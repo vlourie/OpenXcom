@@ -18,7 +18,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <string>
-#include <yaml-cpp/yaml.h>
+#include "../Engine/Yaml.h"
 #include "RuleCraft.h"
 #include "../Savegame/CraftWeaponProjectile.h"
 
@@ -40,6 +40,7 @@ class RuleCraftWeapon
 {
 private:
 	std::string _type;
+	std::string _tooltip;
 	int _sprite, _sound, _damage, _shieldDamageModifier, _range, _accuracy, _reloadCautious, _reloadStandard, _reloadAggressive, _ammoMax, _rearmRate, _projectileSpeed, _weaponType;
 	CraftWeaponProjectileType _projectileType;
 	std::string _launcherName, _clipName;
@@ -56,12 +57,14 @@ public:
 	/// Cleans up the craft weapon ruleset.
 	~RuleCraftWeapon();
 	/// Loads craft weapon data from YAML.
-	void load(const YAML::Node& node, Mod *mod);
+	void load(const YAML::YamlNodeReader& reader, Mod *mod);
 	/// Cross link with other rules.
 	void afterLoad(const Mod* mod);
 
 	/// Gets the craft weapon's type.
 	const std::string& getType() const;
+	/// Gets the craft weapon's tooltip.
+	const std::string& getTooltip() const { return _tooltip; }
 	/// Gets the craft weapon's sprite.
 	int getSprite() const;
 	/// Gets the craft weapon's sound.

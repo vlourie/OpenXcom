@@ -19,7 +19,7 @@
  */
 #include <string>
 #include <map>
-#include <yaml-cpp/yaml.h>
+#include "../Engine/Yaml.h"
 #include "RuleCraft.h"
 #include "ModScript.h"
 
@@ -42,11 +42,11 @@ struct RuleUfoStats : RuleCraftStats
 		return *this;
 	}
 	/// Loads stats from YAML.
-	void load(const YAML::Node &node)
+	void load(const YAML::YamlNodeReader& reader)
 	{
-		(*(RuleCraftStats*)this).load(node);
-		craftCustomDeploy = node["craftCustomDeploy"].as<std::string>(craftCustomDeploy);
-		missionCustomDeploy = node["missionCustomDeploy"].as<std::string>(missionCustomDeploy);
+		(*(RuleCraftStats*)this).load(reader);
+		reader.tryRead("craftCustomDeploy", craftCustomDeploy);
+		reader.tryRead("missionCustomDeploy", missionCustomDeploy);
 	}
 
 	template<auto Stat, typename TBind>
@@ -70,6 +70,7 @@ class RuleUfo
 {
 private:
 	std::string _type, _size;
+	int _radius, _visibility, _blobSize;
 	int _sprite, _marker, _markerLand, _markerCrash;
 	int _power, _range, _score, _reload, _breakOffTime, _missionScore;
 	int _hunterKillerPercentage, _huntMode, _huntSpeed, _huntBehavior, _softlockThreshold;
@@ -101,13 +102,17 @@ public:
 	/// Cleans up the UFO ruleset.
 	~RuleUfo();
 	/// Loads UFO data from YAML.
-	void load(const YAML::Node& node, Mod *mod, const ModScript &parsers);
+	void load(const YAML::YamlNodeReader& reader, Mod *mod, const ModScript &parsers);
 	/// Gets the UFO's type.
 	const std::string &getType() const;
 	/// Gets the UFO's size.
 	const std::string &getSize() const;
 	/// Gets the UFO's radius.
 	int getRadius() const;
+	/// Gets the UFO's default visibility.
+	int getDefaultVisibility() const;
+	/// Gets the UFO's blob size.
+	int getBlobSize() const;
 	/// Gets the UFO's sprite.
 	int getSprite() const;
 	/// Gets the UFO's globe marker when flying.

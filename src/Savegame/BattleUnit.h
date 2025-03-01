@@ -151,6 +151,7 @@ private:
 	std::vector<int> _loftempsSet;
 	Unit *_unitRules;
 	int _rankInt;
+	int _rankIntUnified = 0;
 	int _turretType;
 	int _breathFrame;
 	bool _breathing;
@@ -218,9 +219,9 @@ public:
 	/// Cleans up the BattleUnit.
 	~BattleUnit();
 	/// Loads the unit from YAML.
-	void load(const YAML::Node &node, const Mod *mod, const ScriptGlobal *shared);
+	void load(const YAML::YamlNodeReader& reader, const Mod *mod, const ScriptGlobal *shared);
 	/// Saves the unit to YAML.
-	YAML::Node save(const ScriptGlobal *shared) const;
+	void save(YAML::YamlNodeWriter writer, const ScriptGlobal *shared) const;
 	/// Gets the BattleUnit's ID.
 	int getId() const;
 	/// Calculates the distance squared between the unit and a given position.
@@ -678,8 +679,14 @@ public:
 	void setRankInt(int rank);
 	/// get the rank integer
 	int getRankInt() const;
+	/// get the rank unified integer
+	int getRankIntUnified() const { return _rankIntUnified; };
 	/// derive a rank integer based on rank string (for xcom soldiers ONLY)
-	void deriveRank();
+	void deriveSoldierRank();
+	/// derive a rank integer based on rank string (for Alien)
+	void deriveHostileRank();
+	/// derive a rank integer based on rank string (for Civilians)
+	void deriveNeutralRank();
 	/// this function checks if a tile is visible, using maths.
 	bool checkViewSector(Position pos, bool useTurretDirection = false) const;
 	/// adjust this unit's stats according to difficulty.
