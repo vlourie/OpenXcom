@@ -1151,6 +1151,63 @@
     <ClCompile Include="Battlescape\ExperienceOverviewState.cpp">
       <Filter>Battlescape</Filter>
     </ClCompile>
+    <ClCompile Include="Engine\Yaml.cpp">
+      <Filter>Engine</Filter>
+    </ClCompile>
+    <ClCompile Include="Battlescape\Position.cpp">
+      <Filter>Battlescape</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libs\rapidyaml\c4\base64.cpp">
+      <Filter>Engine\rapidyaml\c4</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libs\rapidyaml\c4\char_traits.cpp">
+      <Filter>Engine\rapidyaml\c4</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libs\rapidyaml\c4\error.cpp">
+      <Filter>Engine\rapidyaml\c4</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libs\rapidyaml\c4\format.cpp">
+      <Filter>Engine\rapidyaml\c4</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libs\rapidyaml\c4\language.cpp">
+      <Filter>Engine\rapidyaml\c4</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libs\rapidyaml\c4\memory_resource.cpp">
+      <Filter>Engine\rapidyaml\c4</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libs\rapidyaml\c4\memory_util.cpp">
+      <Filter>Engine\rapidyaml\c4</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libs\rapidyaml\c4\utf.cpp">
+      <Filter>Engine\rapidyaml\c4</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libs\rapidyaml\c4\yml\common.cpp">
+      <Filter>Engine\rapidyaml\c4\yml</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libs\rapidyaml\c4\yml\node.cpp">
+      <Filter>Engine\rapidyaml\c4\yml</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libs\rapidyaml\c4\yml\node_type.cpp">
+      <Filter>Engine\rapidyaml\c4\yml</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libs\rapidyaml\c4\yml\parse.cpp">
+      <Filter>Engine\rapidyaml\c4\yml</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libs\rapidyaml\c4\yml\preprocess.cpp">
+      <Filter>Engine\rapidyaml\c4\yml</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libs\rapidyaml\c4\yml\reference_resolver.cpp">
+      <Filter>Engine\rapidyaml\c4\yml</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libs\rapidyaml\c4\yml\tag.cpp">
+      <Filter>Engine\rapidyaml\c4\yml</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libs\rapidyaml\c4\yml\tree.cpp">
+      <Filter>Engine\rapidyaml\c4\yml</Filter>
+    </ClCompile>
+    <ClCompile Include="..\libs\rapidyaml\c4\yml\version.cpp">
+      <Filter>Engine\rapidyaml\c4\yml</Filter>
+    </ClCompile>
     <ClCompile Include="Battlescape\UnitTeleportingState.cpp">
       <Filter>Battlescape</Filter>
     </ClCompile>
@@ -2422,6 +2479,36 @@
     <Filter Include="Mod">
       <UniqueIdentifier>{ea5b1e9f-9ff1-457d-9a15-5af8773ccb50}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Engine\rapidyaml">
+      <UniqueIdentifier>{0be071a8-546d-40f0-a2e9-f36fa549568c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Engine\rapidyaml\c4">
+      <UniqueIdentifier>{a1203b04-dfc9-47e6-9243-c036c33aa1d7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Engine\rapidyaml\c4\ext">
+      <UniqueIdentifier>{1ac6e24e-c346-4d98-acde-fb61e5f468f5}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Engine\rapidyaml\c4\ext\rng">
+      <UniqueIdentifier>{44c74bf0-ac0b-4551-a210-faa15a9327c3}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Engine\rapidyaml\c4\ext\sg14">
+      <UniqueIdentifier>{b44914e3-3635-4d44-89f1-63592c1d5e17}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Engine\rapidyaml\c4\ext\debugbreak">
+      <UniqueIdentifier>{c0c64f4a-8d12-4354-8c17-0be6ba14160b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Engine\rapidyaml\c4\std">
+      <UniqueIdentifier>{98137b59-2141-4ea5-94a2-930128026098}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Engine\rapidyaml\c4\yml">
+      <UniqueIdentifier>{75853d8b-7f68-41d5-83f8-c0adff56fd08}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Engine\rapidyaml\c4\yml\detail">
+      <UniqueIdentifier>{a24b27c8-e79d-4e81-9c5f-e43ba1a49320}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Engine\rapidyaml\c4\yml\std">
+      <UniqueIdentifier>{032166e7-3396-4da8-8b9a-79ec1b036488}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="OpenXcom.rc" />
@@ -2430,6 +2517,11 @@
     <None Include="..\res\windows\openxcom.ico" />
   </ItemGroup>
   <ItemGroup>
-    <Natvis Include="yaml-cpp.natvis" />
+    <Natvis Include="..\libs\rapidyaml\ryml.natvis">
+      <Filter>Engine\rapidyaml</Filter>
+    </Natvis>
+    <Natvis Include="..\libs\rapidyaml\c4\c4core.natvis">
+      <Filter>Engine\rapidyaml\c4</Filter>
+    </Natvis>
   </ItemGroup>
 </Project>

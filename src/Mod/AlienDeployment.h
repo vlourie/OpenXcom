@@ -20,7 +20,7 @@
 #include <map>
 #include <vector>
 #include <string>
-#include <yaml-cpp/yaml.h>
+#include "../Engine/Yaml.h"
 #include "../Savegame/WeightedOptions.h"
 
 namespace OpenXcom
@@ -103,6 +103,7 @@ private:
 	std::vector<DeploymentData> _data;
 	std::vector<ReinforcementsData> _reinforcements;
 	int _width, _length, _height, _civilians;
+	bool _ignoreLivingCivilians;
 	bool _markCiviliansAsVIP;
 	int _civilianSpawnNodeRank;
 	std::map<std::string, int> _civiliansByType;
@@ -141,7 +142,7 @@ public:
 	/// Cleans up the Alien Deployment ruleset.
 	~AlienDeployment();
 	/// Loads Alien Deployment data from YAML.
-	void load(const YAML::Node& node, Mod *mod);
+	void load(const YAML::YamlNodeReader& node, Mod *mod);
 	/// Gets the Alien Deployment's type.
 	const std::string& getType() const;
 	/// Gets the custom UFO name to use for the dummy/blank 'addUFO' mapscript command.
@@ -190,6 +191,8 @@ public:
 	void getDimensions(int *width, int *length, int *height) const;
 	/// Gets civilians.
 	int getCivilians() const;
+	/// Should living civilians be ignored for scoring, commendations, etc.?
+	bool getIgnoreLivingCivilians() const { return _ignoreLivingCivilians; }
 	/// Gets the civilian spawn node rank.
 	bool getMarkCiviliansAsVIP() const { return _markCiviliansAsVIP; }
 	/// Gets the civilian spawn node rank.
@@ -314,5 +317,11 @@ public:
 	/// Should items on the "weapon pile" be hidden from the player?
 	bool getNoWeaponPile() const { return _noWeaponPile; }
 };
+
+// helper overloads for deserialization-only
+bool read(ryml::ConstNodeRef const& n, ItemSet* val);
+bool read(ryml::ConstNodeRef const& n, DeploymentData* val);
+bool read(ryml::ConstNodeRef const& n, BriefingData* val);
+bool read(ryml::ConstNodeRef const& n, ReinforcementsData* val);
 
 }

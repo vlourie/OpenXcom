@@ -147,7 +147,7 @@ InventoryState::InventoryState(bool tu, BattlescapeState *parent, Base *base, bo
 
 	// Set up objects
 	_game->getMod()->getSurface("TAC01.SCR")->blitNShade(_bg, 0, 0);
-	add(_btnArmor, "buttonOK", "inventory", _bg);
+	add(_btnArmor, "buttonArmor", "inventory", _bg);
 
 	add(_soldier);
 	add(_btnQuickSearch, "textItem", "inventory");
@@ -1621,7 +1621,14 @@ void InventoryState::btnApplyPersonalTemplateClick(Action *)
 
 		auto& personalTemplate = *unit->getGeoscapeSoldier()->getPersonalEquipmentLayout();
 
-		_applyInventoryTemplate(personalTemplate);
+		if (personalTemplate.empty())
+		{
+			_inv->showWarning(tr("STR_PERSONAL_EQUIPMENT_NOT_DEFINED"));
+		}
+		else
+		{
+			_applyInventoryTemplate(personalTemplate);
+		}
 
 		// refresh ui
 		_inv->arrangeGround();

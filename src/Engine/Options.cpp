@@ -27,7 +27,7 @@
 #include <sstream>
 #include <iostream>
 #include <algorithm>
-#include <yaml-cpp/yaml.h>
+#include "../Engine/Yaml.h"
 #include "Exception.h"
 #include "Logger.h"
 #include "CrossPlatform.h"
@@ -367,7 +367,6 @@ void createOptionsOXCE()
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceThumbButtons", &oxceThumbButtons, true));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceThrottleMouseMoveEvent", &oxceThrottleMouseMoveEvent, 0));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceDisableThinkingProgressBar", &oxceDisableThinkingProgressBar, false));
-	_info.push_back(OptionInfo(OPTION_OXCE, "oxceSortDiscoveredVectorByName", &oxceSortDiscoveredVectorByName, false));
 
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceEmbeddedOnly", &oxceEmbeddedOnly, true));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceListVFSContents", &oxceListVFSContents, false));
@@ -381,6 +380,10 @@ void createOptionsOXCE()
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceGeoscapeDebugLogMaxEntries", &oxceGeoscapeDebugLogMaxEntries, 1000, "", "HIDDEN"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceGeoSlowdownFactor", &oxceGeoSlowdownFactor, 1, "", "HIDDEN"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceGeoShowScoreInsteadOfFunds", &oxceGeoShowScoreInsteadOfFunds, false, "", "HIDDEN"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceGeoSuppressRedundantHKAlert", &oxceGeoSuppressRedundantHKAlert, true, "", "HIDDEN"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceGeoSuppressLandingWithoutEquipment", &oxceGeoSuppressLandingWithoutEquipment, false, "", "HIDDEN"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceGeoGoToNearestBase", &oxceGeoGoToNearestBase, false, "", "HIDDEN"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceGeoSortCraftByDistanceToTarget", &oxceGeoSortCraftByDistanceToTarget, false, "", "HIDDEN"));
 
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceBaseInfoDefenseScaleMultiplier", &oxceBaseInfoDefenseScaleMultiplier, 100, "", "HIDDEN"));
 #ifdef __MOBILE__
@@ -469,6 +472,7 @@ void createControlsOXCE()
 {
 	// OXCE controls general
 	_info.push_back(OptionInfo(OPTION_OXCE, "keyToggleQuickSearch", &keyToggleQuickSearch, SDLK_q, "STR_TOGGLE_QUICK_SEARCH", "STR_GENERAL"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "keyInstaSave", &keyInstaSave, SDLK_F6, "STR_INSTA_SAVE", "STR_GENERAL"));
 
 	// OXCE controls geoscape
 	_info.push_back(OptionInfo(OPTION_OXCE, "keyGeoUfoTracker", &keyGeoUfoTracker, SDLK_t, "STR_UFO_TRACKER", "STR_GEOSCAPE"));
@@ -1232,22 +1236,22 @@ bool load(const std::string &filename)
 	std::string s = _configFolder + filename + ".cfg";
 	try
 	{
-		YAML::Node doc = YAML::Load(*CrossPlatform::readFile(s));
+		YAML::YamlRootNodeReader reader(s);
 		// Ignore old options files
-		if (doc["options"]["NewBattleMission"])
+		if (reader["options"]["NewBattleMission"])
 		{
 			return false;
 		}
 		for (auto& optionInfo : _info)
 		{
-			optionInfo.load(doc["options"]);
+			optionInfo.load(reader["options"]);
 		}
 
 		mods.clear();
-		for (YAML::const_iterator i = doc["mods"].begin(); i != doc["mods"].end(); ++i)
+		for (const auto& mod : reader["mods"].children())
 		{
-			std::string id = (*i)["id"].as<std::string>();
-			bool active = (*i)["active"].as<bool>(false);
+			std::string id = mod["id"].readVal<std::string>();
+			bool active = mod["active"].readVal(false);
 			mods.push_back(std::pair<std::string, bool>(id, active));
 		}
 		if (mods.empty())
@@ -1263,88 +1267,54 @@ bool load(const std::string &filename)
 	return true;
 }
 
-void writeNode(const YAML::Node& node, YAML::Emitter& emitter)
-{
-	switch (node.Type())
-	{
-		case YAML::NodeType::Sequence:
-		{
-			emitter << YAML::BeginSeq;
-			for (size_t i = 0; i < node.size(); i++)
-			{
-				writeNode(node[i], emitter);
-			}
-			emitter << YAML::EndSeq;
-			break;
-		}
-		case YAML::NodeType::Map:
-		{
-			emitter << YAML::BeginMap;
-
-			// First collect all the keys
-			std::vector<std::string> keys(node.size());
-			int key_it = 0;
-			for (YAML::const_iterator it = node.begin(); it != node.end(); ++it)
-			{
-				keys[key_it++] = it->first.as<std::string>();
-			}
-
-			// Then sort them
-			std::sort(keys.begin(), keys.end());
-
-			// Then emit all the entries in sorted order.
-			for (size_t i = 0; i < keys.size(); i++)
-			{
-				emitter << YAML::Key;
-				emitter << keys[i];
-				emitter << YAML::Value;
-				writeNode(node[keys[i]], emitter);
-			}
-			emitter << YAML::EndMap;
-			break;
-		}
-		default:
-			emitter << node;
-			break;
-	}
-}
-
 /**
  * Saves options to a YAML file.
  * @param filename YAML filename.
  * @return Was the saving successful?
  */
-bool save(const std::string &filename)
+bool save(bool reset, const std::string& filename)
 {
-	YAML::Emitter out;
+	std::string yaml;
+	std::string filepath = _configFolder + filename + ".cfg";
 	try
 	{
-		YAML::Node doc, node;
-		for (const auto& optionInfo : _info)
-		{
-			optionInfo.save(node);
-		}
-		doc["options"] = node;
-
+		YAML::YamlRootNodeWriter writer;
+		writer.setAsMap();
+		auto modsWriter = writer["mods"];
+		modsWriter.setAsSeq();
 		for (const auto& pair : mods)
 		{
-			YAML::Node mod;
-			mod["id"] = pair.first;
-			mod["active"] = pair.second;
-			doc["mods"].push_back(mod);
+			auto modWriter = modsWriter.write();
+			modWriter.setAsMap();
+			modWriter.write("active", pair.second);
+			modWriter.write("id", pair.first);
 		}
-
-		writeNode(doc, out);
+		auto optionsWriter = writer["options"];
+		optionsWriter.setAsMap();
+		auto sortedInfo = _info;
+		std::sort(sortedInfo.begin(), sortedInfo.end(), [](const OptionInfo& a, const OptionInfo& b) { return a.id() < b.id(); });
+		for (const auto& optionInfo : sortedInfo)
+		{
+			optionInfo.save(optionsWriter);
+		}
+		if (!reset && CrossPlatform::fileExists(filepath))
+		{
+			// Preserve any undefined options, because they could be from a different fork
+			YAML::YamlRootNodeReader old(filepath);
+			const YAML::YamlNodeReader& currentOptions = optionsWriter.toReader();
+			std::string oldKey, oldVal;
+			for (const auto& oldOption : old["options"].children())
+				if (!currentOptions[oldOption.readKey<ryml::csubstr>()])
+					optionsWriter.write(optionsWriter.saveString(oldKey.assign(oldOption.key())), oldVal.assign(oldOption.val()));
+		}
+		yaml = writer.emit().yaml;
 	}
 	catch (YAML::Exception &e)
 	{
 		Log(LOG_WARNING) << e.what();
 		return false;
 	}
-	std::string filepath = _configFolder + filename + ".cfg";
-	std::string data(out.c_str());
-
-	if (!CrossPlatform::writeFile(filepath, data + "\n" ))
+	if (!CrossPlatform::writeFile(filepath, yaml + "\n"))
 	{
 		Log(LOG_WARNING) << "Failed to save " << filepath;
 		return false;

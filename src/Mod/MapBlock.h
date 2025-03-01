@@ -19,7 +19,7 @@
  */
 #include <string>
 #include <vector>
-#include <yaml-cpp/yaml.h>
+#include "../Engine/Yaml.h"
 #include "../Battlescape/Position.h"
 
 namespace OpenXcom
@@ -32,9 +32,11 @@ struct RandomizedItems
 {
 	Position position;
 	int amount;
+	int fuseTimerMin;
+	int fuseTimerMax;
 	bool mixed;
 	std::vector<std::string> itemList;
-	RandomizedItems() : amount(1), mixed(false) { /*Empty by Design*/ };
+	RandomizedItems() : amount(1), fuseTimerMin(-1), fuseTimerMax(-1), mixed(false) { /*Empty by Design*/ };
 };
 
 struct ExtendedItems
@@ -67,7 +69,7 @@ public:
 	MapBlock(const std::string &name);
 	~MapBlock();
 	/// Loads the map block from YAML.
-	void load(const YAML::Node& node);
+	void load(const YAML::YamlNodeReader& reader);
 	/// Gets the mapblock's name (used for MAP generation).
 	const std::string& getName() const;
 	/// Gets the mapblock's x size.
@@ -92,5 +94,9 @@ public:
 	const std::vector<ExtendedItems> *getExtendedItems() const { return &_extendedItems; }
 
 };
+
+// helper overloads for deserialization-only
+bool read(ryml::ConstNodeRef const& n, RandomizedItems* val);
+bool read(ryml::ConstNodeRef const& n, ExtendedItems* val);
 
 }
