@@ -506,6 +506,7 @@ bool TextList::expandLastRow(const std::string& text)
 	}
 
 	lastRowTexts.push_back(newText);
+	lastText = *std::prev(lastRowTexts.end(), 2);
 
 	const auto rowHeight = std::max(lastText->getHeight(), newText->getTextHeight() + vmargin);
 	for (int i = 0; i < lastRowTexts.size(); ++i)
