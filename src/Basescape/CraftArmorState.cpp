@@ -63,6 +63,8 @@ CraftArmorState::CraftArmorState(Base *base, size_t craft) : _base(base), _craft
 	_lstSoldiers = new TextList(288, 128, 8, 40);
 	_cbxSortBy = new ComboBox(this, 148, 16, 8, 176, true);
 
+	touchComponentsCreate(_txtTitle, true);
+
 	// Set palette
 	setInterface("craftArmor");
 
@@ -75,10 +77,14 @@ CraftArmorState::CraftArmorState(Base *base, size_t craft) : _base(base), _craft
 	add(_lstSoldiers, "list", "craftArmor");
 	add(_cbxSortBy, "button", "craftArmor");
 
+	touchComponentsAdd("button2", "craftArmor", _window);
+
 	centerAllSurfaces();
 
 	// Set up objects
 	setWindowBackground(_window, "craftArmor");
+
+	touchComponentsConfigure();
 
 	_btnOk->setText(tr("STR_OK"));
 	_btnOk->onMouseClick((ActionHandler)&CraftArmorState::btnOkClick);
@@ -170,7 +176,7 @@ CraftArmorState::~CraftArmorState()
  */
 void CraftArmorState::cbxSortByChange(Action *action)
 {
-	bool ctrlPressed = _game->isCtrlPressed();
+	bool ctrlPressed = _game->isCtrlPressed(true);
 	size_t selIdx = _cbxSortBy->getSelected();
 	if (selIdx == (size_t)-1)
 	{
@@ -229,7 +235,7 @@ void CraftArmorState::cbxSortByChange(Action *action)
 			{
 				std::stable_sort(_base->getSoldiers()->begin(), _base->getSoldiers()->end(), *compFunc);
 			}
-			if (_game->isShiftPressed())
+			if (_game->isShiftPressed(true))
 			{
 				std::reverse(_base->getSoldiers()->begin(), _base->getSoldiers()->end());
 			}
@@ -270,6 +276,8 @@ void CraftArmorState::init()
 		_lstSoldiers->setCellText(row, 2, tr(soldier->getArmor()->getType()));
 		row++;
 	}
+
+	touchComponentsRefresh();
 }
 
 /**
@@ -339,11 +347,11 @@ void CraftArmorState::lstItemsLeftArrowClick(Action *action)
 	unsigned int row = _lstSoldiers->getSelectedRow();
 	if (row > 0)
 	{
-		if (action->getDetails()->button.button == SDL_BUTTON_LEFT)
+		if (_game->isLeftClick(action, true))
 		{
 			moveSoldierUp(action, row);
 		}
-		else if (action->getDetails()->button.button == SDL_BUTTON_RIGHT)
+		else if (_game->isRightClick(action, true))
 		{
 			moveSoldierUp(action, row, true);
 		}
@@ -392,11 +400,11 @@ void CraftArmorState::lstItemsRightArrowClick(Action *action)
 	size_t numSoldiers = _base->getSoldiers()->size();
 	if (0 < numSoldiers && INT_MAX >= numSoldiers && row < numSoldiers - 1)
 	{
-		if (action->getDetails()->button.button == SDL_BUTTON_LEFT)
+		if (_game->isLeftClick(action, true))
 		{
 			moveSoldierDown(action, row);
 		}
-		else if (action->getDetails()->button.button == SDL_BUTTON_RIGHT)
+		else if (_game->isRightClick(action, true))
 		{
 			moveSoldierDown(action, row, true);
 		}
@@ -459,9 +467,9 @@ void CraftArmorState::lstSoldiersClick(Action *action)
 	Soldier *s = _base->getSoldiers()->at(_lstSoldiers->getSelectedRow());
 	if (!(s->getCraft() && s->getCraft()->getStatus() == "STR_OUT"))
 	{
-		if (action->getDetails()->button.button == SDL_BUTTON_LEFT)
+		if (_game->isLeftClick(action, true))
 		{
-			if (_game->isCtrlPressed())
+			if (_game->isCtrlPressed(true))
 			{
 				Craft* c = _base->getCrafts()->at(_craft);
 				if (s->getCraft() == c)
@@ -500,7 +508,7 @@ void CraftArmorState::lstSoldiersClick(Action *action)
 				_game->pushState(new SoldierArmorState(_base, _lstSoldiers->getSelectedRow(), SA_GEOSCAPE));
 			}
 		}
-		else if (action->getDetails()->button.button == SDL_BUTTON_RIGHT)
+		else if (_game->isRightClick(action, true))
 		{
 			SavedGame *save;
 			save = _game->getSavedGame();
@@ -549,7 +557,7 @@ void CraftArmorState::lstSoldiersClick(Action *action)
 				}
 			}
 		}
-		else if (action->getDetails()->button.button == SDL_BUTTON_MIDDLE)
+		else if (_game->isMiddleClick(action, true))
 		{
 			std::string articleId = s->getArmor()->getUfopediaType();
 			Ufopaedia::openArticle(_game, articleId);
