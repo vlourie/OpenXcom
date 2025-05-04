@@ -127,6 +127,7 @@ private:
 	UnitSide _fatalShotSide;
 	UnitBodyPart _fatalShotBodyPart;
 	std::string _murdererWeapon, _murdererWeaponAmmo;
+	std::optional<bool> _lightingState = std::nullopt;
 
 	// static data
 	std::string _type;
@@ -831,6 +832,9 @@ public:
 	bool indicatorsAreEnabled() const { return !_disableIndicators; }
 	/// Disable showing indicators for this unit.
 	void disableIndicators();
+
+	std::optional<bool> getLightingState() const { return _lightingState; }
+	void setLightingState(bool val) { _lightingState = val; }
 
 	/// Multiplier of move cost.
 	ArmorMoveCost getMoveCostBase() const { return _moveCostBase; }

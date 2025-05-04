@@ -1072,7 +1072,12 @@ void TileEngine::calculateUnitLighting(MapSubset gs)
 		// add lighting of unit
 		if (unit->getFaction() == FACTION_PLAYER)
 		{
-			currLight = std::max(currLight, _personalLighting ? unit->getArmor()->getPersonalLightFriend() : 0);
+			auto lighting = _personalLighting;
+			auto unitLightingState = unit->getLightingState();
+			if (unitLightingState)
+				lighting = *unitLightingState;
+			
+			currLight = std::max(currLight, lighting ? unit->getArmor()->getPersonalLightFriend() : 0);
 		}
 		else if (unit->getFaction() == FACTION_HOSTILE)
 		{
@@ -4646,6 +4651,23 @@ void TileEngine::togglePersonalLighting()
 	}
 
 	_save->setTogglePersonalLightTemp(_personalLighting);
+	calculateLighting(LL_UNITS);
+	recalculateFOV();
+}
+
+void TileEngine::togglePersonalIndividualLighting()
+{
+	auto* unit = _save->getSelectedUnit();
+	if (!(unit && unit->getFaction() == UnitFaction::FACTION_PLAYER))
+	{
+		return;
+	}
+
+	const auto lightingState = unit->getLightingState();
+	if (lightingState)
+		unit->setLightingState(!lightingState.value());
+	else
+		unit->setLightingState(!_personalLighting);
 	calculateLighting(LL_UNITS);
 	recalculateFOV();
 }

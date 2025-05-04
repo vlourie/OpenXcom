@@ -606,6 +606,7 @@ BattlescapeState::BattlescapeState() :
 	_btnStats->onKeyboardPress((ActionHandler)&BattlescapeState::btnReloadClick, Options::keyBattleReload);
 	_btnStats->onKeyboardPress((ActionHandler)&BattlescapeState::btnSelectMusicTrackClick, Options::keySelectMusicTrack);
 	_btnStats->onKeyboardPress((ActionHandler)&BattlescapeState::btnPersonalLightingClick, Options::keyBattlePersonalLighting);
+	_btnStats->onKeyboardPress((ActionHandler)&BattlescapeState::btnPersonalIndividualLightingClick, Options::QOL::ToggleInvidualLighting);
 	_btnStats->onKeyboardPress((ActionHandler)&BattlescapeState::btnNightVisionClick, Options::keyNightVisionToggle);
 	//_btnStats->onKeyboardPress((ActionHandler)&BattlescapeState::btnTouchButtonsClick, SDLK_t); // for debugging only
 
@@ -1955,6 +1956,12 @@ void BattlescapeState::btnPersonalLightingClick(Action *)
 {
 	if (allowButtons())
 		_save->getTileEngine()->togglePersonalLighting();
+}
+
+void BattlescapeState::btnPersonalIndividualLightingClick(Action* action)
+{
+	if (allowButtons())
+		_save->getTileEngine()->togglePersonalIndividualLighting();
 }
 
 /**

@@ -217,6 +217,9 @@ public:
 	bool isTileInLOS(BattleAction *action, Tile *tile, bool drawing);
 	/// Turn XCom soldier's personal lighting on or off.
 	void togglePersonalLighting();
+	/// Turn XCom soldier's individual personal lighting on or off.
+	void togglePersonalIndividualLighting();
+
 	/// Checks the horizontal blockage of a tile.
 	int horizontalBlockage(Tile *startTile, Tile *endTile, ItemDamageType type, bool skipObject = false);
 	/// Checks the vertical blockage of a tile.

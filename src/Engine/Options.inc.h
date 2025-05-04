@@ -121,6 +121,7 @@ namespace QOL
 
 	OPT bool hideEnemyTurnBackground;
 	OPT int dontTraceProjectiles;
+	OPT SDLKey ToggleInvidualLighting;
 }
 
 // OXCE hidden, accessible only via options.cfg

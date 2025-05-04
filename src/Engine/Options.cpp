@@ -568,6 +568,7 @@ void createAdvancedOptionsOTHER()
 void createControlsOTHER()
 {
 	_info.push_back(OptionInfo(OPTION_OTHER, "qolItemTooltipHotkey", &QOL::ItemTooltipHotkey, SDLK_TAB, "STR_ITEM_TOOLTIP_HOTKEY", "STR_GENERAL"));
+	_info.push_back(OptionInfo(OPTION_OTHER, "qolKeyBattlePersonalIndividualLighting", &QOL::ToggleInvidualLighting, SDLK_p, "STR_TOGGLE_INDIVIDUAL_LIGHTING_HOTKEY", "STR_GENERAL"));
 }
 
 
