@@ -120,6 +120,7 @@ namespace QOL
 	OPT int defaultSoldiersSorter;
 
 	OPT bool hideEnemyTurnBackground;
+	OPT int dontTraceProjectiles;
 }
 
 // OXCE hidden, accessible only via options.cfg

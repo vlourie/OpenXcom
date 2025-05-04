@@ -557,6 +557,7 @@ void createOptionsOTHER()
 	_info.push_back(OptionInfo(OPTION_OTHER, "qolHighlightLowManaSoldiersMode", &QOL::highlightLowManaSoldiersMode, 2, "STR_HIGHLIGHT_LOW_MANA_SOLDIERS", "STR_BASESCAPE"));
 	_info.push_back(OptionInfo(OPTION_OTHER, "qolDefaultSoldiersSorter", &QOL::defaultSoldiersSorter, 0, "STR_DEFAULT_SOLDIERS_SORTER", "STR_BASESCAPE"));
 	_info.push_back(OptionInfo(OPTION_OTHER, "qolHideEnemyTurnBackground", &QOL::hideEnemyTurnBackground, false, "STR_HIDE_ENEMY_TURN_BACKGROUND", "STR_GENERAL"));
+	_info.push_back(OptionInfo(OPTION_OTHER, "qolDontTraceProjectiles", &QOL::dontTraceProjectiles, 0, "STR_DONT_TRACE_PROJECTILES", "STR_GENERAL"));
 }
 
 void createAdvancedOptionsOTHER()

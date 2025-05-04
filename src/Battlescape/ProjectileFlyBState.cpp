@@ -394,11 +394,17 @@ void ProjectileFlyBState::init()
 	if (createNewProjectile())
 	{
 		auto* conf = weapon->getActionConf(_action.type);
-		if (_parent->getMap()->isAltPressed() || (conf && !conf->followProjectiles))
+
+		const bool byAltPressed = _parent->getMap()->isAltPressed();
+		const bool byRules = conf && !conf->followProjectiles;
+		const bool byOptions = (Options::QOL::dontTraceProjectiles == 2) || (_unit->getFaction() == UnitFaction::FACTION_PLAYER && Options::QOL::dontTraceProjectiles == 1);
+
+		if (byAltPressed || byRules || byOptions)
 		{
 			// temporarily turn off camera following projectiles to prevent annoying flashing effects (e.g. on minigun-like weapons)
 			_parent->getMap()->setFollowProjectile(false);
 		}
+
 		if (_range == 0) _action.spendTU();
 		_parent->getMap()->setCursorType(CT_NONE);
 		_parent->getMap()->getCamera()->stopMouseScrolling();
