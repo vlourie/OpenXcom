@@ -144,6 +144,8 @@ public:
 	void invMouseOut(Action *action);
 	/// Handler for hitting the [Move Ground Inventory To Base] hotkey.
 	void onMoveGroundInventoryToBase(Action *action);
+	/// Handler for hitting the [Move Ground Inventory To Base] click.
+	void onMoveGroundInventoryToBaseClick();
 	/// Handles keypresses.
 	void handle(Action *action) override;
 	/// Runs state functionality every cycle.

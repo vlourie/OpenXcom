@@ -1771,7 +1771,11 @@ void InventoryState::onAutoequip(Action *)
  */
 void InventoryState::invClick(Action *act)
 {
-	updateStats();
+	if (_game->isCtrlPressed() && _game->isAltPressed())
+		onMoveGroundInventoryToBaseClick();
+	else
+		updateStats();
+
 	_prev_key = 0, _key_repeats = 0;
 }
 
@@ -2098,6 +2102,64 @@ void InventoryState::onMoveGroundInventoryToBase(Action *)
 	// refresh ui
 	_inv->arrangeGround();
 	updateStats();
+	refreshMouse();
+
+	// give audio feedback
+	_game->getMod()->getSoundByDepth(_battleGame->getDepth(), Mod::ITEM_DROP)->play();
+}
+
+
+void InventoryState::onMoveGroundInventoryToBaseClick()
+{
+	if (_inv->getSelectedItem() != nullptr || _base == nullptr || _noCraft)
+		return;
+
+	BattleUnit* unit = _battleGame->getSelectedUnit();
+	Craft* craft = unit->getGeoscapeSoldier()->getCraft();
+
+	if (craft == 0 || craft->getStatus() == "STR_OUT")
+		return;
+
+	auto* item = _inv->getMouseOverItem();
+	if (!item || item->getRules()->isFixed())
+		return;
+
+	// step 1: move stuff from craft to base
+	const auto& weaponType = item->getRules();
+	// check all ammo slots first
+	for (int slot = 0; slot < RuleItem::AmmoSlotMax; ++slot)
+	{
+		if (item->getAmmoForSlot(slot))
+		{
+			const auto& ammoType = item->getAmmoForSlot(slot)->getRules();
+			// only real ammo
+			if (weaponType != ammoType)
+			{
+				craft->getItems()->removeItem(ammoType);
+				_base->getStorageItems()->addItem(ammoType);
+			}
+		}
+	}
+	// and the weapon as last
+	craft->getItems()->removeItem(weaponType);
+	_base->getStorageItems()->addItem(weaponType);
+
+	// step 2: remove from inventory/ground
+	if (item->getOwner() != nullptr && item->getOwner() == unit)
+	{
+		Collections::removeIf(*unit->getInventory(), 1, [item](BattleItem* i) { return i == item; });
+		updateStats();
+		_game->getSavedGame()->getSavedBattle()->removeItem(item);
+	}
+	else
+	{
+		auto& groundInventory = *unit->getTile()->getInventory();
+		Collections::removeIf(groundInventory, 1, [item](BattleItem* i) { return i == item; });
+		_inv->arrangeGround();
+	}
+
+	_game->getSavedGame()->getSavedBattle()->removeItem(item);
+
 	refreshMouse();
 
 	// give audio feedback

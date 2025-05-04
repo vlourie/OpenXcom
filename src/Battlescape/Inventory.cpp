@@ -743,6 +743,10 @@ void Inventory::mouseClick(Action *action, State *state)
 					{
 						// do nothing!
 					}
+					else if (_game->isCtrlPressed() && _game->isAltPressed())
+					{
+						// movement to craft in InventoryState
+					}
 					else if (_game->isCtrlPressed())
 					{
 						const RuleInventory* newSlot = _inventorySlotGround;
