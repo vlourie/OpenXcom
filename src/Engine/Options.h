@@ -71,7 +71,7 @@ namespace Options
 #define OPT extern
 #include "Options.inc.h"
 #undef OPT
-	namespace OXCEN
+	namespace QOL
 	{
 		enum class ItemTooltipMode
 		{

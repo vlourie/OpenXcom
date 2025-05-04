@@ -432,22 +432,22 @@ void OptionsAdvancedState::lstOptionsClick(Action *action)
 			min = _isTFTD ? 2 : 1;
 			max = _isTFTD ? 16 : 15;
 		}
-		else if (i == &Options::OXCEN::ItemTooltipMode)
+		else if (i == &Options::QOL::ItemTooltipMode)
 		{
 			min = 0;
 			max = 2;
 		}
-		else if (i == &Options::OXCEN::ItemTooltipHoverDelayInTenths)
+		else if (i == &Options::QOL::ItemTooltipHoverDelayInTenths)
 		{
 			min = 5;
 			max = 30;
 		}
-		else if (i == &Options::OXCEN::highlightLowManaSoldiersMode)
+		else if (i == &Options::QOL::highlightLowManaSoldiersMode)
 		{
 			min = 0;
 			max = 2;
 		}
-		else if (i == &Options::OXCEN::defaultSoldiersSorter)
+		else if (i == &Options::QOL::defaultSoldiersSorter)
 		{
 			min = 0;
 			max = 3;

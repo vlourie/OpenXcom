@@ -165,7 +165,7 @@ void BattlescapeMessage::setPalette(const SDL_Color *colors, int firstcolor, int
 void BattlescapeMessage::blit(SDL_Surface *surface)
 {
 	Surface::blit(surface);
-	if (!Options::OXCEN::hideEnemyTurnBackground)
+	if (!Options::QOL::hideEnemyTurnBackground)
 	{
 		_window->blit(surface);
 		_text->blit(surface);

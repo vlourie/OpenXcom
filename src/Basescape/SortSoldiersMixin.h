@@ -20,12 +20,12 @@ namespace OpenXcom
 	protected:
 		void FillSorters(std::vector<SortFunctor*>& sorters, ComboBox& sortingCombobox, ActionHandler comboBoxChangeHandler)
 		{
-			std::map<Options::OXCEN::DefaultSoldiersSorter, size_t> sortersToIndexes;
+			std::map<Options::QOL::DefaultSoldiersSorter, size_t> sortersToIndexes;
 			std::vector<std::string> sortingNames;
 
 			sortingNames.push_back(State::tr("STR_ORIGINAL_ORDER"));
 			sorters.push_back(nullptr);
-			sortersToIndexes[Options::OXCEN::DefaultSoldiersSorter::Original] = sorters.size() - 1;
+			sortersToIndexes[Options::QOL::DefaultSoldiersSorter::Original] = sorters.size() - 1;
 			
 #define PUSH_IN(strId, functor) \
 		sortingNames.push_back(State::tr(strId)); \
@@ -39,13 +39,13 @@ namespace OpenXcom
 			PUSH_IN("STR_IDLE_DAYS", idleDaysStat);
 			PUSH_IN("STR_MISSIONS2", missionsStat);
 			PUSH_IN("STR_KILLS2", killsStat);
-			sortersToIndexes[Options::OXCEN::DefaultSoldiersSorter::KillCount] = sorters.size() - 1;
+			sortersToIndexes[Options::QOL::DefaultSoldiersSorter::KillCount] = sorters.size() - 1;
 
 			PUSH_IN("STR_WOUND_RECOVERY2", woundRecoveryStat);
 			if (State::_game->getMod()->isManaFeatureEnabled() && !State::_game->getMod()->getReplenishManaAfterMission())
 			{
 				PUSH_IN("STR_MANA_CURRENT", currentManaStat);
-				sortersToIndexes[Options::OXCEN::DefaultSoldiersSorter::CurrentMana] = sorters.size() - 1;
+				sortersToIndexes[Options::QOL::DefaultSoldiersSorter::CurrentMana] = sorters.size() - 1;
 
 				PUSH_IN("STR_MANA_MISSING", manaMissingStat);
 			}
@@ -56,7 +56,7 @@ namespace OpenXcom
 			PUSH_IN("STR_BRAVERY", braveryStat);
 			PUSH_IN("STR_REACTIONS", reactionsStat);
 			PUSH_IN("STR_FIRING_ACCURACY", firingStat);
-			sortersToIndexes[Options::OXCEN::DefaultSoldiersSorter::FiringAccuracy] = sorters.size() - 1;
+			sortersToIndexes[Options::QOL::DefaultSoldiersSorter::FiringAccuracy] = sorters.size() - 1;
 
 			PUSH_IN("STR_THROWING_ACCURACY", throwingStat);
 			PUSH_IN("STR_MELEE_ACCURACY", meleeStat);
@@ -71,7 +71,7 @@ namespace OpenXcom
 
 #undef PUSH_IN
 
-			const auto defaultSorter = static_cast<Options::OXCEN::DefaultSoldiersSorter>(Options::OXCEN::defaultSoldiersSorter);
+			const auto defaultSorter = static_cast<Options::QOL::DefaultSoldiersSorter>(Options::QOL::defaultSoldiersSorter);
 			auto it = sortersToIndexes.find(defaultSorter);
 
 			size_t index = 0;
@@ -139,14 +139,14 @@ namespace OpenXcom
 
 		void ChangeDynSorter(getStatFn_t& getter)
 		{
-			const auto defaultSorter = static_cast<Options::OXCEN::DefaultSoldiersSorter>(Options::OXCEN::defaultSoldiersSorter);
-			if (defaultSorter == Options::OXCEN::DefaultSoldiersSorter::Original)
+			const auto defaultSorter = static_cast<Options::QOL::DefaultSoldiersSorter>(Options::QOL::defaultSoldiersSorter);
+			if (defaultSorter == Options::QOL::DefaultSoldiersSorter::Original)
 				getter = nullptr;
-			else if (defaultSorter == Options::OXCEN::DefaultSoldiersSorter::KillCount)
+			else if (defaultSorter == Options::QOL::DefaultSoldiersSorter::KillCount)
 				getter = killsStat;
-			else if (defaultSorter == Options::OXCEN::DefaultSoldiersSorter::FiringAccuracy)
+			else if (defaultSorter == Options::QOL::DefaultSoldiersSorter::FiringAccuracy)
 				getter = firingStat;
-			else if (defaultSorter == Options::OXCEN::DefaultSoldiersSorter::CurrentMana)
+			else if (defaultSorter == Options::QOL::DefaultSoldiersSorter::CurrentMana)
 				getter = currentManaStat;
 		}
 

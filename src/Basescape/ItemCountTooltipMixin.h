@@ -14,19 +14,19 @@ namespace OpenXcom
 	protected:
 		void BindToSurface(InteractiveSurface* surface)
 		{
-			if (Options::OXCEN::ItemTooltipMode == static_cast<int>(Options::OXCEN::ItemTooltipMode::None))
+			if (Options::QOL::ItemTooltipMode == static_cast<int>(Options::QOL::ItemTooltipMode::None))
 				return;
 
-			if (Options::OXCEN::ItemTooltipMode == static_cast<int>(Options::OXCEN::ItemTooltipMode::Hover))
+			if (Options::QOL::ItemTooltipMode == static_cast<int>(Options::QOL::ItemTooltipMode::Hover))
 			{
 				surface->onMouseOver((ActionHandler)&ItemCountTooltipMixin::InitTooltipHover);
 				surface->onMouseOut((ActionHandler)&ItemCountTooltipMixin::ClearTooltip);
 			}
-			else if (Options::OXCEN::ItemTooltipMode == static_cast<int>(Options::OXCEN::ItemTooltipMode::Hotkey))
+			else if (Options::QOL::ItemTooltipMode == static_cast<int>(Options::QOL::ItemTooltipMode::Hotkey))
 			{
 				surface->onMouseOver((ActionHandler)&ItemCountTooltipMixin::StoreCoords);
-				surface->onKeyboardPress((ActionHandler)&ItemCountTooltipMixin::InitTooltipHotkey, Options::OXCEN::ItemTooltipHotkey);
-				surface->onKeyboardRelease((ActionHandler)&ItemCountTooltipMixin::ClearTooltip, Options::OXCEN::ItemTooltipHotkey);
+				surface->onKeyboardPress((ActionHandler)&ItemCountTooltipMixin::InitTooltipHotkey, Options::QOL::ItemTooltipHotkey);
+				surface->onKeyboardRelease((ActionHandler)&ItemCountTooltipMixin::ClearTooltip, Options::QOL::ItemTooltipHotkey);
 				surface->onMouseOut((ActionHandler)&ItemCountTooltipMixin::ClearTooltip);
 			}
 		}
@@ -34,7 +34,7 @@ namespace OpenXcom
 		void InitTooltipHover(Action* action)
 		{
 			StoreCoords(action);
-			InitTooltip(action, Options::OXCEN::ItemTooltipHoverDelayInTenths * 100u);
+			InitTooltip(action, Options::QOL::ItemTooltipHoverDelayInTenths * 100u);
 		}
 
 		void InitTooltipHotkey(Action* action)

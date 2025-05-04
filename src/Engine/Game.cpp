@@ -626,7 +626,7 @@ void Game::loadLanguages()
 	const std::string dirLanguageAndroid = "Language/Android/";
 	const std::string dirLanguageOXCE = "Language/OXCE/";
 	const std::string dirLanguageTechnical = "Language/Technical/";
-	const std::string dirLanguageOXCEN = "Language/OXCEN/";
+	const std::string dirLanguageOXCEN = "Language/QOL/";
 
 	const std::string defaultLangYml = defaultLang + ".yml";
 	const std::string currentLangYml = currentLang + ".yml";

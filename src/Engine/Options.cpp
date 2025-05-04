@@ -552,11 +552,11 @@ void createControlsOXCE()
 
 void createOptionsOTHER()
 {
-	_info.push_back(OptionInfo(OPTION_OTHER, "oxcenItemTooltipMode", &OXCEN::ItemTooltipMode, 1, "STR_ITEM_TOOLTIP_MODE", "STR_GENERAL"));
-	_info.push_back(OptionInfo(OPTION_OTHER, "oxcenItemTooltipHoverDelay", &OXCEN::ItemTooltipHoverDelayInTenths, 15, "STR_ITEM_TOOLTIP_HOVER_DELAY", "STR_GENERAL"));
-	_info.push_back(OptionInfo(OPTION_OTHER, "oxcenHighlightLowManaSoldiersMode", &OXCEN::highlightLowManaSoldiersMode, 2, "STR_HIGHLIGHT_LOW_MANA_SOLDIERS", "STR_BASESCAPE"));
-	_info.push_back(OptionInfo(OPTION_OTHER, "oxcenDefaultSoldiersSorter", &OXCEN::defaultSoldiersSorter, 0, "STR_DEFAULT_SOLDIERS_SORTER", "STR_BASESCAPE"));
-	_info.push_back(OptionInfo(OPTION_OTHER, "oxcenHideEnemyTurnBackground", &OXCEN::hideEnemyTurnBackground, false, "STR_HIDE_ENEMY_TURN_BACKGROUND", "STR_GENERAL"));
+	_info.push_back(OptionInfo(OPTION_OTHER, "qolItemTooltipMode", &QOL::ItemTooltipMode, 1, "STR_ITEM_TOOLTIP_MODE", "STR_GENERAL"));
+	_info.push_back(OptionInfo(OPTION_OTHER, "qolItemTooltipHoverDelay", &QOL::ItemTooltipHoverDelayInTenths, 15, "STR_ITEM_TOOLTIP_HOVER_DELAY", "STR_GENERAL"));
+	_info.push_back(OptionInfo(OPTION_OTHER, "qolHighlightLowManaSoldiersMode", &QOL::highlightLowManaSoldiersMode, 2, "STR_HIGHLIGHT_LOW_MANA_SOLDIERS", "STR_BASESCAPE"));
+	_info.push_back(OptionInfo(OPTION_OTHER, "qolDefaultSoldiersSorter", &QOL::defaultSoldiersSorter, 0, "STR_DEFAULT_SOLDIERS_SORTER", "STR_BASESCAPE"));
+	_info.push_back(OptionInfo(OPTION_OTHER, "qolHideEnemyTurnBackground", &QOL::hideEnemyTurnBackground, false, "STR_HIDE_ENEMY_TURN_BACKGROUND", "STR_GENERAL"));
 }
 
 void createAdvancedOptionsOTHER()
@@ -566,7 +566,7 @@ void createAdvancedOptionsOTHER()
 
 void createControlsOTHER()
 {
-	_info.push_back(OptionInfo(OPTION_OTHER, "oxcenItemTooltipHotkey", &OXCEN::ItemTooltipHotkey, SDLK_TAB, "STR_ITEM_TOOLTIP_HOTKEY", "STR_GENERAL"));
+	_info.push_back(OptionInfo(OPTION_OTHER, "qolItemTooltipHotkey", &QOL::ItemTooltipHotkey, SDLK_TAB, "STR_ITEM_TOOLTIP_HOTKEY", "STR_GENERAL"));
 }
 
 

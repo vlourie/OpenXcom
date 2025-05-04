@@ -106,8 +106,7 @@ OPT bool oxceAutomaticPromotions;
 OPT bool oxceEnableOffCentreShooting;
 OPT int oxceCrashedOrLanded;
 
-// OXCEN
-namespace OXCEN
+namespace QOL
 {
 	enum class ItemTooltipMode;
 	OPT int ItemTooltipMode;

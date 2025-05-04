@@ -15,16 +15,16 @@ namespace OpenXcom
 		{
 			list.setRowColor(row, color);
 
-			const auto mode = static_cast<Options::OXCEN::HighlightLowManaSoldiersMode>(Options::OXCEN::highlightLowManaSoldiersMode);
+			const auto mode = static_cast<Options::QOL::HighlightLowManaSoldiersMode>(Options::QOL::highlightLowManaSoldiersMode);
 			if (StateType::_game->getSavedGame()->isManaUnlocked(StateType::_game->getMod())
-				&& mode != Options::OXCEN::HighlightLowManaSoldiersMode::None)
+				&& mode != Options::QOL::HighlightLowManaSoldiersMode::None)
 			{
 				const auto missingManaColor = soldier.getMissingManaColorForState();
 				if (missingManaColor)
 				{
-					if (mode == Options::OXCEN::HighlightLowManaSoldiersMode::Name)
+					if (mode == Options::QOL::HighlightLowManaSoldiersMode::Name)
 						list.setCellColor(row, 0, *missingManaColor);
-					else if (mode == Options::OXCEN::HighlightLowManaSoldiersMode::Rank)
+					else if (mode == Options::QOL::HighlightLowManaSoldiersMode::Rank)
 						list.setCellColor(row, 1, *missingManaColor);
 				}
 			}
