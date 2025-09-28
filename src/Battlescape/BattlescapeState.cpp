@@ -98,7 +98,7 @@ namespace OpenXcom
  * @param game Pointer to the core game.
  */
 BattlescapeState::BattlescapeState() :
-	_reserve(0), _touchButtonsEnabled(false), _touchButtonsEnabledLastTurn(false), _manaBarVisible(false),
+	_reserve(0), _touchButtonsEnabled(false), _manaBarVisible(false),
 	_firstInit(true), _paletteResetNeeded(false), _paletteResetRequested(false),
 	_isMouseScrolling(false), _isMouseScrolled(false),
 	_xBeforeMouseScrolling(0), _yBeforeMouseScrolling(0),
@@ -1800,17 +1800,17 @@ void BattlescapeState::toggleTouchButtons(bool deactivate, bool tryToReactivate)
 
 	if (tryToReactivate)
 	{
-		_touchButtonsEnabled = _touchButtonsEnabledLastTurn;
-		_touchButtonsEnabledLastTurn = false;
+		_touchButtonsEnabled = Options::oxceBattleTouchButtonsEnabled; // restore
 	}
 	else if (deactivate)
 	{
-		_touchButtonsEnabledLastTurn = _touchButtonsEnabled;
+		Options::oxceBattleTouchButtonsEnabled = _touchButtonsEnabled; // backup
 		_touchButtonsEnabled = false;
 	}
 	else
 	{
 		_touchButtonsEnabled = !_touchButtonsEnabled;
+		Options::oxceBattleTouchButtonsEnabled = _touchButtonsEnabled; // backup
 	}
 
 	_btnCtrl->setVisible(_touchButtonsEnabled);
@@ -2346,13 +2346,16 @@ void BattlescapeState::updateSoldierInfo(bool checkFOV)
 		for (auto* bu : *_save->getUnits())
 		{
 			if (j >= VISIBLE_MAX) break; // loop finished
-			if (bu->getFaction() == FACTION_PLAYER && bu->getStatus() != STATUS_DEAD && !bu->isIgnored() && bu->getFatalWounds() > 0 && bu->indicatorsAreEnabled())
+			if (bu->getFaction() == FACTION_PLAYER && bu->getStatus() != STATUS_DEAD && !bu->isIgnored() && bu->indicatorsAreEnabled())
 			{
-				_btnVisibleUnit[j]->setTooltip(_txtVisibleUnitTooltip[VISIBLE_MAX]);
-				_btnVisibleUnit[j]->setVisible(true);
-				_numVisibleUnit[j]->setVisible(true);
-				_visibleUnit[j] = bu;
-				++j;
+				if (bu->getFatalWounds() > 0 || bu->getFire() > 0)
+				{
+					_btnVisibleUnit[j]->setTooltip(_txtVisibleUnitTooltip[VISIBLE_MAX]);
+					_btnVisibleUnit[j]->setVisible(true);
+					_numVisibleUnit[j]->setVisible(true);
+					_visibleUnit[j] = bu;
+					++j;
+				}
 			}
 		}
 	}
@@ -2407,12 +2410,7 @@ void BattlescapeState::updateUiButton(const BattleUnit *battleUnit)
 	// if we have psi amp with icon then it will show one button only, but if we have two psi amps and one with icon is second (this is important) then we will show both buttons.
 	bool hasPsiWeapon = psiWeapon != 0 && psiWeapon != specialWeapon;
 
-	bool hasSkills = false;
-	Soldier* soldier = battleUnit->getGeoscapeSoldier();
-	if (soldier)
-	{
-		hasSkills = soldier->getRules()->isSkillMenuDefined();
-	}
+	bool hasSkills = battleUnit->getGeoscapeSoldier() && battleUnit->skillMenuCheck();
 
 	resetUiButton();
 
@@ -2435,7 +2433,7 @@ void BattlescapeState::updateUiButton(const BattleUnit *battleUnit)
 	}
 	if (hasSkills)
 	{
-		show(_btnSkills, soldier->getRules()->getSkillIconSprite());
+		show(_btnSkills, battleUnit->getGeoscapeSoldier()->getRules()->getSkillIconSprite());
 	}
 	if (hasPsiWeapon)
 	{
@@ -2859,7 +2857,10 @@ inline void BattlescapeState::handle(Action *action)
 								if (bu->getGeoscapeSoldier() && !bu->hasGainedAnyExperience())
 								{
 									if (!first) ss << ", ";
-									ss << bu->getName(_game->getLanguage());
+									if (bu == _save->getSelectedUnit())
+										ss << Unicode::TOK_COLOR_FLIP << bu->getName(_game->getLanguage()) << Unicode::TOK_COLOR_FLIP;
+									else
+										ss << bu->getName(_game->getLanguage());
 									first = false;
 								}
 							}
@@ -3188,6 +3189,7 @@ void BattlescapeState::saveAIMap()
 						characterRGBA(img, r.x, r.y, (tilePos.z - z) ? 'c' : 'C', 255, 127, 127, 0xff);
 						break;
 					case FACTION_NONE:
+					case FACTION_MAX:
 						break;
 					}
 					break;

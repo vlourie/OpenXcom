@@ -73,6 +73,7 @@ OPT int oxceGeoAutosaveSlots;
 OPT bool oxceLinks;
 OPT bool oxceLinksDisableTextEdit;
 OPT bool oxceFatFingerLinks;
+OPT bool oxceBattleTouchButtonsEnabled;
 OPT bool oxceQuickSearchButton;
 OPT bool oxceHighlightNewTopics;
 OPT bool oxcePediaShowClipSize;
@@ -101,9 +102,11 @@ OPT bool oxcePlayBriefingMusicDuringEquipment;
 OPT int oxceNightVisionColor;
 OPT int oxceAutoNightVisionThreshold;
 OPT int oxceShowAccuracyOnCrosshair;
+OPT int oxceReactionFireThreshold;
 OPT bool oxceAutoSell;
 OPT bool oxceAutomaticPromotions;
 OPT bool oxceEnableOffCentreShooting;
+OPT bool oxceUniformShootingSpread;
 OPT int oxceCrashedOrLanded;
 
 namespace QOL
@@ -148,6 +151,7 @@ OPT int oxceStartUpTextMode;
 OPT int oxceGeoscapeDebugLogMaxEntries;
 OPT int oxceGeoSlowdownFactor;
 OPT bool oxceGeoShowScoreInsteadOfFunds;
+OPT bool oxceGeoEnableTrainingIndicator;
 OPT bool oxceGeoSuppressRedundantHKAlert;
 OPT bool oxceGeoSuppressLandingWithoutEquipment;
 OPT bool oxceGeoGoToNearestBase;
@@ -155,6 +159,8 @@ OPT bool oxceGeoSortCraftByDistanceToTarget;
 
 OPT int oxceBaseInfoDefenseScaleMultiplier;
 OPT bool oxceBaseSoldierTransformationShowOnlyEligible;
+OPT bool oxceBaseFilterResearchable;
+OPT bool oxceBaseManufactureFallbackButton;
 OPT bool oxceBaseManufactureInfinityButton;
 OPT bool oxceBaseTouchButtons;
 
@@ -170,10 +176,13 @@ OPT int oxceTogglePersonalLightType;
 OPT int oxceToggleNightVisionType;
 OPT int oxceToggleBrightnessType;
 
+OPT bool oxceDisableInfoOnThrowCursor;
 OPT bool oxceSwapDontReselectActions;
 OPT bool oxceEnableUnitResponseSounds;
 OPT int oxceHiddenMovementBackgroundChangeFrequency;
 OPT bool oxceInventoryShowUnitSlot;
+OPT bool oxceReplaceNotesLink;
+
 OPT bool oxceInventorySplitScrollButton;
 OPT bool oxceInventoryDropItemOverPaperdoll;
 

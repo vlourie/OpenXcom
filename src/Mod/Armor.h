@@ -31,11 +31,14 @@ namespace OpenXcom
 
 enum ForcedTorso : Uint8;
 enum UnitSide : Uint8;
+enum AIAttackWeight : int;
 
 class BattleUnit;
 class RuleItem;
 class RuleResearch;
 class RuleSoldier;
+class RulesoldierBonus;
+class RuleCommendations;
 
 /**
  * Move cost multipler.
@@ -98,6 +101,8 @@ private:
 	std::string _ufopediaType;
 	std::string _type, _spriteSheet, _spriteInv, _corpseGeoName, _storeItemName, _selfDestructItemName, _specWeaponName;
 	std::string _requiresName;
+	std::string _requiresAwardName;
+	std::string _requiresBonusName;
 	std::string _layersDefaultPrefix;
 	std::map<int, std::string> _layersSpecificPrefix;
 	std::map<std::string, std::vector<std::string> > _layersDefinition;
@@ -108,7 +113,10 @@ private:
 	std::vector<const RuleItem*> _corpseBattle;
 	std::vector<const RuleItem*> _builtInWeapons;
 	std::vector<const RuleSoldier*> _units;
+	std::vector<int> _ranks;
 	const RuleResearch* _requires = nullptr;
+	const RuleCommendations* _requiresAward = nullptr;
+	const RuleSoldierBonus* _requiresBonus = nullptr;
 	const RuleItem* _corpseGeo = nullptr;
 	const RuleItem* _storeItem = nullptr;
 	const RuleItem* _selfDestructItem = nullptr;
@@ -119,6 +127,11 @@ private:
 	bool _drawBubbles;
 	MovementType _movementType;
 	SpecialAbility _specab;
+
+	NullableValue<AIAttackWeight> _aiTargetWeightAsHostile = { };
+	NullableValue<AIAttackWeight> _aiTargetWeightAsHostileCivilians  = { };
+	NullableValue<AIAttackWeight> _aiTargetWeightAsFriendly  = { };
+	NullableValue<AIAttackWeight> _aiTargetWeightAsNeutral = { };
 
 	bool _turnBeforeFirstStep;
 	int _turnCost;
@@ -154,7 +167,9 @@ private:
 	int _personalLightHostile = 0;
 	int _personalLightNeutral = 0;
 
-	int _camouflageAtDay, _camouflageAtDark, _antiCamouflageAtDay, _antiCamouflageAtDark, _heatVision, _psiVision, _psiCamouflage;
+	int _camouflageAtDay, _camouflageAtDark, _antiCamouflageAtDay, _antiCamouflageAtDark;
+	int _visibilityThroughSmoke, _visibilityThroughFire;
+	int _psiVision, _psiCamouflage;
 	float _damageModifier[DAMAGE_TYPES];
 	std::vector<int> _loftempsSet;
 	UnitStats _stats;
@@ -179,6 +194,7 @@ private:
 	bool _isAlwaysVisible = false;
 	int _standHeight, _kneelHeight, _floatHeight;
 	int _meleeOriginVoxelVerticalOffset;
+	int _group;
 	int _listOrder;
 public:
 	/// Creates a blank armor ruleset.
@@ -226,6 +242,10 @@ public:
 	const RuleItem* getSpecialWeapon() const;
 	/// Gets the research required to be able to equip this armor.
 	const RuleResearch* getRequiredResearch() const;
+	/// Gets the commendation required to be able to equip this armor.
+	const RuleCommendations* getRequiredAward() const { return _requiresAward; }
+	/// Gets the soldier bonus required to be able to equip this armor.
+	const RuleSoldierBonus* getRequiredBonus() const { return _requiresBonus; }
 
 	/// Armor have layered armor definition. Check by Prefix.
 	bool hasLayersDefinition() const { return !_layersDefaultPrefix.empty(); }
@@ -246,6 +266,15 @@ public:
 	MovementType getMovementTypeByDepth(int depth) const;
 	/// Gets the armor's special ability.
 	int getSpecialAbility() const;
+
+	/// Gets weight value as hostile unit.
+	NullableValue<AIAttackWeight> getAITargetWeightAsHostile() const { return _aiTargetWeightAsHostile; }
+	/// Gets weight value as civilian unit when consider by aliens.
+	NullableValue<AIAttackWeight> getAITargetWeightAsHostileCivilians() const { return _aiTargetWeightAsHostileCivilians; }
+	/// Gets weight value as same faction unit.
+	NullableValue<AIAttackWeight> getAITargetWeightAsFriendly() const { return _aiTargetWeightAsFriendly; }
+	/// Gets weight value as neutral unit (xcom to civ or vice versa).
+	NullableValue<AIAttackWeight> getAITargetWeightAsNeutral() const { return _aiTargetWeightAsNeutral; }
 
 	/// Should turning before first step cost TU or not?
 	bool getTurnBeforeFirstStep() const { return _turnBeforeFirstStep; }
@@ -371,7 +400,9 @@ public:
 	/// Gets info about anti camouflage at dark.
 	int getAntiCamouflageAtDark() const;
 	/// Gets info about heat vision.
-	int getHeatVision() const;
+	int getVisibilityThroughSmoke() const { return _visibilityThroughSmoke; }
+	/// Gets info about visibility through fire.
+	int getVisibilityThroughFire() const { return _visibilityThroughFire; }
 	/// Gets info about psi vision.
 	int getPsiVision() const;
 	/// Gets info about psi camouflage.
@@ -428,9 +459,11 @@ public:
 	const ScriptValues<Armor> &getScriptValuesRaw() const { return _scriptValues; }
 
 	/// Gets the armor's units.
-	const std::vector<const RuleSoldier*> &getUnits() const;
+	const std::vector<const RuleSoldier*> &getUnitsRaw() const;
+	/// Gets the armor's supported soldier ranks.
+	const std::vector<int>& getRanksRaw() const { return _ranks; }
 	/// Check if a soldier can use this armor.
-	bool getCanBeUsedBy(const RuleSoldier* soldier) const;
+	bool getCanBeUsedBy(const Soldier* soldier) const;
 
 
 	/// Gets the index of the sprite in the CustomArmorPreview sprite set
@@ -460,6 +493,8 @@ public:
 	/// Gets a unit's offset for melee attacks.
 	int getMeleeOriginVoxelVerticalOffset() const { return _meleeOriginVoxelVerticalOffset; }
 
+	/// Gets the armor type group.
+	int getGroup() const { return _group; }
 	/// Get the list weight for this armor.
 	int getListOrder() const { return _listOrder; }
 };

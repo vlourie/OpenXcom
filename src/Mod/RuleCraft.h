@@ -20,6 +20,7 @@
 #include <vector>
 #include <string>
 #include "../Engine/Yaml.h"
+#include "Unit.h"
 #include "RuleBaseFacilityFunctions.h"
 #include "ModScript.h"
 
@@ -41,7 +42,7 @@ struct RuleCraftStats
 {
 	int fuelMax, damageMax, speedMax, accel;
 	int radarRange, radarChance, sightRange;
-	int hitBonus, avoidBonus, powerBonus, armor;
+	int hitBonus, avoidBonus, avoidBonus2, powerBonus, armor;
 	int shieldCapacity, shieldRecharge, shieldRechargeInGeoscape, shieldBleedThrough;
 	int soldiers, vehicles;
 	int maxItems;
@@ -51,7 +52,7 @@ struct RuleCraftStats
 	RuleCraftStats() :
 		fuelMax(0), damageMax(0), speedMax(0), accel(0),
 		radarRange(0), radarChance(0), sightRange(0),
-		hitBonus(0), avoidBonus(0), powerBonus(0), armor(0),
+		hitBonus(0), avoidBonus(0), avoidBonus2(0), powerBonus(0), armor(0),
 		shieldCapacity(0), shieldRecharge(0), shieldRechargeInGeoscape(0), shieldBleedThrough(0),
 		soldiers(0), vehicles(0),
 		maxItems(0), maxStorageSpace(0.0)
@@ -70,6 +71,7 @@ struct RuleCraftStats
 		sightRange += r.sightRange;
 		hitBonus += r.hitBonus;
 		avoidBonus += r.avoidBonus;
+		avoidBonus2 += r.avoidBonus2;
 		powerBonus += r.powerBonus;
 		armor += r.armor;
 		shieldCapacity += r.shieldCapacity;
@@ -94,6 +96,7 @@ struct RuleCraftStats
 		sightRange -= r.sightRange;
 		hitBonus -= r.hitBonus;
 		avoidBonus -= r.avoidBonus;
+		avoidBonus2 -= r.avoidBonus2;
 		powerBonus -= r.powerBonus;
 		armor -= r.armor;
 		shieldCapacity -= r.shieldCapacity;
@@ -126,6 +129,7 @@ struct RuleCraftStats
 		reader.tryRead("sightRange", sightRange);
 		reader.tryRead("hitBonus", hitBonus);
 		reader.tryRead("avoidBonus", avoidBonus);
+		reader.tryRead("avoidBonus2", avoidBonus2);
 		reader.tryRead("powerBonus", powerBonus);
 		reader.tryRead("armor", armor);
 		reader.tryRead("shieldCapacity", shieldCapacity);
@@ -150,6 +154,7 @@ struct RuleCraftStats
 		b.template addField<Stat, &RuleCraftStats::sightRange>(prefix + "getSightRange");
 		b.template addField<Stat, &RuleCraftStats::hitBonus>(prefix + "getHitBonus");
 		b.template addField<Stat, &RuleCraftStats::avoidBonus>(prefix + "getAvoidBonus");
+		b.template addField<Stat, &RuleCraftStats::avoidBonus2>(prefix + "getAvoidBonus2");
 		b.template addField<Stat, &RuleCraftStats::powerBonus>(prefix + "getPowerBonus");
 		b.template addField<Stat, &RuleCraftStats::armor>(prefix + "getArmor");
 		b.template addField<Stat, &RuleCraftStats::shieldCapacity>(prefix + "getShieldCapacity");
@@ -215,6 +220,7 @@ private:
 	std::vector<int> _craftInventoryTile;
 	std::vector<int> _groups;
 	std::vector<int> _allowedSoldierGroups;
+	std::vector<int> _allowedArmorGroups;
 	bool _onlyOneSoldierGroupAllowed;
 	RuleCraftStats _stats;
 	int _shieldRechargeAtBase;
@@ -222,6 +228,9 @@ private:
 	bool _useAllStartTiles;
 	std::string _customPreview;
 	std::vector<int> _selectSound, _takeoffSound;
+	UnitStats _pilotMinStatsRequired;
+	std::vector<std::string> _pilotSoldierBonusesRequiredNames;
+	std::vector<const RuleSoldierBonus*> _pilotSoldierBonusesRequired;
 
 	ModScript::CraftScripts::Container _craftScripts;
 	ScriptValues<RuleCraft> _scriptValues;
@@ -345,6 +354,8 @@ public:
 	const std::vector<int>& getGroups() const { return _groups; }
 	/// Gets the list of allowed soldier groups.
 	const std::vector<int>& getAllowedSoldierGroups() const { return _allowedSoldierGroups; }
+	/// Gets the list of allowed armor groups.
+	const std::vector<int>& getAllowedArmorGroups() const { return _allowedArmorGroups; }
 	/// Does this craft allow soldiers of the same group only?
 	bool isOnlyOneSoldierGroupAllowed() const { return _onlyOneSoldierGroupAllowed; }
 	/// Gets the item limit for this craft.
@@ -387,6 +398,11 @@ public:
 	/// Gets the sound played when a craft takes off from a base.
 	int getTakeoffSound() const;
 	const std::vector<int>& getTakeoffSoundRaw() const { return _takeoffSound; }
+
+	/// Gets the minimum stats a soldier needs to be eligible for piloting this craft
+	const UnitStats& getPilotMinStatsRequired() const { return _pilotMinStatsRequired; }
+	/// Gets the list of soldier bonuses a soldier needs to be eligible for piloting this craft
+	const std::vector<const RuleSoldierBonus*>& getPilotSoldierBonusesRequired() const { return _pilotSoldierBonusesRequired; }
 
 	/// Gets script.
 	template<typename Script>

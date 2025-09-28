@@ -66,7 +66,7 @@ ConfirmDestinationState::ConfirmDestinationState(std::vector<Craft*> crafts, Tar
 
 	if (_crafts.size() == 1)
 	{
-		transferAvailable = (Options::canTransferCraftsWhileAirborne && base != 0 && base != _crafts.front()->getBase() && _crafts.front()->arePilotsOnboard());
+		transferAvailable = (Options::canTransferCraftsWhileAirborne && base != 0 && base != _crafts.front()->getBase() && _crafts.front()->arePilotsOnboard(_game->getMod()));
 	}
 
 	int btnOkX = transferAvailable ? 29 : 68;
@@ -181,6 +181,15 @@ ConfirmDestinationState::~ConfirmDestinationState()
 */
 std::string ConfirmDestinationState::checkStartingCondition()
 {
+	// Check all selected craft
+	for (auto* xcraft : _crafts)
+	{
+		if (xcraft->areBannedArmorsOnboard())
+		{
+			return tr("STR_ARMOR_NOT_ALLOWED_ONBOARD");
+		}
+	}
+
 	Ufo* u = dynamic_cast<Ufo*>(_target);
 	MissionSite* m = dynamic_cast<MissionSite*>(_target);
 	AlienBase* b = dynamic_cast<AlienBase*>(_target);
@@ -337,7 +346,7 @@ void ConfirmDestinationState::btnOkClick(Action *)
 
 	for (auto* craft : _crafts)
 	{
-		if (!craft->arePilotsOnboard())
+		if (!craft->arePilotsOnboard(_game->getMod()))
 		{
 			_game->popState();
 			_game->popState();

@@ -24,6 +24,7 @@ set ( basescape_src
   Basescape/GlobalManufactureState.cpp
   Basescape/GlobalResearchDiaryState.cpp
   Basescape/GlobalResearchState.cpp
+  Basescape/ItemLocationsState.cpp
   Basescape/ItemCountTooltip.cpp
   Basescape/ManageAlienContainmentState.cpp
   Basescape/ManufactureDependenciesTreeState.cpp

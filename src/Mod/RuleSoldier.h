@@ -141,8 +141,6 @@ public:
 	int getBuyCost() const;
 	/// Does salary depend on rank?
 	bool isSalaryDynamic() const;
-	/// Is a skill menu defined for this soldier type?
-	bool isSkillMenuDefined() const;
 	/// Gets the list of defined skills.
 	const std::vector<const RuleSkill*> &getSkills() const;
 	/// Returns the sprite index for the skill icon sprite.
@@ -210,7 +208,7 @@ public:
 	/// Gets the soldier's transfer time.
 	int getTransferTime() const;
 	/// Percentage modifier for morale loss when this unit is killed.
-	int getMoraleLossWhenKilled() { return _moraleLossWhenKilled; };
+	int getMoraleLossWhenKilled() const { return _moraleLossWhenKilled; };
 	/// Gets the list of StatStrings.
 	const std::vector<StatString *> &getStatStrings() const;
 	/// Gets the list of strings for ranks.

@@ -1220,6 +1220,15 @@
     <ClCompile Include="Engine\TouchState.cpp">
       <Filter>Engine</Filter>
     </ClCompile>
+    <ClCompile Include="Basescape\ItemLocationsState.cpp">
+      <Filter>Basescape</Filter>
+    </ClCompile>
+    <ClCompile Include="Battlescape\UnitTeleportingState.cpp">
+      <Filter>Battlescape</Filter>
+    </ClCompile>
+    <ClCompile Include="Basescape\ItemCountTooltip.cpp">
+      <Filter>Basescape</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h" />
@@ -2435,6 +2444,135 @@
     <ClInclude Include="Battlescape\ExperienceOverviewState.h">
       <Filter>Battlescape</Filter>
     </ClInclude>
+    <ClInclude Include="Engine\Yaml.h">
+      <Filter>Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libs\rapidyaml\ryml.hpp">
+      <Filter>Engine\rapidyaml</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libs\rapidyaml\ryml_std.hpp">
+      <Filter>Engine\rapidyaml</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libs\rapidyaml\c4\allocator.hpp">
+      <Filter>Engine\rapidyaml\c4</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libs\rapidyaml\c4\base64.hpp">
+      <Filter>Engine\rapidyaml\c4</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libs\rapidyaml\c4\bitmask.hpp">
+      <Filter>Engine\rapidyaml\c4</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libs\rapidyaml\c4\blob.hpp">
+      <Filter>Engine\rapidyaml\c4</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libs\rapidyaml\c4\c4_pop.hpp">
+      <Filter>Engine\rapidyaml\c4</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libs\rapidyaml\c4\c4_push.hpp">
+      <Filter>Engine\rapidyaml\c4</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libs\rapidyaml\c4\char_traits.hpp">
+      <Filter>Engine\rapidyaml\c4</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libs\rapidyaml\c4\charconv.hpp">
+      <Filter>Engine\rapidyaml\c4</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libs\rapidyaml\c4\common.hpp">
+      <Filter>Engine\rapidyaml\c4</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libs\rapidyaml\c4\compiler.hpp">
+      <Filter>Engine\rapidyaml\c4</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libs\rapidyaml\c4\config.hpp">
+      <Filter>Engine\rapidyaml\c4</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libs\rapidyaml\c4\cpu.hpp">
+      <Filter>Engine\rapidyaml\c4</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libs\rapidyaml\c4\ctor_dtor.hpp">
+      <Filter>Engine\rapidyaml\c4</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libs\rapidyaml\c4\dump.hpp">
+      <Filter>Engine\rapidyaml\c4</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libs\rapidyaml\c4\enum.hpp">
+      <Filter>Engine\rapidyaml\c4</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libs\rapidyaml\c4\error.hpp">
+      <Filter>Engine\rapidyaml\c4</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libs\rapidyaml\c4\export.hpp">
+      <Filter>Engine\rapidyaml\c4</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libs\rapidyaml\c4\format.hpp">
+      <Filter>Engine\rapidyaml\c4</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libs\rapidyaml\c4\gcc-4.8.hpp">
+      <Filter>Engine\rapidyaml\c4</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libs\rapidyaml\c4\hash.hpp">
+      <Filter>Engine\rapidyaml\c4</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libs\rapidyaml\c4\language.hpp">
+      <Filter>Engine\rapidyaml\c4</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libs\rapidyaml\c4\memory_resource.hpp">
+      <Filter>Engine\rapidyaml\c4</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libs\rapidyaml\c4\memory_util.hpp">
+      <Filter>Engine\rapidyaml\c4</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libs\rapidyaml\c4\platform.hpp">
+      <Filter>Engine\rapidyaml\c4</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libs\rapidyaml\c4\preprocessor.hpp">
+      <Filter>Engine\rapidyaml\c4</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libs\rapidyaml\c4\restrict.hpp">
+      <Filter>Engine\rapidyaml\c4</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libs\rapidyaml\c4\span.hpp">
+      <Filter>Engine\rapidyaml\c4</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libs\rapidyaml\c4\substr.hpp">
+      <Filter>Engine\rapidyaml\c4</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libs\rapidyaml\c4\substr_fwd.hpp">
+      <Filter>Engine\rapidyaml\c4</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libs\rapidyaml\c4\szconv.hpp">
+      <Filter>Engine\rapidyaml\c4</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libs\rapidyaml\c4\type_name.hpp">
+      <Filter>Engine\rapidyaml\c4</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libs\rapidyaml\c4\types.hpp">
+      <Filter>Engine\rapidyaml\c4</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libs\rapidyaml\c4\unrestrict.hpp">
+      <Filter>Engine\rapidyaml\c4</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libs\rapidyaml\c4\utf.hpp">
+      <Filter>Engine\rapidyaml\c4</Filter>
+    </ClInclude>
+    <ClInclude Include="..\libs\rapidyaml\c4\windows.hpp">
+      <Filter>Engine\rapidyaml\c4</Filter>
+    </ClInclude>
+    <ClInclude Include="Savegame\ResearchDiary.h">
+      <Filter>Savegame</Filter>
+    </ClInclude>
+    <ClInclude Include="Basescape\GlobalResearchDiaryState.h">
+      <Filter>Basescape</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\TouchState.h">
+      <Filter>Engine</Filter>
+    </ClInclude>
+    <ClInclude Include="Basescape\ItemLocationsState.h">
+      <Filter>Basescape</Filter>
+    </ClInclude>
+    <ClInclude Include="Engine\NullableValue.h">
+      <Filter>Engine</Filter>
+    </ClInclude>
     <ClInclude Include="Battlescape\UnitTeleportingState.h">
       <Filter>Battlescape</Filter>
     </ClInclude>
@@ -2449,15 +2587,6 @@
     </ClInclude>
     <ClInclude Include="Basescape\SortSoldiersMixin.h">
       <Filter>Basescape</Filter>
-    </ClInclude>
-    <ClInclude Include="Savegame\ResearchDiary.h">
-      <Filter>Savegame</Filter>
-    </ClInclude>
-    <ClInclude Include="Basescape\GlobalResearchDiaryState.h">
-      <Filter>Basescape</Filter>
-    </ClInclude>
-    <ClInclude Include="Engine\TouchState.h">
-      <Filter>Engine</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
