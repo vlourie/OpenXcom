@@ -87,6 +87,8 @@ enum BasePlacementErrors : int
 	BPE_Used_Gyms = 16,
 	/// 17: not enough alien containment
 	BPE_Used_AlienContainment = 17,
+	/// 18: trying to build a facility (from scratch) that can only be built as an upgrade of another facility
+	BPE_UpgradeOnly = 18,
 };
 
 struct BaseSumDailyRecovery
@@ -246,6 +248,8 @@ public:
 	int getMonthlyMaintenace() const;
 	/// Get the list of base's ResearchProject
 	const std::vector<ResearchProject *> & getResearch() const;
+	/// Get the list of base's ResearchProject
+	std::vector<ResearchProject *> & getResearch() { return _research; }
 	/// Add a new ResearchProject to the Base
 	void addResearch(ResearchProject *);
 	/// Remove a ResearchProject from the Base

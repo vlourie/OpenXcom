@@ -1689,6 +1689,50 @@ const std::vector<const RuleResearch *> & SavedGame::getDiscoveredResearch() con
 }
 
 /**
+ * Does this item correspond to at least one research topic that can be researched now or in the future?
+ */
+bool SavedGame::isResearchable(const RuleItem* item, const Mod* mod) const
+{
+	for (const auto& pair : mod->getResearchMap())
+	{
+		if (pair.second->needItem() && pair.second->getNeededItem() == item)
+		{
+			// This research topic is "permanently" disabled, ignore it!
+			if (isResearchRuleStatusDisabled(pair.first))
+			{
+				continue;
+			}
+
+			if (isResearched(pair.second, false))
+			{
+				if (hasUndiscoveredGetOneFree(pair.second, false))
+				{
+					// This research topic still has some more undiscovered non-disabled "getOneFree" topics, keep it!
+					return true;
+				}
+				else if (hasUndiscoveredProtectedUnlock(pair.second))
+				{
+					// This research topic still has one or more undiscovered non-disabled "protected unlocks", keep it!
+					return true;
+				}
+				else
+				{
+					// This topic can't give you anything else anymore, ignore it!
+					continue;
+				}
+			}
+			else
+			{
+				// This research topic is not yet researched, keep it!
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
+
+/**
  * Get the list of RuleResearch which can be researched in a Base.
  * @param projects the list of ResearchProject which are available.
  * @param mod the game Mod
@@ -3576,6 +3620,16 @@ void isResearchedScript(const SavedGame* sg, int& val, const RuleResearch* name)
 	val = 0;
 }
 
+bool filterCountryConstScript(const SavedGame*, const Country*)
+{
+	return true;
+}
+
+bool filterCountryScript(SavedGame*, Country*)
+{
+	return true;
+}
+
 std::string debugDisplayScript(const SavedGame* p)
 {
 	if (p)
@@ -3603,6 +3657,7 @@ std::string debugDisplayScript(const SavedGame* p)
  */
 void SavedGame::ScriptRegister(ScriptParserBase* parser)
 {
+	parser->registerPointerType<Country>();
 
 	{
 		const auto name = std::string{ "RandomState" };
@@ -3641,6 +3696,9 @@ void SavedGame::ScriptRegister(ScriptParserBase* parser)
 	sgg.add<&difficultyLevelScript>("difficultyLevel", "Get difficulty level");
 	sgg.add<&SavedGame::getMonthsPassed>("getMonthsPassed", "Number of months passed from start");
 	sgg.add<&SavedGame::getDaysPassed>("getDaysPassed", "Number of days passed from start");
+
+	sgg.addList<&filterCountryConstScript, &SavedGame::_countries>("getCountries");
+	sgg.addList<&filterCountryScript, &SavedGame::_countries>("getCountries");
 
 	sgg.add<&isResearchedScript>("isResearched");
 

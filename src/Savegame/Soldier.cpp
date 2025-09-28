@@ -39,6 +39,7 @@
 #include "../Mod/RuleCommendations.h"
 #include "Base.h"
 #include "ItemContainer.h"
+#include "../Mod/RuleSkill.h"
 
 namespace OpenXcom
 {
@@ -848,7 +849,7 @@ void Soldier::setLookVariant(int lookVariant)
  * Returns the soldier's rules.
  * @return rule soldier
  */
-RuleSoldier *Soldier::getRules() const
+const RuleSoldier *Soldier::getRules() const
 {
 	return _rules;
 }
@@ -1881,6 +1882,42 @@ void Soldier::transform(const Mod *mod, RuleSoldierTransformation *transformatio
 	{
 		_previousTransformations.clear();
 	}
+	else if (!transformationRule->getRemoveTransformations().empty())
+	{
+		// Remove specific transformations and their related bonuses
+		for (const auto& remove_transf : transformationRule->getRemoveTransformations())
+		{
+			int count = 0;
+			auto it1 = _previousTransformations.find(remove_transf);
+			if (it1 != _previousTransformations.end())
+			{
+				count = it1->second;
+				_previousTransformations.erase(remove_transf);
+			}
+			if (count > 0)
+			{
+				const auto* rtRule = mod->getSoldierTransformation(remove_transf, false);
+				if (rtRule)
+				{
+					if (!Mod::isEmptyRuleName(rtRule->getSoldierBonusType()))
+					{
+						auto it2 = _transformationBonuses.find(rtRule->getSoldierBonusType());
+						if (it2 != _transformationBonuses.end())
+						{
+							if (it2->second > count)
+							{
+								it2->second -= count;
+							}
+							else
+							{
+								_transformationBonuses.erase(rtRule->getSoldierBonusType());
+							}
+						}
+					}
+				}
+			}
+		}
+	}
 
 	// Remember the performed transformation (on the source soldier)
 	auto& history = sourceSoldier->getPreviousTransformations();
@@ -2005,6 +2042,22 @@ UnitStats Soldier::calculateStatChanges(const Mod *mod, RuleSoldierTransformatio
 }
 
 /**
+ * Checks whether the soldier has a given bonus.
+ * Disclaimer: DOES NOT REFRESH THE BONUS CACHE!
+ */
+bool Soldier::hasBonus(const RuleSoldierBonus* bonus) const
+{
+	for (auto* sb : _bonusCache)
+	{
+		if (sb == bonus)
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+/**
  * Gets all the soldier bonuses
  * @return The map of soldier bonuses
  */
@@ -2121,6 +2174,78 @@ UnitStats* Soldier::getDailyDogfightExperienceCache()
 void Soldier::resetDailyDogfightExperienceCache()
 {
 	_dailyDogfightExperienceCache = UnitStats::scalar(0);
+}
+
+/**
+ * Check if the soldier has all the required soldier bonuses for the given soldier skill.
+ * @param skillRules Skill rules.
+ */
+bool Soldier::hasAllRequiredBonusesForSkill(const RuleSkill* skillRules)
+{
+	for (auto* requiredBonusRule : skillRules->getRequiredBonuses())
+	{
+		bool found = false;
+		for (auto* bonusRule : *getBonuses(nullptr))
+		{
+			if (bonusRule == requiredBonusRule)
+			{
+				found = true;
+				break;
+			}
+		}
+		if (!found)
+			return false;
+	}
+	return true;
+}
+
+/**
+ * Check if the soldier has all the required stats and soldier bonuses for piloting the (current or new) craft.
+ */
+bool Soldier::hasAllPilotingRequirements(const Craft* newCraft) const
+{
+	if (!_rules->getAllowPiloting())
+		return false;
+
+	const Craft* craft = newCraft ? newCraft : _craft;
+
+	if (!craft)
+		return false;
+
+	// Does this soldier meet the minimum stat requirements for piloting the current craft?
+	const UnitStats& currentStats = _tmpStatsWithAllBonuses; // all bonuses count
+	const UnitStats& minStats = craft->getRules()->getPilotMinStatsRequired();
+	if (currentStats.tu < minStats.tu ||
+		currentStats.stamina < minStats.stamina ||
+		currentStats.health < minStats.health ||
+		currentStats.bravery < minStats.bravery ||
+		currentStats.reactions < minStats.reactions ||
+		currentStats.firing < minStats.firing ||
+		currentStats.throwing < minStats.throwing ||
+		currentStats.melee < minStats.melee ||
+		currentStats.mana < minStats.mana ||
+		currentStats.strength < minStats.strength ||
+		currentStats.psiStrength < minStats.psiStrength ||
+		(currentStats.psiSkill < minStats.psiSkill && minStats.psiSkill != 0)) // The != 0 is required for the "psi training at any time" option, as it sets skill to negative in training
+		return false;
+
+	// Does this soldier have all required soldier bonuses for piloting the current craft?
+	for (auto* requiredBonusRule : craft->getRules()->getPilotSoldierBonusesRequired())
+	{
+		bool found = false;
+		for (auto* bonusRule : _bonusCache) // *getBonuses(nullptr)
+		{
+			if (bonusRule == requiredBonusRule)
+			{
+				found = true;
+				break;
+			}
+		}
+		if (!found)
+			return false;
+	}
+
+	return true;
 }
 
 

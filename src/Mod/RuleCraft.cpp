@@ -142,6 +142,7 @@ void RuleCraft::load(const YAML::YamlNodeReader& node, Mod *mod, const ModScript
 	reader.tryRead("craftInventoryTile", _craftInventoryTile);
 	mod->loadUnorderedInts(_type, _groups, reader["groups"]);
 	mod->loadUnorderedInts(_type, _allowedSoldierGroups, reader["allowedSoldierGroups"]);
+	mod->loadUnorderedInts(_type, _allowedArmorGroups, reader["allowedArmorGroups"]);
 	reader.tryRead("onlyOneSoldierGroupAllowed", _onlyOneSoldierGroupAllowed);
 	reader.tryRead("maxSkinIndex", _maxSkinIndex);
 	reader.tryRead("deployment", _deployment);
@@ -199,6 +200,9 @@ void RuleCraft::load(const YAML::YamlNodeReader& node, Mod *mod, const ModScript
 	mod->loadSoundOffset(_type, _selectSound, reader["selectSound"], "GEO.CAT");
 	mod->loadSoundOffset(_type, _takeoffSound, reader["takeoffSound"], "GEO.CAT");
 
+	reader.tryRead("pilotMinStatsRequired", _pilotMinStatsRequired);
+	mod->loadNames(_type, _pilotSoldierBonusesRequiredNames, reader["pilotSoldierBonusesRequired"]);
+
 	_craftScripts.load(_type, reader, parsers.craftScripts);
 	_scriptValues.load(reader, parsers.getShared());
 }
@@ -209,6 +213,7 @@ void RuleCraft::load(const YAML::YamlNodeReader& node, Mod *mod, const ModScript
 void RuleCraft::afterLoad(const Mod* mod)
 {
 	mod->linkRule(_refuelItem, _refuelItemName);
+	mod->linkRule(_pilotSoldierBonusesRequired, _pilotSoldierBonusesRequiredNames);
 
 	// No turning soldiers into antimatter
 	mod->checkForSoftError(_stats.soldiers < 0, _type, "Default unit capacity cannot be negative.", LOG_ERROR);
