@@ -19,7 +19,8 @@
  */
 #include <vector>
 #include <string>
-#include <yaml-cpp/yaml.h>
+#include <list>
+#include "../Engine/Yaml.h"
 #include "Tile.h"
 #include "../Mod/AlienDeployment.h"
 #include "../Mod/RuleCraft.h"
@@ -75,7 +76,7 @@ private:
 	int _mapsize_x, _mapsize_y, _mapsize_z;
 	std::vector<MapDataSet*> _mapDataSets;
 	std::vector<Tile> _tiles;
-	BattleUnit *_selectedUnit, *_lastSelectedUnit;
+	BattleUnit *_selectedUnit, *_undoUnit, *_lastSelectedUnit;
 	std::vector<Node*> _nodes;
 	std::vector<BattleUnit*> _units;
 	std::vector<BattleItem*> _items, _deleted;
@@ -139,9 +140,9 @@ public:
 	/// Cleans up the saved game.
 	~SavedBattleGame();
 	/// Loads a saved battle game from YAML.
-	void load(const YAML::Node& node, Mod *mod, SavedGame* savedGame);
+	void load(const YAML::YamlNodeReader& reader, Mod *mod, SavedGame* savedGame);
 	/// Saves a saved battle game to YAML.
-	YAML::Node save() const;
+	void save(YAML::YamlNodeWriter writer) const;
 	/// Sets the dimensions of the map and initializes it.
 	void initMap(int mapsize_x, int mapsize_y, int mapsize_z, bool resetTerrain = true);
 	/// Initialises the pathfinding and tile engine.
@@ -370,12 +371,17 @@ public:
 	BattleUnit *getSelectedUnit() const;
 	/// Sets the currently selected unit.
 	void setSelectedUnit(BattleUnit *unit);
+	/// Gets the "undo" unit.
+	BattleUnit* getUndoUnit() const { return _undoUnit; }
+	/// Sets the "undo" unit.
+	void setUndoUnit(BattleUnit* unit) { _undoUnit = unit; }
 	/// Clear state that given unit is selected.
 	void clearUnitSelection(BattleUnit *unit);
 	/// Selects the previous soldier.
 	BattleUnit *selectPreviousPlayerUnit(bool checkReselect = false, bool setReselect = false, bool checkInventory = false);
 	/// Selects the next soldier.
 	BattleUnit *selectNextPlayerUnit(bool checkReselect = false, bool setReselect = false, bool checkInventory = false);
+	BattleUnit *selectNextPlayerUnitByDistance(bool checkReselect = false, bool setReselect = false, bool checkInventory = false);
 	/// Selects the unit with position on map.
 	BattleUnit *selectUnit(Position pos);
 	/// Gets the pathfinding object.
@@ -570,8 +576,8 @@ public:
 	void resetCurrentAmbienceDelay();
 	/// Play a random ambient sound.
 	void playRandomAmbientSound();
-	// gets ruleset.
-	const Mod *getMod() const;
+	/// Gets ruleset.
+	const Mod *getMod() const { return _rule; }
 	/// gets the list of items we're guaranteed.
 	std::vector<BattleItem*> *getGuaranteedRecoveredItems();
 	/// gets the list of items we MIGHT get.

@@ -1462,7 +1462,7 @@ void TechTreeViewerState::initLists()
 			// person joining
 			std::ostringstream name;
 			name << "  ";
-			if (!rule->getSpawnedSoldierTemplate().IsNull())
+			if (rule->getSpawnedSoldierTemplate().yaml != "")
 			{
 				name << "*";
 			}

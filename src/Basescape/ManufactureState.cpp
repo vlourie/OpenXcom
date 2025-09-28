@@ -101,8 +101,6 @@ ManufactureState::ManufactureState(Base *base) : _base(base)
 	_txtTitle->setAlign(ALIGN_CENTER);
 	_txtTitle->setText(tr("STR_CURRENT_PRODUCTION"));
 
-	_txtFunds->setText(tr("STR_CURRENT_FUNDS").arg(Unicode::formatFunding(_game->getSavedGame()->getFunds())));
-
 	_txtItem->setText(tr("STR_ITEM"));
 
 	_txtEngineers->setText(tr("STR_ENGINEERS__ALLOCATED"));
@@ -226,6 +224,7 @@ void ManufactureState::fillProductionList(size_t scrl)
 	_txtAvailable->setText(tr("STR_ENGINEERS_AVAILABLE").arg(_base->getAvailableEngineers()));
 	_txtAllocated->setText(tr("STR_ENGINEERS_ALLOCATED").arg(_base->getAllocatedEngineers()));
 	_txtSpace->setText(tr("STR_WORKSHOP_SPACE_AVAILABLE").arg(_base->getFreeWorkshops()));
+	_txtFunds->setText(tr("STR_CURRENT_FUNDS").arg(Unicode::formatFunding(_game->getSavedGame()->getFunds())));
 
 	if (scrl)
 		_lstManufacture->scrollTo(scrl);

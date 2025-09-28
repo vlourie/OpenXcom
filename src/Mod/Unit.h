@@ -19,7 +19,7 @@
  */
 #include <string>
 #include <vector>
-#include <yaml-cpp/yaml.h>
+#include "../Engine/Yaml.h"
 #include <SDL_types.h>
 #include "../Engine/RNG.h"
 #include "../Savegame/WeightedOptions.h"
@@ -42,9 +42,26 @@ enum MovementType : int;
 enum ForcedTorso : Uint8 { TORSO_USE_GENDER, TORSO_ALWAYS_MALE, TORSO_ALWAYS_FEMALE };
 enum UnitSide : Uint8 { SIDE_FRONT, SIDE_LEFT, SIDE_RIGHT, SIDE_REAR, SIDE_UNDER, SIDE_MAX };
 enum UnitStatus {STATUS_STANDING, STATUS_WALKING, STATUS_FLYING, STATUS_TURNING, STATUS_AIMING, STATUS_COLLAPSING, STATUS_DEAD, STATUS_UNCONSCIOUS, STATUS_PANICKING, STATUS_BERSERK, STATUS_IGNORE_ME};
-enum UnitFaction : int {FACTION_NONE = -1, FACTION_PLAYER = 0, FACTION_HOSTILE = 1, FACTION_NEUTRAL = 2};
+
+/**
+ * Faction naming "absolute":
+ *
+ * Xcom for FACTION_PLAYER.
+ * Aliens for FACTION_HOSTILE.
+ * Civilians for FACTION_NEUTRAL.
+ *
+ *
+ * Faction naming "relative":
+ *
+ * Hostile: between Aliens and Xcom, between Aliens and Civilians.
+ * Friendly: Xcom to Xcom, Aliens to Aliens, Civilians to Civilians.
+ * Neutral: between Xcom and Civilians.
+ * HostileCivilians: Special case for relation of Aliens to Civilians as it should be handled sometimes different than to Xcom.
+ */
+enum UnitFaction : int {FACTION_NONE = -1, FACTION_PLAYER = 0, FACTION_HOSTILE = 1, FACTION_NEUTRAL = 2, FACTION_MAX };
 enum UnitBodyPart : int {BODYPART_HEAD, BODYPART_TORSO, BODYPART_RIGHTARM, BODYPART_LEFTARM, BODYPART_RIGHTLEG, BODYPART_LEFTLEG, BODYPART_MAX};
 enum UnitBodyPartEx {BODYPART_LEGS = BODYPART_MAX, BODYPART_COLLAPSING, BODYPART_ITEM_RIGHTHAND, BODYPART_ITEM_LEFTHAND, BODYPART_ITEM_FLOOR, BODYPART_ITEM_INVENTORY, BODYPART_LARGE_TORSO, BODYPART_LARGE_PROPULSION = BODYPART_LARGE_TORSO + 4, BODYPART_LARGE_TURRET = BODYPART_LARGE_PROPULSION + 4};
+
 
 /**
  * This struct holds some plain unit attribute data together.
@@ -430,7 +447,7 @@ private:
 	std::string _civilianRecoveryTypeName, _spawnedPersonName, _liveAlienName;
 	const RuleSoldier* _civilianRecoverySoldierType = nullptr;
 	const RuleItem* _civilianRecoveryItemType = nullptr;
-	YAML::Node _spawnedSoldier;
+	YAML::YamlString _spawnedSoldier;
 	std::string _race;
 	int _showFullNameInAlienInventory;
 	std::string _rank;
@@ -469,7 +486,7 @@ public:
 	/// Cleans up the unit ruleset.
 	~Unit();
 	/// Loads the unit data from YAML.
-	void load(const YAML::Node& node, Mod *mod);
+	void load(const YAML::YamlNodeReader& reader, Mod *mod);
 	/// Cross link with other rules.
 	void afterLoad(const Mod* mod);
 
@@ -489,7 +506,7 @@ public:
 	/// Gets the custom name of the "spawned person".
 	const std::string &getSpawnedPersonName() const { return _spawnedPersonName; }
 	/// Gets the spawned soldier template.
-	const YAML::Node &getSpawnedSoldierTemplate() const { return _spawnedSoldier; }
+	const YAML::YamlString &getSpawnedSoldierTemplate() const { return _spawnedSoldier; }
 
 	/// Gets the unit's stats.
 	UnitStats *getStats();
@@ -587,49 +604,8 @@ public:
 	static void ScriptRegister(ScriptParserBase* parser);
 };
 
-}
+// helper overloads for (de)serialization
+bool read(ryml::ConstNodeRef const& n, UnitStats* val);
+void write(ryml::NodeRef* n, UnitStats const& val);
 
-namespace YAML
-{
-	template<>
-	struct convert<OpenXcom::UnitStats>
-	{
-		static Node encode(const OpenXcom::UnitStats& rhs)
-		{
-			Node node;
-			node["tu"] = rhs.tu;
-			node["stamina"] = rhs.stamina;
-			node["health"] = rhs.health;
-			node["bravery"] = rhs.bravery;
-			node["reactions"] = rhs.reactions;
-			node["firing"] = rhs.firing;
-			node["throwing"] = rhs.throwing;
-			node["strength"] = rhs.strength;
-			node["psiStrength"] = rhs.psiStrength;
-			node["psiSkill"] = rhs.psiSkill;
-			node["melee"] = rhs.melee;
-			node["mana"] = rhs.mana;
-			return node;
-		}
-
-		static bool decode(const Node& node, OpenXcom::UnitStats& rhs)
-		{
-			if (!node.IsMap())
-				return false;
-
-			rhs.tu = node["tu"].as<int>(rhs.tu);
-			rhs.stamina = node["stamina"].as<int>(rhs.stamina);
-			rhs.health = node["health"].as<int>(rhs.health);
-			rhs.bravery = node["bravery"].as<int>(rhs.bravery);
-			rhs.reactions = node["reactions"].as<int>(rhs.reactions);
-			rhs.firing = node["firing"].as<int>(rhs.firing);
-			rhs.throwing = node["throwing"].as<int>(rhs.throwing);
-			rhs.strength = node["strength"].as<int>(rhs.strength);
-			rhs.psiStrength = node["psiStrength"].as<int>(rhs.psiStrength);
-			rhs.psiSkill = node["psiSkill"].as<int>(rhs.psiSkill);
-			rhs.melee = node["melee"].as<int>(rhs.melee);
-			rhs.mana = node["mana"].as<int>(rhs.mana);
-			return true;
-		}
-	};
 }

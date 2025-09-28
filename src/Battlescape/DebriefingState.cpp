@@ -291,7 +291,8 @@ DebriefingState::DebriefingState() :
 	_lstSoldierStats->setDot(true);
 
 	// Third page
-	_lstRecoveredItems->setColumns(2, 254, 18);
+	int firstColumnWidth = Clamp(_game->getMod()->getInterface("debriefing")->getElement("list")->custom, 90, 254);
+	_lstRecoveredItems->setColumns(2, firstColumnWidth, 18);
 	_lstRecoveredItems->setAlign(ALIGN_LEFT);
 	_lstRecoveredItems->setDot(true);
 }
@@ -755,13 +756,14 @@ void DebriefingState::init()
 			bu->getStatistics()->delta = *bu->getGeoscapeSoldier()->getCurrentStats() - *bu->getGeoscapeSoldier()->getInitStats();
 
 			bu->getGeoscapeSoldier()->getDiary()->updateDiary(bu->getStatistics(), _game->getSavedGame()->getMissionStatistics(), _game->getMod());
-			if (!bu->getStatistics()->MIA && !bu->getStatistics()->KIA && bu->getGeoscapeSoldier()->getDiary()->manageCommendations(_game->getMod(), _game->getSavedGame()->getMissionStatistics()))
+			if (!bu->getStatistics()->MIA && !bu->getStatistics()->KIA &&
+				bu->getGeoscapeSoldier()->getDiary()->manageCommendations(_game->getMod(), _game->getSavedGame(), bu->getGeoscapeSoldier()))
 			{
 				_soldiersCommended.push_back(bu->getGeoscapeSoldier());
 			}
 			else if (bu->getStatistics()->MIA || bu->getStatistics()->KIA)
 			{
-				bu->getGeoscapeSoldier()->getDiary()->manageCommendations(_game->getMod(), _game->getSavedGame()->getMissionStatistics());
+				bu->getGeoscapeSoldier()->getDiary()->manageCommendations(_game->getMod(), _game->getSavedGame(), bu->getGeoscapeSoldier());
 				_deadSoldiersCommended.push_back(bu->getGeoscapeSoldier());
 			}
 		}
@@ -869,6 +871,16 @@ void DebriefingState::btnOkClick(Action *)
 	}
 	else
 	{
+		// Autosave after mission
+		if (_game->getSavedGame()->isIronman())
+		{
+			_game->pushState(new SaveGameState(OPT_GEOSCAPE, SAVE_IRONMAN, _palette));
+		}
+		else if (Options::autosave)
+		{
+			_game->pushState(new SaveGameState(OPT_GEOSCAPE, SAVE_AUTO_GEOSCAPE, _palette));
+		}
+
 		if (_eventToSpawn)
 		{
 			bool canSpawn = _game->getSavedGame()->canSpawnInstantEvent(_eventToSpawn);
@@ -946,16 +958,6 @@ void DebriefingState::btnOkClick(Action *)
 				_game->pushState(new SellState(_base, 0, OPT_BATTLESCAPE));
 				_game->pushState(new ErrorMessageState(tr("STR_STORAGE_EXCEEDED").arg(_base->getName()), _palette, _game->getMod()->getInterface("debriefing")->getElement("errorMessage")->color, "BACK01.SCR", _game->getMod()->getInterface("debriefing")->getElement("errorPalette")->color));
 			}
-		}
-
-		// Autosave after mission
-		if (_game->getSavedGame()->isIronman())
-		{
-			_game->pushState(new SaveGameState(OPT_GEOSCAPE, SAVE_IRONMAN, _palette));
-		}
-		else if (Options::autosave)
-		{
-			_game->pushState(new SaveGameState(OPT_GEOSCAPE, SAVE_AUTO_GEOSCAPE, _palette));
 		}
 	}
 }
@@ -1469,6 +1471,11 @@ void DebriefingState::prepareDebriefing()
 
 	// time to care for units.
 	bool psiStrengthEval = (Options::psiStrengthEval && save->isResearched(_game->getMod()->getPsiRequirements()));
+	bool ignoreLivingCivilians = false;
+	if (ruleDeploy)
+	{
+		ignoreLivingCivilians = ruleDeploy->getIgnoreLivingCivilians();
+	}
 	for (auto* bunit : *battle->getUnits())
 	{
 		UnitStatus status = bunit->getStatus();
@@ -1666,7 +1673,7 @@ void DebriefingState::prepareDebriefing()
 					}
 				}
 			}
-			else if (oldFaction == FACTION_NEUTRAL)
+			else if (oldFaction == FACTION_NEUTRAL && !ignoreLivingCivilians)
 			{
 				// if mission fails, all civilians die
 				if ((aborted && !success) || playersSurvived == 0)
@@ -2126,7 +2133,7 @@ void DebriefingState::prepareDebriefing()
 	{
 		// Unlock research defined in alien deployment, if the mission was a success
 		const RuleResearch *research = _game->getMod()->getResearch(ruleDeploy->getUnlockedResearchOnSuccess());
-		save->handleResearchUnlockedByMissions(research, _game->getMod());
+		save->handleResearchUnlockedByMissions(research, _game->getMod(), ruleDeploy);
 
 		// Give bounty item defined in alien deployment, if the mission was a success
 		const RuleItem *bountyItem = _game->getMod()->getItem(ruleDeploy->getMissionBountyItem());
@@ -2158,7 +2165,7 @@ void DebriefingState::prepareDebriefing()
 	{
 		// Unlock research defined in alien deployment, if the mission was a failure
 		const RuleResearch* research = _game->getMod()->getResearch(ruleDeploy->getUnlockedResearchOnFailure());
-		save->handleResearchUnlockedByMissions(research, _game->getMod());
+		save->handleResearchUnlockedByMissions(research, _game->getMod(), ruleDeploy);
 
 		// Increase counters
 		save->increaseCustomCounter(ruleDeploy->getCounterFailure());
@@ -2589,7 +2596,8 @@ void DebriefingState::recoverCivilian(BattleUnit *from, Base *base, Craft* craft
 			}
 			int nationality = _game->getSavedGame()->selectSoldierNationalityByLocation(_game->getMod(), ruleSoldier, target);
 			Soldier *s = _game->getMod()->genSoldier(_game->getSavedGame(), ruleSoldier, nationality);
-			s->load(from->getUnitRules()->getSpawnedSoldierTemplate(), _game->getMod(), _game->getSavedGame(), _game->getMod()->getScriptGlobal(), true); // load from soldier template
+			YAML::YamlRootNodeReader reader(from->getUnitRules()->getSpawnedSoldierTemplate(), "(spawned soldier template)");
+			s->load(reader.toBase(), _game->getMod(), _game->getSavedGame(), _game->getMod()->getScriptGlobal(), true); // load from soldier template
 			if (!from->getUnitRules()->getSpawnedPersonName().empty())
 			{
 				s->setName(tr(from->getUnitRules()->getSpawnedPersonName()));

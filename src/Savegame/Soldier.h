@@ -18,8 +18,8 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <string>
-#include <yaml-cpp/yaml.h>
 #include <optional>
+#include "../Engine/Yaml.h"
 #include "../Mod/Unit.h"
 #include "../Mod/StatString.h"
 #include "../Engine/Script.h"
@@ -43,6 +43,7 @@ class SoldierDiary;
 class SavedGame;
 class RuleSoldierTransformation;
 class RuleSoldierBonus;
+class RuleSkill;
 class Base;
 struct BaseSumDailyRecovery;
 
@@ -96,9 +97,9 @@ public:
 	/// Cleans up the soldier.
 	~Soldier();
 	/// Loads the soldier from YAML.
-	void load(const YAML::Node& node, const Mod *mod, SavedGame *save, const ScriptGlobal *shared, bool soldierTemplate = false);
+	void load(const YAML::YamlNodeReader& reader, const Mod *mod, SavedGame *save, const ScriptGlobal *shared, bool soldierTemplate = false);
 	/// Saves the soldier to YAML.
-	YAML::Node save(const ScriptGlobal *shared) const;
+	void save(YAML::YamlNodeWriter writer, const ScriptGlobal *shared) const;
 	/// Gets the soldier's name.
 	std::string getName(bool statstring = false, unsigned int maxLength = 20) const;
 	/// Sets the soldier's name.
@@ -156,7 +157,7 @@ public:
 	/// Sets the soldier's look sub type.
 	void setLookVariant(int lookVariant);
 	/// Gets soldier rules.
-	RuleSoldier *getRules() const;
+	const RuleSoldier *getRules() const;
 	/// Gets the soldier's unique ID.
 	int getId() const;
 	/// Add a mission to the counter.
@@ -289,6 +290,8 @@ public:
 	void transform(const Mod *mod, RuleSoldierTransformation *transformationRule, Soldier *sourceSoldier, Base *base);
 	/// Calculates how this project changes the soldier's stats
 	UnitStats calculateStatChanges(const Mod *mod, RuleSoldierTransformation *transformationRule, Soldier *sourceSoldier, int mode, const RuleSoldier *sourceSoldierType);
+	/// Checks whether the soldier has a given bonus. Disclaimer: DOES NOT REFRESH THE BONUS CACHE!
+	bool hasBonus(const RuleSoldierBonus* bonus) const;
 	/// Gets all the soldier bonuses
 	const std::vector<const RuleSoldierBonus*> *getBonuses(const Mod *mod);
 	/// Get pointer to current stats with soldier bonuses, but without armor bonuses.
@@ -301,6 +304,10 @@ public:
 	UnitStats* getDailyDogfightExperienceCache();
 	/// Resets the daily dogfight experience cache.
 	void resetDailyDogfightExperienceCache();
+	/// Check if the soldier has all the required soldier bonuses for the given soldier skill.
+	bool hasAllRequiredBonusesForSkill(const RuleSkill* skillRules);
+	/// Check if the soldier has all the required stats and soldier bonuses for piloting the (current or new) craft.
+	bool hasAllPilotingRequirements(const Craft* newCraft = nullptr) const;
 
 private:
 	std::string generateCallsign(const std::vector<SoldierNamePool*> &names);

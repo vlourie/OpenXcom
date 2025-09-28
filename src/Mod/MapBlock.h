@@ -19,7 +19,7 @@
  */
 #include <string>
 #include <vector>
-#include <yaml-cpp/yaml.h>
+#include "../Engine/Yaml.h"
 #include "../Battlescape/Position.h"
 
 namespace OpenXcom
@@ -32,9 +32,11 @@ struct RandomizedItems
 {
 	Position position;
 	int amount;
+	int fuseTimerMin;
+	int fuseTimerMax;
 	bool mixed;
 	std::vector<std::string> itemList;
-	RandomizedItems() : amount(1), mixed(false) { /*Empty by Design*/ };
+	RandomizedItems() : amount(1), fuseTimerMin(-1), fuseTimerMax(-1), mixed(false) { /*Empty by Design*/ };
 };
 
 struct ExtendedItems
@@ -59,6 +61,7 @@ private:
 	std::string _name;
 	int _size_x, _size_y, _size_z;
 	std::vector<int> _groups, _revealedFloors;
+	std::vector<int> _craftInventoryTile;
 	std::map<std::string, std::vector<Position> > _items;
 	std::map<std::string, std::pair<int, int> > _itemsFuseTimer;
 	std::vector<RandomizedItems> _randomizedItems;
@@ -67,7 +70,7 @@ public:
 	MapBlock(const std::string &name);
 	~MapBlock();
 	/// Loads the map block from YAML.
-	void load(const YAML::Node& node);
+	void load(const YAML::YamlNodeReader& reader);
 	/// Gets the mapblock's name (used for MAP generation).
 	const std::string& getName() const;
 	/// Gets the mapblock's x size.
@@ -90,7 +93,13 @@ public:
 	const std::vector<RandomizedItems> *getRandomizedItems() const { return &_randomizedItems; }
 	/// Gets the layout for any items that belong in this map block. Extended syntax.
 	const std::vector<ExtendedItems> *getExtendedItems() const { return &_extendedItems; }
+	/// Gets the craft inventory tile position.
+	const std::vector<int>& getCraftInventoryTile() const { return _craftInventoryTile; };
 
 };
+
+// helper overloads for deserialization-only
+bool read(ryml::ConstNodeRef const& n, RandomizedItems* val);
+bool read(ryml::ConstNodeRef const& n, ExtendedItems* val);
 
 }

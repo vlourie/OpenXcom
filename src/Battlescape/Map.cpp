@@ -108,7 +108,7 @@ Map::Map(Game *game, int width, int height, int x, int y, int visibleMapHeight) 
 	_game(game), _isTFTD(false), _arrow(0), _anyIndicator(false), _isAltPressed(false), _isCtrlPressed(false),
 	_selectorX(0), _selectorY(0), _mouseX(0), _mouseY(0), _cursorType(CT_NORMAL), _cursorSize(1), _animFrame(0),
 	_projectile(0), _followProjectile(true), _projectileInFOV(false), _explosionInFOV(false), _launch(false), _visibleMapHeight(visibleMapHeight),
-	_unitDying(false), _smoothingEngaged(false), _flashScreen(false), _bgColor(15), _projectileSet(0), _showObstacles(false)
+	_unitDying(false), _smoothingEngaged(false), _flashScreen(false), _bgColor(15), _projectileSet(0), _showObstacles(false), _showInfoOnCursor(false)
 {
 	// TODO: extract to a better place later
 	for (const auto& pair : Options::mods)
@@ -170,6 +170,7 @@ Map::Map(Game *game, int width, int height, int x, int y, int visibleMapHeight) 
 	_obstacleTimer->stop();
 	_obstacleTimer->onTimer((SurfaceHandler)&Map::disableObstacles);
 
+	_showInfoOnCursor = (Options::oxceShowAccuracyOnCrosshair == 1 && Options::battleUFOExtenderAccuracy) || Options::oxceShowAccuracyOnCrosshair == 2;
 	_txtAccuracy = new Text(44, 18, 0, 0);
 	_txtAccuracy->setSmall();
 	_txtAccuracy->setPalette(_game->getScreen()->getPalette());
@@ -341,8 +342,13 @@ void Map::draw()
 	{
 		for (auto* explosion : _explosions)
 		{
+			if (explosion->isBig())
+			{
+				_explosionInFOV = true;
+				break;
+			}
 			t = _save->getTile(explosion->getPosition().toTile());
-			if (t && (explosion->isBig() || t->getVisible()))
+			if (t && t->getVisible())
 			{
 				_explosionInFOV = true;
 				break;
@@ -743,7 +749,8 @@ void Map::drawTerrain(Surface *surface)
 	int dummy;
 	BattleUnit *movingUnit = _save->getTileEngine()->getMovingUnit();
 	int tileShade, tileColor, obstacleShade;
-	UnitSprite unitSprite(surface, _game->getMod(), _save, _animFrame, _save->getDepth() != 0);
+	UnitSprite unitSprite(surface, _game->getMod(), _save, _animFrame, _save->getDepth() != 0,
+		_isTFTD ? ArrowColorsTFTD[1] : ArrowColorsUFO[1], _isTFTD ? ArrowColorsTFTD[2] : ArrowColorsUFO[2]);
 	ItemSprite itemSprite(surface, _game->getMod(), _save, _animFrame);
 
 	const int halfAnimFrame = (_animFrame / 2) % 4;
@@ -1316,8 +1323,7 @@ void Map::drawTerrain(Surface *surface)
 							Surface::blitRaw(surface, tmpSurface, screenPosition.x, screenPosition.y, 0);
 
 							// UFO extender accuracy: display adjusted accuracy value on crosshair in real-time.
-							if ((_cursorType == CT_AIM || _cursorType == CT_PSI || _cursorType == CT_WAYPOINT) &&
-								((Options::oxceShowAccuracyOnCrosshair == 1 && Options::battleUFOExtenderAccuracy) || Options::oxceShowAccuracyOnCrosshair == 2))
+							if (_cursorType >= CT_AIM && _showInfoOnCursor && (_cursorType != CT_THROW || !Options::oxceDisableInfoOnThrowCursor))
 							{
 								BattleAction *action = _save->getBattleGame()->getCurrentAction();
 								const RuleItem *weapon = action->weapon->getRules();
@@ -1326,47 +1332,30 @@ void Map::drawTerrain(Surface *surface)
 								int distanceSq = action->actor->distance3dToPositionSq(Position(itX, itY,itZ));
 								int distance = (int)std::ceil(sqrt(float(distanceSq)));
 
-								if (_cursorType == CT_AIM)
+								if (_cursorType == CT_AIM || _cursorType == CT_THROW)
 								{
 									int accuracy = BattleUnit::getFiringAccuracy(attack, _game->getMod());
-									if (Options::battleUFOExtenderAccuracy)
+
 									{
-										int upperLimit = 200;
-										int lowerLimit = weapon->getMinRange();
-										switch (action->type)
-										{
-										case BA_AIMEDSHOT:
-											upperLimit = weapon->getAimRange();
-											break;
-										case BA_SNAPSHOT:
-											upperLimit = weapon->getSnapRange();
-											break;
-										case BA_AUTOSHOT:
-											upperLimit = weapon->getAutoRange();
-											break;
-										default:
-											break;
-										}
+										int upperLimit, lowerLimit;
+										int dropoff = weapon->calculateLimits(upperLimit, lowerLimit, _save->getDepth(), action->type);
+
 										// at this point, let's assume the shot is adjusted and set the text amber.
 										_txtAccuracy->setColor(Palette::blockOffset(Pathfinding::yellow - 1) - 1);
 
 										if (distance > upperLimit)
 										{
-											accuracy -= (distance - upperLimit) * weapon->getDropoff();
+											accuracy -= (distance - upperLimit) * dropoff;
 										}
 										else if (distance < lowerLimit)
 										{
-											accuracy -= (lowerLimit - distance) * weapon->getDropoff();
+											accuracy -= (lowerLimit - distance) * dropoff;
 										}
 										else
 										{
 											// no adjustment made? set it to green.
 											_txtAccuracy->setColor(Palette::blockOffset(Pathfinding::green - 1) - 1);
 										}
-									}
-									else
-									{
-										_txtAccuracy->setColor(Palette::blockOffset(Pathfinding::green - 1) - 1);
 									}
 
 									// Include LOS penalty for tiles in the unit's current view range
@@ -1404,7 +1393,10 @@ void Map::drawTerrain(Surface *surface)
 										}
 									}
 
-									bool outOfRange = weapon->isOutOfRange(distanceSq);
+									bool outOfRange = action->type == BA_THROW
+										? weapon->isOutOfThrowRange(distanceSq, _save->getDepth())
+										: weapon->isOutOfRange(distanceSq);
+
 									// zero accuracy or out of range: set it red.
 									if (accuracy <= 0 || outOfRange)
 									{
@@ -1785,8 +1777,6 @@ void Map::drawTerrain(Surface *surface)
 	{
 		// big explosions cause the screen to flash as bright as possible before any explosions are actually drawn.
 		// this causes everything to look like EGA for a single frame.
-		// Meridian: no frikin flashing!!
-		_flashScreen = false;
 		if (_flashScreen)
 		{
 			for (int x = 0, y = 0; x < surface->getWidth() && y < surface->getHeight();)
@@ -2559,6 +2549,9 @@ void Map::resetCameraSmoothing()
 void Map::setBlastFlash(bool flash)
 {
 	_flashScreen = flash;
+
+	// Meridian: no frikin flashing!!
+	_flashScreen = false;
 }
 
 /**

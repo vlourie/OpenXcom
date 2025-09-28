@@ -17,6 +17,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "PurchaseState.h"
+#include "ItemLocationsState.h"
 #include <sstream>
 #include <climits>
 #include <iomanip>
@@ -108,6 +109,8 @@ PurchaseState::PurchaseState(Base *base, CannotReequipState *parent) : _base(bas
 	_cbxCategory = new ComboBox(this, 120, 16, 10, 36);
 	_lstItems = new TextList(287, 120, 8, 54);
 
+	touchComponentsCreate(_txtTitle);
+
 	// Set palette
 	setInterface("buyMenu");
 
@@ -126,10 +129,14 @@ PurchaseState::PurchaseState(Base *base, CannotReequipState *parent) : _base(bas
 	add(_lstItems, "list", "buyMenu");
 	add(_cbxCategory, "text", "buyMenu");
 
+	touchComponentsAdd("button2", "buyMenu", _window);
+
 	centerAllSurfaces();
 
 	// Set up objects
 	setWindowBackground(_window, "buyMenu");
+
+	touchComponentsConfigure();
 
 	_btnOk->setText(tr("STR_OK"));
 	_btnOk->onMouseClick((ActionHandler)&PurchaseState::btnOkClick);
@@ -172,6 +179,7 @@ PurchaseState::PurchaseState(Base *base, CannotReequipState *parent) : _base(bas
 
 	_cats.push_back("STR_ALL_ITEMS");
 	_cats.push_back("STR_FILTER_HIDDEN");
+	_cats.push_back("STR_FILTER_EQUIPPED");
 	if (!_missingItemsMap.empty())
 	{
 		_cats.push_back("STR_FILTER_MISSING");
@@ -310,6 +318,7 @@ PurchaseState::PurchaseState(Base *base, CannotReequipState *parent) : _base(bas
 			_cats.clear();
 			_cats.push_back("STR_ALL_ITEMS");
 			_cats.push_back("STR_FILTER_HIDDEN");
+			_cats.push_back("STR_FILTER_EQUIPPED");
 			if (!_missingItemsMap.empty())
 			{
 				_cats.push_back("STR_FILTER_MISSING");
@@ -332,7 +341,7 @@ PurchaseState::PurchaseState(Base *base, CannotReequipState *parent) : _base(bas
 	_cbxCategory->setOptions(_cats, true);
 	if (!_missingItemsMap.empty())
 	{
-		_cbxCategory->setSelected(2); // STR_FILTER_MISSING
+		_cbxCategory->setSelected(3); // STR_FILTER_MISSING
 	}
 	_cbxCategory->onChange((ActionHandler)&PurchaseState::cbxCategoryChange);
 
@@ -374,6 +383,16 @@ PurchaseState::~PurchaseState()
 {
 	delete _timerInc;
 	delete _timerDec;
+}
+
+/**
+ * Resets stuff when coming back from other screens.
+ */
+void PurchaseState::init()
+{
+	State::init();
+
+	touchComponentsRefresh();
 }
 
 /**
@@ -504,9 +523,39 @@ bool PurchaseState::isHidden(int sel) const
 }
 
 /**
+ * Determines if a row item corresponds to equipped items
+ * @param sel Selected row.
+ * @returns True if row item is considered equipped
+ */
+bool PurchaseState::isEquipped(int sel) const
+{
+	switch (_items[sel].type)
+	{
+	case TRANSFER_SOLDIER:
+	case TRANSFER_SCIENTIST:
+	case TRANSFER_ENGINEER:
+	case TRANSFER_CRAFT:
+		return false;
+	case TRANSFER_ITEM:
+		RuleItem* rule = (RuleItem*)_items[sel].rule;
+		if (rule)
+		{
+			// iterate all craft, also craft which are currently not at the base
+			for (auto* xcraft : *_base->getCrafts())
+			{
+				if (xcraft->getItems()->getItem(rule) > 0)
+					return true;
+			}
+		}
+	}
+
+	return false;
+}
+
+/**
  * Determines if a row item is in the map of missing items.
  * @param sel Selected row.
- * @returns Number of missing items.
+ * @returns Number of missing items that can be bought. -1 if not missing.
  */
 int PurchaseState::getMissingQty(int sel) const
 {
@@ -516,7 +565,7 @@ int PurchaseState::getMissingQty(int sel) const
 	case TRANSFER_SCIENTIST:
 	case TRANSFER_ENGINEER:
 	case TRANSFER_CRAFT:
-		return 0;
+		return -1;
 	case TRANSFER_ITEM:
 		RuleItem* rule = (RuleItem*)_items[sel].rule;
 		if (rule)
@@ -524,17 +573,24 @@ int PurchaseState::getMissingQty(int sel) const
 			auto iter = _missingItemsMap.find(rule);
 			if (iter != _missingItemsMap.end())
 			{
+				if (rule->getMonthlyBuyLimit() > 0)
+				{
+					auto& itemPurchaseLimitLog = _game->getSavedGame()->getMonthlyPurchaseLimitLog();
+					int maxByLimit = std::max(0, rule->getMonthlyBuyLimit() - itemPurchaseLimitLog[rule->getType()]);
+					return std::min(maxByLimit, iter->second);
+				}
+
 				return iter->second;
 			}
 			else
 			{
 				// not found = not missing
-				return 0;
+				return -1;
 			}
 		}
 	}
 
-	return 0;
+	return -1;
 }
 
 /**
@@ -581,6 +637,7 @@ void PurchaseState::updateList()
 	bool categoryFilterEnabled = (selectedCategory != "STR_ALL_ITEMS");
 	bool categoryUnassigned = (selectedCategory == "STR_UNASSIGNED");
 	bool categoryHidden = (selectedCategory == "STR_FILTER_HIDDEN");
+	bool categoryEquipped = (selectedCategory == "STR_FILTER_EQUIPPED");
 	bool categoryMissing = (selectedCategory == "STR_FILTER_MISSING");
 
 	for (size_t i = 0; i < _items.size(); ++i)
@@ -589,7 +646,7 @@ void PurchaseState::updateList()
 		if (categoryMissing)
 		{
 			int missingQty = getMissingQty(i);
-			if (missingQty > 0)
+			if (missingQty > -1)
 			{
 				if (!_autoBuyDone)
 				{
@@ -608,6 +665,14 @@ void PurchaseState::updateList()
 				}
 			}
 			else
+			{
+				continue;
+			}
+		}
+		else if (categoryEquipped)
+		{
+			// Note: showing also hidden items (if they are equipped)
+			if (!isEquipped(i))
 			{
 				continue;
 			}
@@ -736,7 +801,18 @@ void PurchaseState::btnOkClick(Action *)
 						time = _game->getMod()->getPersonnelTime();
 					t = new Transfer(time);
 					int nationality = _game->getSavedGame()->selectSoldierNationalityByLocation(_game->getMod(), rule, _base);
-					t->setSoldier(_game->getMod()->genSoldier(_game->getSavedGame(), rule, nationality));
+					Soldier* soldier = _game->getMod()->genSoldier(_game->getSavedGame(), rule, nationality);
+					if (!rule->getSpawnedSoldierTemplate().yaml.empty())
+					{
+						YAML::YamlRootNodeReader reader(rule->getSpawnedSoldierTemplate(), "(spawned soldier template)");
+						int nationalityOrig = soldier->getNationality();
+						soldier->load(reader.toBase(), _game->getMod(), _game->getSavedGame(), _game->getMod()->getScriptGlobal(), true); // load from soldier template
+						if (soldier->getNationality() != nationalityOrig)
+						{
+							soldier->genName();
+						}
+					}
+					t->setSoldier(soldier);
 					_base->getTransfers()->push_back(t);
 				}
 				break;
@@ -809,7 +885,7 @@ void PurchaseState::btnCancelClick(Action *)
 void PurchaseState::lstItemsLeftArrowPress(Action *action)
 {
 	_sel = _lstItems->getSelectedRow();
-	if (action->getDetails()->button.button == SDL_BUTTON_LEFT && !_timerInc->isRunning()) _timerInc->start();
+	if (_game->isLeftClick(action, true) && !_timerInc->isRunning()) _timerInc->start();
 }
 
 /**
@@ -818,7 +894,7 @@ void PurchaseState::lstItemsLeftArrowPress(Action *action)
  */
 void PurchaseState::lstItemsLeftArrowRelease(Action *action)
 {
-	if (action->getDetails()->button.button == SDL_BUTTON_LEFT)
+	if (_game->isLeftClick(action, true))
 	{
 		_timerInc->stop();
 	}
@@ -831,10 +907,10 @@ void PurchaseState::lstItemsLeftArrowRelease(Action *action)
  */
 void PurchaseState::lstItemsLeftArrowClick(Action *action)
 {
-	if (action->getDetails()->button.button == SDL_BUTTON_RIGHT) increaseByValue(INT_MAX);
-	if (action->getDetails()->button.button == SDL_BUTTON_LEFT)
+	if (_game->isRightClick(action, true)) increaseByValue(INT_MAX);
+	if (_game->isLeftClick(action, true))
 	{
-		increaseByValue(1);
+		increaseByValue(_game->getScrollStep());
 		_timerInc->setInterval(250);
 		_timerDec->setInterval(250);
 	}
@@ -847,7 +923,7 @@ void PurchaseState::lstItemsLeftArrowClick(Action *action)
 void PurchaseState::lstItemsRightArrowPress(Action *action)
 {
 	_sel = _lstItems->getSelectedRow();
-	if (action->getDetails()->button.button == SDL_BUTTON_LEFT && !_timerDec->isRunning()) _timerDec->start();
+	if (_game->isLeftClick(action, true) && !_timerDec->isRunning()) _timerDec->start();
 }
 
 /**
@@ -856,7 +932,7 @@ void PurchaseState::lstItemsRightArrowPress(Action *action)
  */
 void PurchaseState::lstItemsRightArrowRelease(Action *action)
 {
-	if (action->getDetails()->button.button == SDL_BUTTON_LEFT)
+	if (_game->isLeftClick(action, true))
 	{
 		_timerDec->stop();
 	}
@@ -869,10 +945,10 @@ void PurchaseState::lstItemsRightArrowRelease(Action *action)
  */
 void PurchaseState::lstItemsRightArrowClick(Action *action)
 {
-	if (action->getDetails()->button.button == SDL_BUTTON_RIGHT) decreaseByValue(INT_MAX);
-	if (action->getDetails()->button.button == SDL_BUTTON_LEFT)
+	if (_game->isRightClick(action, true)) decreaseByValue(INT_MAX);
+	if (_game->isLeftClick(action, true))
 	{
-		decreaseByValue(1);
+		decreaseByValue(_game->getScrollStep());
 		_timerInc->setInterval(250);
 		_timerDec->setInterval(250);
 	}
@@ -905,7 +981,7 @@ void PurchaseState::lstItemsMousePress(Action *action)
 			decreaseByValue(Options::changeValueByMouseWheel);
 		}
 	}
-	else if (action->getDetails()->button.button == SDL_BUTTON_MIDDLE)
+	else if (_game->isMiddleClick(action, true))
 	{
 		if (getRow().type == TRANSFER_ITEM)
 		{
@@ -926,7 +1002,7 @@ void PurchaseState::lstItemsMousePress(Action *action)
 			}
 		}
 	}
-	else if (action->getDetails()->button.button == SDL_BUTTON_RIGHT)
+	else if (_game->isRightClick(action, true))
 	{
 		if (action->getAbsoluteXMouse() >= _lstItems->getArrowsLeftEdge() &&
 			action->getAbsoluteXMouse() <= _lstItems->getArrowsRightEdge())
@@ -939,7 +1015,14 @@ void PurchaseState::lstItemsMousePress(Action *action)
 			RuleItem *rule = (RuleItem*)getRow().rule;
 			if (rule != 0)
 			{
-				itemName = rule->getType();
+				if (_game->isCtrlPressed(true))
+				{
+					_game->pushState(new ItemLocationsState(rule));
+				}
+				else
+				{
+					itemName = rule->getType();
+				}
 			}
 		}
 		else if (getRow().type == TRANSFER_CRAFT)
@@ -980,7 +1063,7 @@ void PurchaseState::increase()
 {
 	_timerDec->setInterval(50);
 	_timerInc->setInterval(50);
-	increaseByValue(1);
+	increaseByValue(_game->getScrollStep());
 }
 
 /**
@@ -1158,7 +1241,7 @@ void PurchaseState::decrease()
 {
 	_timerInc->setInterval(50);
 	_timerDec->setInterval(50);
-	decreaseByValue(1);
+	decreaseByValue(_game->getScrollStep());
 }
 
 /**

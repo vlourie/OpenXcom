@@ -18,7 +18,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <string>
-#include <yaml-cpp/yaml.h>
+#include "../Engine/Yaml.h"
 #include "Unit.h"
 #include "RuleBaseFacilityFunctions.h"
 #include "../Engine/Script.h"
@@ -63,6 +63,7 @@ public:
 
 private:
 	std::string _type;
+	YAML::YamlString _spawnedSoldier;
 	int _group;
 	int _listOrder;
 	std::vector<std::string> _requires;
@@ -105,11 +106,13 @@ public:
 	/// Cleans up the soldier ruleset.
 	~RuleSoldier();
 	/// Loads the soldier data from YAML.
-	void load(const YAML::Node& node, Mod *mod, const ModScript &parsers);
+	void load(const YAML::YamlNodeReader& reader, Mod *mod, const ModScript &parsers);
 	/// Cross link with other rules.
 	void afterLoad(const Mod* mod);
 	/// Gets the soldier's type.
 	const std::string& getType() const;
+	/// Gets the spawned soldier template.
+	const YAML::YamlString& getSpawnedSoldierTemplate() const { return _spawnedSoldier; }
 	/// Gets the soldier type group.
 	int getGroup() const { return _group; }
 	/// Gets whether or not the soldier type should be displayed in the inventory.
@@ -138,8 +141,6 @@ public:
 	int getBuyCost() const;
 	/// Does salary depend on rank?
 	bool isSalaryDynamic() const;
-	/// Is a skill menu defined for this soldier type?
-	bool isSkillMenuDefined() const;
 	/// Gets the list of defined skills.
 	const std::vector<const RuleSkill*> &getSkills() const;
 	/// Returns the sprite index for the skill icon sprite.
@@ -207,7 +208,7 @@ public:
 	/// Gets the soldier's transfer time.
 	int getTransferTime() const;
 	/// Percentage modifier for morale loss when this unit is killed.
-	int getMoraleLossWhenKilled() { return _moraleLossWhenKilled; };
+	int getMoraleLossWhenKilled() const { return _moraleLossWhenKilled; };
 	/// Gets the list of StatStrings.
 	const std::vector<StatString *> &getStatStrings() const;
 	/// Gets the list of strings for ranks.

@@ -39,6 +39,7 @@
 #include "../Mod/RuleCommendations.h"
 #include "Base.h"
 #include "ItemContainer.h"
+#include "../Mod/RuleSkill.h"
 #include "../Engine/Palette.h"
 
 namespace OpenXcom
@@ -89,7 +90,7 @@ Soldier::Soldier(RuleSoldier *rules, Armor *armor, int nationality, int id) :
 			else
 			{
 				// nationality by name pool weights
-				int tmp = RNG::generate(0, rules->getTotalSoldierNamePoolWeight());
+				int tmp = RNG::generate(1, rules->getTotalSoldierNamePoolWeight());
 				int nat = 0;
 				for (auto* namepool : names)
 				{
@@ -144,34 +145,29 @@ Soldier::~Soldier()
  * @param mod Game mod.
  * @param save Pointer to savegame.
  */
-void Soldier::load(const YAML::Node& node, const Mod *mod, SavedGame *save, const ScriptGlobal *shared, bool soldierTemplate)
+void Soldier::load(const YAML::YamlNodeReader& node, const Mod *mod, SavedGame *save, const ScriptGlobal *shared, bool soldierTemplate)
 {
+	const auto& reader = node.useIndex();
+
 	if (!soldierTemplate)
-	{
-		_id = node["id"].as<int>(_id);
-	}
-	_name = node["name"].as<std::string>(_name);
-	if (node["callsign"])
-	{
-		_callsign = node["callsign"].as<std::string>();
-	}
-	_nationality = node["nationality"].as<int>(_nationality);
+		reader.tryRead("id", _id);
+	reader.tryRead("name", _name);
+	reader.tryRead("callsign", _callsign);
+	reader.tryRead("nationality", _nationality);
 	if (soldierTemplate)
 	{
 		UnitStats ii, cc;
-		if (node["initialStats"])
-			ii = node["initialStats"].as<UnitStats>(ii);
-		if (node["currentStats"])
-			cc = node["currentStats"].as<UnitStats>(cc);
+		reader.tryRead("initialStats", ii);
+		reader.tryRead("currentStats", cc);
 		_initialStats = UnitStats::templateMerge(_initialStats, ii);
 		_currentStats = UnitStats::templateMerge(_currentStats, cc);
 	}
 	else
 	{
-		_initialStats = node["initialStats"].as<UnitStats>(_initialStats);
-		_currentStats = node["currentStats"].as<UnitStats>(_currentStats);
+		reader.tryRead("initialStats", _initialStats);
+		reader.tryRead("currentStats", _currentStats);
 	}
-	_dailyDogfightExperienceCache = node["dailyDogfightExperienceCache"].as<UnitStats>(_dailyDogfightExperienceCache);
+	reader.tryRead("dailyDogfightExperienceCache", _dailyDogfightExperienceCache);
 
 	// re-roll mana stats when upgrading saves
 	if (_currentStats.mana == 0 && _rules->getMaxStats().mana > 0)
@@ -181,88 +177,78 @@ void Soldier::load(const YAML::Node& node, const Mod *mod, SavedGame *save, cons
 		_initialStats.mana = reroll;
 	}
 
-	_rank = (SoldierRank)node["rank"].as<int>(_rank);
-	_gender = (SoldierGender)node["gender"].as<int>(_gender);
-	_look = (SoldierLook)node["look"].as<int>(_look);
-	_lookVariant = node["lookVariant"].as<int>(_lookVariant);
-	_missions = node["missions"].as<int>(_missions);
-	_kills = node["kills"].as<int>(_kills);
-	_stuns = node["stuns"].as<int>(_stuns);
-	_manaMissing = node["manaMissing"].as<int>(_manaMissing);
-	_healthMissing = node["healthMissing"].as<int>(_healthMissing);
-	_recovery = node["recovery"].as<float>(_recovery);
+	reader.tryRead("rank", _rank);
+	reader.tryRead("gender", _gender);
+	reader.tryRead("look", _look);
+	reader.tryRead("lookVariant", _lookVariant);
+	reader.tryRead("missions", _missions);
+	reader.tryRead("kills", _kills);
+	reader.tryRead("stuns", _stuns);
+	reader.tryRead("manaMissing", _manaMissing);
+	reader.tryRead("healthMissing", _healthMissing);
+	reader.tryRead("recovery", _recovery);
 	Armor *armor = _armor;
-	if (node["armor"])
-	{
-		armor = mod->getArmor(node["armor"].as<std::string>());
-	}
+	if (reader["armor"])
+		armor = mod->getArmor(reader["armor"].readVal<std::string>());
 	if (armor == 0)
-	{
 		armor = mod->getSoldier(mod->getSoldiersList().front())->getDefaultArmor();
-	}
 	_armor = armor;
-	if (node["replacedArmor"])
-		_replacedArmor = mod->getArmor(node["replacedArmor"].as<std::string>());
-	if (node["transformedArmor"])
-		_transformedArmor = mod->getArmor(node["transformedArmor"].as<std::string>());
-	_psiTraining = node["psiTraining"].as<bool>(_psiTraining);
-	_training = node["training"].as<bool>(_training);
-	_returnToTrainingWhenHealed = node["returnToTrainingWhenHealed"].as<bool>(_returnToTrainingWhenHealed);
+	if (reader["replacedArmor"])
+		_replacedArmor = mod->getArmor(reader["replacedArmor"].readVal<std::string>());
+	if (reader["transformedArmor"])
+		_transformedArmor = mod->getArmor(reader["transformedArmor"].readVal<std::string>());
+	reader.tryRead("psiTraining", _psiTraining);
+	reader.tryRead("training", _training);
+	reader.tryRead("returnToTrainingWhenHealed", _returnToTrainingWhenHealed);
 
-	_improvement = node["improvement"].as<int>(_improvement);
-	_psiStrImprovement = node["psiStrImprovement"].as<int>(_psiStrImprovement);
-	if (const YAML::Node &layout = node["equipmentLayout"])
+	reader.tryRead("improvement", _improvement);
+	reader.tryRead("psiStrImprovement", _psiStrImprovement);
+	for (const auto& layoutItem : reader["equipmentLayout"].children())
 	{
-		for (YAML::const_iterator i = layout.begin(); i != layout.end(); ++i)
+		try
 		{
-			try
-			{
-				_equipmentLayout.push_back(new EquipmentLayoutItem(*i, mod));
-			}
-			catch (Exception& ex)
-			{
-				Log(LOG_ERROR) << "Error loading Layout: " << ex.what();
-			}
+			_equipmentLayout.push_back(new EquipmentLayoutItem(layoutItem, mod));
+		}
+		catch (Exception& ex)
+		{
+			Log(LOG_ERROR) << "Error loading Layout: " << ex.what();
 		}
 	}
-	if (const YAML::Node &layout = node["personalEquipmentLayout"])
+	for (const auto& personalLayoutItem : reader["personalEquipmentLayout"].children())
 	{
-		for (YAML::const_iterator i = layout.begin(); i != layout.end(); ++i)
+		try
 		{
-			try
-			{
-				_personalEquipmentLayout.push_back(new EquipmentLayoutItem(*i, mod));
-			}
-			catch (Exception& ex)
-			{
-				Log(LOG_ERROR) << "Error loading Layout: " << ex.what();
-			}
+			_personalEquipmentLayout.push_back(new EquipmentLayoutItem(personalLayoutItem, mod));
+		}
+		catch (Exception& ex)
+		{
+			Log(LOG_ERROR) << "Error loading Layout: " << ex.what();
 		}
 	}
-	if (node["personalEquipmentArmor"])
+	if (reader["personalEquipmentArmor"])
 	{
-		_personalEquipmentArmor = mod->getArmor(node["personalEquipmentArmor"].as<std::string>());
+		_personalEquipmentArmor = mod->getArmor(reader["personalEquipmentArmor"].readVal<std::string>());
 	}
-	if (node["death"])
+	if (reader["death"])
 	{
 		_death = new SoldierDeath();
-		_death->load(node["death"]);
+		_death->load(reader["death"]);
 	}
-	if (node["diary"])
+	if (reader["diary"])
 	{
 		_diary = new SoldierDiary();
-		_diary->load(node["diary"], mod);
+		_diary->load(reader["diary"], mod);
 	}
 	calcStatString(mod->getStatStrings(), (Options::psiStrengthEval && save->isResearched(mod->getPsiRequirements())));
-	_corpseRecovered = node["corpseRecovered"].as<bool>(_corpseRecovered);
-	_previousTransformations = node["previousTransformations"].as<std::map<std::string, int > >(_previousTransformations);
-	_transformationBonuses = node["transformationBonuses"].as<std::map<std::string, int > >(_transformationBonuses);
+	reader.tryRead("corpseRecovered", _corpseRecovered);
+	reader.tryRead("previousTransformations", _previousTransformations);
+	reader.tryRead("transformationBonuses", _transformationBonuses);
 
-	if (const YAML::Node& spawnInfo = node["randomTransformationBonuses"])
+	if (const auto& spawnInfo = reader["randomTransformationBonuses"])
 	{
 		WeightedOptions randomTransformationBonuses;
 		randomTransformationBonuses.load(spawnInfo);
-		int transformationBonusesCount = node["transformationBonusesCount"].as<int>(1); // if not provided, default is 1
+		int transformationBonusesCount = reader["transformationBonusesCount"].readVal(1); // if not provided, default is 1
 		while (transformationBonusesCount > 0 && !randomTransformationBonuses.empty())
 		{
 			transformationBonusesCount--;
@@ -285,92 +271,75 @@ void Soldier::load(const YAML::Node& node, const Mod *mod, SavedGame *save, cons
 		}
 	}
 
-	_scriptValues.load(node, shared);
+	_scriptValues.load(reader, shared);
 }
 
 /**
  * Saves the soldier to a YAML file.
  * @return YAML node.
  */
-YAML::Node Soldier::save(const ScriptGlobal *shared) const
+void Soldier::save(YAML::YamlNodeWriter writer, const ScriptGlobal *shared) const
 {
-	YAML::Node node;
-	node["type"] = _rules->getType();
-	node["id"] = _id;
-	node["name"] = _name;
+	writer.setAsMap();
+
+	writer.write("type", _rules->getType());
+	writer.write("id", _id);
+	writer.write("name", _name);
 	if (!_callsign.empty())
-	{
-		node["callsign"] = _callsign;
-	}
-	node["nationality"] = _nationality;
-	node["initialStats"] = _initialStats;
-	node["currentStats"] = _currentStats;
+		writer.write("callsign", _callsign);
+	writer.write("nationality", _nationality);
+	writer.write("initialStats", _initialStats);
+	writer.write("currentStats", _currentStats);
 	if (_dailyDogfightExperienceCache.firing > 0 || _dailyDogfightExperienceCache.reactions > 0 || _dailyDogfightExperienceCache.bravery > 0)
-	{
-		node["dailyDogfightExperienceCache"] = _dailyDogfightExperienceCache;
-	}
-	node["rank"] = (int)_rank;
-	if (_craft != 0)
-	{
-		node["craft"] = _craft->saveId();
-	}
-	node["gender"] = (int)_gender;
-	node["look"] = (int)_look;
-	node["lookVariant"] = _lookVariant;
-	node["missions"] = _missions;
-	node["kills"] = _kills;
-	node["stuns"] = _stuns;
+		writer.write("dailyDogfightExperienceCache", _dailyDogfightExperienceCache);
+	writer.write("rank", _rank);
+	if (_craft)
+		_craft->saveId(writer["craft"]);
+	writer.write("gender", _gender);
+	writer.write("look", _look);
+	writer.write("lookVariant", _lookVariant);
+	writer.write("missions", _missions);
+	writer.write("kills", _kills);
+	writer.write("stuns", _stuns);
 	if (_manaMissing > 0)
-		node["manaMissing"] = _manaMissing;
+		writer.write("manaMissing", _manaMissing);
 	if (_healthMissing > 0)
-		node["healthMissing"] = _healthMissing;
+		writer.write("healthMissing", _healthMissing);
 	if (_recovery > 0.0f)
-		node["recovery"] = _recovery;
-	node["armor"] = _armor->getType();
+		writer.write("recovery", _recovery);
+	writer.write("armor", _armor->getType());
 	if (_replacedArmor != 0)
-		node["replacedArmor"] = _replacedArmor->getType();
+		writer.write("replacedArmor", _replacedArmor->getType());
 	if (_transformedArmor != 0)
-		node["transformedArmor"] = _transformedArmor->getType();
+		writer.write("transformedArmor", _transformedArmor->getType());
 	if (_psiTraining)
-		node["psiTraining"] = _psiTraining;
+		writer.write("psiTraining", _psiTraining);
 	if (_training)
-		node["training"] = _training;
+		writer.write("training", _training);
 	if (_returnToTrainingWhenHealed)
-		node["returnToTrainingWhenHealed"] = _returnToTrainingWhenHealed;
-	node["improvement"] = _improvement;
-	node["psiStrImprovement"] = _psiStrImprovement;
-	if (!_equipmentLayout.empty())
-	{
-		for (const auto* entry : _equipmentLayout)
-			node["equipmentLayout"].push_back(entry->save());
-	}
-	if (!_personalEquipmentLayout.empty())
-	{
-		for (const auto* entry : _personalEquipmentLayout)
-			node["personalEquipmentLayout"].push_back(entry->save());
-	}
+		writer.write("returnToTrainingWhenHealed", _returnToTrainingWhenHealed);
+	writer.write("improvement", _improvement);
+	writer.write("psiStrImprovement", _psiStrImprovement);
+	writer.write("equipmentLayout", _equipmentLayout,
+		[](YAML::YamlNodeWriter& w, EquipmentLayoutItem* i)
+		{ i->save(w.write()); });
+	writer.write("personalEquipmentLayout", _personalEquipmentLayout,
+		[](YAML::YamlNodeWriter& w, EquipmentLayoutItem* i)
+		{ i->save(w.write()); });
 	if (_personalEquipmentArmor)
-	{
-		node["personalEquipmentArmor"] = _personalEquipmentArmor->getType();
-	}
+		writer.write("personalEquipmentArmor", _personalEquipmentArmor->getType());
 	if (_death != 0)
-	{
-		node["death"] = _death->save();
-	}
+		 _death->save(writer["death"]);
 	if (Options::soldierDiaries && (!_diary->getMissionIdList().empty() || !_diary->getSoldierCommendations()->empty() || _diary->getMonthsService() > 0))
-	{
-		node["diary"] = _diary->save();
-	}
+		_diary->save(writer["diary"]);
 	if (_corpseRecovered)
-		node["corpseRecovered"] = _corpseRecovered;
+		writer.write("corpseRecovered", _corpseRecovered);
 	if (!_previousTransformations.empty())
-		node["previousTransformations"] = _previousTransformations;
+		writer.write("previousTransformations", _previousTransformations);
 	if (!_transformationBonuses.empty())
-		node["transformationBonuses"] = _transformationBonuses;
+		writer.write("transformationBonuses", _transformationBonuses);
 
-	_scriptValues.save(node, shared);
-
-	return node;
+	_scriptValues.save(writer, shared);
 }
 
 /**
@@ -881,7 +850,7 @@ void Soldier::setLookVariant(int lookVariant)
  * Returns the soldier's rules.
  * @return rule soldier
  */
-RuleSoldier *Soldier::getRules() const
+const RuleSoldier *Soldier::getRules() const
 {
 	return _rules;
 }
@@ -1933,6 +1902,42 @@ void Soldier::transform(const Mod *mod, RuleSoldierTransformation *transformatio
 	{
 		_previousTransformations.clear();
 	}
+	else if (!transformationRule->getRemoveTransformations().empty())
+	{
+		// Remove specific transformations and their related bonuses
+		for (const auto& remove_transf : transformationRule->getRemoveTransformations())
+		{
+			int count = 0;
+			auto it1 = _previousTransformations.find(remove_transf);
+			if (it1 != _previousTransformations.end())
+			{
+				count = it1->second;
+				_previousTransformations.erase(remove_transf);
+			}
+			if (count > 0)
+			{
+				const auto* rtRule = mod->getSoldierTransformation(remove_transf, false);
+				if (rtRule)
+				{
+					if (!Mod::isEmptyRuleName(rtRule->getSoldierBonusType()))
+					{
+						auto it2 = _transformationBonuses.find(rtRule->getSoldierBonusType());
+						if (it2 != _transformationBonuses.end())
+						{
+							if (it2->second > count)
+							{
+								it2->second -= count;
+							}
+							else
+							{
+								_transformationBonuses.erase(rtRule->getSoldierBonusType());
+							}
+						}
+					}
+				}
+			}
+		}
+	}
 
 	// Remember the performed transformation (on the source soldier)
 	auto& history = sourceSoldier->getPreviousTransformations();
@@ -2057,6 +2062,22 @@ UnitStats Soldier::calculateStatChanges(const Mod *mod, RuleSoldierTransformatio
 }
 
 /**
+ * Checks whether the soldier has a given bonus.
+ * Disclaimer: DOES NOT REFRESH THE BONUS CACHE!
+ */
+bool Soldier::hasBonus(const RuleSoldierBonus* bonus) const
+{
+	for (auto* sb : _bonusCache)
+	{
+		if (sb == bonus)
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+/**
  * Gets all the soldier bonuses
  * @return The map of soldier bonuses
  */
@@ -2173,6 +2194,78 @@ UnitStats* Soldier::getDailyDogfightExperienceCache()
 void Soldier::resetDailyDogfightExperienceCache()
 {
 	_dailyDogfightExperienceCache = UnitStats::scalar(0);
+}
+
+/**
+ * Check if the soldier has all the required soldier bonuses for the given soldier skill.
+ * @param skillRules Skill rules.
+ */
+bool Soldier::hasAllRequiredBonusesForSkill(const RuleSkill* skillRules)
+{
+	for (auto* requiredBonusRule : skillRules->getRequiredBonuses())
+	{
+		bool found = false;
+		for (auto* bonusRule : *getBonuses(nullptr))
+		{
+			if (bonusRule == requiredBonusRule)
+			{
+				found = true;
+				break;
+			}
+		}
+		if (!found)
+			return false;
+	}
+	return true;
+}
+
+/**
+ * Check if the soldier has all the required stats and soldier bonuses for piloting the (current or new) craft.
+ */
+bool Soldier::hasAllPilotingRequirements(const Craft* newCraft) const
+{
+	if (!_rules->getAllowPiloting())
+		return false;
+
+	const Craft* craft = newCraft ? newCraft : _craft;
+
+	if (!craft)
+		return false;
+
+	// Does this soldier meet the minimum stat requirements for piloting the current craft?
+	const UnitStats& currentStats = _tmpStatsWithAllBonuses; // all bonuses count
+	const UnitStats& minStats = craft->getRules()->getPilotMinStatsRequired();
+	if (currentStats.tu < minStats.tu ||
+		currentStats.stamina < minStats.stamina ||
+		currentStats.health < minStats.health ||
+		currentStats.bravery < minStats.bravery ||
+		currentStats.reactions < minStats.reactions ||
+		currentStats.firing < minStats.firing ||
+		currentStats.throwing < minStats.throwing ||
+		currentStats.melee < minStats.melee ||
+		currentStats.mana < minStats.mana ||
+		currentStats.strength < minStats.strength ||
+		currentStats.psiStrength < minStats.psiStrength ||
+		(currentStats.psiSkill < minStats.psiSkill && minStats.psiSkill != 0)) // The != 0 is required for the "psi training at any time" option, as it sets skill to negative in training
+		return false;
+
+	// Does this soldier have all required soldier bonuses for piloting the current craft?
+	for (auto* requiredBonusRule : craft->getRules()->getPilotSoldierBonusesRequired())
+	{
+		bool found = false;
+		for (auto* bonusRule : _bonusCache) // *getBonuses(nullptr)
+		{
+			if (bonusRule == requiredBonusRule)
+			{
+				found = true;
+				break;
+			}
+		}
+		if (!found)
+			return false;
+	}
+
+	return true;
 }
 
 

@@ -146,7 +146,7 @@ namespace OpenXcom
 
 		_buttonColor = _game->getMod()->getInterface("articleItem")->getElement("button")->color;
 		_arrowColor = _buttonColor;
-		if (_game->getMod()->getInterface("articleItem")->getElement("arrow"))
+		if (_game->getMod()->getInterface("articleItem")->getElementOptional("arrow"))
 		{
 			_arrowColor = _game->getMod()->getInterface("articleItem")->getElement("arrow")->color;
 		}
@@ -205,7 +205,7 @@ namespace OpenXcom
 			const RuleItem *ammo_rule = (*ammo_data)[0];
 			weightLabel = tr("STR_WEIGHT_PEDIA2").arg(weight).arg(weight + ammo_rule->getWeight());
 		}
-		_txtWeight->setText(weight > 0 ? weightLabel : "");
+		_txtWeight->setText(weight != 0 ? weightLabel : "");
 
 		// SHOT STATS TABLE (for firearms and melee only)
 		if (item->getBattleType() == BT_FIREARM || item->getBattleType() == BT_MELEE)
@@ -236,7 +236,7 @@ namespace OpenXcom
 			_lstInfo->setBig();
 		}
 
-		auto addAttack = [&](int& row, const std::string& name, const RuleItemUseCost& cost, const RuleItemUseCost& flat, const RuleItemAction *config, const RuleItem *weapon)
+		auto addAttack = [&](int& row, const std::string& name, const RuleItemUseCost& cost, const RuleItemUseFlat& flat, const RuleItemAction *config, const RuleItem *weapon)
 		{
 			if (row < 3 && cost.Time > 0 && config->ammoSlot == ammoSlot)
 			{
@@ -512,89 +512,89 @@ namespace OpenXcom
 
 	int ArticleStateItem::getDamageTypeTextColor(ItemDamageType dt)
 	{
-		Element *interfaceElement = 0;
+		const Element *interfaceElement = 0;
 		int color = _ammoColor;
 
 		switch (dt)
 		{
 			case DT_NONE:
-				interfaceElement = _game->getMod()->getInterface("articleItem")->getElement("ammoColorDTNone");
+				interfaceElement = _game->getMod()->getInterface("articleItem")->getElementOptional("ammoColorDTNone");
 				break;
 
 			case DT_AP:
-				interfaceElement = _game->getMod()->getInterface("articleItem")->getElement("ammoColorDTAP");
+				interfaceElement = _game->getMod()->getInterface("articleItem")->getElementOptional("ammoColorDTAP");
 				break;
 
 			case DT_IN:
-				interfaceElement = _game->getMod()->getInterface("articleItem")->getElement("ammoColorDTIN");
+				interfaceElement = _game->getMod()->getInterface("articleItem")->getElementOptional("ammoColorDTIN");
 				break;
 
 			case DT_HE:
-				interfaceElement = _game->getMod()->getInterface("articleItem")->getElement("ammoColorDTHE");
+				interfaceElement = _game->getMod()->getInterface("articleItem")->getElementOptional("ammoColorDTHE");
 				break;
 
 			case DT_LASER:
-				interfaceElement = _game->getMod()->getInterface("articleItem")->getElement("ammoColorDTLaser");
+				interfaceElement = _game->getMod()->getInterface("articleItem")->getElementOptional("ammoColorDTLaser");
 				break;
 
 			case DT_PLASMA:
-				interfaceElement = _game->getMod()->getInterface("articleItem")->getElement("ammoColorDTPlasma");
+				interfaceElement = _game->getMod()->getInterface("articleItem")->getElementOptional("ammoColorDTPlasma");
 				break;
 
 			case DT_STUN:
-				interfaceElement = _game->getMod()->getInterface("articleItem")->getElement("ammoColorDTStun");
+				interfaceElement = _game->getMod()->getInterface("articleItem")->getElementOptional("ammoColorDTStun");
 				break;
 
 			case DT_MELEE:
-				interfaceElement = _game->getMod()->getInterface("articleItem")->getElement("ammoColorDTMelee");
+				interfaceElement = _game->getMod()->getInterface("articleItem")->getElementOptional("ammoColorDTMelee");
 				break;
 
 			case DT_ACID:
-				interfaceElement = _game->getMod()->getInterface("articleItem")->getElement("ammoColorDTAcid");
+				interfaceElement = _game->getMod()->getInterface("articleItem")->getElementOptional("ammoColorDTAcid");
 				break;
 
 			case DT_SMOKE:
-				interfaceElement = _game->getMod()->getInterface("articleItem")->getElement("ammoColorDTSmoke");
+				interfaceElement = _game->getMod()->getInterface("articleItem")->getElementOptional("ammoColorDTSmoke");
 				break;
 
 			case DT_10:
-				interfaceElement = _game->getMod()->getInterface("articleItem")->getElement("ammoColorDT10");
+				interfaceElement = _game->getMod()->getInterface("articleItem")->getElementOptional("ammoColorDT10");
 				break;
 
 			case DT_11:
-				interfaceElement = _game->getMod()->getInterface("articleItem")->getElement("ammoColorDT11");
+				interfaceElement = _game->getMod()->getInterface("articleItem")->getElementOptional("ammoColorDT11");
 				break;
 
 			case DT_12:
-				interfaceElement = _game->getMod()->getInterface("articleItem")->getElement("ammoColorDT12");
+				interfaceElement = _game->getMod()->getInterface("articleItem")->getElementOptional("ammoColorDT12");
 				break;
 
 			case DT_13:
-				interfaceElement = _game->getMod()->getInterface("articleItem")->getElement("ammoColorDT13");
+				interfaceElement = _game->getMod()->getInterface("articleItem")->getElementOptional("ammoColorDT13");
 				break;
 
 			case DT_14:
-				interfaceElement = _game->getMod()->getInterface("articleItem")->getElement("ammoColorDT14");
+				interfaceElement = _game->getMod()->getInterface("articleItem")->getElementOptional("ammoColorDT14");
 				break;
 
 			case DT_15:
-				interfaceElement = _game->getMod()->getInterface("articleItem")->getElement("ammoColorDT15");
+				interfaceElement = _game->getMod()->getInterface("articleItem")->getElementOptional("ammoColorDT15");
 				break;
 
 			case DT_16:
-				interfaceElement = _game->getMod()->getInterface("articleItem")->getElement("ammoColorDT16");
+				interfaceElement = _game->getMod()->getInterface("articleItem")->getElementOptional("ammoColorDT16");
 				break;
 
 			case DT_17:
-				interfaceElement = _game->getMod()->getInterface("articleItem")->getElement("ammoColorDT17");
+				interfaceElement = _game->getMod()->getInterface("articleItem")->getElementOptional("ammoColorDT17");
 				break;
 
 			case DT_18:
-				interfaceElement = _game->getMod()->getInterface("articleItem")->getElement("ammoColorDT18");
+				interfaceElement = _game->getMod()->getInterface("articleItem")->getElementOptional("ammoColorDT18");
 				break;
 
 			case DT_19:
-				interfaceElement = _game->getMod()->getInterface("articleItem")->getElement("ammoColorDT19");
+				interfaceElement = _game->getMod()->getInterface("articleItem")->getElementOptional("ammoColorDT19");
 				break;
 
 			default :

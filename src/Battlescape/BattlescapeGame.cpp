@@ -425,7 +425,7 @@ void BattlescapeGame::handleAI(BattleUnit *unit)
 	if (action.type == BA_SNAPSHOT || action.type == BA_AUTOSHOT || action.type == BA_AIMEDSHOT || action.type == BA_THROW || action.type == BA_HIT || action.type == BA_MINDCONTROL || action.type == BA_USE || action.type == BA_PANIC || action.type == BA_LAUNCH)
 	{
 		ss.clear();
-		ss << "Attack type=" << action.type << " target="<< action.target << " weapon=" << action.weapon->getRules()->getName();
+		ss << "Attack type=" << action.type << " target="<< action.target << " weapon=" << action.weapon->getRules()->getType();
 		_parentState->debug(ss.str());
 		action.updateTU();
 		if (action.type == BA_MINDCONTROL || action.type == BA_PANIC || action.type == BA_USE)
@@ -544,9 +544,13 @@ void BattlescapeGame::endTurn()
 				const RuleItem *rule = item->getRules();
 				const Tile *tile = item->getTile();
 				BattleUnit *unit = item->getOwner();
-				if (!tile && unit && rule->isExplodingInHands() && !_allEnemiesNeutralized)
+				if (!tile && unit && item->getFuseTimer() != -1 && !_allEnemiesNeutralized)
 				{
-					tile = unit->getTile();
+					int explodeAnyway = rule->getExplodeInventory(getMod());
+					if (explodeAnyway >= 2 || (explodeAnyway == 1 && item->getSlot()->getType() != INV_HAND))
+					{
+						tile = unit->getTile();
+					}
 				}
 				if (tile)
 				{
@@ -876,7 +880,7 @@ void BattlescapeGame::checkForCasualties(const RuleDamageType *damageType, Battl
 					int winnerMod = _save->getFactionMoraleModifier(victim->getOriginalFaction() == FACTION_HOSTILE);
 					for (auto* bu : *_save->getUnits())
 					{
-						if (!bu->isOut() && (bu->isSmallUnit() || bu->getGeoscapeSoldier())) // soldier in 2x2 armors should feel dread too
+						if (!bu->isOut())
 						{
 							// the losing squad all get a morale loss
 							if (bu->getOriginalFaction() == victim->getOriginalFaction())
@@ -950,7 +954,7 @@ void BattlescapeGame::checkForCasualties(const RuleDamageType *damageType, Battl
 
 						for (auto* winner : *_save->getUnits())
 						{
-							if (!winner->isOut() && winner->isSmallUnit() && winner->getOriginalFaction() == murderer->getOriginalFaction())
+							if (!winner->isOut() && winner->getOriginalFaction() == murderer->getOriginalFaction())
 							{
 								// the winning squad gets a morale increase (the losing squad is NOT affected)
 								winner->moraleChange(10);
@@ -1563,10 +1567,10 @@ bool BattlescapeGame::handlePanickingUnit(BattleUnit *unit)
 	}
 
 
-	int flee = RNG::generate(0,100);
+	bool flee = RNG::percent(50);
 	BattleAction ba;
 	ba.actor = unit;
-	if (status == STATUS_PANICKING && flee <= 50) // 1/2 chance to freeze and 1/2 chance try to flee, STATUS_BERSERK is handled in the panic state.
+	if (status == STATUS_PANICKING && flee) // 1/2 chance to freeze and 1/2 chance try to flee, STATUS_BERSERK is handled in the panic state.
 	{
 		BattleItem *item = unit->getRightHandWeapon();
 		if (item)
@@ -1961,21 +1965,21 @@ void BattlescapeGame::primaryAction(Position pos)
 				_currentAction.run = false;
 				_currentAction.sneak = false;
 
-				if (isCtrlPressed)
+			if (isCtrlPressed)
+			{
+				if (_save->getPathfinding()->getPath().size() > 1 || isAltPressed)
 				{
-					if (_save->getPathfinding()->getPath().size() > 1)
-					{
-						_currentAction.run = _save->getSelectedUnit()->getArmor()->allowsRunning(_save->getSelectedUnit()->isSmallUnit());
-					}
-					else
-					{
-						_currentAction.strafe = _save->getSelectedUnit()->getArmor()->allowsStrafing(_save->getSelectedUnit()->isSmallUnit());
-					}
+					_currentAction.run = _save->getSelectedUnit()->getArmor()->allowsRunning(_save->getSelectedUnit()->isSmallUnit());
 				}
-				else if (isAltPressed)
+				else
 				{
-					_currentAction.sneak = _save->getSelectedUnit()->getArmor()->allowsSneaking(_save->getSelectedUnit()->isSmallUnit());
+					_currentAction.strafe = _save->getSelectedUnit()->getArmor()->allowsStrafing(_save->getSelectedUnit()->isSmallUnit());
 				}
+			}
+			else if (isAltPressed)
+			{
+				_currentAction.sneak = _save->getSelectedUnit()->getArmor()->allowsSneaking(_save->getSelectedUnit()->isSmallUnit());
+			}
 
 				// recalculate path after setting new move types
 				if (BAM_NORMAL != _currentAction.getMoveType())
@@ -2234,7 +2238,13 @@ void BattlescapeGame::spawnNewUnit(BattleActionAttack attack, Position position)
 	if (!type)
 		return;
 
-	if (!RNG::percent(item->getSpawnUnitChance()))
+	int chance = item->getSpawnUnitChance();
+	if (auto* conf = attack.weapon_item ? attack.weapon_item->getActionConf(attack.type) : nullptr)
+	{
+		chance = useIntNullable(conf->ammoSpawnUnitChanceOverride, chance);
+	}
+
+	if (!RNG::percent(chance))
 	{
 		return;
 	}
@@ -2352,7 +2362,13 @@ void BattlescapeGame::spawnNewItem(BattleActionAttack attack, Position position)
 	if (!type)
 		return;
 
-	if (!RNG::percent(item->getSpawnItemChance()))
+	int chance = item->getSpawnItemChance();
+	if (auto* conf = attack.weapon_item ? attack.weapon_item->getActionConf(attack.type) : nullptr)
+	{
+		chance = useIntNullable(conf->ammoSpawnItemChanceOverride, chance);
+	}
+
+	if (!RNG::percent(chance))
 	{
 		return;
 	}

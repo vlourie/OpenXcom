@@ -24,7 +24,7 @@
 #include <bitset>
 #include <array>
 #include <SDL.h>
-#include <yaml-cpp/yaml.h>
+#include "../Engine/Yaml.h"
 #include "../Engine/Options.h"
 #include "../Engine/FileMap.h"
 #include "../Engine/Collections.h"
@@ -107,6 +107,7 @@ class ScriptGlobal;
 struct StatAdjustment;
 
 enum GameDifficulty : int;
+enum AIAttackWeight : int;
 
 /**
  * Mod data used when loading resources
@@ -128,7 +129,8 @@ struct ModData
  */
 struct LoadRuleException : Exception
 {
-	LoadRuleException(const std::string& parent, const YAML::Node &node, const std::string& message) : Exception{ "Error for '" + parent + "': " + message + " at line " + std::to_string(node.Mark().line)}
+	LoadRuleException(const std::string& parent, const YAML::YamlNodeReader& reader, const std::string& message)
+		: Exception{"Error for '" + parent + "': " + message + " at line " + std::to_string(reader.getLocationInFile().line)}
 	{
 
 	}
@@ -204,6 +206,7 @@ private:
 	std::map<std::string, RuleEventScript*> _eventScripts;
 	std::map<std::string, RuleEvent*> _events;
 	std::map<std::string, RuleMissionScript*> _missionScripts;
+	std::map<std::string, RuleMissionScript*> _adhocScripts;
 	std::map<std::string, std::vector<ExtraSprites *> > _extraSprites;
 	std::map<std::string, CustomPalettes *> _customPalettes;
 	std::vector<std::pair<std::string, ExtraSounds *> > _extraSounds;
@@ -220,18 +223,28 @@ private:
 	int _maxStaticLightDistance, _maxDynamicLightDistance, _enhancedLighting;
 	int _costHireEngineer, _costHireScientist;
 	int _costEngineer, _costScientist, _timePersonnel, _hireByCountryOdds, _hireByRegionOdds, _initialFunding;
-	int _aiUseDelayBlaster, _aiUseDelayFirearm, _aiUseDelayGrenade, _aiUseDelayProxy, _aiUseDelayMelee, _aiUseDelayPsionic;
+
+	int _aiUseDelayBlaster, _aiUseDelayFirearm, _aiUseDelayGrenade, _aiUseDelayProxy, _aiUseDelayMelee, _aiUseDelayPsionic, _aiUseDelayMedikit;
 	int _aiFireChoiceIntelCoeff, _aiFireChoiceAggroCoeff;
 	bool _aiExtendedFireModeChoice, _aiRespectMaxRange, _aiDestroyBaseFacilities;
 	bool _aiPickUpWeaponsMoreActively, _aiPickUpWeaponsMoreActivelyCiv;
-	int _maxLookVariant, _tooMuchSmokeThreshold, _customTrainingFactor, _minReactionAccuracy;
+	int _aiReactionFireThreshold, _aiReactionFireThresholdCiv;
+	AIAttackWeight _aiTargetWeightThreatThreshold = AIAttackWeight{ 50 };
+	AIAttackWeight _aiTargetWeightAsHostile = AIAttackWeight{ 100 };
+	AIAttackWeight _aiTargetWeightAsHostileCivilians = AIAttackWeight{ 50 };
+	AIAttackWeight _aiTargetWeightAsFriendly = AIAttackWeight{ -200 };
+	AIAttackWeight _aiTargetWeightAsNeutral = AIAttackWeight{ -100 };
+
+	int _maxLookVariant, _tooMuchSmokeThreshold, _customTrainingFactor;
 	int _chanceToStopRetaliation;
+	int _chanceToDetectAlienBaseEachMonth;
 	bool _lessAliensDuringBaseDefense;
 	bool _allowCountriesToCancelAlienPact, _buildInfiltrationBaseCloseToTheCountry, _infiltrateRandomCountryInTheRegion;
 	bool _allowAlienBasesOnWrongTextures;
 	int _kneelBonusGlobal, _oneHandedPenaltyGlobal;
 	int _enableCloseQuartersCombat, _closeQuartersAccuracyGlobal, _closeQuartersTuCostGlobal, _closeQuartersEnergyCostGlobal, _closeQuartersSneakUpGlobal;
 	int _noLOSAccuracyPenaltyGlobal;
+	int _explodeInventoryGlobal;
 	int _surrenderMode;
 	int _bughuntMinTurn, _bughuntMaxEnemies, _bughuntRank, _bughuntLowMorale, _bughuntTimeUnitsLeft;
 
@@ -247,6 +260,7 @@ private:
 	int _escortRange, _drawEnemyRadarCircles;
 	bool _escortsJoinFightAgainstHK, _hunterKillerFastRetarget;
 	int _crewEmergencyEvacuationSurvivalChance, _pilotsEmergencyEvacuationSurvivalChance;
+	bool _showUfoPreviewInBaseDefense;
 	std::array<int, (size_t)(RANK_COMMANDER + 1)> _soldiersPerRank;
 	int _pilotAccuracyZeroPoint, _pilotAccuracyRange, _pilotReactionsZeroPoint, _pilotReactionsRange;
 	int _pilotBraveryThresholds[3];
@@ -270,7 +284,7 @@ private:
 	RuleBaseFacilityFunctions _hireScientistsRequiresBaseFunc, _hireEngineersRequiresBaseFunc;
 
 	std::string _destroyedFacility;
-	YAML::Node _startingBaseDefault, _startingBaseBeginner, _startingBaseExperienced, _startingBaseVeteran, _startingBaseGenius, _startingBaseSuperhuman;
+	YAML::YamlString _startingBaseDefault, _startingBaseBeginner, _startingBaseExperienced, _startingBaseVeteran, _startingBaseGenius, _startingBaseSuperhuman;
 	Collections::NamesToIndex _baseFunctionNames;
 
 	GameTime _startingTime;
@@ -301,7 +315,7 @@ private:
 	std::vector<std::string> _countriesIndex, _extraGlobeLabelsIndex, _regionsIndex, _facilitiesIndex, _craftsIndex, _craftWeaponsIndex, _itemCategoriesIndex, _itemsIndex, _invsIndex, _ufosIndex;
 	std::vector<std::string> _aliensIndex, _enviroEffectsIndex, _startingConditionsIndex, _deploymentsIndex, _armorsIndex, _ufopaediaIndex, _ufopaediaCatIndex, _researchIndex, _manufactureIndex;
 	std::vector<std::string> _skillsIndex, _soldiersIndex, _soldierTransformationIndex, _soldierBonusIndex;
-	std::vector<std::string> _alienMissionsIndex, _terrainIndex, _customPalettesIndex, _arcScriptIndex, _eventScriptIndex, _eventIndex, _missionScriptIndex;
+	std::vector<std::string> _alienMissionsIndex, _terrainIndex, _customPalettesIndex, _arcScriptIndex, _eventScriptIndex, _eventIndex, _missionScriptIndex, _adhocScriptIndex;
 	std::vector<std::vector<int> > _alienItemLevels;
 	std::vector<std::array<SDL_Color, TransparenciesOpacityLevels>> _transparencies;
 	int _facilityListOrder, _craftListOrder, _itemCategoryListOrder, _itemListOrder, _armorListOrder, _alienRaceListOrder, _researchListOrder,  _manufactureListOrder;
@@ -330,7 +344,7 @@ private:
 
 	/// Loads a ruleset from a YAML file that have basic resources configuration.
 	void loadResourceConfigFile(const FileMap::FileRecord &filerec);
-	void loadConstants(const YAML::Node &node);
+	void loadConstants(const YAML::YamlNodeReader& reader);
 	/// Loads a ruleset from a YAML file.
 	void loadFile(const FileMap::FileRecord &filerec, ModScript &parsers);
 
@@ -350,7 +364,7 @@ private:
 
 	/// Loads a ruleset element.
 	template <typename T, typename F = RuleFactory<T>>
-	T *loadRule(const YAML::Node &node, std::map<std::string, T*> *map, std::vector<std::string> *index = 0, const std::string &key = "type", F&& factory = { });
+	T* loadRule(const YAML::YamlNodeReader& reader, std::map<std::string, T*>* map, std::vector<std::string>* index = 0, const std::string& key = "type", F&& factory = {});
 	/// Gets a ruleset element.
 	template <typename T>
 	T *getRule(const std::string &id, const std::string &name, const std::map<std::string, T*> &map, bool error) const;
@@ -430,10 +444,12 @@ public:
 	static bool EXTENDED_RUNNING_COST;
 	static int EXTENDED_MOVEMENT_COST_ROUNDING;
 	static bool EXTENDED_HWP_LOAD_ORDER;
+	static int EXTENDED_SPOT_ON_HIT_FOR_SNIPING;
 	static int EXTENDED_MELEE_REACTIONS;
 	static int EXTENDED_TERRAIN_MELEE;
 	static int EXTENDED_UNDERWATER_THROW_FACTOR;
 	static bool EXTENDED_EXPERIENCE_AWARD_SYSTEM;
+	static bool EXTENDED_FORCE_SPAWN;
 
 
 	/// Return `true` when given string is empty or pseudo null value.
@@ -486,45 +502,12 @@ public:
 
 
 	/// Check for obsolete error based on year.
-	bool checkForObsoleteErrorByYear(const std::string &parent, const YAML::Node &node, const std::string &error,int year) const;
-
+	bool checkForObsoleteErrorByYear(const std::string& parent, const YAML::YamlNodeReader& reader, const std::string& error, int year) const;
 	/// Check for error that we can ignore by user request.
-	bool checkForSoftError(bool check, const std::string &parent, const YAML::Node &node, const std::string &error, SeverityLevel level = LOG_WARNING) const
-	{
-		if (check)
-		{
-			auto ex = LoadRuleException(parent, node, error);
-			if (Options::oxceModValidationLevel < level)
-			{
-				Log(level) << "Supressed " << ex.what();
-				return true;
-			}
-			else
-			{
-				throw ex;
-			}
-		}
-		return false;
-	}
-
+	bool checkForSoftError(bool check, const std::string& parent, const YAML::YamlNodeReader& reader, const std::string& error, SeverityLevel level = LOG_WARNING) const;
 	/// Check for error that we can ignore by user request.
-	bool checkForSoftError(bool check, const std::string &parent, const std::string &error, SeverityLevel level = LOG_WARNING) const
-	{
-		if (check)
-		{
-			auto ex = LoadRuleException(parent, error);
-			if (Options::oxceModValidationLevel < level)
-			{
-				Log(level) << "Supressed " << ex.what();
-				return true;
-			}
-			else
-			{
-				throw ex;
-			}
-		}
-		return false;
-	}
+	bool checkForSoftError(bool check, const std::string &parent, const std::string &error, SeverityLevel level = LOG_WARNING) const;
+
 
 	/// Verify if value have defined surface in given set.
 	void verifySpriteOffset(const std::string &parent, const int& sprite, const std::string &set) const;
@@ -539,52 +522,52 @@ public:
 	/// Gets the mod offset.
 	int getModOffset() const;
 	/// Get offset and index for sound set or sprite set.
-	void loadOffsetNode(const std::string &parent, int& offset, const YAML::Node &node, int shared, const std::string &set, size_t multiplier, size_t sizeScale = 1) const;
+	void loadOffsetNode(const std::string &parent, int& offset, const YAML::YamlNodeReader& reader, int shared, const std::string &set, size_t multiplier, size_t sizeScale = 1) const;
 	/// Gets the mod offset for a certain sprite.
-	void loadSpriteOffset(const std::string &parent, int& sprite, const YAML::Node &node, const std::string &set, size_t multiplier = 1) const;
+	void loadSpriteOffset(const std::string& parent, int& sprite, const YAML::YamlNodeReader& reader, const std::string& set, size_t multiplier = 1) const;
 	/// Gets the mod offset array for a certain sprite.
-	void loadSpriteOffset(const std::string &parent, std::vector<int>& sprites, const YAML::Node &node, const std::string &set) const;
+	void loadSpriteOffset(const std::string& parent, std::vector<int>& sprites, const YAML::YamlNodeReader& reader, const std::string& set) const;
 	/// Gets the mod offset for a certain sound.
-	void loadSoundOffset(const std::string &parent, int& sound, const YAML::Node &node, const std::string &set) const;
+	void loadSoundOffset(const std::string &parent, int& sound, const YAML::YamlNodeReader& reader, const std::string &set) const;
 	/// Gets the mod offset array for a certain sound.
-	void loadSoundOffset(const std::string &parent, std::vector<int>& sounds, const YAML::Node &node, const std::string &set) const;
+	void loadSoundOffset(const std::string& parent, std::vector<int>& sounds, const YAML::YamlNodeReader& reader, const std::string& set) const;
 	/// Gets the mod offset array for a certain transparency index.
-	void loadTransparencyOffset(const std::string &parent, int& index, const YAML::Node &node) const;
+	void loadTransparencyOffset(const std::string& parent, int& index, const YAML::YamlNodeReader& reader) const;
 	/// Gets the mod offset for a generic value.
 	int getOffset(int id, int max) const;
 
 	/// Gets base functions from string array in yaml.
-	void loadBaseFunction(const std::string &parent, RuleBaseFacilityFunctions& f, const YAML::Node &node);
+	void loadBaseFunction(const std::string& parent, RuleBaseFacilityFunctions& f, const YAML::YamlNodeReader& reader);
 	/// Get names of function names in given bitset.
 	std::vector<std::string> getBaseFunctionNames(RuleBaseFacilityFunctions f) const;
 
 	/// Loads a list of ints.
-	void loadInts(const std::string &parent, std::vector<int>& ints, const YAML::Node &node) const;
+	void loadInts(const std::string& parent, std::vector<int>& ints, const YAML::YamlNodeReader& reader) const;
 	/// Loads a list of ints where order of items does not matter.
-	void loadUnorderedInts(const std::string &parent, std::vector<int>& ints, const YAML::Node &node) const;
+	void loadUnorderedInts(const std::string& parent, std::vector<int>& ints, const YAML::YamlNodeReader& reader) const;
 
 	/// Loads a name.
-	void loadName(const std::string &parent, std::string& names, const YAML::Node &node) const;
+	void loadName(const std::string& parent, std::string& names, const YAML::YamlNodeReader& reader) const;
 	/// Loads a name.
-	void loadNameNull(const std::string &parent, std::string& names, const YAML::Node &node) const;
+	void loadNameNull(const std::string& parent, std::string& names, const YAML::YamlNodeReader& reader) const;
 	/// Loads a list of names.
-	void loadNames(const std::string &parent, std::vector<std::string>& names, const YAML::Node &node) const;
+	void loadNames(const std::string& parent, std::vector<std::string>& names, const YAML::YamlNodeReader& reader) const;
 	/// Loads a list of names where order of items does not matter.
-	void loadUnorderedNames(const std::string &parent, std::vector<std::string>& names, const YAML::Node &node) const;
+	void loadUnorderedNames(const std::string& parent, std::vector<std::string>& names, const YAML::YamlNodeReader& reader) const;
 
 	/// Loads a map from names to names.
-	void loadNamesToNames(const std::string &parent, std::vector<std::pair<std::string, std::vector<std::string>>>& names, const YAML::Node &node) const;
+	void loadNamesToNames(const std::string& parent, std::vector<std::pair<std::string, std::vector<std::string> > >& names, const YAML::YamlNodeReader& reader) const;
 	/// Loads a map from names to names.
-	void loadUnorderedNamesToNames(const std::string &parent, std::map<std::string, std::string>& names, const YAML::Node &node) const;
+	void loadUnorderedNamesToNames(const std::string& parent, std::map<std::string, std::string>& names, const YAML::YamlNodeReader& reader) const;
 	/// Loads a map from names to ints.
-	void loadUnorderedNamesToInt(const std::string &parent, std::map<std::string, int>& names, const YAML::Node &node) const;
+	void loadUnorderedNamesToInt(const std::string &parent, std::map<std::string, int>& names, const YAML::YamlNodeReader &reader) const;
 	/// Loads a map from names to vector of ints.
-	void loadUnorderedNamesToInts(const std::string &parent, std::map<std::string, std::vector<int>>& names, const YAML::Node &node) const;
+	void loadUnorderedNamesToInts(const std::string& parent, std::map<std::string, std::vector<int> >& names, const YAML::YamlNodeReader& reader) const;
 	/// Loads a map from names to names to int.
-	void loadUnorderedNamesToNamesToInt(const std::string &parent, std::map<std::string, std::map<std::string, int>>& names, const YAML::Node &node) const;
+	void loadUnorderedNamesToNamesToInt(const std::string& parent, std::map<std::string, std::map<std::string, int> >& names, const YAML::YamlNodeReader& reader) const;
 
 	/// Loads data for kill criteria from Commendations.
-	void loadKillCriteria(const std::string &parent, std::vector<std::vector<std::pair<int, std::vector<std::string> > > >& names, const YAML::Node &node) const;
+	void loadKillCriteria(const std::string& parent, std::vector<std::vector<std::pair<int, std::vector<std::string> > > >& names, const YAML::YamlNodeReader& reader) const;
 
 
 	/// Convert names to correct rule objects
@@ -638,6 +621,10 @@ public:
 		else if constexpr (std::is_same_v<T, RuleEvent>)
 		{
 			rule = getEvent(name, true);
+		}
+		else if constexpr (std::is_same_v<T, RuleCommendations>)
+		{
+			rule = getCommendation(name, true);
 		}
 		else
 		{
@@ -831,6 +818,8 @@ public:
 	int getAIUseDelayMelee() const {return _aiUseDelayMelee;}
 	/// Gets first turn when AI can use psionic abilities.
 	int getAIUseDelayPsionic() const  {return _aiUseDelayPsionic;}
+	/// Gets first turn when AI can use self-target medikits.
+	int getAIUseDelayMedikit() const { return _aiUseDelayMedikit; }
 	/// Gets how much AI intelligence should be used to determine firing mode for sniping.
 	int getAIFireChoiceIntelCoeff() const {return _aiFireChoiceIntelCoeff;}
 	/// Gets how much AI aggression should be used to determine firing mode for sniping.
@@ -845,16 +834,29 @@ public:
 	bool getAIPickUpWeaponsMoreActively() const { return _aiPickUpWeaponsMoreActively; }
 	/// Gets whether or not the civilian AI should pick up weapons more actively.
 	bool getAIPickUpWeaponsMoreActivelyCiv() const { return _aiPickUpWeaponsMoreActivelyCiv; }
+	/// Gets the reaction fire threshold (default = 0).
+	int getReactionFireThreshold(UnitFaction faction) const;
+	/// Gets weight value that AI use to determine if target is dangerous.
+	AIAttackWeight getAITargetWeightThreatThreshold() const { return _aiTargetWeightThreatThreshold; }
+	/// Gets default weight value of hostile unit.
+	AIAttackWeight getAITargetWeightAsHostile() const { return _aiTargetWeightAsHostile; }
+	/// Gets default weight value of civilian unit when consider by aliens.
+	AIAttackWeight getAITargetWeightAsHostileCivilians() const { return _aiTargetWeightAsHostileCivilians; }
+	/// Gets default weight value of same faction unit.
+	AIAttackWeight getAITargetWeightAsFriendly() const { return _aiTargetWeightAsFriendly; }
+	/// Gets default weight value of neutral unit (xcom to civ or vice versa).
+	AIAttackWeight getAITargetWeightAsNeutral() const { return _aiTargetWeightAsNeutral; }
+
 	/// Gets maximum supported lookVariant.
 	int getMaxLookVariant() const;
 	/// Gets the threshold for too much smoke (vanilla default = 10).
 	int getTooMuchSmokeThreshold() const  {return _tooMuchSmokeThreshold;}
 	/// Gets the custom physical training factor in percent (default = 100).
 	int getCustomTrainingFactor() const { return _customTrainingFactor; }
-	/// Gets the minimum firing accuracy for reaction fire (default = 0).
-	int getMinReactionAccuracy() const { return _minReactionAccuracy; }
 	/// Gets the chance to stop retaliation after unsuccessful xcom base attack (default = 0).
 	int getChanceToStopRetaliation() const { return _chanceToStopRetaliation; }
+	/// Gets the chance to detect an alien base by xcom operatives each month (default = 20).
+	int getChanceToDetectAlienBaseEachMonth() const { return _chanceToDetectAlienBaseEachMonth; }
 	/// Should a damaged UFO deploy less aliens during the base defense?
 	bool getLessAliensDuringBaseDefense() const { return _lessAliensDuringBaseDefense; }
 	/// Will countries join the good side again after the infiltrator base is destroyed?
@@ -881,6 +883,8 @@ public:
 	int getCloseQuartersSneakUpGlobal() const { return _closeQuartersSneakUpGlobal; }
 	/// Gets the default accuracy penalty for having no LOS to the target (default = 0 is no penalty)
 	int getNoLOSAccuracyPenaltyGlobal() const { return _noLOSAccuracyPenaltyGlobal; }
+	/// Gets the default setting for primed grenades exploding in the inventory (default = 0 is no explosion)
+	int getExplodeInventoryGlobal() const { return _explodeInventoryGlobal; }
 	/// Gets the surrender mode (default = 0).
 	int getSurrenderMode() const { return _surrenderMode; }
 	/// Gets the bug hunt mode minimum turn requirement (default = 20).
@@ -945,6 +949,8 @@ public:
 	int getCrewEmergencyEvacuationSurvivalChance() const { return _crewEmergencyEvacuationSurvivalChance; }
 	/// Gets the pilots emergency evacuation survival chance
 	int getPilotsEmergencyEvacuationSurvivalChance() const { return _pilotsEmergencyEvacuationSurvivalChance; }
+	/// Should UFO preview be shown in base defense UI?
+	bool showUfoPreviewInBaseDefense() const { return _showUfoPreviewInBaseDefense; }
 	/// Gets how many soldiers are needed for one promotion of a given rank
 	int getSoldiersPerRank(const SoldierRank rank) const { return _soldiersPerRank[(size_t)rank]; }
 	/// Gets the firing accuracy needed for no bonus/penalty
@@ -1032,8 +1038,8 @@ public:
 	/// Gets the alien item level table.
 	const std::vector<std::vector<int> > &getAlienItemLevels() const;
 	/// Gets the player starting base.
-	const YAML::Node &getDefaultStartingBase() const;
-	const YAML::Node &getStartingBase(GameDifficulty diff) const;
+	const YAML::YamlString& getDefaultStartingBase() const;
+	const YAML::YamlString& getStartingBase(GameDifficulty diff) const;
 	/// Gets the game starting time.
 	const GameTime &getStartingTime() const;
 	/// Gets the game starting difficulty.
@@ -1088,7 +1094,9 @@ public:
 	const std::vector<std::string>* getEventList() const;
 	RuleEvent* getEvent(const std::string& name, bool error = false) const;
 	const std::vector<std::string> *getMissionScriptList() const;
+	const std::vector<std::string> *getAdhocScriptList() const;
 	RuleMissionScript *getMissionScript(const std::string &name, bool error = false) const;
+	RuleMissionScript *getAdhocScript(const std::string &name, bool error = false) const;
 	/// Get global script data.
 	ScriptGlobal *getScriptGlobal() const;
 	RuleResearch *getFinalResearch() const;

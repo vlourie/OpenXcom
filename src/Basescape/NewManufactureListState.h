@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include "../Engine/State.h"
+#include "../Engine/TouchState.h"
 #include <vector>
 #include "ItemCountTooltipMixin.h"
 
@@ -37,7 +37,7 @@ class ComboBox;
 /**
  * Screen which list possible productions.
  */
-class NewManufactureListState : public ItemCountTooltipMixin<State>
+class NewManufactureListState : public ItemCountTooltipMixin<TouchState>
 {
 private:
 	Base *_base;
@@ -68,6 +68,7 @@ public:
 	void btnQuickSearchToggle(Action *action);
 	void btnQuickSearchApply(Action *action);
 	/// Handlers for clicking on the list.
+	void lstProdClick(Action* action);
 	void lstProdClickLeft (Action * action);
 	void lstProdClickRight(Action * action);
 	void lstProdClickMiddle(Action * action);

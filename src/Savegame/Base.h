@@ -21,7 +21,8 @@
 #include <string>
 #include <vector>
 #include <map>
-#include <yaml-cpp/yaml.h>
+#include <list>
+#include "../Engine/Yaml.h"
 #include "../Mod/RuleBaseFacilityFunctions.h"
 
 #ifndef BASEFACILITIESITERATOR
@@ -86,6 +87,8 @@ enum BasePlacementErrors : int
 	BPE_Used_Gyms = 16,
 	/// 17: not enough alien containment
 	BPE_Used_AlienContainment = 17,
+	/// 18: trying to build a facility (from scratch) that can only be built as an upgrade of another facility
+	BPE_UpgradeOnly = 18,
 };
 
 struct BaseSumDailyRecovery
@@ -135,14 +138,14 @@ public:
 	/// Cleans up the base.
 	~Base();
 	/// Loads the base from YAML.
-	void load(const YAML::Node& node, SavedGame *save, bool newGame, bool newBattleGame = false);
+	void load(const YAML::YamlNodeReader& reader, SavedGame *save, bool newGame, bool newBattleGame = false);
 	/// Finishes loading the base (more specifically all craft in the base) from YAML.
-	void finishLoading(const YAML::Node& node, SavedGame *save);
+	void finishLoading(const YAML::YamlNodeReader& reader, SavedGame *save);
 	void calculateServices(SavedGame* save);
 	/// Tests whether the base facilities are within the base boundaries and not overlapping.
 	bool isOverlappingOrOverflowing();
 	/// Saves the base to YAML.
-	YAML::Node save() const override;
+	void save(YAML::YamlNodeWriter writer) const override;
 	/// Gets the base's type.
 	std::string getType() const override;
 	/// Gets the base's name.
@@ -247,6 +250,8 @@ public:
 	int getMonthlyMaintenace() const;
 	/// Get the list of base's ResearchProject
 	const std::vector<ResearchProject *> & getResearch() const;
+	/// Get the list of base's ResearchProject
+	std::vector<ResearchProject *> & getResearch() { return _research; }
 	/// Add a new ResearchProject to the Base
 	void addResearch(ResearchProject *);
 	/// Remove a ResearchProject from the Base
