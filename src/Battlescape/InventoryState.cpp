@@ -323,7 +323,8 @@ InventoryState::InventoryState(bool tu, BattlescapeState *parent, Base *base, bo
 	_inv->draw();
 	_inv->setTuMode(_tu);
 	_inv->setSelectedUnit(_game->getSavedGame()->getSavedBattle()->getSelectedUnit(), true);
-	_inv->onMouseClick((ActionHandler)&InventoryState::invClick, 0);
+	_inv->onMouseClick((ActionHandler)&InventoryState::invLeftClick, SDL_BUTTON_LEFT);
+	_inv->onMouseClick((ActionHandler)&InventoryState::invRightClick, SDL_BUTTON_RIGHT);
 	_inv->onMouseOver((ActionHandler)&InventoryState::invMouseOver);
 	_inv->onMouseOut((ActionHandler)&InventoryState::invMouseOut);
 	_inv->onMouseClick((ActionHandler)&InventoryState::btnGroundClickForward, SDL_BUTTON_WHEELDOWN);
@@ -1777,12 +1778,20 @@ void InventoryState::onAutoequip(Action *)
  * Updates item info.
  * @param action Pointer to an action.
  */
-void InventoryState::invClick(Action *act)
+void InventoryState::invLeftClick(Action *act)
 {
 	if (_game->isCtrlPressed() && _game->isAltPressed())
-		onMoveGroundInventoryToBaseClick();
+		onMoveGroundInventoryToBaseClick(true);
 	else
 		updateStats();
+
+	_prev_key = 0, _key_repeats = 0;
+}
+
+void InventoryState::invRightClick(Action* action)
+{
+	if (_game->isCtrlPressed() && _game->isAltPressed())
+		onMoveGroundInventoryToBaseClick(false);
 
 	_prev_key = 0, _key_repeats = 0;
 }
@@ -2116,8 +2125,7 @@ void InventoryState::onMoveGroundInventoryToBase(Action *)
 	_game->getMod()->getSoundByDepth(_battleGame->getDepth(), Mod::ITEM_DROP)->play();
 }
 
-
-void InventoryState::onMoveGroundInventoryToBaseClick()
+void InventoryState::onMoveGroundInventoryToBaseClick(bool leftClick)
 {
 	if (_inv->getSelectedItem() != nullptr || _base == nullptr || _noCraft)
 		return;
@@ -2128,45 +2136,82 @@ void InventoryState::onMoveGroundInventoryToBaseClick()
 	if (craft == 0 || craft->getStatus() == "STR_OUT")
 		return;
 
-	auto* item = _inv->getMouseOverItem();
-	if (!item || item->getRules()->isFixed())
+	auto* selectedItem = _inv->getMouseOverItem();
+	if (!selectedItem || selectedItem->getRules()->isFixed())
 		return;
 
-	// step 1: move stuff from craft to base
-	const auto& weaponType = item->getRules();
-	// check all ammo slots first
-	for (int slot = 0; slot < RuleItem::AmmoSlotMax; ++slot)
+	std::vector<BattleItem*> sameSlotItems{ selectedItem };
+	if (!leftClick)
 	{
-		if (item->getAmmoForSlot(slot))
+		auto* selectedItemSlot = selectedItem->getSlot();
+		auto type = selectedItemSlot->getType();
+		auto id = selectedItemSlot->getId();
+		auto slotX = selectedItemSlot->getX();
+		auto slotY = selectedItemSlot->getY();
+		auto invX = selectedItem->getSlotX();
+		auto invY = selectedItem->getSlotY();
+
+		auto& itemInventory = selectedItem->getOwner() == unit
+			? *unit->getInventory()
+			: *unit->getTile()->getInventory();
+
+		for (auto* bi : itemInventory)
 		{
-			const auto& ammoType = item->getAmmoForSlot(slot)->getRules();
-			// only real ammo
-			if (weaponType != ammoType)
-			{
-				craft->getItems()->removeItem(ammoType);
-				_base->getStorageItems()->addItem(ammoType);
-			}
+			if (!bi || bi == selectedItem)
+				continue;
+
+			auto slot = bi->getSlot();
+			if (!slot)
+				continue;
+
+			if (!(bi->getSlotX() == invX && bi->getSlotY() == invY))
+				continue;
+
+			if (!(slot->getId() == id && slot->getType() == type && slot->getX() == slotX && slot->getY() == slotY))
+				continue;
+
+			sameSlotItems.push_back(bi);
 		}
 	}
-	// and the weapon as last
-	craft->getItems()->removeItem(weaponType);
-	_base->getStorageItems()->addItem(weaponType);
 
-	// step 2: remove from inventory/ground
-	if (item->getOwner() != nullptr && item->getOwner() == unit)
+	for (auto* item : sameSlotItems)
 	{
-		Collections::removeIf(*unit->getInventory(), 1, [item](BattleItem* i) { return i == item; });
-		updateStats();
+		// step 1: move stuff from craft to base
+		const auto& weaponType = item->getRules();
+		// check all ammo slots first
+		for (int slot = 0; slot < RuleItem::AmmoSlotMax; ++slot)
+		{
+			if (item->getAmmoForSlot(slot))
+			{
+				const auto& ammoType = item->getAmmoForSlot(slot)->getRules();
+				// only real ammo
+				if (weaponType != ammoType)
+				{
+					craft->getItems()->removeItem(ammoType);
+					_base->getStorageItems()->addItem(ammoType);
+				}
+			}
+		}
+		// and the weapon as last
+		craft->getItems()->removeItem(weaponType);
+		_base->getStorageItems()->addItem(weaponType);
+
+		// step 2: remove from inventory/ground
+		if (item->getOwner() != nullptr && item->getOwner() == unit)
+		{
+			Collections::removeIf(*unit->getInventory(), 1, [item](BattleItem* i) { return i == item; });
+			updateStats();
+			_game->getSavedGame()->getSavedBattle()->removeItem(item);
+		}
+		else
+		{
+			auto& groundInventory = *unit->getTile()->getInventory();
+			Collections::removeIf(groundInventory, 1, [item](BattleItem* i) { return i == item; });
+			_inv->arrangeGround();
+		}
+
 		_game->getSavedGame()->getSavedBattle()->removeItem(item);
 	}
-	else
-	{
-		auto& groundInventory = *unit->getTile()->getInventory();
-		Collections::removeIf(groundInventory, 1, [item](BattleItem* i) { return i == item; });
-		_inv->arrangeGround();
-	}
-
-	_game->getSavedGame()->getSavedBattle()->removeItem(item);
 
 	refreshMouse();
 
