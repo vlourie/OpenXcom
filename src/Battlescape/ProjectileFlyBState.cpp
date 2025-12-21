@@ -397,7 +397,7 @@ void ProjectileFlyBState::init()
 
 		const bool byAltPressed = _parent->getMap()->isAltPressed();
 		const bool byRules = conf && !conf->followProjectiles;
-		const bool byOptions = (Options::QOL::dontTraceProjectiles == 2) || (_unit->getFaction() == UnitFaction::FACTION_PLAYER && Options::QOL::dontTraceProjectiles == 1);
+		const bool byOptions = (Options::QOL::dontTraceProjectiles > 2) || (_unit->getFaction() == UnitFaction::FACTION_PLAYER && Options::QOL::dontTraceProjectiles == 1);
 
 		if (byAltPressed || byRules || byOptions)
 		{

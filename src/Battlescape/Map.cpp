@@ -338,6 +338,10 @@ void Map::draw()
 		}
 	}
 	_explosionInFOV = _save->getDebugMode();
+
+	Explosion* hitExplosion = nullptr;
+	const bool ignoreAllButAlliesHits = Options::QOL::dontTraceProjectiles == 3;
+
 	if (!_explosions.empty())
 	{
 		for (auto* explosion : _explosions)
@@ -351,12 +355,28 @@ void Map::draw()
 			if (t && t->getVisible())
 			{
 				_explosionInFOV = true;
+
+				auto* unit = t->getOverlappingUnit(_save);
+				if (ignoreAllButAlliesHits && unit && unit->getVisible() && (unit->getFaction() == UnitFaction::FACTION_PLAYER || unit->getFaction() == UnitFaction::FACTION_NEUTRAL))
+				{
+					hitExplosion = explosion;
+					_camera->centerOnPosition(t->getPosition(), true);
+				}
+					
 				break;
 			}
 		}
 	}
 
-	if ((_save->getSelectedUnit() && _save->getSelectedUnit()->getVisible()) || _unitDying || _save->getSide() == FACTION_PLAYER || _save->getDebugMode() || _projectileInFOV || _explosionInFOV)
+	const bool unitVisible = _save->getSelectedUnit() && _save->getSelectedUnit()->getVisible();
+	const bool unitEnemy = _save->getSide() == FACTION_HOSTILE;
+
+	if ((_save->getSelectedUnit() && _save->getSelectedUnit()->getVisible())
+		|| _unitDying
+		|| _save->getSide() == FACTION_PLAYER
+		|| _save->getDebugMode()
+		|| (_projectileInFOV && (!ignoreAllButAlliesHits || (unitVisible && !unitEnemy)))
+		|| (_explosionInFOV && (!ignoreAllButAlliesHits || ((unitVisible && !unitEnemy) || hitExplosion))))
 	{
 		drawTerrain(this);
 	}

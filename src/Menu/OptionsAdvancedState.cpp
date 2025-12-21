@@ -455,7 +455,7 @@ void OptionsAdvancedState::lstOptionsClick(Action *action)
 		else if (i == &Options::QOL::dontTraceProjectiles)
 		{
 			min = 0;
-			max = 2;
+			max = 3;
 		}
 
 		if (*i < min)
