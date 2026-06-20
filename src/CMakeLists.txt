@@ -21,6 +21,7 @@ set ( basescape_src
   Basescape/CraftWeaponsState.cpp
   Basescape/DismantleFacilityState.cpp
   Basescape/GlobalAlienContainmentState.cpp
+  Basescape/GlobalTransfersState.cpp
   Basescape/GlobalManufactureState.cpp
   Basescape/GlobalResearchDiaryState.cpp
   Basescape/GlobalResearchState.cpp
@@ -204,6 +205,7 @@ set ( geoscape_src
   Geoscape/FundingState.cpp
   Geoscape/GeoscapeCraftState.cpp
   Geoscape/GeoscapeEventState.cpp
+  Geoscape/GeoscapeGlobalTransfers.cpp
   Geoscape/GeoscapeState.cpp
   Geoscape/Globe.cpp
   Geoscape/GraphsState.cpp
@@ -627,7 +629,7 @@ if (WIN32)
   set(WIN32_LIBS imagehlp dbghelp)
 endif(WIN32)
 
-target_link_libraries ( openxcom ${system_libs} ${PKG_DEPS_LDFLAGS} ${EXTRA_XCOM_LIBS} ${WIN32_LIBS} )
+target_link_libraries ( openxcom ${system_libs} ${PKG_DEPS_LDFLAGS} ${EXTRA_XCOM_LIBS} ${WIN32_LIBS} -Wl,--start-group jpeg png z tiff webp mad vorbisfile vorbis -l:libogg.a mikmod -l:libwinpthread.a winmm dxguid dinput8 ole32 oleaut32 imm32 version setupapi jbig zstd lzma lerc deflate sharpyuv -l:libFLAC.dll.a -Wl,--end-group )
 
 # Pack libraries into bundle and link executable appropriately
 if ( APPLE AND CREATE_BUNDLE )
@@ -654,7 +656,7 @@ if ( NOT EMBED_ASSETS )
 endif ()
 
 # Copy Windows DLLs to bin folder
-if ( WIN32 )
+if ( FALSE )
   if ( CMAKE_CL_64 )
     file ( GLOB Windows_dll "${DEPS_DIR}/lib/x64/*.dll" )
   else ( )
