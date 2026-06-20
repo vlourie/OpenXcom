@@ -5,8 +5,8 @@ on:
 
 jobs:
   windows:
-    name: Windows x86 XP-compatible
-    runs-on: windows-latest
+    name: Windows x86 modern
+    runs-on: windows-2022
 
     steps:
       - name: Checkout
@@ -32,16 +32,6 @@ jobs:
           sed -i "s/OPENXCOM_VERSION_GIT \"[^\"]*\"/OPENXCOM_VERSION_GIT \" git ${{ env.DATEVERSION }} global-transfers\"/" src/version.h
           echo "FILENAME=oxce_global_transfers_${{ env.DATEFILE }}" >> $GITHUB_ENV
 
-      - name: Install XP Toolset
-        shell: powershell
-        run: |
-          Set-Location "C:\Program Files (x86)\Microsoft Visual Studio\Installer\"
-          $InstallPath = "C:\Program Files\Microsoft Visual Studio\2022\Enterprise"
-          $WorkLoads = '--add Microsoft.VisualStudio.Component.WinXP'
-          $Arguments = ('/c', "vs_installer.exe", 'modify', '--installPath', "`"$InstallPath`"", $WorkLoads, '--quiet', '--norestart', '--nocache')
-          $process = Start-Process -FilePath cmd.exe -ArgumentList $Arguments -Wait -PassThru -WindowStyle Hidden
-          if ($process.ExitCode -eq 0) { Write-Host "components have been successfully added" } else { Write-Host "components were not installed" }
-
       - name: Add msbuild to PATH
         uses: microsoft/setup-msbuild@v2
 
@@ -49,19 +39,15 @@ jobs:
         shell: powershell
         run: |
           cd src
-          msbuild OpenXcom.2010.sln /m /v:minimal /p:BuildInParallel=true /p:PreferredToolArchitecture=x64 /p:Configuration=Release_XP /p:Platform=Win32
+          msbuild OpenXcom.2010.sln /m /v:minimal /p:BuildInParallel=true /p:PreferredToolArchitecture=x64 /p:Configuration=Release /p:Platform=Win32
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           cd ..
-          if (Test-Path "bin\Win32\Release") {
-          Remove-Item -Recurse -Force "bin\Win32\Release"
-          }
-          Rename-Item -Path "bin\Win32\Release_XP" -NewName "Release"
 
       - name: Create ZIP
         shell: powershell
         run: |
           New-Item -ItemType "directory" -Path "artifacts"
-          Compress-Archive -Path "bin\Win32\Release\OpenXcom.exe", "bin\Win32\*.dll", "bin\common", "bin\standard", "bin\TFTD", "bin\UFO", "LICENSE.txt" -DestinationPath "artifacts\${{ env.FILENAME }}_win32_xp.zip"
+          Compress-Archive -Path "bin\Win32\Release\OpenXcom.exe", "bin\Win32\*.dll", "bin\common", "bin\standard", "bin\TFTD", "bin\UFO", "LICENSE.txt" -DestinationPath "artifacts\${{ env.FILENAME }}_win32_modern.zip"
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
