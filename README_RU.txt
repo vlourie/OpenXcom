@@ -1,54 +1,27 @@
-OXCE Global Transfers AutoBuild
-================================
+OXCE Global Transfers AutoBuild v145
+===================================
 
-Это пакет, который добавляет в rackrossum/OpenXcom community_build:
+Этот пакет добавляет в OXCE/QOL новый экран:
 
-  OXCE -> Глобальный вид -> ОБЗОР ВСЕХ ДОСТАВОК
+  Глобальный вид -> ОБЗОР ВСЕХ ДОСТАВОК
 
-и собирает Windows openxcom.exe через GitHub Actions.
-
-Почему через GitHub Actions:
-- готовый openxcom.exe должен собираться под Windows через Visual Studio/MSBuild;
-- оригинальный репозиторий уже использует Windows workflow с msbuild OpenXcom.2010.sln;
-- локальная среда ChatGPT не имеет Windows/MSBuild/Visual Studio XP toolset.
+Исправление v145:
+  - обработчик GeoscapeState::btnGlobalTransfersClick теперь вынесен в отдельный файл
+    src/Geoscape/GeoscapeGlobalTransfers.cpp;
+  - это исправляет ошибку линковки LNK2001 unresolved external symbol btnGlobalTransfersClick.
 
 Как использовать:
+1. Распакуй архив.
+2. Загрузи содержимое архива в корень fork-репозитория rackrossum/OpenXcom поверх старых файлов:
+   .github
+   tools
+   README_RU.txt
+3. Commit directly to community_build.
+4. Actions -> Build Global Transfers patched OXCE -> Run workflow.
 
-1. Открой https://github.com/rackrossum/OpenXcom
-2. Нажми Fork.
-3. В своём fork выбери ветку community_build.
-4. Распакуй содержимое этого архива в корень fork-репозитория.
-   Должны появиться:
+После успешной сборки скачай artifact oxce_global_transfers_windows.
 
-   tools/apply_global_transfers_patch.py
-   tools/global_transfers/GlobalTransfersState.cpp
-   tools/global_transfers/GlobalTransfersState.h
-   .github/workflows/build-global-transfers.yml
-
-5. Сделай commit и push.
-6. Открой вкладку Actions.
-7. Выбери workflow:
-
-   Build Global Transfers patched OXCE
-
-8. Нажми Run workflow.
-9. Когда сборка закончится, скачай artifact:
-
-   oxce_global_transfers_windows
-
-10. Внутри будет ZIP с новым OpenXcom.exe.
-    Сделай бэкап старого openxcom.exe и замени новым.
-
-Клавиша:
-- По умолчанию новая горячая клавиша не назначена: SDLK_UNKNOWN.
-- Зайди в настройки игры:
-
+Кнопка/горячая клавиша появится в настройках:
   OXCE -> Глобальный вид -> ОБЗОР ВСЕХ ДОСТАВОК
 
-  и назначь любую удобную кнопку.
-
-Что делает окно:
-- показывает доставки сразу по всем базам;
-- колонки: БАЗА / ДОСТАВКА / КОЛ-ВО / ЧАСОВ;
-- клик по строке открывает обычное окно доставок выбранной базы.
-
+По умолчанию клавиша не назначена, чтобы не конфликтовать с твоими текущими настройками.

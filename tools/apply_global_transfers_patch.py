@@ -66,7 +66,7 @@ def regex_insert_after_once(path: Path, pattern: str, insert: str, marker: str) 
 def copy_new_files() -> None:
     target_dir = SRC / "Basescape"
     target_dir.mkdir(parents=True, exist_ok=True)
-    for name in ["GlobalTransfersState.h", "GlobalTransfersState.cpp"]:
+    for name in ["GlobalTransfersState.h", "GlobalTransfersState.cpp", "GeoscapeGlobalTransfers.cpp"]:
         src = TOOLS / name
         if not src.exists():
             die(f"missing patch file: {src}")
@@ -81,20 +81,34 @@ def patch_cmake() -> None:
         print("skip: src/CMakeLists.txt not found")
         return
     text = read(path)
-    if "Basescape/GlobalTransfersState.cpp" in text:
-        print(f"already patched: {path}")
-        return
-    anchors = [
-        "Basescape/GlobalAlienContainmentState.cpp",
-        "Basescape/GlobalResearchState.cpp",
-        "Basescape/GlobalManufactureState.cpp",
-        "Basescape/TransfersState.cpp",
+    additions = [
+        "Basescape/GlobalTransfersState.cpp",
+        "Geoscape/GeoscapeGlobalTransfers.cpp",
     ]
-    for a in anchors:
-        if a in text:
-            write(path, text.replace(a, a + "\n\tBasescape/GlobalTransfersState.cpp", 1))
-            return
-    die("could not find a Basescape source anchor in CMakeLists.txt")
+    changed = False
+    for source in additions:
+        if source in text:
+            continue
+        anchors = [
+            "Basescape/GlobalAlienContainmentState.cpp",
+            "Basescape/GlobalResearchState.cpp",
+            "Basescape/GlobalManufactureState.cpp",
+            "Basescape/TransfersState.cpp",
+            "Geoscape/GeoscapeState.cpp",
+        ]
+        inserted = False
+        for a in anchors:
+            if a in text:
+                text = text.replace(a, a + "\n\t" + source, 1)
+                inserted = True
+                changed = True
+                break
+        if not inserted:
+            die(f"could not find a source anchor in CMakeLists.txt for {source}")
+    if changed:
+        write(path, text)
+    else:
+        print(f"already patched: {path}")
 
 
 def xml_add_vs_item(path: Path, tag_name: str, include_value: str, filter_name: str | None = None) -> None:
@@ -147,8 +161,10 @@ def xml_add_vs_item(path: Path, tag_name: str, include_value: str, filter_name: 
 def patch_visual_studio_projects() -> None:
     xml_add_vs_item(SRC / "OpenXcom.2010.vcxproj", "ClCompile", r"Basescape\GlobalTransfersState.cpp")
     xml_add_vs_item(SRC / "OpenXcom.2010.vcxproj", "ClInclude", r"Basescape\GlobalTransfersState.h")
+    xml_add_vs_item(SRC / "OpenXcom.2010.vcxproj", "ClCompile", r"Geoscape\GeoscapeGlobalTransfers.cpp")
     xml_add_vs_item(SRC / "OpenXcom.2010.vcxproj.filters", "ClCompile", r"Basescape\GlobalTransfersState.cpp", "Basescape")
     xml_add_vs_item(SRC / "OpenXcom.2010.vcxproj.filters", "ClInclude", r"Basescape\GlobalTransfersState.h", "Basescape")
+    xml_add_vs_item(SRC / "OpenXcom.2010.vcxproj.filters", "ClCompile", r"Geoscape\GeoscapeGlobalTransfers.cpp", "Geoscape")
 
 
 def patch_options() -> None:
@@ -219,23 +235,19 @@ def patch_geoscape() -> None:
         "btnGlobalTransfersClick, Options::keyGeoGlobalTransfers",
     )
 
-    function = '''
-
-/**
- * Opens the Global Transfers overview.
- * @param action Pointer to an action.
- */
-void GeoscapeState::btnGlobalTransfersClick(Action *)
-{
-	_game->pushState(new GlobalTransfersState(false));
-}
-'''
-    regex_insert_after_once(
-        cpp,
-        r"void\s+GeoscapeState::btnGlobalAlienContainmentClick\s*\(\s*Action\s*\*\s*\)\s*\{\s*_game->pushState\(new\s+GlobalAlienContainmentState\(false\)\);\s*\}",
-        function,
-        "GeoscapeState::btnGlobalTransfersClick",
+    # The actual btnGlobalTransfersClick implementation is compiled from
+    # Geoscape/GeoscapeGlobalTransfers.cpp. Remove an old injected body if a
+    # previous patch attempt added one, otherwise Visual Studio would get a
+    # duplicate definition.
+    text = read(cpp)
+    new_text = re.sub(
+        r"\n/\*\*\s*\n \* Opens the Global Transfers overview\.\s*\n \* @param action Pointer to an action\.\s*\n \*/\s*\nvoid\s+GeoscapeState::btnGlobalTransfersClick\s*\(\s*Action\s*\*\s*\)\s*\{\s*_game->pushState\(new\s+GlobalTransfersState\(false\)\);\s*\}\s*",
+        "\n",
+        text,
+        flags=re.S,
     )
+    if new_text != text:
+        write(cpp, new_text)
 
     insert_after_once(
         h,
@@ -275,7 +287,7 @@ def main() -> None:
     patch_options()
     patch_geoscape()
     patch_translations()
-    print("\nGlobal Transfers patch applied.")
+    print("\nGlobal Transfers patch v145 applied.")
 
 
 if __name__ == "__main__":
