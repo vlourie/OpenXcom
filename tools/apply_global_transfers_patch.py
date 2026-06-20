@@ -64,13 +64,19 @@ def regex_insert_after_once(path: Path, pattern: str, insert: str, marker: str) 
 
 
 def copy_new_files() -> None:
-    target_dir = SRC / "Basescape"
-    target_dir.mkdir(parents=True, exist_ok=True)
-    for name in ["GlobalTransfersState.h", "GlobalTransfersState.cpp", "GeoscapeGlobalTransfers.cpp"]:
+    # GlobalTransfersState belongs to Basescape; the Geoscape hotkey handler
+    # belongs to Geoscape. Keeping the files in their real source folders avoids
+    # Visual Studio linker errors such as unresolved btnGlobalTransfersClick.
+    copies = [
+        ("GlobalTransfersState.h", SRC / "Basescape" / "GlobalTransfersState.h"),
+        ("GlobalTransfersState.cpp", SRC / "Basescape" / "GlobalTransfersState.cpp"),
+        ("GeoscapeGlobalTransfers.cpp", SRC / "Geoscape" / "GeoscapeGlobalTransfers.cpp"),
+    ]
+    for name, dst in copies:
         src = TOOLS / name
         if not src.exists():
             die(f"missing patch file: {src}")
-        dst = target_dir / name
+        dst.parent.mkdir(parents=True, exist_ok=True)
         shutil.copyfile(src, dst)
         print(f"copied: {dst}")
 
@@ -157,6 +163,21 @@ def xml_add_vs_item(path: Path, tag_name: str, include_value: str, filter_name: 
     tree.write(path, encoding="utf-8", xml_declaration=True)
     print(f"patched XML: {path}")
 
+
+
+def patch_project_toolset() -> None:
+    # Local/GitHub builds use VS2022 MSVC v143. The old Release_XP config may
+    # require v141_xp, so we retarget only the normal Win32 Release configs.
+    proj = SRC / "OpenXcom.2010.vcxproj"
+    if not proj.exists():
+        return
+    text = read(proj)
+    new_text = text
+    new_text = re.sub(r"<PlatformToolset>v14[0-9](?:_xp)?</PlatformToolset>", "<PlatformToolset>v143</PlatformToolset>", new_text)
+    if new_text != text:
+        write(proj, new_text)
+    else:
+        print(f"toolset already ok: {proj}")
 
 def patch_visual_studio_projects() -> None:
     xml_add_vs_item(SRC / "OpenXcom.2010.vcxproj", "ClCompile", r"Basescape\GlobalTransfersState.cpp")
@@ -283,11 +304,12 @@ def main() -> None:
         die("run this script from OpenXcom repository root; src/ not found")
     copy_new_files()
     patch_cmake()
+    patch_project_toolset()
     patch_visual_studio_projects()
     patch_options()
     patch_geoscape()
     patch_translations()
-    print("\nGlobal Transfers patch v145 applied.")
+    print("\nGlobal Transfers patch v146 applied.")
 
 
 if __name__ == "__main__":
