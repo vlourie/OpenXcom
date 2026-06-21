@@ -35,6 +35,8 @@
 #include "../Savegame/AlienMission.h"
 #include "InterceptState.h"
 #include "../Mod/RuleCraft.h"
+#include "../Ufopaedia/Ufopaedia.h"
+#include "../Mod/ArticleDefinition.h"
 
 namespace OpenXcom
 {
@@ -197,10 +199,21 @@ UfoDetectedState::UfoDetectedState(Ufo *ufo, GeoscapeState *state, bool detected
 
 	_lstInfo2->setColumns(2, 77, 140);
 	_lstInfo2->setDot(true);
+	_lstInfo2->setBackground(_window);
+	_lstInfo2->setSelectable(true);
+	_lstInfo2->onMouseClick((ActionHandler)&UfoDetectedState::lstInfo2Click);
 
 	ss.str("");
 	ss << Unicode::TOK_COLOR_FLIP << tr(_ufo->getRules()->getType());
 	_lstInfo2->addRow(2, tr("STR_CRAFT_TYPE").c_str(), ss.str().c_str());
+	{
+		ArticleDefinition *craftArticle = _game->getMod()->getUfopaediaArticle(_ufo->getRules()->getType(), false);
+		_craftTypeArticleAvailable = craftArticle != 0 && Ufopaedia::isArticleAvailable(_game->getSavedGame(), craftArticle);
+		if (_craftTypeArticleAvailable)
+		{
+			_lstInfo2->setCellColor(0, 0, _lstInfo2->getSecondaryColor());
+		}
+	}
 
 	ss.str("");
 	ss << Unicode::TOK_COLOR_FLIP << tr(_ufo->getAlienRace());
@@ -257,6 +270,19 @@ void UfoDetectedState::btnCancelClick(Action *)
 		_game->getSavedGame()->addUfoToIgnoreList(_ufo->getId());
 	}
 	_game->popState();
+}
+
+/**
+ * Opens the Ufopaedia article for the craft type, if the user clicked
+ * the "Craft Type" row and that article is available (researched).
+ * @param action Pointer to an action.
+ */
+void UfoDetectedState::lstInfo2Click(Action *)
+{
+	if (_lstInfo2->getSelectedRow() == 0 && _craftTypeArticleAvailable)
+	{
+		Ufopaedia::openArticle(_game, _ufo->getRules()->getType());
+	}
 }
 
 /**

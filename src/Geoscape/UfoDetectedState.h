@@ -37,6 +37,7 @@ class UfoDetectedState : public State
 private:
 	Ufo *_ufo;
 	GeoscapeState *_state;
+	bool _craftTypeArticleAvailable = false;
 
 	TextButton *_btnIntercept, *_btnCentre, *_btnCancel;
 	Window *_window;
@@ -53,6 +54,8 @@ public:
 	void btnCentreClick(Action *action);
 	/// Handler for clicking the Cancel button.
 	void btnCancelClick(Action *action);
+	/// Handler for clicking a row in the second info list (opens Ufopaedia for the craft type, if researched).
+	void lstInfo2Click(Action *action);
 	/// Handler for pressing/releasing CTRL.
 	void toggleCancel(Action *action);
 };
