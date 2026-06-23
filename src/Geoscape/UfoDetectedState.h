@@ -38,6 +38,10 @@ private:
 	Ufo *_ufo;
 	GeoscapeState *_state;
 	bool _craftTypeArticleAvailable = false;
+	bool _raceArticleAvailable = false;
+	bool _missionArticleAvailable = false;
+	std::string _raceArticleId;
+	std::string _missionArticleId;
 
 	TextButton *_btnIntercept, *_btnCentre, *_btnCancel;
 	Window *_window;

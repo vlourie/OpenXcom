@@ -42,6 +42,33 @@ namespace OpenXcom
 {
 
 /**
+ * Looks up a Ufopaedia article by id, falling back to progressively
+ * stripped versions of the id (removing the last "_SUFFIX" segment each
+ * time) if no exact match exists. This handles cases like alien race
+ * variants (STR_FLOATER_INDUSTRIAL, STR_FLOATER_ELITE, etc.) that all
+ * share a single base article (STR_FLOATER).
+ */
+static ArticleDefinition *findArticleWithFallback(Mod *mod, std::string id, std::string &resolvedId)
+{
+	while (!id.empty())
+	{
+		ArticleDefinition *article = mod->getUfopaediaArticle(id, false);
+		if (article != 0)
+		{
+			resolvedId = id;
+			return article;
+		}
+		size_t pos = id.find_last_of('_');
+		if (pos == std::string::npos)
+		{
+			break;
+		}
+		id = id.substr(0, pos);
+	}
+	return 0;
+}
+
+/**
  * Initializes all the elements in the Ufo Detected window.
  * @param game Pointer to the core game.
  * @param ufo Pointer to the UFO to get info from.
@@ -218,10 +245,26 @@ UfoDetectedState::UfoDetectedState(Ufo *ufo, GeoscapeState *state, bool detected
 	ss.str("");
 	ss << Unicode::TOK_COLOR_FLIP << tr(_ufo->getAlienRace());
 	_lstInfo2->addRow(2, tr("STR_RACE").c_str(), ss.str().c_str());
+	{
+		ArticleDefinition *raceArticle = findArticleWithFallback(_game->getMod(), _ufo->getAlienRace(), _raceArticleId);
+		_raceArticleAvailable = raceArticle != 0 && Ufopaedia::isArticleAvailable(_game->getSavedGame(), raceArticle);
+		if (_raceArticleAvailable)
+		{
+			_lstInfo2->setCellColor(1, 0, _lstInfo2->getSecondaryColor());
+		}
+	}
 
 	ss.str("");
 	ss << Unicode::TOK_COLOR_FLIP << tr(_ufo->getMissionType());
 	_lstInfo2->addRow(2, tr("STR_MISSION").c_str(), ss.str().c_str());
+	{
+		ArticleDefinition *missionArticle = findArticleWithFallback(_game->getMod(), _ufo->getMissionType(), _missionArticleId);
+		_missionArticleAvailable = missionArticle != 0 && Ufopaedia::isArticleAvailable(_game->getSavedGame(), missionArticle);
+		if (_missionArticleAvailable)
+		{
+			_lstInfo2->setCellColor(2, 0, _lstInfo2->getSecondaryColor());
+		}
+	}
 
 	ss.str("");
 	ss << Unicode::TOK_COLOR_FLIP << tr(_ufo->getMission()->getRegion());
@@ -273,15 +316,25 @@ void UfoDetectedState::btnCancelClick(Action *)
 }
 
 /**
- * Opens the Ufopaedia article for the craft type, if the user clicked
- * the "Craft Type" row and that article is available (researched).
+ * Opens the Ufopaedia article for the craft type, alien race/faction, or
+ * mission type, depending on which row was clicked, if that article is
+ * available (researched).
  * @param action Pointer to an action.
  */
 void UfoDetectedState::lstInfo2Click(Action *)
 {
-	if (_lstInfo2->getSelectedRow() == 0 && _craftTypeArticleAvailable)
+	size_t row = _lstInfo2->getSelectedRow();
+	if (row == 0 && _craftTypeArticleAvailable)
 	{
 		Ufopaedia::openArticle(_game, _ufo->getRules()->getType());
+	}
+	else if (row == 1 && _raceArticleAvailable)
+	{
+		Ufopaedia::openArticle(_game, _raceArticleId);
+	}
+	else if (row == 2 && _missionArticleAvailable)
+	{
+		Ufopaedia::openArticle(_game, _missionArticleId);
 	}
 }
 
