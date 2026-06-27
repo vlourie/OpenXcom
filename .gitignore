@@ -68,6 +68,7 @@ bin/TFTD
 docs/html/
 build/
 build-release/
+apply_ai_tactical_module_replacements.py
 Dependencies/
 translations/
 *.*.user
