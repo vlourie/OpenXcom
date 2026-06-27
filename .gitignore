@@ -67,6 +67,7 @@ bin/UFO
 bin/TFTD
 docs/html/
 build/
+build-release/
 Dependencies/
 translations/
 *.*.user
