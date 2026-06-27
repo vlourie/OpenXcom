@@ -708,7 +708,11 @@ void InventoryState::updateStats()
 					txtField->setText(tr("STR_MELEE_SHORT").arg(unit->getBaseStats()->melee));
 					break;
 				case 14:
-					if (showPsiStrength)
+					if (unit->getDisplayShieldCapacity() > 0)
+					{
+						txtField->setText(tr("STR_SHIELD_SHORT").arg(unit->getDisplayShieldHp()).arg(unit->getDisplayShieldCapacity()));
+					}
+					else if (showPsiStrength)
 					{
 						txtField->setText(tr("STR_PSI_SHORT")
 							.arg(unit->getBaseStats()->psiStrength)
