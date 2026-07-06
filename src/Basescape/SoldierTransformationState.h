@@ -19,6 +19,7 @@
  */
 #include "../Engine/State.h"
 #include <vector>
+#include "ItemCountTooltipMixin.h"
 
 namespace OpenXcom
 {
@@ -31,11 +32,12 @@ class TextList;
 class Base;
 class Soldier;
 class RuleSoldierTransformation;
+class RuleItem;
 
 /**
  * Screen that allocates a soldier to a transformation project
  */
-class SoldierTransformationState : public State
+class SoldierTransformationState : public ItemCountTooltipMixin<State>
 {
 private:
 	RuleSoldierTransformation *_transformationRule;
@@ -69,6 +71,9 @@ public:
 	/// Handler for pressing the Right arrow button
 	void btnRightArrowClick(Action *action);
 
+protected:
+	const RuleItem* GetItemForTooltip() override;
+	const Base* GetBase() override;
 };
 
 }

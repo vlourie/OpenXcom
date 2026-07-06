@@ -17,6 +17,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "SoldierTransformationState.h"
+#include "ItemCountTooltipMixin.h"
 #include <sstream>
 #include <algorithm>
 #include "../Engine/Action.h"
@@ -33,6 +34,7 @@
 #include "../Mod/RuleSoldier.h"
 #include "../Mod/RuleSoldierBonus.h"
 #include "../Mod/RuleSoldierTransformation.h"
+#include "../Mod/RuleItem.h"
 #include "../Savegame/Base.h"
 #include "../Savegame/ItemContainer.h"
 #include "../Savegame/SavedGame.h"
@@ -140,6 +142,9 @@ SoldierTransformationState::SoldierTransformationState(RuleSoldierTransformation
 	_txtUnitAvailableColumn->setWordWrap(true);
 
 	_lstRequiredItems->setColumns(3, 140, 75, 55);
+	_lstRequiredItems->setBackground(_window);
+	_lstRequiredItems->setSelectable(true);
+	ItemCountTooltipMixin::BindToSurface(_lstRequiredItems);
 
 	if (_game->getMod()->isManaFeatureEnabled())
 	{
@@ -618,6 +623,34 @@ void SoldierTransformationState::btnRightArrowClick(Action *action)
 
 	_sourceSoldier = *iter;
 	initTransformationData();
+}
+
+/**
+ * Gets the item rule for the currently selected row in the required items list,
+ * so the per-base breakdown tooltip can be shown.
+ */
+const RuleItem* SoldierTransformationState::GetItemForTooltip()
+{
+	auto selRow = _lstRequiredItems->getSelectedRow();
+	if (selRow < 0)
+		return nullptr;
+
+	int i = 0;
+	for (auto& requiredItem : _transformationRule->getRequiredItems())
+	{
+		if (i == selRow)
+		{
+			return _game->getMod()->getItem(requiredItem.first);
+		}
+		++i;
+	}
+
+	return nullptr;
+}
+
+const Base* SoldierTransformationState::GetBase()
+{
+	return _base;
 }
 
 }

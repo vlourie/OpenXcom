@@ -340,7 +340,10 @@ void Map::draw()
 	_explosionInFOV = _save->getDebugMode();
 
 	Explosion* hitExplosion = nullptr;
-	const bool ignoreAllButAlliesHits = Options::QOL::dontTraceProjectiles == 3;
+	const bool ignoreAllButAlliesHits = Options::QOL::dontTraceProjectiles == 3 || Options::QOL::dontTraceProjectiles == 4;
+	const bool keepCameraOnShooter = Options::QOL::dontTraceProjectiles == 4;
+	const bool unitVisible = _save->getSelectedUnit() && _save->getSelectedUnit()->getVisible();
+	const bool unitEnemy = _save->getSide() == FACTION_HOSTILE;
 
 	if (!_explosions.empty())
 	{
@@ -360,16 +363,16 @@ void Map::draw()
 				if (ignoreAllButAlliesHits && unit && unit->getVisible() && (unit->getFaction() == UnitFaction::FACTION_PLAYER || unit->getFaction() == UnitFaction::FACTION_NEUTRAL))
 				{
 					hitExplosion = explosion;
-					_camera->centerOnPosition(t->getPosition(), true);
+					if (!keepCameraOnShooter)
+					{
+						_camera->centerOnPosition(t->getPosition(), true);
+					}
 				}
 					
 				break;
 			}
 		}
 	}
-
-	const bool unitVisible = _save->getSelectedUnit() && _save->getSelectedUnit()->getVisible();
-	const bool unitEnemy = _save->getSide() == FACTION_HOSTILE;
 
 	if ((_save->getSelectedUnit() && _save->getSelectedUnit()->getVisible())
 		|| _unitDying
