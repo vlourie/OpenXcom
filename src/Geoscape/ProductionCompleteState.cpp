@@ -86,9 +86,12 @@ ProductionCompleteState::ProductionCompleteState(Base *base, const std::string &
 
 	_btnKeepWorking->setText(tr("STR_KEEP_WORKING"));
 	_btnKeepWorking->onMouseClick((ActionHandler)&ProductionCompleteState::btnKeepWorkingClick);
+	// removeProduction() hasn't been called yet at this point, so the completed
+	// production is still in getProductions() and its engineers are not freed.
+	int effectiveFreeEngineers = base->getAvailableEngineers() + (production ? production->getAssignedEngineers() : 0);
 	bool canKeepWorking = (_endType == PROGRESS_COMPLETE || _endType == PROGRESS_NOT_ENOUGH_MONEY || _endType == PROGRESS_NOT_ENOUGH_MATERIALS)
-		&& !base->getProductions().empty()
-		&& base->getAvailableEngineers() > 0;
+		&& base->getProductions().size() > 1
+		&& effectiveFreeEngineers > 0;
 	_btnKeepWorking->setVisible(canKeepWorking);
 
 	if (_endType != PROGRESS_CONSTRUCTION)
