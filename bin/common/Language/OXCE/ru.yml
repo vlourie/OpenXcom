@@ -102,6 +102,7 @@ ru:
   STR_SORT_BY_COST: "По стоимости"
   STR_SORT_BY_NAME: "По названию"
   STR_RANDOM_PRODUCTION_SUMMARY: "Отчет"
+  STR_KEEP_WORKING: "Пашем дальше"
   STR_NOT_ENOUGH_PRISON_SPACE: "НЕ ХВАТАЕТ МЕСТА В ИЗОЛЯТОРЕ ПРИШЕЛЬЦЕВ!{SMALLLINE}Постройте другой изолятор или отправьте пришельцев на другие базы."
   STR_MONTHLY_ITEM_PURCHASE_LIMIT_EXCEEDED: "МЕСЯЧНЫЙ ЛИМИТ НА ЗАКУПКИ ИСЧЕРПАН!{SMALLLINE}Возможность покупки выбранных товаров появится в следующем месяце."
   STR_MONTHLY_CRAFT_PURCHASE_LIMIT_EXCEEDED: "МЕСЯЧНЫЙ ЛИМИТ НА ЗАКУПКИ ИСЧЕРПАН!{SMALLLINE}Возможность покупки выбранных ТС появится в следующем месяце."

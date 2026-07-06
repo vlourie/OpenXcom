@@ -17,6 +17,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <assert.h>
+#include <algorithm>
 #include "ProductionCompleteState.h"
 #include "../Engine/Game.h"
 #include "../Mod/Mod.h"
@@ -51,10 +52,11 @@ ProductionCompleteState::ProductionCompleteState(Base *base, const std::string &
 	_screen = false;
 
 	// Create objects
-	_window = new Window(this, 256, 160, 32, 20, POPUP_BOTH);
-	_btnOk = new TextButton(118, 18, 40, 154);
-	_btnGotoBase = new TextButton(118, 18, 162, 154);
-	_btnSummary = new TextButton(118, 18, 162, 154);
+	_window = new Window(this, 256, 180, 32, 20, POPUP_BOTH);
+	_btnOk = new TextButton(118, 18, 40, 174);
+	_btnGotoBase = new TextButton(118, 18, 162, 174);
+	_btnSummary = new TextButton(118, 18, 162, 174);
+	_btnKeepWorking = new TextButton(236, 18, 40, 152);
 	_txtMessage = new Text(246, 110, 37, 35);
 	_txtItem = new Text(160, 9, 47, 35);
 	_txtQuantity = new Text(70, 9, 209, 35);
@@ -67,6 +69,7 @@ ProductionCompleteState::ProductionCompleteState(Base *base, const std::string &
 	add(_btnOk, "button", "geoManufactureComplete");
 	add(_btnGotoBase, "button", "geoManufactureComplete");
 	add(_btnSummary, "button", "geoManufactureComplete");
+	add(_btnKeepWorking, "button", "geoManufactureComplete");
 	add(_txtMessage, "text1", "geoManufactureComplete");
 	add(_txtItem, "text1", "geoManufactureComplete");
 	add(_txtQuantity, "text1", "geoManufactureComplete");
@@ -80,6 +83,13 @@ ProductionCompleteState::ProductionCompleteState(Base *base, const std::string &
 	_btnOk->setText(tr("STR_OK"));
 	_btnOk->onMouseClick((ActionHandler)&ProductionCompleteState::btnOkClick);
 	_btnOk->onKeyboardPress((ActionHandler)&ProductionCompleteState::btnOkClick, Options::keyCancel);
+
+	_btnKeepWorking->setText(tr("STR_KEEP_WORKING"));
+	_btnKeepWorking->onMouseClick((ActionHandler)&ProductionCompleteState::btnKeepWorkingClick);
+	bool canKeepWorking = (_endType == PROGRESS_COMPLETE || _endType == PROGRESS_NOT_ENOUGH_MONEY || _endType == PROGRESS_NOT_ENOUGH_MATERIALS)
+		&& !base->getProductions().empty()
+		&& base->getAvailableEngineers() > 0;
+	_btnKeepWorking->setVisible(canKeepWorking);
 
 	if (_endType != PROGRESS_CONSTRUCTION)
 	{
@@ -201,6 +211,28 @@ void ProductionCompleteState::btnSummaryClick(Action *)
 	_txtItem->setVisible(true);
 	_txtQuantity->setVisible(true);
 	_lstSummary->setVisible(true);
+}
+
+/**
+ * Assigns all free engineers at this base to the top production item, then closes.
+ * @param action Pointer to an action.
+ */
+void ProductionCompleteState::btnKeepWorkingClick(Action *)
+{
+	const auto& productions = _base->getProductions();
+	if (!productions.empty())
+	{
+		Production* top = productions[0];
+		int freeEngineers = _base->getAvailableEngineers();
+		int freeWorkshop = _base->getAvailableWorkshops() - _base->getUsedWorkshops();
+		int canAssign = std::min(freeEngineers, freeWorkshop);
+		if (canAssign > 0)
+		{
+			top->setAssignedEngineers(top->getAssignedEngineers() + canAssign);
+			_base->setEngineers(_base->getEngineers() - canAssign);
+		}
+	}
+	_game->popState();
 }
 
 /**

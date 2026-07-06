@@ -127,6 +127,7 @@ en-US:
   STR_SORT_BY_NAME: "By name"
 #ProductionCompleteState.cpp
   STR_RANDOM_PRODUCTION_SUMMARY: "Summary"
+  STR_KEEP_WORKING: "Keep working"
 #PurchaseState.cpp
   STR_NOT_ENOUGH_PRISON_SPACE: "NOT ENOUGH ALIEN CONTAINMENT!{SMALLLINE}Build new alien containment or transfer aliens to other bases."
   STR_MONTHLY_ITEM_PURCHASE_LIMIT_EXCEEDED: "MONTHLY PURCHASE LIMIT EXCEEDED!{SMALLLINE}More items will be available next month."
