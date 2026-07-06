@@ -228,6 +228,12 @@ void ProductionCompleteState::btnKeepWorkingClick(Action *)
 		Production* top = productions[0];
 		int freeEngineers = _base->getAvailableEngineers();
 		int freeWorkshop = _base->getAvailableWorkshops() - _base->getUsedWorkshops();
+		// If top production is queued (0 engineers), its requiredSpace isn't counted
+		// in getUsedWorkshops() yet — but assigning engineers activates it, so deduct now.
+		if (top->isQueuedOnly())
+		{
+			freeWorkshop -= top->getRules()->getRequiredSpace();
+		}
 		int canAssign = std::min(freeEngineers, freeWorkshop);
 		if (canAssign > 0)
 		{
