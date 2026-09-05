@@ -170,6 +170,9 @@ Map::Map(Game *game, int width, int height, int x, int y, int visibleMapHeight) 
 	_obstacleTimer->stop();
 	_obstacleTimer->onTimer((SurfaceHandler)&Map::disableObstacles);
 
+	_numUnitMarker = 0;
+	clearUnitMarkers();
+
 	_showInfoOnCursor = (Options::oxceShowAccuracyOnCrosshair == 1 && Options::battleUFOExtenderAccuracy) || Options::oxceShowAccuracyOnCrosshair == 2;
 	_txtAccuracy = new Text(44, 18, 0, 0);
 	_txtAccuracy->setSmall();
@@ -252,6 +255,7 @@ Map::~Map()
 	delete _message;
 	delete _camera;
 	delete _txtAccuracy;
+	delete _numUnitMarker;
 }
 
 /**
@@ -280,6 +284,12 @@ void Map::init()
 			_arrow->setPixel(x, y, pixels[x+(y*9)]);
 	_arrow->unlock();
 
+	// number drawn above the units that the selected unit sees directly
+	delete _numUnitMarker;
+	_numUnitMarker = new NumberText(16, 10, 0, 0);
+	_numUnitMarker->setPalette(this->getPalette());
+	_numUnitMarker->setBordered(true);
+
 	_projectile = 0;
 	if (_save->getDepth() == 0)
 	{
@@ -289,6 +299,34 @@ void Map::init()
 	{
 		_projectileSet = _game->getMod()->getSurfaceSet("UnderwaterProjectiles");
 	}
+}
+
+/**
+ * Clears all on-map markers of the visible unit indicators.
+ */
+void Map::clearUnitMarkers()
+{
+	for (int i = 0; i < UNIT_MARKER_MAX; ++i)
+	{
+		_unitMarkerUnit[i] = 0;
+		_unitMarkerColor[i] = 0;
+	}
+}
+
+/**
+ * Sets an on-map marker for one visible unit indicator.
+ * @param index Index of the indicator (0-based); the number drawn is index+1.
+ * @param unit Unit to mark, 0 to clear the slot.
+ * @param color Color of the number.
+ */
+void Map::setUnitMarker(int index, const BattleUnit *unit, Uint8 color)
+{
+	if (index < 0 || index >= UNIT_MARKER_MAX)
+	{
+		return;
+	}
+	_unitMarkerUnit[index] = unit;
+	_unitMarkerColor[index] = color;
 }
 
 /**
@@ -1735,6 +1773,43 @@ void Map::drawTerrain(Surface *surface)
 		if (this->getCursorType() != CT_NONE)
 		{
 			_arrow->blitNShade(surface, screenPosition.x + offset.x + (_spriteWidth / 2) - (_arrow->getWidth() / 2), screenPosition.y + offset.y - _arrow->getHeight() + getArrowBobForFrame(_animFrame), 0);
+		}
+	}
+
+	// Draw the indicator number above the units seen directly by the selected unit
+	if (_numUnitMarker && (_save->getSide() == FACTION_PLAYER || _save->getDebugMode()) && this->getCursorType() != CT_NONE)
+	{
+		for (int i = 0; i < UNIT_MARKER_MAX; ++i)
+		{
+			const BattleUnit *markedUnit = _unitMarkerUnit[i];
+			if (!markedUnit || markedUnit->isOut() || !(markedUnit->getVisible() || _save->getDebugMode()))
+			{
+				continue;
+			}
+			if (markedUnit->getPosition().z > _camera->getViewLevel())
+			{
+				continue;
+			}
+			_camera->convertMapToScreen(markedUnit->getPosition(), &screenPosition);
+			screenPosition += _camera->getMapOffset();
+			Position markerOffset = calculateWalkingOffset(markedUnit).ScreenOffset;
+			if (markedUnit->isBigUnit())
+			{
+				markerOffset.y += 4;
+			}
+			markerOffset.y += Position::TileZ - (markedUnit->getHeight() + markedUnit->getFloatHeight());
+			if (markedUnit->isKneeled())
+			{
+				markerOffset.y -= 2;
+			}
+			_numUnitMarker->setColor(_unitMarkerColor[i]);
+			_numUnitMarker->setValue(i + 1);
+			_numUnitMarker->draw();
+			_numUnitMarker->blitNShade(
+				surface,
+				screenPosition.x + markerOffset.x + (_spriteWidth / 2) - (i < 9 ? 3 : 5),
+				screenPosition.y + markerOffset.y - 12,
+				0);
 		}
 	}
 

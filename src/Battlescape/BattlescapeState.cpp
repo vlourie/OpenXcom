@@ -2486,6 +2486,13 @@ void BattlescapeState::blinkVisibleUnitButtons()
 			_btnVisibleUnit[i]->drawRect(0, 0, 15, 12, 15);
 			int bgColor = i < _numberOfDirectlyVisibleUnits ? color : i < _numberOfEnemiesTotal ? _indicatorGreen : i < _numberOfEnemiesTotalPlusWounded ? _indicatorBlue : _indicatorPurple;
 			_btnVisibleUnit[i]->drawRect(1, 1, 13, 10, bgColor);
+
+			// mirror the same number above the unit itself, but only for directly visible enemies
+			_map->setUnitMarker(i, i < _numberOfDirectlyVisibleUnits ? _visibleUnit[i] : 0, (Uint8)bgColor);
+		}
+		else
+		{
+			_map->setUnitMarker(i, 0, 0);
 		}
 	}
 

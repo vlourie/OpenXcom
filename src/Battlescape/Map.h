@@ -40,6 +40,7 @@ class Timer;
 class Text;
 class Tile;
 class UnitSprite;
+class NumberText;
 
 enum CursorType { CT_NONE, CT_NORMAL, CT_AIM, CT_PSI, CT_WAYPOINT, CT_THROW };
 enum TilePart : int;
@@ -65,6 +66,7 @@ private:
 	static const int NIGHT_VISION_SHADE = 4;
 	static const int NIGHT_VISION_MAX_SHADE = 8;
 	static const int BULLET_SPRITES = 35;
+	static const int UNIT_MARKER_MAX = 10;
 	Timer *_scrollMouseTimer, *_scrollKeyTimer, *_obstacleTimer;
 	Timer *_fadeTimer;
 	int _fadeShade;
@@ -102,6 +104,9 @@ private:
 	int _bgColor;
 	bool _previewSettingArrows, _previewSettingTu, _previewSettingEnergy;
 	Text *_txtAccuracy;
+	NumberText *_numUnitMarker;
+	const BattleUnit *_unitMarkerUnit[UNIT_MARKER_MAX];
+	Uint8 _unitMarkerColor[UNIT_MARKER_MAX];
 	SurfaceSet *_projectileSet;
 
 	void drawUnit(UnitSprite &unitSprite, Tile *unitTile, Tile *currTile, Position tileScreenPosition, bool topLayer, BattleUnit* movingUnit = nullptr);
@@ -180,6 +185,10 @@ public:
 	void fadeShade();
 	/// Get waypoints vector.
 	std::vector<Position> *getWaypoints();
+	/// Clears all on-map markers of the visible unit indicators.
+	void clearUnitMarkers();
+	/// Sets an on-map marker for one visible unit indicator (0 clears the slot).
+	void setUnitMarker(int index, const BattleUnit *unit, Uint8 color);
 	/// Set mouse-buttons' pressed state.
 	void setButtonsPressed(Uint8 button, bool pressed);
 	/// Sets the unitDying flag.

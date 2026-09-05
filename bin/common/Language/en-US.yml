@@ -91,6 +91,7 @@ en-US:
   STR_CLEAR_INVENTORY: "Clear inventory"
   STR_AUTO_EQUIP: "Auto-equip"
   STR_PERSONAL_ACHIEVEMENTS: "Personal Achievements"
+  STR_PERSONAL_BONUSES: "Personal Bonuses"
   STR_QUICK_SAVE: "Quick Save"
   STR_QUICK_LOAD: "Quick Load"
   STR_ADVANCED: "ADVANCED"

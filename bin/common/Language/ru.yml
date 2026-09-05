@@ -91,6 +91,7 @@ ru:
   STR_CLEAR_INVENTORY: "Очистить инвентарь"
   STR_AUTO_EQUIP: "Автоэкипировка"
   STR_PERSONAL_ACHIEVEMENTS: "ЛИЧНЫЕ ДОСТИЖЕНИЯ"
+  STR_PERSONAL_BONUSES: "ЛИЧНЫЕ БОНУСЫ"
   STR_QUICK_SAVE: "Быстрое сохранение"
   STR_QUICK_LOAD: "Быстрая загрузка"
   STR_ADVANCED: "ДОПОЛНИТЕЛЬНО"

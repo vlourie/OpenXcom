@@ -27,6 +27,7 @@ class Window;
 class Text;
 class InventoryState;
 class SavedBattleGame;
+class Base;
 
 /**
  * A screen with links to the OXCE inventory functionality.
@@ -35,11 +36,13 @@ class ExtendedInventoryLinksState : public State
 {
 private:
 	TextButton *_btnOk;
-	TextButton *_btnArmor, *_btnAvatar, *_btnEquipmentSave, *_btnEquipmentLoad, *_btnPersonalSave, *_btnPersonalLoad, *_btnNotes, *_btnUfopedia, *_btnAutoEquip, *_btnAchievements;
+	TextButton *_btnArmor, *_btnAvatar, *_btnEquipmentSave, *_btnEquipmentLoad, *_btnPersonalSave, *_btnPersonalLoad, *_btnNotes, *_btnUfopedia, *_btnAutoEquip, *_btnAchievements, *_btnBonuses;
 	Window *_window;
 	Text *_txtTitle;
 	InventoryState *_parent;
 	SavedBattleGame* _save;
+	/// Finds the base and the soldier index of the currently selected unit.
+	bool findSelectedSoldier(Base *&outBase, size_t &outIndex) const;
 public:
 	/// Creates the ExtendedInventoryLinks state.
 	ExtendedInventoryLinksState(InventoryState* parent, SavedBattleGame* save, bool inBase, bool beforeMission);
@@ -56,6 +59,7 @@ public:
 	void btnUfopediaClick(Action* action);
 	void btnAutoEquipClick(Action* action);
 	void btnAchievementsClick(Action* action);
+	void btnBonusesClick(Action* action);
 	void btnOkClick(Action* action);
 };
 

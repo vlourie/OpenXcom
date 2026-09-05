@@ -34,6 +34,7 @@
 #include "../Savegame/Base.h"
 #include "../Savegame/Soldier.h"
 #include "../Basescape/SoldierDiaryPerformanceState.h"
+#include "../Basescape/SoldierBonusState.h"
 
 namespace OpenXcom
 {
@@ -50,7 +51,7 @@ ExtendedInventoryLinksState::ExtendedInventoryLinksState(InventoryState* parent,
 	_txtTitle = new Text(220, 17, 50, inBase ? 33 : 33+23);
 	if (Options::oxceFatFingerLinks)
 	{
-		// 6 rows x 2 columns = 12 slots, 11 used (last one single-column).
+		// 6 rows x 2 columns = 12 slots, all used.
 		_btnArmor = new TextButton(116, 22, 44, 50);
 		_btnAvatar = new TextButton(116, 22, 161, 50);
 		_btnEquipmentSave = new TextButton(116, 22, 44, 74);
@@ -62,21 +63,23 @@ ExtendedInventoryLinksState::ExtendedInventoryLinksState(InventoryState* parent,
 		_btnAutoEquip = new TextButton(116, 22, 44, 146);
 		_btnOk = new TextButton(116, 22, 161, 146);
 		_btnAchievements = new TextButton(116, 22, 44, 170);
+		_btnBonuses = new TextButton(116, 22, 161, 170);
 	}
 	else
 	{
-		// 11 single-column rows.
+		// 12 single-column rows (11px pitch, so that they still fit into the window).
 		_btnArmor = new TextButton(220, 11, 50, 50);
-		_btnAvatar = new TextButton(220, 11, 50, 62);
-		_btnEquipmentSave = new TextButton(220, 11, 50, 74);
-		_btnEquipmentLoad = new TextButton(220, 11, 50, 86);
-		_btnPersonalSave = new TextButton(220, 11, 50, 98);
-		_btnPersonalLoad = new TextButton(220, 11, 50, 110);
-		_btnNotes = new TextButton(220, 11, 50, 122);
-		_btnUfopedia = new TextButton(220, 11, 50, 134);
-		_btnAutoEquip = new TextButton(220, 11, 50, 146);
-		_btnAchievements = new TextButton(220, 11, 50, 158);
-		_btnOk = new TextButton(220, 11, 50, 170);
+		_btnAvatar = new TextButton(220, 11, 50, 61);
+		_btnEquipmentSave = new TextButton(220, 11, 50, 72);
+		_btnEquipmentLoad = new TextButton(220, 11, 50, 83);
+		_btnPersonalSave = new TextButton(220, 11, 50, 94);
+		_btnPersonalLoad = new TextButton(220, 11, 50, 105);
+		_btnNotes = new TextButton(220, 11, 50, 116);
+		_btnUfopedia = new TextButton(220, 11, 50, 127);
+		_btnAutoEquip = new TextButton(220, 11, 50, 138);
+		_btnAchievements = new TextButton(220, 11, 50, 149);
+		_btnBonuses = new TextButton(220, 11, 50, 160);
+		_btnOk = new TextButton(220, 11, 50, 171);
 	}
 
 	// Set palette
@@ -96,6 +99,7 @@ ExtendedInventoryLinksState::ExtendedInventoryLinksState(InventoryState* parent,
 	add(_btnUfopedia, "button", "oxceLinks");
 	add(_btnAutoEquip, "button", "oxceLinks");
 	add(_btnAchievements, "button", "oxceLinks");
+	add(_btnBonuses, "button", "oxceLinks");
 
 	centerAllSurfaces();
 
@@ -147,6 +151,10 @@ ExtendedInventoryLinksState::ExtendedInventoryLinksState(InventoryState* parent,
 	_btnAchievements->setText(tr("STR_PERSONAL_ACHIEVEMENTS"));
 	_btnAchievements->onMouseClick((ActionHandler)&ExtendedInventoryLinksState::btnAchievementsClick);
 	_btnAchievements->setVisible(_save->getSelectedUnit() != 0 && _save->getSelectedUnit()->getGeoscapeSoldier() != 0);
+
+	_btnBonuses->setText(tr("STR_PERSONAL_BONUSES"));
+	_btnBonuses->onMouseClick((ActionHandler)&ExtendedInventoryLinksState::btnBonusesClick);
+	_btnBonuses->setVisible(_save->getSelectedUnit() != 0 && _save->getSelectedUnit()->getGeoscapeSoldier() != 0);
 
 	applyBattlescapeTheme("oxceLinks");
 }
@@ -205,35 +213,59 @@ void ExtendedInventoryLinksState::btnAutoEquipClick(Action *)
 	_parent->onAutoequip(nullptr);
 }
 
-void ExtendedInventoryLinksState::btnAchievementsClick(Action *)
+/**
+ * Finds the base (and the soldier's index in it) for the currently selected unit.
+ * @param outBase Base the soldier belongs to.
+ * @param outIndex Index of the soldier in that base.
+ * @return True if the soldier was found.
+ */
+bool ExtendedInventoryLinksState::findSelectedSoldier(Base *&outBase, size_t &outIndex) const
 {
 	BattleUnit *unit = _save->getSelectedUnit();
 	if (!unit || !unit->getGeoscapeSoldier())
 	{
-		return;
+		return false;
 	}
 	Soldier *soldier = unit->getGeoscapeSoldier();
 
-	Base *foundBase = 0;
-	size_t foundIndex = 0;
 	for (Base *xbase : *_game->getSavedGame()->getBases())
 	{
 		auto *soldiers = xbase->getSoldiers();
 		auto it = std::find(soldiers->begin(), soldiers->end(), soldier);
 		if (it != soldiers->end())
 		{
-			foundBase = xbase;
-			foundIndex = std::distance(soldiers->begin(), it);
-			break;
+			outBase = xbase;
+			outIndex = (size_t)std::distance(soldiers->begin(), it);
+			return true;
 		}
 	}
-	if (!foundBase)
+	return false;
+}
+
+void ExtendedInventoryLinksState::btnAchievementsClick(Action *)
+{
+	Base *foundBase = 0;
+	size_t foundIndex = 0;
+	if (!findSelectedSoldier(foundBase, foundIndex))
 	{
 		return;
 	}
 
 	_game->popState();
 	_game->pushState(new SoldierDiaryPerformanceState(foundBase, foundIndex, 0, DIARY_COMMENDATIONS));
+}
+
+void ExtendedInventoryLinksState::btnBonusesClick(Action *)
+{
+	Base *foundBase = 0;
+	size_t foundIndex = 0;
+	if (!findSelectedSoldier(foundBase, foundIndex))
+	{
+		return;
+	}
+
+	_game->popState();
+	_game->pushState(new SoldierBonusState(foundBase, foundIndex));
 }
 
 /**
