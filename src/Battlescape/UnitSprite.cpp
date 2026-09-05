@@ -1023,7 +1023,8 @@ void UnitSprite::drawRoutine4()
 void UnitSprite::drawRoutine5()
 {
 	Part s{ BODYPART_LARGE_TORSO + _part };
-	const bool separateTurret = _part == 0 && _unit->getTurretType() != -1;
+	const bool separateTurret =
+		_part == 0 && _unit->getTurretType() != -1 && !_unit->isSmallUnit();
 
 	// Some four-tile vehicles (such as X-Piratez piloted tanks) use the first
 	// eight frames as a separate turret.  Keep the remaining body parts on the
@@ -1032,7 +1033,6 @@ void UnitSprite::drawRoutine5()
 	{
 		selectUnit(s, 0, _unit->getTurretDirection());
 	}
-
 	else if (_unit->getStatus() == STATUS_WALKING)
 	{
 		selectUnit(s, 32 + (_part * 4), (_unit->getDirection() * 16) + ((_unit->getWalkingPhase() / 2) % 4));
