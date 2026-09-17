@@ -164,6 +164,7 @@ OPT int oxceHdFrameSkip;
 
 // OXCE hidden, but moddable via fixedUserOptions and/or recommendedUserOptions
 OPT int oxceStartUpTextMode;
+OPT bool oxceMaximizeCutsceneScreens;
 
 OPT int oxceGeoscapeDebugLogMaxEntries;
 OPT int oxceGeoSlowdownFactor;
@@ -175,6 +176,7 @@ OPT bool oxceGeoGoToNearestBase;
 OPT bool oxceGeoSortCraftByDistanceToTarget;
 
 OPT int oxceBaseInfoDefenseScaleMultiplier;
+OPT int oxceBaseSoldierInfoColumnDefault;
 OPT bool oxceBaseSoldierTransformationShowOnlyEligible;
 OPT bool oxceBaseFilterResearchable;
 OPT bool oxceBaseResearchReorder;
@@ -199,6 +201,7 @@ OPT bool oxceShowBurningAsWounded;
 OPT bool oxceDisableInfoOnThrowCursor;
 OPT bool oxceSwapDontReselectActions;
 OPT bool oxceEnableUnitResponseSounds;
+OPT bool oxceResetUnitResponseSoundsOnAvatarChange;
 OPT int oxceHiddenMovementBackgroundChangeFrequency;
 OPT bool oxceInventoryShowUnitSlot;
 OPT bool oxceReplaceNotesLink;

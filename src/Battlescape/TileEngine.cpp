@@ -4869,6 +4869,7 @@ int TileEngine::meleeAttackCalculate(BattleActionAttack::ReadOnly attack, const 
 	BattleActionType type = attack.type;
 	auto* attacker = attack.attacker;
 	auto* weapon = attack.weapon_item;
+	int isSameFaction = (attacker->getFaction() == victim->getFaction()) ? 1 : 0;
 
 	auto rng = RNG::globalRandomState().subSequence();
 
@@ -4877,7 +4878,7 @@ int TileEngine::meleeAttackCalculate(BattleActionAttack::ReadOnly attack, const 
 	meleeAttackResult = ModScript::scriptFunc1<ModScript::TryMeleeAttackItem>(
 		weapon->getRules(),
 		meleeAttackResult,
-		weapon, attacker, victim, attack.skill_rules, attackStrength, defenseStrength, type, &rng, arc, defenseStrengthPenalty,
+		weapon, attacker, victim, isSameFaction, attack.skill_rules, attackStrength, defenseStrength, type, &rng, arc, defenseStrengthPenalty,
 		_save
 	);
 

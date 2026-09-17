@@ -92,7 +92,6 @@
 #include "../Mod/RuleInventory.h"
 #include "../Mod/RuleSoldier.h"
 #include "../Mod/RuleVideo.h"
-#include <algorithm>
 
 namespace OpenXcom
 {
@@ -1211,7 +1210,10 @@ void BattlescapeState::btnShowMapClick(Action *)
 {
 	//MiniMapState
 	if (allowButtons())
-		_game->pushState (new MiniMapState (_map->getCamera(), _save));
+	{
+		int maxShade = _map->reShadeMinimap(7); // 7 = vanilla
+		_game->pushState (new MiniMapState (_map->getCamera(), _save, maxShade));
+	}
 }
 
 void BattlescapeState::toggleKneelButton(BattleUnit* unit)
@@ -2873,14 +2875,17 @@ inline void BattlescapeState::handle(Action *action)
 				// "ctrl-shift-Del" - clear TUs for all allied units
 				else if (key == SDLK_DELETE && ctrlPressed && shiftPressed)
 				{
-					for (auto* bu : *_save->getUnits())
+					if (_save->getSide() == FACTION_PLAYER)
 					{
-						if (bu->getFaction() == _save->getSide() && !bu->isOut())
+						for (auto* bu : *_save->getUnits())
 						{
-							bu->clearTimeUnits();
+							if (bu->getFaction() == _save->getSide() && !bu->isOut())
+							{
+								bu->clearTimeUnits();
+							}
 						}
+						updateSoldierInfo();
 					}
-					updateSoldierInfo();
 				}
 				// "ctrl-s" - switch xcom unit speed to max and back
 				else if (key == SDLK_s && ctrlPressed)

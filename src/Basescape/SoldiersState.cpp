@@ -191,6 +191,23 @@ SoldiersState::SoldiersState(Base *base) : SortSoldiersMixin(base), _origSoldier
 	// populate sort options
 	FillSorters(_sortFunctors, *_cbxSortBy, (ActionHandler)&SoldiersState::cbxSortByChange);
 	ChangeDynSorter(_dynGetter);
+	// OXCE 8.7: default info column (Alt+select remembers it); sorting stays with our QOL default sorter
+	{
+		size_t selIdx = Options::oxceBaseSoldierInfoColumnDefault;
+		if (selIdx >= _sortFunctors.size())
+		{
+			selIdx = 0;
+			Options::oxceBaseSoldierInfoColumnDefault = 0;
+		}
+		if (selIdx != 0)
+		{
+			_cbxSortBy->setSelected(selIdx);
+			if (_sortFunctors[selIdx] && selIdx != 2 && selIdx != 3)
+			{
+				_dynGetter = _sortFunctors[selIdx]->getGetter();
+			}
+		}
+	}
 
 	//_lstSoldiers->setArrowColumn(188, ARROW_VERTICAL);
 	_lstSoldiers->setColumns(3, 106, 98, 76);
@@ -227,6 +244,10 @@ void SoldiersState::cbxSortByChange(Action *action)
 	if (selIdx == (size_t)-1)
 	{
 		return;
+	}
+	if (_game->isAltPressed(true))
+	{
+		Options::oxceBaseSoldierInfoColumnDefault = selIdx;
 	}
 
 	SortFunctor *compFunc = _sortFunctors[selIdx];

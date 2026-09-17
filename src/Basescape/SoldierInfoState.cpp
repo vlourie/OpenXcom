@@ -39,6 +39,7 @@
 #include "../Menu/ErrorMessageState.h"
 #include "SellState.h"
 #include "SoldierArmorState.h"
+#include "SoldierVoiceState.h"
 #include "SoldierBonusState.h"
 #include "SoldierTransformState.h"
 #include "SoldierRankState.h"
@@ -752,6 +753,16 @@ void SoldierInfoState::applyBarScale()
  */
 void SoldierInfoState::btnArmorClick(Action *)
 {
+	// voice set can be changed at any time
+	if (_game->isCtrlPressed() && _game->getMod()->getEnableUnitResponseSounds())
+	{
+		if (true)
+		{
+			_game->pushState(new SoldierVoiceState(nullptr, _soldier, SV_GEOSCAPE));
+			return;
+		}
+	}
+
 	if (!_soldier->getCraft() || (_soldier->getCraft() && _soldier->getCraft()->getStatus() != "STR_OUT"))
 	{
 		_game->pushState(new SoldierArmorState(_base, _soldierId, SA_GEOSCAPE));

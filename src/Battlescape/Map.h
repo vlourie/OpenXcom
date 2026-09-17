@@ -251,7 +251,8 @@ public:
 	/// Check if the screen is flashing this.
 	bool getBlastFlash() const;
 	/// Modify shade for fading
-	int reShade(Tile *tile);
+	int reShade(Tile *tile) const;
+	int reShadeMinimap(int maxShade) const;
 	/// HD render test: freeze all animation for one drawn frame and optionally dump the map surface.
 	void hdTestFreeze(const std::string &mapDumpPath);
 	/// HD render test: true while the frozen frame has not been drawn yet.
