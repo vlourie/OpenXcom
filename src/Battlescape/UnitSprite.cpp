@@ -17,6 +17,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "UnitSprite.h"
+#include "../Engine/HdCanvas.h"
 #include "../Engine/SurfaceSet.h"
 #include "../Mod/RuleItem.h"
 #include "../Mod/Armor.h"
@@ -38,18 +39,19 @@ namespace OpenXcom
  * @param x X position in pixels.
  * @param y Y position in pixels.
  */
-UnitSprite::UnitSprite(Surface* dest, const Mod* mod, const SavedBattleGame* save, int frame, bool helmet, int red, int blue) :
+UnitSprite::UnitSprite(HdCanvas* dest, const Mod* mod, const SavedBattleGame* save, int frame, bool helmet, int red, int blue) :
 	_unit(0), _itemR(0), _itemL(0),
 	_unitSurface(0),
-	_itemSurface(const_cast<Mod*>(mod)->getSurfaceSet("HANDOB.PCK")),
-	_fireSurface(const_cast<Mod*>(mod)->getSurfaceSet("SMOKE.PCK")),
-	_breathSurface(const_cast<Mod*>(mod)->getSurfaceSet("BREATH-1.PCK", false)),
-	_facingArrowSurface(const_cast<Mod*>(mod)->getSurfaceSet("DETBLOB.DAT")),
+	_itemSurface(const_cast<Mod*>(mod)->getHdSurfaceSet("HANDOB.PCK")),
+	_fireSurface(const_cast<Mod*>(mod)->getHdSurfaceSet("SMOKE.PCK")),
+	_breathSurface(const_cast<Mod*>(mod)->getHdSurfaceSet("BREATH-1.PCK", false)),
+	_facingArrowSurface(const_cast<Mod*>(mod)->getHdSurfaceSet("DETBLOB.DAT")),
 	_dest(dest), _save(save), _mod(mod),
 	_part(0), _animationFrame(frame), _drawingRoutine(0),
 	_helmet(helmet),
 	_red(red), _blue(blue),
 	_x(0), _y(0), _shade(0), _burn(0),
+	_scale(1),
 	_mask(0, 0)
 {
 
@@ -149,7 +151,7 @@ void UnitSprite::blitItem(Part& item)
 
 	_dest->lock();
 
-	work.executeBlit(item.src, _dest,  _x + item.offX, _y + item.offY, _shade, _mask);
+	_dest->blitScripted(work, item.src, _x + item.offX * _scale, _y + item.offY * _scale, _shade, _mask);
 
 	_dest->unlock();
 }
@@ -169,7 +171,7 @@ void UnitSprite::blitBody(Part& body)
 
 	_dest->lock();
 
-	work.executeBlit(body.src, _dest,  _x + body.offX, _y + body.offY, _shade, _mask);
+	_dest->blitScripted(work, body.src, _x + body.offX * _scale, _y + body.offY * _scale, _shade, _mask);
 
 	_dest->unlock();
 }
@@ -199,7 +201,7 @@ void UnitSprite::draw(const BattleUnit* unit, int part, int x, int y, int shade,
 	_itemR = getIfVisible(_unit->getRightHandWeapon());
 	_itemL = getIfVisible(_unit->getLeftHandWeapon());
 
-	_unitSurface = const_cast<Mod*>(_mod)->getSurfaceSet(armor->getSpriteSheet());
+	_unitSurface = const_cast<Mod*>(_mod)->getHdSurfaceSet(armor->getSpriteSheet());
 
 	_drawingRoutine = armor->getDrawingRoutine();
 
@@ -250,7 +252,10 @@ void UnitSprite::draw(const BattleUnit* unit, int part, int x, int y, int shade,
 	// draw fire
 	if (unit->getFire() > 0)
 	{
-		_fireSurface->getFrame(4 + (_animationFrame / 2) % 4)->blitNShade(_dest, _x, _y, 0, _mask);
+		// HD render: on the odd tick the pack's in-between picture of the frame (variant 1), if it has one
+		_dest->setFrameVariant(_animationFrame % 2);
+		_dest->blit(_fireSurface->getFrame(4 + (_animationFrame / 2) % 4), _x, _y, 0, _mask);
+		_dest->setFrameVariant(0);
 	}
 	if (_breathSurface && _helmet && unit->getBreathExhaleFrame() >= 0 && armor->drawBubbles() && !unit->getFloorAbove())
 	{
@@ -258,7 +263,7 @@ void UnitSprite::draw(const BattleUnit* unit, int part, int x, int y, int shade,
 		if (tmpSurface)
 		{
 			// lower the bubbles for shorter or kneeling units.
-			tmpSurface->blitNShade(_dest, _x, _y- 30 + (22 - unit->getHeight()), shade, _mask);
+			_dest->blit(tmpSurface, _x, _y + (-30 + (22 - unit->getHeight())) * _scale, shade, _mask);
 		}
 	}
 	if (drawFacingIndicator && part == 0)
@@ -267,11 +272,11 @@ void UnitSprite::draw(const BattleUnit* unit, int part, int x, int y, int shade,
 		auto* tmpSurface = _facingArrowSurface->getFrame(7 + ((unit->getDirection() + 1) % 8));
 		if (unit->getOriginalFaction() == FACTION_PLAYER)
 		{
-			tmpSurface->blitNShade(_dest, _x, _y, 0);
+			_dest->blit(tmpSurface, _x, _y, 0);
 		}
 		else
 		{
-			Surface::blitRaw(_dest, tmpSurface, _x, _y, 0, false, unit->getOriginalFaction() == FACTION_HOSTILE ? _blue : _red);
+			_dest->blit(tmpSurface, _x, _y, 0, false, unit->getOriginalFaction() == FACTION_HOSTILE ? _blue : _red);
 		}
 	}
 }
@@ -824,20 +829,41 @@ void UnitSprite::drawRoutine2()
 	blitBody(s);
 
 	// draw the turret, together with the last part
-	if (_part == 3 && turret != -1)
+	if (turret != -1)
 	{
 		Part t{ BODYPART_LARGE_TURRET };
 		selectUnit(t, 64 + (turret * 8), _unit->getTurretDirection());
-		int turretOffsetX = 0;
-		int turretOffsetY = -4;
-		if (hoverTank)
+		// A turret frame bigger than the unit cell (e.g. 64x80 for a long barrel, loaded from a folder of
+		// images) is centred on the classic turret place and drawn with every part, each time through that
+		// part's clip: a moving unit is clipped to one tile column per part, so a turret drawn only with the
+		// last part would lose what sticks out over the other tiles. A classic frame keeps the old behaviour.
+		const int cellW = 32;
+		const int cellH = 40;
+		const int scale = std::max(1, _scale);
+		const int frameW = t.src ? t.src->getWidth() / scale : cellW;
+		const int frameH = t.src ? t.src->getHeight() / scale : cellH;
+		const bool bigTurret = frameW > cellW || frameH > cellH;
+		if (_part == 3 || bigTurret)
 		{
-			turretOffsetX += offX[_unit->getDirection()];
-			turretOffsetY += offy[_unit->getDirection()];
+			int turretOffsetX = 0;
+			int turretOffsetY = -4;
+			if (hoverTank)
+			{
+				turretOffsetX += offX[_unit->getDirection()];
+				turretOffsetY += offy[_unit->getDirection()];
+			}
+			if (bigTurret)
+			{
+				// from this part's tile to the last part's tile (parts: 0 top, 1 right, 2 left, 3 bottom)
+				const int px = _part % 2;
+				const int py = _part / 2;
+				turretOffsetX += -(px - py) * (cellW / 2) - (frameW - cellW) / 2;
+				turretOffsetY += (2 - px - py) * (cellW / 4) - (frameH - cellH) / 2;
+			}
+			t.offX = (turretOffsetX);
+			t.offY = (turretOffsetY);
+			blitBody(t);
 		}
-		t.offX = (turretOffsetX);
-		t.offY = (turretOffsetY);
-		blitBody(t);
 	}
 
 }

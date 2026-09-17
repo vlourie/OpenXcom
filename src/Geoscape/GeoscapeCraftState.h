@@ -50,6 +50,10 @@ private:
 	Text *_txtETA;
 
 	int _weaponNum;
+	Uint8 _weaponOnColor, _weaponOnColor2, _weaponOffColor;
+	bool _weaponOffContrast;
+	/// Colors a weapon label by its enabled/disabled state.
+	void updateWeaponColor(int slot);
 public:
 	/// Creates the Geoscape Craft state.
 	GeoscapeCraftState(Craft *craft, Globe *globe, Waypoint *waypoint, bool useCustomSound);

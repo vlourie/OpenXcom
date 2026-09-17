@@ -364,6 +364,12 @@ void createOptionsOXCE()
 	// OXCE hidden
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceModValidationLevel", &oxceModValidationLevel, (int)LOG_WARNING));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceRawScreenShots", &oxceRawScreenShots, false));
+	// HD render regression test: deterministic dump of the battlescape frame (see Engine/HdTest.h)
+	_info.push_back(OptionInfo(OPTION_OXCE, "keyBattleHdTestDump", &keyBattleHdTestDump, SDLK_F8));
+	// HD render: the key that cycles the sprite drawing mode of the true-color canvas (see Engine/HdCanvas.h HdMode)
+	_info.push_back(OptionInfo(OPTION_OXCE, "keyBattleHdModeToggle", &keyBattleHdModeToggle, SDLK_F9));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdThreads", &oxceHdThreads, 0));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdFrameSkip", &oxceHdFrameSkip, 4));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceFirstPersonViewFisheyeProjection", &oxceFirstPersonViewFisheyeProjection, false));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceThumbButtons", &oxceThumbButtons, true));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceThrottleMouseMoveEvent", &oxceThrottleMouseMoveEvent, 0));
@@ -488,6 +494,13 @@ void createAdvancedOptionsOXCE()
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceWoundedDefendBaseIf", &oxceWoundedDefendBaseIf, 100, "STR_WOUNDED_DEFEND_BASE_IF", "STR_BATTLESCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxcePlayBriefingMusicDuringEquipment", &oxcePlayBriefingMusicDuringEquipment, false, "STR_PLAY_BRIEFING_MUSIC_DURING_EQUIPMENT", "STR_BATTLESCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceNightVisionColor", &oxceNightVisionColor, 5, "STR_NIGHT_VISION_COLOR", "STR_BATTLESCAPE"));
+	// HD render (see Engine/HdCanvas.h): sprite scale of the battlescape and how sprites are drawn on the true-color canvas
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdScale", &oxceHdScale, 1, "STR_HD_SCALE", "STR_BATTLESCAPE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdPictures", &oxceHdPictures, true, "STR_HD_PICTURES", "STR_GENERAL"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdUiSmooth", &oxceHdUiSmooth, true, "STR_HD_UI_SMOOTH", "STR_GENERAL"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdMode", &oxceHdMode, 2, "STR_HD_MODE", "STR_BATTLESCAPE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdLight", &oxceHdLight, true, "STR_HD_LIGHT", "STR_BATTLESCAPE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdGroundVariants", &oxceHdGroundVariants, true, "STR_HD_GROUND_VARIANTS", "STR_BATTLESCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceAutoNightVisionThreshold", &oxceAutoNightVisionThreshold, 15, "STR_AUTO_NIGHT_VISION_THRESHOLD", "STR_BATTLESCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceShowAccuracyOnCrosshair", &oxceShowAccuracyOnCrosshair, 1, "STR_SHOW_ACCURACY_ON_CROSSHAIR", "STR_BATTLESCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceReactionFireThreshold", &oxceReactionFireThreshold, 0, "STR_REACTION_FIRE_THRESHOLD", "STR_BATTLESCAPE"));

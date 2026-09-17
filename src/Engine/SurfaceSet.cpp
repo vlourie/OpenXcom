@@ -17,6 +17,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "SurfaceSet.h"
+#include "HdBlit.h"
 #include <climits>
 #include "Surface.h"
 #include "FileMap.h"
@@ -233,6 +234,41 @@ Surface *SurfaceSet::addFrame(int i)
 	}
 	_frames[i] = Surface(_width, _height);
 	return &_frames[i];
+}
+
+/**
+ * HD render: scales every frame of the set in place by a nearest-neighbour
+ * factor, so that a 32x40 set becomes a 32k x 40k set with identical content.
+ * Frames of unusual sizes (mod PNGs) keep their own proportions.
+ * @param scale k >= 1.
+ */
+void SurfaceSet::hdScaleInPlace(int scale)
+{
+	if (scale <= 1)
+	{
+		return;
+	}
+	for (auto& frame : _frames)
+	{
+		if (frame)
+		{
+			frame = HdBlit::upscaledCopy(frame, scale);
+		}
+	}
+	_width *= scale;
+	_height *= scale;
+}
+
+/**
+ * HD render: makes a new set with every frame scaled by a nearest-neighbour factor.
+ * @param scale k >= 1.
+ * @return New set, owned by the caller.
+ */
+SurfaceSet *SurfaceSet::hdScaledCopy(int scale) const
+{
+	SurfaceSet *copy = new SurfaceSet(*this);
+	copy->hdScaleInPlace(scale);
+	return copy;
 }
 
 /**

@@ -17,6 +17,8 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "Screen.h"
+#include "HdUiArt.h"
+#include "Scalers/xbrz.h"
 #include <algorithm>
 #include <sstream>
 #include <cmath>
@@ -33,6 +35,9 @@
 #include "FileMap.h"
 #include "Zoom.h"
 #include "Timer.h"
+#include "HdTest.h"
+#include "HdWorkers.h"
+#include <chrono>
 #include <SDL.h>
 #include <algorithm>
 
@@ -102,7 +107,9 @@ void Screen::makeVideoFlags()
 		_flags |= SDL_NOFRAME;
 	}
 
-	_bpp = (use32bitScaler() || useOpenGL()) ? 32 : 8;
+	// the HD battlescape needs the layered (32-bit) output whatever the scaler
+	_bpp = (use32bitScaler() || useOpenGL() || Options::oxceHdScale > 1 || Options::oxceHdPictures) ? 32 : 8;
+	_layered = (_bpp == 32);
 	_baseWidth = Options::baseXResolution;
 	_baseHeight = Options::baseYResolution;
 }
@@ -112,8 +119,11 @@ void Screen::makeVideoFlags()
  * Initializes a new display screen for the game to render contents to.
  * The screen is set up based on the current options.
  */
-Screen::Screen() : _baseWidth(ORIGINAL_WIDTH), _baseHeight(ORIGINAL_HEIGHT), _scaleX(1.0), _scaleY(1.0), _flags(0), _numColors(0), _firstColor(0), _pushPalette(false), _flickerFix(false)
+Screen *Screen::_current = nullptr;
+
+Screen::Screen() : _baseWidth(ORIGINAL_WIDTH), _baseHeight(ORIGINAL_HEIGHT), _scaleX(1.0), _scaleY(1.0), _flags(0), _numColors(0), _firstColor(0), _pushPalette(false), _flickerFix(false), _layered(false), _worldScale(1)
 {
+	_current = this;
 	_flickerFix = Options::oxceEnablePaletteFlickerFix;
 
 	resetDisplay();
@@ -126,7 +136,7 @@ Screen::Screen() : _baseWidth(ORIGINAL_WIDTH), _baseHeight(ORIGINAL_HEIGHT), _sc
  */
 Screen::~Screen()
 {
-
+	if (_current == this) _current = nullptr;
 }
 
 /**
@@ -201,7 +211,22 @@ void Screen::flip()
 		_pushPalette = false;
 	}
 
-	if (getWidth() != _baseWidth || getHeight() != _baseHeight || useOpenGL())
+	if (_layered)
+	{
+		// classic 8-bit layer over the world layer, then the world layer is what gets scaled to the display
+		const auto t0 = std::chrono::steady_clock::now();
+		composeInto(_world.get());
+		if (getWidth() != _world->w || getHeight() != _world->h || useOpenGL())
+		{
+			Zoom::flipWithZoom(_world.get(), _screen, _topBlackBand, _bottomBlackBand, _leftBlackBand, _rightBlackBand, &glOutput);
+		}
+		else
+		{
+			SDL_BlitSurface(_world.get(), 0, _screen, 0);
+		}
+		_lastFlipMs = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count();
+	}
+	else if (getWidth() != _baseWidth || getHeight() != _baseHeight || useOpenGL())
 	{
 		Zoom::flipWithZoom(_surface.get(), _screen, _topBlackBand, _bottomBlackBand, _leftBlackBand, _rightBlackBand, &glOutput);
 	}
@@ -235,7 +260,194 @@ void Screen::flip()
 void Screen::clear()
 {
 	Surface::CleanSdlSurface(_surface.get());
+	if (_world)
+	{
+		Surface::CleanSdlSurface(_world.get());
+	}
 	Surface::CleanSdlSurface(_screen);
+}
+
+/**
+ * The classic layer over the world layer through xBRZ: the 8-bit layer becomes
+ * ARGB (index 0 transparent), is scaled k times by xBRZ in row slices on the
+ * render threads, then alpha-blended over the world layer.
+ */
+void Screen::composeSmooth(SDL_Surface *dst, const Uint32 *lut, int srcW, int srcH, int k) const
+{
+	static std::vector<Uint32> src, big;
+	src.resize((size_t)srcW * srcH);
+	big.resize((size_t)srcW * k * srcH * k);
+	const Uint8 *srcPixels = (const Uint8*)_surface->pixels;
+	const int srcPitch = _surface->pitch;
+	for (int y = 0; y < srcH; ++y)
+	{
+		const Uint8 *row = srcPixels + (size_t)y * srcPitch;
+		Uint32 *out = &src[(size_t)y * srcW];
+		for (int x = 0; x < srcW; ++x)
+		{
+			const Uint8 idx = row[x];
+			out[x] = idx ? (lut[idx] | 0xFF000000u) : 0u;
+		}
+	}
+	HdWorkers &pool = HdWorkers::instance();
+	const int jobs = std::max(1, std::min(srcH / 16, pool.threads() * 2));
+	pool.run(jobs, [&](int job)
+	{
+		const int ya = (int)((long long)srcH * job / jobs);
+		const int yb = (int)((long long)srcH * (job + 1) / jobs);
+		xbrz::scale((size_t)k, src.data(), big.data(), srcW, srcH, xbrz::ARGB, xbrz::ScalerCfg(), ya, yb);
+	});
+	if (SDL_MUSTLOCK(dst)) SDL_LockSurface(dst);
+	const int W = srcW * k, H = std::min(srcH * k, dst->h);
+	Uint8 *dstPixels = (Uint8*)dst->pixels;
+	const int dstPitch = dst->pitch;
+	pool.run(jobs, [&](int job)
+	{
+		const int ya = (int)((long long)H * job / jobs);
+		const int yb = (int)((long long)H * (job + 1) / jobs);
+		for (int y = ya; y < yb; ++y)
+		{
+			const Uint32 *s = &big[(size_t)y * W];
+			Uint32 *d = (Uint32*)(dstPixels + (size_t)y * dstPitch);
+			for (int x = 0; x < W && x < dst->w; ++x)
+			{
+				const Uint32 p = s[x];
+				const Uint32 a = p >> 24;
+				if (!a) continue;
+				if (a == 255)
+				{
+					d[x] = p;
+					continue;
+				}
+				const Uint32 q = d[x];
+				const Uint32 ia = 255 - a;
+				const Uint32 r = (((p >> 16) & 0xFF) * a + ((q >> 16) & 0xFF) * ia) / 255;
+				const Uint32 g = (((p >> 8) & 0xFF) * a + ((q >> 8) & 0xFF) * ia) / 255;
+				const Uint32 b = ((p & 0xFF) * a + (q & 0xFF) * ia) / 255;
+				d[x] = 0xFF000000u | (r << 16) | (g << 8) | b;
+			}
+		}
+	});
+	if (SDL_MUSTLOCK(dst)) SDL_UnlockSurface(dst);
+}
+
+/**
+ * (Re)allocates the world layer: a true-color surface of k * base resolution.
+ */
+void Screen::allocateWorld()
+{
+	const int w = _baseWidth * _worldScale;
+	const int h = _baseHeight * _worldScale;
+	if (!_world || _world->w != w || _world->h != h)
+	{
+		std::tie(_worldBuffer, _world) = Surface::NewPair32Bit(w, h);
+	}
+	SDL_SetColorKey(_world.get(), 0, 0);
+}
+
+/**
+ * Returns the world layer (only meaningful when the output is layered).
+ */
+SDL_Surface *Screen::getWorldSurface()
+{
+	if (!_world)
+	{
+		allocateWorld();
+	}
+	return _world.get();
+}
+
+/**
+ * Changes the world layer scale factor and reallocates the layer.
+ * @param scale k >= 1.
+ */
+void Screen::setWorldScale(int scale)
+{
+	if (scale < 1)
+	{
+		scale = 1;
+	}
+	_worldScaleFixed = true;
+	if (scale != _worldScale)
+	{
+		_worldScale = scale;
+		if (_layered)
+		{
+			resetDisplay(false);
+		}
+	}
+}
+
+/**
+ * Composes the classic 8-bit layer over a true-color surface of world size:
+ * every non-zero index is looked up in the layer's palette and written as an
+ * opaque pixel, scaled by k with nearest neighbour; index 0 stays transparent
+ * (exactly the SDL color-key convention every game surface already follows).
+ * @param dst Surface of the world layer's size and format.
+ */
+void Screen::composeInto(SDL_Surface *dst) const
+{
+	if (!dst || !_surface || _surface->format->BitsPerPixel != 8)
+	{
+		return;
+	}
+	const SDL_Palette *pal = _surface->format->palette;
+	Uint32 lut[256];
+	for (int i = 0; i < 256; ++i)
+	{
+		SDL_Color c = { 0, 0, 0, 0 };
+		if (pal && i < pal->ncolors)
+		{
+			c = pal->colors[i];
+		}
+		lut[i] = SDL_MapRGB(dst->format, c.r, c.g, c.b);
+	}
+
+	const int k = _worldScale;
+	const int srcW = std::min(_surface->w, dst->w / k);
+	const int srcH = std::min(_surface->h, dst->h / k);
+	if (k >= 2 && k <= 6 && !_worldScaleFixed && Options::oxceHdUiSmooth)
+	{
+		// outside the battlescape the classic layer goes over the world with xBRZ (the look of the xBRZ
+		// display filter), index 0 transparent: the HD pictures underneath show through
+		composeSmooth(dst, lut, srcW, srcH, k);
+		return;
+	}
+	if (SDL_MUSTLOCK(dst)) SDL_LockSurface(dst);
+	const Uint8 *srcPixels = (const Uint8*)_surface->pixels;
+	Uint8 *dstPixels = (Uint8*)dst->pixels;
+	const int srcPitch = _surface->pitch;
+	const int dstPitch = dst->pitch;
+	// bands of base rows, on the render threads
+	HdWorkers &pool = HdWorkers::instance();
+	const int jobs = std::max(1, std::min(srcH / 8, pool.threads() * 2));
+	pool.run(jobs, [&](int job)
+	{
+		const int ya = (int)((long long)srcH * job / jobs);
+		const int yb = (int)((long long)srcH * (job + 1) / jobs);
+		for (int y = ya; y < yb; ++y)
+		{
+			const Uint8 *srcRow = srcPixels + (size_t)y * srcPitch;
+			for (int ky = 0; ky < k; ++ky)
+			{
+				Uint32 *dstRow = (Uint32*)(dstPixels + (size_t)(y * k + ky) * dstPitch);
+				for (int x = 0; x < srcW; ++x)
+				{
+					const Uint8 idx = srcRow[x];
+					if (idx)
+					{
+						const Uint32 value = lut[idx];
+						Uint32 *d = dstRow + (size_t)x * k;
+						for (int kx = 0; kx < k; ++kx)
+						{
+							d[kx] = value;
+						}
+					}
+				}
+			}
+		}
+	});
+	if (SDL_MUSTLOCK(dst)) SDL_UnlockSurface(dst);
 }
 
 /**
@@ -330,11 +542,13 @@ void Screen::resetDisplay(bool resetVideo, bool noShaders)
 	int height = Options::displayHeight;
 	makeVideoFlags();
 
-	if (!_surface || (_surface->format->BitsPerPixel != _bpp ||
+	// when layered, the internal buffer is the 8-bit classic layer whatever the display depth
+	const int bufferBpp = _layered ? 8 : _bpp;
+	if (!_surface || (_surface->format->BitsPerPixel != bufferBpp ||
 		_surface->w != _baseWidth ||
 		_surface->h != _baseHeight)) // don't reallocate _surface if not necessary, it's a waste of CPU cycles
 	{
-		if (_bpp == 32)
+		if (bufferBpp == 32)
 		{
 			std::tie(_buffer, _surface) = Surface::NewPair32Bit(_baseWidth, _baseHeight);
 		}
@@ -348,7 +562,23 @@ void Screen::resetDisplay(bool resetVideo, bool noShaders)
 			SDL_SetColors(_surface.get(), deferredPalette, 0, 255);
 		}
 	}
-	SDL_SetColorKey(_surface.get(), 0, 0); // turn off color key!
+	SDL_SetColorKey(_surface.get(), 0, 0); // turn off color key! (composeInto() handles transparency itself)
+	if (_layered)
+	{
+		// outside the battlescape (which sets its own scale) the world layer follows the display: the HD
+		// pictures of the interface are drawn into it at the display's resolution
+		if (!_worldScaleFixed && _baseHeight > 0)
+		{
+			_worldScale = Options::oxceHdPictures ? std::max(1, std::min(6, (int)std::lround((double)height / _baseHeight))) : 1;
+		}
+		allocateWorld();
+		HdUiArt::clearPrepared();
+	}
+	else
+	{
+		_world.reset();
+		_worldBuffer.reset();
+	}
 
 	if (resetVideo || _screen->format->BitsPerPixel != _bpp)
 	{
@@ -480,7 +710,14 @@ void Screen::resetDisplay(bool resetVideo, bool noShaders)
 	{
 #ifndef __NO_OPENGL
 		OpenGL::checkErrors = Options::checkOpenGLErrors;
-		glOutput.init(_baseWidth, _baseHeight);
+		if (_layered)
+		{
+			glOutput.init(_world->w, _world->h);
+		}
+		else
+		{
+			glOutput.init(_baseWidth, _baseHeight);
+		}
 		glOutput.linear = Options::useOpenGLSmoothing; // setting from shader file will override this, though
 		if (!noShaders && FileMap::fileExists(Options::useOpenGLShader))
 		{
@@ -595,6 +832,35 @@ void Screen::screenshot(const std::string &filename) const
 	CrossPlatform::writeFile(filename, out);
 }
 
+/**
+ * HD test: writes the internal (base resolution, unscaled) buffer as an RGB PNG
+ * and clears the pending request. Called by the game loop after all states
+ * have been blitted, but before the FPS counter and the mouse cursor.
+ */
+void Screen::writeHdTestDump()
+{
+	if (_hdTestDumpPath.empty())
+	{
+		return;
+	}
+	if (_layered && _world)
+	{
+		// the frame as the player will see it: world layer with the classic layer composed on top
+		Surface::UniqueBufferPtr tmpBuffer;
+		Surface::UniqueSurfacePtr tmp;
+		std::tie(tmpBuffer, tmp) = Surface::NewPair32Bit(_world->w, _world->h);
+		SDL_SetColorKey(tmp.get(), 0, 0);
+		SDL_BlitSurface(_world.get(), 0, tmp.get(), 0);
+		composeInto(tmp.get());
+		HdTest::savePngRgb(_hdTestDumpPath, tmp.get());
+	}
+	else
+	{
+		HdTest::savePngRgb(_hdTestDumpPath, _surface.get());
+	}
+	_hdTestDumpPath.clear();
+}
+
 
 /**
  * Check whether a 32bpp scaler has been selected.
@@ -667,6 +933,8 @@ int Screen::getDY() const
  */
 void Screen::updateScale(int type, int &width, int &height, bool change)
 {
+	// a new kind of screen: its world scale is derived from the display again (until a state sets one)
+	if (_current) _current->_worldScaleFixed = false;
 	double pixelRatioY = 1.0;
 
 	if (Options::nonSquarePixelRatio)

@@ -39,9 +39,10 @@ namespace OpenXcom
 Camera::Camera(int spriteWidth, int spriteHeight, int mapsize_x, int mapsize_y, int mapsize_z, Map *map, int visibleMapHeight) :
 	_scrollMouseTimer(0), _scrollKeyTimer(0),
 	_spriteWidth(spriteWidth), _spriteHeight(spriteHeight),
+	_k(spriteWidth / 32 > 0 ? spriteWidth / 32 : 1),
 	_mapsize_x(mapsize_x), _mapsize_y(mapsize_y), _mapsize_z(mapsize_z),
 	_screenWidth(map->getWidth()), _screenHeight(map->getHeight()),
-	_mapOffset(-250,250,0),
+	_mapOffset(-250 * (spriteWidth / 32 > 0 ? spriteWidth / 32 : 1), 250 * (spriteWidth / 32 > 0 ? spriteWidth / 32 : 1), 0),
 	_scrollMouseX(0), _scrollMouseY(0), _scrollKeyX(0), _scrollKeyY(0), _scrollTrigger(false),
 	_visibleMapHeight(visibleMapHeight), _showAllLayers(false), _showSingleLayer(false),
 	_map(map)
@@ -108,9 +109,9 @@ void Camera::mouseRelease(Action *action, State *)
 		int posX = action->getXMouse();
 		int posY = action->getYMouse();
 		if ((posX < (SCROLL_BORDER * action->getXScale()) && posX > 0)
-			|| (posX > (_screenWidth - SCROLL_BORDER) * action->getXScale())
+			|| (posX > (_screenWidth / _k - SCROLL_BORDER) * action->getXScale())
 			|| (posY < (SCROLL_BORDER * action->getYScale()) && posY > 0)
-			|| (posY > (_screenHeight - SCROLL_BORDER) * action->getYScale()))
+			|| (posY > (_screenHeight / _k - SCROLL_BORDER) * action->getYScale()))
 			// A cheap hack to avoid handling this event as a click
 			// on the map when the mouse is on the scroll-border
 			action->getDetails()->button.button = 0;
@@ -146,14 +147,14 @@ void Camera::mouseOver(Action *action, State *)
 				_scrollMouseY = scrollSpeed/2;
 			}
 			//upleft
-			else if (posY > (_screenHeight - SCROLL_DIAGONAL_EDGE) * action->getYScale())
+			else if (posY > (_screenHeight / _k - SCROLL_DIAGONAL_EDGE) * action->getYScale())
 			{
 				_scrollMouseY = -scrollSpeed/2;
 			}
 			else _scrollMouseY = 0;
 		}
 		//right scroll
-		else if (posX > (_screenWidth - SCROLL_BORDER) * action->getXScale())
+		else if (posX > (_screenWidth / _k - SCROLL_BORDER) * action->getXScale())
 		{
 			_scrollMouseX = -scrollSpeed;
 			// if close to top or bottom, also scroll diagonally
@@ -163,7 +164,7 @@ void Camera::mouseOver(Action *action, State *)
 				_scrollMouseY = scrollSpeed/2;
 			}
 			//upright
-			else if (posY > (_screenHeight - SCROLL_DIAGONAL_EDGE) * action->getYScale())
+			else if (posY > (_screenHeight / _k - SCROLL_DIAGONAL_EDGE) * action->getYScale())
 			{
 				_scrollMouseY = -scrollSpeed/2;
 			}
@@ -186,14 +187,14 @@ void Camera::mouseOver(Action *action, State *)
 				_scrollMouseY /=2;
 			}
 			//up right
-			else if (posX > (_screenWidth - SCROLL_DIAGONAL_EDGE) * action->getXScale())
+			else if (posX > (_screenWidth / _k - SCROLL_DIAGONAL_EDGE) * action->getXScale())
 			{
 				_scrollMouseX = -scrollSpeed;
 				_scrollMouseY /=2;
 			}
 		}
 		//down
-		else if (posY > (_screenHeight- SCROLL_BORDER) * action->getYScale())
+		else if (posY > (_screenHeight / _k - SCROLL_BORDER) * action->getYScale())
 		{
 			_scrollMouseY = -scrollSpeed;
 			// if close to left or right edge, also scroll diagonally
@@ -204,7 +205,7 @@ void Camera::mouseOver(Action *action, State *)
 				_scrollMouseY /=2;
 			}
 			//down right
-			else if (posX > (_screenWidth - SCROLL_DIAGONAL_EDGE) * action->getXScale())
+			else if (posX > (_screenWidth / _k - SCROLL_DIAGONAL_EDGE) * action->getXScale())
 			{
 				_scrollMouseX = -scrollSpeed;
 				_scrollMouseY /=2;
@@ -312,7 +313,8 @@ void Camera::keyboardRelease(Action *action, State *)
  */
 void Camera::scrollMouse()
 {
-	scrollXY(_scrollMouseX, _scrollMouseY, true);
+	// scroll speeds are kept in base pixels, the camera moves in world pixels
+	scrollXY(_scrollMouseX * _k, _scrollMouseY * _k, true);
 }
 
 /**
@@ -320,7 +322,7 @@ void Camera::scrollMouse()
  */
 void Camera::scrollKey()
 {
-	scrollXY(_scrollKeyX, _scrollKeyY, true);
+	scrollXY(_scrollKeyX * _k, _scrollKeyY * _k, true);
 }
 
 /**
@@ -338,17 +340,18 @@ void Camera::scrollXY(int x, int y, bool redraw)
 	{
 		int xx = 0;
 		int yy = 0;
-		convertScreenToMap((_screenWidth / 2), (_visibleMapHeight / 2), &xx, &yy);
+		convertScreenToMap(halfWorld(_screenWidth), halfWorld(_visibleMapHeight), &xx, &yy);
 		_center.x = xx;
 		_center.y = yy;
 
 		// Handling map bounds...
 		// Ok, this is a prototype, it should be optimized.
 		// Actually this should be calculated instead of slow-approximation.
-		if (_center.x < 0)             { _mapOffset.x -= 1; _mapOffset.y -= 1; continue; }
-		if (_center.x > _mapsize_x -1) { _mapOffset.x += 1; _mapOffset.y += 1; continue; }
-		if (_center.y < 0)             { _mapOffset.x += 1; _mapOffset.y -= 1; continue; }
-		if (_center.y > _mapsize_y -1) { _mapOffset.x -= 1; _mapOffset.y += 1; continue; }
+		// (steps of k world pixels = 1 base pixel, keeping the offset a multiple of k)
+		if (_center.x < 0)             { _mapOffset.x -= _k; _mapOffset.y -= _k; continue; }
+		if (_center.x > _mapsize_x -1) { _mapOffset.x += _k; _mapOffset.y += _k; continue; }
+		if (_center.y < 0)             { _mapOffset.x += _k; _mapOffset.y -= _k; continue; }
+		if (_center.y > _mapsize_y -1) { _mapOffset.x -= _k; _mapOffset.y += _k; continue; }
 		break;
 	}
 	while (true);
@@ -369,7 +372,7 @@ void Camera::jumpXY(int x, int y)
 	_mapOffset.y += y;
 	int xx = 0;
 	int yy = 0;
-	convertScreenToMap((_screenWidth / 2), (_visibleMapHeight / 2), &xx, &yy);
+	convertScreenToMap(halfWorld(_screenWidth), halfWorld(_visibleMapHeight), &xx, &yy);
 	_center.x = xx;
 	_center.y = yy;
 }
@@ -425,8 +428,8 @@ void Camera::centerOnPosition(Position mapPos, bool redraw)
 	_center.y = Clamp<int>(_center.y, -1, _mapsize_y);
 	convertMapToScreen(_center, &screenPos);
 
-	_mapOffset.x = -(screenPos.x - (_screenWidth / 2));
-	_mapOffset.y = -(screenPos.y - (_visibleMapHeight / 2));
+	_mapOffset.x = -(screenPos.x - halfWorld(_screenWidth));
+	_mapOffset.y = -(screenPos.y - halfWorld(_visibleMapHeight));
 
 	_mapOffset.z = _center.z;
 	if (redraw) _map->draw();
@@ -451,17 +454,26 @@ Position Camera::getCenterPosition()
  */
 void Camera::convertScreenToMap(int screenX, int screenY, int *mapX, int *mapY) const
 {
+	// HD render: the original integer arithmetic is not scale invariant (the "/ 4" truncates),
+	// so the conversion is done in base pixels: world coordinates are always k times base ones.
+	const int spriteWidth = _spriteWidth / _k;
+	const int spriteHeight = _spriteHeight / _k;
+	const int offsetX = _mapOffset.x / _k;
+	const int offsetY = _mapOffset.y / _k;
+	screenX /= _k;
+	screenY /= _k;
+
 	// add half a tile height to the mouse position per layer we are above the floor
-	screenY += (-_spriteWidth/2) + (_mapOffset.z) * ((_spriteHeight + _spriteWidth / 4) / 2);
+	screenY += (-spriteWidth/2) + (_mapOffset.z) * ((spriteHeight + spriteWidth / 4) / 2);
 
 	// calculate the actual x/y pixel position on a diamond shaped map
 	// taking the view offset into account
-	*mapY = - screenX + _mapOffset.x + 2 * screenY - 2 * _mapOffset.y;
-	*mapX = screenY - _mapOffset.y - *mapY / 4 - (_spriteWidth/4);
+	*mapY = - screenX + offsetX + 2 * screenY - 2 * offsetY;
+	*mapX = screenY - offsetY - *mapY / 4 - (spriteWidth/4);
 
 	// to get the row & column itself, divide by the size of a tile
-	*mapX /= (_spriteWidth / 4);
-	*mapY /= _spriteWidth;
+	*mapX /= (spriteWidth / 4);
+	*mapY /= spriteWidth;
 
 	*mapX = Clamp(*mapX, -1, _mapsize_x);
 	*mapY = Clamp(*mapY, -1, _mapsize_y);
@@ -491,8 +503,10 @@ void Camera::convertVoxelToScreen(Position voxelPos, Position *screenPos) const
 	double dx = voxelPos.x - (mapPosition.x * 16);
 	double dy = voxelPos.y - (mapPosition.y * 16);
 	double dz = voxelPos.z - (mapPosition.z * 24);
-	screenPos->x += (int)(dx - dy) + (_spriteWidth/2);
-	screenPos->y += (int)(((_spriteHeight / 2.0)) + (dx / 2.0) + (dy / 2.0) - dz);
+	// HD render: one voxel is k screen pixels; computed exactly as k times the original integer result
+	const double baseSpriteHeight = _spriteHeight / (double)_k;
+	screenPos->x += (int)(dx - dy) * _k + (_spriteWidth/2);
+	screenPos->y += (int)(((baseSpriteHeight / 2.0)) + (dx / 2.0) + (dy / 2.0) - dz) * _k;
 	screenPos->x += _mapOffset.x;
 	screenPos->y += _mapOffset.y;
 }
@@ -604,17 +618,17 @@ __________
 			|| screenPos.x >= _screenWidth + sizex
 			|| screenPos.y < 0 - sizey
 			|| screenPos.y >= _screenHeight + sizey ) return false; //totally outside
-		int side = ( _screenWidth - _map->getIconWidth() ) / 2;
-		if ( (screenPos.y < (_screenHeight - _map->getIconHeight()) + sizey) ) return true; //above icons
+		int side = ( _screenWidth - _map->getIconWidth() * _k ) / 2;
+		if ( (screenPos.y < (_screenHeight - _map->getIconHeight() * _k) + sizey) ) return true; //above icons
 		if ( (side > 1) && ( (screenPos.x < side + sizex) || (screenPos.x >= (_screenWidth - side - sizex)) ) ) return true; //at sides (if there are any)
 		return false;
 	}
 	else
 	{
 		return screenPos.x >= 0
-			&& screenPos.x <= _screenWidth - 10
+			&& screenPos.x <= _screenWidth - 10 * _k
 			&& screenPos.y >= 0
-			&& screenPos.y <= _screenHeight - 10;
+			&& screenPos.y <= _screenHeight - 10 * _k;
 	}
 }
 
@@ -625,7 +639,7 @@ void Camera::resize()
 {
 	_screenWidth = _map->getWidth();
 	_screenHeight = _map->getHeight();
-	_visibleMapHeight = _map->getHeight() - _map->getIconHeight();
+	_visibleMapHeight = _map->getHeight() - _map->getIconHeight() * _k;
 }
 
 void Camera::stopKeyScrolling()

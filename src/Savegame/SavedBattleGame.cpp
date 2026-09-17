@@ -447,9 +447,11 @@ void SavedBattleGame::load(const YAML::YamlNodeReader& node, Mod *mod, SavedGame
  */
 void SavedBattleGame::loadMapResources(Mod *mod)
 {
+	// HD render: a loaded battle picks up the HD scale option before its terrain loads
+	mod->refreshHdScale();
 	for (auto* mds : _mapDataSets)
 	{
-		mds->loadData(mod->getMCDPatch(mds->getName()));
+		mds->loadData(mod->getMCDPatch(mds->getName()), true, mod->getHdScale());
 	}
 
 	int mdsID, mdID;

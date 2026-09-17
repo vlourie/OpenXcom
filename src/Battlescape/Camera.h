@@ -35,6 +35,10 @@ class Camera
 private:
 	Timer *_scrollMouseTimer, *_scrollKeyTimer;
 	int _spriteWidth, _spriteHeight;
+	/// HD render scale k = _spriteWidth / 32; _screenWidth/_screenHeight/_visibleMapHeight/_mapOffset are in world pixels (k times base).
+	int _k;
+	/// Half of a world-pixel size, computed as k times half of the base size (exactly what the original code did at k = 1).
+	int halfWorld(int worldSize) const { return (worldSize / _k / 2) * _k; }
 	int _mapsize_x, _mapsize_y, _mapsize_z;
 	int _screenWidth, _screenHeight;
 	Position _mapOffset, _center;

@@ -17,6 +17,13 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "MainMenuState.h"
+#include <cstdlib>
+#include "../Savegame/SavedGame.h"
+#include "../Geoscape/Globe.h"
+#include "../Geoscape/GeoscapeState.h"
+#include "OptionsAdvancedState.h"
+#include "../Ufopaedia/Ufopaedia.h"
+#include "ListSaveState.h"
 #include <sstream>
 #include "../version.h"
 #include "../Engine/Game.h"
@@ -242,6 +249,90 @@ MainMenuState::MainMenuState(bool updateCheck)
 void MainMenuState::init()
 {
 	State::init();
+	// HD art tools: OXCE_HD_EXPORT=<folder> writes the sprite sets as 8-bit PNG sheets (OXCE_HD_EXPORT_SETS=units|all|names) and quits
+	static bool exported = false;
+	const char *exportDir = getenv("OXCE_HD_EXPORT");
+	if (exportDir && *exportDir && !exported)
+	{
+		exported = true;
+		const char *which = getenv("OXCE_HD_EXPORT_SETS");
+		const int sets = _game->getMod()->exportHdSets(exportDir, which ? which : "units");
+		Log(LOG_INFO) << "OXCE_HD_EXPORT: " << sets << " set(s) written to " << exportDir;
+		_game->quit();
+		return;
+	}
+	// HD test automation: OXCE_HD_START=newbattle|options|load opens that screen at once (headless dumps)
+	static bool autoStarted = false;
+	const char *autoStart = getenv("OXCE_HD_START");
+	if (autoStart && *autoStart && !autoStarted)
+	{
+		autoStarted = true;
+		const std::string what = autoStart;
+		if (what == "newbattle")
+		{
+			_game->pushState(new NewBattleState);
+		}
+		else if (what == "options")
+		{
+			_game->pushState(new OptionsAdvancedState(OPT_MENU));
+		}
+		else if (what == "load")
+		{
+			_game->pushState(new ListLoadState(OPT_MENU));
+		}
+		else if (what == "battle")
+		{
+			// the mission generator's OK with its defaults: straight into a battle
+			NewBattleState *nb = new NewBattleState;
+			_game->pushState(nb);
+			nb->btnOkClick(nullptr);
+		}
+		else if (what == "geoscape" || what == "save")
+		{
+			// a new game on the geoscape, zoomed a step in, the globe centred on Europe (no base placing)
+			SavedGame *save = _game->getMod()->newSave(DIFF_BEGINNER);
+			save->setDifficulty(DIFF_BEGINNER);
+			_game->setSavedGame(save);
+			GeoscapeState *gs = new GeoscapeState;
+			_game->setState(gs);
+			gs->init();
+			gs->getGlobe()->center(0.2, -0.8);
+			gs->getGlobe()->zoomIn();
+			gs->timerReset();
+			// OXCE_HD_SAVES=n writes n saves of it (rows for the load list's checks)
+			const char *saves = getenv("OXCE_HD_SAVES");
+			for (int i = 0; saves && i < atoi(saves); ++i)
+			{
+				save->setName("HD test " + std::to_string(i + 1));
+				save->save("hdtest" + std::to_string(i + 1) + ".sav", _game->getMod());
+			}
+			if (what == "save")
+			{
+				// the save list over it (an edit field: OXCE_HD_CLICK on a row, OXCE_HD_TYPE a name)
+				_game->pushState(new ListSaveState(OPT_GEOSCAPE));
+			}
+		}
+		else if (what == "ufopaedia")
+		{
+			// a new game and the ufopaedia article OXCE_HD_ARTICLE (or the ufopaedia's index) over the globe
+			SavedGame *save = _game->getMod()->newSave(DIFF_BEGINNER);
+			save->setDifficulty(DIFF_BEGINNER);
+			_game->setSavedGame(save);
+			GeoscapeState *gs = new GeoscapeState;
+			_game->setState(gs);
+			gs->init();
+			const char *article = getenv("OXCE_HD_ARTICLE");
+			if (article && *article)
+			{
+				Ufopaedia::openArticle(_game, std::string(article));
+			}
+			else
+			{
+				Ufopaedia::open(_game);
+			}
+		}
+		return;
+	}
 	if (Options::getLoadLastSave() && !Options::getLoadThisSave().empty())
 	{
 		Log(LOG_INFO) << "Loading saved game passed as parameter";

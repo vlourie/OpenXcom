@@ -17,6 +17,10 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "Game.h"
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <vector>
 #include "../resource.h"
 #include <algorithm>
 #include <cmath>
@@ -359,9 +363,109 @@ void Game::run()
 				}
 				while (i != _states.begin() && !(*i)->isScreen());
 
-				for (; i != _states.end(); ++i)
+				// HD test automation: OXCE_HD_DUMP=<file.png> dumps the frame after OXCE_HD_DUMP_AFTER
+				// seconds (default 8) and quits (headless checks of the HD interface without a display or a player)
+				static const char *autoDump = getenv("OXCE_HD_DUMP");
+				static const Uint32 autoDumpAt = SDL_GetTicks() + (getenv("OXCE_HD_DUMP_AFTER") ? 1000 * atoi(getenv("OXCE_HD_DUMP_AFTER")) : 8000);
+				// Headless checks: OXCE_HD_MOUSE=x,y pins the position (base pixels) and moves the mouse there
+				// 1.5 s before the dump; OXCE_HD_CLICK=x,y left-clicks there 1.2 s before; OXCE_HD_TYPE=text
+				// types it 0.8 s before.
 				{
-					(*i)->blit();
+					static const char *autoMouse = getenv("OXCE_HD_MOUSE");
+					static const char *autoClick = getenv("OXCE_HD_CLICK");
+					static const char *autoType = getenv("OXCE_HD_TYPE");
+					static int autoStep = 0;
+					int mx = _cursor->getX(), my = _cursor->getY();
+					if (autoMouse && *autoMouse) sscanf(autoMouse, "%d,%d", &mx, &my);
+					auto toDisplay = [&](int bx, int by, Uint16 &dx, Uint16 &dy)
+					{
+						dx = (Uint16)(bx * _screen->getXScale() + _screen->getCursorLeftBlackBand());
+						dy = (Uint16)(by * _screen->getYScale() + _screen->getCursorTopBlackBand());
+					};
+					const Uint32 now = SDL_GetTicks();
+					if (autoStep == 0 && autoMouse && *autoMouse && now + 1500 >= autoDumpAt)
+					{
+						// a real motion event too, so the states' own hover handling (list rows) sees it
+						autoStep = 1;
+						SDL_Event ev;
+						memset(&ev, 0, sizeof(ev));
+						ev.type = SDL_MOUSEMOTION;
+						toDisplay(mx, my, ev.motion.x, ev.motion.y);
+						SDL_PushEvent(&ev);
+					}
+					// OXCE_HD_CLICK=x,y[;x,y...]: several clicks 1.2 s apart, the last 1.2 s before the dump
+					static std::vector<std::pair<int, int>> autoClicks;
+					static size_t autoClicked = 0;
+					if (autoClicks.empty() && autoClick && *autoClick)
+					{
+						for (const char *c = autoClick; c && *c; )
+						{
+							int cx, cy;
+							if (sscanf(c, "%d,%d", &cx, &cy) == 2) autoClicks.emplace_back(cx, cy);
+							c = strchr(c, ';');
+							if (c) ++c;
+						}
+					}
+					if (autoStep <= 1 && autoClicked < autoClicks.size() && now + 1200 * (Uint32)(autoClicks.size() - autoClicked) >= autoDumpAt)
+					{
+						const int cx = autoClicks[autoClicked].first, cy = autoClicks[autoClicked].second;
+						if (++autoClicked == autoClicks.size()) autoStep = 2;
+						SDL_Event ev;
+						memset(&ev, 0, sizeof(ev));
+						ev.type = SDL_MOUSEMOTION;
+						toDisplay(cx, cy, ev.motion.x, ev.motion.y);
+						SDL_PushEvent(&ev);
+						ev.type = SDL_MOUSEBUTTONDOWN;
+						ev.button.button = SDL_BUTTON_LEFT;
+						ev.button.state = SDL_PRESSED;
+						toDisplay(cx, cy, ev.button.x, ev.button.y);
+						SDL_PushEvent(&ev);
+						ev.type = SDL_MOUSEBUTTONUP;
+						ev.button.state = SDL_RELEASED;
+						SDL_PushEvent(&ev);
+					}
+					if (autoStep <= 2 && autoType && *autoType && now + 800 >= autoDumpAt)
+					{
+						autoStep = 3;
+						for (const char *c = autoType; *c; ++c)
+						{
+							SDL_Event ev;
+							memset(&ev, 0, sizeof(ev));
+							ev.type = SDL_KEYDOWN;
+							ev.key.state = SDL_PRESSED;
+							ev.key.keysym.sym = (SDLKey)(unsigned char)*c;
+							ev.key.keysym.unicode = (Uint16)(unsigned char)*c;
+							SDL_PushEvent(&ev);
+							ev.type = SDL_KEYUP;
+							ev.key.state = SDL_RELEASED;
+							SDL_PushEvent(&ev);
+						}
+					}
+					for (; i != _states.end(); ++i)
+					{
+						(*i)->blit();
+					}
+				}
+				{
+					static int autoDumpState = 0;
+					if (autoDump && *autoDump && autoDumpState < 2 && SDL_GetTicks() >= autoDumpAt)
+					{
+						if (autoDumpState == 0)
+						{
+							_screen->requestHdTestDump(autoDump);
+							autoDumpState = 1;
+						}
+						else
+						{
+							_quit = true;
+							autoDumpState = 2;
+						}
+					}
+				}
+				if (_screen->hasHdTestDumpRequest())
+				{
+					// deterministic frame capture: game content only, no FPS counter, no cursor
+					_screen->writeHdTestDump();
 				}
 				_fpsCounter->blit(_screen->getSurface());
 				_cursor->blit(_screen->getSurface());

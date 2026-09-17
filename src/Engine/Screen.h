@@ -52,6 +52,22 @@ private:
 	OpenGL glOutput;
 	Surface::UniqueBufferPtr _buffer;
 	Surface::UniqueSurfacePtr _surface;
+	std::string _hdTestDumpPath;
+	double _lastFlipMs = 0.0;
+	/// Layered output (see getWorldSurface): the classic 8-bit layer is composed over a true-color world layer.
+	bool _layered;
+	bool _worldScaleFixed = false;        ///< the world scale was set by a state (the battlescape), not derived from the display
+	static Screen *_current;
+	/// World layer scale factor k: the world layer is k * base resolution.
+	int _worldScale;
+	Surface::UniqueBufferPtr _worldBuffer;
+	Surface::UniqueSurfacePtr _world;
+	/// (Re)allocates the world layer to match the base resolution and scale.
+	void allocateWorld();
+	/// Draws the classic 8-bit layer (index 0 = transparent) over a true-color surface of world size.
+	void composeInto(SDL_Surface *dst) const;
+	/// The classic layer over the world layer with xBRZ (see composeInto).
+	void composeSmooth(SDL_Surface *dst, const Uint32 *lut, int srcW, int srcH, int k) const;
 	/// Sets the _flags and _bpp variables based on game options; needed in more than one place now
 	void makeVideoFlags();
 public:
@@ -94,6 +110,33 @@ public:
 	int getCursorLeftBlackBand() const;
 	/// Takes a screenshot.
 	void screenshot(const std::string &filename) const;
+	/// HD test: asks for the next composed base-resolution frame (before scaling and cursor) to be written as PNG.
+	void requestHdTestDump(const std::string &filename) { _hdTestDumpPath = filename; }
+	/// HD test: true while a dump request is pending.
+	bool hasHdTestDumpRequest() const { return !_hdTestDumpPath.empty(); }
+	/// Time the last layered flip took (compose + scale/upload + swap), milliseconds (HD render profiling).
+	double getLastFlipMs() const { return _lastFlipMs; }
+	/// HD test: writes the pending dump of the internal buffer and clears the request.
+	void writeHdTestDump();
+	/// Gets the base (unscaled) width of the internal buffer.
+	int getBaseWidth() const { return _baseWidth; }
+	/// Gets the base (unscaled) height of the internal buffer.
+	int getBaseHeight() const { return _baseHeight; }
+	/// Gets the bit depth of the display output (the classic layer itself is 8-bit when layered).
+	int getBpp() const { return _bpp; }
+	/// Is the output layered? True whenever the display is 32-bit (OpenGL or a 32-bit scaler).
+	/// Then the internal buffer is an 8-bit "classic" layer (index 0 = transparent) that is composed
+	/// over the world layer at flip time; in plain 8-bit display mode there is no world layer at all.
+	bool isLayered() const { return _layered; }
+	/// Gets the world layer: a true-color surface of k * base resolution that the battlescape map draws into.
+	/// Only valid when isLayered().
+	SDL_Surface *getWorldSurface();
+	/// Gets the world layer scale factor k.
+	int getWorldScale() const { return _worldScale; }
+	/// The screen (for drawing code without a Game at hand); null before it exists.
+	static Screen *current() { return _current; }
+	/// Sets the world layer scale factor k (reallocates the world layer).
+	void setWorldScale(int scale);
 	/// Checks whether a 32bit scaler is requested and works for the selected resolution
 	static bool use32bitScaler();
 	/// Checks whether OpenGL output is requested

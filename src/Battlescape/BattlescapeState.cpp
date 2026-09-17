@@ -58,6 +58,10 @@
 #include "../Engine/Logger.h"
 #include "../Engine/Timer.h"
 #include "../Engine/CrossPlatform.h"
+#include "../Engine/HdTest.h"
+#include "../Engine/HdCanvas.h"
+#include "../Engine/HdWorkers.h"
+#include "../version.h"
 #include "../Interface/Cursor.h"
 #include "../Interface/Text.h"
 #include "../Interface/Bar.h"
@@ -138,6 +142,15 @@ BattlescapeState::BattlescapeState() :
 
 	// Create the battlemap view
 	// the actual map height is the total height minus the height of the buttonbar
+	// HD render: the world layer must be k times the base resolution before the map draws into it
+	_game->getScreen()->setWorldScale(Map::hdScale(_game));
+	// HD render: drawing k times more pixels can take longer than the unit speed settings ask per step;
+	// let the game timer catch up a few steps per frame so that the settings still mean what they say
+	Timer::hdFrameSkip = Map::hdScale(_game) > 1 ? std::max(0, Options::oxceHdFrameSkip) : 0;
+	if (Map::hdScale(_game) > 1 && !_game->getScreen()->isLayered())
+	{
+		Log(LOG_WARNING) << "HD render: sprite scale " << Map::hdScale(_game) << "x needs a 32-bit display (OpenGL or an xBRZ/HQx filter); the battlescape will be drawn cropped";
+	}
 	_map = new Map(_game, screenWidth, screenHeight, 0, 0, visibleMapHeight);
 
 	_numLayers = new NumberText(3, 5, x + 232, y + 6);
@@ -734,6 +747,7 @@ BattlescapeState::BattlescapeState() :
  */
 BattlescapeState::~BattlescapeState()
 {
+	Timer::hdFrameSkip = 0;
 	delete _animTimer;
 	delete _gameTimer;
 	delete _battleGame;
@@ -766,6 +780,11 @@ void BattlescapeState::resetPalettes()
  */
 void BattlescapeState::init()
 {
+	// HD render: the sprite drawing mode may have been changed in the options
+	if (_map->getHdMode() != Options::oxceHdMode)
+	{
+		_map->setHdMode(Options::oxceHdMode);
+	}
 	if (_paletteResetRequested)
 	{
 		_paletteResetRequested = false;
@@ -934,20 +953,22 @@ void BattlescapeState::mapOver(Action *action)
 		}
 
 		// Scrolling
+		// (mouse deltas are in base pixels, the camera scrolls in world pixels = k times base)
+		const int k = _map->getScale();
 		if (Options::battleDragScrollInvert)
 		{
 			_map->getCamera()->setMapOffset(_mapOffsetBeforeMouseScrolling);
 			int scrollX = -(int)((double)_totalMouseMoveX / action->getXScale());
 			int scrollY = -(int)((double)_totalMouseMoveY / action->getYScale());
 			Position delta2 = _map->getCamera()->getMapOffset();
-			_map->getCamera()->scrollXY(scrollX, scrollY, true);
+			_map->getCamera()->scrollXY(scrollX * k, scrollY * k, true);
 			delta2 = _map->getCamera()->getMapOffset() - delta2;
 
 			// Keep the limits...
-			if (scrollX != delta2.x || scrollY != delta2.y)
+			if (scrollX * k != delta2.x || scrollY * k != delta2.y)
 			{
-				_totalMouseMoveX = -(int) (delta2.x * action->getXScale());
-				_totalMouseMoveY = -(int) (delta2.y * action->getYScale());
+				_totalMouseMoveX = -(int) ((double)delta2.x / k * action->getXScale());
+				_totalMouseMoveY = -(int) ((double)delta2.y / k * action->getYScale());
 			}
 
 			if (Options::touchEnabled == false)
@@ -964,21 +985,21 @@ void BattlescapeState::mapOver(Action *action)
 			int scrollX = (int)((double)_totalMouseMoveX / action->getXScale());
 			int scrollY = (int)((double)_totalMouseMoveY / action->getYScale());
 			Position delta2 = _map->getCamera()->getMapOffset();
-			_map->getCamera()->scrollXY(scrollX, scrollY, true);
+			_map->getCamera()->scrollXY(scrollX * k, scrollY * k, true);
 			delta2 = _map->getCamera()->getMapOffset() - delta2;
 			delta = _map->getCamera()->getMapOffset() - delta;
 
 			// Keep the limits...
-			if (scrollX != delta2.x || scrollY != delta2.y)
+			if (scrollX * k != delta2.x || scrollY * k != delta2.y)
 			{
-				_totalMouseMoveX = (int) (delta2.x * action->getXScale());
-				_totalMouseMoveY = (int) (delta2.y * action->getYScale());
+				_totalMouseMoveX = (int) ((double)delta2.x / k * action->getXScale());
+				_totalMouseMoveY = (int) ((double)delta2.y / k * action->getYScale());
 			}
 
 			int barWidth = _game->getScreen()->getCursorLeftBlackBand();
 			int barHeight = _game->getScreen()->getCursorTopBlackBand();
-			int cursorX = _cursorPosition.x + Round(delta.x * action->getXScale());
-			int cursorY = _cursorPosition.y + Round(delta.y * action->getYScale());
+			int cursorX = _cursorPosition.x + Round((double)delta.x / k * action->getXScale());
+			int cursorY = _cursorPosition.y + Round((double)delta.y / k * action->getYScale());
 			_cursorPosition.x = Clamp(cursorX, barWidth, _game->getScreen()->getWidth() - barWidth - (int)(Round(action->getXScale())));
 			_cursorPosition.y = Clamp(cursorY, barHeight, _game->getScreen()->getHeight() - barHeight - (int)(Round(action->getYScale())));
 
@@ -1513,9 +1534,9 @@ void BattlescapeState::btnStatsClick(Action *action)
 			int posX = action->getXMouse();
 			int posY = action->getYMouse();
 			if ((posX < (Camera::SCROLL_BORDER * action->getXScale()) && posX > 0)
-				|| (posX > (_map->getWidth() - Camera::SCROLL_BORDER) * action->getXScale())
+				|| (posX > (_map->getWidth() / _map->getScale() - Camera::SCROLL_BORDER) * action->getXScale())
 				|| (posY < (Camera::SCROLL_BORDER * action->getYScale()) && posY > 0)
-				|| (posY > (_map->getHeight() - Camera::SCROLL_BORDER) * action->getYScale()))
+				|| (posY > (_map->getHeight() / _map->getScale() - Camera::SCROLL_BORDER) * action->getYScale()))
 				// To avoid handling this event as a click
 				// on the stats button when the mouse is on the scroll-border
 				scroll = true;
@@ -2728,7 +2749,7 @@ inline void BattlescapeState::handle(Action *action)
 
 			if (Options::touchEnabled == false && _isMouseScrolling && !Options::battleDragScrollInvert)
 			{
-				_map->setSelectorPosition((_cursorPosition.x - _game->getScreen()->getCursorLeftBlackBand()) / action->getXScale(), (_cursorPosition.y - _game->getScreen()->getCursorTopBlackBand()) / action->getYScale());
+				_map->setSelectorPosition((int)((_cursorPosition.x - _game->getScreen()->getCursorLeftBlackBand()) / action->getXScale()) * _map->getScale(), (int)((_cursorPosition.y - _game->getScreen()->getCursorTopBlackBand()) / action->getYScale()) * _map->getScale());
 			}
 
 			if (Options::oxceThumbButtons && action->getDetails()->type == SDL_MOUSEBUTTONDOWN)
@@ -3176,6 +3197,17 @@ inline void BattlescapeState::handle(Action *action)
 				{
 					saveVoxelView();
 				}
+
+				// HD render test dump (deterministic frame capture)
+				if (key == Options::keyBattleHdTestDump)
+				{
+					hdTestDump();
+				}
+				// HD render: cycle how the canvas draws sprites (nearest / HD packs / HD packs + smoothing)
+				if (key == Options::keyBattleHdModeToggle)
+				{
+					hdModeToggle();
+				}
 			}
 		}
 	}
@@ -3306,6 +3338,115 @@ void BattlescapeState::saveAIMap()
 
 	CrossPlatform::writeFile(ss.str(), out);
 	Log(LOG_INFO) << "saveAIMap() completed in " << SDL_GetTicks() - start << "ms.";
+}
+
+/**
+ * HD render test: deterministic capture of the current battlescape frame.
+ * Writes three files into the user folder:
+ *   hdtestNNN_map.png   - the map surface (no UI), base resolution, before any scaling
+ *   hdtestNNN_frame.png - the whole base-resolution frame (UI included, no cursor)
+ *   hdtestNNN.json      - the state that produced them (camera, resolution, scale, mods)
+ * Animation is frozen at phase 0 for that frame and the 3D cursor is hidden, so two
+ * dumps of the same save with the same camera must be byte-identical.
+ */
+/**
+ * HD render: cycles the sprite drawing mode of the true-color canvas and shows which one is on.
+ */
+void BattlescapeState::hdModeToggle()
+{
+	if (std::string(_map->getCanvasName()) != "Canvas32")
+	{
+		warningRaw("HD: classic 8-bit canvas, no HD modes (needs a 32-bit display: OpenGL or a scaler)");
+		return;
+	}
+	const int mode = (_map->getHdMode() + 1) % HD_MODE_COUNT;
+	Options::oxceHdMode = mode;
+	_map->setHdMode(mode);
+	static const char *names[HD_MODE_COUNT] = { "HD mode 0: nearest (classic pixels)", "HD mode 1: HD packs, nearest for the rest", "HD mode 2: HD packs + xBRZ smoothing" };
+	warningRaw(names[mode]);
+}
+
+void BattlescapeState::hdTestDump()
+{
+	const std::string prefix = HdTest::nextDumpPrefix();
+	Screen *screen = _game->getScreen();
+	Camera *camera = _map->getCamera();
+
+	_map->hdTestFreeze(prefix + "_map.png");
+	screen->requestHdTestDump(prefix + "_frame.png");
+
+	std::vector<std::pair<std::string, std::string> > f;
+	auto num = [](long long v) { return std::to_string(v); };
+	auto boolean = [](bool v) { return std::string(v ? "true" : "false"); };
+
+	f.emplace_back("format", num(1));
+	f.emplace_back("version", HdTest::jsonString(std::string(OPENXCOM_VERSION_SHORT) + OPENXCOM_VERSION_GIT));
+	f.emplace_back("master", HdTest::jsonString(Options::getActiveMaster()));
+	{
+		std::string mods = "[";
+		bool first = true;
+		for (const auto& pair : Options::mods)
+		{
+			if (!pair.second) continue;
+			if (!first) mods += ", ";
+			mods += HdTest::jsonString(pair.first);
+			first = false;
+		}
+		mods += "]";
+		f.emplace_back("mods", mods);
+	}
+	f.emplace_back("save", HdTest::jsonString(_game->getSavedGame()->getName()));
+	f.emplace_back("baseWidth", num(screen->getBaseWidth()));
+	f.emplace_back("baseHeight", num(screen->getBaseHeight()));
+	f.emplace_back("bufferBpp", num(screen->getBpp()));
+	f.emplace_back("layered", boolean(screen->isLayered()));
+	f.emplace_back("worldScale", num(screen->getWorldScale()));
+	f.emplace_back("canvas", HdTest::jsonString(_map->getCanvasName()));
+	f.emplace_back("hdMode", num(_map->getHdMode()));
+	f.emplace_back("hdThreads", num(HdWorkers::instance().threads()));
+	f.emplace_back("drawMs", num((long long)(_map->getLastDrawMs() * 100)) + "e-2");
+	f.emplace_back("flipMs", num((long long)(screen->getLastFlipMs() * 100)) + "e-2");
+	f.emplace_back("displayWidth", num(Options::displayWidth));
+	f.emplace_back("displayHeight", num(Options::displayHeight));
+	f.emplace_back("battlescapeScale", num(Options::battlescapeScale));
+	f.emplace_back("useOpenGL", boolean(Options::useOpenGL));
+	f.emplace_back("useOpenGLShader", HdTest::jsonString(Options::useOpenGLShader));
+	f.emplace_back("useXBRZFilter", boolean(Options::useXBRZFilter));
+	f.emplace_back("useHQXFilter", boolean(Options::useHQXFilter));
+	f.emplace_back("useScaleFilter", boolean(Options::useScaleFilter));
+	f.emplace_back("spriteWidth", num(_map->getSpriteWidth()));
+	f.emplace_back("spriteHeight", num(_map->getSpriteHeight()));
+	f.emplace_back("k", num(_map->getSpriteWidth() / 32));
+	f.emplace_back("mapWidth", num(_save->getMapSizeX()));
+	f.emplace_back("mapHeight", num(_save->getMapSizeY()));
+	f.emplace_back("mapDepth", num(_save->getMapSizeZ()));
+	f.emplace_back("iconHeight", num(_map->getIconHeight()));
+	f.emplace_back("iconWidth", num(_map->getIconWidth()));
+	f.emplace_back("mapSurfaceWidth", num(_map->getWidth()));
+	f.emplace_back("mapSurfaceHeight", num(_map->getHeight()));
+	{
+		Position off = camera->getMapOffset();
+		Position center = camera->getCenterPosition();
+		f.emplace_back("cameraOffsetX", num(off.x));
+		f.emplace_back("cameraOffsetY", num(off.y));
+		f.emplace_back("cameraOffsetZ", num(off.z));
+		f.emplace_back("cameraCenterX", num(center.x));
+		f.emplace_back("cameraCenterY", num(center.y));
+		f.emplace_back("cameraCenterZ", num(center.z));
+		f.emplace_back("viewLevel", num(camera->getViewLevel()));
+		f.emplace_back("showAllLayers", boolean(camera->getShowAllLayers()));
+	}
+	f.emplace_back("animFrame", num(_save->getAnimFrame()));
+	f.emplace_back("turn", num(_save->getTurn()));
+	f.emplace_back("side", num((int)_save->getSide()));
+	f.emplace_back("globalShade", num(_save->getGlobalShade()));
+	f.emplace_back("nightVision", boolean(_map->isNightVisionOn()));
+	f.emplace_back("debugVisionMode", num(_map->getDebugVisionMode()));
+	f.emplace_back("fadeShade", num(_map->getFadeShade()));
+	f.emplace_back("debugMode", boolean(_save->getDebugMode()));
+
+	HdTest::writeJson(prefix + ".json", f);
+	Log(LOG_INFO) << "HdTest: dump requested as " << prefix;
 }
 
 /**
@@ -4076,7 +4217,7 @@ void BattlescapeState::resize(int &dX, int &dY)
 	_map->setWidth(Options::baseXResolution);
 	_map->setHeight(Options::baseYResolution);
 	_map->getCamera()->resize();
-	_map->getCamera()->jumpXY(dX/2, dY/2);
+	_map->getCamera()->jumpXY(dX/2 * _map->getScale(), dY/2 * _map->getScale());
 
 	for (auto* surf : _surfaces)
 	{
@@ -4122,7 +4263,7 @@ void BattlescapeState::stopScrolling(Action *action)
 	{
 		SDL_WarpMouse(_cursorPosition.x, _cursorPosition.y);
 		action->setMouseAction(_cursorPosition.x, _cursorPosition.y, _map->getX(), _map->getY());
-		_map->setSelectorPosition(action->getAbsoluteXMouse(), action->getAbsoluteYMouse());
+		_map->setSelectorPosition((int)action->getAbsoluteXMouse() * _map->getScale(), (int)action->getAbsoluteYMouse() * _map->getScale());
 	}
 	// reset our "mouse position stored" flag
 	_cursorPosition.z = 0;

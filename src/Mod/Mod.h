@@ -18,6 +18,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <map>
+#include <set>
 #include <unordered_map>
 #include <vector>
 #include <string>
@@ -162,6 +163,10 @@ private:
 	std::map<std::string, Font*> _fonts;
 	std::map<std::string, Surface*> _surfaces;
 	std::map<std::string, SurfaceSet*> _sets;
+	/// HD render: scale factor k (0 = not determined yet) and the k-times-bigger copies of battle sprite sets, keyed by source set.
+	int _hdScale = 0;
+	std::map<const SurfaceSet*, SurfaceSet*> _hdSets;
+	std::set<const SurfaceSet*> _hdPacksLoaded;
 	std::map<std::string, SoundSet*> _sounds;
 	std::map<std::string, Music*> _musics;
 	std::vector<Uint16> _voxelData;
@@ -482,6 +487,14 @@ public:
 	Surface *getSurface(const std::string &name, bool error = true);
 	/// Gets a particular surface set.
 	SurfaceSet *getSurfaceSet(const std::string &name, bool error = true);
+	/// HD render: scale factor k of the battlescape sprites (BLANKS.PCK frame width / 32), 1 = original.
+	int getHdScale();
+	/// HD render: re-reads the HD scale option (call at the start of a battle, before its terrain loads); drops the scaled sets when it changed.
+	void refreshHdScale();
+	/// HD render: gets a surface set scaled k times for the battlescape (the set itself when k = 1).
+	SurfaceSet *getHdSurfaceSet(const std::string &name, bool error = true);
+	/// HD render: gets the k-times-scaled copy of a set (the set itself when k = 1 or null).
+	SurfaceSet *getHdSurfaceSet(SurfaceSet *set);
 	/// Gets a particular music.
 	Music *getMusic(const std::string &name, bool error = true) const;
 	/// Gets the available music tracks.
@@ -502,6 +515,8 @@ public:
 	Sound *getSoundByDepth(unsigned int depth, unsigned int sound) const;
 	/// Gets list of LUT data.
 	const std::vector<std::vector<Uint8> > *getLUTs() const;
+	/// Gets the transparency tints (color x opacity level) the LUTs were built from.
+	const std::vector<std::array<SDL_Color, TransparenciesOpacityLevels>> &getTransparencies() const { return _transparencies; }
 
 
 	/// Check for obsolete error based on year.
@@ -661,6 +676,12 @@ public:
 
 	/// Loads a list of mods.
 	void loadAll();
+	/// Registers the HD pictures (hd/UI) of the mods' images.
+	void loadHdUiArt();
+	/// True for an image the engine redraws itself after loading (no HD picture of it can match).
+	static bool isPatchedSurface(const std::string &name);
+	/// Writes surface sets as 8-bit PNG sheets for the HD art tools (`which`: units, all, or set names).
+	int exportHdSets(const std::string &folder, const std::string &which) const;
 	/// Generates the starting saved game.
 	SavedGame *newSave(GameDifficulty diff) const;
 	/// Gets the ruleset for a country type.

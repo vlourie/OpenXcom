@@ -719,6 +719,25 @@ void Tile::animate()
 }
 
 /**
+ * HD render test: puts the tile into a deterministic animation state.
+ * Animated terrain objects go back to frame 0 (UFO doors keep their open/closed
+ * state, which is part of the save), and the random smoke/fire animation offset
+ * assigned on load is zeroed.
+ */
+void Tile::hdTestResetAnimation()
+{
+	for (int i = O_FLOOR; i < O_MAX; ++i)
+	{
+		if (_objects[i] && !_objectsCache[i].isUfoDoor)
+		{
+			_objectsCache[i].currentFrame = 0;
+		}
+		updateSprite((TilePart)i);
+	}
+	_animationOffset = 0;
+}
+
+/**
  * Update cached value of sprite.
  */
 void Tile::updateSprite(TilePart part)

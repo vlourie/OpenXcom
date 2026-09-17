@@ -260,6 +260,10 @@ public:
 	void saveVoxelMap();
 	/// Saves a first-person voxel view of the battlescape.
 	void saveVoxelView();
+	/// HD render test: writes a deterministic capture of the current frame (map, full frame, JSON sidecar).
+	void hdTestDump();
+	/// HD render: cycles the sprite drawing mode of the canvas (nearest / HD packs / HD packs + smoothing).
+	void hdModeToggle();
 	/// Handler for the mouse moving over the icons, disables the tile selection cube.
 	void mouseInIcons(Action *action);
 	/// Handler for the mouse going out of the icons, enabling the tile selection cube.

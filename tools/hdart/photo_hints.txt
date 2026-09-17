@@ -1,0 +1,4 @@
+# Подсказки photo_ui.py на отдельные картинки: `ИМЯ: что добавить в промпт | что запретить (негатив)`.
+# Строка `*: ...` действует на все. Негатив работает только без --fast (там включён CFG).
+# Файл подхватывается сам (tools\hdart\photo_hints.txt); переделать картинку: --force --names ИМЯ
+AI_Hooded_CPAL: the woman under the cloak is nude, bare skin, no armour; behind her only fog, mist and candles, no building | armour, plate armour, clothes, dressed, cathedral, arches

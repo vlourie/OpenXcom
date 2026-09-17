@@ -36,6 +36,8 @@ class Timer
 {
 public:
 	static int maxFrameSkip;
+	/// Frame skip the HD battlescape asks for on top of the option (so that the game speed follows the settings when frames are slow).
+	static int hdFrameSkip;
 	static Uint32 gameSlowSpeed;
 
 private:

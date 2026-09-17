@@ -124,6 +124,7 @@ set ( battlescape_src
   Battlescape/ScannerState.cpp
   Battlescape/ScannerView.cpp
   Battlescape/SkillMenuState.cpp
+  Battlescape/SoldierStatChangeState.cpp
   Battlescape/TileEngine.cpp
   Battlescape/TurnDiaryState.cpp
   Battlescape/UnitDieBState.cpp
@@ -150,6 +151,13 @@ set ( engine_src
   Engine/Font.cpp
   Engine/Game.cpp
   Engine/GMCat.cpp
+  Engine/HdBlit.cpp
+  Engine/HdCanvas.cpp
+  Engine/HdSmooth.cpp
+  Engine/HdSprites.cpp
+  Engine/HdUiArt.cpp
+  Engine/HdTest.cpp
+  Engine/HdWorkers.cpp
   Engine/InteractiveSurface.cpp
   Engine/Language.cpp
   Engine/LanguagePlurality.cpp
@@ -629,7 +637,14 @@ if (WIN32)
   set(WIN32_LIBS imagehlp dbghelp)
 endif(WIN32)
 
-target_link_libraries ( openxcom ${system_libs} ${PKG_DEPS_LDFLAGS} ${EXTRA_XCOM_LIBS} ${WIN32_LIBS} -Wl,--start-group jpeg png z tiff webp mad vorbisfile vorbis -l:libogg.a mikmod -l:libwinpthread.a winmm dxguid dinput8 ole32 oleaut32 imm32 version setupapi jbig zstd lzma lerc deflate sharpyuv -l:libFLAC.dll.a -Wl,--end-group )
+if ( WIN32 )
+  # static MSYS2/MinGW link set for the portable Windows build
+  target_link_libraries ( openxcom ${system_libs} ${PKG_DEPS_LDFLAGS} ${EXTRA_XCOM_LIBS} ${WIN32_LIBS} -Wl,--start-group jpeg png z tiff webp mad vorbisfile vorbis -l:libogg.a mikmod -l:libwinpthread.a winmm dxguid dinput8 ole32 oleaut32 imm32 version setupapi jbig zstd lzma lerc deflate sharpyuv -l:libFLAC.dll.a -Wl,--end-group )
+else ()
+  # the HD renderer draws on std::thread workers
+  find_package ( Threads REQUIRED )
+  target_link_libraries ( openxcom ${system_libs} ${PKG_DEPS_LDFLAGS} ${EXTRA_XCOM_LIBS} ${WIN32_LIBS} Threads::Threads )
+endif ()
 
 # Pack libraries into bundle and link executable appropriately
 if ( APPLE AND CREATE_BUNDLE )

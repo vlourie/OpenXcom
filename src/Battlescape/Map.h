@@ -18,12 +18,14 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "../Engine/InteractiveSurface.h"
+#include "../Engine/HdCanvas.h"
 #include "../Engine/Options.h"
 #include "../Engine/Collections.h"
 #include "../Mod/MapData.h"
 #include "Position.h"
 #include "Particle.h"
 #include <vector>
+#include <string>
 
 namespace OpenXcom
 {
@@ -41,6 +43,7 @@ class Text;
 class Tile;
 class UnitSprite;
 class NumberText;
+class HdCanvas;
 
 enum CursorType { CT_NONE, CT_NORMAL, CT_AIM, CT_PSI, CT_WAYPOINT, CT_THROW };
 enum TilePart : int;
@@ -67,6 +70,9 @@ private:
 	static const int NIGHT_VISION_MAX_SHADE = 8;
 	static const int BULLET_SPRITES = 35;
 	static const int UNIT_MARKER_MAX = 10;
+	/// Original tile sprite size the map geometry was designed around.
+	static const int BASE_SPRITE_WIDTH = 32;
+	static const int BASE_SPRITE_HEIGHT = 40;
 	Timer *_scrollMouseTimer, *_scrollKeyTimer, *_obstacleTimer;
 	Timer *_fadeTimer;
 	int _fadeShade;
@@ -80,6 +86,20 @@ private:
 	Surface *_stunIndicator, *_woundIndicator, *_burnIndicator, *_shockIndicator;
 	bool _anyIndicator, _isAltPressed, _isCtrlPressed;
 	int _spriteWidth, _spriteHeight;
+	/// HD render scale k = _spriteWidth / 32: the map surface and all screen offsets are k times the base resolution.
+	int _k;
+	/// Base-resolution scratch surface used to draw the hidden movement message before scaling it.
+	Surface *_messageScratch;
+	/// The canvas all battlescape drawing goes to (classic 8-bit surface or the true-color world).
+	HdCanvas *_canvas;
+	/// HD render: floors with pack variants are drawn by the ground pattern (option oxceHdGroundVariants).
+	bool _hdGroundVariants;
+	/// The seed of this battle's ground pattern (from the map blocks: the same battle keeps its look after a load).
+	Uint32 groundSeed() const;
+	/// HD light: the light field of the tile being drawn, per-frame shade cache, and whether the field is in use this frame.
+	HdLight _hdLight;
+	std::vector<Sint8> _hdShadeCache;
+	bool _hdLightOn = false;
 	int _selectorX, _selectorY;
 	int _mouseX, _mouseY;
 	CursorType _cursorType;
@@ -110,7 +130,16 @@ private:
 	SurfaceSet *_projectileSet;
 
 	void drawUnit(UnitSprite &unitSprite, Tile *unitTile, Tile *currTile, Position tileScreenPosition, bool topLayer, BattleUnit* movingUnit = nullptr);
-	void drawTerrain(Surface *surface);
+	void drawTerrain(HdCanvas *canvas);
+	void blitMessage();
+	void createCanvas();
+	SDL_Color vaporTint(const Particle &p) const;
+	/// HD light: the drawing shade of a tile, cached for the frame (reShade is not cheap in night vision).
+	int hdShadeOf(Tile *tile);
+	/// HD light: the color of the light on a tile from its light layers (ambient/fire/items/units).
+	void hdTintOf(const Tile *tile, float *tint) const;
+	/// HD light: computes the light field of a tile from its corners and hands it to the canvas.
+	void updateHdLight(Tile *tile, int tileShade, const Position &pos);
 	int getTerrainLevel(const Position& pos, int size) const;
 	int getWallShade(TilePart part, Tile* tileFrot);
 	int _iconHeight, _iconWidth, _messageColor;
@@ -118,6 +147,12 @@ private:
 	const std::vector<Uint8> *_transparencies;
 	bool _showObstacles;
 	bool _showInfoOnCursor;
+	// HD render test (deterministic frame capture), see Engine/HdTest.h
+	bool _hdTestFrozen = false;
+	std::string _hdTestMapDumpPath;
+	CursorType _hdTestSavedCursorType = CT_NORMAL;
+	int _hdTestSavedCursorSize = 1;
+	double _lastDrawMs = 0.0;
 public:
 	/// Creates a new map at the specified position and size.
 	Map(Game* game, int width, int height, int x, int y, int visibleMapHeight);
@@ -195,6 +230,8 @@ public:
 	void setUnitDying(bool flag);
 	/// Refreshes the battlescape selector after scrolling.
 	void refreshSelectorPosition();
+	/// Blits the map: into the screen's world layer when the output is layered, else like any surface.
+	void blit(SDL_Surface *surface) override;
 	/// Special handling for updating map height.
 	void setHeight(int height) override;
 	/// Special handling for updating map width.
@@ -215,6 +252,32 @@ public:
 	bool getBlastFlash() const;
 	/// Modify shade for fading
 	int reShade(Tile *tile);
+	/// HD render test: freeze all animation for one drawn frame and optionally dump the map surface.
+	void hdTestFreeze(const std::string &mapDumpPath);
+	/// HD render test: true while the frozen frame has not been drawn yet.
+	bool isHdTestFrozen() const { return _hdTestFrozen; }
+	/// Is night vision currently on?
+	bool isNightVisionOn() const { return _nightVisionOn; }
+	/// Gets the debug vision mode (0 = off).
+	int getDebugVisionMode() const { return _debugVisionMode; }
+	/// Gets the current fade shade (night vision transition).
+	int getFadeShade() const { return _fadeShade; }
+	/// HD render scale factor read from BLANKS.PCK (1 = original 32x40 tiles).
+	static int hdScale(Game *game);
+	/// Gets the HD render scale k of this map.
+	int getScale() const { return _k; }
+	/// Gets the name of the canvas type the map draws on (HD render test dumps).
+	const char *getCanvasName() const;
+	/// Selects how the canvas draws palette sprites (HdMode) and redraws the map.
+	void setHdMode(int mode);
+	/// Gets the mode the canvas draws palette sprites with.
+	int getHdMode() const;
+	/// Time the last full map draw took, milliseconds (HD render profiling).
+	double getLastDrawMs() const { return _lastDrawMs; }
+	/// Gets the tile sprite width the map geometry is based on (32 in vanilla).
+	int getSpriteWidth() const { return _spriteWidth; }
+	/// Gets the tile sprite height the map geometry is based on (40 in vanilla).
+	int getSpriteHeight() const { return _spriteHeight; }
 	/// toggle the night-vision mode
 	void enableNightVision();
 	void toggleNightVision();

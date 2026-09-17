@@ -769,6 +769,9 @@ void BattlescapeGenerator::run()
 {
 	bool isPreview = _save->isPreview();
 
+	// HD render: a new battle picks up the HD scale option (its terrain loads at that scale)
+	_game->getMod()->refreshHdScale();
+
 	_save->setAlienCustom(_alienCustomDeploy ? _alienCustomDeploy->getType() : "", _alienCustomMission ? _alienCustomMission->getType() : "");
 
 	// Note: this considers also fake underwater UFO deployment (via _alienCustomMission)
@@ -2457,7 +2460,7 @@ int BattlescapeGenerator::loadExtraTerrain(RuleTerrain *terrain)
 
 		for (auto* mds : *terrain->getMapDataSets())
 		{
-			mds->loadData(_game->getMod()->getMCDPatch(mds->getName()));
+			mds->loadData(_game->getMod()->getMCDPatch(mds->getName()), true, _game->getMod()->getHdScale());
 			_save->getMapDataSets()->push_back(mds);
 		}
 
@@ -2804,7 +2807,7 @@ void BattlescapeGenerator::generateMap(const std::vector<MapScript*> *script, co
 	// Load in the default terrain data
 	for (auto* mds : *_terrain->getMapDataSets())
 	{
-		mds->loadData(_game->getMod()->getMCDPatch(mds->getName()));
+		mds->loadData(_game->getMod()->getMCDPatch(mds->getName()), true, _game->getMod()->getHdScale());
 		_save->getMapDataSets()->push_back(mds);
 		mapDataSetIDOffset++;
 	}
@@ -3279,7 +3282,7 @@ void BattlescapeGenerator::generateMap(const std::vector<MapScript*> *script, co
 	{
 		for (auto* mds : *ufoTerrain->getMapDataSets())
 		{
-			mds->loadData(_game->getMod()->getMCDPatch(mds->getName()));
+			mds->loadData(_game->getMod()->getMCDPatch(mds->getName()), true, _game->getMod()->getHdScale());
 			_save->getMapDataSets()->push_back(mds);
 			craftDataSetIDOffset++;
 		}
@@ -3305,7 +3308,7 @@ void BattlescapeGenerator::generateMap(const std::vector<MapScript*> *script, co
 		_craftRules->getBattlescapeTerrainData()->refreshMapDataSets(_craft->getSkinIndex(), _game->getMod()); // change skin if needed
 		for (auto* mds : *_craftRules->getBattlescapeTerrainData()->getMapDataSets())
 		{
-			mds->loadData(_game->getMod()->getMCDPatch(mds->getName()));
+			mds->loadData(_game->getMod()->getMCDPatch(mds->getName()), true, _game->getMod()->getHdScale());
 			_save->getMapDataSets()->push_back(mds);
 		}
 		loadMAP(craftMap, _craftPos.x * 10, _craftPos.y * 10, _craftZ, _craftRules->getBattlescapeTerrainData(), mapDataSetIDOffset + craftDataSetIDOffset, _craftRules->isMapVisible(), true);

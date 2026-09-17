@@ -17,6 +17,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "ItemSprite.h"
+#include "../Engine/HdCanvas.h"
 #include "../Mod/Mod.h"
 #include "../Savegame/BattleUnit.h"
 #include "../Savegame/BattleItem.h"
@@ -32,8 +33,8 @@ namespace OpenXcom
  * @param x X position in pixels.
  * @param y Y position in pixels.
  */
-ItemSprite::ItemSprite(Surface* dest, const Mod* mod, const SavedBattleGame* save, int frame) :
-	_itemSurface(const_cast<Mod*>(mod)->getSurfaceSet("FLOOROB.PCK")),
+ItemSprite::ItemSprite(HdCanvas* dest, const Mod* mod, const SavedBattleGame* save, int frame) :
+	_itemSurface(const_cast<Mod*>(mod)->getHdSurfaceSet("FLOOROB.PCK")),
 	_animationFrame(frame),
 	_dest(dest),
 	_save(save)
@@ -60,7 +61,7 @@ void ItemSprite::draw(const BattleItem* item, int x, int y, int shade)
 	{
 		ScriptWorkerBlit work;
 		BattleItem::ScriptFill(&work, item, _save, BODYPART_ITEM_FLOOR, _animationFrame, shade);
-		work.executeBlit(sprite, _dest, x, y, shade);
+		_dest->blitScripted(work, sprite, x, y, shade, _dest->fullArea());
 	}
 }
 
@@ -72,7 +73,7 @@ void ItemSprite::drawShadow(const BattleItem* item, int x, int y)
 	const Surface* sprite = item->getFloorSprite(_itemSurface, _save, _animationFrame, 16);
 	if (sprite)
 	{
-		sprite->blitNShade(_dest, x, y, 16);
+		_dest->blit(sprite, x, y, 16);
 	}
 }
 

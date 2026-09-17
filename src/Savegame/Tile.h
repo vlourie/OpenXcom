@@ -318,6 +318,8 @@ public:
 	int getExplosiveType() const;
 	/// Animated the tile parts.
 	void animate();
+	/// HD render test: resets animation phase (tile object frames and smoke/fire offset) to a deterministic state.
+	void hdTestResetAnimation();
 	/// Update cached value of sprite.
 	void updateSprite(TilePart part);
 	/// Get object sprites.

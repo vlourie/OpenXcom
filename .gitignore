@@ -86,3 +86,11 @@ bin/user
 /.kdev4/
 /*.kdev4
 /src/OpenXcom.2010.vcxproj.user
+
+# HD art pipeline: local python environment and extracted sheets
+tools/hdart/.venv/
+hdart_sheets/
+__pycache__/
+
+# one-click build output (tools/build)
+dist/

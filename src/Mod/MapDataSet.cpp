@@ -22,6 +22,7 @@
 #include <SDL_endian.h>
 #include "../Engine/Exception.h"
 #include "../Engine/SurfaceSet.h"
+#include "../Engine/HdSprites.h"
 #include "../Engine/FileMap.h"
 #include "../Engine/Logger.h"
 
@@ -102,7 +103,7 @@ SurfaceSet *MapDataSet::getSurfaceset() const
  * Loads terrain data in XCom format (MCD & PCK files).
  * @sa http://www.ufopaedia.org/index.php?title=MCD
  */
-void MapDataSet::loadData(MCDPatch *patch, bool validate)
+void MapDataSet::loadData(MCDPatch *patch, bool validate, int hdScale)
 {
 	// prevents loading twice
 	if (_loaded) return;
@@ -245,6 +246,14 @@ void MapDataSet::loadData(MCDPatch *patch, bool validate)
 	// Load terrain sprites/surfaces/PCK files into a surfaceset
 	_surfaceSet = new SurfaceSet(32, 40);
 	_surfaceSet->loadPck("TERRAIN/" + _name + ".PCK", "TERRAIN/" + _name + ".TAB");
+	// HD render: terrain sets are only ever drawn on the battlescape, so they are scaled in place
+	_surfaceSet->hdScaleInPlace(hdScale);
+	// ... and get their HD pack from hd/TERRAIN/<name>.PCK/<index>.png
+	const int hdFrames = HdSprites::loadPack("TERRAIN/" + _name + ".PCK", _surfaceSet, hdScale);
+	if (hdFrames > 0)
+	{
+		Log(LOG_INFO) << "HD render: " << hdFrames << " HD frame(s) for terrain " << _name;
+	}
 }
 
 /**
@@ -259,6 +268,7 @@ void MapDataSet::unloadData()
 			delete mapdata;
 		}
 		_objects.clear();
+		HdSprites::removeSet(_surfaceSet);
 		delete _surfaceSet;
 		_loaded = false;
 	}

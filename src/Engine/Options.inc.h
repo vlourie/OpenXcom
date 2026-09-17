@@ -40,7 +40,8 @@ OPT SDLKey keyBattleLeft, keyBattleRight, keyBattleUp, keyBattleDown, keyBattleL
 keyBattleUseLeftHand, keyBattleUseRightHand, keyBattleInventory, keyBattleMap, keyBattleOptions, keyBattleEndTurn, keyBattleAbort, keyBattleStats, keyBattleKneel,
 keyBattleReserveKneel, keyBattleReload, keyBattlePersonalLighting, keyBattleReserveNone, keyBattleReserveSnap, keyBattleReserveAimed, keyBattleReserveAuto,
 keyBattleCenterEnemy1, keyBattleCenterEnemy2, keyBattleCenterEnemy3, keyBattleCenterEnemy4, keyBattleCenterEnemy5, keyBattleCenterEnemy6, keyBattleCenterEnemy7, keyBattleCenterEnemy8,
-keyBattleCenterEnemy9, keyBattleCenterEnemy10, keyBattleVoxelView, keyBattleZeroTUs, keyInvCreateTemplate, keyInvApplyTemplate, keyInvClear, keyInvAutoEquip;
+keyBattleCenterEnemy9, keyBattleCenterEnemy10, keyBattleVoxelView, keyBattleZeroTUs, keyInvCreateTemplate, keyInvApplyTemplate, keyInvClear, keyInvAutoEquip,
+keyBattleHdTestDump, keyBattleHdModeToggle;
 
 // Extra hotkeys (OXCE)
 OPT SDLKey keyGeoDailyPilotExperience, keyGeoUfoTracker, keyGeoTechTreeViewer, keyGeoGlobalResearch, keyGeoGlobalProduction, keyGeoGlobalAlienContainment, keyGeoGlobalTransfers,
@@ -145,6 +146,21 @@ OPT bool oxceListVFSContents;
 OPT bool oxceEnablePaletteFlickerFix;
 OPT bool oxceRecommendedOptionsWereSet;
 OPT std::string password;
+
+// HD render: battlescape sprite scale (1 = classic 32x40, 2..4 = HD; needs a 32-bit display), applied at the next battle
+OPT int oxceHdScale;
+OPT bool oxceHdPictures;
+OPT bool oxceHdUiSmooth;
+// HD render: how the true-color battlescape canvas draws palette sprites (0 nearest, 1 HD packs, 2 HD packs + xBRZ smoothing)
+OPT int oxceHdMode;
+// HD render: smooth, colored light on the true-color canvas (HD modes only)
+OPT bool oxceHdLight;
+// HD render: floors whose HD pack has variants (<index>.v1.png ...) vary over the map in patches (HD modes only)
+OPT bool oxceHdGroundVariants;
+// HD render: threads the battlescape frame is drawn with (0 = one per core)
+OPT int oxceHdThreads;
+// HD render: extra game steps a slow frame may catch up on, so that the unit speed settings hold when drawing is slower than they ask (0 = one step per frame)
+OPT int oxceHdFrameSkip;
 
 // OXCE hidden, but moddable via fixedUserOptions and/or recommendedUserOptions
 OPT int oxceStartUpTextMode;

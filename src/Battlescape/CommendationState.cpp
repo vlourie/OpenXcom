@@ -17,6 +17,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "CommendationState.h"
+#include "SoldierStatChangeState.h"
 #include <sstream>
 #include "../Engine/Game.h"
 #include "../Mod/Mod.h"
@@ -38,7 +39,7 @@ namespace OpenXcom
  * Initializes all the elements in the Medals screen.
  * @param soldiersMedalled List of soldiers with medals.
  */
-CommendationState::CommendationState(std::vector<Soldier*> soldiersMedalled)
+CommendationState::CommendationState(std::vector<Soldier*> soldiersMedalled, std::shared_ptr<std::vector<SoldierStatChange>> statChanges) : _statChanges(statChanges)
 {
 	// Create object
 	_window = new Window(this, 320, 200, 0, 0);
@@ -92,6 +93,7 @@ CommendationState::CommendationState(std::vector<Soldier*> soldiersMedalled)
 		{
 			_lstSoldiers->addRow(2, "", ""); // Blank row, will be filled in later
 			_commendationsNames.push_back("");
+			_rowSoldiers.push_back(nullptr);
 			row++;
 		}
 		titleChosen = false;
@@ -142,6 +144,7 @@ CommendationState::CommendationState(std::vector<Soldier*> soldiersMedalled)
 					}
 					_lstSoldiers->addRow(2, wssName.str().c_str(), tr(soldierComm->getDecorationLevelName(skipCounter)).c_str());
 					_commendationsNames.push_back("");
+					_rowSoldiers.push_back(soldier);
 					break;
 				}
 			}
@@ -180,7 +183,24 @@ CommendationState::~CommendationState()
 */
 void CommendationState::lstSoldiersMouseClick(Action *)
 {
-	Ufopaedia::openArticle(_game, _commendationsNames[_lstSoldiers->getSelectedRow()]);
+	size_t row = _lstSoldiers->getSelectedRow();
+	if (row < _rowSoldiers.size() && _rowSoldiers[row])
+	{
+		// soldier row: show what the mission (and this medal) changed
+		if (_statChanges)
+		{
+			int index = SoldierStatChangeState::findSoldier(*_statChanges, _rowSoldiers[row]);
+			if (index >= 0)
+			{
+				_game->pushState(new SoldierStatChangeState(_statChanges, index));
+			}
+		}
+		return;
+	}
+	if (row < _commendationsNames.size())
+	{
+		Ufopaedia::openArticle(_game, _commendationsNames[row]);
+	}
 }
 
 /**

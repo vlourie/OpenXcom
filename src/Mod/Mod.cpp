@@ -30,6 +30,9 @@
 #include "../Engine/Font.h"
 #include "../Engine/Surface.h"
 #include "../Engine/SurfaceSet.h"
+#include "../Engine/HdSprites.h"
+#include "../Engine/HdUiArt.h"
+#include "../Engine/SDL2Helpers.h"
 #include "../Engine/Music.h"
 #include "../Engine/GMCat.h"
 #include "../Engine/SoundSet.h"
@@ -619,6 +622,11 @@ Mod::~Mod()
 	{
 		delete pair.second;
 	}
+	HdSprites::clear();
+	for (auto& pair : _hdSets)
+	{
+		delete pair.second;
+	}
 	for (auto& pair : _palettes)
 	{
 		delete pair.second;
@@ -907,6 +915,107 @@ SurfaceSet *Mod::getSurfaceSet(const std::string &name, bool error)
 {
 	lazyLoadSurface(name);
 	return getRule(name, "Sprite Set", _sets, error);
+}
+
+/**
+ * HD render: the scale factor of the battlescape sprites: the "HD scale"
+ * option (1 = the original 32x40 tiles), or, when that is off, what a mod
+ * asks for by shipping a bigger BLANKS.PCK frame 0 (a 128x160 frame means 4).
+ * Fixed for the duration of a battle: see refreshHdScale().
+ * @return k >= 1.
+ */
+int Mod::getHdScale()
+{
+	if (_hdScale <= 0)
+	{
+		refreshHdScale();
+	}
+	return _hdScale;
+}
+
+/**
+ * HD render: reads the HD scale option again. A change throws away the
+ * k-scaled sets and the HD frames of the old scale, so it must only happen
+ * between battles (BattlescapeGenerator::run and the battle save loader call
+ * it before any terrain is loaded).
+ */
+void Mod::refreshHdScale()
+{
+	int k = std::max(1, std::min(6, Options::oxceHdScale));
+	if (k == 1)
+	{
+		SurfaceSet *blanks = getSurfaceSet("BLANKS.PCK", false);
+		if (blanks && blanks->getFrame(0))
+		{
+			k = std::max(1, blanks->getFrame(0)->getWidth() / 32);
+		}
+	}
+	if (k == _hdScale)
+	{
+		return;
+	}
+	if (_hdScale > 0)
+	{
+		Log(LOG_INFO) << "HD render: battlescape sprite scale changes from " << _hdScale << "x to " << k << "x";
+		HdSprites::clear();
+		for (auto& pair : _hdSets)
+		{
+			delete pair.second;
+		}
+		_hdSets.clear();
+		_hdPacksLoaded.clear();
+	}
+	else if (k > 1)
+	{
+		Log(LOG_INFO) << "HD render: battlescape sprite scale is " << k << "x";
+	}
+	_hdScale = k;
+}
+
+/**
+ * HD render: returns a surface set scaled k times for drawing on the
+ * battlescape. Sets that ship at the original size are upscaled
+ * nearest-neighbour on first use and cached; UI code keeps using the
+ * original set through getSurfaceSet().
+ * @param name Name of the surface set.
+ * @param error Report an error if not found.
+ * @return Pointer to the scaled set (the original set when k = 1).
+ */
+SurfaceSet *Mod::getHdSurfaceSet(const std::string &name, bool error)
+{
+	SurfaceSet *scaled = getHdSurfaceSet(getSurfaceSet(name, error));
+	if (scaled && _hdPacksLoaded.insert(scaled).second)
+	{
+		// first use of this set on the battlescape: pick up its HD pack (hd/<name>/<index>.png), if any mod ships one
+		const int loaded = HdSprites::loadPack(name, scaled, getHdScale());
+		if (loaded > 0)
+		{
+			Log(LOG_INFO) << "HD render: " << loaded << " HD frame(s) for " << name;
+		}
+	}
+	return scaled;
+}
+
+/**
+ * HD render: returns the k-times-scaled copy of a set.
+ * @param set Source set (may be null).
+ * @return Scaled copy, or the set itself when k = 1.
+ */
+SurfaceSet *Mod::getHdSurfaceSet(SurfaceSet *set)
+{
+	const int k = getHdScale();
+	if (!set || k <= 1)
+	{
+		return set;
+	}
+	auto it = _hdSets.find(set);
+	if (it != _hdSets.end())
+	{
+		return it->second;
+	}
+	SurfaceSet *scaled = set->hdScaledCopy(k);
+	_hdSets[set] = scaled;
+	return scaled;
 }
 
 /**
@@ -2472,6 +2581,251 @@ void Mod::loadAll()
 
 	sortLists();
 	modResources();
+	loadHdUiArt();
+}
+
+/**
+ * HD art tools: writes the frames of surface sets as 8-bit PNG sheets (the
+ * battlescape palette, 16 frames per row) with a .txt of the layout each,
+ * exactly as the game assembled them from the mods, so a tool can make the
+ * HD pack of a set frame by frame (tools/hdart/upscale_units.py).
+ * @param folder Where to write <set name>.png and <set name>.png.txt.
+ * @param which "units" (every armor's sprite sheet and HANDOB.PCK), "all"
+ * (every set), or a comma-separated list of set names.
+ * @return the number of sets written.
+ */
+int Mod::exportHdSets(const std::string &folder, const std::string &which) const
+{
+	std::vector<std::string> names;
+	if (which.empty() || which == "units")
+	{
+		std::set<std::string> unique;
+		for (const std::string &armorName : _armorsIndex)
+		{
+			const Armor *armor = getArmor(armorName, false);
+			if (armor && !armor->getSpriteSheet().empty())
+			{
+				unique.insert(armor->getSpriteSheet());
+			}
+		}
+		unique.insert("HANDOB.PCK");
+		names.assign(unique.begin(), unique.end());
+	}
+	else if (which == "all")
+	{
+		for (const auto &pair : _sets)
+		{
+			names.push_back(pair.first);
+		}
+	}
+	else
+	{
+		std::string::size_type from = 0;
+		while (from <= which.size())
+		{
+			const std::string::size_type comma = which.find(',', from);
+			const std::string name = which.substr(from, comma == std::string::npos ? std::string::npos : comma - from);
+			if (!name.empty())
+			{
+				names.push_back(name);
+			}
+			if (comma == std::string::npos) break;
+			from = comma + 1;
+		}
+	}
+	const Palette *palette = getPalette("PAL_BATTLESCAPE", false);
+	if (!palette)
+	{
+		Log(LOG_ERROR) << "HD export: no battlescape palette";
+		return 0;
+	}
+	if (!CrossPlatform::folderExists(folder) && !CrossPlatform::createFolder(folder))
+	{
+		Log(LOG_ERROR) << "HD export: cannot create " << folder;
+		return 0;
+	}
+	int written = 0;
+	size_t frames = 0;
+	for (const std::string &name : names)
+	{
+		auto it = _sets.find(name);
+		if (it == _sets.end() || !it->second)
+		{
+			Log(LOG_WARNING) << "HD export: no set " << name;
+			continue;
+		}
+		const std::string path = folder + "/" + name + ".png";
+		const int n = HdSprites::exportSet(it->second, palette->getColors(), path, 16);
+		if (n > 0)
+		{
+			++written;
+			frames += n;
+		}
+	}
+	Log(LOG_INFO) << "HD export: " << written << " set(s), " << frames << " frame(s) -> " << folder;
+	return written;
+}
+
+/**
+ * HD pictures of the interface's images: every hd/UI/<image name>.png in the
+ * mods is the HD picture of the image of that name (case-insensitive; an
+ * extraSprites type, or the file name of a single-image sprite), with an
+ * optional <image name>.pal.txt (the palette the picture was made with, for
+ * re-tinting). Only their sizes are read now; a picture is decoded when first
+ * drawn.
+ */
+/**
+ * True for an image that modResources() changes after the mods are loaded: an HD picture of it,
+ * made from the file, would draw the image as it was before that change.
+ */
+bool Mod::isPatchedSurface(const std::string &name)
+{
+	return name == "UNIBORD.PCK" || name == "BACK06.SCR" || name == "ALTBACK07.SCR" || name == "ALTGEOBORD.SCR";
+}
+
+void Mod::loadHdUiArt()
+{
+	HdUiArt::clear();
+	const FileMap::NameSet &files = FileMap::getVFolderContents("hd/UI");
+	if (files.empty())
+	{
+		return;
+	}
+	// the images by lower-case name (the virtual file system is lower-case)
+	std::map<std::string, std::string> names;
+	for (const auto &pair : _surfaces)
+	{
+		std::string lower = pair.first;
+		std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
+		names[lower] = pair.first;
+	}
+	for (const auto &pair : _extraSprites)
+	{
+		std::string lower = pair.first;
+		std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
+		names[lower] = pair.first;
+	}
+	// ... and by the file name of a single-image sprite (a mod's picture kept under its own file name)
+	for (const auto &pair : _extraSprites)
+	{
+		for (ExtraSprites *sprites : pair.second)
+		{
+			if (!sprites->getSingleImage() || !sprites->getSprites() || sprites->getSprites()->empty())
+			{
+				continue;
+			}
+			std::string file = sprites->getSprites()->begin()->second;
+			const size_t slash = file.find_last_of("/\\");
+			if (slash != std::string::npos) file = file.substr(slash + 1);
+			const size_t dot = file.find_last_of('.');
+			if (dot != std::string::npos) file = file.substr(0, dot);
+			std::transform(file.begin(), file.end(), file.begin(), ::tolower);
+			if (!file.empty() && names.find(file) == names.end())
+			{
+				names[file] = pair.first;
+			}
+		}
+	}
+	int loaded = 0;
+	for (const std::string &file : files)
+	{
+		if (file.size() < 5 || file.substr(file.size() - 4) != ".png")
+		{
+			continue;
+		}
+		const std::string lower = file.substr(0, file.size() - 4);
+		auto it = names.find(lower);
+		if (it == names.end())
+		{
+			Log(LOG_WARNING) << "HD interface: hd/UI/" << file << " matches no image of the mods";
+			continue;
+		}
+		if (isPatchedSurface(it->second))
+		{
+			// modResources() redraws parts of these images after the mods are loaded (the rows of
+			// the battlescape info screen, the graph screen's grid), so a picture made from the
+			// file cannot match what the game draws - it would show the old lines over the new
+			Log(LOG_INFO) << "HD interface: hd/UI/" << file << " is of an image the engine redraws itself - not used";
+			continue;
+		}
+		Surface *base = getSurface(it->second, false);
+		if (!base)
+		{
+			continue;
+		}
+		// only the size now: the picture itself is read when first drawn (a mod can have thousands)
+		int width = 0, height = 0;
+		if (!HdSprites::pngSize("hd/UI/" + file, width, height))
+		{
+			Log(LOG_WARNING) << "HD interface: hd/UI/" << file << " is not a PNG";
+			continue;
+		}
+		std::vector<SDL_Color> palette;
+		const std::string palPath = "hd/UI/" + lower + ".pal.txt";
+		if (FileMap::fileExists(palPath))
+		{
+			if (SDL_RWops *rw = FileMap::getRWops(palPath))
+			{
+				size_t size = 0;
+				void *data = SDL_LoadFile_RW(rw, &size, SDL_TRUE);
+				if (data)
+				{
+					std::istringstream in(std::string((const char*)data, size));
+					int r, g, b;
+					while (in >> r >> g >> b && palette.size() < 256)
+					{
+						SDL_Color c;
+						c.r = (Uint8)r; c.g = (Uint8)g; c.b = (Uint8)b; c.unused = 255;
+						palette.push_back(c);
+					}
+					SDL_free(data);
+				}
+			}
+			if (palette.size() != 256)
+			{
+				Log(LOG_WARNING) << "HD interface: " << palPath << " should hold 256 lines 'r g b' - no re-tinting for " << it->second;
+				palette.clear();
+			}
+		}
+		if (HdUiArt::addLazy(it->second, base, "hd/UI/" + file, width, height, std::move(palette)))
+		{
+			++loaded;
+		}
+	}
+	// the geoscape's big background is made here by mirroring GEOBORD.SCR (modResources): its
+	// picture is made the same way from GEOBORD's, unless a mod ships its own ALTGEOBORD.SCR (and picture)
+	const HdUiArt::Art *geo = HdUiArt::find(getSurface("GEOBORD.SCR", false));
+	Surface *alt = getSurface("ALTGEOBORD.SCR", false);
+	if (geo && alt && !HdUiArt::find(alt) && alt->getWidth() == (320 - 64) * 3 && alt->getHeight() == 200 * 3
+		&& geo->baseWidth == 320 && geo->baseHeight == 200 && !HdUiArt::frame(geo).pixels.empty())
+	{
+		const int s = geo->scale, nw = (320 - 64) * s, nh = 200 * s;
+		const HdFrame &src = HdUiArt::frame(geo);
+		HdFrame frame;
+		frame.width = nw * 3;
+		frame.height = nh * 3;
+		frame.pixels.assign((size_t)frame.width * frame.height, 0u);
+		for (int y = 0; y < nh; ++y)
+		{
+			for (int x = 0; x < nw; ++x)
+			{
+				const Uint32 p = src.pixels[(size_t)y * src.width + x];
+				const int xs[3] = { nw + x, nw - x - 1, nw * 3 - x - 1 };
+				const int ys[3] = { nh + y, nh - y - 1, nh * 3 - y - 1 };
+				for (int i = 0; i < 3; ++i)
+					for (int j = 0; j < 3; ++j)
+						frame.pixels[(size_t)ys[j] * frame.width + xs[i]] = p;
+			}
+		}
+		if (HdUiArt::add("ALTGEOBORD.SCR", alt, std::move(frame), geo->palette))
+		{
+			++loaded;
+		}
+	}
+	if (loaded > 0)
+	{
+		Log(LOG_INFO) << "HD interface: " << loaded << " HD picture(s) of interface images";
+	}
 }
 
 /**

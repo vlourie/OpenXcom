@@ -17,6 +17,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "Surface.h"
+#include "HdUiArt.h"
 #include "ShaderDraw.h"
 #include "ShaderMove.h"
 #include <vector>
@@ -705,6 +706,12 @@ void Surface::blit(SDL_Surface *surface)
 		if (_redraw)
 			draw();
 
+		// an image with an HD picture goes into the world layer instead (its classic pixels stay out,
+		// so that the picture shows through under what is drawn over it)
+		if (HdUiArt::active() && HdUiArt::drawIfPicture(this, surface))
+		{
+			return;
+		}
 		SDL_Rect target {};
 		target.x = getX();
 		target.y = getY();
