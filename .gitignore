@@ -94,3 +94,6 @@ __pycache__/
 
 # one-click build output (tools/build)
 dist/
+
+# HD-мод (картинки, паки) — в гит не кладём
+/user/
