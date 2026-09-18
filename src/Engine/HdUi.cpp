@@ -289,7 +289,8 @@ const HdFrame *HdUi::smoothed(const Surface *surface, int k, const SDL_Color *co
 		return &e->frame;
 	}
 	HdFrame frame;
-	if (!HdSmooth::smoothPalette(pixels, w, h, pitch, colors, k, frame))
+	// the interface is mirrored on the main thread, so the smoothing may use the whole pool
+	if (!HdSmooth::smoothPalette(pixels, w, h, pitch, colors, k, frame, false, true))
 	{
 		return nullptr;
 	}
@@ -481,20 +482,44 @@ void HdUi::drawSurface(const Surface *surface, int x, int y, bool smooth)
 	}
 	const auto t0 = std::chrono::steady_clock::now();
 	++_calls;
-	struct Timing { double &ms; std::chrono::steady_clock::time_point t; ~Timing() { ms += std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t).count(); } } timing { _frameMs, t0 };
+	++_frameCalls;
+	const int w = surface->getWidth(), h = surface->getHeight();
+	// the worst call of the frame, with the road it took: "HD UI 160 ms over 2 surfaces" says that the
+	// mirror is to blame but not which surface or why, and every road here costs a different amount
+	const char *why = "plain";
+	struct Timing
+	{
+		HdUi &ui; std::chrono::steady_clock::time_point t; int w, h; const char *&why;
+		~Timing()
+		{
+			const double ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t).count();
+			ui._frameMs += ms;
+			if (ms > ui._worstMs) { ui._worstMs = ms; ui._worstW = w; ui._worstH = h; ui._worstWhy = why; }
+		}
+	} timing { *this, t0, w, h, why };
 	// the surface's own palette: an SDL blit shows a surface with the colours it was given, remapping
 	// them to the screen's palette by nearest colour when the two differ (a state's surfaces under a
 	// popup with another palette, a text with its own); indexing the screen's palette instead shows
 	// wrong colours there (black text, most visibly)
 	if (const SDL_Color *own = paletteOf(surface)) pal = own;
-	const int w = surface->getWidth(), h = surface->getHeight();
 	const Uint8 *pixels = (const Uint8*)surface->getBuffer();
 	const int pitch = surface->getPitch();
-	const bool wantHash = k >= 2 && (HdUiArt::count() > 0 || (smooth && k <= 6));
+	// a surface far larger than the screen is never a picture and never worth smoothing: hashing it
+	// costs megabytes a frame and xBRZ of it costs hundreds (NextTurnState makes its backdrop screen
+	// width BY screen width). drawPixels below clips to what is actually seen, so the frame is the
+	// same; measured 177 ms -> nothing on the end-of-turn screen
+	const bool oversize = (long long)w * h > 4LL * (dest->w / k) * (dest->h / k);
+	if (oversize)
+	{
+		why = "oversize";
+		static int said = 0;
+		if (said < 4) { ++said; Log(LOG_INFO) << "HD oversize surface: " << w << "x" << h << " drawn plainly"; }
+	}
+	const bool wantHash = !oversize && k >= 2 && (HdUiArt::count() > 0 || (smooth && k <= 6));
 	const Uint64 pixelHash = wantHash ? HdUiArt::hashPixels(pixels, pitch, w, h) : 0;
 	// an HD picture of this image (hd/UI): by content, so a state's copy of a mod image (or of a part
 	// of it) finds it too; the answer is remembered with the surface's content
-	if (k >= 2 && HdUiArt::count() > 0)
+	if (!oversize && k >= 2 && HdUiArt::count() > 0)
 	{
 		const HdUiArt::Art *art = nullptr;
 		int artX = 0, artY = 0;
@@ -516,6 +541,7 @@ void HdUi::drawSurface(const Surface *surface, int x, int y, bool smooth)
 			const int misses = it == _smooth.end() ? 0 : it->second.artMisses;
 			if (!art && w >= 24 && h >= 16 && misses < 3)
 			{
+				why = "crop scan";
 				art = HdUiArt::findCrop(pixels, pitch, w, h, artX, artY);
 			}
 			if (art)
@@ -530,6 +556,7 @@ void HdUi::drawSurface(const Surface *surface, int x, int y, bool smooth)
 		}
 		if (art)
 		{
+			why = "picture";
 			const HdFrame *frame = prepared(art, art->baseSurface, k, pal);
 			if (frame)
 			{
@@ -546,8 +573,9 @@ void HdUi::drawSurface(const Surface *surface, int x, int y, bool smooth)
 			return;
 		}
 	}
-	if (smooth && k >= 2 && k <= 6)
+	if (!oversize && smooth && k >= 2 && k <= 6)
 	{
+		why = "xBRZ";
 		const HdFrame *frame = smoothed(surface, k, pal, pixelHash);
 		if (frame)
 		{
@@ -781,7 +809,15 @@ void HdUi::frameDone()
 		return;
 	}
 	_totalMs += _frameMs;
+	_lastFrameMs = _frameMs;
+	_lastCalls = _frameCalls;
+	_lastWorstMs = _worstMs;
+	_lastWorstW = _worstW;
+	_lastWorstH = _worstH;
+	_lastWorstWhy = _worstWhy;
 	_frameMs = 0;
+	_frameCalls = 0;
+	_worstMs = 0;
 	if (++_frames % 600 == 0)
 	{
 		Log(LOG_VERBOSE) << "HD interface: " << _totalMs / 600 << " ms/frame, " << _calls / 600 << " surfaces/frame, "

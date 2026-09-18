@@ -35,6 +35,7 @@
 #include "Music.h"
 #include "Language.h"
 #include "Logger.h"
+#include <typeinfo>
 #include "../Interface/Cursor.h"
 #include "../Interface/FpsCounter.h"
 #include "../Mod/Mod.h"
@@ -159,14 +160,22 @@ void Game::run()
 
 	while (!_quit)
 	{
+		// HD measurement: when the frame took too long. The F8 dump only samples good frames,
+		// so freezes are invisible in it (see docs/PERF.md)
+		const Uint32 hdFrameStart = SDL_GetTicks();
+		// ... and which part of it took the time: HD UI alone does not account for every freeze
+		Uint32 hdInitMs = 0, hdThinkMs = 0, hdBlitMs = 0, hdFlipMs = 0, hdFreeMs = 0, hdEventMs = 0;
 		// Clean up states
+		const Uint32 hdFreeStart = SDL_GetTicks();
 		while (!_deleted.empty())
 		{
 			delete _deleted.back();
 			_deleted.pop_back();
 		}
+		hdFreeMs = SDL_GetTicks() - hdFreeStart;
 
 		// Initialize active state
+		const Uint32 hdInitStart = SDL_GetTicks();
 		if (!_init)
 		{
 			_init = true;
@@ -184,9 +193,11 @@ void Game::run()
 			ev.motion.y = y;
 			Action action = Action(&ev, _screen->getXScale(), _screen->getYScale(), _screen->getCursorTopBlackBand(), _screen->getCursorLeftBlackBand());
 			_states.back()->handle(&action);
+			hdInitMs = SDL_GetTicks() - hdInitStart;
 		}
 
 		// Process events
+		const Uint32 hdEventStart = SDL_GetTicks();
 		while (SDL_PollEvent(&_event))
 		{
 			if (CrossPlatform::isQuitShortcut(_event))
@@ -344,12 +355,15 @@ void Game::run()
 				break;
 			}
 		}
+		hdEventMs = SDL_GetTicks() - hdEventStart;
 
 		// Process rendering
 		if (runningState != PAUSED)
 		{
 			// Process logic
+			const Uint32 hdThinkStart = SDL_GetTicks();
 			_states.back()->think();
+			hdThinkMs = SDL_GetTicks() - hdThinkStart;
 			_fpsCounter->think();
 			if (Options::FPS > 0 && !(Options::useOpenGL && Options::vSyncForOpenGL))
 			{
@@ -470,12 +484,14 @@ void Game::run()
 							SDL_PushEvent(&ev);
 						}
 					}
+					const Uint32 hdBlitStart = SDL_GetTicks();
 					for (; i != _states.end(); ++i)
 					{
 						// the HD interface's hover effects follow the cursor, in the top state only
 						HdUi::instance().setMouse(mx, my, std::next(i) == _states.end());
 						(*i)->blit();
 					}
+					hdBlitMs = SDL_GetTicks() - hdBlitStart;
 				}
 				{
 					static int autoDumpState = 0;
@@ -500,7 +516,41 @@ void Game::run()
 				}
 				_fpsCounter->blit(_screen->getSurface());
 				_cursor->blit(_screen->getSurface());
+				const Uint32 hdFlipStart = SDL_GetTicks();
 				_screen->flip();
+				hdFlipMs = SDL_GetTicks() - hdFlipStart;
+			}
+		}
+
+		{
+			static Uint32 hdWatchStart = 0, hdWorst = 0, hdSlow = 0, hdStalls = 0, hdFrames = 0;
+			static const char *hdWorstState = "-";
+			const char *state = _states.empty() ? "-" : typeid(*_states.back()).name();
+			const Uint32 now = SDL_GetTicks();
+			const Uint32 spent = now - hdFrameStart;
+			++hdFrames;
+			if (spent > hdWorst) { hdWorst = spent; hdWorstState = state; }
+			if (spent >= 33) ++hdSlow;
+			if (spent >= 100)
+			{
+				++hdStalls;
+				Log(LOG_INFO) << "HD stall: " << spent << " ms on " << state
+					<< " | free " << hdFreeMs << " init " << hdInitMs << " event " << hdEventMs
+					<< " think " << hdThinkMs << " blit " << hdBlitMs << " flip " << hdFlipMs
+					<< " | HD UI " << (int)(HdUi::instance().lastFrameMs() + 0.5) << " ms over "
+					<< HdUi::instance().lastCalls() << " surfaces, worst "
+					<< (int)(HdUi::instance().lastWorstMs() + 0.5) << " ms on "
+					<< HdUi::instance().lastWorstW() << "x" << HdUi::instance().lastWorstH()
+					<< " (" << HdUi::instance().lastWorstWhy() << ")";
+			}
+			if (now - hdWatchStart >= 2000)
+			{
+				if (hdWatchStart)
+				{
+					Log(LOG_INFO) << "HD frame: " << hdFrames << " fr, worst " << hdWorst << " ms (" << hdWorstState
+						<< "), >=33 ms " << hdSlow << ", >=100 ms " << hdStalls;
+				}
+				hdWatchStart = now; hdWorst = 0; hdSlow = 0; hdStalls = 0; hdFrames = 0;
 			}
 		}
 

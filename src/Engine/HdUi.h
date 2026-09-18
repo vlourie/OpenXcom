@@ -170,6 +170,14 @@ public:
 	void clearCaches();
 	/// Called once per frame (at flip): profiling of the interface drawing, logged now and then.
 	void frameDone();
+	/// Measurement: how long the mirroring of the last frame took, and over how many surfaces.
+	double lastFrameMs() const { return _lastFrameMs; }
+	int lastCalls() const { return _lastCalls; }
+	/// ... and the worst single surface of it: how long, how big, and which road it took.
+	double lastWorstMs() const { return _lastWorstMs; }
+	int lastWorstW() const { return _lastWorstW; }
+	int lastWorstH() const { return _lastWorstH; }
+	const char *lastWorstWhy() const { return _lastWorstWhy; }
 	/// Scales a palette shape (values, 0 = nothing) k times with smooth edges (the Scale2x corner rule with
 	/// exact coverage): value and coverage per HD pixel. Public for tests.
 	static void scaleShape(const Uint8 *src, int w, int h, int k, std::vector<Uint8> &value, std::vector<Uint8> &cov,
@@ -216,8 +224,10 @@ private:
 	int _clipX = 0, _clipY = 0, _clipW = 0, _clipH = 0;
 	int _mouseX = -1, _mouseY = -1;
 	bool _hoverOn = false;
-	double _frameMs = 0, _totalMs = 0;
-	int _frames = 0, _calls = 0;
+	double _frameMs = 0, _totalMs = 0, _lastFrameMs = 0, _worstMs = 0, _lastWorstMs = 0;
+	int _frames = 0, _calls = 0, _frameCalls = 0, _lastCalls = 0;
+	int _worstW = 0, _worstH = 0, _lastWorstW = 0, _lastWorstH = 0;
+	const char *_worstWhy = "-", *_lastWorstWhy = "-";
 
 	HdUi() {}
 	/// The world surface, scale and palette of the current screen; false when not drawing.

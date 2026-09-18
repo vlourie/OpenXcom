@@ -46,6 +46,14 @@ HdWorkers::HdWorkers()
 		_threads.emplace_back(&HdWorkers::workerLoop, this);
 	}
 	Log(LOG_INFO) << "HD render: " << n << " render thread(s)";
+	// the settings that decide how heavy a frame is: without them a log from another machine
+	// cannot be read at all (see docs/PERF.md)
+	Log(LOG_INFO) << "HD setup: " << Options::displayWidth << "x" << Options::displayHeight
+		<< " scale=" << Options::oxceHdScale << " mode=" << Options::oxceHdMode
+		<< " ui=" << Options::oxceHdUi << " frameSkip=" << Options::oxceHdFrameSkip
+		<< " openGL=" << (Options::useOpenGL ? "on" : "off")
+		<< " shader=" << (Options::useOpenGL ? Options::useOpenGLShader : std::string("-"))
+		<< " cores=" << (int)std::thread::hardware_concurrency();
 }
 
 HdWorkers::~HdWorkers()
