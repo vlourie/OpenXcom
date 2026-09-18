@@ -24,7 +24,7 @@ FIELDS = ("Статус", "Файлы", "Симптом", "Причина", "П�
 def load(path: Path = RAKES):
     if not path.exists():
         sys.exit(f"нет файла {path} — запусти из корня проекта")
-    text = path.read_text(encoding="utf-8")
+    text = path.read_text(encoding="utf-8-sig")
     marker = "<!-- ГРАБЛИ НИЖЕ"
     idx = text.find(marker)
     head = text[: text.find("\n", idx) + 1] if idx != -1 else text
@@ -110,7 +110,7 @@ def cmd_hit(a):
     new_line = f"Наступал: {new}   Последний: {today}"
     block = "\n".join(it["raw"])
     text = text.replace(block, block.replace(old_line, new_line), 1)
-    RAKES.write_text(text, encoding="utf-8")
+    RAKES.write_text(text, encoding="utf-8-sig")
     print(f"{a.id}: наступал {new} раз(а)")
     if new >= 2 and (not it.get("Защита") or it["Защита"].lower() in ("нет", "-")):
         print("\nВТОРОЙ РАЗ. Текстовое правило не сработало.")
@@ -127,7 +127,7 @@ def cmd_disarm(a):
     block = "\n".join(it["raw"])
     upd = block.replace(f"Статус:   {it.get('Статус','активны')}", "Статус:   обезврежены")
     upd = re.sub(r"Защита:.*", f"Защита:   {a.test}", upd, count=1)
-    RAKES.write_text(text.replace(block, upd, 1), encoding="utf-8")
+    RAKES.write_text(text.replace(block, upd, 1), encoding="utf-8-sig")
     print(f"{a.id}: обезврежены, защита {a.test}")
     return 0
 
@@ -146,7 +146,7 @@ def cmd_add(a):
         f"Защита:   {a.guard}\n"
         f"Наступал: 1   Последний: {datetime.date.today().isoformat()}\n"
     )
-    RAKES.write_text(text.rstrip("\n") + "\n" + entry, encoding="utf-8")
+    RAKES.write_text(text.rstrip("\n") + "\n" + entry, encoding="utf-8-sig")
     print(f"Записаны грабли {nid}: {a.title}")
     return 0
 

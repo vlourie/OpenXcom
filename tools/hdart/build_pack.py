@@ -59,6 +59,86 @@ def color_match(painted, original, mask, amount):
     return Image.fromarray(np.clip(out, 0, 255).astype(np.uint8), "RGBA")
 
 
+_M_RGB2XYZ = np.array([[0.4124564, 0.3575761, 0.1804375],
+                       [0.2126729, 0.7151522, 0.0721750],
+                       [0.0193339, 0.1191920, 0.9503041]], np.float64)
+_M_XYZ2RGB = np.linalg.inv(_M_RGB2XYZ)
+_WHITE = np.array([0.95047, 1.0, 1.08883], np.float64)
+_E, _K = 216.0 / 24389.0, 24389.0 / 27.0
+
+
+def _rgb_to_lab(rgb):
+    """rgb 0..1 -> CIELAB. Своя реализация: build_pack запускается системным
+    python, тащить в него scikit-image ради одной формулы не нужно."""
+    c = np.clip(rgb, 0, 1)
+    lin = np.where(c <= 0.04045, c / 12.92, ((c + 0.055) / 1.055) ** 2.4)
+    xyz = lin @ _M_RGB2XYZ.T / _WHITE
+    f = np.where(xyz > _E, np.cbrt(xyz), (_K * xyz + 16) / 116)
+    return np.stack([116 * f[..., 1] - 16,
+                     500 * (f[..., 0] - f[..., 1]),
+                     200 * (f[..., 1] - f[..., 2])], axis=-1)
+
+
+def _lab_to_rgb(lab):
+    L, a, b = lab[..., 0], lab[..., 1], lab[..., 2]
+    fy = (L + 16) / 116
+    fx, fz = fy + a / 500, fy - b / 200
+    def inv(v):
+        v3 = v ** 3
+        return np.where(v3 > _E, v3, (116 * v - 16) / _K)
+    y = np.where(L > _K * _E, fy ** 3, L / _K)
+    xyz = np.stack([inv(fx), y, inv(fz)], -1) * _WHITE
+    lin = xyz @ _M_XYZ2RGB.T
+    srgb = np.where(lin <= 0.0031308, lin * 12.92,
+                    1.055 * np.maximum(lin, 0) ** (1 / 2.4) - 0.055)
+    return np.clip(srgb, 0, 1)
+
+
+def chroma_lock(painted, original, mask, amount, c_lo=8.0, c_hi=40.0,
+                w_lo=0.25, w_hi=0.92, blur=2.0):
+    """Яркость (детали, объём, фактура) остаётся от художника, цветность берётся
+    у оригинала.
+
+    Зачем: color_match двигает среднее и разброс по каналу для ВСЕГО кадра, и
+    локальный насыщенный цвет им не вернуть. У X-Piratez, например, рампа 192-207
+    палитры - от розового к фиолетовому; художник считает такой цвет ошибкой и
+    перекрашивает панели в бежевый. Для игрока это потеря, а не улучшение.
+
+    Чем насыщеннее цвет оригинала, тем жёстче привязка: именно он несёт смысл.
+    Малонасыщенному (песок, серые панели) оставляем художнику свободу.
+    Цветность низкочастотна, поэтому оригинал берём размытым - иначе на месте
+    пикселей оригинала проступит сетка."""
+    if amount <= 0:
+        return painted
+    sel = np.array(mask) > 128
+    if sel.sum() < 16:
+        return painted
+    o = original.convert("RGB").filter(ImageFilter.GaussianBlur(blur))
+    p_arr = np.asarray(painted.convert("RGB"), np.float64) / 255.0
+    o_arr = np.asarray(o, np.float64) / 255.0
+    lp, lo = _rgb_to_lab(p_arr), _rgb_to_lab(o_arr)
+    chroma = np.hypot(lo[..., 1], lo[..., 2])
+    w = (np.clip((chroma - c_lo) / (c_hi - c_lo), 0.0, 1.0) * (w_hi - w_lo) + w_lo)
+    w = w * sel.astype(np.float64) * float(amount)
+    out = lp.copy()
+    out[..., 1] = lp[..., 1] + w * (lo[..., 1] - lp[..., 1])
+    out[..., 2] = lp[..., 2] + w * (lo[..., 2] - lp[..., 2])
+    rgb = (_lab_to_rgb(out) * 255.0 + 0.5).astype(np.uint8)
+    res = np.asarray(painted.convert("RGBA")).copy()
+    res[..., :3] = rgb
+    return Image.fromarray(res, "RGBA")
+
+
+def chroma_error(a, b, mask):
+    """Отличие по цвету без учёта яркости: её художник вправе менять."""
+    sel = np.array(mask) > 128
+    if sel.sum() < 16:
+        return 0.0
+    la = _rgb_to_lab(np.asarray(a.convert("RGB"), np.float64) / 255.0)
+    lb = _rgb_to_lab(np.asarray(b.convert("RGB"), np.float64) / 255.0)
+    return float(np.hypot(la[..., 1] - lb[..., 1], la[..., 2] - lb[..., 2])[sel].mean())
+
+
 def tint(rgba, tone, amount=1.0):
     """Recolours an image like gen_hd.tint (brightness, saturation, warmth), `amount` of the way; keeps alpha."""
     b, sat, warm = tone
@@ -241,6 +321,9 @@ def main():
     ap.add_argument("--frames", nargs="*", type=int, default=[], help="only these frame indices")
     ap.add_argument("--color-match", type=float, default=0.8, help="0..1: how far each frame's mean and spread "
                     "per channel are pulled back to the original's (0 = keep the painter's colors)")
+    ap.add_argument("--chroma-lock", type=float, default=1.0,
+                    help="0..1: насколько цветность кадра притягивается к оригиналу при сохранении "
+                         "яркости художника. Лечит потерю насыщенных цветов мода (0 = выключить)")
     ap.add_argument("--variants", choices=["auto", "off"], default="auto", help="auto: also write the ground variants "
                     "gen_hd.py painted (<index>.v<n>.png); off: none, and remove old ones")
     ap.add_argument("--variant-tone", type=float, default=1.0, help="how much of a variant's recolouring is kept "
@@ -313,19 +396,33 @@ def main():
     floors = [(i, sheet.cut(small_rgba, i, 1)) for i in range(info["count"])
               if types[i] == xs.MCD_FLOOR and ground[i] and sheet.cut(small_rgba, i, 1).getbbox() is not None]
 
+    chroma_before, chroma_after = [], []
+
     def process(i):
         """The painted frame i, colour-matched, RGB only (alpha added by the caller)."""
         frame = sheet.cut(painted, i, scale)
+        orig_i = sheet.cut(original, i, scale)
+        mask_i = sheet.cut(hard_mask, i, scale)
         if args.color_match > 0:
-            frame = color_match(frame, sheet.cut(original, i, scale), sheet.cut(hard_mask, i, scale), args.color_match)
+            frame = color_match(frame, orig_i, mask_i, args.color_match)
+        if args.chroma_lock > 0:
+            before = chroma_error(frame, orig_i, mask_i)
+            frame = chroma_lock(frame, orig_i, mask_i, args.chroma_lock)
+            chroma_before.append(before)
+            chroma_after.append(chroma_error(frame, orig_i, mask_i))
         return frame
 
     def process_variant(i, n):
         """Variant n of floor i, colour-matched to the original recoloured by the variant's look."""
         frame = sheet.cut(vsheets[n], i, scale)
-        if args.color_match > 0:
+        if args.color_match > 0 or args.chroma_lock > 0:
             target = tint(sheet.cut(original, i, scale), vframes[i]["looks"][n - 1][1], args.variant_tone)
-            frame = color_match(frame, target, sheet.cut(hard_mask, i, scale), args.color_match)
+            mask_i = sheet.cut(hard_mask, i, scale)
+            if args.color_match > 0:
+                frame = color_match(frame, target, mask_i, args.color_match)
+            if args.chroma_lock > 0:
+                # вариант привязываем к ПЕРЕКРАШЕННОМУ оригиналу, иначе вернём исходный цвет
+                frame = chroma_lock(frame, target, mask_i, args.chroma_lock)
         return frame
 
     processed = {}
@@ -463,6 +560,13 @@ def main():
         print("%s: %d objects got the set's floor under them" % (set_name, floored))
     if faded:
         print("%s: %d floors fade into another floor's painting at the edge" % (set_name, faded))
+    if chroma_before:
+        b_avg = sum(chroma_before) / len(chroma_before)
+        a_avg = sum(chroma_after) / len(chroma_after)
+        rough = sum(1 for v in chroma_after if v > 15)
+        print("%s: цвет подтянут к оригиналу, отличие %.1f -> %.1f%s"
+              % (set_name, b_avg, a_avg,
+                 ("; кадров с грубым расхождением: %d - посмотри их глазами" % rough) if rough else ""))
     print("%s: %d frames -> %s" % (set_name, written, out_dir))
     if varied:
         print("%s: %d floors with %d variant(s) each (<index>.v<n>.png)" % (set_name, varied, len(vsheets)))

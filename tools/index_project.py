@@ -29,7 +29,16 @@ SRC_EXT = {
     ".lua": "Lua", ".rul": "ruleset", ".yml": "YAML", ".yaml": "YAML", ".json": "JSON",
 }
 SKIP_DIRS = {".git", ".index", "build", "dist", "out", "node_modules", "__pycache__",
-             ".vs", ".vscode", ".idea", "game", "assets", "venv", ".venv", "third_party"}
+             ".vs", ".vscode", ".idea", "game", "assets", "venv", ".venv", "third_party",
+             # каталоги сборки, данные и установленные игры: не исходники проекта
+             "build-release", "obj", "deps", "libs", "bin", "user", "install",
+             "Пиратки", "мурукон", "Claude outputs", "hdglobe_dl", "hdart_sheets"}
+
+
+# Windows PowerShell 5.1 читает файл без BOM как cp1251 (`type INDEX.md` — мусор).
+# Пишем со спецификацией, читаем utf-8-sig. Грабли R-001.
+ENC_W = "utf-8-sig"
+ENC_R = "utf-8-sig"
 
 
 def have(tool: str) -> bool:
@@ -54,7 +63,7 @@ def is_stale(root: Path) -> bool:
     if not meta.exists():
         return True
     try:
-        built = json.loads(meta.read_text(encoding="utf-8")).get("built_at", 0)
+        built = json.loads(meta.read_text(encoding=ENC_R)).get("built_at", 0)
     except Exception:
         return True
     return newest_source_mtime(root) > built
@@ -83,7 +92,7 @@ def run_ctags(root: Path) -> list[dict]:
 
 
 def write_tsv(path: Path, header: list[str], rows):
-    with path.open("w", encoding="utf-8", newline="\n") as f:
+    with path.open("w", encoding=ENC_W, newline="\n") as f:
         f.write("\t".join(header) + "\n")
         for r in rows:
             f.write("\t".join(str(c).replace("\t", " ").replace("\n", " ") for c in r) + "\n")
@@ -159,7 +168,7 @@ def build(root: Path, full: bool) -> int:
     ]
     if not have("ctags"):
         md.insert(4, "\n**ctags не установлен — символов нет.** `winget install UniversalCtags.Ctags`\n")
-    (OUT / "INDEX.md").write_text("\n".join(md) + "\n", encoding="utf-8")
+    (OUT / "INDEX.md").write_text("\n".join(md) + "\n", encoding=ENC_W)
 
     (OUT / "meta.json").write_text(json.dumps({
         "built_at": time.time(),
@@ -167,7 +176,7 @@ def build(root: Path, full: bool) -> int:
         "files": len(frows), "lines": total_lines, "symbols": len(srows),
         "ctags": have("ctags"), "clangd": have("clangd"), "doxygen_run": doxy,
         "seconds": round(time.time() - t0, 2),
-    }, ensure_ascii=False, indent=2), encoding="utf-8")
+    }, ensure_ascii=False, indent=2), encoding=ENC_W)
 
     print(f"Индекс собран: {len(frows)} файлов, {len(srows)} символов, {time.time()-t0:.1f} с -> .index/")
     if not have("ctags"):

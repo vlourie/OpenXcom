@@ -1,4 +1,4 @@
-# "Photo" pictures (photo_ui.py): one-time setup on top of setup_gen.ps1's venv (Windows, RTX 5090).
+﻿# "Photo" pictures (photo_ui.py): one-time setup on top of setup_gen.ps1's venv (Windows, RTX 5090).
 #
 #   Updates the diffusers stack in tools\hdart\.venv (Qwen-Image-Edit-2511 needs diffusers >= 0.36 and peft)
 #   and downloads the models into -Models (default E:\models): Qwen-Image-Edit-2511 (about 57 GB),

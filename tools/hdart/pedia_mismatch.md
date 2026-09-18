@@ -80,9 +80,15 @@
 1. Положить новый `photo_hints.txt` в `tools\hdart\`.
 2. Перегенерировать 102 штуки **без `--fast`** (иначе негативы не работают: нужен CFG > 1):
 
+   ```powershell
+   $P = "E:\OpenXCom\Пиратки\Dioxine_XPiratez\user\mods"
+   py -3 tools\hdart\photo_ui.py --dir "$P\Piratez\Resources\Pedia" --hd "$P\hd\hd\UI_esrgan" --mod "$P\hd" --preset <тот же, что и в прошлый раз> --names @tools\hdart\rejected_files.txt --force
    ```
-   py -3 tools\hdart\photo_ui.py --names @tools\hdart\rejected_files.txt --force
-   ```
+
+   **`--hd` обязательно на `UI_esrgan`,** а не на `UI`: в `UI` сейчас лежат сами фотоверсии, и без
+   этого модель будет доводить собственный брак. В `UI_esrgan` — честный апскейл Real-ESRGAN ×4
+   (у `MBT` там танк всё ещё парит). Результат ляжет в `hd\UI_photo`, оттуда скопировать поверх
+   `hd\UI`.
 
 3. Прогнать `pedia_review.py` заново по тем же именам и посмотреть листы.
 4. Ужать заново: `py -3 tools\hdart\optimize_hd.py --mod ...\user\mods\hd`.

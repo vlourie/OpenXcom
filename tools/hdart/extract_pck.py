@@ -112,13 +112,30 @@ def main():
     ap.add_argument("--margin", type=int, default=4)
     ap.add_argument("--sets", nargs="*", default=[])
     ap.add_argument("--all", action="store_true", help="every battlescape set of vanilla UFO")
+    ap.add_argument("--palette", default="",
+                    help="палитра мода (.pal, JASC или GIMP) вместо GEODATA/PALETTES.DAT. "
+                         "Нужна для модов, которые подменяют PAL_BATTLESCAPE через customPalettes")
     args = ap.parse_args()
-    pal_path = os.path.join(args.data, "GEODATA", "PALETTES.DAT")
-    if not os.path.exists(pal_path):
-        for f in os.listdir(os.path.join(args.data, "GEODATA")):
-            if f.upper() == "PALETTES.DAT":
-                pal_path = os.path.join(args.data, "GEODATA", f)
-    palette = xs.load_palette(pal_path)
+    if args.palette:
+        palette = xs.load_palette_file(args.palette)
+        print("палитра:", args.palette)
+    else:
+        pal_path = os.path.join(args.data, "GEODATA", "PALETTES.DAT")
+        if not os.path.exists(pal_path):
+            geo = os.path.join(args.data, "GEODATA")
+            found = ""
+            if os.path.isdir(geo):
+                for f in os.listdir(geo):
+                    if f.upper() == "PALETTES.DAT":
+                        found = os.path.join(geo, f)
+            if not found:
+                raise SystemExit(
+                    "нет %s.\n"
+                    "У модов вроде X-Piratez своей PALETTES.DAT нет — они подменяют боевую палитру\n"
+                    "через customPalettes. Укажи её явно: --palette <мод>/Resources/Pals/<файл>.pal"
+                    % pal_path)
+            pal_path = found
+        palette = xs.load_palette(pal_path)
     sets = list(args.sets)
     if args.all or not sets:
         sets = DEFAULT_SETS if args.all else DEFAULT_SETS[:1]

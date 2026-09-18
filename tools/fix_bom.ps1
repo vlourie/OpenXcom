@@ -22,7 +22,8 @@
 [CmdletBinding()]
 param(
     [string]$Path = $PSScriptRoot,
-    [switch]$Fix
+    [switch]$Fix,
+    [switch]$ShowReads
 )
 
 $ErrorActionPreference = 'Stop'
@@ -88,6 +89,53 @@ Write-Host ""
 if ($broken.Count -gt 0) {
     Write-Warning "Файлы не в UTF-8 — разбери руками, автоматом не чиню:"
     $broken | ForEach-Object { Write-Host "    $_" -ForegroundColor Red }
+}
+
+# Вторая сторона тех же граблей: python пишет UTF-8 БЕЗ спецификации, и потом
+# `type INDEX.md` в PowerShell 5.1 печатает мусор. Лечится encoding="utf-8-sig".
+$pyBad = @()
+$pyFiles = Get-ChildItem -LiteralPath $Path -Recurse -File -ErrorAction SilentlyContinue |
+           Where-Object { $_.Extension -eq '.py' } |
+           Where-Object { $p = $_.FullName; -not ($skipDirs | Where-Object { $p -like "*$_*" }) }
+foreach ($f in $pyFiles) {
+    $hits = Select-String -LiteralPath $f.FullName -Pattern 'encoding\s*=\s*"utf-8"' -ErrorAction SilentlyContinue
+    foreach ($h in $hits) {
+        $rel = $f.FullName.Substring($Path.Length).TrimStart('\', '/')
+        $line = $h.Line.Trim()
+        # Запись — это то, что потом читают в PowerShell: там спецификация обязательна.
+        # Чтение без -sig тише: оно ломается только на файле, у которого спецификация есть.
+        $mode = if ($line -match 'write_text|["'']w["'']|["'']wt["'']|["'']w\+["'']') { 'ЗАПИСЬ' } else { 'чтение' }
+
+        # Главное различие не в режиме, а в том, КТО потом читает файл.
+        # Рулсеты и metadata мода читает игра через yaml-cpp: спецификация там
+        # в лучшем случае бесполезна, в худшем ломает загрузку мода. Не трогать.
+        $what = switch -Regex ($line) {
+            '\.rul|\.yml|\.yaml' { 'НЕ ТРОГАТЬ: читает игра' ; break }
+            '\.csv'                { 'нужна: Excel без неё врёт'; break }
+            '\.json'               { 'пара: чинить и чтение'   ; break }
+            '\.txt|\.md'          { 'нужна: читает человек'   ; break }
+            '\.cpp|\.h\b|\.xml' { 'не нужна: читает не PowerShell'; break }
+            default                { 'посмотреть глазами'      }
+        }
+        if ($line.Length -gt 52) { $line = $line.Substring(0, 52) + '...' }
+        $pyBad += [pscustomobject]@{ Режим = $mode; Что = $what; Файл = $rel; Строка = $h.LineNumber; Код = $line }
+    }
+}
+if ($pyBad.Count -gt 0) {
+    $w = @($pyBad | Where-Object { $_.Режим -eq 'ЗАПИСЬ' })
+    Write-Host ""
+    if ($w.Count -gt 0) {
+        Write-Warning "python пишет UTF-8 без спецификации ($($w.Count) мест) — PowerShell прочтёт такой файл как cp1251."
+    }
+    Write-Host "         Смотри колонку 'Что', а не только режим: файлы, которые читает ИГРА" -ForegroundColor Yellow
+    Write-Host "         (.rul, .yml), со спецификацией могут перестать грузиться. Грабли R-001." -ForegroundColor Yellow
+    $pyBad | Where-Object { $_.Режим -eq 'ЗАПИСЬ' } | Sort-Object Что, Файл, Строка | Format-Table -AutoSize
+    $r = @($pyBad | Where-Object { $_.Режим -eq 'чтение' })
+    if ($r.Count -gt 0) {
+        Write-Host "  Ещё $($r.Count) мест на чтение без -sig — тише, ломается только на файле со спецификацией." -ForegroundColor DarkGray
+        Write-Host "  Показать: .\fix_bom.ps1 -ShowReads" -ForegroundColor DarkGray
+    }
+    if ($ShowReads) { $r | Sort-Object Файл, Строка | Format-Table -AutoSize }
 }
 
 if ($Fix) {

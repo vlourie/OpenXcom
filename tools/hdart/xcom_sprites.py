@@ -47,6 +47,46 @@ def load_palette(palettes_dat, index=PAL_BATTLESCAPE, battlescape_fix=True):
     return pal
 
 
+def load_palette_file(path, battlescape_fix=False):
+    """Палитра из файла мода. Моды OXCE кладут её рядом с ресурсами, а не в
+    GEODATA/PALETTES.DAT, и формат другой: JASC-PAL или GIMP — текст со
+    значениями 0..255, тогда как в PALETTES.DAT они шестибитные и множатся на 4.
+    Перепутать форматы = ровно вчетверо темнее или переполнение."""
+    raw = open(path, "rb").read()
+    head = raw[:16].lstrip()
+
+    if head.upper().startswith(b"JASC-PAL"):
+        lines = raw.decode("ascii", "replace").splitlines()
+        # JASC-PAL / 0100 / <сколько> / затем "r g b"
+        n = int(lines[2].strip())
+        pal = []
+        for line in lines[3:3 + n]:
+            p = line.split()
+            if len(p) >= 3:
+                pal.append((int(p[0]), int(p[1]), int(p[2])))
+        if len(pal) != n:
+            raise ValueError("%s: заявлено %d цветов, прочитано %d" % (path, n, len(pal)))
+    elif head.upper().startswith(b"GIMP PALETTE"):
+        pal = []
+        for line in raw.decode("ascii", "replace").splitlines():
+            line = line.strip()
+            if not line or line.startswith("#") or line[0].isalpha():
+                continue
+            p = line.split()
+            if len(p) >= 3:
+                pal.append((int(p[0]), int(p[1]), int(p[2])))
+    elif len(raw) == 768:
+        pal = [(raw[i * 3], raw[i * 3 + 1], raw[i * 3 + 2]) for i in range(256)]
+    else:
+        raise ValueError("%s: не JASC-PAL, не GIMP и не 768 байт (%d байт)" % (path, len(raw)))
+
+    pal = (pal + [(0, 0, 0)] * 256)[:256]
+    if battlescape_fix:
+        for i, c in enumerate(BATTLESCAPE_TAIL):
+            pal[224 + 16 + i] = c
+    return pal
+
+
 def read_tab(path):
     with open(path, "rb") as f:
         data = f.read()

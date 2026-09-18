@@ -1,4 +1,4 @@
-# HD art pipeline: paints every terrain set of vanilla UFO into the HD mod (user\mods\hd, the one mod that carries every HD asset), set after set, and can be left
+﻿# HD art pipeline: paints every terrain set of vanilla UFO into the HD mod (user\mods\hd, the one mod that carries every HD asset), set after set, and can be left
 # running (it skips sets whose pack already exists, so it resumes after an interruption).
 #
 #   powershell -ExecutionPolicy Bypass -File tools\hdart\gen_all.ps1 [-Sets CULTIVAT,BARN] [-Force] [-Mod user\mods\hd]
@@ -14,6 +14,18 @@
 #   -VariantsOnly  paint only the variants of sets already painted (the base painting and objects stay);
 #           default sets: the natural ones. A set whose variants.json already has N looks is skipped (-Force repaints)
 #   -Data   the UFO data folder (bin\UFO), -Sheets the working folder (hdart_sheets)
+#   -AllSets  взять ВСЕ наборы из <Data>\TERRAIN (или \UNITS при -Units), а не встроенный список ванили.
+#           Для модов вроде X-Piratez это единственный способ: у них 625 наборов, перечислять руками нельзя.
+#   -CleanBig  после упаковки набора удалять painted_x16.png (30-50 МБ на набор, на 625 наборах это ~20 ГБ).
+#           Перепаковка (-PackOnly) работает от painted_x4.png и без него, перерисовка - нет.
+#   -ObjectStrength  объекты красятся отдельным проходом с этой силой (по умолчанию 0.55), полы - обычной.
+#           При общей силе 0.8 мелкий объект модель рисует заново по-своему: он раздувается,
+#           уезжает из силуэта, и обрезка оставляет от него огрызок. На полах та же 0.8 наоборот
+#           даёт хорошую фактуру. 0 = один проход, как раньше.
+#   -Palette  палитра мода (.pal), если мод подменяет PAL_BATTLESCAPE через customPalettes.
+#           X-Piratez: -Data "Пиратки\Dioxine_XPiratez\user\mods\Piratez"
+#                      -Palette "Пиратки\Dioxine_XPiratez\user\mods\Piratez\Resources\Pals\delicious_regular.pal"
+#           Без неё тайлы мода извлекутся в чужих цветах, и вся генерация пойдёт по неверному исходнику.
 #   Extra arguments for gen_hd.py go into -GenArgs, e.g. -GenArgs "--strength 0.85 --seed 7" (a value with spaces
 #   in single quotes: -GenArgs "--variant-looks 'short grass|tall grass'")
 #
@@ -24,6 +36,10 @@ param(
     [switch]$Units,
     [switch]$Force,
     [string]$Data = "bin\UFO",
+    [string]$Palette = "",
+    [double]$ObjectStrength = 0.55,
+    [switch]$AllSets,
+    [switch]$CleanBig,
     [string]$Sheets = "hdart_sheets",
     [string]$Mod = "user\mods\hd",
     [string]$GenArgs = "",
@@ -34,6 +50,7 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+function Log0($msg) { Write-Host $msg -ForegroundColor Cyan }
 # "-File gen_all.ps1 -Sets CULTIVAT,BARN" passes one string: split it
 $Sets = @($Sets | ForEach-Object { $_ -split "," } | ForEach-Object { $_.Trim() } | Where-Object { $_ -ne "" })
 $root = Split-Path -Parent $MyInvocation.MyCommand.Path
@@ -60,6 +77,17 @@ if ($VariantsOnly) {
     if ($Units) { throw "-VariantsOnly is for terrain sets" }
     if ($Variants -lt 1) { $Variants = 2 }
     if ($Sets.Count -eq 0) { $Sets = $natural }
+}
+if ($AllSets -and $Sets.Count -eq 0) {
+    # Регистр расширения на Windows не различается, поэтому один проход и уникальные имена:
+    # два вызова по *.PCK и *.pck вернули бы каждый файл дважды.
+    $srcDir = Join-Path $Data $folder
+    if (-not (Test-Path -LiteralPath $srcDir)) { throw "Нет папки наборов: $srcDir (проверь -Data)" }
+    $Sets = @(Get-ChildItem -LiteralPath $srcDir -File |
+              Where-Object { $_.Extension -ieq '.pck' } |
+              ForEach-Object { $_.BaseName.ToUpper() } |
+              Sort-Object -Unique)
+    Log0 ("наборов в $srcDir : " + $Sets.Count)
 }
 if ($Sets.Count -eq 0) { $Sets = $terrain }
 
@@ -116,7 +144,9 @@ foreach ($set in $Sets) {
             continue
         }
         Log "$set : extract"
-        & py -3 (Join-Path $root "extract_pck.py") --data $Data --out $Sheets --sets "$folder/$set"
+        $exArgs = @("--data", $Data, "--out", $Sheets, "--sets", "$folder/$set")
+        if ($Palette -ne "") { $exArgs += @("--palette", $Palette) }
+        & py -3 (Join-Path $root "extract_pck.py") @exArgs
         if ($LASTEXITCODE -ne 0) { Log "$set : extract failed"; continue }
         Log "$set : paint"
         $t0 = Get-Date
@@ -124,8 +154,22 @@ foreach ($set in $Sets) {
         if ($Variants -gt 0) { $genArgList += @("--variants", "$Variants") }
         if ($VariantsOnly) { $genArgList += @("--only", "variants") }
         if ($GenArgs -ne "") { $genArgList += Split-Args $GenArgs }
-        & $venvPy (Join-Path $root "gen_hd.py") @genArgList
-        if ($LASTEXITCODE -ne 0) { Log "$set : paint failed"; continue }
+
+        # Полы и объекты терпят разную силу: полам 0.8 идёт на пользу, объекты при ней
+        # уезжают из силуэта. Красим двумя проходами; второй берёт полы из листа первого.
+        $split = ($ObjectStrength -gt 0) -and (-not $Units) -and (-not $VariantsOnly) `
+                 -and ($GenArgs -notmatch '--only') -and ($GenArgs -notmatch '--strength')
+        if ($split) {
+            Log ("$set : полы")
+            & $venvPy (Join-Path $root "gen_hd.py") @($genArgList + @("--only", "ground"))
+            if ($LASTEXITCODE -ne 0) { Log "$set : paint failed (полы)"; continue }
+            Log ("$set : объекты, сила $ObjectStrength")
+            & $venvPy (Join-Path $root "gen_hd.py") @($genArgList + @("--only", "objects", "--strength", "$ObjectStrength"))
+            if ($LASTEXITCODE -ne 0) { Log "$set : paint failed (объекты)"; continue }
+        } else {
+            & $venvPy (Join-Path $root "gen_hd.py") @genArgList
+            if ($LASTEXITCODE -ne 0) { Log "$set : paint failed"; continue }
+        }
         Log ("$set : painted in {0:N0} s" -f ((Get-Date) - $t0).TotalSeconds)
     }
     Log "$set : pack"
@@ -134,6 +178,14 @@ foreach ($set in $Sets) {
     if ($PackArgs -ne "") { $packArgList += Split-Args $PackArgs }
     & py -3 (Join-Path $root "build_pack.py") @packArgList
     if ($LASTEXITCODE -ne 0) { Log "$set : pack failed"; continue }
+    if ($CleanBig) {
+        $big = Join-Path $Sheets ($set + "\painted_x16.png")
+        if (Test-Path -LiteralPath $big) {
+            $mb = [math]::Round((Get-Item -LiteralPath $big).Length / 1MB, 1)
+            Remove-Item -LiteralPath $big -Force -ErrorAction SilentlyContinue
+            Log "$set : убран painted_x16 ($mb МБ)"
+        }
+    }
     Log "$set : done"
 }
 Log ("all done in {0:N0} min" -f ((Get-Date) - $started).TotalMinutes)

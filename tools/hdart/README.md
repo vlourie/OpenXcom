@@ -334,8 +334,12 @@ py -3 tools\hdart\pedia_review.py --hd "...\hd\UI" --orig "...\Resources\Pedia" 
 и мха. Перегенерация **без `--fast`** (иначе негативы не работают, там нет CFG):
 
 ```powershell
-py -3 tools\hdart\photo_ui.py --names @tools\hdart\rejected_files.txt --force
+$P = "E:\OpenXCom\Пиратки\Dioxine_XPiratez\user\mods"
+py -3 tools\hdart\photo_ui.py --dir "$P\Piratez\Resources\Pedia" --hd "$P\hd\hd\UI_esrgan" --mod "$P\hd" --preset cinema --names @tools\hdart\rejected_files.txt --force
 ```
+
+`--hd` указывает на `UI_esrgan` (честный апскейл ×4), а не на `UI`: в `UI` лежат уже готовые
+фотоверсии, и подавать их на вход — значит доводить собственный брак. Результат — `hd\UI_photo`.
 
 ## Эффекты (этап 4b): `gen_fx.py`
 

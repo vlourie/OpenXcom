@@ -1,4 +1,4 @@
-# HD art pipeline: one-time setup of the image generation environment (Windows, RTX 50xx).
+﻿# HD art pipeline: one-time setup of the image generation environment (Windows, RTX 50xx).
 #
 #   py -3 -m venv is used, torch comes from the CUDA 12.8 index (the Blackwell / RTX 5090 build),
 #   and the models (about 12 GB: SDXL base, the fp16 VAE, the tile and canny ControlNets) are

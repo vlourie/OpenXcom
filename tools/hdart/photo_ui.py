@@ -967,4 +967,9 @@ def main():
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    try:
+        sys.exit(main())
+    except KeyboardInterrupt:
+        # Ctrl+C lands in the middle of a GPU step; the pictures already written are fine
+        print("\nstopped. What is already in the output folder is kept - run the same command again to go on.")
+        sys.exit(130)

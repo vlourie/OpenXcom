@@ -50,6 +50,7 @@ import json
 import os
 import sys
 import time
+import subjects_terrain
 
 # where the models live: E:\models (or --models / the HD_MODELS variable); must be set before any
 # Hugging Face import looks at the environment
@@ -78,7 +79,10 @@ STYLE_GROUND = ("seamless isometric terrain texture of {subject}, top-down view,
                 "realistic matte materials, detailed natural textures, soft light from the upper left, "
                 "muted earthy colors, sharp focus, highly detailed, Xenonauts style")
 NEGATIVE = ("cartoon, black outlines, vector art, cel shading, glossy, cute, anime, pixel art, pixelated, "
-            "blurry, soft, jpeg artifacts, text, watermark, frame, border, oversaturated, deformed")
+            "blurry, soft, jpeg artifacts, text, watermark, frame, border, oversaturated, deformed, "
+            # тайл - кусок земли, а не снимок товара: иначе подставка под кактусом
+            # читается как горшок, а сам объект встаёт в центр кадра и уезжает из силуэта
+            "potted plant, flower pot, planter, wooden stand, pedestal, tabletop, product photo")
 # unit sets: the frames are parts of a character (legs, torso, arms, a weapon) in eight directions,
 # painted one by one; the prompt asks for the character's material, the controls keep every part's
 # exact shape (the parts must still fit together when the engine assembles them)
@@ -89,7 +93,15 @@ UNIT_SETS = {"XCOM_0.PCK", "XCOM_1.PCK", "XCOM_2.PCK", "SECTOID.PCK", "FLOATER.P
              "ETHEREAL.PCK", "CHRYS.PCK", "CELATID.PCK", "SILACOID.PCK", "ZOMBIE.PCK", "CYBER.PCK", "X_REAP.PCK",
              "X_ROB.PCK", "TANKS.PCK", "CIVM.PCK", "CIVF.PCK", "HANDOB.PCK", "FLOOROB.PCK"}
 
+# Тема набора идёт в промпт ПЕРЕД постоянным стилевым хвостом, а CLIP обрезает всё
+# после 77 токенов. Слишком длинная тема выбрасывает из промпта "Xenonauts style" -
+# то есть ровно то, ради чего стиль и задавался. Держать в пределах ~10-12 слов:
+# к теме ещё добавляется покадровая подсказка, и вместе они должны влезть.
 SUBJECTS = {
+    # Наборы X-Piratez сюда НЕ пишем: их тема берётся из subjects_terrain.py по
+    # террейну из рулсетов. Я один раз написал их руками и оба раза угадал не то
+    # (A_PODS - не гидропоника, а пол базы пришельцев). См. RAKES.md, R-013.
+    # --- ванильный UFO ---
     "CULTIVAT.PCK": "farmland: crop fields, hedges, wooden fences, stone walls, fruit trees, dirt",
     "BARN.PCK": "farm barn: wooden walls, roof, doors, windows, hay",
     "ROADS.PCK": "country road, asphalt, gravel, road markings",
@@ -747,6 +759,8 @@ def main():
     ap.add_argument("--prompt", default="", help="full prompt for objects (default: the style prompt with the set's subject)")
     ap.add_argument("--prompt-ground", default="", help="full prompt for ground tiles (default: the ground style prompt)")
     ap.add_argument("--subject", default="", help="subject words for the style prompts")
+    ap.add_argument("--set-terrains", default="", dest="set_terrains",
+                    help="set_terrains.tsv (по умолчанию .index/mod/Piratez/set_terrains.tsv рядом с корнем)")
     ap.add_argument("--no-hints", action="store_true", help="ignore the per-frame hints (HINTS / hints.json)")
     ap.add_argument("--only", choices=["all", "ground", "objects", "variants"], default="all",
                     help="repaint only the ground (or only the objects) and keep the other cells from the set's existing painted "
@@ -789,7 +803,37 @@ def main():
         print("note: layout.json has no tile types (old extract_pck.py) - every frame is painted as an object; re-run extract_pck.py")
     pack_scale = info["scale"]
     job = Job(args, set_dir, info)
-    subject = args.subject or SUBJECTS.get(set_name, "terrain tiles and objects")
+    # Тема набора: --subject -> SUBJECTS -> террейн мода -> имя набора -> заглушка.
+    # Связь "набор -> террейн" берётся из .index/mod/Piratez/set_terrains.tsv, который
+    # строит tools/index_mod.py по рулсетам. Руками её не пишем (RAKES.md, R-013).
+    subject = args.subject
+    if subject:
+        pass
+    elif set_name in SUBJECTS:
+        subject = SUBJECTS[set_name]
+    else:
+        subject, src = subjects_terrain.subject_for_set(
+            set_name, tsv_path=(args.set_terrains or None))
+        if subject:
+            print("тема набора взята по террейну %s" % src)
+        else:
+            subject, src = subjects_terrain.subject_by_name(set_name)
+            if subject:
+                print("тема набора угадана по имени (образец %s) - проверь, если результат странный" % src)
+            else:
+                subject = "terrain tiles and objects"
+                print("ВНИМАНИЕ: для %s нет темы ни в SUBJECTS, ни по террейну, ни по имени - "
+                      "рисуем с заглушкой 'terrain tiles and objects'. Модель не знает, "
+                      "что это за место." % set_name, file=sys.stderr)
+    # Грубая оценка длины: CLIP считает и слова, и знаки препинания. Точный счёт
+    # доступен только после загрузки модели, а предупредить надо до неё.
+    _tail = 53   # префикс + постоянный стилевой хвост; выверено по факту: длинная
+                 # тема ACHURCH дала ровно 79 токенов, как и сказал CLIP
+    _est = len(subject.replace(",", " , ").replace(":", " : ").split()) + _tail
+    if _est > 77:
+        print("ВНИМАНИЕ: тема набора длинная (~%d токенов с хвостом стиля, предел 77). "
+              "CLIP обрежет конец промпта - потеряется 'Xenonauts style'. Сократи тему."
+              % _est, file=sys.stderr)
     context = (subject.split(":")[0], subject)  # short form after a hint, full form without one
     unit = set_name in UNIT_SETS
     prompts = {"object": args.prompt or (STYLE_UNIT if unit else STYLE), "ground": args.prompt_ground or STYLE_GROUND}
