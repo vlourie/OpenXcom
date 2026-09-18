@@ -233,6 +233,7 @@ private:
 		int x = 0, y = 0, w = 0, h = 0;
 		bool picture = false;
 	};
+	void noteCover(const Cover &c);
 	std::vector<Cover> _covers;       ///< what fills the screen under the text, in drawing order (this frame)
 	int _clipX = 0, _clipY = 0, _clipW = 0, _clipH = 0;
 	int _mouseX = -1, _mouseY = -1;

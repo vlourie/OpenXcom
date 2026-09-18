@@ -793,7 +793,9 @@ void HdUi::drawTtfLine(const std::vector<TextRun> &runs, int originX, int origin
 	// light line over a bright photograph cannot be read at all. Over a panel or a plain background the
 	// classic drop shadow is what the text has always had, and it stays
 	const bool onPicture = overPicture(originX, originY, std::max(textW, 1), std::max(textH, 1));
-	const int outlineW = std::max(2, k / 2);
+	// two base pixels' worth of edge: at k = 4 a fixed 2 would be a quarter of a base pixel and simply
+	// would not be seen, so the outline grows with the scale like everything else here
+	const int outlineW = std::max(2, k);
 	const int shadowOff = onPicture ? 0 : std::max(1, k / 2);
 	for (int pass = 0; pass < 2; ++pass)
 	{

@@ -474,9 +474,9 @@ const HdFrame *HdUi::prepared(const HdUiArt::Art *art, const Surface *key, int k
  */
 void HdUi::notePicture(int x, int y, int w, int h)
 {
-	if (w > 0 && h > 0 && _covers.size() < 64)
+	if (w > 0 && h > 0)
 	{
-		_covers.push_back({ x, y, w, h, true });
+		noteCover({ x, y, w, h, true });
 	}
 }
 
@@ -486,10 +486,23 @@ void HdUi::notePicture(int x, int y, int w, int h)
  */
 void HdUi::notePanel(int x, int y, int w, int h)
 {
-	if (w > 0 && h > 0 && _covers.size() < 64)
+	if (w > 0 && h > 0)
 	{
-		_covers.push_back({ x, y, w, h, false });
+		noteCover({ x, y, w, h, false });
 	}
+}
+
+/**
+ * Adds one rectangle to the frame's list, dropping the oldest when it is full: what was drawn LAST is
+ * what the text lands on, so the end of the list is the part worth keeping.
+ */
+void HdUi::noteCover(const Cover &c)
+{
+	if (_covers.size() >= 128)
+	{
+		_covers.erase(_covers.begin());
+	}
+	_covers.push_back(c);
 }
 
 /**
@@ -628,11 +641,12 @@ void HdUi::drawSurface(const Surface *surface, int x, int y, bool smooth)
 		if (art)
 		{
 			why = "picture";
-			// what the text above it will land on: an HD picture, so the outline is drawn instead of the shadow
-			notePicture(x, y, w, h);
 			const HdFrame *frame = prepared(art, art->baseSurface, k, pal);
 			if (frame)
 			{
+				// what the text above it will land on: an HD picture, so the outline is drawn instead of
+				// the shadow. Noted only here, where the picture really went onto the world layer
+				notePicture(x, y, w, h);
 				// the picture placed so that the surface's part of it lands here, clipped to the surface
 				const SDL_Rect outer = worldClip(dest, k);
 				SDL_Rect clip;
