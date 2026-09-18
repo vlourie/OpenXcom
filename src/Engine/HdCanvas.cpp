@@ -29,6 +29,8 @@
 #include "ShaderDraw.h"
 #include "ShaderMove.h"
 #include "HdWorkers.h"
+#include "HdUiArt.h"
+#include "Logger.h"
 
 namespace OpenXcom
 {
@@ -836,6 +838,10 @@ void Canvas32::flush()
 	// the shaded copies point at the smoothed frames, so they go with them
 	if (_smooth.size() > 4096 || _smoothScripted.size() > 2048)
 	{
+		// measurement: the whole cache goes at once, and the shaded copies with it, so the next
+		// frames re-smooth and re-shade everything visible. Invisible in the log otherwise.
+		Log(LOG_INFO) << "HD perf: smooth cache dropped, " << _smooth.size() << "+" << _smoothScripted.size()
+			<< " frames " << (smoothBytes() >> 20) << " MB, with " << (_tonedBytes >> 20) << " MB of shaded copies";
 		if (_smooth.size() > 4096)
 		{
 			_smooth.clear();
@@ -846,6 +852,45 @@ void Canvas32::flush()
 		}
 		clearToned();
 	}
+	perfReport();
+}
+
+/**
+ * Bytes held by the smoothed-frame caches (measurement only).
+ */
+size_t Canvas32::smoothBytes() const
+{
+	size_t bytes = 0;
+	for (const auto &pair : _smooth)
+	{
+		bytes += pair.second.pixels.size() * sizeof(Uint32);
+	}
+	for (const auto &pair : _smoothScripted)
+	{
+		bytes += pair.second.pixels.size() * sizeof(Uint32);
+	}
+	return bytes;
+}
+
+/**
+ * Logs what the HD caches hold, every two seconds: what a battle actually costs,
+ * and whether a cache is thrashing rather than filling. Draws nothing.
+ */
+void Canvas32::perfReport()
+{
+	const Uint32 now = SDL_GetTicks();
+	if (now - _perfLast < 2000)
+	{
+		return;
+	}
+	_perfLast = now;
+	Log(LOG_INFO) << "HD perf: " << _width << "x" << _height << " k=" << _scale << " mode=" << _hdMode
+		<< " | smooth " << _smooth.size() << "+" << _smoothScripted.size() << " fr " << (smoothBytes() >> 20) << " MB"
+		<< " | toned " << _toned.size() << " fr " << (_tonedBytes >> 20) << " MB"
+		<< " | ground " << _ground.size() << " fr " << (_groundBytes >> 20) << " MB"
+		<< " | packs " << HdSprites::loaded() << " fr " << (HdSprites::loadedBytes() >> 20) << " MB"
+		<< " | pictures " << (HdUiArt::bytes() >> 20) << " MB"
+		<< " | spans " << _spans.size();
 }
 
 /**

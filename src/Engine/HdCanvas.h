@@ -283,6 +283,11 @@ private:
 	std::vector<Uint8> _arena;
 	std::vector<int> _arenaInt;
 
+	/// Measurement: bytes held by the smoothed-frame caches, and the periodic cache report.
+	size_t smoothBytes() const;
+	void perfReport();
+	Uint32 _perfLast = 0;
+
 	void rebuildTables();
 	void rebuildToneTables();
 	const SpanTable &spansFor(SurfaceRaw<const Uint8> src);
