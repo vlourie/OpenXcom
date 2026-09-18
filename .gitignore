@@ -97,3 +97,26 @@ dist/
 
 # HD-мод (картинки, паки) — в гит не кладём
 /user/
+
+# --- mod-ai-agents ---
+/.index/
+/game
+/.claude/state/
+
+# --- рабочие папки: в гит не идут -------------------------------------
+# установка X-Piratez (3.6 ГБ) — копия игры, не исходники
+/Пиратки/
+/мурукон/
+# выгрузки Claude, референсы, скачанные снимки, эксперименты
+/Claude outputs/
+/photo_refs/
+/hdglobe_dl/
+/tank_work/
+/hit_compare/
+/pics/
+/Multiplayer/
+# дампы upstream-версий для ручного сравнения при слиянии
+/head_*.txt
+/head_*.cpp
+/build_log.txt
+/obj/
