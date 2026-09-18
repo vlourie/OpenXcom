@@ -1167,13 +1167,10 @@ void TextList::hdMirror()
 	};
 	if (HdUi::skin())
 	{
-		// the modern skin: banded rows under a long list, the selected row's highlight with an accent bar
+		// the modern skin: the selected row's highlight with an accent bar. Rows are not banded: the
+		// stripes read as part of the text on every screen that shows figures under a caption
 		HdUi &ui = HdUi::instance();
 		ui.setClip(getX(), getY(), getWidth(), getHeight());
-		if (_texts.size() >= 4)
-		{
-			forRows([&](size_t i, int y, int h) { ui.drawRowBand(getX(), getY() + y, getWidth(), h, (i & 1) != 0); });
-		}
 		if (_selector->getVisible())
 		{
 			// the accent bar in the selected row's text colour (its face shade)
