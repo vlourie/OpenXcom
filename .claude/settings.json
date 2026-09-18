@@ -1,0 +1,85 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "defaultMode": "acceptEdits",
+    "allow": [
+      "Read",
+      "Glob",
+      "Grep",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git add:*)",
+      "Bash(git branch:*)",
+      "Bash(python tools/:*)",
+      "Bash(ctags:*)",
+      "Bash(grep:*)",
+      "WebSearch",
+      "WebFetch"
+    ],
+    "ask": [
+      "Bash(git push:*)",
+      "Bash(git reset:*)",
+      "Bash(git rebase:*)"
+    ],
+    "deny": [
+      "Bash(git push --force:*)",
+      "Bash(rm -rf:*)"
+    ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "powershell",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/session-start.ps1",
+            "timeout": 120,
+            "statusMessage": "Поднимаю карту проекта и грабли"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "powershell",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/bom-guard.ps1",
+            "timeout": 15,
+            "statusMessage": "Дописываю BOM в PowerShell-скрипт"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "powershell",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/guard-paths.ps1",
+            "timeout": 15,
+            "statusMessage": "Проверяю, что правка не лезет в файлы игры"
+          },
+          {
+            "type": "command",
+            "shell": "powershell",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/rake-check.ps1",
+            "timeout": 20,
+            "statusMessage": "Смотрю, нет ли граблей на этом файле"
+          }
+        ]
+      }
+    ]
+  },
+  "env": {
+    "MOD_GAME": "OpenXcom Extended",
+    "MOD_NAME": "OXCE-HD",
+    "LOCAL_MODEL": "qwen3.8:27b"
+  }
+}
