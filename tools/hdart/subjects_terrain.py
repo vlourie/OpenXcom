@@ -18,6 +18,14 @@ tools/index_mod.py по рулсетам мода. Руками сопостав
 
 Длина: тема идёт в промпт ПЕРЕД стилевым хвостом, CLIP режет всё после 77 токенов.
 Держать в пределах 10-12 слов (gen_hd.py предупредит, если длинно).
+
+ЧТО ПИСАТЬ. Материал и палитру, а не приметные цветные предметы. Тема одна на весь
+набор, а кадры в нём разные: то, что названо в теме, модель рисует на КАЖДОМ кадре.
+"red stripes, cyan glass" в теме MAGAZYNMAFII дали красные полосы и бирюзовые затёки
+на ровном сером полу, где в оригинале не было ничего (см. RAKES.md, R-016).
+Приметы можно называть только если они есть на большинстве кадров набора - например
+зелёные излучатели в ABASE. Разовая примета идёт не в тему, а в покадровую подсказку
+(hints.py).
 """
 
 import os
@@ -26,34 +34,34 @@ import os
 # (tools/subject_plan.py, колонка floors).
 TERRAIN_SUBJECTS = {
     # --- 1-10: самые крупные по площади пола ---
-    "PORTTFTD6": "sea port: dark asphalt road, concrete kerbs, yellow chevron markings, wet sand",
+    "PORTTFTD6": "sea port: dark asphalt road, concrete kerbs, worn road paint, wet sand",
     "BEACH_SAVANNA": "tropical beach and savanna: pale sand, shells, dry earth, green scrub tufts",
     "FORESTWASTE": "dead forest: reddish-brown dry soil, dead twigs, rotten stumps, fallen logs",
     "FORESTSNOW": "snowy forest: white snow, brown mud patches, snowy stumps, bare shrubs",
     "STYXSWAMP": "lush swamp: dark green grass, bright green reeds, pink flowers, wet mud",
     "FORESTSWAMP": "wet forest: green grass, marsh water, pines, bushes, mud",
-    "TEC_BASE_TUNNELS": "tech tunnel: grey rock walls, orange hazard chevrons, glowing cyan machinery",
+    "TEC_BASE_TUNNELS": "tech tunnel: grey rock walls, dark steel panels, worn concrete floor, dust",
     "POLAR_SOLID": "polar: white snow, frozen brown dirt, blue ice slabs, dark water",
     "NECROPOLIS": "black cave: dark speckled rock walls, grey rubble floor, stone debris",
     "GDX_HOUSE": "garden house: tiled floor, green bushes, fruit trees, grass, wooden fence",
     # --- 11-20 ---
-    "WHITEBASE_INFLIL1": "white base: orange rubber floor, white concrete slabs, grey tiles, green lawn",
+    "WHITEBASE_INFLIL1": "white base: orange rubber floor, white concrete slabs, grey tiles, short grass",
     "WHITE_CASTLE": "white castle: pale marble floor, white stone blocks, green ivy",
-    "THULEBASE": "arctic bunker: metal grating floor, grey steel walls, red banners, wooden crates",
+    "THULEBASE": "arctic bunker: metal grating floor, grey steel walls, painted steel, wooden crates",
     "CITY_OF_THE_DEAD_SEWERS": "jungle ruins: pale stone blocks, sandy floor, green vines, grey rubble",
-    "CYDSUBWAY": "underground dig: brown earth floor, dirt walls, coloured light pools",
-    "SACREDCAVE": "earth cave: brown soil walls, dirt floor, glowing cyan and pink crystal moss",
+    "CYDSUBWAY": "underground dig: brown earth floor, dirt walls, packed soil, loose stones",
+    "SACREDCAVE": "earth cave: brown soil walls, dirt floor, damp earth, mineral crust",
     "DARK_TOWER": "ashen waste: black ash ground, dark grey rock, charred boulders, grey snow",
-    "LAMIA_VILLAGE": "gilded shrine: mossy green ground, golden sand floor, grey stone brick, cave rock",
+    "LAMIA_VILLAGE": "shrine: mossy green ground, pale golden sand floor, grey stone brick, cave rock",
     "RICE_FARM": "rice farm: flooded paddy water, mud dykes, green shoots, wooden barn floor",
     "URBANJUNKUFO": "farmland: crop fields, hedges, dirt track, grass, fruit trees",
     # --- 21-30 ---
     "STYXTOWER": "grey stone keep: flagstone floor, grey block walls, dark stone stairs",
-    "UCITY": "seabed: pale sand, green algae mesh, yellow and pink coral, alien hull plating",
+    "UCITY": "seabed: pale sand, green algae mesh, silt, alien hull plating",
     "EMANSION_MAG": "mansion: marble tiles, wood parquet, coloured carpets, pool water, garden",
     "CRUISE_LINER_ACADEMY": "cruise liner deck: wooden planking, painted steel floor, carpet, white bulkheads",
     "DESERTREFINERY": "desert refinery: sand, cracked dirt, rusty steel sheets, concrete pads",
-    "GOTHIC_LANDING": "stone church: grey block walls, stone floor, red carpet, wooden pews",
+    "GOTHIC_LANDING": "stone church: grey block walls, worn flagstone floor, dressed stone, wooden pews",
     "NUKE_ZONE": "nuked ruin: grey ash rubble, burnt debris, cracked concrete",
     "RURAL": "village: dirt road, grass, wooden barn floor, farm yard",
     "EMANSION": "mansion: marble tiles, wood parquet, coloured carpets, garden lawn",
@@ -70,7 +78,7 @@ TERRAIN_SUBJECTS = {
     "NINJA_BASE_OUTPOST": "ninja outpost: white painted road, concrete floor, tatami, dark tech panels",
     "WINTER_WALL": "winter industrial: grey slush road, concrete yard, dirty snow, steel plates",
     # --- дальше по убыванию; сюда же те, где имя террейна совпадает с именем набора ---
-    "MAGAZYNMAFII": "mafia warehouse: concrete floor, dark grey steel walls, red stripes, cyan glass",
+    "MAGAZYNMAFII": "mafia warehouse: bare concrete floor, dark grey steel walls, oil stains, crates",
     "JUNGLE": "jungle: wet earth, tropical trees, palms, dense green bushes, mud",
     "FOREST": "forest: green grass, pine trees, bushes, dirt track, rocks, logs",
     "URBAN": "city street: asphalt road, pavement, concrete, shop fronts, grass verge",
@@ -168,7 +176,7 @@ NAME_HINTS = [
     ("CAVEDOOM", "hell cave: dark red rock, black scorch marks, glowing embers"),
     ("CAVE", "cave: rock walls, rubble floor, damp stone, gravel"),
     # --- корабли игрока (C_*) и корпоративные (MARSEC) ---
-    ("MARSEC", "corporate ship interior: red panel walls, cyan trim, dark metal deck, orange lamps"),
+    ("MARSEC", "corporate ship interior: red painted panel walls, dark metal deck plating"),
     ("UAC_", "industrial base: stained concrete floor, dark steel panels, pipes, grates"),
     ("C_EXT_ROOF", "ship roof plate: smooth painted metal, plain flat surface, panel seams"),
     ("C_EXT_WALL", "ship hull wall: painted metal plating, panel seams, rivets"),
@@ -192,11 +200,11 @@ NAME_HINTS = [
     ("U_BASE", "alien base: dark metal floor, glowing panels, smooth curved walls"),
     ("DREAD_", "warship interior: dark steel deck, heavy bulkheads, riveted plating"),
     # --- станции, метро, подземка ---
-    ("SPACESTATION", "space station interior: white-grey metal walls, blue light strips, metal deck"),
-    ("COMPLEX", "moon base: grey metal deck, panel walls, blue light strips"),
-    ("STATION", "space station: beige panel walls, magenta accents, grey tech panels, screens"),
+    ("SPACESTATION", "space station interior: white-grey metal walls, panel seams, metal deck"),
+    ("COMPLEX", "moon base: grey metal deck, panel walls, panel seams"),
+    ("STATION", "space station: beige panel walls, grey tech panels, panel seams"),
     ("METRO", "metro tunnel: brown brick walls, red brick, dark concrete floor, dirt"),
-    ("SGR_", "underground station: grey metal floor, earth walls, golden lamps, coloured light pools"),
+    ("SGR_", "underground station: grey metal floor, brown earth walls, packed soil, worn concrete"),
     # --- руины и гробницы ---
     ("CRYPTEK", "crypt: glowing cyan floor slabs, red stone walls, dark portal"),
     ("MUMMY", "stone ruins: grey carved stone blocks, rubble, worn steps"),
@@ -210,7 +218,7 @@ NAME_HINTS = [
     ("MILBARR", "military barracks: concrete floor, rust-orange walls, dirt yard"),
     ("MIL", "military post: concrete floor, painted steel walls, crates"),
     ("XBASE", "military base interior: concrete floor, metal walls, doors, machinery"),
-    ("XB", "base barracks: wooden walls, orange painted steel, sandy floor, shelves"),
+    ("XB", "base barracks: wooden plank walls, painted steel, sandy floor, shelves"),
     ("XARMY", "military base interior: concrete floor, metal walls, crates"),
     ("DOOM_", "hell base: stained concrete floor, dark steel panels, glowing embers"),
     ("GOVT", "government building: polished floor, painted walls, official decor"),
@@ -221,7 +229,7 @@ NAME_HINTS = [
     ("BARN_", "farm barn: wooden plank walls, hay, dirt floor, wooden doors"),
     ("ASYLUM", "asylum grounds: grass, dirt path, white fence, grey stone wall"),
     ("ARENA", "arena: sandy floor, wooden barriers, water channel, grass patch"),
-    ("GRUNGE", "dirty pit: rusty brown rims, grey gritty pools, golden pots"),
+    ("GRUNGE", "dirty pit: rusty brown rims, grey gritty surface, worn metal"),
     ("TAVERN", "tavern: wooden floor, timber walls, barrels, tables"),
     ("BRICKBAR", "brick bar: brick walls, wooden floor, bar counter, stools"),
     ("CAFE", "cafe: tiled floor, glass front, tables, chairs"),
@@ -256,7 +264,7 @@ NAME_HINTS = [
     ("FREIGHTER", "cargo ship interior: painted steel deck, bulkheads, crates, pipes"),
     ("TRANSPORT", "transport aircraft interior: metal deck plating, seats, ramp, bulkheads"),
     ("PLANE", "aircraft interior: metal deck plating, seats, ramp, bulkheads"),
-    ("HANGAR", "hangar: painted concrete floor, yellow markings, steel walls, machinery"),
+    ("HANGAR", "hangar: painted concrete floor, worn floor paint, steel walls, machinery"),
     ("MOUNTSNOW", "snowy mountain: white snow, grey rock, frozen dirt, bare shrubs"),
     ("MOUNTSAND", "sandy mountain: pale sand, eroded rock, dry dirt, sparse scrub"),
     ("MOUNTWASTE", "dead highland: grey ash soil, cracked rock, dead scrub"),

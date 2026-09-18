@@ -14,6 +14,9 @@
 #   -VariantsOnly  paint only the variants of sets already painted (the base painting and objects stay);
 #           default sets: the natural ones. A set whose variants.json already has N looks is skipped (-Force repaints)
 #   -Data   the UFO data folder (bin\UFO), -Sheets the working folder (hdart_sheets)
+#           ВАЖНО: если -Data - это мод, а не bin\UFO, то -Mod и -Sheets обязательны. По умолчанию
+#           они указывают на ванильные user\mods\hd и hdart_sheets: без них результат уходит
+#           в ванильный мод, а листы мода затирают ванильные. Скрипт теперь на этом останавливается.
 #   -AllSets  взять ВСЕ наборы из <Data>\TERRAIN (или \UNITS при -Units), а не встроенный список ванили.
 #           Для модов вроде X-Piratez это единственный способ: у них 625 наборов, перечислять руками нельзя.
 #   -CleanBig  после упаковки набора удалять painted_x16.png (30-50 МБ на набор, на 625 наборах это ~20 ГБ).
@@ -90,6 +93,20 @@ if ($AllSets -and $Sets.Count -eq 0) {
     Log0 ("наборов в $srcDir : " + $Sets.Count)
 }
 if ($Sets.Count -eq 0) { $Sets = $terrain }
+
+# Грабля R-015: -Data указывает на мод, а -Mod и -Sheets остались ванильными. Тогда
+# результат тихо уходит в ванильный мод (user\mods\hd), а листы затирают ванильные -
+# ошибки нет, лог выглядит правильным, и в моде при этом не меняется ничего.
+$dataNorm = ($Data -replace '/','\').TrimEnd('\')
+if ($dataNorm -notmatch '^bin\\(UFO|TFTD)$') {
+    $bad = @()
+    if (-not $PSBoundParameters.ContainsKey('Mod'))    { $bad += ('-Mod (по умолчанию ' + $Mod + ', это ванильный мод)') }
+    if (-not $PSBoundParameters.ContainsKey('Sheets')) { $bad += ('-Sheets (по умолчанию ' + $Sheets + ', общая с ванилью: наборы с одинаковыми именами затрут друг друга)') }
+    if ($bad.Count -gt 0) {
+        throw ('-Data указывает на мод (' + $Data + '), значит надо задать и ' + ($bad -join ' и ') +
+               '. Для X-Piratez: -Mod "Пиратки\Dioxine_XPiratez\user\mods\hd" -Sheets hdart_sheets_pz')
+    }
+}
 
 New-Item -ItemType Directory -Force -Path $Mod | Out-Null
 $meta = Join-Path $Mod "metadata.yml"
