@@ -1,4 +1,4 @@
-# autotools
+﻿# autotools
 aclocal.m4
 m4/pkg.m4
 missing
@@ -113,6 +113,9 @@ dist/
 /hdglobe_dl/
 /tank_work/
 /hit_compare/
+/_cmp/
+/cmp_fast_slow/
+/hdart_sheets_pz/
 /pics/
 /Multiplayer/
 # дампы upstream-версий для ручного сравнения при слиянии
