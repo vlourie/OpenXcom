@@ -184,7 +184,12 @@ void Bar::hdMirror()
 	const SDL_Color *pal = HdUi::paletteOf(this);
 	const int k = HdUi::scale();
 	const float x0 = (float)getX() * k, y0 = (float)getY() * k, y1 = (float)(getY() + getHeight()) * k;
-	const float x1 = x0 + ((float)(_scale * _max) + 1.0f) * k;
+	// cut at the widget's own width, the way the classic bar is cut: draw() fills its own surface and
+	// SDL drops whatever is wider, while here the bar is drawn straight into the screen. A stat above
+	// the widget's width (X-Piratez goes well past the 170 the soldier screen was drawn for) ran the
+	// track off the right edge of the screen
+	const float xMax = (float)(getX() + getWidth()) * k;
+	const float x1 = std::min(x0 + ((float)(_scale * _max) + 1.0f) * k, xMax);
 	const float r = std::min(1.0f * k, (y1 - y0) * 0.5f);
 	const Uint32 border = HdUi::rgba(pal[_borderColor ? _borderColor : (Uint8)(_color + 4)], 200);
 	ui.fillRoundRect(x0, y0, x1, y1, r, 0xA0000000u, 0xA0000000u);
