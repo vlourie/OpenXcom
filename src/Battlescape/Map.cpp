@@ -732,6 +732,14 @@ void Map::blitMessage()
 	{
 		delete _messageScratch;
 		_messageScratch = new Surface(baseW, baseH);
+		// the message is blitted into the scratch as 8-bit pixels, and SDL translates those by
+		// palette: a fresh surface has an all-black one, every colour finds index 0 as its nearest
+		// entry, and the whole hidden movement screen comes out transparent - a black screen with
+		// no picture, no text and no thinking bar
+		if (_message->getPalette())
+		{
+			_messageScratch->setPalette(_message->getPalette());
+		}
 	}
 	_messageScratch->clear();
 	_message->blit(_messageScratch->getSurface());
@@ -843,6 +851,11 @@ void Map::setPalette(const SDL_Color *colors, int firstcolor, int ncolors)
 		mds->getSurfaceset()->setPalette(colors, firstcolor, ncolors);
 	}
 	_message->setPalette(colors, firstcolor, ncolors);
+	if (_messageScratch)
+	{
+		// the scratch the message is drawn into blits index to index only while it carries the same palette
+		_messageScratch->setPalette(colors, firstcolor, ncolors);
+	}
 	refreshHiddenMovementBackground();
 	_message->initText(_game->getMod()->getFont("FONT_BIG"), _game->getMod()->getFont("FONT_SMALL"), _game->getLanguage());
 	_message->setText(_game->getLanguage()->getString("STR_HIDDEN_MOVEMENT"), _game->getLanguage()->getString("STR_THINKING"));
