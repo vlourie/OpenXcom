@@ -24,7 +24,10 @@
 #include "../resource.h"
 #include <algorithm>
 #include <cmath>
+#include <iterator>
 #include <sstream>
+#include "HdUi.h"
+#include "HdTest.h"
 #include <SDL_mixer.h>
 #include "State.h"
 #include "Screen.h"
@@ -47,6 +50,7 @@
 #include "../Menu/NotesState.h"
 #include "../Geoscape/GeoscapeState.h"
 #include "../Menu/TestState.h"
+#include <algorithm>
 #include "../fallthrough.h"
 
 namespace OpenXcom
@@ -321,6 +325,16 @@ void Game::run()
 						}
 					}
 					_states.back()->handle(&action);
+					// the HD dump key outside the battlescape (which writes a richer dump of its own):
+					// the frame as it is drawn, into the master's user folder
+					if (action.getDetails()->type == SDL_KEYDOWN
+						&& action.getDetails()->key.keysym.sym == Options::keyBattleHdTestDump
+						&& !_screen->hasHdTestDumpRequest())
+					{
+						const std::string path = HdTest::nextDumpPrefix() + "_frame.png";
+						_screen->requestHdTestDump(path);
+						Log(LOG_INFO) << "HD dump: " << path;
+					}
 					break;
 			}
 			if (!_init)
@@ -423,6 +437,22 @@ void Game::run()
 						ev.button.state = SDL_RELEASED;
 						SDL_PushEvent(&ev);
 					}
+					// OXCE_HD_KEY=<SDL key number>: presses that key 1.0 s before the dump (289 = F8)
+					static const char *autoKey = getenv("OXCE_HD_KEY");
+					static bool autoKeyed = false;
+					if (!autoKeyed && autoKey && *autoKey && now + 1000 >= autoDumpAt)
+					{
+						autoKeyed = true;
+						SDL_Event ev;
+						memset(&ev, 0, sizeof(ev));
+						ev.type = SDL_KEYDOWN;
+						ev.key.state = SDL_PRESSED;
+						ev.key.keysym.sym = (SDLKey)atoi(autoKey);
+						SDL_PushEvent(&ev);
+						ev.type = SDL_KEYUP;
+						ev.key.state = SDL_RELEASED;
+						SDL_PushEvent(&ev);
+					}
 					if (autoStep <= 2 && autoType && *autoType && now + 800 >= autoDumpAt)
 					{
 						autoStep = 3;
@@ -442,6 +472,8 @@ void Game::run()
 					}
 					for (; i != _states.end(); ++i)
 					{
+						// the HD interface's hover effects follow the cursor, in the top state only
+						HdUi::instance().setMouse(mx, my, std::next(i) == _states.end());
 						(*i)->blit();
 					}
 				}

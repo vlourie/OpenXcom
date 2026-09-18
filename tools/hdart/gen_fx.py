@@ -6,8 +6,10 @@ explosion, drawn procedurally (no GPU, seconds) as an HD pack of the classic set
     hd/SMOKE.PCK/<i>.png    0-3 tile fire, 4-7 burning unit (each with <i>.v1.png, the picture half a step
                             later: the engine shows it on the odd animation tick, 8 phases instead of 4),
                             8-19 smoke (3 densities x 4 frames),
-                            26-35 bullet hit (white and blue sparks), 36-45 laser hit (red-orange burst), 46-55 plasma hit (green)
-    hd/HIT.PCK/<i>.png      0-3 the melee star
+                            26-35 bullet hit (--bullet-style; <i>.v1.png = the same hit with blood, which the
+                            engine draws when the shot landed on a unit), 36-45 laser hit (red-orange burst),
+                            46-55 plasma hit (green)
+    hd/HIT.PCK/<i>.png      0-3 the mark of a melee hit (--melee-style; <i>.v1.png with blood, as above)
     hd/X1.PCK/<i>.png       0-7 the big explosion (128x64 frames)
 
 Frames 20-25 of SMOKE.PCK (the rank badges) are left alone. Every frame keeps the classic
@@ -19,6 +21,8 @@ sparks and flashes. Soft edges throughout - nothing is a blob of pixels any more
     python gen_fx.py --mod out --preview fx.png     also a sheet of every frame for a look
     python gen_fx.py --fire-compare fire_compare    ten fire styles next to the current fire (GIF + sheet)
     python gen_fx.py --mod user\\mods\\hd --fire-style 4 --only-fire     the chosen fire only
+    python gen_fx.py --hit-compare hit_compare                     the melee and bullet hits, every style
+    python gen_fx.py --mod user\\mods\\hd --melee-style 3 --bullet-style 2 --only-hits    the chosen hits only
 
 The fire is one looping flame in eight phases (--fire-style 1-10, default 1): the rising noise repeats
 after a whole number of its periods and every tongue sways a whole number of beats per loop, so phase 8
@@ -403,15 +407,28 @@ def fire_loop(k, phase, big, seed, style):
     return to_image(np.clip(rgb, 0, 255), alpha)
 
 
+def label_font():
+    """A font for the comparison pictures and whether it can write Russian (the built-in one cannot)."""
+    from PIL import ImageFont
+    for path in (r"C:\Windows\Fonts\segoeui.ttf", r"C:\Windows\Fonts\arial.ttf",
+                 "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", "/Library/Fonts/Arial.ttf"):
+        if os.path.exists(path):
+            try:
+                return ImageFont.truetype(path, 14), True
+            except Exception:
+                pass
+    try:
+        return ImageFont.load_default(size=14), False
+    except TypeError:
+        return ImageFont.load_default(), False
+
+
 def fire_compare(out_dir, k, seed):
     """Every style next to the current fire: an animated GIF at game speed (both tile and unit fire, on a
     dark and a snowy ground) and a sheet of the eight phases of each."""
-    from PIL import ImageDraw, ImageFont
+    from PIL import ImageDraw
     os.makedirs(out_dir, exist_ok=True)
-    try:
-        font = ImageFont.load_default(size=14)
-    except TypeError:
-        font = ImageFont.load_default()
+    font, cyrillic = label_font()
     cw, ch = 32 * k, 40 * k
     grounds = [(46, 58, 40), (214, 222, 230)]
     styles = [0] + sorted(FIRE_STYLES)
@@ -511,7 +528,8 @@ def sparks(xs, ys, cx, cy, count, t, seed, speed=(1.3, 2.6), gravity=0.0, width=
         sp = speed[0] + rng.random() * (speed[1] - speed[0])
         vx, vy = math.cos(ang) * sp, math.sin(ang) * sp * 0.8
         px, py = cx + vx * t, cy + vy * t + 0.5 * gravity * t * t
-        qx, qy = cx + vx * (t - streak), cy + vy * (t - streak) + 0.5 * gravity * (t - streak) ** 2
+        qt = max(t - streak, 0.0)
+        qx, qy = cx + vx * qt, cy + vy * qt + 0.5 * gravity * qt * qt
         # a short streak from q to p
         dx, dy = px - qx, py - qy
         ll = dx * dx + dy * dy + 1e-6
@@ -642,16 +660,452 @@ def big_explosion(k, t, seed):
     return to_image(rgb, alpha)
 
 
+# ----------------------------------------------------------------------------- hits: the mark and the blood
+
+def straighten(rgb, alpha):
+    """Layers stacked with `over` are premultiplied by their alpha; the PNG wants plain colours."""
+    return np.where(alpha[..., None] > 0.004, rgb / np.maximum(alpha, 0.004)[..., None], 0.0)
+
+
+def blob(xs, ys, shapes):
+    """A smooth silhouette out of ellipses: shapes = [(cx, cy, rx, ry, angle)]; > 0 inside."""
+    field = np.full(xs.shape, -9.0, dtype=np.float32)
+    for cx, cy, rx, ry, ang in shapes:
+        ca, sa = math.cos(ang), math.sin(ang)
+        px = (xs - cx) * ca + (ys - cy) * sa
+        py = -(xs - cx) * sa + (ys - cy) * ca
+        field = np.maximum(field, 1.0 - np.sqrt((px / rx) ** 2 + (py / ry) ** 2))
+    return field
+
+
+def blob_shaded(field, body, dark, light=(-0.7, -0.7), edge=0.16, k=4):
+    """A blob painted like a game sprite: lit from the upper left, a dark outline along its edge.
+    Returns (rgb, alpha) with alpha antialiased on the silhouette."""
+    alpha = np.clip(field / (0.9 / k) + 0.5, 0, 1)
+    gy, gx = np.gradient(field)
+    norm = np.sqrt(gx ** 2 + gy ** 2) + 1e-6
+    lit = np.clip((-gx / norm) * light[0] + (-gy / norm) * light[1], -1, 1)
+    shade = 0.72 + 0.42 * np.clip(lit, 0, 1) - 0.25 * np.clip(-lit, 0, 1)
+    rgb = np.asarray(body, np.float32)[None, None, :] * shade[..., None]
+    rim = np.clip(1.0 - field / edge, 0, 1) ** 1.5 * (alpha > 0.02)
+    rgb = rgb * (1 - rim[..., None]) + np.asarray(dark, np.float32)[None, None, :] * rim[..., None]
+    return rgb, alpha
+
+
+def burst_field(xs, ys, cx, cy, radius, spikes, turn=0.0, thin=1.6):
+    """A star-shaped flash of light around (cx, cy): `spikes` rays out to `radius`."""
+    ang = np.arctan2(ys - cy, xs - cx)
+    d = np.sqrt((xs - cx) ** 2 + (ys - cy) ** 2)
+    r = radius * (0.35 + 0.65 * (0.5 + 0.5 * np.cos(spikes * (ang + turn))) ** thin)
+    return np.clip((1.0 - d / np.maximum(r, 0.1)) * 1.6, 0, 1)
+
+
+def punch_parts(cx, cy, u, reach, size, glove):
+    """The ellipses of a punch whose knuckles are `reach` px short of (cx, cy), coming in along the unit
+    vector `u`: {"arm": the sleeve, "hand": the fist or glove, "cuff": the glove's white band}."""
+    ux, uy = u
+    px, py = -uy, ux                      # across the punch (positive = the lower side)
+    ang = math.atan2(uy, ux)
+    fx, fy = cx - ux * reach, cy - uy * reach
+    parts = {"arm": [], "hand": [], "cuff": []}
+
+    def at(part, along, across, rx, ry):
+        parts[part].append((fx - ux * along * size + px * across * size, fy - uy * along * size + py * across * size,
+                            rx * size, ry * size, ang))
+    if glove:
+        at("hand", 3.6, 0.0, 5.0, 4.8)    # the round head
+        at("hand", 5.6, -3.0, 2.2, 2.0)   # the thumb, on the upper side
+        at("cuff", 9.2, 0.1, 2.4, 3.4)    # the white band
+        at("arm", 12.8, 0.2, 3.4, 3.0)    # the sleeve
+    else:
+        for i in range(4):                # the knuckles, across the front
+            at("hand", 0.7, (i - 1.5) * 1.65, 1.5, 1.8)
+        at("hand", 4.8, 0.0, 5.2, 5.0)    # the back of the hand
+        at("hand", 2.9, -3.8, 2.1, 1.8)   # the thumb
+        at("arm", 10.6, 0.1, 3.0, 2.7)    # the wrist
+        at("arm", 14.0, 0.2, 3.7, 3.4)    # the sleeve
+    return parts
+
+
+MELEE_STYLES = {
+    1: {"name": "star", "ru": "звезда: как сейчас"},
+    2: {"name": "fist", "ru": "кулак: удар из-за левого плеча"},
+    3: {"name": "glove", "ru": "боксёрская перчатка (рисованная)"},
+    4: {"name": "impact", "ru": "удар: вспышка с лучами и волной"},
+    5: {"name": "slash", "ru": "росчерк: два скрещённых разреза"},
+    6: {"name": "glovepic", "ru": "боксёрская перчатка из картинки (--glove 1..10)"},
+}
+# where the cut-out gloves of style 6 live (cut_gloves.py made them out of the sheet of ten)
+GLOVE_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "gloves")
+GLOVE_COLOURS = {1: "красная", 2: "синяя", 3: "чёрная", 4: "белая с золотом", 5: "жёлтая",
+                 6: "зелёная (шнуровка)", 7: "фиолетовая", 8: "оранжевая", 9: "розовая", 10: "коричневая кожа"}
+GLOVE_COLOURS_EN = {1: "red", 2: "blue", 3: "black", 4: "white-gold", 5: "yellow",
+                    6: "green laced", 7: "purple", 8: "orange", 9: "pink", 10: "leather"}
+GLOVE_LENGTH = 16.0     # the glove's length in classic pixels (the frame is 32x40, so it fits at the hit)
+GLOVE_TURN = -107.0     # the picture punches upwards; this turns it along the punch
+
+
+def glove_sprite(k, glove, size, glove_dir=None):
+    """The cut-out glove `glove` (1..10), scaled `size` and turned along the punch. Returns the picture
+    and the place of its knuckles in it."""
+    path = os.path.join(glove_dir or GLOVE_DIR, "%02d.png" % glove)
+    if not os.path.exists(path):
+        raise SystemExit("no glove picture %s - put the cut-out gloves 01.png..10.png there "
+                         "(cut_gloves.py makes them out of a sheet of gloves)" % path)
+    im = Image.open(path).convert("RGBA")
+    h = max(4, int(round(GLOVE_LENGTH * k * size)))
+    im = im.resize((max(1, int(round(im.width * h / im.height))), h), Image.LANCZOS)
+    pad = Image.new("RGBA", (im.width + 2 * h, im.height + 2 * h), (0, 0, 0, 0))
+    pad.alpha_composite(im, (h, h))
+    a = np.asarray(pad)[:, :, 3].astype(np.float32)
+    ys, xs = np.nonzero(a > 40)
+    top = ys.min()
+    band = (ys >= top) & (ys <= top + max(2, h // 12))
+    tip = (float(xs[band].mean()), float(top))          # the knuckles: the middle of the top edge
+    turned = pad.rotate(GLOVE_TURN, resample=Image.BICUBIC, center=tip)
+    return turned, tip
+
+BULLET_STYLES = {
+    1: {"name": "spark", "ru": "искры: белые и жёлтые (как сейчас, но без синего)"},
+    2: {"name": "dust", "ru": "пыль и осколки: вспышка, облачко пыли, мелкие обломки"},
+    3: {"name": "flash", "ru": "короткая вспышка: почти без частиц, гаснет быстро"},
+    4: {"name": "ricochet", "ru": "рикошет: пучок искр в сторону и пыль"},
+}
+
+
+def melee_hit(k, t, seed, style=1, blood=False, glove=1, glove_dir=None):
+    """HIT.PCK 0-3: the mark of a melee hit at (16.5, 24.8). `blood` adds the spray the engine draws
+    when the hit landed on a unit."""
+    if style == 1 and not blood:
+        return melee_star(k, t, seed)
+    w, h = 32, 40
+    xs, ys = grid(h, w, k)
+    cx, cy = 16.5, 24.8
+    rgb = np.zeros(xs.shape + (3,), np.float32)
+    alpha = np.zeros(xs.shape, np.float32)
+
+    def over(new_rgb, new_a):
+        nonlocal rgb, alpha
+        rgb = new_rgb * new_a[..., None] + rgb * (1 - new_a)[..., None]
+        alpha = np.clip(new_a + alpha * (1 - new_a), 0, 1)
+
+    def light(field, stops):
+        over(ramp(np.clip(field, 0, 1), stops), np.clip(field * 1.35, 0, 1))
+    name = MELEE_STYLES[style]["name"] if style in MELEE_STYLES else "star"
+    if name == "star":
+        im = np.asarray(melee_star(k, t, seed)).astype(np.float32) / 255.0
+        over(im[:, :, :3] * 255.0, im[:, :, 3])
+    elif name in ("fist", "glove"):
+        u = (0.96, 0.29)
+        reach = [5.5, 0.0, 2.6, 7.0][t]
+        size = [1.0, 1.14, 1.10, 1.0][t]
+        fade = [0.85, 1.0, 0.9, 0.0][t]
+        if name == "glove":
+            body, dark = (205, 45, 45), (70, 12, 12)
+        else:
+            body, dark = (226, 182, 148), (64, 34, 24)
+        if t >= 1:
+            # the flash of the blow, behind the fist
+            light(burst_field(xs, ys, cx, cy, [0, 9.5, 12.5, 14.0][t], 8, 0.25 * t) * [0, 1.0, 0.6, 0.25][t],
+                  [(0.0, (190, 90, 15)), (0.45, (255, 190, 45)), (0.85, (255, 240, 150)), (1.0, (255, 255, 235))])
+        if fade > 0:
+            parts = punch_parts(cx, cy, u, reach, size, name == "glove")
+            if t == 0:
+                # a motion streak behind the punch
+                back = punch_parts(cx, cy, u, reach + 4.0, size * 0.92, name == "glove")
+                streak_a = np.clip(blob(xs, ys, back["hand"]) / (0.9 / k) + 0.5, 0, 1) * 0.3
+                over(np.asarray(dark, np.float32)[None, None, :] * 1.5, streak_a)
+            for shapes, col, col_dark in ((parts["arm"], (78, 84, 98), (26, 28, 36)),
+                                          (parts["cuff"], (226, 226, 231), (92, 92, 98)),
+                                          (parts["hand"], body, dark)):
+                if not shapes:
+                    continue
+                part_rgb, part_a = blob_shaded(blob(xs, ys, shapes), col, col_dark, k=k)
+                over(part_rgb, part_a * fade)
+    elif name == "glovepic":
+        u = (0.96, 0.29)
+        reach = [4.0, 0.0, 2.2, 6.0][t]
+        size = [1.0, 1.1, 1.06, 1.0][t]
+        fade = [0.85, 1.0, 0.9, 0.0][t]
+        if t >= 1:
+            light(burst_field(xs, ys, cx, cy, [0, 9.5, 12.5, 14.0][t], 8, 0.25 * t) * [0, 1.0, 0.6, 0.25][t],
+                  [(0.0, (190, 90, 15)), (0.45, (255, 190, 45)), (0.85, (255, 240, 150)), (1.0, (255, 255, 235))])
+        if fade > 0:
+            pic, tip = glove_sprite(k, glove, size, glove_dir)
+            canvas = Image.new("RGBA", (w * k, h * k), (0, 0, 0, 0))
+            px = int(round((cx - u[0] * reach) * k - tip[0]))
+            py = int(round((cy - u[1] * reach) * k - tip[1]))
+            canvas.alpha_composite(pic, (px, py))
+            arr = np.asarray(canvas).astype(np.float32)
+            over(arr[:, :, :3], arr[:, :, 3] / 255.0 * fade)
+    elif name == "impact":
+        r = [5.0, 11.0, 14.5, 17.0][t]
+        gain = [0.9, 1.0, 0.6, 0.28][t]
+        light(burst_field(xs, ys, cx, cy, r, 9, 0.2 * t, 2.0) * gain,
+              [(0.0, (180, 70, 10)), (0.4, (255, 175, 40)), (0.8, (255, 235, 140)), (1.0, (255, 255, 240))])
+        d = np.sqrt((xs - cx) ** 2 + (ys - cy) ** 2)
+        if t >= 1:
+            ring = np.exp(-((d - r * 0.85) ** 2) / (2 * 0.8 ** 2)) * gain * 0.8
+            light(ring, [(0.0, (255, 210, 120)), (1.0, (255, 255, 240))])
+    else:  # slash
+        ang0 = -0.5
+        gain = [1.0, 0.95, 0.6, 0.25][t]
+        length = [7.0, 11.0, 12.5, 13.0][t]
+        for n, a in enumerate((ang0, ang0 + 1.5)):
+            ca, sa = math.cos(a), math.sin(a)
+            px = (xs - cx) * ca + (ys - cy) * sa
+            py = -(xs - cx) * sa + (ys - cy) * ca
+            bend = py - 0.035 * px * px + 1.2 * n - 0.6
+            core = np.exp(-(bend ** 2) / (2 * (0.55 + 0.25 * t) ** 2)) * np.clip(1 - np.abs(px) / length, 0, 1) ** 0.7
+            light(core * gain, [(0.0, (170, 40, 20)), (0.4, (255, 140, 60)), (0.85, (255, 235, 170)), (1.0, (255, 255, 245))])
+    if blood:
+        b_rgb, b_a = blood_spray(xs, ys, cx, cy - 1.0, t / 3.0, seed + 91, k, count=16, spread=(1.4, 3.6))
+        over(b_rgb, b_a)
+    return to_image(np.clip(straighten(rgb, alpha), 0, 255), alpha)
+
+
+def bullet_hit(k, t, seed, style=1, blood=False):
+    """SMOKE.PCK 26-35: the mark of a bullet hit at (15.5, 15.5), ten frames. `blood` adds the spray
+    the engine draws when the hit landed on a unit."""
+    w, h = 32, 40
+    xs, ys = grid(h, w, k)
+    shape = (h * k, w * k)
+    cx, cy = 15.5, 15.5
+    rgb = np.zeros(xs.shape + (3,), np.float32)
+    alpha = np.zeros(xs.shape, np.float32)
+
+    def over(new_rgb, new_a):
+        nonlocal rgb, alpha
+        rgb = new_rgb * new_a[..., None] + rgb * (1 - new_a)[..., None]
+        alpha = np.clip(new_a + alpha * (1 - new_a), 0, 1)
+    name = BULLET_STYLES[style]["name"] if style in BULLET_STYLES else "spark"
+    flash = gauss(xs, ys, cx, cy, 1.15 + 0.55 * t) * max(1 - t / 2.2, 0)
+    glow = gauss(xs, ys, cx, cy, 3.6) * max(1 - t / 3.0, 0) * 0.3
+    if name == "spark":
+        sp = sparks(xs, ys, cx, cy, 22, t, seed, speed=(1.0, 2.6), gravity=0.08, width=0.42, streak=0.5)
+        core = np.clip(flash * 1.8 + sp, 0, 1)
+        over(ramp(core, [(0.0, (180, 60, 0)), (0.4, (255, 170, 40)), (0.8, (255, 240, 160)), (1.0, (255, 255, 240))]),
+             np.clip(core * 1.4 + glow * 0.8, 0, 1))
+    elif name == "dust":
+        n = fbm(shape, 4.0 * k, seed + 5, 3)
+        puff_r = 2.0 + 1.15 * t
+        d = np.sqrt((xs - cx) ** 2 + ((ys - (cy - 0.35 * t)) * 1.1) ** 2)
+        puff = np.clip((1 - d / puff_r) * (1.05 + 0.5 * n) * 1.5, 0, 1) * max(1 - t / 7.0, 0) ** 1.1
+        grey = 155 + 60 * (0.5 + 0.5 * n)
+        over(np.stack([grey * 1.02, grey * 0.99, grey * 0.94], axis=-1), np.clip(puff * 0.9, 0, 1))
+        chips = sparks(xs, ys, cx, cy, 11, t, seed + 2, speed=(0.9, 2.2), gravity=0.2, width=0.36, streak=0.18)
+        over(ramp(np.clip(chips, 0, 1), [(0.0, (60, 52, 44)), (0.6, (150, 132, 108)), (1.0, (205, 190, 165))]),
+             np.clip(chips * 1.7, 0, 1))
+        core = np.clip(flash * 1.6, 0, 1)
+        over(ramp(core, [(0.0, (200, 120, 30)), (0.6, (255, 215, 120)), (1.0, (255, 255, 240))]), np.clip(core * 1.3, 0, 1))
+    elif name == "flash":
+        f = max(1 - t / 3.2, 0)
+        core = np.clip(gauss(xs, ys, cx, cy, 1.2 + 1.1 * t) * f * 1.8, 0, 1)
+        sp = sparks(xs, ys, cx, cy, 6, t, seed + 3, speed=(1.0, 2.0), gravity=0.12, width=0.38, streak=0.4) * f
+        core = np.clip(core + sp, 0, 1)
+        over(ramp(core, [(0.0, (190, 80, 10)), (0.5, (255, 200, 90)), (1.0, (255, 255, 245))]),
+             np.clip(core * 1.3 + glow * f, 0, 1))
+    else:  # ricochet
+        rng = np.random.default_rng(seed + 11)
+        base_ang = -1.05
+        field = np.zeros(xs.shape, np.float32)
+        for i in range(12):
+            a = base_ang + rng.normal(0, 0.28)
+            sp = 1.1 + rng.random() * 2.2
+            vx, vy = math.cos(a) * sp, math.sin(a) * sp
+            px, py = cx + vx * t, cy + vy * t + 0.5 * 0.12 * t * t
+            qx, qy = cx + vx * (t - 1.1), cy + vy * (t - 1.1)
+            dx, dy = px - qx, py - qy
+            ll = dx * dx + dy * dy + 1e-6
+            tt = np.clip(((xs - qx) * dx + (ys - qy) * dy) / ll, 0, 1)
+            dist2 = (xs - (qx + tt * dx)) ** 2 + (ys - (qy + tt * dy)) ** 2
+            field += np.exp(-dist2 / (2 * 0.42 ** 2)) * max(1 - t / 9.0, 0)
+        dust = gauss(xs, ys, cx, cy + 0.2 * t, 2.0 + 0.7 * t) * max(1 - t / 6.0, 0) * 0.6
+        over(np.stack([np.full(xs.shape, 160.0)] * 3, axis=-1) * np.array([1.02, 0.99, 0.93]), np.clip(dust * 0.8, 0, 1))
+        core = np.clip(field + flash * 1.6, 0, 1)
+        over(ramp(core, [(0.0, (190, 70, 0)), (0.45, (255, 180, 50)), (0.85, (255, 245, 180)), (1.0, (255, 255, 245))]),
+             np.clip(core * 1.45, 0, 1))
+    if blood and t > 0:
+        b_rgb, b_a = blood_spray(xs, ys, cx, cy, (t - 1) / 8.0, seed + 71, k, count=20, spread=(1.5, 4.0))
+        over(b_rgb, b_a)
+    return to_image(np.clip(straighten(rgb, alpha), 0, 255), alpha)
+
+
+def blood_spray(xs, ys, cx, cy, life, seed, k, count=16, spread=(1.2, 3.4)):
+    """Blood at a hit: small drops and a few longer streaks flying out and falling, over a thin red
+    mist. `life` runs 0..1 over the animation. Returns (rgb, alpha)."""
+    rng = np.random.default_rng(seed)
+    t = life * 6.0
+    drops = np.zeros(xs.shape, np.float32)
+    for i in range(count + 4):
+        long_one = i >= count           # a few drops fly far and leave a streak
+        ang = rng.random() * 2 * math.pi
+        sp = (spread[0] + rng.random() ** 1.7 * (spread[1] - spread[0])) * (1.7 if long_one else 1.0)
+        vx, vy = math.cos(ang) * sp, math.sin(ang) * sp * 0.7
+        fall = 0.5
+        px, py = cx + vx * t, cy + vy * t + 0.5 * fall * t * t
+        r = (0.34 + 0.3 * rng.random()) * (1.0 - 0.3 * life) * (0.8 if long_one else 1.0)
+        tail = 1.0 if long_one else 0.1
+        # the streak behind a drop follows its own arc (its fall counts too, or the drop smears down)
+        qt = max(t - tail, 0.0)
+        qx, qy = cx + vx * qt, cy + vy * qt + 0.5 * fall * qt * qt
+        dx, dy = px - qx, py - qy
+        ll = dx * dx + dy * dy + 1e-6
+        tt = np.clip(((xs - qx) * dx + (ys - qy) * dy) / ll, 0, 1)
+        dist2 = (xs - (qx + tt * dx)) ** 2 + (ys - (qy + tt * dy)) ** 2
+        drops = np.maximum(drops, np.clip(1.0 - dist2 / (r * r), 0, 1))
+    mist = gauss(xs, ys, cx, cy + 0.5 * t, 2.2 + 2.4 * life) * max(1 - life * 1.5, 0) * 0.7
+    # the splash at the wound itself: a ragged patch, strongest at once, then gone
+    lobes = np.zeros(xs.shape, np.float32)
+    for i in range(7):
+        a = rng.random() * 2 * math.pi
+        rr = (0.9 + 1.5 * rng.random()) * (1.0 + 0.8 * life)
+        lx, ly = cx + math.cos(a) * (0.5 + 1.4 * life) * 1.6, cy + math.sin(a) * (0.5 + 1.4 * life) * 1.2
+        lobes = np.maximum(lobes, np.clip(1.0 - ((xs - lx) ** 2 + ((ys - ly) * 1.15) ** 2) / (rr * rr), 0, 1))
+    splash = lobes * max(1 - life * 1.25, 0) ** 0.8
+    body = np.clip(drops * 1.4 + splash * 1.2, 0, 1)
+    field = np.clip(body + mist * 0.7, 0, 1)
+    rgb = ramp(field, [(0.0, (44, 4, 6)), (0.45, (115, 10, 12)), (0.8, (175, 24, 22)), (1.0, (220, 66, 56))])
+    alpha = np.clip(body * (1.0 - 0.3 * life) + mist * 0.4, 0, 1)
+    return rgb, alpha
+
+
+def hit_compare(out_dir, k, seed, glove=1, glove_dir=None):
+    """Every melee and bullet style, on a wall and on a unit (with the blood the engine adds): animated
+    GIFs at game speed and sheets of every frame; with the glove pictures also every glove colour."""
+    from PIL import ImageDraw
+    os.makedirs(out_dir, exist_ok=True)
+    font, cyrillic = label_font()
+    cw, ch = 32 * k, 40 * k
+    out = []
+    for what, styles, frames, maker in (("melee", MELEE_STYLES, 4, melee_hit), ("bullet", BULLET_STYLES, 10, bullet_hit)):
+        keys = sorted(styles)
+        pics = {}
+        for st in keys:
+            for b in (False, True):
+                for t in range(frames):
+                    pics[(st, b, t)] = (maker(k, t, seed + 3, st, b, glove, glove_dir)
+                                        if what == "melee" else maker(k, t, seed + 3, st, b))
+        label_h = 20
+        head = Image.new("RGB", (cw * len(keys), label_h), (0, 0, 0))
+        d = ImageDraw.Draw(head)
+        for n, st in enumerate(keys):
+            d.text((n * cw + 6, 3), "%d %s" % (st, styles[st]["name"]), fill=(255, 255, 255), font=font)
+        gif = []
+        for t in range(frames):
+            sheet = Image.new("RGB", (cw * len(keys), label_h + ch * 2), (30, 30, 34))
+            sheet.paste(head, (0, 0))
+            for n, st in enumerate(keys):
+                for row, b in enumerate((False, True)):
+                    cell = Image.new("RGBA", (cw, ch), (78, 74, 70, 255) if row == 0 else (96, 104, 120, 255))
+                    cell.alpha_composite(pics[(st, b, t)])
+                    sheet.paste(cell.convert("RGB"), (n * cw, label_h + row * ch))
+            gif.append(sheet)
+        path = os.path.join(out_dir, "%s_styles.gif" % what)
+        gif[0].save(path, save_all=True, append_images=gif[1:], duration=110 if what == "melee" else 70, loop=0)
+        out.append(path)
+        # a sheet: every frame of every style, the wall row and the unit row
+        sheet = Image.new("RGB", (cw * frames, (label_h + ch * 2) * len(keys)), (30, 30, 34))
+        d = ImageDraw.Draw(sheet)
+        for n, st in enumerate(keys):
+            y = n * (label_h + ch * 2)
+            d.text((6, y + 3), "%d %s%s" % (st, styles[st]["name"], " - " + styles[st]["ru"] if cyrillic else ""),
+                   fill=(255, 255, 0), font=font)
+            for t in range(frames):
+                for row, b in enumerate((False, True)):
+                    cell = Image.new("RGBA", (cw, ch), (78, 74, 70, 255) if row == 0 else (96, 104, 120, 255))
+                    cell.alpha_composite(pics[(st, b, t)])
+                    sheet.paste(cell.convert("RGB"), (t * cw, y + label_h + row * ch))
+        path = os.path.join(out_dir, "%s_styles.png" % what)
+        sheet.save(path)
+        out.append(path)
+    # the ten glove colours in the punch, if their pictures are there
+    if os.path.exists(os.path.join(glove_dir or GLOVE_DIR, "01.png")):
+        colours = sorted(GLOVE_COLOURS)
+        pics = {(g, t): melee_hit(k, t, seed + 3, 6, False, g, glove_dir) for g in colours for t in range(4)}
+        head = Image.new("RGB", (cw * len(colours), 20), (0, 0, 0))
+        d = ImageDraw.Draw(head)
+        for n, g in enumerate(colours):
+            d.text((n * cw + 6, 3), "%d" % g, fill=(255, 255, 255), font=font)
+        gif = []
+        for t in range(4):
+            sheet = Image.new("RGB", (cw * len(colours), 20 + ch), (30, 30, 34))
+            sheet.paste(head, (0, 0))
+            for n, g in enumerate(colours):
+                cell = Image.new("RGBA", (cw, ch), (78, 74, 70, 255))
+                cell.alpha_composite(pics[(g, t)])
+                sheet.paste(cell.convert("RGB"), (n * cw, 20))
+            gif.append(sheet)
+        path = os.path.join(out_dir, "glove_colours.gif")
+        gif[0].save(path, save_all=True, append_images=gif[1:], duration=110, loop=0)
+        out.append(path)
+        sheet = Image.new("RGB", (cw * 4, (20 + ch) * len(colours)), (30, 30, 34))
+        d = ImageDraw.Draw(sheet)
+        for n, g in enumerate(colours):
+            y = n * (20 + ch)
+            d.text((6, y + 3), "--glove %d: %s" % (g, GLOVE_COLOURS[g] if cyrillic else GLOVE_COLOURS_EN[g]),
+                   fill=(255, 255, 0), font=font)
+            for t in range(4):
+                cell = Image.new("RGBA", (cw, ch), (78, 74, 70, 255))
+                cell.alpha_composite(pics[(g, t)])
+                sheet.paste(cell.convert("RGB"), (t * cw, y + 20))
+        path = os.path.join(out_dir, "glove_colours.png")
+        sheet.save(path)
+        out.append(path)
+    with open(os.path.join(out_dir, "hit_styles.txt"), "w", encoding="utf-8") as f:
+        f.write("--melee-style (HIT.PCK 0-3):\n")
+        for st in sorted(MELEE_STYLES):
+            f.write("%d %s\n" % (st, MELEE_STYLES[st]["ru"]))
+        f.write("\n--glove (with --melee-style 6):\n")
+        for g in sorted(GLOVE_COLOURS):
+            f.write("%d %s\n" % (g, GLOVE_COLOURS[g]))
+        f.write("\n--bullet-style (SMOKE.PCK 26-35):\n")
+        for st in sorted(BULLET_STYLES):
+            f.write("%d %s\n" % (st, BULLET_STYLES[st]["ru"]))
+    out.append(os.path.join(out_dir, "hit_styles.txt"))
+    print("compare:", ", ".join(out))
+
+
 # ----------------------------------------------------------------------------- packs
 
-def build(mod, k, seed, preview, fire_style=1, only_fire=False):
+def write_frames(frames, tweens, smoke_dir, hit_dir, x1_dir, fire_only=False):
+    """Writes <i>.png for every frame and <i>.v1.png for every second picture (the fire's in-between
+    phase, a hit's blood); a frame written without one loses the .v1.png it had."""
+    dirs = {"SMOKE": smoke_dir, "HIT": hit_dir, "X1": x1_dir}
+    for key, im in frames.items():
+        setn, i = key
+        im.save(os.path.join(dirs[setn], "%d.png" % i))
+        if fire_only and setn == "SMOKE" and i > 7:
+            continue
+        path = os.path.join(dirs[setn], "%d.v1.png" % i)
+        if key in tweens:
+            tweens[key].save(path)
+        elif os.path.exists(path):
+            os.remove(path)
+
+
+def build(mod, k, seed, preview, fire_style=1, only_fire=False, melee_style=1, bullet_style=1, blood=True,
+          only_hits=False, glove=1, glove_dir=None):
     smoke_dir = os.path.join(mod, "hd", "SMOKE.PCK")
     hit_dir = os.path.join(mod, "hd", "HIT.PCK")
     x1_dir = os.path.join(mod, "hd", "X1.PCK")
     for d in (smoke_dir, hit_dir, x1_dir):
         os.makedirs(d, exist_ok=True)
     frames = {}
-    tweens = {}
+    tweens = {}   # frame -> its <i>.v1.png (the fire's in-between picture, a hit's blood)
+    if only_hits:
+        for t in range(10):
+            frames[("SMOKE", 26 + t)] = bullet_hit(k, t, seed + 3, bullet_style)
+            if blood:
+                tweens[("SMOKE", 26 + t)] = bullet_hit(k, t, seed + 3, bullet_style, True)
+        for t in range(4):
+            frames[("HIT", t)] = melee_hit(k, t, seed + 6, melee_style, False, glove, glove_dir)
+            if blood:
+                tweens[("HIT", t)] = melee_hit(k, t, seed + 6, melee_style, True, glove, glove_dir)
+        write_frames(frames, tweens, smoke_dir, hit_dir, x1_dir)
+        print("HIT.PCK: melee style %d, SMOKE.PCK: bullet style %d, frames 26-35%s -> %s" % (
+            melee_style, bullet_style, " + blood in <i>.v1.png" if blood else " (no blood)", os.path.join(mod, "hd")))
+        return
     for f in range(4):
         if fire_style == 0:
             frames[("SMOKE", f)] = fire(k, f, True, seed)
@@ -660,37 +1114,32 @@ def build(mod, k, seed, preview, fire_style=1, only_fire=False):
             # eight phases of one looping flame: the frame and its in-between picture (<i>.v1.png, drawn
             # by the engine on the odd animation tick)
             frames[("SMOKE", f)] = fire_loop(k, (2 * f) / 8.0, True, seed, fire_style)
-            tweens[f] = fire_loop(k, (2 * f + 1) / 8.0, True, seed, fire_style)
+            tweens[("SMOKE", f)] = fire_loop(k, (2 * f + 1) / 8.0, True, seed, fire_style)
             frames[("SMOKE", 4 + f)] = fire_loop(k, (2 * f) / 8.0, False, seed + 1, fire_style)
-            tweens[4 + f] = fire_loop(k, (2 * f + 1) / 8.0, False, seed + 1, fire_style)
+            tweens[("SMOKE", 4 + f)] = fire_loop(k, (2 * f + 1) / 8.0, False, seed + 1, fire_style)
         if only_fire:
             continue
         for density in range(3):
             frames[("SMOKE", 8 + density * 4 + f)] = smoke(k, f, density, seed + 2)
-    for i in range(8):
-        path = os.path.join(smoke_dir, "%d.v1.png" % i)
-        if i in tweens:
-            tweens[i].save(path)
-        elif os.path.exists(path):
-            os.remove(path)
     if only_fire:
-        for (setn, i), im in frames.items():
-            im.save(os.path.join(smoke_dir, "%d.png" % i))
+        write_frames(frames, tweens, smoke_dir, hit_dir, x1_dir, fire_only=True)
         print("SMOKE.PCK: fire style %d, frames 0-7%s -> %s" % (fire_style, " + 0-7.v1" if tweens else "", smoke_dir))
         return
     for t in range(10):
-        frames[("SMOKE", 26 + t)] = hit_bullet(k, t, seed + 3)
+        frames[("SMOKE", 26 + t)] = bullet_hit(k, t, seed + 3, bullet_style)
+        if blood:
+            tweens[("SMOKE", 26 + t)] = bullet_hit(k, t, seed + 3, bullet_style, True)
         frames[("SMOKE", 36 + t)] = hit_laser(k, t, seed + 4)
         frames[("SMOKE", 46 + t)] = hit_plasma(k, t, seed + 5)
     for t in range(4):
-        frames[("HIT", t)] = melee_star(k, t, seed + 6)
+        frames[("HIT", t)] = melee_hit(k, t, seed + 6, melee_style, False, glove, glove_dir)
+        if blood:
+            tweens[("HIT", t)] = melee_hit(k, t, seed + 6, melee_style, True, glove, glove_dir)
     for t in range(8):
         frames[("X1", t)] = big_explosion(k, t, seed + 7)
-    for (setn, i), im in frames.items():
-        d = {"SMOKE": smoke_dir, "HIT": hit_dir, "X1": x1_dir}[setn]
-        im.save(os.path.join(d, "%d.png" % i))
-    print("SMOKE.PCK: %d frames (fire style %d%s), HIT.PCK: 4, X1.PCK: 8 -> %s" % (
-        sum(1 for s, _ in frames if s == "SMOKE"), fire_style, ", 8 phases" if tweens else "", os.path.join(mod, "hd")))
+    write_frames(frames, tweens, smoke_dir, hit_dir, x1_dir)
+    print("SMOKE.PCK: %d frames (fire style %d, bullet style %d), HIT.PCK: 4 (melee style %d), X1.PCK: 8 -> %s" % (
+        sum(1 for s, _ in frames if s == "SMOKE"), fire_style, bullet_style, melee_style, os.path.join(mod, "hd")))
     if preview:
         # every frame over a dark green ground, 8 per row, the big explosion below
         cw, ch = 32 * k, 40 * k
@@ -716,13 +1165,32 @@ def main():
     ap.add_argument("--fire-compare", default="", help="write fire_styles.gif / fire_styles_unit.gif / fire_styles.png "
                     "(every style next to the current fire) into this folder and stop")
     ap.add_argument("--only-fire", action="store_true", help="write only the fire frames (0-7 and their in-between pictures)")
+    ap.add_argument("--melee-style", type=int, default=1, choices=sorted(MELEE_STYLES),
+                    help="the mark of a melee hit, HIT.PCK 0-3 (see --hit-compare): 1 the star as it is, 2 a fist, "
+                         "3 a drawn boxing glove, 4 a burst of light, 5 a slash, 6 a boxing glove out of a picture")
+    ap.add_argument("--glove", type=int, default=1, choices=sorted(GLOVE_COLOURS),
+                    help="which glove picture style 6 uses (1 red, 2 blue, 3 black, 4 white-gold, 5 yellow, "
+                         "6 green, 7 purple, 8 orange, 9 pink, 10 leather)")
+    ap.add_argument("--glove-dir", default="", help="folder with the cut-out gloves 01.png..10.png (default tools/hdart/gloves)")
+    ap.add_argument("--bullet-style", type=int, default=1, choices=sorted(BULLET_STYLES),
+                    help="the mark of a bullet hit, SMOKE.PCK 26-35: 1 sparks, 2 dust and chips, 3 a short flash, 4 a ricochet")
+    ap.add_argument("--no-blood", action="store_true", help="no blood: a hit on a unit looks the same as a hit on a wall")
+    ap.add_argument("--hit-compare", default="", help="write melee_styles.gif / .png, bullet_styles.gif / .png "
+                    "(every style on a wall and on a unit) into this folder and stop")
+    ap.add_argument("--only-hits", action="store_true", help="write only the hit frames (HIT.PCK and SMOKE.PCK 26-35 with their blood)")
     args = ap.parse_args()
     if args.fire_compare:
         fire_compare(args.fire_compare, args.scale, args.seed)
         return 0
+    if args.hit_compare:
+        hit_compare(args.hit_compare, args.scale, args.seed, args.glove, args.glove_dir or None)
+        return 0
     if not args.mod:
-        ap.error("--mod is required (or --fire-compare)")
-    build(args.mod, args.scale, args.seed, args.preview, args.fire_style, args.only_fire)
+        ap.error("--mod is required (or --fire-compare / --hit-compare)")
+    if args.only_fire and args.only_hits:
+        ap.error("--only-fire and --only-hits are different jobs: run them one at a time")
+    build(args.mod, args.scale, args.seed, args.preview, args.fire_style, args.only_fire,
+          args.melee_style, args.bullet_style, not args.no_blood, args.only_hits, args.glove, args.glove_dir or None)
     return 0
 
 

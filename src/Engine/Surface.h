@@ -21,6 +21,7 @@
 #include <string>
 #include <vector>
 #include <memory>
+#include <vector>
 #include <assert.h>
 #include "GraphSubset.h"
 
@@ -88,6 +89,7 @@ protected:
 	Uint8 _visible: 1;
 	Uint8 _hidden: 1;
 	Uint8 _redraw: 1;
+	Uint8 _hdKind: 2;
 
 	/// Copies raw pixels.
 	template <typename T>
@@ -142,6 +144,15 @@ public:
 	virtual void draw();
 	/// Blits this surface onto another one.
 	virtual void blit(SDL_Surface *surface);
+	/// HD interface: draws this surface's HD version into the world layer (after a blit onto the screen).
+	/// The default scales the surface's pixels (smoothed); text, windows, buttons draw their own.
+	virtual void hdMirror();
+	/// HD interface: this surface's pixels scaled crisply (nearest), for rectangles, bars and other geometry.
+	void hdMirrorNearest();
+	/// HD interface, modern skin: what this surface is, when its owner draws it another way there.
+	enum HdKind { HD_NORMAL, HD_SKIP, HD_HIGHLIGHT };
+	void setHdKind(HdKind kind) { _hdKind = (Uint8)kind; }
+	HdKind getHdKind() const { return (HdKind)_hdKind; }
 	/// Initializes the surface's various text resources.
 	virtual void initText(Font *, Font *, Language *) {};
 	/// Copies a portion of another surface into this one.

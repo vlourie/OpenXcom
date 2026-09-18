@@ -17,6 +17,8 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "Bar.h"
+#include <algorithm>
+#include "../Engine/HdUi.h"
 #include <SDL.h>
 
 namespace OpenXcom
@@ -168,6 +170,44 @@ void Bar::setSecondValueOnTop(bool onTop)
  * Draws the bordered bar filled according
  * to its values.
  */
+/**
+ * The HD interface's bar: the modern skin draws a rounded track and fill.
+ */
+void Bar::hdMirror()
+{
+	if (!HdUi::skin())
+	{
+		Surface::hdMirrorNearest();
+		return;
+	}
+	HdUi &ui = HdUi::instance();
+	const SDL_Color *pal = HdUi::paletteOf(this);
+	const int k = HdUi::scale();
+	const float x0 = (float)getX() * k, y0 = (float)getY() * k, y1 = (float)(getY() + getHeight()) * k;
+	const float x1 = x0 + ((float)(_scale * _max) + 1.0f) * k;
+	const float r = std::min(1.0f * k, (y1 - y0) * 0.5f);
+	const Uint32 border = HdUi::rgba(pal[_borderColor ? _borderColor : (Uint8)(_color + 4)], 200);
+	ui.fillRoundRect(x0, y0, x1, y1, r, 0xA0000000u, 0xA0000000u);
+	auto fill = [&](double value, Uint8 color)
+	{
+		const float w = (float)(_scale * value) * k;
+		if (w <= 0.5f) return;
+		const Uint32 c = HdUi::rgba(pal[color]);
+		ui.fillRoundRect(x0 + 0.5f * k, y0 + 0.5f * k, std::min(x0 + 0.5f * k + w, x1 - 0.5f * k), y1 - 0.5f * k, std::max(r - 0.5f * k, 0.0f), HdUi::scaled(c, 1.12f), HdUi::scaled(c, 0.85f));
+	};
+	if (_secondOnTop)
+	{
+		fill(_value, _color);
+		fill(_value2, _color2);
+	}
+	else
+	{
+		fill(_value2, _color2);
+		fill(_value, _color);
+	}
+	ui.strokeRoundRect(x0, y0, x1, y1, r, std::max(1.0f, k * 0.5f), border);
+}
+
 void Bar::draw()
 {
 	Surface::draw();

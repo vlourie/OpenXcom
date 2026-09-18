@@ -20,6 +20,7 @@
 #include "../Engine/InteractiveSurface.h"
 #include <vector>
 #include <string>
+#include <functional>
 #include "../Engine/Unicode.h"
 
 namespace OpenXcom
@@ -50,6 +51,8 @@ private:
 	TextVAlign _valign;
 	Uint8 _color, _color2;
 	int _scrollY;
+	/// Lays the glyphs out as draw() does and reports each: fn(font, code, x, y, color, mul, mid).
+	void forEachGlyph(const std::function<void(Font*, UCode, int, int, int, int, int)> &fn) const;
 
 	/// Processes the contained text.
 	void processText();
@@ -66,6 +69,10 @@ public:
 	void setSmall();
 	/// Gets the text's current font.
 	Font *getFont() const;
+	/// Is the big font in use?
+	bool isBig() const { return _font == _big; }
+	/// Is the high-contrast colour rule in use?
+	bool isHighContrast() const { return _contrast; }
 	/// Initializes the resources for the text.
 	void initText(Font *big, Font *small, Language *lang) override;
 	/// Sets the text's string.
@@ -102,6 +109,11 @@ public:
 	int getTextHeight(int line = -1) const;
 	/// Draws the text.
 	void draw() override;
+	/// HD interface: the text from the font's glyphs with smooth edges.
+	void hdMirror() override;
+	/// HD interface: draws the text at a base position (for surfaces that hold texts inside them),
+	/// cut to its own rectangle and, when given (w > 0), to the holder's rectangle.
+	void hdDrawAt(int x, int y, int clipX = 0, int clipY = 0, int clipW = 0, int clipH = 0, int padX = 0);
 	/// Sets the text's scrollable setting.
 	void setScrollable(bool scroll);
 	/// Special handling for mouse presses.

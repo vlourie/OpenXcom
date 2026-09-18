@@ -20,8 +20,10 @@
 #include <cstdarg>
 #include <cmath>
 #include <algorithm>
+#include <functional>
 #include "../Engine/Action.h"
 #include "../Engine/Font.h"
+#include "../Engine/HdUi.h"
 #include "../Engine/Palette.h"
 #include "../Engine/Options.h"
 #include "ArrowButton.h"
@@ -1139,6 +1141,62 @@ void TextList::draw()
 }
 
 /**
+ * The HD interface's version of the list: the visible rows' texts, laid out
+ * as draw() lays them out, rendered as HD text within the list's rectangle.
+ */
+void TextList::hdMirror()
+{
+	if (_rows.empty())
+	{
+		return;
+	}
+	// the visible rows: index and base y (relative to the list) and height
+	auto forRows = [&](const std::function<void(size_t, int, int)> &fn)
+	{
+		int y = 0;
+		for (int row = _scroll; row > 0 && _rows[row] == _rows[row - 1]; --row)
+		{
+			y -= _font->getHeight() + _font->getSpacing();
+		}
+		for (size_t i = _rows[_scroll]; i < _texts.size() && i < _rows[_scroll] + _visibleRows; ++i)
+		{
+			const int h = (!_texts[i].empty() ? _texts[i].front()->getHeight() : _font->getHeight()) + _font->getSpacing();
+			fn(i, y, h);
+			y += h;
+		}
+	};
+	if (HdUi::skin())
+	{
+		// the modern skin: banded rows under a long list, the selected row's highlight with an accent bar
+		HdUi &ui = HdUi::instance();
+		ui.setClip(getX(), getY(), getWidth(), getHeight());
+		if (_texts.size() >= 4)
+		{
+			forRows([&](size_t i, int y, int h) { ui.drawRowBand(getX(), getY() + y, getWidth(), h, (i & 1) != 0); });
+		}
+		if (_selector->getVisible())
+		{
+			// the accent bar in the selected row's text colour (its face shade)
+			const SDL_Color *pal = HdUi::paletteOf(this);
+			int color = _color;
+			if (_selRow < _rows.size() && !_texts[_rows[_selRow]].empty())
+			{
+				color = _texts[_rows[_selRow]].front()->getColor();
+			}
+			ui.drawHighlight(_selector->getX(), _selector->getY(), _selector->getWidth(), _selector->getHeight(), HdUi::rgba(pal[(Uint8)(color + (_contrast ? 2 : 1))]));
+		}
+		ui.clearClip();
+	}
+	forRows([&](size_t i, int y, int)
+	{
+		for (auto* text : _texts[i])
+		{
+			text->hdDrawAt(getX() + text->getX(), getY() + y, getX(), getY(), getWidth(), getHeight());
+		}
+	});
+}
+
+/**
  * Blits the text list and selector.
  * @param surface Pointer to surface to blit onto.
  */
@@ -1146,6 +1204,8 @@ void TextList::blit(SDL_Surface *surface)
 {
 	if (_visible && !_hidden)
 	{
+		// the skin draws the highlight itself (under the rows, see hdMirror)
+		_selector->setHdKind(HD_SKIP);
 		_selector->blit(surface);
 	}
 	Surface::blit(surface);

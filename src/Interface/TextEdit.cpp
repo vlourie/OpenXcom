@@ -17,6 +17,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "TextEdit.h"
+#include "../Engine/HdUi.h"
 #include <cmath>
 #include "../Engine/Action.h"
 #include "../Engine/Font.h"
@@ -300,6 +301,31 @@ void TextEdit::blink()
  * Adds a flashing | caret to the text
  * to show when it's focused and editable.
  */
+void TextEdit::hdMirror()
+{
+	HdUi &ui = HdUi::instance();
+	if (_enter && _drawBackground)
+	{
+		ui.fillRect(getX(), getY(), getWidth(), getHeight(), getColor(), HdUi::paletteOf(this));
+	}
+	_text->hdDrawAt(getX() + _text->getX(), getY() + _text->getY(), getX(), getY(), getWidth(), getHeight());
+	if (Options::keyboardMode == KEYBOARD_ON && _isFocused && _blink)
+	{
+		if (HdUi::skin() && ui.hasFonts())
+		{
+			// the caret where the TrueType layout puts the character
+			const SDL_Color *pal = HdUi::paletteOf(this);
+			const bool big = _text->isBig();
+			ui.setClip(getX(), getY(), getWidth(), getHeight());
+			ui.drawTtfCaret(_value, _caretPos, _text->getFont(), getX() + _text->getX(), getY() + _text->getY(), _text->getWidth(), _text->getHeight(), (int)_text->getAlign(),
+				HdUi::rgba(pal[(Uint8)(_text->getColor() + (big ? 2 : 1) * (_text->isHighContrast() ? 2 : 1))]));
+			ui.clearClip();
+			return;
+		}
+		_caret->hdDrawAt(getX() + _caret->getX(), getY() + _caret->getY(), getX(), getY(), getWidth(), getHeight());
+	}
+}
+
 void TextEdit::draw()
 {
 	Surface::draw();

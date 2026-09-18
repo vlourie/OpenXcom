@@ -31,14 +31,14 @@ class Explosion
 private:
 	Position _position;
 	int _currentFrame, _startFrame, _frameDelay;
-	bool _big, _hit;
+	bool _big, _hit, _onUnit;
 	int _frames;
 public:
 	static const int HIT_FRAMES;
 	static const int EXPLODE_FRAMES;
 	static const int BULLET_FRAMES;
 	/// Creates a new Explosion.
-	Explosion(Position _position, int startFrame, int frameDelay = 0, bool big = false, bool hit = false, int frames = -1);
+	Explosion(Position _position, int startFrame, int frameDelay = 0, bool big = false, bool hit = false, int frames = -1, bool onUnit = false);
 	/// Cleans up the Explosion.
 	~Explosion();
 	/// Moves the Explosion on one frame.
@@ -51,6 +51,8 @@ public:
 	bool isBig() const;
 	/// Checks if this is a melee or psi hit.
 	bool isHit() const;
+	/// Checks if the hit landed on a unit (the HD pack's other picture of the frame: blood).
+	bool isOnUnit() const;
 };
 
 }

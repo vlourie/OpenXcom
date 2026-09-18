@@ -17,6 +17,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "Cursor.h"
+#include "../Engine/HdUi.h"
 #include <cmath>
 #include <SDL.h>
 #include "../Engine/Action.h"
@@ -81,6 +82,32 @@ Uint8 Cursor::getColor() const
 /**
  * Draws a pointer-shaped cursor graphic.
  */
+void Cursor::hdMirror()
+{
+	if (!HdUi::skin())
+	{
+		Surface::hdMirror();
+		return;
+	}
+	// the classic arrow's outline: a 9x13 shape with the tip at the top left, as a polygon
+	HdUi &ui = HdUi::instance();
+	const SDL_Color *pal = HdUi::paletteOf(this);
+	const int k = HdUi::scale();
+	const float x = (float)getX() * k, y = (float)getY() * k;
+	const float s = (float)k;
+	const Uint32 fill = HdUi::rgba(pal[(Uint8)(_color + 1)]);
+	const Uint32 edge = HdUi::scaled(HdUi::rgba(pal[(Uint8)(_color + 3)]), 0.5f);
+	// two triangles make the arrow head and its tail
+	auto arrow = [&](float grow, Uint32 c)
+	{
+		const float g = grow;
+		ui.fillTriangle(x - g, y - g * 1.5f, x + 8.0f * s + g, y + 8.0f * s + g * 0.4f, x - g, y + 12.0f * s + g * 1.5f, c);
+		ui.fillTriangle(x + 3.0f * s - g * 0.3f, y + 6.5f * s, x + 6.5f * s + g, y + 12.5f * s + g, x + 4.0f * s - g, y + 13.0f * s + g * 1.2f, c);
+	};
+	arrow(1.0f * s, edge);
+	arrow(0.0f, fill);
+}
+
 void Cursor::draw()
 {
 	Surface::draw();

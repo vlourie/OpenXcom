@@ -140,6 +140,12 @@ OPT bool oxceFirstPersonViewFisheyeProjection;
 OPT bool oxceThumbButtons;
 OPT int oxceThrottleMouseMoveEvent;
 OPT bool oxceDisableThinkingProgressBar;
+// OXCE: forget a soldier's voice set when the player changes the avatar (so the new look gets its own voice)
+OPT bool oxceResetUnitResponseSoundsOnAvatarChange;
+// OXCE: the soldier list's extra column (the "sort by" choice), remembered between screens
+OPT int oxceBaseSoldierInfoColumnDefault;
+// OXCE: play cutscenes at the original 320x200 (as the classic game does); off = scaled like the geoscape
+OPT bool oxceMaximizeCutsceneScreens;
 
 OPT bool oxceEmbeddedOnly;
 OPT bool oxceListVFSContents;
@@ -151,11 +157,17 @@ OPT std::string password;
 OPT int oxceHdScale;
 OPT bool oxceHdPictures;
 OPT bool oxceHdUiSmooth;
+/// HD interface: 0 off, 1 crisp text and nearest-scaled art, 2 crisp text and xBRZ-smoothed art.
+OPT int oxceHdUi;
+/// HD interface: the widget skin (0 classic shapes, 1 ramps with gradients, 2 dark panels, 3 flat).
+OPT int oxceHdUiSkin;
+/// HD interface: 0 the game's own font, smoothed (classic colours, widths and lines); 1 TrueType (hd/UI/Font*.ttf).
+OPT int oxceHdUiFont;
 // HD render: how the true-color battlescape canvas draws palette sprites (0 nearest, 1 HD packs, 2 HD packs + xBRZ smoothing)
 OPT int oxceHdMode;
 // HD render: smooth, colored light on the true-color canvas (HD modes only)
 OPT bool oxceHdLight;
-// HD render: floors whose HD pack has variants (<index>.v1.png ...) vary over the map in patches (HD modes only)
+// HD render: the ground pattern - a floor with pack variants (<i>.v1.png ...) is laid over the map as patches
 OPT bool oxceHdGroundVariants;
 // HD render: threads the battlescape frame is drawn with (0 = one per core)
 OPT int oxceHdThreads;
@@ -164,7 +176,6 @@ OPT int oxceHdFrameSkip;
 
 // OXCE hidden, but moddable via fixedUserOptions and/or recommendedUserOptions
 OPT int oxceStartUpTextMode;
-OPT bool oxceMaximizeCutsceneScreens;
 
 OPT int oxceGeoscapeDebugLogMaxEntries;
 OPT int oxceGeoSlowdownFactor;
@@ -176,7 +187,6 @@ OPT bool oxceGeoGoToNearestBase;
 OPT bool oxceGeoSortCraftByDistanceToTarget;
 
 OPT int oxceBaseInfoDefenseScaleMultiplier;
-OPT int oxceBaseSoldierInfoColumnDefault;
 OPT bool oxceBaseSoldierTransformationShowOnlyEligible;
 OPT bool oxceBaseFilterResearchable;
 OPT bool oxceBaseResearchReorder;
@@ -201,7 +211,6 @@ OPT bool oxceShowBurningAsWounded;
 OPT bool oxceDisableInfoOnThrowCursor;
 OPT bool oxceSwapDontReselectActions;
 OPT bool oxceEnableUnitResponseSounds;
-OPT bool oxceResetUnitResponseSoundsOnAvatarChange;
 OPT int oxceHiddenMovementBackgroundChangeFrequency;
 OPT bool oxceInventoryShowUnitSlot;
 OPT bool oxceReplaceNotesLink;

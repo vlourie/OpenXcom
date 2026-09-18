@@ -309,6 +309,53 @@ const Art *find(const Surface *base)
 	return it == bySurface.end() ? nullptr : it->second;
 }
 
+/**
+ * The picture of the image these pixels are a part of (a state's copy of a corner of an image).
+ */
+const Art *findCrop(const Uint8 *pixels, int pitch, int w, int h, int &offX, int &offY)
+{
+	if (w < 8 || h < 8)
+	{
+		return nullptr; // too small to be sure of
+	}
+	for (const auto &art : arts)
+	{
+		if (art->bad)
+		{
+			continue;
+		}
+		const int bw = art->baseWidth, bh = art->baseHeight;
+		if (bw < w || bh < h || (bw == w && bh == h))
+		{
+			continue;
+		}
+		const Uint8 *row0 = pixels;
+		for (int oy = 0; oy + h <= bh; ++oy)
+		{
+			const Uint8 *baseRow = &art->base[(size_t)oy * bw];
+			for (int ox = 0; ox + w <= bw; ++ox)
+			{
+				if (memcmp(baseRow + ox, row0, w) != 0)
+				{
+					continue;
+				}
+				bool all = true;
+				for (int y = 1; y < h && all; ++y)
+				{
+					all = memcmp(&art->base[(size_t)(oy + y) * bw + ox], pixels + (size_t)y * pitch, w) == 0;
+				}
+				if (all)
+				{
+					offX = ox;
+					offY = oy;
+					return art.get();
+				}
+			}
+		}
+	}
+	return nullptr;
+}
+
 void clear()
 {
 	byContent.clear();
@@ -514,6 +561,18 @@ bool active()
 	}
 	Screen *screen = Screen::current();
 	return screen && screen->isLayered() && screen->getWorldScale() >= 2;
+}
+
+/**
+ * Draws a picture into a 32-bit surface at (x, y) (the screen's world layer): what a state
+ * draws itself, such as the base view's HD facilities.
+ */
+void drawFrame(SDL_Surface *dest, const HdFrame &frame, int x, int y)
+{
+	if (dest && dest->format->BytesPerPixel == 4 && !frame.pixels.empty())
+	{
+		blendInto(dest, frame, x, y);
+	}
 }
 
 bool drawIfPicture(const Surface *surface, SDL_Surface *dest)

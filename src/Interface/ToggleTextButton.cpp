@@ -18,6 +18,8 @@
  */
 
 #include "ToggleTextButton.h"
+#include "../Engine/HdUi.h"
+#include "Text.h"
 #include "TextButton.h"
 
 
@@ -72,6 +74,16 @@ void ToggleTextButton::setInvertColor(Uint8 color)
 	_invertedColor = color;
 	_fakeGroup = 0;
 	_redraw = true;
+}
+
+void ToggleTextButton::hdMirror()
+{
+	if (!HdUi::skin())
+	{
+		TextButton::hdMirror();
+		return;
+	}
+	hdMirrorSkin(_isPressed);
 }
 
 /// handle draw() in case we need to paint the button a garish color

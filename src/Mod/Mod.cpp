@@ -32,6 +32,8 @@
 #include "../Engine/SurfaceSet.h"
 #include "../Engine/HdSprites.h"
 #include "../Engine/HdUiArt.h"
+#include "../Engine/HdBase.h"
+#include "../Engine/HdUi.h"
 #include "../Engine/SDL2Helpers.h"
 #include "../Engine/Music.h"
 #include "../Engine/GMCat.h"
@@ -2695,6 +2697,7 @@ bool Mod::isPatchedSurface(const std::string &name)
 void Mod::loadHdUiArt()
 {
 	HdUiArt::clear();
+	HdBase::clear();
 	const FileMap::NameSet &files = FileMap::getVFolderContents("hd/UI");
 	if (files.empty())
 	{
@@ -2835,6 +2838,8 @@ void Mod::loadHdUiArt()
 	{
 		Log(LOG_INFO) << "HD interface: " << loaded << " HD picture(s) of interface images";
 	}
+	// hd/UI/FontBig.ttf and FontSmall.ttf, when the mod ships them (the skin's TrueType text)
+	HdUi::instance().loadFonts();
 }
 
 /**

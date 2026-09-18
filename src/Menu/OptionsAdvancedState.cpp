@@ -432,6 +432,21 @@ void OptionsAdvancedState::lstOptionsClick(Action *action)
 			min = 0;
 			max = 2;
 		}
+		else if (i == &Options::oxceHdUi)
+		{
+			min = 0;
+			max = 2;
+		}
+		else if (i == &Options::oxceHdUiSkin)
+		{
+			min = 0;
+			max = 3;
+		}
+		else if (i == &Options::oxceHdUiFont)
+		{
+			min = 0;
+			max = 1;
+		}
 		else if (i == &Options::oxceNightVisionColor)
 		{
 			// UFO: 1-15, TFTD: 2-16 except 8 and 10

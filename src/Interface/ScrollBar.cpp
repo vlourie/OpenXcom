@@ -17,6 +17,9 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "ScrollBar.h"
+#include <algorithm>
+#include <cmath>
+#include "../Engine/HdUi.h"
 #include "../fmath.h"
 #include "../Engine/Action.h"
 #include "TextList.h"
@@ -170,6 +173,9 @@ void ScrollBar::handle(Action *action, State *state)
  */
 void ScrollBar::blit(SDL_Surface *surface)
 {
+	// under the modern skin the track and thumb are drawn by hdMirror; their own pixels stay in the classic layer
+	_track->setHdKind(HD_SKIP);
+	_thumb->setHdKind(HD_SKIP);
 	Surface::blit(surface);
 	if (_visible && !_hidden)
 	{
@@ -177,6 +183,20 @@ void ScrollBar::blit(SDL_Surface *surface)
 		_thumb->blit(surface);
 		invalidate();
 	}
+}
+
+void ScrollBar::hdMirror()
+{
+	if (!HdUi::skin())
+	{
+		Surface::hdMirror();
+		return;
+	}
+	// the thumb as drawThumb places it
+	const double scale = (double)getHeight() / std::max<double>(1.0, (double)_list->getRowsDoNotUse());
+	const int ty0 = (int)std::floor(_list->getScroll() * scale);
+	const int ty1 = std::min(getHeight(), ty0 + (int)std::ceil(_list->getVisibleRows() * scale));
+	HdUi::instance().drawScrollBar(getX(), getY(), getWidth(), getHeight(), ty0, ty1, _color, _pressed, HdUi::paletteOf(this));
 }
 
 /**

@@ -19,6 +19,7 @@
 #include "Slider.h"
 #include "../fmath.h"
 #include "../Engine/Action.h"
+#include "../Engine/HdUi.h"
 #include "TextButton.h"
 #include "Text.h"
 #include "Frame.h"
@@ -33,7 +34,7 @@ namespace OpenXcom
  * @param x X position in pixels.
  * @param y Y position in pixels.
  */
-Slider::Slider(int width, int height, int x, int y) : InteractiveSurface(width, height, x, y), _pos(0.0), _min(0), _max(100), _pressed(false), _change(0), _offsetX(0)
+Slider::Slider(int width, int height, int x, int y) : InteractiveSurface(width, height, x, y), _pos(0.0), _min(0), _max(100), _pressed(false), _contrast(false), _change(0), _offsetX(0)
 {
 	_thickness = 5;
 	_textness = 8;
@@ -121,6 +122,7 @@ void Slider::initText(Font *big, Font *small, Language *lang)
  */
 void Slider::setHighContrast(bool contrast)
 {
+	_contrast = contrast;
 	_txtMinus->setHighContrast(contrast);
 	_txtPlus->setHighContrast(contrast);
 	_frame->setHighContrast(contrast);
@@ -255,8 +257,16 @@ void Slider::blit(SDL_Surface *surface)
 	{
 		_txtMinus->blit(surface);
 		_txtPlus->blit(surface);
+		// the modern skin draws the slider as a track with a round knob instead of the frame and button
+		const bool skin = HdUi::skin() && HdUi::isScreen(surface);
+		_frame->setHdKind(skin ? HD_SKIP : HD_NORMAL);
+		_button->setHdKind(skin ? HD_SKIP : HD_NORMAL);
 		_frame->blit(surface);
 		_button->blit(surface);
+		if (skin)
+		{
+			HdUi::instance().drawSlider(_frame->getX(), getY(), _frame->getWidth(), getHeight(), (float)_pos, _button->getColor(), _contrast ? 2 : 1, _pressed, HdUi::paletteOf(_button));
+		}
 	}
 }
 

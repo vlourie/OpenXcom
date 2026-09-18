@@ -17,6 +17,8 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "ArrowButton.h"
+#include <algorithm>
+#include "../Engine/HdUi.h"
 #include "TextList.h"
 #include "../Engine/Timer.h"
 #include "../Engine/Action.h"
@@ -91,6 +93,42 @@ void ArrowButton::setTextList(TextList *list)
 /**
  * Draws the button with the specified arrow shape.
  */
+void ArrowButton::hdMirror()
+{
+	if (!HdUi::skin() || _shape == ARROW_NONE)
+	{
+		Surface::hdMirror();
+		return;
+	}
+	HdUi &ui = HdUi::instance();
+	const SDL_Color *pal = HdUi::paletteOf(this);
+	const int k = HdUi::scale();
+	const int w = getWidth(), h = getHeight();
+	ui.drawButton(getX(), getY(), w, h, _color, 1, false, pal);
+	// the arrow: a triangle within the middle of the button
+	const float cx = (getX() + w * 0.5f) * k, cy = (getY() + h * 0.5f) * k;
+	const bool big = _shape == ARROW_BIG_UP || _shape == ARROW_BIG_DOWN;
+	const float aw = (big ? 0.3f : 0.34f) * std::min(w, h) * k, ah = (big ? 0.5f : 0.55f) * std::min(w, h) * k;
+	const Uint32 c = HdUi::rgba(pal[(Uint8)(_color + 1)]);
+	switch (_shape)
+	{
+	case ARROW_BIG_UP: case ARROW_SMALL_UP:
+		ui.fillTriangle(cx - aw, cy + ah * 0.5f, cx + aw, cy + ah * 0.5f, cx, cy - ah * 0.5f, c);
+		break;
+	case ARROW_BIG_DOWN: case ARROW_SMALL_DOWN:
+		ui.fillTriangle(cx - aw, cy - ah * 0.5f, cx + aw, cy - ah * 0.5f, cx, cy + ah * 0.5f, c);
+		break;
+	case ARROW_SMALL_LEFT:
+		ui.fillTriangle(cx + ah * 0.5f, cy - aw, cx + ah * 0.5f, cy + aw, cx - ah * 0.5f, cy, c);
+		break;
+	case ARROW_SMALL_RIGHT:
+		ui.fillTriangle(cx - ah * 0.5f, cy - aw, cx - ah * 0.5f, cy + aw, cx + ah * 0.5f, cy, c);
+		break;
+	default:
+		break;
+	}
+}
+
 void ArrowButton::draw()
 {
 	ImageButton::draw();

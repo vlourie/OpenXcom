@@ -77,6 +77,9 @@ namespace HdUiArt
 	const Art *find(Uint64 hash, int w, int h);
 	/// The picture of a mod's image (by the surface it was registered with), or nullptr.
 	const Art *find(const Surface *base);
+	/// The picture of the image these pixels are a part of (a state's copy of a corner of an image):
+	/// the art and the offset of the pixels within its image, or nullptr. Slow (a search): cache the answer.
+	const Art *findCrop(const Uint8 *pixels, int pitch, int w, int h, int &offX, int &offY);
 	/// Forgets everything (mod reload).
 	void clear();
 	size_t count();
@@ -87,6 +90,9 @@ namespace HdUiArt
 	/// at the surface's position, re-tinted to the surface's palette. True when drawn: the caller then
 	/// leaves the classic pixels out (transparent), so the picture shows through.
 	bool drawIfPicture(const Surface *surface, SDL_Surface *dest);
+	/// Draws an HD picture into a 32-bit surface (the screen's world layer) at (x, y), clipped to it:
+	/// for the pictures a state places itself, such as the base view's facilities (see HdBase).
+	void drawFrame(SDL_Surface *dest, const HdFrame &frame, int x, int y);
 	/// Drops the prepared (scaled, re-tinted) pictures (palette or scale change).
 	void clearPrepared();
 }

@@ -17,8 +17,8 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "Screen.h"
-#include "../resource.h"
 #include "HdUiArt.h"
+#include "HdUi.h"
 #include "Scalers/xbrz.h"
 #include <algorithm>
 #include <sstream>
@@ -40,6 +40,7 @@
 #include "HdWorkers.h"
 #include <chrono>
 #include <SDL.h>
+#include <algorithm>
 
 namespace OpenXcom
 {
@@ -108,7 +109,7 @@ void Screen::makeVideoFlags()
 	}
 
 	// the HD battlescape needs the layered (32-bit) output whatever the scaler
-	_bpp = (use32bitScaler() || useOpenGL() || Options::oxceHdScale > 1 || Options::oxceHdPictures) ? 32 : 8;
+	_bpp = (use32bitScaler() || useOpenGL() || Options::oxceHdScale > 1 || Options::oxceHdPictures || Options::oxceHdUi > 0) ? 32 : 8;
 	_layered = (_bpp == 32);
 	_baseWidth = Options::baseXResolution;
 	_baseHeight = Options::baseYResolution;
@@ -214,8 +215,13 @@ void Screen::flip()
 	if (_layered)
 	{
 		// classic 8-bit layer over the world layer, then the world layer is what gets scaled to the display
+		// (with the HD interface every blit onto the classic layer was mirrored into the world layer already)
 		const auto t0 = std::chrono::steady_clock::now();
-		composeInto(_world.get());
+		if (!HdUi::active())
+		{
+			composeInto(_world.get());
+		}
+		HdUi::instance().frameDone();
 		if (getWidth() != _world->w || getHeight() != _world->h || useOpenGL())
 		{
 			Zoom::flipWithZoom(_world.get(), _screen, _topBlackBand, _bottomBlackBand, _leftBlackBand, _rightBlackBand, &glOutput);
@@ -406,10 +412,13 @@ void Screen::composeInto(SDL_Surface *dst) const
 	const int k = _worldScale;
 	const int srcW = std::min(_surface->w, dst->w / k);
 	const int srcH = std::min(_surface->h, dst->h / k);
-	if (k >= 2 && k <= 6 && !_worldScaleFixed && Options::oxceHdUiSmooth)
+	// the classic layer goes over the world with xBRZ (the look of the xBRZ display filter), index 0
+	// transparent: the HD pictures (outside the battle) or the HD map (in it) underneath show through.
+	// in the battlescape this follows the HD sprite mode, so mode 0 keeps the plain nearest scaling the
+	// HD render tests compare against
+	const bool smooth = Options::oxceHdUiSmooth && (!_worldScaleFixed || Options::oxceHdMode > 0);
+	if (k >= 2 && k <= 6 && smooth)
 	{
-		// outside the battlescape the classic layer goes over the world with xBRZ (the look of the xBRZ
-		// display filter), index 0 transparent: the HD pictures underneath show through
 		composeSmooth(dst, lut, srcW, srcH, k);
 		return;
 	}
@@ -569,10 +578,12 @@ void Screen::resetDisplay(bool resetVideo, bool noShaders)
 		// pictures of the interface are drawn into it at the display's resolution
 		if (!_worldScaleFixed && _baseHeight > 0)
 		{
-			_worldScale = Options::oxceHdPictures ? std::max(1, std::min(6, (int)std::lround((double)height / _baseHeight))) : 1;
+			_worldScale = (Options::oxceHdPictures || Options::oxceHdUi > 0)
+				? std::max(1, std::min(8, (int)std::lround((double)height / _baseHeight))) : 1;
 		}
 		allocateWorld();
 		HdUiArt::clearPrepared();
+		HdUi::instance().clearCaches();
 	}
 	else
 	{
@@ -598,7 +609,6 @@ void Screen::resetDisplay(bool resetVideo, bool noShaders)
 			// recreate operations done by `Game::Game` constructor
 			SDL_ShowCursor(SDL_ENABLE);
 			SDL_EnableUNICODE(1);
-			CrossPlatform::setWindowIcon(IDI_ICON1, "openxcom.png");
 			SDL_WM_SetCaption(title.c_str(), 0);
 			SDL_WM_GrabInput(Options::captureMouse);
 			SDL_SetCursor(SDL_CreateCursor(&cursor, &cursor, 1,1,0,0));
@@ -852,7 +862,10 @@ void Screen::writeHdTestDump()
 		std::tie(tmpBuffer, tmp) = Surface::NewPair32Bit(_world->w, _world->h);
 		SDL_SetColorKey(tmp.get(), 0, 0);
 		SDL_BlitSurface(_world.get(), 0, tmp.get(), 0);
-		composeInto(tmp.get());
+		if (!HdUi::active())
+		{
+			composeInto(tmp.get());
+		}
 		HdTest::savePngRgb(_hdTestDumpPath, tmp.get());
 	}
 	else

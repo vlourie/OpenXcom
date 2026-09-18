@@ -39,7 +39,7 @@ private:
 	TextButton *_button;
 	double _pos;
 	int _min, _max, _value;
-	bool _pressed;
+	bool _pressed, _contrast;
 	ActionHandler _change;
 	int _thickness, _textness, _minX, _maxX, _offsetX;
 

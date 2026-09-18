@@ -71,6 +71,8 @@ public:
 	void popup();
 	/// Draws the window.
 	void draw() override;
+	/// HD interface: the bevel crisp and the background from its HD picture (hd/UI), when it has one.
+	void hdMirror() override;
 	/// sets the X delta.
 	void setDX(int dx);
 	/// sets the Y delta.

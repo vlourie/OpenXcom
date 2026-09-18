@@ -182,6 +182,8 @@ public:
 	void setScrolling(bool scrolling, int scrollPos = 4);
 	/// Draws the text onto the text list.
 	void draw() override;
+	/// HD interface: the visible rows as HD text.
+	void hdMirror() override;
 	/// Blits the text list onto another surface.
 	void blit(SDL_Surface *surface) override;
 	/// Thinks arrow buttons.

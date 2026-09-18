@@ -31,6 +31,21 @@
 #include "../Engine/Options.h"
 #include <climits>
 #include "../Mod/Texture.h"
+#include "../Engine/HdBase.h"
+#include "../Engine/HdUiArt.h"
+#include "../Engine/Screen.h"
+
+namespace
+{
+
+/// The base screen draws its HD pictures when the option is on and the screen has a world layer of 2x or more.
+bool hdBaseActive()
+{
+	OpenXcom::Screen *screen = OpenXcom::Screen::current();
+	return OpenXcom::Options::oxceHdPictures && screen && screen->isLayered() && screen->getWorldScale() >= 2;
+}
+
+}
 
 namespace OpenXcom
 {
@@ -47,7 +62,7 @@ BaseView::BaseView(int width, int height, int x, int y) : InteractiveSurface(wid
 	_gridX(0), _gridY(0), _selSizeX(0), _selSizeY(0),
 	_selector(0), _blink(true),
 	_redColor(0), _yellowColor(0), _greenColor(0), _highContrast(true),
-	_cellColor(0), _selectorColor(0)
+	_cellColor(0), _selectorColor(0), _animPhase(0), _animTick(0)
 {
 	// Clear grid
 	for (int i = 0; i < BASE_SIZE; ++i)
@@ -439,6 +454,74 @@ void BaseView::updateNeighborFacilityBuildTime(BaseFacility* facility, BaseFacil
 }
 
 /**
+ * A facility with an HD picture of every one of its tiles is not drawn on the classic
+ * layer at all - neither its shape nor its graphic - so that the picture in the world
+ * layer under it is what is seen (see BaseView::blit).
+ * @param facility The facility.
+ * @return True when the mod has a picture of every tile of the facility.
+ */
+bool BaseView::isHdFacility(const BaseFacility *facility) const
+{
+	if (!facility || facility->getBuildTime() != 0 || !facility->getRules()->getSpriteEnabled())
+	{
+		return false;
+	}
+	const int tiles = facility->getRules()->getSizeX() * facility->getRules()->getSizeY();
+	for (int num = 0; num < tiles; ++num)
+	{
+		if (HdBase::phases(facility->getRules()->getSpriteFacility() + num) == 0)
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
+/**
+ * Draws the HD pictures of the facilities into the true-color world layer, where
+ * the holes left in the classic layer (see draw) show them.
+ */
+void BaseView::drawHd()
+{
+	if (!_visible || _hidden || !_base || !_texture || !hdBaseActive())
+	{
+		return;
+	}
+	Screen *screen = Screen::current();
+	SDL_Surface *world = screen ? screen->getWorldSurface() : 0;
+	const int k = screen ? screen->getWorldScale() : 1;
+	if (!world || k < 2)
+	{
+		return;
+	}
+	for (const auto* fac : *_base->getFacilities())
+	{
+		if (!isHdFacility(fac))
+		{
+			continue;
+		}
+		int num = 0;
+		for (int y = fac->getY(); y < fac->getY() + fac->getRules()->getSizeY(); ++y)
+		{
+			for (int x = fac->getX(); x < fac->getX() + fac->getRules()->getSizeX(); ++x)
+			{
+				const int index = fac->getRules()->getSpriteFacility() + num;
+				Surface *classic = _texture->getFrame(index);
+				if (classic)
+				{
+					const HdFrame *hd = HdBase::frame(index, _animPhase, k, classic->getWidth(), classic->getHeight());
+					if (hd)
+					{
+						HdUiArt::drawFrame(world, *hd, (getX() + x * GRID_SIZE) * k, (getY() + y * GRID_SIZE) * k);
+					}
+				}
+				++num;
+			}
+		}
+	}
+}
+
+/**
  * Keeps the animation timers running.
  */
 void BaseView::think()
@@ -452,6 +535,14 @@ void BaseView::think()
 void BaseView::blink()
 {
 	_blink = !_blink;
+
+	// HD pictures of facilities can have several phases: one step every other tick (200 ms)
+	if (HdBase::animated() && hdBaseActive() && ++_animTick >= 2)
+	{
+		_animTick = 0;
+		++_animPhase;
+		_redraw = true;         // the classic layer holds the craft and numbers over the pictures
+	}
 
 	if (_selSizeX > 0 && _selSizeY > 0)
 	{
@@ -502,9 +593,15 @@ void BaseView::draw()
 
 	auto craftIt = _base->getCrafts()->begin();
 
+	const bool hdTiles = hdBaseActive();
+
 	for (const auto* fac : *_base->getFacilities())
 	{
-		// Draw facility shape
+		// Draw facility shape (an HD facility is drawn in the world layer instead, see blit)
+		if (hdTiles && isHdFacility(fac))
+		{
+			continue;
+		}
 		int num = 0;
 		for (int y = fac->getY(); y < fac->getY() + fac->getRules()->getSizeY(); ++y)
 		{
@@ -569,13 +666,14 @@ void BaseView::draw()
 	// TODO: make const in the future
 	for (auto* fac : *_base->getFacilities())
 	{
-		// Draw facility graphic
+		// Draw facility graphic (an HD facility is drawn in the world layer instead, see blit)
+		const bool hdFacility = hdTiles && isHdFacility(fac);
 		int num = 0;
 		for (int y = fac->getY(); y < fac->getY() + fac->getRules()->getSizeY(); ++y)
 		{
 			for (int x = fac->getX(); x < fac->getX() + fac->getRules()->getSizeX(); ++x)
 			{
-				if (fac->getRules()->getSpriteEnabled())
+				if (fac->getRules()->getSpriteEnabled() && !hdFacility)
 				{
 					Surface *frame = _texture->getFrame(fac->getRules()->getSpriteFacility() + num);
 					int fx = (x * GRID_SIZE);
@@ -659,6 +757,7 @@ void BaseView::draw()
 void BaseView::blit(SDL_Surface *surface)
 {
 	Surface::blit(surface);
+	drawHd();
 	if (_selector != 0)
 	{
 		_selector->blit(surface);

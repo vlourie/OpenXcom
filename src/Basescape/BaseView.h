@@ -55,6 +55,9 @@ private:
 	Uint8 _redColor, _yellowColor, _greenColor;
 	bool _highContrast;
 	Uint8 _cellColor, _selectorColor;
+	int _animPhase, _animTick;
+	/// Has this facility an HD picture of its tiles (then it is not drawn on the classic layer)?
+	bool isHdFacility(const BaseFacility *facility) const;
 	/// Updates the neighborFacility's build time. This is for internal use only (reCalcQueuedBuildings()).
 	void updateNeighborFacilityBuildTime(BaseFacility* facility, BaseFacility* neighbor);
 public:
@@ -90,6 +93,8 @@ public:
 	void blink();
 	/// Draws the base view.
 	void draw() override;
+	/// Draws the HD pictures of the facilities into the world layer (see drawHd).
+	void drawHd();
 	/// Blits the base view onto another surface.
 	void blit(SDL_Surface *surface) override;
 	/// Special handling for mouse hovers.

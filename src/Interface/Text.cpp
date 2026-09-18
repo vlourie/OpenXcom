@@ -17,12 +17,14 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "Text.h"
+#include <algorithm>
 #include "../fmath.h"
 #include "../Engine/Font.h"
 #include "../Engine/Options.h"
 #include "../Engine/Language.h"
 #include "../Engine/Unicode.h"
 #include "../Engine/ShaderDraw.h"
+#include "../Engine/HdUi.h"
 #include "../Engine/ShaderMove.h"
 #include "../Engine/Action.h"
 
@@ -521,6 +523,25 @@ void Text::draw()
 		this->drawRect(&r, 0);
 	}
 
+	forEachGlyph([this](Font *font, UCode c, int x, int y, int color, int mul, int mid)
+	{
+		auto chr = font->getChar(c);
+		chr.setX(x);
+		chr.setY(y);
+		ShaderDraw<PaletteShift>(ShaderSurface(this, 0, 0), ShaderCrop(chr), ShaderScalar(color), ShaderScalar(mul), ShaderScalar(mid));
+	});
+}
+
+/**
+ * Lays out the characters with a really nasty complex gritty text rendering
+ * algorithm logic stuff, and hands every drawable glyph to the callback.
+ */
+void Text::forEachGlyph(const std::function<void(Font*, UCode, int, int, int, int, int)> &fn) const
+{
+	if (_text.empty() || _font == 0)
+	{
+		return;
+	}
 	int x = 0, y = 0, line = 0, height = 0;
 	Font *font = _font;
 	int color = _color;
@@ -632,14 +653,100 @@ void Text::draw()
 		{
 			if (dir < 0)
 				x += dir * font->getCharSize(*c).w;
-			auto chr = font->getChar(*c);
-			chr.setX(x);
-			chr.setY(y);
-			ShaderDraw<PaletteShift>(ShaderSurface(this, 0, 0), ShaderCrop(chr), ShaderScalar(color), ShaderScalar(mul), ShaderScalar(mid));
+			fn(font, *c, x, y, color, mul, mid);
 			if (dir > 0)
 				x += dir * font->getCharSize(*c).w;
 		}
 	}
+}
+
+/**
+ * The HD interface's text: the same layout, every glyph rendered from the
+ * font's bitmap with smooth edges at the world scale.
+ */
+void Text::hdDrawAt(int ox, int oy, int clipX, int clipY, int clipW, int clipH, int padX)
+{
+	if (_text.empty() || _font == 0)
+	{
+		return;
+	}
+	HdUi &ui = HdUi::instance();
+	int cx0 = ox, cy0 = oy, cx1 = ox + getWidth(), cy1 = oy + getHeight();
+	if (clipW > 0 && clipH > 0)
+	{
+		cx0 = std::max(cx0, clipX); cy0 = std::max(cy0, clipY);
+		cx1 = std::min(cx1, clipX + clipW); cy1 = std::min(cy1, clipY + clipH);
+	}
+	if (cx0 >= cx1 || cy0 >= cy1)
+	{
+		return;
+	}
+	ui.setClip(cx0, cy0, cx1 - cx0, cy1 - cy0);
+	const SDL_Color *colors = HdUi::paletteOf(this);
+	if (HdUi::skin() && ui.hasFonts() && _lang->getTextDirection() == DIRECTION_LTR)
+	{
+		// the modern skin: the classic layout's lines, drawn with the TrueType fonts. The glyph
+		// visitor skips spaces (it only advances), so a gap between glyphs is turned back into them.
+		// `padX` keeps the lines that many base pixels off the sides (a button's label).
+		std::vector<std::vector<HdUi::TextRun>> lines;
+		int lineY = 0, lastEnd = 0;
+		const int pad = std::max(0, std::min(padX, getWidth() / 4));
+		forEachGlyph([&](Font *font, UCode c, int x, int y, int color, int mul, int mid)
+		{
+			if (lines.empty() || y != lineY)
+			{
+				lines.emplace_back();
+				HdUi::TextRun r;
+				r.x = x; r.y = y; r.font = font; r.color = color; r.mul = mul; r.mid = mid;
+				r.dotW = font->getCharSize('.').w;
+				lines.back().push_back(r);
+				lineY = y;
+			}
+			else
+			{
+				HdUi::TextRun &last = lines.back().back();
+				const int gap = x - lastEnd;
+				const int spaceW = std::max(1, (int)font->getCharSize(' ').w);
+				int spaces = gap >= spaceW / 2 ? (gap + spaceW / 2) / spaceW : 0;
+				if (last.font != font || last.color != color || last.mul != mul || last.mid != mid)
+				{
+					HdUi::TextRun r;
+					r.x = x; r.y = y; r.font = font; r.color = color; r.mul = mul; r.mid = mid;
+					r.dotW = font->getCharSize('.').w;
+					// the gap belongs to the run before
+					for (int i = 0; i < spaces; ++i) last.text.push_back(' ');
+					lines.back().push_back(r);
+				}
+				else
+				{
+					for (int i = 0; i < spaces; ++i) last.text.push_back(' ');
+				}
+			}
+			lines.back().back().text.push_back(c);
+			lastEnd = x + font->getCharSize(c).w;
+			lines.back().back().w = lastEnd - lines.back().back().x;
+		});
+		for (const auto &line : lines)
+		{
+			ui.drawTtfLine(line, ox + pad, oy, getWidth() - 2 * pad, getHeight(), (int)_align, lines.size() == 1, colors);
+		}
+		ui.clearClip();
+		return;
+	}
+	forEachGlyph([&](Font *font, UCode c, int x, int y, int color, int mul, int mid)
+	{
+		ui.drawGlyph(font, c, ox + x, oy + y, color, mul, mid, colors);
+	});
+	ui.clearClip();
+}
+
+void Text::hdMirror()
+{
+	if (Options::debugUi)
+	{
+		Surface::hdMirror();
+	}
+	hdDrawAt(getX(), getY());
 }
 
 /**

@@ -152,11 +152,15 @@ set ( engine_src
   Engine/Font.cpp
   Engine/Game.cpp
   Engine/GMCat.cpp
+  Engine/HdBase.cpp
   Engine/HdBlit.cpp
   Engine/HdCanvas.cpp
   Engine/HdSmooth.cpp
+  Engine/HdUi.cpp
   Engine/HdSprites.cpp
   Engine/HdUiArt.cpp
+  Engine/HdFont.cpp
+  Engine/HdUiDraw.cpp
   Engine/HdTest.cpp
   Engine/HdWorkers.cpp
   Engine/InteractiveSurface.cpp

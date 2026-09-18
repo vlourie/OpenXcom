@@ -61,6 +61,7 @@
 #include "../Engine/HdTest.h"
 #include "../Engine/HdCanvas.h"
 #include "../Engine/HdWorkers.h"
+#include "../Engine/HdUi.h"
 #include "../version.h"
 #include "../Interface/Cursor.h"
 #include "../Interface/Text.h"
@@ -92,6 +93,7 @@
 #include "../Mod/RuleInventory.h"
 #include "../Mod/RuleSoldier.h"
 #include "../Mod/RuleVideo.h"
+#include <algorithm>
 
 namespace OpenXcom
 {
@@ -1210,10 +1212,8 @@ void BattlescapeState::btnShowMapClick(Action *)
 {
 	//MiniMapState
 	if (allowButtons())
-	{
-		int maxShade = _map->reShadeMinimap(7); // 7 = vanilla
-		_game->pushState (new MiniMapState (_map->getCamera(), _save, maxShade));
-	}
+		// the minimap's shade cap: vanilla 7, lowered by night vision and the debug vision modes
+		_game->pushState (new MiniMapState (_map->getCamera(), _save, _map->reShadeMinimap(7)));
 }
 
 void BattlescapeState::toggleKneelButton(BattleUnit* unit)
@@ -2875,17 +2875,14 @@ inline void BattlescapeState::handle(Action *action)
 				// "ctrl-shift-Del" - clear TUs for all allied units
 				else if (key == SDLK_DELETE && ctrlPressed && shiftPressed)
 				{
-					if (_save->getSide() == FACTION_PLAYER)
+					for (auto* bu : *_save->getUnits())
 					{
-						for (auto* bu : *_save->getUnits())
+						if (bu->getFaction() == _save->getSide() && !bu->isOut())
 						{
-							if (bu->getFaction() == _save->getSide() && !bu->isOut())
-							{
-								bu->clearTimeUnits();
-							}
+							bu->clearTimeUnits();
 						}
-						updateSoldierInfo();
 					}
+					updateSoldierInfo();
 				}
 				// "ctrl-s" - switch xcom unit speed to max and back
 				else if (key == SDLK_s && ctrlPressed)
@@ -3408,6 +3405,7 @@ void BattlescapeState::hdTestDump()
 	f.emplace_back("worldScale", num(screen->getWorldScale()));
 	f.emplace_back("canvas", HdTest::jsonString(_map->getCanvasName()));
 	f.emplace_back("hdMode", num(_map->getHdMode()));
+	f.emplace_back("hdUi", num(HdUi::active() ? Options::oxceHdUi : 0));
 	f.emplace_back("hdThreads", num(HdWorkers::instance().threads()));
 	f.emplace_back("drawMs", num((long long)(_map->getLastDrawMs() * 100)) + "e-2");
 	f.emplace_back("flipMs", num((long long)(screen->getLastFlipMs() * 100)) + "e-2");

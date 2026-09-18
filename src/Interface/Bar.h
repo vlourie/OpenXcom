@@ -67,6 +67,8 @@ public:
 	void setSecondValueOnTop(bool onTop);
 	/// Draws the bar.
 	void draw() override;
+	/// HD interface: geometry, scaled crisply.
+	void hdMirror() override;
 	/// set the outline color for the bar.
 	void setBorderColor(Uint8 bc) override;
 };

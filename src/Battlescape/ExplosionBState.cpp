@@ -348,7 +348,14 @@ void ExplosionBState::init()
 
 		if (anim != -1)
 		{
-			Explosion *explosion = new Explosion(_center, anim, 0, false, (_hit || _psi), animFrames); // Don't burn the tile
+			// a hit that landed on a unit: the HD pack may have another picture of these frames (blood)
+			bool onUnit = false;
+			if (!miss && !_psi)
+			{
+				const Tile *hitTile = _parent->getSave()->getTile(_center.toTile());
+				onUnit = (_hit ? _targetPsiOrHit : (hitTile ? hitTile->getOverlappingUnit(_parent->getSave()) : nullptr)) != nullptr;
+			}
+			Explosion *explosion = new Explosion(_center, anim, 0, false, (_hit || _psi), animFrames, onUnit); // Don't burn the tile
 			_parent->getMap()->getExplosions()->push_back(explosion);
 		}
 		if (_parent->getMap()->getFollowProjectile())

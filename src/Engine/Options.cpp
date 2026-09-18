@@ -383,6 +383,8 @@ void createOptionsOXCE()
 
 	// OXCE hidden but moddable
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceStartUpTextMode", &oxceStartUpTextMode, 0, "", "HIDDEN"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceResetUnitResponseSoundsOnAvatarChange", &oxceResetUnitResponseSoundsOnAvatarChange, true, "", "HIDDEN"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceBaseSoldierInfoColumnDefault", &oxceBaseSoldierInfoColumnDefault, 0, "", "HIDDEN"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceMaximizeCutsceneScreens", &oxceMaximizeCutsceneScreens, true, "", "HIDDEN"));
 
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceGeoscapeDebugLogMaxEntries", &oxceGeoscapeDebugLogMaxEntries, 1000, "", "HIDDEN"));
@@ -395,7 +397,6 @@ void createOptionsOXCE()
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceGeoSortCraftByDistanceToTarget", &oxceGeoSortCraftByDistanceToTarget, false, "", "HIDDEN"));
 
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceBaseInfoDefenseScaleMultiplier", &oxceBaseInfoDefenseScaleMultiplier, 100, "", "HIDDEN"));
-	_info.push_back(OptionInfo(OPTION_OXCE, "oxceBaseSoldierInfoColumnDefault", &oxceBaseSoldierInfoColumnDefault, 0, "", "HIDDEN"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceBaseSoldierTransformationShowOnlyEligible", &oxceBaseSoldierTransformationShowOnlyEligible, false, "", "HIDDEN"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceBaseFilterResearchable", &oxceBaseFilterResearchable, false, "", "HIDDEN"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceBaseResearchReorder", &oxceBaseResearchReorder, false, "", "HIDDEN"));
@@ -424,7 +425,6 @@ void createOptionsOXCE()
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceDisableInfoOnThrowCursor", &oxceDisableInfoOnThrowCursor, false, "", "HIDDEN"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceSwapDontReselectActions", &oxceSwapDontReselectActions, false, "", "HIDDEN"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceEnableUnitResponseSounds", &oxceEnableUnitResponseSounds, true, "", "HIDDEN"));
-	_info.push_back(OptionInfo(OPTION_OXCE, "oxceResetUnitResponseSoundsOnAvatarChange", &oxceResetUnitResponseSoundsOnAvatarChange, true, "", "HIDDEN"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHiddenMovementBackgroundChangeFrequency", &oxceHiddenMovementBackgroundChangeFrequency, 1, "", "HIDDEN"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceInventoryShowUnitSlot", &oxceInventoryShowUnitSlot, false, "", "HIDDEN"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceReplaceNotesLink", &oxceReplaceNotesLink, false, "", "HIDDEN"));
@@ -501,6 +501,10 @@ void createAdvancedOptionsOXCE()
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdScale", &oxceHdScale, 1, "STR_HD_SCALE", "STR_BATTLESCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdPictures", &oxceHdPictures, true, "STR_HD_PICTURES", "STR_GENERAL"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdUiSmooth", &oxceHdUiSmooth, true, "STR_HD_UI_SMOOTH", "STR_GENERAL"));
+	// HD interface (see Engine/HdUi.h): the widgets drawn again in the world layer at the display's resolution
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdUi", &oxceHdUi, 0, "STR_HD_UI", "STR_GENERAL"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdUiSkin", &oxceHdUiSkin, 2, "STR_HD_UI_SKIN", "STR_GENERAL"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdUiFont", &oxceHdUiFont, 0, "STR_HD_UI_FONT", "STR_GENERAL"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdMode", &oxceHdMode, 2, "STR_HD_MODE", "STR_BATTLESCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdLight", &oxceHdLight, true, "STR_HD_LIGHT", "STR_BATTLESCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdGroundVariants", &oxceHdGroundVariants, true, "STR_HD_GROUND_VARIANTS", "STR_BATTLESCAPE"));
