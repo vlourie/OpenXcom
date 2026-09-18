@@ -469,6 +469,46 @@ const HdFrame *HdUi::prepared(const HdUiArt::Art *art, const Surface *key, int k
 	return cache(key, art->hash, hash, k, std::move(frame));
 }
 
+/**
+ * Remembers an HD picture drawn over a base rectangle this frame.
+ */
+void HdUi::notePicture(int x, int y, int w, int h)
+{
+	if (w > 0 && h > 0 && _covers.size() < 64)
+	{
+		_covers.push_back({ x, y, w, h, true });
+	}
+}
+
+/**
+ * Remembers a panel of the skin drawn over a base rectangle this frame: a button or a window's fill
+ * hides the picture under it, so the text on it needs no outline of its own.
+ */
+void HdUi::notePanel(int x, int y, int w, int h)
+{
+	if (w > 0 && h > 0 && _covers.size() < 64)
+	{
+		_covers.push_back({ x, y, w, h, false });
+	}
+}
+
+/**
+ * Whether a base rectangle sits on an HD picture: the last thing drawn under its middle.
+ */
+bool HdUi::overPicture(int x, int y, int w, int h) const
+{
+	const int cx = x + w / 2, cy = y + h / 2;
+	for (size_t i = _covers.size(); i > 0; --i)
+	{
+		const Cover &c = _covers[i - 1];
+		if (cx >= c.x && cx < c.x + c.w && cy >= c.y && cy < c.y + c.h)
+		{
+			return c.picture;
+		}
+	}
+	return false;
+}
+
 void HdUi::drawArt(const HdUiArt::Art *art, const Surface *key, int x, int y, const SDL_Color *colors)
 {
 	SDL_Surface *dest;
@@ -484,6 +524,9 @@ void HdUi::drawArt(const HdUiArt::Art *art, const Surface *key, int x, int y, co
 	{
 		const SDL_Rect clip = worldClip(dest, k);
 		blendFrame(dest, *frame, x * k, y * k, &clip);
+		// a window's own background, drawn inside its frame and already shaded for the text on it: a panel,
+		// not the bare picture the outline is meant for
+		notePanel(x, y, key->getWidth(), key->getHeight());
 	}
 }
 
@@ -585,6 +628,8 @@ void HdUi::drawSurface(const Surface *surface, int x, int y, bool smooth)
 		if (art)
 		{
 			why = "picture";
+			// what the text above it will land on: an HD picture, so the outline is drawn instead of the shadow
+			notePicture(x, y, w, h);
 			const HdFrame *frame = prepared(art, art->baseSurface, k, pal);
 			if (frame)
 			{
@@ -832,6 +877,7 @@ void HdUi::drawGlyph(const Font *font, UCode c, int x, int y, int color, int mul
 
 void HdUi::frameDone()
 {
+	_covers.clear();
 	if (!active())
 	{
 		return;

@@ -26,6 +26,7 @@
 #include <algorithm>
 #include <cmath>
 #include <list>
+#include "HdUi.h"
 #include "HdWorkers.h"
 #include "Logger.h"
 #include "Options.h"
@@ -620,6 +621,7 @@ bool drawIfPicture(const Surface *surface, SDL_Surface *dest)
 	if (SDL_MUSTLOCK(world)) SDL_LockSurface(world);
 	blendInto(world, *f, surface->getX() * k, surface->getY() * k);
 	if (SDL_MUSTLOCK(world)) SDL_UnlockSurface(world);
+	HdUi::instance().notePicture(surface->getX(), surface->getY(), w, h);
 	return true;
 }
 

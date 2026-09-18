@@ -17,6 +17,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "HdFont.h"
+#include <algorithm>
 #include <cmath>
 #include <cstring>
 #include "FileMap.h"
@@ -83,7 +84,7 @@ float HdFont::sizeForCapHeight(float capHeight) const
 
 const HdFont::Glyph &HdFont::glyph(UCode c, float px, float condense)
 {
-	Key key = { c, (int)(px * 4 + 0.5f), (int)(condense * 64 + 0.5f) };
+	Key key = { c, (int)(px * 4 + 0.5f), (int)(condense * 64 + 0.5f), 0 };
 	auto it = _cache.find(key);
 	if (it != _cache.end())
 	{
@@ -119,6 +120,69 @@ const HdFont::Glyph &HdFont::glyph(UCode c, float px, float condense)
 	else
 	{
 		g.w = g.h = 0;
+	}
+	return g;
+}
+
+/**
+ * The glyph spread by `thickness` pixels: the letter's own coverage taken as a maximum over a square
+ * brush, which is the outline drawn under text that sits on a picture. Two running-maximum passes,
+ * across and down, cost the glyph's area twice, and the result is cached like an ordinary glyph.
+ */
+const HdFont::Glyph &HdFont::outline(UCode c, float px, float condense, int thickness)
+{
+	const int t = std::max(1, thickness);
+	Key key = { c, (int)(px * 4 + 0.5f), (int)(condense * 64 + 0.5f), t };
+	auto it = _cache.find(key);
+	if (it != _cache.end())
+	{
+		return it->second;
+	}
+	// by value: building the letter's own glyph may rehash the cache and move it
+	const Glyph base = glyph(c, px, condense);
+	Glyph &g = _cache[key];
+	g.advance = base.advance;
+	if (base.w <= 0 || base.h <= 0)
+	{
+		return g;
+	}
+	g.w = base.w + 2 * t;
+	g.h = base.h + 2 * t;
+	g.xoff = base.xoff - t;
+	g.yoff = base.yoff - t;
+	// across: a pixel of the wider image takes the brightest of the letter's pixels the brush covers
+	std::vector<Uint8> row((size_t)g.w * base.h, 0);
+	for (int y = 0; y < base.h; ++y)
+	{
+		const Uint8 *src = base.cov.data() + (size_t)y * base.w;
+		Uint8 *dst = row.data() + (size_t)y * g.w;
+		for (int x = 0; x < g.w; ++x)
+		{
+			const int from = std::max(0, x - 2 * t), to = std::min(base.w - 1, x);
+			int m = 0;
+			for (int sx = from; sx <= to; ++sx)
+			{
+				if (src[sx] > m) m = src[sx];
+			}
+			dst[x] = (Uint8)m;
+		}
+	}
+	// and down
+	g.cov.assign((size_t)g.w * g.h, 0);
+	for (int y = 0; y < g.h; ++y)
+	{
+		const int from = std::max(0, y - 2 * t), to = std::min(base.h - 1, y);
+		Uint8 *dst = g.cov.data() + (size_t)y * g.w;
+		for (int x = 0; x < g.w; ++x)
+		{
+			int m = 0;
+			for (int sy = from; sy <= to; ++sy)
+			{
+				const Uint8 v = row[(size_t)sy * g.w + x];
+				if (v > m) m = v;
+			}
+			dst[x] = (Uint8)m;
+		}
 	}
 	return g;
 }

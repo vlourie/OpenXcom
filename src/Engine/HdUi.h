@@ -152,6 +152,13 @@ public:
 	/// The skin's panel frame (a window): the border band around [x, y, w, h] in the ramp of `color`; the
 	/// inside is left to the caller (the picture, a fill). `inset` = the border's width in base pixels.
 	void drawPanelFrame(int x, int y, int w, int h, int color, int mul, int inset, bool thin, const SDL_Color *colors = nullptr);
+	/// Remembers that an HD picture fills a base rectangle in this frame, and that a panel (a button, a
+	/// window's fill) covers one: text drawn on a picture is given an outline so it stays readable, text
+	/// on a panel is not. Both are kept in drawing order and forgotten at the end of the frame.
+	void notePicture(int x, int y, int w, int h);
+	void notePanel(int x, int y, int w, int h);
+	/// Is the last thing drawn under a base rectangle an HD picture?
+	bool overPicture(int x, int y, int w, int h) const;
 	/// The skin's soft shadow around a base rectangle (under a window; `radius` in base pixels).
 	void drawShadow(int x, int y, int w, int h, float radius);
 	/// The skin's list-row highlight: a translucent light band, with an accent bar at its left in `accent` (0 = none).
@@ -221,6 +228,12 @@ private:
 	std::list<const Surface*> _smoothLru;
 	size_t _smoothBytes = 0;
 	std::unordered_map<GlyphKey, Glyph, GlyphKeyHash> _glyphs;
+	struct Cover
+	{
+		int x = 0, y = 0, w = 0, h = 0;
+		bool picture = false;
+	};
+	std::vector<Cover> _covers;       ///< what fills the screen under the text, in drawing order (this frame)
 	int _clipX = 0, _clipY = 0, _clipW = 0, _clipH = 0;
 	int _mouseX = -1, _mouseY = -1;
 	bool _hoverOn = false;

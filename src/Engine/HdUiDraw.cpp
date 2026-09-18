@@ -362,6 +362,8 @@ void HdUi::drawButton(int x, int y, int w, int h, int color, int mul, bool press
 	const SDL_Color *pal;
 	if (!target(dest, k, pal) || w <= 0 || h <= 0) return;
 	if (colors) pal = colors;
+	// the button's face hides whatever is under it: its label needs no outline even on a picture
+	notePanel(x, y, w, h);
 	auto c = [&](int v) { return rgba(pal[(Uint8)(color + v * mul)]); };
 	const float x0 = (float)x * k, y0 = (float)y * k, x1 = (float)(x + w) * k, y1 = (float)(y + h) * k;
 	const float r = 1.5f * k, edge = std::max(1.0f, k * 0.5f);
@@ -522,6 +524,9 @@ void HdUi::drawPanelFrame(int x, int y, int w, int h, int color, int mul, int in
 	int k;
 	const SDL_Color *pal;
 	if (!target(dest, k, pal) || w <= 0 || h <= 0) return;
+	// a window stands between the text and whatever picture fills the screen behind it, whichever way its
+	// own fill was drawn: its labels keep the classic shadow
+	notePanel(x, y, w, h);
 	if (colors) pal = colors;
 	auto c = [&](int v) { return rgba(pal[(Uint8)(color + v * mul)]); };
 	const float x0 = (float)x * k, y0 = (float)y * k, x1 = (float)(x + w) * k, y1 = (float)(y + h) * k;
@@ -784,7 +789,12 @@ void HdUi::drawTtfLine(const std::vector<TextRun> &runs, int originX, int origin
 	case 2: pen = originX * k + (float)textW * k - total - 0.5f * k; break;                         // right
 	default: pen = (float)(originX + lineStart) * k; break;                                         // left
 	}
-	const int shadowOff = std::max(1, k / 2);
+	// a line lying straight on an HD picture: the letters are given an outline of their own, because a
+	// light line over a bright photograph cannot be read at all. Over a panel or a plain background the
+	// classic drop shadow is what the text has always had, and it stays
+	const bool onPicture = overPicture(originX, originY, std::max(textW, 1), std::max(textH, 1));
+	const int outlineW = std::max(2, k / 2);
+	const int shadowOff = onPicture ? 0 : std::max(1, k / 2);
 	for (int pass = 0; pass < 2; ++pass)
 	{
 		float x = pen;
@@ -798,7 +808,12 @@ void HdUi::drawTtfLine(const std::vector<TextRun> &runs, int originX, int origin
 			const int faceV = m.classicCap >= 12 ? 2 : 1, shadowV = 5;
 			auto idx = [&](int v) { return (Uint8)(r.color + v * r.mul + (r.mid ? 2 * (r.mid - v) : 0)); };
 			const Uint32 face = rgba(pal[idx(faceV)]);
-			const Uint32 shadow = rgba(pal[idx(shadowV)], 150);
+			const Uint32 shadow = rgba(pal[idx(shadowV)], onPicture ? 255 : 150);
+			// pass 0 is the outline on a picture, the drop shadow anywhere else
+			auto shape = [&](UCode ch) -> const HdFont::Glyph &
+			{
+				return pass == 0 && onPicture ? f.outline(ch, p.px, condense, outlineW) : f.glyph(ch, p.px, condense);
+			};
 			const Uint32 color = pass == 0 ? shadow : face;
 			const int off = pass == 0 ? shadowOff : 0;
 			// the baseline: the capitals centred in the classic line box, or in the text's own box when
@@ -810,7 +825,7 @@ void HdUi::drawTtfLine(const std::vector<TextRun> &runs, int originX, int origin
 			auto leader = [&](size_t n, float from, float width)
 			{
 				if (n == 0 || width <= 0.0f) return;
-				const HdFont::Glyph &g = f.glyph('.', p.px, condense);
+				const HdFont::Glyph &g = shape('.');
 				if (g.w <= 0) return;
 				const float cell = width / n;
 				for (size_t d = 0; d < n; ++d)
@@ -825,7 +840,7 @@ void HdUi::drawTtfLine(const std::vector<TextRun> &runs, int originX, int origin
 			for (UCode c : p.body)
 			{
 				if (prev) x += f.kern(prev, c, p.px, condense) + p.track * condense;
-				const HdFont::Glyph &g = f.glyph(c, p.px, condense);
+				const HdFont::Glyph &g = shape(c);
 				if (g.w > 0)
 				{
 					const int gx = (int)std::lround(x) + g.xoff + off;
