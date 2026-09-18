@@ -51,6 +51,7 @@
 #include "../Engine/Action.h"
 #include "../Engine/Options.h"
 #include "../Engine/Logger.h"
+#include "../Engine/Unicode.h"
 #include "../Basescape/CraftInfoState.h"
 #include "../Engine/CrossPlatform.h"
 #include "../Mod/RuleAlienMission.h"
@@ -230,6 +231,9 @@ NewBattleState::NewBattleState() :
 			_missionTypes.erase(itr);
 		}
 	}
+	// by what the player reads, not by the mod's listOrder: translated, that order looks like none at all
+	std::sort(_missionTypes.begin(), _missionTypes.end(),
+		[&](const std::string &a, const std::string &b) { return Unicode::naturalCompare(tr(a), tr(b)); });
 	_cbxMission->setOptions(_missionTypes, true);
 	_cbxMission->onChange((ActionHandler)&NewBattleState::cbxMissionChange);
 
@@ -241,6 +245,8 @@ NewBattleState::NewBattleState() :
 			_crafts.push_back(craftType);
 		}
 	}
+	std::sort(_crafts.begin(), _crafts.end(),
+		[&](const std::string &a, const std::string &b) { return Unicode::naturalCompare(tr(a), tr(b)); });
 	_cbxCraft->setOptions(_crafts, true);
 	_cbxCraft->onChange((ActionHandler)&NewBattleState::cbxCraftChange);
 
@@ -774,10 +780,15 @@ void NewBattleState::cbxMissionChange(Action *)
 	}
 	_terrainTypes.clear();
 	std::vector<std::string> terrainStrings;
-	for (const auto& terrain : terrains)
 	{
-		_terrainTypes.push_back(terrain);
-		terrainStrings.push_back("MAP_" + terrain);
+		std::vector<std::string> sorted(terrains.begin(), terrains.end());
+		std::sort(sorted.begin(), sorted.end(), [&](const std::string &a, const std::string &b)
+			{ return Unicode::naturalCompare(tr("MAP_" + a), tr("MAP_" + b)); });
+		for (const auto& terrain : sorted)
+		{
+			_terrainTypes.push_back(terrain);
+			terrainStrings.push_back("MAP_" + terrain);
+		}
 	}
 
 	// Hide controls that don't apply to mission
@@ -912,6 +923,8 @@ void NewBattleState::cbxTerrainChange(Action *)
 			}
 		}
 	}
+	std::sort(_alienRaces.begin(), _alienRaces.end(),
+		[&](const std::string &a, const std::string &b) { return Unicode::naturalCompare(tr(a), tr(b)); });
 	_cbxAlienRace->setOptions(_alienRaces, true);
 	if (_cbxAlienRace->getSelected() >= _alienRaces.size())
 	{

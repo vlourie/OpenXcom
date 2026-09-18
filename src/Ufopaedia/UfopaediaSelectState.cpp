@@ -18,12 +18,14 @@
  */
 
 #include <locale>
+#include <algorithm>
 #include "Ufopaedia.h"
 #include "UfopaediaSelectState.h"
 #include "../Mod/ArticleDefinition.h"
 #include "../Engine/Game.h"
 #include "../Engine/Options.h"
 #include "../Engine/LocalizedText.h"
+#include "../Engine/Unicode.h"
 #include "../Interface/Window.h"
 #include "../Interface/Text.h"
 #include "../Interface/TextEdit.h"
@@ -220,6 +222,10 @@ namespace OpenXcom
 		_lstSelection->clearList();
 		_article_list.clear();
 		Ufopaedia::list(_game->getSavedGame(), _game->getMod(), _section, _article_list);
+		// by the title the player reads: the mod's listOrder groups articles by topic, which in a
+		// section of two hundred entries is no help at all when looking for one by name
+		std::sort(_article_list.begin(), _article_list.end(), [&](ArticleDefinition *a, ArticleDefinition *b)
+			{ return Unicode::naturalCompare(tr(a->getMainTitle()), tr(b->getMainTitle())); });
 		_filtered_article_list.clear();
 		size_t selectedFilter = _cbxFilter->getSelected();
 
