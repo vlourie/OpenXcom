@@ -40,7 +40,11 @@ std::string nextDumpPrefix()
 		ss << Options::getMasterUserFolder() << "hdtest" << std::setfill('0') << std::setw(3) << i;
 		i++;
 	}
-	while (CrossPlatform::fileExists(ss.str() + ".json"));
+	// every part of a dump counts as taken, not just the .json: outside the battlescape only
+	// <prefix>_frame.png is written, so counting by .json alone made every such dump overwrite
+	// the same file and the player saw nothing new appear
+	while (CrossPlatform::fileExists(ss.str() + ".json")
+		|| CrossPlatform::fileExists(ss.str() + "_frame.png"));
 	return ss.str();
 }
 
