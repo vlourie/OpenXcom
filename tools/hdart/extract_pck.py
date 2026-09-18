@@ -103,7 +103,7 @@ def extract_set(data_dir, rel, out_dir, palette, scale, columns, margin):
     return info
 
 
-def main():
+def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--data", required=True, help="the UFO data folder (with GEODATA, TERRAIN, UNITS, UFOGRAPH)")
     ap.add_argument("--out", required=True)
@@ -115,7 +115,7 @@ def main():
     ap.add_argument("--palette", default="",
                     help="палитра мода (.pal, JASC или GIMP) вместо GEODATA/PALETTES.DAT. "
                          "Нужна для модов, которые подменяют PAL_BATTLESCAPE через customPalettes")
-    args = ap.parse_args()
+    args = ap.parse_args(argv)
     if args.palette:
         palette = xs.load_palette_file(args.palette)
         print("палитра:", args.palette)

@@ -324,6 +324,9 @@ def download_models():
     print("done")
 
 
+_PIPE = {}   # base -> готовый pipeline: в одном процессе модель грузится ОДИН раз
+
+
 def load_pipeline(base=None):
     """base: an SDXL checkpoint in diffusers layout - a Hugging Face repo id (downloaded into the models
     folder on first use) or a local folder; None = plain SDXL base. Fine-tunes such as
@@ -335,6 +338,8 @@ def load_pipeline(base=None):
     ver = tuple(int(p) for p in diffusers.__version__.split(".")[:2] if p.isdigit())
     kw = {"dtype": torch.float16} if ver >= (0, 36) else {"torch_dtype": torch.float16}
     base = base or MODELS["base"]
+    if base in _PIPE:
+        return _PIPE[base]
     print("loading models from", DEFAULT_MODELS_DIR, "(downloaded there when missing, ~12 GB)... base:", base)
     tile = ControlNetModel.from_pretrained(MODELS["tile"], **kw)
     canny = ControlNetModel.from_pretrained(MODELS["canny"], **kw)
@@ -347,6 +352,7 @@ def load_pipeline(base=None):
         pipe = StableDiffusionXLControlNetImg2ImgPipeline.from_pretrained(base, **common)
     pipe.to("cuda")
     pipe.set_progress_bar_config(disable=True)
+    _PIPE[base] = pipe
     return pipe
 
 
@@ -501,6 +507,43 @@ def seamless_ground(cell, g, margin, frame_w=32, frame_h=40, band=0.25, flatten=
     return Image.fromarray(np.clip(out, 0, 255).astype(np.uint8), cell.mode)
 
 
+def human_time(sec):
+    """Секунды в «2 ч 05 м» / «3 м 20 с» / «45 с»."""
+    sec = int(max(0, sec))
+    if sec >= 3600:
+        return "%d ч %02d м" % (sec // 3600, (sec % 3600) // 60)
+    if sec >= 60:
+        return "%d м %02d с" % (sec // 60, sec % 60)
+    return "%d с" % sec
+
+
+def frame_texture(frame_rgba):
+    """(сколько цветов, средний перепад яркости между соседями) в непрозрачной части кадра.
+
+    Ровный пол, нарисованный в три-четыре цвета, даёт мало цветов и малый перепад; каменистый
+    или травяной - много и того и другого. По этим двум числам решается, снижать ли силу:
+    на пустом ромбе силе 0.8 не за что зацепиться, и она выдумывает геометрию (RAKES.md, R-017)."""
+    a = np.asarray(frame_rgba.convert("RGBA"), dtype=np.float32)
+    m = a[:, :, 3] > 0
+    if int(m.sum()) < 20:
+        return 0, 0.0
+    rgb = a[:, :, :3]
+    colors = len(np.unique(rgb[m].astype(np.uint8), axis=0))
+    lum = 0.299 * rgb[:, :, 0] + 0.587 * rgb[:, :, 1] + 0.114 * rgb[:, :, 2]
+    diffs = []
+    for dy, dx in ((0, 1), (1, 0)):
+        b = np.roll(np.roll(lum, -dy, 0), -dx, 1)
+        mb = m & np.roll(np.roll(m, -dy, 0), -dx, 1)
+        if dy:
+            mb[-1, :] = False
+        if dx:
+            mb[:, -1] = False
+        if mb.any():
+            diffs.append(np.abs(lum - b)[mb])
+    detail = float(np.concatenate(diffs).mean()) if diffs else 0.0
+    return colors, detail
+
+
 class Job:
     """Everything derived from the arguments before painting: per frame (cell) the painter's input and
     the control images, plus the crops (groups of cells painted together)."""
@@ -531,19 +574,26 @@ class Job:
                        if self.types[i] == xs.MCD_FLOOR and self.sheet.cut(self.original, i, 1).getbbox() is not None]
         self.cells = {}   # frame index -> dict(init, tile, canny) at scale g, or missing for empty frames
         self.tall = {}    # ground frames that rise well above the floor diamond (standing crops)
+        self.flat = {}    # ровные полы: им идёт пониженная сила
+        fc = getattr(args, "flat_colors", 8)
+        fd = getattr(args, "flat_detail", 20.0)
         for i in range(info["count"]):
             frame = self.sheet.cut(self.original, i, 1)
             box = frame.getbbox()
             if box is None:
                 continue
             self.tall[i] = self.ground[i] and box[1] < info["frame_h"] - 16 - 6
+            if self.ground[i] and not self.tall[i] and fc > 0:
+                colors, detail = frame_texture(frame)
+                self.flat[i] = colors <= fc and detail < fd
             self.cells[i] = self.make_cell(frame, self.ground[i], self.base[i])
         # crops: cells of one kind and one hint painted together, side by side
         per = max(1, args.max_crop // self.cell_w)
         self.crops = []
         groups = {}
         for i in sorted(self.cells):
-            groups.setdefault((not self.ground[i], bool(self.tall.get(i)), self.hints.get(i, "")), []).append(i)
+            groups.setdefault((not self.ground[i], bool(self.tall.get(i)),
+                               bool(self.flat.get(i)), self.hints.get(i, "")), []).append(i)
         for key in sorted(groups):
             group = groups[key]
             for k in range(0, len(group), per):
@@ -733,7 +783,7 @@ def label(im, text):
     return out
 
 
-def main():
+def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--models", default=DEFAULT_MODELS_DIR, help="folder the models are kept in (default E:\\models)")
     ap.add_argument("--download-only", action="store_true", help="fetch the models into --models and stop")
@@ -744,6 +794,13 @@ def main():
     ap.add_argument("--gen-scale", type=int, default=16, help="upscale the painter works at: 16 = a 32x40 tile is 512x640 px "
                     "(sprites big on the canvas, the model keeps their details); 8 = four times faster, less faithful")
     ap.add_argument("--strength", type=float, default=0.8)
+    ap.add_argument("--flat-strength", type=float, default=0.6, dest="flat_strength",
+                    help="сила для РОВНЫХ полов (мало цветов, нет фактуры). На пустом ромбе сила 0.8 "
+                         "выдумывает решётки и линии, которых в оригинале нет")
+    ap.add_argument("--flat-colors", type=int, default=8, dest="flat_colors",
+                    help="пол считается ровным, если цветов в нём не больше этого (0 = выключить)")
+    ap.add_argument("--flat-detail", type=float, default=20.0, dest="flat_detail",
+                    help="и средний перепад яркости между соседними пикселями меньше этого")
     ap.add_argument("--steps", type=int, default=30)
     ap.add_argument("--cfg", type=float, default=6.5)
     ap.add_argument("--seed", type=int, default=1234)
@@ -784,7 +841,7 @@ def main():
     ap.add_argument("--frame", default="", help="the frame(s) --sweep / --matrix look at, e.g. 9 or 4,8,9 (default: the first)")
     ap.add_argument("--dry-run", action="store_true", help="write the control images and stop (no model)")
     ap.add_argument("--out", default="")
-    args = ap.parse_args()
+    args = ap.parse_args(argv)
     if args.download_only:
         download_models()
         return
@@ -930,16 +987,27 @@ def main():
             if old_sheet.size == painted.size:
                 painted = old_sheet
                 print("repainting only %s (%d crops), the rest stays from %s" % (args.only, len(crops), previous))
+    flat_crops = sum(1 for c in crops if job.flat.get(c[0]))
+    if flat_crops:
+        print("ровных полов: %d кадр(ов) в %d кроп(ах) - им сила %.2f вместо %.2f"
+              % (sum(1 for c in crops for i in c if job.flat.get(i)), flat_crops,
+                 args.flat_strength, args.strength))
     for n, frames in enumerate(crops):
-        results = painter.paint(job, frames, args.strength, steps, args.seed + n)
+        crop_strength = args.flat_strength if job.flat.get(frames[0]) else args.strength
+        results = painter.paint(job, frames, crop_strength, steps, args.seed + n)
         for i, (final, _) in results.items():
             if job.ground[i] and args.seamless:
                 final = seamless_ground(final, job.g, job.margin, info["frame_w"], info["frame_h"])
             painted.paste(final, job.cell_origin(i))
         panels = [results[i][0] for i in frames]
         side_by_side(panels, 0).save(os.path.join(crop_dir, "crop_%02d.png" % n))
-        print("  crop %d/%d (frames %s%s) done, %.0fs" % (n + 1, len(crops), " ".join(str(i) for i in frames),
-                                                       ": " + job.hints[frames[0]] if frames[0] in job.hints else "", time.time() - t0))
+        el = time.time() - t0
+        left = el / (n + 1) * (len(crops) - n - 1)
+        print("  [%3d%%] кроп %d/%d, кадры %s%s%s | %s, осталось ~%s" % (
+            (n + 1) * 100 // len(crops), n + 1, len(crops), " ".join(str(i) for i in frames),
+            " сила %.2f" % crop_strength if crop_strength != args.strength else "",
+            ": " + job.hints[frames[0]] if frames[0] in job.hints else "",
+            human_time(el), human_time(left)), flush=True)
 
     painted.save(os.path.join(set_dir, "painted_x%d.png" % job.g))
     small = painted.resize((job.original.width * pack_scale, job.original.height * pack_scale), Image.LANCZOS)

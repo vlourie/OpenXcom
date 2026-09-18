@@ -306,7 +306,7 @@ def field_preview(path, out_dir, vinfo, scale, cells=12):
     return path
 
 
-def main():
+def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--sheets", required=True)
     ap.add_argument("--set", required=True, help="set name, e.g. CULTIVAT.PCK")
@@ -330,7 +330,7 @@ def main():
                     "(0 = the base painting's colours, 1 = as its look says, 2 = twice as strong)")
     ap.add_argument("--no-preview", action="store_true", help="skip variants_field.png")
     ap.add_argument("--skip-empty", action="store_true", default=True)
-    args = ap.parse_args()
+    args = ap.parse_args(argv)
 
     set_name = args.set.upper()
     set_dir = os.path.join(args.sheets, set_name)
