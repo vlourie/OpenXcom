@@ -288,13 +288,29 @@ const HdFrame *HdUi::smoothed(const Surface *surface, int k, const SDL_Color *co
 	{
 		return &e->frame;
 	}
+	// which half of a slow recompute costs, and why it had to be recomputed at all: an entry of the
+	// same surface with the same pixels means only the palette moved, and the answer is thrown away
+	// once every couple of seconds instead of being kept (measured 156 ms on a 96x96 preview)
+	const Uint32 t0 = SDL_GetTicks();
+	auto old = _smooth.find(surface);
+	const char *miss = old == _smooth.end() ? "new"
+		: (old->second.k != k ? "scale" : (old->second.pixelHash == pixelHash ? "palette" : "pixels"));
 	HdFrame frame;
 	// the interface is mirrored on the main thread, so the smoothing may use the whole pool
 	if (!HdSmooth::smoothPalette(pixels, w, h, pitch, colors, k, frame, false, true))
 	{
 		return nullptr;
 	}
-	return cache(surface, pixelHash, hash, k, std::move(frame));
+	const Uint32 t1 = SDL_GetTicks();
+	const HdFrame *out = cache(surface, pixelHash, hash, k, std::move(frame));
+	const Uint32 t2 = SDL_GetTicks();
+	if (t2 - t0 >= 20)
+	{
+		Log(LOG_INFO) << "HD smooth: " << w << "x" << h << " k" << k << " " << miss << " - xBRZ "
+			<< (t1 - t0) << " ms, cache " << (t2 - t1) << " ms, " << _smooth.size() << " kept ("
+			<< (_smoothBytes >> 20) << " MB)";
+	}
+	return out;
 }
 
 HdUi::SmoothEntry *HdUi::cached(const Surface *key, Uint64 hash, int k)
@@ -487,6 +503,7 @@ void HdUi::drawSurface(const Surface *surface, int x, int y, bool smooth)
 	// the worst call of the frame, with the road it took: "HD UI 160 ms over 2 surfaces" says that the
 	// mirror is to blame but not which surface or why, and every road here costs a different amount
 	const char *why = "plain";
+	bool cropped = false;
 	struct Timing
 	{
 		HdUi &ui; std::chrono::steady_clock::time_point t; int w, h; const char *&why;
@@ -541,8 +558,19 @@ void HdUi::drawSurface(const Surface *surface, int x, int y, bool smooth)
 			const int misses = it == _smooth.end() ? 0 : it->second.artMisses;
 			if (!art && w >= 24 && h >= 16 && misses < 3)
 			{
-				why = "crop scan";
+				// the whole pack compared against this surface: the only thing left in this path that
+				// can cost a hundred milliseconds. The label used to be overwritten by the smoothing
+				// branch below, which made the log name the wrong culprit
+				const auto cropStart = std::chrono::steady_clock::now();
 				art = HdUiArt::findCrop(pixels, pitch, w, h, artX, artY);
+				const double cropMs = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - cropStart).count();
+				if (cropMs >= 5) { why = "crop scan"; cropped = true; }
+				if (cropMs >= 20)
+				{
+					Log(LOG_INFO) << "HD crop scan: " << w << "x" << h << " against " << HdUiArt::count()
+						<< " pictures - " << (int)(cropMs + 0.5) << " ms, " << (art ? "found" : "nothing")
+						<< ", try " << (misses + 1) << " of 3";
+				}
 			}
 			if (art)
 			{
@@ -575,7 +603,7 @@ void HdUi::drawSurface(const Surface *surface, int x, int y, bool smooth)
 	}
 	if (!oversize && smooth && k >= 2 && k <= 6)
 	{
-		why = "xBRZ";
+		if (!cropped) why = "xBRZ";
 		const HdFrame *frame = smoothed(surface, k, pal, pixelHash);
 		if (frame)
 		{
