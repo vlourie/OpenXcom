@@ -83,6 +83,8 @@ namespace HdUiArt
 	/// Forgets everything (mod reload).
 	void clear();
 	size_t count();
+	/// Bytes of the pictures loaded now (see setBudget).
+	size_t bytes();
 
 	/// Are pictures drawn now: the option is on, the screen is layered with a world scale of 2 or more.
 	bool active();

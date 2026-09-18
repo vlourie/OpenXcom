@@ -17,6 +17,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "HdUiArt.h"
+#include <SDL.h>
 #include <cstring>
 #include <cstdlib>
 #include <map>
@@ -222,20 +223,6 @@ bool pictureMatch(const Art *art, double &distance, double &shape)
 	return true;
 }
 
-/// Takes a picture out of the registry (it is not drawn again).
-void unregister(const Art *art)
-{
-	auto it = byContent.find(Key{ art->hash, art->baseWidth, art->baseHeight });
-	if (it != byContent.end() && it->second == art)
-	{
-		byContent.erase(it);
-	}
-	auto is = bySurface.find(art->baseSurface);
-	if (is != bySurface.end() && is->second == art)
-	{
-		bySurface.erase(is);
-	}
-}
 }
 
 void setBudget(size_t bytes)
@@ -266,10 +253,20 @@ const HdFrame &frame(const Art *art)
 		loadedBytes -= oldest->frame.pixels.size() * 4;
 		oldest->frame = HdFrame();
 	}
+	const Uint32 loadStart = SDL_GetTicks();
 	if (HdSprites::loadPng(art->path, art->frame))
 	{
 		art->frame.buildSpans();
 		loadedBytes += art->frame.pixels.size() * 4;
+		// measurement: a picture is read and unpacked the moment it is first drawn, on the main
+		// thread. A big one is a visible freeze, and nothing in the log said so before
+		const Uint32 loadMs = SDL_GetTicks() - loadStart;
+		const size_t loadBytes = art->frame.pixels.size() * 4;
+		if (loadMs >= 20 || loadBytes >= ((size_t)4 << 20))
+		{
+			Log(LOG_INFO) << "HD picture: " << art->path << " " << (loadBytes >> 20) << " MB in "
+				<< loadMs << " ms, " << (loadedBytes >> 20) << " MB held";
+		}
 		if (!art->checked)
 		{
 			// a picture is registered by name and size only, so it can well be a picture of another
@@ -281,12 +278,14 @@ const HdFrame &frame(const Art *art)
 			double d = 0, shape = 0;
 			if (pictureMatch(art, d, shape) && d > MATCH_LIMIT && shape < SHAPE_LIMIT)
 			{
-				Log(LOG_WARNING) << "HD interface: " << art->path << " is not a picture of " << art->name
-					<< " (colours off by " << (int)(d + 0.5) << ", shape " << (int)(shape * 100 + 0.5) << "%) - not used";
-				loadedBytes -= art->frame.pixels.size() * 4;
-				art->frame = HdFrame();
-				art->bad = true;
-				unregister(art);
+				// only said, not acted on: measured over the whole X-Piratez pack (tools/hd_match_report.py)
+				// 250 pictures of 1702 fall under the limit, and the ones looked at are faithful repaints -
+				// Wolverin_Ped is the same mech in the same pose at shape -0.66, MiG the same plane at -0.09.
+				// A repaint that turns a pale sky into a night one inverts the brightness of the largest
+				// area of the picture, so the correlation cannot tell it from a picture of something else
+				Log(LOG_WARNING) << "HD interface: " << art->path << " is far from " << art->name
+					<< " (colours off by " << (int)(d + 0.5) << ", shape " << (int)(shape * 100 + 0.5)
+					<< "%) - used anyway, check it is the right picture";
 			}
 		}
 	}
@@ -368,6 +367,11 @@ void clear()
 size_t count()
 {
 	return arts.size();
+}
+
+size_t bytes()
+{
+	return loadedBytes;
 }
 
 // --- drawing: the picture scaled to the world and re-tinted, cached; blended into the world layer ---
