@@ -34,7 +34,8 @@ namespace HdSmooth
 	/// `isoTile`: the sprite is a battlescape tile (32 wide, the floor diamond in its bottom 16
 	/// rows): the diamond is smoothed as part of a field of its neighbours and keeps a pixel-exact
 	/// edge, so that tiles meet without seams or notches.
-	bool smoothPalette(const Uint8 *indices, int bw, int bh, int pitch, const SDL_Color *colors, int k, HdFrame &out, bool isoTile = false);
+	/// `threaded` slices the xBRZ over HdWorkers: only from the main thread, the pool is not reentrant.
+	bool smoothPalette(const Uint8 *indices, int bw, int bh, int pitch, const SDL_Color *colors, int k, HdFrame &out, bool isoTile = false, bool threaded = false);
 	/// Is (x, y) inside the classic floor diamond of a bw x bh tile (the bottom 16 rows)?
 	bool inFloorDiamond(int x, int y, int bw, int bh);
 }

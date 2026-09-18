@@ -17,9 +17,11 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "HdSmooth.h"
+#include <algorithm>
 #include <cstring>
 #include <vector>
 #include "Scalers/xbrz.h"
+#include "HdWorkers.h"
 
 namespace OpenXcom
 {
@@ -55,7 +57,7 @@ const int ISO_NEIGHBOURS[8][2] = { {16, 8}, {-16, 8}, {16, -8}, {-16, -8}, {32, 
  * diamond that the sprite did not draw is cut away again, pixel-exact, so
  * that the tiles interlock as they do at base resolution.
  */
-bool HdSmooth::smoothPalette(const Uint8 *indices, int bw, int bh, int pitch, const SDL_Color *colors, int k, HdFrame &out, bool isoTile)
+bool HdSmooth::smoothPalette(const Uint8 *indices, int bw, int bh, int pitch, const SDL_Color *colors, int k, HdFrame &out, bool isoTile, bool threaded)
 {
 	if (k < 2 || k > 6 || bw < 1 || bh < 1)
 	{
@@ -110,7 +112,7 @@ bool HdSmooth::smoothPalette(const Uint8 *indices, int bw, int bh, int pitch, co
 			}
 		}
 		HdFrame big;
-		if (!smoothPalette(padded.data(), pw, ph, pw, colors, k, big, false))
+		if (!smoothPalette(padded.data(), pw, ph, pw, colors, k, big, false, threaded))
 		{
 			return false;
 		}
@@ -258,7 +260,24 @@ bool HdSmooth::smoothPalette(const Uint8 *indices, int bw, int bh, int pitch, co
 	out.height = h;
 	out.pixels.assign((size_t)w * h, 0u);
 	out.generated = true;
-	xbrz::scale((size_t)k, base.data(), out.pixels.data(), bw, bh, xbrz::ARGB);
+	// xBRZ in one thread is the slowest thing the interface does: a 96x96 preview of a base
+	// facility at k=4 cost 118 ms, a visible catch on every page of the pedia. Sliced by rows
+	// the same way Screen.cpp slices it, the frame comes out the same (see docs/PERF.md)
+	HdWorkers &pool = HdWorkers::instance();
+	const int jobs = threaded ? std::max(1, std::min(bh / 16, pool.threads() * 2)) : 1;
+	if (jobs > 1)
+	{
+		pool.run(jobs, [&](int job)
+		{
+			const int ya = (int)((long long)bh * job / jobs);
+			const int yb = (int)((long long)bh * (job + 1) / jobs);
+			xbrz::scale((size_t)k, base.data(), out.pixels.data(), bw, bh, xbrz::ARGB, xbrz::ScalerCfg(), ya, yb);
+		});
+	}
+	else
+	{
+		xbrz::scale((size_t)k, base.data(), out.pixels.data(), bw, bh, xbrz::ARGB);
+	}
 	return true;
 }
 
