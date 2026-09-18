@@ -903,8 +903,15 @@ def main(argv=None):
         print("unit set: strength %.2f, tile %.2f, canny %.2f, refine %.2f" % (args.strength, args.tile, args.canny, args.refine))
     print("prompt (objects):", prompts["object"].replace("{subject}", subject))
     print("prompt (ground): ", prompts["ground"].replace("{subject}", subject))
-    print("%d frames in %d crops (%d ground, %d with hints)" % (
-        len(job.cells), len(job.crops), sum(1 for i in job.cells if job.ground[i]), sum(1 for i in job.cells if i in job.hints)))
+    # Пустые кадры в покраску не идут (gen_hd.Job: кадр без единого непрозрачного пикселя
+    # пропускается), и раньше их число нигде не печаталось: распаковщик говорил "155 frames",
+    # генератор - "52 frames", и разница выглядела потерей. Говорим прямо.
+    empty = info["count"] - len(job.cells)
+    ground_total = sum(1 for g in job.ground if g)
+    ground_painted = sum(1 for i in job.cells if job.ground[i])
+    print("%d кадров: %d пустых, красим %d в %d кроп(ах) (полов %d из %d, с подсказкой %d)" % (
+        info["count"], empty, len(job.cells), len(job.crops),
+        ground_painted, ground_total, sum(1 for i in job.cells if i in job.hints)))
     variants = plan_variants(args, job, set_dir, subject) if args.variants > 0 and args.only != "objects" else None
     if args.dry_run:
         for key in ("init", "tile", "canny"):
