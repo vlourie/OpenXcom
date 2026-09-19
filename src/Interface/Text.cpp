@@ -682,6 +682,10 @@ void Text::hdDrawAt(int ox, int oy, int clipX, int clipY, int clipW, int clipH, 
 		return;
 	}
 	ui.setClip(cx0, cy0, cx1 - cx0, cy1 - cy0);
+	// the room the line may lay itself out in: its own width, cut down by whatever the caller clipped.
+	// Widgets whose columns overlap on paper (the battle action menu) hand every column the room up to
+	// the next one, so a line condenses into its column instead of running over the neighbour's text.
+	const int roomW = std::max(1, std::min(getWidth(), cx1 - ox));
 	const SDL_Color *colors = HdUi::paletteOf(this);
 	if (HdUi::skin() && ui.hasFonts() && _lang->getTextDirection() == DIRECTION_LTR)
 	{
@@ -690,7 +694,7 @@ void Text::hdDrawAt(int ox, int oy, int clipX, int clipY, int clipW, int clipH, 
 		// `padX` keeps the lines that many base pixels off the sides (a button's label).
 		std::vector<std::vector<HdUi::TextRun>> lines;
 		int lineY = 0, lastEnd = 0;
-		const int pad = std::max(0, std::min(padX, getWidth() / 4));
+		const int pad = std::max(0, std::min(padX, roomW / 4));
 		forEachGlyph([&](Font *font, UCode c, int x, int y, int color, int mul, int mid)
 		{
 			if (lines.empty() || y != lineY)
@@ -728,7 +732,7 @@ void Text::hdDrawAt(int ox, int oy, int clipX, int clipY, int clipW, int clipH, 
 		});
 		for (const auto &line : lines)
 		{
-			ui.drawTtfLine(line, ox + pad, oy, getWidth() - 2 * pad, getHeight(), (int)_align, lines.size() == 1, colors);
+			ui.drawTtfLine(line, ox + pad, oy, roomW - 2 * pad, getHeight(), (int)_align, lines.size() == 1, colors);
 		}
 		ui.clearClip();
 		return;

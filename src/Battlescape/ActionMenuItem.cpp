@@ -184,9 +184,20 @@ void ActionMenuItem::hdMirror()
 		ui.fillRoundRect(x0 + edge, y0 + edge, x1 - edge, y0 + (y1 - y0) * 0.5f, std::max(r - edge, 0.0f), 0x24FFFFFFu, 0x06FFFFFFu);
 	}
 	ui.strokeRoundRect(x0, y0, x1, y1, r, edge, HdUi::rgba(pal[(Uint8)(_frame->getColor() + 2)], 220));
-	for (Text *text : { _txtDescription, _txtAcc, _txtTU })
+	// the three columns overlap on paper (10..210, 140..240, 210..290) and the classic layout gets away
+	// with it because the bitmap letters are narrow: a name ending at 149 is simply overpainted by the
+	// accuracy. The TrueType face is about half again as wide at the same cap height, so a long action
+	// name ran straight through the accuracy number. Every column gets the room up to the next one and
+	// the line condenses into it.
+	Text *columns[] = { _txtDescription, _txtAcc, _txtTU };
+	const int count = (int)(sizeof(columns) / sizeof(columns[0]));
+	for (int i = 0; i < count; ++i)
 	{
-		text->hdDrawAt(getX() + text->getX(), getY() + text->getY(), getX(), getY(), getWidth(), getHeight());
+		Text *text = columns[i];
+		const int left = text->getX();
+		const int next = i + 1 < count ? columns[i + 1]->getX() : getWidth();
+		const int room = std::max(1, std::min(left + text->getWidth(), next) - left);
+		text->hdDrawAt(getX() + left, getY() + text->getY(), getX() + left, getY(), room, getHeight());
 	}
 }
 
