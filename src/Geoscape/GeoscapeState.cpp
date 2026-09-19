@@ -2054,7 +2054,7 @@ void GeoscapeState::time30Minutes()
 		if (ge->isOver())
 		{
 			bool interrupted = false;
-			if (!ge->getRules().getInterruptResearch().empty())
+			if (ge->getRules().getInterruptResearch())
 			{
 				if (_game->getSavedGame()->isResearched(ge->getRules().getInterruptResearch(), false))
 				{
@@ -3775,21 +3775,22 @@ void GeoscapeState::determineAlienMissions(bool isNewMonth, const RuleEvent* p_e
 			int arcsEnabled = 0;
 			// level four condition check: check maxArcs (duplicates count, arcs enabled by other commands or in any other way count too!)
 			{
-				for (auto& seqArc : arcCommand->getSequentialArcs())
+				for (auto* seqArc : arcCommand->getSequentialArcs())
 				{
 					if (save->isResearched(seqArc))
 						++arcsEnabled;
 					else
-						disabledSeqArcs.push_back(seqArc);
+						disabledSeqArcs.push_back(seqArc->getName());
 				}
 				WeightedOptions tmp = arcCommand->getRandomArcs(); // copy for the iterator, because of getNames()
 				disabledRngArcs = tmp; // copy for us to modify
 				for (auto& rngArc : tmp.getNames())
 				{
-					if (save->isResearched(rngArc))
+					auto* research = mod->getResearch(rngArc, true);
+					if (save->isResearched(research))
 					{
 						++arcsEnabled;
-						disabledRngArcs.set(rngArc, 0); // delete
+						disabledRngArcs.set(research->getName(), 0); // delete
 					}
 				}
 			}

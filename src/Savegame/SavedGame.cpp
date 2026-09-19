@@ -97,12 +97,6 @@ bool haveReserchVector(const std::vector<const RuleResearch*> &vec, const RuleRe
 	return find != vec.end() && *find == res;
 }
 
-bool haveReserchVector(const std::vector<const RuleResearch*> &vec,  const std::string &res)
-{
-	auto find = std::find_if(vec.begin(), vec.end(), [&](const RuleResearch* r){ return r->getName() == res; });
-	return find != vec.end();
-}
-
 }
 
 /**
@@ -1795,7 +1789,7 @@ void SavedGame::getAvailableResearchProjects(std::vector<RuleResearch *> &projec
 		}
 
 		// Remove the already researched topics from the list *UNLESS* they can still give you something more
-		if (isResearched(research->getName(), false))
+		if (isResearched(research, false))
 		{
 			if (hasUndiscoveredGetOneFree(research, true))
 			{
@@ -2026,9 +2020,9 @@ void SavedGame::getDependableCraft(std::vector<RuleCraft *> & dependables, const
 		if (craftItem->getBuyCost() != 0)
 		{
 			const auto& reqs = craftItem->getRequirements();
-			if (std::find(reqs.begin(), reqs.end(), research->getName()) != reqs.end())
+			if (std::find(reqs.begin(), reqs.end(), research) != reqs.end())
 			{
-				if (isResearched(craftItem->getRequirements()))
+				if (isResearched(reqs))
 				{
 					dependables.push_back(craftItem);
 				}
@@ -2049,9 +2043,9 @@ void SavedGame::getDependableFacilities(std::vector<RuleBaseFacility *> & depend
 	{
 		RuleBaseFacility *facilityItem = mod->getBaseFacility(facType);
 		const auto& reqs = facilityItem->getRequirements();
-		if (std::find(reqs.begin(), reqs.end(), research->getName()) != reqs.end())
+		if (std::find(reqs.begin(), reqs.end(), research) != reqs.end())
 		{
-			if (isResearched(facilityItem->getRequirements()))
+			if (isResearched(reqs))
 			{
 				dependables.push_back(facilityItem);
 			}
@@ -2177,16 +2171,6 @@ bool SavedGame::hasUndiscoveredProtectedUnlock(const RuleResearch * r) const
  * @param considerDebugMode Should debug mode be considered or not.
  * @return Whether it's researched or not.
  */
-bool SavedGame::isResearched(const std::string &research, bool considerDebugMode) const
-{
-	//if (research.empty())
-	//	return true;
-	if (considerDebugMode && _debug)
-		return true;
-
-	return haveReserchVector(_discovered, research);
-}
-
 bool SavedGame::isResearched(const RuleResearch *research, bool considerDebugMode) const
 {
 	//if (research.empty())
@@ -2195,24 +2179,6 @@ bool SavedGame::isResearched(const RuleResearch *research, bool considerDebugMod
 		return true;
 
 	return haveReserchVector(_discovered, research);
-}
-
-bool SavedGame::isResearched(const std::vector<std::string> &research, bool considerDebugMode) const
-{
-	if (research.empty())
-		return true;
-	if (considerDebugMode && _debug)
-		return true;
-
-	for (const auto& res : research)
-	{
-		if (!haveReserchVector(_discovered, res))
-		{
-			return false;
-		}
-	}
-
-	return true;
 }
 
 /**
@@ -3150,8 +3116,7 @@ void SavedGame::setDisableSoldierEquipment(bool disableSoldierEquipment)
  */
 bool SavedGame::isManaUnlocked(Mod *mod) const
 {
-	auto& researchName = mod->getManaUnlockResearch();
-	if (Mod::isEmptyRuleName(researchName) || isResearched(researchName))
+	if (!mod->getManaUnlockResearch() || isResearched(mod->getManaUnlockResearch()))
 	{
 		return true;
 	}
@@ -3284,7 +3249,7 @@ bool SavedGame::canSpawnInstantEvent(const RuleEvent* eventRules)
 	}
 
 	bool interrupted = false;
-	if (!eventRules->getInterruptResearch().empty())
+	if (eventRules->getInterruptResearch())
 	{
 		if (isResearched(eventRules->getInterruptResearch(), false))
 		{
