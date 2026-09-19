@@ -123,3 +123,7 @@ dist/
 /head_*.cpp
 /build_log.txt
 /obj/
+# клон Brutal-OXCE для замеров ИИ, в гит не идёт
+/BrutalAI/
+# замеры и дампы прогонов, в гит не идут
+/logs/

@@ -14,6 +14,9 @@
 from __future__ import annotations
 
 import argparse, datetime, fnmatch, re, sys
+
+if hasattr(sys.stdout, "reconfigure"):   # консоль msys бывает cp1252
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 from pathlib import Path
 
 RAKES = Path("docs/RAKES.md")
