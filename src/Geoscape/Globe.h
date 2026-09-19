@@ -17,6 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <string>
 #include <vector>
 #include <list>
 #include "../Engine/InteractiveSurface.h"
@@ -34,6 +35,7 @@ class Target;
 class LocalizedText;
 class RuleGlobe;
 class Craft;
+class Text;
 
 /**
  * Interactive globe view of the world.
@@ -72,6 +74,21 @@ private:
 	///list of dimension of earth on screen per zoom level
 	std::vector<double> _zoomRadius;
 
+	/// A label the globe has drawn. Two uses: the HD interface redraws it with its own fonts (baked
+	/// into _countries it would only reach the screen through the upscaler, which is what made the
+	/// names look smeared), and a click is looked up against the letters' own rectangle.
+	struct Label
+	{
+		std::string text;
+		std::string id;          ///< what the ruleset calls it; empty when there is nothing to look up
+		int x, y, w, h;          ///< the widget the classic layout placed
+		int inkX, inkY, inkW, inkH;  ///< the letters themselves: what a click has to hit
+		Uint8 color;
+	};
+	std::vector<Label> _labels;
+	std::vector<Text*> _hdLabelText;    ///< one widget per label size, made on first use
+	bool _hdLabelsKept;                 ///< were the labels kept out of _countries when it was last drawn
+
 	bool _isMouseScrolling, _isMouseScrolled;
 	int _xBeforeMouseScrolling, _yBeforeMouseScrolling;
 	double _lonBeforeMouseScrolling, _latBeforeMouseScrolling;
@@ -103,6 +120,14 @@ private:
 	void drawTarget(Target *target, Surface *surface);
 	/// Set up the radius of earth and stuff.
 	void setupRadii(int width, int height);
+	/// Is the HD interface going to draw the labels with its own fonts?
+	bool hdLabels() const;
+	/// Remembers a label and, unless the HD interface will draw it, blits it into _countries.
+	void putLabel(Text *label, const std::string &id);
+	/// The widget of that size the kept labels are laid out through.
+	Text *hdLabelText(int w, int h);
+	/// Draws the kept labels with the TrueType fonts, over the upscaled globe.
+	void drawHdLabels();
 public:
 	static Uint8 OCEAN_COLOR;
 	static bool OCEAN_SHADING;
@@ -189,6 +214,8 @@ public:
 	void drawMarkers();
 	/// Blits the globe onto another surface.
 	void blit(SDL_Surface *surface) override;
+	/// What the label under this screen point is called in the rulesets ("" when there is none).
+	std::string getLabelAt(int x, int y) const;
 	/// Special handling for mouse hover.
 	void mouseOver(Action *action, State *state) override;
 	/// Special handling for mouse presses.

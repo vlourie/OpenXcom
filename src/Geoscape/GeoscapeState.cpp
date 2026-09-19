@@ -87,6 +87,7 @@
 #include "DogfightErrorState.h"
 #include "DogfightExperienceState.h"
 #include "../Ufopaedia/Ufopaedia.h"
+#include "../Mod/ArticleDefinition.h"
 #include "../Savegame/ResearchProject.h"
 #include "ResearchCompleteState.h"
 #include "../Mod/RuleResearch.h"
@@ -713,6 +714,8 @@ void GeoscapeState::init()
 	updateSlackingIndicator();
 
 	_globe->onMouseClick((ActionHandler)&GeoscapeState::globeClick);
+	// the wheel button on a globe label opens its ufopaedia article
+	_globe->onMouseClick((ActionHandler)&GeoscapeState::globeClick, SDL_BUTTON_MIDDLE);
 	_globe->onMouseOver(0);
 	_globe->rotateStop();
 	_globe->setFocus(true);
@@ -2958,6 +2961,22 @@ void GeoscapeState::globeClick(Action *action)
 			// Pass empty vector
 			std::vector<Craft*> crafts;
 			_game->pushState(new MultipleTargetsState(v, crafts, this, true));
+		}
+	}
+
+	// The wheel button on a name written on the globe: its ufopaedia article, when the mod has one
+	// and the player has earned it. Nothing happens otherwise - an article the game hides everywhere
+	// else should not be announced here either.
+	if (action->getDetails()->button.button == SDL_BUTTON_MIDDLE && !buttonsDisabled())
+	{
+		const std::string id = _globe->getLabelAt(mouseX, mouseY);
+		if (!id.empty())
+		{
+			ArticleDefinition *article = _game->getMod()->getUfopaediaArticle(id);
+			if (article && Ufopaedia::isArticleAvailable(_game->getSavedGame(), article))
+			{
+				Ufopaedia::openArticle(_game, article);
+			}
 		}
 	}
 

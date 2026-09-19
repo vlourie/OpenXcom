@@ -53,6 +53,7 @@
 #include "../Mod/Texture.h"
 #include "../Interface/Cursor.h"
 #include "../Engine/Screen.h"
+#include "../Engine/HdUi.h"
 
 namespace OpenXcom
 {
@@ -332,7 +333,7 @@ struct CreateShadowWithoutCache
  * @param y Y position in pixels.
  */
 Globe::Globe(Game* game, int cenX, int cenY, int width, int height, int x, int y) : InteractiveSurface(width, height, x, y), _cenX(cenX), _cenY(cenY), _rotLon(0.0), _rotLat(0.0), _hoverLon(0.0), _hoverLat(0.0), _craftLon(0.0), _craftLat(0.0), _craftRange(0.0), _game(game), _hover(false), _craft(false), _blink(-1),
-																					_isMouseScrolling(false), _isMouseScrolled(false), _xBeforeMouseScrolling(0), _yBeforeMouseScrolling(0), _lonBeforeMouseScrolling(0.0), _latBeforeMouseScrolling(0.0), _mouseScrollingStartTime(0), _totalMouseMoveX(0), _totalMouseMoveY(0), _mouseMovedOverThreshold(false)
+																					_hdLabelsKept(false), _isMouseScrolling(false), _isMouseScrolled(false), _xBeforeMouseScrolling(0), _yBeforeMouseScrolling(0), _lonBeforeMouseScrolling(0.0), _latBeforeMouseScrolling(0.0), _mouseScrollingStartTime(0), _totalMouseMoveX(0), _totalMouseMoveY(0), _mouseMovedOverThreshold(false)
 {
 	_rules = game->getMod()->getGlobe();
 	_texture = new SurfaceSet(*_game->getMod()->getSurfaceSet("TEXTURE.DAT"));
@@ -370,6 +371,10 @@ Globe::~Globe()
 	delete _rotTimer;
 	delete _countries;
 	delete _markers;
+	for (auto* text : _hdLabelText)
+	{
+		delete text;
+	}
 	delete _texture;
 	delete _radars;
 	delete _clipper;
@@ -920,6 +925,11 @@ void Globe::setPalette(const SDL_Color *colors, int firstcolor, int ncolors)
 	_countries->setPalette(colors, firstcolor, ncolors);
 	_markers->setPalette(colors, firstcolor, ncolors);
 	_radars->setPalette(colors, firstcolor, ncolors);
+
+	for (auto* text : _hdLabelText)
+	{
+		text->setPalette(colors, firstcolor, ncolors);
+	}
 }
 
 /**
@@ -1361,6 +1371,8 @@ void Globe::drawVHLine(Surface *surface, double lon1, double lat1, double lon2, 
 void Globe::drawDetail()
 {
 	_countries->clear();
+	_labels.clear();
+	_hdLabelsKept = hdLabels();
 
 	if (!Options::globeDetail)
 		return;
@@ -1418,7 +1430,7 @@ void Globe::drawDetail()
 			{
 				label->setColor(country->getRules()->getLabelColor());
 			}
-			label->blit(_countries->getSurface());
+			putLabel(label, country->getRules()->getType());
 		}
 
 		delete label;
@@ -1452,7 +1464,7 @@ void Globe::drawDetail()
 				{
 					label->setColor(rule->getLabelColor());
 				}
-				label->blit(_countries->getSurface());
+				putLabel(label, rule->getType());
 			}
 		}
 		delete label;
@@ -1484,7 +1496,7 @@ void Globe::drawDetail()
 				label->setX(x - 50);
 				label->setY(y + 2);
 				label->setText(city->getName(_game->getLanguage()));
-				label->blit(_countries->getSurface());
+				putLabel(label, city->getNameId());
 			}
 		}
 		// Draw bases names
@@ -1497,7 +1509,8 @@ void Globe::drawDetail()
 			label->setY(y + 2);
 			label->setColor(BASE_LABEL_COLOR);
 			label->setText(xbase->getName());
-			label->blit(_countries->getSurface());
+			// the player types a base's name, so there is nothing for the ufopaedia to look up
+			putLabel(label, "");
 		}
 
 		delete label;
@@ -1800,6 +1813,110 @@ void Globe::drawMarkers()
 }
 
 /**
+ * Is the HD interface going to draw the globe's labels with its own fonts? Then they are kept out
+ * of _countries: that surface reaches the screen through the upscaler, and a name smeared by xBRZ
+ * under a sharp one drawn over it reads worse than either alone.
+ */
+bool Globe::hdLabels() const
+{
+	return HdUi::skin() && HdUi::instance().hasFonts();
+}
+
+/**
+ * A label the globe has just laid out. It is always remembered - a click is answered from this list -
+ * and it is blitted into _countries unless the HD interface is going to draw it with its own fonts.
+ */
+void Globe::putLabel(Text *label, const std::string &id)
+{
+	// lays the string out (the line widths a click needs); blit() below then finds nothing to redo
+	label->draw();
+	Label kept;
+	kept.text = label->getText();
+	kept.id = id;
+	kept.x = label->getX();
+	kept.y = label->getY();
+	kept.w = label->getWidth();
+	kept.h = label->getHeight();
+	// the letters, not the widget: every globe label is a centred line in a box far wider than itself,
+	// and a click has to hit the name, not the empty half of the box next to the neighbouring one
+	const int textW = std::min(label->getTextWidth(), kept.w);
+	const int textH = std::min(label->getTextHeight(), kept.h);
+	kept.inkX = kept.x + (kept.w - textW) / 2;
+	kept.inkY = kept.y;
+	kept.inkW = textW;
+	kept.inkH = textH;
+	kept.color = label->getColor();
+	_labels.push_back(kept);
+	if (!_hdLabelsKept)
+	{
+		label->blit(_countries->getSurface());
+	}
+}
+
+/**
+ * The ruleset name of the label the player pointed at, or "" when they pointed at none. The labels
+ * are searched from the last drawn backwards, so the one lying on top answers first, the same way
+ * the eye reads them.
+ */
+std::string Globe::getLabelAt(int x, int y) const
+{
+	// a couple of base pixels of slack: the letters are thin and the globe turns under the cursor
+	const int pad = 2;
+	const int lx = x - _countries->getX(), ly = y - _countries->getY();
+	for (size_t i = _labels.size(); i > 0; --i)
+	{
+		const Label &l = _labels[i - 1];
+		if (l.id.empty() || l.inkW <= 0 || l.inkH <= 0)
+		{
+			continue;
+		}
+		if (lx >= l.inkX - pad && lx < l.inkX + l.inkW + pad &&
+			ly >= l.inkY - pad && ly < l.inkY + l.inkH + pad)
+		{
+			return l.id;
+		}
+	}
+	return "";
+}
+
+/**
+ * The widget of that size the kept labels are laid out through: the globe uses three sizes, so
+ * three widgets are made once and then reused, instead of resizing one per label per frame.
+ */
+Text *Globe::hdLabelText(int w, int h)
+{
+	for (auto* text : _hdLabelText)
+	{
+		if (text->getWidth() == w && text->getHeight() == h)
+		{
+			return text;
+		}
+	}
+	Text *text = new Text(w, h, 0, 0);
+	text->setPalette(getPalette());
+	text->initText(_game->getMod()->getFont("FONT_BIG"), _game->getMod()->getFont("FONT_SMALL"), _game->getLanguage());
+	text->setAlign(ALIGN_CENTER);
+	_hdLabelText.push_back(text);
+	return text;
+}
+
+/**
+ * The kept labels, drawn with the TrueType fonts straight onto the world layer, at the place the
+ * classic layout put them. draw() is what lays the string out; hdDrawAt reads that layout.
+ */
+void Globe::drawHdLabels()
+{
+	for (const Label &kept : _labels)
+	{
+		Text *text = hdLabelText(kept.w, kept.h);
+		text->setColor(kept.color);
+		text->setText(kept.text);
+		text->draw();
+		text->hdDrawAt(_countries->getX() + kept.x, _countries->getY() + kept.y);
+	}
+}
+
+/**
  * Blits the globe onto another surface.
  * @param surface Pointer to another surface.
  */
@@ -1808,6 +1925,16 @@ void Globe::blit(SDL_Surface *surface)
 	Surface::blit(surface);
 	_radars->blit(surface);
 	_countries->blit(surface);
+	if (_hdLabelsKept && HdUi::isScreen(surface) && HdUi::active())
+	{
+		// before the markers, so that they cover a name exactly as they did when it sat in _countries
+		drawHdLabels();
+	}
+	else if (_hdLabelsKept != hdLabels())
+	{
+		// the option was switched while the globe stood still: lay the labels out the other way round
+		invalidate();
+	}
 	_markers->blit(surface);
 }
 
