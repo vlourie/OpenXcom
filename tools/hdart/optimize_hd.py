@@ -21,7 +21,8 @@ Three things, in this order, for every PNG under <mod>\hd - and for every pictur
 
 Nothing else changes: the size of the picture, the frame it belongs to and its name stay as they are,
 and the `.pal.txt` files next to the interface pictures are left alone. The run is safe to repeat -
-a file that cannot be made smaller is left as it is - and `--dry-run` only measures.
+a file that cannot be made smaller is left as it is - and `--dry-run` only measures, naming every
+file that still has something to give, so a half-done folder can be told from a finished one.
 
 Typical: the ufopaedia pictures (hd\UI, ~1.2 MB each) come down to about a quarter, terrain frames to
 about an eighth, the unit packs to about two thirds; photographs (hd\GLOBE) are only recompressed,
@@ -260,6 +261,7 @@ def main():
     t0 = time.time()
     total_old = total_new = 0
     done = 0
+    left = 0        # files that still have something to give
     per_dir = {}
     # one process per job: Pillow and the quantizer hold the interpreter lock, so threads would all
     # sit on one core (Windows: the workers import this file again, which is why the work is a plain function)
@@ -280,7 +282,11 @@ def main():
             d[1] += new
             d[2] += 1
             done += 1
-            if done <= 5 or done % 200 == 0:
+            if new < old:
+                left += 1
+            # a dry run is asked precisely to find what is not done yet, so every such file is named;
+            # a real run only keeps a heartbeat, or a big mod would print thousands of lines
+            if (args.dry_run and new < old) or done <= 5 or done % 200 == 0:
                 print("  %-44s %8d -> %8d  %s" % (rel[-44:], old, new, note))
     print("\n%-14s %10s %10s %7s %6s" % ("folder", "before", "after", "saved", "files"))
     for top, (old, new, n) in sorted(per_dir.items(), key=lambda kv: -kv[1][0]):
@@ -289,7 +295,11 @@ def main():
     print("%-14s %9.1fM %9.1fM %6.0f%% %6d   in %.0f s" % ("all", total_old / 1e6, total_new / 1e6,
                                                            100 - total_new * 100 / max(total_old, 1), len(files), time.time() - t0))
     if args.dry_run:
+        print("%d of %d file(s) still have something to give, %d are already as small as they get"
+              % (left, len(files), len(files) - left))
         print("dry run: nothing was written")
+    else:
+        print("%d of %d file(s) written smaller, %d left alone" % (left, len(files), len(files) - left))
     return 0
 
 

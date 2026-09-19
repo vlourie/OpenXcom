@@ -26,6 +26,12 @@ tools/index_mod.py по рулсетам мода. Руками сопостав
 Приметы можно называть только если они есть на большинстве кадров набора - например
 зелёные излучатели в ABASE. Разовая примета идёт не в тему, а в покадровую подсказку
 (hints.py).
+
+ДВЕ ЧАСТИ ЧЕРЕЗ « | ». Слева поверхности, справа предметы. В полы идёт только левая часть,
+в объекты - обе. Это нужно там, где террейн смешивает пол и обстановку: в GDX_HOUSE есть и
+плиточные полы (набор GDXOPSFLOORS), и садовая зелень (набор FLORASET). Пока тема была
+единой, на ровный сиреневый пол ложились зелёные и лиловые разводы - модель честно рисовала
+названные кусты. Без разделителя тема идёт и туда, и туда, как раньше.
 """
 
 import os
@@ -43,7 +49,7 @@ TERRAIN_SUBJECTS = {
     "TEC_BASE_TUNNELS": "tech tunnel: grey rock walls, dark steel panels, worn concrete floor, dust",
     "POLAR_SOLID": "polar: white snow, frozen brown dirt, blue ice slabs, dark water",
     "NECROPOLIS": "black cave: dark speckled rock walls, grey rubble floor, stone debris",
-    "GDX_HOUSE": "garden house: tiled floor, green bushes, fruit trees, grass, wooden fence",
+    "GDX_HOUSE": "garden house: tiled floor, painted concrete, short grass | green bushes, fruit trees, wooden fence",
     # --- 11-20 ---
     "WHITEBASE_INFLIL1": "white base: orange rubber floor, white concrete slabs, grey tiles, short grass",
     "WHITE_CASTLE": "white castle: pale marble floor, white stone blocks, green ivy",
@@ -86,7 +92,7 @@ TERRAIN_SUBJECTS = {
     "DESERT": "desert: sand dunes, cracked dry earth, rocks, dry bushes",
     "CULTA": "farmland: ploughed field, crops, grass, dirt track, hedges, fruit trees",
     "INDUSTRIALSLUM": "industrial slum: cracked asphalt, oil-stained concrete, rusty steel, rubble",
-    "CARGO_LINER": "cargo ship deck: painted steel floor, rusty plating, wooden crates, sea water",
+    "CARGO_LINER": "cargo ship deck: painted steel floor, rusty plating, sea water | wooden crates",
     "CRUISE_LINER": "cruise liner deck: wooden planking, painted steel floor, carpet, white bulkheads",
     "ISLANDURBAN": "island town: pale sand, paved street, concrete, palms, sea water",
     "GDX_PRISON": "prison block: grey concrete floor, steel bars, painted walls, drain grates",
@@ -177,13 +183,13 @@ NAME_HINTS = [
     ("CAVE", "cave: rock walls, rubble floor, damp stone, gravel"),
     # --- корабли игрока (C_*) и корпоративные (MARSEC) ---
     ("MARSEC", "corporate ship interior: red painted panel walls, dark metal deck plating"),
-    ("UAC_", "industrial base: stained concrete floor, dark steel panels, pipes, grates"),
+    ("UAC_", "industrial base: stained concrete floor, dark steel panels | pipes, grates"),
     ("C_EXT_ROOF", "ship roof plate: smooth painted metal, plain flat surface, panel seams"),
     ("C_EXT_WALL", "ship hull wall: painted metal plating, panel seams, rivets"),
     ("C_EXT", "ship hull: painted metal plating, panel seams, rivets"),
     ("C_INT", "ship interior: grey metal deck plating, bulkheads, consoles"),
     ("C_WALL", "ship bulkhead: painted metal plating, panel seams, rivets"),
-    ("C_BITS", "ship fittings: metal deck plating, consoles, pipes, lockers"),
+    ("C_BITS", "ship fittings: metal deck plating | consoles, pipes, lockers"),
     ("LIGHTNIN", "sleek craft hull: dark painted metal plating, ramp, panel seams"),
     ("AVENGER", "advanced craft hull: alien alloy plating, ramp, panel seams"),
     ("RET_", "retro spaceship interior: grey-blue metal panels, gold trim, consoles"),

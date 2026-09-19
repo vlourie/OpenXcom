@@ -713,16 +713,20 @@ class Painter:
         self.pipe = pipe
         self.prompts = prompts  # {"ground": ..., "object": ...} with {subject} still to fill in
         self.negative = negative
-        self.context = context  # the set's subject / short context, appended to a frame's hint
+        # {"ground": (короткая форма, полная), "object": (то же)}: у полов и объектов тема может
+        # отличаться. В наборе вроде GDXOPSFLOORS одни полы, а тема террейна называет кусты и
+        # деревья - и модель рисует зелень на ровном полу (RAKES.md, R-016)
+        self.context = context
 
     def prompt_for(self, job, frame, look=""):
         hint = job.hints.get(frame, "")
-        subject = ("%s, %s" % (hint, self.context[0])) if hint else self.context[1]
+        kind0 = "ground" if job.ground[frame] and not job.tall.get(frame) else "object"
+        ctx = self.context[kind0]
+        subject = ("%s, %s" % (hint, ctx[0])) if hint else ctx[1]
         if look:
             subject = "%s, %s" % (look, subject)
         # flat ground gets the terrain (top-down) prompt; standing crops are a field of objects
-        kind = "ground" if job.ground[frame] and not job.tall.get(frame) else "object"
-        return self.prompts[kind].replace("{subject}", subject)
+        return self.prompts[kind0].replace("{subject}", subject)
 
     def run(self, args, prompt, init, controls, weights, strength, steps, seed):
         w, h = init.size
@@ -891,7 +895,23 @@ def main(argv=None):
         print("ВНИМАНИЕ: тема набора длинная (~%d токенов с хвостом стиля, предел 77). "
               "CLIP обрежет конец промпта - потеряется 'Xenonauts style'. Сократи тему."
               % _est, file=sys.stderr)
-    context = (subject.split(":")[0], subject)  # short form after a hint, full form without one
+    # Тема может быть написана в двух частях через « | »: слева поверхности (идут и в полы,
+    # и в объекты), справа предметы (только в объекты). Без разделителя обе части совпадают.
+    if "|" in subject:
+        head, _, tail = subject.partition(":")
+        if tail:
+            g, _, o = tail.partition("|")
+            subject_ground = "%s:%s" % (head, g.rstrip().rstrip(","))
+            subject = "%s:%s,%s" % (head, g.rstrip().rstrip(","), o)
+        else:
+            g, _, o = subject.partition("|")
+            subject_ground = g.strip().rstrip(",")
+            subject = "%s, %s" % (subject_ground, o.strip())
+    else:
+        subject_ground = subject
+    # short form after a hint, full form without one - отдельно для полов и для объектов
+    context = {"ground": (subject_ground.split(":")[0], subject_ground),
+               "object": (subject.split(":")[0], subject)}
     unit = set_name in UNIT_SETS
     prompts = {"object": args.prompt or (STYLE_UNIT if unit else STYLE), "ground": args.prompt_ground or STYLE_GROUND}
     if unit:
@@ -902,16 +922,9 @@ def main(argv=None):
         if args.refine == 0.45: args.refine = 0.35
         print("unit set: strength %.2f, tile %.2f, canny %.2f, refine %.2f" % (args.strength, args.tile, args.canny, args.refine))
     print("prompt (objects):", prompts["object"].replace("{subject}", subject))
-    print("prompt (ground): ", prompts["ground"].replace("{subject}", subject))
-    # Пустые кадры в покраску не идут (gen_hd.Job: кадр без единого непрозрачного пикселя
-    # пропускается), и раньше их число нигде не печаталось: распаковщик говорил "155 frames",
-    # генератор - "52 frames", и разница выглядела потерей. Говорим прямо.
-    empty = info["count"] - len(job.cells)
-    ground_total = sum(1 for g in job.ground if g)
-    ground_painted = sum(1 for i in job.cells if job.ground[i])
-    print("%d кадров: %d пустых, красим %d в %d кроп(ах) (полов %d из %d, с подсказкой %d)" % (
-        info["count"], empty, len(job.cells), len(job.crops),
-        ground_painted, ground_total, sum(1 for i in job.cells if i in job.hints)))
+    print("prompt (ground): ", prompts["ground"].replace("{subject}", subject_ground))
+    print("%d frames in %d crops (%d ground, %d with hints)" % (
+        len(job.cells), len(job.crops), sum(1 for i in job.cells if job.ground[i]), sum(1 for i in job.cells if i in job.hints)))
     variants = plan_variants(args, job, set_dir, subject) if args.variants > 0 and args.only != "objects" else None
     if args.dry_run:
         for key in ("init", "tile", "canny"):
