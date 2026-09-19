@@ -180,6 +180,9 @@ void HdUi::loadFonts()
 	if (!_fontSmall.loaded() && FileMap::fileExists("hd/UI/Font.ttf")) _fontSmall.load("hd/UI/Font.ttf");
 	if (!_fontSmall.loaded() && _fontBig.loaded()) _fontSmall.load("hd/UI/FontBig.ttf");
 	if (!_fontBig.loaded() && _fontSmall.loaded()) _fontBig.load("hd/UI/FontSmall.ttf");
+	// signs the main face has no glyph for (mod texts use the heart suit) come from here
+	_fontBig.loadFallback("hd/UI/FontFallback.ttf");
+	_fontSmall.loadFallback("hd/UI/FontFallback.ttf");
 	if (hasFonts())
 	{
 		Log(LOG_INFO) << "HD interface: TrueType fonts loaded (hd/UI)";

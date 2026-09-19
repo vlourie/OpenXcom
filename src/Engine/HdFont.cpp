@@ -19,6 +19,7 @@
 #include "HdFont.h"
 #include <algorithm>
 #include <cmath>
+#include <cstdio>
 #include <cstring>
 #include "FileMap.h"
 #include "Logger.h"
@@ -30,19 +31,41 @@
 namespace OpenXcom
 {
 
-HdFont::HdFont() : _info(new stbtt_fontinfo()), _loaded(false), _capRatio(0.7f)
+namespace
 {
+
+/**
+ * The codepoint the face is asked for. Full-width forms (U+FF01..U+FF5E) fold to their
+ * ASCII twin: mod strings use them for wide digits (X-Piratez does), the classic font draws
+ * them out of FontSmall_jp.png, and no Latin face carries that block - without the fold
+ * every such digit came out as '?'.
+ */
+UCode faceCode(UCode c)
+{
+	if (c >= 0xFF01 && c <= 0xFF5E)
+	{
+		return (UCode)(c - 0xFEE0);
+	}
+	return c;
+}
+
+}
+
+HdFont::HdFont()
+{
+	_face.info = new stbtt_fontinfo();
+	_fallback.info = new stbtt_fontinfo();
 }
 
 HdFont::~HdFont()
 {
-	delete (stbtt_fontinfo*)_info;
+	delete (stbtt_fontinfo*)_face.info;
+	delete (stbtt_fontinfo*)_fallback.info;
 }
 
-bool HdFont::load(const std::string &path)
+bool HdFont::loadFace(Face &face, const std::string &path)
 {
-	_loaded = false;
-	_cache.clear();
+	face.loaded = false;
 	if (!FileMap::fileExists(path))
 	{
 		return false;
@@ -58,13 +81,13 @@ bool HdFont::load(const std::string &path)
 	{
 		return false;
 	}
-	_data.assign((unsigned char*)data, (unsigned char*)data + size);
+	face.data.assign((unsigned char*)data, (unsigned char*)data + size);
 	SDL_free(data);
-	stbtt_fontinfo *info = (stbtt_fontinfo*)_info;
-	if (!stbtt_InitFont(info, _data.data(), stbtt_GetFontOffsetForIndex(_data.data(), 0)))
+	stbtt_fontinfo *info = (stbtt_fontinfo*)face.info;
+	if (!stbtt_InitFont(info, face.data.data(), stbtt_GetFontOffsetForIndex(face.data.data(), 0)))
 	{
 		Log(LOG_ERROR) << "HD interface: " << path << " is not a TrueType font";
-		_data.clear();
+		face.data.clear();
 		return false;
 	}
 	// the cap height: the bounds of H at a known size
@@ -72,37 +95,76 @@ bool HdFont::load(const std::string &path)
 	int x0, y0, x1, y1;
 	stbtt_GetCodepointBitmapBox(info, 'H', scale, scale, &x0, &y0, &x1, &y1);
 	const float cap = (float)(y1 - y0);
-	_capRatio = cap > 1.0f ? cap / 100.0f : 0.7f;
-	_loaded = true;
+	face.capRatio = cap > 1.0f ? cap / 100.0f : 0.7f;
+	face.loaded = true;
 	return true;
+}
+
+bool HdFont::load(const std::string &path)
+{
+	_cache.clear();
+	return loadFace(_face, path);
+}
+
+bool HdFont::loadFallback(const std::string &path)
+{
+	_cache.clear();
+	return loadFace(_fallback, path);
+}
+
+void HdFont::warnMissing(UCode c)
+{
+	if (std::find(_warned.begin(), _warned.end(), c) != _warned.end())
+	{
+		return;
+	}
+	_warned.push_back(c);
+	char code[16];
+	snprintf(code, sizeof(code), "U+%04X", (unsigned)c);
+	Log(LOG_WARNING) << "HD interface: no glyph for " << code << " in either face, drawing '?'";
 }
 
 float HdFont::sizeForCapHeight(float capHeight) const
 {
-	return capHeight / _capRatio;
+	return capHeight / _face.capRatio;
 }
 
 const HdFont::Glyph &HdFont::glyph(UCode c, float px, float condense)
 {
-	Key key = { c, (int)(px * 4 + 0.5f), (int)(condense * 64 + 0.5f), 0 };
+	const UCode fc = faceCode(c);
+	Key key = { fc, (int)(px * 4 + 0.5f), (int)(condense * 64 + 0.5f), 0 };
 	auto it = _cache.find(key);
 	if (it != _cache.end())
 	{
 		return it->second;
 	}
 	Glyph &g = _cache[key];
-	if (!_loaded)
+	if (!_face.loaded)
 	{
 		return g;
 	}
-	stbtt_fontinfo *info = (stbtt_fontinfo*)_info;
-	const float sy = stbtt_ScaleForPixelHeight(info, key.px / 4.0f);
-	const float sx = sy * (key.cond / 64.0f);
-	int gi = stbtt_FindGlyphIndex(info, (int)c);
-	if (gi == 0 && c != ' ')
+	// the main font first; what it has no glyph for goes to the fallback face, and only then to '?'
+	stbtt_fontinfo *info = (stbtt_fontinfo*)_face.info;
+	float sizePx = key.px / 4.0f;
+	int gi = stbtt_FindGlyphIndex(info, (int)fc);
+	if (gi == 0 && fc != ' ')
 	{
-		gi = stbtt_FindGlyphIndex(info, '?');
+		stbtt_fontinfo *fb = (stbtt_fontinfo*)_fallback.info;
+		const int fbGi = _fallback.loaded ? stbtt_FindGlyphIndex(fb, (int)fc) : 0;
+		if (fbGi)
+		{
+			info = fb;
+			gi = fbGi;
+			sizePx *= _face.capRatio / _fallback.capRatio; // capitals of both faces stand equally tall
+		}
+		else
+		{
+			warnMissing(fc);
+			gi = stbtt_FindGlyphIndex(info, '?');
+		}
 	}
+	const float sy = stbtt_ScaleForPixelHeight(info, sizePx);
+	const float sx = sy * (key.cond / 64.0f);
 	int advance = 0, lsb = 0;
 	stbtt_GetGlyphHMetrics(info, gi, &advance, &lsb);
 	g.advance = advance * sx;
@@ -132,7 +194,7 @@ const HdFont::Glyph &HdFont::glyph(UCode c, float px, float condense)
 const HdFont::Glyph &HdFont::outline(UCode c, float px, float condense, int thickness)
 {
 	const int t = std::max(1, thickness);
-	Key key = { c, (int)(px * 4 + 0.5f), (int)(condense * 64 + 0.5f), t };
+	Key key = { faceCode(c), (int)(px * 4 + 0.5f), (int)(condense * 64 + 0.5f), t };
 	auto it = _cache.find(key);
 	if (it != _cache.end())
 	{
@@ -189,13 +251,13 @@ const HdFont::Glyph &HdFont::outline(UCode c, float px, float condense, int thic
 
 float HdFont::kern(UCode a, UCode b, float px, float condense)
 {
-	if (!_loaded)
+	if (!_face.loaded)
 	{
 		return 0.0f;
 	}
-	stbtt_fontinfo *info = (stbtt_fontinfo*)_info;
+	stbtt_fontinfo *info = (stbtt_fontinfo*)_face.info;
 	const float sy = stbtt_ScaleForPixelHeight(info, (int)(px * 4 + 0.5f) / 4.0f);
-	return stbtt_GetCodepointKernAdvance(info, (int)a, (int)b) * sy * condense;
+	return stbtt_GetCodepointKernAdvance(info, (int)faceCode(a), (int)faceCode(b)) * sy * condense;
 }
 
 float HdFont::measure(const UString &s, float px, float condense)

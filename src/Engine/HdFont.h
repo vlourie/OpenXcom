@@ -47,7 +47,9 @@ public:
 	~HdFont();
 	/// Loads a TTF/OTF from the mods' virtual file system; false when missing or not a font.
 	bool load(const std::string &path);
-	bool loaded() const { return _loaded; }
+	/// Loads the face that draws the code points the main one has no glyph for; same rules as load().
+	bool loadFallback(const std::string &path);
+	bool loaded() const { return _face.loaded; }
 	/// The pixel size (ascent + descent) at which capital letters are `capHeight` pixels tall.
 	float sizeForCapHeight(float capHeight) const;
 	/// The glyph of a code point at a pixel size, horizontally condensed by `condense` (1 = as designed).
@@ -75,11 +77,21 @@ private:
 	{
 		size_t operator()(const Key &k) const { return (size_t)k.c * 0x9E3779B9u ^ ((size_t)k.px << 16) ^ ((size_t)k.cond << 28) ^ ((size_t)k.t * 0x85EBCA6Bu); }
 	};
-	std::vector<unsigned char> _data;
-	void *_info;               ///< stbtt_fontinfo
-	bool _loaded;
-	float _capRatio;           ///< cap height / pixel size
+	/// One loaded face: the bytes stb reads from, and how tall its capitals stand.
+	struct Face
+	{
+		std::vector<unsigned char> data;
+		void *info = nullptr;      ///< stbtt_fontinfo
+		bool loaded = false;
+		float capRatio = 0.7f;     ///< cap height / pixel size
+	};
+	static bool loadFace(Face &face, const std::string &path);
+	/// Says once in the log that a code point has no glyph anywhere, so a lost sign is not found by eye.
+	void warnMissing(UCode c);
+	Face _face;                ///< the main font
+	Face _fallback;            ///< what draws the code points the main font is missing
 	std::unordered_map<Key, Glyph, KeyHash> _cache;
+	std::vector<UCode> _warned;
 };
 
 }
