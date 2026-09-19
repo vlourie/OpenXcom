@@ -3786,7 +3786,8 @@ void GeoscapeState::determineAlienMissions(bool isNewMonth, const RuleEvent* p_e
 				disabledRngArcs = tmp; // copy for us to modify
 				for (auto& rngArc : tmp.getNames())
 				{
-					auto* research = mod->getResearch(rngArc, true);
+					// HD: имя дуги может оказаться пустышкой - тогда темы в _research нет
+					auto* research = mod->getResearchOrPlaceholder(rngArc);
 					if (save->isResearched(research))
 					{
 						++arcsEnabled;
@@ -3798,7 +3799,7 @@ void GeoscapeState::determineAlienMissions(bool isNewMonth, const RuleEvent* p_e
 			bool canAddOneMore = arcCommand->getMaxArcs() == -1 || arcCommand->getMaxArcs() > arcsEnabled;
 			if (canAddOneMore && !disabledSeqArcs.empty())
 			{
-				auto* ruleResearchSeq = mod->getResearch(disabledSeqArcs.front(), true); // take first
+				auto* ruleResearchSeq = mod->getResearchOrPlaceholder(disabledSeqArcs.front()); // take first
 				save->addFinishedResearch(ruleResearchSeq, mod, hq, true);
 				++arcsEnabled;
 				if (ruleResearchSeq)
@@ -3817,7 +3818,7 @@ void GeoscapeState::determineAlienMissions(bool isNewMonth, const RuleEvent* p_e
 			canAddOneMore = arcCommand->getMaxArcs() == -1 || arcCommand->getMaxArcs() > arcsEnabled;
 			if (canAddOneMore && !disabledRngArcs.empty())
 			{
-				auto* ruleResearchRng = mod->getResearch(disabledRngArcs.choose(), true); // take random
+				auto* ruleResearchRng = mod->getResearchOrPlaceholder(disabledRngArcs.choose()); // take random
 				save->addFinishedResearch(ruleResearchRng, mod, hq, true);
 				++arcsEnabled; // for good measure :)
 				if (ruleResearchRng)

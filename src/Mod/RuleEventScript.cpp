@@ -108,7 +108,8 @@ void RuleEventScript::afterLoad(const Mod* mod)
 	// Link manually
 	for (auto& entry : _researchTriggerNames)
 	{
-		auto* research = mod->getResearch(entry.first, true); // crash if doesn't exist
+		// HD: битая ссылка не роняет загрузку, а получает невыполнимую пустышку
+		auto* research = mod->getResearchOrPlaceholder(entry.first);
 		if (research)
 		{
 			_researchTriggers[research] = entry.second;

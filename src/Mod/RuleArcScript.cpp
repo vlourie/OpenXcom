@@ -93,13 +93,14 @@ void RuleArcScript::afterLoad(const Mod* mod)
 	// No link, only check
 	for (auto& name : _randomArcs.getNames())
 	{
-		auto* research = mod->getResearch(name, true); // crash if doesn't exist
+		mod->getResearchOrPlaceholder(name);   // HD: только назвать дыру в логе, не падать
 	}
 
 	// Link manually
 	for (auto& entry : _researchTriggerNames)
 	{
-		auto* research = mod->getResearch(entry.first, true); // crash if doesn't exist
+		// HD: битая ссылка не роняет загрузку, а получает невыполнимую пустышку
+		auto* research = mod->getResearchOrPlaceholder(entry.first);
 		if (research)
 		{
 			_researchTriggers[research] = entry.second;

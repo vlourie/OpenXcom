@@ -744,6 +744,10 @@ Mod::~Mod()
 	{
 		delete pair.second;
 	}
+	for (auto& pair : _missingResearch)   // HD: пустышки для тем, которых мод не объявил
+	{
+		delete pair.second;
+	}
 	for (auto& pair : _manufacture)
 	{
 		delete pair.second;
@@ -4980,6 +4984,38 @@ const std::vector<std::string> &Mod::getInvsList() const
 RuleResearch *Mod::getResearch(const std::string &id, bool error) const
 {
 	return getRule(id, "Research", _research, error);
+}
+
+/**
+ * Gets the research, or a placeholder that can never be discovered.
+ *
+ * HD: с OXCE 8.7.1 ссылка на несуществующую тему исследования - это исключение при
+ * загрузке рулсетов, и X-Piratez с тремя такими опечатками просто не запускается.
+ * Выбросить ссылку нельзя: условие исчезнет и запертое станет доступным, то есть
+ * поменяется механика. Поэтому заводим тему с тем же именем, которой нет в _research:
+ * в списки исследований она не попадает, открыть её невозможно, и условие остаётся
+ * невыполнимым - ровно как в 8.7.0. Каждая дыра один раз называется в логе.
+ */
+const RuleResearch *Mod::getResearchOrPlaceholder(const std::string &id) const
+{
+	if (isEmptyRuleName(id))
+	{
+		return nullptr;
+	}
+	if (auto *rule = getResearch(id, false))
+	{
+		return rule;
+	}
+	auto it = _missingResearch.find(id);
+	if (it != _missingResearch.end())
+	{
+		return it->second;
+	}
+	Log(LOG_WARNING) << "Mod refers to research '" << id << "', which no mod declares."
+		<< " Treating it as never discovered (OXCE 8.7.0 behaviour).";
+	auto *placeholder = new RuleResearch(id, 0);
+	_missingResearch[id] = placeholder;
+	return placeholder;
 }
 
 /**

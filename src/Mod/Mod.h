@@ -197,6 +197,10 @@ private:
 	std::map<std::string, RuleInventory*> _invs;
 	bool _inventoryOverlapsPaperdoll;
 	std::map<std::string, RuleResearch *> _research;
+	// HD: темы, на которые мод ссылается, но не объявляет. С 8.7.1 апстрим падает на
+	// такой ссылке при загрузке; мы держим для каждой пустышку, которую нельзя открыть,
+	// - поведение остаётся прежним (условие не выполняется никогда), а игра запускается
+	mutable std::map<std::string, RuleResearch *> _missingResearch;
 	std::map<std::string, RuleManufacture *> _manufacture;
 	std::map<std::string, RuleManufactureShortcut *> _manufactureShortcut;
 	std::map<std::string, RuleSoldierBonus *> _soldierBonus;
@@ -625,7 +629,7 @@ public:
 		}
 		else if constexpr (std::is_same_v<T, RuleResearch>)
 		{
-			rule = getResearch(name, true);
+			rule = getResearchOrPlaceholder(name);
 		}
 		else if constexpr (std::is_same_v<T, Unit>)
 		{
@@ -1059,6 +1063,8 @@ public:
 
 	/// Gets the ruleset for a specific research project.
 	RuleResearch *getResearch(const std::string &id, bool error = false) const;
+	/// Gets the research, or an unobtainable placeholder if the mod never declared it.
+	const RuleResearch *getResearchOrPlaceholder(const std::string &id) const;
 	/// Gets the ruleset for a specific research project.
 	std::vector<const RuleResearch*> getResearch(const std::vector<std::string> &id) const;
 	/// Gets the ruleset for a specific research project.
