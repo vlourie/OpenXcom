@@ -640,10 +640,16 @@ void Canvas32::blitScripted(ScriptWorkerBlit &work, const Surface *src, int x, i
 							continue;
 						}
 						const SDL_Color &ca = _colors[a], &cb = _colors[b];
-						const float fr = (cb.r + 2.0f) / (ca.r + 2.0f), fg = (cb.g + 2.0f) / (ca.g + 2.0f), fb = (cb.b + 2.0f) / (ca.b + 2.0f);
-						const int r = std::min(255, (int)(((p >> 16) & 0xFF) * fr + 0.5f));
-						const int g = std::min(255, (int)(((p >> 8) & 0xFF) * fg + 0.5f));
-						const int bl = std::min(255, (int)((p & 0xFF) * fb + 0.5f));
+						// the new color keeps the brightness the HD pixel had on the old ramp. A
+						// per-channel ratio would look the same on paper, but the HD pixel is only
+						// close to the palette entry, not equal to it, and where the old color has
+						// a near-empty channel the ratio turns that gap into a hue (R-030)
+						const float la = 0.299f * ca.r + 0.587f * ca.g + 0.114f * ca.b;
+						const float lp = 0.299f * ((p >> 16) & 0xFF) + 0.587f * ((p >> 8) & 0xFF) + 0.114f * (p & 0xFF);
+						const float f = (lp + 2.0f) / (la + 2.0f);
+						const int r = std::min(255, (int)(cb.r * f + 0.5f));
+						const int g = std::min(255, (int)(cb.g * f + 0.5f));
+						const int bl = std::min(255, (int)(cb.b * f + 0.5f));
 						to[px] = (p & 0xFF000000u) | ((Uint32)r << 16) | ((Uint32)g << 8) | (Uint32)bl;
 					}
 				}
