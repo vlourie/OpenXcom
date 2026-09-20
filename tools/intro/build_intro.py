@@ -28,6 +28,11 @@ import sys
 
 ENC = "utf-8-sig"
 BASE_W, BASE_H = 320, 200
+# Приставка имён. НЕ "intro": у X-Piratez свои картинки вступления называются
+# Intro_06_CPAL и Intro_10, а HD-слой привязывает снимок к картинке ПО ИМЕНИ
+# (Mod.cpp, карта names). Совпали имена - и на шестом кадре показывалась чужая
+# картинка вместо нашей фотографии
+STEM = "voiceintro"
 PHOTO_COLORS = 239          # цвета картинки живут в индексах 1..239
 TEXT_BASE = 240             # подпись: движок рисует буквы в TEXT_BASE+1 .. +5
 TEXT_RAMP = [(255, 255, 255), (214, 214, 214), (160, 160, 160), (96, 96, 96), (16, 16, 16)]
@@ -238,7 +243,7 @@ def main():
         os.makedirs(d, exist_ok=True)
 
     for s in plan:
-        stem = "intro_%02d" % s["n"]
+        stem = "%s_%02d" % (STEM, s["n"])
         make_slide(s["photo"], os.path.join(res, stem + ".png"),
                    os.path.join(hdui, stem + ".png"), args.scale)
 
@@ -255,7 +260,7 @@ def main():
     lines = ["# Сделано tools/intro/build_intro.py - руками не править", "",
              "extraSprites:"]
     for s in plan:
-        stem = "intro_%02d" % s["n"]
+        stem = "%s_%02d" % (STEM, s["n"])
         # _CPAL в имени: без него движок кладёт на картинку палитру состояния
         # (Mod::loadExtraSprite), и HD-снимок сверяется с чужими цветами
         lines += ["  - type: %s_CPAL" % stem.upper(),
@@ -273,7 +278,7 @@ def main():
               "      musicId: INTRO_VOICE",
               "      slides:"]
     for s in plan:
-        lines.append("        - imagePath: Resources/Intro/intro_%02d.png" % s["n"])
+        lines.append("        - imagePath: Resources/Intro/%s_%02d.png" % (STEM, s["n"]))
         lines.append("          transitionSeconds: %d" % s["hold"])
         if s["caption"] and not args.no_captions:
             lines += ["          caption: %s" % s["caption"],
