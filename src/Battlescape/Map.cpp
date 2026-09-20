@@ -37,6 +37,7 @@
 #include "../Engine/HdTest.h"
 #include "../Engine/HdBlit.h"
 #include "../Engine/HdCanvas.h"
+#include "../Engine/HdUi.h"
 #include <chrono>
 #include <cmath>
 #include "../Engine/ShaderDraw.h"
@@ -111,7 +112,7 @@ namespace OpenXcom
  */
 Map::Map(Game *game, int width, int height, int x, int y, int visibleMapHeight) : InteractiveSurface(width * hdScale(game), height * hdScale(game), x, y),
 	_game(game), _isTFTD(false), _arrow(0), _anyIndicator(false), _isAltPressed(false), _isCtrlPressed(false),
-	_k(hdScale(game)), _messageScratch(0), _canvas(0), _hdGroundVariants(Options::oxceHdGroundVariants),
+	_k(hdScale(game)), _messageScratch(0), _messageOnCanvas(false), _canvas(0), _hdGroundVariants(Options::oxceHdGroundVariants),
 	_selectorX(0), _selectorY(0), _mouseX(0), _mouseY(0), _cursorType(CT_NORMAL), _cursorSize(1), _animFrame(0),
 	_projectile(0), _followProjectile(true), _projectileInFOV(false), _explosionInFOV(false), _launch(false), _visibleMapHeight(visibleMapHeight * hdScale(game)),
 	_unitDying(false), _smoothingEngaged(false), _flashScreen(false), _bgColor(15), _projectileSet(0), _showObstacles(false), _showInfoOnCursor(false)
@@ -524,10 +525,12 @@ void Map::draw()
 		|| (_explosionInFOV && (!ignoreAllButAlliesHits || ((unitVisible && !unitEnemy) || hitExplosion))))
 	{
 		drawTerrain(_canvas);
+		_messageOnCanvas = false;
 	}
 	else
 	{
 		blitMessage();
+		_messageOnCanvas = true;
 	}
 	// the true-color canvas records the frame and draws it on all cores now
 	_canvas->setLight(nullptr);
@@ -774,6 +777,14 @@ void Map::blit(SDL_Surface *surface)
 		if (Canvas32 *canvas32 = dynamic_cast<Canvas32*>(_canvas))
 		{
 			canvas32->copyTo(world, getX() * k, getY() * k);
+		}
+		// the message's two lines are not in the canvas when the HD interface can draw them
+		// itself: the canvas reaches the screen scaled, and a smeared line under a sharp one
+		// reads worse than either alone. They go on top here, every frame, because the canvas
+		// is only redrawn on demand while the HD layer is built anew for each frame
+		if (_messageOnCanvas && _message->hdText() && HdUi::active())
+		{
+			_message->hdDrawAt(getX(), getY());
 		}
 		else
 		{

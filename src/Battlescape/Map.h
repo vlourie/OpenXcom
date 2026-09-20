@@ -90,6 +90,8 @@ private:
 	int _k;
 	/// Base-resolution scratch surface used to draw the hidden movement message before scaling it.
 	Surface *_messageScratch;
+	/// true while the canvas holds the hidden movement message and not the terrain
+	bool _messageOnCanvas;
 	/// The canvas all battlescape drawing goes to (classic 8-bit surface or the true-color world).
 	HdCanvas *_canvas;
 	/// HD render: floors with pack variants are drawn by the ground pattern (option oxceHdGroundVariants).

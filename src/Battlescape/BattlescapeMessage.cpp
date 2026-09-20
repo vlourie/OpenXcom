@@ -21,6 +21,7 @@
 #include "../Interface/Text.h"
 #include "../Interface/ProgressBar.h"
 #include "../Engine/Options.h"
+#include "../Engine/HdUi.h"
 #include "../Engine/Palette.h"
 #include "../Engine/Options.h"
 
@@ -165,14 +166,51 @@ void BattlescapeMessage::setPalette(const SDL_Color *colors, int firstcolor, int
 void BattlescapeMessage::blit(SDL_Surface *surface)
 {
 	Surface::blit(surface);
+	const bool hd = hdText();
 	if (!Options::QOL::hideEnemyTurnBackground)
 	{
 		_window->blit(surface);
-		_text->blit(surface);
+		if (!hd)
+		{
+			_text->blit(surface);
+		}
 	}
-	
-	_txtThinking->blit(surface);
+
+	if (!hd)
+	{
+		_txtThinking->blit(surface);
+	}
 	_progressBar->blit(surface);
+}
+
+/**
+ * The message goes into a surface of its own (Map::blitMessage) and reaches the screen already
+ * scaled, so the HD interface never sees these two lines as widgets of its own. They are kept out
+ * of that surface when it can draw them itself, and drawn over the picture afterwards - baked in
+ * otherwise, or the classic frame would lose them.
+ */
+bool BattlescapeMessage::hdText() const
+{
+	return HdUi::skin() && HdUi::instance().hasFonts();
+}
+
+/**
+ * Draws the two lines with the HD fonts at the place the classic layout put them.
+ * @param ox Left edge of the surface the message was drawn into, in base pixels.
+ * @param oy Top edge of the same.
+ */
+void BattlescapeMessage::hdDrawAt(int ox, int oy)
+{
+	if (!Options::QOL::hideEnemyTurnBackground)
+	{
+		_text->draw();
+		_text->hdDrawAt(ox + _text->getX(), oy + _text->getY());
+	}
+	if (_txtThinking->getVisible())
+	{
+		_txtThinking->draw();
+		_txtThinking->hdDrawAt(ox + _txtThinking->getX(), oy + _txtThinking->getY());
+	}
 }
 
 /*
