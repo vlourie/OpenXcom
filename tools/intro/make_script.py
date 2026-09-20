@@ -77,8 +77,22 @@ def parse_block(block):
     slides = []
     for chunk in block.split("- imagePath:")[1:]:
         cap = re.search(r"caption:\s*(STR_\S+)", chunk)
-        slides.append({"image": chunk.splitlines()[0].strip(),
-                       "caption": cap.group(1) if cap else ""})
+        sl = {"image": chunk.splitlines()[0].strip(),
+              "caption": cap.group(1) if cap else ""}
+        # Рамка подписи выверена под саму картинку: где-то место под текст оставлено
+        # в углу, где-то текст на всю ширину. Без переноса этих чисел длинная реплика
+        # не влезает в нашу рамку и обрезается
+        pair = re.search(r"captionSize:\s*\[\s*(\d+)\s*,\s*(\d+)\s*\]", chunk)
+        if pair:
+            sl["size"] = [int(pair.group(1)), int(pair.group(2))]
+        pair = re.search(r"captionPos:\s*\[\s*(-?\d+)\s*,\s*(-?\d+)\s*\]", chunk)
+        if pair:
+            sl["pos"] = [int(pair.group(1)), int(pair.group(2))]
+        for key, name in (("align", "captionAlign"), ("valign", "captionVerticalAlign")):
+            one = re.search(name + r":\s*(\d+)", chunk)
+            if one:
+                sl[key] = int(one.group(1))
+        slides.append(sl)
     return slides, int(header.group(1)) if header else 30, music.group(1) if music else ""
 
 
@@ -133,7 +147,11 @@ def main():
         total += secs
         lines.append("| %d | `%s` | %d | %s |"
                      % (i, os.path.basename(sl["image"]), secs, text or "*(без текста)*"))
-        scenes.append({"n": i, "image": sl["image"], "caption": sl["caption"], "text": text})
+        sc = {"n": i, "image": sl["image"], "caption": sl["caption"], "text": text}
+        for key in ("pos", "size", "align", "valign"):
+            if key in sl:
+                sc[key] = sl[key]
+        scenes.append(sc)
     lines += ["", "Итого на озвучку примерно **%d:%02d**." % (total // 60, total % 60), "",
               "## Как этим пользоваться", "",
               "1. На каждую строку — своя картинка: `photo/NN.png`, номер как в таблице.",

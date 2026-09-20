@@ -192,8 +192,12 @@ def main():
         if not photo:
             missing.append("photo/%d.*" % i)
         secs = duration(ffprobe, voice) if voice else 0.0
-        plan.append({"n": i, "photo": photo, "voice": voice, "secs": secs,
-                     "caption": sc.get("caption", ""), "text": sc.get("text", "")})
+        item = {"n": i, "photo": photo, "voice": voice, "secs": secs,
+                "caption": sc.get("caption", ""), "text": sc.get("text", "")}
+        for key in ("pos", "size", "align", "valign"):
+            if key in sc:
+                item[key] = sc[key]
+        plan.append(item)
     if missing:
         raise SystemExit("нет файлов: " + ", ".join(missing))
 
@@ -281,12 +285,18 @@ def main():
         lines.append("        - imagePath: Resources/Intro/%s_%02d.png" % (STEM, s["n"]))
         lines.append("          transitionSeconds: %d" % s["hold"])
         if s["caption"] and not args.no_captions:
+            # Рамка - та же, что в оригинальной катсцене: реплики длинные, и рамки
+            # под них выверены под сами картинки, где-то с местом, оставленным под
+            # текст. Своя рамка 300x46 обрезала половину текста. Цвет остаётся НАШ:
+            # индекс из чужой палитры в нашей означает другой цвет
+            pos = s.get("pos") or [10, 148]
+            size = s.get("size") or [300, 46]
             lines += ["          caption: %s" % s["caption"],
-                      "          captionPos: [10, 148]",
-                      "          captionSize: [300, 46]",
+                      "          captionPos: [%d, %d]" % (pos[0], pos[1]),
+                      "          captionSize: [%d, %d]" % (size[0], size[1]),
                       "          captionColor: %d" % TEXT_BASE,
-                      "          captionAlign: 1",       # 0 слева, 1 по центру, 2 справа
-                      "          captionVerticalAlign: 2"]  # 0 верх, 1 середина, 2 низ
+                      "          captionAlign: %d" % s.get("align", 1),
+                      "          captionVerticalAlign: %d" % s.get("valign", 0)]
     rul = os.path.join(rules, "intro.rul")
     io.open(rul, "w", encoding="utf-8", newline="\n").write("\n".join(lines) + "\n")
     print("рулсет: ", rul)
