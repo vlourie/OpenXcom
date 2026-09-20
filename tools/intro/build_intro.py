@@ -139,10 +139,33 @@ def build_track(ffmpeg, parts, total, music, music_db, out):
     subprocess.run(cmd, check=True)
 
 
+def write_metadata(mod, mod_id, name):
+    """Своя metadata.yml, если её нет: без неё игра папку модом не считает.
+
+    Чужую не трогаем - в HD-моде она своя и сложнее. Спецификацию не пишем:
+    этот файл читает игра, а не PowerShell (R-001)."""
+    path = os.path.join(mod, "metadata.yml")
+    if os.path.exists(path):
+        return
+    mod_id = mod_id or os.path.basename(mod.rstrip("/" + os.sep))
+    os.makedirs(mod, exist_ok=True)
+    body = ["# Сделано tools/intro/build_intro.py",
+            'name: "%s"' % (name or mod_id),
+            "version: 0.1",
+            'author: "Vitali"',
+            'description: "Вступление: свои кадры под свой голос. Заменяет катсцену intro."',
+            'id: "%s"' % mod_id,
+            'master: "*"']
+    io.open(path, "w", encoding="utf-8", newline="\n").write("\n".join(body) + "\n")
+    print("мод:     ", path)
+
+
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("--in", dest="src", required=True, help="папка с photo/ и voice/")
     p.add_argument("--mod", default="user/mods/hd", help="куда класть - наш HD-мод")
+    p.add_argument("--id", default="", help="id самостоятельного мода (по умолчанию имя папки)")
+    p.add_argument("--name", default="", help="как мод называется в списке модов")
     p.add_argument("--scenes", default="tools/intro/scenes.json", help="сцены от make_script.py")
     p.add_argument("--scale", type=int, default=4, help="во сколько раз HD-кадр больше базы")
     p.add_argument("--pause", type=float, default=1.2, help="тишина после голоса, секунд")
@@ -178,6 +201,7 @@ def main():
         return
 
     mod = os.path.abspath(args.mod)
+    write_metadata(mod, args.id, args.name)
     res = os.path.join(mod, "Resources", "Intro")
     hdui = os.path.join(mod, "hd", "UI")
     sound = os.path.join(mod, "SOUND")
