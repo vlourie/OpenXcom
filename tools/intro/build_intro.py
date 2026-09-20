@@ -65,13 +65,22 @@ def duration(ffprobe, path):
     return float(out) if out else 0.0
 
 
-def find_one(folder, stem):
-    """Файл сцены по номеру, расширение любое."""
+def find_one(folder, number):
+    """Файл сцены по номеру, расширение любое.
+
+    Номер сверяем ЧИСЛОМ, а не строкой: 1.png, 01.png и "1 - причал.png" -
+    это одна и та же сцена. Сравнение строк ловило только 10..16 и молча
+    объявляло пропавшими первые девять."""
     if not os.path.isdir(folder):
         return None
     for name in sorted(os.listdir(folder)):
-        base = name.rsplit(".", 1)[0]
-        if base == stem:
+        base = name.rsplit(".", 1)[0].strip()
+        digits = ""
+        for ch in base:
+            if not ch.isdigit():
+                break
+            digits += ch
+        if digits and int(digits) == number:
             return os.path.join(folder, name)
     return None
 
@@ -147,11 +156,10 @@ def main():
 
     plan, missing = [], []
     for i, sc in enumerate(scenes, 1):
-        stem = "%02d" % i
-        photo = find_one(os.path.join(args.src, "photo"), stem)
-        voice = find_one(os.path.join(args.src, "voice"), stem)
+        photo = find_one(os.path.join(args.src, "photo"), i)
+        voice = find_one(os.path.join(args.src, "voice"), i)
         if not photo:
-            missing.append("photo/%s.*" % stem)
+            missing.append("photo/%d.*" % i)
         secs = duration(ffprobe, voice) if voice else 0.0
         plan.append({"n": i, "photo": photo, "voice": voice, "secs": secs,
                      "caption": sc.get("caption", ""), "text": sc.get("text", "")})
