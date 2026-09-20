@@ -708,7 +708,7 @@ void SoldierInfoState::btnNextClick(Action *)
 }
 
 /**
- * Cycles the stat bar scale between x160 (default), x800 and x2000,
+ * Cycles the stat bar scale between x170 (default), x800 and x2000,
  * then re-applies it to every bar. Triggered by right-clicking the Armor button.
  * @param action Pointer to an action.
  */
@@ -723,11 +723,15 @@ void SoldierInfoState::btnBarScaleClick(Action *)
  * based on the currently selected scale mode. The bars themselves are
  * 170px wide, so scale = 170 / maxValueForCurrentMode.
  * Note: the "0/20/40.../160" axis numbers are part of the background
- * graphic (BACK06.SCR) and are not redrawn by this function.
+ * graphic (BACK06.SCR) and are not redrawn by this function. That axis is
+ * drawn at one pixel per point - the "20" sits 20 pixels right of the "0" and
+ * the grid lines stand every ten - so the default mode has to be 170, the full
+ * width of the bar. With 160 every bar landed up to a whole grid cell right of
+ * the number it was meant to reach.
  */
 void SoldierInfoState::applyBarScale()
 {
-	static const double maxValues[3] = { 160.0, 800.0, 2000.0 };
+	static const double maxValues[3] = { 170.0, 800.0, 2000.0 };
 	double scale = 170.0 / maxValues[_barScaleMode];
 
 	_barTimeUnits->setScale(scale);
