@@ -216,6 +216,8 @@ def turn_geometry(text, battle, arm):
         dist = sorted(min(math.hypot(a[1] - p[1], a[2] - p[2]) for p in pl) for a in ai)
         cx = sum(a[1] for a in ai) / len(ai)
         cy = sum(a[2] for a in ai) / len(ai)
+        px = sum(p[1] for p in pl) / len(pl)
+        py = sum(p[2] for p in pl) / len(pl)
         spread = sum(math.hypot(a[1] - cx, a[2] - cy) for a in ai) / len(ai)
         out.append({"battle": battle, "arm": arm, "turn": turn,
                     "nAI": len(ai), "nPL": len(pl),
@@ -223,7 +225,50 @@ def turn_geometry(text, battle, arm):
                     "dMed": round(dist[len(dist) // 2], 1),
                     "dMax": round(dist[-1], 1),
                     "spread": round(spread, 1),
+                    "plSpread": round(sum(math.hypot(p[1] - px, p[2] - py)
+                                          for p in pl) / len(pl), 1),
                     "contact": sum(1 for a in ai if a[4] > 0)})
+    return out
+
+
+def death_events(text, battle, arm):
+    """Кто выбыл между слепками и на чьём ходу это случилось.
+
+    [AISTATE] пишется на конце хода КАЖДОЙ стороны и пропускает выбывших
+    (isOut - убит или без сознания). Значит юнит, бывший в слепке k и
+    пропавший в слепке k+1, выбыл на ходу той стороны, чей слепок k+1.
+    Это прямой аналог графы дневника «на чьём ходу»: выбывший на ходу ИИ -
+    это огонь по движению, то есть та самая стена отстрела.
+
+    Расстояние: от последней известной клетки выбывшего до ближайшего живого
+    врага в слепке ПОСЛЕ. Для выбывших на ходу игрока это честно - игрок за
+    свой ход дошёл и выстрелил, слепок показывает откуда. Для выбывших на
+    своём же ходу клетка гибели неизвестна: там считаем только долю, а
+    расстояние помечаем -1.
+    """
+    snaps, order = {}, []
+    for m in STATE.finditer(text):
+        turn, side, unit, fac, x, y, z, _tu, hp, _en, vis = (int(g) for g in m.groups())
+        key = (turn, side)
+        if key not in snaps:
+            snaps[key] = {}
+            order.append(key)
+        snaps[key][unit] = (fac, x, y, z, hp, vis)
+    out = []
+    for prev, cur in zip(order, order[1:]):
+        before_s, after_s = snaps[prev], snaps[cur]
+        side = cur[1]
+        foes = {FACTION_PLAYER: [u for u in after_s.values() if u[0] == FACTION_HOSTILE],
+                FACTION_HOSTILE: [u for u in after_s.values() if u[0] == FACTION_PLAYER]}
+        for unit, u in before_s.items():
+            if unit in after_s:
+                continue
+            near = foes.get(u[0], [])
+            dist = -1.0
+            if near and side != u[0]:
+                dist = round(min(math.hypot(u[1] - p[1], u[2] - p[2]) for p in near), 1)
+            out.append({"battle": battle, "arm": arm, "turn": cur[0],
+                        "onSide": side, "fac": u[0], "dist": dist})
     return out
 
 
@@ -241,10 +286,10 @@ def one_battle(idx, args, arms, user):
     m = BATTLE.search(text)
     if killed or not m:
         say("  бой %d: розыгрыш не удался" % idx)
-        return []
+        return [], [], []
     setup = dict(KV.findall(m.group(1)))
 
-    rows, states = [], []
+    rows, states, deaths = [], [], []
     for name, want in arms:
         extra = (["-aiBenchTurns", str(args.turns), "-aiBenchSave", "",
                   "-aiBenchLoad", sav] + opts_cmdline(want))
@@ -269,6 +314,8 @@ def one_battle(idx, args, arms, user):
             row["outcome"] = "done"
             if args.states:
                 states += turn_geometry(text, idx, name)
+            if args.deaths:
+                deaths += death_events(text, idx, name)
         rows.append(row)
 
     path = os.path.join(user, args.master or "xcom1", sav)
@@ -279,7 +326,7 @@ def one_battle(idx, args, arms, user):
         ", ".join("%s ходов=%s потери=%s/%s" % (r["arm"], r.get("turns", "?"),
                   r.get("xcomDead", "?"), r.get("alienDead", "?")) for r in done)
         or "не доигран"))
-    return rows, states
+    return rows, states, deaths
 
 
 def mean_ci(values):
@@ -376,6 +423,8 @@ def main():
                         "в Пиратках случайный корабль часто везёт одного")
     p.add_argument("--states", default="",
                    help="куда сложить геометрию по ходам: как ИИ подходил и как рассыпался")
+    p.add_argument("--deaths", default="",
+                   help="куда сложить выбытия: на чьём ходу и с какого расстояния")
     args = p.parse_args()
 
     arms = []
@@ -401,18 +450,20 @@ def main():
     if not args.master:
         say("  --master не задан: что реально загрузилось, будет видно в колонке master")
     t0 = time.time()
-    rows, states = [], []
+    rows, states, deaths = [], [], []
     lock = threading.Lock()
 
     def work(k):
-        out, geo = [], []
+        out, geo, dead = [], [], []
         for idx in range(k, args.battles, jobs):
-            r, g = one_battle(idx, args, arms, users[k])
+            r, g, d = one_battle(idx, args, arms, users[k])
             out += r
             geo += g
+            dead += d
         with lock:
             rows.extend(out)
             states.extend(geo)
+            deaths.extend(dead)
 
     with ThreadPoolExecutor(max_workers=jobs) as ex:
         list(ex.map(work, range(jobs)))
@@ -429,7 +480,8 @@ def main():
             w.writerow(r)
 
     if args.states:
-        scols = ["battle", "arm", "turn", "nAI", "nPL", "dMin", "dMed", "dMax", "spread", "contact"]
+        scols = ["battle", "arm", "turn", "nAI", "nPL", "dMin", "dMed", "dMax",
+                 "spread", "plSpread", "contact"]
         os.makedirs(os.path.dirname(os.path.abspath(args.states)), exist_ok=True)
         with open(args.states, "w", encoding=ENC, newline="") as f:
             w = csv.DictWriter(f, fieldnames=scols)
@@ -437,6 +489,16 @@ def main():
             for r in sorted(states, key=lambda r: (r["battle"], r["arm"], r["turn"])):
                 w.writerow(r)
         say("геометрия по ходам: %s (%d строк)" % (args.states, len(states)))
+
+    if args.deaths:
+        dcols = ["battle", "arm", "turn", "onSide", "fac", "dist"]
+        os.makedirs(os.path.dirname(os.path.abspath(args.deaths)), exist_ok=True)
+        with open(args.deaths, "w", encoding=ENC, newline="") as f:
+            w = csv.DictWriter(f, fieldnames=dcols)
+            w.writeheader()
+            for r in sorted(deaths, key=lambda r: (r["battle"], r["arm"], r["turn"])):
+                w.writerow(r)
+        say("выбытия: %s (%d строк)" % (args.deaths, len(deaths)))
 
     summarize(rows, arms)
     say("")
