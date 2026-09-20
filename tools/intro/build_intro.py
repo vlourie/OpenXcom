@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """Вступление из твоих картинок и твоего голоса - без единой правки движка.
 
@@ -167,6 +167,21 @@ def write_metadata(mod, mod_id, name):
     print("мод:     ", path)
 
 
+def write_readme(mod):
+    """Инструкция по установке рядом с модом: без неё мод - папка без объяснений.
+
+    Образец лежит в репозитории и переписывается каждую сборку: править
+    надо его, а не копию в моде. Спецификация нужна: этот файл читает
+    человек блокнотом и PowerShell, а не игра (R-001)."""
+    src = os.path.join(os.path.dirname(os.path.abspath(__file__)), "УСТАНОВКА.txt")
+    if not os.path.exists(src):
+        return
+    dst = os.path.join(mod, "УСТАНОВКА.txt")
+    text = io.open(src, encoding=ENC).read()
+    io.open(dst, "w", encoding=ENC, newline="\r\n").write(text)
+    print("инструкция:", dst)
+
+
 def main():
     p = argparse.ArgumentParser()
     p.add_argument("--in", dest="src", required=True, help="папка с photo/ и voice/")
@@ -239,6 +254,7 @@ def main():
 
     mod = os.path.abspath(args.mod)
     write_metadata(mod, args.id, args.name)
+    write_readme(mod)
     res = os.path.join(mod, "Resources", "Intro")
     hdui = os.path.join(mod, "hd", "UI")
     sound = os.path.join(mod, "SOUND")
