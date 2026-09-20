@@ -33,7 +33,7 @@ namespace OpenXcom
 {
 
 SlideshowState::SlideshowState(const SlideshowHeader &slideshowHeader, const std::vector<SlideshowSlide> *slideshowSlides)
-		: _slideshowHeader(slideshowHeader), _slideshowSlides(slideshowSlides), _curScreen(-1)
+		: _slideshowHeader(slideshowHeader), _slideshowSlides(slideshowSlides), _curScreen(-1), _holdMs(0)
 {
 	_wasLetterboxed = CutsceneState::initDisplay();
 
@@ -69,8 +69,8 @@ SlideshowState::SlideshowState(const SlideshowHeader &slideshowHeader, const std
 	int transitionSeconds = _slideshowHeader.transitionSeconds;
 	if (_slideshowSlides->front().transitionSeconds > 0)
 		transitionSeconds = _slideshowSlides->front().transitionSeconds;
-	_transitionTimer = new Timer(transitionSeconds * 1000);
-	_transitionTimer->onTimer((StateHandler)&SlideshowState::screenTimer);
+	_holdMs = transitionSeconds * 1000;
+	_transitionTimer = new Timer(_holdMs);
 
 	_game->getMod()->playMusic(_slideshowHeader.musicId);
 	_game->getCursor()->setVisible(false);
@@ -83,19 +83,17 @@ SlideshowState::~SlideshowState()
 }
 
 /**
- * Shows the next screen on a timed basis.
- */
-void SlideshowState::screenTimer()
-{
-	screenClick(0);
-}
-
-/**
  * Handle timers.
  */
 void SlideshowState::think()
 {
-	_transitionTimer->think(this, 0);
+	// the countdown is read here rather than handed to Timer::onTimer: Timer::think shifts its
+	// own countdown by the interval right after the handler returns, and since the handler is
+	// what puts the next slide's interval there, a slide stayed up for twice what it asked for
+	if (_transitionTimer->isRunning() && _transitionTimer->getTime() >= _holdMs)
+	{
+		screenClick(0);
+	}
 }
 
 /**
@@ -132,7 +130,8 @@ void SlideshowState::screenClick(Action *action)
 		int transitionSeconds = _slideshowHeader.transitionSeconds;
 		if (_slideshowSlides->at(_curScreen).transitionSeconds > 0)
 			transitionSeconds = _slideshowSlides->at(_curScreen).transitionSeconds;
-		_transitionTimer->setInterval(transitionSeconds * 1000);
+		_holdMs = transitionSeconds * 1000;
+		_transitionTimer->setInterval(_holdMs);
 		_transitionTimer->start();
 		setStatePalette(_slides[_curScreen]->getPalette());
 		_slides[_curScreen]->setVisible(true);
