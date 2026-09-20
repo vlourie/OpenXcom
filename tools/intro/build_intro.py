@@ -118,7 +118,9 @@ def build_track(ffmpeg, parts, total, music, music_db, out):
     for _, f in parts:
         cmd += ["-i", f]
     if music:
-        cmd += ["-stream_loop", "-1", "-i", music]
+        # без -stream_loop: музыка играет один раз и кончается там, где кончается.
+        # Зацикленная противоречила бы правилу «последний кадр ждёт конца музыки»
+        cmd += ["-i", music]
     chains, names = [], []
     for i, (start, _) in enumerate(parts):
         chains.append("[%d:a]aformat=sample_rates=44100:channel_layouts=stereo,"
@@ -169,6 +171,7 @@ def main():
     p.add_argument("--scenes", default="tools/intro/scenes.json", help="сцены от make_script.py")
     p.add_argument("--scale", type=int, default=4, help="во сколько раз HD-кадр больше базы")
     p.add_argument("--pause", type=float, default=1.2, help="тишина после голоса, секунд")
+    p.add_argument("--first", type=float, default=6.0, help="сколько держать первый кадр")
     p.add_argument("--music-db", type=float, default=-16.0, help="насколько тише голоса подложка")
     p.add_argument("--no-captions", action="store_true", help="без подписей, только голос")
     p.add_argument("--dry", action="store_true", help="только посчитать, ничего не писать")
@@ -189,14 +192,39 @@ def main():
     if missing:
         raise SystemExit("нет файлов: " + ", ".join(missing))
 
-    total = 0
+    music = os.path.join(args.src, "music.ogg")
+    music_secs = duration(ffprobe, music) if os.path.exists(music) else 0.0
+
+    # Первый кадр держится назначенное время: на нём голоса нет, он заставка.
+    # Средние - по длине своей реплики плюс пауза. Последний ждёт конца музыки,
+    # чтобы показ и дорожка кончились вместе и игра ушла в меню не под обрыв
+    for i, s in enumerate(plan):
+        if i == 0:
+            s["hold"] = int(round(args.first))
+        elif s["voice"]:
+            s["hold"] = int(round(max(3.0, s["secs"] + args.pause)))
+        else:
+            s["hold"] = 4
+    head = sum(s["hold"] for s in plan[:-1])
+    if music_secs > 0 and len(plan) > 1:
+        # своя реплика последнего кадра важнее: недоговорить хуже, чем помолчать
+        tail = max(3, int(round(music_secs)) - head, plan[-1]["hold"])
+        if head + tail > int(round(music_secs)):
+            print("музыка кончится на %d с раньше показа - последние секунды пойдут без неё"
+                  % (head + tail - int(round(music_secs))))
+        plan[-1]["hold"] = tail
+
+    total = sum(s["hold"] for s in plan)
     print("%-3s %-24s %7s  %s" % ("#", "картинка", "секунд", "голос"))
     for s in plan:
-        s["hold"] = int(round(max(3.0, s["secs"] + args.pause))) if s["voice"] else 4
-        total += s["hold"]
         print("%-3d %-24s %7d  %s" % (s["n"], os.path.basename(s["photo"]), s["hold"],
                                       os.path.basename(s["voice"]) if s["voice"] else "-"))
-    print("всего %d:%02d" % (total // 60, total % 60))
+    print("всего %d:%02d" % (total // 60, total % 60), end="")
+    if music_secs > 0:
+        print(", музыка %d:%02d, последний кадр %d с"
+              % (int(music_secs) // 60, int(music_secs) % 60, plan[-1]["hold"]))
+    else:
+        print(", музыки нет")
     if args.dry:
         return
 
@@ -220,9 +248,8 @@ def main():
             parts.append((float(at), s["voice"]))
         at += s["hold"]
     track = os.path.join(sound, "intro_voice.ogg")
-    music = os.path.join(args.src, "music.ogg")
-    if parts:
-        build_track(ffmpeg, parts, float(total), music if os.path.exists(music) else "",
+    if parts or music_secs > 0:
+        build_track(ffmpeg, parts, float(total), music if music_secs > 0 else "",
                     args.music_db, track)
 
     lines = ["# Сделано tools/intro/build_intro.py - руками не править", "",
