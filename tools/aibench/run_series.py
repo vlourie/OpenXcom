@@ -66,7 +66,7 @@ BENCH_OPTS = {
     "aiTempers": "false",
 }
 # каким это должно выйти в строке [AIBENCH] options: булево движок печатает как 1/0
-BOOLS = {"aiPeformance", "aiFairDamage"}
+BOOLS = {"aiPeformance", "aiFairDamage", "aiTempers"}
 
 
 def opt_norm(key, value):
