@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """Серия боёв до конца: кто кого и какой ценой.
 
@@ -43,9 +43,15 @@ DATA = os.path.join(FORK, "bin")
 
 RESULT = re.compile(r"\[AIRESULT\] (.*)")
 OPTSLINE = re.compile(r"\[AIBENCH\] options: (.*)")
+# какой мастер-мод движок взял на самом деле: не назвав его явно, серия наследует
+# его из options.cfg папки прогона - так «пиратки» целиком ушли на ванильный UFO
+MASTER = re.compile(r"\[AIBENCH\] options: master=(\S+)")
 BATTLE = re.compile(r"\[AIBENCH\] battle: (.*)")
 HOSTILE = re.compile(r"\[AIBENCH\] turn=\d+ side=HOSTILE .*?totalMs=(\d+)")
 KV = re.compile(r"(\w+)=([^\s]*)")
+# [AISTATE] пишется на границе КАЖДОГО хода при -aiBench: по нему видно не исход,
+# а форму боя - где стояли стороны и кто кого видел
+STATE = re.compile(r"\[AISTATE\] turn=(\d+) side=(\d+) unit=(\d+) fac=(\d+) pos=\((-?\d+),(-?\d+),(-?\d+)\) tu=(\d+) hp=(\d+) en=(\d+) vis=(\d+)")
 
 # Ключи ИИ и их значения по умолчанию из Options.cpp Brutal-сборки.
 # Передаём их ВСЕ и ВСЕГДА: options.cfg папки прогона запоминает всё, что было
@@ -57,6 +63,7 @@ BENCH_OPTS = {
     "aiPeformance": "false",
     "aiCheatMode": "0",
     "aiFairDamage": "false",
+    "aiTempers": "false",
 }
 # каким это должно выйти в строке [AIBENCH] options: булево движок печатает как 1/0
 BOOLS = {"aiPeformance", "aiFairDamage"}
@@ -102,6 +109,8 @@ def opts_mismatch(text, want):
             bad.append("%s=%s вместо %s" % (k, got[k], opt_norm(k, v)))
     return ", ".join(bad)
 
+FACTION_PLAYER, FACTION_HOSTILE = 0, 1
+
 _print_lock = threading.Lock()
 
 
@@ -123,11 +132,20 @@ def prepare_dir(path, master, mods_from):
         if os.path.isdir(src_mods):
             os.makedirs(dst_mods, exist_ok=True)
             for name in os.listdir(src_mods):
-                link = os.path.join(dst_mods, name)
-                target = os.path.join(src_mods, name)
+                # mklink - команда cmd, прямые слэши она не понимает; а с заглушённой
+                # ошибкой папка молча остаётся пустой, движок не находит мастер-мод и
+                # берёт xcom1. Так серия «пиратки» целиком ушла на ванильный UFO
+                # слэши разворачиваем сами: под msys-питоном os.path остаётся
+                # posix-овым и normpath прямые слэши не тронет
+                link = os.path.join(dst_mods, name).replace("/", "\\")
+                target = os.path.join(src_mods, name).replace("/", "\\")
+                if os.path.exists(link):
+                    continue
+                r = subprocess.run(["cmd", "/c", "mklink", "/J", link, target],
+                                   capture_output=True, text=True)
                 if not os.path.exists(link):
-                    subprocess.run(["cmd", "/c", "mklink", "/J", link, target],
-                                   stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                    raise SystemExit("не удалось связать мод %s -> %s: %s"
+                                     % (link, target, (r.stdout + r.stderr).strip()))
         cfg = os.path.join(mods_from, "options.cfg")
         dst_cfg = os.path.join(path, "options.cfg")
         if os.path.exists(cfg) and not os.path.exists(dst_cfg):
@@ -175,6 +193,40 @@ def run_game(exe, user, data, master, extra, timeout):
     return text, time.time() - t0, killed
 
 
+def turn_geometry(text, battle, arm):
+    """Форма боя по ходам: насколько ИИ подошёл и насколько он рассыпан.
+
+    Считается по снимку на конце хода ИИ. Три числа отвечают на разные вопросы:
+    dMed - как близко ИИ подобрался (медиана расстояния до ближайшего бойца игрока),
+    spread - идёт он толпой или веером (среднее расстояние до собственного центра),
+    contact - сколько его юнитов реально кого-то видят.
+    """
+    per_turn = {}
+    for m in STATE.finditer(text):
+        turn, side, _unit, fac, x, y, z, _tu, _hp, _en, vis = (int(g) for g in m.groups())
+        if side != FACTION_HOSTILE:
+            continue
+        per_turn.setdefault(turn, []).append((fac, x, y, z, vis))
+    out = []
+    for turn in sorted(per_turn):
+        ai = [u for u in per_turn[turn] if u[0] == FACTION_HOSTILE]
+        pl = [u for u in per_turn[turn] if u[0] == FACTION_PLAYER]
+        if not ai or not pl:
+            continue
+        dist = sorted(min(math.hypot(a[1] - p[1], a[2] - p[2]) for p in pl) for a in ai)
+        cx = sum(a[1] for a in ai) / len(ai)
+        cy = sum(a[2] for a in ai) / len(ai)
+        spread = sum(math.hypot(a[1] - cx, a[2] - cy) for a in ai) / len(ai)
+        out.append({"battle": battle, "arm": arm, "turn": turn,
+                    "nAI": len(ai), "nPL": len(pl),
+                    "dMin": round(dist[0], 1),
+                    "dMed": round(dist[len(dist) // 2], 1),
+                    "dMax": round(dist[-1], 1),
+                    "spread": round(spread, 1),
+                    "contact": sum(1 for a in ai if a[4] > 0)})
+    return out
+
+
 def one_battle(idx, args, arms, user):
     """Разыграть бой, сохранить, прогнать каждым вариантом."""
     seed = args.seed0 + idx
@@ -183,6 +235,7 @@ def one_battle(idx, args, arms, user):
     # содержимое файла не влияют; передаём их всё равно, чтобы папка прогона не
     # копила чужие значения
     gen = (["-aiBenchSeed", str(seed), "-aiBenchTurns", "1",
+            "-aiBenchMinXcom", str(args.min_xcom),
             "-aiBenchSave", sav, "-aiBenchLoad", ""] + opts_cmdline(BENCH_OPTS))
     text, _, killed = run_game(args.exe, user, args.data, args.master, gen, args.timeout)
     m = BATTLE.search(text)
@@ -191,13 +244,15 @@ def one_battle(idx, args, arms, user):
         return []
     setup = dict(KV.findall(m.group(1)))
 
-    rows = []
+    rows, states = [], []
     for name, want in arms:
         extra = (["-aiBenchTurns", str(args.turns), "-aiBenchSave", "",
                   "-aiBenchLoad", sav] + opts_cmdline(want))
         text, secs, killed = run_game(args.exe, user, args.data, args.master, extra, args.timeout)
         r = RESULT.search(text)
+        mm = MASTER.search(text)
         row = {"battle": idx, "seed": seed, "arm": name, "wallSec": round(secs, 1),
+               "master": mm.group(1) if mm else "?",
                "mission": setup.get("mission", ""), "terrain": setup.get("terrain", ""),
                "race": setup.get("race", ""), "xcomStart": setup.get("xcom", "")}
         row["aiMs"] = sum(int(x) for x in HOSTILE.findall(text))
@@ -212,6 +267,8 @@ def one_battle(idx, args, arms, user):
         else:
             row.update(dict(KV.findall(r.group(1))))
             row["outcome"] = "done"
+            if args.states:
+                states += turn_geometry(text, idx, name)
         rows.append(row)
 
     path = os.path.join(user, args.master or "xcom1", sav)
@@ -222,7 +279,7 @@ def one_battle(idx, args, arms, user):
         ", ".join("%s ходов=%s потери=%s/%s" % (r["arm"], r.get("turns", "?"),
                   r.get("xcomDead", "?"), r.get("alienDead", "?")) for r in done)
         or "не доигран"))
-    return rows
+    return rows, states
 
 
 def mean_ci(values):
@@ -240,7 +297,11 @@ def mean_ci(values):
 def summarize(rows, arms):
     done = [r for r in rows if r["outcome"] == "done"]
     say("")
-    say("=== итог по вариантам (доиграно %d прогонов из %d) ===" % (len(done), len(rows)))
+    masters = sorted({r.get("master", "?") for r in done})
+    say("=== итог по вариантам (доиграно %d прогонов из %d), мастер-мод: %s ==="
+        % (len(done), len(rows), ", ".join(masters) or "?"))
+    if len(masters) > 1:
+        say("ВНИМАНИЕ: прогоны шли на РАЗНЫХ мастер-модах, сравнивать их нельзя")
     say("%-20s %5s %7s %13s %8s %8s %11s"
         % ("вариант", "боёв", "ходов", "потери игрока", "убито ИИ", "размен", "победа ИИ"))
     per_arm = {}
@@ -310,6 +371,11 @@ def main():
                    help="папка, откуда взять options.cfg и ссылки на моды")
     p.add_argument("--timeout", type=int, default=1800, help="потолок на один прогон, секунд")
     p.add_argument("--out", default=os.path.join(ROOT, "logs", "series.csv"))
+    p.add_argument("--min-xcom", type=int, default=1,
+                   help="не брать бой, если у игрока меньше стольких бойцов: "
+                        "в Пиратках случайный корабль часто везёт одного")
+    p.add_argument("--states", default="",
+                   help="куда сложить геометрию по ходам: как ИИ подходил и как рассыпался")
     args = p.parse_args()
 
     arms = []
@@ -330,23 +396,29 @@ def main():
     users = [prepare_dir("%s_w%02d" % (args.user_base, k), args.master, args.mods_from)
              for k in range(jobs)]
 
-    say("боёв: %d, вариантов: %d, потоков: %d, потолок ходов: %d"
-        % (args.battles, len(arms), jobs, args.turns))
+    say("боёв: %d, вариантов: %d, потоков: %d, потолок ходов: %d, мастер-мод: %s"
+        % (args.battles, len(arms), jobs, args.turns, args.master or "из options.cfg папки прогона"))
+    if not args.master:
+        say("  --master не задан: что реально загрузилось, будет видно в колонке master")
     t0 = time.time()
-    rows = []
+    rows, states = [], []
     lock = threading.Lock()
 
     def work(k):
-        out = []
+        out, geo = [], []
         for idx in range(k, args.battles, jobs):
-            out += one_battle(idx, args, arms, users[k])
+            r, g = one_battle(idx, args, arms, users[k])
+            out += r
+            geo += g
         with lock:
             rows.extend(out)
+            states.extend(geo)
 
     with ThreadPoolExecutor(max_workers=jobs) as ex:
         list(ex.map(work, range(jobs)))
 
-    cols = ["battle", "seed", "arm", "outcome", "why", "mission", "terrain", "race", "xcomStart",
+    cols = ["battle", "seed", "arm", "outcome", "why", "master",
+            "mission", "terrain", "race", "xcomStart",
             "turns", "abort", "inExit", "xcomAlive", "xcomStunned", "xcomDead",
             "alienAlive", "alienStunned", "alienDead", "civAlive", "civDead", "aiMs", "wallSec"]
     os.makedirs(os.path.dirname(os.path.abspath(args.out)), exist_ok=True)
@@ -355,6 +427,16 @@ def main():
         w.writeheader()
         for r in sorted(rows, key=lambda r: (r["battle"], r["arm"])):
             w.writerow(r)
+
+    if args.states:
+        scols = ["battle", "arm", "turn", "nAI", "nPL", "dMin", "dMed", "dMax", "spread", "contact"]
+        os.makedirs(os.path.dirname(os.path.abspath(args.states)), exist_ok=True)
+        with open(args.states, "w", encoding=ENC, newline="") as f:
+            w = csv.DictWriter(f, fieldnames=scols)
+            w.writeheader()
+            for r in sorted(states, key=lambda r: (r["battle"], r["arm"], r["turn"])):
+                w.writerow(r)
+        say("геометрия по ходам: %s (%d строк)" % (args.states, len(states)))
 
     summarize(rows, arms)
     say("")
