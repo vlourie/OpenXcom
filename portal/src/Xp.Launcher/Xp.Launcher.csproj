@@ -1,0 +1,42 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <AssemblyName>XPiratezLauncher</AssemblyName>
+    <RootNamespace>Xp.Launcher</RootNamespace>
+    <PublishAot>true</PublishAot>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <BuiltInComInteropSupport>false</BuiltInComInteropSupport>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
+    <Version>0.1.0</Version>
+    <!-- dev keys are trusted only in Debug or when explicitly allowed for a local test build -->
+    <AllowDevKeys Condition="'$(AllowDevKeys)' == ''">false</AllowDevKeys>
+    <DefineConstants Condition="'$(Configuration)' == 'Debug' Or '$(AllowDevKeys)' == 'true'">$(DefineConstants);ALLOW_DEV_KEYS</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Avalonia" Version="11.3.*" />
+    <PackageReference Include="Avalonia.Desktop" Version="11.3.*" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.*" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Xp.Launcher.Core\Xp.Launcher.Core.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="..\..\keys\release-keys.txt" LogicalName="release-keys.txt" />
+    <EmbeddedResource Include="Strings\*.json" LogicalName="strings.%(Filename).json" />
+    <EmbeddedResource Include="defaults.json" LogicalName="defaults.json" />
+  </ItemGroup>
+  <!-- rendering is WGL/software (Program.cs), ANGLE is never loaded -->
+  <Target Name="DropAngle" AfterTargets="Publish">
+    <Delete Files="$(PublishDir)av_libglesv2.dll" />
+  </Target>
+  <Target Name="RequireProdKey" BeforeTargets="Build" Condition="'$(Configuration)' == 'Release' And '$(AllowDevKeys)' != 'true'">
+    <ReadLinesFromFile File="..\..\keys\release-keys.txt">
+      <Output TaskParameter="Lines" ItemName="KeyLines" />
+    </ReadLinesFromFile>
+    <PropertyGroup>
+      <KeyText>@(KeyLines, '|')</KeyText>
+    </PropertyGroup>
+    <Error Condition="!$(KeyText.Contains('|prod ')) And !$(KeyText.StartsWith('prod '))"
+           Text="keys/release-keys.txt has no 'prod' key: a Release launcher would trust nothing. Add the production public key, or build with -p:AllowDevKeys=true for a local test." />
+  </Target>
+</Project>

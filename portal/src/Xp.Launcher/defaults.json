@@ -1,0 +1,4 @@
+{
+  "repoUrl": "http://localhost:8787/",
+  "channels": ["stable", "test"]
+}
