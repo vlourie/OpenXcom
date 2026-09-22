@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Xp.Bootstrapper/Xp.Bootstrapper.csproj" />
+    <Project Path="src/Xp.Launcher.Core/Xp.Launcher.Core.csproj" />
+    <Project Path="src/Xp.Launcher/Xp.Launcher.csproj" />
+    <Project Path="src/Xp.Manifest/Xp.Manifest.csproj" />
+    <Project Path="src/Xp.ReleaseBuilder/Xp.ReleaseBuilder.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/Xp.Launcher.Core.Tests/Xp.Launcher.Core.Tests.csproj" />
+  </Folder>
+</Solution>

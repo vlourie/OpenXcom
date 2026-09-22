@@ -1,0 +1,13 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>xp-release</AssemblyName>
+    <RootNamespace>Xp.ReleaseBuilder</RootNamespace>
+  </PropertyGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Xp.Manifest\Xp.Manifest.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <InternalsVisibleTo Include="Xp.Launcher.Core.Tests" />
+  </ItemGroup>
+</Project>
