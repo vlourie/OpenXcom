@@ -43,6 +43,10 @@ public sealed class Defaults
     public string PortalUrl { get; set; } = "";
     /// <summary>Per-file limit of the portal (Attachments:MaxFileBytes); a bigger save is zipped, then skipped.</summary>
     public long ReportMaxFileBytes { get; set; }
+    /// <summary>"Support the mod's author" (Dioxine) page; empty - the button is shown disabled.</summary>
+    public string SupportModUrl { get; set; } = "";
+    /// <summary>"Support the HD developers" page; empty - the button is shown disabled.</summary>
+    public string SupportHdUrl { get; set; } = "";
 }
 
 [JsonSourceGenerationOptions(WriteIndented = true, PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]

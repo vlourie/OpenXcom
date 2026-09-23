@@ -55,6 +55,7 @@ public sealed class MainWindow : Window
         _selfUpdate = MakeButton("self.install", async () => await RunAsync(SelfUpdateAsync));
         _selfUpdate.IsVisible = false;
         _reports = MakeButton("reports.button", async () => await ShowReportsAsync());
+        var support = MakeButton("support.button", async () => await new SupportWindow().ShowDialog(this));
         var choose = MakeButton("choose", async () => await ChooseGameDirAsync());
 
         foreach (var c in BuiltIn.Defaults.Channels) _channel.Items.Add(new ComboBoxItem { Content = L.T("channel." + c), Tag = c });
@@ -66,7 +67,7 @@ public sealed class MainWindow : Window
         dirRow.Children.Add(_gameDir);
 
         var actions = new WrapPanel { Orientation = Orientation.Horizontal };
-        foreach (var b in new[] { _play, _update, _check, _repair, _rollback, _selfUpdate, _reports, _cancel })
+        foreach (var b in new[] { _play, _update, _check, _repair, _rollback, _selfUpdate, _reports, support, _cancel })
         {
             b.Margin = new Thickness(0, 0, 8, 8);
             actions.Children.Add(b);
