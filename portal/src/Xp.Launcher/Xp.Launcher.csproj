@@ -24,6 +24,8 @@
     <EmbeddedResource Include="..\..\keys\release-keys.txt" LogicalName="release-keys.txt" />
     <EmbeddedResource Include="Strings\*.json" LogicalName="strings.%(Filename).json" />
     <EmbeddedResource Include="defaults.json" LogicalName="defaults.json" />
+    <!-- Roboto, the HD interface font, cut to Latin and Cyrillic (~30 KB each) -->
+    <AvaloniaResource Include="Assets\Fonts\*.ttf" />
   </ItemGroup>
   <!-- rendering is WGL/software (Program.cs), ANGLE is never loaded -->
   <Target Name="DropAngle" AfterTargets="Publish">

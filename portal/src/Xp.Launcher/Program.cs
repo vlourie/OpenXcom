@@ -1,6 +1,6 @@
 using Avalonia;
 using Avalonia.Controls.ApplicationLifetimes;
-using Avalonia.Themes.Fluent;
+using Avalonia.Styling;
 using Xp.Launcher.Core;
 
 namespace Xp.Launcher;
@@ -11,7 +11,13 @@ public sealed class App : Application
     /// <summary>Set in report mode: the form is the only window.</summary>
     public static (Report Report, Settings Settings)? Report { get; set; }
 
-    public override void Initialize() => Styles.Add(new FluentTheme());
+    public override void Initialize()
+    {
+        RequestedThemeVariant = ThemeVariant.Dark;
+        Styles.Add(Skin.Fluent());
+        Skin.AddResources(Resources);
+        Skin.AddStyles(Styles);
+    }
 
     public override void OnFrameworkInitializationCompleted()
     {

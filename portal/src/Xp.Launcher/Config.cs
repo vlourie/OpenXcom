@@ -17,6 +17,8 @@ public sealed class Settings
     /// <summary>Folders reports came from besides &lt;game&gt;/user/reports: a game with its user folder elsewhere.</summary>
     public List<string> ReportRoots { get; set; } = new();
     public Dictionary<string, long> LauncherSequence { get; set; } = new();
+    public double? WindowWidth { get; set; }
+    public double? WindowHeight { get; set; }
 
     public static string Dir => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "XPiratezLauncher");
     static string FilePath => Path.Combine(Dir, "settings.json");
