@@ -73,7 +73,7 @@ public sealed class ReportTests : IDisposable
     }
 
     /// <summary>What the game leaves on F8: shot.png and context.json, paths with forward slashes.</summary>
-    Report NewReport(string? log = null)
+    Report NewReport(string? log = null, string? snapshot = null)
     {
         var id = Guid.NewGuid().ToString();
         var dir = Path.Combine(Reports, id);
@@ -81,8 +81,11 @@ public sealed class ReportTests : IDisposable
         Directory.CreateDirectory(SaveDir);
         File.WriteAllBytes(Path.Combine(dir, "shot.png"), [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 1, 2, 3]);
         File.WriteAllText(LogFile, log ?? "[INFO] started\n[INFO] Feedback: report written\n");
-        File.WriteAllText(Path.Combine(SaveDir, "battle.sav"), "name: my battle\n");
-        File.WriteAllText(Path.Combine(SaveDir, "_autogeo_.asav"), "name: auto\n");
+        File.WriteAllText(Path.Combine(SaveDir, "battle.sav"), "name: my battle\nversion: Extended 8.7.1\n");
+        File.WriteAllText(Path.Combine(SaveDir, "_autogeo_.asav"), "name: auto\nversion: Extended 8.7.1\n");
+        // written in the same tick as battle.sav, which would leave the newest-first order to chance
+        File.SetLastWriteTimeUtc(Path.Combine(SaveDir, "_autogeo_.asav"), DateTime.UtcNow.AddHours(-1));
+        if (snapshot is not null) File.WriteAllText(Path.Combine(dir, "snapshot.sav"), snapshot);
         var fwd = (string p) => p.Replace('\\', '/');
         File.WriteAllText(Path.Combine(dir, "context.json"), $$"""
             {
@@ -103,6 +106,7 @@ public sealed class ReportTests : IDisposable
               "shot": "shot.png",
               "log": "{{fwd(LogFile)}}",
               "saveDir": "{{fwd(SaveDir)}}/",
+              "save": "{{(snapshot is null ? "" : "snapshot.sav")}}",
               "gameDir": "{{fwd(Path.Combine(_root, "game"))}}/"
             }
             """);
@@ -201,6 +205,33 @@ public sealed class ReportTests : IDisposable
     }
 
     [Fact]
+    public async Task Snapshot_of_this_game_comes_first_and_the_game_language_is_sent()
+    {
+        var r = NewReport(snapshot: "name: \nversion: Extended 8.7.1\n---\ndifficulty: 1\n");
+        File.WriteAllText(Path.Combine(SaveDir, "notes.sav"), "just some text");
+        var saves = r.RecentSaves();
+        Assert.True(saves[0].Snapshot);
+        Assert.Equal(["snapshot.sav", "battle.sav", "_autogeo_.asav"], saves.Select(s => s.Name));   // notes.sav is not a save
+        r.Draft.SavePath = saves[0].Path;
+        await Sender().SendAsync(r, CancellationToken.None);
+        Assert.Equal("ru", _portal.Created.Single().GetProperty("language").GetString());
+        Assert.Contains("snapshot.sav", r.Draft.Uploaded);
+    }
+
+    [Fact]
+    public async Task A_save_that_is_not_a_save_is_named_and_not_sent()
+    {
+        var r = NewReport();
+        var fake = Path.Combine(SaveDir, "battle.sav");
+        File.WriteAllBytes(fake, [.. "name: x\nversion: 1\n"u8, 0, 1, 2]);
+        r.Draft.SavePath = fake;
+        await Sender().SendAsync(r, CancellationToken.None);
+        Assert.Equal(ReportStatus.Sent, r.Draft.Status);
+        Assert.Equal("file_not_text", r.Draft.Skipped.Single(x => x.Name == "battle.sav").Reason);
+        Assert.Null(TextFiles.CheckSave(Path.Combine(SaveDir, "_autogeo_.asav")));
+    }
+
+    [Fact]
     public async Task Without_logs_and_saves_there_is_no_consent()
     {
         var r = NewReport();
@@ -249,7 +280,7 @@ public sealed class ReportTests : IDisposable
         var r = NewReport();
         r.Draft.AttachLog = true;
         var save = Path.Combine(SaveDir, "battle.sav");
-        File.WriteAllText(save, Convert.ToBase64String(System.Security.Cryptography.RandomNumberGenerator.GetBytes(300)));
+        File.WriteAllText(save, "name: battle\nversion: Extended 8.7.1\n" + Convert.ToBase64String(System.Security.Cryptography.RandomNumberGenerator.GetBytes(300)));
         r.Draft.SavePath = save;
         _portal.RefuseFile = name => name == "openxcom.log" ? (HttpStatusCode.Forbidden, """{"code":"consent_required"}""") : null;
         await Sender(new ReportLimits { MaxFileBytes = 100 }).SendAsync(r, CancellationToken.None);
@@ -265,7 +296,7 @@ public sealed class ReportTests : IDisposable
     {
         var r = NewReport();
         var big = Path.Combine(SaveDir, "huge.sav");
-        File.WriteAllText(big, string.Concat(Enumerable.Repeat("soldiers:\n  - name: Fishface\n", 4000)));
+        File.WriteAllText(big, "name: huge\nversion: Extended 8.7.1\n" + string.Concat(Enumerable.Repeat("soldiers:\n  - name: Fishface\n", 4000)));
         r.Draft.AttachShot = false;
         r.Draft.SavePath = big;
         await Sender(new ReportLimits { MaxFileBytes = 64 * 1024 }).SendAsync(r, CancellationToken.None);

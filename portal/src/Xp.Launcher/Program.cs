@@ -53,10 +53,11 @@ static class Program
     static int RunReport(string dir)
     {
         var settings = Settings.Load();
-        L.Use(settings.Language);
         Report report;
         try { report = Report.Open(dir); }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or InvalidDataException or ArgumentException) { return 2; }
+        // no language chosen in the launcher yet: speak the game's
+        L.Use(settings.Language ?? (report.Context?.Language.StartsWith("ru", StringComparison.OrdinalIgnoreCase) == true ? "ru" : "en"));
 
         using var mutex = new Mutex(true, @"Local\XPiratezLauncher.report." + report.Draft.Id, out bool first);
         if (!first) return 0;

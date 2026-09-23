@@ -107,5 +107,11 @@
  "reports.open": "Open",
  "reports.delete": "Delete",
  "reports.deleteConfirm": "Delete the report from disk? If it was sent, it stays on the site.",
- "reports.sendResult": "Sent: {0}, still queued: {1}"
+ "reports.sendResult": "Sent: {0}, still queued: {1}",
+ "report.saveSnapshot": "This game as it is now ({0})",
+ "report.err.file_not_text": "not a text file",
+ "report.err.file_not_save": "not a game save",
+ "report.err.zip_content_not_allowed": "the archive holds files that are not allowed",
+ "report.err.file_content_mismatch": "the content does not match the file type",
+ "report.err.language_invalid": "invalid language code"
 }

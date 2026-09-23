@@ -33,6 +33,8 @@ public sealed class GameContext
     public string Shot { get; set; } = "";
     public string Log { get; set; } = "";
     public string SaveDir { get; set; } = "";
+    /// <summary>The game as it was at F8, written by the engine into the report folder; empty in ironman or with no game loaded.</summary>
+    public string Save { get; set; } = "";
     public string GameDir { get; set; } = "";
 }
 
@@ -94,7 +96,7 @@ public static class ReportKinds
     };
 }
 
-public sealed record SaveFile(string Path, string Name, long Size, DateTime Modified);
+public sealed record SaveFile(string Path, string Name, long Size, DateTime Modified, bool Snapshot = false);
 
 /// <summary>A file about to be sent, as the form shows it: name and size.</summary>
 public sealed record PlannedFile(string Name, string Source, long Size, string Role);
@@ -171,15 +173,31 @@ public sealed class Report
                 File.Delete(f);
     }
 
-    /// <summary>Recent saves of the master mod the report was taken in, newest first.</summary>
+    /// <summary>The engine's snapshot of the game at F8, when it wrote one.</summary>
+    public string? SnapshotPath =>
+        !string.IsNullOrEmpty(Context?.Save) && File.Exists(System.IO.Path.Combine(Dir, System.IO.Path.GetFileName(Context.Save)))
+            ? System.IO.Path.Combine(Dir, System.IO.Path.GetFileName(Context.Save)) : null;
+
+    /// <summary>
+    /// What can go as the save: the snapshot of this very game first, then recent saves of the master
+    /// mod, newest first. A file that does not start like a save is not offered at all.
+    /// </summary>
     public IReadOnlyList<SaveFile> RecentSaves(int max = 15)
     {
+        var list = new List<SaveFile>();
+        if (SnapshotPath is { } snap)
+        {
+            var fi = new FileInfo(snap);
+            list.Add(new SaveFile(fi.FullName, fi.Name, fi.Length, fi.LastWriteTime, Snapshot: true));
+        }
         var dir = Context?.SaveDir;
-        if (string.IsNullOrEmpty(dir) || !Directory.Exists(dir)) return [];
-        return new DirectoryInfo(dir).EnumerateFiles()
+        if (string.IsNullOrEmpty(dir) || !Directory.Exists(dir)) return list;
+        list.AddRange(new DirectoryInfo(dir).EnumerateFiles()
             .Where(f => f.Extension.Equals(".sav", StringComparison.OrdinalIgnoreCase) || f.Extension.Equals(".asav", StringComparison.OrdinalIgnoreCase))
-            .OrderByDescending(f => f.LastWriteTimeUtc).Take(max)
-            .Select(f => new SaveFile(f.FullName, f.Name, f.Length, f.LastWriteTime)).ToList();
+            .OrderByDescending(f => f.LastWriteTimeUtc)
+            .Where(f => TextFiles.StartsLikeSave(f.FullName)).Take(max)
+            .Select(f => new SaveFile(f.FullName, f.Name, f.Length, f.LastWriteTime)));
+        return list;
     }
 
     /// <summary>What goes with the report, in the order it is sent. Each needs its checkbox.</summary>
@@ -275,7 +293,8 @@ public sealed partial class Redactor(string? gameDir, string? profileDir, string
 
 public sealed record CreateTicketRequest(
     string Category, string Title, string Description, string? Steps, string? Expected, string? Actual,
-    string? GameVersion, string? ModVersion, string? LauncherVersion, string? Email, bool ConsentToFiles, string? Source, string? Context);
+    string? GameVersion, string? ModVersion, string? LauncherVersion, string? Email, bool ConsentToFiles, string? Source, string? Context,
+    string? Language = null);
 
 public sealed record CreateTicketResponse(long Number, string DisplayNumber, string? Token, string Url);
 public sealed record TicketAttachmentView(Guid Id, string FileName, long Size, string Scan);
@@ -374,7 +393,8 @@ public sealed class ReportSender(PortalClient portal, ReportLimits limits, Redac
                 var req = new CreateTicketRequest(
                     ReportKinds.Category(d.Kind), d.Title.Trim(), d.Description.Trim(), Blank(d.Steps), Blank(d.Expected), Blank(d.Actual),
                     Cap(report.Context?.Engine, 64), Cap(report.ModVersion(), 64), launcherVersion, Email: null,
-                    ConsentToFiles: files.Any(f => f.Role is "log" or "save"), Source: "f8", Context: report.ContextText(launcherVersion));
+                    ConsentToFiles: files.Any(f => f.Role is "log" or "save"), Source: "f8", Context: report.ContextText(launcherVersion),
+                    Language: Blank(report.Context?.Language ?? ""));
                 var created = await portal.CreateAsync(req, d.Id, ct);
                 d.TicketNumber = created.Number;
                 d.DisplayNumber = created.DisplayNumber;
@@ -387,6 +407,13 @@ public sealed class ReportSender(PortalClient portal, ReportLimits limits, Redac
             foreach (var f in report.PlannedFiles())
             {
                 if (d.Uploaded.Contains(f.Name) || d.Skipped.Any(s => s.Name == f.Name)) continue;
+                // the site refuses these too; saying so here keeps the reason in the player's language
+                if (f.Role == "save" && TextFiles.CheckSave(f.Source) is { } notSave)
+                {
+                    d.Skipped.Add(new SkippedFile { Name = f.Name, Reason = notSave });
+                    report.Save();
+                    continue;
+                }
                 var (name, bytes, stream) = await PrepareAsync(f, ct);
                 await using (stream)
                 {
@@ -444,7 +471,8 @@ public sealed class ReportSender(PortalClient portal, ReportLimits limits, Redac
         switch (f.Role)
         {
             case "log":
-                return (f.Name, Encoding.UTF8.GetBytes(redactor.Redact(await ReadTailAsync(f.Source, limits.MaxLogBytes, ct))), null);
+                // decoding already turned broken bytes into U+FFFD; a NUL would still make the site refuse the log
+                return (f.Name, Encoding.UTF8.GetBytes(redactor.Redact(await ReadTailAsync(f.Source, limits.MaxLogBytes, ct)).Replace("\0", "")), null);
             case "save" when f.Size > limits.MaxFileBytes:
                 var ms = new MemoryStream();
                 using (var zip = new ZipArchive(ms, ZipArchiveMode.Create, leaveOpen: true))
@@ -518,4 +546,57 @@ public static class ReportStore
 [JsonSerializable(typeof(TicketView))]
 internal sealed partial class ReportJson : JsonSerializerContext
 {
+}
+
+/// <summary>
+/// The same rule the site applies to logs and saves (Xp.Portal FileRules/ContentCheck): UTF-8 text
+/// without NUL bytes all the way through, and a save opens with its "name:" / "version:" header.
+/// </summary>
+public static class TextFiles
+{
+    const int HeadBytes = 8192;
+
+    public static bool SaveHeader(ReadOnlySpan<byte> head)
+    {
+        if (head.StartsWith((ReadOnlySpan<byte>)[0xEF, 0xBB, 0xBF])) head = head[3..];
+        return head.StartsWith("name:"u8) && head.IndexOf("\nversion:"u8) > 0;
+    }
+
+    /// <summary>Quick look for the list of saves: only the header.</summary>
+    public static bool StartsLikeSave(string path)
+    {
+        try
+        {
+            using var s = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+            var head = new byte[HeadBytes];
+            int n = s.ReadAtLeast(head, head.Length, throwOnEndOfStream: false);
+            return SaveHeader(head.AsSpan(0, n));
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { return false; }
+    }
+
+    /// <summary>The whole file, before it is sent: null when it is a save, else the reason (a key shared with the site).</summary>
+    public static string? CheckSave(string path)
+    {
+        using var s = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite | FileShare.Delete);
+        var dec = new UTF8Encoding(false, throwOnInvalidBytes: true).GetDecoder();
+        var buf = new byte[81920];
+        var chars = new char[buf.Length + 4];
+        var head = new byte[HeadBytes];
+        int headLen = 0, n;
+        while ((n = s.Read(buf, 0, buf.Length)) > 0)
+        {
+            var chunk = buf.AsSpan(0, n);
+            if (headLen < head.Length)
+            {
+                var take = Math.Min(n, head.Length - headLen);
+                chunk[..take].CopyTo(head.AsSpan(headLen));
+                headLen += take;
+            }
+            if (chunk.IndexOf((byte)0) >= 0) return "file_not_text";
+            try { dec.GetChars(chunk, chars, flush: false); }
+            catch (DecoderFallbackException) { return "file_not_text"; }
+        }
+        return SaveHeader(head.AsSpan(0, headLen)) ? null : "file_not_save";
+    }
 }

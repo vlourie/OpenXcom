@@ -107,5 +107,11 @@
  "reports.open": "Открыть",
  "reports.delete": "Удалить",
  "reports.deleteConfirm": "Удалить отчёт с диска? Если он уже отправлен, на сайте он останется.",
- "reports.sendResult": "Отправлено: {0}, осталось в очереди: {1}"
+ "reports.sendResult": "Отправлено: {0}, осталось в очереди: {1}",
+ "report.saveSnapshot": "Эта игра, как она есть сейчас ({0})",
+ "report.err.file_not_text": "это не текстовый файл",
+ "report.err.file_not_save": "это не сохранение игры",
+ "report.err.zip_content_not_allowed": "в архиве недопустимые файлы",
+ "report.err.file_content_mismatch": "содержимое не совпадает с типом файла",
+ "report.err.language_invalid": "неверный код языка"
 }

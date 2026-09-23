@@ -126,7 +126,7 @@ public sealed class ReportWindow : Window
         if (saves.Count > 0)
         {
             foreach (var s in saves)
-                _saves.Items.Add(new ComboBoxItem { Content = $"{s.Name} — {L.Size(s.Size)} — {s.Modified:yyyy-MM-dd HH:mm}", Tag = s.Path });
+                _saves.Items.Add(new ComboBoxItem { Content = s.Snapshot ? L.T("report.saveSnapshot", L.Size(s.Size)) : $"{s.Name} — {L.Size(s.Size)} — {s.Modified:yyyy-MM-dd HH:mm}", Tag = s.Path });
             _saves.SelectedIndex = 0;
             _save.Content = L.T("report.attachSave");
             _saves.IsEnabled = false;
