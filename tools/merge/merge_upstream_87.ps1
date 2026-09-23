@@ -40,8 +40,8 @@ try {
     if ($branch -ne 'hd-render') { throw "Сейчас ветка '$branch', нужна hd-render" }
     if (Test-Path (Join-Path $Repo '.git\MERGE_HEAD')) { throw 'Уже идёт слияние. Закончи его или отмени: git merge --abort' }
 
-    Step '1/4  Сохраняю текущую работу коммитом (src, tools, .gitignore, OXCE_Build.cmd + все изменённые файлы git)'
-    $paths = @('src', 'tools', '.gitignore', 'OXCE_Build.cmd') | Where-Object { Test-Path (Join-Path $Repo $_) }
+    Step '1/4  Сохраняю текущую работу коммитом (src, tools, .gitignore, Выпуск + все изменённые файлы git)'
+    $paths = @('src', 'tools', '.gitignore', 'Выпуск') | Where-Object { Test-Path (Join-Path $Repo $_) }
     Must (Gx add -A -- @paths) 'git add'
     # все уже отслеживаемые файлы с правками (например строки опций в bin\common\Language)
     Must (Gx add -u) 'git add -u'

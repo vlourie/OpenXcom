@@ -1,6 +1,7 @@
 ﻿# Сборка OXCE HD в один клик
 
-Двойной клик по `E:\OpenXCom\OXCE_Build.cmd` — окно с тремя кнопками:
+Двойной клик по `E:\OpenXCom\Выпуск\OXCE_Build.cmd` — окно с тремя кнопками.
+Сборка вместе с подписью и публикацией релиза — `Выпуск\OXCE_Release.cmd`, см. `Выпуск\README.md`.
 
 | Кнопка | Что делает | Результат в `E:\OpenXCom\dist` |
 |---|---|---|
@@ -19,7 +20,7 @@
 ```powershell
 .\tools\build\build.ps1 -Target Both
 .\tools\build\build.ps1 -Target Exe -NoNinja
-.\OXCE_Build.cmd mod
+.\Выпуск\OXCE_Build.cmd mod
 ```
 
 ## Что попадает в архив

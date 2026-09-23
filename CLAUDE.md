@@ -79,7 +79,8 @@ ninja
 ```
 
 Пути тулчейна — `tools\build\build_config.json` (`MsysBin`) и `build-release\CMakeCache.txt`.
-Сборка релиза с упаковкой DLL — `OXCE_Build.cmd` в корне.
+Сборка релиза с упаковкой DLL — `Выпуск\OXCE_Build.cmd`. Сборка + подпись + публикация +
+архив для станции одним запуском — `Выпуск\OXCE_Release.cmd` (настройки `Выпуск\release_config.json`).
 
 Генерация арта живёт в своём окружении: `tools\hdart\.venv` (в системном `py -3` нет diffusers).
 

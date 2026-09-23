@@ -2,7 +2,7 @@
   OXCE HD — окно с тремя кнопками: EXE / Мод / Оба.
   Каждая кнопка запускает build.ps1 в отдельном окне консоли (там виден ход сборки;
   при ошибке окно не закрывается, пока не нажать клавишу).
-  Запуск: двойной клик по OXCE_Build.cmd в корне E:\OpenXCom.
+  Запуск: двойной клик по E:\OpenXCom\Выпуск\OXCE_Build.cmd.
 #>
 $ErrorActionPreference = 'Stop'
 Add-Type -AssemblyName System.Windows.Forms
