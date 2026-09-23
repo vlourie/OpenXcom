@@ -21,6 +21,7 @@
 #include <cmath>
 #include <chrono>
 #include <cstring>
+#include <unordered_set>
 #include "Logger.h"
 #include "Font.h"
 #include "HdSmooth.h"
@@ -311,6 +312,145 @@ const HdFrame *HdUi::smoothed(const Surface *surface, int k, const SDL_Color *co
 			<< (_smoothBytes >> 20) << " MB)";
 	}
 	return out;
+}
+
+/**
+ * The globe's layers (radars, borders, markers) are the size of the globe, drawn on
+ * well under one percent of it and redrawn with every turn of it: smoothed whole,
+ * they cost 4-7 ms each a frame, and spinning the globe ran at 25 fps. Here only
+ * the 16x16 tiles with something on them are smoothed, a row of such tiles at a
+ * time, each with a margin of 8 pixels around it and drawn clipped to itself. Both
+ * the checkerboard pass and xBRZ look no further than 4 pixels away, so every
+ * pixel comes out as it would from the whole surface; the empty tiles would come
+ * out empty anyway.
+ */
+bool HdUi::drawSparse(SDL_Surface *dest, const Surface *surface, int x, int y, int k, const SDL_Color *colors, Uint64 pixelHash)
+{
+	const int w = surface->getWidth(), h = surface->getHeight();
+	const Uint8 *pixels = (const Uint8*)surface->getBuffer();
+	const int pitch = surface->getPitch();
+	Uint64 hash = pixelHash;
+	for (int i = 0; i < 256; ++i)
+	{
+		hash ^= (Uint64)colors[i].r | ((Uint64)colors[i].g << 8) | ((Uint64)colors[i].b << 16);
+		hash *= 1099511628211ULL;
+	}
+	auto it = _sparse.find(surface);
+	if (it == _sparse.end() || it->second.hash != hash || it->second.k != k)
+	{
+		if (_sparse.size() >= 64 && it == _sparse.end())
+		{
+			_sparse.clear();
+		}
+		SparseEntry &e = _sparse[surface];
+		e = SparseEntry();
+		e.hash = hash;
+		e.k = k;
+		const int T = 16, M = 8;
+		const int tw = (w + T - 1) / T, th = (h + T - 1) / T;
+		std::vector<Uint8> used((size_t)tw * th, 0);
+		int count = 0;
+		for (int yy = 0; yy < h; ++yy)
+		{
+			const Uint8 *row = pixels + (size_t)yy * pitch;
+			Uint8 *tiles = &used[(size_t)(yy / T) * tw];
+			for (int xx = 0; xx < w; ++xx)
+			{
+				if (row[xx] && !tiles[xx / T])
+				{
+					tiles[xx / T] = 1;
+					++count;
+				}
+			}
+		}
+		// a quarter of the tiles drawn: the pieces and their margins would cost about as much as the whole
+		e.dense = count * 4 > tw * th;
+		// the smoothing spills over the edge of a drawn pixel into an empty neighbour (a corner blended,
+		// a hole of a checkerboard filled), so the tiles next to a drawn one are drawn too: without them
+		// the check below found 3 pixels of the globe's borders missing
+		if (!e.dense)
+		{
+			std::vector<Uint8> grown(used);
+			for (int ty = 0; ty < th; ++ty)
+				for (int tx = 0; tx < tw; ++tx)
+					if (used[(size_t)ty * tw + tx])
+						for (int dy = -1; dy <= 1; ++dy)
+							for (int dx = -1; dx <= 1; ++dx)
+								if (ty + dy >= 0 && ty + dy < th && tx + dx >= 0 && tx + dx < tw)
+									grown[(size_t)(ty + dy) * tw + tx + dx] = 1;
+			used.swap(grown);
+		}
+		for (int ty = 0; ty < th && !e.dense; ++ty)
+		{
+			for (int tx = 0; tx < tw; )
+			{
+				if (!used[(size_t)ty * tw + tx]) { ++tx; continue; }
+				const int tx0 = tx;
+				while (tx < tw && used[(size_t)ty * tw + tx]) ++tx;
+				SparsePiece p;
+				p.ix = tx0 * T;
+				p.iy = ty * T;
+				p.iw = std::min(w, tx * T) - p.ix;
+				p.ih = std::min(h, (ty + 1) * T) - p.iy;
+				p.ox = std::max(0, p.ix - M);
+				p.oy = std::max(0, p.iy - M);
+				const int ow = std::min(w, p.ix + p.iw + M) - p.ox, oh = std::min(h, p.iy + p.ih + M) - p.oy;
+				if (!HdSmooth::smoothPalette(pixels + (size_t)p.oy * pitch + p.ox, ow, oh, pitch, colors, k, p.frame, false, ow * oh >= 16384))
+				{
+					return false;
+				}
+				p.frame.buildSpans();
+				e.pieces.push_back(std::move(p));
+			}
+		}
+		// the claim above checked on the real layers: the first few are smoothed whole as well and compared
+		static int checks = 0;
+		if (!e.dense && checks < 6)
+		{
+			++checks;
+			HdFrame whole;
+			if (HdSmooth::smoothPalette(pixels, w, h, pitch, colors, k, whole, false, true))
+			{
+				std::vector<Uint32> parts((size_t)whole.width * whole.height, 0u);
+				for (const SparsePiece &p : e.pieces)
+				{
+					for (int yy = p.iy * k; yy < (p.iy + p.ih) * k; ++yy)
+					{
+						for (int xx = p.ix * k; xx < (p.ix + p.iw) * k; ++xx)
+						{
+							parts[(size_t)yy * whole.width + xx] = p.frame.pixels[(size_t)(yy - p.oy * k) * p.frame.width + (xx - p.ox * k)];
+						}
+					}
+				}
+				size_t differ = 0;
+				for (size_t i = 0; i < parts.size(); ++i)
+				{
+					differ += parts[i] != whole.pixels[i] && ((parts[i] | whole.pixels[i]) >> 24) != 0;
+				}
+				Log(LOG_INFO) << "HD sparse check: " << w << "x" << h << " k" << k << ", " << e.pieces.size() << " pieces, "
+					<< differ << " pixels differ from the whole surface smoothed";
+			}
+		}
+		it = _sparse.find(surface);
+	}
+	if (it->second.dense)
+	{
+		return false;
+	}
+	const SDL_Rect outer = worldClip(dest, k);
+	for (const SparsePiece &p : it->second.pieces)
+	{
+		SDL_Rect clip;
+		const int x0 = std::max((int)outer.x, (x + p.ix) * k), y0 = std::max((int)outer.y, (y + p.iy) * k);
+		const int x1 = std::min(outer.x + outer.w, (x + p.ix + p.iw) * k), y1 = std::min(outer.y + outer.h, (y + p.iy + p.ih) * k);
+		if (x1 <= x0 || y1 <= y0) continue;
+		clip.x = (Sint16)x0;
+		clip.y = (Sint16)y0;
+		clip.w = (Uint16)(x1 - x0);
+		clip.h = (Uint16)(y1 - y0);
+		blendFrame(dest, p.frame, (x + p.ox) * k, (y + p.oy) * k, &clip);
+	}
+	return true;
 }
 
 HdUi::SmoothEntry *HdUi::cached(const Surface *key, Uint64 hash, int k)
@@ -612,13 +752,31 @@ void HdUi::drawSurface(const Surface *surface, int x, int y, bool smooth)
 			// a part of an image: searched for surfaces of some size, and not for ever for a surface
 			// whose content keeps changing (counters, bars: they are never a picture)
 			const int misses = it == _smooth.end() ? 0 : it->second.artMisses;
-			if (!art && w >= 24 && h >= 16 && misses < 3)
+			// the scan costs 100-300 ms against the pack of X-Piratez (1675 pictures), and the misses above
+			// are counted per surface: a surface made anew for every frame (an item in the inventory, the
+			// item of a Ufopaedia page) was scanned again every frame. So a content once searched in vain
+			// is not searched again, whatever surface it comes in; and a sprite-sized surface (items are
+			// at most 32x48 = 1536 px) is not searched at all: every crop found so far is a strip of 220x18
+			static std::unordered_set<Uint64> cropMisses;
+			static size_t cropMissesArts = 0;
+			if (cropMissesArts != HdUiArt::count())
+			{
+				cropMisses.clear();                        // another pack: what was not in the old one may be here
+				cropMissesArts = HdUiArt::count();
+			}
+			const Uint64 cropKey = pixelHash ^ ((Uint64)w << 48) ^ ((Uint64)h << 32);
+			if (!art && w >= 24 && h >= 16 && w * h >= 2048 && misses < 3 && cropMisses.count(cropKey) == 0)
 			{
 				// the whole pack compared against this surface: the only thing left in this path that
 				// can cost a hundred milliseconds. The label used to be overwritten by the smoothing
 				// branch below, which made the log name the wrong culprit
 				const auto cropStart = std::chrono::steady_clock::now();
 				art = HdUiArt::findCrop(pixels, pitch, w, h, artX, artY);
+				if (!art)
+				{
+					if (cropMisses.size() >= 65536) cropMisses.clear();
+					cropMisses.insert(cropKey);
+				}
 				const double cropMs = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - cropStart).count();
 				if (cropMs >= 5) { why = "crop scan"; cropped = true; }
 				if (cropMs >= 20)
@@ -663,6 +821,11 @@ void HdUi::drawSurface(const Surface *surface, int x, int y, bool smooth)
 	if (!oversize && smooth && k >= 2 && k <= 6)
 	{
 		if (!cropped) why = "xBRZ";
+		if ((long long)w * h >= 65536 && drawSparse(dest, surface, x, y, k, pal, pixelHash))
+		{
+			if (!cropped) why = "xBRZ sparse";
+			return;
+		}
 		const HdFrame *frame = smoothed(surface, k, pal, pixelHash);
 		if (frame)
 		{
