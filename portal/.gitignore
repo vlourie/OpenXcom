@@ -9,3 +9,6 @@ TestResults/
 
 # server secrets
 .env
+
+# local dev data of the portal (uploads, mail pickup)
+.dev/
