@@ -24,7 +24,7 @@
   "CopyExeTo": "E:\\OpenXCom\\Пиратки\\Dioxine_XPiratez",
 
   "Launcher": true,
-  "LauncherDevKeys": true,
+  "LauncherDevKeys": false,
   "LauncherOut": "E:\\OpenXCom\\dist\\_launcher_rel",
   "OpenExplorer": true,
 
