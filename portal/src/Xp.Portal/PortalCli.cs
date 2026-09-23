@@ -10,6 +10,8 @@ namespace Xp.Portal;
 /// Xp.Portal migrate                                   apply database migrations, create the roles
 /// Xp.Portal admin create --email E [--name N]         first SuperAdmin; password from XP_ADMIN_PASSWORD or stdin
 /// Xp.Portal admin reset-2fa --email E                 lost authenticator: turn the second factor off
+/// Xp.Portal seed --file F                             mods and forum boards from a catalogue file
+/// Xp.Portal wiki import --file F                      wiki pages built from a mod's rulesets
 /// A SuperAdmin is never created from the web: whoever runs these already controls the server.
 /// </summary>
 public static class PortalCli
@@ -30,6 +32,8 @@ public static class PortalCli
                 ["migrate"] => await MigrateAsync(sp),
                 ["admin", "create", .. var rest] => await CreateAdminAsync(sp, Opt(rest, "--email"), Opt(rest, "--name")),
                 ["admin", "reset-2fa", .. var rest] => await Reset2faAsync(sp, Opt(rest, "--email")),
+                ["seed", .. var rest] => await SeedAsync(sp, Opt(rest, "--file")),
+                ["wiki", "import", .. var rest] => await WikiImportAsync(sp, Opt(rest, "--file")),
                 _ => Usage(),
             };
         }
@@ -42,7 +46,8 @@ public static class PortalCli
 
     static int Usage()
     {
-        Console.Error.WriteLine("usage: Xp.Portal migrate | admin create --email E [--name N] | admin reset-2fa --email E");
+        Console.Error.WriteLine("usage: Xp.Portal migrate | admin create --email E [--name N] | admin reset-2fa --email E"
+            + " | seed --file F | wiki import --file F");
         return 2;
     }
 
@@ -105,6 +110,29 @@ public static class PortalCli
         }
         Console.Error.WriteLine();
         return sb.ToString();
+    }
+
+    static async Task<int> SeedAsync(IServiceProvider sp, string? path)
+    {
+        if (string.IsNullOrWhiteSpace(path)) throw new ArgumentException("--file is required");
+        if (!File.Exists(path)) throw new ArgumentException($"no file {path}");
+        var file = CommunitySeed.Read(path);
+        var r = await sp.GetRequiredService<CommunitySeed>().ApplyAsync(file, CancellationToken.None);
+        Console.WriteLine($"mods: {r.ModsAdded} added, {r.ModsUpdated} updated; boards: {r.SectionsAdded} added, {r.SectionsUpdated} updated");
+        return 0;
+    }
+
+    static async Task<int> WikiImportAsync(IServiceProvider sp, string? path)
+    {
+        if (string.IsNullOrWhiteSpace(path)) throw new ArgumentException("--file is required");
+        if (!File.Exists(path)) throw new ArgumentException($"no file {path}");
+        var file = WikiImport.Read(path);
+        Console.WriteLine($"{file.Mod} {file.Version}: {file.Pages.Count} pages built {file.Generated}");
+        var started = DateTimeOffset.UtcNow;
+        var r = await sp.GetRequiredService<WikiImport>().ApplyAsync(file, CancellationToken.None);
+        Console.WriteLine($"written {r.Written}, removed {r.Removed}, left alone as hand-written {r.KeptByHand}, "
+            + $"skipped {r.Skipped}, in {(DateTimeOffset.UtcNow - started).TotalSeconds:0.0} s");
+        return 0;
     }
 
     static async Task<int> Reset2faAsync(IServiceProvider sp, string? email)

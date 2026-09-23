@@ -10,6 +10,12 @@ public sealed class PortalOptions
     public string Secret { get; set; } = "";
     /// <summary>Where the "Download launcher" button leads.</summary>
     public string LauncherDownloadUrl { get; set; } = "";
+    /// <summary>
+    /// Picture of the entrance screen, a file name under wwwroot/img. While it is empty the slot on
+    /// the page is drawn as a marked frame, not left as a hole - the layout must read the same
+    /// whether or not the art has been made yet.
+    /// </summary>
+    public string HeroImage { get; set; } = "";
     /// <summary>Release repository (the tree xp-release builds): a URL or a local folder.</summary>
     public string ReleaseRepo { get; set; } = "";
     public string ReleaseChannel { get; set; } = "stable";

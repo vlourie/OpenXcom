@@ -4,6 +4,9 @@
     var back = Context.Request.Path + Context.Request.QueryString;
     // the guest link carries its secret in the query: never echo it into the language links
     if (Context.Request.Query.ContainsKey("k")) back = Context.Request.Path;
+    var path = Context.Request.Path.Value ?? "/";
+    // a section stays lit while the reader is anywhere inside it
+    string On(string prefix) => path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) ? "on" : "";
 }
 <!DOCTYPE html>
 <html lang="@Text.Lang">
@@ -11,19 +14,23 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>@(ViewData["Title"] is string title ? title + " — " : "")@T["site.title"]</title>
+    <link rel="stylesheet" href="~/css/palette.css" asp-append-version="true">
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true">
 </head>
 <body>
 <header class="top">
     <a class="brand" href="/">@T["site.title"]</a>
     <nav>
-        <a href="/tickets/new">@T["nav.report"]</a>
+        <a href="/mods" class="@On("/mods")">@T["nav.mods"]</a>
+        <a href="/wiki" class="@On("/wiki")">@T["nav.wiki"]</a>
+        <a href="/forum" class="@On("/forum")">@T["nav.forum"]</a>
+        <a href="/tickets/new" class="@On("/tickets")">@T["nav.report"]</a>
         @if (signedIn)
         {
-            <a href="/me">@T["nav.my"]</a>
+            <a href="/me" class="@On("/me")">@T["nav.my"]</a>
             @if (user.IsInRole(Roles.Admin) || user.IsInRole(Roles.SuperAdmin))
             {
-                <a href="/admin">@T["nav.admin"]</a>
+                <a href="/admin" class="@On("/admin")">@T["nav.admin"]</a>
             }
             @if (user.IsInRole(Roles.SuperAdmin))
             {
@@ -45,7 +52,7 @@
         </span>
     </nav>
 </header>
-<main>
+<main class="@(ViewData["Wide"] is true ? "wide" : "")">
     @if (TempData["flash"] is string flash)
     {
         <p class="flash">@T[flash]</p>

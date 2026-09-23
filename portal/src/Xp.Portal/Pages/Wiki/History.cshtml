@@ -1,0 +1,32 @@
+@page "/wiki/{mod}/{slug}/history"
+@model Xp.Portal.Pages.Wiki.HistoryModel
+@{
+    ViewData["Title"] = T["wiki.history"];
+}
+<p class="crumbs">
+    <a href="/wiki/@Model.ModSlug">@Model.ModName</a> /
+    <a href="/wiki/@Model.ModSlug/@Model.Slug">@Model.PageTitle</a> /
+    @T["wiki.history"]
+</p>
+<h1>@T["wiki.history"]</h1>
+
+@if (Model.Revisions.Count == 0)
+{
+    <p class="hint">@T["wiki.history.none"]</p>
+}
+else
+{
+    <table>
+        <tr><th>@T["field.updated"]</th><th>@T["field.name"]</th><th>@T["field.title"]</th><th>@T["wiki.comment"]</th></tr>
+        @foreach (var r in Model.Revisions)
+        {
+            <tr>
+                <td>@r.At.ToString("yyyy-MM-dd HH:mm")</td>
+                <td>@(r.Editor?.DisplayName ?? "—")</td>
+                <td>@r.Title</td>
+                <td class="hint">@r.Comment</td>
+            </tr>
+        }
+    </table>
+    <p class="hint">@T["wiki.history.hint"]</p>
+}

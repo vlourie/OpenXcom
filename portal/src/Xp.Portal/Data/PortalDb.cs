@@ -15,11 +15,21 @@ public sealed class PortalDb(DbContextOptions<PortalDb> options)
     public DbSet<TelegramRoute> TelegramRoutes => Set<TelegramRoute>();
     public DbSet<NotificationJob> NotificationJobs => Set<NotificationJob>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+    public DbSet<GameMod> Mods => Set<GameMod>();
+    public DbSet<ModText> ModTexts => Set<ModText>();
+    public DbSet<WikiPage> WikiPages => Set<WikiPage>();
+    public DbSet<WikiRevision> WikiRevisions => Set<WikiRevision>();
+    public DbSet<ForumSection> ForumSections => Set<ForumSection>();
+    public DbSet<ForumSectionText> ForumSectionTexts => Set<ForumSectionText>();
+    public DbSet<ForumTopic> ForumTopics => Set<ForumTopic>();
+    public DbSet<ForumPost> ForumPosts => Set<ForumPost>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
         base.OnModelCreating(b);
         b.HasSequence<long>("ticket_numbers").StartsAt(1);
+        b.HasSequence<long>("forum_topic_numbers").StartsAt(1);
+        Community(b);
 
         b.Entity<PortalUser>(e =>
         {
@@ -108,6 +118,89 @@ public sealed class PortalDb(DbContextOptions<PortalDb> options)
             e.Property(a => a.Action).HasMaxLength(64);
             e.Property(a => a.Target).HasMaxLength(128);
             e.Property(a => a.Detail).HasMaxLength(1024);
+        });
+    }
+
+    /// <summary>Mods, wiki and forum. Kept in its own method so the ticket model above stays readable.</summary>
+    static void Community(ModelBuilder b)
+    {
+        b.Entity<GameMod>(e =>
+        {
+            e.HasIndex(m => m.Slug).IsUnique();
+            e.Property(m => m.Slug).HasMaxLength(CommunityLimits.SlugMax);
+            e.Property(m => m.Author).HasMaxLength(CommunityLimits.NameMax);
+            e.Property(m => m.HomeUrl).HasMaxLength(512);
+            e.Property(m => m.DownloadUrl).HasMaxLength(512);
+            e.Property(m => m.Version).HasMaxLength(64);
+            e.Property(m => m.Image).HasMaxLength(128);
+            e.HasMany(m => m.Texts).WithOne().HasForeignKey(t => t.ModId).OnDelete(DeleteBehavior.Cascade);
+        });
+        b.Entity<ModText>(e =>
+        {
+            e.HasKey(t => new { t.ModId, t.Lang });
+            e.Property(t => t.Lang).HasMaxLength(2);
+            e.Property(t => t.Name).HasMaxLength(CommunityLimits.NameMax);
+            e.Property(t => t.Summary).HasMaxLength(CommunityLimits.SummaryMax);
+            e.Property(t => t.Body).HasMaxLength(CommunityLimits.ArticleMax);
+        });
+
+        b.Entity<WikiPage>(e =>
+        {
+            // one address per mod and language; the same slug may exist in ru and en
+            e.HasIndex(p => new { p.ModId, p.Lang, p.Slug }).IsUnique();
+            e.HasIndex(p => new { p.ModId, p.Lang, p.Section });
+            e.Property(p => p.Slug).HasMaxLength(CommunityLimits.SlugMax);
+            e.Property(p => p.Lang).HasMaxLength(2);
+            e.Property(p => p.Title).HasMaxLength(CommunityLimits.TitleMax);
+            e.Property(p => p.Body).HasMaxLength(CommunityLimits.ArticleMax);
+            e.Property(p => p.Section).HasMaxLength(CommunityLimits.SlugMax);
+            e.Property(p => p.Source).HasMaxLength(256);
+            e.Property(p => p.SourceVersion).HasMaxLength(64);
+            e.Property(p => p.Kind).HasConversion<string>().HasMaxLength(16);
+            e.HasOne(p => p.Mod).WithMany().HasForeignKey(p => p.ModId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(p => p.Editor).WithMany().HasForeignKey(p => p.EditorId).OnDelete(DeleteBehavior.SetNull);
+        });
+        b.Entity<WikiRevision>(e =>
+        {
+            e.HasIndex(r => new { r.PageId, r.At });
+            e.Property(r => r.Title).HasMaxLength(CommunityLimits.TitleMax);
+            e.Property(r => r.Body).HasMaxLength(CommunityLimits.ArticleMax);
+            e.Property(r => r.Comment).HasMaxLength(CommunityLimits.SummaryMax);
+            e.HasOne<WikiPage>().WithMany().HasForeignKey(r => r.PageId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(r => r.Editor).WithMany().HasForeignKey(r => r.EditorId).OnDelete(DeleteBehavior.SetNull);
+        });
+
+        b.Entity<ForumSection>(e =>
+        {
+            e.HasIndex(s => s.Slug).IsUnique();
+            e.Property(s => s.Slug).HasMaxLength(CommunityLimits.SlugMax);
+            e.HasOne(s => s.Mod).WithMany().HasForeignKey(s => s.ModId).OnDelete(DeleteBehavior.SetNull);
+            e.HasMany(s => s.Texts).WithOne().HasForeignKey(t => t.SectionId).OnDelete(DeleteBehavior.Cascade);
+        });
+        b.Entity<ForumSectionText>(e =>
+        {
+            e.HasKey(t => new { t.SectionId, t.Lang });
+            e.Property(t => t.Lang).HasMaxLength(2);
+            e.Property(t => t.Name).HasMaxLength(CommunityLimits.NameMax);
+            e.Property(t => t.Summary).HasMaxLength(CommunityLimits.SummaryMax);
+        });
+        b.Entity<ForumTopic>(e =>
+        {
+            e.Property(t => t.Number).HasDefaultValueSql("nextval('forum_topic_numbers')");
+            e.HasIndex(t => t.Number).IsUnique();
+            // the board list: pinned first, then by the last post - this index is the one it uses
+            e.HasIndex(t => new { t.SectionId, t.Pinned, t.LastPostAt });
+            e.Property(t => t.Title).HasMaxLength(CommunityLimits.TitleMax);
+            e.HasOne(t => t.Section).WithMany().HasForeignKey(t => t.SectionId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(t => t.Author).WithMany().HasForeignKey(t => t.AuthorId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(t => t.LastPostAuthor).WithMany().HasForeignKey(t => t.LastPostAuthorId).OnDelete(DeleteBehavior.SetNull);
+        });
+        b.Entity<ForumPost>(e =>
+        {
+            e.HasIndex(p => new { p.TopicId, p.CreatedAt });
+            e.Property(p => p.Body).HasMaxLength(CommunityLimits.PostMax);
+            e.HasOne(p => p.Topic).WithMany().HasForeignKey(p => p.TopicId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne(p => p.Author).WithMany().HasForeignKey(p => p.AuthorId).OnDelete(DeleteBehavior.Cascade);
         });
     }
 }

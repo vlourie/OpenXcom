@@ -29,9 +29,13 @@ public static class Permissions
     public const string DocsEdit = "docs.edit";
     public const string RoadmapEdit = "roadmap.edit";
     public const string ReleasesPublish = "releases.publish";
+    /// <summary>May write and rename wiki articles, and publish or hide them.</summary>
+    public const string WikiEdit = "wiki.edit";
+    /// <summary>May pin, lock, move and hide on the forum, and edit somebody else's post.</summary>
+    public const string ForumModerate = "forum.moderate";
 
     public static string ForCategory(string category) => "tickets." + category;
-    public static readonly string[] All = [.. Categories.All.Select(ForCategory), DocsEdit, RoadmapEdit, ReleasesPublish];
+    public static readonly string[] All = [.. Categories.All.Select(ForCategory), DocsEdit, RoadmapEdit, ReleasesPublish, WikiEdit, ForumModerate];
     public static bool IsValid(string p) => All.Contains(p);
 }
 
@@ -65,7 +69,13 @@ public sealed class Viewer
             : IsAdmin
                 ? Categories.All.Where(c => p.HasClaim(Permissions.ClaimType, Permissions.ForCategory(c))).ToHashSet()
                 : new HashSet<string>();
+        CanEditWiki = IsSuperAdmin || p.HasClaim(Permissions.ClaimType, Permissions.WikiEdit);
+        CanModerateForum = IsSuperAdmin || p.HasClaim(Permissions.ClaimType, Permissions.ForumModerate);
     }
+
+    /// <summary>Wiki and forum rights. A SuperAdmin has them without being granted them one by one.</summary>
+    public bool CanEditWiki { get; private init; }
+    public bool CanModerateForum { get; private init; }
 
     public bool IsStaffFor(Ticket t) => TicketCategories.Contains(t.Category);
     public bool IsOwner(Ticket t) => UserId is { } u && t.AuthorId == u;

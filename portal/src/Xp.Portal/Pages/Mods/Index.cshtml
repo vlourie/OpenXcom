@@ -1,0 +1,29 @@
+@page "/mods"
+@model Xp.Portal.Pages.Mods.ModsModel
+@{
+    ViewData["Title"] = T["nav.mods"];
+}
+<h1>@T["mods.title"]</h1>
+<p class="lead">@T["mods.lead"]</p>
+
+@if (Model.Mods.Count == 0)
+{
+    <p class="hint">@T["mods.empty"]</p>
+}
+else
+{
+    <div class="cards">
+        @foreach (var m in Model.Mods)
+        {
+            <a class="card" href="/mods/@m.Slug">
+                @if (!string.IsNullOrEmpty(m.Image))
+                {
+                    <img src="~/img/mods/@m.Image" alt="@m.Name">
+                }
+                <h3>@m.Name</h3>
+                <p>@m.Summary</p>
+                <span class="count">@T.Format("mods.counts", m.WikiPages, m.Topics)</span>
+            </a>
+        }
+    </div>
+}

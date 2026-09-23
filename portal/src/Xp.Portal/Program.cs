@@ -17,7 +17,9 @@ using Xp.Portal.Notifications;
 using Xp.Portal.Site;
 using Xp.Portal.Tickets;
 
-if (args.Length > 0 && args[0] is "admin" or "migrate")
+// a word the command line knows means the command line, not the web server: an unknown word starting
+// the site by mistake is how a typo in a deployment script turns into a container that never exits
+if (args.Length > 0 && args[0] is "admin" or "migrate" or "seed" or "wiki")
     return await PortalCli.RunAsync(args);
 
 var app = PortalApp.Build(args);
@@ -109,6 +111,9 @@ public static class PortalApp
             o.Conventions.AuthorizeFolder("/Admin", Policies.Staff);
             o.Conventions.AuthorizeFolder("/Admin/Super", Policies.SuperAdmin);
             o.Conventions.AuthorizeFolder("/Me");
+            // reading the forum and the wiki needs no account; writing does
+            o.Conventions.AuthorizePage("/Forum/New");
+            o.Conventions.AuthorizePage("/Wiki/Edit");
         });
         // Razor escapes markup either way; without this it also turns every Cyrillic letter into &#x...;
         s.Configure<Microsoft.Extensions.WebEncoders.WebEncoderOptions>(o =>
@@ -129,6 +134,10 @@ public static class PortalApp
         s.AddSingleton<ClamdScanner>();
         s.AddSingleton<ReleaseFeed>();
         s.AddSingleton<Text>();
+        s.AddSingleton<Markup>();
+        s.AddScoped<CommunityService>();
+        s.AddScoped<CommunitySeed>();
+        s.AddScoped<WikiImport>();
         s.AddSingleton<IEmailSender<PortalUser>, EmailSender>();
         if (cfg.GetValue("Workers:Enabled", true))
         {
@@ -167,6 +176,8 @@ public static class PortalApp
             o.AddPolicy("tickets-create", c => WritesByIp(c, cfg.GetValue("RateLimits:TicketsPer10Min", 5), TimeSpan.FromMinutes(10)));
             o.AddPolicy("tickets-write", c => WritesByIp(c, cfg.GetValue("RateLimits:WritesPer10Min", 60), TimeSpan.FromMinutes(10)));
             o.AddPolicy("api-read", c => ByIp(c, 120, TimeSpan.FromMinutes(1)));
+            // posting on the forum: enough for a conversation, not enough for a flood
+            o.AddPolicy("forum-write", c => WritesByIp(c, cfg.GetValue("RateLimits:ForumPer10Min", 20), TimeSpan.FromMinutes(10)));
             o.AddPolicy("login", c => WritesByIp(c, cfg.GetValue("RateLimits:LoginPer5Min", 10), TimeSpan.FromMinutes(5)));
         });
     }

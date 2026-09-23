@@ -1,0 +1,95 @@
+{
+  "$comment": "Catalogue of the site: mods and forum boards. Apply with: Xp.Portal seed --file deploy/seed/community.json. This file is the source of truth - applying it again matches rows by slug and rewrites them, so the mod texts are edited here, not on the site. Nothing is ever deleted: a board dropped from the file keeps its topics and is hidden by hand.",
+  "mods": [
+    {
+      "slug": "piratez",
+      "order": 10,
+      "published": true,
+      "author": "Dioxine",
+      "homeUrl": "https://openxcom.org/forum/index.php/topic,3626.0.html",
+      "downloadUrl": "https://openxcom.mod.io/x-piratez",
+      "version": "",
+      "image": "",
+      "texts": {
+        "ru": {
+          "name": "X-Piratez",
+          "summary": "Большой мод Dioxine: вместо земной обороны — банда пираток на захваченной Земле. Своя экономика, своё дерево исследований, сотни предметов.",
+          "body": "## Что это\n\n**X-Piratez** — самостоятельная игра на движке OpenXcom. От исходного X-COM остались только правила боя: всё остальное — свои юниты, своя броня, свой мир и своя экономика.\n\nМод огромный: несколько тысяч предметов, своё дерево исследований на сотни узлов, десятки типов карт. Поэтому у него на сайте отдельная вики, собранная прямо из рулсетов мода, — числа в ней те же, что в игре.\n\n## С чего начать\n\n1. Поставить OXCE (или наш билд с HD-графикой).\n2. Распаковать мод в `user/mods`.\n3. Включить его в списке модов и начать новую игру.\n\n## Где спрашивать\n\nВ ветке форума этого мода. Вопрос «как это работает» почти всегда быстрее закрывается страницей вики, чем ответом в теме."
+        },
+        "en": {
+          "name": "X-Piratez",
+          "summary": "Dioxine's big mod: no Earth defence, a gang of pirates on a conquered Earth instead. Its own economy, its own research tree, hundreds of items.",
+          "body": "## What it is\n\n**X-Piratez** is a game of its own on the OpenXcom engine. All that is left of X-COM are the rules of battle: everything else - units, armour, world and economy - is the mod's own.\n\nIt is huge: several thousand items, a research tree of hundreds of nodes, dozens of map types. That is why it gets a wiki of its own here, built straight out of the mod's rulesets - the numbers in it are the numbers in the game.\n\n## Getting started\n\n1. Install OXCE (or our build with the HD graphics).\n2. Unpack the mod into `user/mods`.\n3. Enable it in the mod list and start a new game.\n\n## Where to ask\n\nOn this mod's board. A \"how does this work\" question is almost always answered faster by a wiki page than by a reply in a topic."
+        }
+      }
+    },
+    {
+      "slug": "hd",
+      "order": 20,
+      "published": true,
+      "author": "Vitali, OXCE-HD",
+      "homeUrl": "",
+      "downloadUrl": "",
+      "version": "",
+      "image": "",
+      "texts": {
+        "ru": {
+          "name": "OXCE-HD",
+          "summary": "Новый графический слой поверх OXCE: то же 320×200 в основе, но рисуется в полном разрешении экрана. Механика не меняется ни на число.",
+          "body": "## Что это\n\nМы переписываем **графику** OpenXcom Extended и не трогаем механику. Те же числа, тот же порядок хода, те же сейвы. Отличие одно: картинка.\n\nПоверх классического 8-битного слоя живёт второй, 32-битный. При масштабе 1 он обязан давать побайтно тот же кадр, что и раньше, — это не пожелание, а приёмка: кадр сравнивается с эталонным дампом.\n\n## Что уже есть\n\n- HD-паки для местности, юнитов и интерфейса;\n- шрифты TTF вместо растровых;\n- сглаживание классических элементов там, где HD-кадра ещё нет;\n- масштаб до 4× при нативном разрешении монитора.\n\n## Что в работе\n\nОтрисовка оставшихся наборов плиток. Очередь считается по охвату карт: сначала то, что игрок видит чаще."
+        },
+        "en": {
+          "name": "OXCE-HD",
+          "summary": "A new graphics layer over OXCE: the same 320x200 underneath, drawn at the screen's full resolution. Not a single number of the mechanics changes.",
+          "body": "## What it is\n\nWe are rewriting the **graphics** of OpenXcom Extended and touching no mechanics. Same numbers, same turn order, same saves. One difference: the picture.\n\nOver the classic 8-bit layer lives a second, 32-bit one. At scale 1 it must produce the very same frame byte for byte - that is not a wish but the acceptance test: the frame is compared against a reference dump.\n\n## What is in already\n\n- HD packs for terrain, units and the interface;\n- TTF fonts instead of bitmap ones;\n- smoothing of classic elements where an HD frame does not exist yet;\n- scaling up to 4x at the monitor's native resolution.\n\n## What is being worked on\n\nDrawing the remaining tile sets. The queue is ordered by map coverage: whatever the player sees most often comes first."
+        }
+      }
+    }
+  ],
+  "sections": [
+    {
+      "slug": "news",
+      "order": 10,
+      "staffOnly": true,
+      "published": true,
+      "texts": {
+        "ru": { "name": "Объявления", "summary": "Версии, планы и всё, что команда хочет сказать вслух." },
+        "en": { "name": "Announcements", "summary": "Releases, plans and whatever the team wants said out loud." }
+      }
+    },
+    {
+      "slug": "hd",
+      "order": 20,
+      "mod": "hd",
+      "texts": {
+        "ru": { "name": "OXCE-HD", "summary": "Графический слой: как ставится, что тормозит, что нарисовано криво." },
+        "en": { "name": "OXCE-HD", "summary": "The graphics layer: installing it, what runs slow, what is drawn wrong." }
+      }
+    },
+    {
+      "slug": "piratez",
+      "order": 30,
+      "mod": "piratez",
+      "texts": {
+        "ru": { "name": "X-Piratez", "summary": "Прохождение, сборки, вопросы по моду Dioxine." },
+        "en": { "name": "X-Piratez", "summary": "Playthroughs, builds and questions about Dioxine's mod." }
+      }
+    },
+    {
+      "slug": "help",
+      "order": 40,
+      "texts": {
+        "ru": { "name": "Помощь", "summary": "Не ставится, падает, не находит мод — сюда. К сообщению полезно приложить openxcom.log." },
+        "en": { "name": "Help", "summary": "Will not install, crashes, cannot find the mod - here. Attaching openxcom.log helps." }
+      }
+    },
+    {
+      "slug": "talk",
+      "order": 50,
+      "texts": {
+        "ru": { "name": "Разговоры", "summary": "Всё остальное: другие моды, другие игры, просто поговорить." },
+        "en": { "name": "Talk", "summary": "Everything else: other mods, other games, or just talking." }
+      }
+    }
+  ]
+}

@@ -51,6 +51,7 @@ public class PortalFactory : WebApplicationFactory<Program>, IAsyncLifetime
             ["RateLimits:TicketsPer10Min"] = "1000",
             ["RateLimits:WritesPer10Min"] = "1000",
             ["RateLimits:LoginPer5Min"] = "1000",
+            ["RateLimits:ForumPer10Min"] = "1000",
         };
         foreach (var kv in Settings) s[kv.Key] = kv.Value;
         foreach (var kv in s) builder.UseSetting(kv.Key, kv.Value);

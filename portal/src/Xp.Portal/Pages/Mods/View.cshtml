@@ -1,0 +1,56 @@
+@page "/mods/{slug}"
+@model Xp.Portal.Pages.Mods.ModPageModel
+@inject Markup Md
+@{
+    ViewData["Title"] = Model.Name;
+}
+<p class="crumbs"><a href="/mods">@T["nav.mods"]</a> / @Model.Name</p>
+<h1>@Model.Name</h1>
+<p class="lead">@Model.Summary</p>
+
+<div class="stats">
+    @if (!string.IsNullOrEmpty(Model.Mod.Version))
+    {
+        <div><div class="k">@T["mods.version"]</div><div class="v">@Model.Mod.Version</div></div>
+    }
+    @if (!string.IsNullOrEmpty(Model.Mod.Author))
+    {
+        <div><div class="k">@T["mods.author"]</div><div class="v">@Model.Mod.Author</div></div>
+    }
+    <div><div class="k">@T["nav.wiki"]</div><div class="v">@Model.WikiPages</div></div>
+</div>
+
+@if (Model.Body.Length > 0)
+{
+    <section class="panel article">@Md.Render(Model.Body)</section>
+}
+
+<p>
+    @if (!string.IsNullOrEmpty(Model.Mod.DownloadUrl))
+    {
+        <a class="button" href="@Model.Mod.DownloadUrl" rel="noopener nofollow">@T["mods.download"]</a>
+    }
+    @if (!string.IsNullOrEmpty(Model.Mod.HomeUrl))
+    {
+        <a class="button secondary" href="@Model.Mod.HomeUrl" rel="noopener nofollow">@T["mods.home"]</a>
+    }
+    <a class="button secondary" href="/wiki/@Model.Mod.Slug">@T["mods.wiki"]</a>
+    @if (Model.ForumSlug is { Length: > 0 } fs)
+    {
+        <a class="button secondary" href="/forum/@fs">@T["mods.forum"]</a>
+    }
+</p>
+
+@if (Model.Groups.Count > 0)
+{
+    <section class="panel">
+        <h2 class="title">@T["wiki.contents"]</h2>
+        <nav class="groups">
+            @foreach (var g in Model.Groups)
+            {
+                <a class="chip" href="/wiki/@Model.Mod.Slug?s=@Uri.EscapeDataString(g.Section)">@(g.Section.Length == 0 ? T["wiki.other"] : g.Section)<span>@g.Count</span></a>
+            }
+        </nav>
+        <a class="button secondary" href="/wiki/@Model.Mod.Slug">@T["wiki.all"]</a>
+    </section>
+}

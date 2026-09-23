@@ -1,44 +1,402 @@
-:root {
-    --bg: #14171a; --panel: #1d2226; --line: #2e353b; --text: #e3e6e8; --dim: #9aa4ab;
-    --accent: #d9a441; --bad: #e0685c; --good: #6cc07a;
-    color-scheme: dark;
-}
+/* The site wears the game's interface.
+ *
+ * Every colour comes from palette.css, which tools/portal_palette.py reads out of the mod's own
+ * files. Nothing here invents a shade. The bevels repeat what the engine draws: a window is five
+ * nested rings around a face (Window::draw), a button is four rings around a face
+ * (TextButton::draw), and both keep square corners, because the game has no rounded ones.
+ *
+ * The content security policy allows no inline styles, so every state a page needs must exist
+ * here as a class.
+ */
+
 * { box-sizing: border-box; }
-body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.5 system-ui, "Segoe UI", Roboto, sans-serif; }
+
+html { background: var(--void); }
+
+body {
+    margin: 0;
+    background: var(--void);
+    color: var(--ink);
+    font: 16px/1.55 system-ui, "Segoe UI", Roboto, sans-serif;
+}
+
+/* ---------- the frame of a screen ---------------------------------------------------------- */
+
+.top {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 20px;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 20px;
+    background: var(--win-face);
+    box-shadow: inset 0 -1px 0 var(--win-ring-2), 0 1px 0 var(--win-ring-0);
+}
+
+.top .brand {
+    font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+    font-weight: 700;
+    font-size: 19px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--ink);
+    text-decoration: none;
+}
+
+.top .brand:hover { color: var(--accent); }
+
+.top nav { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; }
+
+.top nav > a {
+    padding: 3px 10px;
+    color: var(--ink);
+    font-size: 14px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    text-decoration: none;
+}
+
+.top nav > a:hover, .top nav > a.on { color: var(--btn-ink); background: var(--btn-ring-0); }
+
+.lang a { margin-left: 6px; color: var(--ink-faint); text-decoration: none; letter-spacing: 1px; }
+.lang a.on { color: var(--accent); font-weight: 700; }
+
+main { max-width: 1000px; margin: 0 auto; padding: 20px 16px 48px; }
+main.wide { max-width: 1240px; }
+
+footer {
+    max-width: 1000px;
+    margin: 0 auto;
+    padding: 16px;
+    color: var(--ink-faint);
+    font-size: 13px;
+    border-top: 1px solid var(--ui-5);
+}
+
 a { color: var(--accent); }
-main { max-width: 960px; margin: 0 auto; padding: 16px; }
-footer { max-width: 960px; margin: 32px auto; padding: 0 16px; color: var(--dim); font-size: 14px; }
-.top { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; padding: 12px 16px; border-bottom: 1px solid var(--line); background: var(--panel); }
-.top .brand { font-weight: 700; font-size: 20px; text-decoration: none; }
-.top nav { display: flex; flex-wrap: wrap; gap: 14px; align-items: center; }
-.lang a { margin-left: 6px; color: var(--dim); text-decoration: none; }
-.lang a.on { color: var(--text); font-weight: 700; }
+a:hover { color: var(--ui-7); }
+
+/* ---------- headings ------------------------------------------------------------------------ */
+
+h1, h2, h3 {
+    font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    margin: 0 0 12px;
+}
+
+h1 { font-size: 24px; color: var(--ink); }
+h2 { font-size: 18px; color: var(--accent); margin-top: 28px; }
+h3 { font-size: 15px; color: var(--sand); letter-spacing: 1.5px; margin-top: 20px; }
+
+.lead { color: var(--ink-dim); max-width: 62ch; }
+
+/* ---------- a window, exactly as Window::draw builds it -------------------------------------- */
+
+.panel {
+    position: relative;
+    margin: 16px 0;
+    padding: 18px;
+    background: var(--win-face);
+    box-shadow:
+        inset 0 0 0 1px var(--win-ring-0),
+        inset 0 0 0 2px var(--win-ring-1),
+        inset 0 0 0 3px var(--win-ring-2),
+        inset 0 0 0 4px var(--win-ring-3),
+        inset 0 0 0 5px var(--win-ring-4);
+}
+
+.panel > :first-child { margin-top: 0; }
+.panel > :last-child { margin-bottom: 0; }
+
+/* a window whose caption sits in the frame, the way a game screen titles itself */
+.panel > h2.title {
+    margin: -18px -18px 16px;
+    padding: 10px 18px 8px;
+    color: var(--ink);
+    background: var(--ui-9);
+    box-shadow: inset 0 -1px 0 var(--win-ring-2);
+}
+
+.panel.quiet { background: var(--ui-5); box-shadow: inset 0 0 0 1px var(--ui-4); }
+
+/* ---------- a button, exactly as TextButton::draw builds it ---------------------------------- */
+
+button, .button {
+    display: inline-block;
+    margin-top: 12px;
+    padding: 9px 20px;
+    background: var(--btn-face);
+    color: var(--btn-ink);
+    border: 0;
+    border-radius: 0;
+    font: inherit;
+    font-weight: 700;
+    font-size: 14px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    text-decoration: none;
+    cursor: pointer;
+    box-shadow:
+        inset 0 0 0 1px var(--btn-ring-0),
+        inset 0 0 0 2px var(--btn-ring-1),
+        inset 0 0 0 3px var(--btn-ring-2),
+        inset 0 0 0 4px var(--btn-ring-3);
+}
+
+button:hover, .button:hover { background: var(--ui-12); color: var(--void); }
+
+/* the engine inverts a pressed button instead of moving it */
+button:active, .button:active { background: var(--btn-ink); color: var(--btn-ring-0); }
+
+button.secondary, .button.secondary { background: var(--ui-9); color: var(--ink); }
+button.secondary:hover, .button.secondary:hover { background: var(--ui-8); color: var(--void); }
+
+button.small, .button.small { margin-top: 0; padding: 4px 12px; font-size: 12px; }
+
+button.link {
+    margin: 0; padding: 0; background: none; box-shadow: none;
+    color: var(--accent); font: inherit; letter-spacing: normal; text-transform: none;
+    text-decoration: underline; cursor: pointer;
+}
+button.link:hover { background: none; color: var(--ui-7); }
+
 form.inline { display: inline; }
-button.link { background: none; border: 0; padding: 0; color: var(--accent); font: inherit; text-decoration: underline; cursor: pointer; }
-h1 { font-size: 26px; margin: 16px 0; }
-h2 { font-size: 20px; margin: 24px 0 8px; }
-.panel { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 16px; margin: 12px 0; }
-label { display: block; margin: 12px 0 4px; color: var(--dim); }
-label.check { display: flex; gap: 8px; align-items: flex-start; color: var(--text); }
-input[type=text], input[type=email], input[type=password], input[type=number], select, textarea {
-    width: 100%; padding: 8px; background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: 4px; font: inherit; }
-textarea { min-height: 120px; }
-button, .button { display: inline-block; margin-top: 12px; padding: 8px 16px; background: var(--accent); color: #111; border: 0; border-radius: 4px; font: inherit; font-weight: 600; cursor: pointer; text-decoration: none; }
-button.secondary { background: var(--line); color: var(--text); }
-.errors { color: var(--bad); }
-.flash { padding: 8px 12px; border-left: 3px solid var(--good); background: var(--panel); }
-.hint { color: var(--dim); font-size: 14px; }
+
+/* ---------- forms ---------------------------------------------------------------------------- */
+
+label { display: block; margin: 14px 0 4px; color: var(--ink-dim); font-size: 14px; letter-spacing: 0.5px; }
+label.check { display: flex; gap: 8px; align-items: flex-start; color: var(--ink); }
+
+input[type=text], input[type=email], input[type=password], input[type=number], input[type=search],
+select, textarea {
+    width: 100%;
+    padding: 9px 10px;
+    background: var(--void);
+    color: var(--ink);
+    border: 0;
+    border-radius: 0;
+    font: inherit;
+    box-shadow: inset 0 0 0 1px var(--ui-9), inset 0 0 0 2px var(--void);
+}
+
+input:focus, select:focus, textarea:focus {
+    outline: 0;
+    box-shadow: inset 0 0 0 1px var(--accent), inset 0 0 0 2px var(--void);
+}
+
+textarea { min-height: 140px; font-family: inherit; }
+
+.errors { color: var(--sand); }
+.errors ul { margin: 6px 0; padding-left: 18px; }
+
+.flash {
+    margin: 0 0 16px;
+    padding: 10px 14px;
+    background: var(--ui-9);
+    color: var(--ink);
+    box-shadow: inset 3px 0 0 var(--accent);
+}
+
+.hint { color: var(--ink-faint); font-size: 13px; }
 .hp { position: absolute; left: -10000px; width: 1px; height: 1px; overflow: hidden; }
+
+/* ---------- lists, the way the game lists things --------------------------------------------- */
+
 table { width: 100%; border-collapse: collapse; }
-th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
-th { color: var(--dim); font-weight: 500; }
-.tag { display: inline-block; padding: 0 6px; border-radius: 3px; background: var(--line); font-size: 13px; }
-.msg { border-left: 3px solid var(--line); padding: 4px 12px; margin: 12px 0; white-space: pre-wrap; }
-.msg.staff { border-color: var(--accent); }
-.msg.internal { border-color: var(--bad); background: #2a1d1c; }
-.msg .meta { color: var(--dim); font-size: 13px; white-space: normal; }
-.pre { white-space: pre-wrap; overflow-wrap: anywhere; }
-.row { display: flex; flex-wrap: wrap; gap: 12px; }
-.row > * { flex: 1 1 200px; }
-.secret { font-family: ui-monospace, Consolas, monospace; font-size: 18px; letter-spacing: 1px; overflow-wrap: anywhere; }
+
+th, td { text-align: left; padding: 7px 10px; vertical-align: top; }
+
+th {
+    color: var(--accent);
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--ui-9);
+}
+
+tbody tr { border-bottom: 1px solid var(--ui-5); }
+tbody tr:hover { background: var(--ui-9); }
+
+.tag {
+    display: inline-block;
+    padding: 1px 8px;
+    background: var(--ui-9);
+    color: var(--ink);
+    font-size: 12px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+.tag.open { background: var(--ui-13); color: var(--void); }
+.tag.done { background: var(--ui-8); color: var(--void); }
+.tag.warn { background: var(--sand); color: var(--void); }
+
+/* ---------- the entrance screen --------------------------------------------------------------- */
+
+.hero {
+    display: grid;
+    grid-template-columns: minmax(0, 3fr) minmax(260px, 2fr);
+    gap: 0;
+    margin: 20px 0 8px;
+    background: var(--win-face);
+    box-shadow:
+        inset 0 0 0 1px var(--win-ring-0),
+        inset 0 0 0 2px var(--win-ring-1),
+        inset 0 0 0 3px var(--win-ring-2),
+        inset 0 0 0 4px var(--win-ring-3),
+        inset 0 0 0 5px var(--win-ring-4);
+}
+
+.hero .shot { margin: 5px; overflow: hidden; background: var(--void); }
+.hero .shot img { display: block; width: 100%; height: 100%; object-fit: cover; }
+
+/* until the picture exists the slot is not empty space but a marked-up frame */
+.hero .shot.empty {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 260px;
+    color: var(--ui-9);
+    font-family: ui-monospace, Consolas, monospace;
+    letter-spacing: 3px;
+    box-shadow: inset 0 0 0 1px var(--ui-9);
+}
+
+.hero .say { padding: 24px 24px 24px 8px; }
+.hero .say h1 { font-size: 27px; line-height: 1.25; }
+.hero .say .version { font-size: 15px; color: var(--accent); letter-spacing: 2px; }
+.hero .say .when { color: var(--ink-faint); font-size: 13px; }
+
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 14px; margin: 14px 0; }
+
+.card {
+    display: block;
+    padding: 16px;
+    background: var(--win-face);
+    color: var(--ink);
+    text-decoration: none;
+    box-shadow: inset 0 0 0 1px var(--win-ring-0), inset 0 0 0 2px var(--win-ring-4);
+}
+
+.card:hover { background: var(--ui-9); color: var(--ink); box-shadow: inset 0 0 0 1px var(--accent), inset 0 0 0 2px var(--win-ring-4); }
+/* the picture of a mod: a fixed strip, so a card without one is the same height as a card with one */
+.card img { display: block; width: calc(100% + 32px); height: 120px; margin: -16px -16px 12px; object-fit: cover; }
+.card h3 { margin: 0 0 6px; color: var(--accent); }
+.card p { margin: 0; color: var(--ink-dim); font-size: 14px; }
+.card .count { display: block; margin-top: 10px; color: var(--sand); font-family: ui-monospace, Consolas, monospace; font-size: 13px; letter-spacing: 1px; }
+
+/* ---------- long text: wiki articles and changelogs ------------------------------------------ */
+
+.article { max-width: 74ch; }
+.article p, .article li { color: var(--ink); }
+.article h2 { margin-top: 32px; }
+.article code { padding: 1px 5px; background: var(--void); color: var(--accent); font-size: 14px; }
+.article pre { padding: 12px; background: var(--void); overflow-x: auto; box-shadow: inset 0 0 0 1px var(--ui-9); }
+.article pre code { padding: 0; background: none; }
+.article blockquote { margin: 16px 0; padding: 4px 16px; color: var(--ink-dim); box-shadow: inset 3px 0 0 var(--ui-9); }
+.article img { max-width: 100%; height: auto; }
+.article table { margin: 16px 0; }
+
 .release { white-space: pre-wrap; }
+.pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+
+.crumbs { margin: 0 0 12px; color: var(--ink-faint); font-size: 13px; letter-spacing: 1px; }
+.crumbs a { color: var(--ink-dim); text-decoration: none; }
+.crumbs a:hover { color: var(--accent); }
+
+/* the groups of a mod's wiki: six thousand pages are not a list, they are a set of drawers */
+.groups { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0; }
+.chip {
+    display: inline-flex;
+    gap: 8px;
+    align-items: baseline;
+    padding: 5px 12px;
+    background: var(--ui-5);
+    color: var(--ink-dim);
+    text-decoration: none;
+    font-size: 14px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    box-shadow: inset 0 0 0 1px var(--win-ring-2);
+}
+.chip:hover { color: var(--ink); background: var(--ui-7); }
+.chip span { color: var(--sand); font-family: ui-monospace, Consolas, monospace; font-size: 13px; }
+.chip.on { background: var(--btn-face); color: var(--btn-ink); box-shadow: inset 0 0 0 1px var(--btn-ring-0), inset 0 0 0 2px var(--btn-ring-1); }
+.chip.on span { color: var(--btn-ink); }
+
+/* a hundred titles read better in columns than in one long ribbon */
+.toc { margin: 0; padding: 0; list-style: none; columns: 3; column-gap: 24px; }
+.toc li { break-inside: avoid; padding: 2px 0; font-size: 14px; }
+.toc a { color: var(--ink); text-decoration: none; }
+.toc a:hover { color: var(--accent); text-decoration: underline; }
+
+/* a page built from the mod's own rulesets says so, and says from which version */
+.derived {
+    margin: 0 0 16px;
+    padding: 8px 12px;
+    background: var(--ui-5);
+    color: var(--ink-dim);
+    font-size: 13px;
+    box-shadow: inset 3px 0 0 var(--sand);
+}
+
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 1px; margin: 16px 0; background: var(--ui-9); }
+.stats div { padding: 10px 12px; background: var(--win-face); }
+.stats dt, .stats .k { color: var(--ink-faint); font-size: 12px; letter-spacing: 1px; text-transform: uppercase; }
+.stats dd, .stats .v { margin: 2px 0 0; color: var(--ink); font-family: ui-monospace, Consolas, monospace; font-size: 17px; }
+
+/* ---------- forum ----------------------------------------------------------------------------- */
+
+.topic { display: grid; grid-template-columns: 1fr auto; gap: 4px 16px; padding: 10px 12px; border-bottom: 1px solid var(--ui-5); }
+.topic:hover { background: var(--ui-9); }
+.topic .name { color: var(--ink); font-weight: 600; text-decoration: none; }
+.topic .name:hover { color: var(--accent); }
+.topic .by { color: var(--ink-faint); font-size: 13px; }
+.topic .num { color: var(--sand); font-family: ui-monospace, Consolas, monospace; font-size: 14px; text-align: right; white-space: nowrap; }
+.topic .marks { display: inline-flex; gap: 6px; margin-right: 8px; vertical-align: middle; }
+
+.post { margin: 14px 0; background: var(--win-face); box-shadow: inset 0 0 0 1px var(--win-ring-4); }
+.post .who { display: flex; flex-wrap: wrap; gap: 10px; align-items: baseline; padding: 8px 14px; background: var(--ui-9); font-size: 13px; }
+.post .who .nick { color: var(--accent); font-weight: 700; letter-spacing: 1px; }
+.post .who .at { color: var(--ink-faint); }
+.post .body { padding: 14px; }
+.post.staff { box-shadow: inset 0 0 0 1px var(--btn-ring-0); }
+.post.op .who { background: var(--ui-8); }
+
+.pager { display: flex; gap: 8px; align-items: center; margin: 18px 0; font-family: ui-monospace, Consolas, monospace; font-size: 14px; }
+.pager a, .pager span { padding: 3px 10px; color: var(--ink-dim); text-decoration: none; box-shadow: inset 0 0 0 1px var(--ui-9); }
+.pager a:hover { color: var(--void); background: var(--btn-ring-0); }
+.pager .now { color: var(--void); background: var(--ui-8); }
+
+/* ---------- odds and ends kept from the ticket pages ------------------------------------------ */
+
+.row { display: flex; flex-wrap: wrap; gap: 14px; }
+.row > * { flex: 1 1 220px; }
+
+.msg { margin: 14px 0; padding: 6px 14px; white-space: pre-wrap; box-shadow: inset 3px 0 0 var(--ui-9); }
+.msg.staff { box-shadow: inset 3px 0 0 var(--accent); }
+.msg.internal { background: var(--ui-5); box-shadow: inset 3px 0 0 var(--sand); }
+.msg .meta { color: var(--ink-faint); font-size: 13px; white-space: normal; }
+
+.secret { font-family: ui-monospace, Consolas, monospace; font-size: 18px; letter-spacing: 1px; overflow-wrap: anywhere; color: var(--accent); }
+
+/* ---------- narrow screens --------------------------------------------------------------------- */
+
+@media (max-width: 720px) {
+    .hero { grid-template-columns: 1fr; }
+    .hero .say { padding: 20px; }
+    .top { padding: 10px 14px; }
+    .top .brand { font-size: 16px; letter-spacing: 2px; }
+    main { padding: 14px 12px 36px; }
+    .panel { padding: 14px; }
+    .panel > h2.title { margin: -14px -14px 12px; padding: 9px 14px 7px; }
+    .toc { columns: 1; }
+    .article table { display: block; overflow-x: auto; }
+}
+
+@media (max-width: 1100px) {
+    .toc { columns: 2; }
+}
