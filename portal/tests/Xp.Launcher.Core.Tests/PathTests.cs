@@ -43,6 +43,16 @@ public sealed class PathTests
     }
 
     [Theory]
+    [InlineData("XPiratezLauncher.exe", false, true)]
+    [InlineData("libSkiaSharp.dll", false, true)]
+    [InlineData("XPiratezLauncher.exe", true, false)]
+    [InlineData("XPiratezLauncher.pdb", true, true)]
+    [InlineData("openxcom_hd.exe", false, false)]
+    [InlineData("user/mods/hd/libsodium.dll", false, false)]
+    public void Game_release_leaves_the_launcher_to_its_own_channel(string rel, bool launcherKind, bool skipped) =>
+        Assert.Equal(skipped, ReleaseRepo.SkipInStage(rel, launcherKind));
+
+    [Theory]
     [InlineData("user/options.cfg", true)]
     [InlineData("user/piratez/a.sav", true)]
     [InlineData("user/mods/hd/x.png", false)]

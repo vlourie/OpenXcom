@@ -155,18 +155,36 @@ public sealed class ReleaseRepo(string root, Action<string>? log = null)
         return manifest;
     }
 
-    static Dictionary<string, string> CollectSources(BuildOptions o)
+    /// <summary>
+    /// The launcher's own files. tools/build/build.ps1 puts them into dist/_stage next to the game
+    /// exe (the game looks for the launcher there), but they are released on the launcher-* channels:
+    /// a game release that owned them would overwrite the running launcher.
+    /// </summary>
+    public static readonly string[] LauncherFiles =
+        ["XPiratezLauncher.exe", "xp-bootstrap.exe", "libHarfBuzzSharp.dll", "libSkiaSharp.dll", "libsodium.dll"];
+
+    /// <summary>A stage file that does not belong in this kind of release: launcher files in a game
+    /// release, debug symbols anywhere at the top level.</summary>
+    public static bool SkipInStage(string rel, bool launcherKind) =>
+        !rel.Contains('/') && (rel.EndsWith(".pdb", StringComparison.OrdinalIgnoreCase) ||
+                               (!launcherKind && LauncherFiles.Contains(rel, StringComparer.OrdinalIgnoreCase)));
+
+    Dictionary<string, string> CollectSources(BuildOptions o)
     {
         var map = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         if (o.StageDir is not null)
         {
             var stage = Path.GetFullPath(o.StageDir);
+            var skipped = new List<string>();
             foreach (var f in Directory.EnumerateFiles(stage, "*", SearchOption.AllDirectories))
             {
                 // reparse points (junctions) are never followed: R-047
                 if ((File.GetAttributes(f) & FileAttributes.ReparsePoint) != 0) continue;
-                map[SafePath.ToRelative(stage, f)] = f;
+                var rel = SafePath.ToRelative(stage, f);
+                if (SkipInStage(rel, o.LauncherKind)) { skipped.Add(rel); continue; }
+                map[rel] = f;
             }
+            if (skipped.Count > 0) _log($"not released from the stage: {string.Join(", ", skipped.Order(StringComparer.Ordinal))}");
         }
         foreach (var kv in o.Adds)
         {

@@ -770,7 +770,8 @@ function Invoke-LauncherStep {
     $dev = [bool](Get-Cfg 'LauncherDevKeys' $true)
     $mode = if ($dev) { 'dev' } else { 'prod' }
     $files = @(Get-Cfg 'LauncherFiles' @('XPiratezLauncher.exe', 'xp-bootstrap.exe', 'libHarfBuzzSharp.dll', 'libSkiaSharp.dll', 'libsodium.dll'))
-    $modeFile = Join-Path $out 'keys_mode.txt'
+    # пометка лежит вне папки публикации: оттуда xp-release собирает релиз лаунчера целиком
+    $modeFile = Join-Path $workDir 'launcher_keys_mode.txt'
     $exe = Join-Path $out $files[0]
 
     Write-Step "лаунчер ($mode-ключи)"
