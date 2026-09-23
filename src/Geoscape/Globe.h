@@ -88,6 +88,9 @@ private:
 	std::vector<Label> _labels;
 	std::vector<Text*> _hdLabelText;    ///< one widget per label size, made on first use
 	bool _hdLabelsKept;                 ///< were the labels kept out of _countries when it was last drawn
+	double _drawPartMs[7] = {};         ///< the cost of the parts of draw() since the last HD globe line
+	double _blitSelfMs = 0, _blitRestMs = 0, _blitPartMs[4] = {};
+	int _drawCount = 0, _blitCount = 0;
 
 	bool _isMouseScrolling, _isMouseScrolled;
 	int _xBeforeMouseScrolling, _yBeforeMouseScrolling;

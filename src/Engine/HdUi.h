@@ -265,6 +265,22 @@ private:
 	bool target(SDL_Surface *&dest, int &k, const SDL_Color *&colors) const;
 	/// The xBRZ copy of a surface (pixelHash: HdUiArt::hashPixels of its pixels), cached.
 	const HdFrame *smoothed(const Surface *surface, int k, const SDL_Color *colors, Uint64 pixelHash);
+	/// A big, mostly empty surface smoothed by its drawn pieces only; false when it is not mostly empty.
+	bool drawSparse(SDL_Surface *dest, const Surface *surface, int x, int y, int k, const SDL_Color *colors, Uint64 pixelHash);
+	struct SparsePiece
+	{
+		int ix, iy, iw, ih;               ///< the part of the surface this piece stands for
+		int ox, oy;                       ///< where its frame starts: the part with a margin around it
+		HdFrame frame;
+	};
+	struct SparseEntry
+	{
+		Uint64 hash = 0;
+		int k = 0;
+		bool dense = false;               ///< not worth it: smoothed whole, as before
+		std::vector<SparsePiece> pieces;
+	};
+	std::unordered_map<const Surface*, SparseEntry> _sparse;
 	/// The picture of an image scaled to k and re-tinted for the palette, cached under `key`.
 	const HdFrame *prepared(const HdUiArt::Art *art, const Surface *key, int k, const SDL_Color *colors);
 	/// Puts a frame into the smoothed-surface cache under a key (evicting by size).
