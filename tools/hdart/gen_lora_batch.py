@@ -144,6 +144,8 @@ def main():
     ap.add_argument("--rescan", action="store_true", help="пересчитать хэши листов")
     ap.add_argument("--plan-only", dest="plan_only", action="store_true",
                     help="показать план и выйти, модель не грузить")
+    ap.add_argument("--max-plan", dest="max_plan", type=int, default=4000,
+                    help="сколько кадров планировать вперёд; без срока - вся очередь")
     ap.add_argument("--out", default=os.path.join("art", "TERRAIN"))
     args = ap.parse_args()
 
@@ -170,7 +172,7 @@ def main():
             continue
         plans.append((name, sh, todo, hints, out, tiles))
         total += len(todo)
-        if total > 4000:                                # дальше считать смысла нет
+        if total > args.max_plan:                       # дальше считать смысла нет
             break
 
     print("наборов в работе: %d, кадров нарисовать: %d, бюджет %.1f ч"
