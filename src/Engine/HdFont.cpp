@@ -96,6 +96,18 @@ bool HdFont::loadFace(Face &face, const std::string &path)
 	stbtt_GetCodepointBitmapBox(info, 'H', scale, scale, &x0, &y0, &x1, &y1);
 	const float cap = (float)(y1 - y0);
 	face.capRatio = cap > 1.0f ? cap / 100.0f : 0.7f;
+	// the tails: how far the deepest of them reaches below the baseline. The bitmap fonts are drawn to
+	// fit their cell ('р' takes one row below the baseline in the small font), a TrueType face hangs
+	// about twice as deep, and the line has to be lifted by that much to stay inside the cell
+	float deep = 0.0f;
+	for (UCode c : { (UCode)'p', (UCode)'q', (UCode)'y', (UCode)'g', (UCode)0x0440, (UCode)0x0443, (UCode)0x0444, (UCode)0x0434 })
+	{
+		if (!stbtt_FindGlyphIndex(info, (int)c)) continue;
+		int bx0, by0, bx1, by1;
+		stbtt_GetCodepointBitmapBox(info, (int)c, scale, scale, &bx0, &by0, &bx1, &by1);
+		deep = std::max(deep, (float)by1);
+	}
+	face.descRatio = deep > 0.0f ? deep / 100.0f : 0.21f;
 	face.loaded = true;
 	return true;
 }
@@ -110,6 +122,46 @@ bool HdFont::loadFallback(const std::string &path)
 {
 	_cache.clear();
 	return loadFace(_fallback, path);
+}
+
+/**
+ * The family name the face carries in its own name table: what the options list shows
+ * instead of a bare number, so a font set is known by name and not by its position.
+ */
+std::string HdFont::familyName() const
+{
+	if (!_face.loaded)
+	{
+		return std::string();
+	}
+	const stbtt_fontinfo *info = (const stbtt_fontinfo*)_face.info;
+	// the typographic family ("Exo 2"), then the plain one for a face that has no typographic name
+	const int ids[2] = { 16, 1 };
+	for (int id : ids)
+	{
+		int len = 0;
+		const char *s = stbtt_GetFontNameString(info, &len, STBTT_PLATFORM_ID_MICROSOFT,
+			STBTT_MS_EID_UNICODE_BMP, STBTT_MS_LANG_ENGLISH, id);
+		if (!s || len < 2)
+		{
+			continue;
+		}
+		// UTF-16BE in the file; the names we show are Latin, anything else is dropped
+		std::string name;
+		for (int i = 1; i < len; i += 2)
+		{
+			const unsigned char c = (unsigned char)s[i];
+			if (s[i - 1] == 0 && c >= 0x20 && c < 0x7F)
+			{
+				name += (char)c;
+			}
+		}
+		if (!name.empty())
+		{
+			return name;
+		}
+	}
+	return std::string();
 }
 
 void HdFont::warnMissing(UCode c)

@@ -896,6 +896,8 @@ void HdUi::frameDone()
 	{
 		return;
 	}
+	// the font can be switched in play (the options list): pick it up between frames
+	applyFontOption();
 	_totalMs += _frameMs;
 	_lastFrameMs = _frameMs;
 	_lastCalls = _frameCalls;

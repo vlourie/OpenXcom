@@ -84,8 +84,14 @@ public:
 	/// The skin's style (the option): 1 the mod's colour ramps with gradients, 2 dark panels with the ramp
 	/// as thin accents, 3 flat mid-tone panels.
 	static int style();
-	/// Loads hd/UI/FontBig.ttf and FontSmall.ttf (or Font.ttf for both) from the mods; called after the mods load.
+	/// Finds the mods' TrueType font sets and loads the one the option asks for; called after the mods load.
 	void loadFonts();
+	/// Loads the font set the option names when it is not the one already loaded (the option can change in play).
+	void applyFontOption();
+	/// How many TrueType font sets the mods ship: the option runs from 0 (the game's own font) to this.
+	int fontSetCount() const { return (int)_fontSets.size(); }
+	/// What to call a font set in the options list: "Classic" for 0, otherwise the face's own name.
+	std::string fontSetName(int index) const;
 	/// Are TrueType fonts available for the text?
 	bool hasFonts() const;
 	HdFont &font(bool big) { return big ? _fontBig : _fontSmall; }
@@ -112,6 +118,7 @@ public:
 		bool big = true;                  ///< FontBig.ttf (a heavy face) or FontSmall.ttf
 		float cap = 6.0f;                 ///< the TrueType capitals' height, base pixels
 		int lineH = 9;                    ///< the classic line height (the cell plus the spacing)
+		int cellH = 9;                    ///< the classic glyph cell: where the bitmap font's own descenders end
 		int classicCap = 8;               ///< the bitmap font's capitals (rows of 'H')
 	};
 	/// The metrics of a classic font (measured once from its 'H').
@@ -222,6 +229,16 @@ private:
 	{
 		size_t operator()(const GlyphKey &g) const { return std::hash<const void*>()(g.font) ^ ((size_t)g.code * 0x9E3779B9u) ^ ((size_t)g.k << 20); }
 	};
+	/// One TrueType font set of the mods: a name for the options list and the two faces it draws with.
+	struct FontSet
+	{
+		std::string name;             ///< what the options list shows (the face's own name, or the file's)
+		std::string big, small;       ///< the paths of the two faces (the same file when the set has one)
+	};
+	std::vector<FontSet> _fontSets;   ///< the sets, in the order the option numbers them (1 = the first)
+	int _fontSetLoaded = -1;          ///< which of them is in _fontBig / _fontSmall now (0 = none, the classic font)
+	/// Lists the font sets the mods ship: hd/UI/Font{Big,Small}.ttf first, then the pairs in hd/UI/fonts.
+	void scanFontSets();
 	HdFont _fontBig, _fontSmall;
 	std::unordered_map<const Font*, FontMetrics> _metrics;
 	std::unordered_map<const Surface*, SmoothEntry> _smooth;
