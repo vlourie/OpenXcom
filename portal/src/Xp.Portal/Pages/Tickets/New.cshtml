@@ -1,0 +1,70 @@
+@page "/tickets/new"
+@model Xp.Portal.Pages.Tickets.NewTicketModel
+@{
+    ViewData["Title"] = T["new.title"];
+}
+<h1>@T["new.title"]</h1>
+@if (!Model.SignedIn)
+{
+    <p class="hint">@T["new.guest.hint"]</p>
+}
+<partial name="_Errors" model="Model.Errors" />
+<form method="post" enctype="multipart/form-data" class="panel">
+    <input type="hidden" asp-for="Form.Key" />
+    <label asp-for="Form.Category">@T["field.category"]</label>
+    <select asp-for="Form.Category">
+        @foreach (var c in Categories.All)
+        {
+            <option value="@c">@T["cat." + c]</option>
+        }
+    </select>
+    <p class="hint">@T["new.category.hint"]</p>
+
+    <label asp-for="Form.Title">@T["field.title"]</label>
+    <input type="text" asp-for="Form.Title" maxlength="@Limits.TitleMax" required />
+
+    <label asp-for="Form.Description">@T["field.description"]</label>
+    <textarea asp-for="Form.Description" required></textarea>
+
+    <label asp-for="Form.Steps">@T["field.steps"]</label>
+    <textarea asp-for="Form.Steps"></textarea>
+    <div class="row">
+        <div>
+            <label asp-for="Form.Expected">@T["field.expected"]</label>
+            <textarea asp-for="Form.Expected"></textarea>
+        </div>
+        <div>
+            <label asp-for="Form.Actual">@T["field.actual"]</label>
+            <textarea asp-for="Form.Actual"></textarea>
+        </div>
+    </div>
+    <div class="row">
+        <div>
+            <label asp-for="Form.GameVersion">@T["field.gameVersion"]</label>
+            <input type="text" asp-for="Form.GameVersion" maxlength="64" />
+        </div>
+        <div>
+            <label asp-for="Form.ModVersion">@T["field.modVersion"]</label>
+            <input type="text" asp-for="Form.ModVersion" maxlength="64" />
+        </div>
+    </div>
+    @if (!Model.SignedIn)
+    {
+        <label asp-for="Form.Email">@T["field.email.optional"]</label>
+        <input type="email" asp-for="Form.Email" maxlength="256" />
+    }
+    <div class="hp" aria-hidden="true">
+        <label asp-for="Form.Website">Website</label>
+        <input type="text" asp-for="Form.Website" tabindex="-1" autocomplete="off" />
+    </div>
+
+    <label for="files">@T["field.files"]</label>
+    <input type="file" id="files" name="files" multiple accept=".png,.jpg,.jpeg,.webp,.txt,.log,.sav,.asav,.zip" />
+    <p class="hint">@T.Format("new.files.hint", Model.MaxFiles, Model.MaxFileMb)</p>
+    <label class="check">
+        <input type="checkbox" asp-for="Form.Consent" />
+        <span>@T["new.consent"]</span>
+    </label>
+
+    <button type="submit">@T["new.submit"]</button>
+</form>

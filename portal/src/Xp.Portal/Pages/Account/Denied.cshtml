@@ -1,0 +1,15 @@
+@page "/account/denied"
+@model Xp.Portal.Pages.Account.DeniedModel
+@{
+    ViewData["Title"] = T["denied.title"];
+}
+<h1>@T["denied.title"]</h1>
+@if (Model.IsStaffWithout2fa)
+{
+    <p>@T["denied.need2fa"]</p>
+    <a class="button" href="/me/security">@T["nav.security"]</a>
+}
+else
+{
+    <p>@T["denied.text"]</p>
+}

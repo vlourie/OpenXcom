@@ -1,0 +1,25 @@
+@page "/account/register"
+@model Xp.Portal.Pages.Account.RegisterModel
+@{
+    ViewData["Title"] = T["register.title"];
+}
+<h1>@T["register.title"]</h1>
+@if (Model.Sent)
+{
+    <p class="flash">@T["register.sent"]</p>
+}
+else
+{
+    <partial name="_Errors" model="Model.Errors" />
+    <form method="post" class="panel">
+        <label for="Email">@T["field.email"]</label>
+        <input type="email" id="Email" name="Email" value="@Model.Email" required maxlength="256" autocomplete="email" />
+        <label for="DisplayName">@T["field.name"]</label>
+        <input type="text" id="DisplayName" name="DisplayName" value="@Model.DisplayName" required maxlength="64" autocomplete="nickname" />
+        <label for="Password">@T["field.password"]</label>
+        <input type="password" id="Password" name="Password" required minlength="10" autocomplete="new-password" />
+        <p class="hint">@T["register.password.hint"]</p>
+        <button type="submit">@T["register.submit"]</button>
+    </form>
+    <p class="hint">@T["register.guest_ok"]</p>
+}

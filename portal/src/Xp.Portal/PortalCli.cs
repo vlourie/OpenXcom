@@ -74,7 +74,7 @@ public static class PortalCli
         if (string.IsNullOrEmpty(password))
         {
             Console.Error.Write("password: ");
-            password = Console.ReadLine();
+            password = ReadSecret();
         }
         if (string.IsNullOrEmpty(password)) throw new ArgumentException("no password given");
         await EnsureRolesAsync(sp);
@@ -89,6 +89,22 @@ public static class PortalCli
         await sp.GetRequiredService<PortalDb>().SaveChangesAsync();
         Console.WriteLine($"SuperAdmin {email} created. Sign in and set up the authenticator: staff pages open only with it.");
         return 0;
+    }
+
+    /// <summary>Reads a line without echoing it when typed at a terminal; piped input is read as is.</summary>
+    static string? ReadSecret()
+    {
+        if (Console.IsInputRedirected) return Console.ReadLine();
+        var sb = new System.Text.StringBuilder();
+        while (true)
+        {
+            var k = Console.ReadKey(intercept: true);
+            if (k.Key == ConsoleKey.Enter) break;
+            if (k.Key == ConsoleKey.Backspace) { if (sb.Length > 0) sb.Length--; }
+            else if (!char.IsControl(k.KeyChar)) sb.Append(k.KeyChar);
+        }
+        Console.Error.WriteLine();
+        return sb.ToString();
     }
 
     static async Task<int> Reset2faAsync(IServiceProvider sp, string? email)

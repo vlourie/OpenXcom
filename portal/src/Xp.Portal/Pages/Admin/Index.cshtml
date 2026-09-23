@@ -1,0 +1,73 @@
+@page "/admin"
+@model Xp.Portal.Pages.Admin.QueueModel
+@{
+    ViewData["Title"] = T["admin.queue"];
+}
+<h1>@T["admin.queue"]</h1>
+<form method="get" class="panel row">
+    <div>
+        <label for="Status">@T["field.status"]</label>
+        <select id="Status" name="Status">
+            <option value="">@T["admin.filter.open"]</option>
+            <option value="all" selected="@(Model.Status == "all")">@T["admin.filter.all"]</option>
+            @foreach (var s in Enum.GetValues<TicketStatus>())
+            {
+                <option value="@s" selected="@(Model.Status == s.ToString())">@T["status." + s]</option>
+            }
+        </select>
+    </div>
+    <div>
+        <label for="Category">@T["field.category"]</label>
+        <select id="Category" name="Category">
+            <option value="">@T["admin.filter.any"]</option>
+            @foreach (var c in Categories.All.Where(Model.Viewer.TicketCategories.Contains))
+            {
+                <option value="@c" selected="@(Model.Category == c)">@T["cat." + c]</option>
+            }
+        </select>
+    </div>
+    <div>
+        <label for="Q">@T["admin.search"]</label>
+        <input type="text" id="Q" name="Q" value="@Model.Q" maxlength="140" />
+    </div>
+    <div>
+        <label class="check"><input type="checkbox" name="Mine" value="true" checked="@Model.Mine" /> <span>@T["admin.filter.mine"]</span></label>
+        <button type="submit">@T["admin.filter.apply"]</button>
+    </div>
+</form>
+
+@if (Model.Viewer.TicketCategories.Count == 0)
+{
+    <p class="hint">@T["admin.no_categories"]</p>
+}
+else if (Model.Tickets.Count == 0)
+{
+    <p class="hint">@T["admin.empty"]</p>
+}
+else
+{
+    <table>
+        <tr><th>№</th><th>@T["field.title"]</th><th>@T["field.category"]</th><th>@T["field.status"]</th><th>@T["field.priority"]</th><th>@T["field.created"]</th></tr>
+        @foreach (var t in Model.Tickets)
+        {
+            <tr>
+                <td><a href="/admin/tickets/@t.Number">@t.DisplayNumber</a></td>
+                <td>@t.Title</td>
+                <td>@T["cat." + t.Category]</td>
+                <td>@T["status." + t.Status]</td>
+                <td>@T["prio." + t.Priority]</td>
+                <td>@t.CreatedAt.ToString("yyyy-MM-dd HH:mm")</td>
+            </tr>
+        }
+    </table>
+    <p>
+        @if (Model.PageNo > 1)
+        {
+            <a href="?Status=@Model.Status&Category=@Model.Category&Mine=@Model.Mine&Q=@Uri.EscapeDataString(Model.Q ?? "")&p=@(Model.PageNo - 1)">←</a>
+        }
+        @if (Model.HasMore)
+        {
+            <a href="?Status=@Model.Status&Category=@Model.Category&Mine=@Model.Mine&Q=@Uri.EscapeDataString(Model.Q ?? "")&p=@(Model.PageNo + 1)">→</a>
+        }
+    </p>
+}

@@ -17,6 +17,8 @@ public sealed class PortalOptions
     public string[] ReleaseKeys { get; set; } = [];
     /// <summary>Addresses of reverse proxies whose X-Forwarded-For is believed (rate limits go by client IP).</summary>
     public string[] TrustedProxies { get; set; } = [];
+    /// <summary>Same, as subnets (CIDR): a reverse proxy in Docker gets a new address on every start.</summary>
+    public string[] TrustedNetworks { get; set; } = [];
 
     public byte[] SecretBytes()
     {

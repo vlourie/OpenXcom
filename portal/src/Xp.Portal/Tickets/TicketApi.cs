@@ -41,14 +41,18 @@ public static class TicketApi
 
         api.MapPost("/tickets", CreateAsync).RequireRateLimiting("tickets-create")
             .Produces<CreateTicketResponse>(StatusCodes.Status201Created).Produces<CreateTicketResponse>(StatusCodes.Status200OK)
-            .ProducesProblem(StatusCodes.Status400BadRequest).ProducesProblem(StatusCodes.Status409Conflict);
+            .ProducesProblem(StatusCodes.Status400BadRequest).ProducesProblem(StatusCodes.Status409Conflict)
+            .ProducesProblem(StatusCodes.Status429TooManyRequests);
         api.MapGet("/tickets/{number:long}", GetAsync).RequireRateLimiting("api-read")
-            .Produces<TicketView>().ProducesProblem(StatusCodes.Status404NotFound);
+            .Produces<TicketView>().ProducesProblem(StatusCodes.Status404NotFound).ProducesProblem(StatusCodes.Status429TooManyRequests);
         api.MapPost("/tickets/{number:long}/messages", ReplyAsync).RequireRateLimiting("tickets-write")
-            .Produces(StatusCodes.Status204NoContent).ProducesProblem(StatusCodes.Status404NotFound);
+            .Produces(StatusCodes.Status204NoContent).ProducesProblem(StatusCodes.Status400BadRequest)
+            .ProducesProblem(StatusCodes.Status404NotFound).ProducesProblem(StatusCodes.Status429TooManyRequests);
         api.MapPost("/tickets/{number:long}/attachments", UploadAsync).RequireRateLimiting("tickets-write")
             .Accepts<IFormFile>("multipart/form-data").Produces<TicketAttachmentView>(StatusCodes.Status201Created)
-            .ProducesProblem(StatusCodes.Status400BadRequest).ProducesProblem(StatusCodes.Status413PayloadTooLarge);
+            .ProducesProblem(StatusCodes.Status400BadRequest).ProducesProblem(StatusCodes.Status403Forbidden)
+            .ProducesProblem(StatusCodes.Status404NotFound).ProducesProblem(StatusCodes.Status413PayloadTooLarge)
+            .ProducesProblem(StatusCodes.Status429TooManyRequests);
     }
 
     static async Task<IResult> CreateAsync(CreateTicketRequest req, HttpContext http, TicketService tickets,
@@ -68,18 +72,17 @@ public static class TicketApi
         catch (TicketException e) { return Problem(e, e.Code == "idempotency_key_reused" ? 409 : 400); }
     }
 
-    static async Task<Ticket?> FindForGuestAsync(PortalDb db, long number, HttpContext http, CancellationToken ct)
+    static async Task<Ticket?> FindForGuestAsync(PortalDb db, long number, string? token, CancellationToken ct)
     {
-        var token = http.Request.Headers[TokenHeader].ToString();
         if (string.IsNullOrEmpty(token)) return null;
         var t = await db.Tickets.FirstOrDefaultAsync(x => x.Number == number, ct);
         // a wrong token and a missing ticket look the same: the number alone reveals nothing
         return t?.GuestTokenHash is not null && GuestTokens.Matches(token, t.GuestTokenHash) ? t : null;
     }
 
-    static async Task<IResult> GetAsync(long number, HttpContext http, PortalDb db, CancellationToken ct)
+    static async Task<IResult> GetAsync(long number, [FromHeader(Name = TokenHeader)] string? token, HttpContext http, PortalDb db, CancellationToken ct)
     {
-        var t = await FindForGuestAsync(db, number, http, ct);
+        var t = await FindForGuestAsync(db, number, token, ct);
         if (t is null) return NotFound();
         http.Response.Headers.CacheControl = "no-store";
         return Results.Ok(await ViewAsync(db, t, ct));
@@ -94,18 +97,22 @@ public static class TicketApi
         return new TicketView(t.Number, t.DisplayNumber, t.Category, t.Status.ToString(), t.Title, t.Description, t.CreatedAt, t.UpdatedAt, msgs, files);
     }
 
-    static async Task<IResult> ReplyAsync(long number, ReplyRequest req, HttpContext http, PortalDb db, TicketService tickets, CancellationToken ct)
+    static async Task<IResult> ReplyAsync(long number, ReplyRequest req, [FromHeader(Name = TokenHeader)] string? token, PortalDb db, TicketService tickets, CancellationToken ct)
     {
-        var t = await FindForGuestAsync(db, number, http, ct);
+        var t = await FindForGuestAsync(db, number, token, ct);
         if (t is null) return NotFound();
         try { await tickets.AddMessageAsync(t, req.Body, author: null, fromStaff: false, isInternal: false, ct); }
         catch (TicketException e) { return Problem(e, 400); }
         return Results.NoContent();
     }
 
-    static async Task<IResult> UploadAsync(long number, HttpContext http, PortalDb db, AttachmentService files, CancellationToken ct)
+    static async Task<IResult> UploadAsync(long number, [FromHeader(Name = TokenHeader)] string? token, HttpContext http, PortalDb db, AttachmentService files,
+        Microsoft.Extensions.Options.IOptions<AttachmentOptions> limits, CancellationToken ct)
     {
-        var t = await FindForGuestAsync(db, number, http, ct);
+        // Kestrel stops bodies at 30 MB by default, below our own limits: lift it to them, plus room for the multipart framing
+        if (http.Features.Get<Microsoft.AspNetCore.Http.Features.IHttpMaxRequestBodySizeFeature>() is { IsReadOnly: false } body)
+            body.MaxRequestBodySize = Math.Max(limits.Value.MaxFileBytes, limits.Value.MaxZipBytes) + 1024 * 1024;
+        var t = await FindForGuestAsync(db, number, token, ct);
         if (t is null) return NotFound();
         var boundary = HeaderUtilities.RemoveQuotes(MediaTypeHeaderValue.Parse(http.Request.ContentType ?? "").Boundary).Value;
         if (string.IsNullOrEmpty(boundary)) return Problem("multipart_required", "send the file as multipart/form-data", 400);

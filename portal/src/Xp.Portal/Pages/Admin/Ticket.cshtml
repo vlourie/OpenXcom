@@ -1,0 +1,134 @@
+@page "/admin/tickets/{number:long}"
+@model Xp.Portal.Pages.Admin.TicketModel
+@{
+    ViewData["Title"] = Model.Ticket.DisplayNumber;
+    var t = Model.Ticket;
+}
+<p><a href="/admin">← @T["admin.queue"]</a></p>
+<partial name="_Errors" model="Model.Errors" />
+<partial name="_TicketBody" model="t" />
+
+<div class="panel">
+    <p class="hint">
+        @T["admin.author"]: @(Model.AuthorName ?? T["admin.guest"])
+        @if (t.GuestEmail is not null)
+        {
+            <text> · @t.GuestEmail</text>
+        }
+        · @T["admin.source"]: @t.Source
+        · @T["field.priority"]: @T["prio." + t.Priority]
+        @if (t.CorrelationId is not null)
+        {
+            <text> · id @t.CorrelationId</text>
+        }
+    </p>
+    @if (Model.DuplicateOf is { } d)
+    {
+        <p>@T["admin.duplicate_of"] <a href="/admin/tickets/@d.Number">@d.DisplayNumber</a></p>
+    }
+    <div class="row">
+        <form method="post" asp-page-handler="Status">
+            <label for="to">@T["field.status"]</label>
+            <select id="to" name="to">
+                @foreach (var s in Xp.Portal.Tickets.TicketService.AllowedMoves(t.Status))
+                {
+                    <option value="@s">@T["status." + s]</option>
+                }
+            </select>
+            <button type="submit" class="secondary">@T["admin.apply"]</button>
+        </form>
+        <form method="post" asp-page-handler="Priority">
+            <label for="priority">@T["field.priority"]</label>
+            <select id="priority" name="priority">
+                @foreach (var p in Enum.GetValues<TicketPriority>())
+                {
+                    <option value="@p" selected="@(p == t.Priority)">@T["prio." + p]</option>
+                }
+            </select>
+            <button type="submit" class="secondary">@T["admin.apply"]</button>
+        </form>
+        <form method="post" asp-page-handler="Category">
+            <label for="category">@T["field.category"]</label>
+            <select id="category" name="category">
+                @foreach (var c in Categories.All)
+                {
+                    <option value="@c" selected="@(c == t.Category)">@T["cat." + c]</option>
+                }
+            </select>
+            <button type="submit" class="secondary">@T["admin.apply"]</button>
+        </form>
+        <form method="post" asp-page-handler="Assign">
+            <label for="assignee">@T["admin.assignee"]</label>
+            <select id="assignee" name="assignee">
+                <option value="">—</option>
+                @foreach (var s in Model.Staff)
+                {
+                    <option value="@s.Id" selected="@(s.Id == t.AssigneeId)">@s.Name</option>
+                }
+            </select>
+            <button type="submit" class="secondary">@T["admin.apply"]</button>
+        </form>
+        <form method="post" asp-page-handler="Duplicate">
+            <label for="of">@T["admin.mark_duplicate"]</label>
+            <input type="text" id="of" name="of" placeholder="XP-000123" maxlength="16" />
+            <button type="submit" class="secondary">@T["admin.apply"]</button>
+        </form>
+    </div>
+</div>
+
+@if (Model.Files.Count > 0)
+{
+    <h2>@T["view.files"]</h2>
+    <ul>
+        @foreach (var f in Model.Files)
+        {
+            <li>
+                @if (Model.LinkFor(f) is { } link)
+                {
+                    <a href="@link" rel="noopener noreferrer">@f.FileName</a>
+                }
+                else
+                {
+                    @f.FileName
+                }
+                <span class="hint">(@(f.Size / 1024 + 1) KB, @T["scan." + f.Scan], sha256 @f.Sha256[..12]…)</span>
+            </li>
+        }
+    </ul>
+}
+
+<h2>@T["view.conversation"]</h2>
+@foreach (var row in Model.Messages)
+{
+    var m = row.Message;
+    <div class="msg @(m.Internal ? "internal" : m.FromStaff ? "staff" : "")">
+        <div class="meta">
+            @(row.Author ?? (m.FromStaff ? T["view.from_staff"] : T["admin.guest"]))
+            @if (m.Internal)
+            {
+                <text> · @T["admin.internal"]</text>
+            }
+            · @m.CreatedAt.ToString("yyyy-MM-dd HH:mm") UTC
+        </div>
+        @m.Body
+    </div>
+}
+<form method="post" asp-page-handler="Message" class="panel">
+    <label for="body">@T["admin.write"]</label>
+    <textarea id="body" name="body" required maxlength="@Limits.TextMax"></textarea>
+    <label class="check"><input type="checkbox" name="internal" value="true" /> <span>@T["admin.internal_note"]</span></label>
+    <button type="submit">@T["view.send"]</button>
+</form>
+
+<h2>@T["admin.history"]</h2>
+<table>
+    @foreach (var h in Model.History)
+    {
+        <tr>
+            <td>@h.Entry.At.ToString("yyyy-MM-dd HH:mm")</td>
+            <td>@(h.Actor ?? "—")</td>
+            <td>@h.Entry.Action</td>
+            <td>@h.Entry.From → @h.Entry.To</td>
+        </tr>
+    }
+</table>

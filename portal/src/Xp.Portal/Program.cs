@@ -3,6 +3,7 @@ using System.Net;
 using System.Security.Claims;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.DataProtection;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Localization;
@@ -64,7 +65,18 @@ public static class PortalApp
             .AddClaimsPrincipalFactory<PortalClaimsFactory>();
         s.AddScoped<IPasswordHasher<PortalUser>, Argon2PasswordHasher>();
         // role and permission changes reach existing sessions within a minute, not at the next login
-        s.Configure<SecurityStampValidatorOptions>(o => o.ValidationInterval = TimeSpan.FromMinutes(1));
+        s.Configure<SecurityStampValidatorOptions>(o =>
+        {
+            o.ValidationInterval = TimeSpan.FromMinutes(1);
+            // the refreshed principal is built from the database and forgets how the user signed in:
+            // carry the second-factor mark over, or staff would lose their pages a minute after signing in
+            o.OnRefreshingPrincipal = c =>
+            {
+                if (c.CurrentPrincipal?.HasClaim("amr", "mfa") == true && c.NewPrincipal?.Identity is ClaimsIdentity id && !id.HasClaim("amr", "mfa"))
+                    id.AddClaim(new Claim("amr", "mfa"));
+                return Task.CompletedTask;
+            };
+        });
 
         s.ConfigureApplicationCookie(o =>
         {
@@ -98,6 +110,9 @@ public static class PortalApp
             o.Conventions.AuthorizeFolder("/Admin/Super", Policies.SuperAdmin);
             o.Conventions.AuthorizeFolder("/Me");
         });
+        // Razor escapes markup either way; without this it also turns every Cyrillic letter into &#x...;
+        s.Configure<Microsoft.Extensions.WebEncoders.WebEncoderOptions>(o =>
+            o.TextEncoderSettings = new System.Text.Encodings.Web.TextEncoderSettings(System.Text.Unicode.UnicodeRanges.All));
         s.AddProblemDetails(o => o.CustomizeProblemDetails = c => c.ProblemDetails.Extensions["traceId"] = c.HttpContext.TraceIdentifier);
         s.AddOpenApi("v1");
         s.AddMemoryCache();
@@ -128,24 +143,38 @@ public static class PortalApp
             o.RequestCultureProviders = [new QueryStringRequestCultureProvider(), new CookieRequestCultureProvider(), new AcceptLanguageHeaderRequestCultureProvider()];
         });
 
+        // cookies, antiforgery and e-mail links are sealed with these keys: in a container they must
+        // outlive the container, or every restart signs everyone out and voids the links in the mail
+        if (cfg["DataProtection:KeysDir"] is { Length: > 0 } keysDir)
+            s.AddDataProtection().PersistKeysToFileSystem(new DirectoryInfo(keysDir)).SetApplicationName("xp-portal");
+
         var proxies = cfg.GetSection("Portal:TrustedProxies").Get<string[]>() ?? [];
+        var proxyNets = cfg.GetSection("Portal:TrustedNetworks").Get<string[]>() ?? [];
         s.Configure<ForwardedHeadersOptions>(o =>
         {
             o.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
             o.KnownProxies.Clear();
             o.KnownIPNetworks.Clear();
             foreach (var p in proxies) o.KnownProxies.Add(IPAddress.Parse(p));
+            // a proxy in a container has no fixed address, only a fixed subnet
+            foreach (var n in proxyNets) o.KnownIPNetworks.Add(System.Net.IPNetwork.Parse(n));
         });
 
         s.AddRateLimiter(o =>
         {
             o.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
-            o.AddPolicy("tickets-create", c => ByIp(c, cfg.GetValue("RateLimits:TicketsPer10Min", 5), TimeSpan.FromMinutes(10)));
-            o.AddPolicy("tickets-write", c => ByIp(c, cfg.GetValue("RateLimits:WritesPer10Min", 60), TimeSpan.FromMinutes(10)));
+            // pages carry their policy on GET too: only the POST that does the work is counted
+            o.AddPolicy("tickets-create", c => WritesByIp(c, cfg.GetValue("RateLimits:TicketsPer10Min", 5), TimeSpan.FromMinutes(10)));
+            o.AddPolicy("tickets-write", c => WritesByIp(c, cfg.GetValue("RateLimits:WritesPer10Min", 60), TimeSpan.FromMinutes(10)));
             o.AddPolicy("api-read", c => ByIp(c, 120, TimeSpan.FromMinutes(1)));
-            o.AddPolicy("login", c => ByIp(c, cfg.GetValue("RateLimits:LoginPer5Min", 10), TimeSpan.FromMinutes(5)));
+            o.AddPolicy("login", c => WritesByIp(c, cfg.GetValue("RateLimits:LoginPer5Min", 10), TimeSpan.FromMinutes(5)));
         });
     }
+
+    static RateLimitPartition<string> WritesByIp(HttpContext c, int permits, TimeSpan window) =>
+        HttpMethods.IsGet(c.Request.Method) || HttpMethods.IsHead(c.Request.Method)
+            ? RateLimitPartition.GetNoLimiter("read")
+            : ByIp(c, permits, window);
 
     static RateLimitPartition<string> ByIp(HttpContext c, int permits, TimeSpan window) =>
         RateLimitPartition.GetFixedWindowLimiter(c.Connection.RemoteIpAddress?.ToString() ?? "?",
@@ -182,7 +211,7 @@ public static class PortalApp
         app.MapHealthChecks("/ready", new() { Predicate = c => c.Tags.Contains("ready") });
         app.MapOpenApi("/openapi/{documentName}.json");
         TicketApi.Map(app);
-        app.MapGet("/files/{id:guid}", ServeFileAsync);
+        app.MapGet("/files/{id:guid}", ServeFileAsync).ExcludeFromDescription();
         app.MapGet("/lang/{lang}", (string lang, string? back, HttpContext http) =>
         {
             if (Text.Languages.Contains(lang))
@@ -191,7 +220,7 @@ public static class PortalApp
                     new CookieOptions { MaxAge = TimeSpan.FromDays(365), HttpOnly = true, SameSite = SameSiteMode.Lax, IsEssential = true });
             // only a local path: no open redirect through ?back=
             return Results.LocalRedirect(back is { Length: > 0 } && back.StartsWith('/') && !back.StartsWith("//") && !back.StartsWith("/\\") ? back : "/");
-        });
+        }).ExcludeFromDescription();
         app.MapRazorPages();
     }
 

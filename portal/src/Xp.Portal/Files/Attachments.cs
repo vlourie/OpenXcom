@@ -13,10 +13,10 @@ public sealed class AttachmentOptions
     public const string Section = "Attachments";
     /// <summary>Folder for uploaded files. Must be outside wwwroot; checked at start-up.</summary>
     public string StorageRoot { get; set; } = "";
-    public long MaxFileBytes { get; set; } = 32L * 1024 * 1024;
-    public long MaxZipBytes { get; set; } = 64L * 1024 * 1024;
+    public long MaxFileBytes { get; set; } = 50L * 1024 * 1024;
+    public long MaxZipBytes { get; set; } = 100L * 1024 * 1024;
     public int MaxFilesPerTicket { get; set; } = 10;
-    public long MaxBytesPerTicket { get; set; } = 128L * 1024 * 1024;
+    public long MaxBytesPerTicket { get; set; } = 200L * 1024 * 1024;
     /// <summary>clamd address "host:port"; empty = no scanning, files are marked Unscanned.</summary>
     public string ClamdAddress { get; set; } = "";
     public int SignedUrlMinutes { get; set; } = 5;

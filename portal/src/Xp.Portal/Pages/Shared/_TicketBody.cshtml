@@ -1,0 +1,37 @@
+@model Ticket
+<div class="panel">
+    <p>
+        <span class="tag">@Model.DisplayNumber</span>
+        <span class="tag">@T["cat." + Model.Category]</span>
+        <span class="tag">@T["status." + Model.Status]</span>
+        <span class="hint">@Model.CreatedAt.ToString("yyyy-MM-dd HH:mm") UTC</span>
+    </p>
+    <h1>@Model.Title</h1>
+    <div class="pre">@Model.Description</div>
+    @if (!string.IsNullOrEmpty(Model.Steps))
+    {
+        <h2>@T["field.steps"]</h2>
+        <div class="pre">@Model.Steps</div>
+    }
+    @if (!string.IsNullOrEmpty(Model.Expected))
+    {
+        <h2>@T["field.expected"]</h2>
+        <div class="pre">@Model.Expected</div>
+    }
+    @if (!string.IsNullOrEmpty(Model.Actual))
+    {
+        <h2>@T["field.actual"]</h2>
+        <div class="pre">@Model.Actual</div>
+    }
+    @if (Model.GameVersion is not null || Model.ModVersion is not null || Model.LauncherVersion is not null)
+    {
+        <p class="hint">
+            @T["field.gameVersion"]: @(Model.GameVersion ?? "—") ·
+            @T["field.modVersion"]: @(Model.ModVersion ?? "—")
+            @if (Model.LauncherVersion is not null)
+            {
+                <text> · launcher @Model.LauncherVersion</text>
+            }
+        </p>
+    }
+</div>

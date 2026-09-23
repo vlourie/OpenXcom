@@ -1,0 +1,22 @@
+@page "/account/reset"
+@model Xp.Portal.Pages.Account.ResetModel
+@{
+    ViewData["Title"] = T["reset.title"];
+}
+<h1>@T["reset.title"]</h1>
+@if (Model.Done)
+{
+    <p class="flash">@T["reset.done"]</p>
+    <a class="button" href="/account/login">@T["nav.login"]</a>
+}
+else
+{
+    <partial name="_Errors" model="Model.Errors" />
+    <form method="post" class="panel">
+        <input type="hidden" name="user" value="@Model.UserId" />
+        <input type="hidden" name="Code" value="@Model.Code" />
+        <label for="Password">@T["field.password.new"]</label>
+        <input type="password" id="Password" name="Password" required minlength="10" autocomplete="new-password" />
+        <button type="submit">@T["reset.submit"]</button>
+    </form>
+}

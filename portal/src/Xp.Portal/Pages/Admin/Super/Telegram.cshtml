@@ -1,0 +1,73 @@
+@page "/admin/super/telegram"
+@model Xp.Portal.Pages.Admin.Super.TelegramModel
+@{
+    ViewData["Title"] = T["super.telegram"];
+}
+<partial name="_SuperNav" />
+<h1>@T["super.telegram"]</h1>
+@if (!Model.TokenSet)
+{
+    <p class="errors">@T["super.telegram.no_token"]</p>
+}
+<partial name="_Errors" model="Model.Errors" />
+<p class="hint">@T["super.telegram.hint"]</p>
+<table>
+    <tr><th>@T["field.category"]</th><th>chat</th><th>thread</th><th></th><th></th></tr>
+    @foreach (var r in Model.Routes)
+    {
+        <tr>
+            <td>@(r.Category == "*" ? T["super.telegram.default"] : T["cat." + r.Category])</td>
+            <td>@r.ChatId</td>
+            <td>@(r.ThreadId?.ToString() ?? "—")</td>
+            <td>@(r.Enabled ? "✓" : "✗")</td>
+            <td>
+                <form method="post" asp-page-handler="Test" class="inline"><input type="hidden" name="id" value="@r.Id" /><button type="submit" class="link">@T["super.telegram.test"]</button></form>
+                · <form method="post" asp-page-handler="Delete" class="inline"><input type="hidden" name="id" value="@r.Id" /><button type="submit" class="link">@T["super.delete"]</button></form>
+            </td>
+        </tr>
+    }
+</table>
+<form method="post" asp-page-handler="Save" class="panel row">
+    <div>
+        <label for="category">@T["field.category"]</label>
+        <select id="category" name="category">
+            <option value="*">@T["super.telegram.default"]</option>
+            @foreach (var c in Categories.All)
+            {
+                <option value="@c">@T["cat." + c]</option>
+            }
+        </select>
+    </div>
+    <div>
+        <label for="chatId">chat id</label>
+        <input type="text" id="chatId" name="chatId" required maxlength="64" placeholder="-1001234567890" />
+    </div>
+    <div>
+        <label for="threadId">thread id</label>
+        <input type="number" id="threadId" name="threadId" />
+    </div>
+    <div>
+        <label class="check"><input type="checkbox" name="enabled" value="true" checked /> <span>@T["super.enabled"]</span></label>
+        <button type="submit">@T["super.save"]</button>
+    </div>
+</form>
+
+<h2>@T["super.telegram.queue"]</h2>
+<p>
+    @foreach (var s in Enum.GetValues<JobState>())
+    {
+        <span class="tag">@s: @(Model.Counts.GetValueOrDefault(s))</span>
+    }
+</p>
+@if (Model.Dead.Count > 0)
+{
+    <table>
+        @foreach (var j in Model.Dead)
+        {
+            <tr><td>#@j.Id</td><td>@j.ChatId</td><td>@j.Attempts</td><td>@j.LastError</td></tr>
+        }
+    </table>
+    <form method="post" asp-page-handler="Retry">
+        <button type="submit" class="secondary">@T["super.telegram.retry"]</button>
+    </form>
+}

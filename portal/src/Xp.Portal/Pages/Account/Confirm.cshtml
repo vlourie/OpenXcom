@@ -1,0 +1,15 @@
+@page "/account/confirm"
+@model Xp.Portal.Pages.Account.ConfirmModel
+@{
+    ViewData["Title"] = T["confirm.title"];
+}
+<h1>@T["confirm.title"]</h1>
+@if (Model.Ok)
+{
+    <p class="flash">@T["confirm.ok"]</p>
+    <a class="button" href="/account/login">@T["nav.login"]</a>
+}
+else
+{
+    <p class="errors">@T["confirm.bad"]</p>
+}

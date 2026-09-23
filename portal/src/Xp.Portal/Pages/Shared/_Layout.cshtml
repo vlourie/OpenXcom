@@ -1,0 +1,57 @@
+@{
+    var user = Context.User;
+    var signedIn = user.Identity?.IsAuthenticated == true;
+    var back = Context.Request.Path + Context.Request.QueryString;
+    // the guest link carries its secret in the query: never echo it into the language links
+    if (Context.Request.Query.ContainsKey("k")) back = Context.Request.Path;
+}
+<!DOCTYPE html>
+<html lang="@Text.Lang">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>@(ViewData["Title"] is string title ? title + " — " : "")@T["site.title"]</title>
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true">
+</head>
+<body>
+<header class="top">
+    <a class="brand" href="/">@T["site.title"]</a>
+    <nav>
+        <a href="/tickets/new">@T["nav.report"]</a>
+        @if (signedIn)
+        {
+            <a href="/me">@T["nav.my"]</a>
+            @if (user.IsInRole(Roles.Admin) || user.IsInRole(Roles.SuperAdmin))
+            {
+                <a href="/admin">@T["nav.admin"]</a>
+            }
+            @if (user.IsInRole(Roles.SuperAdmin))
+            {
+                <a href="/admin/super/users">@T["nav.super"]</a>
+            }
+            <a href="/me/security">@T["nav.security"]</a>
+            <form method="post" action="/account/logout" class="inline" asp-antiforgery="true">
+                <button type="submit" class="link">@T["nav.logout"]</button>
+            </form>
+        }
+        else
+        {
+            <a href="/account/login">@T["nav.login"]</a>
+            <a href="/account/register">@T["nav.register"]</a>
+        }
+        <span class="lang">
+            <a href="/lang/ru?back=@Uri.EscapeDataString(back)" class="@(Text.Lang == "ru" ? "on" : "")">RU</a>
+            <a href="/lang/en?back=@Uri.EscapeDataString(back)" class="@(Text.Lang == "en" ? "on" : "")">EN</a>
+        </span>
+    </nav>
+</header>
+<main>
+    @if (TempData["flash"] is string flash)
+    {
+        <p class="flash">@T[flash]</p>
+    }
+    @RenderBody()
+</main>
+<footer>@T["site.footer"]</footer>
+</body>
+</html>

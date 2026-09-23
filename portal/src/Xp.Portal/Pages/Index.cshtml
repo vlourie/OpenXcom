@@ -1,0 +1,33 @@
+@page "/"
+@model IndexModel
+@{
+    ViewData["Title"] = T["home.title"];
+}
+<h1>@T["home.title"]</h1>
+<p>@T["home.lead"]</p>
+
+<div class="panel">
+    <h2>@T["home.version"]</h2>
+    @if (Model.Release is { } r)
+    {
+        <p><strong>@r.Version</strong> <span class="hint">@r.Published.ToString("yyyy-MM-dd")</span></p>
+        @if (r.Changelog.Length > 0)
+        {
+            <div class="release">@r.Changelog</div>
+        }
+    }
+    else
+    {
+        <p class="hint">@T["home.version.unknown"]</p>
+    }
+    @if (!string.IsNullOrEmpty(Model.LauncherUrl))
+    {
+        <a class="button" href="@Model.LauncherUrl">@T["home.download"]</a>
+    }
+</div>
+
+<div class="panel">
+    <h2>@T["home.report.title"]</h2>
+    <p>@T["home.report.text"]</p>
+    <a class="button" href="/tickets/new">@T["nav.report"]</a>
+</div>

@@ -1,0 +1,59 @@
+@page "/t/{number:long}"
+@model Xp.Portal.Pages.Tickets.ViewTicketModel
+@{
+    ViewData["Title"] = Model.Ticket.DisplayNumber;
+}
+@if (Model.Token is not null)
+{
+    <p class="hint">@T["view.keep_link"]</p>
+}
+<partial name="_TicketBody" model="Model.Ticket" />
+
+@if (Model.Files.Count > 0)
+{
+    <h2>@T["view.files"]</h2>
+    <ul>
+        @foreach (var f in Model.Files)
+        {
+            <li>@f.FileName <span class="hint">(@(f.Size / 1024 + 1) KB, @T["scan." + f.Scan])</span></li>
+        }
+    </ul>
+}
+
+<h2>@T["view.conversation"]</h2>
+@if (Model.Messages.Count == 0)
+{
+    <p class="hint">@T["view.no_messages"]</p>
+}
+@foreach (var m in Model.Messages)
+{
+    <div class="msg @(m.FromStaff ? "staff" : "")">
+        <div class="meta">@(m.FromStaff ? T["view.from_staff"] : T["view.from_you"]) · @m.CreatedAt.ToString("yyyy-MM-dd HH:mm") UTC</div>
+        @m.Body
+    </div>
+}
+
+<partial name="_Errors" model="Model.Errors" />
+@if (Model.CanReply)
+{
+    <form method="post" asp-page-handler="Reply" class="panel">
+        <input type="hidden" name="k" value="@Model.Token" />
+        <label for="body">@T["view.reply"]</label>
+        <textarea id="body" name="body" required maxlength="@Limits.TextMax"></textarea>
+        <button type="submit">@T["view.send"]</button>
+    </form>
+    <form method="post" asp-page-handler="File" enctype="multipart/form-data" class="panel">
+        <input type="hidden" name="k" value="@Model.Token" />
+        <label for="file">@T["view.add_file"]</label>
+        <input type="file" id="file" name="file" required />
+        @if (!Model.Ticket.ConsentToFiles)
+        {
+            <p class="hint">@T["view.images_only"]</p>
+        }
+        <button type="submit" class="secondary">@T["view.upload"]</button>
+    </form>
+}
+else
+{
+    <p class="hint">@T["view.closed"]</p>
+}

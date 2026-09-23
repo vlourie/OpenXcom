@@ -1,0 +1,27 @@
+@page "/me"
+@model Xp.Portal.Pages.Me.MyTicketsModel
+@{
+    ViewData["Title"] = T["nav.my"];
+}
+<h1>@T["nav.my"]</h1>
+@if (Model.Tickets.Count == 0)
+{
+    <p class="hint">@T["my.empty"]</p>
+}
+else
+{
+    <table>
+        <tr><th>№</th><th>@T["field.title"]</th><th>@T["field.category"]</th><th>@T["field.status"]</th><th>@T["field.updated"]</th></tr>
+        @foreach (var t in Model.Tickets)
+        {
+            <tr>
+                <td><a href="/t/@t.Number">@t.DisplayNumber</a></td>
+                <td>@t.Title</td>
+                <td>@T["cat." + t.Category]</td>
+                <td>@T["status." + t.Status]</td>
+                <td>@t.UpdatedAt.ToString("yyyy-MM-dd HH:mm")</td>
+            </tr>
+        }
+    </table>
+}
+<a class="button" href="/tickets/new">@T["nav.report"]</a>
