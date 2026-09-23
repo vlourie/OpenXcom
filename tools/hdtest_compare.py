@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 hdtest_compare.py - compare two HD-render test dumps made with the in-game
-hotkey (Options: keyBattleHdTestDump, default F8).
+hotkey (Options: keyBattleHdTestDump, default F8, pressed with Ctrl).
 
 A dump is three files in the OpenXcom user folder:
     hdtestNNN_map.png    map surface, base resolution, before any scaling
