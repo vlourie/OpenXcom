@@ -147,7 +147,7 @@ public sealed class UpdaterTests : IDisposable
     [InlineData("user/mods/hd/x./y.png")]
     public async Task Path_traversal_in_a_signed_manifest_is_refused(string evil)
     {
-        await ServeHandMadeRelease(m => m.Files.Add(new ManifestFile { Path = evil, Size = 1, Sha256 = new string('a', 64) }));
+        await ServeHandMadeRelease(m => m.Files.Add(new ManifestFile { Path = evil, Size = 1, Sha256 = new string('a', 64), Component = "engine" }));
         await Assert.ThrowsAsync<TrustException>(() => f.UpdateAsync());
         Assert.False(File.Exists(Path.Combine(f.Root, "escape.txt")));
     }
@@ -159,7 +159,7 @@ public sealed class UpdaterTests : IDisposable
     [InlineData("user/mods/Piratez/metadata.yml", "user/")]
     public async Task Player_data_is_off_limits_even_for_a_signed_manifest(string path, string root)
     {
-        await ServeHandMadeRelease(m => { m.Roots.Add(root); m.Files.Add(new ManifestFile { Path = path, Size = 1, Sha256 = new string('a', 64) }); });
+        await ServeHandMadeRelease(m => { m.Roots.Add(root); m.Files.Add(new ManifestFile { Path = path, Size = 1, Sha256 = new string('a', 64), Component = "engine" }); });
         await Assert.ThrowsAsync<ManifestException>(() => f.UpdateAsync());
         f.AssertPlayerDataIntact();
     }
@@ -308,6 +308,7 @@ public sealed class UpdaterTests : IDisposable
         {
             Release = new ReleaseInfo { Id = "evil", Version = "1", Channel = "stable", MinLauncher = "0.0.0" },
             Roots = ["user/mods/hd/"],
+            Components = [new ComponentInfo { Id = "engine", Kind = ComponentKind.Engine }],
         };
         edit(m);
         var mBytes = JsonSerializer.SerializeToUtf8Bytes(m, ManifestJson.Default.ReleaseManifest);

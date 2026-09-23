@@ -12,8 +12,13 @@ xp-release <command> [options]
   build    --repo <dir> --id <id> --version <v> [--channel stable]
            [--stage <dir>] [--add <dest>=<src>]... [--launch openxcom_hd.exe]
            [--min-launcher 1.0.0] [--mandatory] [--changelog-ru <file>] [--changelog-en <file>]
-           [--component <name>=<version>]... [--root <root>]... [--launcher-kind] --key <file>
-                                             hash, store blobs, write a signed manifest (draft)
+           [--line oxce-hd] [--engine-name OXCE-HD]... [--map <prefix>=<component>]...
+           [--component engine=<version>]... [--keep-hd18-copies]
+           [--root <root>]... [--launcher-kind] --key <file>
+                                             hash, store blobs, write a signed manifest (draft);
+                                             files are split into components by docs/portal/EDITIONS.md
+  catalog  --repo <dir> --in <catalog.json> --key <file>
+                                             check presets against the channels, sign catalog.json
   publish  --repo <dir> --channel <ch> --id <id> --key <file>
   revoke   --repo <dir> --channel <ch> --id <id> --key <file>
   verify   --repo <dir> --channel <ch> --pub <file> [--deep]
@@ -56,7 +61,11 @@ try
                 MinLauncher = opt.Get("min-launcher") ?? "0.0.0",
                 Mandatory = opt.Flag("mandatory"),
                 LauncherKind = opt.Flag("launcher-kind"),
+                Line = opt.Get("line") ?? "",
+                KeepHd18Copies = opt.Flag("keep-hd18-copies"),
             };
+            o.Engines.AddRange(opt.All("engine-name"));
+            foreach (var m in opt.All("map")) { var (prefix, id) = Options.Pair(m); o.Maps[prefix.Replace('\\', '/')] = id; }
             foreach (var a in opt.All("add")) { var (d, s) = Options.Pair(a); o.Adds[d] = s; }
             foreach (var c in opt.All("component")) { var (n, v) = Options.Pair(c); o.Components[n] = v; }
             var roots = opt.All("root").ToList();
@@ -64,6 +73,12 @@ try
             foreach (var lang in new[] { "ru", "en" })
                 if (opt.Get("changelog-" + lang) is { } f) o.Changelog[lang] = File.ReadAllText(f);
             repo!.Build(o, LoadKey(opt));
+            return 0;
+        }
+        case "catalog":
+        {
+            var input = ManifestValidator.ParseCatalog(File.ReadAllBytes(opt.Required("in")));
+            repo!.PublishCatalog(input, LoadKey(opt));
             return 0;
         }
         case "publish":

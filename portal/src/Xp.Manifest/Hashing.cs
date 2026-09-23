@@ -31,4 +31,5 @@ public static class BlobKeys
     public static string Channel(string channel) => $"channels/{channel}.json";
     public static string Manifest(string releaseId) => $"releases/{releaseId}/manifest.json";
     public static string Sig(string key) => key + ".sig";
+    public const string Catalog = "catalog.json";
 }

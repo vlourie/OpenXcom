@@ -19,7 +19,16 @@ public sealed class BuildOptions
     public string MinLauncher { get; set; } = "0.0.0";
     public bool Mandatory { get; set; }
     public Dictionary<string, string> Changelog { get; } = new();
+    /// <summary>Component id -> version, for components whose version no metadata.yml gives (the engine).</summary>
     public Dictionary<string, string> Components { get; } = new();
+    /// <summary>Engine line of the release: "oxce" (Meridian's) or "oxce-hd" (ours).</summary>
+    public string Line { get; set; } = "";
+    /// <summary>What the line's exe answers to in requiredExtendedEngine; a mod asking for another is refused.</summary>
+    public List<string> Engines { get; } = new();
+    /// <summary>Path prefix -> component id, for trees the rules do not know.</summary>
+    public Dictionary<string, string> Maps { get; } = new(StringComparer.OrdinalIgnoreCase);
+    /// <summary>Keep hd_18+ files that are byte-identical to their hd twins (off by default).</summary>
+    public bool KeepHd18Copies { get; set; }
     /// <summary>Launcher releases: every top-level entry is its own root, no component mapping.</summary>
     public bool LauncherKind { get; set; }
 }
@@ -77,7 +86,11 @@ public sealed class ReleaseRepo(string root, Action<string>? log = null)
 
         var sources = CollectSources(o);
         if (sources.Count == 0) throw new InvalidOperationException("nothing to release");
+        if (o.Line.Length > 0 && !ManifestValidator.IsValidId(o.Line)) throw new ArgumentException($"bad line '{o.Line}'");
         var roots = o.Roots ?? AutoRoots(sources.Keys, o.LauncherKind);
+        var plan = o.LauncherKind ? null : ComponentPlan.Build(sources,
+            o.Engines.Count > 0 ? o.Engines : ["Extended"], o.Maps, o.Components);
+        foreach (var w in plan?.Warnings ?? []) _log("warning: " + w);
 
         var hashed = new ConcurrentBag<ManifestFile>();
         int newBlobs = 0;
@@ -86,21 +99,43 @@ public sealed class ReleaseRepo(string root, Action<string>? log = null)
             var info = new FileInfo(kv.Value);
             var sha = Hashing.FileSha256(kv.Value);
             if (StoreBlob(kv.Value, sha)) Interlocked.Increment(ref newBlobs);
-            hashed.Add(new ManifestFile { Path = kv.Key, Size = info.Length, Sha256 = sha, Component = o.LauncherKind ? "launcher" : ComponentOf(kv.Key) });
+            hashed.Add(new ManifestFile { Path = kv.Key, Size = info.Length, Sha256 = sha, Component = plan?.FileComponent[kv.Key] ?? ComponentKind.Launcher });
         });
+
+        var files = hashed.OrderBy(f => f.Path, StringComparer.Ordinal).ToList();
+        if (plan is not null && !o.KeepHd18Copies)
+        {
+            var copies = ComponentPlan.Hd18Copies(files);
+            if (copies.Count > 0)
+            {
+                var drop = copies.Select(f => f.Path).ToHashSet(StringComparer.OrdinalIgnoreCase);
+                files.RemoveAll(f => drop.Contains(f.Path));
+                _log($"{ComponentPlan.Hd18Folder}: {copies.Count} files identical to {ComponentPlan.HdFolder}/ left out, " +
+                     $"{copies.Sum(f => f.Size) / (1024.0 * 1024):F1} MiB");
+            }
+        }
+        List<ComponentInfo> components;
+        if (plan is null)
+            components = [new ComponentInfo { Id = ComponentKind.Launcher, Kind = ComponentKind.Launcher, Name = "launcher",
+                                              Version = o.Version, Size = files.Sum(f => f.Size), Files = files.Count }];
+        else
+        {
+            plan.Count(files);
+            components = plan.Components.Values.OrderBy(c => c.Id, StringComparer.Ordinal).ToList();
+        }
 
         var manifest = new ReleaseManifest
         {
             Release = new ReleaseInfo
             {
-                Id = o.Id, Version = o.Version, Channel = o.Channel, Published = DateTimeOffset.UtcNow,
+                Id = o.Id, Version = o.Version, Channel = o.Channel, Line = o.Line, Published = DateTimeOffset.UtcNow,
                 Mandatory = o.Mandatory, MinLauncher = o.MinLauncher, Launch = o.Launch,
             },
             Roots = roots.ToList(),
-            Files = hashed.OrderBy(f => f.Path, StringComparer.Ordinal).ToList(),
+            Files = files,
+            Components = components,
         };
         foreach (var kv in o.Changelog) manifest.Release.Changelog[kv.Key] = kv.Value;
-        foreach (var kv in o.Components) manifest.Components[kv.Key] = kv.Value;
         manifest.Deletes = ComputeDeletes(o.Channel, manifest);
 
         ManifestValidator.Validate(manifest);
@@ -112,6 +147,9 @@ public sealed class ReleaseRepo(string root, Action<string>? log = null)
             Id = o.Id, Channel = o.Channel, Status = ReleaseStatus.Draft, Created = DateTimeOffset.UtcNow,
             Files = manifest.Files.Count, Bytes = manifest.Files.Sum(f => f.Size), NewBlobs = newBlobs,
         });
+        foreach (var c in components)
+            _log($"  {c.Id,-24} {c.Kind,-8} {c.Files,7} files {c.Size / (1024.0 * 1024),9:F1} MiB" +
+                 (c.Requires.Count > 0 ? "  needs " + string.Join(", ", c.Requires) : ""));
         _log($"release {o.Id}: {manifest.Files.Count} files, {manifest.Files.Sum(f => f.Size) / (1024.0 * 1024):F1} MiB, " +
              $"{newBlobs} new blobs, {manifest.Deletes.Count} deletes, status draft");
         return manifest;
@@ -161,15 +199,6 @@ public sealed class ReleaseRepo(string root, Action<string>? log = null)
             else roots.Add(seg[0] + "/");
         }
         return roots.ToList();
-    }
-
-    public static string ComponentOf(string path)
-    {
-        var seg = path.Split('/');
-        if (seg.Length >= 4 && seg[0].Equals("user", StringComparison.OrdinalIgnoreCase) && seg[1].Equals("mods", StringComparison.OrdinalIgnoreCase))
-            return "mod:" + seg[2];
-        if (seg.Length == 1) return "engine";
-        return "data:" + seg[0];
     }
 
     List<string> ComputeDeletes(string channel, ReleaseManifest next)
@@ -262,6 +291,39 @@ public sealed class ReleaseRepo(string root, Action<string>? log = null)
         WriteAtomic(HistoryPath(channel), JsonSerializer.SerializeToUtf8Bytes(history, RepoJson.Default.ListHistoryEntry));
         _log($"channel {channel} -> {releaseId} (sequence {pointer.Sequence}, {action})");
         return pointer;
+    }
+
+    // -------------------------------------------------------------- catalog
+
+    /// <summary>
+    /// Signs and writes catalog.json. Every preset component must exist in the release each
+    /// published channel of its line points at, and that release must be built for the line.
+    /// </summary>
+    public Catalog PublishCatalog(Catalog catalog, byte[] privateSeed)
+    {
+        ManifestValidator.ValidateCatalog(catalog);
+        foreach (var line in catalog.Lines)
+            foreach (var channel in line.Channels)
+            {
+                if (TryLoadPointer(channel) is not { } pointer) { _log($"warning: channel '{channel}' of line '{line.Id}' is not published yet"); continue; }
+                var m = LoadManifest(pointer.ReleaseId);
+                if (m.Release.Line.Length > 0 && m.Release.Line != line.Id)
+                    throw new InvalidOperationException($"channel '{channel}' points at {m.Release.Id}, built for line '{m.Release.Line}', not '{line.Id}'");
+                var have = m.Components.Select(c => c.Id).ToHashSet(StringComparer.Ordinal);
+                foreach (var p in catalog.Presets.Where(p => p.Line == line.Id))
+                    foreach (var id in p.Components.Where(id => !have.Contains(id)))
+                        throw new InvalidOperationException($"preset '{p.Id}': component '{id}' is not in {m.Release.Id} (channel '{channel}')");
+            }
+
+        var path = Full(BlobKeys.Catalog);
+        long old = File.Exists(path) ? ManifestValidator.ParseCatalog(File.ReadAllBytes(path)).Sequence : 0;
+        catalog.Sequence = old + 1;
+        catalog.Updated = DateTimeOffset.UtcNow;
+        var bytes = JsonSerializer.SerializeToUtf8Bytes(catalog, ManifestJson.Default.Catalog);
+        WriteAtomic(Full(BlobKeys.Sig(BlobKeys.Catalog)), Signing.SerializeSignature(Signing.Sign(privateSeed, bytes)));
+        WriteAtomic(path, bytes);
+        _log($"catalog: {catalog.Lines.Count} lines, {catalog.Presets.Count} presets (sequence {catalog.Sequence})");
+        return catalog;
     }
 
     // ------------------------------------------------------------- checking

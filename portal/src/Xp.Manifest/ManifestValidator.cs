@@ -31,7 +31,7 @@ public static partial class ManifestValidator
         try { p = JsonSerializer.Deserialize(json, ManifestJson.Default.ChannelPointer); }
         catch (JsonException e) { throw new ManifestException("channel pointer is not valid JSON: " + e.Message); }
         if (p is null) throw new ManifestException("empty channel pointer");
-        if (p.Schema != ReleaseManifest.CurrentSchema) throw new ManifestException($"unsupported schema {p.Schema}");
+        if (p.Schema != ChannelPointer.CurrentSchema) throw new ManifestException($"unsupported schema {p.Schema}");
         if (!IsValidId(p.Channel) || !IsValidId(p.ReleaseId)) throw new ManifestException("bad channel or release id");
         if (!Hashing.IsSha256Hex(p.ManifestSha256) || p.ManifestSize <= 0) throw new ManifestException("bad manifest reference");
         return p;
@@ -69,6 +69,56 @@ public static partial class ManifestValidator
             if (SafePath.Validate(d) is { } why) throw new ManifestException($"bad delete '{d}': {why}");
             if (!SafePath.UnderAnyRoot(d, m.Roots)) throw new ManifestException($"delete '{d}' is outside the roots");
             if (seen.Contains(d)) throw new ManifestException($"'{d}' is both shipped and deleted");
+        }
+        ValidateComponents(m);
+    }
+
+    static void ValidateComponents(ReleaseManifest m)
+    {
+        var ids = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var c in m.Components)
+        {
+            if (!IsValidId(c.Id)) throw new ManifestException($"bad component id '{c.Id}'");
+            if (!ids.Add(c.Id)) throw new ManifestException($"duplicate component '{c.Id}'");
+            if (!ComponentKind.All.Contains(c.Kind)) throw new ManifestException($"component '{c.Id}': unknown kind '{c.Kind}'");
+            if (c.Kind == ComponentKind.Addon && c.Master.Length == 0) throw new ManifestException($"addon '{c.Id}' names no master");
+        }
+        foreach (var c in m.Components)
+            foreach (var r in c.Requires)
+                if (!ids.Contains(r)) throw new ManifestException($"component '{c.Id}' requires unknown '{r}'");
+        foreach (var f in m.Files)
+            if (!ids.Contains(f.Component)) throw new ManifestException($"'{f.Path}' belongs to unknown component '{f.Component}'");
+    }
+
+    public static Catalog ParseCatalog(ReadOnlySpan<byte> json)
+    {
+        Catalog? c;
+        try { c = JsonSerializer.Deserialize(json, ManifestJson.Default.Catalog); }
+        catch (JsonException e) { throw new ManifestException("catalog is not valid JSON: " + e.Message); }
+        if (c is null) throw new ManifestException("empty catalog");
+        ValidateCatalog(c);
+        return c;
+    }
+
+    public static void ValidateCatalog(Catalog c)
+    {
+        if (c.Schema != Catalog.CurrentSchema) throw new ManifestException($"unsupported catalog schema {c.Schema}");
+        var lines = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var l in c.Lines)
+        {
+            if (!IsValidId(l.Id) || !lines.Add(l.Id)) throw new ManifestException($"bad or duplicate line '{l.Id}'");
+            if (l.Channels.Count == 0) throw new ManifestException($"line '{l.Id}' has no channels");
+            foreach (var ch in l.Channels)
+                if (!IsValidId(ch)) throw new ManifestException($"line '{l.Id}': bad channel '{ch}'");
+        }
+        var presets = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var p in c.Presets)
+        {
+            if (!IsValidId(p.Id) || !presets.Add(p.Id)) throw new ManifestException($"bad or duplicate preset '{p.Id}'");
+            if (!lines.Contains(p.Line)) throw new ManifestException($"preset '{p.Id}': unknown line '{p.Line}'");
+            if (p.Components.Count == 0) throw new ManifestException($"preset '{p.Id}' has no components");
+            foreach (var id in p.Components)
+                if (!IsValidId(id)) throw new ManifestException($"preset '{p.Id}': bad component '{id}'");
         }
     }
 }
