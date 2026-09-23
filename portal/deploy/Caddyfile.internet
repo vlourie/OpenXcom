@@ -1,0 +1,24 @@
+# HTTPS for a test station reachable from the internet (compose.internet.yaml): a real Let's Encrypt
+# certificate for PORTAL_HOST, proven through Dynu's DNS API, on a port other than 443.
+# own_domain: for a name under Dynu's shared domains (x-piratez.mywire.org) the zone Caddy finds is
+# mywire.org, which is not in the account - the module has to be told the account's own name.
+{
+	auto_https disable_redirects
+}
+
+{$PORTAL_HOST} {
+	tls {
+		dns dynu {
+			api_token {$DYNU_API_KEY}
+			own_domain {$PORTAL_HOST}
+		}
+		# public resolvers: the machine's own DNS may cache the absence of the TXT record
+		resolvers 1.1.1.1 8.8.8.8
+	}
+	encode zstd gzip
+	# uploads are limited by the portal itself; this only stops absurd bodies at the door
+	request_body {
+		max_size 600MB
+	}
+	reverse_proxy portal:8080
+}

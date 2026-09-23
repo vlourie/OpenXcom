@@ -9,6 +9,10 @@
 #   .\station.ps1 reset-2fa you@example.com    сбросить двухфакторную проверку
 #   .\station.ps1 mail       письма, которые сайт «отправил» (SMTP не задан)
 #   .\station.ps1 root-cert  выгрузить корневой сертификат Caddy (для лаунчера и чтобы браузер не ругался)
+#   .\station.ps1 internet [имя]  доступ из интернета: Let's Encrypt через Dynu на том же порту,
+#                            ddns держит имя на текущем IP. Нужен DYNU_API_KEY в .env и проброс
+#                            HTTPS_PORT на роутере. Имя по умолчанию - x-piratez.mywire.org
+#   .\station.ps1 lan        обратно: только локальная сеть, свой сертификат
 #   .\station.ps1 down       остановить; данные в томах остаются
 #
 # Никогда не звать 'docker compose down -v': это удаляет базу, файлы и ключи.
@@ -20,13 +24,21 @@ param(
 $ErrorActionPreference = 'Stop'
 try { [Console]::OutputEncoding = New-Object Text.UTF8Encoding $false } catch {}
 Set-Location -LiteralPath $PSScriptRoot
-$compose = @('compose', '-f', 'compose.yaml', '-f', 'compose.station.yaml')
 $utf8 = New-Object Text.UTF8Encoding $false   # .env читает docker compose: без спецификации
 
 function Say([string] $text) { Write-Host "==> $text" -ForegroundColor Cyan }
 function Fail([string] $text) { Write-Host "ОШИБКА: $text" -ForegroundColor Red; exit 1 }
 
+# режим из .env: lan (свой сертификат, только локальная сеть) или internet (Let's Encrypt через Dynu,
+# доступ снаружи через проброс HTTPS_PORT на роутере, ddns держит имя на текущем IP)
+function Get-Compose {
+    $files = @('compose', '-f', 'compose.yaml', '-f', 'compose.station.yaml')
+    if ((Read-DotEnv '.env')['STATION_MODE'] -eq 'internet') { $files += @('-f', 'compose.internet.yaml', '--profile', 'ddns') }
+    $files
+}
+
 function Invoke-Compose {
+    $compose = Get-Compose
     & docker @compose @args
     if ($LASTEXITCODE -ne 0) { Fail "docker compose $($args -join ' ') завершился с кодом $LASTEXITCODE" }
 }
@@ -137,10 +149,27 @@ function Initialize-Config {
 
 function Get-Url { (Read-DotEnv '.env')['PORTAL_PUBLIC_URL'] }
 
+# меняет или дописывает строку KEY=value в .env, остальное не трогает
+function Set-DotEnv([string] $key, [string] $value) {
+    $path = Join-Path $PSScriptRoot '.env'
+    $lines = @(Get-Content -LiteralPath $path -Encoding UTF8)
+    $found = $false
+    for ($i = 0; $i -lt $lines.Count; $i++) {
+        if ($lines[$i] -match "^\s*$key\s*=") { $lines[$i] = "$key=$value"; $found = $true }
+    }
+    if (-not $found) { $lines += "$key=$value" }
+    [IO.File]::WriteAllText($path, ($lines -join "`n") + "`n", $utf8)
+}
+
 function Test-Ready {
-    $url = Get-Url
-    # curl.exe есть в Windows 11; -k - сертификат выдан собственным центром Caddy
-    $answer = & curl.exe -k -s --max-time 5 "$url/ready" 2>$null
+    $env_ = Read-DotEnv '.env'
+    $url = $env_['PORTAL_PUBLIC_URL']
+    # curl.exe есть в Windows 11. Запрос идёт на 127.0.0.1, но с настоящим именем (--resolve): так
+    # проверяется и сертификат на это имя, и не нужен заход снаружи через роутер (NAT loopback умеют
+    # не все роутеры). В режиме lan сертификат свой, его не проверяем (-k)
+    $check = @('-s', '--max-time', '5', '--resolve', "$($env_['PORTAL_HOST']):$($env_['HTTPS_PORT']):127.0.0.1")
+    if ($env_['STATION_MODE'] -ne 'internet') { $check += '-k' }
+    $answer = & curl.exe @check "$url/ready" 2>$null
     $answer -eq 'Healthy'
 }
 
@@ -151,19 +180,26 @@ switch ($Command) {
         $url = Get-Url
         Say "сборка и запуск (первый раз - несколько минут: образы .NET SDK, PostgreSQL, ClamAV)"
         Invoke-Compose up -d --build
-        Say 'жду, пока сайт ответит...'
+        $internet = (Read-DotEnv '.env')['STATION_MODE'] -eq 'internet'
+        Say ($(if ($internet) { 'жду сертификат Let''s Encrypt и ответ сайта (до 5 минут)...' } else { 'жду, пока сайт ответит...' }))
         $ok = $false
-        for ($i = 0; $i -lt 60; $i++) {
+        for ($i = 0; $i -lt 100; $i++) {
             if (Test-Ready) { $ok = $true; break }
             Start-Sleep -Seconds 3
         }
         if (-not $ok) {
             Invoke-Compose ps -a
-            Fail "сайт не ответил на $url/ready за 3 минуты. Журнал: .\station.ps1 logs"
+            if ($internet) { Write-Host 'Сертификат: в журнале caddy ищи certificate obtained или ошибку dynu' }
+            Fail "сайт не ответил на $url/ready за 5 минут. Журнал: .\station.ps1 logs"
         }
         Write-Host ''
         Write-Host "Сайт работает: $url" -ForegroundColor Green
-        Write-Host 'Браузер один раз предупредит о сертификате - это нормально для теста.'
+        if ($internet) {
+            Write-Host "Снаружи он откроется, когда роутер пробрасывает TCP $((Read-DotEnv '.env')['HTTPS_PORT']) на эту машину."
+            Write-Host 'Проверять с телефона на мобильном интернете: из своей сети на свой внешний адрес многие роутеры не пускают.'
+        } else {
+            Write-Host 'Браузер один раз предупредит о сертификате - это нормально для теста.'
+        }
         Write-Host 'Первый администратор:  .\station.ps1 admin you@example.com Имя'
         Write-Host 'Антивирусу нужно 2-3 минуты на загрузку баз: до этого вложения висят в статусе «проверяется».'
     }
@@ -172,7 +208,12 @@ switch ($Command) {
         Invoke-Compose ps -a
         if (Test-Ready) { Write-Host "ready: Healthy  ($(Get-Url))" -ForegroundColor Green } else { Write-Host "ready: НЕ отвечает ($(Get-Url))" -ForegroundColor Red }
     }
-    'logs' { Invoke-Compose logs -f --tail 200 portal migrate }
+    'logs' {
+        # в режиме internet видно и выдачу сертификата (caddy), и обновление адреса (ddns)
+        $services = @('portal', 'migrate')
+        if ((Read-DotEnv '.env')['STATION_MODE'] -eq 'internet') { $services += @('caddy', 'ddns') }
+        Invoke-Compose logs -f --tail 200 @services
+    }
     'admin' {
         if (-not $Email) { Fail 'укажите почту: .\station.ps1 admin you@example.com Имя' }
         $extra = @()
@@ -194,6 +235,36 @@ switch ($Command) {
         Write-Host "Сохранён $(Join-Path $PSScriptRoot 'caddy-root.crt')"
         Write-Host 'Установить на этой машине (от администратора):  certutil -addstore -f Root caddy-root.crt'
     }
+    'internet' {
+        Assert-Docker
+        Initialize-Config
+        $env_ = Read-DotEnv '.env'
+        if (-not $env_['DYNU_API_KEY']) {
+            Fail 'впишите в .env строку DYNU_API_KEY=<ключ> (dynu.com: Control Panel -> API Credentials -> API Key) и повторите'
+        }
+        $name = if ($Email) { $Email } elseif ($env_['DYNU_HOSTNAME']) { $env_['DYNU_HOSTNAME'] } else { 'x-piratez.mywire.org' }
+        $port = $env_['HTTPS_PORT']
+        Say "перевожу сайт на https://${name}:$port (Let's Encrypt через Dynu)"
+        # в режиме lan тут записан внутренний адрес; запоминаем его, чтобы lan вернул как было
+        if ($env_['STATION_MODE'] -ne 'internet') { Set-DotEnv 'LAN_HOST' $env_['PORTAL_HOST'] }
+        Set-DotEnv 'PORTAL_HOST' $name
+        Set-DotEnv 'PORTAL_PUBLIC_URL' "https://${name}:$port"
+        Set-DotEnv 'DYNU_HOSTNAME' $name
+        Set-DotEnv 'STATION_MODE' 'internet'
+        & $PSCommandPath up
+    }
+    'lan' {
+        Assert-Docker
+        $env_ = Read-DotEnv '.env'
+        $lanHost = if ($env_['LAN_HOST']) { $env_['LAN_HOST'] } else { Get-LanAddress }
+        Say "возвращаю сайт на https://${lanHost}:$($env_['HTTPS_PORT']) (только локальная сеть)"
+        # ddns и собранный Caddy из режима internet гасим тем же набором файлов, что их поднимал
+        if ($env_['STATION_MODE'] -eq 'internet') { Invoke-Compose stop ddns }
+        Set-DotEnv 'PORTAL_HOST' $lanHost
+        Set-DotEnv 'PORTAL_PUBLIC_URL' "https://${lanHost}:$($env_['HTTPS_PORT'])"
+        Set-DotEnv 'STATION_MODE' 'lan'
+        & $PSCommandPath up
+    }
     'down' { Invoke-Compose down }
-    default { Fail "неизвестная команда '$Command'. Есть: up, status, logs, admin, reset-2fa, mail, root-cert, down" }
+    default { Fail "неизвестная команда '$Command'. Есть: up, status, logs, admin, reset-2fa, mail, root-cert, internet, lan, down" }
 }

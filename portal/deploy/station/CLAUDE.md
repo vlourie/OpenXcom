@@ -17,7 +17,9 @@
 | `portal/deploy/compose.yaml` | боевая раскладка: db, clamav, migrate, portal, caddy (80/443, Let's Encrypt), ddns |
 | `portal/deploy/compose.station.yaml` | **поверх** боевой для этой машины: caddy на `HTTPS_PORT` со своим сертификатом, ddns выключен, письма в файлы |
 | `portal/deploy/Caddyfile.station` | HTTPS через `tls internal` |
-| `portal/deploy/station.ps1` | всё управление: `up`, `status`, `logs`, `admin`, `reset-2fa`, `mail`, `root-cert`, `down` |
+| `portal/deploy/compose.internet.yaml` | **поверх** станционной для режима `internet`: caddy с модулем Dynu, ddns включён |
+| `portal/deploy/Caddyfile.internet`, `caddy/Dockerfile` | Let's Encrypt через DNS-01 Dynu на любом порту; сборка Caddy через xcaddy |
+| `portal/deploy/station.ps1` | всё управление: `up`, `status`, `logs`, `admin`, `reset-2fa`, `mail`, `root-cert`, `internet`, `lan`, `down` |
 | `portal/deploy/README.md` | как устроен боевой сервер (тома, секреты, ddns) — читать обязательно |
 | `docs/portal/*.md` | архитектура, план, открытые вопросы; `openapi-v1.json` — зафиксированное API |
 
@@ -43,6 +45,10 @@ powershell -ExecutionPolicy Bypass -File .\station.ps1          # = up
 Все прочие команды compose — только с обоими файлами:
 ```powershell
 docker compose -f compose.yaml -f compose.station.yaml ps -a
+```
+В режиме `internet` (`STATION_MODE=internet` в `.env`) — с тремя файлами и профилем:
+```powershell
+docker compose -f compose.yaml -f compose.station.yaml -f compose.internet.yaml --profile ddns ps -a
 ```
 
 ## Правила — нарушать нельзя
@@ -88,10 +94,42 @@ docker compose -f compose.yaml -f compose.station.yaml ps -a
 | Вход не держится, после логина снова форма | зашли по `http://` или по другому адресу, чем `PORTAL_PUBLIC_URL`: куки только для HTTPS |
 | Браузер «соединение не защищено» | нормально: `tls internal`. Убрать — `station.ps1 root-cert` и установить `caddy-root.crt` в доверенные корневые |
 
-## Выход в интернет — только по слову Vitali
+## Выход в интернет
 
-Сейчас сайт виден только в локальной сети. Чтобы тестировать «снаружи», есть два пути,
-выбирает Vitali:
+**Режим `internet` — основной (выбран 2026-09-23).** Сайт остаётся на `HTTPS_PORT` (80/443
+машины не трогаются), сертификат настоящий — Let's Encrypt через DNS-01 API Dynu, поэтому ни 80,
+ни 443 для проверки домена не нужны. Имя — `x-piratez.mywire.org`, ddns держит его на текущем IP.
+
+1. В `.env` строка `DYNU_API_KEY=<ключ>` (dynu.com → Control Panel → API Credentials → API Key).
+   Ключ вписывает Vitali сам; в чат, в REPORT.md и в логи его не выносить.
+2. Роутер: проброс TCP `HTTPS_PORT` (обычно 8443) → LAN-адрес этой машины; адрес машины закрепить
+   в DHCP (резервирование), иначе после перезагрузки проброс уйдёт в пустоту. Брандмауэр Windows —
+   входящее правило на этот порт (PowerShell от администратора):
+   `New-NetFirewallRule -DisplayName "xp-portal" -Direction Inbound -Protocol TCP -LocalPort 8443 -Action Allow`
+3. `.\station.ps1 internet` — пишет в `.env` `PORTAL_HOST`/`PORTAL_PUBLIC_URL` на имя, запоминает
+   прежний адрес в `LAN_HOST`, ставит `STATION_MODE=internet`, собирает Caddy с модулем Dynu и поднимает.
+   Готовность проверяется `curl --resolve <имя>:<порт>:127.0.0.1` — уже с проверкой настоящего
+   сертификата, но без захода через роутер.
+4. Проверка снаружи — только с телефона на мобильном интернете (или внешним сервисом): из своей
+   сети на свой внешний IP многие роутеры не пускают (нет NAT loopback), и «Could not connect»
+   изнутри на `85.x.x.x:8443` ничего не доказывает.
+5. Назад в локальную сеть — `.\station.ps1 lan`.
+
+| Симптом режима `internet` | Причина и что делать |
+|---|---|
+| `set DYNU_API_KEY in .env` | ключа нет в `.env` |
+| в журнале caddy `dynu` и `401`/`unauthorized` | неверный ключ |
+| в журнале caddy `zone`/`domain not found` | имя не заведено в этом аккаунте Dynu или опечатка в `DYNU_HOSTNAME` |
+| `timed out waiting for record to fully propagate` | повторит сам; если час подряд — `nslookup -type=TXT _acme-challenge.<имя> 1.1.1.1` |
+| изнутри работает, с телефона нет | проброс на роутере, брандмауэр, или у провайдера серый IP: WAN-адрес в роутере ≠ адресу из `curl ifconfig.me` — тогда проброс невозможен, писать Vitali |
+| ddns `exited (2)` | неверный ключ или имя — поправить `.env`, затем `internet` заново |
+| сборка caddy падает на `xcaddy` | у Docker нет выхода в интернет или GitHub недоступен — повторить; режим `lan` работает без сборки |
+
+Журнал `.\station.ps1 logs` в этом режиме показывает и caddy, и ddns.
+Let's Encrypt выдаёт не больше 5 одинаковых сертификатов в неделю — не пересоздавать том
+`caddy-data` ради проверки: сертификат хранится там.
+
+Другие пути, если режим `internet` не подойдёт, — только по слову Vitali:
 
 **A. За уже существующий обратный прокси этой машины** (скорее всего так и надо, раз тут крутятся сайты).
 1. Разведка, ничего не меняя: `docker ps --format "table {{.Names}}\t{{.Image}}\t{{.Ports}}"` —

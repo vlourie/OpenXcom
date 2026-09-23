@@ -38,7 +38,7 @@ Add-Type -AssemblyName System.IO.Compression.FileSystem
 $z = [IO.Compression.ZipFile]::OpenRead($zip)
 try {
     $names = $z.Entries | ForEach-Object { $_.FullName }
-    foreach ($must in 'README.txt', 'CLAUDE.md', 'portal/Dockerfile', 'portal/deploy/station.ps1', 'portal/deploy/compose.station.yaml', 'portal/src/Xp.Portal/Program.cs') {
+    foreach ($must in 'README.txt', 'CLAUDE.md', 'portal/Dockerfile', 'portal/deploy/station.ps1', 'portal/deploy/compose.station.yaml', 'portal/deploy/compose.internet.yaml', 'portal/deploy/Caddyfile.internet', 'portal/deploy/caddy/Dockerfile', 'portal/src/Xp.Portal/Program.cs') {
         if ($names -notcontains $must) { throw "в архиве нет $must" }
     }
     $bad = $names | Where-Object { $_ -match '(^|/)(bin|obj)/|\.key$|(^|/)\.env$|portal\.env$' }

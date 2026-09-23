@@ -24,7 +24,13 @@
 Браузер один раз предупредит о сертификате: он выдан самим сайтом, а не Let's Encrypt.
 Чтобы предупреждения не было (и чтобы лаунчер мог слать отчёты), см. команду root-cert.
 
-Остальные команды - в шапке station.ps1: status, logs, mail, root-cert, down.
+Доступ из интернета (https://x-piratez.mywire.org:8443, настоящий сертификат):
+   - в файл portal\deploy\.env дописать строку  DYNU_API_KEY=<ключ из dynu.com, API Credentials>
+   - на роутере пробросить TCP 8443 на этот компьютер, в брандмауэре Windows открыть 8443;
+   - powershell -ExecutionPolicy Bypass -File .\station.ps1 internet
+   Проверять с телефона на мобильном интернете, не по Wi-Fi. Назад: .\station.ps1 lan
+
+Остальные команды - в шапке station.ps1: status, logs, mail, root-cert, internet, lan, down.
 Данные (база, файлы, ключи) живут в томах Docker и переживают перезапуск и пересборку.
 
 Для Claude на этой машине - файл CLAUDE.md в корне архива: открыть папку архива в Claude Code,

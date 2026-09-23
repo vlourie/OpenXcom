@@ -1,0 +1,15 @@
+# A test station reachable from the internet, laid over compose.yaml and compose.station.yaml:
+#   docker compose -f compose.yaml -f compose.station.yaml -f compose.internet.yaml --profile ddns up -d --build
+# (station.ps1 does this when .env has STATION_MODE=internet; ".\station.ps1 internet" switches).
+# The site stays on HTTPS_PORT, ports 80/443 of the machine stay with its other sites; the router
+# forwards HTTPS_PORT to this machine. The certificate is Let's Encrypt's, via Dynu DNS.
+services:
+  caddy:
+    build: ./caddy
+    image: xp-portal-caddy
+    environment:
+      DYNU_API_KEY: ${DYNU_API_KEY:?set DYNU_API_KEY in .env}
+    volumes: !override
+      - ./Caddyfile.internet:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
