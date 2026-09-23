@@ -164,10 +164,12 @@ public sealed class ReleaseRepo(string root, Action<string>? log = null)
         ["XPiratezLauncher.exe", "xp-bootstrap.exe", "libHarfBuzzSharp.dll", "libSkiaSharp.dll", "libsodium.dll"];
 
     /// <summary>A stage file that does not belong in this kind of release: launcher files in a game
-    /// release, debug symbols anywhere at the top level.</summary>
+    /// release, debug symbols anywhere at the top level; a launcher release takes its own files and
+    /// nothing else (a zip of them left in the folder would otherwise ship to every player).</summary>
     public static bool SkipInStage(string rel, bool launcherKind) =>
-        !rel.Contains('/') && (rel.EndsWith(".pdb", StringComparison.OrdinalIgnoreCase) ||
-                               (!launcherKind && LauncherFiles.Contains(rel, StringComparer.OrdinalIgnoreCase)));
+        launcherKind ? !LauncherFiles.Contains(rel, StringComparer.OrdinalIgnoreCase)
+                     : !rel.Contains('/') && (rel.EndsWith(".pdb", StringComparison.OrdinalIgnoreCase) ||
+                                              LauncherFiles.Contains(rel, StringComparer.OrdinalIgnoreCase));
 
     Dictionary<string, string> CollectSources(BuildOptions o)
     {

@@ -49,6 +49,8 @@ public sealed class PathTests
     [InlineData("XPiratezLauncher.pdb", true, true)]
     [InlineData("openxcom_hd.exe", false, false)]
     [InlineData("user/mods/hd/libsodium.dll", false, false)]
+    [InlineData("libHarfBuzzSharp.zip", true, true)]
+    [InlineData("xp-bootstrap.exe", true, false)]
     public void Game_release_leaves_the_launcher_to_its_own_channel(string rel, bool launcherKind, bool skipped) =>
         Assert.Equal(skipped, ReleaseRepo.SkipInStage(rel, launcherKind));
 
