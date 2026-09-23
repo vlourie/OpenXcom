@@ -6,3 +6,6 @@ out/
 TestResults/
 # ключи подписи никогда не лежат в репозитории
 *.key
+
+# server secrets
+.env

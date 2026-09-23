@@ -1,0 +1,13 @@
+# Server side of the portal. For now: only the dynamic DNS updater.
+#   cp .env.example .env   (fill in the password)
+#   docker compose up -d --build
+services:
+  ddns:
+    build: ./ddns
+    # exit code 2 = bad password or hostname: after 3 tries it stays down until .env is fixed
+    restart: on-failure:3
+    env_file: .env
+    volumes:
+      - ddns-state:/state
+volumes:
+  ddns-state:
