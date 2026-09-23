@@ -3,6 +3,8 @@
 #   cp portal.env.example portal.env   (the site's own settings and secrets)
 #   docker compose up -d --build
 # The database schema is brought up to date by the one-shot "migrate" service before the site starts.
+# A fixed project name: the folder is called "deploy", and so may another stack's on the same machine.
+name: xp-portal
 services:
   ddns:
     build: ./ddns
@@ -51,7 +53,7 @@ services:
     environment: &portal-env
       ConnectionStrings__Portal: Host=db;Port=5432;Database=xp_portal;Username=xp;Password=${POSTGRES_PASSWORD}
       Portal__PublicUrl: https://${PORTAL_HOST:?set PORTAL_HOST in .env}
-      Portal__TrustedNetworks__0: 172.30.10.0/24
+      Portal__TrustedNetworks__0: ${FRONT_SUBNET:-172.30.10.0/24}
       Attachments__ClamdAddress: clamav:3310
     depends_on:
       db: { condition: service_healthy }
@@ -88,11 +90,12 @@ services:
 
 networks:
   back:
-  # fixed subnet: the portal believes X-Forwarded-For only from here (Portal__TrustedNetworks__0)
+  # fixed subnet: the portal believes X-Forwarded-For only from here (Portal__TrustedNetworks__0).
+  # FRONT_SUBNET in .env when this one is taken by another network on the machine
   front:
     ipam:
       config:
-        - subnet: 172.30.10.0/24
+        - subnet: ${FRONT_SUBNET:-172.30.10.0/24}
 
 volumes:
   ddns-state:

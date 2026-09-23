@@ -1,0 +1,17 @@
+# HTTPS for a test station (compose.station.yaml): Caddy's own certificate authority instead of
+# Let's Encrypt, so no public name and no ports 80/443 are needed. The browser warns about the
+# certificate once. PORTAL_HOST may be an IP address: browsers send no SNI for one, hence default_sni.
+{
+	auto_https disable_redirects
+	default_sni {$PORTAL_HOST}
+}
+
+{$PORTAL_HOST} {
+	tls internal
+	encode zstd gzip
+	# uploads are limited by the portal itself; this only stops absurd bodies at the door
+	request_body {
+		max_size 600MB
+	}
+	reverse_proxy portal:8080
+}

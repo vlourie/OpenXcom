@@ -1,0 +1,29 @@
+# A test station: a machine that already runs other sites in Docker. Laid over compose.yaml:
+#   docker compose -f compose.yaml -f compose.station.yaml up -d --build
+# (station.ps1 does exactly this). Differences from the public server:
+#   - ports 80 and 443 of the machine stay with its other sites: Caddy is reached on HTTPS_PORT;
+#   - the certificate is Caddy's own (tls internal), not Let's Encrypt: the browser warns once;
+#   - no dynamic DNS;
+#   - without SMTP the mail (confirmations, password resets) is written as .eml files
+#     into the files volume, folder _mail: station.ps1 mail shows them.
+services:
+  ddns:
+    profiles: ["ddns"]
+
+  caddy:
+    ports: !override
+      - "${HTTPS_PORT:-8443}:443"
+    volumes: !override
+      - ./Caddyfile.station:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+
+  migrate:
+    environment:
+      Portal__PublicUrl: ${PORTAL_PUBLIC_URL:?set PORTAL_PUBLIC_URL in .env}
+      Email__PickupDir: /data/files/_mail
+
+  portal:
+    environment:
+      Portal__PublicUrl: ${PORTAL_PUBLIC_URL:?set PORTAL_PUBLIC_URL in .env}
+      Email__PickupDir: /data/files/_mail
