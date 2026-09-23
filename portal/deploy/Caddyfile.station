@@ -4,6 +4,11 @@
 {
 	auto_https disable_redirects
 	default_sni {$PORTAL_HOST}
+	# No HTTP/3: inside the container Caddy listens on 443 and advertises Alt-Svc h3=":443", but the
+	# station publishes it on another port - clients would try QUIC on a port that is not ours.
+	servers {
+		protocols h1 h2
+	}
 }
 
 {$PORTAL_HOST} {
