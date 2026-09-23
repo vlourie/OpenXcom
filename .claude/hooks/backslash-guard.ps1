@@ -15,6 +15,8 @@
 # Проверка: python tools/test_backslash_guard.py
 
 $ErrorActionPreference = 'Stop'
+# ответ хука читается как UTF-8; без этого PowerShell 5.1 пишет в кодировке консоли, и кириллица приходит знаками вопроса
+try { [Console]::OutputEncoding = New-Object Text.UTF8Encoding $false } catch {}
 
 function Test-Command([string]$cmd) {
     if (-not $cmd -or -not $cmd.Contains('\')) { return $null }

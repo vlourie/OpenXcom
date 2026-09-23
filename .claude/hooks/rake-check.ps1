@@ -5,6 +5,8 @@
 # 2 и больше запрещают правку, пока не будет написан тест.
 
 $ErrorActionPreference = 'Stop'
+# ответ хука читается как UTF-8; без этого PowerShell 5.1 пишет в кодировке консоли, и кириллица приходит знаками вопроса
+try { [Console]::OutputEncoding = New-Object Text.UTF8Encoding $false } catch {}
 try {
     $raw = [Console]::In.ReadToEnd()
     if ([string]::IsNullOrWhiteSpace($raw)) { exit 0 }
