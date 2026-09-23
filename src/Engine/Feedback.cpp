@@ -42,6 +42,9 @@
 #include "HdTest.h"
 #include "Logger.h"
 #include "../Savegame/SavedGame.h"
+#include "../Savegame/SavedBattleGame.h"
+#include "Exception.h"
+#include <SDL.h>
 
 namespace OpenXcom
 {
@@ -243,6 +246,24 @@ bool Feedback::open(Game *game, const State *top)
 	Screen *screen = game->getScreen();
 	screen->screenshot(dir + "shot.png");
 
+	// the game exactly as it is now, for staff to load; never in ironman, where it would be a way around it,
+	// and not from a battle preview. save() is const and only reads, so the game goes on untouched
+	std::string snapshot;
+	SavedGame *saved = game->getSavedGame();
+	if (saved && !saved->isIronman() && !(saved->getSavedBattle() && saved->getSavedBattle()->isPreview()))
+	{
+		const Uint32 t0 = SDL_GetTicks();
+		try
+		{
+			// save() writes under the master's user folder, reports live one level up
+			saved->save("../reports/" + id + "/snapshot.sav", game->getMod());
+			snapshot = "snapshot.sav";
+			Log(LOG_INFO) << "Feedback: snapshot written in " << (SDL_GetTicks() - t0) << " ms";
+		}
+		catch (const Exception &e) { Log(LOG_ERROR) << "Feedback: snapshot failed: " << e.what(); }
+		catch (const std::exception &e) { Log(LOG_ERROR) << "Feedback: snapshot failed: " << e.what(); }
+	}
+
 	std::vector<std::pair<std::string, std::string> > f;
 	f.emplace_back("format", "1");
 	f.emplace_back("id", HdTest::jsonString(id));
@@ -266,6 +287,7 @@ bool Feedback::open(Game *game, const State *top)
 	f.emplace_back("shot", HdTest::jsonString("shot.png"));
 	f.emplace_back("log", HdTest::jsonString(CrossPlatform::getLogFileName()));
 	f.emplace_back("saveDir", HdTest::jsonString(Options::getMasterUserFolder()));
+	f.emplace_back("save", HdTest::jsonString(snapshot));
 	f.emplace_back("gameDir", HdTest::jsonString(CrossPlatform::getExeFolder()));
 	HdTest::writeJson(dir + "context.json", f);
 	Log(LOG_INFO) << "Feedback: report " << id << " written";
