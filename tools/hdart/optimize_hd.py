@@ -5,6 +5,9 @@ Makes the HD mod's pictures smaller without changing what the game shows.
     <venv>\Scripts\python.exe tools\hdart\optimize_hd.py --mod user\mods\hd [--dry-run]
         [--mode palette|lossless] [--min-psnr 34] [--only UI] [--skip GLOBE] [--jobs 16] [--level 3]
 
+`--only` and `--skip` take a folder under hd\ or a path below it, so a single set can be done on
+its own: `--only TERRAIN\DESERT.PCK`.
+
 Three things, in this order, for every PNG under <mod>\hd - and for every picture inside a
 `pack.hdp` (the one-file pack of a unit set, which is rebuilt with the smaller pictures):
 
@@ -226,8 +229,9 @@ def main():
                          "--min-psnr; lossless: never change a pixel")
     ap.add_argument("--min-psnr", type=float, default=34.0,
                     help="how close a palette version must stay (dB over the drawn pixels); higher = more careful")
-    ap.add_argument("--only", default="", help="only these subfolders of hd\\, comma separated (UI, TERRAIN, ...)")
-    ap.add_argument("--skip", default="", help="skip these subfolders of hd\\")
+    ap.add_argument("--only", default="", help="only these folders under hd\\, comma separated. "
+                    "A folder or a path below it: UI, TERRAIN, TERRAIN\\DESERT.PCK")
+    ap.add_argument("--skip", default="", help="skip these folders under hd\\ (same form as --only)")
     ap.add_argument("--jobs", type=int, default=0, help="how many pictures at a time (default: one per core)")
     ap.add_argument("--level", type=int, default=1, help="oxipng effort 0-6; 1 is within about 1%% of 3 and "
                     "runs three times faster, 6 is very slow")
@@ -237,13 +241,26 @@ def main():
     root = os.path.join(args.mod, "hd")
     if not os.path.isdir(root):
         ap.error("no %s - point --mod at the mod folder (the one with metadata.yml)" % root)
-    only = {p.strip().upper() for p in args.only.split(",") if p.strip()}
-    skip = {p.strip().upper() for p in args.skip.split(",") if p.strip()}
+    def clean(text):
+        return {p.strip().replace("\\", "/").strip("/").upper()
+                for p in text.split(",") if p.strip()}
+
+    only, skip = clean(args.only), clean(args.skip)
+
+    def listed(where, rel):
+        """Is this folder named in the list? A name matches the folder itself and everything under
+        it, so both "TERRAIN" and "TERRAIN/DESERT.PCK" work. Раньше сравнивался только первый
+        сегмент пути, и одиночный набор было не выбрать - приходилось гонять весь TERRAIN."""
+        for pat in where:
+            if rel == pat or rel.startswith(pat + "/"):
+                return True
+        return False
+
     files = []
     for folder, _, names in os.walk(root):
-        rel = os.path.relpath(folder, root)
-        top = rel.split(os.sep)[0].upper() if rel != "." else ""
-        if (only and top not in only) or (top and top in skip):
+        raw = os.path.relpath(folder, root)
+        rel = "" if raw == "." else raw.replace(os.sep, "/").upper()
+        if (only and not listed(only, rel)) or listed(skip, rel):
             continue
         files.extend(os.path.join(folder, n) for n in names
                      if n.lower().endswith(".png") or n.lower() == "pack.hdp")
