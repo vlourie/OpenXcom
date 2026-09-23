@@ -18,11 +18,14 @@
  */
 #include "HdUi.h"
 #include <algorithm>
+#include <cctype>
 #include <cmath>
+#include <map>
 #include "FileMap.h"
 #include "Font.h"
 #include "Surface.h"
 #include "HdWorkers.h"
+#include "HdSprites.h"
 #include "Logger.h"
 #include "Options.h"
 #include "Screen.h"
@@ -40,6 +43,8 @@ namespace OpenXcom
 namespace
 {
 
+/// Where a mod keeps the TrueType font sets the player can switch between, below the art tree.
+const char *FONT_FOLDER = "UI/fonts";
 /// The classic fonts: FONT_BIG's capitals are 13 base pixels tall, FONT_SMALL's 8, the geoscape's 8 and 6;
 /// the TrueType text is set a little lighter than the chunky bitmaps: this much of the classic capitals.
 const float CAP_RATIO_BIG = 0.78f, CAP_RATIO_SMALL = 0.80f;
@@ -49,6 +54,19 @@ const int BIG_CAP_ROWS = 11;
 const float CAP_BIG = 13.0f * CAP_RATIO_BIG, CAP_SMALL = 8.0f * CAP_RATIO_SMALL;
 /// The baseline of a line of capitals centred in a box of `boxH` base pixels.
 inline float centredBaseline(float boxH, float cap) { return (boxH + cap) * 0.5f; }
+/// The same baseline, lifted so that what hangs below it (`deep` base pixels: the tails of 'р', 'у', 'p')
+/// still ends inside a box `limit` tall. The bitmap fonts are drawn to fit their cell - 'р' reaches one
+/// row below the baseline in the small font - while a TrueType face hangs about twice as deep, so a
+/// baseline set by the capitals alone pushes the tails out of the cell. `deep` is the face's deepest tail,
+/// not this line's: a line of capitals and the line under it must sit on one baseline, or neighbouring
+/// cells of a list drift apart. Never lifted above the capitals' own height: cutting the top off is worse
+/// than a tail crossing into the line below.
+inline float baselineWithTails(float boxH, float cap, float deep, float limit)
+{
+	const float centred = centredBaseline(boxH, cap);
+	if (deep <= 0.0f || centred + deep <= limit) return centred;
+	return std::max(cap, limit - deep);
+}
 /// Letter-spacing of capital titles in the big font (a fraction of the font size).
 const float TRACKING_CAPS = 0.045f;
 /// Dot leaders: a run of at least this many dots keeps its classic length (an ellipsis does not).
@@ -172,21 +190,129 @@ bool HdUi::hasFonts() const
 	return Options::oxceHdUiFont > 0 && _fontBig.loaded() && _fontSmall.loaded();
 }
 
+/**
+ * The font sets the mods ship, in the order the option numbers them: the pair under the
+ * plain names (hd/UI/FontBig.ttf, FontSmall.ttf) is set 1, then whatever lies in
+ * hd/UI/fonts - <Name>-Big.ttf with <Name>-Small.ttf, or a single <Name>.ttf for both.
+ * A mod adds a font by dropping the files there; nothing here knows their names.
+ */
+void HdUi::scanFontSets()
+{
+	_fontSets.clear();
+	const std::string one = HdSprites::artPath("UI/Font.ttf");
+	const bool hasOne = FileMap::fileExists(one);
+	FontSet plain;
+	plain.name = "Default";
+	plain.big = FileMap::fileExists(HdSprites::artPath("UI/FontBig.ttf")) ? HdSprites::artPath("UI/FontBig.ttf") : (hasOne ? one : std::string());
+	plain.small = FileMap::fileExists(HdSprites::artPath("UI/FontSmall.ttf")) ? HdSprites::artPath("UI/FontSmall.ttf") : (hasOne ? one : std::string());
+	if (plain.big.empty()) plain.big = plain.small;
+	if (plain.small.empty()) plain.small = plain.big;
+	if (!plain.big.empty())
+	{
+		_fontSets.push_back(plain);
+	}
+	// the sets are kept by name, so that the numbering does not depend on the order the files come in
+	std::map<std::string, FontSet> found;
+	for (const std::string &file : HdSprites::artFolder(FONT_FOLDER))
+	{
+		const size_t dot = file.find_last_of('.');
+		if (dot == std::string::npos) continue;
+		const std::string ext = file.substr(dot);
+		if (ext != ".ttf" && ext != ".otf" && ext != ".ttc") continue;
+		std::string stem = file.substr(0, dot);
+		int which = 0;   // 0 = the one file of the set, 1 = its big face, 2 = its small one
+		if (stem.size() > 4 && stem.compare(stem.size() - 4, 4, "-big") == 0) { which = 1; stem.resize(stem.size() - 4); }
+		else if (stem.size() > 6 && stem.compare(stem.size() - 6, 6, "-small") == 0) { which = 2; stem.resize(stem.size() - 6); }
+		if (stem.empty()) continue;
+		const std::string path = HdSprites::artPath(std::string(FONT_FOLDER) + "/" + file);
+		FontSet &set = found[stem];
+		if (set.name.empty())
+		{
+			set.name = stem;
+			set.name[0] = (char)toupper((unsigned char)set.name[0]);
+		}
+		if (which == 1) set.big = path;
+		else if (which == 2) set.small = path;
+		else { if (set.big.empty()) set.big = path; if (set.small.empty()) set.small = path; }
+	}
+	for (auto &pair : found)
+	{
+		FontSet set = pair.second;
+		if (set.big.empty()) set.big = set.small;
+		if (set.small.empty()) set.small = set.big;
+		if (set.big.empty()) continue;
+		_fontSets.push_back(set);
+	}
+}
+
 void HdUi::loadFonts()
 {
-	_fontBig.load("hd/UI/FontBig.ttf");
-	_fontSmall.load("hd/UI/FontSmall.ttf");
-	if (!_fontBig.loaded() && FileMap::fileExists("hd/UI/Font.ttf")) _fontBig.load("hd/UI/Font.ttf");
-	if (!_fontSmall.loaded() && FileMap::fileExists("hd/UI/Font.ttf")) _fontSmall.load("hd/UI/Font.ttf");
-	if (!_fontSmall.loaded() && _fontBig.loaded()) _fontSmall.load("hd/UI/FontBig.ttf");
-	if (!_fontBig.loaded() && _fontSmall.loaded()) _fontBig.load("hd/UI/FontSmall.ttf");
+	scanFontSets();
+	_fontSetLoaded = -1;
+	applyFontOption();
+	Log(LOG_INFO) << "HD interface: " << _fontSets.size() << " TrueType font set(s) in the mods";
+}
+
+/**
+ * Puts the set the option asks for into the two faces. The option can be turned in play
+ * (the options list, a saved game of another profile), so this is checked once per frame;
+ * loading only happens when the number actually changed.
+ */
+void HdUi::applyFontOption()
+{
+	int want = Options::oxceHdUiFont;
+	if (want < 0) want = 0;
+	if (want > (int)_fontSets.size()) want = (int)_fontSets.size();
+	if (want == _fontSetLoaded)
+	{
+		return;
+	}
+	_fontSetLoaded = want;
+	if (want == 0)
+	{
+		return;   // the game's own font, smoothed: no face to load
+	}
+	const FontSet &set = _fontSets[want - 1];
+	_fontBig.load(set.big);
+	_fontSmall.load(set.small);
+	if (!_fontSmall.loaded() && _fontBig.loaded()) _fontSmall.load(set.big);
+	if (!_fontBig.loaded() && _fontSmall.loaded()) _fontBig.load(set.small);
 	// signs the main face has no glyph for (mod texts use the heart suit) come from here
-	_fontBig.loadFallback("hd/UI/FontFallback.ttf");
-	_fontSmall.loadFallback("hd/UI/FontFallback.ttf");
+	_fontBig.loadFallback(HdSprites::artPath("UI/FontFallback.ttf"));
+	_fontSmall.loadFallback(HdSprites::artPath("UI/FontFallback.ttf"));
 	if (hasFonts())
 	{
-		Log(LOG_INFO) << "HD interface: TrueType fonts loaded (hd/UI)";
+		// the two numbers that decide where a line sits: the capitals' share of the size, and how deep
+		// the tails hang under the baseline. A face with deep tails is lifted more inside the cell
+		Log(LOG_INFO) << "HD interface: TrueType font " << want << " loaded (" << fontSetName(want)
+			<< "), capitals " << (int)(100.0f / _fontBig.sizeForCapHeight(1.0f) + 0.5f) << "%, tails "
+			<< (int)(_fontBig.descent(100.0f) + 0.5f) << "% of the size";
 	}
+	else
+	{
+		Log(LOG_WARNING) << "HD interface: TrueType font " << want << " did not load (" << set.big << ")";
+	}
+}
+
+/**
+ * What the options list writes next to the setting: the name the face carries itself
+ * ("Exo 2"), so the player picks a font by name instead of counting numbers.
+ */
+std::string HdUi::fontSetName(int index) const
+{
+	if (index <= 0 || index > (int)_fontSets.size())
+	{
+		return "Classic";
+	}
+	if (index == _fontSetLoaded)
+	{
+		const std::string own = _fontBig.familyName();
+		if (!own.empty())
+		{
+			return own;
+		}
+	}
+	return _fontSets[index - 1].name;
 }
 
 void HdUi::blendSpan(SDL_Surface *dest, const SDL_Rect &clip, int y, float xa, float xb, Uint32 color, float cov)
@@ -614,6 +740,7 @@ const HdUi::FontMetrics &HdUi::metrics(const Font *font)
 	m.big = rows >= BIG_CAP_ROWS;
 	m.cap = rows * (m.big ? CAP_RATIO_BIG : CAP_RATIO_SMALL);
 	m.lineH = std::max(1, font->getHeight() + font->getSpacing());
+	m.cellH = std::max(m.lineH, font->getHeight());
 	return m;
 }
 
@@ -635,7 +762,9 @@ void HdUi::drawTtfString(const UString &s, bool big, float capHeight, int x, int
 	const SDL_Rect clip = worldClip(dest, k);
 	HdFont &f = font(big);
 	const float px = f.sizeForCapHeight(capHeight * k);
-	const int baseline = y * k + (int)std::lround(centredBaseline(big ? 16.0f : 9.0f, capHeight) * k);
+	const float cell = big ? 16.0f : 9.0f;
+	const float deep = f.descent(px) / k;
+	const int baseline = y * k + (int)std::lround(baselineWithTails(cell, capHeight, deep, cell) * k);
 	const int shadowOff = std::max(1, k / 2);
 	for (int pass = (shadow >> 24) ? 0 : 1; pass < 2; ++pass)
 	{
@@ -684,9 +813,12 @@ void HdUi::drawTtfCaret(const UString &value, size_t pos, const Font *classic, i
 	default: pen = (float)x * k; break;
 	}
 	pen += f.measure(UString(value.begin(), value.begin() + std::min(pos, value.size())), px, condense);
-	// the line box as drawTtfLine centres a single line: the text's box when it is about a line tall
-	const float boxH = (float)(textH > 0 && textH <= m.lineH + 3 ? textH : m.lineH);
-	const float baseline = y * k + centredBaseline(boxH, cap) * k;
+	// the line box as drawTtfLine centres a single line: the text's box when it is about a line tall,
+	// with the same lift when the line has tails, so that the caret stands on the letters' own baseline
+	const bool inBox = textH > 0 && textH <= m.lineH + 3;
+	const float boxH = (float)(inBox ? textH : m.lineH);
+	const float deep = f.descent(px) / k;
+	const float baseline = y * k + baselineWithTails(boxH, cap, deep, (float)(inBox ? textH : m.cellH)) * k;
 	const float w = std::max(1.0f, 0.4f * k);
 	fillRoundRect(pen, baseline - cap * k * 1.15f, pen + w, baseline + cap * k * 0.2f, w * 0.5f, color, color);
 }
@@ -822,10 +954,14 @@ void HdUi::drawTtfLine(const std::vector<TextRun> &runs, int originX, int origin
 			const Uint32 color = pass == 0 ? shadow : face;
 			const int off = pass == 0 ? shadowOff : 0;
 			// the baseline: the capitals centred in the classic line box, or in the text's own box when
-			// that is a single line of about the line's height (a button's label sits in its middle)
+			// that is a single line of about the line's height (a button's label sits in its middle),
+			// then lifted if this line's own tails would leave the cell (the box when it is the text's)
 			const bool inBox = singleLine && textH > 0 && textH <= m.lineH + 3;
 			const float boxY = inBox ? 0.0f : (float)r.y, boxH = inBox ? (float)textH : (float)m.lineH;
-			const int baseline = originY * k + (int)std::lround((boxY + centredBaseline(boxH, m.cap * shrink)) * k);
+			const float deep = f.descent(p.px) / k;
+			const float limit = inBox ? (float)textH : (float)m.cellH;
+			const float base = boxY + baselineWithTails(boxH, m.cap * shrink, deep, limit);
+			const int baseline = originY * k + (int)std::lround(base * k);
 			// a dot leader: n dots evenly over the classic length
 			auto leader = [&](size_t n, float from, float width)
 			{

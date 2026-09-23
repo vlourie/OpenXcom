@@ -28,6 +28,7 @@
 #include "../Interface/TextList.h"
 #include "../Engine/Options.h"
 #include "../Engine/Action.h"
+#include "../Engine/HdUi.h"
 #include <algorithm>
 
 namespace OpenXcom
@@ -259,6 +260,11 @@ void OptionsAdvancedState::addSettings(const std::vector<OptionInfo> &settings)
 			std::ostringstream ss;
 			ss << *optionInfo.asInt();
 			value = ss.str();
+			// the HD font is picked by name: the number alone says nothing about which face it is
+			if (optionInfo.asInt() == &Options::oxceHdUiFont)
+			{
+				value = HdUi::instance().fontSetName(Options::oxceHdUiFont);
+			}
 		}
 		_lstOptions->addRow(2, name.c_str(), value.c_str());
 		// grey out fixed options
@@ -445,7 +451,7 @@ void OptionsAdvancedState::lstOptionsClick(Action *action)
 		else if (i == &Options::oxceHdUiFont)
 		{
 			min = 0;
-			max = 1;
+			max = HdUi::instance().fontSetCount();
 		}
 		else if (i == &Options::oxceNightVisionColor)
 		{
@@ -495,6 +501,12 @@ void OptionsAdvancedState::lstOptionsClick(Action *action)
 		std::ostringstream ss;
 		ss << *i;
 		settingText = ss.str();
+		if (i == &Options::oxceHdUiFont)
+		{
+			// load it right away, so the list itself is redrawn with the face that was picked
+			HdUi::instance().applyFontOption();
+			settingText = HdUi::instance().fontSetName(*i);
+		}
 	}
 	_lstOptions->setCellText(sel, 1, settingText);
 }

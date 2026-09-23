@@ -424,7 +424,7 @@ en-US:
   STR_HD_UI_SKIN: "HD interface: modern look"
   STR_HD_UI_SKIN_DESC: "With the HD interface on, windows, buttons, lists and bars are drawn again in the mod's own colours. 0 = the classic look, only crisper; 1 = the mod's colour ramps with soft gradients; 2 = dark panels with the mod's colours as accents; 3 = flat panels."
   STR_HD_UI_FONT: "HD interface: font"
-  STR_HD_UI_FONT_DESC: "0 = the game's own font, smoothed: colour, per-letter width and lines exactly as in the classic interface, so text over a picked background does not move. 1 = TrueType from the mod (hd/UI/FontBig.ttf, FontSmall.ttf): prettier, but the metrics differ."
+  STR_HD_UI_FONT_DESC: "Classic = the game's own font, smoothed: colour, per-letter width and lines exactly as in the classic interface, so text over a picked background does not move. The other settings are the TrueType faces the mod ships (hd/UI/FontBig.ttf and the sets in hd/UI/fonts), named as the face names itself: prettier, but the metrics differ. It changes at once, without a restart."
   STR_AUTO_NIGHT_VISION_THRESHOLD: "Auto Night Vision threshold"
   STR_AUTO_NIGHT_VISION_THRESHOLD_DESC: "If darker than this threshold, toggle Night Vision on automatically."
   STR_SHOW_ACCURACY_ON_CROSSHAIR: "Show accuracy on crosshair"

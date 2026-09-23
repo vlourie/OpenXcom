@@ -50,8 +50,12 @@ public:
 	/// Loads the face that draws the code points the main one has no glyph for; same rules as load().
 	bool loadFallback(const std::string &path);
 	bool loaded() const { return _face.loaded; }
+	/// The face's own family name ("Exo 2"), Latin letters only; empty when the font does not say.
+	std::string familyName() const;
 	/// The pixel size (ascent + descent) at which capital letters are `capHeight` pixels tall.
 	float sizeForCapHeight(float capHeight) const;
+	/// How deep the face's tails ('р', 'у', 'p') hang below the baseline at a pixel size.
+	float descent(float px) const { return _face.descRatio * px; }
 	/// The glyph of a code point at a pixel size, horizontally condensed by `condense` (1 = as designed).
 	const Glyph &glyph(UCode c, float px, float condense = 1.0f);
 	/// The same glyph spread by `thickness` pixels in every direction: the outline drawn under a line of
@@ -84,6 +88,7 @@ private:
 		void *info = nullptr;      ///< stbtt_fontinfo
 		bool loaded = false;
 		float capRatio = 0.7f;     ///< cap height / pixel size
+		float descRatio = 0.21f;   ///< how far the tails reach below the baseline / pixel size
 	};
 	static bool loadFace(Face &face, const std::string &path);
 	/// Says once in the log that a code point has no glyph anywhere, so a lost sign is not found by eye.
