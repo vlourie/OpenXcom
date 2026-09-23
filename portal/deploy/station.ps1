@@ -297,7 +297,11 @@ switch ($Command) {
     }
     'releases' {
         Assert-Docker
-        if (-not $Email -or -not (Test-Path -LiteralPath $Email)) { Fail 'укажите архив: .\station.ps1 releases C:\путь\xp-releases_....zip' }
+        if (-not $Email) { Fail 'укажите архив: .\station.ps1 releases C:\путь\xp-releases_....zip' }
+        if (-not (Test-Path -LiteralPath $Email -PathType Leaf)) {
+            $near = Get-ChildItem -LiteralPath (Split-Path -Parent $Email) -Filter 'xp-releases_*' -ErrorAction SilentlyContinue | ForEach-Object Name
+            Fail ("нет файла $Email" + $(if ($near) { "`n  рядом лежит: " + ($near -join ', ') } else { '' }))
+        }
         $zip = (Resolve-Path -LiteralPath $Email).Path
         $env_ = Read-DotEnv '.env'
         $dest = if ($env_['RELEASES_DIR']) { $env_['RELEASES_DIR'] } else { Join-Path $PSScriptRoot 'releases' }
