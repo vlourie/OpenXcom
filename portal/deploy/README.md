@@ -11,7 +11,7 @@
 
 ### Один раз
 
-1. В Dynu: Control Panel → My Account → Username/Password → задать **IP Update Password**,
+1. В Dynu: Control Panel → **Manage Credentials** → задать IP update password,
    отдельный от пароля аккаунта. Украдут его с сервера — смогут только переставить IP, не войти в аккаунт.
 2. На сервере:
 
