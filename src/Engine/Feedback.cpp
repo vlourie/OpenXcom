@@ -203,18 +203,19 @@ std::string findLauncher()
 	return "";
 }
 
-void *startLauncher(const std::string &launcher, const std::string &reportDir)
+/// Starts the launcher as "<launcher> <key> "<folder>"" and returns its process handle, or nullptr.
+void *startLauncher(const std::string &launcher, const char *key, const std::string &folder)
 {
 	// a trailing backslash would escape the closing quote of the argument
-	std::string dir = reportDir;
+	std::string dir = folder;
 	while (!dir.empty() && (dir.back() == '/' || dir.back() == '\\')) dir.pop_back();
-	std::wstring cmd = L"\"" + widen(launcher) + L"\" --report \"" + widen(dir) + L"\"";
+	std::wstring cmd = L"\"" + widen(launcher) + L"\" " + widen(key) + L" \"" + widen(dir) + L"\"";
 	STARTUPINFOW si{};
 	si.cb = sizeof(si);
 	PROCESS_INFORMATION pi{};
 	if (!CreateProcessW(nullptr, &cmd[0], nullptr, nullptr, FALSE, 0, nullptr, nullptr, &si, &pi))
 	{
-		Log(LOG_ERROR) << "Feedback: cannot start the launcher, error " << GetLastError();
+		Log(LOG_ERROR) << "Feedback: cannot start the launcher (" << key << "), error " << GetLastError();
 		return nullptr;
 	}
 	CloseHandle(pi.hThread);
@@ -299,13 +300,73 @@ bool Feedback::open(Game *game, const State *top)
 		Log(LOG_WARNING) << "Feedback: launcher not found, the report stays in " << dir << " to be sent later";
 		return false;
 	}
-	void *process = startLauncher(launcher, dir);
+	void *process = startLauncher(launcher, "--report", dir);
 	if (!process) return false;
 	game->pushState(new FeedbackState(process));
 	return true;
 #else
 	Log(LOG_WARNING) << "Feedback: no launcher on this platform, the report stays in " << dir;
 	return false;
+#endif
+}
+
+std::string Feedback::reportsFolder()
+{
+	return Options::getUserFolder() + "reports/";
+}
+
+bool Feedback::hasLauncher()
+{
+#ifdef _WIN32
+	return !findLauncher().empty();
+#else
+	return false;
+#endif
+}
+
+bool Feedback::openForm(Game *game, const std::string &dir)
+{
+#ifdef _WIN32
+	const std::string launcher = findLauncher();
+	void *process = launcher.empty() ? nullptr : startLauncher(launcher, "--report", dir);
+	if (!process) return false;
+	game->pushState(new FeedbackState(process));
+	return true;
+#else
+	return false;
+#endif
+}
+
+void *Feedback::startRefresh()
+{
+#ifdef _WIN32
+	const std::string launcher = findLauncher();
+	if (launcher.empty()) return nullptr;
+	return startLauncher(launcher, "--refresh", reportsFolder());
+#else
+	return nullptr;
+#endif
+}
+
+int Feedback::refreshResult(void *process)
+{
+#ifdef _WIN32
+	if (!process) return -1;
+	if (WaitForSingleObject((HANDLE)process, 0) == WAIT_TIMEOUT) return -2;
+	DWORD code = 1;
+	GetExitCodeProcess((HANDLE)process, &code);
+	CloseHandle((HANDLE)process);
+	return (int)code;
+#else
+	return -1;
+#endif
+}
+
+void Feedback::abandonRefresh(void *process)
+{
+#ifdef _WIN32
+	// the launcher finishes on its own within its 30 s bound; only our handle goes
+	if (process) CloseHandle((HANDLE)process);
 #endif
 }
 
