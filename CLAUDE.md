@@ -27,12 +27,15 @@
 | `bin/UFO` | оригинальные данные DOS-версии — **только чтение** |
 | `bin/common`, `bin/standard` | строки, шрифты, ванильные рулсеты — см. «Святое правило» |
 | `user/mods/hd` | единый HD-мод: паки, картинки, глобус. В гит не идёт |
+| `art/` | вся графика: листы наборов, обмен с моделью, отчёты сверки. См. `art/README.md`. В гит не идёт |
 | `tools/hdart/` | генерация HD-арта: `gen_hd.py`, `gen_all.ps1`, `build_pack.py`, `photo_ui.py`, `upscale_ui.py` |
 | `tools/merge/` | слияние с upstream MeridianOXC, готовые решения конфликтов |
 | `tools/build/` | сборка «в три кнопки» + упаковка Enigma Virtual Box |
 | `tools/hdtest_compare.py` | сравнение дампов: тот самый тест на IDENTICAL |
 | `build-release/` | каталог сборки Ninja + MinGW. В гит не идёт |
 | `Пиратки/Dioxine_XPiratez/` | установка X-Piratez — **только чтение**, в гит не идёт |
+| `docs/ART_STATUS.md` | **что рисовать следующим** — считается с диска `tools/art_status.py`, руками не править |
+| `census/` | перепись всех PCK и очередь по охвату карт: `pck_census.py`, `pck_roadmap.py`. В гит не идёт |
 | `docs/RAKES.md` | **грабли** — что уже пробовали и почему не работает |
 | `docs/DECISIONS.md` | журнал решений — читать до того, как спорить |
 | `.index/` | **карта проекта** — `symbols.tsv`, `files.tsv`. Грепать, не читать исходники целиком |
