@@ -97,7 +97,7 @@ def main(argv=None):
     ap.add_argument("--sets", default="", help="через запятую")
     ap.add_argument("--random", type=int, default=0, help="взять N случайных уже покрашенных наборов")
     ap.add_argument("--frames", default="", help="только эти кадры, через запятую")
-    ap.add_argument("--out", default="_cmp")
+    ap.add_argument("--out", default="art/_review/_cmp")
     ap.add_argument("--max-width", type=int, default=1400, dest="max_w")
     ap.add_argument("--max-height", type=int, default=2400, dest="max_h")
     args = ap.parse_args(argv)
