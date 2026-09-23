@@ -34,7 +34,7 @@
           {
             "type": "command",
             "shell": "powershell",
-            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/session-start.ps1",
+            "command": "& \"$env:CLAUDE_PROJECT_DIR/.claude/hooks/session-start.ps1\"",
             "timeout": 120,
             "statusMessage": "Поднимаю карту проекта и грабли"
           }
@@ -48,7 +48,7 @@
           {
             "type": "command",
             "shell": "powershell",
-            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/bom-guard.ps1",
+            "command": "& \"$env:CLAUDE_PROJECT_DIR/.claude/hooks/bom-guard.ps1\"",
             "timeout": 15,
             "statusMessage": "Дописываю BOM в PowerShell-скрипт"
           }
@@ -62,7 +62,7 @@
           {
             "type": "command",
             "shell": "powershell",
-            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/backslash-guard.ps1",
+            "command": "& \"$env:CLAUDE_PROJECT_DIR/.claude/hooks/backslash-guard.ps1\"",
             "timeout": 15,
             "statusMessage": "Проверяю, нет ли обратной косой во встроенном скрипте (R-035)"
           }
@@ -74,14 +74,14 @@
           {
             "type": "command",
             "shell": "powershell",
-            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/guard-paths.ps1",
+            "command": "& \"$env:CLAUDE_PROJECT_DIR/.claude/hooks/guard-paths.ps1\"",
             "timeout": 15,
             "statusMessage": "Проверяю, что правка не лезет в файлы игры"
           },
           {
             "type": "command",
             "shell": "powershell",
-            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/rake-check.ps1",
+            "command": "& \"$env:CLAUDE_PROJECT_DIR/.claude/hooks/rake-check.ps1\"",
             "timeout": 20,
             "statusMessage": "Смотрю, нет ли граблей на этом файле"
           }

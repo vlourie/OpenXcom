@@ -3,6 +3,8 @@
 # Вывод уходит в hookSpecificOutput.additionalContext -> попадает в контекст сессии.
 
 $ErrorActionPreference = 'Stop'
+# ответ хука читается как UTF-8; без этого PowerShell 5.1 пишет в кодировке консоли, и кириллица приходит знаками вопроса
+try { [Console]::OutputEncoding = New-Object Text.UTF8Encoding $false } catch {}
 try {
     $root = if ($env:CLAUDE_PROJECT_DIR) { $env:CLAUDE_PROJECT_DIR } else { (Get-Location).Path }
     Set-Location $root

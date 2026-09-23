@@ -12,6 +12,8 @@
 # stdin: JSON события. Выход 0 = решение в stdout либо пропуск.
 
 $ErrorActionPreference = 'Stop'
+# ответ хука читается как UTF-8; без этого PowerShell 5.1 пишет в кодировке консоли, и кириллица приходит знаками вопроса
+try { [Console]::OutputEncoding = New-Object Text.UTF8Encoding $false } catch {}
 try {
     $raw = [Console]::In.ReadToEnd()
     if ([string]::IsNullOrWhiteSpace($raw)) { exit 0 }
