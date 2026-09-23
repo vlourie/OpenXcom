@@ -41,7 +41,8 @@ if [ "$wiki" = yes ]; then
     done
 fi
 
-host=$(grep -E '^PORTAL_HOST=' .env | cut -d= -f2-)
+# || true: без этого set -e уронил бы скрипт на пустом grep, хотя обновление уже прошло
+host=$(grep -E '^PORTAL_HOST=' .env | cut -d= -f2- || true)
 echo '==> проверка'
 docker compose ps
 curl -sS --max-time 10 "https://$host/ready" && echo " <- /ready" || echo 'сайт не ответил; журнал: docker compose logs -f portal'
