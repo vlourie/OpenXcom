@@ -26,6 +26,7 @@
 #include "CrossPlatform.h"
 #include "FileMap.h"
 #include "Logger.h"
+#include "Options.h"
 #include "SDL2Helpers.h"
 #include "Surface.h"
 #include "SurfaceSet.h"
@@ -70,6 +71,58 @@ void HdFrame::buildSpans()
 namespace HdSprites
 {
 
+const char *const ART_ROOT = "hd";
+const char *const ART_ROOT_ADULT = "hd_18+";
+
+/**
+ * Where to read one HD picture from. The adult tree wins when the player asked
+ * for it and actually ships that file; everything it does not hold falls back
+ * to the ordinary tree, so it only needs the pictures that differ.
+ * @param rest Path below the tree, e.g. "UI/zombie.png" or "TERRAIN/CORP.PCK/7.png".
+ */
+std::string artPath(const std::string &rest)
+{
+	if (Options::oxceAdultArt)
+	{
+		std::string adult = std::string(ART_ROOT_ADULT) + "/" + rest;
+		if (FileMap::fileExists(adult))
+		{
+			return adult;
+		}
+	}
+	return std::string(ART_ROOT) + "/" + rest;
+}
+
+/**
+ * The contents of a folder of both trees at once, so that a picture shipped
+ * only by the adult tree is found too. Names are unique; resolve each of them
+ * with artPath to learn which tree it is read from.
+ * @param rest Folder below the tree, e.g. "UI".
+ */
+std::vector<std::string> artFolder(const std::string &rest)
+{
+	std::vector<std::string> names;
+	// the path is kept in a named string: a reference bound to a temporary one
+	// looks dangling to gcc, even though the set itself outlives the call
+	const std::string plainPath = std::string(ART_ROOT) + "/" + rest;
+	const FileMap::NameSet &plain = FileMap::getVFolderContents(plainPath);
+	names.assign(plain.begin(), plain.end());
+	if (Options::oxceAdultArt)
+	{
+		const std::string adultPath = std::string(ART_ROOT_ADULT) + "/" + rest;
+		const FileMap::NameSet &adult = FileMap::getVFolderContents(adultPath);
+		for (const std::string &name : adult)
+		{
+			if (plain.find(name) == plain.end())
+			{
+				names.push_back(name);
+			}
+		}
+	}
+	return names;
+}
+
+
 namespace
 {
 	/// A registered frame: read into `frame` from its file when first found (an eager frame has no path).
@@ -86,6 +139,8 @@ namespace
 	/// the variants of a registered frame: slot n - 1 holds variant n (an empty path = no such variant)
 	std::unordered_map<const void*, std::vector<Entry>> variants;
 	const int MAX_VARIANTS = 15;
+	/// Frames at most this big are dots, not pictures (makeDots): the bullet tracer is 3x3.
+	const int MAX_DOT = 4;
 	unsigned registryGeneration = 1;
 	size_t budget = (size_t)384 << 20;
 	size_t loadedTotal = 0; ///< bytes of the lazily loaded frames in memory
@@ -300,6 +355,11 @@ const HdFrame *find(const void *key)
 		}
 	}
 	return &entry.frame;
+}
+
+bool registered(const void *key)
+{
+	return !registry.empty() && registry.find(key) != registry.end();
 }
 
 void remove(const void *key)
@@ -734,16 +794,15 @@ int loadPack(const std::string &setName, SurfaceSet *surfaceSet, int scale)
 	{
 		return 0;
 	}
-	const std::string folder = "hd/" + setName;
-	const FileMap::NameSet &files = FileMap::getVFolderContents(folder);
+	const std::vector<std::string> files = artFolder(setName);
 	if (files.empty())
 	{
 		return 0;
 	}
 	int loaded = 0;
-	if (files.find("pack.hdp") != files.end())
+	if (std::find(files.begin(), files.end(), std::string("pack.hdp")) != files.end())
 	{
-		loaded += registerPackFile(folder + "/pack.hdp", surfaceSet, scale);
+		loaded += registerPackFile(artPath(setName + "/pack.hdp"), surfaceSet, scale);
 	}
 	for (const std::string &file : files)
 	{
@@ -781,7 +840,7 @@ int loadPack(const std::string &setName, SurfaceSet *surfaceSet, int scale)
 		{
 			continue;
 		}
-		const std::string path = folder + "/" + file;
+		const std::string path = artPath(setName + "/" + file);
 		int width = 0, height = 0;
 		if (!pngSize(path, width, height))
 		{
@@ -807,6 +866,138 @@ int loadPack(const std::string &setName, SurfaceSet *surfaceSet, int scale)
 		}
 	}
 	return loaded;
+}
+
+/**
+ * Round HD frames for a set of tiny sprites, where no pack covers them.
+ *
+ * Why the engine draws these itself instead of a mod shipping pictures: the bullet
+ * tracer is 35 stamps of one 3x3 sprite, a voxel apart, and every mod has its own
+ * sheet of them (X-Piratez has 54 tracers, vanilla 11, and frame 7 means a different
+ * bullet in each). Scaled by nearest the shot becomes a staircase of hard squares,
+ * and smoothing a single 3x3 frame cannot fix a staircase - what fixes it is a rim
+ * that fades out, because then the stamps overlap into one beam.
+ *
+ * The dot keeps the colours of the frame it replaces: the mean of its lit pixels for
+ * the body and the brightest of them for the middle, so nothing is invented. Its
+ * radius follows how much of the frame was lit - the head of a tracer fills all nine
+ * pixels and stays fat, its tail is one pixel and stays thin - and the fuller the
+ * frame, the hotter its middle, which is what makes the head read as the bullet.
+ * @param classic Set at base resolution: the colours and the palette are read from it.
+ * @param scaled The k-times set the game draws; its frames are the keys of the registry.
+ * @param scale k.
+ * @return How many frames were made.
+ */
+int makeDots(const std::string &setName, const SurfaceSet *classic, SurfaceSet *scaled, int scale)
+{
+	if (!classic || !scaled || scale < 2)
+	{
+		return 0;
+	}
+	const int bw = classic->getWidth(), bh = classic->getHeight();
+	// a sprite this small has no shape to keep - it is a dot, and it is drawn as a dot
+	if (bw < 2 || bh < 2 || bw > MAX_DOT || bh > MAX_DOT)
+	{
+		return 0;
+	}
+	const int w = bw * scale, h = bh * scale;
+	const double half = std::min(bw, bh) / 2.0;
+	int made = 0, kept = 0, blank = 0, noPalette = 0;
+	for (size_t i = 0; i < scaled->getTotalFrames(); ++i)
+	{
+		const Surface *src = classic->getFrame((int)i);
+		Surface *dst = scaled->getFrame((int)i);
+		if (!src || !dst || dst->getWidth() != w || dst->getHeight() != h)
+		{
+			++blank;
+			continue;
+		}
+		if (registered(dst->getBuffer()))
+		{
+			++kept;
+			continue;
+		}
+		const SDL_Color *pal = src->getPalette();
+		if (!pal)
+		{
+			++noPalette;
+			continue;
+		}
+		int lit = 0, litEven = 0, peak = 0, peakLum = -1, sumR = 0, sumG = 0, sumB = 0;
+		for (int y = 0; y < bh; ++y)
+		{
+			for (int x = 0; x < bw; ++x)
+			{
+				const Uint8 index = src->getPixel(x, y);
+				if (!index)
+				{
+					continue;
+				}
+				const SDL_Color &c = pal[index];
+				++lit;
+				litEven += ((x + y) & 1) ? 0 : 1;
+				sumR += c.r; sumG += c.g; sumB += c.b;
+				const int lum = c.r * 2 + c.g * 5 + c.b;
+				if (lum > peakLum)
+				{
+					peakLum = lum;
+					peak = index;
+				}
+			}
+		}
+		if (!lit)
+		{
+			++blank;
+			continue;
+		}
+		const double fill = lit / (double)(bw * bh);
+		// half the cells lit and all of one parity: that is the classic way of drawing
+		// half-transparency (the smoke of a vanilla bullet), so it becomes a puff over the
+		// whole frame at half alpha, not a solid dot of half the pixels
+		const bool dithered = lit * 2 >= bw * bh && (litEven == 0 || litEven == lit);
+		const double cover = dithered ? 1.0 : fill;
+		const double fade = dithered ? 0.5 : 1.0;
+		const double radius = (0.37 + 0.63 * std::sqrt(cover)) * half;
+		const double body[3] = { sumR / (double)lit, sumG / (double)lit, sumB / (double)lit };
+		const double white = 0.35 * fill;
+		const double core[3] = {
+			pal[peak].r + (255.0 - pal[peak].r) * white,
+			pal[peak].g + (255.0 - pal[peak].g) * white,
+			pal[peak].b + (255.0 - pal[peak].b) * white };
+		HdFrame frame;
+		frame.width = w;
+		frame.height = h;
+		frame.generated = true;
+		frame.pixels.assign((size_t)w * h, 0);
+		for (int y = 0; y < h; ++y)
+		{
+			for (int x = 0; x < w; ++x)
+			{
+				const double dx = (x + 0.5) / scale - bw / 2.0;
+				const double dy = (y + 0.5) / scale - bh / 2.0;
+				const double t = std::sqrt(dx * dx + dy * dy) / radius;
+				const double fall = 1.0 - t * t;
+				if (fall <= 0.0)
+				{
+					continue;
+				}
+				const double hot = std::max(0.0, 1.0 - (t / 0.55) * (t / 0.55));
+				const Uint32 a = (Uint32)(std::pow(fall, 1.6) * 255.0 * fade + 0.5);
+				const Uint32 r = (Uint32)(body[0] + (core[0] - body[0]) * hot + 0.5);
+				const Uint32 g = (Uint32)(body[1] + (core[1] - body[1]) * hot + 0.5);
+				const Uint32 b = (Uint32)(body[2] + (core[2] - body[2]) * hot + 0.5);
+				frame.pixels[(size_t)y * w + x] = (a << 24) | (r << 16) | (g << 8) | b;
+			}
+		}
+		set(dst->getBuffer(), std::move(frame));
+		++made;
+	}
+	// said out loud even when nothing was made: a set of this size is meant to become dots, so
+	// "0 made" is the answer to "why does the tracer still look the way it did"
+	Log(LOG_INFO) << "HD render: round dots for " << setName << " (" << bw << "x" << bh
+		<< " frames, k=" << scale << "): " << made << " made, " << kept << " left to a pack, "
+		<< blank << " empty, " << noPalette << " without a palette";
+	return made;
 }
 
 /**

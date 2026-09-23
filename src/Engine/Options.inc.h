@@ -173,6 +173,10 @@ OPT bool oxceHdGroundVariants;
 OPT int oxceHdThreads;
 // HD render: extra game steps a slow frame may catch up on, so that the unit speed settings hold when drawing is slower than they ask (0 = one step per frame)
 OPT int oxceHdFrameSkip;
+// Art version currently loaded: false the ordinary HD pictures (hd/), true the adult ones (hd_18+/). Changing it reloads the resources.
+OPT bool oxceAdultArt;
+// Ask which art version to play at every start (AdultChoiceState). Off: play whatever oxceAdultArt says, without asking.
+OPT bool oxceAdultAsk;
 
 // OXCE hidden, but moddable via fixedUserOptions and/or recommendedUserOptions
 OPT int oxceStartUpTextMode;

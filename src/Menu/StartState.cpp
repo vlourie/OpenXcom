@@ -34,6 +34,8 @@
 #include "../Interface/Cursor.h"
 #include "../Interface/Text.h"
 #include "MainMenuState.h"
+#include "AdultChoiceState.h"
+#include "LanguageChoiceState.h"
 #include "CutsceneState.h"
 #include <SDL_mixer.h>
 #include <SDL_thread.h>
@@ -43,6 +45,7 @@ namespace OpenXcom
 
 LoadingPhase StartState::loading;
 std::string StartState::error;
+bool StartState::playIntroAfterReload = false;
 
 /**
  * Initializes all the elements in the Loading screen.
@@ -175,9 +178,24 @@ void StartState::think()
 		CrossPlatform::flashWindow();
 		Log(LOG_INFO) << "OpenXcom started successfully!";
 		_game->setState(new GoToMainMenuState(true));
-		if (_oldMaster != Options::getActiveMaster() && Options::playIntro)
 		{
-			_game->pushState(new CutsceneState("intro"));
+			bool intro = (_oldMaster != Options::getActiveMaster() || playIntroAfterReload) && Options::playIntro;
+			playIntroAfterReload = false;
+			if (intro)
+			{
+				_game->pushState(new CutsceneState("intro"));
+			}
+			// Pushed last, so the questions come before the intro is played.
+			// The language screen hands over to the art one itself: that one
+			// builds its texts in its constructor and needs the language first.
+			if (LanguageChoiceState::isNeeded())
+			{
+				_game->pushState(new LanguageChoiceState(intro));
+			}
+			else if (AdultChoiceState::isNeeded())
+			{
+				_game->pushState(new AdultChoiceState(intro));
+			}
 		}
 		if (Options::reload)
 		{

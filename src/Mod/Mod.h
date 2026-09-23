@@ -168,6 +168,7 @@ private:
 	int _hdScale = 0;
 	std::map<const SurfaceSet*, SurfaceSet*> _hdSets;
 	std::set<const SurfaceSet*> _hdPacksLoaded;
+	std::map<const Surface*, Surface*> _hdSurfaces;
 	std::map<std::string, SoundSet*> _sounds;
 	std::map<std::string, Music*> _musics;
 	std::vector<Uint16> _voxelData;
@@ -514,6 +515,8 @@ public:
 	SurfaceSet *getHdSurfaceSet(const std::string &name, bool error = true);
 	/// HD render: gets the k-times-scaled copy of a set (the set itself when k = 1 or null).
 	SurfaceSet *getHdSurfaceSet(SurfaceSet *set);
+	/// HD render: gets a single picture scaled k times for the battlescape (the picture itself when k = 1).
+	Surface *getHdSurface(const std::string &name, bool error = true);
 	/// Gets a particular music.
 	Music *getMusic(const std::string &name, bool error = true) const;
 	/// Gets the available music tracks.
