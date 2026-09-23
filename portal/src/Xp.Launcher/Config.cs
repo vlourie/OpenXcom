@@ -12,6 +12,10 @@ public sealed class Settings
     /// <summary>Overrides the built-in repository URL (development, own server).</summary>
     public string? RepoUrl { get; set; }
     public string? Language { get; set; }
+    /// <summary>Overrides the built-in portal address for reports (development, own server).</summary>
+    public string? PortalUrl { get; set; }
+    /// <summary>Folders reports came from besides &lt;game&gt;/user/reports: a game with its user folder elsewhere.</summary>
+    public List<string> ReportRoots { get; set; } = new();
     public Dictionary<string, long> LauncherSequence { get; set; } = new();
 
     public static string Dir => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "XPiratezLauncher");
@@ -35,6 +39,10 @@ public sealed class Defaults
 {
     public string RepoUrl { get; set; } = "";
     public List<string> Channels { get; set; } = new();
+    /// <summary>The site that takes F8 and crash reports (its /api/v1).</summary>
+    public string PortalUrl { get; set; } = "";
+    /// <summary>Per-file limit of the portal (Attachments:MaxFileBytes); a bigger save is zipped, then skipped.</summary>
+    public long ReportMaxFileBytes { get; set; }
 }
 
 [JsonSourceGenerationOptions(WriteIndented = true, PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]

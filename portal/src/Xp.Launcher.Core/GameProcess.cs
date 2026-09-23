@@ -34,6 +34,8 @@ public static class GameProcess
         if (!File.Exists(exe)) throw new FileNotFoundException("game executable not found", launchRelative);
         var psi = new ProcessStartInfo(exe) { WorkingDirectory = paths.GameDir, UseShellExecute = false };
         foreach (var a in args ?? []) psi.ArgumentList.Add(a);
+        // F8 in the game starts this exe with --report (src/Engine/Feedback.cpp, findLauncher)
+        if (Environment.ProcessPath is { } self) psi.Environment["XP_LAUNCHER"] = self;
         return Process.Start(psi) ?? throw new InvalidOperationException("the game did not start");
     }
 }

@@ -1,4 +1,6 @@
 {
   "repoUrl": "http://localhost:8787/",
-  "channels": ["stable", "test"]
+  "channels": ["stable", "test"],
+  "portalUrl": "https://x-piratez.mywire.org/",
+  "reportMaxFileBytes": 52428800
 }

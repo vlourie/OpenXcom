@@ -25,7 +25,7 @@ public sealed class MainWindow : Window
     readonly ProgressBar _progress = new() { Minimum = 0, Maximum = 1000, Height = 8 };
     readonly TextBlock _changelog = new() { TextWrapping = TextWrapping.Wrap };
     readonly TextBlock _log = new() { FontFamily = new FontFamily("Consolas,monospace"), FontSize = 11, TextWrapping = TextWrapping.Wrap };
-    readonly Button _check, _update, _repair, _rollback, _play, _cancel, _selfUpdate;
+    readonly Button _check, _update, _repair, _rollback, _play, _cancel, _selfUpdate, _reports;
 
     GamePaths? _paths;
     Updater? _updater;
@@ -54,6 +54,7 @@ public sealed class MainWindow : Window
         _cancel.IsVisible = false;
         _selfUpdate = MakeButton("self.install", async () => await RunAsync(SelfUpdateAsync));
         _selfUpdate.IsVisible = false;
+        _reports = MakeButton("reports.button", async () => await ShowReportsAsync());
         var choose = MakeButton("choose", async () => await ChooseGameDirAsync());
 
         foreach (var c in BuiltIn.Defaults.Channels) _channel.Items.Add(new ComboBoxItem { Content = L.T("channel." + c), Tag = c });
@@ -65,7 +66,7 @@ public sealed class MainWindow : Window
         dirRow.Children.Add(_gameDir);
 
         var actions = new WrapPanel { Orientation = Orientation.Horizontal };
-        foreach (var b in new[] { _play, _update, _check, _repair, _rollback, _selfUpdate, _cancel })
+        foreach (var b in new[] { _play, _update, _check, _repair, _rollback, _selfUpdate, _reports, _cancel })
         {
             b.Margin = new Thickness(0, 0, 8, 8);
             actions.Children.Add(b);
@@ -124,14 +125,6 @@ public sealed class MainWindow : Window
         else SetStatus(L.T("status.noGameDir"));
         Refresh();
 
-        var reportIdx = Array.IndexOf(_args, "--report");
-        if (reportIdx >= 0)
-        {
-            // F8 from the game (stage 3): for now the report stays on disk, the game waits for us to close
-            await MessageAsync(L.T("report.later"));
-            Close();
-            return;
-        }
         if (_updater is not null) await RunAsync(() => CheckAsync(full: false, apply: false));
     }
 
@@ -154,6 +147,44 @@ public sealed class MainWindow : Window
         }
         var state = _updater.LoadState();
         SelectChannel(state.Channel);
+        TellGameWhereWeAre();
+        CountReports();
+    }
+
+    /// <summary>
+    /// F8 in a game started without us (from its own exe) still needs to find the report form:
+    /// the game reads this file when XP_LAUNCHER is not set.
+    /// </summary>
+    void TellGameWhereWeAre()
+    {
+        if (_paths is null || Environment.ProcessPath is not { } self) return;
+        try
+        {
+            Directory.CreateDirectory(_paths.StateDir);
+            var file = Path.Combine(_paths.StateDir, "launcher-path.txt");
+            if (!File.Exists(file) || File.ReadAllText(file).Trim() != self) FileUtil.WriteAtomic(file, System.Text.Encoding.UTF8.GetBytes(self));
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { _fileLog?.Error("launcher-path.txt: " + e.Message); }
+    }
+
+    List<string> ReportRoots()
+    {
+        var roots = new List<string>();
+        if (_paths is not null) roots.Add(Path.Combine(_paths.GameDir, "user", "reports"));
+        roots.AddRange(_settings.ReportRoots);
+        return roots;
+    }
+
+    void CountReports()
+    {
+        var waiting = ReportStore.List(ReportRoots()).Count(r => r.Draft.Status != ReportStatus.Sent);
+        _reports.Content = waiting > 0 ? L.T("reports.buttonCount", waiting) : L.T("reports.button");
+    }
+
+    async Task ShowReportsAsync()
+    {
+        await new ReportsWindow(_settings, ReportRoots()).ShowDialog(this);
+        CountReports();
     }
 
     async Task ChooseGameDirAsync()
