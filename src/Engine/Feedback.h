@@ -37,6 +37,20 @@ namespace Feedback
 	/// Captures the frame now on screen, writes the report folder and opens the form.
 	/// Returns false (and logs why) if the form could not be opened; the folder stays on disk.
 	bool open(Game *game, const State *top);
+	/// Where F8 reports live: <user folder>/reports/.
+	std::string reportsFolder();
+	/// Is there a launcher to open forms and ask the portal? (Windows only.)
+	bool hasLauncher();
+	/// Opens the launcher's form for a report already on disk (a draft or a queued one).
+	bool openForm(Game *game, const std::string &dir);
+	/// Starts "launcher --refresh" in the background: ticket statuses go into each report.json.
+	/// Returns the process handle, or nullptr when there is no launcher.
+	void *startRefresh();
+	/// -2 still running, -1 no process, otherwise the launcher's exit code (0 fresh, 3 portal unreachable);
+	/// once it returned an exit code the handle is closed and must not be used again.
+	int refreshResult(void *process);
+	/// Lets go of a refresh still running (the list is closed before it ended).
+	void abandonRefresh(void *process);
 }
 
 /**

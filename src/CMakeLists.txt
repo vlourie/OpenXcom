@@ -299,6 +299,7 @@ set ( menu_src
   Menu/OptionsGeoscapeState.cpp
   Menu/ModConfirmExtendedState.cpp
   Menu/ModListState.cpp
+  Menu/ReportsState.cpp
   Menu/OptionsNoAudioState.cpp
   Menu/OptionsVideoState.cpp
   Menu/PauseState.cpp

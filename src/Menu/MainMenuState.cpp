@@ -38,6 +38,7 @@
 #include "ListLoadState.h"
 #include "OptionsVideoState.h"
 #include "ModListState.h"
+#include "ReportsState.h"
 #include "../Engine/Options.h"
 #include "../Engine/FileMap.h"
 #include "../Engine/SDL2Helpers.h"
@@ -75,12 +76,24 @@ MainMenuState::MainMenuState(bool updateCheck)
 
 	// Create objects
 	_window = new Window(this, 256, 160, 32, 20, POPUP_BOTH);
-	_btnNewGame = new TextButton(92, 20, 64, 90);
-	_btnNewBattle = new TextButton(92, 20, 164, 90);
-	_btnLoad = new TextButton(92, 20, 64, 118);
-	_btnOptions = new TextButton(92, 20, 164, 118);
-	_btnMods = new TextButton(92, 20, 64, 146);
-	_btnQuit = new TextButton(92, 20, 164, 146);
+	// "My reports" needs the strings of the hd mod (rake R-036): without it the menu stays as it was
+	bool reports = false;
+	for (const auto& mod : Options::mods)
+	{
+		if (mod.first == "hd")
+		{
+			reports = mod.second;
+			break;
+		}
+	}
+	const int row1 = reports ? 82 : 90, row2 = reports ? 106 : 118, row3 = reports ? 130 : 146;
+	_btnNewGame = new TextButton(92, 20, 64, row1);
+	_btnNewBattle = new TextButton(92, 20, 164, row1);
+	_btnLoad = new TextButton(92, 20, 64, row2);
+	_btnOptions = new TextButton(92, 20, 164, row2);
+	_btnMods = new TextButton(92, 20, 64, row3);
+	_btnQuit = new TextButton(92, 20, 164, row3);
+	_btnReports = new TextButton(192, 20, 64, 154);
 	_btnUpdate = new TextButton(72, 16, 209, 27);
 	_txtUpdateInfo = new Text(320, 17, 0, 11);
 	_txtTitle = new Text(256, 30, 32, 45);
@@ -95,6 +108,7 @@ MainMenuState::MainMenuState(bool updateCheck)
 	add(_btnOptions, "button", "mainMenu");
 	add(_btnMods, "button", "mainMenu");
 	add(_btnQuit, "button", "mainMenu");
+	add(_btnReports, "button", "mainMenu");
 	add(_btnUpdate, "button", "mainMenu");
 	add(_txtUpdateInfo, "text", "mainMenu");
 	add(_txtTitle, "text", "mainMenu");
@@ -121,6 +135,10 @@ MainMenuState::MainMenuState(bool updateCheck)
 
 	_btnQuit->setText(tr("STR_QUIT"));
 	_btnQuit->onMouseClick((ActionHandler)&MainMenuState::btnQuitClick);
+
+	_btnReports->setText(tr("STR_MY_REPORTS"));
+	_btnReports->onMouseClick((ActionHandler)&MainMenuState::btnReportsClick);
+	_btnReports->setVisible(reports);
 
 	_btnUpdate->setText(tr("STR_UPDATE"));
 	_btnUpdate->onMouseClick((ActionHandler)& MainMenuState::btnUpdateClick);
@@ -397,6 +415,15 @@ void MainMenuState::btnOptionsClick(Action *)
 void MainMenuState::btnModsClick(Action *)
 {
 	_game->pushState(new ModListState);
+}
+
+/**
+ * Opens the list of this player's F8 reports.
+ * @param action Pointer to an action.
+ */
+void MainMenuState::btnReportsClick(Action *)
+{
+	_game->pushState(new ReportsState);
 }
 
 /**
