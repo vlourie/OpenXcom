@@ -367,7 +367,7 @@ bool HdUi::drawSparse(SDL_Surface *dest, const Surface *surface, int x, int y, i
 		e.dense = count * 4 > tw * th;
 		// the smoothing spills over the edge of a drawn pixel into an empty neighbour (a corner blended,
 		// a hole of a checkerboard filled), so the tiles next to a drawn one are drawn too: without them
-		// the check below found 3 pixels of the globe's borders missing
+		// 3 pixels of the globe's borders went missing (compared against the whole surface smoothed)
 		if (!e.dense)
 		{
 			std::vector<Uint8> grown(used);
@@ -401,34 +401,6 @@ bool HdUi::drawSparse(SDL_Surface *dest, const Surface *surface, int x, int y, i
 				}
 				p.frame.buildSpans();
 				e.pieces.push_back(std::move(p));
-			}
-		}
-		// the claim above checked on the real layers: the first few are smoothed whole as well and compared
-		static int checks = 0;
-		if (!e.dense && checks < 6)
-		{
-			++checks;
-			HdFrame whole;
-			if (HdSmooth::smoothPalette(pixels, w, h, pitch, colors, k, whole, false, true))
-			{
-				std::vector<Uint32> parts((size_t)whole.width * whole.height, 0u);
-				for (const SparsePiece &p : e.pieces)
-				{
-					for (int yy = p.iy * k; yy < (p.iy + p.ih) * k; ++yy)
-					{
-						for (int xx = p.ix * k; xx < (p.ix + p.iw) * k; ++xx)
-						{
-							parts[(size_t)yy * whole.width + xx] = p.frame.pixels[(size_t)(yy - p.oy * k) * p.frame.width + (xx - p.ox * k)];
-						}
-					}
-				}
-				size_t differ = 0;
-				for (size_t i = 0; i < parts.size(); ++i)
-				{
-					differ += parts[i] != whole.pixels[i] && ((parts[i] | whole.pixels[i]) >> 24) != 0;
-				}
-				Log(LOG_INFO) << "HD sparse check: " << w << "x" << h << " k" << k << ", " << e.pieces.size() << " pieces, "
-					<< differ << " pixels differ from the whole surface smoothed";
 			}
 		}
 		it = _sparse.find(surface);

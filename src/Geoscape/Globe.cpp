@@ -17,8 +17,6 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "Globe.h"
-#include <algorithm>
-#include <chrono>
 #include "../fmath.h"
 #include "../Engine/Action.h"
 #include "../Engine/SurfaceSet.h"
@@ -972,31 +970,18 @@ void Globe::rotate()
  */
 void Globe::draw()
 {
-	// what a redraw of the globe costs, part by part: spinning it runs at 25-30 fps with 25-35 ms of
-	// blit per frame, and the log said nothing about which part (HD globe line, every 2 s of redraws)
-	typedef std::chrono::steady_clock Clock;
-	auto t = Clock::now();
-	auto lap = [this, &t](int i) { const auto n = Clock::now(); _drawPartMs[i] += std::chrono::duration<double, std::milli>(n - t).count(); t = n; };
 	if (_redraw)
 	{
 		cachePolygons();
 	}
 	Surface::draw();
-	lap(0);
 	drawOcean();
-	lap(1);
 	drawLand();
-	lap(2);
 	drawRadars();
 	drawFlights();
-	lap(3);
 	drawShadow();
-	lap(4);
 	drawMarkers();
-	lap(5);
 	drawDetail();
-	lap(6);
-	++_drawCount;
 }
 
 
@@ -1937,16 +1922,9 @@ void Globe::drawHdLabels()
  */
 void Globe::blit(SDL_Surface *surface)
 {
-	typedef std::chrono::steady_clock Clock;
-	const auto t0 = Clock::now();
 	Surface::blit(surface);
-	const auto t1 = Clock::now();
-	auto part = [this](int i, Clock::time_point &t) { const auto n = Clock::now(); _blitPartMs[i] += std::chrono::duration<double, std::milli>(n - t).count(); t = n; };
-	auto tp = t1;
 	_radars->blit(surface);
-	part(0, tp);
 	_countries->blit(surface);
-	part(1, tp);
 	if (_hdLabelsKept && HdUi::isScreen(surface) && HdUi::active())
 	{
 		// before the markers, so that they cover a name exactly as they did when it sat in _countries
@@ -1957,50 +1935,7 @@ void Globe::blit(SDL_Surface *surface)
 		// the option was switched while the globe stood still: lay the labels out the other way round
 		invalidate();
 	}
-	part(2, tp);
 	_markers->blit(surface);
-	part(3, tp);
-	const auto t2 = Clock::now();
-	// Surface::blit draws the globe first when it was invalidated, so the draw is taken out of it
-	static double drawBefore = 0;
-	double drawNow = 0;
-	for (double ms : _drawPartMs) drawNow += ms;
-	_blitSelfMs += std::chrono::duration<double, std::milli>(t1 - t0).count() - (drawNow - drawBefore);
-	drawBefore = drawNow;
-	_blitRestMs += std::chrono::duration<double, std::milli>(t2 - t1).count();
-	++_blitCount;
-	static Uint32 since = SDL_GetTicks();
-	if (SDL_GetTicks() - since >= 2000)
-	{
-		since = SDL_GetTicks();
-		if (_drawCount > 0)
-		{
-			const double d = _drawCount, b = std::max(1, _blitCount);
-			Log(LOG_INFO) << "HD globe: " << _drawCount << " redraws in " << _blitCount << " blits, per redraw ms: fill "
-				<< _drawPartMs[0] / d << " ocean " << _drawPartMs[1] / d << " land " << _drawPartMs[2] / d
-				<< " radars+flights " << _drawPartMs[3] / d << " shadow " << _drawPartMs[4] / d
-				<< " markers " << _drawPartMs[5] / d << " detail " << _drawPartMs[6] / d
-				<< " | per blit ms: globe to screen " << _blitSelfMs / b << ", radars+countries+labels+markers "
-				<< _blitRestMs / b << " (radars " << _blitPartMs[0] / b << " countries " << _blitPartMs[1] / b
-				<< " labels " << _blitPartMs[2] / b << " markers " << _blitPartMs[3] / b << ")";
-			// how much of each layer is drawn at all: a layer the size of the globe that is almost empty
-			// is still hashed and smoothed as a whole
-			auto filled = [](Surface *s) {
-				const Uint8 *p = (const Uint8*)s->getBuffer();
-				size_t n = 0;
-				for (int y = 0; y < s->getHeight(); ++y)
-					for (int x = 0; x < s->getWidth(); ++x)
-						n += p[(size_t)y * s->getPitch() + x] != 0;
-				return 100.0 * n / std::max(1, s->getWidth() * s->getHeight());
-			};
-			Log(LOG_INFO) << "HD globe layers " << getWidth() << "x" << getHeight() << ", filled %: globe " << filled(this)
-				<< " radars " << filled(_radars) << " countries " << filled(_countries) << " markers " << filled(_markers);
-		}
-		for (double &ms : _blitPartMs) ms = 0;
-		for (double &ms : _drawPartMs) ms = 0;
-		drawBefore = 0;
-		_drawCount = 0; _blitCount = 0; _blitSelfMs = 0; _blitRestMs = 0;
-	}
 }
 
 /**

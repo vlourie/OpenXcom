@@ -166,7 +166,6 @@ void Game::run()
 		const Uint32 hdFrameStart = SDL_GetTicks();
 		// ... and which part of it took the time: HD UI alone does not account for every freeze
 		Uint32 hdInitMs = 0, hdThinkMs = 0, hdBlitMs = 0, hdFlipMs = 0, hdFreeMs = 0, hdEventMs = 0;
-		bool hdDrawn = false;                   // was a frame drawn in this pass of the loop (the FPS cap skips most)
 		// Clean up states
 		const Uint32 hdFreeStart = SDL_GetTicks();
 		while (!_deleted.empty())
@@ -534,27 +533,16 @@ void Game::run()
 				const Uint32 hdFlipStart = SDL_GetTicks();
 				_screen->flip();
 				hdFlipMs = SDL_GetTicks() - hdFlipStart;
-				hdDrawn = true;
 			}
 		}
 
 		{
 			static Uint32 hdWatchStart = 0, hdWorst = 0, hdSlow = 0, hdStalls = 0, hdFrames = 0;
-			// the frames actually drawn and what they cost: hdFrames counts every pass of the loop, and at
-			// the FPS cap most passes draw nothing, so it says nothing about the FPS the player sees
-			static Uint32 hdDrawnFrames = 0, hdDrawnBlit = 0, hdDrawnFlip = 0, hdThinkSum = 0;
 			static const char *hdWorstState = "-";
 			const char *state = _states.empty() ? "-" : typeid(*_states.back()).name();
 			const Uint32 now = SDL_GetTicks();
 			const Uint32 spent = now - hdFrameStart;
 			++hdFrames;
-			hdThinkSum += hdThinkMs;
-			if (hdDrawn)
-			{
-				++hdDrawnFrames;
-				hdDrawnBlit += hdBlitMs;
-				hdDrawnFlip += hdFlipMs;
-			}
 			if (spent > hdWorst) { hdWorst = spent; hdWorstState = state; }
 			if (spent >= 33) ++hdSlow;
 			if (spent >= 100)
@@ -573,16 +561,10 @@ void Game::run()
 			{
 				if (hdWatchStart)
 				{
-					const double secs = (now - hdWatchStart) / 1000.0;
 					Log(LOG_INFO) << "HD frame: " << hdFrames << " fr, worst " << hdWorst << " ms (" << hdWorstState
-						<< "), >=33 ms " << hdSlow << ", >=100 ms " << hdStalls
-						<< " | drawn " << (int)(hdDrawnFrames / secs + 0.5) << " fps, per drawn frame blit "
-						<< (hdDrawnFrames ? hdDrawnBlit / (double)hdDrawnFrames : 0.0) << " ms flip "
-						<< (hdDrawnFrames ? hdDrawnFlip / (double)hdDrawnFrames : 0.0) << " ms, think "
-						<< (int)(hdThinkSum / secs + 0.5) << " ms/s (" << state << ")";
+						<< "), >=33 ms " << hdSlow << ", >=100 ms " << hdStalls;
 				}
 				hdWatchStart = now; hdWorst = 0; hdSlow = 0; hdStalls = 0; hdFrames = 0;
-				hdDrawnFrames = 0; hdDrawnBlit = 0; hdDrawnFlip = 0; hdThinkSum = 0;
 			}
 		}
 
