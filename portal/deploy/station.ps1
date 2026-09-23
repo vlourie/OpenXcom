@@ -4,6 +4,7 @@
 #   .\station.ps1            первый запуск: .env и portal.env с секретами, сборка, старт, проверка
 #   .\station.ps1 up         то же самое (повторно - пересобрать и перезапустить)
 #   .\station.ps1 status     контейнеры и ответ /ready
+#   .\station.ps1 content    разделы модов и вики из файлов seed\ и wiki\ (up делает это сам)
 #   .\station.ps1 logs       журнал сайта (Ctrl+C - выйти)
 #   .\station.ps1 admin you@example.com Имя    первый SuperAdmin (пароль спросит)
 #   .\station.ps1 reset-2fa you@example.com    сбросить двухфакторную проверку
@@ -161,6 +162,20 @@ function Set-DotEnv([string] $key, [string] $value) {
     [IO.File]::WriteAllText($path, ($lines -join "`n") + "`n", $utf8)
 }
 
+# Каталог сайта и вики: контейнер видит их как /seed и /wiki (монтирует compose.yaml), потому что
+# в образе папки deploy нет вовсе. Применять можно сколько угодно раз: разделы сверяются по адресу,
+# собранная вики переписывается целиком, написанное человеком не трогается
+function Update-Content {
+    if (Test-Path 'seed/community.json') {
+        Say 'разделы модов и доски форума'
+        Invoke-Compose run --rm migrate seed --file /seed/community.json
+    }
+    foreach ($f in @(Get-ChildItem -Path 'wiki' -Filter '*.json' -ErrorAction SilentlyContinue)) {
+        Say "вики из рулсетов: $($f.Name)"
+        Invoke-Compose run --rm migrate wiki import --file "/wiki/$($f.Name)"
+    }
+}
+
 function Test-Ready {
     $env_ = Read-DotEnv '.env'
     $url = $env_['PORTAL_PUBLIC_URL']
@@ -192,6 +207,7 @@ switch ($Command) {
             if ($internet) { Write-Host 'Сертификат: в журнале caddy ищи certificate obtained или ошибку dynu' }
             Fail "сайт не ответил на $url/ready за 5 минут. Журнал: .\station.ps1 logs"
         }
+        Update-Content
         Write-Host ''
         Write-Host "Сайт работает: $url" -ForegroundColor Green
         if ($internet) {
@@ -207,6 +223,10 @@ switch ($Command) {
         Assert-Docker
         Invoke-Compose ps -a
         if (Test-Ready) { Write-Host "ready: Healthy  ($(Get-Url))" -ForegroundColor Green } else { Write-Host "ready: НЕ отвечает ($(Get-Url))" -ForegroundColor Red }
+    }
+    'content' {
+        Assert-Docker
+        Update-Content
     }
     'logs' {
         # в режиме internet видно и выдачу сертификата (caddy), и обновление адреса (ddns)
@@ -266,5 +286,5 @@ switch ($Command) {
         & $PSCommandPath up
     }
     'down' { Invoke-Compose down }
-    default { Fail "неизвестная команда '$Command'. Есть: up, status, logs, admin, reset-2fa, mail, root-cert, internet, lan, down" }
+    default { Fail "неизвестная команда '$Command'. Есть: up, status, content, logs, admin, reset-2fa, mail, root-cert, internet, lan, down" }
 }

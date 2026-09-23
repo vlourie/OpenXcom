@@ -15,8 +15,9 @@
 ## Сайт
 
 Тестовая машина, где в Docker уже живут другие сайты и порты 80/443 заняты, — не этот раздел, а
-`station.ps1` поверх `compose.station.yaml` (свой порт, свой сертификат, без ddns). Архив для неё
-собирает `station/pack.ps1`, инструкция для Claude на ней — `station/CLAUDE.md`.
+`station.ps1` поверх `compose.station.yaml` (свой порт, свой сертификат, без ddns). Архив для обеих
+машин собирает `pack.ps1`, инструкция для человека — `README.txt`, для Claude на той машине —
+`station/CLAUDE.md`.
 
 ### Один раз
 
@@ -24,9 +25,30 @@
 cd portal/deploy
 cp .env.example .env                # DNS, PORTAL_HOST, POSTGRES_PASSWORD (openssl rand -hex 24)
 cp portal.env.example portal.env    # Portal__Secret (openssl rand -base64 48), почта, токен бота
-docker compose up -d --build
+./update.sh
 docker compose logs -f migrate portal
 ```
+
+### Каждое обновление
+
+```sh
+./update.sh          # сборка, схема базы, каталог разделов, вики, проверка /ready
+./update.sh --no-wiki
+```
+
+Данные в томах это не трогает. Три шага, которые скрипт делает за один заход, по отдельности:
+
+| Шаг | Команда | Откуда файл |
+|---|---|---|
+| схема базы | `docker compose up -d --build` | контейнер `migrate` сам |
+| разделы и доски | `docker compose run --rm migrate seed --file /seed/community.json` | `deploy/seed/` |
+| вики из рулсетов | `docker compose run --rm migrate wiki import --file /wiki/piratez.json` | `deploy/wiki/` |
+
+Обе папки контейнер видит только на чтение: образ собирается без `deploy/` (см. `.dockerignore`),
+поэтому файлы приходят монтированием. Каталог применяется сколько угодно раз: записи сверяются по
+адресу и переписываются, ничего не удаляется. Вики переписывается целиком, но страницы, написанные
+человеком, импорт не трогает. Собирает её `tools/portal_wiki.py` — на машине, где установлен мод,
+см. `wiki/README.md`.
 
 Первый SuperAdmin создаётся только из консоли сервера, через веб — никогда:
 

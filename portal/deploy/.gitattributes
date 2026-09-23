@@ -4,3 +4,4 @@ Dockerfile text eol=lf
 .env.example text eol=lf
 Caddyfile* text eol=lf
 *.env.example text eol=lf
+*.sh text eol=lf

@@ -50,6 +50,13 @@ services:
     image: xp-portal
     command: ["migrate"]
     env_file: portal.env
+    # the same container also applies the catalogue and imports the wiki:
+    #   docker compose run --rm migrate seed --file /seed/community.json
+    #   docker compose run --rm migrate wiki import --file /wiki/piratez.json
+    # the image carries no deploy/ folder on purpose, so both files come in as read-only mounts
+    volumes:
+      - ./seed:/seed:ro
+      - ./wiki:/wiki:ro
     environment: &portal-env
       ConnectionStrings__Portal: Host=db;Port=5432;Database=xp_portal;Username=xp;Password=${POSTGRES_PASSWORD}
       Portal__PublicUrl: https://${PORTAL_HOST:?set PORTAL_HOST in .env}
