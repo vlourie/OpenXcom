@@ -27,6 +27,17 @@
         </select>
     </div>
     <div>
+        <label for="Lang">@T["field.language"]</label>
+        <select id="Lang" name="Lang">
+            <option value="">@T["admin.filter.any"]</option>
+            @foreach (var l in Model.Languages)
+            {
+                <option value="@l" selected="@(Model.Lang == l)">@l</option>
+            }
+            <option value="none" selected="@(Model.Lang == "none")">@T["admin.filter.noLanguage"]</option>
+        </select>
+    </div>
+    <div>
         <label for="Q">@T["admin.search"]</label>
         <input type="text" id="Q" name="Q" value="@Model.Q" maxlength="140" />
     </div>
@@ -47,13 +58,14 @@ else if (Model.Tickets.Count == 0)
 else
 {
     <table>
-        <tr><th>№</th><th>@T["field.title"]</th><th>@T["field.category"]</th><th>@T["field.status"]</th><th>@T["field.priority"]</th><th>@T["field.created"]</th></tr>
+        <tr><th>№</th><th>@T["field.title"]</th><th>@T["field.category"]</th><th>@T["field.language"]</th><th>@T["field.status"]</th><th>@T["field.priority"]</th><th>@T["field.created"]</th></tr>
         @foreach (var t in Model.Tickets)
         {
             <tr>
                 <td><a href="/admin/tickets/@t.Number">@t.DisplayNumber</a></td>
                 <td>@t.Title</td>
                 <td>@T["cat." + t.Category]</td>
+                <td>@(t.Language ?? "—")</td>
                 <td>@T["status." + t.Status]</td>
                 <td>@T["prio." + t.Priority]</td>
                 <td>@t.CreatedAt.ToString("yyyy-MM-dd HH:mm")</td>
@@ -63,11 +75,11 @@ else
     <p>
         @if (Model.PageNo > 1)
         {
-            <a href="?Status=@Model.Status&Category=@Model.Category&Mine=@Model.Mine&Q=@Uri.EscapeDataString(Model.Q ?? "")&p=@(Model.PageNo - 1)">←</a>
+            <a href="?Status=@Model.Status&Category=@Model.Category&Lang=@Model.Lang&Mine=@Model.Mine&Q=@Uri.EscapeDataString(Model.Q ?? "")&p=@(Model.PageNo - 1)">←</a>
         }
         @if (Model.HasMore)
         {
-            <a href="?Status=@Model.Status&Category=@Model.Category&Mine=@Model.Mine&Q=@Uri.EscapeDataString(Model.Q ?? "")&p=@(Model.PageNo + 1)">→</a>
+            <a href="?Status=@Model.Status&Category=@Model.Category&Lang=@Model.Lang&Mine=@Model.Mine&Q=@Uri.EscapeDataString(Model.Q ?? "")&p=@(Model.PageNo + 1)">→</a>
         }
     </p>
 }

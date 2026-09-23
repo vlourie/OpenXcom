@@ -39,6 +39,7 @@ public sealed class PortalDb(DbContextOptions<PortalDb> options)
             e.HasIndex(t => t.IdempotencyKey).IsUnique();
             e.HasIndex(t => new { t.Category, t.Status });
             e.HasIndex(t => t.AuthorId);
+            e.HasIndex(t => t.Language);
             e.Property(t => t.Category).HasMaxLength(32);
             e.Property(t => t.Title).HasMaxLength(Limits.TitleMax);
             e.Property(t => t.Description).HasMaxLength(Limits.TextMax);
@@ -46,6 +47,7 @@ public sealed class PortalDb(DbContextOptions<PortalDb> options)
             e.Property(t => t.Expected).HasMaxLength(Limits.TextMax);
             e.Property(t => t.Actual).HasMaxLength(Limits.TextMax);
             e.Property(t => t.Context).HasMaxLength(Limits.ContextMax);
+            e.Property(t => t.Language).HasMaxLength(Xp.Portal.Tickets.TicketLanguage.Max);
             e.Property(t => t.GameVersion).HasMaxLength(64);
             e.Property(t => t.ModVersion).HasMaxLength(64);
             e.Property(t => t.LauncherVersion).HasMaxLength(64);

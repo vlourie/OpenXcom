@@ -222,5 +222,11 @@
   "identity.DefaultError": "That did not work. Try again.",
   "field.context": "Technical data",
   "source.F8": "from the game (F8)",
-  "source.Crash": "crash report"
+  "source.Crash": "crash report",
+  "field.language": "Language",
+  "admin.filter.noLanguage": "No language",
+  "language_invalid": "The language is a code like ru, en or pt-BR.",
+  "file_not_text": "The file must be text (UTF-8), but it holds binary data.",
+  "file_not_save": "This is not an OpenXcom save: there is no name/version header.",
+  "zip_content_not_allowed": "The archive holds files that may not be attached, or another archive."
 }

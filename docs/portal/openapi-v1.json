@@ -403,6 +403,14 @@
               "null",
               "string"
             ]
+          },
+          "language": {
+            "maxLength": 16,
+            "minLength": 0,
+            "type": [
+              "null",
+              "string"
+            ]
           }
         }
       },

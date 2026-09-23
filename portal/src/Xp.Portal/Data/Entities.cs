@@ -39,6 +39,8 @@ public sealed class Ticket
     public string? LauncherVersion { get; set; }
     /// <summary>Technical data from the launcher (F8, crash): versions, OS, screen mode, game screen. No paths, no names.</summary>
     public string? Context { get; set; }
+    /// <summary>What the ticket is written in: the game's language (F8, crash) or the site's (web). See TicketLanguage.</summary>
+    public string? Language { get; set; }
     public Guid? AuthorId { get; set; }
     public PortalUser? Author { get; set; }
     /// <summary>Guests only: the reply address they chose to leave, never shown to other people.</summary>

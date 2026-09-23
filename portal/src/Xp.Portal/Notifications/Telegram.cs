@@ -41,7 +41,9 @@ public sealed class TelegramNotices(PortalDb db, IOptions<PortalOptions> portal)
     {
         var versions = string.Join(" / ", new[] { t.GameVersion, t.ModVersion }.Where(v => !string.IsNullOrWhiteSpace(v)));
         var sb = new StringBuilder();
-        sb.Append("🆕 <b>").Append(Html(t.DisplayNumber)).Append("</b> · ").Append(Html(t.Category)).Append('\n');
+        sb.Append("🆕 <b>").Append(Html(t.DisplayNumber)).Append("</b> · ").Append(Html(t.Category));
+        if (!string.IsNullOrEmpty(t.Language)) sb.Append(" · ").Append(Html(t.Language));
+        sb.Append('\n');
         sb.Append(Html(Shorten(t.Title, TitleMax))).Append('\n');
         if (versions.Length > 0) sb.Append("v ").Append(Html(Shorten(versions, 64))).Append('\n');
         sb.Append(t.CreatedAt.UtcDateTime.ToString("yyyy-MM-dd HH:mm 'UTC'", CultureInfo.InvariantCulture)).Append('\n');

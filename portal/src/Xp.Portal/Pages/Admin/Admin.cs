@@ -18,17 +18,29 @@ public sealed class QueueModel(PortalDb db) : PageModel
     [BindProperty(SupportsGet = true)] public string? Status { get; set; }
     [BindProperty(SupportsGet = true)] public string? Category { get; set; }
     [BindProperty(SupportsGet = true)] public bool Mine { get; set; }
+    /// <summary>Language group ("ru", "en"); "none" = tickets without a language.</summary>
+    [BindProperty(SupportsGet = true)] public string? Lang { get; set; }
     [BindProperty(SupportsGet = true)] public string? Q { get; set; }
     [BindProperty(SupportsGet = true, Name = "p")] public int PageNo { get; set; } = 1;
 
     public Viewer Viewer { get; private set; } = null!;
     public List<Ticket> Tickets { get; private set; } = new();
     public bool HasMore { get; private set; }
+    /// <summary>Language groups present among the tickets this person may see, for the filter.</summary>
+    public List<string> Languages { get; private set; } = new();
 
     public async Task OnGetAsync(CancellationToken ct)
     {
         Viewer = new Viewer(User);
         var q = Viewer.VisibleToStaff(db.Tickets);
+        var tags = await q.Where(t => t.Language != null).Select(t => t.Language!).Distinct().ToListAsync(ct);
+        Languages = tags.Select(TicketLanguage.Primary).Distinct().Order(StringComparer.Ordinal).ToList();
+        if (Lang == "none") q = q.Where(t => t.Language == null);
+        else if (!string.IsNullOrEmpty(Lang) && Languages.Contains(Lang))
+        {
+            var prefix = Lang + "-";
+            q = q.Where(t => t.Language == Lang || t.Language!.StartsWith(prefix));
+        }
         if (Categories.IsValid(Category)) q = q.Where(t => t.Category == Category);
         if (Status == "all") { }
         else if (Enum.TryParse<TicketStatus>(Status, out var st)) q = q.Where(t => t.Status == st);
@@ -126,6 +138,9 @@ public sealed class TicketModel(PortalDb db, TicketService tickets, SignedUrls u
 
     public Task<IActionResult> OnPostCategoryAsync(long number, string? category, CancellationToken ct) =>
         ActAsync(number, () => tickets.SetCategoryAsync(Ticket, category ?? "", Me, ct), ct);
+
+    public Task<IActionResult> OnPostLanguageAsync(long number, string? language, CancellationToken ct) =>
+        ActAsync(number, () => tickets.SetLanguageAsync(Ticket, language, Me, ct), ct);
 
     public Task<IActionResult> OnPostAssignAsync(long number, Guid? assignee, CancellationToken ct) =>
         ActAsync(number, () => tickets.AssignAsync(Ticket, assignee, Me, ct), ct);

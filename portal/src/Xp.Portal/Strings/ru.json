@@ -222,5 +222,11 @@
   "identity.DefaultError": "Не получилось. Попробуйте ещё раз.",
   "field.context": "Технические данные",
   "source.F8": "из игры (F8)",
-  "source.Crash": "отчёт о сбое"
+  "source.Crash": "отчёт о сбое",
+  "field.language": "Язык",
+  "admin.filter.noLanguage": "Без языка",
+  "language_invalid": "Язык — код вида ru, en или pt-BR.",
+  "file_not_text": "Файл должен быть текстовым (UTF-8), а в нём двоичные данные.",
+  "file_not_save": "Это не сохранение OpenXcom: нет шапки name/version.",
+  "zip_content_not_allowed": "В архиве есть файлы, которые нельзя прикладывать, или вложенный архив."
 }

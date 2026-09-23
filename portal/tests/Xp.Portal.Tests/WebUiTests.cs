@@ -232,6 +232,30 @@ public sealed partial class WebUiTests(PortalFactory f) : IClassFixture<PortalFa
     }
 
     [Fact]
+    public async Task Queue_is_split_by_language_and_staff_can_correct_it()
+    {
+        var tag = Guid.NewGuid().ToString("N")[..6];
+        Task<Ticket> Make(string title, string? lang) => f.ScopedAsync(async sp =>
+            (await sp.GetRequiredService<TicketService>().CreateAsync(new NewTicket("code", title, "d", Language: lang), null, null, null, default)).Ticket);
+        var ru = await Make("ru-" + tag, "ru");
+        var us = await Make("us-" + tag, "en-US");
+        var none = await Make("none-" + tag, null);
+        var admin = await SignInAsync(await MakeUserAsync(Roles.Admin, true, "tickets.code"));
+
+        var en = await admin.GetStringAsync("/admin?Status=all&Lang=en");
+        Assert.Contains(us.Title, en);   // en-US sits with en
+        Assert.DoesNotContain(ru.Title, en);
+        Assert.DoesNotContain(none.Title, en);
+        var unknown = await admin.GetStringAsync("/admin?Status=all&Lang=none");
+        Assert.Contains(none.Title, unknown);
+        Assert.DoesNotContain(ru.Title, unknown);
+
+        var r = await PostForm(admin, $"/admin/tickets/{none.Number}?handler=Language", new() { ["language"] = "pt_br" }, tokenFrom: "/admin");
+        Assert.Equal(HttpStatusCode.Redirect, r.StatusCode);
+        Assert.Equal("pt-BR", await f.DbAsync(db => db.Tickets.Where(t => t.Id == none.Id).Select(t => t.Language).FirstAsync()));
+    }
+
+    [Fact]
     public async Task Admin_works_a_ticket_and_the_guest_sees_only_the_public_part()
     {
         var created = await f.ScopedAsync(sp => sp.GetRequiredService<TicketService>().CreateAsync(new NewTicket("code", "crash on load", "d"), null, null, null, default));

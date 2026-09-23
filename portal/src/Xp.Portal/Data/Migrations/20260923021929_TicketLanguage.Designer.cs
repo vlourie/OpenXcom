@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using Xp.Portal.Data;
@@ -11,9 +12,11 @@ using Xp.Portal.Data;
 namespace Xp.Portal.Data.Migrations
 {
     [DbContext(typeof(PortalDb))]
-    partial class PortalDbModelSnapshot : ModelSnapshot
+    [Migration("20260923021929_TicketLanguage")]
+    partial class TicketLanguage
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

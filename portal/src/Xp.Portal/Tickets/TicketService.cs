@@ -13,7 +13,8 @@ public sealed record NewTicket(
     string Category, string Title, string Description,
     string? Steps = null, string? Expected = null, string? Actual = null,
     string? GameVersion = null, string? ModVersion = null, string? LauncherVersion = null,
-    string? GuestEmail = null, bool ConsentToFiles = false, TicketSource Source = TicketSource.Web, string? Context = null);
+    string? GuestEmail = null, bool ConsentToFiles = false, TicketSource Source = TicketSource.Web, string? Context = null,
+    string? Language = null);
 
 public sealed record CreatedTicket(Ticket Ticket, string? GuestToken, bool Replayed);
 
@@ -65,6 +66,7 @@ public sealed class TicketService(PortalDb db, TelegramNotices notices, IOptions
             ModVersion = Clean(n.ModVersion, 64, true),
             LauncherVersion = Clean(n.LauncherVersion, 64, true),
             Context = Clean(n.Context, Limits.ContextMax),
+            Language = TicketLanguage.Normalize(n.Language),
             Source = n.Source,
             AuthorId = authorId,
             GuestEmail = authorId is null ? Clean(n.GuestEmail, 256, true) : null,
@@ -174,6 +176,15 @@ public sealed class TicketService(PortalDb db, TelegramNotices notices, IOptions
         if (category == t.Category) return;
         await HistoryAsync(t, actor, "category", t.Category, category, ct);
         t.Category = category;
+        await TouchAsync(t, ct);
+    }
+
+    public async Task SetLanguageAsync(Ticket t, string? language, Guid actor, CancellationToken ct)
+    {
+        var tag = TicketLanguage.Normalize(language);
+        if (tag == t.Language) return;
+        await HistoryAsync(t, actor, "language", t.Language, tag, ct);
+        t.Language = tag;
         await TouchAsync(t, ct);
     }
 

@@ -57,6 +57,11 @@
             </select>
             <button type="submit" class="secondary">@T["admin.apply"]</button>
         </form>
+        <form method="post" asp-page-handler="Language">
+            <label for="language">@T["field.language"]</label>
+            <input type="text" id="language" name="language" value="@t.Language" maxlength="16" placeholder="ru, en, de…" />
+            <button type="submit" class="secondary">@T["admin.apply"]</button>
+        </form>
         <form method="post" asp-page-handler="Assign">
             <label for="assignee">@T["admin.assignee"]</label>
             <select id="assignee" name="assignee">

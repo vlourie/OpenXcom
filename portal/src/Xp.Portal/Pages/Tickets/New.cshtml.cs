@@ -6,6 +6,7 @@ using Microsoft.Extensions.Options;
 using Xp.Portal.Auth;
 using Xp.Portal.Data;
 using Xp.Portal.Files;
+using Xp.Portal.Site;
 using Xp.Portal.Tickets;
 
 namespace Xp.Portal.Pages.Tickets;
@@ -62,7 +63,8 @@ public sealed class NewTicketModel(TicketService tickets, AttachmentService file
         try
         {
             created = await tickets.CreateAsync(new NewTicket(Form.Category, Form.Title, Form.Description, Form.Steps, Form.Expected, Form.Actual,
-                Form.GameVersion, Form.ModVersion, null, author is null ? Form.Email : null, Form.Consent), author,
+                Form.GameVersion, Form.ModVersion, null, author is null ? Form.Email : null, Form.Consent,
+                Language: Text.Lang), author,
                 string.IsNullOrEmpty(Form.Key) ? null : "web:" + Form.Key, HttpContext.TraceIdentifier, ct);
         }
         catch (TicketException e)
