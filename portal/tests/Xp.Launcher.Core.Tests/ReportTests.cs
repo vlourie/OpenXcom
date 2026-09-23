@@ -336,7 +336,7 @@ public sealed class ReportTests : IDisposable
         Assert.Equal(3, all.Count);
         ReportStore.Rotate(all, keep: 1);
         var left = ReportStore.List([Reports]).Select(r => r.Draft.Id).ToHashSet();
-        Assert.Equal([b.Draft.Id, c.Draft.Id], left.Order());
+        Assert.Equal(new[] { b.Draft.Id, c.Draft.Id }.Order(), left.Order());   // ids are random: compare as sets
         Assert.True(Directory.Exists(Path.Combine(Reports, "not-a-report")));
     }
 
