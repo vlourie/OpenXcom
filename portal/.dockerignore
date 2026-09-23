@@ -1,0 +1,10 @@
+**/bin/
+**/obj/
+**/.vs/
+.dev/
+out/
+tests/
+deploy/
+keys/*.key
+**/*.user
+**/appsettings.Development.json
