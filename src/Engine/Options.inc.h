@@ -177,6 +177,8 @@ OPT int oxceHdFrameSkip;
 OPT bool oxceAdultArt;
 // Ask which art version to play at every start (AdultChoiceState). Off: play whatever oxceAdultArt says, without asking.
 OPT bool oxceAdultAsk;
+// The language was picked on the start screen (LanguageChoiceState); it is only asked until then. Changed later in Options > Video.
+OPT bool oxceLanguageChosen;
 
 // OXCE hidden, but moddable via fixedUserOptions and/or recommendedUserOptions
 OPT int oxceStartUpTextMode;

@@ -294,6 +294,8 @@ set ( menu_src
   Menu/OptionsControlsState.cpp
   Menu/OptionsDefaultsState.cpp
   Menu/OptionsFoldersState.cpp
+  Menu/OptionDetailState.cpp
+  Menu/OptionsHdState.cpp
   Menu/OptionsGeoscapeState.cpp
   Menu/ModConfirmExtendedState.cpp
   Menu/ModListState.cpp

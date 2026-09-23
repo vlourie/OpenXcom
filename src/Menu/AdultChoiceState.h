@@ -57,6 +57,8 @@ public:
 	~AdultChoiceState();
 	/// Should the question be asked on this start?
 	static bool isNeeded();
+	/// Does any active mod ship the adult picture tree?
+	static bool adultArtShipped();
 	/// Handler for clicking the adult button.
 	void btnAdultClick(Action *action);
 	/// Handler for clicking the classic button.
