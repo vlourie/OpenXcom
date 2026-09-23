@@ -1,0 +1,30 @@
+{
+  "RepoDir": "E:\\OpenXCom",
+  "BuildDir": "E:\\OpenXCom\\build-release",
+  "MsysBin": "C:\\msys64\\mingw64\\bin",
+  "Ninja": "",
+  "EnigmaConsole": "",
+  "SevenZip": "",
+
+  "GameDir": "E:\\OpenXCom\\Пиратки\\Dioxine_XPiratez",
+  "Mods": ["hd", "intro_voice"],
+  "ModRequire": {
+    "hd": ["metadata.yml", "hd/UI/FontBig.ttf", "hd/UI/FontSmall.ttf", "hd/UI/FontFallback.ttf", "hd/UI/fonts", "Ruleset"],
+    "intro_voice": ["metadata.yml", "Ruleset", "SOUND"]
+  },
+  "ModExcludeDirs": ["UI_photo", "preview", "__pycache__", "UI_esrgan", "UI_FAST", "UI_FIXED", "hdart_sheets", "_cmp"],
+  "ModExcludeFiles": ["*.exe", "*.pyc", "Thumbs.db", "desktop.ini"],
+  "DataDirs": ["common", "standard"],
+  "DataSource": "",
+
+  "ExeName": "openxcom_hd.exe",
+  "ExeResultName": "OpenXComEx_{stamp}",
+  "DistDir": "E:\\OpenXCom\\dist",
+  "KeepLast": 5,
+  "CopyExeTo": "",
+  "OpenExplorer": true,
+
+  "DynamicDlls": ["libvorbisfile-3.dll"],
+  "ExtraDllDirs": [],
+  "FallbackDlls": ["libFLAC.dll", "libogg-0.dll", "libwinpthread-1.dll", "libvorbis-0.dll", "libvorbisfile-3.dll"]
+}

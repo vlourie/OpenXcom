@@ -32,7 +32,7 @@ SKIP_DIRS = {".git", ".index", "build", "dist", "out", "node_modules", "__pycach
              ".vs", ".vscode", ".idea", "game", "assets", "venv", ".venv", "third_party",
              # каталоги сборки, данные и установленные игры: не исходники проекта
              "build-release", "obj", "deps", "libs", "bin", "user", "install",
-             "Пиратки", "мурукон", "Claude outputs", "hdglobe_dl", "hdart_sheets"}
+             "Пиратки", "мурукон", "Claude outputs", "hdglobe_dl", "hdart_sheets", "art"}
 
 
 # Windows PowerShell 5.1 читает файл без BOM как cp1251 (`type INDEX.md` — мусор).
