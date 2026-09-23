@@ -113,5 +113,15 @@
  "report.err.file_not_save": "это не сохранение игры",
  "report.err.zip_content_not_allowed": "в архиве недопустимые файлы",
  "report.err.file_content_mismatch": "содержимое не совпадает с типом файла",
- "report.err.language_invalid": "неверный код языка"
+ "report.err.language_invalid": "неверный код языка",
+ "report.reason": "Причина: {0}",
+ "ticket.status.New": "получен",
+ "ticket.status.Triaged": "разобран",
+ "ticket.status.InProgress": "в работе",
+ "ticket.status.NeedsInfo": "нужны подробности",
+ "ticket.status.Resolved": "исправлено",
+ "ticket.status.Closed": "закрыт",
+ "ticket.status.Duplicate": "дубликат",
+ "ticket.status.Rejected": "отклонён",
+ "ticket.status.Gone": "удалён с сайта"
 }

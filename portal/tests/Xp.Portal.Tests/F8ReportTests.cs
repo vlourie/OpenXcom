@@ -80,6 +80,30 @@ public sealed class F8ReportTests(PortalFactory f) : IClassFixture<PortalFactory
     }
 
     [Fact]
+    public async Task The_launcher_reads_back_the_status_and_the_team_reply()
+    {
+        var r = GameWroteReport();
+        r.Draft.AttachLog = false;
+        r.Draft.SavePath = null;
+        await Sender().SendAsync(r, CancellationToken.None);
+        await f.DbAsync(async db =>
+        {
+            var t = await db.Tickets.SingleAsync(x => x.Number == r.Draft.TicketNumber);
+            t.Status = TicketStatus.NeedsInfo;
+            db.TicketMessages.Add(new TicketMessage { TicketId = t.Id, FromStaff = true, Body = "Какой мод включён?", CreatedAt = DateTimeOffset.UtcNow });
+            db.TicketMessages.Add(new TicketMessage { TicketId = t.Id, FromStaff = true, Internal = true, Body = "между нами", CreatedAt = DateTimeOffset.UtcNow.AddMinutes(1) });
+            await db.SaveChangesAsync();
+            return 0;
+        });
+
+        var n = await ReportStore.RefreshAsync(ReportStore.List([Path.GetDirectoryName(r.Dir)!]), new PortalClient(f.CreateClient(), f.Server.BaseAddress), CancellationToken.None);
+        Assert.Equal(1, n);
+        var d = Report.Open(r.Dir).Draft;
+        Assert.Equal("NeedsInfo", d.TicketStatus);
+        Assert.Equal("Какой мод включён?", d.StaffReply);   // internal notes never reach the player
+    }
+
+    [Fact]
     public async Task Sending_the_same_report_twice_makes_one_ticket()
     {
         var r = GameWroteReport();

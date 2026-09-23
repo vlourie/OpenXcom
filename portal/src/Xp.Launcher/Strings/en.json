@@ -113,5 +113,15 @@
  "report.err.file_not_save": "not a game save",
  "report.err.zip_content_not_allowed": "the archive holds files that are not allowed",
  "report.err.file_content_mismatch": "the content does not match the file type",
- "report.err.language_invalid": "invalid language code"
+ "report.err.language_invalid": "invalid language code",
+ "report.reason": "Reason: {0}",
+ "ticket.status.New": "received",
+ "ticket.status.Triaged": "triaged",
+ "ticket.status.InProgress": "in progress",
+ "ticket.status.NeedsInfo": "needs more info",
+ "ticket.status.Resolved": "fixed",
+ "ticket.status.Closed": "closed",
+ "ticket.status.Duplicate": "duplicate",
+ "ticket.status.Rejected": "rejected",
+ "ticket.status.Gone": "gone from the site"
 }

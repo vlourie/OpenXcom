@@ -12,6 +12,8 @@ public sealed class FakePortal : HttpMessageHandler
     /// <summary>The answer to a create is lost on the way back after the server did the work.</summary>
     public bool LoseCreateAnswer;
     public Func<string, (HttpStatusCode, string)?>? RefuseFile;
+    public string Status = "New";
+    public string? StaffReply;
     public readonly List<(string Name, long Size)> Files = new();
     public readonly List<JsonElement> Created = new();
     public readonly HashSet<string> Keys = new();
@@ -34,7 +36,8 @@ public sealed class FakePortal : HttpMessageHandler
         if (req.Method == HttpMethod.Get && path == "/api/v1/tickets/7")
         {
             var files = string.Join(",", Files.Select(f => $$"""{"id":"{{Guid.NewGuid()}}","fileName":"{{f.Name}}","size":{{f.Size}},"scan":"Clean"}"""));
-            return Json(HttpStatusCode.OK, $$"""{"number":7,"displayNumber":"XP-000007","category":"code","status":"New","title":"t","description":"d","createdAt":"2026-09-23T00:00:00Z","updatedAt":"2026-09-23T00:00:00Z","messages":[],"attachments":[{{files}}]}""");
+            var messages = StaffReply is null ? "" : JsonSerializer.Serialize(new { fromStaff = true, body = StaffReply, createdAt = "2026-09-23T02:00:00Z" });
+            return Json(HttpStatusCode.OK, $$"""{"number":7,"displayNumber":"XP-000007","category":"code","status":"{{Status}}","title":"t","description":"d","createdAt":"2026-09-23T00:00:00Z","updatedAt":"2026-09-23T00:00:00Z","messages":[{{messages}}],"attachments":[{{files}}]}""");
         }
         if (req.Method == HttpMethod.Post && path == "/api/v1/tickets/7/attachments")
         {
@@ -338,6 +341,50 @@ public sealed class ReportTests : IDisposable
         var left = ReportStore.List([Reports]).Select(r => r.Draft.Id).ToHashSet();
         Assert.Equal(new[] { b.Draft.Id, c.Draft.Id }.Order(), left.Order());   // ids are random: compare as sets
         Assert.True(Directory.Exists(Path.Combine(Reports, "not-a-report")));
+    }
+
+    [Fact]
+    public async Task Refresh_writes_status_and_the_team_reply_and_finished_tickets_rotate_away_later()
+    {
+        var r = NewReport();
+        await Sender().SendAsync(r, CancellationToken.None);
+        _portal.Status = "NeedsInfo";
+        _portal.StaffReply = "Какой мод включён?";
+        var reports = ReportStore.List([Reports]);
+        Assert.Equal(1, await ReportStore.RefreshAsync(reports, new PortalClient(new HttpClient(_portal), new Uri("https://p.test/")), CancellationToken.None));
+
+        var d = Report.Open(r.Dir).Draft;
+        Assert.Equal("NeedsInfo", d.TicketStatus);
+        Assert.Equal("Какой мод включён?", d.StaffReply);
+        Assert.NotNull(d.CheckedAt);
+        Assert.Null(d.FinishedAt);
+        // what the game reads: the status spelled out as a word, not a number
+        var onDisk = File.ReadAllText(Path.Combine(r.Dir, Report.DraftFile));
+        Assert.Contains("\"ticketStatus\": \"NeedsInfo\"", onDisk);
+        Assert.Contains("Какой мод включён?", onDisk);   // plain UTF-8, no \u escapes
+
+        // an open ticket outlives the old count rule; a finished one goes 30 days after it was seen finished
+        ReportStore.Rotate(ReportStore.List([Reports]), keep: 0);
+        Assert.True(Directory.Exists(r.Dir));
+        _portal.Status = "Resolved";
+        await ReportStore.RefreshAsync(ReportStore.List([Reports]), new PortalClient(new HttpClient(_portal), new Uri("https://p.test/")), CancellationToken.None);
+        var done = Report.Open(r.Dir);
+        Assert.NotNull(done.Draft.FinishedAt);
+        ReportStore.Rotate([done], keep: 0);
+        Assert.True(Directory.Exists(r.Dir));
+        done.Draft.FinishedAt = DateTimeOffset.UtcNow.AddDays(-31);
+        done.Save();
+        ReportStore.Rotate(ReportStore.List([Reports]), keep: 0);
+        Assert.False(Directory.Exists(r.Dir));
+    }
+
+    [Fact]
+    public async Task A_failed_send_keeps_the_words_of_the_cause()
+    {
+        var r = NewReport();
+        _portal.Offline = true;
+        await Assert.ThrowsAsync<ReportQueuedException>(() => Sender().SendAsync(r, CancellationToken.None));
+        Assert.Contains("no route to host", Report.Open(r.Dir).Draft.LastErrorDetail);
     }
 
     [Fact]

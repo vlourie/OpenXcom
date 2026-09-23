@@ -72,6 +72,17 @@ public sealed class ReportDraft
     public List<string> Uploaded { get; set; } = new();
     public List<SkippedFile> Skipped { get; set; } = new();
     public string? LastError { get; set; }
+    /// <summary>What went wrong in words (the exception's text): the form and the game's list show it next to the code.</summary>
+    public string? LastErrorDetail { get; set; }
+    /// <summary>The ticket's status as the portal last gave it (New, InProgress, NeedsInfo, Resolved…); "Gone" when it is no more.</summary>
+    public string? TicketStatus { get; set; }
+    /// <summary>The team's newest answer on the ticket, for the game's "My reports" list.</summary>
+    public string? StaffReply { get; set; }
+    public DateTimeOffset? StaffReplyAt { get; set; }
+    /// <summary>When the portal was last asked about the ticket.</summary>
+    public DateTimeOffset? CheckedAt { get; set; }
+    /// <summary>When the ticket was first seen finished or gone; the report is kept a while after, then rotated away.</summary>
+    public DateTimeOffset? FinishedAt { get; set; }
 }
 
 public sealed class SkippedFile
@@ -156,8 +167,18 @@ public sealed class Report
     public void Save()
     {
         Draft.UpdatedAt = DateTimeOffset.UtcNow;
-        FileUtil.WriteAtomic(System.IO.Path.Combine(Dir, DraftFile), JsonSerializer.SerializeToUtf8Bytes(Draft, ReportJson.Default.ReportDraft));
+        FileUtil.WriteAtomic(System.IO.Path.Combine(Dir, DraftFile), JsonSerializer.SerializeToUtf8Bytes(Draft, DraftOnDisk));
     }
+
+    /// <summary>
+    /// report.json is also read by the game (its "My reports" list, through its YAML parser): Cyrillic goes as
+    /// plain UTF-8, not as \u escapes, so the game does not depend on how its parser treats them.
+    /// </summary>
+    static readonly System.Text.Json.Serialization.Metadata.JsonTypeInfo<ReportDraft> DraftOnDisk =
+        (System.Text.Json.Serialization.Metadata.JsonTypeInfo<ReportDraft>)new JsonSerializerOptions(ReportJson.Default.Options)
+        {
+            Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping,
+        }.GetTypeInfo(typeof(ReportDraft));
 
     /// <summary>Deletes the whole report: Cancel in the form, Delete in the list.</summary>
     public void Discard()
@@ -298,8 +319,9 @@ public sealed record CreateTicketRequest(
 
 public sealed record CreateTicketResponse(long Number, string DisplayNumber, string? Token, string Url);
 public sealed record TicketAttachmentView(Guid Id, string FileName, long Size, string Scan);
+public sealed record TicketMessageView(bool FromStaff, string Body, DateTimeOffset CreatedAt);
 public sealed record TicketView(long Number, string DisplayNumber, string Category, string Status, string Title, string Description,
-    DateTimeOffset CreatedAt, DateTimeOffset UpdatedAt, List<TicketAttachmentView> Attachments);
+    DateTimeOffset CreatedAt, DateTimeOffset UpdatedAt, List<TicketMessageView>? Messages, List<TicketAttachmentView> Attachments);
 
 /// <summary>The portal said no: a machine-readable code (file_too_large, consent_required, …) and its HTTP status.</summary>
 public sealed class PortalException(int status, string code, string message) : Exception(message)
@@ -384,6 +406,7 @@ public sealed class ReportSender(PortalClient portal, ReportLimits limits, Redac
         if (d.Status == ReportStatus.Sent) return;
         d.Status = ReportStatus.Queued;
         d.LastError = null;
+        d.LastErrorDetail = null;
         report.Save();
         try
         {
@@ -452,6 +475,7 @@ public sealed class ReportSender(PortalClient portal, ReportLimits limits, Redac
         {
             d.Status = ReportStatus.Queued;
             d.LastError = e is PortalException pe ? pe.Code : "network";
+            d.LastErrorDetail = Detail(e);
             report.Save();
             throw new ReportQueuedException(e.Message, e);
         }
@@ -460,9 +484,23 @@ public sealed class ReportSender(PortalClient portal, ReportLimits limits, Redac
             // refused as a whole (bad text, reused key): back to the form, the player can fix it
             d.Status = ReportStatus.Draft;
             d.LastError = e.Code;
+            d.LastErrorDetail = Detail(e);
             report.Save();
             throw;
         }
+    }
+
+    /// <summary>
+    /// The words behind a failure: HttpClient hides the cause ("No such host is known", "connection refused")
+    /// in the inner exception, and that is the part that says what to fix.
+    /// </summary>
+    static string Detail(Exception e)
+    {
+        var text = e.Message;
+        for (var inner = e.InnerException; inner is not null; inner = inner.InnerException)
+            if (!string.IsNullOrWhiteSpace(inner.Message) && !text.Contains(inner.Message, StringComparison.Ordinal)) text += " — " + inner.Message;
+        if (e is PortalException p) text = $"HTTP {p.Status}: {text}";
+        return text.Length > 300 ? text[..300] : text;
     }
 
     /// <summary>The log goes cleaned and cut to its end; a save that is too big goes zipped; the rest as is.</summary>
@@ -526,14 +564,51 @@ public static class ReportStore
         return list.OrderByDescending(r => r.Draft.CreatedAt).ToList();
     }
 
-    /// <summary>Keeps the newest <paramref name="keep"/> sent reports; they are only links by then.</summary>
-    public static void Rotate(IEnumerable<Report> reports, int keep)
+    /// <summary>Statuses after which nothing more happens to a ticket (Xp.Portal TicketStatus), plus our "Gone".</summary>
+    public static bool IsFinished(string? status) => status is "Resolved" or "Closed" or "Duplicate" or "Rejected" or "Gone";
+
+    /// <summary>
+    /// Sent reports are only links by then. One whose ticket the portal has shown stays while the ticket is
+    /// open and <paramref name="finishedDays"/> after it was seen finished, so the player gets to see "resolved".
+    /// Ones never checked (no network since) keep the old rule: the newest <paramref name="keep"/>.
+    /// </summary>
+    public static void Rotate(IEnumerable<Report> reports, int keep, int finishedDays = 30)
     {
-        foreach (var r in reports.Where(r => r.Draft.Status == ReportStatus.Sent).OrderByDescending(r => r.Draft.UpdatedAt).Skip(keep))
+        var sent = reports.Where(r => r.Draft.Status == ReportStatus.Sent).ToList();
+        var old = DateTimeOffset.UtcNow.AddDays(-finishedDays);
+        var drop = sent.Where(r => r.Draft.CheckedAt is null).OrderByDescending(r => r.Draft.UpdatedAt).Skip(keep)
+            .Concat(sent.Where(r => r.Draft.FinishedAt is { } f && f < old));
+        foreach (var r in drop)
         {
             try { r.Discard(); }
             catch (Exception e) when (e is IOException or UnauthorizedAccessException) { }
         }
+    }
+
+    /// <summary>
+    /// Asks the portal about every sent ticket and writes the answer into its report.json: status, the team's
+    /// newest reply, when it was checked. The game's "My reports" list reads only these files. The first network
+    /// failure stops the round; what was learned so far is kept.
+    /// </summary>
+    public static async Task<int> RefreshAsync(IEnumerable<Report> reports, PortalClient portal, CancellationToken ct)
+    {
+        int asked = 0;
+        foreach (var r in reports)
+        {
+            var d = r.Draft;
+            if (d.Status != ReportStatus.Sent || d.TicketNumber is not { } number || string.IsNullOrEmpty(d.Token)) continue;
+            var t = await portal.GetAsync(number, d.Token, ct);
+            var now = DateTimeOffset.UtcNow;
+            d.TicketStatus = t?.Status ?? "Gone";
+            var reply = t?.Messages?.LastOrDefault(m => m.FromStaff);
+            d.StaffReply = reply?.Body;
+            d.StaffReplyAt = reply?.CreatedAt;
+            d.CheckedAt = now;
+            d.FinishedAt = IsFinished(d.TicketStatus) ? d.FinishedAt ?? now : null;
+            r.Save();
+            asked++;
+        }
+        return asked;
     }
 }
 

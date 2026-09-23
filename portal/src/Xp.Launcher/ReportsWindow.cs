@@ -41,6 +41,15 @@ public sealed class ReportsWindow : Window
         root.Children.Add(new ScrollViewer { Content = _list, Margin = new Thickness(16, 0, 16, 16) });
         Content = root;
         Fill();
+        // fresh ticket statuses once per opening; asking is harmless, unlike sending, so it needs no button
+        Opened += async (_, _) =>
+        {
+            var portalUrl = _settings.PortalUrl ?? BuiltIn.Defaults.PortalUrl;
+            if (!Uri.TryCreate(portalUrl, UriKind.Absolute, out var baseUri)) return;
+            try { await ReportFlow.RefreshAsync(_roots, baseUri, CancellationToken.None); }
+            catch (Exception e) when (e is HttpRequestException or OperationCanceledException or PortalException or IOException or UnauthorizedAccessException) { }
+            if (!_busy) Fill();
+        };
     }
 
     public static IReadOnlyList<Report> Load(IEnumerable<string> roots) => ReportStore.List(roots);
@@ -60,7 +69,7 @@ public sealed class ReportsWindow : Window
         var title = string.IsNullOrWhiteSpace(d.Title) ? L.T("reports.untitled") : d.Title;
         var state = d.Status switch
         {
-            ReportStatus.Sent => L.T("reports.state.sent", d.DisplayNumber ?? ""),
+            ReportStatus.Sent => L.T("reports.state.sent", d.DisplayNumber ?? "") + (d.TicketStatus is { } ts ? " · " + L.T("ticket.status." + ts) : ""),
             ReportStatus.Queued => L.T("reports.state.queued"),
             _ => L.T("reports.state.draft"),
         };

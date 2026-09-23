@@ -55,8 +55,8 @@ public sealed class ReportWindow : Window
             // the ticket already exists (only files were left): its text can no longer change
             bool created = d.TicketNumber is not null;
             foreach (var c in new Control[] { _kind, _title, _description, _steps, _expected, _actual }) c.IsEnabled = !created;
-            if (d.Status == ReportStatus.Queued) _status.Text = L.T("report.queuedBefore");
-            else if (d.LastError is { } err) _status.Text = ErrorText(err);
+            if (d.Status == ReportStatus.Queued) _status.Text = WithReason(L.T("report.queuedBefore"));
+            else if (d.LastError is { } err) _status.Text = WithReason(ErrorText(err));
         }
 
         Opened += (_, _) => { Activate(); _title.Focus(); };
@@ -232,12 +232,12 @@ public sealed class ReportWindow : Window
         }
         catch (ReportQueuedException)
         {
-            _status.Text = L.T("report.queued");
+            _status.Text = WithReason(L.T("report.queued"));
             _send.Content = L.T("report.retry");
         }
         catch (PortalException e)
         {
-            _status.Text = ErrorText(e.Code);
+            _status.Text = WithReason(ErrorText(e.Code));
             foreach (var c in new Control[] { _kind, _title, _description, _steps, _expected, _actual }) c.IsEnabled = _report.Draft.TicketNumber is null;
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
@@ -252,6 +252,10 @@ public sealed class ReportWindow : Window
         _busy = busy;
         _send.IsEnabled = _draft.IsEnabled = _cancel.IsEnabled = !busy;
     }
+
+    /// <summary>The status line plus what exactly failed: "the site is unreachable" alone does not say what to fix.</summary>
+    string WithReason(string text) =>
+        string.IsNullOrWhiteSpace(_report.Draft.LastErrorDetail) ? text : text + "\n" + L.T("report.reason", _report.Draft.LastErrorDetail);
 
     static string ErrorText(string code)
     {
@@ -301,5 +305,18 @@ public static class ReportFlow
             try { report.TrimSent(); }
             catch (Exception e) when (e is IOException or UnauthorizedAccessException) { }
         }
+    }
+
+    /// <summary>
+    /// Ticket statuses for the sent reports under <paramref name="roots"/>, then the rotation that may now drop
+    /// finished ones. Bounded in time: the game's list waits for this, and a dead network must not hang it.
+    /// </summary>
+    public static async Task RefreshAsync(IEnumerable<string> roots, Uri portal, CancellationToken ct)
+    {
+        var list = roots.ToList();
+        using var cts = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        cts.CancelAfter(TimeSpan.FromSeconds(30));
+        try { await ReportStore.RefreshAsync(ReportStore.List(list), new PortalClient(Http, portal), cts.Token); }
+        finally { ReportStore.Rotate(ReportStore.List(list), new ReportLimits().KeepSent); }
     }
 }
