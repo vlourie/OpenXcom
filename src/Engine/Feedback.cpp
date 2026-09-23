@@ -209,13 +209,14 @@ void *startLauncher(const std::string &launcher, const char *key, const std::str
 	// a trailing backslash would escape the closing quote of the argument
 	std::string dir = folder;
 	while (!dir.empty() && (dir.back() == '/' || dir.back() == '\\')) dir.pop_back();
-	std::wstring cmd = L"\"" + widen(launcher) + L"\" " + widen(key) + L" \"" + widen(dir) + L"\"";
+	std::wstring cmd = L"\"" + widen(launcher) + L"\"";
+	if (key) cmd += L" " + widen(key) + L" \"" + widen(dir) + L"\"";
 	STARTUPINFOW si{};
 	si.cb = sizeof(si);
 	PROCESS_INFORMATION pi{};
 	if (!CreateProcessW(nullptr, &cmd[0], nullptr, nullptr, FALSE, 0, nullptr, nullptr, &si, &pi))
 	{
-		Log(LOG_ERROR) << "Feedback: cannot start the launcher (" << key << "), error " << GetLastError();
+		Log(LOG_ERROR) << "Feedback: cannot start the launcher (" << (key ? key : "window") << "), error " << GetLastError();
 		return nullptr;
 	}
 	CloseHandle(pi.hThread);
@@ -319,6 +320,22 @@ bool Feedback::hasLauncher()
 {
 #ifdef _WIN32
 	return !findLauncher().empty();
+#else
+	return false;
+#endif
+}
+
+bool Feedback::openLauncher()
+{
+#ifdef _WIN32
+	const std::string launcher = findLauncher();
+	if (launcher.empty()) return false;
+	// the game keeps running: the launcher is an ordinary window beside it, nobody waits for it
+	void *process = startLauncher(launcher, nullptr, "");
+	if (!process) return false;
+	CloseHandle(process);
+	Log(LOG_INFO) << "Feedback: launcher window opened from the main menu";
+	return true;
 #else
 	return false;
 #endif

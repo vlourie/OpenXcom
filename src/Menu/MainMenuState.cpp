@@ -39,6 +39,7 @@
 #include "OptionsVideoState.h"
 #include "ModListState.h"
 #include "ReportsState.h"
+#include "../Engine/Feedback.h"
 #include "../Engine/Options.h"
 #include "../Engine/FileMap.h"
 #include "../Engine/SDL2Helpers.h"
@@ -93,7 +94,10 @@ MainMenuState::MainMenuState(bool updateCheck)
 	_btnOptions = new TextButton(92, 20, 164, row2);
 	_btnMods = new TextButton(92, 20, 64, row3);
 	_btnQuit = new TextButton(92, 20, 164, row3);
-	_btnReports = new TextButton(192, 20, 64, 154);
+	// the fourth row: My reports | Launcher; without a launcher My reports takes the whole row
+	const bool launcher = reports && Feedback::hasLauncher();
+	_btnReports = new TextButton(launcher ? 92 : 192, 20, 64, 154);
+	_btnLauncher = new TextButton(92, 20, 164, 154);
 	_btnUpdate = new TextButton(72, 16, 209, 27);
 	_txtUpdateInfo = new Text(320, 17, 0, 11);
 	_txtTitle = new Text(256, 30, 32, 45);
@@ -109,6 +113,7 @@ MainMenuState::MainMenuState(bool updateCheck)
 	add(_btnMods, "button", "mainMenu");
 	add(_btnQuit, "button", "mainMenu");
 	add(_btnReports, "button", "mainMenu");
+	add(_btnLauncher, "button", "mainMenu");
 	add(_btnUpdate, "button", "mainMenu");
 	add(_txtUpdateInfo, "text", "mainMenu");
 	add(_txtTitle, "text", "mainMenu");
@@ -139,6 +144,10 @@ MainMenuState::MainMenuState(bool updateCheck)
 	_btnReports->setText(tr("STR_MY_REPORTS"));
 	_btnReports->onMouseClick((ActionHandler)&MainMenuState::btnReportsClick);
 	_btnReports->setVisible(reports);
+
+	_btnLauncher->setText(tr("STR_LAUNCHER"));
+	_btnLauncher->onMouseClick((ActionHandler)&MainMenuState::btnLauncherClick);
+	_btnLauncher->setVisible(launcher);
 
 	_btnUpdate->setText(tr("STR_UPDATE"));
 	_btnUpdate->onMouseClick((ActionHandler)& MainMenuState::btnUpdateClick);
@@ -424,6 +433,15 @@ void MainMenuState::btnModsClick(Action *)
 void MainMenuState::btnReportsClick(Action *)
 {
 	_game->pushState(new ReportsState);
+}
+
+/**
+ * Opens the launcher's window beside the game.
+ * @param action Pointer to an action.
+ */
+void MainMenuState::btnLauncherClick(Action *)
+{
+	Feedback::openLauncher();
 }
 
 /**
