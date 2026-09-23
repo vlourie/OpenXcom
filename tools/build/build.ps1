@@ -2,6 +2,10 @@
   OXCE HD — сборка одним запуском.
 
     -Target Exe   ninja -> openxcom.exe -> Enigma Virtual Box (DLL внутрь) -> dist\OpenXComEx_<дата>_<время>.exe
+                  и dist\OXCE-HD_<дата>_<hash>_exe.zip   (внутри exe + common + standard, для второй машины)
+
+  Перед любой сборкой common/standard из репозитория переносятся в установку игры (GameDir,
+  Sync-DataToGame), а exe копируется туда же (CopyExeTo) под постоянным именем ExeName.
     -Target Mod   папка мода -> dist\OXCE-HD_<дата>_<hash>_mod.zip   (внутри user\mods\hd)
     -Target Both  оба шага   -> dist\OXCE-HD_<дата>_<hash>_full.zip  (внутри exe + user\mods\hd)
 
@@ -394,6 +398,55 @@ function Assert-DataSync {
 }
 
 <#
+  Второй шаг Святого правила делается сам: common и standard из репозитория переносятся
+  в установку игры (GameDir) — только те файлы, что отличаются. exe без своих данных
+  показывает STR_ вместо строк, поэтому данные едут вместе с ним.
+  Правка, сделанная прямо в установке (файл там НОВЕЕ и другой), не затирается:
+  сборка останавливается и просит перенести её в репозиторий. Лишнее в установке не удаляется.
+#>
+function Sync-DataToGame {
+    $gameDir = Get-Cfg 'GameDir' ''
+    if (-not $gameDir -or -not (Test-Path -LiteralPath $gameDir)) { Write-Warn "нет папки игры '$gameDir' — common/standard в установку не переношу"; return }
+    Write-Step "common/standard -> $gameDir"
+    $copy = New-Object Collections.Generic.List[object]
+    $conflicts = New-Object Collections.Generic.List[string]
+    $extra = 0
+    foreach ($name in @(Get-Cfg 'DataDirs' @())) {
+        $a = Join-Path (Join-Path $repoDir 'bin') $name
+        $b = Join-Path $gameDir $name
+        if (-not (Test-Path -LiteralPath $a)) { continue }
+        $ta = Get-TreeInfo $a
+        $tb = Get-TreeInfo $b
+        foreach ($rel in $ta.Files.Keys) {
+            $from = Join-Path $a $rel
+            $to = Join-Path $b $rel
+            if ($tb.Files.ContainsKey($rel)) {
+                $same = ($ta.Files[$rel] -split ':')[0] -eq ($tb.Files[$rel] -split ':')[0] -and
+                        (Get-FileHash -LiteralPath $from -Algorithm MD5).Hash -eq (Get-FileHash -LiteralPath $to -Algorithm MD5).Hash
+                if ($same) { continue }
+                if ((Get-Item -LiteralPath $to).LastWriteTimeUtc -gt (Get-Item -LiteralPath $from).LastWriteTimeUtc) {
+                    $conflicts.Add("$name\$rel"); continue
+                }
+            }
+            $copy.Add([pscustomobject]@{ From = $from; To = $to; Rel = "$name\$rel" })
+        }
+        foreach ($rel in $tb.Files.Keys) { if (-not $ta.Files.ContainsKey($rel)) { $extra++ } }
+    }
+    if ($conflicts.Count) {
+        $head = (($conflicts | Select-Object -First 8) -join '; ')
+        throw ("В установке игры правка новее репозитория ({0} шт.): {1}. Перенесите её в bin\ и повторите сборку — затирать не буду" -f $conflicts.Count, $head)
+    }
+    foreach ($c in $copy) {
+        New-Item -ItemType Directory -Force -Path (Split-Path -Parent $c.To) | Out-Null
+        Copy-Item -LiteralPath $c.From -Destination $c.To -Force
+        Write-Info "обновлён $($c.Rel)"
+    }
+    if ($copy.Count) { Write-Ok ("перенесено файлов: {0}. На второй машине повторить: common/standard едут в архиве _exe.zip" -f $copy.Count) }
+    else { Write-Ok 'уже совпадают' }
+    if ($extra) { Write-Warn "в установке есть $extra файлов, которых нет в репозитории; не удаляю" }
+}
+
+<#
   Мод без своих ключевых файлов собирать незачем: без шрифтов HD-текст у игрока
   молча становится классическим, без metadata.yml мода просто нет в списке.
 #>
@@ -483,10 +536,11 @@ function Save-StageNotes([string[]]$head, $mods, [string[]]$data, [string]$exeNa
         '',
         '1. Распаковать архив в папку игры (где лежит OpenXcomEx.exe и папка user), с заменой файлов.'
     )
+    $modLine = if ($names.Count) { 'Включить в списке модов: {0}. ' -f ($names -join ', ') } else { '' }
     if ($exeName) {
-        $readme += @("2. Запускать $exeName.", ("3. Включить в списке модов: {0}. HD-опции — Опции -> Дополнительно -> OXCE." -f ($names -join ', ')))
+        $readme += @("2. Запускать $exeName.", "3. ${modLine}HD-опции — Настройки -> HD.")
     } else {
-        $readme += ("2. Включить в списке модов: {0}. HD-опции — Опции -> Дополнительно -> OXCE." -f ($names -join ', '))
+        $readme += "2. ${modLine}HD-опции — Настройки -> HD."
     }
     if ($data.Count) {
         $readme += @('', ("В архиве есть и папки движка ({0}) — они заменят те, что лежат в игре." -f ($data -join ', ')))
@@ -812,15 +866,26 @@ try {
 
     $result = $null
     $patch = $null
+    # до сборки: и exe, и архивы берут common/standard из репозитория, установка должна им совпадать
+    if (Get-Cfg 'SyncDataToGame' $true) { Sync-DataToGame }
     switch ($Target) {
         'Exe' {
-            Clear-DataDirs
             $boxed = Invoke-ExeStep
             $result = Join-Path $distDir "$exeBase.exe"
             Copy-Item -LiteralPath $boxed -Destination $result -Force
             $mask = Get-NameMask $exeTemplate
             if ($mask) { Remove-OldResults "$mask.exe" }
             else { Write-Warn "ExeResultName без {stamp} — старые exe не чищу, имя одно и то же" }
+            # для второй машины: exe вместе со своими common/standard, моды не нужны
+            $stageMods = Join-Path $stageDir 'user'
+            if (Test-Path -LiteralPath $stageMods) { Remove-Item -LiteralPath $stageMods -Recurse -Force }
+            $data = @(Invoke-DataStep)
+            Copy-Item -LiteralPath $boxed -Destination (Join-Path $stageDir $exeName) -Force
+            Save-StageNotes @("OXCE HD — $exeName и данные движка ($stamp, $branch $hash)") @() $data $exeName
+            $exeZip = Join-Path $distDir "${base}_exe.zip"
+            New-Zip $exeZip $stageDir
+            Remove-OldResults 'OXCE-HD_*_exe.zip'
+            Write-Ok "для второй машины: $exeZip"
         }
         'Mod' {
             $mods = @(Invoke-ModStep)

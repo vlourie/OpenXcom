@@ -21,7 +21,7 @@
   "ExeResultName": "OpenXComEx_{stamp}",
   "DistDir": "E:\\OpenXCom\\dist",
   "KeepLast": 5,
-  "CopyExeTo": "",
+  "CopyExeTo": "E:\\OpenXCom\\Пиратки\\Dioxine_XPiratez",
   "OpenExplorer": true,
 
   "DynamicDlls": ["libvorbisfile-3.dll"],
