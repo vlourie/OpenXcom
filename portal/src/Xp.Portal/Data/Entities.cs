@@ -37,6 +37,8 @@ public sealed class Ticket
     public string? GameVersion { get; set; }
     public string? ModVersion { get; set; }
     public string? LauncherVersion { get; set; }
+    /// <summary>Technical data from the launcher (F8, crash): versions, OS, screen mode, game screen. No paths, no names.</summary>
+    public string? Context { get; set; }
     public Guid? AuthorId { get; set; }
     public PortalUser? Author { get; set; }
     /// <summary>Guests only: the reply address they chose to leave, never shown to other people.</summary>

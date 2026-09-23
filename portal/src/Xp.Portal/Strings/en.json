@@ -219,5 +219,8 @@
   "identity.InvalidEmail": "Invalid e-mail address.",
   "identity.InvalidUserName": "Invalid e-mail address.",
   "identity.PasswordMismatch": "The current password is wrong.",
-  "identity.DefaultError": "That did not work. Try again."
+  "identity.DefaultError": "That did not work. Try again.",
+  "field.context": "Technical data",
+  "source.F8": "from the game (F8)",
+  "source.Crash": "crash report"
 }

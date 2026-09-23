@@ -4,6 +4,10 @@
         <span class="tag">@Model.DisplayNumber</span>
         <span class="tag">@T["cat." + Model.Category]</span>
         <span class="tag">@T["status." + Model.Status]</span>
+        @if (Model.Source != TicketSource.Web)
+        {
+            <span class="tag">@T["source." + Model.Source]</span>
+        }
         <span class="hint">@Model.CreatedAt.ToString("yyyy-MM-dd HH:mm") UTC</span>
     </p>
     <h1>@Model.Title</h1>
@@ -33,5 +37,12 @@
                 <text> · launcher @Model.LauncherVersion</text>
             }
         </p>
+    }
+    @if (!string.IsNullOrEmpty(Model.Context))
+    {
+        <details>
+            <summary>@T["field.context"]</summary>
+            <div class="pre hint">@Model.Context</div>
+        </details>
     }
 </div>

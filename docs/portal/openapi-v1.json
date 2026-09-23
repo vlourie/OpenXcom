@@ -333,7 +333,8 @@
           "launcherVersion",
           "email",
           "consentToFiles",
-          "source"
+          "source",
+          "context"
         ],
         "type": "object",
         "properties": {
@@ -392,6 +393,12 @@
             "type": "boolean"
           },
           "source": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "context": {
             "type": [
               "null",
               "string"

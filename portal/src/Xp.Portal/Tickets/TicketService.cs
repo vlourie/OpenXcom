@@ -13,7 +13,7 @@ public sealed record NewTicket(
     string Category, string Title, string Description,
     string? Steps = null, string? Expected = null, string? Actual = null,
     string? GameVersion = null, string? ModVersion = null, string? LauncherVersion = null,
-    string? GuestEmail = null, bool ConsentToFiles = false, TicketSource Source = TicketSource.Web);
+    string? GuestEmail = null, bool ConsentToFiles = false, TicketSource Source = TicketSource.Web, string? Context = null);
 
 public sealed record CreatedTicket(Ticket Ticket, string? GuestToken, bool Replayed);
 
@@ -64,6 +64,7 @@ public sealed class TicketService(PortalDb db, TelegramNotices notices, IOptions
             GameVersion = Clean(n.GameVersion, 64, true),
             ModVersion = Clean(n.ModVersion, 64, true),
             LauncherVersion = Clean(n.LauncherVersion, 64, true),
+            Context = Clean(n.Context, Limits.ContextMax),
             Source = n.Source,
             AuthorId = authorId,
             GuestEmail = authorId is null ? Clean(n.GuestEmail, 256, true) : null,
@@ -123,6 +124,7 @@ public sealed class TicketService(PortalDb db, TelegramNotices notices, IOptions
         if (n.Title.Length > Limits.TitleMax) throw new TicketException("title_too_long", $"title is longer than {Limits.TitleMax}");
         foreach (var s in new[] { n.Description, n.Steps, n.Expected, n.Actual })
             if (s?.Length > Limits.TextMax) throw new TicketException("text_too_long", $"text is longer than {Limits.TextMax}");
+        if (n.Context?.Length > Limits.ContextMax) throw new TicketException("text_too_long", $"context is longer than {Limits.ContextMax}");
         if (authorId is null && !string.IsNullOrWhiteSpace(n.GuestEmail) && !System.Net.Mail.MailAddress.TryCreate(n.GuestEmail.Trim(), out _))
             throw new TicketException("email_invalid", "e-mail address is not valid");
     }

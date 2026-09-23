@@ -45,6 +45,7 @@ public sealed class PortalDb(DbContextOptions<PortalDb> options)
             e.Property(t => t.Steps).HasMaxLength(Limits.TextMax);
             e.Property(t => t.Expected).HasMaxLength(Limits.TextMax);
             e.Property(t => t.Actual).HasMaxLength(Limits.TextMax);
+            e.Property(t => t.Context).HasMaxLength(Limits.ContextMax);
             e.Property(t => t.GameVersion).HasMaxLength(64);
             e.Property(t => t.ModVersion).HasMaxLength(64);
             e.Property(t => t.LauncherVersion).HasMaxLength(64);
@@ -114,4 +115,6 @@ public static class Limits
     public const int TitleMax = 140;
     public const int TextMax = 20_000;
     public const int FileNameMax = 128;
+    /// <summary>Technical data the launcher adds to an F8 or crash report: versions, OS, screen mode.</summary>
+    public const int ContextMax = 4_000;
 }

@@ -219,5 +219,8 @@
   "identity.InvalidEmail": "Неверный адрес почты.",
   "identity.InvalidUserName": "Неверный адрес почты.",
   "identity.PasswordMismatch": "Текущий пароль неверен.",
-  "identity.DefaultError": "Не получилось. Попробуйте ещё раз."
+  "identity.DefaultError": "Не получилось. Попробуйте ещё раз.",
+  "field.context": "Технические данные",
+  "source.F8": "из игры (F8)",
+  "source.Crash": "отчёт о сбое"
 }

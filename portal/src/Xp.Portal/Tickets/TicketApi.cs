@@ -15,7 +15,7 @@ public sealed record CreateTicketRequest(
     [property: Required] string Description,
     string? Steps, string? Expected, string? Actual,
     string? GameVersion, string? ModVersion, string? LauncherVersion,
-    string? Email, bool ConsentToFiles, string? Source);
+    string? Email, bool ConsentToFiles, string? Source, string? Context);
 
 public sealed record CreateTicketResponse(long Number, string DisplayNumber, string? Token, string Url);
 
@@ -61,7 +61,7 @@ public static class TicketApi
     {
         var source = req.Source?.ToLowerInvariant() switch { "f8" => TicketSource.F8, "crash" => TicketSource.Crash, _ => TicketSource.Web };
         var n = new NewTicket(req.Category, req.Title, req.Description, req.Steps, req.Expected, req.Actual,
-            req.GameVersion, req.ModVersion, req.LauncherVersion, req.Email, req.ConsentToFiles, source);
+            req.GameVersion, req.ModVersion, req.LauncherVersion, req.Email, req.ConsentToFiles, source, req.Context);
         try
         {
             var r = await tickets.CreateAsync(n, authorId: null, idempotencyKey, correlationId ?? http.TraceIdentifier, ct);
