@@ -1,3 +1,4 @@
+using System.IO.Compression;
 using System.Security.Cryptography;
 using System.Text;
 using Microsoft.AspNetCore.WebUtilities;
@@ -15,6 +16,9 @@ public sealed class AttachmentOptions
     public string StorageRoot { get; set; } = "";
     public long MaxFileBytes { get; set; } = 50L * 1024 * 1024;
     public long MaxZipBytes { get; set; } = 100L * 1024 * 1024;
+    /// <summary>A zip is read entry by entry to check what is inside, never unpacked to disk: at most this much, in at most this many files.</summary>
+    public long MaxZipUnpackedBytes { get; set; } = 512L * 1024 * 1024;
+    public int MaxZipEntries { get; set; } = 20;
     public int MaxFilesPerTicket { get; set; } = 10;
     public long MaxBytesPerTicket { get; set; } = 200L * 1024 * 1024;
     /// <summary>clamd address "host:port"; empty = no scanning, files are marked Unscanned.</summary>
@@ -60,9 +64,20 @@ public static class FileRules
         FileKind.Webp => head.Length >= 12 && head[..4].SequenceEqual("RIFF"u8) && head[8..12].SequenceEqual("WEBP"u8),
         FileKind.Zip => head.StartsWith("PK\x03\x04"u8) || head.StartsWith("PK\x05\x06"u8),
         // text: no NUL bytes and valid UTF-8 (a cut multi-byte sequence at the very end is fine)
-        FileKind.Text or FileKind.Save => head.IndexOf((byte)0) < 0 && LooksUtf8(head),
+        FileKind.Text => head.IndexOf((byte)0) < 0 && LooksUtf8(head),
+        FileKind.Save => head.IndexOf((byte)0) < 0 && LooksUtf8(head) && SaveHeader(head),
         _ => false,
     };
+
+    /// <summary>
+    /// An OpenXcom save opens with its header document: "name:" on the first line, "version:" soon
+    /// after (SavedGame::save). Normal saves, auto- and quick-saves all have it.
+    /// </summary>
+    public static bool SaveHeader(ReadOnlySpan<byte> head)
+    {
+        if (head.StartsWith((ReadOnlySpan<byte>)[0xEF, 0xBB, 0xBF])) head = head[3..];
+        return head.StartsWith("name:"u8) && head.IndexOf("\nversion:"u8) > 0;
+    }
 
     static bool LooksUtf8(ReadOnlySpan<byte> b)
     {
@@ -86,6 +101,98 @@ public static class FileRules
             s = s[..(Limits.FileNameMax - ext.Length)] + ext;
         }
         return s;
+    }
+}
+
+/// <summary>
+/// Checks a file as it streams in, not only its head: a log or a save must be UTF-8 text without NUL
+/// bytes all the way through, a save must also start with the save header, a picture with its magic.
+/// </summary>
+public sealed class ContentCheck(FileKind kind)
+{
+    readonly Decoder? _utf8 = kind is FileKind.Text or FileKind.Save ? new UTF8Encoding(false, throwOnInvalidBytes: true).GetDecoder() : null;
+    readonly byte[] _head = new byte[8192];
+    int _headLen;
+    bool _headChecked;
+    char[] _chars = [];
+
+    /// <summary>The reason the file is refused (a key of Strings/*.json), or null while it looks right.</summary>
+    public string? Error { get; private set; }
+
+    public void Feed(ReadOnlySpan<byte> chunk)
+    {
+        if (Error is not null) return;
+        if (_headLen < _head.Length)
+        {
+            var take = Math.Min(chunk.Length, _head.Length - _headLen);
+            chunk[..take].CopyTo(_head.AsSpan(_headLen));
+            _headLen += take;
+            // decide as soon as the head is complete, before storing megabytes of a fake file
+            if (_headLen == _head.Length) CheckHead();
+        }
+        if (_utf8 is null || Error is not null) return;
+        if (chunk.IndexOf((byte)0) >= 0) { Error = "file_not_text"; return; }
+        if (_chars.Length < chunk.Length + 4) _chars = new char[chunk.Length + 4];
+        try { _utf8.GetChars(chunk, _chars, flush: false); }
+        catch (DecoderFallbackException) { Error = "file_not_text"; }
+    }
+
+    /// <summary>After the last chunk: the head of a short file is checked here.</summary>
+    public string? Finish()
+    {
+        if (!_headChecked && Error is null) CheckHead();
+        return Error;
+    }
+
+    void CheckHead()
+    {
+        _headChecked = true;
+        var head = _head.AsSpan(0, _headLen);
+        if (FileRules.HeadMatches(kind, head)) return;
+        Error = kind switch
+        {
+            FileKind.Save when head.IndexOf((byte)0) < 0 && !FileRules.SaveHeader(head) => "file_not_save",
+            FileKind.Text or FileKind.Save => "file_not_text",
+            _ => "file_content_mismatch",
+        };
+    }
+}
+
+/// <summary>
+/// A zip is only a wrapper for what could be attached on its own: every entry is read through the
+/// same ContentCheck, nothing is written out. Another archive inside is refused.
+/// </summary>
+public static class ZipCheck
+{
+    public static async Task<string?> CheckAsync(Stream file, AttachmentOptions o, CancellationToken ct)
+    {
+        try
+        {
+            using var zip = new ZipArchive(file, ZipArchiveMode.Read, leaveOpen: true);
+            if (zip.Entries.Count > o.MaxZipEntries) return "zip_content_not_allowed";
+            long unpacked = 0;
+            int files = 0;
+            var buf = new byte[81920];
+            foreach (var e in zip.Entries)
+            {
+                if (e.FullName.EndsWith('/')) continue;
+                if (FileRules.KindOf(e.Name) is not { } kind || kind == FileKind.Zip) return "zip_content_not_allowed";
+                files++;
+                var check = new ContentCheck(kind);
+                await using var s = e.Open();
+                int n;
+                while ((n = await s.ReadAsync(buf, ct)) > 0)
+                {
+                    unpacked += n;
+                    if (unpacked > o.MaxZipUnpackedBytes) return "file_too_large";
+                    check.Feed(buf.AsSpan(0, n));
+                    if (check.Error is not null) return check.Error;
+                }
+                if (check.Finish() is { } err) return err;
+            }
+            return files == 0 ? "file_empty" : null;
+        }
+        catch (InvalidDataException) { return "file_content_mismatch"; }
     }
 }
 
@@ -141,29 +248,25 @@ public sealed class AttachmentService(PortalDb db, ObjectStore store, IOptions<A
             await using (var dst = store.Create(key))
             {
                 var buf = new byte[81920];
-                var head = new byte[8192];
-                int headLen = 0;
+                var check = new ContentCheck(kind);
                 int n;
                 while ((n = await body.ReadAsync(buf, ct)) > 0)
                 {
                     size += n;
                     if (size > limit) throw new TicketException("file_too_large", "the file is too large");
                     if (size > roomLeft) throw new TicketException("ticket_files_too_large", "the ticket's files are too large in total");
-                    if (headLen < head.Length)
-                    {
-                        var take = Math.Min(n, head.Length - headLen);
-                        Array.Copy(buf, 0, head, headLen, take);
-                        headLen += take;
-                        // decide as soon as the head is complete, before storing megabytes of a fake file
-                        if (headLen == head.Length && !FileRules.HeadMatches(kind, head))
-                            throw new TicketException("file_content_mismatch", "the file content does not match its type");
-                    }
+                    check.Feed(buf.AsSpan(0, n));
+                    if (check.Error is { } midway) throw new TicketException(midway, "the file content does not match its type");
                     sha.AppendData(buf, 0, n);
                     await dst.WriteAsync(buf.AsMemory(0, n), ct);
                 }
                 if (size == 0) throw new TicketException("file_empty", "the file is empty");
-                if (headLen < head.Length && !FileRules.HeadMatches(kind, head.AsSpan(0, headLen)))
-                    throw new TicketException("file_content_mismatch", "the file content does not match its type");
+                if (check.Finish() is { } bad) throw new TicketException(bad, "the file content does not match its type");
+            }
+            if (kind == FileKind.Zip)
+            {
+                await using var stored = store.OpenRead(key);
+                if (await ZipCheck.CheckAsync(stored, o, ct) is { } inside) throw new TicketException(inside, "the archive holds something that may not be attached");
             }
         }
         catch

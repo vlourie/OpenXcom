@@ -26,7 +26,7 @@ public sealed class F8ReportTests(PortalFactory f) : IClassFixture<PortalFactory
         File.WriteAllBytes(Path.Combine(dir, "shot.png"), [0x89, 0x50, 0x4E, 0x47, 0x0D, 0x0A, 0x1A, 0x0A, 0, 0, 0, 13, 0x49, 0x48, 0x44, 0x52]);
         var log = Path.Combine(_root, "user", "openxcom.log");
         File.WriteAllText(log, $"[INFO] User folder is: {_root.Replace('\\', '/')}/user/\n[INFO] Feedback: report written\n");
-        File.WriteAllText(Path.Combine(saves, "ship.sav"), "name: Ship\n");
+        File.WriteAllText(Path.Combine(saves, "ship.sav"), "name: Ship\nversion: Extended 8.7.1\n");
         var fwd = (string p) => p.Replace('\\', '/');
         File.WriteAllText(Path.Combine(dir, "context.json"), $$"""
             {"format": 1, "id": "x", "session": "s1", "createdAt": "2026-09-23T01:02:03Z",

@@ -202,7 +202,70 @@ public sealed class TicketApiTests(PortalFactory f) : IClassFixture<PortalFactor
     {
         var t = await CreateAsync(Body(consent: true));
         var r = await UploadAsync(t, "crash.log", [0x4D, 0x5A, 0x90, 0x00, 0x03]);
-        Assert.Equal("file_content_mismatch", await CodeOf(r));
+        Assert.Equal("file_not_text", await CodeOf(r));
+    }
+
+    static readonly byte[] GoodSave = "name: Battle\nversion: Extended 8.7.1\n---\ndifficulty: 2\n"u8.ToArray();
+
+    [Fact]
+    public async Task Log_is_checked_past_its_head()
+    {
+        var t = await CreateAsync(Body(consent: true));
+        var log = new byte[12_000];
+        Array.Fill(log, (byte)'a');
+        log[10_000] = 0;   // well after the 8 KB head a sniffer would look at
+        var r = await UploadAsync(t, "openxcom.log", log);
+        Assert.Equal("file_not_text", await CodeOf(r));
+        log[10_000] = 0xC3;   // half of a two-byte UTF-8 letter
+        Assert.Equal("file_not_text", await CodeOf(await UploadAsync(t, "openxcom.log", log)));
+    }
+
+    [Fact]
+    public async Task Save_needs_its_header()
+    {
+        var t = await CreateAsync(Body(consent: true));
+        Assert.Equal("file_not_save", await CodeOf(await UploadAsync(t, "battle.sav", "difficulty: 2\n"u8.ToArray())));
+        Assert.Equal(HttpStatusCode.Created, (await UploadAsync(t, "battle.sav", [0xEF, 0xBB, 0xBF, .. GoodSave])).StatusCode);
+    }
+
+    static byte[] Zip(params (string name, byte[] data)[] entries)
+    {
+        using var ms = new MemoryStream();
+        using (var z = new System.IO.Compression.ZipArchive(ms, System.IO.Compression.ZipArchiveMode.Create, leaveOpen: true))
+            foreach (var (name, data) in entries)
+            {
+                using var s = z.CreateEntry(name).Open();
+                s.Write(data);
+            }
+        return ms.ToArray();
+    }
+
+    [Fact]
+    public async Task Zip_is_checked_entry_by_entry()
+    {
+        var t = await CreateAsync(Body(consent: true));
+        Assert.Equal(HttpStatusCode.Created, (await UploadAsync(t, "report.zip", Zip(("snapshot.sav", GoodSave), ("openxcom.log", "[INFO] ok"u8.ToArray())))).StatusCode);
+        Assert.Equal("zip_content_not_allowed", await CodeOf(await UploadAsync(t, "a.zip", Zip(("tool.exe", "MZ"u8.ToArray())))));
+        Assert.Equal("zip_content_not_allowed", await CodeOf(await UploadAsync(t, "b.zip", Zip(("inner.zip", Zip(("x.log", "ok"u8.ToArray())))))));
+    }
+
+    [Fact]
+    public async Task Bad_save_inside_a_zip_is_refused()
+    {
+        var t = await CreateAsync(Body(consent: true));
+        Assert.Equal("file_not_save", await CodeOf(await UploadAsync(t, "c.zip", Zip(("snapshot.sav", "difficulty: 2\n"u8.ToArray())))));
+    }
+
+    [Fact]
+    public async Task Language_is_kept_as_a_tag_and_checked()
+    {
+        var t = await CreateAsync(new { category = "code", title = "Crash", description = "x", language = "EN_us" });
+        Assert.Equal("en-US", await f.DbAsync(db => db.Tickets.Where(x => x.Number == t.Number).Select(x => x.Language).SingleAsync()));
+        var bad = await f.CreateClient().PostAsJsonAsync("/api/v1/tickets", new { category = "code", title = "Crash", description = "x", language = "english!" });
+        Assert.Equal("language_invalid", await CodeOf(bad));
+        Assert.Equal("zh-Hans-CN", TicketLanguage.Normalize("zh-hans-cn"));
+        Assert.Equal("en", TicketLanguage.Primary("en-GB"));
+        Assert.Null(TicketLanguage.Normalize("  "));
     }
 
     [Fact]
