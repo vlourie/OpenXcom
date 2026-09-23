@@ -271,6 +271,7 @@ set ( interface_src
 
 set ( menu_src
   Menu/AbandonGameState.cpp
+  Menu/AdultChoiceState.cpp
   Menu/ConfirmLoadState.cpp
   Menu/CutsceneState.cpp
   Menu/DeleteGameState.cpp
@@ -279,6 +280,7 @@ set ( menu_src
   Menu/ListLoadOriginalState.cpp
   Menu/ListLoadState.cpp
   Menu/ListSaveState.cpp
+  Menu/LanguageChoiceState.cpp
   Menu/LoadGameState.cpp
   Menu/MainMenuState.cpp
   Menu/NewBattleState.cpp

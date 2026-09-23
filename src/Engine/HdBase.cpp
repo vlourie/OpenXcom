@@ -21,6 +21,7 @@
 #include <map>
 #include <vector>
 #include "FileMap.h"
+#include "HdSprites.h"
 #include "Logger.h"
 
 namespace OpenXcom
@@ -32,7 +33,7 @@ namespace HdBase
 namespace
 {
 
-const char *FOLDER = "hd/BASEBITS.PCK";
+const char *FOLDER = "BASEBITS.PCK";
 const int MAX_PHASES = 16;
 
 struct Tile
@@ -58,7 +59,7 @@ void scan()
 		return;
 	}
 	scanned = true;
-	const FileMap::NameSet &files = FileMap::getVFolderContents(FOLDER);
+	const std::vector<std::string> files = HdSprites::artFolder(FOLDER);
 	for (const std::string &file : files)
 	{
 		const size_t dot = file.find('.');
@@ -94,7 +95,7 @@ void scan()
 		{
 			tile.paths.resize(phase + 1);
 		}
-		tile.paths[phase] = std::string(FOLDER) + "/" + file;
+		tile.paths[phase] = HdSprites::artPath(std::string(FOLDER) + "/" + file);
 	}
 	// a picture of phase 0 is what makes a tile HD; phases stop at the first missing one
 	for (auto it = tiles.begin(); it != tiles.end(); )

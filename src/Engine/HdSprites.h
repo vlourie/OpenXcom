@@ -93,6 +93,14 @@ namespace HdSprites
 	int variantCount(const void *key);
 	/// Finds variant `variant` of a palette frame's HD frame (0 = the frame itself, see find), or nullptr.
 	const HdFrame *findVariant(const void *key, int variant);
+	/// Is a frame registered at all? Unlike find, this never reads a file, so it can be asked about
+	/// every frame of a set.
+	bool registered(const void *key);
+	/// Draws every tiny frame of a set (at most 4x4 base pixels) as a round dot with a soft rim,
+	/// in its own colours, where no pack covers it: the bullet tracer is 35 stamps of a 3x3 sprite
+	/// a voxel apart, and scaled by nearest that is a staircase of hard squares. `classic` is the
+	/// set at base resolution, `scaled` the k-times one the game draws. Returns how many it made.
+	int makeDots(const std::string &setName, const SurfaceSet *classic, SurfaceSet *scaled, int scale);
 	/// Forgets the HD frame of a palette frame.
 	void remove(const void *key);
 	/// Forgets the HD frames of every frame of a set (call before the set is destroyed).
@@ -112,6 +120,16 @@ namespace HdSprites
 	void trim();
 	/// A counter that changes whenever the registry does (caches keyed by frame pointers check it).
 	unsigned generation();
+
+	/// The two trees the HD pictures live in, side by side in the mod: the ordinary one and the
+	/// adult one. Which is read is decided per path, so the adult tree only has to hold what
+	/// differs - anything missing there falls back to the ordinary tree.
+	extern const char *const ART_ROOT;
+	extern const char *const ART_ROOT_ADULT;
+	/// "<adult root>/<rest>" when the adult art is chosen and that file is shipped, else "hd/<rest>".
+	std::string artPath(const std::string &rest);
+	/// The names in "<rest>" of both trees merged (adult ones win); use artPath on each of them.
+	std::vector<std::string> artFolder(const std::string &rest);
 
 	/// Registers hd/<setName>/pack.hdp and hd/<setName>/<index>.png for the frames of a set scaled
 	/// `scale` times (a loose PNG wins over the pack's frame of the same index), and the variants

@@ -236,17 +236,19 @@ Map::Map(Game *game, int width, int height, int x, int y, int visibleMapHeight) 
 		_bgColor = enviro->getMapBackgroundColor();
 	}
 
-	_stunIndicator = _game->getMod()->getSurface("FloorStunIndicator", false);
-	_woundIndicator = _game->getMod()->getSurface("FloorWoundIndicator", false);
-	_burnIndicator = _game->getMod()->getSurface("FloorBurnIndicator", false);
-	_shockIndicator = _game->getMod()->getSurface("FloorShockIndicator", false);
+	// the k-times copies: these are drawn into the map canvas like a sprite, so that a mod
+	// shipping hd/UI/<name>.png gets a real HD icon instead of a nearest-scaled 16x16 one
+	_stunIndicator = _game->getMod()->getHdSurface("FloorStunIndicator", false);
+	_woundIndicator = _game->getMod()->getHdSurface("FloorWoundIndicator", false);
+	_burnIndicator = _game->getMod()->getHdSurface("FloorBurnIndicator", false);
+	_shockIndicator = _game->getMod()->getHdSurface("FloorShockIndicator", false);
 	_anyIndicator = _stunIndicator || _woundIndicator || _burnIndicator || _shockIndicator;
 
 	if (enviro)
 	{
 		if (!enviro->getMapShockIndicator().empty())
 		{
-			_shockIndicator = _game->getMod()->getSurface(enviro->getMapShockIndicator(), false);
+			_shockIndicator = _game->getMod()->getHdSurface(enviro->getMapShockIndicator(), false);
 		}
 	}
 
@@ -1531,31 +1533,31 @@ void Map::drawTerrain(HdCanvas *surface)
 								{
 									if (_burnIndicator && itemUnit->getFire() > 0)
 									{
-										surface->blitClassic(_burnIndicator,
+										surface->blit(_burnIndicator,
 											screenPosition.x,
 											screenPosition.y + tile->getTerrainLevel() * _k,
-											_k, tileShade);
+											tileShade);
 									}
 									else if (_woundIndicator && itemUnit->getFatalWounds() > 0)
 									{
-										surface->blitClassic(_woundIndicator,
+										surface->blit(_woundIndicator,
 											screenPosition.x,
 											screenPosition.y + tile->getTerrainLevel() * _k,
-											_k, tileShade);
+											tileShade);
 									}
 									else if (_shockIndicator && itemUnit->hasNegativeHealthRegen())
 									{
-										surface->blitClassic(_shockIndicator,
+										surface->blit(_shockIndicator,
 											screenPosition.x,
 											screenPosition.y + tile->getTerrainLevel() * _k,
-											_k, tileShade);
+											tileShade);
 									}
 									else if (_stunIndicator)
 									{
-										surface->blitClassic(_stunIndicator,
+										surface->blit(_stunIndicator,
 											screenPosition.x,
 											screenPosition.y + tile->getTerrainLevel() * _k,
-											_k, tileShade);
+											tileShade);
 									}
 								}
 							}
@@ -1626,6 +1628,27 @@ void Map::drawTerrain(HdCanvas *surface)
 									if (tmpSurface)
 									{
 										Position voxelPos = _projectile->getPosition(1-i);
+										// HD render: one voxel of the trail is k screen pixels and the tracer sprite is
+										// only three base pixels wide, so its thirty-five stamps are a row of separate
+										// dots with gaps between them. In HD the step to the next voxel is filled with
+										// stamps of the same sprite and the shot reads as one beam; the classic path
+										// draws the single stamp it always drew
+										Position trail = Position(0, 0, 0);
+										int steps = 1;
+										if (surface->getHdMode() != HD_MODE_NEAREST)
+										{
+											Position from, to;
+											_camera->convertVoxelToScreen(voxelPos, &from);
+											_camera->convertVoxelToScreen(_projectile->getPosition(-i), &to);
+											const int gap = std::max(std::abs(to.x - from.x), std::abs(to.y - from.y));
+											// a stamp every third of the sprite: closer is wasted work, wider leaves a gap
+											const int stride = std::max(1, tmpSurface.getWidth() / 3);
+											steps = std::max(1, std::min(4, (gap + stride - 1) / stride));
+											trail = to - from;
+										}
+										// k times the original half size (a 3x3 bullet frame is centred on 1, not on 6 at 4x)
+										const int halfX = (tmpSurface.getWidth() / _k / 2) * _k;
+										const int halfY = (tmpSurface.getHeight() / _k / 2) * _k;
 										// draw shadow on the floor
 										voxelPos.z = _save->getTileEngine()->castedShade(voxelPos);
 										if (voxelPos.x / 16 == itX &&
@@ -1634,10 +1657,12 @@ void Map::drawTerrain(HdCanvas *surface)
 											_save->getTileEngine()->isVoxelVisible(voxelPos))
 										{
 											_camera->convertVoxelToScreen(voxelPos, &bulletPositionScreen);
-											// k times the original half size (a 3x3 bullet frame is centred on 1, not on 6 at 4x)
-											bulletPositionScreen.x -= (tmpSurface.getWidth() / _k / 2) * _k;
-											bulletPositionScreen.y -= (tmpSurface.getHeight() / _k / 2) * _k;
-											surface->blit(tmpSurface, bulletPositionScreen.x, bulletPositionScreen.y, 16, false, _nvColor);
+											for (int s = 0; s < steps; ++s)
+											{
+												surface->blit(tmpSurface,
+													bulletPositionScreen.x - halfX + trail.x * s / steps,
+													bulletPositionScreen.y - halfY + trail.y * s / steps, 16, false, _nvColor);
+											}
 										}
 
 										// draw bullet itself
@@ -1648,10 +1673,12 @@ void Map::drawTerrain(HdCanvas *surface)
 											_save->getTileEngine()->isVoxelVisible(voxelPos))
 										{
 											_camera->convertVoxelToScreen(voxelPos, &bulletPositionScreen);
-											// k times the original half size (a 3x3 bullet frame is centred on 1, not on 6 at 4x)
-											bulletPositionScreen.x -= (tmpSurface.getWidth() / _k / 2) * _k;
-											bulletPositionScreen.y -= (tmpSurface.getHeight() / _k / 2) * _k;
-											surface->blit(tmpSurface, bulletPositionScreen.x, bulletPositionScreen.y, 0, false, _nvColor);
+											for (int s = 0; s < steps; ++s)
+											{
+												surface->blit(tmpSurface,
+													bulletPositionScreen.x - halfX + trail.x * s / steps,
+													bulletPositionScreen.y - halfY + trail.y * s / steps, 0, false, _nvColor);
+											}
 										}
 									}
 								}

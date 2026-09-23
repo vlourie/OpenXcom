@@ -52,7 +52,18 @@ void CutsceneState::init()
 	// pop self off stack and replace with actual player state
 	_game->popState();
 
-	const RuleVideo *videoRule = _game->getMod()->getVideo(_cutsceneId, true);
+	// A cutscene may have a per-language variant next to it (intro_ru beside
+	// intro). The voice-over is a different recording, so its slides carry their
+	// own timings and its own musicId - the whole cutscene is redefined, not
+	// just the track. Resolved here, in init(), because the language may still
+	// be chosen after this state was pushed (LanguageChoiceState).
+	std::string cutsceneId = _cutsceneId;
+	if (!Options::language.empty() && _game->getMod()->getVideo(_cutsceneId + "_" + Options::language, false))
+	{
+		cutsceneId = _cutsceneId + "_" + Options::language;
+		Log(LOG_INFO) << "Cutscene " << _cutsceneId << ": playing the " << Options::language << " version";
+	}
+	const RuleVideo *videoRule = _game->getMod()->getVideo(cutsceneId, true);
 	if (_game->getSavedGame() && _game->getSavedGame()->getEnding() != END_NONE)
 	{
 		if (_game->getSavedGame()->getMonthsPassed() > -1)

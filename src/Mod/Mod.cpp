@@ -31,6 +31,7 @@
 #include "../Engine/Surface.h"
 #include "../Engine/SurfaceSet.h"
 #include "../Engine/HdSprites.h"
+#include "../Engine/HdBlit.h"
 #include "../Engine/HdUiArt.h"
 #include "../Engine/HdBase.h"
 #include "../Engine/HdUi.h"
@@ -632,6 +633,10 @@ Mod::~Mod()
 	{
 		delete pair.second;
 	}
+	for (auto& pair : _hdSurfaces)
+	{
+		delete pair.second;
+	}
 	for (auto& pair : _palettes)
 	{
 		delete pair.second;
@@ -977,6 +982,11 @@ void Mod::refreshHdScale()
 		}
 		_hdSets.clear();
 		_hdPacksLoaded.clear();
+		for (auto& pair : _hdSurfaces)
+		{
+			delete pair.second;
+		}
+		_hdSurfaces.clear();
 	}
 	else if (k > 1)
 	{
@@ -1005,6 +1015,10 @@ SurfaceSet *Mod::getHdSurfaceSet(const std::string &name, bool error)
 		{
 			Log(LOG_INFO) << "HD render: " << loaded << " HD frame(s) for " << name;
 		}
+		// a set of 3x3 sprites is a set of dots, not of pictures: the bullet tracer is 35 stamps of
+		// one along the shot, and nearest scaling turns it into a staircase of squares. What no pack
+		// covers the engine draws as a round dot in the frame's own colours
+		HdSprites::makeDots(name, getSurfaceSet(name, false), scaled, getHdScale());
 	}
 	return scaled;
 }
@@ -1028,6 +1042,53 @@ SurfaceSet *Mod::getHdSurfaceSet(SurfaceSet *set)
 	}
 	SurfaceSet *scaled = set->hdScaledCopy(k);
 	_hdSets[set] = scaled;
+	return scaled;
+}
+
+/**
+ * HD render: returns a single picture scaled k times for drawing on the
+ * battlescape (the indicators over a body on the floor, the arrow over the
+ * selected unit). The copy is upscaled nearest-neighbour on first use and
+ * cached; a mod can replace it with hd/UI/<name>.png, the same picture the
+ * HD interface uses - the drawing call finds it by the pixel buffer of the
+ * scaled copy, exactly as it finds the frames of an HD pack.
+ * @param name Name of the picture.
+ * @param error Report an error if not found.
+ * @return Pointer to the scaled picture (the picture itself when k = 1).
+ */
+Surface *Mod::getHdSurface(const std::string &name, bool error)
+{
+	Surface *base = getSurface(name, error);
+	const int k = getHdScale();
+	if (!base || k <= 1)
+	{
+		return base;
+	}
+	auto it = _hdSurfaces.find(base);
+	if (it != _hdSurfaces.end())
+	{
+		return it->second;
+	}
+	Surface *scaled = new Surface(HdBlit::upscaledCopy(*base, k));
+	_hdSurfaces[base] = scaled;
+	std::string lower = name;
+	std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
+	const std::string picture = HdSprites::artPath("UI/" + lower + ".png");
+	int width = 0, height = 0;
+	if (HdSprites::pngSize(picture, width, height))
+	{
+		// the picture replaces the scaled frame pixel for pixel, so a pack drawn for another k is useless here
+		if (width == scaled->getWidth() && height == scaled->getHeight())
+		{
+			HdSprites::setLazy(scaled->getBuffer(), picture, 0, 0, scaled->getWidth(), scaled->getHeight());
+			Log(LOG_INFO) << "HD render: HD picture for " << name;
+		}
+		else
+		{
+			Log(LOG_WARNING) << "HD render: " << picture << " is " << width << "x" << height
+				<< ", expected " << scaled->getWidth() << "x" << scaled->getHeight() << " - skipped";
+		}
+	}
 	return scaled;
 }
 
@@ -2731,7 +2792,8 @@ void Mod::loadHdUiArt()
 {
 	HdUiArt::clear();
 	HdBase::clear();
-	const FileMap::NameSet &files = FileMap::getVFolderContents("hd/UI");
+	// both trees at once: the adult one only holds the pictures that differ
+	const std::vector<std::string> files = HdSprites::artFolder("UI");
 	if (files.empty())
 	{
 		return;
@@ -2782,7 +2844,7 @@ void Mod::loadHdUiArt()
 		auto it = names.find(lower);
 		if (it == names.end())
 		{
-			Log(LOG_WARNING) << "HD interface: hd/UI/" << file << " matches no image of the mods";
+			Log(LOG_WARNING) << "HD interface: " << HdSprites::artPath("UI/" + file) << " matches no image of the mods";
 			continue;
 		}
 		if (isPatchedSurface(it->second))
@@ -2790,7 +2852,7 @@ void Mod::loadHdUiArt()
 			// modResources() redraws parts of these images after the mods are loaded (the rows of
 			// the battlescape info screen, the graph screen's grid), so a picture made from the
 			// file cannot match what the game draws - it would show the old lines over the new
-			Log(LOG_INFO) << "HD interface: hd/UI/" << file << " is of an image the engine redraws itself - not used";
+			Log(LOG_INFO) << "HD interface: " << HdSprites::artPath("UI/" + file) << " is of an image the engine redraws itself - not used";
 			continue;
 		}
 		Surface *base = getSurface(it->second, false);
@@ -2800,13 +2862,14 @@ void Mod::loadHdUiArt()
 		}
 		// only the size now: the picture itself is read when first drawn (a mod can have thousands)
 		int width = 0, height = 0;
-		if (!HdSprites::pngSize("hd/UI/" + file, width, height))
+		const std::string picture = HdSprites::artPath("UI/" + file);
+		if (!HdSprites::pngSize(picture, width, height))
 		{
-			Log(LOG_WARNING) << "HD interface: hd/UI/" << file << " is not a PNG";
+			Log(LOG_WARNING) << "HD interface: " << picture << " is not a PNG";
 			continue;
 		}
 		std::vector<SDL_Color> palette;
-		const std::string palPath = "hd/UI/" + lower + ".pal.txt";
+		const std::string palPath = HdSprites::artPath("UI/" + lower + ".pal.txt");
 		if (FileMap::fileExists(palPath))
 		{
 			if (SDL_RWops *rw = FileMap::getRWops(palPath))
@@ -2832,7 +2895,7 @@ void Mod::loadHdUiArt()
 				palette.clear();
 			}
 		}
-		if (HdUiArt::addLazy(it->second, base, "hd/UI/" + file, width, height, std::move(palette)))
+		if (HdUiArt::addLazy(it->second, base, picture, width, height, std::move(palette)))
 		{
 			++loaded;
 		}
