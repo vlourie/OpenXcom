@@ -40,7 +40,7 @@ static const std::string STRINGS_MOD = "hd";
  * rather than the tree itself, because the virtual file system lists files,
  * not the folders above them.
  */
-static bool adultArtShipped()
+bool AdultChoiceState::adultArtShipped()
 {
 	static const char *const branches[] = { "UI", "TERRAIN", "GLOBE", "BASEBITS.PCK" };
 	for (const char *branch : branches)

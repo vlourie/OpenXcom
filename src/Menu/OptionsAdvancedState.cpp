@@ -17,6 +17,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "OptionsAdvancedState.h"
+#include "OptionDetailState.h"
 #include <sstream>
 #include "../Engine/Game.h"
 #include "../Mod/Mod.h"
@@ -28,7 +29,6 @@
 #include "../Interface/TextList.h"
 #include "../Engine/Options.h"
 #include "../Engine/Action.h"
-#include "../Engine/HdUi.h"
 #include <algorithm>
 
 namespace OpenXcom
@@ -260,13 +260,13 @@ void OptionsAdvancedState::addSettings(const std::vector<OptionInfo> &settings)
 			std::ostringstream ss;
 			ss << *optionInfo.asInt();
 			value = ss.str();
-			// the HD font is picked by name: the number alone says nothing about which face it is
-			if (optionInfo.asInt() == &Options::oxceHdUiFont)
-			{
-				value = HdUi::instance().fontSetName(Options::oxceHdUiFont);
-			}
 		}
 		_lstOptions->addRow(2, name.c_str(), value.c_str());
+		// a "no" reads apart from a "yes" at a glance: in the color of a disabled option
+		if (optionInfo.type() == OPTION_BOOL && !*optionInfo.asBool())
+		{
+			_lstOptions->setCellColor(_lstOptions->getLastRowIndex(), 1, _greyedOutColor);
+		}
 		// grey out fixed options
 		auto search = fixeduserOptions.find(optionInfo.id());
 		if (search != fixeduserOptions.end())
@@ -319,11 +319,39 @@ OptionInfo *OptionsAdvancedState::getSetting(size_t sel)
 void OptionsAdvancedState::lstOptionsClick(Action *action)
 {
 	Uint8 button = action->getDetails()->button.button;
+	size_t sel = _lstOptions->getSelectedRow();
+	// middle button: the setting on a window of its own, with the whole description and the
+	// value as a button that changes it just like a click here
+	if (button == SDL_BUTTON_MIDDLE)
+	{
+		OptionInfo *setting = getSetting(sel);
+		if (!setting) return;
+		_game->pushState(new OptionDetailState(_origin, tr(setting->description()), tr(setting->description() + "_DESC"),
+			[this, sel, setting](Uint8 b)
+			{
+				if (b != 0)
+				{
+					changeSetting(sel, b);
+				}
+				const bool no = setting->type() == OPTION_BOOL && !*setting->asBool();
+				return std::make_pair(_lstOptions->getCellText(sel, 1), no ? _greyedOutColor : (Uint8)0);
+			}));
+		return;
+	}
+	changeSetting(sel, button);
+}
+
+/**
+ * Changes a setting as a click on its row does.
+ * @param sel Row of the setting.
+ * @param button Mouse button: left steps forward, right back.
+ */
+void OptionsAdvancedState::changeSetting(size_t sel, Uint8 button)
+{
 	if (button != SDL_BUTTON_LEFT && button != SDL_BUTTON_RIGHT)
 	{
 		return;
 	}
-	size_t sel = _lstOptions->getSelectedRow();
 	OptionInfo *setting = getSetting(sel);
 	if (!setting) return;
 
@@ -341,6 +369,7 @@ void OptionsAdvancedState::lstOptionsClick(Action *action)
 		bool *b = setting->asBool();
 		*b = !*b;
 		settingText = *b ? tr("STR_YES") : tr("STR_NO");
+		_lstOptions->setCellColor(sel, 1, *b ? _lstOptions->getColor() : _greyedOutColor);
 		if (b == &Options::lazyLoadResources && !*b)
 		{
 			Options::reload = true; // reload when turning lazy loading off
@@ -428,31 +457,6 @@ void OptionsAdvancedState::lstOptionsClick(Action *action)
 			min = 0;
 			max = 15;
 		}
-		else if (i == &Options::oxceHdScale)
-		{
-			min = 1;
-			max = 4;
-		}
-		else if (i == &Options::oxceHdMode)
-		{
-			min = 0;
-			max = 2;
-		}
-		else if (i == &Options::oxceHdUi)
-		{
-			min = 0;
-			max = 2;
-		}
-		else if (i == &Options::oxceHdUiSkin)
-		{
-			min = 0;
-			max = 3;
-		}
-		else if (i == &Options::oxceHdUiFont)
-		{
-			min = 0;
-			max = HdUi::instance().fontSetCount();
-		}
 		else if (i == &Options::oxceNightVisionColor)
 		{
 			// UFO: 1-15, TFTD: 2-16 except 8 and 10
@@ -501,12 +505,6 @@ void OptionsAdvancedState::lstOptionsClick(Action *action)
 		std::ostringstream ss;
 		ss << *i;
 		settingText = ss.str();
-		if (i == &Options::oxceHdUiFont)
-		{
-			// load it right away, so the list itself is redrawn with the face that was picked
-			HdUi::instance().applyFontOption();
-			settingText = HdUi::instance().fontSetName(*i);
-		}
 	}
 	_lstOptions->setCellText(sel, 1, settingText);
 }

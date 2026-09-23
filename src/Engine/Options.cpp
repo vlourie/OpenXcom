@@ -370,8 +370,6 @@ void createOptionsOXCE()
 	_info.push_back(OptionInfo(OPTION_OXCE, "keyFeedback", &keyFeedback, SDLK_F8));
 	// HD render: the key that cycles the sprite drawing mode of the true-color canvas (see Engine/HdCanvas.h HdMode)
 	_info.push_back(OptionInfo(OPTION_OXCE, "keyBattleHdModeToggle", &keyBattleHdModeToggle, SDLK_F9));
-	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdThreads", &oxceHdThreads, 0));
-	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdFrameSkip", &oxceHdFrameSkip, 4));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceFirstPersonViewFisheyeProjection", &oxceFirstPersonViewFisheyeProjection, false));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceThumbButtons", &oxceThumbButtons, true));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceThrottleMouseMoveEvent", &oxceThrottleMouseMoveEvent, 0));
@@ -499,21 +497,27 @@ void createAdvancedOptionsOXCE()
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceWoundedDefendBaseIf", &oxceWoundedDefendBaseIf, 100, "STR_WOUNDED_DEFEND_BASE_IF", "STR_BATTLESCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxcePlayBriefingMusicDuringEquipment", &oxcePlayBriefingMusicDuringEquipment, false, "STR_PLAY_BRIEFING_MUSIC_DURING_EQUIPMENT", "STR_BATTLESCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceNightVisionColor", &oxceNightVisionColor, 5, "STR_NIGHT_VISION_COLOR", "STR_BATTLESCAPE"));
+	// Everything HD lives on its own tab (Menu/OptionsHdState.h), grouped by the STR_HD_* categories and
+	// shown in this order; the advanced list does not know these categories and leaves them out.
+	// Which HD art tree is loaded: the tab shows it together with oxceHdMode as one "art version" row,
+	// so it has no row of its own. AdultChoiceState asks about it at every start while oxceAdultAsk is on.
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceAdultArt", &oxceAdultArt, false, "", "STR_HD_ART"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceAdultAsk", &oxceAdultAsk, true, "STR_HD_ADULT_ASK", "STR_HD_ART"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceLanguageChosen", &oxceLanguageChosen, false, "", "STR_GENERAL"));
 	// HD render (see Engine/HdCanvas.h): sprite scale of the battlescape and how sprites are drawn on the true-color canvas
-	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdScale", &oxceHdScale, 1, "STR_HD_SCALE", "STR_BATTLESCAPE"));
-	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdPictures", &oxceHdPictures, true, "STR_HD_PICTURES", "STR_GENERAL"));
-	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdUiSmooth", &oxceHdUiSmooth, true, "STR_HD_UI_SMOOTH", "STR_GENERAL"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdScale", &oxceHdScale, 1, "STR_HD_SCALE", "STR_HD_BATTLE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdMode", &oxceHdMode, 2, "STR_HD_MODE", "STR_HD_BATTLE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdLight", &oxceHdLight, true, "STR_HD_LIGHT", "STR_HD_BATTLE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdGroundVariants", &oxceHdGroundVariants, true, "STR_HD_GROUND_VARIANTS", "STR_HD_BATTLE"));
 	// HD interface (see Engine/HdUi.h): the widgets drawn again in the world layer at the display's resolution
-	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdUi", &oxceHdUi, 0, "STR_HD_UI", "STR_GENERAL"));
-	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdUiSkin", &oxceHdUiSkin, 2, "STR_HD_UI_SKIN", "STR_GENERAL"));
-	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdUiFont", &oxceHdUiFont, 0, "STR_HD_UI_FONT", "STR_GENERAL"));
-	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdMode", &oxceHdMode, 2, "STR_HD_MODE", "STR_BATTLESCAPE"));
-	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdLight", &oxceHdLight, true, "STR_HD_LIGHT", "STR_BATTLESCAPE"));
-	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdGroundVariants", &oxceHdGroundVariants, true, "STR_HD_GROUND_VARIANTS", "STR_BATTLESCAPE"));
-	// Which HD art tree is loaded, and whether AdultChoiceState asks about it at every start.
-	// Empty descriptions keep both out of the advanced list: the question itself is the way to change them.
-	_info.push_back(OptionInfo(OPTION_OXCE, "oxceAdultArt", &oxceAdultArt, false, "", "STR_GENERAL"));
-	_info.push_back(OptionInfo(OPTION_OXCE, "oxceAdultAsk", &oxceAdultAsk, true, "", "STR_GENERAL"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdUi", &oxceHdUi, 0, "STR_HD_UI", "STR_HD_INTERFACE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdUiSkin", &oxceHdUiSkin, 2, "STR_HD_UI_SKIN", "STR_HD_INTERFACE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdUiFont", &oxceHdUiFont, 0, "STR_HD_UI_FONT", "STR_HD_INTERFACE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdPictures", &oxceHdPictures, true, "STR_HD_PICTURES", "STR_HD_INTERFACE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdUiSmooth", &oxceHdUiSmooth, true, "STR_HD_UI_SMOOTH", "STR_HD_INTERFACE"));
+	// HD render workers (Engine/HdWorkers.h) and how far the battle timer may run ahead of slow frames
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdThreads", &oxceHdThreads, 0, "STR_HD_THREADS", "STR_HD_SPEED"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdFrameSkip", &oxceHdFrameSkip, 4, "STR_HD_FRAME_SKIP", "STR_HD_SPEED"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceAutoNightVisionThreshold", &oxceAutoNightVisionThreshold, 15, "STR_AUTO_NIGHT_VISION_THRESHOLD", "STR_BATTLESCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceShowAccuracyOnCrosshair", &oxceShowAccuracyOnCrosshair, 1, "STR_SHOW_ACCURACY_ON_CROSSHAIR", "STR_BATTLESCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceReactionFireThreshold", &oxceReactionFireThreshold, 0, "STR_REACTION_FIRE_THRESHOLD", "STR_BATTLESCAPE"));
