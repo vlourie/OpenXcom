@@ -11,5 +11,6 @@ services:
       DYNU_API_KEY: ${DYNU_API_KEY:?set DYNU_API_KEY in .env}
     volumes: !override
       - ./Caddyfile.internet:/etc/caddy/Caddyfile:ro
+      - ${RELEASES_DIR:-./releases}:/srv/releases:ro
       - caddy-data:/data
       - caddy-config:/config

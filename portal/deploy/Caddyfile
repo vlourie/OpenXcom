@@ -1,10 +1,30 @@
 # HTTPS in front of the portal. Caddy gets and renews the Let's Encrypt certificate by itself;
 # for that, ports 80 and 443 of the router must lead to this server.
 {$PORTAL_HOST} {
-	encode zstd gzip
-	# uploads are limited by the portal itself; this only stops absurd bodies at the door
-	request_body {
-		max_size 600MB
+	# release repository (xp-release): plain files, Range requests for resumed downloads.
+	# Not compressed: blobs are fetched by byte ranges and checked by hash, gzip would break both
+	handle_path /releases/* {
+		root * /srv/releases
+		# a blob is named by its hash and never changes; channels and manifests' status do
+		header /blobs/* Cache-Control "public, max-age=31536000, immutable"
+		header /channels/* Cache-Control "no-cache"
+		header /catalog.json* Cache-Control "no-cache"
+		file_server
 	}
-	reverse_proxy portal:8080
+	handle {
+		encode zstd gzip
+		# uploads are limited by the portal itself; this only stops absurd bodies at the door
+		request_body {
+			max_size 600MB
+		}
+		reverse_proxy portal:8080
+	}
+}
+
+# The same repository for the portal itself, inside the Docker network only (not published):
+# the site reads its releases without going out to its own public address and back through
+# the router, which many routers do not allow
+:8081 {
+	root * /srv/releases
+	file_server
 }

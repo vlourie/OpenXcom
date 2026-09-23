@@ -14,6 +14,9 @@
 #                            ddns держит имя на текущем IP. Нужен DYNU_API_KEY в .env и проброс
 #                            HTTPS_PORT на роутере. Имя по умолчанию - x-piratez.mywire.org
 #   .\station.ps1 lan        обратно: только локальная сеть, свой сертификат
+#   .\station.ps1 releases <архив.zip>   выложить релизы: архив от portal\deploy\pack-releases.ps1
+#                            раскладывается в deploy\releases (blobs, потом releases, последними
+#                            channels), Caddy раздаёт их по адресу <сайт>/releases/
 #   .\station.ps1 down       остановить; данные в томах остаются
 #
 # Никогда не звать 'docker compose down -v': это удаляет базу, файлы и ключи.
@@ -151,8 +154,8 @@ function Initialize-Config {
 function Get-Url { (Read-DotEnv '.env')['PORTAL_PUBLIC_URL'] }
 
 # меняет или дописывает строку KEY=value в .env, остальное не трогает
-function Set-DotEnv([string] $key, [string] $value) {
-    $path = Join-Path $PSScriptRoot '.env'
+function Set-DotEnv([string] $key, [string] $value, [string] $file = '.env') {
+    $path = Join-Path $PSScriptRoot $file
     $lines = @(Get-Content -LiteralPath $path -Encoding UTF8)
     $found = $false
     for ($i = 0; $i -lt $lines.Count; $i++) {
@@ -292,6 +295,60 @@ switch ($Command) {
         Set-DotEnv 'STATION_MODE' 'lan'
         & $PSCommandPath up
     }
+    'releases' {
+        Assert-Docker
+        if (-not $Email -or -not (Test-Path -LiteralPath $Email)) { Fail 'укажите архив: .\station.ps1 releases C:\путь\xp-releases_....zip' }
+        $zip = (Resolve-Path -LiteralPath $Email).Path
+        $env_ = Read-DotEnv '.env'
+        $dest = if ($env_['RELEASES_DIR']) { $env_['RELEASES_DIR'] } else { Join-Path $PSScriptRoot 'releases' }
+        New-Item -ItemType Directory -Force -Path $dest | Out-Null
+        $tmp = Join-Path $env:TEMP ('xp-releases-' + [Guid]::NewGuid().ToString('N'))
+        New-Item -ItemType Directory -Force -Path $tmp | Out-Null
+        try {
+            Say "распаковываю $zip"
+            # tar из Windows по полному пути: tar из Git в PATH принимает 'C:' за имя сервера
+            & (Join-Path $env:WINDIR 'System32\tar.exe') -xf $zip -C $tmp
+            if ($LASTEXITCODE -ne 0) { Fail "tar не распаковал архив (код $LASTEXITCODE)" }
+            if (-not (Test-Path (Join-Path $tmp 'channels'))) { Fail 'в архиве нет папки channels - это не архив релизов' }
+            # порядок важен: указатель канала, пришедший раньше своих файлов, отправит лаунчеры
+            # за тем, чего на сервере ещё нет
+            foreach ($part in 'blobs', 'releases', '.', 'channels') {
+                $from = Join-Path $tmp $part
+                if (-not (Test-Path $from)) { continue }
+                $to = if ($part -eq '.') { $dest } else { Join-Path $dest $part }
+                $rc = if ($part -eq '.') { @($from, $to, 'catalog.json', 'catalog.json.sig') } else { @($from, $to, '/E') }
+                Say "releases\$part"
+                & robocopy.exe @rc /R:1 /W:1 /NFL /NDL /NP /NJH /NJS | Out-Null
+                if ($LASTEXITCODE -ge 8) { Fail "robocopy: ошибка при копировании $part (код $LASTEXITCODE)" }
+            }
+        } finally {
+            Remove-Item -LiteralPath $tmp -Recurse -Force -ErrorAction SilentlyContinue
+        }
+
+        # открытый ключ, которым сайт проверяет релизы: строки prod из keys\release-keys.txt
+        $keysFile = Join-Path $PSScriptRoot '..\keys\release-keys.txt'
+        $prod = @(Get-Content -LiteralPath $keysFile -Encoding UTF8 | Where-Object { $_ -match '^prod\s+\S+' } | ForEach-Object { ($_ -split '\s+')[1] })
+        $penv = Read-DotEnv 'portal.env'
+        $changed = $false
+        for ($i = 0; $i -lt $prod.Count; $i++) {
+            if ($penv["Portal__ReleaseKeys__$i"] -ne $prod[$i]) { Set-DotEnv "Portal__ReleaseKeys__$i" $prod[$i] 'portal.env'; $changed = $true }
+        }
+        if ($changed) { Say 'ключ релизов записан в portal.env' }
+        # новый portal.env и папку releases контейнеры видят только после пересоздания
+        Invoke-Compose up -d caddy portal
+
+        $url = Get-Url
+        $check = @('-s', '--max-time', '10', '--resolve', "$($env_['PORTAL_HOST']):$($env_['HTTPS_PORT']):127.0.0.1")
+        if ($env_['STATION_MODE'] -ne 'internet') { $check += '-k' }
+        Start-Sleep -Seconds 3
+        foreach ($ch in @(Get-ChildItem -LiteralPath (Join-Path $dest 'channels') -Filter '*.json' | Where-Object { $_.Name -notlike '*.history.json' })) {
+            $answer = & curl.exe @check "$url/releases/channels/$($ch.Name)" 2>$null
+            $id = if ($answer -match '"releaseId":"([^"]+)"') { $Matches[1] } else { $null }
+            if ($id) { Write-Host ("{0,-20} -> {1}" -f $ch.BaseName, $id) -ForegroundColor Green }
+            else { Write-Host ("{0,-20} НЕ отвечает: $url/releases/channels/$($ch.Name)" -f $ch.BaseName) -ForegroundColor Red }
+        }
+        Write-Host "Лаунчеры берут обновления с $url/releases/"
+    }
     'down' { Invoke-Compose down }
-    default { Fail "неизвестная команда '$Command'. Есть: up, status, content, logs, admin, reset-2fa, mail, root-cert, internet, lan, down" }
+    default { Fail "неизвестная команда '$Command'. Есть: up, status, content, logs, admin, reset-2fa, mail, root-cert, internet, lan, releases, down" }
 }

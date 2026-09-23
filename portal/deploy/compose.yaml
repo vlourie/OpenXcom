@@ -61,6 +61,9 @@ services:
       ConnectionStrings__Portal: Host=db;Port=5432;Database=xp_portal;Username=xp;Password=${POSTGRES_PASSWORD}
       Portal__PublicUrl: https://${PORTAL_HOST:?set PORTAL_HOST in .env}
       Portal__TrustedNetworks__0: ${FRONT_SUBNET:-172.30.10.0/24}
+      # releases as Caddy serves them inside the Docker network (Caddyfile, :8081); the keys the
+      # site trusts are Portal__ReleaseKeys__N in portal.env
+      Portal__ReleaseRepo: http://caddy:8081/
       Attachments__ClamdAddress: clamav:3310
     depends_on:
       db: { condition: service_healthy }
@@ -90,6 +93,9 @@ services:
       PORTAL_HOST: ${PORTAL_HOST}
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      # release repository, served at /releases/: filled by 'station.ps1 releases' (or by hand,
+      # blobs first, channels last); RELEASES_DIR in .env to keep it elsewhere
+      - ${RELEASES_DIR:-./releases}:/srv/releases:ro
       - caddy-data:/data
       - caddy-config:/config
     depends_on: [portal]

@@ -13,3 +13,6 @@ portal.env
 
 # local dev data of the portal (uploads, mail pickup)
 .dev/
+
+# release repository on the server (station.ps1 releases)
+deploy/releases/

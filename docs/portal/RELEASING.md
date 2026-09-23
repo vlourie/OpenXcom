@@ -35,7 +35,9 @@ dotnet run --project src\Xp.ReleaseBuilder -c Release -- keygen --out D:\keys\xp
 5. Обновиться тестовым лаунчером, сыграть. Потом тот же `--id` публикуется в `stable` —
    пересобирать не нужно.
 6. Выложить изменившиеся файлы хранилища на сервер (блобы — **до** указателей каналов, иначе
-   игрок увидит релиз, файлов которого ещё нет).
+   игрок увидит релиз, файлов которого ещё нет): здесь `portal\deploy\pack-releases.ps1`, на
+   станции `.\station.ps1 releases <архив>`. Хранилище лежит в `portal\deploy\releases` станции и
+   раздаётся по `https://x-piratez.mywire.org:8443/releases/`. Пошагово — `FIRST_RELEASE.md`, раздел 10.
 
 Плохой релиз: `xp-release revoke --repo D:\xp-repo --channel stable --id <id>` — канал
 возвращается на предыдущий опубликованный релиз, номер канала растёт, лаунчеры откатываются.

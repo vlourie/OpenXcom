@@ -5,7 +5,7 @@
 
 Что получится в итоге: на диске `D:\xp-repo` — подписанное хранилище релизов. Лаунчер
 скачивает обновления оттуда. Пока хранилище лежит только у тебя на диске, игроки его не видят.
-Что нужно, чтобы увидели, — в конце, раздел «Чего ещё нет».
+Как выложить его на сервер — последний раздел, «Выложить на сервер».
 
 ## 0. Открыть PowerShell
 
@@ -105,10 +105,13 @@ release 2026.09.24-test1: 39019 files, ... status draft
 же версия.
 
 ```powershell
-& $xpr build --repo $repo --id launcher-0.1.0 --version 0.1.0 --channel launcher-stable `
+& $xpr build --repo $repo --id launcher-0.1.1 --version 0.1.1 --channel launcher-stable `
     --stage E:\OpenXCom\dist\_launcher_rel --launcher-kind --key $key
-& $xpr publish --repo $repo --channel launcher-stable --id launcher-0.1.0 --key $key
+& $xpr publish --repo $repo --channel launcher-stable --id launcher-0.1.1 --key $key
 ```
+
+Сейчас версия 0.1.1: в ней лаунчер уже смотрит на сервер, а не на `localhost`. Собирать сам
+лаунчер отдельно не надо: сборка «Обе» из шага 2 кладёт свежий в `dist\_launcher_rel`.
 
 Должно быть `5 files`: сам лаунчер, `xp-bootstrap.exe` и три DLL.
 
@@ -130,15 +133,15 @@ release 2026.09.24-test1: 39019 files, ... status draft
 
 ```powershell
 $game = 'E:\OpenXCom\Пиратки\Dioxine_XPiratez'
-$p = Start-Process "$game\XPiratezLauncher.exe" -ArgumentList '--headless','check','--game',"`"$game`"" -Wait -PassThru -NoNewWindow
+$p = Start-Process "$game\XPiratezLauncher.exe" -ArgumentList '--headless','check','--game',"`"$game`"",'--repo','http://localhost:8787/' -Wait -PassThru -NoNewWindow
 $p.ExitCode
 ```
 
 Число в ответе: `0` — всё уже как в релизе, `3` — есть обновление, `2` — подпись не принята
-(значит, подписано не тем ключом), `1` — другая ошибка, текст выше.
+(значит, подписано не тем ключом), `1` — другая ошибка, текст выше. `--repo` действует только на
+эту проверку и в настройки лаунчера не записывается.
 
-Можно и просто открыть лаунчер: пока он смотрит на `localhost:8787`, он увидит этот релиз
-сам. Раздачу во втором окне остановить — Ctrl+C.
+Раздачу во втором окне остановить — Ctrl+C.
 
 ## Если ошибся
 
@@ -148,15 +151,63 @@ $p.ExitCode
   `& $xpr revoke --repo $repo --channel stable --id $id --key $key`
 - `error: ...` с путём к ключу — проверить, что `D:\keys\xp-prod\release.key` на месте.
 
-## Чего ещё нет — без этого игроки обновление не получат
+## 10. Выложить на сервер
 
-1. **Места на сервере для хранилища.** `D:\xp-repo` нужно раздавать по HTTPS (с поддержкой
-   Range). Сейчас станция раздаёт только сайт, хранилища на ней нет.
-2. **Адреса хранилища в лаунчере.** В `portal\src\Xp.Launcher\defaults.json` стоит
-   `repoUrl: http://localhost:8787/`. Лаунчер, выданный игрокам с таким адресом, будет
-   искать обновления у них же на компьютере.
-3. **Открытого ключа на сайте.** В `.env` станции нужна строка
-   `Portal__ReleaseKeys__0=<содержимое release.pub>` и `Portal__ReleaseRepo=<адрес хранилища>`.
+Куда: на станцию, в папку `portal\deploy\releases` рядом с `station.ps1`. Её раздаёт тот же
+Caddy, что и сайт, по адресу `https://x-piratez.mywire.org:8443/releases/`. Оттуда берут
+обновления лаунчеры, и оттуда же сайт показывает текущую версию.
 
-Как появятся все три, к шагам выше добавится один: залить изменившиеся файлы `D:\xp-repo`
-на сервер — сначала `blobs`, потом `releases`, последними `channels`.
+Что: все файлы `D:\xp-repo` — `blobs`, `releases`, `channels`. Порядок важен, и его соблюдает
+команда станции: сначала файлы, указатели каналов последними. Иначе лаунчер увидит релиз,
+файлов которого на сервере ещё нет.
+
+**Первый раз** — сначала обновить сам сайт: в его новой версии Caddy умеет раздавать
+`/releases/`.
+
+1. Здесь, в PowerShell:
+
+   ```powershell
+   cd E:\OpenXCom
+   powershell -ExecutionPolicy Bypass -File portal\deploy\pack.ps1
+   ```
+
+   Получится `dist\xp-portal_<дата>_<коммит>.zip`. На станции распаковать его поверх папки
+   сайта и из `portal\deploy` запустить `powershell -ExecutionPolicy Bypass -File .\station.ps1`.
+
+**Каждый раз** (и первый тоже — после обновления сайта):
+
+1. Здесь упаковать хранилище. Упаковывается только то, что изменилось с прошлого раза; первый
+   архив — всё хранилище, около 1,8 ГБ:
+
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File portal\deploy\pack-releases.ps1
+   ```
+
+   Получится `dist\xp-releases_<дата_время>.zip`.
+2. Перенести архив на станцию — как обычно переносишь архив сайта.
+3. На станции, в PowerShell из `portal\deploy`:
+
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File .\station.ps1 releases C:\путь\xp-releases_....zip
+   ```
+
+   Команда разложит файлы в правильном порядке, в первый раз сама впишет открытый ключ в
+   `portal.env` и перезапустит сайт с Caddy. В конце покажет каналы:
+
+   ```
+   launcher-stable      -> launcher-0.1.1
+   stable               -> 2026.09.24-test1
+   ```
+
+   Красная строка `НЕ отвечает` — Caddy не раздаёт папку: запустить `.\station.ps1` (up) и
+   повторить.
+4. Проверить снаружи — с телефона на мобильном интернете открыть
+   `https://x-piratez.mywire.org:8443/releases/channels/stable.json`. Должна показаться строка с
+   `"releaseId"`.
+
+Если архив потерялся по дороге и на станцию не попал, следующий упаковывать с `-Full`: скрипт
+считает отправленным всё, что однажды упаковал.
+
+После этого лаунчер 0.1.1 у любого игрока сам находит обновления на сервере. Лаунчер 0.1.0,
+который уже лежит в Пиратках, смотрит на `localhost` — его один раз заменить руками на 0.1.1
+из сборки «Обе».
