@@ -15,5 +15,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Xp.Portal\Xp.Portal.csproj" />
+    <!-- the launcher's own report sender against the real API: the contract is checked from both ends -->
+    <ProjectReference Include="..\..\src\Xp.Launcher.Core\Xp.Launcher.Core.csproj" />
   </ItemGroup>
 </Project>
