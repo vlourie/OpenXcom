@@ -32,11 +32,16 @@ namespace OpenXcom
 {
 
 /**
- * Is there a choice to make? Only when the mods actually ship more than one
- * language - with a single one the screen would be a dead end.
+ * Is there a choice to make? Only on the first start - the answer is kept, and
+ * changed later in Options > Video - and only when the mods actually ship more
+ * than one language: with a single one the screen would be a dead end.
  */
 bool LanguageChoiceState::isNeeded()
 {
+	if (Options::oxceLanguageChosen)
+	{
+		return false;
+	}
 	std::vector<std::string> ids, names;
 	Language::getList(ids, names);
 	return ids.size() > 1;
@@ -118,10 +123,11 @@ void LanguageChoiceState::choose(const std::string &id)
 	if (!id.empty() && id != Options::language)
 	{
 		Options::language = id;
-		Options::save();
 		_game->loadLanguages();
 		Log(LOG_INFO) << "Language chosen: " << id;
 	}
+	Options::oxceLanguageChosen = true;
+	Options::save();
 
 	// Build the next screen only now, with the chosen language loaded: its
 	// texts are set in its constructor and would otherwise be the old ones.
