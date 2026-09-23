@@ -147,6 +147,7 @@ set ( engine_src
   Engine/CatFile.cpp
   Engine/CrossPlatform.cpp
   Engine/FastLineClip.cpp
+  Engine/Feedback.cpp
   Engine/FileMap.cpp
   Engine/FlcPlayer.cpp
   Engine/Font.cpp

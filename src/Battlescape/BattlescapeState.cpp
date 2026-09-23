@@ -3200,8 +3200,8 @@ inline void BattlescapeState::handle(Action *action)
 					saveVoxelView();
 				}
 
-				// HD render test dump (deterministic frame capture)
-				if (key == Options::keyBattleHdTestDump)
+				// HD render test dump (deterministic frame capture); the bare key is the feedback form
+				if (key == Options::keyBattleHdTestDump && _game->isCtrlPressed())
 				{
 					hdTestDump();
 				}

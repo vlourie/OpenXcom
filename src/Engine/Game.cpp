@@ -28,6 +28,7 @@
 #include <sstream>
 #include "HdUi.h"
 #include "HdTest.h"
+#include "Feedback.h"
 #include <SDL_mixer.h>
 #include "State.h"
 #include "Screen.h"
@@ -335,11 +336,24 @@ void Game::run()
 							}
 						}
 					}
+					// the feedback key: the report form opens over a paused game and the world never sees the key.
+					// Ctrl goes to the HD dump on the same key, Alt to the debug slow motion
+					if (action.getDetails()->type == SDL_KEYDOWN
+						&& action.getDetails()->key.keysym.sym == Options::keyFeedback
+						&& !isCtrlPressed() && !isAltPressed())
+					{
+						if (!dynamic_cast<FeedbackState*>(_states.back()))
+						{
+							Feedback::open(this, _states.back());
+						}
+						break;
+					}
 					_states.back()->handle(&action);
 					// the HD dump key outside the battlescape (which writes a richer dump of its own):
 					// the frame as it is drawn, into the master's user folder
 					if (action.getDetails()->type == SDL_KEYDOWN
 						&& action.getDetails()->key.keysym.sym == Options::keyBattleHdTestDump
+						&& isCtrlPressed()
 						&& !_screen->hasHdTestDumpRequest())
 					{
 						const std::string path = HdTest::nextDumpPrefix() + "_frame.png";

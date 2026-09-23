@@ -364,8 +364,10 @@ void createOptionsOXCE()
 	// OXCE hidden
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceModValidationLevel", &oxceModValidationLevel, (int)LOG_WARNING));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceRawScreenShots", &oxceRawScreenShots, false));
-	// HD render regression test: deterministic dump of the battlescape frame (see Engine/HdTest.h)
+	// HD render regression test: deterministic dump of the battlescape frame (see Engine/HdTest.h), taken with Ctrl
 	_info.push_back(OptionInfo(OPTION_OXCE, "keyBattleHdTestDump", &keyBattleHdTestDump, SDLK_F8));
+	// player feedback: screenshot, pause and the launcher's report form (see Engine/Feedback.h)
+	_info.push_back(OptionInfo(OPTION_OXCE, "keyFeedback", &keyFeedback, SDLK_F8));
 	// HD render: the key that cycles the sprite drawing mode of the true-color canvas (see Engine/HdCanvas.h HdMode)
 	_info.push_back(OptionInfo(OPTION_OXCE, "keyBattleHdModeToggle", &keyBattleHdModeToggle, SDLK_F9));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdThreads", &oxceHdThreads, 0));
