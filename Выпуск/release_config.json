@@ -1,0 +1,13 @@
+{
+  "Channel": "stable",
+  "Key": "D:\\keys\\xp-prod\\release.key",
+  "Pub": "D:\\keys\\xp-prod\\release.pub",
+  "Repo": "D:\\xp-repo",
+  "XpRelease": "E:\\OpenXCom\\dist\\_xp-release\\xp-release.exe",
+  "Stage": "E:\\OpenXCom\\dist\\_stage",
+  "LauncherDir": "E:\\OpenXCom\\dist\\_launcher_rel",
+  "Launch": "openxcom_hd.exe",
+  "VerifyDeep": true,
+  "StationDrop": "",
+  "OpenExplorer": true
+}
