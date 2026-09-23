@@ -20,7 +20,7 @@ if (-not $vs) { throw 'нет MSVC (VC.Tools.x86.x64): NativeAOT нечем ли
 
 $extra = @()
 if ($DevKeys) { $extra += '-p:AllowDevKeys=true' }
-$Out = [IO.Path]::GetFullPath((Join-Path (Get-Location) $Out))
+$Out = [IO.Path]::GetFullPath([IO.Path]::Combine((Get-Location).Path, $Out))
 foreach ($proj in 'src\Xp.Launcher', 'src\Xp.Bootstrapper') {
     dotnet publish (Join-Path $PSScriptRoot $proj) -c Release -r win-x64 -o $Out @extra
     if ($LASTEXITCODE -ne 0) { throw "сборка $proj упала" }

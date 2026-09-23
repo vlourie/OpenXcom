@@ -2,7 +2,8 @@
   OXCE HD — сборка одним запуском.
 
     -Target Exe   ninja -> openxcom.exe -> Enigma Virtual Box (DLL внутрь) -> dist\OpenXComEx_<дата>_<время>.exe
-                  и dist\OXCE-HD_<дата>_<hash>_exe.zip   (внутри exe + common + standard, для второй машины)
+                  и dist\OXCE-HD_<дата>_<hash>_exe.zip   (внутри exe + лаунчер + common + standard, для второй машины)
+                  Лаунчер (portal\publish.ps1) публикуется заново, только если его исходники новее.
 
   Перед любой сборкой common/standard из репозитория переносятся в установку игры (GameDir,
   Sync-DataToGame), а exe копируется туда же (CopyExeTo) под постоянным именем ExeName.
@@ -542,6 +543,9 @@ function Save-StageNotes([string[]]$head, $mods, [string[]]$data, [string]$exeNa
     } else {
         $readme += "2. ${modLine}HD-опции — Настройки -> HD."
     }
+    if ($launcher) {
+        $readme += @('', 'XPiratezLauncher.exe — лаунчер: обновления, отчёты об ошибках (F8 в игре), поддержка авторов.')
+    }
     if ($data.Count) {
         $readme += @('', ("В архиве есть и папки движка ({0}) — они заменят те, что лежат в игре." -f ($data -join ', ')))
     }
@@ -549,6 +553,7 @@ function Save-StageNotes([string[]]$head, $mods, [string[]]$data, [string]$exeNa
 
     $ver = @($head) + @('')
     if ($exeName) { $ver += "exe:    $exeName" }
+    if ($launcher) { $ver += ("лаунчер: {0} ({1}-ключи)" -f $launcher.Version, $launcher.Mode) }
     $ver += "ветка:  $branch"
     $ver += "коммит: $hash"
     foreach ($m in $mods) {
@@ -752,6 +757,73 @@ function Clear-DataDirs {
     }
 }
 
+<#
+  Лаунчер (portal\src, NativeAOT) едет рядом с exe игры: кнопка «Лаунчер» и отчёт по F8
+  ищут XPiratezLauncher.exe в папке exe (Feedback.cpp). Публикация идёт в LauncherOut и
+  повторяется, только если исходники новее опубликованного exe или сменился вид ключей
+  (dev/prod) — иначе берётся готовая. Грабли R-044: упакованное не должно быть старше правки.
+#>
+function Invoke-LauncherStep {
+    if (-not (Get-Cfg 'Launcher' $true)) { Write-Info 'лаунчер выключен (Launcher: false)'; return $null }
+    $portal = Join-Path $repoDir 'portal'
+    $out = Get-Cfg 'LauncherOut' (Join-Path $distDir '_launcher_rel')
+    $dev = [bool](Get-Cfg 'LauncherDevKeys' $true)
+    $mode = if ($dev) { 'dev' } else { 'prod' }
+    $files = @(Get-Cfg 'LauncherFiles' @('XPiratezLauncher.exe', 'xp-bootstrap.exe', 'libHarfBuzzSharp.dll', 'libSkiaSharp.dll', 'libsodium.dll'))
+    $modeFile = Join-Path $out 'keys_mode.txt'
+    $exe = Join-Path $out $files[0]
+
+    Write-Step "лаунчер ($mode-ключи)"
+    $newest = $null
+    $roots = @('Xp.Launcher', 'Xp.Launcher.Core', 'Xp.Manifest', 'Xp.Bootstrapper' | ForEach-Object { Join-Path $portal "src\$_" })
+    foreach ($r in $roots) {
+        if (-not (Test-Path -LiteralPath $r)) { continue }
+        foreach ($f in (New-Object IO.DirectoryInfo $r).EnumerateFiles('*', [IO.SearchOption]::AllDirectories)) {
+            if ($f.FullName -match '[\\/](bin|obj)[\\/]') { continue }
+            if (-not $newest -or $f.LastWriteTimeUtc -gt $newest.LastWriteTimeUtc) { $newest = $f }
+        }
+    }
+    $keys = Join-Path $portal 'keys\release-keys.txt'
+    if (Test-Path -LiteralPath $keys) {
+        $k = Get-Item -LiteralPath $keys
+        if (-not $newest -or $k.LastWriteTimeUtc -gt $newest.LastWriteTimeUtc) { $newest = $k }
+    }
+
+    $why = $null
+    if (-not (Test-Path -LiteralPath $exe)) { $why = 'опубликованного лаунчера нет' }
+    elseif (-not (Test-Path -LiteralPath $modeFile) -or (Get-Content -LiteralPath $modeFile -Raw).Trim() -ne $mode) { $why = "прошлая публикация не с $mode-ключами" }
+    elseif ($newest -and $newest.LastWriteTimeUtc -gt (Get-Item -LiteralPath $exe).LastWriteTimeUtc) {
+        $why = "{0} изменён {1:dd.MM HH:mm}, позже лаунчера" -f $newest.Name, $newest.LastWriteTime
+    }
+    if ($why) {
+        Write-Info "публикую заново: $why"
+        $t = [Diagnostics.Stopwatch]::StartNew()
+        $pubArgs = @{ Out = $out }
+        if ($dev) { $pubArgs.DevKeys = $true }
+        & (Join-Path $portal 'publish.ps1') @pubArgs | Out-Host
+        if (-not (Test-Path -LiteralPath $exe)) { throw "publish.ps1 не создал $exe" }
+        [IO.File]::WriteAllText($modeFile, $mode, (New-Object Text.UTF8Encoding $false))
+        Write-Ok ("опубликован за {0:N0} с" -f $t.Elapsed.TotalSeconds)
+    } else {
+        Write-Ok ("готовый новее исходников (самый свежий: {0}, {1:dd.MM HH:mm})" -f $newest.Name, $newest.LastWriteTime)
+    }
+    if ($dev) { Write-Warn 'лаунчер на dev-ключах: годится для проверки, игрокам — LauncherDevKeys: false' }
+
+    $paths = @()
+    foreach ($n in $files) {
+        $p = Join-Path $out $n
+        if (-not (Test-Path -LiteralPath $p)) { throw "в публикации лаунчера нет $n ($out)" }
+        $paths += $p
+    }
+    $ver = (Get-Item -LiteralPath $exe).VersionInfo.ProductVersion
+    Write-Ok ("{0} {1}, {2}" -f $files[0], $ver, (Format-Size (Get-Item -LiteralPath $exe).Length))
+    return [pscustomobject]@{ Paths = $paths; Version = $ver; Mode = $mode }
+}
+
+function Copy-Launcher($launcher, [string]$to) {
+    foreach ($p in $launcher.Paths) { Copy-Item -LiteralPath $p -Destination $to -Force }
+}
+
 function New-Zip([string]$zip, [string]$dir) {
     Write-Step 'архив'
     Remove-Item -LiteralPath $zip -Force -ErrorAction SilentlyContinue
@@ -866,11 +938,13 @@ try {
 
     $result = $null
     $patch = $null
+    $launcher = $null
     # до сборки: и exe, и архивы берут common/standard из репозитория, установка должна им совпадать
     if (Get-Cfg 'SyncDataToGame' $true) { Sync-DataToGame }
     switch ($Target) {
         'Exe' {
             $boxed = Invoke-ExeStep
+            $launcher = Invoke-LauncherStep
             $result = Join-Path $distDir "$exeBase.exe"
             Copy-Item -LiteralPath $boxed -Destination $result -Force
             $mask = Get-NameMask $exeTemplate
@@ -881,6 +955,7 @@ try {
             if (Test-Path -LiteralPath $stageMods) { Remove-Item -LiteralPath $stageMods -Recurse -Force }
             $data = @(Invoke-DataStep)
             Copy-Item -LiteralPath $boxed -Destination (Join-Path $stageDir $exeName) -Force
+            if ($launcher) { Copy-Launcher $launcher $stageDir }
             Save-StageNotes @("OXCE HD — $exeName и данные движка ($stamp, $branch $hash)") @() $data $exeName
             $exeZip = Join-Path $distDir "${base}_exe.zip"
             New-Zip $exeZip $stageDir
@@ -901,9 +976,11 @@ try {
         }
         'Both' {
             $boxed = Invoke-ExeStep
+            $launcher = Invoke-LauncherStep
             $mods = @(Invoke-ModStep)
             $data = @(Invoke-DataStep)
             Copy-Item -LiteralPath $boxed -Destination (Join-Path $stageDir $exeName) -Force
+            if ($launcher) { Copy-Launcher $launcher $stageDir }
             $head = @("OXCE HD — $exeName и моды ($stamp, $branch $hash)")
             Save-StageNotes $head $mods $data $exeName
             $tree = Get-TreeInfo $stageDir
@@ -920,6 +997,11 @@ try {
         if (Test-Path -LiteralPath $copyTo) {
             Copy-Item -LiteralPath (Join-Path $workDir 'openxcom_boxed.exe') -Destination (Join-Path $copyTo $exeName) -Force
             Write-Info "exe также скопирован в $copyTo\$exeName"
+            if ($launcher) {
+                # запущенный лаунчер держит свой exe: тогда в установке останется старый, и об этом надо сказать
+                try { Copy-Launcher $launcher $copyTo; Write-Info "лаунчер $($launcher.Version) также скопирован в $copyTo" }
+                catch { Write-Warn "лаунчер в $copyTo не обновлён — закройте его и соберите снова: $($_.Exception.Message)" }
+            }
         } else { Write-Warn "CopyExeTo: нет папки $copyTo" }
     }
 

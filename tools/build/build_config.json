@@ -22,6 +22,10 @@
   "DistDir": "E:\\OpenXCom\\dist",
   "KeepLast": 5,
   "CopyExeTo": "E:\\OpenXCom\\Пиратки\\Dioxine_XPiratez",
+
+  "Launcher": true,
+  "LauncherDevKeys": true,
+  "LauncherOut": "E:\\OpenXCom\\dist\\_launcher_rel",
   "OpenExplorer": true,
 
   "DynamicDlls": ["libvorbisfile-3.dll"],
