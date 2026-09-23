@@ -223,7 +223,7 @@
 Статические страницы портала: Canvas + Web Worker (+ `OffscreenCanvas`), ничего не
 отправляется на сервер. Ограничение — 8192×8192 и 64 Мп на картинку, понятная ошибка сверх того.
 
-## 4. Хранилище релизов (схема 1)
+## 4. Хранилище релизов (схема 2)
 
 Статическое дерево, отдаётся любым HTTP-сервером с поддержкой Range (в разработке —
 `xp-release serve`, в продакшене — CDN или nginx):
@@ -235,6 +235,7 @@ releases/<id>/manifest.json.sig      подпись Ed25519
 releases/<id>/release.json           статус draft/published/revoked — служебный, НЕ подписан
 channels/<канал>.json + .sig         подписанный указатель канала
 channels/<канал>.history.json        история канала — служебная, НЕ подписана
+catalog.json + .sig                  подписанный каталог: линии движка и готовые комплекты
 ```
 
 Лаунчеру канала `stable` соответствует канал `launcher-stable`, `test` — `launcher-test`.
@@ -255,16 +256,22 @@ channels/<канал>.history.json        история канала — слу
 
 ```json
 {
-  "schema": 1,
-  "release": { "id": "2026.10.1-hd", "version": "2026.10.1", "channel": "stable",
+  "schema": 2,
+  "release": { "id": "2026.10.1-hd", "version": "2026.10.1", "channel": "stable", "line": "oxce-hd",
                "published": "2026-10-01T12:00:00Z", "mandatory": false,
                "minLauncher": "1.0.0", "launch": "openxcom_hd.exe",
                "changelog": { "ru": "...", "en": "..." } },
-  "components": { "engine": "OXCE 8.7.0+hd 3846d4c5f" },
+  "components": [
+    { "id": "engine", "kind": "engine", "version": "OXCE 8.7.0+hd 3846d4c5f", "size": 31457280, "files": 856 },
+    { "id": "mod.piratez", "kind": "master", "mod": "piratez", "name": "X-Piratez", "version": "v.o1.1.1",
+      "master": "xcom1", "engine": "Extended", "requires": ["engine"], "adult": false, "size": 1, "files": 1 },
+    { "id": "art.hd", "kind": "art", "mod": "hd", "engine": "OXCE-HD", "requires": ["engine"], "size": 1, "files": 1 },
+    { "id": "art.hd18", "kind": "art", "adult": true, "requires": ["engine", "art.hd"], "size": 1, "files": 1 }
+  ],
   "roots": ["common/", "openxcom_hd.exe", "standard/", "user/mods/hd/", "user/mods/intro_voice/"],
   "files": [
     { "path": "user/mods/hd/hd/TERRAIN/DESERT.PCK/0.png", "size": 48213,
-      "sha256": "…", "component": "hd" }
+      "sha256": "…", "component": "art.hd" }
   ],
   "deletes": ["user/mods/hd/hd/UI_old/Foo.png"]
 }
@@ -273,6 +280,23 @@ channels/<канал>.history.json        история канала — слу
 Адрес файла не хранится: он выводится из `sha256`. `roots` строятся автоматически — каждый
 мод в `user/mods/` отдельным корнем, файлы верхнего уровня поимённо; сам `user/` корнем быть
 не может, сборка релиза с таким файлом останавливается.
+
+**Компоненты** (схема 2; зачем — `EDITIONS.md`). Каждый файл принадлежит ровно одному компоненту,
+сборщик раскладывает их сам по правилам: `user/mods/<м>/hd_18+/` → `art.hd18`, `user/mods/<м>/hd/`
+и весь мод `hd` → `art.hd`, остальное мода → `mod.<id из metadata.yml>` (вид `master`, `addon` или
+`shared` — так, как их читает `ModInfo.cpp`), файлы верхнего уровня, `common/`, `standard/` →
+`engine`. Файл, не попавший ни под одно правило, останавливает сборку; дерево, которое правило не
+знает, называется явно: `--map TFTD/=engine`. Мод, у которого `requiredExtendedEngine` не из
+`--engine-name` линии (по умолчанию `Extended`), в релиз не попадает — так наши моды не уезжают
+в сборку под OXCE Меридиана. Файлы `hd_18+`, побайтно равные своим близнецам в `hd/`, в релиз не
+идут (`--keep-hd18-copies` оставляет): игра сама берёт `hd/`, когда в `hd_18+/` файла нет.
+Валидатор требует уникальных id, известных видов, существующих `requires` и компонента у каждого
+файла. Версию движка задаёт `--component engine=<версия>`, версии модов — их `metadata.yml`.
+
+**Каталог** (`xp-release catalog --in <json>`): список линий (`oxce`, `oxce-hd`) с их каналами и
+комплектов — наборов компонентов для карточек первой установки. Перед подписью сборщик проверяет,
+что каждый компонент комплекта есть в релизе, на который смотрит каждый опубликованный канал
+линии, и что релиз собран для этой линии. `sequence` растёт, как у указателя канала.
 
 **Подпись** — отдельный JSON рядом с файлом: `{"algorithm":"ed25519","keyId":"739d80ec62db6e46",
 "signature":"<base64>"}`, подписаны точные байты файла. `keyId` — первые 8 байт SHA-256 открытого
