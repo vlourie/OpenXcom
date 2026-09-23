@@ -41,6 +41,8 @@ namespace Feedback
 	std::string reportsFolder();
 	/// Is there a launcher to open forms and ask the portal? (Windows only.)
 	bool hasLauncher();
+	/// Opens the launcher's own window (updates, reports, support) beside the running game.
+	bool openLauncher();
 	/// Opens the launcher's form for a report already on disk (a draft or a queued one).
 	bool openForm(Game *game, const std::string &dir);
 	/// Starts "launcher --refresh" in the background: ticket statuses go into each report.json.
