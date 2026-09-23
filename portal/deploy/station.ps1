@@ -165,7 +165,14 @@ function Set-DotEnv([string] $key, [string] $value) {
 # Каталог сайта и вики: контейнер видит их как /seed и /wiki (монтирует compose.yaml), потому что
 # в образе папки deploy нет вовсе. Применять можно сколько угодно раз: разделы сверяются по адресу,
 # собранная вики переписывается целиком, написанное человеком не трогается
-function Update-Content {
+function Update-Content([switch] $Build) {
+    # Отдельной командой - сначала пересборка: скрипты приехали из нового архива, а образ на машине
+    # может быть собран из старых исходников, где 'seed' ещё не команда. Тогда контейнер молча
+    # поднимет веб-сервер вместо загрузки и будет висеть. С кэшем пересборка - несколько секунд
+    if ($Build) {
+        Say 'сверяю образ с исходниками'
+        Invoke-Compose build migrate
+    }
     if (Test-Path 'seed/community.json') {
         Say 'разделы модов и доски форума'
         Invoke-Compose run --rm migrate seed --file /seed/community.json
@@ -226,7 +233,7 @@ switch ($Command) {
     }
     'content' {
         Assert-Docker
-        Update-Content
+        Update-Content -Build
     }
     'logs' {
         # в режиме internet видно и выдачу сертификата (caddy), и обновление адреса (ddns)
