@@ -21,7 +21,10 @@ Two modes:
     tools\\hdart\\.venv\\Scripts\\python.exe tools\\hdart\\photo_ui.py --dir <mod>\\Resources\\Pedia --mod user\\mods\\hd --refs AAP_002
     tools\\hdart\\.venv\\Scripts\\python.exe tools\\hdart\\photo_ui.py --dir <mod>\\Resources\\Pedia --mod user\\mods\\hd --preset cinema
 
---fast: the Lightning LoRA, 4 steps without CFG (~15 s a picture) instead of 40 steps with CFG 4
+--fast: the Lightning LoRA, 4 steps without CFG (~15 s a picture) instead of 40 steps with CFG 4.
+  Drawn, outlined art (the intro cutscene) needs the slow path AND a preset whose lora > 0 (film, studio,
+  retro): the Anime-to-Photoreal LoRA is what turns a drawing into a photograph. Without it the model only
+  tidies the illustration.
 (~3-4 min a picture, better). Presets `studio` and `retro` also use the Anime-to-Photoreal LoRA.
 --dry-run needs no model: it only writes <name>_layout.png showing what is kept flat and what is painted.
 One-time setup: tools\\hdart\\setup_photo.ps1 (pip + ~58 GB of models into E:\\models).
@@ -43,12 +46,18 @@ LIGHTNING = ("lightx2v/Qwen-Image-Edit-2511-Lightning", ("4steps", "bf16"))
 PHOTOREAL = ("Hyperccino/Qwen-Edit-2511-Anime-to-Photoreal-v1.1", ())
 
 # What every preset asks for first: the same picture, only real.
+KEEP_DRESSED = ("Clothing stays exactly as drawn, no more and no less: do not add clothes, armour, fabric or "
+                "any covering that is not in the drawing - bare skin in the drawing stays bare skin, and what "
+                "is covered stays covered the same way. ")
+KEEP_NUDE = ("The woman is completely nude: every piece of clothing in the drawing is gone and there is bare "
+             "skin in its place - bare breasts, bare hips, bare legs. Nothing else changes: the same face and "
+             "the same expression, the same hair, the same pose and the same background. ")
+KEEP_CLOTHES = KEEP_DRESSED
+
 KEEP = ("Turn this drawn illustration into a real photograph of exactly the same scene. Keep everything that is "
         "in the picture - every person, creature, object, weapon, vehicle, building, landscape and any text or "
         "lettering - with the same composition, framing, camera angle, poses, proportions, colours and background; "
-        "do not add, remove, move, resize or crop anything. Clothing stays exactly as drawn, no more and no less: "
-        "do not add clothes, armour, fabric or any covering that is not in the drawing - bare skin in the drawing "
-        "stays bare skin, and what is covered stays covered the same way. Render each material as it is drawn, "
+        "do not add, remove, move, resize or crop anything. " + KEEP_CLOTHES + "Render each material as it is drawn, "
         "only real: skin with pores, hair, cloth, leather, metal, stone, glass, foliage, with realistic lighting, "
         "shadows and reflections. The background stays exactly what it is, with the same colour and brightness: "
         "a plain or empty background remains plain and empty (light stays light), a dark background stays dark, "
@@ -56,6 +65,15 @@ KEEP = ("Turn this drawn illustration into a real photograph of exactly the same
         "No outlines, no cel shading, no flat colours, no drawing look.")
 
 PRESETS = {
+    "same": dict(lora=0.0, keep=None, neg=None, style=(
+        "The result is the very same airbrush illustration as the input, only with the change asked for: "
+        "same painted surface, same soft airbrush gradients, same line work, same colours, same light.")),
+    "film": dict(lora=1.0, style=(
+        "The result is a frame from a live-action feature film, photographed on set with a real camera and "
+        "an anamorphic lens: real human actors, real skin with pores, fine hair and uneven tone, real cloth, "
+        "leather, metal, sand and dust, practical lighting with soft falloff and real shadows, shallow depth "
+        "of field, faint lens imperfection and fine film grain. Nothing is painted: no brush strokes, no "
+        "airbrush, no smooth plastic skin, no ink outlines, no flat saturated colour fields.")),
     "cinema": dict(lora=0.0, style=(
         "The result is a cinematic film still from a live-action movie: 35 mm lens, dramatic natural light, "
         "shallow depth of field, rich colour grading, subtle film grain.")),
@@ -76,6 +94,15 @@ NEGATIVE = ("anime, manga, cartoon, comic, illustration, drawing, painting, sket
             "outlines, lowres, blurry, deformed, extra limbs, extra fingers, text, watermark, logo")
 
 # The Lightning LoRA wants this flow schedule (from lightx2v's README).
+KEEP_SAME = ("Redraw this illustration keeping its own style exactly: the same airbrush painting, the "
+             "same brush work and shading, the same outlines and the same palette - it stays a painted "
+             "illustration and does not become a photograph. Keep everything that is in the picture - "
+             "every person, creature, object, vehicle, building and landscape - with the same composition, "
+             "framing, camera angle, poses, proportions, colours and background; do not add, remove, move, "
+             "resize or crop anything. " + KEEP_CLOTHES)
+NEG_SAME = ("photograph, photorealistic, 3d render, cgi, skin pores, film grain, depth of field, "
+            "lowres, blurry, deformed, extra limbs, extra fingers, text, watermark, logo")
+
 LIGHTNING_SCHEDULER = {
     "base_image_seq_len": 256, "base_shift": math.log(3), "invert_sigmas": False, "max_image_seq_len": 8192,
     "max_shift": math.log(3), "num_train_timesteps": 1000, "shift": 1.0, "shift_terminal": None,
@@ -765,8 +792,13 @@ class Painter:
 
     def paint(self, rgb, preset, seed, steps, cfg, mp, hint="", neg=""):
         p = PRESETS[preset]
-        prompt = KEEP + " " + p["style"] + ((" " + hint.strip()) if hint and hint.strip() else "")
-        negative = NEGATIVE + ((", " + neg.strip()) if neg and neg.strip() else "")
+        # пресет может принести свой KEEP и свой негатив: тогда общий негатив и --neg не в счёт
+        keep = p.get("keep") or KEEP
+        if p.get("neg"):
+            negative = p["neg"]
+        else:
+            negative = NEGATIVE + ((", " + neg.strip()) if neg and neg.strip() else "")
+        prompt = keep + " " + p["style"] + ((" " + hint.strip()) if hint and hint.strip() else "")
         h, w = rgb.shape[:2]
         W, H = target_size(w, h, mp)
         src = Image.fromarray(rgb).resize((W, H), Image.LANCZOS)
@@ -783,7 +815,7 @@ def main():
     ap.add_argument("--mod", default="user\\mods\\hd", help="mod with hd\\UI (the 4x inputs); outputs go next to it")
     ap.add_argument("--hd", default="", help="folder of the 4x inputs (default <mod>\\hd\\UI)")
     ap.add_argument("--out", default="", help="batch output folder (default <mod>\\hd\\UI_photo, or <dir>_photo when --dir holds the 4x pictures)")
-    ap.add_argument("--refs-dir", default="photo_refs", help="where --refs writes")
+    ap.add_argument("--refs-dir", default="art/_refs/photo_refs", help="where --refs writes")
     ap.add_argument("--refs", default="", help="name of one picture: every preset + a contact sheet")
     ap.add_argument("--preset", default="", help="batch mode with this preset: " + ", ".join(PRESETS))
     ap.add_argument("--presets", default=",".join(PRESETS), help="presets for --refs (comma-separated)")
@@ -802,6 +834,7 @@ def main():
     ap.add_argument("--names", default="", help="only these files (comma-separated, with or without extension), or @file.txt with one name per line")
     ap.add_argument("--limit", type=int, default=0, help="stop after this many pictures")
     ap.add_argument("--force", action="store_true", help="remake pictures that exist")
+    ap.add_argument("--undress", action="store_true", help="the person is rendered nude: the clothing of the drawing is dropped instead of kept (drawn adult figures only)")
     ap.add_argument("--no-lora", action="store_true", help="do not load the Anime-to-Photoreal LoRA (presets use it at 0)")
     ap.add_argument("--quant", default="fp8", choices=["fp8", "none", "gguf"], help="how the 20B transformer fits: fp8 storage (default), none (40 GB VRAM), gguf")
     ap.add_argument("--offload", default="swap", choices=["swap", "none", "all"], help="swap (default): transformer resident, text encoder swapped in per picture; none: all resident (tight in 32 GB); all: diffusers offloading of every part (slow)")
@@ -824,13 +857,21 @@ def main():
     for p in presets:
         if p not in PRESETS:
             ap.error("unknown preset " + p)
+    PRESETS["same"]["keep"] = KEEP_SAME
+    PRESETS["same"]["neg"] = NEG_SAME
+    if args.undress:
+        global KEEP, KEEP_CLOTHES
+        KEEP_CLOTHES = KEEP_NUDE
+        KEEP = KEEP.replace(KEEP_DRESSED, KEEP_NUDE)
+        PRESETS["same"]["keep"] = KEEP_SAME.replace(KEEP_DRESSED, KEEP_NUDE)
+        print("undress: clothing of the drawing is dropped")
     steps = args.steps or (4 if args.fast else 40)
     cfg = args.cfg or (1.0 if args.fast else 4.0)
 
     dirs = [d for d in args.dir.split(",") if d.strip()]
     files = []
     for d in dirs:
-        files += sorted(f for f in glob.glob(os.path.join(d.strip(), "*")) if f.lower().endswith((".png", ".gif")))
+        files += sorted(f for f in glob.glob(os.path.join(d.strip(), "*")) if f.lower().endswith((".png", ".gif", ".jpg", ".jpeg")))
     excl = tuple(e.strip().lower() for e in args.exclude.split(",") if e.strip())
     if excl:
         files = [f for f in files if not os.path.basename(f).lower().startswith(excl)]

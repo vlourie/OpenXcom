@@ -110,7 +110,7 @@ if ($dataNorm -notmatch '^bin\\(UFO|TFTD)$') {
     if (-not $PSBoundParameters.ContainsKey('Sheets')) { $bad += ('-Sheets (по умолчанию ' + $Sheets + ', общая с ванилью: наборы с одинаковыми именами затрут друг друга)') }
     if ($bad.Count -gt 0) {
         throw ('-Data указывает на мод (' + $Data + '), значит надо задать и ' + ($bad -join ' и ') +
-               '. Для X-Piratez: -Mod "Пиратки\Dioxine_XPiratez\user\mods\hd" -Sheets hdart_sheets_pz')
+               '. Для X-Piratez: -Mod "Пиратки\Dioxine_XPiratez\user\mods\hd" -Sheets art/TERRAIN')
     }
 }
 

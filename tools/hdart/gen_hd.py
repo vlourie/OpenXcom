@@ -78,6 +78,91 @@ STYLE = ("isometric game tile of {subject}, pre-rendered 3D game asset, realisti
 STYLE_GROUND = ("seamless isometric terrain texture of {subject}, top-down view, pre-rendered 3D game asset, "
                 "realistic matte materials, detailed natural textures, soft light from the upper left, "
                 "muted earthy colors, sharp focus, highly detailed, Xenonauts style")
+# Промпт ПОЛЯ (--ground-field). Отдельный от обычного не для красоты: слова «seamless texture»
+# для SDXL - подпись тысяч обоев и тайлов, и на большом холсте модель рисует именно узор (круги,
+# розетки, повторяющиеся лепестки), а не землю. На холсте в одну клетку это держал ControlNet,
+# на поле из 9-25 клеток узор побеждает. Поэтому здесь: снимок настоящей земли сверху, без слов
+# «texture», «isometric», «3D asset» (грабли R-037).
+STYLE_FIELD = ("{subject}, seen straight from above, flat even daylight, matte surface, "
+               "fine grain, muted natural colors")
+# то, чем узор и лезет: к общему негативу добавляется только в режиме поля
+NEGATIVE_FIELD = ("seamless texture, repeating pattern, ornament, wallpaper, kaleidoscope, symmetrical, "
+                  "mosaic, rosette, 3d render, cgi, plasticine, clay, toy, plastic, glossy, shiny, "
+                  "specular highlights, wet look, blurry")
+
+# Qwen-Image-Edit (--painter qwen): он не пересочиняет картинку, а правит её по указанию, поэтому
+# и говорим с ним указанием, а не списком тегов. Композицию он держит сам - ControlNet не нужен.
+QWEN_KEEP = ("Enhance this 2D game terrain tile into detailed HD hand-painted game art. "
+             "Preserve the exact camera angle, object positions, silhouettes, tile boundaries, "
+             "walkable areas and transparent background. Do not add new objects. Do not move or "
+             "resize existing elements. Keep the original color identity and lighting direction.")
+QWEN_STYLE = ("Clean detailed textures, sharp readable shapes, consistent X-COM game asset style. "
+              "What is drawn here: {subject}.")
+# с эталоном (--qwen21-ref): модель получает две картинки, и надо сказать, что делать с каждой.
+# Эталон идёт первым, кадр - последним, и в тексте они названы по номерам.
+QWEN_REF_KEEP = ("Picture {last} is a game terrain tile. Picture 1 shows the reference material: "
+                 "its colors, grain, level of detail and painting style are the target. "
+                 "Repaint picture {last} in the material and style of picture 1, and change nothing else. "
+                 "Preserve the exact camera angle, object positions and sizes, silhouettes, tile boundaries, "
+                 "walkable areas and transparent background. Do not add new objects. Do not move or "
+                 "resize existing elements. Keep the lighting direction.")
+# Строгая реставрация (--qwen21-prompt strict, по умолчанию): не «улучши», а «тот же самый тайл
+# вчетверо крупнее». Текст Виталия, дословно - менять его формулировки нельзя, они и есть договор
+# с моделью о том, чего трогать не надо.
+QWEN21_STRICT = (
+    "Perform a strict 4x restoration and detail enhancement of the provided original X-COM game "
+    "terrain tile. "
+    "Treat the source image as a locked blueprint. Preserve every object, shape, position, "
+    "proportion, boundary, surface type and visual feature exactly where it is. Do not reinterpret "
+    "or redesign anything. Do not add, remove, replace, enlarge, shrink, rotate or move any element. "
+    "Do not shift the image left, right, up or down. Preserve the exact camera angle, perspective, "
+    "framing, aspect ratio and tile geometry. "
+    "Preserve the original art style and the original color palette exactly. Do not change hue, "
+    "saturation, brightness, contrast, lighting direction or material identity. Only add clean "
+    "high-resolution detail that naturally belongs inside the existing shapes and surfaces. "
+    "This is one repeatable terrain tile shown with neighboring repetitions for context. It must "
+    "connect seamlessly with identical copies on every side. Preserve exact edge alignment and edge "
+    "colors. The left edge must continue perfectly into the right edge, and the top edge must "
+    "continue perfectly into the bottom edge. Do not create borders, seams, outlines, gaps, shadows, "
+    "highlights, gradients or distinctive features along the tile boundaries. The completed terrain "
+    "must look continuous, uniform and homogeneous when repeated in every direction. "
+    "The result must be the same original X-COM tile at four times the resolution - not a new "
+    "interpretation of it.")
+
+QWEN21_STRICT_NEGATIVE = (
+    "redesigned scene, changed composition, changed geometry, changed perspective, changed camera "
+    "angle, shifted image, displaced objects, moved objects, resized objects, rotated objects, "
+    "added objects, removed objects, missing details, invented details, cropped content, expanded "
+    "canvas, padding, border, frame, visible tile edges, seams, gaps, grid lines, edge shadows, "
+    "edge highlights, mismatched edges, non-tileable texture, repeating ornament, obvious repeating "
+    "pattern, changed colors, recoloring, color grading, changed brightness, changed contrast, "
+    "changed saturation, changed lighting, new shadows, new highlights, different materials, "
+    "different art style, photorealism, 3D render, cartoon, anime, vector art, painterly "
+    "reinterpretation, blur, soft focus, distortion, warped shapes, text, symbols, watermark")
+
+# что нарисовано в кадре: 5078 подсказок писались руками, и модели полезно знать, что она
+# реставрирует. Отдельным хвостом, чтобы строгий текст выше остался нетронутым.
+QWEN21_WHAT = " What is drawn here: {subject}."
+
+# с эталоном: сначала надо сказать, какая картинка чем является
+# Qwen требует ссылаться на картинки тегами <image1>, <image2> - «Picture 1» и «the first image»
+# её системный промпт называет запрещёнными формами (R-045)
+QWEN21_REF_HEAD = ("<image1> is a reference sample of the terrain material. <image{last}> is the tile "
+                   "to redraw. Redraw <image{last}> with the material of <image1>. ")
+# то же самое, но тайл идёт первым: 2.1 держится за первую картинку сильнее, чем за текст, и с
+# эталоном впереди перерисовывала эталон, а тайл выбрасывала вместе с тем, что на нём (R-044)
+QWEN21_REF_HEAD_LAST = ("<image1> is the tile to redraw, with everything on it. <image{last}> is a "
+                        "reference sample of the terrain material only. Redraw <image1> with the "
+                        "material of <image{last}>. ")
+
+QWEN_NEGATIVE = ("changed geometry, moved objects, new objects, altered perspective, cropped elements, "
+                 "blurred edges, shadows outside the original silhouette, background, border, text, "
+                 "interface, photorealistic scene")
+
+NEGATIVE = ("3d render, cgi, plastic, plasticine, clay, toy, glossy, shiny, specular highlights, "
+                 "wet look, studio lighting, drop shadow, vignette, depth of field, blurry, text, "
+                 "watermark, extra objects, pattern, ornament, tiles")
+
 NEGATIVE = ("cartoon, black outlines, vector art, cel shading, glossy, cute, anime, pixel art, pixelated, "
             "blurry, soft, jpeg artifacts, text, watermark, frame, border, oversaturated, deformed, "
             # тайл - кусок земли, а не снимок товара: иначе подставка под кактусом
@@ -214,6 +299,28 @@ def ground_kind(text):
     return None
 
 
+def ground_kind_tail(subject):
+    """Вид грунта из ХВОСТА темы набора (после двоеточия).
+
+    У многих тем в голове стоит место, а не грунт: «seabed: pale sand, ...», «red cave: crimson
+    rock, ...», «tropical beach and savanna: pale sand, ...». Голова вида не даёт, и пол остаётся
+    без вариантов, хотя грунт назван прямо в хвосте. Здесь берётся ПЕРВОЕ слово вида из хвоста
+    (перечисление идёт от главного к мелочам), а сделанная земля где угодно в хвосте (бетон,
+    палуба, доски, плитка) отменяет весь хвост - такие полы выложены осознанно.
+    """
+    import re
+    if not subject or ":" not in subject:
+        return None
+    words = re.findall(r"[a-z]+", subject.split(":", 1)[1].lower())
+    if any(w in MADE_GROUND for w in words):
+        return None
+    for word in words:
+        for kind, kind_words in KIND_WORDS.items():
+            if word in kind_words:
+                return kind
+    return None
+
+
 def variant_looks(kind, count):
     """The looks of variants 1..count of a ground kind: [(words, (brightness, saturation, warmth))]."""
     low, high = GROUND_LOOKS[kind]
@@ -302,6 +409,36 @@ def side_by_side(images, gap=8):
         out.paste(im.convert("RGB"), (x, 0))
         x += im.width + gap
     return out
+
+
+def save_png(im, path):
+    """Сохранить картинку, не уронив прогон. На Windows файл, открытый в просмотрщике, отдаёт
+    Errno 13 или 22 - и час работы GPU улетал из-за одной картинки (грабли R-042). Пишем во
+    временный файл рядом и подменяем; если и это не вышло - говорим и идём дальше."""
+    tmp = path + ".part"
+    try:
+        im.save(tmp, "PNG")
+        if os.path.exists(path):
+            os.remove(path)
+        os.replace(tmp, path)
+        return True
+    except OSError as e:
+        for junk in (tmp,):
+            try:
+                if os.path.exists(junk):
+                    os.remove(junk)
+            except OSError:
+                pass
+        spare = "%s.new%s" % os.path.splitext(path)
+        try:
+            im.save(spare, "PNG")
+            print("  не записать %s (%s) - положил рядом как %s"
+                  % (os.path.basename(path), e.strerror or e, os.path.basename(spare)), file=sys.stderr)
+            return True
+        except OSError as e2:
+            print("  не записать %s: %s - картинка потеряна"
+                  % (os.path.basename(path), e2.strerror or e2), file=sys.stderr)
+            return False
 
 
 MODELS = {
@@ -562,7 +699,8 @@ class Job:
         self.hints = hints_for(info["set"])
         hints_file = os.path.join(set_dir, "hints.json")
         if os.path.exists(hints_file):
-            with open(hints_file) as f:
+            # utf-8-sig: файл мог прийти со спецификацией из редактора или из hints_apply.py
+            with open(hints_file, encoding="utf-8-sig") as f:
                 self.hints.update({int(k): v for k, v in json.load(f).items()})
         if getattr(args, "no_hints", False):
             self.hints = {}
@@ -679,6 +817,8 @@ class Job:
         if custom:
             return "custom", (custom + custom[-1:] * count)[:count]
         kind = ground_kind(self.hints.get(i, "")) or (ground_kind(subject.split(":")[0]) if ":" in subject else None)
+        if kind is None and getattr(self.args, "tail_kind", "on") == "on":
+            kind = ground_kind_tail(subject)
         if kind is None:
             return None, []
         return kind, variant_looks(kind, count)
@@ -718,15 +858,21 @@ class Painter:
         # деревья - и модель рисует зелень на ровном полу (RAKES.md, R-016)
         self.context = context
 
-    def prompt_for(self, job, frame, look=""):
+    def prompt_for(self, job, frame, look="", style=None):
         hint = job.hints.get(frame, "")
         kind0 = "ground" if job.ground[frame] and not job.tall.get(frame) else "object"
         ctx = self.context[kind0]
         subject = ("%s, %s" % (hint, ctx[0])) if hint else ctx[1]
+        if style and hint:
+            # у поля промпт длиннее, а CLIP читает только 77 токенов: с темой набора хвост стиля
+            # обрезается (в логе «Token indices sequence length is longer»). Подсказка кадра
+            # конкретнее темы, поэтому в режиме поля тема опускается (грабли R-038).
+            subject = hint
         if look:
             subject = "%s, %s" % (look, subject)
-        # flat ground gets the terrain (top-down) prompt; standing crops are a field of objects
-        return self.prompts[kind0].replace("{subject}", subject)
+        # flat ground gets the terrain (top-down) prompt; standing crops are a field of objects;
+        # `style` подменяет его целиком - так режим поля просит снимок земли, а не текстуру
+        return (style or self.prompts[kind0]).replace("{subject}", subject)
 
     def run(self, args, prompt, init, controls, weights, strength, steps, seed):
         w, h = init.size
@@ -778,6 +924,202 @@ class Painter:
         return out
 
 
+class QwenPainter:
+    """Qwen-Image-Edit вместо SDXL. Интерфейс тот же, что у Painter: prompt_for + run, поэтому
+    paint_ground_field не знает, кто именно рисует. Второй проход (refine) ему не нужен - он и так
+    правит, а не сочиняет."""
+
+    def __init__(self, args, context):
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        import photo_ui
+        self.photo_ui = photo_ui
+        self.context = context
+        self.negative = QWEN_NEGATIVE
+        fast = args.qwen_steps <= 8
+        print("Qwen-Image-Edit: шагов %d, cfg %.1f, %s" % (args.qwen_steps, args.qwen_cfg,
+                                                           "быстрый режим" if fast else "полный"))
+        self.painter = photo_ui.Painter(args.models, fast, args.qwen_steps, quant=args.qwen_quant,
+                                        photoreal=False, offload=args.qwen_offload)
+
+    def prompt_for(self, job, frame, look="", style=None):
+        hint = job.hints.get(frame, "")
+        head, full = self.context["ground"]
+        subject = ("%s, %s" % (hint, head)) if hint else full
+        if look:
+            subject = "%s, %s" % (look, subject)
+        return "%s %s" % (QWEN_KEEP, QWEN_STYLE.replace("{subject}", subject))
+
+    def run(self, args, prompt, init, controls, weights, strength, steps, seed):
+        w, h = init.size
+        W, H = self.photo_ui.target_size(w, h, args.qwen_mp)
+        src = init.convert("RGB").resize((W, H), Image.LANCZOS)
+        rgb = self.painter.edit([src], prompt, self.negative, seed, args.qwen_steps, args.qwen_cfg, W, H)
+        out = Image.fromarray(rgb)
+        if out.size != (w, h):
+            out = out.resize((w, h), Image.LANCZOS)
+        mix = getattr(args, "qwen_mix", 1.0)
+        if mix < 1.0:
+            # сила правки: столько нарисованного, остальное - исходный увеличенный кадр
+            out = Image.blend(init.convert("RGB"), out, max(0.0, min(1.0, mix)))
+        return out
+
+
+QWEN21_REPO = "Qwen/Qwen-Image-2.1"
+
+
+class Qwen21Painter:
+    r"""Qwen-Image-2.1 (--painter qwen21): один поток DiT на 7 млрд, умеет и рисовать с нуля, и
+    править поданную картинку, держит 2K без нарезки и отдаёт RGBA. Интерфейс тот же, что у
+    Painter и QwenPainter (prompt_for + run), так что paint_ground_field не знает, кто рисует.
+
+    Живёт в своём окружении tools\hdart\.venv-qwen21 (ему нужны свежие diffusers и
+    transformers >= 5.17, а старое .venv со всем остальным ломать нельзя):
+        tools\hdart\.venv-qwen21\Scripts\python.exe tools\hdart\gen_hd.py ... --painter qwen21
+
+    Имя класса конвейера и набор его параметров ещё меняются от сборки к сборке diffusers,
+    поэтому и то и другое ищется на месте: берётся первый из известных классов, а в вызов
+    попадают только те ключи, которые он правда принимает."""
+
+    NAMES = ("QwenImage21Pipeline", "QwenImage21EditPipeline", "QwenImageEdit21Pipeline",
+             "QwenImage2_1Pipeline")
+
+    def __init__(self, args, context):
+        import inspect
+        import torch
+        import diffusers
+        self.torch = torch
+        self.context = context
+        self.strict = getattr(args, "qwen21_prompt", "strict") == "strict"
+        self.negative = QWEN21_STRICT_NEGATIVE if self.strict else QWEN_NEGATIVE
+        self.want_hint = getattr(args, "qwen21_hint", "on") == "on"
+        self.ref_last = getattr(args, "qwen21_ref_order", "ref-first") == "ref-last"
+        cls = None
+        for name in self.NAMES:
+            cls = getattr(diffusers, name, None)
+            if cls is not None:
+                break
+        if cls is None:
+            raise SystemExit(
+                "в diffusers %s нет конвейера Qwen-Image-2.1 (искал %s).\n"
+                "Поставь свежий: tools\\hdart\\.venv-qwen21\\Scripts\\python.exe -m pip install "
+                "--upgrade git+https://github.com/huggingface/diffusers"
+                % (diffusers.__version__, ", ".join(self.NAMES)))
+        repo = args.qwen21_model or QWEN21_REPO
+        size = "размер как есть" if args.qwen21_mp <= 0 else "%.1f Мпикс" % args.qwen21_mp
+        print("Qwen-Image-2.1: %s (%s), шагов %d, cfg %.1f, %s"
+              % (repo, cls.__name__, args.qwen21_steps, args.qwen21_cfg, size))
+        pipe = cls.from_pretrained(repo, torch_dtype=torch.bfloat16)
+        if args.qwen21_offload == "none":
+            pipe.to("cuda")
+        elif args.qwen21_offload == "seq":
+            pipe.enable_sequential_cpu_offload()
+        else:
+            # по умолчанию: слои уезжают в обычную память между шагами - на 32 ГБ 5090 хватает с запасом
+            pipe.enable_model_cpu_offload()
+        for opt in ("enable_attention_slicing", "enable_vae_tiling"):
+            fn = getattr(pipe, opt, None)
+            if args.qwen21_thrifty and fn is not None:
+                fn()
+        self.pipe = pipe
+        self.accepts = set(inspect.signature(pipe.__call__).parameters)
+        # эталоны: картинки, по которым модель понимает, КАКОЙ должна быть земля. Кадр она и так
+        # видит, но по одной клетке 32x40 «наш песок» не вычитать - поэтому рядом кладётся
+        # утверждённый образец материала (make_ref.py), и промпт ссылается на него по номеру.
+        self.refs = []
+        for path in [p.strip() for p in (args.qwen21_ref or "").split(",") if p.strip()]:
+            if not os.path.exists(path):
+                raise SystemExit("эталон не найден: %s" % path)
+            ref = Image.open(path).convert("RGB")
+            rw, rh = qwen21_size(ref.width, ref.height, args.qwen21_ref_mp)
+            self.refs.append(ref.resize((rw, rh), Image.LANCZOS))
+            print("   эталон: %s (%dx%d -> %dx%d)" % (path, ref.width, ref.height, rw, rh))
+        print("   конвейер принимает:", ", ".join(sorted(
+            k for k in ("image", "images", "negative_prompt", "true_cfg_scale", "guidance_scale",
+                        "strength", "width", "height", "num_inference_steps", "output_type",
+                        "output_resolution", "use_kv_cache")
+            if k in self.accepts)) or "(ничего из ожидаемого - проверь версию diffusers)")
+
+    # тот же промпт, что у Qwen-Image-Edit: 77 токенов CLIP здесь не мешают (текст читает Qwen3),
+    # поэтому к подсказке кадра остаётся и тема набора
+    def prompt_for(self, job, frame, look="", style=None):
+        hint = job.hints.get(frame, "")
+        head, full = self.context["ground"]
+        subject = ("%s, %s" % (hint, head)) if hint else full
+        if look:
+            subject = "%s, %s" % (look, subject)
+        if self.strict:
+            text = QWEN21_STRICT
+            if self.want_hint:
+                text += QWEN21_WHAT.replace("{subject}", subject)
+        else:
+            keep = QWEN_KEEP if not self.refs else \
+                QWEN_REF_KEEP.replace("{last}", str(len(self.refs) + 1))
+            text = "%s %s" % (keep, QWEN_STYLE.replace("{subject}", subject))
+        if self.refs:
+            head = QWEN21_REF_HEAD_LAST if self.ref_last else QWEN21_REF_HEAD
+            text = head.replace("{last}", str(len(self.refs) + 1)) + text
+        return text
+
+    def run(self, args, prompt, init, controls, weights, strength, steps, seed):
+        w, h = init.size
+        W, H = qwen21_size(w, h, args.qwen21_mp)
+        src = init.convert("RGB").resize((W, H), Image.LANCZOS)
+        # порядок важнее текста: см. --qwen21-ref-order
+        shown = ([src] + self.refs) if self.ref_last else (self.refs + [src])
+        kw = {"prompt": prompt,
+              "num_inference_steps": args.qwen21_steps,
+              "generator": self.torch.Generator("cuda").manual_seed(seed)}
+        if "image" in self.accepts:
+            kw["image"] = shown if self.refs else src
+        elif "images" in self.accepts:
+            kw["images"] = shown
+        else:
+            raise SystemExit("конвейер Qwen-Image-2.1 не принимает входную картинку - "
+                             "он рисовал бы пол с нуля, а нам надо править")
+        if "negative_prompt" in self.accepts and args.qwen21_cfg > 1:
+            kw["negative_prompt"] = self.negative
+        if "true_cfg_scale" in self.accepts:
+            kw["true_cfg_scale"] = args.qwen21_cfg
+        elif "guidance_scale" in self.accepts:
+            kw["guidance_scale"] = args.qwen21_cfg
+        if "strength" in self.accepts and args.qwen21_strength > 0:
+            kw["strength"] = args.qwen21_strength
+        if "width" in self.accepts:
+            kw["width"], kw["height"] = W, H
+        if "output_resolution" in self.accepts:
+            kw["output_resolution"] = args.qwen21_res
+        out = self.pipe(**kw).images[0]
+        if out.mode == "RGBA":
+            # 2.1 умеет отдавать прозрачность, но прозрачность кадра мы и так возвращаем из
+            # оригинала после покраски - здесь нужен только цвет
+            flat = Image.new("RGB", out.size, (128, 128, 128))
+            flat.paste(out, (0, 0), out)
+            out = flat
+        else:
+            out = out.convert("RGB")
+        if out.size != (w, h):
+            out = out.resize((w, h), Image.LANCZOS)
+        mix = getattr(args, "qwen_mix", 1.0)
+        if mix < 1.0:
+            out = Image.blend(init.convert("RGB"), out, max(0.0, min(1.0, mix)))
+        return out
+
+
+def qwen21_size(w, h, mp, mult=32):
+    """Размер под бюджет мегапикселей, с сохранением сторон и кратностью mult.
+    mp <= 0 - оставить как есть (только подогнать под кратность): для одной клетки, которую
+    незачем раздувать до 2K."""
+    import math
+    if mp <= 0:
+        return (max(mult, int(round(w / float(mult))) * mult),
+                max(mult, int(round(h / float(mult))) * mult))
+    k = math.sqrt(max(0.05, mp) * 1e6 / float(w * h))
+    W = max(mult, int(round(w * k / mult)) * mult)
+    H = max(mult, int(round(h * k / mult)) * mult)
+    return W, H
+
+
+
 def label(im, text):
     from PIL import ImageDraw
     out = im.convert("RGB").copy()
@@ -787,7 +1129,9 @@ def label(im, text):
     return out
 
 
-def main(argv=None):
+def build_parser():
+    """Разбор ключей отдельно от main: им пользуется и field_sweep.py, чтобы взять те же значения
+    по умолчанию, а не повторять их у себя."""
     ap = argparse.ArgumentParser()
     ap.add_argument("--models", default=DEFAULT_MODELS_DIR, help="folder the models are kept in (default E:\\models)")
     ap.add_argument("--download-only", action="store_true", help="fetch the models into --models and stop")
@@ -831,6 +1175,92 @@ def main(argv=None):
     ap.add_argument("--variant-looks", default="", help="the words of the variants for every floor, in order: "
                     "\"v1 words|v2 words\" (v1, v3 ... one way from the base painting, v2, v4 ... the other; "
                     "\"words@1.05,0.9,0.02\" also recolours: brightness, saturation, warmth); default: by the floor's kind")
+    ap.add_argument("--ground-field", type=int, default=0, dest="ground_field",
+                    help="рисовать ровные полы полем N x N клеток (3, 5, 7) и вырезать клетки обратно: "
+                         "художник видит, как клетки стыкуются. 1 - одна клетка, но тем же путём "
+                         "(поштучно, с проверкой сдвига и правкой нарезки). 0 - старая покраска кропами")
+    ap.add_argument("--field-scale", type=int, default=0, dest="field_scale",
+                    help="масштаб рисования поля; 0 - подобрать под --field-pixels")
+    ap.add_argument("--field-pixels", type=int, default=2200000, dest="field_pixels",
+                    help="бюджет пикселей на одно поле (по нему выбирается масштаб)")
+    ap.add_argument("--painter", choices=["sdxl", "qwen", "qwen21"], default="sdxl",
+                    help="кто рисует поле: sdxl (Juggernaut + ControlNet, сочиняет заново), "
+                         "qwen (Qwen-Image-Edit-2511, правит кадр по указанию и держит композицию сам) "
+                         "или qwen21 (Qwen-Image-2.1: 7 млрд, родные 2K и прозрачность, своё "
+                         "окружение .venv-qwen21). Оба qwen работают только с --ground-field и --only ground")
+    ap.add_argument("--qwen-steps", type=int, default=8, dest="qwen_steps",
+                    help="шагов у Qwen: 4-8 - быстрый режим с Lightning LoRA, 40 - полный")
+    ap.add_argument("--qwen-cfg", type=float, default=1.0, dest="qwen_cfg",
+                    help="true CFG у Qwen: 1.0 в быстром режиме, 4.0 в полном (тогда работает негатив)")
+    ap.add_argument("--qwen-mp", type=float, default=1.6, dest="qwen_mp",
+                    help="мегапикселей на поле у Qwen (1.6 - поле 3x3 почти в своём размере)")
+    ap.add_argument("--qwen-mix", type=float, default=1.0, dest="qwen_mix",
+                    help="сила правки: 1.0 - как нарисовал Qwen, 0.75 - три четверти нарисованного и "
+                         "четверть исходного увеличенного кадра, 0.5 - совсем осторожно")
+    ap.add_argument("--qwen-quant", default="fp8", choices=["fp8", "none", "gguf"], dest="qwen_quant")
+    ap.add_argument("--qwen21-model", default="", dest="qwen21_model",
+                    help="какой слепок Qwen-Image-2.1 брать (по умолчанию " + QWEN21_REPO + ")")
+    ap.add_argument("--qwen21-steps", type=int, default=40, dest="qwen21_steps",
+                    help="шагов у Qwen-Image-2.1 (40 - как советует карточка модели)")
+    ap.add_argument("--qwen21-cfg", type=float, default=1.0, dest="qwen21_cfg",
+                    help="true_cfg_scale. Qwen-Image-2.1 рассчитана рисовать БЕЗ направляющей: "
+                         "1.0 - как советует автор модели (и вдвое быстрее). Больше 1 включает "
+                         "направляющую и негатив, но уводит модель с её привычного режима")
+    ap.add_argument("--qwen21-res", type=int, default=2048, dest="qwen21_res",
+                    help="output_resolution конвейера: по нему он приводит и ВХОДНУЮ картинку, и выход. "
+                         "У diffusers по умолчанию 1024 - вдвое ниже, чем училась модель, и ровно на "
+                         "нём открыта ошибка #14824 (правка вырождается в гало). 2048 - родное")
+    ap.add_argument("--qwen21-mp", type=float, default=2.0, dest="qwen21_mp",
+                    help="мегапикселей на поле (2.0 - родные 2K, модель на них и училась; "
+                         "0 - подавать как есть, не раздувая - для --ground-field 1)")
+    ap.add_argument("--qwen21-strength", type=float, default=0.0, dest="qwen21_strength",
+                    help="сила правки, если конвейер её принимает: 0 - не передавать (он сам решит), "
+                         "0.3-0.5 - осторожная правка поверх оригинала")
+    ap.add_argument("--qwen21-offload", default="model", choices=["model", "seq", "none"], dest="qwen21_offload",
+                    help="model - слои гуляют между видеопамятью и обычной (по умолчанию), "
+                         "seq - совсем по кусочкам (медленно, для малой карты), none - всё в видеопамять")
+    ap.add_argument("--qwen21-prompt", choices=["strict", "paint"], default="strict", dest="qwen21_prompt",
+                    help="strict - строгая реставрация: тот же тайл вчетверо крупнее, ничего не "
+                         "двигать и не перекрашивать (по умолчанию); paint - прежний текст, "
+                         "«улучши до HD рисованной графики»")
+    ap.add_argument("--qwen21-hint", choices=["on", "off"], default="on", dest="qwen21_hint",
+                    help="дописывать ли к строгому тексту, ЧТО нарисовано в кадре (подсказка пола)")
+    ap.add_argument("--qwen21-ref", default="", dest="qwen21_ref",
+                    help="эталон материала: png (или несколько через запятую), который подаётся "
+                         "модели рядом с кадром - «крась как здесь». Делается make_ref.py; если "
+                         "не указан, берётся <sheets>\\<набор>\\ref.png, когда он есть")
+    ap.add_argument("--no-ref", action="store_true", dest="no_ref",
+                    help="не подхватывать ref.png из папки набора")
+    ap.add_argument("--qwen21-ref-order", choices=["ref-first", "ref-last"], default="ref-first",
+                    dest="qwen21_ref_order",
+                    help="что модель видит первым: ref-first - эталон, потом кадр (как было); "
+                         "ref-last - кадр, потом эталон. 2.1 держится за ПЕРВУЮ картинку сильнее, "
+                         "чем за текст, так что от этого зависит, что она перерисовывает")
+    ap.add_argument("--qwen21-ref-mp", type=float, default=1.0, dest="qwen21_ref_mp",
+                    help="мегапикселей на эталон (меньше - быстрее, 1.0 хватает на материал)")
+    ap.add_argument("--qwen21-thrifty", action="store_true", dest="qwen21_thrifty",
+                    help="включить нарезку внимания и VAE (меньше видеопамяти, медленнее)")
+    ap.add_argument("--qwen-offload", default="swap", choices=["swap", "none", "all"], dest="qwen_offload")
+    ap.add_argument("--field-prompt", choices=["on", "off"], default="on", dest="field_prompt",
+                    help="on: у поля свой промпт (снимок земли сверху) и свой негатив против узоров; "
+                         "off: тот же промпт, что у обычной клетки")
+    ap.add_argument("--field-blur", type=float, default=1.8, dest="field_blur",
+                    help="во сколько раз сильнее размывается управляющая картинка поля (1.0 - как у "
+                         "обычной клетки: художник строже держится оригинала)")
+    ap.add_argument("--no-shift-check", action="store_false", dest="shift_check", default=True,
+                    help="не проверять, что нарисованная клетка не сползла относительно оригинала")
+    ap.add_argument("--no-field-align", action="store_false", dest="field_align", default=True,
+                    help="не подправлять нарезку, если художник сдвинул поле целиком (по умолчанию "
+                         "сдвиг меряется и окно нарезки едет следом - клетка встаёт на своё место)")
+    ap.add_argument("--tries", type=int, default=1, dest="field_tries",
+                    help="нарисовать каждый пол столько раз с разными зёрнами и сложить попытки "
+                         "рядом в crops\\tries_<кадр>.png (в пак идёт первая). Чтобы посмотреть, "
+                         "что у модели устойчиво, а что случайность")
+    ap.add_argument("--field-keep", action="store_true", dest="field_keep",
+                    help="сохранять нарисованные поля целиком в crops\\field_<кадр>.png")
+    ap.add_argument("--tail-kind", choices=["on", "off"], default="on", dest="tail_kind",
+                    help="on: если в голове темы вида грунта нет, искать его в хвосте темы "
+                         "(«seabed: pale sand, ...» -> sand); off: как раньше, только голова")
     ap.add_argument("--variant-frames", default="", help="paint the variants of only these floors, e.g. 0,3 (floors "
                     "varied before with the same --variants keep theirs)")
     ap.add_argument("--seamless", type=int, default=1, help="1: blend the edges of ground tiles with the continued "
@@ -842,9 +1272,15 @@ def main(argv=None):
                                                "paints one frame with each and writes crops/sweep.png for comparing")
     ap.add_argument("--matrix", action="store_true", help="paints one frame with the built-in list of variations "
                                                           "(MATRIX in the script) into crops/matrix.png")
-    ap.add_argument("--frame", default="", help="the frame(s) --sweep / --matrix look at, e.g. 9 or 4,8,9 (default: the first)")
+    ap.add_argument("--frame", default="", help="красить только эти кадры, например 9 или 4,8,9 "
+                    "(и на них же смотрят --sweep / --matrix; по умолчанию - весь набор, а --sweep - первый кадр)")
     ap.add_argument("--dry-run", action="store_true", help="write the control images and stop (no model)")
     ap.add_argument("--out", default="")
+    return ap
+
+
+def main(argv=None):
+    ap = build_parser()
     args = ap.parse_args(argv)
     if args.download_only:
         download_models()
@@ -921,11 +1357,43 @@ def main(argv=None):
         if args.canny == 0.2: args.canny = 0.4
         if args.refine == 0.45: args.refine = 0.35
         print("unit set: strength %.2f, tile %.2f, canny %.2f, refine %.2f" % (args.strength, args.tile, args.canny, args.refine))
-    print("prompt (objects):", prompts["object"].replace("{subject}", subject))
-    print("prompt (ground): ", prompts["ground"].replace("{subject}", subject_ground))
+    field_mode = args.ground_field >= 1 and args.only != "objects"
+    if args.painter == "qwen21" and not args.qwen21_ref and not args.no_ref:
+        # утверждённый эталон набора подхватывается сам: положил ref.png рядом с original.png -
+        # и все полы набора красятся по нему, без лишнего ключа в каждой команде
+        auto = os.path.join(set_dir, "ref.png")
+        if os.path.exists(auto):
+            args.qwen21_ref = auto
+    # печатаем ровно то, что правда поедет в модель: у Qwen промпт свой (указание, а не набор
+    # тегов), у поля свой (снимок земли сверху), и показывать вместо них заготовку SDXL - враньё
+    if args.painter in ("qwen", "qwen21"):
+        head, full = context["ground"]
+        nref = len([p for p in (getattr(args, "qwen21_ref", "") or "").split(",") if p.strip()])
+        strict = args.painter == "qwen21" and args.qwen21_prompt == "strict"
+        if strict:
+            text = QWEN21_STRICT
+            if args.qwen21_hint == "on":
+                text += QWEN21_WHAT.replace("{subject}", "<подсказка кадра>, " + head)
+        else:
+            keep = QWEN_KEEP if not nref else QWEN_REF_KEEP.replace("{last}", str(nref + 1))
+            text = "%s %s" % (keep, QWEN_STYLE.replace("{subject}", "<подсказка кадра>, " + head))
+        if nref:
+            head = QWEN21_REF_HEAD_LAST if args.qwen21_ref_order == "ref-last" else QWEN21_REF_HEAD
+            text = head.replace("{last}", str(nref + 1)) + text
+        print("prompt (%s):" % args.painter, text)
+        print("negative (%s):" % args.painter,
+              QWEN21_STRICT_NEGATIVE if strict else QWEN_NEGATIVE)
+    else:
+        print("prompt (objects):", prompts["object"].replace("{subject}", subject))
+        ground_style = STYLE_FIELD if (field_mode and args.field_prompt == "on") else prompts["ground"]
+        print("prompt (ground): ", ground_style.replace(
+            "{subject}", "<подсказка кадра>" if field_mode else subject_ground))
+        if field_mode and args.field_prompt == "on":
+            print("negative (поле): ", args.negative + ", " + NEGATIVE_FIELD)
     print("%d frames in %d crops (%d ground, %d with hints)" % (
         len(job.cells), len(job.crops), sum(1 for i in job.cells if job.ground[i]), sum(1 for i in job.cells if i in job.hints)))
-    variants = plan_variants(args, job, set_dir, subject) if args.variants > 0 and args.only != "objects" else None
+    variants = None if field_mode else \
+        (plan_variants(args, job, set_dir, subject) if args.variants > 0 and args.only != "objects" else None)
     if args.dry_run:
         for key in ("init", "tile", "canny"):
             job.assemble(key).save(os.path.join(set_dir, "dry_%s_x%d.png" % (key, job.g)))
@@ -938,7 +1406,16 @@ def main(argv=None):
         print("dry run: wrote dry_*.png into", set_dir)
         return
 
-    painter = Painter(load_pipeline(args.base), prompts, args.negative, context)
+    if args.painter in ("qwen", "qwen21"):
+        if args.ground_field < 1:
+            raise SystemExit("--painter %s рисует полы поштучно или полем: добавь --ground-field 1 "
+                             "(одна клетка), 3 или 5" % args.painter)
+        if args.only != "ground":
+            raise SystemExit("--painter %s красит только полы: добавь --only ground "
+                             "(объекты остаются от прошлой покраски)" % args.painter)
+        painter = QwenPainter(args, context) if args.painter == "qwen" else Qwen21Painter(args, context)
+    else:
+        painter = Painter(load_pipeline(args.base), prompts, args.negative, context)
     steps = 20 if args.test else args.steps
     crop_dir = os.path.join(set_dir, "crops")
     os.makedirs(crop_dir, exist_ok=True)
@@ -999,6 +1476,19 @@ def main(argv=None):
         return
     crops = job.crops[:1] if args.test else job.crops
     painted = job.assemble("init")
+    if args.frame:
+        # ключ читали только --sweep и --matrix, а обычный прогон всё равно красил весь набор:
+        # попросишь один пол на пробу - ждёшь весь набор (грабли R-040)
+        want = {int(v) for v in args.frame.split(",") if v.strip()}
+        crops = [[i for i in c if i in want] for c in crops]
+        crops = [c for c in crops if c]
+        got = sorted({i for c in crops for i in c})
+        if not got:
+            raise SystemExit("--frame %s: таких кадров в наборе нет (есть %d..%d)"
+                             % (args.frame, min(job.cells), max(job.cells)))
+        missed = sorted(want - set(got))
+        print("красим только кадры: %s%s" % (" ".join(str(i) for i in got),
+              ", а %s в наборе нет" % " ".join(str(i) for i in missed) if missed else ""))
     if args.only != "all":
         crops = [c for c in crops if job.ground[c[0]] == (args.only == "ground")]
         previous = os.path.join(set_dir, "painted_x%d.png" % job.g)
@@ -1007,6 +1497,28 @@ def main(argv=None):
             if old_sheet.size == painted.size:
                 painted = old_sheet
                 print("repainting only %s (%d crops), the rest stays from %s" % (args.only, len(crops), previous))
+    field_frames = []
+    if field_mode:
+        field_frames = sorted({i for c in crops for i in c
+                               if job.ground[i] and not job.tall.get(i) and job.types[i] == xs.MCD_FLOOR})
+        if field_frames:
+            fset = set(field_frames)
+            crops = [[i for i in c if i not in fset] for c in crops]
+            crops = [c for c in crops if c]
+            ring = max(0, (args.ground_field - 1) // 2)
+            gs = field_scale_for(args, ring, info["frame_w"], info["frame_h"], job.margin)
+            how = "по одной клетке" if ring == 0 else "полем %d x %d" % (2 * ring + 1, 2 * ring + 1)
+            # список номеров кадров, а не их количество: на одном кадре «полы: 1» читалось
+            # как «один пол», и было непонятно, какой именно красится (грабли R-043)
+            if len(field_frames) <= 4:
+                what = "; ".join("кадр %d - %s" % (i, job.hints.get(i, "без подсказки"))
+                                 for i in field_frames)
+            else:
+                what = "%d шт., кадры: %s" % (len(field_frames),
+                                              " ".join(str(i) for i in field_frames))
+            print("%s (масштаб %d) рисуются ровные полы - %s" % (how, gs, what))
+        else:
+            print("полем рисовать нечего: ровных полов в наборе нет")
     flat_crops = sum(1 for c in crops if job.flat.get(c[0]))
     if flat_crops:
         print("ровных полов: %d кадр(ов) в %d кроп(ах) - им сила %.2f вместо %.2f"
@@ -1029,10 +1541,42 @@ def main(argv=None):
             ": " + job.hints[frames[0]] if frames[0] in job.hints else "",
             human_time(el), human_time(left)), flush=True)
 
+    vsheets = {}
+    if field_frames:
+        count = 1 + max(0, args.variants)
+        for n, i in enumerate(field_frames):
+            cells, gs, places = paint_ground_field(args, job, painter, set_dir, info, i, steps,
+                                                   args.seed + 104729 + n, count)
+            for k, cell in enumerate(cells):
+                if args.seamless:
+                    cell = seamless_ground(cell, job.g, job.margin, info["frame_w"], info["frame_h"])
+                if k == 0:
+                    painted.paste(cell, job.cell_origin(i))
+                else:
+                    if k not in vsheets:
+                        vsheets[k] = Image.new("RGB", job.sheet.size(job.g), (128, 128, 128))
+                    vsheets[k].paste(cell, job.cell_origin(i))
+            el = time.time() - t0
+            left = el / (n + 1) * (len(field_frames) - n - 1)
+            print("  [%3d%%] поле пола %d (%d/%d), клеток взято %d%s | %s, осталось ~%s"
+                  % ((n + 1) * 100 // len(field_frames), i, n + 1, len(field_frames), len(cells),
+                     ": " + job.hints[i] if i in job.hints else "", human_time(el), human_time(left)),
+                  flush=True)
+
     painted.save(os.path.join(set_dir, "painted_x%d.png" % job.g))
     small = painted.resize((job.original.width * pack_scale, job.original.height * pack_scale), Image.LANCZOS)
     out = args.out or os.path.join(set_dir, "painted_x%d.png" % pack_scale)
     small.save(out)
+    if vsheets:
+        out_base = os.path.splitext(out)[0]
+        for k in sorted(vsheets):
+            vsheets[k].save(os.path.join(set_dir, "painted_x%d.v%d.png" % (job.g, k)))
+            vsheets[k].resize((job.original.width * pack_scale, job.original.height * pack_scale),
+                              Image.LANCZOS).save("%s.v%d.png" % (out_base, k))
+        with open(os.path.join(set_dir, "variants.json"), "w", encoding="utf-8") as f:
+            json.dump(field_variants_meta(job, field_frames, len(vsheets)), f, indent=1, ensure_ascii=False)
+        print("вариантов из поля: %d, листы %s.v1.png ... и variants.json (%d полов)"
+              % (len(vsheets), out_base, len(field_frames)))
     if variants:
         paint_variants(args, job, painter, set_dir, info, variants, steps, t0)
     print("wrote", out, "- next: build_pack.py --sheets %s --set %s --hd %s --mod <mod> [--pack-path TERRAIN]" % (args.sheets, set_name, out))
@@ -1044,7 +1588,7 @@ def plan_variants(args, job, set_dir, subject):
     per_frame = {}
     looks_file = os.path.join(set_dir, "looks.json")
     if os.path.exists(looks_file):
-        with open(looks_file, encoding="utf-8") as f:
+        with open(looks_file, encoding="utf-8-sig") as f:
             per_frame = {int(k): v for k, v in json.load(f).items()}
     only = {int(v) for v in args.variant_frames.split(",") if v.strip()}
     plan, skipped = {}, []
@@ -1065,6 +1609,210 @@ def plan_variants(args, job, set_dir, subject):
     if not plan:
         print("no floors to vary")
     return {"plan": plan}
+
+
+# Поле клеток для художника (--ground-field): вместо одной клетки ему даётся кусок карты из N x N
+# клеток одного пола, он рисует его целиком - и видит, как клетки стыкуются и что вообще происходит
+# на такой земле. Обратно вырезаются несколько клеток из середины: одна в пак, остальные - варианты.
+# Они отличаются естественно (разные места одного поля), а не перекраской.
+FIELD_CUTS = [(0, 0), (1, 0), (0, 1), (-1, 0), (0, -1), (1, 1), (-1, -1), (1, -1), (-1, 1),
+              (2, 0), (0, 2), (-2, 0), (0, -2), (2, 1), (1, 2), (-2, -1), (-1, -2)]
+
+
+def field_flipped(i, j):
+    """Копия (i, j) в поле зеркальная? (то же правило, что в tile_ground)"""
+    return (i * 7 + j * 13) % 3 == 0 and (i, j) != (0, 0)
+
+
+def field_scale_for(args, ring, frame_w, frame_h, margin):
+    """Масштаб, при котором поле влезает в бюджет пикселей: большое поле рисуется мельче."""
+    if args.field_scale > 0:
+        return args.field_scale
+    base_w = 64 * ring + frame_w + 2 * margin
+    base_h = 32 * ring + frame_h + 2 * margin
+    g = args.gen_scale
+    while g > 4 and base_w * g * base_h * g > args.field_pixels:
+        g -= 2
+    return g
+
+
+def build_field(frame, ring, gs, frame_w, frame_h, margin):
+    """Поле (2*ring+1)^2 клеток одного пола на изосетке: (картинка RGBA в исходных пикселях,
+    начало координат). Клетка (i, j) стоит в (ox + 16*(i-j), oy + 8*(i+j))."""
+    diamond, rest = split_diamond(frame)
+    tile = derim_ground(diamond)
+    if rest.getbbox() is not None:
+        tile = tile.copy()
+        tile.alpha_composite(rest)
+    mirrored = tile.transpose(Image.FLIP_LEFT_RIGHT)
+    ox, oy = 32 * ring + margin, 16 * ring + margin
+    w = 64 * ring + frame_w + 2 * margin
+    h = 32 * ring + frame_h + 2 * margin
+    field = Image.new("RGBA", (w, h), (0, 0, 0, 0))
+    spots = []
+    reach = ring + 3
+    for i in range(-reach, reach + 1):
+        for j in range(-reach, reach + 1):
+            spots.append((ox + 16 * (i - j), oy + 8 * (i + j), field_flipped(i, j)))
+    for x, y, flip in sorted(spots, key=lambda t: (t[1], t[0])):   # сзади вперёд
+        if x + frame_w <= 0 or y + frame_h <= 0 or x >= w or y >= h:
+            continue
+        field.alpha_composite(mirrored if flip else tile, (x, y))
+    return field, (ox, oy)
+
+
+def field_cut_boxes(ring, origin, count, frame_w, frame_h, margin, gs):
+    """Откуда резать клетки: середина поля, только незеркальные копии, с запасом от края."""
+    ox, oy = origin
+    w = 64 * ring + frame_w + 2 * margin
+    h = 32 * ring + frame_h + 2 * margin
+    cw, ch = frame_w + 2 * margin, frame_h + 2 * margin
+    # у поля 3x3 и больше клетку берём не вплотную к краю: там художник видел пустоту.
+    # При кольце 0 поле и есть одна клетка, запасу взяться неоткуда
+    edge = margin if ring > 0 else 0
+    out = []
+    for i, j in FIELD_CUTS:
+        if len(out) >= count:
+            break
+        if field_flipped(i, j):
+            continue
+        x, y = ox + 16 * (i - j) - margin, oy + 8 * (i + j) - margin
+        if x < edge or y < edge or x + cw > w - edge or y + ch > h - edge:
+            continue
+        out.append(((x * gs, y * gs, (x + cw) * gs, (y + ch) * gs), (i, j)))
+    return out
+
+
+def shift_of(painted, original, radius=5):
+    """На сколько пикселей уехала картинка: сдвиг, при котором она лучше всего ложится на оригинал.
+    (dx, dy) в пикселях кадра. Ноль - геометрия на месте; всё остальное - художник сдвинул стену."""
+    a = np.asarray(painted.convert("L").resize(original.size, Image.LANCZOS), np.float32)
+    b = np.asarray(original.convert("L"), np.float32)
+    a, b = a - a.mean(), b - b.mean()
+    best, best_d = None, None
+    for dy in range(-radius, radius + 1):
+        for dx in range(-radius, radius + 1):
+            sa = a[max(0, dy):a.shape[0] + min(0, dy), max(0, dx):a.shape[1] + min(0, dx)]
+            sb = b[max(0, -dy):b.shape[0] + min(0, -dy), max(0, -dx):b.shape[1] + min(0, -dx)]
+            if sa.size == 0:
+                continue
+            d = float(np.abs(sa - sb).mean())
+            if best_d is None or d < best_d:
+                best, best_d = (dx, dy), d
+    return best
+
+
+def paint_ground_field(args, job, painter, set_dir, info, frame_i, steps, seed, count):
+    """Рисует поле вокруг пола `frame_i` и отдаёт `count` клеток из него в масштабе job.g."""
+    fw, fh, m = info["frame_w"], info["frame_h"], job.margin
+    ring = max(0, (args.ground_field - 1) // 2)
+    gs = field_scale_for(args, ring, fw, fh, m)
+    field, origin = build_field(job.sheet.cut(job.original, frame_i, 1), ring, gs, fw, fh, m)
+    filled = fill_background(field, radius=3, blur=1.0)
+    init = smooth_upscale(filled, gs) if args.init == "smooth" else \
+        filled.resize((filled.width * gs, filled.height * gs), Image.NEAREST)
+    blur = args.tile_blur * getattr(args, "field_blur", 1.8)
+    tile = init.filter(ImageFilter.GaussianBlur(gs * blur)) if blur > 0 else init
+    canny = canny_image(init, 20, 60)
+    qwen = getattr(args, "painter", "sdxl") in ("qwen", "qwen21")
+    # у Qwen свой промпт-указание и свой негатив: стилевые слова SDXL ему только мешают
+    field_style = None if qwen or getattr(args, "field_prompt", "on") == "off" else STYLE_FIELD
+    prompt = painter.prompt_for(job, frame_i, style=field_style)
+    strength = args.flat_strength if job.flat.get(frame_i) else args.strength
+    keep_negative = painter.negative
+    if field_style and not qwen:
+        painter.negative = "%s, %s" % (NEGATIVE_FIELD, keep_negative)
+    tries = max(1, getattr(args, "field_tries", 1))
+    outs = []
+    try:
+        for t in range(tries):
+            # один и тот же кадр, разные зёрна: модель каждый раз решает заново, и по нескольким
+            # попыткам видно, что у неё устойчиво, а что случайность
+            st = seed + t * 7919
+            first = painter.run(args, prompt, init, [tile, canny], [args.tile, 0.0], strength, steps, st)
+            cur = first
+            if args.refine > 0 and not qwen:
+                cur = painter.run(args, prompt, first, [first, canny_image(first)], [args.tile, 0.0],
+                                  args.refine, steps, st + 1000)
+            outs.append(cur)
+            if tries > 1:
+                print("    попытка %d/%d (зерно %d)" % (t + 1, tries, st), flush=True)
+    finally:
+        painter.negative = keep_negative
+    final = outs[0]
+    if tries > 1:
+        crops = os.path.join(set_dir, "crops")
+        os.makedirs(crops, exist_ok=True)
+        for t, im in enumerate(outs):
+            save_png(im, os.path.join(crops, "field_%d_t%d.png" % (frame_i, t + 1)))
+        wide = max(1, 1800 // len(outs))
+        small = [label(im.resize((wide, max(1, round(wide * im.height / im.width))), Image.LANCZOS),
+                       "%d" % (t + 1)) for t, im in enumerate(outs)]
+        sheet = os.path.join(crops, "tries_%d.png" % frame_i)
+        save_png(side_by_side(small), sheet)
+        print("    попытки рядом: %s (в пак идёт 1-я)" % sheet)
+    boxes = field_cut_boxes(ring, origin, count, fw, fh, m, gs)
+
+    def cut(box):
+        cell = final.crop(box)
+        if cell.size != (job.cell_w, job.cell_h):
+            cell = cell.resize((job.cell_w, job.cell_h), Image.LANCZOS)
+        return cell
+
+    # чем меряем: исходная клетка поля в её же размере, всегда из НЕсдвинутого окна - это
+    # единственная точка отсчёта, с которой сравниваются все кандидаты на нарезку
+    ref = None
+    if boxes:
+        b0 = boxes[0][0]
+        ref = field.crop((b0[0] // gs, b0[1] // gs, b0[2] // gs, b0[3] // gs)).convert("RGB")
+
+    radius = 5
+    if boxes and args.field_align:
+        # Qwen-Image-2.1 не принимает strength: поданный кадр для него не холст, с которого он
+        # продолжает, а условие - и всё поле целиком может съехать на пиксель-другой. Поле
+        # сложено из одного и того же пола во все стороны, так что лечится это не моделью, а
+        # ножницами: меряем сдвиг и двигаем следом окно нарезки (грабли R-039).
+        dx, dy = shift_of(cut(boxes[0][0]), ref)
+        if max(abs(dx), abs(dy)) >= radius:
+            # упёрлись в край поиска: это не перенос картинки, а другая композиция -
+            # двигать окно бессмысленно, пусть ругается проверка ниже
+            print("  пол %d: совпадения с оригиналом нет вовсе (сдвиг уперся в %d пикс.)"
+                  % (frame_i, radius), file=sys.stderr)
+            dx = dy = 0
+        if (dx, dy) != (0, 0):
+            moved = [((b[0] + dx * gs, b[1] + dy * gs, b[2] + dx * gs, b[3] + dy * gs), ij)
+                     for b, ij in boxes]
+            if all(b[0] >= 0 and b[1] >= 0 and b[2] <= final.width and b[3] <= final.height
+                   for b, _ in moved):
+                boxes = moved
+                print("  пол %d: поле уехало на (%d, %d) пикс. - окно нарезки сдвинуто следом"
+                      % (frame_i, dx, dy))
+            else:
+                print("  пол %d: поле уехало на (%d, %d) пикс., но сдвигать окно некуда - "
+                      "поле кончилось" % (frame_i, dx, dy), file=sys.stderr)
+    cells = []
+    for n, (box, _) in enumerate(boxes):
+        cell = cut(box)
+        if n == 0 and args.shift_check:
+            # ровно ли легла клетка после всех сдвигов. Пиксель туда-сюда - шум самого
+            # измерения: клетка ПЕРЕРИСОВАНА, и корреляция с оригиналом точной быть не может.
+            # Ругаемся с двух пикселей - с них сдвиг уже виден на клетке 32x40 (грабли R-041)
+            dx, dy = shift_of(cell, ref)
+            if max(abs(dx), abs(dy)) >= 2:
+                print("  ВНИМАНИЕ: пол %d уехал на (%d, %d) пикс. - геометрия не совпала с оригиналом"
+                      % (frame_i, dx, dy), file=sys.stderr)
+        cells.append(cell)
+    if args.field_keep:
+        save_png(final, os.path.join(set_dir, "crops", "field_%d.png" % frame_i))
+    return cells, gs, [ij for _, ij in boxes]
+
+
+def field_variants_meta(job, frames, count):
+    """variants.json для клеток, нарезанных из поля: перекраски не было, тон нейтральный."""
+    looks = [["cut from the painted field (place %d)" % (n + 1), [1.0, 1.0, 0.0]] for n in range(count)]
+    return {"count": count,
+            "frames": {str(i): {"kind": "field", "hint": job.hints.get(i, ""), "looks": looks}
+                       for i in frames}}
 
 
 def paint_variants(args, job, painter, set_dir, info, variants, steps, t0):

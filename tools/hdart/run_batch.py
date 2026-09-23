@@ -5,7 +5,7 @@ r"""Весь батч в ОДНОМ процессе: модель грузит�
         --data    "Пиратки\Dioxine_XPiratez\user\mods\Piratez" ^
         --palette "Пиратки\Dioxine_XPiratez\user\mods\Piratez\Resources\Pals\delicious_regular.pal" ^
         --mod     "Пиратки\Dioxine_XPiratez\user\mods\hd" ^
-        --sheets  hdart_sheets_pz --clean-big
+        --sheets  art/TERRAIN --clean-big
 
 Запускать венвовым питоном (tools\hdart\.venv\Scripts\python.exe): в нём torch и diffusers.
 
@@ -105,7 +105,7 @@ def main(argv=None):
     if dn not in ("bin\\ufo", "bin\\tftd") and args.sheets == "hdart_sheets":
         raise SystemExit("--data указывает на мод (%s), значит нужен и свой --sheets: иначе листы "
                          "мода затрут ванильные (наборы DESERT, FOREST, ROADS и другие называются "
-                         "одинаково). Для X-Piratez: --sheets hdart_sheets_pz" % args.data)
+                         "одинаково). Для X-Piratez: --sheets art/TERRAIN" % args.data)
 
     folder = "UNITS" if args.units else "TERRAIN"
     pack_path = "" if args.units else "TERRAIN"

@@ -113,9 +113,19 @@ def chroma_lock(painted, original, mask, amount, c_lo=8.0, c_hi=40.0,
     sel = np.array(mask) > 128
     if sel.sum() < 16:
         return painted
-    o = original.convert("RGB").filter(ImageFilter.GaussianBlur(blur))
+    # Размывать оригинал напрямую нельзя: за краем ромба он прозрачный, и размытие затягивает
+    # туда цвет фона. У самого края цветность падает почти до нуля, привязка тянет пиксель к
+    # серому - и по краю каждой клетки идёт бледная полоса, а поле собирается в решётку.
+    # Поэтому размываем цвет, домноженный на маску, и делим на размытую же маску: цвет
+    # растекается только внутри спрайта (грабли R-035).
+    o_rgba = np.asarray(original.convert("RGBA"), np.float64)
+    o_a = (o_rgba[..., 3:4] > 128).astype(np.float64)
+    prem = Image.fromarray(np.clip(o_rgba[..., :3] * o_a, 0, 255).astype(np.uint8), "RGB")
+    cover = Image.fromarray((o_a[..., 0] * 255).astype(np.uint8), "L")
+    prem_b = np.asarray(prem.filter(ImageFilter.GaussianBlur(blur)), np.float64)
+    cover_b = np.asarray(cover.filter(ImageFilter.GaussianBlur(blur)), np.float64)[..., None] / 255.0
+    o_arr = np.where(cover_b > 1e-3, prem_b / np.maximum(cover_b, 1e-3), o_rgba[..., :3]) / 255.0
     p_arr = np.asarray(painted.convert("RGB"), np.float64) / 255.0
-    o_arr = np.asarray(o, np.float64) / 255.0
     lp, lo = _rgb_to_lab(p_arr), _rgb_to_lab(o_arr)
     chroma = np.hypot(lo[..., 1], lo[..., 2])
     w = (np.clip((chroma - c_lo) / (c_hi - c_lo), 0.0, 1.0) * (w_hi - w_lo) + w_lo)
