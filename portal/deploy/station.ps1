@@ -331,6 +331,7 @@ switch ($Command) {
 
         # открытый ключ, которым сайт проверяет релизы: строки prod из keys\release-keys.txt
         $keysFile = Join-Path $PSScriptRoot '..\keys\release-keys.txt'
+        if (-not (Test-Path -LiteralPath $keysFile)) { Fail "нет $keysFile - файлы релизов разложены, но ключа нет: распакуйте свежий архив сайта (pack.ps1) и повторите" }
         $prod = @(Get-Content -LiteralPath $keysFile -Encoding UTF8 | Where-Object { $_ -match '^prod\s+\S+' } | ForEach-Object { ($_ -split '\s+')[1] })
         $penv = Read-DotEnv 'portal.env'
         $changed = $false

@@ -31,7 +31,8 @@ $zip = Join-Path $dist "xp-portal_${stamp}_$hash.zip"
 $paths = @(
     'portal/Dockerfile', 'portal/.dockerignore', 'portal/Directory.Build.props',
     'portal/src/Xp.Portal', 'portal/src/Xp.Manifest', 'portal/src/Xp.Launcher.Core',
-    'portal/deploy', 'docs/portal'
+    'portal/deploy', 'docs/portal',
+    'portal/keys/release-keys.txt'   # открытые ключи релизов: station.ps1 releases пишет prod в portal.env
 )
 # --add-file кладёт файл в корень архива: инструкции видны сразу при распаковке
 & git -C $repo archive --format=zip -o $zip `
