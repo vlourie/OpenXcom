@@ -57,6 +57,18 @@
     ],
     "PreToolUse": [
       {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "powershell",
+            "command": "${CLAUDE_PROJECT_DIR}/.claude/hooks/backslash-guard.ps1",
+            "timeout": 15,
+            "statusMessage": "Проверяю, нет ли обратной косой во встроенном скрипте (R-035)"
+          }
+        ]
+      },
+      {
         "matcher": "Edit|Write|NotebookEdit",
         "hooks": [
           {
