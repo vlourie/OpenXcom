@@ -12,6 +12,7 @@ using Microsoft.Extensions.Options;
 using Xp.Portal;
 using Xp.Portal.Auth;
 using Xp.Portal.Data;
+using Xp.Portal.Devices;
 using Xp.Portal.Files;
 using Xp.Portal.Notifications;
 using Xp.Portal.Site;
@@ -188,6 +189,8 @@ public static class PortalApp
             // posting on the forum: enough for a conversation, not enough for a flood
             o.AddPolicy("forum-write", c => WritesByIp(c, cfg.GetValue("RateLimits:ForumPer10Min", 20), TimeSpan.FromMinutes(10)));
             o.AddPolicy("login", c => WritesByIp(c, cfg.GetValue("RateLimits:LoginPer5Min", 10), TimeSpan.FromMinutes(5)));
+            // linking a launcher: a person does it once, so a low limit also caps guessing at the codes
+            o.AddPolicy("devices", c => WritesByIp(c, cfg.GetValue("RateLimits:DevicesPer10Min", 20), TimeSpan.FromMinutes(10)));
         });
     }
 
@@ -231,6 +234,7 @@ public static class PortalApp
         app.MapHealthChecks("/ready", new() { Predicate = c => c.Tags.Contains("ready") });
         app.MapOpenApi("/openapi/{documentName}.json");
         TicketApi.Map(app);
+        DeviceApi.Map(app);
         app.MapGet("/files/{id:guid}", ServeFileAsync).ExcludeFromDescription();
         app.MapGet("/lang/{lang}", (string lang, string? back, HttpContext http) =>
         {

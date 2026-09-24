@@ -23,6 +23,46 @@ public static class GuestTokens
     internal static string Base64Url(byte[] b) => Convert.ToBase64String(b).TrimEnd('=').Replace('+', '-').Replace('/', '_');
 }
 
+/// <summary>
+/// The launcher's device secret: 256 random bits, kept as its SHA-256, and the short code a person
+/// reads off the screen. The code's alphabet has no look-alikes (no O and 0, no I and 1), because
+/// it is read aloud and typed by hand.
+/// </summary>
+public static class DeviceSecrets
+{
+    public const string Alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    public const int CodeLength = 6;
+
+    public static string NewToken() => GuestTokens.Base64Url(RandomNumberGenerator.GetBytes(32));
+
+    public static string Hash(string token) => GuestTokens.Hash(token);
+
+    /// <summary>Six characters, shown as XXX-XXX.</summary>
+    public static string NewCode()
+    {
+        var c = new char[CodeLength];
+        for (int i = 0; i < c.Length; i++) c[i] = Alphabet[RandomNumberGenerator.GetInt32(Alphabet.Length)];
+        return new string(c);
+    }
+
+    public static string Format(string code) => code.Length == CodeLength ? code[..3] + "-" + code[3..] : code;
+
+    /// <summary>What a person typed, made comparable: case, spaces and the dash do not matter.</summary>
+    public static string? Normalize(string? typed)
+    {
+        if (typed is null) return null;
+        var c = new char[CodeLength];
+        int n = 0;
+        foreach (var ch in typed.ToUpperInvariant())
+        {
+            if (ch is ' ' or '-' or '_') continue;
+            if (n == CodeLength || !Alphabet.Contains(ch)) return null;
+            c[n++] = ch;
+        }
+        return n == CodeLength ? new string(c) : null;
+    }
+}
+
 public sealed class Argon2Options
 {
     /// <summary>KiB. OWASP 2024 minimum for Argon2id: m=19 MiB, t=2, p=1; we use a bit more.</summary>

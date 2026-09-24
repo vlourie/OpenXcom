@@ -53,6 +53,7 @@ public sealed class MainWindow : Window
 
     readonly ReportsPage _reportsPage;
     readonly ReviewPage _reviewPage;
+    readonly AccountPanel _account;
 
     GamePaths? _paths;
     Updater? _updater;
@@ -104,6 +105,7 @@ public sealed class MainWindow : Window
         _reportsPage = new ReportsPage(_settings, ReportRoots);
         _reportsPage.Changed += CountReports;
         _reviewPage = new ReviewPage(_settings, () => _paths?.GameDir);
+        _account = new AccountPanel(_settings);
 
         _whatsNew = Skin.Panel(WhatsNewContent(), new Thickness(20));
         _whatsNew.Width = 250;
@@ -367,12 +369,15 @@ public sealed class MainWindow : Window
             Child = new ScrollViewer { Content = _log },
         });
 
-        var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("*,14,*"), RowDefinitions = new RowDefinitions("Auto,14,Auto") };
+        var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("*,14,*"), RowDefinitions = new RowDefinitions("Auto,14,Auto,14,Auto") };
         void Put(Control c, int row, int col) { Grid.SetRow(c, row); Grid.SetColumn(c, col); grid.Children.Add(c); }
         Put(Skin.Panel(game), 0, 0);
         Put(Skin.Panel(updates), 0, 2);
         Put(Skin.Panel(broken), 2, 0);
         Put(Skin.Panel(log), 2, 2);
+        var account = Skin.Panel(_account);
+        Grid.SetColumnSpan(account, 3);
+        Put(account, 4, 0);
 
         var page = new StackPanel { Spacing = 14, Margin = new Thickness(28, 24, 28, 28) };
         page.Children.Add(Skin.H1(L.T("nav.settings")));
@@ -395,6 +400,7 @@ public sealed class MainWindow : Window
         _repo = new RepoClient(_http, new Uri(repoUrl), BuiltIn.Keys);
         if (_settings.GameDir is { } dir && GamePaths.LooksLikeGameDir(dir)) OpenGameDir(dir);
         Refresh();
+        await _account.CheckAsync();
 
         if (_updater is not null) await RunAsync(Work.Check, () => CheckAsync(full: false, apply: false));
     }

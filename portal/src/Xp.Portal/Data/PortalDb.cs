@@ -16,6 +16,8 @@ public sealed class PortalDb(DbContextOptions<PortalDb> options)
     public DbSet<NotificationJob> NotificationJobs => Set<NotificationJob>();
     public DbSet<UpstreamState> UpstreamStates => Set<UpstreamState>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+    public DbSet<DeviceToken> DeviceTokens => Set<DeviceToken>();
+    public DbSet<DeviceLinkCode> DeviceLinkCodes => Set<DeviceLinkCode>();
     public DbSet<GameMod> Mods => Set<GameMod>();
     public DbSet<ModText> ModTexts => Set<ModText>();
     public DbSet<WikiPage> WikiPages => Set<WikiPage>();
@@ -128,6 +130,23 @@ public sealed class PortalDb(DbContextOptions<PortalDb> options)
             e.Property(a => a.Action).HasMaxLength(64);
             e.Property(a => a.Target).HasMaxLength(128);
             e.Property(a => a.Detail).HasMaxLength(1024);
+        });
+        b.Entity<DeviceToken>(e =>
+        {
+            // the hash is how a request finds its device: one row per secret, looked up by equality
+            e.HasIndex(d => d.TokenHash).IsUnique();
+            e.HasIndex(d => d.UserId);
+            e.Property(d => d.TokenHash).HasMaxLength(64);
+            e.Property(d => d.Name).HasMaxLength(DeviceLimits.NameMax);
+            e.HasOne(d => d.User).WithMany().HasForeignKey(d => d.UserId).OnDelete(DeleteBehavior.Cascade);
+        });
+        b.Entity<DeviceLinkCode>(e =>
+        {
+            e.HasKey(c => c.Code);
+            e.HasIndex(c => c.DeviceId).IsUnique();
+            e.HasIndex(c => c.ExpiresAt);
+            e.Property(c => c.Code).HasMaxLength(DeviceLimits.CodeMax);
+            e.Property(c => c.Name).HasMaxLength(DeviceLimits.NameMax);
         });
     }
 

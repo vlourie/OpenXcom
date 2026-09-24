@@ -333,8 +333,9 @@ public sealed class PortalException(int status, string code, string message) : E
 }
 
 /// <summary>/api/v1 of the portal, the part the launcher uses. A guest proves access with the ticket token.</summary>
-public sealed class PortalClient(HttpClient http, Uri baseUri)
+public sealed partial class PortalClient(HttpClient http, Uri baseUri)
 {
+    HttpClient Http { get; } = http;
     public Uri BaseUri { get; } = baseUri.AbsoluteUri.EndsWith('/') ? baseUri : new Uri(baseUri.AbsoluteUri + "/");
 
     public async Task<CreateTicketResponse> CreateAsync(CreateTicketRequest request, string idempotencyKey, CancellationToken ct)
@@ -344,7 +345,7 @@ public sealed class PortalClient(HttpClient http, Uri baseUri)
             Content = JsonContent.Create(request, ReportJson.Default.CreateTicketRequest),
         };
         msg.Headers.Add("Idempotency-Key", idempotencyKey);
-        using var resp = await http.SendAsync(msg, ct);
+        using var resp = await Http.SendAsync(msg, ct);
         await ThrowIfFailedAsync(resp, ct);
         return await resp.Content.ReadFromJsonAsync(ReportJson.Default.CreateTicketResponse, ct)
                ?? throw new PortalException((int)resp.StatusCode, "bad_response", "empty answer");
@@ -354,7 +355,7 @@ public sealed class PortalClient(HttpClient http, Uri baseUri)
     {
         using var msg = new HttpRequestMessage(HttpMethod.Get, new Uri(BaseUri, $"api/v1/tickets/{number}"));
         msg.Headers.Add("X-Ticket-Token", token);
-        using var resp = await http.SendAsync(msg, ct);
+        using var resp = await Http.SendAsync(msg, ct);
         if (resp.StatusCode == HttpStatusCode.NotFound) return null;
         await ThrowIfFailedAsync(resp, ct);
         return await resp.Content.ReadFromJsonAsync(ReportJson.Default.TicketView, ct);
@@ -368,7 +369,7 @@ public sealed class PortalClient(HttpClient http, Uri baseUri)
         form.Add(part, "file", fileName);
         using var msg = new HttpRequestMessage(HttpMethod.Post, new Uri(BaseUri, $"api/v1/tickets/{number}/attachments")) { Content = form };
         msg.Headers.Add("X-Ticket-Token", token);
-        using var resp = await http.SendAsync(msg, ct);
+        using var resp = await Http.SendAsync(msg, ct);
         await ThrowIfFailedAsync(resp, ct);
     }
 

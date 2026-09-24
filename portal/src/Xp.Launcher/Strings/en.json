@@ -213,5 +213,22 @@
  "review.loaded": "Frames to check: {0}. Skipped: {1} the game never draws, {2} missing from the pack.",
  "review.restored": "Earlier marks restored: {0}.",
  "review.noGame": "No game folder chosen — pick it in the settings.",
- "review.noPack": "No HD packs in this installation: nothing to check."
+ "review.noPack": "No HD packs in this installation: nothing to check.",
+ "account.title": "Account",
+ "account.none": "This launcher is not linked to anybody.",
+ "account.hint": "No password is typed into the launcher. It shows a short code, you confirm it on the site, and from then on art verdicts go in your name.",
+ "account.link": "Link to an account",
+ "account.deviceName": "Launcher {0}",
+ "account.waiting": "Waiting for the site to confirm...",
+ "account.codeHint": "Open Devices on the site and confirm this code. It lives ten minutes.",
+ "account.open": "Open the site",
+ "account.cancel": "Cancel",
+ "account.linkedAs": "Linked as {0}",
+ "account.unlink": "Unlink",
+ "account.unlinkHint": "Unlinking takes the key off this machine. Verdicts already sent stay.",
+ "account.expired": "Nobody confirmed the code - take a new one.",
+ "account.revoked": "The link was taken away on the site. Link again to go on.",
+ "account.noPortal": "No site address is set.",
+ "account.offline": "The site does not answer. Try later.",
+ "account.error": "The site refused: {0}"
 }

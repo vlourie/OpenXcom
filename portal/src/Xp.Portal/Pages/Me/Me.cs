@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
+using Xp.Portal.Auth;
 using Xp.Portal.Data;
 using Xp.Portal.Site;
 
@@ -123,6 +124,68 @@ public sealed class SecurityModel(UserManager<PortalUser> users, SignInManager<P
         }
         await signIn.RefreshSignInAsync(u);
         TempData["flash"] = "security.password_changed";
+        return RedirectToPage();
+    }
+}
+
+/// <summary>
+/// The launchers linked to this account. A launcher never holds the password: it shows a code, the
+/// person confirms it here, and from then on it works with a device token that can be taken away
+/// from this page alone.
+/// </summary>
+[EnableRateLimiting("devices")]
+public sealed class DevicesModel(PortalDb db, TimeProvider clock, Audit audit) : PageModel
+{
+    public List<DeviceToken> Devices { get; private set; } = new();
+    /// <summary>A code waiting for a yes, as the launcher shows it (XXX-XXX).</summary>
+    public string? Pending { get; private set; }
+    public string PendingName { get; private set; } = "";
+    public List<string> Errors { get; } = new();
+
+    Guid Me => Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
+
+    async Task LoadAsync(string? code, CancellationToken ct)
+    {
+        Devices = await db.DeviceTokens.Where(d => d.UserId == Me && d.RevokedAt == null)
+            .OrderByDescending(d => d.CreatedAt).ToListAsync(ct);
+        if (DeviceSecrets.Normalize(code) is not { } clean) return;
+        var row = await db.DeviceLinkCodes.FirstOrDefaultAsync(c => c.Code == clean, ct);
+        // an unknown code and an expired one answer the same: the page tells nothing about codes it was not given
+        if (row is null || row.ConsumedByUserId is not null || row.ExpiresAt <= clock.GetUtcNow()) return;
+        Pending = DeviceSecrets.Format(row.Code);
+        PendingName = row.Name;
+    }
+
+    public async Task OnGetAsync(string? code, CancellationToken ct) => await LoadAsync(code, ct);
+
+    public async Task<IActionResult> OnPostConfirmAsync(string? code, CancellationToken ct)
+    {
+        var clean = DeviceSecrets.Normalize(code);
+        var row = clean is null ? null : await db.DeviceLinkCodes.FirstOrDefaultAsync(c => c.Code == clean, ct);
+        if (row is null || row.ConsumedByUserId is not null || row.ExpiresAt <= clock.GetUtcNow())
+        {
+            Errors.Add("devices.code_bad");
+            await LoadAsync(null, ct);
+            return Page();
+        }
+        row.ConsumedByUserId = Me;
+        row.ConsumedAt = clock.GetUtcNow();
+        audit.Add(Me, "device.link", row.DeviceId.ToString(), row.Name);
+        await db.SaveChangesAsync(ct);
+        TempData["flash"] = "devices.flash.linked";
+        return RedirectToPage();
+    }
+
+    public async Task<IActionResult> OnPostRevokeAsync(Guid id, CancellationToken ct)
+    {
+        var device = await db.DeviceTokens.FirstOrDefaultAsync(d => d.Id == id && d.UserId == Me && d.RevokedAt == null, ct);
+        if (device is not null)
+        {
+            device.RevokedAt = clock.GetUtcNow();
+            audit.Add(Me, "device.revoke", device.Id.ToString(), device.Name);
+            await db.SaveChangesAsync(ct);
+            TempData["flash"] = "devices.flash.revoked";
+        }
         return RedirectToPage();
     }
 }
