@@ -52,6 +52,7 @@ public sealed class MainWindow : Window
     readonly Button _check, _repair, _rollback, _selfUpdate, _choose;
 
     readonly ReportsPage _reportsPage;
+    readonly ReviewPage _reviewPage;
 
     GamePaths? _paths;
     Updater? _updater;
@@ -102,6 +103,7 @@ public sealed class MainWindow : Window
 
         _reportsPage = new ReportsPage(_settings, ReportRoots);
         _reportsPage.Changed += CountReports;
+        _reviewPage = new ReviewPage(_settings, () => _paths?.GameDir);
 
         _whatsNew = Skin.Panel(WhatsNewContent(), new Thickness(20));
         _whatsNew.Width = 250;
@@ -109,6 +111,7 @@ public sealed class MainWindow : Window
 
         _pages["home"] = HomePage();
         _pages["reports"] = _reportsPage;
+        _pages["review"] = _reviewPage;
         _pages["support"] = new SupportPage();
         _pages["settings"] = SettingsPage();
 
@@ -152,6 +155,7 @@ public sealed class MainWindow : Window
         top.Children.Add(NavButton("home", "nav.home", Skin.IconHome, null));
         _reportsBadge.Child = _reportsCount;
         top.Children.Add(NavButton("reports", "nav.reports", Skin.IconReports, _reportsBadge));
+        top.Children.Add(NavButton("review", "nav.review", Skin.IconCheck, null));
         top.Children.Add(NavButton("support", "nav.support", Skin.IconHeart, null));
         top.Children.Add(NavButton("settings", "nav.settings", Skin.IconSettings, null));
 
@@ -204,6 +208,7 @@ public sealed class MainWindow : Window
             b.BorderThickness = new Thickness(on ? 3 : 0, 0, 0, 0);
         }
         if (page == "reports") _reportsPage.Shown();
+        if (page == "review") _reviewPage.Shown();
     }
 
     Control HomePage()
@@ -389,6 +394,8 @@ public sealed class MainWindow : Window
         _fileLog.Written += line => Dispatcher.UIThread.Post(() => AppendLog(line));
         _updater = new Updater(_paths, _repo!, _fileLog);
         _gameDir.Text = _paths.GameDir;
+        // the review page may already be on screen: until now it had no folder to read packs from
+        if (_reviewPage.IsVisible) _reviewPage.Shown();
         _fileLog.Info($"launcher {BuiltIn.VersionText} started, game dir <game>");
         try
         {
