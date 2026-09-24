@@ -49,7 +49,7 @@ public sealed class MainWindow : Window
     readonly TextBlock _launcherLine = new() { FontSize = 12, Foreground = Skin.B(Skin.Muted), VerticalAlignment = VerticalAlignment.Center, TextWrapping = TextWrapping.Wrap };
     readonly TextBlock _rollbackNote = new() { FontSize = 12, Foreground = Skin.B(Skin.Muted), TextWrapping = TextWrapping.Wrap };
     readonly TextBlock _log = new() { FontFamily = new FontFamily("Consolas,monospace"), FontSize = 11, TextWrapping = TextWrapping.Wrap, Foreground = Skin.B(Skin.Muted), LineHeight = 16 };
-    readonly Button _check, _repair, _rollback, _selfUpdate, _choose;
+    readonly Button _check, _repair, _rollback, _selfUpdate, _choose, _updateOnly;
 
     readonly ReportsPage _reportsPage;
     readonly ReviewPage _reviewPage;
@@ -88,6 +88,9 @@ public sealed class MainWindow : Window
 
         _check = Skin.Btn(L.T("checkUpdates"), "ghost");
         _check.Click += async (_, _) => await RunAsync(Work.Check, () => CheckAsync(full: false, apply: false));
+        // «Играть» обновляет и запускает; эта кнопка только обновляет - игру запускать не обязательно
+        _updateOnly = Skin.Btn(L.T("main.updateOnly"), "ghost", 64);
+        _updateOnly.Click += async (_, _) => await RunAsync(Work.Check, () => CheckAsync(full: false, apply: true));
         _repair = Skin.Btn(L.T("repair"));
         _repair.HorizontalContentAlignment = HorizontalAlignment.Left;
         _repair.Click += async (_, _) => await RunAsync(Work.Repair, () => CheckAsync(full: true, apply: true));
@@ -166,8 +169,12 @@ public sealed class MainWindow : Window
         var portal = _settings.PortalUrl ?? BuiltIn.Defaults.PortalUrl;
         site.IsEnabled = portal.StartsWith("http", StringComparison.OrdinalIgnoreCase);
         site.Click += (_, _) => ReportWindow.OpenUrl(portal);
+        var quit = NavLike(L.T("nav.quit"), Skin.IconQuit, null);
+        quit.Click += (_, _) => Close();
+
         var bottom = new StackPanel();
         bottom.Children.Add(site);
+        bottom.Children.Add(quit);
         bottom.Children.Add(new TextBlock { Text = L.T("nav.version", BuiltIn.VersionText), FontSize = 12, Foreground = Skin.B(Skin.Muted), Margin = new Thickness(12, 8, 12, 0) });
 
         var dock = new DockPanel { Margin = new Thickness(12, 24, 12, 16) };
@@ -222,9 +229,13 @@ public sealed class MainWindow : Window
         heading.Children.Add(new Viewbox { Child = title, Stretch = Stretch.Uniform, StretchDirection = StretchDirection.DownOnly, HorizontalAlignment = HorizontalAlignment.Left });
         heading.Children.Add(_version);
 
-        var mainArea = new Grid();
+        var mainArea = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto") };
         mainArea.Children.Add(_main);
         mainArea.Children.Add(_progress);
+        _updateOnly.Margin = new Thickness(10, 0, 0, 0);
+        _updateOnly.Padding = new Thickness(22, 0);
+        Grid.SetColumn(_updateOnly, 1);
+        mainArea.Children.Add(_updateOnly);
 
         var content = new StackPanel { Spacing = 14, VerticalAlignment = VerticalAlignment.Bottom };
         content.Children.Add(heading);
@@ -725,6 +736,7 @@ public sealed class MainWindow : Window
         bool idle = _updater is not null && _work == Work.None;
         bool running = _game is { HasExited: false };
         _check.IsEnabled = idle;
+        _updateOnly.IsEnabled = idle && !running && _paths is not null;
         _repair.IsEnabled = idle && !running && state?.InstalledReleaseId is not null;
         _rollback.IsEnabled = idle && !running && _updater!.CanRollback;
         _choose.IsEnabled = _work == Work.None;

@@ -313,4 +313,6 @@ public static class Skin
     public const string IconPlay = "M7,4 L19,12 L7,20 Z";
     public const string IconMessage = "M21,12 C21,16.4 17.4,20 13,20 C11.6,20 10.4,19.7 9.4,19.2 L4,21 L5.8,15.6 C5.3,14.5 5,13.3 5,12 C5,7.6 8.6,4 13,4 C17.4,4 21,7.6 21,12 Z";
     public const string IconCheck = "M3,12 A9,9 0 1 1 21,12 A9,9 0 1 1 3,12 M8,12.5 L11,15.5 L16,9.5";
+    // дверь со стрелкой наружу: выйти из приложения
+    public const string IconQuit = "M14,4 L5,4 L5,20 L14,20 M11,12 L20,12 M16,8 L20,12 L16,16";
 }
