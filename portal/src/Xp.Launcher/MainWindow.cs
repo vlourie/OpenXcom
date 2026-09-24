@@ -231,7 +231,7 @@ public sealed class MainWindow : Window
         content.Children.Add(_current);
 
         var hero = new Grid();
-        // the card art: indigo duotone like the pictures in the game's windows, until the generated art is in
+        // the card art: indigo duotone like the pictures in the game's windows; the gradient shows while it loads or if it is missing
         hero.Children.Add(new Border
         {
             CornerRadius = new CornerRadius(3),
@@ -242,6 +242,8 @@ public sealed class MainWindow : Window
                 GradientStops = { new GradientStop(Color.Parse("#181868"), 0), new GradientStop(Color.Parse("#180810"), 1) },
             },
         });
+        if (HeroArt() is { } art)
+            hero.Children.Add(new Border { CornerRadius = new CornerRadius(3), ClipToBounds = true, Background = new ImageBrush(art) { Stretch = Stretch.UniformToFill } });
         hero.Children.Add(new Border { CornerRadius = new CornerRadius(3), Background = Glow(0.7, 0.3, "#8C185888") });
         hero.Children.Add(new Border { CornerRadius = new CornerRadius(3), Background = Glow(0.2, 0.8, "#CC181868") });
         hero.Children.Add(new Border
@@ -261,6 +263,16 @@ public sealed class MainWindow : Window
         page.Children.Add(_notice);
         page.Children.Add(body);
         return page;
+    }
+
+    static Avalonia.Media.Imaging.Bitmap? HeroArt()
+    {
+        try
+        {
+            using var s = Avalonia.Platform.AssetLoader.Open(new Uri("avares://XPiratezLauncher/Assets/hero.jpg"));
+            return new Avalonia.Media.Imaging.Bitmap(s);
+        }
+        catch (Exception) { return null; }   // a build without the picture keeps the gradient
     }
 
     static RadialGradientBrush Glow(double x, double y, string color)
