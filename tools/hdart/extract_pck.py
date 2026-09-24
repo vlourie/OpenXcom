@@ -23,6 +23,42 @@ from PIL import Image
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import xcom_sprites as xs  # noqa: E402
 
+def find_ci(folder, name):
+    """Файл в папке без учёта регистра: у модов имена наборов пишутся и так, и так."""
+    p = os.path.join(folder, name)
+    if os.path.exists(p):
+        return p
+    if os.path.isdir(folder):
+        for f in os.listdir(folder):
+            if f.upper() == name.upper():
+                return os.path.join(folder, f)
+    return ""
+
+
+def ground_flags(frames, types, walkable, raised, fw, fh):
+    """Какие кадры набора — сплошное поле, а какие стоят на своём ромбе пола.
+
+    Правило одно на весь конвейер: им пользуется и разбор наборов, и приёмка (review_floors),
+    иначе поле у них разъедется и приёмка будет судить не о том, что собрано.
+    """
+    ground, base = [], []
+    for i, frame in enumerate(frames):
+        if frame is None or (fw, fh) != (32, 40):
+            ground.append(False)
+            base.append(False)
+            continue
+        cov = xs.diamond_coverage(frame, fw, fh)
+        top = min((y for y in range(fh) if any(frame[y])), default=fh)
+        # flat only: slopes, stairs and hay bales (terrain level != 0) are objects, not a field; so is
+        # a "floor" with something tall drawn on it (a phone booth)
+        ground.append(not raised[i] and ((types[i] == xs.MCD_FLOOR and top >= fh - 16 - 8) or
+                                         (types[i] == xs.MCD_OBJECT and walkable[i] and cov >= 0.85)))
+        # an object standing on its own full ground diamond (a tree on grass): the painter gets the
+        # diamond repeated around it as a field, so that it does not read as a planter
+        base.append(not ground[-1] and types[i] in (xs.MCD_FLOOR, xs.MCD_OBJECT) and cov >= 0.85)
+    return ground, base
+
+
 DEFAULT_SETS = [
     "TERRAIN/CULTIVAT.PCK", "TERRAIN/BARN.PCK", "TERRAIN/ROADS.PCK", "TERRAIN/FRNITURE.PCK",
     "TERRAIN/FOREST.PCK", "TERRAIN/JUNGLE.PCK", "TERRAIN/DESERT.PCK", "TERRAIN/MOUNT.PCK",
@@ -41,22 +77,13 @@ DEFAULT_SETS = [
 
 def extract_set(data_dir, rel, out_dir, palette, scale, columns, margin):
     name = os.path.basename(rel).upper()
-    pck = os.path.join(data_dir, rel)
-    if not os.path.exists(pck):
-        # case-insensitive lookup
-        folder = os.path.join(data_dir, os.path.dirname(rel))
-        for f in os.listdir(folder):
-            if f.upper() == name:
-                pck = os.path.join(folder, f)
-                break
-    if not os.path.exists(pck):
+    folder = os.path.join(data_dir, os.path.dirname(rel))
+    pck = find_ci(folder, name)
+    if not pck:
         print("  missing:", rel)
         return None
-    tab = os.path.splitext(pck)[0] + ".TAB"
-    if not os.path.exists(tab):
-        for f in os.listdir(os.path.dirname(pck)):
-            if f.upper() == os.path.splitext(name)[0] + ".TAB":
-                tab = os.path.join(os.path.dirname(pck), f)
+    stem = os.path.splitext(os.path.basename(pck))[0]
+    tab = find_ci(folder, stem + ".TAB") or os.path.splitext(pck)[0] + ".TAB"
     fw, fh = xs.frame_size_for(name)
     frames = xs.read_pck(pck, tab, fw, fh)
     sheet = xs.Sheet(fw, fh, len(frames), columns=columns, margin=margin)
@@ -64,28 +91,10 @@ def extract_set(data_dir, rel, out_dir, palette, scale, columns, margin):
     # floors, and walkable objects that fill the floor diamond (crops, flowers; a tree is impassable) -
     # those are painted as a continuous field, not as an object standing on a background
     types, walkable, raised = [-1] * len(frames), [True] * len(frames), [False] * len(frames)
-    mcd = os.path.splitext(pck)[0] + ".MCD"
-    if not os.path.exists(mcd):
-        for f in os.listdir(os.path.dirname(pck)):
-            if f.upper() == os.path.splitext(name)[0] + ".MCD":
-                mcd = os.path.join(os.path.dirname(pck), f)
-    if os.path.exists(mcd):
+    mcd = find_ci(folder, stem + ".MCD")
+    if mcd:
         types, walkable, raised = xs.frame_types(xs.read_mcd(mcd), len(frames))
-    ground, base = [], []
-    for i, frame in enumerate(frames):
-        if frame is None or (fw, fh) != (32, 40):
-            ground.append(False)
-            base.append(False)
-            continue
-        cov = xs.diamond_coverage(frame, fw, fh)
-        top = min((y for y in range(fh) if any(frame[y])), default=fh)
-        # flat only: slopes, stairs and hay bales (terrain level != 0) are objects, not a field; so is
-        # a "floor" with something tall drawn on it (a phone booth)
-        ground.append(not raised[i] and ((types[i] == xs.MCD_FLOOR and top >= fh - 16 - 8) or
-                                         (types[i] == xs.MCD_OBJECT and walkable[i] and cov >= 0.85)))
-        # an object standing on its own full ground diamond (a tree on grass): the painter gets the
-        # diamond repeated around it as a field, so that it does not read as a planter
-        base.append(not ground[-1] and types[i] in (xs.MCD_FLOOR, xs.MCD_OBJECT) and cov >= 0.85)
+    ground, base = ground_flags(frames, types, walkable, raised, fw, fh)
     target = os.path.join(out_dir, name)
     os.makedirs(target, exist_ok=True)
     sheet.compose(frames, palette, 1, "P").save(os.path.join(target, "original.png"))
