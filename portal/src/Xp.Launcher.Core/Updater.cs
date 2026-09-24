@@ -33,7 +33,12 @@ public sealed class UpdateBlockedException(string message) : Exception(message);
 /// </summary>
 public sealed class Updater(GamePaths paths, RepoClient repo, ILauncherLog log)
 {
-    public const int DownloadParallelism = 4;
+    /// <summary>
+    /// How many files are asked for at once. Over HTTP/2 these are streams of one connection, not
+    /// sockets: four of them left the link three times idle (10.9 MB/s of 29.5 measured on the
+    /// station), twenty-four fill it. See <see cref="RepoClient.NewHttpClient"/>.
+    /// </summary>
+    public const int DownloadParallelism = 24;
     const long DiskMargin = 256L * 1024 * 1024;
 
     public GamePaths Paths { get; } = paths;

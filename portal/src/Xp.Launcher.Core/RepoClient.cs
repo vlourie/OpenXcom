@@ -23,6 +23,26 @@ public sealed class RepoClient(HttpClient http, Uri baseUri, TrustedKeys keys)
 
     public Uri BaseUri { get; } = baseUri.AbsoluteUri.EndsWith('/') ? baseUri : new Uri(baseUri.AbsoluteUri + "/");
 
+    /// <summary>
+    /// The client every download goes through. A release is 38 791 files of 54 KB on average, so
+    /// what it costs is not the bytes but the requests. Measured against the live station on a
+    /// sample of 1000 blobs: HTTP/1.1 over four connections 10.9 MB/s, HTTP/2 over one 25.2 MB/s —
+    /// the speed of a single large file in a single stream (29.5 MB/s), which is the ceiling of the
+    /// link itself. HTTP/2 carries the requests over one socket, so it is also gentler on the
+    /// station than sixteen sockets would be; a server that cannot speak it falls back to 1.1.
+    /// </summary>
+    public static HttpClient NewHttpClient() => new(new SocketsHttpHandler
+    {
+        // matters on the fallback path only: without multiplexing every request in flight wants its own socket
+        MaxConnectionsPerServer = 8,
+        PooledConnectionLifetime = TimeSpan.FromMinutes(5),
+    })
+    {
+        DefaultRequestVersion = HttpVersion.Version20,
+        DefaultVersionPolicy = HttpVersionPolicy.RequestVersionOrLower,
+        Timeout = Timeout.InfiniteTimeSpan,
+    };
+
     Uri Url(string key) => new(BaseUri, key);
 
     /// <summary>

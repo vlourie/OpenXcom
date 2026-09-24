@@ -20,7 +20,7 @@ public sealed class MainWindow : Window
     enum Work { None, Check, Update, Repair, Rollback, SelfUpdate }
 
     readonly Settings _settings = Settings.Load();
-    readonly HttpClient _http = new() { Timeout = Timeout.InfiniteTimeSpan };
+    readonly HttpClient _http = RepoClient.NewHttpClient();
     readonly string[] _args;
 
     // rail

@@ -47,7 +47,7 @@ static partial class Headless
         var paths = new GamePaths(game);
         var log = new FileLog(paths);
         log.Written += Console.WriteLine;
-        using var http = new HttpClient { Timeout = Timeout.InfiniteTimeSpan };
+        using var http = RepoClient.NewHttpClient();
         var repo = new RepoClient(http, new Uri(Opt(args, "--repo") ?? settings.RepoUrl ?? BuiltIn.Defaults.RepoUrl), BuiltIn.Keys);
         var u = new Updater(paths, repo, log);
         if (u.Recover()) Console.WriteLine("an interrupted install was undone");
