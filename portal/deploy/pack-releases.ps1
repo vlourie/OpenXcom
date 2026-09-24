@@ -20,10 +20,14 @@ if (-not (Test-Path (Join-Path $Repo 'channels'))) { throw "в $Repo нет па
 
 $sentFile = "$Repo.sent.txt"
 $sent = @{}
-if (-not $Full -and (Test-Path -LiteralPath $sentFile)) {
+# третий столбец - архив, в который файл попал впервые: по нему видно, что ещё нужно разложить (грабли R-065)
+$sentZip = @{}
+if (Test-Path -LiteralPath $sentFile) {
     foreach ($line in Get-Content -LiteralPath $sentFile -Encoding UTF8) {
         $p = $line -split "`t"
-        if ($p.Count -eq 2) { $sent[$p[0]] = $p[1] }
+        if ($p.Count -lt 2) { continue }
+        if (-not $Full) { $sent[$p[0]] = $p[1] }
+        if ($p.Count -ge 3) { $sentZip[$p[0]] = $p[2] }
     }
 }
 
@@ -64,12 +68,39 @@ try {
     if ($LASTEXITCODE -ne 0 -or -not (Test-Path -LiteralPath $zip)) { throw "архив не создан (код $LASTEXITCODE)" }
 } finally { Pop-Location; Remove-Item -LiteralPath $list -Force -ErrorAction SilentlyContinue }
 
-$lines = foreach ($k in ($now.Keys | Sort-Object)) { "$k`t$($now[$k])" }
+$zipName = Split-Path -Leaf $zip
+$picked = @{}
+foreach ($p in $pick) { $picked[$p] = $true; $sentZip[$p] = $zipName }
+$lines = foreach ($k in ($now.Keys | Sort-Object)) { "$k`t$($now[$k])`t$($sentZip[$k])" }
 [IO.File]::WriteAllLines($sentFile, [string[]]$lines, (New-Object Text.UTF8Encoding $true))
 
 foreach ($c in @(Get-ChildItem -LiteralPath (Join-Path $Repo 'channels') -Filter '*.json' | Where-Object { $_.Name -notlike '*.history.json' })) {
     $j = Get-Content -LiteralPath $c.FullName -Raw | ConvertFrom-Json
     Write-Host ("  {0,-18} -> {1}" -f $c.BaseName, $j.releaseId)
+    # указатель канала едет всегда, а файлы выпуска - только те, что новые. Назвать архивы,
+    # без которых канал позовёт лаунчеры за тем, чего на станции нет (грабли R-065)
+    $id = $j.releaseId
+    if (-not $id) { continue }
+    $need = New-Object System.Collections.Generic.List[string]
+    foreach ($n in 'manifest.json', 'manifest.json.sig', 'release.json') { $need.Add("releases\$id\$n") }
+    $mfPath = Join-Path $Repo "releases\$id\manifest.json"
+    if (Test-Path -LiteralPath $mfPath) {
+        foreach ($f in (Get-Content -LiteralPath $mfPath -Raw | ConvertFrom-Json).files) {
+            $h = $f.sha256
+            $need.Add(('blobs\sha256\{0}\{1}' -f $h.Substring(0, 2), $h))
+        }
+    }
+    $where = @{}
+    foreach ($n in $need) {
+        if ($picked[$n]) { continue }
+        # пустой столбец - файл из времён до этой записи: про него ничего не известно,
+        # и за него отвечает проверка на станции, а не предупреждение здесь
+        $w = $sentZip[$n]
+        if ($w) { $where[$w] = $true }
+    }
+    if ($where.Count) {
+        Write-Host ("  {0,-18}    файлы выпуска есть ещё в: {1}" -f '', (($where.Keys | Sort-Object) -join ', ')) -ForegroundColor Yellow
+    }
 }
 Write-Host ("Готово: {0}  ({1:N1} МБ)" -f $zip, ((Get-Item -LiteralPath $zip).Length / 1MB)) -ForegroundColor Green
 Write-Host 'На станции:  .\station.ps1 releases <этот архив>'
