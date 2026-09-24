@@ -351,6 +351,22 @@ switch ($Command) {
             $id = if ($answer -match '"releaseId":"([^"]+)"') { $Matches[1] } else { $null }
             if ($id) { Write-Host ("{0,-20} -> {1}" -f $ch.BaseName, $id) -ForegroundColor Green }
             else { Write-Host ("{0,-20} НЕ отвечает: $url/releases/channels/$($ch.Name)" -f $ch.BaseName) -ForegroundColor Red }
+            # указатель канала едет в КАЖДОМ архиве, а файлы выпуска - только в том, где они новые.
+            # Если архив с ними не доехал, канал зовёт лаунчеры за тем, чего здесь нет (грабли R-065)
+            if ($id) {
+                $mf = Join-Path $dest "releases\$id\manifest.json"
+                if (-not (Test-Path -LiteralPath $mf)) {
+                    Write-Host ("  НЕТ выпуска {0}: канал на него указывает, а файлов нет. Разложите архив, в котором он собран." -f $id) -ForegroundColor Red
+                } else {
+                    $all = (Get-Content -LiteralPath $mf -Raw | ConvertFrom-Json).files
+                    $gone = 0
+                    foreach ($f in $all) {
+                        $h = $f.sha256
+                        if (-not (Test-Path -LiteralPath (Join-Path $dest ("blobs\sha256\{0}\{1}" -f $h.Substring(0, 2), $h)))) { $gone++ }
+                    }
+                    if ($gone) { Write-Host ("  У выпуска {0} нет {1} файлов из {2} - обновление не пройдёт" -f $id, $gone, $all.Count) -ForegroundColor Red }
+                }
+            }
         }
         Write-Host "Лаунчеры берут обновления с $url/releases/"
     }
