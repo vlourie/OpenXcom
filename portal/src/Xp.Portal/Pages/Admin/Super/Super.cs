@@ -78,6 +78,7 @@ public sealed class TelegramModel(PortalDb db, Audit audit, TimeProvider clock, 
     public List<TelegramRoute> Routes { get; private set; } = new();
     public Dictionary<JobState, int> Counts { get; private set; } = new();
     public List<NotificationJob> Dead { get; private set; } = new();
+    public List<UpstreamState> Upstream { get; private set; } = new();
     public bool TokenSet => !string.IsNullOrWhiteSpace(options.Value.BotToken);
     public List<string> Errors { get; } = new();
 
@@ -88,6 +89,7 @@ public sealed class TelegramModel(PortalDb db, Audit audit, TimeProvider clock, 
         Routes = await db.TelegramRoutes.OrderBy(r => r.Category).ToListAsync(ct);
         Counts = (await db.NotificationJobs.GroupBy(j => j.State).Select(g => new { g.Key, N = g.Count() }).ToListAsync(ct)).ToDictionary(x => x.Key, x => x.N);
         Dead = await db.NotificationJobs.Where(j => j.State == JobState.Dead).OrderByDescending(j => j.Id).Take(20).ToListAsync(ct);
+        Upstream = await db.UpstreamStates.OrderBy(u => u.Source).ToListAsync(ct);
     }
 
     public async Task OnGetAsync(CancellationToken ct) => await LoadAsync(ct);
@@ -96,7 +98,7 @@ public sealed class TelegramModel(PortalDb db, Audit audit, TimeProvider clock, 
     {
         category = (category ?? "").Trim();
         chatId = (chatId ?? "").Trim();
-        if (category != "*" && !Categories.IsValid(category)) Errors.Add("category_invalid");
+        if (category != "*" && category != TelegramNotices.UpstreamCategory && !Categories.IsValid(category)) Errors.Add("category_invalid");
         // chat ids are numbers (-100… for groups) or @channelname
         if (!(long.TryParse(chatId, out _) || (chatId.StartsWith('@') && chatId.Length is > 1 and <= 64))) Errors.Add("chat_invalid");
         if (Errors.Count > 0) { await LoadAsync(ct); return Page(); }
@@ -135,6 +137,16 @@ public sealed class TelegramModel(PortalDb db, Audit audit, TimeProvider clock, 
         audit.Add(Me, "telegram.test", r.Category, r.ChatId);
         await db.SaveChangesAsync(ct);
         TempData["flash"] = "super.test_queued";
+        return RedirectToPage();
+    }
+
+    /// <summary>The daily upstream check, now: a way to see the notices work without waiting a day.</summary>
+    public async Task<IActionResult> OnPostCheckUpstreamAsync([FromServices] UpstreamCheck check, CancellationToken ct)
+    {
+        var queued = await check.RunAsync(ct);
+        audit.Add(Me, "upstream.check", "all", queued.ToString());
+        await db.SaveChangesAsync(ct);
+        TempData["flash"] = "super.upstream.checked_flash";
         return RedirectToPage();
     }
 

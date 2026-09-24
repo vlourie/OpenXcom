@@ -28,13 +28,19 @@ public sealed class TelegramNotices(PortalDb db, IOptions<PortalOptions> portal)
 {
     public const int TitleMax = 80;
 
-    public async Task EnqueueNewTicketAsync(Ticket t, CancellationToken ct)
+    /// <summary>Route of the upstream-version notices (UpstreamCheck); falls back to the default one.</summary>
+    public const string UpstreamCategory = "upstream";
+
+    public Task EnqueueNewTicketAsync(Ticket t, CancellationToken ct) => EnqueueAsync(t.Category, NewTicketText(t, portal.Value.PublicUrl), ct);
+
+    /// <summary>Queues a ready, escaped text on the category's route, or the default route; nothing when neither is set.</summary>
+    public async Task EnqueueAsync(string category, string text, CancellationToken ct)
     {
-        var routes = await db.TelegramRoutes.Where(r => r.Enabled && (r.Category == t.Category || r.Category == "*")).ToListAsync(ct);
+        var routes = await db.TelegramRoutes.Where(r => r.Enabled && (r.Category == category || r.Category == "*")).ToListAsync(ct);
         // a category's own route wins over the default one
-        var route = routes.FirstOrDefault(r => r.Category == t.Category) ?? routes.FirstOrDefault();
+        var route = routes.FirstOrDefault(r => r.Category == category) ?? routes.FirstOrDefault();
         if (route is null) return;
-        db.NotificationJobs.Add(new NotificationJob { ChatId = route.ChatId, ThreadId = route.ThreadId, Text = NewTicketText(t, portal.Value.PublicUrl) });
+        db.NotificationJobs.Add(new NotificationJob { ChatId = route.ChatId, ThreadId = route.ThreadId, Text = text });
     }
 
     public static string NewTicketText(Ticket t, string publicUrl)

@@ -137,6 +137,22 @@ public sealed class NotificationJob
     public DateTimeOffset? DoneAt { get; set; }
 }
 
+/// <summary>What an upstream source (ModDB, OXCE on GitHub, the VK group) showed at the last check.</summary>
+public sealed class UpstreamState
+{
+    /// <summary>Source key: "piratez", "oxce", "ru-patch".</summary>
+    public string Source { get; set; } = "";
+    /// <summary>What identifies the version: a ModDB file id, a version string, a VK post id.</summary>
+    public string Value { get; set; } = "";
+    /// <summary>The same for a human: file title, "8.7.1 (v2026-09-19)", first line of a post.</summary>
+    public string Label { get; set; } = "";
+    public string Url { get; set; } = "";
+    public DateTimeOffset? CheckedAt { get; set; }
+    public DateTimeOffset? ChangedAt { get; set; }
+    public int Failures { get; set; }
+    public string? LastError { get; set; }
+}
+
 public sealed class AuditLog
 {
     public long Id { get; set; }

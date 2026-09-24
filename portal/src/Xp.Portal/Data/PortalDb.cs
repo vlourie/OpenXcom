@@ -14,6 +14,7 @@ public sealed class PortalDb(DbContextOptions<PortalDb> options)
     public DbSet<TicketHistory> TicketHistory => Set<TicketHistory>();
     public DbSet<TelegramRoute> TelegramRoutes => Set<TelegramRoute>();
     public DbSet<NotificationJob> NotificationJobs => Set<NotificationJob>();
+    public DbSet<UpstreamState> UpstreamStates => Set<UpstreamState>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<GameMod> Mods => Set<GameMod>();
     public DbSet<ModText> ModTexts => Set<ModText>();
@@ -111,6 +112,15 @@ public sealed class PortalDb(DbContextOptions<PortalDb> options)
             e.Property(j => j.Text).HasMaxLength(4096);
             e.Property(j => j.State).HasConversion<string>().HasMaxLength(16);
             e.Property(j => j.LastError).HasMaxLength(512);
+        });
+        b.Entity<UpstreamState>(e =>
+        {
+            e.HasKey(u => u.Source);
+            e.Property(u => u.Source).HasMaxLength(32);
+            e.Property(u => u.Value).HasMaxLength(256);
+            e.Property(u => u.Label).HasMaxLength(512);
+            e.Property(u => u.Url).HasMaxLength(512);
+            e.Property(u => u.LastError).HasMaxLength(512);
         });
         b.Entity<AuditLog>(e =>
         {

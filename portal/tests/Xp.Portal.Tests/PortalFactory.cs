@@ -25,6 +25,7 @@ public class PortalFactory : WebApplicationFactory<Program>, IAsyncLifetime
     public string Storage { get; } = Path.Combine(Path.GetTempPath(), "xp-portal-test-" + Guid.NewGuid().ToString("N")[..8]);
     public FakeTimeProvider Clock { get; } = new(new DateTimeOffset(2026, 9, 23, 12, 0, 0, TimeSpan.Zero));
     public FakeTelegram Telegram { get; } = new();
+    public FakeWeb Upstream { get; } = new();
     public Dictionary<string, string?> Settings { get; } = new();
     public string ConnectionString => new NpgsqlConnectionStringBuilder(ServerConnection) { Database = _db }.ConnectionString;
 
@@ -59,6 +60,7 @@ public class PortalFactory : WebApplicationFactory<Program>, IAsyncLifetime
         {
             services.AddSingleton<TimeProvider>(Clock);
             services.AddHttpClient("telegram").ConfigurePrimaryHttpMessageHandler(() => Telegram);
+            services.AddHttpClient("upstream").ConfigurePrimaryHttpMessageHandler(() => Upstream);
         });
     }
 
@@ -100,6 +102,22 @@ public class PortalFactory : WebApplicationFactory<Program>, IAsyncLifetime
     }
 
     public async Task<T> DbAsync<T>(Func<PortalDb, Task<T>> f) => await ScopedAsync(sp => f(sp.GetRequiredService<PortalDb>()));
+}
+
+/// <summary>Stands in for outside sites by URL (without the query): a missing URL answers 404. Records every request.</summary>
+public sealed class FakeWeb : HttpMessageHandler
+{
+    public Dictionary<string, (HttpStatusCode Status, string Body)> Pages { get; } = new();
+    public List<(string Url, string Body)> Requests { get; } = new();
+
+    protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
+    {
+        var body = request.Content is null ? "" : await request.Content.ReadAsStringAsync(ct);
+        var url = request.RequestUri!.GetLeftPart(UriPartial.Path);
+        lock (Requests) Requests.Add((request.RequestUri.ToString(), body));
+        var (status, answer) = Pages.TryGetValue(url, out var p) ? p : (HttpStatusCode.NotFound, "");
+        return new HttpResponseMessage(status) { Content = new StringContent(answer, Encoding.UTF8) };
+    }
 }
 
 /// <summary>Stands in for api.telegram.org: records requests, answers with a scripted status.</summary>

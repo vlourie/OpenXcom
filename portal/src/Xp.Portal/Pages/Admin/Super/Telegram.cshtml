@@ -1,5 +1,6 @@
 @page "/admin/super/telegram"
 @model Xp.Portal.Pages.Admin.Super.TelegramModel
+@using Xp.Portal.Notifications
 @{
     ViewData["Title"] = T["super.telegram"];
 }
@@ -36,6 +37,7 @@
             {
                 <option value="@c">@T["cat." + c]</option>
             }
+            <option value="@TelegramNotices.UpstreamCategory">@T["cat." + TelegramNotices.UpstreamCategory]</option>
         </select>
     </div>
     <div>
@@ -50,6 +52,28 @@
         <label class="check"><input type="checkbox" name="enabled" value="true" checked /> <span>@T["super.enabled"]</span></label>
         <button type="submit">@T["super.save"]</button>
     </div>
+</form>
+
+<h2>@T["super.upstream"]</h2>
+<p class="hint">@T["super.upstream.hint"]</p>
+@if (Model.Upstream.Count > 0)
+{
+    <table>
+        <tr><th></th><th>@T["super.upstream.now"]</th><th>@T["super.upstream.checked"]</th><th>@T["super.upstream.changed"]</th><th></th></tr>
+        @foreach (var u in Model.Upstream)
+        {
+            <tr>
+                <td>@u.Source</td>
+                <td>@if (u.Url.Length > 0) { <a href="@u.Url" rel="noopener nofollow">@u.Label</a> } else { @u.Label }</td>
+                <td>@u.CheckedAt?.ToString("yyyy-MM-dd HH:mm")</td>
+                <td>@u.ChangedAt?.ToString("yyyy-MM-dd HH:mm")</td>
+                <td>@(u.LastError is null ? "" : $"✗ {u.Failures}: {u.LastError}")</td>
+            </tr>
+        }
+    </table>
+}
+<form method="post" asp-page-handler="CheckUpstream">
+    <button type="submit" class="secondary">@T["super.upstream.check"]</button>
 </form>
 
 <h2>@T["super.telegram.queue"]</h2>

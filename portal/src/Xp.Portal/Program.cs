@@ -45,6 +45,7 @@ public static class PortalApp
         s.Configure<PortalOptions>(cfg.GetSection(PortalOptions.Section));
         s.Configure<AttachmentOptions>(cfg.GetSection(AttachmentOptions.Section));
         s.Configure<TelegramOptions>(cfg.GetSection(TelegramOptions.Section));
+        s.Configure<UpstreamOptions>(cfg.GetSection(UpstreamOptions.Section));
         s.Configure<EmailOptions>(cfg.GetSection(EmailOptions.Section));
         s.Configure<Argon2Options>(cfg.GetSection("Argon2"));
         s.AddSingleton(TimeProvider.System);
@@ -123,10 +124,17 @@ public static class PortalApp
         s.AddMemoryCache();
         s.AddHttpClient("telegram", c => c.Timeout = TimeSpan.FromSeconds(20));
         s.AddHttpClient("releases", c => c.Timeout = TimeSpan.FromSeconds(20));
+        // an honest name: ModDB and GitHub serve it as is
+        s.AddHttpClient("upstream", c =>
+        {
+            c.Timeout = TimeSpan.FromSeconds(30);
+            c.DefaultRequestHeaders.UserAgent.ParseAdd("XPiratezPortal/1.0 (+https://x-piratez.mywire.org:8443/)");
+        });
         s.AddHealthChecks().AddDbContextCheck<PortalDb>("db", tags: ["ready"]);
 
         s.AddScoped<TicketService>();
         s.AddScoped<TelegramNotices>();
+        s.AddScoped<UpstreamCheck>();
         s.AddScoped<AttachmentService>();
         s.AddScoped<Audit>();
         s.AddSingleton<ObjectStore>();
@@ -143,6 +151,7 @@ public static class PortalApp
         {
             s.AddHostedService<TelegramWorker>();
             s.AddHostedService<ScanWorker>();
+            s.AddHostedService<UpstreamWorker>();
         }
 
         s.Configure<RequestLocalizationOptions>(o =>
