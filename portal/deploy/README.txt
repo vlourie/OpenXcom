@@ -46,6 +46,8 @@
 ОБНОВЛЕНИЕ ТЕСТОВОЙ СТАНЦИИ (Windows 11 + Docker Desktop)
 ---------------------------------------------------------
 
+Залитые на станцию архивы (и этот, и xp-releases_*.zip) лежат в C:\XPiratezModHD.
+
 Распаковать архив поверх папки сайта и в PowerShell из portal\deploy:
 
        powershell -ExecutionPolicy Bypass -File .\station.ps1
@@ -63,7 +65,7 @@
 раздаётся Caddy по https://<сайт>/releases/. Приходит архивом xp-releases_<дата_время>.zip,
 который собирает portal\deploy\pack-releases.ps1 на машине выпуска. Разложить:
 
-       powershell -ExecutionPolicy Bypass -File .\station.ps1 releases C:\путь\xp-releases_....zip
+       powershell -ExecutionPolicy Bypass -File .\station.ps1 releases C:\XPiratezModHD\xp-releases_....zip
 
 Команда кладёт файлы в правильном порядке (блобы, релизы, каталог, каналы последними), вписывает
 открытый ключ релизов в portal.env, перезапускает caddy и portal и печатает, какой релиз стоит в
