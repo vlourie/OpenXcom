@@ -43,6 +43,7 @@
 ```powershell
 .\Выпуск\OXCE_Release.cmd                 # канал stable, со сборкой
 .\Выпуск\OXCE_Release.cmd nobuild         # без сборки: подписать то, что уже лежит в dist\_stage
+.\Выпуск\OXCE_Release.cmd launcher        # только новый лаунчер (поднять <Version>), игра в канале прежняя
 .\Выпуск\OXCE_Release.cmd test            # в канал test (свой лаунчер-канал launcher-test)
 ```
 
