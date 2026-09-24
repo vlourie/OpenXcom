@@ -21,9 +21,10 @@ namespace Xp.Launcher;
 public sealed class ReviewPage : UserControl
 {
     /// <summary>
-    /// The box a picture is shown in, in points. Fixed for every frame: a floor shown as a field is
-    /// four times wider than a single object, and a box that follows the picture makes the page jump
-    /// under the hand and two frames in a row incomparable by eye.
+    /// The box a picture starts in, in points, until the page knows its own size. The box follows
+    /// the WINDOW and never the picture: a floor shown as a field is four times wider than a single
+    /// object, and a box that followed the frame would make the page jump under the hand and two
+    /// frames in a row incomparable by eye. See <see cref="Box"/>.
     /// </summary>
     const int BoxW = 544, BoxH = 448;
 
@@ -34,8 +35,11 @@ public sealed class ReviewPage : UserControl
     readonly TextBlock _status = new() { FontSize = 13, Foreground = Skin.B(Skin.Text2), TextWrapping = TextWrapping.Wrap };
     readonly TextBlock _position = new() { FontSize = 13, Foreground = Skin.B(Skin.Muted), VerticalAlignment = VerticalAlignment.Center };
     readonly TextBlock _caption = new() { FontSize = 13, Foreground = Skin.B(Skin.Muted), TextWrapping = TextWrapping.Wrap };
-    readonly Image _left = new() { Stretch = Stretch.Uniform, StretchDirection = StretchDirection.DownOnly };
-    readonly Image _right = new() { Stretch = Stretch.Uniform, StretchDirection = StretchDirection.DownOnly };
+    // Stretch.None on purpose: any stretching here is done to PIXELS OF A SPRITE. Uniform would
+    // shrink the picture by whatever fraction the window happens to leave, and rows of the frame
+    // would drop out or double — the pack would then be judged by an artefact of the layout.
+    readonly Image _left = new() { Stretch = Stretch.None };
+    readonly Image _right = new() { Stretch = Stretch.None };
     readonly StackPanel _verdicts = new() { Orientation = Orientation.Horizontal, Spacing = 8 };
     readonly WrapPanel _reasons = new() { Orientation = Orientation.Horizontal };
     readonly TextBlock _done = new() { FontSize = 13, Foreground = Skin.B(Skin.Muted), VerticalAlignment = VerticalAlignment.Center };
@@ -43,6 +47,9 @@ public sealed class ReviewPage : UserControl
     readonly Button _send;
     readonly Dictionary<string, Button> _verdictButtons = new();
     readonly Dictionary<string, Button> _reasonButtons = new();
+
+    Panel? _leftHost;
+    (int W, int H, double Scaling) _drawnBox;
 
     string? _data, _mod;
     Rgb[]? _palette;
@@ -77,6 +84,7 @@ public sealed class ReviewPage : UserControl
             e.Handled = true;
         };
         Focusable = true;
+        SizeChanged += OnBoxChanged;
 
         foreach (var (verdict, key) in new[] { ("ok", "review.ok"), ("bad", "review.bad"), ("doubt", "review.doubt"), ("", "review.clear") })
         {
@@ -117,9 +125,9 @@ public sealed class ReviewPage : UserControl
         RenderOptions.SetBitmapInterpolationMode(_left, BitmapInterpolationMode.None);
         RenderOptions.SetBitmapInterpolationMode(_right, BitmapInterpolationMode.None);
 
-        var panes = new Grid { ColumnDefinitions = new ColumnDefinitions("*,16,*"), VerticalAlignment = VerticalAlignment.Center };
-        panes.Children.Add(Pane(_left, L.T("review.original")));
-        var right = Pane(_right, L.T("review.pack.side"));
+        var panes = new Grid { ColumnDefinitions = new ColumnDefinitions("*,16,*") };
+        panes.Children.Add(Pane(_left, L.T("review.original"), out _leftHost));
+        var right = Pane(_right, L.T("review.pack.side"), out _);
         Grid.SetColumn(right, 2);
         panes.Children.Add(right);
 
@@ -139,25 +147,57 @@ public sealed class ReviewPage : UserControl
         Content = root;
     }
 
-    static Control Pane(Image image, string title)
+    /// <summary>
+    /// One side: a caption, and under it all the room that is left. The picture is built to the size
+    /// of that room, measured by the layout itself — guessing it from the sum of the paddings is how
+    /// a picture ends up hanging over the frame it is supposed to sit in.
+    /// </summary>
+    static Control Pane(Image image, string title, out Panel host)
     {
-        var stack = new StackPanel { Spacing = 8 };
-        stack.Children.Add(new TextBlock { Text = title, FontSize = 12, Foreground = Skin.B(Skin.Muted), HorizontalAlignment = HorizontalAlignment.Center });
-        stack.Children.Add(image);
-        var pane = Skin.Panel(stack, new Thickness(12));
+        host = new Panel { ClipToBounds = true };
+        host.Children.Add(image);
+        var caption = new TextBlock
+        {
+            Text = title, FontSize = 12, Foreground = Skin.B(Skin.Muted),
+            HorizontalAlignment = HorizontalAlignment.Center, Margin = new Thickness(0, 0, 0, 8),
+        };
+        var dock = new DockPanel();
+        DockPanel.SetDock(caption, Dock.Top);
+        dock.Children.Add(caption);
+        dock.Children.Add(host);
+        var pane = Skin.Panel(dock, new Thickness(12));
         pane.MinHeight = BoxH + 48;    // the pane keeps its place while a set is still being read
         return pane;
+    }
+
+    /// <summary>
+    /// The window itself hands over the keys and tells about the screen. Hooked on attachment and
+    /// not only when the page is opened: at the moment a page is chosen from code there may be no
+    /// window over it yet, and then the arrows would never arrive.
+    /// </summary>
+    protected override void OnAttachedToVisualTree(VisualTreeAttachmentEventArgs e)
+    {
+        base.OnAttachedToVisualTree(e);
+        Hook();
+    }
+
+    void Hook()
+    {
+        if (TopLevel.GetTopLevel(this) is not Window w) return;
+        // tunnelling: otherwise the focused pack combo eats the arrows before the page sees them
+        w.RemoveHandler(InputElement.KeyDownEvent, OnKey);
+        w.AddHandler(InputElement.KeyDownEvent, OnKey, RoutingStrategies.Tunnel);
+        // the window is resized and moved between screens of different scaling: the picture is
+        // rebuilt only when the box really becomes another one, or laying out the new picture
+        // would ask for a redraw of its own and the two would chase each other
+        w.ScalingChanged -= OnBoxChanged;
+        w.ScalingChanged += OnBoxChanged;
     }
 
     /// <summary>The page was opened: find the mods once, then show the pack list.</summary>
     public void Shown()
     {
-        if (TopLevel.GetTopLevel(this) is Window w)
-        {
-            // tunnelling: otherwise the focused pack combo eats the arrows before the page sees them
-            w.RemoveHandler(InputElement.KeyDownEvent, OnKey);
-            w.AddHandler(InputElement.KeyDownEvent, OnKey, RoutingStrategies.Tunnel);
-        }
+        Hook();
         // the page takes the keyboard itself: otherwise the first arrow lands in the description box
         Dispatcher.UIThread.Post(() => Focus());
         if (_filled) return;
@@ -236,7 +276,12 @@ public sealed class ReviewPage : UserControl
         _note.IsEnabled = frame is not null;
         _note.Text = frame?.Note ?? "";
         foreach (var (verdict, b) in _verdictButtons) b.Classes.Set("on", frame is not null && frame.Verdict == verdict && verdict.Length > 0);
-        _reasons.IsVisible = frame?.Verdict == "bad";
+        // the row of reasons keeps its place whatever the verdict. Made to appear and vanish, it
+        // changed the height of everything under the pictures — and the pictures with it — at the
+        // very moment a verdict was given, which is the moment one wants them to hold still
+        var bad = frame?.Verdict == "bad";
+        _reasons.IsEnabled = bad;
+        _reasons.Opacity = bad ? 1 : 0.3;
         foreach (var (reason, b) in _reasonButtons) b.Classes.Set("on", frame?.Reasons.Contains(reason) == true);
         if (frame is null || _pack is null || _plan is null || _data is null || _palette is null || _sprites is null) return;
 
@@ -264,13 +309,44 @@ public sealed class ReviewPage : UserControl
             }
             // both sides into the same fixed box: a single sprite at k=1 is 32x40 and nothing is
             // visible in it, a field of a floor is 512 wide, and the two must still look like a pair
-            _left.Source = Bitmap(left.Fit(BoxW, BoxH, Review.Floor));
-            _right.Source = Bitmap(right.Fit(BoxW, BoxH, Review.Floor));
+            _drawnBox = Box();
+            var (bw, bh, scaling) = _drawnBox;
+            _left.Source = Bitmap(left.Fit(bw, bh, Review.Floor), scaling);
+            _right.Source = Bitmap(right.Fit(bw, bh, Review.Floor), scaling);
         }
         catch (Exception e) when (e is ReviewException or PngException or IOException)
         {
             _status.Text = L.T("err.generic", e.Message);
         }
+    }
+
+    void OnBoxChanged(object? sender, EventArgs e)
+    {
+        if (Box() != _drawnBox) Draw();
+    }
+
+    /// <summary>
+    /// The box for one picture, in pixels of the glass, and the screen's scaling next to it.
+    /// A point is not a pixel: at 150 per cent one point is a pixel and a half, so a picture built
+    /// in points is magnified by that fraction on its way to the screen — every second row of the
+    /// sprite doubles while its neighbour does not, and the pack ends up judged by an artefact of
+    /// the display. Building it in pixels instead costs nothing and shows more of the frame the
+    /// finer the screen.
+    /// </summary>
+    (int W, int H, double Scaling) Box()
+    {
+        var scaling = TopLevel.GetTopLevel(this)?.RenderScaling ?? 1.0;
+        var w = BoxW;
+        var h = BoxH;
+        // the room left for one picture, as the layout arranged it. Both sides of it come from the
+        // window: the column is star-sized and the host fills what the caption leaves, so neither
+        // depends on the picture — which is what keeps this from chasing its own tail
+        if (_leftHost is { Bounds.Width: > 120, Bounds.Height: > 120 })
+        {
+            w = (int)_leftHost.Bounds.Width;
+            h = (int)_leftHost.Bounds.Height;
+        }
+        return ((int)(w * scaling), (int)(h * scaling), scaling);
     }
 
     ReviewFrame? Current => _plan is not null && _at >= 0 && _at < _plan.Frames.Count ? _plan.Frames[_at] : null;
@@ -374,10 +450,15 @@ public sealed class ReviewPage : UserControl
         }
     }
 
-    /// <summary>Avalonia draws BGRA; our pictures are RGBA, so the two colour channels swap.</summary>
-    static WriteableBitmap Bitmap(Image32 picture)
+    /// <summary>
+    /// Avalonia draws BGRA; our pictures are RGBA, so the two colour channels swap. The bitmap is
+    /// given the screen's own dpi (96 is one point per pixel), which is what makes one pixel of the
+    /// picture land on exactly one pixel of the glass instead of being stretched by the scaling.
+    /// </summary>
+    static WriteableBitmap Bitmap(Image32 picture, double scaling)
     {
-        var bmp = new WriteableBitmap(new PixelSize(picture.Width, picture.Height), new Vector(96, 96), PixelFormat.Bgra8888, AlphaFormat.Unpremul);
+        var dpi = 96 * scaling;
+        var bmp = new WriteableBitmap(new PixelSize(picture.Width, picture.Height), new Vector(dpi, dpi), PixelFormat.Bgra8888, AlphaFormat.Unpremul);
         using var buffer = bmp.Lock();
         var row = new byte[picture.Width * 4];
         for (var y = 0; y < picture.Height; y++)

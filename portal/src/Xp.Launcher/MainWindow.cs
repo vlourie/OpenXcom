@@ -2,6 +2,8 @@ using System.Diagnostics;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Documents;
+using Avalonia.Input;
+using Avalonia.Interactivity;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Platform.Storage;
@@ -85,6 +87,9 @@ public sealed class MainWindow : Window
         Height = _settings.WindowHeight is >= 520 and <= 3000 ? _settings.WindowHeight.Value : 600;
         MinWidth = 800; MinHeight = 520;
         WindowStartupLocation = WindowStartupLocation.CenterScreen;
+        // открываемся во весь экран: паре картинок на вкладке «Графика» нужно место, а окно,
+        // размер которого свой на каждой машине, даёт кадру каждый раз разное
+        WindowState = WindowState.Maximized;
 
         _check = Skin.Btn(L.T("checkUpdates"), "ghost");
         _check.Click += async (_, _) => await RunAsync(Work.Check, () => CheckAsync(full: false, apply: false));
@@ -127,6 +132,13 @@ public sealed class MainWindow : Window
         Grid.SetColumn(host, 1);
         root.Children.Add(host);
         Content = root;
+        // F11 - весь экран без заголовка окна и панели задач: для разбора картинок кадром больше
+        AddHandler(KeyDownEvent, (object? _, KeyEventArgs e) =>
+        {
+            if (e.Key is not Key.F11) return;
+            WindowState = WindowState == WindowState.FullScreen ? WindowState.Maximized : WindowState.FullScreen;
+            e.Handled = true;
+        }, RoutingStrategies.Tunnel);
         Navigate("home");
 #if DEBUG
         // screenshots of every page without clicking through them
