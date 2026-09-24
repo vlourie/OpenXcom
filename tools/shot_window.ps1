@@ -20,6 +20,9 @@ param(
     [double]$Scale = 0.5
 )
 $ErrorActionPreference = "Stop"
+# powershell -File массивов не понимает: -Arguments "--page","review" приходит ОДНОЙ строкой
+# "--page,review", программа получает один непонятный ключ и молча его не видит (грабли R-045)
+$Arguments = @($Arguments | ForEach-Object { $_ -split '[,\s]+' } | Where-Object { $_ })
 Add-Type -AssemblyName System.Drawing
 Add-Type @"
 using System;
