@@ -131,6 +131,31 @@ public sealed class ReviewTests(ITestOutputHelper output)
         Assert.Equal(0, field.Rgba[3]);
     }
 
+    /// <summary>
+    /// The box a frame is shown in must not follow the frame: a floor as a field is four times wider
+    /// than a single object, and a box that changes makes the page jump and two frames incomparable.
+    /// </summary>
+    [Fact]
+    public void Every_frame_is_shown_in_the_same_box_whatever_its_own_size()
+    {
+        var floor = new Rgb(34, 34, 40);
+        foreach (var (w, h) in new[] { (32, 40), (128, 160), (148, 180), (512, 416), (1200, 900) })
+        {
+            var fit = Image32.Empty(w, h).Fit(544, 448, floor);
+            Assert.Equal(544, fit.Width);
+            Assert.Equal(448, fit.Height);
+            // the whole box is painted: nothing of the frame before it shows through
+            Assert.Equal(255, fit.Rgba[3]);
+            Assert.Equal(floor.R, fit.Rgba[^4]);
+        }
+        // a small frame is magnified by a whole number, so pixels stay pixels
+        var one = Image32.Empty(1, 1);
+        one.Rgba[0] = one.Rgba[3] = 255;
+        var big = one.ScaleNearest(2).Fit(8, 8, floor);
+        Assert.Equal(8, big.Width);
+        output.WriteLine("box 544x448 holds every frame size");
+    }
+
     [Fact]
     public void Marks_come_back_only_for_the_picture_they_were_made_about()
     {

@@ -237,6 +237,40 @@ public sealed class Image32(int width, int height, byte[] rgba)
         }
     }
 
+    /// <summary>Every d-th pixel: the only honest way down for pixel art that outgrew its box.</summary>
+    public Image32 ShrinkNearest(int d)
+    {
+        if (d <= 1) return this;
+        var to = Empty(Math.Max(1, Width / d), Math.Max(1, Height / d));
+        for (var y = 0; y < to.Height; y++)
+            for (var x = 0; x < to.Width; x++)
+            {
+                var s = (y * d * Width + x * d) * 4;
+                var t = (y * to.Width + x) * 4;
+                to.Rgba[t] = Rgba[s]; to.Rgba[t + 1] = Rgba[s + 1]; to.Rgba[t + 2] = Rgba[s + 2]; to.Rgba[t + 3] = Rgba[s + 3];
+            }
+        return to;
+    }
+
+    /// <summary>
+    /// The picture centred on a canvas of a FIXED size, magnified by a whole number so pixels stay
+    /// pixels. Every frame is shown in the same box on purpose: a box that changes with the frame
+    /// makes the page jump under the hand and two frames in a row incomparable by eye.
+    /// </summary>
+    public Image32 Fit(int boxW, int boxH, Rgb floor)
+    {
+        var picture = Width > boxW || Height > boxH
+            ? ShrinkNearest(Math.Max((Width + boxW - 1) / boxW, (Height + boxH - 1) / boxH))
+            : ScaleNearest(Math.Max(1, Math.Min(boxW / Width, boxH / Height)));
+        var to = Empty(boxW, boxH);
+        for (var i = 0; i < to.Rgba.Length; i += 4)
+        {
+            to.Rgba[i] = floor.R; to.Rgba[i + 1] = floor.G; to.Rgba[i + 2] = floor.B; to.Rgba[i + 3] = 255;
+        }
+        to.Composite(picture, (boxW - picture.Width) / 2, (boxH - picture.Height) / 2);
+        return to;
+    }
+
     /// <summary>The frame on the dark battle floor, with a margin, so a leftover panel shows.</summary>
     public Image32 OnFloor(Rgb floor, int pad = 10)
     {
@@ -341,6 +375,8 @@ public sealed class ReviewFrame
     public int Variants { get; set; }
     public string Verdict { get; set; } = "";
     public List<string> Reasons { get; set; } = [];
+    /// <summary>What the person wrote about this frame. The closed list of reasons cannot say everything.</summary>
+    public string Note { get; set; } = "";
 }
 
 /// <summary>One pack's frames, hardest first. This is also the block that goes to the site.</summary>
@@ -415,7 +451,8 @@ public static class ReviewStore
         Section = plan.Section,
         Set = plan.Set,
         ModVersion = plan.ModVersion,
-        Frames = plan.Frames.Where(f => !string.IsNullOrEmpty(f.Verdict)).ToList(),
+        // a written note without a verdict is worth sending too: it is the part the six reasons cannot say
+        Frames = plan.Frames.Where(f => !string.IsNullOrEmpty(f.Verdict) || !string.IsNullOrWhiteSpace(f.Note)).ToList(),
     };
 
     /// <summary>
@@ -430,9 +467,11 @@ public static class ReviewStore
         var back = 0;
         foreach (var f in plan.Frames)
         {
-            if (!was.TryGetValue((f.Frame, f.Orig, f.Hd), out var old) || string.IsNullOrEmpty(old.Verdict)) continue;
+            if (!was.TryGetValue((f.Frame, f.Orig, f.Hd), out var old)) continue;
+            if (string.IsNullOrEmpty(old.Verdict) && string.IsNullOrWhiteSpace(old.Note)) continue;
             f.Verdict = old.Verdict;
             f.Reasons = old.Reasons.Where(Review.Reasons.Contains).ToList();
+            f.Note = old.Note;
             back++;
         }
         return back;

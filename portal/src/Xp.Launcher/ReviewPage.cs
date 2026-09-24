@@ -20,8 +20,12 @@ namespace Xp.Launcher;
 /// </summary>
 public sealed class ReviewPage : UserControl
 {
-    /// <summary>How big the longer side of a shown picture should be, in points.</summary>
-    const int Target = 512;
+    /// <summary>
+    /// The box a picture is shown in, in points. Fixed for every frame: a floor shown as a field is
+    /// four times wider than a single object, and a box that follows the picture makes the page jump
+    /// under the hand and two frames in a row incomparable by eye.
+    /// </summary>
+    const int BoxW = 544, BoxH = 448;
 
     readonly Settings _settings;
     readonly Func<string?> _gameDir;
@@ -35,6 +39,7 @@ public sealed class ReviewPage : UserControl
     readonly StackPanel _verdicts = new() { Orientation = Orientation.Horizontal, Spacing = 8 };
     readonly WrapPanel _reasons = new() { Orientation = Orientation.Horizontal };
     readonly TextBlock _done = new() { FontSize = 13, Foreground = Skin.B(Skin.Muted), VerticalAlignment = VerticalAlignment.Center };
+    readonly TextBox _note = new() { AcceptsReturn = true, TextWrapping = TextWrapping.Wrap, Height = 62, MaxLength = 2000, FontSize = 13 };
     readonly Button _send;
     readonly Dictionary<string, Button> _verdictButtons = new();
     readonly Dictionary<string, Button> _reasonButtons = new();
@@ -60,6 +65,18 @@ public sealed class ReviewPage : UserControl
         _send.FontFamily = Skin.Medium;
         _send.FontSize = 14;
         _send.Click += async (_, _) => await SendAsync();
+        // the button stays on the page always: hidden until the first verdict, it looked as if there were none
+        _note.Watermark = L.T("review.note");
+        _note.LostFocus += (_, _) => Commit();
+        // the page is driven from the keyboard; Esc is the way out of the box back to the arrows
+        _note.KeyDown += (_, e) =>
+        {
+            if (e.Key is not Key.Escape) return;
+            Commit();
+            Focus();
+            e.Handled = true;
+        };
+        Focusable = true;
 
         foreach (var (verdict, key) in new[] { ("ok", "review.ok"), ("bad", "review.bad"), ("doubt", "review.doubt"), ("", "review.clear") })
         {
@@ -110,6 +127,7 @@ public sealed class ReviewPage : UserControl
         bottom.Children.Add(_caption);
         bottom.Children.Add(_verdicts);
         bottom.Children.Add(_reasons);
+        bottom.Children.Add(_note);
         bottom.Children.Add(Skin.Note(L.T("review.keys"), 12));
 
         var root = new DockPanel { Margin = new Thickness(28, 24, 28, 24) };
@@ -126,7 +144,9 @@ public sealed class ReviewPage : UserControl
         var stack = new StackPanel { Spacing = 8 };
         stack.Children.Add(new TextBlock { Text = title, FontSize = 12, Foreground = Skin.B(Skin.Muted), HorizontalAlignment = HorizontalAlignment.Center });
         stack.Children.Add(image);
-        return Skin.Panel(stack, new Thickness(12));
+        var pane = Skin.Panel(stack, new Thickness(12));
+        pane.MinHeight = BoxH + 48;    // the pane keeps its place while a set is still being read
+        return pane;
     }
 
     /// <summary>The page was opened: find the mods once, then show the pack list.</summary>
@@ -138,6 +158,8 @@ public sealed class ReviewPage : UserControl
             w.RemoveHandler(InputElement.KeyDownEvent, OnKey);
             w.AddHandler(InputElement.KeyDownEvent, OnKey, RoutingStrategies.Tunnel);
         }
+        // the page takes the keyboard itself: otherwise the first arrow lands in the description box
+        Dispatcher.UIThread.Post(() => Focus());
         if (_filled) return;
         // filled only once it worked: the game folder may still be opening when the page first shows
         var dir = _gameDir();
@@ -169,6 +191,7 @@ public sealed class ReviewPage : UserControl
     async void LoadSet()
     {
         if (_sets.SelectedItem is not string set || _data is null || _mod is null || _palette is null) return;
+        Commit();
         _status.Text = L.T("review.reading", set);
         _left.Source = _right.Source = null;
         _pack?.Dispose();
@@ -209,7 +232,9 @@ public sealed class ReviewPage : UserControl
         var frame = Current;
         _position.Text = _plan is null || frame is null ? "" : L.T("review.position", _at + 1, _plan.Frames.Count);
         _done.Text = _plan is null ? "" : L.T("review.marked", _plan.Frames.Count(f => f.Verdict.Length > 0), _plan.Frames.Count);
-        _send.IsVisible = ReviewStore.All().Sum(p => p.Frames.Count) > 0;
+        _send.IsEnabled = ReviewStore.All().Sum(p => p.Frames.Count) > 0;
+        _note.IsEnabled = frame is not null;
+        _note.Text = frame?.Note ?? "";
         foreach (var (verdict, b) in _verdictButtons) b.Classes.Set("on", frame is not null && frame.Verdict == verdict && verdict.Length > 0);
         _reasons.IsVisible = frame?.Verdict == "bad";
         foreach (var (reason, b) in _reasonButtons) b.Classes.Set("on", frame?.Reasons.Contains(reason) == true);
@@ -237,11 +262,10 @@ public sealed class ReviewPage : UserControl
                 left = big.OnFloor(Review.Floor);
                 right = hd.OnFloor(Review.Floor);
             }
-            // a single sprite at k=1 is 32x40 and nothing is visible in it: blow both sides up by the
-            // same whole number, so pixels stay pixels and the pair stays comparable
-            var zoom = Math.Clamp(Target / Math.Max(left.Width, left.Height), 1, 4);
-            _left.Source = Bitmap(left.ScaleNearest(zoom));
-            _right.Source = Bitmap(right.ScaleNearest(zoom));
+            // both sides into the same fixed box: a single sprite at k=1 is 32x40 and nothing is
+            // visible in it, a field of a floor is 512 wide, and the two must still look like a pair
+            _left.Source = Bitmap(left.Fit(BoxW, BoxH, Review.Floor));
+            _right.Source = Bitmap(right.Fit(BoxW, BoxH, Review.Floor));
         }
         catch (Exception e) when (e is ReviewException or PngException or IOException)
         {
@@ -254,13 +278,25 @@ public sealed class ReviewPage : UserControl
     void Go(int delta)
     {
         if (_plan is null || _plan.Frames.Count == 0) return;
+        Commit();
         _at = Math.Clamp(_at + delta, 0, _plan.Frames.Count - 1);
         Draw();
+    }
+
+    /// <summary>What is typed in the box belongs to the frame on screen: put it there before anything moves.</summary>
+    void Commit()
+    {
+        if (Current is not { } frame) return;
+        var text = (_note.Text ?? "").Trim();
+        if (text == frame.Note) return;
+        frame.Note = text;
+        Save();
     }
 
     void Mark(string verdict)
     {
         if (Current is not { } frame || _plan is null) return;
+        Commit();
         frame.Verdict = verdict;
         if (verdict != "bad") frame.Reasons.Clear();
         Save();
@@ -287,6 +323,8 @@ public sealed class ReviewPage : UserControl
     void OnKey(object? sender, KeyEventArgs e)
     {
         if (!IsVisible || _plan is null) return;
+        // while the description is being typed, 1 2 3 are digits and the arrows move the caret
+        if (TopLevel.GetTopLevel(this)?.FocusManager?.GetFocusedElement() is TextBox) return;
         switch (e.Key)
         {
             case Key.Left or Key.PageUp: Go(-1); break;
@@ -315,6 +353,7 @@ public sealed class ReviewPage : UserControl
     /// </summary>
     async Task SendAsync()
     {
+        Commit();
         if (TopLevel.GetTopLevel(this) is not { } top) return;
         var file = await top.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
         {
