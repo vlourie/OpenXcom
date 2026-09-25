@@ -7,9 +7,10 @@
   "SevenZip": "",
 
   "GameDir": "E:\\OpenXCom\\Пиратки\\Dioxine_XPiratez",
-  "Mods": ["hd", "intro_voice", "Piratez", "OAK patch for RU Piratez", "Piratez Cities Lore", "Piratez Cyrillic Names", "Piratez Czech Names"],
+  "Mods": ["hd", "intro_voice", "Piratez", "OAK patch for RU Piratez", "Piratez Cities Lore", "Piratez Cyrillic Names", "Piratez Czech Names", "XPZ RU-patch"],
   "ModRequire": {
     "Piratez": ["metadata.yml", "Ruleset", "Language", "Resources"],
+    "XPZ RU-patch": ["metadata.yml", "Language/ru.yml"],
     "hd": ["metadata.yml", "hd/UI/FontBig.ttf", "hd/UI/FontSmall.ttf", "hd/UI/FontFallback.ttf", "hd/UI/fonts", "Ruleset"],
     "intro_voice": ["metadata.yml", "Ruleset", "SOUND"]
   },
