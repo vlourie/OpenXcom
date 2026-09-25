@@ -12,4 +12,6 @@ rem gen_batch2.log holds the run itself.
 set PYTHONIOENCODING=utf-8
 set PYTHONUTF8=1
 cd /d E:\OpenXCom
-py -3 tools\hdart\keep_batch.py --lora E:/train/lora/oxcehd/step-2540.safetensors --hours 48 --gap 60 --extra "--max-plan 100000" >> keep_batch.log 2>&1
+rem Через очередь видеокарты (tools\gpuq.py): прогон дождётся своей очереди, его вывод -
+rem в .gpuq\logs\<номер>.log, а не в keep_batch.log.
+py -3 tools\gpuq.py add --name lora-batch -- py -3 tools\hdart\keep_batch.py --lora E:/train/lora/oxcehd/step-2540.safetensors --hours 48 --gap 60 --extra "--max-plan 100000"

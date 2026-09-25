@@ -1,0 +1,31 @@
+# Скрипты, которые грузят модель на видеокарту. Один на строку, имя файла без пути.
+# Читают двое: tools/gpuq.py (видит запуск мимо очереди и ждёт его) и
+# .claude/hooks/gpu-guard.ps1 (не даёт агенту запустить такой скрипт мимо очереди).
+# Новый скрипт с моделью - дописать сюда.
+gen_hd.py
+gen_lora_batch.py
+gen_lora_test.py
+gen_promo.py
+gen_cursor.py
+gen_fire.py
+gen_tile.py
+gen_all.ps1
+run_batch.py
+keep_batch.py
+paint3.py
+map_paint.py
+photo_ui.py
+prompt_writer.py
+upscale_ui.py
+upscale_units.py
+score_batch.py
+build_dataset.py
+make_ref.py
+field_sweep.py
+caption.py
+describe_modules.py
+train_lora.ps1
+train.py
+check_triton.py
+pedia_ab.py
+pedia_batch.py

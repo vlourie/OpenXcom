@@ -133,3 +133,6 @@ dist/
 /dataset/
 /lora_*/
 /X-Files*/
+
+# очередь видеокарты tools/gpuq.py
+.gpuq/

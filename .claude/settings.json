@@ -65,6 +65,13 @@
             "command": "& \"$env:CLAUDE_PROJECT_DIR/.claude/hooks/backslash-guard.ps1\"",
             "timeout": 15,
             "statusMessage": "Проверяю, нет ли обратной косой во встроенном скрипте (R-035)"
+          },
+          {
+            "type": "command",
+            "shell": "powershell",
+            "command": "& \"$env:CLAUDE_PROJECT_DIR/.claude/hooks/gpu-guard.ps1\"",
+            "timeout": 15,
+            "statusMessage": "Проверяю, что видеокарта идёт через очередь"
           }
         ]
       },
