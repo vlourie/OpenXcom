@@ -1531,33 +1531,36 @@ void Map::drawTerrain(HdCanvas *surface)
 								BattleUnit *itemUnit = item->getUnit();
 								if (itemUnit && itemUnit->getStatus() == STATUS_UNCONSCIOUS && itemUnit->indicatorsAreEnabled())
 								{
+									// the same pulse as the indicators on the inventory's ground grid (Inventory::drawItems)
+									static const int Pulsate[8] = { 0, 1, 2, 3, 4, 3, 2, 1 };
+									const int indicatorShade = std::min(15, tileShade + Pulsate[_animFrame % 8]);
 									if (_burnIndicator && itemUnit->getFire() > 0)
 									{
 										surface->blit(_burnIndicator,
 											screenPosition.x,
 											screenPosition.y + tile->getTerrainLevel() * _k,
-											tileShade);
+											indicatorShade);
 									}
 									else if (_woundIndicator && itemUnit->getFatalWounds() > 0)
 									{
 										surface->blit(_woundIndicator,
 											screenPosition.x,
 											screenPosition.y + tile->getTerrainLevel() * _k,
-											tileShade);
+											indicatorShade);
 									}
 									else if (_shockIndicator && itemUnit->hasNegativeHealthRegen())
 									{
 										surface->blit(_shockIndicator,
 											screenPosition.x,
 											screenPosition.y + tile->getTerrainLevel() * _k,
-											tileShade);
+											indicatorShade);
 									}
 									else if (_stunIndicator)
 									{
 										surface->blit(_stunIndicator,
 											screenPosition.x,
 											screenPosition.y + tile->getTerrainLevel() * _k,
-											tileShade);
+											indicatorShade);
 									}
 								}
 							}
