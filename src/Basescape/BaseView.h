@@ -63,6 +63,8 @@ private:
 	std::vector<HdCraft> _hdCrafts;
 	/// Has this facility an HD picture of its tiles (then it is not drawn on the classic layer)?
 	bool isHdFacility(const BaseFacility *facility) const;
+	/// The frame whose HD picture stands for tile `num` of the facility.
+	static int hdTileIndex(const BaseFacility *facility, int num);
 	/// Updates the neighborFacility's build time. This is for internal use only (reCalcQueuedBuildings()).
 	void updateNeighborFacilityBuildTime(BaseFacility* facility, BaseFacility* neighbor);
 public:
