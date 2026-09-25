@@ -52,12 +52,51 @@ public sealed class ModMetadata
     static string Unquote(string v)
     {
         v = v.Trim();
-        if (v.Length >= 2 && (v[0] == '"' || v[0] == '\''))
+        if (v.Length >= 2 && v[0] == '"') return DoubleQuoted(v);
+        if (v.Length >= 2 && v[0] == '\'')
         {
             var end = v.IndexOf(v[0], 1);
             if (end > 0) return v[1..end];
         }
         var hash = v.IndexOf(" #", StringComparison.Ordinal);
         return (hash >= 0 ? v[..hash] : v).Trim();
+    }
+
+    /// <summary>
+    /// A YAML double-quoted scalar with its escapes, as yaml-cpp reads it, minus the engine's
+    /// text markup: "\eC\x59" sets a colour and "\ecP" resets it (Text.cpp, TOK_CUSTOM_FORMAT),
+    /// the byte 0x01 flips colours. XPZ RU-patch 12.3.2 paints its name and version so.
+    /// </summary>
+    static string DoubleQuoted(string v)
+    {
+        var sb = new System.Text.StringBuilder();
+        for (var i = 1; i < v.Length && v[i] != '"'; i++)
+        {
+            var c = v[i];
+            if (c == '\\' && i + 1 < v.Length)
+            {
+                c = v[++i];
+                int hex = c switch { 'x' => 2, 'u' => 4, 'U' => 8, _ => 0 };
+                if (hex > 0 && i + hex < v.Length
+                    && int.TryParse(v.AsSpan(i + 1, hex), System.Globalization.NumberStyles.HexNumber, null, out var code))
+                {
+                    sb.Append(char.ConvertFromUtf32(code));
+                    i += hex;
+                    continue;
+                }
+                sb.Append(c switch { 'e' => '\x1b', 'n' => '\n', 't' => '\t', '0' => '\0', _ => c });
+                continue;
+            }
+            sb.Append(c);
+        }
+        var s = sb.ToString();
+        var clean = new System.Text.StringBuilder(s.Length);
+        for (var i = 0; i < s.Length; i++)
+        {
+            if (s[i] == '\x1b') { i += 2; continue; }
+            if (s[i] == '\x01') continue;
+            clean.Append(s[i]);
+        }
+        return clean.ToString().Trim();
     }
 }

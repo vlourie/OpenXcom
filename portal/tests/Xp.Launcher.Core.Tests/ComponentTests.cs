@@ -25,6 +25,15 @@ public sealed class ComponentTests : IDisposable
         Assert.Equal("", ModMetadata.Parse("id: m\nisMaster: true\n", "m").Master);             // a master has none unless named
     }
 
+    [Fact]
+    public void Colour_markup_of_a_mod_name_does_not_reach_the_player()
+    {
+        // XPZ RU-patch 12.3.2 paints its name and version with the engine's "\eC\xNN ... \ecP"
+        var ru = ModMetadata.Parse("name: \"XPZ \\eC\\x59Russian Patch\\ecP\"\nversion: \"\\eC\\x5012.3.2\\ecP / 19-SEP-2026\"\nid: XPZ_EX_RU-patch\n", "XPZ RU-patch");
+        Assert.Equal(("XPZ Russian Patch", "12.3.2 / 19-SEP-2026"), (ru.Name, ru.Version));
+        Assert.Equal("say \"hi\"", ModMetadata.Parse("name: \"say \\\"hi\\\"\" # c\n", "m").Name);
+    }
+
     void StageEdition()
     {
         Fixture.Write(f.Stage, "openxcom_hd.exe", "engine");
