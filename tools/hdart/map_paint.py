@@ -21,6 +21,7 @@ art\maps\paint\<режим>\<НАБОР>.PCK\<кадр>.png, листы - в art
     tools\hdart\.venv\Scripts\python.exe tools\hdart\map_paint.py --terrain CULTA_UBER --block CULTAFARM01 --mode whole,context
 """
 import argparse
+import json
 import os
 import sys
 import time
@@ -42,20 +43,42 @@ OUT = os.path.join("art", "maps", "paint")
 
 # CLIP читает 77 токенов: сцена короткая, иначе хвост стиля отрезается (так было в первом прогоне)
 SCENES = {
-    "CULTAFARM01": "an old farm barn, wooden plank floor, straw hay bales, sandstone brick base, "
-                   "weathered vertical wooden boards, wooden staircase, dark roof, green grass around",
+    "CULTAFARM01": "an old farm barn, wooden plank floor, sandstone brick base, "
+                   "weathered vertical wooden boards, dark roof, green grass around | straw hay bales, "
+                   "wooden staircase",
     "CARGO00": "a cargo ship deck at sea, green painted steel deck, helipad, metal railings, "
-               "shipping containers, barrels, cabin with windows, blue sea water",
-    "DESERT05": "a sandy desert, orange sand with small ripples, green saguaro cacti, "
+               "blue sea water | shipping containers, barrels, cabin with windows",
+    "DESERT05": "a sandy desert, pale orange sand with small ripples |green saguaro cacti, "
                 "dead dry trees, small desert bushes",
-    "CULTASOLHUGE01": "a large farm warehouse, sandstone brick walls, dark corrugated roof, stacked straw "
-                      "hay bales, yellow farm tractors, grey gravel yard, small wooden shed, green grass",
+    "CULTASOLHUGE01": "a large farm warehouse, sandstone brick walls, dark corrugated roof, grey gravel "
+                      "yard, green grass | stacked straw hay bales, yellow farm tractors, small wooden shed",
     # лотки A_PODS - по словам Vitali, основание разбитой капсулы; по MCD это отдельный предмет (R-071)
-    "UBASE_00": "alien base room, glowing magenta floor tiles, grey metal walls with red ribs, "
-                "orange consoles, amber glass capsules, broken capsule bases with green sprouts, purple rock",
+    # «red ribs» в прежней теме дали красные трещины на всех стенах (R-016); по листу оригинала стены -
+    # сиреневый камень с бурыми прожилками
+    "UBASE_00": "alien base room, pale lavender floor tiles, dark purple rock floor, purple organic stone "
+                "walls with dark brown veins | red spherical pods on blue pipes, amber glass panels "
+                "in pale frames, broken capsule bases with green sprouts",
+    # пилот по картам: описания по макетам art/maps/<ТЕРРЕЙН>__<КАРТА>.png
+    "URBAN06": "a city block building, flat roof of light grey gravel and concrete, grey plaster walls "
+               "with small windows, grey concrete pillars, grey paved sidewalk | glass shop fronts, "
+               "shop shelves with goods, cardboard boxes",
+    "JUNGLE04": "a tropical jungle clearing, lush bright green grass | big broadleaf trees, "
+                "ferns, small palms, tropical flowers",
+    "CATACOMBS_33": "ancient jungle catacombs, rough brown earth and rock, grey cobblestone floor, "
+                    "dark grey stone brick walls with green moss | creeping vines",
 }
 STYLE = ("isometric view of {scene}, pre-rendered 3D game art, realistic matte materials, "
          "detailed textures, soft light from the upper left, sharp focus")
+
+def scene_prompts(scene):
+    """Тема «поверхности | предметы» (R-016): всё, что названо в теме, модель рисует на каждом кадре.
+    Возвращает (промпт участка - обе части, промпт поля полов и стен - только поверхности)."""
+    # делить по голой черте: « |green» без пробела в DESERT05 не делилось, и поле песка получало
+    # «сухие деревья, кустики» - на каждой клетке пустыни выросла веточка
+    surf, _bar, things = (p.strip() for p in scene.partition("|"))
+    return (STYLE.replace("{scene}", ", ".join(p for p in (surf, things) if p)),
+            STYLE.replace("{scene}", surf))
+
 
 # подсказка к кадру (R-007): участок, где кадр стоит, получает её В НАЧАЛО промпта. Описание -
 # по кадру оригинала x4, а не по памяти (R-040). Коротко: хвост промпта режется по 77 токенам CLIP
@@ -138,12 +161,13 @@ class Brush:
         self.painter = gen_hd.Painter(pipe, {}, neg, {})
         self.args = args
 
-    def paint(self, rgba, g, prompt, seed, under=None):
+    def paint(self, rgba, g, prompt, seed, under=None, opts=None):
         """Картинка k=1 (RGBA) -> рисунок xg (RGB): два прохода, как Painter.paint в gen_hd.
 
         under - уже нарисованные клетки участка xg (RGBA): ложатся на вход поверх увеличенного
-        оригинала, и новая клетка продолжает их тон и кладку, а не рисует свою."""
-        gh, a = self.gh, self.args
+        оригинала, и новая клетка продолжает их тон и кладку, а не рисует свою.
+        opts - свои настройки вместо общих (поле полов и стен, ключ --field)."""
+        gh, a = self.gh, opts or self.args
         base = gh.fill_background(rgba, radius=3, blur=1.0)
         # только гладкое увеличение: xBRZ на входе проверен прогоном 7 и дал кляксы вместо досок (R-004)
         filled = gh.smooth_upscale(base, g)
@@ -167,6 +191,12 @@ def silhouette(spr, k=4, soft=False):
     a = spr.split()[3]
     if not soft:
         return a.resize((spr.width * k, spr.height * k), Image.NEAREST)
+    if EDGE_BLUR > 0:
+        # размыв ступенчатой маски на EDGE_BLUR пикселей оригинала: лесенка уходит, листва - плавной кромкой
+        big = a.resize((spr.width * k, spr.height * k), Image.NEAREST)
+        m = np.asarray(big.filter(ImageFilter.GaussianBlur(EDGE_BLUR * k))).astype(np.float32) / 255
+        m = np.clip((m - 0.5) * 4 + 0.5, 0, 1)
+        return Image.fromarray((m * 255).astype(np.uint8))
     m = np.asarray(a.resize((spr.width * k, spr.height * k), Image.BICUBIC)).astype(np.float32) / 255
     m = np.clip((m - 0.5) * 4 + 0.5, 0, 1)
     return Image.fromarray((m * 255).astype(np.uint8))
@@ -202,6 +232,7 @@ def match_tone(rgb, spr, amount):
 
 
 SOFT_EDGE = False
+EDGE_BLUR = 0.0
 
 
 SAME_MIN = 0.5
@@ -533,7 +564,10 @@ def paint_tiled(world, brush, args, prompt, seed, spr, part, lattice):
     продолжению соседней копии. Закрытое соседями (верх стены под этажом выше) - из рисунка, где центр
     поверх всех, тем же seed.
     """
-    g = args.g_context
+    # поле - своими настройками (--field): вольные направляющие предметов рисуют стык плиток рамкой -
+    # крыша URBAN06 при x8 и tile 0.45 вышла сеткой светлых швов
+    fa = getattr(args, "field_args", args)
+    g = fa.g_context
     k = 4
     reach = 1 if len(lattice) > 1 else 2
     rng = range(-reach, reach + 1)
@@ -574,7 +608,7 @@ def paint_tiled(world, brush, args, prompt, seed, spr, part, lattice):
         return im, owner
 
     im, owner = mosaic(False)
-    painted = brush.paint(im, g, prompt, seed)
+    painted = brush.paint(im, g, prompt, seed, opts=fa)
     P = np.asarray(painted.convert("RGB").resize((w * k, h * k), Image.LANCZOS)).astype(np.float32)
     # область центральной копии x4 (маска, не вход модели) и её размытие - вес W
     mine = Image.fromarray(((owner == 0) * 255).astype(np.uint8)).resize((w * k, h * k), Image.NEAREST)
@@ -608,7 +642,7 @@ def paint_tiled(world, brush, args, prompt, seed, spr, part, lattice):
             p2 = np.asarray(top_cell).astype(np.float32)
         else:
             im2, _o2 = mosaic(True)
-            p2 = np.asarray(brush.paint(im2, g, prompt, seed).convert("RGB")
+            p2 = np.asarray(brush.paint(im2, g, prompt, seed, opts=fa).convert("RGB")
                             .resize((w * k, h * k), Image.LANCZOS)).astype(np.float32)[ys, xs]
         # переход - только ВНУТРЬ закрытого: видимые пиксели остаются из сборки, иначе у стыка с этажом
         # выше в них попадает другой рисунок и стык ломается (тест: 4.0 вместо 1.0)
@@ -699,7 +733,9 @@ def run_regions(world, brush, args, prompt, root):
                 lattice = tile_lattice(inst_all, key)
             if not lattice:
                 continue
-            tp = ", ".join([FRAME_HINTS[key], prompt]) if key in FRAME_HINTS else prompt
+            fp = getattr(args, "prompt_surf", prompt)
+            tp = ", ".join([FRAME_HINTS[key], fp]) if key in FRAME_HINTS else fp
+            print("  regions: подсказка поля %s %d: %s" % (key[0], key[1], tp), flush=True)
             cell, rep = paint_tiled(world, brush, args, tp, args.seed + 500 + j, d["spr"], d["part"], lattice)
             save_cell(root, key[0], key[1], cell, d["spr"], d["part"])
             done.add(key)
@@ -750,14 +786,29 @@ def run_regions(world, brush, args, prompt, root):
             if z2 != z:
                 continue
             d = inst[i2]
+            # solo - только предметам: полы, нарисованные каждый в своём участке, легли лоскутами
+            if args.solo and k2 != key and inst[i2]["part"] != 0:
+                continue
+            # пол со своей подсказкой - предмет на земле (DESERT 7 - опунция): в чужом участке он
+            # получал чужую подсказку и выходил змеёй соседа
+            if args.solo and k2 != key and (inst[i2]["set"], inst[i2]["frame"]) in FRAME_HINTS:
+                continue
             if x0 <= d["x"] and d["x"] + 32 <= x0 + rw and y0 <= d["y"] and d["y"] + 40 <= y0 + rh:
                 here.append((k2, i2))
-        hints = list(dict.fromkeys(FRAME_HINTS[(inst[i]["set"], inst[i]["frame"])] for _k, i in here
+        # первой - подсказка предмета, вокруг которого строится участок: here собран из множества,
+        # и без этого участку доставалась подсказка случайного соседа
+        hints = list(dict.fromkeys(FRAME_HINTS[(inst[i]["set"], inst[i]["frame"])]
+                                   for _k, i in sorted(here, key=lambda h: h[1] != i0)
                                    if (inst[i]["set"], inst[i]["frame"]) in FRAME_HINTS))
         # одна подсказка на участок: с двумя хвост про свет уходит за 77 токенов, а свет обязан быть
         # у всех участков один
-        rprompt = ", ".join(hints[:1] + [prompt]) if hints else prompt
+        # solo: в участке один предмет - список предметов сцены он рисует на себе (красные наклейки
+        # «товаров» на ящике URBAN06 88, R-016), поэтому только поверхности и своя подсказка
+        base_p = getattr(args, "prompt_surf", prompt) if args.solo else prompt
+        rprompt = ", ".join(hints[:1] + [base_p]) if hints else base_p
         count["подсказок"] += bool(hints)
+        print("  regions: участок вокруг %s %d, в нём %s: %s"
+              % (key[0], key[1], " ".join("%s:%d" % k for k, _i in here), rprompt), flush=True)
 
         def ud(inst_, top=None):
             # готовые клетки на вход: новые продолжают их тон и кладку (прогон 12, окно на стене)
@@ -785,7 +836,8 @@ def run_regions(world, brush, args, prompt, root):
             m4 = np.kron(hidden, np.ones((4, 4), bool))
             if (s, d["frame"]) not in done and hidden.sum() > 0.02 * max(1, body.sum()):
                 im2, _o2, _i2 = layout(world, args.terrain, args.block, maxz=z, top=i)
-                p2 = brush.paint(im2.crop(box), g, rprompt, seed, ud(_i2, i))
+                own = FRAME_HINTS.get((s, d["frame"]))
+                p2 = brush.paint(im2.crop(box), g, ", ".join([own, base_p]) if own else rprompt, seed, ud(_i2, i))
                 cell[m4] = np.asarray(cell_from(p2, g, local).convert("RGB"))[m4]
                 count["дорисовок"] += 1
             if (s, d["frame"]) not in done:
@@ -832,7 +884,16 @@ def run_regions(world, brush, args, prompt, root):
                         continue
                     im3, _o3, inst3 = layout(world, args.terrain, args.block, maxz=z, top=i,
                                              frame_of={i: (fa, er["p_level"])})
-                    p3 = brush.paint(im3.crop(box), g, rprompt, seed, ud(inst3, i))
+                    # обломки с подсказкой целого предмета выходили целым предметом (DESERT 11, 13, 15 -
+                    # снова кактусы): у обломков и двери своя подсказка, без неё - «остатки» предмета
+                    own3 = FRAME_HINTS.get((s, fa))
+                    if own3 and why:
+                        p3_prompt = ", ".join([own3, base_p])
+                    elif why == "обломки":
+                        p3_prompt = ", ".join(["broken wrecked remains and scattered pieces"] + hints[:1] + [base_p])
+                    else:
+                        p3_prompt = rprompt
+                    p3 = brush.paint(im3.crop(box), g, p3_prompt, seed, ud(inst3, i))
                     d3 = inst3[i]
                     loc3 = dict(d3, x=d3["x"] - x0, y=d3["y"] - y0)
                     c3 = np.asarray(cell_from(p3, g, loc3).convert("RGB")).copy()
@@ -943,6 +1004,13 @@ def main(argv=None):
                          "берёт совпавшее из него (окно в стене - стена плюс окошко)")
     ap.add_argument("--root", default="",
                     help="общая папка клеток для серии карт: уже нарисованное в ней не рисуется второй раз")
+    ap.add_argument("--edge-blur", type=float, default=0.0, dest="edge_blur",
+                    help="с --soft-edge: размыть силуэт предмета на столько пикселей оригинала (0 - как было)")
+    ap.add_argument("--field", default="",
+                    help="свои настройки поля полов и стен: g=16,tile=0.6,canny=0.2,strength=0.65,tile_blur=0")
+    ap.add_argument("--solo", action="store_true",
+                    help="regions: с участка берётся только запись в его центре - каждой свой участок и своя подсказка")
+    ap.add_argument("--hints", default="", help="json подсказок на кадр {\"НАБОР:кадр\": \"текст\"}")
     ap.add_argument("--only-missing", action="store_true", dest="only_missing",
                     help="рисовать только кадры, которых в папке результата ещё нет")
     args = ap.parse_args(argv)
@@ -953,6 +1021,15 @@ def main(argv=None):
                          % args.pre)
     globals()["TONE"] = args.tone
     globals()["SOFT_EDGE"] = args.soft_edge
+    globals()["EDGE_BLUR"] = args.edge_blur
+    fa = dict(vars(args))
+    for kv in filter(None, args.field.split(",")):
+        name, val = kv.split("=")
+        name = {"g": "g_context"}.get(name.strip(), name.strip().replace("-", "_"))
+        if name not in fa:
+            raise SystemExit("--field: нет такой настройки %s" % name)
+        fa[name] = type(fa[name])(val)
+    args.field_args = SimpleNamespace(**fa)
     args.window = tuple(int(v) for v in args.window.split(","))
     args.region = tuple(int(v) for v in args.region.split(","))
 
@@ -960,8 +1037,14 @@ def main(argv=None):
     scene = args.scene or SCENES.get(args.block, "")
     if not scene:
         raise SystemExit("нет описания сцены: --scene")
-    prompt = STYLE.replace("{scene}", scene)
-    modes = [m.strip() for m in args.mode.split(",") if m.strip()]
+    prompt, args.prompt_surf = scene_prompts(scene)
+    if args.hints:
+        # подсказки на кадр из файла {"НАБОР:кадр": "что нарисовано"} - поверх FRAME_HINTS (R-007)
+        with open(args.hints, encoding="utf-8-sig") as f:
+            for k, v in json.load(f).items():
+                s, fr = k.rsplit(":", 1)
+                FRAME_HINTS[(s.upper(), int(fr))] = v
+    modes =[m.strip() for m in args.mode.split(",") if m.strip()]
     if not args.sheet_only:
         brush = Brush(args)
         for m in modes:
