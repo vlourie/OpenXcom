@@ -154,6 +154,7 @@ set ( engine_src
   Engine/Game.cpp
   Engine/GMCat.cpp
   Engine/HdBase.cpp
+  Engine/HdCraftLights.cpp
   Engine/HdBlit.cpp
   Engine/HdCanvas.cpp
   Engine/HdSmooth.cpp
