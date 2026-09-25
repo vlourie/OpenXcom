@@ -17,6 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <vector>
 #include "../Engine/InteractiveSurface.h"
 
 namespace OpenXcom
@@ -56,6 +57,10 @@ private:
 	bool _highContrast;
 	Uint8 _cellColor, _selectorColor;
 	int _animPhase, _animTick;
+	/// A craft drawn in the world layer (with its HD picture or lights) instead of the classic layer.
+	/// A craft whose lights go over the view; `inWorld`: its picture is drawn in the world layer too.
+	struct HdCraft { int index, x, y, status; Uint32 seed; bool inWorld; };
+	std::vector<HdCraft> _hdCrafts;
 	/// Has this facility an HD picture of its tiles (then it is not drawn on the classic layer)?
 	bool isHdFacility(const BaseFacility *facility) const;
 	/// Updates the neighborFacility's build time. This is for internal use only (reCalcQueuedBuildings()).
@@ -95,6 +100,8 @@ public:
 	void draw() override;
 	/// Draws the HD pictures of the facilities into the world layer (see drawHd).
 	void drawHd();
+	/// Draws the lights of the crafts over everything the view has put into the world layer.
+	void drawHdLights();
 	/// Blits the base view onto another surface.
 	void blit(SDL_Surface *surface) override;
 	/// Special handling for mouse hovers.
