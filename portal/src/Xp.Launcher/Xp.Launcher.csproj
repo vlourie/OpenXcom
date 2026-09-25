@@ -7,7 +7,7 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <BuiltInComInteropSupport>false</BuiltInComInteropSupport>
     <ApplicationManifest>app.manifest</ApplicationManifest>
-    <Version>0.3.0</Version>
+    <Version>0.3.1</Version>
     <!-- dev keys are trusted only in Debug or when explicitly allowed for a local test build -->
     <AllowDevKeys Condition="'$(AllowDevKeys)' == ''">false</AllowDevKeys>
     <DefineConstants Condition="'$(Configuration)' == 'Debug' Or '$(AllowDevKeys)' == 'true'">$(DefineConstants);ALLOW_DEV_KEYS</DefineConstants>
