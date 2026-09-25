@@ -515,6 +515,10 @@ public:
 	SurfaceSet *getHdSurfaceSet(const std::string &name, bool error = true);
 	/// HD render: gets the k-times-scaled copy of a set (the set itself when k = 1 or null).
 	SurfaceSet *getHdSurfaceSet(SurfaceSet *set);
+	/// HD render: the reticle styles oxceHdReticle picks from 2 on (folders hd/CURSOR.PCK/reticle_<style>/).
+	static const std::vector<std::string> HD_RETICLES;
+	/// HD render: registers frames 6..10 of the battle cursor as oxceHdReticle says (call again after it changes).
+	void applyHdReticle();
 	/// HD render: gets a single picture scaled k times for the battlescape (the picture itself when k = 1).
 	Surface *getHdSurface(const std::string &name, bool error = true);
 	/// Gets a particular music.

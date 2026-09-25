@@ -213,13 +213,32 @@ def render(style, ramp, phase, phases, scale):
         img = compose(layers, size)
         img = bloom(img, radius=max(2, scale), strength=0.34)
 
+    elif style == "ring45":
+        # то же кольцо, но клинья по диагоналям и обрезаны до центра: середина пустая,
+        # линии не пересекаются. Поворот на 45 градусов - просто другой базис для тех же клиньев
+        c45 = math.sqrt(0.5)
+        xr, yr = (x - y) * c45, (x + y) * c45
+        cover, u = wedge_mask_u(xr, yr)
+        cover = np.where(r >= R_HOLE, cover, 0.0)
+        lvl = travelling_level(u, phase, phases)
+        col = ramp_rgb(ramp, lvl)
+        heat = np.clip(1.0 - lvl / 0.7, 0.0, 1.0)[..., None] * 0.75
+        col = col * (1.0 - heat) + hot * heat
+        layers = [(ramp_rgb(ramp, np.full(r.shape, float(RING_STEP))), ring_cover(r, 1.9)),
+                  (ramp_rgb(ramp, np.full(r.shape, float(DIAMOND_STEP))), diamond_cover(xs, ys, 0.85)),
+                  (col, cover)]
+        img = compose(layers, size)
+        img = bloom(img, radius=max(1, int(scale * 0.7)), strength=0.34)
+
     else:
         raise SystemExit("нет такого стиля: %s" % style)
     return img
 
 
-STYLES = ("plasma", "techno", "predator")
-STYLE_RU = {"plasma": "Плазма", "techno": "Техно", "predator": "Хищник"}
+R_HOLE = 4.0             # ring45: ближе этого радиуса клиньев нет - центр пустой
+
+STYLES = ("plasma", "techno", "predator", "ring45")
+STYLE_RU = {"plasma": "Плазма", "techno": "Техно", "predator": "Хищник", "ring45": "Кольцо 45"}
 
 
 def checker(im, step=16):

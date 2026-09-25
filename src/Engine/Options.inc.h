@@ -169,6 +169,8 @@ OPT int oxceHdMode;
 OPT bool oxceHdLight;
 // HD render: the ground pattern - a floor with pack variants (<i>.v1.png ...) is laid over the map as patches
 OPT bool oxceHdGroundVariants;
+// HD render: the battle reticle (CURSOR.PCK 6..10): 0 the pack's own, 1 the stock picture, 2.. a style from hd/CURSOR.PCK/reticle_<style>/ (Mod::HD_RETICLES)
+OPT int oxceHdReticle;
 // HD render: threads the battlescape frame is drawn with (0 = one per core)
 OPT int oxceHdThreads;
 // HD render: extra game steps a slow frame may catch up on, so that the unit speed settings hold when drawing is slower than they ask (0 = one step per frame)
