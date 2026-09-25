@@ -180,6 +180,12 @@ function Update-Content([switch] $Build) {
         Say 'разделы модов и доски форума'
         Invoke-Compose run --rm migrate seed --file /seed/community.json
     }
+    # перепись наборов арта: без неё дорожная карта открывается пустой, потому что знаменатель
+    # («сколько всего картинок») берётся отсюда, а не из присланных отметок
+    if (Test-Path 'seed/packs.json') {
+        Say 'перепись наборов графики'
+        Invoke-Compose run --rm migrate packs --file /seed/packs.json
+    }
     foreach ($f in @(Get-ChildItem -Path 'wiki' -Filter '*.json' -ErrorAction SilentlyContinue)) {
         Say "вики из рулсетов: $($f.Name)"
         Invoke-Compose run --rm migrate wiki import --file "/wiki/$($f.Name)"

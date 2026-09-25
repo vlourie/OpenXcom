@@ -69,7 +69,7 @@ try {
     $must = @('README.txt', 'CLAUDE.md', 'portal/Dockerfile', 'portal/deploy/station.ps1', 'portal/deploy/update.sh',
         'portal/deploy/compose.yaml', 'portal/deploy/compose.station.yaml', 'portal/deploy/compose.internet.yaml',
         'portal/deploy/Caddyfile.internet', 'portal/deploy/caddy/Dockerfile',
-        'portal/deploy/seed/community.json', 'portal/src/Xp.Portal/Program.cs')
+        'portal/deploy/seed/community.json', 'portal/deploy/seed/packs.json', 'portal/src/Xp.Portal/Program.cs')
     foreach ($m in $must) { if ($names -notcontains $m) { throw "в архиве нет $m" } }
     foreach ($f in $wiki) { if ($names -notcontains "portal/deploy/wiki/$($f.Name)") { throw "в архив не попала вики $($f.Name)" } }
     $bad = $names | Where-Object { $_ -match '(^|/)(bin|obj)/|\.key$|(^|/)\.env$|portal\.env$' }
