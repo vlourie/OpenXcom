@@ -1,0 +1,679 @@
+# base_anims.yml - анимации построек базы для gen_base_anim.py.
+#
+# Ключ - код постройки (type из рулсета). Поля:
+#   like: <код>      - сначала эффекты другой постройки или шаблона (_имя), потом свои
+#   skip: true       - не трогать (анимация уже сделана своим генератором)
+#   effects: [...]   - список эффектов по порядку
+#
+# Выборка sel (все поля необязательны, координаты - пиксели классики, 32 на клетку):
+#   color: red|orange|yellow|green|cyan|blue|purple|white|grey|dark или список
+#   bright / darker: порог яркости 0..1;  rect: [x0, y0, x1, y1] или список;  not_rect;
+#   inset: N - без рамки в N пикселей;  min / max - площадь связного куска;
+#   largest: N - N крупнейших;  merge: true - все куски одним
+#
+# Эффекты (fx) и главные ключи:
+#   pulse   amp, glow, radius, stagger, speed, tint     - яркость дышит, ореол
+#   blink   period, duty, dim, glow, stagger same|seq|random, order x|angle
+#   flicker lo, hi, seed                                  - случайная яркость по кускам
+#   ripple  amp, wavelength, angle, glint                 - рябь воды
+#   bubbles count, radius [min,max]                       - пузыри лопаются кольцами
+#   smoke   at | sel, color, rise, r0, r1, opacity, puffs, limit - дым / пар
+#   sparks  at | sel, color, spread, chance, count         - искры
+#   fire    strength, cells                                - пламя по выборке
+#   sweep   center, turns, ccw, tail, amp, tint            - вращающийся блик
+#   band    angle, width, amp, pause, speed                - бегущая полоса света
+#   sway    amp, wavelength, angle, anchor_x, reach        - колыхание
+#   swarm   at | sel, count, radius, size, color, glow     - рой точек
+#   roll    rect, period, axis x|y, reverse                - конвейер
+#   lid     cover {фаза: доля}                              - моргание
+#   breathe center, amp, beat                              - вздох / удар сердца
+#   tint    tint, amp, radius, stagger                     - цветное свечение дышит
+
+# ---------------------------------------------------------------- шаблоны
+
+_craters:
+  effects:
+    - {fx: smoke, sel: {color: dark, min: 4, max: 90, inset: 3}, limit: 6, opacity: 0.5, rise: 9}
+    - {fx: sparks, sel: {color: dark, min: 4, max: 90, inset: 3}, limit: 3, chance: 0.25, count: 2, seed: 31}
+
+_craters_heavy:
+  effects:
+    - {fx: smoke, sel: {color: dark, min: 4, max: 200, inset: 3}, limit: 10, opacity: 0.6, rise: 11, r1: 3.8}
+    - {fx: sparks, sel: {color: dark, min: 4, max: 200, inset: 3}, limit: 5, chance: 0.3, count: 2, seed: 33}
+    - {fx: tint, sel: {color: dark, min: 6, max: 60}, tint: "#ff5a10", amp: 0.35, radius: 1.2, stagger: 0.27}
+
+_beds:
+  effects:
+    - {fx: blink, sel: {rect: [[28, 14, 34, 19], [10, 31, 16, 36], [42, 31, 48, 36], [28, 45, 34, 50]], color: [grey, dark]}, stagger: seq, period: 16, duty: 0.3, dim: 0.8, glow: 0.5, tint: "#80ff90"}
+    - {fx: band, sel: {rect: [[6, 6, 28, 30], [36, 6, 58, 30], [6, 38, 28, 58], [36, 38, 58, 58]], merge: true}, angle: 0, width: 4, amp: 0.18, pause: 0.3, tint: "#b0d8ff"}
+
+# ---------------------------------------------------------------- жильё, склады
+
+STR_ACCESS_LIFT:
+  effects:
+    - {fx: pulse, sel: {color: red, rect: [8, 8, 24, 24]}, amp: 0.3, glow: 0.35, radius: 2}
+    - {fx: band, sel: {rect: [12, 12, 20, 20], color: dark}, angle: 90, width: 1.5, amp: 0.35, pause: 0.4, tint: "#ffe0a0"}
+
+STR_CORRIDOR:
+  effects:
+    - {fx: band, sel: {inset: 3, merge: true}, angle: 45, width: 3, amp: 0.25, pause: 0.35}
+
+STR_BURROW:
+  effects:
+    - {fx: tint, sel: {rect: [4, 4, 28, 28], merge: true}, tint: "#ff9a40", amp: 0.22, radius: 3, speed: 2}
+    - {fx: flicker, sel: {rect: [4, 4, 28, 28], merge: true}, lo: 0.93, hi: 1.07}
+
+STR_BEAST_DEN:
+  effects:
+    - {fx: breathe, sel: {rect: [6, 8, 26, 22], merge: true}, center: [15, 14], amp: 0.05}
+    - {fx: swarm, at: [[16, 11]], count: 4, radius: 6, size: 0.35, color: "#101010"}
+
+STR_LIVING_QUARTERS_SMALL:
+  effects:
+    - {fx: blink, sel: {color: green, rect: [8, 10, 24, 20]}, period: 8, duty: 0.5, stagger: seq, glow: 0.5}
+    - {fx: blink, sel: {color: red, rect: [8, 10, 24, 22]}, period: 4, duty: 0.5, glow: 0.4}
+    - {fx: flicker, sel: {color: white, rect: [10, 12, 22, 18], min: 2}, lo: 0.85, hi: 1.15}
+
+STR_CAPSULE_QUARTERS:
+  effects:
+    - {fx: blink, sel: {color: red, max: 6}, period: 16, duty: 0.6, stagger: random, glow: 0.5}
+
+STR_LIVING_QUARTERS:
+  effects:
+    - {fx: blink, sel: {color: [green, yellow], max: 8, inset: 3}, period: 8, duty: 0.6, stagger: random, glow: 0.5}
+    - {fx: flicker, sel: {color: white, rect: [4, 4, 28, 28], min: 3, max: 20}, lo: 0.85, hi: 1.12}
+
+STR_LIVING_QUARTERS_DAMAGED:
+  like: _craters
+
+STR_LIVING_QUARTERS_LARGE:
+  effects:
+    - {fx: blink, sel: {color: [green, yellow], max: 10, inset: 3}, period: 16, duty: 0.6, stagger: random, glow: 0.5}
+    - {fx: blink, sel: {color: red, max: 4, inset: 3}, period: 8, duty: 0.5, stagger: random, glow: 0.4, seed: 8}
+    - {fx: flicker, sel: {color: white, inset: 4, min: 3, max: 20}, lo: 0.88, hi: 1.1}
+
+STR_LIVING_QUARTERS_LARGE_DAMAGED:
+  like: _craters_heavy
+
+STR_LIVING_QUARTERS_ADVANCED:
+  effects:
+    - {fx: sweep, sel: {rect: [2, 0, 12, 6], merge: true, inset: 0}, center: [6, 2], amp: 0.8, tail: 60, tint: "#ff3020"}
+    - {fx: blink, sel: {color: red, rect: [4, 6, 30, 30], max: 6}, period: 8, stagger: random, glow: 0.4}
+    - {fx: flicker, sel: {color: white, inset: 3, min: 3, max: 16}, lo: 0.85, hi: 1.12}
+
+STR_LIVING_QUARTERS_ADVANCED_DAMAGED:
+  like: STR_LIVING_QUARTERS_ADVANCED
+  effects:
+    - {fx: smoke, sel: {color: [dark, purple], min: 3, max: 60, inset: 3}, limit: 4, opacity: 0.45, rise: 8}
+    - {fx: sparks, sel: {color: [dark, purple], min: 3, max: 60, inset: 3}, limit: 3, chance: 0.25, count: 2}
+
+STR_LIVING_QUARTERS_ADVANCED_LARGE:
+  effects:
+    - {fx: ripple, sel: {color: blue, largest: 2}, amp: 0.14, wavelength: 5, angle: 70, glint: 0.6}
+    - {fx: sway, sel: {color: green, rect: [16, 10, 36, 50]}, amp: 0.35, wavelength: 6, angle: 90}
+    - {fx: sweep, sel: {rect: [2, 0, 12, 6], merge: true, inset: 0}, center: [6, 2], amp: 0.8, tail: 60, tint: "#ff3020"}
+    - {fx: blink, sel: {color: red, rect: [40, 44, 62, 56], max: 12}, period: 8, stagger: seq, glow: 0.4}
+    - {fx: flicker, sel: {color: white, inset: 3, min: 3, max: 16}, lo: 0.88, hi: 1.1}
+
+STR_LIVING_QUARTERS_ADVANCED_LARGE_DAMAGED:
+  effects:
+    - {fx: ripple, sel: {color: blue, largest: 2}, amp: 0.1, wavelength: 5, angle: 70, glint: 0.3}
+    - {fx: sway, sel: {color: green, rect: [16, 10, 36, 50]}, amp: 0.3, wavelength: 6, angle: 90}
+    - {fx: smoke, sel: {color: dark, min: 8, max: 200, inset: 3}, limit: 6, opacity: 0.55, rise: 10, r1: 3.6}
+    - {fx: sparks, sel: {color: dark, min: 8, max: 200, inset: 3}, limit: 4, chance: 0.3, count: 2}
+
+STR_BUNKER_FACILITY:
+  effects:
+    - {fx: band, sel: {rect: [3, 3, 26, 26], merge: true}, angle: 30, width: 4, amp: 0.2, pause: 0.4}
+
+STR_BUNKER_FACILITY_DAMAGED1:
+  like: _craters
+
+STR_BUNKER_FACILITY_DAMAGED2:
+  like: _craters_heavy
+
+STR_WAR_BARRACKS:
+  effects:
+    - {fx: sway, sel: {color: red, rect: [8, 2, 20, 10]}, amp: 0.45, wavelength: 4, angle: 0, amp_y: 0.3, anchor_x: 10, reach: 6}
+    - {fx: pulse, sel: {color: red, rect: [4, 76, 18, 92], merge: true}, amp: 0.25, glow: 0.3, radius: 2}
+    - {fx: blink, sel: {color: blue, max: 12}, period: 16, duty: 0.6, stagger: random, glow: 0.4}
+
+STR_WAR_BARRACKS_DAMAGED1:
+  like: STR_WAR_BARRACKS
+  effects:
+    - {fx: smoke, sel: {color: dark, min: 3, max: 60, inset: 4, not_rect: [[0, 0, 20, 96], [0, 0, 96, 12]]}, limit: 5, opacity: 0.45, rise: 10}
+
+STR_WAR_BARRACKS_DAMAGED2:
+  like: STR_WAR_BARRACKS
+  effects:
+    - {fx: smoke, sel: {color: dark, min: 3, max: 60, inset: 4}, limit: 8, opacity: 0.5, rise: 11}
+    - {fx: sparks, sel: {color: dark, min: 3, max: 60, inset: 4}, limit: 3, chance: 0.3, count: 2}
+
+STR_WAR_BARRACKS_DAMAGED3:
+  effects:
+    - {fx: sway, sel: {color: red, rect: [8, 2, 20, 10]}, amp: 0.6, wavelength: 3, angle: 0, amp_y: 0.4, anchor_x: 10, reach: 6, speed: 2}
+    - {fx: smoke, sel: {color: dark, min: 4, max: 300, inset: 4}, limit: 12, opacity: 0.6, rise: 12, r1: 4}
+    - {fx: tint, sel: {color: dark, min: 20, max: 300, inset: 4}, tint: "#ff5a10", amp: 0.45, radius: 1.5, stagger: 0.31}
+    - {fx: sparks, sel: {color: dark, min: 4, max: 300, inset: 4}, limit: 5, chance: 0.35, count: 2}
+
+STR_GENERAL_STORES:
+  effects:
+    - {fx: blink, sel: {color: yellow, rect: [12, 10, 22, 20]}, period: 8, duty: 0.5, glow: 0.5}
+    - {fx: sway, sel: {color: green, rect: [2, 20, 16, 28]}, amp: 0.3, wavelength: 5}
+    - {fx: band, sel: {rect: [4, 4, 26, 26], merge: true}, angle: 0, width: 2, amp: 0.2, pause: 0.5, tint: "#ffe080"}
+
+STR_GENERAL_STORES_DAMAGED:
+  like: _craters_heavy
+
+STR_GENERAL_STORES_LARGE:
+  effects:
+    - {fx: blink, sel: {color: blue, rect: [2, 2, 12, 10]}, period: 8, duty: 0.5, glow: 0.6}
+    - {fx: blink, sel: {color: red, max: 4, inset: 3}, period: 16, stagger: random, glow: 0.4}
+    - {fx: sway, sel: {color: green, min: 3}, amp: 0.3, wavelength: 5}
+    - {fx: swarm, at: [[32, 46]], count: 1, radius: 20, size: 1.2, color: "#ffd040", glow: 0.4}
+
+STR_GENERAL_STORES_LARGE_DAMAGED:
+  like: _craters_heavy
+
+STR_GENERAL_STORES_XLARGE:
+  effects:
+    - {fx: blink, sel: {color: orange, rect: [[26, 20, 38, 30], [12, 46, 22, 58]], merge: false}, period: 8, duty: 0.4, stagger: seq, glow: 0.6, tint: "#ffb040"}
+    - {fx: roll, rect: [30, 19, 94, 22], period: 4}
+    - {fx: blink, sel: {color: red, max: 3, inset: 3}, period: 8, stagger: random, glow: 0.4}
+    - {fx: swarm, at: [[40, 50], [70, 76]], count: 1, radius: 12, size: 1.0, color: "#a0e0ff", glow: 0.5}
+    - {fx: blink, sel: {color: blue, rect: [4, 4, 12, 10]}, period: 4, glow: 0.4}
+
+STR_GENERAL_STORES_ARMORED:
+  effects:
+    - {fx: sweep, sel: {color: green, rect: [2, 2, 12, 12], merge: true}, center: [6, 6], amp: 0.4, tail: 120, turns: 1}
+    - {fx: blink, sel: {color: red, max: 4}, period: 8, stagger: random, glow: 0.4}
+    - {fx: sway, sel: {color: green, rect: [2, 20, 30, 30]}, amp: 0.25, wavelength: 5}
+
+STR_GENERAL_STORES_ARMORED_DAMAGED:
+  effects:
+    - {fx: flicker, sel: {color: green, rect: [2, 2, 12, 12], merge: true}, lo: 0.6, hi: 1.1}
+    - {fx: sparks, at: [[6, 6]], chance: 0.3, count: 2, spread: 2}
+    - {fx: smoke, sel: {color: [dark, purple], min: 3, max: 60, inset: 3}, limit: 4, opacity: 0.45, rise: 8}
+
+# ---------------------------------------------------------------- тюрьмы
+
+STR_JAIL:
+  effects:
+    - {fx: flicker, sel: {color: [red, purple, orange], rect: [2, 6, 30, 30]}, lo: 0.75, hi: 1.1}
+    - {fx: blink, sel: {color: blue, rect: [4, 4, 14, 12], merge: true}, period: 8, glow: 0.5}
+
+STR_JAIL_DOUBLE:
+  effects:
+    - {fx: blink, sel: {color: red, max: 3}, period: 8, stagger: seq, glow: 0.6}
+    - {fx: flicker, sel: {color: [purple, red], min: 1}, lo: 0.75, hi: 1.1}
+    - {fx: blink, sel: {color: blue, merge: false, min: 2}, period: 16, stagger: random, glow: 0.4}
+
+STR_PRISON:
+  effects:
+    - {fx: band, sel: {rect: [14, 4, 50, 56], merge: true}, angle: 90, width: 3, amp: 0.3, tint: "#fff3c0"}
+    - {fx: pulse, sel: {color: green, rect: [46, 48, 58, 60]}, amp: 0.35, glow: 0.5, radius: 3}
+    - {fx: flicker, sel: {color: [red, purple], min: 4}, lo: 0.8, hi: 1.08}
+
+STR_CRYO_PRISON:
+  effects:
+    - {fx: smoke, at: [[9, 12], [15, 12], [21, 12], [9, 20], [15, 20], [21, 20]], color: "#dcecff", opacity: 0.35, rise: 5, r0: 0.8, r1: 2.2, puffs: 3, drift: 1}
+    - {fx: pulse, sel: {color: blue, rect: [0, 4, 8, 18]}, amp: 0.3, glow: 0.4}
+    - {fx: blink, sel: {color: [red, orange], rect: [8, 16, 16, 22]}, period: 8, glow: 0.5}
+
+STR_DUNGEON:
+  effects:
+    - {fx: tint, sel: {rect: [[8, 8, 13, 13], [16, 8, 21, 13]], color: [dark, grey, white], merge: false}, tint: "#ff2010", amp: 0.8, radius: 0.8}
+    - {fx: tint, sel: {rect: [4, 4, 28, 28], merge: true}, tint: "#ffa040", amp: 0.08, radius: 3, speed: 3}
+
+STR_NINE_CIRCLES:
+  effects:
+    - {fx: sweep, sel: {rect: [4, 4, 60, 60], color: [yellow, orange], merge: true}, center: [38, 54], amp: 0.25, tail: 160, tint: "#ffd080"}
+    - {fx: pulse, sel: {color: [red, dark], rect: [33, 50, 44, 60], merge: true}, amp: 0.4, glow: 0.8, radius: 3, tint: "#ff4010"}
+
+# ---------------------------------------------------------------- радары, связь
+
+STR_SMALL_RADAR_SYSTEM:
+  effects:
+    - {fx: sweep, sel: {rect: [7, 7, 26, 28], color: [grey, white], merge: true}, center: [15, 16], amp: 0.5, tail: 100, tint: "#a0ffa0"}
+    - {fx: blink, sel: {color: green, rect: [4, 4, 12, 12]}, period: 16, duty: 0.25, glow: 0.7}
+
+STR_LARGE_RADAR_SYSTEM:
+  effects:
+    - {fx: sweep, sel: {rect: [4, 4, 18, 16], color: [grey, white], merge: true}, center: [11, 9], amp: 0.45, tail: 100, tint: "#a0ffa0"}
+    - {fx: sweep, sel: {rect: [8, 14, 28, 28], color: [grey, white], merge: true}, center: [18, 21], amp: 0.45, tail: 100, ccw: true, turns: 1, tint: "#a0ffa0"}
+    - {fx: pulse, sel: {color: [red, green, yellow], rect: [12, 10, 20, 18]}, amp: 0.4, glow: 0.5, stagger: 0.3}
+
+STR_ALENIUM_CHAMBER:
+  effects:
+    - {fx: ripple, sel: {color: blue, merge: true}, amp: 0.12, wavelength: 7, angle: 0, glint: 0.25}
+    - {fx: blink, sel: {color: orange, rect: [4, 4, 28, 28], max: 10}, period: 8, stagger: random, glow: 0.5}
+
+STR_HYPER_WAVE_DECODER:
+  effects:
+    - {fx: sweep, sel: {rect: [4, 6, 20, 24], color: purple, merge: true}, center: [12, 14], amp: 0.3, tail: 70, tint: "#c0a0ff"}
+    - {fx: band, sel: {color: green, merge: true}, angle: 60, width: 2.5, amp: 0.7, tint: "#b0ff80"}
+    - {fx: pulse, sel: {color: green, merge: true}, amp: 0.2, glow: 0.3}
+
+STR_EYE_OF_HORUS:
+  effects:
+    - {fx: pulse, sel: {color: [red, orange], rect: [8, 8, 24, 22], merge: true}, amp: 0.3, glow: 0.4}
+    - {fx: pulse, sel: {color: green, rect: [11, 8, 20, 20], merge: true}, amp: 0.3, glow: 0.5, phase: 0.25}
+    - {fx: blink, sel: {color: [green, dark], rect: [11, 9, 20, 19], merge: true}, period: 16, duty: 0.85, dim: 0.75}
+
+STR_SPACE_RADIO:
+  effects:
+    - {fx: blink, sel: {color: purple, rect: [[14, 8, 24, 16], [8, 17, 18, 26]]}, period: 8, duty: 0.5, dim: 0.5, stagger: seq, glow: 0.7}
+    - {fx: flicker, sel: {color: [blue, green], rect: [4, 4, 12, 14]}, lo: 0.75, hi: 1.2}
+
+STR_TACTICAL_CENTER:
+  effects:
+    - {fx: flicker, sel: {color: red, rect: [12, 6, 20, 22], merge: true}, lo: 0.8, hi: 1.2}
+    - {fx: blink, sel: {color: [yellow, white], rect: [12, 6, 20, 22], max: 3}, period: 8, stagger: random, glow: 0.5}
+    - {fx: flicker, sel: {color: [white, purple], rect: [[2, 2, 11, 12], [2, 17, 8, 24]], merge: false}, lo: 0.8, hi: 1.15, seed: 9}
+
+STR_TACTICAL_CENTER_DAMAGED:
+  effects:
+    - {fx: flicker, sel: {color: [red, grey], rect: [12, 6, 20, 22]}, lo: 0.8, hi: 1.1}
+    - {fx: smoke, sel: {color: dark, min: 4, max: 60, inset: 3}, limit: 4, opacity: 0.5}
+    - {fx: sparks, sel: {color: dark, min: 4, max: 60, inset: 3}, limit: 3, chance: 0.3, count: 2}
+
+# ---------------------------------------------------------------- ангар и оборона
+
+STR_HANGAR:
+  effects:
+    - {fx: blink, sel: {color: [yellow, white], rect: [12, 14, 52, 52], min: 3}, order: angle, stagger: seq, period: 8, duty: 0.4, dim: 0.7, glow: 0.4}
+    - {fx: blink, sel: {color: [yellow, orange], rect: [34, 4, 60, 30], merge: true}, period: 4, duty: 0.5, dim: 0.6, glow: 0.3}
+
+STR_HANGAR_DAMAGED:
+  effects:
+    - {fx: smoke, sel: {color: orange, min: 6, max: 60, rect: [8, 8, 56, 60]}, limit: 6, opacity: 0.5, rise: 10}
+    - {fx: sparks, sel: {color: orange, min: 6, max: 60, rect: [8, 8, 56, 60]}, limit: 3, chance: 0.3, count: 2}
+    - {fx: flicker, sel: {color: grey, rect: [36, 26, 50, 34], merge: true}, lo: 0.5, hi: 1.2}
+
+STR_IRRADIATOR_TOWER:
+  effects:
+    - {fx: blink, sel: {color: green, max: 10}, period: 8, stagger: seq, glow: 0.6}
+    - {fx: ripple, sel: {color: red, merge: true}, amp: 0.1, wavelength: 6, angle: 45, glint: 0.0}
+    - {fx: tint, sel: {color: [white, grey], rect: [6, 8, 26, 24], merge: true}, tint: "#80ff60", amp: 0.2, radius: 1.5, speed: 2}
+
+STR_FLAK_TOWER:
+  effects:
+    - {fx: pulse, sel: {color: green, min: 6}, amp: 0.25, stagger: 0.25, glow: 0.2}
+    - {fx: sparks, sel: {color: green, min: 6}, chance: 0.3, count: 3, spread: 2.5, color: "#fff0a0"}
+
+STR_FLAK_TOWER_DAMAGED:
+  effects:
+    - {fx: flicker, sel: {color: green, min: 6}, lo: 0.7, hi: 1.15}
+    - {fx: smoke, sel: {color: dark, min: 3, max: 60, inset: 3}, limit: 4, opacity: 0.5}
+    - {fx: sparks, sel: {color: dark, min: 3, max: 60, inset: 3}, limit: 2, chance: 0.3}
+
+STR_FLAK_DEFENSES:
+  effects:
+    - {fx: sweep, sel: {color: green, merge: true}, center: [16, 16], amp: 0.3, tail: 90}
+    - {fx: sparks, at: [[16, 3]], chance: 0.35, count: 4, spread: 2.5, color: "#fff0a0"}
+
+STR_VULCAN_DEFENSES:
+  effects:
+    - {fx: sparks, at: [[10, 9], [22, 9]], chance: 0.55, count: 3, spread: 2, color: "#fff0a0"}
+    - {fx: blink, sel: {color: blue, max: 4}, period: 4, glow: 0.5}
+    - {fx: pulse, sel: {color: green, min: 6}, amp: 0.15, speed: 2}
+
+STR_SAM_DEFENSES:
+  effects:
+    - {fx: blink, sel: {color: red, rect: [10, 6, 22, 12]}, period: 8, stagger: seq, glow: 0.6}
+    - {fx: smoke, at: [[14, 24], [18, 24]], color: "#c8c8c8", opacity: 0.3, rise: 4, r0: 0.8, r1: 2, puffs: 2}
+
+STR_MISSILE_DEFENSES:
+  effects:
+    - {fx: pulse, sel: {color: red, rect: [8, 8, 24, 24]}, amp: 0.4, glow: 0.7, radius: 2.5, speed: 2}
+    - {fx: pulse, sel: {color: purple, merge: true}, amp: 0.2, phase: 0.5}
+    - {fx: band, sel: {color: [yellow, orange], rect: [2, 2, 30, 30], merge: true}, angle: 0, width: 3, amp: 0.35, speed: 1}
+
+STR_LASER_DEFENSES:
+  effects:
+    - {fx: pulse, sel: {color: [red, white], rect: [14, 4, 19, 10], merge: true}, amp: 0.4, glow: 0.8, radius: 2, tint: "#ff3030"}
+    - {fx: sparks, at: [[16, 3]], chance: 0.25, count: 3, spread: 2, color: "#ff8080"}
+    - {fx: blink, sel: {color: green, max: 4}, period: 4, glow: 0.4}
+
+STR_GAUSS_DEFENSES:
+  effects:
+    - {fx: tint, sel: {color: yellow, rect: [10, 4, 22, 14]}, tint: "#80d0ff", amp: 0.6, radius: 1, speed: 2}
+    - {fx: sparks, at: [[13, 5], [19, 5]], chance: 0.4, count: 3, spread: 1.5, color: "#a0e0ff"}
+
+STR_PLASMA_DEFENSES:
+  effects:
+    - {fx: sweep, sel: {color: blue, merge: true}, center: [16, 15], amp: 0.5, tail: 140, tint: "#80c0ff"}
+    - {fx: pulse, sel: {color: blue, merge: true}, amp: 0.2, glow: 0.4, speed: 2}
+    - {fx: pulse, sel: {color: green}, amp: 0.4, glow: 0.7, radius: 2}
+
+STR_FUSION_BALL_DEFENSES:
+  effects:
+    - {fx: blink, sel: {color: [yellow, red], rect: [4, 4, 28, 28], max: 8}, order: angle, stagger: seq, period: 8, duty: 0.4, dim: 0.5, glow: 0.7, tint: "#ffa020"}
+
+STR_ARMORY:
+  effects:
+    - {fx: flicker, sel: {color: blue, merge: false}, lo: 0.8, hi: 1.2}
+    - {fx: band, sel: {color: blue, rect: [10, 8, 24, 24], merge: true}, angle: 90, width: 1.5, amp: 0.4, tint: "#c0e0ff"}
+    - {fx: blink, sel: {color: red, max: 3}, period: 8, stagger: random, glow: 0.4}
+
+STR_ARMORY_DAMAGED_1:
+  effects:
+    - {fx: flicker, sel: {color: blue, merge: true}, lo: 0.55, hi: 1.15}
+    - {fx: smoke, sel: {color: [dark, purple], min: 3, max: 40, inset: 3}, limit: 2, opacity: 0.45}
+    - {fx: blink, sel: {color: red, max: 3}, period: 8, stagger: random, glow: 0.4}
+
+STR_ARMORY_DAMAGED_2:
+  effects:
+    - {fx: flicker, sel: {color: blue, merge: true}, lo: 0.35, hi: 1.1, smooth: false}
+    - {fx: smoke, sel: {color: [dark, purple], min: 3, max: 60, inset: 3}, limit: 5, opacity: 0.55}
+    - {fx: sparks, sel: {color: [dark, purple], min: 3, max: 60, inset: 3}, limit: 3, chance: 0.35, count: 2}
+
+STR_GRAV_SHIELD:
+  effects:
+    - {fx: band, sel: {color: white, merge: true}, angle: 45, width: 3, amp: 0.6, tint: "#a0d0ff"}
+    - {fx: band, sel: {color: white, merge: true}, angle: 135, width: 2, amp: 0.4, tint: "#c0a0ff", phase: 0.5}
+    - {fx: flicker, sel: {color: [red, orange], max: 4, rect: [4, 4, 28, 28]}, lo: 0.7, hi: 1.3}
+
+# ---------------------------------------------------------------- отдых, медицина
+
+STR_GYM_ROOM:
+  effects:
+    - {fx: sway, sel: {rect: [9, 4, 16, 14], color: [blue, white, grey]}, amp: 0.35, wavelength: 10, angle: 90, amp_y: 0.2}
+    - {fx: breathe, sel: {color: blue, rect: [14, 18, 22, 26], merge: true}, amp: 0.06, speed: 2}
+
+STR_ONSEN:
+  effects:
+    - {fx: ripple, sel: {color: blue, largest: 1}, amp: 0.12, wavelength: 5, angle: 60, glint: 0.5}
+    - {fx: smoke, at: [[10, 12], [16, 16], [12, 20], [20, 10], [22, 22]], color: "#f4f4ff", opacity: 0.35, rise: 7, r0: 1.5, r1: 3.5, puffs: 3, drift: 2}
+
+STR_LUXURY_SPA:
+  effects:
+    - {fx: ripple, sel: {color: blue, largest: 2}, amp: 0.14, wavelength: 6, angle: 30, glint: 0.7}
+    - {fx: sway, sel: {color: [green, yellow]}, amp: 0.4, wavelength: 4}
+
+STR_VIP_CLUB_FAC:
+  effects:
+    - {fx: blink, sel: {color: [yellow, white], rect: [2, 2, 30, 30], not_rect: [8, 10, 24, 24], min: 2}, order: angle, stagger: seq, period: 8, duty: 0.5, dim: 0.5, glow: 0.5}
+    - {fx: pulse, sel: {color: green, largest: 1}, amp: 0.15, glow: 0.25}
+
+STR_MESS_HALL:
+  effects:
+    - {fx: ripple, sel: {color: blue, merge: true}, amp: 0.1, wavelength: 5, angle: 30, glint: 0.3}
+    - {fx: flicker, sel: {color: [red, green, yellow], rect: [6, 6, 26, 26], max: 6}, lo: 0.7, hi: 1.3}
+    - {fx: sway, sel: {color: red, rect: [6, 0, 26, 4], inset: 0}, amp: 0.4, wavelength: 3, angle: 0}
+
+STR_MESS_HALL_ADV:
+  effects:
+    - {fx: pulse, sel: {color: yellow, rect: [2, 0, 10, 12], merge: true}, amp: 0.25, glow: 0.5, radius: 3}
+    - {fx: ripple, sel: {color: blue, merge: true}, amp: 0.1, wavelength: 5, angle: 30, glint: 0.4}
+    - {fx: flicker, sel: {color: [red, green], rect: [10, 4, 30, 30], max: 8}, lo: 0.7, hi: 1.3}
+
+STR_DRUG_DEN:
+  effects:
+    - {fx: pulse, sel: {color: purple, min: 4}, amp: 0.3, glow: 0.5, stagger: 0.17, radius: 2}
+    - {fx: smoke, sel: {color: green, largest: 1}, color: "#d8f0d8", opacity: 0.4, rise: 8, r0: 1, r1: 3, puffs: 4}
+    - {fx: flicker, sel: {color: [white, grey], rect: [8, 4, 22, 28], max: 3}, lo: 0.5, hi: 1.5, smooth: false}
+
+STR_HOTEL:
+  effects:
+    - {fx: ripple, sel: {color: blue, rect: [36, 34, 60, 58]}, amp: 0.12, wavelength: 5, glint: 0.5}
+    - {fx: sway, sel: {color: white, rect: [34, 34, 52, 52], merge: true}, amp: 0.4, wavelength: 8, angle: 0}
+    - {fx: blink, sel: {color: [white, grey], max: 8, inset: 2}, period: 8, stagger: seq, glow: 0.4}
+
+STR_MED_BAY:
+  effects:
+    - {fx: pulse, sel: {color: [red, white], rect: [8, 4, 20, 14], merge: true}, amp: 0.2, glow: 0.4, radius: 3}
+    - {fx: breathe, sel: {color: [red, white], rect: [8, 4, 20, 14], merge: true}, center: [13, 9], amp: 0.08, beat: true}
+
+STR_MASH:
+  effects:
+    - {fx: breathe, sel: {color: red, rect: [10, 4, 22, 12], merge: true}, center: [15, 8], amp: 0.1, beat: true, speed: 2}
+    - {fx: pulse, sel: {color: red, rect: [10, 4, 22, 12], merge: true}, amp: 0.2, glow: 0.35, speed: 2}
+
+STR_SLUDGE_VATS:
+  effects:
+    - {fx: bubbles, sel: {color: green, min: 10}, count: 3, radius: [0.8, 1.4], inset: 1}
+    - {fx: pulse, sel: {color: green, min: 10}, amp: 0.1, stagger: 0.25}
+    - {fx: smoke, sel: {color: green, min: 10}, color: "#c0ffa0", opacity: 0.25, rise: 5, r0: 0.8, r1: 2.2, puffs: 2}
+
+STR_LOVE_CLINIC:
+  effects:
+    - {fx: breathe, sel: {color: [red, white], rect: [8, 4, 20, 16], merge: true}, center: [13, 9], amp: 0.1, beat: true}
+    - {fx: tint, sel: {color: [red, white], rect: [8, 4, 20, 16], merge: true}, tint: "#ff60c0", amp: 0.5, radius: 3}
+
+STR_METAGARDEN:
+  effects:
+    - {fx: sway, sel: {color: [green, yellow], min: 2}, amp: 0.35, wavelength: 5, angle: 90}
+    - {fx: ripple, sel: {color: [blue, white], rect: [4, 10, 30, 24], min: 3}, amp: 0.15, wavelength: 3, angle: 0, glint: 0.6, speed: 2}
+    - {fx: ripple, sel: {color: blue, rect: [12, 22, 22, 30]}, amp: 0.1, wavelength: 4, glint: 0.4}
+
+STR_CLONING_CENTRE:
+  effects:
+    - {fx: tint, sel: {color: [white, blue, grey], rect: [[8, 10, 13, 15], [18, 10, 23, 15], [8, 18, 13, 23], [18, 18, 23, 23]], merge: false}, tint: "#ff80c0", amp: 0.35, radius: 1, stagger: 0.25}
+    - {fx: blink, sel: {color: [red, green], max: 6}, period: 8, stagger: random, glow: 0.5}
+
+STR_PSIONIC_LABORATORY:
+  effects:
+    - {fx: flicker, sel: {color: [grey, white], rect: [14, 6, 24, 26]}, lo: 0.7, hi: 1.3, smooth: false}
+    - {fx: tint, sel: {color: [grey, white], rect: [14, 6, 24, 26]}, tint: "#ffb040", amp: 0.4, radius: 1.5, speed: 3}
+    - {fx: band, sel: {color: [red, orange], rect: [4, 4, 28, 28], merge: true}, angle: 90, width: 5, amp: 0.25, tint: "#c080ff"}
+
+STR_MIND_SHIELD:
+  effects:
+    - {fx: tint, sel: {rect: [[7, 7, 14, 14], [15, 7, 22, 14], [7, 15, 14, 22], [15, 15, 22, 22]], color: [grey, white], merge: false}, tint: "#ffa040", amp: 0.45, radius: 1.5, stagger: 0.25}
+    - {fx: sparks, sel: {color: red, rect: [6, 6, 26, 26], min: 2}, limit: 5, chance: 0.35, count: 2, spread: 2, color: "#ffb060"}
+
+STR_DISRUPTOR_SHROUD:
+  effects:
+    - {fx: pulse, sel: {color: green, min: 8}, amp: 0.3, glow: 0.5, stagger: 0.25, radius: 2}
+    - {fx: sparks, sel: {color: blue, min: 2}, limit: 4, chance: 0.45, count: 2, spread: 2, color: "#a0e0ff"}
+    - {fx: blink, sel: {color: red, max: 4}, period: 4, stagger: random, glow: 0.4}
+
+STR_TRAP_ROOM:
+  effects:
+    - {fx: blink, sel: {color: red, rect: [6, 6, 26, 26], min: 3}, period: 16, duty: 0.2, dim: 0.6, stagger: random, glow: 0.8}
+    - {fx: sparks, sel: {color: red, rect: [6, 6, 26, 26], min: 3}, chance: 0.15, count: 3}
+
+STR_FIRE_PIT:
+  effects:
+    - {fx: fire, sel: {color: red, merge: true}, strength: 0.55}
+    - {fx: sparks, at: [[10, 16], [16, 10], [22, 16], [16, 22]], chance: 0.3, count: 2, spread: 3, color: "#ffc060"}
+
+STR_GAS_CHAMBER:
+  effects:
+    - {fx: ripple, sel: {color: green, merge: true}, amp: 0.2, wavelength: 9, angle: 20, glint: 0.0}
+    - {fx: tint, sel: {color: green, merge: true}, tint: "#b0ff60", amp: 0.2, radius: 2}
+
+# ---------------------------------------------------------------- фермы и производство
+
+STR_HYDROPONICS:
+  like: _beds
+
+STR_HYDROPONICS_WEED:
+  like: _beds
+
+STR_HYDROPONICS_WEED_HARVEST:
+  like: _beds
+  effects:
+    - {fx: sway, sel: {color: green, merge: true}, amp: 0.3, wavelength: 8, angle: 0}
+    - {fx: pulse, sel: {color: green, merge: true}, amp: 0.12, glow: 0.15}
+
+STR_HYDROPONICS_BOOM:
+  like: _beds
+
+STR_HYDROPONICS_BOOM_HARVEST:
+  like: _beds
+  effects:
+    - {fx: band, sel: {color: purple, merge: true}, angle: 0, width: 5, amp: 0.5, tint: "#e080ff"}
+    - {fx: pulse, sel: {color: purple, merge: true}, amp: 0.15, glow: 0.2}
+
+STR_BODY_FARM:
+  effects:
+    - {fx: pulse, sel: {color: green, min: 2}, amp: 0.4, glow: 0.4, stagger: 0.19, radius: 2}
+    - {fx: blink, sel: {color: red, rect: [20, 44, 28, 62]}, order: x, stagger: seq, period: 8, glow: 0.5}
+    - {fx: blink, sel: {color: blue, max: 6}, period: 16, stagger: random, glow: 0.4}
+
+STR_BODY_FARM_E:
+  effects:
+    - {fx: pulse, sel: {color: blue, min: 4}, amp: 0.15, glow: 0.25, stagger: 0.19}
+    - {fx: blink, sel: {color: [yellow, green], rect: [20, 44, 28, 62]}, stagger: seq, period: 16, duty: 0.25, glow: 0.4}
+
+STR_BEE_HIVE:
+  effects:
+    - {fx: swarm, at: [[10, 12], [18, 12], [14, 18]], count: 4, radius: 3.5, size: 0.35, color: "#201808"}
+    - {fx: pulse, sel: {color: yellow, merge: true}, amp: 0.08}
+
+STR_CASINO:
+  effects:
+    - {fx: sweep, sel: {rect: [28, 28, 37, 37], merge: true}, center: [32, 32], turns: 3, amp: 0.8, tail: 120, tint: "#ffffa0"}
+    - {fx: pulse, sel: {color: green, min: 8}, amp: 0.15, glow: 0.3, stagger: 0.25}
+    - {fx: blink, sel: {color: [yellow, white, red, blue], rect: [12, 12, 52, 52], not_rect: [28, 28, 37, 37], max: 2}, period: 8, stagger: random, glow: 0.5}
+    - {fx: band, sel: {rect: [[6, 6, 58, 10], [6, 54, 58, 58]], merge: true}, angle: 0, width: 3, amp: 0.4, speed: 2, tint: "#ffe080"}
+
+STR_STILL:
+  effects:
+    - {fx: pulse, sel: {color: [orange, yellow], rect: [4, 6, 22, 16], merge: true}, amp: 0.25, glow: 0.4, radius: 2, speed: 2}
+    - {fx: smoke, at: [[9, 7], [15, 7]], color: "#e8e8e8", opacity: 0.35, rise: 5, r0: 0.8, r1: 2.4, puffs: 3}
+    - {fx: band, sel: {color: blue, merge: true}, angle: 45, width: 1.5, amp: 0.6, tint: "#c0e0ff"}
+
+STR_MINT:
+  effects:
+    - {fx: breathe, sel: {color: grey, rect: [8, 8, 24, 16], merge: true}, center: [16, 12], amp: 0.06, speed: 2}
+    - {fx: blink, sel: {color: [yellow, orange, white], rect: [4, 4, 28, 24], max: 4}, period: 8, stagger: random, duty: 0.3, dim: 0.7, glow: 0.6}
+
+STR_REFINERY:
+  effects:
+    - {fx: smoke, at: [[6, 4]], color: "#9a9a9a", opacity: 0.45, rise: 8, r1: 3}
+    - {fx: blink, sel: {color: green, max: 4}, period: 8, stagger: random, glow: 0.6}
+    - {fx: band, sel: {color: [white, grey], rect: [16, 4, 28, 14], merge: true}, angle: 0, width: 2, amp: 0.4}
+
+STR_SUMMONING_CIRCLE:
+  effects:
+    - {fx: tint, sel: {color: red, merge: true}, tint: "#ff4010", amp: 0.35, radius: 2}
+    - {fx: sweep, sel: {color: [red, grey], rect: [4, 4, 28, 28], merge: true}, center: [15, 15], amp: 0.5, tail: 60, tint: "#ff8030"}
+    - {fx: sparks, at: [[6, 6], [24, 6], [6, 24], [24, 24]], chance: 0.3, count: 2, color: "#ff9040"}
+
+STR_WELL:
+  effects:
+    - {fx: bubbles, sel: {color: green, largest: 1}, count: 4, radius: [0.8, 1.6]}
+    - {fx: ripple, sel: {color: green, largest: 1}, amp: 0.08, wavelength: 5, glint: 0.2}
+    - {fx: blink, sel: {color: [orange, red], max: 6}, period: 8, stagger: random, glow: 0.5}
+
+STR_RED_FORGE:
+  effects:
+    - {fx: fire, sel: {color: red, rect: [4, 4, 20, 20], merge: true}, strength: 0.4}
+    - {fx: pulse, sel: {color: red, rect: [4, 4, 20, 20], merge: true}, amp: 0.2, glow: 0.4, radius: 3, speed: 2}
+    - {fx: sparks, at: [[10, 12], [14, 16]], chance: 0.5, count: 3, spread: 3}
+
+STR_WORKSHOP:
+  effects:
+    - {fx: sparks, at: [[10, 6]], chance: 0.55, count: 4, spread: 2.5, color: "#e0f0ff"}
+    - {fx: blink, sel: {color: orange, rect: [20, 8, 30, 30]}, period: 8, stagger: seq, glow: 0.5}
+
+STR_HELLERIUM_PLANT:
+  skip: true
+
+STR_INDUSTRIAL_PRINTER:
+  effects:
+    - {fx: blink, sel: {color: [orange, red], rect: [[4, 18, 60, 24], [4, 46, 60, 52]], max: 4}, order: x, stagger: seq, period: 8, duty: 0.4, glow: 0.5}
+    - {fx: sparks, at: [[6, 6], [36, 6]], chance: 0.35, count: 2, color: "#ffc070"}
+    - {fx: band, sel: {rect: [[4, 18, 60, 24], [4, 46, 60, 52]], merge: true}, angle: 0, width: 1.5, amp: 0.4, speed: 2}
+
+STR_FACTORY:
+  effects:
+    - {fx: roll, rect: [6, 44, 44, 52], period: 4}
+    - {fx: roll, rect: [6, 78, 88, 88], period: 4, reverse: true}
+    - {fx: roll, rect: [58, 10, 64, 90], period: 4, axis: y}
+    - {fx: blink, sel: {color: [red, orange], max: 4, inset: 3}, period: 8, stagger: random, duty: 0.4, glow: 0.5}
+    - {fx: sparks, at: [[18, 12], [44, 18]], chance: 0.4, count: 3, color: "#e0f0ff"}
+
+STR_POWER_PLANT:
+  effects:
+    - {fx: pulse, sel: {color: [orange, yellow], rect: [0, 0, 32, 14], min: 6}, amp: 0.25, glow: 0.4, stagger: 0.5, radius: 2}
+    - {fx: blink, sel: {color: white, rect: [12, 12, 30, 16]}, order: x, stagger: seq, period: 8, duty: 0.3, dim: 0.6, glow: 0.4, tint: "#80c0ff"}
+    - {fx: blink, sel: {color: [yellow, dark], rect: [20, 20, 30, 30], merge: true}, period: 4, dim: 0.7, glow: 0.2}
+    - {fx: band, sel: {color: blue, largest: 1}, angle: 60, width: 2, amp: 0.4, tint: "#a0d0ff"}
+
+STR_FUSION_REACTOR:
+  effects:
+    - {fx: pulse, sel: {color: [orange, yellow], rect: [12, 12, 24, 24], merge: true}, amp: 0.35, glow: 0.8, radius: 3, speed: 2}
+    - {fx: pulse, sel: {color: [orange, yellow], rect: [2, 2, 10, 10], merge: true}, amp: 0.3, glow: 0.4, phase: 0.5}
+    - {fx: sweep, sel: {color: grey, merge: true}, center: [17, 18], turns: 2, amp: 0.5, tail: 40, tint: "#ffb060"}
+
+# ---------------------------------------------------------------- лаборатории и башни
+
+STR_LABORATORY:
+  effects:
+    - {fx: flicker, sel: {color: white, inset: 4, min: 3, max: 40}, lo: 0.85, hi: 1.12}
+    - {fx: band, sel: {color: [white, grey], rect: [8, 6, 24, 26], merge: true}, angle: 90, width: 2, amp: 0.3, pause: 0.4, tint: "#c0e8ff"}
+
+STR_PERSONAL_LABS:
+  like: STR_LABORATORY
+
+STR_LIBRARY:
+  effects:
+    - {fx: band, sel: {rect: [4, 10, 26, 26], merge: true}, angle: 0, width: 2, amp: 0.25, pause: 0.4, tint: "#fff0c0"}
+    - {fx: flicker, sel: {color: white, rect: [4, 2, 26, 10], min: 2}, lo: 0.85, hi: 1.15}
+
+STR_GREAT_LIBRARY:
+  effects:
+    - {fx: band, sel: {color: [blue, green, yellow, purple], rect: [8, 10, 56, 56], merge: true}, angle: 0, width: 5, amp: 0.45, tint: "#fff0c0"}
+    - {fx: pulse, sel: {rect: [[10, 4, 16, 8], [42, 4, 50, 8], [2, 44, 8, 52], [54, 44, 62, 52]], color: [red, dark, orange]}, amp: 0.2, glow: 0.3, stagger: 0.25, tint: "#ffb050"}
+
+STR_SURGERY_ROOM:
+  effects:
+    - {fx: blink, sel: {color: red, max: 8}, period: 8, duty: 0.3, dim: 0.5, stagger: same, glow: 0.5}
+    - {fx: pulse, sel: {color: white, rect: [10, 10, 22, 22], merge: true}, amp: 0.1}
+
+STR_STUDY_ROOM:
+  effects:
+    - {fx: flicker, sel: {color: white, rect: [8, 10, 26, 24], min: 2}, lo: 0.8, hi: 1.15}
+    - {fx: band, sel: {rect: [4, 2, 28, 8], merge: true}, angle: 0, width: 2, amp: 0.3, speed: 2}
+
+STR_DATA_CENTER:
+  effects:
+    - {fx: blink, sel: {color: green, max: 20}, period: 4, stagger: random, glow: 0.5, duty: 0.6}
+    - {fx: flicker, sel: {color: white, inset: 3, min: 2, max: 30}, lo: 0.8, hi: 1.2, smooth: false}
+
+STR_COMPUTER_CORE:
+  effects:
+    - {fx: sweep, sel: {color: [green, blue, purple], rect: [4, 8, 24, 28], merge: true}, center: [13, 15], turns: 1, amp: 0.6, tail: 120}
+    - {fx: pulse, sel: {color: dark, rect: [10, 12, 17, 20], merge: true}, amp: 0.8, glow: 0.4, tint: "#60ff80"}
+    - {fx: ripple, sel: {color: blue, rect: [2, 2, 30, 8], merge: true}, amp: 0.1, wavelength: 4, glint: 0.4}
+
+STR_WITCH_CAVE:
+  effects:
+    - {fx: pulse, sel: {color: red, rect: [8, 4, 24, 14]}, amp: 0.4, glow: 0.6, radius: 2, stagger: 0.1}
+    - {fx: smoke, at: [[14, 20], [20, 18]], color: "#c8d0c0", opacity: 0.25, rise: 8, r1: 3.5}
+
+STR_ASTROSENSORIUM:
+  effects:
+    - {fx: pulse, sel: {color: [red, orange, white], rect: [12, 12, 20, 20], merge: true}, amp: 0.4, glow: 0.8, radius: 3}
+    - {fx: blink, sel: {color: [blue, green, yellow, white], rect: [4, 4, 28, 28], not_rect: [12, 12, 20, 20], max: 3}, period: 8, stagger: random, duty: 0.5, dim: 0.3, glow: 0.7}
+    - {fx: sweep, sel: {color: purple, merge: true}, center: [16, 16], amp: 0.15, tail: 180, tint: "#c080ff"}
+
+STR_NONPROFIT_LAB:
+  effects:
+    - {fx: pulse, sel: {color: green, rect: [10, 10, 20, 20], merge: true}, amp: 0.3, glow: 0.7, radius: 3}
+    - {fx: blink, sel: {color: [orange, yellow], min: 1}, order: angle, stagger: seq, period: 8, duty: 0.3, dim: 0.6, glow: 0.5}
+
+STR_GDX_LAB:
+  effects:
+    - {fx: pulse, sel: {color: red, rect: [16, 18, 24, 24]}, amp: 0.4, glow: 0.7, radius: 2}
+    - {fx: flicker, sel: {color: blue, rect: [8, 4, 22, 14]}, lo: 0.7, hi: 1.3}
+    - {fx: band, sel: {color: orange, merge: true}, angle: 90, width: 2, amp: 0.5}
+
+STR_RED_TOWER:
+  effects:
+    - {fx: breathe, sel: {color: [red, white], rect: [4, 2, 28, 26], merge: true}, center: [15, 14], amp: 0.045}
+    - {fx: pulse, sel: {color: red, merge: true}, amp: 0.15, glow: 0.2, phase: 0.25}
+
+STR_BLACK_TOWER:
+  effects:
+    - {fx: pulse, sel: {color: [red, purple], rect: [8, 4, 24, 20], merge: true}, amp: 0.4, glow: 0.8, radius: 3}
+    - {fx: blink, sel: {color: [white, yellow, orange], rect: [4, 4, 28, 28], max: 6}, order: angle, stagger: seq, period: 16, duty: 0.4, dim: 0.4, glow: 0.6}
+
+STR_RUBBLE:
+  effects:
+    - {fx: smoke, at: [[8, 8], [22, 18], [12, 24]], opacity: 0.3, rise: 7}
+    - {fx: flicker, sel: {color: red}, lo: 0.5, hi: 1.4, smooth: false}
