@@ -10,12 +10,14 @@ public sealed class IndexModel(ReleaseFeed feed, CommunityService community, IOp
     public ReleaseView? Release { get; private set; }
     public HomeCounts Counts { get; private set; } = new(0, 0, 0, 0);
     public List<ForumTopic> Latest { get; private set; } = new();
+    public LauncherView? Launcher { get; private set; }
     public string LauncherUrl => options.Value.LauncherDownloadUrl;
     public string HeroImage => options.Value.HeroImage;
 
     public async Task OnGetAsync(CancellationToken ct)
     {
         Release = await feed.CurrentAsync(Text.Lang, ct);
+        Launcher = await feed.LauncherAsync(ct);
         Counts = await community.CountsAsync(Text.Lang, ct);
         Latest = await community.LatestTopicsAsync(6, ct);
     }

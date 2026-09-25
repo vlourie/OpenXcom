@@ -236,6 +236,7 @@ public static class PortalApp
         TicketApi.Map(app);
         DeviceApi.Map(app);
         app.MapGet("/files/{id:guid}", ServeFileAsync).ExcludeFromDescription();
+        app.MapGet("/download/launcher", DownloadLauncherAsync).ExcludeFromDescription();
         app.MapGet("/lang/{lang}", (string lang, string? back, HttpContext http) =>
         {
             if (Text.Languages.Contains(lang))
@@ -271,6 +272,26 @@ public static class PortalApp
         h["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()";
         h.ContentSecurityPolicy = "default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'";
         await next();
+    }
+
+    /// <summary>
+    /// The launcher, straight from the release repository the site already reads. One address that
+    /// always works and needs nothing set by hand: the blob is named by its own SHA-256 inside the
+    /// repository, and its name here carries the version instead, so the player sees what they got.
+    /// </summary>
+    static async Task<IResult> DownloadLauncherAsync(ReleaseFeed feed, IOptions<PortalOptions> options, IHttpClientFactory http, CancellationToken ct)
+    {
+        var o = options.Value;
+        if (o.LauncherDownloadUrl is { Length: > 0 } elsewhere) return Results.Redirect(elsewhere);
+        var launcher = await feed.LauncherAsync(ct);
+        if (launcher is null) return Results.NotFound();
+        var client = http.CreateClient("releases");
+        var url = new Uri(new Uri(o.ReleaseRepo.EndsWith('/') ? o.ReleaseRepo : o.ReleaseRepo + "/"), Xp.Manifest.BlobKeys.For(launcher.Sha256));
+        var resp = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, ct);
+        if (!resp.IsSuccessStatusCode) { resp.Dispose(); return Results.NotFound(); }
+        // the stream owns the response: it is disposed once the body has been written out
+        var body = await resp.Content.ReadAsStreamAsync(ct);
+        return Results.Stream(body, "application/octet-stream", launcher.FileName, enableRangeProcessing: false);
     }
 
     /// <summary>

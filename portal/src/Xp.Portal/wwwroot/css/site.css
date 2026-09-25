@@ -58,6 +58,10 @@ body {
 
 .top nav > a:hover, .top nav > a.on { color: var(--btn-ink); background: var(--btn-ring-0); }
 
+/* the download stays visible from every page, not only from the entrance screen */
+.top nav > a.get { color: var(--btn-ink); background: var(--btn-face); font-weight: 700; }
+.top nav > a.get:hover { background: var(--ui-12); color: var(--void); }
+
 .lang a { margin-left: 6px; color: var(--ink-faint); text-decoration: none; letter-spacing: 1px; }
 .lang a.on { color: var(--accent); font-weight: 700; }
 
@@ -154,6 +158,9 @@ button.secondary, .button.secondary { background: var(--ui-9); color: var(--ink)
 button.secondary:hover, .button.secondary:hover { background: var(--ui-8); color: var(--void); }
 
 button.small, .button.small { margin-top: 0; padding: 4px 12px; font-size: 12px; }
+
+/* the one thing a first-time visitor came for: it is the largest control on the entrance screen */
+button.big, .button.big { padding: 14px 32px; font-size: 17px; letter-spacing: 2px; }
 
 button.link {
     margin: 0; padding: 0; background: none; box-shadow: none;

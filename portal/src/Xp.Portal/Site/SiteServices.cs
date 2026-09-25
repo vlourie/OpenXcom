@@ -13,35 +13,71 @@ namespace Xp.Portal.Site;
 
 public sealed record ReleaseView(string Id, string Version, DateTimeOffset Published, string Changelog);
 
+/// <summary>What the entrance screen offers a new player: one file, its version and its size.</summary>
+public sealed record LauncherView(string Version, string Sha256, long Size, DateTimeOffset Published)
+{
+    /// <summary>The name the file is saved under — the version is in it, so a support question names it.</summary>
+    public string FileName => $"XPiratezHD-Setup-{Version}.exe";
+    public double Megabytes => Math.Round(Size / 1024.0 / 1024.0, 1);
+}
+
 /// <summary>
 /// The version shown on the site, read from the release repository with the same verification as the
 /// launcher: a release whose signature does not check out is not shown at all.
 /// </summary>
 public sealed class ReleaseFeed(IOptions<PortalOptions> options, IHttpClientFactory http, IMemoryCache cache, ILogger<ReleaseFeed> log)
 {
+    /// <summary>The first file a new player runs. Small: it fetches the launcher itself.</summary>
+    public const string BootstrapFile = "xp-bootstrap.exe";
+
     public async Task<ReleaseView?> CurrentAsync(string lang, CancellationToken ct)
     {
+        var latest = await LatestAsync(options.Value.ReleaseChannel, ct);
+        if (latest is null) return null;
+        var r = latest.Manifest.Release;
+        var log_ = r.Changelog.TryGetValue(lang, out var c) ? c : r.Changelog.Values.FirstOrDefault() ?? "";
+        return new ReleaseView(r.Id, r.Version, r.Published, log_);
+    }
+
+    /// <summary>
+    /// The launcher to download, taken from the launcher channel of the same repository. Read from
+    /// the repository and never from a setting: the site went out with an empty setting and the
+    /// entrance screen simply had no download button, which nothing in the code or the log said.
+    /// </summary>
+    public async Task<LauncherView?> LauncherAsync(CancellationToken ct)
+    {
+        var latest = await LatestAsync(options.Value.LauncherChannel, ct);
+        if (latest is null) return null;
+        var files = latest.Manifest.Files;
+        var file = files.FirstOrDefault(f => f.Path.Equals(BootstrapFile, StringComparison.OrdinalIgnoreCase));
+        if (file is null)
+        {
+            log.LogWarning("launcher release {Id} has no {File}", latest.Manifest.Release.Id, BootstrapFile);
+            return null;
+        }
+        var r = latest.Manifest.Release;
+        return new LauncherView(r.Version, file.Sha256, file.Size, r.Published);
+    }
+
+    async Task<LatestRelease?> LatestAsync(string channel, CancellationToken ct)
+    {
         var o = options.Value;
-        if (string.IsNullOrWhiteSpace(o.ReleaseRepo) || o.ReleaseKeys.Length == 0) return null;
-        var latest = await cache.GetOrCreateAsync("release:" + o.ReleaseChannel, async e =>
+        if (string.IsNullOrWhiteSpace(o.ReleaseRepo) || o.ReleaseKeys.Length == 0 || string.IsNullOrWhiteSpace(channel)) return null;
+        return await cache.GetOrCreateAsync("release:" + channel, async e =>
         {
             e.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5);
             try
             {
                 var repo = new RepoClient(http.CreateClient("releases"), new Uri(o.ReleaseRepo), new TrustedKeys(o.ReleaseKeys));
-                return await repo.GetLatestAsync(o.ReleaseChannel, 0, ct);
+                return await repo.GetLatestAsync(channel, 0, ct);
             }
             catch (Exception ex) when (ex is HttpRequestException or TrustException or ManifestException or IOException or TaskCanceledException)
             {
-                log.LogWarning("release feed: {Error}", ex.Message);
+                log.LogWarning("release feed ({Channel}): {Error}", channel, ex.Message);
                 e.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1);
                 return null;
             }
         });
-        if (latest is null) return null;
-        var r = latest.Manifest.Release;
-        var log_ = r.Changelog.TryGetValue(lang, out var c) ? c : r.Changelog.Values.FirstOrDefault() ?? "";
-        return new ReleaseView(r.Id, r.Version, r.Published, log_);
     }
 }
 

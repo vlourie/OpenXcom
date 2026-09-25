@@ -24,9 +24,18 @@
         {
             <p class="hint">@T["home.version.unknown"]</p>
         }
-        @if (Model.LauncherUrl.Length > 0)
+        @if (Model.Launcher is { } dl)
         {
-            <a class="button" href="@Model.LauncherUrl">@T["home.download"]</a>
+            <a class="button big" href="/download/launcher" download>@T["home.download"]</a>
+            <p class="hint">@T.Format("home.download.about", dl.Version, dl.Megabytes)</p>
+        }
+        else if (Model.LauncherUrl.Length > 0)
+        {
+            <a class="button big" href="@Model.LauncherUrl">@T["home.download"]</a>
+        }
+        else
+        {
+            <p class="hint">@T["home.download.none"]</p>
         }
     </div>
 </section>

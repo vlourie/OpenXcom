@@ -98,6 +98,29 @@ public sealed partial class CommunityTests(PortalFactory f) : IClassFixture<Port
         Assert.Contains("Разговоры", await c.GetStringAsync("/forum"));
     }
 
+    /// <summary>
+    /// The site went out with the download setting empty, and the entrance screen then had no
+    /// download button at all — the one thing a first-time visitor comes for, missing without a word
+    /// anywhere. The button now comes from the release repository, and when the repository cannot be
+    /// read the page says so out loud; what it may never do again is stay silent.
+    /// </summary>
+    [Fact]
+    public async Task The_entrance_screen_offers_the_launcher_or_says_why_it_cannot()
+    {
+        await SeedAsync();
+        var c = Browser();
+        var home = await c.GetStringAsync("/");
+        Assert.True(home.Contains("/download/launcher") || home.Contains("сайт не может прочитать хранилище"),
+            "the entrance screen says nothing about the launcher: neither a button nor a reason");
+
+        // and the way to it is on every page, not only on the entrance screen
+        foreach (var url in new[] { "/", "/mods", "/wiki", "/forum" })
+            Assert.Contains("/download/launcher", await c.GetStringAsync(url));
+
+        // without a repository the address is honestly empty-handed, not a server error
+        Assert.Equal(HttpStatusCode.NotFound, (await c.GetAsync("/download/launcher")).StatusCode);
+    }
+
     // ---- the wiki built from rulesets ----
 
     static WikiImport.File Built(string version, params (string Slug, string Title)[] pages) => new(
