@@ -360,9 +360,37 @@ public sealed class SetupPage : UserControl
         var sum = Skin.Note(L.T("setup.total", L.Size(total)), 14, Skin.Text);
         sum.Margin = new Thickness(0, 10, 0, 0);
         s.Children.Add(sum);
+        AddOwnMods(s, m);
         _body.Content = s;
         _next.Content = L.T("setup.install");
         _next.IsEnabled = true;
+    }
+
+    /// <summary>The player's own mods: shown, never touched - no box to tick, the game's Mods menu switches them.</summary>
+    void AddOwnMods(StackPanel s, ReleaseManifest m)
+    {
+        List<OwnMod> own;
+        try { own = Setup.OwnMods(_dir, m, Setup.Master(m, _picked)); }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { return; }
+        if (own.Count == 0) return;
+        var head = Skin.Note(L.T("setup.own"), 14, Skin.Text);
+        head.Margin = new Thickness(0, 18, 0, 0);
+        s.Children.Add(head);
+        s.Children.Add(Skin.Note(L.T("setup.ownHint")));
+        foreach (var o in own)
+        {
+            var text = new StackPanel { Spacing = 1, Margin = new Thickness(28, 2, 0, 0) };
+            bool bad = o.OtherMaster is not null || o.WrongEngine is not null;
+            var name = o.Name + (o.Version.Length > 0 ? "  " + o.Version : "");
+            text.Children.Add(new TextBlock { Text = name, FontSize = 14, FontFamily = Skin.Medium, Foreground = Skin.B(bad ? Skin.Dim : Skin.Text) });
+            var why = o.OtherMaster is { } om ? L.T("setup.ownOtherMaster", om)
+                    : o.WrongEngine is { } e ? L.T("setup.wrongEngine", e)
+                    : L.T("setup.ownUntested");
+            var state = o.IsMaster ? L.T("setup.kind.master") : L.T(o.Active ? "setup.ownOn" : "setup.ownOff");
+            var line = string.Join("  ·  ", new[] { state, "user/mods/" + o.Folder, why });
+            text.Children.Add(new TextBlock { Text = line, FontSize = 12, TextWrapping = TextWrapping.Wrap, Foreground = Skin.B(Skin.WarnText) });
+            s.Children.Add(text);
+        }
     }
 
     Control PartRow(SetupRow r)
@@ -432,7 +460,11 @@ public sealed class SetupPage : UserControl
             }
 
             var state = u.LoadState();
+            var before = new HashSet<string>(state.Components ?? []);
             state.Components = [.. Setup.Normalize(_manifest!, _picked).Order(StringComparer.Ordinal)];
+            // what the player has just ticked is switched on in the game too, even in a mods list they set themselves
+            var ticked = _manifest!.Components.Where(c => c.Mod.Length > 0 && state.Components.Contains(c.Id) && !before.Contains(c.Id))
+                                              .Select(c => c.Mod).ToList();
             state.Save(u.Paths);
             var progress = new Progress<Core.Progress>(ShowProgress);
             var plan = await Task.Run(() => u.Scan(state, _manifest!, full: false, progress, ct), ct);
@@ -445,7 +477,7 @@ public sealed class SetupPage : UserControl
             }
 
             var master = Setup.Master(_manifest!, _picked);
-            var r = ProfileWriter.ApplyForGame(u.Paths, master, Setup.GameLanguage(_lang), ScreenHeight());
+            var r = ProfileWriter.ApplyForGame(u.Paths, master, Setup.GameLanguage(_lang), ScreenHeight(), switchOn: ticked);
             _doneText = L.T("setup.doneText", _manifest!.Release.Version)
                         + (r is { Changes.Count: > 0 } ? "\n\n" + L.T("setup.doneChanges", string.Join("; ", r.Changes)) : "");
             _settings.GameDir = _dir;

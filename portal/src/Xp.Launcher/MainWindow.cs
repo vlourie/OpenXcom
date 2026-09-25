@@ -51,7 +51,7 @@ public sealed class MainWindow : Window
     readonly TextBlock _launcherLine = new() { FontSize = 12, Foreground = Skin.B(Skin.Muted), VerticalAlignment = VerticalAlignment.Center, TextWrapping = TextWrapping.Wrap };
     readonly TextBlock _rollbackNote = new() { FontSize = 12, Foreground = Skin.B(Skin.Muted), TextWrapping = TextWrapping.Wrap };
     readonly TextBlock _log = new() { FontFamily = new FontFamily("Consolas,monospace"), FontSize = 11, TextWrapping = TextWrapping.Wrap, Foreground = Skin.B(Skin.Muted), LineHeight = 16 };
-    readonly Button _check, _repair, _rollback, _selfUpdate, _choose, _updateOnly, _components;
+    readonly Button _check, _repair, _rollback, _selfUpdate, _choose, _updateOnly, _components, _resetProfile;
 
     readonly SetupPage _setupPage;
     readonly ReportsPage _reportsPage;
@@ -110,6 +110,8 @@ public sealed class MainWindow : Window
         _choose.Click += async (_, _) => await ChooseGameDirAsync();
         _components = Skin.Btn(L.T("settings.components"));
         _components.Click += (_, _) => OpenSetup(_paths?.GameDir);
+        _resetProfile = Skin.Btn(L.T("settings.resetProfile"));
+        _resetProfile.Click += async (_, _) => await ResetProfileAsync();
         _main.Content = _mainText;
         _main.Click += async (_, _) => await OnMainAsync();
 
@@ -349,8 +351,11 @@ public sealed class MainWindow : Window
         dirRow.Children.Add(_choose);
         dirRow.Children.Add(_gameDir);
         game.Children.Add(dirRow);
-        _components.HorizontalAlignment = HorizontalAlignment.Left;
-        game.Children.Add(_components);
+        var modsRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
+        modsRow.Children.Add(_components);
+        modsRow.Children.Add(_resetProfile);
+        game.Children.Add(modsRow);
+        game.Children.Add(Skin.Note(L.T("settings.modsHint"), 13, Skin.Text2));
         game.Children.Add(Skin.Note(L.T("settings.language"), 13, Skin.Text2));
         _language.Items.Add(new ComboBoxItem { Content = "Русский", Tag = "ru" });
         _language.Items.Add(new ComboBoxItem { Content = "English", Tag = "en" });
@@ -547,6 +552,26 @@ public sealed class MainWindow : Window
         if (_work != Work.None || (installedGame is not null && GameIsRunning())) return;
         _setupPage.Start(installedGame);
         Navigate("setup");
+    }
+
+    /// <summary>The player changed the mods in the game and wants ours back: the profile's list and recommended options.</summary>
+    async Task ResetProfileAsync()
+    {
+        if (_paths is null || GameIsRunning() || !await ConfirmAsync(L.T("settings.resetConfirm"))) return;
+        string text;
+        try
+        {
+            var r = ProfileWriter.ApplyForGame(_paths, null, null, Screens.ScreenFromWindow(this)?.Bounds.Height, resetMods: true);
+            text = r is null ? L.T("settings.resetNothing")
+                 : r.Changes.Count == 0 ? L.T("settings.resetSame")
+                 : L.T("settings.resetDone", string.Join("; ", r.Changes));
+            if (r is { Written: true }) _fileLog?.Info("options.cfg back to the profile: " + string.Join("; ", r.Changes));
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or System.Text.Json.JsonException or InvalidOperationException)
+        {
+            text = L.T("err.generic", e.Message);
+        }
+        await new MessageDialog(text, withNo: false).ShowDialog<bool>(this);
     }
 
     void OnSetupFinished(string dir, bool play)
@@ -801,6 +826,7 @@ public sealed class MainWindow : Window
         _rollback.IsEnabled = idle && !running && _updater!.CanRollback;
         _choose.IsEnabled = _work == Work.None;
         _components.IsEnabled = idle && !running && _paths is not null;
+        _resetProfile.IsEnabled = idle && !running && _paths is not null;
         _selfUpdate.IsVisible = _launcherUpdate is not null;
         _selfUpdate.IsEnabled = idle;
         if (_launcherUpdate is not null) _selfUpdate.Content = L.T("self.install") + " " + _launcherUpdate.Release.Version;

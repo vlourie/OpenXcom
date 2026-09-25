@@ -7,6 +7,12 @@ namespace Xp.Launcher.Core;
 /// the engine, always on. <see cref="Needs"/>: the name of a component it cannot go without, not
 /// ticked. <see cref="WrongEngine"/>: the mod asks for an engine this release is not.
 /// </summary>
+/// <summary>A mod of the player's own in user/mods: its compatibility with our build was never checked.</summary>
+/// <param name="OtherMaster">the master it is made for, when that is not the game's; the engine will not switch it on</param>
+/// <param name="WrongEngine">the engine it asks for, when that is not ours</param>
+public sealed record OwnMod(string Id, string Name, string Version, string Folder, bool IsMaster, bool Active,
+    string? OtherMaster, string? WrongEngine);
+
 public sealed record SetupRow(ComponentInfo Component, bool Checked, bool Locked, string? Needs, string? WrongEngine)
 {
     public bool Blocked => Needs is not null || WrongEngine is not null;
@@ -109,12 +115,44 @@ public static class Setup
 
     public static string Title(ComponentInfo c) => c.Name.Length > 0 ? c.Name : c.Mod.Length > 0 ? c.Mod : c.Id;
 
+    /// <summary>
+    /// The mods the player put into user/mods themselves: none of our components is that mod.
+    /// The launcher does not install or remove them, it only says what the engine will make of them;
+    /// on and off stays with the game's Mods menu.
+    /// </summary>
+    /// <param name="master">the master mod the ticks make the game, or null when none is ticked</param>
+    public static List<OwnMod> OwnMods(string gameDir, ReleaseManifest m, string? master)
+    {
+        var ours = new HashSet<string>(m.Components.Select(c => c.Mod).Where(id => id.Length > 0), StringComparer.Ordinal);
+        var cfgPath = Path.Combine(gameDir, "user", "options.cfg");
+        var cfg = OptionsCfg.Parse(File.Exists(cfgPath) ? File.ReadAllText(cfgPath) : "");
+        var result = new List<OwnMod>();
+        var root = Path.Combine(gameDir, "user", "mods");
+        if (!Directory.Exists(root)) return result;
+        foreach (var dir in Directory.EnumerateDirectories(root).Order(StringComparer.OrdinalIgnoreCase))
+        {
+            var folder = Path.GetFileName(dir);
+            var meta = Path.Combine(dir, "metadata.yml");
+            ModMetadata md;
+            try { md = ModMetadata.Parse(File.Exists(meta) ? File.ReadAllText(meta) : "", folder); }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException) { continue; }
+            if (ours.Contains(md.Id) || result.Any(o => o.Id == md.Id)) continue;
+            // the engine's rule (ModInfo::canActivate): a master mod, a mod for any master, or one for this very master
+            var otherMaster = !md.IsMaster && !md.AnyMaster && master is not null && md.Master != master ? md.Master : null;
+            result.Add(new OwnMod(md.Id, md.Name, md.Version, folder, md.IsMaster,
+                cfg.Mods.Any(x => x.Id == md.Id && x.Active), otherMaster, EngineMismatch(m, md.Engine)));
+        }
+        return result;
+    }
+
     /// <summary>requiredExtendedEngine: "" any, "Extended" any OXCE (ours is one), "OXCE-HD" only our line.</summary>
-    static string? EngineMismatch(ReleaseManifest m, ComponentInfo c) => c.Engine switch
+    static string? EngineMismatch(ReleaseManifest m, ComponentInfo c) => EngineMismatch(m, c.Engine);
+
+    static string? EngineMismatch(ReleaseManifest m, string engine) => engine switch
     {
         "" or "Extended" => null,
-        "OXCE-HD" => m.Release.Line is "" or "oxce-hd" ? null : c.Engine,
-        _ => c.Engine,
+        "OXCE-HD" => m.Release.Line is "" or "oxce-hd" ? null : engine,
+        _ => engine,
     };
 
     static bool Same(string a, string b) => string.Equals(a, b, StringComparison.OrdinalIgnoreCase);

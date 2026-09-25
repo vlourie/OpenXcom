@@ -144,6 +144,124 @@ public sealed class SetupTests : IDisposable
         Assert.False(again!.Written);
     }
 
+    /// <summary>Installs the Russian defaults and applies the profile, as the wizard does.</summary>
+    async Task<ReleaseManifest> InstallRussianAsync()
+    {
+        StageRelease();
+        var m = await LatestAsync();
+        var pz = (await f.Updater.ProfilesAsync(m, default))!.For("piratez");
+        var state = f.Updater.LoadState();
+        state.Components = Setup.Defaults(m, pz, "ru").ToList();
+        state.Save(f.Updater.Paths);
+        await f.UpdateAsync();
+        ProfileWriter.ApplyForGame(f.Updater.Paths, "piratez", "ru", 1080);
+        return m;
+    }
+
+    /// <summary>What the engine does when the player switches a mod off in its Mods menu.</summary>
+    void PlayerSwitches(string id, bool on)
+    {
+        var cfg = OptionsCfg.Parse(f.ReadGame("user/options.cfg"));
+        int at = cfg.Mods.FindIndex(x => x.Id == id);
+        cfg.Mods[at] = (id, on);
+        Fixture.Write(f.Game, "user/options.cfg", cfg.Render());
+    }
+
+    List<(string Id, bool Active)> Mods() => OptionsCfg.Parse(f.ReadGame("user/options.cfg")).Mods;
+
+    [Fact]
+    public async Task A_mod_the_player_switched_off_in_the_game_stays_off()
+    {
+        await InstallRussianAsync();
+        PlayerSwitches("hd", false);
+
+        var r = ProfileWriter.ApplyForGame(f.Updater.Paths, null, null, 1080);   // before a start
+        Assert.Contains(("hd", false), Mods());
+        Assert.Contains(r!.Changes, c => c.Contains("kept"));
+        // and on the next start too: the launcher remembers what it wrote, not what it would write
+        ProfileWriter.ApplyForGame(f.Updater.Paths, null, null, 1080);
+        Assert.Contains(("hd", false), Mods());
+    }
+
+    [Fact]
+    public async Task Back_to_recommended_brings_the_profile_list_back()
+    {
+        await InstallRussianAsync();
+        PlayerSwitches("hd", false);
+        ProfileWriter.ApplyForGame(f.Updater.Paths, null, null, 1080);
+
+        var r = ProfileWriter.ApplyForGame(f.Updater.Paths, null, null, 1080, resetMods: true);
+        Assert.True(r!.Written);
+        Assert.Contains(("hd", true), Mods());
+        // from here on the list is ours again: a start keeps it as it is
+        Assert.False(ProfileWriter.ApplyForGame(f.Updater.Paths, null, null, 1080)!.Written);
+    }
+
+    [Fact]
+    public async Task A_mod_ticked_in_the_launcher_comes_on_even_in_the_players_list()
+    {
+        var m = await InstallRussianAsync();
+        PlayerSwitches("hd", false);   // the list is the player's now
+
+        var state = f.Updater.LoadState();
+        state.Components = [.. state.Components!, Id(m, "piratezCzechNames")];
+        state.Save(f.Updater.Paths);
+        await f.UpdateAsync();
+        ProfileWriter.ApplyForGame(f.Updater.Paths, "piratez", "ru", 1080, switchOn: ["piratezCzechNames"]);
+
+        Assert.Contains(("piratezCzechNames", true), Mods());
+        Assert.Contains(("hd", false), Mods());   // what the player switched off stays off
+    }
+
+    [Fact]
+    public async Task A_component_removed_in_the_launcher_is_not_the_players_change()
+    {
+        var m = await InstallRussianAsync();
+        var state = f.Updater.LoadState();
+        state.Components!.Remove(Id(m, "hd"));
+        state.Save(f.Updater.Paths);
+        await f.UpdateAsync();
+        // options.cfg still names hd on, but its files are gone: that is not a choice of the player
+
+        ProfileWriter.ApplyForGame(f.Updater.Paths, null, null, 1080);
+        // still the launcher's list: the profile order is kept up, the RU patch on
+        Assert.DoesNotContain(Mods(), x => x.Id == "hd");
+        Assert.Contains(("XPZ_EX_RU-patch", true), Mods());
+        Assert.DoesNotContain(f.Updater.LoadState().Installed.Keys, k => k.StartsWith("user/mods/hd/"));
+        var r = ProfileWriter.ApplyForGame(f.Updater.Paths, null, null, 1080);
+        Assert.DoesNotContain(r!.Changes, c => c.Contains("kept"));
+    }
+
+    [Fact]
+    public async Task The_players_own_mods_are_listed_with_what_the_engine_will_make_of_them()
+    {
+        var m = await InstallRussianAsync();
+        Fixture.Write(f.Game, "user/mods/MoreGuns/metadata.yml", "id: moreGuns\nname: More Guns\nversion: 1.2\nmaster: piratez\n");
+        Fixture.Write(f.Game, "user/mods/VanillaTweak/metadata.yml", "id: vanillaTweak\n");   // master defaults to xcom1
+        Fixture.Write(f.Game, "user/mods/Brutal/metadata.yml", "id: brutal\nmaster: \"*\"\nrequiredExtendedEngine: BrutalOXCE\n");
+        PlayerAdds("moreGuns", true);
+
+        var own = Setup.OwnMods(f.Game, m, "piratez");
+        Assert.Equal(["brutal", "moreGuns", "vanillaTweak"], own.Select(o => o.Id).Order(StringComparer.Ordinal));   // ours are not listed
+        var guns = own.Single(o => o.Id == "moreGuns");
+        Assert.True(guns.Active);
+        Assert.Null(guns.OtherMaster);
+        Assert.Null(guns.WrongEngine);
+        Assert.Equal("xcom1", own.Single(o => o.Id == "vanillaTweak").OtherMaster);
+        Assert.Equal("BrutalOXCE", own.Single(o => o.Id == "brutal").WrongEngine);
+
+        // before a start the profile leaves them as the player set them
+        ProfileWriter.ApplyForGame(f.Updater.Paths, null, null, 1080);
+        Assert.Contains(("moreGuns", true), Mods());
+    }
+
+    void PlayerAdds(string id, bool on)
+    {
+        var cfg = OptionsCfg.Parse(f.ReadGame("user/options.cfg"));
+        cfg.Mods.Add((id, on));
+        Fixture.Write(f.Game, "user/options.cfg", cfg.Render());
+    }
+
     [Fact]
     public void A_game_without_profiles_starts_as_it_is()
     {
