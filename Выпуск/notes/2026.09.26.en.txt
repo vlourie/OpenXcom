@@ -1,0 +1,5 @@
+﻿Craft lights in the hangar now work.
+
+— Craft lights at the base never lit: the game looked them up under another picture number, and a classic hangar covered them. Now every craft shows its lights, over any hangar.
+
+— Fixed the lights of the X35, MiG, Hyperjet and five more craft: they used to hang in the air next to the craft. The Lightning and the balloon got lights too.
