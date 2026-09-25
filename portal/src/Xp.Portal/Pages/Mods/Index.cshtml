@@ -18,7 +18,7 @@ else
             <a class="card" href="/mods/@m.Slug">
                 @if (!string.IsNullOrEmpty(m.Image))
                 {
-                    <img src="~/img/mods/@m.Image" alt="@m.Name">
+                    <img src="~/img/mods/@m.Image" srcset="@Art.SrcSet($"img/mods/{m.Image}")" alt="@m.Name">
                 }
                 <h3>@m.Name</h3>
                 <p>@m.Summary</p>

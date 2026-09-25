@@ -82,6 +82,28 @@ public sealed class ReleaseFeed(IOptions<PortalOptions> options, IHttpClientFact
 }
 
 /// <summary>
+/// A picture and its double twin. A screen with scaling asks for twice the pixels; a site that has only
+/// one size lets the browser stretch what it has, and the art floats. The twin lies beside the picture
+/// as &lt;name&gt;@2x.&lt;ext&gt; (tools/site_art_2x.py builds it); where there is no twin the markup asks for
+/// nothing extra, so a missing file never turns into a 404 in every visitor's log.
+/// </summary>
+public sealed class Art(IWebHostEnvironment env)
+{
+    readonly System.Collections.Concurrent.ConcurrentDictionary<string, string?> _known = new();
+
+    /// <summary>For "img/hero.jpg" — "/img/hero.jpg 1x, /img/hero@2x.jpg 2x", or null when there is no twin.</summary>
+    public string? SrcSet(string path)
+    {
+        if (string.IsNullOrEmpty(path)) return null;
+        return _known.GetOrAdd(path.TrimStart('/'), p =>
+        {
+            var twin = $"{System.IO.Path.ChangeExtension(p, null)}@2x{System.IO.Path.GetExtension(p)}";
+            return env.WebRootFileProvider.GetFileInfo(twin).Exists ? $"/{p} 1x, /{twin} 2x" : null;
+        });
+    }
+}
+
+/// <summary>
 /// UI strings from Strings/&lt;lang&gt;.json, embedded. A missing key shows as the key itself, so a gap is
 /// visible on the page instead of silently empty.
 /// </summary>

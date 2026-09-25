@@ -289,8 +289,8 @@ tbody tr:hover { background: var(--ui-9); }
 }
 
 .card:hover { background: var(--ui-9); color: var(--ink); box-shadow: inset 0 0 0 1px var(--accent), inset 0 0 0 2px var(--win-ring-4); }
-/* the picture of a mod: a fixed strip, so a card without one is the same height as a card with one */
-.card img { display: block; width: calc(100% + 32px); height: 120px; margin: -16px -16px 12px; object-fit: cover; }
+/* the picture of a mod: the whole frame in its own proportions, so faces are not cut off by a fixed strip */
+.card img { display: block; width: calc(100% + 32px); aspect-ratio: 16 / 9; margin: -16px -16px 12px; object-fit: cover; }
 .card h3 { margin: 0 0 6px; color: var(--accent); }
 .card p { margin: 0; color: var(--ink-dim); font-size: 14px; }
 .card .count { display: block; margin-top: 10px; color: var(--sand); font-family: ui-monospace, Consolas, monospace; font-size: 13px; letter-spacing: 1px; }

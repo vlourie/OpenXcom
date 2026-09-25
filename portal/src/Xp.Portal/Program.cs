@@ -143,6 +143,7 @@ public static class PortalApp
         s.AddSingleton<ClamdScanner>();
         s.AddSingleton<ReleaseFeed>();
         s.AddSingleton<Text>();
+        s.AddSingleton<Art>();
         s.AddSingleton<Markup>();
         s.AddScoped<CommunityService>();
         s.AddScoped<CommunitySeed>();

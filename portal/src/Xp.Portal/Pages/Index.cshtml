@@ -7,7 +7,7 @@
 <section class="hero">
     @if (Model.HeroImage.Length > 0)
     {
-        <div class="shot"><img src="~/img/@Model.HeroImage" alt="@T["home.shot.alt"]"></div>
+        <div class="shot"><img src="~/img/@Model.HeroImage" srcset="@Art.SrcSet($"img/{Model.HeroImage}")" alt="@T["home.shot.alt"]"></div>
     }
     else
     {

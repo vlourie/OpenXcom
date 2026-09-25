@@ -121,6 +121,26 @@ public sealed partial class CommunityTests(PortalFactory f) : IClassFixture<Port
         Assert.Equal(HttpStatusCode.NotFound, (await c.GetAsync("/download/launcher")).StatusCode);
     }
 
+    [Fact]
+    public async Task A_picture_is_offered_in_two_sizes_so_a_screen_with_scaling_does_not_stretch_it()
+    {
+        await SeedAsync();
+        var c = Browser();
+
+        // the entrance screen: the picture itself and the twin for a screen that asks for twice the pixels
+        var home = await c.GetStringAsync("/");
+        Assert.Contains("/img/hero.jpg 1x, /img/hero@2x.jpg 2x", home);
+
+        // and the twin is really served, not just named in the markup
+        var big = await c.GetAsync("/img/hero@2x.jpg");
+        Assert.Equal(HttpStatusCode.OK, big.StatusCode);
+        Assert.True(big.Content.Headers.ContentLength > 200 * 1024,
+            $"the double picture is too small to be one: {big.Content.Headers.ContentLength} bytes");
+
+        // the covers of the mods are in two sizes too
+        Assert.Contains("@2x.jpg 2x", await c.GetStringAsync("/mods"));
+    }
+
     // ---- the wiki built from rulesets ----
 
     static WikiImport.File Built(string version, params (string Slug, string Title)[] pages) => new(
