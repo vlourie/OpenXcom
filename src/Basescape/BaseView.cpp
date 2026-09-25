@@ -507,6 +507,16 @@ void BaseView::updateNeighborFacilityBuildTime(BaseFacility* facility, BaseFacil
 }
 
 /**
+ * The frame whose HD picture stands for a tile of the facility: its graphic, or its shape
+ * when the graphic is not drawn (a big facility without spriteEnabled keeps it all in the shape).
+ */
+int BaseView::hdTileIndex(const BaseFacility *facility, int num)
+{
+	const RuleBaseFacility *rules = facility->getRules();
+	return (rules->getSpriteEnabled() ? rules->getSpriteFacility() : rules->getSpriteShape()) + num;
+}
+
+/**
  * A facility with an HD picture of every one of its tiles is not drawn on the classic
  * layer at all - neither its shape nor its graphic - so that the picture in the world
  * layer under it is what is seen (see BaseView::blit).
@@ -515,14 +525,14 @@ void BaseView::updateNeighborFacilityBuildTime(BaseFacility* facility, BaseFacil
  */
 bool BaseView::isHdFacility(const BaseFacility *facility) const
 {
-	if (!facility || facility->getBuildTime() != 0 || !facility->getRules()->getSpriteEnabled())
+	if (!facility || facility->getBuildTime() != 0)
 	{
 		return false;
 	}
 	const int tiles = facility->getRules()->getSizeX() * facility->getRules()->getSizeY();
 	for (int num = 0; num < tiles; ++num)
 	{
-		if (HdBase::phases(facility->getRules()->getSpriteFacility() + num) == 0)
+		if (HdBase::phases(hdTileIndex(facility, num)) == 0)
 		{
 			return false;
 		}
@@ -564,7 +574,7 @@ void BaseView::drawHd()
 				{
 					HdUiArt::drawFrame(world, *ground, (getX() + x * GRID_SIZE) * k, (getY() + y * GRID_SIZE) * k);
 				}
-				const int index = fac->getRules()->getSpriteFacility() + num;
+				const int index = hdTileIndex(fac, num);
 				Surface *classic = _texture->getFrame(index);
 				if (classic)
 				{

@@ -35,6 +35,8 @@ namespace
 
 const char *FOLDER = "BASEBITS.PCK";
 const int MAX_PHASES = 16;
+/// Files use the master mod's own frame numbers; the game adds the master's offset (see HdCraftLights).
+const int MASTER_OFFSET = 1000;
 
 struct Tile
 {
@@ -124,6 +126,17 @@ void scan()
 	}
 }
 
+/// The tile of a game frame: by its number, else by the number without the master mod's offset.
+std::map<int, Tile>::iterator findTile(int index)
+{
+	auto it = tiles.find(index);
+	if (it == tiles.end() && index >= MASTER_OFFSET)
+	{
+		it = tiles.find(index - MASTER_OFFSET);
+	}
+	return it;
+}
+
 /// Drops the pictures found longest ago while the loaded ones exceed the budget.
 void trim(const HdFrame *keep)
 {
@@ -162,7 +175,7 @@ void trim(const HdFrame *keep)
 int phases(int index)
 {
 	scan();
-	auto it = tiles.find(index);
+	auto it = findTile(index);
 	return it == tiles.end() ? 0 : (int)it->second.paths.size();
 }
 
@@ -184,7 +197,7 @@ const HdFrame *frame(int index, int phase, int scale, int baseWidth, int baseHei
 		bytes = 0;
 		scanScale = scale;
 	}
-	auto it = tiles.find(index);
+	auto it = findTile(index);
 	if (it == tiles.end() || it->second.paths.empty())
 	{
 		return nullptr;
