@@ -1,0 +1,32 @@
+﻿{
+  // Как лаунчер настраивает игру под каждый мастер-мод (docs/portal/EDITIONS.md §12.5).
+  // Едет в корень игры вместе с выпуском (tools/build/build.ps1, шаг лаунчера).
+  // mods: порядок загрузки после мастера; "*" - место модов, поставленных игроком самим.
+  // options: fixed - ставится перед каждым запуском, recommended - один раз на version.
+  // Поднял рекомендации - подними version, иначе игроки их не получат.
+  "schema": 1,
+  "profiles": [
+    {
+      "master": "piratez",
+      "version": 1,
+      "mods": [
+        { "id": "OAK-RU", "lang": "ru" },
+        { "id": "XPZ_EX_RU-patch", "lang": "ru" },
+        { "id": "piratezRusNames", "lang": "ru" },
+        { "id": "piratezCitiesLore" },
+        { "id": "*" },
+        { "id": "piratez_tank_turret" },
+        { "id": "intro_voice" },
+        { "id": "hd" }
+      ],
+      "options": [
+        { "key": "oxceHdScale", "value": "auto", "needsMod": "hd" },
+        { "key": "oxceHdMode", "value": "2", "needsMod": "hd" },
+        { "key": "oxceHdUi", "value": "2", "needsMod": "hd" },
+        { "key": "oxceHdUiSkin", "value": "1", "needsMod": "hd" },
+        { "key": "oxceHdUiFont", "value": "1", "needsMod": "hd" },
+        { "key": "oxceHdPictures", "value": "true", "needsMod": "hd" }
+      ]
+    }
+  ]
+}

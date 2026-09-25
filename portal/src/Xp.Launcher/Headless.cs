@@ -51,10 +51,35 @@ static partial class Headless
         return found.Count > 0 ? 0 : 4;
     }
 
+    /// <summary>
+    /// "profile [--master piratez] [--lang ru] [--screen 1440] [--profiles file] [--dry-run]": sets user/options.cfg
+    /// up for the master mod by xp-profiles.json. --dry-run only prints what would change.
+    /// </summary>
+    static int ApplyProfile(string? game, string[] args)
+    {
+        if (game is null || !GamePaths.LooksLikeGameDir(game)) throw new InvalidOperationException("not a game folder: " + game);
+        var file = Opt(args, "--profiles");
+        var set = file is not null ? ProfileSet.Parse(File.ReadAllText(file)) : ProfileSet.Load(game)
+                  ?? throw new InvalidOperationException($"no {ProfileSet.FileName} in {game}: this release has no profiles");
+        var master = Opt(args, "--master") ?? "piratez";
+        var profile = set.For(master) ?? throw new InvalidOperationException($"no profile for master '{master}'");
+        int? screen = int.TryParse(Opt(args, "--screen"), out var h) ? h : null;
+        bool dry = args.Contains("--dry-run");
+        var state = new ProfileState(new GamePaths(game));
+        var done = state.Load();
+        var r = ProfileWriter.Apply(game, profile, ProfileWriter.ScanMods(game), Opt(args, "--lang"), screen, done, dry);
+        foreach (var c in r.Changes) Console.WriteLine((dry ? "would set " : "set ") + c);
+        if (r.Changes.Count == 0) Console.WriteLine("options.cfg already matches the profile");
+        if (r.Backup is not null) Console.WriteLine("previous file kept as " + r.Backup);
+        if (!dry) state.Save(done);
+        return 0;
+    }
+
     static async Task<int> RunAsync(string[] args, Settings settings)
     {
         var cmd = args.Length > 1 ? args[1] : "check";
         if (cmd == "ufo") return FindUfo(Opt(args, "--game") ?? settings.GameDir);
+        if (cmd == "profile") return ApplyProfile(Opt(args, "--game") ?? settings.GameDir, args);
         var game = Opt(args, "--game") ?? settings.GameDir ?? throw new InvalidOperationException("no game folder: pass --game");
         if (!GamePaths.LooksLikeGameDir(game)) throw new InvalidOperationException("not a game folder: " + game);
         var paths = new GamePaths(game);

@@ -816,6 +816,10 @@ function Invoke-LauncherStep {
         if (-not (Test-Path -LiteralPath $p)) { throw "в публикации лаунчера нет $n ($out)" }
         $paths += $p
     }
+    # профили мастер-модов: лаунчер читает их из корня игры и по ним пишет options.cfg
+    $profiles = Join-Path $portal 'profiles\xp-profiles.json'
+    if (-not (Test-Path -LiteralPath $profiles)) { throw "нет $profiles" }
+    $paths += $profiles
     $ver = (Get-Item -LiteralPath $exe).VersionInfo.ProductVersion
     Write-Ok ("{0} {1}, {2}" -f $files[0], $ver, (Format-Size (Get-Item -LiteralPath $exe).Length))
     return [pscustomobject]@{ Paths = $paths; Version = $ver; Mode = $mode }
