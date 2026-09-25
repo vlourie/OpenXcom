@@ -31,6 +31,13 @@ if [ -f seed/community.json ]; then
     docker compose run --rm migrate seed --file /seed/community.json
 fi
 
+# перепись наборов арта: без неё дорожная карта открывается пустой, потому что знаменатель
+# («сколько всего картинок») берётся отсюда, а не из присланных отметок
+if [ -f seed/packs.json ]; then
+    echo '==> перепись наборов графики'
+    docker compose run --rm migrate packs --file /seed/packs.json
+fi
+
 # вики, собранная из рулсетов (tools/portal_wiki.py на машине, где установлен мод).
 # Импорт переписывает собранные страницы целиком; написанные человеком не трогает
 if [ "$wiki" = yes ]; then
