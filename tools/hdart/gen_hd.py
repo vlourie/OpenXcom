@@ -702,6 +702,11 @@ class Job:
             # utf-8-sig: файл мог прийти со спецификацией из редактора или из hints_apply.py
             with open(hints_file, encoding="utf-8-sig") as f:
                 self.hints.update({int(k): v for k, v in json.load(f).items()})
+        extra = getattr(args, "extra_hints", "")
+        if extra and os.path.exists(extra):
+            # подсказки со стороны (prompt_writer): {"НАБОР.PCK": {"кадр": "текст"}}, поверх своих
+            with open(extra, encoding="utf-8-sig") as f:
+                self.hints.update({int(k): v for k, v in json.load(f).get(info["set"], {}).items()})
         if getattr(args, "no_hints", False):
             self.hints = {}
         self.cell_w1, self.cell_h1 = info["frame_w"] + 2 * m, info["frame_h"] + 2 * m
@@ -1167,6 +1172,8 @@ def build_parser():
     ap.add_argument("--set-terrains", default="", dest="set_terrains",
                     help="set_terrains.tsv (по умолчанию .index/mod/Piratez/set_terrains.tsv рядом с корнем)")
     ap.add_argument("--no-hints", action="store_true", help="ignore the per-frame hints (HINTS / hints.json)")
+    ap.add_argument("--extra-hints", default="", dest="extra_hints",
+                    help='JSON {"SET.PCK": {"frame": "hint"}} laid over the set\'s own hints (prompt_writer)')
     ap.add_argument("--only", choices=["all", "ground", "objects", "variants"], default="all",
                     help="repaint only the ground (or only the objects) and keep the other cells from the set's existing painted "
                          "sheet; variants: paint only the ground variants (--variants), the base painting stays")
