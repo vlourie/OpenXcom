@@ -17,6 +17,9 @@ public static class GameProcess
             {
                 if (p.Id == self) continue;
                 string? exe;
+                // an exited process stays in the list while anyone holds its handle
+                try { if (p.HasExited) continue; }
+                catch (Exception e) when (e is Win32Exception or InvalidOperationException or NotSupportedException) { }
                 try { exe = p.MainModule?.FileName; }
                 catch (Exception e) when (e is Win32Exception or InvalidOperationException or NotSupportedException) { continue; }
                 if (exe is not null && exe.StartsWith(root, StringComparison.OrdinalIgnoreCase)

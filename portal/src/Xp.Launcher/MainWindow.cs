@@ -757,6 +757,7 @@ public sealed class MainWindow : Window
             _game.Exited += (_, _) => Dispatcher.UIThread.Post(() =>
             {
                 _fileLog?.Info($"game exited with code {_game?.ExitCode}");
+                _game?.Dispose();   // the open handle keeps the exited game in the process list
                 _game = null;
                 Refresh();
             });
