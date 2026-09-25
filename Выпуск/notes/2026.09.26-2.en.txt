@@ -1,0 +1,3 @@
+
+— Craft lights now also blink on the craft screen (equipment), not only in the hangar.
+— The Hellerium power plant pool on the base screen now bubbles: bubbles swell and pop into rings.
