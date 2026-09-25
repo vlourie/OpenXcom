@@ -28,6 +28,7 @@
     <AvaloniaResource Include="Assets\Fonts\*.ttf" />
     <!-- the home card art: tools/hdart/gen_promo.py, indigo duotone, <= 400 KB -->
     <AvaloniaResource Include="Assets\hero.jpg" />
+    <AvaloniaResource Include="Assets\setup_*.jpg" />
   </ItemGroup>
   <!-- rendering is WGL/software (Program.cs), ANGLE is never loaded -->
   <Target Name="DropAngle" AfterTargets="Publish">

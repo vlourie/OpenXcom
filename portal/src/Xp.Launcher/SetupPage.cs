@@ -90,7 +90,29 @@ public sealed class SetupPage : UserControl
         var page = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto"), Margin = new Thickness(28, 24, 28, 28) };
         page.ColumnDefinitions[0].MaxWidth = 820;
         page.Children.Add(dock);
-        Content = page;
+
+        // each step has its own picture behind it (Assets/setup_<step>.jpg, tools/hdart/gen_promo.py);
+        // the scene is in its right part, and the shade keeps the left, under the card, dark and calm
+        var shade = new Border
+        {
+            Background = new LinearGradientBrush
+            {
+                StartPoint = new RelativePoint(0, 0, RelativeUnit.Relative),
+                EndPoint = new RelativePoint(1, 0, RelativeUnit.Relative),
+                GradientStops =
+                {
+                    new GradientStop(Skin.Bg, 0),
+                    new GradientStop(Color.FromArgb(0xD0, Skin.Bg.R, Skin.Bg.G, Skin.Bg.B), 0.4),
+                    new GradientStop(Color.FromArgb(0x30, Skin.Bg.R, Skin.Bg.G, Skin.Bg.B), 0.75),
+                    new GradientStop(Color.FromArgb(0x10, Skin.Bg.R, Skin.Bg.G, Skin.Bg.B), 1),
+                },
+            },
+        };
+        var root = new Grid { Background = new SolidColorBrush(Skin.Bg), ClipToBounds = true };
+        root.Children.Add(_backdrop);
+        root.Children.Add(shade);
+        root.Children.Add(page);
+        Content = root;
     }
 
     /// <summary>A fresh install starts at the folder; an installed game (Settings) at the list of components.</summary>
@@ -118,9 +140,25 @@ public sealed class SetupPage : UserControl
 
     // ------------------------------------------------------------------ steps
 
+    readonly Image _backdrop = new() { Stretch = Stretch.UniformToFill, HorizontalAlignment = HorizontalAlignment.Right };
+    readonly Dictionary<Step, Avalonia.Media.Imaging.Bitmap?> _art = new();
+
+    Avalonia.Media.Imaging.Bitmap? Art(Step step)
+    {
+        if (_art.TryGetValue(step, out var b)) return b;
+        try
+        {
+            using var s = Avalonia.Platform.AssetLoader.Open(new Uri($"avares://XPiratezLauncher/Assets/setup_{step.ToString().ToLowerInvariant()}.jpg"));
+            b = new Avalonia.Media.Imaging.Bitmap(s);
+        }
+        catch (Exception) { b = null; }   // a build without the picture keeps the plain background
+        return _art[step] = b;
+    }
+
     void Go(Step step)
     {
         _step = step;
+        _backdrop.Source = Art(step);
         _error.IsVisible = false;
         _ufoTimer.IsEnabled = step == Step.Ufo;
         _stepLine.Text = L.T("setup.step", (int)step + 1, Steps);
