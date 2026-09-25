@@ -10,3 +10,6 @@ en-US:
   STR_DEFAULT_SOLDIERS_SORTER_DESC: "When the soldiers list window is displayed, the soldiers are sorted, 0 - in the original order, 1 - by number of kills, 2 - by accuracy of the shot, 3 - by current mana(sanity, vigor)"
   STR_HIDE_ENEMY_TURN_BACKGROUND: "Hide enemy turn background picture"
   STR_HIDE_ENEMY_TURN_BACKGROUND_DESC: "With YES selected, only the progress bar will be shown with the label"
+  STR_DONT_TRACE_PROJECTILES: "Do not follow projectiles with the camera"
+  STR_DONT_TRACE_PROJECTILES_DESC: "The camera does not fly after a shot. 0 - always follows, 1 - does not follow your own shots, 2 - does not follow any shots"
+  STR_TOGGLE_INDIVIDUAL_LIGHTING_HOTKEY: "Toggle personal light of the selected unit"
