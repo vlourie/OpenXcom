@@ -30,7 +30,7 @@ public sealed class ProfileTests : IDisposable
         Version = 1,
         Mods =
         [
-            new() { Id = "OAK-RU", Lang = "ru" }, new() { Id = "XPZ_EX_RU-patch", Lang = "ru" },
+            new() { Id = "OAK-RU", Off = true }, new() { Id = "XPZ_EX_RU-patch", Lang = "ru" },
             new() { Id = "piratezRusNames", Lang = "ru" }, new() { Id = "*" }, new() { Id = "hd" },
         ],
         Options =
@@ -53,13 +53,14 @@ public sealed class ProfileTests : IDisposable
         Assert.Equal(PlayerCfg, File.ReadAllText(Cfg + ".bak"));
 
         var cfg = OptionsCfg.Parse(File.ReadAllText(Cfg));
-        // master first and alone; RU patches on for ru; the player's mods where "*" stands; hd last;
-        // a profile mod that is not installed (piratezRusNames) is not invented
+        // master first and alone; the RU patch on for ru, the old one it replaced off whatever the player had;
+        // the player's mods where "*" stands; hd last; a profile mod that is not installed (piratezRusNames) is not invented
         Assert.Equal(
-            [("piratez", true), ("xcom1", false), ("OAK-RU", true), ("XPZ_EX_RU-patch", true),
+            [("piratez", true), ("xcom1", false), ("OAK-RU", false), ("XPZ_EX_RU-patch", true),
              ("Smarter_Equip", true), ("piratezCzechNames", false), ("hd", true)],
             cfg.Mods);
         Assert.Equal("ru", cfg.Get("language"));
+        Assert.Equal("true", cfg.Get("oxceLanguageChosen"));   // chosen in the launcher: the game does not ask again
         Assert.Equal("4", cfg.Get("oxceHdScale"));   // 1440 lines of screen
         Assert.Equal("2", cfg.Get("oxceHdUi"));
         // what the profile does not name stays byte for byte, including a key of another fork
@@ -131,6 +132,8 @@ public sealed class ProfileTests : IDisposable
         var pz = set.For("piratez");
         Assert.NotNull(pz);
         Assert.Contains(pz!.Mods, m => m.Id == "XPZ_EX_RU-patch" && m.Lang == "ru");
+        // XPZ RU-patch 12.3 is built on OAK and replaces it: the two together fight over the same strings
+        Assert.Contains(pz.Mods, m => m.Id == "OAK-RU" && m.Off && !m.OnFor("ru"));
         Assert.Contains(pz.Options, o => o.Key == ProfileWriter.ScaleKey && o.Value == "auto");
     }
 

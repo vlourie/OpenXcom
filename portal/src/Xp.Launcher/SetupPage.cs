@@ -33,6 +33,7 @@ public sealed class SetupPage : UserControl
     readonly TextBlock _error = new() { FontSize = 13, Foreground = Skin.B(Skin.WarnText), TextWrapping = TextWrapping.Wrap, IsVisible = false };
     readonly Button _back = Skin.Btn(L.T("setup.back"));
     readonly Button _next = Skin.Btn(L.T("setup.next"), "primary", 44);
+    readonly Button _toLauncher = Skin.Btn(L.T("setup.toLauncher"));
     readonly DispatcherTimer _ufoTimer = new() { Interval = TimeSpan.FromSeconds(3) };
 
     Step _step;
@@ -59,11 +60,15 @@ public sealed class SetupPage : UserControl
         _back.Click += (_, _) => Go(_step == Step.Ufo ? Step.Where : Step.Ufo);
         _next.Click += async (_, _) => await NextAsync();
         _next.MinWidth = 160;
+        _toLauncher.Click += (_, _) => Finished?.Invoke(_dir, false);
         _ufoTimer.Tick += async (_, _) => { if (_step == Step.Ufo && _ufoFrom is null) await SearchUfoAsync(quiet: true); };
 
         var buttons = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 10, HorizontalAlignment = HorizontalAlignment.Right };
         buttons.Children.Add(_back);
+        buttons.Children.Add(_toLauncher);
         buttons.Children.Add(_next);
+        // the buttons are as tall as each other, and their text stands in the middle
+        foreach (var b in new[] { _back, _toLauncher, _next }) { b.VerticalAlignment = VerticalAlignment.Stretch; b.VerticalContentAlignment = VerticalAlignment.Center; }
 
         var head = new StackPanel { Spacing = 4 };
         head.Children.Add(_stepLine);
@@ -164,6 +169,7 @@ public sealed class SetupPage : UserControl
         _stepLine.Text = L.T("setup.step", (int)step + 1, Steps);
         _back.IsVisible = step is Step.Ufo or Step.Parts && step != _first;
         _next.IsVisible = step != Step.Install;
+        _toLauncher.IsVisible = step == Step.Done;
         _next.IsEnabled = true;
         _next.Content = L.T(step switch { Step.Parts => "setup.install", Step.Done => "setup.play", _ => "setup.next" });
         switch (step)
@@ -516,6 +522,10 @@ public sealed class SetupPage : UserControl
 
             var master = Setup.Master(_manifest!, _picked);
             var r = ProfileWriter.ApplyForGame(u.Paths, master, Setup.GameLanguage(_lang), ScreenHeight(), switchOn: ticked);
+            // without this line a game with every mod off is a guess: was the profile written, and where
+            new FileLog(u.Paths).Info(r is null
+                ? $"setup: no profile applied (master '{master}', {ProfileSet.FileName} {(File.Exists(Path.Combine(u.Paths.GameDir, ProfileSet.FileName)) ? "found" : "missing")}, mods {string.Join(",", ProfileWriter.ScanMods(u.Paths.GameDir).Select(m => m.Id + (m.IsMaster ? "*" : "")))})"
+                : $"setup: options.cfg by the profile in {u.Paths.GameDir}: {string.Join("; ", r.Changes)}");
             _doneText = L.T("setup.doneText", _manifest!.Release.Version)
                         + (r is { Changes.Count: > 0 } ? "\n\n" + L.T("setup.doneChanges", ProfileText.Lines(r.Items)) : "");
             _settings.GameDir = _dir;
@@ -565,10 +575,7 @@ public sealed class SetupPage : UserControl
 
     Control DoneView()
     {
-        var s = new StackPanel { Spacing = 14 };
-        s.Children.Add(Skin.Note(_doneText, 15, Skin.Text));
-        var toLauncher = Skin.Link(L.T("setup.toLauncher"), () => Finished?.Invoke(_dir, false), 14);
-        s.Children.Add(toLauncher);
-        return s;
+        // "Play" and "To the launcher" stand together in the button row under the card, not in the text
+        return Skin.Note(_doneText, 15, Skin.Text);
     }
 }

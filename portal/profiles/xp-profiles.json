@@ -2,6 +2,7 @@
   // Как лаунчер настраивает игру под каждый мастер-мод (docs/portal/EDITIONS.md §12.5).
   // Едет в корень игры вместе с выпуском (tools/build/build.ps1, шаг лаунчера).
   // mods: порядок загрузки после мастера; "*" - место модов, поставленных игроком самим.
+  // "off": true - мод выключен всегда: OAK-RU заменён XPZ RU-patch 12.3, вдвоём они спорят.
   // options: fixed - ставится перед каждым запуском, recommended - один раз на version.
   // Поднял рекомендации - подними version, иначе игроки их не получат.
   "schema": 1,
@@ -10,7 +11,7 @@
       "master": "piratez",
       "version": 1,
       "mods": [
-        { "id": "OAK-RU", "lang": "ru" },
+        { "id": "OAK-RU", "off": true },
         { "id": "XPZ_EX_RU-patch", "lang": "ru" },
         { "id": "piratezRusNames", "lang": "ru" },
         { "id": "piratezCitiesLore" },

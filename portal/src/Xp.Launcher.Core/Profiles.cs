@@ -53,6 +53,11 @@ public sealed class ProfileMod
     public string Id { get; set; } = "";
     /// <summary>On only for this game language ("ru"): a translation patch must be off for the others.</summary>
     public string? Lang { get; set; }
+    /// <summary>Always off, whatever the language: a mod another one replaces (OAK-RU under XPZ RU-patch 12.3).</summary>
+    public bool Off { get; set; }
+
+    /// <summary>Is the mod on in a game of this language (as <see cref="ProfileWriter.LangOf"/> gives it)?</summary>
+    public bool OnFor(string lang) => !Off && (Lang is null || ProfileWriter.LangOf(Lang) == lang);
 }
 
 public sealed class ProfileOption
@@ -254,7 +259,7 @@ public static class ProfileWriter
             if (!byId.TryGetValue(id, out var sm) || sm.IsMaster) continue;
             int at = mods.FindIndex(m => m.Id == id);
             // a mod the profile switches by language stays as the profile said (the RU patch in an English game)
-            if (!playersList && profile.Mods.Any(pm => pm.Id == id && pm.Lang is not null)) continue;
+            if (!playersList && profile.Mods.Any(pm => pm.Id == id && (pm.Lang is not null || pm.Off))) continue;
             if (at < 0) mods.Add((id, true));
             else mods[at] = (id, true);
         }
@@ -271,6 +276,8 @@ public static class ProfileWriter
             cfg.Set("language", language);
             changes.Add(new ProfileChange(ProfileChangeKind.Language, "language", language));
         }
+        // the language was chosen in the launcher: the game does not ask it again on its first start
+        if (language is { Length: > 0 } && cfg.Get("oxceLanguageChosen") != "true") cfg.Set("oxceLanguageChosen", "true");
 
         bool offerRecommended = !recommendedDone.TryGetValue(doneKey, out var done) || done < profile.Version;
         foreach (var o in profile.Options)
@@ -355,7 +362,7 @@ public static class ProfileWriter
         {
             if (pm.Id == "*") { result.AddRange(others); placed = true; continue; }
             if (!installed.ContainsKey(pm.Id) || IsMaster(pm.Id)) continue;
-            result.Add((pm.Id, pm.Lang is null || LangOf(pm.Lang) == lang));
+            result.Add((pm.Id, pm.OnFor(lang)));
         }
         if (!placed) result.AddRange(others);
         return result;

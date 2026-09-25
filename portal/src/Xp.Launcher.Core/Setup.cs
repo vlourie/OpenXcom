@@ -39,7 +39,7 @@ public static class Setup
                 ComponentKind.Engine => true,
                 ComponentKind.Master => profile is null || Same(c.Mod, profile.Master),
                 ComponentKind.Art or ComponentKind.Shared => !c.Adult,
-                ComponentKind.Addon => profile?.Mods.Any(pm => Same(pm.Id, c.Mod) && (pm.Lang is null || ProfileWriter.LangOf(pm.Lang) == lang)) == true,
+                ComponentKind.Addon => profile?.Mods.Any(pm => Same(pm.Id, c.Mod) && pm.OnFor(lang)) == true,
                 _ => false,
             };
             if (on) picked.Add(c.Id);
