@@ -81,15 +81,20 @@ public static class Pck
         return offsets;
     }
 
-    /// <summary>Decodes every frame of a PCK. No TAB means one frame at offset 0.</summary>
+    /// <summary>
+    /// Decodes every frame of a PCK. No TAB means one frame. Frames are read one after another, the
+    /// way SurfaceSet::loadPck does: the TAB gives only their number, its offsets are ignored. Some
+    /// X-Piratez PCKs were rebuilt next to a stale TAB (BARN), and by the offsets their frames come
+    /// out wrong or empty (docs/RAKES.md R-075).
+    /// </summary>
     public static SpriteSet Decode(ReadOnlySpan<byte> pck, IReadOnlyList<long> offsets, int width, int height)
     {
         var frames = new List<byte[]?>(offsets.Count);
-        foreach (var off in offsets)
+        var pos = 0;
+        for (var n = 0; n < offsets.Count; n++)
         {
-            if (off < 0 || off >= pck.Length) { frames.Add(null); continue; }
+            if (pos >= pck.Length) { frames.Add(null); continue; }
             var pixels = new byte[width * height];
-            var pos = (int)off;
             var i = pck[pos] * width;                 // the first byte counts the empty rows on top
             pos++;
             while (pos < pck.Length)
