@@ -24,6 +24,8 @@
 #include "../Engine/LocalizedText.h"
 #include "../Engine/Logger.h"
 #include "../Engine/Options.h"
+#include "../Engine/Screen.h"
+#include "../Engine/HdCraftLights.h"
 #include "../Engine/Unicode.h"
 #include "../Interface/TextButton.h"
 #include "../Interface/Window.h"
@@ -477,6 +479,32 @@ std::string CraftInfoState::formatTime(int total)
 	}
 	ss << ")";
 	return ss.str();
+}
+
+/**
+ * Draws the state, then the blinking lights of the craft picture: they go into the HD world
+ * layer after the classic layer has been mirrored there, as in the hangar (BaseView::drawHdLights).
+ */
+void CraftInfoState::blit()
+{
+	State::blit();
+	Screen *screen = Screen::current();
+	if (!_craft || !_sprite->getVisible() || !Options::oxceHdPictures || !screen || !screen->isLayered())
+	{
+		return;
+	}
+	SDL_Surface *world = screen->getWorldSurface();
+	const int k = screen->getWorldScale();
+	const int index = _craft->getSkinSprite() + 33;
+	if (!world || k < 2 || !HdCraftLights::has(index))
+	{
+		return;
+	}
+	const std::string &status = _craft->getStatus();
+	const HdCraftLights::Status lights = status == "STR_READY" ? HdCraftLights::READY
+		: status == "STR_REPAIRS" ? HdCraftLights::REPAIRS : HdCraftLights::BUSY;
+	HdCraftLights::draw(world, index, _sprite->getX() * k, _sprite->getY() * k, k, lights,
+		(Uint32)_craft->getId(), SDL_GetTicks());
 }
 
 /**

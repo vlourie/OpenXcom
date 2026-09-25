@@ -60,6 +60,8 @@ public:
 	~CraftInfoState();
 	/// Updates the craft info.
 	void init() override;
+	/// Draws the state, then the lights of the craft picture in the HD world layer.
+	void blit() override;
 	/// Handler for clicking the OK button.
 	void btnOkClick(Action *action);
 	/// Handler for clicking the Ufopedia button.
