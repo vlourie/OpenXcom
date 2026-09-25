@@ -479,7 +479,7 @@ public sealed class SetupPage : UserControl
             var master = Setup.Master(_manifest!, _picked);
             var r = ProfileWriter.ApplyForGame(u.Paths, master, Setup.GameLanguage(_lang), ScreenHeight(), switchOn: ticked);
             _doneText = L.T("setup.doneText", _manifest!.Release.Version)
-                        + (r is { Changes.Count: > 0 } ? "\n\n" + L.T("setup.doneChanges", string.Join("; ", r.Changes)) : "");
+                        + (r is { Changes.Count: > 0 } ? "\n\n" + L.T("setup.doneChanges", ProfileText.Lines(r.Items)) : "");
             _settings.GameDir = _dir;
             _settings.Language = _lang;
             try { _settings.Save(); } catch (IOException) { }

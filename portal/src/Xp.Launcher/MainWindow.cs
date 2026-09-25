@@ -564,7 +564,7 @@ public sealed class MainWindow : Window
             var r = ProfileWriter.ApplyForGame(_paths, null, null, Screens.ScreenFromWindow(this)?.Bounds.Height, resetMods: true);
             text = r is null ? L.T("settings.resetNothing")
                  : r.Changes.Count == 0 ? L.T("settings.resetSame")
-                 : L.T("settings.resetDone", string.Join("; ", r.Changes));
+                 : L.T("settings.resetDone", ProfileText.Lines(r.Items));
             if (r is { Written: true }) _fileLog?.Info("options.cfg back to the profile: " + string.Join("; ", r.Changes));
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or System.Text.Json.JsonException or InvalidOperationException)

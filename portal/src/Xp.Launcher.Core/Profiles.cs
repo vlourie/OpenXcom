@@ -67,10 +67,32 @@ public sealed class ProfileOption
 }
 
 /// <summary>A mod of the installation, as the engine will see it.</summary>
-public sealed record InstalledMod(string Id, bool IsMaster);
+public sealed record InstalledMod(string Id, bool IsMaster, string Name = "");
+
+public enum ProfileChangeKind { ModsKept, Mods, Language, Option }
+
+/// <summary>
+/// One thing applying a profile changed. The window words it for the player (ProfileText in the launcher),
+/// ToString is the line for the log.
+/// </summary>
+/// <param name="Mods">for <see cref="ProfileChangeKind.Mods"/>: the mods on, by the name in their metadata.yml</param>
+public sealed record ProfileChange(ProfileChangeKind Kind, string Key = "", string Value = "", IReadOnlyList<string>? Mods = null)
+{
+    public override string ToString() => Kind switch
+    {
+        ProfileChangeKind.ModsKept => "mods: kept as the player set them in the game",
+        ProfileChangeKind.Mods => "mods: " + string.Join(", ", Mods ?? []),
+        ProfileChangeKind.Language => "language: " + Value,
+        _ => $"{Key}: {Value}",
+    };
+}
 
 /// <summary>What applying a profile changed, for the log and the window.</summary>
-public sealed record ProfileResult(bool Written, IReadOnlyList<string> Changes, string? Backup);
+public sealed record ProfileResult(bool Written, IReadOnlyList<ProfileChange> Items, string? Backup)
+{
+    /// <summary>The lines for the log.</summary>
+    public IReadOnlyList<string> Changes => [.. Items.Select(i => i.ToString())];
+}
 
 /// <summary>
 /// user/options.cfg, edited the way the engine writes it (Options::save): a "mods" sequence of
@@ -192,7 +214,7 @@ public static class ProfileWriter
                 var meta = Path.Combine(dir, "metadata.yml");
                 if (!File.Exists(meta)) continue;
                 var m = ModMetadata.Parse(File.ReadAllText(meta), Path.GetFileName(dir));
-                if (!found.Any(f => f.Id == m.Id)) found.Add(new InstalledMod(m.Id, m.IsMaster));
+                if (!found.Any(f => f.Id == m.Id)) found.Add(new InstalledMod(m.Id, m.IsMaster, m.Name));
             }
         }
         return found;
@@ -215,7 +237,7 @@ public static class ProfileWriter
         var path = Path.Combine(gameDir, "user", "options.cfg");
         var before = File.Exists(path) ? File.ReadAllText(path) : "";
         var cfg = OptionsCfg.Parse(before);
-        var changes = new List<string>();
+        var changes = new List<ProfileChange>();
         var byId = installed.ToDictionary(m => m.Id, StringComparer.Ordinal);
         if (!byId.TryGetValue(profile.Master, out var master) || !master.IsMaster)
             throw new InvalidOperationException($"master mod '{profile.Master}' is not installed");
@@ -226,7 +248,7 @@ public static class ProfileWriter
         bool playersList = !resetMods && writtenMods is not null && writtenMods.TryGetValue(doneKey, out var wrote)
                            && ModsSignature(wrote.Split('\n').Select(id => (id, true)), byId) != ModsSignature(cfg.Mods, byId);
         var mods = playersList ? [.. cfg.Mods] : OrderMods(cfg.Mods, profile, byId, lang);
-        if (playersList) changes.Add("mods: kept as the player set them in the game");
+        if (playersList) changes.Add(new ProfileChange(ProfileChangeKind.ModsKept));
         foreach (var id in switchOn ?? [])
         {
             if (!byId.TryGetValue(id, out var sm) || sm.IsMaster) continue;
@@ -236,7 +258,9 @@ public static class ProfileWriter
             if (at < 0) mods.Add((id, true));
             else mods[at] = (id, true);
         }
-        if (!mods.SequenceEqual(cfg.Mods)) changes.Add("mods: " + string.Join(", ", mods.Where(m => m.Active).Select(m => m.Id)));
+        if (!mods.SequenceEqual(cfg.Mods))
+            changes.Add(new ProfileChange(ProfileChangeKind.Mods, Mods: [.. mods.Where(m => m.Active)
+                .Select(m => byId.TryGetValue(m.Id, out var im) && im.Name.Length > 0 ? im.Name : m.Id)]));
         // the player's list is not remembered as ours: it would pass for ours on the next start and be rewritten
         if (!dryRun && writtenMods is not null && !playersList) writtenMods[doneKey] = ModsSignature(mods, byId);
         cfg.Mods.Clear();
@@ -245,7 +269,7 @@ public static class ProfileWriter
         if (language is { Length: > 0 } && cfg.Get("language") != language)
         {
             cfg.Set("language", language);
-            changes.Add("language: " + language);
+            changes.Add(new ProfileChange(ProfileChangeKind.Language, "language", language));
         }
 
         bool offerRecommended = !recommendedDone.TryGetValue(doneKey, out var done) || done < profile.Version;
@@ -262,7 +286,7 @@ public static class ProfileWriter
             }
             if (cfg.Get(o.Key) == value) continue;
             cfg.Set(o.Key, value);
-            changes.Add($"{o.Key}: {value}");
+            changes.Add(new ProfileChange(ProfileChangeKind.Option, o.Key, value));
         }
         var after = cfg.Render();
         if (dryRun) return new ProfileResult(false, changes, null);

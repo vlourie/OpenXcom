@@ -120,6 +120,7 @@ public static class L
         JsonSerializer.Deserialize(BuiltIn.Resource($"strings.{lang}.json"), LauncherJson.Default.DictionaryStringString) ?? new();
 
     public static string T(string key) => _s.TryGetValue(key, out var v) ? v : key;
+    public static bool Has(string key) => _s.ContainsKey(key);
     public static string T(string key, params object[] args) => string.Format(System.Globalization.CultureInfo.CurrentCulture, T(key), args);
 
     public static string Size(double bytes) =>
