@@ -61,11 +61,27 @@ public sealed class Updater(GamePaths paths, RepoClient repo, ILauncherLog log)
     }
 
     /// <summary>
+    /// The profiles of a release before it is installed: the wizard needs them to tick the language's
+    /// addons. Fetched as the blob the manifest names, so the hash is checked like any file's.
+    /// </summary>
+    public async Task<ProfileSet?> ProfilesAsync(ReleaseManifest manifest, CancellationToken ct)
+    {
+        var f = manifest.Files.FirstOrDefault(x => x.Path.Equals(ProfileSet.FileName, StringComparison.OrdinalIgnoreCase));
+        if (f is null) return null;
+        Directory.CreateDirectory(Paths.Staging);
+        var blob = StagedBlob(f.Sha256);
+        if (!File.Exists(blob)) await repo.DownloadBlobAsync(f.Sha256, f.Size, blob, _ => { }, ct);
+        return ProfileSet.Parse(await File.ReadAllTextAsync(blob, ct));
+    }
+
+    /// <summary>
     /// Compares disk with the manifest. Quick mode trusts the cache when size and time match;
     /// <paramref name="full"/> re-hashes every managed file ("check / repair").
     /// </summary>
     public UpdatePlan Scan(LauncherState state, ReleaseManifest manifest, bool full, IProgress<Progress>? progress, CancellationToken ct)
     {
+        // only the ticked components: files of an unticked one we installed fall out as deletes
+        manifest = Setup.Chosen(manifest, state.Components);
         var total = manifest.Files.Sum(f => f.Size);
         long done = 0;
         var results = new ConcurrentBag<FileCheck>();

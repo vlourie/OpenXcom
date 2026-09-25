@@ -259,8 +259,28 @@ public static class ProfileWriter
         return new ProfileResult(true, changes, backup);
     }
 
+    /// <summary>
+    /// The launcher's call: the profile shipped in the game folder for <paramref name="master"/>, or for
+    /// the master on in options.cfg. Null when there is nothing to apply (no profiles in this release,
+    /// no profile for that master, the master not installed) - the game still starts.
+    /// </summary>
+    public static ProfileResult? ApplyForGame(GamePaths paths, string? master, string? language, int? screenHeight)
+    {
+        if (ProfileSet.Load(paths.GameDir) is not { } set) return null;
+        var installed = ScanMods(paths.GameDir);
+        var cfgPath = Path.Combine(paths.GameDir, "user", "options.cfg");
+        master ??= OptionsCfg.Parse(File.Exists(cfgPath) ? File.ReadAllText(cfgPath) : "").Mods
+            .Where(m => m.Active && installed.Any(i => i.IsMaster && i.Id == m.Id)).Select(m => m.Id).FirstOrDefault();
+        if (master is null || set.For(master) is not { } profile || !installed.Any(i => i.IsMaster && i.Id == profile.Master)) return null;
+        var state = new ProfileState(paths);
+        var done = state.Load();
+        var r = Apply(paths.GameDir, profile, installed, language, screenHeight, done);
+        state.Save(done);
+        return r;
+    }
+
     /// <summary>"ru", "ru-RU" -> "ru"; the part a profile's Lang is compared with.</summary>
-    static string LangOf(string language) => language.Split('-', '_')[0].ToLowerInvariant();
+    public static string LangOf(string language) => language.Split('-', '_')[0].ToLowerInvariant();
 
     internal static List<(string Id, bool Active)> OrderMods(List<(string Id, bool Active)> current, ModProfile profile,
         IReadOnlyDictionary<string, InstalledMod> installed, string lang)

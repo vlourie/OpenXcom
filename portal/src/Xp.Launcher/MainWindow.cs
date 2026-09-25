@@ -51,8 +51,9 @@ public sealed class MainWindow : Window
     readonly TextBlock _launcherLine = new() { FontSize = 12, Foreground = Skin.B(Skin.Muted), VerticalAlignment = VerticalAlignment.Center, TextWrapping = TextWrapping.Wrap };
     readonly TextBlock _rollbackNote = new() { FontSize = 12, Foreground = Skin.B(Skin.Muted), TextWrapping = TextWrapping.Wrap };
     readonly TextBlock _log = new() { FontFamily = new FontFamily("Consolas,monospace"), FontSize = 11, TextWrapping = TextWrapping.Wrap, Foreground = Skin.B(Skin.Muted), LineHeight = 16 };
-    readonly Button _check, _repair, _rollback, _selfUpdate, _choose, _updateOnly;
+    readonly Button _check, _repair, _rollback, _selfUpdate, _choose, _updateOnly, _components;
 
+    readonly SetupPage _setupPage;
     readonly ReportsPage _reportsPage;
     readonly ReviewPage _reviewPage;
     readonly AccountPanel _account;
@@ -107,6 +108,8 @@ public sealed class MainWindow : Window
         _selfUpdate.Click += async (_, _) => await RunAsync(Work.SelfUpdate, SelfUpdateAsync);
         _choose = Skin.Btn(L.T("settings.change"));
         _choose.Click += async (_, _) => await ChooseGameDirAsync();
+        _components = Skin.Btn(L.T("settings.components"));
+        _components.Click += (_, _) => OpenSetup(_paths?.GameDir);
         _main.Content = _mainText;
         _main.Click += async (_, _) => await OnMainAsync();
 
@@ -114,12 +117,16 @@ public sealed class MainWindow : Window
         _reportsPage.Changed += CountReports;
         _reviewPage = new ReviewPage(_settings, () => _paths?.GameDir);
         _account = new AccountPanel(_settings);
+        _setupPage = new SetupPage(_settings, () => _repo);
+        _setupPage.Finished += (dir, play) => OnSetupFinished(dir, play);
+        _setupPage.PickExisting += async () => await ChooseGameDirAsync();
 
         _whatsNew = Skin.Panel(WhatsNewContent(), new Thickness(20));
         _whatsNew.Width = 250;
         _whatsNew.IsVisible = false;
 
         _pages["home"] = HomePage();
+        _pages["setup"] = _setupPage;
         _pages["reports"] = _reportsPage;
         _pages["review"] = _reviewPage;
         _pages["support"] = new SupportPage();
@@ -145,7 +152,15 @@ public sealed class MainWindow : Window
         if (Array.IndexOf(args, "--page") is var i and >= 0 && i + 1 < args.Length && _pages.ContainsKey(args[i + 1])) Navigate(args[i + 1]);
 #endif
 
-        Opened += async (_, _) => await StartupAsync();
+        Opened += async (_, _) =>
+        {
+            await StartupAsync();
+#if DEBUG
+            // the wizard for screenshots: --setup new (its first step), --setup <scratch dir> (the list of components);
+            // only after the start-up check, the wizard does not open while the launcher is busy
+            if (Array.IndexOf(args, "--setup") is var j and >= 0 && j + 1 < args.Length) OpenSetup(args[j + 1] == "new" ? null : args[j + 1]);
+#endif
+        };
         Closing += (_, _) =>
         {
             _cts?.Cancel();
@@ -334,6 +349,8 @@ public sealed class MainWindow : Window
         dirRow.Children.Add(_choose);
         dirRow.Children.Add(_gameDir);
         game.Children.Add(dirRow);
+        _components.HorizontalAlignment = HorizontalAlignment.Left;
+        game.Children.Add(_components);
         game.Children.Add(Skin.Note(L.T("settings.language"), 13, Skin.Text2));
         _language.Items.Add(new ComboBoxItem { Content = "Русский", Tag = "ru" });
         _language.Items.Add(new ComboBoxItem { Content = "English", Tag = "en" });
@@ -423,6 +440,8 @@ public sealed class MainWindow : Window
         _repo = new RepoClient(_http, new Uri(repoUrl), BuiltIn.Keys);
         if (_settings.GameDir is { } dir && GamePaths.LooksLikeGameDir(dir)) OpenGameDir(dir);
         Refresh();
+        // first start: no game yet - the wizard installs it
+        if (_paths is null) OpenSetup(null);
         await _account.CheckAsync();
 
         if (_updater is not null) await RunAsync(Work.Check, () => CheckAsync(full: false, apply: false));
@@ -517,14 +536,32 @@ public sealed class MainWindow : Window
         _settings.Save();
         OpenGameDir(dir);
         Refresh();
+        Navigate("home");
         await RunAsync(Work.Check, () => CheckAsync(full: false, apply: false));
     }
 
     // ---------------------------------------------------------------- actions
 
+    void OpenSetup(string? installedGame)
+    {
+        if (_work != Work.None || (installedGame is not null && GameIsRunning())) return;
+        _setupPage.Start(installedGame);
+        Navigate("setup");
+    }
+
+    void OnSetupFinished(string dir, bool play)
+    {
+        if (_paths is null || !Path.GetFullPath(dir).Equals(_paths.GameDir, StringComparison.OrdinalIgnoreCase)) OpenGameDir(dir);
+        _pendingLine = null;
+        _error = null;
+        Refresh();
+        Navigate("home");
+        if (play) Play();
+    }
+
     async Task OnMainAsync()
     {
-        if (_paths is null) { await ChooseGameDirAsync(); return; }
+        if (_paths is null) { OpenSetup(null); await Task.CompletedTask; return; }
         if (_needLauncher is not null) { await RunAsync(Work.SelfUpdate, SelfUpdateAsync); return; }
         if (_error is not null || _pendingLine is not null)
         {
@@ -672,6 +709,17 @@ public sealed class MainWindow : Window
         if (exe is null) { Fail(L.T("err.noLaunch")); Refresh(); return; }
         try
         {
+            // the profile of the master mod: fixed options and the mod order, before every start
+            try
+            {
+                var screen = Screens.ScreenFromWindow(this)?.Bounds.Height;
+                if (ProfileWriter.ApplyForGame(_updater.Paths, null, null, screen) is { Written: true } r)
+                    _fileLog?.Info("options.cfg by the profile: " + string.Join("; ", r.Changes));
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException or System.Text.Json.JsonException or InvalidOperationException)
+            {
+                _fileLog?.Error("profile not applied: " + e.Message);   // the game still starts, as the player left it
+            }
             _game = GameProcess.Start(_updater.Paths, exe);
             _fileLog?.Info($"game started: {exe}");
             _game.EnableRaisingEvents = true;
@@ -752,6 +800,7 @@ public sealed class MainWindow : Window
         _repair.IsEnabled = idle && !running && state?.InstalledReleaseId is not null;
         _rollback.IsEnabled = idle && !running && _updater!.CanRollback;
         _choose.IsEnabled = _work == Work.None;
+        _components.IsEnabled = idle && !running && _paths is not null;
         _selfUpdate.IsVisible = _launcherUpdate is not null;
         _selfUpdate.IsEnabled = idle;
         if (_launcherUpdate is not null) _selfUpdate.Content = L.T("self.install") + " " + _launcherUpdate.Release.Version;
@@ -770,8 +819,9 @@ public sealed class MainWindow : Window
 
         if (_paths is null)
         {
-            caption = L.T("main.choose");
-            Sub(L.T("main.chooseHint"));
+            caption = L.T("main.install");
+            Sub(L.T("main.installHint"));
+            SubLink(L.T("main.haveGame"), async () => await ChooseGameDirAsync());
         }
         else if (_work is Work.Update or Work.Repair or Work.Rollback or Work.SelfUpdate)
         {

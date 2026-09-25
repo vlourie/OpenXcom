@@ -93,6 +93,8 @@ public sealed class LauncherState
     public Dictionary<string, string> Installed { get; set; } = new(StringComparer.OrdinalIgnoreCase);
     public List<string> InstalledRoots { get; set; } = new();
     public string InstalledLaunch { get; set; } = "";
+    /// <summary>Component ids the player ticked in the wizard; null - the whole release (installs from before the wizard).</summary>
+    public List<string>? Components { get; set; }
     /// <summary>Files the player chose to keep modified, until the next release.</summary>
     public Dictionary<string, KeptFile> Kept { get; set; } = new(StringComparer.OrdinalIgnoreCase);
     public Dictionary<string, CacheEntry> Cache { get; set; } = new(StringComparer.OrdinalIgnoreCase);
