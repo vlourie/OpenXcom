@@ -32,6 +32,15 @@ NEGATIVE = ("text, letters, words, caption, title, logo, watermark, signature, f
             "duplicated faces, identical faces, clones, nudity, cleavage, bare midriff, bare belly, "
             "lingerie, pin-up, glamour pose, gore, photograph, plastic 3d render")
 
+SETUP_LEFT = ("Composition: the left two fifths of the picture are calm, empty, very dark shadow "
+              "with no objects and no detail. ")
+
+
+def SETUP_OUT(step):
+    """Фон шага мастера: в лаунчер, 1920x1200 под окно любого размера, тот же дуотон, что у карточки."""
+    return ("portal/src/Xp.Launcher/Assets/setup_%s.jpg" % step, 1920, 1200, 350, "duotone")
+
+
 # цель: (промпт, ширина, высота модели, что получается в конце)
 # итог: (путь от корня репозитория, ширина, высота, бюджет КБ, обработка)
 SLOTS = {
@@ -69,6 +78,38 @@ SLOTS = {
         "every tile sharp and clean like high resolution pixel-perfect game art.",
         1920, 1088,
         ("portal/src/Xp.Portal/wwwroot/img/mods/hd.jpg", 960, 540, 200, "color")),
+    # фоны мастера установки: карточка шага стоит слева, поэтому сюжет - в правой половине,
+    # а левые две пятых - ровная тёмная тень, на которой ничего не спорит с текстом
+    "setup_where": (
+        STYLE + SETUP_LEFT + "In the right half: the cramped navigation cabin of a pirate airship "
+        "at night. A grizzled mutant pirate woman navigator in a long patched coat and goggles on "
+        "her forehead leans over a chart table covered with old paper maps, a brass compass and a "
+        "flickering lime-green holographic globe of Earth. Through a round porthole behind her, "
+        "alien saucers drift over a ruined city.",
+        1792, 1120, SETUP_OUT("where")),
+    "setup_ufo": (
+        STYLE + SETUP_LEFT + "In the right half: two pirate women in patched armor with flashlights "
+        "break open a dusty military crate in a long-abandoned underground 20th-century defense "
+        "base. Behind them in the hangar gloom stands a rusty old interceptor jet and faded "
+        "soldiers' armor on racks; their flashlight beams cut through the dust.",
+        1792, 1120, SETUP_OUT("ufo")),
+    "setup_parts": (
+        STYLE + SETUP_LEFT + "In the right half: the cargo hold of a pirate airship stacked with loot "
+        "- crates, barrels, racks of improvised rifles and alien gadgets glowing lime green. A "
+        "stocky pirate quartermaster woman with a bandana and a scarred face checks items off a "
+        "long list on a clipboard, a pencil behind her ear.",
+        1792, 1120, SETUP_OUT("parts")),
+    "setup_install": (
+        STYLE + SETUP_LEFT + "In the right half: the engine room of a pirate airship being made ready "
+        "for flight. A pirate mechanic woman in overalls and welding goggles works on a huge "
+        "patched-together engine, sparks flying, pipes and cables everywhere, a gauge needle "
+        "climbing, warm orange sparks against the violet gloom.",
+        1792, 1120, SETUP_OUT("install")),
+    "setup_done": (
+        STYLE + SETUP_LEFT + "In the right half: a battered pirate airship lifts off from a canyon "
+        "hideout at dawn, engines glowing lime green, crew of pirate women waving from the open "
+        "deck rail, heading toward a sky with distant alien saucers. Hopeful, adventurous mood.",
+        1792, 1120, SETUP_OUT("done")),
     "emblem": (
         "Flat vector emblem, centered, bold simple silhouette readable at 32 pixels: a grinning "
         "pirate skull with a bandana over crossed improvised rifle and energy blade, acid lime "
@@ -97,7 +138,9 @@ def load_pipe(offload):
 
 def draw(args):
     from PIL import Image
-    names = [args.slot] if args.slot else list(SLOTS)
+    # --slot setup_where,setup_ufo или по приставке: --slot setup_*
+    names = [s for part in args.slot.split(",") if part
+             for s in ([k for k in SLOTS if k.startswith(part[:-1])] if part.endswith("*") else [part])] or list(SLOTS)
     for n in names:
         if n not in SLOTS:
             raise SystemExit("нет такой цели: %s (есть %s)" % (n, ", ".join(SLOTS)))
@@ -215,7 +258,7 @@ def main():
     ap = argparse.ArgumentParser()
     sub = ap.add_subparsers(dest="cmd", required=True)
     d = sub.add_parser("draw")
-    d.add_argument("--slot", default="", help="одна цель; пусто - все")
+    d.add_argument("--slot", default="", help="цели через запятую, setup_* - по приставке; пусто - все")
     d.add_argument("--seeds", type=int, default=4, help="вариантов на цель")
     d.add_argument("--seed", type=int, default=2601)
     d.add_argument("--steps", type=int, default=40)
