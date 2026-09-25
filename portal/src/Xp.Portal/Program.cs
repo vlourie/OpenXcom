@@ -243,7 +243,8 @@ public static class PortalApp
         DeviceApi.Map(app);
         ReviewApi.Map(app);
         app.MapGet("/files/{id:guid}", ServeFileAsync).ExcludeFromDescription();
-        app.MapGet("/download/launcher", DownloadLauncherAsync).ExcludeFromDescription();
+        // HEAD too: download managers ask the name and size first, and 405 made them give up
+        app.MapMethods("/download/launcher", ["GET", "HEAD"], DownloadLauncherAsync).ExcludeFromDescription();
         app.MapGet("/lang/{lang}", (string lang, string? back, HttpContext http) =>
         {
             if (Text.Languages.Contains(lang))

@@ -119,6 +119,8 @@ public sealed partial class CommunityTests(PortalFactory f) : IClassFixture<Port
 
         // without a repository the address is honestly empty-handed, not a server error
         Assert.Equal(HttpStatusCode.NotFound, (await c.GetAsync("/download/launcher")).StatusCode);
+        // a download manager asks HEAD first and must get the same answer, not 405
+        Assert.Equal(HttpStatusCode.NotFound, (await c.SendAsync(new HttpRequestMessage(HttpMethod.Head, "/download/launcher"))).StatusCode);
     }
 
     [Fact]
