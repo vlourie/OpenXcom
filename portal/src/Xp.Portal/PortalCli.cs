@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Xp.Portal.Auth;
 using Xp.Portal.Data;
+using Xp.Portal.Review;
 using Xp.Portal.Site;
 
 namespace Xp.Portal;
@@ -11,6 +12,7 @@ namespace Xp.Portal;
 /// Xp.Portal admin create --email E [--name N]         first SuperAdmin; password from XP_ADMIN_PASSWORD or stdin
 /// Xp.Portal admin reset-2fa --email E                 lost authenticator: turn the second factor off
 /// Xp.Portal seed --file F                             mods and forum boards from a catalogue file
+/// Xp.Portal packs --file F                            the sets of the game to review, from the census
 /// Xp.Portal wiki import --file F                      wiki pages built from a mod's rulesets
 /// A SuperAdmin is never created from the web: whoever runs these already controls the server.
 /// </summary>
@@ -33,6 +35,7 @@ public static class PortalCli
                 ["admin", "create", .. var rest] => await CreateAdminAsync(sp, Opt(rest, "--email"), Opt(rest, "--name")),
                 ["admin", "reset-2fa", .. var rest] => await Reset2faAsync(sp, Opt(rest, "--email")),
                 ["seed", .. var rest] => await SeedAsync(sp, Opt(rest, "--file")),
+                ["packs", .. var rest] => await PacksAsync(sp, Opt(rest, "--file")),
                 ["wiki", "import", .. var rest] => await WikiImportAsync(sp, Opt(rest, "--file")),
                 _ => Usage(),
             };
@@ -47,7 +50,7 @@ public static class PortalCli
     static int Usage()
     {
         Console.Error.WriteLine("usage: Xp.Portal migrate | admin create --email E [--name N] | admin reset-2fa --email E"
-            + " | seed --file F | wiki import --file F");
+            + " | seed --file F | packs --file F | wiki import --file F");
         return 2;
     }
 
@@ -119,6 +122,16 @@ public static class PortalCli
         var file = CommunitySeed.Read(path);
         var r = await sp.GetRequiredService<CommunitySeed>().ApplyAsync(file, CancellationToken.None);
         Console.WriteLine($"mods: {r.ModsAdded} added, {r.ModsUpdated} updated; boards: {r.SectionsAdded} added, {r.SectionsUpdated} updated");
+        return 0;
+    }
+
+    static async Task<int> PacksAsync(IServiceProvider sp, string? path)
+    {
+        if (string.IsNullOrWhiteSpace(path)) throw new ArgumentException("--file is required");
+        if (!File.Exists(path)) throw new ArgumentException($"no file {path}");
+        var file = PackSeed.Read(path);
+        var r = await sp.GetRequiredService<PackSeed>().ApplyAsync(file, CancellationToken.None);
+        Console.WriteLine($"packs: {r.Added} added, {r.Updated} updated");
         return 0;
     }
 

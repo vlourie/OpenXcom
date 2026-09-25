@@ -1,0 +1,33 @@
+@page "/roadmap/queue"
+@model Xp.Portal.Pages.Roadmap.RepaintQueueModel
+@{
+    ViewData["Title"] = T["roadmap.queue.title"];
+}
+<p class="crumbs"><a href="/roadmap">@T["nav.roadmap"]</a> / @T["roadmap.queue.title"]</p>
+<h1>@T["roadmap.queue.title"]</h1>
+<p class="lead">@T["roadmap.queue.lead"]</p>
+
+@if (Model.Rows.Count == 0)
+{
+    <p class="hint">@T["roadmap.queue.none"]</p>
+}
+else
+{
+    <table>
+        <tr>
+            <th>@T["roadmap.col.picture"]</th>
+            <th>@T["roadmap.col.complaints"]</th>
+            <th>@T["roadmap.col.packs"]</th>
+            <th>@T["roadmap.col.reasons"]</th>
+        </tr>
+        @foreach (var r in Model.Rows)
+        {
+            <tr>
+                <td><span class="mono" title="@r.Hd">@r.Sets</span></td>
+                <td class="mono">@r.People</td>
+                <td class="mono">@r.Packs</td>
+                <td>@string.Join(", ", r.Reasons.Split(", ", StringSplitOptions.RemoveEmptyEntries).Select(x => T["reason." + x]))</td>
+            </tr>
+        }
+    </table>
+}

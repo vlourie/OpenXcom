@@ -12,14 +12,17 @@ using Xp.Portal.Site;
 
 namespace Xp.Portal.Pages.Me;
 
-public sealed class MyTicketsModel(PortalDb db) : PageModel
+public sealed class MyTicketsModel(PortalDb db, Xp.Portal.Review.Roadmap roadmap) : PageModel
 {
     public List<Ticket> Tickets { get; private set; } = new();
+    /// <summary>What this person has done for the art: without it nobody would page through 20 000 frames.</summary>
+    public Xp.Portal.Review.MyReviewWork Review { get; private set; } = new(0, 0, 0, 0, null);
 
     public async Task OnGetAsync(CancellationToken ct)
     {
         var me = Guid.Parse(User.FindFirstValue(ClaimTypes.NameIdentifier)!);
         Tickets = await db.Tickets.Where(t => t.AuthorId == me).OrderByDescending(t => t.UpdatedAt).Take(200).ToListAsync(ct);
+        Review = await roadmap.MineAsync(me, ct);
     }
 }
 

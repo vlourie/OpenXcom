@@ -1,4 +1,5 @@
 using System.IO.Compression;
+using System.Net.Http.Json;
 using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -133,6 +134,7 @@ public static class Review
             });
         }
         plan.Frames.Sort((a, b) => b.Error.CompareTo(a.Error) is var c and not 0 ? c : a.Frame.CompareTo(b.Frame));
+        plan.Pictures = plan.Frames.Select(f => f.Orig).Distinct(StringComparer.Ordinal).Count();
         return plan;
     }
 
@@ -385,6 +387,12 @@ public sealed class ReviewPlan
     public string Section { get; set; } = "TERRAIN";
     public string Set { get; set; } = "";
     public string ModVersion { get; set; } = "";
+    /// <summary>
+    /// How many different pictures the set offered for judging. It travels with the verdicts because
+    /// the site has no game data of its own: without it "checked" has no denominator, and three
+    /// frames out of forty one would close the set.
+    /// </summary>
+    public int Pictures { get; set; }
     public List<ReviewFrame> Frames { get; set; } = [];
     [JsonIgnore] public List<string> Skipped { get; set; } = [];
     [JsonIgnore] public int Orphans { get; set; }
@@ -451,6 +459,7 @@ public static class ReviewStore
         Section = plan.Section,
         Set = plan.Set,
         ModVersion = plan.ModVersion,
+        Pictures = plan.Pictures,
         // a written note without a verdict is worth sending too: it is the part the six reasons cannot say
         Frames = plan.Frames.Where(f => !string.IsNullOrEmpty(f.Verdict) || !string.IsNullOrWhiteSpace(f.Note)).ToList(),
     };
@@ -515,9 +524,35 @@ public static class ModInfo
 
 public sealed class ReviewException(string message) : Exception(message);
 
+/// <summary>What the site made of a send: packs taken, pictures in them, and own earlier results replaced.</summary>
+public sealed record ReviewAccepted(int Packs, int Frames, int Replaced);
+
+/// <summary>The review half of the portal API: the marks go up under the device's own key.</summary>
+public sealed partial class PortalClient
+{
+    /// <summary>
+    /// Sends what the person judged. The idempotency key is the send, not the moment: a repeat after
+    /// a broken connection must not count the same evening twice.
+    /// </summary>
+    public async Task<ReviewAccepted> SendReviewAsync(VerdictFile file, string deviceToken, string idempotencyKey, CancellationToken ct)
+    {
+        using var msg = new HttpRequestMessage(HttpMethod.Post, new Uri(BaseUri, "api/v1/review/packs"))
+        {
+            Content = JsonContent.Create(file, ReviewJson.Default.VerdictFile),
+        };
+        msg.Headers.Add(DeviceTokenHeader, deviceToken);
+        msg.Headers.Add("Idempotency-Key", idempotencyKey);
+        using var resp = await Http.SendAsync(msg, ct);
+        await ThrowIfFailedAsync(resp, ct);
+        return await resp.Content.ReadFromJsonAsync(ReviewJson.Default.ReviewAccepted, ct)
+               ?? throw new PortalException((int)resp.StatusCode, "bad_response", "empty answer");
+    }
+}
+
 [JsonSourceGenerationOptions(WriteIndented = true, PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase, DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull)]
 [JsonSerializable(typeof(ReviewPlan))]
 [JsonSerializable(typeof(VerdictFile))]
+[JsonSerializable(typeof(ReviewAccepted))]
 internal sealed partial class ReviewJson : JsonSerializerContext
 {
 }

@@ -1,0 +1,5674 @@
+{
+  "packs": [
+    {
+      "section": "GEOGRAPH",
+      "name": "BASEBITS",
+      "frames": 54,
+      "pictures": 54,
+      "hdFrames": 4,
+      "cells": 0,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "ABUNKER",
+      "frames": 67,
+      "pictures": 67,
+      "hdFrames": 67,
+      "cells": 2393,
+      "cellShare": 0.044
+    },
+    {
+      "section": "TERRAIN",
+      "name": "ACHURCH",
+      "frames": 79,
+      "pictures": 78,
+      "hdFrames": 79,
+      "cells": 183,
+      "cellShare": 0.003
+    },
+    {
+      "section": "TERRAIN",
+      "name": "ACHURCH2",
+      "frames": 80,
+      "pictures": 80,
+      "hdFrames": 80,
+      "cells": 91,
+      "cellShare": 0.002
+    },
+    {
+      "section": "TERRAIN",
+      "name": "ACHURCH3",
+      "frames": 32,
+      "pictures": 32,
+      "hdFrames": 32,
+      "cells": 11,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "ACHURCH4",
+      "frames": 43,
+      "pictures": 40,
+      "hdFrames": 43,
+      "cells": 6,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "AGROUND",
+      "frames": 21,
+      "pictures": 21,
+      "hdFrames": 21,
+      "cells": 112,
+      "cellShare": 0.002
+    },
+    {
+      "section": "TERRAIN",
+      "name": "ARENA",
+      "frames": 29,
+      "pictures": 29,
+      "hdFrames": 29,
+      "cells": 3835,
+      "cellShare": 0.071
+    },
+    {
+      "section": "TERRAIN",
+      "name": "ASHEN1",
+      "frames": 123,
+      "pictures": 83,
+      "hdFrames": 123,
+      "cells": 448,
+      "cellShare": 0.008
+    },
+    {
+      "section": "TERRAIN",
+      "name": "ASSAULTBIKE",
+      "frames": 8,
+      "pictures": 8,
+      "hdFrames": 8,
+      "cells": 7,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "ASYLUM_WALL",
+      "frames": 47,
+      "pictures": 47,
+      "hdFrames": 47,
+      "cells": 2696,
+      "cellShare": 0.05
+    },
+    {
+      "section": "TERRAIN",
+      "name": "ATLANTDESERT",
+      "frames": 76,
+      "pictures": 76,
+      "hdFrames": 76,
+      "cells": 5378,
+      "cellShare": 0.1
+    },
+    {
+      "section": "TERRAIN",
+      "name": "ATLANTSEASHORT",
+      "frames": 43,
+      "pictures": 43,
+      "hdFrames": 43,
+      "cells": 477,
+      "cellShare": 0.009
+    },
+    {
+      "section": "TERRAIN",
+      "name": "ATLANVILLA",
+      "frames": 73,
+      "pictures": 73,
+      "hdFrames": 73,
+      "cells": 2978,
+      "cellShare": 0.055
+    },
+    {
+      "section": "TERRAIN",
+      "name": "AVENGER",
+      "frames": 62,
+      "pictures": 62,
+      "hdFrames": 62,
+      "cells": 0,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "AVENGER_BL2",
+      "frames": 62,
+      "pictures": 62,
+      "hdFrames": 62,
+      "cells": 29,
+      "cellShare": 0.001
+    },
+    {
+      "section": "TERRAIN",
+      "name": "AVENGER_EDIT",
+      "frames": 62,
+      "pictures": 62,
+      "hdFrames": 62,
+      "cells": 532,
+      "cellShare": 0.01
+    },
+    {
+      "section": "TERRAIN",
+      "name": "AVENGER_G3",
+      "frames": 62,
+      "pictures": 62,
+      "hdFrames": 62,
+      "cells": 575,
+      "cellShare": 0.011
+    },
+    {
+      "section": "TERRAIN",
+      "name": "AVENGER_GR",
+      "frames": 62,
+      "pictures": 62,
+      "hdFrames": 62,
+      "cells": 29,
+      "cellShare": 0.001
+    },
+    {
+      "section": "TERRAIN",
+      "name": "AVENGER_R",
+      "frames": 62,
+      "pictures": 62,
+      "hdFrames": 62,
+      "cells": 593,
+      "cellShare": 0.011
+    },
+    {
+      "section": "TERRAIN",
+      "name": "A_BASE",
+      "frames": 85,
+      "pictures": 85,
+      "hdFrames": 85,
+      "cells": 65678,
+      "cellShare": 1.216
+    },
+    {
+      "section": "TERRAIN",
+      "name": "A_BASE2",
+      "frames": 23,
+      "pictures": 21,
+      "hdFrames": 23,
+      "cells": 63,
+      "cellShare": 0.001
+    },
+    {
+      "section": "TERRAIN",
+      "name": "A_BITS",
+      "frames": 8,
+      "pictures": 8,
+      "hdFrames": 8,
+      "cells": 9,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "A_DECOR",
+      "frames": 111,
+      "pictures": 111,
+      "hdFrames": 111,
+      "cells": 5149,
+      "cellShare": 0.095
+    },
+    {
+      "section": "TERRAIN",
+      "name": "A_EXT02",
+      "frames": 40,
+      "pictures": 40,
+      "hdFrames": 40,
+      "cells": 259,
+      "cellShare": 0.005
+    },
+    {
+      "section": "TERRAIN",
+      "name": "A_FLOOR",
+      "frames": 18,
+      "pictures": 18,
+      "hdFrames": 18,
+      "cells": 1,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "A_FRN",
+      "frames": 87,
+      "pictures": 86,
+      "hdFrames": 87,
+      "cells": 55,
+      "cellShare": 0.001
+    },
+    {
+      "section": "TERRAIN",
+      "name": "A_PODS",
+      "frames": 53,
+      "pictures": 53,
+      "hdFrames": 53,
+      "cells": 886,
+      "cellShare": 0.016
+    },
+    {
+      "section": "TERRAIN",
+      "name": "A_WALL02",
+      "frames": 72,
+      "pictures": 72,
+      "hdFrames": 72,
+      "cells": 26629,
+      "cellShare": 0.493
+    },
+    {
+      "section": "TERRAIN",
+      "name": "BARN",
+      "frames": 19,
+      "pictures": 19,
+      "hdFrames": 29,
+      "cells": 27652,
+      "cellShare": 0.512
+    },
+    {
+      "section": "TERRAIN",
+      "name": "BARN_GROX",
+      "frames": 29,
+      "pictures": 29,
+      "hdFrames": 29,
+      "cells": 917,
+      "cellShare": 0.017
+    },
+    {
+      "section": "TERRAIN",
+      "name": "BARN_JUNK",
+      "frames": 29,
+      "pictures": 29,
+      "hdFrames": 29,
+      "cells": 31065,
+      "cellShare": 0.575
+    },
+    {
+      "section": "TERRAIN",
+      "name": "BARN_PP",
+      "frames": 29,
+      "pictures": 29,
+      "hdFrames": 29,
+      "cells": 7851,
+      "cellShare": 0.145
+    },
+    {
+      "section": "TERRAIN",
+      "name": "BARN_VR",
+      "frames": 29,
+      "pictures": 29,
+      "hdFrames": 29,
+      "cells": 732,
+      "cellShare": 0.014
+    },
+    {
+      "section": "TERRAIN",
+      "name": "BATHBITZ",
+      "frames": 29,
+      "pictures": 29,
+      "hdFrames": 29,
+      "cells": 119,
+      "cellShare": 0.002
+    },
+    {
+      "section": "TERRAIN",
+      "name": "BATHBITZ_HT",
+      "frames": 17,
+      "pictures": 17,
+      "hdFrames": 17,
+      "cells": 505,
+      "cellShare": 0.009
+    },
+    {
+      "section": "TERRAIN",
+      "name": "BEACH",
+      "frames": 123,
+      "pictures": 108,
+      "hdFrames": 123,
+      "cells": 486,
+      "cellShare": 0.009
+    },
+    {
+      "section": "TERRAIN",
+      "name": "BEDS",
+      "frames": 6,
+      "pictures": 6,
+      "hdFrames": 6,
+      "cells": 42,
+      "cellShare": 0.001
+    },
+    {
+      "section": "TERRAIN",
+      "name": "BLACKFOREST",
+      "frames": 59,
+      "pictures": 59,
+      "hdFrames": 59,
+      "cells": 11678,
+      "cellShare": 0.216
+    },
+    {
+      "section": "TERRAIN",
+      "name": "BLACKFORESTBITS",
+      "frames": 15,
+      "pictures": 15,
+      "hdFrames": 15,
+      "cells": 248,
+      "cellShare": 0.005
+    },
+    {
+      "section": "TERRAIN",
+      "name": "BLACKJUNGLE",
+      "frames": 82,
+      "pictures": 82,
+      "hdFrames": 82,
+      "cells": 3125,
+      "cellShare": 0.058
+    },
+    {
+      "section": "TERRAIN",
+      "name": "BLANKS",
+      "frames": 2,
+      "pictures": 2,
+      "hdFrames": 2,
+      "cells": 1,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "BLANKSPACE",
+      "frames": 2,
+      "pictures": 2,
+      "hdFrames": 2,
+      "cells": 100,
+      "cellShare": 0.002
+    },
+    {
+      "section": "TERRAIN",
+      "name": "BLANKS_VR",
+      "frames": 2,
+      "pictures": 2,
+      "hdFrames": 2,
+      "cells": 0,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "BOAT_XPZ",
+      "frames": 74,
+      "pictures": 74,
+      "hdFrames": 74,
+      "cells": 28,
+      "cellShare": 0.001
+    },
+    {
+      "section": "TERRAIN",
+      "name": "BRAIN",
+      "frames": 8,
+      "pictures": 8,
+      "hdFrames": 8,
+      "cells": 28,
+      "cellShare": 0.001
+    },
+    {
+      "section": "TERRAIN",
+      "name": "BRAIN2",
+      "frames": 38,
+      "pictures": 38,
+      "hdFrames": 38,
+      "cells": 84,
+      "cellShare": 0.002
+    },
+    {
+      "section": "TERRAIN",
+      "name": "BRICKBAR",
+      "frames": 31,
+      "pictures": 31,
+      "hdFrames": 31,
+      "cells": 20712,
+      "cellShare": 0.384
+    },
+    {
+      "section": "TERRAIN",
+      "name": "BROWNHILL",
+      "frames": 16,
+      "pictures": 16,
+      "hdFrames": 16,
+      "cells": 3330,
+      "cellShare": 0.062
+    },
+    {
+      "section": "TERRAIN",
+      "name": "CADILLAC",
+      "frames": 13,
+      "pictures": 13,
+      "hdFrames": 13,
+      "cells": 0,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "CAFEENTRY",
+      "frames": 7,
+      "pictures": 7,
+      "hdFrames": 7,
+      "cells": 29,
+      "cellShare": 0.001
+    },
+    {
+      "section": "TERRAIN",
+      "name": "CARGO1",
+      "frames": 105,
+      "pictures": 105,
+      "hdFrames": 105,
+      "cells": 11045,
+      "cellShare": 0.205
+    },
+    {
+      "section": "TERRAIN",
+      "name": "CARGO2_IND",
+      "frames": 65,
+      "pictures": 58,
+      "hdFrames": 65,
+      "cells": 181,
+      "cellShare": 0.003
+    },
+    {
+      "section": "TERRAIN",
+      "name": "CARGO3",
+      "frames": 13,
+      "pictures": 7,
+      "hdFrames": 13,
+      "cells": 514,
+      "cellShare": 0.01
+    },
+    {
+      "section": "TERRAIN",
+      "name": "CATACDECOR",
+      "frames": 45,
+      "pictures": 45,
+      "hdFrames": 45,
+      "cells": 1881,
+      "cellShare": 0.035
+    },
+    {
+      "section": "TERRAIN",
+      "name": "CATACDECOR_CONC",
+      "frames": 39,
+      "pictures": 37,
+      "hdFrames": 39,
+      "cells": 151,
+      "cellShare": 0.003
+    },
+    {
+      "section": "TERRAIN",
+      "name": "CATACDECOR_DEAD",
+      "frames": 35,
+      "pictures": 35,
+      "hdFrames": 35,
+      "cells": 118,
+      "cellShare": 0.002
+    },
+    {
+      "section": "TERRAIN",
+      "name": "CATACDECOR_DOOM",
+      "frames": 48,
+      "pictures": 47,
+      "hdFrames": 48,
+      "cells": 217,
+      "cellShare": 0.004
+    },
+    {
+      "section": "TERRAIN",
+      "name": "CATACOMB",
+      "frames": 80,
+      "pictures": 80,
+      "hdFrames": 80,
+      "cells": 690,
+      "cellShare": 0.013
+    },
+    {
+      "section": "TERRAIN",
+      "name": "CAVEAQUA",
+      "frames": 41,
+      "pictures": 41,
+      "hdFrames": 41,
+      "cells": 280476,
+      "cellShare": 5.194
+    },
+    {
+      "section": "TERRAIN",
+      "name": "CAVEBLACK",
+      "frames": 41,
+      "pictures": 41,
+      "hdFrames": 41,
+      "cells": 279874,
+      "cellShare": 5.183
+    },
+    {
+      "section": "TERRAIN",
+      "name": "CAVEBONE",
+      "frames": 41,
+      "pictures": 41,
+      "hdFrames": 41,
+      "cells": 30401,
+      "cellShare": 0.563
+    },
+    {
+      "section": "TERRAIN",
+      "name": "CAVEBROWN",
+      "frames": 41,
+      "pictures": 41,
+      "hdFrames": 41,
+      "cells": 474680,
+      "cellShare": 8.791
+    },
+    {
+      "section": "TERRAIN",
+      "name": "CAVEDOOM",
+      "frames": 41,
+      "pictures": 39,
+      "hdFrames": 41,
+      "cells": 30856,
+      "cellShare": 0.571
+    },
+    {
+      "section": "TERRAIN",
+      "name": "CAVEMARS",
+      "frames": 41,
+      "pictures": 33,
+      "hdFrames": 41,
+      "cells": 70119,
+      "cellShare": 1.299
+    },
+    {
+      "section": "TERRAIN",
+      "name": "CAVEMEAT",
+      "frames": 47,
+      "pictures": 44,
+      "hdFrames": 47,
+      "cells": 75643,
+      "cellShare": 1.401
+    },
+    {
+      "section": "TERRAIN",
+      "name": "CAVEPINK",
+      "frames": 41,
+      "pictures": 41,
+      "hdFrames": 41,
+      "cells": 0,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "CAVERED",
+      "frames": 41,
+      "pictures": 41,
+      "hdFrames": 41,
+      "cells": 0,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "CITYFRNITURE",
+      "frames": 26,
+      "pictures": 26,
+      "hdFrames": 26,
+      "cells": 124,
+      "cellShare": 0.002
+    },
+    {
+      "section": "TERRAIN",
+      "name": "COMBITS",
+      "frames": 28,
+      "pictures": 28,
+      "hdFrames": 28,
+      "cells": 11969,
+      "cellShare": 0.222
+    },
+    {
+      "section": "TERRAIN",
+      "name": "COMDECOR",
+      "frames": 83,
+      "pictures": 83,
+      "hdFrames": 83,
+      "cells": 27161,
+      "cellShare": 0.503
+    },
+    {
+      "section": "TERRAIN",
+      "name": "COMFRN",
+      "frames": 26,
+      "pictures": 26,
+      "hdFrames": 26,
+      "cells": 172,
+      "cellShare": 0.003
+    },
+    {
+      "section": "TERRAIN",
+      "name": "COMFRN2",
+      "frames": 26,
+      "pictures": 26,
+      "hdFrames": 26,
+      "cells": 1924,
+      "cellShare": 0.036
+    },
+    {
+      "section": "TERRAIN",
+      "name": "COMMERCE",
+      "frames": 117,
+      "pictures": 117,
+      "hdFrames": 117,
+      "cells": 78120,
+      "cellShare": 1.447
+    },
+    {
+      "section": "TERRAIN",
+      "name": "COMMERCE_MAG",
+      "frames": 117,
+      "pictures": 117,
+      "hdFrames": 117,
+      "cells": 14654,
+      "cellShare": 0.271
+    },
+    {
+      "section": "TERRAIN",
+      "name": "COMMS",
+      "frames": 78,
+      "pictures": 78,
+      "hdFrames": 78,
+      "cells": 132,
+      "cellShare": 0.002
+    },
+    {
+      "section": "TERRAIN",
+      "name": "COMPLEXBITSMOON",
+      "frames": 88,
+      "pictures": 88,
+      "hdFrames": 88,
+      "cells": 3302,
+      "cellShare": 0.061
+    },
+    {
+      "section": "TERRAIN",
+      "name": "COMPUTERS",
+      "frames": 16,
+      "pictures": 16,
+      "hdFrames": 16,
+      "cells": 197,
+      "cellShare": 0.004
+    },
+    {
+      "section": "TERRAIN",
+      "name": "COMROADS",
+      "frames": 24,
+      "pictures": 24,
+      "hdFrames": 24,
+      "cells": 33143,
+      "cellShare": 0.614
+    },
+    {
+      "section": "TERRAIN",
+      "name": "CONTAINERS",
+      "frames": 23,
+      "pictures": 23,
+      "hdFrames": 23,
+      "cells": 1529,
+      "cellShare": 0.028
+    },
+    {
+      "section": "TERRAIN",
+      "name": "CORP",
+      "frames": 52,
+      "pictures": 52,
+      "hdFrames": 52,
+      "cells": 349,
+      "cellShare": 0.006
+    },
+    {
+      "section": "TERRAIN",
+      "name": "CRASHEDPLANE",
+      "frames": 80,
+      "pictures": 80,
+      "hdFrames": 80,
+      "cells": 10795,
+      "cellShare": 0.2
+    },
+    {
+      "section": "TERRAIN",
+      "name": "CRATES",
+      "frames": 14,
+      "pictures": 14,
+      "hdFrames": 14,
+      "cells": 130,
+      "cellShare": 0.002
+    },
+    {
+      "section": "TERRAIN",
+      "name": "CRIBDECOR",
+      "frames": 70,
+      "pictures": 70,
+      "hdFrames": 70,
+      "cells": 603,
+      "cellShare": 0.011
+    },
+    {
+      "section": "TERRAIN",
+      "name": "CRYPTEK1",
+      "frames": 45,
+      "pictures": 45,
+      "hdFrames": 45,
+      "cells": 2487,
+      "cellShare": 0.046
+    },
+    {
+      "section": "TERRAIN",
+      "name": "CRYPTEK2",
+      "frames": 27,
+      "pictures": 27,
+      "hdFrames": 27,
+      "cells": 15,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "CRYPTEK3",
+      "frames": 52,
+      "pictures": 50,
+      "hdFrames": 52,
+      "cells": 1066,
+      "cellShare": 0.02
+    },
+    {
+      "section": "TERRAIN",
+      "name": "CRYPTEK4",
+      "frames": 32,
+      "pictures": 32,
+      "hdFrames": 32,
+      "cells": 87,
+      "cellShare": 0.002
+    },
+    {
+      "section": "TERRAIN",
+      "name": "CULTAN",
+      "frames": 116,
+      "pictures": 116,
+      "hdFrames": 116,
+      "cells": 5670,
+      "cellShare": 0.105
+    },
+    {
+      "section": "TERRAIN",
+      "name": "CULTAREA",
+      "frames": 116,
+      "pictures": 116,
+      "hdFrames": 116,
+      "cells": 2437,
+      "cellShare": 0.045
+    },
+    {
+      "section": "TERRAIN",
+      "name": "CULTBITS",
+      "frames": 22,
+      "pictures": 22,
+      "hdFrames": 22,
+      "cells": 886,
+      "cellShare": 0.016
+    },
+    {
+      "section": "TERRAIN",
+      "name": "CULTDECOR",
+      "frames": 80,
+      "pictures": 80,
+      "hdFrames": 80,
+      "cells": 279,
+      "cellShare": 0.005
+    },
+    {
+      "section": "TERRAIN",
+      "name": "CULTEXTRA",
+      "frames": 48,
+      "pictures": 48,
+      "hdFrames": 48,
+      "cells": 1162,
+      "cellShare": 0.022
+    },
+    {
+      "section": "TERRAIN",
+      "name": "CULTIVAT",
+      "frames": 37,
+      "pictures": 37,
+      "hdFrames": 37,
+      "cells": 18650,
+      "cellShare": 0.345
+    },
+    {
+      "section": "TERRAIN",
+      "name": "CULTIVAT_PP",
+      "frames": 37,
+      "pictures": 37,
+      "hdFrames": 37,
+      "cells": 16310,
+      "cellShare": 0.302
+    },
+    {
+      "section": "TERRAIN",
+      "name": "CULTIVAT_UBER",
+      "frames": 37,
+      "pictures": 37,
+      "hdFrames": 37,
+      "cells": 16310,
+      "cellShare": 0.302
+    },
+    {
+      "section": "TERRAIN",
+      "name": "CULTIVAT_VR",
+      "frames": 37,
+      "pictures": 37,
+      "hdFrames": 37,
+      "cells": 2363,
+      "cellShare": 0.044
+    },
+    {
+      "section": "TERRAIN",
+      "name": "CULTMACHINES",
+      "frames": 10,
+      "pictures": 10,
+      "hdFrames": 10,
+      "cells": 108,
+      "cellShare": 0.002
+    },
+    {
+      "section": "TERRAIN",
+      "name": "CUNTTRYROAD",
+      "frames": 21,
+      "pictures": 21,
+      "hdFrames": 21,
+      "cells": 218,
+      "cellShare": 0.004
+    },
+    {
+      "section": "TERRAIN",
+      "name": "CUNTTRYROAD_LT",
+      "frames": 21,
+      "pictures": 21,
+      "hdFrames": 21,
+      "cells": 654,
+      "cellShare": 0.012
+    },
+    {
+      "section": "TERRAIN",
+      "name": "CYBERWAREAN",
+      "frames": 118,
+      "pictures": 118,
+      "hdFrames": 118,
+      "cells": 12140,
+      "cellShare": 0.225
+    },
+    {
+      "section": "TERRAIN",
+      "name": "CYBERWAREBITS",
+      "frames": 33,
+      "pictures": 33,
+      "hdFrames": 33,
+      "cells": 14290,
+      "cellShare": 0.265
+    },
+    {
+      "section": "TERRAIN",
+      "name": "C_BITS2",
+      "frames": 8,
+      "pictures": 8,
+      "hdFrames": 8,
+      "cells": 42,
+      "cellShare": 0.001
+    },
+    {
+      "section": "TERRAIN",
+      "name": "C_BITS_02",
+      "frames": 5,
+      "pictures": 5,
+      "hdFrames": 5,
+      "cells": 4,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "C_BITS_X1",
+      "frames": 29,
+      "pictures": 29,
+      "hdFrames": 29,
+      "cells": 443,
+      "cellShare": 0.008
+    },
+    {
+      "section": "TERRAIN",
+      "name": "C_EXT02",
+      "frames": 40,
+      "pictures": 37,
+      "hdFrames": 40,
+      "cells": 1637,
+      "cellShare": 0.03
+    },
+    {
+      "section": "TERRAIN",
+      "name": "C_EXT_ENGINE_E",
+      "frames": 10,
+      "pictures": 10,
+      "hdFrames": 10,
+      "cells": 26,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "C_EXT_ENGINE_E_SILVER",
+      "frames": 10,
+      "pictures": 10,
+      "hdFrames": 10,
+      "cells": 0,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "C_EXT_ENGINE_S",
+      "frames": 10,
+      "pictures": 10,
+      "hdFrames": 10,
+      "cells": 46,
+      "cellShare": 0.001
+    },
+    {
+      "section": "TERRAIN",
+      "name": "C_EXT_ENGINE_S_BLACK",
+      "frames": 5,
+      "pictures": 5,
+      "hdFrames": 5,
+      "cells": 104,
+      "cellShare": 0.002
+    },
+    {
+      "section": "TERRAIN",
+      "name": "C_EXT_ENGINE_S_RED",
+      "frames": 10,
+      "pictures": 10,
+      "hdFrames": 10,
+      "cells": 50,
+      "cellShare": 0.001
+    },
+    {
+      "section": "TERRAIN",
+      "name": "C_EXT_ENGINE_S_SILVER",
+      "frames": 10,
+      "pictures": 10,
+      "hdFrames": 10,
+      "cells": 156,
+      "cellShare": 0.003
+    },
+    {
+      "section": "TERRAIN",
+      "name": "C_EXT_ENG_E_BLACK",
+      "frames": 5,
+      "pictures": 5,
+      "hdFrames": 5,
+      "cells": 6,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "C_EXT_ENG_E_PRPL",
+      "frames": 3,
+      "pictures": 3,
+      "hdFrames": 3,
+      "cells": 28,
+      "cellShare": 0.001
+    },
+    {
+      "section": "TERRAIN",
+      "name": "C_EXT_GLASSWALL",
+      "frames": 5,
+      "pictures": 5,
+      "hdFrames": 5,
+      "cells": 78,
+      "cellShare": 0.001
+    },
+    {
+      "section": "TERRAIN",
+      "name": "C_EXT_LANDGEAR",
+      "frames": 4,
+      "pictures": 4,
+      "hdFrames": 4,
+      "cells": 4,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "C_EXT_NOSE",
+      "frames": 28,
+      "pictures": 28,
+      "hdFrames": 28,
+      "cells": 38,
+      "cellShare": 0.001
+    },
+    {
+      "section": "TERRAIN",
+      "name": "C_EXT_NOSE_BLACK",
+      "frames": 28,
+      "pictures": 28,
+      "hdFrames": 28,
+      "cells": 8,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "C_EXT_NOSE_BUMPER",
+      "frames": 28,
+      "pictures": 28,
+      "hdFrames": 28,
+      "cells": 16,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "C_EXT_NOSE_BUMPER_BLACK",
+      "frames": 28,
+      "pictures": 28,
+      "hdFrames": 28,
+      "cells": 49,
+      "cellShare": 0.001
+    },
+    {
+      "section": "TERRAIN",
+      "name": "C_EXT_NOSE_BUMPER_PRPL",
+      "frames": 28,
+      "pictures": 28,
+      "hdFrames": 28,
+      "cells": 3,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "C_EXT_NOSE_BUMPER_RED",
+      "frames": 28,
+      "pictures": 28,
+      "hdFrames": 28,
+      "cells": 16,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "C_EXT_NOSE_BUMPLESS",
+      "frames": 28,
+      "pictures": 28,
+      "hdFrames": 28,
+      "cells": 13,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "C_EXT_NOSE_BUMPLESS_BLACK",
+      "frames": 28,
+      "pictures": 28,
+      "hdFrames": 28,
+      "cells": 21,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "C_EXT_NOSE_BUMPLESS_GOLD",
+      "frames": 28,
+      "pictures": 28,
+      "hdFrames": 28,
+      "cells": 9,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "C_EXT_NOSE_BUMPLESS_PRPL",
+      "frames": 28,
+      "pictures": 28,
+      "hdFrames": 28,
+      "cells": 0,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "C_EXT_NOSE_BUMPLESS_RED",
+      "frames": 28,
+      "pictures": 28,
+      "hdFrames": 28,
+      "cells": 31,
+      "cellShare": 0.001
+    },
+    {
+      "section": "TERRAIN",
+      "name": "C_EXT_NOSE_DBLUE",
+      "frames": 28,
+      "pictures": 28,
+      "hdFrames": 28,
+      "cells": 41,
+      "cellShare": 0.001
+    },
+    {
+      "section": "TERRAIN",
+      "name": "C_EXT_NOSE_PRPL",
+      "frames": 28,
+      "pictures": 28,
+      "hdFrames": 28,
+      "cells": 2,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "C_EXT_NOSE_RED",
+      "frames": 28,
+      "pictures": 28,
+      "hdFrames": 28,
+      "cells": 3,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "C_EXT_NOSE_SIDE",
+      "frames": 28,
+      "pictures": 28,
+      "hdFrames": 28,
+      "cells": 41,
+      "cellShare": 0.001
+    },
+    {
+      "section": "TERRAIN",
+      "name": "C_EXT_NOSE_SIDE_BLACK",
+      "frames": 28,
+      "pictures": 28,
+      "hdFrames": 28,
+      "cells": 40,
+      "cellShare": 0.001
+    },
+    {
+      "section": "TERRAIN",
+      "name": "C_EXT_NOSE_SIDE_GOLD",
+      "frames": 28,
+      "pictures": 28,
+      "hdFrames": 28,
+      "cells": 8,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "C_EXT_NOSE_SIDE_PRPL",
+      "frames": 28,
+      "pictures": 28,
+      "hdFrames": 28,
+      "cells": 2,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "C_EXT_NOSE_SIDE_RED",
+      "frames": 28,
+      "pictures": 28,
+      "hdFrames": 28,
+      "cells": 27,
+      "cellShare": 0.001
+    },
+    {
+      "section": "TERRAIN",
+      "name": "C_EXT_NOSE_SIDE_SILVER",
+      "frames": 28,
+      "pictures": 28,
+      "hdFrames": 28,
+      "cells": 12,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "C_EXT_NOSE_SILVER",
+      "frames": 28,
+      "pictures": 28,
+      "hdFrames": 28,
+      "cells": 55,
+      "cellShare": 0.001
+    },
+    {
+      "section": "TERRAIN",
+      "name": "C_EXT_NOSE_SILVERGREEN",
+      "frames": 28,
+      "pictures": 28,
+      "hdFrames": 28,
+      "cells": 5,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "C_EXT_ROOF",
+      "frames": 50,
+      "pictures": 50,
+      "hdFrames": 50,
+      "cells": 597,
+      "cellShare": 0.011
+    },
+    {
+      "section": "TERRAIN",
+      "name": "C_EXT_ROOFBITS_SILVER",
+      "frames": 50,
+      "pictures": 50,
+      "hdFrames": 50,
+      "cells": 0,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "C_EXT_ROOF_BLACK",
+      "frames": 50,
+      "pictures": 50,
+      "hdFrames": 50,
+      "cells": 1829,
+      "cellShare": 0.034
+    },
+    {
+      "section": "TERRAIN",
+      "name": "C_EXT_ROOF_BLACK2",
+      "frames": 50,
+      "pictures": 50,
+      "hdFrames": 50,
+      "cells": 72,
+      "cellShare": 0.001
+    },
+    {
+      "section": "TERRAIN",
+      "name": "C_EXT_ROOF_DBLUE",
+      "frames": 50,
+      "pictures": 50,
+      "hdFrames": 50,
+      "cells": 1834,
+      "cellShare": 0.034
+    },
+    {
+      "section": "TERRAIN",
+      "name": "C_EXT_ROOF_GOLD",
+      "frames": 50,
+      "pictures": 50,
+      "hdFrames": 50,
+      "cells": 151,
+      "cellShare": 0.003
+    },
+    {
+      "section": "TERRAIN",
+      "name": "C_EXT_ROOF_PRPL",
+      "frames": 50,
+      "pictures": 50,
+      "hdFrames": 50,
+      "cells": 69,
+      "cellShare": 0.001
+    },
+    {
+      "section": "TERRAIN",
+      "name": "C_EXT_ROOF_RED",
+      "frames": 50,
+      "pictures": 50,
+      "hdFrames": 50,
+      "cells": 598,
+      "cellShare": 0.011
+    },
+    {
+      "section": "TERRAIN",
+      "name": "C_EXT_ROOF_SILVER",
+      "frames": 50,
+      "pictures": 50,
+      "hdFrames": 50,
+      "cells": 6208,
+      "cellShare": 0.115
+    },
+    {
+      "section": "TERRAIN",
+      "name": "C_EXT_TURRET_DBLUE",
+      "frames": 20,
+      "pictures": 9,
+      "hdFrames": 20,
+      "cells": 6,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "C_EXT_WALL",
+      "frames": 49,
+      "pictures": 49,
+      "hdFrames": 49,
+      "cells": 456,
+      "cellShare": 0.008
+    },
+    {
+      "section": "TERRAIN",
+      "name": "C_EXT_WALL_ACD_EXTRA",
+      "frames": 2,
+      "pictures": 2,
+      "hdFrames": 2,
+      "cells": 1,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "C_EXT_WALL_BLACK",
+      "frames": 49,
+      "pictures": 49,
+      "hdFrames": 49,
+      "cells": 1169,
+      "cellShare": 0.022
+    },
+    {
+      "section": "TERRAIN",
+      "name": "C_EXT_WALL_BLACK_PURR",
+      "frames": 49,
+      "pictures": 49,
+      "hdFrames": 49,
+      "cells": 8,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "C_EXT_WALL_DBLUE",
+      "frames": 49,
+      "pictures": 49,
+      "hdFrames": 49,
+      "cells": 1106,
+      "cellShare": 0.02
+    },
+    {
+      "section": "TERRAIN",
+      "name": "C_EXT_WALL_GOLD",
+      "frames": 49,
+      "pictures": 49,
+      "hdFrames": 49,
+      "cells": 68,
+      "cellShare": 0.001
+    },
+    {
+      "section": "TERRAIN",
+      "name": "C_EXT_WALL_POLICE",
+      "frames": 4,
+      "pictures": 4,
+      "hdFrames": 4,
+      "cells": 5,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "C_EXT_WALL_PRPL",
+      "frames": 49,
+      "pictures": 49,
+      "hdFrames": 49,
+      "cells": 26,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "C_EXT_WALL_RED",
+      "frames": 49,
+      "pictures": 49,
+      "hdFrames": 49,
+      "cells": 370,
+      "cellShare": 0.007
+    },
+    {
+      "section": "TERRAIN",
+      "name": "C_EXT_WALL_SILVER",
+      "frames": 47,
+      "pictures": 47,
+      "hdFrames": 47,
+      "cells": 3569,
+      "cellShare": 0.066
+    },
+    {
+      "section": "TERRAIN",
+      "name": "C_EXT_XCOM",
+      "frames": 53,
+      "pictures": 53,
+      "hdFrames": 53,
+      "cells": 175,
+      "cellShare": 0.003
+    },
+    {
+      "section": "TERRAIN",
+      "name": "C_EXT_XCOM_BLACK",
+      "frames": 53,
+      "pictures": 53,
+      "hdFrames": 53,
+      "cells": 41,
+      "cellShare": 0.001
+    },
+    {
+      "section": "TERRAIN",
+      "name": "C_EXT_XCOM_DARK",
+      "frames": 53,
+      "pictures": 53,
+      "hdFrames": 53,
+      "cells": 333,
+      "cellShare": 0.006
+    },
+    {
+      "section": "TERRAIN",
+      "name": "C_INT",
+      "frames": 90,
+      "pictures": 90,
+      "hdFrames": 90,
+      "cells": 10130,
+      "cellShare": 0.188
+    },
+    {
+      "section": "TERRAIN",
+      "name": "C_INT_CHAIRS",
+      "frames": 52,
+      "pictures": 52,
+      "hdFrames": 52,
+      "cells": 173,
+      "cellShare": 0.003
+    },
+    {
+      "section": "TERRAIN",
+      "name": "C_INT_ENGINE_E",
+      "frames": 10,
+      "pictures": 10,
+      "hdFrames": 10,
+      "cells": 218,
+      "cellShare": 0.004
+    },
+    {
+      "section": "TERRAIN",
+      "name": "C_INT_ENGINE_S",
+      "frames": 10,
+      "pictures": 10,
+      "hdFrames": 10,
+      "cells": 13,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "C_INT_HALF",
+      "frames": 51,
+      "pictures": 51,
+      "hdFrames": 51,
+      "cells": 6231,
+      "cellShare": 0.115
+    },
+    {
+      "section": "TERRAIN",
+      "name": "C_INT_HALF_XCOM",
+      "frames": 51,
+      "pictures": 51,
+      "hdFrames": 51,
+      "cells": 102,
+      "cellShare": 0.002
+    },
+    {
+      "section": "TERRAIN",
+      "name": "C_INT_SMALL",
+      "frames": 90,
+      "pictures": 90,
+      "hdFrames": 90,
+      "cells": 47,
+      "cellShare": 0.001
+    },
+    {
+      "section": "TERRAIN",
+      "name": "C_INT_THIRD",
+      "frames": 51,
+      "pictures": 51,
+      "hdFrames": 51,
+      "cells": 7843,
+      "cellShare": 0.145
+    },
+    {
+      "section": "TERRAIN",
+      "name": "C_INT_XCOM",
+      "frames": 90,
+      "pictures": 90,
+      "hdFrames": 90,
+      "cells": 2632,
+      "cellShare": 0.049
+    },
+    {
+      "section": "TERRAIN",
+      "name": "C_INT_XCOM_GOLD",
+      "frames": 90,
+      "pictures": 88,
+      "hdFrames": 90,
+      "cells": 328,
+      "cellShare": 0.006
+    },
+    {
+      "section": "TERRAIN",
+      "name": "C_WALL02",
+      "frames": 66,
+      "pictures": 66,
+      "hdFrames": 66,
+      "cells": 187,
+      "cellShare": 0.003
+    },
+    {
+      "section": "TERRAIN",
+      "name": "DAWNCARS",
+      "frames": 17,
+      "pictures": 17,
+      "hdFrames": 17,
+      "cells": 80,
+      "cellShare": 0.001
+    },
+    {
+      "section": "TERRAIN",
+      "name": "DAWNURBAN",
+      "frames": 116,
+      "pictures": 116,
+      "hdFrames": 116,
+      "cells": 3080,
+      "cellShare": 0.057
+    },
+    {
+      "section": "TERRAIN",
+      "name": "DAWNURBITS",
+      "frames": 25,
+      "pictures": 25,
+      "hdFrames": 25,
+      "cells": 362,
+      "cellShare": 0.007
+    },
+    {
+      "section": "TERRAIN",
+      "name": "DEAD_SEWERS_BITS",
+      "frames": 24,
+      "pictures": 24,
+      "hdFrames": 24,
+      "cells": 29,
+      "cellShare": 0.001
+    },
+    {
+      "section": "TERRAIN",
+      "name": "DEBRIS40KCUT",
+      "frames": 11,
+      "pictures": 11,
+      "hdFrames": 11,
+      "cells": 49,
+      "cellShare": 0.001
+    },
+    {
+      "section": "TERRAIN",
+      "name": "DECKSHIPC",
+      "frames": 18,
+      "pictures": 18,
+      "hdFrames": 18,
+      "cells": 283,
+      "cellShare": 0.005
+    },
+    {
+      "section": "TERRAIN",
+      "name": "DECORLUX",
+      "frames": 86,
+      "pictures": 86,
+      "hdFrames": 86,
+      "cells": 1478,
+      "cellShare": 0.027
+    },
+    {
+      "section": "TERRAIN",
+      "name": "DELOREAN",
+      "frames": 21,
+      "pictures": 21,
+      "hdFrames": 21,
+      "cells": 14,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "DESERT",
+      "frames": 46,
+      "pictures": 46,
+      "hdFrames": 46,
+      "cells": 10052,
+      "cellShare": 0.186
+    },
+    {
+      "section": "TERRAIN",
+      "name": "DESERTBITS",
+      "frames": 7,
+      "pictures": 7,
+      "hdFrames": 7,
+      "cells": 612,
+      "cellShare": 0.011
+    },
+    {
+      "section": "TERRAIN",
+      "name": "DESERTPLANE",
+      "frames": 22,
+      "pictures": 22,
+      "hdFrames": 22,
+      "cells": 3396,
+      "cellShare": 0.063
+    },
+    {
+      "section": "TERRAIN",
+      "name": "DESERTROCKS_RED",
+      "frames": 22,
+      "pictures": 22,
+      "hdFrames": 22,
+      "cells": 4728,
+      "cellShare": 0.088
+    },
+    {
+      "section": "TERRAIN",
+      "name": "DOOMDECOR",
+      "frames": 4,
+      "pictures": 4,
+      "hdFrames": 4,
+      "cells": 1,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "DOOM_BASE",
+      "frames": 64,
+      "pictures": 64,
+      "hdFrames": 64,
+      "cells": 9979,
+      "cellShare": 0.185
+    },
+    {
+      "section": "TERRAIN",
+      "name": "DOOM_BASE2",
+      "frames": 23,
+      "pictures": 23,
+      "hdFrames": 23,
+      "cells": 38,
+      "cellShare": 0.001
+    },
+    {
+      "section": "TERRAIN",
+      "name": "DOOM_FACILITY",
+      "frames": 7,
+      "pictures": 7,
+      "hdFrames": 7,
+      "cells": 351,
+      "cellShare": 0.007
+    },
+    {
+      "section": "TERRAIN",
+      "name": "DOOM_FRN",
+      "frames": 33,
+      "pictures": 33,
+      "hdFrames": 33,
+      "cells": 65,
+      "cellShare": 0.001
+    },
+    {
+      "section": "TERRAIN",
+      "name": "DOOM_PIPES",
+      "frames": 8,
+      "pictures": 8,
+      "hdFrames": 8,
+      "cells": 126,
+      "cellShare": 0.002
+    },
+    {
+      "section": "TERRAIN",
+      "name": "DOOM_PODS",
+      "frames": 28,
+      "pictures": 28,
+      "hdFrames": 28,
+      "cells": 63,
+      "cellShare": 0.001
+    },
+    {
+      "section": "TERRAIN",
+      "name": "DOOM_WALL02",
+      "frames": 72,
+      "pictures": 71,
+      "hdFrames": 72,
+      "cells": 3597,
+      "cellShare": 0.067
+    },
+    {
+      "section": "TERRAIN",
+      "name": "DOORS1",
+      "frames": 45,
+      "pictures": 45,
+      "hdFrames": 45,
+      "cells": 134,
+      "cellShare": 0.002
+    },
+    {
+      "section": "TERRAIN",
+      "name": "DOORS2",
+      "frames": 20,
+      "pictures": 20,
+      "hdFrames": 20,
+      "cells": 63,
+      "cellShare": 0.001
+    },
+    {
+      "section": "TERRAIN",
+      "name": "DOORSSEC",
+      "frames": 45,
+      "pictures": 45,
+      "hdFrames": 45,
+      "cells": 148,
+      "cellShare": 0.003
+    },
+    {
+      "section": "TERRAIN",
+      "name": "DREADSHIP",
+      "frames": 136,
+      "pictures": 133,
+      "hdFrames": 136,
+      "cells": 312,
+      "cellShare": 0.006
+    },
+    {
+      "section": "TERRAIN",
+      "name": "DREADSHIP2",
+      "frames": 19,
+      "pictures": 19,
+      "hdFrames": 19,
+      "cells": 170,
+      "cellShare": 0.003
+    },
+    {
+      "section": "TERRAIN",
+      "name": "DREAD_BASE",
+      "frames": 65,
+      "pictures": 65,
+      "hdFrames": 65,
+      "cells": 63598,
+      "cellShare": 1.178
+    },
+    {
+      "section": "TERRAIN",
+      "name": "DREAD_PODS",
+      "frames": 46,
+      "pictures": 44,
+      "hdFrames": 46,
+      "cells": 848,
+      "cellShare": 0.016
+    },
+    {
+      "section": "TERRAIN",
+      "name": "DREAD_WALL02",
+      "frames": 85,
+      "pictures": 81,
+      "hdFrames": 85,
+      "cells": 25910,
+      "cellShare": 0.48
+    },
+    {
+      "section": "TERRAIN",
+      "name": "DREAMVILLA",
+      "frames": 78,
+      "pictures": 78,
+      "hdFrames": 78,
+      "cells": 1919,
+      "cellShare": 0.036
+    },
+    {
+      "section": "TERRAIN",
+      "name": "DUNGEON",
+      "frames": 47,
+      "pictures": 47,
+      "hdFrames": 47,
+      "cells": 1308,
+      "cellShare": 0.024
+    },
+    {
+      "section": "TERRAIN",
+      "name": "DUNGEONDOOM",
+      "frames": 47,
+      "pictures": 47,
+      "hdFrames": 47,
+      "cells": 220,
+      "cellShare": 0.004
+    },
+    {
+      "section": "TERRAIN",
+      "name": "DUNGEONEXTRA",
+      "frames": 6,
+      "pictures": 6,
+      "hdFrames": 6,
+      "cells": 182,
+      "cellShare": 0.003
+    },
+    {
+      "section": "TERRAIN",
+      "name": "DUNGEONEXTRA_DOOM",
+      "frames": 6,
+      "pictures": 6,
+      "hdFrames": 6,
+      "cells": 50,
+      "cellShare": 0.001
+    },
+    {
+      "section": "TERRAIN",
+      "name": "DUNGEON_CONC",
+      "frames": 47,
+      "pictures": 47,
+      "hdFrames": 47,
+      "cells": 148,
+      "cellShare": 0.003
+    },
+    {
+      "section": "TERRAIN",
+      "name": "DUNGEON_DEAD",
+      "frames": 51,
+      "pictures": 51,
+      "hdFrames": 51,
+      "cells": 108,
+      "cellShare": 0.002
+    },
+    {
+      "section": "TERRAIN",
+      "name": "DUNGEON_VILLA",
+      "frames": 42,
+      "pictures": 42,
+      "hdFrames": 42,
+      "cells": 90,
+      "cellShare": 0.002
+    },
+    {
+      "section": "TERRAIN",
+      "name": "DUSKURBAN",
+      "frames": 116,
+      "pictures": 116,
+      "hdFrames": 116,
+      "cells": 0,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "EARTHTEMPLE1",
+      "frames": 45,
+      "pictures": 45,
+      "hdFrames": 45,
+      "cells": 4,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "EASTER",
+      "frames": 8,
+      "pictures": 8,
+      "hdFrames": 8,
+      "cells": 84,
+      "cellShare": 0.002
+    },
+    {
+      "section": "TERRAIN",
+      "name": "EXPEDITION",
+      "frames": 14,
+      "pictures": 14,
+      "hdFrames": 14,
+      "cells": 39,
+      "cellShare": 0.001
+    },
+    {
+      "section": "TERRAIN",
+      "name": "FLOORHOLE",
+      "frames": 117,
+      "pictures": 117,
+      "hdFrames": 117,
+      "cells": 37,
+      "cellShare": 0.001
+    },
+    {
+      "section": "TERRAIN",
+      "name": "FLOORSET",
+      "frames": 30,
+      "pictures": 30,
+      "hdFrames": 30,
+      "cells": 14431,
+      "cellShare": 0.267
+    },
+    {
+      "section": "TERRAIN",
+      "name": "FLOORSETSTYX",
+      "frames": 36,
+      "pictures": 36,
+      "hdFrames": 36,
+      "cells": 1010,
+      "cellShare": 0.019
+    },
+    {
+      "section": "TERRAIN",
+      "name": "FLORASET",
+      "frames": 25,
+      "pictures": 25,
+      "hdFrames": 25,
+      "cells": 228,
+      "cellShare": 0.004
+    },
+    {
+      "section": "TERRAIN",
+      "name": "FOREST",
+      "frames": 59,
+      "pictures": 59,
+      "hdFrames": 59,
+      "cells": 52453,
+      "cellShare": 0.971
+    },
+    {
+      "section": "TERRAIN",
+      "name": "FORESTBITS2",
+      "frames": 15,
+      "pictures": 15,
+      "hdFrames": 15,
+      "cells": 741,
+      "cellShare": 0.014
+    },
+    {
+      "section": "TERRAIN",
+      "name": "FORESTBITS3",
+      "frames": 15,
+      "pictures": 15,
+      "hdFrames": 15,
+      "cells": 18,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "FORESTBITSRED",
+      "frames": 15,
+      "pictures": 15,
+      "hdFrames": 15,
+      "cells": 247,
+      "cellShare": 0.005
+    },
+    {
+      "section": "TERRAIN",
+      "name": "FORESTBITSWASTE",
+      "frames": 15,
+      "pictures": 15,
+      "hdFrames": 15,
+      "cells": 667,
+      "cellShare": 0.012
+    },
+    {
+      "section": "TERRAIN",
+      "name": "FORESTBITS_SNOW",
+      "frames": 15,
+      "pictures": 15,
+      "hdFrames": 15,
+      "cells": 951,
+      "cellShare": 0.018
+    },
+    {
+      "section": "TERRAIN",
+      "name": "FORESTJUNGLESTYX",
+      "frames": 59,
+      "pictures": 54,
+      "hdFrames": 59,
+      "cells": 5915,
+      "cellShare": 0.11
+    },
+    {
+      "section": "TERRAIN",
+      "name": "FORESTRED",
+      "frames": 59,
+      "pictures": 59,
+      "hdFrames": 59,
+      "cells": 12543,
+      "cellShare": 0.232
+    },
+    {
+      "section": "TERRAIN",
+      "name": "FORESTSWAMP",
+      "frames": 143,
+      "pictures": 109,
+      "hdFrames": 143,
+      "cells": 2779,
+      "cellShare": 0.051
+    },
+    {
+      "section": "TERRAIN",
+      "name": "FORESTSWAMPBITS",
+      "frames": 15,
+      "pictures": 15,
+      "hdFrames": 15,
+      "cells": 210,
+      "cellShare": 0.004
+    },
+    {
+      "section": "TERRAIN",
+      "name": "FORESTSWAMPSTYX",
+      "frames": 143,
+      "pictures": 109,
+      "hdFrames": 143,
+      "cells": 3557,
+      "cellShare": 0.066
+    },
+    {
+      "section": "TERRAIN",
+      "name": "FORESTSWAMP_SNOW",
+      "frames": 142,
+      "pictures": 102,
+      "hdFrames": 142,
+      "cells": 2779,
+      "cellShare": 0.051
+    },
+    {
+      "section": "TERRAIN",
+      "name": "FORESTSWAMP_WASTE",
+      "frames": 142,
+      "pictures": 131,
+      "hdFrames": 142,
+      "cells": 5558,
+      "cellShare": 0.103
+    },
+    {
+      "section": "TERRAIN",
+      "name": "FOREST_NORD",
+      "frames": 11,
+      "pictures": 11,
+      "hdFrames": 11,
+      "cells": 37,
+      "cellShare": 0.001
+    },
+    {
+      "section": "TERRAIN",
+      "name": "FOREST_SNOW",
+      "frames": 59,
+      "pictures": 59,
+      "hdFrames": 59,
+      "cells": 52453,
+      "cellShare": 0.971
+    },
+    {
+      "section": "TERRAIN",
+      "name": "FOREST_WASTE",
+      "frames": 59,
+      "pictures": 59,
+      "hdFrames": 59,
+      "cells": 42191,
+      "cellShare": 0.781
+    },
+    {
+      "section": "TERRAIN",
+      "name": "FREIGHTER_AGRARIAN",
+      "frames": 142,
+      "pictures": 142,
+      "hdFrames": 142,
+      "cells": 1536,
+      "cellShare": 0.028
+    },
+    {
+      "section": "TERRAIN",
+      "name": "FREIGHTER_CARGO",
+      "frames": 142,
+      "pictures": 142,
+      "hdFrames": 142,
+      "cells": 1479,
+      "cellShare": 0.027
+    },
+    {
+      "section": "TERRAIN",
+      "name": "FREIGHTER_COMMAND",
+      "frames": 152,
+      "pictures": 151,
+      "hdFrames": 152,
+      "cells": 4074,
+      "cellShare": 0.075
+    },
+    {
+      "section": "TERRAIN",
+      "name": "FREIGHTER_COMMAND_2",
+      "frames": 118,
+      "pictures": 118,
+      "hdFrames": 118,
+      "cells": 663,
+      "cellShare": 0.012
+    },
+    {
+      "section": "TERRAIN",
+      "name": "FREIGHTER_MAIN",
+      "frames": 83,
+      "pictures": 83,
+      "hdFrames": 83,
+      "cells": 44720,
+      "cellShare": 0.828
+    },
+    {
+      "section": "TERRAIN",
+      "name": "FREIGHTER_PASSENGER",
+      "frames": 150,
+      "pictures": 150,
+      "hdFrames": 150,
+      "cells": 3185,
+      "cellShare": 0.059
+    },
+    {
+      "section": "TERRAIN",
+      "name": "FREIGHTER_TECHNICAL",
+      "frames": 146,
+      "pictures": 145,
+      "hdFrames": 146,
+      "cells": 3441,
+      "cellShare": 0.064
+    },
+    {
+      "section": "TERRAIN",
+      "name": "FRNITURE",
+      "frames": 26,
+      "pictures": 26,
+      "hdFrames": 26,
+      "cells": 9920,
+      "cellShare": 0.184
+    },
+    {
+      "section": "TERRAIN",
+      "name": "FRNITURELUX",
+      "frames": 26,
+      "pictures": 26,
+      "hdFrames": 26,
+      "cells": 2359,
+      "cellShare": 0.044
+    },
+    {
+      "section": "TERRAIN",
+      "name": "FRNITURE_WASTE",
+      "frames": 26,
+      "pictures": 26,
+      "hdFrames": 26,
+      "cells": 510,
+      "cellShare": 0.009
+    },
+    {
+      "section": "TERRAIN",
+      "name": "FRNTURE_GOLD",
+      "frames": 26,
+      "pictures": 26,
+      "hdFrames": 26,
+      "cells": 42,
+      "cellShare": 0.001
+    },
+    {
+      "section": "TERRAIN",
+      "name": "FRN_OLD",
+      "frames": 29,
+      "pictures": 29,
+      "hdFrames": 29,
+      "cells": 114,
+      "cellShare": 0.002
+    },
+    {
+      "section": "TERRAIN",
+      "name": "GDXOPSFLOORS",
+      "frames": 89,
+      "pictures": 89,
+      "hdFrames": 89,
+      "cells": 2332,
+      "cellShare": 0.043
+    },
+    {
+      "section": "TERRAIN",
+      "name": "GDXOPSPORTA",
+      "frames": 51,
+      "pictures": 51,
+      "hdFrames": 51,
+      "cells": 95,
+      "cellShare": 0.002
+    },
+    {
+      "section": "TERRAIN",
+      "name": "GDXOPSWALLS",
+      "frames": 85,
+      "pictures": 84,
+      "hdFrames": 85,
+      "cells": 1881,
+      "cellShare": 0.035
+    },
+    {
+      "section": "TERRAIN",
+      "name": "GLASSDECOR",
+      "frames": 12,
+      "pictures": 12,
+      "hdFrames": 12,
+      "cells": 4,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "GOLDENCLAW",
+      "frames": 47,
+      "pictures": 47,
+      "hdFrames": 47,
+      "cells": 49,
+      "cellShare": 0.001
+    },
+    {
+      "section": "TERRAIN",
+      "name": "GOTHIC",
+      "frames": 68,
+      "pictures": 67,
+      "hdFrames": 68,
+      "cells": 504,
+      "cellShare": 0.009
+    },
+    {
+      "section": "TERRAIN",
+      "name": "GOVROADS",
+      "frames": 23,
+      "pictures": 23,
+      "hdFrames": 23,
+      "cells": 134,
+      "cellShare": 0.002
+    },
+    {
+      "section": "TERRAIN",
+      "name": "GOVT",
+      "frames": 123,
+      "pictures": 123,
+      "hdFrames": 123,
+      "cells": 2805,
+      "cellShare": 0.052
+    },
+    {
+      "section": "TERRAIN",
+      "name": "GOVTDECOR",
+      "frames": 70,
+      "pictures": 69,
+      "hdFrames": 70,
+      "cells": 32527,
+      "cellShare": 0.602
+    },
+    {
+      "section": "TERRAIN",
+      "name": "GRAVES_RED",
+      "frames": 15,
+      "pictures": 15,
+      "hdFrames": 15,
+      "cells": 57,
+      "cellShare": 0.001
+    },
+    {
+      "section": "TERRAIN",
+      "name": "GRUNGE5",
+      "frames": 40,
+      "pictures": 31,
+      "hdFrames": 40,
+      "cells": 77,
+      "cellShare": 0.001
+    },
+    {
+      "section": "TERRAIN",
+      "name": "HANGAR2_SCI",
+      "frames": 110,
+      "pictures": 110,
+      "hdFrames": 110,
+      "cells": 122,
+      "cellShare": 0.002
+    },
+    {
+      "section": "TERRAIN",
+      "name": "HIGHSTAR",
+      "frames": 7,
+      "pictures": 7,
+      "hdFrames": 7,
+      "cells": 4,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "ICEKING_PODS",
+      "frames": 24,
+      "pictures": 24,
+      "hdFrames": 24,
+      "cells": 217,
+      "cellShare": 0.004
+    },
+    {
+      "section": "TERRAIN",
+      "name": "ICEKING_RUINS",
+      "frames": 89,
+      "pictures": 88,
+      "hdFrames": 89,
+      "cells": 8654,
+      "cellShare": 0.16
+    },
+    {
+      "section": "TERRAIN",
+      "name": "ICEKING_VILLAGE",
+      "frames": 85,
+      "pictures": 85,
+      "hdFrames": 85,
+      "cells": 26201,
+      "cellShare": 0.485
+    },
+    {
+      "section": "TERRAIN",
+      "name": "ICEKING_WALL02",
+      "frames": 70,
+      "pictures": 68,
+      "hdFrames": 70,
+      "cells": 438,
+      "cellShare": 0.008
+    },
+    {
+      "section": "TERRAIN",
+      "name": "IDT_ASIA",
+      "frames": 88,
+      "pictures": 88,
+      "hdFrames": 88,
+      "cells": 0,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "IDT_BARNFLOOR",
+      "frames": 29,
+      "pictures": 29,
+      "hdFrames": 29,
+      "cells": 1927,
+      "cellShare": 0.036
+    },
+    {
+      "section": "TERRAIN",
+      "name": "IDT_FARM",
+      "frames": 60,
+      "pictures": 60,
+      "hdFrames": 60,
+      "cells": 42785,
+      "cellShare": 0.792
+    },
+    {
+      "section": "TERRAIN",
+      "name": "IDT_FARM_WATER",
+      "frames": 85,
+      "pictures": 69,
+      "hdFrames": 85,
+      "cells": 6981,
+      "cellShare": 0.129
+    },
+    {
+      "section": "TERRAIN",
+      "name": "IDT_HUMAN",
+      "frames": 105,
+      "pictures": 105,
+      "hdFrames": 105,
+      "cells": 156,
+      "cellShare": 0.003
+    },
+    {
+      "section": "TERRAIN",
+      "name": "IDT_ROOF",
+      "frames": 32,
+      "pictures": 28,
+      "hdFrames": 32,
+      "cells": 537,
+      "cellShare": 0.01
+    },
+    {
+      "section": "TERRAIN",
+      "name": "IDT_SNOWBARN",
+      "frames": 53,
+      "pictures": 45,
+      "hdFrames": 53,
+      "cells": 3722,
+      "cellShare": 0.069
+    },
+    {
+      "section": "TERRAIN",
+      "name": "IDT_SNOWCULTIVAT",
+      "frames": 37,
+      "pictures": 37,
+      "hdFrames": 37,
+      "cells": 1097,
+      "cellShare": 0.02
+    },
+    {
+      "section": "TERRAIN",
+      "name": "IDT_SNOWROOF",
+      "frames": 32,
+      "pictures": 32,
+      "hdFrames": 32,
+      "cells": 621,
+      "cellShare": 0.012
+    },
+    {
+      "section": "TERRAIN",
+      "name": "IDT_SNOWVILBAN",
+      "frames": 118,
+      "pictures": 118,
+      "hdFrames": 118,
+      "cells": 653,
+      "cellShare": 0.012
+    },
+    {
+      "section": "TERRAIN",
+      "name": "INDUSLUM",
+      "frames": 88,
+      "pictures": 88,
+      "hdFrames": 88,
+      "cells": 35124,
+      "cellShare": 0.65
+    },
+    {
+      "section": "TERRAIN",
+      "name": "ISLANDURBAN1",
+      "frames": 50,
+      "pictures": 50,
+      "hdFrames": 50,
+      "cells": 12612,
+      "cellShare": 0.234
+    },
+    {
+      "section": "TERRAIN",
+      "name": "ISLANDURBAN2",
+      "frames": 50,
+      "pictures": 50,
+      "hdFrames": 50,
+      "cells": 36332,
+      "cellShare": 0.673
+    },
+    {
+      "section": "TERRAIN",
+      "name": "ISLANDURBAN3",
+      "frames": 39,
+      "pictures": 39,
+      "hdFrames": 39,
+      "cells": 868,
+      "cellShare": 0.016
+    },
+    {
+      "section": "TERRAIN",
+      "name": "JAILBITES",
+      "frames": 14,
+      "pictures": 14,
+      "hdFrames": 14,
+      "cells": 188,
+      "cellShare": 0.003
+    },
+    {
+      "section": "TERRAIN",
+      "name": "JUNGLE",
+      "frames": 82,
+      "pictures": 82,
+      "hdFrames": 82,
+      "cells": 23341,
+      "cellShare": 0.432
+    },
+    {
+      "section": "TERRAIN",
+      "name": "JUNGLEBITS",
+      "frames": 85,
+      "pictures": 85,
+      "hdFrames": 85,
+      "cells": 13701,
+      "cellShare": 0.254
+    },
+    {
+      "section": "TERRAIN",
+      "name": "JUNGLEROCKS",
+      "frames": 15,
+      "pictures": 15,
+      "hdFrames": 15,
+      "cells": 90,
+      "cellShare": 0.002
+    },
+    {
+      "section": "TERRAIN",
+      "name": "JUNGLESTYX",
+      "frames": 28,
+      "pictures": 28,
+      "hdFrames": 28,
+      "cells": 6726,
+      "cellShare": 0.125
+    },
+    {
+      "section": "TERRAIN",
+      "name": "JUNGLEVINES",
+      "frames": 9,
+      "pictures": 9,
+      "hdFrames": 9,
+      "cells": 38,
+      "cellShare": 0.001
+    },
+    {
+      "section": "TERRAIN",
+      "name": "JUNGLYROAD",
+      "frames": 22,
+      "pictures": 22,
+      "hdFrames": 22,
+      "cells": 386,
+      "cellShare": 0.007
+    },
+    {
+      "section": "TERRAIN",
+      "name": "KITSUNE",
+      "frames": 45,
+      "pictures": 45,
+      "hdFrames": 45,
+      "cells": 30,
+      "cellShare": 0.001
+    },
+    {
+      "section": "TERRAIN",
+      "name": "LAM_BASE",
+      "frames": 73,
+      "pictures": 73,
+      "hdFrames": 73,
+      "cells": 20438,
+      "cellShare": 0.378
+    },
+    {
+      "section": "TERRAIN",
+      "name": "LAM_BASE2",
+      "frames": 21,
+      "pictures": 21,
+      "hdFrames": 21,
+      "cells": 66,
+      "cellShare": 0.001
+    },
+    {
+      "section": "TERRAIN",
+      "name": "LAM_BITS",
+      "frames": 8,
+      "pictures": 8,
+      "hdFrames": 8,
+      "cells": 0,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "LAM_EXT02",
+      "frames": 40,
+      "pictures": 40,
+      "hdFrames": 40,
+      "cells": 477,
+      "cellShare": 0.009
+    },
+    {
+      "section": "TERRAIN",
+      "name": "LAM_FLOOR",
+      "frames": 24,
+      "pictures": 24,
+      "hdFrames": 24,
+      "cells": 992,
+      "cellShare": 0.018
+    },
+    {
+      "section": "TERRAIN",
+      "name": "LAM_FRN",
+      "frames": 72,
+      "pictures": 72,
+      "hdFrames": 72,
+      "cells": 11152,
+      "cellShare": 0.207
+    },
+    {
+      "section": "TERRAIN",
+      "name": "LAM_PODS",
+      "frames": 19,
+      "pictures": 19,
+      "hdFrames": 19,
+      "cells": 18,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "LAM_WALL02",
+      "frames": 91,
+      "pictures": 86,
+      "hdFrames": 91,
+      "cells": 2762,
+      "cellShare": 0.051
+    },
+    {
+      "section": "TERRAIN",
+      "name": "LANTERNS",
+      "frames": 44,
+      "pictures": 42,
+      "hdFrames": 44,
+      "cells": 14,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "LAVA",
+      "frames": 67,
+      "pictures": 31,
+      "hdFrames": 67,
+      "cells": 975,
+      "cellShare": 0.018
+    },
+    {
+      "section": "TERRAIN",
+      "name": "LAVA_SWAMP",
+      "frames": 67,
+      "pictures": 33,
+      "hdFrames": 67,
+      "cells": 1191,
+      "cellShare": 0.022
+    },
+    {
+      "section": "TERRAIN",
+      "name": "LAVA_SWAMPGREEN",
+      "frames": 67,
+      "pictures": 33,
+      "hdFrames": 67,
+      "cells": 995,
+      "cellShare": 0.018
+    },
+    {
+      "section": "TERRAIN",
+      "name": "LIFTER",
+      "frames": 16,
+      "pictures": 16,
+      "hdFrames": 16,
+      "cells": 1424,
+      "cellShare": 0.026
+    },
+    {
+      "section": "TERRAIN",
+      "name": "LIFTER_LOLI",
+      "frames": 16,
+      "pictures": 16,
+      "hdFrames": 16,
+      "cells": 12,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "LIGHTNIN",
+      "frames": 55,
+      "pictures": 55,
+      "hdFrames": 55,
+      "cells": 450,
+      "cellShare": 0.008
+    },
+    {
+      "section": "TERRAIN",
+      "name": "LIGHTNIN_BL2",
+      "frames": 51,
+      "pictures": 51,
+      "hdFrames": 51,
+      "cells": 151,
+      "cellShare": 0.003
+    },
+    {
+      "section": "TERRAIN",
+      "name": "LIGHTNIN_G2",
+      "frames": 55,
+      "pictures": 55,
+      "hdFrames": 55,
+      "cells": 342,
+      "cellShare": 0.006
+    },
+    {
+      "section": "TERRAIN",
+      "name": "LIGHTNIN_GR",
+      "frames": 51,
+      "pictures": 51,
+      "hdFrames": 51,
+      "cells": 151,
+      "cellShare": 0.003
+    },
+    {
+      "section": "TERRAIN",
+      "name": "LIGHTNIN_R",
+      "frames": 51,
+      "pictures": 51,
+      "hdFrames": 51,
+      "cells": 431,
+      "cellShare": 0.008
+    },
+    {
+      "section": "TERRAIN",
+      "name": "LIGHTNIN_R2",
+      "frames": 51,
+      "pictures": 51,
+      "hdFrames": 51,
+      "cells": 151,
+      "cellShare": 0.003
+    },
+    {
+      "section": "TERRAIN",
+      "name": "LINERSHIPA",
+      "frames": 117,
+      "pictures": 109,
+      "hdFrames": 117,
+      "cells": 24969,
+      "cellShare": 0.462
+    },
+    {
+      "section": "TERRAIN",
+      "name": "LINERSHIPB",
+      "frames": 115,
+      "pictures": 106,
+      "hdFrames": 115,
+      "cells": 4274,
+      "cellShare": 0.079
+    },
+    {
+      "section": "TERRAIN",
+      "name": "LINERSHIPC",
+      "frames": 40,
+      "pictures": 40,
+      "hdFrames": 40,
+      "cells": 1188,
+      "cellShare": 0.022
+    },
+    {
+      "section": "TERRAIN",
+      "name": "LINERSHIPD",
+      "frames": 42,
+      "pictures": 42,
+      "hdFrames": 42,
+      "cells": 4278,
+      "cellShare": 0.079
+    },
+    {
+      "section": "TERRAIN",
+      "name": "LITTLE_BIRD",
+      "frames": 49,
+      "pictures": 47,
+      "hdFrames": 49,
+      "cells": 0,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "MADDECOR",
+      "frames": 87,
+      "pictures": 87,
+      "hdFrames": 87,
+      "cells": 7070,
+      "cellShare": 0.131
+    },
+    {
+      "section": "TERRAIN",
+      "name": "MADDECOR_WASTE",
+      "frames": 89,
+      "pictures": 89,
+      "hdFrames": 89,
+      "cells": 2086,
+      "cellShare": 0.039
+    },
+    {
+      "section": "TERRAIN",
+      "name": "MAGETOWER0",
+      "frames": 46,
+      "pictures": 46,
+      "hdFrames": 46,
+      "cells": 156,
+      "cellShare": 0.003
+    },
+    {
+      "section": "TERRAIN",
+      "name": "MAGETOWER1",
+      "frames": 92,
+      "pictures": 90,
+      "hdFrames": 92,
+      "cells": 742,
+      "cellShare": 0.014
+    },
+    {
+      "section": "TERRAIN",
+      "name": "MANHOLE",
+      "frames": 4,
+      "pictures": 4,
+      "hdFrames": 4,
+      "cells": 4,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "MANSIONBITS",
+      "frames": 22,
+      "pictures": 22,
+      "hdFrames": 22,
+      "cells": 2974,
+      "cellShare": 0.055
+    },
+    {
+      "section": "TERRAIN",
+      "name": "MANSIONFLOOR_MAG",
+      "frames": 38,
+      "pictures": 38,
+      "hdFrames": 38,
+      "cells": 10875,
+      "cellShare": 0.201
+    },
+    {
+      "section": "TERRAIN",
+      "name": "MANSIONFURNITURE",
+      "frames": 26,
+      "pictures": 26,
+      "hdFrames": 26,
+      "cells": 295,
+      "cellShare": 0.005
+    },
+    {
+      "section": "TERRAIN",
+      "name": "MANSIONFURNITURE_MAG",
+      "frames": 28,
+      "pictures": 28,
+      "hdFrames": 28,
+      "cells": 358,
+      "cellShare": 0.007
+    },
+    {
+      "section": "TERRAIN",
+      "name": "MANSIONGARDEN",
+      "frames": 19,
+      "pictures": 19,
+      "hdFrames": 19,
+      "cells": 5797,
+      "cellShare": 0.107
+    },
+    {
+      "section": "TERRAIN",
+      "name": "MANSIONGARDEN_MAG",
+      "frames": 19,
+      "pictures": 19,
+      "hdFrames": 19,
+      "cells": 4709,
+      "cellShare": 0.087
+    },
+    {
+      "section": "TERRAIN",
+      "name": "MANSION_PAINTINGS",
+      "frames": 20,
+      "pictures": 20,
+      "hdFrames": 20,
+      "cells": 8,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "MARS",
+      "frames": 37,
+      "pictures": 37,
+      "hdFrames": 37,
+      "cells": 2326,
+      "cellShare": 0.043
+    },
+    {
+      "section": "TERRAIN",
+      "name": "MARSEC_COMPUTERS",
+      "frames": 16,
+      "pictures": 16,
+      "hdFrames": 16,
+      "cells": 19,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "MARSEC_EXT_2",
+      "frames": 75,
+      "pictures": 75,
+      "hdFrames": 75,
+      "cells": 918,
+      "cellShare": 0.017
+    },
+    {
+      "section": "TERRAIN",
+      "name": "MARSEC_FRN",
+      "frames": 27,
+      "pictures": 27,
+      "hdFrames": 27,
+      "cells": 74,
+      "cellShare": 0.001
+    },
+    {
+      "section": "TERRAIN",
+      "name": "MARSEC_INT_2",
+      "frames": 129,
+      "pictures": 129,
+      "hdFrames": 129,
+      "cells": 874,
+      "cellShare": 0.016
+    },
+    {
+      "section": "TERRAIN",
+      "name": "MARSEC_NAVIGATION",
+      "frames": 23,
+      "pictures": 22,
+      "hdFrames": 23,
+      "cells": 42,
+      "cellShare": 0.001
+    },
+    {
+      "section": "TERRAIN",
+      "name": "MARSEC_OPER",
+      "frames": 31,
+      "pictures": 29,
+      "hdFrames": 31,
+      "cells": 8,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "MARSEC_PODS",
+      "frames": 27,
+      "pictures": 27,
+      "hdFrames": 27,
+      "cells": 5,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "MARS_VR",
+      "frames": 37,
+      "pictures": 37,
+      "hdFrames": 37,
+      "cells": 1493,
+      "cellShare": 0.028
+    },
+    {
+      "section": "TERRAIN",
+      "name": "MEDIEVAL",
+      "frames": 46,
+      "pictures": 46,
+      "hdFrames": 46,
+      "cells": 33,
+      "cellShare": 0.001
+    },
+    {
+      "section": "TERRAIN",
+      "name": "METRO1",
+      "frames": 121,
+      "pictures": 121,
+      "hdFrames": 121,
+      "cells": 28998,
+      "cellShare": 0.537
+    },
+    {
+      "section": "TERRAIN",
+      "name": "METROBITS",
+      "frames": 29,
+      "pictures": 28,
+      "hdFrames": 29,
+      "cells": 26815,
+      "cellShare": 0.497
+    },
+    {
+      "section": "TERRAIN",
+      "name": "METROPIPES",
+      "frames": 89,
+      "pictures": 88,
+      "hdFrames": 89,
+      "cells": 1477,
+      "cellShare": 0.027
+    },
+    {
+      "section": "TERRAIN",
+      "name": "MI8",
+      "frames": 76,
+      "pictures": 75,
+      "hdFrames": 76,
+      "cells": 111,
+      "cellShare": 0.002
+    },
+    {
+      "section": "TERRAIN",
+      "name": "MILBARR",
+      "frames": 58,
+      "pictures": 58,
+      "hdFrames": 58,
+      "cells": 5630,
+      "cellShare": 0.104
+    },
+    {
+      "section": "TERRAIN",
+      "name": "MILBARRGHOUL",
+      "frames": 66,
+      "pictures": 66,
+      "hdFrames": 66,
+      "cells": 2593,
+      "cellShare": 0.048
+    },
+    {
+      "section": "TERRAIN",
+      "name": "MILEXT",
+      "frames": 77,
+      "pictures": 77,
+      "hdFrames": 77,
+      "cells": 32687,
+      "cellShare": 0.605
+    },
+    {
+      "section": "TERRAIN",
+      "name": "MILINDUSTRIAL",
+      "frames": 18,
+      "pictures": 18,
+      "hdFrames": 18,
+      "cells": 1523,
+      "cellShare": 0.028
+    },
+    {
+      "section": "TERRAIN",
+      "name": "MILINDUSTRIALGHOUL",
+      "frames": 19,
+      "pictures": 19,
+      "hdFrames": 19,
+      "cells": 539,
+      "cellShare": 0.01
+    },
+    {
+      "section": "TERRAIN",
+      "name": "MILTECHDIO",
+      "frames": 63,
+      "pictures": 63,
+      "hdFrames": 63,
+      "cells": 1325,
+      "cellShare": 0.025
+    },
+    {
+      "section": "TERRAIN",
+      "name": "MILTECHGHOUL",
+      "frames": 60,
+      "pictures": 60,
+      "hdFrames": 60,
+      "cells": 404,
+      "cellShare": 0.007
+    },
+    {
+      "section": "TERRAIN",
+      "name": "MILURBAN",
+      "frames": 116,
+      "pictures": 116,
+      "hdFrames": 116,
+      "cells": 0,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "MILURBITSEXT",
+      "frames": 93,
+      "pictures": 93,
+      "hdFrames": 93,
+      "cells": 273,
+      "cellShare": 0.005
+    },
+    {
+      "section": "TERRAIN",
+      "name": "MILWARE",
+      "frames": 87,
+      "pictures": 87,
+      "hdFrames": 87,
+      "cells": 8627,
+      "cellShare": 0.16
+    },
+    {
+      "section": "TERRAIN",
+      "name": "MILWAREGHOUL",
+      "frames": 94,
+      "pictures": 93,
+      "hdFrames": 94,
+      "cells": 2947,
+      "cellShare": 0.055
+    },
+    {
+      "section": "TERRAIN",
+      "name": "MI_24_HIND_A",
+      "frames": 63,
+      "pictures": 61,
+      "hdFrames": 63,
+      "cells": 132,
+      "cellShare": 0.002
+    },
+    {
+      "section": "TERRAIN",
+      "name": "MOORINGS",
+      "frames": 16,
+      "pictures": 16,
+      "hdFrames": 16,
+      "cells": 838,
+      "cellShare": 0.016
+    },
+    {
+      "section": "TERRAIN",
+      "name": "MOUNT",
+      "frames": 54,
+      "pictures": 54,
+      "hdFrames": 54,
+      "cells": 33243,
+      "cellShare": 0.616
+    },
+    {
+      "section": "TERRAIN",
+      "name": "MOUNTGRASS",
+      "frames": 65,
+      "pictures": 65,
+      "hdFrames": 65,
+      "cells": 24138,
+      "cellShare": 0.447
+    },
+    {
+      "section": "TERRAIN",
+      "name": "MOUNTMOON",
+      "frames": 65,
+      "pictures": 65,
+      "hdFrames": 65,
+      "cells": 5272,
+      "cellShare": 0.098
+    },
+    {
+      "section": "TERRAIN",
+      "name": "MOUNTMUD",
+      "frames": 65,
+      "pictures": 65,
+      "hdFrames": 65,
+      "cells": 17291,
+      "cellShare": 0.32
+    },
+    {
+      "section": "TERRAIN",
+      "name": "MOUNTROCK",
+      "frames": 66,
+      "pictures": 66,
+      "hdFrames": 66,
+      "cells": 17291,
+      "cellShare": 0.32
+    },
+    {
+      "section": "TERRAIN",
+      "name": "MOUNTSAND",
+      "frames": 64,
+      "pictures": 64,
+      "hdFrames": 64,
+      "cells": 17291,
+      "cellShare": 0.32
+    },
+    {
+      "section": "TERRAIN",
+      "name": "MOUNTSNOW2",
+      "frames": 64,
+      "pictures": 64,
+      "hdFrames": 64,
+      "cells": 17291,
+      "cellShare": 0.32
+    },
+    {
+      "section": "TERRAIN",
+      "name": "MOUNTTROP",
+      "frames": 66,
+      "pictures": 65,
+      "hdFrames": 66,
+      "cells": 34727,
+      "cellShare": 0.643
+    },
+    {
+      "section": "TERRAIN",
+      "name": "MOUNTWASTE2",
+      "frames": 66,
+      "pictures": 66,
+      "hdFrames": 66,
+      "cells": 17291,
+      "cellShare": 0.32
+    },
+    {
+      "section": "TERRAIN",
+      "name": "MUCONCRETE",
+      "frames": 96,
+      "pictures": 91,
+      "hdFrames": 96,
+      "cells": 18025,
+      "cellShare": 0.334
+    },
+    {
+      "section": "TERRAIN",
+      "name": "MUICE",
+      "frames": 80,
+      "pictures": 80,
+      "hdFrames": 80,
+      "cells": 0,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "MUJUNGLE",
+      "frames": 80,
+      "pictures": 80,
+      "hdFrames": 80,
+      "cells": 30859,
+      "cellShare": 0.571
+    },
+    {
+      "section": "TERRAIN",
+      "name": "MUJUNGLE_2",
+      "frames": 80,
+      "pictures": 79,
+      "hdFrames": 80,
+      "cells": 36841,
+      "cellShare": 0.682
+    },
+    {
+      "section": "TERRAIN",
+      "name": "MUMMY_RUINS",
+      "frames": 88,
+      "pictures": 88,
+      "hdFrames": 88,
+      "cells": 8654,
+      "cellShare": 0.16
+    },
+    {
+      "section": "TERRAIN",
+      "name": "MUMMY_VILLAGE",
+      "frames": 85,
+      "pictures": 85,
+      "hdFrames": 85,
+      "cells": 26201,
+      "cellShare": 0.485
+    },
+    {
+      "section": "TERRAIN",
+      "name": "MUSTYX",
+      "frames": 84,
+      "pictures": 83,
+      "hdFrames": 84,
+      "cells": 7217,
+      "cellShare": 0.134
+    },
+    {
+      "section": "TERRAIN",
+      "name": "NECROPOLIS_DECOR",
+      "frames": 7,
+      "pictures": 7,
+      "hdFrames": 7,
+      "cells": 163,
+      "cellShare": 0.003
+    },
+    {
+      "section": "TERRAIN",
+      "name": "NEOJUNGLE",
+      "frames": 82,
+      "pictures": 82,
+      "hdFrames": 82,
+      "cells": 3290,
+      "cellShare": 0.061
+    },
+    {
+      "section": "TERRAIN",
+      "name": "NINJASPECIALS",
+      "frames": 11,
+      "pictures": 11,
+      "hdFrames": 11,
+      "cells": 5,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "NINJATECH",
+      "frames": 70,
+      "pictures": 70,
+      "hdFrames": 70,
+      "cells": 3057,
+      "cellShare": 0.057
+    },
+    {
+      "section": "TERRAIN",
+      "name": "NKF_APC_PIR_BROWN",
+      "frames": 40,
+      "pictures": 40,
+      "hdFrames": 40,
+      "cells": 153,
+      "cellShare": 0.003
+    },
+    {
+      "section": "TERRAIN",
+      "name": "NUKE1",
+      "frames": 23,
+      "pictures": 23,
+      "hdFrames": 23,
+      "cells": 39071,
+      "cellShare": 0.724
+    },
+    {
+      "section": "TERRAIN",
+      "name": "NUKE2",
+      "frames": 39,
+      "pictures": 38,
+      "hdFrames": 39,
+      "cells": 40658,
+      "cellShare": 0.753
+    },
+    {
+      "section": "TERRAIN",
+      "name": "NUKE3",
+      "frames": 37,
+      "pictures": 37,
+      "hdFrames": 37,
+      "cells": 41950,
+      "cellShare": 0.777
+    },
+    {
+      "section": "TERRAIN",
+      "name": "NUKE_CITY",
+      "frames": 32,
+      "pictures": 31,
+      "hdFrames": 32,
+      "cells": 1016,
+      "cellShare": 0.019
+    },
+    {
+      "section": "TERRAIN",
+      "name": "NUKE_CITY_2",
+      "frames": 23,
+      "pictures": 21,
+      "hdFrames": 23,
+      "cells": 7782,
+      "cellShare": 0.144
+    },
+    {
+      "section": "TERRAIN",
+      "name": "NUKE_UNDERGROUND",
+      "frames": 8,
+      "pictures": 8,
+      "hdFrames": 8,
+      "cells": 2546,
+      "cellShare": 0.047
+    },
+    {
+      "section": "TERRAIN",
+      "name": "NUKE_WATER_2",
+      "frames": 81,
+      "pictures": 57,
+      "hdFrames": 81,
+      "cells": 1265,
+      "cellShare": 0.023
+    },
+    {
+      "section": "TERRAIN",
+      "name": "ORKP_BLACK",
+      "frames": 83,
+      "pictures": 75,
+      "hdFrames": 83,
+      "cells": 57,
+      "cellShare": 0.001
+    },
+    {
+      "section": "TERRAIN",
+      "name": "OSIRON_FINNIK",
+      "frames": 66,
+      "pictures": 66,
+      "hdFrames": 66,
+      "cells": 69,
+      "cellShare": 0.001
+    },
+    {
+      "section": "TERRAIN",
+      "name": "PENTA_X",
+      "frames": 12,
+      "pictures": 12,
+      "hdFrames": 12,
+      "cells": 46,
+      "cellShare": 0.001
+    },
+    {
+      "section": "TERRAIN",
+      "name": "PLANE",
+      "frames": 63,
+      "pictures": 63,
+      "hdFrames": 63,
+      "cells": 236,
+      "cellShare": 0.004
+    },
+    {
+      "section": "TERRAIN",
+      "name": "PLANE2",
+      "frames": 130,
+      "pictures": 130,
+      "hdFrames": 130,
+      "cells": 416,
+      "cellShare": 0.008
+    },
+    {
+      "section": "TERRAIN",
+      "name": "PLANE2R",
+      "frames": 130,
+      "pictures": 130,
+      "hdFrames": 130,
+      "cells": 25,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "PLANE_VR",
+      "frames": 63,
+      "pictures": 56,
+      "hdFrames": 63,
+      "cells": 124,
+      "cellShare": 0.002
+    },
+    {
+      "section": "TERRAIN",
+      "name": "POLAR",
+      "frames": 123,
+      "pictures": 108,
+      "hdFrames": 123,
+      "cells": 7541,
+      "cellShare": 0.14
+    },
+    {
+      "section": "TERRAIN",
+      "name": "POLARPLANE",
+      "frames": 22,
+      "pictures": 22,
+      "hdFrames": 22,
+      "cells": 3396,
+      "cellShare": 0.063
+    },
+    {
+      "section": "TERRAIN",
+      "name": "PORTROADS",
+      "frames": 95,
+      "pictures": 95,
+      "hdFrames": 95,
+      "cells": 87026,
+      "cellShare": 1.612
+    },
+    {
+      "section": "TERRAIN",
+      "name": "PORTURBITS",
+      "frames": 93,
+      "pictures": 93,
+      "hdFrames": 93,
+      "cells": 20645,
+      "cellShare": 0.382
+    },
+    {
+      "section": "TERRAIN",
+      "name": "PREDATOR_NAZ",
+      "frames": 31,
+      "pictures": 31,
+      "hdFrames": 31,
+      "cells": 20,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "PREDATOR_PIR",
+      "frames": 31,
+      "pictures": 31,
+      "hdFrames": 31,
+      "cells": 20,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "PYRAMID_DARK",
+      "frames": 20,
+      "pictures": 20,
+      "hdFrames": 20,
+      "cells": 162,
+      "cellShare": 0.003
+    },
+    {
+      "section": "TERRAIN",
+      "name": "QTAXI",
+      "frames": 14,
+      "pictures": 14,
+      "hdFrames": 14,
+      "cells": 10,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "REDDESERT",
+      "frames": 42,
+      "pictures": 42,
+      "hdFrames": 42,
+      "cells": 3137,
+      "cellShare": 0.058
+    },
+    {
+      "section": "TERRAIN",
+      "name": "REDGATE",
+      "frames": 8,
+      "pictures": 8,
+      "hdFrames": 8,
+      "cells": 24,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "RET_BITS",
+      "frames": 23,
+      "pictures": 23,
+      "hdFrames": 23,
+      "cells": 67,
+      "cellShare": 0.001
+    },
+    {
+      "section": "TERRAIN",
+      "name": "RET_LADDERS",
+      "frames": 117,
+      "pictures": 117,
+      "hdFrames": 117,
+      "cells": 4,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "RET_SHIPS",
+      "frames": 117,
+      "pictures": 117,
+      "hdFrames": 117,
+      "cells": 11229,
+      "cellShare": 0.208
+    },
+    {
+      "section": "TERRAIN",
+      "name": "RET_SHIPS_XCOM",
+      "frames": 117,
+      "pictures": 117,
+      "hdFrames": 117,
+      "cells": 416,
+      "cellShare": 0.008
+    },
+    {
+      "section": "TERRAIN",
+      "name": "RET_WALLS",
+      "frames": 93,
+      "pictures": 93,
+      "hdFrames": 93,
+      "cells": 265,
+      "cellShare": 0.005
+    },
+    {
+      "section": "TERRAIN",
+      "name": "RITUALS",
+      "frames": 23,
+      "pictures": 23,
+      "hdFrames": 23,
+      "cells": 186,
+      "cellShare": 0.003
+    },
+    {
+      "section": "TERRAIN",
+      "name": "ROADS",
+      "frames": 23,
+      "pictures": 23,
+      "hdFrames": 23,
+      "cells": 74971,
+      "cellShare": 1.388
+    },
+    {
+      "section": "TERRAIN",
+      "name": "ROADSGREEN",
+      "frames": 22,
+      "pictures": 22,
+      "hdFrames": 22,
+      "cells": 1175,
+      "cellShare": 0.022
+    },
+    {
+      "section": "TERRAIN",
+      "name": "ROADSLUX",
+      "frames": 23,
+      "pictures": 23,
+      "hdFrames": 23,
+      "cells": 15284,
+      "cellShare": 0.283
+    },
+    {
+      "section": "TERRAIN",
+      "name": "ROADS_SNOW",
+      "frames": 19,
+      "pictures": 19,
+      "hdFrames": 19,
+      "cells": 1216,
+      "cellShare": 0.023
+    },
+    {
+      "section": "TERRAIN",
+      "name": "ROADS_WASTE",
+      "frames": 23,
+      "pictures": 23,
+      "hdFrames": 23,
+      "cells": 5365,
+      "cellShare": 0.099
+    },
+    {
+      "section": "TERRAIN",
+      "name": "ROAD_ONLY_WHITE",
+      "frames": 6,
+      "pictures": 6,
+      "hdFrames": 6,
+      "cells": 4661,
+      "cellShare": 0.086
+    },
+    {
+      "section": "TERRAIN",
+      "name": "RUSTSHACKS",
+      "frames": 52,
+      "pictures": 52,
+      "hdFrames": 52,
+      "cells": 1487,
+      "cellShare": 0.028
+    },
+    {
+      "section": "TERRAIN",
+      "name": "RUSTSHACKS2",
+      "frames": 57,
+      "pictures": 57,
+      "hdFrames": 57,
+      "cells": 580,
+      "cellShare": 0.011
+    },
+    {
+      "section": "TERRAIN",
+      "name": "SANDS",
+      "frames": 22,
+      "pictures": 22,
+      "hdFrames": 22,
+      "cells": 178,
+      "cellShare": 0.003
+    },
+    {
+      "section": "TERRAIN",
+      "name": "SAVANNABEACH",
+      "frames": 81,
+      "pictures": 72,
+      "hdFrames": 81,
+      "cells": 190,
+      "cellShare": 0.004
+    },
+    {
+      "section": "TERRAIN",
+      "name": "SEABITS",
+      "frames": 3,
+      "pictures": 2,
+      "hdFrames": 3,
+      "cells": 120,
+      "cellShare": 0.002
+    },
+    {
+      "section": "TERRAIN",
+      "name": "SEACORAL",
+      "frames": 34,
+      "pictures": 34,
+      "hdFrames": 34,
+      "cells": 2845,
+      "cellShare": 0.053
+    },
+    {
+      "section": "TERRAIN",
+      "name": "SEADEBRIS6",
+      "frames": 67,
+      "pictures": 52,
+      "hdFrames": 67,
+      "cells": 486,
+      "cellShare": 0.009
+    },
+    {
+      "section": "TERRAIN",
+      "name": "SEADEBRIS6EXT",
+      "frames": 4,
+      "pictures": 4,
+      "hdFrames": 4,
+      "cells": 6,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "SEAMADDECOR",
+      "frames": 87,
+      "pictures": 85,
+      "hdFrames": 87,
+      "cells": 1414,
+      "cellShare": 0.026
+    },
+    {
+      "section": "TERRAIN",
+      "name": "SEAMSUNK1",
+      "frames": 50,
+      "pictures": 50,
+      "hdFrames": 50,
+      "cells": 704,
+      "cellShare": 0.013
+    },
+    {
+      "section": "TERRAIN",
+      "name": "SEAMSUNK2",
+      "frames": 29,
+      "pictures": 29,
+      "hdFrames": 29,
+      "cells": 194,
+      "cellShare": 0.004
+    },
+    {
+      "section": "TERRAIN",
+      "name": "SEANOM",
+      "frames": 16,
+      "pictures": 10,
+      "hdFrames": 16,
+      "cells": 139,
+      "cellShare": 0.003
+    },
+    {
+      "section": "TERRAIN",
+      "name": "SEAORGANIC1XPZ",
+      "frames": 139,
+      "pictures": 139,
+      "hdFrames": 139,
+      "cells": 17157,
+      "cellShare": 0.318
+    },
+    {
+      "section": "TERRAIN",
+      "name": "SEAORGANIC2XPZ",
+      "frames": 64,
+      "pictures": 60,
+      "hdFrames": 64,
+      "cells": 289,
+      "cellShare": 0.005
+    },
+    {
+      "section": "TERRAIN",
+      "name": "SEAORGANIC3",
+      "frames": 43,
+      "pictures": 43,
+      "hdFrames": 43,
+      "cells": 28,
+      "cellShare": 0.001
+    },
+    {
+      "section": "TERRAIN",
+      "name": "SEAROADSDIO",
+      "frames": 23,
+      "pictures": 14,
+      "hdFrames": 23,
+      "cells": 7715,
+      "cellShare": 0.143
+    },
+    {
+      "section": "TERRAIN",
+      "name": "SEAROCKS",
+      "frames": 17,
+      "pictures": 17,
+      "hdFrames": 17,
+      "cells": 469,
+      "cellShare": 0.009
+    },
+    {
+      "section": "TERRAIN",
+      "name": "SEASAND",
+      "frames": 22,
+      "pictures": 22,
+      "hdFrames": 22,
+      "cells": 4049,
+      "cellShare": 0.075
+    },
+    {
+      "section": "TERRAIN",
+      "name": "SEASAND6",
+      "frames": 22,
+      "pictures": 22,
+      "hdFrames": 22,
+      "cells": 16444,
+      "cellShare": 0.305
+    },
+    {
+      "section": "TERRAIN",
+      "name": "SEASUNK6",
+      "frames": 50,
+      "pictures": 50,
+      "hdFrames": 50,
+      "cells": 466,
+      "cellShare": 0.009
+    },
+    {
+      "section": "TERRAIN",
+      "name": "SEAURBAN",
+      "frames": 144,
+      "pictures": 144,
+      "hdFrames": 144,
+      "cells": 3069,
+      "cellShare": 0.057
+    },
+    {
+      "section": "TERRAIN",
+      "name": "SEAURBANDIO",
+      "frames": 123,
+      "pictures": 123,
+      "hdFrames": 123,
+      "cells": 33872,
+      "cellShare": 0.627
+    },
+    {
+      "section": "TERRAIN",
+      "name": "SEAURBITSSDIO",
+      "frames": 25,
+      "pictures": 25,
+      "hdFrames": 25,
+      "cells": 7802,
+      "cellShare": 0.144
+    },
+    {
+      "section": "TERRAIN",
+      "name": "SEAWEEDS",
+      "frames": 5,
+      "pictures": 5,
+      "hdFrames": 5,
+      "cells": 384,
+      "cellShare": 0.007
+    },
+    {
+      "section": "TERRAIN",
+      "name": "SGR_BASIS",
+      "frames": 18,
+      "pictures": 18,
+      "hdFrames": 18,
+      "cells": 211299,
+      "cellShare": 3.913
+    },
+    {
+      "section": "TERRAIN",
+      "name": "SGR_BOTANICA",
+      "frames": 48,
+      "pictures": 48,
+      "hdFrames": 48,
+      "cells": 788,
+      "cellShare": 0.015
+    },
+    {
+      "section": "TERRAIN",
+      "name": "SGR_CAVE",
+      "frames": 124,
+      "pictures": 124,
+      "hdFrames": 124,
+      "cells": 34452,
+      "cellShare": 0.638
+    },
+    {
+      "section": "TERRAIN",
+      "name": "SGR_CAVE2",
+      "frames": 98,
+      "pictures": 98,
+      "hdFrames": 98,
+      "cells": 1092,
+      "cellShare": 0.02
+    },
+    {
+      "section": "TERRAIN",
+      "name": "SGR_CAVE3",
+      "frames": 76,
+      "pictures": 76,
+      "hdFrames": 76,
+      "cells": 792,
+      "cellShare": 0.015
+    },
+    {
+      "section": "TERRAIN",
+      "name": "SGR_COM",
+      "frames": 77,
+      "pictures": 77,
+      "hdFrames": 77,
+      "cells": 21774,
+      "cellShare": 0.403
+    },
+    {
+      "section": "TERRAIN",
+      "name": "SGR_CORRUPTION",
+      "frames": 114,
+      "pictures": 114,
+      "hdFrames": 114,
+      "cells": 353,
+      "cellShare": 0.007
+    },
+    {
+      "section": "TERRAIN",
+      "name": "SGR_DOORS",
+      "frames": 37,
+      "pictures": 37,
+      "hdFrames": 37,
+      "cells": 52,
+      "cellShare": 0.001
+    },
+    {
+      "section": "TERRAIN",
+      "name": "SGR_ELECTRONICS",
+      "frames": 90,
+      "pictures": 90,
+      "hdFrames": 90,
+      "cells": 2685,
+      "cellShare": 0.05
+    },
+    {
+      "section": "TERRAIN",
+      "name": "SGR_HABITATION",
+      "frames": 104,
+      "pictures": 104,
+      "hdFrames": 104,
+      "cells": 1450,
+      "cellShare": 0.027
+    },
+    {
+      "section": "TERRAIN",
+      "name": "SGR_INT01",
+      "frames": 112,
+      "pictures": 112,
+      "hdFrames": 112,
+      "cells": 5594,
+      "cellShare": 0.104
+    },
+    {
+      "section": "TERRAIN",
+      "name": "SGR_INT02",
+      "frames": 39,
+      "pictures": 38,
+      "hdFrames": 39,
+      "cells": 9042,
+      "cellShare": 0.167
+    },
+    {
+      "section": "TERRAIN",
+      "name": "SGR_INT03",
+      "frames": 88,
+      "pictures": 88,
+      "hdFrames": 88,
+      "cells": 90,
+      "cellShare": 0.002
+    },
+    {
+      "section": "TERRAIN",
+      "name": "SGR_MEDBAY",
+      "frames": 72,
+      "pictures": 72,
+      "hdFrames": 72,
+      "cells": 1308,
+      "cellShare": 0.024
+    },
+    {
+      "section": "TERRAIN",
+      "name": "SGR_REACTORS",
+      "frames": 28,
+      "pictures": 28,
+      "hdFrames": 28,
+      "cells": 347,
+      "cellShare": 0.006
+    },
+    {
+      "section": "TERRAIN",
+      "name": "SGR_SERVICE",
+      "frames": 64,
+      "pictures": 64,
+      "hdFrames": 64,
+      "cells": 30325,
+      "cellShare": 0.562
+    },
+    {
+      "section": "TERRAIN",
+      "name": "SGR_SPECIAL01",
+      "frames": 90,
+      "pictures": 90,
+      "hdFrames": 90,
+      "cells": 7433,
+      "cellShare": 0.138
+    },
+    {
+      "section": "TERRAIN",
+      "name": "SGR_SPECIAL02",
+      "frames": 70,
+      "pictures": 70,
+      "hdFrames": 70,
+      "cells": 355,
+      "cellShare": 0.007
+    },
+    {
+      "section": "TERRAIN",
+      "name": "SGR_SUBWAY",
+      "frames": 70,
+      "pictures": 70,
+      "hdFrames": 70,
+      "cells": 2622,
+      "cellShare": 0.049
+    },
+    {
+      "section": "TERRAIN",
+      "name": "SGR_TRAIN",
+      "frames": 139,
+      "pictures": 139,
+      "hdFrames": 139,
+      "cells": 1036,
+      "cellShare": 0.019
+    },
+    {
+      "section": "TERRAIN",
+      "name": "SGR_TRAIN2",
+      "frames": 129,
+      "pictures": 129,
+      "hdFrames": 129,
+      "cells": 1290,
+      "cellShare": 0.024
+    },
+    {
+      "section": "TERRAIN",
+      "name": "SGR_WALLS",
+      "frames": 31,
+      "pictures": 31,
+      "hdFrames": 31,
+      "cells": 28228,
+      "cellShare": 0.523
+    },
+    {
+      "section": "TERRAIN",
+      "name": "SGR_WALLS_B",
+      "frames": 31,
+      "pictures": 31,
+      "hdFrames": 31,
+      "cells": 8182,
+      "cellShare": 0.152
+    },
+    {
+      "section": "TERRAIN",
+      "name": "SGR_WALLS_GOLD",
+      "frames": 31,
+      "pictures": 31,
+      "hdFrames": 31,
+      "cells": 3092,
+      "cellShare": 0.057
+    },
+    {
+      "section": "TERRAIN",
+      "name": "SGR_WALLS_P",
+      "frames": 31,
+      "pictures": 31,
+      "hdFrames": 31,
+      "cells": 1372,
+      "cellShare": 0.025
+    },
+    {
+      "section": "TERRAIN",
+      "name": "SHOGG_VILLAGE_PODS",
+      "frames": 24,
+      "pictures": 24,
+      "hdFrames": 24,
+      "cells": 217,
+      "cellShare": 0.004
+    },
+    {
+      "section": "TERRAIN",
+      "name": "SHOGG_VILLAGE_WALL02",
+      "frames": 70,
+      "pictures": 68,
+      "hdFrames": 70,
+      "cells": 438,
+      "cellShare": 0.008
+    },
+    {
+      "section": "TERRAIN",
+      "name": "SIBERIABASE",
+      "frames": 105,
+      "pictures": 105,
+      "hdFrames": 105,
+      "cells": 6500,
+      "cellShare": 0.12
+    },
+    {
+      "section": "TERRAIN",
+      "name": "SIETCH",
+      "frames": 80,
+      "pictures": 80,
+      "hdFrames": 80,
+      "cells": 22975,
+      "cellShare": 0.425
+    },
+    {
+      "section": "TERRAIN",
+      "name": "SIETCHDOOM",
+      "frames": 79,
+      "pictures": 72,
+      "hdFrames": 79,
+      "cells": 24664,
+      "cellShare": 0.457
+    },
+    {
+      "section": "TERRAIN",
+      "name": "SIETCH_DARK",
+      "frames": 80,
+      "pictures": 80,
+      "hdFrames": 80,
+      "cells": 70498,
+      "cellShare": 1.306
+    },
+    {
+      "section": "TERRAIN",
+      "name": "SLUM_FURNITURE",
+      "frames": 15,
+      "pictures": 15,
+      "hdFrames": 15,
+      "cells": 885,
+      "cellShare": 0.016
+    },
+    {
+      "section": "TERRAIN",
+      "name": "SPACESTATION_EXTRA",
+      "frames": 109,
+      "pictures": 109,
+      "hdFrames": 109,
+      "cells": 2084,
+      "cellShare": 0.039
+    },
+    {
+      "section": "TERRAIN",
+      "name": "SPACESTATION_INT",
+      "frames": 145,
+      "pictures": 145,
+      "hdFrames": 145,
+      "cells": 3942,
+      "cellShare": 0.073
+    },
+    {
+      "section": "TERRAIN",
+      "name": "SPACEVOID",
+      "frames": 1,
+      "pictures": 1,
+      "hdFrames": 1,
+      "cells": 4200,
+      "cellShare": 0.078
+    },
+    {
+      "section": "TERRAIN",
+      "name": "STATION",
+      "frames": 121,
+      "pictures": 121,
+      "hdFrames": 121,
+      "cells": 1869,
+      "cellShare": 0.035
+    },
+    {
+      "section": "TERRAIN",
+      "name": "STATIONBITS",
+      "frames": 37,
+      "pictures": 37,
+      "hdFrames": 37,
+      "cells": 7850,
+      "cellShare": 0.145
+    },
+    {
+      "section": "TERRAIN",
+      "name": "STATIONDECOR",
+      "frames": 69,
+      "pictures": 65,
+      "hdFrames": 69,
+      "cells": 403,
+      "cellShare": 0.007
+    },
+    {
+      "section": "TERRAIN",
+      "name": "STATIONWALLS",
+      "frames": 55,
+      "pictures": 55,
+      "hdFrames": 55,
+      "cells": 1483,
+      "cellShare": 0.027
+    },
+    {
+      "section": "TERRAIN",
+      "name": "STATUES_NORD",
+      "frames": 20,
+      "pictures": 20,
+      "hdFrames": 20,
+      "cells": 21,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "STORMMOUNT",
+      "frames": 29,
+      "pictures": 29,
+      "hdFrames": 29,
+      "cells": 291,
+      "cellShare": 0.005
+    },
+    {
+      "section": "TERRAIN",
+      "name": "STRYKER",
+      "frames": 25,
+      "pictures": 25,
+      "hdFrames": 25,
+      "cells": 27,
+      "cellShare": 0.001
+    },
+    {
+      "section": "TERRAIN",
+      "name": "SUBBITS",
+      "frames": 8,
+      "pictures": 8,
+      "hdFrames": 8,
+      "cells": 2,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "TABLES",
+      "frames": 37,
+      "pictures": 37,
+      "hdFrames": 37,
+      "cells": 50,
+      "cellShare": 0.001
+    },
+    {
+      "section": "TERRAIN",
+      "name": "TAUROX",
+      "frames": 50,
+      "pictures": 50,
+      "hdFrames": 50,
+      "cells": 118,
+      "cellShare": 0.002
+    },
+    {
+      "section": "TERRAIN",
+      "name": "TAVERN",
+      "frames": 37,
+      "pictures": 37,
+      "hdFrames": 37,
+      "cells": 980,
+      "cellShare": 0.018
+    },
+    {
+      "section": "TERRAIN",
+      "name": "TDPORTAL",
+      "frames": 9,
+      "pictures": 9,
+      "hdFrames": 9,
+      "cells": 1,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "TDPORTAL_BLACK",
+      "frames": 9,
+      "pictures": 9,
+      "hdFrames": 9,
+      "cells": 1,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "TECHFLOOR",
+      "frames": 4,
+      "pictures": 4,
+      "hdFrames": 4,
+      "cells": 42,
+      "cellShare": 0.001
+    },
+    {
+      "section": "TERRAIN",
+      "name": "THULBASES01",
+      "frames": 108,
+      "pictures": 108,
+      "hdFrames": 108,
+      "cells": 7199,
+      "cellShare": 0.133
+    },
+    {
+      "section": "TERRAIN",
+      "name": "THULBASES02",
+      "frames": 103,
+      "pictures": 103,
+      "hdFrames": 103,
+      "cells": 1678,
+      "cellShare": 0.031
+    },
+    {
+      "section": "TERRAIN",
+      "name": "THULBASES03",
+      "frames": 97,
+      "pictures": 90,
+      "hdFrames": 97,
+      "cells": 1746,
+      "cellShare": 0.032
+    },
+    {
+      "section": "TERRAIN",
+      "name": "THULBASES04",
+      "frames": 86,
+      "pictures": 79,
+      "hdFrames": 86,
+      "cells": 86,
+      "cellShare": 0.002
+    },
+    {
+      "section": "TERRAIN",
+      "name": "THULBASES05",
+      "frames": 73,
+      "pictures": 73,
+      "hdFrames": 73,
+      "cells": 928,
+      "cellShare": 0.017
+    },
+    {
+      "section": "TERRAIN",
+      "name": "TOILET",
+      "frames": 30,
+      "pictures": 30,
+      "hdFrames": 30,
+      "cells": 577,
+      "cellShare": 0.011
+    },
+    {
+      "section": "TERRAIN",
+      "name": "TRITON_PURR",
+      "frames": 70,
+      "pictures": 65,
+      "hdFrames": 70,
+      "cells": 120,
+      "cellShare": 0.002
+    },
+    {
+      "section": "TERRAIN",
+      "name": "TRITON_U",
+      "frames": 70,
+      "pictures": 66,
+      "hdFrames": 70,
+      "cells": 110,
+      "cellShare": 0.002
+    },
+    {
+      "section": "TERRAIN",
+      "name": "TUNDRAPLANE",
+      "frames": 22,
+      "pictures": 22,
+      "hdFrames": 22,
+      "cells": 3396,
+      "cellShare": 0.063
+    },
+    {
+      "section": "TERRAIN",
+      "name": "UAC_BASE_V",
+      "frames": 109,
+      "pictures": 107,
+      "hdFrames": 109,
+      "cells": 13484,
+      "cellShare": 0.25
+    },
+    {
+      "section": "TERRAIN",
+      "name": "UAC_BITS",
+      "frames": 8,
+      "pictures": 8,
+      "hdFrames": 8,
+      "cells": 0,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "UAC_DECOR_V",
+      "frames": 135,
+      "pictures": 130,
+      "hdFrames": 135,
+      "cells": 6606,
+      "cellShare": 0.122
+    },
+    {
+      "section": "TERRAIN",
+      "name": "UAC_WALL02_V",
+      "frames": 92,
+      "pictures": 92,
+      "hdFrames": 92,
+      "cells": 8196,
+      "cellShare": 0.152
+    },
+    {
+      "section": "TERRAIN",
+      "name": "UFO1",
+      "frames": 27,
+      "pictures": 27,
+      "hdFrames": 27,
+      "cells": 71,
+      "cellShare": 0.001
+    },
+    {
+      "section": "TERRAIN",
+      "name": "UFOAA_BITS",
+      "frames": 15,
+      "pictures": 15,
+      "hdFrames": 15,
+      "cells": 474,
+      "cellShare": 0.009
+    },
+    {
+      "section": "TERRAIN",
+      "name": "UFOAA_EXT",
+      "frames": 107,
+      "pictures": 107,
+      "hdFrames": 107,
+      "cells": 8970,
+      "cellShare": 0.166
+    },
+    {
+      "section": "TERRAIN",
+      "name": "UFOAA_INT",
+      "frames": 123,
+      "pictures": 123,
+      "hdFrames": 123,
+      "cells": 2944,
+      "cellShare": 0.055
+    },
+    {
+      "section": "TERRAIN",
+      "name": "UFOAA_INT02",
+      "frames": 97,
+      "pictures": 94,
+      "hdFrames": 97,
+      "cells": 804,
+      "cellShare": 0.015
+    },
+    {
+      "section": "TERRAIN",
+      "name": "UFOL83",
+      "frames": 56,
+      "pictures": 52,
+      "hdFrames": 56,
+      "cells": 30,
+      "cellShare": 0.001
+    },
+    {
+      "section": "TERRAIN",
+      "name": "UFOL83DIO_B",
+      "frames": 49,
+      "pictures": 45,
+      "hdFrames": 49,
+      "cells": 329,
+      "cellShare": 0.006
+    },
+    {
+      "section": "TERRAIN",
+      "name": "UFOL83DIO_B2",
+      "frames": 47,
+      "pictures": 45,
+      "hdFrames": 47,
+      "cells": 31,
+      "cellShare": 0.001
+    },
+    {
+      "section": "TERRAIN",
+      "name": "UFOL83_G",
+      "frames": 56,
+      "pictures": 52,
+      "hdFrames": 56,
+      "cells": 140,
+      "cellShare": 0.003
+    },
+    {
+      "section": "TERRAIN",
+      "name": "UFOL83_P",
+      "frames": 56,
+      "pictures": 52,
+      "hdFrames": 56,
+      "cells": 35,
+      "cellShare": 0.001
+    },
+    {
+      "section": "TERRAIN",
+      "name": "UH_1B_HUEY",
+      "frames": 49,
+      "pictures": 49,
+      "hdFrames": 49,
+      "cells": 52,
+      "cellShare": 0.001
+    },
+    {
+      "section": "TERRAIN",
+      "name": "URBAN",
+      "frames": 116,
+      "pictures": 116,
+      "hdFrames": 116,
+      "cells": 77257,
+      "cellShare": 1.431
+    },
+    {
+      "section": "TERRAIN",
+      "name": "URBAN40K",
+      "frames": 117,
+      "pictures": 117,
+      "hdFrames": 117,
+      "cells": 18406,
+      "cellShare": 0.341
+    },
+    {
+      "section": "TERRAIN",
+      "name": "URBAN40K2MOON",
+      "frames": 125,
+      "pictures": 125,
+      "hdFrames": 125,
+      "cells": 16356,
+      "cellShare": 0.303
+    },
+    {
+      "section": "TERRAIN",
+      "name": "URBAN40KN1",
+      "frames": 117,
+      "pictures": 117,
+      "hdFrames": 117,
+      "cells": 9740,
+      "cellShare": 0.18
+    },
+    {
+      "section": "TERRAIN",
+      "name": "URBANLUX",
+      "frames": 116,
+      "pictures": 109,
+      "hdFrames": 116,
+      "cells": 70255,
+      "cellShare": 1.301
+    },
+    {
+      "section": "TERRAIN",
+      "name": "URBANWAR",
+      "frames": 116,
+      "pictures": 116,
+      "hdFrames": 116,
+      "cells": 101616,
+      "cellShare": 1.882
+    },
+    {
+      "section": "TERRAIN",
+      "name": "URBAN_GOODS",
+      "frames": 116,
+      "pictures": 116,
+      "hdFrames": 116,
+      "cells": 51,
+      "cellShare": 0.001
+    },
+    {
+      "section": "TERRAIN",
+      "name": "URBAN_WASTE",
+      "frames": 116,
+      "pictures": 116,
+      "hdFrames": 116,
+      "cells": 19777,
+      "cellShare": 0.366
+    },
+    {
+      "section": "TERRAIN",
+      "name": "URBAN_WASTE_WALLS",
+      "frames": 81,
+      "pictures": 81,
+      "hdFrames": 81,
+      "cells": 318,
+      "cellShare": 0.006
+    },
+    {
+      "section": "TERRAIN",
+      "name": "URBITS",
+      "frames": 25,
+      "pictures": 25,
+      "hdFrames": 25,
+      "cells": 51573,
+      "cellShare": 0.955
+    },
+    {
+      "section": "TERRAIN",
+      "name": "URBITS40K",
+      "frames": 25,
+      "pictures": 25,
+      "hdFrames": 25,
+      "cells": 271,
+      "cellShare": 0.005
+    },
+    {
+      "section": "TERRAIN",
+      "name": "URBITSLUX",
+      "frames": 25,
+      "pictures": 25,
+      "hdFrames": 25,
+      "cells": 11947,
+      "cellShare": 0.221
+    },
+    {
+      "section": "TERRAIN",
+      "name": "URBITS_INDUSLUM",
+      "frames": 28,
+      "pictures": 28,
+      "hdFrames": 28,
+      "cells": 16559,
+      "cellShare": 0.307
+    },
+    {
+      "section": "TERRAIN",
+      "name": "URBITS_JUNK",
+      "frames": 25,
+      "pictures": 25,
+      "hdFrames": 25,
+      "cells": 29931,
+      "cellShare": 0.554
+    },
+    {
+      "section": "TERRAIN",
+      "name": "URBITS_WASTE",
+      "frames": 25,
+      "pictures": 25,
+      "hdFrames": 25,
+      "cells": 10944,
+      "cellShare": 0.203
+    },
+    {
+      "section": "TERRAIN",
+      "name": "USOBITS",
+      "frames": 12,
+      "pictures": 12,
+      "hdFrames": 12,
+      "cells": 151,
+      "cellShare": 0.003
+    },
+    {
+      "section": "TERRAIN",
+      "name": "USOENTRY",
+      "frames": 80,
+      "pictures": 70,
+      "hdFrames": 80,
+      "cells": 117,
+      "cellShare": 0.002
+    },
+    {
+      "section": "TERRAIN",
+      "name": "USOEXT2",
+      "frames": 66,
+      "pictures": 60,
+      "hdFrames": 66,
+      "cells": 170,
+      "cellShare": 0.003
+    },
+    {
+      "section": "TERRAIN",
+      "name": "USOEXT2BROKEN",
+      "frames": 66,
+      "pictures": 60,
+      "hdFrames": 66,
+      "cells": 15,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "USOEXT3",
+      "frames": 25,
+      "pictures": 25,
+      "hdFrames": 25,
+      "cells": 6172,
+      "cellShare": 0.114
+    },
+    {
+      "section": "TERRAIN",
+      "name": "USOINT1",
+      "frames": 46,
+      "pictures": 42,
+      "hdFrames": 46,
+      "cells": 2970,
+      "cellShare": 0.055
+    },
+    {
+      "section": "TERRAIN",
+      "name": "USOINT2",
+      "frames": 44,
+      "pictures": 44,
+      "hdFrames": 44,
+      "cells": 76,
+      "cellShare": 0.001
+    },
+    {
+      "section": "TERRAIN",
+      "name": "USOINT3",
+      "frames": 33,
+      "pictures": 33,
+      "hdFrames": 33,
+      "cells": 787,
+      "cellShare": 0.015
+    },
+    {
+      "section": "TERRAIN",
+      "name": "U_BASE",
+      "frames": 71,
+      "pictures": 71,
+      "hdFrames": 71,
+      "cells": 127196,
+      "cellShare": 2.356
+    },
+    {
+      "section": "TERRAIN",
+      "name": "U_BASE2",
+      "frames": 23,
+      "pictures": 21,
+      "hdFrames": 23,
+      "cells": 152,
+      "cellShare": 0.003
+    },
+    {
+      "section": "TERRAIN",
+      "name": "U_BASE2GOLD",
+      "frames": 20,
+      "pictures": 18,
+      "hdFrames": 20,
+      "cells": 38,
+      "cellShare": 0.001
+    },
+    {
+      "section": "TERRAIN",
+      "name": "U_BASE2_VR",
+      "frames": 23,
+      "pictures": 23,
+      "hdFrames": 23,
+      "cells": 38,
+      "cellShare": 0.001
+    },
+    {
+      "section": "TERRAIN",
+      "name": "U_BASECHURCH",
+      "frames": 70,
+      "pictures": 70,
+      "hdFrames": 70,
+      "cells": 63598,
+      "cellShare": 1.178
+    },
+    {
+      "section": "TERRAIN",
+      "name": "U_BASEGOLD",
+      "frames": 71,
+      "pictures": 71,
+      "hdFrames": 71,
+      "cells": 0,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "U_BASE_B",
+      "frames": 71,
+      "pictures": 71,
+      "hdFrames": 71,
+      "cells": 63598,
+      "cellShare": 1.178
+    },
+    {
+      "section": "TERRAIN",
+      "name": "U_BASE_RET",
+      "frames": 71,
+      "pictures": 71,
+      "hdFrames": 71,
+      "cells": 3437,
+      "cellShare": 0.064
+    },
+    {
+      "section": "TERRAIN",
+      "name": "U_BASE_VR",
+      "frames": 11,
+      "pictures": 11,
+      "hdFrames": 11,
+      "cells": 63598,
+      "cellShare": 1.178
+    },
+    {
+      "section": "TERRAIN",
+      "name": "U_BITS",
+      "frames": 8,
+      "pictures": 8,
+      "hdFrames": 8,
+      "cells": 722,
+      "cellShare": 0.013
+    },
+    {
+      "section": "TERRAIN",
+      "name": "U_BITSGOLD",
+      "frames": 8,
+      "pictures": 8,
+      "hdFrames": 8,
+      "cells": 91,
+      "cellShare": 0.002
+    },
+    {
+      "section": "TERRAIN",
+      "name": "U_BITSN",
+      "frames": 12,
+      "pictures": 12,
+      "hdFrames": 12,
+      "cells": 0,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "U_BITS_B",
+      "frames": 8,
+      "pictures": 8,
+      "hdFrames": 8,
+      "cells": 242,
+      "cellShare": 0.004
+    },
+    {
+      "section": "TERRAIN",
+      "name": "U_BITS_G",
+      "frames": 8,
+      "pictures": 8,
+      "hdFrames": 8,
+      "cells": 1329,
+      "cellShare": 0.025
+    },
+    {
+      "section": "TERRAIN",
+      "name": "U_BITS_P",
+      "frames": 8,
+      "pictures": 8,
+      "hdFrames": 8,
+      "cells": 56,
+      "cellShare": 0.001
+    },
+    {
+      "section": "TERRAIN",
+      "name": "U_BITS_VR",
+      "frames": 8,
+      "pictures": 8,
+      "hdFrames": 8,
+      "cells": 229,
+      "cellShare": 0.004
+    },
+    {
+      "section": "TERRAIN",
+      "name": "U_DISEC2",
+      "frames": 22,
+      "pictures": 22,
+      "hdFrames": 22,
+      "cells": 154,
+      "cellShare": 0.003
+    },
+    {
+      "section": "TERRAIN",
+      "name": "U_DISEC2GOLD",
+      "frames": 22,
+      "pictures": 22,
+      "hdFrames": 22,
+      "cells": 20,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "U_DISEC3GOLD",
+      "frames": 48,
+      "pictures": 40,
+      "hdFrames": 48,
+      "cells": 0,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "U_EXT",
+      "frames": 101,
+      "pictures": 100,
+      "hdFrames": 101,
+      "cells": 0,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "U_EXT02",
+      "frames": 40,
+      "pictures": 40,
+      "hdFrames": 40,
+      "cells": 11679,
+      "cellShare": 0.216
+    },
+    {
+      "section": "TERRAIN",
+      "name": "U_EXT02GOLD",
+      "frames": 40,
+      "pictures": 40,
+      "hdFrames": 40,
+      "cells": 1082,
+      "cellShare": 0.02
+    },
+    {
+      "section": "TERRAIN",
+      "name": "U_EXT02_VR",
+      "frames": 40,
+      "pictures": 40,
+      "hdFrames": 40,
+      "cells": 3280,
+      "cellShare": 0.061
+    },
+    {
+      "section": "TERRAIN",
+      "name": "U_EXT_B",
+      "frames": 40,
+      "pictures": 40,
+      "hdFrames": 40,
+      "cells": 10419,
+      "cellShare": 0.193
+    },
+    {
+      "section": "TERRAIN",
+      "name": "U_EXT_G",
+      "frames": 40,
+      "pictures": 40,
+      "hdFrames": 40,
+      "cells": 24686,
+      "cellShare": 0.457
+    },
+    {
+      "section": "TERRAIN",
+      "name": "U_EXT_P",
+      "frames": 40,
+      "pictures": 40,
+      "hdFrames": 40,
+      "cells": 770,
+      "cellShare": 0.014
+    },
+    {
+      "section": "TERRAIN",
+      "name": "U_EXT_ROOF",
+      "frames": 101,
+      "pictures": 100,
+      "hdFrames": 101,
+      "cells": 0,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "U_FLOOR",
+      "frames": 18,
+      "pictures": 18,
+      "hdFrames": 18,
+      "cells": 5,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "U_FLOORGOLD",
+      "frames": 18,
+      "pictures": 18,
+      "hdFrames": 18,
+      "cells": 1,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "U_FRN",
+      "frames": 87,
+      "pictures": 86,
+      "hdFrames": 87,
+      "cells": 275,
+      "cellShare": 0.005
+    },
+    {
+      "section": "TERRAIN",
+      "name": "U_FRNCHURCH",
+      "frames": 87,
+      "pictures": 86,
+      "hdFrames": 87,
+      "cells": 55,
+      "cellShare": 0.001
+    },
+    {
+      "section": "TERRAIN",
+      "name": "U_OPER2",
+      "frames": 15,
+      "pictures": 15,
+      "hdFrames": 15,
+      "cells": 13,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "U_OPER_G",
+      "frames": 15,
+      "pictures": 15,
+      "hdFrames": 15,
+      "cells": 87,
+      "cellShare": 0.002
+    },
+    {
+      "section": "TERRAIN",
+      "name": "U_PLANET_VOID",
+      "frames": 72,
+      "pictures": 72,
+      "hdFrames": 72,
+      "cells": 11401,
+      "cellShare": 0.211
+    },
+    {
+      "section": "TERRAIN",
+      "name": "U_PODS",
+      "frames": 27,
+      "pictures": 27,
+      "hdFrames": 27,
+      "cells": 986,
+      "cellShare": 0.018
+    },
+    {
+      "section": "TERRAIN",
+      "name": "U_PODSCHURCH",
+      "frames": 26,
+      "pictures": 26,
+      "hdFrames": 26,
+      "cells": 848,
+      "cellShare": 0.016
+    },
+    {
+      "section": "TERRAIN",
+      "name": "U_PODSGOLD",
+      "frames": 27,
+      "pictures": 27,
+      "hdFrames": 27,
+      "cells": 0,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "U_PODS_B",
+      "frames": 27,
+      "pictures": 27,
+      "hdFrames": 27,
+      "cells": 944,
+      "cellShare": 0.017
+    },
+    {
+      "section": "TERRAIN",
+      "name": "U_PODS_G",
+      "frames": 27,
+      "pictures": 27,
+      "hdFrames": 27,
+      "cells": 1116,
+      "cellShare": 0.021
+    },
+    {
+      "section": "TERRAIN",
+      "name": "U_PODS_VR",
+      "frames": 27,
+      "pictures": 27,
+      "hdFrames": 27,
+      "cells": 897,
+      "cellShare": 0.017
+    },
+    {
+      "section": "TERRAIN",
+      "name": "U_WALL",
+      "frames": 84,
+      "pictures": 84,
+      "hdFrames": 84,
+      "cells": 0,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "U_WALL02",
+      "frames": 66,
+      "pictures": 66,
+      "hdFrames": 66,
+      "cells": 28873,
+      "cellShare": 0.535
+    },
+    {
+      "section": "TERRAIN",
+      "name": "U_WALL02GOLD",
+      "frames": 72,
+      "pictures": 72,
+      "hdFrames": 72,
+      "cells": 0,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "U_WALL02_VR",
+      "frames": 66,
+      "pictures": 66,
+      "hdFrames": 66,
+      "cells": 26883,
+      "cellShare": 0.498
+    },
+    {
+      "section": "TERRAIN",
+      "name": "U_WALLCHURCH",
+      "frames": 72,
+      "pictures": 72,
+      "hdFrames": 72,
+      "cells": 26090,
+      "cellShare": 0.483
+    },
+    {
+      "section": "TERRAIN",
+      "name": "U_WALLGUILD",
+      "frames": 66,
+      "pictures": 66,
+      "hdFrames": 66,
+      "cells": 25878,
+      "cellShare": 0.479
+    },
+    {
+      "section": "TERRAIN",
+      "name": "U_WALL_B",
+      "frames": 66,
+      "pictures": 66,
+      "hdFrames": 66,
+      "cells": 2515,
+      "cellShare": 0.047
+    },
+    {
+      "section": "TERRAIN",
+      "name": "U_WALL_G",
+      "frames": 66,
+      "pictures": 66,
+      "hdFrames": 66,
+      "cells": 31951,
+      "cellShare": 0.592
+    },
+    {
+      "section": "TERRAIN",
+      "name": "U_WALL_G_X",
+      "frames": 66,
+      "pictures": 66,
+      "hdFrames": 66,
+      "cells": 192,
+      "cellShare": 0.004
+    },
+    {
+      "section": "TERRAIN",
+      "name": "U_WALL_P",
+      "frames": 66,
+      "pictures": 66,
+      "hdFrames": 66,
+      "cells": 175,
+      "cellShare": 0.003
+    },
+    {
+      "section": "TERRAIN",
+      "name": "VILBAN",
+      "frames": 116,
+      "pictures": 116,
+      "hdFrames": 116,
+      "cells": 12659,
+      "cellShare": 0.234
+    },
+    {
+      "section": "TERRAIN",
+      "name": "VILBITS",
+      "frames": 25,
+      "pictures": 25,
+      "hdFrames": 25,
+      "cells": 19558,
+      "cellShare": 0.362
+    },
+    {
+      "section": "TERRAIN",
+      "name": "VILFRNITURE",
+      "frames": 109,
+      "pictures": 109,
+      "hdFrames": 109,
+      "cells": 6847,
+      "cellShare": 0.127
+    },
+    {
+      "section": "TERRAIN",
+      "name": "VILROADS",
+      "frames": 22,
+      "pictures": 22,
+      "hdFrames": 22,
+      "cells": 11874,
+      "cellShare": 0.22
+    },
+    {
+      "section": "TERRAIN",
+      "name": "WALL_DECO",
+      "frames": 13,
+      "pictures": 13,
+      "hdFrames": 13,
+      "cells": 125,
+      "cellShare": 0.002
+    },
+    {
+      "section": "TERRAIN",
+      "name": "WALL_DECO_CUT",
+      "frames": 10,
+      "pictures": 10,
+      "hdFrames": 10,
+      "cells": 12,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "WAREAN_TEC",
+      "frames": 52,
+      "pictures": 52,
+      "hdFrames": 52,
+      "cells": 7504,
+      "cellShare": 0.139
+    },
+    {
+      "section": "TERRAIN",
+      "name": "WAREBITS",
+      "frames": 31,
+      "pictures": 31,
+      "hdFrames": 31,
+      "cells": 608,
+      "cellShare": 0.011
+    },
+    {
+      "section": "TERRAIN",
+      "name": "WESTFLOOR",
+      "frames": 15,
+      "pictures": 15,
+      "hdFrames": 15,
+      "cells": 21512,
+      "cellShare": 0.398
+    },
+    {
+      "section": "TERRAIN",
+      "name": "WHITEBASES01",
+      "frames": 111,
+      "pictures": 110,
+      "hdFrames": 111,
+      "cells": 5426,
+      "cellShare": 0.1
+    },
+    {
+      "section": "TERRAIN",
+      "name": "WHITEBASES02",
+      "frames": 92,
+      "pictures": 92,
+      "hdFrames": 92,
+      "cells": 6544,
+      "cellShare": 0.121
+    },
+    {
+      "section": "TERRAIN",
+      "name": "WHITEBASES03",
+      "frames": 98,
+      "pictures": 91,
+      "hdFrames": 98,
+      "cells": 3350,
+      "cellShare": 0.062
+    },
+    {
+      "section": "TERRAIN",
+      "name": "WHITEBASES04",
+      "frames": 86,
+      "pictures": 79,
+      "hdFrames": 86,
+      "cells": 234,
+      "cellShare": 0.004
+    },
+    {
+      "section": "TERRAIN",
+      "name": "WHITEBASES05",
+      "frames": 73,
+      "pictures": 73,
+      "hdFrames": 73,
+      "cells": 784,
+      "cellShare": 0.015
+    },
+    {
+      "section": "TERRAIN",
+      "name": "WHITEBITS",
+      "frames": 46,
+      "pictures": 45,
+      "hdFrames": 46,
+      "cells": 0,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "WHITECASTLE",
+      "frames": 80,
+      "pictures": 79,
+      "hdFrames": 80,
+      "cells": 14637,
+      "cellShare": 0.271
+    },
+    {
+      "section": "TERRAIN",
+      "name": "XARMY",
+      "frames": 83,
+      "pictures": 75,
+      "hdFrames": 83,
+      "cells": 254,
+      "cellShare": 0.005
+    },
+    {
+      "section": "TERRAIN",
+      "name": "XB1BR",
+      "frames": 119,
+      "pictures": 119,
+      "hdFrames": 119,
+      "cells": 92725,
+      "cellShare": 1.717
+    },
+    {
+      "section": "TERRAIN",
+      "name": "XB2BR",
+      "frames": 114,
+      "pictures": 114,
+      "hdFrames": 114,
+      "cells": 18291,
+      "cellShare": 0.339
+    },
+    {
+      "section": "TERRAIN",
+      "name": "XB3BITZ1",
+      "frames": 29,
+      "pictures": 29,
+      "hdFrames": 29,
+      "cells": 3697,
+      "cellShare": 0.068
+    },
+    {
+      "section": "TERRAIN",
+      "name": "XB3BITZ1_MAG",
+      "frames": 29,
+      "pictures": 29,
+      "hdFrames": 29,
+      "cells": 240,
+      "cellShare": 0.004
+    },
+    {
+      "section": "TERRAIN",
+      "name": "XB3BITZ2",
+      "frames": 58,
+      "pictures": 58,
+      "hdFrames": 58,
+      "cells": 2735,
+      "cellShare": 0.051
+    },
+    {
+      "section": "TERRAIN",
+      "name": "XB3BITZ3",
+      "frames": 35,
+      "pictures": 35,
+      "hdFrames": 35,
+      "cells": 23504,
+      "cellShare": 0.435
+    },
+    {
+      "section": "TERRAIN",
+      "name": "XBASE1",
+      "frames": 105,
+      "pictures": 105,
+      "hdFrames": 105,
+      "cells": 1102,
+      "cellShare": 0.02
+    },
+    {
+      "section": "TERRAIN",
+      "name": "XBASE1_AMB",
+      "frames": 105,
+      "pictures": 105,
+      "hdFrames": 105,
+      "cells": 93,
+      "cellShare": 0.002
+    },
+    {
+      "section": "TERRAIN",
+      "name": "XBASE1_NTR",
+      "frames": 105,
+      "pictures": 105,
+      "hdFrames": 105,
+      "cells": 720,
+      "cellShare": 0.013
+    },
+    {
+      "section": "TERRAIN",
+      "name": "XBASE2",
+      "frames": 63,
+      "pictures": 63,
+      "hdFrames": 63,
+      "cells": 139,
+      "cellShare": 0.003
+    },
+    {
+      "section": "TERRAIN",
+      "name": "XBASEN_BEDS",
+      "frames": 16,
+      "pictures": 16,
+      "hdFrames": 16,
+      "cells": 1709,
+      "cellShare": 0.032
+    },
+    {
+      "section": "TERRAIN",
+      "name": "XBASEN_BITS",
+      "frames": 51,
+      "pictures": 51,
+      "hdFrames": 51,
+      "cells": 1429,
+      "cellShare": 0.026
+    },
+    {
+      "section": "TERRAIN",
+      "name": "XBITSUFO",
+      "frames": 46,
+      "pictures": 46,
+      "hdFrames": 46,
+      "cells": 524,
+      "cellShare": 0.01
+    },
+    {
+      "section": "TERRAIN",
+      "name": "XBR1NEUTRAL",
+      "frames": 83,
+      "pictures": 83,
+      "hdFrames": 83,
+      "cells": 100,
+      "cellShare": 0.002
+    },
+    {
+      "section": "TERRAIN",
+      "name": "XCARS_BLACK",
+      "frames": 34,
+      "pictures": 34,
+      "hdFrames": 34,
+      "cells": 8,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "XCARS_BLACK_CUT",
+      "frames": 34,
+      "pictures": 34,
+      "hdFrames": 34,
+      "cells": 156,
+      "cellShare": 0.003
+    },
+    {
+      "section": "TERRAIN",
+      "name": "XCOMENTRY",
+      "frames": 3,
+      "pictures": 3,
+      "hdFrames": 3,
+      "cells": 1667,
+      "cellShare": 0.031
+    },
+    {
+      "section": "TERRAIN",
+      "name": "XCOMEXIT",
+      "frames": 3,
+      "pictures": 3,
+      "hdFrames": 3,
+      "cells": 1778,
+      "cellShare": 0.033
+    },
+    {
+      "section": "TERRAIN",
+      "name": "XOPSDESERT",
+      "frames": 96,
+      "pictures": 96,
+      "hdFrames": 96,
+      "cells": 23514,
+      "cellShare": 0.435
+    },
+    {
+      "section": "TERRAIN",
+      "name": "XOPSDESERTRED",
+      "frames": 46,
+      "pictures": 46,
+      "hdFrames": 46,
+      "cells": 8919,
+      "cellShare": 0.165
+    },
+    {
+      "section": "TERRAIN",
+      "name": "XOPSDESERTRUINS",
+      "frames": 50,
+      "pictures": 50,
+      "hdFrames": 50,
+      "cells": 2747,
+      "cellShare": 0.051
+    },
+    {
+      "section": "TERRAIN",
+      "name": "XOPSMUJUNGLEADDON",
+      "frames": 24,
+      "pictures": 24,
+      "hdFrames": 24,
+      "cells": 1416,
+      "cellShare": 0.026
+    },
+    {
+      "section": "TERRAIN",
+      "name": "XOPSMUJUNGLEADDONDARK",
+      "frames": 24,
+      "pictures": 24,
+      "hdFrames": 24,
+      "cells": 574,
+      "cellShare": 0.011
+    },
+    {
+      "section": "TERRAIN",
+      "name": "XOPSMUJUNGLEADDONSIETCH",
+      "frames": 24,
+      "pictures": 24,
+      "hdFrames": 24,
+      "cells": 397,
+      "cellShare": 0.007
+    },
+    {
+      "section": "TERRAIN",
+      "name": "XOPSTRANSPORT2",
+      "frames": 115,
+      "pictures": 111,
+      "hdFrames": 115,
+      "cells": 343,
+      "cellShare": 0.006
+    },
+    {
+      "section": "TERRAIN",
+      "name": "XOPSTRANSPORT2_RED",
+      "frames": 115,
+      "pictures": 111,
+      "hdFrames": 115,
+      "cells": 35,
+      "cellShare": 0.001
+    },
+    {
+      "section": "TERRAIN",
+      "name": "XOPSTRANSPORT3",
+      "frames": 89,
+      "pictures": 89,
+      "hdFrames": 89,
+      "cells": 2,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "XOPSUFOEXT",
+      "frames": 103,
+      "pictures": 103,
+      "hdFrames": 103,
+      "cells": 2354,
+      "cellShare": 0.044
+    },
+    {
+      "section": "TERRAIN",
+      "name": "XOPSUFOFLOOR",
+      "frames": 89,
+      "pictures": 89,
+      "hdFrames": 89,
+      "cells": 126,
+      "cellShare": 0.002
+    },
+    {
+      "section": "TERRAIN",
+      "name": "XOPSUFOITEMS1",
+      "frames": 51,
+      "pictures": 51,
+      "hdFrames": 51,
+      "cells": 279,
+      "cellShare": 0.005
+    },
+    {
+      "section": "TERRAIN",
+      "name": "XOPSUFOITEMS2",
+      "frames": 137,
+      "pictures": 136,
+      "hdFrames": 137,
+      "cells": 7,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "XOPSUFOITEMS2SM",
+      "frames": 137,
+      "pictures": 136,
+      "hdFrames": 137,
+      "cells": 71,
+      "cellShare": 0.001
+    },
+    {
+      "section": "TERRAIN",
+      "name": "XOPSUFOSMFLOOR",
+      "frames": 89,
+      "pictures": 89,
+      "hdFrames": 89,
+      "cells": 19733,
+      "cellShare": 0.365
+    },
+    {
+      "section": "TERRAIN",
+      "name": "XOPSUFOSUPPLYALT",
+      "frames": 36,
+      "pictures": 36,
+      "hdFrames": 36,
+      "cells": 275,
+      "cellShare": 0.005
+    },
+    {
+      "section": "TERRAIN",
+      "name": "XOPSUFOWALLS",
+      "frames": 85,
+      "pictures": 84,
+      "hdFrames": 85,
+      "cells": 21,
+      "cellShare": 0.0
+    },
+    {
+      "section": "TERRAIN",
+      "name": "XOPSUFOWALLSSM",
+      "frames": 85,
+      "pictures": 84,
+      "hdFrames": 85,
+      "cells": 7044,
+      "cellShare": 0.13
+    },
+    {
+      "section": "UFOGRAPH",
+      "name": "HIT",
+      "frames": 4,
+      "pictures": 4,
+      "hdFrames": 4,
+      "cells": 0,
+      "cellShare": 0.0
+    },
+    {
+      "section": "UFOGRAPH",
+      "name": "SMOKE",
+      "frames": 56,
+      "pictures": 56,
+      "hdFrames": 50,
+      "cells": 0,
+      "cellShare": 0.0
+    },
+    {
+      "section": "UFOGRAPH",
+      "name": "X1",
+      "frames": 8,
+      "pictures": 8,
+      "hdFrames": 8,
+      "cells": 0,
+      "cellShare": 0.0
+    }
+  ]
+}

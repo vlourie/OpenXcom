@@ -28,6 +28,9 @@ public sealed class ReviewPage : UserControl
     /// </summary>
     const int BoxW = 544, BoxH = 448;
 
+    /// <summary>A send is a few hundred kilobytes of text: one client, one minute, no ceremony.</summary>
+    static readonly HttpClient Http = new() { Timeout = TimeSpan.FromMinutes(1) };
+
     readonly Settings _settings;
     readonly Func<string?> _gameDir;
 
@@ -424,12 +427,34 @@ public sealed class ReviewPage : UserControl
     }
 
     /// <summary>
-    /// Until an account is linked to the launcher there is nowhere to send this: the file is saved,
-    /// and it is already the body of the request the site will take.
+    /// The marks go to the site under the launcher's own key. Without a linked account there is
+    /// nowhere to send them, and the file is saved instead — it is already the body of the request.
+    /// Marks are never dropped after sending: a send that the site did not take must not cost an
+    /// evening of work, and a repeat carries the same key, so nothing is counted twice.
     /// </summary>
     async Task SendAsync()
     {
         Commit();
+        var envelope = ReviewStore.Envelope(ReviewStore.All());
+        if (envelope.Packs.Count == 0) { _status.Text = L.T("review.nothing"); return; }
+
+        if (Account() is { } account && Portal() is { } portal)
+        {
+            _send.IsEnabled = false;
+            _status.Text = L.T("review.sending");
+            try
+            {
+                var taken = await new PortalClient(Http, portal).SendReviewAsync(envelope, account.Token, SendKey(envelope), CancellationToken.None);
+                _status.Text = L.T("review.sent", taken.Packs, taken.Frames);
+            }
+            catch (Exception e) when (e is PortalException or HttpRequestException or TaskCanceledException)
+            {
+                _status.Text = L.T("review.sendFailed", e.Message);
+            }
+            finally { _send.IsEnabled = true; }
+            return;
+        }
+
         if (TopLevel.GetTopLevel(this) is not { } top) return;
         var file = await top.StorageProvider.SaveFilePickerAsync(new FilePickerSaveOptions
         {
@@ -441,13 +466,32 @@ public sealed class ReviewPage : UserControl
         try
         {
             await using var stream = await file.OpenWriteAsync();
-            await stream.WriteAsync(ReviewStore.Serialize(ReviewStore.Envelope(ReviewStore.All())));
+            await stream.WriteAsync(ReviewStore.Serialize(envelope));
             _status.Text = L.T("review.saved", file.Name);
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {
             _status.Text = L.T("err.generic", e.Message);
         }
+    }
+
+    DeviceAccount? Account() => new DeviceStore(Path.Combine(Settings.Dir, "device.json")).Load();
+
+    Uri? Portal()
+    {
+        var url = _settings.PortalUrl ?? BuiltIn.Defaults.PortalUrl;
+        return Uri.TryCreate(url, UriKind.Absolute, out var uri) ? uri : null;
+    }
+
+    /// <summary>
+    /// The key of this send: the marks themselves, not the clock. Pressing "send" twice on the same
+    /// marks is one send; a mark changed in between makes it a different one.
+    /// </summary>
+    static string SendKey(VerdictFile envelope)
+    {
+        var bytes = System.Text.Encoding.UTF8.GetBytes(string.Join('\n', envelope.Packs.Select(p =>
+            $"{p.Section}/{p.Set}/{p.ModVersion}/" + string.Join(',', p.Frames.Select(f => $"{f.Frame}:{f.Hd}:{f.Verdict}:{string.Join('+', f.Reasons)}:{f.Note}")))));
+        return Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(bytes))[..32].ToLowerInvariant();
     }
 
     /// <summary>

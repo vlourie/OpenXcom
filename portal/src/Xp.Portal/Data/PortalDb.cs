@@ -26,6 +26,9 @@ public sealed class PortalDb(DbContextOptions<PortalDb> options)
     public DbSet<ForumSectionText> ForumSectionTexts => Set<ForumSectionText>();
     public DbSet<ForumTopic> ForumTopics => Set<ForumTopic>();
     public DbSet<ForumPost> ForumPosts => Set<ForumPost>();
+    public DbSet<PackReview> PackReviews => Set<PackReview>();
+    public DbSet<PackReviewFrame> PackReviewFrames => Set<PackReviewFrame>();
+    public DbSet<ArtPack> ArtPacks => Set<ArtPack>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -33,6 +36,7 @@ public sealed class PortalDb(DbContextOptions<PortalDb> options)
         b.HasSequence<long>("ticket_numbers").StartsAt(1);
         b.HasSequence<long>("forum_topic_numbers").StartsAt(1);
         Community(b);
+        Art(b);
 
         b.Entity<PortalUser>(e =>
         {
@@ -147,6 +151,42 @@ public sealed class PortalDb(DbContextOptions<PortalDb> options)
             e.HasIndex(c => c.ExpiresAt);
             e.Property(c => c.Code).HasMaxLength(DeviceLimits.CodeMax);
             e.Property(c => c.Name).HasMaxLength(DeviceLimits.NameMax);
+        });
+    }
+
+    /// <summary>The art review: what there is to check, and what people said about it.</summary>
+    static void Art(ModelBuilder b)
+    {
+        b.Entity<PackReview>(e =>
+        {
+            // the roadmap asks one question above all: who looked at this set
+            e.HasIndex(r => new { r.Section, r.SetName });
+            e.HasIndex(r => new { r.UserId, r.Section, r.SetName });
+            e.HasIndex(r => r.IdempotencyKey);
+            e.Property(r => r.Section).HasMaxLength(ReviewLimits.SectionMax);
+            e.Property(r => r.SetName).HasMaxLength(ReviewLimits.SetMax);
+            e.Property(r => r.ModVersion).HasMaxLength(ReviewLimits.VersionMax);
+            e.Property(r => r.Tool).HasMaxLength(ReviewLimits.ToolMax);
+            e.Property(r => r.IdempotencyKey).HasMaxLength(64);
+            e.Property(r => r.RevokedReason).HasMaxLength(256);
+            e.HasOne(r => r.User).WithMany().HasForeignKey(r => r.UserId).OnDelete(DeleteBehavior.Cascade);
+            e.HasMany(r => r.Frames).WithOne(f => f.Review!).HasForeignKey(f => f.ReviewId).OnDelete(DeleteBehavior.Cascade);
+        });
+        b.Entity<PackReviewFrame>(e =>
+        {
+            // the repaint queue groups by the picture, not by the frame number
+            e.HasIndex(f => f.Hd);
+            e.HasIndex(f => f.Orig);
+            e.Property(f => f.Orig).HasMaxLength(ReviewLimits.HashMax);
+            e.Property(f => f.Hd).HasMaxLength(ReviewLimits.HashMax);
+            e.Property(f => f.Verdict).HasMaxLength(ReviewLimits.VerdictMax);
+            e.Property(f => f.Note).HasMaxLength(ReviewLimits.NoteMax);
+        });
+        b.Entity<ArtPack>(e =>
+        {
+            e.HasIndex(p => new { p.Section, p.Name }).IsUnique();
+            e.Property(p => p.Section).HasMaxLength(ReviewLimits.SectionMax);
+            e.Property(p => p.Name).HasMaxLength(ReviewLimits.SetMax);
         });
     }
 

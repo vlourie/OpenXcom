@@ -15,12 +15,13 @@ using Xp.Portal.Data;
 using Xp.Portal.Devices;
 using Xp.Portal.Files;
 using Xp.Portal.Notifications;
+using Xp.Portal.Review;
 using Xp.Portal.Site;
 using Xp.Portal.Tickets;
 
 // a word the command line knows means the command line, not the web server: an unknown word starting
 // the site by mistake is how a typo in a deployment script turns into a container that never exits
-if (args.Length > 0 && args[0] is "admin" or "migrate" or "seed" or "wiki")
+if (args.Length > 0 && args[0] is "admin" or "migrate" or "seed" or "packs" or "wiki")
     return await PortalCli.RunAsync(args);
 
 var app = PortalApp.Build(args);
@@ -145,6 +146,8 @@ public static class PortalApp
         s.AddSingleton<Text>();
         s.AddSingleton<Art>();
         s.AddSingleton<Markup>();
+        s.AddScoped<Roadmap>();
+        s.AddScoped<PackSeed>();
         s.AddScoped<CommunityService>();
         s.AddScoped<CommunitySeed>();
         s.AddScoped<WikiImport>();
@@ -192,6 +195,8 @@ public static class PortalApp
             o.AddPolicy("login", c => WritesByIp(c, cfg.GetValue("RateLimits:LoginPer5Min", 10), TimeSpan.FromMinutes(5)));
             // linking a launcher: a person does it once, so a low limit also caps guessing at the codes
             o.AddPolicy("devices", c => WritesByIp(c, cfg.GetValue("RateLimits:DevicesPer10Min", 20), TimeSpan.FromMinutes(10)));
+            // an evening of reviewing is a few sends, not a few hundred: a set at a time, plus retries
+            o.AddPolicy("review-write", c => WritesByIp(c, cfg.GetValue("RateLimits:ReviewPer10Min", 60), TimeSpan.FromMinutes(10)));
         });
     }
 
@@ -236,6 +241,7 @@ public static class PortalApp
         app.MapOpenApi("/openapi/{documentName}.json");
         TicketApi.Map(app);
         DeviceApi.Map(app);
+        ReviewApi.Map(app);
         app.MapGet("/files/{id:guid}", ServeFileAsync).ExcludeFromDescription();
         app.MapGet("/download/launcher", DownloadLauncherAsync).ExcludeFromDescription();
         app.MapGet("/lang/{lang}", (string lang, string? back, HttpContext http) =>

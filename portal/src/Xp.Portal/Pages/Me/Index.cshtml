@@ -25,3 +25,25 @@ else
     </table>
 }
 <a class="button" href="/tickets/new">@T["nav.report"]</a>
+
+<section class="panel">
+    <h2 class="title">@T["me.review.title"]</h2>
+    @if (Model.Review.Packs == 0)
+    {
+        <p class="hint">@T["me.review.none"]</p>
+    }
+    else
+    {
+        <div class="stats">
+            <div><div class="k">@T["me.review.packs"]</div><div class="v">@Model.Review.Packs</div></div>
+            <div><div class="k">@T["me.review.pictures"]</div><div class="v">@Model.Review.Pictures</div></div>
+            <div><div class="k">@T["me.review.bad"]</div><div class="v">@Model.Review.Bad</div></div>
+            <div><div class="k">@T["me.review.repaint"]</div><div class="v">@Model.Review.WentToRepaint</div></div>
+            @if (Model.Review.Last is { } last)
+            {
+                <div><div class="k">@T["me.review.last"]</div><div class="v">@last.ToString("yyyy-MM-dd")</div></div>
+            }
+        </div>
+    }
+    <a class="button secondary" href="/roadmap">@T["nav.roadmap"]</a>
+</section>
