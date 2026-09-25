@@ -59,7 +59,7 @@ def read_order(roadmap):
     return [(r["набор"], int(r["клеток"]), int(r["рисовать"])) for r in rows]
 
 
-def plan_set(sheets, name, out_root, by_frame=None, claimed=None):
+def plan_set(sheets, name, out_root, by_frame=None, claimed=None, sub="lora"):
     """Что рисовать в наборе: кадры с содержимым, которых ещё нет в ответе.
 
     claimed - множество хэшей картинок, уже заказанных или уже нарисованных ГДЕ УГОДНО.
@@ -78,7 +78,7 @@ def plan_set(sheets, name, out_root, by_frame=None, claimed=None):
                 hints = {int(k): v for k, v in json.load(f).items()}
         except Exception:                               # noqa: BLE001
             hints = {}
-    out = os.path.join(out_root, name + ".PCK", "returned", "lora")
+    out = os.path.join(out_root, name + ".PCK", "returned", sub)
     # Зеркала не рисуем. Их два сорта, и первая версия фильтра видела только первый:
     # побайтовое отражение. Второй сорт - художник отразил ФОРМУ, а свет оставил с той же
     # стороны, и хэш такую пару не ловит вовсе (R-054). В ICEKING_RUINS таких 24 из 25 пар,
