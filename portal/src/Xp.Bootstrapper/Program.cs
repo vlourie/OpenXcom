@@ -4,6 +4,7 @@ using Xp.Manifest;
 // xp-bootstrap — replaces the launcher's files after the launcher has exited.
 // The files were already verified (signature + SHA-256) by the launcher; this program only
 // swaps them, starts the new launcher and puts the old one back if the new one does not confirm.
+// Started with no arguments it is the setup a new player downloads from the site: Installer.cs.
 
 namespace Xp.Bootstrapper;
 
@@ -19,6 +20,8 @@ static class Program
         Directory.CreateDirectory(logDir);
         using (_log = new StreamWriter(Path.Combine(logDir, "bootstrap.log"), append: true) { AutoFlush = true })
         {
+            // no arguments: a player ran the file the site gave them (XPiratezHD-Setup-<v>.exe)
+            if (args.Length == 0) return Installer.Run(Log);
             try { return Run(Parse(args)); }
             catch (Exception e)
             {

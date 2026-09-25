@@ -7,9 +7,23 @@
     <OptimizationPreference>Size</OptimizationPreference>
     <InvariantGlobalization>true</InvariantGlobalization>
     <UseSystemResourceKeys>true</UseSystemResourceKeys>
+    <!-- the shell link for shortcuts is source-generated COM (Installer.cs) -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <!-- the same key rule as the launcher: dev keys only in Debug or with -p:AllowDevKeys=true -->
+    <AllowDevKeys Condition="'$(AllowDevKeys)' == ''">false</AllowDevKeys>
+    <DefineConstants Condition="'$(Configuration)' == 'Debug' Or '$(AllowDevKeys)' == 'true'">$(DefineConstants);ALLOW_DEV_KEYS</DefineConstants>
   </PropertyGroup>
   <ItemGroup>
-    <!-- only SafePath is used; the manifest library is small and AOT-clean -->
+    <!-- SafePath and signatures from the manifest library, the release client from Launcher.Core; both AOT-clean -->
     <ProjectReference Include="..\Xp.Manifest\Xp.Manifest.csproj" />
+    <ProjectReference Include="..\Xp.Launcher.Core\Xp.Launcher.Core.csproj" />
+    <!-- referenced directly only for its path: the setup is one downloaded file and carries libsodium inside -->
+    <PackageReference Include="libsodium" Version="1.0.20.1" GeneratePathProperty="true" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- the install mode (no arguments) reads the same server and keys the launcher is built with -->
+    <EmbeddedResource Include="..\..\keys\release-keys.txt" LogicalName="release-keys.txt" />
+    <EmbeddedResource Include="..\Xp.Launcher\defaults.json" LogicalName="defaults.json" />
+    <EmbeddedResource Include="$(PkgLibsodium)\runtimes\win-x64\native\libsodium.dll" LogicalName="libsodium.dll" />
   </ItemGroup>
 </Project>
