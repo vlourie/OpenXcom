@@ -4,10 +4,11 @@ using Xp.Launcher.Core;
 namespace Xp.Launcher;
 
 /// <summary>
-/// XPiratezLauncher.exe --headless &lt;check|update|repair|rollback|self-update&gt; [--game &lt;dir&gt;] [--channel &lt;ch&gt;] [--repo &lt;url&gt;]
+/// XPiratezLauncher.exe --headless &lt;check|update|repair|rollback|self-update|ufo&gt; [--game &lt;dir&gt;] [--channel &lt;ch&gt;] [--repo &lt;url&gt;]
 /// The same core as the window, for scripts and tests. "update" keeps player-modified files,
 /// "repair" replaces them, "check" changes nothing.
-/// Exit codes: 0 done / up to date, 1 error, 2 refused (signature, running game), 3 update available (check).
+/// Exit codes: 0 done / up to date, 1 error, 2 refused (signature, running game), 3 update available (check),
+/// 4 the original UFO is nowhere on this machine (ufo).
 /// </summary>
 static partial class Headless
 {
@@ -39,9 +40,21 @@ static partial class Headless
         return i >= 0 && i + 1 < args.Length ? args[i + 1] : null;
     }
 
+    /// <summary>"ufo": where the original game is on this machine, and what each place lacks. Changes nothing; 0 found, 4 not found.</summary>
+    static int FindUfo(string? game)
+    {
+        foreach (var (root, source) in UfoData.Roots(game))
+            Console.WriteLine($"{source,-9} {root}{(Directory.Exists(root) ? "" : "  (no folder)")}");
+        var found = UfoData.Search(game);
+        foreach (var u in found) Console.WriteLine($"FOUND {u.Source}: {u.Dir}");
+        if (found.Count == 0) Console.WriteLine($"not found; Steam: {UfoData.SteamStoreUrl}  GOG: {UfoData.GogUrl}");
+        return found.Count > 0 ? 0 : 4;
+    }
+
     static async Task<int> RunAsync(string[] args, Settings settings)
     {
         var cmd = args.Length > 1 ? args[1] : "check";
+        if (cmd == "ufo") return FindUfo(Opt(args, "--game") ?? settings.GameDir);
         var game = Opt(args, "--game") ?? settings.GameDir ?? throw new InvalidOperationException("no game folder: pass --game");
         if (!GamePaths.LooksLikeGameDir(game)) throw new InvalidOperationException("not a game folder: " + game);
         var paths = new GamePaths(game);
