@@ -96,7 +96,8 @@ public sealed class MainWindow : Window
         _check.Click += async (_, _) => await RunAsync(Work.Check, () => CheckAsync(full: false, apply: false));
         // «Играть» обновляет и запускает; эта кнопка только обновляет - игру запускать не обязательно
         _updateOnly = Skin.Btn(L.T("main.updateOnly"), "ghost", 64);
-        _updateOnly.Click += async (_, _) => await RunAsync(Work.Check, () => CheckAsync(full: false, apply: true));
+        // Work.Update, not Check: the main button shows the percent and the bar, the same as «Обновить и играть»
+        _updateOnly.Click += async (_, _) => await RunAsync(Work.Update, () => CheckAsync(full: false, apply: true));
         _repair = Skin.Btn(L.T("repair"));
         _repair.HorizontalContentAlignment = HorizontalAlignment.Left;
         _repair.Click += async (_, _) => await RunAsync(Work.Repair, () => CheckAsync(full: true, apply: true));
@@ -258,11 +259,16 @@ public sealed class MainWindow : Window
         heading.Children.Add(new Viewbox { Child = title, Stretch = Stretch.Uniform, StretchDirection = StretchDirection.DownOnly, HorizontalAlignment = HorizontalAlignment.Left });
         heading.Children.Add(_version);
 
-        var mainArea = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto") };
+        // «Обновить и играть» two thirds, «Обновить» one third
+        var mainArea = new Grid { ColumnDefinitions = new ColumnDefinitions("2*,*") };
         mainArea.Children.Add(_main);
         mainArea.Children.Add(_progress);
         _updateOnly.Margin = new Thickness(10, 0, 0, 0);
         _updateOnly.Padding = new Thickness(22, 0);
+        _updateOnly.Height = 64;
+        _updateOnly.FontSize = 18;
+        _updateOnly.HorizontalAlignment = HorizontalAlignment.Stretch;
+        _updateOnly.HorizontalContentAlignment = HorizontalAlignment.Center;
         Grid.SetColumn(_updateOnly, 1);
         mainArea.Children.Add(_updateOnly);
 
