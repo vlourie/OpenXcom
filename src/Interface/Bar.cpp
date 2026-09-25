@@ -189,16 +189,21 @@ void Bar::hdMirror()
 	// the widget's width (X-Piratez goes well past the 170 the soldier screen was drawn for) ran the
 	// track off the right edge of the screen
 	const float xMax = (float)(getX() + getWidth()) * k;
-	const float x1 = std::min(x0 + ((float)(_scale * _max) + 1.0f) * k, xMax);
+	// the track holds the fill too: an armor bonus runs past the stat's own maximum, and the classic
+	// bar draws it past its frame; a track cut at the maximum hid it
+	const double longest = std::max(_max, std::max(_value, _value2));
+	const float x1 = std::min(x0 + ((float)(_scale * longest) + 1.0f) * k, xMax);
 	const float r = std::min(1.0f * k, (y1 - y0) * 0.5f);
 	const Uint32 border = HdUi::rgba(pal[_borderColor ? _borderColor : (Uint8)(_color + 4)], 200);
 	ui.fillRoundRect(x0, y0, x1, y1, r, 0xA0000000u, 0xA0000000u);
 	auto fill = [&](double value, Uint8 color)
 	{
+		// ends where the classic fill ends (its last pixel is the value's line of the soldier screen's
+		// ruler, one pixel per point), not half a pixel later: the start is inset, the end is not
 		const float w = (float)(_scale * value) * k;
-		if (w <= 0.5f) return;
+		if (w <= 0.5f * k) return;
 		const Uint32 c = HdUi::rgba(pal[color]);
-		ui.fillRoundRect(x0 + 0.5f * k, y0 + 0.5f * k, std::min(x0 + 0.5f * k + w, x1 - 0.5f * k), y1 - 0.5f * k, std::max(r - 0.5f * k, 0.0f), HdUi::scaled(c, 1.12f), HdUi::scaled(c, 0.85f));
+		ui.fillRoundRect(x0 + 0.5f * k, y0 + 0.5f * k, std::min(x0 + w, x1 - 0.5f * k), y1 - 0.5f * k, std::max(r - 0.5f * k, 0.0f), HdUi::scaled(c, 1.12f), HdUi::scaled(c, 0.85f));
 	};
 	if (_secondOnTop)
 	{
