@@ -99,15 +99,20 @@ def read_tab(path):
 
 def read_pck(pck_path, tab_path=None, width=32, height=40):
     """Decodes every frame; returns a list of lists of rows (each row = list of
-    palette indices, `width` long, `height` rows)."""
+    palette indices, `width` long, `height` rows).
+
+    Frames are read one after another, the way the game does (SurfaceSet::loadPck): the TAB
+    only gives the number of frames, its offsets are ignored. Some X-Piratez PCKs were rebuilt
+    and kept a stale TAB (BARN.TAB is from 1993, BARN.PCK from 2023) - by the offsets, frames
+    19-28 of BARN come out empty, while the game shows floors and debris there."""
     with open(pck_path, "rb") as f:
         data = f.read()
     if tab_path is None:
         tab_path = os.path.splitext(pck_path)[0] + ".TAB"
     offsets = read_tab(tab_path) if os.path.exists(tab_path) else [0]
     frames = []
-    for off in offsets:
-        pos = off
+    pos = 0
+    for _off in offsets:
         if pos >= len(data):
             frames.append(None)
             continue

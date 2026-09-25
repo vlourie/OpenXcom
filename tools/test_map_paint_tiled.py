@@ -33,7 +33,7 @@ class Fake:
     def __init__(self):
         self.inputs = []
 
-    def paint(self, rgba, g, prompt, seed, under=None):
+    def paint(self, rgba, g, prompt, seed, under=None, opts=None):
         self.inputs.append(rgba.copy())
         rng = np.random.default_rng(seed)
         small = rng.integers(0, 256, (rgba.height // 2 + 2, rgba.width // 2 + 2, 3)).astype(np.uint8)
@@ -143,10 +143,25 @@ def check_reuse(w, name, key, part, bases):
     return 0 if ok else 1
 
 
+def check_scenes():
+    """R-016: поля полов и стен не получают предметов темы; у каждой темы пилота есть « | »."""
+    bad = 0
+    full, surf = mp.scene_prompts("grey floor | red barrels")
+    if "red barrels" in surf or "red barrels" not in full or "grey floor" not in surf:
+        print("BAD  тема: поле получило предметы или участок их потерял")
+        bad += 1
+    for name, sc in mp.SCENES.items():
+        if " | " not in sc and name in ("UBASE_00", "URBAN06", "CATACOMBS_33"):
+            print("BAD  тема %s без деления на поверхности и предметы" % name)
+            bad += 1
+    print("%s  тема делится на поверхности и предметы" % ("ok " if not bad else "BAD"))
+    return bad
+
+
 def main():
     w = mm.World()
     _im, _ow, inst = mp.layout(w, T, B)
-    bad = 0
+    bad = check_scenes()
     for key in CASES:
         d = next(q for q in inst if (q["set"], q["frame"]) == key)
         lattice = mp.tile_lattice(inst, key)
