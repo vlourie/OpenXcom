@@ -208,6 +208,15 @@ std::string OptionsHdState::valueText(const OptionInfo &info) const
 	{
 		return HdUi::instance().fontSetName(Options::oxceHdUiFont);
 	}
+	if (info.asInt() == &Options::oxceHdReticle)
+	{
+		const int r = Options::oxceHdReticle;
+		if (r >= 2 && r - 2 < (int)Mod::HD_RETICLES.size())
+		{
+			return tr("STR_HD_RETICLE_" + Mod::HD_RETICLES[r - 2]);
+		}
+		return tr(r == 1 ? "STR_HD_RETICLE_STOCK" : "STR_HD_RETICLE_PACK");
+	}
 	std::ostringstream ss;
 	ss << *info.asInt();
 	return ss.str();
@@ -359,6 +368,11 @@ void OptionsHdState::changeSetting(size_t sel, Uint8 button)
 			min = 0;
 			max = HdUi::instance().fontSetCount();
 		}
+		else if (i == &Options::oxceHdReticle)
+		{
+			min = 0;
+			max = 1 + (int)Mod::HD_RETICLES.size();
+		}
 		else if (i == &Options::oxceHdThreads)
 		{
 			min = 0;                                  // 0 = all cores but two
@@ -381,6 +395,10 @@ void OptionsHdState::changeSetting(size_t sel, Uint8 button)
 		{
 			// load it right away, so the list itself is redrawn with the face that was picked
 			HdUi::instance().applyFontOption();
+		}
+		if (i == &Options::oxceHdReticle)
+		{
+			_game->getMod()->applyHdReticle();         // takes effect at once, in battle too
 		}
 		if (i == &Options::oxceHdMode)
 		{

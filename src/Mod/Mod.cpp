@@ -34,6 +34,7 @@
 #include "../Engine/HdBlit.h"
 #include "../Engine/HdUiArt.h"
 #include "../Engine/HdBase.h"
+#include "../Engine/HdCraftLights.h"
 #include "../Engine/HdUi.h"
 #include "../Engine/SDL2Helpers.h"
 #include "../Engine/Music.h"
@@ -1019,8 +1020,72 @@ SurfaceSet *Mod::getHdSurfaceSet(const std::string &name, bool error)
 		// one along the shot, and nearest scaling turns it into a staircase of squares. What no pack
 		// covers the engine draws as a round dot in the frame's own colours
 		HdSprites::makeDots(name, getSurfaceSet(name, false), scaled, getHdScale());
+		if (name == "CURSOR.PCK")
+		{
+			applyHdReticle();
+		}
 	}
 	return scaled;
+}
+
+const std::vector<std::string> Mod::HD_RETICLES = { "ring45", "plasma", "techno", "predator" };
+
+/**
+ * HD render: the reticle is frames 6..10 of CURSOR.PCK (6 red, 7..10 the yellow loop). The player
+ * picks it in the HD options: the pack's own frames, the stock picture (no HD frame, so it is
+ * scaled like any classic sprite), or a style shipped in hd/CURSOR.PCK/reticle_<style>/6..10.png.
+ * A style that is not shipped falls back to the pack's own frames.
+ */
+void Mod::applyHdReticle()
+{
+	SurfaceSet *classic = getSurfaceSet("CURSOR.PCK", false);
+	if (!classic || getHdScale() <= 1)
+	{
+		return;
+	}
+	SurfaceSet *scaled = getHdSurfaceSet(classic);
+	if (!_hdPacksLoaded.count(scaled))
+	{
+		return;                                       // not loaded yet: getHdSurfaceSet applies it on first use
+	}
+	const int pick = Options::oxceHdReticle;
+	std::string folder;
+	if (pick >= 2 && pick - 2 < (int)HD_RETICLES.size())
+	{
+		folder = "CURSOR.PCK/reticle_" + HD_RETICLES[pick - 2] + "/";
+		if (!FileMap::fileExists(HdSprites::artPath(folder + "6.png")))
+		{
+			Log(LOG_WARNING) << "HD reticle " << HD_RETICLES[pick - 2] << " is not shipped - the pack's own is used";
+			folder.clear();
+		}
+	}
+	for (int i = 6; i <= 10; ++i)
+	{
+		Surface *frame = scaled->getFrame(i);
+		if (!frame)
+		{
+			continue;
+		}
+		const std::string own = HdSprites::artPath("CURSOR.PCK/" + std::to_string(i) + ".png");
+		const std::string styled = folder.empty() ? "" : HdSprites::artPath(folder + std::to_string(i) + ".png");
+		if (pick == 1)
+		{
+			HdSprites::remove(frame->getBuffer());
+		}
+		else if (!styled.empty() && FileMap::fileExists(styled))
+		{
+			HdSprites::setLazy(frame->getBuffer(), styled, 0, 0, frame->getWidth(), frame->getHeight());
+		}
+		else if (FileMap::fileExists(own))
+		{
+			HdSprites::setLazy(frame->getBuffer(), own, 0, 0, frame->getWidth(), frame->getHeight());
+		}
+		else
+		{
+			HdSprites::remove(frame->getBuffer());
+		}
+	}
+	Log(LOG_INFO) << "HD reticle: " << (pick == 1 ? std::string("stock") : folder.empty() ? std::string("the pack's own") : folder);
 }
 
 /**
@@ -2792,6 +2857,7 @@ void Mod::loadHdUiArt()
 {
 	HdUiArt::clear();
 	HdBase::clear();
+	HdCraftLights::clear();
 	// both trees at once: the adult one only holds the pictures that differ
 	const std::vector<std::string> files = HdSprites::artFolder("UI");
 	if (files.empty())
