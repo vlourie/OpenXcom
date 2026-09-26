@@ -397,6 +397,8 @@ bool HdUi::drawSparse(SDL_Surface *dest, const Surface *surface, int x, int y, i
 				const int ow = std::min(w, p.ix + p.iw + M) - p.ox, oh = std::min(h, p.iy + p.ih + M) - p.oy;
 				if (!HdSmooth::smoothPalette(pixels + (size_t)p.oy * pitch + p.ox, ow, oh, pitch, colors, k, p.frame, false, ow * oh >= 16384))
 				{
+					// half an entry under the full hash would be drawn next time as if it were whole
+					_sparse.erase(surface);
 					return false;
 				}
 				p.frame.buildSpans();
@@ -664,6 +666,12 @@ void HdUi::drawSurface(const Surface *surface, int x, int y, bool smooth)
 	{
 		return;
 	}
+	// a mod reload freed the pictures the cached entries point to
+	if (_artGeneration != HdUiArt::generation())
+	{
+		clearCaches();
+		_artGeneration = HdUiArt::generation();
+	}
 	const auto t0 = std::chrono::steady_clock::now();
 	++_calls;
 	++_frameCalls;
@@ -729,15 +737,13 @@ void HdUi::drawSurface(const Surface *surface, int x, int y, bool smooth)
 			// item of a Ufopaedia page) was scanned again every frame. So a content once searched in vain
 			// is not searched again, whatever surface it comes in; and a sprite-sized surface (items are
 			// at most 32x48 = 1536 px) is not searched at all: every crop found so far is a strip of 220x18
-			static std::unordered_set<Uint64> cropMisses;
-			static size_t cropMissesArts = 0;
-			if (cropMissesArts != HdUiArt::count())
+			if (_cropMissesArts != HdUiArt::count())
 			{
-				cropMisses.clear();                        // another pack: what was not in the old one may be here
-				cropMissesArts = HdUiArt::count();
+				_cropMisses.clear();                       // another pack: what was not in the old one may be here
+				_cropMissesArts = HdUiArt::count();
 			}
 			const Uint64 cropKey = pixelHash ^ ((Uint64)w << 48) ^ ((Uint64)h << 32);
-			if (!art && w >= 24 && h >= 16 && w * h >= 2048 && misses < 3 && cropMisses.count(cropKey) == 0)
+			if (!art && w >= 24 && h >= 16 && w * h >= 2048 && misses < 3 && _cropMisses.count(cropKey) == 0)
 			{
 				// the whole pack compared against this surface: the only thing left in this path that
 				// can cost a hundred milliseconds. The label used to be overwritten by the smoothing
@@ -746,8 +752,8 @@ void HdUi::drawSurface(const Surface *surface, int x, int y, bool smooth)
 				art = HdUiArt::findCrop(pixels, pitch, w, h, artX, artY);
 				if (!art)
 				{
-					if (cropMisses.size() >= 65536) cropMisses.clear();
-					cropMisses.insert(cropKey);
+					if (_cropMisses.size() >= 65536) _cropMisses.clear();
+					_cropMisses.insert(cropKey);
 				}
 				const double cropMs = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - cropStart).count();
 				if (cropMs >= 5) { why = "crop scan"; cropped = true; }
@@ -1072,6 +1078,8 @@ void HdUi::clearCaches()
 	_smooth.clear();
 	_smoothLru.clear();
 	_smoothBytes = 0;
+	_sparse.clear();
+	_cropMisses.clear();
 	_glyphs.clear();
 }
 

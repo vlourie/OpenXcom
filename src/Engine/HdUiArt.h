@@ -81,6 +81,8 @@ namespace HdUiArt
 	/// Forgets everything (mod reload).
 	void clear();
 	size_t count();
+	/// Grows with every clear(): whoever keeps an Art pointer drops it when this changes.
+	unsigned generation();
 	/// Bytes of the pictures loaded now (the budget is 768 MB).
 	size_t bytes();
 

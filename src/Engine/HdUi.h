@@ -20,6 +20,7 @@
 #include <SDL.h>
 #include <list>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 #include "HdSprites.h"
 #include "HdUiArt.h"
@@ -244,6 +245,9 @@ private:
 	std::unordered_map<const Surface*, SmoothEntry> _smooth;
 	std::list<const Surface*> _smoothLru;
 	size_t _smoothBytes = 0;
+	unsigned _artGeneration = 0;      ///< HdUiArt::generation() the entries' art pointers belong to
+	std::unordered_set<Uint64> _cropMisses; ///< contents searched for a picture in vain (by pixels and size)
+	size_t _cropMissesArts = 0;       ///< the pack size they were searched in
 	std::unordered_map<GlyphKey, Glyph, GlyphKeyHash> _glyphs;
 	struct Cover
 	{
