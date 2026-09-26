@@ -37,12 +37,13 @@ for p in (HERE, os.path.dirname(HERE)):
 
 import numpy as np                                      # noqa: E402
 from PIL import Image, ImageDraw                        # noqa: E402
+import common  # noqa: E402
 
 ENC = "utf-8-sig"
 OUT = os.path.join("art", "maps", "updates")
 LEDGER = os.path.join(OUT, "updates.tsv")
 STATUS = os.path.join("docs", "MAP_STATUS.md")
-MOD = os.path.join("Пиратки", "Dioxine_XPiratez", "user", "mods", "hd")
+MOD = common.GAME_HD
 BACKUP = os.path.join("art", "_backup", "map_updates")
 FIELDS = ["обновление", "вид", "дата", "террейн", "карта", "набор", "кадр", "файл", "sha", "был_sha",
           "что", "в_моде", "годен", "флаги", "годен_мод", "флаги_мод", "решение"]

@@ -38,9 +38,10 @@ from PIL import Image, ImageDraw                        # noqa: E402
 
 import pck_census as pc                                 # noqa: E402
 import tile_forge as tf                                 # noqa: E402
+import common  # noqa: E402
 
 ENC = "utf-8-sig"
-INSTALL = os.path.join("Пиратки", "Dioxine_XPiratez")
+INSTALL = common.INSTALL
 SHEETS = os.path.join("art", "TERRAIN")
 OLD_PACK = os.path.join("art", "_backup", "TERRAIN_before_lora_20260924_1057")
 OUT = os.path.join("art", "maps")

@@ -21,6 +21,7 @@ import sys
 
 import numpy as np
 from PIL import Image
+import common
 
 sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
@@ -28,7 +29,7 @@ BULLET_SPRITES = 35      # Map.h: столько кадров на один тр
 SUB = 3                  # subX/subY набора Projectiles
 MAX_DOT = 4              # HdSprites.cpp: кадр не больше этого - точка, а не картинка
 
-PIRATEZ = os.path.join("Пиратки", "Dioxine_XPiratez", "user", "mods", "Piratez",
+PIRATEZ = os.path.join(common.PIRATEZ,
                        "Resources", "Smoke", "Projectiles_DIO.png")
 VANILLA = os.path.join("bin", "standard", "xcom1", "Resources", "BulletSprites",
                        "BulletSprites.png")

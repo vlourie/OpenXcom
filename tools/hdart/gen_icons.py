@@ -32,13 +32,14 @@ import sys
 
 import numpy as np
 from PIL import Image
+import common
 
 sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 BASE = 16      # оригиналы 16x16
 SS = 8         # отсчётов геометрии на выходной пиксель по каждой оси
 
-SRC_DIR = os.path.join("Пиратки", "Dioxine_XPiratez", "user", "mods", "Piratez",
+SRC_DIR = os.path.join(common.PIRATEZ,
                        "Resources", "UnitUI")
 
 # имя файла в hd/UI -> имя оригинала, по которому движок ищет картинку (он приводит к нижнему)

@@ -31,8 +31,9 @@ import numpy as np                                      # noqa: E402
 from PIL import Image                                   # noqa: E402
 
 import photo_ui as pu                                   # noqa: E402
+import common  # noqa: E402
 
-PIR = os.path.join("Пиратки", "Dioxine_XPiratez", "user", "mods")
+PIR = common.MODS
 ORIG = os.path.join(PIR, "Piratez", "Resources", "Pedia")
 HD_IN = os.path.join(PIR, "hd", "hd", "UI_esrgan")
 OUT = os.path.join("art", "_refs", "pedia_ab")

@@ -32,9 +32,10 @@ from collections import Counter
 
 sys.path.insert(0, os.path.join("tools", "hdart"))
 import dupe_plan as dup  # noqa: E402
+import common  # noqa: E402
 
 ENC = "utf-8-sig"
-MOD = os.path.join(u"Пиратки", "Dioxine_XPiratez", "user", "mods", "hd", "hd", "TERRAIN")
+MOD = os.path.join(common.GAME_HD, "hd", "TERRAIN")
 BK = os.path.join("art", "_backup")
 OLD = os.path.join(BK, "TERRAIN_before_lora_20260924_1057")
 LORA_BK = os.path.join(BK, "TERRAIN_lora_20260924_1353")

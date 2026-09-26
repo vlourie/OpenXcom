@@ -32,6 +32,7 @@ from gen_base import basebits_map  # noqa: E402
 from gen_craft_lights import load_frame  # noqa: E402
 import yaml  # noqa: E402
 from pck_census import Tolerant, load_yaml  # noqa: E402
+import common  # noqa: E402
 
 
 def _plain(loader, suffix, node):
@@ -46,7 +47,7 @@ def _plain(loader, suffix, node):
 for _loader in (yaml.CSafeLoader, Tolerant):
     yaml.add_multi_constructor("!", _plain, Loader=_loader)
 
-GAME = os.path.join(ROOT, "Пиратки", "Dioxine_XPiratez")
+GAME = os.path.join(ROOT, common.INSTALL)
 VANILLA = os.path.join(GAME, "standard", "xcom1")
 MODS = [os.path.join(GAME, "user", "mods", m) for m in ("Piratez", "XPZ RU-patch")]
 HD = os.path.join(GAME, "user", "mods", "hd", "hd", "BASEBITS.PCK")

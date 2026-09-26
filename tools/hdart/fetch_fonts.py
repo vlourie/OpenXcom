@@ -19,6 +19,7 @@ import os
 import sys
 import urllib.parse
 import urllib.request
+import common
 
 if hasattr(sys.stdout, "reconfigure"):   # консоль msys бывает cp1252
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -254,7 +255,7 @@ def main():
     args = parser.parse_args()
 
     out = os.path.join(args.dest, "hd", "UI", "fonts")
-    texts = args.texts if args.texts else ["bin", os.path.join("Пиратки", "Dioxine_XPiratez")]
+    texts = args.texts if args.texts else ["bin", common.INSTALL]
     codes, files = mod_texts([root for root in texts if os.path.isdir(root)], args.langs)
     print("знаков в текстах игры и модов (%s): %d из %d файлов" % (
         " ".join(args.langs), len(codes), files))

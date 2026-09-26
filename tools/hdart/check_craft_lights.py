@@ -26,11 +26,12 @@ from PIL import Image
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from gen_base import basebits_map  # noqa: E402
 from gen_craft_lights import SKIP, load_frame, read_lights, kind_color, glow  # noqa: E402
+import common  # noqa: E402
 
 ENC_W = "utf-8-sig"
 ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
-PIRATEZ = os.path.join(ROOT, "Пиратки", "Dioxine_XPiratez", "user", "mods", "Piratez")
-HD_COPIES = [os.path.join(ROOT, "Пиратки", "Dioxine_XPiratez", "user", "mods", "hd"),
+PIRATEZ = os.path.join(ROOT, common.PIRATEZ)
+HD_COPIES = [os.path.join(ROOT, common.GAME_HD),
              os.path.join(ROOT, "user", "mods", "hd")]
 MASTER_OFFSET = 1000
 

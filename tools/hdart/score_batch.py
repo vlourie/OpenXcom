@@ -37,9 +37,10 @@ from PIL import Image, ImageDraw, ImageFilter           # noqa: E402
 import build_dataset as bd                              # noqa: E402
 import dupe_plan as dup                                 # noqa: E402
 import tile_forge as tf                                 # noqa: E402
+import common  # noqa: E402
 
 ENC = "utf-8-sig"
-MOD = os.path.join("Пиратки", "Dioxine_XPiratez", "user", "mods", "hd", "hd", "TERRAIN")
+MOD = os.path.join(common.GAME_HD, "hd", "TERRAIN")
 FIELDS = ["набор", "кадр", "вид", "подпись_вид", "прогон", "area", "iou", "det", "low_orig", "low_cell",
           "low_ratio", "tone", "rim_own", "rim_after", "sat_orig", "sat_cell", "spill", "miss", "corr", "flags",
           "годен", "балл", "hash", "hint"]

@@ -18,9 +18,10 @@ sys.path[:0] = [os.path.dirname(os.path.abspath(__file__))]
 import map_mockup as mm          # noqa: E402
 import map_update as mu          # noqa: E402
 import build_dataset as bd       # noqa: E402
+import common  # noqa: E402
 
 DARK = (28, 26, 24)
-MOD = os.path.join("Пиратки", "Dioxine_XPiratez", "user", "mods", "hd")
+MOD = common.GAME_HD
 
 
 def main():

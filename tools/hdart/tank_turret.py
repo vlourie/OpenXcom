@@ -42,6 +42,7 @@ import time
 
 import numpy as np
 from PIL import Image, ImageDraw, ImageFont
+import common
 
 CELL_W, CELL_H = 32, 40
 CANVAS_W, CANVAS_H = 64, 80
@@ -54,7 +55,7 @@ DOME_RGB = (255, 0, 0)
 BARREL_RGB = (0, 0, 255)
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-PIRATEZ = os.path.join("Пиратки", "Dioxine_XPiratez", "user", "mods", "Piratez")
+PIRATEZ = common.PIRATEZ
 
 # world directions of the 8 unit directions (0 = north ... 7 = north-west) and their screen projection
 DIR_VEC = [(0, -1), (1, -1), (1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0), (-1, -1)]
@@ -601,7 +602,7 @@ def main():
     ap.add_argument("--sprites", default="Resources/Sprites", help="where the sheets are, inside --mod-dir")
     ap.add_argument("--masks", default=os.path.join(HERE, "tank_masks.json"), help="dome/barrel polygons")
     ap.add_argument("--work", default="tank_work", help="work folder (mask pictures, previews)")
-    ap.add_argument("--out-mod", default=os.path.join("Пиратки", "Dioxine_XPiratez", "user", "mods", "piratez_tank_turret"))
+    ap.add_argument("--out-mod", default=os.path.join(common.MODS, "piratez_tank_turret"))
     ap.add_argument("--master", default="piratez")
     ap.add_argument("--stage", default="all", choices=["all", "masks", "build"])
     ap.add_argument("--remask", action="store_true", help="overwrite hand-edited mask pictures with the polygons")

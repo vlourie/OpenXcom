@@ -41,9 +41,10 @@ import mirror_frames as mfr                            # noqa: E402
 import link_frames as lfr                              # noqa: E402
 import dupe_plan as dup                                # noqa: E402
 from PIL import Image                                  # noqa: E402
+import common  # noqa: E402
 
 ENC = "utf-8-sig"
-MCD_DIRS = [os.path.join("Пиратки", "Dioxine_XPiratez", "user", "mods", "Piratez", "TERRAIN"),
+MCD_DIRS = [os.path.join(common.PIRATEZ, "TERRAIN"),
             os.path.join("user", "mods", "XComFiles", "TERRAIN"),
             os.path.join("bin", "UFO", "TERRAIN")]
 ZOOM = glt.ZOOM

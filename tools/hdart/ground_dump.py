@@ -16,9 +16,10 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import xcom_sprites as xs  # noqa: E402
 import extract_pck  # noqa: E402
+import common  # noqa: E402
 
 ENC = "utf-8-sig"
-DEFAULT_DATA = os.path.join("Пиратки", "Dioxine_XPiratez", "user", "mods", "Piratez")
+DEFAULT_DATA = common.PIRATEZ
 
 
 def dump_set(folder, name):
