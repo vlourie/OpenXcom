@@ -558,6 +558,25 @@ void BaseView::drawHd()
 		return;
 	}
 	const int rock = _base->getGlobeTexture() ? _base->getGlobeTexture()->getBaseGridSprite() : 0;
+	// every phase of the base's tiles at once, before the first of them is drawn
+	std::vector<HdBase::Want> want;
+	for (const auto* fac : *_base->getFacilities())
+	{
+		if (!isHdFacility(fac))
+		{
+			continue;
+		}
+		const int tiles = fac->getRules()->getSizeX() * fac->getRules()->getSizeY();
+		for (int num = 0; num < tiles; ++num)
+		{
+			const int index = hdTileIndex(fac, num);
+			if (Surface *classic = _texture->getFrame(index))
+			{
+				want.push_back({ index, classic->getWidth(), classic->getHeight() });
+			}
+		}
+	}
+	HdBase::preload(want, k);
 	for (const auto* fac : *_base->getFacilities())
 	{
 		if (!isHdFacility(fac))

@@ -18,6 +18,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <string>
+#include <vector>
 #include "HdSprites.h"
 
 namespace OpenXcom
@@ -45,6 +46,14 @@ namespace HdBase
 	int phases(int index);
 	/// The picture of a base tile at `scale` times the classic `baseWidth` x `baseHeight`, or nullptr.
 	const HdFrame *frame(int index, int phase, int scale, int baseWidth, int baseHeight);
+	/// A tile a base screen is about to draw.
+	struct Want
+	{
+		int index, baseWidth, baseHeight;
+	};
+	/// Reads every phase of these tiles not read yet, decoding across HdWorkers: a base opens
+	/// with one short pause instead of a stall on each phase met for the first time.
+	void preload(const std::vector<Want> &want, int scale);
 	/// Are animated tiles in use (something drawn since the last clear has more than one phase)?
 	bool animated();
 	/// Forgets everything (mod reload).
