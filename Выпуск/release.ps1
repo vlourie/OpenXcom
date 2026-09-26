@@ -37,6 +37,11 @@ $args_ = @($Rest | Where-Object { $_ })
 $cfgFile = $args_ | Where-Object { $_ -like '*.json' } | Select-Object -Last 1
 if (-not $cfgFile) { $cfgFile = Join-Path $PSScriptRoot 'release_config.json' }
 $cfg = Get-Content -LiteralPath $cfgFile -Raw -Encoding UTF8 | ConvertFrom-Json
+# пути в настройках могут быть от корня репозитория (ключи и хранилище на своём диске - полными)
+foreach ($key in 'Key', 'Pub', 'Repo', 'XpRelease', 'Stage', 'LauncherDir', 'StationDrop') {
+    $v = $cfg.$key
+    if ($v -is [string] -and $v -ne '' -and -not [IO.Path]::IsPathRooted($v)) { $cfg.$key = Join-Path $root $v }
+}
 $channel = $cfg.Channel
 $noBuild = $false
 $launcherOnly = $false

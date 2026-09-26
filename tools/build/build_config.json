@@ -1,12 +1,12 @@
 {
-  "RepoDir": "E:\\OpenXCom",
-  "BuildDir": "E:\\OpenXCom\\build-release",
+  "RepoDir": "",
+  "BuildDir": "build-release",
   "MsysBin": "C:\\msys64\\mingw64\\bin",
   "Ninja": "",
   "EnigmaConsole": "",
   "SevenZip": "",
 
-  "GameDir": "E:\\OpenXCom\\Пиратки\\Dioxine_XPiratez",
+  "GameDir": "Пиратки\\Dioxine_XPiratez",
   "Mods": ["hd", "intro_voice", "Piratez", "OAK patch for RU Piratez", "Piratez Cities Lore", "Piratez Cyrillic Names", "Piratez Czech Names", "XPZ RU-patch"],
   "ModRequire": {
     "Piratez": ["metadata.yml", "Ruleset", "Language", "Resources", "Ruleset/zz_award_pages_en.rul"],
@@ -21,13 +21,13 @@
 
   "ExeName": "openxcom_hd.exe",
   "ExeResultName": "OpenXComEx_{stamp}",
-  "DistDir": "E:\\OpenXCom\\dist",
+  "DistDir": "dist",
   "KeepLast": 5,
-  "CopyExeTo": "E:\\OpenXCom\\Пиратки\\Dioxine_XPiratez",
+  "CopyExeTo": "Пиратки\\Dioxine_XPiratez",
 
   "Launcher": true,
   "LauncherDevKeys": false,
-  "LauncherOut": "E:\\OpenXCom\\dist\\_launcher_rel",
+  "LauncherOut": "dist\\_launcher_rel",
   "OpenExplorer": true,
 
   "DynamicDlls": ["libvorbisfile-3.dll"],
