@@ -1107,37 +1107,43 @@ void TextList::setScrolling(bool scrolling, int scrollPos)
 }
 
 /**
+ * The visible rows as draw() lays them out: for wrapped items the draw
+ * height starts above the visible surface, so that the correct row appears
+ * at the top, and every row takes its first line's height and the spacing.
+ */
+void TextList::forVisibleRows(const std::function<void(size_t, int, int)> &fn) const
+{
+	if (_rows.empty())
+	{
+		return;
+	}
+	int y = 0;
+	for (int row = _scroll; row > 0 && _rows[row] == _rows[row - 1]; --row)
+	{
+		y -= _font->getHeight() + _font->getSpacing();
+	}
+	for (size_t i = _rows[_scroll]; i < _texts.size() && i < _rows[_scroll] + _visibleRows; ++i)
+	{
+		const int h = (!_texts[i].empty() ? _texts[i].front()->getHeight() : _font->getHeight()) + _font->getSpacing();
+		fn(i, y, h);
+		y += h;
+	}
+}
+
+/**
  * Draws the text list and all the text contained within.
  */
 void TextList::draw()
 {
 	Surface::draw();
-	int y = 0;
-	if (!_rows.empty())
+	forVisibleRows([&](size_t i, int y, int)
 	{
-		// for wrapped items, offset the draw height above the visible surface
-		// so that the correct row appears at the top
-		for (int row = _scroll; row > 0 && _rows[row] == _rows[row - 1]; --row)
+		for (auto* text : _texts[i])
 		{
-			y -= _font->getHeight() + _font->getSpacing();
+			text->setY(y);
+			text->blit(this->getSurface());
 		}
-		for (size_t i = _rows[_scroll]; i < _texts.size() && i < _rows[_scroll] + _visibleRows; ++i)
-		{
-			for (auto* text : _texts[i])
-			{
-				text->setY(y);
-				text->blit(this->getSurface());
-			}
-			if (!_texts[i].empty())
-			{
-				y += _texts[i].front()->getHeight() + _font->getSpacing();
-			}
-			else
-			{
-				y += _font->getHeight() + _font->getSpacing();
-			}
-		}
-	}
+	});
 }
 
 /**
@@ -1150,21 +1156,6 @@ void TextList::hdMirror()
 	{
 		return;
 	}
-	// the visible rows: index and base y (relative to the list) and height
-	auto forRows = [&](const std::function<void(size_t, int, int)> &fn)
-	{
-		int y = 0;
-		for (int row = _scroll; row > 0 && _rows[row] == _rows[row - 1]; --row)
-		{
-			y -= _font->getHeight() + _font->getSpacing();
-		}
-		for (size_t i = _rows[_scroll]; i < _texts.size() && i < _rows[_scroll] + _visibleRows; ++i)
-		{
-			const int h = (!_texts[i].empty() ? _texts[i].front()->getHeight() : _font->getHeight()) + _font->getSpacing();
-			fn(i, y, h);
-			y += h;
-		}
-	};
 	if (HdUi::skin())
 	{
 		// the modern skin: the selected row's highlight with an accent bar. Rows are not banded: the
@@ -1184,7 +1175,7 @@ void TextList::hdMirror()
 		}
 		ui.clearClip();
 	}
-	forRows([&](size_t i, int y, int)
+	forVisibleRows([&](size_t i, int y, int)
 	{
 		for (auto* text : _texts[i])
 		{
