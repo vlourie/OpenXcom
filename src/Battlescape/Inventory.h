@@ -31,6 +31,7 @@ class WarningMessage;
 class BattleItem;
 class BattleUnit;
 class NumberText;
+class Text;
 class Timer;
 
 /**
@@ -62,7 +63,15 @@ private:
 	RuleInventory *_inventorySlotBackPack = nullptr;
 	RuleInventory *_inventorySlotBelt = nullptr;
 	RuleInventory *_inventorySlotGround = nullptr;
+	/// a slot name as the classic layout put it, for the HD interface to draw with its own fonts
+	struct GridLabel { std::string text; int x, y; };
+	std::vector<GridLabel> _labels;
+	Text *_hdLabel;
 
+	/// Is the HD interface going to draw the slot names with its own fonts on that surface?
+	bool hdLabels(const SDL_Surface *surface) const;
+	/// Draws the slot names with the TrueType fonts where the classic layout put them.
+	void drawHdLabels();
 	/// Clear all occupied slots markers.
 	std::vector<std::vector<char>>* clearOccupiedSlotsCache();
 	/// Moves an item to a specified slot.
