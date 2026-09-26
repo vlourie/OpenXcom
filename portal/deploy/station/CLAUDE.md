@@ -36,7 +36,8 @@ powershell -ExecutionPolicy Bypass -File .\station.ps1          # = up
 `up` при первом запуске сам пишет `.env` и `portal.env`:
 - `PORTAL_HOST` — IPv4 интерфейса маршрута по умолчанию (не vEthernet WSL/Docker);
 - `HTTPS_PORT` — первый свободный порт от 8443;
-- `FRONT_SUBNET` — первая `172.30.N.0/24`, не пересекающаяся ни с одной сетью Docker;
+- `FRONT_SUBNET` — из переменной окружения `FRONT_SUBNET`, если задана; иначе подсеть уже существующей
+  сети `xp-portal_front`; иначе первая `172.30.N.0/24`, не пересекающаяся ни с одной сетью Docker;
 - `POSTGRES_PASSWORD`, `Portal__Secret` — случайные.
 
 Потом `docker compose -f compose.yaml -f compose.station.yaml up -d --build` и ждёт `/ready`.

@@ -122,13 +122,29 @@ function Get-FreeSubnet {
     Fail 'не нашлось свободной подсети 172.30.N.0/24'
 }
 
+# FRONT_SUBNET для нового .env: задана в окружении - она; сеть прошлого запуска уже есть - её настоящий
+# адрес (раньше здесь стояло 172.30.10.0/24 наугад, а сеть могла быть создана с другим); иначе свободная
+function Get-FrontSubnet {
+    if ($env:FRONT_SUBNET) {
+        if ($env:FRONT_SUBNET -notmatch '^\d+\.\d+\.\d+\.\d+/\d+$') { Fail "FRONT_SUBNET='$env:FRONT_SUBNET' - не подсеть вида 172.30.10.0/24" }
+        return $env:FRONT_SUBNET
+    }
+    $existing = @(& docker network ls --filter 'name=xp-portal_front' -q)
+    if ($existing) {
+        $s = ((& docker network inspect $existing[0] --format '{{range .IPAM.Config}}{{.Subnet}} {{end}}') -split ' ') |
+            Where-Object { $_ -match '^\d+\.\d+\.\d+\.\d+/\d+$' } | Select-Object -First 1
+        if ($s) { return $s }
+        return '172.30.10.0/24'   # подсеть не прочиталась: прежнее значение, как в compose.yaml
+    }
+    Get-FreeSubnet
+}
+
 function Initialize-Config {
     if (-not (Test-Path '.env')) {
         Say 'создаю .env'
         $host_ = Get-LanAddress
         $port = Get-FreePort 8443
-        $existing = & docker network ls --filter 'name=xp-portal_front' -q
-        $subnet = if ($existing) { '172.30.10.0/24' } else { Get-FreeSubnet }
+        $subnet = Get-FrontSubnet
         $pg = -join ((New-Secret 24) | ForEach-Object { $_.ToString('x2') })
         $text = @(
             '# made by station.ps1 for a test station; the public server uses .env.example instead'
