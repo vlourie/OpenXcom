@@ -324,7 +324,8 @@ public sealed class Updater(GamePaths paths, RepoClient repo, ILauncherLog log)
         var lastUndo = Path.Combine(Paths.LastBackup, "undo.json");
         var movedToLast = !Directory.Exists(backup) && File.Exists(lastUndo) && LoadJournal(lastUndo).Id == journal.Id;
         var what = journal.Rollback ? $"rollback to {journal.ReleaseId}" : $"install {journal.ReleaseId}";
-        if (journal.Phase == "committed" || movedToLast)
+        RecoveryFinished = journal.Phase == "committed" || movedToLast;
+        if (RecoveryFinished)
         {
             log.Info($"{what} was interrupted after it committed: finishing it");
             FinishCommit(journal, backup);
@@ -337,6 +338,9 @@ public sealed class Updater(GamePaths paths, RepoClient repo, ILauncherLog log)
         if (Directory.Exists(backup)) Directory.Delete(backup, recursive: true);
         return true;
     }
+
+    /// <summary>After <see cref="Recover"/> returned true: the interrupted work was finished rather than undone.</summary>
+    public bool RecoveryFinished { get; private set; }
 
     public bool CanRollback => File.Exists(Path.Combine(Paths.LastBackup, "undo.json"));
 

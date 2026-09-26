@@ -470,7 +470,7 @@ public sealed class MainWindow : Window
         _fileLog.Info($"launcher {BuiltIn.VersionText} started, game dir <game>");
         try
         {
-            if (_updater.Recover()) SetStatus(L.T("status.recovered"));
+            if (_updater.Recover()) SetStatus(L.T(_updater.RecoveryFinished ? "status.recoveredFinished" : "status.recovered"));
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException)
         {

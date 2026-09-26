@@ -220,6 +220,7 @@ public sealed class UpdaterTests : IDisposable
     {
         var v1 = await CrashV2InstallAt("state saved");
         Assert.True(f.Updater.Recover());
+        Assert.False(f.Updater.RecoveryFinished);
         Assert.Equal(v1, f.Snapshot());
         Assert.Equal("v1", f.Updater.LoadState().InstalledReleaseId);
         Assert.False(File.Exists(f.Updater.Paths.Journal));
@@ -230,6 +231,7 @@ public sealed class UpdaterTests : IDisposable
     {
         var v1 = await CrashV2InstallAt("committed");
         Assert.True(f.Updater.Recover());
+        Assert.True(f.Updater.RecoveryFinished);   // the player is told the new version is in place
         AssertV2Installed();
         Assert.False(File.Exists(f.Updater.Paths.Journal));
         Assert.False(f.Updater.Recover());         // nothing left over

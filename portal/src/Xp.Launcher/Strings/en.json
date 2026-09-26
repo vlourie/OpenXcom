@@ -28,6 +28,7 @@
  "status.noGameDir": "Choose your X-Piratez game folder.",
  "status.notGameDir": "No game here: common, user and OpenXcomEx.exe are required.",
  "status.recovered": "The previous install was interrupted and has been undone; files are as before.",
+ "status.recoveredFinished": "The previous install was interrupted at the very end and has been finished; the new version is in place.",
  "err.gameRunning": "The game is running. Close it to update files.",
  "err.trust": "Authenticity check failed, nothing installed: {0}",
  "err.network": "Cannot reach the update server: {0}",
