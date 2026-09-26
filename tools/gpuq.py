@@ -259,7 +259,7 @@ def now():
 
 def dlog(msg):
     os.makedirs(HOME, exist_ok=True)
-    with io.open(DAEMON_LOG, "a", encoding="utf-8") as f:
+    with io.open(DAEMON_LOG, "a", encoding="utf-8-sig") as f:
         f.write(f"{now()}  {msg}\n")
 
 

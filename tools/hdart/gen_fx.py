@@ -484,7 +484,7 @@ def fire_compare(out_dir, k, seed):
             sheet.alpha_composite(tile, (170 + t * cw, r * ch))
     png = os.path.join(out_dir, "fire_styles.png")
     sheet.save(png)
-    with open(os.path.join(out_dir, "fire_styles.txt"), "w", encoding="utf-8") as f:
+    with open(os.path.join(out_dir, "fire_styles.txt"), "w", encoding="utf-8-sig") as f:
         f.write("0 сейчас: нынешний огонь (4 разных пламени, каждое по два тика)\n")
         for s in sorted(FIRE_STYLES):
             f.write("%d %s\n" % (s, FIRE_STYLES[s]["ru"]))

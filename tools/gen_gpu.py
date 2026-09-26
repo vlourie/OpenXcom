@@ -64,7 +64,7 @@ def cmd_check() -> int:
 
 def parse_spec(path: Path) -> dict:
     """Достаёт промпт, негатив и размер из docs/assets/<имя>.spec.md."""
-    text = path.read_text(encoding="utf-8")
+    text = path.read_text(encoding="utf-8-sig")
     out = {"prompt": "", "negative": "", "width": 1024, "height": 1024}
     section = None
     for line in text.splitlines():
@@ -101,7 +101,7 @@ def cmd_generate(args) -> int:
     outdir = Path(args.out); outdir.mkdir(parents=True, exist_ok=True)
 
     manifest_path = outdir / "manifest.json"
-    manifest = json.loads(manifest_path.read_text(encoding="utf-8")) if manifest_path.exists() else {"runs": []}
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8-sig")) if manifest_path.exists() else {"runs": []}
 
     run = {
         "timestamp": time.strftime("%Y-%m-%dT%H:%M:%S"),
@@ -125,7 +125,7 @@ def cmd_generate(args) -> int:
         ),
     }
     manifest["runs"].append(run)
-    manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8")
+    manifest_path.write_text(json.dumps(manifest, ensure_ascii=False, indent=2), encoding="utf-8-sig")
 
     print(f"Заготовка запуска записана в {manifest_path}")
     print("Дальше: подключить свой workflow (см. поле note в манифесте).")

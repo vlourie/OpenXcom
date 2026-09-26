@@ -242,7 +242,7 @@ def main():
     if args.text:
         os.makedirs(args.text, exist_ok=True)
         for k, v in picked.items():
-            with io.open(os.path.join(args.text, k + ".txt"), "w", encoding="utf-8") as f:
+            with io.open(os.path.join(args.text, k + ".txt"), "w", encoding="utf-8-sig") as f:
                 f.write(as_text(k, v, langs))
         print("texts: %s (%d)" % (args.text, len(picked)))
     return 0

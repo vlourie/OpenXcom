@@ -137,7 +137,7 @@ def main():
         if not args.no_sheets:
             sheet(orig, hd, os.path.join(args.out, key + ".png"), args.height)
             if key in text:
-                with io.open(os.path.join(args.out, key + ".txt"), "w", encoding="utf-8") as f:
+                with io.open(os.path.join(args.out, key + ".txt"), "w", encoding="utf-8-sig") as f:
                     f.write(words_of(text[key], langs) + "\n")
     rows.sort(key=lambda r: r["shape"])
     if args.worst and not args.no_sheets:
