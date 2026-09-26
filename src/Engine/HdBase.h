@@ -53,7 +53,8 @@ namespace HdBase
 	};
 	/// Reads every phase of these tiles not read yet, decoding across HdWorkers: a base opens
 	/// with one short pause instead of a stall on each phase met for the first time.
-	void preload(const std::vector<Want> &want, int scale);
+	/// Without `allPhases` only the first phase is read (the animations are switched off).
+	void preload(const std::vector<Want> &want, int scale, bool allPhases);
 	/// Are animated tiles in use (something drawn since the last clear has more than one phase)?
 	bool animated();
 	/// Forgets everything (mod reload).

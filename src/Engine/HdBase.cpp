@@ -252,7 +252,7 @@ const HdFrame *frame(int index, int phase, int scale, int baseWidth, int baseHei
 	return &stored;
 }
 
-void preload(const std::vector<Want> &want, int scale)
+void preload(const std::vector<Want> &want, int scale, bool allPhases)
 {
 	scan();
 	if (scale < 1)
@@ -279,7 +279,8 @@ void preload(const std::vector<Want> &want, int scale)
 			continue;
 		}
 		Tile &tile = it->second;
-		for (int p = 0; p < (int)tile.paths.size(); ++p)
+		const int count = allPhases ? (int)tile.paths.size() : 1;
+		for (int p = 0; p < count; ++p)
 		{
 			if (tile.loaded.count(p))
 			{

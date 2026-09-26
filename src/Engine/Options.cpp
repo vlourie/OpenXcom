@@ -516,6 +516,8 @@ void createAdvancedOptionsOXCE()
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdUiFont", &oxceHdUiFont, 0, "STR_HD_UI_FONT", "STR_HD_INTERFACE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdPictures", &oxceHdPictures, true, "STR_HD_PICTURES", "STR_HD_INTERFACE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdUiSmooth", &oxceHdUiSmooth, true, "STR_HD_UI_SMOOTH", "STR_HD_INTERFACE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdBaseAnim", &oxceHdBaseAnim, true, "STR_HD_BASE_ANIM", "STR_HD_INTERFACE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdCraftLights", &oxceHdCraftLights, true, "STR_HD_CRAFT_LIGHTS", "STR_HD_INTERFACE"));
 	// HD render workers (Engine/HdWorkers.h) and how far the battle timer may run ahead of slow frames
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdThreads", &oxceHdThreads, 0, "STR_HD_THREADS", "STR_HD_SPEED"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdFrameSkip", &oxceHdFrameSkip, 4, "STR_HD_FRAME_SKIP", "STR_HD_SPEED"));

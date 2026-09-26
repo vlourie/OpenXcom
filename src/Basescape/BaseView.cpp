@@ -576,7 +576,8 @@ void BaseView::drawHd()
 			}
 		}
 	}
-	HdBase::preload(want, k);
+	HdBase::preload(want, k, Options::oxceHdBaseAnim);
+	const int facilityPhase = Options::oxceHdBaseAnim ? _animPhase : 0;
 	for (const auto* fac : *_base->getFacilities())
 	{
 		if (!isHdFacility(fac))
@@ -597,7 +598,7 @@ void BaseView::drawHd()
 				Surface *classic = _texture->getFrame(index);
 				if (classic)
 				{
-					const HdFrame *hd = HdBase::frame(index, _animPhase, k, classic->getWidth(), classic->getHeight());
+					const HdFrame *hd = HdBase::frame(index, facilityPhase, k, classic->getWidth(), classic->getHeight());
 					if (hd)
 					{
 						HdUiArt::drawFrame(world, *hd, (getX() + x * GRID_SIZE) * k, (getY() + y * GRID_SIZE) * k);
@@ -616,7 +617,7 @@ void BaseView::drawHd()
 			continue;
 		}
 		const HdFrame *picture = HdBase::phases(craft.index) > 0
-			? HdBase::frame(craft.index, _animPhase, k, classic->getWidth(), classic->getHeight())
+			? HdBase::frame(craft.index, Options::oxceHdCraftLights ? _animPhase : 0, k, classic->getWidth(), classic->getHeight())
 			: classicHd(_texture, craft.index, k, getPalette());
 		if (picture)
 		{
@@ -631,7 +632,7 @@ void BaseView::drawHd()
  */
 void BaseView::drawHdLights()
 {
-	if (!_visible || _hidden || !_base || _hdCrafts.empty() || !hdBaseActive())
+	if (!_visible || _hidden || !_base || _hdCrafts.empty() || !hdBaseActive() || !Options::oxceHdCraftLights)
 	{
 		return;
 	}
@@ -666,7 +667,7 @@ void BaseView::blink()
 	_blink = !_blink;
 
 	// HD pictures of facilities can have several phases: one step every other tick (200 ms)
-	if (HdBase::animated() && hdBaseActive() && ++_animTick >= 2)
+	if (HdBase::animated() && hdBaseActive() && (Options::oxceHdBaseAnim || Options::oxceHdCraftLights) && ++_animTick >= 2)
 	{
 		_animTick = 0;
 		++_animPhase;
