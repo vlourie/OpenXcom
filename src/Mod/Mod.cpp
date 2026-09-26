@@ -2911,6 +2911,9 @@ void Mod::loadHdUiArt()
 		}
 	}
 	int loaded = 0;
+	// one pack serves both games: on vanilla nearly every picture of it is unmatched, so one summary line, the names at debug
+	int unmatched = 0;
+	std::string unmatchedNames;
 	for (const std::string &file : files)
 	{
 		if (file.size() < 5 || file.substr(file.size() - 4) != ".png")
@@ -2921,7 +2924,11 @@ void Mod::loadHdUiArt()
 		auto it = names.find(lower);
 		if (it == names.end())
 		{
-			Log(LOG_WARNING) << "HD interface: " << HdSprites::artPath("UI/" + file) << " matches no image of the mods";
+			if (++unmatched <= 5)
+			{
+				unmatchedNames += (unmatchedNames.empty() ? "" : ", ") + file;
+			}
+			Log(LOG_DEBUG) << "HD interface: " << HdSprites::artPath("UI/" + file) << " matches no image of the mods";
 			continue;
 		}
 		if (isPatchedSurface(it->second))
@@ -2976,6 +2983,11 @@ void Mod::loadHdUiArt()
 		{
 			++loaded;
 		}
+	}
+	if (unmatched)
+	{
+		Log(LOG_WARNING) << "HD interface: " << unmatched << " picture(s) in hd/UI match no image of the mods (" << unmatchedNames
+			<< (unmatched > 5 ? ", ..." : "") << ") - every name is in the log at debug level";
 	}
 	// the geoscape's big background is made here by mirroring GEOBORD.SCR (modResources): its
 	// picture is made the same way from GEOBORD's, unless a mod ships its own ALTGEOBORD.SCR (and picture)
