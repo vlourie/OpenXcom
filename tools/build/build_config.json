@@ -22,7 +22,7 @@
   "ExeName": "openxcom_hd.exe",
   "ExeResultName": "OpenXComEx_{stamp}",
   "DistDir": "dist",
-  "KeepLast": 5,
+  "KeepLast": 2,
   "CopyExeTo": "Пиратки\\Dioxine_XPiratez",
 
   "Launcher": true,
