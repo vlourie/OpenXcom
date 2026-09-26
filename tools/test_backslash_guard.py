@@ -23,6 +23,9 @@ DENY = {
     "sed -E -i": "sed -E -i 's/x" + BS + "s+/y/' file.txt",
     "perl -pi -e": "perl -pi -e 's/x" + BS + "n/y/' file.txt",
     "после cd": "cd /e/OpenXCom; python -c \"print('" + BS + "t')\"",
+    "sed s в конвейере": "cat f.cs | sed 's/a" + BS * 2 + "b/c/' > g.cs",
+    "sed s с > в файл": "sed 's/x" + BS + "n/y/' in.txt > out.txt",
+    "sed -e s в двойных кавычках": "grep x f | sed -e \"s|a" + BS + "|b|c|g\"",
 }
 
 ALLOW = {
@@ -34,6 +37,9 @@ ALLOW = {
     "без косых": "python tools/rake.py hit R-035",
     "python со скриптом по пути": "python C:" + BS + "tmp" + BS + "edit.py",
     "PowerShell путь": "Get-Content E:" + BS + "x.txt -Encoding UTF8",
+    "sed s без косых": "sed 's/utf-8/utf-8-sig/' f.py > g.py",
+    "sed чтение по пути Windows": "sed -n '1,20p' \"E:" + BS + "x.txt\"",
+    "sed в конвейере без подстановки": "git log | sed -n '/a" + BS + "|b/p'",
 }
 
 
