@@ -29,7 +29,8 @@ public sealed class UpdateBlockedException(string message) : Exception(message);
 /// <summary>
 /// Everything the launcher does to the game directory. Order of an install:
 /// download to staging (hash-checked) -> journal -> move replaced files to backup -> put new files ->
-/// save state -> mark committed. A crash at any point is undone by <see cref="Recover"/>.
+/// save state -> mark committed in the journal -> backup becomes "last". A crash before the mark is
+/// undone by <see cref="Recover"/>, a crash after it is finished by it.
 /// </summary>
 public sealed class Updater(GamePaths paths, RepoClient repo, ILauncherLog log)
 {
@@ -272,25 +273,59 @@ public sealed class Updater(GamePaths paths, RepoClient repo, ILauncherLog log)
         foreach (var k in state.Kept.Keys.ToList())
             if (state.Kept[k].ReleaseId != plan.Manifest.Release.Id) state.Kept.Remove(k);
         state.Save(Paths);
+        Checkpoint("state saved");
 
+        // the commit point, recorded in the journal itself: past it a crash is finished on the next start
+        // rather than undone - files and state already say "new release", and the backup may already
+        // have become backup/last, where an undo would not look for it
         journal.Phase = "committed";
-        SaveJournal(Path.Combine(backup, "undo.json"), journal);
-        // keep exactly one undo set: this one becomes "last"
-        if (Directory.Exists(Paths.LastBackup)) Directory.Delete(Paths.LastBackup, recursive: true);
-        Directory.Move(backup, Paths.LastBackup);
-        File.Delete(Paths.Journal);
-        CleanStaging();
+        SaveJournal(Paths.Journal, journal);
+        Checkpoint("committed");
+        FinishCommit(journal, backup);
         log.Info($"installed {journal.ReleaseId}: {writes.Count} written, {journal.Deletes.Count} removed");
     }
 
-    /// <summary>Called at start-up: an install that did not reach "committed" is undone.</summary>
+    /// <summary>Test seam: called at the named steps of an install, to break it off exactly there.</summary>
+    internal Action<string> Checkpoint { get; set; } = _ => { };
+
+    /// <summary>Everything after the commit point. Safe to run again after a crash in the middle of it.</summary>
+    void FinishCommit(Journal journal, string backup)
+    {
+        // keep exactly one undo set: this one becomes "last". No backup here means an earlier
+        // attempt already moved it, and deleting "last" now would delete this very set
+        if (Directory.Exists(backup))
+        {
+            SaveJournal(Path.Combine(backup, "undo.json"), journal);
+            if (Directory.Exists(Paths.LastBackup)) Directory.Delete(Paths.LastBackup, recursive: true);
+            Directory.Move(backup, Paths.LastBackup);
+        }
+        File.Delete(Paths.Journal);
+        CleanStaging();
+    }
+
+    /// <summary>
+    /// Called at start-up. An install that did not reach the commit point is undone; one that did is
+    /// finished. Also run again if it is itself interrupted: the journal goes only after the undo is complete.
+    /// </summary>
     public bool Recover()
     {
         if (!File.Exists(Paths.Journal)) return false;
         var journal = LoadJournal(Paths.Journal);
+        var backup = Path.Combine(Paths.Backup, journal.Id);
+        // a journal from a launcher before the commit record: the move to "last" is the only sign it committed
+        var lastUndo = Path.Combine(Paths.LastBackup, "undo.json");
+        var movedToLast = !Directory.Exists(backup) && File.Exists(lastUndo) && LoadJournal(lastUndo).Id == journal.Id;
+        if (journal.Phase == "committed" || movedToLast)
+        {
+            log.Info($"install {journal.ReleaseId} was interrupted after it committed: finishing it");
+            FinishCommit(journal, backup);
+            return true;
+        }
         log.Info($"unfinished install {journal.ReleaseId} found: undoing");
-        Undo(journal, Path.Combine(Paths.Backup, journal.Id));
+        Undo(journal, backup);
+        // journal first: an undo interrupted after its backup is gone would find no old state to restore
         File.Delete(Paths.Journal);
+        if (Directory.Exists(backup)) Directory.Delete(backup, recursive: true);
         return true;
     }
 
@@ -339,7 +374,6 @@ public sealed class Updater(GamePaths paths, RepoClient repo, ILauncherLog log)
             s.InstalledReleaseId = null; s.InstalledVersion = null; s.Installed.Clear(); s.InstalledRoots.Clear(); s.Cache.Clear();
             s.Save(Paths);
         }
-        if (Directory.Exists(backup) && backup != Paths.LastBackup) Directory.Delete(backup, recursive: true);
     }
 
     void CleanStaging()

@@ -189,6 +189,78 @@ public sealed class UpdaterTests : IDisposable
         Assert.Equal("engine v2", f.ReadGame("openxcom_hd.exe"));
     }
 
+    /// <summary>v1 installed, v2 downloaded, and the install of v2 breaks off at <paramref name="step"/>.</summary>
+    async Task<Dictionary<string, string>> CrashV2InstallAt(string step)
+    {
+        f.StageV1(); f.BuildAndPublish("v1");
+        await f.UpdateAsync();
+        var v1 = f.Snapshot();
+        f.StageV2(); f.BuildAndPublish("v2");
+        var state = f.Updater.LoadState();
+        var latest = await f.Updater.CheckAsync(state, default);
+        var plan = f.Updater.Scan(state, latest.Manifest, false, null, default);
+        await f.Updater.DownloadAsync(plan, null, default);
+        f.Updater.Checkpoint = s => { if (s == step) throw new IOException("power cut (test)"); };
+        Assert.Throws<IOException>(() => f.Updater.Install(state, plan, null));
+        f.Updater.Checkpoint = _ => { };
+        return v1;
+    }
+
+    void AssertV2Installed()
+    {
+        Assert.Equal("v2", f.Updater.LoadState().InstalledReleaseId);
+        Assert.Equal("engine v2", f.ReadGame("openxcom_hd.exe"));
+        Assert.Equal("new in v2", f.ReadGame("user/mods/hd/hd/UI/new.png"));
+        Assert.False(f.GameHas("user/mods/hd/hd/UI/old.png"));
+        f.AssertPlayerDataIntact();
+    }
+
+    [Fact]
+    public async Task Crash_just_before_the_commit_point_is_undone()
+    {
+        var v1 = await CrashV2InstallAt("state saved");
+        Assert.True(f.Updater.Recover());
+        Assert.Equal(v1, f.Snapshot());
+        Assert.Equal("v1", f.Updater.LoadState().InstalledReleaseId);
+        Assert.False(File.Exists(f.Updater.Paths.Journal));
+    }
+
+    [Fact]
+    public async Task Crash_after_the_commit_point_is_finished_and_keeps_the_undo_set()
+    {
+        var v1 = await CrashV2InstallAt("committed");
+        Assert.True(f.Updater.Recover());
+        AssertV2Installed();
+        Assert.False(File.Exists(f.Updater.Paths.Journal));
+        Assert.False(f.Updater.Recover());         // nothing left over
+
+        f.Updater.RollbackLast();                  // and the undo set is whole
+        Assert.Equal(v1, f.Snapshot());
+        Assert.Equal("v1", f.Updater.LoadState().InstalledReleaseId);
+    }
+
+    [Fact]
+    public async Task Journal_of_an_older_launcher_left_after_the_backup_moved_is_finished_not_undone()
+    {
+        // a launcher before the commit record crashed between moving the backup to "last" and deleting
+        // the journal: the journal still says "applying", and undoing from a backup that is not there
+        // used to delete the new files and forget the install
+        f.StageV1(); f.BuildAndPublish("v1");
+        await f.UpdateAsync();
+        var v1 = f.Snapshot();
+        f.StageV2(); f.BuildAndPublish("v2");
+        await f.UpdateAsync();
+        var undo = JsonSerializer.Deserialize<JsonElement>(File.ReadAllText(Path.Combine(f.Updater.Paths.LastBackup, "undo.json")));
+        var old = JsonSerializer.Serialize(undo).Replace("\"phase\":\"committed\"", "\"phase\":\"applying\"");
+        Assert.Contains("\"phase\":\"applying\"", old);
+        File.WriteAllText(f.Updater.Paths.Journal, old);
+
+        Assert.True(f.Updater.Recover());
+        AssertV2Installed();
+        f.Updater.RollbackLast();
+        Assert.Equal(v1, f.Snapshot());
+    }
+
     [Fact]
     public async Task Update_removes_dropped_files_but_not_the_players_own()
     {
