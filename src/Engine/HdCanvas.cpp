@@ -181,6 +181,14 @@ void Canvas32::rebuildTables()
 	{
 		_lut[i] = SDL_MapRGB(_surface->format, _colors[i].r, _colors[i].g, _colors[i].b);
 	}
+	// index 0 is transparent and never on the canvas: a color it shares belongs to the first other index
+	const Uint32 rgbMask = _surface->format->Rmask | _surface->format->Gmask | _surface->format->Bmask;
+	_paletteIndexOf.clear();
+	for (int i = 1; i < 256; ++i)
+	{
+		_paletteIndexOf.push_back(((Uint64)(_lut[i] & rgbMask) << 8) | (Uint64)i);
+	}
+	std::sort(_paletteIndexOf.begin(), _paletteIndexOf.end());
 	for (int shade = 0; shade <= 16; ++shade)
 	{
 		for (int i = 0; i < 256; ++i)
@@ -755,7 +763,7 @@ void Canvas32::blitClassic(Surface *src, int x, int y, int scale, int shade, int
 	record(cmd);
 }
 
-void Canvas32::drawVapor(SurfaceRaw<int> pattern, int x, int y, int size, const Uint8 *, SDL_Color tint)
+void Canvas32::drawVapor(SurfaceRaw<int> pattern, int x, int y, int size, const Uint8 *transparencyLUT, SDL_Color tint)
 {
 	if (tint.unused == 0)
 	{
@@ -767,6 +775,7 @@ void Canvas32::drawVapor(SurfaceRaw<int> pattern, int x, int y, int size, const 
 	cmd.y = y;
 	cmd.size = size;
 	cmd.tint = tint;
+	cmd.transparencyLUT = transparencyLUT;
 	cmd.srcW = pattern.getWidth();
 	cmd.srcH = pattern.getHeight();
 	cmd.clip = fullArea();
@@ -1000,7 +1009,7 @@ void Canvas32::execute(const Cmd &cmd, int y0, int y1)
 		doBlitScaled(_arena.data() + cmd.arena, cmd.srcW, cmd.srcH, cmd.x, cmd.y, cmd.scale, cmd.shade, cmd.newBaseColor, clip);
 		break;
 	case Cmd::VAPOR:
-		doVapor(_arenaInt.data() + cmd.arena, cmd.srcW, cmd.srcH, cmd.x, cmd.y, cmd.size, cmd.tint, clip);
+		doVapor(_arenaInt.data() + cmd.arena, cmd.srcW, cmd.srcH, cmd.x, cmd.y, cmd.size, cmd.tint, cmd.transparencyLUT, clip);
 		break;
 	case Cmd::FLASH:
 		doFlash(y0, y1);
@@ -1121,12 +1130,25 @@ void Canvas32::doBlitScaled(const Uint8 *src, int srcW, int srcH, int x, int y, 
 	}
 }
 
-void Canvas32::doVapor(const int *pattern, int w, int h, int x, int y, int size, SDL_Color tint, GraphSubset destClip)
+int Canvas32::paletteIndexOf(Uint32 pixel) const
+{
+	const Uint64 key = (Uint64)(pixel & (_surface->format->Rmask | _surface->format->Gmask | _surface->format->Bmask)) << 8;
+	auto it = std::lower_bound(_paletteIndexOf.begin(), _paletteIndexOf.end(), key);
+	if (it != _paletteIndexOf.end() && (*it >> 8) == (key >> 8))
+	{
+		return (int)(*it & 0xFF);
+	}
+	return -1;
+}
+
+void Canvas32::doVapor(const int *pattern, int w, int h, int x, int y, int size, SDL_Color tint, const Uint8 *transparencyLUT, GraphSubset destClip)
 {
 	const int x0 = std::max({ x, destClip.beg_x, 0 });
 	const int y0 = std::max({ y, destClip.beg_y, 0 });
 	const int x1 = std::min({ x + w, destClip.end_x, _width });
 	const int y1 = std::min({ y + h, destClip.end_y, _height });
+	// classic pixels: the classic canvas's own table, so mode 0 stays byte-identical to it
+	const bool exact = _hdMode == HD_MODE_NEAREST && transparencyLUT;
 	for (int dy = y0; dy < y1; ++dy)
 	{
 		const int *patternRow = pattern + (size_t)(dy - y) * w;
@@ -1136,6 +1158,12 @@ void Canvas32::doVapor(const int *pattern, int w, int h, int x, int y, int size,
 			if (size <= patternRow[dx - x])
 			{
 				const Uint32 d = dstRow[dx];
+				const int index = exact ? paletteIndexOf(d) : -1;
+				if (index > 0)
+				{
+					dstRow[dx] = _lut[transparencyLUT[index]];
+					continue;
+				}
 				int r = (d >> _rshift) & 0xFF, g = (d >> _gshift) & 0xFF, b = (d >> _bshift) & 0xFF;
 				// same formula the palette transparency tables were built from
 				r = std::min(255, (r * tint.unused / 255) + tint.r);
@@ -1149,14 +1177,21 @@ void Canvas32::doVapor(const int *pattern, int w, int h, int x, int y, int size,
 
 void Canvas32::doFlash(int y0, int y1)
 {
-	// the palette version jumps every pixel to the brightest entry of its color group;
-	// here: a strong brightening that keeps the hue
+	// the palette version jumps every pixel to the brightest entry of its color group
+	// (classic pixels in mode 0 do exactly that); others: a strong brightening that keeps the hue
+	const bool exact = _hdMode == HD_MODE_NEAREST;
 	for (int dy = y0; dy < y1; ++dy)
 	{
 		Uint32 *dstRow = rowPtr(dy);
 		for (int dx = 0; dx < _width; ++dx)
 		{
 			const Uint32 d = dstRow[dx];
+			const int index = exact ? paletteIndexOf(d) : -1;
+			if (index > 0)
+			{
+				dstRow[dx] = _lut[(index & 0xF0) + 1];
+				continue;
+			}
 			int r = (d >> _rshift) & 0xFF, g = (d >> _gshift) & 0xFF, b = (d >> _bshift) & 0xFF;
 			r = 255 - (255 - r) / 4;
 			g = 255 - (255 - g) / 4;
