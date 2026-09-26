@@ -234,6 +234,7 @@ void ExplosionBState::init()
 			_parent->getMap()->setBlastFlash(true);
 			int lowerLimit = std::max(1, powerForAnimation / 5);
 			const std::string hdFx = HdFx::boomClip(itemRule);
+			HdFx::noteForTest(hdFx);
 			for (int i = 0; i < lowerLimit; i++)
 			{
 				int X = RNG::generate(-powerForAnimation / 2, powerForAnimation / 2);
