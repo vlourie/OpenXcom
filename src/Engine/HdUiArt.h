@@ -71,8 +71,6 @@ namespace HdUiArt
 	bool addLazy(const std::string &name, const Surface *base, const std::string &path, int width, int height, std::vector<SDL_Color> palette);
 	/// The picture's pixels, loading them if needed (empty when the file cannot be read).
 	const HdFrame &frame(const Art *art);
-	/// The memory budget of the loaded pictures (bytes).
-	void setBudget(size_t bytes);
 	/// The picture of the classic image with these pixels (by content), or nullptr.
 	const Art *find(Uint64 hash, int w, int h);
 	/// The picture of a mod's image (by the surface it was registered with), or nullptr.
@@ -83,7 +81,7 @@ namespace HdUiArt
 	/// Forgets everything (mod reload).
 	void clear();
 	size_t count();
-	/// Bytes of the pictures loaded now (see setBudget).
+	/// Bytes of the pictures loaded now (the budget is 768 MB).
 	size_t bytes();
 
 	/// Are pictures drawn now: the option is on, the screen is layered with a world scale of 2 or more.

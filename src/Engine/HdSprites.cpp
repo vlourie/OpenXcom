@@ -448,11 +448,6 @@ size_t loadedBytes()
 	return loadedTotal;
 }
 
-void setBudget(size_t bytes)
-{
-	budget = bytes;
-}
-
 /**
  * Drops the lazily read frames found longest ago until the loaded ones are
  * a quarter under the budget (so this runs rarely, not every frame).

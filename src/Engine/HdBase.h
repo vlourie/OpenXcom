@@ -59,8 +59,6 @@ namespace HdBase
 	bool animated();
 	/// Forgets everything (mod reload).
 	void clear();
-	/// The memory budget of the loaded pictures (bytes, default 64 MB).
-	void setBudget(size_t bytes);
 }
 
 }

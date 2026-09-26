@@ -237,11 +237,6 @@ bool pictureMatch(const Art *art, double &distance, double &shape)
 
 }
 
-void setBudget(size_t bytes)
-{
-	budget = bytes;
-}
-
 const HdFrame &frame(const Art *art)
 {
 	art->lru = ++clock;

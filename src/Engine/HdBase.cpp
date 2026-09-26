@@ -367,11 +367,6 @@ void clear()
 	anyAnimated = false;
 }
 
-void setBudget(size_t value)
-{
-	budget = value;
-}
-
 }
 
 }
