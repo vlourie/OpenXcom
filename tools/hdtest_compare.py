@@ -103,6 +103,26 @@ def compare_json(ja, jb, quiet, scale=1):
     return ok
 
 
+def compare_perf(ja, jb, slowdown):
+    """R-009: drawMs/flipMs of B against A. One frame is noisy, so this warns and does not change the verdict."""
+    if not (ja and jb and os.path.exists(ja) and os.path.exists(jb)):
+        return
+    with open(ja, "r", encoding="utf-8") as f:
+        da = json.load(f)
+    with open(jb, "r", encoding="utf-8") as f:
+        db = json.load(f)
+    for key in ("drawMs", "flipMs"):
+        va, vb = da.get(key), db.get(key)
+        if not isinstance(va, (int, float)) or not isinstance(vb, (int, float)):
+            continue
+        slow = vb > va * slowdown and vb - va > 1.0
+        print("%s perf %-6s A=%.2f  B=%.2f  (%s)" % ("!!" if slow else "  ", key, va, vb,
+              "B slower by %.0f%% - check docs/PERF.md, dump again to rule out noise" % ((vb / va - 1) * 100) if slow and va > 0
+              else "B/A %.2f" % (vb / va) if va > 0 else "A is 0"))
+    if da.get("hdThreads") != db.get("hdThreads"):
+        print("   perf hdThreads A=%r  B=%r - timings are not comparable" % (da.get("hdThreads"), db.get("hdThreads")))
+
+
 def compare_images(label, pa, pb, scale, out_dir, write_diff, quiet):
     a = load_rgb(pa)
     b = load_rgb(pb)
@@ -165,6 +185,7 @@ def main():
     ap.add_argument("--out", default=None)
     ap.add_argument("--no-diff", action="store_true")
     ap.add_argument("--quiet", action="store_true")
+    ap.add_argument("--max-slowdown", type=float, default=1.25, help="warn when drawMs/flipMs of B exceed A times this (R-009)")
     args = ap.parse_args()
 
     pairs, ja, jb = resolve_pair(args.a, args.b)
@@ -177,6 +198,7 @@ def main():
         return 2
 
     state_ok = compare_json(ja, jb, args.quiet, args.scale)
+    compare_perf(ja, jb, args.max_slowdown)
     all_same = True
     for label, pa, pb in pairs:
         try:
