@@ -18,6 +18,7 @@
  */
 #include "HdBlit.h"
 #include <algorithm>
+#include <cstring>
 #include "Surface.h"
 
 namespace OpenXcom
@@ -85,13 +86,22 @@ void upscaleFrame(SDL_Surface *dest, const SDL_Surface *src, int scale)
 	const int h = std::min(dest->h, src->h * scale);
 	const Uint8 *srcPixels = (const Uint8*)src->pixels;
 	Uint8 *dstPixels = (Uint8*)dest->pixels;
-	for (int y = 0; y < h; ++y)
+	// one row per source row, then copies of it: no division per pixel
+	for (int y = 0; y < h; y += scale)
 	{
 		const Uint8 *srcRow = srcPixels + (size_t)(y / scale) * src->pitch;
 		Uint8 *dstRow = dstPixels + (size_t)y * dest->pitch;
-		for (int x = 0; x < w; ++x)
+		for (int x = 0, sx = 0; x < w; ++sx)
 		{
-			dstRow[x] = srcRow[x / scale];
+			const Uint8 c = srcRow[sx];
+			for (int i = 0; i < scale && x < w; ++i, ++x)
+			{
+				dstRow[x] = c;
+			}
+		}
+		for (int r = 1; r < scale && y + r < h; ++r)
+		{
+			memcpy(dstPixels + (size_t)(y + r) * dest->pitch, dstRow, w);
 		}
 	}
 }

@@ -112,7 +112,10 @@ void HdWorkers::run(int jobs, const std::function<void(int)> &fn)
 	{
 		return;
 	}
-	if (_threads.empty() || jobs == 1)
+	// the pool runs one batch at a time: a call from a job, or from another thread while a batch runs
+	// (the data loading thread of the start screen), runs its jobs itself
+	bool idle = false;
+	if (_threads.empty() || jobs == 1 || !_busy.compare_exchange_strong(idle, true))
 	{
 		for (int i = 0; i < jobs; ++i)
 		{
@@ -120,6 +123,7 @@ void HdWorkers::run(int jobs, const std::function<void(int)> &fn)
 		}
 		return;
 	}
+	struct Release { std::atomic<bool> &busy; ~Release() { busy = false; } } release{ _busy };
 	{
 		std::lock_guard<std::mutex> lock(_mutex);
 		_job = &fn;

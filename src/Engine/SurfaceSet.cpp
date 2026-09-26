@@ -18,6 +18,7 @@
  */
 #include "SurfaceSet.h"
 #include "HdBlit.h"
+#include "HdWorkers.h"
 #include <climits>
 #include "Surface.h"
 #include "FileMap.h"
@@ -248,13 +249,32 @@ void SurfaceSet::hdScaleInPlace(int scale)
 	{
 		return;
 	}
-	for (auto& frame : _frames)
+	// the new frames are made here (SDL keeps a shared counter of pixel formats), the pixels on all
+	// cores: a set of a few thousand frames took 100 ms on the first frame of a battle
+	std::vector<Surface> scaled(_frames.size());
+	for (size_t i = 0; i < _frames.size(); ++i)
 	{
-		if (frame)
+		if (_frames[i])
 		{
-			frame = HdBlit::upscaledCopy(frame, scale);
+			scaled[i] = Surface(_frames[i].getWidth() * scale, _frames[i].getHeight() * scale, _frames[i].getX(), _frames[i].getY());
+			if (_frames[i].getPalette())
+			{
+				scaled[i].setPalette(_frames[i].getPalette());
+			}
 		}
 	}
+	const int jobs = (int)std::min<size_t>(_frames.size(), 64);
+	HdWorkers::instance().run(jobs, [&](int job)
+	{
+		for (size_t i = job; i < _frames.size(); i += jobs)
+		{
+			if (_frames[i])
+			{
+				HdBlit::upscaleFrame(scaled[i].getSurface(), _frames[i].getSurface(), scale);
+			}
+		}
+	});
+	_frames.swap(scaled);
 	_width *= scale;
 	_height *= scale;
 }

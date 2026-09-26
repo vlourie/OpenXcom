@@ -43,6 +43,8 @@ private:
 	const std::function<void(int)> *_job = nullptr;
 	int _jobs = 0;
 	std::atomic<int> _next { 0 };
+	/// A batch is running (see run).
+	std::atomic<bool> _busy { false };
 	int _running = 0;
 	unsigned _generation = 0;
 	bool _quit = false;

@@ -25,6 +25,7 @@
 #include "../Engine/HdSprites.h"
 #include "../Engine/FileMap.h"
 #include "../Engine/Logger.h"
+#include "../Engine/Options.h"
 
 namespace OpenXcom
 {
@@ -253,6 +254,11 @@ void MapDataSet::loadData(MCDPatch *patch, bool validate, int hdScale)
 	if (hdFrames > 0)
 	{
 		Log(LOG_INFO) << "HD render: " << hdFrames << " HD frame(s) for terrain " << _name;
+		// read them now on all cores, not one by one on the first frame of the battle (nearest mode draws no pack)
+		if (Options::oxceHdMode != 0)
+		{
+			HdSprites::preload(_surfaceSet);
+		}
 	}
 }
 
