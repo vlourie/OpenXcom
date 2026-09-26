@@ -53,7 +53,9 @@ def parse(body: str):
         m = re.match(r"(\d+)", it.get("Наступал", "0"))
         it["count"] = int(m.group(1)) if m else 0
         it["active"] = not it.get("Статус", "активны").startswith("обезвреж")
-        it["globs"] = [g.strip() for g in it.get("Файлы", "").split(",") if g.strip()]
+        # пояснение в скобках вместо глоба - грабли не про файлы, хук их не показывает
+        it["globs"] = [g.strip() for g in it.get("Файлы", "").split(",")
+                       if g.strip() and not g.strip().startswith("(")]
     return items
 
 

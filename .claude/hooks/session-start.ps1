@@ -36,7 +36,8 @@ try {
     # --- 2. Грабли ----------------------------------------------------------
     if ($py -and (Test-Path 'tools/rake.py')) {
         try {
-            $rakes = & $py.Source tools/rake.py list 2>&1 | Out-String
+            # коротко: полный текст граблей уже в контексте через @docs/RAKES.md в CLAUDE.md
+            $rakes = & $py.Source tools/rake.py list --short 2>&1 | Out-String
             if ($rakes.Trim()) {
                 $lines.Add("")
                 $lines.Add("=== ГРАБЛИ ПРОЕКТА (docs/RAKES.md) ===")
