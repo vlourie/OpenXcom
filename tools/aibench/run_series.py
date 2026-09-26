@@ -16,7 +16,7 @@
       --arm "родной=-brutalAI 0"
       --arm "честный=-brutalAI 0 -aiFairDamage true"
       --data "E:/OpenXCom/Пиратки/Dioxine_XPiratez" --master piratez
-      --mods-from E:/OpenXCom/BrutalAI/user_pz --out logs/series_pz.csv
+      --mods-from E:/BrutalAI/user_pz --out logs/series_pz.csv
 """
 
 import argparse
@@ -37,7 +37,11 @@ if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-FORK = os.path.join(ROOT, "BrutalAI")
+# клон Brutal-OXCE лежит рядом с репозиторием, а не в нём (аудит 26.09);
+# OXCE_BRUTAL_DIR задаёт другое место, прежнее место внутри дерева - запасное
+FORK = os.environ.get("OXCE_BRUTAL_DIR") or next(
+    (p for p in (os.path.join(os.path.dirname(ROOT), "BrutalAI"), os.path.join(ROOT, "BrutalAI")) if os.path.isdir(p)),
+    os.path.join(os.path.dirname(ROOT), "BrutalAI"))
 EXE = os.path.join(FORK, "build-release", "bin", "openxcom.exe")
 DATA = os.path.join(FORK, "bin")
 

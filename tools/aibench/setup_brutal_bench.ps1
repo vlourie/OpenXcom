@@ -4,7 +4,8 @@
 
 $ErrorActionPreference = "Stop"
 
-$Root      = "E:\OpenXCom\BrutalAI"
+# клон лежит рядом с репозиторием, а не в нём (аудит 26.09); OXCE_BRUTAL_DIR задаёт другое место
+$Root      = if ($env:OXCE_BRUTAL_DIR) { $env:OXCE_BRUTAL_DIR } else { Join-Path (Split-Path (Split-Path (Split-Path $PSScriptRoot))) "BrutalAI" }
 $Src       = Join-Path $Root "src-brutal"
 $BuildDir  = Join-Path $Root "build-release"
 $Patch     = "E:\OpenXCom\tools\aibench\aibench.patch"

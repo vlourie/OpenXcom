@@ -8,7 +8,7 @@
 когда состояние боя у любой сборки одно и то же. Её и сравниваем.
 
 Пример:
-  python tools/aibench/decide_diff.py BrutalAI/user_pz/log_a_1.log BrutalAI/user_pz/log_b_1.log
+  python tools/aibench/decide_diff.py ../BrutalAI/user_pz/log_a_1.log ../BrutalAI/user_pz/log_b_1.log
 """
 
 import argparse

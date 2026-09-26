@@ -45,7 +45,9 @@
 10. `DebriefingState.cpp` — если бой кончился раньше лимита ходов, процесс выходит.
 11. `SavedBattleGame.cpp` — процесс выходит после `aiBenchTurns` ходов.
 
-В нашу ветку не идёт ничего: патч живёт в чужом дереве `BrutalAI`.
+В нашу ветку не идёт ничего: патч живёт в чужом дереве `BrutalAI`. Дерево лежит рядом с
+репозиторием (`E:\BrutalAI`), а не в нём; другое место задаёт переменная `OXCE_BRUTAL_DIR`,
+её читают `run_bench.py`, `run_series.py` и `setup_brutal_bench.ps1`.
 
 Строка в логе:
 
@@ -91,7 +93,7 @@ CSV: `posScanned`, `posLoopMs`, `posLoopRuns` и посчитанное `usPerPo
 что и куда он решил делать.
 
 ```powershell
-python tools\aibench\decide_diff.py BrutalAI\user_pz\log_a_1.log BrutalAI\user_pz\log_b_1.log
+python tools\aibench\decide_diff.py ..\BrutalAI\user_pz\log_a_1.log ..\BrutalAI\user_pz\log_b_1.log
 ```
 
 **Сначала измерь шум.** Прогони ОДИН И ТОТ ЖЕ режим дважды и сличи логи между собой:
@@ -139,10 +141,10 @@ python tools\aibench\run_bench.py --load-battle aibench_pz.sav --fair 1 --label 
 Установка Пираток только читается. Мод подключается ссылкой в отдельную папку прогона:
 
 ```powershell
-mkdir E:\OpenXCom\BrutalAI\user_pz\mods
-cmd /c mklink /J "E:\OpenXCom\BrutalAI\user_pz\mods\Piratez" "E:\OpenXCom\Пиратки\Dioxine_XPiratez\user\mods\Piratez"
+mkdir E:\BrutalAI\user_pz\mods
+cmd /c mklink /J "E:\BrutalAI\user_pz\mods\Piratez" "E:\OpenXCom\Пиратки\Dioxine_XPiratez\user\mods\Piratez"
 python tools\aibench\run_bench.py --runs 1 --turns 1 --brutal 1 `
-  --data "E:/OpenXCom/Пиратки/Dioxine_XPiratez" --user "E:/OpenXCom/BrutalAI/user_pz" --master piratez
+  --data "E:/OpenXCom/Пиратки/Dioxine_XPiratez" --user "E:/BrutalAI/user_pz" --master piratez
 ```
 
 Первый запуск активирует мод не сразу: `-master` работает только по тем модам, что уже
@@ -164,7 +166,7 @@ python tools\aibench\run_bench.py --runs 1 --turns 1 --brutal 1 `
 powershell -ExecutionPolicy Bypass -File E:\OpenXCom\tools\aibench\setup_brutal_bench.ps1
 ```
 
-Данные: в `BrutalAI\bin\UFO` скопировать `GEODATA GEOGRAPH MAPS ROUTES SOUND TERRAIN
+Данные: в `..\BrutalAI\bin\UFO` скопировать `GEODATA GEOGRAPH MAPS ROUTES SOUND TERRAIN
 UFOGRAPH UNITS` из `bin\UFO`.
 
 Прогон:
@@ -195,14 +197,14 @@ python tools\aibench\run_bench.py --runs 3 --turns 4 --seed 1001 --brutal 0 --la
 сохранить рядом — иначе сравнивать будет не с чем:
 
 ```powershell
-copy BrutalAI/build-release/bin/openxcom.exe BrutalAI/build-release/bin/openxcom_base.exe
+copy ../BrutalAI/build-release/bin/openxcom.exe ../BrutalAI/build-release/bin/openxcom_base.exe
 ```
 
 Дальше обе сборки гоняются одной командой, отличается только `--exe`:
 
 ```powershell
 python tools/aibench/run_bench.py --runs 1 --turns 1 --seed 2002 --brutal 1 --label base `
-  --exe E:/OpenXCom/BrutalAI/build-release/bin/openxcom_base.exe ...
+  --exe E:/BrutalAI/build-release/bin/openxcom_base.exe ...
 python tools/aibench/run_bench.py --runs 1 --turns 1 --seed 2002 --brutal 1 --label opt ...
 ```
 
@@ -248,8 +250,8 @@ python tools/aibench/run_series.py --battles 40 --jobs 16 --turns 30 ^
     --arm "родной=-brutalAI 0" ^
     --arm "брутал=-brutalAI 1" ^
     --data "E:/OpenXCom/Пиратки/Dioxine_XPiratez" --master piratez ^
-    --mods-from E:/OpenXCom/BrutalAI/user_pz ^
-    --user-base E:/OpenXCom/BrutalAI/user_pzs ^
+    --mods-from E:/BrutalAI/user_pz ^
+    --user-base E:/BrutalAI/user_pzs ^
     --out logs/series_pz.csv
 ```
 
