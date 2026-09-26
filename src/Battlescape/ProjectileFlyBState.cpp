@@ -542,7 +542,7 @@ bool ProjectileFlyBState::createNewProjectile()
 			{
 				_parent->getMod()->getSoundByDepth(_parent->getDepth(), _action.weapon->getRules()->getFireSound())->play(-1, _parent->getMap()->getSoundAngle(_unit->getPosition()));
 			}
-			hdMuzzle(projectile->getOrigin());
+			hdMuzzle(projectile->getPosition(0));
 			if (_action.type != BA_LAUNCH)
 			{
 				_action.weapon->spendAmmoForAction(_action.type, _parent->getSave());
@@ -585,7 +585,7 @@ bool ProjectileFlyBState::createNewProjectile()
 			{
 				_parent->getMod()->getSoundByDepth(_parent->getDepth(), _action.weapon->getRules()->getFireSound())->play(-1, _parent->getMap()->getSoundAngle(projectile->getOrigin()));
 			}
-			hdMuzzle(projectile->getOrigin());
+			hdMuzzle(projectile->getPosition(0));
 			if (_action.type != BA_LAUNCH)
 			{
 				_action.weapon->spendAmmoForAction(_action.type, _parent->getSave());
