@@ -20,11 +20,13 @@
 #include <cstdlib>
 #include <cstring>
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <sstream>
 #include <unordered_map>
 #include "CrossPlatform.h"
 #include "FileMap.h"
+#include "HdWorkers.h"
 #include "Logger.h"
 #include "Options.h"
 #include "SDL2Helpers.h"
@@ -160,17 +162,30 @@ namespace
 		return frame.pixels.size() * sizeof(Uint32) + (frame.rows.size() + frame.solid.size()) * sizeof(HdFrame::Span);
 	}
 
-	/// Reads a lazy entry's picture from its file.
+	/// Measurement: frames read from files and the time it took, since takeLoadStats.
+	unsigned loadFrames = 0;
+	double loadMs = 0;
+
+	void loadFile(Entry &entry);
+	/// Reads a lazy entry's picture from its file (timed: the first show of a set reads its frames on the drawing thread).
 	void load(Entry &entry)
+	{
+		const auto start = std::chrono::steady_clock::now();
+		loadFile(entry);
+		loadMs += std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - start).count();
+		++loadFrames;
+	}
+
+	/// Reads the bytes of a lazy entry's picture (the file system is used from one thread only).
+	bool readBlob(Entry &entry, std::vector<unsigned char> &data)
 	{
 		SDL_RWops *rw = FileMap::fileExists(entry.path) ? FileMap::getRWops(entry.path) : nullptr;
 		if (!rw)
 		{
 			entry.failed = true;
 			Log(LOG_WARNING) << "HD sprite: cannot open " << entry.path;
-			return;
+			return false;
 		}
-		std::vector<unsigned char> data;
 		bool ok = true;
 		if (entry.size > 0)
 		{
@@ -189,24 +204,57 @@ namespace
 				SDL_free(whole);
 			}
 		}
+		return ok;
+	}
+
+	/// Decodes the bytes of a lazy entry's picture into a frame of the entry's size (any thread).
+	bool decodeBlob(const Entry &entry, const std::vector<unsigned char> &data, HdFrame &out)
+	{
 		HdFrame read;
-		if (!ok || !decodePng(data.data(), data.size(), read))
+		if (data.empty() || !decodePng(data.data(), data.size(), read))
+		{
+			return false;
+		}
+		if (read.width != entry.width || read.height != entry.height)
+		{
+			resample(read, entry.width, entry.height, out);
+		}
+		else
+		{
+			out = std::move(read);
+		}
+		out.generated = false;
+		out.buildSpans();
+		return true;
+	}
+
+	/// Puts a decoded picture into its entry (or marks the entry as unreadable).
+	void settle(Entry &entry, bool ok, HdFrame &&frame)
+	{
+		if (!ok)
 		{
 			entry.failed = true;
 			Log(LOG_WARNING) << "HD sprite: cannot read " << entry.path << " at " << entry.offset;
 			return;
 		}
-		if (read.width != entry.width || read.height != entry.height)
-		{
-			resample(read, entry.width, entry.height, entry.frame);
-		}
-		else
-		{
-			entry.frame = std::move(read);
-		}
-		entry.frame.generated = false;
-		entry.frame.buildSpans();
+		entry.frame = std::move(frame);
 		loadedTotal += bytesOf(entry.frame);
+	}
+
+	void loadFile(Entry &entry)
+	{
+		std::vector<unsigned char> data;
+		if (!readBlob(entry, data))
+		{
+			if (!entry.failed) // opened, but cut short
+			{
+				settle(entry, false, HdFrame());
+			}
+			return;
+		}
+		HdFrame frame;
+		const bool ok = decodeBlob(entry, data, frame);
+		settle(entry, ok, std::move(frame));
 	}
 }
 
@@ -467,19 +515,112 @@ size_t loadedBytes()
  * Drops the lazily read frames found longest ago until the loaded ones are
  * a quarter under the budget (so this runs rarely, not every frame).
  */
-void trim()
+namespace
 {
-	// OXCE_HD_PACK_BUDGET=<MB> overrides the budget (tests of the dropping)
-	static bool budgetRead = false;
-	if (!budgetRead)
+	/// The budget of the loaded frames; OXCE_HD_PACK_BUDGET=<MB> overrides it (tests of the dropping).
+	size_t budgetBytes()
 	{
-		budgetRead = true;
-		const char *env = getenv("OXCE_HD_PACK_BUDGET");
-		if (env && atoi(env) > 0)
+		static bool budgetRead = false;
+		if (!budgetRead)
 		{
-			budget = (size_t)atoi(env) << 20;
+			budgetRead = true;
+			const char *env = getenv("OXCE_HD_PACK_BUDGET");
+			if (env && atoi(env) > 0)
+			{
+				budget = (size_t)atoi(env) << 20;
+			}
+		}
+		return budget;
+	}
+}
+
+int preload(const SurfaceSet *surfaceSet)
+{
+	if (!surfaceSet || registry.empty())
+	{
+		return 0;
+	}
+	// the entries of the set not read yet (the frames and their variants), while half the budget is free:
+	// what is preloaded must not push out what is on screen
+	std::vector<Entry*> todo;
+	size_t planned = loadedTotal;
+	auto want = [&](Entry &entry)
+	{
+		if (entry.path.empty() || entry.failed || !entry.frame.pixels.empty())
+		{
+			return;
+		}
+		const size_t bytes = (size_t)entry.width * entry.height * sizeof(Uint32);
+		if (planned + bytes > budgetBytes() / 2)
+		{
+			return;
+		}
+		planned += bytes;
+		todo.push_back(&entry);
+	};
+	for (size_t i = 0; i < surfaceSet->getTotalFrames(); ++i)
+	{
+		const Surface *frame = surfaceSet->getFrame((int)i);
+		if (!frame)
+		{
+			continue;
+		}
+		auto it = registry.find(frame->getBuffer());
+		if (it != registry.end())
+		{
+			want(it->second);
+		}
+		auto vit = variants.find(frame->getBuffer());
+		if (vit != variants.end())
+		{
+			for (Entry &variant : vit->second)
+			{
+				want(variant);
+			}
 		}
 	}
+	if (todo.empty())
+	{
+		return 0;
+	}
+	const auto start = std::chrono::steady_clock::now();
+	// the bytes here (the file system is not shared between threads), the decoding on all cores
+	std::vector<std::vector<unsigned char>> blobs(todo.size());
+	for (size_t i = 0; i < todo.size(); ++i)
+	{
+		if (!readBlob(*todo[i], blobs[i]))
+		{
+			blobs[i].clear();
+		}
+	}
+	std::vector<HdFrame> frames(todo.size());
+	std::vector<char> ok(todo.size(), 0);
+	HdWorkers::instance().run((int)todo.size(), [&](int i)
+	{
+		ok[i] = !todo[i]->failed && decodeBlob(*todo[i], blobs[i], frames[i]);
+	});
+	int loaded = 0;
+	for (size_t i = 0; i < todo.size(); ++i)
+	{
+		if (todo[i]->failed)
+		{
+			continue; // could not be opened (already told)
+		}
+		settle(*todo[i], ok[i] != 0, std::move(frames[i]));
+		if (ok[i])
+		{
+			todo[i]->lru = ++clock;
+			++loaded;
+		}
+	}
+	Log(LOG_INFO) << "HD sprites: " << loaded << " frame(s) read ahead in "
+		<< (int)(std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - start).count() + 0.5) << " ms";
+	return loaded;
+}
+
+void trim()
+{
+	const size_t budget = budgetBytes();
 	if (loadedTotal <= budget)
 	{
 		return;
@@ -528,6 +669,14 @@ unsigned generation()
 void setBeforeChange(void (*hook)())
 {
 	beforeChangeHook = hook;
+}
+
+void takeLoadStats(unsigned &frames, double &ms)
+{
+	frames = loadFrames;
+	ms = loadMs;
+	loadFrames = 0;
+	loadMs = 0;
 }
 
 /**

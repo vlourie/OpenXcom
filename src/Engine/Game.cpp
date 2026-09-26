@@ -28,6 +28,7 @@
 #include <sstream>
 #include "HdUi.h"
 #include "HdTest.h"
+#include "HdSprites.h"
 #include "Feedback.h"
 #include <SDL_mixer.h>
 #include "State.h"
@@ -545,6 +546,9 @@ void Game::run()
 			++hdFrames;
 			if (spent > hdWorst) { hdWorst = spent; hdWorstState = state; }
 			if (spent >= 33) ++hdSlow;
+			unsigned packFrames = 0;
+			double packMs = 0;
+			HdSprites::takeLoadStats(packFrames, packMs);
 			if (spent >= 100)
 			{
 				++hdStalls;
@@ -555,7 +559,8 @@ void Game::run()
 					<< HdUi::instance().lastCalls() << " surfaces, worst "
 					<< (int)(HdUi::instance().lastWorstMs() + 0.5) << " ms on "
 					<< HdUi::instance().lastWorstW() << "x" << HdUi::instance().lastWorstH()
-					<< " (" << HdUi::instance().lastWorstWhy() << ")";
+					<< " (" << HdUi::instance().lastWorstWhy() << ")"
+					<< " | packs read " << packFrames << " fr in " << (int)(packMs + 0.5) << " ms";
 			}
 			if (now - hdWatchStart >= 2000)
 			{
