@@ -295,6 +295,53 @@ public sealed class UpdaterTests : IDisposable
     }
 
     [Fact]
+    public async Task Rollback_broken_off_in_the_middle_is_undone_and_can_be_run_again()
+    {
+        f.StageV1(); f.BuildAndPublish("v1");
+        await f.UpdateAsync();
+        var v1 = f.Snapshot();
+        f.StageV2(); f.BuildAndPublish("v2");
+        await f.UpdateAsync();
+        var v2 = f.Snapshot();
+
+        int n = 0;
+        f.Updater.Checkpoint = s => { if (s == "rollback file" && ++n == 2) throw new IOException("power cut (test)"); };
+        Assert.Throws<IOException>(() => f.Updater.RollbackLast());
+        f.Updater.Checkpoint = _ => { };
+        Assert.NotEqual(v2, f.Snapshot());        // really half rolled back
+
+        Assert.True(f.Updater.Recover());
+        Assert.Equal(v2, f.Snapshot());           // the reserve put the update back
+        Assert.Equal("v2", f.Updater.LoadState().InstalledReleaseId);
+        Assert.True(f.Updater.CanRollback);       // and its undo set is still whole
+        f.Updater.RollbackLast();
+        Assert.Equal(v1, f.Snapshot());
+        Assert.Equal("v1", f.Updater.LoadState().InstalledReleaseId);
+        Assert.Empty(Directory.EnumerateFileSystemEntries(f.Updater.Paths.Backup));
+    }
+
+    [Fact]
+    public async Task Rollback_broken_off_after_it_committed_is_finished()
+    {
+        f.StageV1(); f.BuildAndPublish("v1");
+        await f.UpdateAsync();
+        var v1 = f.Snapshot();
+        f.StageV2(); f.BuildAndPublish("v2");
+        await f.UpdateAsync();
+
+        f.Updater.Checkpoint = s => { if (s == "committed") throw new IOException("power cut (test)"); };
+        Assert.Throws<IOException>(() => f.Updater.RollbackLast());
+        f.Updater.Checkpoint = _ => { };
+
+        Assert.True(f.Updater.Recover());
+        Assert.Equal(v1, f.Snapshot());
+        Assert.Equal("v1", f.Updater.LoadState().InstalledReleaseId);
+        Assert.Equal(2, f.Updater.LoadState().LastSequence["stable"]);
+        Assert.False(f.Updater.CanRollback);
+        Assert.Empty(Directory.EnumerateFileSystemEntries(f.Updater.Paths.Backup));
+    }
+
+    [Fact]
     public async Task Player_modified_file_is_kept_when_the_player_says_so()
     {
         f.StageV1(); f.BuildAndPublish("v1");

@@ -139,6 +139,8 @@ public sealed class Journal
     public string ReleaseId { get; set; } = "";
     public string? PreviousReleaseId { get; set; }
     public string Phase { get; set; } = "applying";
+    /// <summary>A rollback of the last update rather than an install: once committed it leaves no undo set.</summary>
+    public bool Rollback { get; set; }
     public List<JournalOp> Writes { get; set; } = new();
     public List<string> Deletes { get; set; } = new();
     public DateTimeOffset Started { get; set; }

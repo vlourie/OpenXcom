@@ -291,6 +291,14 @@ public sealed class Updater(GamePaths paths, RepoClient repo, ILauncherLog log)
     /// <summary>Everything after the commit point. Safe to run again after a crash in the middle of it.</summary>
     void FinishCommit(Journal journal, string backup)
     {
+        if (journal.Rollback)
+        {
+            // the update is undone for good: its undo set goes, and so does the reserve of what the rollback replaced
+            if (Directory.Exists(Paths.LastBackup)) Directory.Delete(Paths.LastBackup, recursive: true);
+            File.Delete(Paths.Journal);
+            if (Directory.Exists(backup)) Directory.Delete(backup, recursive: true);
+            return;
+        }
         // keep exactly one undo set: this one becomes "last". No backup here means an earlier
         // attempt already moved it, and deleting "last" now would delete this very set
         if (Directory.Exists(backup))
@@ -315,13 +323,14 @@ public sealed class Updater(GamePaths paths, RepoClient repo, ILauncherLog log)
         // a journal from a launcher before the commit record: the move to "last" is the only sign it committed
         var lastUndo = Path.Combine(Paths.LastBackup, "undo.json");
         var movedToLast = !Directory.Exists(backup) && File.Exists(lastUndo) && LoadJournal(lastUndo).Id == journal.Id;
+        var what = journal.Rollback ? $"rollback to {journal.ReleaseId}" : $"install {journal.ReleaseId}";
         if (journal.Phase == "committed" || movedToLast)
         {
-            log.Info($"install {journal.ReleaseId} was interrupted after it committed: finishing it");
+            log.Info($"{what} was interrupted after it committed: finishing it");
             FinishCommit(journal, backup);
             return true;
         }
-        log.Info($"unfinished install {journal.ReleaseId} found: undoing");
+        log.Info($"unfinished {what} found: undoing");
         Undo(journal, backup);
         // journal first: an undo interrupted after its backup is gone would find no old state to restore
         File.Delete(Paths.Journal);
@@ -331,15 +340,64 @@ public sealed class Updater(GamePaths paths, RepoClient repo, ILauncherLog log)
 
     public bool CanRollback => File.Exists(Path.Combine(Paths.LastBackup, "undo.json"));
 
-    /// <summary>"Undo the last update": puts back every replaced and removed file and the previous state.</summary>
+    /// <summary>
+    /// "Undo the last update": puts back every replaced and removed file and the previous state. It is a
+    /// transaction of its own, like an install: what it replaces is moved aside into a reserve first and
+    /// the undo set is copied rather than moved, so a crash in the middle is undone by <see cref="Recover"/>
+    /// and leaves the update installed and still undoable.
+    /// </summary>
     public void RollbackLast()
     {
         if (IsGameRunning(Paths.GameDir)) throw new UpdateBlockedException("the game is running: close it before rolling back");
+        if (File.Exists(Paths.Journal)) throw new InvalidOperationException("an unfinished install exists: run recovery first");
         if (!CanRollback) throw new InvalidOperationException("nothing to roll back");
-        var journal = LoadJournal(Path.Combine(Paths.LastBackup, "undo.json"));
-        Undo(journal, Paths.LastBackup);
-        Directory.Delete(Paths.LastBackup, recursive: true);
-        log.Info($"rolled back {journal.ReleaseId} -> {journal.PreviousReleaseId ?? "(nothing installed)"}");
+        var undo = LoadJournal(Path.Combine(Paths.LastBackup, "undo.json"));
+        var saved = Path.Combine(Paths.LastBackup, "files");
+
+        // what goes where: the saved copy, or nothing for a file the update created
+        var steps = new List<(string Path, string? Old)>();
+        foreach (var d in undo.Deletes)
+            if (File.Exists(Path.Combine(saved, d))) steps.Add((d, Path.Combine(saved, d)));
+        foreach (var w in Enumerable.Reverse(undo.Writes))
+        {
+            var old = Path.Combine(saved, w.Path);
+            if (File.Exists(old)) steps.Add((w.Path, old));
+            else if (!w.Existed && File.Exists(Paths.Full(w.Path))) steps.Add((w.Path, null));
+        }
+
+        var journal = new Journal
+        {
+            Id = RandomId.New(),
+            ReleaseId = undo.PreviousReleaseId ?? "",
+            PreviousReleaseId = undo.ReleaseId,
+            Rollback = true,
+            Started = DateTimeOffset.UtcNow,
+            Writes = steps.Select(s => new JournalOp { Path = s.Path, Existed = File.Exists(Paths.Full(s.Path)) }).ToList(),
+        };
+        var reserve = Path.Combine(Paths.Backup, journal.Id);
+        Directory.CreateDirectory(reserve);
+        if (File.Exists(Paths.StateFile)) File.Copy(Paths.StateFile, Path.Combine(reserve, "state.json"), overwrite: true);
+        SaveJournal(Paths.Journal, journal);
+
+        foreach (var (rel, old) in steps)
+        {
+            var target = Paths.Full(rel);
+            if (File.Exists(target)) FileUtil.MoveInto(target, Path.Combine(reserve, "files", rel));
+            if (old is not null)
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+                File.Copy(old, target + ".xp-tmp", overwrite: true);
+                File.Move(target + ".xp-tmp", target);
+            }
+            Checkpoint("rollback file");
+        }
+        RestoreState(Path.Combine(Paths.LastBackup, "state.json"));
+
+        journal.Phase = "committed";
+        SaveJournal(Paths.Journal, journal);
+        Checkpoint("committed");
+        FinishCommit(journal, reserve);
+        log.Info($"rolled back {undo.ReleaseId} -> {undo.PreviousReleaseId ?? "(nothing installed)"}");
     }
 
     void Undo(Journal journal, string backup)
@@ -357,9 +415,13 @@ public sealed class Updater(GamePaths paths, RepoClient repo, ILauncherLog log)
             if (File.Exists(saved)) FileUtil.MoveInto(saved, target);
             else if (!w.Existed && File.Exists(target)) File.Delete(target);
         }
+        RestoreState(Path.Combine(backup, "state.json"));
+    }
+
+    void RestoreState(string oldState)
+    {
         // replay protection survives an undo: the highest sequence ever seen is kept
         var seen = File.Exists(Paths.StateFile) ? LauncherState.Load(Paths, log).LastSequence : new();
-        var oldState = Path.Combine(backup, "state.json");
         if (File.Exists(oldState))
         {
             File.Copy(oldState, Paths.StateFile, overwrite: true);
