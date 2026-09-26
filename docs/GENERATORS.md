@@ -15,18 +15,18 @@ map_paint.py --mode context или whole   блок .MAP как сцена на 
 (в модели: SDXL Juggernaut + ControlNet; альфа = силуэт оригинала x4)
 ```
 
-**G1–G2 (прежние поколения, архивируются в `tools/hdart/attic/`):**
+**G1–G2 (прежние поколения; точки входа, которые никто живой не импортирует, лежат в `tools/hdart/attic/`, список — `attic/README.md`):**
 
 ```
 extract_pck.py              лист набора (original.png + layout.json)
         |
         +-- gen_hd.py --painter qwen21    весь набор разом, поле полов (G1-2)
-        +-- gen_tile.py                   одна плитка, два прохода (G2)
+        +-- attic/gen_tile.py             одна плитка, два прохода (G2)
         +-- gen_fire.py                   огонь: петля кадров
         +-- человек / GPT в чате          картинки руками в папку
         |
 tile_forge.py fit   нарисованное -> клетки пака (G2: остаётся библиотекой)
-build_pack.py       нарезка целого ЛИСТА в пак (G1-2: архивируется)
+build_pack.py       нарезка целого ЛИСТА в пак (G1-2: остаётся, её импортирует review_floors)
         |
 optimize_hd.py      сжатие пака на месте
 ```
@@ -97,7 +97,7 @@ optimize_hd.py      сжатие пака на месте
 
 ---
 
-## gen_tile.py — одна плитка, два прохода (прежнее поколение G2)
+## attic/gen_tile.py — одна плитка, два прохода (прежнее поколение G2, в чердаке)
 
 Для плиток террейна. Проход 1 «sketch-to-render» разрешает дорисовать деталь, проход 2
 «precise-object-edit» снимает бортик и «коврик» по краю ромба.
@@ -127,7 +127,7 @@ optimize_hd.py      сжатие пака на месте
 | `--model` / `--offload` | — / `model` | как у `gen_hd.py` |
 
 ```powershell
-tools\hdart\.venv-qwen21\Scripts\python.exe tools\hdart\gen_tile.py `
+tools\hdart\.venv-qwen21\Scripts\python.exe tools\hdart\attic\gen_tile.py `
     --sheets art/TERRAIN --set DESERT.PCK --frame 1 --tries 2
 ```
 
@@ -198,7 +198,7 @@ py -3 tools\hdart\tile_forge.py fit --sheets art/TERRAIN --set DESERT.PCK `
 
 ---
 
-## build_pack.py — нарезка целого листа (прежнее поколение G1, архивируется)
+## build_pack.py — нарезка целого листа (прежнее поколение G1; библиотека review_floors, на месте)
 
 Когда нарисован ЛИСТ целиком (выход `gen_hd.py`), а не отдельные плитки.
 Лист должен быть в раскладке `layout.json` и в её масштабе.

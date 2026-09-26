@@ -35,9 +35,9 @@ r"""paint3.py - третий генератор TERRAIN: промпт из фа�
 кузница им не нужна. Копии в другие паки: dupe_plan.py --spread --sub gen3.
 Листы «оригинал | прежний пак | LoRA | gen3» на тёмном полу: art\gen3\review\<НАБОР>.png.
 
-    E:\train\.venv-train\Scripts\python.exe tools\hdart\paint3.py --sets C_INT,MARSEC_EXT_2 --plan-only
-    E:\train\.venv-train\Scripts\python.exe tools\hdart\paint3.py --sets C_INT --frames 68,16 --cands 3
-    E:\train\.venv-train\Scripts\python.exe tools\hdart\paint3.py --hours 4       по очереди census\roadmap.tsv
+    E:\train\.venv-train\Scripts\python.exe tools\hdart\attic\paint3.py --sets C_INT,MARSEC_EXT_2 --plan-only
+    E:\train\.venv-train\Scripts\python.exe tools\hdart\attic\paint3.py --sets C_INT --frames 68,16 --cands 3
+    E:\train\.venv-train\Scripts\python.exe tools\hdart\attic\paint3.py --hours 4       по очереди census\roadmap.tsv
 """
 import argparse
 import csv
@@ -47,8 +47,10 @@ import sys
 import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-if HERE not in sys.path:
-    sys.path.insert(0, HERE)
+# чердак (attic): библиотеки-соседи лежат уровнем выше, в tools/hdart
+for _p in (os.path.dirname(HERE), HERE):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
 
 import numpy as np                                      # noqa: E402
 from PIL import Image, ImageDraw, ImageFilter           # noqa: E402

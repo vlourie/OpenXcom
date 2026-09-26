@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 r"""Весь батч в ОДНОМ процессе: модель грузится один раз, прогресс в процентах с оценкой времени.
 
-    python tools\hdart\run_batch.py --all-sets ^
+    python tools\hdart\attic\run_batch.py --all-sets ^
         --data    "Пиратки\Dioxine_XPiratez\user\mods\Piratez" ^
         --palette "Пиратки\Dioxine_XPiratez\user\mods\Piratez\Resources\Pals\delicious_regular.pal" ^
         --mod     "Пиратки\Dioxine_XPiratez\user\mods\hd" ^
@@ -28,8 +28,10 @@ import time
 import traceback
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-if HERE not in sys.path:
-    sys.path.insert(0, HERE)
+# чердак (attic): библиотеки-соседи лежат уровнем выше, в tools/hdart
+for _p in (os.path.dirname(HERE), HERE):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
 
 import xcom_sprites as xs          # noqa: E402
 import extract_pck                 # noqa: E402

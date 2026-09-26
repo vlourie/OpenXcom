@@ -19,7 +19,7 @@ r"""Какие наборы террейна имеет смысл красит�
 
 Дальше (видеокарта, после того как батч террейна закончится):
   $sets = (Get-Content art/TERRAIN\ground_sets_list.txt -Encoding UTF8 -Raw).Trim()
-  tools\hdart\.venv\Scripts\python.exe tools\hdart\run_batch.py --sets $sets --force --clean-big `
+  tools\hdart\.venv\Scripts\python.exe tools\hdart\attic\run_batch.py --sets $sets --force --clean-big `
       --data "Пиратки\Dioxine_XPiratez\user\mods\Piratez" `
       --palette "Пиратки\Dioxine_XPiratez\user\mods\Piratez\Resources\Pals\delicious_regular.pal" `
       --mod "Пиратки\Dioxine_XPiratez\user\mods\hd" --sheets art/TERRAIN `

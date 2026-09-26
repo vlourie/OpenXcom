@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 r"""Перебор настроек поля на ОДНОМ полу: что художник вообще понимает.
 
-    tools\hdart\.venv\Scripts\python.exe tools\hdart\field_sweep.py --sheets hdart_sheets_pz_field --set CULTIVAT.PCK --frame 0 --mod-b "Пиратки\Dioxine_XPiratez\user\mods\hd"
+    tools\hdart\.venv\Scripts\python.exe tools\hdart\attic\field_sweep.py --sheets hdart_sheets_pz_field --set CULTIVAT.PCK --frame 0 --mod-b "Пиратки\Dioxine_XPiratez\user\mods\hd"
 
 Рисует один и тот же пол несколькими способами подряд (модель грузится один раз) и складывает
 результаты на один лист: оригинал, старый пак (если дан --mod-b) и каждая настройка - полем 3x3,
@@ -22,8 +22,10 @@ import sys
 import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-if HERE not in sys.path:
-    sys.path.insert(0, HERE)
+# чердак (attic): библиотеки-соседи лежат уровнем выше, в tools/hdart
+for _p in (os.path.dirname(HERE), HERE):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
 
 from PIL import Image, ImageDraw     # noqa: E402
 import xcom_sprites as xs            # noqa: E402

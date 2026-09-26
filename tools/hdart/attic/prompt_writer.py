@@ -22,8 +22,8 @@ tile, terrain tile» и рисовала то, чему её научили на
 Материал в негатив: если кадр серый или белый - «rust, brown stone, wood grain», если это снег -
 «sand». Ровно тот перекос, который показал разбор.
 
-    py -3 tools/hdart/prompt_writer.py --sets C_INT,MARSEC_EXT_2 --show 10
-    py -3 tools/hdart/prompt_writer.py --sets C_INT --vlm        описание моделью (Ollama)
+    py -3 tools/hdart/attic/prompt_writer.py --sets C_INT,MARSEC_EXT_2 --show 10
+    py -3 tools/hdart/attic/prompt_writer.py --sets C_INT --vlm        описание моделью (Ollama)
 
 Пишет art/gen3/prompts.tsv (дописывает и заменяет строки своих наборов) и кэш описаний
 art/gen3/captions.json по хэшу картинки: одна картинка - одно описание на все паки.
@@ -41,8 +41,10 @@ import sys
 import urllib.request
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-if HERE not in sys.path:
-    sys.path.insert(0, HERE)
+# чердак (attic): библиотеки-соседи лежат уровнем выше, в tools/hdart
+for _p in (os.path.dirname(HERE), HERE):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
 
 import numpy as np                                      # noqa: E402
 from PIL import Image                                   # noqa: E402

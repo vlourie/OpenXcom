@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 r"""Проверка, как испеклись ПОЛЫ: поле из одной клетки, как его кладёт движок, плюс отличие по цвету.
 
-    tools\hdart\.venv\Scripts\python.exe tools\hdart\check_floors.py --mod "Пиратки\Dioxine_XPiratez\user\mods\hd" --sheets art/TERRAIN
+    tools\hdart\.venv\Scripts\python.exe tools\hdart\attic\check_floors.py --mod "Пиратки\Dioxine_XPiratez\user\mods\hd" --sheets art/TERRAIN
 
 Для каждого набора берётся его главный ровный пол (самый большой по площади; `--per-set 2` - два),
 из пака мода читается готовый HD-кадр и раскладывается полем `--cells` x `--cells` ровно тем узором,
@@ -25,8 +25,10 @@ import os
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-if HERE not in sys.path:
-    sys.path.insert(0, HERE)
+# чердак (attic): библиотеки-соседи лежат уровнем выше, в tools/hdart
+for _p in (os.path.dirname(HERE), HERE):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
 
 import numpy as np                   # noqa: E402
 from PIL import Image, ImageDraw     # noqa: E402

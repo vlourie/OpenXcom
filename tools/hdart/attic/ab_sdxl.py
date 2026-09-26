@@ -13,7 +13,7 @@ art\gen3\ab\sdxl_<вариант>\report.tsv, дальше лист ab_sheet.py.
   s1  то же + подсказка кадра из prompt_writer (описание и материал, коротко - CLIP читает 77 токенов)
   s2  s1 + стиль без «muted earthy colors» (он толкает всё в бурое)
 
-    tools\hdart\.venv\Scripts\python.exe tools\hdart\ab_sdxl.py --list art\gen3\pilot.txt --variants s0,s1,s2
+    tools\hdart\.venv\Scripts\python.exe tools\hdart\attic\ab_sdxl.py --list art\gen3\pilot.txt --variants s0,s1,s2
 """
 import argparse
 import csv
@@ -24,8 +24,10 @@ import sys
 import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-if HERE not in sys.path:
-    sys.path.insert(0, HERE)
+# чердак (attic): библиотеки-соседи лежат уровнем выше, в tools/hdart
+for _p in (os.path.dirname(HERE), HERE):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
 
 import gen_hd                                           # noqa: E402
 import build_pack                                       # noqa: E402

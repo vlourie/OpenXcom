@@ -20,7 +20,7 @@ r"""Плитка целиком, по описанию: два прохода Qw
 но геометрия заперта вертикальная, стык требуется вбок и вверх, а земля под стеной запрещена.
 Какой набор взять, решает --kind (по умолчанию auto - по типу MCD из layout.json).
 
-    tools\hdart\.venv-qwen21\Scripts\python.exe tools\hdart\gen_tile.py ^
+    tools\hdart\.venv-qwen21\Scripts\python.exe tools\hdart\attic\gen_tile.py ^
         --sheets art/TERRAIN --set DESERT.PCK --frame 1 --tries 2
 
 Кладёт в <sheets>\<набор>\tiles\:
@@ -52,8 +52,10 @@ def _utf8_console():
 _utf8_console()
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-if HERE not in sys.path:
-    sys.path.insert(0, HERE)
+# чердак (attic): библиотеки-соседи лежат уровнем выше, в tools/hdart
+for _p in (os.path.dirname(HERE), HERE):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
 
 import gen_hd                                       # noqa: E402  (он же ставит HF_HOME)
 from PIL import Image, ImageDraw                    # noqa: E402

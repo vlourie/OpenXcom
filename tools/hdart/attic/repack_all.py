@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 r"""Пересобрать паки из уже нарисованных листов - без видеокарты и без перерисовки.
 
-    tools\hdart\.venv\Scripts\python.exe tools\hdart\repack_all.py --sheets art/TERRAIN --mod "Пиратки\Dioxine_XPiratez\user\mods\hd"
+    tools\hdart\.venv\Scripts\python.exe tools\hdart\attic\repack_all.py --sheets art/TERRAIN --mod "Пиратки\Dioxine_XPiratez\user\mods\hd"
 
 Нужно, когда поменялся build_pack (правила сборки кадра, цвет, края), а покраска осталась прежней:
 листы `painted_x4.png` лежат в папке листов, GPU не требуется. Варианты (`painted_x4.v*.png`)
@@ -16,8 +16,10 @@ import sys
 import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-if HERE not in sys.path:
-    sys.path.insert(0, HERE)
+# чердак (attic): библиотеки-соседи лежат уровнем выше, в tools/hdart
+for _p in (os.path.dirname(HERE), HERE):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
 
 import build_pack                  # noqa: E402
 import gen_hd                      # noqa: E402
