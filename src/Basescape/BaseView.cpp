@@ -115,7 +115,7 @@ BaseView::BaseView(int width, int height, int x, int y) : InteractiveSurface(wid
 	_gridX(0), _gridY(0), _selSizeX(0), _selSizeY(0),
 	_selector(0), _blink(true),
 	_redColor(0), _yellowColor(0), _greenColor(0), _highContrast(true),
-	_cellColor(0), _selectorColor(0), _animPhase(0), _animTick(0)
+	_cellColor(0), _selectorColor(0), _animPhase(0), _animTick(0), _hdNumbersKept(false)
 {
 	// Clear grid
 	for (int i = 0; i < BASE_SIZE; ++i)
@@ -138,6 +138,36 @@ BaseView::~BaseView()
 {
 	delete _selector;
 	delete _timer;
+	for (auto* text : _hdNumbers)
+	{
+		delete text;
+	}
+}
+
+/**
+ * Is the HD interface going to draw the numbers over the facilities with its own fonts? Then they
+ * are kept out of the classic layer: it reaches the HD layer through the upscaler, which smears
+ * letters (R-022).
+ */
+bool BaseView::hdNumbers() const
+{
+	return HdUi::skin() && HdUi::instance().hasFonts();
+}
+
+/**
+ * A number over a facility, laid out: blitted into the classic layer and dropped, or kept for
+ * the HD interface to draw with its own fonts (blit).
+ */
+void BaseView::keepNumber(Text *text)
+{
+	if (_hdNumbersKept)
+	{
+		text->draw();   // lays the string out; hdDrawAt reads that layout
+		_hdNumbers.push_back(text);
+		return;
+	}
+	text->blit(this->getSurface());
+	delete text;
 }
 
 /**
@@ -711,6 +741,12 @@ void BaseView::draw()
 
 	const bool hdTiles = hdBaseActive();
 	_hdCrafts.clear();
+	for (auto* text : _hdNumbers)
+	{
+		delete text;
+	}
+	_hdNumbers.clear();
+	_hdNumbersKept = hdNumbers();
 
 	// Draw grid squares (under an HD facility the rock goes to the world layer with it, see drawHd)
 	for (int x = 0; x < BASE_SIZE; ++x)
@@ -877,8 +913,7 @@ void BaseView::draw()
 			text->setAlign(ALIGN_CENTER);
 			text->setColor(_cellColor);
 			text->setText(ss.str());
-			text->blit(this->getSurface());
-			delete text;
+			keepNumber(text);
 		}
 
 		// Draw ammo indicator
@@ -899,8 +934,7 @@ void BaseView::draw()
 			std::ostringstream ss;
 			ss << fac->getAmmo() << "/" << fac->getRules()->getAmmoMax();
 			text->setText(ss.str());
-			text->blit(this->getSurface());
-			delete text;
+			keepNumber(text);
 		}
 	}
 }
@@ -920,6 +954,21 @@ void BaseView::blit(SDL_Surface *surface)
 	}
 	drawHd();
 	Surface::blit(surface);
+	if (_hdNumbersKept && HdUi::isScreen(surface) && HdUi::active())
+	{
+		// the numbers lie on the facilities' pictures, light ones too: an outline, as on any HD picture,
+		// in place of the thin drop shadow (the classic big font has its dark edge drawn in)
+		HdUi::instance().notePicture(getX(), getY(), getWidth(), getHeight());
+		for (auto* text : _hdNumbers)
+		{
+			text->hdDrawAt(getX() + text->getX(), getY() + text->getY());
+		}
+	}
+	else if (_hdNumbersKept != hdNumbers())
+	{
+		// the option was switched while the base stood still: lay the numbers out the other way round
+		_redraw = true;
+	}
 	drawHdLights();
 	if (_selector != 0)
 	{

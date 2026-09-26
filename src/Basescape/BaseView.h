@@ -29,6 +29,7 @@ class BaseFacility;
 class RuleBaseFacility;
 class Font;
 class Language;
+class Text;
 class Timer;
 enum BasePlacementErrors : int;
 
@@ -61,6 +62,14 @@ private:
 	/// A craft whose lights go over the view; `inWorld`: its picture is drawn in the world layer too.
 	struct HdCraft { int index, x, y, status; Uint32 seed; bool inWorld; };
 	std::vector<HdCraft> _hdCrafts;
+	/// The numbers over the facilities (build time, ammo), laid out and kept out of the classic layer,
+	/// when the HD interface draws them with its own fonts; `_hdNumbersKept`: were they when last drawn.
+	std::vector<Text*> _hdNumbers;
+	bool _hdNumbersKept;
+	/// Is the HD interface going to draw the numbers over the facilities with its own fonts?
+	bool hdNumbers() const;
+	/// Blits a laid-out number into the classic layer, or keeps it for the HD interface.
+	void keepNumber(Text *text);
 	/// Has this facility an HD picture of its tiles (then it is not drawn on the classic layer)?
 	bool isHdFacility(const BaseFacility *facility) const;
 	/// The frame whose HD picture stands for tile `num` of the facility.
