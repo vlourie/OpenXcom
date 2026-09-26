@@ -36,6 +36,11 @@ namespace HdSmooth
 	/// edge, so that tiles meet without seams or notches.
 	/// `threaded` slices the xBRZ over HdWorkers: only from the main thread, the pool is not reentrant.
 	bool smoothPalette(const Uint8 *indices, int bw, int bh, int pitch, const SDL_Color *colors, int k, HdFrame &out, bool isoTile = false, bool threaded = false);
+	/// Brings `frame`, the smoothPalette of `previous` (bw x bh, rows packed), up to date with `indices`
+	/// by smoothing again only the 16x16 tiles that changed and their neighbours; the result is the
+	/// same as smoothing `indices` whole. False, with `frame` untouched, when over a quarter of the
+	/// tiles would have to be redone. From the main thread only (the pieces go over HdWorkers).
+	bool smoothPatch(const Uint8 *indices, int pitch, const Uint8 *previous, int bw, int bh, const SDL_Color *colors, int k, HdFrame &frame, int *redone = nullptr);
 	/// Is (x, y) inside the classic floor diamond of a bw x bh tile (the bottom 16 rows)?
 	bool inFloorDiamond(int x, int y, int bw, int bh);
 }
