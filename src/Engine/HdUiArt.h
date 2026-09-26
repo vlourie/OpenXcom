@@ -92,9 +92,15 @@ namespace HdUiArt
 	/// at the surface's position, re-tinted to the surface's palette. True when drawn: the caller then
 	/// leaves the classic pixels out (transparent), so the picture shows through.
 	bool drawIfPicture(const Surface *surface, SDL_Surface *dest);
-	/// Draws an HD picture into a 32-bit surface (the screen's world layer) at (x, y), clipped to it:
-	/// for the pictures a state places itself, such as the base view's facilities (see HdBase).
-	void drawFrame(SDL_Surface *dest, const HdFrame &frame, int x, int y);
+	/// Draws an HD picture into a 32-bit surface (the screen's world layer) at (x, y), alpha-blended and
+	/// clipped to it and to `clip` when given: the one blend of the interface's pictures (HdUi draws with it
+	/// too), also for the pictures a state places itself, such as the base view's facilities (see HdBase).
+	void drawFrame(SDL_Surface *dest, const HdFrame &frame, int x, int y, const SDL_Rect *clip = nullptr);
+	/// A palette folded into `seed` (FNV-1a over its 256 colours): the one palette hash of the interface's caches.
+	Uint64 foldPalette(Uint64 seed, const SDL_Color *colors);
+	/// The picture at the world scale k (bilinear when its own scale differs), re-tinted from its reference
+	/// palette to `colors` per classic pixel. False when the picture cannot be read. Not cached.
+	bool prepare(const Art *art, int k, const SDL_Color *colors, HdFrame &out);
 	/// Drops the prepared (scaled, re-tinted) pictures (palette or scale change).
 	void clearPrepared();
 }

@@ -218,56 +218,6 @@ void HdUi::fillRect(int x, int y, int w, int h, Uint8 color, const SDL_Color *co
 	}
 }
 
-void HdUi::blendFrame(SDL_Surface *dest, const HdFrame &frame, int x, int y, const SDL_Rect *clip)
-{
-	const int cx0 = clip->x, cy0 = clip->y, cx1 = clip->x + clip->w, cy1 = clip->y + clip->h;
-	const int x0 = std::max(cx0, x), y0 = std::max(cy0, y);
-	const int x1 = std::min(cx1, x + frame.width), y1 = std::min(cy1, y + frame.height);
-	if (x0 >= x1 || y0 >= y1)
-	{
-		return;
-	}
-	auto rows = [&](int ra, int rb)
-	{
-		for (int dy = ra; dy < rb; ++dy)
-		{
-			const Uint32 *src = frame.row(dy - y);
-			Uint32 *drow = (Uint32*)((Uint8*)dest->pixels + (size_t)dy * dest->pitch);
-			for (int dx = x0; dx < x1; ++dx)
-			{
-				const Uint32 s = src[dx - x];
-				const Uint32 a = s >> 24;
-				if (!a) continue;
-				if (a == 255)
-				{
-					drow[dx] = s | 0xFF000000u;
-					continue;
-				}
-				const Uint32 d = drow[dx];
-				const Uint32 ia = 255 - a;
-				const Uint32 r = (((s >> 16) & 0xFF) * a + ((d >> 16) & 0xFF) * ia) / 255;
-				const Uint32 g = (((s >> 8) & 0xFF) * a + ((d >> 8) & 0xFF) * ia) / 255;
-				const Uint32 b = ((s & 0xFF) * a + (d & 0xFF) * ia) / 255;
-				drow[dx] = 0xFF000000u | (r << 16) | (g << 8) | b;
-			}
-		}
-	};
-	const int n = y1 - y0;
-	if (n >= 256)
-	{
-		HdWorkers &pool = HdWorkers::instance();
-		const int jobs = std::max(1, std::min(n / 64, pool.threads() * 2));
-		pool.run(jobs, [&](int job)
-		{
-			rows(y0 + (int)((long long)n * job / jobs), y0 + (int)((long long)n * (job + 1) / jobs));
-		});
-	}
-	else
-	{
-		rows(y0, y1);
-	}
-}
-
 /**
  * The smoothed copy of a surface, kept while its pixels stay the same (a
  * hash of the pixels is compared; surfaces change rarely compared to how
@@ -279,12 +229,7 @@ const HdFrame *HdUi::smoothed(const Surface *surface, int k, const SDL_Color *co
 	const Uint8 *pixels = (const Uint8*)surface->getBuffer();
 	const int pitch = surface->getPitch();
 	// the palette is part of the content
-	Uint64 hash = pixelHash;
-	for (int i = 0; i < 256; ++i)
-	{
-		hash ^= (Uint64)colors[i].r | ((Uint64)colors[i].g << 8) | ((Uint64)colors[i].b << 16);
-		hash *= 1099511628211ULL;
-	}
+	const Uint64 hash = HdUiArt::foldPalette(pixelHash, colors);
 	if (SmoothEntry *e = cached(surface, hash, k))
 	{
 		return &e->frame;
@@ -329,12 +274,7 @@ bool HdUi::drawSparse(SDL_Surface *dest, const Surface *surface, int x, int y, i
 	const int w = surface->getWidth(), h = surface->getHeight();
 	const Uint8 *pixels = (const Uint8*)surface->getBuffer();
 	const int pitch = surface->getPitch();
-	Uint64 hash = pixelHash;
-	for (int i = 0; i < 256; ++i)
-	{
-		hash ^= (Uint64)colors[i].r | ((Uint64)colors[i].g << 8) | ((Uint64)colors[i].b << 16);
-		hash *= 1099511628211ULL;
-	}
+	const Uint64 hash = HdUiArt::foldPalette(pixelHash, colors);
 	auto it = _sparse.find(surface);
 	if (it == _sparse.end() || it->second.hash != hash || it->second.k != k)
 	{
@@ -422,7 +362,7 @@ bool HdUi::drawSparse(SDL_Surface *dest, const Surface *surface, int x, int y, i
 		clip.y = (Sint16)y0;
 		clip.w = (Uint16)(x1 - x0);
 		clip.h = (Uint16)(y1 - y0);
-		blendFrame(dest, p.frame, (x + p.ox) * k, (y + p.oy) * k, &clip);
+		HdUiArt::drawFrame(dest, p.frame, (x + p.ox) * k, (y + p.oy) * k, &clip);
 	}
 	return true;
 }
@@ -489,97 +429,17 @@ const HdFrame *HdUi::cache(const Surface *key, Uint64 pixelHash, Uint64 hash, in
  */
 const HdFrame *HdUi::prepared(const HdUiArt::Art *art, const Surface *key, int k, const SDL_Color *colors)
 {
-	Uint64 hash = art->hash ^ 0x9E3779B97F4A7C15ULL;
-	const bool tint = !art->palette.empty();
-	if (tint)
-	{
-		for (int i = 0; i < 256; ++i)
-		{
-			hash ^= (Uint64)colors[i].r | ((Uint64)colors[i].g << 8) | ((Uint64)colors[i].b << 16);
-			hash *= 1099511628211ULL;
-		}
-	}
+	const Uint64 hash = art->palette.empty() ? art->hash ^ 0x9E3779B97F4A7C15ULL
+		: HdUiArt::foldPalette(art->hash ^ 0x9E3779B97F4A7C15ULL, colors);
 	if (SmoothEntry *e = cached(key, hash, k))
 	{
 		return &e->frame;
 	}
-	const int W = art->baseWidth * k, H = art->baseHeight * k;
-	const int s = art->scale;
-	const HdFrame &src = HdUiArt::frame(art);
-	if (src.pixels.empty())
+	HdFrame frame;
+	if (!HdUiArt::prepare(art, k, colors, frame))
 	{
 		return nullptr;
 	}
-	HdFrame frame;
-	frame.width = W;
-	frame.height = H;
-	frame.pixels.assign((size_t)W * H, 0u);
-	frame.generated = false;
-	// the colour factors of the palette entries
-	float factor[256][3];
-	bool differs = false;
-	if (tint)
-	{
-		for (int i = 0; i < 256; ++i)
-		{
-			const SDL_Color &ref = art->palette[i], &cur = colors[i];
-			factor[i][0] = (cur.r + 1.0f) / (ref.r + 1.0f);
-			factor[i][1] = (cur.g + 1.0f) / (ref.g + 1.0f);
-			factor[i][2] = (cur.b + 1.0f) / (ref.b + 1.0f);
-			if (ref.r != cur.r || ref.g != cur.g || ref.b != cur.b) differs = true;
-		}
-	}
-	auto rows = [&](int ya, int yb)
-	{
-		for (int y = ya; y < yb; ++y)
-		{
-			Uint32 *dst = &frame.pixels[(size_t)y * W];
-			const Uint8 *baseRow = &art->base[(size_t)(y / k) * art->baseWidth];
-			for (int x = 0; x < W; ++x)
-			{
-				Uint32 p;
-				if (s == k)
-				{
-					p = src.pixels[(size_t)y * src.width + x];
-				}
-				else
-				{
-					// bilinear from the picture's own scale
-					const float fx = (x + 0.5f) * s / k - 0.5f, fy = (y + 0.5f) * s / k - 0.5f;
-					int x0 = (int)std::floor(fx), y0 = (int)std::floor(fy);
-					const float tx = fx - x0, ty = fy - y0;
-					const int x1 = std::min(x0 + 1, src.width - 1), y1 = std::min(y0 + 1, src.height - 1);
-					x0 = std::max(x0, 0); y0 = std::max(y0, 0);
-					const Uint32 p00 = src.pixels[(size_t)y0 * src.width + x0], p10 = src.pixels[(size_t)y0 * src.width + x1];
-					const Uint32 p01 = src.pixels[(size_t)y1 * src.width + x0], p11 = src.pixels[(size_t)y1 * src.width + x1];
-					Uint32 out = 0;
-					for (int shift = 0; shift < 32; shift += 8)
-					{
-						const float c = ((p00 >> shift) & 0xFF) * (1 - tx) * (1 - ty) + ((p10 >> shift) & 0xFF) * tx * (1 - ty)
-							+ ((p01 >> shift) & 0xFF) * (1 - tx) * ty + ((p11 >> shift) & 0xFF) * tx * ty;
-						out |= (Uint32)std::min(255, (int)(c + 0.5f)) << shift;
-					}
-					p = out;
-				}
-				if (differs)
-				{
-					const Uint8 idx = baseRow[x / k];
-					const float *f = factor[idx];
-					const int r = std::min(255, (int)(((p >> 16) & 0xFF) * f[0] + 0.5f));
-					const int g = std::min(255, (int)(((p >> 8) & 0xFF) * f[1] + 0.5f));
-					const int b = std::min(255, (int)((p & 0xFF) * f[2] + 0.5f));
-					p = (p & 0xFF000000u) | ((Uint32)r << 16) | ((Uint32)g << 8) | (Uint32)b;
-				}
-				dst[x] = p;
-			}
-		}
-	};
-	HdWorkers &pool = HdWorkers::instance();
-	const int jobs = std::max(1, std::min(H / 64, pool.threads() * 2));
-	pool.run(jobs, [&](int job)
-	{
-		rows((int)((long long)H * job / jobs), (int)((long long)H * (job + 1) / jobs));
-	});
 	return cache(key, art->hash, hash, k, std::move(frame));
 }
 
@@ -650,7 +510,7 @@ void HdUi::drawArt(const HdUiArt::Art *art, const Surface *key, int x, int y, co
 	if (frame)
 	{
 		const SDL_Rect clip = worldClip(dest, k);
-		blendFrame(dest, *frame, x * k, y * k, &clip);
+		HdUiArt::drawFrame(dest, *frame, x * k, y * k, &clip);
 		// a window's own background, drawn inside its frame and already shaded for the text on it: a panel,
 		// not the bare picture the outline is meant for
 		notePanel(x, y, key->getWidth(), key->getHeight());
@@ -791,7 +651,7 @@ void HdUi::drawSurface(const Surface *surface, int x, int y, bool smooth)
 				const int x1 = std::min(outer.x + outer.w, (x + w) * k), y1 = std::min(outer.y + outer.h, (y + h) * k);
 				clip.w = (Uint16)std::max(0, x1 - clip.x);
 				clip.h = (Uint16)std::max(0, y1 - clip.y);
-				blendFrame(dest, *frame, (x - artX) * k, (y - artY) * k, &clip);
+				HdUiArt::drawFrame(dest, *frame, (x - artX) * k, (y - artY) * k, &clip);
 			}
 			return;
 		}
@@ -808,7 +668,7 @@ void HdUi::drawSurface(const Surface *surface, int x, int y, bool smooth)
 		if (frame)
 		{
 			const SDL_Rect clip = worldClip(dest, k);
-			blendFrame(dest, *frame, x * k, y * k, &clip);
+			HdUiArt::drawFrame(dest, *frame, x * k, y * k, &clip);
 			return;
 		}
 	}
