@@ -26,6 +26,10 @@ DENY = {
     "sed s в конвейере": "cat f.cs | sed 's/a" + BS * 2 + "b/c/' > g.cs",
     "sed s с > в файл": "sed 's/x" + BS + "n/y/' in.txt > out.txt",
     "sed -e s в двойных кавычках": "grep x f | sed -e \"s|a" + BS + "|b|c|g\"",
+    # R-037: ключ через одну косую Git Bash переводит в путь
+    "robocopy /E": "robocopy src dst /E /NFL",
+    "taskkill /IM после cd": "cd /e/OpenXCom && taskkill /IM openxcom.exe /F",
+    "cmd /c": "cmd /c dir",
 }
 
 ALLOW = {
@@ -40,11 +44,20 @@ ALLOW = {
     "sed s без косых": "sed 's/utf-8/utf-8-sig/' f.py > g.py",
     "sed чтение по пути Windows": "sed -n '1,20p' \"E:" + BS + "x.txt\"",
     "sed в конвейере без подстановки": "git log | sed -n '/a" + BS + "|b/p'",
+    "robocopy //E": "robocopy src dst //E //NFL",
+    "путь /e/ после robocopy": "robocopy /e/OpenXCom/a /e/OpenXCom/b //E",
+    "MSYS2_ARG_CONV_EXCL": "MSYS2_ARG_CONV_EXCL='*' robocopy a b /E",
+    "ключ в кавычках grep": "grep -n \"taskkill /IM\" tools/x.ps1",
+    "ключ в теле heredoc": "git commit -F - <<'EOF'\nhooks: robocopy /E ловится\nEOF",
+    "PowerShell-инструмент": ("PS", "robocopy src dst /E"),
 }
 
 
 def decision(command):
-    event = {"hook_event_name": "PreToolUse", "tool_name": "Bash", "tool_input": {"command": command}}
+    tool = "Bash"
+    if isinstance(command, tuple):   # ("PS", команда) - вызов из инструмента PowerShell
+        tool, command = "PowerShell", command[1]
+    event = {"hook_event_name": "PreToolUse", "tool_name": tool, "tool_input": {"command": command}}
     r = subprocess.run(["powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", HOOK],
                        input=json.dumps(event).encode("utf-8"), capture_output=True, timeout=60)
     return "deny" if b'"deny"' in r.stdout else "allow"
