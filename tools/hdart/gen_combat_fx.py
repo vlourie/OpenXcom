@@ -608,11 +608,6 @@ def ex_blunt(c, onunit):
     ring(c, (255, 255, 230), 1, 6, 0.25, 0.8, h=c.h0)
     star(c, (255, 250, 200), 3.5, 0.18)
 
-def ex_whip(c, onunit):
-    # щелчок: короткая белая волна и искорки
-    ring(c, (255, 250, 235), 0.5, 5, 0.18, 0.5, h=c.h0)
-    spray(c, 6, "spark", (255, 240, 200), 55, up=0.4, size=(0.3, 0.5), life=(0.1, 0.25), g=10)
-
 
 def energy(name, fam, col, where):
     """Лучевое и прочее: цвет - от исходной анимации оружия."""
@@ -972,8 +967,8 @@ def boom(fam, col=None):
 
 def build_all():
     clips = []
-    kin = {"arrow": (0.7, ex_arrow), "blunt": (1.0, ex_blunt), "whip": (0.6, ex_whip),
-           "pellet": (0.5, ex_bullet)}
+    # удар ближнего боя движок рисует клипом взмаха (swing_*), попадания hit_<семья> у него нет
+    kin = {"arrow": (0.7, ex_arrow), "blunt": (1.0, ex_blunt), "pellet": (0.5, ex_bullet)}
     # пули по ступеням калибра: какую ступень берёт оружие - tools/hdart/weapon_classes.py
     for step, pw in CAL.items():
         kin[f"cal{step}"] = (pw, ex_cal(step))
@@ -996,7 +991,9 @@ def build_all():
     for kind in FLASH:
         for d in range(8):
             clips.append(lambda kind=kind, d=d: muzzle(kind, d))
-    for kind in ("laser", "plasma", "electric", "spit"):
+    # плевка здесь нет: своего рисунка у muzzle для него нет, выходила копия плазмы, а таблица
+    # fx_map даёт существам вспышку none
+    for kind in ("laser", "plasma", "electric"):
         for col in ECOLORS:
             for d in range(8):
                 clips.append(lambda kind=kind, col=col, d=d: muzzle(kind, d, col))
