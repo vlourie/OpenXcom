@@ -17,7 +17,7 @@
 
 Запуск: py -3 tools/hdart/gen_combat_fx.py --out <мод>/hd [--only hit_bullet] [--preview <png/gif каталог>]
 """
-import argparse, math, os, sys, time
+import argparse, math, os, sys, time, zlib
 import numpy as np
 from PIL import Image
 
@@ -253,7 +253,8 @@ class Clip:
 
     def __init__(self, name, frames, duration, size=64, seed=0, h0=0.0):
         self.name, self.L, self.dur, self.size = name, frames, duration, size
-        self.rng = np.random.default_rng(abs(hash(name)) % (2 ** 31) + seed)
+        # crc32, а не hash(): hash строки в питоне свой у каждого процесса
+        self.rng = np.random.default_rng(zlib.crc32(name.encode()) + seed)
         self.parts = []
         self.layers = []   # функции (canvas, t_sec, u 0..1)
         self.h0 = h0       # высота точки попадания над землёй (пиксели 1x): у юнита ~10, у пола 0
