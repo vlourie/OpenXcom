@@ -18,6 +18,7 @@
  */
 #include "HdUiArt.h"
 #include <SDL.h>
+#include <atomic>
 #include <cstring>
 #include <cstdlib>
 #include <map>
@@ -328,42 +329,68 @@ const Art *findCrop(const Uint8 *pixels, int pitch, int w, int h, int &offX, int
 	{
 		return nullptr; // too small to be sure of
 	}
-	for (const auto &art : arts)
+	// every picture at every offset: 100 ms against the pack of X-Piratez in one thread, so the pictures are
+	// shared out between the workers. The answer is the one the plain loop gives: the first picture in
+	// order, at its first offset - a job stops as soon as a picture before its own has been found
+	const int count = (int)arts.size();
+	std::atomic<int> best(count);
+	std::vector<int> foundX(count, 0), foundY(count, 0);
+	auto scan = [&](int index)
 	{
-		if (art->bad)
+		const Art &art = *arts[index];
+		const int bw = art.baseWidth, bh = art.baseHeight;
+		if (art.bad || bw < w || bh < h || (bw == w && bh == h))
 		{
-			continue;
+			return false;
 		}
-		const int bw = art->baseWidth, bh = art->baseHeight;
-		if (bw < w || bh < h || (bw == w && bh == h))
-		{
-			continue;
-		}
-		const Uint8 *row0 = pixels;
 		for (int oy = 0; oy + h <= bh; ++oy)
 		{
-			const Uint8 *baseRow = &art->base[(size_t)oy * bw];
-			for (int ox = 0; ox + w <= bw; ++ox)
+			const Uint8 *baseRow = &art.base[(size_t)oy * bw];
+			const Uint8 *end = baseRow + (bw - w + 1);
+			for (const Uint8 *at = baseRow; (at = (const Uint8*)memchr(at, pixels[0], end - at)) != nullptr; ++at)
 			{
-				if (memcmp(baseRow + ox, row0, w) != 0)
+				if (memcmp(at, pixels, w) != 0)
 				{
 					continue;
 				}
+				const int ox = (int)(at - baseRow);
 				bool all = true;
 				for (int y = 1; y < h && all; ++y)
 				{
-					all = memcmp(&art->base[(size_t)(oy + y) * bw + ox], pixels + (size_t)y * pitch, w) == 0;
+					all = memcmp(&art.base[(size_t)(oy + y) * bw + ox], pixels + (size_t)y * pitch, w) == 0;
 				}
 				if (all)
 				{
-					offX = ox;
-					offY = oy;
-					return art.get();
+					foundX[index] = ox;
+					foundY[index] = oy;
+					return true;
 				}
 			}
 		}
+		return false;
+	};
+	HdWorkers &pool = HdWorkers::instance();
+	const int jobs = std::max(1, std::min(count / 16, pool.threads() * 4));
+	pool.run(jobs, [&](int job)
+	{
+		for (int i = (int)((long long)count * job / jobs), last = (int)((long long)count * (job + 1) / jobs); i < last && i < best.load(); ++i)
+		{
+			if (scan(i))
+			{
+				int seen = best.load();
+				while (i < seen && !best.compare_exchange_weak(seen, i)) {}
+				return;
+			}
+		}
+	});
+	const int index = best.load();
+	if (index >= count)
+	{
+		return nullptr;
 	}
-	return nullptr;
+	offX = foundX[index];
+	offY = foundY[index];
+	return arts[index].get();
 }
 
 void clear()
