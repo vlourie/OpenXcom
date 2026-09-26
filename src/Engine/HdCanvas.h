@@ -245,6 +245,8 @@ private:
 	/// sorted (pixel << 8 | index) of the entries 1..255, first index of a repeated color.
 	std::vector<Uint64> _paletteIndexOf;
 	Uint32 _shadeLut[17][256];
+	/// The same with the color group replaced (helper::ColorReplace): [newBaseColor - 1][shade].
+	Uint32 _recolorLut[16][17][256];
 	/// Shading factor (16.16 fixed point) of every channel and shade by the pixel's brightest channel, calibrated from the palette ramps.
 	Uint32 _toneFactor[3][17][256];
 	/// Luminance -> palette ramp level 0..15 (for the night-vision recolor of HD pixels).
@@ -349,6 +351,8 @@ private:
 	void doBlit(SurfaceRaw<const Uint8> src, const SpanTable &spans, GraphSubset srcDomain, int x, int y, const Uint32 *table, GraphSubset destClip);
 	void doBlitHd(const HdFrame &hd, int x, int y, int shade, GraphSubset srcDomain, int newBaseColor, GraphSubset destClip);
 	void doBlitScaled(const Uint8 *src, int srcW, int srcH, int x, int y, int scale, int shade, int newBaseColor, GraphSubset destClip);
+	/// Index -> pixel table of a classic blit: a prepared one, or built into `scratch` for a rare shade.
+	const Uint32 *classicTable(int shade, int newBaseColor, Uint32 *scratch) const;
 	void doVapor(const int *pattern, int w, int h, int x, int y, int size, SDL_Color tint, const Uint8 *transparencyLUT, GraphSubset destClip);
 	void doFlash(int y0, int y1);
 	/// The palette index 1..255 whose color the pixel is, or -1.
