@@ -11,7 +11,9 @@ namespace Xp.Bootstrapper;
 static class Program
 {
     static readonly TimeSpan ExitWait = TimeSpan.FromSeconds(60);
-    static readonly TimeSpan ConfirmWait = TimeSpan.FromSeconds(30);
+    internal static TimeSpan ConfirmWait { get; set; } = TimeSpan.FromSeconds(30);
+    /// <summary>Tests only: stands in for starting the launcher (the job, whether it is the updated one).</summary>
+    internal static Func<Job, bool, Process?>? StartOverride { get; set; }
     static StreamWriter? _log;
 
     static int Main(string[] args)
@@ -31,9 +33,9 @@ static class Program
         }
     }
 
-    sealed record Job(int Pid, string Source, string Target, string Exe, List<string> Files);
+    internal sealed record Job(int Pid, string Source, string Target, string Exe, List<string> Files);
 
-    static Job Parse(string[] args)
+    internal static Job Parse(string[] args)
     {
         int pid = 0; string? source = null, target = null, exe = null;
         var files = new List<string>();
@@ -56,7 +58,7 @@ static class Program
         return new Job(pid, Path.GetFullPath(source), Path.GetFullPath(target), exe, files);
     }
 
-    static int Run(Job job)
+    internal static int Run(Job job)
     {
         Log($"update: {job.Files.Count} files into {job.Target}");
         if (!WaitForExit(job.Pid)) { Log("launcher did not exit, nothing changed"); return 2; }
@@ -140,6 +142,7 @@ static class Program
 
     static Process? Start(Job job, bool updated)
     {
+        if (StartOverride is { } start) return start(job, updated);
         var exe = SafePath.Resolve(job.Target, job.Exe);
         var psi = new ProcessStartInfo(exe) { WorkingDirectory = job.Target, UseShellExecute = true };
         if (updated) psi.ArgumentList.Add("--updated");

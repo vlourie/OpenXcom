@@ -21,6 +21,9 @@
     <PackageReference Include="libsodium" Version="1.0.20.1" GeneratePathProperty="true" />
   </ItemGroup>
   <ItemGroup>
+    <InternalsVisibleTo Include="Xp.Launcher.Core.Tests" />
+  </ItemGroup>
+  <ItemGroup>
     <!-- the install mode (no arguments) reads the same server and keys the launcher is built with -->
     <EmbeddedResource Include="..\..\keys\release-keys.txt" LogicalName="release-keys.txt" />
     <EmbeddedResource Include="..\Xp.Launcher\defaults.json" LogicalName="defaults.json" />

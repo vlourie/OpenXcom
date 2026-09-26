@@ -15,5 +15,7 @@
     <ProjectReference Include="..\..\src\Xp.Manifest\Xp.Manifest.csproj" />
     <ProjectReference Include="..\..\src\Xp.ReleaseBuilder\Xp.ReleaseBuilder.csproj" />
     <ProjectReference Include="..\..\src\Xp.Launcher.Core\Xp.Launcher.Core.csproj" />
+    <!-- the file swap of a self-update, run in-process with the launcher start stubbed out -->
+    <ProjectReference Include="..\..\src\Xp.Bootstrapper\Xp.Bootstrapper.csproj" />
   </ItemGroup>
 </Project>
