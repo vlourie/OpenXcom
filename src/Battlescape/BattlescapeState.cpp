@@ -3412,6 +3412,7 @@ void BattlescapeState::hdTestDump()
 	f.emplace_back("hdThreads", num(HdWorkers::instance().threads()));
 	f.emplace_back("drawMs", num((long long)(_map->getLastDrawMs() * 100)) + "e-2");
 	f.emplace_back("flipMs", num((long long)(screen->getLastFlipMs() * 100)) + "e-2");
+	f.emplace_back("uiMs", num((long long)(HdUi::instance().lastFrameMs() * 100)) + "e-2");
 	f.emplace_back("displayWidth", num(Options::displayWidth));
 	f.emplace_back("displayHeight", num(Options::displayHeight));
 	f.emplace_back("battlescapeScale", num(Options::battlescapeScale));
