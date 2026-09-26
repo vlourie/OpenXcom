@@ -27,6 +27,21 @@ public sealed class UpdaterTests : IDisposable
     }
 
     [Fact]
+    public async Task Empty_file_is_installed_without_a_download()
+    {
+        // Piratez ships empty files (routes .RMP): there is nothing to fetch, and the launcher 0.3.4
+        // then looked for a .part that nobody had written - "Could not find file ...e3b0c442...part"
+        f.StageV1();
+        Fixture.Write(f.Stage, "user/mods/Piratez/ROUTES/EMPTY.RMP", Array.Empty<byte>());
+        f.BuildAndPublish("v1");
+        await f.UpdateAsync();
+
+        Assert.True(f.GameHas("user/mods/Piratez/ROUTES/EMPTY.RMP"));
+        Assert.Equal(0, new FileInfo(Path.Combine(f.Game, "user/mods/Piratez/ROUTES/EMPTY.RMP")).Length);
+        Assert.DoesNotContain(f.Server.Requests, r => r.Key.EndsWith(Hashing.Sha256Hex(Array.Empty<byte>())));
+    }
+
+    [Fact]
     public async Task Missing_file_is_restored_by_quick_check()
     {
         f.StageV1(); f.BuildAndPublish("v1");

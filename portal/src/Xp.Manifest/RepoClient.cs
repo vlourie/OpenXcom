@@ -159,6 +159,12 @@ public sealed class RepoClient(HttpClient http, Uri baseUri, TrustedKeys keys)
             }
             if (have != size) throw new IOException($"blob {sha256[..12]}: connection closed at {have} of {size} bytes");
         }
+        else if (!File.Exists(part))
+        {
+            // an empty file (Piratez ships empty .RMP routes): nothing to fetch, but the hash check
+            // below still holds it to the manifest
+            await File.WriteAllBytesAsync(part, [], ct);
+        }
 
         var actual = await Hashing.FileSha256Async(part, ct);
         if (actual != sha256)
