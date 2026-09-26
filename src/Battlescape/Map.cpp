@@ -934,6 +934,9 @@ namespace
 
 static const int ArrowBobOffsets[8] = {0,1,2,1,0,1,2,1};
 
+/// Ticks of the animation timer (100 ms) the sway of a hanging unit takes to fade in or out, so taking off or landing does not jump (Map::hoverBob).
+constexpr int HOVER_FADE_STEPS = 4;
+
 static const int ArrowColorsUFO[4]  = { 6,  3, 14, 4 }; // white,    red, blue, green
 static const int ArrowColorsTFTD[4] = { 4, 11, 16, 6 }; // white, orange, blue, green
 
@@ -2605,6 +2608,31 @@ void Map::animate(bool redraw)
 	_save->nextAnimFrame();
 	_animFrame = _save->getAnimFrame();
 
+	// units hanging with no floor below fade their sway in, landed ones fade it out (hoverBob)
+	if (Options::oxceHdHoverBob)
+	{
+		for (const auto* bu : *_save->getUnits())
+		{
+			const bool hanging = bu->isFloating() && !bu->isOut() && bu->getStatus() != STATUS_COLLAPSING;
+			auto it = _hoverFade.find(bu->getId());
+			if (hanging)
+			{
+				if (it == _hoverFade.end())
+					_hoverFade[bu->getId()] = 1;
+				else if (it->second < HOVER_FADE_STEPS)
+					++it->second;
+			}
+			else if (it != _hoverFade.end() && --it->second <= 0)
+			{
+				_hoverFade.erase(it);
+			}
+		}
+	}
+	else
+	{
+		_hoverFade.clear();
+	}
+
 	// random ambient sounds
 	{
 		if (!_save->getAmbienceRandom().empty())
@@ -2832,7 +2860,38 @@ UnitWalkingOffset Map::calculateWalkingOffset(const BattleUnit *unit) const
 		result.TerrainLevelOffset = getTerrainLevel(unit->getPosition(), size);
 	}
 	result.ScreenOffset.y += result.TerrainLevelOffset * _k; // voxels to world pixels
+	result.ScreenOffset += hoverBob(unit);
 	return result;
+}
+
+/**
+ * The sway of a unit hanging with no floor below. Drawing only: the unit's position, voxels and
+ * line of fire stay where they are. In the air it is a quick shallow hover, in the water
+ * (a battle with depth) a slow deep sway with a drift to the side. Each unit has its own phase,
+ * so a flock does not bob in step. Measured in world pixels, so at k > 1 it moves by HD pixels.
+ * @param unit The unit.
+ * @return The offset to add on screen, zero for a unit standing on a floor.
+ */
+Position Map::hoverBob(const BattleUnit *unit) const
+{
+	auto it = _hoverFade.find(unit->getId());
+	if (it == _hoverFade.end())
+	{
+		return Position();
+	}
+	constexpr double Tau = 6.283185307179586;
+	const bool water = _save->getDepth() != 0;
+	// periods in ticks divide the wrap of the animation frame (705600), so the sway never jumps
+	const double period = water ? 24.0 : 8.0;
+	const double amplitude = (water ? 2.0 : 1.0) * _k * it->second / HOVER_FADE_STEPS;
+	const double t = _animFrame + unit->getId() * 7;
+	Position offset;
+	offset.y = (int)std::lround(amplitude * std::sin(Tau * t / period));
+	if (water)
+	{
+		offset.x = (int)std::lround(1.0 * _k * it->second / HOVER_FADE_STEPS * std::sin(Tau * t / 48.0));
+	}
+	return offset;
 }
 
 
