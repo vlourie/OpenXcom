@@ -663,6 +663,28 @@ function Get-ModList {
     return $out
 }
 
+<#
+  Грабли R-081 (семья R-087): арт положили в одну копию мода, а сборка берёт другую целиком.
+  Называет папки с файлами, которые есть только в НЕвыбранной копии, - в выпуск они не попадут.
+#>
+function Show-ModOnlyElsewhere($chosen, $trees) {
+    $mine = @{}
+    foreach ($rel in $chosen.Files.Keys) { $mine[[IO.Path]::GetDirectoryName($rel).ToLowerInvariant()] = $true }
+    foreach ($t in $trees) {
+        if ($t.Root -eq $chosen.Root) { continue }
+        $miss = @{}
+        foreach ($rel in $t.Files.Keys) {
+            $d = [IO.Path]::GetDirectoryName($rel).ToLowerInvariant()
+            if (-not $mine.ContainsKey($d)) { $miss[$d] = 1 + [int]$miss[$d] }
+        }
+        if (-not $miss.Count) { continue }
+        Write-Warn ("{0:N0} папок есть только в {1} и в выпуск НЕ попадут (грабли R-081). Нужны - разложите в обе копии:" -f $miss.Count, $t.Root)
+        $list = @($miss.Keys | Sort-Object)
+        foreach ($d in ($list | Select-Object -First 12)) { Write-Info ("  {0}  ({1} файлов)" -f $(if ($d) { $d } else { '.' }), $miss[$d]) }
+        if ($list.Count -gt 12) { Write-Info ("  ... и ещё {0}" -f ($list.Count - 12)) }
+    }
+}
+
 function Select-ModSource($mod, [string[]]$excludeDirs) {
     $trees = @()
     foreach ($s in $mod.Sources) {
@@ -679,6 +701,7 @@ function Select-ModSource($mod, [string[]]$excludeDirs) {
         $chosen = @($trees | Where-Object { $exp -and $_.Root -eq (Resolve-Path -LiteralPath $exp -ErrorAction SilentlyContinue).Path.TrimEnd('\') })
         if (-not $chosen.Count) { throw ("ModSource для мода {0} говорит «{1}», а такой копии нет: {2}" -f $mod.Name, $want, $exp) }
         Write-Info ("источник задан в настройках (ModSource: {0})" -f $want)
+        Show-ModOnlyElsewhere $chosen[0] $trees
         return $chosen[0].Root
     }
     $best = @($trees | Sort-Object Newest -Descending)[0]
@@ -691,6 +714,7 @@ function Select-ModSource($mod, [string[]]$excludeDirs) {
                 throw ("свежая копия мода {0} заметно меньше другой: {1:N0} файлов в {2} против {3:N0} в {4}. Релиз вышел бы неполным — выберите источник явно (ключ ModSource в build_config.json: repo или game)" -f $mod.Name, $best.Num, $best.Root, $t.Num, $t.Root)
             }
         }
+        Show-ModOnlyElsewhere $best $trees
     }
     return $best.Root
 }
