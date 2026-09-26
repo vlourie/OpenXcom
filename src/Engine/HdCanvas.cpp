@@ -198,6 +198,15 @@ void Canvas32::rebuildTables()
 			const Uint8 result = ((newShade ^ idx) & 0xF0) ? 0x0F : newShade;
 			_shadeLut[shade][i] = _lut[result];
 		}
+		for (int base = 1; base <= 16; ++base)
+		{
+			const Uint8 newColor = (Uint8)((base - 1) << 4);
+			for (int i = 0; i < 256; ++i)
+			{
+				const Uint8 newShade = (Uint8)((i & 0x0F) + shade);
+				_recolorLut[base - 1][shade][i] = _lut[(newShade & 0xF0) ? 0x0F : (Uint8)(newColor | newShade)];
+			}
+		}
 	}
 	rebuildToneTables();
 	// the smoothed and shaded frames were made with the old palette
@@ -970,35 +979,11 @@ void Canvas32::execute(const Cmd &cmd, int y0, int y1)
 		doFill(cmd.color, y0, y1);
 		break;
 	case Cmd::BLIT:
-		if (cmd.newBaseColor)
-		{
-			// helper::ColorReplace: shade of the pixel plus shade, color group replaced
-			Uint32 table[256];
-			const Uint8 newColor = (Uint8)((cmd.newBaseColor - 1) << 4);
-			for (int i = 0; i < 256; ++i)
-			{
-				const Uint8 newShade = (Uint8)((i & 0x0F) + cmd.shade);
-				const Uint8 result = (newShade & 0xF0) ? 0x0F : (Uint8)(newColor | newShade);
-				table[i] = _lut[result];
-			}
-			doBlit(cmd.src, *cmd.spans, cmd.srcDomain, cmd.x, cmd.y, table, clip);
-		}
-		else if (cmd.shade >= 0 && cmd.shade <= 16)
-		{
-			doBlit(cmd.src, *cmd.spans, cmd.srcDomain, cmd.x, cmd.y, _shadeLut[cmd.shade], clip);
-		}
-		else
-		{
-			Uint32 table[256];
-			for (int i = 0; i < 256; ++i)
-			{
-				const Uint8 idx = (Uint8)i;
-				const Uint8 newShade = (Uint8)(idx + cmd.shade);
-				table[i] = _lut[((newShade ^ idx) & 0xF0) ? 0x0F : newShade];
-			}
-			doBlit(cmd.src, *cmd.spans, cmd.srcDomain, cmd.x, cmd.y, table, clip);
-		}
+	{
+		Uint32 scratch[256];
+		doBlit(cmd.src, *cmd.spans, cmd.srcDomain, cmd.x, cmd.y, classicTable(cmd.shade, cmd.newBaseColor, scratch), clip);
 		break;
+	}
 	case Cmd::BLIT_HD:
 		doBlitHd(*cmd.hd, cmd.x, cmd.y, cmd.shade, cmd.srcDomain, cmd.newBaseColor, clip);
 		break;
@@ -1069,6 +1054,46 @@ void Canvas32::doBlit(SurfaceRaw<const Uint8> src, const SpanTable &spans, Graph
 }
 
 /**
+ * The index -> pixel table of a classic blit. The tables of every shade 0..16 and color
+ * group are made once per palette (setPalette); only a shade out of that range is built
+ * here, into `scratch`, by the same rules.
+ */
+const Uint32 *Canvas32::classicTable(int shade, int newBaseColor, Uint32 *scratch) const
+{
+	if (shade >= 0 && shade <= 16)
+	{
+		if (!newBaseColor)
+		{
+			return _shadeLut[shade];
+		}
+		if (newBaseColor <= 16)
+		{
+			return _recolorLut[newBaseColor - 1][shade];
+		}
+	}
+	if (newBaseColor)
+	{
+		// helper::ColorReplace: shade of the pixel plus shade, color group replaced
+		const Uint8 newColor = (Uint8)((newBaseColor - 1) << 4);
+		for (int i = 0; i < 256; ++i)
+		{
+			const Uint8 newShade = (Uint8)((i & 0x0F) + shade);
+			scratch[i] = _lut[(newShade & 0xF0) ? 0x0F : (Uint8)(newColor | newShade)];
+		}
+	}
+	else
+	{
+		for (int i = 0; i < 256; ++i)
+		{
+			const Uint8 idx = (Uint8)i;
+			const Uint8 newShade = (Uint8)(idx + shade);
+			scratch[i] = _lut[((newShade ^ idx) & 0xF0) ? 0x0F : newShade];
+		}
+	}
+	return scratch;
+}
+
+/**
  * A base-resolution 8-bit image drawn scaled by an integer factor (classic
  * UI elements in the map, script results): HdBlit::blitScaled semantics.
  */
@@ -1082,25 +1107,8 @@ void Canvas32::doBlitScaled(const Uint8 *src, int srcW, int srcH, int x, int y, 
 	{
 		return;
 	}
-	Uint32 table[256];
-	if (newBaseColor)
-	{
-		const Uint8 newColor = (Uint8)((newBaseColor - 1) << 4);
-		for (int i = 0; i < 256; ++i)
-		{
-			const Uint8 newShade = (Uint8)((i & 0x0F) + shade);
-			table[i] = _lut[(newShade & 0xF0) ? 0x0F : (Uint8)(newColor | newShade)];
-		}
-	}
-	else
-	{
-		for (int i = 0; i < 256; ++i)
-		{
-			const Uint8 idx = (Uint8)i;
-			const Uint8 newShade = (Uint8)(idx + shade);
-			table[i] = _lut[((newShade ^ idx) & 0xF0) ? 0x0F : newShade];
-		}
-	}
+	Uint32 scratch[256];
+	const Uint32 *table = classicTable(shade, newBaseColor, scratch);
 	for (int dy = dstY0; dy < dstY1; ++dy)
 	{
 		const Uint8 *srcRow = src + (size_t)((dy - y) / scale) * srcW;
