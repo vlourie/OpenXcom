@@ -10,6 +10,8 @@
 #   - код в -c / -e у python, py, perl, ruby, node;
 #   - sed -i и perl -i/-pi (правка файла на месте);
 #   - подстановка sed ('s/../../') с косой и без -i - в конвейере или с > в файл.
+# Там же R-037 (только для Bash): ключ windows-утилиты через одну косую (robocopy /E, taskkill /IM)
+# Git Bash переводит в путь; просится //E или MSYS2_ARG_CONV_EXCL='*'.
 # Косая в обычной команде (путь, регулярка grep) не трогается.
 #
 # stdin: JSON события. Выход 0 = решение в stdout либо пропуск.
@@ -52,12 +54,45 @@ function Test-Command([string]$cmd) {
     return $null
 }
 
+# Грабли R-037 (семья R-090): Git Bash переводит ключ вида /E в путь E:/ ещё до запуска программы.
+# Ключ windows-утилиты через одну косую - отдельным словом, не началом пути (/e/OpenXCom не ключ).
+function Test-SlashFlags([string]$cmd) {
+    if (-not $cmd -or $cmd -match 'MSYS2_ARG_CONV_EXCL') { return $null }
+    # тело heredoc (сообщение коммита) и текст в кавычках - не команды
+    $lines = New-Object Collections.Generic.List[string]
+    $tag = $null
+    foreach ($line in ($cmd -split "`n")) {
+        if ($tag) { if ($line.Trim() -eq $tag) { $tag = $null }; continue }
+        $lines.Add($line)
+        $h = [regex]::Match($line, "<<-?[ \t]*(['""]?)([A-Za-z_][A-Za-z0-9_]*)\1")
+        if ($h.Success) { $tag = $h.Groups[2].Value }
+    }
+    $bare = [regex]::Replace(($lines -join "`n"), '''[^'']*''|"[^"]*"', '""')
+    $tools = 'robocopy|taskkill|tasklist|xcopy|reg|sc|schtasks|icacls|wmic|netsh|attrib|findstr|cmd|where|shutdown'
+    foreach ($m in [regex]::Matches($bare, "(?i)(^|[\s;&|(])($tools)(\.exe)?\s+([^|;&\n]*)")) {
+        $f = [regex]::Match($m.Groups[4].Value, '(?<![/\S])/[A-Za-z?][A-Za-z0-9]{0,11}(?=\s|:|$)')
+        if ($f.Success) { return "$($m.Groups[2].Value) $($f.Value)" }
+    }
+    return $null
+}
+
 try {
     $raw = [Console]::In.ReadToEnd()
     if ([string]::IsNullOrWhiteSpace($raw)) { exit 0 }
     $ev = $raw | ConvertFrom-Json
     $cmd = $null
     if ($ev.tool_input -and ($ev.tool_input.PSObject.Properties.Name -contains 'command')) { $cmd = [string]$ev.tool_input.command }
+    if ([string]$ev.tool_name -eq 'Bash') {
+        $flag = Test-SlashFlags $cmd
+        if ($flag) {
+            @{ hookSpecificOutput = @{
+                hookEventName            = 'PreToolUse'
+                permissionDecision       = 'deny'
+                permissionDecisionReason = "Грабли R-037: ключ '$flag' в Git Bash превратится в путь (/E -> E:/) ещё до запуска программы, и она получит испорченный аргумент. Пиши ключ через две косые (robocopy src dst //E, taskkill //IM x.exe //F) либо выстави MSYS2_ARG_CONV_EXCL='*' на эту команду."
+            } } | ConvertTo-Json -Depth 5 -Compress
+            exit 0
+        }
+    }
     $what = Test-Command $cmd
     if (-not $what) { exit 0 }
 
