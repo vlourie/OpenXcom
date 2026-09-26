@@ -164,16 +164,12 @@ void Window::popup()
 }
 
 /**
- * Draws the bordered window with a graphic background.
- * The background never moves with the window, it's
- * always aligned to the top-left corner of the screen
- * and cropped to fit the inside area.
+ * The window's rectangle at the current popup step: it grows from the middle
+ * while the window pops up, and is the whole window otherwise.
  */
-void Window::draw()
+SDL_Rect Window::popupSquare() const
 {
-	Surface::draw();
 	SDL_Rect square;
-
 	if (_popup == POPUP_HORIZONTAL || _popup == POPUP_BOTH)
 	{
 		square.x = (int)((getWidth() - getWidth() * _popupStep) / 2);
@@ -194,20 +190,37 @@ void Window::draw()
 		square.y = 0;
 		square.h = getHeight();
 	}
+	return square;
+}
 
+/**
+ * The bevel of the border: five nested rectangles of the border colour's
+ * shades (and two single pixels for the thin border), then the inner colour.
+ */
+void Window::bevel(SDL_Rect &square, const std::function<void(SDL_Rect &r, Uint8 color, bool dot)> &fill) const
+{
 	int mul = 1;
 	if (_contrast)
 	{
 		mul = 2;
 	}
 	Uint8 color = _color + 3 * mul;
+	auto dot = [&](int x, int y, Uint8 c)
+	{
+		SDL_Rect r;
+		r.x = x;
+		r.y = y;
+		r.w = 1;
+		r.h = 1;
+		fill(r, c, true);
+	};
 
 	if (_thinBorder)
 	{
 		color = _color + 1 * mul;
 		for (int i = 0; i < 5; ++i)
 		{
-			drawRect(&square, color);
+			fill(square, color, false);
 
 			if (i % 2 == 0)
 			{
@@ -221,14 +234,14 @@ void Window::draw()
 			{
 			case 0:
 				color = _color + 5 * mul;
-				setPixel(square.w, 0, color);
+				dot(square.w, 0, color);
 				break;
 			case 1:
 				color = _color + 2 * mul;
 				break;
 			case 2:
 				color = _color + 4 * mul;
-				setPixel(square.w+1, 1, color);
+				dot(square.w+1, 1, color);
 				break;
 			case 3:
 				color = _color + 3 * mul;
@@ -240,7 +253,7 @@ void Window::draw()
 	{
 		for (int i = 0; i < 5; ++i)
 		{
-			drawRect(&square, color);
+			fill(square, color, false);
 			if (i < 2)
 				color -= 1 * mul;
 			else
@@ -259,9 +272,34 @@ void Window::draw()
 		}
 		if (_innerColor != 0)
 		{
-			drawRect(&square, _innerColor);
+			fill(square, _innerColor, false);
 		}
 	}
+}
+
+/**
+ * Draws the bordered window with a graphic background.
+ * The background never moves with the window, it's
+ * always aligned to the top-left corner of the screen
+ * and cropped to fit the inside area.
+ */
+void Window::draw()
+{
+	Surface::draw();
+	SDL_Rect square = popupSquare();
+
+	bevel(square, [&](SDL_Rect &r, Uint8 color, bool dot)
+	{
+		if (dot)
+		{
+			setPixel(r.x, r.y, color);
+		}
+		else
+		{
+			// the very square: SDL 1.2 writes the clipped rectangle back into it, as it always did
+			drawRect(&r, color);
+		}
+	});
 
 	if (_bg != 0)
 	{
@@ -291,11 +329,7 @@ void Window::hdMirror()
 	if (HdUi::skin())
 	{
 		// the modern panel: the picture (or a dark fill) inside a rounded frame band
-		SDL_Rect sq;
-		sq.x = (_popup == POPUP_HORIZONTAL || _popup == POPUP_BOTH) ? (int)((getWidth() - getWidth() * _popupStep) / 2) : 0;
-		sq.w = (_popup == POPUP_HORIZONTAL || _popup == POPUP_BOTH) ? (int)(getWidth() * _popupStep) : getWidth();
-		sq.y = (_popup == POPUP_VERTICAL || _popup == POPUP_BOTH) ? (int)((getHeight() - getHeight() * _popupStep) / 2) : 0;
-		sq.h = (_popup == POPUP_VERTICAL || _popup == POPUP_BOTH) ? (int)(getHeight() * _popupStep) : getHeight();
+		const SDL_Rect sq = popupSquare();
 		const int mul = _contrast ? 2 : 1;
 		const int inset = _thinBorder ? 2 : 4;
 		const int k = HdUi::scale();
@@ -341,90 +375,11 @@ void Window::hdMirror()
 		Surface::hdMirror();
 		return;
 	}
-	SDL_Rect square;
-	if (_popup == POPUP_HORIZONTAL || _popup == POPUP_BOTH)
+	SDL_Rect square = popupSquare();
+	bevel(square, [&](SDL_Rect &r, Uint8 color, bool)
 	{
-		square.x = (int)((getWidth() - getWidth() * _popupStep) / 2);
-		square.w = (int)(getWidth() * _popupStep);
-	}
-	else
-	{
-		square.x = 0;
-		square.w = getWidth();
-	}
-	if (_popup == POPUP_VERTICAL || _popup == POPUP_BOTH)
-	{
-		square.y = (int)((getHeight() - getHeight() * _popupStep) / 2);
-		square.h = (int)(getHeight() * _popupStep);
-	}
-	else
-	{
-		square.y = 0;
-		square.h = getHeight();
-	}
-	int mul = 1;
-	if (_contrast)
-	{
-		mul = 2;
-	}
-	Uint8 color = _color + 3 * mul;
-	if (_thinBorder)
-	{
-		color = _color + 1 * mul;
-		for (int i = 0; i < 5; ++i)
-		{
-			ui.fillRect(ox + square.x, oy + square.y, square.w, square.h, color, pal);
-			if (i % 2 == 0)
-			{
-				square.x++;
-				square.y++;
-			}
-			square.w--;
-			square.h--;
-			switch (i)
-			{
-			case 0:
-				color = _color + 5 * mul;
-				ui.fillRect(ox + square.w, oy, 1, 1, color, pal);
-				break;
-			case 1:
-				color = _color + 2 * mul;
-				break;
-			case 2:
-				color = _color + 4 * mul;
-				ui.fillRect(ox + square.w + 1, oy + 1, 1, 1, color, pal);
-				break;
-			case 3:
-				color = _color + 3 * mul;
-				break;
-			}
-		}
-	}
-	else
-	{
-		for (int i = 0; i < 5; ++i)
-		{
-			ui.fillRect(ox + square.x, oy + square.y, square.w, square.h, color, pal);
-			if (i < 2)
-				color -= 1 * mul;
-			else
-				color += 1 * mul;
-			square.x++;
-			square.y++;
-			if (square.w >= 2)
-				square.w -= 2;
-			else
-				square.w = 1;
-			if (square.h >= 2)
-				square.h -= 2;
-			else
-				square.h = 1;
-		}
-		if (_innerColor != 0)
-		{
-			ui.fillRect(ox + square.x, oy + square.y, square.w, square.h, _innerColor, pal);
-		}
-	}
+		ui.fillRect(ox + r.x, oy + r.y, r.w, r.h, color, pal);
+	});
 	// the background: the picture where draw() copies the image from, clipped to the inside
 	ui.setClip(ox + square.x, oy + square.y, square.w, square.h);
 	ui.drawArt(art, _bg, ox + _dx, oy + _dy, pal);

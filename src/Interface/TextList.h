@@ -17,6 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <functional>
 #include <vector>
 #include <map>
 #include "../Engine/InteractiveSurface.h"
@@ -65,6 +66,9 @@ private:
 	void updateArrows();
 	/// Updates the visible rows.
 	void updateVisible();
+	/// Calls `fn(row, y, height)` for every visible row as draw() lays them out, y relative to the list
+	/// (above 0 for the hidden lines of a wrapped row at the top). One layout for draw() and hdMirror().
+	void forVisibleRows(const std::function<void(size_t, int, int)> &fn) const;
 public:
 	/// Creates a text list with the specified size and position.
 	TextList(int width, int height, int x = 0, int y = 0);
