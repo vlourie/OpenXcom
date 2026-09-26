@@ -69,8 +69,9 @@ struct Clip
 };
 std::unordered_map<std::string, Clip> clips;
 size_t loadedBytes = 0;
-/// Colour name of a classic frame, by its pixel buffer.
+/// Colour name of a classic frame, by its pixel buffer; valid for the palette `coloursPalette` (a hash of its colours).
 std::unordered_map<const void*, std::string> colours;
+Uint32 coloursPalette = 0;
 std::vector<Live> live;
 
 void readTable()
@@ -277,10 +278,20 @@ void drop(Clip &clip)
 std::string hitClip(const RuleItem *damageItem, bool onUnit, const BattleUnit *targetUnit, bool armorHeld, const Tile *tile, int voxelZ)
 {
 	const std::string *table = lookup(hitOf, damageItem);
-	std::string family = table ? *table : familyByDamage(damageType(damageItem, false));
+	const int dt = damageType(damageItem, false);
+	std::string family = table ? *table : familyByDamage(dt);
 	if (family.compare(0, 5, "boom_") == 0)
 	{
 		family = "cal4";        // an explosive round that hit without a blast
+	}
+	// the table knows calibres, not what a round does: a stun round dazes, a light concussive one (a stone, a slug) strikes blunt
+	if (dt == 6 && (family.compare(0, 3, "cal") == 0 || family == "pellet"))
+	{
+		family = "daze";
+	}
+	else if (dt == 3 && (family == "cal1" || family == "cal2" || family == "cal3"))
+	{
+		family = "blunt";
 	}
 	if (coloured(family))
 	{
@@ -333,6 +344,10 @@ std::string flashClip(const RuleItem *weapon, const RuleItem *ammo, int directio
 		const std::string family = familyByDamage(damageType(ammo ? ammo : weapon, false));
 		kind = family == "laser" || family == "plasma" || family == "electric" ? family : "rifle";
 	}
+	if (kind == "none")
+	{
+		return "";              // bows, thrown weapons, creatures: nothing leaves a muzzle
+	}
 	if (kind == "laser" || kind == "plasma" || kind == "electric")
 	{
 		return "flash_" + kind + "_%c_" + dirName(direction);
@@ -350,6 +365,17 @@ std::string colour(const std::string &clip, SurfaceRaw<const Uint8> frame, const
 	std::string name = "white";
 	if (frame && palette)
 	{
+		// the same frame reads another colour under another palette: a new palette forgets the names
+		Uint32 hash = 2166136261u;
+		for (int c = 0; c < 256; ++c)
+		{
+			hash = (hash ^ (Uint32)((palette[c].r << 16) | (palette[c].g << 8) | palette[c].b)) * 16777619u;
+		}
+		if (hash != coloursPalette)
+		{
+			colours.clear();
+			coloursPalette = hash;
+		}
 		auto i = colours.find(frame.getBuffer());
 		if (i != colours.end())
 		{
@@ -444,8 +470,9 @@ void spawn(const std::string &clip, Position voxel)
 	live.push_back(Live{ clip, voxel, SDL_GetTicks() });
 }
 
-bool active()
+bool active(Uint32 now)
 {
+	live.erase(std::remove_if(live.begin(), live.end(), [now](const Live &l) { return now - l.start >= FLASH_MS; }), live.end());
 	return !live.empty();
 }
 
@@ -482,6 +509,7 @@ void clear()
 {
 	clips.clear();
 	colours.clear();
+	coloursPalette = 0;
 	live.clear();
 	loadedBytes = 0;
 	tableRead = false;

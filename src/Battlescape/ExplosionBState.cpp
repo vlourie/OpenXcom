@@ -364,7 +364,8 @@ void ExplosionBState::init()
 				onUnit = (_hit ? _targetPsiOrHit : (hitTile ? hitTile->getOverlappingUnit(_parent->getSave()) : nullptr)) != nullptr;
 			}
 			Explosion *explosion = new Explosion(_center, anim, 0, false, (_hit || _psi), animFrames, onUnit); // Don't burn the tile
-			if (!_psi)
+			// a missed shot keeps the classic miss animation; a missed swing still swings
+			if (!_psi && !(miss && !_hit))
 			{
 				const bool armorHeld = onUnit && hdUnit && hdUnit->getHealth() * 1000 + hdUnit->getStunlevel() == hdBefore;
 				explosion->setHdFx(_hit
