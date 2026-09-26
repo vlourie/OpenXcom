@@ -97,6 +97,38 @@ def by_category(cats):
     return None, None
 
 
+# вид удара ближнего боя (клип swing_<вид>_<dir>) - по словам имени, как в fx_census.py:
+# слово целиком или начало слова от 4 букв; SPIKED_MACE не копьё, BATTLE_AX не дубина
+MELEE_RULES = [
+    ("whip", ["WHIP", "LASH", "FLAIL", "KUSARIGAMA", "NOOSE", "CHAIN", "GRAPPLE", "TENTACLE", "TENTACLES"]),
+    ("claw", ["CLAW", "CLAWS", "TALON", "PAWS", "REAPER", "CHRYSSALID", "RATT", "HYENA", "DOGG", "WEREDOGE", "CHUPACABRA",
+              "SPIDER", "GIANTSPIDER", "MEGASCORPION", "KRAB", "BEETLE", "MAGGOT", "VAMPIRE", "CAT", "TASOTH", "BOOMOSAURUS",
+              "ZOMBIGAL", "WOLVERINE"]),
+    ("bite", ["BITE", "JAW", "FANG", "BEAK", "MAW", "FISH", "SHARK", "ZOMBIE", "VAMPBAT", "DOGE"]),
+    ("fist", ["FIST", "FISTO", "FISTY", "SHOCKAFIST", "PUNCH", "KNUCKLES", "GAUNTLET", "KUNG", "PALM", "KICK", "BRAWL",
+              "SLAP", "UNARMED", "WRESTLING", "BAD", "GENTLE", "PEG", "CESTUS", "HANDLE", "GLOVE"]),
+    ("sting", ["STING", "NEEDLE", "BEES", "INFECTOR", "SYRINGE", "DRILL"]),
+    ("pierce", ["SPEAR", "PIKE", "TRIDENT", "LANCE", "IMPALER", "PITCHFORK", "BOATHOOK", "HALBERD", "GLAIVE", "BAYONET",
+                "RAPIER"]),
+    ("blade", ["SWORD", "KNOIF", "KNIFE", "BLADE", "SABER", "SABRE", "CUTLASS", "MACHETE", "KATANA", "WAKIZASHI", "GLADIUS",
+               "DAGGER", "AX", "SCYTHE", "CLEAVER", "CHAINSAW", "SICKLE", "SLICER", "RAZOR", "BILLHOOK", "GARLAND", "SHIV",
+               "MANHACK", "HATCHET"]),
+    ("club", ["CLUB", "BAT", "BATTO", "MACE", "HAMMER", "BATON", "CROWBAR", "PIPE", "STAFF", "QUARTERSTAFF", "CANE", "MAUL",
+              "STICK", "WRENCH", "ROD", "TONFA", "MORNING", "SLEDGE", "PAN", "SHOVEL", "SCEPTER", "THUNDERSTRIKER",
+              "DISCIPLINER", "ANCHOR", "SIGN", "IV", "ROCK", "PILLOW", "GUITAR", "FLAG", "SHIELD", "PADD", "TORCH", "MAG",
+              "FIRE", "FAN", "SHAWL", "PROD"]),
+]
+
+
+def melee_kind(name, bt):
+    """Вид удара; без совпадения: у стрелкового - приклад, у прочего - кулак."""
+    words = name.upper().split("_")
+    for kind, ws in MELEE_RULES:
+        if any(w == x or (len(x) >= 4 and w.startswith(x)) for w in words for x in ws):
+            return kind
+    return "butt" if bt == 1 else "fist"
+
+
 # ------------------------------------------------------------------ чтение рулсетов
 
 def load_items(dirs):
@@ -205,7 +237,8 @@ def classify(t, it, items):
     if cls == "shotgun" and pellets <= 1:          # лазерный пистолет Пираток в категории дробовиков
         c2, k2 = by_category([c for c in cats if c != "STR_BAT_CAT_SHOTGUN"])
         cls, why = (c2, f"категория {k2}") if c2 else ("pistol", "без дроби")
-    if pellets > 1 and cls not in ("musket", "launcher"):
+    # пушка с картечным снарядом остаётся пушкой: дробь только у попадания этого снаряда
+    if pellets > 1 and cls not in ("musket", "launcher", "cannon"):
         cls, why = "shotgun", f"дробь {pellets}"
     if cls is None:
         if not t.startswith("STR_"):
