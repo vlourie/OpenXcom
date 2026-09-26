@@ -29,8 +29,8 @@ HdFx закоммичен **без** правок §5 — они остаютс�
 |---|---|---|---|---|
 | M-1 | вернуть обёртку `if (getSide() == FACTION_PLAYER)` у Ctrl+Shift+Del | `BattlescapeState.cpp:2876` | дифф против `441cae1b0` пуст в этом месте | ☑ `f67648cdd` |
 | M-2 | битая ссылка на исследование в арке: ERROR в лог и пропуск, в сейв не писать | `GeoscapeState.cpp:3790/3802/3821`, `Mod.cpp:5130` | случайная арка пропускает пустышку, последовательная встаёт на дыре; сборка без предупреждений | ☑ `bde0ba3c3` |
-| M-4 | вернуть строки из `441cae1b0`: `STR_NOT_PURCHASABLE` (en, ru), `STR_SELECT_VOICE_SET_FOR` (en, ru), `STR_RANDOM_EVENTS` (ru). Сверено: `STR_SELECT_AVATAR_FOR`, `STR_SOLDIER_BONUSES_FOR` на месте | `bin/common/Language/OXCE/` — **Святое правило**: предупредить, перенести в Пиратки, сказать | `Assert-DataSync` зелёный | ? |
-| M-3 | сортировка бойцов по убыванию (`>`) — коммит `c1d6af8df` rackrossum 2023 «descending sorting», осознанный QOL | `SoldierSortUtil.h:37` | запись в DECISIONS или правка | ? |
+| M-4 | вернуть строки из `441cae1b0`: `STR_NOT_PURCHASABLE` (en, ru), `STR_SELECT_VOICE_SET_FOR` (en, ru), `STR_RANDOM_EVENTS` (ru). Сверено: `STR_SELECT_AVATAR_FOR`, `STR_SOLDIER_BONUSES_FOR` на месте | `bin/common/Language/OXCE/` — **Святое правило**: предупредить, перенести в Пиратки, сказать | MD5 обеих копий совпадает; ru-строка голоса в местном формате «ВЫБЕРИТЕ ГОЛОС ДЛЯ{NEWLINE}{0}», как соседний аватар | ☑ |
+| M-3 | сортировка бойцов по убыванию (`>`) — коммит `c1d6af8df` rackrossum 2023 «descending sorting», осознанный QOL | `SoldierSortUtil.h:37` | решение Vitali: оставить; запись в DECISIONS 2026-09-26 | ☑ |
 
 ## Этап 2 — инвариант `k = 1 IDENTICAL`
 
@@ -112,3 +112,5 @@ V-3…V-8 (ядро), U-3…U-8 (интерфейс), P-1…P-11 (портал �
 | 2026-09-26 | G-1…G-5 | `421a6d737` | html-отчёты сохранены в `art/_review/html` |
 | 2026-09-26 | M-1 | `f67648cdd` | |
 | 2026-09-26 | M-2 | `bde0ba3c3` | игру не запускал, путь проверен только сборкой |
+| 2026-09-26 | M-4 | см. `git log -- bin/common/Language/OXCE` | перенесено в установку Пираток; на второй машине повторить |
+| 2026-09-26 | M-3 | см. `git log -- docs/DECISIONS.md` | оставлено, решение записано |
