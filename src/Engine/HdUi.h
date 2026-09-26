@@ -210,6 +210,8 @@ private:
 		const HdUiArt::Art *art = nullptr;///< the HD picture the surface is (a part of), if any
 		int artX = 0, artY = 0;           ///< where the surface's pixels sit in the picture's image
 		int artMisses = 0;                ///< how often the surface's content was searched for a picture in vain
+		Uint64 palette = 0;               ///< content: the palette alone
+		std::vector<Uint8> source;        ///< the pixels `frame` was smoothed from (large surfaces only: a change is patched)
 		std::list<const Surface*>::iterator lru;
 	};
 	struct Glyph

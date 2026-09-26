@@ -281,4 +281,93 @@ bool HdSmooth::smoothPalette(const Uint8 *indices, int bw, int bh, int pitch, co
 	return true;
 }
 
+/**
+ * A surface the size of the base screen that changes a little a few times a second
+ * (the base view, a list with a blinking line) cost 20-34 ms of xBRZ each time it was
+ * smoothed whole. Only what changed is smoothed again here, the way drawSparse smooths
+ * only what is drawn: tiles of 16x16, the changed ones and their neighbours (the
+ * smoothing spills over into the next tile), each run of tiles with a margin of 8
+ * pixels around it. The checkerboard pass and xBRZ look no further than 4 pixels away,
+ * so the pieces come out as the whole would.
+ */
+bool HdSmooth::smoothPatch(const Uint8 *indices, int pitch, const Uint8 *previous, int bw, int bh, const SDL_Color *colors, int k, HdFrame &frame, int *redone)
+{
+	if (redone) *redone = 0;
+	if (k < 2 || k > 6 || bw < 1 || bh < 1 || frame.width != bw * k || frame.height != bh * k || frame.pixels.size() != (size_t)frame.width * frame.height)
+	{
+		return false;
+	}
+	const int T = 16, M = 8;
+	const int tw = (bw + T - 1) / T, th = (bh + T - 1) / T;
+	std::vector<Uint8> changed((size_t)tw * th, 0);
+	bool any = false;
+	for (int y = 0; y < bh; ++y)
+	{
+		const Uint8 *a = indices + (size_t)y * pitch, *b = previous + (size_t)y * bw;
+		if (memcmp(a, b, bw) == 0) continue;
+		Uint8 *tiles = &changed[(size_t)(y / T) * tw];
+		for (int x = 0; x < bw; ++x)
+		{
+			if (a[x] != b[x]) { tiles[x / T] = 1; any = true; }
+		}
+	}
+	if (!any)
+	{
+		return true;
+	}
+	std::vector<Uint8> dirty((size_t)tw * th, 0);
+	int count = 0;
+	for (int ty = 0; ty < th; ++ty)
+		for (int tx = 0; tx < tw; ++tx)
+			if (changed[(size_t)ty * tw + tx])
+				for (int dy = -1; dy <= 1; ++dy)
+					for (int dx = -1; dx <= 1; ++dx)
+						if (ty + dy >= 0 && ty + dy < th && tx + dx >= 0 && tx + dx < tw && !dirty[(size_t)(ty + dy) * tw + tx + dx])
+						{
+							dirty[(size_t)(ty + dy) * tw + tx + dx] = 1;
+							++count;
+						}
+	// half of the tiles: the pieces and their margins would cost about as much as the whole. The globe
+	// under a moving terminator changes 30 percent of them (with neighbours) and is patched in 2 ms, 7 whole
+	if (count * 2 > tw * th)
+	{
+		return false;
+	}
+	struct Piece { int ix, iy, iw, ih, ox, oy, ow, oh; };
+	std::vector<Piece> pieces;
+	for (int ty = 0; ty < th; ++ty)
+	{
+		for (int tx = 0; tx < tw; )
+		{
+			if (!dirty[(size_t)ty * tw + tx]) { ++tx; continue; }
+			const int tx0 = tx;
+			while (tx < tw && dirty[(size_t)ty * tw + tx]) ++tx;
+			Piece p;
+			p.ix = tx0 * T;
+			p.iy = ty * T;
+			p.iw = std::min(bw, tx * T) - p.ix;
+			p.ih = std::min(bh, (ty + 1) * T) - p.iy;
+			p.ox = std::max(0, p.ix - M);
+			p.oy = std::max(0, p.iy - M);
+			p.ow = std::min(bw, p.ix + p.iw + M) - p.ox;
+			p.oh = std::min(bh, p.iy + p.ih + M) - p.oy;
+			pieces.push_back(p);
+		}
+	}
+	// the pieces write rows of their own tiles only, so they go over the pool side by side
+	const int w = bw * k;
+	HdWorkers::instance().run((int)pieces.size(), [&](int i)
+	{
+		const Piece &p = pieces[i];
+		HdFrame part;
+		smoothPalette(indices + (size_t)p.oy * pitch + p.ox, p.ow, p.oh, pitch, colors, k, part);
+		for (int y = p.iy * k; y < (p.iy + p.ih) * k; ++y)
+		{
+			memcpy(&frame.pixels[(size_t)y * w + (size_t)p.ix * k], &part.pixels[(size_t)(y - p.oy * k) * part.width + (size_t)(p.ix - p.ox) * k], (size_t)p.iw * k * sizeof(Uint32));
+		}
+	});
+	if (redone) *redone = count;
+	return true;
+}
+
 }

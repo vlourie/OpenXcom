@@ -238,21 +238,51 @@ const HdFrame *HdUi::smoothed(const Surface *surface, int k, const SDL_Color *co
 	// same surface with the same pixels means only the palette moved, and the answer is thrown away
 	// once every couple of seconds instead of being kept (measured 156 ms on a 96x96 preview)
 	const Uint32 t0 = SDL_GetTicks();
+	const Uint64 palette = HdUiArt::foldPalette(1469598103934665603ULL, colors);
 	auto old = _smooth.find(surface);
 	const char *miss = old == _smooth.end() ? "new"
 		: (old->second.k != k ? "scale" : (old->second.pixelHash == pixelHash ? "palette" : "pixels"));
 	HdFrame frame;
+	// a big surface that changed in places (the globe under the moving terminator, 576x360) is patched
+	// where it changed: smoothed whole it cost 20-40 ms a few times a second
+	int redone = -1;
+	if (old != _smooth.end() && old->second.k == k && old->second.palette == palette && !old->second.art
+		&& old->second.source.size() == (size_t)w * h)
+	{
+		HdFrame &prev = old->second.frame;
+		const size_t bytes = prev.pixels.size() * 4;
+		if (HdSmooth::smoothPatch(pixels, pitch, old->second.source.data(), w, h, colors, k, prev, &redone))
+		{
+			_smoothBytes -= bytes; // the frame moves on to the new entry, cache() finds the old one empty
+			frame = std::move(prev);
+		}
+		else
+		{
+			redone = -1;
+		}
+	}
 	// the interface is mirrored on the main thread, so the smoothing may use the whole pool
-	if (!HdSmooth::smoothPalette(pixels, w, h, pitch, colors, k, frame, false, true))
+	if (redone < 0 && !HdSmooth::smoothPalette(pixels, w, h, pitch, colors, k, frame, false, true))
 	{
 		return nullptr;
 	}
 	const Uint32 t1 = SDL_GetTicks();
 	const HdFrame *out = cache(surface, pixelHash, hash, k, std::move(frame));
+	SmoothEntry &e = _smooth[surface];
+	e.palette = palette;
+	if ((long long)w * h >= 65536)
+	{
+		e.source.resize((size_t)w * h);
+		for (int yy = 0; yy < h; ++yy)
+		{
+			memcpy(e.source.data() + (size_t)yy * w, pixels + (size_t)yy * pitch, w);
+		}
+	}
 	const Uint32 t2 = SDL_GetTicks();
 	if (t2 - t0 >= 20)
 	{
-		Log(LOG_INFO) << "HD smooth: " << w << "x" << h << " k" << k << " " << miss << " - xBRZ "
+		Log(LOG_INFO) << "HD smooth: " << w << "x" << h << " k" << k << " " << miss
+			<< (redone >= 0 ? ", patched " + std::to_string(redone) + " tile(s)" : std::string()) << " - xBRZ "
 			<< (t1 - t0) << " ms, cache " << (t2 - t1) << " ms, " << _smooth.size() << " kept ("
 			<< (_smoothBytes >> 20) << " MB)";
 	}
