@@ -5,7 +5,6 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
-using Xp.Launcher.Core;
 using Xp.Manifest;
 using Xp.Portal.Data;
 

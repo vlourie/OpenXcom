@@ -5,11 +5,9 @@ FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 COPY Directory.Build.props ./
 COPY src/Xp.Manifest/Xp.Manifest.csproj src/Xp.Manifest/
-COPY src/Xp.Launcher.Core/Xp.Launcher.Core.csproj src/Xp.Launcher.Core/
 COPY src/Xp.Portal/Xp.Portal.csproj src/Xp.Portal/
 RUN dotnet restore src/Xp.Portal/Xp.Portal.csproj
 COPY src/Xp.Manifest/ src/Xp.Manifest/
-COPY src/Xp.Launcher.Core/ src/Xp.Launcher.Core/
 COPY src/Xp.Portal/ src/Xp.Portal/
 RUN dotnet publish src/Xp.Portal/Xp.Portal.csproj -c Release -o /out --no-restore -p:UseAppHost=false
 

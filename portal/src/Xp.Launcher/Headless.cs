@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using Xp.Launcher.Core;
+using Xp.Manifest;
 
 namespace Xp.Launcher;
 

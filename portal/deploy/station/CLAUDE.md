@@ -13,7 +13,7 @@
 |---|---|
 | `portal/Dockerfile` | образ сайта: сборка на .NET 10 SDK, запуск на aspnet 10, порт 8080, пользователь `app` |
 | `portal/src/Xp.Portal` | сам сайт (ASP.NET Core, Razor Pages + API `/api/v1`, EF Core + PostgreSQL) |
-| `portal/src/Xp.Manifest`, `Xp.Launcher.Core` | общие библиотеки, нужны для сборки |
+| `portal/src/Xp.Manifest` | общая библиотека (манифест, подписи, клиент выпусков), нужна для сборки |
 | `portal/deploy/compose.yaml` | боевая раскладка: db, clamav, migrate, portal, caddy (80/443, Let's Encrypt), ddns |
 | `portal/deploy/compose.station.yaml` | **поверх** боевой для этой машины: caddy на `HTTPS_PORT` со своим сертификатом, ddns выключен, письма в файлы |
 | `portal/deploy/Caddyfile.station` | HTTPS через `tls internal` |
