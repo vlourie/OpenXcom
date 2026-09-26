@@ -929,6 +929,11 @@ try {
 
     $repoDir = Get-Cfg 'RepoDir' ''
     if (-not $repoDir) { $repoDir = (Resolve-Path (Join-Path $scriptDir '..\..')).Path }
+    # пути в настройках могут быть от корня репозитория: тогда один файл годится обеим машинам
+    foreach ($key in 'BuildDir', 'GameDir', 'DistDir', 'CopyExeTo', 'LauncherOut', 'DataSource') {
+        $v = $script:cfg.$key
+        if ($v -is [string] -and $v -ne '' -and -not [IO.Path]::IsPathRooted($v)) { $script:cfg.$key = Join-Path $repoDir $v }
+    }
     $distDir = Get-Cfg 'DistDir' (Join-Path $repoDir 'dist')
     $workDir = Join-Path $distDir '_work'
     $stageDir = Join-Path $distDir '_stage'
