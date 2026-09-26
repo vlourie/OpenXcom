@@ -287,20 +287,44 @@ public static class PortalApp
     /// always works and needs nothing set by hand: the blob is named by its own SHA-256 inside the
     /// repository, and its name here carries the version instead, so the player sees what they got.
     /// </summary>
-    static async Task<IResult> DownloadLauncherAsync(ReleaseFeed feed, IOptions<PortalOptions> options, IHttpClientFactory http, CancellationToken ct)
+    static async Task<IResult> DownloadLauncherAsync(ReleaseFeed feed, IOptions<PortalOptions> options, IHttpClientFactory http,
+        ILogger<ReleaseFeed> log, CancellationToken ct)
     {
         var o = options.Value;
         if (o.LauncherDownloadUrl is { Length: > 0 } elsewhere) return Results.Redirect(elsewhere);
         var launcher = await feed.LauncherAsync(ct);
         if (launcher is null) return Results.NotFound();
+        if (launcher.Size > MaxLauncherBytes)
+        {
+            log.LogError("launcher {Version}: {Size} bytes in the manifest, more than the site hands out ({Max})", launcher.Version, launcher.Size, MaxLauncherBytes);
+            return Results.StatusCode(StatusCodes.Status500InternalServerError);
+        }
         var client = http.CreateClient("releases");
         var url = new Uri(new Uri(o.ReleaseRepo.EndsWith('/') ? o.ReleaseRepo : o.ReleaseRepo + "/"), Xp.Manifest.BlobKeys.For(launcher.Sha256));
-        var resp = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, ct);
-        if (!resp.IsSuccessStatusCode) { resp.Dispose(); return Results.NotFound(); }
-        // the stream owns the response: it is disposed once the body has been written out
-        var body = await resp.Content.ReadAsStreamAsync(ct);
-        return Results.Stream(body, "application/octet-stream", launcher.FileName, enableRangeProcessing: false);
+        using var resp = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, ct);
+        if (!resp.IsSuccessStatusCode) return Results.NotFound();
+
+        // checked against the signed manifest before the first byte goes out: whoever downloads this has
+        // nothing yet to check it with, and a file already sent cannot be taken back. It is small (the
+        // setup fetches the launcher itself), so it is read whole rather than streamed
+        await using var body = await resp.Content.ReadAsStreamAsync(ct);
+        using var ms = new MemoryStream((int)launcher.Size);
+        var buf = new byte[81920];
+        int n;
+        while ((n = await body.ReadAsync(buf, ct)) > 0 && ms.Length <= launcher.Size) ms.Write(buf, 0, n);
+        var bytes = ms.ToArray();
+        var sha = Xp.Manifest.Hashing.Sha256Hex(bytes);
+        if (bytes.Length != launcher.Size || sha != launcher.Sha256)
+        {
+            log.LogError("launcher {Version}: the repository's file does not match the signed manifest ({Got} bytes, SHA-256 {Sha}; manifest {Size} bytes, {Want}) - not handed out",
+                launcher.Version, bytes.Length, sha, launcher.Size, launcher.Sha256);
+            return Results.StatusCode(StatusCodes.Status500InternalServerError);
+        }
+        return Results.File(bytes, "application/octet-stream", launcher.FileName);
     }
+
+    /// <summary>The setup is about 2 MB; this is only a ceiling on what one request may hold in memory.</summary>
+    const long MaxLauncherBytes = 64L * 1024 * 1024;
 
     /// <summary>
     /// An attachment by signed link. The signature limits the link's life; the viewer's rights are
