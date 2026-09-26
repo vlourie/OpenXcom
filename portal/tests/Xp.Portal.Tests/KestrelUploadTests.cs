@@ -5,8 +5,14 @@ using System.Net.Http.Json;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.Http.Features;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.TestHost;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Xp.Portal.Auth;
+using Xp.Portal.Data;
+using Xp.Portal.Devices;
+using Xp.Portal.Review;
 using Xp.Portal.Tickets;
 
 namespace Xp.Portal.Tests;
@@ -114,5 +120,80 @@ public sealed class KestrelUploadTests(KestrelPortalFactory f) : IClassFixture<K
         f.Limits.Clear();
         Assert.Equal(HttpStatusCode.Created, (await UploadAsync(t.Number, t.Token, Png)).StatusCode);
         Assert.True(Assert.Single(f.Limits, x => x.Path == path).Limit > KestrelDefault);
+    }
+}
+
+/// <summary>
+/// The review envelope's own 8 MB, on real Kestrel. Set inside the handler it came after the body was
+/// bound and changed nothing: 9 MB went through under Kestrel's 30 MB.
+/// </summary>
+public sealed class KestrelReviewLimitTests(KestrelPortalFactory f) : IClassFixture<KestrelPortalFactory>
+{
+    const string Url = "/api/v1/review/packs";
+
+    /// <summary>A linked launcher, made straight in the database: the link dance is ReviewTests' business.</summary>
+    async Task<string> DeviceAsync()
+    {
+        var secret = DeviceSecrets.NewToken();
+        await f.ScopedAsync(async sp =>
+        {
+            var users = sp.GetRequiredService<UserManager<PortalUser>>();
+            var email = $"kr-{Guid.NewGuid():N}@x.test";
+            var u = new PortalUser { UserName = email, Email = email, EmailConfirmed = true, DisplayName = "Kestrel" };
+            var r = await users.CreateAsync(u);
+            Assert.True(r.Succeeded, string.Join(", ", r.Errors.Select(e => e.Description)));
+            var db = sp.GetRequiredService<PortalDb>();
+            db.DeviceTokens.Add(new DeviceToken { UserId = u.Id, TokenHash = DeviceSecrets.Hash(secret), Name = "test", CreatedAt = f.Clock.GetUtcNow() });
+            return await db.SaveChangesAsync();
+        });
+        return secret;
+    }
+
+    /// <summary>One verdict whose note is padded to make the whole send about <paramref name="bytes"/> long.</summary>
+    static VerdictEnvelope Padded(long bytes) => new()
+    {
+        Tool = "launcher",
+        Packs =
+        [
+            new PackVerdicts
+            {
+                Set = "KESTREL_" + Guid.NewGuid().ToString("N")[..6].ToUpperInvariant(),
+                Pictures = 1,
+                Frames = [new FrameVerdict { Frame = 0, Orig = "0000aaaa", Hd = "0000bbbb", Verdict = "ok", Note = new string('n', (int)bytes) }],
+            },
+        ],
+    };
+
+    async Task<HttpResponseMessage> SendAsync(string token, VerdictEnvelope envelope)
+    {
+        var c = f.CreateClient();
+        c.Timeout = TimeSpan.FromMinutes(2);
+        var msg = new HttpRequestMessage(HttpMethod.Post, Url) { Content = JsonContent.Create(envelope) };
+        msg.Headers.Add(DeviceApi.TokenHeader, token);
+        return await c.SendAsync(msg);
+    }
+
+    [Fact]
+    public async Task A_send_under_8_MB_is_taken_with_the_review_limit_on_it()
+    {
+        Assert.StartsWith("http://127.0.0.1:", f.CreateClient().BaseAddress!.ToString());
+        var token = await DeviceAsync();
+        f.Limits.Clear();
+        var r = await SendAsync(token, Padded(ReviewApi.BodyLimit - 512 * 1024));
+        Assert.True(r.StatusCode == HttpStatusCode.Created, $"{(int)r.StatusCode}: {await r.Content.ReadAsStringAsync()}");
+        // the endpoint's own limit, not Kestrel's 30 MB
+        Assert.Equal(ReviewApi.BodyLimit, Assert.Single(f.Limits, x => x.Path == Url).Limit);
+    }
+
+    [Fact]
+    public async Task A_send_over_8_MB_is_refused_with_413_before_anything_is_stored()
+    {
+        var token = await DeviceAsync();
+        var envelope = Padded(ReviewApi.BodyLimit + 1024 * 1024);
+        var r = await SendAsync(token, envelope);
+        Assert.Equal(HttpStatusCode.RequestEntityTooLarge, r.StatusCode);
+        Assert.Equal("application/problem+json", r.Content.Headers.ContentType?.MediaType);   // as the OpenAPI description promises
+        var set = envelope.Packs[0].Set;
+        Assert.Equal(0, await f.DbAsync(db => db.PackReviews.CountAsync(x => x.SetName == set)));
     }
 }

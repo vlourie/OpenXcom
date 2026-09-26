@@ -1,6 +1,5 @@
 using System.Security.Cryptography;
 using System.Text;
-using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Xp.Portal.Data;
@@ -50,14 +49,18 @@ public sealed record QueueSet(string Section, string Set, int Frames, int Pictur
 /// </summary>
 public static class ReviewApi
 {
-    /// <summary>Kestrel cuts a body at 30 MB before our own limits are even reached (rake R-053).</summary>
+    /// <summary>A send is verdicts and hashes, not pictures: anything near Kestrel's own 30 MB is not a review.</summary>
     public const long BodyLimit = 8 * 1024 * 1024;
 
     public static void Map(IEndpointRouteBuilder app)
     {
         var api = app.MapGroup("/api/v1").WithTags("review").DisableAntiforgery();
 
+        // the limit goes in as endpoint metadata: routing applies it before the envelope is bound, whereas
+        // setting the feature inside the handler comes after the body is read and changes nothing
         api.MapPost("/review/packs", TakeAsync).RequireRateLimiting("review-write")
+            .WithMetadata(new RequestSizeLimitAttribute(BodyLimit))
+            .ProducesProblem(StatusCodes.Status413PayloadTooLarge)
             .Produces<ReviewAccepted>(StatusCodes.Status201Created)
             .ProducesProblem(StatusCodes.Status400BadRequest)
             .ProducesProblem(StatusCodes.Status401Unauthorized)
@@ -70,11 +73,8 @@ public static class ReviewApi
         VerdictEnvelope envelope,
         [FromHeader(Name = DeviceApi.TokenHeader)] string? token,
         [FromHeader(Name = "Idempotency-Key")] string? idempotencyKey,
-        HttpContext http, PortalDb db, TimeProvider clock, CancellationToken ct)
+        PortalDb db, TimeProvider clock, CancellationToken ct)
     {
-        // our own limit is only real if the server's is at least as high
-        if (http.Features.Get<IHttpMaxRequestBodySizeFeature>() is { IsReadOnly: false } size) size.MaxRequestBodySize = BodyLimit;
-
         var device = await DeviceApi.AuthenticateAsync(db, token, clock, ct);
         if (device is null)
             return Problem("device_unknown", "the device token is unknown or revoked", StatusCodes.Status401Unauthorized);
