@@ -113,8 +113,6 @@ namespace HdSprites
 	size_t loaded();
 	/// Bytes of the frames read into memory now.
 	size_t loadedBytes();
-	/// The memory budget of the frames read from files (bytes; default 384 MB).
-	void setBudget(size_t bytes);
 	/// Drops the frames found longest ago while the loaded ones exceed the budget. Call between drawn
 	/// frames only (drawing commands point at the frames).
 	void trim();
