@@ -2857,8 +2857,17 @@ bool Mod::isPatchedSurface(const std::string &name)
 void Mod::loadHdUiArt()
 {
 	HdUiArt::clear();
-	HdBase::clear();
-	HdCraftLights::clear();
+	// the base pictures are named in the master's own frame numbers, the game shifts them by its offset
+	int masterOffset = 0;
+	for (const ModData &m : _modData)
+	{
+		if (m.name == Options::getActiveMaster())
+		{
+			masterOffset = (int)m.offset;
+		}
+	}
+	HdBase::clear(masterOffset);
+	HdCraftLights::clear(masterOffset);
 	HdFx::clear();
 	// both trees at once: the adult one only holds the pictures that differ
 	const std::vector<std::string> files = HdSprites::artFolder("UI");

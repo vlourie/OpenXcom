@@ -57,8 +57,9 @@ namespace HdBase
 	void preload(const std::vector<Want> &want, int scale, bool allPhases);
 	/// Are animated tiles in use (something drawn since the last clear has more than one phase)?
 	bool animated();
-	/// Forgets everything (mod reload).
-	void clear();
+	/// Forgets everything (mod reload). `masterOffset` is where the game puts the master mod's
+	/// frames (ModData::offset of the master): the files are named in the master's own numbering.
+	void clear(int masterOffset);
 }
 
 }

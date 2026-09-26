@@ -40,9 +40,9 @@ namespace
 
 const char *FOLDER = "BASEBITS.PCK";
 const char *SUFFIX = ".lights.txt";
-/// Offset of the master mod's sprites (Mod::loadAll: 1000 x the reserved space of the mods before it,
-/// and before the master there is only the 1000 frames of the original game).
-const int MASTER_OFFSET = 1000;
+/// Offset of the master mod's sprites (Mod::loadAll: 1000 x the reserved space of the mods before it;
+/// for a master on top of the original game it is 1000). Set by clear().
+int masterOffset = 1000;
 
 enum Kind { RED, GREEN, WHITE, STROBE, BEACON, BLINK };
 
@@ -288,9 +288,9 @@ const std::vector<Light> *lightsOf(int index)
 {
 	scan();
 	auto it = frames.find(index);
-	if (it == frames.end() && index >= MASTER_OFFSET)
+	if (it == frames.end() && masterOffset > 0 && index >= masterOffset)
 	{
-		it = frames.find(index - MASTER_OFFSET);
+		it = frames.find(index - masterOffset);
 	}
 	return it == frames.end() ? nullptr : &it->second;
 }
@@ -332,8 +332,9 @@ void draw(SDL_Surface *world, int index, int x, int y, int k, Status status, Uin
 	}
 }
 
-void clear()
+void clear(int offset)
 {
+	masterOffset = offset;
 	frames.clear();
 	scanned = false;
 }
