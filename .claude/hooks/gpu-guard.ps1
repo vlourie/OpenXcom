@@ -4,10 +4,11 @@
 # очереди (оба ползут, R-073), либо заставляет очередь ждать его. Поэтому прямой запуск
 # останавливается, а агенту подсказывается та же команда через gpuq.py add.
 #
-# Что считается запуском: интерпретатор (python, py, pythonw, accelerate, powershell, pwsh,
-# в том числе с путём и .exe) и дальше в той же команде имя скрипта из списка; либо .ps1 из
-# списка первым словом команды (& .\train_lora.ps1). Чтение файла (cat, grep, git diff) -
-# не запуск и не трогается.
+# Что считается запуском: интерпретатор (python, py, pythonw, accelerate, powershell, pwsh, sh,
+# bash, в том числе с путём и .exe) и первым скриптом после него - скрипт из списка (python
+# rake.py match gen_hd.py запускает rake.py); либо .ps1 из списка первым словом команды
+# (& .\train_lora.ps1). Чтение файла (cat, grep, git diff) - не запуск и не трогается. Команда
+# делится на части по && || ; | только вне кавычек.
 #
 # Пропускается: команда с gpuq.py (это и есть постановка в очередь); --help, -h, --dry-run,
 # -DryRun (карту не трогают); GPUQ_BYPASS=1 в команде - для подкоманд без модели.
@@ -35,21 +36,59 @@ function Test-Command([string]$cmd, [string[]]$scripts) {
     # имя скрипта - отдельным словом: test_map_paint.py не совпадает с map_paint.py
     $script = "[^\s;&|]*?(?<![A-Za-z0-9_.-])(?<n>$names)(?![A-Za-z0-9_])"
     # интерпретатор - словом или концом пути, но не внутри кавычек: grep -n "py" gen_hd.py не запуск
-    $interp = '(?i)(^|[\s(/\\])(python3?|pythonw|py|accelerate|powershell|pwsh)(\.exe)?[''"]?\s+(\S+\s+)*?' + $script
+    $interp = '(?i)(^|[\s(/\\])(python3?|pythonw|py|accelerate|powershell|pwsh|sh|bash)(\.exe)?[''"]?(?=\s)'
     $direct = '^\(?\s*(&\s*)?[''"]?' + $script
     # команду режем на части; часть, которая только читает файлы, не запуск
     $readers = '(?i)^(grep|rg|cat|git|sed|awk|head|tail|less|more|wc|ls|find|echo|printf|diff|type|code|notepad|get-content|gc|select-string|sls|get-item|test-path)$'
-    foreach ($seg in [regex]::Split($cmd, '&&|\|\||[;|\r\n]')) {
+    foreach ($seg in (Split-Command $cmd)) {
         $s = $seg.Trim()
         if (-not $s) { continue }
         $first = ($s -split '\s+')[0].Trim('"', "'", '(')
         if ($first -match $readers) { continue }
         $m = [regex]::Match($s, $interp)
-        if ($m.Success) { return $m.Groups['n'].Value }
+        if ($m.Success) {
+            # запускается ПЕРВЫЙ скрипт после интерпретатора; дальше - его аргументы:
+            # python tools/rake.py match gen_hd.py запускает rake.py
+            foreach ($t in ($s.Substring($m.Index + $m.Length).Trim() -split '\s+')) {
+                $t = $t.Trim('"', "'", '(', ')')
+                if ($t -match '(?i)\.(py|ps1|sh)$') {
+                    $leaf = ($t -split '[\\/]')[-1]
+                    if ($scripts -contains $leaf) { return $leaf }
+                    break
+                }
+            }
+            continue
+        }
         $m = [regex]::Match($s, $direct)
         if ($m.Success) { return $m.Groups['n'].Value }
     }
     return $null
+}
+
+# Части команды по && || ; | и переводу строки - только вне кавычек: grep "a\|gen_hd.py" один кусок
+function Split-Command([string]$cmd) {
+    $parts = New-Object Collections.Generic.List[string]
+    $cur = New-Object Text.StringBuilder
+    $quote = [char]0
+    for ($i = 0; $i -lt $cmd.Length; $i++) {
+        $c = $cmd[$i]
+        if ($quote -ne [char]0) {
+            if ($c -eq $quote) { $quote = [char]0 }
+            [void]$cur.Append($c)
+            continue
+        }
+        if ($c -eq '"' -or $c -eq "'") { $quote = $c; [void]$cur.Append($c); continue }
+        if ($c -eq ';' -or $c -eq '|' -or $c -eq '&' -or $c -eq "`r" -or $c -eq "`n") {
+            # одиночный & (фон, 2>&1, вызов & .\x.ps1) команду не делит
+            if ($c -eq '&' -and -not ($i + 1 -lt $cmd.Length -and $cmd[$i + 1] -eq '&')) { [void]$cur.Append($c); continue }
+            $parts.Add($cur.ToString()); [void]$cur.Clear()
+            if ($i + 1 -lt $cmd.Length -and $cmd[$i + 1] -eq $c) { $i++ }
+            continue
+        }
+        [void]$cur.Append($c)
+    }
+    $parts.Add($cur.ToString())
+    return $parts
 }
 
 try {

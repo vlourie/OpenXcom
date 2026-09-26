@@ -176,10 +176,12 @@ def kill_tree(p):
 
 
 def gpu_script(cmdline):
-    for a in cmdline:
+    """Скрипт из списка, если процесс запускает именно его: смотрится первый скрипт после интерпретатора
+    (python rake.py match gen_hd.py запускает rake.py, а не gen_hd.py)."""
+    for a in cmdline[1:]:
         base = os.path.basename(a.replace("\\", "/")).lower()
-        if base in GPU_SCRIPTS:
-            return base
+        if base.endswith((".py", ".ps1", ".sh")):
+            return base if base in GPU_SCRIPTS else None
     return None
 
 

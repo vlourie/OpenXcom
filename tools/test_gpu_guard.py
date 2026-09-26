@@ -21,8 +21,11 @@ DENY = {
     "powershell -File": "powershell -NoProfile -ExecutionPolicy Bypass -File tools/hdart/train_lora.ps1 -Steps 3000",
     ".ps1 первым словом": "& .\\tools\\hdart\\gen_all.ps1 -Data x".replace("\\", BS),
     "nohup в фон": "nohup python tools/hdart/triage/caption.py --all > cap.log 2>&1 &",
-    "timeout": "timeout 600 py -3 tools/hdart/score_batch.py --mod user/mods/hd",
+    "timeout": "timeout 600 py -3 tools/hdart/paint3.py --n 32",
     "в конвейере": "python tools/hdart/gen_lora_batch.py --max-plan 10 | tee run.log",
+    "ключ интерпретатора со значением": "python -X utf8 tools/hdart/map_paint.py --map UBASE_00",
+    "sh со скриптом из списка": "sh art/maps/paint/sweep.sh JUNGLE JUNGLE04 a",
+    "bash -c": "bash -c \"python tools/hdart/map_paint.py --map X\"",
 }
 
 ALLOW = {
@@ -37,6 +40,10 @@ ALLOW = {
     "тест с похожим именем": "python tools/test_map_paint_tiled.py",
     "свой скрипт": "python tools/rake.py hit R-035",
     "Get-Content": "Get-Content tools/hdart/paint3.py -Encoding UTF8",
+    "имя скрипта аргументом другого": "python tools/rake.py match gen_hd.py",
+    "имя скрипта аргументом после ключа": "py -3 tools/art_status.py --script map_paint.py",
+    "| внутри кавычек grep": "grep -n \"score_batch.py" + BS + "|build_dataset.py" + BS + "|paint3.py\" tools/gpu_scripts.txt",
+    "подсчёт без модели": "py -3 tools/hdart/score_batch.py --mod user/mods/hd",
 }
 
 
