@@ -14,7 +14,7 @@ public sealed class SelfUpdate(RepoClient repo, Settings settings, ILauncherLog 
     public static string AppDir => AppContext.BaseDirectory;
     public static string ExeName => Path.GetFileName(Environment.ProcessPath ?? "XPiratezLauncher.exe");
 
-    public static string ChannelFor(string gameChannel) => "launcher-" + gameChannel;
+    public static string ChannelFor(string gameChannel) => LauncherRelease.ChannelFor(gameChannel);
 
     public async Task<ReleaseManifest?> CheckAsync(string gameChannel, CancellationToken ct)
     {
@@ -44,21 +44,7 @@ public sealed class SelfUpdate(RepoClient repo, Settings settings, ILauncherLog 
     public async Task<string> PrepareAsync(ReleaseManifest m, CancellationToken ct)
     {
         var dir = Path.Combine(Settings.Dir, "update", m.Release.Id);
-        foreach (var f in m.Files)
-        {
-            var target = SafePath.Resolve(dir, f.Path);
-            if (File.Exists(target) && Hashing.FileSha256(target) == f.Sha256) continue;
-            var current = SafePath.Resolve(AppDir, f.Path);
-            if (File.Exists(current) && new FileInfo(current).Length == f.Size && Hashing.FileSha256(current) == f.Sha256)
-            {
-                Directory.CreateDirectory(Path.GetDirectoryName(target)!);
-                File.Copy(current, target, overwrite: true);
-                continue;
-            }
-            await repo.DownloadBlobAsync(f.Sha256, f.Size, target, _ => { }, ct);
-        }
-        if (!m.Files.Any(f => f.Path.Equals(ExeName, StringComparison.OrdinalIgnoreCase)))
-            throw new ManifestException($"launcher release has no {ExeName}");
+        await LauncherRelease.FetchAsync(repo, m, dir, ExeName, reuseFrom: AppDir, _ => { }, ct);
         log.Info($"launcher {m.Release.Version} prepared");
         return dir;
     }

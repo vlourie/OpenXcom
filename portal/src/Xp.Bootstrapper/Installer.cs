@@ -81,24 +81,13 @@ static class Installer
             return have;
         }
         var m = latest.Manifest;
-        if (!m.Files.Any(f => f.Path.Equals(LauncherExe, StringComparison.OrdinalIgnoreCase)))
-            throw new ManifestException($"launcher release {m.Release.Id} has no {LauncherExe}");
         Say(T("Версия ", "Version ") + m.Release.Version);
 
+        // the same fetch the running launcher does for its own update (LauncherRelease), only straight
+        // into the install folder: nothing runs from it yet, so there is nothing to swap afterwards
         long total = m.Files.Sum(f => f.Size), done = 0;
-        foreach (var f in m.Files)
-        {
-            var target = SafePath.Resolve(InstallDir, f.Path);
-            if (!(File.Exists(target) && new FileInfo(target).Length == f.Size && Hashing.FileSha256(target) == f.Sha256))
-            {
-                // downloaded next to the target and moved in only after the hash matched (RepoClient)
-                await repo.DownloadBlobAsync(f.Sha256, f.Size, target + ".xp-new",
-                    n => { done += n; Progress(done, total); }, CancellationToken.None);
-                File.Move(target + ".xp-new", target, overwrite: true);
-            }
-            else done += f.Size;
-            Progress(done, total);
-        }
+        await LauncherRelease.FetchAsync(repo, m, InstallDir, LauncherExe, reuseFrom: null,
+            n => { done += n; Progress(done, total); }, CancellationToken.None);
         Console.WriteLine();
         log($"install: launcher {m.Release.Version} ({m.Files.Count} files)");
 
@@ -132,7 +121,7 @@ static class Installer
             catch (JsonException) { }
         }
         if (repo.Length == 0) throw new InvalidOperationException("no release server compiled in");
-        return (repo, "launcher-" + ch);
+        return (repo, LauncherRelease.ChannelFor(ch));
     }
 
     /// <summary>Same rule as the launcher (BuiltIn.LoadKeys): only "prod" keys, "dev" in Debug or with AllowDevKeys.</summary>
