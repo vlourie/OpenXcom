@@ -26,6 +26,7 @@
 #include "Particle.h"
 #include <vector>
 #include <string>
+#include <unordered_map>
 
 namespace OpenXcom
 {
@@ -111,6 +112,7 @@ private:
 	Position _cacheCursorPosition;
 	int _cacheHasLOS; // -1 = unknown, 0 = no LOS, 1 = has LOS
 	int _animFrame;
+	std::unordered_map<int, int> _hoverFade; // unit id -> 1..HOVER_FADE_STEPS, how far the sway of a hanging unit has faded in
 	Projectile *_projectile;
 	bool _followProjectile;
 	bool _projectileInFOV;
@@ -188,6 +190,8 @@ public:
 	void getSelectorPosition(Position *pos) const;
 	/// Calculates the offset of a soldier, when it is walking in the middle of 2 tiles.
 	UnitWalkingOffset calculateWalkingOffset(const BattleUnit *unit) const;
+	/// Screen offset of a unit hanging with no floor below: a sway in the air, a slow drift in the water.
+	Position hoverBob(const BattleUnit *unit) const;
 	/// Sets the 3D cursor type.
 	void setCursorType(CursorType type, int size = 1);
 	/// Gets the 3D cursor type.
