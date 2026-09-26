@@ -555,6 +555,10 @@ void Map::draw()
 		}
 		_cursorType = _hdTestSavedCursorType;
 		_cursorSize = _hdTestSavedCursorSize;
+		for (auto& tileParticles : _vaporParticles)
+		{
+			tileParticles.clear(); // the fixed test cloud is not the game's
+		}
 		_hdTestFrozen = false;
 		_redraw = true;
 	}
@@ -834,6 +838,52 @@ void Map::hdTestFreeze(const std::string &mapDumpPath)
 	{
 		tileParticles.clear();
 	}
+	// the live vapor is random, so a fixed cloud takes its place: the dump still covers the vapor
+	// path, and two dumps of one save match (every third tile of the view level: a 4x4 patch of
+	// puffs of every size and opacity level, the vapor color cycling over the tiles)
+	// only the colors whose table changes something: the mod offsets leave most of the slots empty (identity)
+	const int vaporSlots = (int)(_transparencies->size() / (Mod::TransparenciesOpacityLevels * Mod::TransparenciesPaletteColors));
+	std::vector<Uint8> liveColors;
+	for (int c = 0; c < vaporSlots; ++c)
+	{
+		const Uint8 *lut = _transparencies->data() + c * Mod::TransparenciesOpacityLevels * Mod::TransparenciesPaletteColors;
+		for (int i = 0; i < Mod::TransparenciesOpacityLevels * Mod::TransparenciesPaletteColors; ++i)
+		{
+			if (lut[i] != i % Mod::TransparenciesPaletteColors)
+			{
+				liveColors.push_back((Uint8)c);
+				break;
+			}
+		}
+	}
+	const int vaporColors = (int)liveColors.size();
+	int puffs = 0;
+	if (vaporColors > 0)
+	{
+		const int z = _camera->getViewLevel();
+		for (int y = 0; y < _camera->getMapSizeY(); ++y)
+		{
+			for (int x = 0; x < _camera->getMapSizeX(); ++x)
+			{
+				if ((x + 2 * y) % 3 != 0)
+				{
+					continue;
+				}
+				auto &tileParticles = _vaporParticles[_camera->getMapSizeX() * y + x];
+				for (int n = 0; n < 16; ++n)
+				{
+					const Position voxel = Position(x, y, z).toVoxel() + Position(2 + 4 * (n % 4), 2 + 4 * (n / 4), 4 + 6 * (n % 3));
+					Particle p(voxel, Position(0, 0, 0), Position(0, 0, 0), Position(0, 0, 0), 0,
+						liveColors[(x + y) % vaporColors], (Uint8)(3 + 10 * (n % 4)), (Uint8)(n / 4));
+					p.updateScreenPosition();
+					tileParticles.push_back(p);
+				}
+				std::sort(tileParticles.begin(), tileParticles.end(), [](const Particle& a, const Particle& b){ return a.getLayerZ() < b.getLayerZ(); });
+				puffs += 16;
+			}
+		}
+	}
+	Log(LOG_INFO) << "HD test: frozen, " << puffs << " vapor puffs of " << vaporColors << " of " << vaporSlots << " color(s) at level " << _camera->getViewLevel();
 	_cursorType = CT_NONE;
 	_cursorSize = 1;
 	_redraw = true;

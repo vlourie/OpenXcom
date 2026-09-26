@@ -219,6 +219,8 @@ private:
 		GraphSubset clip;
 		SDL_Color tint;
 		int size;
+		/// VAPOR: the palette transparency table of the classic canvas (exact colors in HD_MODE_NEAREST).
+		const Uint8 *transparencyLUT;
 		/// Dest rows the command can touch (strip culling).
 		int y0, y1;
 		/// BLIT_HD_LIT: node shades (8.8 fixed) and tints of the light field; tintFlat: all node tints equal.
@@ -239,6 +241,9 @@ private:
 	bool _deferred;
 	SDL_Color _colors[256];
 	Uint32 _lut[256];
+	/// Pixel -> palette index, for the ops the classic canvas does on indices (vapor, flash):
+	/// sorted (pixel << 8 | index) of the entries 1..255, first index of a repeated color.
+	std::vector<Uint64> _paletteIndexOf;
 	Uint32 _shadeLut[17][256];
 	/// Shading factor (16.16 fixed point) of every channel and shade by the pixel's brightest channel, calibrated from the palette ramps.
 	Uint32 _toneFactor[3][17][256];
@@ -344,8 +349,10 @@ private:
 	void doBlit(SurfaceRaw<const Uint8> src, const SpanTable &spans, GraphSubset srcDomain, int x, int y, const Uint32 *table, GraphSubset destClip);
 	void doBlitHd(const HdFrame &hd, int x, int y, int shade, GraphSubset srcDomain, int newBaseColor, GraphSubset destClip);
 	void doBlitScaled(const Uint8 *src, int srcW, int srcH, int x, int y, int scale, int shade, int newBaseColor, GraphSubset destClip);
-	void doVapor(const int *pattern, int w, int h, int x, int y, int size, SDL_Color tint, GraphSubset destClip);
+	void doVapor(const int *pattern, int w, int h, int x, int y, int size, SDL_Color tint, const Uint8 *transparencyLUT, GraphSubset destClip);
 	void doFlash(int y0, int y1);
+	/// The palette index 1..255 whose color the pixel is, or -1.
+	int paletteIndexOf(Uint32 pixel) const;
 	Uint32 *rowPtr(int y) { return (Uint32*)((Uint8*)_surface->pixels + (size_t)y * _surface->pitch); }
 	Uint32 pack(int r, int g, int b) const { return ((Uint32)r << _rshift) | ((Uint32)g << _gshift) | ((Uint32)b << _bshift); }
 public:
