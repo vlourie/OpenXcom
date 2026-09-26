@@ -75,6 +75,20 @@ public sealed class UpdaterTests : IDisposable
     }
 
     [Fact]
+    public async Task Download_that_goes_silent_is_broken_off_and_resumed()
+    {
+        // without a limit on silence the read waited for ever and the progress bar froze
+        f.StageV1(); f.BuildAndPublish("v1");
+        f.Server.StallBlobsAfter = 100_000;
+        await f.UpdateAsync();
+
+        var bigSha = Hashing.FileSha256(Path.Combine(f.Stage, "user/mods/hd/hd/UI/big.png"));
+        Assert.Contains(f.Log.Lines, l => l.Contains("no data from the server"));
+        Assert.Contains(f.Server.Requests, r => r.Key.EndsWith(bigSha) && r.From == 100_000);
+        Assert.Equal(bigSha, Hashing.FileSha256(Path.Combine(f.Game, "user/mods/hd/hd/UI/big.png")));
+    }
+
+    [Fact]
     public async Task Server_ignoring_range_restarts_instead_of_appending()
     {
         f.StageV1(); f.BuildAndPublish("v1");

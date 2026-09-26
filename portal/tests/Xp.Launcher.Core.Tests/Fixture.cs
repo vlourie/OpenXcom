@@ -26,7 +26,10 @@ public sealed class Fixture : IDisposable
         (Key, PublicKey) = Signing.CreateKeyPair();
         Repo = new ReleaseRepo(RepoDir);
         Server = new RepoHandler(RepoDir);
-        var client = new RepoClient(new HttpClient(Server), new Uri("http://repo.test/"), new TrustedKeys([Convert.ToBase64String(PublicKey)]));
+        var client = new RepoClient(new HttpClient(Server), new Uri("http://repo.test/"), new TrustedKeys([Convert.ToBase64String(PublicKey)]))
+        {
+            IdleTimeout = TimeSpan.FromSeconds(2),   // the fake server answers from memory: only a stall is ever this slow
+        };
         Updater = new Updater(new GamePaths(Game), client, Log) { IsGameRunning = _ => false, FreeSpace = _ => long.MaxValue };
 
         // the player's installation: engine data, saves, options, somebody else's mod
@@ -125,6 +128,8 @@ public sealed class RepoHandler(string root) : HttpMessageHandler
     public Dictionary<string, byte[]> Overrides { get; } = new();
     /// <summary>First response for each blob breaks off after this many bytes.</summary>
     public int CutBlobsAfter { get; set; } = -1;
+    /// <summary>First response for each blob goes silent after this many bytes, without closing.</summary>
+    public int StallBlobsAfter { get; set; } = -1;
     public bool IgnoreRange { get; set; }
     readonly HashSet<string> _cut = new();
 
@@ -146,10 +151,39 @@ public sealed class RepoHandler(string root) : HttpMessageHandler
         bool cut;
         lock (_cut) cut = CutBlobsAfter >= 0 && key.StartsWith("blobs/") && data.Length > CutBlobsAfter && _cut.Add(key);
         if (cut) body = new BreakingStream(data, CutBlobsAfter);
+        bool stall;
+        lock (_cut) stall = StallBlobsAfter >= 0 && key.StartsWith("blobs/") && data.Length > StallBlobsAfter && _cut.Add(key);
+        if (stall) body = new StallingStream(data, StallBlobsAfter);
         var resp = new HttpResponseMessage(status) { Content = new StreamContent(body) };
         resp.Content.Headers.ContentLength = data.Length;
         return Task.FromResult(resp);
     }
+}
+
+/// <summary>Gives the first N bytes, then says nothing more, like a connection that died without a reset.</summary>
+sealed class StallingStream(byte[] data, int stallAfter) : Stream
+{
+    int _pos;
+    public override async ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken ct = default)
+    {
+        if (_pos >= stallAfter) await Task.Delay(Timeout.Infinite, ct);
+        int n = Math.Min(buffer.Length, stallAfter - _pos);
+        data.AsMemory(_pos, n).CopyTo(buffer);
+        _pos += n;
+        return n;
+    }
+    public override Task<int> ReadAsync(byte[] buffer, int offset, int count, CancellationToken ct) =>
+        ReadAsync(buffer.AsMemory(offset, count), ct).AsTask();
+    public override int Read(byte[] buffer, int offset, int count) => ReadAsync(buffer, offset, count, default).GetAwaiter().GetResult();
+    public override bool CanRead => true;
+    public override bool CanSeek => false;
+    public override bool CanWrite => false;
+    public override long Length => data.Length;
+    public override long Position { get => _pos; set => throw new NotSupportedException(); }
+    public override void Flush() { }
+    public override long Seek(long offset, SeekOrigin origin) => throw new NotSupportedException();
+    public override void SetLength(long value) => throw new NotSupportedException();
+    public override void Write(byte[] buffer, int offset, int count) => throw new NotSupportedException();
 }
 
 /// <summary>Gives the first N bytes, then fails like a dropped connection.</summary>

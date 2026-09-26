@@ -36,12 +36,35 @@ public sealed class RepoClient(HttpClient http, Uri baseUri, TrustedKeys keys)
         // matters on the fallback path only: without multiplexing every request in flight wants its own socket
         MaxConnectionsPerServer = 8,
         PooledConnectionLifetime = TimeSpan.FromMinutes(5),
+        ConnectTimeout = TimeSpan.FromSeconds(30),
+        // a connection that died without a word (Wi-Fi gone, NAT forgot it) fails every stream on it
+        // within a minute instead of leaving them waiting for ever
+        KeepAlivePingDelay = TimeSpan.FromSeconds(30),
+        KeepAlivePingTimeout = TimeSpan.FromSeconds(30),
+        KeepAlivePingPolicy = HttpKeepAlivePingPolicy.WithActiveRequests,
     })
     {
         DefaultRequestVersion = HttpVersion.Version20,
         DefaultVersionPolicy = HttpVersionPolicy.RequestVersionOrLower,
+        // no limit on the whole request: a large blob takes as long as the link needs, and on the 1.1
+        // fallback the wait for a free socket would count too. Silence is what is limited: IdleTimeout
         Timeout = Timeout.InfiniteTimeSpan,
     };
+
+    /// <summary>How long a response body may stay silent before the transfer counts as broken (and is retried).</summary>
+    public TimeSpan IdleTimeout { get; init; } = TimeSpan.FromSeconds(60);
+
+    /// <summary>A read that gives up after <see cref="IdleTimeout"/> without a byte, as an IOException.</summary>
+    async Task<int> ReadAsync(Stream s, Memory<byte> buf, string what, CancellationToken ct)
+    {
+        using var idle = CancellationTokenSource.CreateLinkedTokenSource(ct);
+        idle.CancelAfter(IdleTimeout);
+        try { return await s.ReadAsync(buf, idle.Token); }
+        catch (OperationCanceledException) when (!ct.IsCancellationRequested)
+        {
+            throw new IOException($"{what}: no data from the server for {IdleTimeout.TotalSeconds:0} s");
+        }
+    }
 
     Uri Url(string key) => new(BaseUri, key);
 
@@ -87,7 +110,7 @@ public sealed class RepoClient(HttpClient http, Uri baseUri, TrustedKeys keys)
         using var ms = new MemoryStream();
         var buf = new byte[81920];
         int n;
-        while ((n = await s.ReadAsync(buf, ct)) > 0)
+        while ((n = await ReadAsync(s, buf, key, ct)) > 0)
         {
             if (ms.Length + n > limit) throw new TrustException($"{key}: larger than allowed");
             ms.Write(buf, 0, n);
@@ -126,7 +149,7 @@ public sealed class RepoClient(HttpClient http, Uri baseUri, TrustedKeys keys)
             {
                 var buf = new byte[1 << 16];
                 int n;
-                while ((n = await input.ReadAsync(buf, ct)) > 0)
+                while ((n = await ReadAsync(input, buf, $"blob {sha256[..12]}", ct)) > 0)
                 {
                     if (have + n > size) throw new TrustException($"blob {sha256[..12]}: server sent more than the manifest size");
                     await output.WriteAsync(buf.AsMemory(0, n), ct);
