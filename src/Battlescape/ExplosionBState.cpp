@@ -368,9 +368,11 @@ void ExplosionBState::init()
 			if (!_psi && !(miss && !_hit))
 			{
 				const bool armorHeld = onUnit && hdUnit && hdUnit->getHealth() * 1000 + hdUnit->getStunlevel() == hdBefore;
-				explosion->setHdFx(_hit
+				const std::string clip = _hit
 					? HdFx::swingClip(weaponRule, damageRule, _attack.attacker ? _attack.attacker->getDirection() : 0)
-					: HdFx::hitClip(itemRule, onUnit, hdUnit, armorHeld, hdTile, _center.z));
+					: HdFx::hitClip(itemRule, onUnit, hdUnit, armorHeld, hdTile, _center.z);
+				explosion->setHdFx(clip);
+				HdFx::noteForTest(clip);
 			}
 			_parent->getMap()->getExplosions()->push_back(explosion);
 		}
