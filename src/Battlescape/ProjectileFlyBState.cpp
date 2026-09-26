@@ -30,6 +30,8 @@
 #include "../Mod/Mod.h"
 #include "../Engine/Sound.h"
 #include "../Engine/RNG.h"
+#include "../Engine/HdFx.h"
+#include "../Engine/SurfaceSet.h"
 #include "../Mod/Armor.h"
 #include "../Mod/RuleItem.h"
 #include "../Engine/Options.h"
@@ -421,6 +423,23 @@ void ProjectileFlyBState::init()
  * calculating its trajectory.
  * @return True, if the projectile was successfully created.
  */
+/**
+ * HD render: the muzzle flash of the shot, in the HD modes and only for a shooter the player can see.
+ * Pictures only: no timing, no random numbers.
+ * @param origin The voxel the projectile leaves from.
+ */
+void ProjectileFlyBState::hdMuzzle(Position origin)
+{
+	Map *map = _parent->getMap();
+	if (map->getHdMode() == HD_MODE_NEAREST || !(_unit->getFaction() == FACTION_PLAYER || _unit->getVisible()))
+	{
+		return;
+	}
+	const RuleItem *ammoRule = _ammo->getRules();
+	const Surface *hitFrame = _parent->getMod()->getSurfaceSet("SMOKE.PCK")->getFrame(ammoRule->getHitAnimation());
+	HdFx::spawn(HdFx::colour(HdFx::flashClip(_action.weapon->getRules(), ammoRule, _unit->getDirection()), hitFrame, map->getPalette()), origin);
+}
+
 bool ProjectileFlyBState::createNewProjectile()
 {
 	++_action.autoShotCounter;
@@ -523,6 +542,7 @@ bool ProjectileFlyBState::createNewProjectile()
 			{
 				_parent->getMod()->getSoundByDepth(_parent->getDepth(), _action.weapon->getRules()->getFireSound())->play(-1, _parent->getMap()->getSoundAngle(_unit->getPosition()));
 			}
+			hdMuzzle(projectile->getOrigin());
 			if (_action.type != BA_LAUNCH)
 			{
 				_action.weapon->spendAmmoForAction(_action.type, _parent->getSave());
@@ -565,6 +585,7 @@ bool ProjectileFlyBState::createNewProjectile()
 			{
 				_parent->getMod()->getSoundByDepth(_parent->getDepth(), _action.weapon->getRules()->getFireSound())->play(-1, _parent->getMap()->getSoundAngle(projectile->getOrigin()));
 			}
+			hdMuzzle(projectile->getOrigin());
 			if (_action.type != BA_LAUNCH)
 			{
 				_action.weapon->spendAmmoForAction(_action.type, _parent->getSave());

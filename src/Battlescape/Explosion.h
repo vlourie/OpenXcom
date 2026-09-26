@@ -17,6 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <string>
 #include "Position.h"
 
 namespace OpenXcom
@@ -33,6 +34,7 @@ private:
 	int _currentFrame, _startFrame, _frameDelay;
 	bool _big, _hit, _onUnit;
 	int _frames;
+	std::string _hdFx;
 public:
 	static const int HIT_FRAMES;
 	static const int EXPLODE_FRAMES;
@@ -53,6 +55,14 @@ public:
 	bool isHit() const;
 	/// Checks if the hit landed on a unit (the HD pack's other picture of the frame: blood).
 	bool isOnUnit() const;
+	/// HD render: the combat effect clip drawn instead of the classic frames (see HdFx; empty: none).
+	const std::string &getHdFx() const { return _hdFx; }
+	/// HD render: sets the combat effect clip.
+	void setHdFx(const std::string &clip) { _hdFx = clip; }
+	/// The first frame of the animation.
+	int getStartFrame() const { return _startFrame; }
+	/// The number of frames the animation runs (the default of its kind until it has started).
+	int getFrameCount() const { return _frames > 0 ? _frames : (_hit ? HIT_FRAMES : _big ? EXPLODE_FRAMES : BULLET_FRAMES); }
 };
 
 }

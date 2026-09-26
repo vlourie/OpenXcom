@@ -37,6 +37,7 @@
 #include "../Engine/HdTest.h"
 #include "../Engine/HdBlit.h"
 #include "../Engine/HdCanvas.h"
+#include "../Engine/HdFx.h"
 #include "../Engine/HdUi.h"
 #include <chrono>
 #include <cmath>
@@ -444,6 +445,11 @@ void Map::think()
 	_scrollKeyTimer->think(0, this);
 	_fadeTimer->think(0, this);
 	_obstacleTimer->think(0, this);
+	// HD render: a running muzzle flash needs every frame, not only the game's ticks
+	if (HdFx::active() && _canvas->getHdMode() != HD_MODE_NEAREST)
+	{
+		_redraw = true;
+	}
 }
 
 /**
@@ -1217,6 +1223,8 @@ void Map::drawTerrain(HdCanvas *surface)
 {
 	_isAltPressed = _game->isAltPressed(true);
 	_isCtrlPressed = _game->isCtrlPressed(true);
+	// HD render: combat effect clips not drawn for a while go, before this frame records any
+	HdFx::trim();
 	int frameNumber = 0;
 	SurfaceRaw<const Uint8> tmpSurface;
 	Tile *tile;
@@ -2364,6 +2372,21 @@ void Map::drawTerrain(HdCanvas *surface)
 			for (const auto* explosion : _explosions)
 			{
 				_camera->convertVoxelToScreen(explosion->getPosition(), &bulletPositionScreen);
+				// HD render: the combat effect clip in place of the classic frames, frame for frame by progress
+				if (surface->getHdMode() != HD_MODE_NEAREST && !explosion->getHdFx().empty())
+				{
+					if (explosion->getCurrentFrame() < 0)
+					{
+						continue;
+					}
+					const char *setName = explosion->isBig() ? "X1.PCK" : explosion->isHit() ? "HIT.PCK" : "SMOKE.PCK";
+					const std::string clip = HdFx::colour(explosion->getHdFx(), _game->getMod()->getSurfaceSet(setName)->getFrame(explosion->getStartFrame()), getPalette());
+					if (const HdFrame *hd = HdFx::frame(clip, explosion->getCurrentFrame() - explosion->getStartFrame(), explosion->getFrameCount(), _k))
+					{
+						surface->blitFrame(*hd, bulletPositionScreen.x - hd->width / 2, bulletPositionScreen.y - hd->height / 2);
+						continue;
+					}
+				}
 				if (explosion->isBig())
 				{
 					if (explosion->getCurrentFrame() >= 0)
@@ -2392,6 +2415,18 @@ void Map::drawTerrain(HdCanvas *surface)
 						surface->setFrameVariant(0);
 				}
 			}
+		}
+	}
+
+	// HD render: muzzle flashes, on their own clock (see hdMuzzle)
+	if (surface->getHdMode() != HD_MODE_NEAREST)
+	{
+		std::vector<std::pair<const HdFx::Live*, const HdFrame*>> flashes;
+		HdFx::running(SDL_GetTicks(), _k, flashes);
+		for (const auto &f : flashes)
+		{
+			_camera->convertVoxelToScreen(f.first->voxel, &bulletPositionScreen);
+			surface->blitFrame(*f.second, bulletPositionScreen.x - f.second->width / 2, bulletPositionScreen.y - f.second->height / 2);
 		}
 	}
 

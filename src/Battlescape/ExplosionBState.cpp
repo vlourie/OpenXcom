@@ -31,6 +31,7 @@
 #include "../Mod/RuleItem.h"
 #include "../Mod/Armor.h"
 #include "../Engine/RNG.h"
+#include "../Engine/HdFx.h"
 
 namespace OpenXcom
 {
@@ -232,6 +233,7 @@ void ExplosionBState::init()
 			int counter = std::max(1, (powerForAnimation / 5) / 5);
 			_parent->getMap()->setBlastFlash(true);
 			int lowerLimit = std::max(1, powerForAnimation / 5);
+			const std::string hdFx = HdFx::boomClip(itemRule);
 			for (int i = 0; i < lowerLimit; i++)
 			{
 				int X = RNG::generate(-powerForAnimation / 2, powerForAnimation / 2);
@@ -239,6 +241,7 @@ void ExplosionBState::init()
 				Position p = _center;
 				p.x += X; p.y += Y;
 				Explosion *explosion = new Explosion(p, frame, frameDelay, true, false, frameCount);
+				explosion->setHdFx(hdFx);
 				// add the explosion on the map
 				_parent->getMap()->getExplosions()->push_back(explosion);
 				if (i > 0 && i % counter == 0)
@@ -271,6 +274,11 @@ void ExplosionBState::init()
 	else
 	// create a bullet hit
 	{
+		// HD render: what the hit lands on picks its combat effect (read only, before and after the hit)
+		const Tile *hdTile = _parent->getSave()->getTile(_center.toTile());
+		const BattleUnit *hdUnit = _hit ? _targetPsiOrHit : (hdTile ? hdTile->getOverlappingUnit(_parent->getSave()) : nullptr);
+		const int hdBefore = hdUnit ? hdUnit->getHealth() * 1000 + hdUnit->getStunlevel() : 0;
+
 		_parent->getSave()->getTileEngine()->hit(_attack, _center, _power, _damageType, range, _terrainMeleeTilePart);
 
 		_parent->setStateInterval(std::max(1, ((BattlescapeState::DEFAULT_ANIM_SPEED/2) - (10 * itemRule->getExplosionSpeed()))));
@@ -356,6 +364,13 @@ void ExplosionBState::init()
 				onUnit = (_hit ? _targetPsiOrHit : (hitTile ? hitTile->getOverlappingUnit(_parent->getSave()) : nullptr)) != nullptr;
 			}
 			Explosion *explosion = new Explosion(_center, anim, 0, false, (_hit || _psi), animFrames, onUnit); // Don't burn the tile
+			if (!_psi)
+			{
+				const bool armorHeld = onUnit && hdUnit && hdUnit->getHealth() * 1000 + hdUnit->getStunlevel() == hdBefore;
+				explosion->setHdFx(_hit
+					? HdFx::swingClip(weaponRule, damageRule, _attack.attacker ? _attack.attacker->getDirection() : 0)
+					: HdFx::hitClip(itemRule, onUnit, hdUnit, armorHeld, hdTile, _center.z));
+			}
 			_parent->getMap()->getExplosions()->push_back(explosion);
 		}
 		if (_parent->getMap()->getFollowProjectile())
