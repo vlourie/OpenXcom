@@ -110,11 +110,12 @@ public static class TicketApi
     static async Task<IResult> UploadAsync(long number, [FromHeader(Name = TokenHeader)] string? token, HttpContext http, PortalDb db, AttachmentService files,
         Microsoft.Extensions.Options.IOptions<AttachmentOptions> limits, CancellationToken ct)
     {
-        // Kestrel stops bodies at 30 MB by default, below our own limits: lift it to them, plus room for the multipart framing
-        if (http.Features.Get<Microsoft.AspNetCore.Http.Features.IHttpMaxRequestBodySizeFeature>() is { IsReadOnly: false } body)
-            body.MaxRequestBodySize = Math.Max(limits.Value.MaxFileBytes, limits.Value.MaxZipBytes) + 1024 * 1024;
         var t = await FindForGuestAsync(db, number, token, ct);
         if (t is null) return NotFound();
+        // Kestrel stops bodies at 30 MB by default, below our own limits: lift it to them, plus room for the multipart
+        // framing - and only now, for a caller with the ticket's token, so a stranger never gets the bigger limit
+        if (http.Features.Get<Microsoft.AspNetCore.Http.Features.IHttpMaxRequestBodySizeFeature>() is { IsReadOnly: false } body)
+            body.MaxRequestBodySize = Math.Max(limits.Value.MaxFileBytes, limits.Value.MaxZipBytes) + 1024 * 1024;
         var boundary = HeaderUtilities.RemoveQuotes(MediaTypeHeaderValue.Parse(http.Request.ContentType ?? "").Boundary).Value;
         if (string.IsNullOrEmpty(boundary)) return Problem("multipart_required", "send the file as multipart/form-data", 400);
 
