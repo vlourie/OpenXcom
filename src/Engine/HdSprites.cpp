@@ -142,6 +142,15 @@ namespace
 	/// Frames at most this big are dots, not pictures (makeDots): the bullet tracer is 3x3.
 	const int MAX_DOT = 4;
 	unsigned registryGeneration = 1;
+	void (*beforeChangeHook)() = nullptr;
+	/// Lets the canvases run the commands that point at the frames about to change.
+	void beforeChange()
+	{
+		if (beforeChangeHook)
+		{
+			beforeChangeHook();
+		}
+	}
 	size_t budget = (size_t)384 << 20;
 	size_t loadedTotal = 0; ///< bytes of the lazily loaded frames in memory
 	size_t clock = 0;
@@ -207,6 +216,7 @@ void set(const void *key, HdFrame &&frame)
 	{
 		return;
 	}
+	beforeChange();
 	frame.buildSpans();
 	Entry &entry = registry[key];
 	if (!entry.path.empty() && !entry.frame.pixels.empty())
@@ -226,6 +236,7 @@ void setLazy(const void *key, const std::string &path, Uint32 offset, Uint32 siz
 	{
 		return;
 	}
+	beforeChange();
 	Entry &entry = registry[key];
 	if (!entry.path.empty() && !entry.frame.pixels.empty())
 	{
@@ -286,6 +297,7 @@ void setVariantLazy(const void *key, int variant, const std::string &path, Uint3
 	{
 		return;
 	}
+	beforeChange();
 	std::vector<Entry> &slots = variants[key];
 	if ((int)slots.size() < variant)
 	{
@@ -364,6 +376,7 @@ bool registered(const void *key)
 
 void remove(const void *key)
 {
+	beforeChange();
 	auto it = registry.find(key);
 	if (it != registry.end())
 	{
@@ -387,6 +400,7 @@ void removeSet(const SurfaceSet *surfaceSet)
 	{
 		return;
 	}
+	beforeChange();
 	for (size_t i = 0; i < surfaceSet->getTotalFrames(); ++i)
 	{
 		const Surface *frame = surfaceSet->getFrame((int)i);
@@ -409,6 +423,7 @@ void removeSet(const SurfaceSet *surfaceSet)
 
 void clear()
 {
+	beforeChange();
 	registry.clear();
 	variants.clear();
 	loadedTotal = 0;
@@ -469,6 +484,7 @@ void trim()
 	{
 		return;
 	}
+	beforeChange();
 	std::vector<std::pair<size_t, Entry*>> candidates;
 	for (auto &pair : registry)
 	{
@@ -507,6 +523,11 @@ void trim()
 unsigned generation()
 {
 	return registryGeneration;
+}
+
+void setBeforeChange(void (*hook)())
+{
+	beforeChangeHook = hook;
 }
 
 /**
