@@ -80,7 +80,7 @@ def compare_json(ja, jb, quiet, scale=1):
         print("!! hdMode A=%r B=%r: only HD mode 0 (nearest) is meant to be pixel-identical (F9 cycles the mode)" % (da["hdMode"], db["hdMode"]))
         ok = False
     for key in sorted(set(da) | set(db)):
-        if key in ("drawMs", "flipMs", "hdThreads"):
+        if key in ("drawMs", "flipMs", "uiMs", "hdThreads"):
             continue  # profiling figures, not state
         va, vb = da.get(key), db.get(key)
         if scale > 1 and key in scaled and isinstance(va, int) and isinstance(vb, int):
@@ -111,7 +111,7 @@ def compare_perf(ja, jb, slowdown):
         da = json.load(f)
     with open(jb, "r", encoding="utf-8") as f:
         db = json.load(f)
-    for key in ("drawMs", "flipMs"):
+    for key in ("drawMs", "flipMs", "uiMs"):
         va, vb = da.get(key), db.get(key)
         if not isinstance(va, (int, float)) or not isinstance(vb, (int, float)):
             continue

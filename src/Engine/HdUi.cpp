@@ -1045,7 +1045,7 @@ void HdUi::frameDone()
 	_worstMs = 0;
 	if (++_frames % 600 == 0)
 	{
-		Log(LOG_VERBOSE) << "HD interface: " << _totalMs / 600 << " ms/frame, " << _calls / 600 << " surfaces/frame, "
+		Log(LOG_INFO) << "HD interface: " << _totalMs / 600 << " ms/frame, " << _calls / 600 << " surfaces/frame, "
 			<< _smooth.size() << " smoothed surfaces cached (" << (_smoothBytes >> 20) << " MB), " << _glyphs.size() << " glyphs";
 		_totalMs = 0;
 		_calls = 0;

@@ -12,7 +12,8 @@
   - память процесса — CSV раз в 2 с в `docs/QA/hd_mem_<дата>.csv` (тот же скрипт);
   - занятость кэшей HD — строки `HD perf` в `user/openxcom.log`, пишутся раз в 2 с
     из `Canvas32::flush`, плюс отдельная строка в момент обрыва кэша сглаживания;
-  - время кадра — `drawMs` и `flipMs` в `hdtestNNN.json` по Ctrl+F8.
+  - время кадра — `drawMs` и `flipMs` в `hdtestNNN.json` по Ctrl+F8; HD-интерфейс отдельно — `uiMs`
+    там же и строка `HD interface: … ms/frame` в логе.
 - **Что считаем нормой:** `drawMs + flipMs` ниже 16 мс (60 fps). Ниже 8 мс — запас есть.
 
 ## Замеры
