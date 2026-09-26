@@ -37,8 +37,8 @@ namespace
 
 const char *FOLDER = "BASEBITS.PCK";
 const int MAX_PHASES = 16;
-/// Files use the master mod's own frame numbers; the game adds the master's offset (see HdCraftLights).
-const int MASTER_OFFSET = 1000;
+/// Files use the master mod's own frame numbers; the game adds the master's offset (set by clear()).
+int masterOffset = 1000;
 
 struct Tile
 {
@@ -124,7 +124,8 @@ void scan()
 	}
 	if (!tiles.empty())
 	{
-		Log(LOG_INFO) << "HD base: " << tiles.size() << " tiles with pictures" << (anyAnimated ? " (animated)" : "");
+		Log(LOG_INFO) << "HD base: " << tiles.size() << " tiles with pictures" << (anyAnimated ? " (animated)" : "")
+			<< ", master frames from " << masterOffset;
 	}
 }
 
@@ -132,9 +133,9 @@ void scan()
 std::map<int, Tile>::iterator findTile(int index)
 {
 	auto it = tiles.find(index);
-	if (it == tiles.end() && index >= MASTER_OFFSET)
+	if (it == tiles.end() && masterOffset > 0 && index >= masterOffset)
 	{
-		it = tiles.find(index - MASTER_OFFSET);
+		it = tiles.find(index - masterOffset);
 	}
 	return it;
 }
@@ -358,8 +359,9 @@ bool animated()
 	return anyAnimated;
 }
 
-void clear()
+void clear(int offset)
 {
+	masterOffset = offset;
 	tiles.clear();
 	scanned = false;
 	scanScale = 0;

@@ -54,8 +54,9 @@ namespace HdCraftLights
 	/// Draws the lights of the frame whose top-left corner is at (x, y) of the world layer.
 	/// `seed` shifts the rhythm, so that two hangars do not blink together.
 	void draw(SDL_Surface *world, int index, int x, int y, int k, Status status, Uint32 seed, Uint32 ticks);
-	/// Forgets everything (mod reload).
-	void clear();
+	/// Forgets everything (mod reload). `masterOffset` is where the game puts the master mod's
+	/// frames (ModData::offset of the master): the files are named in the master's own numbering.
+	void clear(int masterOffset);
 }
 
 }
