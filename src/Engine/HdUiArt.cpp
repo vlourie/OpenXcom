@@ -388,6 +388,8 @@ const Art *findCrop(const Uint8 *pixels, int pitch, int w, int h, int &offX, int
 	return arts[index].get();
 }
 
+namespace { unsigned cleared = 0; }
+
 void clear()
 {
 	byContent.clear();
@@ -395,12 +397,18 @@ void clear()
 	sizes.clear();
 	arts.clear();
 	loadedBytes = 0;
+	++cleared;
 	clearPrepared();
 }
 
 size_t count()
 {
 	return arts.size();
+}
+
+unsigned generation()
+{
+	return cleared;
 }
 
 size_t bytes()
