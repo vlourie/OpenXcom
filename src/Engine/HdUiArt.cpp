@@ -23,6 +23,7 @@
 #include <map>
 #include <memory>
 #include <unordered_map>
+#include <unordered_set>
 #include <algorithm>
 #include <cmath>
 #include <list>
@@ -56,6 +57,13 @@ struct KeyHash
 std::vector<std::unique_ptr<Art>> arts;
 std::unordered_map<Key, const Art*, KeyHash> byContent;
 std::unordered_map<const Surface*, const Art*> bySurface;
+/// The base sizes of the pictures (w << 32 | h): a surface of any other size is not hashed at all (R-014).
+std::unordered_set<Uint64> sizes;
+
+Uint64 sizeKey(int w, int h)
+{
+	return ((Uint64)(Uint32)w << 32) | (Uint32)h;
+}
 
 }
 
@@ -107,6 +115,7 @@ bool add(const std::string &name, const Surface *base, HdFrame &&frame, std::vec
 	const Art *p = art.get();
 	byContent[Key{ p->hash, bw, bh }] = p;
 	bySurface[base] = p;
+	sizes.insert(sizeKey(bw, bh));
 	arts.push_back(std::move(art));
 	return true;
 }
@@ -143,6 +152,7 @@ bool addLazy(const std::string &name, const Surface *base, const std::string &pa
 	const Art *p = art.get();
 	byContent[Key{ p->hash, bw, bh }] = p;
 	bySurface[base] = p;
+	sizes.insert(sizeKey(bw, bh));
 	arts.push_back(std::move(art));
 	return true;
 }
@@ -360,6 +370,7 @@ void clear()
 {
 	byContent.clear();
 	bySurface.clear();
+	sizes.clear();
 	arts.clear();
 	loadedBytes = 0;
 	clearPrepared();
@@ -595,7 +606,7 @@ bool drawIfPicture(const Surface *surface, SDL_Surface *dest)
 	}
 	// the picture by the surface itself (a mod's image) or by its content (a state's copy of one)
 	const Art *art = find(surface);
-	if (!art)
+	if (!art && sizes.count(sizeKey(w, h)))
 	{
 		const Uint64 hash = hashPixels((const Uint8*)surface->getBuffer(), surface->getPitch(), w, h);
 		art = find(hash, w, h);
