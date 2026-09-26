@@ -468,6 +468,38 @@ const HdFrame *frame(const std::string &name, int step, int steps, int k)
 void spawn(const std::string &clip, Position voxel)
 {
 	live.push_back(Live{ clip, voxel, SDL_GetTicks() });
+	noteForTest(clip);
+}
+
+namespace
+{
+std::vector<std::pair<std::string, Uint32>> testDumps;
+int testDumped = 0;
+}
+
+void noteForTest(const std::string &clip)
+{
+	static const char *prefix = getenv("OXCE_HD_DUMP_FX");
+	if (!prefix || !*prefix || clip.empty() || testDumped + testDumps.size() >= 4)
+	{
+		return;
+	}
+	testDumps.emplace_back(clip, SDL_GetTicks() + 50);     // a few frames in: the clip is on screen, not yet over
+}
+
+std::string takeTestDump(Uint32 now)
+{
+	if (testDumps.empty() || now < testDumps.front().second)
+	{
+		return "";
+	}
+	std::string name = testDumps.front().first;
+	testDumps.erase(testDumps.begin());
+	for (char &c : name)
+	{
+		if (!std::isalnum((unsigned char)c)) c = '_';
+	}
+	return std::string(getenv("OXCE_HD_DUMP_FX")) + "_" + std::to_string(++testDumped) + "_" + name + ".png";
 }
 
 bool active(Uint32 now)

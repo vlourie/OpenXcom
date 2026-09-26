@@ -29,6 +29,7 @@
 #include "HdUi.h"
 #include "HdTest.h"
 #include "HdSprites.h"
+#include "HdFx.h"
 #include "Feedback.h"
 #include <SDL_mixer.h>
 #include "State.h"
@@ -522,6 +523,16 @@ void Game::run()
 							_quit = true;
 							autoDumpState = 2;
 						}
+					}
+				}
+				if (!_screen->hasHdTestDumpRequest())
+				{
+					// OXCE_HD_DUMP_FX=<prefix>: the frame just after a combat effect started (HdFx::noteForTest)
+					const std::string fx = HdFx::takeTestDump(SDL_GetTicks());
+					if (!fx.empty())
+					{
+						_screen->requestHdTestDump(fx);
+						Log(LOG_INFO) << "HD dump: " << fx;
 					}
 				}
 				if (_screen->hasHdTestDumpRequest())

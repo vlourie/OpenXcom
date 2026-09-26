@@ -72,6 +72,10 @@ namespace HdFx
 	bool active(Uint32 now);
 	/// The flashes still running at `now`, with the frame of each (the finished ones are dropped).
 	void running(Uint32 now, int k, std::vector<std::pair<const Live*, const HdFrame*>> &out);
+	/// Headless checks: with OXCE_HD_DUMP_FX=<prefix> the first effects started ask for a dump of the frame showing them.
+	void noteForTest(const std::string &clip);
+	/// The dump file due at `now` for a noted effect, or empty.
+	std::string takeTestDump(Uint32 now);
 	/// Drops loaded clips not drawn for a while. Call before a frame is recorded, never during one.
 	void trim();
 	/// Forgets everything (mod reload).
