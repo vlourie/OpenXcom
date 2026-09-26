@@ -9,7 +9,8 @@
   Имя выпуска выбирается само по дате: 2026.09.24, второй за день 2026.09.24-2; в канале test -
   2026.09.24-test, 2026.09.24-test2. Версия - 2026.9.24 (2026.9.24.2 для второго за день).
   «Что нового»: notes\next.ru.txt и notes\next.en.txt. После выпуска они переименовываются в
-  notes\<имя выпуска>.ru.txt, чтобы следующий выпуск не показал старый текст.
+  notes\<имя выпуска>.ru.txt, чтобы следующий выпуск не показал старый текст. В канале stable
+  раздел «[Не выпущено]» CHANGELOG.md становится разделом «<имя выпуска> — <дата>».
   Лаунчер выпускается, только если его версии (<Version> в Xp.Launcher.csproj) ещё нет в хранилище.
 
   Приватный ключ скрипт не читает: путь к нему передаётся xp-release, и всё.
@@ -27,6 +28,27 @@ function Ok([string] $t)   { Write-Host "    $t" -ForegroundColor Green }
 function Warn([string] $t) { Write-Host "    ВНИМАНИЕ: $t" -ForegroundColor Yellow }
 
 # xp-release печатает в консоль сам; ненулевой код - остановка
+# CHANGELOG.md: всё, что копилось под «[Не выпущено]», становится разделом выпуска $id, а сверху
+# остаётся пустой «[Не выпущено]» для следующего. Иначе выпуски сливаются в один раздел (аудит 26.09)
+function Close-Changelog([string] $path, [string] $id, [datetime] $day) {
+    if (-not (Test-Path -LiteralPath $path)) { Warn "нет $path"; return }
+    $text = [IO.File]::ReadAllText($path, [Text.Encoding]::UTF8)
+    $nl = if ($text.Contains("`r`n")) { "`r`n" } else { "`n" }
+    $mark = '## [Не выпущено]'
+    $at = $text.IndexOf($mark)
+    if ($at -lt 0) { Warn "в CHANGELOG.md нет раздела «[Не выпущено]» - раздел выпуска не записан"; return }
+    $from = $at + $mark.Length
+    $next = $text.IndexOf("$nl## ", $from)
+    if ($next -lt 0) { $next = $text.Length }
+    $body = $text.Substring($from, $next - $from)
+    if (-not $body.Trim()) { Warn 'в CHANGELOG.md под «[Не выпущено]» пусто - раздел выпуска не записан'; return }
+    $months = 'января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'
+    $title = '## {0} — {1} {2} {3}' -f $id, $day.Day, $months[$day.Month - 1], $day.Year
+    $text = $text.Substring(0, $at) + $mark + $nl + $nl + $title + $nl + $body.TrimStart("`r", "`n") + $text.Substring($next)
+    [IO.File]::WriteAllText($path, $text, (New-Object Text.UTF8Encoding $true))
+    Ok "CHANGELOG.md: раздел «$title» - закоммитьте его вместе с notes"
+}
+
 function Xpr([string[]] $a) {
     & $script:xpr @a | Out-Host
     if ($LASTEXITCODE -ne 0) { throw "xp-release $($a[0]) завершился с кодом $LASTEXITCODE" }
@@ -138,6 +160,7 @@ try {
             $lang = [IO.Path]::GetFileNameWithoutExtension($f).Split('.')[-1]
             Move-Item -LiteralPath $f -Destination (Join-Path $notes "$id.$lang.txt") -Force
         }
+        if ($channel -eq 'stable') { Close-Changelog (Join-Path $root 'CHANGELOG.md') $id $today }
     }
 
     # ---- лаунчер: только новая версия
