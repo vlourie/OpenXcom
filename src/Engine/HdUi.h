@@ -292,8 +292,6 @@ private:
 	/// The cache entry of a surface if its content (hash) and scale still match.
 	SmoothEntry *cached(const Surface *key, Uint64 hash, int k);
 	const Glyph &glyph(const Font *font, UCode c, int k);
-	/// Blends a true-color frame at world pixel (x, y).
-	void blendFrame(SDL_Surface *dest, const HdFrame &frame, int x, int y, const SDL_Rect *clip);
 	/// Blends a colour with a coverage over a span of a row (world pixels), clipped.
 	void blendSpan(SDL_Surface *dest, const SDL_Rect &clip, int y, float xa, float xb, Uint32 color, float cov);
 	/// Blends a glyph's coverage bitmap at world position, clipped.

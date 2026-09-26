@@ -433,21 +433,10 @@ size_t preparedBytes = 0;
 const size_t preparedBudget = (size_t)256 << 20;
 size_t preparedClock = 0;
 
-Uint64 paletteHash(const SDL_Color *colors, int k)
-{
-	Uint64 hash = 0x9E3779B97F4A7C15ULL ^ (Uint64)k;
-	for (int i = 0; i < 256; ++i)
-	{
-		hash ^= (Uint64)colors[i].r | ((Uint64)colors[i].g << 8) | ((Uint64)colors[i].b << 16);
-		hash *= 1099511628211ULL;
-	}
-	return hash;
-}
-
 /// The picture at the world scale k, re-tinted from its reference palette to `colors` per classic pixel.
 const HdFrame *preparedFrame(const Art *art, int k, const SDL_Color *colors)
 {
-	const Uint64 key = art->palette.empty() ? (Uint64)k : paletteHash(colors, k);
+	const Uint64 key = art->palette.empty() ? (Uint64)k : foldPalette(0x9E3779B97F4A7C15ULL ^ (Uint64)k, colors);
 	for (auto &p : prepared)
 	{
 		if (p->art == art && p->key == key)
@@ -456,18 +445,53 @@ const HdFrame *preparedFrame(const Art *art, int k, const SDL_Color *colors)
 			return &p->frame;
 		}
 	}
-	const HdFrame &src = frame(art);
-	if (src.pixels.empty())
-	{
-		return nullptr;
-	}
-	const int W = art->baseWidth * k, H = art->baseHeight * k;
-	const int s = art->scale;
 	std::unique_ptr<Prepared> p(new Prepared());
 	p->art = art;
 	p->key = key;
 	p->lru = ++preparedClock;
-	HdFrame &out = p->frame;
+	if (!prepare(art, k, colors, p->frame))
+	{
+		return nullptr;
+	}
+	// room for it
+	const size_t bytes = p->frame.pixels.size() * 4;
+	while (!prepared.empty() && preparedBytes + bytes > preparedBudget)
+	{
+		size_t oldest = 0;
+		for (size_t i = 1; i < prepared.size(); ++i)
+		{
+			if (prepared[i]->lru < prepared[oldest]->lru) oldest = i;
+		}
+		preparedBytes -= prepared[oldest]->frame.pixels.size() * 4;
+		prepared.erase(prepared.begin() + oldest);
+	}
+	preparedBytes += bytes;
+	prepared.push_back(std::move(p));
+	return &prepared.back()->frame;
+}
+
+}
+
+Uint64 foldPalette(Uint64 seed, const SDL_Color *colors)
+{
+	Uint64 hash = seed;
+	for (int i = 0; i < 256; ++i)
+	{
+		hash ^= (Uint64)colors[i].r | ((Uint64)colors[i].g << 8) | ((Uint64)colors[i].b << 16);
+		hash *= 1099511628211ULL;
+	}
+	return hash;
+}
+
+bool prepare(const Art *art, int k, const SDL_Color *colors, HdFrame &out)
+{
+	const HdFrame &src = frame(art);
+	if (src.pixels.empty())
+	{
+		return false;
+	}
+	const int W = art->baseWidth * k, H = art->baseHeight * k;
+	const int s = art->scale;
 	out.width = W;
 	out.height = H;
 	out.pixels.assign((size_t)W * H, 0u);
@@ -537,28 +561,25 @@ const HdFrame *preparedFrame(const Art *art, int k, const SDL_Color *colors)
 	{
 		rows((int)((long long)H * job / jobs), (int)((long long)H * (job + 1) / jobs));
 	});
-	// room for it
-	const size_t bytes = out.pixels.size() * 4;
-	while (!prepared.empty() && preparedBytes + bytes > preparedBudget)
-	{
-		size_t oldest = 0;
-		for (size_t i = 1; i < prepared.size(); ++i)
-		{
-			if (prepared[i]->lru < prepared[oldest]->lru) oldest = i;
-		}
-		preparedBytes -= prepared[oldest]->frame.pixels.size() * 4;
-		prepared.erase(prepared.begin() + oldest);
-	}
-	preparedBytes += bytes;
-	prepared.push_back(std::move(p));
-	return &prepared.back()->frame;
+	return true;
 }
 
-/// Alpha-blends a frame into a 32-bit surface at (x, y), clipped to it.
-void blendInto(SDL_Surface *dest, const HdFrame &f, int x, int y)
+namespace
 {
-	const int x0 = std::max(0, x), y0 = std::max(0, y);
-	const int x1 = std::min(dest->w, x + f.width), y1 = std::min(dest->h, y + f.height);
+
+/// Alpha-blends a frame into a 32-bit surface at (x, y), clipped to `clip` and to the surface.
+void blendInto(SDL_Surface *dest, const HdFrame &f, int x, int y, const SDL_Rect *clip)
+{
+	int cx0 = 0, cy0 = 0, cx1 = dest->w, cy1 = dest->h;
+	if (clip)
+	{
+		cx0 = std::max(cx0, (int)clip->x);
+		cy0 = std::max(cy0, (int)clip->y);
+		cx1 = std::min(cx1, clip->x + clip->w);
+		cy1 = std::min(cy1, clip->y + clip->h);
+	}
+	const int x0 = std::max(cx0, x), y0 = std::max(cy0, y);
+	const int x1 = std::min(cx1, x + f.width), y1 = std::min(cy1, y + f.height);
 	if (x0 >= x1 || y0 >= y1)
 	{
 		return;
@@ -589,8 +610,13 @@ void blendInto(SDL_Surface *dest, const HdFrame &f, int x, int y)
 		}
 	};
 	const int n = y1 - y0;
+	if (n < 256)
+	{
+		rows(y0, y1); // a button's worth: the pool would cost more than the rows
+		return;
+	}
 	HdWorkers &pool = HdWorkers::instance();
-	const int jobs = std::max(1, std::min(n / 32, pool.threads() * 2));
+	const int jobs = std::max(1, std::min(n / 64, pool.threads() * 2));
 	pool.run(jobs, [&](int job)
 	{
 		rows(y0 + (int)((long long)n * job / jobs), y0 + (int)((long long)n * (job + 1) / jobs));
@@ -613,11 +639,11 @@ bool active()
  * Draws a picture into a 32-bit surface at (x, y) (the screen's world layer): what a state
  * draws itself, such as the base view's HD facilities.
  */
-void drawFrame(SDL_Surface *dest, const HdFrame &frame, int x, int y)
+void drawFrame(SDL_Surface *dest, const HdFrame &frame, int x, int y, const SDL_Rect *clip)
 {
 	if (dest && dest->format->BytesPerPixel == 4 && !frame.pixels.empty())
 	{
-		blendInto(dest, frame, x, y);
+		blendInto(dest, frame, x, y, clip);
 	}
 }
 
@@ -660,7 +686,7 @@ bool drawIfPicture(const Surface *surface, SDL_Surface *dest)
 		return false;
 	}
 	if (SDL_MUSTLOCK(world)) SDL_LockSurface(world);
-	blendInto(world, *f, surface->getX() * k, surface->getY() * k);
+	blendInto(world, *f, surface->getX() * k, surface->getY() * k, nullptr);
 	if (SDL_MUSTLOCK(world)) SDL_UnlockSurface(world);
 	HdUi::instance().notePicture(surface->getX(), surface->getY(), w, h);
 	return true;
