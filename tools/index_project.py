@@ -18,7 +18,7 @@ tools/describe_modules.py.
 """
 from __future__ import annotations
 
-import argparse, json, os, shutil, subprocess, sys, time
+import argparse, fnmatch, json, os, shutil, subprocess, sys, time
 from collections import Counter
 from pathlib import Path
 
@@ -27,12 +27,16 @@ SRC_EXT = {
     ".c": "C", ".h": "C/C++ header", ".cpp": "C++", ".cc": "C++", ".cxx": "C++",
     ".hpp": "C++ header", ".cs": "C#", ".py": "Python", ".js": "JS", ".ts": "TS",
     ".lua": "Lua", ".rul": "ruleset", ".yml": "YAML", ".yaml": "YAML", ".json": "JSON",
+    ".ps1": "PowerShell", ".sh": "Shell",
 }
 SKIP_DIRS = {".git", ".index", "build", "dist", "out", "node_modules", "__pycache__",
              ".vs", ".vscode", ".idea", "game", "assets", "venv", ".venv", "third_party",
              # каталоги сборки, данные и установленные игры: не исходники проекта
              "build-release", "obj", "deps", "libs", "bin", "user", "install",
              "Пиратки", "мурукон", "Claude outputs", "hdglobe_dl", "hdart_sheets", "art"}
+# и по маске: скрытые папки (.venv-qwen21 - 729 тысяч символов чужих библиотек) и готовые
+# решения конфликтов слияния (tools/merge/resolved_8.7 - копии src, символы двоились бы)
+SKIP_GLOBS = [".*", "resolved_*"]
 
 
 # Windows PowerShell 5.1 читает файл без BOM как cp1251 (`type INDEX.md` — мусор).
@@ -45,20 +49,21 @@ def have(tool: str) -> bool:
     return shutil.which(tool) is not None
 
 
-def iter_sources(root: Path):
-    for dirpath, dirnames, filenames in os.walk(root):
-        dirnames[:] = [d for d in dirnames if d not in SKIP_DIRS and not d.startswith(".")]
-        for fn in filenames:
-            p = Path(dirpath) / fn
-            if p.suffix.lower() in SRC_EXT:
-                yield p
+def iter_sources(roots: list[Path]):
+    for root in roots:
+        for dirpath, dirnames, filenames in os.walk(root):
+            dirnames[:] = [d for d in dirnames if d not in SKIP_DIRS and not any(fnmatch.fnmatch(d, g) for g in SKIP_GLOBS)]
+            for fn in filenames:
+                p = Path(dirpath) / fn
+                if p.suffix.lower() in SRC_EXT:
+                    yield p
 
 
-def newest_source_mtime(root: Path) -> float:
-    return max((p.stat().st_mtime for p in iter_sources(root)), default=0.0)
+def newest_source_mtime(roots: list[Path]) -> float:
+    return max((p.stat().st_mtime for p in iter_sources(roots)), default=0.0)
 
 
-def is_stale(root: Path) -> bool:
+def is_stale(roots: list[Path]) -> bool:
     meta = OUT / "meta.json"
     if not meta.exists():
         return True
@@ -66,16 +71,19 @@ def is_stale(root: Path) -> bool:
         built = json.loads(meta.read_text(encoding=ENC_R)).get("built_at", 0)
     except Exception:
         return True
-    return newest_source_mtime(root) > built
+    return newest_source_mtime(roots) > built
 
 
-def run_ctags(root: Path) -> list[dict]:
+def run_ctags(roots: list[Path]) -> list[dict]:
     if not have("ctags"):
         return []
-    excl = [f"--exclude={d}" for d in SKIP_DIRS]
-    cmd = ["ctags", "-R", "--output-format=json", "--fields=+nKSt", "--extras=+q", *excl, str(root)]
+    excl = [f"--exclude={d}" for d in [*SKIP_DIRS, *SKIP_GLOBS]]
+    cmd = ["ctags", "-R", "--output-format=json", "--fields=+nKSt", "--extras=+q",
+           # данные (ключи JSON и YAML) - не символы кода
+           "--languages=-JSON,-Yaml", *excl, *map(str, roots)]
     try:
-        res = subprocess.run(cmd, capture_output=True, text=True, timeout=600)
+        # ctags пишет UTF-8; кодировка консоли по умолчанию (cp1252) падает на кириллице в tools/
+        res = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace", timeout=600)
     except Exception as e:
         print(f"ctags не отработал: {e}", file=sys.stderr)
         return []
@@ -98,11 +106,11 @@ def write_tsv(path: Path, header: list[str], rows):
             f.write("\t".join(str(c).replace("\t", " ").replace("\n", " ") for c in r) + "\n")
 
 
-def build(root: Path, full: bool) -> int:
+def build(roots: list[Path], full: bool) -> int:
     t0 = time.time()
     OUT.mkdir(exist_ok=True)
 
-    files = sorted(iter_sources(root))
+    files = sorted(iter_sources(roots))
     frows = []
     total_lines = 0
     for p in files:
@@ -114,7 +122,7 @@ def build(root: Path, full: bool) -> int:
         frows.append([p.as_posix(), n, SRC_EXT.get(p.suffix.lower(), "?")])
     write_tsv(OUT / "files.tsv", ["file", "lines", "lang"], frows)
 
-    tags = run_ctags(root)
+    tags = run_ctags(roots)
     srows = [[t.get("name", ""), t.get("kind", ""), t.get("path", "").replace("\\", "/"),
               t.get("line", ""), t.get("scope", ""), (t.get("signature", "") or "")]
              for t in tags]
@@ -189,18 +197,17 @@ def main():
     ap.add_argument("--if-stale", action="store_true", help="пересобрать, только если устарел")
     ap.add_argument("--full", action="store_true", help="плюс doxygen (нужен Doxyfile)")
     ap.add_argument("--quiet", action="store_true")
-    ap.add_argument("--root", default="src")
+    # движок, инструменты и портал: без tools/ и portal/ агенты читали их файлы целиком (аудит 26.09)
+    ap.add_argument("--root", nargs="+", default=["src", "tools", "portal"])
     a = ap.parse_args()
 
-    root = Path(a.root)
-    if not root.exists():
-        root = Path(".")
+    roots = [Path(r) for r in a.root if Path(r).exists()] or [Path(".")]
 
-    if a.if_stale and not is_stale(root):
+    if a.if_stale and not is_stale(roots):
         if not a.quiet:
             print("Индекс свежий, пересборка не нужна.")
         return 0
-    return build(root, a.full)
+    return build(roots, a.full)
 
 
 if __name__ == "__main__":
