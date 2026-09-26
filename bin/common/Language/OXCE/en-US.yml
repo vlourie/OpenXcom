@@ -418,6 +418,8 @@ en-US:
   STR_HD_LIGHT_DESC: "In the HD sprite modes: light blends smoothly between tiles and has color (cool at night, warm from fire and lamps). The game's own visibility rules are not affected."
   STR_HD_GROUND_VARIANTS: "HD ground variants"
   STR_HD_GROUND_VARIANTS_DESC: "In the HD sprite modes: where a mod's HD pack holds several paintings of a floor (<index>.v1.png and on), they are laid over the map as smooth patches with blended, ragged edges, so a field of one tile stops looking like a grid. Off = the pack's own painting everywhere."
+  STR_HD_HOVER_BOB: "HD unit sway"
+  STR_HD_HOVER_BOB_DESC: "In the HD sprite modes: flying units that hang with no floor below sway gently up and down, easing in on take-off and out on landing. Picture only, the unit's position does not change. Off (and mode 0) = they hang still, as in the classic game."
   STR_HD_PICTURES: "HD pictures"
   STR_HD_PICTURES_DESC: "Pictures of the interface's images that mods ship in hd/UI (Ufopaedia illustrations, screens) are shown in the display's resolution in place of the 8-bit originals; everything else of the interface stays as it is. Needs a 32-bit display (OpenGL or a 32-bit filter)."
   STR_HD_UI_SMOOTH: "HD pictures: smooth interface"
