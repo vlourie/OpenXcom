@@ -32,7 +32,7 @@
 #   Extra arguments for gen_hd.py go into -GenArgs, e.g. -GenArgs "--strength 0.85 --seed 7" (a value with spaces
 #   in single quotes: -GenArgs "--variant-looks 'short grass|tall grass'")
 #
-# БОЛЬШОЙ БАТЧ ЗАПУСКАТЬ НЕ ОТСЮДА, а через tools\hdart\run_batch.py: этот скрипт поднимает
+# БОЛЬШОЙ БАТЧ ЗАПУСКАТЬ НЕ ОТСЮДА, а через tools\hdart\attic\run_batch.py: этот скрипт поднимает
 # новый процесс python на каждый набор, и SDXL грузится заново дважды на набор (~17 с каждый раз) -
 # на 625 наборах это около шести часов впустую. run_batch.py делает то же самое в одном процессе,
 # держит модель в памяти и печатает проценты с оценкой оставшегося времени. Здесь остаётся удобный

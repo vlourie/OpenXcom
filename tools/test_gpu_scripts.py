@@ -56,7 +56,7 @@ def read(path):
 def files():
     for top in WHERE:
         for dirpath, dirnames, names in os.walk(top):
-            dirnames[:] = [d for d in dirnames if not d.startswith(".venv") and d not in ("__pycache__", "attic")]
+            dirnames[:] = [d for d in dirnames if not d.startswith(".venv") and d != "__pycache__"]
             for n in names:
                 if n.endswith((".py", ".sh", ".ps1")):
                     yield n, os.path.join(dirpath, n)

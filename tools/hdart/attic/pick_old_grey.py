@@ -10,13 +10,15 @@ LoRA, обученная на DESERT и FORESTSWAMP, перекрашивает 
 площадь не меньше --min-area, не больше --per-set на набор, одна картинка один раз.
 Пишет picked_old.tsv и листы оригинал | прежний | LoRA в sheets_old/.
 
-  python tools/hdart/pick_old_grey.py --pick 150
+  python tools/hdart/attic/pick_old_grey.py --pick 150
 """
 import argparse
 import csv
 import os
 import sys
 
+# чердак (attic): библиотеки-соседи лежат уровнем выше, в tools/hdart
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from PIL import Image, ImageDraw                                     # noqa: E402
 

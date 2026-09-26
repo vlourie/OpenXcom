@@ -8,7 +8,7 @@ gen_lora_batch сам по себе останавливается по бюдж
 гасят не только ошибки: обвязка снимает фоновые задачи при нехватке памяти в системе, и
 в логе при этом нет ни сбоя, ни последней строки - просто обрыв на целом кадре.
 
-    py -3 tools/hdart/keep_batch.py --lora E:\train\lora\oxcehd\step-2540.safetensors ^
+    py -3 tools/hdart/attic/keep_batch.py --lora E:\train\lora\oxcehd\step-2540.safetensors ^
         --hours 12
 
 Останавливается сам в трёх случаях: вышел общий срок; очередь кончилась (gen_lora_batch

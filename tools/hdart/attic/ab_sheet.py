@@ -7,7 +7,7 @@ report.tsv в <out>. Лист: строка на кадр, столбцы «ор
 тёмном полу боя (R-041). Сводка: годных по меркам, средний балл и секунд на кадр по варианту -
 но выбирать вариант по листу глазами, мерки материала не видят (R-063).
 
-    py -3 tools\hdart\ab_sheet.py --list art\gen3\pilot.txt --variants V1=ab_v1,V2=ab_v2 --ab art\gen3\ab
+    py -3 tools\hdart\attic\ab_sheet.py --list art\gen3\pilot.txt --variants V1=ab_v1,V2=ab_v2 --ab art\gen3\ab
 """
 import argparse
 import csv
@@ -15,8 +15,10 @@ import os
 import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-if HERE not in sys.path:
-    sys.path.insert(0, HERE)
+# чердак (attic): библиотеки-соседи лежат уровнем выше, в tools/hdart
+for _p in (os.path.dirname(HERE), HERE):
+    if _p not in sys.path:
+        sys.path.insert(0, _p)
 
 from PIL import Image, ImageDraw                        # noqa: E402
 
