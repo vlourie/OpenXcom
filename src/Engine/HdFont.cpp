@@ -333,4 +333,31 @@ void HdFont::clearCache()
 	_cache.clear();
 }
 
+/**
+ * Every size and condensing a text was ever drawn at stays in the cache: a font switched a few times
+ * in play, or a window resized, leaves glyphs nobody asks for again. Counted only when the cache grew
+ * (it stops growing once the screens in use have been seen), dropped whole: the glyphs of one screen
+ * are rasterized again in a few milliseconds.
+ */
+bool HdFont::trimCache(size_t capBytes)
+{
+	if (_cache.size() == _measured)
+	{
+		return false;
+	}
+	_measured = _cache.size();
+	size_t bytes = 0;
+	for (const auto &e : _cache)
+	{
+		bytes += sizeof(e) + e.second.cov.size();
+	}
+	if (bytes <= capBytes)
+	{
+		return false;
+	}
+	_cache.clear();
+	_measured = 0;
+	return true;
+}
+
 }

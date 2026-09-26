@@ -67,6 +67,9 @@ public:
 	float measure(const UString &s, float px, float condense = 1.0f);
 	/// Forgets the cached glyphs.
 	void clearCache();
+	/// Forgets them all when they take more than `capBytes`. Only between frames: the glyphs are handed
+	/// out by reference and must stay put while a line is drawn. True when it did.
+	bool trimCache(size_t capBytes);
 
 private:
 	struct Key
@@ -96,6 +99,7 @@ private:
 	Face _face;                ///< the main font
 	Face _fallback;            ///< what draws the code points the main font is missing
 	std::unordered_map<Key, Glyph, KeyHash> _cache;
+	size_t _measured = 0;      ///< the cache's size when trimCache last counted its bytes
 	std::vector<UCode> _warned;
 };
 
