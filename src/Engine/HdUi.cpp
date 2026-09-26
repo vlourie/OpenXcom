@@ -1033,6 +1033,21 @@ void HdUi::frameDone()
 	}
 	// the font can be switched in play (the options list): pick it up between frames
 	applyFontOption();
+	// the glyph caches keep every size a text was drawn at: a ceiling, checked between frames (no glyph
+	// reference is held then)
+	const size_t GLYPH_CACHE_BYTES = 32u << 20;
+	for (HdFont *font : { &_fontBig, &_fontSmall })
+	{
+		if (font->trimCache(GLYPH_CACHE_BYTES / 2))
+		{
+			Log(LOG_INFO) << "HD interface: TrueType glyph cache over " << (GLYPH_CACHE_BYTES >> 21) << " MB, dropped";
+		}
+	}
+	if (_glyphs.size() > 16384)
+	{
+		Log(LOG_INFO) << "HD interface: " << _glyphs.size() << " classic glyphs cached, dropped";
+		_glyphs.clear();
+	}
 	_totalMs += _frameMs;
 	_lastFrameMs = _frameMs;
 	_lastCalls = _frameCalls;
