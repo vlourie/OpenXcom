@@ -47,6 +47,7 @@
 #include <unordered_map>
 #include "../Engine/Screen.h"
 #include "../Engine/CrossPlatform.h"
+#include "../Engine/HdUi.h"
 #include "TileEngine.h"
 
 namespace OpenXcom
@@ -78,6 +79,12 @@ Inventory::Inventory(Game *game, int width, int height, int x, int y, bool base)
 	_warning->initText(_game->getMod()->getFont("FONT_BIG"), _game->getMod()->getFont("FONT_SMALL"), _game->getLanguage());
 	_warning->setColor(_game->getMod()->getInterface("battlescape")->getElement("warning")->color2);
 	_warning->setTextColor(_game->getMod()->getInterface("battlescape")->getElement("warning")->color);
+
+	// the same widget drawGridLabels() lays the names out with
+	_hdLabel = new Text(90, 9, 0, 0);
+	_hdLabel->initText(_game->getMod()->getFont("FONT_BIG"), _game->getMod()->getFont("FONT_SMALL"), _game->getLanguage());
+	_hdLabel->setColor(_game->getMod()->getInterface("inventory")->getElement("textSlots")->color);
+	_hdLabel->setHighContrast(true);
 
 	_animTimer = new Timer(100);
 	_animTimer->onTimer((SurfaceHandler)&Inventory::animate);
@@ -121,6 +128,7 @@ Inventory::~Inventory()
 	delete _grid;
 	delete _items;
 	delete _gridLabels;
+	delete _hdLabel;
 	delete _selection;
 	delete _warning;
 	delete _stackNumber;
@@ -139,6 +147,7 @@ void Inventory::setPalette(const SDL_Color *colors, int firstcolor, int ncolors)
 	_grid->setPalette(colors, firstcolor, ncolors);
 	_items->setPalette(colors, firstcolor, ncolors);
 	_gridLabels->setPalette(colors, firstcolor, ncolors);
+	_hdLabel->setPalette(colors, firstcolor, ncolors);
 	_selection->setPalette(colors, firstcolor, ncolors);
 	_warning->setPalette(colors, firstcolor, ncolors);
 	_stackNumber->setPalette(getPalette());
@@ -262,6 +271,7 @@ void Inventory::drawGrid()
 void Inventory::drawGridLabels(bool showTuCost)
 {
 	_gridLabels->clear();
+	_labels.clear();
 
 	Text text = Text(90, 9, 0, 0);
 	text.setPalette(_gridLabels->getPalette());
@@ -292,6 +302,30 @@ void Inventory::drawGridLabels(bool showTuCost)
 			text.setText(_game->getLanguage()->getString(i->getId()).arg(1 + _groundOffset / _groundSlotsX).arg(1 + _xMax / _groundSlotsX));
 		}
 		text.blit(_gridLabels->getSurface());
+		_labels.push_back({ text.getText(), text.getX(), text.getY() });
+	}
+}
+
+/**
+ * Is the HD interface going to draw the slot names with its own fonts? Then they stay out of the
+ * inventory's own pixels: those reach the HD layer through the upscaler, which smears letters (R-022).
+ */
+bool Inventory::hdLabels(const SDL_Surface *surface) const
+{
+	return HdUi::isScreen(surface) && HdUi::active() && HdUi::skin() && HdUi::instance().hasFonts();
+}
+
+/**
+ * The slot names, drawn with the TrueType fonts straight onto the HD layer where the classic layout
+ * put them. draw() is what lays the string out; hdDrawAt reads that layout.
+ */
+void Inventory::drawHdLabels()
+{
+	for (const auto &label : _labels)
+	{
+		_hdLabel->setText(label.text);
+		_hdLabel->draw();
+		_hdLabel->hdDrawAt(getX() + label.x, getY() + label.y);
 	}
 }
 
@@ -643,6 +677,26 @@ void Inventory::blit(SDL_Surface *surface)
 	clear();
 	_grid->blitNShade(this, 0, 0);
 	_items->blitNShade(this, 0, 0);
+	if (hdLabels(surface))
+	{
+		// the layers go to the screen one by one, in the same order: the classic pixels come out the
+		// same, and the HD layer gets the names in its own fonts under the dragged item and the warning
+		Surface::blit(surface);
+		SDL_Rect target {};
+		target.x = getX();
+		target.y = getY();
+		SDL_BlitSurface(_gridLabels->getSurface(), nullptr, surface, &target);
+		drawHdLabels();
+		for (Surface *over : { _selection, (Surface*)_warning })
+		{
+			over->setX(over->getX() + getX());
+			over->setY(over->getY() + getY());
+			over->blit(surface);
+			over->setX(over->getX() - getX());
+			over->setY(over->getY() - getY());
+		}
+		return;
+	}
 	_gridLabels->blitNShade(this, 0, 0);
 	_selection->blitNShade(this, _selection->getX(), _selection->getY());
 	_warning->blit(this->getSurface());
