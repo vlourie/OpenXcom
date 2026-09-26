@@ -94,6 +94,12 @@ try {
         $launchExe = Join-Path $cfg.Stage $cfg.Launch
         if (-not (Test-Path -LiteralPath $launchExe)) { throw "в $($cfg.Stage) нет $($cfg.Launch) - нужна сборка «Обе»" }
         Ok ("стейдж от {0:dd.MM HH:mm}" -f (Get-Item -LiteralPath $launchExe).LastWriteTime)
+        # грабли R-044: с nobuild стейдж мог быть собран до последней правки движка
+        $newestSrc = Get-ChildItem -LiteralPath (Join-Path $root 'src') -Recurse -File -Include *.cpp, *.h |
+            Sort-Object LastWriteTime | Select-Object -Last 1
+        if ($newestSrc -and $newestSrc.LastWriteTime -gt (Get-Item -LiteralPath $launchExe).LastWriteTime) {
+            throw ("exe в стейдже старше исходников: {0} изменён {1:dd.MM HH:mm}. Выпуск без сборки выложил бы игру без этой правки - запустите без nobuild" -f $newestSrc.Name, $newestSrc.LastWriteTime)
+        }
 
         # ---- имя и версия выпуска по дате
         $today = Get-Date
