@@ -838,6 +838,8 @@ void Map::hdTestFreeze(const std::string &mapDumpPath)
 	{
 		tileParticles.clear();
 	}
+	// the sway of hanging units depends on when the key was pressed: the dump draws them still
+	_hoverFade.clear();
 	// the live vapor is random, so a fixed cloud takes its place: the dump still covers the vapor
 	// path, and two dumps of one save match (every third tile of the view level: a 4x4 patch of
 	// puffs of every size and opacity level, the vapor color cycling over the tiles)
@@ -1592,9 +1594,9 @@ void Map::drawTerrain(HdCanvas *surface)
 								BattleUnit *itemUnit = item->getUnit();
 								if (itemUnit && itemUnit->getStatus() == STATUS_UNCONSCIOUS && itemUnit->indicatorsAreEnabled())
 								{
-									// the same pulse as the indicators on the inventory's ground grid (Inventory::drawItems)
+									// the same pulse as the indicators on the inventory's ground grid (Inventory::drawItems); mode 0 keeps the classic still shade
 									static const int Pulsate[8] = { 0, 1, 2, 3, 4, 3, 2, 1 };
-									const int indicatorShade = std::min(15, tileShade + Pulsate[_animFrame % 8]);
+									const int indicatorShade = surface->getHdMode() == HD_MODE_NEAREST ? tileShade : std::min(15, tileShade + Pulsate[_animFrame % 8]);
 									if (_burnIndicator && itemUnit->getFire() > 0)
 									{
 										surface->blit(_burnIndicator,
@@ -2693,8 +2695,8 @@ void Map::animate(bool redraw)
 	_save->nextAnimFrame();
 	_animFrame = _save->getAnimFrame();
 
-	// units hanging with no floor below fade their sway in, landed ones fade it out (hoverBob)
-	if (Options::oxceHdHoverBob)
+	// units hanging with no floor below fade their sway in, landed ones fade it out (hoverBob); mode 0 draws them still, as the classic game
+	if (Options::oxceHdHoverBob && _canvas->getHdMode() != HD_MODE_NEAREST)
 	{
 		for (const auto* bu : *_save->getUnits())
 		{
