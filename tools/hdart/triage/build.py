@@ -30,11 +30,12 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(HERE)))
 import pck_census as pc                                                # noqa: E402
 import score_batch as sb                                               # noqa: E402
 import tile_forge as tf                                                # noqa: E402
+import common  # noqa: E402
 
 ENC = "utf-8-sig"
 OUT = os.path.join("art", "_review", "triage")
 OLD = os.path.join("art", "_backup", "TERRAIN_before_lora_20260924_1057")
-PIRATEZ = os.path.join("Пиратки", "Dioxine_XPiratez", "user", "mods", "Piratez")
+PIRATEZ = common.PIRATEZ
 
 # смещения полей записи MCD (62 байта), порядок struct MCD в src/Mod/MapDataSet.cpp
 F = dict(ufo_door=30, stop_los=31, no_floor=32, big_wall=33, gravlift=34, door=35,

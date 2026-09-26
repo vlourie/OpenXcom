@@ -56,10 +56,11 @@ import extract_pck                   # noqa: E402
 import gen_hd                        # noqa: E402
 import subjects_terrain              # noqa: E402
 import pck_census                    # noqa: E402
+import common  # noqa: E402
 
 ENC = "utf-8-sig"
 FLOOR = (38, 34, 30)                 # тёмный пол боя: на нём виден остаток подложки (грабли R-041)
-PZ = os.path.join("Пиратки", "Dioxine_XPiratez", "user", "mods")
+PZ = common.MODS
 
 # Причина брака задаёт, каким скриптом чинить, поэтому список закрытый: по свободному тексту
 # статистику на двадцати тысячах кадров не построишь (docs/portal/PACK_REVIEW.md §3).

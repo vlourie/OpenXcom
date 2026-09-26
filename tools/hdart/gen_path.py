@@ -35,6 +35,7 @@ import sys
 
 import numpy as np
 from PIL import Image
+import common
 
 if hasattr(sys.stdout, "reconfigure"):   # консоль msys бывает cp1252
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -43,8 +44,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.abspath(os.path.join(HERE, "..", ".."))
 
 SHEET = os.path.join(ROOT, "bin", "common", "Resources", "Pathfinding", "Pathfinding.png")
-PIRATEZ_PAL = os.path.join(ROOT, "Пиратки", "Dioxine_XPiratez", "user", "mods",
-                           "Piratez", "Resources", "Pals", "delicious_regular.pal")
+PIRATEZ_PAL = os.path.join(ROOT, common.PIRATEZ, "Resources", "Pals", "delicious_regular.pal")
 
 FW, FH = 32, 40
 COUNT = 24

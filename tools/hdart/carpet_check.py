@@ -15,9 +15,10 @@ census/ground.tsv - поле) и смотрит в тот пак мода, ко�
 import argparse
 import os
 import sys
+import common
 
 ENC = "utf-8-sig"
-DEFAULT_MOD = os.path.join("Пиратки", "Dioxine_XPiratez", "user", "mods", "hd", "hd", "TERRAIN")
+DEFAULT_MOD = os.path.join(common.GAME_HD, "hd", "TERRAIN")
 
 
 def read_tsv(path):

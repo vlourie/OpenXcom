@@ -21,11 +21,12 @@ from collections import Counter
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."))
 from pck_census import load_yaml  # noqa: E402
+import common  # noqa: E402
 
 ENC = "utf-8-sig"
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 MODS = {
-    "Piratez": [os.path.join(ROOT, "Пиратки", "Dioxine_XPiratez", "user", "mods", "Piratez", "Ruleset")],
+    "Piratez": [os.path.join(ROOT, common.PIRATEZ, "Ruleset")],
     "xcom1": [os.path.join(ROOT, "bin", "standard", "xcom1")],
 }
 # имена типов урона Пираток (их damageTypes), для ванили 0..9 те же по смыслу: AP, IN, HE, LASER...

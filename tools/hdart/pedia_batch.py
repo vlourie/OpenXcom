@@ -26,10 +26,11 @@ import subprocess
 import sys
 import time
 import urllib.request
+import common
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ENC = "utf-8-sig"
-PIR = os.path.join("Пиратки", "Dioxine_XPiratez", "user", "mods")
+PIR = common.MODS
 ORIG = os.path.join(PIR, "Piratez", "Resources", "Pedia")
 HD_IN = os.path.join(PIR, "hd", "hd", "UI_esrgan")
 ROOT = os.path.join("art", "pedia_regen")

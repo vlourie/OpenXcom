@@ -23,9 +23,10 @@ import time
 
 sys.path.insert(0, os.path.join("tools", "hdart"))
 import dupe_plan as dup  # noqa: E402
+import common  # noqa: E402
 
 ENC = "utf-8-sig"
-MOD = os.path.join(u"Пиратки", "Dioxine_XPiratez", "user", "mods", "hd", "hd", "TERRAIN")
+MOD = os.path.join(common.GAME_HD, "hd", "TERRAIN")
 OLD = os.path.join("art", "_backup", "TERRAIN_before_lora_20260924_1057")
 SHEETS = os.path.join("art", "TERRAIN")
 KEEP = os.path.join("art", "_backup", "TERRAIN_lora_%s" % time.strftime("%Y%m%d_%H%M"))
