@@ -8,7 +8,8 @@
 # Что считается встроенным скриптом:
 #   - тело heredoc (<<EOF ... EOF, <<'EOF', <<-EOF);
 #   - код в -c / -e у python, py, perl, ruby, node;
-#   - sed -i и perl -i/-pi (правка файла на месте).
+#   - sed -i и perl -i/-pi (правка файла на месте);
+#   - подстановка sed ('s/../../') с косой и без -i - в конвейере или с > в файл.
 # Косая в обычной команде (путь, регулярка grep) не трогается.
 #
 # stdin: JSON события. Выход 0 = решение в stdout либо пропуск.
@@ -39,6 +40,15 @@ function Test-Command([string]$cmd) {
     # правка файла на месте
     if ($cmd -match '(^|[\s;&|(])sed\s+(-[A-Za-z]*\s+)*-[A-Za-z]*i') { return 'sed -i' }
     if ($cmd -match '(^|[\s;&|(])perl\s+(-[A-Za-z]+\s+)*-[A-Za-z]*i') { return 'perl -i' }
+
+    # подстановка sed с косой и без -i: в конвейере и с > в файл она так же пуста или портит (R-4 аудита);
+    # адрес-регулярка на чтение (sed -n '/a\|b/p') не подстановка и не трогается
+    foreach ($m in [regex]::Matches($cmd, '(^|[\s;&|(])sed\s+((?:[^|;&''"]|''[^'']*''|"[^"]*")*)')) {
+        foreach ($q in [regex]::Matches($m.Groups[2].Value, '''([^'']*)''|"([^"]*)"')) {
+            $s = $q.Groups[1].Value + $q.Groups[2].Value
+            if ($s.Contains('\') -and $s -match '(^|[;{}\s\d$/])s([/|#,:@!])') { return 'sed s с косой' }
+        }
+    }
     return $null
 }
 
