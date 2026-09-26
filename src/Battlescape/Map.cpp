@@ -446,7 +446,7 @@ void Map::think()
 	_fadeTimer->think(0, this);
 	_obstacleTimer->think(0, this);
 	// HD render: a running muzzle flash needs every frame, not only the game's ticks
-	if (HdFx::active() && _canvas->getHdMode() != HD_MODE_NEAREST)
+	if (Options::oxceHdFx && _canvas->getHdMode() != HD_MODE_NEAREST && HdFx::active(SDL_GetTicks()))
 	{
 		_redraw = true;
 	}
@@ -2425,7 +2425,7 @@ void Map::drawTerrain(HdCanvas *surface)
 			{
 				_camera->convertVoxelToScreen(explosion->getPosition(), &bulletPositionScreen);
 				// HD render: the combat effect clip in place of the classic frames, frame for frame by progress
-				if (surface->getHdMode() != HD_MODE_NEAREST && !explosion->getHdFx().empty())
+				if (Options::oxceHdFx && surface->getHdMode() != HD_MODE_NEAREST && !explosion->getHdFx().empty())
 				{
 					if (explosion->getCurrentFrame() < 0)
 					{
@@ -2471,7 +2471,7 @@ void Map::drawTerrain(HdCanvas *surface)
 	}
 
 	// HD render: muzzle flashes, on their own clock (see hdMuzzle)
-	if (surface->getHdMode() != HD_MODE_NEAREST)
+	if (Options::oxceHdFx && surface->getHdMode() != HD_MODE_NEAREST)
 	{
 		std::vector<std::pair<const HdFx::Live*, const HdFrame*>> flashes;
 		HdFx::running(SDL_GetTicks(), _k, flashes);

@@ -52,7 +52,7 @@ namespace HdFx
 	std::string boomClip(const RuleItem *damageItem);
 	/// The clip for a melee swing of `weapon` (dealing `damage`) by a unit facing `direction`.
 	std::string swingClip(const RuleItem *weapon, const RuleItem *damage, int direction);
-	/// The clip for the muzzle flash of `weapon` firing `ammo` facing `direction`.
+	/// The clip for the muzzle flash of `weapon` firing `ammo` facing `direction` (empty: the weapon has no muzzle flash).
 	std::string flashClip(const RuleItem *weapon, const RuleItem *ammo, int direction);
 	/// Replaces "%c" in a clip name with the colour of a classic frame (palette: the map's).
 	std::string colour(const std::string &clip, SurfaceRaw<const Uint8> frame, const SDL_Color *palette);
@@ -68,8 +68,8 @@ namespace HdFx
 	};
 	/// Starts a muzzle flash at a voxel.
 	void spawn(const std::string &clip, Position voxel);
-	/// Is any flash running (or finished and not yet drawn away)?
-	bool active();
+	/// Is any flash still running at `now` (the finished ones are dropped)?
+	bool active(Uint32 now);
 	/// The flashes still running at `now`, with the frame of each (the finished ones are dropped).
 	void running(Uint32 now, int k, std::vector<std::pair<const Live*, const HdFrame*>> &out);
 	/// Drops loaded clips not drawn for a while. Call before a frame is recorded, never during one.

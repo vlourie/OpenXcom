@@ -431,13 +431,18 @@ void ProjectileFlyBState::init()
 void ProjectileFlyBState::hdMuzzle(Position origin)
 {
 	Map *map = _parent->getMap();
-	if (map->getHdMode() == HD_MODE_NEAREST || !(_unit->getFaction() == FACTION_PLAYER || _unit->getVisible()))
+	if (!Options::oxceHdFx || map->getHdMode() == HD_MODE_NEAREST || !(_unit->getFaction() == FACTION_PLAYER || _unit->getVisible()))
 	{
 		return;
 	}
 	const RuleItem *ammoRule = _ammo->getRules();
+	const std::string clip = HdFx::flashClip(_action.weapon->getRules(), ammoRule, _unit->getDirection());
+	if (clip.empty())
+	{
+		return;
+	}
 	const Surface *hitFrame = _parent->getMod()->getSurfaceSet("SMOKE.PCK")->getFrame(ammoRule->getHitAnimation());
-	HdFx::spawn(HdFx::colour(HdFx::flashClip(_action.weapon->getRules(), ammoRule, _unit->getDirection()), hitFrame, map->getPalette()), origin);
+	HdFx::spawn(HdFx::colour(clip, hitFrame, map->getPalette()), origin);
 }
 
 bool ProjectileFlyBState::createNewProjectile()
