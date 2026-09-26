@@ -3793,11 +3793,22 @@ void GeoscapeState::determineAlienMissions(bool isNewMonth, const RuleEvent* p_e
 						++arcsEnabled;
 						disabledRngArcs.set(research->getName(), 0); // delete
 					}
+					else if (!mod->getResearch(rngArc))
+					{
+						// HD: пустышку открывать нельзя - она ушла бы в сейв открытым исследованием без правила
+						Log(LOG_ERROR) << "Arc script refers to research '" << rngArc << "', which no mod declares; skipping it.";
+						disabledRngArcs.set(rngArc, 0);
+					}
 				}
 			}
 			Base* hq = save->getBases()->front();
 			bool canAddOneMore = arcCommand->getMaxArcs() == -1 || arcCommand->getMaxArcs() > arcsEnabled;
-			if (canAddOneMore && !disabledSeqArcs.empty())
+			if (canAddOneMore && !disabledSeqArcs.empty() && !mod->getResearch(disabledSeqArcs.front()))
+			{
+				// HD: следующая по порядку дуга - пустышка: последовательность стоит на дыре, в сейв ничего не пишем
+				Log(LOG_ERROR) << "Arc script refers to research '" << disabledSeqArcs.front() << "', which no mod declares; sequence stops here.";
+			}
+			else if (canAddOneMore && !disabledSeqArcs.empty())
 			{
 				auto* ruleResearchSeq = mod->getResearchOrPlaceholder(disabledSeqArcs.front()); // take first
 				save->addFinishedResearch(ruleResearchSeq, mod, hq, true);
