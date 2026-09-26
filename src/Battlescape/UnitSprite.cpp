@@ -836,13 +836,14 @@ void UnitSprite::drawRoutine2()
 		// A turret frame bigger than the unit cell (e.g. 64x80 for a long barrel, loaded from a folder of
 		// images) is centred on the classic turret place and drawn with every part, each time through that
 		// part's clip: a moving unit is clipped to one tile column per part, so a turret drawn only with the
-		// last part would lose what sticks out over the other tiles. A classic frame keeps the old behaviour.
+		// last part would lose what sticks out over the other tiles. A classic frame keeps the old behaviour,
+		// and so does mode 0, which draws the classic frame as it is.
 		const int cellW = 32;
 		const int cellH = 40;
 		const int scale = std::max(1, _scale);
 		const int frameW = t.src ? t.src->getWidth() / scale : cellW;
 		const int frameH = t.src ? t.src->getHeight() / scale : cellH;
-		const bool bigTurret = frameW > cellW || frameH > cellH;
+		const bool bigTurret = _dest->getHdMode() != HD_MODE_NEAREST && (frameW > cellW || frameH > cellH);
 		if (_part == 3 || bigTurret)
 		{
 			int turretOffsetX = 0;
@@ -1049,12 +1050,13 @@ void UnitSprite::drawRoutine4()
 void UnitSprite::drawRoutine5()
 {
 	Part s{ BODYPART_LARGE_TORSO + _part };
-	const bool separateTurret =
+	const bool separateTurret = _dest->getHdMode() != HD_MODE_NEAREST &&
 		_part == 0 && _unit->getTurretType() != -1 && !_unit->isSmallUnit();
 
 	// Some four-tile vehicles (such as X-Piratez piloted tanks) use the first
 	// eight frames as a separate turret.  Keep the remaining body parts on the
 	// walking animation, but select that turret by its independent direction.
+	// Mode 0 draws the classic frame as it is.
 	if (separateTurret)
 	{
 		selectUnit(s, 0, _unit->getTurretDirection());
