@@ -256,8 +256,20 @@ private:
 	Surface _scriptSrc, _scriptDst;
 	std::unordered_map<const void*, SpanTable> _spans;
 	/// xBRZ-smoothed frames made on demand (key: frame buffer, or the hash of a scripted result).
-	std::unordered_map<const void*, HdFrame> _smooth;
-	std::unordered_map<Uint64, HdFrame> _smoothScripted;
+	/// Trimmed by the flushes that used them longest ago once they hold more than their cap (see trimSmooth).
+	struct SmoothEntry
+	{
+		HdFrame frame;
+		Uint32 used = 0;
+	};
+	std::unordered_map<const void*, SmoothEntry> _smooth;
+	std::unordered_map<Uint64, SmoothEntry> _smoothScripted;
+	/// The number of the flush being recorded (the `used` of the smoothed frames), and their bytes.
+	Uint32 _smoothClock = 1;
+	size_t _smoothBytes = 0;
+	/// The end of a flush: the smoothed frames used longest ago go while the caches are over their cap.
+	void trimSmooth();
+	void clearSmooth();
 	/// HD frames with a shade already applied, so that a shaded HD blit is a plain alpha copy (LRU, capped by size).
 	struct TonedKey
 	{

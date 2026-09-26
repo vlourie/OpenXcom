@@ -239,8 +239,7 @@ void Canvas32::rebuildTables()
 	}
 	rebuildToneTables();
 	// the smoothed and shaded frames were made with the old palette
-	_smooth.clear();
-	_smoothScripted.clear();
+	clearSmooth();
 	clearToned();
 }
 
@@ -722,10 +721,12 @@ void Canvas32::blitScripted(ScriptWorkerBlit &work, const Surface *src, int x, i
 					}
 				}
 				made.buildSpans();
-				it = _smoothScripted.emplace(hash, std::move(made)).first;
+				_smoothBytes += made.pixels.size() * sizeof(Uint32);
+				it = _smoothScripted.emplace(hash, SmoothEntry{ std::move(made) }).first;
 			}
+			it->second.used = _smoothClock;
 			cmd.type = Cmd::BLIT_HD;
-			cmd.hd = &it->second;
+			cmd.hd = &it->second.frame;
 			cmd.srcDomain = GraphSubset(w, h);
 			record(cmd);
 			return;
@@ -750,13 +751,15 @@ void Canvas32::blitScripted(ScriptWorkerBlit &work, const Surface *src, int x, i
 			if (smoothBase(_scriptDst.getRaw(0, 0), bw, bh, _scriptDst.getPitch(), made))
 			{
 				made.buildSpans();
-				it = _smoothScripted.emplace(hash, std::move(made)).first;
+				_smoothBytes += made.pixels.size() * sizeof(Uint32);
+				it = _smoothScripted.emplace(hash, SmoothEntry{ std::move(made) }).first;
 			}
 		}
 		if (it != _smoothScripted.end())
 		{
+			it->second.used = _smoothClock;
 			cmd.type = Cmd::BLIT_HD;
-			cmd.hd = &it->second;
+			cmd.hd = &it->second.frame;
 			cmd.srcDomain = GraphSubset(w, h);
 			record(cmd);
 			return;
@@ -924,25 +927,120 @@ void Canvas32::flush()
 		}
 		_tonedLru.pop_back();
 	}
-	// the smoothed-frame caches are only trimmed between frames: commands point into them;
-	// the shaded copies point at the smoothed frames, so they go with them
-	if (_smooth.size() > 4096 || _smoothScripted.size() > 2048)
-	{
-		// measurement: the whole cache goes at once, and the shaded copies with it, so the next
-		// frames re-smooth and re-shade everything visible. Invisible in the log otherwise.
-		Log(LOG_INFO) << "HD perf: smooth cache dropped, " << _smooth.size() << "+" << _smoothScripted.size()
-			<< " frames " << (smoothBytes() >> 20) << " MB, with " << (_tonedBytes >> 20) << " MB of shaded copies";
-		if (_smooth.size() > 4096)
-		{
-			_smooth.clear();
-		}
-		if (_smoothScripted.size() > 2048)
-		{
-			_smoothScripted.clear();
-		}
-		clearToned();
-	}
+	// the smoothed-frame caches are only trimmed between frames: commands point into them
+	trimSmooth();
+	++_smoothClock;
 	perfReport();
+}
+
+/**
+ * The end of a flush: while the smoothed frames exceed their cap, the ones used
+ * by the oldest flushes go (down to three quarters of it, so a trim is rare),
+ * and the shaded copies made from them with them. Frames used by this flush
+ * are never dropped: the next one draws them again.
+ */
+void Canvas32::trimSmooth()
+{
+	// OXCE_HD_SMOOTH_CAP=<MB> overrides the cap (tests of the dropping)
+	static const size_t smoothCap = []
+	{
+		const char *env = getenv("OXCE_HD_SMOOTH_CAP");
+		return (env && atoi(env) > 0) ? (size_t)atoi(env) << 20 : (size_t)256u << 20;
+	}();
+	if (_smoothBytes <= smoothCap)
+	{
+		return;
+	}
+	const size_t before = _smoothBytes, count = _smooth.size() + _smoothScripted.size();
+	// the bytes last used by every flush, then the oldest flush kept: walk the flushes up until
+	// what is left fits in three quarters of the cap
+	std::unordered_map<Uint32, size_t> bytesAt;
+	for (const auto &pair : _smooth)
+	{
+		bytesAt[pair.second.used] += pair.second.frame.pixels.size() * sizeof(Uint32);
+	}
+	for (const auto &pair : _smoothScripted)
+	{
+		bytesAt[pair.second.used] += pair.second.frame.pixels.size() * sizeof(Uint32);
+	}
+	std::vector<Uint32> ages;
+	ages.reserve(bytesAt.size());
+	for (const auto &pair : bytesAt)
+	{
+		ages.push_back(pair.first);
+	}
+	std::sort(ages.begin(), ages.end());
+	const size_t target = smoothCap - smoothCap / 4;
+	size_t left = _smoothBytes;
+	Uint32 keepFrom = 0;
+	for (Uint32 age : ages)
+	{
+		if (left <= target || age >= _smoothClock)
+		{
+			keepFrom = age;
+			break;
+		}
+		left -= bytesAt[age];
+		keepFrom = age + 1;
+	}
+	std::unordered_set<const HdFrame*> dropped;
+	for (auto it = _smooth.begin(); it != _smooth.end(); )
+	{
+		if (it->second.used < keepFrom)
+		{
+			_smoothBytes -= it->second.frame.pixels.size() * sizeof(Uint32);
+			dropped.insert(&it->second.frame);
+			it = _smooth.erase(it);
+		}
+		else
+		{
+			++it;
+		}
+	}
+	for (auto it = _smoothScripted.begin(); it != _smoothScripted.end(); )
+	{
+		if (it->second.used < keepFrom)
+		{
+			_smoothBytes -= it->second.frame.pixels.size() * sizeof(Uint32);
+			dropped.insert(&it->second.frame);
+			it = _smoothScripted.erase(it);
+		}
+		else
+		{
+			++it;
+		}
+	}
+	// the shaded copies are keyed by the address of their frame, which the next smoothed frame may get
+	for (auto it = _toned.begin(); it != _toned.end(); )
+	{
+		if (dropped.count(it->first.frame))
+		{
+			_tonedBytes -= it->second.frame.pixels.size() * sizeof(Uint32);
+			_tonedLru.erase(it->second.lru);
+			it = _toned.erase(it);
+		}
+		else
+		{
+			++it;
+		}
+	}
+	// measurement: how often the cap is reached, and how much goes each time
+	if (!dropped.empty())
+	{
+		Log(LOG_INFO) << "HD perf: smooth cache trimmed, " << dropped.size() << " of " << count << " frames, "
+			<< (before >> 20) << " -> " << (_smoothBytes >> 20) << " MB";
+	}
+}
+
+/**
+ * Forgets the smoothed frames (the palette changed). The shaded copies made
+ * from them are the caller's to clear.
+ */
+void Canvas32::clearSmooth()
+{
+	_smooth.clear();
+	_smoothScripted.clear();
+	_smoothBytes = 0;
 }
 
 /**
@@ -950,16 +1048,7 @@ void Canvas32::flush()
  */
 size_t Canvas32::smoothBytes() const
 {
-	size_t bytes = 0;
-	for (const auto &pair : _smooth)
-	{
-		bytes += pair.second.pixels.size() * sizeof(Uint32);
-	}
-	for (const auto &pair : _smoothScripted)
-	{
-		bytes += pair.second.pixels.size() * sizeof(Uint32);
-	}
-	return bytes;
+	return _smoothBytes;
 }
 
 /**
@@ -1630,16 +1719,18 @@ const HdFrame *Canvas32::smoothFor(SurfaceRaw<const Uint8> src)
 	auto it = _smooth.find(key);
 	if (it != _smooth.end())
 	{
-		return it->second.empty() ? nullptr : &it->second;
+		it->second.used = _smoothClock;
+		return it->second.frame.empty() ? nullptr : &it->second.frame;
 	}
 	HdFrame made;
 	if (!smoothFrame(src, made))
 	{
-		_smooth.emplace(key, HdFrame()); // remember that it cannot be smoothed
+		_smooth.emplace(key, SmoothEntry{ HdFrame(), _smoothClock }); // remember that it cannot be smoothed
 		return nullptr;
 	}
 	made.buildSpans();
-	return &_smooth.emplace(key, std::move(made)).first->second;
+	_smoothBytes += made.pixels.size() * sizeof(Uint32);
+	return &_smooth.emplace(key, SmoothEntry{ std::move(made), _smoothClock }).first->second.frame;
 }
 
 /**
