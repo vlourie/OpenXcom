@@ -790,6 +790,13 @@ void Map::blit(SDL_Surface *surface)
 		{
 			canvas32->copyTo(world, getX() * k, getY() * k);
 		}
+		else
+		{
+			SDL_Rect target {};
+			target.x = getX() * k;
+			target.y = getY() * k;
+			SDL_BlitSurface(_canvas->getSdlSurface(), nullptr, world, &target);
+		}
 		// the message's two lines are not in the canvas when the HD interface can draw them
 		// itself: the canvas reaches the screen scaled, and a smeared line under a sharp one
 		// reads worse than either alone. They go on top here, every frame, because the canvas
@@ -797,13 +804,6 @@ void Map::blit(SDL_Surface *surface)
 		if (_messageOnCanvas && _message->hdText() && HdUi::active())
 		{
 			_message->hdDrawAt(getX(), getY());
-		}
-		else
-		{
-			SDL_Rect target {};
-			target.x = getX() * k;
-			target.y = getY() * k;
-			SDL_BlitSurface(_canvas->getSdlSurface(), nullptr, world, &target);
 		}
 	}
 }
