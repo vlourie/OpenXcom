@@ -290,6 +290,8 @@ private:
 	std::unordered_map<Uint32, LightWeights> _lightWeights;
 	/// The recorded frame.
 	std::vector<Cmd> _cmds;
+	/// HdSprites::generation() when the first of _cmds was recorded (see flush).
+	unsigned _cmdsGeneration = 0;
 	std::vector<Uint8> _arena;
 	std::vector<int> _arenaInt;
 
@@ -362,6 +364,7 @@ private:
 public:
 	/// Creates a true-color canvas of the given size (world pixels) for sprites scaled k times.
 	Canvas32(int width, int height, int scale = 1);
+	~Canvas32() override;
 	int getWidth() const override { return _width; }
 	int getHeight() const override { return _height; }
 	void fill(Uint8 color) override;

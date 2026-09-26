@@ -118,6 +118,9 @@ namespace HdSprites
 	void trim();
 	/// A counter that changes whenever the registry does (caches keyed by frame pointers check it).
 	unsigned generation();
+	/// Called before every change of the registry: drawing commands waiting for a flush point at
+	/// its frames, so the canvases run them first (Canvas32 sets it).
+	void setBeforeChange(void (*hook)());
 
 	/// The two trees the HD pictures live in, side by side in the mod: the ordinary one and the
 	/// adult one. Which is read is decided per path, so the adult tree only has to hold what

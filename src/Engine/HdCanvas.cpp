@@ -124,8 +124,37 @@ namespace
 	}
 }
 
+namespace
+{
+	/// The live true-color canvases: the frame registry makes them run their waiting commands before it changes.
+	std::vector<Canvas32*> liveCanvases;
+
+	void flushLiveCanvases()
+	{
+		// a flush trims the registry itself (HdSprites::trim), which calls here again
+		static bool busy = false;
+		if (busy)
+		{
+			return;
+		}
+		busy = true;
+		for (Canvas32 *canvas : liveCanvases)
+		{
+			canvas->flush();
+		}
+		busy = false;
+	}
+}
+
+Canvas32::~Canvas32()
+{
+	liveCanvases.erase(std::remove(liveCanvases.begin(), liveCanvases.end(), this), liveCanvases.end());
+}
+
 Canvas32::Canvas32(int width, int height, int scale) : _width(width), _height(height), _scale(scale < 1 ? 1 : scale), _hdMode(HD_MODE_NEAREST), _deferred(true), _scriptSrc(1, 1), _scriptDst(1, 1)
 {
+	liveCanvases.push_back(this);
+	HdSprites::setBeforeChange(flushLiveCanvases);
 	std::tie(_buffer, _surface) = Surface::NewPair32Bit(width, height);
 	SDL_SetColorKey(_surface.get(), 0, 0);
 	_rshift = _surface->format->Rshift;
@@ -415,6 +444,10 @@ void Canvas32::record(Cmd &cmd)
 	}
 	if (_deferred)
 	{
+		if (_cmds.empty())
+		{
+			_cmdsGeneration = HdSprites::generation();
+		}
 		_cmds.push_back(cmd);
 	}
 	else
@@ -831,6 +864,21 @@ void Canvas32::flush()
 {
 	if (_cmds.empty())
 	{
+		return;
+	}
+	// commands point into the frame registry, which runs them before it changes (flushLiveCanvases);
+	// a change that got past that would leave them pointing at freed frames, so it is not drawn at all
+	if (HdSprites::generation() != _cmdsGeneration)
+	{
+		static bool told = false;
+		if (!told)
+		{
+			told = true;
+			Log(LOG_ERROR) << "HD canvas: the frame registry changed while " << _cmds.size() << " command(s) waited for the flush - the frame is dropped";
+		}
+		_cmds.clear();
+		_arena.clear();
+		_arenaInt.clear();
 		return;
 	}
 	HdWorkers &pool = HdWorkers::instance();
