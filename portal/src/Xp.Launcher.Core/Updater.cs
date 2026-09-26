@@ -45,7 +45,7 @@ public sealed class Updater(GamePaths paths, RepoClient repo, ILauncherLog log)
     public Func<string, bool> IsGameRunning { get; set; } = GameProcess.IsRunningIn;
     public Func<string, long> FreeSpace { get; set; } = dir => new DriveInfo(Path.GetPathRoot(dir)!).AvailableFreeSpace;
 
-    public LauncherState LoadState() => LauncherState.Load(Paths);
+    public LauncherState LoadState() => LauncherState.Load(Paths, log);
 
     // ------------------------------------------------------------------ check
 
@@ -323,19 +323,19 @@ public sealed class Updater(GamePaths paths, RepoClient repo, ILauncherLog log)
             else if (!w.Existed && File.Exists(target)) File.Delete(target);
         }
         // replay protection survives an undo: the highest sequence ever seen is kept
-        var seen = File.Exists(Paths.StateFile) ? LauncherState.Load(Paths).LastSequence : new();
+        var seen = File.Exists(Paths.StateFile) ? LauncherState.Load(Paths, log).LastSequence : new();
         var oldState = Path.Combine(backup, "state.json");
         if (File.Exists(oldState))
         {
             File.Copy(oldState, Paths.StateFile, overwrite: true);
-            var s = LauncherState.Load(Paths);
+            var s = LauncherState.Load(Paths, log);
             foreach (var kv in seen) s.LastSequence[kv.Key] = Math.Max(kv.Value, s.LastSequence.GetValueOrDefault(kv.Key));
             s.Save(Paths);
         }
         else if (File.Exists(Paths.StateFile))
         {
             // there was no state before: keep channel and replay protection, forget the install
-            var s = LauncherState.Load(Paths);
+            var s = LauncherState.Load(Paths, log);
             s.InstalledReleaseId = null; s.InstalledVersion = null; s.Installed.Clear(); s.InstalledRoots.Clear(); s.Cache.Clear();
             s.Save(Paths);
         }

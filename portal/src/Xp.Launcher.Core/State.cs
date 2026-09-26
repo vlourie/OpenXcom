@@ -99,15 +99,27 @@ public sealed class LauncherState
     public Dictionary<string, KeptFile> Kept { get; set; } = new(StringComparer.OrdinalIgnoreCase);
     public Dictionary<string, CacheEntry> Cache { get; set; } = new(StringComparer.OrdinalIgnoreCase);
 
-    public static LauncherState Load(GamePaths p)
+    public static LauncherState Load(GamePaths p, ILauncherLog? log = null)
     {
         if (!File.Exists(p.StateFile)) return new LauncherState();
-        var s = JsonSerializer.Deserialize(File.ReadAllBytes(p.StateFile), CoreJson.Default.LauncherState) ?? new LauncherState();
-        // dictionaries come back case-sensitive from JSON; paths on Windows are not
-        s.Installed = new(s.Installed, StringComparer.OrdinalIgnoreCase);
-        s.Kept = new(s.Kept, StringComparer.OrdinalIgnoreCase);
-        s.Cache = new(s.Cache, StringComparer.OrdinalIgnoreCase);
-        return s;
+        try
+        {
+            var s = JsonSerializer.Deserialize(File.ReadAllBytes(p.StateFile), CoreJson.Default.LauncherState) ?? new LauncherState();
+            // dictionaries come back case-sensitive from JSON; paths on Windows are not
+            s.Installed = new(s.Installed, StringComparer.OrdinalIgnoreCase);
+            s.Kept = new(s.Kept, StringComparer.OrdinalIgnoreCase);
+            s.Cache = new(s.Cache, StringComparer.OrdinalIgnoreCase);
+            return s;
+        }
+        catch (Exception e) when (e is JsonException or ArgumentNullException)
+        {
+            // a damaged state must not keep the launcher from starting: the files on disk are the truth,
+            // and a check against the release rebuilds the rest. The file is kept aside for a look.
+            var bad = p.StateFile + ".bad";
+            File.Move(p.StateFile, bad, overwrite: true);
+            log?.Error($"launcher state unreadable ({e.Message}): moved to {Path.GetFileName(bad)}, starting from an empty state");
+            return new LauncherState();
+        }
     }
 
     public void Save(GamePaths p) => FileUtil.WriteAtomic(p.StateFile, JsonSerializer.SerializeToUtf8Bytes(this, CoreJson.Default.LauncherState));

@@ -301,6 +301,28 @@ public sealed class UpdaterTests : IDisposable
         f.AssertPlayerDataIntact();
     }
 
+    [Theory]
+    [InlineData("{\"channel\": \"stable\", \"installed\": ")]      // cut off mid-write
+    [InlineData("\0\0\0\0")]                                        // zeroed by a crash of the disk cache
+    [InlineData("{\"installed\": null}")]                          // valid JSON the state cannot live with
+    public async Task Damaged_state_is_set_aside_and_the_launcher_starts_from_scratch(string junk)
+    {
+        f.StageV1(); f.BuildAndPublish("v1");
+        await f.UpdateAsync();
+        File.WriteAllText(f.Updater.Paths.StateFile, junk);
+
+        var state = f.Updater.LoadState();
+        Assert.Null(state.InstalledReleaseId);
+        Assert.False(File.Exists(f.Updater.Paths.StateFile));
+        Assert.Equal(junk, File.ReadAllText(f.Updater.Paths.StateFile + ".bad"));
+        Assert.Contains(f.Log.Lines, l => l.StartsWith("ERROR launcher state unreadable"));
+
+        await f.UpdateAsync();                     // and the next check rebuilds it
+        Assert.Equal("v1", f.Updater.LoadState().InstalledReleaseId);
+        Assert.Equal("engine v1", f.ReadGame("openxcom_hd.exe"));
+        f.AssertPlayerDataIntact();
+    }
+
     /// <summary>Publishes a manifest written by hand (signed with the trusted key), bypassing the builder's checks.</summary>
     async Task ServeHandMadeRelease(Action<ReleaseManifest> edit)
     {
