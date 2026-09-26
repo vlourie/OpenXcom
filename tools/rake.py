@@ -1,15 +1,19 @@
 #!/usr/bin/env python3
 """
-Учёт граблей проекта — docs/RAKES.md.
+Учёт граблей проекта — docs/RAKES.md и docs/rakes/*.md.
 
     python tools/rake.py list                       активные грабли
     python tools/rake.py match src/Foo/Bar.cpp      грабли, относящиеся к файлу
     python tools/rake.py hit R-007                  наступил снова: +1 к счётчику
     python tools/rake.py disarm R-007 tests/t.py    обезврежены тестом
     python tools/rake.py add --title "..." --files "src/*.cpp" \
-        --symptom "..." --cause "..." --rule "..."
+        --symptom "..." --cause "..." --rule "..." [--area portal]
 
 Формат записи описан в шапке docs/RAKES.md и парсится отсюда. Не меняй поля.
+docs/RAKES.md грузится в контекст каждой сессии (CLAUDE.md). docs/rakes/<область>.md - грабли
+отдельной области (aibench, portal): в контекст не грузятся, хук показывает их при правке файла.
+docs/rakes/merged.md - полные тексты граблей, слитых в семью: статус «слиты в R-0NN», hit по
+такому номеру уходит в семью.
 """
 from __future__ import annotations
 
@@ -20,6 +24,7 @@ if hasattr(sys.stdout, "reconfigure"):   # консоль msys бывает cp12
 from pathlib import Path
 
 RAKES = Path("docs/RAKES.md")
+MORE = Path("docs/rakes")
 HEAD_RE = re.compile(r"^## (R-\d{3})\s+(.*)$")
 FIELDS = ("Статус", "Файлы", "Симптом", "Причина", "Правило", "Защита", "Наступал")
 
@@ -52,11 +57,37 @@ def parse(body: str):
     for it in items:
         m = re.match(r"(\d+)", it.get("Наступал", "0"))
         it["count"] = int(m.group(1)) if m else 0
-        it["active"] = not it.get("Статус", "активны").startswith("обезвреж")
+        status = it.get("Статус", "активны")
+        m = re.match(r"слиты в (R-\d{3})", status)
+        it["into"] = m.group(1) if m else None
+        it["active"] = not status.startswith("обезвреж") and not it["into"]
         # пояснение в скобках вместо глоба - грабли не про файлы, хук их не показывает
         it["globs"] = [g.strip() for g in it.get("Файлы", "").split(",")
                        if g.strip() and not g.strip().startswith("(")]
     return items
+
+
+def all_files():
+    return [RAKES] + (sorted(MORE.glob("*.md")) if MORE.is_dir() else [])
+
+
+def load_all():
+    items = []
+    for p in all_files():
+        for it in parse(load(p)[2]):
+            it["path"] = p
+            items.append(it)
+    return items
+
+
+def find(items, rid):
+    it = next((i for i in items if i["id"] == rid), None)
+    if not it:
+        sys.exit(f"нет граблей {rid}")
+    if it["into"]:
+        print(f"{rid} слиты в {it['into']} — дальше про семью")
+        return find(items, it["into"])
+    return it
 
 
 def norm(p: str) -> str:
@@ -74,7 +105,7 @@ def fmt(it, full=True):
 
 
 def cmd_list(a):
-    items = parse(load()[2])
+    items = load_all()
     act = [i for i in items if i["active"]]
     if not act:
         print("Граблей нет. Это либо хорошо, либо их просто не записывали.")
@@ -92,7 +123,7 @@ def cmd_list(a):
 
 def cmd_match(a):
     target = norm(a.path)
-    items = [i for i in parse(load()[2]) if i["active"]]
+    items = [i for i in load_all() if i["active"]]
     hits = [i for i in items
             if any(fnmatch.fnmatch(target, norm(g)) or norm(g) in target for g in i["globs"])]
     if not hits:
@@ -104,43 +135,40 @@ def cmd_match(a):
 
 
 def cmd_hit(a):
-    text, head, body = load()
-    items = parse(body)
-    it = next((i for i in items if i["id"] == a.id), None)
-    if not it:
-        sys.exit(f"нет граблей {a.id}")
+    it = find(load_all(), a.id)
+    text = load(it["path"])[0]
     new = it["count"] + 1
     today = datetime.date.today().isoformat()
     old_line = f"Наступал: {it['Наступал']}"
     new_line = f"Наступал: {new}   Последний: {today}"
     block = "\n".join(it["raw"])
     text = text.replace(block, block.replace(old_line, new_line), 1)
-    RAKES.write_text(text, encoding="utf-8-sig")
-    print(f"{a.id}: наступал {new} раз(а)")
+    it["path"].write_text(text, encoding="utf-8-sig")
+    print(f"{it['id']}: наступал {new} раз(а)")
     if new >= 2 and (not it.get("Защита") or it["Защита"].lower() in ("нет", "-")):
         print("\nВТОРОЙ РАЗ. Текстовое правило не сработало.")
         print("Не закрывай задачу, пока нет теста или хука, который ловит это автоматически.")
-        print(f"Потом: python tools/rake.py disarm {a.id} <путь-к-тесту>")
+        print(f"Потом: python tools/rake.py disarm {it['id']} <путь-к-тесту>")
     return 0
 
 
 def cmd_disarm(a):
-    text, head, body = load()
-    it = next((i for i in parse(body) if i["id"] == a.id), None)
-    if not it:
-        sys.exit(f"нет граблей {a.id}")
+    it = find(load_all(), a.id)
+    text = load(it["path"])[0]
     block = "\n".join(it["raw"])
     upd = block.replace(f"Статус:   {it.get('Статус','активны')}", "Статус:   обезврежены")
     upd = re.sub(r"Защита:.*", f"Защита:   {a.test}", upd, count=1)
-    RAKES.write_text(text.replace(block, upd, 1), encoding="utf-8-sig")
-    print(f"{a.id}: обезврежены, защита {a.test}")
+    it["path"].write_text(text.replace(block, upd, 1), encoding="utf-8-sig")
+    print(f"{it['id']}: обезврежены, защита {a.test}")
     return 0
 
 
 def cmd_add(a):
-    text, head, body = load()
-    items = parse(body)
-    nid = f"R-{max([int(i['id'][2:]) for i in items], default=0) + 1:03d}"
+    path = MORE / f"{a.area}.md" if a.area else RAKES
+    if not path.exists():
+        sys.exit(f"нет файла {path}; области: " + ", ".join(p.stem for p in all_files()[1:]))
+    text = load(path)[0]
+    nid = f"R-{max([int(i['id'][2:]) for i in load_all()], default=0) + 1:03d}"
     entry = (
         f"\n## {nid}  {a.title}\n"
         f"Статус:   активны\n"
@@ -151,8 +179,8 @@ def cmd_add(a):
         f"Защита:   {a.guard}\n"
         f"Наступал: 1   Последний: {datetime.date.today().isoformat()}\n"
     )
-    RAKES.write_text(text.rstrip("\n") + "\n" + entry, encoding="utf-8-sig")
-    print(f"Записаны грабли {nid}: {a.title}")
+    path.write_text(text.rstrip("\n") + "\n" + entry, encoding="utf-8-sig")
+    print(f"Записаны грабли {nid} в {path}: {a.title}")
     return 0
 
 
@@ -168,6 +196,7 @@ def main():
     for f in ("title", "files", "symptom", "cause", "rule"):
         s.add_argument("--" + f, required=True)
     s.add_argument("--guard", default="нет")
+    s.add_argument("--area", default="", help="область в docs/rakes/<область>.md (aibench, portal); по умолчанию docs/RAKES.md")
     s.set_defaults(fn=cmd_add)
 
     a = p.parse_args()
