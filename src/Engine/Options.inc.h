@@ -171,6 +171,10 @@ OPT bool oxceHdLight;
 OPT bool oxceHdGroundVariants;
 // HD render: the battle reticle (CURSOR.PCK 6..10): 0 the pack's own, 1 the stock picture, 2.. a style from hd/CURSOR.PCK/reticle_<style>/ (Mod::HD_RETICLES)
 OPT int oxceHdReticle;
+// HD base screen: facility pictures play their phases (hd/BASEBITS.PCK/<i>.vN.png); off = the first phase only
+OPT bool oxceHdBaseAnim;
+// HD base and craft screens: the lights of the crafts (hd/BASEBITS.PCK/<i>.lights.txt) and the phases of their pictures
+OPT bool oxceHdCraftLights;
 // HD render: threads the battlescape frame is drawn with (0 = one per core)
 OPT int oxceHdThreads;
 // HD render: extra game steps a slow frame may catch up on, so that the unit speed settings hold when drawing is slower than they ask (0 = one step per frame)
