@@ -140,6 +140,9 @@ public:
 	/// HD render: the blits that follow draw variant `variant` of a pack frame when it has one (0 = the
 	/// frame itself). The fire uses variant 1 as the picture half a step after the frame.
 	virtual void setFrameVariant(int variant) {}
+	/// HD render: draws a true-color frame as it is (combat effects, see HdFx; no effect on the classic
+	/// canvas). The frame must stay alive until the canvas is flushed.
+	virtual void blitFrame(const HdFrame &hd, int x, int y) {}
 };
 
 /**
@@ -368,6 +371,7 @@ public:
 	void setGroundCell(bool on, int x, int y, int z) override { _groundOn = on; _groundX = x; _groundY = y; _groundZ = z; }
 	void setGroundSeed(Uint32 seed) override;
 	void setFrameVariant(int variant) override { _frameVariant = variant; }
+	void blitFrame(const HdFrame &hd, int x, int y) override;
 	/// The ground pattern at point (u, v) of level z (tiles; u along the map's x, v along its y) for
 	/// `count` variants: 0 .. count - 1, continuous (exposed for tests).
 	static float groundLevel(Uint32 seed, float u, float v, int z, int count);

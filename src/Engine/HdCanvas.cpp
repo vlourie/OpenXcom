@@ -473,6 +473,24 @@ void Canvas32::blit(SurfaceRaw<const Uint8> src, int x, int y, int shade, bool h
 	record(cmd);
 }
 
+void Canvas32::blitFrame(const HdFrame &hd, int x, int y)
+{
+	if (_hdMode == HD_MODE_NEAREST || hd.empty())
+	{
+		return;
+	}
+	Cmd cmd {};
+	cmd.type = Cmd::BLIT_HD;
+	cmd.x = x;
+	cmd.y = y;
+	cmd.hd = &hd;
+	cmd.srcDomain = GraphSubset(hd.width, hd.height);
+	cmd.clip = fullArea();
+	cmd.y0 = y;
+	cmd.y1 = y + hd.height;
+	record(cmd);
+}
+
 void Canvas32::blit(SurfaceRaw<const Uint8> src, int x, int y, int shade, GraphSubset range)
 {
 	Cmd cmd {};
