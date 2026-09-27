@@ -12,10 +12,14 @@
 по умолчанию 4 боя одновременно. Нужна локальная сборка стенда build-ai (cmake -DOXCE_AI_DEV=ON).
 
   py -3.13 tools/ai_arena.py --seeds 1-40 [--jobs 4] [--turns 60] [--diff 4] [--label base] [--out итог.txt]
+  py -3.13 tools/ai_arena.py --missions @tools/ai_missions.txt --seeds 1-50 --jobs 8 --label maps27 [--resume]
+
+С --missions каждая миссия играется на всех зёрнах (местность, раса и отряд - по зерну), в сводке строка на миссию.
+Таблица пишется по строке после каждого боя; --resume продолжает прерванную серию с того же места.
 
 Таблица боёв - <label>.tsv рядом с логами прогона (%TEMP%/oxce_ai_probe/arena), сводка - в stdout и --out.
 """
-import argparse, statistics, sys, time
+import argparse, collections, queue, re, statistics, sys, time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
@@ -23,9 +27,33 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import ai_probe
 
 ENC_W = "utf-8-sig"
-COLS = ("seed", "how", "mission", "month", "units", "terrain", "race", "craft", "shade", "turn", "player", "pdead", "pout",
+# поведение из [AIDECIDE]: p - сторона игрока (бот), h - враг
+MOVES = ("decisions", "run", "kneel", "throw", "psi", "melee")
+COLS = ("seed", "want", "how", "mission", "month", "units", "terrain", "race", "craft", "shade", "turn", "player", "pdead", "pout",
         "pwounded", "phplost", "hostile", "hdead", "hout", "hleft", "livesoldiers", "livealiens", "aborted",
-        "pattacks", "hattacks", "seconds", "note")
+        "pattacks", "hattacks") + tuple(s + m for s in "ph" for m in MOVES) + ("seconds", "note")
+DECIDE = re.compile(r"\[AIDECIDE\] turn=\d+ side=(\d) .*? act=(\d+) to=\S+ run=(\d)")
+
+
+def behaviour(log):
+    """Счётчики решений по сторонам из лога боя: сам лог перезапишет следующий бой того же потока."""
+    c = collections.Counter()
+    try:
+        text = Path(log).read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        return {}
+    for side, act, run in DECIDE.findall(text):
+        s = {"0": "p", "1": "h"}.get(side)
+        if not s:
+            continue
+        act = int(act)
+        c[s + "decisions"] += 1
+        c[s + "run"] += act == 2 and run == "1"
+        c[s + "kneel"] += act == 3
+        c[s + "throw"] += act in (6, 12)
+        c[s + "psi"] += act in (13, 14)
+        c[s + "melee"] += act == 10
+    return {s + m: c[s + m] for s in "ph" for m in MOVES}
 
 
 def seeds_of(spec):
@@ -36,10 +64,20 @@ def seeds_of(spec):
     return out
 
 
-def one(seed, turns, diff, timeout, campaign):
-    r = ai_probe.run(None, turns, name=f"arena_{seed}", timeout=timeout, bot=True, seed=seed, diff=diff,
-                     campaign=campaign)
-    row = {"seed": seed, "seconds": f"{r.seconds:.0f}", "note": ""}
+SLOTS = queue.Queue()
+
+
+def one(seed, turns, diff, timeout, campaign, mission=None):
+    # папка прогона - по потоку, а не по зерну: одно зерно идёт на разных миссиях одновременно
+    slot = SLOTS.get()
+    try:
+        r = ai_probe.run(None, turns, name=f"arena_w{slot}", timeout=timeout, bot=True, seed=seed, diff=diff,
+                         campaign=campaign, mission=mission)
+        moves = behaviour(r.log)
+    finally:
+        SLOTS.put(slot)
+    row = {"seed": seed, "want": mission or "", "seconds": f"{r.seconds:.0f}", "note": ""}
+    row.update(moves)
     battle = r.tagged("[AIPROBE] battle")
     if battle:
         row.update({k: v for k, v in ai_probe.fields(battle[0]).items() if k in COLS})
@@ -96,10 +134,47 @@ def summary(rows, label):
         f"атак за бой: игрок {sum(num(r, 'pattacks') for r in done) / n:.1f}, враг {sum(num(r, 'hattacks') for r in done) / n:.1f};"
         f" время боя медиана {statistics.median(float(r['seconds']) for r in done):.0f} с",
     ]
+    moves = {m: sum(int(r.get(m) or 0) for r in done) for m in COLS if m[1:] in MOVES}
+    for s, who in (("p", "бот-игрок"), ("h", "враг")):
+        d = moves[s + "decisions"] or 1
+        lines.append(f"{who}: решений {moves[s + 'decisions']}, бегом {100 * moves[s + 'run'] / d:.1f} %,"
+                     f" присел {100 * moves[s + 'kneel'] / d:.1f} %, гранат и ракет {moves[s + 'throw']},"
+                     f" пси {moves[s + 'psi']}, вплотную {moves[s + 'melee']}")
     bad = [r for r in rows if r not in done]
     for r in bad:
-        lines.append(f"  не доиграно: зерно {r['seed']} {r.get('how')} {r.get('mission', '-')} {r.get('note', '')}")
+        lines.append(f"  не доиграно: зерно {r['seed']} {r.get('how')} {r.get('mission', '-')} {r.get('note', '')[:160]}")
     return lines
+
+
+def by_mission(rows):
+    """Строка на миссию: сколько сыграно, исходы, погибших и раненых за бой, длина боя."""
+    groups = collections.defaultdict(list)
+    for r in rows:
+        groups[r.get("want") or r.get("mission") or "-"].append(r)
+    lines = ["", "по миссиям (сыграно | победа/поражение/предел | погибло, ранено из отряда | ходов медиана | nomap):"]
+    for m, rs in sorted(groups.items()):
+        done = [r for r in rs if outcome(r) in ("win", "loss", "draw", "abort", "end-other")]
+        out = collections.Counter(outcome(r) for r in rs)
+        if not done:
+            lines.append(f"  {m}: не сыграно ни одного, {dict(out)}")
+            continue
+        n = len(done)
+        mean = lambda k: sum(int(r[k]) for r in done) / n
+        lines.append(f"  {m}: {n} | {out['win']}/{out['loss']}/{out['draw']} | {mean('pdead'):.1f}, {mean('pwounded'):.1f}"
+                     f" из {mean('player'):.0f} | {statistics.median(int(r['turn']) for r in done):.0f}"
+                     f" | {out['nomap']}" + (f" | прочее {n - out['win'] - out['loss'] - out['draw']}"
+                                              if n > out['win'] + out['loss'] + out['draw'] else "")
+                     + (f" | не доиграно {len(rs) - n - out['nomap']}" if len(rs) - n - out['nomap'] else ""))
+    return lines
+
+
+def read_table(table):
+    """Уже сыгранные строки таблицы - чтобы продолжить прерванную серию (--resume)."""
+    if not table.exists():
+        return []
+    lines = table.read_text(encoding=ENC_W).splitlines()
+    head = lines[0].split("\t")
+    return [dict(zip(head, ln.split("\t"))) for ln in lines[1:] if ln.strip()]
 
 
 def main():
@@ -112,25 +187,40 @@ def main():
     ap.add_argument("--campaign", default="NoCodexCatZ.sav", help="сейв кампании: отряд - самый большой экипаж оттуда")
     ap.add_argument("--recruits", action="store_true", help="вместо кампании новобранцы быстрого боя")
     ap.add_argument("--timeout", type=int, default=1200, help="секунд на бой")
+    ap.add_argument("--missions", default="", help="миссии через запятую или @файл (строка на миссию): каждая на всех зёрнах")
+    ap.add_argument("--resume", action="store_true", help="продолжить серию: уже сыгранные миссия+зерно из таблицы пропустить")
     ap.add_argument("--label", default="arena")
     ap.add_argument("--out", default="")
     a = ap.parse_args()
 
     seeds = seeds_of(a.seeds)
+    missions = [None]
+    if a.missions:
+        text = Path(a.missions[1:]).read_text(encoding=ENC_W) if a.missions.startswith("@") else a.missions.replace(",", "\n")
+        missions = [m.strip() for m in text.splitlines() if m.strip() and not m.startswith("#")]
     table = ai_probe.WORK / "arena" / f"{a.label}.tsv"
     table.parent.mkdir(parents=True, exist_ok=True)
-    rows = []
+    rows = read_table(table) if a.resume else []
+    played = {(r.get("want", ""), str(r["seed"])) for r in rows}
+    jobs = [(m, s) for m in missions for s in seeds if (m or "", str(s)) not in played]
+    if not rows:
+        table.write_text("\t".join(COLS + ("outcome",)) + "\n", encoding=ENC_W)
+    for slot in range(a.jobs):
+        SLOTS.put(slot)
+    campaign = None if a.recruits else a.campaign
+    total = len(jobs) + len(rows)
+    print(f"боёв {len(jobs)} (уже сыграно {len(rows)}), миссий {len(missions)}, зёрен {len(seeds)}, потоков {a.jobs}", flush=True)
     t0 = time.time()
     with ThreadPoolExecutor(a.jobs) as pool:
-        for row in pool.map(lambda s: one(s, a.turns, a.diff, a.timeout, None if a.recruits else a.campaign), seeds):
+        for row in pool.map(lambda j: one(j[1], a.turns, a.diff, a.timeout, campaign, j[0]), jobs):
             rows.append(row)
-            print(f"[{len(rows)}/{len(seeds)}] зерно {row['seed']}: {outcome(row)}, {row.get('mission', '-')},"
+            # строка в таблицу сразу: серия на часы, обрыв не должен стоить уже сыгранного
+            with open(table, "a", encoding="utf-8") as f:
+                f.write("\t".join(str(row.get(c, "")).replace("\t", " ") for c in COLS) + "\t" + outcome(row) + "\n")
+            print(f"[{len(rows)}/{total}] зерно {row['seed']}: {outcome(row)}, {row.get('mission', '-')},"
                   f" ход {row.get('turn', '-')}, раненых {row.get('pwounded', '-')}, {row['seconds']} с", flush=True)
-    with open(table, "w", encoding=ENC_W) as f:
-        f.write("\t".join(COLS + ("outcome",)) + "\n")
-        for r in rows:
-            f.write("\t".join(str(r.get(c, "")) for c in COLS) + "\t" + outcome(r) + "\n")
-    lines = summary(rows, a.label) + [f"таблица: {table}", f"вся серия {time.time() - t0:.0f} с"]
+    lines = summary(rows, a.label) + (by_mission(rows) if a.missions else []) + [
+        f"таблица: {table}", f"вся серия {time.time() - t0:.0f} с"]
     print("\n".join(lines))
     if a.out:
         Path(a.out).write_text("\n".join(lines) + "\n", encoding=ENC_W)

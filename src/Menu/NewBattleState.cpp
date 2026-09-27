@@ -671,6 +671,19 @@ void NewBattleState::probeRandomize(long long seed)
 		}
 	}
 	_cbxMission->setSelected(pick(_missionTypes.size()));
+	// OXCE_AI_MISSION=<deployment> pins the mission; the pick above still spends its roll, so the rest of the seed stays
+	if (const char *wanted = getenv("OXCE_AI_MISSION"))
+	{
+		auto it = std::find(_missionTypes.begin(), _missionTypes.end(), std::string(wanted));
+		if (it != _missionTypes.end())
+		{
+			_cbxMission->setSelected(it - _missionTypes.begin());
+		}
+		else if (*wanted)
+		{
+			Log(LOG_WARNING) << "[AIPROBE] no mission " << wanted << " in the quick battle list: random instead";
+		}
+	}
 	if (month >= 0)
 	{
 		cbxMissionChange(nullptr);

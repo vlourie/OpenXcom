@@ -70,11 +70,13 @@ def campaign_path(name):
     return p if p.is_file() else GAME / "user" / "piratez" / name
 
 
-def run(save, turns=1, save_as="", name="probe", timeout=900, bot=False, seed=None, diff=None, campaign=None):
+def run(save, turns=1, save_as="", name="probe", timeout=900, bot=False, seed=None, diff=None, campaign=None,
+        mission=None):
     """Прогоняет пробу и возвращает Probe.
     save - сейв боя (копируется) или None вместе с seed: тогда игра сама собирает случайный бой мода.
     campaign - сейв кампании: отряд боя - самый большой экипаж оттуда, со снаряжением, сложностью и месяцем.
-    bot - сторону игрока тоже ведёт ИИ, до конца боя или turns ходов."""
+    bot - сторону игрока тоже ведёт ИИ, до конца боя или turns ходов.
+    mission - закрепить миссию случайного боя (тип развёртывания), остальное по зерну."""
     if save is not None:
         save = Path(save)
         if not save.is_file():
@@ -112,6 +114,7 @@ def run(save, turns=1, save_as="", name="probe", timeout=900, bot=False, seed=No
     env["OXCE_AI_SEED"] = "" if seed is None else str(seed)
     env["OXCE_AI_DIFF"] = "" if diff is None else str(diff)
     env["OXCE_AI_CAMPAIGN"] = "campaign.sav" if campaign else ""
+    env["OXCE_AI_MISSION"] = mission or ""
     args = [str(EXE), "-data", str(GAME), "-user", str(work), "-cfg", str(work),
             "-fullscreen", "false", "-borderless", "false", "-displayWidth", "1280", "-displayHeight", "720",
             "-soundVolume", "0", "-musicVolume", "0", "-uiVolume", "0"]
