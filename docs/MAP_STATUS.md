@@ -2,11 +2,11 @@
 
 Считается `tools/hdart/map_update.py` из учёта `art/maps/updates/updates.tsv`. Руками не править.
 
-Обновлено: 2026-09-27 00:52
+Обновлено: 2026-09-27 06:29
 
 | карт в игре | с обновлением | целиком в моде | обновлений | файлов |
 |---|---|---|---|---|
-| 7295 | 17 | 0 | 31 | 2111 |
+| 7295 | 20 | 0 | 34 | 2412 |
 
 ## По картам
 
@@ -16,6 +16,7 @@
 | CATACOMBS_JUNGLE | CATACOMBS_33 | 0010 | исправление | 45 | 0 | 45 | 13 | в моде частично |
 | CATACOMBS_JUNGLE | CATACOMBS_33 | 0017 | исправление | 8 | 0 | 8 | 7 | в моде частично |
 | CAVES_AQUA_D | CAVESDIO_04 | 0022 | карта | 37 | 37 | 0 | 12 | в моде частично |
+| CAVES_MARS_NOCTIS | CAVESDIO_04 | 0032 | карта | 33 | 33 | 0 | 13 | ждёт решения |
 | COMRCURBAN_MSDF | COMRCURBAN_MEY_02 | 0030 | карта | 201 | 201 | 0 | 53 | ждёт решения |
 | CULTA_UBER | CULTAFARM01 | 0001 | карта | 30 | 30 | 0 | 15 | отклонено |
 | CULTA_UBER | CULTAFARM01 | 0002 | исправление | 10 | 0 | 10 | 0 | отклонено |
@@ -29,6 +30,7 @@
 | JUNGLE | JUNGLE04 | 0011 | исправление | 25 | 0 | 25 | 10 | отклонено |
 | JUNGLE | JUNGLE04 | 0014 | исправление | 55 | 0 | 55 | 36 | в моде частично |
 | NUKE_CITY_NORAD_7 | NUKECITY09 | 0028 | карта | 108 | 108 | 0 | 36 | ждёт решения |
+| POLISURBAN | POLISURBAN06 | 0033 | карта | 145 | 145 | 0 | 36 | ждёт решения |
 | SPACE_FREIGHTER_AGRARIAN | FREIGHTER_AGRI_LINK_NW00 | 0029 | карта | 122 | 122 | 0 | 41 | ждёт решения |
 | UAC_VAULTS_UFQ | UACVAULT_NS05 | 0021 | карта | 58 | 58 | 0 | 21 | в моде частично |
 | UAC_VAULTS_UFQ | UACVAULT_NS05 | 0024 | исправление | 22 | 0 | 22 | 4 | в моде |
@@ -42,6 +44,7 @@
 | VAMPIRE_CASTLE | VAMPCASTLE_14 | 0020 | карта | 85 | 85 | 0 | 41 | отклонено |
 | VAMPIRE_CASTLE | VAMPCASTLE_14 | 0023 | исправление | 85 | 0 | 85 | 40 | в моде частично |
 | VAMPIRE_CASTLE | VAMPCASTLE_14 | 0025 | исправление | 6 | 0 | 6 | 4 | ждёт решения |
+| WESTOWN_LOKNAR | WESTOWN_SALOON | 0034 | карта | 123 | 122 | 1 | 37 | ждёт решения |
 | XBASE | XBR_109 | 0026 | карта | 109 | 109 | 0 | 31 | ждёт решения |
 
 ## Исправления по файлам
@@ -217,6 +220,7 @@
 | hd/TERRAIN/MUJUNGLE.PCK/74.png | 0006 (CATACOMBS_33), 0010 (CATACOMBS_33) | в моде |
 | hd/TERRAIN/MUJUNGLE.PCK/77.png | 0006 (CATACOMBS_33), 0010 (CATACOMBS_33) | в моде |
 | hd/TERRAIN/MUJUNGLE.PCK/8.png | 0006 (CATACOMBS_33), 0010 (CATACOMBS_33), 0017 (CATACOMBS_33) | в моде |
+| hd/TERRAIN/NUKE3.PCK/8.png | 0028 (NUKECITY09), 0034 (WESTOWN_SALOON) | ждёт |
 | hd/TERRAIN/ROADS.PCK/0.png | 0003 (URBAN06), 0008 (URBAN06), 0018 (CULTASOLHUGE01) | в моде |
 | hd/TERRAIN/ROADS.PCK/0.v1.png | 0003 (URBAN06), 0008 (URBAN06), 0018 (CULTASOLHUGE01) | в моде |
 | hd/TERRAIN/ROADS.PCK/0.v2.png | 0003 (URBAN06), 0008 (URBAN06), 0018 (CULTASOLHUGE01) | в моде |
