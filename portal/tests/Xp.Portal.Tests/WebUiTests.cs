@@ -226,7 +226,7 @@ public sealed partial class WebUiTests(PortalFactory f) : IClassFixture<PortalFa
         Assert.Contains(code.Title, queue);
         Assert.DoesNotContain(art.Title, queue);
         // and a staff POST on the invisible ticket is the same 404
-        var r = await PostForm(admin, $"/admin/tickets/{art.Number}?handler=Status", new() { ["to"] = "Rejected" }, tokenFrom: "/admin");
+        var r = await PostForm(admin, $"/admin/tickets/{art.Number}?handler=Save", new() { ["to"] = "Rejected" }, tokenFrom: "/admin");
         Assert.Equal(HttpStatusCode.NotFound, r.StatusCode);
         Assert.Equal(TicketStatus.New, await f.DbAsync(db => db.Tickets.Where(t => t.Id == art.Id).Select(t => t.Status).FirstAsync()));
     }
@@ -250,9 +250,52 @@ public sealed partial class WebUiTests(PortalFactory f) : IClassFixture<PortalFa
         Assert.Contains(none.Title, unknown);
         Assert.DoesNotContain(ru.Title, unknown);
 
-        var r = await PostForm(admin, $"/admin/tickets/{none.Number}?handler=Language", new() { ["language"] = "pt_br" }, tokenFrom: "/admin");
+        var r = await PostForm(admin, $"/admin/tickets/{none.Number}?handler=Save", new() { ["language"] = "pt_br" }, tokenFrom: "/admin");
         Assert.Equal(HttpStatusCode.Redirect, r.StatusCode);
         Assert.Equal("pt-BR", await f.DbAsync(db => db.Tickets.Where(t => t.Id == none.Id).Select(t => t.Language).FirstAsync()));
+    }
+
+    [Fact]
+    public async Task One_save_keeps_every_field_and_taking_into_work_assigns_the_one_who_took_it()
+    {
+        var a = await MakeUserAsync(Roles.Admin, true, "tickets.code");
+        var b = await MakeUserAsync(Roles.Admin, true, "tickets.code");
+        var admin = await SignInAsync(a);
+        Task<Guid> IdOf(Staff s) => f.DbAsync(db => db.Users.Where(u => u.Email == s.Email).Select(u => u.Id).FirstAsync());
+        var aId = await IdOf(a);
+        var bId = await IdOf(b);
+
+        // the whole panel as the browser sends it: status changed, assignee left at "—"
+        var t1 = await NewTicketAsync("code");
+        var page = $"/admin/tickets/{t1.Number}";
+        var html = await admin.GetStringAsync(page);
+        Assert.Contains("<option value=\"New\" selected", html);   // the status select starts at the current status
+        var r = await PostForm(admin, page + "?handler=Save", new()
+        {
+            ["to"] = "InProgress", ["priority"] = "High", ["category"] = "code", ["language"] = "ru", ["assignee"] = "",
+        }, page);
+        Assert.Equal(HttpStatusCode.Redirect, r.StatusCode);
+        var saved = await f.DbAsync(db => db.Tickets.FirstAsync(t => t.Id == t1.Id));
+        Assert.Equal(TicketStatus.InProgress, saved.Status);
+        Assert.Equal(TicketPriority.High, saved.Priority);
+        Assert.Equal("ru", saved.Language);
+        Assert.Equal(aId, saved.AssigneeId);
+
+        // someone named in the same save wins over the automatic choice
+        var t2 = await NewTicketAsync("code");
+        page = $"/admin/tickets/{t2.Number}";
+        r = await PostForm(admin, page + "?handler=Save", new() { ["to"] = "InProgress", ["assignee"] = bId.ToString() }, page);
+        Assert.Equal(HttpStatusCode.Redirect, r.StatusCode);
+        Assert.Equal(bId, await f.DbAsync(db => db.Tickets.Where(t => t.Id == t2.Id).Select(t => t.AssigneeId).FirstAsync()));
+
+        // a save that does not move the ticket into work leaves the assignee alone
+        var t3 = await NewTicketAsync("code");
+        page = $"/admin/tickets/{t3.Number}";
+        r = await PostForm(admin, page + "?handler=Save", new() { ["to"] = "Triaged", ["assignee"] = "" }, page);
+        Assert.Equal(HttpStatusCode.Redirect, r.StatusCode);
+        Assert.Null(await f.DbAsync(db => db.Tickets.Where(t => t.Id == t3.Id).Select(t => t.AssigneeId).FirstAsync()));
+
+        Assert.Equal(HttpStatusCode.OK, (await admin.GetAsync("/js/lightbox.js")).StatusCode);
     }
 
     [Fact]
@@ -262,7 +305,7 @@ public sealed partial class WebUiTests(PortalFactory f) : IClassFixture<PortalFa
         var n = created.Ticket.Number;
         var admin = await SignInAsync(await MakeUserAsync(Roles.Admin, true, "tickets.code"));
         var page = $"/admin/tickets/{n}";
-        Assert.Equal(HttpStatusCode.Redirect, (await PostForm(admin, page + "?handler=Status", new() { ["to"] = "NeedsInfo" }, page)).StatusCode);
+        Assert.Equal(HttpStatusCode.Redirect, (await PostForm(admin, page + "?handler=Save", new() { ["to"] = "NeedsInfo" }, page)).StatusCode);
         Assert.Equal(HttpStatusCode.Redirect, (await PostForm(admin, page + "?handler=Message", new() { ["body"] = "secret-staff-note", ["internal"] = "true" }, page)).StatusCode);
         Assert.Equal(HttpStatusCode.Redirect, (await PostForm(admin, page + "?handler=Message", new() { ["body"] = "please attach the save" }, page)).StatusCode);
 

@@ -151,6 +151,8 @@
   "admin.duplicate_of": "Duplicate of",
   "admin.apply": "Apply",
   "admin.assignee": "Assignee",
+  "admin.save": "Save",
+  "admin.take_hint": "Moving to “In progress” makes you the assignee, unless the same save names someone else.",
   "admin.mark_duplicate": "Duplicate of number",
   "admin.internal": "internal note",
   "admin.write": "Message",

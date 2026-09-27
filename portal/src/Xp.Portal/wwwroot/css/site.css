@@ -405,6 +405,12 @@ tbody tr:hover { background: var(--ui-9); }
 .msg.internal { background: var(--ui-5); box-shadow: inset 3px 0 0 var(--sand); }
 .msg .meta { color: var(--ink-faint); font-size: 13px; white-space: normal; }
 
+/* a ticket's picture over the page (js/lightbox.js); any click or Esc closes it */
+dialog.lightbox { max-width: 96vw; max-height: 96vh; padding: 0; border: 0; background: transparent; overflow: visible; cursor: zoom-out; }
+dialog.lightbox::backdrop { background: rgba(0, 0, 0, 0.85); }
+dialog.lightbox img { display: block; max-width: 96vw; max-height: 96vh; }
+dialog.lightbox .close { position: fixed; top: 10px; right: 14px; min-width: 0; padding: 2px 12px; font-size: 22px; line-height: 1.2; }
+
 .secret { font-family: ui-monospace, Consolas, monospace; font-size: 18px; letter-spacing: 1px; overflow-wrap: anywhere; color: var(--accent); }
 
 /* ---------- narrow screens --------------------------------------------------------------------- */

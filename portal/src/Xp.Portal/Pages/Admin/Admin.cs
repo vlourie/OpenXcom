@@ -130,20 +130,29 @@ public sealed class TicketModel(PortalDb db, TicketService tickets, SignedUrls u
         return Viewer.IsStaffFor(Ticket) ? Redirect($"/admin/tickets/{number}") : Redirect("/admin");
     }
 
-    public Task<IActionResult> OnPostStatusAsync(long number, TicketStatus to, CancellationToken ct) =>
-        ActAsync(number, () => tickets.ChangeStatusAsync(Ticket, to, Me, ct), ct);
+    /// <summary>
+    /// One save for the whole panel: every field that came with the form is applied, the rest are left alone.
+    /// Separate forms lost a change made in one select when another form's button was pressed.
+    /// Moving a ticket into work makes the one who moved it responsible, unless the same save named someone.
+    /// </summary>
+    public Task<IActionResult> OnPostSaveAsync(long number, TicketStatus? to, TicketPriority? priority, string? category, CancellationToken ct) =>
+        ActAsync(number, async () =>
+        {
+            var form = Request.HasFormContentType ? Request.Form : null;
+            Guid? assignee = null;
+            var assigneeSent = form?.ContainsKey("assignee") == true;
+            if (assigneeSent && Guid.TryParse(form!["assignee"], out var g)) assignee = g;
+            var named = assigneeSent && assignee != Ticket.AssigneeId;
+            var wasInWork = Ticket.Status == TicketStatus.InProgress;
 
-    public Task<IActionResult> OnPostPriorityAsync(long number, TicketPriority priority, CancellationToken ct) =>
-        ActAsync(number, () => tickets.SetPriorityAsync(Ticket, priority, Me, ct), ct);
-
-    public Task<IActionResult> OnPostCategoryAsync(long number, string? category, CancellationToken ct) =>
-        ActAsync(number, () => tickets.SetCategoryAsync(Ticket, category ?? "", Me, ct), ct);
-
-    public Task<IActionResult> OnPostLanguageAsync(long number, string? language, CancellationToken ct) =>
-        ActAsync(number, () => tickets.SetLanguageAsync(Ticket, language, Me, ct), ct);
-
-    public Task<IActionResult> OnPostAssignAsync(long number, Guid? assignee, CancellationToken ct) =>
-        ActAsync(number, () => tickets.AssignAsync(Ticket, assignee, Me, ct), ct);
+            if (category is not null) await tickets.SetCategoryAsync(Ticket, category, Me, ct);
+            if (priority is { } p) await tickets.SetPriorityAsync(Ticket, p, Me, ct);
+            if (form?.ContainsKey("language") == true) await tickets.SetLanguageAsync(Ticket, form["language"], Me, ct);
+            if (to is { } s) await tickets.ChangeStatusAsync(Ticket, s, Me, ct);
+            if (named) await tickets.AssignAsync(Ticket, assignee, Me, ct);
+            else if (!wasInWork && Ticket.Status == TicketStatus.InProgress && Ticket.AssigneeId != Me && Viewer.IsStaffFor(Ticket))
+                await tickets.AssignAsync(Ticket, Me, Me, ct);
+        }, ct);
 
     public Task<IActionResult> OnPostDuplicateAsync(long number, string? of, CancellationToken ct) =>
         ActAsync(number, () =>

@@ -26,53 +26,55 @@
     {
         <p>@T["admin.duplicate_of"] <a href="/admin/tickets/@d.Number">@d.DisplayNumber</a></p>
     }
+    <form method="post" asp-page-handler="Save">
+        <div class="row">
+            <div>
+                <label for="to">@T["field.status"]</label>
+                <select id="to" name="to">
+                    <option value="@t.Status" selected>@T["status." + t.Status]</option>
+                    @foreach (var s in Xp.Portal.Tickets.TicketService.AllowedMoves(t.Status))
+                    {
+                        <option value="@s">@T["status." + s]</option>
+                    }
+                </select>
+            </div>
+            <div>
+                <label for="priority">@T["field.priority"]</label>
+                <select id="priority" name="priority">
+                    @foreach (var p in Enum.GetValues<TicketPriority>())
+                    {
+                        <option value="@p" selected="@(p == t.Priority)">@T["prio." + p]</option>
+                    }
+                </select>
+            </div>
+            <div>
+                <label for="category">@T["field.category"]</label>
+                <select id="category" name="category">
+                    @foreach (var c in Categories.All)
+                    {
+                        <option value="@c" selected="@(c == t.Category)">@T["cat." + c]</option>
+                    }
+                </select>
+            </div>
+            <div>
+                <label for="language">@T["field.language"]</label>
+                <input type="text" id="language" name="language" value="@t.Language" maxlength="16" placeholder="ru, en, de…" />
+            </div>
+            <div>
+                <label for="assignee">@T["admin.assignee"]</label>
+                <select id="assignee" name="assignee">
+                    <option value="">—</option>
+                    @foreach (var s in Model.Staff)
+                    {
+                        <option value="@s.Id" selected="@(s.Id == t.AssigneeId)">@s.Name</option>
+                    }
+                </select>
+            </div>
+        </div>
+        <p class="hint">@T["admin.take_hint"]</p>
+        <button type="submit">@T["admin.save"]</button>
+    </form>
     <div class="row">
-        <form method="post" asp-page-handler="Status">
-            <label for="to">@T["field.status"]</label>
-            <select id="to" name="to">
-                @foreach (var s in Xp.Portal.Tickets.TicketService.AllowedMoves(t.Status))
-                {
-                    <option value="@s">@T["status." + s]</option>
-                }
-            </select>
-            <button type="submit" class="secondary">@T["admin.apply"]</button>
-        </form>
-        <form method="post" asp-page-handler="Priority">
-            <label for="priority">@T["field.priority"]</label>
-            <select id="priority" name="priority">
-                @foreach (var p in Enum.GetValues<TicketPriority>())
-                {
-                    <option value="@p" selected="@(p == t.Priority)">@T["prio." + p]</option>
-                }
-            </select>
-            <button type="submit" class="secondary">@T["admin.apply"]</button>
-        </form>
-        <form method="post" asp-page-handler="Category">
-            <label for="category">@T["field.category"]</label>
-            <select id="category" name="category">
-                @foreach (var c in Categories.All)
-                {
-                    <option value="@c" selected="@(c == t.Category)">@T["cat." + c]</option>
-                }
-            </select>
-            <button type="submit" class="secondary">@T["admin.apply"]</button>
-        </form>
-        <form method="post" asp-page-handler="Language">
-            <label for="language">@T["field.language"]</label>
-            <input type="text" id="language" name="language" value="@t.Language" maxlength="16" placeholder="ru, en, de…" />
-            <button type="submit" class="secondary">@T["admin.apply"]</button>
-        </form>
-        <form method="post" asp-page-handler="Assign">
-            <label for="assignee">@T["admin.assignee"]</label>
-            <select id="assignee" name="assignee">
-                <option value="">—</option>
-                @foreach (var s in Model.Staff)
-                {
-                    <option value="@s.Id" selected="@(s.Id == t.AssigneeId)">@s.Name</option>
-                }
-            </select>
-            <button type="submit" class="secondary">@T["admin.apply"]</button>
-        </form>
         <form method="post" asp-page-handler="Duplicate">
             <label for="of">@T["admin.mark_duplicate"]</label>
             <input type="text" id="of" name="of" placeholder="XP-000123" maxlength="16" />
@@ -90,7 +92,14 @@
             <li>
                 @if (Model.LinkFor(f) is { } link)
                 {
-                    <a href="@link" rel="noopener noreferrer">@f.FileName</a>
+                    @if (Xp.Portal.Files.FileRules.KindOf(f.FileName) is { } k && Xp.Portal.Files.FileRules.IsImage(k))
+                    {
+                        <a href="@link" target="_blank" rel="noopener noreferrer" data-image>@f.FileName</a>
+                    }
+                    else
+                    {
+                        <a href="@link" rel="noopener noreferrer">@f.FileName</a>
+                    }
                 }
                 else
                 {
@@ -137,3 +146,4 @@
         </tr>
     }
 </table>
+<script src="~/js/lightbox.js" asp-append-version="true" defer></script>
