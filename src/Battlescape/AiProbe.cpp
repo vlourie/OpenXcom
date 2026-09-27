@@ -18,6 +18,7 @@
  */
 #include "AiProbe.h"
 #include <algorithm>
+#include <cmath>
 #include <cstdlib>
 #include <map>
 #include <sstream>
@@ -52,6 +53,7 @@ void logState(SavedBattleGame *, const char *) {}
 bool tactics(const BattleUnit *) { return false; }
 bool careful(const BattleUnit *) { return false; }
 void tally(const BattleUnit *, const char *) {}
+void logCasualty(SavedBattleGame *, const BattleUnit *, const BattleUnit *, const std::string &, bool, int, bool) {}
 
 #else
 
@@ -314,6 +316,50 @@ void logDecision(SavedBattleGame *save, BattleUnit *unit, const BattleAction &ac
 		<< " aim=" << (target ? target->getId() : -1)
 		<< " weapon=" << (action.weapon ? action.weapon->getRules()->getType() : std::string("-"))
 		<< " seen=" << (seen.tellp() > 0 ? seen.str() : std::string("-"));
+}
+
+void logCasualty(SavedBattleGame *save, const BattleUnit *victim, const BattleUnit *killer, const std::string &weapon,
+	bool dead, int hitSide, bool terrain)
+{
+	if (!active())
+	{
+		return;
+	}
+	// how many of the other side had eyes on the victim, and how far the killer stood: in the open, flanked, sniped
+	const UnitFaction other = victim->getOriginalFaction() == FACTION_HOSTILE ? FACTION_PLAYER : FACTION_HOSTILE;
+	int seenBy = 0;
+	for (auto *bu : *save->getUnits())
+	{
+		if (bu->getFaction() == other && !bu->isOut())
+		{
+			const auto *vis = bu->getVisibleUnits();
+			seenBy += std::find(vis->begin(), vis->end(), victim) != vis->end() ? 1 : 0;
+		}
+	}
+	int dist = -1;
+	if (killer)
+	{
+		const Position d = killer->getPosition() - victim->getPosition();
+		dist = (int)(std::sqrt((double)(d.x * d.x + d.y * d.y)) + 0.5);
+	}
+	static const char *sides[] = { "front", "left", "right", "rear", "under" };
+	Log(LOG_INFO) << "[AICASUALTY] turn=" << save->getTurn()
+		<< " side=" << (int)save->getSide()
+		<< " victim=" << victim->getId()
+		<< " vfaction=" << (int)victim->getOriginalFaction()
+		<< " type=" << victim->getType()
+		<< " how=" << (dead ? "dead" : "stun")
+		<< " pos=" << victim->getPosition()
+		<< " tu=" << victim->getTimeUnits()
+		<< " kneel=" << (victim->isKneeled() ? 1 : 0)
+		<< " seenby=" << seenBy
+		<< " killer=" << (killer ? killer->getId() : -1)
+		<< " kfaction=" << (killer ? (int)killer->getFaction() : -1)
+		<< " ktype=" << (killer ? killer->getType() : std::string("-"))
+		<< " dist=" << dist
+		<< " weapon=" << weapon
+		<< " hit=" << (hitSide >= 0 && hitSide < 5 ? sides[hitSide] : "-")
+		<< " terrain=" << (terrain ? 1 : 0);
 }
 
 void logState(SavedBattleGame *save, const char *when)

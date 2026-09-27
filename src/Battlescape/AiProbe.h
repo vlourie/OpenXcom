@@ -1,4 +1,5 @@
 #pragma once
+#include <string>
 /*
  * Copyright 2010-2026 OpenXcom Developers.
  *
@@ -62,6 +63,9 @@ bool tactics(const BattleUnit *unit);
 bool careful(const BattleUnit *unit);
 /// Counts one use of a tactical rule for the result line ([AIRESULT] tac=).
 void tally(const BattleUnit *unit, const char *rule);
+/// One line per unit killed or knocked out ([AICASUALTY]): by whom, with what, from how far, on whose turn.
+void logCasualty(SavedBattleGame *save, const BattleUnit *victim, const BattleUnit *killer, const std::string &weapon,
+	bool dead, int hitSide, bool terrain);
 
 }
 

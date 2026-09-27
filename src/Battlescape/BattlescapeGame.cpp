@@ -810,6 +810,11 @@ void BattlescapeGame::checkForCasualties(const RuleDamageType *damageType, Battl
 			}
 		}
 
+		if (killStat.status == STATUS_DEAD || killStat.status == STATUS_UNCONSCIOUS)
+		{
+			AiProbe::logCasualty(_save, victim, murderer, killStat.weapon, killStat.status == STATUS_DEAD, (int)killStat.side, terrainExplosion);
+		}
+
 		if (murderer && killStat.status != STATUS_IGNORE_ME)
 		{
 			if (murderer->getFaction() == FACTION_PLAYER && murderer->getOriginalFaction() != FACTION_PLAYER)

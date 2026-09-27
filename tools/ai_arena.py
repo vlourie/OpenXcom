@@ -79,7 +79,8 @@ def one(seed, turns, diff, timeout, campaign, mission=None, tactics=False, caref
         moves = behaviour(r.log)
     finally:
         SLOTS.put(slot)
-    row = {"seed": seed, "want": mission or "", "seconds": f"{r.seconds:.0f}", "note": ""}
+    row = {"seed": seed, "want": mission or "", "seconds": f"{r.seconds:.0f}", "note": "",
+           "_casualties": r.tagged("[AICASUALTY]")}
     row.update(moves)
     battle = r.tagged("[AIPROBE] battle")
     if battle:
@@ -234,6 +235,10 @@ def main():
             # строка в таблицу сразу: серия на часы, обрыв не должен стоить уже сыгранного
             with open(table, "a", encoding="utf-8") as f:
                 f.write("\t".join(str(row.get(c, "")).replace("\t", " ") for c in COLS) + "\t" + outcome(row) + "\n")
+            # павшие и оглушённые боя - рядом, строка [AICASUALTY] как есть: кто, чем, откуда, на чьём ходу
+            if row.get("_casualties"):
+                with open(table.with_suffix(".casualties.txt"), "a", encoding="utf-8") as f:
+                    f.writelines(f"seed={row['seed']} want={row['want']} {line}\n" for line in row["_casualties"])
             print(f"[{len(rows)}/{total}] зерно {row['seed']}: {outcome(row)}, {row.get('mission', '-')},"
                   f" ход {row.get('turn', '-')}, раненых {row.get('pwounded', '-')}, {row['seconds']} с", flush=True)
     lines = summary(rows, a.label) + (by_mission(rows) if a.missions else []) + [
