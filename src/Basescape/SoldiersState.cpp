@@ -21,6 +21,7 @@
 #include "../Engine/Screen.h"
 #include "../Engine/Game.h"
 #include "../Mod/Mod.h"
+#include "../Engine/SurfaceSet.h"
 #include "../Mod/RuleSoldierTransformation.h"
 #include "../Engine/LocalizedText.h"
 #include "../Engine/Options.h"
@@ -360,13 +361,18 @@ void SoldiersState::initList(size_t scrl)
 		}
 	}
 
+	// OXCE-HD: the race badge before the name (Options::oxceBaseSoldierTypeIcon); the name column gives it room
+	const int icon = Options::oxceBaseSoldierTypeIcon ? 10 : 0;
+	SurfaceSet *badges = icon ? _game->getMod()->getSurfaceSet("BASEBITS.PCK") : nullptr;
+	_lstSoldiers->setIconColumn(8, icon);
+	_lstSoldiers->setMargin(8 + icon);
 	if (_dynGetter != NULL)
 	{
-		_lstSoldiers->setColumns(4, 106, 98 - offset, 60 + offset, 16);
+		_lstSoldiers->setColumns(4, 106 - icon, 98 - offset, 60 + offset, 16);
 	}
 	else
 	{
-		_lstSoldiers->setColumns(3, 106, 98 - offset, 76 + offset);
+		_lstSoldiers->setColumns(3, 106 - icon, 98 - offset, 76 + offset);
 	}
 	_txtCraft->setX(_txtRank->getX() + 98 - offset);
 
@@ -399,6 +405,10 @@ void SoldiersState::initList(size_t scrl)
 		if (soldier->getDeath())
 		{
 			_lstSoldiers->setRowColor(row, _txtCraft->getColor());
+		}
+		if (badges)
+		{
+			_lstSoldiers->setRowIcon(row, badges->getFrame(soldier->getRankSprite()));
 		}
 
 		row++;

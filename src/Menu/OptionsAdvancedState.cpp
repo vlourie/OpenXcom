@@ -439,6 +439,11 @@ void OptionsAdvancedState::changeSetting(size_t sel, Uint8 button)
 			min = 0;
 			max = 2;
 		}
+		else if (i == &Options::oxceBaseSoldierGroupBy)
+		{
+			min = 0;
+			max = 3;
+		}
 		else if (i == &Options::oxceInterceptTableSize)
 		{
 			min = 8;

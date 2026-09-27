@@ -6,6 +6,8 @@
 #include "../Engine/Options.h"
 #include "../Interface/ComboBox.h"
 #include "../Savegame/Base.h"
+#include "../Savegame/Craft.h"
+#include "../Mod/RuleSoldier.h"
 
 namespace OpenXcom
 {
@@ -101,30 +103,7 @@ namespace OpenXcom
 			}
 			else if (sortIndex == 3)
 			{
-				std::stable_sort(_base->getSoldiers()->begin(), _base->getSoldiers()->end(),
-								 [](const Soldier* a, const Soldier* b)
-								 {
-									 if (a->getCraft())
-									 {
-										 if (b->getCraft())
-										 {
-											 if (a->getCraft()->getRules() == b->getCraft()->getRules())
-											 {
-												 return a->getCraft()->getId() < b->getCraft()->getId();
-											 }
-											 else
-											 {
-												 return a->getCraft()->getRules() < b->getCraft()->getRules();
-											 }
-										 }
-										 else
-										 {
-											 return true; // a < b
-										 }
-									 }
-
-									 return false; // b > a
-								 });
+				std::stable_sort(_base->getSoldiers()->begin(), _base->getSoldiers()->end(), craftLess);
 			}
 			else
 			{
@@ -135,6 +114,57 @@ namespace OpenXcom
 			{
 				std::reverse(_base->getSoldiers()->begin(), _base->getSoldiers()->end());
 			}
+
+			// OXCE-HD: the groups (Options::oxceBaseSoldierGroupBy) over the order just made: the sort is
+			// stable, so inside a group the soldiers stay in the chosen order (reversed with Shift too).
+			// Sorting by the grouping criterion itself keeps its own direction
+			const int groupBy = Options::oxceBaseSoldierGroupBy;
+			if (groupBy == 1 && sortIndex != 4)
+			{
+				// the types in the mod's list order
+				std::stable_sort(_base->getSoldiers()->begin(), _base->getSoldiers()->end(),
+								 [](const Soldier* a, const Soldier* b)
+								 {
+									 return a->getRules()->getListOrder() < b->getRules()->getListOrder();
+								 });
+			}
+			else if (groupBy == 2 && sortIndex != 5)
+			{
+				std::stable_sort(_base->getSoldiers()->begin(), _base->getSoldiers()->end(),
+								 [](const Soldier* a, const Soldier* b)
+								 {
+									 return a->getRank() > b->getRank();
+								 });
+			}
+			else if (groupBy == 3 && sortIndex != 3)
+			{
+				std::stable_sort(_base->getSoldiers()->begin(), _base->getSoldiers()->end(), craftLess);
+			}
+		}
+
+		/// The craft order: soldiers on a craft first, by the craft's type, then by its number.
+		static bool craftLess(const Soldier* a, const Soldier* b)
+		{
+			if (a->getCraft())
+			{
+				if (b->getCraft())
+				{
+					if (a->getCraft()->getRules() == b->getCraft()->getRules())
+					{
+						return a->getCraft()->getId() < b->getCraft()->getId();
+					}
+					else
+					{
+						return a->getCraft()->getRules() < b->getCraft()->getRules();
+					}
+				}
+				else
+				{
+					return true; // a < b
+				}
+			}
+
+			return false; // b > a
 		}
 
 		void ChangeDynSorter(getStatFn_t& getter)

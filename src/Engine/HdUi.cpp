@@ -706,6 +706,86 @@ void HdUi::drawSurface(const Surface *surface, int x, int y, bool smooth)
 }
 
 /**
+ * A sprite drawn smaller than it is (a 26x23 badge in a list row of 8): made
+ * from the xBRZ copy k times bigger (mode 2) or from the palette pixels as they
+ * are, every world pixel the mean of the source pixels it covers, weighted by
+ * their alpha. Once per content, palette, size and scale; drawing it is a blend.
+ */
+void HdUi::drawSurfaceFit(const Surface *surface, int x, int y, int w, int h)
+{
+	SDL_Surface *dest;
+	int k;
+	const SDL_Color *pal;
+	if (!target(dest, k, pal) || !surface || w <= 0 || h <= 0 || surface->getWidth() <= 0 || surface->getHeight() <= 0)
+	{
+		return;
+	}
+	if (_artGeneration != HdUiArt::generation())
+	{
+		clearCaches();
+		_artGeneration = HdUiArt::generation();
+	}
+	if (const SDL_Color *own = paletteOf(surface)) pal = own;
+	const int sw = surface->getWidth(), sh = surface->getHeight();
+	const Uint8 *pixels = (const Uint8*)surface->getBuffer();
+	const int pitch = surface->getPitch();
+	const bool smooth = mode() >= 2 && k >= 2 && k <= 6;
+	const Uint64 pixelHash = HdUiArt::hashPixels(pixels, pitch, sw, sh);
+	const Uint64 key = HdUiArt::foldPalette(pixelHash, pal) ^ ((Uint64)w << 48) ^ ((Uint64)h << 40) ^ ((Uint64)k << 32) ^ (smooth ? 1ULL << 63 : 0);
+	auto it = _fitted.find(key);
+	if (it == _fitted.end())
+	{
+		const HdFrame *big = smooth ? smoothed(surface, k, pal, pixelHash) : nullptr;
+		const int bw = big ? big->width : sw, bh = big ? big->height : sh;
+		auto at = [&](int sx, int sy) -> Uint32
+		{
+			if (big) return big->row(sy)[sx];
+			const Uint8 i = pixels[(size_t)sy * pitch + sx];
+			return i ? packColor(pal[i]) : 0u;
+		};
+		HdFrame out;
+		out.width = w * k;
+		out.height = h * k;
+		out.generated = true;
+		out.pixels.assign((size_t)out.width * out.height, 0u);
+		for (int dy = 0; dy < out.height; ++dy)
+		{
+			const int sy0 = dy * bh / out.height, sy1 = std::max(sy0 + 1, (dy + 1) * bh / out.height);
+			Uint32 *drow = out.pixels.data() + (size_t)dy * out.width;
+			for (int dx = 0; dx < out.width; ++dx)
+			{
+				const int sx0 = dx * bw / out.width, sx1 = std::max(sx0 + 1, (dx + 1) * bw / out.width);
+				Uint32 sa = 0, sr = 0, sg = 0, sb = 0, n = 0;
+				for (int sy = sy0; sy < sy1; ++sy)
+				{
+					for (int sx = sx0; sx < sx1; ++sx)
+					{
+						const Uint32 c = at(sx, sy), a = c >> 24;
+						sa += a;
+						sr += ((c >> 16) & 0xFF) * a;
+						sg += ((c >> 8) & 0xFF) * a;
+						sb += (c & 0xFF) * a;
+						++n;
+					}
+				}
+				if (sa)
+				{
+					drow[dx] = ((sa / n) << 24) | ((sr / sa) << 16) | ((sg / sa) << 8) | (sb / sa);
+				}
+			}
+		}
+		out.buildSpans();
+		if (_fitted.size() >= 256)
+		{
+			_fitted.clear();
+		}
+		it = _fitted.emplace(key, std::move(out)).first;
+	}
+	const SDL_Rect clip = worldClip(dest, k);
+	HdUiArt::drawFrame(dest, it->second, x * k, y * k, &clip);
+}
+
+/**
  * A glyph k times bigger with smooth edges: every source pixel becomes a
  * k x k block, and at the corners where the classic Scale2x rule applies
  * (the two neighbours across the corner agree with each other and disagree
@@ -971,6 +1051,7 @@ void HdUi::clearCaches()
 	_sparse.clear();
 	_cropMisses.clear();
 	_glyphs.clear();
+	_fitted.clear();
 }
 
 }

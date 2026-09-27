@@ -144,6 +144,10 @@ OPT bool oxceDisableThinkingProgressBar;
 OPT bool oxceResetUnitResponseSoundsOnAvatarChange;
 // OXCE: the soldier list's extra column (the "sort by" choice), remembered between screens
 OPT int oxceBaseSoldierInfoColumnDefault;
+// Soldier lists (soldiers, craft crew): sorting puts them into groups first and keeps the chosen order inside each (0 none, 1 soldier type, 2 rank, 3 craft)
+OPT int oxceBaseSoldierGroupBy;
+// Soldier lists: the soldier's rank badge (its type's own set, BASEBITS) before the name
+OPT bool oxceBaseSoldierTypeIcon;
 // OXCE: play cutscenes at the original 320x200 (as the classic game does); off = scaled like the geoscape
 OPT bool oxceMaximizeCutsceneScreens;
 

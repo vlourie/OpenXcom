@@ -492,6 +492,8 @@ void createAdvancedOptionsOXCE()
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceManufactureScrollSpeedWithCtrl", &oxceManufactureScrollSpeedWithCtrl, 10, "STR_MANUFACTURE_SCROLL_SPEED_CTRL", "STR_BASESCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxcePersonalLayoutIncludingArmor", &oxcePersonalLayoutIncludingArmor, true, "STR_PERSONAL_LAYOUT_INCLUDING_ARMOR", "STR_BASESCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceManualPromotions", &oxceManualPromotions, false, "STR_MANUALPROMOTIONS", "STR_BASESCAPE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceBaseSoldierGroupBy", &oxceBaseSoldierGroupBy, 0, "STR_SOLDIER_GROUP_BY", "STR_BASESCAPE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceBaseSoldierTypeIcon", &oxceBaseSoldierTypeIcon, false, "STR_SOLDIER_TYPE_ICON", "STR_BASESCAPE"));
 
 	// OXCE options battlescape
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceWoundedDefendBaseIf", &oxceWoundedDefendBaseIf, 100, "STR_WOUNDED_DEFEND_BASE_IF", "STR_BATTLESCAPE"));
