@@ -469,6 +469,11 @@ def cmd_add(a):
     if cmd[0].lower().endswith(".py"):
         raise SystemExit("укажи интерпретатор перед .py: у генерации свои окружения "
                          "(.venv, .venv-qwen21, E:/train/.venv-train)")
+    # Popen в Windows ищет относительный exe от своей папки, а не от cwd задания:
+    # tools/x/.venv/Scripts/python.exe падает с WinError 2 уже у диспетчера (R-097)
+    exe = os.path.join(os.path.abspath(a.cwd), cmd[0])
+    if not os.path.isabs(cmd[0]) and os.path.dirname(cmd[0]) and os.path.isfile(exe):
+        cmd = [os.path.normpath(exe)] + cmd[1:]
     env = dict(kv.split("=", 1) for kv in a.env)
     with locked() as st:
         jid = str(st["next_id"])
