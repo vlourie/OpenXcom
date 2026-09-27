@@ -90,8 +90,10 @@ SoldierInfoState::SoldierInfoState(Base *base, size_t soldierId, bool forceLimit
 	_edtSoldier = new TextEdit(this, 210, 16, 40, 9);
 	_btnSack = new TextButton(60, 14, 260, 33);
 	_btnDiary = new TextButton(60, 14, 260, 48);
-	_txtRank = new Text(130, 9, 0, 48);
-	_txtMissions = new Text(100, 9, 130, 48);
+	// OXCE-HD: the missions moved left and both cut to the next text - the TTF is wider than the classic font,
+	// and "missions> 147" ran into "kills>" at 200; the longest rank ("Властительница") still ends before 115
+	_txtRank = new Text(115, 9, 0, 48);
+	_txtMissions = new Text(85, 9, 115, 48);
 	_txtKills = new Text(100, 9, 200, 48);
 	_txtStuns = new Text(60, 9, 260, 48);
 	_txtCraft = new Text(130, 9, 0, 56);

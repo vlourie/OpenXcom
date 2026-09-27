@@ -4,6 +4,7 @@
 #include "../Engine/State.h"
 #include "SoldierSortUtil.h"
 #include "../Engine/Options.h"
+#include "../Engine/SurfaceSet.h"
 #include "../Interface/ComboBox.h"
 #include "../Savegame/Base.h"
 #include "../Savegame/Craft.h"
@@ -20,6 +21,10 @@ namespace OpenXcom
 		{}
 
 	protected:
+		/// OXCE-HD: how far the soldier lists' rank column (and its header) stands right of where OXCE has it,
+		/// near the arrows, with the rank badge in front of it
+		static const int RANK_SHIFT = 12;
+
 		void FillSorters(std::vector<SortFunctor*>& sorters, ComboBox& sortingCombobox, ActionHandler comboBoxChangeHandler)
 		{
 			std::map<Options::QOL::DefaultSoldiersSorter, size_t> sortersToIndexes;
@@ -122,11 +127,13 @@ namespace OpenXcom
 			const int groupBy = Options::oxceBaseSoldierGroupBy;
 			if (groupBy == 1 && sortIndex != 4)
 			{
-				// the types in the mod's list order
+				// by race, and inside a race by the chosen criterion alone. The race is the set of pictures
+				// (flagOffset): in X-Piratez a race has several types (the synths with dolls and killbots),
+				// and by the type the list went race - type - criterion. In vanilla the offset is 0 for all
 				std::stable_sort(_base->getSoldiers()->begin(), _base->getSoldiers()->end(),
 								 [](const Soldier* a, const Soldier* b)
 								 {
-									 return a->getRules()->getListOrder() < b->getRules()->getListOrder();
+									 return a->getRules()->getFlagOffset() < b->getRules()->getFlagOffset();
 								 });
 			}
 			else if (groupBy == 2 && sortIndex != 5)
@@ -166,6 +173,27 @@ namespace OpenXcom
 			}
 
 			return false; // b > a
+		}
+
+		/// OXCE-HD: the soldier's picture from the soldier info screen - the same "Flag" id as SoldierInfoState
+		/// (nationality or kills, plus the type's flagOffset); null when the mod has none.
+		Surface *SoldierFlag(const Soldier *soldier) const
+		{
+			int index = soldier->getNationality();
+			const std::vector<int> &mapping = State::_game->getMod()->getFlagByKills();
+			if (!mapping.empty())
+			{
+				index = 0;
+				for (int item : mapping)
+				{
+					if (soldier->getKills() <= item)
+					{
+						break;
+					}
+					index++;
+				}
+			}
+			return State::_game->getMod()->getSurface("Flag" + std::to_string(index + soldier->getRules()->getFlagOffset()), false);
 		}
 
 		void ChangeDynSorter(getStatFn_t& getter)

@@ -68,11 +68,12 @@ private:
 		Surface *fitted = nullptr;        ///< the classic picture, scaled down to the column and the line
 		int x = 0, y = 0;                 ///< where it sits in the column and the line
 	};
-	int _iconX = 0, _iconW = 0;
-	std::vector<Surface*> _rowIcons;      ///< by row: the frame given (not owned)
-	std::map<Surface*, Icon> _iconCache;  ///< by frame (owned)
-	/// The picture of a row, made when first asked for; nullptr when the row has none.
-	const Icon *rowIcon(size_t row);
+	static const int ICON_COLUMNS = 2;
+	int _iconX[ICON_COLUMNS] = {}, _iconW[ICON_COLUMNS] = {};
+	std::vector<Surface*> _rowIcons[ICON_COLUMNS];                ///< by column and row: the frame given (not owned)
+	std::map<std::pair<Surface*, int>, Icon> _iconCache;          ///< by frame and column (owned)
+	/// The picture of a row in a column, made when first asked for; nullptr when the row has none.
+	const Icon *rowIcon(size_t row, int col);
 
 	/// Updates the arrow buttons.
 	void updateArrows();
@@ -233,11 +234,11 @@ public:
 	/// Treat separators as spaces (false) or as normal text (true)?
 	void setIgnoreSeparators(bool ignoreSeparators);
 	/// OXCE-HD: the column of row pictures, `width` pixels from `x` (in the list); width 0 = no pictures.
-	/// The columns of text are not moved: leave them room with setMargin.
-	void setIconColumn(int x, int width);
+	/// The columns of text are not moved: leave them room with setMargin / setColumns. `col` 0 or 1: two such columns.
+	void setIconColumn(int x, int width, int col = 0);
 	/// OXCE-HD: the picture of a row: a sprite frame, its transparent edge trimmed and the rest scaled
 	/// to fit the column and the line (the HD mirror scales it from the full frame); nullptr = none.
-	void setRowIcon(size_t row, Surface *frame);
+	void setRowIcon(size_t row, Surface *frame, int col = 0);
 };
 
 }
