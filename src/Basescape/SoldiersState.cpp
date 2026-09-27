@@ -21,7 +21,6 @@
 #include "../Engine/Screen.h"
 #include "../Engine/Game.h"
 #include "../Mod/Mod.h"
-#include "../Engine/SurfaceSet.h"
 #include "../Mod/RuleSoldierTransformation.h"
 #include "../Engine/LocalizedText.h"
 #include "../Engine/Options.h"
@@ -86,7 +85,7 @@ SoldiersState::SoldiersState(Base *base) : SortSoldiersMixin(base), _origSoldier
 	_txtTitle = new Text(168, 17, 16, 8);
 	_cbxSortBy = new ComboBox(this, 120, 16, 192, 8, false);
 	_txtName = new Text(114, 9, 16, 32);
-	_txtRank = new Text(102, 9, 122, 32);
+	_txtRank = new Text(102 - RANK_SHIFT, 9, 122 + RANK_SHIFT, 32);
 	_txtCraft = new Text(82, 9, 220, 32);
 	_lstSoldiers = new TextList(288, 128, 8, 40);
 
@@ -362,20 +361,23 @@ void SoldiersState::initList(size_t scrl)
 		}
 	}
 
-	// OXCE-HD: the race badge before the name (Options::oxceBaseSoldierTypeIcon); the name column gives it room
-	const int icon = Options::oxceBaseSoldierTypeIcon ? 10 : 0;
+	// OXCE-HD: the race picture of the soldier info screen before the name and the rank badge before the rank
+	// (Options::oxceBaseSoldierTypeIcon): 32x20 fits the row as 13x8. The rank stands RANK_SHIFT to the right,
+	// near the arrows (the header too); the craft column stays where it was
+	const int icon = Options::oxceBaseSoldierTypeIcon ? 13 : 0;
 	SurfaceSet *badges = icon ? _game->getMod()->getSurfaceSet("BASEBITS.PCK") : nullptr;
 	_lstSoldiers->setIconColumn(8, icon);
+	_lstSoldiers->setIconColumn(106 + RANK_SHIFT - 3, badges ? 10 : 0, 1);
 	_lstSoldiers->setMargin(8 + icon);
 	if (_dynGetter != NULL)
 	{
-		_lstSoldiers->setColumns(4, 106 - icon, 98 - offset, 60 + offset, 16);
+		_lstSoldiers->setColumns(4, 106 - icon + RANK_SHIFT, 98 - offset - RANK_SHIFT, 60 + offset, 16);
 	}
 	else
 	{
-		_lstSoldiers->setColumns(3, 106 - icon, 98 - offset, 76 + offset);
+		_lstSoldiers->setColumns(3, 106 - icon + RANK_SHIFT, 98 - offset - RANK_SHIFT, 76 + offset);
 	}
-	_txtCraft->setX(_txtRank->getX() + 98 - offset);
+	_txtCraft->setX(_txtRank->getX() + 98 - offset - RANK_SHIFT);
 
 	BaseSumDailyRecovery recovery = _base->getSumRecoveryPerDay();
 	unsigned int row = 0;
@@ -407,9 +409,10 @@ void SoldiersState::initList(size_t scrl)
 		{
 			_lstSoldiers->setRowColor(row, _txtCraft->getColor());
 		}
-		if (badges)
+		if (icon)
 		{
-			_lstSoldiers->setRowIcon(row, badges->getFrame(soldier->getRankSprite()));
+			_lstSoldiers->setRowIcon(row, SoldierFlag(soldier));
+			_lstSoldiers->setRowIcon(row, badges->getFrame(soldier->getRankSprite()), 1);
 		}
 
 		row++;
