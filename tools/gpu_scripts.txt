@@ -33,6 +33,10 @@ train.py
 check_triton.py
 pedia_ab.py
 pedia_batch.py
+pedia_nudecheck.py
 run_series.sh
+probe_mmaudio.py
+probe_stable_audio.py
+probe_sa3.py
 run_series2.sh
 run_series3.sh

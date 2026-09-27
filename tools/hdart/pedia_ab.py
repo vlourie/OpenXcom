@@ -161,6 +161,11 @@ def main():
         src = pu.Source(path)
         mask, fill, box, parts = pu.layout(src, job.get("panel", "auto"))
         hd, k, kind = pu.hd_input(src, path, args.hd, 0)
+        if spec.get("input"):
+            # второй проход поверх готового ответа: вход - прошлый результат того же размера, что hd
+            prev = np.array(Image.open(spec["input"]).convert("RGB").resize(
+                (hd.shape[1], hd.shape[0]), Image.LANCZOS))
+            hd, kind = prev, "prev"
         if box is None:
             print("%s: рисовать нечего (%s)" % (name, parts))
             continue

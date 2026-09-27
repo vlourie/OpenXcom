@@ -256,7 +256,8 @@ def spec_for(variant, it, c):
             p += NOBODY
             neg += NEG_NOBODY
     elif variant == "style":
-        p, neg, strength = STYLE + desc, NEG_STYLE, 1.0
+        # 1.0 уводил цвет кораблей (style_01: AIRVAN, CA_9, X60_Ped); 0.9 - выбор Vitali 26.09
+        p, neg, strength = STYLE + desc, NEG_STYLE, 0.9
         if who:
             p += PEOPLE + AS_DRAWN
         else:
@@ -265,9 +266,8 @@ def spec_for(variant, it, c):
     else:                                   # 18: только там, где она отличается от обычной
         if not who or not c["women"]:
             return None
-        if nude:                            # раздетая на оригинале: как нарисовано (обычная - в белье)
-            p = (FREE if ship else PHOTO) + desc + PEOPLE + AS_DRAWN
-            neg = NEG_PHOTO + ", bra, shirt"
+        if nude:                            # раздетая на оригинале: в 18+ остаётся прежняя картинка
+            return None                     # (прежние файлы педии перенесены в hd_18+, Vitali 26.09)
         else:                               # одетая: не раздевать, подчеркнуть
             what = "unbuttoned further, a deeper neckline, the clothes fitting tighter"
             if c["clothes"]:
@@ -351,6 +351,80 @@ def run(a):
     return rc
 
 
+# переделка по списку art/pedia_regen/redo_hd.tsv (имя, серия, причина). Строки «- проверить» не берём:
+# их сначала смотрят глазами. Грудь/пах не закрыты - полный чёрный верх силой 1.0; уехали фон, волосы,
+# поза - сила ниже и прямое требование держать цвета
+COVER = ("Every woman whose breasts or groin are bare in the drawing now wears a plain black top that fully "
+         "covers the whole chest and black briefs; no bare breast or nipple shows anywhere in the picture, "
+         "including small figures in the background. ")
+KEEP = ("Hair colour and hairstyle, skin tone, the pose and the background with all its colours stay exactly "
+        "as in the drawing. ")
+NUDE_WORDS = ("грудь", "пах", "голы", "голая", "соски")
+
+
+def redo(a):
+    p = load(os.path.join(ROOT, "plan.json"), None) or plan(a.size)
+    info = p["info"]
+    by_file = {info[k]["file"].lower(): k for k in info}
+    caps = load(os.path.join(ROOT, "captions.json"), {})
+    out_dir = os.path.join(ROOT, "%s_redo" % a.variant)
+    os.makedirs(out_dir, exist_ok=True)
+    jobs, keys, seen = [], [], set()
+    with io.open(os.path.join(ROOT, "redo_%s%s.tsv" % (a.variant, a.list)), encoding=ENC) as f:
+        for line in f:
+            parts = line.rstrip("\r\n").split("\t")
+            if len(parts) < 3 or parts[2].endswith("проверить"):
+                continue
+            k = by_file.get(parts[0].lower())
+            if k is None or k in seen or k not in caps:
+                print("  мимо: %s" % parts[0], flush=True)
+                continue
+            seen.add(k)
+            c = dict(caps[k])
+            stem = os.path.splitext(info[k]["file"])[0]
+            if a.only and stem.lower() not in a.only:
+                continue
+            # голая на оригинале - закрывать при любой причине: на 0.75 бельё не появляется (hd_redo v2)
+            nude = any(w in parts[2] for w in NUDE_WORDS) or c["topless"] or c["bottomless"]
+            if nude:
+                c["topless"] = True
+            s = spec_for(a.variant, info[k], c)
+            if s is None:
+                continue
+            if stem.lower() in a.chain:
+                # второй проход поверх своего же ответа: модель только одевает уже нарисованное
+                s["prompt"] = s["prompt"].replace(UNDERWEAR, COVER) + KEEP
+                s["strength"] = 0.85
+                s["input"] = os.path.join(out_dir, "%s__%s__%s.png" % (stem, a.variant, a.chain_from))
+            elif nude and not any(w in parts[2] for w in NUDE_WORDS):
+                # голая, а жалоба на фон или волосы: сила серии и другое зерно, цвета держать словами
+                s["prompt"] = s["prompt"].replace(UNDERWEAR, COVER) + KEEP
+                s["strength"] = 0.92
+                s["neg"] += ", changed hair colour, different hairstyle, changed background"
+            elif nude:
+                s["prompt"] = s["prompt"].replace(UNDERWEAR, COVER)
+                s["strength"] = 1.0
+            else:
+                s["prompt"] += KEEP
+                s["strength"] = 0.75
+                s["neg"] += ", changed hair colour, different hairstyle, changed background"
+            jobs.append({"file": info[k]["file"], "variants": {a.variant: s}})
+            keys.append(k)
+    jpath = os.path.join(out_dir, "jobs.json")
+    save(jpath, jobs)
+    print("переделка %s: заданий %d" % (a.variant, len(jobs)), flush=True)
+    if a.no_gen or not jobs:
+        return 0
+    cmd = [PY_NEW, os.path.join(HERE, "pedia_ab.py"), "--model", "new", "--jobs", jpath,
+           "--out", out_dir, "--tag", a.tag]
+    if a.seed:
+        cmd += ["--seed", str(a.seed)]
+    print(" ".join(cmd), flush=True)
+    rc = subprocess.call(cmd)
+    sheet(out_dir, keys, info, a.tag, a.variant)
+    return rc
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -362,7 +436,21 @@ def main():
     r.add_argument("--size", type=int, default=100)
     r.add_argument("--tag", default="v1")
     r.add_argument("--no-gen", dest="no_gen", action="store_true", help="только описания и задание")
+    rd = sub.add_parser("redo", help="переделка по списку redo_<серия>.tsv")
+    rd.add_argument("--variant", choices=["hd", "style", "18"], default="hd")
+    rd.add_argument("--size", type=int, default=100)
+    rd.add_argument("--tag", default="v2")
+    rd.add_argument("--no-gen", dest="no_gen", action="store_true", help="только задание")
+    rd.add_argument("--only", default="", help="только эти картинки, через запятую, без расширения")
+    rd.add_argument("--chain", default="", help="эти картинки рисовать поверх своего ответа --chain-from")
+    rd.add_argument("--chain-from", dest="chain_from", default="v2")
+    rd.add_argument("--seed", type=int, default=0, help="0 - зерно от имени, как в серии")
+    rd.add_argument("--list", default="", help="хвост имени списка: _bra -> redo_<серия>_bra.tsv")
     a = ap.parse_args()
+    if a.cmd == "redo":
+        a.only = {n.strip().lower() for n in a.only.split(",") if n.strip()}
+        a.chain = {n.strip().lower() for n in a.chain.split(",") if n.strip()}
+        return redo(a)
     if a.cmd == "plan":
         p = plan(a.size)
         from collections import Counter
