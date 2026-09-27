@@ -10,9 +10,9 @@ gen_base_bubbles.py - бурлящая жижа в постройке базы (
     * пузыри - вздуваются три фазы и лопаются кольцом, которое расходится и гаснет.
 
 Каждый пузырь живёт по кругу фаз, поэтому петля бесшовная. Движок листает фазы раз в
-200 мс (BaseView::blink), 16 фаз - петля в 3.2 с. Клетки пишутся как у gen_base.py:
+200 мс (BaseView::blink), 16 фаз - петля в 3.2 с. Клетки пишутся через base_pack.py:
 
-    <мод hd>/hd/BASEBITS.PCK/<кадр>.png, <кадр>.v1.png ... v15.png
+    <мод hd>/hd/BASEBITS.PCK/<кадр>.png (чистая), <кадр>.v1.png ... v16.png (петля), <кадр>.anim.txt
 
 Номер кадра - как в рулсете мода (без сдвига 1000: движок ищет и так, см. HdBase).
 
@@ -30,6 +30,7 @@ from PIL import Image
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from gen_base import basebits_map, parse_indices, scale2x  # noqa: E402
+import base_pack  # noqa: E402
 
 
 def load_tiles(sprites, indices, cols, rows):
@@ -188,16 +189,10 @@ def main():
     frames = [render(rgb, liquid, p, phases, bubbles, ripple, args.amp) for p in range(phases)]
 
     for out_dir in args.out:
-        dest = os.path.join(out_dir, "hd", "BASEBITS.PCK")
-        os.makedirs(dest, exist_ok=True)
-        for p, f in enumerate(frames):
-            data = np.concatenate([np.clip(f * 255.0 + 0.5, 0, 255), alpha[..., None] * 255.0], axis=2).astype(np.uint8)
-            for n, index in enumerate(indices):
-                y, x = divmod(n, cols)
-                tile = data[y * th * scale:(y + 1) * th * scale, x * tw * scale:(x + 1) * tw * scale]
-                name = "%d.png" % index if p == 0 else "%d.v%d.png" % (index, p)
-                Image.fromarray(tile, "RGBA").save(os.path.join(dest, name))
-        print("%d клеток x %d фаз -> %s" % (len(indices), phases, dest))
+        # жижа бурлит всё время: чистая картинка и постоянная петля, без вспышек (base_pack.py)
+        base_pack.write(out_dir, indices, cols, tw * scale, th * scale, alpha, np.clip(rgb, 0, 1), frames,
+                        None, 0, "gen_base_bubbles.py")
+        print("%d клеток x %d фаз -> %s" % (len(indices), phases, out_dir))
 
     if args.preview:
         os.makedirs(os.path.dirname(os.path.abspath(args.preview)), exist_ok=True)
