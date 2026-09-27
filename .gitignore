@@ -89,6 +89,8 @@ bin/user
 
 # HD art pipeline: local python environment and extracted sheets
 tools/hdart/.venv/
+# sound effects pipeline: own environments (MMAudio pins numpy < 2.1, stable-audio-3 pins torch 2.7.1)
+tools/sfx/.venv*/
 hdart_sheets/
 __pycache__/
 
