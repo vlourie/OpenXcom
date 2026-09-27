@@ -434,6 +434,8 @@ public:
 	void setDisplayShieldCapacity(int capacity);
 	/// Gets the shield max capacity to display in the inventory screen.
 	int getDisplayShieldCapacity() const;
+	/// Gets the script tag values (read-only).
+	const ScriptValues<BattleUnit> &getScriptValuesRaw() const { return _scriptValues; }
 
 	/// Get the list of items in the inventory.
 	std::vector<BattleItem*> *getInventory();

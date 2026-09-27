@@ -180,6 +180,15 @@ InventoryState::InventoryState(bool tu, BattlescapeState *parent, Base *base, bo
 	if (Options::showMoreStatsInInventoryView)
 	{
 		_txtTus->setY(_txtTus->getY() + 8);
+		if (_tu)
+		{
+			// in battle TU takes the first stat row, the stat rows move one down;
+			// the last one (shield) comes out below the unload button, its long text is not covered
+			_txtStatLine1->setY(_txtStatLine1->getY() + 8);
+			_txtStatLine2->setY(_txtStatLine2->getY() + 8);
+			_txtStatLine3->setY(_txtStatLine3->getY() + 8);
+			_txtStatLine4->setY(_txtStatLine4->getY() + 8);
+		}
 	}
 
 	centerAllSurfaces();
@@ -344,10 +353,10 @@ InventoryState::InventoryState(bool tu, BattlescapeState *parent, Base *base, bo
 
 	_txtTus->setVisible(_tu);
 	_txtWeight->setVisible(Options::showMoreStatsInInventoryView);
-	_txtStatLine1->setVisible(Options::showMoreStatsInInventoryView && !_tu);
-	_txtStatLine2->setVisible(Options::showMoreStatsInInventoryView && !_tu);
-	_txtStatLine3->setVisible(Options::showMoreStatsInInventoryView && !_tu);
-	_txtStatLine4->setVisible((Options::showMoreStatsInInventoryView && !_tu) || _battleGame->getSelectedUnit()->getDisplayShieldCapacity() > 0);
+	_txtStatLine1->setVisible(Options::showMoreStatsInInventoryView);
+	_txtStatLine2->setVisible(Options::showMoreStatsInInventoryView);
+	_txtStatLine3->setVisible(Options::showMoreStatsInInventoryView);
+	_txtStatLine4->setVisible(Options::showMoreStatsInInventoryView || _tu);
 }
 
 static void _clearInventoryTemplate(std::vector<EquipmentLayoutItem*> &inventoryTemplate)
@@ -648,11 +657,36 @@ void InventoryState::edtSoldierChange(Action *)
 }
 
 /**
+ * Gets the armour energy shield of the unit: charge and capacity.
+ * A mod script may push them with setDisplayShieldHp/Capacity; without that they are read
+ * straight from the tags Yankes' scripts keep (unit UNIT_ENERGY_SHIELD_HP, armour ARMOR_ENERGY_SHIELD_CAPACITY).
+ */
+static void getUnitShield(const Mod *mod, const BattleUnit *unit, int &hp, int &capacity)
+{
+	hp = unit->getDisplayShieldHp();
+	capacity = unit->getDisplayShieldCapacity();
+	if (capacity > 0)
+	{
+		return;
+	}
+	auto hpTag = mod->getScriptGlobal()->getTag<ScriptTag<BattleUnit>>("Tag.UNIT_ENERGY_SHIELD_HP");
+	auto capacityTag = mod->getScriptGlobal()->getTag<ScriptTag<Armor>>("Tag.ARMOR_ENERGY_SHIELD_CAPACITY");
+	if (hpTag && capacityTag)
+	{
+		hp = unit->getScriptValuesRaw().get(hpTag);
+		capacity = unit->getArmor()->getScriptValuesRaw().get(capacityTag);
+	}
+}
+
+/**
  * Updates the soldier stats (Weight, TU).
  */
 void InventoryState::updateStats()
 {
 	BattleUnit *unit = _battleGame->getSelectedUnit();
+
+	int shieldHp, shieldCapacity;
+	getUnitShield(_game->getMod(), unit, shieldHp, shieldCapacity);
 
 	_txtTus->setText(tr("STR_TIME_UNITS_SHORT").arg(unit->getTimeUnits()));
 
@@ -709,9 +743,9 @@ void InventoryState::updateStats()
 					txtField->setText(tr("STR_MELEE_SHORT").arg(unit->getBaseStats()->melee));
 					break;
 				case 14:
-					if (unit->getDisplayShieldCapacity() > 0)
+					if (shieldCapacity > 0)
 					{
-						txtField->setText(tr("STR_SHIELD_SHORT").arg(unit->getDisplayShieldHp()).arg(unit->getDisplayShieldCapacity()));
+						txtField->setText(tr("STR_SHIELD_SHORT").arg(shieldHp).arg(shieldCapacity));
 					}
 					else if (showPsiStrength)
 					{
@@ -725,9 +759,9 @@ void InventoryState::updateStats()
 					}
 					break;
 						case 20:
-							if (unit->getDisplayShieldCapacity() > 0)
+							if (shieldCapacity > 0)
 							{
-								txtField->setText(tr("STR_SHIELD_SHORT").arg(unit->getDisplayShieldHp()).arg(unit->getDisplayShieldCapacity()));
+								txtField->setText(tr("STR_SHIELD_SHORT").arg(shieldHp).arg(shieldCapacity));
 							}
 							else
 							{
@@ -2288,6 +2322,12 @@ void InventoryState::handle(Action *action)
  */
 void InventoryState::think()
 {
+	if (_tu && Options::showMoreStatsInInventoryView)
+	{
+		// in battle the last stat row sits where the ammo counter of a weapon appears
+		_txtStatLine4->setVisible(_txtAmmo->getText().empty());
+	}
+
 	if (_mouseHoverItem)
 	{
 		int anim = _inv->getAnimFrame();
