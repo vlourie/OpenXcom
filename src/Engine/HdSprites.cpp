@@ -1053,7 +1053,7 @@ int loadPack(const std::string &setName, SurfaceSet *surfaceSet, int scale)
  * @param scale k.
  * @return How many frames were made.
  */
-int makeDots(const std::string &setName, const SurfaceSet *classic, SurfaceSet *scaled, int scale)
+int makeDots(const std::string &setName, const SurfaceSet *classic, SurfaceSet *scaled, int scale, const std::vector<const DotStyle*> *styles)
 {
 	if (!classic || !scaled || scale < 2)
 	{
@@ -1067,9 +1067,63 @@ int makeDots(const std::string &setName, const SurfaceSet *classic, SurfaceSet *
 	}
 	const int w = bw * scale, h = bh * scale;
 	const double half = std::min(bw, bh) / 2.0;
-	int made = 0, kept = 0, blank = 0, noPalette = 0;
+	int made = 0, kept = 0, blank = 0, noPalette = 0, styled = 0, leftClassic = 0;
+	// a styled tracer, read as a whole: its brightest pixel and its most vivid colour at full brightness
+	struct Row { int maxLum = 1; double vivid[3] = { 255, 255, 255 }; };
+	std::unordered_map<const DotStyle*, Row> rows;
+	auto rowOf = [&](const DotStyle *st) -> const Row&
+	{
+		auto found = rows.find(st);
+		if (found != rows.end())
+		{
+			return found->second;
+		}
+		Row &row = rows[st];
+		int maxV = 0;
+		for (int pass = 0; pass < 2; ++pass)
+		{
+			double best = -1.0;
+			for (int f = st->first; f < st->first + 35; ++f)
+			{
+				const Surface *s = classic->getFrame(f);
+				const SDL_Color *p = s ? s->getPalette() : nullptr;
+				if (!p) continue;
+				for (int y = 0; y < bh; ++y)
+				{
+					for (int x = 0; x < bw; ++x)
+					{
+						const Uint8 index = s->getPixel(x, y);
+						if (!index) continue;
+						const SDL_Color &c = p[index];
+						const int v = std::max({ c.r, c.g, c.b });
+						if (pass == 0)
+						{
+							maxV = std::max(maxV, v);
+							row.maxLum = std::max(row.maxLum, c.r * 2 + c.g * 5 + c.b);
+						}
+						else if (v * 10 >= maxV * 6 && v > 0)
+						{
+							const double score = (v - std::min({ c.r, c.g, c.b })) / (double)v * v;
+							if (score > best)
+							{
+								best = score;
+								row.vivid[0] = c.r * 255.0 / v; row.vivid[1] = c.g * 255.0 / v; row.vivid[2] = c.b * 255.0 / v;
+							}
+						}
+					}
+				}
+			}
+		}
+		return row;
+	};
 	for (size_t i = 0; i < scaled->getTotalFrames(); ++i)
 	{
+		const DotStyle *style = styles && i < styles->size() ? (*styles)[i] : nullptr;
+		if (style && style->classic)
+		{
+			++leftClassic;
+			continue;
+		}
 		const Surface *src = classic->getFrame((int)i);
 		Surface *dst = scaled->getFrame((int)i);
 		if (!src || !dst || dst->getWidth() != w || dst->getHeight() != h)
@@ -1088,7 +1142,7 @@ int makeDots(const std::string &setName, const SurfaceSet *classic, SurfaceSet *
 			++noPalette;
 			continue;
 		}
-		int lit = 0, litEven = 0, peak = 0, peakLum = -1, sumR = 0, sumG = 0, sumB = 0;
+		int lit = 0, litEven = 0, peak = 0, peakLum = -1, sumR = 0, sumG = 0, sumB = 0, sumLum = 0;
 		for (int y = 0; y < bh; ++y)
 		{
 			for (int x = 0; x < bw; ++x)
@@ -1103,6 +1157,7 @@ int makeDots(const std::string &setName, const SurfaceSet *classic, SurfaceSet *
 				litEven += ((x + y) & 1) ? 0 : 1;
 				sumR += c.r; sumG += c.g; sumB += c.b;
 				const int lum = c.r * 2 + c.g * 5 + c.b;
+				sumLum += lum;
 				if (lum > peakLum)
 				{
 					peakLum = lum;
@@ -1121,14 +1176,53 @@ int makeDots(const std::string &setName, const SurfaceSet *classic, SurfaceSet *
 		// whole frame at half alpha, not a solid dot of half the pixels
 		const bool dithered = lit * 2 >= bw * bh && (litEven == 0 || litEven == lit);
 		const double cover = dithered ? 1.0 : fill;
-		const double fade = dithered ? 0.5 : 1.0;
-		const double radius = (0.37 + 0.63 * std::sqrt(cover)) * half;
-		const double body[3] = { sumR / (double)lit, sumG / (double)lit, sumB / (double)lit };
+		double fade = dithered ? 0.5 : 1.0;
+		double radius = (0.37 + 0.63 * std::sqrt(cover)) * half;
+		double body[3] = { sumR / (double)lit, sumG / (double)lit, sumB / (double)lit };
 		const double white = 0.35 * fill;
-		const double core[3] = {
+		double core[3] = {
 			pal[peak].r + (255.0 - pal[peak].r) * white,
 			pal[peak].g + (255.0 - pal[peak].g) * white,
 			pal[peak].b + (255.0 - pal[peak].b) * white };
+		if (style)
+		{
+			// the projectile is a frame lit over half and bright for its tracer; the rest is its trail
+			const Row &row = rowOf(style);
+			const double rel = sumLum / (double)lit / row.maxLum;
+			const bool projectile = !dithered && lit * 2 >= bw * bh && rel >= 0.55;
+			radius *= style->width;
+			const double *to = nullptr;
+			double tint[3] = { (double)style->headR, (double)style->headG, (double)style->headB };
+			if (projectile && style->headR >= 0)
+			{
+				to = tint;
+			}
+			else if (projectile && style->bright)
+			{
+				to = row.vivid;
+			}
+			if (to)
+			{
+				for (int c = 0; c < 3; ++c)
+				{
+					body[c] = to[c];
+					core[c] = to[c] + (255.0 - to[c]) * 0.55;
+				}
+			}
+			else if (!projectile && style->fade < 1.0)
+			{
+				// a dark trail drawn opaque reads as the smoke of a rocket: it glows faintly instead
+				for (int c = 0; c < 3; ++c)
+				{
+					body[c] = row.vivid[c];
+					core[c] = row.vivid[c] + (255.0 - row.vivid[c]) * 0.3;
+				}
+				fade *= style->fade * std::min(1.0, rel);
+			}
+			++styled;
+		}
+		// a dot thinner than the step between stamps: a denser rim, or the beam breaks into beads
+		const double rim = 1.6 * (style ? std::min(1.0, style->width) : 1.0);
 		HdFrame frame;
 		frame.width = w;
 		frame.height = h;
@@ -1147,7 +1241,7 @@ int makeDots(const std::string &setName, const SurfaceSet *classic, SurfaceSet *
 					continue;
 				}
 				const double hot = std::max(0.0, 1.0 - (t / 0.55) * (t / 0.55));
-				const Uint32 a = (Uint32)(std::pow(fall, 1.6) * 255.0 * fade + 0.5);
+				const Uint32 a = (Uint32)(std::pow(fall, rim) * 255.0 * fade + 0.5);
 				const Uint32 r = (Uint32)(body[0] + (core[0] - body[0]) * hot + 0.5);
 				const Uint32 g = (Uint32)(body[1] + (core[1] - body[1]) * hot + 0.5);
 				const Uint32 b = (Uint32)(body[2] + (core[2] - body[2]) * hot + 0.5);
@@ -1161,7 +1255,8 @@ int makeDots(const std::string &setName, const SurfaceSet *classic, SurfaceSet *
 	// "0 made" is the answer to "why does the tracer still look the way it did"
 	Log(LOG_INFO) << "HD render: round dots for " << setName << " (" << bw << "x" << bh
 		<< " frames, k=" << scale << "): " << made << " made, " << kept << " left to a pack, "
-		<< blank << " empty, " << noPalette << " without a palette";
+		<< blank << " empty, " << noPalette << " without a palette; " << styled << " styled, "
+		<< leftClassic << " left classic by hd/FX/weapons.txt";
 	return made;
 }
 

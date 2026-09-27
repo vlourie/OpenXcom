@@ -1020,7 +1020,31 @@ SurfaceSet *Mod::getHdSurfaceSet(const std::string &name, bool error)
 		// a set of 3x3 sprites is a set of dots, not of pictures: the bullet tracer is 35 stamps of
 		// one along the shot, and nearest scaling turns it into a staircase of squares. What no pack
 		// covers the engine draws as a round dot in the frame's own colours
-		HdSprites::makeDots(name, getSurfaceSet(name, false), scaled, getHdScale());
+		// hd/FX/weapons.txt may change how a weapon's tracer is drawn (a plasma bolt reads as a dark rocket in its own colours)
+		std::vector<DotStyle> tracerStyles;
+		if (name == "Projectiles" || name == "UnderwaterProjectiles")
+		{
+			for (const std::string &type : _itemsIndex)
+			{
+				const RuleItem *item = getItem(type);
+				DotStyle style;
+				if (item && item->getBulletSprite() >= 0 && item->isWaterOnly() == (name == "UnderwaterProjectiles") && HdFx::tracerStyle(item, style))
+				{
+					style.first = item->getBulletSprite();
+					tracerStyles.push_back(style);
+				}
+			}
+		}
+		std::vector<const DotStyle*> byFrame;
+		for (const DotStyle &style : tracerStyles)
+		{
+			for (int f = style.first; f < style.first + 35; ++f)
+			{
+				if ((size_t)f >= byFrame.size()) byFrame.resize(f + 1, nullptr);
+				if (!byFrame[f]) byFrame[f] = &style;      // two weapons on one tracer: the first one's style
+			}
+		}
+		HdSprites::makeDots(name, getSurfaceSet(name, false), scaled, getHdScale(), byFrame.empty() ? nullptr : &byFrame);
 		if (name == "CURSOR.PCK")
 		{
 			applyHdReticle();

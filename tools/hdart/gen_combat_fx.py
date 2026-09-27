@@ -492,18 +492,22 @@ def puffs(clip, n, rgb, r, rise, spread, life=(0.4, 0.8), delay=0.05, h=None):
 
 UNIT_H = 11.0   # высота попадания по юниту над полом (пиксели 1x)
 
-def target_fx(clip, target, power=1.0):
-    """Что брызжет из цели. power: 0.5 - игла, 1 - пуля, 2 - снаряд."""
+def target_fx(clip, target, power=1.0, blood=1.0, late=0.0):
+    """Что брызжет из цели. power: 0.5 - игла, 1 - пуля, 2 - снаряд.
+    blood - размер капель (1 - пистолет, дальше лестница калибров до гаусса), late - кровь позже удара, с."""
     p = power
     if target == "flesh":
+        first = len(clip.parts)
         # тёмный пол боя съедает тёмно-красное: кровь светлее, чем в жизни, и с бликом
-        spray(clip, int(22 * p), "drop", (205, 24, 24), 48 * p ** 0.5, up=0.5, size=(0.6, 1.2), life=(0.4, 0.75), g=90)
-        spray(clip, int(8 * p), "drop", (150, 10, 14), 34 * p ** 0.5, up=0.4, size=(0.9, 1.6), life=(0.5, 0.85), g=90)
+        spray(clip, int(22 * p), "drop", (205, 24, 24), 48 * p ** 0.5, up=0.5, size=(0.6 * blood, 1.2 * blood), life=(0.4, 0.75), g=90)
+        spray(clip, int(8 * p), "drop", (150, 10, 14), 34 * p ** 0.5, up=0.4, size=(0.9 * blood, 1.6 * blood), life=(0.5, 0.85), g=90)
         # первый кадр - облачко брызг, видно сразу, а не когда капли разлетятся
-        clip.add(kind="mist", rgb=(225, 40, 35), size=3.4 * p ** 0.5, life=0.22, g=0, drag=0, seed=1.5)
+        clip.add(kind="mist", rgb=(225, 40, 35), size=3.4 * (p * blood) ** 0.5, life=0.22, g=0, drag=0, seed=1.5)
         for _ in range(int(3 * p) + 1):
             clip.add(vx=clip.rng.normal(0, 8), vy=clip.rng.normal(0, 8), vz=6, kind="mist", rgb=(190, 25, 25),
-                     size=3.0 * p ** 0.5, life=0.55, g=0, drag=4, seed=clip.rng.uniform(0, 50))
+                     size=3.0 * (p * blood) ** 0.5, life=0.55, g=0, drag=4, seed=clip.rng.uniform(0, 50))
+        for q in clip.parts[first:]:
+            q.age -= late
         flash(clip, (255, 120, 90), 1.6 * p ** 0.5, 0.06)
     elif target == "mech":
         spray(clip, int(16 * p), "spark", "fire", 70 * p ** 0.5, up=0.6, size=(0.5, 0.9), life=(0.2, 0.45), g=70, drag=1.5)
@@ -569,20 +573,17 @@ ECOLORS = ["red", "orange", "yellow", "green", "blue", "purple", "white"]
 L_HIT = 10
 DUR_HIT = 0.55
 
-def kinetic(name, where, power, extra=None):
-    """Пуля, снаряд, стрела, тупое: разное только силой и добавкой."""
+def kinetic(name, where, power, extra=None, blood=1.0, late=0.0):
+    """Пуля, снаряд, стрела, тупое: разное только силой, размером крови и добавкой."""
     onunit = where in TARGETS
     c = Clip(name, L_HIT, DUR_HIT, 64, h0=UNIT_H if onunit else 0.0)
     if onunit:
-        target_fx(c, where, power)
+        target_fx(c, where, power, blood, late)
     else:
         material_fx(c, where, power)
     if extra:
         extra(c, onunit)
     return c
-
-def ex_bullet(c, onunit):
-    flash(c, (255, 210, 140), 1.6, 0.06)
 
 def ex_shell(c, onunit):
     flash(c, (255, 190, 90), 4.5, 0.14)
@@ -591,6 +592,23 @@ def ex_shell(c, onunit):
 
 # ступени калибра пули: сила разлёта и добавка (вспышка, искры, дым)
 CAL = {1: 0.55, 2: 0.8, 3: 1.1, 4: 1.5, 5: 2.1}
+# размер капель крови: у пистолета мелкие точки, дальше растут с калибром; самые крупные - гаусс
+BLOOD = {"cal1": 1.0, "pellet": 1.15, "cal2": 1.25, "cal3": 1.35, "cal4": 1.6, "cal5": 1.8, "gauss": 2.1}
+
+def ex_pellet(c, onunit):
+    """Дробина: звёздочка пистолета и горсть жёлтых искр; кровь - следом (late в build_all)."""
+    flash(c, (255, 210, 140), 1.7, 0.065)
+    spray(c, 8, "spark", "fire", 60, up=0.5, size=(0.3, 0.55), life=(0.12, 0.3), g=40)
+
+GAUSS = (110, 180, 255)
+
+def ex_gauss(c, onunit):
+    """Гаусс: яркая голубая вспышка с белым ядром, лучи, кольцо и голубые искры."""
+    flash(c, GAUSS, 7.0, 0.22)
+    star(c, (175, 220, 255), 6.0, 0.18)
+    if not onunit:      # на юните кольцо в воздухе читается пузырём вокруг цели
+        ring(c, GAUSS, 1, 10, 0.3, 1.0, h=c.h0)
+    spray(c, 14, "spark", GAUSS, 75, up=0.5, size=(0.4, 0.8), life=(0.15, 0.35), g=30)
 
 def ex_cal(step):
     def f(c, onunit):
@@ -733,6 +751,10 @@ def swing(kind, d, col=None):
         cx, cy = cv.proj(0, 0, UNIT_H)
         k = min(1.0, t / DUR_MELEE)
         fade = 1 - max(0, (k - 0.55) / 0.45)
+        if style == "whip":
+            fade = 1 - min(1.0, max(0, (k - 0.4) / 0.45))      # плеть щёлкает быстрее и раньше гаснет
+        elif kind == "pierce":
+            fade = 1.0                                           # копьё: последний кадр держится до конца
         R = 16 * s
         if style in ("arc", "claws"):
             # центр дуги - со стороны атакующего, середина дуги ложится на точку удара
@@ -750,7 +772,7 @@ def swing(kind, d, col=None):
             half = math.radians(arcdeg) / 2
             base = math.atan2(oy, ox)
             # дуга проходит через точку удара поперёк направления
-            sweep = [base + math.pi / 2 - half + 2 * half * min(1, k * 1.8) * i / 23 for i in range(24)]
+            sweep = [base + math.pi / 2 - half + 2 * half * min(1, k * 3.0) * i / 23 for i in range(24)]
             offs = [0] if style != "claws" else [-2.2, 0, 2.2]
             for off in offs:
                 pts = []
@@ -766,9 +788,9 @@ def swing(kind, d, col=None):
                     w = width * s * (0.3 + 0.7 * tt)
                     cv.line(pts[i][0], pts[i][1], pts[i + 1][0], pts[i + 1][1], w * 2.2, rgb, a * 0.25, "glow")
                     cv.line(pts[i][0], pts[i][1], pts[i + 1][0], pts[i + 1][1], w, rgb, a * 0.9, "glow" if glowy else "over")
-            if style == "whip" and k > 0.4:
+            if style == "whip" and k > 0.2:
                 ex, ey = pts[-1]
-                cv.disc(ex, ey, 2.5 * s * (1 - k), (255, 255, 240), fade, 1.0, "glow")
+                cv.disc(ex, ey, 2.5 * s * (1 - k * 0.6), (255, 255, 240), fade, 1.0, "glow")
         elif style == "wolverine":
             # как в оригинале: три прямых штриха-линзы, но двумя лапами -
             # первая тройка косо, вторая крест-накрест поверх неё
@@ -814,7 +836,11 @@ def swing(kind, d, col=None):
                 cv.line(x0, y0, x1, y1, width * s * 0.3, rgb, fade * 0.6, "over", taper=False)
         elif style == "thrust":
             L = R * 1.2
-            head = min(1.0, k * 2.5)
+            if kind == "pierce":
+                # копьё медленнее: наконечник идёт три четверти клипа, дальше стоит
+                head = min(1.0, k / 0.75)
+            else:
+                head = min(1.0, k * 2.5)
             x0, y0 = cx + ox * L, cy + oy * L
             x1, y1 = cx + ox * L * (1 - head), cy + oy * L * (1 - head)
             cv.line(x0, y0, x1, y1, width * s * 3, rgb, fade * 0.25, "glow")
@@ -968,13 +994,14 @@ def boom(fam, col=None):
 def build_all():
     clips = []
     # удар ближнего боя движок рисует клипом взмаха (swing_*), попадания hit_<семья> у него нет
-    kin = {"arrow": (0.7, ex_arrow), "blunt": (1.0, ex_blunt), "pellet": (0.5, ex_bullet)}
+    kin = {"arrow": (0.7, ex_arrow), "blunt": (1.0, ex_blunt), "pellet": (0.55, ex_pellet), "gauss": (1.8, ex_gauss)}
     # пули по ступеням калибра: какую ступень берёт оружие - tools/hdart/weapon_classes.py
     for step, pw in CAL.items():
         kin[f"cal{step}"] = (pw, ex_cal(step))
     for fam, (pw, ex) in kin.items():
+        blood, late = BLOOD.get(fam, 1.0), 0.07 if fam == "pellet" else 0.0
         for w in TARGETS + MATS:
-            clips.append(lambda fam=fam, w=w, pw=pw, ex=ex: kinetic(f"hit_{fam}_{w}", w, pw, ex))
+            clips.append(lambda fam=fam, w=w, pw=pw, ex=ex, blood=blood, late=late: kinetic(f"hit_{fam}_{w}", w, pw, ex, blood, late))
     for fam in ("laser", "plasma", "electric", "warp", "psi"):
         for col in ECOLORS:
             for w in ("unit", "ground"):
@@ -1024,6 +1051,10 @@ def main():
         frames = c.render()
         d = os.path.join(args.out, "FX", c.name)
         os.makedirs(d, exist_ok=True)
+        # клип стал короче - лишние кадры прошлого прогона иначе посчитаются в clips.yml
+        for old in os.listdir(d):
+            if old.endswith(".png") and old[:-4].isdigit() and int(old[:-4]) >= len(frames):
+                os.remove(os.path.join(d, old))
         for i, im in enumerate(frames):
             im.save(os.path.join(d, f"{i}.png"), optimize=True)
         index.append((c.name, c.L, c.size))

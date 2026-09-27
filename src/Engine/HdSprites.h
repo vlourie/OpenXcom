@@ -72,6 +72,26 @@ struct HdFrame
  * mod with thousands of HD unit frames costs the memory of the units on the
  * map, not of the mod.
  */
+/**
+ * How one tracer (the 35 frames from `first`) is drawn as dots, when the frames' own colours
+ * read wrong at HD size (hd/FX/weapons.txt, "tracer <item> <options>").
+ */
+struct DotStyle
+{
+	/// The first frame of the tracer in its set.
+	int first = 0;
+	/// No dot: the frame stays the classic sprite, scaled, one stamp a voxel (the flying CD discs).
+	bool classic = false;
+	/// Radius factor of every dot (a laser is a thin beam).
+	double width = 1.0;
+	/// The projectile - the frames lit over half - in the tracer's most vivid colour at full brightness.
+	bool bright = false;
+	/// The projectile in this colour instead (headR < 0: its own colour).
+	int headR = -1, headG = 0, headB = 0;
+	/// Alpha of the trail - the thin frames - in the vivid colour, times their brightness (1: as drawn).
+	double fade = 1.0;
+};
+
 namespace HdSprites
 {
 	/// The header of a pack file: magic (8), then little-endian u32 scale, base width, base height, frame
@@ -99,8 +119,9 @@ namespace HdSprites
 	/// Draws every tiny frame of a set (at most 4x4 base pixels) as a round dot with a soft rim,
 	/// in its own colours, where no pack covers it: the bullet tracer is 35 stamps of a 3x3 sprite
 	/// a voxel apart, and scaled by nearest that is a staircase of hard squares. `classic` is the
-	/// set at base resolution, `scaled` the k-times one the game draws. Returns how many it made.
-	int makeDots(const std::string &setName, const SurfaceSet *classic, SurfaceSet *scaled, int scale);
+	/// set at base resolution, `scaled` the k-times one the game draws; `styles`, by frame, change
+	/// how some tracers look (may be null). Returns how many it made.
+	int makeDots(const std::string &setName, const SurfaceSet *classic, SurfaceSet *scaled, int scale, const std::vector<const DotStyle*> *styles = nullptr);
 	/// Forgets the HD frame of a palette frame.
 	void remove(const void *key);
 	/// Forgets the HD frames of every frame of a set (call before the set is destroyed).
