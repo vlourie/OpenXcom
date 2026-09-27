@@ -68,9 +68,7 @@ bin/TFTD
 docs/html/
 /build/
 build-release/
-build-ai/
-build-ai2/
-build-ai3/
+build-ai*/
 apply_ai_tactical_module_replacements.py
 Dependencies/
 translations/

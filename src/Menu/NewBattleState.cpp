@@ -662,6 +662,49 @@ void NewBattleState::probeRandomize(long long seed)
 		{
 			_craft = crews[pick(crews.size())];
 		}
+		// OXCE_AI_SQUAD=<n>: Vitali's way (8 in a battle) - the most seasoned crew, its n most seasoned soldiers,
+		// the rest stay home; the pick above still spends its roll, so the rest of the seed stays
+		const char *squad = getenv("OXCE_AI_SQUAD");
+		const int squadSize = squad ? atoi(squad) : 0;
+		if (squadSize > 0 && !crews.empty())
+		{
+			auto seasoned = [](const Soldier *s) { return s->getMissions() + s->getKills(); };
+			auto crewOf = [&](const Craft *craft)
+			{
+				std::vector<Soldier*> crew;
+				for (auto *s : *craft->getBase()->getSoldiers())
+				{
+					if (s->getCraft() == craft)
+					{
+						crew.push_back(s);
+					}
+				}
+				std::stable_sort(crew.begin(), crew.end(), [&](const Soldier *a, const Soldier *b) { return seasoned(a) > seasoned(b); });
+				return crew;
+			};
+			auto strength = [&](const Craft *craft)
+			{
+				int sum = 0;
+				auto crew = crewOf(craft);
+				for (size_t i = 0; i < crew.size() && (int)i < squadSize; ++i)
+				{
+					sum += seasoned(crew[i]);
+				}
+				return sum;
+			};
+			for (auto *craft : crews)
+			{
+				if (strength(craft) > strength(_craft))
+				{
+					_craft = craft;
+				}
+			}
+			auto crew = crewOf(_craft);
+			for (size_t i = squadSize; i < crew.size(); ++i)
+			{
+				crew[i]->setCraft(nullptr);
+			}
+		}
 		month = _game->getSavedGame()->getMonthsPassed();
 		_cbxDifficulty->setSelected((size_t)_game->getSavedGame()->getDifficulty());
 		auto it = std::find(_crafts.begin(), _crafts.end(), _craft->getRules()->getType());

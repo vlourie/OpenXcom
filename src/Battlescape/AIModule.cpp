@@ -2106,6 +2106,14 @@ void AIModule::tacticalMode()
 				AiProbe::tally(_unit, "snap");
 			}
 		}
+		// the careful bot never ends a turn in the open after its shot: no time units left for cover - cover now, shoot next turn
+		if (AiProbe::careful(_unit) && _attackAction.weapon && _attackAction.type != BA_WALK
+			&& _unit->getTimeUnits() - BattleActionCost(_attackAction.type, _unit, _attackAction.weapon).Time < _escapeTUs)
+		{
+			_AIMode = AI_ESCAPE;
+			AiProbe::tally(_unit, "scoot");
+			return;
+		}
 		AiProbe::tally(_unit, "attack");
 		return;
 	}
