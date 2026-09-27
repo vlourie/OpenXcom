@@ -84,6 +84,11 @@ TextList::~TextList()
 	delete _up;
 	delete _down;
 	delete _scrollbar;
+	for (auto& entry : _iconCache)
+	{
+		delete entry.second.trimmed;
+		delete entry.second.fitted;
+	}
 }
 
 /**
@@ -610,6 +615,11 @@ void TextList::setPalette(const SDL_Color *colors, int firstcolor, int ncolors)
 	_up->setPalette(colors, firstcolor, ncolors);
 	_down->setPalette(colors, firstcolor, ncolors);
 	_scrollbar->setPalette(colors, firstcolor, ncolors);
+	for (auto& entry : _iconCache)
+	{
+		if (entry.second.trimmed) entry.second.trimmed->setPalette(colors, firstcolor, ncolors);
+		if (entry.second.fitted) entry.second.fitted->setPalette(colors, firstcolor, ncolors);
+	}
 }
 
 /**
@@ -1001,6 +1011,7 @@ void TextList::clearList()
 	scrollUp(true, false);
 	_texts.clear();
 	_rows.clear();
+	_rowIcons.clear();
 	_redraw = true;
 }
 
@@ -1138,6 +1149,12 @@ void TextList::draw()
 	Surface::draw();
 	forVisibleRows([&](size_t i, int y, int)
 	{
+		if (const Icon *icon = rowIcon(i))
+		{
+			icon->fitted->setX(icon->x);
+			icon->fitted->setY(y + icon->y);
+			icon->fitted->blit(this->getSurface());
+		}
 		for (auto* text : _texts[i])
 		{
 			text->setY(y);
@@ -1177,6 +1194,14 @@ void TextList::hdMirror()
 	}
 	forVisibleRows([&](size_t i, int y, int)
 	{
+		if (const Icon *icon = rowIcon(i))
+		{
+			// from the whole frame, not from the classic picture: that one is a few pixels big
+			HdUi &ui = HdUi::instance();
+			ui.setClip(getX(), getY(), getWidth(), getHeight());
+			ui.drawSurfaceFit(icon->trimmed, getX() + icon->x, getY() + y + icon->y, icon->fitted->getWidth(), icon->fitted->getHeight());
+			ui.clearClip();
+		}
 		for (auto* text : _texts[i])
 		{
 			text->hdDrawAt(getX() + text->getX(), getY() + y, getX(), getY(), getWidth(), getHeight());
@@ -1534,6 +1559,131 @@ void TextList::setFlooding(bool flooding)
 void TextList::setIgnoreSeparators(bool ignoreSeparators)
 {
 	_ignoreSeparators = ignoreSeparators;
+}
+
+/**
+ * OXCE-HD: sets the column the row pictures are drawn in.
+ * @param x Left edge in list pixels.
+ * @param width Width in pixels; 0 = no pictures.
+ */
+void TextList::setIconColumn(int x, int width)
+{
+	if (width != _iconW || x != _iconX)
+	{
+		// the classic pictures were made for the old column
+		for (auto& entry : _iconCache)
+		{
+			delete entry.second.trimmed;
+			delete entry.second.fitted;
+		}
+		_iconCache.clear();
+	}
+	_iconX = x;
+	_iconW = std::max(0, width);
+	_redraw = true;
+}
+
+/**
+ * OXCE-HD: sets the picture of a row.
+ * @param row Row number (as setRowColor counts them).
+ * @param frame A sprite frame (kept by its owner, not copied); nullptr = none.
+ */
+void TextList::setRowIcon(size_t row, Surface *frame)
+{
+	if (row >= _rowIcons.size())
+	{
+		_rowIcons.resize(row + 1, nullptr);
+	}
+	_rowIcons[row] = frame;
+	_redraw = true;
+}
+
+/**
+ * OXCE-HD: the picture of a row. Made once per frame: the frame's drawn part,
+ * and from it the classic picture as big as fits the column and the line with
+ * the shape kept; every pixel of it takes the commonest colour of the part it
+ * covers, or stays empty where that part is mostly empty (a mean of palette
+ * indices would be a colour from another ramp).
+ */
+const TextList::Icon *TextList::rowIcon(size_t row)
+{
+	if (_iconW <= 0 || row >= _rowIcons.size() || !_rowIcons[row])
+	{
+		return nullptr;
+	}
+	Surface *frame = _rowIcons[row];
+	auto found = _iconCache.find(frame);
+	if (found != _iconCache.end())
+	{
+		return found->second.fitted ? &found->second : nullptr;
+	}
+	Icon &icon = _iconCache[frame];
+	const int w = frame->getWidth(), h = frame->getHeight();
+	int x0 = w, y0 = h, x1 = -1, y1 = -1;
+	for (int y = 0; y < h; ++y)
+	{
+		for (int x = 0; x < w; ++x)
+		{
+			if (frame->getPixel(x, y))
+			{
+				x0 = std::min(x0, x); x1 = std::max(x1, x);
+				y0 = std::min(y0, y); y1 = std::max(y1, y);
+			}
+		}
+	}
+	if (x1 < 0)
+	{
+		return nullptr; // an empty frame: nothing to draw
+	}
+	const int bw = x1 - x0 + 1, bh = y1 - y0 + 1;
+	icon.trimmed = new Surface(bw, bh);
+	icon.trimmed->setPalette(getPalette());
+	for (int y = 0; y < bh; ++y)
+	{
+		for (int x = 0; x < bw; ++x)
+		{
+			icon.trimmed->setPixel(x, y, frame->getPixel(x0 + x, y0 + y));
+		}
+	}
+	const int lineH = _font->getHeight();
+	const double s = std::min(1.0, std::min((double)_iconW / bw, (double)lineH / bh));
+	const int dw = std::max(1, (int)std::lround(bw * s)), dh = std::max(1, (int)std::lround(bh * s));
+	icon.fitted = new Surface(dw, dh);
+	icon.fitted->setPalette(getPalette());
+	for (int y = 0; y < dh; ++y)
+	{
+		const int sy0 = y * bh / dh, sy1 = std::max(sy0 + 1, (y + 1) * bh / dh);
+		for (int x = 0; x < dw; ++x)
+		{
+			const int sx0 = x * bw / dw, sx1 = std::max(sx0 + 1, (x + 1) * bw / dw);
+			int count[256] = {};
+			int drawn = 0;
+			for (int sy = sy0; sy < sy1; ++sy)
+			{
+				for (int sx = sx0; sx < sx1; ++sx)
+				{
+					const Uint8 c = icon.trimmed->getPixel(sx, sy);
+					if (c)
+					{
+						++count[c];
+						++drawn;
+					}
+				}
+			}
+			if (drawn * 2 >= (sx1 - sx0) * (sy1 - sy0))
+			{
+				int best = 1;
+				for (int c = 2; c < 256; ++c)
+				{
+					if (count[c] > count[best]) best = c;
+				}
+				icon.fitted->setPixel(x, y, (Uint8)best);
+			}
+		}
+	}
+	icon.x = _iconX + (_iconW - dw) / 2;
+	icon.y = (lineH - dh) / 2;
+	return &icon;
 }
 
 }

@@ -61,6 +61,18 @@ private:
 	int _arrowsLeftEdge, _arrowsRightEdge;
 	int _noScrollLeftEdge, _noScrollRightEdge;
 	ComboBox *_comboBox;
+	/// OXCE-HD: pictures before the rows (setIconColumn / setRowIcon).
+	struct Icon
+	{
+		Surface *trimmed = nullptr;       ///< the frame without its transparent edge: what the HD mirror scales
+		Surface *fitted = nullptr;        ///< the classic picture, scaled down to the column and the line
+		int x = 0, y = 0;                 ///< where it sits in the column and the line
+	};
+	int _iconX = 0, _iconW = 0;
+	std::vector<Surface*> _rowIcons;      ///< by row: the frame given (not owned)
+	std::map<Surface*, Icon> _iconCache;  ///< by frame (owned)
+	/// The picture of a row, made when first asked for; nullptr when the row has none.
+	const Icon *rowIcon(size_t row);
 
 	/// Updates the arrow buttons.
 	void updateArrows();
@@ -220,6 +232,12 @@ public:
 	void setFlooding(bool flooding);
 	/// Treat separators as spaces (false) or as normal text (true)?
 	void setIgnoreSeparators(bool ignoreSeparators);
+	/// OXCE-HD: the column of row pictures, `width` pixels from `x` (in the list); width 0 = no pictures.
+	/// The columns of text are not moved: leave them room with setMargin.
+	void setIconColumn(int x, int width);
+	/// OXCE-HD: the picture of a row: a sprite frame, its transparent edge trimmed and the rest scaled
+	/// to fit the column and the line (the HD mirror scales it from the full frame); nullptr = none.
+	void setRowIcon(size_t row, Surface *frame);
 };
 
 }

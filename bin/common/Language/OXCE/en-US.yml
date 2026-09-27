@@ -403,6 +403,10 @@ en-US:
   STR_PERSONAL_LAYOUT_INCLUDING_ARMOR_DESC: "If enabled, soldier personal equipment layout is saved including the worn armor."
   STR_MANUALPROMOTIONS: "Manual promotions"
   STR_MANUALPROMOTIONS_DESC: "If enabled, soldiers can be manually promoted (or demoted) by clicking on the rank icon."
+  STR_SOLDIER_GROUP_BY: "Group soldiers"
+  STR_SOLDIER_GROUP_BY_DESC: "Sorting the soldier list puts them into groups first, and by the chosen criterion inside each group. 0 - no groups, 1 - by soldier type, 2 - by rank, 3 - by craft."
+  STR_SOLDIER_TYPE_ICON: "Race badge in soldier lists"
+  STR_SOLDIER_TYPE_ICON_DESC: "The soldier's rank badge before the name. Every race has its own set: the colour tells the race, the picture the rank."
 #==== Battlescape ===============
   STR_WOUNDED_DEFEND_BASE_IF: "Wounded defend (if HP above x%)"
   STR_WOUNDED_DEFEND_BASE_IF_DESC: "Wounded soldiers defend the base too, if their health is above the given percentage threshold."

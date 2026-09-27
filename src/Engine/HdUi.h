@@ -62,6 +62,9 @@ public:
 	/// Draws an 8-bit surface (index 0 transparent) at base position (x, y): nearest or smoothed. The colours
 	/// are the surface's own palette (what an SDL blit of it onto the screen shows), the screen's when it has none.
 	void drawSurface(const Surface *surface, int x, int y, bool smooth);
+	/// Draws an 8-bit surface scaled to the base rectangle (x, y, w, h), smoothed first (mode 2) and averaged
+	/// down: a sprite shown smaller than it is drawn (the rank badge in a list row). Cached by content and size.
+	void drawSurfaceFit(const Surface *surface, int x, int y, int w, int h);
 	/// Draws a rectangle of an 8-bit surface's pixels (given in surface pixels) at base position (x, y), nearest.
 	void drawPixels(const Uint8 *pixels, int pitch, int w, int h, int x, int y, const SDL_Color *colors = nullptr);
 	/// Fills a base rectangle with a palette colour.
@@ -251,6 +254,7 @@ private:
 	std::unordered_set<Uint64> _cropMisses; ///< contents searched for a picture in vain (by pixels and size)
 	size_t _cropMissesArts = 0;       ///< the pack size they were searched in
 	std::unordered_map<GlyphKey, Glyph, GlyphKeyHash> _glyphs;
+	std::unordered_map<Uint64, HdFrame> _fitted; ///< drawSurfaceFit: by content, palette, size and scale
 	struct Cover
 	{
 		int x = 0, y = 0, w = 0, h = 0;

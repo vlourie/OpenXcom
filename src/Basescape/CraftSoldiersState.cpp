@@ -23,6 +23,7 @@
 #include "../Engine/Action.h"
 #include "../Engine/Game.h"
 #include "../Mod/Mod.h"
+#include "../Engine/SurfaceSet.h"
 #include "../Engine/LocalizedText.h"
 #include "../Engine/Options.h"
 #include "../Interface/ComboBox.h"
@@ -273,13 +274,18 @@ void CraftSoldiersState::initList(size_t scrl)
 	int row = 0;
 	_lstSoldiers->clearList();
 
+	// OXCE-HD: the race badge before the name (Options::oxceBaseSoldierTypeIcon); the name column gives it room
+	const int icon = Options::oxceBaseSoldierTypeIcon ? 10 : 0;
+	SurfaceSet *badges = icon ? _game->getMod()->getSurfaceSet("BASEBITS.PCK") : nullptr;
+	_lstSoldiers->setIconColumn(8, icon);
+	_lstSoldiers->setMargin(8 + icon);
 	if (_dynGetter != NULL)
 	{
-		_lstSoldiers->setColumns(4, 106, 98, 60, 16);
+		_lstSoldiers->setColumns(4, 106 - icon, 98, 60, 16);
 	}
 	else
 	{
-		_lstSoldiers->setColumns(3, 106, 98, 76);
+		_lstSoldiers->setColumns(3, 106 - icon, 98, 76);
 	}
 
 	Craft *c = _base->getCrafts()->at(_craft);
@@ -313,7 +319,11 @@ void CraftSoldiersState::initList(size_t scrl)
 			color = _lstSoldiers->getColor();
 		}
 		setListRowColor(*_lstSoldiers, row, color, *soldier);
-		
+		if (badges)
+		{
+			_lstSoldiers->setRowIcon(row, badges->getFrame(soldier->getRankSprite()));
+		}
+
 		row++;
 	}
 	if (scrl)
