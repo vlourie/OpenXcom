@@ -21,6 +21,9 @@ sparks and flashes. Soft edges throughout - nothing is a blob of pixels any more
     python gen_fx.py --mod out --preview fx.png     also a sheet of every frame for a look
     python gen_fx.py --fire-compare fire_compare    ten fire styles next to the current fire (GIF + sheet)
     python gen_fx.py --mod user\\mods\\hd --fire-style 4 --only-fire     the chosen fire only
+    python gen_fx.py --mod user\\mods\\hd --only-fire --fire-from <Piratez>\\Resources\\SMOKE\\Smoke_DIO.gif
+                                                    the fire after the original storyboard (in the pack now)
+    python gen_fx.py --mod user\\mods\\hd --only-smoke --smoke-step 8    the smoke that moves 8 HD px a frame
     python gen_fx.py --hit-compare hit_compare                     the melee and bullet hits, every style
     python gen_fx.py --mod user\\mods\\hd --melee-style 3 --bullet-style 2 --only-hits    the chosen hits only
 
@@ -407,6 +410,111 @@ def fire_loop(k, phase, big, seed, style):
     return to_image(np.clip(rgb, 0, 255), alpha)
 
 
+# ----------------------------------------------------------------------------- fire after the original frames
+
+# the colour of each fire (tile, unit) - chosen from the preview sheets (art/fx_smooth_preview): the unit
+# fire of X-Piratez is paler than the tile fire, so it is deepened to sit in the same tone
+STORY_COLOUR = {True: dict(gamma=0.75, sat=0.0, deep=0.0), False: dict(gamma=0.9, sat=0.7, deep=0.8)}
+
+
+def load_sheet(path):
+    """The classic SMOKE.PCK frames from a mod's sheet (.gif / .png, 32x40 cells, 10 to a row) - read as
+    indices with the sheet's own palette, index 0 transparent, the way the game reads it (R-043)."""
+    im = Image.open(path)
+    if im.mode != "P":
+        raise SystemExit("%s: an indexed sheet (mode P) is needed, got %s" % (path, im.mode))
+    idx = np.array(im)
+    pal = np.array(im.getpalette()[:768], dtype=np.uint8).reshape(-1, 3)
+    per_row = idx.shape[1] // 32
+    frames = []
+    for n in range(8):
+        r, c = divmod(n, per_row)
+        frames.append(idx[r * 40:(r + 1) * 40, c * 32:(c + 1) * 32].copy())
+    return frames, pal
+
+
+def smooth_up(a, k, radius):
+    """A 32x40 field up to 32k x 40k smoothly (bicubic, then a little blur): no steps (R-004)."""
+    im = Image.fromarray(a.astype(np.float32), "F").resize((a.shape[1] * k, a.shape[0] * k), Image.BICUBIC)
+    return blur(np.asarray(im, dtype=np.float32), max(1, int(round(radius))))
+
+
+def stretch(a, shape):
+    im = Image.fromarray(a.astype(np.float32), "F").resize((shape[1], shape[0]), Image.BICUBIC)
+    return np.asarray(im, dtype=np.float32)
+
+
+def shift_rows(a, dy):
+    """The field moved down by dy pixels (a fraction too; up if negative)."""
+    i = int(math.floor(dy))
+    f = dy - i
+    return np.roll(a, i, 0) * (1 - f) + np.roll(a, i + 1, 0) * f
+
+
+def fire_story(k, orig, lo, t, big, seed):
+    """Phase t (0..7) of the fire of the classic frames lo..lo+3 (`orig` = (frames, palette) of the sheet).
+
+    Even phases are the original frame lo + t/2 - its silhouette, hot spots and colour, smoothed - odd ones
+    the middle between it and the next (the last going into the first), so the loop follows the original
+    storyboard and closes. The flame's area follows the original instead of breathing on a sine (the old
+    styles grew and shrank by ±15% per loop, and it read as a pulse); a noise flowing upwards, which closes
+    after the eight phases, moves only the edge of the flame."""
+    frames, pal = orig
+    w, h = 32, 40
+    xs, ys = grid(h, w, k)
+    shape = (h * k, w * k)
+    j = t // 2
+    fields = []
+    for n in (j, (j + 1) % 4):
+        fr = frames[lo + n]
+        m = (fr > 0).astype(np.float32)
+        cols = pal[fr].astype(np.float32) / 255.0 * m[..., None]
+        fields.append([smooth_up(m, k, 0.5 * k)] + [smooth_up(cols[..., c], k, 0.5 * k) for c in range(3)])
+    rise = 1.0 * k                           # the original rises about a pixel a frame
+    if t % 2 == 0:
+        mixed = fields[0]
+    else:
+        mixed = [0.5 * (shift_rows(a, -rise / 2) + shift_rows(b, rise / 2)) for a, b in zip(*fields)]
+    dens = mixed[0]
+    orig_rgb = np.stack(mixed[1:], axis=-1) / np.maximum(dens, 0.06)[..., None]
+    lum = (orig_rgb @ np.array([0.30, 0.55, 0.15], np.float32)) * dens
+    phase = t / 8.0
+    period = 13.0 * k                        # in the half-height field: 26 classic pixels on screen
+    sway = 0.8 * k * math.sin(2 * math.pi * phase)
+    half = (shape[0] // 2, shape[1])
+    # the noise is made in a field squeezed to half height and stretched back: its spots become tongues
+    # reaching up instead of round blobs
+    flow = stretch(rising_fbm(half, 5.0 * k, seed + 11, phase, period, [1, 2, 2, 3], sway, 0.45), shape)
+    fine = stretch(rising_fbm(half, 2.4 * k, seed + 23, phase, period, [2, 3, 3], -sway, 0.32), shape)
+    edge = 4.0 * dens * (1.0 - dens)         # the middle of a dense field hardly changes
+    d = np.clip(dens + edge * (0.42 * flow + 0.18 * fine), 0, 1)
+    base = 36.5 if big else 29.5
+    top = 2.0 if big else 0.5
+    height = np.clip((base - ys) / (base - top), 0, 1)
+    soft = np.clip(smoothstep(0.12, 0.60, d), 0, 1)
+    # the original's colour (yellow body, white hot spots), going red by the fire ramp towards the edge
+    # and the top; the rising noise draws streaks inside the body
+    col = np.clip(lum / np.maximum(dens, 0.06), 0, 1)
+    edge_heat = ramp(np.clip(col * (0.35 + 0.5 * soft), 0, 1), FIRE_RAMP) / 255.0
+    w_orig = np.clip(soft * (1.0 - 0.35 * height), 0, 1)[..., None]
+    rgb = (orig_rgb * w_orig + edge_heat * (1 - w_orig)) * (0.90 + 0.22 * flow * soft + 0.08 * fine)[..., None]
+    st = STORY_COLOUR[big]
+    if st["deep"]:
+        # orange towards the edge and the top instead of cream; white stays in the core only
+        mix = (st["deep"] * (1 - soft) + 0.5 * st["deep"] * height)[..., None]
+        rgb = rgb * (1 - mix) + np.array([0.95, 0.42, 0.05], np.float32) * mix
+    if st["sat"]:
+        grey = rgb.mean(axis=-1, keepdims=True)
+        rgb = grey + (rgb - grey) * (1.0 + st["sat"])
+    rgb = np.clip(rgb, 0, 1) ** st["gamma"] * 255.0     # the core glows: fire is drawn without the tile's shade
+    alpha = smoothstep(0.16, 0.42, d) * (1.0 - 0.30 * height) * 0.97
+    glow = blur(dens, 3 * k) * smoothstep(base + 3.0, base - 8.0, ys)
+    rgb = rgb * alpha[..., None] + np.array(FIRE_RAMP[2][1], np.float32) * (glow * 0.35)[..., None]
+    alpha = np.clip(alpha + glow * 0.25, 0, 1)
+    rgb = np.where(alpha[..., None] > 0.004, rgb / np.maximum(alpha, 0.004)[..., None], 0.0)
+    return to_image(np.clip(rgb, 0, 255), alpha)
+
+
 def label_font():
     """A font for the comparison pictures and whether it can write Russian (the built-in one cannot)."""
     from PIL import ImageFont
@@ -516,6 +624,40 @@ def smoke(k, frame, density, seed):
     light = 0.62 + 0.30 * np.clip((22 - ys) / 20, -1, 1) + 0.18 * n2
     grey = np.clip(150 + 75 * light - 25 * density, 60, 245)
     rgb = np.stack([grey * 1.0, grey * 1.0, grey * 1.02], axis=-1)
+    return to_image(rgb, alpha)
+
+
+SMOKE_PUFFS = [(15.5, 22, 9.5), (10, 17, 6.5), (21, 16, 6.5), (13, 28, 6.0), (19, 27, 6.0), (15.5, 11, 5.5)]
+
+
+def smoke_drift(k, frame, density, seed, step):
+    """A cloud over the tile (4 looping frames per density, as smoke()) that moves instead of being drawn
+    anew: every puff and the texture inside it go round a small circle, each puff at its own phase, and
+    the circle closes after the 4 frames. Neighbouring frames differ by a shift of at most `step` HD
+    pixels (the chord of the circle), so the cloud churns instead of boiling - the engine has no
+    in-between picture for smoke, a frame stays 200 ms, and a redrawn texture read as a jump."""
+    w, h = 32, 40
+    xs, ys = grid(h, w, k)
+    shape = (h * k, w * k)
+    theta = 2 * math.pi * frame / 4
+    r_hd = step / (2 * math.sin(math.pi / 4))       # the radius whose chord between frames is `step`
+    r = r_hd / k
+    rng = np.random.default_rng(seed + density * 13)
+    ox, oy = r_hd * math.cos(theta), r_hd * math.sin(theta)
+    # the texture is not made anew but rides the same circle
+    n = fbm(shape, 6.0 * k, seed + density * 31, 4, offset=(ox, oy))
+    n2 = fbm(shape, 3.2 * k, seed + density * 31 + 9, 3, offset=(-oy, ox))
+    cover = np.zeros(shape, dtype=np.float32)
+    for i, (px, py, pr) in enumerate(SMOKE_PUFFS):
+        ph = theta + i * 2 * math.pi / len(SMOKE_PUFFS) * (1 if i % 2 else -1)
+        rr = pr * (0.9 + 0.2 * rng.random())
+        cover = 1 - (1 - cover) * (1 - gauss(xs, ys, px + r * math.cos(ph), py + r * math.sin(ph), rr * 0.62))
+    edge = np.clip(cover * (0.62 + 0.55 * n), 0, 1)
+    max_alpha = [0.42, 0.62, 0.82][density]
+    alpha = smoothstep(0.08, 0.55, edge) * max_alpha
+    light = 0.62 + 0.30 * np.clip((22 - ys) / 20, -1, 1) + 0.18 * n2
+    grey = np.clip(150 + 75 * light - 25 * density, 60, 245)
+    rgb = np.stack([grey, grey, grey * 1.02], axis=-1)
     return to_image(rgb, alpha)
 
 
@@ -1085,7 +1227,7 @@ def write_frames(frames, tweens, smoke_dir, hit_dir, x1_dir, fire_only=False):
 
 
 def build(mod, k, seed, preview, fire_style=1, only_fire=False, melee_style=1, bullet_style=1, blood=True,
-          only_hits=False, glove=1, glove_dir=None):
+          only_hits=False, glove=1, glove_dir=None, fire_from=None, smoke_step=0, only_smoke=False):
     smoke_dir = os.path.join(mod, "hd", "SMOKE.PCK")
     hit_dir = os.path.join(mod, "hd", "HIT.PCK")
     x1_dir = os.path.join(mod, "hd", "X1.PCK")
@@ -1106,8 +1248,23 @@ def build(mod, k, seed, preview, fire_style=1, only_fire=False, melee_style=1, b
         print("HIT.PCK: melee style %d, SMOKE.PCK: bullet style %d, frames 26-35%s -> %s" % (
             melee_style, bullet_style, " + blood in <i>.v1.png" if blood else " (no blood)", os.path.join(mod, "hd")))
         return
+    if only_smoke:
+        for f in range(4):
+            for density in range(3):
+                frames[("SMOKE", 8 + density * 4 + f)] = (smoke_drift(k, f, density, seed + 2, smoke_step) if smoke_step
+                                                          else smoke(k, f, density, seed + 2))
+        write_frames(frames, tweens, smoke_dir, hit_dir, x1_dir)
+        print("SMOKE.PCK: smoke frames 8-19 (%s) -> %s" % (
+            "shift %g HD px a frame" % smoke_step if smoke_step else "redrawn per frame", smoke_dir))
+        return
+    orig = load_sheet(fire_from) if fire_from else None
     for f in range(4):
-        if fire_style == 0:
+        if orig:
+            # the original storyboard, eight phases: the frame and its in-between picture
+            for lo, big in ((0, True), (4, False)):
+                frames[("SMOKE", lo + f)] = fire_story(k, orig, lo, 2 * f, big, seed)
+                tweens[("SMOKE", lo + f)] = fire_story(k, orig, lo, 2 * f + 1, big, seed)
+        elif fire_style == 0:
             frames[("SMOKE", f)] = fire(k, f, True, seed)
             frames[("SMOKE", 4 + f)] = fire(k, f, False, seed + 1)
         else:
@@ -1120,10 +1277,12 @@ def build(mod, k, seed, preview, fire_style=1, only_fire=False, melee_style=1, b
         if only_fire:
             continue
         for density in range(3):
-            frames[("SMOKE", 8 + density * 4 + f)] = smoke(k, f, density, seed + 2)
+            frames[("SMOKE", 8 + density * 4 + f)] = (smoke_drift(k, f, density, seed + 2, smoke_step) if smoke_step
+                                                      else smoke(k, f, density, seed + 2))
     if only_fire:
         write_frames(frames, tweens, smoke_dir, hit_dir, x1_dir, fire_only=True)
-        print("SMOKE.PCK: fire style %d, frames 0-7%s -> %s" % (fire_style, " + 0-7.v1" if tweens else "", smoke_dir))
+        print("SMOKE.PCK: fire %s, frames 0-7%s -> %s" % ("after " + fire_from if orig else "style %d" % fire_style,
+                                                           " + 0-7.v1" if tweens else "", smoke_dir))
         return
     for t in range(10):
         frames[("SMOKE", 26 + t)] = bullet_hit(k, t, seed + 3, bullet_style)
@@ -1165,6 +1324,12 @@ def main():
     ap.add_argument("--fire-compare", default="", help="write fire_styles.gif / fire_styles_unit.gif / fire_styles.png "
                     "(every style next to the current fire) into this folder and stop")
     ap.add_argument("--only-fire", action="store_true", help="write only the fire frames (0-7 and their in-between pictures)")
+    ap.add_argument("--fire-from", default="", help="draw the fire after the original frames 0-7 of this indexed sheet "
+                    "(the mod's SMOKE.PCK picture, e.g. Piratez Resources/SMOKE/Smoke_DIO.gif): the storyboard of "
+                    "the original in 8 phases; overrides --fire-style")
+    ap.add_argument("--smoke-step", type=float, default=0, help="the smoke moves by this many HD pixels a frame "
+                    "instead of being redrawn (chosen: 8 = 2 classic pixels at x4); 0 = the old smoke")
+    ap.add_argument("--only-smoke", action="store_true", help="write only the smoke frames (8-19)")
     ap.add_argument("--melee-style", type=int, default=1, choices=sorted(MELEE_STYLES),
                     help="the mark of a melee hit, HIT.PCK 0-3 (see --hit-compare): 1 the star as it is, 2 a fist, "
                          "3 a drawn boxing glove, 4 a burst of light, 5 a slash, 6 a boxing glove out of a picture")
@@ -1187,10 +1352,11 @@ def main():
         return 0
     if not args.mod:
         ap.error("--mod is required (or --fire-compare / --hit-compare)")
-    if args.only_fire and args.only_hits:
-        ap.error("--only-fire and --only-hits are different jobs: run them one at a time")
+    if args.only_fire + args.only_hits + args.only_smoke > 1:
+        ap.error("--only-fire, --only-hits and --only-smoke are different jobs: run them one at a time")
     build(args.mod, args.scale, args.seed, args.preview, args.fire_style, args.only_fire,
-          args.melee_style, args.bullet_style, not args.no_blood, args.only_hits, args.glove, args.glove_dir or None)
+          args.melee_style, args.bullet_style, not args.no_blood, args.only_hits, args.glove, args.glove_dir or None,
+          args.fire_from or None, args.smoke_step, args.only_smoke)
     return 0
 
 
