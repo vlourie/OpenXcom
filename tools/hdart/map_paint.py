@@ -66,6 +66,41 @@ SCENES = {
                 "ferns, small palms, tropical flowers",
     "CATACOMBS_33": "ancient jungle catacombs, rough brown earth and rock, grey cobblestone floor, "
                     "dark grey stone brick walls with green moss | creeping vines",
+    # очередь docs/MAP_QUEUE.md; цвета стен разные у каждого набора SGR_* - их держат подсказки на кадр
+    "SGR_TERMINAL_01": "an underground alien temple complex dug into dark brown earth and rock, dark gravel "
+                       "ground, smooth glowing floor panels, smooth sci-fi metal wall panels | pink alien "
+                       "computer consoles, glass stasis tanks, glowing lamp cylinders",
+    # красные трещины - только в подсказках стен: в поверхностях сцены они легли на каждый блок скалы
+    "VAMPCASTLE_14": "a dark underground castle dungeon, rough dark grey rock, dark grey stone slab floor, dark "
+                     "stone block walls | grey carved stone sarcophagi, "
+                     "thin red glowing roots, dark iron urn",
+    "UACVAULT_NS05": "an underground industrial vault dug into brown earth and rock, pinkish brown metal floor "
+                     "plates, pinkish brown metal wall panels | industrial fan machines, grey blast doors with "
+                     "hazard stripes, green toxic barrels",
+    "CAVESDIO_04": "a turquoise cave deep underground, teal turquoise rock, teal rocky cave ground | rounded "
+                   "teal boulders, jagged rock spires",
+    # 26.09, очередь до 53%: сцены по листам оригинала art/maps/paint/hints/<КАРТА>_NN.png, сокращены под
+    # 77 токенов; зелёная вода, стекло и огни - справа от черты, на поверхности не ложатся (R-016)
+    "XBR_109": "an underground base dug into brown earth, brown earth floor, dark grey metal grating, brown "
+               "floor tiles, orange panelled walls on a tan stone base | tan computer consoles, sliding doors, "
+               "metal lockers, bookcases, tables and chairs, trimmed green hedge blocks",
+    "INDUSTRIALSLUMHUGE02": "an industrial slum yard, dark blue grey asphalt, brown dirt and grass, red brick "
+                            "walls, weathered brown wooden plank walls and fences | chain-link fences, blue tarp "
+                            "roofs, tyre stacks, rusty barrels, burning oil drums, grey metal stairs, trees",
+    "NUKECITY09": "a ruined nuclear wasteland town, pinkish brown gravel ground, rusty orange checkered metal "
+                  "floors, pale pink plaster walls, grey stone block walls | green toxic water pools, dead grey "
+                  "trees and thorny scrub, sandbag walls, barrels, charred rubble",
+    "FREIGHTER_AGRI_LINK_NW00": "a metal starship interior, near black and dark grey riveted metal floors, grey "
+                                "chequered floor plates, dark grey metal walls | tall grey steel pillars, orange "
+                                "fungi, dark green leafy plants, grey computer consoles, glowing floor panels, "
+                                "green glass sliding doors",
+    "URBANDIO01": "war-damaged suburban houses with gardens, dark blue grey asphalt, grey concrete, green lawn, "
+                  "pinkish brown plank floors, tan plaster walls, charcoal brick walls | wooden furniture, beds, "
+                  "bookshelves, wooden stairs, picket fences, flower beds, trees, rubble",
+    "COMRCURBAN_MEY_02": "a city shopping street, dark asphalt, dark grey paving, pale beige flagstones, dark "
+                         "brown wooden boardwalk, salmon pink plaster walls with cream mouldings | palm trees, "
+                         "green hedges, street lamps, shop shelves with goods, glass display cases, glass "
+                         "sliding doors",
 }
 STYLE = ("isometric view of {scene}, pre-rendered 3D game art, realistic matte materials, "
          "detailed textures, soft light from the upper left, sharp focus")
@@ -686,6 +721,14 @@ def run_regions(world, brush, args, prompt, root):
         if d["part"] == 0:
             uses[(d["set"], d["frame"])] = uses.get((d["set"], d["frame"]), 0) + 1
     var_sets = {s.strip().upper() for s in args.variant_sets.split(",") if s.strip()}
+    # НАБОР:кадр - варианты одному кадру: в SGR_BASIS земля и светящиеся панели в одном наборе,
+    # а у панели варианты - разнобой ровного узора
+    var_frames = {(s.rsplit(":", 1)[0], int(s.rsplit(":", 1)[1])) for s in var_sets if ":" in s}
+    var_ok = lambda key: key[0] in var_sets or key in var_frames      # noqa: E731
+    # перерисовка по выбору Vitali (map_pick: выбран оригинал) - рисовать заново, не собирать из готового:
+    # из тех же основ вышел бы тот же кадр
+    fresh = {(s.rsplit(":", 1)[0].strip().upper(), int(s.rsplit(":", 1)[1]))
+             for s in getattr(args, "fresh", "").split(",") if ":" in s}
     # что уже нарисовано на прошлых картах (общая папка --root) - не рисуется второй раз
     done = set()
     for d in inst_all:
@@ -718,8 +761,12 @@ def run_regions(world, brush, args, prompt, root):
         for key, d in first.items():
             if key in t_uses:
                 d["_n"] = t_uses[key]
+        # сплошной блок скалы - предмет по MCD, но стоит массивом: участком он вышел одной подушкой с
+        # трещиной, повторённой по всей крыше (VAMPCASTLE_14, SIETCH_DARK 5)
+        f_obj = {(s.rsplit(":", 1)[0].strip().upper(), int(s.rsplit(":", 1)[1]))
+                 for s in getattr(args, "field_objects", "").split(",") if ":" in s}
         for j, (key, d) in enumerate(sorted(first.items())):
-            if key in done or d["_n"] < args.tile_min or d["part"] == 3:
+            if key in done or d["_n"] < args.tile_min or (d["part"] == 3 and key not in f_obj):
                 continue
             if key in t_pairs:
                 # у каждой части свои сдвиги: полы разных этажей не стыкуются (верхний закрывает нижний),
@@ -742,7 +789,7 @@ def run_regions(world, brush, args, prompt, root):
             count["полем"] += 1
             count["новых"] += 1
             count["дорисовок"] += rep
-            if d["part"] == 0 and key[0] in var_sets:
+            if d["part"] == 0 and var_ok(key):
                 for v in range(1, args.variants + 1):
                     vc, _r = paint_tiled(world, brush, args, tp, args.seed + 500 + j + 100 * v,
                                          d["spr"], d["part"], lattice)
@@ -817,7 +864,7 @@ def run_regions(world, brush, args, prompt, root):
         # варианты частых полов этого участка: тот же участок другим seed, клетка режется оттуда же
         # варианты - только природной земле (--variant-sets): у досок и крыши они лоскутные (прогон 9)
         floors = [(k2, i) for k2, i in here
-                  if inst[i]["part"] == 0 and inst[i]["set"] in var_sets
+                  if inst[i]["part"] == 0 and var_ok((inst[i]["set"], inst[i]["frame"]))
                   and (inst[i]["set"], inst[i]["frame"]) not in done
                   and uses.get((inst[i]["set"], inst[i]["frame"]), 0) >= args.variant_min]
         under0 = ud(inst) if floors else None
@@ -845,7 +892,7 @@ def run_regions(world, brush, args, prompt, root):
                 is_var = any(i == fi for _k, fi in floors) and var_paint
                 rb = reuse_base(world, root, s, d["frame"], cell, d["spr"], pool | done, base_cache, part=d["part"],
                                 avoid=users.get((s, d["frame"]), ())) \
-                    if args.reuse_same and not is_var else None
+                    if args.reuse_same and not is_var and (s, d["frame"]) not in fresh else None
                 if rb is not None:
                     save_cell(root, s, d["frame"], rb[0], d["spr"], d["part"], tone=False)
                     count["из готовых"] += 1
@@ -898,7 +945,7 @@ def run_regions(world, brush, args, prompt, root):
                     loc3 = dict(d3, x=d3["x"] - x0, y=d3["y"] - y0)
                     c3 = np.asarray(cell_from(p3, g, loc3).convert("RGB")).copy()
                     rb = reuse_base(world, root, s, fa, c3, d3["spr"], pool | done, base_cache, part=d3["part"],
-                                    avoid=users.get((s, fa), ())) if args.reuse_same else None
+                                    avoid=users.get((s, fa), ())) if args.reuse_same and (s, fa) not in fresh else None
                     if rb is not None:
                         save_cell(root, s, fa, rb[0], d3["spr"], d3["part"], tone=False)
                         count["из готовых"] += 1
@@ -917,6 +964,8 @@ def run_regions(world, brush, args, prompt, root):
               % (count["участков"], taken, n_todo, el / max(1, taken) * len(left) / 60), flush=True)
     # второй заход: предмет рисовался раньше пола под ним - теперь пол готов
     for (s, f), (cell, spr, part) in late.items():
+        if (s, f) in fresh:
+            continue
         rb = reuse_base(world, root, s, f, cell, spr, pool | done, base_cache, part=part,
                         avoid=users.get((s, f), ()))
         if rb is None:
@@ -990,10 +1039,17 @@ def main(argv=None):
     ap.add_argument("--variant-min", type=int, default=6, dest="variant_min",
                     help="пол получает варианты, если лежит на карте не меньше стольких раз")
     ap.add_argument("--variant-sets", default="", dest="variant_sets",
-                    help="наборы через запятую, чьим полам можно варианты: природная земля, не доски и не крыша")
+                    help="наборы через запятую, чьим полам можно варианты: природная земля, не доски и не крыша; "
+                         "НАБОР:кадр - только этому кадру")
     ap.add_argument("--tile-min", type=int, default=0, dest="tile_min",
                     help="режим regions: пол и стену, что стоят на карте не меньше стольких раз, рисовать полем "
                          "своих копий, чтобы стыковались сами с собой; 0 - не рисовать")
+    ap.add_argument("--field-objects", default="", dest="field_objects",
+                    help="режим regions: предметы по MCD (НАБОР:кадр через запятую), которые рисовать полем, как пол: "
+                         "сплошной блок скалы стоит массивом, и одна картинка на всех копиях - решётка (R-039)")
+    ap.add_argument("--fresh", default="",
+                    help="режим regions: НАБОР:кадр через запятую - рисовать заново, не собирать из готового "
+                         "(перерисовка по выбору в map_pick)")
     ap.add_argument("--use-done", type=int, default=1, dest="use_done",
                     help="режим regions: 1 - готовые клетки участка идут на вход модели поверх оригинала")
     ap.add_argument("--tile-terrain", type=int, default=1, dest="tile_terrain",

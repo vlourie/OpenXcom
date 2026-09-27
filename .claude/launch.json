@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "map-pick",
+      "runtimeExecutable": "E:/OpenXCom/tools/hdart/.venv/Scripts/python.exe",
+      "runtimeArgs": ["tools/hdart/map_pick.py", "serve"],
+      "port": 8772
+    }
+  ]
+}

@@ -33,3 +33,6 @@ train.py
 check_triton.py
 pedia_ab.py
 pedia_batch.py
+run_series.sh
+run_series2.sh
+run_series3.sh
