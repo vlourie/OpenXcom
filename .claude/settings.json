@@ -51,6 +51,24 @@
             "command": "& \"$env:CLAUDE_PROJECT_DIR/.claude/hooks/bom-guard.ps1\"",
             "timeout": 15,
             "statusMessage": "Дописываю BOM в PowerShell-скрипт"
+          },
+          {
+            "type": "command",
+            "command": "py -3 \"$CLAUDE_PROJECT_DIR/tools/editq.py\" hook post",
+            "timeout": 20,
+            "statusMessage": "Очередь правок игры"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "py -3 \"$CLAUDE_PROJECT_DIR/tools/editq.py\" hook stop",
+            "timeout": 20,
+            "statusMessage": "Очередь правок игры: не забыт ли done"
           }
         ]
       }
@@ -72,12 +90,24 @@
             "command": "& \"$env:CLAUDE_PROJECT_DIR/.claude/hooks/gpu-guard.ps1\"",
             "timeout": 15,
             "statusMessage": "Проверяю, что видеокарта идёт через очередь"
+          },
+          {
+            "type": "command",
+            "command": "py -3 \"$CLAUDE_PROJECT_DIR/tools/editq.py\" hook pre",
+            "timeout": 20,
+            "statusMessage": "Очередь правок игры: сборка и git add -A"
           }
         ]
       },
       {
         "matcher": "Edit|Write|NotebookEdit",
         "hooks": [
+          {
+            "type": "command",
+            "command": "py -3 \"$CLAUDE_PROJECT_DIR/tools/editq.py\" hook pre",
+            "timeout": 20,
+            "statusMessage": "Очередь правок игры: чья сейчас очередь"
+          },
           {
             "type": "command",
             "shell": "powershell",
