@@ -848,7 +848,9 @@ def main():
     p = sub.add_parser("wait"); p.add_argument("--name"); p.add_argument("--max", type=int, default=WAIT_MAX)
     p.add_argument("--session")
     p = sub.add_parser("done"); p.add_argument("-m", "--message"); p.add_argument("-F", "--file")
-    p.add_argument("--add", nargs="*", default=[]); p.add_argument("--drop", nargs="*", default=[])
+    # extend: "--add a --add b" копит оба, а не оставляет последний
+    p.add_argument("--add", nargs="*", action="extend", default=[])
+    p.add_argument("--drop", nargs="*", action="extend", default=[])
     p.add_argument("--no-build", action="store_true"); p.add_argument("--force", action="store_true")
     p.add_argument("--session")
     p = sub.add_parser("pause"); p.add_argument("why", nargs="?", default=""); p.add_argument("--session")
