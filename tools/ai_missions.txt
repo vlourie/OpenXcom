@@ -1,7 +1,9 @@
 # Миссии большого прогона ИИ (tools/ai_arena.py --missions @tools/ai_missions.txt): разные карты и противники.
 # Террейн, раса, отряд и тьма идут по зерну. Выбраны из тех, что доигрывались в сериях camp40/camp40b 27.09.
-STR_UFO_GROUND_ASSAULT
-STR_UFO_CRASH_RECOVERY
+# НЛО - по типу корабля: STR_UFO_GROUND_ASSAULT и STR_UFO_CRASH_RECOVERY - тип боя движка, а не миссия списка.
+STR_MEDIUM_SCOUT
+STR_ABDUCTOR
+STR_BATTLESHIP
 STR_PUNK_TERROR
 STR_ERIDIAN_TERROR
 STR_LOC_ALIEN_BASE_VR
