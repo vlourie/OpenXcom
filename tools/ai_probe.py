@@ -73,7 +73,7 @@ def campaign_path(name):
 
 
 def run(save, turns=1, save_as="", name="probe", timeout=900, bot=False, seed=None, diff=None, campaign=None,
-        mission=None):
+        mission=None, tactics=False, careful=False):
     """Прогоняет пробу и возвращает Probe.
     save - сейв боя (копируется) или None вместе с seed: тогда игра сама собирает случайный бой мода.
     campaign - сейв кампании: отряд боя - самый большой экипаж оттуда, со снаряжением, сложностью и месяцем.
@@ -117,6 +117,9 @@ def run(save, turns=1, save_as="", name="probe", timeout=900, bot=False, seed=No
     env["OXCE_AI_DIFF"] = "" if diff is None else str(diff)
     env["OXCE_AI_CAMPAIGN"] = "campaign.sav" if campaign else ""
     env["OXCE_AI_MISSION"] = mission or ""
+    # правила под опытом задаются явно: унаследованная переменная не должна тихо включить их в базовой серии
+    env["OXCE_AI_TACTICS"] = "1" if tactics else ""
+    env["OXCE_AI_CAREFUL"] = "1" if careful else ""
     args = [str(EXE), "-data", str(GAME), "-user", str(work), "-cfg", str(work),
             "-fullscreen", "false", "-borderless", "false", "-displayWidth", "1280", "-displayHeight", "720",
             "-soundVolume", "0", "-musicVolume", "0", "-uiVolume", "0"]

@@ -34,6 +34,7 @@
 #include "../Mod/Mod.h"
 #include "../Mod/RuleItem.h"
 #include "../fmath.h"
+#include "AiProbe.h"
 
 namespace OpenXcom
 {
@@ -522,7 +523,9 @@ void AIModule::think(BattleAction *action)
 	BattleItem *grenadeItem = _unit->getGrenadeFromBelt(_save);
 	_grenade = grenadeItem != 0;
 
-	if (_spottingEnemies && !_escapeTUs)
+	// the tactical rules need cover reachable with the TU left now, not with those of the turn's start
+	const bool tactical = AiProbe::tactics(_unit) || AiProbe::careful(_unit);
+	if (_spottingEnemies && (!_escapeTUs || tactical))
 	{
 		setupEscape();
 	}
@@ -610,7 +613,14 @@ void AIModule::think(BattleAction *action)
 		}
 	}
 
+	if (tactical)
+	{
+		tacticalMode();
+	}
+
 	_reserve = BA_NONE;
+	// the careful bot kneels by the player's rule (soldiers may), the AI by its own (armor must allow)
+	const bool kneelDefault = AiProbe::careful(_unit) && _unit->getType() == "SOLDIER";
 
 	switch (_AIMode)
 	{
@@ -675,7 +685,7 @@ void AIModule::think(BattleAction *action)
 		}
 		else if (action->type == BA_AIMEDSHOT || action->type == BA_AUTOSHOT)
 		{
-			action->kneel = _unit->getArmor()->allowsKneeling(false);
+			action->kneel = _unit->getArmor()->allowsKneeling(kneelDefault);
 		}
 		break;
 	case AI_AMBUSH:
@@ -686,7 +696,7 @@ void AIModule::think(BattleAction *action)
 		action->finalFacing = _ambushAction.finalFacing;
 		// end this unit's turn.
 		action->finalAction = true;
-		action->kneel = _unit->getArmor()->allowsKneeling(false);
+		action->kneel = _unit->getArmor()->allowsKneeling(kneelDefault);
 		break;
 	default:
 		break;
@@ -1151,7 +1161,8 @@ void AIModule::setupEscape()
 	while (tries < 150 && !coverFound)
 	{
 		_escapeAction.target = _unit->getPosition(); // start looking in a direction away from the enemy
-		_escapeAction.run = _unit->getArmor()->allowsRunning(false) && (tries & 1); // every odd try, i.e. roughly 50%
+		// the careful bot runs by the player's rule (small units may), the AI by its own (armor must allow)
+		_escapeAction.run = _unit->getArmor()->allowsRunning(AiProbe::careful(_unit) && _unit->isSmallUnit()) && (tries & 1); // every odd try, i.e. roughly 50%
 
 		if (!_save->getTile(_escapeAction.target))
 		{
@@ -2046,6 +2057,54 @@ void AIModule::evaluateAIMode()
 		}
 		_AIMode = AI_ESCAPE;
 	}
+}
+
+/**
+ * The bench's tactical rules (docs/AI_ROADMAP.md, Ф2), on only for the smarter enemy (OXCE_AI_TACTICS)
+ * and the careful bot (OXCE_AI_CAREFUL): a unit the other side sees either attacks or goes to cover
+ * it can reach now, it does not walk around or stand in view; an aimed or auto shot that would leave
+ * no TU for cover becomes a snap shot; the careful bot also pulls its wounded out of view.
+ */
+void AIModule::tacticalMode()
+{
+	// every exit is counted: a rule that never fires is visible in the result line, not only in the outcome (R-034)
+	if (!_spottingEnemies)
+	{
+		return;
+	}
+	AiProbe::tally(_unit, "spotted");
+	if (_AIMode == AI_ESCAPE)
+	{
+		AiProbe::tally(_unit, "escaping");
+		return;
+	}
+	// cover is a tile fewer of them see than see us now
+	if (_escapeAction.type != BA_WALK || _escapeAction.target == _unit->getPosition()
+		|| getSpottingUnits(_escapeAction.target) >= _spottingEnemies)
+	{
+		AiProbe::tally(_unit, "nocover");
+		return;
+	}
+	const bool wounded = AiProbe::careful(_unit)
+		&& (_unit->getFatalWounds() > 0 || _unit->getHealth() < _unit->getBaseStats()->health / 2);
+	const bool attacking = _AIMode == AI_COMBAT && _attackAction.type != BA_RETHINK && _attackAction.type != BA_NONE;
+	if (attacking && !wounded)
+	{
+		if ((_attackAction.type == BA_AIMEDSHOT || _attackAction.type == BA_AUTOSHOT) && _attackAction.weapon)
+		{
+			const int left = _unit->getTimeUnits() - BattleActionCost(_attackAction.type, _unit, _attackAction.weapon).Time;
+			BattleActionCost snap(BA_SNAPSHOT, _unit, _attackAction.weapon);
+			if (left < _escapeTUs && snap.haveTU() && _unit->getTimeUnits() - snap.Time >= _escapeTUs)
+			{
+				_attackAction.type = BA_SNAPSHOT;
+				AiProbe::tally(_unit, "snap");
+			}
+		}
+		AiProbe::tally(_unit, "attack");
+		return;
+	}
+	_AIMode = AI_ESCAPE;
+	AiProbe::tally(_unit, wounded ? "pullback" : "cover");
 }
 
 /**
