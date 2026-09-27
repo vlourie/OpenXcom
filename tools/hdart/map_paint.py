@@ -449,6 +449,9 @@ def same_base(world, root, s, f, spr, done, cache, part=1, avoid=()):
     for s2, f2 in done:
         if (s2, f2) == (s, f) or (s2, f2) in avoid:
             continue
+        # список готовых снят при старте, а map_pick мог за это время убрать кадр на перерисовку
+        if (s2, f2) not in cache and not os.path.exists(os.path.join(root, s2 + ".PCK", "%d.png" % f2)):
+            continue
         o = world.sprite(s2, f2, None)
         if o is None or o.size != spr.size:
             continue
@@ -897,6 +900,9 @@ def run_regions(world, brush, args, prompt, root):
             for fn in os.listdir(os.path.join(root, dn)):
                 if fn.endswith(".png") and fn[:-4].isdigit():
                     pool.add((dn[:-4].upper(), int(fn[:-4])))
+    # кадры обломков и дверей на карте не стоят, в done по inst_all не попадали и рисовались заново
+    # каждым прогоном карты (перерисовка каньона 27.09 задела 25 чужих кадров)
+    done |= pool
     users = {}    # основа -> кадры, собранные из неё: обратно из них её не собираем
     late = {}     # нарисованные своими - повторная попытка в конце, когда готово больше
     t_all = time.time()
