@@ -27,6 +27,8 @@
 #include "BattlescapeState.h"
 #include "BattlescapeGame.h"
 #include "../Engine/Options.h"
+#include "../Engine/Logger.h"
+#include "AiProbe.h"
 
 namespace OpenXcom
 {
@@ -112,6 +114,21 @@ void ConfirmEndMissionState::btnOkClick(Action *)
 void ConfirmEndMissionState::btnCancelClick(Action *)
 {
 	_game->popState();
+}
+
+/**
+ * The AI probe has nobody to press OK when the bot ends its turn with fatally wounded soldiers: confirms by itself.
+ */
+void ConfirmEndMissionState::think()
+{
+	State::think();
+#ifdef OXCE_AI_DEV
+	if (AiProbe::active())
+	{
+		Log(LOG_INFO) << "[AIPROBE] closed: end the turn with " << _wounded << " fatally wounded";
+		btnOkClick(nullptr);
+	}
+#endif
 }
 
 
