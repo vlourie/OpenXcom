@@ -101,6 +101,158 @@ SCENES = {
                          "brown wooden boardwalk, salmon pink plaster walls with cream mouldings | palm trees, "
                          "green hedges, street lamps, shop shelves with goods, glass display cases, glass "
                          "sliding doors",
+    # очередь до 90 процентов охвата (docs/MAP_QUEUE.md от 27.09); одноимённые карты - ключом ТЕРРЕЙН/КАРТА
+    "CAVES_MARS_NOCTIS/CAVESDIO_04": "a rusty red rock cave, rusty orange ground with grey pebbles, dark red "
+                                     "brown rock floor, solid rusty orange rock walls with dark red cracks | "
+                                     "rounded rusty orange boulders, lumpy rock slabs with bright orange nodules, "
+                                     "rock heaps, stone staircases",
+    "POLISURBAN06": "an upscale city block, dark grey asphalt streets, green lawns, brown dirt, beige mauve and "
+                    "dark wood walls, lilac tile and ochre floors | home furniture, kitchen, shop shelves and "
+                    "crates, statues, stairs, picket fences, flowers, fruit trees, computer terminals",
+    "WESTOWN_SALOON": "a frontier town saloon and yard, brown wooden plank floors and walls, orange and red brick "
+                      "walls, green grass, pinkish grey gravel | wooden bar counters, barrels, sacks, crates, "
+                      "bookcase, brick fireplaces, wooden stairs, rail fences, hay bale, pine trees",
+    "UBASE_VR/CEREBRAL_CHAMBER_2": "a virtual reality alien base chamber, flat dark navy walls and floors with "
+                                   "thin pale grey outlines, peach cracked veins | amber fluid tanks, pink neon "
+                                   "consoles, pale cyan chairs, blue capsules, green screens, glowing magenta "
+                                   "floor pads, orange fungi",
+    "CAVES_PRISON": "a cave of living flesh, dull greyish violet organic ground, dark violet speckled fleshy walls "
+                    "| magenta and beige swirled flesh mounds, ribbed violet flesh ramps, tan stalk pods with pink "
+                    "bulbs, glowing green pools, golden exit plate",
+    "CEREBRAL_CHAMBER_1": "an alien base chamber, pale gold and amber walls, orange floor plates, pale yellow "
+                          "floor, dark brown rocky floor | red alien chairs, orange consoles with cyan lights, "
+                          "glowing green lattices, orange fungi, red coral, green plants, glowing blue floor panels",
+    "VES_330": "an alien starship interior, bright blue metal deck plates, curved blue hull walls, dark charcoal "
+               "panels, pinkish brown carpet | amber and cyan glass tanks, pink consoles, bunk beds, chairs, "
+               "bathroom fixtures, orange spheres, glowing lamps",
+    "CANYON_N02": "a jungle canyon, grey cliff rock, brown earth, maroon soil, green grass, grey concrete bunker "
+                  "floors, ribbed dark metal walls | mossy boulders, vines, bushes, log, concrete stairs, bunk "
+                  "beds with green mattresses, computer terminal with glowing pink keys",
+    "VES_270": "an alien ship interior, dark grey metal floor plates, curved black hull walls, dark grey wall "
+               "panels | pink and blue furniture, grey consoles with red screens, amber and cyan glass tanks, "
+               "orange sphere pods, glowing red floor pads",
+    "DREADBASE/CEREBRAL_CHAMBER_2": "an alien hive chamber, dark purple-grey stone floor, dark purple rock walls "
+                                    "with red veins, dark grey metal panels | orange rock blocks, red-lit black "
+                                    "machines, metal chairs, pink egg pods, flame lamps, orange fungi, green "
+                                    "glowing columns",
+    "EMANS06_SPAWN2": "a mansion interior and garden, cream marble, brown wooden plank and stone tile floors, "
+                      "white marble and dark brick walls, dark grey rock | golden bathtub, candelabra, purple "
+                      "armchairs, bookcases, wardrobes, kitchen counters, stairs, potted plants",
+    "CATACOMBS_DIABLO_07": "a ruined underground catacomb, crimson red mottled rock ground, dark grey stone brick "
+                           "walls and stairs, grey stone and golden brass floor plates | golden candelabra with "
+                           "candles, iron braziers with red fire, wall torches, iron bar grates, stone lanterns",
+    "MUJUNGLE14": "a ruined stone temple in a jungle clearing, weathered tan sandstone paving, dark brown carved "
+                  "stone walls, green moss, short green grass, dark earth | stepped stone blocks, carved face "
+                  "reliefs, hanging vines, dense jungle trees, ferns, palms",
+    "SOLFORESTHUGE01": "a snowy winter forest, flat white snow with pale lilac shading, raised banks of sandy tan "
+                       "earth under snow, grey rock ledges | tall snow-laden dark green fir trees, bare brown "
+                       "trunks, snowy fallen logs, grey boulders",
+    "FORESTSWAMP/FORESTSWAMP02": "a temperate swampy conifer forest, green grass and dark mossy bog ground with "
+                                 "black mud patches, grassy hills with light tan sandy soil sides | dark green "
+                                 "conifer trees, brown trunks, charred stump, green bushes, mossy grey boulders",
+    "ENTRY03": "a seabed alien base entrance, pale blue lilac sand, golden riveted metal walls, mauve stone "
+               "floor, smooth orange organic floors and honeycomb walls | golden sliding doors, pale pink flesh "
+               "pods, glowing green pools, green metal panels, oval hatch",
+    "PORTUFO22": "an industrial warehouse yard, dark asphalt, salmon pink brick walls, wooden plank and dark red "
+                 "floors, grey steel grating | orange wooden crates, tyre stacks, forklift, cardboard boxes, "
+                 "barrels, yellow road chevrons, yellow steel bins, office desks, posters",
+    "CATACOMBS_DIABLO_11": "an underground concrete catacomb, dark grey concrete floors and blocks, pinkish brown "
+                           "rock, grey mossy patches | grey stone pillars, cyan glass walls, black tables with "
+                           "candles, skulls, bones, green vines, small red blobs",
+    "LAM_VILLAGE_MIDDLE_BIG04": "a desert village, orange speckled sand, crimson mottled rock blocks, tan woven "
+                                "mats, green checkered grating, green panel walls, golden walls | cacti, green "
+                                "ribbed pods, flowering plants, golden ornaments, sandstone consoles, grey "
+                                "stairs, red slat doors, turquoise water pools",
+    "URBANJUNK42": "an abandoned junkyard lot, grey concrete and near-black floors, sandy dirt, green lawn, "
+                   "ploughed and burnt soil, dark grey brick walls | palm trees and fronds, golden wheat, fruit "
+                   "tree, sacks, baskets, trash can, metal stairs, white doors, old television",
+    "ISLANDURBAN03": "an island houses, brown plank floors, mauve tile, grey pink paving, pink plaster and cream "
+                     "clapboard walls, brown earth, green grass | palm trees, pink beds, orange doors and "
+                     "counters, blue glass windows and doors, dining table, television, wooden stairs",
+    "STORMMOUNTAIN08": "a grey rocky mountainside, pale grey gravel, pinkish dirt, grey rock cliffs, tan "
+                       "carved-panel bunker rooms, beige and light grey floors | white boulders, dead brown "
+                       "trees, fallen logs, cyan bunk beds, black cabinets, wooden stairs, grey shutters",
+    "CHEMTOWNHUGE01": "an industrial town, dark grey gravel ground, grey concrete slabs, dark red brick and grey "
+                      "concrete walls, brown wooden plank floors | chain-link fences, orange crates, coloured "
+                      "barrels, forklift, street lamps, green screens, bunk beds, office furniture",
+    "MADURBAN31": "a suburban house interior and backyard, pale wooden plank floors, grey concrete, brown earth "
+                  "yard, ochre plaster and grey stone brick walls, dark wooden plank fence | tan wooden "
+                  "furniture, beds, chairs, pink and cyan armchairs, blue doors, cyan lamp",
+    "SGR_01": "an underground sacred cave, dark brown rock and black gravel floor, pale beige and lavender stone "
+              "temple walls | dark blue water pools, glowing purple vines, violet flowers, orange fungi, fleshy "
+              "pods, glowing golden floor, stone consoles",
+    "LINERT01A": "a ship interior and open deck at sea: light wooden deck planks, dark green carpet, brown "
+                 "checkered floor panels, tan marble and cream walls, sea water | deck chairs, bar counters, "
+                 "wooden doors, portholes, staircases, bathtubs, engines, marble statue",
+    "TECBASE01SW": "a futuristic metal base courtyard, smooth pale lilac and violet metal floor plates, engraved "
+                   "lilac metal hull walls, pale blue metal grating | glowing molten lava floor, orange energy "
+                   "doors, hexagonal lilac canisters, blue glass panes, green glowing floor pad",
+    "BANK_01": "an office interior, pale grey stone tile floors, grey stone brick walls, pink and tan plaster "
+               "walls, black metal wall panels | orange armchairs, wooden desks, cabinets, red double doors, "
+               "marble statues, black pirate flags, green-screen consoles",
+    "MUM_VILLAGE_S01_ENTRY_MDF": "a frozen ice cave, pale lilac snow and cyan ice floors, dark grey gravel, walls "
+                                 "of frosted cyan ice and dark blue stone blocks | blue-flame torches on black "
+                                 "poles, purple-grey fluted stone columns, orange-brown curtain, ice stairs",
+    "ICEKING_VILLAGE_W_00": "a ruined stone village, dark grey rough stone floors, pinkish brown gravel ground, "
+                            "brown brick and grey stone walls, grey stone stairs | wax candles, iron torches, "
+                            "glowing lantern, blue pyramids, bookcase, fireplace, stone columns",
+    "WESTOWN_JEFFERSON": "a wasteland farmstead, grey gravel and pinkish brown dirt, golden dry straw ground, "
+                         "dark weathered plank barns with pale grey roofs, plank floors | dead black trees, grey "
+                         "boulder, wooden staircases, bookcase, carved stag cabinets, ornate chest, bar counter",
+    "URBANWASTEHUGE46": "a ruined wasteland town, pinkish brown gravel, black asphalt, grey concrete floors, "
+                        "brown plank floors, soot-stained grey concrete and brown plank walls | burning oil "
+                        "drums, chain-link fences, tyres, wooden crates, beds, rusty metal tanks, dead trees, "
+                        "broken furniture",
+    "NEURBAN01B": "a ruined town block, pale blue and teal floors, pale blue sandy streets, grey concrete and "
+                  "teal brick walls, cool blue grey palette | grey metal crates, teal columns, wooden furniture, "
+                  "green bushes, red tendril clump",
+    "FORESTSWAMP_WASTE_NUKE/FORESTSWAMP02": "a dead burnt forest wasteland, dusty pinkish-brown dead earth, dark "
+                                            "purplish-brown mottled soil, bare earth hills with brown soil sides "
+                                            "| charred blackish-grey dead conifers, burnt stumps, withered ochre "
+                                            "bushes, dark grey boulder, few green specks",
+    "WHITECASTLE_03": "a ruined pale stone castle, pale grey-lavender stone brick walls, stairs and ramps, grey "
+                      "paved slabs, mossy stone, brown earth, green swamp grass, dark teal water | green ivy, "
+                      "burning wall torches, iron torch stands, barrel, wooden rack",
+    "DSRTREFI_09": "an orange desert sand, raised banks of packed tan sand, black charred ash patches, grey steel "
+                   "plate floor, corrugated grey metal walls | rusty grey steel tanks, rusty pipes and girders, "
+                   "black tyre, grey machine with amber panels, bones",
+    "ABASE_00": "an alien prison base interior, light grey metal walls with coloured trim, grey checkered, maroon "
+                "and blue tiled floors, black rocky cave ground | barred cell walls, cyan machines and cabinets, "
+                "lavender hexagonal pillars, glowing floor pads, bunk beds, toilets",
+    "MOUNTBD12": "a muddy mountain slope, brown earth ground, raised mud ledges and ramps, earthy brown and tan "
+                 "palette | large brown rock boulders, dry yellow grass, green bushes and reeds, small leafy "
+                 "tree, dead stump, hollow log",
+    "NINBASE1_OUTPOST": "a metal outpost interior, dark grey bolted metal decks, pale grey tiles, pale lavender "
+                        "and light blue mottled concrete walls, dark grey corrugated walls | glowing magenta "
+                        "pool, orange-lit consoles, green-screen computers, bunk beds, lockers, boxes, blue "
+                        "stairs",
+    "CULTAFARM23": "a farm field of purple grass, dark grey gravel soil, green crop rows, orange cobblestone "
+                   "yard, dark charcoal plank barns, grey stone brick walls | tall green crops, lime green hay "
+                   "bales, dark wooden rail fences, dark red plank doors",
+    "MOONBERIA20": "a lunar colony, flat grey concrete floors, dark charcoal floor slabs, grey lunar dust and "
+                   "rock, grey stone walls, pale grey rock blocks | tan crates, green bunk beds, plant racks, "
+                   "lilac cabinets, orange engines, green-lit doors",
+    "MOUNTBD_SNOW/MOUNTBDSOLHUGE00": "a snowy mountain, white snow ground, patches of tan earth and grey stone, "
+                                     "grey rock ledges and cliffs, snow-capped grey boulders | dark green snowy "
+                                     "fir trees, bare trees, hollow brown logs, stumps, leafless red-brown shrubs",
+    "MOUNTBD_SANDY/MOUNTBDSOLHUGE00": "a desert mountain, pale yellow sand ground, orange sand slopes, tan "
+                                      "sandstone cliffs, olive-ochre sandstone boulders, brown earth patches | "
+                                      "green saguaro cacti with yellow buds, barrel cactus, dead bare trees, "
+                                      "bleached skulls and bones, coiled snake",
+    "MOUNTBD_ERODED/MOUNTBDSOLHUGE00": "an eroded mountain, grey gravel ground with green moss, pinkish-brown "
+                                       "dirt paths, grey rock ledges and cliffs, mossy grey boulders | green fir "
+                                       "trees, dense dark green bushes, hollow brown logs, broken stumps, "
+                                       "red-brown thorny shrubs",
+    "CYBERWEBDIO_00": "an underground den in black rock, near-black stone floors, grey checkered metal plates, "
+                      "tan plank decking, salmon brick, beige and grey walls, chain-link fences | glowing green "
+                      "sludge, cardboard crates, metal shelves, purple computer consoles, desks, orange-framed "
+                      "doors, grated stairs",
+    "STYX_DARKTOWER": "a dark stone tower, dark grey stone brick walls, slate pyramid roofs, grey stone slab "
+                      "floors, brown wooden plank floors | wooden furniture, bookcases, beds, thrones, glowing "
+                      "blue floor seams, glowing red walls, yellow lanterns, crystal orb, potted plants",
+    "WHITEBASE_17": "a white stone base interior, light grey stone block walls with tan trim, grey and black "
+                    "checkered tile floor, smooth white floor | computer consoles with green screens, glowing "
+                    "green glass tanks, grass planters, white stairs, wrecked dark grey machine",
 }
 STYLE = ("isometric view of {scene}, pre-rendered 3D game art, realistic matte materials, "
          "detailed textures, soft light from the upper left, sharp focus")
@@ -1090,7 +1242,8 @@ def main(argv=None):
     args.region = tuple(int(v) for v in args.region.split(","))
 
     world = mm.World()
-    scene = args.scene or SCENES.get(args.block, "")
+    # одна карта бывает в нескольких террейнах (CEREBRAL_CHAMBER_2 в UBASE_VR и DREADBASE): ТЕРРЕЙН/КАРТА, потом КАРТА
+    scene = args.scene or SCENES.get("%s/%s" % (args.terrain, args.block)) or SCENES.get(args.block, "")
     if not scene:
         raise SystemExit("нет описания сцены: --scene")
     prompt, args.prompt_surf = scene_prompts(scene)

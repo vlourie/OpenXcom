@@ -293,7 +293,10 @@ class State:
                 shutil.copy2(os.path.join(src, fn), os.path.join(d, fn))
 
     def _queue_redo(self, terrain, block, frames):
-        cfg = load_json(MAPS, {}).get(block)
+        # одна карта бывает в нескольких террейнах (CEREBRAL_CHAMBER_2 в UBASE_VR и DREADBASE):
+        # сначала ключ ТЕРРЕЙН/КАРТА, потом просто КАРТА
+        maps = load_json(MAPS, {})
+        cfg = maps.get("%s/%s" % (terrain, block)) or maps.get(block)
         fl = ",".join("%s:%d" % sf for sf in sorted(frames))
         if not cfg:
             return "%s: нет настроек в %s - кадры %s убраны из серии, перерисуются со следующим прогоном карты" \
