@@ -47,6 +47,7 @@
 #include "Action.h"
 #include "Exception.h"
 #include "Options.h"
+#include "Timer.h"
 #include "CrossPlatform.h"
 #include "FileMap.h"
 #include "Unicode.h"
@@ -160,6 +161,11 @@ void Game::run()
 	Uint32 lastMouseMoveEvent = 0;
 	Sint16 xrel = 0;
 	Sint16 yrel = 0;
+	// the AI probe (OXCE_AI_PROBE, Battlescape/AiProbe.cpp): virtual clock, never paused, no frame cap,
+	// a frame drawn only every 16th loop - nobody watches, and the clock no longer waits for frames
+	const char *aiProbe = getenv("OXCE_AI_PROBE");
+	Timer::probeClock = aiProbe && *aiProbe && *aiProbe != '0';
+	Uint32 probeLoops = 0;
 
 	while (!_quit)
 	{
@@ -372,6 +378,11 @@ void Game::run()
 			}
 		}
 		hdEventMs = SDL_GetTicks() - hdEventStart;
+		if (Timer::probeClock)
+		{
+			runningState = RUNNING;
+			Timer::probeAdvance();
+		}
 
 		// Process rendering
 		if (runningState != PAUSED)
@@ -391,6 +402,10 @@ void Game::run()
 			else
 			{
 				_timeUntilNextFrame = 0;
+			}
+			if (Timer::probeClock)
+			{
+				_timeUntilNextFrame = (++probeLoops % 16) ? 1 : 0;
 			}
 
 			if (_init && _timeUntilNextFrame <= 0)
@@ -601,7 +616,8 @@ void Game::run()
 		switch (runningState)
 		{
 			case RUNNING:
-				SDL_Delay(1); //Save CPU from going 100%
+				if (!Timer::probeClock)
+					SDL_Delay(1); //Save CPU from going 100%
 				break;
 			case SLOWED: case PAUSED:
 				SDL_Delay(100); break; //More slowing down.

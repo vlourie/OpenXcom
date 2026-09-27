@@ -39,6 +39,11 @@ public:
 	/// Frame skip the HD battlescape asks for on top of the option (so that the game speed follows the settings when frames are slow).
 	static int hdFrameSkip;
 	static Uint32 gameSlowSpeed;
+	/// The AI probe's virtual clock (OXCE_AI_PROBE): time goes in equal steps per loop, not by the wall clock.
+	static bool probeClock;
+	static Uint32 probeTicks;
+	/// One step of the virtual clock, called once per game loop.
+	static void probeAdvance() { probeTicks += 10; }
 
 private:
 	Uint32 _start;

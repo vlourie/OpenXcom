@@ -19,6 +19,7 @@
 #include <algorithm>
 #include <sstream>
 #include <iomanip>
+#include "AiProbe.h"
 #include "../fmath.h"
 #include <SDL_gfxPrimitives.h>
 #include "Map.h"
@@ -887,6 +888,7 @@ void BattlescapeState::think()
 		if (_popups.empty())
 		{
 			State::think();
+			AiProbe::think(this, _save);
 			int ret = _battleGame->think();
 			if (ret > -1)
 			{
