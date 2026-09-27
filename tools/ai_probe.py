@@ -58,7 +58,9 @@ def prepare_user(work):
         sys.exit(f"нет ссылки на моды: {mods}")
     cfg = (GAME / "user" / "options.cfg").read_text(encoding=ENC_R)
     # R-093, R-095: камеру не крутит мышь человека, экран выбора версии не встаёт
-    for key, value in (("battleEdgeScroll", "0"), ("oxceAdultAsk", "false"), ("playIntro", "false")):
+    # картинку прогона никто не смотрит: один поток рисования и масштаб 1, иначе 8 боёв разом съедают весь процессор
+    for key, value in (("battleEdgeScroll", "0"), ("oxceAdultAsk", "false"), ("playIntro", "false"),
+                       ("oxceHdThreads", "1"), ("oxceHdScale", "1"), ("oxceHdMode", "0")):
         cfg = re.sub(rf"(?m)^(\s*){key}: .*$", rf"\g<1>{key}: {value}", cfg)
     # options.cfg читает игра (yaml-cpp), а не PowerShell: без спецификации (R-001, исключение)
     (work / "options.cfg").write_bytes(cfg.encode("utf-8"))

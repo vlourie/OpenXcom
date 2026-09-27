@@ -29,7 +29,7 @@ import ai_probe
 ENC_W = "utf-8-sig"
 # поведение из [AIDECIDE]: p - сторона игрока (бот), h - враг
 MOVES = ("decisions", "run", "kneel", "throw", "psi", "melee")
-COLS = ("seed", "want", "how", "mission", "month", "units", "terrain", "race", "craft", "shade", "turn", "player", "pdead", "pout",
+COLS = ("seed", "want", "how", "mission", "kind", "month", "units", "terrain", "race", "craft", "shade", "turn", "player", "pdead", "pout",
         "pwounded", "phplost", "hostile", "hdead", "hout", "hleft", "livesoldiers", "livealiens", "aborted",
         "pattacks", "hattacks") + tuple(s + m for s in "ph" for m in MOVES) + ("seconds", "note")
 DECIDE = re.compile(r"\[AIDECIDE\] turn=\d+ side=(\d) .*? act=(\d+) to=\S+ run=(\d)")
@@ -83,7 +83,10 @@ def one(seed, turns, diff, timeout, campaign, mission=None):
         row.update({k: v for k, v in ai_probe.fields(battle[0]).items() if k in COLS})
     res = r.tagged("[AIRESULT]")
     if res:
-        row.update({k: v for k, v in ai_probe.fields(res[0]).items() if k in COLS})
+        got = ai_probe.fields(res[0])
+        # mission в [AIRESULT] - тип боя движка (у любого НЛО STR_UFO_GROUND_ASSAULT), миссия - из строки battle
+        row["kind"] = got.pop("mission", "")
+        row.update({k: v for k, v in got.items() if k in COLS})
     else:
         stuck = r.tagged("[AIPROBE] stuck")
         row["how"] = "stuck" if stuck else ("nobattle" if not battle else "timeout-real")
@@ -93,6 +96,8 @@ def one(seed, turns, diff, timeout, campaign, mission=None):
 
 def outcome(row):
     """win - врагов на ногах не осталось, loss - у игрока, draw - предел ходов, иначе прогон не дошёл."""
+    if row.get("want") and row.get("mission") and row["want"] != row["mission"]:
+        return "unpinned"  # такой миссии нет в списке быстрого боя, игра взяла случайную
     if "could not be placed" in row.get("note", ""):
         return "nomap"  # корабль не встаёт на карту миссии: генератор падает так же и в игре
     if row.get("how") not in ("over", "abort", "timeout"):
