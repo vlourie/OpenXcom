@@ -222,6 +222,7 @@ void CraftSoldiersState::cbxSortByChange(Action *)
 				_base->getSoldiers()->insert(_base->getSoldiers()->end(), s);
 			}
 		}
+		DoSort(selIdx, nullptr); // OXCE-HD: the groups over the original order
 	}
 
 	size_t originalScrollPos = _lstSoldiers->getScroll();

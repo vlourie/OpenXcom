@@ -90,29 +90,30 @@ namespace OpenXcom
 
 		void DoSort(int sortIndex, const SortFunctor* sortFunctor)
 		{
-			if (!sortFunctor || !sortFunctor->_getStatFn)
-				return;
+			// OXCE-HD: no sorter (original order) still gets the groups below
+			if (sortFunctor && sortFunctor->_getStatFn)
+			{
+				if (sortIndex == 2)
+				{
+					std::stable_sort(_base->getSoldiers()->begin(), _base->getSoldiers()->end(),
+									 [](const Soldier* a, const Soldier* b)
+									 {
+										 return Unicode::naturalCompare(a->getName(), b->getName());
+									 });
+				}
+				else if (sortIndex == 3)
+				{
+					std::stable_sort(_base->getSoldiers()->begin(), _base->getSoldiers()->end(), craftLess);
+				}
+				else
+				{
+					std::stable_sort(_base->getSoldiers()->begin(), _base->getSoldiers()->end(), *sortFunctor);
+				}
 
-			if (sortIndex == 2)
-			{
-				std::stable_sort(_base->getSoldiers()->begin(), _base->getSoldiers()->end(),
-								 [](const Soldier* a, const Soldier* b)
-								 {
-									 return Unicode::naturalCompare(a->getName(), b->getName());
-								 });
-			}
-			else if (sortIndex == 3)
-			{
-				std::stable_sort(_base->getSoldiers()->begin(), _base->getSoldiers()->end(), craftLess);
-			}
-			else
-			{
-				std::stable_sort(_base->getSoldiers()->begin(), _base->getSoldiers()->end(), *sortFunctor);
-			}
-
-			if (State::_game->isShiftPressed())
-			{
-				std::reverse(_base->getSoldiers()->begin(), _base->getSoldiers()->end());
+				if (State::_game->isShiftPressed())
+				{
+					std::reverse(_base->getSoldiers()->begin(), _base->getSoldiers()->end());
+				}
 			}
 
 			// OXCE-HD: the groups (Options::oxceBaseSoldierGroupBy) over the order just made: the sort is
