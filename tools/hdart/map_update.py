@@ -225,10 +225,11 @@ def cmd_pack(args):
             for src in got:
                 rel = "hd/TERRAIN/%s/%s" % (os.path.basename(mod_dir(args.mod, s)), os.path.basename(src))
                 h = sha(src)
-                if shipped.get(rel) == h:
+                old = os.path.join(mod_dir(args.mod, s), os.path.basename(src))
+                # в серии лежит кадр мода: в map_pick выбран прежний кадр, и серия строится от него
+                if shipped.get(rel) == h or (os.path.exists(old) and sha(old) == h):
                     same += 1
                     continue
-                old = os.path.join(mod_dir(args.mod, s), os.path.basename(src))
                 is_main = "." not in os.path.basename(src)[:-4]
                 ok, fl = score(world, s, f, src) if is_main else ("", "")
                 ok_m, fl_m = score(world, s, f, old) if is_main and os.path.exists(old) else ("", "")
