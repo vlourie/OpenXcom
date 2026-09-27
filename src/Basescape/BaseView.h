@@ -58,6 +58,8 @@ private:
 	bool _highContrast;
 	Uint8 _cellColor, _selectorColor;
 	int _animPhase, _animTick;
+	/// When an HD picture of a facility changes next (SDL_GetTicks), as drawHd found it.
+	Uint32 _hdNextChange;
 	/// A craft drawn in the world layer (with its HD picture or lights) instead of the classic layer.
 	/// A craft whose lights go over the view; `inWorld`: its picture is drawn in the world layer too.
 	struct HdCraft { int index, x, y, status; Uint32 seed; bool inWorld; };

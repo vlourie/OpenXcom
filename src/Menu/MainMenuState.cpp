@@ -21,6 +21,8 @@
 #include "../Savegame/SavedGame.h"
 #include "../Geoscape/Globe.h"
 #include "../Geoscape/GeoscapeState.h"
+#include "../Basescape/BasescapeState.h"
+#include "../Savegame/Base.h"
 #include "OptionsAdvancedState.h"
 #include "../Ufopaedia/Ufopaedia.h"
 #include "ListSaveState.h"
@@ -288,7 +290,7 @@ void MainMenuState::init()
 		_game->quit();
 		return;
 	}
-	// HD test automation: OXCE_HD_START=newbattle|options|load opens that screen at once (headless dumps)
+	// HD test automation: OXCE_HD_START=newbattle|options|load|geoscape|base... opens that screen at once (headless dumps)
 	static bool autoStarted = false;
 	const char *autoStart = getenv("OXCE_HD_START");
 	if (autoStart && *autoStart && !autoStarted)
@@ -314,7 +316,7 @@ void MainMenuState::init()
 			_game->pushState(nb);
 			nb->btnOkClick(nullptr);
 		}
-		else if (what == "geoscape" || what == "save")
+		else if (what == "geoscape" || what == "save" || what == "base")
 		{
 			// a new game on the geoscape, zoomed a step in, the globe centred on Europe (no base placing)
 			SavedGame *save = _game->getMod()->newSave(DIFF_BEGINNER);
@@ -337,6 +339,11 @@ void MainMenuState::init()
 			{
 				// the save list over it (an edit field: OXCE_HD_CLICK on a row, OXCE_HD_TYPE a name)
 				_game->pushState(new ListSaveState(OPT_GEOSCAPE));
+			}
+			if (what == "base" && !save->getBases()->empty())
+			{
+				// the starting base's screen (its facilities' HD pictures)
+				_game->pushState(new BasescapeState(save->getBases()->front(), gs->getGlobe()));
 			}
 		}
 		else if (what == "ufopaedia")

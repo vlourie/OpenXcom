@@ -115,7 +115,7 @@ BaseView::BaseView(int width, int height, int x, int y) : InteractiveSurface(wid
 	_gridX(0), _gridY(0), _selSizeX(0), _selSizeY(0),
 	_selector(0), _blink(true),
 	_redColor(0), _yellowColor(0), _greenColor(0), _highContrast(true),
-	_cellColor(0), _selectorColor(0), _animPhase(0), _animTick(0), _hdNumbersKept(false)
+	_cellColor(0), _selectorColor(0), _animPhase(0), _animTick(0), _hdNextChange(0), _hdNumbersKept(false)
 {
 	// Clear grid
 	for (int i = 0; i < BASE_SIZE; ++i)
@@ -607,13 +607,17 @@ void BaseView::drawHd()
 		}
 	}
 	HdBase::preload(want, k, Options::oxceHdBaseAnim);
-	const int facilityPhase = Options::oxceHdBaseAnim ? _animPhase : 0;
+	// the pictures run on the display clock, never the game's: a still picture, a loop, a burst now and then
+	const Uint32 now = SDL_GetTicks();
+	Uint32 next = 0xFFFFFFFFu;
 	for (const auto* fac : *_base->getFacilities())
 	{
 		if (!isHdFacility(fac))
 		{
 			continue;
 		}
+		// every tile of a facility bursts at once, facilities one after another
+		const Uint32 seed = (Uint32)(fac->getX() * 7 + fac->getY() * 31 + 1);
 		int num = 0;
 		for (int y = fac->getY(); y < fac->getY() + fac->getRules()->getSizeY(); ++y)
 		{
@@ -628,11 +632,8 @@ void BaseView::drawHd()
 				Surface *classic = _texture->getFrame(index);
 				if (classic)
 				{
-					const HdFrame *hd = HdBase::frame(index, facilityPhase, k, classic->getWidth(), classic->getHeight());
-					if (hd)
-					{
-						HdUiArt::drawFrame(world, *hd, (getX() + x * GRID_SIZE) * k, (getY() + y * GRID_SIZE) * k);
-					}
+					next = std::min(next, HdBase::draw(world, index, (getX() + x * GRID_SIZE) * k, (getY() + y * GRID_SIZE) * k,
+						k, classic->getWidth(), classic->getHeight(), Options::oxceHdBaseAnim, now, seed));
 				}
 				++num;
 			}
@@ -653,7 +654,12 @@ void BaseView::drawHd()
 		{
 			HdUiArt::drawFrame(world, *picture, (getX() + craft.x) * k, (getY() + craft.y) * k);
 		}
+		if (Options::oxceHdCraftLights && HdBase::phases(craft.index) > 1)
+		{
+			next = now;         // a craft picture with phases steps with _animPhase
+		}
 	}
+	_hdNextChange = next;
 }
 
 /**
@@ -696,12 +702,20 @@ void BaseView::blink()
 {
 	_blink = !_blink;
 
-	// HD pictures of facilities can have several phases: one step every other tick (200 ms)
-	if (HdBase::animated() && hdBaseActive() && (Options::oxceHdBaseAnim || Options::oxceHdCraftLights) && ++_animTick >= 2)
+	// HD pictures of facilities change on their own clock (HdBase::draw, steps of 200 ms): the classic
+	// layer, which holds the craft and numbers over them, is drawn again only when one of them does
+	if (HdBase::animated() && hdBaseActive() && (Options::oxceHdBaseAnim || Options::oxceHdCraftLights))
 	{
-		_animTick = 0;
-		++_animPhase;
-		_redraw = true;         // the classic layer holds the craft and numbers over the pictures
+		if (++_animTick >= 2)
+		{
+			_animTick = 0;
+			++_animPhase;       // phases of the craft pictures
+		}
+		if (SDL_GetTicks() >= _hdNextChange)
+		{
+			_hdNextChange = 0xFFFFFFFFu;   // drawHd sets it again
+			_redraw = true;
+		}
 	}
 
 	if (_selSizeX > 0 && _selSizeY > 0)
