@@ -31,8 +31,8 @@ ENC_W = "utf-8-sig"
 MOVES = ("decisions", "run", "kneel", "throw", "psi", "melee")
 COLS = ("seed", "want", "how", "mission", "kind", "month", "units", "terrain", "race", "craft", "shade", "turn", "player", "pdead", "pout",
         "pwounded", "phplost", "hostile", "hdead", "hout", "hleft", "livesoldiers", "livealiens", "aborted",
-        "pattacks", "hattacks") + tuple(s + m for s in "ph" for m in MOVES) + ("seconds", "note")
-DECIDE = re.compile(r"\[AIDECIDE\] turn=\d+ side=(\d) .*? act=(\d+) to=\S+ run=(\d)")
+        "pattacks", "hattacks", "tac") + tuple(s + m for s in "ph" for m in MOVES) + ("seconds", "note")
+DECIDE = re.compile(r"\[AIDECIDE\] turn=\d+ side=(\d) .*? act=(\d+) to=\S+ run=(\d)(?: kneel=(\d))?")
 
 
 def behaviour(log):
@@ -42,14 +42,15 @@ def behaviour(log):
         text = Path(log).read_text(encoding="utf-8", errors="replace")
     except OSError:
         return {}
-    for side, act, run in DECIDE.findall(text):
+    for side, act, run, kneel in DECIDE.findall(text):
         s = {"0": "p", "1": "h"}.get(side)
         if not s:
             continue
         act = int(act)
         c[s + "decisions"] += 1
         c[s + "run"] += act == 2 and run == "1"
-        c[s + "kneel"] += act == 3
+        # присед - и отдельным действием, и флагом при выстреле или засаде (AIModule.cpp, action->kneel)
+        c[s + "kneel"] += act == 3 or kneel == "1"
         c[s + "throw"] += act in (6, 12)
         c[s + "psi"] += act in (13, 14)
         c[s + "melee"] += act == 10
@@ -67,12 +68,12 @@ def seeds_of(spec):
 SLOTS = queue.Queue()
 
 
-def one(seed, turns, diff, timeout, campaign, mission=None):
+def one(seed, turns, diff, timeout, campaign, mission=None, tactics=False, careful=False):
     # папка прогона - по потоку, а не по зерну: одно зерно идёт на разных миссиях одновременно
     slot = SLOTS.get()
     try:
         r = ai_probe.run(None, turns, name=f"arena_w{slot}", timeout=timeout, bot=True, seed=seed, diff=diff,
-                         campaign=campaign, mission=mission)
+                         campaign=campaign, mission=mission, tactics=tactics, careful=careful)
         moves = behaviour(r.log)
     finally:
         SLOTS.put(slot)
@@ -110,7 +111,8 @@ def outcome(row):
             return "win"
         if int(row["livesoldiers"]) == 0:
             return "loss"
-        return "abort" if row["how"] == "abort" or row.get("aborted") == "1" else "end-other"
+        # бот не отступает никогда: прерванный бой - это таймер миссии (turnLimit + chronoTrigger), отряд продержался
+        return "held" if row["how"] == "abort" or row.get("aborted") == "1" else "end-other"
     if int(row["hleft"]) == 0:
         return "win"
     if int(row["pdead"]) + int(row["pout"]) >= int(row["player"]):
@@ -124,7 +126,7 @@ def summary(rows, label):
     for r in rows:
         by.setdefault(outcome(r), []).append(r)
     lines.append("исходы: " + ", ".join(f"{k} {len(v)}" for k, v in sorted(by.items())))
-    done = [r for r in rows if outcome(r) in ("win", "loss", "draw", "abort", "end-other")]
+    done = [r for r in rows if outcome(r) in ("win", "loss", "draw", "held", "abort", "end-other")]
     if not done:
         return lines
     n = len(done)
@@ -158,7 +160,7 @@ def by_mission(rows):
         groups[r.get("want") or r.get("mission") or "-"].append(r)
     lines = ["", "по миссиям (сыграно | победа/поражение/предел | погибло, ранено из отряда | ходов медиана | nomap):"]
     for m, rs in sorted(groups.items()):
-        done = [r for r in rs if outcome(r) in ("win", "loss", "draw", "abort", "end-other")]
+        done = [r for r in rs if outcome(r) in ("win", "loss", "draw", "held", "abort", "end-other")]
         out = collections.Counter(outcome(r) for r in rs)
         if not done:
             lines.append(f"  {m}: не сыграно ни одного, {dict(out)}")
@@ -194,6 +196,8 @@ def main():
     ap.add_argument("--timeout", type=int, default=1200, help="секунд на бой")
     ap.add_argument("--missions", default="", help="миссии через запятую или @файл (строка на миссию): каждая на всех зёрнах")
     ap.add_argument("--resume", action="store_true", help="продолжить серию: уже сыгранные миссия+зерно из таблицы пропустить")
+    ap.add_argument("--tactics", action="store_true", help="враг с правилами опыта (OXCE_AI_TACTICS): стреляет или уходит в укрытие")
+    ap.add_argument("--careful", action="store_true", help="осторожный бот за игрока (OXCE_AI_CAREFUL): укрытие, отвод раненых, присед и бег по правилам игрока")
     ap.add_argument("--label", default="arena")
     ap.add_argument("--out", default="")
     a = ap.parse_args()
@@ -214,10 +218,11 @@ def main():
         SLOTS.put(slot)
     campaign = None if a.recruits else a.campaign
     total = len(jobs) + len(rows)
+    print(f"правила: враг {'опыт' if a.tactics else 'родной'}, бот {'осторожный' if a.careful else 'родной'}", flush=True)
     print(f"боёв {len(jobs)} (уже сыграно {len(rows)}), миссий {len(missions)}, зёрен {len(seeds)}, потоков {a.jobs}", flush=True)
     t0 = time.time()
     with ThreadPoolExecutor(a.jobs) as pool:
-        for row in pool.map(lambda j: one(j[1], a.turns, a.diff, a.timeout, campaign, j[0]), jobs):
+        for row in pool.map(lambda j: one(j[1], a.turns, a.diff, a.timeout, campaign, j[0], a.tactics, a.careful), jobs):
             rows.append(row)
             # строка в таблицу сразу: серия на часы, обрыв не должен стоить уже сыгранного
             with open(table, "a", encoding="utf-8") as f:

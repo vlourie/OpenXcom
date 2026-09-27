@@ -56,6 +56,12 @@ void battleOver(BattlescapeState *state, SavedBattleGame *save, bool abort);
 void logDecision(SavedBattleGame *save, BattleUnit *unit, const BattleAction &action);
 /// One line per unit on the field: position, TU, health, who it sees and who has spotted it.
 void logState(SavedBattleGame *save, const char *when);
+/// The smarter enemy under test (OXCE_AI_TACTICS): true for hostile units only.
+bool tactics(const BattleUnit *unit);
+/// The careful bot (OXCE_AI_CAREFUL): true for the player's units while the bot plays them.
+bool careful(const BattleUnit *unit);
+/// Counts one use of a tactical rule for the result line ([AIRESULT] tac=).
+void tally(const BattleUnit *unit, const char *rule);
 
 }
 

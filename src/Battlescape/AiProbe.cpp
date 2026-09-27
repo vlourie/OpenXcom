@@ -49,6 +49,9 @@ void think(BattlescapeState *, SavedBattleGame *) {}
 void battleOver(BattlescapeState *, SavedBattleGame *, bool) {}
 void logDecision(SavedBattleGame *, BattleUnit *, const BattleAction &) {}
 void logState(SavedBattleGame *, const char *) {}
+bool tactics(const BattleUnit *) { return false; }
+bool careful(const BattleUnit *) { return false; }
+void tally(const BattleUnit *, const char *) {}
 
 #else
 
@@ -87,6 +90,8 @@ bool started = false;
 std::map<int, int> startHealth;
 /// decisions per side: [side][0] moves, [side][1] attacks (shots, throws, melee)
 int decided[3][2] = {};
+/// uses of the tactical rules: "h.cover", "p.pullback"...
+std::map<std::string, int> tallies;
 
 void logStart(SavedBattleGame *save)
 {
@@ -131,7 +136,13 @@ void logResult(SavedBattleGame *save, const char *how)
 	}
 	// the engine's own count decides who won: it skips surrendered, psi-captured and over-threshold units
 	const BattlescapeTally tally = save->getBattleGame()->tallyUnits();
+	std::ostringstream tac;
+	for (const auto &t : tallies)
+	{
+		tac << (tac.tellp() > 0 ? "," : "") << t.first << ":" << t.second;
+	}
 	Log(LOG_INFO) << "[AIRESULT] how=" << how
+		<< " tac=" << (tac.tellp() > 0 ? tac.str() : std::string("-"))
 		<< " seed=" << battleSeed()
 		<< " livesoldiers=" << tally.liveSoldiers << " livealiens=" << tally.liveAliens << " aborted=" << save->isAborted()
 		<< " mission=" << save->getMissionType()
@@ -154,6 +165,23 @@ bool active()
 bool botTurn(const SavedBattleGame *save)
 {
 	return bot() && save->getSide() == FACTION_PLAYER;
+}
+
+bool tactics(const BattleUnit *unit)
+{
+	static const bool on = active() && envOn("OXCE_AI_TACTICS");
+	return on && unit->getFaction() == FACTION_HOSTILE;
+}
+
+bool careful(const BattleUnit *unit)
+{
+	static const bool on = bot() && envOn("OXCE_AI_CAREFUL");
+	return on && unit->getFaction() == FACTION_PLAYER;
+}
+
+void tally(const BattleUnit *unit, const char *rule)
+{
+	++tallies[std::string(unit->getFaction() == FACTION_PLAYER ? "p." : "h.") + rule];
 }
 
 long long battleSeed()
@@ -282,6 +310,7 @@ void logDecision(SavedBattleGame *save, BattleUnit *unit, const BattleAction &ac
 		<< " act=" << (int)action.type
 		<< " to=" << action.target
 		<< " run=" << (action.run ? 1 : 0)
+		<< " kneel=" << (action.kneel ? 1 : 0)
 		<< " aim=" << (target ? target->getId() : -1)
 		<< " weapon=" << (action.weapon ? action.weapon->getRules()->getType() : std::string("-"))
 		<< " seen=" << (seen.tellp() > 0 ? seen.str() : std::string("-"));

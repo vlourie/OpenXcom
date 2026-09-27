@@ -122,6 +122,8 @@ public:
 	int scoreFiringMode(BattleAction *action, BattleUnit *target, bool checkLOF);
 	/// re-evaluate our situation, and make a decision from our available options.
 	void evaluateAIMode();
+	/// The bench's tactical rules (OXCE_AI_TACTICS / OXCE_AI_CAREFUL): attack or take cover, never loiter in view.
+	void tacticalMode();
 	/// Selects a suitable position from which to attack.
 	bool findFirePoint();
 	/// Decides if we should throw a grenade/launch a missile to this position.

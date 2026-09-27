@@ -352,6 +352,12 @@ void BattlescapeGame::handleAI(BattleUnit *unit)
 		unit->setAIModule(new AIModule(_save, unit, 0));
 		ai = unit->getAIModule();
 	}
+	if (AiProbe::careful(unit))
+	{
+		// the bench bot: an AI module aims at the player by default, the bot's enemies are the hostiles
+		// (without this it sees nobody spotting it and counts its own soldiers in a grenade's blast)
+		ai->setTargetFaction(FACTION_HOSTILE);
+	}
 	_AIActionCounter++;
 	if (_AIActionCounter == 1)
 	{
