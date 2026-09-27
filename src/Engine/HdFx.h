@@ -27,6 +27,7 @@ namespace OpenXcom
 {
 
 struct HdFrame;
+struct DotStyle;
 class RuleItem;
 class BattleUnit;
 class Tile;
@@ -41,7 +42,7 @@ class Tile;
  * clock and is drawn only in the HD modes, for a shooter the player can see.
  *
  * Mod layout: hd/FX/<clip>/<i>.png (RGBA 4x, the point of impact in the middle),
- * hd/FX/weapons.txt (tools/hdart/fx_map.py): "flash|hit|swing <item> <kind>".
+ * hd/FX/weapons.txt (tools/hdart/fx_map.py): "flash|hit|swing <item> <kind>", "tracer <item> <options>".
  * A clip name may hold "%c": the colour, taken from the classic frame it replaces.
  */
 namespace HdFx
@@ -54,6 +55,8 @@ namespace HdFx
 	std::string swingClip(const RuleItem *weapon, const RuleItem *damage, int direction);
 	/// The clip for the muzzle flash of `weapon` firing `ammo` facing `direction` (empty: the weapon has no muzzle flash).
 	std::string flashClip(const RuleItem *weapon, const RuleItem *ammo, int direction);
+	/// How the tracer of `item` is drawn in HD, if hd/FX/weapons.txt says ("tracer <item> <options>").
+	bool tracerStyle(const RuleItem *item, DotStyle &style);
 	/// Replaces "%c" in a clip name with the colour of a classic frame (palette: the map's).
 	std::string colour(const std::string &clip, SurfaceRaw<const Uint8> frame, const SDL_Color *palette);
 	/// Frame `step` of `steps` of a clip at scale k (nullptr: the mod has no such clip).

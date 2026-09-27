@@ -14,6 +14,7 @@ R-039 у ковровых плиток): всё решает то, как отт
     py -3 tools\\hdart\\tracer_preview.py
     ... --sheet <путь к PNG набора> --types 0,2,6,14
     ... --scale 4 --out "Claude outputs\\tracer.png"
+    ... --style "bright;fade=0.35"     третья строка: стиль из hd/FX/weapons.txt (tracer)
 """
 import argparse
 import os
@@ -35,7 +36,32 @@ VANILLA = os.path.join("bin", "standard", "xcom1", "Resources", "BulletSprites",
                        "BulletSprites.png")
 
 
-def dot(frame, k):
+def parse_style(text):
+    """Строка tracer из hd/FX/weapons.txt - как HdFx::tracerStyle."""
+    st = {"classic": False, "bright": False, "width": 1.0, "fade": 1.0, "head": None}
+    for opt in filter(None, text.split(";")):
+        key, _, value = opt.partition("=")
+        if key in ("classic", "bright"):
+            st[key] = True
+        elif key in ("width", "fade"):
+            st[key] = float(value)
+        elif key == "head":
+            st["head"] = np.array([float(v) for v in value.split(",")])
+    return st
+
+
+def row_of(frames):
+    """Трассер целиком: самый яркий пиксель и самый живой цвет на полной яркости - как rowOf в makeDots."""
+    px = np.concatenate([f[..., :3][f[..., 3] > 0] for f in frames if (f[..., 3] > 0).any()])
+    max_lum = max(1.0, float((px[:, 0] * 2 + px[:, 1] * 5 + px[:, 2]).max()))
+    v = px.max(axis=1)
+    ok = (v * 10 >= v.max() * 6) & (v > 0)
+    score = np.where(ok, (v - px.min(axis=1)) / np.maximum(v, 1) * v, -1.0)
+    best = px[score.argmax()]
+    return max_lum, best * 255.0 / best.max()
+
+
+def dot(frame, k, style=None, row=None):
     """Кадр движка вместо кадра bw x bh - повторяет HdSprites::makeDots."""
     bh, bw = frame.shape[:2]
     if bw < 2 or bh < 2 or bw > MAX_DOT or bh > MAX_DOT:
@@ -58,6 +84,22 @@ def dot(frame, k):
     fade = 0.5 if dithered else 1.0
     radius = (0.37 + 0.63 * np.sqrt(cover)) * (min(bw, bh) / 2.0)
     core = peak + (255.0 - peak) * (0.35 * fill)
+    if style:
+        max_lum, vivid = row
+        lumv = rgb[..., 0] * 2 + rgb[..., 1] * 5 + rgb[..., 2]
+        rel = float(lumv[lit].mean()) / max_lum
+        projectile = not dithered and n * 2 >= bw * bh and rel >= 0.55
+        radius *= style["width"]
+        to = None
+        if projectile and style["head"] is not None:
+            to = style["head"]
+        elif projectile and style["bright"]:
+            to = vivid
+        if to is not None:
+            body, core = to, to + (255.0 - to) * 0.55
+        elif not projectile and style["fade"] < 1.0:
+            body, core = vivid, vivid + (255.0 - vivid) * 0.3
+            fade *= style["fade"] * min(1.0, rel)
 
     w, h = bw * k, bh * k
     xs = (np.arange(w) + 0.5) / k - bw / 2.0
@@ -68,7 +110,9 @@ def dot(frame, k):
     hot = np.clip(1.0 - (t / 0.55) ** 2, 0.0, None)
     out = np.zeros((h, w, 4), np.float64)
     out[..., :3] = body + (core - body) * hot[..., None]
-    out[..., 3] = np.where(fall > 0.0, np.power(np.clip(fall, 0.0, None), 1.6) * 255.0 * fade, 0.0)
+    # тонкая точка уже шага оттисков: край плотнее, чтобы луч не рассыпался на бусины
+    power = 1.6 * min(1.0, style["width"]) if style else 1.6
+    out[..., 3] = np.where(fall > 0.0, np.power(np.clip(fall, 0.0, None), power) * 255.0 * fade, 0.0)
     return out
 
 
@@ -110,17 +154,20 @@ def over(dst, src, x, y):
     d[..., :3] = s[..., :3] * a + d[..., :3] * (1.0 - a)
 
 
-def strip(frames, traj, k, new, size, origin, bg):
+def strip(frames, traj, k, new, size, origin, bg, style=None):
     W, H = size
     dst = np.zeros((H, W, 4), np.float64)
     dst[..., :3] = bg
     dst[..., 3] = 255
+    row = row_of(frames) if style else None
+    if style and style["classic"]:
+        new = False          # classic: кадр остаётся спрайтом, один оттиск на воксель
     for i, f in enumerate(frames):
         if i >= len(traj):
             break
         if f[..., 3].sum() == 0:
             continue
-        g = dot(f, k) if new else np.repeat(np.repeat(f.astype(np.float64), k, 0), k, 1)
+        g = dot(f, k, style, row) if new else np.repeat(np.repeat(f.astype(np.float64), k, 0), k, 1)
         if g is None:
             continue
         sx, sy = to_screen(traj[i], k)
@@ -148,6 +195,7 @@ def main():
     ap.add_argument("--from", dest="src", default="70,40,12", help="начало выстрела в вокселях")
     ap.add_argument("--to", dest="dst", default="10,30,10", help="конец выстрела в вокселях")
     ap.add_argument("--bg", default="36,40,32", help="цвет пола под трассером")
+    ap.add_argument("--style", default="", help="стиль трассера (строка tracer): третья строка каждого трассера")
     ap.add_argument("--out", default=os.path.join("Claude outputs", "tracer.png"))
     args = ap.parse_args()
 
@@ -181,13 +229,15 @@ def main():
                       for j in range(base, base + BULLET_SPRITES)]
             rows.append(strip(frames, traj, k, False, (W, H), origin, bg))
             rows.append(strip(frames, traj, k, True, (W, H), origin, bg))
+            if args.style:
+                rows.append(strip(frames, traj, k, True, (W, H), origin, bg, parse_style(args.style)))
     if not rows:
         print("нечего показывать")
         return 1
     img = np.concatenate(rows, axis=0)
     os.makedirs(os.path.dirname(args.out) or ".", exist_ok=True)
     Image.fromarray(np.clip(img, 0, 255).astype(np.uint8), "RGBA").save(args.out)
-    print("лист:", args.out, "- пары строк: сверху как сейчас, снизу как станет")
+    print("лист:", args.out, "- на трассер: классика, точки" + (", точки со стилем" if args.style else ""))
     return 0
 
 

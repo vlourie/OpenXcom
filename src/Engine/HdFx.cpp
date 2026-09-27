@@ -20,6 +20,7 @@
 #include <algorithm>
 #include <cctype>
 #include <cmath>
+#include <cstdio>
 #include <cstdlib>
 #include <memory>
 #include <sstream>
@@ -54,7 +55,7 @@ const Uint32 FLASH_MS = 120;
 
 /// hd/FX/weapons.txt: item type -> kind, one table per moment.
 bool tableRead = false;
-std::unordered_map<std::string, std::string> flashOf, hitOf, swingOf;
+std::unordered_map<std::string, std::string> flashOf, hitOf, swingOf, tracerOf;
 
 struct Clip
 {
@@ -103,8 +104,9 @@ void readTable()
 		if (what == "flash") flashOf[item] = kind;
 		else if (what == "hit") hitOf[item] = kind;
 		else if (what == "swing") swingOf[item] = kind;
+		else if (what == "tracer") tracerOf[item] = kind;
 	}
-	Log(LOG_INFO) << "HD fx: " << flashOf.size() << " guns, " << hitOf.size() << " hits, " << swingOf.size() << " melee weapons";
+	Log(LOG_INFO) << "HD fx: " << flashOf.size() << " guns, " << hitOf.size() << " hits, " << swingOf.size() << " melee weapons, " << tracerOf.size() << " tracer styles";
 }
 
 const std::string *lookup(const std::unordered_map<std::string, std::string> &table, const RuleItem *item)
@@ -280,6 +282,10 @@ std::string hitClip(const RuleItem *damageItem, bool onUnit, const BattleUnit *t
 	const std::string *table = lookup(hitOf, damageItem);
 	const int dt = damageType(damageItem, false);
 	std::string family = table ? *table : familyByDamage(dt);
+	if (family == "classic")
+	{
+		return "";              // the weapon's own animation reads better than any clip (the flying CD discs)
+	}
 	if (family.compare(0, 5, "boom_") == 0)
 	{
 		family = "cal4";        // an explosive round that hit without a blast
@@ -353,6 +359,29 @@ std::string flashClip(const RuleItem *weapon, const RuleItem *ammo, int directio
 		return "flash_" + kind + "_%c_" + dirName(direction);
 	}
 	return "flash_" + kind + "_" + dirName(direction);
+}
+
+bool tracerStyle(const RuleItem *item, DotStyle &style)
+{
+	const std::string *table = lookup(tracerOf, item);
+	if (!table)
+	{
+		return false;
+	}
+	// "classic", "bright;fade=0.4", "head=90,170,255", "width=0.55"
+	std::istringstream ss(*table);
+	std::string opt;
+	while (std::getline(ss, opt, ';'))
+	{
+		const size_t eq = opt.find('=');
+		const std::string key = opt.substr(0, eq), value = eq == std::string::npos ? "" : opt.substr(eq + 1);
+		if (key == "classic") style.classic = true;
+		else if (key == "bright") style.bright = true;
+		else if (key == "width") style.width = std::atof(value.c_str());
+		else if (key == "fade") style.fade = std::atof(value.c_str());
+		else if (key == "head" && std::sscanf(value.c_str(), "%d,%d,%d", &style.headR, &style.headG, &style.headB) != 3) style.headR = -1;
+	}
+	return true;
 }
 
 std::string colour(const std::string &clip, SurfaceRaw<const Uint8> frame, const SDL_Color *palette)
@@ -548,6 +577,7 @@ void clear()
 	flashOf.clear();
 	hitOf.clear();
 	swingOf.clear();
+	tracerOf.clear();
 }
 
 }

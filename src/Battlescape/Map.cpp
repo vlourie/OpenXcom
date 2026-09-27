@@ -38,6 +38,7 @@
 #include "../Engine/HdBlit.h"
 #include "../Engine/HdCanvas.h"
 #include "../Engine/HdFx.h"
+#include "../Engine/HdSprites.h"
 #include "../Engine/HdUi.h"
 #include <chrono>
 #include <cmath>
@@ -1701,7 +1702,8 @@ void Map::drawTerrain(HdCanvas *surface)
 										// draws the single stamp it always drew
 										Position trail = Position(0, 0, 0);
 										int steps = 1;
-										if (surface->getHdMode() != HD_MODE_NEAREST)
+										// (a tiny frame without a dot is one hd/FX/weapons.txt leaves classic: its bars stay one a voxel)
+										if (surface->getHdMode() != HD_MODE_NEAREST && (HdSprites::registered(tmpSurface.getBuffer()) || tmpSurface.getWidth() > 4 * _k))
 										{
 											Position from, to;
 											_camera->convertVoxelToScreen(voxelPos, &from);

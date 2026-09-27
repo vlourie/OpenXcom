@@ -848,7 +848,15 @@ void ProjectileFlyBState::think()
 										power = _ammo->getRules()->getPowerBonus(attack) - _ammo->getRules()->getPowerRangeReduction(proj->getDistance());
 									}
 									_parent->getMap()->getExplosions()->push_back(explosion);
+									// HD render: each pellet gets the combat effect of what it lands on (read only, before and after the hit)
+									const Position hdAt = proj->getPosition(offset);
+									const Tile *hdTile = _parent->getSave()->getTile(hdAt.toTile());
+									const BattleUnit *hdUnit = hdTile ? hdTile->getOverlappingUnit(_parent->getSave()) : nullptr;
+									const int hdBefore = hdUnit ? hdUnit->getHealth() * 1000 + hdUnit->getStunlevel() : 0;
 									_parent->getSave()->getTileEngine()->hit(attack, proj->getPosition(offset), power, _ammo->getRules()->getDamageType());
+									const bool hdOnUnit = secondaryImpact == V_UNIT && hdUnit;
+									const bool hdArmorHeld = hdOnUnit && hdUnit->getHealth() * 1000 + hdUnit->getStunlevel() == hdBefore;
+									explosion->setHdFx(HdFx::hitClip(_ammo->getRules(), hdOnUnit, hdUnit, hdArmorHeld, hdTile, hdAt.z));
 
 									//do not work yet
 //									if (_ammo->getRules()->getExplosionRadius(_unit) != 0)
