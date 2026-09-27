@@ -69,13 +69,13 @@ SLOTS = queue.Queue()
 LABEL = "arena"
 
 
-def one(seed, turns, diff, timeout, campaign, mission=None, tactics=False, careful=False):
+def one(seed, turns, diff, timeout, campaign, mission=None, tactics=False, careful=False, squad=0):
     # папка прогона - по потоку, а не по зерну: одно зерно идёт на разных миссиях одновременно;
     # у каждой серии (--label) свои папки - серии идут рядом, в том числе на одной сборке
     slot = SLOTS.get()
     try:
         r = ai_probe.run(None, turns, name=f"arena_{LABEL}_w{slot}", timeout=timeout, bot=True, seed=seed, diff=diff,
-                         campaign=campaign, mission=mission, tactics=tactics, careful=careful)
+                         campaign=campaign, mission=mission, tactics=tactics, careful=careful, squad=squad)
         moves = behaviour(r.log)
     finally:
         SLOTS.put(slot)
@@ -201,6 +201,7 @@ def main():
     ap.add_argument("--resume", action="store_true", help="продолжить серию: уже сыгранные миссия+зерно из таблицы пропустить")
     ap.add_argument("--tactics", action="store_true", help="враг с правилами опыта (OXCE_AI_TACTICS): стреляет или уходит в укрытие")
     ap.add_argument("--careful", action="store_true", help="осторожный бот за игрока (OXCE_AI_CAREFUL): укрытие, отвод раненых, присед и бег по правилам игрока")
+    ap.add_argument("--squad", type=int, default=0, help="отряд как у Vitali (OXCE_AI_SQUAD): n самых опытных бойцов самого опытного экипажа, остальные дома")
     ap.add_argument("--label", default="arena")
     ap.add_argument("--out", default="")
     a = ap.parse_args()
@@ -228,7 +229,7 @@ def main():
     t0 = time.time()
     with ThreadPoolExecutor(a.jobs) as pool:
         # по мере готовности, а не по порядку: бой, чей процесс не закрылся и ждёт таймаута, не держит запись остальных
-        futures = [pool.submit(one, s, a.turns, a.diff, a.timeout, campaign, m, a.tactics, a.careful) for m, s in jobs]
+        futures = [pool.submit(one, s, a.turns, a.diff, a.timeout, campaign, m, a.tactics, a.careful, a.squad) for m, s in jobs]
         for fut in as_completed(futures):
             row = fut.result()
             rows.append(row)
