@@ -172,9 +172,18 @@ def hide_windows(pid):
     found, errors = [], []
 
     def text(hwnd):
-        n = user32.SendMessageW(hwnd, 0x000E, 0, 0)  # WM_GETTEXTLENGTH
-        buf = ctypes.create_unicode_buffer(n + 1)
-        user32.SendMessageW(hwnd, 0x000D, n + 1, buf)  # WM_GETTEXT
+        # с таймаутом: окно игры, повисшей на выходе, на SendMessage не отвечает, и сторож ждал вечно,
+        # мимо своего таймаута - серия вставала (SMTO_ABORTIFHUNG | SMTO_BLOCK, 200 мс)
+        send = user32.SendMessageTimeoutW
+        send.argtypes = [wintypes.HWND, wintypes.UINT, wintypes.WPARAM, ctypes.c_void_p, wintypes.UINT, wintypes.UINT,
+                         ctypes.POINTER(ctypes.c_size_t)]
+        n = ctypes.c_size_t(0)
+        if not send(hwnd, 0x000E, 0, None, 0x0002 | 0x0001, 200, ctypes.byref(n)):  # WM_GETTEXTLENGTH
+            return ""
+        buf = ctypes.create_unicode_buffer(n.value + 1)
+        got = ctypes.c_size_t(0)
+        if not send(hwnd, 0x000D, n.value + 1, ctypes.cast(buf, ctypes.c_void_p), 0x0002 | 0x0001, 200, ctypes.byref(got)):  # WM_GETTEXT
+            return ""
         return buf.value
 
     @ctypes.WINFUNCTYPE(wintypes.BOOL, wintypes.HWND, wintypes.LPARAM)
@@ -197,7 +206,7 @@ def hide_windows(pid):
 
     user32.EnumWindows(each, 0)
     for hwnd in found:
-        user32.ShowWindow(hwnd, 0)
+        user32.ShowWindowAsync(hwnd, 0)  # не ждёт окно чужого потока: повисшее не держит сторожа
     found_text = []
     for hwnd in errors:
         user32.EnumChildWindows(hwnd, child, 0)
