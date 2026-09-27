@@ -48,6 +48,14 @@ try {
         } catch {}
     }
 
+    # --- 3. Очередь правок игры: кто держит, что с выпуском ---------------------
+    if (Test-Path 'tools/editq.py') {
+        try {
+            $q = & py -3 tools/editq.py brief 2>&1 | Out-String
+            if ($q.Trim()) { $lines.Add(""); $lines.Add($q.Trim()) }
+        } catch {}
+    }
+
     if ($lines.Count -eq 0) { exit 0 }
 
     $payload = @{
