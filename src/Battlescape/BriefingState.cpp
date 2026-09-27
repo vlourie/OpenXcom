@@ -41,6 +41,7 @@
 #include "../Menu/CutsceneState.h"
 #include "../Savegame/AlienMission.h"
 #include "../Mod/RuleAlienMission.h"
+#include "AiProbe.h"
 
 namespace OpenXcom
 {
@@ -260,6 +261,15 @@ void BriefingState::init()
 	else
 	{
 		_game->getMod()->playMusic(_musicId);
+	}
+}
+
+void BriefingState::think()
+{
+	State::think();
+	if (AiProbe::active())
+	{
+		btnOkClick(nullptr);
 	}
 }
 

@@ -91,6 +91,8 @@ public:
 	void initSave();
 	/// Handler for clicking the OK button.
 	void btnOkClick(Action *action);
+	/// The AI test bench: a random battle of the mod from a seed (mission, craft, terrain, race, shade, tech).
+	void probeRandomize(long long seed);
 	/// Handler for clicking the Cancel button.
 	void btnCancelClick(Action *action);
 	/// Handler for clicking the Randomize button.

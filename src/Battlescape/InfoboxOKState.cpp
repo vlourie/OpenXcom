@@ -97,11 +97,13 @@ void InfoboxOKState::btnOkClick(Action *)
 void InfoboxOKState::think()
 {
 	State::think();
+#ifdef OXCE_AI_DEV
 	if (AiProbe::active())
 	{
 		Log(LOG_INFO) << "[AIPROBE] closed: " << _txtTitle->getText();
 		btnOkClick(nullptr);
 	}
+#endif
 }
 
 }

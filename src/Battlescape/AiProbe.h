@@ -31,14 +31,27 @@ struct BattleAction;
  * ends the player's turn by itself, the AI plays its turn on the virtual clock, the log gets
  * the state of the battle before and after ([AISTATE]) and every AI decision ([AIDECIDE]),
  * then the game quits. Asleep and silent in normal play.
+ *
+ * OXCE_AI_BOT=1: the player's side is played by the AI too, to the end of the battle or
+ * OXCE_AI_PROBE_TURNS turns; the result goes to the log ([AIRESULT]). OXCE_AI_SEED=<n> with
+ * OXCE_HD_START=battle: a random quick battle of the mod (NewBattleState::probeRandomize).
+ *
+ * Compiled in only with the CMake option OXCE_AI_DEV (the local build-ai): in a release build
+ * active() is always false.
  */
 namespace AiProbe
 {
 
-/// Is the probe on (the OXCE_AI_PROBE environment variable)?
+/// Is the probe on (the OXCE_AI_PROBE environment variable, OXCE_AI_DEV builds only)?
 bool active();
+/// Does the AI play the player's side right now (OXCE_AI_BOT)?
+bool botTurn(const SavedBattleGame *save);
+/// The seed of a generated battle (OXCE_AI_SEED), or -1.
+long long battleSeed();
 /// Drives the probe from the battlescape's think: ends the player's turn, quits after the AI's.
 void think(BattlescapeState *state, SavedBattleGame *save);
+/// The battle is over (BattlescapeState::finishBattle): the result line, and the bot quits.
+void battleOver(BattlescapeState *state, SavedBattleGame *save, bool abort);
 /// One line per AI decision (after the unit has thought, before the action runs).
 void logDecision(SavedBattleGame *save, BattleUnit *unit, const BattleAction &action);
 /// One line per unit on the field: position, TU, health, who it sees and who has spotted it.

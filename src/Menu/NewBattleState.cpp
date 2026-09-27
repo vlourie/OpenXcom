@@ -600,6 +600,128 @@ void NewBattleState::initSave()
 }
 
 /**
+ * The AI test bench (OXCE_AI_SEED): the same seed gives the same battle, soldiers included.
+ * OXCE_AI_CAMPAIGN=<save in the user folder>: the squad is the biggest crew of that campaign,
+ * with its equipment, difficulty and month; otherwise quick battle recruits in a craft of 8+.
+ * Difficulty from OXCE_AI_DIFF (default: the campaign's, else 4, as Vitali plays).
+ */
+void NewBattleState::probeRandomize(long long seed)
+{
+#ifndef OXCE_AI_DEV
+	(void)seed; // a release build: the bench is not compiled in
+#else
+	const char *campaign = getenv("OXCE_AI_CAMPAIGN");
+	int month = -1;
+	if (campaign && *campaign)
+	{
+		SavedGame *save = new SavedGame();
+		save->load(campaign, _game->getMod(), _game->getLanguage());
+		save->setIronman(false); // a copy, and nothing of it is ever saved
+		_game->setSavedGame(save);
+		_craft = nullptr;
+		for (auto *base : *save->getBases())
+		{
+			for (auto *craft : *base->getCrafts())
+			{
+				if (!_craft || craft->getNumTotalUnits() > _craft->getNumTotalUnits())
+				{
+					_craft = craft;
+				}
+			}
+		}
+		if (!_craft)
+		{
+			Log(LOG_WARNING) << "[AIPROBE] no craft in " << campaign << ": quick battle recruits instead";
+			campaign = nullptr;
+		}
+	}
+	if (campaign && *campaign)
+	{
+		month = _game->getSavedGame()->getMonthsPassed();
+		_cbxDifficulty->setSelected((size_t)_game->getSavedGame()->getDifficulty());
+		auto it = std::find(_crafts.begin(), _crafts.end(), _craft ? _craft->getRules()->getType() : std::string());
+		if (it != _crafts.end())
+		{
+			_cbxCraft->setSelected(it - _crafts.begin());
+		}
+	}
+	RNG::setSeed(seed); // after the load: a save brings its own seed
+	auto pick = [](size_t n) { return n > 1 ? (size_t)RNG::generate(0, (int)n - 1) : (size_t)0; };
+	_cbxMission->setSelected(pick(_missionTypes.size()));
+	if (month >= 0)
+	{
+		cbxMissionChange(nullptr);
+	}
+	else
+	{
+		// a real squad, not a two-seat interceptor: a craft that seats 8+, else the roomiest
+		std::vector<size_t> roomy;
+		size_t roomiest = 0;
+		for (size_t i = 0; i < _crafts.size(); ++i)
+		{
+			const int seats = _game->getMod()->getCraft(_crafts[i])->getMaxUnits();
+			if (seats >= 8)
+			{
+				roomy.push_back(i);
+			}
+			if (seats > _game->getMod()->getCraft(_crafts[roomiest])->getMaxUnits())
+			{
+				roomiest = i;
+			}
+		}
+		_cbxCraft->setSelected(roomy.empty() ? roomiest : roomy[pick(roomy.size())]);
+		initSave();
+	}
+	_cbxTerrain->setSelected(pick(_terrainTypes.size()));
+	cbxTerrainChange(nullptr);
+	_slrDarkness->setValue(RNG::generate(0, 15));
+	// the race the mod sends to this mission (a mission whose site it is), at a random month of the campaign
+	_cbxAlienRace->setSelected(pick(_alienRaces.size()));
+	{
+		const std::string &deployment = _missionTypes[_cbxMission->getSelected()];
+		std::vector<const RuleAlienMission*> senders;
+		for (const auto &id : _game->getMod()->getAlienMissionList())
+		{
+			const RuleAlienMission *m = _game->getMod()->getAlienMission(id);
+			if (m && m->getSiteType() == deployment)
+			{
+				senders.push_back(m);
+			}
+		}
+		if (!senders.empty())
+		{
+			const std::string race = senders[pick(senders.size())]->generateRace(month >= 0 ? month : RNG::generate(0, 120));
+			auto it = std::find(_alienRaces.begin(), _alienRaces.end(), race);
+			if (it != _alienRaces.end())
+			{
+				_cbxAlienRace->setSelected(it - _alienRaces.begin());
+			}
+		}
+	}
+	const char *diff = getenv("OXCE_AI_DIFF");
+	if (diff && *diff)
+	{
+		_cbxDifficulty->setSelected(atoi(diff));
+	}
+	else if (month < 0)
+	{
+		_cbxDifficulty->setSelected(4);
+	}
+	const int levels = (int)_game->getMod()->getAlienItemLevels().size();
+	_slrAlienTech->setValue(month >= 0 ? std::min(month, levels - 1) : RNG::generate(0, std::max(0, levels - 1)));
+	Log(LOG_INFO) << "[AIPROBE] battle seed=" << seed
+		<< " campaign=" << (month >= 0 ? campaign : "-") << " month=" << month
+		<< " mission=" << _missionTypes[_cbxMission->getSelected()]
+		<< " craft=" << _craft->getRules()->getType() << " units=" << _craft->getNumTotalUnits()
+		<< " terrain=" << (_terrainTypes.empty() ? std::string("-") : _terrainTypes[_cbxTerrain->getSelected()])
+		<< " race=" << _alienRaces[_cbxAlienRace->getSelected()]
+		<< " shade=" << _slrDarkness->getValue()
+		<< " diff=" << _cbxDifficulty->getSelected()
+		<< " tech=" << _slrAlienTech->getValue();
+#endif
+}
+
+/**
  * Starts the battle.
  * @param action Pointer to an action.
  */

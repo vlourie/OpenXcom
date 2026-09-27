@@ -21,6 +21,11 @@ option ( ENABLE_CLANG_ANALYSIS "When building with clang, enable the static anal
 option ( CHECK_CCACHE "Check if ccache is installed and use it" OFF )
 set ( MSVC_WARNING_LEVEL 3 CACHE STRING "Visual Studio warning levels" )
 option ( FORCE_INSTALL_DATA_TO_BIN "Force installation of data to binary directory" OFF )
+# the AI test bench (src/Battlescape/AiProbe.*, docs/AI_ROADMAP.md): only in the local build-ai, never in a release
+option ( OXCE_AI_DEV "AI test bench: probe, player bot, generated battles" OFF )
+if ( OXCE_AI_DEV )
+  add_definitions( -DOXCE_AI_DEV )
+endif ()
 set ( DATADIR "" CACHE STRING "Where to search for datafiles" )
 
 if ( CHECK_CCACHE )

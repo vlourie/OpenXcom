@@ -55,6 +55,7 @@
 #include "../Menu/NotesState.h"
 #include "../Geoscape/GeoscapeState.h"
 #include "../Menu/TestState.h"
+#include "../Battlescape/AiProbe.h"
 #include <algorithm>
 #include "../fallthrough.h"
 
@@ -163,8 +164,7 @@ void Game::run()
 	Sint16 yrel = 0;
 	// the AI probe (OXCE_AI_PROBE, Battlescape/AiProbe.cpp): virtual clock, never paused, no frame cap,
 	// a frame drawn only every 16th loop - nobody watches, and the clock no longer waits for frames
-	const char *aiProbe = getenv("OXCE_AI_PROBE");
-	Timer::probeClock = aiProbe && *aiProbe && *aiProbe != '0';
+	Timer::probeClock = AiProbe::active();
 	Uint32 probeLoops = 0;
 
 	while (!_quit)
