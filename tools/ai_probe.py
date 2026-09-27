@@ -27,7 +27,7 @@ GAME = ROOT / CFG["GameDir"]
 # OXCE_AI_BUILD - другой каталог сборки стенда (build-ai2): новая правка собирается и играет, пока идёт серия на прежней
 EXE = ROOT / (os.environ.get("OXCE_AI_BUILD") or "build-ai") / "bin" / "openxcom.exe"
 WORK = Path(tempfile.gettempdir()) / "oxce_ai_probe"
-TAGS = ("[AISTATE]", "[AIDECIDE]", "[AIPROBE]", "[AIRESULT]")
+TAGS = ("[AISTATE]", "[AIDECIDE]", "[AIPROBE]", "[AIRESULT]", "[AICASUALTY]")
 
 
 class Probe:
