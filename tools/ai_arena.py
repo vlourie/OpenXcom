@@ -19,7 +19,7 @@
 
 Таблица боёв - <label>.tsv рядом с логами прогона (%TEMP%/oxce_ai_probe/arena), сводка - в stdout и --out.
 """
-import argparse, collections, queue, re, statistics, sys, time
+import argparse, collections, os, queue, re, statistics, sys, time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
@@ -69,10 +69,12 @@ SLOTS = queue.Queue()
 
 
 def one(seed, turns, diff, timeout, campaign, mission=None, tactics=False, careful=False):
-    # папка прогона - по потоку, а не по зерну: одно зерно идёт на разных миссиях одновременно
+    # папка прогона - по потоку, а не по зерну: одно зерно идёт на разных миссиях одновременно;
+    # у серии на другой сборке (OXCE_AI_BUILD) свои папки - две серии идут рядом
     slot = SLOTS.get()
+    build = os.environ.get("OXCE_AI_BUILD")
     try:
-        r = ai_probe.run(None, turns, name=f"arena_w{slot}", timeout=timeout, bot=True, seed=seed, diff=diff,
+        r = ai_probe.run(None, turns, name=f"arena_w{slot}" + (f"_{build}" if build else ""), timeout=timeout, bot=True, seed=seed, diff=diff,
                          campaign=campaign, mission=mission, tactics=tactics, careful=careful)
         moves = behaviour(r.log)
     finally:
