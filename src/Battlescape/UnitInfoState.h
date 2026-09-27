@@ -52,7 +52,9 @@ private:
 	Text *_txtPsiStrength,  *_txtPsiSkill, *_txtMana;
 	Text *_numTimeUnits, *_numEnergy, *_numHealth, *_numFatalWounds, *_numBravery, *_numMorale, *_numReactions, *_numFiring, *_numThrowing, *_numMelee, *_numStrength;
 	Text *_numPsiStrength, *_numPsiSkill, *_numMana;
-	Text *_numMaxHealth;
+	// max values, a column left of the current ones; only for rows that drop during battle
+	Text *_maxTimeUnits, *_maxEnergy, *_maxHealth, *_maxFiring, *_maxThrowing, *_maxMelee, *_maxMana;
+	Text *_maxFrontArmor, *_maxLeftArmor, *_maxRightArmor, *_maxRearArmor, *_maxUnderArmor;
 	Bar *_barTimeUnits, *_barEnergy, *_barHealth, *_barFatalWounds, *_barBravery, *_barMorale, *_barReactions, *_barFiring, *_barThrowing, *_barMelee, *_barStrength;
 	Bar *_barPsiStrength, *_barPsiSkill, *_barMana;
 
