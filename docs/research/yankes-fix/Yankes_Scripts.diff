@@ -1,0 +1,118 @@
+--- a/Ruleset/Yankes_Scripts.rul
++++ b/Ruleset/Yankes_Scripts.rul
+@@ -202,7 +202,7 @@
+       ITEM_RESIST_TYPE_5: 60
+       ITEM_MINIMUM_RESIST_TYPE_5: 30
+       ITEM_RESIST_TYPE_6: 60
+-      ITEM_MINIMUM_RESIST_TYPE_5: 30
++      ITEM_MINIMUM_RESIST_TYPE_6: 30
+       ITEM_RESIST_TYPE_7: 60
+       ITEM_MINIMUM_RESIST_TYPE_7: 30
+       ITEM_RESIST_TYPE_8: 60
+@@ -1375,6 +1375,7 @@
+       ARMOR_ENERGY_SHIELD_PER_TURN: 6
+       ARMOR_ENERGY_SHIELD_FLASH_COLOR: 9
+       ARMOR_ENERGY_SHIELD_TYPE: 1
++      ARMOR_GAINS_EXTRA_SECONDARY_STATS_PERCENT: 5
+   - type: STR_FORCE_ARMOR_SEA_UC
+     tags:
+       ARMOR_ENERGY_SHIELD_CAPACITY: 66
+@@ -1592,6 +1593,7 @@
+       ARMOR_ENERGY_SHIELD_PER_TURN: 20
+       ARMOR_ENERGY_SHIELD_FLASH_COLOR: 12
+       ARMOR_ENERGY_SHIELD_TYPE: 3
++      ARMOR_GAINS_EXTRA_SECONDARY_STATS_PERCENT: 10
+   - type: STR_HYBRID_PSICRYSTAL_SEA_UC
+     tags:
+       ARMOR_ENERGY_SHIELD_CAPACITY: 60
+@@ -1605,6 +1607,7 @@
+       ARMOR_ENERGY_SHIELD_PER_TURN: 20
+       ARMOR_ENERGY_SHIELD_FLASH_COLOR: 12
+       ARMOR_ENERGY_SHIELD_TYPE: 3
++      ARMOR_GAINS_EXTRA_SECONDARY_STATS_PERCENT: 10
+   - type: STR_HYBRID_CYBERARMOR_UC
+     tags:
+       ARMOR_ENERGY_SHIELD_CAPACITY: 90
+@@ -2887,7 +2890,7 @@
+ 
+             attackingUnit.getStun statAttacker;
+             sub statAttacker stunReturned;
+-            limit_lower stunReturned 0;
++            limit_lower statAttacker 0;
+             attackingUnit.setStun statAttacker;
+           end;
+ 
+@@ -3507,6 +3510,15 @@
+           if eq powerStatus 1;
+             unit.setTag Tag.UNIT_ENERGY_SHIELD_HP 0;
+           end;
++
++          # Overcharged (status 3): shields stay capped at 125 = 750 / 6,
++          # the value YSCRIPT_CYDONIA_REMOTE_CONTROL sets on overcharge
++          if eq powerStatus 3;
++            var int shieldHp;
++            unit.getTag shieldHp Tag.UNIT_ENERGY_SHIELD_HP;
++            limit_upper shieldHp 125;
++            unit.setTag Tag.UNIT_ENERGY_SHIELD_HP shieldHp;
++          end;
+           return;
+           
+       - new: IXP_CHECK_IF_HOSTILE_IS_UNDER_MIND_CONTROL
+@@ -4595,6 +4607,21 @@
+             end;
+           end;
+ 
++          return power part side;
++
++      - new: YSCRIPT_ENERGY_SHIELDS_HIT_ITEM_RIGHT
++        offset: 1.5
++        code: |
++          var ptre BattleItem shieldItem;
++          var ptr RuleItem shieldRule;
++          var int shieldCapacity;
++          var int shieldNeedsPriming;
++          var int shieldTimer;
++          var int shieldType;
++          var int shieldResistCoeff;
++          var int shieldHp;
++          var int temp;
++
+           # Now do it for a right hand shield
+           unit.getRightHandWeapon shieldItem;
+ 
+@@ -5963,7 +5990,7 @@
+         unit.getRuleSoldier soldierRuleset;
+         soldier.Stats.getTimeUnits statCurrent;
+         soldierRuleset.StatsCap.getTimeUnits statCap;
+-        if le statCurrent statCap;
++        if lt statCurrent statCap;
+           set statBonus statCap;
+           sub statBonus statCurrent;
+           muldiv statBonus extraExperiencePercentage 100;
+@@ -5975,7 +6002,7 @@
+ 
+         soldier.Stats.getStamina statCurrent;
+         soldierRuleset.StatsCap.getStamina statCap;
+-        if le statCurrent statCap;
++        if lt statCurrent statCap;
+           set statBonus statCap;
+           sub statBonus statCurrent;
+           muldiv statBonus extraExperiencePercentage 100;
+@@ -5987,7 +6014,7 @@
+ 
+         soldier.Stats.getHealth statCurrent;
+         soldierRuleset.StatsCap.getHealth statCap;
+-        if le statCurrent statCap;
++        if lt statCurrent statCap;
+           set statBonus statCap;
+           sub statBonus statCurrent;
+           muldiv statBonus extraExperiencePercentage 100;
+@@ -5999,7 +6026,7 @@
+ 
+         soldier.Stats.getStrength statCurrent;
+         soldierRuleset.StatsCap.getStrength statCap;
+-        if le statCurrent statCap;
++        if lt statCurrent statCap;
+           set statBonus statCap;
+           sub statBonus statCurrent;
+           muldiv statBonus extraExperiencePercentage 100;

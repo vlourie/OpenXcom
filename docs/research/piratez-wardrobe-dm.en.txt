@@ -1,0 +1,32 @@
+﻿Hi Dioxine! Same checker, this time Piratez_Wardrobe.rul. The file itself is spotless: 3426 entries, no duplicate names, no missing files. Every image is 8-bit, 320x200, with transparent index 0. Every layer an armor asks for exists. The problems are all in Piratez_Armors.rul, where an armor points at the wrong look number. A girl who changes clothes then gets someone else's hair, head or skin. I built each of these paperdolls into a picture the same way the inventory does and looked at it, so these aren't guesses from names. Line numbers are from the current release, all in Piratez_Armors.rul.
+
+1) STR_PATIENT_OUTFIT_UC: hair on M52-M54 is shifted by one (lines 18337-18339).
+  M52: HAIR_M51 -> HAIR_M52
+  M53: HAIR_M52 -> HAIR_M53
+  M54: HAIR_M53 -> HAIR_M54
+
+2) STR_SLAVE_ARMOR_DEMOLISHER_UC: M52 and F52 get look 53's body (lines 3152, 3216). You get a ginger face on pale hands.
+  M52: M53_NUDE -> M52_NUDE
+  F52: F53_NUDE -> F52_NUDE
+
+3) STR_PEASANT_FUSILIER_UC: M33 and F33 get look 34's body (lines 8645, 8709).
+  M33: M34_NUDECAMO -> M33_NUDECAMO
+  F33: F34_NUDECAMO -> F33_NUDECAMO
+
+4) F40 gets M40's body in two peasant outfits: STR_PSICORPS_ARMOR_PEASANT_UC (line 8978) and STR_PEASANT_DIVER_SEA_UC (line 9240).
+  F40: M40_NUDE -> F40_NUDE
+
+5) STR_FORCE_ARMOR_SEA_UC: F59 has M59's head (line 18158). The land version is right.
+  F59: HEAD_M59 -> HEAD_F59
+
+6) F40 has M40's hair in STR_PEASANT_NURSE_OUTFIT_UC (line 7264) and STR_PEASANT_GLITTERARMOR_UC (line 7403). Through *LayersPeaGlitter, the Dreamland glitter armor has it too. A blonde fringe ends up on top of her dark hair.
+  F40: HAIR_M40 -> HAIR_F40
+
+7) Peasant Centurion and Medic stop at look 59. The other 35 peasant/damsel armors go up to 63 (&Section_Layers_Centurion_F line 5071, &Section_Layers_Medic_F line 5197, plus their _SEA copies through the anchors). When a key is missing, the engine quietly falls back: 60-63 become 28-31. So about 1 in 16 peasants shows another girl's face in the visor and another girl's skin in these four armors. The images for 60-63 already exist.
+Fix: add M60-M63 and F60-F63 to both anchors, same as the M59/F59 lines.
+
+Small stuff, no rush:
+- 99 wardrobe entries that no armor uses. Most are Nekomimi: all 48 NEKOMIMI__12__HEAD_* (the cat bodies already include the head), 30 of the 48 NEKOMIMI__18__ARM_*, HAIR_M7/F3/F10 and ANNI_HELMET. Also Nekomimi/Hair/hair851_F3.png is a byte-for-byte copy of Head/head851_F3.png. The others look like cut or forgotten outfits: the whole Sucker Punch set (UBERGAL SP_BLONDIE, SP_ROCKET, SP_SWEETPEA and their goggles/ribbon, lines 6943-6959), CHAINMAIL_COIF, VIKING_HELMET, PIRATE_SHIRT_2, GANGER_SHORTS, SUC_DRESS_BLACK, SWASH_BELT, PIRATE_BELT, and four panties/shades entries.
+- 12 images in Resources/Armors that no ruleset mentions (44 KB): Gals/Admiral/Admiral_Main.gif, Gals/Misc/Armbands_Low.gif, Gals/Pirate/Pirate_Pants.gif, Gals/Smokey/Mesh_Mask_Held.gif and Smokey_Mask_Held.gif, "Nekomimi/Dreamwalker/Ankha_body (1).png" (a copy with " (1)" in the name), and the SG_*/ST_* body/helm/tail parts in Nekomimi/SpaceGuardian and SpaceTrooper (the game uses the *_fullsuit.png versions).
+
+That's all. It's from the rulesets, the engine code and rendered paperdolls, not from in-game inventory screens.

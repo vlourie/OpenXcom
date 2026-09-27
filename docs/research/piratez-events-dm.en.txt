@@ -1,0 +1,56 @@
+Hi Dioxine! Same checker again, this time Piratez_Events.rul. It's clean where it counts: 792 events and 643 scripts, no duplicate names or keys, no broken references, every title and description exists in en-US and in the RU patch, all 321 backgrounds and all music resolve, and every event is reachable from some script. Everything below is about how many times an event arrives, plus a handful of texts whose numbers don't match the data. Line numbers are from the current release.
+
+1) Ninja escalation: interruptResearch sits on the scripts, and the engine ignores it there.
+RuleEventScript has no interruptResearch key, so these two are silently dropped:
+  STR_NINJAS_ESCALATION script (line 11474, key at 11482): interruptResearch: STR_NINJA_ESCALATION_4
+  STR_NINJAS_AT_BAY script (line 11484, key at 11491): interruptResearch: STR_NINJA_ESCALATION_6
+ESC_4 and ESC_6 also come from winning the raids (Piratez_Factions.rul:83546 STR_NINJA_APC_RAID_SITE, :83644 STR_NINJA_CRAWLER_RAID_GOVT). An event spawned at the start of the month can pop up after the player has already won the raid: another +500 "escalation", or another +100 "Ninjas At Bay" whose text says the equilibrium ends once we repel them.
+Fix: move the key to the events and remove it from the scripts:
+  - name: STR_NINJAS_ESCALATION          # line 4616
+    interruptResearch: STR_NINJA_ESCALATION_4
+  - name: STR_NINJAS_AT_BAY              # line 4623
+    interruptResearch: STR_NINJA_ESCALATION_6
+
+2) STR_BOUNTY_HUNTS_LATE comes twice in its first month (script at line 6582).
+The script has the event both in oneTimeRandomEvents and in eventWeights. The engine spawns from both lists in the same run, so the first month gives two "A Most Brilliant Idea" popups and -25 twice. After that the one-time copy is marked done and only the repeating one is left. The event's interruptResearch: STR_BOUNTY_HUNTING already stops it properly later on.
+Fix: keep one list. If the monthly nag is intended, drop oneTimeRandomEvents; if not, drop eventWeights.
+
+3) The Wasteland Sorceress can arrive twice, with two sets of her items (event at line 4481).
+Two scripts spawn her: STR_WASTELAND_SORCERESS (11109, 23%, from month 5) and STR_WASTELAND_SORCERESS_ACCEL (11119, 33%, from month 10). Both have the same conditions (STR_WEIRDNESS: true, STR_WASTELAND_SORCERESS: false), so from month 10 they fire in the same month 0.23 x 0.33 = 7.6% of the time. That's about 1 in 6 of her arrivals. The event has no interruptResearch, so both copies show: two popups, two quarterstaffs, two purses, two robes and so on. STR_BLESSINGS right next to it (4490) has the same two-script setup and does have interruptResearch: STR_WASTELAND_PRIESTESS, so I think it was just forgotten here.
+Same for STR_TEC_EVENT_I_HAVE_DR_X (4437): scripts at 8560 (33%) and 8571 (_DUEL, 23%), both gated on STR_GDX_053: false. There it's only a second popup, no items.
+Fix:
+  - name: STR_WASTELAND_SORCERESS        # line 4481
+    interruptResearch: STR_WASTELAND_SORCERESS
+  - name: STR_TEC_EVENT_I_HAVE_DR_X      # line 4437
+    interruptResearch: STR_GDX_053
+
+4) The general case of #3: an event closed by its own research can repeat next month.
+110 repeating events give a research topic, and their script is switched off by that same topic (researchTriggers: X: false). The topic is only granted when the popup shows. With timer 60 + timerRandom 43400, the popup can come up to 30.2 days later, i.e. after the next monthly script run. At that run X is still not researched, so the script spawns a second copy, and without interruptResearch it shows too. It's rare: about 0.8% per spawn on average, but 7.2% if spawned on 1 February, because February is shorter than the timer. 57 script/event pairs can do this. The duplicate repeats everything. The expensive ones:
+  STR_CBT_TOURNAMENT_CHALLENGER_NINJA_DEFEAT (2859): +2500, +$500k, items
+  STR_CBT_TOURNAMENT_CHALLENGER_OGRESS_WIN (2913): +3000, +$500k, items
+  STR_CBT_TOURNAMENT_WIN (2812): +1000, +$250k, items
+  STR_CLEO_CHALLENGE (4904): +$250k
+  STR_CODEX_RED/GRAY/GREEN_AWAKENS (4766/4776/4785): codex items
+  STR_GDX_150 (4198): +500
+  STR_INTERSTELLAR_ASTROROCK_EVENT_SILENCE (3556): -1000, -$100k
+  STR_ALERT_COMMS_DISRUPTION (4338): -500
+Only 8 of the 110 have interruptResearch now (BLESSINGS, PSI_INITIATION_EVENT, TEC_EVENT_WARNING, the CAPTAIN_PERSONALITY autochoices and a few others), and those are safe.
+Fix: the same trick you already use on BLESSINGS: give each such event interruptResearch set to its own researchList topic. The first copy isn't affected, since the topic is still unresearched when it shows. I can send the full list of 57 if you want it.
+
+5) Numbers in the popup text vs the data.
+  STR_SOREDUMB_PIRATEZ (1553): text +$70k, data funds 75000
+  STR_NORED_STOIC (2028): text -$75k, no funds at all (points: 75)
+  STR_CBT_TOURNAMENT_LOSE_BAD (2790): text +1000 Infamy, data 100 (plain LOSE at 2801 says 300 and gives 300)
+  STR_CBT_TOURNAMENT_WIN (2812): text +700 Infamy, data 1000 (plus 500 from the research)
+  STR_RAGS_FOR_FREAKS (3040): text +5 Infamy, data points -5
+  STR_REVOLUTIONARY_MISSING_FUNDS_C (3175): text -$650k, data -65000. B is -300k and D is -1.5M, so I'd guess a lost zero in the data
+  STR_MRSHAN_WARRIOR_EVENT (3370): text +250, data 200
+  STR_MRSHAN_FIGHTER_EVENT (3432): text +300, data 200
+  STR_EARTHQUAKE_SOREASS (3674): text $50,000, data -65000
+  STR_GDX_EVENT_VAMPIRE_KISS (4134): text -250, data -300
+Fix: whichever side is wrong. I only checked en-US; I didn't compare the numbers in the RU patch texts.
+
+Question, maybe intended:
+- STR_WIZ_128 "Red Mage's Gift" (4291). Three scripts at 50% each, STR_WIZ_128_35 (8373), _45 (8383) and _ASC30 (8393). Each needs its Red Mage variant in the base (itemTriggers), and none is gated by STR_WIZ_128. So while she's held, the gift arrives every other month. With two variants in the base it can come twice in one month. If it's meant to happen once, add STR_WIZ_128: false to the three scripts or interruptResearch: STR_WIZ_128 to the event.
+
+That's all. It's from the ruleset and the engine code only, none of it tested in game.

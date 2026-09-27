@@ -1,0 +1,87 @@
+[b]Yankes_Scripts.rul — a few bugs and questions (X-Piratez v.o1.1.1)[/b]
+
+Hi! I went through [i]Ruleset/Yankes_Scripts.rul[/i] line by line (the 6065-line version shipped with v.o1.1.1) and cross-checked it against the OXCE source. Overall it's in very good shape: no script parse errors in the log, tags are declared once with a single owner, and the 20 copy-pasted resistance blocks are identical apart from the type number (I diffed them with a script). Still, I found a few things. Line numbers refer to that file.
+
+[b]A. Clear bugs[/b]
+
+[b]1. STR_DOOMED_VEST loses its Daze (type 6) resistance[/b] — lines 203 and 205
+[code]      ITEM_RESIST_TYPE_5: 60
+      ITEM_MINIMUM_RESIST_TYPE_5: 30
+      ITEM_RESIST_TYPE_6: 60
+      ITEM_MINIMUM_RESIST_TYPE_5: 30     <- line 205, duplicate key[/code]
+ITEM_MINIMUM_RESIST_TYPE_6 is never set, so it stays 0. The resistance script skips any type whose minimum is 0, so ITEM_RESIST_TYPE_6: 60 does nothing. The duplicate YAML key is also silently accepted by yaml-cpp.
+Fix: line 205 -> [tt]ITEM_MINIMUM_RESIST_TYPE_6: 30[/tt]
+
+[b]2. Extra secondary stat gains can push a stat 1 point over its cap[/b] — YSCRIPT_EXTRA_SECONDARY_XP_GAINS, lines 5966, 5978, 5990, 6002 (TU, Stamina, Health, Strength)
+[code]        if le statCurrent statCap;
+          set statBonus statCap;
+          sub statBonus statCurrent;          # = 0 when already at cap
+          muldiv statBonus extraExperiencePercentage 100;
+          limit_lower statBonus 1;            # -> 1
+          battle_game.randomRange statBonus 0 statBonus;   # 0..1
+          add statBonus statCurrent;          # cap + 1 with 50% chance[/code]
+When the stat is already at the cap, [tt]le[/tt] lets it through, [tt]limit_lower 1[/tt] turns the bonus into 1, and a 50/50 roll puts the stat at cap+1. Every mission, for every soldier at cap wearing such armor.
+Fix: [tt]if lt statCurrent statCap;[/tt] in all four blocks.
+
+[b]3. Left-hand item shield disables the right-hand one[/b] — YSCRIPT_ENERGY_SHIELDS_HIT_ITEM, lines 4490, 4511, 4532, 4551
+Inside the left-hand block, the "stronger element ignores this shield" branches do [tt]return power part side;[/tt]. That exits the whole script, so the right-hand shield (from line 4599) is never checked.
+Example: red shield in the left hand, gold in the right, hit by Warp (14). Red lets it through, gold should absorb it, but the script has already returned.
+(The returns for the ignored types 0/9/10/17/18 at 4481/4502/4523/4542 are harmless: they are the same for every shield type.)
+Fix, one option: in the left-hand block, replace those four returns with [tt]set shieldResistCoeff 0;[/tt] and wrap the absorb part (from "Get the item's HP value…" line 4559 to the end of the flash/"shield down" block) in [tt]if gt shieldResistCoeff 0; … end;[/tt]. The right-hand block can keep its returns, since nothing comes after it.
+
+[b]4. Vampirism: limit_lower on the wrong variable[/b] — line 2890
+[code]            attackingUnit.getStun statAttacker;
+            sub statAttacker stunReturned;
+            limit_lower stunReturned 0;      <- should be statAttacker
+            attackingUnit.setStun statAttacker;[/code]
+Harmless today, because setStun clamps to 0 itself, but it's clearly a typo.
+Fix: [tt]limit_lower statAttacker 0;[/tt]
+
+[b]B. Probably unintended — please confirm[/b]
+
+[b]5. Shield colours off the pattern.[/b] Everywhere else the pairs are type 0 -> flash 2, type 1 -> 9, type 2 -> 13, type 3 -> 12 (48/37/54/35 armors).
+- STR_HERMIT_UC, line 1569: type 3 with [tt]ARMOR_ENERGY_SHIELD_FLASH_COLOR: 4[/tt]. It's the only purple shield out of 36 not using 12.
+- AUX_GORGON_SHIELD, lines 790–791: type 3 (purple), flash 12, but INDICATOR_COLOR and COLOR_REPLACED_BY_INDICATOR are 2 (red). This may be on purpose for the sprite.
+- STR_VAMPY_ROBE_UC, lines 1465–1467: a shield of 50 with no ARMOR_ENERGY_SHIELD_TYPE, so it defaults to type 0 (red). The flash of 2 matches that. It's probably intended; I'd just write the type out explicitly.
+
+[b]6. Resistance items without ITEM_RESIST_SLOT_INDEX stack without limit.[/b]
+- STR_HELLERIUM_CHARM (line 670): several charms in the backpack all apply.
+- STR_GREAT_EYE (line 211): same, though you probably only ever carry one.
+Intended?
+
+[b]7. Armor variants that differ.[/b]
+- STR_FORCE_ARMOR_SEA_UC (line 1378) has ARMOR_GAINS_EXTRA_SECONDARY_STATS_PERCENT: 5; the land STR_FORCE_ARMOR_UC has none.
+- STR_HYBRID_PSICRYSTAL_SEA_UC (line 1595) has 10; the land and DREAMLAND versions have none.
+Swimsuit/bikini sea 20 vs land 10 looks deliberate. Are these two deliberate as well?
+
+[b]8. Cydonia remote control: the overcharge shield penalty is temporary.[/b] Lines 5106–5117: overcharge sets UNIT_ENERGY_SHIELD_HP to 750/6 = 125. But the turret armor regenerates 75 per turn up to its 750 capacity, and YSCRIPT_DEPOWERED_SHIELDS (line 3507) only holds shields at 0 for status 1. So after a few turns an overcharged turret is back at full shields while keeping the triple TU and reactions. If the penalty is meant to last, DEPOWERED_SHIELDS could cap status 3 at 125:
+[code]          var int temp;      # add next to "var int powerStatus;"
+          ...
+          if eq powerStatus 3;
+            unit.getTag temp Tag.UNIT_ENERGY_SHIELD_HP;
+            limit_upper temp 125;
+            unit.setTag Tag.UNIT_ENERGY_SHIELD_HP temp;
+          end;[/code]
+(Minor: [tt]mul currentTimeCap 0[/tt] at line 5073 could just be [tt]set currentTimeCap 0[/tt].)
+
+[b]C. Documentation and dead code (low priority)[/b]
+
+[b]9. Header text doesn't match the code.[/b]
+- Lines 43 and 76: "excluding the first turn". Current OXCE runs newTurnUnit/newTurnItem on turn 1 too (SavedBattleGame::startFirstTurn calls newTurnUpdateScripts).
+- Line 78: newTurnItem is described as stun/energy/morale only. The script also handles ITEM_TIME/HP/MANA_PER_TURN.
+- Lines 150–154: "Tag value of 0 disables regeneration … regenerating soldiers with non-regenerating armor". The code (YSCRIPT_REGEN_FULL_AFTER_MISSION) uses [tt]if gt regenArmor 0[/tt], and an unset tag is also 0, so armor can't switch soldier regen off. If that feature is wanted, use -1 as "disable":
+[code]        if lt regenArmor 0;
+          set recoveryCost 0;
+        end;[/code]
+Put that after the two [tt]if gt … set recoveryCost[/tt] blocks, and set MISSION_END_FULL_REGENERATION: -1 on those armors.
+
+[b]10. Unused systems.[/b] No item in the Piratez rulesets sets any of these (grepped all .rul files):
+- PHYSICAL_SHIELD_ARMOR / ITEM_IS_MELEE / ITEM_SHIELD_BLOCK_*: the physical shield script at line 4892 runs on every hit for nothing. Its comment says "special, choking, heat, cold", but the code tests types 0/9/10/11.
+- ITEM_ENCUMBRANCE_TO_ENERGY_PERCENT (bipod, line 3324).
+- ITEM_RESIST_TYPE_19 / slot 20.
+- ITEM_TIME_PER_TURN_NOLIMIT: declared at line 2507, never read.
+Not bugs, just leftovers. Remove them or keep them for the future?
+
+[b]11. Tiny display inconsistency.[/b] The item shield indicator (lines 5779 and 5800) checks [tt]gt shieldTimer 0[/tt], while the hit and new-turn scripts check [tt]neq shieldTimer -1[/tt]. A priming shield armed with timer 0 works, but the indicator shows it as empty until the first hit.
+
+Items 1–4 are one-line fixes each. I haven't changed anything on my side, so I'm happy to test whichever fixes you pick. Thanks for the scripts — this is a lot of good work!

@@ -1,0 +1,54 @@
+Hi Dioxine! Same checker, this time Piratez_Globals.rul. It's in good shape overall. All 110 commendations use valid criteria, and every one of the 1150+ names in their killCriteria exists. All 45 starting conditions are used, and every defaultArmor target exists. The inventory cost matrix is complete, including the new Q.D. slot, which matters because the engine doesn't check for a missing cost. Cutscene images, strings and music are all in place, and every enviroEffects armor, palette and aura item resolves. What's left is below. Line numbers are from the current release.
+
+First, a correction to my earlier report. I said minReactionAccuracy works under ai:. It doesn't. OXCE dropped that key entirely in May 2025 (commit "Reaction fire thresholds"), and neither line 8878 nor 9152 is read. Enemies and civilians are covered by your ai.reactionFireThreshold(Civ): 5. For the player's own soldiers the threshold is now the user option oxceReactionFireThreshold, which defaults to 0 (no check). So your soldiers now take 1-4% reaction shots, which the old 5 used to block.
+Fix: delete both lines. If you want the old player behaviour, add it to recommendedUserOptions:
+  oxceReactionFireThreshold: 5
+
+1) Three HWPs are allowed, but they silently stay at base.
+The engine also checks the HWP's ammo (first ammo in slot 0) against the starting condition. If the ammo isn't permitted, the tank goes back to storage with no message.
+- Sentry Spike: STR_HWP_SPIKE_ROCKETS only has STR_BAT_CAT_AUX, while every other HWP ammo has TANK_AMMO. Blocked in STR_STARCON_SPACE (6943) and in &allowedHWPExo (7127: EXO, MARS, MARS_CODES). So it never deploys on the space stations, the Moon, Labyrinthus Noctis or Cydonia.
+- Red Mage ASC-30: STR_WIZ_SPELL_HADES is blocked in SPACE (6944), GAL_PARTY (4926) and SHADOWLANDS_NOSTUFF (6572). In NOSTUFF you already added the A70's spells to &AllowedItemsShadowlandsNostuff (6566-6571), just not HADES.
+- Doctor X A70 in GAL_PARTY (4928): STR_WIZ_SPELL_HOLOGAL isn't in the tavern's allowedItems. So in the tavern only the Vampire actually deploys.
+Fix: add the ammo to allowedItems in those conditions (it combines with allowedItemCategories):
+  allowedItems: [STR_HWP_SPIKE_ROCKETS]                      # SPACE, EXO, MARS, MARS_CODES
+  + STR_WIZ_SPELL_HADES                                       # SPACE, GAL_PARTY, SHADOWLANDS_NOSTUFF
+  + STR_WIZ_SPELL_HOLOGAL                                     # GAL_PARTY
+Or give the spike rockets the TANK_AMMO category.
+
+2) The STR_NEKO_WITCH_OUTFIT typo from my first report is worse than it looked. In CITY_STEALTH (POLIS_TERMINAL), defaultArmor for NEKOMIMI_H is BOXX_ARMOR, so a witch-outfit neko spends the whole mission in a box. The gnome in grav armor there becomes STR_GNOME_DRESS_UC. Also, two questions from that report answer themselves:
+- STR_SOLDIER_DOLL (4681) can just go. STR_AURORA_DOLL_ARMOR_UC is already on 4682.
+- STR_DELIVERATOR (4975) is the English name of STR_FIRESTORM, which is already on 4950. It can go too.
+
+3) Two medals count the same weapon twice. Each OR block in killCriteria counts separately:
+- SHELLSHOCKED: STR_FLAMETHROWER appears on both 1852 and 1860, so every flamer kill counts as 2. Delete 1859-1860.
+- HAMMERER: STR_COOKER appears on both 2122 and 2128. Delete 2127-2128.
+
+4) STR_ENVIRO_MAGMA (7495) leaves Red Mage in Gorgon form. Its armorTransformations is the EVA list typed out by hand, but without STR_ARMOR_RED_MAGE_GORGON: STR_ARMOR_RED_MAGE_EXO. All 12 other hazard environments have that pair.
+Fix:
+    armorTransformations: *SECTION_ARMOR_TRANSFORM_EVA
+
+5) Confirmation windows use the wrong interface.
+- mainMenu 8089-8092: confirmDefaults and confirmVideo are read from optionsMenu, and have been since 2018. The reset-defaults, video-confirm and mod-change confirm windows get the master colours instead of your 89. Move both elements into optionsMenu.
+- modsMenu 8180: "- id: button". The mods screen asks for button1 and button2, so OK/Cancel stay colour 133. Rename it to button2.
+
+6) The Coral Island mission counts for Partygoer, not Diver. UNDERSEA_MISSIONS' filter (1095) has STR_SEA_CORAL_EXIT, but that's stage 1, and its nextStage is STR_CORAL_ISLAND. Diary stats record the last stage played, and a mission can't be won on stage 1. STR_CORAL_ISLAND is in INFILTRATION (1088). Move it to Diver, or drop the dead STR_SEA_CORAL_EXIT, whichever you intended.
+
+Questions, maybe intended:
+- HEAT (7262, 7337): THIEF_ARMOR_SEA -> PIR_TOPLESS and NEKO_THIEF_ARMOR_SEA -> NEKO_NUDE. SEA makes them from THIEF_ARMOR / NEKO_THIEF_ARMOR, and the other ~90 pairs mirror SEA. It only matters in a sea stage followed by a hot one.
+- GROUND_OR_UNDETECTABLE (4303) lacks STR_CAPSULE and STR_SKYRANGER_SHADOW, both undetectable. LOCAL_CITIZENS craftTransformations (5047-5118) turns every landing craft into the expedition except STR_SKYRANGER_SHADOW.
+- NEKO_CLASS_HERBALIST (4092) has totalIronMan 9999 and no commendationName awards it. The transformation gives the bonus, but the herbalist never gets a diary medal, unlike the other classes.
+- GLOBETROTTER, VALKYRIE and FALLEN have thresholds [1,1,...,1], so all 10 levels are awarded at once. The GLOBETROTTER pedia says "Awarded once".
+- DOTS also counts ACADEMY_COUNSELLOR and ACADEMY_SCIENTIST, but the pedia only names the Provost. ROOMSERVICE also counts the vanilla SNAKEMAN_ENGINEER.
+- CYDONIA_2 / _3 (7973, 7986) have no PAL_MARS, unlike CYDONIA and CYDONIA_SURFACE. Is that because they're underground?
+
+Small stuff, no rush:
+- soldierDiaries in fixedUserOptions has no effect. The engine only applies options that have a menu category, so a player with soldierDiaries: false in options.cfg gets no medals. The same goes for the four globe* options in recommendedUserOptions (they default to true anyway), and the engine strips maximizeInfoScreens from recommended options.
+- Unread interface entries: loadingText (8201, no such interface in OXCE), dogfight button/background (8325, 8331), battlescape indicatorGreen (8449).
+- STR_ENVIRO_COLDSPACE (8041) isn't used by anything.
+- 26 itemCategories (MELEE, CARBINE, SNIPER, the damage-type ones MAGIC..FOREVER) have no strings and no items. They're harmless, since unused categories don't show in filters.
+- STR_MEDAL_IMPORTANT_MISSIONS (1011) is a placeholder: no string, ORIGINAL8's description, criterion 9999.
+- SPACE allowedArmors lists STR_SYNTH_REFRACTOR_A_SPACE_UC and STR_SYNTH_CHILLER_ARMOR_A_SPACE_UC twice (6910-6913).
+- missionRatings bottoms out at -10000. A worse score shows an empty rating (monthly goes to -999999).
+- Typos in en-US: "Chihuaha", "Caucassus", "Cordiliera".
+
+That's all. As before, it's from the ruleset and the engine code only, none of it tested in combat.
