@@ -6,7 +6,10 @@ gen_base_anim.py - процедурная HD-анимация построек �
 клетку форма (spriteShape + номер) и поверх - картинка (spriteFacility + номер), если она
 включена; HD-кадр кладётся под номер hdTileIndex (картинка, если включена, иначе форма).
 Каждый слой увеличивается Scale2x дважды (x4, как gen_base.py), затем на цельную постройку
-накладываются эффекты из yml, 16 фаз по 200 мс (BaseView::blink) - петля 3.2 с, бесшовная.
+накладываются эффекты из yml. Пишется так (формат - tools/hdart/base_pack.py):
+чистая постройка без эффектов - неподвижная картинка; постоянные эффекты (вода, пузыри,
+колыхание, ключ always) - петля 16 фаз по 200 мс; остальные - вспышка раз в every секунд
+(по умолчанию 30/45/60 по виду эффектов, default_every), loops петель с нарастанием и затуханием.
 
 Эффекты берут пиксели ВЫБОРКОЙ (sel): цвет палитры (red, orange, yellow, green, cyan, blue,
 purple, white, grey, dark), яркость, прямоугольник в пикселях классики, размер связных кусков.
@@ -33,6 +36,7 @@ sys.path.insert(0, HERE)
 from facility_sheet import load_rules, load_strings, sprites_map  # noqa: E402
 from gen_base import scale2x  # noqa: E402
 from gen_craft_lights import load_frame  # noqa: E402
+import base_pack  # noqa: E402
 import yaml  # noqa: E402
 
 K = 4
@@ -650,6 +654,8 @@ EFFECTS = {
     "lid": fx_lid, "breathe": fx_breathe, "tint": fx_tint,
 }
 POINT_EFFECTS = {"smoke", "sparks", "swarm"}
+# идут всё время (вода, пузыри, колыхание растений); остальные - вспышкой раз в every секунд
+ALWAYS_FX = {"ripple", "bubbles", "sway"}
 
 
 def expand(spec, name, seen=()):
@@ -661,7 +667,31 @@ def expand(spec, name, seen=()):
     return effects + list(entry.get("effects") or [])
 
 
-def animate(fac, effects):
+def is_always(e):
+    """Эффект идёт всё время (вода), а не вспышкой: ключ always, иначе по виду эффекта."""
+    return bool(e.get("always", e["fx"] in ALWAYS_FX))
+
+
+def default_every(effects):
+    """Период вспышки по умолчанию: дым и искры чаще, сигнальные огни реже, остальное - раз в минуту."""
+    kinds = set(e["fx"] for e in effects if not is_always(e))
+    if kinds & {"fire", "sparks", "smoke", "roll", "swarm"}:
+        return 30
+    if kinds & {"blink", "sweep", "band", "flicker"}:
+        return 45
+    return 60
+
+
+def render(fac, effects, ctxs, p):
+    out = fac.rgb.copy()
+    for e, ctx in zip(effects, ctxs):
+        out = EFFECTS[e["fx"]](fac, out, p % PHASES, e, ctx)
+    return np.clip(out, 0, 1)
+
+
+def animate(fac, effects, loops=1):
+    """(неподвижная, петля или None, вспышка или None, пустые выборки). Петля - только постоянные
+    эффекты, 16 фаз; вспышка - все эффекты, loops петель, с огибающей поверх петли."""
     ctxs = []
     for e in effects:
         ctx = {}
@@ -670,26 +700,26 @@ def animate(fac, effects):
         else:
             ctx["parts"] = select(fac, e.get("sel"))
         ctxs.append(ctx)
-    frames = []
-    for p in range(PHASES):
-        out = fac.rgb.copy()
-        for e, ctx in zip(effects, ctxs):
-            out = EFFECTS[e["fx"]](fac, out, p, e, ctx)
-        frames.append(np.clip(out, 0, 1))
     empty = [e.get("fx") for e, c in zip(effects, ctxs) if not c.get("parts") and not c.get("points")]
-    return frames, empty
+    still = np.clip(fac.rgb, 0, 1)
+    always = [(e, c) for e, c in zip(effects, ctxs) if is_always(e)]
+    loop = None
+    if always:
+        loop = [render(fac, [e for e, _ in always], [c for _, c in always], p) for p in range(PHASES)]
+    burst = None
+    if len(always) < len(effects):
+        total = PHASES * max(1, int(loops))
+        burst = []
+        for q in range(total):
+            under = loop[q % PHASES] if loop else still
+            full = render(fac, effects, ctxs, q)
+            burst.append(np.clip(under + base_pack.envelope(q, total) * (full - under), 0, 1))
+    return still, loop, burst, empty
 
 
-def write(fac, frames, out_dir):
-    dest = os.path.join(out_dir, "hd", "BASEBITS.PCK")
-    os.makedirs(dest, exist_ok=True)
-    for p, f in enumerate(frames):
-        data = np.concatenate([np.clip(f * 255 + 0.5, 0, 255), fac.alpha[..., None] * 255], 2).astype(np.uint8)
-        for n, index in enumerate(fac.indices):
-            y, x = divmod(n, fac.cols)
-            tile = data[y * 32 * K:(y + 1) * 32 * K, x * 32 * K:(x + 1) * 32 * K]
-            name = "%d.png" % index if p == 0 else "%d.v%d.png" % (index, p)
-            Image.fromarray(tile, "RGBA").save(os.path.join(dest, name))
+def write(fac, still, loop, burst, every, out_dir):
+    return base_pack.write(out_dir, fac.indices, fac.cols, 32 * K, 32 * K, fac.alpha, still, loop, burst,
+                           every, "gen_base_anim.py")
 
 
 # ---------------------------------------------------------------- превью и разметка
@@ -794,24 +824,31 @@ def main():
         if shared:
             problems.append("%s: кадр %d общий с %s - анимация достанется и им" % (t, fac.indices[0], ", ".join(shared)))
         effects = expand(spec, t)
-        frames, empty = animate(fac, effects)
+        still, loop, burst, empty = animate(fac, effects, int(entry.get("loops", 1)))
+        every = int(entry.get("every") or default_every(effects))
         if empty:
             problems.append("%s: пустая выборка у %s" % (t, ", ".join(empty)))
         for d in args.out:
-            write(fac, frames, d)
+            write(fac, still, loop, burst, every, d)
         if args.preview:
             gif_dir = os.path.join(args.preview, "gif")
             os.makedirs(gif_dir, exist_ok=True)
+            # как в игре: 2 с покоя (или петли), вспышка, 2 с покоя
+            calm = [loop[p % PHASES] if loop else still for p in range(10)]
+            frames = calm + (burst or []) + calm
             imgs = [to_image(fac, f) for f in frames]
             name = "%03d_%s" % (n, t)
             imgs[0].save(os.path.join(gif_dir, name + ".gif"), save_all=True, append_images=imgs[1:], duration=200, loop=0)
-            half = [im.resize((im.width // 2, im.height // 2), Image.LANCZOS) for im in imgs]
+            half = [to_image(fac, f) for f in [still] + (burst or loop or [])[:15]]
+            half = [im.resize((im.width // 2, im.height // 2), Image.LANCZOS) for im in half]
             sheet = Image.new("RGB", (half[0].width * 8, half[0].height * 2))
             for p, im in enumerate(half):
                 sheet.paste(im, ((p % 8) * im.width, (p // 8) * im.height))
             sheet.save(os.path.join(gif_dir, name + "_phases.png"))
         items.append((n, t, ru.get(t, t), ideas.get(t, ""), fac))
-        print("%3d %-40s %d клеток, эффектов %d" % (n, t, len(fac.indices), len(effects)))
+        print("%3d %-40s %d клеток, эффектов %d, петля %s, вспышка %s" % (
+            n, t, len(fac.indices), len(effects), "да" if loop else "нет",
+            ("%d фаз раз в %d с" % (len(burst), every)) if burst else "нет"))
 
     if args.preview:
         page = os.path.join(args.preview, "index.html")
