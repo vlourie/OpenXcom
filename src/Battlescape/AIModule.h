@@ -155,6 +155,8 @@ public:
 	void selectMeleeOrRanged();
 	/// Gets the current targetted unit.
 	BattleUnit* getTarget();
+	/// Gets the current AI mode (AI_PATROL..AI_ESCAPE), for the AI probe's log.
+	int getAIMode() const { return _AIMode; }
 	/// Frees up the destination node for another Unit to select
 	void freePatrolTarget();
 };

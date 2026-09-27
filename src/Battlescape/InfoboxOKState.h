@@ -43,6 +43,8 @@ public:
 	~InfoboxOKState();
 	/// Handler for clicking the OK button.
 	void btnOkClick(Action *action);
+	/// Closes itself in the AI probe.
+	void think() override;
 };
 
 }

@@ -19,6 +19,7 @@
 #include <sstream>
 #include "BattlescapeGame.h"
 #include "BattlescapeState.h"
+#include "AiProbe.h"
 #include "Map.h"
 #include "Camera.h"
 #include "NextTurnState.h"
@@ -401,6 +402,7 @@ void BattlescapeGame::handleAI(BattleUnit *unit)
 			_playedAggroSound = true;
 		}
 	}
+	AiProbe::logDecision(_save, unit, action);
 	if (action.type == BA_WALK)
 	{
 		ss << "Walking to " << action.target;

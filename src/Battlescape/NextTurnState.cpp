@@ -42,6 +42,7 @@
 #include "../Savegame/SavedGame.h"
 #include "../Savegame/HitLog.h"
 #include "AIModule.h"
+#include "AiProbe.h"
 #include "BattlescapeState.h"
 #include "BattlescapeGame.h"
 #include "BriefingState.h"
@@ -307,7 +308,8 @@ NextTurnState::NextTurnState(SavedBattleGame *battleGame, BattlescapeState *stat
 		}
 	}
 
-	if (Options::skipNextTurnScreen && message.empty() && messageReinforcements.empty())
+	// the AI probe has nobody to click the screen away
+	if (AiProbe::active() || (Options::skipNextTurnScreen && message.empty() && messageReinforcements.empty()))
 	{
 		_timer = new Timer(NEXT_TURN_DELAY);
 		_timer->onTimer((StateHandler)&NextTurnState::close);

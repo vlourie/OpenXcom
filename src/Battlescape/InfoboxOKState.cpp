@@ -23,6 +23,8 @@
 #include "../Interface/Text.h"
 #include "../Interface/Cursor.h"
 #include "../Engine/Options.h"
+#include "../Engine/Logger.h"
+#include "AiProbe.h"
 #include "../Savegame/SavedGame.h"
 #include "../Savegame/SavedBattleGame.h"
 
@@ -87,6 +89,19 @@ InfoboxOKState::~InfoboxOKState()
 void InfoboxOKState::btnOkClick(Action *)
 {
 	_game->popState();
+}
+
+/**
+ * The AI probe has nobody to press OK ("unit has lost consciousness" and the like): closes itself.
+ */
+void InfoboxOKState::think()
+{
+	State::think();
+	if (AiProbe::active())
+	{
+		Log(LOG_INFO) << "[AIPROBE] closed: " << _txtTitle->getText();
+		btnOkClick(nullptr);
+	}
 }
 
 }

@@ -30,6 +30,9 @@ namespace
 const Uint32 accurate = 4;
 Uint32 slowTick()
 {
+	// the AI probe plays the same battle the same way on any machine: animations wait loops, not milliseconds
+	if (Timer::probeClock)
+		return Timer::probeTicks;
 	static Uint32 old_time = SDL_GetTicks();
 	static Uint64 false_time = static_cast<Uint64>(old_time) << accurate;
 	Uint64 new_time = ((Uint64)SDL_GetTicks()) << accurate;
@@ -41,6 +44,8 @@ Uint32 slowTick()
 }//namespace
 
 Uint32 Timer::gameSlowSpeed = 1;
+bool Timer::probeClock = false;
+Uint32 Timer::probeTicks = 0;
 int Timer::maxFrameSkip = 8; // this is a pretty good default at 60FPS.
 int Timer::hdFrameSkip = 0;
 
