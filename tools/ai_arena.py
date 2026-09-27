@@ -20,7 +20,7 @@
 Таблица боёв - <label>.tsv рядом с логами прогона (%TEMP%/oxce_ai_probe/arena), сводка - в stdout и --out.
 """
 import argparse, collections, os, queue, re, statistics, sys, time
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -66,15 +66,15 @@ def seeds_of(spec):
 
 
 SLOTS = queue.Queue()
+LABEL = "arena"
 
 
 def one(seed, turns, diff, timeout, campaign, mission=None, tactics=False, careful=False):
     # папка прогона - по потоку, а не по зерну: одно зерно идёт на разных миссиях одновременно;
-    # у серии на другой сборке (OXCE_AI_BUILD) свои папки - две серии идут рядом
+    # у каждой серии (--label) свои папки - серии идут рядом, в том числе на одной сборке
     slot = SLOTS.get()
-    build = os.environ.get("OXCE_AI_BUILD")
     try:
-        r = ai_probe.run(None, turns, name=f"arena_w{slot}" + (f"_{build}" if build else ""), timeout=timeout, bot=True, seed=seed, diff=diff,
+        r = ai_probe.run(None, turns, name=f"arena_{LABEL}_w{slot}", timeout=timeout, bot=True, seed=seed, diff=diff,
                          campaign=campaign, mission=mission, tactics=tactics, careful=careful)
         moves = behaviour(r.log)
     finally:
@@ -203,6 +203,8 @@ def main():
     ap.add_argument("--label", default="arena")
     ap.add_argument("--out", default="")
     a = ap.parse_args()
+    global LABEL
+    LABEL = a.label
 
     seeds = seeds_of(a.seeds)
     missions = [None]
@@ -224,7 +226,10 @@ def main():
     print(f"боёв {len(jobs)} (уже сыграно {len(rows)}), миссий {len(missions)}, зёрен {len(seeds)}, потоков {a.jobs}", flush=True)
     t0 = time.time()
     with ThreadPoolExecutor(a.jobs) as pool:
-        for row in pool.map(lambda j: one(j[1], a.turns, a.diff, a.timeout, campaign, j[0], a.tactics, a.careful), jobs):
+        # по мере готовности, а не по порядку: бой, чей процесс не закрылся и ждёт таймаута, не держит запись остальных
+        futures = [pool.submit(one, s, a.turns, a.diff, a.timeout, campaign, m, a.tactics, a.careful) for m, s in jobs]
+        for fut in as_completed(futures):
+            row = fut.result()
             rows.append(row)
             # строка в таблицу сразу: серия на часы, обрыв не должен стоить уже сыгранного
             with open(table, "a", encoding="utf-8") as f:
