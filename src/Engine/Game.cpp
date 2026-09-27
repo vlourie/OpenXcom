@@ -467,17 +467,30 @@ void Game::run()
 						ev.button.state = SDL_RELEASED;
 						SDL_PushEvent(&ev);
 					}
-					// OXCE_HD_KEY=<SDL key number>: presses that key 1.0 s before the dump (289 = F8)
+					// OXCE_HD_KEY=<SDL key number>: presses that key 1.0 s before the dump (289 = F8);
+					// "ctrl+289" holds Ctrl for the next few frames (Ctrl+F8: the battle's full dump - map, frame, json)
 					static const char *autoKey = getenv("OXCE_HD_KEY");
 					static bool autoKeyed = false;
+					static int autoCtrlFrames = 0;
+					if (autoCtrlFrames > 0 && --autoCtrlFrames == 0)
+					{
+						SDL_SetModState(KMOD_NONE);
+					}
 					if (!autoKeyed && autoKey && *autoKey && now + 1000 >= autoDumpAt)
 					{
 						autoKeyed = true;
+						const bool ctrl = strncmp(autoKey, "ctrl+", 5) == 0;
+						if (ctrl)
+						{
+							SDL_SetModState(KMOD_LCTRL);
+							autoCtrlFrames = 5;
+						}
 						SDL_Event ev;
 						memset(&ev, 0, sizeof(ev));
 						ev.type = SDL_KEYDOWN;
 						ev.key.state = SDL_PRESSED;
-						ev.key.keysym.sym = (SDLKey)atoi(autoKey);
+						ev.key.keysym.sym = (SDLKey)atoi(autoKey + (ctrl ? 5 : 0));
+						ev.key.keysym.mod = ctrl ? KMOD_LCTRL : KMOD_NONE;
 						SDL_PushEvent(&ev);
 						ev.type = SDL_KEYUP;
 						ev.key.state = SDL_RELEASED;
