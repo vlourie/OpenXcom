@@ -14,7 +14,7 @@
 
 Справка: docs/AI_ROADMAP.md, этап Ф2.1.
 """
-import argparse, json, os, re, shutil, subprocess, sys, tempfile, time
+import argparse, json, os, re, shutil, subprocess, sys, tempfile, threading, time
 from pathlib import Path
 
 ENC_W = "utf-8-sig"
@@ -110,6 +110,9 @@ def run(save, turns=1, save_as="", name="probe", timeout=900, bot=False, seed=No
     env = {k: v for k, v in os.environ.items() if not k.startswith("OXCE_HD_")}
     env["PATH"] = CFG["MsysBin"] + os.pathsep + env.get("PATH", "")
     env["SDL_AUDIODRIVER"] = "dummy"
+    # окна нет вовсе: SDL показывает своё окно мимо STARTUPINFO, и прятать его после - значит дать мелькнуть
+    # (Vitali 27.09: «нельзя открывать игру даже на секунду на экране»)
+    env["SDL_VIDEODRIVER"] = "dummy"
     env["OXCE_AI_PROBE"] = "1"
     env["OXCE_AI_PROBE_TURNS"] = str(turns)
     env["OXCE_AI_PROBE_SAVE"] = save_as or ""
@@ -128,18 +131,13 @@ def run(save, turns=1, save_as="", name="probe", timeout=900, bot=False, seed=No
         args[5:5] = ["-load", "probe.asav"]
     else:
         env["OXCE_HD_START"] = "battle"  # главное меню сразу собирает бой (MainMenuState.cpp)
-    si = subprocess.STARTUPINFO()
-    si.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-    si.wShowWindow = 0  # SW_HIDE: ни окна, ни кнопки на панели задач
     t0 = time.time()
-    p = subprocess.Popen(args, cwd=str(EXE.parent), env=env, startupinfo=si,
-                         creationflags=subprocess.BELOW_NORMAL_PRIORITY_CLASS,
-                         stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    p = Hidden(args, str(EXE.parent), env)
     stuck = ""
     watch = Watch(log)
     try:
         while p.poll() is None:
-            # SDL показывает окно сам, мимо STARTUPINFO: прячем, пока процесс жив
+            # окно ошибки игры ждёт нажатия вечно: ищем его на скрытом столе прогона
             crash = hide_windows(p.pid)
             stuck = f"crash: {crash}" if crash else watch.stuck()
             if stuck or time.time() - t0 > timeout:
@@ -160,6 +158,86 @@ def run(save, turns=1, save_as="", name="probe", timeout=900, bot=False, seed=No
     if stuck:
         lines.append(f"[AIPROBE] stuck: {stuck}")
     return Probe(lines, log, saved if saved and saved.exists() else None, seconds, finished)
+
+
+DESK_NAME = "oxce_ai_bench"
+_desk = None
+_desk_lock = threading.Lock()
+
+
+def bench_desktop():
+    """Свой рабочий стол для игры (CreateDesktop): всё, что она покажет, - окно SDL, окно ошибки,
+    системный диалог - живёт там и на экран Vitali не попадает ни на миг. Один на процесс питона."""
+    global _desk
+    with _desk_lock:  # серия зовёт из 12 потоков сразу: без замка второй CreateDesktop получал отказ (ошибка 5)
+        if _desk is None:
+            import ctypes
+            user32 = ctypes.windll.user32
+            user32.CreateDesktopW.restype = user32.OpenDesktopW.restype = ctypes.c_void_p
+            # стол уже есть (соседняя серия) - открыть его
+            _desk = user32.OpenDesktopW(DESK_NAME, 0, False, 0x10000000) \
+                or user32.CreateDesktopW(DESK_NAME, None, None, 0, 0x10000000, None)  # GENERIC_ALL
+            if not _desk:
+                raise OSError(f"не создан скрытый рабочий стол: ошибка {ctypes.GetLastError()}")
+    return _desk
+
+
+class Hidden:
+    """Процесс игры на скрытом рабочем столе (CreateProcessW с lpDesktop), приоритет ниже обычного.
+    Повторяет то, что прогону нужно от Popen: pid, poll(), wait()."""
+
+    def __init__(self, args, cwd, env):
+        import ctypes
+        from ctypes import wintypes
+        k32 = ctypes.windll.kernel32
+        bench_desktop()
+        # системные окна об ошибке (сбой, нет диска) не показывать вовсе; режим наследует игра
+        k32.SetErrorMode(0x0001 | 0x0002 | 0x8000)
+
+        class SI(ctypes.Structure):
+            _fields_ = [("cb", wintypes.DWORD), ("lpReserved", wintypes.LPWSTR), ("lpDesktop", wintypes.LPWSTR),
+                        ("lpTitle", wintypes.LPWSTR), ("dwX", wintypes.DWORD), ("dwY", wintypes.DWORD),
+                        ("dwXSize", wintypes.DWORD), ("dwYSize", wintypes.DWORD), ("dwXCountChars", wintypes.DWORD),
+                        ("dwYCountChars", wintypes.DWORD), ("dwFillAttribute", wintypes.DWORD),
+                        ("dwFlags", wintypes.DWORD), ("wShowWindow", wintypes.WORD), ("cbReserved2", wintypes.WORD),
+                        ("lpReserved2", ctypes.c_void_p), ("hStdInput", wintypes.HANDLE),
+                        ("hStdOutput", wintypes.HANDLE), ("hStdError", wintypes.HANDLE)]
+
+        class PI(ctypes.Structure):
+            _fields_ = [("hProcess", wintypes.HANDLE), ("hThread", wintypes.HANDLE),
+                        ("dwProcessId", wintypes.DWORD), ("dwThreadId", wintypes.DWORD)]
+
+        si = SI()
+        si.cb = ctypes.sizeof(SI)
+        si.lpDesktop = "WinSta0" + chr(92) + DESK_NAME
+        si.dwFlags = 0x0001  # STARTF_USESHOWWINDOW
+        si.wShowWindow = 0   # SW_HIDE - и на скрытом столе
+        pi = PI()
+        block = ctypes.create_unicode_buffer("".join(f"{k}={v}\0" for k, v in env.items()) + "\0")
+        cmd = ctypes.create_unicode_buffer(subprocess.list2cmdline(args))
+        k32.CreateProcessW.argtypes = [wintypes.LPCWSTR, wintypes.LPWSTR, ctypes.c_void_p, ctypes.c_void_p,
+                                       wintypes.BOOL, wintypes.DWORD, ctypes.c_void_p, wintypes.LPCWSTR,
+                                       ctypes.POINTER(SI), ctypes.POINTER(PI)]
+        # BELOW_NORMAL_PRIORITY_CLASS | CREATE_UNICODE_ENVIRONMENT
+        if not k32.CreateProcessW(None, cmd, None, None, False, 0x4000 | 0x0400, block, cwd,
+                                  ctypes.byref(si), ctypes.byref(pi)):
+            raise OSError(f"CreateProcessW: ошибка {ctypes.GetLastError()}")
+        k32.CloseHandle(pi.hThread)
+        self._k32, self._h, self.pid, self.returncode = k32, pi.hProcess, pi.dwProcessId, None
+
+    def poll(self):
+        if self.returncode is None and self._k32.WaitForSingleObject(self._h, 0) == 0:
+            import ctypes
+            code = ctypes.c_ulong(0)
+            self._k32.GetExitCodeProcess(self._h, ctypes.byref(code))
+            self.returncode = code.value
+            self._k32.CloseHandle(self._h)
+        return self.returncode
+
+    def wait(self):
+        while self.poll() is None:
+            time.sleep(0.1)
+        return self.returncode
 
 
 def hide_windows(pid):
@@ -204,7 +282,7 @@ def hide_windows(pid):
             found_text.append(t.splitlines()[0])
         return True
 
-    user32.EnumWindows(each, 0)
+    user32.EnumDesktopWindows(ctypes.c_void_p(bench_desktop()), each, 0)  # игра живёт на своём столе
     for hwnd in found:
         user32.ShowWindowAsync(hwnd, 0)  # не ждёт окно чужого потока: повисшее не держит сторожа
     found_text = []
