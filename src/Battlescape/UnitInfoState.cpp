@@ -69,104 +69,112 @@ UnitInfoState::UnitInfoState(BattleUnit *unit, BattlescapeState *parent, bool fr
 		yPos = 30;
 	}
 
-	_txtTimeUnits = new Text(140, 9, 8, yPos);
+	_txtTimeUnits = new Text(104, 9, 8, yPos);
+	_maxTimeUnits = new Text(30, 9, 112, yPos);
 	_numTimeUnits = new Text(18, 9, 150, yPos);
 	_barTimeUnits = new Bar(150, 5, 170, yPos + 1);
 	yPos += step;
 
-	_txtEnergy = new Text(140, 9, 8, yPos);
+	_txtEnergy = new Text(104, 9, 8, yPos);
+	_maxEnergy = new Text(30, 9, 112, yPos);
 	_numEnergy = new Text(18, 9, 150, yPos);
 	_barEnergy = new Bar(150, 5, 170, yPos + 1);
 	yPos += step;
 
-	_txtHealth = new Text(140, 9, 8, yPos);
+	_txtHealth = new Text(104, 9, 8, yPos);
+	_maxHealth = new Text(30, 9, 112, yPos);
 	_numHealth = new Text(18, 9, 150, yPos);
 	_barHealth = new Bar(150, 5, 170, yPos + 1);
-	{
-		int numMaxHealthPosX = _game->getMod()->getInterface("stats")->getElement("numMaxHealth")->x;
-		_numMaxHealth = new Text(40, 9, numMaxHealthPosX, yPos);
-	}
 	yPos += step;
 
-	_txtFatalWounds = new Text(140, 9, 8, yPos);
+	_txtFatalWounds = new Text(104, 9, 8, yPos);
 	_numFatalWounds = new Text(18, 9, 150, yPos);
 	_barFatalWounds = new Bar(150, 5, 170, yPos + 1);
 	yPos += step;
 
-	_txtBravery = new Text(140, 9, 8, yPos);
+	_txtBravery = new Text(104, 9, 8, yPos);
 	_numBravery = new Text(18, 9, 150, yPos);
 	_barBravery = new Bar(150, 5, 170, yPos + 1);
 	yPos += step;
 
-	_txtMorale = new Text(140, 9, 8, yPos);
+	_txtMorale = new Text(104, 9, 8, yPos);
 	_numMorale = new Text(18, 9, 150, yPos);
 	_barMorale = new Bar(150, 5, 170, yPos + 1);
 	yPos += step;
 
-	_txtReactions = new Text(140, 9, 8, yPos);
+	_txtReactions = new Text(104, 9, 8, yPos);
 	_numReactions = new Text(18, 9, 150, yPos);
 	_barReactions = new Bar(150, 5, 170, yPos + 1);
 	yPos += step;
 
-	_txtFiring = new Text(140, 9, 8, yPos);
+	_txtFiring = new Text(104, 9, 8, yPos);
+	_maxFiring = new Text(30, 9, 112, yPos);
 	_numFiring = new Text(18, 9, 150, yPos);
 	_barFiring = new Bar(150, 5, 170, yPos + 1);
 	yPos += step;
 
-	_txtThrowing = new Text(140, 9, 8, yPos);
+	_txtThrowing = new Text(104, 9, 8, yPos);
+	_maxThrowing = new Text(30, 9, 112, yPos);
 	_numThrowing = new Text(18, 9, 150, yPos);
 	_barThrowing = new Bar(150, 5, 170, yPos + 1);
 	yPos += step;
 
-	_txtMelee = new Text(140, 9, 8, yPos);
+	_txtMelee = new Text(104, 9, 8, yPos);
+	_maxMelee = new Text(30, 9, 112, yPos);
 	_numMelee = new Text(18, 9, 150, yPos);
 	_barMelee = new Bar(150, 5, 170, yPos + 1);
 	yPos += step;
 
-	_txtStrength = new Text(140, 9, 8, yPos);
+	_txtStrength = new Text(104, 9, 8, yPos);
 	_numStrength = new Text(18, 9, 150, yPos);
 	_barStrength = new Bar(150, 5, 170, yPos + 1);
 	yPos += step;
 
 	if (_game->getMod()->isManaFeatureEnabled())
 	{
-		_txtMana = new Text(140, 9, 8, yPos);
+		_txtMana = new Text(104, 9, 8, yPos);
+		_maxMana = new Text(30, 9, 112, yPos);
 		_numMana = new Text(18, 9, 150, yPos);
 		_barMana = new Bar(150, 5, 170, yPos + 1);
 		yPos += step;
 	}
 
-	_txtPsiStrength = new Text(140, 9, 8, yPos);
+	_txtPsiStrength = new Text(104, 9, 8, yPos);
 	_numPsiStrength = new Text(18, 9, 150, yPos);
 	_barPsiStrength = new Bar(150, 5, 170, yPos + 1);
 	yPos += step;
 
-	_txtPsiSkill = new Text(140, 9, 8, yPos);
+	_txtPsiSkill = new Text(104, 9, 8, yPos);
 	_numPsiSkill = new Text(18, 9, 150, yPos);
 	_barPsiSkill = new Bar(150, 5, 170, yPos + 1);
 	yPos += step;
 
-	_txtFrontArmor = new Text(140, 9, 8, yPos);
+	_txtFrontArmor = new Text(104, 9, 8, yPos);
+	_maxFrontArmor = new Text(30, 9, 112, yPos);
 	_numFrontArmor= new Text(18, 9, 150, yPos);
 	_barFrontArmor = new Bar(150, 5, 170, yPos + 1);
 	yPos += step;
 
-	_txtLeftArmor = new Text(140, 9, 8, yPos);
+	_txtLeftArmor = new Text(104, 9, 8, yPos);
+	_maxLeftArmor = new Text(30, 9, 112, yPos);
 	_numLeftArmor = new Text(18, 9, 150, yPos);
 	_barLeftArmor = new Bar(150, 5, 170, yPos + 1);
 	yPos += step;
 
-	_txtRightArmor = new Text(140, 9, 8, yPos);
+	_txtRightArmor = new Text(104, 9, 8, yPos);
+	_maxRightArmor = new Text(30, 9, 112, yPos);
 	_numRightArmor = new Text(18, 9, 150, yPos);
 	_barRightArmor = new Bar(150, 5, 170, yPos + 1);
 	yPos += step;
 
-	_txtRearArmor = new Text(140, 9, 8, yPos);
+	_txtRearArmor = new Text(104, 9, 8, yPos);
+	_maxRearArmor = new Text(30, 9, 112, yPos);
 	_numRearArmor = new Text(18, 9, 150, yPos);
 	_barRearArmor = new Bar(150, 5, 170, yPos + 1);
 	yPos += step;
 
-	_txtUnderArmor = new Text(140, 9, 8, yPos);
+	_txtUnderArmor = new Text(104, 9, 8, yPos);
+	_maxUnderArmor = new Text(30, 9, 112, yPos);
 	_numUnderArmor = new Text(18, 9, 150, yPos);
 	_barUnderArmor = new Bar(150, 5, 170, yPos + 1);
 
@@ -185,16 +193,18 @@ UnitInfoState::UnitInfoState(BattleUnit *unit, BattlescapeState *parent, bool fr
 
 	add(_txtTimeUnits);
 	add(_numTimeUnits);
+	add(_maxTimeUnits);
 	add(_barTimeUnits, "barTUs", "stats", 0);
 
 	add(_txtEnergy);
 	add(_numEnergy);
+	add(_maxEnergy);
 	add(_barEnergy, "barEnergy", "stats", 0);
 
 	add(_txtHealth);
 	add(_numHealth);
+	add(_maxHealth);
 	add(_barHealth, "barHealth", "stats", 0);
-	add(_numMaxHealth, "numMaxHealth", "stats", 0);
 
 	add(_txtFatalWounds);
 	add(_numFatalWounds);
@@ -214,14 +224,17 @@ UnitInfoState::UnitInfoState(BattleUnit *unit, BattlescapeState *parent, bool fr
 
 	add(_txtFiring);
 	add(_numFiring);
+	add(_maxFiring);
 	add(_barFiring, "barFiring", "stats", 0);
 
 	add(_txtThrowing);
 	add(_numThrowing);
+	add(_maxThrowing);
 	add(_barThrowing, "barThrowing", "stats", 0);
 
 	add(_txtMelee);
 	add(_numMelee);
+	add(_maxMelee);
 	add(_barMelee, "barMelee", "stats", 0);
 
 	add(_txtStrength);
@@ -232,6 +245,7 @@ UnitInfoState::UnitInfoState(BattleUnit *unit, BattlescapeState *parent, bool fr
 	{
 		add(_txtMana);
 		add(_numMana);
+		add(_maxMana);
 		add(_barMana, "barMana", "stats", 0);
 	}
 
@@ -245,22 +259,27 @@ UnitInfoState::UnitInfoState(BattleUnit *unit, BattlescapeState *parent, bool fr
 
 	add(_txtFrontArmor);
 	add(_numFrontArmor);
+	add(_maxFrontArmor);
 	add(_barFrontArmor, "barFrontArmor", "stats", 0);
 
 	add(_txtLeftArmor);
 	add(_numLeftArmor);
+	add(_maxLeftArmor);
 	add(_barLeftArmor, "barLeftArmor", "stats", 0);
 
 	add(_txtRightArmor);
 	add(_numRightArmor);
+	add(_maxRightArmor);
 	add(_barRightArmor, "barRightArmor", "stats", 0);
 
 	add(_txtRearArmor);
 	add(_numRearArmor);
+	add(_maxRearArmor);
 	add(_barRearArmor, "barRearArmor", "stats", 0);
 
 	add(_txtUnderArmor);
 	add(_numUnderArmor);
+	add(_maxUnderArmor);
 	add(_barUnderArmor, "barUnderArmor", "stats", 0);
 
 	if (!_mindProbe)
@@ -292,6 +311,10 @@ UnitInfoState::UnitInfoState(BattleUnit *unit, BattlescapeState *parent, bool fr
 	_numTimeUnits->setColor(color2);
 	_numTimeUnits->setHighContrast(true);
 
+	_maxTimeUnits->setColor(color2 + 4);
+	_maxTimeUnits->setHighContrast(true);
+	_maxTimeUnits->setAlign(ALIGN_RIGHT);
+
 	_barTimeUnits->setScale(1.0);
 
 	_txtEnergy->setColor(color);
@@ -300,6 +323,10 @@ UnitInfoState::UnitInfoState(BattleUnit *unit, BattlescapeState *parent, bool fr
 
 	_numEnergy->setColor(color2);
 	_numEnergy->setHighContrast(true);
+
+	_maxEnergy->setColor(color2 + 4);
+	_maxEnergy->setHighContrast(true);
+	_maxEnergy->setAlign(ALIGN_RIGHT);
 
 	_barEnergy->setScale(1.0);
 
@@ -310,8 +337,9 @@ UnitInfoState::UnitInfoState(BattleUnit *unit, BattlescapeState *parent, bool fr
 	_numHealth->setColor(color2);
 	_numHealth->setHighContrast(true);
 
-	_numMaxHealth->setHighContrast(true);
-	_numMaxHealth->setAlign(ALIGN_RIGHT);
+	_maxHealth->setColor(color2 + 4);
+	_maxHealth->setHighContrast(true);
+	_maxHealth->setAlign(ALIGN_RIGHT);
 
 	_barHealth->setScale(1.0);
 
@@ -358,6 +386,10 @@ UnitInfoState::UnitInfoState(BattleUnit *unit, BattlescapeState *parent, bool fr
 	_numFiring->setColor(color2);
 	_numFiring->setHighContrast(true);
 
+	_maxFiring->setColor(color2 + 4);
+	_maxFiring->setHighContrast(true);
+	_maxFiring->setAlign(ALIGN_RIGHT);
+
 	_barFiring->setScale(1.0);
 
 	_txtThrowing->setColor(color);
@@ -367,6 +399,10 @@ UnitInfoState::UnitInfoState(BattleUnit *unit, BattlescapeState *parent, bool fr
 	_numThrowing->setColor(color2);
 	_numThrowing->setHighContrast(true);
 
+	_maxThrowing->setColor(color2 + 4);
+	_maxThrowing->setHighContrast(true);
+	_maxThrowing->setAlign(ALIGN_RIGHT);
+
 	_barThrowing->setScale(1.0);
 
 	_txtMelee->setColor(color);
@@ -375,6 +411,10 @@ UnitInfoState::UnitInfoState(BattleUnit *unit, BattlescapeState *parent, bool fr
 
 	_numMelee->setColor(color2);
 	_numMelee->setHighContrast(true);
+
+	_maxMelee->setColor(color2 + 4);
+	_maxMelee->setHighContrast(true);
+	_maxMelee->setAlign(ALIGN_RIGHT);
 
 	_barMelee->setScale(1.0);
 
@@ -395,6 +435,10 @@ UnitInfoState::UnitInfoState(BattleUnit *unit, BattlescapeState *parent, bool fr
 
 		_numMana->setColor(color2);
 		_numMana->setHighContrast(true);
+
+		_maxMana->setColor(color2 + 4);
+		_maxMana->setHighContrast(true);
+		_maxMana->setAlign(ALIGN_RIGHT);
 
 		_barMana->setScale(1.0);
 	}
@@ -424,6 +468,10 @@ UnitInfoState::UnitInfoState(BattleUnit *unit, BattlescapeState *parent, bool fr
 	_numFrontArmor->setColor(color2);
 	_numFrontArmor->setHighContrast(true);
 
+	_maxFrontArmor->setColor(color2 + 4);
+	_maxFrontArmor->setHighContrast(true);
+	_maxFrontArmor->setAlign(ALIGN_RIGHT);
+
 	_barFrontArmor->setScale(1.0);
 
 	_txtLeftArmor->setColor(color);
@@ -432,6 +480,10 @@ UnitInfoState::UnitInfoState(BattleUnit *unit, BattlescapeState *parent, bool fr
 
 	_numLeftArmor->setColor(color2);
 	_numLeftArmor->setHighContrast(true);
+
+	_maxLeftArmor->setColor(color2 + 4);
+	_maxLeftArmor->setHighContrast(true);
+	_maxLeftArmor->setAlign(ALIGN_RIGHT);
 
 	_barLeftArmor->setScale(1.0);
 
@@ -442,6 +494,10 @@ UnitInfoState::UnitInfoState(BattleUnit *unit, BattlescapeState *parent, bool fr
 	_numRightArmor->setColor(color2);
 	_numRightArmor->setHighContrast(true);
 
+	_maxRightArmor->setColor(color2 + 4);
+	_maxRightArmor->setHighContrast(true);
+	_maxRightArmor->setAlign(ALIGN_RIGHT);
+
 	_barRightArmor->setScale(1.0);
 
 	_txtRearArmor->setColor(color);
@@ -451,6 +507,10 @@ UnitInfoState::UnitInfoState(BattleUnit *unit, BattlescapeState *parent, bool fr
 	_numRearArmor->setColor(color2);
 	_numRearArmor->setHighContrast(true);
 
+	_maxRearArmor->setColor(color2 + 4);
+	_maxRearArmor->setHighContrast(true);
+	_maxRearArmor->setAlign(ALIGN_RIGHT);
+
 	_barRearArmor->setScale(1.0);
 
 	_txtUnderArmor->setColor(color);
@@ -459,6 +519,10 @@ UnitInfoState::UnitInfoState(BattleUnit *unit, BattlescapeState *parent, bool fr
 
 	_numUnderArmor->setColor(color2);
 	_numUnderArmor->setHighContrast(true);
+
+	_maxUnderArmor->setColor(color2 + 4);
+	_maxUnderArmor->setHighContrast(true);
+	_maxUnderArmor->setAlign(ALIGN_RIGHT);
 
 	_barUnderArmor->setScale(1.0);
 
@@ -493,6 +557,7 @@ void UnitInfoState::init()
 	ss << _unit->getTimeUnits();
 	_numTimeUnits->setText(ss.str());
 	_barTimeUnits->setMax(_unit->getBaseStats()->tu);
+	_maxTimeUnits->setText(std::to_string(_unit->getBaseStats()->tu));
 	_barTimeUnits->setValue(_unit->getTimeUnits());
 
 	ss.str("");
@@ -510,30 +575,17 @@ void UnitInfoState::init()
 	ss << _unit->getEnergy();
 	_numEnergy->setText(ss.str());
 	_barEnergy->setMax(_unit->getBaseStats()->stamina);
+	_maxEnergy->setText(std::to_string(_unit->getBaseStats()->stamina));
 	_barEnergy->setValue(_unit->getEnergy());
 
 	ss.str("");
 	ss << _unit->getHealth();
 	_numHealth->setText(ss.str());
 	_barHealth->setMax(_unit->getBaseStats()->health);
+	_maxHealth->setText(std::to_string(_unit->getBaseStats()->health));
 	_barHealth->setValue(_unit->getHealth());
 	_barHealth->setValue2(_unit->getStunlevel());
 
-	_numMaxHealth->setText("");
-	if (_unit->getBaseStats()->health >= 147)
-	{
-		auto* numMaxHealthElement = _game->getMod()->getInterface("stats")->getElement("numMaxHealth");
-		if ((numMaxHealthElement->custom & 1) || _unit->getHealth() != _unit->getBaseStats()->health)
-		{
-			ss.str("");
-			if (numMaxHealthElement->custom & 2)
-			{
-				ss << "/";
-			}
-			ss << _unit->getBaseStats()->health;
-			_numMaxHealth->setText(ss.str());
-		}
-	}
 
 	ss.str("");
 	ss << _unit->getFatalWounds();
@@ -566,18 +618,21 @@ void UnitInfoState::init()
 	ss << (int)((_unit->getBaseStats()->firing * healthModifier) / 100);
 	_numFiring->setText(ss.str());
 	_barFiring->setMax(_unit->getBaseStats()->firing);
+	_maxFiring->setText(std::to_string(_unit->getBaseStats()->firing));
 	_barFiring->setValue((_unit->getBaseStats()->firing * healthModifier) / 100);
 
 	ss.str("");
 	ss << (int)((_unit->getBaseStats()->throwing * healthModifier) / 100);
 	_numThrowing->setText(ss.str());
 	_barThrowing->setMax(_unit->getBaseStats()->throwing);
+	_maxThrowing->setText(std::to_string(_unit->getBaseStats()->throwing));
 	_barThrowing->setValue((_unit->getBaseStats()->throwing * healthModifier) / 100);
 
 	ss.str("");
 	ss << (int)((_unit->getBaseStats()->melee * healthModifier) / 100);
 	_numMelee->setText(ss.str());
 	_barMelee->setMax(_unit->getBaseStats()->melee);
+	_maxMelee->setText(std::to_string(_unit->getBaseStats()->melee));
 	_barMelee->setValue((_unit->getBaseStats()->melee * healthModifier) / 100);
 	// end of healthModifier usage
 
@@ -595,16 +650,19 @@ void UnitInfoState::init()
 			ss << _unit->getMana();
 			_numMana->setText(ss.str());
 			_barMana->setMax(_unit->getBaseStats()->mana);
+			_maxMana->setText(std::to_string(_unit->getBaseStats()->mana));
 			_barMana->setValue(_unit->getMana());
 
 			_txtMana->setVisible(true);
 			_numMana->setVisible(true);
+			_maxMana->setVisible(true);
 			_barMana->setVisible(true);
 		}
 		else
 		{
 			_txtMana->setVisible(false);
 			_numMana->setVisible(false);
+			_maxMana->setVisible(false);
 			_barMana->setVisible(false);
 		}
 	}
@@ -656,30 +714,35 @@ void UnitInfoState::init()
 	ss << _unit->getArmor(SIDE_FRONT);
 	_numFrontArmor->setText(ss.str());
 	_barFrontArmor->setMax(_unit->getMaxArmor(SIDE_FRONT));
+	_maxFrontArmor->setText(std::to_string(_unit->getMaxArmor(SIDE_FRONT)));
 	_barFrontArmor->setValue(_unit->getArmor(SIDE_FRONT));
 
 	ss.str("");
 	ss << _unit->getArmor(SIDE_LEFT);
 	_numLeftArmor->setText(ss.str());
 	_barLeftArmor->setMax(_unit->getMaxArmor(SIDE_LEFT));
+	_maxLeftArmor->setText(std::to_string(_unit->getMaxArmor(SIDE_LEFT)));
 	_barLeftArmor->setValue(_unit->getArmor(SIDE_LEFT));
 
 	ss.str("");
 	ss << _unit->getArmor(SIDE_RIGHT);
 	_numRightArmor->setText(ss.str());
 	_barRightArmor->setMax(_unit->getMaxArmor(SIDE_RIGHT));
+	_maxRightArmor->setText(std::to_string(_unit->getMaxArmor(SIDE_RIGHT)));
 	_barRightArmor->setValue(_unit->getArmor(SIDE_RIGHT));
 
 	ss.str("");
 	ss << _unit->getArmor(SIDE_REAR);
 	_numRearArmor->setText(ss.str());
 	_barRearArmor->setMax(_unit->getMaxArmor(SIDE_REAR));
+	_maxRearArmor->setText(std::to_string(_unit->getMaxArmor(SIDE_REAR)));
 	_barRearArmor->setValue(_unit->getArmor(SIDE_REAR));
 
 	ss.str("");
 	ss << _unit->getArmor(SIDE_UNDER);
 	_numUnderArmor->setText(ss.str());
 	_barUnderArmor->setMax(_unit->getMaxArmor(SIDE_UNDER));
+	_maxUnderArmor->setText(std::to_string(_unit->getMaxArmor(SIDE_UNDER)));
 	_barUnderArmor->setValue(_unit->getArmor(SIDE_UNDER));
 }
 
