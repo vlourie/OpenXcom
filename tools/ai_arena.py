@@ -24,7 +24,8 @@ import ai_probe
 
 ENC_W = "utf-8-sig"
 COLS = ("seed", "how", "mission", "month", "units", "terrain", "race", "craft", "shade", "turn", "player", "pdead", "pout",
-        "pwounded", "phplost", "hostile", "hdead", "hout", "hleft", "pattacks", "hattacks", "seconds", "note")
+        "pwounded", "phplost", "hostile", "hdead", "hout", "hleft", "livesoldiers", "livealiens", "aborted",
+        "pattacks", "hattacks", "seconds", "note")
 
 
 def seeds_of(spec):
@@ -54,10 +55,19 @@ def one(seed, turns, diff, timeout, campaign):
 
 def outcome(row):
     """win - врагов на ногах не осталось, loss - у игрока, draw - предел ходов, иначе прогон не дошёл."""
+    if "could not be placed" in row.get("note", ""):
+        return "nomap"  # корабль не встаёт на карту миссии: генератор падает так же и в игре
     if row.get("how") not in ("over", "abort", "timeout"):
         return row.get("how", "?")
     if row["how"] == "timeout":
         return "draw"
+    if row.get("livealiens", "") != "":
+        # подсчёт движка: сдавшихся, пленённых пси и оглушённых сверх порога он живыми не считает
+        if int(row["livealiens"]) == 0:
+            return "win"
+        if int(row["livesoldiers"]) == 0:
+            return "loss"
+        return "abort" if row["how"] == "abort" or row.get("aborted") == "1" else "end-other"
     if int(row["hleft"]) == 0:
         return "win"
     if int(row["pdead"]) + int(row["pout"]) >= int(row["player"]):
@@ -71,7 +81,7 @@ def summary(rows, label):
     for r in rows:
         by.setdefault(outcome(r), []).append(r)
     lines.append("исходы: " + ", ".join(f"{k} {len(v)}" for k, v in sorted(by.items())))
-    done = [r for r in rows if outcome(r) in ("win", "loss", "draw", "abort")]
+    done = [r for r in rows if outcome(r) in ("win", "loss", "draw", "abort", "end-other")]
     if not done:
         return lines
     n = len(done)

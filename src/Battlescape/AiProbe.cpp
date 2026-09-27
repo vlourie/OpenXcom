@@ -129,8 +129,11 @@ void logResult(SavedBattleGame *save, const char *how)
 			hOut += out;
 		}
 	}
+	// the engine's own count decides who won: it skips surrendered, psi-captured and over-threshold units
+	const BattlescapeTally tally = save->getBattleGame()->tallyUnits();
 	Log(LOG_INFO) << "[AIRESULT] how=" << how
 		<< " seed=" << battleSeed()
+		<< " livesoldiers=" << tally.liveSoldiers << " livealiens=" << tally.liveAliens << " aborted=" << save->isAborted()
 		<< " mission=" << save->getMissionType()
 		<< " turn=" << save->getTurn()
 		<< " player=" << pUnits << " pdead=" << pDead << " pout=" << pOut << " pwounded=" << pWounded << " phplost=" << pHpLost
@@ -254,7 +257,8 @@ void logDecision(SavedBattleGame *save, BattleUnit *unit, const BattleAction &ac
 	if (side >= 0 && side < 3 && action.type != BA_NONE)
 	{
 		const bool attack = action.type == BA_AUTOSHOT || action.type == BA_SNAPSHOT || action.type == BA_AIMEDSHOT
-			|| action.type == BA_HIT || action.type == BA_THROW || action.type == BA_LAUNCH;
+			|| action.type == BA_HIT || action.type == BA_THROW || action.type == BA_LAUNCH
+			|| action.type == BA_MINDCONTROL || action.type == BA_PANIC;
 		++decided[side][attack ? 1 : 0];
 	}
 	const AIModule *ai = unit->getAIModule();

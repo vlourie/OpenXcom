@@ -612,6 +612,7 @@ void NewBattleState::probeRandomize(long long seed)
 #else
 	const char *campaign = getenv("OXCE_AI_CAMPAIGN");
 	int month = -1;
+	std::vector<Craft*> crews;
 	if (campaign && *campaign)
 	{
 		SavedGame *save = new SavedGame();
@@ -619,10 +620,27 @@ void NewBattleState::probeRandomize(long long seed)
 		save->setIronman(false); // a copy, and nothing of it is ever saved
 		_game->setSavedGame(save);
 		_craft = nullptr;
+		// OXCE_AI_CRAFT=<type> or <type>#<id> pins the squad; otherwise one of the crews of 6+ by the seed, below
+		const char *pin = getenv("OXCE_AI_CRAFT");
+		const std::string pinned = pin ? pin : "";
 		for (auto *base : *save->getBases())
 		{
 			for (auto *craft : *base->getCrafts())
 			{
+				const std::string name = craft->getRules()->getType() + "#" + std::to_string(craft->getId());
+				if (!pinned.empty())
+				{
+					if (pinned == name || pinned == craft->getRules()->getType())
+					{
+						_craft = craft;
+						crews.push_back(craft);
+					}
+					continue;
+				}
+				if (craft->getNumTotalUnits() >= 6)
+				{
+					crews.push_back(craft);
+				}
 				if (!_craft || craft->getNumTotalUnits() > _craft->getNumTotalUnits())
 				{
 					_craft = craft;
@@ -635,18 +653,23 @@ void NewBattleState::probeRandomize(long long seed)
 			campaign = nullptr;
 		}
 	}
+	RNG::setSeed(seed); // after the load: a save brings its own seed
+	auto pick = [](size_t n) { return n > 1 ? (size_t)RNG::generate(0, (int)n - 1) : (size_t)0; };
 	if (campaign && *campaign)
 	{
+		// the biggest crew may be trainees (the dropship of pistols): the seed picks among all real squads
+		if (!crews.empty())
+		{
+			_craft = crews[pick(crews.size())];
+		}
 		month = _game->getSavedGame()->getMonthsPassed();
 		_cbxDifficulty->setSelected((size_t)_game->getSavedGame()->getDifficulty());
-		auto it = std::find(_crafts.begin(), _crafts.end(), _craft ? _craft->getRules()->getType() : std::string());
+		auto it = std::find(_crafts.begin(), _crafts.end(), _craft->getRules()->getType());
 		if (it != _crafts.end())
 		{
 			_cbxCraft->setSelected(it - _crafts.begin());
 		}
 	}
-	RNG::setSeed(seed); // after the load: a save brings its own seed
-	auto pick = [](size_t n) { return n > 1 ? (size_t)RNG::generate(0, (int)n - 1) : (size_t)0; };
 	_cbxMission->setSelected(pick(_missionTypes.size()));
 	if (month >= 0)
 	{
@@ -712,7 +735,7 @@ void NewBattleState::probeRandomize(long long seed)
 	Log(LOG_INFO) << "[AIPROBE] battle seed=" << seed
 		<< " campaign=" << (month >= 0 ? campaign : "-") << " month=" << month
 		<< " mission=" << _missionTypes[_cbxMission->getSelected()]
-		<< " craft=" << _craft->getRules()->getType() << " units=" << _craft->getNumTotalUnits()
+		<< " craft=" << _craft->getRules()->getType() << "#" << _craft->getId() << " units=" << _craft->getNumTotalUnits()
 		<< " terrain=" << (_terrainTypes.empty() ? std::string("-") : _terrainTypes[_cbxTerrain->getSelected()])
 		<< " race=" << _alienRaces[_cbxAlienRace->getSelected()]
 		<< " shade=" << _slrDarkness->getValue()
