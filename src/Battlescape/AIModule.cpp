@@ -2087,6 +2087,12 @@ void AIModule::tacticalMode()
 	}
 	const bool wounded = AiProbe::careful(_unit)
 		&& (_unit->getFatalWounds() > 0 || _unit->getHealth() < _unit->getBaseStats()->health / 2);
+	if (_AIMode == AI_AMBUSH && !wounded)
+	{
+		// an ambush holds its time units for reaction fire - the wall the player uses; sending it to cover throws that away
+		AiProbe::tally(_unit, "ambush");
+		return;
+	}
 	const bool attacking = _AIMode == AI_COMBAT && _attackAction.type != BA_RETHINK && _attackAction.type != BA_NONE;
 	if (attacking && !wounded)
 	{
@@ -2103,8 +2109,9 @@ void AIModule::tacticalMode()
 		AiProbe::tally(_unit, "attack");
 		return;
 	}
+	// which mode gave way to cover: a patrol walking in view, or combat that found nothing to do
+	AiProbe::tally(_unit, wounded ? "pullback" : _AIMode == AI_PATROL ? "cover.patrol" : "cover.combat");
 	_AIMode = AI_ESCAPE;
-	AiProbe::tally(_unit, wounded ? "pullback" : "cover");
 }
 
 /**

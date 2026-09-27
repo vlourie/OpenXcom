@@ -24,7 +24,8 @@ ROOT = Path(__file__).resolve().parent.parent
 CFG = json.loads((ROOT / "tools/build/build_config.json").read_text(encoding=ENC_R))
 GAME = ROOT / CFG["GameDir"]
 # стенд ИИ живёт только в локальной сборке с OXCE_AI_DEV: в сборке для игроков его нет
-EXE = ROOT / "build-ai" / "bin" / "openxcom.exe"
+# OXCE_AI_BUILD - другой каталог сборки стенда (build-ai2): новая правка собирается и играет, пока идёт серия на прежней
+EXE = ROOT / (os.environ.get("OXCE_AI_BUILD") or "build-ai") / "bin" / "openxcom.exe"
 WORK = Path(tempfile.gettempdir()) / "oxce_ai_probe"
 TAGS = ("[AISTATE]", "[AIDECIDE]", "[AIPROBE]", "[AIRESULT]")
 
