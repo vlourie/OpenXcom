@@ -45,6 +45,7 @@
 #include "../Engine/Options.h"
 #include "../Engine/FileMap.h"
 #include "../Engine/SDL2Helpers.h"
+#include "../Battlescape/AiProbe.h"
 #include <fstream>
 
 namespace OpenXcom
@@ -314,6 +315,10 @@ void MainMenuState::init()
 			// the mission generator's OK with its defaults: straight into a battle
 			NewBattleState *nb = new NewBattleState;
 			_game->pushState(nb);
+			if (AiProbe::battleSeed() >= 0)
+			{
+				nb->probeRandomize(AiProbe::battleSeed());
+			}
 			nb->btnOkClick(nullptr);
 		}
 		else if (what == "geoscape" || what == "save" || what == "base")

@@ -61,6 +61,7 @@
 #include "TileEngine.h"
 #include "../Mod/RuleInterface.h"
 #include "../Ufopaedia/Ufopaedia.h"
+#include "AiProbe.h"
 
 namespace OpenXcom
 {
@@ -2322,6 +2323,12 @@ void InventoryState::handle(Action *action)
  */
 void InventoryState::think()
 {
+	// the AI test bench: the pre-battle equipment screen has nobody to press OK
+	if (!_tu && _parent && AiProbe::active())
+	{
+		btnOkClick(nullptr);
+		return;
+	}
 	if (_tu && Options::showMoreStatsInInventoryView)
 	{
 		// in battle the last stat row sits where the ammo counter of a weapon appears

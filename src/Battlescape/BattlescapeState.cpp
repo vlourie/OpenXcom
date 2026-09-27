@@ -861,7 +861,8 @@ void BattlescapeState::init()
 	_txtTooltip->setText("");
 	_btnReserveKneel->toggle(_save->getKneelReserved());
 	_battleGame->setKneelReserved(_save->getKneelReserved());
-	if (_autosave > 0 && !_save->isPreview())
+	// the AI test bench doesn't autosave: its generated battle has a UFO without a mission, which can't be saved
+	if (_autosave > 0 && !_save->isPreview() && !AiProbe::active())
 	{
 		int currentTurn = _autosave;
 		_autosave = 0;
@@ -3681,6 +3682,7 @@ void BattlescapeState::popup(State *state)
  */
 void BattlescapeState::finishBattle(bool abort, int inExitArea)
 {
+	AiProbe::battleOver(this, _save, abort);
 	bool isPreview = _save->isPreview();
 
 	while (!_game->isState(this))

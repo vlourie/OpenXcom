@@ -226,8 +226,8 @@ int BattlescapeGame::think()
 			_save->setUnitsFalling(false);
 			return ret;
 		}
-		// it's a non player side (ALIENS or CIVILIANS)
-		if (_save->getSide() != FACTION_PLAYER)
+		// it's a non player side (ALIENS or CIVILIANS), or the AI test bench's bot plays the player
+		if (_save->getSide() != FACTION_PLAYER || AiProbe::botTurn(_save))
 		{
 			auto sideBackup = _save->getSide();
 			_save->resetUnitHitStates();

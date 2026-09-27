@@ -17,7 +17,9 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "AiProbe.h"
+#include <algorithm>
 #include <cstdlib>
+#include <map>
 #include <sstream>
 #include "AIModule.h"
 #include "BattlescapeGame.h"
@@ -37,15 +39,41 @@ namespace OpenXcom
 namespace AiProbe
 {
 
+#ifndef OXCE_AI_DEV
+
+// a release build: the bench is not compiled in, every entry point does nothing
+bool active() { return false; }
+bool botTurn(const SavedBattleGame *) { return false; }
+long long battleSeed() { return -1; }
+void think(BattlescapeState *, SavedBattleGame *) {}
+void battleOver(BattlescapeState *, SavedBattleGame *, bool) {}
+void logDecision(SavedBattleGame *, BattleUnit *, const BattleAction &) {}
+void logState(SavedBattleGame *, const char *) {}
+
+#else
+
 namespace
 {
 
-/// AI turns to play before quitting (OXCE_AI_PROBE_TURNS, default 1).
+bool envOn(const char *name)
+{
+	const char *s = getenv(name);
+	return s && *s && *s != '0';
+}
+
+/// Does the AI play the player's side too (OXCE_AI_BOT)?
+bool bot()
+{
+	static const bool on = active() && envOn("OXCE_AI_BOT");
+	return on;
+}
+
+/// AI turns to play before quitting (OXCE_AI_PROBE_TURNS, default 1; for the bot the turn cap, default 60).
 int turnsWanted()
 {
 	const char *s = getenv("OXCE_AI_PROBE_TURNS");
 	const int n = s ? atoi(s) : 0;
-	return n > 0 ? n : 1;
+	return n > 0 ? n : (bot() ? 60 : 1);
 }
 
 enum Phase { WAIT_PLAYER, AI_PLAYING, FINISHED };
@@ -54,13 +82,97 @@ int turnsPlayed = 0;
 int turnAtEnd = 0;
 int aiStartLogged = -1;
 Uint32 startTicks = 0, startVirtual = 0;
+bool started = false;
+/// health of every unit when the probe started: the battle may begin with soldiers already hurt
+std::map<int, int> startHealth;
+/// decisions per side: [side][0] moves, [side][1] attacks (shots, throws, melee)
+int decided[3][2] = {};
+
+void logStart(SavedBattleGame *save)
+{
+	started = true;
+	startTicks = SDL_GetTicks();
+	startVirtual = Timer::probeTicks;
+	for (const auto *bu : *save->getUnits())
+	{
+		startHealth[bu->getId()] = bu->getHealth();
+	}
+	Log(LOG_INFO) << "[AIPROBE] start: turn " << save->getTurn() << ", mission " << save->getMissionType()
+		<< (bot() ? ", bot plays the player, turn cap " : ", AI turns to play ") << turnsWanted();
+	logState(save, "before");
+}
+
+/// The line the statistics are made of: who is left on each side, what it cost the player.
+void logResult(SavedBattleGame *save, const char *how)
+{
+	int pUnits = 0, pDead = 0, pOut = 0, pWounded = 0, pHpLost = 0;
+	int hUnits = 0, hDead = 0, hOut = 0;
+	for (const auto *bu : *save->getUnits())
+	{
+		// the battle ends before the last casualty falls: health 0 is dead, stun over health is out
+		const bool dead = bu->getStatus() == STATUS_DEAD || bu->getHealth() <= 0;
+		const bool out = !dead && (bu->getStatus() == STATUS_UNCONSCIOUS || bu->getStunlevel() >= bu->getHealth());
+		if (bu->getOriginalFaction() == FACTION_PLAYER)
+		{
+			++pUnits;
+			auto was = startHealth.find(bu->getId());
+			const int lost = (was != startHealth.end() ? was->second : bu->getBaseStats()->health) - std::max(0, bu->getHealth());
+			pDead += dead;
+			pOut += out;
+			pWounded += lost > 0 || bu->getFatalWounds() > 0;
+			pHpLost += lost > 0 ? lost : 0;
+		}
+		else if (bu->getOriginalFaction() == FACTION_HOSTILE)
+		{
+			++hUnits;
+			hDead += dead;
+			hOut += out;
+		}
+	}
+	Log(LOG_INFO) << "[AIRESULT] how=" << how
+		<< " seed=" << battleSeed()
+		<< " mission=" << save->getMissionType()
+		<< " turn=" << save->getTurn()
+		<< " player=" << pUnits << " pdead=" << pDead << " pout=" << pOut << " pwounded=" << pWounded << " phplost=" << pHpLost
+		<< " hostile=" << hUnits << " hdead=" << hDead << " hout=" << hOut << " hleft=" << (hUnits - hDead - hOut)
+		<< " pmoves=" << decided[FACTION_PLAYER][0] << " pattacks=" << decided[FACTION_PLAYER][1]
+		<< " hmoves=" << decided[FACTION_HOSTILE][0] << " hattacks=" << decided[FACTION_HOSTILE][1]
+		<< " ms=" << (SDL_GetTicks() - startTicks) << " vms=" << (Timer::probeTicks - startVirtual);
+}
 
 }
 
 bool active()
 {
-	static const bool on = [] { const char *s = getenv("OXCE_AI_PROBE"); return s && *s && *s != '0'; }();
+	static const bool on = envOn("OXCE_AI_PROBE");
 	return on;
+}
+
+bool botTurn(const SavedBattleGame *save)
+{
+	return bot() && save->getSide() == FACTION_PLAYER;
+}
+
+long long battleSeed()
+{
+	static const long long seed = [] { const char *s = getenv("OXCE_AI_SEED"); return active() && s && *s ? atoll(s) : -1LL; }();
+	return seed;
+}
+
+void battleOver(BattlescapeState *state, SavedBattleGame *save, bool abort)
+{
+	if (!active() || phase == FINISHED)
+	{
+		return;
+	}
+	if (!started)
+	{
+		logStart(save);
+	}
+	logState(save, "end");
+	logResult(save, abort ? "abort" : "over");
+	phase = FINISHED;
+	state->getGame()->quit();
 }
 
 void think(BattlescapeState *state, SavedBattleGame *save)
@@ -69,17 +181,35 @@ void think(BattlescapeState *state, SavedBattleGame *save)
 	{
 		return;
 	}
+	if (bot())
+	{
+		// both sides are the AI's: watch, log the start of each hostile turn, stop at the turn cap
+		if (!started)
+		{
+			logStart(save);
+		}
+		if (save->getSide() == FACTION_HOSTILE && aiStartLogged != save->getTurn())
+		{
+			aiStartLogged = save->getTurn();
+			logState(save, "aistart");
+		}
+		if (save->getTurn() > turnsWanted())
+		{
+			logState(save, "end");
+			logResult(save, "timeout");
+			phase = FINISHED;
+			state->getGame()->quit();
+		}
+		return;
+	}
 	BattlescapeGame *bg = state->getBattleGame();
 	// the player's turn, nothing moving: either the first one after loading or the one the AI handed back
 	const bool playerReady = save->getSide() == FACTION_PLAYER && !bg->isBusy() && state->allowButtons();
 	if (phase == WAIT_PLAYER && playerReady)
 	{
-		if (turnsPlayed == 0)
+		if (!started)
 		{
-			startTicks = SDL_GetTicks();
-			startVirtual = Timer::probeTicks;
-			Log(LOG_INFO) << "[AIPROBE] start: turn " << save->getTurn() << ", AI turns to play " << turnsWanted();
-			logState(save, "before");
+			logStart(save);
 		}
 		turnAtEnd = save->getTurn();
 		phase = AI_PLAYING;
@@ -119,6 +249,13 @@ void logDecision(SavedBattleGame *save, BattleUnit *unit, const BattleAction &ac
 	if (!active())
 	{
 		return;
+	}
+	const int side = save->getSide();
+	if (side >= 0 && side < 3 && action.type != BA_NONE)
+	{
+		const bool attack = action.type == BA_AUTOSHOT || action.type == BA_SNAPSHOT || action.type == BA_AIMEDSHOT
+			|| action.type == BA_HIT || action.type == BA_THROW || action.type == BA_LAUNCH;
+		++decided[side][attack ? 1 : 0];
 	}
 	const AIModule *ai = unit->getAIModule();
 	BattleUnit *target = unit->getAIModule() ? unit->getAIModule()->getTarget() : nullptr;
@@ -176,11 +313,14 @@ void logState(SavedBattleGame *save, const char *when)
 			<< " stun=" << bu->getStunlevel()
 			<< " morale=" << bu->getMorale()
 			<< " kneel=" << (bu->isKneeled() ? 1 : 0)
+			<< " weapon=" << (bu->getMainHandWeapon() ? bu->getMainHandWeapon()->getRules()->getType() : std::string("-"))
 			<< " spotted=" << bu->getTurnsSinceSpottedByFaction(FACTION_HOSTILE)
 			<< " sniped=" << bu->getTurnsLeftSpottedForSnipersByFaction(FACTION_HOSTILE)
 			<< " sees=" << (sees.tellp() > 0 ? sees.str() : std::string("-"));
 	}
 }
+
+#endif
 
 }
 
