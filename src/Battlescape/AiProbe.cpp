@@ -475,6 +475,50 @@ void threatOf(SavedBattleGame *save, BattleUnit *unit, double &threat, int &reac
 	}
 }
 
+/// What the unit holds and carries: each hand as type:1 (loaded or needs no ammo) / type:0 (empty),
+/// weapons with ammo outside the hands (it could draw them), ammo that fits a hand weapon (it could reload).
+std::string handsOf(const BattleUnit *unit)
+{
+	std::ostringstream out;
+	const BattleItem *hands[2] = { unit->getRightHandWeapon(), unit->getLeftHandWeapon() };
+	const char *names[2] = { "rh", "lh" };
+	for (int i = 0; i < 2; ++i)
+	{
+		out << " " << names[i] << "=";
+		if (hands[i])
+		{
+			out << hands[i]->getRules()->getType() << ":" << (hands[i]->haveAnyAmmo() ? 1 : 0);
+		}
+		else
+		{
+			out << "-";
+		}
+	}
+	int spare = 0, ammo = 0;
+	for (const auto *bi : *unit->getInventory())
+	{
+		if (bi == hands[0] || bi == hands[1])
+		{
+			continue;
+		}
+		const RuleItem *rule = bi->getRules();
+		if ((rule->getBattleType() == BT_FIREARM || rule->getBattleType() == BT_MELEE) && bi->haveAnyAmmo())
+		{
+			++spare;
+		}
+		for (const auto *h : hands)
+		{
+			if (h && h->isWeaponWithAmmo() && h->getRules()->getSlotForAmmo(rule) != -1)
+			{
+				++ammo;
+				break;
+			}
+		}
+	}
+	out << " spare=" << spare << " ammo=" << ammo;
+	return out.str();
+}
+
 }
 
 void logState(SavedBattleGame *save, const char *when)
@@ -549,7 +593,8 @@ void logState(SavedBattleGame *save, const char *when)
 			<< " tumax=" << bu->getBaseStats()->tu
 			<< " wounds=" << bu->getFatalWounds()
 			<< " threat=" << threat
-			<< " reach=" << reachable;
+			<< " reach=" << reachable
+			<< handsOf(bu);
 	}
 }
 
