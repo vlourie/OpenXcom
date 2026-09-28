@@ -10,7 +10,10 @@
 Скрипт берёт из патча статьи с pages: (без text_width - он подобран под русский текст)
 и строки страниц _2, _3..., переводит таблицы по словарю статов и кладёт их ОДНИМ файлом
 прямо в мод Пираток (Ruleset/zz_award_pages_en.rul: страницы плюс extraStrings en-US) -
-отдельного мода нет. Русской игре файл не мешает: там строки даёт RU-патч.
+отдельного мода нет. Рядом тот же набор ключей идёт блоком extraStrings ru с текстом
+самого патча: движок грузит extraStrings ПОСЛЕ всех Language/*.yml (Game::loadLanguages),
+и без русского блока английский перебил бы ru.yml патча - в русской игре второй экран
+наград выходил по-английски (R-131).
 Статью, где после перевода осталась кириллица (проза, имена), не трогает вовсе и
 называет в выводе: лучше один экран, чем половина по-русски.
 
@@ -116,7 +119,7 @@ def main():
 
     rules = load_yaml(os.path.join(PATCH, "Ruleset", "EX_ufopedia.rul"))
     ru = read_strings(os.path.join(PATCH, "Language", "ru.yml"))
-    arts, strings, skipped = [], {}, []
+    arts, strings, strings_ru, skipped = [], {}, {}, []
     for a in rules.get("ufopaedia", []):
         pages = a.get("pages")
         if not pages or not a.get("id", "").startswith("STR_MEDAL_"):
@@ -138,6 +141,7 @@ def main():
         if ok:
             arts.append(a)
             strings.update(extra)
+            strings_ru.update({k: ru[k] for k in extra})
         else:
             skipped.append(a["id"])
 
@@ -157,7 +161,13 @@ def main():
             f.write("extraStrings:\n  - type: en-US\n    strings:\n")
             for k in sorted(strings):
                 f.write('      %s: "%s"\n' % (k, strings[k].replace('"', '\\"')))
-        print("%s: %d статей, %d строк" % (out, len(arts), len(strings)))
+            # extraStrings грузятся после Language/*.yml: без этого блока английский
+            # выше перебивает ru.yml патча в русской игре (R-131). Текст - из самого патча,
+            # read_strings отдаёт его как есть, в кавычках yaml.
+            f.write("  - type: ru\n    strings:\n")
+            for k in sorted(strings_ru):
+                f.write('      %s: "%s"\n' % (k, strings_ru[k]))
+        print("%s: %d статей, %d строк en-US и %d ru" % (out, len(arts), len(strings), len(strings_ru)))
     if skipped:
         print("оставлены одним экраном (после перевода осталась кириллица): %d" % len(skipped))
         for s in skipped:
