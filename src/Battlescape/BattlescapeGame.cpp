@@ -297,6 +297,66 @@ void BattlescapeGame::init()
 	}
 }
 
+/**
+ * The bench bot (OXCE_AI_CAREFUL) ends a unit's turn facing the nearest enemy its side sees now:
+ * reaction fire looks that way and hits land on the front armor instead of the rear.
+ * The turn is paid by the player's rule (UnitTurnBState charges time units); once per unit per turn.
+ * @param unit Unit that has finished its actions.
+ * @return True if a turn was queued.
+ */
+bool BattlescapeGame::carefulGuard(BattleUnit *unit)
+{
+	if (!AiProbe::careful(unit) || unit->isOut())
+	{
+		return false;
+	}
+	if (_guardedTurn != _save->getTurn())
+	{
+		_guardedTurn = _save->getTurn();
+		_guardedUnits.clear();
+	}
+	if (std::find(_guardedUnits.begin(), _guardedUnits.end(), unit->getId()) != _guardedUnits.end())
+	{
+		return false;
+	}
+	_guardedUnits.push_back(unit->getId());
+	const BattleUnit *threat = nullptr;
+	int best = 1 << 30;
+	for (auto* bu : *_save->getUnits())
+	{
+		// only what the bot's side sees now: no knowledge a player would not have
+		if (bu->getFaction() != FACTION_HOSTILE || bu->isOut() || !bu->getVisible())
+		{
+			continue;
+		}
+		int d = Position::distanceSq(unit->getPosition(), bu->getPosition());
+		if (d < best)
+		{
+			best = d;
+			threat = bu;
+		}
+	}
+	if (!threat)
+	{
+		return false;
+	}
+	// the whole turn must be affordable: UnitTurnBState short of time units mid-turn waits for the player's panic check,
+	// which never comes on the bot's turn, and the battle hangs
+	const int diff = std::abs(unit->directionTo(threat->getPosition()) - unit->getDirection());
+	const int steps = std::min(diff, 8 - diff);
+	if (steps == 0 || unit->getTimeUnits() < steps * unit->getTurnCost())
+	{
+		return false;
+	}
+	BattleAction turn;
+	turn.actor = unit;
+	turn.type = BA_TURN;
+	turn.target = threat->getPosition();
+	AiProbe::tally(unit, "guard");
+	statePushBack(new UnitTurnBState(this, turn));
+	return true;
+}
+
 
 /**
  * Handles the processing of the AI states of a unit.
@@ -312,6 +372,10 @@ void BattlescapeGame::handleAI(BattleUnit *unit)
 	}
 	if (_AIActionCounter >= 2 || !unit->reselectAllowed() || unit->getTurnsSinceStunned() == 0) //stun check for restoring OXC behavior that AI does not attack after waking up even having full TU
 	{
+		if (carefulGuard(unit))
+		{
+			return;
+		}
 		if (_save->selectNextPlayerUnit(true, _AISecondMove) == 0)
 		{
 			if (!_save->getDebugMode())
@@ -456,6 +520,10 @@ void BattlescapeGame::handleAI(BattleUnit *unit)
 
 	if (action.type == BA_NONE)
 	{
+		if (carefulGuard(unit))
+		{
+			return;
+		}
 		_parentState->debug("Idle");
 		_AIActionCounter = 0;
 		if (_save->selectNextPlayerUnit(true, _AISecondMove) == 0)
