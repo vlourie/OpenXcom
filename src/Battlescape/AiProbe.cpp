@@ -34,6 +34,7 @@
 #include "../Savegame/SavedBattleGame.h"
 #include "../Savegame/SavedGame.h"
 #include "../Savegame/Tile.h"
+#include "TileEngine.h"
 
 namespace OpenXcom
 {
@@ -370,12 +371,105 @@ void logCasualty(SavedBattleGame *save, const BattleUnit *victim, const BattleUn
 		<< " terrain=" << (terrain ? 1 : 0);
 }
 
+namespace
+{
+
+/// Where each side last laid eyes on each enemy, and how far that enemy has been seen to go in a turn (docs/AI_TRAINING.md):
+/// the fair threat map knows the map, the sighting and an estimate of speed - never the enemy's position now or its TUs.
+struct Sighting { Position pos; int turn; };
+std::map<int, Sighting> lastSeen[3];
+std::map<int, double> seenReach;
+const double REACH_PRIOR = 8.0; // tiles a turn before anything is observed: an average walker
+
+void updateSightings(SavedBattleGame *save)
+{
+	for (const auto *e : *save->getUnits())
+	{
+		if (e->isOut())
+		{
+			continue;
+		}
+		for (int f = 0; f < 3; ++f)
+		{
+			if (f == (int)e->getFaction() || e->getTurnsSinceSpottedByFaction((UnitFaction)f) != 0)
+			{
+				continue;
+			}
+			auto it = lastSeen[f].find(e->getId());
+			if (it != lastSeen[f].end() && save->getTurn() > it->second.turn)
+			{
+				const Position d = e->getPosition() - it->second.pos;
+				const double moved = std::sqrt((double)(d.x * d.x + d.y * d.y)) / (save->getTurn() - it->second.turn);
+				double &reach = seenReach[e->getId()];
+				reach = std::max(reach, moved); // the estimate only grows
+			}
+			lastSeen[f][e->getId()] = { e->getPosition(), save->getTurn() };
+		}
+	}
+}
+
+/// Expected number of enemies the unit's side knows of that could have a line of fire on it after their next move:
+/// each is somewhere within reach x (turns since seen + 1) of its sighting; 16 fixed points of that disc (no RNG - the battle
+/// must not change), the engine's own line of fire from eye height to the unit. Also how many could be within 3 tiles (melee).
+void threatOf(SavedBattleGame *save, BattleUnit *unit, double &threat, int &reachable)
+{
+	threat = 0;
+	reachable = 0;
+	Tile *tile = unit->getTile();
+	if (!tile)
+	{
+		return;
+	}
+	static const double ring[16][2] = { {0, 0},
+		{0.5, 0}, {-0.25, 0.43}, {-0.25, -0.43}, {0.25, 0.43}, {0.25, -0.43},
+		{1, 0}, {0.81, 0.59}, {0.31, 0.95}, {-0.31, 0.95}, {-0.81, 0.59}, {-1, 0}, {-0.81, -0.59}, {-0.31, -0.95}, {0.31, -0.95}, {0.81, -0.59} };
+	const Position at = unit->getPosition();
+	std::map<int, const BattleUnit *> byId;
+	for (const auto *u : *save->getUnits())
+	{
+		byId[u->getId()] = u;
+	}
+	for (const auto &s : lastSeen[(int)unit->getFaction()])
+	{
+		auto e = byId.find(s.first);
+		if (e == byId.end() || e->second->isOut())
+		{
+			continue;
+		}
+		auto r = seenReach.find(s.first);
+		const double radius = std::max(REACH_PRIOR, r != seenReach.end() ? r->second : 0.0) * (save->getTurn() - s.second.turn + 1);
+		const Position d = at - s.second.pos;
+		const double dist = std::sqrt((double)(d.x * d.x + d.y * d.y));
+		reachable += dist <= radius + 3 ? 1 : 0;
+		if (dist > radius + 30)
+		{
+			continue; // too far to shoot from anywhere it can be
+		}
+		int hits = 0, tried = 0;
+		for (const auto &p : ring)
+		{
+			const Position q(s.second.pos.x + (int)std::lround(p[0] * radius), s.second.pos.y + (int)std::lround(p[1] * radius), s.second.pos.z);
+			if (!save->getTile(q))
+			{
+				continue;
+			}
+			++tried;
+			Position origin = q.toVoxel() + Position(8, 8, 20), scan;
+			hits += save->getTileEngine()->canTargetUnit(&origin, tile, &scan, nullptr, false) ? 1 : 0;
+		}
+		threat += tried ? (double)hits / tried : 0.0;
+	}
+}
+
+}
+
 void logState(SavedBattleGame *save, const char *when)
 {
 	if (!active())
 	{
 		return;
 	}
+	updateSightings(save);
 	for (auto *bu : *save->getUnits())
 	{
 		if (bu->getStatus() == STATUS_DEAD || bu->getStatus() == STATUS_IGNORE_ME)
@@ -408,6 +502,15 @@ void logState(SavedBattleGame *save, const char *when)
 			}
 		}
 		const Tile *tile = bu->getTile();
+		// the threat map only for the side whose turn just ended: its outcome comes with the next snapshot
+		const bool ended = (std::string(when) == "aistart" && own == FACTION_PLAYER)
+			|| ((std::string(when) == "pstart" || std::string(when) == "before") && own == FACTION_HOSTILE);
+		double threat = -1;
+		int reachable = -1;
+		if (ended && !bu->isOut())
+		{
+			threatOf(save, bu, threat, reachable);
+		}
 		Log(LOG_INFO) << "[AISTATE] " << when
 			<< " turn=" << save->getTurn()
 			<< " unit=" << bu->getId()
@@ -430,7 +533,9 @@ void logState(SavedBattleGame *save, const char *when)
 			<< " near=" << near
 			<< " shade=" << (tile ? tile->getShade() : -1)
 			<< " tumax=" << bu->getBaseStats()->tu
-			<< " wounds=" << bu->getFatalWounds();
+			<< " wounds=" << bu->getFatalWounds()
+			<< " threat=" << threat
+			<< " reach=" << reachable;
 	}
 }
 
