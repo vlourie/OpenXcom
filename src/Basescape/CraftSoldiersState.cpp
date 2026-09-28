@@ -288,7 +288,8 @@ void CraftSoldiersState::initList(size_t scrl)
 	_lstSoldiers->setMargin(8 + icon);
 	if (_dynGetter != NULL)
 	{
-		_lstSoldiers->setColumns(4, 106 - icon + RANK_SHIFT, 98 - RANK_SHIFT, 60, 16);
+		// OXCE-HD: the stat column wider (22, not 16) - kills in thousands (X-Piratez) ran over the craft name
+		_lstSoldiers->setColumns(4, 106 - icon + RANK_SHIFT, 98 - RANK_SHIFT, 54, 22);
 	}
 	else
 	{
