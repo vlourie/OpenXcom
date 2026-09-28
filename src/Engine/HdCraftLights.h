@@ -40,11 +40,12 @@ namespace OpenXcom
  *
  * Kinds: red, green, white (steady), strobe (white double flash), beacon (red pulse),
  * blink (pulse like a beacon, white unless coloured). Any light may carry its own
- * colour "#rrggbb" before the period.
+ * colour "#rrggbb" before the period. A line "sideways" marks a craft standing across
+ * the hangar (nose left or right): its sides are up and down in the picture.
  * The lights follow the craft's state, every light in the state's colour and rhythm:
  * ready - green blinking; under repair - red, an even pulse; rearming - red, two short
  * flashes and a pause; not enough pilots aboard - red, the port and starboard sides in
- * turn; refuelling (and anything else) - only the beacons. The fuel is shown apart, by a
+ * turn, the lights on the keel dark; refuelling (and anything else) - only the beacons. The fuel is shown apart, by a
  * garland of five bulbs in the hangar (drawFuel).
  *
  * Drawn only in the true-color world layer; the classic frame never changes.
