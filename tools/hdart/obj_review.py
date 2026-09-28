@@ -117,7 +117,8 @@ def main():
     for n, (it, keys) in enumerate(todo, 1):
         at = it["at"] if it["kind"] == "составной" and len(it["at"]) == len(keys) else [[0, 0, 0]] * len(keys)
         if len(keys) > 1 and at == [[0, 0, 0]] * len(keys):
-            keys = keys[:1]
+            # копии одного предмета в разных наборах: показать ту, у которой есть вариант
+            keys = [next((k for k in keys if any(frame_file(r, k) for _n, r in cands)), keys[0])]
             at = [[0, 0, 0]]
         orig = compose([world.sprite(k[0], k[1], None) for k in keys], at)
         pack_f = [Image.open(p) if p else None for p in (frame_file(GAME_HD, k) for k in keys)]
