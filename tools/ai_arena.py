@@ -204,9 +204,16 @@ def main():
     ap.add_argument("--squad", type=int, default=0, help="отряд как у Vitali (OXCE_AI_SQUAD): n самых опытных бойцов самого опытного экипажа, остальные дома")
     ap.add_argument("--label", default="arena")
     ap.add_argument("--out", default="")
+    ap.add_argument("--env", action="append", default=[], metavar="K=V",
+                    help="переменная окружения боя OXCE_AI_*, повторяемый: --env OXCE_AI_EVAL=1 --env OXCE_AI_EVAL_RISK=0.12")
     a = ap.parse_args()
     global LABEL
     LABEL = a.label
+    for kv in a.env:
+        k, _, v = kv.partition("=")
+        if not k.startswith("OXCE_AI_"):
+            raise SystemExit(f"--env {kv}: только OXCE_AI_*")
+        os.environ[k] = v  # ai_probe.run копирует окружение в процесс боя
 
     seeds = seeds_of(a.seeds)
     missions = [None]
@@ -224,7 +231,8 @@ def main():
         SLOTS.put(slot)
     campaign = None if a.recruits else a.campaign
     total = len(jobs) + len(rows)
-    print(f"правила: враг {'опыт' if a.tactics else 'родной'}, бот {'осторожный' if a.careful else 'родной'}", flush=True)
+    print(f"правила: враг {'опыт' if a.tactics else 'родной'}, бот {'осторожный' if a.careful else 'родной'}"
+          + (f", окружение {' '.join(a.env)}" if a.env else ""), flush=True)
     print(f"боёв {len(jobs)} (уже сыграно {len(rows)}), миссий {len(missions)}, зёрен {len(seeds)}, потоков {a.jobs}", flush=True)
     t0 = time.time()
     with ThreadPoolExecutor(a.jobs) as pool:

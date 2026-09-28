@@ -1605,6 +1605,17 @@ std::vector<int> Pathfinding::findReachable(const BattleUnit *unit, const Battle
 }
 
 /**
+ * The cost of the path findReachable found to a tile; valid until the next pathfinding call.
+ * @param pos The tile.
+ * @return Time units spent to get there, or -1 if findReachable did not reach it.
+ */
+int Pathfinding::reachedTU(Position pos)
+{
+	PathfindingNode *node = getNode(pos);
+	return node->isChecked() ? node->getTUCost(false).time : -1;
+}
+
+/**
  * Gets the strafe move setting.
  * @return Strafe move.
  */
