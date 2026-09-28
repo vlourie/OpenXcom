@@ -41,19 +41,31 @@ namespace OpenXcom
  * Kinds: red, green, white (steady), strobe (white double flash), beacon (red pulse),
  * blink (pulse like a beacon, white unless coloured). Any light may carry its own
  * colour "#rrggbb" before the period.
- * The lights follow the craft's state: all of them when it is ready, only the
- * beacons while refuelling or rearming, amber quick beacons under repair.
+ * The lights follow the craft's state, every light in the state's colour and rhythm:
+ * ready - green blinking; under repair - red, an even pulse; rearming - red, two short
+ * flashes and a pause; not enough pilots aboard - red, the port and starboard sides in
+ * turn; refuelling (and anything else) - only the beacons. The fuel is shown apart, by a
+ * garland of five bulbs in the hangar (drawFuel).
  *
  * Drawn only in the true-color world layer; the classic frame never changes.
  */
+class Craft;
+
 namespace HdCraftLights
 {
-	enum Status { READY, BUSY, REPAIRS };
+	enum Status { READY, BUSY, REPAIRS, REARMING, NO_CREW };
+	/// The state the lights show. Reads the craft only: counts the soldiers aboard able to
+	/// pilot it, never assigns pilots as Craft::arePilotsOnboard does.
+	Status statusOf(const Craft *craft);
 	/// Does the frame have lights?
 	bool has(int index);
 	/// Draws the lights of the frame whose top-left corner is at (x, y) of the world layer.
 	/// `seed` shifts the rhythm, so that two hangars do not blink together.
 	void draw(SDL_Surface *world, int index, int x, int y, int k, Status status, Uint32 seed, Uint32 ticks);
+	/// Draws the fuel garland: five bulbs centred on (x, y) of the world layer. Up to 25% one
+	/// red, up to 50% two orange, up to 75% three yellow, below 100% four green; full - all
+	/// five, green and gold in turn.
+	void drawFuel(SDL_Surface *world, int x, int y, int k, int percent, Uint32 seed, Uint32 ticks);
 	/// Forgets everything (mod reload). `masterOffset` is where the game puts the master mod's
 	/// frames (ModData::offset of the master): the files are named in the master's own numbering.
 	void clear(int masterOffset);

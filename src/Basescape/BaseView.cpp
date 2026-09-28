@@ -688,6 +688,11 @@ void BaseView::drawHdLights()
 	{
 		HdCraftLights::draw(world, craft.index, (getX() + craft.x) * k, (getY() + craft.y) * k, k,
 			(HdCraftLights::Status)craft.status, craft.seed, ticks);
+		if (craft.fuel >= 0)
+		{
+			HdCraftLights::drawFuel(world, (getX() + craft.fuelX) * k, (getY() + craft.fuelY) * k, k,
+				craft.fuel, craft.seed, ticks);
+		}
 	}
 }
 
@@ -890,17 +895,20 @@ void BaseView::draw()
 					// hangar comes with the mirror of this layer and would cover it); its lights go
 					// over everything (see drawHdLights)
 					const bool inWorld = hdFacility && HdBase::phases(index) > 0;
-					if (hdTiles && (inWorld || HdCraftLights::has(index)))
+					// every craft in an HD hangar: its fuel garland is drawn even without lights
+					if (hdTiles)
 					{
-						const std::string &status = (*craftIt)->getStatus();
 						HdCraft craft;
 						craft.index = index;
 						craft.x = fx;
 						craft.y = fy;
-						craft.status = status == "STR_READY" ? HdCraftLights::READY : status == "STR_REPAIRS" ? HdCraftLights::REPAIRS : HdCraftLights::BUSY;
+						craft.status = HdCraftLights::statusOf(*craftIt);
 						craft.seed = (Uint32)(fac->getX() * 7 + fac->getY() * 31);
 						craft.inWorld = inWorld;
-						_hdCrafts.push_back(craft);
+						// the garland along the bottom edge of the hangar, under the craft
+						craft.fuel = (*craftIt)->getFuelMax() > 0 ? (*craftIt)->getFuelPercentage() : -1;
+						craft.fuelX = fac->getX() * GRID_SIZE + fac->getRules()->getSizeX() * GRID_SIZE / 2;
+						craft.fuelY = (fac->getY() + fac->getRules()->getSizeY()) * GRID_SIZE - 7;						_hdCrafts.push_back(craft);
 					}
 					if (!inWorld)
 					{

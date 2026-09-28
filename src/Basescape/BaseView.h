@@ -62,7 +62,8 @@ private:
 	Uint32 _hdNextChange;
 	/// A craft drawn in the world layer (with its HD picture or lights) instead of the classic layer.
 	/// A craft whose lights go over the view; `inWorld`: its picture is drawn in the world layer too.
-	struct HdCraft { int index, x, y, status; Uint32 seed; bool inWorld; };
+	/// `fuel`: percent for the fuel garland at (fuelX, fuelY), -1 for a craft without fuel.
+	struct HdCraft { int index, x, y, status; Uint32 seed; bool inWorld; int fuel, fuelX, fuelY; };
 	std::vector<HdCraft> _hdCrafts;
 	/// The numbers over the facilities (build time, ammo), laid out and kept out of the classic layer,
 	/// when the HD interface draws them with its own fonts; `_hdNumbersKept`: were they when last drawn.
