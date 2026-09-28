@@ -19,7 +19,7 @@
 
 Таблица боёв - <label>.tsv рядом с логами прогона (%TEMP%/oxce_ai_probe/arena), сводка - в stdout и --out.
 """
-import argparse, collections, os, queue, re, statistics, sys, time
+import argparse, collections, gzip, os, queue, re, statistics, sys, time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
@@ -80,7 +80,7 @@ def one(seed, turns, diff, timeout, campaign, mission=None, tactics=False, caref
     finally:
         SLOTS.put(slot)
     row = {"seed": seed, "want": mission or "", "seconds": f"{r.seconds:.0f}", "note": "",
-           "_casualties": r.tagged("[AICASUALTY]")}
+           "_casualties": r.tagged("[AICASUALTY]"), "_tiles": r.tagged("[AISTATE]")}
     row.update(moves)
     battle = r.tagged("[AIPROBE] battle")
     if battle:
@@ -240,6 +240,11 @@ def main():
             if row.get("_casualties"):
                 with open(table.with_suffix(".casualties.txt"), "a", encoding="utf-8") as f:
                     f.writelines(f"seed={row['seed']} want={row['want']} {line}\n" for line in row["_casualties"])
+            # снимки всех юнитов в начале каждого хода стороны - данные «каждой клеткой» (docs/AI_TRAINING.md):
+            # признаки клетки в конце хода и её исход после хода противника; gzip дописывается членами
+            if row.get("_tiles"):
+                with gzip.open(table.with_suffix(".tiles.gz"), "at", encoding="utf-8") as f:
+                    f.writelines(f"seed={row['seed']} want={row['want']} {line}\n" for line in row["_tiles"])
             print(f"[{len(rows)}/{total}] зерно {row['seed']}: {outcome(row)}, {row.get('mission', '-')},"
                   f" ход {row.get('turn', '-')}, раненых {row.get('pwounded', '-')}, {row['seconds']} с", flush=True)
     lines = summary(rows, a.label) + (by_mission(rows) if a.missions else []) + [

@@ -33,6 +33,7 @@
 #include "../Savegame/BattleUnit.h"
 #include "../Savegame/SavedBattleGame.h"
 #include "../Savegame/SavedGame.h"
+#include "../Savegame/Tile.h"
 
 namespace OpenXcom
 {
@@ -86,6 +87,7 @@ Phase phase = WAIT_PLAYER;
 int turnsPlayed = 0;
 int turnAtEnd = 0;
 int aiStartLogged = -1;
+int playerStartLogged = -1;
 Uint32 startTicks = 0, startVirtual = 0;
 bool started = false;
 /// health of every unit when the probe started: the battle may begin with soldiers already hurt
@@ -225,6 +227,12 @@ void think(BattlescapeState *state, SavedBattleGame *save)
 		{
 			aiStartLogged = save->getTurn();
 			logState(save, "aistart");
+		}
+		// and of each player turn: a tile's outcome is the next snapshot after the other side has moved
+		if (save->getSide() == FACTION_PLAYER && playerStartLogged != save->getTurn() && save->getTurn() > 1)
+		{
+			playerStartLogged = save->getTurn();
+			logState(save, "pstart");
 		}
 		if (save->getTurn() > turnsWanted())
 		{
@@ -379,6 +387,27 @@ void logState(SavedBattleGame *save, const char *when)
 		{
 			sees << (sees.tellp() > 0 ? "," : "") << v->getId();
 		}
+		// what the tile is worth (docs/AI_TRAINING.md, [AITILE] data): how many of the other side have eyes on the unit
+		// right now (truth), how many of them its own side knows this turn and the nearest known one, how dark it stands
+		const UnitFaction own = bu->getFaction();
+		int seenBy = 0, known = 0, near = -1;
+		for (auto *e : *save->getUnits())
+		{
+			if (e->isOut() || e->getFaction() == own || e->getFaction() == FACTION_NEUTRAL)
+			{
+				continue;
+			}
+			const auto *vis = e->getVisibleUnits();
+			seenBy += std::find(vis->begin(), vis->end(), bu) != vis->end() ? 1 : 0;
+			if (e->getTurnsSinceSpottedByFaction(own) == 0)
+			{
+				++known;
+				const Position d = e->getPosition() - bu->getPosition();
+				const int dist = (int)(std::sqrt((double)(d.x * d.x + d.y * d.y)) + 0.5);
+				near = near < 0 ? dist : std::min(near, dist);
+			}
+		}
+		const Tile *tile = bu->getTile();
 		Log(LOG_INFO) << "[AISTATE] " << when
 			<< " turn=" << save->getTurn()
 			<< " unit=" << bu->getId()
@@ -395,7 +424,13 @@ void logState(SavedBattleGame *save, const char *when)
 			<< " weapon=" << (bu->getMainHandWeapon() ? bu->getMainHandWeapon()->getRules()->getType() : std::string("-"))
 			<< " spotted=" << bu->getTurnsSinceSpottedByFaction(FACTION_HOSTILE)
 			<< " sniped=" << bu->getTurnsLeftSpottedForSnipersByFaction(FACTION_HOSTILE)
-			<< " sees=" << (sees.tellp() > 0 ? sees.str() : std::string("-"));
+			<< " sees=" << (sees.tellp() > 0 ? sees.str() : std::string("-"))
+			<< " seenby=" << seenBy
+			<< " known=" << known
+			<< " near=" << near
+			<< " shade=" << (tile ? tile->getShade() : -1)
+			<< " tumax=" << bu->getBaseStats()->tu
+			<< " wounds=" << bu->getFatalWounds();
 	}
 }
 
