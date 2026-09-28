@@ -93,6 +93,13 @@
           },
           {
             "type": "command",
+            "shell": "powershell",
+            "command": "& \"$env:CLAUDE_PROJECT_DIR/.claude/hooks/game-guard.ps1\"",
+            "timeout": 15,
+            "statusMessage": "Проверяю, что игра запускается невидимо (R-124)"
+          },
+          {
+            "type": "command",
             "command": "py -3 \"$CLAUDE_PROJECT_DIR/tools/editq.py\" hook pre",
             "timeout": 20,
             "statusMessage": "Очередь правок игры: сборка и git add -A"
