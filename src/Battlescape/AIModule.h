@@ -64,6 +64,8 @@ private:
 	UnitFaction _targetFaction;
 
 	BattleAction _escapeAction, _ambushAction, _attackAction, _patrolAction, _psiAction;
+	/// The shot chosen by evalFireAction (OXCE_AI_EVAL): kneel for it, and whether it chose one this think.
+	bool _evalKneel = false, _evalChosen = false;
 
 	bool selectPointNearTargetLeeroy(BattleUnit *target, bool canRun);
 	int selectNearestTargetLeeroy(bool canRun);
@@ -137,6 +139,8 @@ public:
 	bool sniperAction();
 	/// Attempts to fire at an enemy we can see.
 	void projectileAction();
+	/// The bench's shot evaluator (OXCE_AI_EVAL): every reachable tile, seen enemy and fire mode by expected damage against risk.
+	bool evalFireAction();
 	/// Chooses a firing mode for the AI based on expected number of hits per turn
 	void extendedFireModeChoice(BattleActionCost& costAuto, BattleActionCost& costSnap, BattleActionCost& costAimed, BattleActionCost& costThrow, bool checkLOF = false);
 	/// Attempts to throw a grenade at an enemy (or group of enemies) we can see.

@@ -280,6 +280,8 @@ private:
 	void setUnit(BattleUnit *unit);
 	/// Gets all reachable tiles, based on cost.
 	std::vector<int> findReachable(const BattleUnit *unit, const BattleActionCost &cost);
+	/// The time units the last findReachable spent to get to pos, or -1 if it did not get there.
+	int reachedTU(Position pos);
 	/// Gets _totalTUCost; finds out whether we can hike somewhere in this turn or not.
 	int getTotalTUCost() const { return _totalTUCost.time; }
 	/// Gets the path preview setting.

@@ -61,6 +61,10 @@ void logState(SavedBattleGame *save, const char *when);
 bool tactics(const BattleUnit *unit);
 /// The careful bot (OXCE_AI_CAREFUL): true for the player's units while the bot plays them.
 bool careful(const BattleUnit *unit);
+/// The careful bot weighs every reachable tile, target and fire mode by expected damage against risk (OXCE_AI_EVAL).
+bool evalFire(const BattleUnit *unit);
+/// A tuning number from the environment (OXCE_AI_EVAL_RISK and the like), or def; always def in a release build.
+double param(const char *name, double def);
 /// Counts one use of a tactical rule for the result line ([AIRESULT] tac=).
 void tally(const BattleUnit *unit, const char *rule);
 /// One line per unit killed or knocked out ([AICASUALTY]): by whom, with what, from how far, on whose turn.

@@ -54,6 +54,8 @@ void logDecision(SavedBattleGame *, BattleUnit *, const BattleAction &) {}
 void logState(SavedBattleGame *, const char *) {}
 bool tactics(const BattleUnit *) { return false; }
 bool careful(const BattleUnit *) { return false; }
+bool evalFire(const BattleUnit *) { return false; }
+double param(const char *, double def) { return def; }
 void tally(const BattleUnit *, const char *) {}
 void logCasualty(SavedBattleGame *, const BattleUnit *, const BattleUnit *, const std::string &, bool, int, bool) {}
 
@@ -182,6 +184,18 @@ bool careful(const BattleUnit *unit)
 {
 	static const bool on = bot() && envOn("OXCE_AI_CAREFUL");
 	return on && unit->getFaction() == FACTION_PLAYER;
+}
+
+bool evalFire(const BattleUnit *unit)
+{
+	static const bool on = envOn("OXCE_AI_EVAL");
+	return on && careful(unit);
+}
+
+double param(const char *name, double def)
+{
+	const char *s = getenv(name);
+	return s && *s ? atof(s) : def;
 }
 
 void tally(const BattleUnit *unit, const char *rule)

@@ -33,6 +33,7 @@
 #include "../Mod/Armor.h"
 #include "../Mod/Mod.h"
 #include "../Mod/RuleItem.h"
+#include "../Mod/RuleDamageType.h"
 #include "../fmath.h"
 #include "AiProbe.h"
 
@@ -613,6 +614,12 @@ void AIModule::think(BattleAction *action)
 		}
 	}
 
+	// a shot the evaluator found worth its risk is combat whatever mode the dice gave
+	if (_evalChosen)
+	{
+		_AIMode = AI_COMBAT;
+	}
+
 	if (tactical)
 	{
 		tacticalMode();
@@ -686,6 +693,10 @@ void AIModule::think(BattleAction *action)
 		else if (action->type == BA_AIMEDSHOT || action->type == BA_AUTOSHOT)
 		{
 			action->kneel = _unit->getArmor()->allowsKneeling(kneelDefault);
+		}
+		if (_evalChosen && action->type != BA_WALK)
+		{
+			action->kneel = _evalKneel;
 		}
 		break;
 	case AI_AMBUSH:
@@ -1043,6 +1054,7 @@ void AIModule::setupAttack()
 {
 	_attackAction.type = BA_RETHINK;
 	_psiAction.type = BA_NONE;
+	_evalChosen = false;
 
 	bool sniperAttack = false;
 
@@ -1066,6 +1078,12 @@ void AIModule::setupAttack()
 				sniperAttack = sniperAction();
 			}
 		}
+	}
+
+	// the bench's evaluator weighs every reachable tile itself: neither the nearest-target shot nor findFirePoint after it
+	if (!sniperAttack && _rifle && AiProbe::evalFire(_unit) && evalFireAction())
+	{
+		return;
 	}
 
 	// if we CAN see someone, that makes them a viable target for "regular" attacks.
@@ -2096,6 +2114,12 @@ void AIModule::tacticalMode()
 	const bool attacking = _AIMode == AI_COMBAT && _attackAction.type != BA_RETHINK && _attackAction.type != BA_NONE;
 	if (attacking && !wounded)
 	{
+		// the evaluator has already priced the time units left after its shot
+		if (_evalChosen)
+		{
+			AiProbe::tally(_unit, "attack");
+			return;
+		}
 		if ((_attackAction.type == BA_AIMEDSHOT || _attackAction.type == BA_AUTOSHOT) && _attackAction.weapon)
 		{
 			const int left = _unit->getTimeUnits() - BattleActionCost(_attackAction.type, _unit, _attackAction.weapon).Time;
@@ -2648,6 +2672,228 @@ void AIModule::projectileAction()
 	{
 		_attackAction.type = BA_AUTOSHOT;
 	}
+}
+
+/**
+ * The bench's shot evaluator (OXCE_AI_EVAL, docs/AI_TRAINING.md): every tile the unit can reach and
+ * still shoot from, every enemy its side saw this turn, every fire mode standing and kneeling. A shot is
+ * worth the share of the target's health it is expected to take (one hit that kills: the chance of at
+ * least one hit), by the engine's own accuracy with range dropoff and the target's armor and resistance;
+ * the tile costs its exposure after the shot - the seen enemies with a line of fire to it, heavier for a
+ * wounded unit and lighter when time units are left to reach cover. The best positive plan is a shot from
+ * here or a walk to its tile (the next think shoots from there); none positive - no attack, cover decides.
+ * @return False if the side sees no enemy (the old logic goes on), true if the evaluator decided.
+ */
+bool AIModule::evalFireAction()
+{
+	BattleItem *weapon = _attackAction.weapon;
+	if (!weapon)
+	{
+		return false;
+	}
+	std::vector<BattleUnit*> targets;
+	for (auto* bu : *_save->getUnits())
+	{
+		if (bu->getFaction() == _targetFaction && !bu->isOut() && bu->getTurnsSinceSpottedByFaction(_unit->getFaction()) == 0)
+		{
+			targets.push_back(bu);
+		}
+	}
+	if (targets.empty())
+	{
+		return false;
+	}
+
+	struct Mode { BattleActionType type; int time; int accuracy; int shots; BattleActionAttack attack; };
+	std::vector<Mode> modes;
+	const RuleItem *rule = weapon->getRules();
+	const int kneelBonus = rule->getKneelBonus(_save->getMod());
+	int cheapest = -1;
+	BattleActionCost cheapestCost;
+	for (BattleActionType type : { BA_AIMEDSHOT, BA_SNAPSHOT, BA_AUTOSHOT })
+	{
+		BattleActionCost cost(type, _unit, weapon);
+		if (!cost.Time || !cost.haveTU())
+		{
+			continue;
+		}
+		BattleActionAttack attack = BattleActionAttack::GetBeforeShoot(cost);
+		if (attack.damage_item == nullptr)
+		{
+			continue;
+		}
+		// accuracy standing: moving stands the unit up, kneeling is weighed as its own option
+		int accuracy = BattleUnit::getFiringAccuracy(attack, _save->getMod());
+		if (_unit->isKneeled() && kneelBonus > 0)
+		{
+			accuracy = accuracy * 100 / kneelBonus;
+		}
+		int shots = type == BA_AIMEDSHOT ? rule->getConfigAimed()->shots : type == BA_SNAPSHOT ? rule->getConfigSnap()->shots : rule->getConfigAuto()->shots;
+		modes.push_back({ type, cost.Time, accuracy, std::max(1, shots), attack });
+		if (cheapest < 0 || cost.Time < cheapest)
+		{
+			cheapest = cost.Time;
+			cheapestCost = cost;
+		}
+	}
+	if (modes.empty())
+	{
+		AiProbe::tally(_unit, "eval.nomode");
+		return false;
+	}
+
+	// tiles the unit reaches with the cheapest shot left, and what the walk costs; cheapest first, a bounded search
+	std::vector<std::pair<Position, int>> tiles;
+	{
+		Pathfinding *pf = _save->getPathfinding();
+		std::vector<int> reach = pf->findReachable(_unit, cheapestCost);
+		const size_t maxTiles = 250;
+		for (size_t i = 0; i < reach.size() && tiles.size() < maxTiles; ++i)
+		{
+			Position pos = _save->getTileCoords(reach[i]);
+			int tu = pf->reachedTU(pos);
+			if (tu >= 0)
+			{
+				tiles.push_back({ pos, tu });
+			}
+		}
+	}
+
+	const double riskPerSpotter = AiProbe::param("OXCE_AI_EVAL_RISK", 0.08);
+	const double coverRelief = AiProbe::param("OXCE_AI_EVAL_COVER", 0.5);
+	const double coverShare = AiProbe::param("OXCE_AI_EVAL_COVERTU", 0.25);
+	const double fragility = 2.0 - (double)_unit->getHealth() / std::max(1, (int)_unit->getBaseStats()->health);
+	const bool mayKneel = _unit->getArmor()->allowsKneeling(_unit->getType() == "SOLDIER") && !_unit->isFloating();
+	const int timeUnits = _unit->getTimeUnits();
+	const int coverTU = (int)(coverShare * _unit->getBaseStats()->tu);
+
+	double bestScore = 0.0;
+	Position bestTile, bestTarget;
+	BattleActionType bestType = BA_RETHINK;
+	bool bestKneel = false;
+	int evaluated = 0;
+	for (const auto& t : tiles)
+	{
+		const Position pos = t.first;
+		const int walk = t.second;
+		Tile *tile = _save->getTile(pos);
+		if (!tile)
+		{
+			continue;
+		}
+		Position origin = pos.toVoxel() + Position(8, 8, _unit->getHeight() + _unit->getFloatHeight() - tile->getTerrainLevel() - 4);
+		// which seen enemies have a line of fire here - they are the targets and, the other way, the exposure
+		std::vector<BattleUnit*> inLine;
+		for (auto* e : targets)
+		{
+			Position scan;
+			if (_save->getTileEngine()->canTargetUnit(&origin, e->getTile(), &scan, _unit, false))
+			{
+				inLine.push_back(e);
+			}
+		}
+		if (inLine.empty())
+		{
+			continue;
+		}
+		const double exposure = riskPerSpotter * fragility * inLine.size();
+		for (auto* e : inLine)
+		{
+			const int distanceSq = Position::distanceSq(pos, e->getPosition());
+			const int distance = (int)std::ceil(std::sqrt((float)distanceSq));
+			if (rule->isOutOfRange(distanceSq))
+			{
+				continue;
+			}
+			const int hp = std::max(1, e->getHealth());
+			for (const auto& m : modes)
+			{
+				const RuleItem *ammo = m.attack.damage_item->getRules();
+				if (ammo->getExplosionRadius(m.attack) != 0)
+				{
+					continue; // area damage: the old logic with explosiveEfficacy
+				}
+				int upper, lower;
+				const int dropoff = rule->calculateLimits(upper, lower, _save->getDepth(), m.type);
+				int accuracy = m.accuracy;
+				if (distance > upper)
+				{
+					accuracy -= (distance - upper) * dropoff;
+				}
+				else if (distance < lower)
+				{
+					accuracy -= (lower - distance) * dropoff;
+				}
+				const RuleDamageType *type = ammo->getDamageType();
+				const int power = e->reduceByResistance(ammo->getPowerBonus(m.attack), type->ResistType);
+				const double perHit = std::max(0.0, power - e->getArmor(SIDE_FRONT) * (double)type->ArmorEffectiveness);
+				if (perHit <= 0.0)
+				{
+					continue;
+				}
+				for (int kneel = 0; kneel < 2; ++kneel)
+				{
+					if (kneel && !mayKneel)
+					{
+						continue;
+					}
+					// staying put keeps the kneel the unit already has; kneeling down costs its time units
+					const bool alreadyKneeled = walk == 0 && _unit->isKneeled();
+					const int kneelTU = kneel && !alreadyKneeled ? _unit->getKneelDownCost() : 0;
+					const int left = timeUnits - walk - m.time - kneelTU;
+					if (left < 0)
+					{
+						continue;
+					}
+					const bool kneeled = kneel || alreadyKneeled;
+					const double hit = std::min(1.0, std::max(0.0, (kneeled ? accuracy * kneelBonus / 100.0 : accuracy) / 100.0));
+					const double gain = perHit >= hp
+						? 1.0 - std::pow(1.0 - hit, m.shots)
+						: 0.7 * std::min(1.0, hit * m.shots * perHit / hp);
+					const double risk = exposure * (left >= coverTU ? 1.0 - coverRelief : 1.0);
+					const double score = gain - risk + 0.0005 * left;
+					++evaluated;
+					if (score > bestScore)
+					{
+						bestScore = score;
+						bestTile = pos;
+						bestTarget = e->getPosition();
+						bestType = m.type;
+						bestKneel = kneeled;
+					}
+				}
+			}
+		}
+	}
+
+	if (bestType == BA_RETHINK)
+	{
+		AiProbe::tally(_unit, "eval.none");
+		_attackAction.type = BA_RETHINK;
+		return true;
+	}
+	_evalChosen = true;
+	if (bestTile == _unit->getPosition())
+	{
+		_attackAction.type = bestType;
+		_attackAction.target = bestTarget;
+		_evalKneel = bestKneel;
+		AiProbe::tally(_unit, "eval.shot");
+	}
+	else
+	{
+		_attackAction.type = BA_WALK;
+		_attackAction.target = bestTile;
+		_attackAction.finalFacing = _save->getTileEngine()->getDirectionTo(bestTile, bestTarget);
+		_evalKneel = false;
+		AiProbe::tally(_unit, "eval.walk");
+	}
+	if (_traceAI)
+	{
+		Log(LOG_INFO) << "Shot evaluator: " << evaluated << " options on " << tiles.size() << " tiles, best " << bestScore
+			<< " - " << (int)bestType << " at " << bestTarget << " from " << bestTile << (bestKneel ? " kneeling" : "");
+	}
+	return true;
 }
 
 void AIModule::extendedFireModeChoice(BattleActionCost& costAuto, BattleActionCost& costSnap, BattleActionCost& costAimed, BattleActionCost& costThrow, bool checkLOF)
