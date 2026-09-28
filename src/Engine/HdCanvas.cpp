@@ -658,8 +658,12 @@ void Canvas32::blitScripted(ScriptWorkerBlit &work, const Surface *src, int x, i
 		const HdFrame *pack = HdSprites::find(src->getBuffer());
 		if (pack && pack->width == w && pack->height == h)
 		{
-			Uint64 hash = 0x1234567887654321ULL ^ (Uint64)(uintptr_t)src->getBuffer();
+			Uint64 hash = (0x1234567887654321ULL ^ (Uint64)(uintptr_t)src->getBuffer()) + (Uint64)shade;
 			bool changed = false;
+			// a script that sets the level of the ramp itself - the hit flash of X-Piratez, set_shade 0
+			// over the whole body whatever the ramp and the light - asks for that brightness: the classic
+			// sprite keeps none of its shading, so the pack keeps only a trace of its own
+			bool flat = false;
 			for (int sy = 0; sy < bh; ++sy)
 			{
 				const Uint8 *in = _scriptSrc.getRaw(0, sy);
@@ -667,7 +671,14 @@ void Canvas32::blitScripted(ScriptWorkerBlit &work, const Surface *src, int x, i
 				for (int sx = 0; sx < bw; ++sx)
 				{
 					hash = (hash ^ out[sx]) * 1099511628211ULL;
-					if (out[sx] != in[sx]) changed = true;
+					if (out[sx] != in[sx])
+					{
+						changed = true;
+						if (in[sx] && out[sx] && (out[sx] & 0x0F) < std::min(15, (in[sx] & 0x0F) + std::max(0, shade)))
+						{
+							flat = true;
+						}
+					}
 				}
 			}
 			if (!changed)
@@ -695,7 +706,32 @@ void Canvas32::blitScripted(ScriptWorkerBlit &work, const Surface *src, int x, i
 					for (int px = 0; px < w; ++px)
 					{
 						const Uint32 p = from[px];
-						const Uint8 a = in[px / k], b = out[px / k];
+						Uint8 a = in[px / k], b = out[px / k];
+						if (a == 0 && (p >> 24))
+						{
+							// the pack's outline reaches a pixel or two past the classic one: there the
+							// recolour of the nearest base pixel, or a flash leaves a rim of the old colours
+							const int cx = px / k, cy = py / k;
+							int best = INT_MAX;
+							for (int dy = -1; dy <= 1; ++dy)
+							{
+								for (int dx = -1; dx <= 1; ++dx)
+								{
+									const int nx = cx + dx, ny = cy + dy;
+									if (nx < 0 || ny < 0 || nx >= bw || ny >= bh || !*_scriptSrc.getRaw(nx, ny))
+									{
+										continue;
+									}
+									const int ex = 2 * px + 1 - (2 * nx + 1) * k, ey = 2 * py + 1 - (2 * ny + 1) * k;
+									if (ex * ex + ey * ey < best)
+									{
+										best = ex * ex + ey * ey;
+										a = *_scriptSrc.getRaw(nx, ny);
+										b = *_scriptDst.getRaw(nx, ny);
+									}
+								}
+							}
+						}
 						if (a == b || !(p >> 24))
 						{
 							to[px] = p;
@@ -713,7 +749,7 @@ void Canvas32::blitScripted(ScriptWorkerBlit &work, const Surface *src, int x, i
 						// a near-empty channel the ratio turns that gap into a hue (R-030)
 						const float la = 0.299f * ca.r + 0.587f * ca.g + 0.114f * ca.b;
 						const float lp = 0.299f * ((p >> 16) & 0xFF) + 0.587f * ((p >> 8) & 0xFF) + 0.114f * (p & 0xFF);
-						const float f = (lp + 2.0f) / (la + 2.0f);
+						const float f = flat ? 1.0f + ((lp + 2.0f) / (la + 2.0f) - 1.0f) * 0.3f : (lp + 2.0f) / (la + 2.0f);
 						const int r = std::min(255, (int)(cb.r * f + 0.5f));
 						const int g = std::min(255, (int)(cb.g * f + 0.5f));
 						const int bl = std::min(255, (int)(cb.b * f + 0.5f));
