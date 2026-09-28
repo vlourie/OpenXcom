@@ -30,7 +30,7 @@ namespace HdKillCam
 namespace
 {
 
-const double ZOOM = 1.8;        // the enlargement at its full
+const double ZOOM = 3.0;        // the enlargement at its full
 const double BARS = 0.09;       // the height the black bars take at the full zoom, top and bottom each
 const Uint32 IN_MS = 350;       // the zoom in
 const Uint32 SCENE_MS = 4000;   // the whole scene, zoom out included: the hold makes up what the fall left
