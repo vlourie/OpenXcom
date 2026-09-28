@@ -264,6 +264,10 @@ void SoldiersState::cbxSortByChange(Action *action)
 		{
 			DoSort(selIdx, compFunc);
 		}
+		else
+		{
+			SortSecond(selIdx, _sortFunctors, *_cbxSortBy); // OXCE-HD: second criterion inside the first
+		}
 	}
 	else
 	{
@@ -443,6 +447,7 @@ void SoldiersState::lstItemsLeftArrowClick(Action *action)
 	}
 	_cbxSortBy->setText(tr("STR_SORT_BY"));
 	_cbxSortBy->setSelected(-1);
+	ForgetSort();
 }
 
 /**
@@ -496,6 +501,7 @@ void SoldiersState::lstItemsRightArrowClick(Action *action)
 	}
 	_cbxSortBy->setText(tr("STR_SORT_BY"));
 	_cbxSortBy->setSelected(-1);
+	ForgetSort();
 }
 
 /**
