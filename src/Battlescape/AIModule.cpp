@@ -2114,12 +2114,6 @@ void AIModule::tacticalMode()
 	const bool attacking = _AIMode == AI_COMBAT && _attackAction.type != BA_RETHINK && _attackAction.type != BA_NONE;
 	if (attacking && !wounded)
 	{
-		// the evaluator has already priced the time units left after its shot
-		if (_evalChosen)
-		{
-			AiProbe::tally(_unit, "attack");
-			return;
-		}
 		if ((_attackAction.type == BA_AIMEDSHOT || _attackAction.type == BA_AUTOSHOT) && _attackAction.weapon)
 		{
 			const int left = _unit->getTimeUnits() - BattleActionCost(_attackAction.type, _unit, _attackAction.weapon).Time;
@@ -2680,8 +2674,10 @@ void AIModule::projectileAction()
  * worth the share of the target's health it is expected to take (one hit that kills: the chance of at
  * least one hit), by the engine's own accuracy with range dropoff and the target's armor and resistance;
  * the tile costs its exposure after the shot - the seen enemies with a line of fire to it, heavier for a
- * wounded unit and lighter when time units are left to reach cover. The best positive plan is a shot from
- * here or a walk to its tile (the next think shoots from there); none positive - no attack, cover decides.
+ * wounded unit and lighter when time units are left to reach cover. A shot must leave the time units for
+ * cover (from here the careful bot's escape path); a unit the other side sees does not walk, and a walk
+ * costs OXCE_AI_EVAL_WALK. The best positive plan is a shot from here or a walk to its tile (the next
+ * think shoots from there); none positive - no attack, cover decides; the careful rules stay the safety net.
  * @return False if the side sees no enemy (the old logic goes on), true if the evaluator decided.
  */
 bool AIModule::evalFireAction()
@@ -2759,9 +2755,10 @@ bool AIModule::evalFireAction()
 		}
 	}
 
-	const double riskPerSpotter = AiProbe::param("OXCE_AI_EVAL_RISK", 0.08);
+	const double riskPerSpotter = AiProbe::param("OXCE_AI_EVAL_RISK", 0.15);
 	const double coverRelief = AiProbe::param("OXCE_AI_EVAL_COVER", 0.5);
 	const double coverShare = AiProbe::param("OXCE_AI_EVAL_COVERTU", 0.25);
+	const double walkCost = AiProbe::param("OXCE_AI_EVAL_WALK", 0.1);
 	const double fragility = 2.0 - (double)_unit->getHealth() / std::max(1, (int)_unit->getBaseStats()->health);
 	const bool mayKneel = _unit->getArmor()->allowsKneeling(_unit->getType() == "SOLDIER") && !_unit->isFloating();
 	const int timeUnits = _unit->getTimeUnits();
@@ -2776,6 +2773,13 @@ bool AIModule::evalFireAction()
 	{
 		const Position pos = t.first;
 		const int walk = t.second;
+		// moving in view draws reaction fire: a unit the other side sees shoots from where it stands or not at all (v1 walked 3.5 times per shot, +0.9 dead a battle)
+		if (walk > 0 && _spottingEnemies)
+		{
+			continue;
+		}
+		// time units that must remain after the shot: the careful bot's cover path from here, a share of the turn elsewhere
+		const int need = walk == 0 ? (_spottingEnemies ? _escapeTUs : 0) : coverTU;
 		Tile *tile = _save->getTile(pos);
 		if (!tile)
 		{
@@ -2841,7 +2845,7 @@ bool AIModule::evalFireAction()
 					const bool alreadyKneeled = walk == 0 && _unit->isKneeled();
 					const int kneelTU = kneel && !alreadyKneeled ? _unit->getKneelDownCost() : 0;
 					const int left = timeUnits - walk - m.time - kneelTU;
-					if (left < 0)
+					if (left < need)
 					{
 						continue;
 					}
@@ -2851,7 +2855,7 @@ bool AIModule::evalFireAction()
 						? 1.0 - std::pow(1.0 - hit, m.shots)
 						: 0.7 * std::min(1.0, hit * m.shots * perHit / hp);
 					const double risk = exposure * (left >= coverTU ? 1.0 - coverRelief : 1.0);
-					const double score = gain - risk + 0.0005 * left;
+					const double score = gain - risk - (walk > 0 ? walkCost : 0.0) + 0.0005 * left;
 					++evaluated;
 					if (score > bestScore)
 					{
