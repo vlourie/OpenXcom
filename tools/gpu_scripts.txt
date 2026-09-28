@@ -40,3 +40,12 @@ probe_stable_audio.py
 probe_sa3.py
 run_series2.sh
 run_series3.sh
+probe_object.py
+obj_series.py
+probe_floor.py
+floor_group.py
+obj_photo.py
+ground_relief.py
+long_object.py
+vx_control.py
+gen_fire_real.py
