@@ -167,6 +167,8 @@ OPT int oxceHdUi;
 OPT int oxceHdUiSkin;
 /// HD interface: 0 the game's own font, smoothed (classic colours, widths and lines); 1 TrueType (hd/UI/Font*.ttf).
 OPT int oxceHdUiFont;
+/// HD interface: the globe's own scale, apart from the windows around it: 0 as the geoscape, N = one globe pixel is N display pixels.
+OPT int oxceHdGlobeScale;
 // HD render: how the true-color battlescape canvas draws palette sprites (0 nearest, 1 HD packs, 2 HD packs + xBRZ smoothing)
 OPT int oxceHdMode;
 // HD render: smooth, colored light on the true-color canvas (HD modes only)

@@ -65,6 +65,9 @@ public:
 	/// Draws an 8-bit surface scaled to the base rectangle (x, y, w, h), smoothed first (mode 2) and averaged
 	/// down: a sprite shown smaller than it is drawn (the rank badge in a list row). Cached by content and size.
 	void drawSurfaceFit(const Surface *surface, int x, int y, int w, int h);
+	/// Draws an 8-bit surface finer than the base grid: each pixel s world pixels (not k), the top left at world
+	/// pixel (wx, wy), clipped to the world rectangle `area`; smoothed at s (mode 2) or nearest. The globe at its own scale.
+	void drawSurfaceWorld(const Surface *surface, int wx, int wy, int s, const SDL_Rect &area);
 	/// Draws a rectangle of an 8-bit surface's pixels (given in surface pixels) at base position (x, y), nearest.
 	void drawPixels(const Uint8 *pixels, int pitch, int w, int h, int x, int y, const SDL_Color *colors = nullptr);
 	/// Fills a base rectangle with a palette colour.

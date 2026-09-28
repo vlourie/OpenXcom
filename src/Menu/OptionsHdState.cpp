@@ -217,6 +217,15 @@ std::string OptionsHdState::valueText(const OptionInfo &info) const
 		}
 		return tr(r == 1 ? "STR_HD_RETICLE_STOCK" : "STR_HD_RETICLE_PACK");
 	}
+	// the same names as the geoscape scale in the video options: "3x" = a globe pixel is 3 display pixels
+	if (info.asInt() == &Options::oxceHdGlobeScale)
+	{
+		if (Options::oxceHdGlobeScale > 0)
+		{
+			return std::to_string(Options::oxceHdGlobeScale) + "x";
+		}
+		return tr("STR_HD_GLOBE_SCALE_SAME");
+	}
 	std::ostringstream ss;
 	ss << *info.asInt();
 	return ss.str();
@@ -372,6 +381,11 @@ void OptionsHdState::changeSetting(size_t sel, Uint8 button)
 		{
 			min = 0;
 			max = 1 + (int)Mod::HD_RETICLES.size();
+		}
+		else if (i == &Options::oxceHdGlobeScale)
+		{
+			min = 0;                                  // 0 = as the geoscape
+			max = 6;
 		}
 		else if (i == &Options::oxceHdThreads)
 		{

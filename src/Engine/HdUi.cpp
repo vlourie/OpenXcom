@@ -706,6 +706,92 @@ void HdUi::drawSurface(const Surface *surface, int x, int y, bool smooth)
 }
 
 /**
+ * A surface drawn finer than the base grid (the globe at its own scale, oxceHdGlobeScale):
+ * each of its pixels takes s world pixels instead of k. Smoothed with xBRZ at s (mode 2)
+ * through the same cache as any surface, nearest otherwise; clipped to the world
+ * rectangle `area` and the current clip.
+ */
+void HdUi::drawSurfaceWorld(const Surface *surface, int wx, int wy, int s, const SDL_Rect &area)
+{
+	SDL_Surface *dest;
+	int k;
+	const SDL_Color *pal;
+	if (!target(dest, k, pal) || !surface || s < 1 || surface->getWidth() <= 0 || surface->getHeight() <= 0)
+	{
+		return;
+	}
+	if (_artGeneration != HdUiArt::generation())
+	{
+		clearCaches();
+		_artGeneration = HdUiArt::generation();
+	}
+	const auto t0 = std::chrono::steady_clock::now();
+	++_calls;
+	++_frameCalls;
+	if (const SDL_Color *own = paletteOf(surface)) pal = own;
+	const int w = surface->getWidth(), h = surface->getHeight();
+	const Uint8 *pixels = (const Uint8*)surface->getBuffer();
+	const int pitch = surface->getPitch();
+	const SDL_Rect outer = worldClip(dest, k);
+	const int cx0 = std::max((int)outer.x, (int)area.x), cy0 = std::max((int)outer.y, (int)area.y);
+	const int cx1 = std::min(outer.x + outer.w, area.x + area.w), cy1 = std::min(outer.y + outer.h, area.y + area.h);
+	const char *why = "world nearest";
+	if (cx0 < cx1 && cy0 < cy1)
+	{
+		const HdFrame *frame = nullptr;
+		if (mode() >= 2 && s >= 2 && s <= 6)
+		{
+			frame = smoothed(surface, s, pal, HdUiArt::hashPixels(pixels, pitch, w, h));
+		}
+		if (frame)
+		{
+			why = "world xBRZ";
+			SDL_Rect clip;
+			clip.x = (Sint16)cx0;
+			clip.y = (Sint16)cy0;
+			clip.w = (Uint16)(cx1 - cx0);
+			clip.h = (Uint16)(cy1 - cy0);
+			HdUiArt::drawFrame(dest, *frame, wx, wy, &clip);
+		}
+		else
+		{
+			Uint32 lut[256];
+			for (int i = 0; i < 256; ++i) lut[i] = packColor(pal[i]);
+			Uint8 *dp = (Uint8*)dest->pixels;
+			const int dpitch = dest->pitch;
+			const int y0 = std::max(cy0, wy), y1 = std::min(cy1, wy + h * s);
+			const int x0 = std::max(cx0, wx), x1 = std::min(cx1, wx + w * s);
+			auto rows = [&](int ra, int rb)
+			{
+				for (int dy = ra; dy < rb; ++dy)
+				{
+					const Uint8 *src = pixels + (size_t)((dy - wy) / s) * pitch;
+					Uint32 *drow = (Uint32*)(dp + (size_t)dy * dpitch);
+					for (int dx = x0; dx < x1; ++dx)
+					{
+						const Uint8 idx = src[(dx - wx) / s];
+						if (idx) drow[dx] = lut[idx];
+					}
+				}
+			};
+			const int n = y1 - y0;
+			if (n > 0 && x0 < x1)
+			{
+				HdWorkers &pool = HdWorkers::instance();
+				const int jobs = std::max(1, std::min(n / 32, pool.threads() * 2));
+				pool.run(jobs, [&](int job)
+				{
+					rows(y0 + (int)((long long)n * job / jobs), y0 + (int)((long long)n * (job + 1) / jobs));
+				});
+			}
+		}
+	}
+	const double ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count();
+	_frameMs += ms;
+	if (ms > _worstMs) { _worstMs = ms; _worstW = w; _worstH = h; _worstWhy = why; }
+}
+
+/**
  * A sprite drawn smaller than it is (a 26x23 badge in a list row of 8): made
  * from the xBRZ copy k times bigger (mode 2) or from the palette pixels as they
  * are, every world pixel the mean of the source pixels it covers, weighted by
