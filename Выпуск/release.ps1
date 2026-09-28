@@ -113,8 +113,9 @@ try {
 
     # ---- сборка «Обе»: exe, моды, лаунчер -> dist\_stage и dist\_launcher_rel
     if (-not $noBuild -and -not $launcherOnly) {
-        Step 'Сборка «Обе» (tools\build\build.ps1 -Target Both)'
-        & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $root 'tools\build\build.ps1') -Target Both
+        # -StageOnly: выпуску нужен только стейдж; full.zip на 3.8 ГБ - это «большой архив», его без надобности не собирать
+        Step 'Сборка «Обе» (tools\build\build.ps1 -Target Both -StageOnly)'
+        & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $root 'tools\build\build.ps1') -Target Both -StageOnly
         if ($LASTEXITCODE -ne 0) { throw "сборка не удалась (код $LASTEXITCODE) - смотрите её вывод выше" }
     }
     if (-not $launcherOnly) {

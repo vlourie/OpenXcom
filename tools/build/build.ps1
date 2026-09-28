@@ -25,6 +25,8 @@ param(
     [string]$Target = 'Both',
     [switch]$NoNinja,
     [switch]$FromGui,
+    # для выпуска (Выпуск\release.ps1): только стейдж, без full.zip и патча - станция берёт стейдж, а 7-Zip на 3.8 ГБ - минуты впустую
+    [switch]$StageOnly,
     [string]$Config = ''
 )
 
@@ -1017,12 +1019,17 @@ try {
             if ($launcher) { Copy-Launcher $launcher $stageDir }
             $head = @("OXCE HD — $exeName и моды ($stamp, $branch $hash)")
             Save-StageNotes $head $mods $data $exeName
-            $tree = Get-TreeInfo $stageDir
-            $result = Join-Path $distDir "${base}_full.zip"
-            New-Zip $result $stageDir
-            Remove-OldResults 'OXCE-HD_*_full.zip'
-            $patch = New-PatchStep 'full' $tree (Join-Path $distDir "${base}_full_patch.zip") $head
-            Remove-OldResults 'OXCE-HD_*_full_patch.zip'
+            if ($StageOnly) {
+                $result = $stageDir
+                Write-Ok "только стейдж: $stageDir (full.zip не собираю)"
+            } else {
+                $tree = Get-TreeInfo $stageDir
+                $result = Join-Path $distDir "${base}_full.zip"
+                New-Zip $result $stageDir
+                Remove-OldResults 'OXCE-HD_*_full.zip'
+                $patch = New-PatchStep 'full' $tree (Join-Path $distDir "${base}_full_patch.zip") $head
+                Remove-OldResults 'OXCE-HD_*_full_patch.zip'
+            }
         }
     }
 
@@ -1048,7 +1055,7 @@ try {
     }
     Write-Host ''
     Write-Host ("ГОТОВО за {0:mm\:ss}:  {1}  ({2})" -f $clock.Elapsed, $result, (Format-Size (Get-Item -LiteralPath $result).Length)) -ForegroundColor Green
-    if (-not $FromGui -and (Get-Cfg 'OpenExplorer' $true)) { Start-Process explorer.exe "/select,`"$result`"" }
+    if (-not $FromGui -and -not $StageOnly -and (Get-Cfg 'OpenExplorer' $true)) { Start-Process explorer.exe "/select,`"$result`"" }
 } catch {
     $failed = $true
     Write-Host ''
