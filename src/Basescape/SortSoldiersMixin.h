@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include <string>
+#include <functional>
 #include "../Engine/State.h"
 #include "SoldierSortUtil.h"
 #include "../Engine/Options.h"
@@ -17,7 +18,7 @@ namespace OpenXcom
 	{
 	public:
 		SortSoldiersMixin(Base* base)
-			: _base(base)
+			: _base(base), _sortFirst(-1), _sortFirstReversed(false)
 		{}
 
 	protected:
@@ -78,6 +79,7 @@ namespace OpenXcom
 
 #undef PUSH_IN
 
+			_sortNames = sortingNames;
 			const auto defaultSorter = static_cast<Options::QOL::DefaultSoldiersSorter>(Options::QOL::defaultSoldiersSorter);
 			auto it = sortersToIndexes.find(defaultSorter);
 
@@ -93,11 +95,21 @@ namespace OpenXcom
 			sortingCombobox.setText(State::tr("STR_SORT_BY"));
 		}
 
-		void DoSort(int sortIndex, const SortFunctor* sortFunctor)
+		void DoSort(int sortIndex, const SortFunctor* sortFunctor, int secondIndex = -1, const SortFunctor* second = nullptr)
 		{
 			// OXCE-HD: no sorter (original order) still gets the groups below
-			if (sortFunctor && sortFunctor->_getStatFn)
+			if (sortFunctor && sortFunctor->_getStatFn && second && second->_getStatFn)
 			{
+				// OXCE-HD: two criteria (SortSecond): the second one first, then the first one over it - the
+				// sort is stable, so among soldiers equal by the first the second one's order stays. Each keeps
+				// the direction it was picked with (Shift)
+				SortBy(secondIndex, second, State::_game->isShiftPressed());
+				SortBy(sortIndex, sortFunctor, _sortFirstReversed);
+			}
+			else if (sortFunctor && sortFunctor->_getStatFn)
+			{
+				_sortFirst = sortIndex;
+				_sortFirstReversed = State::_game->isShiftPressed();
 				if (sortIndex == 2)
 				{
 					std::stable_sort(_base->getSoldiers()->begin(), _base->getSoldiers()->end(),
@@ -119,6 +131,10 @@ namespace OpenXcom
 				{
 					std::reverse(_base->getSoldiers()->begin(), _base->getSoldiers()->end());
 				}
+			}
+			else
+			{
+				_sortFirst = -1;
 			}
 
 			// OXCE-HD: the groups (Options::oxceBaseSoldierGroupBy) over the order just made: the sort is
@@ -148,6 +164,57 @@ namespace OpenXcom
 			{
 				std::stable_sort(_base->getSoldiers()->begin(), _base->getSoldiers()->end(), craftLess);
 			}
+		}
+
+		/// OXCE-HD: one stable sort by the criterion; reversed turns the criterion around, soldiers equal by it
+		/// keep their order (unlike reversing the whole list, which would turn a second criterion around too).
+		void SortBy(int sortIndex, const SortFunctor* sortFunctor, bool reversed)
+		{
+			std::function<bool(Soldier*, Soldier*)> less;
+			if (sortIndex == 2)
+			{
+				less = [](Soldier* a, Soldier* b) { return Unicode::naturalCompare(a->getName(), b->getName()); };
+			}
+			else if (sortIndex == 3)
+			{
+				less = craftLess;
+			}
+			else
+			{
+				less = *sortFunctor;
+			}
+			if (reversed)
+			{
+				std::stable_sort(_base->getSoldiers()->begin(), _base->getSoldiers()->end(),
+								 [&less](Soldier* a, Soldier* b) { return less(b, a); });
+			}
+			else
+			{
+				std::stable_sort(_base->getSoldiers()->begin(), _base->getSoldiers()->end(), less);
+			}
+		}
+
+		/// OXCE-HD: Ctrl + a criterion in the sort list while the list is sorted by another one - the new one
+		/// becomes the second criterion, inside the first (Type, then Firing accuracy), and the list button
+		/// names both. False when there is no first criterion (original order, hand-moved list, the same one):
+		/// then Ctrl keeps its OXCE meaning - show the column without sorting.
+		bool SortSecond(size_t selIdx, const std::vector<SortFunctor*>& sorters, ComboBox& sortingCombobox)
+		{
+			const int first = _sortFirst;
+			if (first <= 0 || (size_t)first >= sorters.size() || !sorters[first] || (int)selIdx == first ||
+				selIdx >= sorters.size() || !sorters[selIdx] || (size_t)first >= _sortNames.size())
+			{
+				return false;
+			}
+			DoSort(first, sorters[first], selIdx, sorters[selIdx]);
+			sortingCombobox.setText(_sortNames[first] + " > " + _sortNames[selIdx]);
+			return true;
+		}
+
+		/// OXCE-HD: the list was reordered by hand - Ctrl has no first criterion to add to.
+		void ForgetSort()
+		{
+			_sortFirst = -1;
 		}
 
 		/// The craft order: soldiers on a craft first, by the craft's type, then by its number.
@@ -196,6 +263,10 @@ namespace OpenXcom
 
 	protected:
 		Base* _base;
+		/// OXCE-HD: the first criterion (-1 - none) and its direction, and the list's names, for SortSecond
+		int _sortFirst;
+		bool _sortFirstReversed;
+		std::vector<std::string> _sortNames;
 	};
 
 }

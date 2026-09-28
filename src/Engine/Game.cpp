@@ -454,12 +454,24 @@ void Game::run()
 					// OXCE_HD_CLICK=x,y[;x,y...]: several clicks 1.2 s apart, the last 1.2 s before the dump
 					static std::vector<std::pair<int, int>> autoClicks;
 					static size_t autoClicked = 0;
+					// "c" before a click (c336,190) holds Ctrl for it (Ctrl + a sort criterion in the soldier lists)
+					static std::vector<bool> autoClicksCtrl;
+					static int autoClickCtrlFrames = 0;
+					if (autoClickCtrlFrames > 0 && --autoClickCtrlFrames == 0)
+					{
+						SDL_SetModState(KMOD_NONE);
+					}
 					if (autoClicks.empty() && autoClick && *autoClick)
 					{
 						for (const char *c = autoClick; c && *c; )
 						{
 							int cx, cy;
-							if (sscanf(c, "%d,%d", &cx, &cy) == 2) autoClicks.emplace_back(cx, cy);
+							const bool ctrl = *c == 'c';
+							if (sscanf(c + (ctrl ? 1 : 0), "%d,%d", &cx, &cy) == 2)
+							{
+								autoClicks.emplace_back(cx, cy);
+								autoClicksCtrl.push_back(ctrl);
+							}
 							c = strchr(c, ';');
 							if (c) ++c;
 						}
@@ -467,6 +479,11 @@ void Game::run()
 					if (autoStep <= 1 && autoClicked < autoClicks.size() && now + 1200 * (Uint32)(autoClicks.size() - autoClicked) >= autoDumpAt)
 					{
 						const int cx = autoClicks[autoClicked].first, cy = autoClicks[autoClicked].second;
+						if (autoClicksCtrl[autoClicked])
+						{
+							SDL_SetModState(KMOD_LCTRL);
+							autoClickCtrlFrames = 5;
+						}
 						if (++autoClicked == autoClicks.size()) autoStep = 2;
 						SDL_Event ev;
 						memset(&ev, 0, sizeof(ev));

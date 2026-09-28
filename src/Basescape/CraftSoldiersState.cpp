@@ -206,6 +206,10 @@ void CraftSoldiersState::cbxSortByChange(Action *)
 		{
 			DoSort(selIdx, compFunc);
 		}
+		else
+		{
+			SortSecond(selIdx, _sortFunctors, *_cbxSortBy); // OXCE-HD: second criterion inside the first
+		}
 	}
 	else
 	{
@@ -377,6 +381,7 @@ void CraftSoldiersState::lstItemsLeftArrowClick(Action *action)
 	}
 	_cbxSortBy->setText(tr("STR_SORT_BY"));
 	_cbxSortBy->setSelected(-1);
+	ForgetSort();
 }
 
 /**
@@ -430,6 +435,7 @@ void CraftSoldiersState::lstItemsRightArrowClick(Action *action)
 	}
 	_cbxSortBy->setText(tr("STR_SORT_BY"));
 	_cbxSortBy->setSelected(-1);
+	ForgetSort();
 }
 
 /**
