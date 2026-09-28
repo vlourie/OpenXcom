@@ -8,7 +8,8 @@
 
   Имя выпуска выбирается само по дате: 2026.09.24, второй за день 2026.09.24-2; в канале test -
   2026.09.24-test, 2026.09.24-test2. Версия - 2026.9.24 (2026.9.24.2 для второго за день).
-  «Что нового»: notes\next.ru.txt и notes\next.en.txt. После выпуска они переименовываются в
+  «Что нового»: по-русски - раздел «[Не выпущено]» CHANGELOG.md сам, плюс notes\next.ru.txt (только то,
+  чего в CHANGELOG нет); по-английски - notes\next.en.txt. После выпуска они переименовываются в
   notes\<имя выпуска>.ru.txt, чтобы следующий выпуск не показал старый текст. В канале stable
   раздел «[Не выпущено]» CHANGELOG.md становится разделом «<имя выпуска> — <дата>».
   Лаунчер выпускается, только если его версии (<Version> в Xp.Launcher.csproj) ещё нет в хранилище.
@@ -47,6 +48,26 @@ function Close-Changelog([string] $path, [string] $id, [datetime] $day) {
     $text = $text.Substring(0, $at) + $mark + $nl + $nl + $title + $nl + $body.TrimStart("`r", "`n") + $text.Substring($next)
     [IO.File]::WriteAllText($path, $text, (New-Object Text.UTF8Encoding $true))
     Ok "CHANGELOG.md: раздел «$title» - закоммитьте его вместе с notes"
+}
+
+# «Что нового» по-русски из раздела «[Не выпущено]» CHANGELOG.md: пункты «- » становятся «— », заголовки ### уходят.
+# Выпуски 27.09-5..28.09-3 ушли без описания, потому что notes\next.ru.txt никто не написал (R-130)
+function Get-UnreleasedNotes([string] $path) {
+    if (-not (Test-Path -LiteralPath $path)) { return '' }
+    $text = [IO.File]::ReadAllText($path, [Text.Encoding]::UTF8)
+    $nl = if ($text.Contains("`r`n")) { "`r`n" } else { "`n" }
+    $mark = '## [Не выпущено]'
+    $at = $text.IndexOf($mark)
+    if ($at -lt 0) { return '' }
+    $from = $at + $mark.Length
+    $next = $text.IndexOf("$nl## ", $from)
+    if ($next -lt 0) { $next = $text.Length }
+    $lines = foreach ($l in $text.Substring($from, $next - $from) -split "`r?`n") {
+        $l = $l.TrimEnd()
+        if ($l -match '^\s*- (.+)$') { '— ' + $Matches[1] }
+        elseif ($l -and $l -notmatch '^#') { $l }
+    }
+    return (@($lines) -join "`r`n").Trim()
 }
 
 function Xpr([string[]] $a) {
@@ -147,6 +168,17 @@ try {
         Step "Подписываю игру: $id"
         $buildArgs = @('build', '--repo', $repo, '--id', $id, '--version', $version, '--channel', $channel,
             '--stage', $cfg.Stage, '--launch', $cfg.Launch, '--key', $cfg.Key)
+        # русское «Что нового» = notes\next.ru.txt (то, чего нет в CHANGELOG) + раздел «[Не выпущено]» CHANGELOG.md.
+        # Английское - только notes\next.en.txt; без него лаунчер покажет русское
+        $fromLog = Get-UnreleasedNotes (Join-Path $root 'CHANGELOG.md')
+        if ($fromLog) {
+            $ruFile = Join-Path $notes 'next.ru.txt'
+            $hand = if (Test-Path -LiteralPath $ruFile) { (Get-Content -LiteralPath $ruFile -Raw -Encoding UTF8).Trim() } else { '' }
+            $ru = if ($hand) { $hand + "`r`n" + $fromLog } else { $fromLog }
+            [IO.File]::WriteAllText($ruFile, $ru + "`r`n", (New-Object Text.UTF8Encoding $true))
+            Ok ("«Что нового» из CHANGELOG: {0} пункт(ов){1}" -f @($fromLog -split "`r`n" | Where-Object { $_ -like '— *' }).Count, $(if ($hand) { ' + notes\next.ru.txt' } else { '' }))
+        }
+        if (-not (Test-Path -LiteralPath (Join-Path $notes 'next.en.txt'))) { Warn 'нет notes\next.en.txt - английским игрокам лаунчер покажет русское «Что нового»' }
         $usedNotes = @()
         foreach ($lang in 'ru', 'en') {
             $f = Join-Path $notes "next.$lang.txt"
