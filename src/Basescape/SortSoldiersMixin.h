@@ -175,25 +175,10 @@ namespace OpenXcom
 			return false; // b > a
 		}
 
-		/// OXCE-HD: the soldier's picture from the soldier info screen - the same "Flag" id as SoldierInfoState
-		/// (nationality or kills, plus the type's flagOffset); null when the mod has none.
+		/// OXCE-HD: the soldier's picture from the soldier info screen (soldierFlag in SoldierSortUtil).
 		Surface *SoldierFlag(const Soldier *soldier) const
 		{
-			int index = soldier->getNationality();
-			const std::vector<int> &mapping = State::_game->getMod()->getFlagByKills();
-			if (!mapping.empty())
-			{
-				index = 0;
-				for (int item : mapping)
-				{
-					if (soldier->getKills() <= item)
-					{
-						break;
-					}
-					index++;
-				}
-			}
-			return State::_game->getMod()->getSurface("Flag" + std::to_string(index + soldier->getRules()->getFlagOffset()), false);
+			return soldierFlag(State::_game->getMod(), soldier);
 		}
 
 		void ChangeDynSorter(getStatFn_t& getter)

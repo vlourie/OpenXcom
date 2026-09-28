@@ -27,6 +27,10 @@ namespace OpenXcom
 
 typedef int (*getStatFn_t)(const Game*, const Soldier*);
 
+class Surface;
+/// OXCE-HD: the soldier's race picture from the soldier info screen, for the soldier lists.
+Surface *soldierFlag(Mod *mod, const Soldier *soldier);
+
 struct SortFunctor
 {
 	Game *_game;

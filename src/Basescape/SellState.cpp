@@ -39,6 +39,7 @@
 #include "../Savegame/SavedGame.h"
 #include "../Savegame/Base.h"
 #include "../Savegame/Soldier.h"
+#include "SoldierSortUtil.h"
 #include "../Savegame/Craft.h"
 #include "../Savegame/ItemContainer.h"
 #include "../Savegame/Vehicle.h"
@@ -539,6 +540,7 @@ void SellState::updateList()
 
 	_lstItems->clearList();
 	_rows.clear();
+	std::vector<size_t> shown;
 
 	size_t selCategory = _cbxCategory->getSelected();
 	const std::string selectedCategory = _cats[selCategory];
@@ -620,6 +622,29 @@ void SellState::updateList()
 			}
 		}
 
+		shown.push_back(i);
+	}
+
+	// OXCE-HD: the soldier's race picture before the name, as in the soldier lists. The list moves right
+	// for it only when a soldier is shown, so item names keep their full width otherwise
+	int icon = 0;
+	if (Options::oxceBaseSoldierTypeIcon)
+	{
+		for (size_t i : shown)
+		{
+			if (_items[i].type == TRANSFER_SOLDIER)
+			{
+				icon = 13;
+				break;
+			}
+		}
+	}
+	_lstItems->setIconColumn(2, icon);
+	_lstItems->setColumns(4, 156 - icon, 54, 24, 53);
+	_lstItems->setMargin(2 + icon);
+
+	for (size_t i : shown)
+	{
 		std::string name = _items[i].name;
 		bool ammo = false;
 		if (_items[i].type == TRANSFER_ITEM)
@@ -637,6 +662,10 @@ void SellState::updateList()
 		int64_t adjustedCost = _items[i].cost;
 		_lstItems->addRow(4, name.c_str(), ssQty.str().c_str(), ssAmount.str().c_str(), Unicode::formatFunding(adjustedCost).c_str());
 		_rows.push_back(i);
+		if (icon && _items[i].type == TRANSFER_SOLDIER)
+		{
+			_lstItems->setRowIcon(_rows.size() - 1, soldierFlag(_game->getMod(), (const Soldier*)_items[i].rule));
+		}
 		if (_items[i].amount > 0)
 		{
 			_lstItems->setRowColor(_rows.size() - 1, _lstItems->getSecondaryColor());
