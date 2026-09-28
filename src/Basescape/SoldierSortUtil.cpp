@@ -1,5 +1,6 @@
 #include "SoldierSortUtil.h"
 #include "../Mod/RuleSoldier.h"
+#include "../Engine/Surface.h"
 
 #define GET_ATTRIB_STAT_FN(attrib) \
 	int OpenXcom::attrib##Stat(const Game *game, const Soldier *s) { return s->getStatsWithAllBonuses()->attrib; }
@@ -165,3 +166,26 @@ int OpenXcom::currentManaStat(const Game *game, const Soldier *s)
 	return manaStat(game, s) - manaMissingStat(game, s);
 }
 #undef GET_SOLDIER_STAT_FN
+
+/**
+ * OXCE-HD: the soldier's picture from the soldier info screen - the same "Flag" id as SoldierInfoState
+ * (nationality or kills, plus the type's flagOffset); null when the mod has none.
+ */
+OpenXcom::Surface *OpenXcom::soldierFlag(Mod *mod, const Soldier *soldier)
+{
+	int index = soldier->getNationality();
+	const std::vector<int> &mapping = mod->getFlagByKills();
+	if (!mapping.empty())
+	{
+		index = 0;
+		for (int item : mapping)
+		{
+			if (soldier->getKills() <= item)
+			{
+				break;
+			}
+			index++;
+		}
+	}
+	return mod->getSurface("Flag" + std::to_string(index + soldier->getRules()->getFlagOffset()), false);
+}
