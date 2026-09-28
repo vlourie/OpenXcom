@@ -28,6 +28,10 @@
 #include "FileMap.h"
 #include "HdSprites.h"
 #include "Logger.h"
+#include "../Mod/RuleCraft.h"
+#include "../Savegame/Base.h"
+#include "../Savegame/Craft.h"
+#include "../Savegame/Soldier.h"
 
 namespace OpenXcom
 {
@@ -183,39 +187,59 @@ void scan()
 	}
 }
 
-/// Brightness 0..1 of a light at time t (seconds).
-float intensity(const Light &light, Status status, float t)
+/// A soft pulse over one period (phase 0..1): up in the first half, dark in the second.
+float pulse(float phase)
 {
-	const float period = light.period * (status == REPAIRS ? 0.6f : 1.0f);
-	const float phase = std::fmod(std::fabs(t + light.offset), period) / period;
-	switch (light.kind)
+	const float s = std::sin(phase * 6.2831853f);
+	return s > 0.0f ? s * s : 0.0f;
+}
+
+/// Brightness 0..1 of a light at time t (seconds). `port`: the light is on the left half of the
+/// craft (the sides blink in turn when pilots are missing).
+float intensity(const Light &light, Status status, float t, bool port)
+{
+	if (status != BUSY)
 	{
-	case RED:
-	case GREEN:
-	case WHITE:
-		return status == READY ? 1.0f : 0.0f;
-	case STROBE:
-	{
-		if (status != READY)
+		// every light in one rhythm of the state, the offsets of the file set aside
+		const float period = status == READY ? 1.2f : status == REARMING ? 1.4f : 1.0f;
+		const float phase = std::fmod(std::fabs(t), period) / period;
+		switch (status)
 		{
-			return 0.0f;
+		case REARMING:
+		{
+			// two short flashes, then a pause
+			const float ms = phase * period * 1000.0f;
+			return (ms < 120.0f || (ms >= 260.0f && ms < 380.0f)) ? 1.0f : 0.0f;
 		}
-		// two short flashes, 60 ms each, 100 ms apart, as on a real airframe
-		const float ms = phase * period * 1000.0f;
-		return (ms < 60.0f || (ms >= 160.0f && ms < 220.0f)) ? 1.0f : 0.0f;
+		case NO_CREW:
+			return pulse(port ? phase : std::fmod(phase + 0.5f, 1.0f));
+		default:
+			return pulse(phase);    // ready, repairs: an even pulse
+		}
 	}
-	case BEACON:
-	case BLINK:
+	// refuelling and the rest: only the beacons, each in its own rhythm
+	if (light.kind != BEACON && light.kind != BLINK)
 	{
-		const float s = std::sin(phase * 6.2831853f);
-		return s > 0.0f ? s * s : 0.0f;
+		return 0.0f;
 	}
-	}
-	return 0.0f;
+	return pulse(std::fmod(std::fabs(t + light.offset), light.period) / light.period);
 }
 
 void colorOf(const Light &light, Status status, float &r, float &g, float &b)
 {
+	switch (status)
+	{
+	case READY:
+		r = 0.10f; g = 1.00f; b = 0.30f;
+		return;
+	case REPAIRS:
+	case REARMING:
+	case NO_CREW:
+		r = 1.00f; g = 0.12f; b = 0.08f;
+		return;
+	default:
+		break;
+	}
 	if (light.ownColor)
 	{
 		r = light.r; g = light.g; b = light.b;
@@ -228,19 +252,16 @@ void colorOf(const Light &light, Status status, float &r, float &g, float &b)
 	case WHITE:
 	case STROBE:
 	case BLINK:  r = 1.00f; g = 1.00f; b = 1.00f; return;
-	case BEACON:
-		if (status == REPAIRS) { r = 1.00f; g = 0.62f; b = 0.05f; }
-		else { r = 1.00f; g = 0.10f; b = 0.05f; }
-		return;
+	case BEACON: r = 1.00f; g = 0.10f; b = 0.05f; return;
 	}
 }
 
 /// Adds a soft point of light: a hot white core and a coloured halo, additively.
 /// A light painted on the craft (`own`) instead pulls the pixels toward its colour:
-/// adding would bleach that colour to white.
-void glow(SDL_Surface *world, float cx, float cy, int k, float r, float g, float b, float amount, bool own)
+/// adding would bleach that colour to white. `size` scales the spot (the garland's bulbs are smaller).
+void glow(SDL_Surface *world, float cx, float cy, int k, float r, float g, float b, float amount, bool own, float size = 1.0f)
 {
-	const float halo = 1.4f * k, core = 0.45f * k;
+	const float halo = 1.4f * k * size, core = 0.45f * k * size;
 	const float reach = halo * 2.6f;
 	const int x0 = std::max(0, (int)std::floor(cx - reach)), x1 = std::min(world->w, (int)std::ceil(cx + reach));
 	const int y0 = std::max(0, (int)std::floor(cy - reach)), y1 = std::min(world->h, (int)std::ceil(cy + reach));
@@ -297,6 +318,42 @@ const std::vector<Light> *lightsOf(int index)
 
 }
 
+Status statusOf(const Craft *craft)
+{
+	const std::string status = craft->getStatus();
+	if (status == "STR_REPAIRS")
+	{
+		return REPAIRS;
+	}
+	if (status == "STR_REARMING")
+	{
+		return REARMING;
+	}
+	if (status != "STR_READY")
+	{
+		return BUSY;                // refuelling and the rest
+	}
+	const int needed = craft->getRules()->getPilots();
+	const Base *base = craft->getBase();
+	if (needed > 0 && base)
+	{
+		// the soldiers' stats with bonuses are the cache Base::load and the screens keep fresh
+		int pilots = 0;
+		for (const Soldier *soldier : base->getSoldiers())
+		{
+			if (soldier->getCraft() == craft && soldier->hasAllPilotingRequirements())
+			{
+				++pilots;
+			}
+		}
+		if (pilots < needed)
+		{
+			return NO_CREW;
+		}
+	}
+	return READY;
+}
+
 bool has(int index)
 {
 	return lightsOf(index) != nullptr;
@@ -311,20 +368,63 @@ void draw(SDL_Surface *world, int index, int x, int y, int k, Status status, Uin
 	}
 	// each hangar keeps its own rhythm
 	const float t = (float)ticks / 1000.0f + (float)(seed % 997u) * 0.0371f;
+	// the sides of the craft: left and right of the middle of its lights
+	float middle = 0.0f;
+	for (const Light &light : *lights)
+	{
+		middle += light.x;
+	}
+	middle /= (float)lights->size();
 	if (SDL_MUSTLOCK(world))
 	{
 		SDL_LockSurface(world);
 	}
 	for (const Light &light : *lights)
 	{
-		const float amount = intensity(light, status, t);
+		const float amount = intensity(light, status, t, light.x < middle);
 		if (amount <= 0.0f)
 		{
 			continue;
 		}
-		float r, g, b;
+		float r = 1.0f, g = 1.0f, b = 1.0f;
 		colorOf(light, status, r, g, b);
 		glow(world, x + light.x * k, y + light.y * k, k, r, g, b, amount, light.ownColor);
+	}
+	if (SDL_MUSTLOCK(world))
+	{
+		SDL_UnlockSurface(world);
+	}
+}
+
+void drawFuel(SDL_Surface *world, int x, int y, int k, int percent, Uint32 seed, Uint32 ticks)
+{
+	if (!world || world->format->BytesPerPixel != 4 || k < 1)
+	{
+		return;
+	}
+	struct Rgb { float r, g, b; };
+	const Rgb red = { 1.00f, 0.12f, 0.08f }, orange = { 1.00f, 0.45f, 0.05f }, yellow = { 1.00f, 0.90f, 0.10f },
+		green = { 0.10f, 1.00f, 0.30f }, gold = { 1.00f, 0.72f, 0.12f }, dark = { 0.30f, 0.30f, 0.30f };
+	const bool full = percent >= 100;
+	const int lit = full ? 5 : percent > 75 ? 4 : percent > 50 ? 3 : percent > 25 ? 2 : 1;
+	const Rgb &colour = lit == 1 ? red : lit == 2 ? orange : lit == 3 ? yellow : green;
+	// full: the bulbs swap green and gold every half second, neighbours opposite
+	const float t = (float)ticks / 1000.0f + (float)(seed % 997u) * 0.0371f;
+	const int swap = (int)(t / 0.5f) & 1;
+	if (SDL_MUSTLOCK(world))
+	{
+		SDL_LockSurface(world);
+	}
+	for (int i = 0; i < 5; ++i)
+	{
+		const float cx = x + (i - 2) * 5.0f * k;     // 5 classic pixels apart
+		if (i >= lit)
+		{
+			glow(world, cx, (float)y, k, dark.r, dark.g, dark.b, 0.25f, false, 0.6f);
+			continue;
+		}
+		const Rgb &c = full ? (((i + swap) & 1) ? gold : green) : colour;
+		glow(world, cx, (float)y, k, c.r, c.g, c.b, 0.9f, false, 0.7f);
 	}
 	if (SDL_MUSTLOCK(world))
 	{

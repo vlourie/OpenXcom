@@ -500,10 +500,7 @@ void CraftInfoState::blit()
 	{
 		return;
 	}
-	const std::string &status = _craft->getStatus();
-	const HdCraftLights::Status lights = status == "STR_READY" ? HdCraftLights::READY
-		: status == "STR_REPAIRS" ? HdCraftLights::REPAIRS : HdCraftLights::BUSY;
-	HdCraftLights::draw(world, index, _sprite->getX() * k, _sprite->getY() * k, k, lights,
+	HdCraftLights::draw(world, index, _sprite->getX() * k, _sprite->getY() * k, k, HdCraftLights::statusOf(_craft),
 		(Uint32)_craft->getId(), SDL_GetTicks());
 }
 
