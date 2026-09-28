@@ -143,6 +143,11 @@ private:
 	bool _endTurnRequested;
 	bool _endConfirmationHandled;
 	bool _allEnemiesNeutralized;
+	std::vector<int> _guardedUnits; // bench bot: units that already turned to face the enemy this turn
+	int _guardedTurn = -1;
+
+	/// Bench bot: ends a unit's turn facing the nearest enemy its side sees.
+	bool carefulGuard(BattleUnit *unit);
 
 	helper::SingleRun _endTurnProcessed;
 	helper::SingleRun _triggerProcessed;
