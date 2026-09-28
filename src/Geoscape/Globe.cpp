@@ -54,6 +54,7 @@
 #include "../Interface/Cursor.h"
 #include "../Engine/Screen.h"
 #include "../Engine/HdUi.h"
+#include "../Engine/HdWorkers.h"
 
 namespace OpenXcom
 {
@@ -377,6 +378,7 @@ Globe::~Globe()
 	}
 	delete _texture;
 	delete _radars;
+	delete _hdEarth;
 	delete _clipper;
 
 	for (auto* polygon : _cacheLand)
@@ -925,6 +927,10 @@ void Globe::setPalette(const SDL_Color *colors, int firstcolor, int ncolors)
 	_countries->setPalette(colors, firstcolor, ncolors);
 	_markers->setPalette(colors, firstcolor, ncolors);
 	_radars->setPalette(colors, firstcolor, ncolors);
+	if (_hdEarth)
+	{
+		_hdEarth->setPalette(colors, firstcolor, ncolors);
+	}
 
 	for (auto* text : _hdLabelText)
 	{
@@ -975,6 +981,7 @@ void Globe::draw()
 		cachePolygons();
 	}
 	Surface::draw();
+	_hdEarthDirty = true;
 	drawOcean();
 	drawLand();
 	drawRadars();
@@ -1936,6 +1943,100 @@ void Globe::blit(SDL_Surface *surface)
 		invalidate();
 	}
 	_markers->blit(surface);
+}
+
+/**
+ * The globe's own scale in the HD layer (oxceHdGlobeScale): how many world pixels one of
+ * its pixels takes - what it would be with the geoscape scale set to that, while the windows,
+ * the base and the lists around it stay at the geoscape scale. 0 when it is not finer than them.
+ */
+int Globe::hdEarthScale() const
+{
+	const int s = Options::oxceHdGlobeScale;
+	if (s < 1 || !HdUi::active())
+	{
+		return 0;
+	}
+	return s < HdUi::scale() ? s : 0;
+}
+
+/**
+ * HD interface: the ocean and land drawn anew at the globe's own scale instead of this
+ * surface's base pixels scaled up. Only the picture is finer: the radars, paths, markers
+ * and labels over it, the clicks and the classic layer keep the base grid.
+ */
+void Globe::hdMirror()
+{
+	const int s = hdEarthScale();
+	if (!s)
+	{
+		InteractiveSurface::hdMirror();
+		return;
+	}
+	const int k = HdUi::scale();
+	const double f = (double)k / s;
+	const int w = (getWidth() * k + s - 1) / s, h = (getHeight() * k + s - 1) / s;
+	if (_hdEarthDirty || !_hdEarth || _hdEarth->getWidth() != w || _hdEarth->getHeight() != h || _hdEarthFactor != f)
+	{
+		drawHdEarth(w, h, f);
+	}
+	SDL_Rect area;
+	area.x = (Sint16)(getX() * k);
+	area.y = (Sint16)(getY() * k);
+	area.w = (Uint16)(getWidth() * k);
+	area.h = (Uint16)(getHeight() * k);
+	HdUi::instance().drawSurfaceWorld(_hdEarth, getX() * k, getY() * k, s, area);
+}
+
+/**
+ * The ocean, the land and the shadow as draw() makes them, f times finer: the polygons are
+ * projected again from their coordinates (not the cached base pixels), the terminator is
+ * computed per fine pixel, in bands on the render threads. The textures keep their pixel
+ * size, as at a finer geoscape scale.
+ */
+void Globe::drawHdEarth(int w, int h, double f)
+{
+	if (!_hdEarth || _hdEarth->getWidth() != w || _hdEarth->getHeight() != h)
+	{
+		delete _hdEarth;
+		_hdEarth = new Surface(w, h);
+		_hdEarth->setPalette(getPalette());
+	}
+	_hdEarthDirty = false;
+	_hdEarthFactor = f;
+	_hdEarth->clear();
+
+	const int cx = (int)std::lround(_cenX * f), cy = (int)std::lround(_cenY * f);
+	_hdEarth->lock();
+	_hdEarth->drawCircle((Sint16)std::lround((_cenX + 1) * f), (Sint16)cy, (Sint16)std::lround((_radius + 20) * f), OCEAN_COLOR);
+	_hdEarth->unlock();
+
+	Sint16 x[4], y[4];
+	for (auto* polygon : _cacheLand)
+	{
+		for (int j = 0; j < polygon->getPoints(); ++j)
+		{
+			double px, py;
+			polarToCart(polygon->getLongitude(j), polygon->getLatitude(j), &px, &py);
+			x[j] = (Sint16)std::floor(px * f);
+			y[j] = (Sint16)std::floor(py * f);
+		}
+		_hdEarth->drawTexturedPolygon(x, y, polygon->getPoints(), _texture->getFrame(polygon->getTexture() + _zoomTexture), 0, 0);
+	}
+
+	const Cord sun = getSunDirection(_cenLon, _cenLat);
+	const int radius = (int)std::lround(_zoomRadius[_zoom] * f);
+	_hdEarth->lock();
+	HdWorkers &pool = HdWorkers::instance();
+	const int jobs = std::max(1, std::min(h / 16, pool.threads() * 2));
+	pool.run(jobs, [&](int job)
+	{
+		ShaderMove<Uint8> dest = ShaderSurface(_hdEarth);
+		dest.setDomain(GraphSubset(std::make_pair(0, w), std::make_pair(h * job / jobs, h * (job + 1) / jobs)));
+		ShaderRepeat<Sint16> noise = ShaderRepeat<Sint16>(SurfaceRaw<Sint16>(static_data.random_noise, static_data.random_surf_size, static_data.random_surf_size));
+		ShaderDraw<CreateShadowWithoutCache>(dest, helper::Offset(cx, cy), ShaderScalar(sun), noise, ShaderScalar(radius));
+	});
+	_hdEarth->unlock();
 }
 
 /**

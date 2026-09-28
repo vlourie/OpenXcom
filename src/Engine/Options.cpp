@@ -520,6 +520,7 @@ void createAdvancedOptionsOXCE()
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdUi", &oxceHdUi, 0, "STR_HD_UI", "STR_HD_INTERFACE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdUiSkin", &oxceHdUiSkin, 2, "STR_HD_UI_SKIN", "STR_HD_INTERFACE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdUiFont", &oxceHdUiFont, 0, "STR_HD_UI_FONT", "STR_HD_INTERFACE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdGlobeScale", &oxceHdGlobeScale, 0, "STR_HD_GLOBE_SCALE", "STR_HD_INTERFACE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdPictures", &oxceHdPictures, true, "STR_HD_PICTURES", "STR_HD_INTERFACE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdUiSmooth", &oxceHdUiSmooth, true, "STR_HD_UI_SMOOTH", "STR_HD_INTERFACE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdBaseAnim", &oxceHdBaseAnim, true, "STR_HD_BASE_ANIM", "STR_HD_INTERFACE"));

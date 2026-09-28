@@ -88,6 +88,9 @@ private:
 	std::vector<Label> _labels;
 	std::vector<Text*> _hdLabelText;    ///< one widget per label size, made on first use
 	bool _hdLabelsKept;                 ///< were the labels kept out of _countries when it was last drawn
+	Surface *_hdEarth = nullptr;        ///< ocean, land and shadow at the globe's own scale (oxceHdGlobeScale), for the HD layer
+	bool _hdEarthDirty = true;          ///< the globe was drawn again since _hdEarth was
+	double _hdEarthFactor = 0.0;        ///< how many _hdEarth pixels one base pixel was when it was drawn
 
 	bool _isMouseScrolling, _isMouseScrolled;
 	int _xBeforeMouseScrolling, _yBeforeMouseScrolling;
@@ -128,6 +131,10 @@ private:
 	Text *hdLabelText(int w, int h);
 	/// Draws the kept labels with the TrueType fonts, over the upscaled globe.
 	void drawHdLabels();
+	/// The world pixels one pixel of the globe takes in the HD layer when it has a scale of its own; 0 = as the geoscape.
+	int hdEarthScale() const;
+	/// Draws the ocean, the land and the shadow into _hdEarth (w x h), f times finer than the base pixels.
+	void drawHdEarth(int w, int h, double f);
 public:
 	static Uint8 OCEAN_COLOR;
 	static bool OCEAN_SHADING;
@@ -214,6 +221,8 @@ public:
 	void drawMarkers();
 	/// Blits the globe onto another surface.
 	void blit(SDL_Surface *surface) override;
+	/// HD interface: the ocean and land at the globe's own scale when it has one.
+	void hdMirror() override;
 	/// What the label under this screen point is called in the rulesets ("" when there is none).
 	std::string getLabelAt(int x, int y) const;
 	/// Special handling for mouse hover.
