@@ -35,6 +35,10 @@
 #include "InfoboxOKState.h"
 #include "InfoboxState.h"
 #include "../Savegame/Node.h"
+#include "../Engine/HdKillCam.h"
+#include "../Engine/Screen.h"
+#include "../Mod/Unit.h"
+#include "Camera.h"
 
 namespace OpenXcom
 {
@@ -47,8 +51,26 @@ namespace OpenXcom
  * @param noSound Whether to disable the death sound.
  */
 UnitDieBState::UnitDieBState(BattlescapeGame *parent, BattleUnit *unit, const RuleDamageType* damageType, bool noSound) : BattleState(parent),
-	_unit(unit), _damageType(damageType), _noSound(noSound), _extraFrame(0), _overKill(unit->getOverKillDamage())
+	_unit(unit), _damageType(damageType), _noSound(noSound), _extraFrame(0), _overKill(unit->getOverKillDamage()),
+	_killCam(false), _pace(BattlescapeState::DEFAULT_ANIM_SPEED)
 {
+	// HD render: the last enemy falling to a shot or a blow - the camera zooms in, the fall slows down
+	if (finalBlow())
+	{
+		_killCam = true;
+		const int size = _unit->getArmor()->getSize();
+		Camera *camera = _parent->getMap()->getCamera();
+		if (camera->getViewLevel() < _unit->getPosition().z || !camera->isOnScreen(_unit->getPosition(), false, size, false))
+		{
+			camera->centerOnPosition(_unit->getPosition());
+		}
+		Position voxel = _unit->getPosition().toVoxel() + Position(8 * size, 8 * size, _unit->getFloatHeight() + _unit->getHeight() / 3);
+		if (Tile *tile = _unit->getTile())
+		{
+			voxel.z -= tile->getTerrainLevel();
+		}
+		HdKillCam::start(voxel);
+	}
 	// don't show the "fall to death" animation when a unit is blasted with explosives or he is already unconscious
 	if (!_damageType->isDirect() || _unit->getStatus() == STATUS_UNCONSCIOUS)
 	{
@@ -79,10 +101,10 @@ UnitDieBState::UnitDieBState(BattlescapeGame *parent, BattleUnit *unit, const Ru
 		{
 			_parent->getMap()->setUnitDying(true);
 		}
-		_parent->setStateInterval(BattlescapeState::DEFAULT_ANIM_SPEED);
+		pace(BattlescapeState::DEFAULT_ANIM_SPEED);
 		if (_unit->getDirection() != 3)
 		{
-			_parent->setStateInterval(BattlescapeState::DEFAULT_ANIM_SPEED / 3);
+			pace(BattlescapeState::DEFAULT_ANIM_SPEED / 3);
 		}
 	}
 
@@ -110,7 +132,64 @@ UnitDieBState::UnitDieBState(BattlescapeGame *parent, BattleUnit *unit, const Ru
  */
 UnitDieBState::~UnitDieBState()
 {
+	if (_killCam)
+	{
+		HdKillCam::skip(); // gone before its end: the scene must not outlive it
+	}
+}
 
+/**
+ * HD render: is this the final blow - the last enemy falling to a shot or a blow, in sight,
+ * in a battle that ends with the enemies? Reads the battle and changes nothing: the count
+ * mirrors BattlescapeGame::tallyUnits, but takes only a surrender already decided, since
+ * asking a unit (isSurrendering) may make it surrender.
+ */
+bool UnitDieBState::finalBlow() const
+{
+	SavedBattleGame *save = _parent->getSave();
+	if (!Options::oxceHdKillCam || save->isBeforeGame() || save->isPreview() || !save->getBattleState()
+		|| !save->getBattleState()->getGame()->getScreen()->isLayered())
+	{
+		return false;
+	}
+	// DT_NONE: bled to death at the start of a turn - no blow to show
+	if (!_damageType->isDirect() || _damageType->ResistType == DT_NONE || _unit->getStatus() == STATUS_UNCONSCIOUS || !_unit->getTile() || !_unit->getVisible()
+		|| _unit->getFaction() != FACTION_HOSTILE || _unit->getOriginalFaction() != FACTION_HOSTILE
+		|| _unit->getRespawn() || _unit->getSpawnUnit())
+	{
+		return false;
+	}
+	if (save->getObjectiveType() == MUST_DESTROY || (save->getVIPSurvivalPercentage() > 0 && save->getVIPEscapeType() != ESCAPE_NONE))
+	{
+		return false;
+	}
+	for (const auto *bu : *save->getUnits())
+	{
+		if (bu == _unit || bu->getOriginalFaction() != FACTION_HOSTILE || bu->isOut())
+		{
+			continue;
+		}
+		if (bu->isOutThresholdExceed() && !(bu->getUnitRules() && bu->getUnitRules()->getSpawnUnit()))
+		{
+			continue;
+		}
+		if (bu->getCapturable() && ((Options::allowPsionicCapture && bu->getFaction() == FACTION_PLAYER) || bu->isSurrendering()))
+		{
+			continue;
+		}
+		return false;
+	}
+	return !HdKillCam::running();
+}
+
+/**
+ * Sets the state's tick interval: the classic one, slowed down during the final blow (HdKillCam).
+ * @param interval The classic interval in ms.
+ */
+void UnitDieBState::pace(Uint32 interval)
+{
+	_pace = interval;
+	_parent->setStateInterval(_killCam ? HdKillCam::pace(interval) : interval);
 }
 
 void UnitDieBState::init()
@@ -150,6 +229,10 @@ void UnitDieBState::think()
 		_parent->popState();
 		return;
 	}
+	if (_killCam)
+	{
+		pace(_pace); // the slowing comes on smoothly, and a key or a click drops it
+	}
 	if (_unit->getDirection() != 3 && _damageType->isDirect())
 	{
 		int dir = _unit->getDirection() + 1;
@@ -161,7 +244,7 @@ void UnitDieBState::think()
 		_unit->turn();
 		if (dir == 3)
 		{
-			_parent->setStateInterval(BattlescapeState::DEFAULT_ANIM_SPEED);
+			pace(BattlescapeState::DEFAULT_ANIM_SPEED);
 		}
 	}
 	else if (_unit->getStatus() == STATUS_COLLAPSING)
@@ -186,6 +269,10 @@ void UnitDieBState::think()
 	}
 	if (_extraFrame == 2)
 	{
+		if (_killCam && HdKillCam::hold())
+		{
+			return; // the final blow still shows the body: the rest waits for the zoom out
+		}
 		_parent->getMap()->setUnitDying(false);
 		_parent->getTileEngine()->calculateLighting(LL_ITEMS, _unit->getPosition(), _unit->getArmor()->getSize());
 		_parent->getTileEngine()->calculateFOV(_unit->getPosition(), _unit->getArmor()->getSize(), false); //Update FOV for anyone that can see me

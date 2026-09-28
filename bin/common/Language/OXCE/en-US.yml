@@ -426,6 +426,8 @@ en-US:
   STR_HD_HOVER_BOB_DESC: "In the HD sprite modes: flying units that hang with no floor below sway gently up and down, easing in on take-off and out on landing. Picture only, the unit's position does not change. Off (and mode 0) = they hang still, as in the classic game."
   STR_HD_FX: "HD combat effects"
   STR_HD_FX_DESC: "In the HD sprite modes: hits, melee swings and explosions are drawn with the HD mod's effects, chosen by the weapon, the target and the ground, and guns show a muzzle flash. Picture only, the timing and the damage stay the same. Off (and mode 0) = the classic animations."
+  STR_HD_KILLCAM: "Final blow close-up"
+  STR_HD_KILLCAM_DESC: "When the last enemy falls to a shot or a blow, the camera zooms in on it, the fall smoothly slows down, the body lies still for a moment and the camera zooms back out - about four seconds in all. Picture and pace only: damage, turns and random rolls stay the same. A key or a click skips it. Needs 32-bit output."
   STR_HD_PICTURES: "HD pictures"
   STR_HD_PICTURES_DESC: "Pictures of the interface's images that mods ship in hd/UI (Ufopaedia illustrations, screens) are shown in the display's resolution in place of the 8-bit originals; everything else of the interface stays as it is. Needs a 32-bit display (OpenGL or a 32-bit filter)."
   STR_HD_UI_SMOOTH: "HD pictures: smooth interface"

@@ -38,6 +38,7 @@
 #include "../Engine/HdBlit.h"
 #include "../Engine/HdCanvas.h"
 #include "../Engine/HdFx.h"
+#include "../Engine/HdKillCam.h"
 #include "../Engine/HdSprites.h"
 #include "../Engine/HdUi.h"
 #include <chrono>
@@ -260,6 +261,7 @@ Map::Map(Game *game, int width, int height, int x, int y, int visibleMapHeight) 
 	// HD render: every drawing call goes through the canvas - the true-color one when the
 	// display is 32-bit (the world layer takes it as is), else the classic 8-bit surface
 	createCanvas();
+	HdKillCam::clear();
 }
 
 /**
@@ -789,7 +791,18 @@ void Map::blit(SDL_Surface *surface)
 		// a true-color canvas copies straight into the world (rows in parallel), a palette one is converted by SDL
 		if (Canvas32 *canvas32 = dynamic_cast<Canvas32*>(_canvas))
 		{
-			canvas32->copyTo(world, getX() * k, getY() * k);
+			// the final blow (HdKillCam): the frame goes to the screen enlarged around the victim
+			Position voxel, focus;
+			double zoom, pull, bars;
+			if (HdKillCam::view(voxel, zoom, pull, bars))
+			{
+				_camera->convertVoxelToScreen(voxel, &focus);
+				canvas32->copyZoomed(world, getX() * k, getY() * k, focus.x, focus.y, zoom, pull, bars);
+			}
+			else
+			{
+				canvas32->copyTo(world, getX() * k, getY() * k);
+			}
 		}
 		else
 		{

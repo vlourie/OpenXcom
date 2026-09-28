@@ -405,6 +405,9 @@ public:
 	void flush() override;
 	/// Copies the drawn frame into a same-format 32-bit surface at (x, y), rows in parallel.
 	void copyTo(SDL_Surface *dest, int x, int y);
+	/// The same, enlarged `zoom` times (bilinear) with `pull` of the way to the point (fx, fy) in the
+	/// middle and black bars `bars` of the height at the top and the bottom (see HdKillCam).
+	void copyZoomed(SDL_Surface *dest, int x, int y, double fx, double fy, double zoom, double pull, double bars);
 	/// Records commands (default) or draws each call at once (tests, single-threaded use).
 	void setDeferred(bool deferred);
 	/// The shaded value of a grey pixel (exposed for tests).

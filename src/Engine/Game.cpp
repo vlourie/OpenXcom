@@ -30,6 +30,7 @@
 #include "HdTest.h"
 #include "HdSprites.h"
 #include "HdFx.h"
+#include "HdKillCam.h"
 #include "Feedback.h"
 #include <SDL_mixer.h>
 #include "State.h"
@@ -500,18 +501,29 @@ void Game::run()
 						SDL_PushEvent(&ev);
 					}
 					// OXCE_HD_KEY=<SDL key number>: presses that key 1.0 s before the dump (289 = F8);
-					// "ctrl+289" holds Ctrl for the next few frames (Ctrl+F8: the battle's full dump - map, frame, json)
+					// "ctrl+289" holds Ctrl for the next few frames (Ctrl+F8: the battle's full dump - map, frame, json);
+					// several keys "ctrl+100;ctrl+107" go 1.2 s apart, the last 1.0 s before the dump
 					static const char *autoKey = getenv("OXCE_HD_KEY");
-					static bool autoKeyed = false;
+					static size_t autoKeyed = 0;
 					static int autoCtrlFrames = 0;
 					if (autoCtrlFrames > 0 && --autoCtrlFrames == 0)
 					{
 						SDL_SetModState(KMOD_NONE);
 					}
-					if (!autoKeyed && autoKey && *autoKey && now + 1000 >= autoDumpAt)
+					static std::vector<std::string> autoKeys;
+					if (autoKeys.empty() && autoKey && *autoKey)
 					{
-						autoKeyed = true;
-						const bool ctrl = strncmp(autoKey, "ctrl+", 5) == 0;
+						for (const char *c = autoKey; c && *c; )
+						{
+							const char *end = strchr(c, ';');
+							autoKeys.emplace_back(c, end ? (size_t)(end - c) : strlen(c));
+							c = end ? end + 1 : nullptr;
+						}
+					}
+					if (autoKeyed < autoKeys.size() && now + 1000 + 1200 * (Uint32)(autoKeys.size() - 1 - autoKeyed) >= autoDumpAt)
+					{
+						const char *key = autoKeys[autoKeyed++].c_str();
+						const bool ctrl = strncmp(key, "ctrl+", 5) == 0;
 						if (ctrl)
 						{
 							SDL_SetModState(KMOD_LCTRL);
@@ -521,7 +533,7 @@ void Game::run()
 						memset(&ev, 0, sizeof(ev));
 						ev.type = SDL_KEYDOWN;
 						ev.key.state = SDL_PRESSED;
-						ev.key.keysym.sym = (SDLKey)atoi(autoKey + (ctrl ? 5 : 0));
+						ev.key.keysym.sym = (SDLKey)atoi(key + (ctrl ? 5 : 0));
 						ev.key.keysym.mod = ctrl ? KMOD_LCTRL : KMOD_NONE;
 						SDL_PushEvent(&ev);
 						ev.type = SDL_KEYUP;
@@ -563,8 +575,9 @@ void Game::run()
 							_screen->requestHdTestDump(autoDump);
 							autoDumpState = 1;
 						}
-						else
+						else if (!HdKillCam::running())
 						{
+							// a final blow on screen is let run to its end, for its own dumps (OXCE_HD_DUMP_KILLCAM)
 							_quit = true;
 							autoDumpState = 2;
 						}
@@ -573,7 +586,11 @@ void Game::run()
 				if (!_screen->hasHdTestDumpRequest())
 				{
 					// OXCE_HD_DUMP_FX=<prefix>: the frame just after a combat effect started (HdFx::noteForTest)
-					const std::string fx = HdFx::takeTestDump(SDL_GetTicks());
+					std::string fx = HdFx::takeTestDump(SDL_GetTicks());
+					if (fx.empty())
+					{
+						fx = HdKillCam::takeTestDump(SDL_GetTicks());
+					}
 					if (!fx.empty())
 					{
 						_screen->requestHdTestDump(fx);
