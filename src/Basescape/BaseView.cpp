@@ -550,12 +550,16 @@ int BaseView::hdTileIndex(const BaseFacility *facility, int num)
  * A facility with an HD picture of every one of its tiles is not drawn on the classic
  * layer at all - neither its shape nor its graphic - so that the picture in the world
  * layer under it is what is seen (see BaseView::blit).
+ * The pictures come with the facility animations: with them off the base is drawn from the
+ * classic sprites, as before the pictures were made. The option is read once per run, so it
+ * applies after a restart.
  * @param facility The facility.
  * @return True when the mod has a picture of every tile of the facility.
  */
 bool BaseView::isHdFacility(const BaseFacility *facility) const
 {
-	if (!facility || facility->getBuildTime() != 0)
+	static const bool pictures = Options::oxceHdBaseAnim;
+	if (!pictures || !facility || facility->getBuildTime() != 0)
 	{
 		return false;
 	}
