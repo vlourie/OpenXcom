@@ -1844,12 +1844,13 @@ void Map::drawTerrain(HdCanvas *surface)
 							// HD render: the fire burns on the tile's surface (a raised object, a bank), as the
 							// items lying there are drawn, not sunk into it; on the odd animation tick the
 							// pack's in-between picture of the frame (variant 1), if it has one, doubles the
-							// fire's frame rate
-							const bool tween = tile->getFire() && halfAnimFrameRest;
-							if (tween)
-								surface->setFrameVariant(1);
+							// fire's frame rate; a fire style of oxceHdFire takes the pack's variants 2s and 2s + 1
+							// instead (a pack without them keeps its own fire)
+							const int variant = tile->getFire() ? (halfAnimFrameRest ? 1 : 0) + 2 * Options::oxceHdFire : 0;
+							if (variant)
+								surface->setFrameVariant(variant);
 							surface->blit(tmpSurface, screenPosition.x, screenPosition.y + (tile->getFire() ? tile->getTerrainLevel() * _k : 0), shade, false, _nvColor);
-							if (tween)
+							if (variant)
 								surface->setFrameVariant(0);
 						}
 						else

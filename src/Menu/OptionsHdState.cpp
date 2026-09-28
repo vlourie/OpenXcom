@@ -217,6 +217,11 @@ std::string OptionsHdState::valueText(const OptionInfo &info) const
 		}
 		return tr(r == 1 ? "STR_HD_RETICLE_STOCK" : "STR_HD_RETICLE_PACK");
 	}
+	// the fire styles by name (strings in the hd mod, Ruleset/fire.rul)
+	if (info.asInt() == &Options::oxceHdFire)
+	{
+		return tr("STR_HD_FIRE_" + std::to_string(Options::oxceHdFire));
+	}
 	// the same names as the geoscape scale in the video options: "3x" = a globe pixel is 3 display pixels
 	if (info.asInt() == &Options::oxceHdGlobeScale)
 	{
@@ -381,6 +386,11 @@ void OptionsHdState::changeSetting(size_t sel, Uint8 button)
 		{
 			min = 0;
 			max = 1 + (int)Mod::HD_RETICLES.size();
+		}
+		else if (i == &Options::oxceHdFire)
+		{
+			min = 0;                                  // 0 = the pack's own fire
+			max = 3;
 		}
 		else if (i == &Options::oxceHdGlobeScale)
 		{

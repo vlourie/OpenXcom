@@ -28,6 +28,7 @@
 #include "../Mod/RuleInventory.h"
 #include "../Mod/Mod.h"
 #include "../Engine/Exception.h"
+#include "../Engine/Options.h"
 
 namespace OpenXcom
 {
@@ -252,8 +253,9 @@ void UnitSprite::draw(const BattleUnit* unit, int part, int x, int y, int shade,
 	// draw fire
 	if (unit->getFire() > 0)
 	{
-		// HD render: on the odd tick the pack's in-between picture of the frame (variant 1), if it has one
-		_dest->setFrameVariant(_animationFrame % 2);
+		// HD render: on the odd tick the pack's in-between picture of the frame (variant 1), if it has one;
+		// a fire style of oxceHdFire takes the pack's variants 2s and 2s + 1 instead
+		_dest->setFrameVariant(_animationFrame % 2 + 2 * Options::oxceHdFire);
 		_dest->blit(_fireSurface->getFrame(4 + (_animationFrame / 2) % 4), _x, _y, 0, _mask);
 		_dest->setFrameVariant(0);
 	}
