@@ -513,6 +513,12 @@ void noteForTest(const std::string &clip)
 	{
 		return;
 	}
+	// OXCE_HD_DUMP_FX_ONLY=<part of the name>: only such clips (hits on a unit: "_unit", "_armor")
+	static const char *only = getenv("OXCE_HD_DUMP_FX_ONLY");
+	if (only && *only && clip.find(only) == std::string::npos)
+	{
+		return;
+	}
 	testDumps.emplace_back(clip, SDL_GetTicks() + 50);     // a few frames in: the clip is on screen, not yet over
 }
 
