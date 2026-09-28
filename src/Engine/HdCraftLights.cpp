@@ -61,6 +61,9 @@ struct Light
 };
 
 std::map<int, std::vector<Light>> frames;
+/// Frames of a craft standing sideways in the hangar (a line "sideways" in the file): its
+/// sides are up and down in the picture, not left and right.
+std::map<int, bool> sideways;
 bool scanned = false;
 
 bool parseKind(const std::string &s, Kind &kind, float &period)
@@ -121,6 +124,7 @@ void scan()
 			continue;
 		}
 		std::vector<Light> lights;
+		bool side = false;
 		std::string line;
 		int number = 0;
 		while (std::getline(*in, line))
@@ -140,6 +144,11 @@ void scan()
 			std::istringstream ss(line);
 			Light light;
 			std::string kind;
+			if (line.find("sideways") != std::string::npos)
+			{
+				side = true;
+				continue;
+			}
 			if (!(ss >> light.x >> light.y))
 			{
 				continue;                   // blank or comment
@@ -179,6 +188,7 @@ void scan()
 		if (!lights.empty())
 		{
 			frames[(int)index] = std::move(lights);
+			sideways[(int)index] = side;
 		}
 	}
 	if (!frames.empty())
@@ -194,9 +204,9 @@ float pulse(float phase)
 	return s > 0.0f ? s * s : 0.0f;
 }
 
-/// Brightness 0..1 of a light at time t (seconds). `port`: the light is on the left half of the
-/// craft (the sides blink in turn when pilots are missing).
-float intensity(const Light &light, Status status, float t, bool port)
+/// Brightness 0..1 of a light at time t (seconds). `side`: -1 and 1 - the two sides of the craft,
+/// which blink in turn when pilots are missing; 0 - on its keel, dark then.
+float intensity(const Light &light, Status status, float t, int side)
 {
 	if (status != BUSY)
 	{
@@ -212,7 +222,7 @@ float intensity(const Light &light, Status status, float t, bool port)
 			return (ms < 120.0f || (ms >= 260.0f && ms < 380.0f)) ? 1.0f : 0.0f;
 		}
 		case NO_CREW:
-			return pulse(port ? phase : std::fmod(phase + 0.5f, 1.0f));
+			return side == 0 ? 0.0f : pulse(side < 0 ? phase : std::fmod(phase + 0.5f, 1.0f));
 		default:
 			return pulse(phase);    // ready, repairs: an even pulse
 		}
@@ -305,7 +315,8 @@ void glow(SDL_Surface *world, float cx, float cy, int k, float r, float g, float
 /// The lights of a frame of the game's BASEBITS set. The files are named by the frame in the
 /// master mod's own numbering (sprite + 33), while the game shifts a mod's craft sprite above 4
 /// by the mod's offset (Mod::getOffset): the master's Brig, sprite 26, is frame 1059, not 59.
-const std::vector<Light> *lightsOf(int index)
+/// `side`, when given: does the craft stand sideways.
+const std::vector<Light> *lightsOf(int index, bool *side = nullptr)
 {
 	scan();
 	auto it = frames.find(index);
@@ -313,7 +324,15 @@ const std::vector<Light> *lightsOf(int index)
 	{
 		it = frames.find(index - masterOffset);
 	}
-	return it == frames.end() ? nullptr : &it->second;
+	if (it == frames.end())
+	{
+		return nullptr;
+	}
+	if (side)
+	{
+		*side = sideways[it->first];
+	}
+	return &it->second;
 }
 
 }
@@ -361,27 +380,35 @@ bool has(int index)
 
 void draw(SDL_Surface *world, int index, int x, int y, int k, Status status, Uint32 seed, Uint32 ticks)
 {
-	const std::vector<Light> *lights = lightsOf(index);
+	bool side = false;
+	const std::vector<Light> *lights = lightsOf(index, &side);
 	if (!world || world->format->BytesPerPixel != 4 || k < 1 || !lights)
 	{
 		return;
 	}
 	// each hangar keeps its own rhythm
 	const float t = (float)ticks / 1000.0f + (float)(seed % 997u) * 0.0371f;
-	// the sides of the craft: left and right of the middle of its lights
-	float middle = 0.0f;
+	// the sides of the craft: across its length, halves of the span of its lights (a craft nose up
+	// has them left and right, one standing sideways up and down). A light near the middle is on
+	// the keel (strobe, beacon): it stays dark while the sides blink in turn, unless every light is
+	auto across = [side](const Light &light) { return side ? light.y : light.x; };
+	float lo = across(lights->front()), hi = lo;
 	for (const Light &light : *lights)
 	{
-		middle += light.x;
+		lo = std::min(lo, across(light));
+		hi = std::max(hi, across(light));
 	}
-	middle /= (float)lights->size();
+	const float middle = (lo + hi) / 2.0f, keel = 1.5f;
+	const bool anySide = hi - lo > 2.0f * keel;
 	if (SDL_MUSTLOCK(world))
 	{
 		SDL_LockSurface(world);
 	}
 	for (const Light &light : *lights)
 	{
-		const float amount = intensity(light, status, t, light.x < middle);
+		const float d = across(light) - middle;
+		const int part = !anySide ? -1 : d < -keel ? -1 : d > keel ? 1 : 0;
+		const float amount = intensity(light, status, t, part);
 		if (amount <= 0.0f)
 		{
 			continue;
@@ -436,6 +463,7 @@ void clear(int offset)
 {
 	masterOffset = offset;
 	frames.clear();
+	sideways.clear();
 	scanned = false;
 }
 

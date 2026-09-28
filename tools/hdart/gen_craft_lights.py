@@ -74,6 +74,11 @@ PAINTED = {
     1289: [(10.5, 11.5, "#cc4444"), (21.5, 11.5, "#cc4444")],
 }
 
+# Корабли, стоящие в ангаре боком (нос влево или вправо), по листу всех кораблей: крылья у них
+# сверху и снизу. Огни ставятся по повёрнутому силуэту, в файл пишется строка sideways -
+# движок делит на борта верх и низ, а не лево и право.
+SIDEWAYS = {186, 202}
+
 
 def glow_color(hexc):
     """Цвет пятна -> цвет свечения: тот же тон, насыщенность не ниже 0.8, яркость полная
@@ -168,6 +173,14 @@ def place(idx, pal, frame=None):
     if frame in PAINTED:
         return [(x, y, "blink " + glow_color(c)) for x, y, c in PAINTED[frame]]
     body = body_mask(idx, pal)
+    if frame in SIDEWAYS:
+        # тот же расчёт по силуэту, повёрнутому носом вверх, и обратно: крылья сверху и снизу
+        return [(y, x, kind) for x, y, kind in place_body(body.T)]
+    return place_body(body)
+
+
+def place_body(body):
+    """Огни по маске силуэта корабля, стоящего носом вверх."""
     ys, xs = np.nonzero(body)
     if len(xs) < 12:
         return []
@@ -197,9 +210,11 @@ def place(idx, pal, frame=None):
     return lights
 
 
-def write_lights(path, name, lights):
+def write_lights(path, name, lights, sideways=False):
     with open(path, "w", encoding=ENC_W, newline="\n") as f:
         f.write("# %s - gen_craft_lights.py; x y kind [period s] [offset s]\n" % name)
+        if sideways:
+            f.write("sideways\n")
         for x, y, kind in lights:
             f.write("%5.1f %5.1f  %s\n" % (x, y, kind))
 
@@ -325,7 +340,7 @@ def main():
             lights = place(idx, pal, frame)
             if not lights:
                 continue
-            write_lights(path, name, lights)
+            write_lights(path, name, lights, frame in SIDEWAYS)
             written += 1
         items.append((idx, pal, lights))
         print("%-26s кадр %4d: %d огней" % (name, frame, len(lights)))
