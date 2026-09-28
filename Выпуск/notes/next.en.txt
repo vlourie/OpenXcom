@@ -1,0 +1,1 @@
+— If "Base facility animations" is turned off in the HD settings, base facilities look as they used to, in the classic style without HD pictures. Before, the HD pictures stayed on the base screen, only frozen. The setting takes effect after restarting the game, and its tooltip now says so.
