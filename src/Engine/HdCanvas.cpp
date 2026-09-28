@@ -1139,6 +1139,84 @@ void Canvas32::copyTo(SDL_Surface *dest, int x, int y)
 	});
 }
 
+namespace
+{
+
+/// Mixes two 32-bit pixels channel by channel, `w` of 256 of the second one.
+inline Uint32 mix2(Uint32 a, Uint32 b, Uint32 w)
+{
+	const Uint32 rb = (((a & 0x00FF00FFu) * (256 - w) + (b & 0x00FF00FFu) * w) >> 8) & 0x00FF00FFu;
+	const Uint32 ag = (((a >> 8) & 0x00FF00FFu) * (256 - w) + ((b >> 8) & 0x00FF00FFu) * w) & 0xFF00FF00u;
+	return rb | ag;
+}
+
+}
+
+/**
+ * Copies the frame into a same-format 32-bit surface at (x, y), enlarged `zoom` times, rows in
+ * parallel. At `pull` 0 the middle of the frame stays in the middle, at 1 the point (fx, fy) of
+ * the frame comes there, as far as the frame's edges allow. `bars` of the height at the top and
+ * at the bottom are black.
+ */
+void Canvas32::copyZoomed(SDL_Surface *dest, int x, int y, double fx, double fy, double zoom, double pull, double bars)
+{
+	flush();
+	if (!dest || dest->format->BytesPerPixel != 4 || _width < 2 || _height < 2)
+	{
+		return;
+	}
+	const int x0 = std::max(x, 0), y0 = std::max(y, 0);
+	const int x1 = std::min(x + _width, dest->w), y1 = std::min(y + _height, dest->h);
+	if (x0 >= x1 || y0 >= y1)
+	{
+		return;
+	}
+	zoom = std::max(1.0, zoom);
+	const double halfW = _width / 2.0, halfH = _height / 2.0;
+	const double cx = std::min(std::max(halfW + (fx - halfW) * pull, halfW / zoom), _width - halfW / zoom);
+	const double cy = std::min(std::max(halfH + (fy - halfH) * pull, halfH / zoom), _height - halfH / zoom);
+	// the source column of each target column, and the weight of the next one (of 256)
+	std::vector<int> cols(x1 - x0);
+	std::vector<Uint32> colWeights(x1 - x0);
+	for (int dx = x0; dx < x1; ++dx)
+	{
+		const double s = std::min(std::max(cx + (dx - x + 0.5 - halfW) / zoom - 0.5, 0.0), _width - 1.0);
+		const int i = std::min((int)s, _width - 2);
+		cols[dx - x0] = i;
+		colWeights[dx - x0] = (Uint32)((s - i) * 256.0 + 0.5);
+	}
+	const int bar = (int)(_height * bars + 0.5);
+	const Uint32 black = SDL_MapRGB(dest->format, 0, 0, 0);
+	HdWorkers &pool = HdWorkers::instance();
+	const int rows = y1 - y0;
+	const int jobs = std::max(1, std::min(rows / 32, pool.threads() * 2));
+	pool.run(jobs, [&](int job)
+	{
+		const int ya = y0 + (int)((long long)rows * job / jobs);
+		const int yb = y0 + (int)((long long)rows * (job + 1) / jobs);
+		for (int dy = ya; dy < yb; ++dy)
+		{
+			Uint32 *out = (Uint32*)((Uint8*)dest->pixels + (size_t)dy * dest->pitch) + x0;
+			const int ly = dy - y;
+			if (ly < bar || ly >= _height - bar)
+			{
+				std::fill(out, out + (x1 - x0), black);
+				continue;
+			}
+			const double s = std::min(std::max(cy + (ly + 0.5 - halfH) / zoom - 0.5, 0.0), _height - 1.0);
+			const int j = std::min((int)s, _height - 2);
+			const Uint32 wy = (Uint32)((s - j) * 256.0 + 0.5);
+			const Uint32 *r0 = rowPtr(j), *r1 = rowPtr(j + 1);
+			for (int i = 0; i < x1 - x0; ++i)
+			{
+				const int c = cols[i];
+				const Uint32 w = colWeights[i];
+				out[i] = mix2(mix2(r0[c], r0[c + 1], w), mix2(r1[c], r1[c + 1], w), wy);
+			}
+		}
+	});
+}
+
 /**
  * Runs one command on the rows [y0, y1) of the canvas.
  */

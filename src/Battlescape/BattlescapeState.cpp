@@ -63,6 +63,7 @@
 #include "../Engine/HdCanvas.h"
 #include "../Engine/HdWorkers.h"
 #include "../Engine/HdUi.h"
+#include "../Engine/HdKillCam.h"
 #include "../version.h"
 #include "../Interface/Cursor.h"
 #include "../Interface/Text.h"
@@ -2746,6 +2747,13 @@ std::string BattlescapeState::getMeleeDamagePreview(BattleUnit *actor, BattleIte
  */
 inline void BattlescapeState::handle(Action *action)
 {
+	// HD render: a key or a click (not the wheel) cuts the final blow short (HdKillCam)
+	const SDL_Event *ev = action->getDetails();
+	if ((ev->type == SDL_KEYDOWN || (ev->type == SDL_MOUSEBUTTONDOWN && ev->button.button != SDL_BUTTON_WHEELUP && ev->button.button != SDL_BUTTON_WHEELDOWN))
+		&& HdKillCam::running())
+	{
+		HdKillCam::skip();
+	}
 	if (!_firstInit)
 	{
 		if (_game->getCursor()->getVisible() || ((action->getDetails()->type == SDL_MOUSEBUTTONDOWN || action->getDetails()->type == SDL_MOUSEBUTTONUP) && _game->isRightClick(action)))
@@ -3130,7 +3138,9 @@ inline void BattlescapeState::handle(Action *action)
 								}
 							}
 						}
-						_battleGame->checkForCasualties(nullptr, BattleActionAttack{}, true, false);
+						// headless checks of the final blow (OXCE_HD_DUMP_KILLCAM): the debug kill counts as a blow, so the fall plays
+						const bool asBlow = !stunOnly && getenv("OXCE_HD_DUMP_KILLCAM");
+						_battleGame->checkForCasualties(asBlow ? _game->getMod()->getDamageType(DT_MELEE) : nullptr, BattleActionAttack{}, !asBlow, false);
 						_battleGame->handleState();
 					}
 					else if (_save->getDebugMode() && (key == SDLK_m || key == SDLK_p) && ctrlPressed && shiftPressed)

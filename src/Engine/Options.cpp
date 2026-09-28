@@ -517,6 +517,7 @@ void createAdvancedOptionsOXCE()
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdHoverBob", &oxceHdHoverBob, true, "STR_HD_HOVER_BOB", "STR_HD_BATTLE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdFx", &oxceHdFx, true, "STR_HD_FX", "STR_HD_BATTLE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdFire", &oxceHdFire, 2, "STR_HD_FIRE", "STR_HD_BATTLE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdKillCam", &oxceHdKillCam, true, "STR_HD_KILLCAM", "STR_HD_BATTLE"));
 	// HD interface (see Engine/HdUi.h): the widgets drawn again in the world layer at the display's resolution
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdUi", &oxceHdUi, 0, "STR_HD_UI", "STR_HD_INTERFACE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdUiSkin", &oxceHdUiSkin, 2, "STR_HD_UI_SKIN", "STR_HD_INTERFACE"));

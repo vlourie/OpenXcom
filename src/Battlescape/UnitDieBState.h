@@ -38,6 +38,13 @@ private:
 	bool _noSound;
 	int _extraFrame;
 	bool _overKill;
+	/// HD render: this fall is the final blow (HdKillCam), and the state's classic tick interval.
+	bool _killCam;
+	Uint32 _pace;
+	/// Is this the last enemy falling to a shot or a blow, in sight (reads the battle, changes nothing)?
+	bool finalBlow() const;
+	/// Sets the state's tick interval: the classic one, slowed down during the final blow.
+	void pace(Uint32 interval);
 public:
 	/// Creates a new UnitDieBState class
 	UnitDieBState(BattlescapeGame *parent, BattleUnit *unit, const RuleDamageType *damageType, bool noSound);
