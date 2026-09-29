@@ -21,6 +21,7 @@
 #include "BattlescapeGame.h"
 #include "Position.h"
 #include "../Savegame/BattleUnit.h"
+#include <climits>
 #include <vector>
 
 
@@ -66,6 +67,15 @@ private:
 	BattleAction _escapeAction, _ambushAction, _attackAction, _patrolAction, _psiAction;
 	/// The shot chosen by evalFireAction (OXCE_AI_EVAL): kneel for it, and whether it chose one this think.
 	bool _evalKneel = false, _evalChosen = false;
+	/// The bench's decision record (AiProbe::propose, docs/AI_DECISION_RECORD.md): the score the rule that ran last gave its
+	/// action and, if it names itself more exactly than its caller, its name. Written, never read by play.
+	int _probeScore = INT_MIN;
+	const char *_probeSource = nullptr;
+	/// A slot's action before a rule runs: the record hears of the rule only if it changed the slot.
+	struct ProbeMark { BattleActionType type; Position target; const BattleItem *weapon; };
+	const BattleAction &probeAction(char slot) const;
+	ProbeMark probeMark(char slot) const;
+	void probeSlot(char slot, const char *source, const ProbeMark &before);
 
 	bool selectPointNearTargetLeeroy(BattleUnit *target, bool canRun);
 	int selectNearestTargetLeeroy(bool canRun);

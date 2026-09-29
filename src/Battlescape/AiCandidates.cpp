@@ -254,6 +254,16 @@ Set generate(SavedBattleGame *save, BattleUnit *unit)
 		set.acts.push_back(c);
 	}
 
+	// think again on the next frame (BA_RETHINK left after both thinks): a meta action, nothing happens now
+	{
+		Candidate c;
+		c.kind = RETHINK;
+		c.type = BA_RETHINK;
+		c.tile = pos;
+		c.id = actionId(c.kind, id, c.type, c.tile, "");
+		set.acts.push_back(c);
+	}
+
 	// every tile it can walk to this turn
 	Pathfinding *pf = save->getPathfinding();
 	Fnv moves;
@@ -363,6 +373,11 @@ uint64_t chosenId(SavedBattleGame *save, const BattleUnit *unit, const BattleAct
 	else if (action.type == BA_NONE)
 	{
 		k = END;
+		tile = unit->getPosition();
+	}
+	else if (action.type == BA_RETHINK)
+	{
+		k = RETHINK;
 		tile = unit->getPosition();
 	}
 	if (kind)

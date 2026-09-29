@@ -82,8 +82,12 @@ def one(seed, turns, diff, timeout, campaign, mission=None, tactics=False, caref
     row = {"seed": seed, "want": mission or "", "seconds": f"{r.seconds:.0f}", "note": "",
            "_casualties": r.tagged("[AICASUALTY]"), "_tiles": r.tagged("[AISTATE]"),
            # решения и, по OXCE_AI_TRACE_MELEE, кандидаты ближнего боя ([AIMELEE]), по OXCE_AI_TRACE_PATH -
-           # расчёты пути ([AIPATH]), по OXCE_AI_RECORD - запись решений ([AIREC], [AICAND]) - в порядке лога
-           "_decide": [l for l in r.lines if l.startswith(("[AIDECIDE]", "[AIMELEE]", "[AIPATH]", "[AIREC]", "[AICAND]"))] if os.environ.get("OXCE_AI_KEEP_DECIDE") else []}
+           # расчёты пути ([AIPATH]) - в порядке лога
+           "_decide": [l for l in r.lines if l.startswith(("[AIDECIDE]", "[AIMELEE]", "[AIPATH]"))] if os.environ.get("OXCE_AI_KEEP_DECIDE") else [],
+           # по OXCE_AI_RECORD - запись решений (docs/AI_DECISION_RECORD.md): решение, исполнение, итог после хода врага,
+           # разбор по OXCE_AI_TRACE_DECISION; списки кандидатов ([AICAND]) - отдельно, они тяжелее всего остального
+           "_rec": [l for l in r.lines if l.startswith(("[AIRECHEAD]", "[AIREC]", "[AIEXEC]", "[AIAFTER]", "[AITRACE]"))],
+           "_cand": r.tagged("[AICAND]")}
     row.update(moves)
     battle = r.tagged("[AIPROBE] battle")
     if battle:
@@ -257,9 +261,10 @@ def main():
                 with gzip.open(table.with_suffix(".tiles.gz"), "at", encoding="utf-8") as f:
                     f.writelines(f"seed={row['seed']} want={row['want']} {line}\n" for line in row["_tiles"])
             # каждое решение ИИ ([AIDECIDE]) - только по OXCE_AI_KEEP_DECIDE=1: разбор «почему стоял», на порцию это сотни МБ
-            if row.get("_decide"):
-                with gzip.open(table.with_suffix(".decide.gz"), "at", encoding="utf-8") as f:
-                    f.writelines(f"seed={row['seed']} want={row['want']} {line}\n" for line in row["_decide"])
+            for key, ext in (("_decide", ".decide.gz"), ("_rec", ".rec.gz"), ("_cand", ".cand.gz")):
+                if row.get(key):
+                    with gzip.open(table.with_suffix(ext), "at", encoding="utf-8") as f:
+                        f.writelines(f"seed={row['seed']} want={row['want']} {line}\n" for line in row[key])
             print(f"[{len(rows)}/{total}] зерно {row['seed']}: {outcome(row)}, {row.get('mission', '-')},"
                   f" ход {row.get('turn', '-')}, раненых {row.get('pwounded', '-')}, {row['seconds']} с", flush=True)
     lines = summary(rows, a.label) + (by_mission(rows) if a.missions else []) + [
