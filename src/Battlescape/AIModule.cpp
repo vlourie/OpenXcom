@@ -106,6 +106,35 @@ unsigned long long AIModule::probeHash() const
 }
 
 /**
+ * The action slot of the bench's decision record: p patrol, a ambush, e escape, s psi, x attack.
+ */
+const BattleAction &AIModule::probeAction(char slot) const
+{
+	return slot == 'p' ? _patrolAction : slot == 'a' ? _ambushAction : slot == 'e' ? _escapeAction : slot == 's' ? _psiAction : _attackAction;
+}
+
+AIModule::ProbeMark AIModule::probeMark(char slot) const
+{
+	const BattleAction &a = probeAction(slot);
+	return { a.type, a.target, a.weapon };
+}
+
+/**
+ * Tells the decision record (OXCE_AI_RECORD) which rule filled a slot, if the rule that just ran changed it.
+ */
+void AIModule::probeSlot(char slot, const char *source, const ProbeMark &before)
+{
+	const BattleAction &a = probeAction(slot);
+	if (AiProbe::active() && a.type != BA_RETHINK && a.type != BA_NONE
+		&& (a.type != before.type || a.target != before.target || a.weapon != before.weapon))
+	{
+		AiProbe::propose(_unit, slot, _probeSource ? _probeSource : source, _probeScore, a);
+	}
+	_probeScore = INT_MIN;
+	_probeSource = nullptr;
+}
+
+/**
  * Sets the target faction.
  */
 void AIModule::setTargetFaction(UnitFaction f)
@@ -211,7 +240,9 @@ void AIModule::dont_think(BattleAction *action)
 		{
 			Log(LOG_INFO) << "LEEROY: LEEROYIN' at someone!";
 		}
+		const ProbeMark mark = probeMark('x');
 		meleeActionLeeroy(canRun);
+		probeSlot('x', "leeroy", mark);
 		action->type = _attackAction.type;
 		action->run = _attackAction.run;
 		action->target = _attackAction.target;
@@ -225,7 +256,10 @@ void AIModule::dont_think(BattleAction *action)
 		{
 			Log(LOG_INFO) << "LEEROY: No one to LEEROY!, patrolling...";
 		}
+		const ProbeMark mark = probeMark('p');
 		setupPatrol();
+		probeSlot('p', _patrolAction.type == BA_WALK ? "patrol.node" : "patrol.module", mark);
+		AiProbe::chosen(_unit, 'p');
 		_unit->setCharging(0);
 		_reserve = BA_NONE;
 		action->type = _patrolAction.type;
@@ -477,8 +511,11 @@ void AIModule::think(BattleAction *action)
 	_rifle = false;
 	_blaster = false;
 	_reachable = _save->getPathfinding()->findReachable(_unit, BattleActionCost());
-	if (AiProbe::revive(_save, _unit, action, _reachable) || AiProbe::flee(_save, _unit, action, _reachable))
+	const bool revived = AiProbe::revive(_save, _unit, action, _reachable);
+	if (revived || AiProbe::flee(_save, _unit, action, _reachable))
 	{
+		AiProbe::propose(_unit, 'b', revived ? "revive" : "flee", INT_MIN, *action);
+		AiProbe::chosen(_unit, 'b');
 		// walking onto a downed comrade's body (the stimulant goes on the next think) or away from the enemy it cannot fight
 		_escapeTUs = 0;
 		_ambushTUs = 0;
@@ -523,6 +560,7 @@ void AIModule::think(BattleAction *action)
 
 	if (_unit->isLeeroyJenkins())
 	{
+		AiProbe::chosen(_unit, 'l');
 		dont_think(action);
 		return;
 	}
@@ -564,19 +602,28 @@ void AIModule::think(BattleAction *action)
 	const bool tactical = AiProbe::tactics(_unit) || AiProbe::careful(_unit);
 	if (_spottingEnemies && (!_escapeTUs || tactical))
 	{
+		const ProbeMark mark = probeMark('e');
 		setupEscape();
+		probeSlot('e', "escape", mark);
 	}
 
 	if (_knownEnemies && !_melee && !_ambushTUs)
 	{
+		const ProbeMark mark = probeMark('a');
 		setupAmbush();
+		probeSlot('a', "ambush", mark);
 	}
 
 	setupAttack();
-	setupPatrol();
+	{
+		const ProbeMark mark = probeMark('p');
+		setupPatrol();
+		probeSlot('p', _patrolAction.type == BA_WALK ? "patrol.node" : "patrol.module", mark);
+	}
 
 	if (_psiAction.type != BA_NONE && !_didPsi && _save->getTurn() >= _psiAction.weapon->getRules()->getAIUseDelay(_save->getMod()))
 	{
+		AiProbe::chosen(_unit, 's');
 		_didPsi = true;
 		action->type = _psiAction.type;
 		action->target = _psiAction.target;
@@ -748,6 +795,10 @@ void AIModule::think(BattleAction *action)
 	default:
 		break;
 	}
+	if (_AIMode >= AI_PATROL && _AIMode <= AI_ESCAPE)
+	{
+		AiProbe::chosen(_unit, "paxe"[_AIMode]);
+	}
 
 	// the careful bot on patrol in contact walks half its time units at most and keeps the rest for reaction fire and cover:
 	// it ended 77 % of turns with nothing left, 54 % of them in someone's sight (OXCE_AI_HALF)
@@ -784,6 +835,7 @@ void AIModule::think(BattleAction *action)
 		}
 		else
 		{
+			AiProbe::note(_unit, "walk.self");
 			action->type = BA_NONE;
 		}
 	}
@@ -1050,6 +1102,7 @@ void AIModule::setupAmbush()
 						{
 							score += COVER_BONUS;
 						}
+						AiProbe::traceTile(_unit, "ambush", pos, score);
 						if (score > bestScore)
 						{
 							path = _save->getPathfinding()->copyPath();
@@ -1068,6 +1121,7 @@ void AIModule::setupAmbush()
 
 		if (bestScore > 0)
 		{
+			_probeScore = bestScore;
 			_ambushAction.type = BA_WALK;
 			// i should really make a function for this
 			origin = _ambushAction.target.toVoxel() +
@@ -1122,29 +1176,42 @@ void AIModule::setupAttack()
 	// if enemies are known to us but not necessarily visible, we can attack them with a blaster launcher or psi or a sniper attack.
 	if (_knownEnemies)
 	{
-		if (psiAction())
+		const ProbeMark psiMark = probeMark('s');
+		const bool psi = psiAction();
+		probeSlot('s', "psi", psiMark);
+		if (psi)
 		{
 			// at this point we can save some time with other calculations - the unit WILL make a psionic attack this turn.
 			return;
 		}
 		if (_blaster)
 		{
+			const ProbeMark mark = probeMark('x');
 			wayPointAction();
+			probeSlot('x', "waypoint", mark);
 		}
 		else if (_unit->getUnitRules()) // xcom soldiers (under mind control) lack unit rules!
 		{
 			// don't always act on spotter information unless modder says so
 			if (RNG::percent(_unit->getUnitRules()->getSniperPercentage()))
 			{
+				const ProbeMark mark = probeMark('x');
 				sniperAttack = sniperAction();
+				probeSlot('x', "sniper", mark);
 			}
 		}
 	}
 
 	// the bench's evaluator weighs every reachable tile itself: neither the nearest-target shot nor findFirePoint after it
-	if (!sniperAttack && _rifle && AiProbe::evalFire(_unit) && evalFireAction())
+	if (!sniperAttack && _rifle && AiProbe::evalFire(_unit))
 	{
-		return;
+		const ProbeMark mark = probeMark('x');
+		const bool evaluated = evalFireAction();
+		probeSlot('x', "eval", mark);
+		if (evaluated)
+		{
+			return;
+		}
 	}
 
 	// if we CAN see someone, that makes them a viable target for "regular" attacks.
@@ -1158,15 +1225,21 @@ void AIModule::setupAttack()
 		}
 		if (_grenade)
 		{
+			const ProbeMark mark = probeMark('x');
 			grenadeAction();
+			probeSlot('x', "grenade", mark);
 		}
 		if (_melee)
 		{
+			const ProbeMark mark = probeMark('x');
 			meleeAction();
+			probeSlot('x', "melee", mark);
 		}
 		if (_rifle)
 		{
+			const ProbeMark mark = probeMark('x');
 			projectileAction();
+			probeSlot('x', "shot", mark);
 		}
 	}
 
@@ -1188,7 +1261,10 @@ void AIModule::setupAttack()
 	else if (_spottingEnemies || _unit->getAggression() < RNG::generate(0, 3))
 	{
 		// if enemies can see us, or if we're feeling lucky, we can try to spot the enemy.
-		if (findFirePoint())
+		const ProbeMark mark = probeMark('x');
+		const bool found = findFirePoint();
+		probeSlot('x', "firepoint", mark);
+		if (found)
 		{
 			if (_traceAI)
 			{
@@ -1362,6 +1438,10 @@ void AIModule::setupEscape()
 
 		}
 
+		if (tile)
+		{
+			AiProbe::traceTile(_unit, "escape", _escapeAction.target, score);
+		}
 		if (tile && score > bestTileScore)
 		{
 			// calculate TUs to tile; we could be getting this from findReachable() somehow but that would break something for sure...
@@ -1422,6 +1502,7 @@ void AIModule::setupEscape()
 		{
 			Log(LOG_INFO) << "Escape estimation completed after " << tries << " tries, " << Position::distance2d(_unit->getPosition(), bestTile) << " squares or so away.";
 		}
+		_probeScore = bestTileScore;
 		_escapeAction.type = BA_WALK;
 	}
 }
@@ -1797,6 +1878,7 @@ bool AIModule::selectSpottedUnitForSniper()
 
 	if (numberOfTargets) // Now that we have a list of valid targets, pick one and return.
 	{
+		_probeScore = INT_MIN; // each target was scored, the pick is random
 		int pick = RNG::generate(0, numberOfTargets - 1);
 		_aggroTarget = spottedTargets.at(pick).first;
 		_attackAction.target = _aggroTarget->getPosition();
@@ -1946,7 +2028,9 @@ void AIModule::evaluateAIMode()
 		patrolOdds = 0;
 		if (_escapeTUs == 0)
 		{
+			const ProbeMark mark = probeMark('e');
 			setupEscape();
+			probeSlot('e', "escape", mark);
 		}
 	}
 
@@ -1972,7 +2056,9 @@ void AIModule::evaluateAIMode()
 		{
 			if (selectClosestKnownEnemy())
 			{
+				const ProbeMark mark = probeMark('e');
 				setupEscape();
+				probeSlot('e', "escape.known", mark);
 			}
 			else
 			{
@@ -2120,6 +2206,7 @@ void AIModule::evaluateAIMode()
 	{
 		_AIMode = AI_COMBAT;
 	}
+	AiProbe::modeOdds(_unit, patrolOdds, ambushOdds, combatOdds, escapeOdds, decision, _AIMode);
 
 
 	// enforce the validity of our decision, and try fallback behaviour according to priority.
@@ -2133,14 +2220,24 @@ void AIModule::evaluateAIMode()
 			{
 				return;
 			}
-			if (findFirePoint())
+			const ProbeMark mark = probeMark('x');
+			const bool found = findFirePoint();
+			probeSlot('x', "firepoint.fallback", mark);
+			if (found)
 			{
 				return;
 			}
 		}
-		else if (selectRandomTarget() && findFirePoint())
+		else
 		{
-			return;
+			const bool picked = selectRandomTarget();
+			const ProbeMark mark = probeMark('x');
+			const bool found = picked && findFirePoint();
+			probeSlot('x', "firepoint.random", mark);
+			if (found)
+			{
+				return;
+			}
 		}
 		_AIMode = AI_PATROL;
 	}
@@ -2289,6 +2386,7 @@ bool AIModule::findFirePoint()
 					}
 				}
 
+				AiProbe::traceTile(_unit, "firepoint", pos, score);
 				if (score > bestScore)
 				{
 					bestScore = score;
@@ -2305,6 +2403,7 @@ bool AIModule::findFirePoint()
 
 	if (bestScore > 70)
 	{
+		_probeScore = bestScore;
 		_attackAction.type = BA_WALK;
 		if (_traceAI)
 		{
@@ -2948,6 +3047,7 @@ bool AIModule::evalFireAction()
 						: 0.7 * std::min(1.0, hit * m.shots * perHit / hp);
 					const double risk = exposure * (left >= coverTU ? 1.0 - coverRelief : 1.0);
 					const double score = gain - risk - (walk > 0 ? walkCost : 0.0) + 0.0005 * left;
+					AiProbe::traceTile(_unit, "eval", pos, (int)std::lround(score * 1000));
 					++evaluated;
 					if (score > bestScore)
 					{
@@ -2968,6 +3068,7 @@ bool AIModule::evalFireAction()
 		_attackAction.type = BA_RETHINK;
 		return true;
 	}
+	_probeScore = (int)std::lround(bestScore * 1000);
 	_evalChosen = true;
 	if (bestTile == _unit->getPosition())
 	{
@@ -3060,6 +3161,7 @@ void AIModule::extendedFireModeChoice(BattleActionCost& costAuto, BattleActionCo
 		}
 	}
 
+	_probeScore = score;
 	_attackAction.type = chosenAction;
 }
 
@@ -3089,6 +3191,10 @@ void AIModule::grenadeAction()
 		else if (!getNodeOfBestEfficacy(&action, radius))
 		{
 			return;
+		}
+		else
+		{
+			_probeSource = "grenade.node";
 		}
 		std::vector<std::pair<Position, int>> shifts;
 		if (grenade->getRules()->getBattleType() == BT_PROXIMITYGRENADE)
@@ -3328,6 +3434,7 @@ bool AIModule::psiAction()
 			Log(LOG_INFO) << "making a psionic attack this turn";
 		}
 
+		_probeScore = weightToAttack;
 		_psiAction.type = typeToAttack;
 		_psiAction.target = _aggroTarget->getPosition();
 		_psiAction.weapon = item;

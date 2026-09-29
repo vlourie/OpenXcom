@@ -90,8 +90,23 @@ bool flee(SavedBattleGame *save, BattleUnit *unit, BattleAction *action, const s
 int maxActions(const BattleUnit *unit);
 /// A tuning number from the environment (OXCE_AI_EVAL_RISK and the like), or def; always def in a release build.
 double param(const char *name, double def);
-/// Counts one use of a tactical rule for the result line ([AIRESULT] tac=).
+/// Counts one use of a tactical rule for the result line ([AIRESULT] tac=); also a step of the decision's reason trail.
 void tally(const BattleUnit *unit, const char *rule);
+/// A step of the decision's reason trail that is not counted in the result line (docs/AI_DECISION_RECORD.md).
+void note(const BattleUnit *unit, const char *what);
+/// A rule of the AI module filled one of its action slots (p patrol, a ambush, e escape, x attack, s psi): which rule, with
+/// what score (INT_MIN - the rule has none), what action. For the decision record only (OXCE_AI_RECORD).
+void propose(const BattleUnit *unit, char slot, const char *source, int score, const BattleAction &action);
+/// The slot the decision was taken from (p a e x s as in propose, l Leeroy, b the bench's revive or flee).
+void chosen(const BattleUnit *unit, char slot);
+/// The dice of evaluateAIMode: the odds of each mode, the roll and the mode it gave.
+void modeOdds(const BattleUnit *unit, int patrol, int ambush, int combat, int escape, int roll, int mode);
+/// A tile a rule scored (firepoint, ambush, escape): logged only for the decisions of OXCE_AI_TRACE_DECISION.
+void traceTile(const BattleUnit *unit, const char *what, const Position &pos, int score);
+/// The walk the decision asked for got a path (handleAI pushes it) or not (it is dropped).
+void walkPlanned(const BattleUnit *unit, bool pushed);
+/// A side's turn ends (BattlescapeGame::endTurn): the last decision's action is over.
+void sideEnds(SavedBattleGame *save);
 /// One line per unit killed or knocked out ([AICASUALTY]): by whom, with what, from how far, on whose turn.
 void logCasualty(SavedBattleGame *save, const BattleUnit *victim, const BattleUnit *killer, const std::string &weapon,
 	bool dead, int hitSide, bool terrain);

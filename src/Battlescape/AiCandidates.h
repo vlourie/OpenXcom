@@ -38,8 +38,9 @@ struct BattleAction;
 namespace AiCandidates
 {
 
-/// Kind of a candidate: move, attack (shot, blow, throw, psi), kneel or stand, turn, end the unit's actions.
-enum Kind : char { MOVE = 'm', ATTACK = 'a', KNEEL = 'k', TURN = 't', END = 'e', OTHER = 'x' };
+/// Kind of a candidate: move, attack (shot, blow, throw, psi), kneel or stand, turn, end the unit's actions, think again.
+/// MOVE_TO_AI_POINT is never a candidate: the kind of a chosen walk to a tile the AI picked out of this turn's reach.
+enum Kind : char { MOVE = 'm', ATTACK = 'a', KNEEL = 'k', TURN = 't', END = 'e', RETHINK = 'r', MOVE_TO_AI_POINT = 'M', OTHER = 'x' };
 
 struct Candidate
 {

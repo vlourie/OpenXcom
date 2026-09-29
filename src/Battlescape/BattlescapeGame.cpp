@@ -501,6 +501,7 @@ void BattlescapeGame::handleAI(BattleUnit *unit)
 		{
 			_save->getPathfinding()->calculate(action.actor, action.target, BAM_NORMAL);
 		}
+		AiProbe::walkPlanned(unit, _save->getPathfinding()->getStartDirection() != -1);
 		if (_save->getPathfinding()->getStartDirection() != -1)
 		{
 			statePushBack(new UnitWalkBState(this, action));
@@ -605,6 +606,7 @@ bool BattlescapeGame::kneel(BattleUnit *bu)
  */
 void BattlescapeGame::endTurn()
 {
+	AiProbe::sideEnds(_save);
 	_debugPlay = _save->getDebugMode() && _parentState->getGame()->isCtrlPressed() && (_save->getSide() != FACTION_NEUTRAL);
 	_currentAction.type = BA_NONE;
 	_currentAction.skillRules = nullptr;

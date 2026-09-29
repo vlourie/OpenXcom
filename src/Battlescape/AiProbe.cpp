@@ -18,6 +18,7 @@
  */
 #include "AiProbe.h"
 #include <algorithm>
+#include <climits>
 #include <cmath>
 #include <cstdlib>
 #include <map>
@@ -42,6 +43,13 @@
 #include "../Savegame/SavedGame.h"
 #include "../Savegame/Tile.h"
 #include "TileEngine.h"
+
+#ifdef _WIN32
+#define PROBE_ENVIRON _environ
+#else
+extern char **environ;
+#define PROBE_ENVIRON environ
+#endif
 
 namespace OpenXcom
 {
@@ -73,6 +81,13 @@ bool flee(SavedBattleGame *, BattleUnit *, BattleAction *, const std::vector<int
 int maxActions(const BattleUnit *) { return 2; }
 double param(const char *, double def) { return def; }
 void tally(const BattleUnit *, const char *) {}
+void note(const BattleUnit *, const char *) {}
+void propose(const BattleUnit *, char, const char *, int, const BattleAction &) {}
+void chosen(const BattleUnit *, char) {}
+void modeOdds(const BattleUnit *, int, int, int, int, int, int) {}
+void traceTile(const BattleUnit *, const char *, const Position &, int) {}
+void walkPlanned(const BattleUnit *, bool) {}
+void sideEnds(SavedBattleGame *) {}
 void logCasualty(SavedBattleGame *, const BattleUnit *, const BattleUnit *, const std::string &, bool, int, bool) {}
 
 #else
@@ -115,6 +130,13 @@ std::map<int, int> startHealth;
 int decided[3][2] = {};
 /// uses of the tactical rules: "h.cover", "p.pullback"...
 std::map<std::string, int> tallies;
+/// the decision record's reason trail (defined with the record below)
+void addTrail(const BattleUnit *unit, const char *what);
+/// did the faction last see an enemy on this tile (defined with the sightings below)
+bool lastSeenAt(int faction, const Position &pos);
+/// the decision record at a new side's turn and at the end of the battle (defined with the record below)
+void recordTurn(SavedBattleGame *save);
+void recordEnd(SavedBattleGame *save);
 
 void logStart(SavedBattleGame *save)
 {
@@ -223,6 +245,12 @@ double param(const char *name, double def)
 void tally(const BattleUnit *unit, const char *rule)
 {
 	++tallies[std::string(unit->getFaction() == FACTION_PLAYER ? "p." : "h.") + rule];
+	addTrail(unit, rule);
+}
+
+void note(const BattleUnit *unit, const char *what)
+{
+	addTrail(unit, what);
 }
 
 long long battleSeed()
@@ -241,6 +269,7 @@ void battleOver(BattlescapeState *state, SavedBattleGame *save, bool abort)
 	{
 		logStart(save);
 	}
+	recordEnd(save);
 	logState(save, "end");
 	logResult(save, abort ? "abort" : "over");
 	phase = FINISHED;
@@ -253,6 +282,7 @@ void think(BattlescapeState *state, SavedBattleGame *save)
 	{
 		return;
 	}
+	recordTurn(save);
 	if (bot())
 	{
 		// both sides are the AI's: watch, log the start of each hostile turn, stop at the turn cap
@@ -273,6 +303,7 @@ void think(BattlescapeState *state, SavedBattleGame *save)
 		}
 		if (save->getTurn() > turnsWanted())
 		{
+			recordEnd(save);
 			logState(save, "end");
 			logResult(save, "timeout");
 			phase = FINISHED;
@@ -426,25 +457,273 @@ uint64_t rngBefore = 0, aiBefore = 0;
 namespace
 {
 
-/// The decision record (OXCE_AI_RECORD, plan V2 step 2): the candidates of the unit about to think.
+/// Which bench behaviour made the record (docs/AI_DECISION_RECORD.md): a dataset never mixes generations. base_v2 is
+/// build-ai28 and later - the battle's items in the mod's order (docs/research/ai-arena-v2-plan.md, "Поколения базы").
+/// Change it with any change of how the bench plays; the OXCE_AI_* switches of a run go into "cfg" apart.
+const char *const ENGINE_GEN = "base_v2";
+
+/// A rule of the AI module that filled a slot: the slot is taken from later, maybe by a later decision.
+struct Proposal
+{
+	char slot = 0;
+	std::string src;
+	int score = INT_MIN;
+	int type = 0;
+	Position to;
+	std::string weapon;
+	int rec = -1;
+};
+
+/// hp, stun, whether down, faction: every unit as a decision begins, to see what its action did
+struct Snapshot { int hp, stun; bool down; int faction; };
+
+bool isDown(const BattleUnit *bu)
+{
+	return bu->getStatus() == STATUS_DEAD || bu->getHealth() <= 0 || bu->getStatus() == STATUS_UNCONSCIOUS
+		|| bu->getStunlevel() >= bu->getHealth();
+}
+
+/// The decision record (OXCE_AI_RECORD, plan V2 step 2): the candidates of the unit about to think, and what it thought.
 struct Pending
 {
 	int unit = -1;
 	AiCandidates::Set set;
 	bool rngTouched = false;
+	/// the unit as it starts to think (thinking may spend: a grenade is primed in think)
+	Position pos;
+	int dir = 0, tu = 0, hp = 0, stun = 0, morale = 0;
+	bool kneel = false;
+	std::map<int, Snapshot> units;
+	std::vector<Proposal> proposals;
+	std::vector<std::string> trail;
+	std::vector<std::string> odds;
+	char slot = 0;
+	bool trace = false;
+	std::map<std::string, std::vector<std::string>> traced;
 };
 Pending pending;
-/// move lists already written in this battle: a list is stored once, the records refer to it by its hash
-std::set<uint64_t> movesWritten;
+
+/// The action of the last decision until it is over: the next decision, the end of the side's turn or of the battle.
+struct Exec
+{
+	int rec = -1, unit = -1, side = -1, turn = 0;
+	int tu = 0;
+	int walk = -1;
+	std::map<int, Snapshot> units;
+	std::vector<std::string> trail;
+};
+Exec exec;
+
+/// Each unit that decided in its side's turn: first and last record, and how it was when its last action was over;
+/// written when the side's next turn begins - what the enemy's turn did to it.
+struct After { int first = -1, last = -1, n = 0, turn = 0, hp = 0, stun = 0; };
+std::map<int, After> afterOf[3];
+int seenSide = -1, seenTurn = -1;
+
+/// per unit, per slot: the last rule that filled it
+std::map<int, std::map<char, Proposal>> slotOf;
+/// move and action lists already written in this battle: a list is stored once, the records refer to it by its hash
+std::set<uint64_t> movesWritten, actsWritten;
 /// the decision's number in the battle, and the order in which units first decide within one side's turn
 int recordNo = 0;
 int orderTurn = -1, orderSide = -1;
 std::map<int, int> orderOf;
+bool headWritten = false;
 
 bool record()
 {
 	static const bool on = active() && envOn("OXCE_AI_RECORD");
-	return on;
+	// the battle is over (turn cap): a decision taken later in the same frame has no execution to follow
+	return on && phase != FINISHED;
+}
+
+/// OXCE_AI_TRACE_DECISION=12,40: the record numbers whose every scored tile goes to the log ([AITRACE])
+bool traced(int rec)
+{
+	static const std::set<int> wanted = []
+	{
+		std::set<int> out;
+		const char *s = getenv("OXCE_AI_TRACE_DECISION");
+		std::istringstream in(s ? s : "");
+		std::string item;
+		while (std::getline(in, item, ','))
+		{
+			if (!item.empty())
+				out.insert(atoi(item.c_str()));
+		}
+		return out;
+	}();
+	return wanted.count(rec) > 0;
+}
+
+void addTrail(const BattleUnit *unit, const char *what)
+{
+	if (!record())
+		return;
+	if (pending.unit == unit->getId())
+		pending.trail.push_back(what);
+	else if (exec.unit == unit->getId())
+		exec.trail.push_back(what);
+}
+
+}
+
+namespace
+{
+
+std::string jpos(Position p)
+{
+	std::ostringstream s;
+	s << "[" << p.x << "," << p.y << "," << p.z << "]";
+	return s.str();
+}
+
+BattleUnit *unitById(SavedBattleGame *save, int id)
+{
+	for (auto *bu : *save->getUnits())
+	{
+		if (bu->getId() == id)
+			return bu;
+	}
+	return nullptr;
+}
+
+/// Living units of other factions with the unit in their sight now.
+int spottedBy(SavedBattleGame *save, const BattleUnit *unit)
+{
+	int n = 0;
+	for (auto *bu : *save->getUnits())
+	{
+		if (bu->getFaction() != unit->getFaction() && !bu->isOut())
+		{
+			const auto *vis = bu->getVisibleUnits();
+			n += std::find(vis->begin(), vis->end(), unit) != vis->end() ? 1 : 0;
+		}
+	}
+	return n;
+}
+
+/// The last decision's action is over: what it did ([AIEXEC], joined to [AIREC] by rec).
+void flushExec(SavedBattleGame *save)
+{
+	if (exec.rec < 0)
+	{
+		return;
+	}
+	BattleUnit *self = unitById(save, exec.unit);
+	int dmg = 0, stunned = 0, downed = 0, fdmg = 0, fdowned = 0, born = 0;
+	for (const auto *bu : *save->getUnits())
+	{
+		auto b = exec.units.find(bu->getId());
+		if (b == exec.units.end())
+		{
+			++born; // spawned by the action (a zombie, a split unit)
+			continue;
+		}
+		if (bu->getId() == exec.unit)
+			continue;
+		const int lost = std::max(0, b->second.hp - bu->getHealth());
+		const int stun = std::max(0, bu->getStunlevel() - b->second.stun);
+		const int down = !b->second.down && isDown(bu) ? 1 : 0;
+		if (b->second.faction != exec.side)
+		{
+			dmg += lost; stunned += stun; downed += down;
+		}
+		else
+		{
+			fdmg += lost; fdowned += down;
+		}
+	}
+	std::ostringstream trail;
+	for (const auto &t : exec.trail)
+	{
+		trail << (trail.tellp() > 0 ? "," : "") << "\"" << t << "\"";
+	}
+	std::ostringstream line;
+	line << "[AIEXEC] {\"v\":1,\"rec\":" << exec.rec << ",\"unit\":" << exec.unit << ",\"walk\":";
+	if (exec.walk < 0) line << "null"; else line << exec.walk;
+	if (self)
+	{
+		const auto &b = exec.units[exec.unit];
+		int seen = 0;
+		for (const auto *v : *self->getVisibleUnits())
+		{
+			seen += v->getFaction() != self->getFaction() && !v->isOut() ? 1 : 0;
+		}
+		line << ",\"pos\":" << jpos(self->getPosition()) << ",\"dir\":" << self->getDirection() << ",\"tu\":" << self->getTimeUnits()
+			<< ",\"spent\":" << (exec.tu - self->getTimeUnits()) << ",\"kneel\":" << (self->isKneeled() ? 1 : 0)
+			<< ",\"hp\":" << self->getHealth() << ",\"hp_lost\":" << std::max(0, b.hp - self->getHealth())
+			<< ",\"stun\":" << self->getStunlevel() << ",\"down\":" << (isDown(self) ? 1 : 0)
+			<< ",\"seen\":" << seen << ",\"spotted\":" << spottedBy(save, self);
+		if (exec.side >= 0 && exec.side < 3)
+		{
+			After &a = afterOf[exec.side][exec.unit];
+			if (a.n++ == 0)
+				a.first = exec.rec;
+			a.last = exec.rec;
+			a.turn = exec.turn;
+			a.hp = self->getHealth();
+			a.stun = self->getStunlevel();
+		}
+	}
+	line << ",\"dmg\":" << dmg << ",\"stunned\":" << stunned << ",\"downed\":" << downed << ",\"fdmg\":" << fdmg << ",\"fdowned\":" << fdowned
+		<< ",\"born\":" << born << ",\"trail\":[" << trail.str() << "]}";
+	Log(LOG_INFO) << line.str();
+	exec = Exec();
+}
+
+/// The side begins its next turn (or the battle is over): what the enemy's turn did to each unit that decided in the side's
+/// last turn ([AIAFTER], joined to the records first..last).
+void flushAfter(SavedBattleGame *save, int side, bool end)
+{
+	for (const auto &e : afterOf[side])
+	{
+		const BattleUnit *u = unitById(save, e.first);
+		const After &a = e.second;
+		std::ostringstream line;
+		line << "[AIAFTER] {\"v\":1,\"side\":" << side << ",\"turn\":" << a.turn << ",\"now\":" << save->getTurn() << ",\"unit\":" << e.first
+			<< ",\"first\":" << a.first << ",\"last\":" << a.last << ",\"n\":" << a.n << ",\"end\":" << (end ? 1 : 0);
+		if (u)
+		{
+			const bool dead = u->getStatus() == STATUS_DEAD || u->getHealth() <= 0;
+			line << ",\"dead\":" << (dead ? 1 : 0) << ",\"down\":" << (isDown(u) ? 1 : 0)
+				<< ",\"hp\":" << u->getHealth() << ",\"hp_lost\":" << std::max(0, a.hp - u->getHealth())
+				<< ",\"stun\":" << u->getStunlevel() << ",\"stun_gain\":" << std::max(0, u->getStunlevel() - a.stun)
+				<< ",\"wounds\":" << u->getFatalWounds() << ",\"pos\":" << jpos(u->getPosition()) << ",\"spotted\":" << (dead ? 0 : spottedBy(save, u));
+		}
+		line << "}";
+		Log(LOG_INFO) << line.str();
+	}
+	afterOf[side].clear();
+}
+
+void recordTurn(SavedBattleGame *save)
+{
+	const int side = save->getSide();
+	if (!record() || (side == seenSide && save->getTurn() == seenTurn))
+	{
+		return;
+	}
+	seenSide = side;
+	seenTurn = save->getTurn();
+	if (side >= 0 && side < 3)
+	{
+		flushExec(save); // the other side's last action, if its turn end was not seen
+		flushAfter(save, side, false);
+	}
+}
+
+void recordEnd(SavedBattleGame *save)
+{
+	if (!record())
+	{
+		return;
+	}
+	flushExec(save);
+	for (int side = 0; side < 3; ++side)
+	{
+		flushAfter(save, side, true);
+	}
 }
 
 }
@@ -459,10 +738,87 @@ void beforeThink(SavedBattleGame *save, BattleUnit *unit)
 	aiBefore = unit->getAIModule() ? unit->getAIModule()->probeHash() : 0;
 	if (record())
 	{
+		flushExec(save);
+		pending = Pending();
 		pending.unit = unit->getId();
+		pending.pos = unit->getPosition();
+		pending.dir = unit->getDirection();
+		pending.tu = unit->getTimeUnits();
+		pending.hp = unit->getHealth();
+		pending.stun = unit->getStunlevel();
+		pending.morale = unit->getMorale();
+		pending.kneel = unit->isKneeled();
+		pending.trace = traced(recordNo);
+		for (const auto *bu : *save->getUnits())
+		{
+			pending.units[bu->getId()] = { bu->getHealth(), bu->getStunlevel(), isDown(bu), (int)bu->getFaction() };
+		}
 		pending.set = AiCandidates::generate(save, unit);
 		// the list must not change the battle: it may not draw a random number
 		pending.rngTouched = RNG::getSeed() != rngBefore;
+	}
+}
+
+void propose(const BattleUnit *unit, char slot, const char *source, int score, const BattleAction &action)
+{
+	if (!record() || pending.unit != unit->getId())
+	{
+		return;
+	}
+	Proposal p;
+	p.slot = slot;
+	p.src = source;
+	p.score = score;
+	p.type = action.type;
+	p.to = action.target;
+	p.weapon = action.weapon ? action.weapon->getRules()->getType() : std::string();
+	p.rec = recordNo;
+	pending.proposals.push_back(p);
+	slotOf[unit->getId()][slot] = p;
+}
+
+void chosen(const BattleUnit *unit, char slot)
+{
+	if (record() && pending.unit == unit->getId())
+	{
+		pending.slot = slot;
+	}
+}
+
+void modeOdds(const BattleUnit *unit, int patrol, int ambush, int combat, int escape, int roll, int mode)
+{
+	if (!record() || pending.unit != unit->getId())
+	{
+		return;
+	}
+	std::ostringstream s;
+	s << "{\"p\":" << patrol << ",\"a\":" << ambush << ",\"c\":" << combat << ",\"e\":" << escape << ",\"roll\":" << roll << ",\"mode\":" << mode << "}";
+	pending.odds.push_back(s.str());
+}
+
+void traceTile(const BattleUnit *unit, const char *what, const Position &pos, int score)
+{
+	if (pending.trace && pending.unit == unit->getId())
+	{
+		std::ostringstream s;
+		s << "[" << pos.x << "," << pos.y << "," << pos.z << "," << score << "]";
+		pending.traced[what].push_back(s.str());
+	}
+}
+
+void walkPlanned(const BattleUnit *unit, bool pushed)
+{
+	if (record() && exec.unit == unit->getId())
+	{
+		exec.walk = pushed ? 1 : 0;
+	}
+}
+
+void sideEnds(SavedBattleGame *save)
+{
+	if (record())
+	{
+		flushExec(save);
 	}
 }
 
@@ -497,6 +853,90 @@ std::string quoted(const std::string &text)
 	return out + "\"";
 }
 
+bool attackType(int type)
+{
+	return type == BA_AUTOSHOT || type == BA_SNAPSHOT || type == BA_AIMEDSHOT || type == BA_HIT || type == BA_THROW
+		|| type == BA_LAUNCH || type == BA_MINDCONTROL || type == BA_PANIC || type == BA_USE;
+}
+
+/// What an attack aims at (docs/AI_DECISION_RECORD.md): an enemy the unit knows of or one it does not, a friend, a body,
+/// the tile its side last saw an enemy on, a door, a wall or object, or a bare tile. A launch aims at its last waypoint.
+std::string targetKind(SavedBattleGame *save, BattleUnit *unit, const BattleAction &action)
+{
+	const Position at = action.type == BA_LAUNCH && !action.waypoints.empty() ? action.waypoints.back() : action.target;
+	Tile *tile = save->getTile(at);
+	if (!tile)
+		return "none";
+	if (const BattleUnit *bu = tile->getUnit())
+	{
+		if (bu == unit)
+			return "self";
+		if (bu->isOut())
+			return "down";
+		if (bu->getFaction() == unit->getFaction())
+			return "friend";
+		const auto &seen = *unit->getVisibleUnits();
+		const bool known = std::find(seen.begin(), seen.end(), bu) != seen.end()
+			|| bu->getTurnsSinceSpottedByFaction(unit->getFaction()) <= unit->getIntelligence();
+		return known ? "enemy" : "enemy_unknown";
+	}
+	if (lastSeenAt((int)unit->getFaction(), at))
+		return "last_seen";
+	bool door = false, solid = false;
+	for (TilePart part : { O_WESTWALL, O_NORTHWALL, O_OBJECT })
+	{
+		if (const MapData *md = tile->getMapData(part))
+		{
+			door = door || md->isDoor() || md->isUFODoor();
+			solid = true;
+		}
+	}
+	return door ? "door" : solid ? "terrain" : "tile";
+}
+
+/// The OXCE_AI_* switches of the run, sorted, but the battle's own (seed, mission, campaign), the recording's and the machine's
+/// paths: the bench's configuration.
+const std::string &cfgText()
+{
+	static const std::string text = []
+	{
+		static const std::set<std::string> skip = { "OXCE_AI_SEED", "OXCE_AI_RECORD", "OXCE_AI_TRACE_DECISION", "OXCE_AI_PROBE_SAVE",
+			"OXCE_AI_BUILD", "OXCE_AI_KEEP_DECIDE", "OXCE_AI_MISSION", "OXCE_AI_CAMPAIGN", "OXCE_AI_EXE", "OXCE_AI_GAME", "OXCE_AI_WORK" };
+		std::vector<std::string> vars;
+		for (char **e = PROBE_ENVIRON; e && *e; ++e)
+		{
+			const std::string v = *e;
+			if (v.compare(0, 8, "OXCE_AI_") == 0 && !skip.count(v.substr(0, v.find('='))))
+				vars.push_back(v);
+		}
+		std::sort(vars.begin(), vars.end());
+		std::string out;
+		for (const auto &v : vars)
+		{
+			const size_t eq = v.find('=');
+			out += (out.empty() ? "" : ",") + quoted(v.substr(0, eq)) + ":" + quoted(eq == std::string::npos ? std::string() : v.substr(eq + 1));
+		}
+		return out;
+	}();
+	return text;
+}
+
+uint64_t cfgHash()
+{
+	static const uint64_t h = [] { StateHash s; s.text(cfgText()); return s.h; }();
+	return h;
+}
+
+std::string jlist(const std::vector<std::string> &items, bool quote)
+{
+	std::string out;
+	for (const auto &i : items)
+	{
+		out += (out.empty() ? "" : ",") + (quote ? quoted(i) : i);
+	}
+	return "[" + out + "]";
+}
+
 void writeRecord(SavedBattleGame *save, BattleUnit *unit, const BattleAction &action, uint64_t hashUnits, uint64_t hashItems,
 	uint64_t hashOrder, uint64_t hashMap, uint64_t hashRng)
 {
@@ -504,6 +944,12 @@ void writeRecord(SavedBattleGame *save, BattleUnit *unit, const BattleAction &ac
 	{
 		Log(LOG_INFO) << "[AIPROBE] record: no candidates for unit " << unit->getId();
 		return;
+	}
+	if (!headWritten)
+	{
+		headWritten = true;
+		Log(LOG_INFO) << "[AIRECHEAD] {\"v\":1,\"gen\":\"" << ENGINE_GEN << "\",\"cfg\":\"" << hex(cfgHash()) << "\",\"seed\":" << battleSeed()
+			<< ",\"env\":{" << cfgText() << "}}";
 	}
 	const AiCandidates::Set &set = pending.set;
 	if (movesWritten.insert(set.movesHash).second)
@@ -514,6 +960,24 @@ void writeRecord(SavedBattleGame *save, BattleUnit *unit, const BattleAction &ac
 			moves << (moves.tellp() > 0 ? ";" : "") << m.tile.x << "." << m.tile.y << "." << m.tile.z << ":" << m.tu;
 		}
 		Log(LOG_INFO) << "[AICAND] moves=" << hex(set.movesHash) << " unit=" << unit->getId() << " list=" << moves.str();
+	}
+	// the other actions with their chances: stored once per battle too, under the hash of the text
+	std::ostringstream acts;
+	for (const auto &c : set.acts)
+	{
+		acts << (acts.tellp() > 0 ? "," : "") << "{\"id\":\"" << hex(c.id) << "\",\"k\":\"" << (char)c.kind << "\",\"t\":" << c.type
+			<< ",\"to\":" << pos(c.tile) << ",\"tu\":" << c.tu;
+		if (c.kind == AiCandidates::ATTACK)
+		{
+			acts << ",\"u\":" << c.target << ",\"w\":" << quoted(c.weapon) << ",\"p\":" << c.chance << ",\"lof\":" << c.lof << ",\"d\":" << c.dist;
+		}
+		acts << "}";
+	}
+	StateHash actsHash;
+	actsHash.text(acts.str());
+	if (actsWritten.insert(actsHash.h).second)
+	{
+		Log(LOG_INFO) << "[AICAND] acts=" << hex(actsHash.h) << " unit=" << unit->getId() << " list=[" << acts.str() << "]";
 	}
 	if (save->getTurn() != orderTurn || save->getSide() != orderSide)
 	{
@@ -533,36 +997,104 @@ void writeRecord(SavedBattleGame *save, BattleUnit *unit, const BattleAction &ac
 			in = in || c.id == chosen;
 		}
 	}
+	// a choice out of the list still has to have a known kind: a walk to a tile the AI picked beyond this turn's reach,
+	// a step onto a neighbour's tile, an attack whose target the record names
+	std::string exp = in ? "cand" : "none";
+	const std::string tk = attackType(action.type) ? targetKind(save, unit, action) : std::string();
+	if (!in && kind == AiCandidates::MOVE)
+	{
+		const Position p = unit->getPosition(), to = action.target;
+		const Tile *t = save->getTile(to);
+		if (std::max(std::abs(to.x - p.x), std::abs(to.y - p.y)) <= 1 && std::abs(to.z - p.z) <= 1 && t && t->getUnit() && t->getUnit() != unit)
+		{
+			exp = "occupied";
+		}
+		else
+		{
+			kind = AiCandidates::MOVE_TO_AI_POINT;
+			exp = "ai_point";
+		}
+	}
+	else if (!in && kind == AiCandidates::ATTACK)
+	{
+		exp = "target";
+	}
+
+	// the slot the action came from and the rule that filled it (maybe in an earlier decision: a slot is kept)
+	const AIModule *ai = unit->getAIModule();
+	const int mode = ai ? ai->getAIMode() : -1;
+	char slot = pending.slot;
+	if (!slot && mode >= AI_PATROL && mode <= AI_ESCAPE)
+	{
+		slot = "paxe"[mode];
+	}
+	const char look = slot == 'l' ? 'x' : slot;
+	const Proposal *src = nullptr;
+	auto of = slotOf.find(unit->getId());
+	if (of != slotOf.end() && of->second.count(look))
+	{
+		src = &of->second[look];
+		// a rule of an earlier decision whose action is not the one taken: the slot was emptied since; but a walk to the unit's
+		// own tile became BA_NONE on the way (walk.self) and still is that rule's
+		const bool self = action.type == BA_NONE && src->type == BA_WALK
+			&& std::find(pending.trail.begin(), pending.trail.end(), std::string("walk.self")) != pending.trail.end();
+		if (src->rec < recordNo && src->type != action.type && !self && !(attackType(src->type) && attackType(action.type)))
+			src = nullptr;
+	}
+	std::vector<std::string> props;
+	for (const auto &p : pending.proposals)
+	{
+		std::ostringstream s;
+		s << "{\"s\":\"" << p.slot << "\",\"src\":" << quoted(p.src) << ",\"sc\":";
+		if (p.score == INT_MIN) s << "null"; else s << p.score;
+		s << ",\"t\":" << p.type << ",\"to\":" << pos(p.to) << ",\"w\":" << quoted(p.weapon) << "}";
+		props.push_back(s.str());
+	}
+	const std::string trail = jlist(pending.trail, true);
 	tally(unit, in ? "rec.in" : (std::string("rec.out.") + (char)kind + std::to_string((int)action.type)).c_str());
 
-	std::ostringstream acts;
-	for (const auto &c : set.acts)
-	{
-		acts << (acts.tellp() > 0 ? "," : "") << "{\"id\":\"" << hex(c.id) << "\",\"k\":\"" << (char)c.kind << "\",\"t\":" << c.type
-			<< ",\"to\":" << pos(c.tile) << ",\"tu\":" << c.tu;
-		if (c.kind == AiCandidates::ATTACK)
-		{
-			acts << ",\"u\":" << c.target << ",\"w\":" << quoted(c.weapon) << ",\"p\":" << c.chance << ",\"lof\":" << c.lof << ",\"d\":" << c.dist;
-		}
-		acts << "}";
-	}
-	const AIModule *ai = unit->getAIModule();
-	Log(LOG_INFO) << "[AIREC] {\"v\":1,\"seed\":" << battleSeed() << ",\"rec\":" << recordNo++
+	const int rec = recordNo++;
+	std::ostringstream line;
+	line << "[AIREC] {\"v\":1,\"gen\":\"" << ENGINE_GEN << "\",\"cfg\":\"" << hex(cfgHash()) << "\",\"seed\":" << battleSeed() << ",\"rec\":" << rec
 		<< ",\"turn\":" << save->getTurn() << ",\"side\":" << (int)save->getSide() << ",\"unit\":" << unit->getId() << ",\"order\":" << order
 		<< ",\"n\":" << action.number
-		<< ",\"state\":{\"pos\":" << pos(unit->getPosition()) << ",\"dir\":" << unit->getDirection() << ",\"tu\":" << unit->getTimeUnits()
-		<< ",\"hp\":" << unit->getHealth() << ",\"stun\":" << unit->getStunlevel() << ",\"morale\":" << unit->getMorale()
-		<< ",\"kneel\":" << (unit->isKneeled() ? 1 : 0)
+		<< ",\"state\":{\"pos\":" << pos(pending.pos) << ",\"dir\":" << pending.dir << ",\"tu\":" << pending.tu
+		<< ",\"hp\":" << pending.hp << ",\"stun\":" << pending.stun << ",\"morale\":" << pending.morale << ",\"kneel\":" << (pending.kneel ? 1 : 0)
 		<< ",\"h\":{\"u\":\"" << hex(hashUnits) << "\",\"i\":\"" << hex(hashItems) << "\",\"o\":\"" << hex(hashOrder) << "\",\"m\":\"" << hex(hashMap)
 		<< "\",\"r0\":\"" << hex(rngBefore) << "\",\"r\":\"" << hex(hashRng) << "\",\"a0\":\"" << hex(aiBefore) << "\"}"
 		<< ",\"state_id\":\"" << hex(hashUnits ^ hashMap) << "\"}"
 		<< ",\"cand\":{\"n\":" << set.count() << ",\"set\":\"" << hex(set.setHash) << "\",\"order\":\"" << hex(set.orderHash)
-		<< "\",\"moves\":\"" << hex(set.movesHash) << "\",\"nmoves\":" << set.moves.size() << ",\"rng\":" << (pending.rngTouched ? 1 : 0)
-		<< ",\"acts\":[" << acts.str() << "]}"
-		<< ",\"base\":{\"id\":\"" << hex(chosen) << "\",\"k\":\"" << (char)kind << "\",\"in\":" << (in ? 1 : 0) << ",\"t\":" << (int)action.type
+		<< "\",\"moves\":\"" << hex(set.movesHash) << "\",\"nmoves\":" << set.moves.size() << ",\"acts\":\"" << hex(actsHash.h)
+		<< "\",\"nacts\":" << set.acts.size() << ",\"rng\":" << (pending.rngTouched ? 1 : 0) << "}"
+		<< ",\"base\":{\"id\":\"" << hex(chosen) << "\",\"k\":\"" << (char)kind << "\",\"in\":" << (in ? 1 : 0) << ",\"exp\":\"" << exp << "\""
+		<< ",\"tk\":" << (tk.empty() ? std::string("null") : quoted(tk)) << ",\"t\":" << (int)action.type
 		<< ",\"to\":" << pos(action.target) << ",\"w\":" << quoted(action.weapon ? action.weapon->getRules()->getType() : std::string())
-		<< ",\"run\":" << (action.run ? 1 : 0) << ",\"mode\":" << (ai ? ai->getAIMode() : -1) << ",\"score\":null,\"reason\":null}"
-		<< ",\"rule\":null,\"exec\":null,\"after\":null,\"after_enemy\":null}";
+		<< ",\"run\":" << (action.run ? 1 : 0) << ",\"mode\":" << mode << ",\"slot\":";
+	if (slot) line << "\"" << slot << "\""; else line << "null";
+	// RETHINK is the AI's own meta-action (think again next frame), no rule proposes it
+	line << ",\"src\":" << (src ? quoted(src->src) : action.type == BA_RETHINK ? std::string("\"rethink\"") : std::string("null"))
+		<< ",\"src_rec\":" << (src ? std::to_string(src->rec) : std::string("null"))
+		<< ",\"score\":" << (src && src->score != INT_MIN ? std::to_string(src->score) : std::string("null"))
+		<< ",\"reason\":{\"trail\":" << trail << ",\"odds\":" << jlist(pending.odds, false) << ",\"props\":" << jlist(props, false) << "}}"
+		<< ",\"rule\":null}";
+	Log(LOG_INFO) << line.str();
+	if (pending.trace)
+	{
+		std::ostringstream tiles;
+		for (const auto &t : pending.traced)
+		{
+			tiles << (tiles.tellp() > 0 ? "," : "") << quoted(t.first) << ":" << jlist(t.second, false);
+		}
+		Log(LOG_INFO) << "[AITRACE] {\"v\":1,\"rec\":" << rec << ",\"unit\":" << unit->getId() << ",\"tiles\":{" << tiles.str() << "}}";
+	}
+	// the action runs now: follow it to its end
+	exec = Exec();
+	exec.rec = rec;
+	exec.unit = unit->getId();
+	exec.side = (int)save->getSide();
+	exec.turn = save->getTurn();
+	exec.tu = pending.tu;
+	exec.units = std::move(pending.units);
 	pending.unit = -1;
 }
 
@@ -676,6 +1208,16 @@ struct Sighting { Position pos; int turn; };
 std::map<int, Sighting> lastSeen[3];
 std::map<int, double> seenReach;
 const double REACH_PRIOR = 8.0; // tiles a turn before anything is observed: an average walker
+
+bool lastSeenAt(int faction, const Position &pos)
+{
+	for (const auto &s : lastSeen[faction])
+	{
+		if (s.second.pos == pos)
+			return true;
+	}
+	return false;
+}
 
 void updateSightings(SavedBattleGame *save)
 {
