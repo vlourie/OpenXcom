@@ -50,7 +50,38 @@ import sys
 import time
 import urllib.request
 
-import psutil
+
+def _relaunch_with_psutil():
+    """psutil стоит не во всех питонах: `py -3` может выбрать новый, где его нет. Тогда тот же
+    скрипт с теми же ключами перезапускается под первым установленным питоном, где psutil есть
+    (`py -0p`). Годится и для тестов, которые делают import gpuq: перезапускается sys.argv."""
+    if os.environ.get("GPUQ_RELAUNCHED") or not os.path.isfile(sys.argv[0] or ""):
+        return
+    try:
+        listed = subprocess.run(["py", "-0p"], capture_output=True, text=True,
+                                timeout=20).stdout
+    except (OSError, subprocess.SubprocessError):
+        return
+    me = os.path.normcase(os.path.abspath(sys.executable))
+    for line in listed.splitlines():
+        parts = line.split(None, 1)
+        if len(parts) < 2 or not parts[0].startswith("-V:"):
+            continue
+        exe = parts[1].lstrip("* ").strip()
+        if not os.path.isfile(exe) or os.path.normcase(os.path.abspath(exe)) == me:
+            continue
+        if subprocess.run([exe, "-c", "import psutil"], capture_output=True).returncode:
+            continue
+        # utf-8 - и для вывода самого запускающего скрипта (тест печатает кириллицу, R-001)
+        env = dict(os.environ, GPUQ_RELAUNCHED="1", PYTHONIOENCODING="utf-8")
+        sys.exit(subprocess.call([exe] + sys.argv, env=env))
+
+
+try:
+    import psutil
+except ImportError:
+    _relaunch_with_psutil()
+    raise
 
 ENC = "utf-8-sig"
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -554,6 +585,10 @@ def cmd_shutdown(_a):
 
 
 def main():
+    # вывод с кириллицей: при перенаправлении в файл Windows дала бы cp1252 (R-001)
+    for s in (sys.stdout, sys.stderr):
+        with contextlib.suppress(AttributeError, ValueError):
+            s.reconfigure(encoding="utf-8")
     ap = argparse.ArgumentParser(description="очередь заданий на видеокарту")
     sub = ap.add_subparsers(dest="op", required=True)
 
