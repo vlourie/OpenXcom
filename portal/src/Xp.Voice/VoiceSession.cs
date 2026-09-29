@@ -24,6 +24,12 @@ public sealed class VoiceOptions
     public int SendQueueMs { get; init; }
     /// <summary>Runs the test tone through the echo canceller too - to exercise that path without a microphone.</summary>
     public bool ForceEchoCanceller { get; init; }
+    /// <summary>A folder: the first minutes of the microphone as captured (mic.wav), as sent after
+    /// the echo canceller (sent.wav) and of what was played (heard.wav). Null records nothing.</summary>
+    public string? RecordDir { get; init; }
+    /// <summary>With Tone: a 48 kHz mono 16-bit WAV played in a loop instead of the beeps - speech
+    /// through the whole chain without a person at the microphone.</summary>
+    public string? MicFile { get; init; }
 }
 
 public enum VoiceState { Connecting, Connected, Reconnecting, Disconnected, Stopped }
@@ -48,9 +54,13 @@ public sealed class VoiceSession : IAsyncDisposable
     readonly ConcurrentDictionary<string, Peer> _peers = new();
     readonly ConcurrentDictionary<ulong, Peer> _streams = new();
     readonly ConcurrentDictionary<ulong, nint> _captures = new();
+    readonly Lock _captureOrderLock = new();
+    ulong _lastCaptured;
+    int _outOfOrder;
     readonly ConcurrentQueue<string> _notes = new();
     readonly SampleRing _mic = new(AudioDevice.Rate);
     readonly SampleRing _played = new(AudioDevice.Rate);
+    readonly SampleRing _heard = new(AudioDevice.Rate);
     readonly AutoResetEvent _wake = new(false);
     volatile Peer[] _mix = [];
     volatile bool _stopping;
@@ -68,6 +78,8 @@ public sealed class VoiceSession : IAsyncDisposable
     double _maxGapMs, _micDb = -90;
     long _lastCallback;
     int _toneAt, _beepSeq;
+    short[]? _file;
+    int _fileAt;
 
     public event Action<string>? Line;
     public VoiceState State { get; private set; } = VoiceState.Connecting;
@@ -126,8 +138,10 @@ public sealed class VoiceSession : IAsyncDisposable
             });
             _apm = r.NewApm.Apm.Handle.Id;
         }
+        if (_opt.Tone && _opt.MicFile is { } mf) _file = ReadWav(mf);
         var dev = AudioDevice.Open(_opt.Microphone && !_opt.Tone, OnAudio, Log);
-        Log($"sound: {dev}; echo canceller {(apm ? "on" : "off")}{(_opt.Tone ? ", test tone instead of the microphone" : "")}, output gain {_opt.OutputGain:0.##}");
+        Log($"sound: {dev}; echo canceller {(apm ? "on" : "off")}" +
+            $"{(_file is not null ? $", {Path.GetFileName(_opt.MicFile)} ({_file.Length / AudioDevice.Rate} s) instead of the microphone" : _opt.Tone ? ", test tone instead of the microphone" : "")}, output gain {_opt.OutputGain:0.##}");
         _pump = new Thread(Pump) { IsBackground = true, Name = "voice pump", Priority = ThreadPriority.AboveNormal };
         _pump.Start();
         _loopTask = Task.Run(RoomLoop);
@@ -176,8 +190,18 @@ public sealed class VoiceSession : IAsyncDisposable
         float g = _opt.OutputGain;
         for (int i = 0; i < n; i++) output[i] = (short)Math.Clamp((int)(acc[i] * g), short.MinValue, short.MaxValue);
         _played.Write(output);
+        if (_opt.RecordDir is not null)
+        {
+            // before the output gain: a silent test run still records what it would have played
+            for (int i = 0; i < n; i++) tmp[i] = (short)Math.Clamp(acc[i], short.MinValue, short.MaxValue);
+            _heard.Write(tmp);
+        }
 
-        if (_opt.Tone) Tone(tmp);
+        if (_opt.Tone && _file is { } file)
+        {
+            for (int i = 0; i < n; i++, _fileAt = (_fileAt + 1) % file.Length) tmp[i] = file[_fileAt];
+        }
+        else if (_opt.Tone) Tone(tmp);
         else if (input.Length == n) input.CopyTo(tmp);
         else tmp.Clear();
         _mic.Write(tmp);
@@ -194,12 +218,49 @@ public sealed class VoiceSession : IAsyncDisposable
         }
     }
 
+    /// <summary>The samples of a 48 kHz mono 16-bit PCM WAV.</summary>
+    static short[] ReadWav(string path)
+    {
+        var b = File.ReadAllBytes(path);
+        int at = 12;
+        while (at + 8 <= b.Length)
+        {
+            string id = System.Text.Encoding.ASCII.GetString(b, at, 4);
+            int size = BitConverter.ToInt32(b, at + 4);
+            if (id == "fmt " && (BitConverter.ToInt16(b, at + 8) != 1 || BitConverter.ToInt16(b, at + 10) != 1
+                || BitConverter.ToInt32(b, at + 12) != AudioDevice.Rate || BitConverter.ToInt16(b, at + 22) != 16))
+                throw new InvalidDataException($"{path}: need 48000 Hz mono 16-bit PCM");
+            if (id == "data")
+            {
+                size = Math.Min(size, b.Length - at - 8);
+                var s = new short[size / 2];
+                Buffer.BlockCopy(b, at + 8, s, 0, s.Length * 2);
+                return s;
+            }
+            at += 8 + size + (size & 1);
+        }
+        throw new InvalidDataException($"{path}: no data chunk");
+    }
+
     // ---------------------------------------------------------------- pump thread
 
     unsafe void Pump()
     {
         var frame = new short[Frame];
         long lastStats = Stopwatch.GetTimestamp();
+        WavRecorder? recMic = null, recSent = null, recHeard = null;
+        if (_opt.RecordDir is { } dir)
+        {
+            try
+            {
+                Directory.CreateDirectory(dir);
+                recMic = new WavRecorder(Path.Combine(dir, "mic.wav"), RecordSeconds);
+                recSent = new WavRecorder(Path.Combine(dir, "sent.wav"), RecordSeconds);
+                recHeard = new WavRecorder(Path.Combine(dir, "heard.wav"), RecordSeconds);
+                Log($"recording the first {RecordSeconds / 60} min to {Path.GetFullPath(dir)}: mic.wav, sent.wav, heard.wav");
+            }
+            catch (Exception e) { Log("recording off: " + e.Message); }
+        }
         while (!_stopping)
         {
             _wake.WaitOne(50);
@@ -208,11 +269,18 @@ public sealed class VoiceSession : IAsyncDisposable
                 _played.Read(frame);
                 if (_apm != 0) Apm(frame, reverse: true);
             }
+            while (_heard.Count >= Frame)
+            {
+                _heard.Read(frame);
+                recHeard?.Write(frame);
+            }
             while (_mic.Count >= Frame)
             {
                 _mic.Read(frame);
+                recMic?.Write(frame);
                 if (_apm != 0 && _apmOn) Apm(frame, reverse: false);
                 _micDb = Db(frame);
+                recSent?.Write(_muted ? new short[Frame] : frame);
                 Send(frame);
             }
             while (_notes.TryDequeue(out var note)) Log(note);
@@ -220,9 +288,17 @@ public sealed class VoiceSession : IAsyncDisposable
             {
                 lastStats = Stopwatch.GetTimestamp();
                 Stats();
+                recMic?.Patch();
+                recSent?.Patch();
+                recHeard?.Patch();
             }
         }
+        recMic?.Dispose();
+        recSent?.Dispose();
+        recHeard?.Dispose();
     }
+
+    const int RecordSeconds = 10 * 60;
 
     unsafe void Apm(short[] frame, bool reverse)
     {
@@ -273,6 +349,7 @@ public sealed class VoiceSession : IAsyncDisposable
     {
         var peers = string.Join("; ", _mix.Select(p => p.StatsLine()));
         Log($"stats: {State} sent {Interlocked.Exchange(ref _sent, 0)} frames/5s, dropped {Interlocked.Exchange(ref _sendDropped, 0)}, " +
+            $"out of order {Interlocked.Exchange(ref _outOfOrder, 0)}, " +
             $"mic {_micDb:0} dB{(_muted ? " (muted)" : "")}{(_apm != 0 && !_apmOn ? " (echo canceller off)" : "")}, device {Interlocked.Exchange(ref _callbacks, 0)} calls, max gap {_maxGapMs:0} ms | {(peers.Length > 0 ? peers : "nobody")}");
         _maxGapMs = 0;
     }
@@ -309,6 +386,13 @@ public sealed class VoiceSession : IAsyncDisposable
                 unsafe
                 {
                     if (_captures.TryRemove(e.CaptureAudioFrame.AsyncId, out var buf)) NativeMemory.Free((void*)buf);
+                }
+                // the SDK takes each frame in its own task: an answer older than the last one means
+                // two frames were handed to the encoder the other way round
+                lock (_captureOrderLock)
+                {
+                    if (e.CaptureAudioFrame.AsyncId < _lastCaptured) _outOfOrder++;
+                    else _lastCaptured = e.CaptureAudioFrame.AsyncId;
                 }
                 if (e.CaptureAudioFrame.HasError && e.CaptureAudioFrame.Error.Length > 0) _notes.Enqueue("send: " + e.CaptureAudioFrame.Error);
                 return;

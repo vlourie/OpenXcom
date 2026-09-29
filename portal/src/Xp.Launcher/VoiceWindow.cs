@@ -156,11 +156,13 @@ public sealed class VoiceWindow : Window
     {
         if (args.Length < 3) return 2;
         string token = args[2].StartsWith('@') ? File.ReadAllText(args[2][1..]).Trim() : args[2];
-        string? log = null;
+        string? log = null, record = null, micFile = null;
         int quit = 0, queue = 0;
         for (int i = 3; i < args.Length; i++)
         {
             if (args[i] == "--log" && i + 1 < args.Length) log = args[++i];
+            else if (args[i] == "--record" && i + 1 < args.Length) record = args[++i];
+            else if (args[i] == "--mic-file" && i + 1 < args.Length) micFile = args[++i];
             else if (args[i] == "--quit-after" && i + 1 < args.Length) quit = int.Parse(args[++i], System.Globalization.CultureInfo.InvariantCulture);
             else if (args[i] == "--queue-ms" && i + 1 < args.Length) queue = int.Parse(args[++i], System.Globalization.CultureInfo.InvariantCulture);
         }
@@ -169,7 +171,9 @@ public sealed class VoiceWindow : Window
         {
             Url = args[1],
             Token = token,
-            Tone = args.Contains("--tone"),
+            Tone = args.Contains("--tone") || micFile is not null,
+            MicFile = micFile,
+            RecordDir = record,
             ForceEchoCanceller = args.Contains("--apm"),
             Microphone = !args.Contains("--listen"),
             OutputGain = args.Contains("--silent") ? 0f : 1f,
