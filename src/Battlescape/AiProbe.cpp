@@ -58,6 +58,7 @@ bool evalFire(const BattleUnit *) { return false; }
 bool pickUp(const BattleUnit *) { return false; }
 bool watchPoint(SavedBattleGame *, const BattleUnit *, Position &) { return false; }
 bool halfWalk(SavedBattleGame *, const BattleUnit *) { return false; }
+int closeEnemies(SavedBattleGame *, const BattleUnit *, const Position &) { return 0; }
 double param(const char *, double def) { return def; }
 void tally(const BattleUnit *, const char *) {}
 void logCasualty(SavedBattleGame *, const BattleUnit *, const BattleUnit *, const std::string &, bool, int, bool) {}
@@ -590,6 +591,28 @@ bool halfWalk(SavedBattleGame *save, const BattleUnit *unit)
 		}
 	}
 	return false;
+}
+
+int closeEnemies(SavedBattleGame *save, const BattleUnit *unit, const Position &pos)
+{
+	static const bool on = envOn("OXCE_AI_GAP");
+	if (!on || !careful(unit))
+	{
+		return 0;
+	}
+	// only what the side sees now: 28 % of the bot's turns ended within 2 tiles of a visible enemy, half its melee losses
+	const UnitFaction own = unit->getFaction();
+	int close = 0;
+	for (const auto *e : *save->getUnits())
+	{
+		if (e->isOut() || e->getFaction() == own || e->getFaction() == FACTION_NEUTRAL
+			|| e->getTurnsSinceSpottedByFaction(own) != 0 || e->getPosition().z != pos.z)
+		{
+			continue;
+		}
+		close += Position::distance2d(pos, e->getPosition()) <= 2 ? 1 : 0;
+	}
+	return close;
 }
 
 void logState(SavedBattleGame *save, const char *when)

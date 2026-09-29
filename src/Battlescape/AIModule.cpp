@@ -1197,6 +1197,7 @@ void AIModule::setupEscape()
 	const int BASE_SYSTEMATIC_SUCCESS = 100;
 	const int BASE_DESPERATE_SUCCESS = 110;
 	const int FAST_PASS_THRESHOLD = 100; // a score that's good enough to quit the while loop early; it's subjective, hand-tuned and may need tweaking
+	const int GAP_PENALTY = 60; // per enemy seen within 2 tiles of the tile, the careful bot only (OXCE_AI_GAP)
 
 	std::vector<Position> randomTileSearch = _save->getTileSearch();
 	RNG::shuffle(randomTileSearch);
@@ -1311,6 +1312,8 @@ void AIModule::setupEscape()
 			{
 				score -= BASE_SYSTEMATIC_SUCCESS;
 			}
+			// the careful bot does not take cover next to an enemy it sees: melee comes to the back on the enemy turn (OXCE_AI_GAP)
+			score -= AiProbe::closeEnemies(_save, _unit, _escapeAction.target) * GAP_PENALTY;
 
 			if (_traceAI)
 			{
@@ -1348,6 +1351,14 @@ void AIModule::setupEscape()
 	}
 	_escapeAction.target = bestTile;
 	_escapeAction.run = run;
+	if (bestTileScore > -100000)
+	{
+		const int closeNow = AiProbe::closeEnemies(_save, _unit, _unit->getPosition());
+		if (closeNow > 0)
+		{
+			AiProbe::tally(_unit, AiProbe::closeEnemies(_save, _unit, bestTile) < closeNow ? "gap.away" : "gap.stuck");
+		}
+	}
 	if (_traceAI)
 	{
 		_save->getTile(_escapeAction.target)->setMarkerColor(13);
