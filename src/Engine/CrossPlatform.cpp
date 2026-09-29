@@ -1591,6 +1591,12 @@ bool openExplorer(const std::string &url)
 static bool logToFile(const std::string& filename, const std::string& data) {
 	// Even SDL1 file IO accepts UTF-8 file names on windows.
 	SDL_RWops *rwops = SDL_RWFromFile(filename.c_str(), "a+");
+	// SDL opens for writing without sharing: while another program reads the log, the open fails. A failed line waits
+	// in the buffer for the next one, so the last line before quitting was lost - wait out a short read instead
+	for (int retry = 0; !rwops && retry < 20; ++retry) {
+		SDL_Delay(5);
+		rwops = SDL_RWFromFile(filename.c_str(), "a+");
+	}
 	if (rwops) {
 		auto rv = SDL_RWwrite(rwops, data.c_str(), data.size(), 1);
 		SDL_RWclose(rwops);
