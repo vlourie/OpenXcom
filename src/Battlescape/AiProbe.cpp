@@ -56,6 +56,7 @@ bool tactics(const BattleUnit *) { return false; }
 bool careful(const BattleUnit *) { return false; }
 bool evalFire(const BattleUnit *) { return false; }
 bool pickUp(const BattleUnit *) { return false; }
+bool watchPoint(SavedBattleGame *, const BattleUnit *, Position &) { return false; }
 double param(const char *, double def) { return def; }
 void tally(const BattleUnit *, const char *) {}
 void logCasualty(SavedBattleGame *, const BattleUnit *, const BattleUnit *, const std::string &, bool, int, bool) {}
@@ -526,6 +527,43 @@ std::string handsOf(const BattleUnit *unit)
 	return out.str();
 }
 
+}
+
+bool watchPoint(SavedBattleGame *save, const BattleUnit *unit, Position &out)
+{
+	static const bool on = envOn("OXCE_AI_WATCH");
+	if (!on || !careful(unit))
+	{
+		return false;
+	}
+	updateSightings(save); // what the side sees now joins what it saw before; nothing it has not seen
+	std::map<int, const BattleUnit *> byId;
+	for (const auto *u : *save->getUnits())
+	{
+		byId[u->getId()] = u;
+	}
+	// the enemy nearest to reaching the unit: its distance from its sighting less how far it can have gone since
+	double best = 1e9;
+	bool found = false;
+	for (const auto &s : lastSeen[(int)unit->getFaction()])
+	{
+		auto e = byId.find(s.first);
+		if (e == byId.end() || e->second->isOut() || s.second.pos == unit->getPosition())
+		{
+			continue;
+		}
+		auto r = seenReach.find(s.first);
+		const double radius = std::max(REACH_PRIOR, r != seenReach.end() ? r->second : 0.0) * (save->getTurn() - s.second.turn + 1);
+		const Position d = unit->getPosition() - s.second.pos;
+		const double margin = std::sqrt((double)(d.x * d.x + d.y * d.y)) - radius;
+		if (margin < best)
+		{
+			best = margin;
+			out = s.second.pos;
+			found = true;
+		}
+	}
+	return found;
 }
 
 void logState(SavedBattleGame *save, const char *when)
