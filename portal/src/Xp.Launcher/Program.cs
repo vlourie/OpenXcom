@@ -1,4 +1,5 @@
 using Avalonia;
+using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Styling;
 using Xp.Launcher.Core;
@@ -10,6 +11,8 @@ public sealed class App : Application
     public static string[] Args { get; set; } = [];
     /// <summary>Set in report mode: the form is the only window.</summary>
     public static (Report Report, Settings Settings)? Report { get; set; }
+    /// <summary>Set in voice mode (the prototype of part B): the voice window is the only window.</summary>
+    public static Func<Window>? Voice { get; set; }
 
     public override void Initialize()
     {
@@ -22,7 +25,8 @@ public sealed class App : Application
     public override void OnFrameworkInitializationCompleted()
     {
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
-            desktop.MainWindow = Report is { } r ? new ReportWindow(r.Report, r.Settings) { Topmost = true } : new MainWindow(Args);
+            desktop.MainWindow = Voice is { } v ? v()
+                : Report is { } r ? new ReportWindow(r.Report, r.Settings) { Topmost = true } : new MainWindow(Args);
         base.OnFrameworkInitializationCompleted();
     }
 }
@@ -36,6 +40,10 @@ static class Program
         if (args.Length >= 2 && args[0] == "--report") return RunReport(args[1]);
         // the game's "My reports" list: ticket statuses into report.json, no window, next to anything else open
         if (args.Length >= 1 && args[0] == "--refresh") return RunRefresh(args.Length >= 2 ? args[1] : null);
+#if XP_VOICE
+        // the voice prototype: a test room, as many copies as wanted (two on one machine are the local test)
+        if (args.Length >= 1 && args[0] == "--voice") return VoiceWindow.Run(args, Build);
+#endif
 
         // one launcher per user: two would fight over the same staging directory
         using var mutex = new Mutex(true, @"Local\XPiratezLauncher", out bool first);

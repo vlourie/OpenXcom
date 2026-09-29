@@ -20,6 +20,16 @@
   <ItemGroup>
     <ProjectReference Include="..\Xp.Launcher.Core\Xp.Launcher.Core.csproj" />
   </ItemGroup>
+  <!-- the voice prototype (the voice switch) only with -p:XpVoice=true (publish.ps1 -Voice): players' builds stay without it -->
+  <PropertyGroup Condition="'$(XpVoice)' == 'true'">
+    <DefineConstants>$(DefineConstants);XP_VOICE</DefineConstants>
+  </PropertyGroup>
+  <ItemGroup Condition="'$(XpVoice)' == 'true'">
+    <ProjectReference Include="..\Xp.Voice\Xp.Voice.csproj" />
+  </ItemGroup>
+  <ItemGroup Condition="'$(XpVoice)' != 'true'">
+    <Compile Remove="VoiceWindow.cs" />
+  </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="..\..\keys\release-keys.txt" LogicalName="release-keys.txt" />
     <EmbeddedResource Include="Strings\*.json" LogicalName="strings.%(Filename).json" />

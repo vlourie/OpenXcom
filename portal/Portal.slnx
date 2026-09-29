@@ -6,6 +6,7 @@
     <Project Path="src/Xp.Manifest/Xp.Manifest.csproj" />
     <Project Path="src/Xp.Portal/Xp.Portal.csproj" />
     <Project Path="src/Xp.ReleaseBuilder/Xp.ReleaseBuilder.csproj" />
+    <Project Path="src/Xp.Voice/Xp.Voice.csproj" />
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Xp.Launcher.Core.Tests/Xp.Launcher.Core.Tests.csproj" />

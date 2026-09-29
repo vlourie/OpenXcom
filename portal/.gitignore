@@ -16,3 +16,6 @@ portal.env
 
 # release repository on the server (station.ps1 releases)
 deploy/releases/
+
+# native parts of the launcher voice: tools/voice_deps.py downloads them (pinned by SHA-256)
+third_party/
