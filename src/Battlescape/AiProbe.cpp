@@ -21,8 +21,10 @@
 #include <cmath>
 #include <cstdlib>
 #include <map>
+#include <set>
 #include <sstream>
 #include <typeinfo>
+#include "AiCandidates.h"
 #include "AIModule.h"
 #include "BattleState.h"
 #include "BattlescapeGame.h"
@@ -55,7 +57,7 @@ bool botTurn(const SavedBattleGame *) { return false; }
 long long battleSeed() { return -1; }
 void think(BattlescapeState *, SavedBattleGame *) {}
 void battleOver(BattlescapeState *, SavedBattleGame *, bool) {}
-void beforeThink(const BattleUnit *) {}
+void beforeThink(SavedBattleGame *, BattleUnit *) {}
 void logDecision(SavedBattleGame *, BattleUnit *, const BattleAction &) {}
 void logState(SavedBattleGame *, const char *) {}
 bool tactics(const BattleUnit *) { return false; }
@@ -421,7 +423,33 @@ static void stateHash(SavedBattleGame *save, uint64_t &units, uint64_t &items, u
 
 uint64_t rngBefore = 0, aiBefore = 0;
 
-void beforeThink(const BattleUnit *unit)
+namespace
+{
+
+/// The decision record (OXCE_AI_RECORD, plan V2 step 2): the candidates of the unit about to think.
+struct Pending
+{
+	int unit = -1;
+	AiCandidates::Set set;
+	bool rngTouched = false;
+};
+Pending pending;
+/// move lists already written in this battle: a list is stored once, the records refer to it by its hash
+std::set<uint64_t> movesWritten;
+/// the decision's number in the battle, and the order in which units first decide within one side's turn
+int recordNo = 0;
+int orderTurn = -1, orderSide = -1;
+std::map<int, int> orderOf;
+
+bool record()
+{
+	static const bool on = active() && envOn("OXCE_AI_RECORD");
+	return on;
+}
+
+}
+
+void beforeThink(SavedBattleGame *save, BattleUnit *unit)
 {
 	if (!active())
 	{
@@ -429,6 +457,115 @@ void beforeThink(const BattleUnit *unit)
 	}
 	rngBefore = RNG::getSeed();
 	aiBefore = unit->getAIModule() ? unit->getAIModule()->probeHash() : 0;
+	if (record())
+	{
+		pending.unit = unit->getId();
+		pending.set = AiCandidates::generate(save, unit);
+		// the list must not change the battle: it may not draw a random number
+		pending.rngTouched = RNG::getSeed() != rngBefore;
+	}
+}
+
+namespace
+{
+
+std::string hex(uint64_t v)
+{
+	std::ostringstream s;
+	s << std::hex << v;
+	return s.str();
+}
+
+std::string pos(Position p)
+{
+	std::ostringstream s;
+	s << "[" << p.x << "," << p.y << "," << p.z << "]";
+	return s.str();
+}
+
+/// Item types are plain STR_ names, but the record is JSON: keep it so whatever a mod calls its items.
+std::string quoted(const std::string &text)
+{
+	std::string out = "\"";
+	for (char c : text)
+	{
+		if (c == '"' || c == '\\')
+			out += '\\';
+		if ((unsigned char)c >= 0x20)
+			out += c;
+	}
+	return out + "\"";
+}
+
+void writeRecord(SavedBattleGame *save, BattleUnit *unit, const BattleAction &action, uint64_t hashUnits, uint64_t hashItems,
+	uint64_t hashOrder, uint64_t hashMap, uint64_t hashRng)
+{
+	if (pending.unit != unit->getId())
+	{
+		Log(LOG_INFO) << "[AIPROBE] record: no candidates for unit " << unit->getId();
+		return;
+	}
+	const AiCandidates::Set &set = pending.set;
+	if (movesWritten.insert(set.movesHash).second)
+	{
+		std::ostringstream moves;
+		for (const auto &m : set.moves)
+		{
+			moves << (moves.tellp() > 0 ? ";" : "") << m.tile.x << "." << m.tile.y << "." << m.tile.z << ":" << m.tu;
+		}
+		Log(LOG_INFO) << "[AICAND] moves=" << hex(set.movesHash) << " unit=" << unit->getId() << " list=" << moves.str();
+	}
+	if (save->getTurn() != orderTurn || save->getSide() != orderSide)
+	{
+		orderTurn = save->getTurn();
+		orderSide = save->getSide();
+		orderOf.clear();
+	}
+	const int order = orderOf.emplace(unit->getId(), (int)orderOf.size()).first->second;
+
+	AiCandidates::Kind kind;
+	const uint64_t chosen = AiCandidates::chosenId(save, unit, action, &kind);
+	bool in = false;
+	for (const auto *list : { &set.acts, &set.moves })
+	{
+		for (const auto &c : *list)
+		{
+			in = in || c.id == chosen;
+		}
+	}
+	tally(unit, in ? "rec.in" : (std::string("rec.out.") + (char)kind + std::to_string((int)action.type)).c_str());
+
+	std::ostringstream acts;
+	for (const auto &c : set.acts)
+	{
+		acts << (acts.tellp() > 0 ? "," : "") << "{\"id\":\"" << hex(c.id) << "\",\"k\":\"" << (char)c.kind << "\",\"t\":" << c.type
+			<< ",\"to\":" << pos(c.tile) << ",\"tu\":" << c.tu;
+		if (c.kind == AiCandidates::ATTACK)
+		{
+			acts << ",\"u\":" << c.target << ",\"w\":" << quoted(c.weapon) << ",\"p\":" << c.chance << ",\"lof\":" << c.lof << ",\"d\":" << c.dist;
+		}
+		acts << "}";
+	}
+	const AIModule *ai = unit->getAIModule();
+	Log(LOG_INFO) << "[AIREC] {\"v\":1,\"seed\":" << battleSeed() << ",\"rec\":" << recordNo++
+		<< ",\"turn\":" << save->getTurn() << ",\"side\":" << (int)save->getSide() << ",\"unit\":" << unit->getId() << ",\"order\":" << order
+		<< ",\"n\":" << action.number
+		<< ",\"state\":{\"pos\":" << pos(unit->getPosition()) << ",\"dir\":" << unit->getDirection() << ",\"tu\":" << unit->getTimeUnits()
+		<< ",\"hp\":" << unit->getHealth() << ",\"stun\":" << unit->getStunlevel() << ",\"morale\":" << unit->getMorale()
+		<< ",\"kneel\":" << (unit->isKneeled() ? 1 : 0)
+		<< ",\"h\":{\"u\":\"" << hex(hashUnits) << "\",\"i\":\"" << hex(hashItems) << "\",\"o\":\"" << hex(hashOrder) << "\",\"m\":\"" << hex(hashMap)
+		<< "\",\"r0\":\"" << hex(rngBefore) << "\",\"r\":\"" << hex(hashRng) << "\",\"a0\":\"" << hex(aiBefore) << "\"}"
+		<< ",\"state_id\":\"" << hex(hashUnits ^ hashMap) << "\"}"
+		<< ",\"cand\":{\"n\":" << set.count() << ",\"set\":\"" << hex(set.setHash) << "\",\"order\":\"" << hex(set.orderHash)
+		<< "\",\"moves\":\"" << hex(set.movesHash) << "\",\"nmoves\":" << set.moves.size() << ",\"rng\":" << (pending.rngTouched ? 1 : 0)
+		<< ",\"acts\":[" << acts.str() << "]}"
+		<< ",\"base\":{\"id\":\"" << hex(chosen) << "\",\"k\":\"" << (char)kind << "\",\"in\":" << (in ? 1 : 0) << ",\"t\":" << (int)action.type
+		<< ",\"to\":" << pos(action.target) << ",\"w\":" << quoted(action.weapon ? action.weapon->getRules()->getType() : std::string())
+		<< ",\"run\":" << (action.run ? 1 : 0) << ",\"mode\":" << (ai ? ai->getAIMode() : -1) << ",\"score\":null,\"reason\":null}"
+		<< ",\"rule\":null,\"exec\":null,\"after\":null,\"after_enemy\":null}";
+	pending.unit = -1;
+}
+
 }
 
 void logDecision(SavedBattleGame *save, BattleUnit *unit, const BattleAction &action)
@@ -480,6 +617,10 @@ void logDecision(SavedBattleGame *save, BattleUnit *unit, const BattleAction &ac
 		<< " seen=" << (seen.tellp() > 0 ? seen.str() : std::string("-"))
 		<< " hu=" << std::hex << hashUnits << " hi=" << hashItems << " ho=" << hashOrder << " hou=" << own.h << " hm=" << hashMap << " hr=" << hashRng
 		<< " hr0=" << rngBefore << " ha0=" << aiBefore << " ha=" << (ai ? ai->probeHash() : 0) << std::dec;
+	if (record())
+	{
+		writeRecord(save, unit, action, hashUnits, hashItems, hashOrder, hashMap, hashRng);
+	}
 }
 
 void logCasualty(SavedBattleGame *save, const BattleUnit *victim, const BattleUnit *killer, const std::string &weapon,

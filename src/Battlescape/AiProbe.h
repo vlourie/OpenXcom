@@ -55,8 +55,9 @@ long long battleSeed();
 void think(BattlescapeState *state, SavedBattleGame *save);
 /// The battle is over (BattlescapeState::finishBattle): the result line, and the bot quits.
 void battleOver(BattlescapeState *state, SavedBattleGame *save, bool abort);
-/// Remembers the random generator and the unit's AI state just before it thinks (logDecision prints them next to the after).
-void beforeThink(const BattleUnit *unit);
+/// Remembers the random generator and the unit's AI state just before it thinks (logDecision prints them next to the after),
+/// and with OXCE_AI_RECORD the actions it could take (AiCandidates) for the decision record.
+void beforeThink(SavedBattleGame *save, BattleUnit *unit);
 /// One line per AI decision (after the unit has thought, before the action runs).
 void logDecision(SavedBattleGame *save, BattleUnit *unit, const BattleAction &action);
 /// One line per unit on the field: position, TU, health, who it sees and who has spotted it.
