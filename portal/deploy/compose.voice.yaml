@@ -1,0 +1,42 @@
+# Voice probe (docs/portal/VOICE_CHAT.md, stage 1): LiveKit next to the site, laid over the station files.
+# station.ps1 adds it by itself once .env has VOICE_PROBE=1 ('.\station.ps1 voice' sets it up):
+#   docker compose -f compose.yaml -f compose.station.yaml [-f compose.internet.yaml] -f compose.voice.yaml ...
+# Signalling goes through Caddy on HTTPS_PORT (/rtc), media straight to LiveKit:
+#   7882/udp - every participant on one UDP port (rtc.udp_port), the main path;
+#   7881/tcp - ICE over TCP when a player's network lets no UDP through.
+# Both have to be forwarded on the router to this machine. This is the probe layout, not the
+# production one: the voice server of the release lives on a machine with a public IP.
+services:
+  livekit:
+    # pinned: the probe records which version it passed on (LIVEKIT_TAG in .env to try another)
+    image: livekit/livekit-server:${LIVEKIT_TAG:-v1.13.7}
+    restart: unless-stopped
+    command: ["--config", "/etc/livekit.yaml"]
+    environment:
+      # "key: secret"; station.ps1 voice writes both into .env
+      LIVEKIT_KEYS: "${LIVEKIT_API_KEY:?run station.ps1 voice}: ${LIVEKIT_API_SECRET:?run station.ps1 voice}"
+    volumes:
+      - ./voice-probe/livekit.yaml:/etc/livekit.yaml:ro
+    ports:
+      - "7881:7881/tcp"
+      - "7882:7882/udp"
+    networks: [front]
+
+  # answers every "probe-beep" track with an "echo:<identity>" track: the probe page measures the
+  # round trip of its own beep through the server, on one clock
+  voice-echo:
+    build: ./voice-probe/echo
+    image: xp-voice-echo
+    restart: unless-stopped
+    environment:
+      LIVEKIT_URL: ws://livekit:7880
+      LIVEKIT_API_KEY: ${LIVEKIT_API_KEY}
+      LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET}
+      PROBE_ROOM: probe
+    depends_on: [livekit]
+    networks: [front]
+
+  caddy:
+    # the probe page, /voice-probe/ in both Caddyfiles
+    volumes:
+      - ./voice-probe/web:/srv/voice-probe:ro

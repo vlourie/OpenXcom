@@ -23,6 +23,16 @@
 		header /catalog.json* Cache-Control "no-cache"
 		file_server
 	}
+	# voice probe (compose.voice.yaml): LiveKit signalling and the probe page. Without the voice
+	# overlay /rtc answers 502 and /voice-probe/ 404, nothing else changes
+	handle /rtc* {
+		reverse_proxy livekit:7880
+	}
+	redir /voice-probe /voice-probe/
+	handle_path /voice-probe/* {
+		root * /srv/voice-probe
+		file_server
+	}
 	handle {
 		encode zstd gzip
 		# uploads are limited by the portal itself; this only stops absurd bodies at the door

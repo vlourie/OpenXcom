@@ -17,6 +17,11 @@
 #   .\station.ps1 releases <архив.zip>   выложить релизы: архив от portal\deploy\pack-releases.ps1
 #                            раскладывается в deploy\releases (blobs, потом releases, последними
 #                            channels), Caddy раздаёт их по адресу <сайт>/releases/
+#   .\station.ps1 voice      проба голоса (docs/portal/VOICE_PROBE.md): LiveKit и эхо-бот поверх сайта,
+#                            ключи LiveKit в .env. Нужен режим internet и проброс 7882/UDP и 7881/TCP
+#   .\station.ps1 voice-check    что видно изнутри: контейнеры, /rtc через Caddy, порты, брандмауэр
+#   .\station.ps1 voice-token <имя> [часы]   ссылка на страницу пробы с пропуском (по умолчанию 24 ч)
+#   .\station.ps1 voice-off  убрать пробу голоса; сайт остаётся
 #   .\station.ps1 down       остановить; данные в томах остаются
 #
 # Никогда не звать 'docker compose down -v': это удаляет базу, файлы и ключи.
@@ -36,8 +41,12 @@ function Fail([string] $text) { Write-Host "ОШИБКА: $text" -ForegroundColo
 # режим из .env: lan (свой сертификат, только локальная сеть) или internet (Let's Encrypt через Dynu,
 # доступ снаружи через проброс HTTPS_PORT на роутере, ddns держит имя на текущем IP)
 function Get-Compose {
+    $env_ = Read-DotEnv '.env'
     $files = @('compose', '-f', 'compose.yaml', '-f', 'compose.station.yaml')
-    if ((Read-DotEnv '.env')['STATION_MODE'] -eq 'internet') { $files += @('-f', 'compose.internet.yaml', '--profile', 'ddns') }
+    if ($env_['STATION_MODE'] -eq 'internet') { $files += @('-f', 'compose.internet.yaml') }
+    # проба голоса (docs/portal/VOICE_PROBE.md): последним, чтобы её том Caddy лёг поверх !override
+    if ($env_['VOICE_PROBE'] -eq '1') { $files += @('-f', 'compose.voice.yaml') }
+    if ($env_['STATION_MODE'] -eq 'internet') { $files += @('--profile', 'ddns') }
     $files
 }
 
@@ -220,7 +229,111 @@ function Test-Ready {
     $answer -eq 'Healthy'
 }
 
+# ---- проба голоса ----
+
+function ConvertTo-B64Url([byte[]] $b) { [Convert]::ToBase64String($b).TrimEnd('=').Replace('+', '-').Replace('/', '_') }
+
+# пропуск LiveKit (JWT HS256) в комнату probe: только для пробы, в боевой схеме его выдаёт портал
+function New-VoiceToken([string] $identity, [int] $hours) {
+    $env_ = Read-DotEnv '.env'
+    $now = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds()
+    $header = '{"alg":"HS256","typ":"JWT"}'
+    $payload = '{"iss":"' + $env_['LIVEKIT_API_KEY'] + '","sub":"' + $identity + '","name":"' + $identity +
+        '","nbf":' + ($now - 30) + ',"exp":' + ($now + $hours * 3600) +
+        ',"video":{"room":"probe","roomJoin":true,"canPublish":true,"canSubscribe":true}}'
+    $data = (ConvertTo-B64Url $utf8.GetBytes($header)) + '.' + (ConvertTo-B64Url $utf8.GetBytes($payload))
+    $hmac = New-Object Security.Cryptography.HMACSHA256 (, $utf8.GetBytes($env_['LIVEKIT_API_SECRET']))
+    $sig = ConvertTo-B64Url $hmac.ComputeHash($utf8.GetBytes($data))
+    $hmac.Dispose()
+    "$data.$sig"
+}
+
+# ответ LiveKit через Caddy: /rtc/validate без пропуска - 401 от LiveKit. 404 - старый Caddyfile,
+# 502 - Caddy не достучался до контейнера livekit
+function Test-Rtc {
+    $env_ = Read-DotEnv '.env'
+    $check = @('-s', '-o', 'NUL', '-w', '%{http_code}', '--max-time', '5', '--resolve', "$($env_['PORTAL_HOST']):$($env_['HTTPS_PORT']):127.0.0.1")
+    if ($env_['STATION_MODE'] -ne 'internet') { $check += '-k' }
+    [string](& curl.exe @check "$($env_['PORTAL_PUBLIC_URL'])/rtc/validate" 2>$null)
+}
+
+function Show-VoiceCheck {
+    $env_ = Read-DotEnv '.env'
+    Invoke-Compose ps -a livekit voice-echo caddy
+    $code = Test-Rtc
+    if ($code -match '^4\d\d$' -and $code -ne '404') { Write-Host "сигналинг /rtc через Caddy: отвечает LiveKit (HTTP $code)" -ForegroundColor Green }
+    else { Write-Host "сигналинг /rtc через Caddy: HTTP '$code' - 404 значит старый Caddyfile, 502 - livekit не запущен" -ForegroundColor Red }
+
+    $tcp = Get-NetTCPConnection -State Listen -LocalPort 7881 -ErrorAction SilentlyContinue
+    $udp = Get-NetUDPEndpoint -LocalPort 7882 -ErrorAction SilentlyContinue
+    Write-Host ('7881/TCP на машине: ' + $(if ($tcp) { 'слушает (' + (($tcp | ForEach-Object { (Get-Process -Id $_.OwningProcess -ErrorAction SilentlyContinue).Name } | Sort-Object -Unique) -join ', ') + ')' } else { 'НЕ слушает' })) -ForegroundColor $(if ($tcp) { 'Green' } else { 'Red' })
+    Write-Host ('7882/UDP на машине: ' + $(if ($udp) { 'открыт (' + (($udp | ForEach-Object { (Get-Process -Id $_.OwningProcess -ErrorAction SilentlyContinue).Name } | Sort-Object -Unique) -join ', ') + ')' } else { 'НЕ открыт' })) -ForegroundColor $(if ($udp) { 'Green' } else { 'Red' })
+
+    # входящие правила брандмауэра Windows для Docker и профиль сети: без правила на профиль текущей
+    # сети пакеты снаружи до Docker Desktop не дойдут, даже если роутер их пробросил
+    $profiles = @(Get-NetConnectionProfile -ErrorAction SilentlyContinue | ForEach-Object { "$($_.InterfaceAlias): $($_.NetworkCategory)" })
+    Write-Host ('профиль сети: ' + ($profiles -join '; '))
+    $rules = @(Get-NetFirewallRule -Direction Inbound -Enabled True -Action Allow -ErrorAction SilentlyContinue | Where-Object { $_.DisplayName -match 'Docker|com\.docker' })
+    if ($rules) { $rules | ForEach-Object { Write-Host ("брандмауэр: {0} [{1}]" -f $_.DisplayName, $_.Profile) } }
+    else { Write-Host 'брандмауэр: входящих разрешающих правил Docker не нашлось' -ForegroundColor Yellow }
+
+    # внешний адрес: по имени сайта (его держит ddns) и тот, что LiveKit узнал через STUN при старте
+    if ($env_['STATION_MODE'] -eq 'internet') {
+        $dns = @(Resolve-DnsName $env_['PORTAL_HOST'] -Type A -Server 1.1.1.1 -ErrorAction SilentlyContinue | Where-Object { $_.IPAddress } | ForEach-Object IPAddress)
+        Write-Host "внешний IP по DNS ($($env_['PORTAL_HOST'])): $($dns -join ', ')"
+    }
+    $compose = Get-Compose
+    $lines = @(& docker @compose logs livekit 2>&1 | Select-String -Pattern 'nodeIP|external|STUN' | Select-Object -Last 3)
+    if ($lines) { $lines | ForEach-Object { Write-Host "livekit: $($_.Line.Trim())" } }
+    else { Write-Host 'livekit: строки с внешним IP в журнале не нашлось - смотреть docker compose logs livekit' -ForegroundColor Yellow }
+    $echo = @(& docker @compose logs --tail 5 voice-echo 2>&1)
+    Write-Host 'эхо-бот, последние строки:'
+    $echo | ForEach-Object { Write-Host "  $_" }
+}
+
 switch ($Command) {
+    'voice' {
+        Assert-Docker
+        Initialize-Config
+        $env_ = Read-DotEnv '.env'
+        if ($env_['STATION_MODE'] -ne 'internet') {
+            Write-Host 'Сайт в режиме lan: снаружи проба не пройдёт (свой сертификат, локальный адрес). Сначала .\station.ps1 internet' -ForegroundColor Yellow
+        }
+        if (-not $env_['LIVEKIT_API_KEY'] -or -not $env_['LIVEKIT_API_SECRET']) {
+            Say 'создаю ключи LiveKit в .env'
+            Set-DotEnv 'LIVEKIT_API_KEY' ('API' + (-join ((New-Secret 6) | ForEach-Object { $_.ToString('x2') })))
+            Set-DotEnv 'LIVEKIT_API_SECRET' (-join ((New-Secret 32) | ForEach-Object { $_.ToString('x2') }))
+        }
+        Set-DotEnv 'VOICE_PROBE' '1'
+        Say 'запускаю LiveKit, эхо-бот и Caddy с маршрутом /rtc'
+        Invoke-Compose up -d --build livekit voice-echo caddy
+        Start-Sleep -Seconds 5
+        Show-VoiceCheck
+        Write-Host ''
+        Write-Host 'Дальше: на роутере пробросить на эту машину 7882/UDP и 7881/TCP (если ещё нет).' -ForegroundColor Green
+        Write-Host 'Ссылка для участника:  .\station.ps1 voice-token vitali'
+    }
+    'voice-check' {
+        Assert-Docker
+        Show-VoiceCheck
+    }
+    'voice-token' {
+        $env_ = Read-DotEnv '.env'
+        if (-not $env_['LIVEKIT_API_SECRET']) { Fail 'ключей LiveKit нет - сначала .\station.ps1 voice' }
+        if ($Email -notmatch '^[A-Za-z0-9_-]{1,32}$') { Fail 'имя участника - латиница, цифры, _ и -, до 32 знаков: .\station.ps1 voice-token vitali' }
+        $hours = if ($Name) { [int]$Name } else { 24 }
+        $jwt = New-VoiceToken $Email $hours
+        Write-Host "$(Get-Url)/voice-probe/#t=$jwt"
+        Write-Host "Пропуск на $hours ч для '$Email'. Одно имя - одно подключение: второй вход с той же ссылкой выбьет первый." -ForegroundColor DarkGray
+    }
+    'voice-off' {
+        Assert-Docker
+        if ((Read-DotEnv '.env')['VOICE_PROBE'] -eq '1') { Invoke-Compose rm -s -f livekit voice-echo }
+        Set-DotEnv 'VOICE_PROBE' '0'
+        # Caddy без тома страницы пробы
+        Invoke-Compose up -d caddy
+        Write-Host 'Проба голоса убрана; ключи LiveKit остались в .env. Проброс 7881/7882 на роутере можно снять.'
+    }
     'up' {
         Assert-Docker
         Initialize-Config
@@ -393,5 +506,5 @@ switch ($Command) {
         Write-Host "Лаунчеры берут обновления с $url/releases/"
     }
     'down' { Invoke-Compose down }
-    default { Fail "неизвестная команда '$Command'. Есть: up, status, content, logs, admin, reset-2fa, mail, root-cert, internet, lan, releases, down" }
+    default { Fail "неизвестная команда '$Command'. Есть: up, status, content, logs, admin, reset-2fa, mail, root-cert, internet, lan, releases, voice, voice-check, voice-token, voice-off, down" }
 }
