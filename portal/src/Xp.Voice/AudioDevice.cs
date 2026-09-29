@@ -32,6 +32,23 @@ public static unsafe partial class AudioDevice
     [LibraryImport(Lib)]
     private static partial nint xpa_describe();
 
+    [LibraryImport(Lib)]
+    private static partial int xpa_loopback_start(uint rate);
+
+    [LibraryImport(Lib)]
+    private static partial int xpa_loopback_read(short* dst, uint max);
+
+    /// <summary>Diagnostics: starts recording what Windows renders on the default output (every app's
+    /// sound after the system mix). Returns null or the error text.</summary>
+    public static string? StartLoopback() =>
+        xpa_loopback_start(Rate) == 0 ? null : Marshal.PtrToStringUTF8(xpa_error());
+
+    /// <summary>Takes up to dst.Length loopback samples recorded since the last call.</summary>
+    public static int ReadLoopback(Span<short> dst)
+    {
+        fixed (short* p = dst) return xpa_loopback_read(p, (uint)dst.Length);
+    }
+
     static DataHandler? _handler;
     static Action<string>? _note;
 

@@ -75,7 +75,8 @@ public sealed class VoiceSession : IAsyncDisposable
     int _retry;
     // counters, read by the pump for the 5 s line
     long _sent, _sendDropped, _callbacks;
-    double _maxGapMs, _micDb = -90;
+    double _maxGapMs, _maxBusyMs, _micDb = -90;
+    long _oddCalls;
     long _lastCallback;
     int _toneAt, _beepSeq;
     short[]? _file;
@@ -154,9 +155,9 @@ public sealed class VoiceSession : IAsyncDisposable
         _stopping = true;
         _loop.Writer.TryWrite(Command.Stop);
         if (_loopTask is not null) await _loopTask.WaitAsync(TimeSpan.FromSeconds(8)).ConfigureAwait(false);
-        AudioDevice.Close();
         _wake.Set();
         _pump?.Join(2000);
+        AudioDevice.Close();   // after the pump: it reads the loopback ring that Close frees
         if (_apm != 0) Ffi.Drop(_apm);
         Ffi.Events -= OnFfiEvent;
         Ffi.Log -= Log;
@@ -177,7 +178,17 @@ public sealed class VoiceSession : IAsyncDisposable
         }
         _lastCallback = now;
         _callbacks++;
+        if (output.Length != AudioDevice.Period) _oddCalls++;
+        try { Render(input, output); }
+        finally
+        {
+            double busy = Stopwatch.GetElapsedTime(now).TotalMilliseconds;
+            if (busy > _maxBusyMs) _maxBusyMs = busy;
+        }
+    }
 
+    void Render(ReadOnlySpan<short> input, Span<short> output)
+    {
         int n = output.Length;
         Span<int> acc = n <= 4096 ? stackalloc int[n] : new int[n];
         Span<short> tmp = n <= 4096 ? stackalloc short[n] : new short[n];
@@ -248,7 +259,8 @@ public sealed class VoiceSession : IAsyncDisposable
     {
         var frame = new short[Frame];
         long lastStats = Stopwatch.GetTimestamp();
-        WavRecorder? recMic = null, recSent = null, recHeard = null;
+        WavRecorder? recMic = null, recSent = null, recHeard = null, recOut = null;
+        var loopBuf = new short[AudioDevice.Rate / 10];
         if (_opt.RecordDir is { } dir)
         {
             try
@@ -257,7 +269,10 @@ public sealed class VoiceSession : IAsyncDisposable
                 recMic = new WavRecorder(Path.Combine(dir, "mic.wav"), RecordSeconds);
                 recSent = new WavRecorder(Path.Combine(dir, "sent.wav"), RecordSeconds);
                 recHeard = new WavRecorder(Path.Combine(dir, "heard.wav"), RecordSeconds);
-                Log($"recording the first {RecordSeconds / 60} min to {Path.GetFullPath(dir)}: mic.wav, sent.wav, heard.wav");
+                // what Windows really rendered on the output - every app's sound, after the system mix
+                if (AudioDevice.StartLoopback() is { } lerr) Log("recording out.wav off: " + lerr);
+                else recOut = new WavRecorder(Path.Combine(dir, "out.wav"), RecordSeconds);
+                Log($"recording the first {RecordSeconds / 60} min to {Path.GetFullPath(dir)}: mic.wav, sent.wav, heard.wav{(recOut is null ? "" : ", out.wav")}");
             }
             catch (Exception e) { Log("recording off: " + e.Message); }
         }
@@ -274,6 +289,8 @@ public sealed class VoiceSession : IAsyncDisposable
                 _heard.Read(frame);
                 recHeard?.Write(frame);
             }
+            if (recOut is not null)
+                for (int got; (got = AudioDevice.ReadLoopback(loopBuf)) > 0;) recOut.Write(loopBuf.AsSpan(0, got));
             while (_mic.Count >= Frame)
             {
                 _mic.Read(frame);
@@ -291,11 +308,13 @@ public sealed class VoiceSession : IAsyncDisposable
                 recMic?.Patch();
                 recSent?.Patch();
                 recHeard?.Patch();
+                recOut?.Patch();
             }
         }
         recMic?.Dispose();
         recSent?.Dispose();
         recHeard?.Dispose();
+        recOut?.Dispose();
     }
 
     const int RecordSeconds = 10 * 60;
@@ -350,8 +369,9 @@ public sealed class VoiceSession : IAsyncDisposable
         var peers = string.Join("; ", _mix.Select(p => p.StatsLine()));
         Log($"stats: {State} sent {Interlocked.Exchange(ref _sent, 0)} frames/5s, dropped {Interlocked.Exchange(ref _sendDropped, 0)}, " +
             $"out of order {Interlocked.Exchange(ref _outOfOrder, 0)}, " +
-            $"mic {_micDb:0} dB{(_muted ? " (muted)" : "")}{(_apm != 0 && !_apmOn ? " (echo canceller off)" : "")}, device {Interlocked.Exchange(ref _callbacks, 0)} calls, max gap {_maxGapMs:0} ms | {(peers.Length > 0 ? peers : "nobody")}");
+            $"mic {_micDb:0} dB{(_muted ? " (muted)" : "")}{(_apm != 0 && !_apmOn ? " (echo canceller off)" : "")}, device {Interlocked.Exchange(ref _callbacks, 0)} calls{(_oddCalls > 0 ? $" ({Interlocked.Exchange(ref _oddCalls, 0)} not 10 ms)" : "")}, max gap {_maxGapMs:0} ms, max busy {_maxBusyMs:0.0} ms | {(peers.Length > 0 ? peers : "nobody")}");
         _maxGapMs = 0;
+        _maxBusyMs = 0;
     }
 
     static double Db(ReadOnlySpan<short> s)

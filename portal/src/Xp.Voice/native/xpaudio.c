@@ -91,8 +91,70 @@ XPA_API int xpa_open(uint32_t rate, uint32_t period, xpa_data_cb data, xpa_note_
     return mode;
 }
 
+/* Diagnostics: what Windows really renders on the default output (WASAPI loopback - every app's
+ * sound, after the system mix), 48 kHz mono s16, kept in a 2 s ring for xpa_loopback_read. */
+static ma_device g_loop;
+static ma_pcm_rb g_loopRb;
+static int g_loopOpen = 0;
+
+static void on_loop(ma_device *dev, void *output, const void *input, ma_uint32 frames)
+{
+    (void)dev; (void)output;
+    const int16_t *src = (const int16_t *)input;
+    while (frames > 0) {
+        ma_uint32 n = frames;
+        void *dst;
+        if (ma_pcm_rb_acquire_write(&g_loopRb, &n, &dst) != MA_SUCCESS || n == 0) return;   /* full: drop */
+        memcpy(dst, src, n * sizeof(int16_t));
+        ma_pcm_rb_commit_write(&g_loopRb, n);
+        src += n; frames -= n;
+    }
+}
+
+/* 0 - recording, <0 - error (text in xpa_error) */
+XPA_API int xpa_loopback_start(uint32_t rate)
+{
+    if (g_loopOpen) return 0;
+    if (ma_pcm_rb_init(ma_format_s16, 1, rate * 2, NULL, NULL, &g_loopRb) != MA_SUCCESS) return -1;
+    ma_device_config c = ma_device_config_init(ma_device_type_loopback);
+    c.sampleRate = rate;
+    c.capture.format = ma_format_s16;
+    c.capture.channels = 1;
+    c.dataCallback = on_loop;
+    ma_result r = ma_device_init(NULL, &c, &g_loop);
+    if (r == MA_SUCCESS) r = ma_device_start(&g_loop);
+    if (r != MA_SUCCESS) {
+        snprintf(g_error, sizeof g_error, "loopback: %s", ma_result_description(r));
+        ma_pcm_rb_uninit(&g_loopRb);
+        return -2;
+    }
+    g_loopOpen = 1;
+    return 0;
+}
+
+/* Copies up to max samples of the loopback ring into dst; returns how many. */
+XPA_API int xpa_loopback_read(int16_t *dst, uint32_t max)
+{
+    if (!g_loopOpen) return 0;
+    uint32_t got = 0;
+    while (got < max) {
+        ma_uint32 n = max - got;
+        void *src;
+        if (ma_pcm_rb_acquire_read(&g_loopRb, &n, &src) != MA_SUCCESS || n == 0) break;
+        memcpy(dst + got, src, n * sizeof(int16_t));
+        ma_pcm_rb_commit_read(&g_loopRb, n);
+        got += n;
+    }
+    return (int)got;
+}
+
 XPA_API void xpa_close(void)
 {
+    if (g_loopOpen) {
+        ma_device_uninit(&g_loop);
+        ma_pcm_rb_uninit(&g_loopRb);
+        g_loopOpen = 0;
+    }
     if (!g_open) return;
     ma_device_uninit(&g_device);   /* waits for the callback to finish */
     g_open = 0;
