@@ -25,6 +25,7 @@ namespace OpenXcom
 class BattlescapeState;
 class SavedBattleGame;
 class BattleUnit;
+class Position;
 struct BattleAction;
 
 /**
@@ -65,6 +66,8 @@ bool careful(const BattleUnit *unit);
 bool evalFire(const BattleUnit *unit);
 /// The careful bot, its hands empty or its gun dry, picks up a weapon from the ground while it sees no enemy (OXCE_AI_ARMS).
 bool pickUp(const BattleUnit *unit);
+/// The careful bot, seeing no enemy, ends its turn facing the sighting of the known enemy nearest to reaching it (OXCE_AI_WATCH).
+bool watchPoint(SavedBattleGame *save, const BattleUnit *unit, Position &out);
 /// A tuning number from the environment (OXCE_AI_EVAL_RISK and the like), or def; always def in a release build.
 double param(const char *name, double def);
 /// Counts one use of a tactical rule for the result line ([AIRESULT] tac=).

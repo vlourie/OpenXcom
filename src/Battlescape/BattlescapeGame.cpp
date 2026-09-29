@@ -336,13 +336,19 @@ bool BattlescapeGame::carefulGuard(BattleUnit *unit)
 			threat = bu;
 		}
 	}
-	if (!threat)
+	// none in sight: where the side last saw the enemy nearest to reaching this unit (OXCE_AI_WATCH) - melee comes to the back
+	Position target;
+	if (threat)
+	{
+		target = threat->getPosition();
+	}
+	else if (!AiProbe::watchPoint(_save, unit, target))
 	{
 		return false;
 	}
 	// the whole turn must be affordable: UnitTurnBState short of time units mid-turn waits for the player's panic check,
 	// which never comes on the bot's turn, and the battle hangs
-	const int diff = std::abs(unit->directionTo(threat->getPosition()) - unit->getDirection());
+	const int diff = std::abs(unit->directionTo(target) - unit->getDirection());
 	const int steps = std::min(diff, 8 - diff);
 	if (steps == 0 || unit->getTimeUnits() < steps * unit->getTurnCost())
 	{
@@ -351,8 +357,8 @@ bool BattlescapeGame::carefulGuard(BattleUnit *unit)
 	BattleAction turn;
 	turn.actor = unit;
 	turn.type = BA_TURN;
-	turn.target = threat->getPosition();
-	AiProbe::tally(unit, "guard");
+	turn.target = target;
+	AiProbe::tally(unit, threat ? "guard" : "watch");
 	statePushBack(new UnitTurnBState(this, turn));
 	return true;
 }
