@@ -68,7 +68,7 @@ PYTHONIOENCODING=utf-8 OXCE_AI_BUILD=build-ai30 py -3.13 tools/ai_arena.py --mis
 | `n` | номер действия юнита в ходу (`BattleAction::number`) |
 | `state.pos … kneel` | юнит **до** того, как подумал (`AiProbe::beforeThink`) |
 | `state.h` | отпечатки **после** думанья: `u` юниты, `i` предметы, `o` порядок, `m` карта, `r0` ГСЧ до, `r` ГСЧ после, `a0` память AIModule до |
-| `state.state_id` | `u xor m` — ключ состояния для L0 |
+| `state.state_id` | `u xor m`. В `u` входят счётчик действий ИИ движка (`getAIActionCounter`) и очередь состояний боя, поэтому `state_id` другой на **каждом** решении: это отпечаток для сверки прогонов, а не ключ «то же состояние». «То же состояние» между двумя решениями юнита — записи подряд (никто другой не решал), те же `pos dir tu hp stun kneel morale`, `h.i` и `h.m` (`rec_diff.same_state`) |
 | `cand.n` | всего кандидатов; `set` — хэш набора, `order` — хэш порядка |
 | `cand.moves`, `nmoves` | хэш и длина списка достижимых клеток |
 | `cand.acts`, `nacts` | хэш текста и длина списка прочих действий |
@@ -172,6 +172,9 @@ py -3.13 E:\OXCE_AIWorker\source\rec_diff.py <каталог> det37a det37b
 Одна метка — охват: доля выборов среди кандидатов, объяснённых, разбор по `exp`, `tk`, `slot:src`, доля с
 `[AIEXEC]` и `[AIAFTER]`, целостность списков, пустые ходы (шаг пущен, юнит на месте, ОВ 0) и `idle_repeat` —
 сколько из них повторяют предыдущее решение того же юнита в том же ходу (та же цель), с разбором серий по длине.
+Строки `L0 patrol idle` — метрики для правил L0: `idle_decisions_per_battle`, `units_with_idle_repeat`,
+`max_idle_chain`, `TU_wasted_by_idle`, `turns_with_zero_progress`, `same_state_same_choice_repeat`
+(определения — в плане V2, раздел «Первая гипотеза L0»).
 Две — первое расхождение в каждом бою: `state`, `set`, `order`, `choice`, `exec`.
 
 **Приёмка формата** (и любой правки записи) — fair22, зерно 202, два прогона с записью против серии без записи:
