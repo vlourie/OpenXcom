@@ -671,8 +671,13 @@ bool revive(SavedBattleGame *save, BattleUnit *unit, BattleAction *action, const
 		{
 			continue;
 		}
-		while (kit->getStimulantQuantity() > 0 && bu->getStatus() == STATUS_UNCONSCIOUS)
+		// OXCE_AI_REVIVE=2: dose on until the stun is below half the health - raised with stun just under it and no time units,
+		// the comrade fell again and was killed standing (0.033 -> 0.059 a battle on r17s5..s7)
+		static const bool dose = getenv("OXCE_AI_REVIVE") && atoi(getenv("OXCE_AI_REVIVE")) >= 2;
+		while (kit->getStimulantQuantity() > 0 && (bu->getStatus() == STATUS_UNCONSCIOUS
+			|| (dose && !bu->isOut() && bu->getStunlevel() * 2 >= bu->getHealth())))
 		{
+			const bool wasDown = bu->getStatus() == STATUS_UNCONSCIOUS;
 			BattleAction stim;
 			stim.weapon = kit;
 			stim.type = BA_USE;
@@ -685,7 +690,7 @@ bool revive(SavedBattleGame *save, BattleUnit *unit, BattleAction *action, const
 				break;
 			}
 			save->getTileEngine()->medikitUse(&stim, bu, BMA_STIMULANT, BODYPART_TORSO);
-			tally(unit, bu->getStatus() == STATUS_UNCONSCIOUS ? "revive.use" : "revive.up");
+			tally(unit, !wasDown ? "revive.dose" : bu->getStatus() == STATUS_UNCONSCIOUS ? "revive.use" : "revive.up");
 			save->getTileEngine()->medikitRemoveIfEmpty(&stim);
 		}
 		return false;
