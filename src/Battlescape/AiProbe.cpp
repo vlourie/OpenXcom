@@ -57,6 +57,7 @@ bool careful(const BattleUnit *) { return false; }
 bool evalFire(const BattleUnit *) { return false; }
 bool pickUp(const BattleUnit *) { return false; }
 bool watchPoint(SavedBattleGame *, const BattleUnit *, Position &) { return false; }
+bool halfWalk(const BattleUnit *) { return false; }
 double param(const char *, double def) { return def; }
 void tally(const BattleUnit *, const char *) {}
 void logCasualty(SavedBattleGame *, const BattleUnit *, const BattleUnit *, const std::string &, bool, int, bool) {}
@@ -197,6 +198,12 @@ bool evalFire(const BattleUnit *unit)
 bool pickUp(const BattleUnit *unit)
 {
 	static const bool on = envOn("OXCE_AI_ARMS");
+	return on && careful(unit);
+}
+
+bool halfWalk(const BattleUnit *unit)
+{
+	static const bool on = envOn("OXCE_AI_HALF");
 	return on && careful(unit);
 }
 
