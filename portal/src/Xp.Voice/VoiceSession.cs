@@ -55,6 +55,7 @@ public sealed class VoiceSession : IAsyncDisposable
     volatile Peer[] _mix = [];
     volatile bool _stopping;
     volatile bool _muted;
+    volatile bool _apmOn = true;
     Room? _room;
     string _token;
     ulong _apm;
@@ -80,6 +81,21 @@ public sealed class VoiceSession : IAsyncDisposable
         {
             _muted = value;
             _loop.Writer.TryWrite(Command.Mute);
+        }
+    }
+
+    /// <summary>Whether the echo canceller exists at all (off for the tone and listen-only).</summary>
+    public bool HasEchoCanceller => _apm != 0;
+
+    /// <summary>The echo canceller, noise suppressor and gain control, switched live: an A/B test in a real conversation.</summary>
+    public bool EchoCanceller
+    {
+        get => _apmOn;
+        set
+        {
+            if (_apmOn == value) return;
+            _apmOn = value;
+            _notes.Enqueue(value ? "echo canceller on" : "echo canceller off");
         }
     }
 
@@ -195,7 +211,7 @@ public sealed class VoiceSession : IAsyncDisposable
             while (_mic.Count >= Frame)
             {
                 _mic.Read(frame);
-                if (_apm != 0) Apm(frame, reverse: false);
+                if (_apm != 0 && _apmOn) Apm(frame, reverse: false);
                 _micDb = Db(frame);
                 Send(frame);
             }
@@ -257,7 +273,7 @@ public sealed class VoiceSession : IAsyncDisposable
     {
         var peers = string.Join("; ", _mix.Select(p => p.StatsLine()));
         Log($"stats: {State} sent {Interlocked.Exchange(ref _sent, 0)} frames/5s, dropped {Interlocked.Exchange(ref _sendDropped, 0)}, " +
-            $"mic {_micDb:0} dB{(_muted ? " (muted)" : "")}, device {Interlocked.Exchange(ref _callbacks, 0)} calls, max gap {_maxGapMs:0} ms | {(peers.Length > 0 ? peers : "nobody")}");
+            $"mic {_micDb:0} dB{(_muted ? " (muted)" : "")}{(_apm != 0 && !_apmOn ? " (echo canceller off)" : "")}, device {Interlocked.Exchange(ref _callbacks, 0)} calls, max gap {_maxGapMs:0} ms | {(peers.Length > 0 ? peers : "nobody")}");
         _maxGapMs = 0;
     }
 
@@ -304,7 +320,7 @@ public sealed class VoiceSession : IAsyncDisposable
 
     // ---------------------------------------------------------------- room loop
 
-    enum Command { Join, Mute, Hang, Stop }
+    enum Command { Join, Mute, Hang, Net, Stop }
 
     sealed class Room(ulong handle, ulong local)
     {
@@ -312,12 +328,15 @@ public sealed class VoiceSession : IAsyncDisposable
         public ulong Source, Track;
         public readonly List<ulong> Owned = [];
         public readonly Dictionary<string, (ulong Track, ulong Stream)> Remote = [];
+        /// <summary>track sid -> participant identity, for the net line</summary>
+        public readonly Dictionary<string, string> Who = [];
     }
 
     async Task RoomLoop()
     {
         using var hang = new Timer(_ => { if (_breakAt != 0 && Stopwatch.GetElapsedTime(_breakAt).TotalMilliseconds > _opt.HangMs) _loop.Writer.TryWrite(Command.Hang); },
             null, 1000, 1000);
+        using var net = new Timer(_ => _loop.Writer.TryWrite(Command.Net), null, 5000, 5000);
         await foreach (var item in _loop.Reader.ReadAllAsync().ConfigureAwait(false))
         {
             try
@@ -338,6 +357,10 @@ public sealed class VoiceSession : IAsyncDisposable
                         Log($"reconnection hangs longer than {_opt.HangMs / 1000} s - joining anew");
                         await Leave(DisconnectReason.ClientInitiated).ConfigureAwait(false);
                         await Join().ConfigureAwait(false);
+                        break;
+                    case Command.Net:
+                        // not awaited: the answer comes as an event, the loop must not wait for it
+                        if (_room is { } nr && State == VoiceState.Connected) _ = NetStats(nr);
                         break;
                     case Command.Stop:
                         await Leave(DisconnectReason.ClientInitiated).ConfigureAwait(false);
@@ -505,6 +528,7 @@ public sealed class VoiceSession : IAsyncDisposable
                 var peer = PeerOf(ts.ParticipantIdentity);
                 peer.Reset();
                 room.Remote[ts.Track.Info.Sid] = (ts.Track.Handle.Id, stream);
+                room.Who[ts.Track.Info.Sid] = ts.ParticipantIdentity;
                 _streams[stream] = peer;
                 Log($"hearing {ts.ParticipantIdentity}");
                 break;
@@ -558,6 +582,115 @@ public sealed class VoiceSession : IAsyncDisposable
                 Log("room event stream ended");
                 break;
         }
+    }
+
+    // ---------------------------------------------------------------- network stats
+
+    // previous cumulative counters per RTC stats id, for the 5 s deltas
+    readonly ConcurrentDictionary<string, RtcStats> _netPrev = new();
+    int _netBusy;
+
+    /// <summary>
+    /// What WebRTC itself knows about the network, every 5 s. Our own counters cannot see a lost packet:
+    /// the decoder conceals it and still hands over a full 10 ms frame, so "robot" voice is only visible
+    /// here - concealed samples and jitter buffer stretching on the receiving side, loss reported by
+    /// the server on the sending side, and which path (udp/tcp, host/srflx/relay) the media takes.
+    /// </summary>
+    async Task NetStats(Room room)
+    {
+        if (Interlocked.Exchange(ref _netBusy, 1) == 1) return;
+        // taken on the room loop, before the first await: Remote is only touched there
+        var remote = room.Remote.Select(r => (Who: room.Who.TryGetValue(r.Key, out var w) ? w : r.Key, r.Value.Track)).ToList();
+        try
+        {
+            ulong id = Ffi.NextAsyncId();
+            var e = await Ffi.RequestAsync(new FfiRequest { GetSessionStats = new GetSessionStatsRequest { RoomHandle = room.Handle, RequestAsyncId = id } },
+                id, TimeSpan.FromSeconds(3)).ConfigureAwait(false);
+            var cb = e.GetSessionStats;
+            if (cb.MessageCase != GetSessionStatsCallback.MessageOneofCase.Result) { Log("net: " + cb.Error); return; }
+            Log($"net up: {NetSide(cb.Result.PublisherStats, up: true)}");
+            // the session's subscriber list is empty when the server carries both ways on one
+            // connection, so receiving is asked per remote track
+            foreach (var (who, track) in remote)
+            {
+                ulong tid = Ffi.NextAsyncId();
+                var te = await Ffi.RequestAsync(new FfiRequest { GetStats = new GetStatsRequest { TrackHandle = track, RequestAsyncId = tid } },
+                    tid, TimeSpan.FromSeconds(3)).ConfigureAwait(false);
+                if (te.GetStats.HasError) Log($"net down {who}: {te.GetStats.Error}");
+                else Log($"net down {who}: {NetSide(te.GetStats.Stats, up: false)}");
+            }
+        }
+        catch (TimeoutException) { Log("net: no stats in 3 s"); }
+        catch (Exception ex) { Log($"net: {ex.GetType().Name}: {ex.Message}"); }
+        finally { Volatile.Write(ref _netBusy, 0); }
+    }
+
+    string NetSide(IEnumerable<RtcStats> stats, bool up)
+    {
+        var all = stats.ToList();
+        var cand = new Dictionary<string, IceCandidateStats>();
+        foreach (var s in all)
+        {
+            if (s.StatsCase == RtcStats.StatsOneofCase.LocalCandidate) cand[s.LocalCandidate.Rtc.Id] = s.LocalCandidate.Candidate;
+            else if (s.StatsCase == RtcStats.StatsOneofCase.RemoteCandidate) cand[s.RemoteCandidate.Rtc.Id] = s.RemoteCandidate.Candidate;
+        }
+        var parts = new List<string>();
+        var pair = all.Where(s => s.StatsCase == RtcStats.StatsOneofCase.CandidatePair).Select(s => s.CandidatePair.CandidatePair_)
+            .FirstOrDefault(p => p.Nominated && p.State == IceCandidatePairState.PairSucceeded);
+        if (pair is null) parts.Add("no path yet");
+        else
+        {
+            cand.TryGetValue(pair.LocalCandidateId, out var l);
+            cand.TryGetValue(pair.RemoteCandidateId, out var r);
+            parts.Add($"{l?.Protocol ?? "?"} {(l is { HasCandidateType: true } ? l.CandidateType.ToString().ToLowerInvariant() : "?")} -> {r?.Address}:{r?.Port}, rtt {pair.CurrentRoundTripTime * 1000:0} ms");
+        }
+        foreach (var s in all)
+        {
+            switch (s.StatsCase)
+            {
+                case RtcStats.StatsOneofCase.OutboundRtp when up && s.OutboundRtp.Stream.Kind == "audio":
+                {
+                    var o = s.OutboundRtp;
+                    var p = Prev(o.Rtc.Id, s)?.OutboundRtp;
+                    parts.Add($"sent {o.Sent.PacketsSent - (p?.Sent.PacketsSent ?? 0)} pkts, {(o.Sent.BytesSent - (p?.Sent.BytesSent ?? 0)) * 8 / 5000.0:0.0} kbit/s, " +
+                        $"resent {o.Outbound.RetransmittedPacketsSent - (p?.Outbound.RetransmittedPacketsSent ?? 0)}, target {o.Outbound.TargetBitrate / 1000:0} kbit/s");
+                    break;
+                }
+                case RtcStats.StatsOneofCase.RemoteInboundRtp when up && s.RemoteInboundRtp.Stream.Kind == "audio":
+                {
+                    var ri = s.RemoteInboundRtp;
+                    var p = Prev(ri.Rtc.Id, s)?.RemoteInboundRtp;
+                    parts.Add($"server got: lost {ri.Received.PacketsLost - (p?.Received.PacketsLost ?? 0)} ({ri.RemoteInbound.FractionLost * 100:0.#}%), jitter {ri.Received.Jitter * 1000:0} ms, rtt {ri.RemoteInbound.RoundTripTime * 1000:0} ms");
+                    break;
+                }
+                case RtcStats.StatsOneofCase.InboundRtp when !up && s.InboundRtp.Stream.Kind == "audio":
+                {
+                    var i = s.InboundRtp;
+                    var p = Prev(i.Rtc.Id, s)?.InboundRtp;
+                    ulong samples = i.Inbound.TotalSamplesReceived - (p?.Inbound.TotalSamplesReceived ?? 0);
+                    ulong concealed = i.Inbound.ConcealedSamples - (p?.Inbound.ConcealedSamples ?? 0);
+                    ulong silent = i.Inbound.SilentConcealedSamples - (p?.Inbound.SilentConcealedSamples ?? 0);
+                    ulong emitted = i.Inbound.JitterBufferEmittedCount - (p?.Inbound.JitterBufferEmittedCount ?? 0);
+                    double jbDelay = i.Inbound.JitterBufferDelay - (p?.Inbound.JitterBufferDelay ?? 0);
+                    // silent concealment is DTX (the speaker is quiet), not loss
+                    double lossy = samples == 0 ? 0 : 100.0 * (concealed - Math.Min(silent, concealed)) / samples;
+                    parts.Add($"got {i.Received.PacketsReceived - (p?.Received.PacketsReceived ?? 0)} pkts, lost {i.Received.PacketsLost - (p?.Received.PacketsLost ?? 0)}, " +
+                        $"jitter {i.Received.Jitter * 1000:0} ms, concealed {lossy:0.#}% ({i.Inbound.ConcealmentEvents - (p?.Inbound.ConcealmentEvents ?? 0)} events), " +
+                        $"stretched +{(i.Inbound.InsertedSamplesForDeceleration - (p?.Inbound.InsertedSamplesForDeceleration ?? 0)) * 1000 / AudioDevice.Rate} " +
+                        $"-{(i.Inbound.RemovedSamplesForAcceleration - (p?.Inbound.RemovedSamplesForAcceleration ?? 0)) * 1000 / AudioDevice.Rate} ms, " +
+                        $"jitter buffer {(emitted == 0 ? 0 : jbDelay / emitted * 1000):0} ms, nack {i.Inbound.NackCount - (p?.Inbound.NackCount ?? 0)}");
+                    break;
+                }
+            }
+        }
+        return string.Join("; ", parts);
+    }
+
+    RtcStats? Prev(string id, RtcStats now)
+    {
+        _netPrev.TryGetValue(id, out var prev);
+        _netPrev[id] = now;
+        return prev;
     }
 
     void BreakStarts(string why)

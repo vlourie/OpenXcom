@@ -25,6 +25,7 @@ public sealed class VoiceWindow : Window
     readonly StackPanel _peers = new() { Spacing = 6 };
     readonly TextBox _log = new() { IsReadOnly = true, AcceptsReturn = true, TextWrapping = TextWrapping.NoWrap, FontFamily = new FontFamily("Consolas"), FontSize = 12 };
     readonly Button _mute = Skin.Btn("Выключить микрофон");
+    readonly Button _apm = Skin.Btn("Выключить эхоподавитель");
     readonly Queue<string> _lines = new();
     readonly Lock _linesLock = new();
     bool _linesDirty;
@@ -51,6 +52,13 @@ public sealed class VoiceWindow : Window
             _mute.Content = _session.Muted ? "Включить микрофон" : "Выключить микрофон";
         };
         _mute.IsEnabled = opt.Microphone || opt.Tone;
+        // A/B in a real conversation: is the "robot" voice the echo canceller or the network?
+        _apm.Click += (_, _) =>
+        {
+            _session.EchoCanceller = !_session.EchoCanceller;
+            _apm.Content = _session.EchoCanceller ? "Выключить эхоподавитель" : "Включить эхоподавитель";
+        };
+        _apm.IsVisible = false;
 
         var top = new StackPanel { Spacing = 10 };
         top.Children.Add(_state);
@@ -58,6 +66,7 @@ public sealed class VoiceWindow : Window
         micRow.Children.Add(new TextBlock { Text = opt.Tone ? "тон" : "микрофон", VerticalAlignment = VerticalAlignment.Center, FontSize = 13 });
         micRow.Children.Add(_mic);
         micRow.Children.Add(_mute);
+        micRow.Children.Add(_apm);
         top.Children.Add(micRow);
         top.Children.Add(Skin.H2("в комнате"));
         top.Children.Add(_peers);
@@ -77,6 +86,7 @@ public sealed class VoiceWindow : Window
             Add($"launcher {typeof(VoiceWindow).Assembly.GetName().Version}, pid {Environment.ProcessId}, {opt.Url}");
             try { _session.Start(); }
             catch (Exception e) { Add("voice did not start: " + e.Message); }
+            _apm.IsVisible = _session.HasEchoCanceller;
             if (quitAfter > 0) DispatcherTimer.RunOnce(Close, TimeSpan.FromSeconds(quitAfter));
         };
         Closing += async (_, e) =>
