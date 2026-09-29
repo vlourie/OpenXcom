@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include <vector>
 /*
  * Copyright 2010-2026 OpenXcom Developers.
  *
@@ -72,6 +73,9 @@ bool watchPoint(SavedBattleGame *save, const BattleUnit *unit, Position &out);
 bool halfWalk(SavedBattleGame *save, const BattleUnit *unit);
 /// The careful bot's cover keeps its distance (OXCE_AI_GAP): living enemies its side sees now within 2 tiles of pos; 0 when off.
 int closeEnemies(SavedBattleGame *save, const BattleUnit *unit, const Position &pos);
+/// The careful bot raises a downed comrade with a medikit's stimulant (OXCE_AI_REVIVE): standing on the body it spends uses
+/// until the comrade gets up; otherwise it sets a walk onto the nearest body in reach (reachable - the last findReachable). True when it set a walk.
+bool revive(SavedBattleGame *save, BattleUnit *unit, BattleAction *action, const std::vector<int> &reachable);
 /// A tuning number from the environment (OXCE_AI_EVAL_RISK and the like), or def; always def in a release build.
 double param(const char *name, double def);
 /// Counts one use of a tactical rule for the result line ([AIRESULT] tac=).

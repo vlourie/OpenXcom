@@ -448,6 +448,13 @@ void AIModule::think(BattleAction *action)
 	_rifle = false;
 	_blaster = false;
 	_reachable = _save->getPathfinding()->findReachable(_unit, BattleActionCost());
+	if (AiProbe::revive(_save, _unit, action, _reachable))
+	{
+		// walking onto a downed comrade's body, the stimulant goes on the next think
+		_escapeTUs = 0;
+		_ambushTUs = 0;
+		return;
+	}
 	_wasHitBy.clear();
 	_foundBaseModuleToDestroy = false;
 
