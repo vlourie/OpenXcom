@@ -1,5 +1,7 @@
 #pragma once
+#include <map>
 #include <string>
+#include <utility>
 #include <vector>
 /*
  * Copyright 2010-2026 OpenXcom Developers.
@@ -27,6 +29,7 @@ class BattlescapeState;
 class SavedBattleGame;
 class BattleUnit;
 class Position;
+class RuleItem;
 struct BattleAction;
 
 /**
@@ -55,6 +58,8 @@ long long battleSeed();
 void think(BattlescapeState *state, SavedBattleGame *save);
 /// The battle is over (BattlescapeState::finishBattle): the result line, and the bot quits.
 void battleOver(BattlescapeState *state, SavedBattleGame *save, bool abort);
+/// Remembers the random generator and the unit's AI state just before it thinks (logDecision prints them next to the after).
+void beforeThink(const BattleUnit *unit);
 /// One line per AI decision (after the unit has thought, before the action runs).
 void logDecision(SavedBattleGame *save, BattleUnit *unit, const BattleAction &action);
 /// One line per unit on the field: position, TU, health, who it sees and who has spotted it.
@@ -85,6 +90,9 @@ int turretsSeeing(SavedBattleGame *save, BattleUnit *unit, const Position &pos);
 bool flee(SavedBattleGame *save, BattleUnit *unit, BattleAction *action, const std::vector<int> &reachable);
 /// How many AI actions a unit takes in a row before the next unit: the engine's 2, or OXCE_AI_ACTIONS for the careful bot.
 int maxActions(const BattleUnit *unit);
+/// An ItemContainer's contents for the battle generator: as stored (by heap address, so a new order in every process) in the game,
+/// by item type in a probe - the battle's item list, and every tie the AI breaks by its order, must repeat from run to run.
+std::vector<std::pair<const RuleItem*, int>> stableItems(const std::map<const RuleItem*, int> &contents);
 /// A tuning number from the environment (OXCE_AI_EVAL_RISK and the like), or def; always def in a release build.
 double param(const char *name, double def);
 /// Counts one use of a tactical rule for the result line ([AIRESULT] tac=).

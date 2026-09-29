@@ -77,6 +77,35 @@ AIModule::~AIModule()
 }
 
 /**
+ * The fingerprint of this module's own state: two runs of one battle with the same world and the same random generator
+ * can still decide differently if what the module remembers differs (target, patrol nodes, reachable tiles, who hit it).
+ */
+unsigned long long AIModule::probeHash() const
+{
+	unsigned long long h = 1469598103934665603ULL;
+	auto add = [&h](long long v)
+	{
+		for (int i = 0; i < 8; ++i)
+		{
+			h = (h ^ (unsigned long long)((v >> (i * 8)) & 0xff)) * 1099511628211ULL;
+		}
+	};
+	add(_aggroTarget ? _aggroTarget->getId() : -1);
+	add(_knownEnemies); add(_visibleEnemies); add(_spottingEnemies);
+	add(_escapeTUs); add(_ambushTUs); add(_walkAbortCounter);
+	add(_weaponPickedUp); add(_rifle); add(_melee); add(_blaster); add(_grenade); add(_didPsi);
+	add(_AIMode); add(_intelligence); add(_closestDist);
+	add(_fromNode ? _fromNode->getID() : -1); add(_toNode ? _toNode->getID() : -1);
+	add(_foundBaseModuleToDestroy); add((int)_reserve); add((int)_targetFaction);
+	add((long long)_reachable.size());
+	for (int i : _reachable) { add(i); }
+	add((long long)_reachableWithAttack.size());
+	for (int i : _reachableWithAttack) { add(i); }
+	for (int i : _wasHitBy) { add(i); }
+	return h;
+}
+
+/**
  * Sets the target faction.
  */
 void AIModule::setTargetFaction(UnitFaction f)
@@ -1630,12 +1659,25 @@ bool AIModule::selectPointNearTarget(BattleUnit *target, int maxTUs)
 					bool valid = _save->getTileEngine()->validMeleeRange(checkPath, dir, _unit, target, 0);
 					bool fitHere = _save->setUnitPosition(_unit, checkPath, true);
 
+					// the determinism hunt (OXCE_AI_TRACE_MELEE, bench builds only): every candidate tile with what decided it
+					static const bool trace = AiProbe::param("OXCE_AI_TRACE_MELEE", 0) > 0;
+					if (trace && AiProbe::active())
+					{
+						Log(LOG_INFO) << "[AIMELEE] unit=" << _unit->getId() << " target=" << target->getId() << " tile=" << checkPath
+							<< " valid=" << valid << " fit=" << fitHere << " danger=" << _save->getTile(checkPath)->getDangerous()
+							<< " dodge=" << dodgeChanceDiff << " maxtu=" << maxTUs;
+					}
 					if (valid && fitHere && !_save->getTile(checkPath)->getDangerous())
 					{
 						_save->getPathfinding()->calculate(_unit, checkPath, BAM_NORMAL, 0, maxTUs);
 
 						//for 100% dodge diff and on 4th difficulty it will allow aliens to move 10 squares around to made attack from behind.
 						int distanceCurrent = _save->getPathfinding()->getPath().size() - dodgeChanceDiff * _save->getTileEngine()->getArcDirection(dir - 4, dirTarget);
+						if (trace && AiProbe::active())
+						{
+							Log(LOG_INFO) << "[AIMELEE] unit=" << _unit->getId() << " tile=" << checkPath << " path=" << _save->getPathfinding()->getPath().size()
+								<< " start=" << _save->getPathfinding()->getStartDirection() << " dist=" << distanceCurrent << " best=" << distance;
+						}
 						if (_save->getPathfinding()->getStartDirection() != -1 && distanceCurrent < distance)
 						{
 							_attackAction.target = checkPath;

@@ -28,6 +28,9 @@
 #include "../Engine/Options.h"
 #include "../fmath.h"
 #include "BattlescapeGame.h"
+#include "AiProbe.h"
+#include "../Engine/Logger.h"
+#include <optional>
 
 namespace OpenXcom
 {
@@ -146,6 +149,22 @@ std::optional<Position> Pathfinding::tryCalculateFinalPosition(Position endPosit
  */
 void Pathfinding::calculate(BattleUnit *unit, Position endPosition, BattleActionMove bam, const BattleUnit *missileTarget, int maxTUCost)
 {
+	// the determinism hunt (OXCE_AI_TRACE_PATH, bench builds only): every path asked for and what came back, on any return
+	static const bool trace = AiProbe::param("OXCE_AI_TRACE_PATH", 0) > 0;
+	struct Trace
+	{
+		Pathfinding *pf; BattleUnit *unit; Position from, to; int bam, maxTU;
+		~Trace()
+		{
+			Log(LOG_INFO) << "[AIPATH] unit=" << unit->getId() << " from=" << from << " to=" << to << " bam=" << bam << " max=" << maxTU
+				<< " len=" << pf->_path.size() << " start=" << pf->getStartDirection() << " tu=" << pf->_totalTUCost.time;
+		}
+	};
+	std::optional<Trace> traced;
+	if (trace && AiProbe::active())
+	{
+		traced.emplace(Trace{this, unit, unit->getPosition(), endPosition, (int)bam, maxTUCost});
+	}
 	_totalTUCost = {};
 	_path.clear();
 	_unit = unit;

@@ -443,6 +443,7 @@ void BattlescapeGame::handleAI(BattleUnit *unit)
 	BattleAction action;
 	action.actor = unit;
 	action.number = _AIActionCounter;
+	AiProbe::beforeThink(unit);
 	unit->think(&action);
 
 	if (action.type == BA_RETHINK)

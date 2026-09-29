@@ -78,6 +78,8 @@ public:
 	AIModule(SavedBattleGame *save, BattleUnit *unit, Node *node);
 	/// Cleans up the AIModule.
 	~AIModule();
+	/// The fingerprint of this module's own state (the AI turn probe logs it before and after each decision).
+	unsigned long long probeHash() const;
 	/// Sets the target faction.
 	void setTargetFaction(UnitFaction f);
 	/// Resets the unsaved AI state.

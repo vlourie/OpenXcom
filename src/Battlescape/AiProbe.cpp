@@ -22,7 +22,9 @@
 #include <cstdlib>
 #include <map>
 #include <sstream>
+#include <typeinfo>
 #include "AIModule.h"
+#include "BattleState.h"
 #include "BattlescapeGame.h"
 #include "BattlescapeState.h"
 #include "Pathfinding.h"
@@ -30,6 +32,7 @@
 #include "../Engine/Logger.h"
 #include "../Engine/RNG.h"
 #include "../Engine/Timer.h"
+#include "../Mod/RuleInventory.h"
 #include "../Mod/RuleItem.h"
 #include "../Savegame/BattleItem.h"
 #include "../Savegame/BattleUnit.h"
@@ -52,6 +55,7 @@ bool botTurn(const SavedBattleGame *) { return false; }
 long long battleSeed() { return -1; }
 void think(BattlescapeState *, SavedBattleGame *) {}
 void battleOver(BattlescapeState *, SavedBattleGame *, bool) {}
+void beforeThink(const BattleUnit *) {}
 void logDecision(SavedBattleGame *, BattleUnit *, const BattleAction &) {}
 void logState(SavedBattleGame *, const char *) {}
 bool tactics(const BattleUnit *) { return false; }
@@ -65,6 +69,10 @@ bool revive(SavedBattleGame *, BattleUnit *, BattleAction *, const std::vector<i
 int turretsSeeing(SavedBattleGame *, BattleUnit *, const Position &) { return 0; }
 bool flee(SavedBattleGame *, BattleUnit *, BattleAction *, const std::vector<int> &) { return false; }
 int maxActions(const BattleUnit *) { return 2; }
+std::vector<std::pair<const RuleItem*, int>> stableItems(const std::map<const RuleItem*, int> &contents)
+{
+	return std::vector<std::pair<const RuleItem*, int>>(contents.begin(), contents.end());
+}
 double param(const char *, double def) { return def; }
 void tally(const BattleUnit *, const char *) {}
 void logCasualty(SavedBattleGame *, const BattleUnit *, const BattleUnit *, const std::string &, bool, int, bool) {}
@@ -327,20 +335,39 @@ struct StateHash
 			h = (h ^ (uint64_t)((v >> (i * 8)) & 0xff)) * 1099511628211ULL;
 		}
 	}
-	void item(const BattleItem *it)
+	void text(const std::string &s)
 	{
-		add(it ? it->getId() : -1);
-		add(it ? it->getAmmoQuantity() : 0);
-		add(it ? it->getFuseTimer() : 0);
+		for (char c : s)
+		{
+			add(c);
+		}
 	}
 };
 
-/// Two runs of one battle diverge at the first decision whose fingerprints differ: units (place, facing, TU, health, stun,
-/// morale, energy, fire, status, faction, who they see, what they carry), map (tile parts, doors, fire, smoke, items on the ground)
-/// and the random generator's state - three parts, to see at once which one it was.
-static void stateHash(SavedBattleGame *save, uint64_t &units, uint64_t &map, uint64_t &rng)
+/// One item by what it is, not by getId(): item ids differ between runs of one battle (the items are made in the order of
+/// a map keyed by rule pointers, R-025) while every decision stays the same (det23a/det23b, 22 of 22).
+static uint64_t itemHash(const BattleItem *it, long long where)
 {
-	StateHash u, m;
+	StateHash h;
+	h.add(where);
+	h.text(it->getRules()->getType());
+	h.text(it->getSlot() ? it->getSlot()->getId() : std::string("-"));
+	h.add(it->getAmmoQuantity());
+	h.add(it->getFuseTimer());
+	const BattleItem *ammo = it->getAmmoForSlot(0);
+	h.text(ammo && ammo != it ? ammo->getRules()->getType() : std::string("-"));
+	h.add(ammo && ammo != it ? ammo->getAmmoQuantity() : 0);
+	return h.h;
+}
+
+/// Two runs of one battle diverge at the first decision whose fingerprints differ: units (place, facing, TU, health, stun,
+/// morale, energy, fire, status, faction, who they see; the engine's state queue), items (what lies where, in any order),
+/// the order of items in each inventory, map (tile parts, doors, fire, smoke) and the random generator's state - five parts,
+/// to see at once which one it was. Items and their order apart: the order of one inventory can differ between runs.
+static void stateHash(SavedBattleGame *save, uint64_t &units, uint64_t &items, uint64_t &order, uint64_t &map, uint64_t &rng)
+{
+	StateHash u, o, m;
+	uint64_t itemSum = 0;
 	for (auto *bu : *save->getUnits())
 	{
 		u.add(bu->getId());
@@ -353,8 +380,9 @@ static void stateHash(SavedBattleGame *save, uint64_t &units, uint64_t &map, uin
 		}
 		for (const auto *it : *bu->getInventory())
 		{
-			u.item(it);
-			u.item(it->getAmmoForSlot(0));
+			const uint64_t h = itemHash(it, bu->getId());
+			itemSum += h;
+			o.add((long long)h);
 		}
 	}
 	for (int i = 0; i < save->getMapSizeXYZ(); ++i)
@@ -370,12 +398,41 @@ static void stateHash(SavedBattleGame *save, uint64_t &units, uint64_t &map, uin
 		m.add(tile->getFire()); m.add(tile->getSmoke());
 		for (const auto *it : *tile->getInventory())
 		{
-			m.item(it);
+			const uint64_t h = itemHash(it, -1 - i);
+			itemSum += h;
+			o.add((long long)h);
 		}
 	}
+	// the engine's own state goes with the units: the same world with another queue of battle states moves on differently
+	if (const BattlescapeGame *game = save->getBattleGame())
+	{
+		u.add(game->getAIActionCounter());
+		for (const auto *state : game->getStates())
+		{
+			for (const char *c = typeid(*state).name(); *c; ++c)
+			{
+				u.add(*c);
+			}
+		}
+	}
+	u.add((int)save->getSide());
 	units = u.h;
+	items = itemSum;
+	order = o.h;
 	map = m.h;
 	rng = RNG::getSeed();
+}
+
+uint64_t rngBefore = 0, aiBefore = 0;
+
+void beforeThink(const BattleUnit *unit)
+{
+	if (!active())
+	{
+		return;
+	}
+	rngBefore = RNG::getSeed();
+	aiBefore = unit->getAIModule() ? unit->getAIModule()->probeHash() : 0;
 }
 
 void logDecision(SavedBattleGame *save, BattleUnit *unit, const BattleAction &action)
@@ -384,8 +441,14 @@ void logDecision(SavedBattleGame *save, BattleUnit *unit, const BattleAction &ac
 	{
 		return;
 	}
-	uint64_t hashUnits, hashMap, hashRng;
-	stateHash(save, hashUnits, hashMap, hashRng);
+	uint64_t hashUnits, hashItems, hashOrder, hashMap, hashRng;
+	stateHash(save, hashUnits, hashItems, hashOrder, hashMap, hashRng);
+	// the order of the deciding unit's own inventory: the AI takes the first fitting item it finds
+	StateHash own;
+	for (const auto *it : *unit->getInventory())
+	{
+		own.add((long long)itemHash(it, unit->getId()));
+	}
 	const int side = save->getSide();
 	if (side >= 0 && side < 3 && action.type != BA_NONE)
 	{
@@ -419,7 +482,8 @@ void logDecision(SavedBattleGame *save, BattleUnit *unit, const BattleAction &ac
 		<< " aim=" << (target ? target->getId() : -1)
 		<< " weapon=" << (action.weapon ? action.weapon->getRules()->getType() : std::string("-"))
 		<< " seen=" << (seen.tellp() > 0 ? seen.str() : std::string("-"))
-		<< " hu=" << std::hex << hashUnits << " hm=" << hashMap << " hr=" << hashRng << std::dec;
+		<< " hu=" << std::hex << hashUnits << " hi=" << hashItems << " ho=" << hashOrder << " hou=" << own.h << " hm=" << hashMap << " hr=" << hashRng
+		<< " hr0=" << rngBefore << " ha0=" << aiBefore << " ha=" << (ai ? ai->probeHash() : 0) << std::dec;
 }
 
 void logCasualty(SavedBattleGame *save, const BattleUnit *victim, const BattleUnit *killer, const std::string &weapon,
@@ -920,6 +984,18 @@ int maxActions(const BattleUnit *unit)
 	// with 260 of 282 left (d9probe, 127 such hits on 22 battles) - a player hits on until the enemy falls
 	static const int n = getenv("OXCE_AI_ACTIONS") ? atoi(getenv("OXCE_AI_ACTIONS")) : 0;
 	return n > 2 && careful(unit) ? n : 2;
+}
+
+std::vector<std::pair<const RuleItem*, int>> stableItems(const std::map<const RuleItem*, int> &contents)
+{
+	// the sectoid fist (fair22 seed 202, turn 17) walked to one of two items of equal worth: BattlescapeGame::surveyItems keeps
+	// the first in the battle's item list, and that list is filled from this map in heap-address order
+	std::vector<std::pair<const RuleItem*, int>> out(contents.begin(), contents.end());
+	if (active())
+	{
+		std::sort(out.begin(), out.end(), [](const auto &a, const auto &b) { return a.first->getType() < b.first->getType(); });
+	}
+	return out;
 }
 
 void logState(SavedBattleGame *save, const char *when)
