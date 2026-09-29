@@ -63,6 +63,8 @@ bool tactics(const BattleUnit *unit);
 bool careful(const BattleUnit *unit);
 /// The careful bot weighs every reachable tile, target and fire mode by expected damage against risk (OXCE_AI_EVAL).
 bool evalFire(const BattleUnit *unit);
+/// The careful bot, its hands empty or its gun dry, picks up a weapon from the ground while it sees no enemy (OXCE_AI_ARMS).
+bool pickUp(const BattleUnit *unit);
 /// A tuning number from the environment (OXCE_AI_EVAL_RISK and the like), or def; always def in a release build.
 double param(const char *name, double def);
 /// Counts one use of a tactical rule for the result line ([AIRESULT] tac=).
