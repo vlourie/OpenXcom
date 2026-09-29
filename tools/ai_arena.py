@@ -80,7 +80,8 @@ def one(seed, turns, diff, timeout, campaign, mission=None, tactics=False, caref
     finally:
         SLOTS.put(slot)
     row = {"seed": seed, "want": mission or "", "seconds": f"{r.seconds:.0f}", "note": "",
-           "_casualties": r.tagged("[AICASUALTY]"), "_tiles": r.tagged("[AISTATE]")}
+           "_casualties": r.tagged("[AICASUALTY]"), "_tiles": r.tagged("[AISTATE]"),
+           "_decide": r.tagged("[AIDECIDE]") if os.environ.get("OXCE_AI_KEEP_DECIDE") else []}
     row.update(moves)
     battle = r.tagged("[AIPROBE] battle")
     if battle:
@@ -253,6 +254,10 @@ def main():
             if row.get("_tiles"):
                 with gzip.open(table.with_suffix(".tiles.gz"), "at", encoding="utf-8") as f:
                     f.writelines(f"seed={row['seed']} want={row['want']} {line}\n" for line in row["_tiles"])
+            # каждое решение ИИ ([AIDECIDE]) - только по OXCE_AI_KEEP_DECIDE=1: разбор «почему стоял», на порцию это сотни МБ
+            if row.get("_decide"):
+                with gzip.open(table.with_suffix(".decide.gz"), "at", encoding="utf-8") as f:
+                    f.writelines(f"seed={row['seed']} want={row['want']} {line}\n" for line in row["_decide"])
             print(f"[{len(rows)}/{total}] зерно {row['seed']}: {outcome(row)}, {row.get('mission', '-')},"
                   f" ход {row.get('turn', '-')}, раненых {row.get('pwounded', '-')}, {row['seconds']} с", flush=True)
     lines = summary(rows, a.label) + (by_mission(rows) if a.missions else []) + [

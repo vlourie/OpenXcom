@@ -63,6 +63,7 @@ int closeEnemies(SavedBattleGame *, const BattleUnit *, const Position &) { retu
 bool revive(SavedBattleGame *, BattleUnit *, BattleAction *, const std::vector<int> &) { return false; }
 int turretsSeeing(SavedBattleGame *, BattleUnit *, const Position &) { return 0; }
 bool flee(SavedBattleGame *, BattleUnit *, BattleAction *, const std::vector<int> &) { return false; }
+int maxActions(const BattleUnit *) { return 2; }
 double param(const char *, double def) { return def; }
 void tally(const BattleUnit *, const char *) {}
 void logCasualty(SavedBattleGame *, const BattleUnit *, const BattleUnit *, const std::string &, bool, int, bool) {}
@@ -845,6 +846,14 @@ bool flee(SavedBattleGame *save, BattleUnit *unit, BattleAction *action, const s
 	action->target = bestPos;
 	action->run = false; // the reachable tiles and their time units are the walking ones
 	return true;
+}
+
+int maxActions(const BattleUnit *unit)
+{
+	// the engine moves to the next unit after 2 actions: a clawed soldier next to the enemy hits twice for 9 TU each and stands
+	// with 260 of 282 left (d9probe, 127 such hits on 22 battles) - a player hits on until the enemy falls
+	static const int n = getenv("OXCE_AI_ACTIONS") ? atoi(getenv("OXCE_AI_ACTIONS")) : 0;
+	return n > 2 && careful(unit) ? n : 2;
 }
 
 void logState(SavedBattleGame *save, const char *when)
