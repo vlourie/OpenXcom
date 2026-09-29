@@ -713,6 +713,31 @@ void AIModule::think(BattleAction *action)
 		break;
 	}
 
+	// the careful bot on patrol in contact walks half its time units at most and keeps the rest for reaction fire and cover:
+	// it ended 77 % of turns with nothing left, 54 % of them in someone's sight (OXCE_AI_HALF)
+	if (action->type == BA_WALK && _AIMode == AI_PATROL && _knownEnemies && AiProbe::halfWalk(_unit))
+	{
+		BattleActionCost keep;
+		keep.Time = _unit->getBaseStats()->tu / 2;
+		Position best = _unit->getPosition();
+		int bestDist = Position::distanceSq(best, action->target);
+		for (int index : _save->getPathfinding()->findReachable(_unit, keep))
+		{
+			const Position pos = _save->getTileCoords(index);
+			const int d = Position::distanceSq(pos, action->target);
+			if (d < bestDist)
+			{
+				bestDist = d;
+				best = pos;
+			}
+		}
+		if (best != action->target)
+		{
+			AiProbe::tally(_unit, best == _unit->getPosition() ? "half.stay" : "half.cut");
+			action->target = best;
+		}
+	}
+
 	if (action->type == BA_WALK)
 	{
 		// if we're moving, we'll have to re-evaluate our escape/ambush position.
