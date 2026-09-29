@@ -27,8 +27,9 @@ GAME = ROOT / CFG["GameDir"]
 # OXCE_AI_BUILD - другой каталог сборки стенда (build-ai2): новая правка собирается и играет, пока идёт серия на прежней
 EXE = ROOT / (os.environ.get("OXCE_AI_BUILD") or "build-ai") / "bin" / "openxcom.exe"
 WORK = Path(tempfile.gettempdir()) / "oxce_ai_probe"
-# трассы охоты за недетерминизмом ([AIMELEE], [AIPATH]) тоже: без них ai_arena --env OXCE_AI_TRACE_* пишет пустоту
-TAGS = ("[AISTATE]", "[AIDECIDE]", "[AIPROBE]", "[AIRESULT]", "[AICASUALTY]", "[AIMELEE]", "[AIPATH]")
+# трассы охоты за недетерминизмом ([AIMELEE], [AIPATH]) тоже: без них ai_arena --env OXCE_AI_TRACE_* пишет пустоту;
+# запись решений по OXCE_AI_RECORD ([AIREC], списки ходов [AICAND]) - план V2, шаг 2
+TAGS = ("[AISTATE]", "[AIDECIDE]", "[AIPROBE]", "[AIRESULT]", "[AICASUALTY]", "[AIMELEE]", "[AIPATH]", "[AIREC]", "[AICAND]")
 
 
 class Probe:
