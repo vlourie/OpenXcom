@@ -61,6 +61,7 @@ bool watchPoint(SavedBattleGame *, const BattleUnit *, Position &) { return fals
 bool halfWalk(SavedBattleGame *, const BattleUnit *) { return false; }
 int closeEnemies(SavedBattleGame *, const BattleUnit *, const Position &) { return 0; }
 bool revive(SavedBattleGame *, BattleUnit *, BattleAction *, const std::vector<int> &) { return false; }
+int turretsSeeing(SavedBattleGame *, BattleUnit *, const Position &) { return 0; }
 double param(const char *, double def) { return def; }
 void tally(const BattleUnit *, const char *) {}
 void logCasualty(SavedBattleGame *, const BattleUnit *, const BattleUnit *, const std::string &, bool, int, bool) {}
@@ -721,6 +722,43 @@ bool revive(SavedBattleGame *save, BattleUnit *unit, BattleAction *action, const
 	action->target = best;
 	action->run = false;
 	return true;
+}
+
+int turretsSeeing(SavedBattleGame *save, BattleUnit *unit, const Position &pos)
+{
+	static const bool on = envOn("OXCE_AI_TURRET");
+	if (!on || !careful(unit))
+	{
+		return 0;
+	}
+	// 12 % of the base's dead: the NINJA_RAID_SITE chaingun turret, median 15 tiles away - the engine's spotter count stops at 20
+	Tile *tile = save->getTile(pos);
+	if (!tile)
+	{
+		return 0;
+	}
+	updateSightings(save);
+	const UnitFaction own = unit->getFaction();
+	int seeing = 0;
+	for (auto *e : *save->getUnits())
+	{
+		if (e->isOut() || e->getFaction() == own || e->getFaction() == FACTION_NEUTRAL || e->getArmor()->allowsMoving())
+		{
+			continue;
+		}
+		if (!e->getArmor()->isAlwaysVisible() && lastSeen[(int)own].find(e->getId()) == lastSeen[(int)own].end())
+		{
+			continue; // the side has never seen it
+		}
+		Position origin = save->getTileEngine()->getSightOriginVoxel(e);
+		origin.z -= 2;
+		Position scan;
+		if (save->getTileEngine()->canTargetUnit(&origin, tile, &scan, e, false, pos != unit->getPosition() ? unit : nullptr))
+		{
+			++seeing;
+		}
+	}
+	return seeing;
 }
 
 void logState(SavedBattleGame *save, const char *when)

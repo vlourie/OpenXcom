@@ -76,6 +76,9 @@ int closeEnemies(SavedBattleGame *save, const BattleUnit *unit, const Position &
 /// The careful bot raises a downed comrade with a medikit's stimulant (OXCE_AI_REVIVE): standing on the body it spends uses
 /// until the comrade gets up; otherwise it sets a walk onto the nearest body in reach (reachable - the last findReachable). True when it set a walk.
 bool revive(SavedBattleGame *save, BattleUnit *unit, BattleAction *action, const std::vector<int> &reachable);
+/// The careful bot's cover out of turret fire (OXCE_AI_TURRET): living enemies that cannot move, whose place its side knows,
+/// with a line of fire to pos at any distance; 0 when off.
+int turretsSeeing(SavedBattleGame *save, BattleUnit *unit, const Position &pos);
 /// A tuning number from the environment (OXCE_AI_EVAL_RISK and the like), or def; always def in a release build.
 double param(const char *name, double def);
 /// Counts one use of a tactical rule for the result line ([AIRESULT] tac=).
