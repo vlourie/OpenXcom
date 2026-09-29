@@ -28,6 +28,7 @@
 #include "Pathfinding.h"
 #include "../Engine/Game.h"
 #include "../Engine/Logger.h"
+#include "../Engine/RNG.h"
 #include "../Engine/Timer.h"
 #include "../Mod/RuleItem.h"
 #include "../Savegame/BattleItem.h"
@@ -315,12 +316,76 @@ void think(BattlescapeState *state, SavedBattleGame *save)
 	}
 }
 
+/// FNV-1a over whole numbers: the fingerprint of the battle state before a decision (docs/research/ai-arena-v2-plan.md, 3.1).
+struct StateHash
+{
+	uint64_t h = 1469598103934665603ULL;
+	void add(long long v)
+	{
+		for (int i = 0; i < 8; ++i)
+		{
+			h = (h ^ (uint64_t)((v >> (i * 8)) & 0xff)) * 1099511628211ULL;
+		}
+	}
+	void item(const BattleItem *it)
+	{
+		add(it ? it->getId() : -1);
+		add(it ? it->getAmmoQuantity() : 0);
+		add(it ? it->getFuseTimer() : 0);
+	}
+};
+
+/// Two runs of one battle diverge at the first decision whose fingerprints differ: units (place, facing, TU, health, stun,
+/// morale, energy, fire, status, faction, who they see, what they carry), map (tile parts, doors, fire, smoke, items on the ground)
+/// and the random generator's state - three parts, to see at once which one it was.
+static void stateHash(SavedBattleGame *save, uint64_t &units, uint64_t &map, uint64_t &rng)
+{
+	StateHash u, m;
+	for (auto *bu : *save->getUnits())
+	{
+		u.add(bu->getId());
+		u.add(bu->getPosition().x); u.add(bu->getPosition().y); u.add(bu->getPosition().z);
+		u.add(bu->getDirection()); u.add(bu->getTimeUnits()); u.add(bu->getHealth()); u.add(bu->getStunlevel());
+		u.add(bu->getMorale()); u.add(bu->getEnergy()); u.add(bu->getFire()); u.add((int)bu->getStatus()); u.add((int)bu->getFaction());
+		for (const auto *seen : *bu->getVisibleUnits())
+		{
+			u.add(seen->getId());
+		}
+		for (const auto *it : *bu->getInventory())
+		{
+			u.item(it);
+			u.item(it->getAmmoForSlot(0));
+		}
+	}
+	for (int i = 0; i < save->getMapSizeXYZ(); ++i)
+	{
+		Tile *tile = save->getTile(i);
+		for (int part = O_FLOOR; part < O_MAX; ++part)
+		{
+			int id = -1, set = -1;
+			tile->getMapData(&id, &set, (TilePart)part);
+			m.add(id * 256 + set);
+			m.add(tile->isUfoDoorOpen((TilePart)part) ? 1 : 0);
+		}
+		m.add(tile->getFire()); m.add(tile->getSmoke());
+		for (const auto *it : *tile->getInventory())
+		{
+			m.item(it);
+		}
+	}
+	units = u.h;
+	map = m.h;
+	rng = RNG::getSeed();
+}
+
 void logDecision(SavedBattleGame *save, BattleUnit *unit, const BattleAction &action)
 {
 	if (!active())
 	{
 		return;
 	}
+	uint64_t hashUnits, hashMap, hashRng;
+	stateHash(save, hashUnits, hashMap, hashRng);
 	const int side = save->getSide();
 	if (side >= 0 && side < 3 && action.type != BA_NONE)
 	{
@@ -353,7 +418,8 @@ void logDecision(SavedBattleGame *save, BattleUnit *unit, const BattleAction &ac
 		<< " kneel=" << (action.kneel ? 1 : 0)
 		<< " aim=" << (target ? target->getId() : -1)
 		<< " weapon=" << (action.weapon ? action.weapon->getRules()->getType() : std::string("-"))
-		<< " seen=" << (seen.tellp() > 0 ? seen.str() : std::string("-"));
+		<< " seen=" << (seen.tellp() > 0 ? seen.str() : std::string("-"))
+		<< " hu=" << std::hex << hashUnits << " hm=" << hashMap << " hr=" << hashRng << std::dec;
 }
 
 void logCasualty(SavedBattleGame *save, const BattleUnit *victim, const BattleUnit *killer, const std::string &weapon,
