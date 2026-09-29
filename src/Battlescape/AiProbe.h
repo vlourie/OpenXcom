@@ -69,7 +69,7 @@ bool pickUp(const BattleUnit *unit);
 /// The careful bot, seeing no enemy, ends its turn facing the sighting of the known enemy nearest to reaching it (OXCE_AI_WATCH).
 bool watchPoint(SavedBattleGame *save, const BattleUnit *unit, Position &out);
 /// The careful bot on patrol with enemies known walks half its time units at most, as a player does (OXCE_AI_HALF).
-bool halfWalk(const BattleUnit *unit);
+bool halfWalk(SavedBattleGame *save, const BattleUnit *unit);
 /// A tuning number from the environment (OXCE_AI_EVAL_RISK and the like), or def; always def in a release build.
 double param(const char *name, double def);
 /// Counts one use of a tactical rule for the result line ([AIRESULT] tac=).

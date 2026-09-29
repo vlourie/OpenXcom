@@ -715,7 +715,7 @@ void AIModule::think(BattleAction *action)
 
 	// the careful bot on patrol in contact walks half its time units at most and keeps the rest for reaction fire and cover:
 	// it ended 77 % of turns with nothing left, 54 % of them in someone's sight (OXCE_AI_HALF)
-	if (action->type == BA_WALK && _AIMode == AI_PATROL && _knownEnemies && AiProbe::halfWalk(_unit))
+	if (action->type == BA_WALK && _AIMode == AI_PATROL && AiProbe::halfWalk(_save, _unit))
 	{
 		BattleActionCost keep;
 		keep.Time = _unit->getBaseStats()->tu / 2;
