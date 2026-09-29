@@ -1,7 +1,5 @@
 #pragma once
-#include <map>
 #include <string>
-#include <utility>
 #include <vector>
 /*
  * Copyright 2010-2026 OpenXcom Developers.
@@ -29,7 +27,6 @@ class BattlescapeState;
 class SavedBattleGame;
 class BattleUnit;
 class Position;
-class RuleItem;
 struct BattleAction;
 
 /**
@@ -90,9 +87,6 @@ int turretsSeeing(SavedBattleGame *save, BattleUnit *unit, const Position &pos);
 bool flee(SavedBattleGame *save, BattleUnit *unit, BattleAction *action, const std::vector<int> &reachable);
 /// How many AI actions a unit takes in a row before the next unit: the engine's 2, or OXCE_AI_ACTIONS for the careful bot.
 int maxActions(const BattleUnit *unit);
-/// An ItemContainer's contents for the battle generator: as stored (by heap address, so a new order in every process) in the game,
-/// by item type in a probe - the battle's item list, and every tie the AI breaks by its order, must repeat from run to run.
-std::vector<std::pair<const RuleItem*, int>> stableItems(const std::map<const RuleItem*, int> &contents);
 /// A tuning number from the environment (OXCE_AI_EVAL_RISK and the like), or def; always def in a release build.
 double param(const char *name, double def);
 /// Counts one use of a tactical rule for the result line ([AIRESULT] tac=).

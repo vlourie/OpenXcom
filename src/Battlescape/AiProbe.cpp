@@ -69,10 +69,6 @@ bool revive(SavedBattleGame *, BattleUnit *, BattleAction *, const std::vector<i
 int turretsSeeing(SavedBattleGame *, BattleUnit *, const Position &) { return 0; }
 bool flee(SavedBattleGame *, BattleUnit *, BattleAction *, const std::vector<int> &) { return false; }
 int maxActions(const BattleUnit *) { return 2; }
-std::vector<std::pair<const RuleItem*, int>> stableItems(const std::map<const RuleItem*, int> &contents)
-{
-	return std::vector<std::pair<const RuleItem*, int>>(contents.begin(), contents.end());
-}
 double param(const char *, double def) { return def; }
 void tally(const BattleUnit *, const char *) {}
 void logCasualty(SavedBattleGame *, const BattleUnit *, const BattleUnit *, const std::string &, bool, int, bool) {}
@@ -984,18 +980,6 @@ int maxActions(const BattleUnit *unit)
 	// with 260 of 282 left (d9probe, 127 such hits on 22 battles) - a player hits on until the enemy falls
 	static const int n = getenv("OXCE_AI_ACTIONS") ? atoi(getenv("OXCE_AI_ACTIONS")) : 0;
 	return n > 2 && careful(unit) ? n : 2;
-}
-
-std::vector<std::pair<const RuleItem*, int>> stableItems(const std::map<const RuleItem*, int> &contents)
-{
-	// the sectoid fist (fair22 seed 202, turn 17) walked to one of two items of equal worth: BattlescapeGame::surveyItems keeps
-	// the first in the battle's item list, and that list is filled from this map in heap-address order
-	std::vector<std::pair<const RuleItem*, int>> out(contents.begin(), contents.end());
-	if (active())
-	{
-		std::sort(out.begin(), out.end(), [](const auto &a, const auto &b) { return a.first->getType() < b.first->getType(); });
-	}
-	return out;
 }
 
 void logState(SavedBattleGame *save, const char *when)
