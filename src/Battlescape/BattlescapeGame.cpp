@@ -443,7 +443,9 @@ void BattlescapeGame::handleAI(BattleUnit *unit)
 
 	_AIActionCounter = action.number;
 	BattleItem *weapon = unit->getMainHandWeapon();
-	bool pickUpWeaponsMoreActively = unit->getPickUpWeaponsMoreActively();
+	// the careful bot picks up as the AI does when told to more actively, but only out of every enemy's sight it knows of
+	const bool botArms = AiProbe::pickUp(unit);
+	bool pickUpWeaponsMoreActively = unit->getPickUpWeaponsMoreActively() || botArms;
 	bool weaponPickedUp = false;
 	bool walkToItem = false;
 	if (!weapon || !weapon->haveAnyAmmo())
@@ -454,6 +456,11 @@ void BattlescapeGame::handleAI(BattleUnit *unit)
 			{
 				weaponPickedUp = findItem(&action, pickUpWeaponsMoreActively, walkToItem);
 			}
+		}
+		else if (botArms && unit->getVisibleUnits()->empty())
+		{
+			weaponPickedUp = findItem(&action, true, walkToItem);
+			AiProbe::tally(unit, weaponPickedUp ? "arms.take" : walkToItem ? "arms.walk" : "arms.none");
 		}
 	}
 	if (pickUpWeaponsMoreActively && weaponPickedUp)
