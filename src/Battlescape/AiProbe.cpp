@@ -57,7 +57,7 @@ bool careful(const BattleUnit *) { return false; }
 bool evalFire(const BattleUnit *) { return false; }
 bool pickUp(const BattleUnit *) { return false; }
 bool watchPoint(SavedBattleGame *, const BattleUnit *, Position &) { return false; }
-bool halfWalk(const BattleUnit *) { return false; }
+bool halfWalk(SavedBattleGame *, const BattleUnit *) { return false; }
 double param(const char *, double def) { return def; }
 void tally(const BattleUnit *, const char *) {}
 void logCasualty(SavedBattleGame *, const BattleUnit *, const BattleUnit *, const std::string &, bool, int, bool) {}
@@ -198,12 +198,6 @@ bool evalFire(const BattleUnit *unit)
 bool pickUp(const BattleUnit *unit)
 {
 	static const bool on = envOn("OXCE_AI_ARMS");
-	return on && careful(unit);
-}
-
-bool halfWalk(const BattleUnit *unit)
-{
-	static const bool on = envOn("OXCE_AI_HALF");
 	return on && careful(unit);
 }
 
@@ -571,6 +565,31 @@ bool watchPoint(SavedBattleGame *save, const BattleUnit *unit, Position &out)
 		}
 	}
 	return found;
+}
+
+bool halfWalk(SavedBattleGame *save, const BattleUnit *unit)
+{
+	static const bool on = envOn("OXCE_AI_HALF");
+	if (!on || !careful(unit))
+	{
+		return false;
+	}
+	// "in contact" is the side's own memory of a living enemy: the engine's known-enemies count is kept for the alien side only
+	updateSightings(save);
+	std::map<int, const BattleUnit *> byId;
+	for (const auto *u : *save->getUnits())
+	{
+		byId[u->getId()] = u;
+	}
+	for (const auto &s : lastSeen[(int)unit->getFaction()])
+	{
+		auto e = byId.find(s.first);
+		if (e != byId.end() && !e->second->isOut())
+		{
+			return true;
+		}
+	}
+	return false;
 }
 
 void logState(SavedBattleGame *save, const char *when)
