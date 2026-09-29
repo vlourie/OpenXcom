@@ -25,6 +25,7 @@
 #include "AIModule.h"
 #include "BattlescapeGame.h"
 #include "BattlescapeState.h"
+#include "Pathfinding.h"
 #include "../Engine/Game.h"
 #include "../Engine/Logger.h"
 #include "../Engine/Timer.h"
@@ -59,6 +60,7 @@ bool pickUp(const BattleUnit *) { return false; }
 bool watchPoint(SavedBattleGame *, const BattleUnit *, Position &) { return false; }
 bool halfWalk(SavedBattleGame *, const BattleUnit *) { return false; }
 int closeEnemies(SavedBattleGame *, const BattleUnit *, const Position &) { return 0; }
+bool revive(SavedBattleGame *, BattleUnit *, BattleAction *, const std::vector<int> &) { return false; }
 double param(const char *, double def) { return def; }
 void tally(const BattleUnit *, const char *) {}
 void logCasualty(SavedBattleGame *, const BattleUnit *, const BattleUnit *, const std::string &, bool, int, bool) {}
@@ -613,6 +615,107 @@ int closeEnemies(SavedBattleGame *save, const BattleUnit *unit, const Position &
 		close += Position::distance2d(pos, e->getPosition()) <= 2 ? 1 : 0;
 	}
 	return close;
+}
+
+bool revive(SavedBattleGame *save, BattleUnit *unit, BattleAction *action, const std::vector<int> &reachable)
+{
+	static const bool on = envOn("OXCE_AI_REVIVE");
+	if (!on || !careful(unit))
+	{
+		return false;
+	}
+	// 18.6 % of the bot's dead were lying unconscious and got finished off, and half of them one stimulant would have raised
+	BattleItem *kit = nullptr;
+	for (auto *item : *unit->getInventory())
+	{
+		const RuleItem *rule = item->getRules();
+		if (rule->getBattleType() == BT_MEDIKIT && (rule->getMediKitType() == BMT_STIMULANT || rule->getMediKitType() == BMT_NORMAL)
+			&& rule->getStunRecovery() > 0 && item->getStimulantQuantity() > 0
+			&& rule->getAllowTargetGround() && rule->getAllowTargetFriendGround())
+		{
+			kit = item;
+			break;
+		}
+	}
+	if (!kit)
+	{
+		return false;
+	}
+	BattleActionCost use(BA_USE, unit, kit);
+	const int useTU = use.Time + 4; // the AI's hardcoded 4 TUs for picking the kit up, as its own self-use pays
+	// the same bodies the player's medikit takes: small, woundable, lying where they fell (ActionMenuState)
+	auto downed = [&](BattleUnit *bu)
+	{
+		if (bu->getStatus() != STATUS_UNCONSCIOUS || bu->getOriginalFaction() != unit->getOriginalFaction() || bu->isBigUnit()
+			|| bu->getHealth() <= 0 || (!bu->isWoundable() && !kit->getRules()->getAllowTargetImmune()))
+		{
+			return false;
+		}
+		const Tile *tile = save->getTile(bu->getPosition());
+		if (!tile)
+		{
+			return false;
+		}
+		for (const auto *bi : *const_cast<Tile *>(tile)->getInventory())
+		{
+			if (bi->getUnit() == bu)
+			{
+				return true;
+			}
+		}
+		return false;
+	};
+	for (auto *bu : *save->getUnits())
+	{
+		if (bu->getPosition() != unit->getPosition() || bu == unit || !downed(bu))
+		{
+			continue;
+		}
+		while (kit->getStimulantQuantity() > 0 && bu->getStatus() == STATUS_UNCONSCIOUS)
+		{
+			BattleAction stim;
+			stim.weapon = kit;
+			stim.type = BA_USE;
+			stim.actor = unit;
+			stim.updateTU();
+			stim.Time += 4;
+			if (!stim.spendTU())
+			{
+				tally(unit, "revive.short");
+				break;
+			}
+			save->getTileEngine()->medikitUse(&stim, bu, BMA_STIMULANT, BODYPART_TORSO);
+			tally(unit, bu->getStatus() == STATUS_UNCONSCIOUS ? "revive.use" : "revive.up");
+			save->getTileEngine()->medikitRemoveIfEmpty(&stim);
+		}
+		return false;
+	}
+	// no body here: walk onto the nearest one this turn's time units reach with one use to spare
+	Position best;
+	int bestTU = -1;
+	for (auto *bu : *save->getUnits())
+	{
+		if (bu == unit || !downed(bu) || std::find(reachable.begin(), reachable.end(), save->getTileIndex(bu->getPosition())) == reachable.end())
+		{
+			continue;
+		}
+		const int walk = save->getPathfinding()->reachedTU(bu->getPosition());
+		if (walk < 0 || walk + useTU > unit->getTimeUnits() || (bestTU >= 0 && walk >= bestTU))
+		{
+			continue;
+		}
+		bestTU = walk;
+		best = bu->getPosition();
+	}
+	if (bestTU < 0)
+	{
+		return false;
+	}
+	tally(unit, "revive.walk");
+	action->type = BA_WALK;
+	action->target = best;
+	action->run = false;
+	return true;
 }
 
 void logState(SavedBattleGame *save, const char *when)
