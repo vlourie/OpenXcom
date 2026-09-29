@@ -263,6 +263,8 @@ public:
 	int takeItemFromGround(BattleItem* item, BattleAction *action);
 	/// Assigns the item to a slot (stolen from battlescapeGenerator::addItem()).
 	bool takeItem(BattleItem* item, BattleAction *action);
+	/// The careful bot: the nearest loaded gun or fitting ammo on the ground near by - takes it, or walks to it.
+	bool findBotWeapon(BattleAction *action, bool &walkToItem);
 	/// Returns the type of action that is reserved.
 	BattleActionType getReservedAction();
 	/// Tallies the living units, converting them if necessary.

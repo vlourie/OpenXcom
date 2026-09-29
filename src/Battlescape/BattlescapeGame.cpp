@@ -459,7 +459,7 @@ void BattlescapeGame::handleAI(BattleUnit *unit)
 		}
 		else if (botArms && unit->getVisibleUnits()->empty())
 		{
-			weaponPickedUp = findItem(&action, true, walkToItem);
+			weaponPickedUp = findBotWeapon(&action, walkToItem);
 			AiProbe::tally(unit, weaponPickedUp ? "arms.take" : walkToItem ? "arms.walk" : "arms.none");
 		}
 	}
@@ -3037,6 +3037,81 @@ bool BattlescapeGame::takeItem(BattleItem* item, BattleAction *action)
 	default: break;
 	}
 	return placed;
+}
+
+/**
+ * The careful bot's own search: surveyItems ranks by attraction, so junk outranks a gun, and worthTaking
+ * counts 25 free slots, which a Piratez soldier never has - the gun a panic or a faint dropped at its feet stayed there.
+ * Here only what makes the unit armed again: a loaded firearm (its right hand free), or ammo for a gun in its hands;
+ * the nearest within 8 tiles, on a tile no one else stands on. takeItem itself checks the room and the time units.
+ * @param action The unit's action; becomes a walk to the item when it lies elsewhere.
+ * @param walkToItem Set when the action is that walk.
+ * @return Whether an item was taken.
+ */
+bool BattlescapeGame::findBotWeapon(BattleAction *action, bool &walkToItem)
+{
+	BattleUnit *unit = action->actor;
+	auto *right = unit->getRightHandWeapon();
+	auto *left = unit->getLeftHandWeapon();
+	auto fitsHands = [&](const RuleItem *ammo)
+	{
+		for (auto *w : { right, left })
+		{
+			if (w && w->isWeaponWithAmmo() && !w->haveAnyAmmo() && w->getRules()->getSlotForAmmo(ammo) != -1)
+			{
+				return true;
+			}
+		}
+		return false;
+	};
+	BattleItem *best = nullptr;
+	int bestDist = 9;
+	for (auto *bi : *_save->getItems())
+	{
+		Tile *tile = bi->getTile();
+		if (bi->isOwnerIgnored() || !bi->getSlot() || bi->getSlot()->getType() != INV_GROUND || !tile || tile->getDangerous())
+		{
+			continue;
+		}
+		const int dist = Position::distance2d(unit->getPosition(), tile->getPosition());
+		if (dist >= bestDist || tile->getPosition().z != unit->getPosition().z)
+		{
+			continue;
+		}
+		const bool useful = bi->getRules()->getBattleType() == BT_FIREARM
+			? !right && bi->haveAnyAmmo()
+			: bi->getRules()->getBattleType() == BT_AMMO && fitsHands(bi->getRules());
+		if (!useful || (tile->getUnit() && tile->getUnit() != unit && !tile->getUnit()->isOut()))
+		{
+			continue;
+		}
+		best = bi;
+		bestDist = dist;
+	}
+	if (!best)
+	{
+		return false;
+	}
+	if (best->getTile()->getPosition() == unit->getPosition())
+	{
+		if (!takeItem(best, action))
+		{
+			best->getTile()->setDangerous(true); // no room or no time units: not again this turn
+			return false;
+		}
+		if (best->getGlow())
+		{
+			_save->getTileEngine()->calculateLighting(LL_ITEMS, unit->getPosition());
+			_save->getTileEngine()->calculateFOV(unit->getPosition(), best->getVisibilityUpdateRange(), false);
+		}
+		return true;
+	}
+	action->target = best->getTile()->getPosition();
+	action->type = BA_WALK;
+	action->finalAction = false;
+	action->desperate = false;
+	walkToItem = true;
+	return false;
 }
 
 /**
