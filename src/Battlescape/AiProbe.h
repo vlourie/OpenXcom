@@ -79,6 +79,10 @@ bool revive(SavedBattleGame *save, BattleUnit *unit, BattleAction *action, const
 /// The careful bot's cover out of turret fire (OXCE_AI_TURRET): living enemies that cannot move, whose place its side knows,
 /// with a line of fire to pos at any distance; 0 when off.
 int turretsSeeing(SavedBattleGame *save, BattleUnit *unit, const Position &pos);
+/// The careful bot's soldier who cannot fight - empty hands, health under half or stun at half the health - runs from the enemies
+/// its side sees (OXCE_AI_FLEE): a walk to the reachable tile fewest of them have a line of fire to, then farthest from them.
+/// True when it set a walk.
+bool flee(SavedBattleGame *save, BattleUnit *unit, BattleAction *action, const std::vector<int> &reachable);
 /// A tuning number from the environment (OXCE_AI_EVAL_RISK and the like), or def; always def in a release build.
 double param(const char *name, double def);
 /// Counts one use of a tactical rule for the result line ([AIRESULT] tac=).

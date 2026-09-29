@@ -448,9 +448,9 @@ void AIModule::think(BattleAction *action)
 	_rifle = false;
 	_blaster = false;
 	_reachable = _save->getPathfinding()->findReachable(_unit, BattleActionCost());
-	if (AiProbe::revive(_save, _unit, action, _reachable))
+	if (AiProbe::revive(_save, _unit, action, _reachable) || AiProbe::flee(_save, _unit, action, _reachable))
 	{
-		// walking onto a downed comrade's body, the stimulant goes on the next think
+		// walking onto a downed comrade's body (the stimulant goes on the next think) or away from the enemy it cannot fight
 		_escapeTUs = 0;
 		_ambushTUs = 0;
 		return;
