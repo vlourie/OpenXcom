@@ -62,6 +62,7 @@ bool halfWalk(SavedBattleGame *, const BattleUnit *) { return false; }
 int closeEnemies(SavedBattleGame *, const BattleUnit *, const Position &) { return 0; }
 bool revive(SavedBattleGame *, BattleUnit *, BattleAction *, const std::vector<int> &) { return false; }
 int turretsSeeing(SavedBattleGame *, BattleUnit *, const Position &) { return 0; }
+bool flee(SavedBattleGame *, BattleUnit *, BattleAction *, const std::vector<int> &) { return false; }
 double param(const char *, double def) { return def; }
 void tally(const BattleUnit *, const char *) {}
 void logCasualty(SavedBattleGame *, const BattleUnit *, const BattleUnit *, const std::string &, bool, int, bool) {}
@@ -759,6 +760,89 @@ int turretsSeeing(SavedBattleGame *save, BattleUnit *unit, const Position &pos)
 		}
 	}
 	return seeing;
+}
+
+bool flee(SavedBattleGame *save, BattleUnit *unit, BattleAction *action, const std::vector<int> &reachable)
+{
+	static const bool on = envOn("OXCE_AI_FLEE");
+	if (!on || !careful(unit))
+	{
+		return false;
+	}
+	// 5 % of the base's turns: the soldier sees an enemy, stays put and spends under a quarter of its time units - killed
+	// in the enemy's turn 2.7 % (empty hands 6.6 %, health under half 36 %), 15 % of the losses in the enemy's turn;
+	// the cover rules need a tile fewer see than now, and next to the enemy there is none
+	const bool unarmed = !unit->getRightHandWeapon() && !unit->getLeftHandWeapon();
+	const bool hurt = unit->getHealth() * 2 < unit->getBaseStats()->health || unit->getStunlevel() * 2 >= unit->getHealth();
+	if ((!unarmed && !hurt) || unit->getTimeUnits() * 4 < unit->getBaseStats()->tu)
+	{
+		return false;
+	}
+	const UnitFaction own = unit->getFaction();
+	std::vector<BattleUnit *> seen;
+	for (auto *e : *save->getUnits())
+	{
+		if (!e->isOut() && e->getFaction() != own && e->getFaction() != FACTION_NEUTRAL && e->getTurnsSinceSpottedByFaction(own) == 0
+			&& Position::distance2d(e->getPosition(), unit->getPosition()) <= 25)
+		{
+			seen.push_back(e);
+		}
+	}
+	if (seen.empty())
+	{
+		return false;
+	}
+	TileEngine *te = save->getTileEngine();
+	// fewer lines of fire first, then distance to the nearest (up to 20 tiles), then the time units the walk takes
+	auto score = [&](const Position &pos, int walk, int &lines)
+	{
+		Tile *tile = save->getTile(pos);
+		int nearest = 20;
+		lines = 0;
+		for (auto *e : seen)
+		{
+			nearest = std::min(nearest, Position::distance2d(pos, e->getPosition()));
+			Position origin = te->getSightOriginVoxel(e);
+			origin.z -= 2;
+			Position scan;
+			if (te->canTargetUnit(&origin, tile, &scan, e, false, pos != unit->getPosition() ? unit : nullptr))
+			{
+				++lines;
+			}
+		}
+		return -1000 * lines + 10 * nearest - walk / 10;
+	};
+	int hereLines = 0, bestLines = 0, lines = 0;
+	int best = score(unit->getPosition(), 0, hereLines);
+	bestLines = hereLines;
+	Position bestPos = unit->getPosition();
+	for (int index : reachable)
+	{
+		Position pos = save->getTileCoords(index);
+		const int walk = save->getPathfinding()->reachedTU(pos);
+		if (walk <= 0 || pos == unit->getPosition())
+		{
+			continue;
+		}
+		const int s = score(pos, walk, lines);
+		if (s > best)
+		{
+			best = s;
+			bestPos = pos;
+			bestLines = lines;
+		}
+	}
+	if (bestPos == unit->getPosition())
+	{
+		tally(unit, unarmed ? "flee.stay.unarmed" : "flee.stay.hurt");
+		return false;
+	}
+	// out: to a tile fewer of them can shoot at; back: the same lines of fire, only farther
+	tally(unit, bestLines < hereLines ? (unarmed ? "flee.out.unarmed" : "flee.out.hurt") : (unarmed ? "flee.back.unarmed" : "flee.back.hurt"));
+	action->type = BA_WALK;
+	action->target = bestPos;
+	action->run = false; // the reachable tiles and their time units are the walking ones
+	return true;
 }
 
 void logState(SavedBattleGame *save, const char *when)
