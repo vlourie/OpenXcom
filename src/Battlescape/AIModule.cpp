@@ -1205,6 +1205,7 @@ void AIModule::setupEscape()
 	const int BASE_DESPERATE_SUCCESS = 110;
 	const int FAST_PASS_THRESHOLD = 100; // a score that's good enough to quit the while loop early; it's subjective, hand-tuned and may need tweaking
 	const int GAP_PENALTY = 60; // per enemy seen within 2 tiles of the tile, the careful bot only (OXCE_AI_GAP)
+	const int TURRET_PENALTY = 100; // per known turret with a line of fire to the tile at any distance, the careful bot only (OXCE_AI_TURRET)
 
 	std::vector<Position> randomTileSearch = _save->getTileSearch();
 	RNG::shuffle(randomTileSearch);
@@ -1321,6 +1322,7 @@ void AIModule::setupEscape()
 			}
 			// the careful bot does not take cover next to an enemy it sees: melee comes to the back on the enemy turn (OXCE_AI_GAP)
 			score -= AiProbe::closeEnemies(_save, _unit, _escapeAction.target) * GAP_PENALTY;
+			score -= AiProbe::turretsSeeing(_save, _unit, _escapeAction.target) * TURRET_PENALTY;
 
 			if (_traceAI)
 			{
@@ -1364,6 +1366,11 @@ void AIModule::setupEscape()
 		if (closeNow > 0)
 		{
 			AiProbe::tally(_unit, AiProbe::closeEnemies(_save, _unit, bestTile) < closeNow ? "gap.away" : "gap.stuck");
+		}
+		const int turretsNow = AiProbe::turretsSeeing(_save, _unit, _unit->getPosition());
+		if (turretsNow > 0)
+		{
+			AiProbe::tally(_unit, AiProbe::turretsSeeing(_save, _unit, bestTile) < turretsNow ? "turret.away" : "turret.stuck");
 		}
 	}
 	if (_traceAI)
