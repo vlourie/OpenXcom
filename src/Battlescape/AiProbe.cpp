@@ -772,7 +772,9 @@ bool flee(SavedBattleGame *save, BattleUnit *unit, BattleAction *action, const s
 	// 5 % of the base's turns: the soldier sees an enemy, stays put and spends under a quarter of its time units - killed
 	// in the enemy's turn 2.7 % (empty hands 6.6 %, health under half 36 %), 15 % of the losses in the enemy's turn;
 	// the cover rules need a tile fewer see than now, and next to the enemy there is none
-	const bool unarmed = !unit->getRightHandWeapon() && !unit->getLeftHandWeapon();
+	// no weapon the unit can use - empty hands are not enough: armour's empty-hand weapon (STR_GAUNTLET_CLAW) is the bot's
+	// top killer, 11 % of its kills, and fleeing with it cost 9.5 % of the kills and 4.9 % of the wins (f20s5, f20s9)
+	const bool unarmed = !unit->getMainHandWeapon() && !unit->getUtilityWeapon(BT_MELEE);
 	const bool hurt = unit->getHealth() * 2 < unit->getBaseStats()->health || unit->getStunlevel() * 2 >= unit->getHealth();
 	if ((!unarmed && !hurt) || unit->getTimeUnits() * 4 < unit->getBaseStats()->tu)
 	{
