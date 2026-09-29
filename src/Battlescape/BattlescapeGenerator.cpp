@@ -62,6 +62,7 @@
 #include "../Mod/RuleBaseFacility.h"
 #include "../Mod/Texture.h"
 #include "Pathfinding.h"
+#include "AiProbe.h"
 
 namespace OpenXcom
 {
@@ -1233,7 +1234,7 @@ void BattlescapeGenerator::deployXCOM(const RuleStartingCondition* startingCondi
 	if (_craft != 0)
 	{
 		// add items that are in the craft
-		for (const auto& pair : *_craft->getItems()->getContents())
+		for (const auto& pair : AiProbe::stableItems(*_craft->getItems()->getContents()))
 		{
 			if (startingCondition != 0 && !startingCondition->isItemPermitted(pair.first->getType(), _game->getMod(), _craft))
 			{
@@ -1255,9 +1256,9 @@ void BattlescapeGenerator::deployXCOM(const RuleStartingCondition* startingCondi
 		if (_game->getSavedGame()->getMonthsPassed() != -1)
 		{
 			// add items that are in the base
-			for (auto i = _base->getStorageItems()->getContents()->begin(); i != _base->getStorageItems()->getContents()->end();)
+			for (const auto& pair : AiProbe::stableItems(*_base->getStorageItems()->getContents()))
 			{
-				const RuleItem *rule = i->first;
+				const RuleItem *rule = pair.first;
 				if (
 					// is item allowed in base defense?
 					rule->canBeEquippedBeforeBaseDefense() &&
@@ -1269,20 +1270,14 @@ void BattlescapeGenerator::deployXCOM(const RuleStartingCondition* startingCondi
 					// we know how to use this item
 					_game->getSavedGame()->isResearched(rule->getRequirements()))
 				{
-					for (int count = 0; count < i->second; count++)
+					for (int count = 0; count < pair.second; count++)
 					{
-						_save->createItemForTile(i->first, _craftInventoryTile);
+						_save->createItemForTile(pair.first, _craftInventoryTile);
 					}
-					auto tmp = i; // copy
-					++i;
 					if (!_baseInventory)
 					{
-						_base->getStorageItems()->removeItem(tmp->first, tmp->second);
+						_base->getStorageItems()->removeItem(pair.first, pair.second);
 					}
-				}
-				else
-				{
-					++i;
 				}
 			}
 		}
@@ -1291,7 +1286,7 @@ void BattlescapeGenerator::deployXCOM(const RuleStartingCondition* startingCondi
 		{
 			if (craft->getStatus() == "STR_OUT")
 				continue;
-			for (const auto& pair : *craft->getItems()->getContents())
+			for (const auto& pair : AiProbe::stableItems(*craft->getItems()->getContents()))
 			{
 				for (int count = 0; count < pair.second; count++)
 				{

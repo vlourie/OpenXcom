@@ -173,6 +173,10 @@ public:
 	~BattlescapeGame();
 	/// Checks for units panicking or falling and so on.
 	int think();
+	/// The queue of battle states (the AI turn probe fingerprints it before each decision).
+	const std::list<BattleState*> &getStates() const { return _states; }
+	/// AI actions of the current unit so far (the AI turn probe fingerprints it before each decision).
+	int getAIActionCounter() const { return _AIActionCounter; }
 	/// Initializes the Battlescape game.
 	void init();
 	/// Determines whether a playable unit is selected.

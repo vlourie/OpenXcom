@@ -81,7 +81,9 @@ def one(seed, turns, diff, timeout, campaign, mission=None, tactics=False, caref
         SLOTS.put(slot)
     row = {"seed": seed, "want": mission or "", "seconds": f"{r.seconds:.0f}", "note": "",
            "_casualties": r.tagged("[AICASUALTY]"), "_tiles": r.tagged("[AISTATE]"),
-           "_decide": r.tagged("[AIDECIDE]") if os.environ.get("OXCE_AI_KEEP_DECIDE") else []}
+           # решения и, по OXCE_AI_TRACE_MELEE, кандидаты ближнего боя ([AIMELEE]), по OXCE_AI_TRACE_PATH -
+           # расчёты пути ([AIPATH]) - в порядке лога
+           "_decide": [l for l in r.lines if l.startswith(("[AIDECIDE]", "[AIMELEE]", "[AIPATH]"))] if os.environ.get("OXCE_AI_KEEP_DECIDE") else []}
     row.update(moves)
     battle = r.tagged("[AIPROBE] battle")
     if battle:
