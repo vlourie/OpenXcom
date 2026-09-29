@@ -21,13 +21,15 @@ import tempfile
 import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, HERE)
+# без psutil gpuq перезапускает этот тест под другим питоном - до создания TMP
+import gpuq  # noqa: E402  (только чистые функции, без HOME)
+
+sys.stdout.reconfigure(encoding="utf-8")  # кириллица при перенаправлении (R-001)
 TMP = tempfile.mkdtemp(prefix="gpuq_test_")
 ENV = dict(os.environ, GPUQ_HOME=os.path.join(TMP, "q"), GPUQ_FAKE_GPU="1",
            PYTHONIOENCODING="utf-8")
 MARKS = os.path.join(TMP, "marks.txt")
-
-sys.path.insert(0, HERE)
-import gpuq  # noqa: E402  (только чистые функции, без HOME)
 
 
 def q(*args):
@@ -119,7 +121,8 @@ def test_now_retry_stop():
     q("add", "--name", "hot", *job("hot", 1))
     q("urgent", "hot", "--now")
     t = time.time()
-    while "start hot" not in io.open(MARKS, encoding="utf-8").read():
+    # long уже идёт, но marks.txt его питон мог ещё не создать
+    while not os.path.exists(MARKS) or "start hot" not in io.open(MARKS, encoding="utf-8").read():
         assert time.time() - t < 20, "hot не запустился"
         time.sleep(0.3)
     st = state()
