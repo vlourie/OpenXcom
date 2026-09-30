@@ -88,7 +88,7 @@ void propose(const BattleUnit *, char, const char *, int, const BattleAction &) 
 void chosen(const BattleUnit *, char) {}
 void modeOdds(const BattleUnit *, int, int, int, int, int, int) {}
 void traceTile(const BattleUnit *, const char *, const Position &, int) {}
-void walkPlanned(SavedBattleGame *, BattleUnit *, bool) {}
+void walkPlanned(SavedBattleGame *, BattleUnit *, bool, bool) {}
 bool patrolOutOfEnergy(SavedBattleGame *, BattleUnit *, const BattleAction &, bool) { return false; }
 void sideEnds(SavedBattleGame *) {}
 void logCasualty(SavedBattleGame *, const BattleUnit *, const BattleUnit *, const std::string &, bool, int, bool) {}
@@ -512,6 +512,8 @@ struct Exec
 	int rec = -1, unit = -1, side = -1, turn = 0;
 	int tu = 0;
 	int walk = -1;
+	/// the walk goes to an item (findItem / findBotWeapon replaced the decision's action): "item":1 in [AIEXEC] and [AIPATROL]
+	bool item = false;
 	std::map<int, Snapshot> units;
 	std::vector<std::string> trail;
 	/// a patrol walk to its node, followed by [AIPATROL] (OXCE_AI_RECORD_PATH): the node, the move type, the tiles in reach
@@ -652,6 +654,7 @@ void flushExec(SavedBattleGame *save)
 	std::ostringstream line;
 	line << "[AIEXEC] {\"v\":1,\"rec\":" << exec.rec << ",\"unit\":" << exec.unit << ",\"walk\":";
 	if (exec.walk < 0) line << "null"; else line << exec.walk;
+	if (exec.item) line << ",\"item\":1";
 	if (self)
 	{
 		const auto &b = exec.units[exec.unit];
@@ -818,11 +821,12 @@ void traceTile(const BattleUnit *unit, const char *what, const Position &pos, in
 
 namespace { void logPatrolPath(SavedBattleGame *save, BattleUnit *unit, bool pushed); }
 
-void walkPlanned(SavedBattleGame *save, BattleUnit *unit, bool pushed)
+void walkPlanned(SavedBattleGame *save, BattleUnit *unit, bool pushed, bool item)
 {
 	if (record() && exec.unit == unit->getId())
 	{
 		exec.walk = pushed ? 1 : 0;
+		exec.item = item;
 		if (exec.patrol)
 		{
 			exec.patrol = false;
@@ -1018,7 +1022,7 @@ void logPatrolPath(SavedBattleGame *save, BattleUnit *unit, bool pushed)
 
 	std::ostringstream line;
 	line << "[AIPATROL] {\"v\":3,\"rec\":" << exec.rec << ",\"unit\":" << unit->getId() << ",\"pos\":" << pos(from) << ",\"to\":" << pos(exec.target)
-		<< ",\"bam\":" << exec.bam << ",\"pushed\":" << (pushed ? 1 : 0) << ",\"len\":" << (pushed ? (int)path.size() : 0) << ",\"cost\":" << cost
+		<< ",\"bam\":" << exec.bam << (exec.item ? ",\"item\":1" : "") << ",\"pushed\":" << (pushed ? 1 : 0) << ",\"len\":" << (pushed ? (int)path.size() : 0) << ",\"cost\":" << cost
 		<< ",\"first\":";
 	if (pushed)
 		line << "{\"dir\":" << firstDir << ",\"tu\":" << firstTu << ",\"en\":" << firstEn << ",\"to\":" << pos(firstTo) << "}";
