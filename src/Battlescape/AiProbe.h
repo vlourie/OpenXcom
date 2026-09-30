@@ -106,6 +106,10 @@ void traceTile(const BattleUnit *unit, const char *what, const Position &pos, in
 /// The walk the decision asked for got a path (handleAI pushes it) or not (it is dropped). With OXCE_AI_RECORD_PATH a
 /// patrol walk also writes [AIPATROL]: its path, what stops its first step, and the reachable tile that gets closest.
 void walkPlanned(SavedBattleGame *save, BattleUnit *unit, bool pushed);
+/// ENERGY_PATROL_END_V2 (OXCE_AI_ENERGY_PATROL_END, bench only): the patrol walk handleAI just planned is stopped by energy,
+/// and the unit has less energy than the cheapest step to any neighbouring tile, other units aside - it has no step left
+/// this turn. Checked after walkPlanned, on the same path.
+bool patrolOutOfEnergy(SavedBattleGame *save, BattleUnit *unit, const BattleAction &action, bool pushed);
 /// A side's turn ends (BattlescapeGame::endTurn): the last decision's action is over.
 void sideEnds(SavedBattleGame *save);
 /// One line per unit killed or knocked out ([AICASUALTY]): by whom, with what, from how far, on whose turn.

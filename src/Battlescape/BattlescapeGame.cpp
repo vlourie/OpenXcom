@@ -502,6 +502,10 @@ void BattlescapeGame::handleAI(BattleUnit *unit)
 			_save->getPathfinding()->calculate(action.actor, action.target, BAM_NORMAL);
 		}
 		AiProbe::walkPlanned(_save, unit, _save->getPathfinding()->getStartDirection() != -1);
+		if (!walkToItem && ai->isPatrolWalk(action) && AiProbe::patrolOutOfEnergy(_save, unit, action, _save->getPathfinding()->getStartDirection() != -1))
+		{
+			ai->spendPatrol();
+		}
 		if (_save->getPathfinding()->getStartDirection() != -1)
 		{
 			statePushBack(new UnitWalkBState(this, action));
