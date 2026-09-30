@@ -980,10 +980,16 @@ void logPatrolPath(SavedBattleGame *save, BattleUnit *unit, bool pushed)
 	// the cheapest step to a neighbouring tile by energy, other units aside (ENERGY_PATROL_END_V2): the game's step cost in
 	// all 10 directions with the walk's move type, with the other units lifted off the tiles around for the count and put
 	// straight back - they are a passing obstacle, the terrain, the stairs and the unit's size are not
+	// (getTUCost and all it calls are const, and it runs on the probe's own Pathfinding; the only thing touched is the
+	// lifted units, and LiftUnits puts them back on any way out of the block)
 	int snEn = -1, snN = 0;
 	{
-		const int big = unit->getArmor()->getSize() - 1;
-		std::vector<std::pair<Tile*, BattleUnit*>> lifted;
+		struct LiftUnits
+		{
+			std::vector<std::pair<Tile*, BattleUnit*>> lifted;
+			~LiftUnits() { for (const auto &l : lifted) l.first->setUnit(l.second); }
+		} lift;
+		const int big = unit->getArmor()->getSize() - 1; // the box covers the footprint of a large unit and its neighbours
 		for (int z = from.z - 2; z <= from.z + 1; ++z)
 			for (int x = from.x - 1; x <= from.x + big + 1; ++x)
 				for (int y = from.y - 1; y <= from.y + big + 1; ++y)
@@ -991,7 +997,7 @@ void logPatrolPath(SavedBattleGame *save, BattleUnit *unit, bool pushed)
 					Tile *t = save->getTile(Position(x, y, z));
 					if (t && t->getUnit() && t->getUnit() != unit)
 					{
-						lifted.push_back({ t, t->getUnit() });
+						lift.lifted.push_back({ t, t->getUnit() });
 						t->setUnit(nullptr);
 					}
 				}
@@ -1002,7 +1008,6 @@ void logPatrolPath(SavedBattleGame *save, BattleUnit *unit, bool pushed)
 			++snN;
 			if (snEn < 0 || r.cost.energy < snEn) snEn = r.cost.energy;
 		}
-		for (const auto &l : lifted) l.first->setUnit(l.second);
 	}
 	AIModule *ai = unit->getAIModule();
 	line << ",\"sn_en\":" << snEn << ",\"sn_n\":" << snN;
