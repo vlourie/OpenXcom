@@ -107,6 +107,10 @@ void traceTile(const BattleUnit *unit, const char *what, const Position &pos, in
 /// patrol walk also writes [AIPATROL]: its path, what stops its first step, and the reachable tile that gets closest.
 /// item: the walk goes to an item (findItem / findBotWeapon), not where the decision chose - "item":1 in both lines.
 void walkPlanned(SavedBattleGame *save, BattleUnit *unit, bool pushed, bool item);
+/// A walk stops without the unit moving (UnitWalkBState): a step of the action's trail in [AIEXEC],
+/// "walk.stop.<reason> from>to d<dir> bam<move> mt<movement> sz<size> tu<tu>/<step> en<energy>/<step> rs<reserve> bu<blocker>".
+/// Record only; -1 where a value is unknown.
+void walkStop(const BattleUnit *unit, const char *reason, const Position &to, int dir, int bam, int stepTu, int stepEnergy, int blocker);
 /// ENERGY_PATROL_END_V2 (OXCE_AI_ENERGY_PATROL_END, bench only): the patrol walk handleAI just planned is stopped by energy,
 /// and the unit has less energy than the cheapest step to any neighbouring tile, other units aside - it has no step left
 /// this turn. Checked after walkPlanned, on the same path.

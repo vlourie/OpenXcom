@@ -89,6 +89,7 @@ void chosen(const BattleUnit *, char) {}
 void modeOdds(const BattleUnit *, int, int, int, int, int, int) {}
 void traceTile(const BattleUnit *, const char *, const Position &, int) {}
 void walkPlanned(SavedBattleGame *, BattleUnit *, bool, bool) {}
+void walkStop(const BattleUnit *, const char *, const Position &, int, int, int, int, int) {}
 bool patrolOutOfEnergy(SavedBattleGame *, BattleUnit *, const BattleAction &, bool) { return false; }
 void sideEnds(SavedBattleGame *) {}
 void logCasualty(SavedBattleGame *, const BattleUnit *, const BattleUnit *, const std::string &, bool, int, bool) {}
@@ -135,6 +136,8 @@ int decided[3][2] = {};
 std::map<std::string, int> tallies;
 /// the decision record's reason trail (defined with the record below)
 void addTrail(const BattleUnit *unit, const char *what);
+/// is the decision record on (defined with the record below)
+bool record();
 /// did the faction last see an enemy on this tile (defined with the sightings below)
 bool lastSeenAt(int faction, const Position &pos);
 /// the decision record at a new side's turn and at the end of the battle (defined with the record below)
@@ -254,6 +257,20 @@ void tally(const BattleUnit *unit, const char *rule)
 void note(const BattleUnit *unit, const char *what)
 {
 	addTrail(unit, what);
+}
+
+void walkStop(const BattleUnit *unit, const char *reason, const Position &to, int dir, int bam, int stepTu, int stepEnergy, int blocker)
+{
+	if (!record())
+		return;
+	const Position from = unit->getPosition();
+	const AIModule *ai = unit->getAIModule();
+	std::ostringstream s;
+	s << "walk.stop." << reason << " " << from.x << "," << from.y << "," << from.z << ">" << to.x << "," << to.y << "," << to.z
+		<< " d" << dir << " bam" << bam << " mt" << (int)unit->getMovementType() << " sz" << unit->getArmor()->getSize()
+		<< " tu" << unit->getTimeUnits() << "/" << stepTu << " en" << unit->getEnergy() << "/" << stepEnergy
+		<< " rs" << (ai ? (int)const_cast<AIModule *>(ai)->getReserveMode() : -1) << " bu" << blocker;
+	addTrail(unit, s.str().c_str());
 }
 
 long long battleSeed()

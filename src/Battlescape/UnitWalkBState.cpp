@@ -33,6 +33,7 @@
 #include "../Mod/Armor.h"
 #include "../Mod/Mod.h"
 #include "UnitFallBState.h"
+#include "AiProbe.h"
 
 namespace OpenXcom
 {
@@ -232,6 +233,7 @@ void UnitWalkBState::think()
 			}
 			if (unitSpotted)
 			{
+				AiProbe::walkStop(_unit, "spotted", _unit->getDestination(), _unit->getDirection(), (int)_action.getMoveType(), -1, -1, -1);
 				return cancelCurentMove();
 			}
 			// check for reaction fire
@@ -240,6 +242,7 @@ void UnitWalkBState::think()
 				if (_terrain->checkReactionFire(_unit, _action))
 				{
 					// unit got fired upon - stop walking
+					AiProbe::walkStop(_unit, "reaction", _unit->getDestination(), _unit->getDirection(), (int)_action.getMoveType(), -1, -1, -1);
 					return cancelCurentMove();
 				}
 			}
@@ -300,6 +303,7 @@ void UnitWalkBState::think()
 
 			if (tu == Pathfinding::INVALID_MOVE_COST)
 			{
+				AiProbe::walkStop(_unit, "invalid", destination, dir, (int)_action.getMoveType(), tu, energy, -1);
 				return cancelCurentMove();
 			}
 
@@ -309,6 +313,7 @@ void UnitWalkBState::think()
 				{
 					_action.result = "STR_NOT_ENOUGH_TIME_UNITS";
 				}
+				AiProbe::walkStop(_unit, "tu", destination, dir, (int)_action.getMoveType(), tu, energy, -1);
 				return cancelCurentMove();
 			}
 
@@ -318,11 +323,13 @@ void UnitWalkBState::think()
 				{
 					_action.result = "STR_NOT_ENOUGH_ENERGY";
 				}
+				AiProbe::walkStop(_unit, "energy", destination, dir, (int)_action.getMoveType(), tu, energy, -1);
 				return cancelCurentMove();
 			}
 
 			if (_parent->getPanicHandled() && !_falling && _parent->checkReservedTU(_unit, tu, energy) == false)
 			{
+				AiProbe::walkStop(_unit, "reserve", destination, dir, (int)_action.getMoveType(), tu, energy, -1);
 				return cancelCurentMove();
 			}
 
@@ -362,6 +369,7 @@ void UnitWalkBState::think()
 					{
 						_action.clearTU();
 						_unit->increaseAIWalkAbortCounter();
+						AiProbe::walkStop(_unit, "unit", destination, dir, (int)_action.getMoveType(), tu, energy, unitInMyWay->getId());
 						return cancelCurentMove();
 					}
 				}
@@ -433,6 +441,7 @@ void UnitWalkBState::think()
 			if (Options::traceAI) { Log(LOG_INFO) << "Egads! A turn reveals new units! I must pause!"; }
 			_unit->setHiding(false); // not hidden, are we...
 			_unit->abortTurn(); //revert to a standing state.
+			AiProbe::walkStop(_unit, "turnspot", _unit->getPosition(), _unit->getDirection(), (int)_action.getMoveType(), -1, -1, -1);
 			return cancelCurentMove();
 		}
 	}
