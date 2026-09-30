@@ -80,6 +80,11 @@ private:
 	bool _patrolWalk = false;
 	/// The think after a spent patrol dropped: 1 asked for it (BA_RETHINK), 2 this think is it (no second ask).
 	int _patrolRetry = 0;
+	/// What findReachable left for the walk when it made _reachableWithAttack: the unit's TU and energy less the attack's
+	/// (FIREPOINT_ENERGY_PATH_V1, bench, AiProbe::firepointPathOver).
+	int _reachableTuMax = 0, _reachableEnergyMax = 0;
+	/// _reachableWithAttack for this attack, and what it left for the walk.
+	void reachableWithAttack(const BattleActionCost &cost);
 	int unitTurn() const;
 	/// Marks the patrol's walk in action and drops it if the patrol is spent here (both think and dont_think end in it);
 	/// with retry the first drop thinks once more, as the empty walk it replaces was followed by a think.

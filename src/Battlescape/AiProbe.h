@@ -119,6 +119,14 @@ void walkStop(const BattleUnit *unit, const char *reason, const Position &to, in
 /// and the unit has less energy than the cheapest step to any neighbouring tile, other units aside - it has no step left
 /// this turn. Checked after walkPlanned, on the same path.
 bool patrolOutOfEnergy(SavedBattleGame *save, BattleUnit *unit, const BattleAction &action, bool pushed);
+/// FIREPOINT_ENERGY_PATH_V1 (OXCE_AI_FIREPOINT_ENERGY_PATH, bench only): the path the battle's Pathfinding holds - the one
+/// findFirePoint just asked for, and handleAI asks for the same before the walk - against what findReachable left for the
+/// walk when it let the tile into _reachableWithAttack. Bit 1: the path needs more energy (the walk would stop on energy,
+/// UnitWalkBState, and findFirePoint drops the tile); bit 2: more TU (counted only). 0 without the flag.
+int firepointPathOver(SavedBattleGame *save, const BattleUnit *unit, int tuMax, int energyMax);
+/// FIREPOINT_ENERGY_PATH_V1: the tiles one findFirePoint dropped by energy and found over by TU, one step of the trail
+/// "firepoint.energy n<dropped> t<over by TU> mt<movement> en<energy>" and a tally when it dropped any.
+void firepointDropped(const BattleUnit *unit, int droppedByEnergy, int overByTu);
 /// A side's turn ends (BattlescapeGame::endTurn): the last decision's action is over.
 void sideEnds(SavedBattleGame *save);
 /// One line per unit killed or knocked out ([AICASUALTY]): by whom, with what, from how far, on whose turn.

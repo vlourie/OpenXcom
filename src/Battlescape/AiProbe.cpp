@@ -92,6 +92,8 @@ void traceTile(const BattleUnit *, const char *, const Position &, int) {}
 void walkPlanned(SavedBattleGame *, BattleUnit *, bool, bool) {}
 void walkStop(const BattleUnit *, const char *, const Position &, int, int, int, int, int) {}
 bool patrolOutOfEnergy(SavedBattleGame *, BattleUnit *, const BattleAction &, bool) { return false; }
+int firepointPathOver(SavedBattleGame *, const BattleUnit *, int, int) { return 0; }
+void firepointDropped(const BattleUnit *, int, int) {}
 void sideEnds(SavedBattleGame *) {}
 void logCasualty(SavedBattleGame *, const BattleUnit *, const BattleUnit *, const std::string &, bool, int, bool) {}
 
@@ -1973,6 +1975,40 @@ bool patrolOutOfEnergy(SavedBattleGame *save, BattleUnit *unit, const BattleActi
 	int snEn, snN;
 	staticStep(save, unit, bam, snEn, snN);
 	return snN > 0 && unit->getEnergy() < snEn;
+}
+
+int firepointPathOver(SavedBattleGame *save, const BattleUnit *unit, int tuMax, int energyMax)
+{
+	static const bool on = active() && envOn("OXCE_AI_FIREPOINT_ENERGY_PATH");
+	if (!on)
+	{
+		return 0;
+	}
+	// the path is the one calculate(unit, pos, BAM_NORMAL) found - often bresenhamPath, which does not look at energy at all;
+	// its steps are costed the way findReachable costs them (penalty in the TU, none in the energy)
+	Pathfinding *pf = save->getPathfinding();
+	const std::vector<int> &path = pf->getPath();
+	int tu = 0, energy = 0;
+	Position p = unit->getPosition();
+	for (auto it = path.rbegin(); it != path.rend(); ++it) // paths are stored in reverse order
+	{
+		PathfindingStep r = pf->getTUCost(p, *it, unit, nullptr, BAM_NORMAL);
+		tu += r.cost.time + r.penalty.time;
+		energy += r.cost.energy;
+		p = r.pos;
+	}
+	return (energy > energyMax ? 1 : 0) | (tu > tuMax ? 2 : 0);
+}
+
+void firepointDropped(const BattleUnit *unit, int droppedByEnergy, int overByTu)
+{
+	if (droppedByEnergy)
+	{
+		++tallies[std::string(unit->getFaction() == FACTION_PLAYER ? "p." : "h.") + "firepoint.energy"];
+	}
+	std::ostringstream s;
+	s << "firepoint.energy n" << droppedByEnergy << " t" << overByTu << " mt" << (int)unit->getMovementType() << " en" << unit->getEnergy();
+	addTrail(unit, s.str().c_str());
 }
 
 void logState(SavedBattleGame *save, const char *when)
