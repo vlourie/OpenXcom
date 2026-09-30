@@ -102,6 +102,11 @@ unsigned long long AIModule::probeHash() const
 	add((long long)_reachableWithAttack.size());
 	for (int i : _reachableWithAttack) { add(i); }
 	for (int i : _wasHitBy) { add(i); }
+	if (_patrolSpent != -1)
+	{
+		// only once the bench rule has spent a patrol: without OXCE_AI_ENERGY_PATROL_END the fingerprint stays as it was
+		add(_patrolSpent); add(_patrolSpentAt.x); add(_patrolSpentAt.y); add(_patrolSpentAt.z); add(_patrolSpentEnergy);
+	}
 	return h;
 }
 
@@ -264,6 +269,7 @@ void AIModule::dont_think(BattleAction *action)
 		_reserve = BA_NONE;
 		action->type = _patrolAction.type;
 		action->target = _patrolAction.target;
+		endPatrolIfSpent(action);
 	}
 }
 
@@ -749,13 +755,7 @@ void AIModule::think(BattleAction *action)
 		}
 		action->type = _patrolAction.type;
 		action->target = _patrolAction.target;
-		_patrolWalk = _patrolAction.type == BA_WALK;
-		if (_patrolWalk && _patrolSpent == unitTurn() && _unit->getPosition() == _patrolSpentAt && _unit->getEnergy() <= _patrolSpentEnergy)
-		{
-			// ENERGY_PATROL_END_V2: no step is left by energy this unit-turn, the walk would stop where it stands
-			AiProbe::tally(_unit, "patrol.spent");
-			action->type = BA_NONE;
-		}
+		endPatrolIfSpent(action);
 		break;
 	case AI_COMBAT:
 		action->type = _attackAction.type;
@@ -874,6 +874,21 @@ void AIModule::spendPatrol()
 	_patrolSpent = unitTurn();
 	_patrolSpentAt = _unit->getPosition();
 	_patrolSpentEnergy = _unit->getEnergy();
+}
+
+/**
+ * The patrol's walk chosen by think or dont_think (isLeeroyJenkins): marks it for spendPatrol and, if no step is left by
+ * energy this unit-turn, drops it (ENERGY_PATROL_END_V2).
+ */
+void AIModule::endPatrolIfSpent(BattleAction *action)
+{
+	_patrolWalk = _patrolAction.type == BA_WALK;
+	if (_patrolWalk && _patrolSpent == unitTurn() && _unit->getPosition() == _patrolSpentAt && _unit->getEnergy() <= _patrolSpentEnergy)
+	{
+		// the walk would stop where it stands
+		AiProbe::tally(_unit, "patrol.spent");
+		action->type = BA_NONE;
+	}
 }
 
 /*
