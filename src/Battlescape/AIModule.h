@@ -79,6 +79,8 @@ private:
 	/// This think's action is the patrol's walk to its node.
 	bool _patrolWalk = false;
 	int unitTurn() const;
+	/// Marks the patrol's walk in action and drops it if the patrol is spent here (both think and dont_think end in it).
+	void endPatrolIfSpent(BattleAction *action);
 	/// A slot's action before a rule runs: the record hears of the rule only if it changed the slot.
 	struct ProbeMark { BattleActionType type; Position target; const BattleItem *weapon; };
 	const BattleAction &probeAction(char slot) const;

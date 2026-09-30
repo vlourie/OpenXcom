@@ -152,3 +152,12 @@
 Правило:  Ходом патруля считать только ход в цель предложения патруля из src_rec (props s=p); запись без src проверять по слоту. Первое нарушение правила в новой серии разбирать дампом записей вокруг него (scratchpad l1_dump.py), прежде чем винить движок
 Защита:   l1_energy.patrol проверяет цель против предложения src_rec; теста нет
 Наступал: 1   Последний: 2026-09-30
+
+## R-147  Правило ИИ вставлено в ветку think - юниты isLeeroyJenkins решают через dont_think и идут мимо
+Статус:   активны
+Файлы:    src/Battlescape/AIModule.cpp, src/Battlescape/AIModule.h, src/Battlescape/BattlescapeGame.cpp
+Симптом:  ENERGY_PATROL_END_V2 на l1s11: 131 ход патруля пропущен после срабатывания (l1s13 - 613), все у юнитов с кулаками, когтями, ножами. Прибор показывает все условия срабатывания, режим AI_PATROL, слот p - а patrol.spent нет. На шлюзе p34r - 0 нарушений, потому что берсерков там не было
+Причина:  think() для isLeeroyJenkins рано возвращается в dont_think(), который сам зовёт setupPatrol и выдаёт BA_WALK патруля. Отметка _patrolWalk и проверка patrol.spent жили только в ветке case AI_PATROL, поэтому spendPatrol не звался, а подавления не было вовсе. Поле режима AI_PATROL сбивает: ветка его не исполнялась. Связь с оружием - корреляция (это оружие берсерков)
+Правило:  Правило, которое меняет выбор ИИ, вешать на все места выдачи этого действия: грепнуть setupPatrol / action->type = _<slot>Action.type и ранние return в think (revive/flee, isLeeroyJenkins). Шлюз до серии гонять на боях, где есть берсерки (DRIFTER_CAMP 504, ERIDIAN_TERROR 508, CITY_OF_THE_DEAD 601)
+Защита:   AIModule::endPatrolIfSpent - один путь для think и dont_think (build-ai35); p35x/p35y с флагом - 0 нарушений
+Наступал: 1   Последний: 2026-09-30
