@@ -2587,6 +2587,11 @@ void BattlescapeState::handleItemClick(BattleItem *item, bool middleClick)
  */
 void BattlescapeState::animate()
 {
+	if (AiProbe::fast())
+	{
+		_map->animate(false); // UFO doors only, nothing on the screen is animated
+		return;
+	}
 	_map->animate(!_battleGame->isBusy());
 
 	blinkVisibleUnitButtons();

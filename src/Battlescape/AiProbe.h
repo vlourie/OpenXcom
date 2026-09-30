@@ -47,6 +47,10 @@ namespace AiProbe
 
 /// Is the probe on (the OXCE_AI_PROBE environment variable, OXCE_AI_DEV builds only)?
 bool active();
+/// The probe skips everything nobody watches (OXCE_AI_FAST): no frame is drawn, no tile but UFO doors is animated,
+/// every unit walks the short off-screen cycle, no final-blow scene, no audio, one log handle for the run, and the process
+/// leaves right after the result line. The decisions, the record and the outcome stay the same as without it.
+bool fast();
 /// Does the AI play the player's side right now (OXCE_AI_BOT)?
 bool botTurn(const SavedBattleGame *save);
 /// The seed of a generated battle (OXCE_AI_SEED), or -1.

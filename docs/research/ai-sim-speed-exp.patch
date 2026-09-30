@@ -1,0 +1,376 @@
+--- a/src/Battlescape/AiProbe.cpp
++++ b/src/Battlescape/AiProbe.cpp
+@@ -56,6 +56,8 @@
+ namespace OpenXcom
+ {
+ 
++void probeLoopDump(); // EXPERIMENT (audit): BattlescapeGame.cpp
++
+ namespace AiProbe
+ {
+ 
+@@ -189,6 +191,10 @@
+ 	{
+ 		tac << (tac.tellp() > 0 ? "," : "") << t.first << ":" << t.second;
+ 	}
++	if (getenv("OXCE_AI_LOOPSTAT"))
++	{
++		probeLoopDump();
++	}
+ 	Log(LOG_INFO) << "[AIRESULT] how=" << how
+ 		<< " tac=" << (tac.tellp() > 0 ? tac.str() : std::string("-"))
+ 		<< " seed=" << battleSeed()
+--- a/src/Battlescape/BattlescapeGame.cpp
++++ b/src/Battlescape/BattlescapeGame.cpp
+@@ -65,6 +65,15 @@
+ namespace OpenXcom
+ {
+ 
++// EXPERIMENT (audit): OXCE_AI_LOOPSTAT=1 - loops of the battle by the state in front, printed before [AIRESULT]
++std::map<std::string, unsigned long> probeLoopStat;
++void probeLoopDump()
++{
++	std::ostringstream ss;
++	for (const auto &p : probeLoopStat) ss << " " << p.first << "=" << p.second;
++	Log(LOG_INFO) << "[AILOOPS]" << ss.str();
++}
++
+ bool BattlescapeGame::_debugPlay = false;
+ 
+ /**
+@@ -217,6 +226,13 @@
+ int BattlescapeGame::think()
+ {
+ 	int ret = -1;
++	{
++		static const bool loopStat = getenv("OXCE_AI_LOOPSTAT") && *getenv("OXCE_AI_LOOPSTAT") == '1';
++		if (loopStat)
++		{
++			++probeLoopStat[_states.empty() ? "idle" : (_states.front() ? typeid(*_states.front()).name() : "endturn")];
++		}
++	}
+ 	// nothing is happening - see if we need some alien AI or units panicking or what have you
+ 	if (_states.empty())
+ 	{
+--- a/src/Battlescape/BattlescapeState.cpp
++++ b/src/Battlescape/BattlescapeState.cpp
+@@ -2587,6 +2587,13 @@
+  */
+ void BattlescapeState::animate()
+ {
++	// EXPERIMENT (audit): OXCE_AI_NOANIM=1 - nothing is animated
++	static const bool noAnim = getenv("OXCE_AI_NOANIM") && *getenv("OXCE_AI_NOANIM") == '1';
++	if (noAnim)
++	{
++		_map->animate(false); // UFO doors only, see Map::animate
++		return;
++	}
+ 	_map->animate(!_battleGame->isBusy());
+ 
+ 	blinkVisibleUnitButtons();
+--- a/src/Battlescape/Map.cpp
++++ b/src/Battlescape/Map.cpp
+@@ -464,6 +464,12 @@
+ 	{
+ 		return;
+ 	}
++	// EXPERIMENT (audit): OXCE_AI_NODRAW=1 - the map is never drawn
++	static const bool noDraw = getenv("OXCE_AI_NODRAW") && *getenv("OXCE_AI_NODRAW") == '1';
++	if (noDraw)
++	{
++		return;
++	}
+ 
+ 	// normally we'd call for a Surface::draw();
+ 	// but we don't want to clear the background with colour 0, which is transparent (aka black)
+@@ -2711,6 +2717,36 @@
+ 	_save->nextAnimFrame();
+ 	_animFrame = _save->getAnimFrame();
+ 
++	// EXPERIMENT (audit): OXCE_AI_NOANIM=1 - only UFO doors are animated (walking waits for them to open)
++	static const bool noAnim = getenv("OXCE_AI_NOANIM") && *getenv("OXCE_AI_NOANIM") == '1';
++	if (noAnim)
++	{
++		static std::vector<int> doors;
++		static unsigned calls = 0;
++		if (calls++ % 64 == 0)
++		{
++			doors.clear();
++			for (int i = 0; i < _save->getMapSizeXYZ(); ++i)
++			{
++				Tile *t = _save->getTile(i);
++				for (int part = O_FLOOR; part < O_MAX; ++part)
++				{
++					const MapData *d = t->getMapData((TilePart)part);
++					if (d && d->isUFODoor())
++					{
++						doors.push_back(i);
++						break;
++					}
++				}
++			}
++		}
++		for (int i : doors)
++		{
++			_save->getTile(i)->animate();
++		}
++		return;
++	}
++
+ 	// units hanging with no floor below fade their sway in, landed ones fade it out (hoverBob); mode 0 draws them still, as the classic game
+ 	if (Options::oxceHdHoverBob && _canvas->getHdMode() != HD_MODE_NEAREST)
+ 	{
+--- a/src/Battlescape/TileEngine.cpp
++++ b/src/Battlescape/TileEngine.cpp
+@@ -1059,6 +1059,47 @@
+ /**
+   * Recalculates lighting for the units.
+   */
++int TileEngine::unitLightPower(const BattleUnit *unit) const
++{
++	// EXPERIMENT (audit): same rules as calculateUnitLighting below, without the clamp
++	int currLight = 0;
++	if (unit->getFaction() == FACTION_PLAYER)
++	{
++		auto lighting = _personalLighting;
++		auto unitLightingState = unit->getLightingState();
++		if (unitLightingState)
++			lighting = *unitLightingState;
++		currLight = std::max(currLight, lighting ? unit->getArmor()->getPersonalLightFriend() : 0);
++	}
++	else if (unit->getFaction() == FACTION_HOSTILE)
++	{
++		currLight = std::max(currLight, unit->getArmor()->getPersonalLightHostile());
++	}
++	else if (unit->getFaction() == FACTION_NEUTRAL)
++	{
++		currLight = std::max(currLight, unit->getArmor()->getPersonalLightNeutral());
++	}
++	const BattleItem *handWeapons[] = { unit->getLeftHandWeapon(), unit->getRightHandWeapon() };
++	for (const BattleItem *w : handWeapons)
++	{
++		if (!w) continue;
++		if (w->getGlow())
++		{
++			currLight = std::max(currLight, w->getGlowRange());
++		}
++		auto* u = w->getUnit();
++		if (u && u->getFire())
++		{
++			currLight = std::max(currLight, unitFireLightPowerStunned);
++		}
++	}
++	if (unit->getFire())
++	{
++		currLight = std::max(currLight, unitFireLightPower);
++	}
++	return currLight;
++}
++
+ void TileEngine::calculateUnitLighting(MapSubset gs)
+ {
+ 	for (BattleUnit *unit : *_save->getUnits())
+--- a/src/Battlescape/TileEngine.h
++++ b/src/Battlescape/TileEngine.h
+@@ -185,6 +185,8 @@
+ 	void calculateFOV(Position position, int eventRadius = -1, const bool updateTiles = true, const bool appendToTileVisibility = false);
+ 	/// Checks reaction fire.
+ 	bool checkReactionFire(BattleUnit *unit, const BattleAction &originalAction);
++	/// EXPERIMENT (audit): light a unit would emit in calculateUnitLighting.
++	int unitLightPower(const BattleUnit *unit) const;
+ 	/// Recalculate all lighting in some area.
+ 	void calculateLighting(LightLayers layer, Position position = invalid, int eventRadius = 0, bool terrianChanged = false);
+ 	/// Handles tile hit.
+--- a/src/Battlescape/UnitDieBState.cpp
++++ b/src/Battlescape/UnitDieBState.cpp
+@@ -147,7 +147,9 @@
+ bool UnitDieBState::finalBlow() const
+ {
+ 	SavedBattleGame *save = _parent->getSave();
+-	if (!Options::oxceHdKillCam || save->isBeforeGame() || save->isPreview() || !save->getBattleState()
++	// EXPERIMENT (audit): OXCE_AI_NOKILLCAM=1 - no final blow scene (it waits up to 4 s of real time)
++	static const bool noKillCam = getenv("OXCE_AI_NOKILLCAM") && *getenv("OXCE_AI_NOKILLCAM") == '1';
++	if (noKillCam || !Options::oxceHdKillCam || save->isBeforeGame() || save->isPreview() || !save->getBattleState()
+ 		|| !save->getBattleState()->getGame()->getScreen()->isLayered())
+ 	{
+ 		return false;
+--- a/src/Battlescape/UnitWalkBState.cpp
++++ b/src/Battlescape/UnitWalkBState.cpp
+@@ -97,7 +97,9 @@
+ 
+ 	bool unitSpotted = false;
+ 	int size = _unit->getArmor()->getSize() - 1;
+-	bool onScreen = (_unit->getVisible() && _parent->getMap()->getCamera()->isOnScreen(_unit->getPosition(), true, size, false));
++	// EXPERIMENT (audit): OXCE_AI_SHORTWALK=1 - every unit walks the short off-screen cycle at interval 0
++	static const bool shortWalk = getenv("OXCE_AI_SHORTWALK") && *getenv("OXCE_AI_SHORTWALK") == '1';
++	bool onScreen = !shortWalk && (_unit->getVisible() && _parent->getMap()->getCamera()->isOnScreen(_unit->getPosition(), true, size, false));
+ 	if (_unit->isKneeled())
+ 	{
+ 		if (_parent->kneel(_unit))
+@@ -142,7 +144,7 @@
+ 		if ((_parent->getSave()->getTile(_unit->getDestination())->getUnit() == 0) || // next tile must be not occupied
+ 			(_parent->getSave()->getTile(_unit->getDestination())->getUnit() == _unit))
+ 		{
+-			bool onScreenBoundary = (_unit->getVisible() && _parent->getMap()->getCamera()->isOnScreen(_unit->getPosition(), true, size, true));
++			bool onScreenBoundary = !shortWalk && (_unit->getVisible() && _parent->getMap()->getCamera()->isOnScreen(_unit->getPosition(), true, size, true));
+ 			_unit->keepWalking(_parent->getSave(), onScreenBoundary); // advances the phase
+ 			playMovementSound();
+ 			if (_parent->getSave()->isPreview())
+@@ -220,6 +222,9 @@
+ 
+ 			int change = _parent->checkForProximityGrenades(_unit);
+ 			// move our personal lighting with us
++			// EXPERIMENT (audit): OXCE_AI_LIGHTSKIP=1 - a unit that emits no light does not relight the map on its step
++			static const bool lightSkip = getenv("OXCE_AI_LIGHTSKIP") && *getenv("OXCE_AI_LIGHTSKIP") == '1';
++			if (change || !lightSkip || _terrain->unitLightPower(_unit) > 0)
+ 			_terrain->calculateLighting(change ? LL_ITEMS : LL_UNITS, _unit->getPosition(), 2);
+ 			_terrain->calculateFOV(_unit->getPosition(), 2, false); //update unit visibility for all units which can see last and current position.
+ 			//tile visibility for this unit is handled later.
+@@ -508,6 +513,8 @@
+ 		_unit->clearTimeUnits();
+ 	}
+ 
++	static const bool lightSkipEnd = getenv("OXCE_AI_LIGHTSKIP") && *getenv("OXCE_AI_LIGHTSKIP") == '1';
++	if (!lightSkipEnd || _terrain->unitLightPower(_unit) > 0)
+ 	_terrain->calculateLighting(LL_UNITS, _unit->getPosition());
+ 	_terrain->calculateFOV(_unit);
+ 	if (!_falling)
+--- a/src/Engine/CrossPlatform.cpp
++++ b/src/Engine/CrossPlatform.cpp
+@@ -1588,7 +1588,33 @@
+  * @param data - what to writeFile
+  * @return if we did write it.
+  */
++static FILE *fastLog = nullptr;
++static void fastLogClose() { if (fastLog) { fclose(fastLog); fastLog = nullptr; } }
++// EXPERIMENT (audit): the result line is on disk - leave without unloading 1 GB of resources and without ExitProcess
++void probeFastExit() {
++#ifdef _WIN32
++	if (fastLog) { fflush(fastLog); }
++	TerminateProcess(GetCurrentProcess(), 0);
++#endif
++}
+ static bool logToFile(const std::string& filename, const std::string& data) {
++#ifdef _WIN32
++	// EXPERIMENT (audit): one handle for the whole run, shared for reading, flushed 4 times a second
++	static const bool fast = getenv("OXCE_AI_FASTLOG") && *getenv("OXCE_AI_FASTLOG") == '1';
++	if (fast) {
++		static Uint32 flushed = 0;
++		if (!fastLog) {
++			fastLog = _fsopen(filename.c_str(), "ab", 0x40 /* _SH_DENYNO */);
++			if (fastLog) { setvbuf(fastLog, nullptr, _IOFBF, 1 << 20); atexit(fastLogClose); }
++		}
++		if (fastLog) {
++			bool ok = fwrite(data.c_str(), data.size(), 1, fastLog) == 1;
++			Uint32 now = SDL_GetTicks();
++			if (now - flushed >= 250) { fflush(fastLog); flushed = now; }
++			return ok;
++		}
++	}
++#endif
+ 	// Even SDL1 file IO accepts UTF-8 file names on windows.
+ 	SDL_RWops *rwops = SDL_RWFromFile(filename.c_str(), "a+");
+ 	// SDL opens for writing without sharing: while another program reads the log, the open fails. A failed line waits
+--- a/src/Engine/Game.cpp
++++ b/src/Engine/Game.cpp
+@@ -63,6 +63,8 @@
+ namespace OpenXcom
+ {
+ 
++namespace CrossPlatform { void probeFastExit(); } // EXPERIMENT (audit): CrossPlatform.cpp
++
+ const double Game::VOLUME_GRADIENT = 10.0;
+ 
+ /**
+@@ -167,6 +169,12 @@
+ 	// a frame drawn only every 16th loop - nobody watches, and the clock no longer waits for frames
+ 	Timer::probeClock = AiProbe::active();
+ 	Uint32 probeLoops = 0;
++	// EXPERIMENT (audit): OXCE_AI_TICK=<ms per loop>, OXCE_AI_NODRAW=1 - no frame is ever drawn
++	if (const char *tick = getenv("OXCE_AI_TICK"))
++	{
++		if (atoi(tick) > 0) Timer::probeStep = atoi(tick);
++	}
++	const bool probeNoDraw = Timer::probeClock && getenv("OXCE_AI_NODRAW") && *getenv("OXCE_AI_NODRAW") == '1';
+ 
+ 	while (!_quit)
+ 	{
+@@ -406,7 +414,7 @@
+ 			}
+ 			if (Timer::probeClock)
+ 			{
+-				_timeUntilNextFrame = (++probeLoops % 16) ? 1 : 0;
++				_timeUntilNextFrame = (probeNoDraw || (++probeLoops % 16)) ? 1 : 0;
+ 			}
+ 
+ 			if (_init && _timeUntilNextFrame <= 0)
+@@ -658,6 +666,12 @@
+ 		}
+ 	}
+ 
++	// EXPERIMENT (audit): OXCE_AI_FASTEXIT=1 - the probe has its result in the log: leave at once, without unloading
++	// a gigabyte of resources and without the ExitProcess that hangs on an orphaned lock
++	if (Timer::probeClock && getenv("OXCE_AI_FASTEXIT") && *getenv("OXCE_AI_FASTEXIT") == '1')
++	{
++		CrossPlatform::probeFastExit();
++	}
+ 	Options::save();
+ }
+ 
+@@ -986,6 +1000,12 @@
+  */
+ void Game::initAudio()
+ {
++	// EXPERIMENT (audit): OXCE_AI_MUTE=1 - no audio at all (no sounds loaded, nothing played)
++	if (getenv("OXCE_AI_MUTE") && *getenv("OXCE_AI_MUTE") == '1')
++	{
++		Options::mute = true;
++		return;
++	}
+ 	if (SDL_InitSubSystem(SDL_INIT_AUDIO) < 0)
+ 	{
+ 		Log(LOG_ERROR) << SDL_GetError();
+--- a/src/Engine/Timer.cpp
++++ b/src/Engine/Timer.cpp
+@@ -46,6 +46,7 @@
+ Uint32 Timer::gameSlowSpeed = 1;
+ bool Timer::probeClock = false;
+ Uint32 Timer::probeTicks = 0;
++Uint32 Timer::probeStep = 10;
+ int Timer::maxFrameSkip = 8; // this is a pretty good default at 60FPS.
+ int Timer::hdFrameSkip = 0;
+ 
+--- a/src/Engine/Timer.h
++++ b/src/Engine/Timer.h
+@@ -43,7 +43,8 @@
+ 	static bool probeClock;
+ 	static Uint32 probeTicks;
+ 	/// One step of the virtual clock, called once per game loop.
+-	static void probeAdvance() { probeTicks += 10; }
++	static Uint32 probeStep;
++	static void probeAdvance() { probeTicks += probeStep; }
+ 
+ private:
+ 	Uint32 _start;
+--- a/src/Menu/StartState.cpp
++++ b/src/Menu/StartState.cpp
+@@ -121,7 +121,18 @@
+ {
+ 	if (_thread != 0)
+ 	{
+-		SDL_KillThread(_thread);
++		// EXPERIMENT (audit): OXCE_AI_JOINLOAD=1 - a loader that has finished is waited for, not killed. TerminateThread
++		// on a thread that is on its way out (freeing memory, detaching from the DLLs) orphans the heap or the loader
++		// lock: the game then hangs at once or in ExitProcess
++		static const bool join = getenv("OXCE_AI_JOINLOAD") && *getenv("OXCE_AI_JOINLOAD") == '1';
++		if (join && loading != LOADING_STARTED)
++		{
++			SDL_WaitThread(_thread, 0);
++		}
++		else
++		{
++			SDL_KillThread(_thread);
++		}
+ 	}
+ 	delete _font;
+ 	delete _timer;

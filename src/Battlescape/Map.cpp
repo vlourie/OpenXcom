@@ -57,6 +57,7 @@
 #include "../Mod/Armor.h"
 #include "../Mod/RuleEnviroEffects.h"
 #include "BattlescapeMessage.h"
+#include "AiProbe.h"
 #include "../Savegame/SavedGame.h"
 #include "../Interface/NumberText.h"
 #include "../Interface/Text.h"
@@ -460,7 +461,7 @@ void Map::think()
  */
 void Map::draw()
 {
-	if (!_redraw)
+	if (!_redraw || AiProbe::fast())
 	{
 		return;
 	}
@@ -2710,6 +2711,21 @@ void Map::animate(bool redraw)
 
 	_save->nextAnimFrame();
 	_animFrame = _save->getAnimFrame();
+
+	if (AiProbe::fast())
+	{
+		// nobody watches: only UFO doors keep their frames going - a door is open once its animation
+		// reaches frame 7 (Tile::openDoor), so that is mechanics, everything else here is the picture
+		for (int i = 0; i < _save->getMapSizeXYZ(); ++i)
+		{
+			Tile *t = _save->getTile(i);
+			if (t->isUfoDoor(O_FLOOR) || t->isUfoDoor(O_WESTWALL) || t->isUfoDoor(O_NORTHWALL) || t->isUfoDoor(O_OBJECT))
+			{
+				t->animate();
+			}
+		}
+		return;
+	}
 
 	// units hanging with no floor below fade their sway in, landed ones fade it out (hoverBob); mode 0 draws them still, as the classic game
 	if (Options::oxceHdHoverBob && _canvas->getHdMode() != HD_MODE_NEAREST)

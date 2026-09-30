@@ -39,6 +39,7 @@
 #include "../Engine/Screen.h"
 #include "../Mod/Unit.h"
 #include "Camera.h"
+#include "AiProbe.h"
 
 namespace OpenXcom
 {
@@ -147,7 +148,8 @@ UnitDieBState::~UnitDieBState()
 bool UnitDieBState::finalBlow() const
 {
 	SavedBattleGame *save = _parent->getSave();
-	if (!Options::oxceHdKillCam || save->isBeforeGame() || save->isPreview() || !save->getBattleState()
+	// the scene waits up to four seconds of real time, and the probe's fast mode has nobody to show it to
+	if (!Options::oxceHdKillCam || AiProbe::fast() || save->isBeforeGame() || save->isPreview() || !save->getBattleState()
 		|| !save->getBattleState()->getGame()->getScreen()->isLayered())
 	{
 		return false;
