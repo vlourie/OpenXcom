@@ -518,6 +518,8 @@ struct Exec
 	Position target;
 	int bam = 0;
 	std::vector<std::pair<Position, int>> reach;
+	/// enemies it knows of (AiCandidates' rule), sees itself, has a shot at with a line of fire (any / within its TU)
+	int known = 0, seen = 0, lof = 0, lofTu = 0;
 };
 Exec exec;
 
@@ -951,15 +953,37 @@ void logPatrolPath(SavedBattleGame *save, BattleUnit *unit, bool pushed)
 	}
 
 	std::ostringstream line;
-	line << "[AIPATROL] {\"v\":1,\"rec\":" << exec.rec << ",\"unit\":" << unit->getId() << ",\"pos\":" << pos(from) << ",\"to\":" << pos(exec.target)
+	line << "[AIPATROL] {\"v\":2,\"rec\":" << exec.rec << ",\"unit\":" << unit->getId() << ",\"pos\":" << pos(from) << ",\"to\":" << pos(exec.target)
 		<< ",\"bam\":" << exec.bam << ",\"pushed\":" << (pushed ? 1 : 0) << ",\"len\":" << (pushed ? (int)path.size() : 0) << ",\"cost\":" << cost
 		<< ",\"first\":";
 	if (pushed)
 		line << "{\"dir\":" << firstDir << ",\"tu\":" << firstTu << ",\"en\":" << firstEn << ",\"to\":" << pos(firstTo) << "}";
 	else
 		line << "null";
+	// how many TU the reserve leaves for a move: the largest step it lets go (the check only gets harder with more TU)
+	int lo = -1, hi = tu;
+	while (lo < hi)
+	{
+		const int mid = (lo + hi + 1) / 2;
+		if (reserveLets(save, unit, mid, 0)) lo = mid; else hi = mid - 1;
+	}
+	// the TU a reaction shot costs: a snap shot with the weapon TileEngine::determineReactionType takes
+	int snap = -1;
+	if (BattleItem *w = unit->getMainHandWeapon(unit->getFaction() != FACTION_PLAYER, true))
+	{
+		if (w->getRules()->getBattleType() == BT_FIREARM)
+		{
+			const BattleActionCost c(BA_SNAPSHOT, unit, w);
+			if (c.Time > 0) snap = c.Time;
+		}
+	}
+	AIModule *ai = unit->getAIModule();
 	line << ",\"tu\":" << tu << ",\"energy\":" << energy << ",\"kneel\":" << (kneel ? 1 : 0)
 		<< ",\"reserve\":" << (pushed && firstTu != Pathfinding::INVALID_MOVE_COST ? (reserveLets(save, unit, firstTu + stand, firstEn) ? 1 : 0) : -1)
+		<< ",\"free\":" << lo << ",\"reserved\":" << (lo < 0 ? tu : tu - lo)
+		<< ",\"rmode\":" << (ai && save->getSide() == FACTION_HOSTILE ? (int)ai->getReserveMode() : (int)save->getTUReserved())
+		<< ",\"after\":" << (pushed && firstTu != Pathfinding::INVALID_MOVE_COST ? tu - stand - firstTu : -1) << ",\"snap\":" << snap
+		<< ",\"known\":" << exec.known << ",\"seen\":" << exec.seen << ",\"lof\":" << exec.lof << ",\"lof_tu\":" << exec.lofTu
 		<< ",\"stop\":\"" << stop << "\",\"nreach\":" << exec.reach.size();
 	if (stop != "none")
 	{
@@ -1249,6 +1273,23 @@ void writeRecord(SavedBattleGame *save, BattleUnit *unit, const BattleAction &ac
 		{
 			if (m.tu >= 0 && m.tu <= pending.tu && m.tile != pending.pos) exec.reach.push_back({ m.tile, m.tu });
 		}
+		const auto &visible = *unit->getVisibleUnits();
+		for (const auto *bu : *save->getUnits())
+		{
+			if (bu->isOut() || bu->getFaction() == unit->getFaction()) continue;
+			const bool sees = std::find(visible.begin(), visible.end(), bu) != visible.end();
+			exec.seen += sees ? 1 : 0;
+			exec.known += sees || bu->getTurnsSinceSpottedByFaction(unit->getFaction()) <= unit->getIntelligence() ? 1 : 0;
+		}
+		std::set<int> lof, lofTu;
+		for (const auto &c : set.acts)
+		{
+			if (c.kind != AiCandidates::ATTACK || c.lof != 1 || (c.type != BA_SNAPSHOT && c.type != BA_AUTOSHOT && c.type != BA_AIMEDSHOT)) continue;
+			lof.insert(c.target);
+			if (c.tu <= pending.tu) lofTu.insert(c.target);
+		}
+		exec.lof = (int)lof.size();
+		exec.lofTu = (int)lofTu.size();
 	}
 	pending.unit = -1;
 }
