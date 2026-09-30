@@ -115,13 +115,23 @@ StartState::StartState() : _anim(0)
 }
 
 /**
- * Kill the thread in case the game is quit early.
+ * Join the finished loading thread, or kill it in case the game is quit early.
  */
 StartState::~StartState()
 {
 	if (_thread != 0)
 	{
-		SDL_KillThread(_thread);
+		if (loading != LOADING_STARTED)
+		{
+			// The loading thread sets `loading` as its last step and is about to return:
+			// wait for it. Killing it here caught it inside the CRT thread exit with the
+			// loader lock held, and the game hung at start-up or on exit (R-150).
+			SDL_WaitThread(_thread, 0);
+		}
+		else
+		{
+			SDL_KillThread(_thread);
+		}
 	}
 	delete _font;
 	delete _timer;
