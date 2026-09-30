@@ -63,6 +63,7 @@ namespace AiProbe
 
 // a release build: the bench is not compiled in, every entry point does nothing
 bool active() { return false; }
+bool fast() { return false; }
 bool botTurn(const SavedBattleGame *) { return false; }
 long long battleSeed() { return -1; }
 void think(BattlescapeState *, SavedBattleGame *) {}
@@ -210,6 +211,12 @@ void logResult(SavedBattleGame *save, const char *how)
 bool active()
 {
 	static const bool on = envOn("OXCE_AI_PROBE");
+	return on;
+}
+
+bool fast()
+{
+	static const bool on = active() && envOn("OXCE_AI_FAST");
 	return on;
 }
 
@@ -1158,7 +1165,8 @@ const std::string &cfgText()
 	static const std::string text = []
 	{
 		static const std::set<std::string> skip = { "OXCE_AI_SEED", "OXCE_AI_RECORD", "OXCE_AI_TRACE_DECISION", "OXCE_AI_PROBE_SAVE",
-			"OXCE_AI_BUILD", "OXCE_AI_KEEP_DECIDE", "OXCE_AI_MISSION", "OXCE_AI_CAMPAIGN", "OXCE_AI_EXE", "OXCE_AI_GAME", "OXCE_AI_WORK", "OXCE_AI_RECORD_PATH" };
+			"OXCE_AI_BUILD", "OXCE_AI_KEEP_DECIDE", "OXCE_AI_MISSION", "OXCE_AI_CAMPAIGN", "OXCE_AI_EXE", "OXCE_AI_GAME", "OXCE_AI_WORK", "OXCE_AI_RECORD_PATH",
+			"OXCE_AI_FAST" }; // the fast mode skips what nobody watches, not how the bench plays
 		std::vector<std::string> vars;
 		for (char **e = PROBE_ENVIRON; e && *e; ++e)
 		{

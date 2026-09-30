@@ -128,6 +128,11 @@ def run(save, turns=1, save_as="", name="probe", timeout=900, bot=False, seed=No
     env["OXCE_AI_TACTICS"] = "1" if tactics else ""
     env["OXCE_AI_CAREFUL"] = "1" if careful else ""
     env["OXCE_AI_SQUAD"] = str(squad) if squad else ""  # отряд: n самых опытных бойцов самого опытного экипажа
+    # быстрый режим стенда (AiProbe::fast, с build-ai39): ни кадра, ни анимации кроме дверей НЛО, ни сцены добивания,
+    # ни звука, один открытый лог, выход сразу за строкой итога - решения, запись и итог те же (p39a = p39f2 на fair22, 22 из 22,
+    # tools/ai_speed/README.md). Выключить для контрольного опыта: OXCE_AI_FAST=0 (ai_arena --env OXCE_AI_FAST=0).
+    # Сборки до build-ai39 переменную не знают и играют как прежде
+    env.setdefault("OXCE_AI_FAST", "1")
     args = [str(EXE), "-data", str(GAME), "-user", str(work), "-cfg", str(work),
             "-fullscreen", "false", "-borderless", "false", "-displayWidth", "1280", "-displayHeight", "720",
             "-soundVolume", "0", "-musicVolume", "0", "-uiVolume", "0"]

@@ -37,6 +37,7 @@
 #include "AdultChoiceState.h"
 #include "LanguageChoiceState.h"
 #include "CutsceneState.h"
+#include "../Battlescape/AiProbe.h"
 #include <SDL_mixer.h>
 #include <SDL_thread.h>
 
@@ -170,6 +171,13 @@ void StartState::think()
 {
 	State::think();
 	_timer->think(this, 0);
+
+	if (loading == LOADING_STARTED && AiProbe::fast())
+	{
+		// the probe's fast mode draws no frame, so this loop would spin millions of times a second and
+		// starve the loading thread of the heap (the HD interface art took 28 s instead of 1 s)
+		SDL_Delay(1);
+	}
 
 	switch (loading)
 	{

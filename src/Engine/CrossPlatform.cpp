@@ -41,6 +41,8 @@
 #endif
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#include <share.h>
+#include <cstdio>
 #include <shlobj.h>
 #include <shlwapi.h>
 #include <shellapi.h>
@@ -92,6 +94,7 @@
 #include "FileMap.h"
 #include "SDL2Helpers.h"
 #include "../version.h"
+#include "../Battlescape/AiProbe.h"
 
 namespace OpenXcom
 {
@@ -1588,7 +1591,30 @@ bool openExplorer(const std::string &url)
  * @param data - what to writeFile
  * @return if we did write it.
  */
+// The AI probe's fast mode keeps the log open for the whole run (shared for reading, a 1 MB buffer flushed four
+// times a second and on every error): opening the file for each line was a third of a short battle.
+static FILE *probeLog = nullptr;
+static void probeLogFlush() { if (probeLog) { fflush(probeLog); } }
+static void probeLogClose() { if (probeLog) { fclose(probeLog); probeLog = nullptr; } }
+
 static bool logToFile(const std::string& filename, const std::string& data) {
+	if (AiProbe::fast()) {
+		static Uint32 flushed = 0;
+		if (!probeLog) {
+#ifdef _WIN32
+			probeLog = _fsopen(filename.c_str(), "ab", _SH_DENYNO);
+#else
+			probeLog = fopen(filename.c_str(), "ab");
+#endif
+			if (probeLog) { setvbuf(probeLog, nullptr, _IOFBF, 1 << 20); atexit(probeLogClose); }
+		}
+		if (probeLog) {
+			const bool ok = fwrite(data.c_str(), data.size(), 1, probeLog) == 1;
+			const Uint32 now = SDL_GetTicks();
+			if (now - flushed >= 250) { probeLogFlush(); flushed = now; }
+			return ok;
+		}
+	}
 	// Even SDL1 file IO accepts UTF-8 file names on windows.
 	SDL_RWops *rwops = SDL_RWFromFile(filename.c_str(), "a+");
 	// SDL opens for writing without sharing: while another program reads the log, the open fails. A failed line waits
@@ -1616,6 +1642,7 @@ const std::string& getLogFileName() { return logFileName; }
  * and turns on writing them to the actual log (and flushes the buffer).
  */
 void setLogFileName(const std::string& name) {
+	probeLogClose();
 	deleteFile(name);
 	size_t sz = logBuffer.size();
 	Log(LOG_DEBUG) << "setLogFileName("<<name<<") was '"<<logFileName<<"'; "<<sz<<" in buffer";
@@ -1657,6 +1684,19 @@ void log(int level, const std::ostringstream& baremsgstream) {
 	if (failed || !logToFile(logFileName, msg)) {
 		logBuffer.push_back(std::make_pair(level, msg));
 	}
+	if (level <= LOG_ERROR) {
+		probeLogFlush(); // an error may be the last line before a crash
+	}
+}
+
+void exitNow() {
+	probeLogFlush();
+	fflush(nullptr);
+#ifdef _WIN32
+	TerminateProcess(GetCurrentProcess(), 0);
+#else
+	_exit(0);
+#endif
 }
 
 #if defined(EMBED_ASSETS)

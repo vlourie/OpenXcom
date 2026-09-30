@@ -164,8 +164,10 @@ void Game::run()
 	Sint16 xrel = 0;
 	Sint16 yrel = 0;
 	// the AI probe (OXCE_AI_PROBE, Battlescape/AiProbe.cpp): virtual clock, never paused, no frame cap,
-	// a frame drawn only every 16th loop - nobody watches, and the clock no longer waits for frames
+	// a frame drawn only every 16th loop - nobody watches, and the clock no longer waits for frames;
+	// in the fast mode (OXCE_AI_FAST) no frame at all
 	Timer::probeClock = AiProbe::active();
+	const bool probeNoDraw = AiProbe::fast();
 	Uint32 probeLoops = 0;
 
 	while (!_quit)
@@ -406,7 +408,7 @@ void Game::run()
 			}
 			if (Timer::probeClock)
 			{
-				_timeUntilNextFrame = (++probeLoops % 16) ? 1 : 0;
+				_timeUntilNextFrame = (probeNoDraw || (++probeLoops % 16)) ? 1 : 0;
 			}
 
 			if (_init && _timeUntilNextFrame <= 0)
@@ -658,6 +660,11 @@ void Game::run()
 		}
 	}
 
+	if (AiProbe::fast())
+	{
+		// the result line is in the log and nobody reads the options back: leave without unloading the mod
+		CrossPlatform::exitNow();
+	}
 	Options::save();
 }
 
@@ -986,6 +993,12 @@ void Game::loadLanguages()
  */
 void Game::initAudio()
 {
+	if (AiProbe::fast())
+	{
+		// nobody listens: no sound is loaded or played, as with no sound device
+		Options::mute = true;
+		return;
+	}
 	if (SDL_InitSubSystem(SDL_INIT_AUDIO) < 0)
 	{
 		Log(LOG_ERROR) << SDL_GetError();
