@@ -953,7 +953,7 @@ void logPatrolPath(SavedBattleGame *save, BattleUnit *unit, bool pushed)
 	}
 
 	std::ostringstream line;
-	line << "[AIPATROL] {\"v\":2,\"rec\":" << exec.rec << ",\"unit\":" << unit->getId() << ",\"pos\":" << pos(from) << ",\"to\":" << pos(exec.target)
+	line << "[AIPATROL] {\"v\":3,\"rec\":" << exec.rec << ",\"unit\":" << unit->getId() << ",\"pos\":" << pos(from) << ",\"to\":" << pos(exec.target)
 		<< ",\"bam\":" << exec.bam << ",\"pushed\":" << (pushed ? 1 : 0) << ",\"len\":" << (pushed ? (int)path.size() : 0) << ",\"cost\":" << cost
 		<< ",\"first\":";
 	if (pushed)
@@ -977,7 +977,35 @@ void logPatrolPath(SavedBattleGame *save, BattleUnit *unit, bool pushed)
 			if (c.Time > 0) snap = c.Time;
 		}
 	}
+	// the cheapest step to a neighbouring tile by energy, other units aside (ENERGY_PATROL_END_V2): the game's step cost in
+	// all 10 directions with the walk's move type, with the other units lifted off the tiles around for the count and put
+	// straight back - they are a passing obstacle, the terrain, the stairs and the unit's size are not
+	int snEn = -1, snN = 0;
+	{
+		const int big = unit->getArmor()->getSize() - 1;
+		std::vector<std::pair<Tile*, BattleUnit*>> lifted;
+		for (int z = from.z - 2; z <= from.z + 1; ++z)
+			for (int x = from.x - 1; x <= from.x + big + 1; ++x)
+				for (int y = from.y - 1; y <= from.y + big + 1; ++y)
+				{
+					Tile *t = save->getTile(Position(x, y, z));
+					if (t && t->getUnit() && t->getUnit() != unit)
+					{
+						lifted.push_back({ t, t->getUnit() });
+						t->setUnit(nullptr);
+					}
+				}
+		for (int dir = 0; dir <= Pathfinding::DIR_DOWN; ++dir)
+		{
+			const PathfindingStep r = probe->getTUCost(from, dir, unit, nullptr, bam);
+			if (r.cost.time >= Pathfinding::INVALID_MOVE_COST || r.pos == from) continue;
+			++snN;
+			if (snEn < 0 || r.cost.energy < snEn) snEn = r.cost.energy;
+		}
+		for (const auto &l : lifted) l.first->setUnit(l.second);
+	}
 	AIModule *ai = unit->getAIModule();
+	line << ",\"sn_en\":" << snEn << ",\"sn_n\":" << snN;
 	line << ",\"tu\":" << tu << ",\"energy\":" << energy << ",\"kneel\":" << (kneel ? 1 : 0)
 		<< ",\"reserve\":" << (pushed && firstTu != Pathfinding::INVALID_MOVE_COST ? (reserveLets(save, unit, firstTu + stand, firstEn) ? 1 : 0) : -1)
 		<< ",\"free\":" << lo << ",\"reserved\":" << (lo < 0 ? tu : tu - lo)

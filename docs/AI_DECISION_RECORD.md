@@ -166,8 +166,8 @@ PYTHONIOENCODING=utf-8 OXCE_AI_BUILD=build-ai30 py -3.13 tools/ai_arena.py --mis
 ## `[AIPATROL]`
 
 ```json
-{"v":2,"rec":40,"unit":1000005,"pos":[x,y,z],"to":[x,y,z],"bam":0,"pushed":1,"len":14,"cost":62,
- "first":{"dir":3,"tu":4,"en":2,"to":[x,y,z]},"tu":30,"energy":70,"kneel":0,"reserve":0,"free":2,"reserved":28,"rmode":9,
+{"v":3,"rec":40,"unit":1000005,"pos":[x,y,z],"to":[x,y,z],"bam":0,"pushed":1,"len":14,"cost":62,
+ "first":{"dir":3,"tu":4,"en":2,"to":[x,y,z]},"sn_en":2,"sn_n":7,"tu":30,"energy":70,"kneel":0,"reserve":0,"free":2,"reserved":28,"rmode":9,
  "after":26,"snap":18,"known":0,"seen":0,"lof":0,"lof_tu":0,"stop":"reserve","nreach":9,
  "before":62,"best":{"to":[x,y,z],"reach":24,"after":38,"reserve":0},"best_ok":{"to":[x,y,z],"reach":8,"after":54,"reserve":1}}
 ```
@@ -182,6 +182,7 @@ PYTHONIOENCODING=utf-8 OXCE_AI_BUILD=build-ai30 py -3.13 tools/ai_arena.py --mis
 | `to`, `bam` | узел патруля и вид хода (`BattleActionMove`) |
 | `pushed`, `len`, `cost` | нашёлся ли путь, число шагов и цена всего пути в ОВ (сумма `getTUCost` по пути игры); `cost` −1 без пути |
 | `first` | первый шаг: направление, ОВ, силы, клетка |
+| `sn_en`, `sn_n` | v3 (ENERGY_PATROL_END_V2): наименьшая цена в силах шага в соседнюю клетку и число возможных шагов — `getTUCost` из клетки юнита в 10 направлениях тем же `bam`, без учёта других юнитов (прибор на время подсчёта снимает их с клеток вокруг и сразу возвращает) и без резерва ОВ; `sn_en` −1, если шага нет |
 | `tu`, `energy`, `kneel` | юнит в момент решения |
 | `reserve` | пропустит ли первый шаг проверка резерва ОВ (−1 — шага нет) |
 | `free`, `reserved` | v2: сколько ОВ резерв оставляет на ход (наибольший шаг, который он пропускает; −1 — ни одного) и сколько держит (`tu − free`) |
