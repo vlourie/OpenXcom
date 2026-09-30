@@ -294,6 +294,11 @@ private:
 	const std::vector<int> &getPath() const;
 	/// Makes a copy to the path.
 	std::vector<int> copyPath() const;
+#ifdef OXCE_AI_DEV
+	/// The bench (plan V2, L0-B): TU of the cheapest path between two tiles for this unit, -1 if there is none. Uses this
+	/// object's nodes and path: call it on a Pathfinding of its own, never on the battle's.
+	int pathCost(BattleUnit *unit, Position from, Position to, BattleActionMove bam, int maxTUCost = 1000);
+#endif
 };
 
 }
