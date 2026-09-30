@@ -166,8 +166,9 @@ PYTHONIOENCODING=utf-8 OXCE_AI_BUILD=build-ai30 py -3.13 tools/ai_arena.py --mis
 ## `[AIPATROL]`
 
 ```json
-{"v":1,"rec":40,"unit":1000005,"pos":[x,y,z],"to":[x,y,z],"bam":0,"pushed":1,"len":14,"cost":62,
- "first":{"dir":3,"tu":4,"en":2,"to":[x,y,z]},"tu":30,"energy":70,"kneel":0,"reserve":0,"stop":"reserve","nreach":9,
+{"v":2,"rec":40,"unit":1000005,"pos":[x,y,z],"to":[x,y,z],"bam":0,"pushed":1,"len":14,"cost":62,
+ "first":{"dir":3,"tu":4,"en":2,"to":[x,y,z]},"tu":30,"energy":70,"kneel":0,"reserve":0,"free":2,"reserved":28,"rmode":9,
+ "after":26,"snap":18,"known":0,"seen":0,"lof":0,"lof_tu":0,"stop":"reserve","nreach":9,
  "before":62,"best":{"to":[x,y,z],"reach":24,"after":38,"reserve":0},"best_ok":{"to":[x,y,z],"reach":8,"after":54,"reserve":1}}
 ```
 
@@ -183,6 +184,10 @@ PYTHONIOENCODING=utf-8 OXCE_AI_BUILD=build-ai30 py -3.13 tools/ai_arena.py --mis
 | `first` | первый шаг: направление, ОВ, силы, клетка |
 | `tu`, `energy`, `kneel` | юнит в момент решения |
 | `reserve` | пропустит ли первый шаг проверка резерва ОВ (−1 — шага нет) |
+| `free`, `reserved` | v2: сколько ОВ резерв оставляет на ход (наибольший шаг, который он пропускает; −1 — ни одного) и сколько держит (`tu − free`) |
+| `rmode` | v2: режим резерва — у врага `AIModule::getReserveMode`, у игрока резерв стороны (`BattleActionType`: 0 нет, 7 авто, 8 навскидку, 9 прицельно) |
+| `after`, `snap` | v2: ОВ после первого шага (с учётом «встать»; −1 — шага нет) и цена выстрела реакции — навскидку оружием, которое берёт `TileEngine::determineReactionType` (−1 — нет) |
+| `known`, `seen`, `lof`, `lof_tu` | v2: врагов известно (правило `AiCandidates`), видит сам, врагов под выстрелом с линией огня — всего и по цене ≤ ОВ |
 | `stop` | что остановит первый шаг, в порядке `UnitWalkBState`: `nopath`, `kneel` (не встать), `invalid`, `tu`, `energy`, `reserve`, `occupied`; `none` — шаг будет |
 | `nreach` | клеток из списка ходов `[AICAND] moves` с ценой ≤ ОВ, кроме своей |
 | `before` | цена пути до узла со своей клетки по поиску стенда (только если `stop` не `none`) |
@@ -190,6 +195,7 @@ PYTHONIOENCODING=utf-8 OXCE_AI_BUILD=build-ai30 py -3.13 tools/ai_arena.py --mis
 | `best_ok` | то же среди клеток, которые резерв пускает |
 
 Сравнение «в тени»: база стоит (`stop` не `none`), а L0-B пошёл бы на `best_ok`, если `after` < `before`.
+Строки v1 (build-ai31) — без полей v2. Разбор по причинам — `E:\OXCE_AIWorker\source\l0b_path.py`.
 
 ## Проверка
 
