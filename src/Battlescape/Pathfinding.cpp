@@ -1679,4 +1679,35 @@ std::vector<int> Pathfinding::copyPath() const
 	return _path;
 }
 
+#ifdef OXCE_AI_DEV
+/**
+ * The bench (plan V2, L0-B): TU of the cheapest path between two tiles, summed step by step as a walk spends them
+ * (after A* _totalTUCost is the last node tried, not the path).
+ * @return TU, or -1 if there is no path within maxTUCost.
+ */
+int Pathfinding::pathCost(BattleUnit *unit, Position from, Position to, BattleActionMove bam, int maxTUCost)
+{
+	_unit = unit;
+	_path.clear();
+	if (from == to)
+	{
+		return 0;
+	}
+	int sum = -1;
+	if (aStarPath(from, to, bam, nullptr, false, maxTUCost))
+	{
+		sum = 0;
+		Position p = from;
+		for (auto it = _path.rbegin(); it != _path.rend(); ++it) // paths are stored in reverse order
+		{
+			PathfindingStep r = getTUCost(p, *it, unit, nullptr, bam);
+			sum += r.cost.time;
+			p = r.pos;
+		}
+	}
+	_path.clear();
+	return sum;
+}
+#endif
+
 }

@@ -103,8 +103,9 @@ void chosen(const BattleUnit *unit, char slot);
 void modeOdds(const BattleUnit *unit, int patrol, int ambush, int combat, int escape, int roll, int mode);
 /// A tile a rule scored (firepoint, ambush, escape): logged only for the decisions of OXCE_AI_TRACE_DECISION.
 void traceTile(const BattleUnit *unit, const char *what, const Position &pos, int score);
-/// The walk the decision asked for got a path (handleAI pushes it) or not (it is dropped).
-void walkPlanned(const BattleUnit *unit, bool pushed);
+/// The walk the decision asked for got a path (handleAI pushes it) or not (it is dropped). With OXCE_AI_RECORD_PATH a
+/// patrol walk also writes [AIPATROL]: its path, what stops its first step, and the reachable tile that gets closest.
+void walkPlanned(SavedBattleGame *save, BattleUnit *unit, bool pushed);
 /// A side's turn ends (BattlescapeGame::endTurn): the last decision's action is over.
 void sideEnds(SavedBattleGame *save);
 /// One line per unit killed or knocked out ([AICASUALTY]): by whom, with what, from how far, on whose turn.

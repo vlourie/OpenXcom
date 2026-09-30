@@ -22,6 +22,7 @@
 #include <cmath>
 #include <cstdlib>
 #include <map>
+#include <memory>
 #include <set>
 #include <sstream>
 #include <typeinfo>
@@ -35,6 +36,7 @@
 #include "../Engine/Logger.h"
 #include "../Engine/RNG.h"
 #include "../Engine/Timer.h"
+#include "../Mod/Armor.h"
 #include "../Mod/RuleInventory.h"
 #include "../Mod/RuleItem.h"
 #include "../Savegame/BattleItem.h"
@@ -86,7 +88,7 @@ void propose(const BattleUnit *, char, const char *, int, const BattleAction &) 
 void chosen(const BattleUnit *, char) {}
 void modeOdds(const BattleUnit *, int, int, int, int, int, int) {}
 void traceTile(const BattleUnit *, const char *, const Position &, int) {}
-void walkPlanned(const BattleUnit *, bool) {}
+void walkPlanned(SavedBattleGame *, BattleUnit *, bool) {}
 void sideEnds(SavedBattleGame *) {}
 void logCasualty(SavedBattleGame *, const BattleUnit *, const BattleUnit *, const std::string &, bool, int, bool) {}
 
@@ -511,6 +513,11 @@ struct Exec
 	int walk = -1;
 	std::map<int, Snapshot> units;
 	std::vector<std::string> trail;
+	/// a patrol walk to its node, followed by [AIPATROL] (OXCE_AI_RECORD_PATH): the node, the move type, the tiles in reach
+	bool patrol = false;
+	Position target;
+	int bam = 0;
+	std::vector<std::pair<Position, int>> reach;
 };
 Exec exec;
 
@@ -806,11 +813,18 @@ void traceTile(const BattleUnit *unit, const char *what, const Position &pos, in
 	}
 }
 
-void walkPlanned(const BattleUnit *unit, bool pushed)
+namespace { void logPatrolPath(SavedBattleGame *save, BattleUnit *unit, bool pushed); }
+
+void walkPlanned(SavedBattleGame *save, BattleUnit *unit, bool pushed)
 {
 	if (record() && exec.unit == unit->getId())
 	{
 		exec.walk = pushed ? 1 : 0;
+		if (exec.patrol)
+		{
+			exec.patrol = false;
+			logPatrolPath(save, unit, pushed);
+		}
 	}
 }
 
@@ -851,6 +865,137 @@ std::string quoted(const std::string &text)
 			out += c;
 	}
 	return out + "\"";
+}
+
+/// Would the walk's reserve check let a step of tu, energy go (BattlescapeGame::checkReservedTU as UnitWalkBState calls it)?
+/// Asked with justChecking, which has no side effects; for the player's side that skips one shortcut of the real call -
+/// a reserve the unit cannot pay at all reserves nothing - so it is put back here.
+bool reserveLets(SavedBattleGame *save, BattleUnit *unit, int tu, int energy)
+{
+	BattlescapeGame *game = save->getBattleGame();
+	if (save->getSide() == FACTION_HOSTILE) return game->checkReservedTU(unit, tu, energy, true);
+	return !game->checkReservedTU(unit, 0, 0, true) || game->checkReservedTU(unit, tu, energy, true);
+}
+
+/// [AIPATROL] (plan V2, L0-B): a patrol walk to its node - the path the game found, what stops its first step, and when it
+/// is stopped, the tiles in reach that get closest to the node. The costs come from a Pathfinding of the probe's own: the
+/// battle's one holds the path the walk is about to take.
+void logPatrolPath(SavedBattleGame *save, BattleUnit *unit, bool pushed)
+{
+	static std::unique_ptr<Pathfinding> probe;
+	static const SavedBattleGame *probeSave = nullptr;
+	static Position probeSize;
+	const Position mapSize(save->getMapSizeX(), save->getMapSizeY(), save->getMapSizeZ());
+	if (!probe || probeSave != save || probeSize != mapSize) // a new battle may get the old one's address
+	{
+		probe.reset(new Pathfinding(save));
+		probeSave = save;
+		probeSize = mapSize;
+	}
+	Pathfinding *pf = save->getPathfinding();
+	const BattleActionMove bam = (BattleActionMove)exec.bam;
+	const Position from = unit->getPosition();
+	const std::vector<int> &path = pf->getPath();
+
+	int cost = -1;
+	int firstDir = -1, firstTu = -1, firstEn = -1;
+	Position firstTo = from;
+	if (pushed)
+	{
+		cost = 0;
+		Position p = from;
+		for (auto it = path.rbegin(); it != path.rend(); ++it) // paths are stored in reverse order
+		{
+			PathfindingStep r = pf->getTUCost(p, *it, unit, nullptr, bam);
+			if (it == path.rbegin())
+			{
+				firstDir = *it;
+				firstTu = r.cost.time;
+				firstEn = r.cost.energy;
+				firstTo = r.pos;
+			}
+			cost += r.cost.time;
+			p = r.pos;
+		}
+	}
+
+	// UnitWalkBState's checks in its order; a kneeling unit stands up first, and that TU is gone before the step
+	const int tu = unit->getTimeUnits(), energy = unit->getEnergy();
+	const bool kneel = unit->isKneeled();
+	const int stand = kneel ? unit->getKneelUpCost() : 0;
+	std::string stop = "none";
+	if (!pushed)
+		stop = "nopath";
+	else if (kneel && !(unit->getArmor()->allowsKneeling(unit->getType() == "SOLDIER") && !unit->isFloating() && reserveLets(save, unit, stand, 0)))
+		stop = "kneel";
+	else if (firstTu == Pathfinding::INVALID_MOVE_COST)
+		stop = "invalid";
+	else if (firstTu > tu - stand)
+		stop = "tu";
+	else if (firstEn > energy)
+		stop = "energy";
+	else if (!reserveLets(save, unit, firstTu + stand, firstEn))
+		stop = "reserve";
+	else
+	{
+		const int size = unit->getArmor()->getSize() - 1;
+		for (int x = size; x >= 0 && stop == "none"; --x)
+		{
+			for (int y = size; y >= 0 && stop == "none"; --y)
+			{
+				const Tile *t = save->getTile(firstTo + Position(x, y, 0));
+				const BattleUnit *other = t ? t->getOverlappingUnit(save, TUO_IGNORE_SMALL) : nullptr;
+				if (other && other != unit) stop = "occupied";
+			}
+		}
+	}
+
+	std::ostringstream line;
+	line << "[AIPATROL] {\"v\":1,\"rec\":" << exec.rec << ",\"unit\":" << unit->getId() << ",\"pos\":" << pos(from) << ",\"to\":" << pos(exec.target)
+		<< ",\"bam\":" << exec.bam << ",\"pushed\":" << (pushed ? 1 : 0) << ",\"len\":" << (pushed ? (int)path.size() : 0) << ",\"cost\":" << cost
+		<< ",\"first\":";
+	if (pushed)
+		line << "{\"dir\":" << firstDir << ",\"tu\":" << firstTu << ",\"en\":" << firstEn << ",\"to\":" << pos(firstTo) << "}";
+	else
+		line << "null";
+	line << ",\"tu\":" << tu << ",\"energy\":" << energy << ",\"kneel\":" << (kneel ? 1 : 0)
+		<< ",\"reserve\":" << (pushed && firstTu != Pathfinding::INVALID_MOVE_COST ? (reserveLets(save, unit, firstTu + stand, firstEn) ? 1 : 0) : -1)
+		<< ",\"stop\":\"" << stop << "\",\"nreach\":" << exec.reach.size();
+	if (stop != "none")
+	{
+		// the tiles in reach nearest to the node, and how far each still is from it by path
+		const int before = probe->pathCost(unit, from, exec.target, bam);
+		std::vector<std::pair<int, size_t>> near;
+		for (size_t i = 0; i < exec.reach.size(); ++i)
+		{
+			const Position d = exec.reach[i].first - exec.target;
+			near.push_back({ d.x * d.x + d.y * d.y + 4 * d.z * d.z, i });
+		}
+		std::sort(near.begin(), near.end());
+		if (near.size() > 16) near.resize(16);
+		struct Best { int i = -1, after = -1, reach = 0; bool ok = false; };
+		Best best, bestOk;
+		for (const auto &n : near)
+		{
+			const auto &r = exec.reach[n.second];
+			const int after = probe->pathCost(unit, r.first, exec.target, bam);
+			if (after < 0) continue;
+			const bool ok = reserveLets(save, unit, r.second, 0);
+			auto better = [&](const Best &b) { return b.i < 0 || after < b.after || (after == b.after && r.second < b.reach); };
+			if (better(best)) best = { (int)n.second, after, r.second, ok };
+			if (ok && better(bestOk)) bestOk = { (int)n.second, after, r.second, ok };
+		}
+		auto put = [&](const Best &b) {
+			if (b.i < 0) { line << "null"; return; }
+			line << "{\"to\":" << pos(exec.reach[b.i].first) << ",\"reach\":" << b.reach << ",\"after\":" << b.after << ",\"reserve\":" << (b.ok ? 1 : 0) << "}";
+		};
+		line << ",\"before\":" << before << ",\"best\":";
+		put(best);
+		line << ",\"best_ok\":";
+		put(bestOk);
+	}
+	line << "}";
+	Log(LOG_INFO) << line.str();
 }
 
 bool attackType(int type)
@@ -901,7 +1046,7 @@ const std::string &cfgText()
 	static const std::string text = []
 	{
 		static const std::set<std::string> skip = { "OXCE_AI_SEED", "OXCE_AI_RECORD", "OXCE_AI_TRACE_DECISION", "OXCE_AI_PROBE_SAVE",
-			"OXCE_AI_BUILD", "OXCE_AI_KEEP_DECIDE", "OXCE_AI_MISSION", "OXCE_AI_CAMPAIGN", "OXCE_AI_EXE", "OXCE_AI_GAME", "OXCE_AI_WORK" };
+			"OXCE_AI_BUILD", "OXCE_AI_KEEP_DECIDE", "OXCE_AI_MISSION", "OXCE_AI_CAMPAIGN", "OXCE_AI_EXE", "OXCE_AI_GAME", "OXCE_AI_WORK", "OXCE_AI_RECORD_PATH" };
 		std::vector<std::string> vars;
 		for (char **e = PROBE_ENVIRON; e && *e; ++e)
 		{
@@ -1095,6 +1240,16 @@ void writeRecord(SavedBattleGame *save, BattleUnit *unit, const BattleAction &ac
 	exec.turn = save->getTurn();
 	exec.tu = pending.tu;
 	exec.units = std::move(pending.units);
+	if (slot == 'p' && src && src->src == "patrol.node" && action.type == BA_WALK && param("OXCE_AI_RECORD_PATH", 0) > 0)
+	{
+		exec.patrol = true;
+		exec.target = action.target;
+		exec.bam = (int)action.getMoveType();
+		for (const auto &m : set.moves)
+		{
+			if (m.tu >= 0 && m.tu <= pending.tu && m.tile != pending.pos) exec.reach.push_back({ m.tile, m.tu });
+		}
+	}
 	pending.unit = -1;
 }
 

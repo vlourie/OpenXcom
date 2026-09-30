@@ -87,7 +87,9 @@ def one(seed, turns, diff, timeout, campaign, mission=None, tactics=False, caref
            # по OXCE_AI_RECORD - запись решений (docs/AI_DECISION_RECORD.md): решение, исполнение, итог после хода врага,
            # разбор по OXCE_AI_TRACE_DECISION; списки кандидатов ([AICAND]) - отдельно, они тяжелее всего остального
            "_rec": [l for l in r.lines if l.startswith(("[AIRECHEAD]", "[AIREC]", "[AIEXEC]", "[AIAFTER]", "[AITRACE]"))],
-           "_cand": r.tagged("[AICAND]")}
+           "_cand": r.tagged("[AICAND]"),
+           # по OXCE_AI_RECORD_PATH - путь патруля и что держит первый шаг ([AIPATROL], план V2, L0-B)
+           "_path": [l for l in r.lines if l.startswith("[AIPATROL]")]}
     row.update(moves)
     battle = r.tagged("[AIPROBE] battle")
     if battle:
@@ -261,7 +263,7 @@ def main():
                 with gzip.open(table.with_suffix(".tiles.gz"), "at", encoding="utf-8") as f:
                     f.writelines(f"seed={row['seed']} want={row['want']} {line}\n" for line in row["_tiles"])
             # каждое решение ИИ ([AIDECIDE]) - только по OXCE_AI_KEEP_DECIDE=1: разбор «почему стоял», на порцию это сотни МБ
-            for key, ext in (("_decide", ".decide.gz"), ("_rec", ".rec.gz"), ("_cand", ".cand.gz")):
+            for key, ext in (("_decide", ".decide.gz"), ("_rec", ".rec.gz"), ("_cand", ".cand.gz"), ("_path", ".path.gz")):
                 if row.get(key):
                     with gzip.open(table.with_suffix(ext), "at", encoding="utf-8") as f:
                         f.writelines(f"seed={row['seed']} want={row['want']} {line}\n" for line in row[key])

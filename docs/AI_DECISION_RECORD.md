@@ -14,6 +14,7 @@ L0, L1, Arena, запись ходов Vitali) читают только эту 
 | `OXCE_AI_RECORD=1` | писать запись |
 | `OXCE_AI_TRACE_DECISION=12,40` | для записей с этими `rec` ещё и `[AITRACE]` — оценки всех клеток, которые перебрали правила |
 | `OXCE_AI_KEEP_DECIDE=1` | ai_arena сохраняет и прежние строки `[AIDECIDE]/[AIMELEE]/[AIPATH]` в `<метка>.decide.gz` |
+| `OXCE_AI_RECORD_PATH=1` | вместе с `OXCE_AI_RECORD`: у хода патруля к узлу ещё и `[AIPATROL]` — путь, что держит первый шаг, ближайшая к узлу досягаемая клетка (план V2, L0-B); в хэш `cfg` не входит |
 
 ```
 PYTHONIOENCODING=utf-8 OXCE_AI_BUILD=build-ai30 py -3.13 tools/ai_arena.py --missions @fair22.txt --seeds 202 --careful --squad 8 --jobs 4 --label det37a --env OXCE_AI_RECORD=1
@@ -28,6 +29,7 @@ PYTHONIOENCODING=utf-8 OXCE_AI_BUILD=build-ai30 py -3.13 tools/ai_arena.py --mis
 | `<метка>.rec.gz` | `[AIRECHEAD]`, `[AIREC]`, `[AIEXEC]`, `[AIAFTER]`, `[AITRACE]` |
 | `<метка>.cand.gz` | `[AICAND]` — тяжёлые списки кандидатов, один раз на хэш |
 | `<метка>.decide.gz` | только с `OXCE_AI_KEEP_DECIDE=1` |
+| `<метка>.path.gz` | `[AIPATROL]`, только с `OXCE_AI_RECORD_PATH=1` |
 
 Серии до v1 (build-ai29 и первый build-ai30) писали всё в `.decide.gz` без `exp`, `[AIEXEC]` и `[AIAFTER]`;
 `rec_diff.py` читает и их.
@@ -160,6 +162,34 @@ PYTHONIOENCODING=utf-8 OXCE_AI_BUILD=build-ai30 py -3.13 tools/ai_arena.py --mis
 ```
 
 Только для записей из `OXCE_AI_TRACE_DECISION`: все клетки, которые правило оценило, со счётом.
+
+## `[AIPATROL]`
+
+```json
+{"v":1,"rec":40,"unit":1000005,"pos":[x,y,z],"to":[x,y,z],"bam":0,"pushed":1,"len":14,"cost":62,
+ "first":{"dir":3,"tu":4,"en":2,"to":[x,y,z]},"tu":30,"energy":70,"kneel":0,"reserve":0,"stop":"reserve","nreach":9,
+ "before":62,"best":{"to":[x,y,z],"reach":24,"after":38,"reserve":0},"best_ok":{"to":[x,y,z],"reach":8,"after":54,"reserve":1}}
+```
+
+Только с `OXCE_AI_RECORD_PATH=1`, только у решения, где база выбрала патруль к узлу (`slot` p, `src` `patrol.node`,
+ход), сразу после того, как игра посчитала путь (`BattlescapeGame::handleAI`). Движок это не меняет: цены берутся
+отдельным `Pathfinding` стенда, проверка резерва — `checkReservedTU` с `justChecking`.
+
+| Поле | Что |
+|---|---|
+| `rec` | запись `[AIREC]` этого решения |
+| `to`, `bam` | узел патруля и вид хода (`BattleActionMove`) |
+| `pushed`, `len`, `cost` | нашёлся ли путь, число шагов и цена всего пути в ОВ (сумма `getTUCost` по пути игры); `cost` −1 без пути |
+| `first` | первый шаг: направление, ОВ, силы, клетка |
+| `tu`, `energy`, `kneel` | юнит в момент решения |
+| `reserve` | пропустит ли первый шаг проверка резерва ОВ (−1 — шага нет) |
+| `stop` | что остановит первый шаг, в порядке `UnitWalkBState`: `nopath`, `kneel` (не встать), `invalid`, `tu`, `energy`, `reserve`, `occupied`; `none` — шаг будет |
+| `nreach` | клеток из списка ходов `[AICAND] moves` с ценой ≤ ОВ, кроме своей |
+| `before` | цена пути до узла со своей клетки по поиску стенда (только если `stop` не `none`) |
+| `best` | из 16 досягаемых клеток, ближайших к узлу, та, откуда путь до узла дешевле всего: клетка, цена дойти (`reach`), цена остатка (`after`), пустит ли резерв ход на `reach` ОВ |
+| `best_ok` | то же среди клеток, которые резерв пускает |
+
+Сравнение «в тени»: база стоит (`stop` не `none`), а L0-B пошёл бы на `best_ok`, если `after` < `before`.
 
 ## Проверка
 
