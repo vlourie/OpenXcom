@@ -584,18 +584,18 @@ void AIModule::think(BattleAction *action)
 				if (action->weapon->getCurrentWaypoints() != 0)
 				{
 					_blaster = true;
-					_reachableWithAttack = _save->getPathfinding()->findReachable(_unit, BattleActionCost(BA_AIMEDSHOT, _unit, action->weapon));
+					reachableWithAttack(BattleActionCost(BA_AIMEDSHOT, _unit, action->weapon));
 				}
 				else
 				{
 					_rifle = true;
-					_reachableWithAttack = _save->getPathfinding()->findReachable(_unit, BattleActionCost(BA_SNAPSHOT, _unit, action->weapon));
+					reachableWithAttack(BattleActionCost(BA_SNAPSHOT, _unit, action->weapon));
 				}
 			}
 			else if (rule->getBattleType() == BT_MELEE)
 			{
 				_melee = true;
-				_reachableWithAttack = _save->getPathfinding()->findReachable(_unit, BattleActionCost(BA_HIT, _unit, action->weapon));
+				reachableWithAttack(BattleActionCost(BA_HIT, _unit, action->weapon));
 			}
 		}
 		else
@@ -866,6 +866,18 @@ int AIModule::unitTurn() const
 bool AIModule::isPatrolWalk(const BattleAction &action) const
 {
 	return _patrolWalk && action.type == BA_WALK;
+}
+
+/**
+ * The tiles the unit can walk to and still attack at, and what they leave for the walk (FIREPOINT_ENERGY_PATH_V1 reads it).
+ * @param cost The attack.
+ */
+void AIModule::reachableWithAttack(const BattleActionCost &cost)
+{
+	_reachableWithAttack = _save->getPathfinding()->findReachable(_unit, cost);
+	// the same budget as findReachable's own
+	_reachableTuMax = _unit->getTimeUnits() - cost.Time;
+	_reachableEnergyMax = _unit->getEnergy() - cost.Energy;
 }
 
 /**
@@ -2408,6 +2420,7 @@ bool AIModule::findFirePoint()
 	bool waitIfOutsideWeaponRange = _unit->getGeoscapeSoldier() ? false : _unit->getUnitRules()->waitIfOutsideWeaponRange();
 	bool extendedFireModeChoiceEnabled = _save->getMod()->getAIExtendedFireModeChoice();
 	int bestScore = 0;
+	int droppedByEnergy = 0, overByTu = 0;
 	_attackAction.type = BA_RETHINK;
 	for (const auto& randomPosition : randomTileSearch)
 	{
@@ -2428,6 +2441,14 @@ bool AIModule::findFirePoint()
 			// can move here
 			if (_save->getPathfinding()->getStartDirection() != -1)
 			{
+				// FIREPOINT_ENERGY_PATH_V1 (bench): the walk goes by this path, not by the one findReachable found the tile by
+				const int over = AiProbe::firepointPathOver(_save, _unit, _reachableTuMax, _reachableEnergyMax);
+				overByTu += (over & 2) ? 1 : 0;
+				if (over & 1)
+				{
+					++droppedByEnergy;
+					continue;
+				}
 				score = BASE_SYSTEMATIC_SUCCESS - getSpottingUnits(pos) * 10;
 				score += _unit->getTimeUnits() - _save->getPathfinding()->getTotalTUCost();
 				if (!_aggroTarget->checkViewSector(pos))
@@ -2461,6 +2482,10 @@ bool AIModule::findFirePoint()
 				}
 			}
 		}
+	}
+	if (droppedByEnergy || overByTu)
+	{
+		AiProbe::firepointDropped(_unit, droppedByEnergy, overByTu);
 	}
 
 	if (bestScore > 70)
@@ -3660,7 +3685,7 @@ void AIModule::selectMeleeOrRanged()
 		{
 			_rifle = false;
 			_attackAction.weapon = melee;
-			_reachableWithAttack = _save->getPathfinding()->findReachable(_unit, BattleActionCost(BA_HIT, _unit, melee));
+			reachableWithAttack(BattleActionCost(BA_HIT, _unit, melee));
 			return;
 		}
 	}
