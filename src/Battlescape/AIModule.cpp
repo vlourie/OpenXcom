@@ -498,6 +498,7 @@ void AIModule::think(BattleAction *action)
 	action->type = BA_RETHINK;
 	action->actor = _unit;
 	action->weapon = _unit->getMainHandWeapon(false);
+	_patrolWalk = false;
 	_attackAction.diff = _save->getBattleState()->getGame()->getSavedGame()->getDifficultyCoefficient();
 	_attackAction.actor = _unit;
 	_attackAction.run = false;
@@ -748,6 +749,13 @@ void AIModule::think(BattleAction *action)
 		}
 		action->type = _patrolAction.type;
 		action->target = _patrolAction.target;
+		_patrolWalk = _patrolAction.type == BA_WALK;
+		if (_patrolWalk && _patrolSpent == unitTurn() && _unit->getPosition() == _patrolSpentAt && _unit->getEnergy() <= _patrolSpentEnergy)
+		{
+			// ENERGY_PATROL_END_V2: no step is left by energy this unit-turn, the walk would stop where it stands
+			AiProbe::tally(_unit, "patrol.spent");
+			action->type = BA_NONE;
+		}
 		break;
 	case AI_COMBAT:
 		action->type = _attackAction.type;
@@ -841,6 +849,32 @@ void AIModule::think(BattleAction *action)
 	}
 }
 
+
+/**
+ * The unit-turn now: a unit acts once per turn and side.
+ */
+int AIModule::unitTurn() const
+{
+	return _save->getTurn() * 8 + (int)_save->getSide();
+}
+
+/**
+ * Is this the walk of a patrol to its node, as the last think chose it?
+ */
+bool AIModule::isPatrolWalk(const BattleAction &action) const
+{
+	return _patrolWalk && action.type == BA_WALK;
+}
+
+/**
+ * No more patrol walks for the rest of this unit-turn (ENERGY_PATROL_END_V2).
+ */
+void AIModule::spendPatrol()
+{
+	_patrolSpent = unitTurn();
+	_patrolSpentAt = _unit->getPosition();
+	_patrolSpentEnergy = _unit->getEnergy();
+}
 
 /*
  * sets the "was hit" flag to true.

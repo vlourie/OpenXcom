@@ -71,6 +71,14 @@ private:
 	/// action and, if it names itself more exactly than its caller, its name. Written, never read by play.
 	int _probeScore = INT_MIN;
 	const char *_probeSource = nullptr;
+	/// ENERGY_PATROL_END_V2 (bench, AiProbe::patrolOutOfEnergy): the unit-turn (turn and side) its patrol walks are spent in.
+	int _patrolSpent = -1;
+	/// Where it stood and how much energy it had then: a unit moved or given energy (a stimulant) may walk again.
+	Position _patrolSpentAt;
+	int _patrolSpentEnergy = -1;
+	/// This think's action is the patrol's walk to its node.
+	bool _patrolWalk = false;
+	int unitTurn() const;
 	/// A slot's action before a rule runs: the record hears of the rule only if it changed the slot.
 	struct ProbeMark { BattleActionType type; Position target; const BattleItem *weapon; };
 	const BattleAction &probeAction(char slot) const;
@@ -175,6 +183,10 @@ public:
 	BattleUnit* getTarget();
 	/// Gets the current AI mode (AI_PATROL..AI_ESCAPE), for the AI probe's log.
 	int getAIMode() const { return _AIMode; }
+	/// Is this the walk of a patrol to its node (the probe's slot p, patrol.node)?
+	bool isPatrolWalk(const BattleAction &action) const;
+	/// No more patrol walks for the rest of this unit-turn: it has no step left by energy (bench, ENERGY_PATROL_END_V2).
+	void spendPatrol();
 	/// Frees up the destination node for another Unit to select
 	void freePatrolTarget();
 };

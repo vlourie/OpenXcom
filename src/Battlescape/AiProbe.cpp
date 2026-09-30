@@ -89,6 +89,7 @@ void chosen(const BattleUnit *, char) {}
 void modeOdds(const BattleUnit *, int, int, int, int, int, int) {}
 void traceTile(const BattleUnit *, const char *, const Position &, int) {}
 void walkPlanned(SavedBattleGame *, BattleUnit *, bool) {}
+bool patrolOutOfEnergy(SavedBattleGame *, BattleUnit *, const BattleAction &, bool) { return false; }
 void sideEnds(SavedBattleGame *) {}
 void logCasualty(SavedBattleGame *, const BattleUnit *, const BattleUnit *, const std::string &, bool, int, bool) {}
 
@@ -879,10 +880,8 @@ bool reserveLets(SavedBattleGame *save, BattleUnit *unit, int tu, int energy)
 	return !game->checkReservedTU(unit, 0, 0, true) || game->checkReservedTU(unit, tu, energy, true);
 }
 
-/// [AIPATROL] (plan V2, L0-B): a patrol walk to its node - the path the game found, what stops its first step, and when it
-/// is stopped, the tiles in reach that get closest to the node. The costs come from a Pathfinding of the probe's own: the
-/// battle's one holds the path the walk is about to take.
-void logPatrolPath(SavedBattleGame *save, BattleUnit *unit, bool pushed)
+/// A Pathfinding of the probe's own: the battle's one holds the path the walk is about to take.
+Pathfinding *probePathfinding(SavedBattleGame *save)
 {
 	static std::unique_ptr<Pathfinding> probe;
 	static const SavedBattleGame *probeSave = nullptr;
@@ -894,63 +893,128 @@ void logPatrolPath(SavedBattleGame *save, BattleUnit *unit, bool pushed)
 		probeSave = save;
 		probeSize = mapSize;
 	}
-	Pathfinding *pf = save->getPathfinding();
-	const BattleActionMove bam = (BattleActionMove)exec.bam;
-	const Position from = unit->getPosition();
-	const std::vector<int> &path = pf->getPath();
+	return probe.get();
+}
 
-	int cost = -1;
-	int firstDir = -1, firstTu = -1, firstEn = -1;
-	Position firstTo = from;
+/// The walk's path as the battle's Pathfinding holds it: its cost, its first step, and what stops that step.
+struct FirstStep
+{
+	int cost = -1, dir = -1, tu = -1, en = -1, stand = 0;
+	Position to;
+	std::string stop = "none";
+};
+
+/// What stops the first step of the walk the battle's Pathfinding holds - UnitWalkBState's checks in its order.
+FirstStep firstStep(SavedBattleGame *save, BattleUnit *unit, BattleActionMove bam, bool pushed)
+{
+	Pathfinding *pf = save->getPathfinding();
+	const std::vector<int> &path = pf->getPath();
+	FirstStep s;
+	s.to = unit->getPosition();
 	if (pushed)
 	{
-		cost = 0;
-		Position p = from;
+		s.cost = 0;
+		Position p = unit->getPosition();
 		for (auto it = path.rbegin(); it != path.rend(); ++it) // paths are stored in reverse order
 		{
 			PathfindingStep r = pf->getTUCost(p, *it, unit, nullptr, bam);
 			if (it == path.rbegin())
 			{
-				firstDir = *it;
-				firstTu = r.cost.time;
-				firstEn = r.cost.energy;
-				firstTo = r.pos;
+				s.dir = *it;
+				s.tu = r.cost.time;
+				s.en = r.cost.energy;
+				s.to = r.pos;
 			}
-			cost += r.cost.time;
+			s.cost += r.cost.time;
 			p = r.pos;
 		}
 	}
 
-	// UnitWalkBState's checks in its order; a kneeling unit stands up first, and that TU is gone before the step
+	// a kneeling unit stands up first, and that TU is gone before the step
 	const int tu = unit->getTimeUnits(), energy = unit->getEnergy();
 	const bool kneel = unit->isKneeled();
-	const int stand = kneel ? unit->getKneelUpCost() : 0;
-	std::string stop = "none";
+	s.stand = kneel ? unit->getKneelUpCost() : 0;
 	if (!pushed)
-		stop = "nopath";
-	else if (kneel && !(unit->getArmor()->allowsKneeling(unit->getType() == "SOLDIER") && !unit->isFloating() && reserveLets(save, unit, stand, 0)))
-		stop = "kneel";
-	else if (firstTu == Pathfinding::INVALID_MOVE_COST)
-		stop = "invalid";
-	else if (firstTu > tu - stand)
-		stop = "tu";
-	else if (firstEn > energy)
-		stop = "energy";
-	else if (!reserveLets(save, unit, firstTu + stand, firstEn))
-		stop = "reserve";
+		s.stop = "nopath";
+	else if (kneel && !(unit->getArmor()->allowsKneeling(unit->getType() == "SOLDIER") && !unit->isFloating() && reserveLets(save, unit, s.stand, 0)))
+		s.stop = "kneel";
+	else if (s.tu == Pathfinding::INVALID_MOVE_COST)
+		s.stop = "invalid";
+	else if (s.tu > tu - s.stand)
+		s.stop = "tu";
+	else if (s.en > energy)
+		s.stop = "energy";
+	else if (!reserveLets(save, unit, s.tu + s.stand, s.en))
+		s.stop = "reserve";
 	else
 	{
 		const int size = unit->getArmor()->getSize() - 1;
-		for (int x = size; x >= 0 && stop == "none"; --x)
+		for (int x = size; x >= 0 && s.stop == "none"; --x)
 		{
-			for (int y = size; y >= 0 && stop == "none"; --y)
+			for (int y = size; y >= 0 && s.stop == "none"; --y)
 			{
-				const Tile *t = save->getTile(firstTo + Position(x, y, 0));
+				const Tile *t = save->getTile(s.to + Position(x, y, 0));
 				const BattleUnit *other = t ? t->getOverlappingUnit(save, TUO_IGNORE_SMALL) : nullptr;
-				if (other && other != unit) stop = "occupied";
+				if (other && other != unit) s.stop = "occupied";
 			}
 		}
 	}
+	return s;
+}
+
+/// The cheapest step to a neighbouring tile by energy, other units aside (ENERGY_PATROL_END_V2): the game's step cost in
+/// all 10 directions with the walk's move type, with the other units lifted off the tiles around for the count and put
+/// straight back - they are a passing obstacle, the terrain, the stairs and the unit's size are not.
+/// (getTUCost and all it calls are const, and it runs on the probe's own Pathfinding; the only thing touched is the
+/// lifted units, and LiftUnits puts them back on any way out of the block.) snEn -1 - no such step, snN - how many.
+void staticStep(SavedBattleGame *save, BattleUnit *unit, BattleActionMove bam, int &snEn, int &snN)
+{
+	Pathfinding *probe = probePathfinding(save);
+	const Position from = unit->getPosition();
+	snEn = -1;
+	snN = 0;
+	struct LiftUnits
+	{
+		std::vector<std::pair<Tile*, BattleUnit*>> lifted;
+		~LiftUnits() { for (const auto &l : lifted) l.first->setUnit(l.second); }
+	} lift;
+	const int big = unit->getArmor()->getSize() - 1; // the box covers the footprint of a large unit and its neighbours
+	for (int z = from.z - 2; z <= from.z + 1; ++z)
+		for (int x = from.x - 1; x <= from.x + big + 1; ++x)
+			for (int y = from.y - 1; y <= from.y + big + 1; ++y)
+			{
+				Tile *t = save->getTile(Position(x, y, z));
+				if (t && t->getUnit() && t->getUnit() != unit)
+				{
+					lift.lifted.push_back({ t, t->getUnit() });
+					t->setUnit(nullptr);
+				}
+			}
+	for (int dir = 0; dir <= Pathfinding::DIR_DOWN; ++dir)
+	{
+		const PathfindingStep r = probe->getTUCost(from, dir, unit, nullptr, bam);
+		if (r.cost.time >= Pathfinding::INVALID_MOVE_COST || r.pos == from) continue;
+		++snN;
+		if (snEn < 0 || r.cost.energy < snEn) snEn = r.cost.energy;
+	}
+}
+
+/// [AIPATROL] (plan V2, L0-B): a patrol walk to its node - the path the game found, what stops its first step, and when it
+/// is stopped, the tiles in reach that get closest to the node. The costs come from a Pathfinding of the probe's own: the
+/// battle's one holds the path the walk is about to take.
+void logPatrolPath(SavedBattleGame *save, BattleUnit *unit, bool pushed)
+{
+	Pathfinding *probe = probePathfinding(save);
+	const BattleActionMove bam = (BattleActionMove)exec.bam;
+	const Position from = unit->getPosition();
+	const std::vector<int> &path = save->getPathfinding()->getPath();
+
+	const FirstStep step = firstStep(save, unit, bam, pushed);
+	const int cost = step.cost, firstDir = step.dir, firstTu = step.tu, firstEn = step.en, stand = step.stand;
+	const Position firstTo = step.to;
+	const std::string &stop = step.stop;
+	const int tu = unit->getTimeUnits(), energy = unit->getEnergy();
+	const bool kneel = unit->isKneeled();
 
 	std::ostringstream line;
 	line << "[AIPATROL] {\"v\":3,\"rec\":" << exec.rec << ",\"unit\":" << unit->getId() << ",\"pos\":" << pos(from) << ",\"to\":" << pos(exec.target)
@@ -977,38 +1041,8 @@ void logPatrolPath(SavedBattleGame *save, BattleUnit *unit, bool pushed)
 			if (c.Time > 0) snap = c.Time;
 		}
 	}
-	// the cheapest step to a neighbouring tile by energy, other units aside (ENERGY_PATROL_END_V2): the game's step cost in
-	// all 10 directions with the walk's move type, with the other units lifted off the tiles around for the count and put
-	// straight back - they are a passing obstacle, the terrain, the stairs and the unit's size are not
-	// (getTUCost and all it calls are const, and it runs on the probe's own Pathfinding; the only thing touched is the
-	// lifted units, and LiftUnits puts them back on any way out of the block)
-	int snEn = -1, snN = 0;
-	{
-		struct LiftUnits
-		{
-			std::vector<std::pair<Tile*, BattleUnit*>> lifted;
-			~LiftUnits() { for (const auto &l : lifted) l.first->setUnit(l.second); }
-		} lift;
-		const int big = unit->getArmor()->getSize() - 1; // the box covers the footprint of a large unit and its neighbours
-		for (int z = from.z - 2; z <= from.z + 1; ++z)
-			for (int x = from.x - 1; x <= from.x + big + 1; ++x)
-				for (int y = from.y - 1; y <= from.y + big + 1; ++y)
-				{
-					Tile *t = save->getTile(Position(x, y, z));
-					if (t && t->getUnit() && t->getUnit() != unit)
-					{
-						lift.lifted.push_back({ t, t->getUnit() });
-						t->setUnit(nullptr);
-					}
-				}
-		for (int dir = 0; dir <= Pathfinding::DIR_DOWN; ++dir)
-		{
-			const PathfindingStep r = probe->getTUCost(from, dir, unit, nullptr, bam);
-			if (r.cost.time >= Pathfinding::INVALID_MOVE_COST || r.pos == from) continue;
-			++snN;
-			if (snEn < 0 || r.cost.energy < snEn) snEn = r.cost.energy;
-		}
-	}
+	int snEn, snN;
+	staticStep(save, unit, bam, snEn, snN);
 	AIModule *ai = unit->getAIModule();
 	line << ",\"sn_en\":" << snEn << ",\"sn_n\":" << snN;
 	line << ",\"tu\":" << tu << ",\"energy\":" << energy << ",\"kneel\":" << (kneel ? 1 : 0)
@@ -1892,6 +1926,24 @@ int maxActions(const BattleUnit *unit)
 	// with 260 of 282 left (d9probe, 127 such hits on 22 battles) - a player hits on until the enemy falls
 	static const int n = getenv("OXCE_AI_ACTIONS") ? atoi(getenv("OXCE_AI_ACTIONS")) : 0;
 	return n > 2 && careful(unit) ? n : 2;
+}
+
+bool patrolOutOfEnergy(SavedBattleGame *save, BattleUnit *unit, const BattleAction &action, bool pushed)
+{
+	static const bool on = active() && envOn("OXCE_AI_ENERGY_PATROL_END");
+	if (!on || !pushed)
+	{
+		return false;
+	}
+	// the same count as [AIPATROL] v3: stop energy, a static neighbour step exists, and it costs more energy than is left
+	const BattleActionMove bam = action.getMoveType();
+	if (firstStep(save, unit, bam, true).stop != "energy")
+	{
+		return false;
+	}
+	int snEn, snN;
+	staticStep(save, unit, bam, snEn, snN);
+	return snN > 0 && unit->getEnergy() < snEn;
 }
 
 void logState(SavedBattleGame *save, const char *when)
