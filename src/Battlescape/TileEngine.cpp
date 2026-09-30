@@ -1057,6 +1057,57 @@ void TileEngine::calculateTerrainItems(MapSubset gs)
 }
 
 /**
+ * The light a unit sheds by itself, before the clamp of calculateUnitLighting.
+ * @param unit The unit.
+ * @return Light power; 0 - the unit lights nothing, so its step changes no light source.
+ */
+int TileEngine::unitLightPower(const BattleUnit *unit) const
+{
+	int currLight = 0;
+	// add lighting of unit
+	if (unit->getFaction() == FACTION_PLAYER)
+	{
+		auto lighting = _personalLighting;
+		auto unitLightingState = unit->getLightingState();
+		if (unitLightingState)
+			lighting = *unitLightingState;
+
+		currLight = std::max(currLight, lighting ? unit->getArmor()->getPersonalLightFriend() : 0);
+	}
+	else if (unit->getFaction() == FACTION_HOSTILE)
+	{
+		currLight = std::max(currLight, unit->getArmor()->getPersonalLightHostile());
+	}
+	else if (unit->getFaction() == FACTION_NEUTRAL)
+	{
+		currLight = std::max(currLight, unit->getArmor()->getPersonalLightNeutral());
+	}
+
+	const BattleItem *handWeapons[] = { unit->getLeftHandWeapon(), unit->getRightHandWeapon() };
+	for (const BattleItem *w : handWeapons)
+	{
+		if (!w) continue;
+
+		if (w->getGlow())
+		{
+			currLight = std::max(currLight, w->getGlowRange());
+		}
+
+		auto* u = w->getUnit();
+		if (u && u->getFire())
+		{
+			currLight = std::max(currLight, unitFireLightPowerStunned);
+		}
+	}
+	// add lighting of units on fire
+	if (unit->getFire())
+	{
+		currLight = std::max(currLight, unitFireLightPower);
+	}
+	return currLight;
+}
+
+/**
   * Recalculates lighting for the units.
   */
 void TileEngine::calculateUnitLighting(MapSubset gs)
@@ -1068,47 +1119,7 @@ void TileEngine::calculateUnitLighting(MapSubset gs)
 			continue;
 		}
 
-		int currLight = 0;
-		// add lighting of unit
-		if (unit->getFaction() == FACTION_PLAYER)
-		{
-			auto lighting = _personalLighting;
-			auto unitLightingState = unit->getLightingState();
-			if (unitLightingState)
-				lighting = *unitLightingState;
-			
-			currLight = std::max(currLight, lighting ? unit->getArmor()->getPersonalLightFriend() : 0);
-		}
-		else if (unit->getFaction() == FACTION_HOSTILE)
-		{
-			currLight = std::max(currLight, unit->getArmor()->getPersonalLightHostile());
-		}
-		else if (unit->getFaction() == FACTION_NEUTRAL)
-		{
-			currLight = std::max(currLight, unit->getArmor()->getPersonalLightNeutral());
-		}
-
-		const BattleItem *handWeapons[] = { unit->getLeftHandWeapon(), unit->getRightHandWeapon() };
-		for (const BattleItem *w : handWeapons)
-		{
-			if (!w) continue;
-
-			if (w->getGlow())
-			{
-				currLight = std::max(currLight, w->getGlowRange());
-			}
-
-			auto* u = w->getUnit();
-			if (u && u->getFire())
-			{
-				currLight = std::max(currLight, unitFireLightPowerStunned);
-			}
-		}
-		// add lighting of units on fire
-		if (unit->getFire())
-		{
-			currLight = std::max(currLight, unitFireLightPower);
-		}
+		int currLight = unitLightPower(unit);
 
 		if (currLight >= getMaxDynamicLightDistance())
 		{

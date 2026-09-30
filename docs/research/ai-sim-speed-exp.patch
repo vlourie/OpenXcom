@@ -120,67 +120,6 @@
  	// units hanging with no floor below fade their sway in, landed ones fade it out (hoverBob); mode 0 draws them still, as the classic game
  	if (Options::oxceHdHoverBob && _canvas->getHdMode() != HD_MODE_NEAREST)
  	{
---- a/src/Battlescape/TileEngine.cpp
-+++ b/src/Battlescape/TileEngine.cpp
-@@ -1059,6 +1059,47 @@
- /**
-   * Recalculates lighting for the units.
-   */
-+int TileEngine::unitLightPower(const BattleUnit *unit) const
-+{
-+	// EXPERIMENT (audit): same rules as calculateUnitLighting below, without the clamp
-+	int currLight = 0;
-+	if (unit->getFaction() == FACTION_PLAYER)
-+	{
-+		auto lighting = _personalLighting;
-+		auto unitLightingState = unit->getLightingState();
-+		if (unitLightingState)
-+			lighting = *unitLightingState;
-+		currLight = std::max(currLight, lighting ? unit->getArmor()->getPersonalLightFriend() : 0);
-+	}
-+	else if (unit->getFaction() == FACTION_HOSTILE)
-+	{
-+		currLight = std::max(currLight, unit->getArmor()->getPersonalLightHostile());
-+	}
-+	else if (unit->getFaction() == FACTION_NEUTRAL)
-+	{
-+		currLight = std::max(currLight, unit->getArmor()->getPersonalLightNeutral());
-+	}
-+	const BattleItem *handWeapons[] = { unit->getLeftHandWeapon(), unit->getRightHandWeapon() };
-+	for (const BattleItem *w : handWeapons)
-+	{
-+		if (!w) continue;
-+		if (w->getGlow())
-+		{
-+			currLight = std::max(currLight, w->getGlowRange());
-+		}
-+		auto* u = w->getUnit();
-+		if (u && u->getFire())
-+		{
-+			currLight = std::max(currLight, unitFireLightPowerStunned);
-+		}
-+	}
-+	if (unit->getFire())
-+	{
-+		currLight = std::max(currLight, unitFireLightPower);
-+	}
-+	return currLight;
-+}
-+
- void TileEngine::calculateUnitLighting(MapSubset gs)
- {
- 	for (BattleUnit *unit : *_save->getUnits())
---- a/src/Battlescape/TileEngine.h
-+++ b/src/Battlescape/TileEngine.h
-@@ -185,6 +185,8 @@
- 	void calculateFOV(Position position, int eventRadius = -1, const bool updateTiles = true, const bool appendToTileVisibility = false);
- 	/// Checks reaction fire.
- 	bool checkReactionFire(BattleUnit *unit, const BattleAction &originalAction);
-+	/// EXPERIMENT (audit): light a unit would emit in calculateUnitLighting.
-+	int unitLightPower(const BattleUnit *unit) const;
- 	/// Recalculate all lighting in some area.
- 	void calculateLighting(LightLayers layer, Position position = invalid, int eventRadius = 0, bool terrianChanged = false);
- 	/// Handles tile hit.
 --- a/src/Battlescape/UnitDieBState.cpp
 +++ b/src/Battlescape/UnitDieBState.cpp
 @@ -147,7 +147,9 @@
@@ -216,25 +155,6 @@
  			_unit->keepWalking(_parent->getSave(), onScreenBoundary); // advances the phase
  			playMovementSound();
  			if (_parent->getSave()->isPreview())
-@@ -220,6 +222,9 @@
- 
- 			int change = _parent->checkForProximityGrenades(_unit);
- 			// move our personal lighting with us
-+			// EXPERIMENT (audit): OXCE_AI_LIGHTSKIP=1 - a unit that emits no light does not relight the map on its step
-+			static const bool lightSkip = getenv("OXCE_AI_LIGHTSKIP") && *getenv("OXCE_AI_LIGHTSKIP") == '1';
-+			if (change || !lightSkip || _terrain->unitLightPower(_unit) > 0)
- 			_terrain->calculateLighting(change ? LL_ITEMS : LL_UNITS, _unit->getPosition(), 2);
- 			_terrain->calculateFOV(_unit->getPosition(), 2, false); //update unit visibility for all units which can see last and current position.
- 			//tile visibility for this unit is handled later.
-@@ -508,6 +513,8 @@
- 		_unit->clearTimeUnits();
- 	}
- 
-+	static const bool lightSkipEnd = getenv("OXCE_AI_LIGHTSKIP") && *getenv("OXCE_AI_LIGHTSKIP") == '1';
-+	if (!lightSkipEnd || _terrain->unitLightPower(_unit) > 0)
- 	_terrain->calculateLighting(LL_UNITS, _unit->getPosition());
- 	_terrain->calculateFOV(_unit);
- 	if (!_falling)
 --- a/src/Engine/CrossPlatform.cpp
 +++ b/src/Engine/CrossPlatform.cpp
 @@ -1588,7 +1588,33 @@

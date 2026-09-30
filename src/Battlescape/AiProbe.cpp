@@ -64,6 +64,7 @@ namespace AiProbe
 // a release build: the bench is not compiled in, every entry point does nothing
 bool active() { return false; }
 bool fast() { return false; }
+bool lightSkip(const TileEngine *, const BattleUnit *) { return false; }
 bool botTurn(const SavedBattleGame *) { return false; }
 long long battleSeed() { return -1; }
 void think(BattlescapeState *, SavedBattleGame *) {}
@@ -107,6 +108,9 @@ bool envOn(const char *name)
 	const char *s = getenv(name);
 	return s && *s && *s != '0';
 }
+
+/// Lighting recalculations on a unit's step - done and skipped (lightSkip), for the [AILIGHT] line of the result.
+int lightRecalc = 0, lightSkipped = 0;
 
 /// Does the AI play the player's side too (OXCE_AI_BOT)?
 bool bot()
@@ -206,6 +210,18 @@ void logResult(SavedBattleGame *save, const char *how)
 		<< " pmoves=" << decided[FACTION_PLAYER][0] << " pattacks=" << decided[FACTION_PLAYER][1]
 		<< " hmoves=" << decided[FACTION_HOSTILE][0] << " hattacks=" << decided[FACTION_HOSTILE][1]
 		<< " ms=" << (SDL_GetTicks() - startTicks) << " vms=" << (Timer::probeTicks - startVirtual);
+	// the light of the run (OXCE_AI_LIGHTSKIP): did the walks go through the skip, was anybody lit, how dark was the map
+	int litHostile = 0, litNow = 0;
+	for (const auto *bu : *save->getUnits())
+	{
+		litHostile += bu->getOriginalFaction() == FACTION_HOSTILE && bu->getArmor()->getPersonalLightHostile() > 0;
+		litNow += save->getTileEngine()->unitLightPower(bu) > 0;
+	}
+	const char *ls = getenv("OXCE_AI_LIGHTSKIP");
+	Log(LOG_INFO) << "[AILIGHT] lightskip=" << (ls ? ls : "-")
+		<< " lighting_recalc_count=" << lightRecalc << " lighting_skipped_count=" << lightSkipped
+		<< " units_with_personalLightHostile=" << litHostile << " units_lit_now=" << litNow
+		<< " shade=" << save->getGlobalShade();
 }
 
 }
@@ -220,6 +236,18 @@ bool fast()
 {
 	static const bool on = active() && envOn("OXCE_AI_FAST");
 	return on;
+}
+
+bool lightSkip(const TileEngine *terrain, const BattleUnit *unit)
+{
+	static const bool on = active() && envOn("OXCE_AI_LIGHTSKIP");
+	if (on && terrain->unitLightPower(unit) == 0)
+	{
+		++lightSkipped;
+		return true;
+	}
+	++lightRecalc;
+	return false;
 }
 
 bool botTurn(const SavedBattleGame *save)
@@ -1168,7 +1196,7 @@ const std::string &cfgText()
 	{
 		static const std::set<std::string> skip = { "OXCE_AI_SEED", "OXCE_AI_RECORD", "OXCE_AI_TRACE_DECISION", "OXCE_AI_PROBE_SAVE",
 			"OXCE_AI_BUILD", "OXCE_AI_KEEP_DECIDE", "OXCE_AI_MISSION", "OXCE_AI_CAMPAIGN", "OXCE_AI_EXE", "OXCE_AI_GAME", "OXCE_AI_WORK", "OXCE_AI_RECORD_PATH",
-			"OXCE_AI_FAST" }; // the fast mode skips what nobody watches, not how the bench plays
+			"OXCE_AI_FAST", "OXCE_AI_LIGHTSKIP" }; // the fast mode and the light skip change what is computed, not how the bench plays
 		std::vector<std::string> vars;
 		for (char **e = PROBE_ENVIRON; e && *e; ++e)
 		{

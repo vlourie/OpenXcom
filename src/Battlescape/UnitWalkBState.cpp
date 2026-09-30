@@ -220,8 +220,11 @@ void UnitWalkBState::think()
 			}
 
 			int change = _parent->checkForProximityGrenades(_unit);
-			// move our personal lighting with us
-			_terrain->calculateLighting(change ? LL_ITEMS : LL_UNITS, _unit->getPosition(), 2);
+			// move our personal lighting with us (the bench may skip it for a unit that sheds no light, AiProbe::lightSkip)
+			if (change || !AiProbe::lightSkip(_terrain, _unit))
+			{
+				_terrain->calculateLighting(change ? LL_ITEMS : LL_UNITS, _unit->getPosition(), 2);
+			}
 			_terrain->calculateFOV(_unit->getPosition(), 2, false); //update unit visibility for all units which can see last and current position.
 			//tile visibility for this unit is handled later.
 			unitSpotted = (!_action.ignoreSpottedEnemies && !_falling && !_action.desperate && _parent->getPanicHandled() && _numUnitsSpotted != _unit->getUnitsSpottedThisTurn().size());
@@ -517,7 +520,11 @@ void UnitWalkBState::postPathProcedures()
 		_unit->clearTimeUnits();
 	}
 
-	_terrain->calculateLighting(LL_UNITS, _unit->getPosition());
+	// the light of the unit at the end of its walk (the bench may skip it for a unit that sheds no light, AiProbe::lightSkip)
+	if (!AiProbe::lightSkip(_terrain, _unit))
+	{
+		_terrain->calculateLighting(LL_UNITS, _unit->getPosition());
+	}
 	_terrain->calculateFOV(_unit);
 	if (!_falling)
 		_parent->popState();

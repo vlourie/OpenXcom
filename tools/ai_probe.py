@@ -133,6 +133,11 @@ def run(save, turns=1, save_as="", name="probe", timeout=900, bot=False, seed=No
     # tools/ai_speed/README.md). Выключить для контрольного опыта: OXCE_AI_FAST=0 (ai_arena --env OXCE_AI_FAST=0).
     # Сборки до build-ai39 переменную не знают и играют как прежде
     env.setdefault("OXCE_AI_FAST", "1")
+    # свет (AiProbe::lightSkip, с build-ai41): шаг юнита, который сам не светит, не пересчитывает освещение карты - все
+    # события, меняющие свет, пересчитывают его сами. Приёмка отдельно от FAST: 8 карт парами без/с флагом (в том числе
+    # ночь и квады-фонари с personalLightHostile 26), все потоки =, fair22 IDENTICAL 22 из 22 (tools/ai_speed/README.md).
+    # Контрольный опыт: OXCE_AI_LIGHTSKIP=0. Сборки до build-ai41 переменную не знают и играют как прежде
+    env.setdefault("OXCE_AI_LIGHTSKIP", "1")
     args = [str(EXE), "-data", str(GAME), "-user", str(work), "-cfg", str(work),
             "-fullscreen", "false", "-borderless", "false", "-displayWidth", "1280", "-displayHeight", "720",
             "-soundVolume", "0", "-musicVolume", "0", "-uiVolume", "0"]

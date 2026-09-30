@@ -185,6 +185,8 @@ public:
 	void calculateFOV(Position position, int eventRadius = -1, const bool updateTiles = true, const bool appendToTileVisibility = false);
 	/// Checks reaction fire.
 	bool checkReactionFire(BattleUnit *unit, const BattleAction &originalAction);
+	/// The light a unit sheds by itself (personal light, a glowing hand item, fire), before the clamp of calculateUnitLighting; 0 - none.
+	int unitLightPower(const BattleUnit *unit) const;
 	/// Recalculate all lighting in some area.
 	void calculateLighting(LightLayers layer, Position position = invalid, int eventRadius = 0, bool terrianChanged = false);
 	/// Handles tile hit.

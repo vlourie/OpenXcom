@@ -27,6 +27,7 @@ class BattlescapeState;
 class SavedBattleGame;
 class BattleUnit;
 class Position;
+class TileEngine;
 struct BattleAction;
 
 /**
@@ -51,6 +52,11 @@ bool active();
 /// every unit walks the short off-screen cycle, no final-blow scene, no audio, one log handle for the run, and the process
 /// leaves right after the result line. The decisions, the record and the outcome stay the same as without it.
 bool fast();
+/// The bench skips the lighting recalculation on a step of a unit that sheds no light (OXCE_AI_LIGHTSKIP, docs/research/
+/// ai-sim-speed-audit-2026-09-30.md, п. 6): its walk changes no light source, so the map's light stays what it is. Every other
+/// light event (a shot, a glowing item dropped or picked up, a death, a fall, a teleport, a toggle of the personal light,
+/// a hit, terrain changed) recalculates on its own. True - skip; counts the recalculations done and skipped for [AILIGHT].
+bool lightSkip(const TileEngine *terrain, const BattleUnit *unit);
 /// Does the AI play the player's side right now (OXCE_AI_BOT)?
 bool botTurn(const SavedBattleGame *save);
 /// The seed of a generated battle (OXCE_AI_SEED), or -1.
