@@ -78,9 +78,12 @@ private:
 	int _patrolSpentEnergy = -1;
 	/// This think's action is the patrol's walk to its node.
 	bool _patrolWalk = false;
+	/// The think after a spent patrol dropped: 1 asked for it (BA_RETHINK), 2 this think is it (no second ask).
+	int _patrolRetry = 0;
 	int unitTurn() const;
-	/// Marks the patrol's walk in action and drops it if the patrol is spent here (both think and dont_think end in it).
-	void endPatrolIfSpent(BattleAction *action);
+	/// Marks the patrol's walk in action and drops it if the patrol is spent here (both think and dont_think end in it);
+	/// with retry the first drop thinks once more, as the empty walk it replaces was followed by a think.
+	void endPatrolIfSpent(BattleAction *action, bool retry);
 	/// A slot's action before a rule runs: the record hears of the rule only if it changed the slot.
 	struct ProbeMark { BattleActionType type; Position target; const BattleItem *weapon; };
 	const BattleAction &probeAction(char slot) const;

@@ -105,7 +105,7 @@ unsigned long long AIModule::probeHash() const
 	if (_patrolSpent != -1)
 	{
 		// only once the bench rule has spent a patrol: without OXCE_AI_ENERGY_PATROL_END the fingerprint stays as it was
-		add(_patrolSpent); add(_patrolSpentAt.x); add(_patrolSpentAt.y); add(_patrolSpentAt.z); add(_patrolSpentEnergy);
+		add(_patrolSpent); add(_patrolSpentAt.x); add(_patrolSpentAt.y); add(_patrolSpentAt.z); add(_patrolSpentEnergy); add(_patrolRetry);
 	}
 	return h;
 }
@@ -269,7 +269,8 @@ void AIModule::dont_think(BattleAction *action)
 		_reserve = BA_NONE;
 		action->type = _patrolAction.type;
 		action->target = _patrolAction.target;
-		endPatrolIfSpent(action);
+		// a charge's choice has no dice to throw again
+		endPatrolIfSpent(action, false);
 	}
 }
 
@@ -505,6 +506,7 @@ void AIModule::think(BattleAction *action)
 	action->actor = _unit;
 	action->weapon = _unit->getMainHandWeapon(false);
 	_patrolWalk = false;
+	_patrolRetry = _patrolRetry == 1 ? 2 : 0;
 	_attackAction.diff = _save->getBattleState()->getGame()->getSavedGame()->getDifficultyCoefficient();
 	_attackAction.actor = _unit;
 	_attackAction.run = false;
@@ -755,7 +757,7 @@ void AIModule::think(BattleAction *action)
 		}
 		action->type = _patrolAction.type;
 		action->target = _patrolAction.target;
-		endPatrolIfSpent(action);
+		endPatrolIfSpent(action, true);
 		break;
 	case AI_COMBAT:
 		action->type = _attackAction.type;
@@ -878,16 +880,27 @@ void AIModule::spendPatrol()
 
 /**
  * The patrol's walk chosen by think or dont_think (isLeeroyJenkins): marks it for spendPatrol and, if no step is left by
- * energy this unit-turn, drops it (ENERGY_PATROL_END_V2).
+ * energy this unit-turn, drops it (ENERGY_PATROL_END_V2). The empty walk it replaces was followed by another think in the
+ * same selection, which may throw the dice for combat; with retry the first drop keeps that think (handleAI runs it at
+ * once on BA_RETHINK) and only a patrol chosen again ends the selection.
  */
-void AIModule::endPatrolIfSpent(BattleAction *action)
+void AIModule::endPatrolIfSpent(BattleAction *action, bool retry)
 {
 	_patrolWalk = _patrolAction.type == BA_WALK;
 	if (_patrolWalk && _patrolSpent == unitTurn() && _unit->getPosition() == _patrolSpentAt && _unit->getEnergy() <= _patrolSpentEnergy)
 	{
 		// the walk would stop where it stands
-		AiProbe::tally(_unit, "patrol.spent");
-		action->type = BA_NONE;
+		if (retry && _patrolRetry == 0)
+		{
+			AiProbe::tally(_unit, "patrol.retry");
+			_patrolRetry = 1;
+			action->type = BA_RETHINK;
+		}
+		else
+		{
+			AiProbe::tally(_unit, "patrol.spent");
+			action->type = BA_NONE;
+		}
 	}
 }
 
