@@ -777,6 +777,19 @@ void NewBattleState::probeRandomize(long long seed)
 			}
 		}
 	}
+	// OXCE_AI_RACE=<race> pins the enemy race; the rolls above are spent as usual, so the rest of the seed stays
+	if (const char *wantedRace = getenv("OXCE_AI_RACE"))
+	{
+		auto it = std::find(_alienRaces.begin(), _alienRaces.end(), std::string(wantedRace));
+		if (it != _alienRaces.end())
+		{
+			_cbxAlienRace->setSelected(it - _alienRaces.begin());
+		}
+		else if (*wantedRace)
+		{
+			Log(LOG_WARNING) << "[AIPROBE] no race " << wantedRace << " in the quick battle list: random instead";
+		}
+	}
 	const char *diff = getenv("OXCE_AI_DIFF");
 	if (diff && *diff)
 	{

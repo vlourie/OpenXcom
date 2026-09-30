@@ -207,7 +207,8 @@ canTargetUnit→voxelCheck` 8,3 + `evaluateAIMode` 5,0), `AiProbe::logDecision�
 `personalLight` 15 у брони игрока, у врага `personalLightHostile` по умолчанию 0 (в Пиратках задан у 4 броней
 из 933). Свет — механика (видимость ночью), пропускать нельзя; но юнит, который сам не светит (нет личного
 света, нет светящегося оружия, не горит — `TileEngine::unitLightPower`), своей ходьбой слой света не меняет.
-`OXCE_AI_LIGHTSKIP=1` пропускает пересчёт для таких юнитов (на шаге и в конце пути). Потоки и на станции, и
+`OXCE_AI_LIGHTSKIP=1` пропускает пересчёт для таких юнитов (на шаге и в конце пути; с 1.10 в дереве —
+`AiProbe::lightSkip`, build-ai41, см. «Приёмка LIGHTSKIP» ниже и «Сделано», п. 4). Потоки и на станции, и
 на городе IDENTICAL (все семь). Время без троттлинга, поверх набора P: станция **93,4 → 83,9 с** (повтор
 94,7 → 82,1; ×1,12…1,15), город **172,8 → 99,3 с (×1,74; бой 168,8 → 90,2 с, ×1,87)**. Против base36 город —
 **×3,8** одними пассивными флагами. Это самый большой выигрыш на боях ИИ: чем больше юнитов ходит, тем он
@@ -255,10 +256,11 @@ fair22 с флагом на сборке-черновике (`p39ls`) проти
 `=`, счётчики те же до единицы (2328 → 1635 + 693, 3565 + 4560, 3407 + 4832, 1374 + 13557). Станция без флага на
 новом коде = станция без флага на старом: перенос правила в `unitLightPower` путь без флага не сдвинул.
 fair22 на итоговом коде (`p39ls2`) против `p39f2`: **IDENTICAL** 22/22, все пять потоков серии без расхождений,
-сумма боёв 666 с (средний 30, худший 100). Итог: LIGHTSKIP — кандидат в отдельный коммит (флаг `OXCE_AI_LIGHTSKIP`,
-в `tools/ai_probe.py` по умолчанию `1`, контроль — `--env OXCE_AI_LIGHTSKIP=0`), в дерево только отдельным словом
-Vitali; патч в виде для дерева — `lightskip_tree.lf.diff` в блокноте сессии 1.10 (6 файлов, +105/−42). Кэш поиска
-пути — только после него, отдельным решением.
+сумма боёв 666 с (средний 30, худший 100). Итог: по второму мнению и слову Vitali (1.10) LIGHTSKIP внесён в дерево
+отдельным коммитом (флаг `OXCE_AI_LIGHTSKIP`, `AiProbe::lightSkip`; в `tools/ai_probe.py` по умолчанию `1`,
+контроль — `--env OXCE_AI_LIGHTSKIP=0`; build-ai41) — «Сделано», п. 4; шлюз после слияния — fair22 на build-ai41
+без флага против с флагом, п. 5. Кэш поиска пути — только после него, отдельным решением, с LIGHTSKIP не
+объединять.
 
 ### 7. Поиск пути: 45–55 % станции, из них половина — повторы
 
@@ -538,17 +540,29 @@ py -3.13 tools/ai_speed/par_test.py --n 20 --tag s20fast --mission STR_LOC_SPACE
 3. **`tools/ai_speed/series_eq.py`** — шлюз пассивности на серии: две серии `ai_arena.py` на одной сборке
    побайтно по каждому бою (таблица без `seconds`, rec, cand, tiles, path, потери), IDENTICAL/DIFFERENT и код
    возврата. Проверен на `p37a = p37a` (IDENTICAL) и `p37a ≠ p37r` (DIFFERENT).
+4. **`OXCE_AI_LIGHTSKIP`** (`AiProbe::lightSkip()`, build-ai41, 1.10) — в дерево отдельным коммитом по второму
+   мнению и слову Vitali после отдельной приёмки (выше, «Приёмка LIGHTSKIP»: 8 карт парами, в том числе ночные и
+   красный дом с квадами-фонарями, все семь потоков `=`, счётчики сходятся до единицы, контроль другим зерном `!`,
+   fair22 IDENTICAL 22 из 22 дважды). Шаг и конец пути юнита, который сам не светит (`TileEngine::unitLightPower`
+   = 0; правило в одном месте, `calculateUnitLighting` берёт свет оттуда же), не зовут `calculateLighting`; в
+   сборке для игроков заглушка `false`; `OXCE_AI_LIGHTSKIP` в списке `skip` у `cfgText()`, как `OXCE_AI_FAST`;
+   строка `[AILIGHT]` со счётчиками в итоге боя; `OXCE_AI_RACE=<раса>` закрепляет расу врага быстрого боя
+   (`NewBattleState::probeRandomize`). `tools/ai_probe.py` включает по умолчанию, контроль —
+   `--env OXCE_AI_LIGHTSKIP=0`. Из опытного патча ветка LIGHTSKIP и `unitLightPower` убраны — один источник
+   правки. Шлюз после слияния — п. 5.
 
-Не сделано и не планируется без отдельного слова: LIGHTSKIP (ярус 3 — приёмка станция, город, ночная карта,
-fair22), запись по требованию (ярус 2 — вопрос к анализу), политика тупиков и параллель (ярус 4).
+Не сделано и не планируется без отдельного слова: кэш поиска пути (ярус 3, следующий и более рискованный слой —
+только после шлюза LIGHTSKIP и отдельным решением), запись по требованию (ярус 2 — вопрос к анализу), политика
+тупиков и параллель (ярус 4).
 
 ## Приложение
 
-- `docs/research/ai-sim-speed-exp.patch` — опытные правки (13 файлов), все за флагами `OXCE_AI_*`:
+- `docs/research/ai-sim-speed-exp.patch` — опытные правки (11 файлов), все за флагами `OXCE_AI_*`:
   AiProbe.cpp / BattlescapeGame.cpp (счётчик циклов состояний), BattlescapeState.cpp и Map.cpp (NODRAW,
-  NOANIM), TileEngine.cpp/.h (`unitLightPower`), UnitDieBState.cpp (NOKILLCAM), UnitWalkBState.cpp
-  (SHORTWALK, LIGHTSKIP), CrossPlatform.cpp (FASTLOG, `probeFastExit`), Game.cpp (TICK, NODRAW, FASTEXIT,
-  MUTE), Timer.cpp/.h (`probeStep`), StartState.cpp (JOINLOAD).
+  NOANIM), UnitDieBState.cpp (NOKILLCAM), UnitWalkBState.cpp (SHORTWALK), CrossPlatform.cpp (FASTLOG,
+  `probeFastExit`), Game.cpp (TICK, NODRAW, FASTEXIT, MUTE), Timer.cpp/.h (`probeStep`), StartState.cpp
+  (JOINLOAD). Ветка LIGHTSKIP с `unitLightPower` (TileEngine.cpp/.h, два куска UnitWalkBState.cpp) из патча
+  убрана 1.10 — она в дереве (`AiProbe::lightSkip`), двух источников одной правки быть не должно.
 - `tools/ai_speed/` — скрипты замера: `run_one.py` (один скрытый бой с замером ЦП/памяти), `cmp_runs.py`
   (хэши потоков), `prof_battle.py` / `prof_report.py` (профиль по выборкам стека), `hang_count.py` (счёт
   зависаний), `attach_all.py` / `hang_stack.py` (стеки всех потоков повисшего процесса), `par_test.py`
