@@ -34,10 +34,12 @@ def table(path):
 
 
 def stream(path, strip):
-    """Отпечаток строк потока по каждому бою и число строк; None, если файла нет."""
+    """Отпечаток строк потока по каждому бою, число строк и бои с несколькими заголовками [AIRECHEAD] - метка
+    серии переиспользована, ai_arena.py дописывает потоки (грабли R-164, docs/rakes/aibench.md); None, если файла нет."""
     if not path.exists():
         return None
     per = defaultdict(hashlib.sha1)
+    heads = defaultdict(int)
     n = 0
     op = gzip.open if path.suffix == ".gz" else open
     rx = re.compile(strip) if strip else None
@@ -49,8 +51,10 @@ def stream(path, strip):
             seed = head.split("seed=")[1].split()[0]
             want = head.split("want=")[1].split()[0]
             per[(seed, want)].update(("[" + rest).encode("utf-8"))
+            if rest.startswith("AIRECHEAD]"):
+                heads[(seed, want)] += 1
             n += 1
-    return {k: v.hexdigest() for k, v in per.items()}, n
+    return {k: v.hexdigest() for k, v in per.items()}, n, {k: c for k, c in heads.items() if c > 1}
 
 
 def compare(a, b, arena, strip=""):
@@ -76,7 +80,13 @@ def compare(a, b, arena, strip=""):
             out.append(f"{ext}: нет файла у {a if sa is None else b}")
             verdict = False
             continue
-        (ha, na), (hb, nb) = sa, sb
+        (ha, na, da), (hb, nb, db) = sa, sb
+        for label, dup in ((a, da), (b, db)):
+            if dup:
+                out.append(f"{ext}: ЗАДВОЕН у {label} - заголовков [AIRECHEAD] больше одного: "
+                           + ", ".join(f"{s}/{w} x{c}" for (s, w), c in sorted(dup.items())[:5])
+                           + " (метка серии переиспользована, ai_arena.py дописывает потоки - серию под новой меткой)")
+                verdict = False
         bad = [k for k in keys if ha.get(k) != hb.get(k)]
         out.append(f"{ext}: строк {na} против {nb}, боёв разошлось {len(bad)}"
                    + (" " + ", ".join(f"{s}/{w}" for s, w in bad[:5]) if bad else ""))
