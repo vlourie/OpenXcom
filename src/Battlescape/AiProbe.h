@@ -108,6 +108,19 @@ int ambushMemo();
 /// A node the memo answered: skipped - its search was not run (mode 1); ok - what the search still run gave (mode 2);
 /// own, score, best as ambushEnemy. [AIAMBN] with memo=1 for a skipped node; counts in [AIAMB] and the memo total line.
 void ambushMemoNode(const Position &pos, bool skipped, bool ok, int own, int score, int best);
+/// The escape audit (OXCE_AI_ESCAPEPROF, docs/research/ai-path-audit-2026-10-01.md, п. 11): how many candidate tiles
+/// AIModule::setupEscape looks at, how many of them it drops as unreachable after getSpottingUnits has already traced the
+/// enemies' lines of fire to them, how many canTargetUnit traces and how much time that took. Reads only: [AIESC] per side
+/// at the end of the battle. Off (the default): nothing is counted.
+bool escapeProf();
+/// setupEscape starts for the unit.
+void escapeBegin(const BattleUnit *unit);
+/// One canTargetUnit trace of AIModule::getSpottingUnits (any caller).
+void escapeTarget();
+/// A candidate tile's getSpottingUnits is about to run (its traces and time are counted from here).
+void escapeMark();
+/// The candidate was classified: kind 0 - unreachable, dropped after the traces; 1 - reachable, scored; 2 - no tile (no traces).
+void escapeProbe(const BattleUnit *unit, int kind);
 /// Does the AI play the player's side right now (OXCE_AI_BOT)?
 bool botTurn(const SavedBattleGame *save);
 /// The seed of a generated battle (OXCE_AI_SEED), or -1.
@@ -165,7 +178,8 @@ void modeOdds(const BattleUnit *unit, int patrol, int ambush, int combat, int es
 /// A tile a rule scored (firepoint, ambush, escape): logged only for the decisions of OXCE_AI_TRACE_DECISION.
 void traceTile(const BattleUnit *unit, const char *what, const Position &pos, int score);
 /// The walk the decision asked for got a path (handleAI pushes it) or not (it is dropped). With OXCE_AI_RECORD_PATH a
-/// patrol walk also writes [AIPATROL]: its path, what stops its first step, and the reachable tile that gets closest.
+/// patrol walk also writes [AIPATROL]: 1 - its path and what stops its first step; 2 - also the reachable tile that gets
+/// closest to the node (forensic: up to 17 full A* per stopped walk, a quarter of the station battle).
 /// item: the walk goes to an item (findItem / findBotWeapon), not where the decision chose - "item":1 in both lines.
 void walkPlanned(SavedBattleGame *save, BattleUnit *unit, bool pushed, bool item);
 /// A walk stops without the unit moving (UnitWalkBState): a step of the action's trail in [AIEXEC],

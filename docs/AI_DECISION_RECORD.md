@@ -14,7 +14,8 @@ L0, L1, Arena, запись ходов Vitali) читают только эту 
 | `OXCE_AI_RECORD=1` | писать запись |
 | `OXCE_AI_TRACE_DECISION=12,40` | для записей с этими `rec` ещё и `[AITRACE]` — оценки всех клеток, которые перебрали правила |
 | `OXCE_AI_KEEP_DECIDE=1` | ai_arena сохраняет и прежние строки `[AIDECIDE]/[AIMELEE]/[AIPATH]` в `<метка>.decide.gz` |
-| `OXCE_AI_RECORD_PATH=1` | вместе с `OXCE_AI_RECORD`: у хода патруля к узлу ещё и `[AIPATROL]` — путь, что держит первый шаг, ближайшая к узлу досягаемая клетка (план V2, L0-B); в хэш `cfg` не входит |
+| `OXCE_AI_RECORD_PATH=1` | вместе с `OXCE_AI_RECORD`: у хода патруля к узлу ещё и `[AIPATROL]` — путь и что держит первый шаг (план V2, L0-B); в хэш `cfg` не входит |
+| `OXCE_AI_RECORD_PATH=2` | forensic (с build-ai44): к тому же ещё `before`, `best`, `best_ok` — ближайшая к узлу досягаемая клетка, до 17 полных A* стенда на каждый остановленный патруль (на станции четверть боя, аудит п. 11); по умолчанию 0 — без `[AIPATROL]` |
 
 ```
 PYTHONIOENCODING=utf-8 OXCE_AI_BUILD=build-ai30 py -3.13 tools/ai_arena.py --missions @fair22.txt --seeds 202 --careful --squad 8 --jobs 4 --label det37a --env OXCE_AI_RECORD=1
@@ -29,7 +30,7 @@ PYTHONIOENCODING=utf-8 OXCE_AI_BUILD=build-ai30 py -3.13 tools/ai_arena.py --mis
 | `<метка>.rec.gz` | `[AIRECHEAD]`, `[AIREC]`, `[AIEXEC]`, `[AIAFTER]`, `[AITRACE]` |
 | `<метка>.cand.gz` | `[AICAND]` — тяжёлые списки кандидатов, один раз на хэш |
 | `<метка>.decide.gz` | только с `OXCE_AI_KEEP_DECIDE=1` |
-| `<метка>.path.gz` | `[AIPATROL]`, только с `OXCE_AI_RECORD_PATH=1` |
+| `<метка>.path.gz` | `[AIPATROL]`, только с `OXCE_AI_RECORD_PATH=1` или `2` |
 
 Серии до v1 (build-ai29 и первый build-ai30) писали всё в `.decide.gz` без `exp`, `[AIEXEC]` и `[AIAFTER]`;
 `rec_diff.py` читает и их.
@@ -172,9 +173,10 @@ PYTHONIOENCODING=utf-8 OXCE_AI_BUILD=build-ai30 py -3.13 tools/ai_arena.py --mis
  "before":62,"best":{"to":[x,y,z],"reach":24,"after":38,"reserve":0},"best_ok":{"to":[x,y,z],"reach":8,"after":54,"reserve":1}}
 ```
 
-Только с `OXCE_AI_RECORD_PATH=1`, только у решения, где база выбрала патруль к узлу (`slot` p, `src` `patrol.node`,
+Только с `OXCE_AI_RECORD_PATH=1` или `2`, только у решения, где база выбрала патруль к узлу (`slot` p, `src` `patrol.node`,
 ход), сразу после того, как игра посчитала путь (`BattlescapeGame::handleAI`). Движок это не меняет: цены берутся
-отдельным `Pathfinding` стенда, проверка резерва — `checkReservedTU` с `justChecking`.
+отдельным `Pathfinding` стенда, проверка резерва — `checkReservedTU` с `justChecking`. Поля `before`, `best`, `best_ok`
+(forensic: до 17 полных A* на остановленный патруль) — только в режиме `2`; в режиме `1` строка кончается на `nreach`.
 
 | Поле | Что |
 |---|---|

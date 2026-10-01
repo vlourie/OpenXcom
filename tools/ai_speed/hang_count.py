@@ -23,8 +23,7 @@ def main():
     ap.add_argument("--env", action="append", default=[])
     a = ap.parse_args()
     os.environ["OXCE_AI_BUILD"] = a.build
-    os.environ["OXCE_AI_RECORD"] = "1"
-    os.environ["OXCE_AI_RECORD_PATH"] = "1"
+    os.environ["OXCE_AI_RECORD"] = "1"  # [AIPATROL] - только по --env OXCE_AI_RECORD_PATH=1|2
     for kv in a.env:
         k, v = kv.split("=", 1)
         os.environ[k] = v

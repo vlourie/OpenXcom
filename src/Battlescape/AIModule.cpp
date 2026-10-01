@@ -1403,6 +1403,7 @@ void AIModule::setupAttack()
  */
 void AIModule::setupEscape()
 {
+	AiProbe::escapeBegin(_unit);
 	int unitsSpottingMe = getSpottingUnits(_unit->getPosition());
 	int currentTilePreference = 15;
 	int tries = -1;
@@ -1515,11 +1516,16 @@ void AIModule::setupEscape()
 		if (!tile)
 		{
 			score = -100001; // no you can't quit the battlefield by running off the map.
+			AiProbe::escapeProbe(_unit, 2);
 		}
 		else
 		{
+			// the escape audit (OXCE_AI_ESCAPEPROF) counts the traces and the time spent on a tile dropped as unreachable right after
+			AiProbe::escapeMark();
 			spotters = getSpottingUnits(_escapeAction.target);
-			if (std::find(_reachable.begin(), _reachable.end(), _save->getTileIndex(_escapeAction.target))  == _reachable.end())
+			const bool inReach = std::find(_reachable.begin(), _reachable.end(), _save->getTileIndex(_escapeAction.target)) != _reachable.end();
+			AiProbe::escapeProbe(_unit, inReach ? 1 : 0);
+			if (!inReach)
 				continue; // just ignore unreachable tiles
 
 			if (_spottingEnemies || spotters)
@@ -1663,6 +1669,7 @@ int AIModule::getSpottingUnits(const Position& pos) const
 			Position originVoxel = _save->getTileEngine()->getSightOriginVoxel(bu);
 			originVoxel.z -= 2;
 			Position targetVoxel;
+			AiProbe::escapeTarget(); // the escape audit counts the traces (OXCE_AI_ESCAPEPROF)
 			if (checking)
 			{
 				if (_save->getTileEngine()->canTargetUnit(&originVoxel, _save->getTile(pos), &targetVoxel, bu, false, _unit))
