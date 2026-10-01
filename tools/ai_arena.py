@@ -91,6 +91,8 @@ def provenance(a):
     lines = [f"=== provenance {datetime.datetime.now().isoformat(timespec='seconds')} label={a.label}",
              f"exe_sha256={sha}", f"exe_size={size}", f"exe_mtime={mtime}", f"exe_path={exe}",
              f"build_label={exe.parent.name}", f"git_commit={commit}",
+             # чья машина играла: панель стенда ставит worker_id из settings.json, иначе имя компьютера
+             f"worker_id={os.environ.get('OXCE_AI_WORKER_ID') or os.environ.get('COMPUTERNAME', 'unknown')}",
              "effective_env: " + ", ".join(f"{k}={eff.get(k, '<unset>')}" for k in keys),
              "all_oxce_ai_env: " + " ".join(f"{k}={eff[k]}" for k in sorted(eff)),
              "args: " + " ".join(sys.argv[1:])]
