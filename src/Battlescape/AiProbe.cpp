@@ -3428,7 +3428,13 @@ void blockedStepPlan(SavedBattleGame *save, BattleUnit *unit, const BattleAction
 	pf->calculate(action.actor, action.target, BAM_NORMAL);
 	pf->setBannedFirst({});
 	const int now = pf->getStartDirection();
-	if (now == -1) blockedBump(unit, &BlockedStepCount::noPath, "no_path");
+	if (now == -1)
+	{
+		blockedBump(unit, &BlockedStepCount::noPath, "no_path");
+		// the walk the old code took here was stopped at once and counted an abort; the unit decides the same again with
+		// nothing changed, and only the abort cap (AIModule::think, 200) ends that - without it the turn never ends
+		unit->increaseAIWalkAbortCounter();
+	}
 	else blockedBump(unit, &BlockedStepCount::rerouted, "rerouted");
 	note(unit, ("blockstep.suppressed d" + std::to_string(first) + " -> " + (now == -1 ? std::string("none") : "d" + std::to_string(now))).c_str());
 }
