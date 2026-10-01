@@ -18,10 +18,13 @@
  */
 #include "AiProbe.h"
 #include <algorithm>
+#include <chrono>
 #include <climits>
 #include <cmath>
+#include <cstdint>
 #include <cstdlib>
 #include <map>
+#include <unordered_map>
 #include <memory>
 #include <set>
 #include <sstream>
@@ -65,6 +68,8 @@ namespace AiProbe
 bool active() { return false; }
 bool fast() { return false; }
 bool lightSkip(const TileEngine *, const BattleUnit *) { return false; }
+bool pathProf() { return false; }
+void pathAsk(int, int, const BattleUnit *, const Position &, const Position &, int, const BattleUnit *, int, int, int, unsigned long long, int, int, long long, const void *) {}
 bool botTurn(const SavedBattleGame *) { return false; }
 long long battleSeed() { return -1; }
 void think(BattlescapeState *, SavedBattleGame *) {}
@@ -150,6 +155,8 @@ bool lastSeenAt(int faction, const Position &pos);
 /// the decision record at a new side's turn and at the end of the battle (defined with the record below)
 void recordTurn(SavedBattleGame *save);
 void recordEnd(SavedBattleGame *save);
+/// the pathfinding profile's totals and call sites at the end of the battle (defined with the profile below)
+void pathReport();
 
 void logStart(SavedBattleGame *save)
 {
@@ -222,6 +229,7 @@ void logResult(SavedBattleGame *save, const char *how)
 		<< " lighting_recalc_count=" << lightRecalc << " lighting_skipped_count=" << lightSkipped
 		<< " units_with_personalLightHostile=" << litHostile << " units_lit_now=" << litNow
 		<< " shade=" << save->getGlobalShade();
+	pathReport();
 }
 
 }
@@ -795,6 +803,210 @@ void recordEnd(SavedBattleGame *save)
 
 }
 
+namespace
+{
+
+/// The pathfinding profile (pathProf): the asks of the decision being made, keyed by what they ask. An ask asked again
+/// within the decision is a repeat; asked in the next decision with the battle unchanged (pathRevision) - a cross repeat.
+struct PathAskStat { int n = 0; uint64_t answer = 0; int algo = 0, len = 0, cost = 0; long long ns = 0; const void *site = nullptr; };
+struct PathSiteStat { int kind = 0; long long n = 0, rep = 0, ns = 0, repNs = 0; };
+struct PathCounts
+{
+	long long calls = 0, rep = 0, ns = 0, repNs = 0, cross = 0, crossNs = 0, mismatch = 0, crossMismatch = 0;
+	long long calc = 0, reach = 0, bres = 0, astar = 0, nopath = 0;
+	void add(const PathCounts &o)
+	{
+		calls += o.calls; rep += o.rep; ns += o.ns; repNs += o.repNs; cross += o.cross; crossNs += o.crossNs;
+		mismatch += o.mismatch; crossMismatch += o.crossMismatch;
+		calc += o.calc; reach += o.reach; bres += o.bres; astar += o.astar; nopath += o.nopath;
+	}
+};
+struct PathDecision : PathCounts
+{
+	bool open = false;
+	int unit = 0;
+	bool sameRev = false;
+	uint64_t rev = 0;
+	std::chrono::steady_clock::time_point t0;
+	std::unordered_map<uint64_t, PathAskStat> asks;
+};
+PathDecision pathNow, pathLast;
+/// the battle's totals; pathOutside - asks made between decisions (the walk itself, the game's own checks)
+PathCounts pathAll, pathOutside;
+long long pathDecisions = 0, pathSameRev = 0, pathThinkNs = 0, pathUniq = 0, pathMisLogged = 0;
+std::map<const void *, PathSiteStat> pathSites;
+
+/// A repeat that came back different: the first 40 per battle in full, to see what the same ask can answer differently
+void pathMismatch(const char *how, int kind, const BattleUnit *unit, const Position &from, const Position &to, int bam, int maxTU,
+	int tu, int energy, const PathAskStat &was, int algo, int len, int cost, long long ns, const void *site)
+{
+	if (pathMisLogged++ >= 40)
+	{
+		return;
+	}
+	Log(LOG_INFO) << "[AIPF] " << how << " kind=" << (kind == 1 ? "calc" : "reach") << " unit=" << unit->getId() << " from=" << from << " to=" << to
+		<< " bam=" << bam << " max=" << maxTU << " tu=" << tu << " en=" << energy
+		<< " was=" << was.algo << "/" << was.len << "/" << was.cost << " now=" << algo << "/" << len << "/" << cost
+		<< " us=" << was.ns / 1000 << "/" << ns / 1000 << " nth=" << was.n + 1
+		<< " site0=0x" << std::hex << reinterpret_cast<std::uintptr_t>(was.site) << " site=0x" << reinterpret_cast<std::uintptr_t>(site) << std::dec;
+}
+
+/// What the pathfinder's answers depend on besides the ask: where every unit stands (a unit blocks a tile) and whether it is
+/// out, the map's parts, doors, fire and smoke. Not the TU: the asking unit's budget is in the key, the others' do not matter.
+uint64_t pathRevision(SavedBattleGame *save)
+{
+	StateHash h;
+	for (const auto *bu : *save->getUnits())
+	{
+		h.add(bu->getId());
+		h.add(bu->getPosition().x); h.add(bu->getPosition().y); h.add(bu->getPosition().z);
+		h.add((int)bu->getStatus()); h.add(bu->isOut() ? 1 : 0);
+	}
+	for (int i = 0; i < save->getMapSizeXYZ(); ++i)
+	{
+		Tile *tile = save->getTile(i);
+		for (int part = O_FLOOR; part < O_MAX; ++part)
+		{
+			int id = -1, set = -1;
+			tile->getMapData(&id, &set, (TilePart)part);
+			h.add(id * 256 + set);
+			h.add(tile->isUfoDoorOpen((TilePart)part) ? 1 : 0);
+		}
+		h.add(tile->getFire()); h.add(tile->getSmoke());
+	}
+	return h.h;
+}
+
+void pathOpen(SavedBattleGame *save, const BattleUnit *unit)
+{
+	if (!pathProf())
+	{
+		return;
+	}
+	pathLast = std::move(pathNow);
+	pathNow = PathDecision();
+	pathNow.open = true;
+	pathNow.unit = unit->getId();
+	pathNow.rev = pathRevision(save);
+	pathNow.sameRev = pathLast.unit != 0 && pathLast.rev == pathNow.rev;
+	pathNow.t0 = std::chrono::steady_clock::now();
+}
+
+/// One line per decision: what it asked, how much of it again, what it cost (microseconds), against the time of the whole think.
+void pathClose(const BattleUnit *unit)
+{
+	if (!pathProf() || !pathNow.open)
+	{
+		return;
+	}
+	const long long thinkNs = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - pathNow.t0).count();
+	Log(LOG_INFO) << "[AIPF] unit=" << unit->getId() << " same=" << (pathNow.sameRev ? 1 : 0) << " tt=" << thinkNs / 1000
+		<< " n=" << pathNow.calls << " u=" << pathNow.asks.size() << " r=" << pathNow.rep << " t=" << pathNow.ns / 1000 << " tr=" << pathNow.repNs / 1000
+		<< " x=" << pathNow.cross << " tx=" << pathNow.crossNs / 1000 << " mis=" << pathNow.mismatch << " xmis=" << pathNow.crossMismatch
+		<< " calc=" << pathNow.calc << " reach=" << pathNow.reach << " bres=" << pathNow.bres << " astar=" << pathNow.astar << " nopath=" << pathNow.nopath;
+	pathAll.add(pathNow);
+	++pathDecisions;
+	pathSameRev += pathNow.sameRev ? 1 : 0;
+	pathThinkNs += thinkNs;
+	pathUniq += (long long)pathNow.asks.size();
+	pathNow.open = false;
+}
+
+void pathReport()
+{
+	if (!pathProf())
+	{
+		return;
+	}
+	// the anchor is a function of this build: path_prof.py takes its address in the exe (nm) to turn every site into a name
+	Log(LOG_INFO) << "[AIPF] total decisions=" << pathDecisions << " same=" << pathSameRev << " tt=" << pathThinkNs / 1000
+		<< " n=" << pathAll.calls << " u=" << pathUniq << " r=" << pathAll.rep << " t=" << pathAll.ns / 1000 << " tr=" << pathAll.repNs / 1000
+		<< " x=" << pathAll.cross << " tx=" << pathAll.crossNs / 1000 << " mis=" << pathAll.mismatch << " xmis=" << pathAll.crossMismatch
+		<< " calc=" << pathAll.calc << " reach=" << pathAll.reach << " bres=" << pathAll.bres << " astar=" << pathAll.astar << " nopath=" << pathAll.nopath
+		<< " outside_n=" << pathOutside.calls << " outside_t=" << pathOutside.ns / 1000
+		<< " outside_calc=" << pathOutside.calc << " outside_reach=" << pathOutside.reach
+		<< " anchor=0x" << std::hex << reinterpret_cast<std::uintptr_t>(&active) << std::dec;
+	std::vector<std::pair<const void *, PathSiteStat>> sites(pathSites.begin(), pathSites.end());
+	std::sort(sites.begin(), sites.end(), [](const auto &a, const auto &b) { return a.second.ns > b.second.ns; });
+	for (const auto &s : sites)
+	{
+		Log(LOG_INFO) << "[AIPF] site=0x" << std::hex << reinterpret_cast<std::uintptr_t>(s.first) << std::dec
+			<< " kind=" << (s.second.kind == 1 ? "calc" : "reach") << " n=" << s.second.n << " r=" << s.second.rep
+			<< " t=" << s.second.ns / 1000 << " tr=" << s.second.repNs / 1000;
+	}
+}
+
+}
+
+bool pathProf()
+{
+	static const bool on = active() && envOn("OXCE_AI_PATHPROF");
+	return on;
+}
+
+void pathAsk(int kind, int algo, const BattleUnit *unit, const Position &from, const Position &to, int bam,
+	const BattleUnit *missileTarget, int maxTU, int tu, int energy, unsigned long long answer, int len, int cost, long long ns, const void *site)
+{
+	if (!pathProf())
+	{
+		return;
+	}
+	PathSiteStat &s = pathSites[site];
+	s.kind = kind;
+	++s.n;
+	s.ns += ns;
+	if (!pathNow.open)
+	{
+		++pathOutside.calls;
+		pathOutside.ns += ns;
+		++(kind == 1 ? pathOutside.calc : pathOutside.reach);
+		return;
+	}
+	StateHash k;
+	k.add(kind); k.add(unit->getId());
+	k.add(from.x); k.add(from.y); k.add(from.z); k.add(to.x); k.add(to.y); k.add(to.z);
+	k.add(bam); k.add(missileTarget ? missileTarget->getId() : -1); k.add(maxTU); k.add(tu); k.add(energy);
+	PathAskStat &a = pathNow.asks[k.h];
+	if (a.n > 0)
+	{
+		++pathNow.rep;
+		pathNow.repNs += ns;
+		++s.rep;
+		s.repNs += ns;
+		if (a.answer != answer)
+		{
+			++pathNow.mismatch;
+			pathMismatch("mis", kind, unit, from, to, bam, maxTU, tu, energy, a, algo, len, cost, ns, site);
+		}
+	}
+	else
+	{
+		a.answer = answer;
+		a.algo = algo; a.len = len; a.cost = cost; a.ns = ns; a.site = site;
+		if (pathNow.sameRev)
+		{
+			auto p = pathLast.asks.find(k.h);
+			if (p != pathLast.asks.end())
+			{
+				++pathNow.cross;
+				pathNow.crossNs += ns;
+				if (p->second.answer != answer)
+				{
+					++pathNow.crossMismatch;
+					pathMismatch("xmis", kind, unit, from, to, bam, maxTU, tu, energy, p->second, algo, len, cost, ns, site);
+				}
+			}
+		}
+	}
+	++a.n;
+	++pathNow.calls;
+	pathNow.ns += ns;
+	++(kind == 1 ? pathNow.calc : pathNow.reach);
+	if (algo == 1) ++pathNow.bres;
+	else if (algo == 2) ++pathNow.astar;
+	else if (algo == 3) ++pathNow.nopath;
+}
+
 void beforeThink(SavedBattleGame *save, BattleUnit *unit)
 {
 	if (!active())
@@ -803,6 +1015,7 @@ void beforeThink(SavedBattleGame *save, BattleUnit *unit)
 	}
 	rngBefore = RNG::getSeed();
 	aiBefore = unit->getAIModule() ? unit->getAIModule()->probeHash() : 0;
+	pathOpen(save, unit);
 	if (record())
 	{
 		flushExec(save);
@@ -1196,7 +1409,7 @@ const std::string &cfgText()
 	{
 		static const std::set<std::string> skip = { "OXCE_AI_SEED", "OXCE_AI_RECORD", "OXCE_AI_TRACE_DECISION", "OXCE_AI_PROBE_SAVE",
 			"OXCE_AI_BUILD", "OXCE_AI_KEEP_DECIDE", "OXCE_AI_MISSION", "OXCE_AI_CAMPAIGN", "OXCE_AI_EXE", "OXCE_AI_GAME", "OXCE_AI_WORK", "OXCE_AI_RECORD_PATH",
-			"OXCE_AI_FAST", "OXCE_AI_LIGHTSKIP" }; // the fast mode and the light skip change what is computed, not how the bench plays
+			"OXCE_AI_FAST", "OXCE_AI_LIGHTSKIP", "OXCE_AI_PATHPROF" }; // the fast mode, the light skip and the path profile change what is computed, not how the bench plays
 		std::vector<std::string> vars;
 		for (char **e = PROBE_ENVIRON; e && *e; ++e)
 		{
@@ -1475,6 +1688,7 @@ void logDecision(SavedBattleGame *save, BattleUnit *unit, const BattleAction &ac
 	{
 		writeRecord(save, unit, action, hashUnits, hashItems, hashOrder, hashMap, hashRng);
 	}
+	pathClose(unit);
 }
 
 void logCasualty(SavedBattleGame *save, const BattleUnit *victim, const BattleUnit *killer, const std::string &weapon,

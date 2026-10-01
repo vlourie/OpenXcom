@@ -57,6 +57,17 @@ bool fast();
 /// light event (a shot, a glowing item dropped or picked up, a death, a fall, a teleport, a toggle of the personal light,
 /// a hit, terrain changed) recalculates on its own. True - skip; counts the recalculations done and skipped for [AILIGHT].
 bool lightSkip(const TileEngine *terrain, const BattleUnit *unit);
+/// The pathfinding profile (OXCE_AI_PATHPROF, docs/research/ai-path-audit-2026-10-01.md): what the AI asks of the pathfinder
+/// while it decides, each ask keyed by what it asks (kind, unit, place, target, move type, missile target, TU cap, TU and
+/// energy) and timed, so that the same ask repeated within one decision - or in the next decision with the battle unchanged -
+/// is counted apart and its answer's fingerprint is checked against the first. Reads only; [AIPF] lines per decision and at
+/// the end of the battle. Off (the default): pathAsk is never called.
+bool pathProf();
+/// One answered ask: kind 1 calculate (algo 1 bresenham, 2 A*, 3 no path, 0 no end position), 2 findReachable; site - the
+/// caller's return address, turned into a name offline by tools/ai_speed/path_prof.py; answer - the fingerprint of what came
+/// back, len and cost - its size (path steps, reachable tiles) and TU (path cost, TU budget) for the mismatch lines.
+void pathAsk(int kind, int algo, const BattleUnit *unit, const Position &from, const Position &to, int bam,
+	const BattleUnit *missileTarget, int maxTU, int tu, int energy, unsigned long long answer, int len, int cost, long long ns, const void *site);
 /// Does the AI play the player's side right now (OXCE_AI_BOT)?
 bool botTurn(const SavedBattleGame *save);
 /// The seed of a generated battle (OXCE_AI_SEED), or -1.

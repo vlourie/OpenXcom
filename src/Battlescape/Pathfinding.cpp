@@ -31,6 +31,7 @@
 #include "AiProbe.h"
 #include "../Engine/Logger.h"
 #include <optional>
+#include <chrono>
 
 namespace OpenXcom
 {
@@ -151,9 +152,14 @@ void Pathfinding::calculate(BattleUnit *unit, Position endPosition, BattleAction
 {
 	// the determinism hunt (OXCE_AI_TRACE_PATH, bench builds only): every path asked for and what came back, on any return
 	static const bool trace = AiProbe::param("OXCE_AI_TRACE_PATH", 0) > 0;
+	// both watchers are built in place (emplace with arguments, copying forbidden): emplace(Trace{...}) would destroy the temporary
+	// at once and report the previous ask's answer as this one's, then report again on return - every ask twice
 	struct Trace
 	{
 		Pathfinding *pf; BattleUnit *unit; Position from, to; int bam, maxTU;
+		Trace(Pathfinding *p, BattleUnit *u, Position f, Position t, int b, int m) : pf(p), unit(u), from(f), to(t), bam(b), maxTU(m) {}
+		Trace(const Trace &) = delete;
+		Trace &operator=(const Trace &) = delete;
 		~Trace()
 		{
 			Log(LOG_INFO) << "[AIPATH] unit=" << unit->getId() << " from=" << from << " to=" << to << " bam=" << bam << " max=" << maxTU
@@ -163,7 +169,33 @@ void Pathfinding::calculate(BattleUnit *unit, Position endPosition, BattleAction
 	std::optional<Trace> traced;
 	if (trace && AiProbe::active())
 	{
-		traced.emplace(Trace{this, unit, unit->getPosition(), endPosition, (int)bam, maxTUCost});
+		traced.emplace(this, unit, unit->getPosition(), endPosition, (int)bam, maxTUCost);
+	}
+	// the pathfinding profile (OXCE_AI_PATHPROF, bench builds only): the ask, its answer's fingerprint and its time, on any return
+	struct Ask
+	{
+		Pathfinding *pf; const BattleUnit *unit; Position from, to; int bam; const BattleUnit *missile; int maxTU; int algo;
+		std::chrono::steady_clock::time_point t0; const void *site;
+		Ask(Pathfinding *p, const BattleUnit *u, Position f, Position t, int b, const BattleUnit *m, int mt, const void *s)
+			: pf(p), unit(u), from(f), to(t), bam(b), missile(m), maxTU(mt), algo(0), t0(std::chrono::steady_clock::now()), site(s) {}
+		Ask(const Ask &) = delete;
+		Ask &operator=(const Ask &) = delete;
+		~Ask()
+		{
+			unsigned long long h = 1469598103934665603ULL;
+			auto mix = [&h](long long v) { for (int i = 0; i < 8; ++i) h = (h ^ (unsigned long long)((v >> (i * 8)) & 0xff)) * 1099511628211ULL; };
+			for (int d : pf->_path) mix(d);
+			mix(pf->_totalTUCost.time); mix(pf->_totalTUCost.energy); mix(pf->_strafeMove ? 1 : 0);
+			mix(pf->_teleportDestination ? pf->_teleportDestination->x + pf->_teleportDestination->y * 1000 + pf->_teleportDestination->z * 1000000 : -1);
+			const long long ns = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - t0).count();
+			AiProbe::pathAsk(1, algo, unit, from, to, bam, missile, maxTU, unit->getTimeUnits(), unit->getEnergy(), h,
+				(int)pf->_path.size(), pf->_totalTUCost.time, ns, site);
+		}
+	};
+	std::optional<Ask> asked;
+	if (AiProbe::pathProf())
+	{
+		asked.emplace(this, unit, unit->getPosition(), endPosition, (int)bam, missileTarget, maxTUCost, __builtin_return_address(0));
 	}
 	_totalTUCost = {};
 	_path.clear();
@@ -203,6 +235,10 @@ void Pathfinding::calculate(BattleUnit *unit, Position endPosition, BattleAction
 	if (bresenhamPath(startPosition, endPosition, bam, missileTarget, sneak))
 	{
 		std::reverse(_path.begin(), _path.end()); //paths are stored in reverse order
+		if (asked)
+		{
+			asked->algo = 1;
+		}
 		return;
 	}
 	else
@@ -218,6 +254,14 @@ void Pathfinding::calculate(BattleUnit *unit, Position endPosition, BattleAction
 	if (!aStarPath(startPosition, endPosition, bam, missileTarget, sneak, maxTUCost))
 	{
 		abortPath();
+		if (asked)
+		{
+			asked->algo = 3;
+		}
+	}
+	else if (asked)
+	{
+		asked->algo = 2;
 	}
 }
 
@@ -1571,6 +1615,10 @@ bool Pathfinding::bresenhamPath(Position origin, Position target, BattleActionMo
  */
 std::vector<int> Pathfinding::findReachable(const BattleUnit *unit, const BattleActionCost &cost)
 {
+	// the pathfinding profile (OXCE_AI_PATHPROF, bench builds only): the ask, its answer's fingerprint and its time
+	const bool asked = AiProbe::pathProf();
+	const auto t0 = asked ? std::chrono::steady_clock::now() : std::chrono::steady_clock::time_point();
+	const void *site = asked ? __builtin_return_address(0) : nullptr;
 	const Position start = unit->getPosition();
 	int tuMax = unit->getTimeUnits() - cost.Time;
 	int energyMax = unit->getEnergy() - cost.Energy;
@@ -1619,6 +1667,20 @@ std::vector<int> Pathfinding::findReachable(const BattleUnit *unit, const Battle
 	for (auto* pn : reachable)
 	{
 		tiles.push_back(_save->getTileIndex(pn->getPosition()));
+	}
+	if (asked)
+	{
+		// the answer is the tiles in their order with the cost to each (reachedTU reads it from the nodes)
+		unsigned long long h = 1469598103934665603ULL;
+		auto mix = [&h](long long v) { for (int i = 0; i < 8; ++i) h = (h ^ (unsigned long long)((v >> (i * 8)) & 0xff)) * 1099511628211ULL; };
+		for (auto* pn : reachable)
+		{
+			mix(_save->getTileIndex(pn->getPosition()));
+			mix(pn->getTUCost(false).time);
+			mix(pn->getTUCost(false).energy);
+		}
+		const long long ns = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - t0).count();
+		AiProbe::pathAsk(2, 0, unit, start, start, (int)BAM_NORMAL, nullptr, tuMax, unit->getTimeUnits(), energyMax, h, (int)tiles.size(), tuMax, ns, site);
 	}
 	return tiles;
 }

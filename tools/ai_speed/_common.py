@@ -28,6 +28,11 @@ def build_dir(build):
     return b if b.is_absolute() else ROOT / build
 
 
+def build_exe(build):
+    """Файл игры этой сборки - для nm и grep -a по строкам; запускает игру только ai_probe (скрыто, R-124)."""
+    return build_dir(build) / "bin" / "openxcom.exe"
+
+
 def probe_work():
     """Рабочая папка проб стенда (ai_probe.WORK), чтобы не дублировать путь."""
     sys.path.insert(0, str(ROOT / "tools"))
