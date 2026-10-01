@@ -245,6 +245,16 @@ unsigned long long knownRevision(SavedBattleGame *save, const BattleUnit *unit);
 /// OXCE_AI_FIREPOINT_BLOCKED_SALT (bench test of the invalidation, not a game fixture): the first check of a record in
 /// each unit-turn sees the revision changed. False in a release build.
 bool firepointBlockedSalt();
+/// REPEATED_BLOCKED_STEP_V1 (OXCE_AI_BLOCKED_STEP, bench only): a walk stopped at a unit on the step in dir from where the
+/// unit stands (UnitWalkBState). Remembered for the rest of the unit-turn while knownRevision stays what it was then; another
+/// stop there at the same revision adds its step. No-op without the flag.
+void blockedStepStop(SavedBattleGame *save, BattleUnit *unit, int dir);
+/// REPEATED_BLOCKED_STEP_V1: a decision of the unit (handleAI, any action) - drops the steps it remembers when the unit-turn or
+/// knownRevision changed (the unit's own move changes the revision).
+void blockedStepDecide(SavedBattleGame *save, BattleUnit *unit);
+/// REPEATED_BLOCKED_STEP_V1: the walk handleAI just calculated starts with a remembered step - calculates the path again
+/// with the remembered steps banned as first steps: a way round them, or none.
+void blockedStepPlan(SavedBattleGame *save, BattleUnit *unit, const BattleAction &action);
 /// A side's turn ends (BattlescapeGame::endTurn): the last decision's action is over.
 void sideEnds(SavedBattleGame *save);
 /// One line per unit killed or knocked out ([AICASUALTY]): by whom, with what, from how far, on whose turn.

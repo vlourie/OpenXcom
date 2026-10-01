@@ -491,6 +491,7 @@ void BattlescapeGame::handleAI(BattleUnit *unit)
 		}
 	}
 	AiProbe::logDecision(_save, unit, action);
+	AiProbe::blockedStepDecide(_save, unit);
 	if (action.type == BA_WALK)
 	{
 		ss << "Walking to " << action.target;
@@ -500,6 +501,7 @@ void BattlescapeGame::handleAI(BattleUnit *unit)
 		if (targetTile)
 		{
 			_save->getPathfinding()->calculate(action.actor, action.target, BAM_NORMAL);
+			AiProbe::blockedStepPlan(_save, unit, action);
 		}
 		AiProbe::walkPlanned(_save, unit, _save->getPathfinding()->getStartDirection() != -1, walkToItem);
 		if (!walkToItem && ai->isPatrolWalk(action) && AiProbe::patrolOutOfEnergy(_save, unit, action, _save->getPathfinding()->getStartDirection() != -1))
