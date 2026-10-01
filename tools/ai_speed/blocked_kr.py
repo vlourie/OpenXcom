@@ -24,6 +24,7 @@ import re
 import sys
 from pathlib import Path
 
+import blocked_repeat as br
 from _common import probe_work
 
 STOP = re.compile(r"walk\.stop\.unit (\d+,\d+,\d+)>(\d+,\d+,\d+) d(\d+) .* bu(\d+) kr([0-9a-f]+)")
@@ -46,7 +47,7 @@ def load(path):
             if "[AIREC]" in head:
                 r = json.loads(line[line.index("{"):])
                 d = B[key].setdefault(r["rec"], {})
-                d.update(turn=r["turn"], unit=r["unit"], start=cell(r["state"]["pos"]))
+                d.update(turn=r["turn"], unit=r["unit"], start=cell(r["state"]["pos"]), tu=r["state"].get("tu"))
             elif "[AIEXEC]" in head:
                 r = json.loads(line[line.index("{"):])
                 d = B[key].setdefault(r["rec"], {})
@@ -73,7 +74,9 @@ def classify(recs):
             if d.get("krdec") is None:
                 out.append(("нет kr.dec (запись без прибора?)", u, m))
             elif d["krdec"] != m[5]:
-                out.append(("ревизия другая - память снята", u, m))
+                passed = (d.get("first") == m[3] and not any(s[0] == m[1] and s[1] == m[2] for s in d.get("stops", []))
+                          and d.get("end") and d["end"] != m[1])
+                out.append(("ревизия другая, тот же шаг ПРОШЁЛ" if passed else "ревизия другая, не прошёл тем же шагом", u, m))
             elif d.get("first") != m[3]:
                 out.append(("та же ревизия, другой шаг или не ходил", u, m))
             elif any(s[0] == m[1] and s[1] == m[2] for s in d.get("stops", [])):
@@ -118,6 +121,30 @@ def main():
     print(f"\nложных подавлений: {len(false_)}")
     for x in false_[:50]:
         print("  " + x)
+    # прежний замер blocked_repeat: B свободна к следующему решению юнита в том же ходу после 1-й остановки - чем
+    # объясняется по kr (снята память или ревизия та же)
+    expl = collections.Counter()
+    for lab in a.labels:
+        K = load(arena / f"{lab}.rec.gz")
+        for battle, recs in br.load(arena / f"{lab}.rec.gz").items():
+            for c in br.chains(recs):
+                r = br.after_n(c, 1)
+                if not (r and r[0]):
+                    continue
+                rec1, turn1 = c["stops"][0][0], c["stops"][0][1]
+                nxt = next((rr for rr, d in c["tl"] if rr > rec1 and d["turn"] == turn1), None)
+                d = K[battle].get(nxt, {})
+                expl["нет kr.dec (решение не на A)" if d.get("krdec") is None else
+                     "ревизия та же" if any(s[4] == d["krdec"] for s in K[battle][rec1].get("stops", [])
+                                            if s[0] == c["A"] and s[1] == c["B"]) else "ревизия другая"] += 1
+    same = [k for k in total if k.startswith("та же ревизия, тот же шаг")]
+    print("\nсводка для второго мнения:")
+    print(f"  memory_candidates (та же ревизия и тот же первый шаг): {sum(total[k] for k in same)}")
+    print(f"  false_suppressions: {len(false_)}")
+    print(f"  invalidated_before_retry (B свободна к следующему решению того же хода, blocked_repeat): "
+          f"{expl['ревизия другая']} из {sum(expl.values())}  {dict(expl)}")
+    print(f"  same_turn_success_after_changed_kr: {total['ревизия другая, тот же шаг ПРОШЁЛ']}"
+          f" из {total['ревизия другая, тот же шаг ПРОШЁЛ'] + total['ревизия другая, не прошёл тем же шагом']}")
     return 0
 
 
