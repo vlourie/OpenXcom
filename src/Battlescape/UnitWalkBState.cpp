@@ -373,6 +373,7 @@ void UnitWalkBState::think()
 						_action.clearTU();
 						_unit->increaseAIWalkAbortCounter();
 						AiProbe::walkStop(_unit, "unit", destination, dir, (int)_action.getMoveType(), tu, energy, unitInMyWay->getId());
+						AiProbe::firepointBlocked(_unit, _action, dir);
 						return cancelCurentMove();
 					}
 				}
