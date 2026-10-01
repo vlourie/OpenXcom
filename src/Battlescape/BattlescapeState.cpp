@@ -2514,8 +2514,10 @@ void BattlescapeState::blinkVisibleUnitButtons()
 			int bgColor = i < _numberOfDirectlyVisibleUnits ? color : i < _numberOfEnemiesTotal ? _indicatorGreen : i < _numberOfEnemiesTotalPlusWounded ? _indicatorBlue : _indicatorPurple;
 			_btnVisibleUnit[i]->drawRect(1, 1, 13, 10, bgColor);
 
-			// mirror the same number above the unit itself, but only for directly visible enemies
-			_map->setUnitMarker(i, i < _numberOfDirectlyVisibleUnits ? _visibleUnit[i] : 0, (Uint8)bgColor);
+			// mirror the same number above the unit itself, but only for directly visible enemies;
+			// OXCE-HD: Options::oxceHdEnemyNumber - 0 no number, 1 blinking as the button, 2 steady at the ramp's start
+			const bool marked = i < _numberOfDirectlyVisibleUnits && Options::oxceHdEnemyNumber > 0;
+			_map->setUnitMarker(i, marked ? _visibleUnit[i] : 0, (Uint8)(Options::oxceHdEnemyNumber == 2 ? 32 : bgColor));
 		}
 		else
 		{
