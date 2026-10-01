@@ -247,17 +247,36 @@ def _append(path, data):
         os.fsync(f.fileno())
 
 
-def commit_battle(table, row):
-    """Бой в серию целиком или никак (R-162). Порядок: журнал с прежними размерами архивов -> куски архивов
-    (gzip-член собран в памяти, одна запись на файл) -> строка таблицы - отметка «бой записан» -> журнал снят.
-    Оборвали посреди - recover() при --resume срежет архивы до размеров из журнала, и бой сыграется заново."""
+def pack_battle(row):
+    """Куски архивов боя: (суффикс, байты), gzip-член собран в памяти. Зовётся в потоке боя (play), не в главном:
+    zlib отпускает GIL, и сжатие идёт параллельно. В главном потоке сервер (44 игры, ядро 2.6 ГГц) упирался в одно
+    ядро на gzip.compress cand - игры кончились, а бои дописывались ещё минуты по одному."""
     tag = f"seed={row['seed']} want={row['want']} "
-    chunks = []
+    out = []
     for key, ext in ARCHIVES:
         if row.get(key):
             # концы строк как у прежней записи текстовым режимом (на Windows CRLF и в таблице, и внутри gzip)
             text = "".join(f"{tag}{line}{os.linesep}" for line in row[key]).encode("utf-8")
-            chunks.append((table.with_suffix(ext), text if ext.endswith(".txt") else gzip.compress(text)))
+            out.append((ext, text if ext.endswith(".txt") else gzip.compress(text)))
+    return out
+
+
+def play(*args):
+    """Бой и его архивы в потоке пула. Строки архивов после сжатия из строки боя убраны: rows держится до конца
+    серии ради сводки, а сводке нужны только столбцы таблицы."""
+    row = one(*args)
+    packed = pack_battle(row)
+    for key, _ in ARCHIVES:
+        row.pop(key, None)
+    return row, packed
+
+
+def commit_battle(table, row, packed=None):
+    """Бой в серию целиком или никак (R-162). Порядок: журнал с прежними размерами архивов -> куски архивов
+    (gzip-член собран в памяти, одна запись на файл) -> строка таблицы - отметка «бой записан» -> журнал снят.
+    Оборвали посреди - recover() при --resume срежет архивы до размеров из журнала, и бой сыграется заново.
+    packed - готовые куски из play(); без них сжимается здесь."""
+    chunks = [(table.with_suffix(ext), data) for ext, data in (pack_battle(row) if packed is None else packed)]
     journal = table.with_suffix(".journal")
     sizes = {p.name: (p.stat().st_size if p.exists() else 0) for p, _ in chunks}
     tmp = journal.with_suffix(".journal.tmp")
@@ -356,14 +375,14 @@ def main():
     t0 = time.time()
     with ThreadPoolExecutor(a.jobs) as pool:
         # по мере готовности, а не по порядку: бой, чей процесс не закрылся и ждёт таймаута, не держит запись остальных
-        futures = [pool.submit(one, s, a.turns, a.diff, a.timeout, campaign, m, a.tactics, a.careful, a.squad) for m, s in jobs]
+        futures = [pool.submit(play, s, a.turns, a.diff, a.timeout, campaign, m, a.tactics, a.careful, a.squad) for m, s in jobs]
         for fut in as_completed(futures):
-            row = fut.result()
+            row, packed = fut.result()
             rows.append(row)
             # бой в таблицу сразу: серия на часы, обрыв не должен стоить уже сыгранного. Рядом архивы: павшие
             # ([AICASUALTY] как есть), снимки юнитов на начало хода (docs/AI_TRAINING.md), решения ИИ
             # (decide - только по OXCE_AI_KEEP_DECIDE=1, сотни МБ на порцию), rec, cand, path
-            commit_battle(table, row)
+            commit_battle(table, row, packed)
             print(f"[{len(rows)}/{total}] зерно {row['seed']}: {outcome(row)}, {row.get('mission', '-')},"
                   f" ход {row.get('turn', '-')}, раненых {row.get('pwounded', '-')}, {row['seconds']} с", flush=True)
     lines = summary(rows, a.label) + (by_mission(rows) if a.missions else []) + [
