@@ -528,6 +528,9 @@ py -3.13 tools/ai_speed/stagnation_classes.py --arena E:/OXCE_AIWorker/results/a
 15 из 18, в хвосте сходились до 2,2 в 6 боях), UAC — враг стоит в `escape.known`, бот ищет и проходит
 мимо; METRO — этажи, в 5 из 9 бот сам стоит. B — диагональ рукопашной 2 (`RITUAL_CAVE`), нечем бить 5,
 по сути C 3, палубы 1; турелей нет. Аудит п. 17. Политика не принята, ничего не реализовано.
+Второе мнение по п. 17 (аудит п. 17.4): `STAGNATION_POLICY` — NO GO / insufficiently homogeneous
+causes; METRO — позже как `BOT_IDLE_NO_SOURCE`; после `REPEATED_BLOCKED_STEP_V1` повторить профиль и оба
+режима, контроль — исчезли ли `RITUAL_CAVE` 1157/1460 из класса B и сменилось ли распределение timeout.
 
 Профиль:
 
