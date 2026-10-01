@@ -47,7 +47,8 @@ def load(path):
             if "[AIREC]" in head:
                 r = json.loads(line[line.index("{"):])
                 d = B[key].setdefault(r["rec"], {})
-                d.update(turn=r["turn"], unit=r["unit"], start=cell(r["state"]["pos"]), tu=r["state"].get("tu"))
+                d.update(turn=r["turn"], unit=r["unit"], start=cell(r["state"]["pos"]), tu=r["state"].get("tu"),
+                         src=(r.get("base") or {}).get("src"))
             elif "[AIEXEC]" in head:
                 r = json.loads(line[line.index("{"):])
                 d = B[key].setdefault(r["rec"], {})
@@ -60,8 +61,17 @@ def load(path):
     return B
 
 
+def group(src):
+    """источник хода решения -> группа для сводки"""
+    src = src or "?"
+    for g in ("firepoint", "escape", "ambush", "melee"):
+        if src.startswith(g):
+            return g
+    return "patrol" if src.startswith("patrol") else "прочие"
+
+
 def classify(recs):
-    """решения под памятью: (класс, юнит, ход, A, B, блокирующий)"""
+    """решения под памятью: (класс, юнит, память остановки, источник хода решения)"""
     out = []
     mem = {}  # юнит -> (ход, A, B, d, блокирующий, kr) последней остановки
     for rec in sorted(recs):
@@ -85,6 +95,7 @@ def classify(recs):
                 out.append(("та же ревизия, тот же шаг, ПРОШЁЛ - ложное подавление", u, m))
             else:
                 out.append(("та же ревизия, тот же шаг, остался на A по другой причине", u, m))
+            out[-1] = out[-1] + (d.get("src"),)
         for a, b, dr, blk, kr in d.get("stops", []):
             if a == d["start"]:  # остановка первого шага: память юнита на этот ход
                 mem[u] = (d["turn"], a, b, dr, blk, kr)
@@ -102,12 +113,25 @@ def main():
     side = collections.Counter()
     false_ = []
     n_stops = 0
+    cand_src = collections.Counter()
+    cand_raw = collections.Counter()
+    accum = collections.Counter()
     for lab in a.labels:
         B = load(arena / f"{lab}.rec.gz")
         for battle, recs in B.items():
             n_stops += sum(len(d.get("stops", [])) for d in recs.values())
-            for cls, u, m in classify(recs):
+            per_turn = collections.defaultdict(set)  # (юнит, ход, A) -> остановленные первые шаги
+            for d in recs.values():
+                for st in d.get("stops", []):
+                    if "unit" in d and st[0] == d["start"]:
+                        per_turn[d["unit"], d["turn"], st[0]].add(st[2])
+            for v in per_turn.values():
+                accum[min(len(v), 3)] += 1
+            for cls, u, m, src in classify(recs):
                 total[cls] += 1
+                if cls.startswith("та же ревизия, тот же шаг"):
+                    cand_src[group(src)] += 1
+                    cand_raw[src] += 1
                 side[("бот" if u < HOSTILE else "враг") + (" / свой" if (u >= HOSTILE) == (m[4] >= HOSTILE) else " / чужой"), cls] += 1
                 if "ложное" in cls:
                     false_.append(f"{lab} {battle} юнит {u} ход {m[0]} {m[1]} > {m[2]} блок {m[4]}")
@@ -145,6 +169,10 @@ def main():
           f"{expl['ревизия другая']} из {sum(expl.values())}  {dict(expl)}")
     print(f"  same_turn_success_after_changed_kr: {total['ревизия другая, тот же шаг ПРОШЁЛ']}"
           f" из {total['ревизия другая, тот же шаг ПРОШЁЛ'] + total['ревизия другая, не прошёл тем же шагом']}")
+    print("\nmemory_candidates по источнику хода: " + ", ".join(f"{k} {v}" for k, v in cand_src.most_common()))
+    print("  подробно: " + ", ".join(f"{k} {v}" for k, v in cand_raw.most_common()))
+    print("ходов юнита с остановленными первыми шагами с одной клетки, разных шагов: "
+          + ", ".join(f"{'3+' if k == 3 else k} - {accum[k]}" for k in sorted(accum)))
     return 0
 
 
