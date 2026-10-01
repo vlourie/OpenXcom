@@ -509,6 +509,9 @@ void createAdvancedOptionsOXCE()
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceAdultArt", &oxceAdultArt, false, "", "STR_HD_ART"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceAdultAsk", &oxceAdultAsk, true, "STR_HD_ADULT_ASK", "STR_HD_ART"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceLanguageChosen", &oxceLanguageChosen, false, "", "STR_GENERAL"));
+	// Gentle mode (Engine/HdGentle.h): its own group on the HD tab. The warning is asked once (GentleChoiceState), no row.
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceGentle", &oxceGentle, false, "STR_GENTLE_MODE", "STR_HD_GENTLE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceGentleAsk", &oxceGentleAsk, true, "", "STR_GENERAL"));
 	// HD render (see Engine/HdCanvas.h): sprite scale of the battlescape and how sprites are drawn on the true-color canvas
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdScale", &oxceHdScale, 1, "STR_HD_SCALE", "STR_HD_BATTLE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdMode", &oxceHdMode, 2, "STR_HD_MODE", "STR_HD_BATTLE"));

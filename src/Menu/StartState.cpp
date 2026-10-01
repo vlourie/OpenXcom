@@ -35,6 +35,7 @@
 #include "../Interface/Text.h"
 #include "MainMenuState.h"
 #include "AdultChoiceState.h"
+#include "GentleChoiceState.h"
 #include "LanguageChoiceState.h"
 #include "CutsceneState.h"
 #include "../Battlescape/AiProbe.h"
@@ -206,9 +207,14 @@ void StartState::think()
 			// Pushed last, so the questions come before the intro is played.
 			// The language screen hands over to the art one itself: that one
 			// builds its texts in its constructor and needs the language first.
+			// The photosensitivity warning goes next, still before the intro: the intro is the first thing that flashes.
 			if (LanguageChoiceState::isNeeded())
 			{
 				_game->pushState(new LanguageChoiceState(intro));
+			}
+			else if (GentleChoiceState::isNeeded())
+			{
+				_game->pushState(new GentleChoiceState(intro));
 			}
 			else if (AdultChoiceState::isNeeded())
 			{

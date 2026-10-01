@@ -40,6 +40,8 @@ private:
 	ComboBox *_cbxEdgeScroll, *_cbxDragScroll;
 	Text *_txtScrollSpeed, *_txtFireSpeed, *_txtXcomSpeed, *_txtAlienSpeed;
 	Slider *_slrScrollSpeed, *_slrFireSpeed, *_slrXcomSpeed, *_slrAlienSpeed;
+	/// In place of the speed sliders while the gentle mode holds them (Engine/HdGentle.h).
+	Text *_txtFireGentle, *_txtXcomGentle, *_txtAlienGentle;
 	Text *_txtPathPreview;
 	ToggleTextButton *_btnArrows, *_btnTuCost, *_btnEnergyCost;
 	Text *_txtOptions;

@@ -20,6 +20,7 @@
 #include <sstream>
 #include "../Engine/Game.h"
 #include "../Engine/Action.h"
+#include "../Engine/HdGentle.h"
 #include "../Engine/HdUi.h"
 #include "../Engine/LocalizedText.h"
 #include "../Engine/Options.h"
@@ -38,7 +39,7 @@ namespace OpenXcom
 /// The mod the HD settings act on.
 static const std::string HD_MOD = "hd";
 /// The categories of Options.cpp shown here, in this order; the first one also holds the art version row.
-static const char *const HD_CATEGORIES[] = { "STR_HD_ART", "STR_HD_BATTLE", "STR_HD_INTERFACE", "STR_HD_SPEED" };
+static const char *const HD_CATEGORIES[] = { "STR_HD_ART", "STR_HD_GENTLE", "STR_HD_BATTLE", "STR_HD_INTERFACE", "STR_HD_SPEED" };
 /// Row markers in _rows.
 static const int ROW_NONE = -1, ROW_ART = -2;
 
@@ -178,10 +179,11 @@ void OptionsHdState::updateList()
 		for (size_t i = 0; i < group.settings.size(); ++i)
 		{
 			const OptionInfo &info = group.settings[i];
-			addRow((int)g, (int)i, tr(info.description()), valueText(info));
+			const bool gentle = HdGentle::locks(info);
+			addRow((int)g, (int)i, gentle ? std::string(tr(info.description())) + " " + std::string(tr("STR_GENTLE_LOCKED")) : std::string(tr(info.description())), valueText(info));
 			_lstOptions->setCellColor(_lstOptions->getLastRowIndex(), 1, valueColor(info));
-			// grey out options a mod fixes
-			if (fixeduserOptions.find(info.id()) != fixeduserOptions.end())
+			// grey out options a mod or the gentle mode fixes
+			if (gentle || fixeduserOptions.find(info.id()) != fixeduserOptions.end())
 			{
 				_lstOptions->setRowColor(_lstOptions->getLastRowIndex(), _greyedOutColor);
 			}
@@ -194,6 +196,10 @@ void OptionsHdState::updateList()
  */
 Uint8 OptionsHdState::valueColor(const OptionInfo &info) const
 {
+	if (HdGentle::locks(info))
+	{
+		return _greyedOutColor;
+	}
 	return info.type() == OPTION_BOOL && !*info.asBool() ? _greyedOutColor : _lstOptions->getColor();
 }
 
@@ -201,7 +207,9 @@ std::string OptionsHdState::valueText(const OptionInfo &info) const
 {
 	if (info.type() == OPTION_BOOL)
 	{
-		return *info.asBool() ? tr("STR_YES") : tr("STR_NO");
+		// a setting the gentle mode holds shows the value it is held at, not the player's own
+		const bool value = HdGentle::locks(info) ? HdGentle::lockedValue(info.asBool()) != 0 : *info.asBool();
+		return value ? tr("STR_YES") : tr("STR_NO");
 	}
 	// the HD font is picked by name: the number alone says nothing about which face it is
 	if (info.asInt() == &Options::oxceHdUiFont)
@@ -349,7 +357,7 @@ void OptionsHdState::changeSetting(size_t sel, Uint8 button)
 
 	// greyed out options are fixed, cannot be changed by the user
 	auto& fixeduserOptions = _game->getMod()->getFixedUserOptions();
-	if (fixeduserOptions.find(setting->id()) != fixeduserOptions.end())
+	if (fixeduserOptions.find(setting->id()) != fixeduserOptions.end() || HdGentle::locks(*setting))
 	{
 		return;
 	}
@@ -358,6 +366,11 @@ void OptionsHdState::changeSetting(size_t sel, Uint8 button)
 	{
 		bool *b = setting->asBool();
 		*b = !*b;
+		if (b == &Options::oxceGentle)
+		{
+			updateList();                             // the rows the mode holds change with it
+			return;
+		}
 		_lstOptions->setCellColor(sel, 1, valueColor(*setting));
 	}
 	else if (setting->type() == OPTION_INT)
@@ -462,7 +475,13 @@ std::string OptionsHdState::rowDescription(size_t sel) const
 		}
 		else if (row.group >= 0)
 		{
-			desc = tr(_groups[row.group].settings[row.index].description() + "_DESC");
+			const OptionInfo &info = _groups[row.group].settings[row.index];
+			desc = tr(info.description() + "_DESC");
+			if (HdGentle::locks(info))
+			{
+				desc += " ";
+				desc += tr("STR_GENTLE_LOCKED_DESC");
+			}
 		}
 	}
 	return desc;
@@ -488,7 +507,7 @@ void OptionsHdState::showDetail(size_t sel)
 				return std::make_pair(artText(), (Uint8)0);
 			}
 			const OptionInfo &info = _groups[row.group].settings[row.index];
-			return std::make_pair(valueText(info), info.type() == OPTION_BOOL && !*info.asBool() ? _greyedOutColor : (Uint8)0);
+			return std::make_pair(valueText(info), HdGentle::locks(info) || (info.type() == OPTION_BOOL && !*info.asBool()) ? _greyedOutColor : (Uint8)0);
 		}));
 }
 

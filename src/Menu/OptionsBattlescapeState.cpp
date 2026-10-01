@@ -24,6 +24,7 @@
 #include "../Interface/ComboBox.h"
 #include "../Engine/Action.h"
 #include "../Engine/Options.h"
+#include "../Engine/HdGentle.h"
 
 namespace OpenXcom
 {
@@ -56,6 +57,10 @@ OptionsBattlescapeState::OptionsBattlescapeState(OptionsOrigin origin) : Options
 	_txtAlienSpeed = new Text(114, 9, 206, 72);
 	_slrAlienSpeed = new Slider(104, 16, 206, 82);
 
+	_txtFireGentle = new Text(104, 16, 206, 50);
+	_txtXcomGentle = new Text(104, 16, 94, 82);
+	_txtAlienGentle = new Text(104, 16, 206, 82);
+
 	_txtPathPreview = new Text(114, 9, 94, 100);
 	_btnArrows = new ToggleTextButton(104, 16, 94, 110);
 	_btnTuCost = new ToggleTextButton(58, 16, 94, 128);
@@ -79,6 +84,10 @@ OptionsBattlescapeState::OptionsBattlescapeState(OptionsOrigin origin) : Options
 
 	add(_txtAlienSpeed, "text", "battlescapeMenu");
 	add(_slrAlienSpeed, "button", "battlescapeMenu");
+
+	add(_txtFireGentle, "text", "battlescapeMenu");
+	add(_txtXcomGentle, "text", "battlescapeMenu");
+	add(_txtAlienGentle, "text", "battlescapeMenu");
 
 	add(_txtPathPreview, "text", "battlescapeMenu");
 	add(_btnArrows, "button", "battlescapeMenu");
@@ -159,6 +168,17 @@ OptionsBattlescapeState::OptionsBattlescapeState(OptionsOrigin origin) : Options
 	_slrAlienSpeed->setTooltip("STR_COMPUTER_MOVEMENT_SPEED_DESC");
 	_slrAlienSpeed->onMouseIn((ActionHandler)&OptionsBattlescapeState::txtTooltipIn);
 	_slrAlienSpeed->onMouseOut((ActionHandler)&OptionsBattlescapeState::txtTooltipOut);
+
+	// the speeds the gentle mode holds: a note in place of the slider, the player's own value stays in options.cfg
+	const std::pair<Slider*, Text*> gentleRows[] = { { _slrFireSpeed, _txtFireGentle }, { _slrXcomSpeed, _txtXcomGentle }, { _slrAlienSpeed, _txtAlienGentle } };
+	for (const auto& row : gentleRows)
+	{
+		row.first->setVisible(!HdGentle::on());
+		row.second->setVisible(HdGentle::on());
+		row.second->setText(tr("STR_GENTLE_LOCKED"));
+		row.second->setAlign(ALIGN_CENTER);
+		row.second->setVerticalAlign(ALIGN_MIDDLE);
+	}
 
 	_txtPathPreview->setText(tr("STR_PATH_PREVIEW"));
 

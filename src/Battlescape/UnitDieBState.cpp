@@ -29,6 +29,7 @@
 #include "../Mod/Mod.h"
 #include "../Engine/Sound.h"
 #include "../Engine/RNG.h"
+#include "../Engine/HdGentle.h"
 #include "../Engine/Options.h"
 #include "../Engine/Language.h"
 #include "../Mod/Armor.h"
@@ -149,7 +150,7 @@ bool UnitDieBState::finalBlow() const
 {
 	SavedBattleGame *save = _parent->getSave();
 	// the scene waits up to four seconds of real time, and the probe's fast mode has nobody to show it to
-	if (!Options::oxceHdKillCam || AiProbe::fast() || save->isBeforeGame() || save->isPreview() || !save->getBattleState()
+	if (!HdGentle::killCam() || AiProbe::fast() || save->isBeforeGame() || save->isPreview() || !save->getBattleState()
 		|| !save->getBattleState()->getGame()->getScreen()->isLayered())
 	{
 		return false;

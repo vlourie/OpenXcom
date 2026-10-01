@@ -29,6 +29,7 @@
 #include "../Savegame/Tile.h"
 #include "../Engine/Sound.h"
 #include "../Engine/Options.h"
+#include "../Engine/HdGentle.h"
 #include "../Engine/Logger.h"
 #include "../Mod/Armor.h"
 #include "../Mod/Mod.h"
@@ -542,9 +543,9 @@ void UnitWalkBState::postPathProcedures()
 void UnitWalkBState::setNormalWalkSpeed()
 {
 	if (_unit->getFaction() == FACTION_PLAYER)
-		_parent->setStateInterval(Options::battleXcomSpeed);
+		_parent->setStateInterval(HdGentle::xcomSpeed());
 	else
-		_parent->setStateInterval(Options::battleAlienSpeed);
+		_parent->setStateInterval(HdGentle::alienSpeed());
 }
 
 
