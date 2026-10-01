@@ -260,7 +260,9 @@ def pack_battle(row):
         if row.get(key):
             # концы строк как у прежней записи текстовым режимом (на Windows CRLF и в таблице, и внутри gzip)
             text = "".join(f"{tag}{line}{os.linesep}" for line in row[key]).encode("utf-8")
-            out.append((ext, text if ext.endswith(".txt") else gzip.compress(text)))
+            # уровень 1, а не 9 по умолчанию: бой станции 387 МБ сжимается 3,8 с вместо 71 с при +22 % размера, хвост
+            # серии был сжатием последнего боя; распакованные байты те же, сами .gz - нет
+            out.append((ext, text if ext.endswith(".txt") else gzip.compress(text, compresslevel=1)))
     return out
 
 
