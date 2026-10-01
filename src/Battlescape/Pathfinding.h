@@ -17,6 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <algorithm>
 #include <vector>
 #include <optional>
 #include "Position.h"
@@ -81,6 +82,9 @@ private:
 	int _expanded = 0;
 	/// The cap the last A* ran under (closedTiles).
 	int _searchCap = 0;
+	/// REPEATED_BLOCKED_STEP_V1 (bench, AiProbe::blockedStepPlan): first steps calculate() must not take; empty but there
+	std::vector<int> _bannedFirst;
+	bool bannedFirst(int dir) const { return std::find(_bannedFirst.begin(), _bannedFirst.end(), dir) != _bannedFirst.end(); }
 
   public:
 	/// Determines whether the unit is going up a stairs.
@@ -294,6 +298,8 @@ private:
 	/// nodes - every tile the unit can reach from where it stands under that search's costs; empty unless the last search failed
 	/// that way with every closed tile under half its cap. Read only; the next search overwrites the flags it reads.
 	std::vector<char> closedTiles() const;
+	/// REPEATED_BLOCKED_STEP_V1 (bench): the first steps the next calculate() calls must not take; empty clears.
+	void setBannedFirst(const std::vector<int> &dirs) { _bannedFirst = dirs; }
 	/// Gets the path preview setting.
 	bool isPathPreviewed() const;
 	/// Gets the modifier setting.

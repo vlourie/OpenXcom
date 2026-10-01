@@ -130,6 +130,9 @@ void firepointDropped(const BattleUnit *, int, int) {}
 void firepointBlocked(BattleUnit *, const BattleAction &, int) {}
 unsigned long long knownRevision(SavedBattleGame *, const BattleUnit *) { return 0; }
 bool firepointBlockedSalt() { return false; }
+void blockedStepStop(SavedBattleGame *, BattleUnit *, int) {}
+void blockedStepDecide(SavedBattleGame *, BattleUnit *) {}
+void blockedStepPlan(SavedBattleGame *, BattleUnit *, const BattleAction &) {}
 void sideEnds(SavedBattleGame *) {}
 void logCasualty(SavedBattleGame *, const BattleUnit *, const BattleUnit *, const std::string &, bool, int, bool) {}
 
@@ -180,6 +183,15 @@ std::map<std::string, int> tallies;
 /// on), knownRevision then; its next decisions there this turn record kr.dec and walk.first
 struct StopMem { int turn = -1; Position from; unsigned long long kr = 0; };
 std::map<int, StopMem> stopMem;
+/// REPEATED_BLOCKED_STEP_V1 (OXCE_AI_BLOCKED_STEP): per unit, the steps that stopped at a unit from one tile in one unit-turn
+/// at one knownRevision; the counts of the battle per side, and the steps suppressed per unit-turn
+struct BlockedSteps { int turn = -1; Position from; unsigned long long kr = 0; std::vector<int> dirs; };
+std::map<int, BlockedSteps> blockedSteps;
+struct BlockedStepCount { int recorded = 0, suppressed = 0, rerouted = 0, noPath = 0, invRevision = 0, invTurn = 0; std::map<std::string, int> bySource; };
+BlockedStepCount blockedCount[3];
+std::map<std::pair<int, int>, std::vector<int>> blockedPerTurn;
+/// the source of each unit's last decision as the record took it ("?" without the record)
+std::map<int, std::string> decisionSource;
 /// the decision record's reason trail (defined with the record below)
 void addTrail(const BattleUnit *unit, const char *what);
 /// is the decision record on (defined with the record below)
@@ -199,11 +211,14 @@ void escapeReport();
 /// the FOV-on-step audit's totals at the end of the battle (defined with the escape audit below)
 void walkFovReport();
 void walkFovSkipReport();
+/// REPEATED_BLOCKED_STEP_V1's totals at the end of the battle (defined with the rule below)
+void blockedStepReport();
 
 void logStart(SavedBattleGame *save)
 {
 	started = true;
 	stopMem.clear();
+	blockedSteps.clear();
 	startTicks = SDL_GetTicks();
 	startVirtual = Timer::probeTicks;
 	for (const auto *bu : *save->getUnits())
@@ -278,6 +293,7 @@ void logResult(SavedBattleGame *save, const char *how)
 	escapeReport();
 	walkFovReport();
 	walkFovSkipReport();
+	blockedStepReport();
 }
 
 }
@@ -2512,6 +2528,7 @@ void writeRecord(SavedBattleGame *save, BattleUnit *unit, const BattleAction &ac
 		props.push_back(s.str());
 	}
 	const std::string trail = jlist(pending.trail, true);
+	decisionSource[unit->getId()] = src ? src->src : std::string("?");
 	tally(unit, in ? "rec.in" : (std::string("rec.out.") + (char)kind + std::to_string((int)action.type)).c_str());
 
 	const int rec = recordNo++;
@@ -3256,6 +3273,164 @@ bool firepointBlockedSalt()
 {
 	static const bool on = active() && envOn("OXCE_AI_FIREPOINT_BLOCKED_SALT");
 	return on;
+}
+
+namespace
+{
+
+bool blockedStepOn()
+{
+	static const bool on = active() && envOn("OXCE_AI_BLOCKED_STEP");
+	return on;
+}
+
+int unitTurnOf(const SavedBattleGame *save)
+{
+	return save->getTurn() * 8 + (int)save->getSide();
+}
+
+BlockedStepCount &blockedCountOf(const BattleUnit *unit)
+{
+	const int f = (int)unit->getFaction();
+	return blockedCount[f >= 0 && f < 3 ? f : 2];
+}
+
+/// one count to the battle's [AIBLOCKSTEP] line and to the tac column of [AIRESULT] (p./h.blockstep.<name>): the second
+/// is what the stations' ai_probe.py keeps; no trail entry, the callers note the detail themselves
+void blockedBump(const BattleUnit *unit, int BlockedStepCount::*field, const std::string &name)
+{
+	++(blockedCountOf(unit).*field);
+	++tallies[std::string(unit->getFaction() == FACTION_PLAYER ? "p." : "h.") + "blockstep." + name];
+}
+
+std::string dirList(const std::vector<int> &dirs)
+{
+	std::string s;
+	for (int d : dirs) s += (s.empty() ? "d" : ",d") + std::to_string(d);
+	return s;
+}
+
+void blockedStepReport()
+{
+	if (!active())
+	{
+		return;
+	}
+	// the flag's own line, also off: the proof of which artefact played (R-087)
+	std::ostringstream s;
+	s << "[AIBLOCKSTEP] mode=" << (blockedStepOn() ? 1 : 0);
+	static const char *const sides[3] = { "player", "hostile", "neutral" };
+	for (int i = 0; i < 3; ++i)
+	{
+		const BlockedStepCount &c = blockedCount[i];
+		s << " " << sides[i] << ".recorded=" << c.recorded << " " << sides[i] << ".suppressed=" << c.suppressed
+			<< " " << sides[i] << ".rerouted=" << c.rerouted << " " << sides[i] << ".no_path=" << c.noPath
+			<< " " << sides[i] << ".invalidated_revision=" << c.invRevision << " " << sides[i] << ".invalidated_turn=" << c.invTurn;
+		std::string by;
+		for (const auto &b : c.bySource) by += (by.empty() ? "" : ",") + b.first + ":" + std::to_string(b.second);
+		s << " " << sides[i] << ".by_source=" << (by.empty() ? "-" : by);
+	}
+	// the unit-turns that had steps suppressed, by how many different steps
+	int distinct[4] = {};
+	for (const auto &t : blockedPerTurn) ++distinct[std::min<size_t>(t.second.size(), 3)];
+	s << " distinct_per_unit_turn=1:" << distinct[1] << ",2:" << distinct[2] << ",3+:" << distinct[3];
+	Log(LOG_INFO) << s.str();
+}
+
+}
+
+void blockedStepStop(SavedBattleGame *save, BattleUnit *unit, int dir)
+{
+	if (!blockedStepOn() || !unit->getAIModule())
+	{
+		return;
+	}
+	const int turn = unitTurnOf(save);
+	const unsigned long long kr = knownRevision(save, unit);
+	BlockedSteps &m = blockedSteps[unit->getId()];
+	if (m.turn == turn && m.from == unit->getPosition() && m.kr == kr)
+	{
+		if (std::find(m.dirs.begin(), m.dirs.end(), dir) == m.dirs.end()) m.dirs.push_back(dir);
+	}
+	else
+	{
+		if (m.turn != -1 && m.turn != turn) blockedBump(unit, &BlockedStepCount::invTurn, "inv.turn");
+		else if (m.turn != -1) blockedBump(unit, &BlockedStepCount::invRevision, "inv.rev");
+		m.turn = turn;
+		m.from = unit->getPosition();
+		m.kr = kr;
+		m.dirs.assign(1, dir);
+	}
+	blockedBump(unit, &BlockedStepCount::recorded, "recorded");
+	note(unit, ("blockstep.recorded" + dirList(m.dirs)).c_str());
+}
+
+void blockedStepDecide(SavedBattleGame *save, BattleUnit *unit)
+{
+	if (!blockedStepOn())
+	{
+		return;
+	}
+	const auto it = blockedSteps.find(unit->getId());
+	if (it == blockedSteps.end())
+	{
+		return;
+	}
+	const BlockedSteps &m = it->second;
+	const char *why = nullptr;
+	if (m.turn != unitTurnOf(save))
+	{
+		why = "turn";
+		blockedBump(unit, &BlockedStepCount::invTurn, "inv.turn");
+	}
+	else if (m.from != unit->getPosition() || knownRevision(save, unit) != m.kr)
+	{
+		// the unit's own position is in the revision: moving off the tile changes it
+		why = "revision";
+		blockedBump(unit, &BlockedStepCount::invRevision, "inv.rev");
+	}
+	if (why)
+	{
+		note(unit, (std::string("blockstep.invalidated.") + why + " " + dirList(m.dirs)).c_str());
+		blockedSteps.erase(it);
+	}
+}
+
+void blockedStepPlan(SavedBattleGame *save, BattleUnit *unit, const BattleAction &action)
+{
+	if (!blockedStepOn())
+	{
+		return;
+	}
+	const auto it = blockedSteps.find(unit->getId());
+	if (it == blockedSteps.end())
+	{
+		return;
+	}
+	// blockedStepDecide checked this decision's turn, tile and revision; nothing moved since
+	Pathfinding *pf = save->getPathfinding();
+	const int first = pf->getStartDirection();
+	const std::vector<int> &dirs = it->second.dirs;
+	if (first == -1 || std::find(dirs.begin(), dirs.end(), first) == dirs.end())
+	{
+		return;
+	}
+	blockedBump(unit, &BlockedStepCount::suppressed, "suppressed");
+	const auto src = decisionSource.find(unit->getId());
+	std::string source = src != decisionSource.end() && !src->second.empty() ? src->second : std::string("?");
+	// both lists are name:count,name:count
+	for (char &ch : source) if (ch == ' ' || ch == ',' || ch == ':' || ch == '=') ch = '_';
+	++blockedCountOf(unit).bySource[source];
+	++tallies[std::string(unit->getFaction() == FACTION_PLAYER ? "p." : "h.") + "blockstep.src." + source];
+	std::vector<int> &perTurn = blockedPerTurn[{ unit->getId(), it->second.turn }];
+	if (std::find(perTurn.begin(), perTurn.end(), first) == perTurn.end()) perTurn.push_back(first);
+	pf->setBannedFirst(dirs);
+	pf->calculate(action.actor, action.target, BAM_NORMAL);
+	pf->setBannedFirst({});
+	const int now = pf->getStartDirection();
+	if (now == -1) blockedBump(unit, &BlockedStepCount::noPath, "no_path");
+	else blockedBump(unit, &BlockedStepCount::rerouted, "rerouted");
+	note(unit, ("blockstep.suppressed d" + std::to_string(first) + " -> " + (now == -1 ? std::string("none") : "d" + std::to_string(now))).c_str());
 }
 
 void logState(SavedBattleGame *save, const char *when)

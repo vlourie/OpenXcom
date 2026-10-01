@@ -233,7 +233,8 @@ void Pathfinding::calculate(BattleUnit *unit, Position endPosition, BattleAction
 	const bool sneak = Options::sneakyAI && unit->getFaction() == FACTION_HOSTILE;
 
 	// look for a possible fast and accurate bresenham path and skip A*
-	if (bresenhamPath(startPosition, endPosition, bam, missileTarget, sneak))
+	// a banned first step (REPEATED_BLOCKED_STEP_V1, bench): the straight path is refused and A* goes round it
+	if (bresenhamPath(startPosition, endPosition, bam, missileTarget, sneak) && (_bannedFirst.empty() || _path.empty() || !bannedFirst(_path.front())))
 	{
 		std::reverse(_path.begin(), _path.end()); //paths are stored in reverse order
 		if (asked)
@@ -369,6 +370,8 @@ bool Pathfinding::aStarPath(Position startPosition, Position endPosition, Battle
 		// Try all reachable neighbours.
 		for (int direction = 0; direction < 10; direction++)
 		{
+			if (!_bannedFirst.empty() && currentNode == start && bannedFirst(direction))
+				continue;
 			PathfindingStep r = getTUCost(currentPos, direction, _unit, missileTarget, bam);
 			if (r.cost.time == INVALID_MOVE_COST) // Skip unreachable / blocked
 				continue;
