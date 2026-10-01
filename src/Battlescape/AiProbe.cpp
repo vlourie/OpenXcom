@@ -20,6 +20,7 @@
 #include <algorithm>
 #include <chrono>
 #include <climits>
+#include <iterator>
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
@@ -37,6 +38,7 @@
 #include "Pathfinding.h"
 #include "../Engine/Game.h"
 #include "../Engine/Logger.h"
+#include "../Engine/Options.h"
 #include "../Engine/RNG.h"
 #include "../Engine/Timer.h"
 #include "../Mod/Armor.h"
@@ -89,6 +91,10 @@ void escapeMark() {}
 void escapeProbe(const BattleUnit *, int) {}
 bool escapeReachFirst() { return false; }
 void escapeSkipped() {}
+bool walkFovProf() { return false; }
+void walkFovBefore(BattlescapeGame *, const BattleUnit *) {}
+void walkFovAfter(BattlescapeGame *, const BattleUnit *) {}
+void walkFovConfirm(BattlescapeGame *, const BattleUnit *) {}
 bool botTurn(const SavedBattleGame *) { return false; }
 long long battleSeed() { return -1; }
 void think(BattlescapeState *, SavedBattleGame *) {}
@@ -184,6 +190,8 @@ void reachReport();
 void ambushReport();
 /// the escape audit's totals at the end of the battle (defined with the ambush profile below)
 void escapeReport();
+/// the FOV-on-step audit's totals at the end of the battle (defined with the escape audit below)
+void walkFovReport();
 
 void logStart(SavedBattleGame *save)
 {
@@ -260,6 +268,7 @@ void logResult(SavedBattleGame *save, const char *how)
 	reachReport();
 	ambushReport();
 	escapeReport();
+	walkFovReport();
 }
 
 }
@@ -1491,6 +1500,242 @@ void escapeSkipped()
 	++escSkipN;
 }
 
+namespace
+{
+
+/// The FOV-on-step audit (OXCE_AI_WALKFOVPROF, docs/research/ai-path-audit-2026-10-01.md, п. 14). UnitWalkBState::think calls
+/// BattlescapeState::updateSoldierInfo after every finished step "to update the TU display"; on the player's side that call
+/// recalculates the selected unit's whole field of view - its visible tiles and units - and the step's own event FOV around
+/// the walker follows a few lines later. The audit reads only: a snapshot of the selected unit's sight before the call, one
+/// after it, one more after the step's FOV - what the call changed, what of that the step's FOV kept, how long the call took.
+struct WalkFovSnap
+{
+	std::vector<const BattleUnit *> units;   // the selected unit's visible units, sorted
+	std::vector<const BattleUnit *> spotted; // its units spotted this turn, sorted
+	std::vector<const Tile *> tiles;         // its visible tiles, sorted
+	std::vector<char> seen;                  // BattleUnit::getVisible of every unit of the battle
+	std::vector<int> since, snipers;         // turnsSinceSpotted / turnsLeftSpottedForSnipers by the selected unit's faction, every unit
+	long long discovered = 0;                // discovered floors and walls of the whole map
+};
+struct WalkFovCount
+{
+	long long calls = 0, ran = 0, selWalker = 0, selOther = 0, walker[4] = {}; // walker: 0 player's side by a human, 1 by the bot, 2 the AI's side, 3 other
+	long long nsRan = 0, nsNoop = 0, nsProbe = 0;
+	long long tilesCalls = 0, tilesAdded = 0, tilesRemoved = 0, discCalls = 0, discTiles = 0;
+	long long unitsCalls = 0, unitsAdded = 0, unitsRemoved = 0, spottedCalls = 0, spottedAdded = 0;
+	long long seenHostile = 0, seenOther = 0, sinceReset = 0, snipersSet = 0;
+	long long confirmed = 0, notConfirmed = 0, spottedNotConfirmed = 0, removedBack = 0, stepChanged = 0, noConfirm = 0;
+};
+WalkFovCount wfc;
+WalkFovSnap wfS0, wfS1;
+std::vector<const BattleUnit *> wfAdded, wfRemoved, wfSpotted; // what the call added to, removed from, spotted for the selected unit
+const BattleUnit *wfSel = 0;
+bool wfRan = false, wfPendingAfter = false, wfPendingConfirm = false;
+std::chrono::steady_clock::time_point wfMark;
+
+void walkFovTake(WalkFovSnap &s, SavedBattleGame *save, BattleUnit *sel)
+{
+	s.units.assign(sel->getVisibleUnits()->begin(), sel->getVisibleUnits()->end());
+	std::sort(s.units.begin(), s.units.end());
+	s.spotted.assign(sel->getUnitsSpottedThisTurn().begin(), sel->getUnitsSpottedThisTurn().end());
+	std::sort(s.spotted.begin(), s.spotted.end());
+	s.tiles.assign(sel->getVisibleTiles()->begin(), sel->getVisibleTiles()->end());
+	std::sort(s.tiles.begin(), s.tiles.end());
+	const UnitFaction f = sel->getFaction();
+	s.seen.clear();
+	s.since.clear();
+	s.snipers.clear();
+	for (const auto *bu : *save->getUnits())
+	{
+		s.seen.push_back(bu->getVisible());
+		s.since.push_back(bu->getTurnsSinceSpottedByFaction(f));
+		s.snipers.push_back(bu->getTurnsLeftSpottedForSnipersByFaction(f));
+	}
+	s.discovered = 0;
+	for (int i = 0, n = save->getMapSizeXYZ(); i < n; ++i)
+	{
+		const Tile *t = save->getTile(i);
+		s.discovered += t->isDiscovered(O_FLOOR) + t->isDiscovered(O_WESTWALL) + t->isDiscovered(O_NORTHWALL);
+	}
+}
+
+template <class T>
+void walkFovDiff(const std::vector<T> &before, const std::vector<T> &after, std::vector<T> &added, std::vector<T> &removed)
+{
+	added.clear();
+	removed.clear();
+	std::set_difference(after.begin(), after.end(), before.begin(), before.end(), std::back_inserter(added));
+	std::set_difference(before.begin(), before.end(), after.begin(), after.end(), std::back_inserter(removed));
+}
+
+long long walkFovNs(const std::chrono::steady_clock::time_point &from)
+{
+	return std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - from).count();
+}
+
+/// 0 off, 1 snapshots and time, 2 time only: the snapshots walk the whole map before the call and cool the caches, so the
+/// call's time under mode 1 is an upper bound; mode 2 counts and times the same calls with nothing else in between.
+int walkFovMode()
+{
+	static const int mode = active() ? (int)param("OXCE_AI_WALKFOVPROF", 0) : 0;
+	return mode;
+}
+
+void walkFovReport()
+{
+	if (!walkFovProf())
+	{
+		return;
+	}
+	Log(LOG_INFO) << "[AIWALKFOV] mode=" << walkFovMode() << " walk_fov_calls=" << wfc.calls << " walk_fov_ran=" << wfc.ran
+		<< " walk_fov_selected_player=" << wfc.walker[0] << " walk_fov_bot=" << wfc.walker[1] << " walk_fov_ai=" << wfc.walker[2] << " walk_fov_other=" << wfc.walker[3]
+		<< " walk_fov_selected_is_walker=" << wfc.selWalker << " walk_fov_selected_other=" << wfc.selOther
+		<< " walk_fov_time_us=" << wfc.nsRan / 1000 << " walk_fov_noop_time_us=" << wfc.nsNoop / 1000 << " probe_overhead_us=" << wfc.nsProbe / 1000
+		<< " walk_fov_changed_visible_tiles=" << wfc.tilesCalls << " tiles_added=" << wfc.tilesAdded << " tiles_removed=" << wfc.tilesRemoved
+		<< " walk_fov_new_discovered=" << wfc.discCalls << " discovered_parts=" << wfc.discTiles
+		<< " walk_fov_changed_visible_units=" << wfc.unitsCalls << " units_added=" << wfc.unitsAdded << " units_removed=" << wfc.unitsRemoved
+		<< " walk_fov_changed_spotted_units=" << wfc.spottedCalls << " spotted_added=" << wfc.spottedAdded
+		<< " units_set_visible_hostile=" << wfc.seenHostile << " units_set_visible_other=" << wfc.seenOther
+		<< " turns_since_spotted_reset=" << wfc.sinceReset << " snipers_set=" << wfc.snipersSet
+		<< " added_kept_by_step_fov=" << wfc.confirmed << " added_not_kept_by_step_fov=" << wfc.notConfirmed
+		<< " spotted_not_kept_by_step_fov=" << wfc.spottedNotConfirmed << " removed_back_by_step_fov=" << wfc.removedBack
+		<< " step_changed_visible_units=" << wfc.stepChanged << " no_step_fov=" << wfc.noConfirm
+		<< " sneakyAI=" << (Options::sneakyAI ? 1 : 0);
+}
+
+}
+
+bool walkFovProf()
+{
+	return walkFovMode() > 0;
+}
+
+void walkFovBefore(BattlescapeGame *game, const BattleUnit *walker)
+{
+	if (!walkFovProf())
+	{
+		return;
+	}
+	SavedBattleGame *save = game->getSave();
+	if (wfPendingConfirm)
+	{
+		++wfc.noConfirm; // the previous step left think before its own FOV (it burned through the floor)
+		wfPendingConfirm = false;
+	}
+	++wfc.calls;
+	const bool playerSide = save->getSide() == FACTION_PLAYER;
+	++wfc.walker[walker->getFaction() == FACTION_PLAYER ? (playerSide ? (bot() ? 1 : 0) : 3) : (playerSide ? 3 : 2)];
+	wfSel = save->getSelectedUnit();
+	wfRan = game->playableUnitSelected(); // otherwise updateSoldierInfo leaves before its calculateFOV
+	if (wfRan)
+	{
+		++(wfSel == walker ? wfc.selWalker : wfc.selOther);
+		if (walkFovMode() == 1)
+		{
+			const auto t0 = std::chrono::steady_clock::now();
+			walkFovTake(wfS0, save, save->getSelectedUnit());
+			wfc.nsProbe += walkFovNs(t0);
+		}
+	}
+	wfPendingAfter = true;
+	wfMark = std::chrono::steady_clock::now();
+}
+
+void walkFovAfter(BattlescapeGame *game, const BattleUnit *)
+{
+	if (!walkFovProf() || !wfPendingAfter)
+	{
+		return;
+	}
+	wfPendingAfter = false;
+	const long long ns = walkFovNs(wfMark);
+	if (!wfRan)
+	{
+		wfc.nsNoop += ns;
+		return;
+	}
+	++wfc.ran;
+	wfc.nsRan += ns;
+	if (walkFovMode() != 1)
+	{
+		return;
+	}
+	SavedBattleGame *save = game->getSave();
+	const auto t0 = std::chrono::steady_clock::now();
+	walkFovTake(wfS1, save, save->getSelectedUnit());
+	std::vector<const Tile *> tAdded, tRemoved;
+	walkFovDiff(wfS0.tiles, wfS1.tiles, tAdded, tRemoved);
+	if (!tAdded.empty() || !tRemoved.empty())
+	{
+		++wfc.tilesCalls;
+		wfc.tilesAdded += tAdded.size();
+		wfc.tilesRemoved += tRemoved.size();
+	}
+	if (wfS1.discovered > wfS0.discovered)
+	{
+		++wfc.discCalls;
+		wfc.discTiles += wfS1.discovered - wfS0.discovered;
+	}
+	walkFovDiff(wfS0.units, wfS1.units, wfAdded, wfRemoved);
+	if (!wfAdded.empty() || !wfRemoved.empty())
+	{
+		++wfc.unitsCalls;
+		wfc.unitsAdded += wfAdded.size();
+		wfc.unitsRemoved += wfRemoved.size();
+	}
+	std::vector<const BattleUnit *> gone;
+	walkFovDiff(wfS0.spotted, wfS1.spotted, wfSpotted, gone);
+	if (!wfSpotted.empty())
+	{
+		++wfc.spottedCalls;
+		wfc.spottedAdded += wfSpotted.size();
+	}
+	const auto &units = *save->getUnits();
+	for (size_t i = 0; i < wfS0.seen.size() && i < wfS1.seen.size() && i < units.size(); ++i)
+	{
+		if (!wfS0.seen[i] && wfS1.seen[i])
+		{
+			++(units[i]->getFaction() == FACTION_HOSTILE ? wfc.seenHostile : wfc.seenOther);
+		}
+		wfc.sinceReset += wfS0.since[i] != wfS1.since[i];
+		wfc.snipersSet += wfS0.snipers[i] != wfS1.snipers[i];
+	}
+	wfc.nsProbe += walkFovNs(t0);
+	wfPendingConfirm = true;
+}
+
+void walkFovConfirm(BattlescapeGame *game, const BattleUnit *)
+{
+	if (!walkFovProf() || !wfPendingConfirm)
+	{
+		return;
+	}
+	wfPendingConfirm = false;
+	BattleUnit *sel = game->getSave()->getSelectedUnit();
+	if (sel != wfSel)
+	{
+		++wfc.noConfirm;
+		return;
+	}
+	const auto t0 = std::chrono::steady_clock::now();
+	std::vector<const BattleUnit *> now(sel->getVisibleUnits()->begin(), sel->getVisibleUnits()->end());
+	std::sort(now.begin(), now.end());
+	for (const auto *u : wfAdded)
+	{
+		++(std::binary_search(now.begin(), now.end(), u) ? wfc.confirmed : wfc.notConfirmed);
+	}
+	for (const auto *u : wfSpotted)
+	{
+		wfc.spottedNotConfirmed += !std::binary_search(now.begin(), now.end(), u);
+	}
+	for (const auto *u : wfRemoved)
+	{
+		wfc.removedBack += std::binary_search(now.begin(), now.end(), u);
+	}
+	wfc.stepChanged += now != wfS0.units;
+	wfc.nsProbe += walkFovNs(t0);
+}
+
 void propose(const BattleUnit *unit, char slot, const char *source, int score, const BattleAction &action)
 {
 	if (!record() || pending.unit != unit->getId())
@@ -1864,7 +2109,7 @@ const std::string &cfgText()
 		static const std::set<std::string> skip = { "OXCE_AI_SEED", "OXCE_AI_RECORD", "OXCE_AI_TRACE_DECISION", "OXCE_AI_PROBE_SAVE",
 			"OXCE_AI_BUILD", "OXCE_AI_KEEP_DECIDE", "OXCE_AI_MISSION", "OXCE_AI_CAMPAIGN", "OXCE_AI_EXE", "OXCE_AI_GAME", "OXCE_AI_WORK", "OXCE_AI_RECORD_PATH",
 			"OXCE_AI_FAST", "OXCE_AI_LIGHTSKIP", "OXCE_AI_PATHPROF", "OXCE_AI_AMBUSHPROF", "OXCE_AI_ESCAPEPROF", "OXCE_AI_RECORD_REUSE",
-			"OXCE_AI_AMBUSH_MEMO", "OXCE_AI_ESCAPE_REACH_FIRST" }; // the fast mode, the light skip, the profiles, the record's reuse, the ambush memo and the escape order change what is computed, not how the bench plays
+			"OXCE_AI_AMBUSH_MEMO", "OXCE_AI_ESCAPE_REACH_FIRST", "OXCE_AI_WALKFOVPROF" }; // the fast mode, the light skip, the profiles, the record's reuse, the ambush memo and the escape order change what is computed, not how the bench plays
 		std::vector<std::string> vars;
 		for (char **e = PROBE_ENVIRON; e && *e; ++e)
 		{

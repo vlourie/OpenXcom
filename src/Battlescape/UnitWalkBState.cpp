@@ -197,8 +197,10 @@ void UnitWalkBState::think()
 		// is the step finished?
 		if (_unit->getStatus() == STATUS_STANDING)
 		{
-			// update the TU display
+			// update the TU display (the bench may watch what its FOV changes in the selected unit's sight, AiProbe::walkFov*: reads only)
+			AiProbe::walkFovBefore(_parent, _unit);
 			_parent->getSave()->getBattleState()->updateSoldierInfo();
+			AiProbe::walkFovAfter(_parent, _unit);
 			// if the unit burns floor tiles, burn floor tiles as long as we're not falling
 			if (!_falling && (_unit->getSpecialAbility() == SPECAB_BURNFLOOR || _unit->getSpecialAbility() == SPECAB_BURN_AND_EXPLODE))
 			{
@@ -226,6 +228,7 @@ void UnitWalkBState::think()
 				_terrain->calculateLighting(change ? LL_ITEMS : LL_UNITS, _unit->getPosition(), 2);
 			}
 			_terrain->calculateFOV(_unit->getPosition(), 2, false); //update unit visibility for all units which can see last and current position.
+			AiProbe::walkFovConfirm(_parent, _unit); // did the step's own FOV keep what updateSoldierInfo had added (the audit above, reads only)
 			//tile visibility for this unit is handled later.
 			unitSpotted = (!_action.ignoreSpottedEnemies && !_falling && !_action.desperate && _parent->getPanicHandled() && _numUnitsSpotted != _unit->getUnitsSpottedThisTurn().size());
 

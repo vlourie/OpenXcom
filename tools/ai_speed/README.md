@@ -363,6 +363,56 @@ py -3.13 tools/ai_speed/run_one.py --mission STR_LOC_CITY_OF_THE_DEAD_SCOUTING -
 py -3.13 tools/ai_speed/cmp_runs.py e45_ci0 e45_ci1
 ```
 
+## Аудит FOV на шаге — `OXCE_AI_WALKFOVPROF` (с build-ai47)
+
+Только прибор, по слову второго мнения (пункт 4 порядка): «не отключать FOV, а сначала snapshot
+до/после и посмотреть, что реально изменилось». `UnitWalkBState::think` после каждого законченного
+шага зовёт `BattlescapeState::updateSoldierInfo()` «обновить панель ОВ» (строка 201), а внутри —
+`calculateFOV(getSelectedUnit())`, полный пересчёт обзора **выбранного** юнита (тайлы и юниты), если
+`playableUnitSelected()` (сторона игрока); на стороне ИИ вызов выходит до FOV. FOV самого шага
+(юниты для всех наблюдателей вокруг ходока, строка 228) идёт следом в той же функции. Прибор —
+`AiProbe::walkFovBefore / walkFovAfter / walkFovConfirm` вокруг строк 201 и 228: снимок обзора
+выбранного до вызова (видимые юниты и тайлы, список замеченных за ход, `getVisible` /
+`turnsSinceSpotted` / `ForSnipers` всех юнитов, число открытых частей карты), снимок после, и после
+FOV шага — что из добавленного вызовом шаг оставил. Время вызова — `steady_clock` вокруг
+`updateSoldierInfo`, цена снимков отдельно (`probe_overhead_us`). Режим 1 — снимки и время, режим 2 —
+только время (снимки обходят всю карту и остужают кэш, время режима 1 — верхняя граница). Порядок
+кода не менялся, флаг в списке skip `cfgText`, выключен — ничего не считается; в сборке для игроков
+заглушки. Строка в итоге боя:
+
+`[AIWALKFOV] mode= walk_fov_calls= walk_fov_ran= walk_fov_selected_player= walk_fov_bot= walk_fov_ai=
+walk_fov_other= walk_fov_selected_is_walker= walk_fov_selected_other= walk_fov_time_us=
+walk_fov_noop_time_us= probe_overhead_us= walk_fov_changed_visible_tiles= tiles_added= tiles_removed=
+walk_fov_new_discovered= discovered_parts= walk_fov_changed_visible_units= units_added=
+units_removed= walk_fov_changed_spotted_units= spotted_added= units_set_visible_hostile=
+units_set_visible_other= turns_since_spotted_reset= snipers_set= added_kept_by_step_fov=
+added_not_kept_by_step_fov= spotted_not_kept_by_step_fov= removed_back_by_step_fov=
+step_changed_visible_units= no_step_fov= sneakyAI=`
+
+`walk_fov_ran` — вызовов, дошедших до FOV (сторона игрока); `walk_fov_ai` — ходок на стороне ИИ
+(FOV не было); `*_not_kept_by_step_fov` — юниты, которые вызов 201 добавил в обзор выбранного (или в
+список замеченных за ход), а FOV шага 228 уже не видит: единственный след 201 в механике по коду
+(вызов стоит до `calculateLighting` 226). Читатели изменённого до следующего штатного пересчёта —
+аудит п. 14.2 (тайлы — только отрисовка, миникарта, отладка и `sneakyAI`, в стенде off).
+
+Цифры 01.10 (build-ai47, exe `ab5c0640613771a7`, зерно 201, станция / город / ниндзя): вызовов 2 165 /
+12 088 / 8 270, из них на стороне ИИ без FOV 28 / 90 / 81 %, остальные — бот, выбранный всегда ходок;
+время вызова (режим 2) 5,74 / 0,83 / 1,91 с = 8,7 / 1,1 / 2,9 % боя под EcoQoS (3,7 / 0,67 / 1,23 мс
+на вызов); без EcoQoS (`--unthrottle 1`, `t47_*`)
+5,07 / 0,79 / 1,80 с на боях 56,3 / 69,6 / 61,3 с = 9,0 / 1,1 / 2,9 % — та же доля; тайлы меняются в 96–100 % вызовов (1,49 млн добавлено / 1,73 млн убрано на станции),
+юниты — в 5 / 23 / 28 %; **все 580 добавленных юнитов на месте после FOV шага, потеряно 0, замеченных
+за ход не видно 0, вернувшихся 0** — юнитовая часть вызова на измеренных боях целиком повторена FOV
+шага, остаётся только интерфейс (панель, кнопки врагов, открытые тайлы). Приёмка: шесть потоков `=`
+у режимов 1 и 2 против 0 на трёх картах (`path` пуст по замыслу); fair22 `p47w2` IDENTICAL 22 из 22 против `p45f2` (первая серия `p47w1` —
+DIFFERENT из-за задвоенной метки, R-164). Аудит п. 14.
+
+```powershell
+py -3.13 tools/ai_speed/run_one.py --mission STR_LOC_CITY_OF_THE_DEAD_SCOUTING --seed 201 --name f47_ci0 --build E:/OpenXCom/build-ai47
+py -3.13 tools/ai_speed/run_one.py --mission STR_LOC_CITY_OF_THE_DEAD_SCOUTING --seed 201 --name f47_ci1 --build E:/OpenXCom/build-ai47 --env OXCE_AI_WALKFOVPROF=1
+py -3.13 tools/ai_speed/run_one.py --mission STR_LOC_CITY_OF_THE_DEAD_SCOUTING --seed 201 --name f47_ci2 --build E:/OpenXCom/build-ai47 --env OXCE_AI_WALKFOVPROF=2
+py -3.13 tools/ai_speed/cmp_runs.py f47_ci0 f47_ci1 f47_ci2
+```
+
 Профиль:
 
 ```powershell
