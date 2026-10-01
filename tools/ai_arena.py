@@ -65,6 +65,42 @@ def seeds_of(spec):
     return out
 
 
+def provenance(a):
+    """Происхождение серии - перед КАЖДЫМ стартом (и при --resume): хэш exe, сборка, коммит, окружение боя.
+    Пишется в stdout (журнал воркера logs/<label>.out) и дописывается в arena/<label>.prov.txt рядом с таблицей.
+    Коммит - из BUILD_INFO.txt в каталоге exe (пишется при упаковке сборки), в сам exe он не зашит."""
+    import datetime, hashlib
+    exe = ai_probe.EXE
+    h = hashlib.sha256()
+    try:
+        with open(exe, "rb") as f:
+            for b in iter(lambda: f.read(1 << 20), b""):
+                h.update(b)
+        st = exe.stat()
+        sha, size = h.hexdigest(), st.st_size
+        mtime = datetime.datetime.fromtimestamp(st.st_mtime).isoformat(timespec="seconds")
+    except OSError as e:
+        sha, size, mtime = f"нет ({e})", "", ""
+    try:
+        info = (exe.parent / "BUILD_INFO.txt").read_text(encoding="utf-8-sig").strip().splitlines()
+    except OSError:
+        info = []
+    commit = next((ln.split("=", 1)[1] for ln in info if ln.startswith("git_commit=")), "unknown")
+    keys = ("OXCE_AI_FAST", "OXCE_AI_ENERGY_PATROL_END", "OXCE_AI_FIREPOINT_ENERGY_PATH")
+    eff = {k: v for k, v in os.environ.items() if k.startswith("OXCE_AI_") and k not in ("OXCE_AI_EXE", "OXCE_AI_GAME", "OXCE_AI_WORK")}
+    lines = [f"=== provenance {datetime.datetime.now().isoformat(timespec='seconds')} label={a.label}",
+             f"exe_sha256={sha}", f"exe_size={size}", f"exe_mtime={mtime}", f"exe_path={exe}",
+             f"build_label={exe.parent.name}", f"git_commit={commit}",
+             "effective_env: " + ", ".join(f"{k}={eff.get(k, '<unset>')}" for k in keys),
+             "all_oxce_ai_env: " + " ".join(f"{k}={eff[k]}" for k in sorted(eff)),
+             "args: " + " ".join(sys.argv[1:])]
+    print("\n".join(lines), flush=True)
+    prov = ai_probe.WORK / "arena" / f"{a.label}.prov.txt"
+    prov.parent.mkdir(parents=True, exist_ok=True)
+    with open(prov, "a", encoding="utf-8") as f:
+        f.write("\n".join(lines) + "\n")
+
+
 SLOTS = queue.Queue()
 LABEL = "arena"
 
@@ -224,6 +260,7 @@ def main():
             raise SystemExit(f"--env {kv}: только OXCE_AI_*")
         os.environ[k] = v  # ai_probe.run копирует окружение в процесс боя
 
+    provenance(a)
     seeds = seeds_of(a.seeds)
     missions = [None]
     if a.missions:
