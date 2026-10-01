@@ -36,8 +36,15 @@ namespace HdGentle
 	constexpr int UNIT_SPEED = 60;
 	/// Projectile pixels per frame while the mode is on: half the stock 6.
 	constexpr int FIRE_SPEED = 3;
-	/// The camera does not fly after any shot; it only goes to hits on own and neutral units (Map::drawTerrain).
-	constexpr int TRACE_PROJECTILES = 3;
+	/// The camera does not fly after any shot and stays put on hits too (Map::drawTerrain, keepCameraOnShooter):
+	/// mode 3 jumped to the soldier hit by a reaction shot and back. Where the fire came from is shown by
+	/// an arrow at that soldier and the shooter's number colour instead (Map::noteGentleShot).
+	constexpr int TRACE_PROJECTILES = 4;
+	/// Palette index of the reaction-fire marks: start of the yellow-orange ramp in both the stock
+	/// and the X-Piratez battle palettes (224,160,0), apart from the red, green, blue and purple of the numbers.
+	constexpr Uint8 REACTION_COLOR = 18;
+	/// How long the arrow towards a reaction shooter stays at the soldier fired at, ms (picture clock).
+	constexpr Uint32 REACTION_ARROW_MS = 3000;
 
 	inline bool on() { return Options::oxceGentle; }
 

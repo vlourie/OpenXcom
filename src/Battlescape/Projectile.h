@@ -86,6 +86,8 @@ public:
 	Position getOrigin() const;
 	/// Gets the targetted tile for the projectile.
 	Position getTarget() const;
+	/// Gets the unit that fired it (the picture marks reaction shots by it).
+	const BattleUnit *getActor() const { return _action.actor; }
 	/// Gets the distance that projectile traveled.
 	float getDistance() const;
 	/// Is this projectile being drawn back-to-front or front-to-back?

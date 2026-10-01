@@ -2513,12 +2513,18 @@ void BattlescapeState::blinkVisibleUnitButtons()
 		{
 			_btnVisibleUnit[i]->drawRect(0, 0, 15, 12, 15);
 			int bgColor = i < _numberOfDirectlyVisibleUnits ? color : i < _numberOfEnemiesTotal ? _indicatorGreen : i < _numberOfEnemiesTotalPlusWounded ? _indicatorBlue : _indicatorPurple;
+			// gentle mode: the camera no longer goes to reaction fire, so its shooters stand out instead, steady
+			const bool reacted = HdGentle::on() && _map->firedReactionThisTurn(_visibleUnit[i]);
+			if (reacted)
+			{
+				bgColor = HdGentle::REACTION_COLOR;
+			}
 			_btnVisibleUnit[i]->drawRect(1, 1, 13, 10, bgColor);
 
 			// mirror the same number above the unit itself, but only for directly visible enemies;
 			// OXCE-HD: Options::oxceHdEnemyNumber - 0 no number, 1 blinking as the button, 2 steady at the ramp's start
 			const bool marked = i < _numberOfDirectlyVisibleUnits && Options::oxceHdEnemyNumber > 0;
-			_map->setUnitMarker(i, marked ? _visibleUnit[i] : 0, (Uint8)(Options::oxceHdEnemyNumber == 2 ? 32 : bgColor));
+			_map->setUnitMarker(i, marked ? _visibleUnit[i] : 0, (Uint8)(Options::oxceHdEnemyNumber == 2 && !reacted ? 32 : bgColor));
 		}
 		else
 		{
