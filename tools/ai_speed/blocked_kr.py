@@ -158,9 +158,17 @@ def main():
                 rec1, turn1 = c["stops"][0][0], c["stops"][0][1]
                 nxt = next((rr for rr, d in c["tl"] if rr > rec1 and d["turn"] == turn1), None)
                 d = K[battle].get(nxt, {})
-                expl["нет kr.dec (решение не на A)" if d.get("krdec") is None else
-                     "ревизия та же" if any(s[4] == d["krdec"] for s in K[battle][rec1].get("stops", [])
-                                            if s[0] == c["A"] and s[1] == c["B"]) else "ревизия другая"] += 1
+                st = [s for s in K[battle][rec1].get("stops", []) if s[0] == c["A"] and s[1] == c["B"]]
+                if d.get("krdec") is None or not st:
+                    expl["нет kr.dec (решение не на A)"] += 1
+                elif st[0][4] != d["krdec"]:
+                    expl["ревизия другая"] += 1
+                elif d.get("first") != st[0][2]:
+                    expl["ревизия та же, выбрал другой шаг или не ходил"] += 1
+                elif any(s[0] == c["A"] and s[1] == c["B"] for s in d.get("stops", [])):
+                    expl["ревизия та же, тот же шаг снова остановлен"] += 1
+                else:
+                    expl["ревизия та же, тот же шаг ПРОШЁЛ"] += 1
     same = [k for k in total if k.startswith("та же ревизия, тот же шаг")]
     print("\nсводка для второго мнения:")
     print(f"  memory_candidates (та же ревизия и тот же первый шаг): {sum(total[k] for k in same)}")
