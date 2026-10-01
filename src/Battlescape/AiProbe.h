@@ -260,6 +260,9 @@ void sideEnds(SavedBattleGame *save);
 /// One line per unit killed or knocked out ([AICASUALTY]): by whom, with what, from how far, on whose turn.
 void logCasualty(SavedBattleGame *save, const BattleUnit *victim, const BattleUnit *killer, const std::string &weapon,
 	bool dead, int hitSide, bool terrain);
+/// One line per event the gentle on/off check must cover ([AIEVENT]): a reaction shot, an area explosion; the camera's
+/// floor is logged by think. Separate from [AIRESULT] tac=, so the AI series comparing builds do not see it.
+void event(SavedBattleGame *save, const char *what, const BattleUnit *unit, const Position &pos);
 
 }
 

@@ -35,6 +35,8 @@
 #include "BattleState.h"
 #include "BattlescapeGame.h"
 #include "BattlescapeState.h"
+#include "Camera.h"
+#include "Map.h"
 #include "Pathfinding.h"
 #include "../Engine/Game.h"
 #include "../Engine/Logger.h"
@@ -135,6 +137,7 @@ void blockedStepDecide(SavedBattleGame *, BattleUnit *) {}
 void blockedStepPlan(SavedBattleGame *, BattleUnit *, const BattleAction &) {}
 void sideEnds(SavedBattleGame *) {}
 void logCasualty(SavedBattleGame *, const BattleUnit *, const BattleUnit *, const std::string &, bool, int, bool) {}
+void event(SavedBattleGame *, const char *, const BattleUnit *, const Position &) {}
 
 #else
 
@@ -417,6 +420,17 @@ void think(BattlescapeState *state, SavedBattleGame *save)
 	if (!active() || phase == FINISHED)
 	{
 		return;
+	}
+	// the camera's floor: picture only - the gentle on/off check counts it for coverage and never compares it
+	static int viewLevel = -1;
+	const int view = state->getMap()->getCamera()->getViewLevel();
+	if (view != viewLevel)
+	{
+		if (viewLevel >= 0)
+		{
+			event(save, "view", save->getSelectedUnit(), Position(viewLevel, view, 0)); // pos = (from, to, 0)
+		}
+		viewLevel = view;
 	}
 	recordTurn(save);
 	if (bot())
@@ -2711,6 +2725,19 @@ void logCasualty(SavedBattleGame *save, const BattleUnit *victim, const BattleUn
 		<< " weapon=" << weapon
 		<< " hit=" << (hitSide >= 0 && hitSide < 5 ? sides[hitSide] : "-")
 		<< " terrain=" << (terrain ? 1 : 0);
+}
+
+void event(SavedBattleGame *save, const char *what, const BattleUnit *unit, const Position &pos)
+{
+	if (!active())
+	{
+		return;
+	}
+	Log(LOG_INFO) << "[AIEVENT] turn=" << save->getTurn()
+		<< " side=" << (int)save->getSide()
+		<< " what=" << what
+		<< " unit=" << (unit ? unit->getId() : -1)
+		<< " pos=" << pos;
 }
 
 namespace
