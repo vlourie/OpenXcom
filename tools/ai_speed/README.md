@@ -214,6 +214,51 @@ py -3.13 tools/ai_speed/run_one.py --mission STR_LOC_SPACE_STATION_1 --seed 201 
 py -3.13 tools/ai_speed/ambush_prof.py amb_st1
 ```
 
+## Отрицательная память засады — `OXCE_AI_AMBUSH_MEMO` (с build-ai43, AMBUSH_NEGATIVE_MEMO_V1)
+
+Профиль выше показал: засада станции — 222 неудачных A* врага по 39 мс, из них 104 — повторные к тому
+же врагу в том же вызове `setupAmbush`. Утверждение, которое запоминается: A* в `Pathfinding::calculate`
+сбрасывает все узлы и снимает открытый список до пустого, так что после **неудачи** (раскрытых узлов
+> 0, пути нет) закрытые узлы — это все клетки, куда враг вообще может дойти с места, где стоит, при
+этих же ценах; узел вне них недостижим для того же запроса (тот же враг, та же клетка, `BAM_NORMAL`,
+без ракеты, потолок 1000). `Pathfinding::closedTiles` отдаёт эти флаги (только чтение; пусто, если
+последний поиск не был такой неудачей — ранний отказ до A* оставляет флаги старого поиска — или
+хоть один закрытый узел стоил больше половины потолка: у потолка порядок обхода мог бы закрыть
+клетку другой ценой). Память — локальная `std::vector<char>` в `AIModule::setupAmbush`: засевается
+первой такой неудачей вызова, узлы вне неё пропускают поиск врага (`continue` — весь код после
+неудачного поиска и так под `if (enemyPath)`), узлы внутри ищутся как прежде (положительный ответ
+не повторяется никогда), на выходе из вызова уничтожается; в `Pathfinding` ничего не хранится,
+между решениями ничего не переживает. Режимы: `0` — выключено (по умолчанию), `1` — пропускать,
+`2` — проверка: поиск идёт всё равно, а ответ памяти сверяется с ним (`[AIAMBMEMO] … bad=` обязан
+быть 0 — это контрольный опыт утверждения, R-086). Строка `[AIAMBMEMO] mode= skip= verify= bad=` в
+итоге боя пишется и без профиля; с профилем в `[AIAMB]` поля `memo= mver= mbad=`, пропущенный узел —
+`[AIAMBN] … exp=0 us=0 … memo=1`, `ambush_prof.py` считает его отдельно от поисков. В сборке для
+игроков `ambushMemo()` — 0, памяти нет. Цифры (станция, зерно 201, та же сборка, пара без EcoQoS
+`--unthrottle 1`, memo 0 → 1): засада 8,93 → 4,76 с (28,7 → 17,8 % think), think 31,10 → 26,69 с,
+бой 77,7 → 72,9 с, неудачных A* врага 222 → 123, памятью отвечено 99 (из 104 повторов 5 не
+отвечены: первая неудача вызова была ранним отказом, exp=0, засевать нечем); режим 2 — 99 проверено,
+0 расхождений; бомбардировщик — 6 неудач по одной на вызов, память не срабатывает, время то же;
+семь потоков `=` на обеих картах; fair22 с `OXCE_AI_AMBUSH_MEMO=1` (`p43m1b`) IDENTICAL 22/22 против
+той же сборки без памяти и против build-ai41 — `docs/research/ai-path-audit-2026-10-01.md`, п. 8.
+Флаг стоит в списке skip `AiProbe::cfgText`: без этого `cfg` в `[AIRECHEAD]` отличается, и
+`series_eq.py` даёт DIFFERENT по `rec` во всех боях при побайтно тех же записях (так вышло с первым
+шлюзом `p43m1`) — новый флаг стенда, который меняет, что считается, а не как играет стенд, добавлять
+туда сразу.
+
+```powershell
+py -3.13 tools/ai_speed/run_one.py --mission STR_LOC_SPACE_STATION_1 --seed 201 --name amb_st0u --build E:/OpenXCom/build-ai43 --unthrottle 1 --env OXCE_AI_PATHPROF=1 --env OXCE_AI_AMBUSHPROF=1 --env OXCE_AI_AMBUSH_MEMO=0
+py -3.13 tools/ai_speed/run_one.py --mission STR_LOC_SPACE_STATION_1 --seed 201 --name amb_st1u --build E:/OpenXCom/build-ai43 --unthrottle 1 --env OXCE_AI_PATHPROF=1 --env OXCE_AI_AMBUSHPROF=1 --env OXCE_AI_AMBUSH_MEMO=1
+py -3.13 tools/ai_speed/run_one.py --mission STR_LOC_SPACE_STATION_1 --seed 201 --name am_st2 --build E:/OpenXCom/build-ai43 --env OXCE_AI_PATHPROF=1 --env OXCE_AI_AMBUSHPROF=1 --env OXCE_AI_AMBUSH_MEMO=2
+py -3.13 tools/ai_speed/cmp_runs.py amb_st0u amb_st1u am_st2
+py -3.13 tools/ai_speed/ambush_prof.py amb_st0u amb_st1u am_st2
+```
+
+База для сравнения — прогон **той же сборки** с `OXCE_AI_AMBUSH_MEMO=0`: прогон прежней сборки
+расходится по `rec`/`cand`/`path` из-за своей записи (R-087; строка `[AIREUSE]` в логе выдаёт сборку).
+С build-ai43 `run_one.py` пишет в json отпечаток exe (`exe_sha256`, размер, время), а `cmp_runs.py`
+печатает `!! сборка другая`, если база снята другим exe; у прогонов до отпечатка — пометку, что сборка
+не записана.
+
 Профиль:
 
 ```powershell

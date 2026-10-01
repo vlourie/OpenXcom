@@ -79,6 +79,8 @@ private:
 	std::optional<Position> _teleportDestination;
 	/// nodes the last calculate's A* took off its open list (0 after a straight path or no search): what the search cost, for the bench
 	int _expanded = 0;
+	/// The cap the last A* ran under (closedTiles).
+	int _searchCap = 0;
 
   public:
 	/// Determines whether the unit is going up a stairs.
@@ -288,6 +290,10 @@ private:
 	int getTotalTUCost() const { return _totalTUCost.time; }
 	/// Nodes the last calculate's A* expanded; 0 when the straight path did or nothing was searched.
 	int getExpanded() const { return _expanded; }
+	/// AMBUSH_NEGATIVE_MEMO_V1 (bench, AIModule::setupAmbush): the tiles the last calculate() closed when its A* ran out of open
+	/// nodes - every tile the unit can reach from where it stands under that search's costs; empty unless the last search failed
+	/// that way with every closed tile under half its cap. Read only; the next search overwrites the flags it reads.
+	std::vector<char> closedTiles() const;
 	/// Gets the path preview setting.
 	bool isPathPreviewed() const;
 	/// Gets the modifier setting.

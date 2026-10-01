@@ -100,6 +100,14 @@ void ambushEnemy(const Position &pos, bool ok, int cost, int len, int expanded, 
 void ambushScored(int score, bool cover, bool taken);
 /// setupAmbush ends: chosen - it set a walk, best - its score, target - the node, tus - the cost it kept, fast - it stopped early.
 void ambushEnd(bool chosen, int best, const Position &target, int tus, bool fast);
+/// AMBUSH_NEGATIVE_MEMO_V1 (OXCE_AI_AMBUSH_MEMO): inside one setupAmbush, once the enemy's A* to a node ran out of open nodes,
+/// a node outside the tiles it closed has no path from the enemy (Pathfinding::closedTiles) and its search is skipped. The
+/// memo lives in that call only. 0 - off (the default), 1 - skip, 2 - verify: search anyway and count answers that disagree
+/// (none expected; the control of the statement). In the release build 0.
+int ambushMemo();
+/// A node the memo answered: skipped - its search was not run (mode 1); ok - what the search still run gave (mode 2);
+/// own, score, best as ambushEnemy. [AIAMBN] with memo=1 for a skipped node; counts in [AIAMB] and the memo total line.
+void ambushMemoNode(const Position &pos, bool skipped, bool ok, int own, int score, int best);
 /// Does the AI play the player's side right now (OXCE_AI_BOT)?
 bool botTurn(const SavedBattleGame *save);
 /// The seed of a generated battle (OXCE_AI_SEED), or -1.

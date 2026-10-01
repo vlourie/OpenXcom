@@ -252,6 +252,7 @@ void Pathfinding::calculate(BattleUnit *unit, Position endPosition, BattleAction
 		maxTUCost = 10000;
 	}
 	// Now try through A*.
+	_searchCap = maxTUCost;
 	if (!aStarPath(startPosition, endPosition, bam, missileTarget, sneak, maxTUCost))
 	{
 		abortPath();
@@ -264,6 +265,39 @@ void Pathfinding::calculate(BattleUnit *unit, Position endPosition, BattleAction
 	{
 		asked->algo = 2;
 	}
+}
+
+/**
+ * AMBUSH_NEGATIVE_MEMO_V1 (bench, AIModule::setupAmbush): the tiles the last calculate() closed when its A* ran out of open
+ * nodes. aStarPath resets every node, pops the open list until it is empty and marks each popped node checked, so after a
+ * failure the checked nodes are every tile the unit can reach from where it stands under that search's costs - and a tile
+ * outside them has no path for the same unit, start and move type. Empty unless the last search failed in A* (expanded nodes
+ * and no path: a destination refused before the search leaves the flags of an older one) and every closed tile cost under
+ * half the cap: near the cap another search's order could close a tile at another cost and push or drop a neighbour
+ * differently, so the closed set would not be the whole reachable component.
+ * @return A flag per tile index, or empty.
+ */
+std::vector<char> Pathfinding::closedTiles() const
+{
+	std::vector<char> out;
+	if (_expanded == 0 || getStartDirection() != -1)
+	{
+		return out;
+	}
+	out.assign(_nodes.size(), 0);
+	for (size_t i = 0; i < _nodes.size(); ++i)
+	{
+		if (_nodes[i].isChecked())
+		{
+			if (_nodes[i].getTUCost(false).time * 2 > _searchCap)
+			{
+				out.clear();
+				return out;
+			}
+			out[i] = 1;
+		}
+	}
+	return out;
 }
 
 /**

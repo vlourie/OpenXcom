@@ -9,7 +9,10 @@
 (efail), их раскрытые узлы A* (expok/expfail) и время (tok/tfail, мкс), сколько раз лучший менялся (taken), выбран ли узел,
 ранний выход (fast). На каждый поиск врага - строка [AIAMBN]: узел, расстояние до юнита (d) и до врага (de), свой путь (own),
 дошёл ли враг (ok), его ОВ и шаги (cost, len), раскрытые узлы (exp), время (us), счёт до укрытия (s0) против лучшего на тот
-момент (best), укрытие (cover), итоговый счёт (s), стал ли лучшим (take).
+момент (best), укрытие (cover), итоговый счёт (s), стал ли лучшим (take). Узел, который отрицательная память засады
+(OXCE_AI_AMBUSH_MEMO=1) ответила без поиска, идёт строкой [AIAMBN] ... memo=1 (exp=0, us=0): в счёт поисков не входит,
+считается отдельно; в режиме проверки (=2) поиск идёт, а в [AIAMB] mver - сколько узлов память ответила, mbad - сколько
+ответов разошлись с поиском (обязано быть 0). Итог памяти за бой - строка [AIAMBMEMO] (пишется и без профиля).
 
 Ответы, которые нужны второму мнению: сколько узлов рассматривается; сколько A* успешны; сколько отсеивается уже после
 дорогого A*; стоимость выбранного узла относительно остальных; сколько узлов можно было бы отвергнуть до A* по заведомо
@@ -38,22 +41,24 @@ def parse_line(body):
 
 def read_run(work, name):
     """Строки прогона: вызовы setupAmbush, поиски врага, итог; время think из [AIPF] total, если профиль пути был включён."""
-    calls, nodes, total, think_us = [], [], None, None
+    calls, nodes, memo, total, think_us, memo_total = [], [], [], None, None, None
     log = work / ("var_" + name) / "openxcom.log"
     with open(log, encoding=ENC_R, errors="replace") as f:
         for raw in f:
             body = raw.rstrip("\n").split("\t", 2)[-1]
             if body.startswith("[AIAMB] total "):
                 total = parse_line(body[14:])
+            elif body.startswith("[AIAMBMEMO] "):
+                memo_total = parse_line(body[12:])
             elif body.startswith("[AIAMB] "):
                 calls.append(parse_line(body[8:]))
             elif body.startswith("[AIAMBN] "):
                 n = parse_line(body[9:])
                 n["call"] = len(calls)  # the call this search belongs to: its [AIAMB] line follows its [AIAMBN] lines
-                nodes.append(n)
+                (memo if n.get("memo") else nodes).append(n)  # a node the memo answered is not a search
             elif body.startswith("[AIPF] total "):
                 think_us = parse_line(body[13:]).get("tt")
-    return calls, nodes, total, think_us
+    return calls, nodes, memo, total, think_us, memo_total
 
 
 def pct(a, b):
@@ -67,12 +72,15 @@ def dist(xs):
     return f"ср {statistics.mean(xs):.0f}, медиана {xs[len(xs) // 2]}, макс {xs[-1]}"
 
 
-def summary(name, calls, nodes, total, think_us):
+def summary(name, calls, nodes, memo, total, think_us, memo_total):
     t = total
     print(f"=== {name}")
+    if memo_total:
+        print(f"  отрицательная память засады: режим {memo_total['mode']}, узлов отвечено без поиска {memo_total['skip']},"
+              f" проверено поиском {memo_total['verify']}, разошлось {memo_total['bad']}" + (" - ОШИБКА" if memo_total["bad"] else ""))
     if not t:
         print("  нет строки [AIAMB] total - бой не дошёл до итога или флаг выключен")
-        return {}
+        return {"memo": memo_total} if memo_total else {}
     out = {"calls": t["calls"], "chosen": t["chosen"], "fast": t["fast"], "us": t["us"], "think_us": think_us,
            "nodes": t["nodes"], "near": t["near"], "hidden": t["hidden"], "own": t["own"],
            "eok": t["eok"], "efail": t["efail"], "tok": t["tok"], "tfail": t["tfail"], "expok": t["expok"], "expfail": t["expfail"]}
@@ -91,6 +99,10 @@ def summary(name, calls, nodes, total, think_us):
     print(f"  отсеяно после дорогого A*: {wasted} из {e} ({pct(wasted, e)}) - не дошёл враг {t['efail']},"
           f" дошёл, но счёт не выше лучшего {t['eok'] - t['taken']}, стал лучшим и перебит позже {t['taken'] - t['chosen']}")
     out["wasted"] = wasted
+    if memo_total:
+        out["memo"] = memo_total
+        print(f"  память засады по вызовам: отвечено без поиска {t.get('memo', 0)} в {sum(1 for c in calls if c.get('memo'))} вызовах,"
+              f" проверено {t.get('mver', 0)}, разошлось {t.get('mbad', 0)}; узлов memo=1 в строках {len(memo)}")
     if nodes:
         # safe pre-filter: the node cannot beat the best so far even with cover - the code takes a node only at score > best
         safe = [n for n in nodes if n["s0"] + COVER_BONUS <= n["best"]]
@@ -171,8 +183,8 @@ def main():
     work = probe_work()
     allsum = {}
     for name in a.names:
-        calls, nodes, total, think_us = read_run(work, name)
-        allsum[name] = summary(name, calls, nodes, total, think_us)
+        calls, nodes, memo, total, think_us, memo_total = read_run(work, name)
+        allsum[name] = summary(name, calls, nodes, memo, total, think_us, memo_total)
     if a.json:
         with open(a.json, "w", encoding=ENC_W) as f:
             json.dump(allsum, f, ensure_ascii=False, indent=1)
