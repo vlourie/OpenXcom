@@ -38,7 +38,8 @@ namespace HdGentle
 	constexpr int FIRE_SPEED = 3;
 	/// The camera does not fly after any shot and stays put on hits too (Map::drawTerrain, keepCameraOnShooter):
 	/// mode 3 jumped to the soldier hit by a reaction shot and back. Where the fire came from is shown by
-	/// an arrow at that soldier and the shooter's number colour instead (Map::noteGentleShot).
+	/// an arrow at that soldier and the shooter's number colour instead (Map::noteGentleShot), each only
+	/// once the bullet was drawn in view (Map::noteGentleTrail): never more than the trail itself showed.
 	constexpr int TRACE_PROJECTILES = 4;
 	/// Palette index of the reaction-fire marks: start of the yellow-orange ramp in both the stock
 	/// and the X-Piratez battle palettes (224,160,0), apart from the red, green, blue and purple of the numbers.

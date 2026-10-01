@@ -134,15 +134,22 @@ private:
 	Uint8 _unitMarkerColor[UNIT_MARKER_MAX];
 	SurfaceSet *_projectileSet;
 	/// Gentle mode: a reaction shot of this turn, for the arrow at the soldier fired at (picture only).
+	/// The arrow tells no more than the shot's trail did: it shows only once the bullet was drawn in view
+	/// (seen), and the shooter's number turns only once it was drawn by the shooter (seenOrigin).
 	struct GentleShot
 	{
-		const BattleUnit *shooter, *target;
+		const BattleUnit *shooter;
 		Position from, at;
-		Uint32 ticks;
+		int height;
+		Uint32 ticks, id;
+		bool seen, seenOrigin;
 	};
 	std::vector<GentleShot> _gentleShots;
 	std::vector<const BattleUnit*> _gentleShooters;
 	int _gentleTurn = -1;
+	Uint32 _gentleShotId = 0, _gentleFlying = 0;
+	/// Gentle mode: the bullet of the shot in flight was drawn at this voxel, this screen point.
+	void noteGentleTrail(const Position &voxel, const Position &screen, int width);
 	static const int GENTLE_ARROW_STEPS = 32;
 	Surface *_gentleArrow[GENTLE_ARROW_STEPS] = {};
 	int _gentleArrowScale = 0;
