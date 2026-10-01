@@ -274,7 +274,8 @@ void Pathfinding::calculate(BattleUnit *unit, Position endPosition, BattleAction
  * outside them has no path for the same unit, start and move type. Empty unless the last search failed in A* (expanded nodes
  * and no path: a destination refused before the search leaves the flags of an older one) and every closed tile cost under
  * half the cap: near the cap another search's order could close a tile at another cost and push or drop a neighbour
- * differently, so the closed set would not be the whole reachable component.
+ * differently, so the closed set would not be the whole reachable component. These guards are what AIModule::setupAmbush's
+ * memo relies on: loosening one changes what it may remember and needs that memo's acceptance again.
  * @return A flag per tile index, or empty.
  */
 std::vector<char> Pathfinding::closedTiles() const

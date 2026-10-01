@@ -1138,6 +1138,10 @@ void AIModule::setupAmbush()
 		// AMBUSH_NEGATIVE_MEMO_V1 (bench, AiProbe::ambushMemo): the tiles the enemy's first search of this call that ran out of
 		// open nodes closed - everything it can reach from where it stands (Pathfinding::closedTiles); a node outside them has
 		// no path from it, and that search is skipped. Empty until such a search; dies with this call, nothing crosses decisions.
+		// Invariant (accepted 01.10): only NO_PATH proven by a full A* - open list emptied, no early refusal, no cap hit
+		// (closedTiles is empty otherwise) - is remembered; a positive answer is never reused; the memo lives in this call only.
+		// Widening any of the three (another search's result, a cap, a longer life) is a new change with its own acceptance:
+		// seven streams = against the memo off, mode 2 (verify) with 0 disagreements, fair22 IDENTICAL.
 		const int memo = AiProbe::ambushMemo();
 		std::vector<char> enemyReach;
 
