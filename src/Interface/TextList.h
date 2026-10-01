@@ -61,19 +61,21 @@ private:
 	int _arrowsLeftEdge, _arrowsRightEdge;
 	int _noScrollLeftEdge, _noScrollRightEdge;
 	ComboBox *_comboBox;
-	/// OXCE-HD: pictures before the rows (setIconColumn / setRowIcon).
+	/// OXCE-HD: pictures before the rows (setIconColumn / setRowIcon / setRowIcons).
 	struct Icon
 	{
 		Surface *trimmed = nullptr;       ///< the frame without its transparent edge: what the HD mirror scales
-		Surface *fitted = nullptr;        ///< the classic picture, scaled down to the column and the line
-		int x = 0, y = 0;                 ///< where it sits in the column and the line
+		Surface *fitted = nullptr;        ///< the classic picture, scaled down to the slot and the line
+		int x = 0, y = 0;                 ///< where it sits in its slot and the line
 	};
 	static const int ICON_COLUMNS = 2;
-	int _iconX[ICON_COLUMNS] = {}, _iconW[ICON_COLUMNS] = {};
-	std::vector<Surface*> _rowIcons[ICON_COLUMNS];                ///< by column and row: the frame given (not owned)
+	int _iconX[ICON_COLUMNS] = {}, _iconW[ICON_COLUMNS] = {}, _iconSlots[ICON_COLUMNS] = { 1, 1 };
+	std::vector<std::vector<Surface*> > _rowIcons[ICON_COLUMNS];  ///< by column and row: the frames given, one per slot (not owned)
 	std::map<std::pair<Surface*, int>, Icon> _iconCache;          ///< by frame and column (owned)
-	/// The picture of a row in a column, made when first asked for; nullptr when the row has none.
-	const Icon *rowIcon(size_t row, int col);
+	/// The picture of a frame in a column, made when first asked for; nullptr when the frame is empty.
+	const Icon *frameIcon(Surface *frame, int col);
+	/// Calls fn(icon, x in the list) for every picture of a row.
+	template<typename Fn> void forRowIcons(size_t row, Fn fn);
 
 	/// Updates the arrow buttons.
 	void updateArrows();
@@ -235,10 +237,13 @@ public:
 	void setIgnoreSeparators(bool ignoreSeparators);
 	/// OXCE-HD: the column of row pictures, `width` pixels from `x` (in the list); width 0 = no pictures.
 	/// The columns of text are not moved: leave them room with setMargin / setColumns. `col` 0 or 1: two such columns.
-	void setIconColumn(int x, int width, int col = 0);
+	/// `slots`: the column split into that many equal places, the row's pictures one after another (setRowIcons).
+	void setIconColumn(int x, int width, int col = 0, int slots = 1);
 	/// OXCE-HD: the picture of a row: a sprite frame, its transparent edge trimmed and the rest scaled
 	/// to fit the column and the line (the HD mirror scales it from the full frame); nullptr = none.
 	void setRowIcon(size_t row, Surface *frame, int col = 0);
+	/// OXCE-HD: several pictures of a row, from the left slot of the column on; those past its slots are not drawn.
+	void setRowIcons(size_t row, const std::vector<Surface*> &frames, int col = 0);
 };
 
 }

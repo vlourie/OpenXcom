@@ -83,6 +83,7 @@ OPT int oxcePediaSortResistances; // hidden, unhide if becomes popular?
 OPT int oxceInterceptTableSize;
 OPT bool oxceEnableSlackingIndicator;
 OPT int oxceInterceptGuiMaintenanceTime;
+OPT bool oxceCraftWeaponIcons;
 OPT int oxceShowETAMode;
 OPT bool oxceUfoLandingAlert;
 OPT bool oxceRememberDisabledCraftWeapons;

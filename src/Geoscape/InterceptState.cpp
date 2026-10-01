@@ -194,6 +194,40 @@ InterceptState::InterceptState(Globe *globe, bool useCustomSound, Base *base, Ta
 		);
 	}
 
+	// OXCE-HD: the pictures of the installed weapons and equipment before the craft name (Options::oxceCraftWeaponIcons),
+	// 9 pixels each. The room is taken from the craft, status and base columns (a quarter, a half and a quarter;
+	// without the maintenance time the status column is narrow - half from the craft column, half from the base
+	// one): the columns between move right, the weapons column stays
+	int icons = 0;
+	if (Options::oxceCraftWeaponIcons)
+	{
+		for (auto& tuple : craftList)
+		{
+			icons = std::max(icons, std::get<0>(tuple)->getNumWeapons());
+		}
+	}
+	if (icons > 0)
+	{
+		_weaponIcons = new CraftWeaponIcons(_game->getMod(), _lstCrafts->getPalette());
+		const bool maintenance = Options::oxceInterceptGuiMaintenanceTime > 0;
+		const int iconW = 9 * icons;
+		const int fromCraft = maintenance ? iconW / 4 : iconW / 2, fromStatus = maintenance ? iconW / 2 : 0;
+		const int fromBase = iconW - fromCraft - fromStatus;
+		const int margin = maintenance ? 2 : 6;
+		_lstCrafts->setIconColumn(margin, iconW, 0, icons);
+		_lstCrafts->setMargin(margin + iconW);
+		if (maintenance)
+		{
+			_lstCrafts->setColumns(4, WIDTH_CRAFT - fromCraft, WIDTH_STATUS - fromStatus, WIDTH_BASE - fromBase, WIDTH_WEAPONS);
+		}
+		else
+		{
+			_lstCrafts->setColumns(4, 86 - fromCraft, 70, 80 - fromBase, 46);
+		}
+		_txtStatus->setX(_txtStatus->getX() + iconW - fromCraft);
+		_txtBase->setX(_txtBase->getX() + fromBase);
+	}
+
 	int row = 0;
 	for (auto& tuple : craftList)
 	{
@@ -362,6 +396,10 @@ InterceptState::InterceptState(Globe *globe, bool useCustomSound, Base *base, Ta
 			}
 			_crafts.push_back(xcraft);
 			_lstCrafts->addRow(4, xcraft->getName(_game->getLanguage()).c_str(), ssStatus.str().c_str(), xbase->getName().c_str(), ss.str().c_str());
+			if (_weaponIcons)
+			{
+				_lstCrafts->setRowIcons(row, _weaponIcons->of(xcraft));
+			}
 			if (hasEnoughPilots && status == "STR_READY")
 			{
 				_lstCrafts->setCellColor(row, 1, _lstCrafts->getSecondaryColor());
@@ -399,7 +437,7 @@ InterceptState::InterceptState(Globe *globe, bool useCustomSound, Base *base, Ta
  */
 InterceptState::~InterceptState()
 {
-
+	delete _weaponIcons;
 }
 
 /**
