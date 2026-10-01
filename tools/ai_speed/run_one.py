@@ -78,7 +78,7 @@ def main():
     ap.add_argument("--name", required=True)
     ap.add_argument("--build", default="build-ai36")
     ap.add_argument("--rec", type=int, default=1)
-    ap.add_argument("--path", type=int, default=1)
+    ap.add_argument("--path", type=int, default=0, help="[AIPATROL]: 0 нет, 1 путь патруля и что держит шаг, 2 forensic - и 17 A* к узлу")
     ap.add_argument("--turns", type=int, default=60)
     ap.add_argument("--unthrottle", type=int, default=0, help="1 - снять EcoQoS с процесса игры (R-126)")
     ap.add_argument("--timeout", type=int, default=600)
@@ -94,7 +94,7 @@ def main():
     if a.rec:
         os.environ["OXCE_AI_RECORD"] = "1"
     if a.path:
-        os.environ["OXCE_AI_RECORD_PATH"] = "1"
+        os.environ["OXCE_AI_RECORD_PATH"] = str(a.path)
     for kv in a.env:
         k, v = kv.split("=", 1)
         os.environ[k] = v

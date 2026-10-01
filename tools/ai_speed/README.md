@@ -269,6 +269,55 @@ py -3.13 tools/ai_speed/ambush_prof.py amb_st0u amb_st1u am_st2
 печатает `!! сборка другая`, если база снята другим exe; у прогонов до отпечатка — пометку, что сборка
 не записана.
 
+## Запись патруля по режимам — `OXCE_AI_RECORD_PATH` 0/1/2 (с build-ai44)
+
+Профиль по стекам (аудит п. 11) показал: `AiProbe::logPatrolPath` на каждую запись патруля с остановкой
+(`stop` не `none`) гонит до 17 полных A* стенда (`Pathfinding::pathCost`, потолок 1000) ради полей
+`before`/`best`/`best_ok` — 3 / 9,5 / 24 % боя на городе / ниндзя / станции, на станции больше всей
+засады. Второе мнение: это исследовательская диагностика L0/L1, не постоянная запись. С build-ai44
+переменная трёхзначная: `0` (умолчание) — `[AIPATROL]` не пишется; `1` — строка с путём, первым шагом,
+резервом и `stop`, кончается на `nreach`, лишних A* нет; `2` — forensic, прежняя полная строка с
+`before`/`best`/`best_ok` (побайтно та же, что режим `1` до build-ai44). След `walk.stop.<причина>` в
+`[AIEXEC]` остаётся при любом режиме — он дешёвый и нужен обучению. `run_one.py --path` теперь номер
+режима (умолчание 0), `prof_battle.py` и `hang_count.py` сами режим не ставят — `--env
+OXCE_AI_RECORD_PATH=1|2`; серии `ai_arena` — тем же `--env`. Кто читает `before/best` (`l0b_path.py`,
+сравнение «в тени» L0-B), запускает серию с `2`. Приёмка (станция, зерно 201): режим `2` build-ai44 против
+режима `1` build-ai43 — семь потоков `=`, 220 строк `[AIPATROL]`, 84 с `before` у обоих; режим `1` — шесть `=`
+и `!path` (те же 220 строк без `before`), бой 72,4 → 55,1 с (−24 %); fair22 `p44f2` (режим 2) IDENTICAL
+22/22 против `p43d1`, `p44d0` (умолчания) — всё, кроме отсутствующего `path.gz`, то же, сумма боёв
+589 → 522 с. Аудит п. 12.
+
+```powershell
+py -3.13 tools/ai_speed/run_one.py --mission STR_LOC_SPACE_STATION_1 --seed 201 --name e43_st_p1 --build E:/OpenXCom/build-ai43 --path 1
+py -3.13 tools/ai_speed/run_one.py --mission STR_LOC_SPACE_STATION_1 --seed 201 --name e44_st_p2 --build E:/OpenXCom/build-ai44 --path 2
+py -3.13 tools/ai_speed/run_one.py --mission STR_LOC_SPACE_STATION_1 --seed 201 --name e44_st_p1 --build E:/OpenXCom/build-ai44 --path 1
+py -3.13 tools/ai_speed/cmp_runs.py e43_st_p1 e44_st_p2 e44_st_p1
+```
+
+## Аудит отхода — `OXCE_AI_ESCAPEPROF` (с build-ai44)
+
+Только прибор, по слову второго мнения: «до числа `unreachable` код не переставлять».
+`AIModule::setupEscape` перебирает до 150 клеток, и для каждой сначала считает `getSpottingUnits`
+(трасса `canTargetUnit` от каждого врага в 20 клетках), а уже потом смотрит, досягаема ли клетка
+(`_reachable`, AIModule.cpp) — трассы для недосягаемых клеток считаются впустую. Прибор считает по
+сторонам: вызовов `setupEscape`, кандидатов всего / досягаемых / недосягаемых / без клетки, трасс
+`canTargetUnit` на досягаемых и недосягаемых, время проб на тех и других (`steady_clock` вокруг
+`getSpottingUnits` кандидата). Строки `[AIESC] side=<player|hostile|neutral|all> escape_calls=
+escape_candidates_total= escape_candidates_reachable= escape_candidates_unreachable=
+escape_candidates_notile= canTargetUnit_calls_on_reachable= canTargetUnit_calls_on_unreachable=
+time_on_reachable_us= time_wasted_on_unreachable_us=` в итоге боя. Порядок кода не менялся, флаг в
+списке skip `cfgText`, выключен — ничего не считается; в сборке для игроков заглушки. Цифры 01.10
+(зерно 201, враг, город / ниндзя / станция): недосягаемых 63,8 / 70,2 / 65,8 % кандидатов, на них
+81 / 83 / 67 % трасс и впустую 20,0 / 6,2 / 0,8 % боя (город 18,2 с из 90,9); у бота 80–84 %
+кандидатов досягаемы. Семь потоков `=` с флагом и без на трёх картах. `ESCAPE_REACH_FIRST` по этим
+числам — решение второго мнения, не реализован. Аудит п. 12.
+
+```powershell
+py -3.13 tools/ai_speed/run_one.py --mission STR_LOC_CITY_OF_THE_DEAD_SCOUTING --seed 201 --name e44_ci0 --build E:/OpenXCom/build-ai44
+py -3.13 tools/ai_speed/run_one.py --mission STR_LOC_CITY_OF_THE_DEAD_SCOUTING --seed 201 --name e44_ci1 --build E:/OpenXCom/build-ai44 --env OXCE_AI_ESCAPEPROF=1
+py -3.13 tools/ai_speed/cmp_runs.py e44_ci0 e44_ci1
+```
+
 Профиль:
 
 ```powershell

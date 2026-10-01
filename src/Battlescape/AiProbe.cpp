@@ -82,6 +82,11 @@ void ambushScored(int, bool, bool) {}
 void ambushEnd(bool, int, const Position &, int, bool) {}
 int ambushMemo() { return 0; }
 void ambushMemoNode(const Position &, bool, bool, int, int, int) {}
+bool escapeProf() { return false; }
+void escapeBegin(const BattleUnit *) {}
+void escapeTarget() {}
+void escapeMark() {}
+void escapeProbe(const BattleUnit *, int) {}
 bool botTurn(const SavedBattleGame *) { return false; }
 long long battleSeed() { return -1; }
 void think(BattlescapeState *, SavedBattleGame *) {}
@@ -172,6 +177,8 @@ void pathReport();
 /// the record's reuse of the think's reach and the ambush profile, their totals at the end of the battle (defined below)
 void reachReport();
 void ambushReport();
+/// the escape audit's totals at the end of the battle (defined with the ambush profile below)
+void escapeReport();
 
 void logStart(SavedBattleGame *save)
 {
@@ -247,6 +254,7 @@ void logResult(SavedBattleGame *save, const char *how)
 	pathReport();
 	reachReport();
 	ambushReport();
+	escapeReport();
 }
 
 }
@@ -1239,6 +1247,41 @@ void ambushReport()
 		<< " memo=" << memoSkipN << " mver=" << memoVerifyN << " mbad=" << memoBadN << " us=" << ambNs / 1000;
 }
 
+/// The escape audit (OXCE_AI_ESCAPEPROF): per faction, setupEscape calls and its candidate tiles - with no tile, reachable,
+/// unreachable - with the canTargetUnit traces getSpottingUnits ran for each kind and the time they took.
+struct EscapeCount { long long calls = 0, notile = 0, reach = 0, unreach = 0, traceReach = 0, traceUnreach = 0, nsReach = 0, nsUnreach = 0; };
+EscapeCount esc[3];
+/// canTargetUnit traces of getSpottingUnits so far (any caller), and where the candidate's count and clock started
+long long escTraces = 0, escTraceMark = 0;
+std::chrono::steady_clock::time_point escMark;
+
+void escapeReport()
+{
+	if (!escapeProf())
+	{
+		return;
+	}
+	static const char *const sides[3] = { "player", "hostile", "neutral" };
+	auto put = [](const char *side, const EscapeCount &e)
+	{
+		Log(LOG_INFO) << "[AIESC] side=" << side << " escape_calls=" << e.calls
+			<< " escape_candidates_total=" << e.notile + e.reach + e.unreach << " escape_candidates_reachable=" << e.reach
+			<< " escape_candidates_unreachable=" << e.unreach << " escape_candidates_notile=" << e.notile
+			<< " canTargetUnit_calls_on_reachable=" << e.traceReach << " canTargetUnit_calls_on_unreachable=" << e.traceUnreach
+			<< " time_on_reachable_us=" << e.nsReach / 1000 << " time_wasted_on_unreachable_us=" << e.nsUnreach / 1000;
+	};
+	EscapeCount all;
+	for (int f = 0; f < 3; ++f)
+	{
+		const EscapeCount &e = esc[f];
+		if (!e.calls) continue;
+		put(sides[f], e);
+		all.calls += e.calls; all.notile += e.notile; all.reach += e.reach; all.unreach += e.unreach;
+		all.traceReach += e.traceReach; all.traceUnreach += e.traceUnreach; all.nsReach += e.nsReach; all.nsUnreach += e.nsUnreach;
+	}
+	put("all", all);
+}
+
 }
 
 bool ambushProf()
@@ -1379,6 +1422,50 @@ void ambushEnd(bool chosen, int best, const Position &target, int tus, bool fast
 	ambOwnN += amb.ownN; ambOwnOk += amb.ownOk; ambOwnExp += amb.ownExp; ambOwnNs += amb.ownNs;
 	ambEok += amb.eok; ambEfail += amb.efail; ambExpOk += amb.expOk; ambExpFail += amb.expFail;
 	ambNsOk += amb.nsOk; ambNsFail += amb.nsFail; ambTaken += amb.taken; ambNs += ns;
+}
+
+bool escapeProf()
+{
+	static const bool on = active() && envOn("OXCE_AI_ESCAPEPROF");
+	return on;
+}
+
+void escapeBegin(const BattleUnit *unit)
+{
+	if (escapeProf()) ++esc[(int)unit->getFaction()].calls;
+}
+
+void escapeTarget()
+{
+	if (escapeProf()) ++escTraces;
+}
+
+void escapeMark()
+{
+	if (!escapeProf())
+	{
+		return;
+	}
+	escTraceMark = escTraces;
+	escMark = std::chrono::steady_clock::now();
+}
+
+void escapeProbe(const BattleUnit *unit, int kind)
+{
+	if (!escapeProf())
+	{
+		return;
+	}
+	EscapeCount &e = esc[(int)unit->getFaction()];
+	if (kind == 2)
+	{
+		++e.notile;
+		return;
+	}
+	const long long ns = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - escMark).count();
+	const long long traces = escTraces - escTraceMark;
+	if (kind == 1) { ++e.reach; e.traceReach += traces; e.nsReach += ns; }
+	else { ++e.unreach; e.traceUnreach += traces; e.nsUnreach += ns; }
 }
 
 void propose(const BattleUnit *unit, char slot, const char *source, int score, const BattleAction &action)
@@ -1612,9 +1699,9 @@ void staticStep(SavedBattleGame *save, BattleUnit *unit, BattleActionMove bam, i
 	}
 }
 
-/// [AIPATROL] (plan V2, L0-B): a patrol walk to its node - the path the game found, what stops its first step, and when it
-/// is stopped, the tiles in reach that get closest to the node. The costs come from a Pathfinding of the probe's own: the
-/// battle's one holds the path the walk is about to take.
+/// [AIPATROL] (plan V2, L0-B): a patrol walk to its node - the path the game found, what stops its first step, and with
+/// OXCE_AI_RECORD_PATH=2, when it is stopped, the tiles in reach that get closest to the node. The costs come from a
+/// Pathfinding of the probe's own: the battle's one holds the path the walk is about to take.
 void logPatrolPath(SavedBattleGame *save, BattleUnit *unit, bool pushed)
 {
 	Pathfinding *probe = probePathfinding(save);
@@ -1665,7 +1752,9 @@ void logPatrolPath(SavedBattleGame *save, BattleUnit *unit, bool pushed)
 		<< ",\"after\":" << (pushed && firstTu != Pathfinding::INVALID_MOVE_COST ? tu - stand - firstTu : -1) << ",\"snap\":" << snap
 		<< ",\"known\":" << exec.known << ",\"seen\":" << exec.seen << ",\"lof\":" << exec.lof << ",\"lof_tu\":" << exec.lofTu
 		<< ",\"stop\":\"" << stop << "\",\"nreach\":" << exec.reach.size();
-	if (stop != "none")
+	// the forensic fields (OXCE_AI_RECORD_PATH=2 only): up to 17 full A* of the probe's own Pathfinding per stopped walk, a
+	// quarter of the station battle (docs/research/ai-path-audit-2026-10-01.md, п. 11); mode 1 ends the line here
+	if (stop != "none" && param("OXCE_AI_RECORD_PATH", 0) >= 2)
 	{
 		// the tiles in reach nearest to the node, and how far each still is from it by path
 		const int before = probe->pathCost(unit, from, exec.target, bam);
@@ -1751,7 +1840,7 @@ const std::string &cfgText()
 	{
 		static const std::set<std::string> skip = { "OXCE_AI_SEED", "OXCE_AI_RECORD", "OXCE_AI_TRACE_DECISION", "OXCE_AI_PROBE_SAVE",
 			"OXCE_AI_BUILD", "OXCE_AI_KEEP_DECIDE", "OXCE_AI_MISSION", "OXCE_AI_CAMPAIGN", "OXCE_AI_EXE", "OXCE_AI_GAME", "OXCE_AI_WORK", "OXCE_AI_RECORD_PATH",
-			"OXCE_AI_FAST", "OXCE_AI_LIGHTSKIP", "OXCE_AI_PATHPROF", "OXCE_AI_AMBUSHPROF", "OXCE_AI_RECORD_REUSE",
+			"OXCE_AI_FAST", "OXCE_AI_LIGHTSKIP", "OXCE_AI_PATHPROF", "OXCE_AI_AMBUSHPROF", "OXCE_AI_ESCAPEPROF", "OXCE_AI_RECORD_REUSE",
 			"OXCE_AI_AMBUSH_MEMO" }; // the fast mode, the light skip, the profiles, the record's reuse and the ambush memo change what is computed, not how the bench plays
 		std::vector<std::string> vars;
 		for (char **e = PROBE_ENVIRON; e && *e; ++e)

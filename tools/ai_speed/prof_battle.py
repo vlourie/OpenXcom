@@ -212,8 +212,7 @@ def main():
 
     os.environ["OXCE_AI_BUILD"] = a.build
     if a.record:
-        os.environ["OXCE_AI_RECORD"] = "1"
-        os.environ["OXCE_AI_RECORD_PATH"] = "1"
+        os.environ["OXCE_AI_RECORD"] = "1"  # [AIPATROL] - только по --env OXCE_AI_RECORD_PATH=1|2 (2 - forensic, 17 A* на остановленный патруль)
     for kv in a.env:
         k, v = kv.split("=", 1)
         os.environ[k] = v
