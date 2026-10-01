@@ -30,7 +30,9 @@ WORK = Path(tempfile.gettempdir()) / "oxce_ai_probe"
 # трассы охоты за недетерминизмом ([AIMELEE], [AIPATH]) тоже: без них ai_arena --env OXCE_AI_TRACE_* пишет пустоту;
 # запись решений по OXCE_AI_RECORD ([AIREC], списки ходов [AICAND]) - план V2, шаг 2
 TAGS = ("[AISTATE]", "[AIDECIDE]", "[AIPROBE]", "[AIRESULT]", "[AICASUALTY]", "[AIMELEE]", "[AIPATH]", "[AIRECHEAD]", "[AIREC]",
-        "[AIEXEC]", "[AIAFTER]", "[AITRACE]", "[AICAND]", "[AIPATROL]", "[AIPF]")
+        "[AIEXEC]", "[AIAFTER]", "[AITRACE]", "[AICAND]", "[AIPATROL]", "[AIPF]",
+        # итоги приборов стенда после [AIRESULT] (свет, отход, FOV на шаге) - архив <метка>.result.txt серии ai_arena.py
+        "[AILIGHT]", "[AIESCRF]", "[AIWALKFOV]", "[AIWALKFOVSKIP]")
 
 
 class Probe:
@@ -150,6 +152,14 @@ def run(save, turns=1, save_as="", name="probe", timeout=900, bot=False, seed=No
     # IDENTICAL 22 из 22 против p43d1 и p44f2 (tools/ai_speed/README.md); включено по умолчанию 01.10 по второму мнению.
     # Контрольный опыт обязателен: OXCE_AI_ESCAPE_REACH_FIRST=0. Сборки до build-ai45 переменную не знают и играют как прежде
     env.setdefault("OXCE_AI_ESCAPE_REACH_FIRST", "1")
+    # FOV экрана на шаге бота (AiProbe::walkFovKeep, с build-ai48, BOT_WALKFOV_UI_SKIP_V1): после законченного шага ходока бота
+    # updateSoldierInfo обновляет только панель, без полного FOV выбранного (его юнитовую часть тут же заново считает FOV шага
+    # UnitWalkBState 228, тайловую между шагами никто не читает); только когда бот играет сторону игрока, выбранный - ходок и
+    # sneakyAI выключен, иначе как в движке. Приёмка: 8 карт флаг 0/1/2 (в том числе тень 11-12) - шесть потоков =, тень (=2:
+    # что вызов ставил под старым светом, а FOV шага не повторил) - все счётчики 0; fair22 зерно 201 и 301 IDENTICAL 22 из 22
+    # (tools/ai_speed/README.md); включено по умолчанию 01.10 по второму мнению. Контрольный опыт обязателен:
+    # OXCE_AI_WALKFOV_SKIP=0; тень - =2. Сборки до build-ai48 переменную не знают и играют как прежде
+    env.setdefault("OXCE_AI_WALKFOV_SKIP", "1")
     args = [str(EXE), "-data", str(GAME), "-user", str(work), "-cfg", str(work),
             "-fullscreen", "false", "-borderless", "false", "-displayWidth", "1280", "-displayHeight", "720",
             "-soundVolume", "0", "-musicVolume", "0", "-uiVolume", "0"]

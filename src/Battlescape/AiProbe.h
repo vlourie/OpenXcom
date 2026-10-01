@@ -141,6 +141,19 @@ void walkFovBefore(BattlescapeGame *game, const BattleUnit *walker);
 void walkFovAfter(BattlescapeGame *game, const BattleUnit *walker);
 /// The step's own calculateFOV ran: does the selected unit still see what updateSoldierInfo added.
 void walkFovConfirm(BattlescapeGame *game, const BattleUnit *walker);
+/// BOT_WALKFOV_UI_SKIP_V1 (OXCE_AI_WALKFOV_SKIP, stand only; the second opinion of 01.10 on audit п. 14). The
+/// updateSoldierInfo call after a finished step of UnitWalkBState recalculates the selected unit's whole field of view for
+/// the TU display; for the stand's bot nobody reads the display, and the step's own calculateFOV a few lines later recomputes
+/// the units' part from scratch (visible units, spotted this turn, the seen flag, turnsSinceSpotted) - that one always stays.
+/// 1 - skip the call's FOV (updateSoldierInfo(false): the display only) when the bot plays the player's side, the selected
+/// unit is the walker and sneakyAI is off (the only reader of tile visibility between the steps); a human's turn, the AI's
+/// side, another selected unit, sneakyAI - the call runs as in the engine. 2 - shadow: nothing is skipped; what the call
+/// changed in the units and the step's FOV then did not keep is counted (prelight_*, postlight_* of [AIWALKFOVSKIP]) - the
+/// gate: all of them 0 on the cohort before 1 goes in by default. Off (the default of the engine): the call as in OXCE; not
+/// combined with OXCE_AI_WALKFOVPROF (the audit would count a skipped call as ran). Release builds: 0 always.
+int walkFovSkip();
+/// The step is finished: run the call's FOV? False only under walkFovSkip() 1 for the allowed case (counted).
+bool walkFovKeep(BattlescapeGame *game, const BattleUnit *walker);
 /// Does the AI play the player's side right now (OXCE_AI_BOT)?
 bool botTurn(const SavedBattleGame *save);
 /// The seed of a generated battle (OXCE_AI_SEED), or -1.
