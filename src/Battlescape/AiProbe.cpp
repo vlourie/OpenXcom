@@ -80,6 +80,8 @@ void ambushOwn(bool, int, int) {}
 void ambushEnemy(const Position &, bool, int, int, int, int, int, int) {}
 void ambushScored(int, bool, bool) {}
 void ambushEnd(bool, int, const Position &, int, bool) {}
+int ambushMemo() { return 0; }
+void ambushMemoNode(const Position &, bool, bool, int, int, int) {}
 bool botTurn(const SavedBattleGame *) { return false; }
 long long battleSeed() { return -1; }
 void think(BattlescapeState *, SavedBattleGame *) {}
@@ -1205,6 +1207,8 @@ struct AmbushCall
 	/// enemy searches: got there or not, their expanded nodes and time apart, best changes
 	int eok = 0, efail = 0, expOk = 0, expFail = 0, taken = 0;
 	long long nsOk = 0, nsFail = 0;
+	/// the negative memo: searches skipped, searches run to verify it and how many of those disagreed
+	int memoSkip = 0, memoVerify = 0, memoBad = 0;
 	/// the enemy search waiting for its score line
 	bool nodeOpen = false;
 	std::ostringstream node;
@@ -1214,9 +1218,15 @@ AmbushCall amb;
 int ambCalls = 0, ambChosen = 0, ambFast = 0;
 long long ambStage[4] = {}, ambOwnN = 0, ambOwnOk = 0, ambOwnExp = 0, ambOwnNs = 0;
 long long ambEok = 0, ambEfail = 0, ambExpOk = 0, ambExpFail = 0, ambNsOk = 0, ambNsFail = 0, ambTaken = 0, ambNs = 0;
+/// the negative memo over the battle, counted with or without the profile (the gate reads this line)
+long long memoSkipN = 0, memoVerifyN = 0, memoBadN = 0;
 
 void ambushReport()
 {
+	if (ambushMemo())
+	{
+		Log(LOG_INFO) << "[AIAMBMEMO] mode=" << ambushMemo() << " skip=" << memoSkipN << " verify=" << memoVerifyN << " bad=" << memoBadN;
+	}
 	if (!ambushProf())
 	{
 		return;
@@ -1225,7 +1235,8 @@ void ambushReport()
 		<< " nodes=" << ambStage[0] << " near=" << ambStage[1] << " hidden=" << ambStage[2] << " own=" << ambStage[3]
 		<< " ownn=" << ambOwnN << " ownok=" << ambOwnOk << " ownexp=" << ambOwnExp << " ownus=" << ambOwnNs / 1000
 		<< " eok=" << ambEok << " efail=" << ambEfail << " expok=" << ambExpOk << " expfail=" << ambExpFail
-		<< " tok=" << ambNsOk / 1000 << " tfail=" << ambNsFail / 1000 << " taken=" << ambTaken << " us=" << ambNs / 1000;
+		<< " tok=" << ambNsOk / 1000 << " tfail=" << ambNsFail / 1000 << " taken=" << ambTaken
+		<< " memo=" << memoSkipN << " mver=" << memoVerifyN << " mbad=" << memoBadN << " us=" << ambNs / 1000;
 }
 
 }
@@ -1234,6 +1245,31 @@ bool ambushProf()
 {
 	static const bool on = active() && envOn("OXCE_AI_AMBUSHPROF");
 	return on;
+}
+
+int ambushMemo()
+{
+	static const int mode = active() ? (int)param("OXCE_AI_AMBUSH_MEMO", 0) : 0;
+	return mode;
+}
+
+void ambushMemoNode(const Position &pos, bool skipped, bool ok, int own, int score, int best)
+{
+	if (skipped) { ++memoSkipN; } else { ++memoVerifyN; memoBadN += ok ? 1 : 0; }
+	if (!amb.open)
+	{
+		return;
+	}
+	if (!skipped)
+	{
+		++amb.memoVerify;
+		amb.memoBad += ok ? 1 : 0;
+		return; // the search ran: ambushEnemy writes its line as usual
+	}
+	++amb.memoSkip;
+	Log(LOG_INFO) << "[AIAMBN] u=" << amb.unit << " e=" << amb.enemy << " pos=" << pos.x << "," << pos.y << "," << pos.z
+		<< " d=" << Position::distance2d(pos, amb.unitPos) << " de=" << Position::distance2d(pos, amb.enemyPos) << " dze=" << pos.z - amb.enemyPos.z
+		<< " own=" << own << " ok=0 cost=0 len=0 exp=0 us=0 s0=" << score << " best=" << best << " cover=-1 s=" << score << " take=0 memo=1";
 }
 
 void ambushBegin(SavedBattleGame *save, const BattleUnit *unit, const BattleUnit *enemy)
@@ -1333,6 +1369,7 @@ void ambushEnd(bool chosen, int best, const Position &target, int tus, bool fast
 		<< " ownn=" << amb.ownN << " ownok=" << amb.ownOk << " ownexp=" << amb.ownExp << " ownus=" << amb.ownNs / 1000
 		<< " eok=" << amb.eok << " efail=" << amb.efail << " expok=" << amb.expOk << " expfail=" << amb.expFail
 		<< " tok=" << amb.nsOk / 1000 << " tfail=" << amb.nsFail / 1000 << " taken=" << amb.taken
+		<< " memo=" << amb.memoSkip << " mver=" << amb.memoVerify << " mbad=" << amb.memoBad
 		<< " chosen=" << (chosen ? 1 : 0) << " best=" << best << " target=" << target.x << "," << target.y << "," << target.z << " tus=" << tus
 		<< " fast=" << (fast ? 1 : 0) << " us=" << ns / 1000;
 	++ambCalls;
@@ -1714,7 +1751,8 @@ const std::string &cfgText()
 	{
 		static const std::set<std::string> skip = { "OXCE_AI_SEED", "OXCE_AI_RECORD", "OXCE_AI_TRACE_DECISION", "OXCE_AI_PROBE_SAVE",
 			"OXCE_AI_BUILD", "OXCE_AI_KEEP_DECIDE", "OXCE_AI_MISSION", "OXCE_AI_CAMPAIGN", "OXCE_AI_EXE", "OXCE_AI_GAME", "OXCE_AI_WORK", "OXCE_AI_RECORD_PATH",
-			"OXCE_AI_FAST", "OXCE_AI_LIGHTSKIP", "OXCE_AI_PATHPROF", "OXCE_AI_AMBUSHPROF", "OXCE_AI_RECORD_REUSE" }; // the fast mode, the light skip, the profiles and the record's reuse change what is computed, not how the bench plays
+			"OXCE_AI_FAST", "OXCE_AI_LIGHTSKIP", "OXCE_AI_PATHPROF", "OXCE_AI_AMBUSHPROF", "OXCE_AI_RECORD_REUSE",
+			"OXCE_AI_AMBUSH_MEMO" }; // the fast mode, the light skip, the profiles, the record's reuse and the ambush memo change what is computed, not how the bench plays
 		std::vector<std::string> vars;
 		for (char **e = PROBE_ENVIRON; e && *e; ++e)
 		{

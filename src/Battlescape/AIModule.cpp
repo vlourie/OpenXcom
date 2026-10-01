@@ -1135,6 +1135,11 @@ void AIModule::setupAmbush()
 		const int FAST_PASS_THRESHOLD = 80;
 		Position origin = _save->getTileEngine()->getSightOriginVoxel(_aggroTarget);
 		AiProbe::ambushBegin(_save, _unit, _aggroTarget);
+		// AMBUSH_NEGATIVE_MEMO_V1 (bench, AiProbe::ambushMemo): the tiles the enemy's first search of this call that ran out of
+		// open nodes closed - everything it can reach from where it stands (Pathfinding::closedTiles); a node outside them has
+		// no path from it, and that search is skipped. Empty until such a search; dies with this call, nothing crosses decisions.
+		const int memo = AiProbe::ambushMemo();
+		std::vector<char> enemyReach;
 
 		// we'll use node positions for this, as it gives map makers a good degree of control over how the units will use the environment.
 		for (const auto* node : *_save->getNodes())
@@ -1176,12 +1181,26 @@ void AIModule::setupAmbush()
 					score -= ambushTUs;
 
 					// make sure our enemy can reach here too.
+					const bool memoNoPath = !enemyReach.empty() && !enemyReach[_save->getTileIndex(pos)];
+					if (memoNoPath && memo == 1)
+					{
+						AiProbe::ambushMemoNode(pos, true, false, ambushTUs, score, bestScore);
+						continue;
+					}
 					AiProbe::ambushMark();
 					_save->getPathfinding()->calculate(_aggroTarget, pos, BAM_NORMAL);
 
 					const bool enemyPath = _save->getPathfinding()->getStartDirection() != -1;
 					AiProbe::ambushEnemy(pos, enemyPath, _save->getPathfinding()->getTotalTUCost(), (int)_save->getPathfinding()->getPath().size(),
 						_save->getPathfinding()->getExpanded(), ambushTUs, score, bestScore);
+					if (memoNoPath)
+					{
+						AiProbe::ambushMemoNode(pos, false, enemyPath, ambushTUs, score, bestScore);
+					}
+					else if (memo && !enemyPath && enemyReach.empty())
+					{
+						enemyReach = _save->getPathfinding()->closedTiles();
+					}
 					if (enemyPath)
 					{
 						// ideally we'd like to be behind some cover, like say a window or a low wall.

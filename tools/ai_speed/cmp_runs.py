@@ -5,7 +5,10 @@
 
 Потоки считаются заново по логам прогонов run_one.py; отпечаток настроек (cfg, env в [AIRECHEAD]) и реальное
 время (ms, vms) из сравнения убраны - они различаются по определению. "=поток" - побайтно тот же, "!поток" - другой.
-Флаг стенда пассивен, только если ВСЕ потоки "=" на станции и на городе (R-149), потом на 22 боях (R-113)."""
+Флаг стенда пассивен, только если ВСЕ потоки "=" на станции и на городе (R-149), потом на 22 боях (R-113).
+База и вариант обязаны быть прогонами ОДНОЙ сборки: прогон прежней сборки несёт её запись (другой предикат
+повтора записи - другие rec/cand/path), и "!" тогда про сборку, а не про флаг (R-087). run_one.py пишет в json
+отпечаток exe (exe_sha256, exe_mtime); при расхождении с базой строка помечается "!! сборка"."""
 import hashlib, json, re, sys
 
 from _common import OUT, ENC_R, probe_work
@@ -58,9 +61,17 @@ def main():
                 continue
             same.append(("=" if h[k] == base[k] else "!") + k)
         x = bd["ms"] / d["ms"] if d["ms"] else 0
+        if not bd.get("exe_sha256"):
+            build = "  (сборка базы не записана - прогон до отпечатка exe)" if n == names[0] else ""
+        elif not d.get("exe_sha256"):
+            build = "  (сборка не записана - прогон до отпечатка exe)"
+        elif d["exe_sha256"] != bd["exe_sha256"]:
+            build = f"  !! сборка другая: exe {d['exe_mtime']} против базы {bd['exe_mtime']}"
+        else:
+            build = ""
         print(f"{n:26} {d['wall']:6.1f} {d['ms'] / 1000:6.1f} {x:5.2f} {d.get('cpu', 0):6.1f} {d['vms'] / 1000:6.0f} "
               f"{d['log_mb']:6.1f} {d['log_lines']:6d}  {' '.join(same)}  {' '.join(d['env'])}"
-              f"{'' if d['rec'] else ' rec=0'}{'' if d['path'] else ' path=0'}")
+              f"{'' if d['rec'] else ' rec=0'}{'' if d['path'] else ' path=0'}{build}")
 
 
 if __name__ == "__main__":

@@ -6,7 +6,7 @@
 
 Итог - runs/<имя>.json и одна строка в stdout; сравнение вариантов - cmp_runs.py.
 Игра идёт как в серии: скрытый стол, SDL dummy (ai_probe.Hidden), на экране ничего (R-124)."""
-import argparse, ctypes, json, os, re, sys, threading, time
+import argparse, ctypes, hashlib, json, os, re, sys, threading, time
 
 from _common import OUT, ROOT, ENC_W
 
@@ -103,6 +103,10 @@ def main():
 
     if not ai_probe.EXE.is_file():
         sys.exit(f"нет exe: {ai_probe.EXE}")
+    # the build this run measures, for cmp_runs: a base run of another build compares another record (R-087)
+    st = ai_probe.EXE.stat()
+    exe = {"exe": str(ai_probe.EXE), "exe_mtime": time.strftime("%Y-%m-%d %H:%M:%S", time.localtime(st.st_mtime)),
+           "exe_size": st.st_size, "exe_sha256": hashlib.sha256(ai_probe.EXE.read_bytes()).hexdigest()[:16]}
     holder = {}
     base_hidden = ai_probe.Hidden
     base_prepare = ai_probe.prepare_user
@@ -153,7 +157,7 @@ def main():
             "vms": vms, "log_mb": round(log.stat().st_size / 1e6, 1),
             "log_lines": sum(1 for _ in open(log, "rb")), "finished": res.finished, "cpu": round(m.cpu, 1),
             "peak_mb": round(m.peak / 1e6), "unthrottle": m.unthrottle,
-            "ecore_share": round(on_e / max(1, sum(m.cores.values())), 2), "ecores": len(eset)}
+            "ecore_share": round(on_e / max(1, sum(m.cores.values())), 2), "ecores": len(eset), **exe}
     (OUT / (a.name + ".json")).write_text(json.dumps(data, ensure_ascii=False, indent=1), encoding=ENC_W)
     turn = (re.search(r" turn=(\d+)", result) or [0, "?"])[1]
     how = (re.search(r" how=(\S+)", result) or [0, "?"])[1]
