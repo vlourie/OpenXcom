@@ -123,7 +123,7 @@ void chosen(const BattleUnit *, char) {}
 void modeOdds(const BattleUnit *, int, int, int, int, int, int) {}
 void traceTile(const BattleUnit *, const char *, const Position &, int) {}
 void walkPlanned(SavedBattleGame *, BattleUnit *, bool, bool) {}
-void walkStop(const BattleUnit *, const char *, const Position &, int, int, int, int, int) {}
+void walkStop(const BattleUnit *, const char *, const Position &, int, int, int, int, int, SavedBattleGame *) {}
 bool patrolOutOfEnergy(SavedBattleGame *, BattleUnit *, const BattleAction &, bool) { return false; }
 int firepointPathOver(SavedBattleGame *, const BattleUnit *, int, int) { return 0; }
 void firepointDropped(const BattleUnit *, int, int) {}
@@ -176,6 +176,10 @@ std::map<int, int> startHealth;
 int decided[3][2] = {};
 /// uses of the tactical rules: "h.cover", "p.pullback"...
 std::map<std::string, int> tallies;
+/// REPEATED_BLOCKED_STEP (passive): each unit's last stop at a unit - turn, the tile it stood on (and still must stand
+/// on), knownRevision then; its next decisions there this turn record kr.dec and walk.first
+struct StopMem { int turn = -1; Position from; unsigned long long kr = 0; };
+std::map<int, StopMem> stopMem;
 /// the decision record's reason trail (defined with the record below)
 void addTrail(const BattleUnit *unit, const char *what);
 /// is the decision record on (defined with the record below)
@@ -199,6 +203,7 @@ void walkFovSkipReport();
 void logStart(SavedBattleGame *save)
 {
 	started = true;
+	stopMem.clear();
 	startTicks = SDL_GetTicks();
 	startVirtual = Timer::probeTicks;
 	for (const auto *bu : *save->getUnits())
@@ -347,7 +352,8 @@ void note(const BattleUnit *unit, const char *what)
 	addTrail(unit, what);
 }
 
-void walkStop(const BattleUnit *unit, const char *reason, const Position &to, int dir, int bam, int stepTu, int stepEnergy, int blocker)
+void walkStop(const BattleUnit *unit, const char *reason, const Position &to, int dir, int bam, int stepTu, int stepEnergy, int blocker,
+	SavedBattleGame *save)
 {
 	if (!record())
 		return;
@@ -358,6 +364,12 @@ void walkStop(const BattleUnit *unit, const char *reason, const Position &to, in
 		<< " d" << dir << " bam" << bam << " mt" << (int)unit->getMovementType() << " sz" << unit->getArmor()->getSize()
 		<< " tu" << unit->getTimeUnits() << "/" << stepTu << " en" << unit->getEnergy() << "/" << stepEnergy
 		<< " rs" << (ai ? (int)const_cast<AIModule *>(ai)->getReserveMode() : -1) << " bu" << blocker;
+	if (save)
+	{
+		const unsigned long long kr = knownRevision(save, unit);
+		s << " kr" << std::hex << kr << std::dec;
+		stopMem[unit->getId()] = { save->getTurn(), from, kr };
+	}
 	addTrail(unit, s.str().c_str());
 }
 
@@ -611,6 +623,9 @@ struct Pending
 	char slot = 0;
 	bool trace = false;
 	std::map<std::string, std::vector<std::string>> traced;
+	/// REPEATED_BLOCKED_STEP: the unit stands where it was stopped this turn - knownRevision as it starts to think
+	bool krWatch = false;
+	unsigned long long krDec = 0;
 };
 Pending pending;
 
@@ -631,6 +646,8 @@ struct Exec
 	std::vector<std::pair<Position, int>> reach;
 	/// enemies it knows of (AiCandidates' rule), sees itself, has a shot at with a line of fire (any / within its TU)
 	int known = 0, seen = 0, lof = 0, lofTu = 0;
+	/// REPEATED_BLOCKED_STEP: record the walk's first step (walk.first)
+	bool krWatch = false;
 };
 Exec exec;
 
@@ -1172,6 +1189,12 @@ void beforeThink(SavedBattleGame *save, BattleUnit *unit)
 			pending.units[bu->getId()] = { bu->getHealth(), bu->getStunlevel(), isDown(bu), (int)bu->getFaction() };
 		}
 		pending.energy = unit->getEnergy();
+		const auto mem = stopMem.find(unit->getId());
+		if (mem != stopMem.end() && mem->second.turn == save->getTurn() && mem->second.from == unit->getPosition())
+		{
+			pending.krWatch = true;
+			pending.krDec = knownRevision(save, unit);
+		}
 		const int spends = reachReuse() ? spendsBeforeThink(save, unit) : 0;
 		if (reachReuse() && !spends)
 		{
@@ -2017,6 +2040,10 @@ void walkPlanned(SavedBattleGame *save, BattleUnit *unit, bool pushed, bool item
 	{
 		exec.walk = pushed ? 1 : 0;
 		exec.item = item;
+		if (exec.krWatch && pushed)
+		{
+			exec.trail.push_back("walk.first d" + std::to_string(save->getPathfinding()->getStartDirection()));
+		}
 		if (exec.patrol)
 		{
 			exec.patrol = false;
@@ -2529,6 +2556,13 @@ void writeRecord(SavedBattleGame *save, BattleUnit *unit, const BattleAction &ac
 	exec.turn = save->getTurn();
 	exec.tu = pending.tu;
 	exec.units = std::move(pending.units);
+	if (pending.krWatch)
+	{
+		exec.krWatch = true;
+		std::ostringstream kr;
+		kr << "kr.dec " << std::hex << pending.krDec;
+		exec.trail.push_back(kr.str());
+	}
 	if (slot == 'p' && src && src->src == "patrol.node" && action.type == BA_WALK && param("OXCE_AI_RECORD_PATH", 0) > 0)
 	{
 		exec.patrol = true;
