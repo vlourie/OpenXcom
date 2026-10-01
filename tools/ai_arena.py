@@ -128,7 +128,10 @@ def one(seed, turns, diff, timeout, campaign, mission=None, tactics=False, caref
            "_rec": [l for l in r.lines if l.startswith(("[AIRECHEAD]", "[AIREC]", "[AIEXEC]", "[AIAFTER]", "[AITRACE]"))],
            "_cand": r.tagged("[AICAND]"),
            # по OXCE_AI_RECORD_PATH - путь патруля и что держит первый шаг ([AIPATROL], план V2, L0-B)
-           "_path": [l for l in r.lines if l.startswith("[AIPATROL]")]}
+           "_path": [l for l in r.lines if l.startswith("[AIPATROL]")],
+           # итоги боя со счётчиками приборов стенда (свет, отход, FOV на шаге) - по ним читается шлюз серии; в сверку
+           # series_eq.py не входят (в них время)
+           "_result": [l for l in r.lines if l.startswith(("[AIRESULT]", "[AILIGHT]", "[AIESCRF]", "[AIWALKFOV]", "[AIWALKFOVSKIP]"))]}
     row.update(moves)
     battle = r.tagged("[AIPROBE] battle")
     if battle:
@@ -237,7 +240,7 @@ def read_table(table):
 
 # архивы боя рядом с таблицей: павшие текстом, остальное gzip членами; ключ строки боя -> суффикс файла
 ARCHIVES = (("_casualties", ".casualties.txt"), ("_tiles", ".tiles.gz"), ("_decide", ".decide.gz"),
-            ("_rec", ".rec.gz"), ("_cand", ".cand.gz"), ("_path", ".path.gz"))
+            ("_rec", ".rec.gz"), ("_cand", ".cand.gz"), ("_path", ".path.gz"), ("_result", ".result.txt"))
 
 
 def _append(path, data):

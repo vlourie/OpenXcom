@@ -413,6 +413,72 @@ py -3.13 tools/ai_speed/run_one.py --mission STR_LOC_CITY_OF_THE_DEAD_SCOUTING -
 py -3.13 tools/ai_speed/cmp_runs.py f47_ci0 f47_ci1 f47_ci2
 ```
 
+## Пропуск FOV экрана на шаге бота — `OXCE_AI_WALKFOV_SKIP` (с build-ai48, `BOT_WALKFOV_UI_SKIP_V1`)
+
+Решение второго мнения по цифрам аудита (п. 14): после законченного шага ходока бота
+`UnitWalkBState::think` зовёт `updateSoldierInfo(AiProbe::walkFovKeep(_parent, _unit))` (строка 201) —
+панель обновляется, а полный FOV выбранного внутри вызова пропускается ровно тогда, когда бот играет
+сторону игрока, вызов дошёл бы до FOV (`playableUnitSelected()`), выбранный — сам ходок и `sneakyAI`
+выключен; любой другой случай — как в движке (счётчик причины `kept_not_bot / kept_not_playable /
+kept_selected_other / kept_sneaky`). FOV шага (строка 228, после `calculateLighting`) идёт всегда и
+сам пересчитывает юнитовую часть; тайловую между ними никто не читает (п. 14.2). Человек, ИИ врага и
+выпуск нетронуты (заглушка `true`). Флаг: 0 — как движок, 1 — пропуск, 2 — тень: вызов идёт, а
+снимки до/после сравниваются с обзором после FOV шага. Строка в итоге боя (флаг 1 и 2):
+
+`[AIWALKFOVSKIP] mode= calls= skipped= kept_not_bot= kept_not_playable= kept_selected_other=
+kept_sneaky= shadow_calls= prelight_spotted_only= prelight_visible_only=
+prelight_turnsSinceSpotted_only= prelight_snipers_only= postlight_missing_prelight_unit=
+shadow_no_step_fov= prelight_set_again_by_step= prelight_set_again_neutral= sneakyAI=`
+
+Шлюз тени — что вызов поставил под старым светом, а FOV шага не поставил снова (это и потерял бы
+режим 1): `postlight_missing_prelight_unit` — юнит, добавленный вызовом в обзор выбранного и не
+видимый после шага; `prelight_spotted_only` — то же по замеченным за ход; `prelight_visible_only /
+turnsSinceSpotted_only / snipers_only` — флаг `getVisible`, `turnsSinceSpotted[PLAYER]`, таймер
+снайперов у юнита, которого после шага не видит никто со стороны и которого выбранный не видит
+сейчас по решению FOV шага (`walkFovStepSees`: `checkViewSector` + `TileEngine::visible`, с
+build-ai49); `prelight_set_again_*` — поставлено снова, не потеря (нейтралы: `calculateUnitsInFOV`
+ставит им флаг и таймеры, но в `visibleUnits` не кладёт); `shadow_no_step_fov` — шаг ушёл без своего
+FOV (провал пола). Флаг в списке skip `cfgText`; в стенде **включён по умолчанию**
+(`tools/ai_probe.py`, 01.10, по второму мнению); контрольный опыт обязателен —
+`--env OXCE_AI_WALKFOV_SKIP=0`, тень — `=2`. Сборки до build-ai48 переменную не знают и играют как
+прежде. `ai_arena.py` кладёт строки `[AIWALKFOVSKIP]`, `[AIWALKFOV]`, `[AILIGHT]`, `[AIESCRF]` боёв в
+`<метка>.result.txt` (с 01.10; раньше там была только `[AIRESULT]`).
+
+Шлюз 01.10 (build-ai49, exe `f9bf36999fd6d965`; build-ai48 `4209596611e03a2a` — тот же пропуск, тень
+без проверки нейтралов, и на четырёх картах с гражданскими зерна 301 она считала 3 / 6 / 1 / 6
+ложных потерь):
+
+| Карта | зерно | тень карты | потоки 1 и 2 против 0 | `calls` / `skipped` / `kept_not_bot` | шлюз тени |
+|---|---|---|---|---|---|
+| станция `k49_st` | 201 | 5 | шесть `=` (`path` пуст) | 2 165 / 1 554 / 611 | 0 |
+| город `k49_ci` | 201 | 1 | шесть `=` | 12 088 / 1 241 / 10 847 | 0 |
+| ниндзя `k49_ni` | 201 | 1 | шесть `=` | 8 270 / 1 550 / 6 720 | 0 |
+| шамблер `k49_sh` | 301 | 12 | шесть `=` | 715 / 370 / 345 | 0 |
+| бомбардировщик `k49_bo` | 301 | 12 | шесть `=` | 1 592 / 309 / 1 283 | 0 |
+| красный дом, квады `k49_rh` (`OXCE_AI_RACE=STR_BANDIT_TOWN`) | 301 | 12 | шесть `=` | 7 158 / 2 162 / 4 996 | 0 |
+| база VR `k49_vr` | 303 | 11 | шесть `=` | 2 687 / 118 / 2 569 | 0 |
+| METRO `k49_me` | 301 | 0 | шесть `=` | 2 329 / 930 / 1 399 | 0 |
+
+`kept_not_playable`, `kept_selected_other`, `kept_sneaky` — 0 везде (у бота выбранный всегда ходок).
+fair22: зерно 201 — `p49s` (тень) и `p49k` (пропуск) **IDENTICAL 22 из 22** против `p45f2` (`rec`
+54 359, `cand` 36 342, `tiles` 22 083, `path` 9 694, потери 1 009), пропущено 20 963 вызова из 67 772
+(31 %), шлюз 0 на всех 22, `set_again_neutral` 19; зерно 301 (ночь на 17 картах из 22) — `n49s` (тень) и `n49k` (пропуск) **IDENTICAL
+22 из 22** против `n49z` (`rec` 46 752, `cand` 31 197, `tiles` 18 545, `path` 10 860, потери 881);
+вызовов 80 373, пропущено 22 536 (28 %, во всех 22 боях), четыре счётчика тени 0 на всех 22,
+`set_again_neutral` 16. Цена без EcoQoS (`--unthrottle 1`, пары подряд, `t49_*`): станция 55,5 → 49,7 с (**−10 %**;
+build-ai48 `t48_*` 54,4 → 50,9, −6 %), город 68,2 → 66,8 (−2 %), ниндзя 59,3 → 57,3 (−3 %) — доля
+вызова из аудита (9,0 / 1,1 / 2,9 %), шесть потоков `=`. Приёмка умолчания стенда (R-105): fair22
+`p49d` на умолчаниях (`OXCE_AI_RECORD=1 OXCE_AI_RECORD_PATH=2`, без `--env OXCE_AI_WALKFOV_SKIP`, в
+`prov.txt` флага нет) — **IDENTICAL 22 из 22** против `p45f2`, во всех 22 боях `mode=1`, `skipped`
+20 963 как у `p49k`; при флаге 0 строки `[AIWALKFOVSKIP]` нет — это и есть признак умолчания движка.
+Аудит п. 15.
+
+```powershell
+py -3.13 tools/ai_speed/run_one.py --mission STR_LOC_SPACE_STATION_1 --seed 201 --name k49_st0 --build E:/OpenXCom/build-ai49 --env OXCE_AI_WALKFOV_SKIP=0
+py -3.13 tools/ai_speed/run_one.py --mission STR_LOC_SPACE_STATION_1 --seed 201 --name k49_st1 --build E:/OpenXCom/build-ai49 --env OXCE_AI_WALKFOV_SKIP=1
+py -3.13 tools/ai_speed/run_one.py --mission STR_LOC_SPACE_STATION_1 --seed 201 --name k49_st2 --build E:/OpenXCom/build-ai49 --env OXCE_AI_WALKFOV_SKIP=2
+py -3.13 tools/ai_speed/cmp_runs.py k49_st0 k49_st1 k49_st2
+```
 Профиль:
 
 ```powershell
