@@ -18,6 +18,7 @@
  */
 
 #include "ExplosionBState.h"
+#include "AiProbe.h"
 #include "BattlescapeState.h"
 #include "Explosion.h"
 #include "TileEngine.h"
@@ -207,6 +208,7 @@ void ExplosionBState::init()
 	{
 		if (_power > 0)
 		{
+			AiProbe::event(_parent->getSave(), "explosion", _attack.attacker, _center.toTile());
 			_parent->getSave()->getTileEngine()->explode(_attack, _center, _power, _damageType, _radius, range);
 
 			int powerForAnimation = _power;

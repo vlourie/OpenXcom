@@ -20,6 +20,7 @@
 #include <set>
 #include "TileEngine.h"
 #include "AIModule.h"
+#include "AiProbe.h"
 #include "Map.h"
 #include "Camera.h"
 #include "Projectile.h"
@@ -2891,6 +2892,7 @@ bool TileEngine::tryReaction(ReactionScore *reaction, BattleUnit *target, const 
 			if (RNG::percent(arg.getFirst()))
 			{
 				_save->appendToHitLog(HITLOG_REACTION_FIRE, unit->getFaction());
+				AiProbe::event(_save, "reaction", unit, target->getPosition());
 
 				if (action.type == BA_HIT)
 				{
