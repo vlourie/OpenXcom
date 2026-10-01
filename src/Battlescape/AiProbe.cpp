@@ -70,6 +70,16 @@ bool fast() { return false; }
 bool lightSkip(const TileEngine *, const BattleUnit *) { return false; }
 bool pathProf() { return false; }
 void pathAsk(int, int, const BattleUnit *, const Position &, const Position &, int, const BattleUnit *, int, int, int, unsigned long long, int, int, long long, const void *) {}
+bool reachWanted(const BattleUnit *, const BattleActionCost &) { return false; }
+void reachTaken(SavedBattleGame *, std::vector<std::pair<int, int>> &&) {}
+bool ambushProf() { return false; }
+void ambushBegin(SavedBattleGame *, const BattleUnit *, const BattleUnit *) {}
+void ambushNode(int) {}
+void ambushMark() {}
+void ambushOwn(bool, int, int) {}
+void ambushEnemy(const Position &, bool, int, int, int, int, int, int) {}
+void ambushScored(int, bool, bool) {}
+void ambushEnd(bool, int, const Position &, int, bool) {}
 bool botTurn(const SavedBattleGame *) { return false; }
 long long battleSeed() { return -1; }
 void think(BattlescapeState *, SavedBattleGame *) {}
@@ -157,6 +167,9 @@ void recordTurn(SavedBattleGame *save);
 void recordEnd(SavedBattleGame *save);
 /// the pathfinding profile's totals and call sites at the end of the battle (defined with the profile below)
 void pathReport();
+/// the record's reuse of the think's reach and the ambush profile, their totals at the end of the battle (defined below)
+void reachReport();
+void ambushReport();
 
 void logStart(SavedBattleGame *save)
 {
@@ -230,6 +243,8 @@ void logResult(SavedBattleGame *save, const char *how)
 		<< " units_with_personalLightHostile=" << litHostile << " units_lit_now=" << litNow
 		<< " shade=" << save->getGlobalShade();
 	pathReport();
+	reachReport();
+	ambushReport();
 }
 
 }
@@ -558,6 +573,9 @@ struct Pending
 	Position pos;
 	int dir = 0, tu = 0, hp = 0, stun = 0, morale = 0;
 	bool kneel = false;
+	/// the set has no moves yet: they come from the think's own findReachable (reachWanted / reachTaken), or after the think
+	bool wantReach = false;
+	int energy = 0;
 	std::map<int, Snapshot> units;
 	std::vector<Proposal> proposals;
 	std::vector<std::string> trail;
@@ -609,6 +627,98 @@ bool record()
 	static const bool on = active() && envOn("OXCE_AI_RECORD");
 	// the battle is over (turn cap): a decision taken later in the same frame has no execution to follow
 	return on && phase != FINISHED;
+}
+
+/// The record takes the think's reach (OXCE_AI_RECORD_REUSE, on unless set to 0).
+bool reachReuse()
+{
+	static const bool on = []
+	{
+		const char *s = getenv("OXCE_AI_RECORD_REUSE");
+		return !(s && *s == '0');
+	}();
+	return on;
+}
+/// Decisions whose moves came from the think (taken), whose the record asked for itself before the think because the think
+/// might spend first (own), whose came from the record's own ask after the think (fallback), and how many asks of the thinking
+/// unit came at other time units or energy than it started with (tudiff); the fallback asks' time.
+int reachTakenN = 0, reachOwnN = 0, reachFallbackN = 0, reachTuDiffN = 0;
+/// Why the record asked itself before the think: the freeze workaround, a reload, the medikit check (spendsBeforeThink).
+int reachOwnAbortN = 0, reachOwnReloadN = 0, reachOwnMedikitN = 0;
+long long reachFallbackNs = 0;
+
+void reachReport()
+{
+	if (!record())
+	{
+		return;
+	}
+	Log(LOG_INFO) << "[AIREUSE] reuse=" << (reachReuse() ? 1 : 0) << " taken=" << reachTakenN << " own=" << reachOwnN << " abort=" << reachOwnAbortN
+		<< " reload=" << reachOwnReloadN << " medikit=" << reachOwnMedikitN << " fallback=" << reachFallbackN
+		<< " tudiff=" << reachTuDiffN << " fallback_us=" << reachFallbackNs / 1000;
+}
+
+/// May BattleUnit::think spend time units before the AI asks for its reach? AIModule::think clears the time units after 200
+/// aborted walks (1); BattleUnit::think reloads a hand weapon short of ammo when the inventory holds a clip for its empty slot
+/// (BattleUnit::reloadAmmo, 2) and once a turn runs the medikit check, whose gates before the dice are the unit's wounds, stun
+/// and energy and a medikit it may use on itself now (AIModule::medikit_think steps 2 and 3; 3). The record asked for its
+/// reach before all that, so on such a decision it keeps asking itself: the think's reach would be another one. Mirrors the
+/// gates, never the dice: says yes whenever it cannot rule the spend out, and only the saving is lost then. 0 - no spend.
+int spendsBeforeThink(const SavedBattleGame *save, const BattleUnit *unit)
+{
+	if (unit->getAIModule() && unit->getAIModule()->getWalkAbortCounter() > 200)
+	{
+		return 1;
+	}
+	for (const BattleItem *w : { unit->getRightHandWeapon(), unit->getLeftHandWeapon() })
+	{
+		if (!w || !w->isWeaponWithAmmo() || w->haveAllAmmo())
+		{
+			continue;
+		}
+		for (const auto *bi : *unit->getInventory())
+		{
+			const int slot = w->getRules()->getSlotForAmmo(bi->getRules());
+			if (slot != -1 && !w->getAmmoForSlot(slot))
+			{
+				return 2;
+			}
+		}
+	}
+	if (!unit->isAiMedikitUsed())
+	{
+		const int stamina = unit->getBaseStats()->stamina;
+		const bool heal = unit->getFatalWounds() > 0;
+		const bool stim = unit->getStunlevel() > 0 || stamina <= 0 || unit->getEnergy() * 100 / stamina < 40;
+		for (const auto *bi : *unit->getInventory())
+		{
+			const RuleItem *r = bi->getRules();
+			if (r->getBattleType() != BT_MEDIKIT || !r->getAllowTargetSelf() || save->getTurn() < r->getAIUseDelay(save->getMod()))
+			{
+				continue;
+			}
+			const BattleMediKitType t = r->getMediKitType();
+			if ((heal && (t == BMT_HEAL || t == BMT_NORMAL)) || (stim && (t == BMT_STIMULANT || t == BMT_NORMAL)))
+			{
+				return 3;
+			}
+		}
+	}
+	return 0;
+}
+
+/// The decision's moves are still wanted after the think: the record asks itself, as it did before the think without reuse.
+void reachFallback(SavedBattleGame *save, const BattleUnit *unit)
+{
+	if (!pending.wantReach || pending.unit != unit->getId())
+	{
+		return;
+	}
+	const auto t0 = std::chrono::steady_clock::now();
+	AiCandidates::addMoves(save, pending.set, AiCandidates::reach(save, unit));
+	pending.wantReach = false;
+	++reachFallbackN;
+	reachFallbackNs += std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - t0).count();
 }
 
 /// OXCE_AI_TRACE_DECISION=12,40: the record numbers whose every scored tile goes to the log ([AITRACE])
@@ -1033,10 +1143,205 @@ void beforeThink(SavedBattleGame *save, BattleUnit *unit)
 		{
 			pending.units[bu->getId()] = { bu->getHealth(), bu->getStunlevel(), isDown(bu), (int)bu->getFaction() };
 		}
-		pending.set = AiCandidates::generate(save, unit);
+		pending.energy = unit->getEnergy();
+		const int spends = reachReuse() ? spendsBeforeThink(save, unit) : 0;
+		if (reachReuse() && !spends)
+		{
+			// the moves come from the think's own findReachable (reachTaken), the same ask this would make
+			pending.set = AiCandidates::generate(save, unit, false);
+			pending.wantReach = true;
+		}
+		else
+		{
+			pending.set = AiCandidates::generate(save, unit);
+			if (spends)
+			{
+				++reachOwnN;
+				++(spends == 1 ? reachOwnAbortN : spends == 2 ? reachOwnReloadN : reachOwnMedikitN);
+			}
+		}
 		// the list must not change the battle: it may not draw a random number
 		pending.rngTouched = RNG::getSeed() != rngBefore;
 	}
+}
+
+bool reachWanted(const BattleUnit *unit, const BattleActionCost &cost)
+{
+	if (!record() || !pending.wantReach || pending.unit != unit->getId() || cost.Time != 0 || cost.Energy != 0)
+	{
+		return false;
+	}
+	if (unit->getTimeUnits() != pending.tu || unit->getEnergy() != pending.energy)
+	{
+		// the think spent before it asked (the AI freeze workaround clears the time units): not the record's ask
+		++reachTuDiffN;
+		return false;
+	}
+	return true;
+}
+
+void reachTaken(SavedBattleGame *save, std::vector<std::pair<int, int>> &&reach)
+{
+	AiCandidates::addMoves(save, pending.set, reach);
+	pending.wantReach = false;
+	++reachTakenN;
+}
+
+namespace
+{
+
+/// One setupAmbush call under the ambush profile.
+struct AmbushCall
+{
+	bool open = false;
+	int unit = -1, enemy = -1, enemyTu = 0;
+	Position unitPos, enemyPos;
+	std::chrono::steady_clock::time_point t0, mark;
+	/// nodes per stage: looked at, near and in reach, hidden, own path ok
+	int stage[4] = {};
+	/// own searches: count, got there, expanded nodes, time
+	int ownN = 0, ownOk = 0, ownExp = 0;
+	long long ownNs = 0;
+	/// enemy searches: got there or not, their expanded nodes and time apart, best changes
+	int eok = 0, efail = 0, expOk = 0, expFail = 0, taken = 0;
+	long long nsOk = 0, nsFail = 0;
+	/// the enemy search waiting for its score line
+	bool nodeOpen = false;
+	std::ostringstream node;
+};
+AmbushCall amb;
+/// totals over the battle: calls, calls that chose a node, calls that stopped early, and the sums of the fields above
+int ambCalls = 0, ambChosen = 0, ambFast = 0;
+long long ambStage[4] = {}, ambOwnN = 0, ambOwnOk = 0, ambOwnExp = 0, ambOwnNs = 0;
+long long ambEok = 0, ambEfail = 0, ambExpOk = 0, ambExpFail = 0, ambNsOk = 0, ambNsFail = 0, ambTaken = 0, ambNs = 0;
+
+void ambushReport()
+{
+	if (!ambushProf())
+	{
+		return;
+	}
+	Log(LOG_INFO) << "[AIAMB] total calls=" << ambCalls << " chosen=" << ambChosen << " fast=" << ambFast
+		<< " nodes=" << ambStage[0] << " near=" << ambStage[1] << " hidden=" << ambStage[2] << " own=" << ambStage[3]
+		<< " ownn=" << ambOwnN << " ownok=" << ambOwnOk << " ownexp=" << ambOwnExp << " ownus=" << ambOwnNs / 1000
+		<< " eok=" << ambEok << " efail=" << ambEfail << " expok=" << ambExpOk << " expfail=" << ambExpFail
+		<< " tok=" << ambNsOk / 1000 << " tfail=" << ambNsFail / 1000 << " taken=" << ambTaken << " us=" << ambNs / 1000;
+}
+
+}
+
+bool ambushProf()
+{
+	static const bool on = active() && envOn("OXCE_AI_AMBUSHPROF");
+	return on;
+}
+
+void ambushBegin(SavedBattleGame *save, const BattleUnit *unit, const BattleUnit *enemy)
+{
+	if (!ambushProf())
+	{
+		return;
+	}
+	(void)save;
+	amb = AmbushCall();
+	amb.open = true;
+	amb.unit = unit->getId();
+	amb.enemy = enemy->getId();
+	amb.enemyTu = enemy->getTimeUnits();
+	amb.unitPos = unit->getPosition();
+	amb.enemyPos = enemy->getPosition();
+	amb.t0 = std::chrono::steady_clock::now();
+}
+
+void ambushNode(int stage)
+{
+	if (amb.open && stage >= 0 && stage < 4)
+	{
+		++amb.stage[stage];
+	}
+}
+
+void ambushMark()
+{
+	if (amb.open)
+	{
+		amb.mark = std::chrono::steady_clock::now();
+	}
+}
+
+void ambushOwn(bool ok, int tu, int expanded)
+{
+	if (!amb.open)
+	{
+		return;
+	}
+	(void)tu;
+	++amb.ownN;
+	amb.ownOk += ok ? 1 : 0;
+	amb.ownExp += expanded;
+	amb.ownNs += std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - amb.mark).count();
+}
+
+void ambushEnemy(const Position &pos, bool ok, int cost, int len, int expanded, int own, int score, int best)
+{
+	if (!amb.open)
+	{
+		return;
+	}
+	const long long ns = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - amb.mark).count();
+	if (ok) { ++amb.eok; amb.expOk += expanded; amb.nsOk += ns; }
+	else { ++amb.efail; amb.expFail += expanded; amb.nsFail += ns; }
+	// one line per enemy search: where, how far from both, what the unit's own path cost, what the enemy's search gave and cost,
+	// the score before cover against the best so far; the cover and the outcome follow from ambushScored when the enemy got there
+	amb.node.str("");
+	amb.node << "[AIAMBN] u=" << amb.unit << " e=" << amb.enemy << " pos=" << pos.x << "," << pos.y << "," << pos.z
+		<< " d=" << Position::distance2d(pos, amb.unitPos) << " de=" << Position::distance2d(pos, amb.enemyPos) << " dze=" << pos.z - amb.enemyPos.z
+		<< " own=" << own << " ok=" << (ok ? 1 : 0) << " cost=" << cost << " len=" << len << " exp=" << expanded << " us=" << ns / 1000
+		<< " s0=" << score << " best=" << best;
+	if (ok)
+	{
+		amb.nodeOpen = true;
+	}
+	else
+	{
+		Log(LOG_INFO) << amb.node.str() << " cover=-1 s=" << score << " take=0";
+	}
+}
+
+void ambushScored(int score, bool cover, bool taken)
+{
+	if (!amb.open || !amb.nodeOpen)
+	{
+		return;
+	}
+	amb.nodeOpen = false;
+	amb.taken += taken ? 1 : 0;
+	Log(LOG_INFO) << amb.node.str() << " cover=" << (cover ? 1 : 0) << " s=" << score << " take=" << (taken ? 1 : 0);
+}
+
+void ambushEnd(bool chosen, int best, const Position &target, int tus, bool fast)
+{
+	if (!amb.open)
+	{
+		return;
+	}
+	amb.open = false;
+	const long long ns = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - amb.t0).count();
+	Log(LOG_INFO) << "[AIAMB] u=" << amb.unit << " e=" << amb.enemy << " etu=" << amb.enemyTu
+		<< " upos=" << amb.unitPos.x << "," << amb.unitPos.y << "," << amb.unitPos.z << " epos=" << amb.enemyPos.x << "," << amb.enemyPos.y << "," << amb.enemyPos.z
+		<< " nodes=" << amb.stage[0] << " near=" << amb.stage[1] << " hidden=" << amb.stage[2] << " own=" << amb.stage[3]
+		<< " ownn=" << amb.ownN << " ownok=" << amb.ownOk << " ownexp=" << amb.ownExp << " ownus=" << amb.ownNs / 1000
+		<< " eok=" << amb.eok << " efail=" << amb.efail << " expok=" << amb.expOk << " expfail=" << amb.expFail
+		<< " tok=" << amb.nsOk / 1000 << " tfail=" << amb.nsFail / 1000 << " taken=" << amb.taken
+		<< " chosen=" << (chosen ? 1 : 0) << " best=" << best << " target=" << target.x << "," << target.y << "," << target.z << " tus=" << tus
+		<< " fast=" << (fast ? 1 : 0) << " us=" << ns / 1000;
+	++ambCalls;
+	ambChosen += chosen ? 1 : 0;
+	ambFast += fast ? 1 : 0;
+	for (int i = 0; i < 4; ++i) ambStage[i] += amb.stage[i];
+	ambOwnN += amb.ownN; ambOwnOk += amb.ownOk; ambOwnExp += amb.ownExp; ambOwnNs += amb.ownNs;
+	ambEok += amb.eok; ambEfail += amb.efail; ambExpOk += amb.expOk; ambExpFail += amb.expFail;
+	ambNsOk += amb.nsOk; ambNsFail += amb.nsFail; ambTaken += amb.taken; ambNs += ns;
 }
 
 void propose(const BattleUnit *unit, char slot, const char *source, int score, const BattleAction &action)
@@ -1409,7 +1714,7 @@ const std::string &cfgText()
 	{
 		static const std::set<std::string> skip = { "OXCE_AI_SEED", "OXCE_AI_RECORD", "OXCE_AI_TRACE_DECISION", "OXCE_AI_PROBE_SAVE",
 			"OXCE_AI_BUILD", "OXCE_AI_KEEP_DECIDE", "OXCE_AI_MISSION", "OXCE_AI_CAMPAIGN", "OXCE_AI_EXE", "OXCE_AI_GAME", "OXCE_AI_WORK", "OXCE_AI_RECORD_PATH",
-			"OXCE_AI_FAST", "OXCE_AI_LIGHTSKIP", "OXCE_AI_PATHPROF" }; // the fast mode, the light skip and the path profile change what is computed, not how the bench plays
+			"OXCE_AI_FAST", "OXCE_AI_LIGHTSKIP", "OXCE_AI_PATHPROF", "OXCE_AI_AMBUSHPROF", "OXCE_AI_RECORD_REUSE" }; // the fast mode, the light skip, the profiles and the record's reuse change what is computed, not how the bench plays
 		std::vector<std::string> vars;
 		for (char **e = PROBE_ENVIRON; e && *e; ++e)
 		{
@@ -1686,6 +1991,7 @@ void logDecision(SavedBattleGame *save, BattleUnit *unit, const BattleAction &ac
 		<< " hr0=" << rngBefore << " ha0=" << aiBefore << " ha=" << (ai ? ai->probeHash() : 0) << std::dec;
 	if (record())
 	{
+		reachFallback(save, unit);
 		writeRecord(save, unit, action, hashUnits, hashItems, hashOrder, hashMap, hashRng);
 	}
 	pathClose(unit);

@@ -122,6 +122,8 @@ public:
 	void setWasHitBy(BattleUnit *attacker);
 	/// Increases the walk abort counter.
 	void increaseWalkAbortCounter() { _walkAbortCounter++; }
+	/// The walk abort counter: over 200, the next think clears the unit's time units first (the AI freeze workaround).
+	int getWalkAbortCounter() const { return _walkAbortCounter; }
 	/// Sets the "unit picked up a weapon" flag.
 	void setWeaponPickedUp();
 	/// Gets whether the unit was hit.
