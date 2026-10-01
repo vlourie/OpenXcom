@@ -157,6 +157,7 @@ Uint8 visibleNewColor(const SDL_Color *pal, Uint8 normal, Uint8 fromMod)
 		filterOptions.push_back("STR_FILTER_DEFAULT");
 		filterOptions.push_back(_isCommendationsSection ? "STR_NOT_AWARDED_YET" : "STR_SHOW_ONLY_NEW");
 		filterOptions.push_back("STR_FILTER_HIDDEN");
+		filterOptions.push_back("STR_FILTER_ALPHABETICAL"); // OXCE-HD: as the default one, sorted by title
 		_cbxFilter->setOptions(filterOptions, true);
 		_cbxFilter->onChange((ActionHandler)&UfopaediaSelectState::cbxFilterChange);
 
@@ -283,12 +284,16 @@ Uint8 visibleNewColor(const SDL_Color *pal, Uint8 normal, Uint8 fromMod)
 		_lstSelection->clearList();
 		_article_list.clear();
 		Ufopaedia::list(_game->getSavedGame(), _game->getMod(), _section, _article_list);
-		// by the title the player reads: the mod's listOrder groups articles by topic, which in a
-		// section of two hundred entries is no help at all when looking for one by name
-		std::sort(_article_list.begin(), _article_list.end(), [&](ArticleDefinition *a, ArticleDefinition *b)
-			{ return Unicode::naturalCompare(tr(a->getMainTitle()), tr(b->getMainTitle())); });
 		_filtered_article_list.clear();
 		size_t selectedFilter = _cbxFilter->getSelected();
+		// OXCE-HD: the mod's listOrder groups articles by topic; "alphabetical" sorts by the title the player
+		// reads, for finding one by name in a section of two hundred entries, and otherwise shows what the default one does
+		if (selectedFilter == 3)
+		{
+			std::sort(_article_list.begin(), _article_list.end(), [&](ArticleDefinition *a, ArticleDefinition *b)
+				{ return Unicode::naturalCompare(tr(a->getMainTitle()), tr(b->getMainTitle())); });
+			selectedFilter = 0;
+		}
 
 		int row = 0;
 		bool hasUnseen = false;
