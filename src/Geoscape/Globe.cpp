@@ -54,6 +54,7 @@
 #include "../Interface/Cursor.h"
 #include "../Engine/Screen.h"
 #include "../Engine/HdUi.h"
+#include "../Engine/HdOutline.h"
 #include "../Engine/HdWorkers.h"
 
 namespace OpenXcom
@@ -1801,10 +1802,20 @@ void Globe::drawMarkers()
 		drawTarget(ab, _markers);
 	}
 
+	// the HD layer draws the own craft and the UFOs a decoder has read as outlines after the blit
+	_hdMarksKept = hdOutlines();
+	_hdMarks.clear();
+	std::unordered_map<const Target*, HdHeading> seen;
+
 	// Draw the UFO markers
 	for (auto* ufo : *_game->getSavedGame()->getUfos())
 	{
 		if (ufo->getStatus() == Ufo::IGNORE_ME) continue;
+		if (_hdMarksKept && ufo->getHdDecoded() &&
+			keepHdMark(ufo, ufo->getRules()->getType(), HdOutline::raceColor(ufo->getAlienRace()), ufo->getStatus() == Ufo::CRASHED ? 0.75f : 1.0f, seen))
+		{
+			continue;
+		}
 		drawTarget(ufo, _markers);
 	}
 
@@ -1813,10 +1824,103 @@ void Globe::drawMarkers()
 	{
 		for (auto* xcraft : *xbase->getCrafts())
 		{
+			if (_hdMarksKept && keepHdMark(xcraft, xcraft->getRules()->getType(), HdOutline::OWN_COLOR, 1.0f, seen))
+			{
+				continue;
+			}
 			drawTarget(xcraft, _markers);
 		}
 	}
 	_markers->unlock();
+	_hdHeadings.swap(seen);
+}
+
+/**
+ * Are the own craft and the UFOs a hyper-wave decoder has read drawn as outlines? Then they are kept
+ * out of _markers, the way the labels are kept out of _countries, and drawn after the blit.
+ */
+bool Globe::hdOutlines() const
+{
+	return Options::oxceHdCraftOutlines && HdUi::active();
+}
+
+/**
+ * Keeps a craft or a UFO as an outline: where it is on the globe, which way it flies and its colour.
+ * The heading is the projection of a step towards its destination; one that stands keeps the last.
+ * @return false when its type has no outline: the marker is drawn as before.
+ */
+bool Globe::keepHdMark(MovingTarget *target, const std::string &type, Uint32 color, float strength, std::unordered_map<const Target*, HdHeading> &seen)
+{
+	if (!HdOutline::has(type))
+	{
+		return false;
+	}
+	if (target->getMarker() == -1)
+	{
+		// not on the globe at all (a craft in its hangar, a UFO lost from the radar): it appears anew later
+		return true;
+	}
+	const double lon = target->getLongitude(), lat = target->getLatitude();
+	auto old = _hdHeadings.find(target);
+	HdHeading heading = old != _hdHeadings.end() ? old->second : HdHeading{ -(float)M_PI / 2, SDL_GetTicks() };
+	if (pointBack(lon, lat))
+	{
+		seen[target] = heading;
+		return true;
+	}
+	double x, y;
+	polarToCart(lon, lat, &x, &y);
+	const Target *dest = target->getDestination();
+	if (dest && target->getSpeed() > 0)
+	{
+		double dLon = dest->getLongitude() - lon;
+		while (dLon > M_PI) dLon -= 2 * M_PI;
+		while (dLon < -M_PI) dLon += 2 * M_PI;
+		const double dLat = dest->getLatitude() - lat;
+		const double len = std::sqrt(dLon * dLon + dLat * dLat);
+		if (len > 1e-6)
+		{
+			const double step = 0.001 / len;
+			double x2, y2;
+			polarToCart(lon + dLon * step, lat + dLat * step, &x2, &y2);
+			if (std::fabs(x2 - x) + std::fabs(y2 - y) > 1e-9)
+			{
+				heading.angle = (float)std::atan2(y2 - y, x2 - x);
+			}
+		}
+	}
+	seen[target] = heading;
+	_hdMarks.push_back(HdMark{ type, x, y, heading.angle, color, strength, heading.since });
+	return true;
+}
+
+/**
+ * The kept outlines, drawn straight onto the world layer over the markers: a size per zoom (the
+ * globe's own, not the screen's) times how big the craft is, a light running round each hull.
+ */
+void Globe::drawHdMarks()
+{
+	const int k = HdUi::scale();
+	if (k <= 0 || _hdMarks.empty())
+	{
+		return;
+	}
+	// base pixels an average craft is long at each zoom (tools/hdart/craft_outline.py ZOOM_LEN)
+	static const int LENGTH[] = { 4, 5, 6, 8, 10, 12 };
+	const int length = LENGTH[std::min(_zoom, (size_t)5)];
+	const Uint32 now = SDL_GetTicks();
+	HdUi &ui = HdUi::instance();
+	ui.setClip(getX(), getY(), getWidth(), getHeight());
+	for (const HdMark &m : _hdMarks)
+	{
+		float factor = 1.0f;
+		HdOutline::has(m.type, &factor);
+		// each hull has its own beat, so that a fleet does not flash in step
+		const float phase = ((now + m.since * 7u) % 100000u) / 1000.0f * 2.4f;
+		const float reveal = std::min(1.0f, (now - m.since) / 900.0f);
+		HdOutline::draw(m.type, (float)((getX() + m.x) * k), (float)((getY() + m.y) * k), length * k * factor, m.angle, m.color, phase, reveal, m.strength);
+	}
+	ui.clearClip();
 }
 
 /**
@@ -1943,6 +2047,15 @@ void Globe::blit(SDL_Surface *surface)
 		invalidate();
 	}
 	_markers->blit(surface);
+	if (_hdMarksKept && HdUi::isScreen(surface) && HdUi::active())
+	{
+		drawHdMarks();
+	}
+	else if (_hdMarksKept != hdOutlines())
+	{
+		// the option was switched: the markers kept out of _markers come back, or go
+		invalidate();
+	}
 }
 
 /**

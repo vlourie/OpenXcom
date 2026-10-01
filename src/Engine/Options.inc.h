@@ -182,6 +182,8 @@ OPT int oxceHdReticle;
 OPT bool oxceHdBaseAnim;
 // HD base and craft screens: the lights of the crafts (hd/BASEBITS.PCK/<i>.lights.txt) and the phases of their pictures
 OPT bool oxceHdCraftLights;
+// HD globe and dogfight: own craft and UFOs once read by a hyper-wave decoder as small outlines from above (Engine/HdOutline.h); off = the classic markers and blob
+OPT bool oxceHdCraftOutlines;
 // Battlescape: a unit hanging in the air or in the water with no floor below sways in place (Map::hoverBob); off = the classic still frame
 OPT bool oxceHdHoverBob;
 // HD render: combat effects of the HD mod (Engine/HdFx.h) - hits, swings, explosions, muzzle flashes; off = the classic animations

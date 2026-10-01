@@ -54,6 +54,9 @@
 #include "DogfightErrorState.h"
 #include "../Mod/RuleInterface.h"
 #include "../Mod/Mod.h"
+#include "../Engine/HdOutline.h"
+#include "../Engine/HdUi.h"
+#include "../Engine/Options.h"
 
 namespace OpenXcom
 {
@@ -2240,7 +2243,7 @@ void DogfightState::previewClick(Action *)
  */
 void DogfightState::drawUfo()
 {
-	if (_ufoBlobSize < 0 || _ufo->isDestroyed())
+	if (_ufoBlobSize < 0 || _ufo->isDestroyed() || hdOutline())
 	{
 		return;
 	}
@@ -2289,6 +2292,70 @@ void DogfightState::drawUfo()
 			}
 		}
 	}
+}
+
+/**
+ * Does the HD layer draw the UFO as its outline? Then the blob is left out of _battle and the
+ * outline is drawn over the radar in blit(), where the blob stood and as wide as it.
+ */
+bool DogfightState::hdOutline() const
+{
+	return Options::oxceHdCraftOutlines && HdUi::active() && HdOutline::has(_ufo->getRules()->getType());
+}
+
+/**
+ * Blits the window; in the HD layer then the UFO's outline over the radar: the blob's place and width
+ * (it grows with the UFO's size and shrinks as a wreck falls), drawn stroke by stroke when the
+ * dogfight opens, white when hit or falling, bluish while the shield holds.
+ */
+void DogfightState::blit()
+{
+	State::blit();
+	if (!hdOutline() || !_battle->getVisible() || _ufoBlobSize < 0 || _ufo->isDestroyed())
+	{
+		return;
+	}
+	const int blob = _ufoBlobSize + _ufo->getHitFrame();
+	int x0 = 13, x1 = -1;
+	for (int y = 0; y < 13; ++y)
+	{
+		for (int x = 0; x < 13; ++x)
+		{
+			if (_ufoBlobs[blob][y][x])
+			{
+				x0 = std::min(x0, x);
+				x1 = std::max(x1, x);
+			}
+		}
+	}
+	if (x1 < x0)
+	{
+		return;
+	}
+	const Uint32 now = SDL_GetTicks();
+	if (_hdOutlineSince == 0)
+	{
+		_hdOutlineSince = now ? now : 1;
+	}
+	Uint32 color = 0xA8F0B4;
+	if (_ufo->isCrashed() || _ufo->getHitFrame() > 0)
+	{
+		color = 0xFFFFFF;
+	}
+	else if (_ufo->getShield() != 0 && _ufo->getCraftStats().shieldCapacity != 0)
+	{
+		color = HdUi::mixed(color, 0x8CC8FF, 0.7f * _ufo->getShield() / _ufo->getCraftStats().shieldCapacity) & 0xFFFFFF;
+	}
+	const int k = HdUi::scale();
+	// the blob's own place (drawUfo): its 13 x 13 box sits so in _battle
+	const float cx = _battle->getX() + _battle->getWidth() / 2 - 6 + (x0 + x1 + 1) * 0.5f;
+	const float cy = _battle->getY() + _battle->getHeight() - (_currentDist / 8) - 6 + 6.5f;
+	HdUi &ui = HdUi::instance();
+	ui.setClip(_battle->getX(), _battle->getY(), _battle->getWidth(), _battle->getHeight());
+	// nose up: the UFO flies on, away from the craft at the bottom that chases it
+	HdOutline::draw(_ufo->getRules()->getType(), cx * k, cy * k, (x1 - x0 + 1) * 1.3f * k, -1.5707963f, color,
+		(now % 100000u) / 1000.0f * 2.4f, std::min(1.0f, (now - _hdOutlineSince) / 1200.0f));
+	ui.clearClip();
 }
 
 /*

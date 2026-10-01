@@ -71,6 +71,7 @@ private:
 	const UfoTrajectory *_trajectory;
 	size_t _trajectoryPoint;
 	bool _detected, _hyperDetected, _processedIntercept;
+	bool _hdDecoded;    ///< has a hyper-wave decoder ever read it (the HD globe's outline; no effect on the game)
 	int _shootingAt, _hitFrame, _fireCountdown, _escapeCountdown;
 	RuleUfoStats _stats;
 	/// Calculates a new speed vector to the destination.
@@ -175,6 +176,8 @@ public:
 	bool getHyperDetected() const;
 	/// Sets the UFO's hyper detection status.
 	void setHyperDetected(bool hyperdetected);
+	/// Has a hyper-wave decoder ever read this UFO? Kept in the save; only the HD globe asks it.
+	bool getHdDecoded() const { return _hdDecoded; }
 	/// Gets the UFO's progress on the trajectory track.
 	size_t getTrajectoryPoint() const { return _trajectoryPoint; }
 	/// Sets the UFO's progress on the trajectory track.

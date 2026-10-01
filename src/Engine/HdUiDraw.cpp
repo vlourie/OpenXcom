@@ -467,6 +467,28 @@ void HdUi::fillCircle(float cx, float cy, float r, Uint32 color)
 	}
 }
 
+void HdUi::drawImage(const Uint32 *argb, int w, int h, int x, int y)
+{
+	FrameTiming timing(_frameMs);
+	SDL_Surface *dest;
+	int k;
+	const SDL_Color *pal;
+	if (!target(dest, k, pal) || w <= 0 || h <= 0) return;
+	const SDL_Rect clip = worldClip(dest, k);
+	const int x0 = std::max(x, (int)clip.x), y0 = std::max(y, (int)clip.y);
+	const int x1 = std::min(x + w, clip.x + clip.w), y1 = std::min(y + h, clip.y + clip.h);
+	for (int py = y0; py < y1; ++py)
+	{
+		Uint32 *row = (Uint32*)((Uint8*)dest->pixels + (size_t)py * dest->pitch);
+		const Uint32 *src = argb + (size_t)(py - y) * w;
+		for (int px = x0; px < x1; ++px)
+		{
+			const Uint32 c = src[px - x];
+			if (c >> 24) blendPixel(row[px], c, 1.0f);
+		}
+	}
+}
+
 void HdUi::blendGlyph(SDL_Surface *dest, const SDL_Rect &clip, const HdFont::Glyph &g, int x, int y, Uint32 color)
 {
 	const int x0 = std::max(x, (int)clip.x), y0 = std::max(y, (int)clip.y);

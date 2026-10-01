@@ -118,6 +118,8 @@ public:
 	void fillTriangle(float ax, float ay, float bx, float by, float cx, float cy, Uint32 color);
 	/// Fills a circle.
 	void fillCircle(float cx, float cy, float r, Uint32 color);
+	/// Blends a picture of 0xAARRGGBB pixels (straight alpha) with its top left at world pixel (x, y), clipped.
+	void drawImage(const Uint32 *argb, int w, int h, int x, int y);
 	/// What a classic bitmap font is replaced with: the TrueType face (big or small), the capitals' height in
 	/// base pixels (a little lighter than the chunky bitmap's) and the classic line advance.
 	struct FontMetrics

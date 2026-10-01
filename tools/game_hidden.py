@@ -46,7 +46,9 @@ for n, v in fixed.items():
 if added:
     cfg = re.sub(r"(?m)^options:\s*$", "options:\n" + "\n".join(added), cfg, count=1)
 (u / "options.cfg").write_text(cfg, encoding="utf-8")
-shutil.copy(GAME / "user" / "piratez" / o.save, u / "piratez" / "hiddentest.sav")
+# имя - из user/piratez установки; путь к существующему файлу - своя копия сейва (установку не трогаем)
+save = Path(o.save) if Path(o.save).is_file() else GAME / "user" / "piratez" / o.save
+shutil.copy(save, u / "piratez" / "hiddentest.sav")
 
 dump = Path(o.out).resolve()
 if dump.exists():
