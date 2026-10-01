@@ -84,7 +84,8 @@ private:
 	SavedBattleGame *_save;
 	bool _isTFTD;
 	Surface *_arrow;
-	Surface *_stunIndicator, *_woundIndicator, *_burnIndicator, *_shockIndicator;
+	/// The indicators over a body on the floor, each as its animation phases (one when the HD mod ships none).
+	std::vector<Surface*> _stunIndicator, _woundIndicator, _burnIndicator, _shockIndicator;
 	bool _anyIndicator, _isAltPressed, _isCtrlPressed;
 	int _spriteWidth, _spriteHeight;
 	/// HD render scale k = _spriteWidth / 32: the map surface and all screen offsets are k times the base resolution.
