@@ -369,6 +369,10 @@ Map::~Map()
 	delete _camera;
 	delete _txtAccuracy;
 	delete _numUnitMarker;
+	for (auto *arrow : _gentleArrow)
+	{
+		delete arrow;
+	}
 }
 
 /**
@@ -2359,6 +2363,9 @@ void Map::drawTerrain(HdCanvas *surface)
 		}
 	}
 
+	// gentle mode: where the reaction fire came from (drawn while the shot flies too, the cursor is off then)
+	drawGentleArrows(surface);
+
 	// Draw motion scanner arrows
 	if (_isAltPressed && _save->getSide() == FACTION_PLAYER && this->getCursorType() != CT_NONE)
 	{
@@ -2874,6 +2881,8 @@ void Map::animate(bool redraw)
 	}
 
 	if (redraw) _redraw = true;
+	// gentle mode: the reaction arrows go away on the picture clock, also while the battle is busy
+	if (!_gentleShots.empty()) _redraw = true;
 }
 
 /**
@@ -3082,6 +3091,161 @@ void Map::setProjectile(Projectile *projectile)
 	if (projectile && HdGentle::smoothCamera())
 	{
 		_launch = true;
+	}
+	if (projectile && HdGentle::on())
+	{
+		noteGentleShot(projectile);
+	}
+}
+
+/**
+ * Gentle mode: the camera stays put on reaction fire (HdGentle::TRACE_PROJECTILES), so the picture
+ * tells where it came from instead - an arrow at the soldier fired at, pointing to the shooter,
+ * and the shooter's number in the reaction colour for the rest of the turn. Picture only:
+ * the rules never read any of it.
+ * @param projectile The projectile just launched.
+ */
+void Map::noteGentleShot(const Projectile *projectile)
+{
+	const BattleUnit *shooter = projectile->getActor();
+	// during the player's turn only the other sides' reaction fire shoots
+	if (!shooter || _save->getSide() != FACTION_PLAYER || shooter->getFaction() == FACTION_PLAYER)
+	{
+		return;
+	}
+	if (_gentleTurn != _save->getTurn())
+	{
+		_gentleTurn = _save->getTurn();
+		_gentleShooters.clear();
+		_gentleShots.clear();
+	}
+	if (std::find(_gentleShooters.begin(), _gentleShooters.end(), shooter) == _gentleShooters.end())
+	{
+		_gentleShooters.push_back(shooter);
+	}
+	const Position at = projectile->getTarget();
+	Tile *tile = _save->getTile(at);
+	const BattleUnit *target = tile ? tile->getOverlappingUnit(_save) : nullptr;
+	// a burst renews its arrow instead of stacking copies
+	_gentleShots.erase(std::remove_if(_gentleShots.begin(), _gentleShots.end(),
+		[&](const GentleShot &s) { return s.shooter == shooter && s.target == target; }), _gentleShots.end());
+	_gentleShots.push_back(GentleShot{ shooter, target, shooter->getPosition(), at, SDL_GetTicks() });
+	_redraw = true;
+}
+
+/**
+ * Gentle mode: has this unit fired a reaction shot at the player's side in this turn?
+ * @param unit The unit behind a visible unit indicator.
+ * @return True to show its number in the reaction colour.
+ */
+bool Map::firedReactionThisTurn(const BattleUnit *unit) const
+{
+	return _gentleTurn == _save->getTurn() && std::find(_gentleShooters.begin(), _gentleShooters.end(), unit) != _gentleShooters.end();
+}
+
+/**
+ * The reaction arrow pointing one of GENTLE_ARROW_STEPS ways (step 0 to the right, clockwise on
+ * the screen), built in world pixels from its outline so its edges stay straight at any scale (R-042).
+ * @param step Direction step.
+ * @return The arrow sprite, kept until the scale changes.
+ */
+Surface *Map::gentleArrow(int step)
+{
+	if (_gentleArrowScale != _k)
+	{
+		for (auto *&arrow : _gentleArrow)
+		{
+			delete arrow;
+			arrow = nullptr;
+		}
+		_gentleArrowScale = _k;
+	}
+	if (_gentleArrow[step])
+	{
+		return _gentleArrow[step];
+	}
+	const int size = 24 * _k;
+	auto *arrow = new Surface(size, size);
+	arrow->clear();
+	const double angle = step * 2.0 * M_PI / GENTLE_ARROW_STEPS;
+	const double c = std::cos(angle), s = std::sin(angle), k = _k;
+	// along the arrow u (tail -9, head tip +10), across it v; m widens the shape by the outline
+	auto inside = [&](double u, double v, double m)
+	{
+		const double av = std::abs(v);
+		if (u >= -9 * k - m && u <= 3 * k + m && av <= 1.5 * k + m)
+			return true;
+		return u >= 3 * k - m && u <= 10 * k + m && av <= (10 * k - u) * 5.0 / 7.0 + m * 1.25;
+	};
+	arrow->lock();
+	for (int y = 0; y < size; ++y)
+	{
+		for (int x = 0; x < size; ++x)
+		{
+			const double px = x + 0.5 - size / 2.0, py = y + 0.5 - size / 2.0;
+			const double u = px * c + py * s, v = -px * s + py * c;
+			if (inside(u, v, 0))
+				arrow->setPixel(x, y, HdGentle::REACTION_COLOR);
+			else if (inside(u, v, k))
+				arrow->setPixel(x, y, 15); // dark rim, readable on any floor
+		}
+	}
+	arrow->unlock();
+	_gentleArrow[step] = arrow;
+	return arrow;
+}
+
+/**
+ * Draws the arrows from the soldiers fired at by reaction shots towards the shooters.
+ * Steady, no blinking; each goes after HdGentle::REACTION_ARROW_MS.
+ * @param surface The canvas.
+ */
+void Map::drawGentleArrows(HdCanvas *surface)
+{
+	if (_gentleShots.empty())
+	{
+		return;
+	}
+	const Uint32 now = SDL_GetTicks();
+	_gentleShots.erase(std::remove_if(_gentleShots.begin(), _gentleShots.end(), [&](const GentleShot &s)
+	{
+		return _gentleTurn != _save->getTurn() || now - s.ticks > HdGentle::REACTION_ARROW_MS;
+	}), _gentleShots.end());
+	for (const auto &shot : _gentleShots)
+	{
+		const bool onUnit = shot.target && !shot.target->isOut();
+		const Position at = onUnit ? shot.target->getPosition() : shot.at;
+		if (at.z > _camera->getViewLevel())
+		{
+			continue;
+		}
+		Position here, there;
+		_camera->convertMapToScreen(at, &here);
+		_camera->convertMapToScreen(shot.from, &there);
+		const double dx = there.x - here.x, dy = there.y - here.y;
+		if (dx == 0 && dy == 0)
+		{
+			continue;
+		}
+		const double angle = std::atan2(dy, dx);
+		const int step = ((int)std::lround(angle * GENTLE_ARROW_STEPS / (2.0 * M_PI)) % GENTLE_ARROW_STEPS + GENTLE_ARROW_STEPS) % GENTLE_ARROW_STEPS;
+		Surface *arrow = gentleArrow(step);
+
+		// the middle of the body, as the number above an enemy is placed (see the visible unit indicators)
+		Position offset;
+		int height = 12;
+		if (onUnit)
+		{
+			offset = calculateWalkingOffset(shot.target).ScreenOffset;
+			height = shot.target->getHeight() + shot.target->getFloatHeight();
+			if (shot.target->isBigUnit())
+			{
+				offset.y += 4 * _k;
+			}
+		}
+		const int cx = here.x + _camera->getMapOffset().x + offset.x + _spriteWidth / 2 + (int)std::lround(std::cos(angle) * 16 * _k);
+		const int cy = here.y + _camera->getMapOffset().y + offset.y + (Position::TileZ - height / 2) * _k + (int)std::lround(std::sin(angle) * 16 * _k);
+		surface->blitClassic(arrow, cx - arrow->getWidth() / 2, cy - arrow->getHeight() / 2, 1);
 	}
 }
 

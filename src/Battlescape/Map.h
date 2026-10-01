@@ -133,6 +133,25 @@ private:
 	const BattleUnit *_unitMarkerUnit[UNIT_MARKER_MAX];
 	Uint8 _unitMarkerColor[UNIT_MARKER_MAX];
 	SurfaceSet *_projectileSet;
+	/// Gentle mode: a reaction shot of this turn, for the arrow at the soldier fired at (picture only).
+	struct GentleShot
+	{
+		const BattleUnit *shooter, *target;
+		Position from, at;
+		Uint32 ticks;
+	};
+	std::vector<GentleShot> _gentleShots;
+	std::vector<const BattleUnit*> _gentleShooters;
+	int _gentleTurn = -1;
+	static const int GENTLE_ARROW_STEPS = 32;
+	Surface *_gentleArrow[GENTLE_ARROW_STEPS] = {};
+	int _gentleArrowScale = 0;
+	/// Notes a reaction shot fired at the player's side (gentle mode).
+	void noteGentleShot(const Projectile *projectile);
+	/// Draws the arrows from the soldiers fired at towards their shooters (gentle mode).
+	void drawGentleArrows(HdCanvas *surface);
+	/// The arrow sprite pointing one of GENTLE_ARROW_STEPS ways, in world pixels.
+	Surface *gentleArrow(int step);
 
 	void drawUnit(UnitSprite &unitSprite, Tile *unitTile, Tile *currTile, Position tileScreenPosition, bool topLayer, BattleUnit* movingUnit = nullptr);
 	void drawTerrain(HdCanvas *canvas);
@@ -231,6 +250,8 @@ public:
 	void clearUnitMarkers();
 	/// Sets an on-map marker for one visible unit indicator (0 clears the slot).
 	void setUnitMarker(int index, const BattleUnit *unit, Uint8 color);
+	/// Gentle mode: has this unit fired a reaction shot at the player's side in this turn?
+	bool firedReactionThisTurn(const BattleUnit *unit) const;
 	/// Set mouse-buttons' pressed state.
 	void setButtonsPressed(Uint8 button, bool pressed);
 	/// Sets the unitDying flag.
