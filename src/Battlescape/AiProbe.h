@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include <utility>
 #include <vector>
 /*
  * Copyright 2010-2026 OpenXcom Developers.
@@ -29,6 +30,7 @@ class BattleUnit;
 class Position;
 class TileEngine;
 struct BattleAction;
+struct BattleActionCost;
 
 /**
  * The AI turn probe (OXCE_AI_PROBE=1, docs/AI_ROADMAP.md, stage 2.1): a loaded battle save
@@ -68,6 +70,36 @@ bool pathProf();
 /// back, len and cost - its size (path steps, reachable tiles) and TU (path cost, TU budget) for the mismatch lines.
 void pathAsk(int kind, int algo, const BattleUnit *unit, const Position &from, const Position &to, int bam,
 	const BattleUnit *missileTarget, int maxTU, int tu, int energy, unsigned long long answer, int len, int cost, long long ns, const void *site);
+/// The decision record takes the reach the game computes when the unit thinks instead of asking the pathfinder itself before
+/// the think (OXCE_AI_RECORD_REUSE, default on; 0 - the record asks as before). The path profile (docs/research/
+/// ai-path-audit-2026-10-01.md, 2.3) found the record's ask repeated the think's own to the byte - 439 asks, 5,2 s of the
+/// station battle. True for the first findReachable of the thinking unit with no action cost, at the time units and energy it
+/// started to think with: the same ask the record would make. When the think may spend first (a reload, the once-a-turn
+/// medikit, the freeze workaround - BattleUnit::think before AIModule::think) the record asks itself before the think as it
+/// always did; a decision the think never asked for gets the record's own ask after it ([AIREUSE]: taken, own, fallback).
+bool reachWanted(const BattleUnit *unit, const BattleActionCost &cost);
+/// That answer: the tiles in the pathfinder's order with the time units to each (findReachable, reachedTU).
+void reachTaken(SavedBattleGame *save, std::vector<std::pair<int, int>> &&reach);
+/// The ambush profile (OXCE_AI_AMBUSHPROF): what AIModule::setupAmbush does with the map's nodes - how many it looks at, how
+/// many pass each cheap check, how many enemy searches (A*, no TU cap) it runs, which of them succeed, what each costs in
+/// expanded nodes and time, and which node it takes. Reads only: [AIAMB] per call, [AIAMBN] per enemy search, totals at the
+/// end of the battle. Off (the default): nothing is counted.
+bool ambushProf();
+/// setupAmbush starts for unit against enemy, the closest known.
+void ambushBegin(SavedBattleGame *save, const BattleUnit *unit, const BattleUnit *enemy);
+/// A node passed a stage: 0 looked at, 1 near, same level, safe and in reach with the attack, 2 hidden from the enemy, 3 the unit's own path got there.
+void ambushNode(int stage);
+/// A search is about to start (its time is measured from here).
+void ambushMark();
+/// The unit's own path to the node was searched: ok - it got there, tu - its cost, expanded - the A* nodes.
+void ambushOwn(bool ok, int tu, int expanded);
+/// The enemy's path to the node was searched: ok - it got there, cost and len - its TU and steps, expanded - the A* nodes;
+/// own - the unit's own cost, score - the node's score before cover, best - the best score so far.
+void ambushEnemy(const Position &pos, bool ok, int cost, int len, int expanded, int own, int score, int best);
+/// The node was scored after the enemy's search got there: cover - behind a window, taken - it became the best.
+void ambushScored(int score, bool cover, bool taken);
+/// setupAmbush ends: chosen - it set a walk, best - its score, target - the node, tus - the cost it kept, fast - it stopped early.
+void ambushEnd(bool chosen, int best, const Position &target, int tus, bool fast);
 /// Does the AI play the player's side right now (OXCE_AI_BOT)?
 bool botTurn(const SavedBattleGame *save);
 /// The seed of a generated battle (OXCE_AI_SEED), or -1.

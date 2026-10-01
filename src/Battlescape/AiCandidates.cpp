@@ -145,11 +145,13 @@ uint64_t actionId(Kind kind, int actor, int type, Position tile, const std::stri
 	return f.h;
 }
 
-Set generate(SavedBattleGame *save, BattleUnit *unit)
+Set generate(SavedBattleGame *save, BattleUnit *unit, bool withMoves)
 {
 	Set set;
 	const int id = unit->getId();
 	const Position pos = unit->getPosition();
+	set.actor = id;
+	set.at = pos;
 
 	// the enemies it knows of: seen by itself, or by its side no longer ago than its intelligence (as AIModule counts them)
 	std::vector<BattleUnit*> enemies;
@@ -264,43 +266,61 @@ Set generate(SavedBattleGame *save, BattleUnit *unit)
 		set.acts.push_back(c);
 	}
 
+	// where it may head beyond this turn's reach (tu -1): the map's nodes, as a patrol goes, and the enemies it knows of
+	for (const auto *node : *save->getNodes())
+	{
+		set.far.push_back(node->getPosition());
+	}
+	for (const auto *bu : enemies)
+	{
+		set.far.push_back(bu->getPosition());
+	}
+	if (withMoves)
+	{
+		addMoves(save, set, reach(save, unit));
+	}
+	return set;
+}
+
+Reach reach(SavedBattleGame *save, const BattleUnit *unit)
+{
 	// every tile it can walk to this turn
 	Pathfinding *pf = save->getPathfinding();
-	Fnv moves;
+	Reach r;
 	for (int index : pf->findReachable(unit, BattleActionCost()))
 	{
-		const Position to = save->getTileCoords(index);
-		if (to == pos)
+		r.emplace_back(index, pf->reachedTU(save->getTileCoords(index)));
+	}
+	return r;
+}
+
+void addMoves(SavedBattleGame *save, Set &set, const Reach &reach)
+{
+	Fnv moves;
+	for (const auto &it : reach)
+	{
+		const Position to = save->getTileCoords(it.first);
+		if (to == set.at)
 			continue;
 		Candidate c;
 		c.kind = MOVE;
 		c.type = BA_WALK;
 		c.tile = to;
-		c.tu = pf->reachedTU(to);
-		c.id = actionId(c.kind, id, c.type, c.tile, "");
+		c.tu = it.second;
+		c.id = actionId(c.kind, set.actor, c.type, c.tile, "");
 		moves.add(to.x);
 		moves.add(to.y);
 		moves.add(to.z);
 		moves.add(c.tu);
 		set.moves.push_back(c);
 	}
-	// where it may head beyond this turn's reach (tu -1): the map's nodes, as a patrol goes, and the enemies it knows of
-	std::vector<Position> far;
-	for (const auto *node : *save->getNodes())
-	{
-		far.push_back(node->getPosition());
-	}
-	for (const auto *bu : enemies)
-	{
-		far.push_back(bu->getPosition());
-	}
 	std::set<int> listed;
-	listed.insert(save->getTileIndex(pos));
+	listed.insert(save->getTileIndex(set.at));
 	for (const auto &m : set.moves)
 	{
 		listed.insert(save->getTileIndex(m.tile));
 	}
-	for (const Position &to : far)
+	for (const Position &to : set.far)
 	{
 		if (!save->getTile(to) || !listed.insert(save->getTileIndex(to)).second)
 			continue;
@@ -309,7 +329,7 @@ Set generate(SavedBattleGame *save, BattleUnit *unit)
 		c.type = BA_WALK;
 		c.tile = to;
 		c.tu = -1;
-		c.id = actionId(c.kind, id, c.type, c.tile, "");
+		c.id = actionId(c.kind, set.actor, c.type, c.tile, "");
 		moves.add(to.x);
 		moves.add(to.y);
 		moves.add(to.z);
@@ -336,7 +356,6 @@ Set generate(SavedBattleGame *save, BattleUnit *unit)
 	}
 	set.orderHash = order.h;
 	set.setHash = sorted.h;
-	return set;
 }
 
 uint64_t chosenId(SavedBattleGame *save, const BattleUnit *unit, const BattleAction &action, Kind *kind)

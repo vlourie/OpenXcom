@@ -199,6 +199,7 @@ void Pathfinding::calculate(BattleUnit *unit, Position endPosition, BattleAction
 	}
 	_totalTUCost = {};
 	_path.clear();
+	_expanded = 0;
 	_unit = unit;
 	_teleportDestination.reset();
 
@@ -315,6 +316,7 @@ bool Pathfinding::aStarPath(Position startPosition, Position endPosition, Battle
 	while (!openList.empty())
 	{
 		PathfindingNode *currentNode = openList.pop();
+		++_expanded;
 		Position const &currentPos = currentNode->getPosition();
 		currentNode->setChecked();
 		if (currentPos == endPosition) // We found our target.
@@ -1681,6 +1683,18 @@ std::vector<int> Pathfinding::findReachable(const BattleUnit *unit, const Battle
 		}
 		const long long ns = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - t0).count();
 		AiProbe::pathAsk(2, 0, unit, start, start, (int)BAM_NORMAL, nullptr, tuMax, unit->getTimeUnits(), energyMax, h, (int)tiles.size(), tuMax, ns, site);
+	}
+	if (AiProbe::reachWanted(unit, cost))
+	{
+		// the decision record (OXCE_AI_RECORD_REUSE, bench builds only) takes this answer - the tiles in their order with the cost to
+		// each, as reachedTU would read it - instead of asking the same once more before the unit thinks
+		std::vector<std::pair<int, int>> got;
+		got.reserve(reachable.size());
+		for (auto* pn : reachable)
+		{
+			got.emplace_back(_save->getTileIndex(pn->getPosition()), pn->getTUCost(false).time);
+		}
+		AiProbe::reachTaken(_save, std::move(got));
 	}
 	return tiles;
 }

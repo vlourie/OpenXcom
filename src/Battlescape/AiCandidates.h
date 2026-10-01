@@ -60,14 +60,25 @@ struct Set
 {
 	std::vector<Candidate> acts;    ///< everything but the moves, in generation order
 	std::vector<Candidate> moves;   ///< every reachable tile with its cost, in the pathfinder's order, then tu -1: nodes and known enemies out of reach
+	std::vector<Position> far;      ///< where it may head beyond this turn's reach, as generate saw it: the map's nodes, then the enemies it knows of
+	int actor = 0;                  ///< the unit's id, for the ids of the moves
+	Position at;                    ///< the unit's tile: not a move
 	uint64_t setHash = 0;           ///< over the sorted action ids: are the candidates the same?
 	uint64_t orderHash = 0;         ///< over the ids in generation order: are they walked in the same order?
 	uint64_t movesHash = 0;         ///< the move list alone: the id it is stored under once per battle
 	int count() const { return (int)(acts.size() + moves.size()); }
 };
 
-/// Every action the unit could start now.
-Set generate(SavedBattleGame *save, BattleUnit *unit);
+/// The tiles a unit can walk to this turn with the cost of getting there, in the pathfinder's order (findReachable, reachedTU).
+using Reach = std::vector<std::pair<int, int>>;
+
+/// Every action the unit could start now. Without the moves the set is not complete until addMoves: the record takes the
+/// reach the game computes when the unit thinks (OXCE_AI_RECORD_REUSE) instead of asking the pathfinder once more here.
+Set generate(SavedBattleGame *save, BattleUnit *unit, bool withMoves = true);
+/// The unit's reach as generate asks for it itself.
+Reach reach(SavedBattleGame *save, const BattleUnit *unit);
+/// The moves of a set generated without them: the reach, then what is far, then the hashes.
+void addMoves(SavedBattleGame *save, Set &set, const Reach &reach);
 /// The stable id of a candidate.
 uint64_t actionId(Kind kind, int actor, int type, Position tile, const std::string &weapon);
 /// The id of an action that was chosen, in the same terms as the candidates; kind OTHER if no candidate matches its type.

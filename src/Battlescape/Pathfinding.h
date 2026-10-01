@@ -77,6 +77,8 @@ private:
 
 	std::vector<int> _path;
 	std::optional<Position> _teleportDestination;
+	/// nodes the last calculate's A* took off its open list (0 after a straight path or no search): what the search cost, for the bench
+	int _expanded = 0;
 
   public:
 	/// Determines whether the unit is going up a stairs.
@@ -284,6 +286,8 @@ private:
 	int reachedTU(Position pos);
 	/// Gets _totalTUCost; finds out whether we can hike somewhere in this turn or not.
 	int getTotalTUCost() const { return _totalTUCost.time; }
+	/// Nodes the last calculate's A* expanded; 0 when the straight path did or nothing was searched.
+	int getExpanded() const { return _expanded; }
 	/// Gets the path preview setting.
 	bool isPathPreviewed() const;
 	/// Gets the modifier setting.

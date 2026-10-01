@@ -1126,6 +1126,7 @@ void AIModule::setupAmbush()
 	int bestScore = 0;
 	_ambushTUs = 0;
 	std::vector<int> path;
+	bool fastPass = false;
 
 	if (selectClosestKnownEnemy())
 	{
@@ -1133,6 +1134,7 @@ void AIModule::setupAmbush()
 		const int COVER_BONUS = 25;
 		const int FAST_PASS_THRESHOLD = 80;
 		Position origin = _save->getTileEngine()->getSightOriginVoxel(_aggroTarget);
+		AiProbe::ambushBegin(_save, _unit, _aggroTarget);
 
 		// we'll use node positions for this, as it gives map makers a good degree of control over how the units will use the environment.
 		for (const auto* node : *_save->getNodes())
@@ -1141,11 +1143,13 @@ void AIModule::setupAmbush()
 			{
 				continue;
 			}
+			AiProbe::ambushNode(0);
 			Position pos = node->getPosition();
 			Tile *tile = _save->getTile(pos);
 			if (tile == 0 || Position::distance2d(pos, _unit->getPosition()) > 10 || pos.z != _unit->getPosition().z || tile->getDangerous() ||
 				std::find(_reachableWithAttack.begin(), _reachableWithAttack.end(), _save->getTileIndex(pos))  == _reachableWithAttack.end())
 				continue; // just ignore unreachable tiles
+			AiProbe::ambushNode(1);
 
 			if (_traceAI)
 			{
@@ -1158,26 +1162,38 @@ void AIModule::setupAmbush()
 			Position target;
 			if (!_save->getTileEngine()->canTargetUnit(&origin, tile, &target, _aggroTarget, false, _unit) && !getSpottingUnits(pos))
 			{
+				AiProbe::ambushNode(2);
+				AiProbe::ambushMark();
 				_save->getPathfinding()->calculate(_unit, pos, BAM_NORMAL);
 				int ambushTUs = _save->getPathfinding()->getTotalTUCost();
 				// make sure we can move here
-				if (_save->getPathfinding()->getStartDirection() != -1)
+				const bool ownPath = _save->getPathfinding()->getStartDirection() != -1;
+				AiProbe::ambushOwn(ownPath, ambushTUs, _save->getPathfinding()->getExpanded());
+				if (ownPath)
 				{
+					AiProbe::ambushNode(3);
 					int score = BASE_SYSTEMATIC_SUCCESS;
 					score -= ambushTUs;
 
 					// make sure our enemy can reach here too.
+					AiProbe::ambushMark();
 					_save->getPathfinding()->calculate(_aggroTarget, pos, BAM_NORMAL);
 
-					if (_save->getPathfinding()->getStartDirection() != -1)
+					const bool enemyPath = _save->getPathfinding()->getStartDirection() != -1;
+					AiProbe::ambushEnemy(pos, enemyPath, _save->getPathfinding()->getTotalTUCost(), (int)_save->getPathfinding()->getPath().size(),
+						_save->getPathfinding()->getExpanded(), ambushTUs, score, bestScore);
+					if (enemyPath)
 					{
 						// ideally we'd like to be behind some cover, like say a window or a low wall.
-						if (_save->getTileEngine()->faceWindow(pos) != -1)
+						const bool cover = _save->getTileEngine()->faceWindow(pos) != -1;
+						if (cover)
 						{
 							score += COVER_BONUS;
 						}
 						AiProbe::traceTile(_unit, "ambush", pos, score);
-						if (score > bestScore)
+						const bool taken = score > bestScore;
+						AiProbe::ambushScored(score, cover, taken);
+						if (taken)
 						{
 							path = _save->getPathfinding()->copyPath();
 							bestScore = score;
@@ -1185,6 +1201,7 @@ void AIModule::setupAmbush()
 							_ambushAction.target = pos;
 							if (bestScore > FAST_PASS_THRESHOLD)
 							{
+								fastPass = true;
 								break;
 							}
 						}
@@ -1195,6 +1212,7 @@ void AIModule::setupAmbush()
 
 		if (bestScore > 0)
 		{
+			AiProbe::ambushEnd(true, bestScore, _ambushAction.target, _ambushTUs, fastPass);
 			_probeScore = bestScore;
 			_ambushAction.type = BA_WALK;
 			// i should really make a function for this
@@ -1227,6 +1245,7 @@ void AIModule::setupAmbush()
 			return;
 		}
 	}
+	AiProbe::ambushEnd(false, bestScore, _ambushAction.target, _ambushTUs, fastPass);
 	if (_traceAI)
 	{
 		Log(LOG_INFO) << "Ambush estimation failed";

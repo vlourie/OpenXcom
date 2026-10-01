@@ -502,6 +502,8 @@ public:
 	const BattleItem *getActiveHand(const BattleItem *left, const BattleItem *right) const;
 	/// Reloads a weapon if needed.
 	bool reloadAmmo();
+	/// Has the AI's once-a-turn medikit check (think) already run this turn?
+	bool isAiMedikitUsed() const { return _aiMedikitUsed; }
 
 	/// Toggle the right hand as main hand for reactions.
 	void toggleRightHandForReactions(bool isCtrl);
