@@ -158,6 +158,7 @@ set ( engine_src
   Engine/HdBase.cpp
   Engine/HdCraftLights.cpp
   Engine/HdFx.cpp
+  Engine/HdOutline.cpp
   Engine/HdKillCam.cpp
   Engine/HdBlit.cpp
   Engine/HdCanvas.cpp

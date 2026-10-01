@@ -79,6 +79,9 @@ private:
 	void endDogfight();
 	bool _tractorLockedOn[RuleCraft::WeaponMax];
 	void updateOceanIndicator();
+	unsigned _hdOutlineSince = 0;   ///< SDL_GetTicks when the HD outline of the UFO first showed (0 = not shown)
+	/// Is the HD layer drawing the UFO as an outline instead of the blob (oxceHdCraftOutlines)?
+	bool hdOutline() const;
 
 public:
 	/// Creates the Dogfight state.
@@ -89,6 +92,8 @@ public:
 	bool isUfoAttacking() const;
 	/// Runs the timers.
 	void think() override;
+	/// Blits the window, then the UFO's HD outline over the radar.
+	void blit() override;
 	/// Animates the window.
 	void animate();
 	/// Moves the craft.

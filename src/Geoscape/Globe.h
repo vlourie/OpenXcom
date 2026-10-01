@@ -20,6 +20,7 @@
 #include <string>
 #include <vector>
 #include <list>
+#include <unordered_map>
 #include "../Engine/InteractiveSurface.h"
 #include "../Engine/FastLineClip.h"
 #include "Cord.h"
@@ -32,6 +33,7 @@ class Polygon;
 class SurfaceSet;
 class Timer;
 class Target;
+class MovingTarget;
 class LocalizedText;
 class RuleGlobe;
 class Craft;
@@ -91,6 +93,25 @@ private:
 	Surface *_hdEarth = nullptr;        ///< ocean, land and shadow at the globe's own scale (oxceHdGlobeScale), for the HD layer
 	bool _hdEarthDirty = true;          ///< the globe was drawn again since _hdEarth was
 	double _hdEarthFactor = 0.0;        ///< how many _hdEarth pixels one base pixel was when it was drawn
+	/// A craft or a UFO the HD layer draws as an outline instead of its marker (oxceHdCraftOutlines).
+	struct HdMark
+	{
+		std::string type;        ///< the ruleset type: the outline's name
+		double x, y;             ///< the centre on the globe surface, base pixels
+		float angle;             ///< the nose on the screen, radians
+		Uint32 color;            ///< 0xRRGGBB
+		float strength;          ///< a wreck is dimmer
+		Uint32 since;            ///< SDL_GetTicks when it came into sight: drawn stroke by stroke at first
+	};
+	/// What an outlined target looked like last time: its heading (kept while it stands) and when it came into sight.
+	struct HdHeading
+	{
+		float angle;
+		Uint32 since;
+	};
+	std::vector<HdMark> _hdMarks;
+	std::unordered_map<const Target*, HdHeading> _hdHeadings;
+	bool _hdMarksKept = false;          ///< were the outlined targets kept out of _markers when it was last drawn
 
 	bool _isMouseScrolling, _isMouseScrolled;
 	int _xBeforeMouseScrolling, _yBeforeMouseScrolling;
@@ -131,6 +152,12 @@ private:
 	Text *hdLabelText(int w, int h);
 	/// Draws the kept labels with the TrueType fonts, over the upscaled globe.
 	void drawHdLabels();
+	/// Is the HD layer drawing the own craft and the decoded UFOs as outlines?
+	bool hdOutlines() const;
+	/// Keeps a craft or a UFO as an outline instead of a marker; false when its type has none (the marker stays).
+	bool keepHdMark(MovingTarget *target, const std::string &type, Uint32 color, float strength, std::unordered_map<const Target*, HdHeading> &seen);
+	/// Draws the kept outlines over the upscaled globe.
+	void drawHdMarks();
 	/// The world pixels one pixel of the globe takes in the HD layer when it has a scale of its own; 0 = as the geoscape.
 	int hdEarthScale() const;
 	/// Draws the ocean, the land and the shadow into _hdEarth (w x h), f times finer than the base pixels.
