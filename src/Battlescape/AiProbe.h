@@ -205,6 +205,16 @@ int firepointPathOver(SavedBattleGame *save, const BattleUnit *unit, int tuMax, 
 /// FIREPOINT_ENERGY_PATH_V1: the tiles one findFirePoint dropped by energy and found over by TU, one step of the trail
 /// "firepoint.energy n<dropped> t<over by TU> mt<movement> en<energy>" and a tally when it dropped any.
 void firepointDropped(const BattleUnit *unit, int droppedByEnergy, int overByTu);
+/// FIREPOINT_BLOCKED_UNIT_STALL (OXCE_AI_FIREPOINT_BLOCKED, bench only): a walk stopped at a unit on the step in dir
+/// (UnitWalkBState); the AI module records it if findFirePoint chose the walk. No-op without the flag.
+void firepointBlocked(BattleUnit *unit, const BattleAction &action, int dir);
+/// FIREPOINT_BLOCKED_UNIT_STALL: what the unit's side may know of the battle that a path depends on - pathRevision's hash
+/// (where units stand, their status, the map's parts, doors, fire, smoke), but of the units only its own side and those
+/// its side spotted this turn: a unit it does not see neither keeps nor drops a record. 0 in a release build.
+unsigned long long knownRevision(SavedBattleGame *save, const BattleUnit *unit);
+/// OXCE_AI_FIREPOINT_BLOCKED_SALT (bench test of the invalidation, not a game fixture): the first check of a record in
+/// each unit-turn sees the revision changed. False in a release build.
+bool firepointBlockedSalt();
 /// A side's turn ends (BattlescapeGame::endTurn): the last decision's action is over.
 void sideEnds(SavedBattleGame *save);
 /// One line per unit killed or knocked out ([AICASUALTY]): by whom, with what, from how far, on whose turn.

@@ -107,6 +107,13 @@ unsigned long long AIModule::probeHash() const
 		// only once the bench rule has spent a patrol: without OXCE_AI_ENERGY_PATROL_END the fingerprint stays as it was
 		add(_patrolSpent); add(_patrolSpentAt.x); add(_patrolSpentAt.y); add(_patrolSpentAt.z); add(_patrolSpentEnergy); add(_patrolRetry);
 	}
+	if (_fpBlocked || _fpInvalidated)
+	{
+		// only once the bench rule has recorded a blocked firepoint (OXCE_AI_FIREPOINT_BLOCKED)
+		add(_fpBlocked); add(_fpBlockedPoint.x); add(_fpBlockedPoint.y); add(_fpBlockedPoint.z); add(_fpBlockedDir);
+		add(_fpBlockedFrom.x); add(_fpBlockedFrom.y); add(_fpBlockedFrom.z); add(_fpBlockedTu); add(_fpBlockedTurn);
+		add(_fpBlockedAggro); add((long long)_fpBlockedRev); add(_fpInvalidated);
+	}
 	return h;
 }
 
@@ -507,6 +514,8 @@ void AIModule::think(BattleAction *action)
 	action->weapon = _unit->getMainHandWeapon(false);
 	_patrolWalk = false;
 	_patrolRetry = _patrolRetry == 1 ? 2 : 0;
+	_firepointChosen = false;
+	_fpSuppressedNow = false;
 	_attackAction.diff = _save->getBattleState()->getGame()->getSavedGame()->getDifficultyCoefficient();
 	_attackAction.actor = _unit;
 	_attackAction.run = false;
@@ -849,6 +858,28 @@ void AIModule::think(BattleAction *action)
 			action->type = BA_NONE;
 		}
 	}
+
+	// FIREPOINT_BLOCKED_UNIT_STALL (bench): what the think did instead of the skipped point, and a walk to a blocked point
+	// another branch chose (not suppressed in V1, only counted)
+	const bool firepointWalk = action->type == BA_WALK && _firepointChosen && action->target == _firepointChosenAt;
+	if (_fpSuppressedNow)
+	{
+		const char *after = "fpblocked.after.attack";
+		if (action->type == BA_WALK)
+			after = firepointWalk ? "fpblocked.after.firepoint" : (_AIMode == AI_PATROL ? "fpblocked.after.patrol" : "fpblocked.after.move");
+		else if (action->type == BA_NONE)
+			after = "fpblocked.after.end";
+		else if (action->type == BA_RETHINK)
+			after = "fpblocked.after.rethink";
+		else if (action->type == BA_TURN)
+			after = "fpblocked.after.turn";
+		AiProbe::tally(_unit, after);
+	}
+	if (_fpBlocked && action->type == BA_WALK && !firepointWalk && action->target == _fpBlockedPoint
+		&& _unit->getPosition() == _fpBlockedFrom && _unit->getTimeUnits() == _fpBlockedTu && unitTurn() == _fpBlockedTurn)
+	{
+		AiProbe::tally(_unit, "fpblocked.other_branch");
+	}
 }
 
 
@@ -878,6 +909,71 @@ void AIModule::reachableWithAttack(const BattleActionCost &cost)
 	// the same budget as findReachable's own
 	_reachableTuMax = _unit->getTimeUnits() - cost.Time;
 	_reachableEnergyMax = _unit->getEnergy() - cost.Energy;
+}
+
+/**
+ * The walk being done stopped at a unit (walk.stop.unit) on the step in dir (FIREPOINT_BLOCKED_UNIT_STALL, bench): if
+ * findFirePoint chose it, records the point, the step and the state it was asked in. Nothing of the unit in the way is
+ * read - the side may not see it.
+ */
+void AIModule::firepointWalkBlocked(const BattleAction &action, int dir)
+{
+	if (!_firepointChosen || action.type != BA_WALK || action.target != _firepointChosenAt)
+	{
+		return;
+	}
+	if (_fpInvalidated && _fpInvalidatedFrom == _unit->getPosition() && _fpInvalidatedDir == dir)
+	{
+		AiProbe::tally(_unit, "fpblocked.retry");
+	}
+	_fpInvalidated = false;
+	_fpBlocked = true;
+	_fpBlockedPoint = action.target;
+	_fpBlockedDir = dir;
+	_fpBlockedFrom = _unit->getPosition();
+	_fpBlockedTu = _unit->getTimeUnits();
+	_fpBlockedTurn = unitTurn();
+	_fpBlockedAggro = _aggroTarget ? _aggroTarget->getId() : -1;
+	_fpBlockedAggroPos = _aggroTarget ? _aggroTarget->getPosition() : Position(-1, -1, -1);
+	_fpBlockedRev = AiProbe::knownRevision(_save, _unit);
+	AiProbe::tally(_unit, "fpblocked.recorded");
+}
+
+/**
+ * Does the blocked firepoint's record hold for the ask findFirePoint is making (FIREPOINT_BLOCKED_UNIT_STALL)? The same
+ * unit-turn, place, TU, target where it was and the same revision of what the side knows; anything else drops the record
+ * with the list of what changed, and the point may be tried again.
+ */
+bool AIModule::firepointBlockedHolds()
+{
+	std::string why;
+	if (unitTurn() != _fpBlockedTurn) why += ",turn";
+	if (_unit->getPosition() != _fpBlockedFrom) why += ",unit_pos";
+	if (_unit->getTimeUnits() != _fpBlockedTu) why += ",TU";
+	if ((_aggroTarget ? _aggroTarget->getId() : -1) != _fpBlockedAggro) why += ",target";
+	else if (_aggroTarget && _aggroTarget->getPosition() != _fpBlockedAggroPos) why += ",target_pos";
+	if (why.empty())
+	{
+		unsigned long long rev = AiProbe::knownRevision(_save, _unit);
+		if (AiProbe::firepointBlockedSalt() && _fpSaltTurn != unitTurn())
+		{
+			// the test of the invalidation: once per unit-turn the revision is seen changed
+			_fpSaltTurn = unitTurn();
+			rev ^= 1;
+		}
+		if (rev != _fpBlockedRev) why += ",known_revision";
+	}
+	if (why.empty())
+	{
+		return true;
+	}
+	_fpBlocked = false;
+	_fpInvalidated = true;
+	_fpInvalidatedFrom = _fpBlockedFrom;
+	_fpInvalidatedDir = _fpBlockedDir;
+	AiProbe::tally(_unit, "fpblocked.invalidated");
+	AiProbe::note(_unit, ("fpblocked.why " + why.substr(1)).c_str());
+	return false;
 }
 
 /**
@@ -2480,6 +2576,11 @@ bool AIModule::findFirePoint()
 	bool extendedFireModeChoiceEnabled = _save->getMod()->getAIExtendedFireModeChoice();
 	int bestScore = 0;
 	int droppedByEnergy = 0, overByTu = 0;
+	// FIREPOINT_BLOCKED_UNIT_STALL (bench): points by the first step that met a unit, from where it stood, while nothing
+	// it may know has changed; the first step of the point chosen instead (same_first_step must stay 0)
+	const bool suppress = _fpBlocked && firepointBlockedHolds();
+	bool suppressedHere = false;
+	int bestDir = -1;
 	_attackAction.type = BA_RETHINK;
 	for (const auto& randomPosition : randomTileSearch)
 	{
@@ -2508,6 +2609,18 @@ bool AIModule::findFirePoint()
 					++droppedByEnergy;
 					continue;
 				}
+				if (suppress && _save->getPathfinding()->getStartDirection() == _fpBlockedDir)
+				{
+					// any point by the step that met the unit, not only the point it was walking to: another point by the
+					// same step meets it again (the observation seed 1458 - 81 such reselections with the point in the key)
+					if (!suppressedHere)
+					{
+						AiProbe::tally(_unit, "fpblocked.suppressed");
+					}
+					suppressedHere = true;
+					_fpSuppressedNow = true;
+					continue;
+				}
 				score = BASE_SYSTEMATIC_SUCCESS - getSpottingUnits(pos) * 10;
 				score += _unit->getTimeUnits() - _save->getPathfinding()->getTotalTUCost();
 				if (!_aggroTarget->checkViewSector(pos))
@@ -2532,6 +2645,7 @@ bool AIModule::findFirePoint()
 				if (score > bestScore)
 				{
 					bestScore = score;
+					bestDir = _save->getPathfinding()->getStartDirection();
 					_attackAction.target = pos;
 					_attackAction.finalFacing = _save->getTileEngine()->getDirectionTo(pos, _aggroTarget->getPosition());
 					if (score > FAST_PASS_THRESHOLD)
@@ -2551,6 +2665,12 @@ bool AIModule::findFirePoint()
 	{
 		_probeScore = bestScore;
 		_attackAction.type = BA_WALK;
+		_firepointChosen = true;
+		_firepointChosenAt = _attackAction.target;
+		if (suppressedHere && bestDir == _fpBlockedDir)
+		{
+			AiProbe::tally(_unit, "fpblocked.same_first_step");
+		}
 		if (_traceAI)
 		{
 			Log(LOG_INFO) << "Firepoint found at " << _attackAction.target << ", with a score of: " << bestScore;

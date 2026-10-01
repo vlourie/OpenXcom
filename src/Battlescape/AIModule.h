@@ -83,6 +83,25 @@ private:
 	/// What findReachable left for the walk when it made _reachableWithAttack: the unit's TU and energy less the attack's
 	/// (FIREPOINT_ENERGY_PATH_V1, bench, AiProbe::firepointPathOver).
 	int _reachableTuMax = 0, _reachableEnergyMax = 0;
+	/// FIREPOINT_BLOCKED_UNIT_STALL (bench, AiProbe::firepointBlocked): the point findFirePoint chose in this think - one
+	/// function for firepoint, its fallback and random, so the source is not part of the key.
+	bool _firepointChosen = false;
+	Position _firepointChosenAt;
+	/// The firepoint walk a unit stopped (walk.stop.unit) and the state it was asked in: while all of it holds, any point
+	/// by the same first step from there meets the same unit, and findFirePoint skips it. Any change drops the record.
+	bool _fpBlocked = false;
+	Position _fpBlockedPoint, _fpBlockedFrom, _fpBlockedAggroPos;
+	int _fpBlockedDir = -1, _fpBlockedTu = -1, _fpBlockedTurn = -1, _fpBlockedAggro = -1;
+	unsigned long long _fpBlockedRev = 0;
+	/// A record dropped by a change: the same step from the same place stopped again is a retry after invalidation.
+	bool _fpInvalidated = false;
+	Position _fpInvalidatedFrom;
+	int _fpInvalidatedDir = -1;
+	/// This think skipped a blocked point (the outcome tally); the unit-turn the test salt was used in.
+	bool _fpSuppressedNow = false;
+	int _fpSaltTurn = -1;
+	/// Does the record still hold for this ask? If not, drops it and says why.
+	bool firepointBlockedHolds();
 	/// _reachableWithAttack for this attack, and what it left for the walk.
 	void reachableWithAttack(const BattleActionCost &cost);
 	int unitTurn() const;
@@ -199,6 +218,9 @@ public:
 	bool isPatrolWalk(const BattleAction &action) const;
 	/// No more patrol walks for the rest of this unit-turn: it has no step left by energy (bench, ENERGY_PATROL_END_V2).
 	void spendPatrol();
+	/// The walk being done stopped at a unit on the step in dir: recorded if findFirePoint chose it (bench,
+	/// FIREPOINT_BLOCKED_UNIT_STALL; called by AiProbe::firepointBlocked only).
+	void firepointWalkBlocked(const BattleAction &action, int dir);
 	/// Frees up the destination node for another Unit to select
 	void freePatrolTarget();
 };

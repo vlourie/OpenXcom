@@ -119,6 +119,9 @@ void walkStop(const BattleUnit *, const char *, const Position &, int, int, int,
 bool patrolOutOfEnergy(SavedBattleGame *, BattleUnit *, const BattleAction &, bool) { return false; }
 int firepointPathOver(SavedBattleGame *, const BattleUnit *, int, int) { return 0; }
 void firepointDropped(const BattleUnit *, int, int) {}
+void firepointBlocked(BattleUnit *, const BattleAction &, int) {}
+unsigned long long knownRevision(SavedBattleGame *, const BattleUnit *) { return 0; }
+bool firepointBlockedSalt() { return false; }
 void sideEnds(SavedBattleGame *) {}
 void logCasualty(SavedBattleGame *, const BattleUnit *, const BattleUnit *, const std::string &, bool, int, bool) {}
 
@@ -2704,6 +2707,50 @@ void firepointDropped(const BattleUnit *unit, int droppedByEnergy, int overByTu)
 	std::ostringstream s;
 	s << "firepoint.energy n" << droppedByEnergy << " t" << overByTu << " mt" << (int)unit->getMovementType() << " en" << unit->getEnergy();
 	addTrail(unit, s.str().c_str());
+}
+
+void firepointBlocked(BattleUnit *unit, const BattleAction &action, int dir)
+{
+	static const bool on = active() && envOn("OXCE_AI_FIREPOINT_BLOCKED");
+	if (on && unit->getAIModule())
+	{
+		unit->getAIModule()->firepointWalkBlocked(action, dir);
+	}
+}
+
+unsigned long long knownRevision(SavedBattleGame *save, const BattleUnit *unit)
+{
+	StateHash h;
+	for (const auto *bu : *save->getUnits())
+	{
+		// a unit the side does not see is not in it: neither where it stands nor whether it is out
+		if (bu->getFaction() != unit->getFaction() && bu->getTurnsSinceSpottedByFaction(unit->getFaction()) != 0)
+		{
+			continue;
+		}
+		h.add(bu->getId());
+		h.add(bu->getPosition().x); h.add(bu->getPosition().y); h.add(bu->getPosition().z);
+		h.add((int)bu->getStatus()); h.add(bu->isOut() ? 1 : 0);
+	}
+	for (int i = 0; i < save->getMapSizeXYZ(); ++i)
+	{
+		Tile *tile = save->getTile(i);
+		for (int part = O_FLOOR; part < O_MAX; ++part)
+		{
+			int id = -1, set = -1;
+			tile->getMapData(&id, &set, (TilePart)part);
+			h.add(id * 256 + set);
+			h.add(tile->isUfoDoorOpen((TilePart)part) ? 1 : 0);
+		}
+		h.add(tile->getFire()); h.add(tile->getSmoke());
+	}
+	return h.h;
+}
+
+bool firepointBlockedSalt()
+{
+	static const bool on = active() && envOn("OXCE_AI_FIREPOINT_BLOCKED_SALT");
+	return on;
 }
 
 void logState(SavedBattleGame *save, const char *when)
