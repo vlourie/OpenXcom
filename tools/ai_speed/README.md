@@ -309,13 +309,53 @@ time_on_reachable_us= time_wasted_on_unreachable_us=` в итоге боя. По
 списке skip `cfgText`, выключен — ничего не считается; в сборке для игроков заглушки. Цифры 01.10
 (зерно 201, враг, город / ниндзя / станция): недосягаемых 63,8 / 70,2 / 65,8 % кандидатов, на них
 81 / 83 / 67 % трасс и впустую 20,0 / 6,2 / 0,8 % боя (город 18,2 с из 90,9); у бота 80–84 %
-кандидатов досягаемы. Семь потоков `=` с флагом и без на трёх картах. `ESCAPE_REACH_FIRST` по этим
-числам — решение второго мнения, не реализован. Аудит п. 12.
+кандидатов досягаемы. Семь потоков `=` с флагом и без на трёх картах. По этим числам второе мнение
+дало ход `ESCAPE_REACH_FIRST_V1` — раздел ниже. Аудит п. 12.
 
 ```powershell
 py -3.13 tools/ai_speed/run_one.py --mission STR_LOC_CITY_OF_THE_DEAD_SCOUTING --seed 201 --name e44_ci0 --build E:/OpenXCom/build-ai44
 py -3.13 tools/ai_speed/run_one.py --mission STR_LOC_CITY_OF_THE_DEAD_SCOUTING --seed 201 --name e44_ci1 --build E:/OpenXCom/build-ai44 --env OXCE_AI_ESCAPEPROF=1
 py -3.13 tools/ai_speed/cmp_runs.py e44_ci0 e44_ci1
+```
+
+## Отход — досягаемость раньше трасс — `OXCE_AI_ESCAPE_REACH_FIRST` (с build-ai45, `ESCAPE_REACH_FIRST_V1`)
+
+Минимальная перестановка по слову второго мнения, без счёта, эвристик и кэша: в цикле проб
+`AIModule::setupEscape` проверка `_reachable` стоит **до** `getSpottingUnits` (трассы
+`canTargetUnit` от каждого врага), а не после — недосягаемая клетка отбрасывается, не считая
+трасс к ней. `getSpottingUnits` — `const`, RNG не трогает, `spotters` живёт внутри итерации, клетка
+всё равно отбрасывалась сразу за трассами — поэтому досягаемые клетки получают те же оценки, выбор
+клетки и действие те же. Флаг в списке skip `cfgText`; без флага (умолчание движка) порядок прежний,
+как в OXCE; в сборке для игроков заглушка. Строка `[AIESCRF] mode=0|1 skipped=N` в итоге боя пишется
+всегда — доказательство, какой артефакт играл (R-087, R-105). В стенде **включён по умолчанию**
+(`tools/ai_probe.py`, 01.10, по второму мнению); контрольный опыт обязателен —
+`--env OXCE_AI_ESCAPE_REACH_FIRST=0`. Сборки до build-ai45 переменную не знают и играют как прежде.
+
+Шлюз эквивалентности 01.10 (build-ai45, exe `4051c81657b5be3e`, зерно 201, флаг 0 против 1, у обеих
+`OXCE_AI_ESCAPEPROF=1`):
+
+| Карта | потоки | трасс на недосягаемых, 0 → 1 | досягаемых (враг / бот) | `skipped` = недосягаемых | оценки клеток (`[AITRACE]`, пара с `OXCE_AI_TRACE_DECISION=1..800`) |
+|---|---|---|---|---|---|
+| город `e45_ci0/1` | шесть `=` (`path` пуст) | 482 553 → **0** | 81 414 / 1 194 = | 205 581 | `rec` `=`, 742 клетки отхода из 800 строк |
+| ниндзя `e45_ni0/1` | шесть `=` | 83 932 → **0** | 16 357 / 709 = | 46 032 | `rec` `=`, 522 из 800 |
+| станция `e45_st0/1` | шесть `=` | 23 954 → **0** | 3 528 / 74 = | 6 844 | `rec` `=`, 249 из 439 |
+
+Враг (`side=hostile`) и бот (`side=player`) — в каждом прогоне, по сторонам отдельно. Цена без
+EcoQoS (`--unthrottle 1`, пары подряд): город 85,2 → 67,3 с (**−21 %**), ниндзя 63,7 → 61,1 (−4 %),
+станция 56,0 → 55,0 (−2 %) — ровно «впустую» аудита (20,0 / 6,2 / 0,8 %). fair22 `p45f2`
+(`OXCE_AI_RECORD=1 OXCE_AI_RECORD_PATH=2 OXCE_AI_ESCAPE_REACH_FIRST=1`) — **IDENTICAL 22 из 22**
+против `p43d1` и `p44f2` (`rec` 54 359, `cand` 36 342, `tiles` 22 083, `path` 9 694, потери 1 009
+строк); сумма боёв 589 → 587 с (город 96 → 80, остальное шум ±7 % четырёх рабочих). Приёмка
+умолчания стенда (R-105, без подстановки флага): город без `--env` (`e45_cid`) — `[AIESCRF] mode=1
+skipped=205 581`, шесть потоков `=` против `e45_ci0`; контроль `e45_cic`
+(`--env OXCE_AI_ESCAPE_REACH_FIRST=0`) — `mode=0`; fair22 `p45d1` на умолчаниях (только
+`OXCE_AI_RECORD=1`) против `p44d0` — таблица, `rec`, `cand`, `tiles`, потери те же (`path.gz` нет у
+обеих по замыслу, `series_eq` DIFFERENT только по нему). Аудит п. 13.
+
+```powershell
+py -3.13 tools/ai_speed/run_one.py --mission STR_LOC_CITY_OF_THE_DEAD_SCOUTING --seed 201 --name e45_ci0 --build E:/OpenXCom/build-ai45 --env OXCE_AI_ESCAPE_REACH_FIRST=0 --env OXCE_AI_ESCAPEPROF=1
+py -3.13 tools/ai_speed/run_one.py --mission STR_LOC_CITY_OF_THE_DEAD_SCOUTING --seed 201 --name e45_ci1 --build E:/OpenXCom/build-ai45 --env OXCE_AI_ESCAPE_REACH_FIRST=1 --env OXCE_AI_ESCAPEPROF=1
+py -3.13 tools/ai_speed/cmp_runs.py e45_ci0 e45_ci1
 ```
 
 Профиль:

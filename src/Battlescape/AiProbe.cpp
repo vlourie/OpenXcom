@@ -87,6 +87,8 @@ void escapeBegin(const BattleUnit *) {}
 void escapeTarget() {}
 void escapeMark() {}
 void escapeProbe(const BattleUnit *, int) {}
+bool escapeReachFirst() { return false; }
+void escapeSkipped() {}
 bool botTurn(const SavedBattleGame *) { return false; }
 long long battleSeed() { return -1; }
 void think(BattlescapeState *, SavedBattleGame *) {}
@@ -1254,9 +1256,16 @@ EscapeCount esc[3];
 /// canTargetUnit traces of getSpottingUnits so far (any caller), and where the candidate's count and clock started
 long long escTraces = 0, escTraceMark = 0;
 std::chrono::steady_clock::time_point escMark;
+/// candidates dropped before their traces by ESCAPE_REACH_FIRST_V1 (counted without the profile)
+long long escSkipN = 0;
 
 void escapeReport()
 {
+	if (active())
+	{
+		// the flag's own line, written without the profile: the proof of which artefact played (R-087, R-105)
+		Log(LOG_INFO) << "[AIESCRF] mode=" << (escapeReachFirst() ? 1 : 0) << " skipped=" << escSkipN;
+	}
 	if (!escapeProf())
 	{
 		return;
@@ -1466,6 +1475,17 @@ void escapeProbe(const BattleUnit *unit, int kind)
 	const long long traces = escTraces - escTraceMark;
 	if (kind == 1) { ++e.reach; e.traceReach += traces; e.nsReach += ns; }
 	else { ++e.unreach; e.traceUnreach += traces; e.nsUnreach += ns; }
+}
+
+bool escapeReachFirst()
+{
+	static const bool on = active() && envOn("OXCE_AI_ESCAPE_REACH_FIRST");
+	return on;
+}
+
+void escapeSkipped()
+{
+	++escSkipN;
 }
 
 void propose(const BattleUnit *unit, char slot, const char *source, int score, const BattleAction &action)
@@ -1841,7 +1861,7 @@ const std::string &cfgText()
 		static const std::set<std::string> skip = { "OXCE_AI_SEED", "OXCE_AI_RECORD", "OXCE_AI_TRACE_DECISION", "OXCE_AI_PROBE_SAVE",
 			"OXCE_AI_BUILD", "OXCE_AI_KEEP_DECIDE", "OXCE_AI_MISSION", "OXCE_AI_CAMPAIGN", "OXCE_AI_EXE", "OXCE_AI_GAME", "OXCE_AI_WORK", "OXCE_AI_RECORD_PATH",
 			"OXCE_AI_FAST", "OXCE_AI_LIGHTSKIP", "OXCE_AI_PATHPROF", "OXCE_AI_AMBUSHPROF", "OXCE_AI_ESCAPEPROF", "OXCE_AI_RECORD_REUSE",
-			"OXCE_AI_AMBUSH_MEMO" }; // the fast mode, the light skip, the profiles, the record's reuse and the ambush memo change what is computed, not how the bench plays
+			"OXCE_AI_AMBUSH_MEMO", "OXCE_AI_ESCAPE_REACH_FIRST" }; // the fast mode, the light skip, the profiles, the record's reuse, the ambush memo and the escape order change what is computed, not how the bench plays
 		std::vector<std::string> vars;
 		for (char **e = PROBE_ENVIRON; e && *e; ++e)
 		{
