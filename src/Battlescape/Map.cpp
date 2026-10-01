@@ -241,18 +241,19 @@ Map::Map(Game *game, int width, int height, int x, int y, int visibleMapHeight) 
 	}
 
 	// the k-times copies: these are drawn into the map canvas like a sprite, so that a mod
-	// shipping hd/UI/<name>.png gets a real HD icon instead of a nearest-scaled 16x16 one
-	_stunIndicator = _game->getMod()->getHdSurface("FloorStunIndicator", false);
-	_woundIndicator = _game->getMod()->getHdSurface("FloorWoundIndicator", false);
-	_burnIndicator = _game->getMod()->getHdSurface("FloorBurnIndicator", false);
-	_shockIndicator = _game->getMod()->getHdSurface("FloorShockIndicator", false);
-	_anyIndicator = _stunIndicator || _woundIndicator || _burnIndicator || _shockIndicator;
+	// shipping hd/UI/<name>.png gets a real HD icon instead of a nearest-scaled 16x16 one,
+	// and one shipping hd/UI/anim/<name>/<i>.png gets it animated
+	_stunIndicator = _game->getMod()->getHdSurfaceFrames("FloorStunIndicator", false);
+	_woundIndicator = _game->getMod()->getHdSurfaceFrames("FloorWoundIndicator", false);
+	_burnIndicator = _game->getMod()->getHdSurfaceFrames("FloorBurnIndicator", false);
+	_shockIndicator = _game->getMod()->getHdSurfaceFrames("FloorShockIndicator", false);
+	_anyIndicator = !_stunIndicator.empty() || !_woundIndicator.empty() || !_burnIndicator.empty() || !_shockIndicator.empty();
 
 	if (enviro)
 	{
 		if (!enviro->getMapShockIndicator().empty())
 		{
-			_shockIndicator = _game->getMod()->getHdSurface(enviro->getMapShockIndicator(), false);
+			_shockIndicator = _game->getMod()->getHdSurfaceFrames(enviro->getMapShockIndicator(), false);
 		}
 	}
 
@@ -1611,31 +1612,34 @@ void Map::drawTerrain(HdCanvas *surface)
 								{
 									// the same pulse as the indicators on the inventory's ground grid (Inventory::drawItems); mode 0 keeps the classic still shade
 									static const int Pulsate[8] = { 0, 1, 2, 3, 4, 3, 2, 1 };
-									const int indicatorShade = surface->getHdMode() == HD_MODE_NEAREST ? tileShade : std::min(15, tileShade + Pulsate[_animFrame % 8]);
-									if (_burnIndicator && itemUnit->getFire() > 0)
+									const bool still = surface->getHdMode() == HD_MODE_NEAREST;
+									const int indicatorShade = still ? tileShade : std::min(15, tileShade + Pulsate[_animFrame % 8]);
+									// the phases share the classic pixels, so mode 0 would draw the same with any of them
+									auto phase = [&](const std::vector<Surface*> &frames) { return frames[still ? 0 : _animFrame % frames.size()]; };
+									if (!_burnIndicator.empty() && itemUnit->getFire() > 0)
 									{
-										surface->blit(_burnIndicator,
+										surface->blit(phase(_burnIndicator),
 											screenPosition.x,
 											screenPosition.y + tile->getTerrainLevel() * _k,
 											indicatorShade);
 									}
-									else if (_woundIndicator && itemUnit->getFatalWounds() > 0)
+									else if (!_woundIndicator.empty() && itemUnit->getFatalWounds() > 0)
 									{
-										surface->blit(_woundIndicator,
+										surface->blit(phase(_woundIndicator),
 											screenPosition.x,
 											screenPosition.y + tile->getTerrainLevel() * _k,
 											indicatorShade);
 									}
-									else if (_shockIndicator && itemUnit->hasNegativeHealthRegen())
+									else if (!_shockIndicator.empty() && itemUnit->hasNegativeHealthRegen())
 									{
-										surface->blit(_shockIndicator,
+										surface->blit(phase(_shockIndicator),
 											screenPosition.x,
 											screenPosition.y + tile->getTerrainLevel() * _k,
 											indicatorShade);
 									}
-									else if (_stunIndicator)
+									else if (!_stunIndicator.empty())
 									{
-										surface->blit(_stunIndicator,
+										surface->blit(phase(_stunIndicator),
 											screenPosition.x,
 											screenPosition.y + tile->getTerrainLevel() * _k,
 											indicatorShade);

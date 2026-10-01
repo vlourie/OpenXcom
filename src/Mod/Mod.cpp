@@ -639,6 +639,13 @@ Mod::~Mod()
 	{
 		delete pair.second;
 	}
+	for (auto& pair : _hdSurfaceFrames)
+	{
+		for (Surface *frame : pair.second)
+		{
+			delete frame;
+		}
+	}
 	for (auto& pair : _palettes)
 	{
 		delete pair.second;
@@ -989,6 +996,14 @@ void Mod::refreshHdScale()
 			delete pair.second;
 		}
 		_hdSurfaces.clear();
+		for (auto& pair : _hdSurfaceFrames)
+		{
+			for (Surface *frame : pair.second)
+			{
+				delete frame;
+			}
+		}
+		_hdSurfaceFrames.clear();
 	}
 	else if (k > 1)
 	{
@@ -1180,6 +1195,62 @@ Surface *Mod::getHdSurface(const std::string &name, bool error)
 		}
 	}
 	return scaled;
+}
+
+/**
+ * HD render: the animation phases of a single picture for the battlescape (the indicators over
+ * a body on the floor). A mod ships them as hd/UI/anim/<name>/0.png, 1.png, ... in the size of
+ * getHdSurface; each phase gets its own copy of the scaled picture, so the classic pixels - and
+ * so mode 0 - are those of the picture itself, and only the HD frame found by the buffer differs.
+ * The still picture hd/UI/<name>.png is not a phase and is not used here.
+ * @param name Name of the picture.
+ * @param error Report an error if not found.
+ * @return The phases in order; just getHdSurface(name) when none are shipped (empty when there is no picture).
+ */
+std::vector<Surface*> Mod::getHdSurfaceFrames(const std::string &name, bool error)
+{
+	Surface *still = getHdSurface(name, error);
+	Surface *base = getSurface(name, false);
+	if (!still || !base || getHdScale() <= 1)
+	{
+		return still ? std::vector<Surface*>{ still } : std::vector<Surface*>();
+	}
+	auto it = _hdSurfaceFrames.find(base);
+	if (it == _hdSurfaceFrames.end())
+	{
+		std::vector<Surface*> frames;
+		std::string lower = name;
+		std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
+		for (int i = 0; ; ++i)
+		{
+			const std::string picture = HdSprites::artPath("UI/anim/" + lower + "/" + std::to_string(i) + ".png");
+			int width = 0, height = 0;
+			if (!HdSprites::pngSize(picture, width, height))
+			{
+				break;
+			}
+			if (width != still->getWidth() || height != still->getHeight())
+			{
+				Log(LOG_WARNING) << "HD render: " << picture << " is " << width << "x" << height
+					<< ", expected " << still->getWidth() << "x" << still->getHeight() << " - the animation is skipped";
+				for (Surface *frame : frames)
+				{
+					delete frame;
+				}
+				frames.clear();
+				break;
+			}
+			Surface *frame = new Surface(HdBlit::upscaledCopy(*base, getHdScale()));
+			HdSprites::setLazy(frame->getBuffer(), picture, 0, 0, frame->getWidth(), frame->getHeight());
+			frames.push_back(frame);
+		}
+		if (!frames.empty())
+		{
+			Log(LOG_INFO) << "HD render: " << frames.size() << " animation phase(s) for " << name;
+		}
+		it = _hdSurfaceFrames.emplace(base, frames).first;
+	}
+	return it->second.empty() ? std::vector<Surface*>{ still } : it->second;
 }
 
 /**

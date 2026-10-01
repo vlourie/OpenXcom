@@ -152,6 +152,20 @@ def blob(x, y, cx, cy, rx, ry, k):
     return down(disc(x, y, cx, cy, rx, ry), k)
 
 
+def capsule(x, y, x1, y1, x2, y2, r):
+    """Отрезок толщиной 2r со скруглёнными концами: рука призрака от плеча до кисти."""
+    dx, dy = x2 - x1, y2 - y1
+    t = np.clip(((x - x1) * dx + (y - y1) * dy) / max(dx * dx + dy * dy, 1e-9), 0.0, 1.0)
+    return (x - x1 - t * dx) ** 2 + (y - y1 - t * dy) ** 2 <= r * r
+
+
+def over(rgb, a, col, cov):
+    """Слой поверх слоя с честной альфой: у тающей капли цвет не уходит в чёрный."""
+    na = cov + a * (1.0 - cov)
+    num = col * cov[..., None] + rgb * (a * (1.0 - cov))[..., None]
+    return num / np.maximum(na, 1e-6)[..., None], na
+
+
 # ---------------------------------------------------------------- сами иконки
 
 Z_BOXES = [
@@ -241,14 +255,22 @@ F_YELLOW = np.float32([250, 206, 10])
 F_CORE = np.float32([255, 242, 158])
 
 
-def icon_burn(x, y, k):
-    m0 = down(profile(x, y, F_TOP, F_BOT, F_W, F_C), k)
-    m1 = down(profile(x, y, 4.40, 15.20, F_W, F_C, wscale=0.64, cshift=0.30), k)
-    m2 = down(profile(x, y, 7.00, 14.60, F_W, F_C, wscale=0.37, cshift=0.58), k)
+def lean(centers, amp):
+    """Ось языка, наклонённая ветром: основание стоит, кончик уходит на amp."""
+    n = len(centers)
+    return [c + amp * (1.0 - j / (n - 1)) ** 1.5 for j, c in enumerate(centers)]
+
+
+def icon_burn(x, y, k, sway=(0.0, 0.0, 0.0), lift=(0.0, 0.0, 0.0)):
+    """sway - сдвиг кончика вбок, lift - подъём верха; по языку: внешний, оранжевый, жёлтый."""
+    c0, c1, c2 = (lean(F_C, s) for s in sway)
+    m0 = down(profile(x, y, F_TOP - lift[0], F_BOT, F_W, c0), k)
+    m1 = down(profile(x, y, 4.40 - lift[1], 15.20, F_W, c1, wscale=0.64, cshift=0.30), k)
+    m2 = down(profile(x, y, 7.00 - lift[2], 14.60, F_W, c2, wscale=0.37, cshift=0.58), k)
 
     rgb, core = bevel(m0, k, F_EDGE, F_BODY, edge_px=0.50)
     # светлый рубчик по левому краю - он есть и в оригинале (F = 224,92,92)
-    left = smooth(F_C[5] - down(x, k), 1.2, 4.2) * (1.0 - core)
+    left = smooth(c0[5] - down(x, k), 1.2, 4.2) * (1.0 - core)
     rgb = mix(rgb, F_RIM, np.clip(left, 0.0, 1.0) * m0 * 0.85)
 
     t1 = smooth(gauss(m1, 0.22 * k), 0.30, 0.85)
@@ -271,14 +293,24 @@ G_LITE = np.float32([244, 244, 244])
 G_DARK = np.float32([74, 74, 74])
 
 
-def icon_shock(x, y, k):
+def icon_shock(x, y, k, arms=None):
+    """arms - (левая, правая), насколько поднята рука, 0..1; None - неподвижная картинка."""
     body = profile(x, y, G_TOP, G_BOT, G_W, G_C)
     # подол тремя свисающими лепестками: у призрака он рваный, а не прямой
     for cx, rx, ry in G_HEM:
         body |= disc(x, y, cx, G_BOT, rx, ry) & (y >= G_BOT)
     # две лапки по бокам: без них силуэт читается как капля, а в оригинале выступы есть
-    body |= disc(x, y, 1.35, 9.60, 1.60, 1.35)
-    body |= disc(x, y, 13.25, 9.60, 1.60, 1.35)
+    if arms is None:
+        body |= disc(x, y, 1.35, 9.60, 1.60, 1.35)
+        body |= disc(x, y, 13.25, 9.60, 1.60, 1.35)
+    else:
+        # поднятая кисть уходит выше края тела, поэтому к плечу её держит рука-отрезок
+        # кисть идёт вверх и чуть наружу: вдоль тела поднятая рука сливается с ним и не читается
+        for hx, sx, side, u in ((1.35, 3.55, -1.0, arms[0]), (13.25, 11.05, 1.0, arms[1])):
+            hx = hx + side * 0.35 * u
+            hy = 9.60 - 4.60 * u
+            body |= capsule(x, y, sx, 9.30, hx, hy, 1.05)
+            body |= disc(x, y, hx, hy, 1.60 - 0.40 * u, 1.35 + 0.25 * u)
     mouth = disc(x, y, 7.30, 10.05, 2.10, 2.50)
     m = down(body & ~mouth, k)
 
@@ -290,6 +322,86 @@ def icon_shock(x, y, k):
     eyes = np.minimum(eyes, m)
     rgb = mix(rgb, G_DARK, eyes)
     return rgb, m
+
+
+# ---------------------------------------------------------------- анимация
+
+def z_slot(s):
+    """Буква на пути от тела (s = 0, малая Z у тела) вдаль (s = 1, большая наверху)."""
+    b = np.float64(Z_BOXES[::-1])
+    q = min(max(s, 0.0), 1.0) * (len(b) - 1)
+    i = min(int(q), len(b) - 2)
+    return b[i] + (b[i + 1] - b[i]) * (q - i)
+
+
+def anim_stun(x, y, k, t):
+    """Три Z по очереди рождаются у тела и улетают вдаль, вырастая и светлея."""
+    n = BASE * k
+    rgb = np.zeros((n, n, 3), np.float32)
+    a = np.zeros((n, n), np.float32)
+    for s in sorted(((t + i / 3.0) % 1.0 for i in range(3)), reverse=True):
+        x0, y0, x1, y1, bar, diag, lit = z_slot(s)
+        fade = float(smooth(s, 0.0, 0.16) * (1.0 - smooth(s, 0.80, 1.0)))
+        if fade <= 0.0:
+            continue
+        m = down(polygon(x, y, z_glyph(x0, y0, x1, y1, bar, diag)), k)
+        col, core = bevel(m, k, Z_EDGE, Z_BODY * lit, edge_px=0.62)
+        up = smooth((y1 - down(y, k)) / (y1 - y0), 0.30, 1.00) * core
+        col = mix(col, Z_LITE * lit, up * 0.72)
+        rgb, a = over(rgb, a, col, m * fade)
+    return rgb, a
+
+
+DROP_FALL = [3.2, 4.2]      # на сколько пикселей базы падает капля, по DROPS
+
+
+def anim_wound(x, y, k, t):
+    """Капли по очереди набухают, срываются вниз с разгоном, вытягиваются и тают."""
+    n = BASE * k
+    rgb = np.zeros((n, n, 3), np.float32)
+    a = np.zeros((n, n), np.float32)
+    for i, (cx, cy0, r0, apex0) in enumerate(DROPS):
+        p = (t + 0.5 * (1 - i)) % 1.0        # верхняя (малая) срывается первой
+        grow = float(smooth(p, 0.0, 0.25))
+        u = min(max((p - 0.45) / 0.55, 0.0), 1.0)
+        fade = float(smooth(p, 0.0, 0.12) * (1.0 - smooth(u, 0.55, 1.0)))
+        if fade <= 0.0:
+            continue
+        s = 0.40 + 0.60 * grow
+        r = r0 * s
+        cy = cy0 - 1.4 + DROP_FALL[i] * u * u
+        apex = cy - (cy0 - apex0) * s * (1.0 + 0.45 * u)
+        m = down(drop_mask(x, y, cx, cy, r, apex), k)
+        col, core = bevel(m, k, B_EDGE, B_BODY, edge_px=0.55)
+        spec = gauss(blob(x, y, cx - r * 0.34, cy - r * 0.40, r * 0.46, r * 0.56, k), 0.55 * k)
+        col = mix(col, B_LITE, np.clip(spec * 2.4, 0.0, 1.0) * core)
+        shade = gauss(blob(x, y, cx + r * 0.45, cy + r * 0.50, r * 0.75, r * 0.70, k), 0.7 * k)
+        col = mix(col, B_EDGE, np.clip(shade * 0.9, 0.0, 1.0) * core * 0.45)
+        rgb, a = over(rgb, a, col, m * fade)
+    return rgb, a
+
+
+def anim_burn(x, y, k, t):
+    """Язык колышется вбок (кончик сильнее основания) и дышит вверх-вниз; внутренние - с запаздыванием."""
+    ph = 2.0 * np.pi * t
+    sway = tuple(1.30 * g * np.sin(ph - lag) for g, lag in ((1.0, 0.0), (0.85, 0.5), (0.70, 1.0)))
+    lift = tuple(0.80 * g * np.sin(2.0 * ph + 0.7 - lag) for g, lag in ((1.0, 0.0), (0.8, 0.5), (0.6, 1.0)))
+    return icon_burn(x, y, k, sway, lift)
+
+
+def anim_shock(x, y, k, t):
+    """Призрак поднимает и опускает руки по очереди: левую, потом правую."""
+    s = float(np.sin(2.0 * np.pi * t))
+    return icon_shock(x, y, k, arms=(max(0.0, s), max(0.0, -s)))
+
+
+# ключ -> (функция фазы, число фаз); фаза длится 100 мс (BattlescapeState::DEFAULT_ANIM_SPEED)
+ANIM = {
+    "stun":  (anim_stun, 12),
+    "wound": (anim_wound, 16),
+    "burn":  (anim_burn, 12),
+    "shock": (anim_shock, 16),
+}
 
 
 ICONS = {
@@ -304,7 +416,37 @@ ICONS = {
 
 def render(key, k):
     x, y = grids(k)
-    rgb, a = ICONS[key](x, y, k)
+    return to_image(*ICONS[key](x, y, k))
+
+
+def render_anim(key, k):
+    """Фазы анимации: hd/UI/anim/<имя>/<i>.png, Mod::getHdSurfaceFrames."""
+    x, y = grids(k)
+    fn, count = ANIM[key]
+    return [to_image(*fn(x, y, k, i / float(count))) for i in range(count)]
+
+
+def gif(rows, path, k, zoom=3):
+    """Превью на тёмном полу боя: в строке неподвижная картинка и анимация, 100 мс на фазу."""
+    cell = BASE * k * zoom
+    pad = 12
+    total = int(np.lcm.reduce([len(f) for _, f in rows]))
+    w = len(rows) * (cell * 2 + pad) + pad
+    frames = []
+    for i in range(total):
+        im = Image.new("RGBA", (w, cell + 2 * pad), (34, 38, 30, 255))
+        x = pad
+        for still, phases in rows:
+            im.alpha_composite(still.resize((cell, cell), Image.LANCZOS), (x, pad))
+            im.alpha_composite(phases[i % len(phases)].resize((cell, cell), Image.LANCZOS), (x + cell, pad))
+            x += cell * 2 + pad
+        frames.append(im.convert("RGB"))
+    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+    frames[0].save(path, save_all=True, append_images=frames[1:], duration=100, loop=0)
+    print("превью:", path, frames[0].size, "кадров", total)
+
+
+def to_image(rgb, a):
     rgb = np.clip(rgb, 0.0, 255.0)
     a = np.clip(a, 0.0, 1.0)
     out = np.zeros(a.shape + (4,), np.uint8)
@@ -350,15 +492,19 @@ def sheet(pairs, path, k):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--scale", type=int, default=4, help="k, во сколько раз крупнее базы")
-    ap.add_argument("--pack", default="", help="куда положить кадры (user\\mods\\hd\\hd\\UI)")
+    ap.add_argument("--pack", action="append", default=[],
+                    help="куда положить кадры (user\\mods\\hd\\hd\\UI); можно дважды - обе копии мода hd (R-087)")
     ap.add_argument("--out", default="", help="каталог для отдельных PNG, если пак не нужен")
     ap.add_argument("--sheet", default=os.path.join("Claude outputs", "indicators_cmp.png"))
     ap.add_argument("--only", default="", help="через запятую: stun,wound,burn,shock")
+    ap.add_argument("--anim", action="store_true", help="и фазы анимации: <пак>/anim/<имя>/<i>.png")
+    ap.add_argument("--gif", default="", help="превью анимации на тёмном полу (с --anim)")
     args = ap.parse_args()
 
     k = args.scale
     keys = [s.strip() for s in args.only.split(",") if s.strip()] or list(ICONS)
     pairs = []
+    rows = []
     bad = 0
     for key in keys:
         name, src = OUT_NAMES[key]
@@ -369,14 +515,29 @@ def main():
         if worst > 0.5 or drift > 2.0:
             bad += 1
         pairs.append((orig, img))
-        for d in (args.pack, args.out):
+        phases = render_anim(key, k) if args.anim else []
+        if phases:
+            rows.append((img, phases))
+            print("    фаз анимации: %d" % len(phases))
+        for d in args.pack + [args.out]:
             if d:
                 os.makedirs(d, exist_ok=True)
                 p = os.path.join(d, name)
                 img.save(p)
                 print("    ->", p)
+                if phases:
+                    ad = os.path.join(d, "anim", os.path.splitext(name)[0])
+                    os.makedirs(ad, exist_ok=True)
+                    for f in os.listdir(ad):           # прежние фазы: их могло быть больше
+                        if f.endswith(".png"):
+                            os.remove(os.path.join(ad, f))
+                    for i, ph in enumerate(phases):
+                        ph.save(os.path.join(ad, "%d.png" % i))
+                    print("    ->", ad, "(%d)" % len(phases))
     if args.sheet:
         sheet(pairs, args.sheet, k)
+    if args.gif and rows:
+        gif(rows, args.gif, k)
     if bad:
         print("ПРОВЕРЬ: %d кадр(ов) не прошли приёмку по углам или габариту" % bad)
     return 0

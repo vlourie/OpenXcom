@@ -169,6 +169,8 @@ private:
 	std::map<const SurfaceSet*, SurfaceSet*> _hdSets;
 	std::set<const SurfaceSet*> _hdPacksLoaded;
 	std::map<const Surface*, Surface*> _hdSurfaces;
+	/// HD render: the animation phases of a single picture (hd/UI/anim/<name>/<i>.png), keyed by the classic picture.
+	std::map<const Surface*, std::vector<Surface*> > _hdSurfaceFrames;
 	std::map<std::string, SoundSet*> _sounds;
 	std::map<std::string, Music*> _musics;
 	std::vector<Uint16> _voxelData;
@@ -521,6 +523,8 @@ public:
 	void applyHdReticle();
 	/// HD render: gets a single picture scaled k times for the battlescape (the picture itself when k = 1).
 	Surface *getHdSurface(const std::string &name, bool error = true);
+	/// HD render: the animation phases of a single picture for the battlescape (just getHdSurface when none are shipped).
+	std::vector<Surface*> getHdSurfaceFrames(const std::string &name, bool error = true);
 	/// Gets a particular music.
 	Music *getMusic(const std::string &name, bool error = true) const;
 	/// Gets the available music tracks.
