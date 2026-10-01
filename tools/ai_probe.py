@@ -138,6 +138,12 @@ def run(save, turns=1, save_as="", name="probe", timeout=900, bot=False, seed=No
     # ночь и квады-фонари с personalLightHostile 26), все потоки =, fair22 IDENTICAL 22 из 22 (tools/ai_speed/README.md).
     # Контрольный опыт: OXCE_AI_LIGHTSKIP=0. Сборки до build-ai41 переменную не знают и играют как прежде
     env.setdefault("OXCE_AI_LIGHTSKIP", "1")
+    # память засады (AiProbe::ambushMemo, с build-ai43, AMBUSH_NEGATIVE_MEMO_V1): внутри одного setupAmbush узел, куда враг
+    # заведомо не дойдёт (закрытые узлы его первого неудачного A* в этом вызове), пропускает поиск врага; помнится только
+    # «нет пути», только до выхода из вызова. Приёмка: семь потоков = на станции и бомбардировщике, режим 2 (проверка) - 99
+    # ответов, 0 расхождений, fair22 IDENTICAL 22 из 22 (tools/ai_speed/README.md); включено по умолчанию 01.10 по второму
+    # мнению. Контрольный опыт обязателен: OXCE_AI_AMBUSH_MEMO=0. Сборки до build-ai43 переменную не знают и играют как прежде
+    env.setdefault("OXCE_AI_AMBUSH_MEMO", "1")
     args = [str(EXE), "-data", str(GAME), "-user", str(work), "-cfg", str(work),
             "-fullscreen", "false", "-borderless", "false", "-displayWidth", "1280", "-displayHeight", "720",
             "-soundVolume", "0", "-musicVolume", "0", "-uiVolume", "0"]
