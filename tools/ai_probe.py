@@ -65,9 +65,16 @@ def prepare_user(work):
     cfg = (GAME / "user" / "options.cfg").read_text(encoding=ENC_R)
     # R-093, R-095: камеру не крутит мышь человека, экран выбора версии не встаёт
     # картинку прогона никто не смотрит: один поток рисования и масштаб 1, иначе 8 боёв разом съедают весь процессор
+    # нежный режим: вопрос при запуске не встаёт, темп прогона прежний (ключей может ещё не быть в конфиге - дописываем)
+    added = []
     for key, value in (("battleEdgeScroll", "0"), ("oxceAdultAsk", "false"), ("playIntro", "false"),
-                       ("oxceHdThreads", "1"), ("oxceHdScale", "1"), ("oxceHdMode", "0")):
-        cfg = re.sub(rf"(?m)^(\s*){key}: .*$", rf"\g<1>{key}: {value}", cfg)
+                       ("oxceHdThreads", "1"), ("oxceHdScale", "1"), ("oxceHdMode", "0"),
+                       ("oxceGentleAsk", "false"), ("oxceGentle", "false")):
+        cfg, n = re.subn(rf"(?m)^(\s*){key}: .*$", rf"\g<1>{key}: {value}", cfg)
+        if not n:
+            added.append(f"  {key}: {value}")
+    if added:
+        cfg = re.sub(r"(?m)^options:\s*$", "options:\n" + "\n".join(added), cfg, count=1)
     # options.cfg читает игра (yaml-cpp), а не PowerShell: без спецификации (R-001, исключение)
     (work / "options.cfg").write_bytes(cfg.encode("utf-8"))
 
