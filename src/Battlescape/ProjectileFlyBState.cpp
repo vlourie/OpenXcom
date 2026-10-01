@@ -31,6 +31,7 @@
 #include "../Engine/Sound.h"
 #include "../Engine/RNG.h"
 #include "../Engine/HdFx.h"
+#include "../Engine/HdGentle.h"
 #include "../Engine/SurfaceSet.h"
 #include "../Mod/Armor.h"
 #include "../Mod/RuleItem.h"
@@ -399,7 +400,7 @@ void ProjectileFlyBState::init()
 
 		const bool byAltPressed = _parent->getMap()->isAltPressed();
 		const bool byRules = conf && !conf->followProjectiles;
-		const bool byOptions = (Options::QOL::dontTraceProjectiles > 2) || (_unit->getFaction() == UnitFaction::FACTION_PLAYER && Options::QOL::dontTraceProjectiles == 1);
+		const bool byOptions = (HdGentle::traceProjectiles() > 2) || (_unit->getFaction() == UnitFaction::FACTION_PLAYER && HdGentle::traceProjectiles() == 1);
 
 		if (byAltPressed || byRules || byOptions)
 		{

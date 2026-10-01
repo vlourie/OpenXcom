@@ -38,6 +38,7 @@
 #include "../Engine/HdBlit.h"
 #include "../Engine/HdCanvas.h"
 #include "../Engine/HdFx.h"
+#include "../Engine/HdGentle.h"
 #include "../Engine/HdKillCam.h"
 #include "../Engine/HdSprites.h"
 #include "../Engine/HdUi.h"
@@ -144,7 +145,7 @@ Map::Map(Game *game, int width, int height, int x, int y, int visibleMapHeight) 
 	_borderBarColor = itf->border;
 
 	PathPreview previewSetting = Options::battleNewPreviewPath;
-	_smoothCamera = Options::battleSmoothCamera;
+	_smoothCamera = HdGentle::smoothCamera();
 	if (Options::traceAI)
 	{
 		// turn everything on because we want to see the markers.
@@ -496,8 +497,9 @@ void Map::draw()
 	_explosionInFOV = _save->getDebugMode();
 
 	Explosion* hitExplosion = nullptr;
-	const bool ignoreAllButAlliesHits = Options::QOL::dontTraceProjectiles == 3 || Options::QOL::dontTraceProjectiles == 4;
-	const bool keepCameraOnShooter = Options::QOL::dontTraceProjectiles == 4;
+	const int traceProjectiles = HdGentle::traceProjectiles();
+	const bool ignoreAllButAlliesHits = traceProjectiles == 3 || traceProjectiles == 4;
+	const bool keepCameraOnShooter = traceProjectiles == 4;
 	const bool unitVisible = _save->getSelectedUnit() && _save->getSelectedUnit()->getVisible();
 	const bool unitEnemy = _save->getSide() == FACTION_HOSTILE;
 
@@ -3077,7 +3079,7 @@ CursorType Map::getCursorType() const
 void Map::setProjectile(Projectile *projectile)
 {
 	_projectile = projectile;
-	if (projectile && Options::battleSmoothCamera)
+	if (projectile && HdGentle::smoothCamera())
 	{
 		_launch = true;
 	}

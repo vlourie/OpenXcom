@@ -64,6 +64,7 @@
 #include "../Engine/HdWorkers.h"
 #include "../Engine/HdUi.h"
 #include "../Engine/HdKillCam.h"
+#include "../Engine/HdGentle.h"
 #include "../version.h"
 #include "../Interface/Cursor.h"
 #include "../Interface/Text.h"
@@ -2908,7 +2909,12 @@ inline void BattlescapeState::handle(Action *action)
 				// "ctrl-s" - switch xcom unit speed to max and back
 				else if (key == SDLK_s && ctrlPressed)
 				{
-					if (_save->getSide() == FACTION_PLAYER)
+					if (HdGentle::on())
+					{
+						// the gentle mode holds the unit speed (HdGentle::xcomSpeed): say so rather than claim a switch
+						warning("STR_GENTLE_QUICK_MODE_LOCKED");
+					}
+					else if (_save->getSide() == FACTION_PLAYER)
 					{
 						if (Options::battleXcomSpeedOrig >= 1 && Options::battleXcomSpeedOrig <= 40)
 						{

@@ -18,6 +18,7 @@
  */
 #include "LanguageChoiceState.h"
 #include "AdultChoiceState.h"
+#include "GentleChoiceState.h"
 #include "../Engine/Action.h"
 #include "../Engine/Game.h"
 #include "../Engine/Language.h"
@@ -132,7 +133,11 @@ void LanguageChoiceState::choose(const std::string &id)
 	// Build the next screen only now, with the chosen language loaded: its
 	// texts are set in its constructor and would otherwise be the old ones.
 	_game->popState();
-	if (AdultChoiceState::isNeeded())
+	if (GentleChoiceState::isNeeded())
+	{
+		_game->pushState(new GentleChoiceState(_introPending));
+	}
+	else if (AdultChoiceState::isNeeded())
 	{
 		_game->pushState(new AdultChoiceState(_introPending));
 	}

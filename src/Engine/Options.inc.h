@@ -204,6 +204,10 @@ OPT bool oxceAdultArt;
 OPT bool oxceAdultAsk;
 // The language was picked on the start screen (LanguageChoiceState); it is only asked until then. Changed later in Options > Video.
 OPT bool oxceLanguageChosen;
+// Gentle mode for players sensitive to flashing light (Engine/HdGentle.h): slower pace, no camera jumps. Picture and pace only.
+OPT bool oxceGentle;
+// The photosensitivity warning (GentleChoiceState) is shown once, until answered; then the mode is changed on the HD tab.
+OPT bool oxceGentleAsk;
 
 // OXCE hidden, but moddable via fixedUserOptions and/or recommendedUserOptions
 OPT int oxceStartUpTextMode;
