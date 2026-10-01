@@ -188,6 +188,8 @@ OPT bool oxceHdHoverBob;
 OPT bool oxceHdFx;
 // HD render: the fire picture (SMOKE.PCK 0..7): 0 the pack's own (<i>.png, <i>.v1.png), style s = the pack's variants 2s and 2s + 1 (tools/hdart/fire_real_pack.py)
 OPT int oxceHdFire;
+// Battlescape: the numbers above the enemies the selected unit sees (Map::setUnitMarker): 0 none, 1 blinking as the buttons, 2 steady red
+OPT int oxceHdEnemyNumber;
 // HD render: the final blow (Engine/HdKillCam.h) - zoom in and slow motion on the last enemy's fall; picture and pace only
 OPT bool oxceHdKillCam;
 // HD render: threads the battlescape frame is drawn with (0 = one per core)
