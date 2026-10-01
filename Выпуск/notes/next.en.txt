@@ -1,0 +1,1 @@
+— The photosensitivity warning shown at first start now says plainly that gentle mode reduces flashes and sudden movement but cannot guarantee protection: both flickering and some patterns on the screen can trigger a seizure. The hint for the "Gentle mode" option now starts with "Fewer flashes and sudden movements".
