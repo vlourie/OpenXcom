@@ -121,6 +121,13 @@ void escapeTarget();
 void escapeMark();
 /// The candidate was classified: kind 0 - unreachable, dropped after the traces; 1 - reachable, scored; 2 - no tile (no traces).
 void escapeProbe(const BattleUnit *unit, int kind);
+/// ESCAPE_REACH_FIRST_V1 (OXCE_AI_ESCAPE_REACH_FIRST, stand only): setupEscape drops an unreachable candidate before the
+/// enemies' lines of fire to it are traced. The traces are const and touch no RNG, so every reachable candidate gets the same
+/// score and the same tile is chosen (audit п. 12-13: two thirds of the enemy's candidates are unreachable, 20 % of the city
+/// battle went into their traces). Off (the default of the engine): the traces come first, as in OXCE.
+bool escapeReachFirst();
+/// A candidate dropped before its traces by the flag (counted always, [AIESCRF] in the battle's result).
+void escapeSkipped();
 /// Does the AI play the player's side right now (OXCE_AI_BOT)?
 bool botTurn(const SavedBattleGame *save);
 /// The seed of a generated battle (OXCE_AI_SEED), or -1.

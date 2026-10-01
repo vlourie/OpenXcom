@@ -1522,8 +1522,18 @@ void AIModule::setupEscape()
 		{
 			// the escape audit (OXCE_AI_ESCAPEPROF) counts the traces and the time spent on a tile dropped as unreachable right after
 			AiProbe::escapeMark();
-			spotters = getSpottingUnits(_escapeAction.target);
 			const bool inReach = std::find(_reachable.begin(), _reachable.end(), _save->getTileIndex(_escapeAction.target)) != _reachable.end();
+			if (!inReach && AiProbe::escapeReachFirst())
+			{
+				// ESCAPE_REACH_FIRST_V1 (stand only, OXCE_AI_ESCAPE_REACH_FIRST): the unreachable tile is dropped before the enemies'
+				// lines of fire to it are traced - getSpottingUnits is const and touches no RNG, the tile would be dropped right after
+				// the traces anyway, so the reachable tiles score the same and the same tile is chosen (audit п. 12-13). Without the
+				// flag the traces come first, as in OXCE (std::find above is a pure read of _reachable, its place changes nothing)
+				AiProbe::escapeSkipped();
+				AiProbe::escapeProbe(_unit, 0);
+				continue;
+			}
+			spotters = getSpottingUnits(_escapeAction.target);
 			AiProbe::escapeProbe(_unit, inReach ? 1 : 0);
 			if (!inReach)
 				continue; // just ignore unreachable tiles
