@@ -218,7 +218,11 @@ void walkPlanned(SavedBattleGame *save, BattleUnit *unit, bool pushed, bool item
 /// A walk stops without the unit moving (UnitWalkBState): a step of the action's trail in [AIEXEC],
 /// "walk.stop.<reason> from>to d<dir> bam<move> mt<movement> sz<size> tu<tu>/<step> en<energy>/<step> rs<reserve> bu<blocker>".
 /// Record only; -1 where a value is unknown.
-void walkStop(const BattleUnit *unit, const char *reason, const Position &to, int dir, int bam, int stepTu, int stepEnergy, int blocker);
+/// REPEATED_BLOCKED_STEP (passive, record only): with save, a stop at a unit ends with " kr<knownRevision>", and the
+/// unit's next decisions this turn on the same tile start their [AIEXEC] trail with "kr.dec <knownRevision>" and, if they
+/// walk, "walk.first d<first step>" - whether a suppression of that first step would have held. Nothing else reads it.
+void walkStop(const BattleUnit *unit, const char *reason, const Position &to, int dir, int bam, int stepTu, int stepEnergy, int blocker,
+	SavedBattleGame *save = nullptr);
 /// ENERGY_PATROL_END_V2 (OXCE_AI_ENERGY_PATROL_END, bench only): the patrol walk handleAI just planned is stopped by energy,
 /// and the unit has less energy than the cheapest step to any neighbouring tile, other units aside - it has no step left
 /// this turn. Checked after walkPlanned, on the same path.
