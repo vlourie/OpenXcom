@@ -15,6 +15,7 @@
 | `prof_report.py` | отчёт по выборкам: плоский, включающий, дерево от `Game::run`; `--phase battle` — только бой |
 | `attach_all.py` | по стеку каждого потока живого (повисшего) процесса игры → `runs/<имя>.samples.json` |
 | `hang_stack.py` | самый частый стек из выборок с ближайшими экспортами системных DLL — чем занят повисший процесс |
+| `stagnation_profile.py` | `STAGNATION_PROFILE`: по архивам серий `ai_arena` — почему бой живёт до предела ходов (атаки, урон, ходы, контакт, блокировки по ходу и хвосту), классы timeout; движок не трогает |
 
 ## Порядок
 
@@ -479,6 +480,29 @@ py -3.13 tools/ai_speed/run_one.py --mission STR_LOC_SPACE_STATION_1 --seed 201 
 py -3.13 tools/ai_speed/run_one.py --mission STR_LOC_SPACE_STATION_1 --seed 201 --name k49_st2 --build E:/OpenXCom/build-ai49 --env OXCE_AI_WALKFOV_SKIP=2
 py -3.13 tools/ai_speed/cmp_runs.py k49_st0 k49_st1 k49_st2
 ```
+
+## Профиль пата по архивам серий — `stagnation_profile.py` (01.10, `STAGNATION_PROFILE`)
+
+Второе мнение разделило п. 5 порядка на `STAGNATION_PROFILE` (понять, почему бой живёт до 60/61 хода)
+и `STAGNATION_POLICY` (только потом решать про досрочный bench-only stop). Профиль пассивный: игру не
+запускает, движок не трогает, читает архивы серии `ai_arena` — `<метка>.rec.gz` (`[AIREC]` / `[AIEXEC]`),
+`<метка>.tiles.gz` (`[AISTATE]`), `<метка>.casualties.txt`, `<метка>.tsv` — и считает по ходу и стороне
+атаки, урон, потери, удачные и сорванные ходы (по причине `walk.stop.*`; `nowalk` — юнит, которому
+броня ходить не даёт: турели), повторные остановки первого шага, новых замеченных, контакт, живых;
+по бою — последние ходы событий, `since_any` / `since_combat` / `since_contact`, хвост 20 и 30 ходов и
+классы timeout: A бой идёт (атаки ≥ 6 ходов из 20), D редкие атаки, B контакт без атак, C без контакта.
+Классы — данные для второго мнения, не правило; исход боя скрипт не меняет. Построчно по боям —
+`runs/stagnation_profile.tsv` (`--out`).
+
+```powershell
+py -3.13 tools/ai_speed/stagnation_profile.py --arena E:/OXCE_AIWorker/results/arena b46fp23 b46fp24 b46fp29 b46fp30 b46fp32 b46fp35
+```
+
+Когорта build-ai46 (1320 боёв, 215 timeout), 01.10: `since_any` 0 у всех — бот ходит каждый ход, хвост
+«только blocked / idle» 0 боёв из 215; пат из блокировок один (`RITUAL_CAVE` 1157); A 170 (у 57 враг —
+неподвижные турели), D 16, B 11, C 18 (метро и UAC, 8–56 ходов без контакта; у over `since_contact`
+выше 10 — 0 из 1105). Аудит п. 16. Прогнать заново на новой когорте после `REPEATED_BLOCKED_STEP_V1`.
+
 Профиль:
 
 ```powershell
