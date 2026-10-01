@@ -232,6 +232,70 @@ def read_table(table):
     return [dict(zip(head, ln.split("\t"))) for ln in lines[1:] if ln.strip()]
 
 
+# архивы боя рядом с таблицей: павшие текстом, остальное gzip членами; ключ строки боя -> суффикс файла
+ARCHIVES = (("_casualties", ".casualties.txt"), ("_tiles", ".tiles.gz"), ("_decide", ".decide.gz"),
+            ("_rec", ".rec.gz"), ("_cand", ".cand.gz"), ("_path", ".path.gz"))
+
+
+def _append(path, data):
+    with open(path, "ab") as f:
+        f.write(data)
+        f.flush()
+        os.fsync(f.fileno())
+
+
+def commit_battle(table, row):
+    """Бой в серию целиком или никак (R-162). Порядок: журнал с прежними размерами архивов -> куски архивов
+    (gzip-член собран в памяти, одна запись на файл) -> строка таблицы - отметка «бой записан» -> журнал снят.
+    Оборвали посреди - recover() при --resume срежет архивы до размеров из журнала, и бой сыграется заново."""
+    tag = f"seed={row['seed']} want={row['want']} "
+    chunks = []
+    for key, ext in ARCHIVES:
+        if row.get(key):
+            # концы строк как у прежней записи текстовым режимом (на Windows CRLF и в таблице, и внутри gzip)
+            text = "".join(f"{tag}{line}{os.linesep}" for line in row[key]).encode("utf-8")
+            chunks.append((table.with_suffix(ext), text if ext.endswith(".txt") else gzip.compress(text)))
+    journal = table.with_suffix(".journal")
+    sizes = {p.name: (p.stat().st_size if p.exists() else 0) for p, _ in chunks}
+    tmp = journal.with_suffix(".journal.tmp")
+    tmp.write_text("\t".join([str(row["seed"]), str(row.get("want", ""))] + [f"{n}={s}" for n, s in sizes.items()]) + "\n",
+                   encoding="utf-8")
+    os.replace(tmp, journal)
+    for path, data in chunks:
+        _append(path, data)
+    _append(table, ("\t".join(str(row.get(c, "")).replace("\t", " ") for c in COLS) + "\t" + outcome(row) + os.linesep).encode("utf-8"))
+    journal.unlink()
+
+
+def recover(table):
+    """Перед --resume: оборванная строка таблицы срезается, архивы незаписанного боя - до размеров из журнала.
+    Возвращает, что сделано (для журнала серии); пустая строка - серия остановлена между боями."""
+    done = []
+    if table.exists():
+        raw = table.read_bytes()
+        if raw and not raw.endswith(b"\n"):
+            with open(table, "r+b") as f:
+                f.truncate(raw.rfind(b"\n") + 1)
+            done.append("срезана оборванная строка таблицы")
+    journal = table.with_suffix(".journal")
+    if not journal.exists():
+        return "; ".join(done)
+    seed, want, *sizes = journal.read_text(encoding="utf-8").rstrip("\n").split("\t")
+    if (want, seed) in {(r.get("want", ""), str(r["seed"])) for r in read_table(table)}:
+        done.append(f"бой {seed} {want} записан до остановки, журнал снят")
+    else:
+        for item in sizes:
+            name, _, size = item.rpartition("=")
+            path = table.parent / name
+            if path.exists() and path.stat().st_size > int(size):
+                with open(path, "r+b") as f:
+                    f.truncate(int(size))
+                done.append(f"{name} срезан до {size}")
+        done.append(f"бой {seed} {want} не записан - сыграется заново")
+    journal.unlink()
+    return "; ".join(done)
+
+
 def main():
     sys.stdout.reconfigure(encoding="utf-8")  # R-001
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
@@ -268,6 +332,12 @@ def main():
         missions = [m.strip() for m in text.splitlines() if m.strip() and not m.startswith("#")]
     table = ai_probe.WORK / "arena" / f"{a.label}.tsv"
     table.parent.mkdir(parents=True, exist_ok=True)
+    if a.resume:
+        fixed = recover(table)
+        if fixed:
+            print(f"восстановление серии: {fixed}", flush=True)
+    else:
+        table.with_suffix(".journal").unlink(missing_ok=True)
     rows = read_table(table) if a.resume else []
     played = {(r.get("want", ""), str(r["seed"])) for r in rows}
     jobs = [(m, s) for m in missions for s in seeds if (m or "", str(s)) not in played]
@@ -287,23 +357,10 @@ def main():
         for fut in as_completed(futures):
             row = fut.result()
             rows.append(row)
-            # строка в таблицу сразу: серия на часы, обрыв не должен стоить уже сыгранного
-            with open(table, "a", encoding="utf-8") as f:
-                f.write("\t".join(str(row.get(c, "")).replace("\t", " ") for c in COLS) + "\t" + outcome(row) + "\n")
-            # павшие и оглушённые боя - рядом, строка [AICASUALTY] как есть: кто, чем, откуда, на чьём ходу
-            if row.get("_casualties"):
-                with open(table.with_suffix(".casualties.txt"), "a", encoding="utf-8") as f:
-                    f.writelines(f"seed={row['seed']} want={row['want']} {line}\n" for line in row["_casualties"])
-            # снимки всех юнитов в начале каждого хода стороны - данные «каждой клеткой» (docs/AI_TRAINING.md):
-            # признаки клетки в конце хода и её исход после хода противника; gzip дописывается членами
-            if row.get("_tiles"):
-                with gzip.open(table.with_suffix(".tiles.gz"), "at", encoding="utf-8") as f:
-                    f.writelines(f"seed={row['seed']} want={row['want']} {line}\n" for line in row["_tiles"])
-            # каждое решение ИИ ([AIDECIDE]) - только по OXCE_AI_KEEP_DECIDE=1: разбор «почему стоял», на порцию это сотни МБ
-            for key, ext in (("_decide", ".decide.gz"), ("_rec", ".rec.gz"), ("_cand", ".cand.gz"), ("_path", ".path.gz")):
-                if row.get(key):
-                    with gzip.open(table.with_suffix(ext), "at", encoding="utf-8") as f:
-                        f.writelines(f"seed={row['seed']} want={row['want']} {line}\n" for line in row[key])
+            # бой в таблицу сразу: серия на часы, обрыв не должен стоить уже сыгранного. Рядом архивы: павшие
+            # ([AICASUALTY] как есть), снимки юнитов на начало хода (docs/AI_TRAINING.md), решения ИИ
+            # (decide - только по OXCE_AI_KEEP_DECIDE=1, сотни МБ на порцию), rec, cand, path
+            commit_battle(table, row)
             print(f"[{len(rows)}/{total}] зерно {row['seed']}: {outcome(row)}, {row.get('mission', '-')},"
                   f" ход {row.get('turn', '-')}, раненых {row.get('pwounded', '-')}, {row['seconds']} с", flush=True)
     lines = summary(rows, a.label) + (by_mission(rows) if a.missions else []) + [
