@@ -1696,6 +1696,10 @@ void Map::drawTerrain(HdCanvas *surface)
 									bulletPositionScreen.y - 26 * _k,
 									tileShade
 								);
+								if (_gentleFlying)
+								{
+									noteGentleTrail(voxelPos, bulletPositionScreen, surface->getWidth());
+								}
 							}
 						}
 						else
@@ -1770,6 +1774,10 @@ void Map::drawTerrain(HdCanvas *surface)
 												surface->blit(tmpSurface,
 													bulletPositionScreen.x - halfX + trail.x * s / steps,
 													bulletPositionScreen.y - halfY + trail.y * s / steps, 0, false, _nvColor);
+											}
+											if (_gentleFlying)
+											{
+												noteGentleTrail(voxelPos, bulletPositionScreen, surface->getWidth());
 											}
 										}
 									}
@@ -3092,6 +3100,7 @@ void Map::setProjectile(Projectile *projectile)
 	{
 		_launch = true;
 	}
+	_gentleFlying = 0;
 	if (projectile && HdGentle::on())
 	{
 		noteGentleShot(projectile);
@@ -3119,18 +3128,51 @@ void Map::noteGentleShot(const Projectile *projectile)
 		_gentleShooters.clear();
 		_gentleShots.clear();
 	}
-	if (std::find(_gentleShooters.begin(), _gentleShooters.end(), shooter) == _gentleShooters.end())
-	{
-		_gentleShooters.push_back(shooter);
-	}
-	const Position at = projectile->getTarget();
+	// the arrow stays where the soldier stood when fired at and points where the shot came from then:
+	// it never follows the soldier or the shooter afterwards
+	Position at = projectile->getTarget();
 	Tile *tile = _save->getTile(at);
 	const BattleUnit *target = tile ? tile->getOverlappingUnit(_save) : nullptr;
-	// a burst renews its arrow instead of stacking copies
-	_gentleShots.erase(std::remove_if(_gentleShots.begin(), _gentleShots.end(),
-		[&](const GentleShot &s) { return s.shooter == shooter && s.target == target; }), _gentleShots.end());
-	_gentleShots.push_back(GentleShot{ shooter, target, shooter->getPosition(), at, SDL_GetTicks() });
-	_redraw = true;
+	int height = 12;
+	if (target)
+	{
+		at = target->getPosition();
+		height = target->getHeight() + target->getFloatHeight() + (target->isBigUnit() ? -8 : 0);
+	}
+	_gentleFlying = ++_gentleShotId;
+	_gentleShots.push_back(GentleShot{ shooter, shooter->getPosition(), at, height, SDL_GetTicks(), _gentleFlying, false, false });
+}
+
+/**
+ * Gentle mode: the bullet of the shot in flight was drawn - the player has seen its trail here.
+ * @param voxel Where the bullet was drawn.
+ * @param screen Its point on the canvas.
+ * @param width The canvas width.
+ */
+void Map::noteGentleTrail(const Position &voxel, const Position &screen, int width)
+{
+	if (!_gentleFlying || screen.x < 0 || screen.y < 0 || screen.x >= width || screen.y >= _visibleMapHeight)
+	{
+		return;
+	}
+	for (auto &shot : _gentleShots)
+	{
+		if (shot.id != _gentleFlying)
+		{
+			continue;
+		}
+		_redraw = _redraw || !shot.seen;
+		shot.seen = true;
+		const Position tile = voxel.toTile();
+		if (!shot.seenOrigin && std::abs(tile.x - shot.from.x) <= 1 && std::abs(tile.y - shot.from.y) <= 1 && std::abs(tile.z - shot.from.z) <= 1)
+		{
+			shot.seenOrigin = true;
+			if (std::find(_gentleShooters.begin(), _gentleShooters.end(), shot.shooter) == _gentleShooters.end())
+			{
+				_gentleShooters.push_back(shot.shooter);
+			}
+		}
+	}
 }
 
 /**
@@ -3213,9 +3255,8 @@ void Map::drawGentleArrows(HdCanvas *surface)
 	}), _gentleShots.end());
 	for (const auto &shot : _gentleShots)
 	{
-		const bool onUnit = shot.target && !shot.target->isOut();
-		const Position at = onUnit ? shot.target->getPosition() : shot.at;
-		if (at.z > _camera->getViewLevel())
+		const Position &at = shot.at;
+		if (!shot.seen || at.z > _camera->getViewLevel())
 		{
 			continue;
 		}
@@ -3231,20 +3272,9 @@ void Map::drawGentleArrows(HdCanvas *surface)
 		const int step = ((int)std::lround(angle * GENTLE_ARROW_STEPS / (2.0 * M_PI)) % GENTLE_ARROW_STEPS + GENTLE_ARROW_STEPS) % GENTLE_ARROW_STEPS;
 		Surface *arrow = gentleArrow(step);
 
-		// the middle of the body, as the number above an enemy is placed (see the visible unit indicators)
-		Position offset;
-		int height = 12;
-		if (onUnit)
-		{
-			offset = calculateWalkingOffset(shot.target).ScreenOffset;
-			height = shot.target->getHeight() + shot.target->getFloatHeight();
-			if (shot.target->isBigUnit())
-			{
-				offset.y += 4 * _k;
-			}
-		}
-		const int cx = here.x + _camera->getMapOffset().x + offset.x + _spriteWidth / 2 + (int)std::lround(std::cos(angle) * 16 * _k);
-		const int cy = here.y + _camera->getMapOffset().y + offset.y + (Position::TileZ - height / 2) * _k + (int)std::lround(std::sin(angle) * 16 * _k);
+		// the middle of the body as it stood when fired at (see the visible unit indicators)
+		const int cx = here.x + _camera->getMapOffset().x + _spriteWidth / 2 + (int)std::lround(std::cos(angle) * 16 * _k);
+		const int cy = here.y + _camera->getMapOffset().y + (Position::TileZ - shot.height / 2) * _k + (int)std::lround(std::sin(angle) * 16 * _k);
 		surface->blitClassic(arrow, cx - arrow->getWidth() / 2, cy - arrow->getHeight() / 2, 1);
 	}
 }
