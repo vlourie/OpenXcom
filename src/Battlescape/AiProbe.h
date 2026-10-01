@@ -25,6 +25,7 @@ namespace OpenXcom
 {
 
 class BattlescapeState;
+class BattlescapeGame;
 class SavedBattleGame;
 class BattleUnit;
 class Position;
@@ -128,6 +129,18 @@ void escapeProbe(const BattleUnit *unit, int kind);
 bool escapeReachFirst();
 /// A candidate dropped before its traces by the flag (counted always, [AIESCRF] in the battle's result).
 void escapeSkipped();
+/// The FOV-on-step audit (OXCE_AI_WALKFOVPROF, docs/research/ai-path-audit-2026-10-01.md, п. 14): what the
+/// updateSoldierInfo call after every finished step of UnitWalkBState changes in the selected unit's sight, what of it the
+/// step's own calculateFOV keeps, and how long the call takes. Reads only, snapshots before and after; [AIWALKFOV] at the end
+/// of the battle. 1 - snapshots and time, 2 - time only (the snapshots cool the caches, mode 2 times the bare call);
+/// off (the default): nothing is counted.
+bool walkFovProf();
+/// The step is finished, updateSoldierInfo is about to run for the walker: the snapshot before it.
+void walkFovBefore(BattlescapeGame *game, const BattleUnit *walker);
+/// updateSoldierInfo returned: the snapshot after it, compared with the one before.
+void walkFovAfter(BattlescapeGame *game, const BattleUnit *walker);
+/// The step's own calculateFOV ran: does the selected unit still see what updateSoldierInfo added.
+void walkFovConfirm(BattlescapeGame *game, const BattleUnit *walker);
 /// Does the AI play the player's side right now (OXCE_AI_BOT)?
 bool botTurn(const SavedBattleGame *save);
 /// The seed of a generated battle (OXCE_AI_SEED), or -1.
