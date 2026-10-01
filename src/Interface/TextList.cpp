@@ -1152,15 +1152,12 @@ void TextList::draw()
 	Surface::draw();
 	forVisibleRows([&](size_t i, int y, int)
 	{
-		for (int col = 0; col < ICON_COLUMNS; ++col)
+		forRowIcons(i, [&](const Icon &icon, int x)
 		{
-			if (const Icon *icon = rowIcon(i, col))
-			{
-				icon->fitted->setX(icon->x);
-				icon->fitted->setY(y + icon->y);
-				icon->fitted->blit(this->getSurface());
-			}
-		}
+			icon.fitted->setX(x);
+			icon.fitted->setY(y + icon.y);
+			icon.fitted->blit(this->getSurface());
+		});
 		for (auto* text : _texts[i])
 		{
 			text->setY(y);
@@ -1200,17 +1197,14 @@ void TextList::hdMirror()
 	}
 	forVisibleRows([&](size_t i, int y, int)
 	{
-		for (int col = 0; col < ICON_COLUMNS; ++col)
+		forRowIcons(i, [&](const Icon &icon, int x)
 		{
-			if (const Icon *icon = rowIcon(i, col))
-			{
-				// from the whole frame, not from the classic picture: that one is a few pixels big
-				HdUi &ui = HdUi::instance();
-				ui.setClip(getX(), getY(), getWidth(), getHeight());
-				ui.drawSurfaceFit(icon->trimmed, getX() + icon->x, getY() + y + icon->y, icon->fitted->getWidth(), icon->fitted->getHeight());
-				ui.clearClip();
-			}
-		}
+			// from the whole frame, not from the classic picture: that one is a few pixels big
+			HdUi &ui = HdUi::instance();
+			ui.setClip(getX(), getY(), getWidth(), getHeight());
+			ui.drawSurfaceFit(icon.trimmed, getX() + x, getY() + y + icon.y, icon.fitted->getWidth(), icon.fitted->getHeight());
+			ui.clearClip();
+		});
 		for (auto* text : _texts[i])
 		{
 			text->hdDrawAt(getX() + text->getX(), getY() + y, getX(), getY(), getWidth(), getHeight());
@@ -1575,14 +1569,16 @@ void TextList::setIgnoreSeparators(bool ignoreSeparators)
  * @param x Left edge in list pixels.
  * @param width Width in pixels; 0 = no pictures.
  * @param col Which of the two picture columns.
+ * @param slots The column split into that many places, one picture each.
  */
-void TextList::setIconColumn(int x, int width, int col)
+void TextList::setIconColumn(int x, int width, int col, int slots)
 {
 	if (col < 0 || col >= ICON_COLUMNS)
 	{
 		return;
 	}
-	if (width != _iconW[col] || x != _iconX[col])
+	slots = std::max(1, slots);
+	if (width != _iconW[col] || x != _iconX[col] || slots != _iconSlots[col])
 	{
 		// the classic pictures were made for the old column
 		for (auto it = _iconCache.begin(); it != _iconCache.end();)
@@ -1601,6 +1597,7 @@ void TextList::setIconColumn(int x, int width, int col)
 	}
 	_iconX[col] = x;
 	_iconW[col] = std::max(0, width);
+	_iconSlots[col] = slots;
 	_redraw = true;
 }
 
@@ -1612,32 +1609,62 @@ void TextList::setIconColumn(int x, int width, int col)
  */
 void TextList::setRowIcon(size_t row, Surface *frame, int col)
 {
+	setRowIcons(row, frame ? std::vector<Surface*>(1, frame) : std::vector<Surface*>(), col);
+}
+
+/**
+ * OXCE-HD: sets the pictures of a row, one per slot of the column.
+ * @param row Row number (as setRowColor counts them).
+ * @param frames Sprite frames (kept by their owner, not copied); nullptr leaves its slot empty.
+ * @param col Which of the two picture columns.
+ */
+void TextList::setRowIcons(size_t row, const std::vector<Surface*> &frames, int col)
+{
 	if (col < 0 || col >= ICON_COLUMNS)
 	{
 		return;
 	}
 	if (row >= _rowIcons[col].size())
 	{
-		_rowIcons[col].resize(row + 1, nullptr);
+		_rowIcons[col].resize(row + 1);
 	}
-	_rowIcons[col][row] = frame;
+	_rowIcons[col][row] = frames;
 	_redraw = true;
 }
 
 /**
- * OXCE-HD: the picture of a row. Made once per frame: the frame's drawn part,
- * and from it the classic picture as big as fits the column and the line with
+ * OXCE-HD: calls fn(icon, x) for the pictures of a row, x in list pixels.
+ */
+template<typename Fn>
+void TextList::forRowIcons(size_t row, Fn fn)
+{
+	for (int col = 0; col < ICON_COLUMNS; ++col)
+	{
+		if (_iconW[col] <= 0 || row >= _rowIcons[col].size())
+		{
+			continue;
+		}
+		const std::vector<Surface*> &frames = _rowIcons[col][row];
+		const int slotW = _iconW[col] / _iconSlots[col];
+		for (size_t slot = 0; slot < frames.size() && slot < (size_t)_iconSlots[col]; ++slot)
+		{
+			if (const Icon *icon = frames[slot] ? frameIcon(frames[slot], col) : nullptr)
+			{
+				fn(*icon, _iconX[col] + (int)slot * slotW + icon->x);
+			}
+		}
+	}
+}
+
+/**
+ * OXCE-HD: the picture of a frame. Made once per frame: the frame's drawn part,
+ * and from it the classic picture as big as fits the slot and the line with
  * the shape kept; every pixel of it takes the commonest colour of the part it
  * covers, or stays empty where that part is mostly empty (a mean of palette
  * indices would be a colour from another ramp).
  */
-const TextList::Icon *TextList::rowIcon(size_t row, int col)
+const TextList::Icon *TextList::frameIcon(Surface *frame, int col)
 {
-	if (_iconW[col] <= 0 || row >= _rowIcons[col].size() || !_rowIcons[col][row])
-	{
-		return nullptr;
-	}
-	Surface *frame = _rowIcons[col][row];
 	auto found = _iconCache.find(std::make_pair(frame, col));
 	if (found != _iconCache.end())
 	{
@@ -1672,7 +1699,8 @@ const TextList::Icon *TextList::rowIcon(size_t row, int col)
 		}
 	}
 	const int lineH = _font->getHeight();
-	const double s = std::min(1.0, std::min((double)_iconW[col] / bw, (double)lineH / bh));
+	const int slotW = _iconW[col] / _iconSlots[col];
+	const double s = std::min(1.0, std::min((double)slotW / bw, (double)lineH / bh));
 	const int dw = std::max(1, (int)std::lround(bw * s)), dh = std::max(1, (int)std::lround(bh * s));
 	icon.fitted = new Surface(dw, dh);
 	icon.fitted->setPalette(getPalette());
@@ -1707,7 +1735,7 @@ const TextList::Icon *TextList::rowIcon(size_t row, int col)
 			}
 		}
 	}
-	icon.x = _iconX[col] + (_iconW[col] - dw) / 2;
+	icon.x = (slotW - dw) / 2;
 	icon.y = (lineH - dh) / 2;
 	return &icon;
 }
