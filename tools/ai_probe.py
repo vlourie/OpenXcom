@@ -30,7 +30,7 @@ WORK = Path(tempfile.gettempdir()) / "oxce_ai_probe"
 # трассы охоты за недетерминизмом ([AIMELEE], [AIPATH]) тоже: без них ai_arena --env OXCE_AI_TRACE_* пишет пустоту;
 # запись решений по OXCE_AI_RECORD ([AIREC], списки ходов [AICAND]) - план V2, шаг 2
 TAGS = ("[AISTATE]", "[AIDECIDE]", "[AIPROBE]", "[AIRESULT]", "[AICASUALTY]", "[AIMELEE]", "[AIPATH]", "[AIRECHEAD]", "[AIREC]",
-        "[AIEXEC]", "[AIAFTER]", "[AITRACE]", "[AICAND]", "[AIPATROL]")
+        "[AIEXEC]", "[AIAFTER]", "[AITRACE]", "[AICAND]", "[AIPATROL]", "[AIPF]")
 
 
 class Probe:
