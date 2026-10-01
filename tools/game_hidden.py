@@ -34,7 +34,7 @@ if not (u / "mods").exists():
                    check=True, capture_output=True)
 cfg = (GAME / "user" / "options.cfg").read_text(encoding="utf-8")
 # всё, что спрашивает игрока или крутит камеру мышью человека (R-093, R-095)
-fixed = {"battleEdgeScroll": "0", "oxceAdultAsk": "false", "playIntro": "false"}
+fixed = {"battleEdgeScroll": "0", "oxceAdultAsk": "false", "playIntro": "false", "oxceGentleAsk": "false"}
 for kv in filter(None, o.set.split(";")):
     n, v = kv.split("=", 1)
     fixed[n] = v
