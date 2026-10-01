@@ -97,6 +97,7 @@ ru:
   STR_FILTER_DEFAULT_NO_SUPPLIES: "По умолч. (ресурсов нет)"
   STR_FILTER_FACILITY_REQUIRED: "Необходимо сооружение"
   STR_FILTER_HIDDEN: "Скрытые"
+  STR_FILTER_ALPHABETICAL: "По алфавиту"
   STR_FILTER_EQUIPPED: "Снаряженные"
   STR_FILTER_MISSING: "Недостача"
   STR_SORT_DEFAULT: "По умолчанию"
