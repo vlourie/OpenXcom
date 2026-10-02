@@ -20,6 +20,8 @@
 #include <sstream>
 #include "../Engine/Game.h"
 #include "../Engine/Action.h"
+#include "../Engine/FileMap.h"
+#include "../Engine/HdSprites.h"
 #include "../Engine/HdGentle.h"
 #include "../Engine/HdUi.h"
 #include "../Engine/LocalizedText.h"
@@ -88,6 +90,15 @@ OptionsHdState::OptionsHdState(OptionsOrigin origin) : OptionsBaseState(origin)
 
 	_adultShipped = AdultChoiceState::adultArtShipped();
 	_hdActive = _game->getMod()->hasHdArt();
+	// a style row without its pictures in the active mods would change nothing: it is not offered, and
+	// its value stays in options.cfg as it was (Options::save writes every option, shown or not).
+	// Fire styles are the variants 2s and 2s + 1 of the fire frames (Map.cpp, UnitSprite.cpp)
+	const bool fireShipped = FileMap::fileExists(HdSprites::artPath("SMOKE.PCK/0.v2.png"));
+	bool reticleShipped = FileMap::fileExists(HdSprites::artPath("CURSOR.PCK/6.png"));
+	for (const auto &style : Mod::HD_RETICLES)
+	{
+		reticleShipped = reticleShipped || FileMap::fileExists(HdSprites::artPath("CURSOR.PCK/reticle_" + style + "/6.png"));
+	}
 
 	for (const char *category : HD_CATEGORIES)
 	{
@@ -100,6 +111,11 @@ OptionsHdState::OptionsHdState(OptionsOrigin origin) : OptionsBaseState(origin)
 				// asking at every start only means something when there is an adult tree to choose
 				// (asBool throws on an option of another type, so the type is checked first)
 				if (optionInfo.type() == OPTION_BOOL && optionInfo.asBool() == &Options::oxceAdultAsk && !_adultShipped)
+				{
+					continue;
+				}
+				if (optionInfo.type() == OPTION_INT && ((optionInfo.asInt() == &Options::oxceHdFire && !fireShipped) ||
+					(optionInfo.asInt() == &Options::oxceHdReticle && !reticleShipped)))
 				{
 					continue;
 				}
