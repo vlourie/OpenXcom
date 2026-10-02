@@ -28,8 +28,13 @@ DENY = {
     "sed -e s в двойных кавычках": "grep x f | sed -e \"s|a" + BS + "|b|c|g\"",
     # R-037: ключ через одну косую Git Bash переводит в путь
     "robocopy /E": "robocopy src dst /E /NFL",
-    "taskkill /IM после cd": "cd /e/OpenXCom && taskkill /IM openxcom.exe /F",
+    "taskkill /IM после cd": "cd /e/OpenXCom && taskkill /IM notepad.exe /F",
     "cmd /c": "cmd /c dir",
+    # R-184: питон без программы - REPL, у фоновой команды пишет ошибку по кругу
+    "py - с пустым heredoc": "cd /c/x && py -3.13 - <<'EOF'\nEOF\necho skip",
+    "python - без stdin": "python - ; echo done",
+    "py -3.13 без аргументов": "PYTHONIOENCODING=utf-8 py -3.13",
+    "python.exe по пути без скрипта": "E:/v/.venv/Scripts/python.exe -u > out.txt",
 }
 
 ALLOW = {
@@ -50,6 +55,13 @@ ALLOW = {
     "ключ в кавычках grep": "grep -n \"taskkill /IM\" tools/x.ps1",
     "ключ в теле heredoc": "git commit -F - <<'EOF'\nhooks: robocopy /E ловится\nEOF",
     "PowerShell-инструмент": ("PS", "robocopy src dst /E"),
+    "python - с непустым heredoc": "python - <<'EOF'\nprint(1)\nEOF",
+    "конвейер в python -": "cat x.py | python -",
+    "python - < файл": "py -3.13 - < x.py",
+    "py -3.13 со скриптом": "py -3.13 tools/x.py --a 1",
+    "python -m": "python -m pytest -q",
+    "python --version": "python --version && py -0p",
+    "python в тексте": "grep -n python f.txt; echo use py",
 }
 
 

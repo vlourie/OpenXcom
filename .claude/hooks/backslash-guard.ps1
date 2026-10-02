@@ -76,6 +76,41 @@ function Test-SlashFlags([string]$cmd) {
     return $null
 }
 
+# Грабли R-184: питон без скрипта (python -, py -3.13 без аргументов) читает программу из stdin.
+# Пустой heredoc или нет stdin вовсе - и у фоновой команды без консоли поднимается REPL, который
+# печатает свою ошибку по кругу: гигабайты лога. Можно: конвейер в питон, < файл, непустой heredoc.
+function Test-StdinPython([string]$cmd) {
+    if (-not $cmd) { return $null }
+    $lines = $cmd -split "`n"
+    $rx = '(?i)(?:^|[;&|(])\s*(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)*(?:\S*[/\\])?(python3?|py)(?:\.exe)?((?:\s+-(?:\d+(?:\.\d+)?|[uIBsSEOq]+))*)(\s+-)?(?=\s*(?:$|[;&|)<>]))'
+    $tag = $null
+    for ($i = 0; $i -lt $lines.Count; $i++) {
+        $line = $lines[$i].TrimEnd("`r")
+        if ($tag) { if ($line.Trim() -eq $tag) { $tag = $null }; continue }
+        foreach ($m in [regex]::Matches($line, $rx)) {
+            $before = $line.Substring(0, $m.Index + 1).TrimEnd()
+            $lead = $m.Value.TrimStart()
+            if ($lead.StartsWith('|') -and -not $lead.StartsWith('||') -and -not $before.EndsWith('||')) { continue }   # конвейер в питон
+            $rest = $line.Substring($m.Index + $m.Length)
+            $h = [regex]::Match($rest, "^\s*<<-?[ \t]*(['""]?)([A-Za-z_][A-Za-z0-9_]*)\1")
+            if ($h.Success) {
+                $body = New-Object Collections.Generic.List[string]
+                for ($j = $i + 1; $j -lt $lines.Count; $j++) {
+                    if ($lines[$j].TrimEnd("`r").Trim() -eq $h.Groups[2].Value) { break }
+                    $body.Add($lines[$j])
+                }
+                if ((($body -join '') -replace '\s', '') -eq '') { return "$($m.Groups[1].Value) с пустым heredoc" }
+                continue
+            }
+            if ($rest -match '^\s*<') { continue }   # < файл, <<< строка
+            return "$($m.Groups[1].Value)$($m.Groups[2].Value)$($m.Groups[3].Value) без stdin"
+        }
+        $hd = [regex]::Match($line, "<<-?[ \t]*(['""]?)([A-Za-z_][A-Za-z0-9_]*)\1")
+        if ($hd.Success) { $tag = $hd.Groups[2].Value }
+    }
+    return $null
+}
+
 try {
     $raw = [Console]::In.ReadToEnd()
     if ([string]::IsNullOrWhiteSpace($raw)) { exit 0 }
@@ -92,6 +127,15 @@ try {
             } } | ConvertTo-Json -Depth 5 -Compress
             exit 0
         }
+    }
+    $repl = Test-StdinPython $cmd
+    if ($repl) {
+        @{ hookSpecificOutput = @{
+            hookEventName            = 'PreToolUse'
+            permissionDecision       = 'deny'
+            permissionDecisionReason = "Грабли R-184: $repl - питон возьмёт программу из stdin, а без неё поднимет REPL; у фоновой команды без консоли он пишет ошибку по кругу, гигабайты лога. Запиши скрипт инструментом Write и запусти по пути (py -3.13 путь)."
+        } } | ConvertTo-Json -Depth 5 -Compress
+        exit 0
     }
     $what = Test-Command $cmd
     if (-not $what) { exit 0 }
