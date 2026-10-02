@@ -123,6 +123,16 @@ private:
 	const BattleUnit *_ko2WalkTarget = 0;
 	const char *_ko2WalkBranch = 0;
 	Position _ko2WalkTo;
+	/// PATROL_REUSE_PROBE (bench, passive): the turn setupPatrol chose _toNode in (-1: before this battle's play, as a save
+	/// loads it); what the last setupPatrol of this decision found when it kept the stored node (empty class: it did not).
+	/// Written, never read by play.
+	int _toNodeTurn = -1;
+	std::string _prClass, _prRoute, _prTrail;
+	Position _prNode;
+	/// PATROL_REUSE_PROBE: classifies the stored node setupPatrol is about to keep (its own search, then abortPath, as the
+	/// choice of a node does); a unit's class as the unit's side sees it.
+	void patrolReuseProbe();
+	const char *patrolReuseWho(const BattleUnit *other) const;
 	/// _reachableWithAttack for this attack, and what it left for the walk.
 	void reachableWithAttack(const BattleActionCost &cost);
 	int unitTurn() const;
@@ -256,6 +266,8 @@ public:
 	const BattleUnit *knownOccupantV2Walk(const BattleAction &action) const;
 	/// KNOWN_OCCUPANT_PATH_V2: the walk's own path is calculated with that T (found: it has a first step; hits: what it blocked).
 	void knownOccupantV2Walked(const BattleAction &action, bool found, int hits);
+	/// PATROL_REUSE_PROBE (bench): the decision is made - tallies what its last setupPatrol found keeping the stored node.
+	void patrolReuseDecided(const BattleAction &action);
 	/// Frees up the destination node for another Unit to select
 	void freePatrolTarget();
 };

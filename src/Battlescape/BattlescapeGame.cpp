@@ -500,6 +500,10 @@ void BattlescapeGame::handleAI(BattleUnit *unit)
 	{
 		ai->knownOccupantV2Decided(action);
 	}
+	if (AiProbe::patrolReuseProbe())
+	{
+		ai->patrolReuseDecided(action);
+	}
 	if (action.type == BA_WALK)
 	{
 		ss << "Walking to " << action.target;
