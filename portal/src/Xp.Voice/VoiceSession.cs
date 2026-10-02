@@ -34,7 +34,11 @@ public sealed class VoiceOptions
 
 public enum VoiceState { Connecting, Connected, Reconnecting, Disconnected, Stopped }
 
-public sealed record PeerView(string Identity, double LevelDb, bool Speaking, bool Muted, long Frames, int BufferedMs, int Underruns);
+/// <summary>LevelDb is what is played (-90 while the jitter ring primes), ReceivedDb what arrives from the
+/// network; SilenceMs - how long the arriving frames have been digital silence (below -80 dBFS);
+/// SinceFrameMs - since the last frame arrived, -1 before the first.</summary>
+public sealed record PeerView(string Identity, double LevelDb, bool Speaking, bool Muted, long Frames, int BufferedMs, int Underruns,
+    double ReceivedDb, int SilenceMs, int SinceFrameMs);
 
 /// <summary>
 /// One voice room: the microphone is published as a LiveKit audio track, every other participant is
@@ -807,7 +811,7 @@ public sealed class VoiceSession : IAsyncDisposable
 
     Peer PeerOf(string identity)
     {
-        var p = _peers.GetOrAdd(identity, id => new Peer(id));
+        var p = _peers.GetOrAdd(identity, id => new Peer(id, _notes));
         _mix = [.. _peers.Values];
         return p;
     }
@@ -818,7 +822,7 @@ public sealed class VoiceSession : IAsyncDisposable
     }
 
     /// <summary>One remote speaker: its jitter ring and what the log and the window show about it.</summary>
-    sealed class Peer(string identity)
+    sealed class Peer(string identity, ConcurrentQueue<string> notes)
     {
         public readonly string Identity = identity;
         readonly SampleRing _ring = new(AudioDevice.Rate / 2);
@@ -828,6 +832,17 @@ public sealed class VoiceSession : IAsyncDisposable
         int _underruns, _trimmed, _pushDropped;
         double _db = -90;
         long _quietSince = Stopwatch.GetTimestamp();
+        // what arrives from the network, before the jitter ring: the level (300 ms peak hold for the
+        // window, 5 s peak for the log) and runs of digital silence - the other side's gate or an empty
+        // track, which a level alone shows as "quiet". Silence is below -80 dBFS, not exact zeros only:
+        // after ~1 s of zeros the sender's DTX stops the packets and the decoder fills in comfort noise
+        // of +-1 LSB (local test 02.10: a 6 s gap of zeros arrived as 150 ms of zeros and 5.8 s of noise)
+        double _rxHoldDb = -90, _rxPeakDb = -90;
+        long _rxHoldAt, _rxAt;                        // Stopwatch timestamps; _rxAt 0 = no frame yet
+        int _voiced;                                  // frames above -45 dB since the last stats line
+        long _silentRun, _silentMs, _silentLongest;   // samples of the run in progress; ms since the last stats line
+        int _silentRuns;
+        const double SilentDb = -80;
 
         public void Reset()
         {
@@ -840,6 +855,25 @@ public sealed class VoiceSession : IAsyncDisposable
             _pushDropped += _ring.Write(samples);
             Interlocked.Increment(ref _frames);
             Interlocked.Increment(ref _framesTotal);
+            long now = Stopwatch.GetTimestamp();
+            _rxAt = now;
+            double db = Db(samples);
+            if (db > _rxPeakDb) _rxPeakDb = db;
+            if (db >= _rxHoldDb || Stopwatch.GetElapsedTime(_rxHoldAt, now).TotalMilliseconds > 300) { _rxHoldDb = db; _rxHoldAt = now; }
+            if (db > -45) _voiced++;
+            if (db <= SilentDb) _silentRun += samples.Length;
+            else if (_silentRun > 0) SilentRunEnds();
+        }
+
+        void SilentRunEnds()
+        {
+            long ms = _silentRun * 1000 / AudioDevice.Rate;
+            _silentRun = 0;
+            _silentMs += ms;
+            if (ms < 100) return;
+            _silentRuns++;
+            if (ms > _silentLongest) _silentLongest = ms;
+            if (ms >= 2000) notes.Enqueue($"{Identity}: {ms / 1000.0:0.0} s of digital silence received (below {SilentDb} dBFS)");
         }
 
         /// <returns>false when there was nothing to play</returns>
@@ -867,16 +901,25 @@ public sealed class VoiceSession : IAsyncDisposable
             return got > 0;
         }
 
-        public PeerView View() => new(Identity, _db, _db > -45, Muted, Interlocked.Read(ref _framesTotal), _ring.Count * 1000 / AudioDevice.Rate, _underruns);
+        public PeerView View() => new(Identity, _db, _db > -45, Muted, Interlocked.Read(ref _framesTotal), _ring.Count * 1000 / AudioDevice.Rate, _underruns,
+            _rxHoldDb, (int)(_silentRun * 1000 / AudioDevice.Rate), _rxAt == 0 ? -1 : (int)Stopwatch.GetElapsedTime(_rxAt).TotalMilliseconds);
 
         public string StatsLine()
         {
             long f = Interlocked.Exchange(ref _frames, 0);
-            string s = $"{Identity}: got {f} frames, buffered {_ring.Count * 1000 / AudioDevice.Rate} ms, underruns {_underruns}, cut {_trimmed * 1000 / AudioDevice.Rate} ms";
+            string s = $"{Identity}: got {f} frames" +
+                (f == 0 ? "" : $", peak {_rxPeakDb:0} dB, voiced {_voiced * 100 / f}%, silent {_silentMs} ms{(_silentRuns > 0 ? $" ({_silentRuns} runs >= 100 ms, longest {_silentLongest} ms)" : "")}") +
+                (_silentRun >= AudioDevice.Rate ? $", silence now {_silentRun / AudioDevice.Rate} s" : "") +
+                $", buffered {_ring.Count * 1000 / AudioDevice.Rate} ms, underruns {_underruns}, cut {_trimmed * 1000 / AudioDevice.Rate} ms";
             if (_pushDropped > 0) s += $", overflow {_pushDropped * 1000 / AudioDevice.Rate} ms";
             _underruns = 0;
             _trimmed = 0;
             _pushDropped = 0;
+            _rxPeakDb = -90;
+            _voiced = 0;
+            _silentMs = 0;
+            _silentRuns = 0;
+            _silentLongest = 0;
             return s;
         }
     }

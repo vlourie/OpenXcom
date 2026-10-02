@@ -137,8 +137,15 @@ public sealed class VoiceWindow : Window
                 Text = (p.Speaking ? "● " : "○ ") + p.Identity + (p.Muted ? " (микрофон выключен)" : ""),
                 Foreground = Skin.B(p.Speaking ? Skin.Accent : Skin.Text2), FontSize = 14, MinWidth = 260,
             });
-            row.Children.Add(new ProgressBar { Minimum = -60, Maximum = 0, Value = Math.Max(-60, p.LevelDb), Height = 6, Width = 140, VerticalAlignment = VerticalAlignment.Center });
-            row.Children.Add(new TextBlock { Text = $"буфер {p.BufferedMs} мс", FontSize = 12, Foreground = Skin.B(Skin.Muted), VerticalAlignment = VerticalAlignment.Center });
+            // the bar is what arrives from the network, not what is played: a silent bar with frames
+            // coming in means the other side sends silence, no frames means the path is down
+            row.Children.Add(new ProgressBar { Minimum = -60, Maximum = 0, Value = Math.Max(-60, p.ReceivedDb), Height = 6, Width = 140, VerticalAlignment = VerticalAlignment.Center });
+            string arriving = p.SinceFrameMs < 0 ? "звука ещё не было"
+                : p.SinceFrameMs > 1000 ? $"нет пакетов {p.SinceFrameMs / 1000} с"
+                : p.SilenceMs >= 1000 ? $"цифровая тишина {p.SilenceMs / 1000} с"
+                : $"принято {p.ReceivedDb:0} дБ";
+            bool warn = p.SinceFrameMs > 1000 || p.SilenceMs >= 1000;
+            row.Children.Add(new TextBlock { Text = $"{arriving}, буфер {p.BufferedMs} мс", FontSize = 12, Foreground = Skin.B(warn ? Skin.WarnText : Skin.Muted), VerticalAlignment = VerticalAlignment.Center });
             _peers.Children.Add(row);
         }
 
