@@ -266,7 +266,7 @@ void ExplosionBState::init()
 			_parent->playSound(sound);
 			if (_parent->getMap()->getFollowProjectile() || _explosionCounter > 0)
 			{
-				_parent->getMap()->getCamera()->centerOnPosition(_center.toTile(), false);
+				_parent->getMap()->getCamera()->focusOn(_center.toTile(), false);
 			}
 		}
 		else
@@ -386,7 +386,7 @@ void ExplosionBState::init()
 
 		if (_targetPsiOrHit && _parent->getSave()->getSide() == FACTION_HOSTILE && _targetPsiOrHit->getFaction() == FACTION_PLAYER)
 		{
-			_parent->getMap()->getCamera()->centerOnPosition(_center.toTile(), false);
+			_parent->getMap()->getCamera()->focusOn(_center.toTile(), false);
 		}
 		// bullet hit sound
 		_parent->playSound(sound, _center.toTile());

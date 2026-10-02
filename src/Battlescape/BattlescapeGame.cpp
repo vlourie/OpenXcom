@@ -398,7 +398,7 @@ void BattlescapeGame::handleAI(BattleUnit *unit)
 		if (_save->getSelectedUnit())
 		{
 			_parentState->updateSoldierInfo();
-			getMap()->getCamera()->centerOnPosition(_save->getSelectedUnit()->getPosition());
+			getMap()->getCamera()->focusOn(_save->getSelectedUnit()->getPosition());
 			if (_save->getSelectedUnit()->getId() <= unit->getId())
 			{
 				_AISecondMove = true;
@@ -567,7 +567,7 @@ void BattlescapeGame::handleAI(BattleUnit *unit)
 		if (_save->getSelectedUnit())
 		{
 			_parentState->updateSoldierInfo();
-			getMap()->getCamera()->centerOnPosition(_save->getSelectedUnit()->getPosition());
+			getMap()->getCamera()->focusOn(_save->getSelectedUnit()->getPosition());
 			if (_save->getSelectedUnit()->getId() <= unit->getId())
 			{
 				_AISecondMove = true;
@@ -789,7 +789,7 @@ void BattlescapeGame::endTurn()
 
 		if (playableUnitSelected())
 		{
-			getMap()->getCamera()->centerOnPosition(_save->getSelectedUnit()->getPosition());
+			getMap()->getCamera()->focusOn(_save->getSelectedUnit()->getPosition());
 			setupCursor();
 		}
 	}
@@ -1399,7 +1399,7 @@ void BattlescapeGame::popState()
 					}
 					if (_save->getSelectedUnit())
 					{
-						getMap()->getCamera()->centerOnPosition(_save->getSelectedUnit()->getPosition());
+						getMap()->getCamera()->focusOn(_save->getSelectedUnit()->getPosition());
 					}
 				}
 			}

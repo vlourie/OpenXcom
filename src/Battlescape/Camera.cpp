@@ -21,7 +21,10 @@
 #include "../Engine/Action.h"
 #include "../Engine/Options.h"
 #include "../Engine/Timer.h"
+#include "../Engine/HdGentle.h"
 #include "../fmath.h"
+#include <algorithm>
+#include <cmath>
 
 namespace OpenXcom
 {
@@ -432,7 +435,172 @@ void Camera::centerOnPosition(Position mapPos, bool redraw)
 	_mapOffset.y = -(screenPos.y - halfWorld(_visibleMapHeight));
 
 	_mapOffset.z = _center.z;
+	_glideNext = true;
 	if (redraw) _map->draw();
+}
+
+/**
+ * Is a tile well inside the visible part of the map (above the icons) at the logical offset?
+ * The unit standing on it fits whole: its floor point is half a tile in from the sides and the
+ * bottom, and a tile's height below the top.
+ * @param mapPos Position to check.
+ */
+bool Camera::inView(Position mapPos) const
+{
+	Position screenPos;
+	convertMapToScreen(mapPos, &screenPos);
+	const int x = screenPos.x + _mapOffset.x + _spriteWidth / 2;
+	const int y = screenPos.y + _mapOffset.y + _spriteHeight - _spriteWidth / 4;
+	return x >= _spriteWidth / 2 && x <= _screenWidth - _spriteWidth / 2
+		&& y >= _spriteHeight && y <= _visibleMapHeight - _spriteWidth / 4;
+}
+
+/**
+ * Centers map on a position for a unit picked or an event, unless in gentle mode the position
+ * is in view already: then the camera stays and only goes to its level. Without the mode it is
+ * centerOnPosition exactly.
+ * @param mapPos Position to center on.
+ * @param redraw Redraw map or not.
+ */
+void Camera::focusOn(Position mapPos, bool redraw)
+{
+	if (HdGentle::on() && mapPos.x >= 0 && mapPos.y >= 0 && mapPos.z >= 0 && mapPos.z < _mapsize_z && inView(mapPos))
+	{
+		_mapOffset.z = mapPos.z;
+		if (redraw) _map->draw();
+		return;
+	}
+	centerOnPosition(mapPos, redraw);
+}
+
+/// Gentle mode: how fast the picture catches up with the camera, s (a critically damped spring:
+/// about 0.3 s to 95 % of the way, no overshoot; a new target turns it from where it is now).
+static const double GLIDE_TIME = 0.13;
+/// Gentle mode: a centering further than this many screens is cut, not glided: a fast sweep of
+/// the whole screen is just what the mode is for avoiding.
+static const double GLIDE_FAR = 1.5;
+/// Gentle mode: frames further apart than this, ms (a message or a dialog over the map), stop
+/// counting as a glide for clicks into the map.
+static const unsigned GLIDE_GAP = 250;
+/// Gentle mode: one frame moves the picture by at most this much time of its way, ms: after a pause
+/// (the AI thinking, a dialog) the picture goes on from where it stood instead of jumping ahead.
+/// About one frame at 50-60 fps: a slower game glides longer, never in bigger steps.
+static const unsigned GLIDE_STEP = 20;
+
+/**
+ * Gentle mode: puts the shown offset in place of the logical one for drawing the map. A centering
+ * (centerOnPosition) since the last frame glides there; any other move (scrolling, a level up or
+ * down) moves the picture along at once, a glide on its way included. Does nothing without the mode.
+ */
+void Camera::beginShown()
+{
+	_gliding = false;
+	if (!HdGentle::on())
+	{
+		_shownValid = false;
+		_glideNext = false;
+		return;
+	}
+	const unsigned now = SDL_GetTicks();
+	const Position logical = _mapOffset;
+	if (!_shownValid)
+	{
+		_shownX = logical.x;
+		_shownY = logical.y;
+		_shownVX = _shownVY = 0;
+		_shownValid = true;
+	}
+	else if (logical.x != _lastLogical.x || logical.y != _lastLogical.y)
+	{
+		if (!_glideNext)
+		{
+			_shownX += logical.x - _lastLogical.x;
+			_shownY += logical.y - _lastLogical.y;
+		}
+		else if (std::abs(logical.x - _shownX) > GLIDE_FAR * _screenWidth || std::abs(logical.y - _shownY) > GLIDE_FAR * _visibleMapHeight)
+		{
+			_shownX = logical.x;
+			_shownY = logical.y;
+			_shownVX = _shownVY = 0;
+		}
+		else if (_shownX == _lastLogical.x && _shownY == _lastLogical.y && _shownVX == 0 && _shownVY == 0)
+		{
+			_shownTicks = now; // a glide from rest starts with this frame
+		}
+	}
+	_glideNext = false;
+	_lastLogical = logical;
+
+	if (_shownX != logical.x || _shownY != logical.y)
+	{
+		const unsigned ms = std::min(now - _shownTicks, GLIDE_STEP);
+		const double dt = ms / 1000.0;
+		const double omega = 2.0 / GLIDE_TIME;
+		const double x = omega * dt;
+		const double decay = 1.0 / (1.0 + x + 0.48 * x * x + 0.235 * x * x * x);
+		auto spring = [&](double &cur, double &vel, double target)
+		{
+			const double change = cur - target;
+			const double temp = (vel + omega * change) * dt;
+			vel = (vel - omega * temp) * decay;
+			cur = target + (change + temp) * decay;
+		};
+		spring(_shownX, _shownVX, logical.x);
+		spring(_shownY, _shownVY, logical.y);
+		if (std::abs(_shownX - logical.x) < _k && std::abs(_shownY - logical.y) < _k)
+		{
+			_shownX = logical.x;
+			_shownY = logical.y;
+			_shownVX = _shownVY = 0;
+		}
+	}
+	else
+	{
+		_shownVX = _shownVY = 0;
+	}
+	_shownTicks = now;
+	_gliding = _shownX != logical.x || _shownY != logical.y;
+
+	_savedOffset = logical;
+	_mapOffset.x = (int)std::lround(_shownX / _k) * _k;
+	_mapOffset.y = (int)std::lround(_shownY / _k) * _k;
+	_drawnOffset = _mapOffset;
+	_inShown = true;
+}
+
+/**
+ * Gentle mode: is the picture still on its way to the logical offset? A glide whose frames
+ * stopped coming (a message over the map) does not count: it ends at the next frame anyway.
+ */
+bool Camera::isGliding() const
+{
+	return _gliding && SDL_GetTicks() - _shownTicks <= GLIDE_GAP;
+}
+
+/**
+ * Gentle mode: brings the logical offset back after drawing the map. If the drawing moved the
+ * camera itself (following a projectile, which the mode turns off), that place is taken as is.
+ */
+void Camera::endShown()
+{
+	if (!_inShown)
+	{
+		return;
+	}
+	_inShown = false;
+	if (_mapOffset.x == _drawnOffset.x && _mapOffset.y == _drawnOffset.y)
+	{
+		_mapOffset.x = _savedOffset.x;
+		_mapOffset.y = _savedOffset.y;
+	}
+	else
+	{
+		_shownX = _mapOffset.x;
+		_shownY = _mapOffset.y;
+		_shownVX = _shownVY = 0;
+		_lastLogical = _mapOffset;
+		_gliding = false;
+	}
 }
 
 /**
