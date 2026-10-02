@@ -400,7 +400,7 @@ void ProjectileFlyBState::init()
 
 		const bool byAltPressed = _parent->getMap()->isAltPressed();
 		const bool byRules = conf && !conf->followProjectiles;
-		const bool byOptions = (HdGentle::traceProjectiles() > 2) || (_unit->getFaction() == UnitFaction::FACTION_PLAYER && HdGentle::traceProjectiles() == 1);
+		const bool byOptions = (HdGentle::traceProjectiles() >= 2) || (_unit->getFaction() == UnitFaction::FACTION_PLAYER && HdGentle::traceProjectiles() == 1);
 
 		if (byAltPressed || byRules || byOptions)
 		{

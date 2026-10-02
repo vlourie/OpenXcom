@@ -11,5 +11,5 @@ en-US:
   STR_HIDE_ENEMY_TURN_BACKGROUND: "Hide enemy turn background picture"
   STR_HIDE_ENEMY_TURN_BACKGROUND_DESC: "With YES selected, only the progress bar will be shown with the label"
   STR_DONT_TRACE_PROJECTILES: "Do not follow projectiles with the camera"
-  STR_DONT_TRACE_PROJECTILES_DESC: "The camera does not fly after a shot. 0 - always follows, 1 - does not follow your own shots, 2 - does not follow any shots"
+  STR_DONT_TRACE_PROJECTILES_DESC: "The camera does not fly after a shot. 0 - always follows, 1 - does not follow your own shots, 2 - does not follow any shots, 3 - as 2, but centres on a hit on your soldier or a civilian, 4 - as 3, but the camera does not move"
   STR_TOGGLE_INDIVIDUAL_LIGHTING_HOTKEY: "Toggle personal light of the selected unit"
