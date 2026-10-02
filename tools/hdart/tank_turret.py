@@ -51,6 +51,10 @@ PART_POS = {0: (16, 8), 1: (32, 16), 2: (0, 16), 3: (16, 24)}
 # the big turret frame: the part of the screen a standing 2x2 unit may draw on (the canvas lies at (16, 8));
 # the engine centres it on the tank
 BIG_W, BIG_H, BIG_X, BIG_Y = 96, 96, 16, 8
+# the mod's sets get names of their own (PIR_TANK_TURRET.PCK) and the armors are pointed at them: the HD
+# pack of the mod's frames lives in the mod (hd/<set>/pack.hdp), and the hd mod's pack of the original
+# PIR_TANK.PCK (the hull with the turret drawn in) can no longer be drawn over the new hulls
+SET_SUFFIX = "_TURRET.PCK"
 DOME_RGB = (255, 0, 0)
 BARREL_RGB = (0, 0, 255)
 
@@ -534,7 +538,7 @@ def write_mod(out_mod, master, sheets_info):
     os.makedirs(os.path.join(out_mod, "Ruleset"), exist_ok=True)
     with open(os.path.join(out_mod, "metadata.yml"), "w", encoding="utf-8") as f:
         f.write('name: "Piratez tanks: turning turret"\n')
-        f.write('version: "1.2"\n')
+        f.write('version: "1.3"\n')
         f.write('description: "The pirate tanks (PIR_TANK*) drawn as real tanks (drawingRoutine 2) with a turret that turns on its own, '
                 'mounted where it is drawn (at the rear). Needs the OXCE HD build with big turret frames (UnitSprite::drawRoutine2)."\n')
         f.write('author: "Vitali + Claude"\n')
@@ -555,7 +559,7 @@ def write_mod(out_mod, master, sheets_info):
     lines.append("armors:")
     for s in sheets_info:
         for a in s["armors"]:
-            lines += ["  - type: %s" % a, "    drawingRoutine: 2"]
+            lines += ["  - type: %s" % a, "    spriteSheet: %s" % s["type"], "    drawingRoutine: 2"]
             if s["script"]:
                 lines += ["    scripts:", "      selectUnitSprite: |"]
                 lines += ["        " + l for l in s["script"].rstrip("\n").split("\n")]
@@ -729,7 +733,7 @@ def main():
             f.write(script or "(no script: the engine's default)\n")
         armors = find_armors(rulesets, name + ".PCK")
         sheets_info.append(dict(
-            type=name + ".PCK", width=sheet.image.width, height=sheet.image.height,
+            type=name + SET_SUFFIX, width=sheet.image.width, height=sheet.image.height,
             sheet_file="Resources/TankTurret/%s.png" % name, turret_dir="Resources/TankTurret/%s_turret/" % name,
             turret_type=args.turret_type, turret_base=base, script=script,
             armors=[a for a, r, w in armors],

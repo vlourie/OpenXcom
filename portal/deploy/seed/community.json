@@ -44,6 +44,72 @@
           "body": "## What it is\n\nWe are rewriting the **graphics** of OpenXcom Extended and touching no mechanics. Same numbers, same turn order, same saves. One difference: the picture.\n\nOver the classic 8-bit layer lives a second, 32-bit one. At scale 1 it must produce the very same frame byte for byte - that is not a wish but the acceptance test: the frame is compared against a reference dump.\n\n## What is in already\n\n- HD packs for terrain, units and the interface;\n- TTF fonts instead of bitmap ones;\n- smoothing of classic elements where an HD frame does not exist yet;\n- scaling up to 4x at the monitor's native resolution.\n\n## What is being worked on\n\nDrawing the remaining tile sets. The queue is ordered by map coverage: whatever the player sees most often comes first."
         }
       }
+    },
+    {
+      "slug": "tank-turret",
+      "order": 30,
+      "published": true,
+      "author": "Vitali, OXCE-HD",
+      "homeUrl": "",
+      "downloadUrl": "/download/launcher",
+      "version": "1.3",
+      "image": "",
+      "texts": {
+        "ru": {
+          "name": "Пиратские танки: поворотная башня",
+          "summary": "Танки пираток становятся настоящими танками: корпус едет сам по себе, а башня поворачивается отдельно, туда, куда стреляет. Меняется только картинка.",
+          "body": "## Что делает\n\nВ X-Piratez танки пираток (**ТАНК\\*60-ММ АП**, **ТАНК\\*85ММ ПУШКА**, **ТАНК\\*ТЯЖ.ЛАЗПУШКА**) нарисованы одним спрайтом: пушка всегда смотрит туда же, куда корпус. Мод рисует их так, как движок рисует танки оригинального X-COM, — корпус и башня отдельно. Башня стоит там, где она нарисована на корпусе, у кормы, и поворачивается к цели независимо от того, куда едет танк.\n\nВ HD у мода свои кадры: корпус и все положения башни нарисованы в увеличенном разрешении, в тех же цветах, что и остальная графика.\n\n## Что не меняется\n\nНи одного числа: броня, ОД, оружие, стрельба и обзор те же, что без мода. Его можно включить и выключить посреди кампании — сейвы совместимы.\n\n## Что нужно\n\nX-Piratez и наш движок OXCE-HD: большие кадры башни рисует только он.\n\n## Как поставить\n\nМод ставится лаунчером, отдельной галочкой:\n\n1. [Скачать лаунчер](/download/launcher) и поставить игру, если она ещё не стоит.\n2. В лаунчере открыть **Настройки → Компоненты игры…**.\n3. Поставить галочку «Piratez tanks: turning turret» и подтвердить установку. Лаунчер скачает мод и включит его.\n\nУбрать мод — снять ту же галочку. Включать и выключать его можно и в меню модов самой игры."
+        },
+        "en": {
+          "name": "Pirate tanks: turning turret",
+          "summary": "The pirates' tanks become real tanks: the hull drives on its own and the turret turns separately, towards whatever it shoots. Only the picture changes.",
+          "body": "## What it does\n\nIn X-Piratez the pirates' tanks (**TANK\\*60AC**, **TANK\\*85BC**, **TANK\\*H-LAS**) are drawn as a single sprite: the gun always points where the hull points. The mod draws them the way the engine draws the tanks of the original X-COM - hull and turret apart. The turret sits where it is drawn on the hull, at the rear, and turns towards the target whichever way the tank is driving.\n\nIn HD the mod brings frames of its own: the hull and every turret position are drawn at high resolution, in the same colours as the rest of the graphics.\n\n## What stays the same\n\nEvery number: armour, TUs, weapons, shooting and sight are the same as without the mod. It can be switched on and off in the middle of a campaign - saves stay compatible.\n\n## Requirements\n\nX-Piratez and our OXCE-HD engine: only it draws the big turret frames.\n\n## Installing\n\nThe launcher installs the mod as a separate tick:\n\n1. [Download the launcher](/download/launcher) and install the game if it is not installed yet.\n2. In the launcher open **Settings → Game components…**.\n3. Tick \"Piratez tanks: turning turret\" and confirm the install. The launcher downloads the mod and switches it on.\n\nTo remove the mod, untick it there. You can also switch it on and off in the game's own Mods menu."
+        }
+      }
+    },
+    {
+      "slug": "apple-processing",
+      "order": 40,
+      "published": true,
+      "author": "Vitali Lourie",
+      "homeUrl": "",
+      "downloadUrl": "/download/launcher",
+      "version": "1.2",
+      "image": "",
+      "texts": {
+        "ru": {
+          "name": "Яблочное пюре и джем",
+          "summary": "Переработка яблок: из трёх яблок — туба пюре, из пяти — банка джема. Тот же эффект, что от яблок, но за одно действие и в рюкзаке теснее.",
+          "body": "## Зачем\n\nЯблоко в X-Piratez — ценная вещь, но съедается по одному: бойцу, которому нужно пять яблок, приходится кормить его пять раз подряд. Мод убирает эту однообразную возню и не трогает баланс: новые предметы дают ровно столько, сколько дали бы исходные яблоки, а яблоко остаётся тем же ценным сырьём.\n\n## Что добавляет\n\n- **Исследование «Переработка яблок»** — доступно в лаборатории с самого начала, стоит 10.\n- **Яблочное пюре** — туба 2×1. Съесть — как три яблока подряд: те же 45 ОД и тот же расход бодрости, боевого духа и здоровья, а места в рюкзаке на клетку меньше.\n- **Яблочный джем** — банка 2×2. Как пять яблок подряд, 75 ОД, на клетку меньше места.\n- **Производство**: 3 яблока — туба пюре за час работы, 5 яблок — банка джема за два; бесплатно, места в мастерской не нужно. Продаются по цене своих яблок: 300 и 500.\n- Свои картинки в рюкзаке и на земле и две статьи в энциклопедии — с кухонной историей того, как пюре и джем были открыты.\n\n## Что нужно\n\nX-Piratez. Работает и на OXCE-HD, и на обычном OpenXcom Extended.\n\n## Как поставить\n\nМод ставится лаунчером, отдельной галочкой:\n\n1. [Скачать лаунчер](/download/launcher) и поставить игру, если она ещё не стоит.\n2. В лаунчере открыть **Настройки → Компоненты игры…**.\n3. Поставить галочку «Apple Processing» и подтвердить установку. Лаунчер скачает мод и включит его.\n\nУбрать мод — снять ту же галочку. Включать и выключать его можно и в меню модов самой игры."
+        },
+        "en": {
+          "name": "Apple puree and jam",
+          "summary": "Apple processing: three apples make a tube of puree, five make a jar of jam. The same effect as the apples, in one action and less backpack space.",
+          "body": "## Why\n\nAn apple in X-Piratez is a valuable thing, but it is eaten one at a time: a fighter who needs five apples has to be fed five times in a row. The mod removes that tedium without touching the balance: the new items give exactly what the apples they are made of would give, and the apple stays the same valuable raw material.\n\n## What it adds\n\n- **Research \"Apple Processing\"** - available in the lab from the start, costs 10.\n- **Apple Puree** - a 2x1 tube. Eating it is three apples in a row: the same 45 TUs and the same energy, morale and health cost, one backpack cell less.\n- **Apple Jam** - a 2x2 jar. Five apples in a row, 75 TUs, one cell less.\n- **Manufacturing**: 3 apples make a tube of puree in an hour of work, 5 apples a jar of jam in two; free, no workshop space. They sell for the price of their apples: 300 and 500.\n- Their own inventory and floor sprites and two encyclopedia articles with the kitchen story of how puree and jam were discovered.\n\n## Requirements\n\nX-Piratez. Works on OXCE-HD and on plain OpenXcom Extended alike.\n\n## Installing\n\nThe launcher installs the mod as a separate tick:\n\n1. [Download the launcher](/download/launcher) and install the game if it is not installed yet.\n2. In the launcher open **Settings → Game components…**.\n3. Tick \"Apple Processing\" and confirm the install. The launcher downloads the mod and switches it on.\n\nTo remove the mod, untick it there. You can also switch it on and off in the game's own Mods menu."
+        }
+      }
+    },
+    {
+      "slug": "kisya-brysya",
+      "order": 50,
+      "published": true,
+      "author": "Vitali",
+      "homeUrl": "",
+      "downloadUrl": "/download/launcher",
+      "version": "1.0.1",
+      "image": "",
+      "texts": {
+        "ru": {
+          "name": "Сёстры Кися и Брыся",
+          "summary": "Возвращает в кампанию сестёр Пума — Кисю и Брысю, двух кошкодевочек-охотниц за головами из старой версии X-Piratez. Они приходят в банду сами, когда о ней пойдёт слава.",
+          "body": "## Что это\n\nВ X-Piratez N11 были героини-близнецы Анна и Уни Пума — пара кошкодевочек-охотниц за головами. В новых версиях мода они пропали из кампании, хотя их портреты, броня и бонусы в игре остались. Мод возвращает события, по которым сёстры приходят в банду. В русском переводе их зовут Кися и Брыся.\n\n## Как они приходят\n\n1. Когда у банды ранг IV «Пахан» и решён вопрос о достойном задании, сёстры её замечают — событие «Сёстры Кися и Брыся». На пути «Кошки это жизнь» это случается заметно скорее.\n2. На ранге VII «Враг народа» (на сложности 4 и 5 — на ранге VIII «Авторитет») обе приходят в банду: событие «Близнецы с Лапуты», +200 рейтинга за каждую.\n\n## Кто они\n\n- **Кися (Анна Пума)** — «мозги» дуэта, спокойная и рассудительная: +1 к восстановлению ОВ и от оглушения, +2 к восстановлению боевого духа, +5 к Н.Вуду.\n- **Брыся (Уни Пума)** — «мускулы»: +3 к обзору ночью, +5 к точности стрельбы и к реакции, меньше теряет здоровья от ран.\n\nОбе приходят опытными, со своим снаряжением, у каждой — статья в энциклопедии и портрет.\n\n## Что нужно\n\nX-Piratez O1.1.1. Мод можно включить и в начатой кампании: условия событий проверяются по ходу игры.\n\n## Как поставить\n\nМод ставится лаунчером, отдельной галочкой:\n\n1. [Скачать лаунчер](/download/launcher) и поставить игру, если она ещё не стоит.\n2. В лаунчере открыть **Настройки → Компоненты игры…**.\n3. Поставить галочку «Kisya and Brysya Sisters» и подтвердить установку. Лаунчер скачает мод и включит его.\n\nУбрать мод — снять ту же галочку. Включать и выключать его можно и в меню модов самой игры."
+        },
+        "en": {
+          "name": "Kisya and Brysya Sisters",
+          "summary": "Brings the Puma Sisters back into the campaign: Anna and Uni Puma, two catgirl bounty hunters from an older X-Piratez. They join the gang on their own once it gets famous.",
+          "body": "## What it is\n\nX-Piratez N11 had twin heroines, Anna and Uni Puma - a pair of catgirl bounty hunters. Newer versions of the mod dropped them from the campaign, though their portraits, armour and bonuses are still in the game. This mod restores the events that bring the sisters into the gang. The Russian translation calls them Kisya and Brysya.\n\n## How they come\n\n1. Once the gang has Rank IV (Entrepreneur) and the Bounty Challenge is confronted, the sisters notice it - the \"Puma Sisters\" event. On the Cats 4 Life path this happens noticeably sooner.\n2. At Rank VII (Public Enemy) - Rank VIII (Crime Lord) on difficulty 4 and 5 - both join: the \"Twins from Laputa\" event, +200 infamy each.\n\n## Who they are\n\n- **Anna Puma** - the brains of the duo, calm and judicious: +1 stamina and stun regeneration, +2 morale regeneration, +5 voodoo skill.\n- **Uni Puma** - the muscles: +3 night vision, +5 firing and reactions, loses less health to wounds.\n\nBoth arrive experienced and with their own kit; each has an encyclopedia article and a portrait.\n\n## Requirements\n\nX-Piratez O1.1.1. The mod can be switched on in a running campaign too: the event conditions are checked as the game goes.\n\n## Installing\n\nThe launcher installs the mod as a separate tick:\n\n1. [Download the launcher](/download/launcher) and install the game if it is not installed yet.\n2. In the launcher open **Settings → Game components…**.\n3. Tick \"Kisya and Brysya Sisters\" and confirm the install. The launcher downloads the mod and switches it on.\n\nTo remove the mod, untick it there. You can also switch it on and off in the game's own Mods menu."
+        }
+      }
     }
   ],
   "sections": [

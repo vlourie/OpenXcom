@@ -99,6 +99,23 @@ public sealed partial class CommunityTests(PortalFactory f) : IClassFixture<Port
     }
 
     /// <summary>
+    /// An add-on (the tank, the apples, the sisters) is installed by a tick in the launcher and has no wiki of
+    /// its own: its page sends to the launcher and offers no link to an empty wiki.
+    /// </summary>
+    [Fact]
+    public async Task An_addon_page_sends_to_the_launcher_and_has_no_empty_wiki()
+    {
+        await SeedAsync();
+        var c = Browser();
+        foreach (var slug in new[] { "tank-turret", "apple-processing", "kisya-brysya" })
+        {
+            var html = await c.GetStringAsync("/mods/" + slug);
+            Assert.Contains("href=\"/download/launcher\"", html);
+            Assert.DoesNotContain($"href=\"/wiki/{slug}\"", html);
+        }
+    }
+
+    /// <summary>
     /// The site went out with the download setting empty, and the entrance screen then had no
     /// download button at all — the one thing a first-time visitor comes for, missing without a word
     /// anywhere. The button now comes from the release repository, and when the repository cannot be

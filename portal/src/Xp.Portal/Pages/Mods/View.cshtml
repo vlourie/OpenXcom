@@ -17,7 +17,10 @@
     {
         <div><div class="k">@T["mods.author"]</div><div class="v">@Model.Mod.Author</div></div>
     }
-    <div><div class="k">@T["nav.wiki"]</div><div class="v">@Model.WikiPages</div></div>
+    @if (Model.WikiPages > 0)
+    {
+        <div><div class="k">@T["nav.wiki"]</div><div class="v">@Model.WikiPages</div></div>
+    }
 </div>
 
 @if (Model.Body.Length > 0)
@@ -34,7 +37,10 @@
     {
         <a class="button secondary" href="@Model.Mod.HomeUrl" rel="noopener nofollow">@T["mods.home"]</a>
     }
-    <a class="button secondary" href="/wiki/@Model.Mod.Slug">@T["mods.wiki"]</a>
+    @if (Model.WikiPages > 0)
+    {
+        <a class="button secondary" href="/wiki/@Model.Mod.Slug">@T["mods.wiki"]</a>
+    }
     @if (Model.ForumSlug is { Length: > 0 } fs)
     {
         <a class="button secondary" href="/forum/@fs">@T["mods.forum"]</a>
