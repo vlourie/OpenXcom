@@ -102,6 +102,8 @@ private:
 	int _fpSaltTurn = -1;
 	/// Does the record still hold for this ask? If not, drops it and says why.
 	bool firepointBlockedHolds();
+	/// The record of one blocked firepoint walk: a real stop or V1's suppression (FIREPOINT_BLOCKED_V2_INTEROP).
+	void recordFirepointBlockedAttempt(const BattleAction &action, int dir, bool v1Suppression);
 	/// _reachableWithAttack for this attack, and what it left for the walk.
 	void reachableWithAttack(const BattleActionCost &cost);
 	int unitTurn() const;
@@ -221,6 +223,9 @@ public:
 	/// The walk being done stopped at a unit on the step in dir: recorded if findFirePoint chose it (bench,
 	/// FIREPOINT_BLOCKED_UNIT_STALL; called by AiProbe::firepointBlocked only).
 	void firepointWalkBlocked(const BattleAction &action, int dir);
+	/// V1 suppressed the first step in dir of that walk and found no way round (bench, FIREPOINT_BLOCKED_V2_INTEROP; called
+	/// by AiProbe::blockedStepPlan only): recorded as a stop on that step.
+	void firepointStepSuppressed(const BattleAction &action, int dir);
 	/// Frees up the destination node for another Unit to select
 	void freePatrolTarget();
 };

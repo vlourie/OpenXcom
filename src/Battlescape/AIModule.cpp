@@ -918,13 +918,32 @@ void AIModule::reachableWithAttack(const BattleActionCost &cost)
  */
 void AIModule::firepointWalkBlocked(const BattleAction &action, int dir)
 {
+	recordFirepointBlockedAttempt(action, dir, false);
+}
+
+/**
+ * REPEATED_BLOCKED_STEP_V1 suppressed the first step of the walk handleAI calculated and found no way round it
+ * (FIREPOINT_BLOCKED_V2_INTEROP, bench): the walk the old code took here stopped at the unit on that step at once, so the
+ * record gets the fact walk.stop.unit would have given it. Only the suppressed step is known - nothing of the unit.
+ */
+void AIModule::firepointStepSuppressed(const BattleAction &action, int dir)
+{
+	recordFirepointBlockedAttempt(action, dir, true);
+}
+
+/**
+ * One blocked attempt of the firepoint walk, from a real stop or from V1's suppression: recorded if findFirePoint chose the
+ * walk. The tallies tell the two apart (fpblocked.recorded / .retry against fpblocked.v1.recorded / .retry).
+ */
+void AIModule::recordFirepointBlockedAttempt(const BattleAction &action, int dir, bool v1Suppression)
+{
 	if (!_firepointChosen || action.type != BA_WALK || action.target != _firepointChosenAt)
 	{
 		return;
 	}
 	if (_fpInvalidated && _fpInvalidatedFrom == _unit->getPosition() && _fpInvalidatedDir == dir)
 	{
-		AiProbe::tally(_unit, "fpblocked.retry");
+		AiProbe::tally(_unit, v1Suppression ? "fpblocked.v1.retry" : "fpblocked.retry");
 	}
 	_fpInvalidated = false;
 	_fpBlocked = true;
@@ -936,7 +955,7 @@ void AIModule::firepointWalkBlocked(const BattleAction &action, int dir)
 	_fpBlockedAggro = _aggroTarget ? _aggroTarget->getId() : -1;
 	_fpBlockedAggroPos = _aggroTarget ? _aggroTarget->getPosition() : Position(-1, -1, -1);
 	_fpBlockedRev = AiProbe::knownRevision(_save, _unit);
-	AiProbe::tally(_unit, "fpblocked.recorded");
+	AiProbe::tally(_unit, v1Suppression ? "fpblocked.v1.recorded" : "fpblocked.recorded");
 }
 
 /**

@@ -12,6 +12,9 @@ BASE - V1=1, FP=0 (флаги v53), TEST - V1=1, FP=1; оба на одной м
   BASE против TEST - потоки боя совпали или нет (где FP не сработал, обязаны совпасть).
 
   py -3.13 tools/ai_speed/fp_interaction.py --arena E:/OXCE_AIWorker/results/arena --base ix53b --test ix53f rc cd wl
+FIREPOINT_BLOCKED_V2_INTEROP (п. 17.8): BASE - interop выкл (ix54o, эталон ix53f), TEST - interop вкл; след FP различает
+настоящую остановку (recorded / retry) и подавление V1 (v1.recorded / v1.retry):
+  py -3.13 tools/ai_speed/fp_interaction.py --arena E:/OXCE_AIWorker/results/arena --base ix54o --test ix54i --ref-prefix ix53f rc cd wl
 """
 import argparse
 import collections
@@ -87,6 +90,7 @@ def main():
     ap.add_argument("--base", required=True, help="префикс меток BASE")
     ap.add_argument("--test", required=True, help="префикс меток TEST")
     ap.add_argument("--ref", default="v53", help="эталон BASE: серии <ref><блок>")
+    ap.add_argument("--ref-prefix", default="", help="эталон BASE - серии <префикс>_<группа> той же раскладки (OFF против прежней сборки)")
     ap.add_argument("groups", nargs="+")
     a = ap.parse_args()
     arena = Path(a.arena)
@@ -122,7 +126,7 @@ def main():
             if not b or not t:
                 print(f" {k[0]} {k[1]}: НЕТ БОЯ в {'BASE' if not b else 'TEST'}")
                 continue
-            rl = ref_label(a.ref, k[0])
+            rl = f"{a.ref_prefix}_{g}" if a.ref_prefix else ref_label(a.ref, k[0])
             det = "нет эталона"
             if rl and (arena / f"{rl}.tsv").exists():
                 rt, rs = ref(rl)
@@ -143,7 +147,7 @@ def main():
                 if r:
                     print(f"         повторов {r['rep']}: блокировка {r['block']}, ресурсы {r['res']}; до 200: {r['cap']};"
                           f" длиннейшая {r['maxc']}; длинные (>=20) по источнику {r['long'] or '-'}")
-    print(f"детерминизм BASE против {a.ref}: {det_ok} из {det_n}")
+    print(f"детерминизм BASE против {a.ref_prefix or a.ref}: {det_ok} из {det_n}")
 
 
 if __name__ == "__main__":
