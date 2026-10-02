@@ -20,6 +20,13 @@ public sealed class VoiceDeniedException(string reason, string? message = null)
     public const string Banned = "banned";
     public const string RoomClosed = "room_closed";
     public const string AccountBanned = "account_banned";
+    public const string InviteRevoked = "invite_revoked";
+    public const string NotFriends = "not_friends";
+    /// <summary>The site no longer knows this launcher: the link was taken away there.</summary>
+    public const string DeviceUnknown = "device_unknown";
+    /// <summary>Not a refusal of the person, but asking again in a loop would only hammer the site: the
+    /// player presses "Join" again when there is a place.</summary>
+    public const string RoomFull = "room_full";
 
     public string Reason { get; } = reason;
 }
@@ -34,7 +41,8 @@ public sealed class VoiceOptions
     public required Func<CancellationToken, Task<VoicePass>> Pass { get; init; }
     /// <summary>false: the microphone is not opened at all (listen only).</summary>
     public bool Microphone { get; init; } = true;
-    /// <summary>0 plays nothing - automatic tests must not sound on the speakers of the machine.</summary>
+    /// <summary>0 plays nothing - automatic tests must not sound on the speakers of the machine. The
+    /// start value of <see cref="VoiceSession.Volume"/>.</summary>
     public float OutputGain { get; init; } = 1f;
     /// <summary>A reconnection longer than this is given up and the room is joined anew (R-142).</summary>
     public int HangMs { get; init; } = 20000;
@@ -127,7 +135,31 @@ public sealed class VoiceSession : IAsyncDisposable
     /// <summary>Raised once, on the room loop, when the portal refuses the entry. The sound device stays
     /// open until the session is disposed - dispose it.</summary>
     public event Action<string>? Denied;
+    /// <summary>Raised once, on the room loop, when the server sent us away and the session does not come
+    /// back on its own: "removed" (the owner took us out), "room_deleted", "duplicate" (the same account
+    /// joined from elsewhere). Dispose the session.</summary>
+    public event Action<string>? SentAway;
     public string Identity { get; private set; } = "";
+
+    // what the player hears: the whole mix, and each speaker apart (0 - off at this machine only).
+    // Kept by identity, so a speaker who leaves and comes back keeps their volume
+    volatile float _volume;
+    readonly ConcurrentDictionary<string, float> _peerGain = new(StringComparer.Ordinal);
+
+    /// <summary>The volume of everything played, live; 1 is as received.</summary>
+    public float Volume
+    {
+        get => _volume;
+        set => _volume = Math.Clamp(value, 0f, 4f);
+    }
+
+    /// <summary>One speaker's volume at this machine only, live: 0 switches them off here, nobody else is told.</summary>
+    public void SetPeerVolume(string identity, float gain)
+    {
+        gain = Math.Clamp(gain, 0f, 4f);
+        _peerGain[identity] = gain;
+        if (_peers.TryGetValue(identity, out var p)) p.Gain = gain;
+    }
     public double MicDb => _micDb;
     /// <summary>The microphone was asked for and did not open: speakers only, nothing is published.</summary>
     public bool MicrophoneMissing => MicWanted && !_micOpen;
@@ -170,6 +202,7 @@ public sealed class VoiceSession : IAsyncDisposable
     public VoiceSession(VoiceOptions opt)
     {
         _opt = opt;
+        _volume = opt.OutputGain;
     }
 
     /// <summary>Releases the LiveKit runtime: once, at process exit, after every session is disposed.</summary>
@@ -256,10 +289,13 @@ public sealed class VoiceSession : IAsyncDisposable
         acc.Clear();
         foreach (var p in _mix)
         {
+            // pulled even when switched off here: the ring keeps draining and the speaking light stays true
             if (!p.Pull(tmp)) continue;
-            for (int i = 0; i < n; i++) acc[i] += tmp[i];
+            float pg = p.Gain;
+            if (pg == 1f) for (int i = 0; i < n; i++) acc[i] += tmp[i];
+            else if (pg > 0f) for (int i = 0; i < n; i++) acc[i] += (int)(tmp[i] * pg);
         }
-        float g = _opt.OutputGain;
+        float g = _volume;
         for (int i = 0; i < n; i++) output[i] = (short)Math.Clamp((int)(acc[i] * g), short.MinValue, short.MaxValue);
         _played.Write(output);
 
@@ -836,6 +872,13 @@ public sealed class VoiceSession : IAsyncDisposable
                     _breakAt = 0;
                     State = VoiceState.Disconnected;
                     Log("not rejoining: the room or the server sent us away");
+                    string why = re.Disconnected.Reason switch
+                    {
+                        DisconnectReason.ParticipantRemoved => "removed",
+                        DisconnectReason.RoomDeleted => "room_deleted",
+                        _ => "duplicate",
+                    };
+                    try { SentAway?.Invoke(why); } catch { }
                 }
                 else Retry("rejoining");
                 break;
@@ -964,7 +1007,7 @@ public sealed class VoiceSession : IAsyncDisposable
 
     Peer PeerOf(string identity)
     {
-        var p = _peers.GetOrAdd(identity, id => new Peer(id, _opt.Diagnostics ? _notes : null));
+        var p = _peers.GetOrAdd(identity, id => new Peer(id, _opt.Diagnostics ? _notes : null) { Gain = _peerGain.GetValueOrDefault(id, 1f) });
         _mix = [.. _peers.Values];
         return p;
     }
@@ -988,6 +1031,7 @@ public sealed class VoiceSession : IAsyncDisposable
         readonly SampleRing _ring = new(AudioDevice.Rate / 2);
         volatile bool _primed;
         public volatile bool Muted;
+        public volatile float Gain = 1f;
         long _frames, _framesTotal;
         int _underruns, _trimmed, _pushDropped;
         double _db = -90;
