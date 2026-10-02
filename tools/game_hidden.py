@@ -16,21 +16,26 @@ EXE = ROOT / "build-release" / "bin" / "openxcom.exe"
 
 a = argparse.ArgumentParser()
 a.add_argument("--out", required=True, help="куда положить дамп кадра (png)")
-a.add_argument("--save", default="NoCodexCatZ.sav", help="сейв из user/piratez установки")
+a.add_argument("--save", default="NoCodexCatZ.sav", help="сейв из user/piratez установки; пусто - без сейва, до главного меню")
 a.add_argument("--after", type=int, default=100, help="секунд до дампа (загрузка сейва ~60-90)")
 a.add_argument("--clicks", default="")
 a.add_argument("--key", default="")
 a.add_argument("--set", default="", help="ключи options.cfg: a=1;b=false")
 a.add_argument("--user", default=str(Path(tempfile.gettempdir()) / "oxce_hidden_user"))
 a.add_argument("--exe", default=str(EXE), help="другая сборка - эталон для сравнения кадров")
+a.add_argument("--mods-dir", default="", help="папка модов вместо user/mods установки (раскладка tools/compat/hd_layout.py)")
+a.add_argument("--mods", default="", help="список модов options.cfg: id=true;id2=false (нет в списке - дописать в конец)")
 o = a.parse_args()
 EXE = Path(o.exe).resolve()
 
 u = Path(o.user)
 (u / "piratez").mkdir(parents=True, exist_ok=True)
+mods_dir = Path(o.mods_dir).resolve() if o.mods_dir else GAME / "user" / "mods"
+if (u / "mods").exists() and Path(os.path.realpath(u / "mods")) != Path(os.path.realpath(mods_dir)):
+    os.rmdir(u / "mods")   # соединение на другую папку модов: снимается только связь (R-047)
 if not (u / "mods").exists():
     # соединение на моды установки, а не копия (5 ГБ); снимать только rmdir (R-047)
-    subprocess.run(["cmd", "/c", "mklink", "/J", str(u / "mods"), str(GAME / "user" / "mods")],
+    subprocess.run(["cmd", "/c", "mklink", "/J", str(u / "mods"), str(mods_dir)],
                    check=True, capture_output=True)
 cfg = (GAME / "user" / "options.cfg").read_text(encoding="utf-8")
 # всё, что спрашивает игрока или крутит камеру мышью человека (R-093, R-095)
@@ -45,10 +50,16 @@ for n, v in fixed.items():
         added.append(f"  {n}: {v}")
 if added:
     cfg = re.sub(r"(?m)^options:\s*$", "options:\n" + "\n".join(added), cfg, count=1)
+for kv in filter(None, o.mods.split(";")):
+    n, v = kv.split("=", 1)
+    cfg, k = re.subn(rf"(?m)^(  - active: )\S+(\r?\n    id: {re.escape(n)}\r?)$", rf"\g<1>{v}\g<2>", cfg)
+    if not k:
+        cfg = re.sub(r"(?m)^options:\s*$", f"  - active: {v}\n    id: {n}\noptions:", cfg, count=1)
 (u / "options.cfg").write_text(cfg, encoding="utf-8")
 # имя - из user/piratez установки; путь к существующему файлу - своя копия сейва (установку не трогаем)
-save = Path(o.save) if Path(o.save).is_file() else GAME / "user" / "piratez" / o.save
-shutil.copy(save, u / "piratez" / "hiddentest.sav")
+if o.save:
+    save = Path(o.save) if Path(o.save).is_file() else GAME / "user" / "piratez" / o.save
+    shutil.copy(save, u / "piratez" / "hiddentest.sav")
 
 dump = Path(o.out).resolve()
 if dump.exists():
@@ -58,7 +69,7 @@ env = {k.upper(): v for k, v in os.environ.items()}
 env["PATH"] = "C:\\msys64\\mingw64\\bin;" + env.get("PATH", "")
 env.update(SDL_VIDEODRIVER="dummy", SDL_AUDIODRIVER="dummy", OXCE_HD_DUMP=str(dump),
            OXCE_HD_DUMP_AFTER=str(o.after), OXCE_HD_CLICK=o.clicks, OXCE_HD_KEY=o.key)
-args = [str(EXE), "-data", str(GAME), "-user", str(u), "-cfg", str(u), "-load", "hiddentest.sav",
+args = [str(EXE), "-data", str(GAME), "-user", str(u), "-cfg", str(u)] + (["-load", "hiddentest.sav"] if o.save else []) + [
         "-fullscreen", "false", "-borderless", "false", "-displayWidth", "1920", "-displayHeight", "1080",
         "-soundVolume", "0", "-musicVolume", "0", "-FPSInactive", "60"]
 p = ai_probe.Hidden(args, str(EXE.parent), env)
