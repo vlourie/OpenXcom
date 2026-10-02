@@ -156,9 +156,11 @@ def frames_of_ruleset_set(entry, mod_root):
     """The frames of a ruleset set, cut exactly as the game cuts them: the file is laid into a
     sheet of the size the ruleset declares (bigger is cropped, smaller leaves the rest empty) and
     that sheet is divided into width/subX by height/subY frames, numbered row by row from the
-    file's index (ExtraSprites::loadSprite).
+    file's index (ExtraSprites::loadSprite). A folder ("168: Resources/X/") is one frame per image
+    from that index, in natural order, each of its own size (a tank's big turret frames).
     @return (frames [(index, h x w indices)], palette, w, h)
     """
+    import re
     w, h = entry["subX"], entry["subY"]
     frames = []
     palette = None
@@ -167,6 +169,17 @@ def frames_of_ruleset_set(entry, mod_root):
         path = os.path.join(mod_root, rel.replace("/", os.sep))
         if not os.path.exists(path):
             notes.append("missing %s" % rel)
+            continue
+        if os.path.isdir(path):
+            # Unicode::naturalCompare: digit runs compared as numbers; every image takes an index
+            names = sorted((n for n in os.listdir(path) if n.lower().endswith((".png", ".gif", ".bmp"))),
+                           key=lambda n: [int(t) if t.isdigit() else t.lower() for t in re.split(r"(\d+)", n)])
+            for i, n in enumerate(names):
+                idx, pal = load_sheet_file(os.path.join(path, n))
+                if palette is None:
+                    palette = pal
+                if (idx != 0).any():
+                    frames.append((offset + i, idx))
             continue
         idx, pal = load_sheet_file(path)
         if palette is None:
@@ -512,8 +525,16 @@ def process_set(up, name, frames, palette, w, h, out_root, args, preview_dir):
     want_preview = preview_dir is not None
     todo = frames[:18] if args.preview_only else frames
     batch = max(1, args.batch)
-    for start in range(0, len(todo), batch):
-        chunk = todo[start:start + batch]
+    # frames of one size per batch (a folder of big frames sits beside the sheet's cells)
+    shapes = []
+    for _, f in todo:
+        if f.shape not in shapes:
+            shapes.append(f.shape)
+    chunks = []
+    for shape in shapes:
+        same = [t for t in todo if t[1].shape == shape]
+        chunks += [same[s:s + batch] for s in range(0, len(same), batch)]
+    for chunk in chunks:
         f_batch = np.stack([f for _, f in chunk])
         hd = make_frames(up, f_batch, palette, args)
         if want_preview and len(preview_final) < 18:
@@ -543,7 +564,7 @@ def process_set(up, name, frames, palette, w, h, out_root, args, preview_dir):
             with open(os.path.join(set_dir, "%d.png" % index), "wb") as f:
                 f.write(blob)
     else:
-        write_pack(pack_path, args.scale, w, h, blobs)
+        write_pack(pack_path, args.scale, w, h, sorted(blobs, key=lambda b: b[0]))
     with open(os.path.join(set_dir, "settings.txt"), "w") as f:
         f.write(settings + "\n")
     return len(blobs), 0, preview_path
