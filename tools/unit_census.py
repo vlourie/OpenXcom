@@ -147,9 +147,9 @@ def piratez_chain():
     for base in (PZ / "user" / "mods", PZ / "standard"):
         for d in base.iterdir():
             if d.is_dir():
-                mid = read_meta(d).get("id")
-                if mid:
-                    dirs.setdefault(mid, d)
+                # без id в metadata.yml движок берёт имя папки (UFOextender_Psionic_Line_Of_Fire)
+                mid = read_meta(d).get("id") or d.name
+                dirs.setdefault(mid, d)
     chain = [("xcom1", PZ / "standard" / "xcom1")]
     for mid in active:
         if mid in dirs and mid != "xcom1":
