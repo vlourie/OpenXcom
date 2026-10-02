@@ -33,6 +33,9 @@ public sealed class VoiceOptions
     /// <summary>Test only: after this many seconds the sound device is stopped as if Windows had taken
     /// it away, to exercise the reopening. 0 = never.</summary>
     public int StopDeviceAfterSec { get; init; }
+    /// <summary>Test only: during the first N seconds the microphone is not opened, as if it were
+    /// unplugged, and is let in after - exercises the microphone coming back. 0 = no such pretence.</summary>
+    public int NoMicUntilSec { get; init; }
 }
 
 public enum VoiceState { Connecting, Connected, Reconnecting, Disconnected, Stopped }
@@ -92,6 +95,9 @@ public sealed class VoiceSession : IAsyncDisposable
     long _deviceStoppedAt, _deviceRetryAt;
     int _deviceRetries;
     volatile bool _deviceDead;                          // a "stopped" note since the last open attempt
+    volatile bool _closingDevice;                       // our own Close of a running device fires "stopped" too: not a loss
+    long _startedAt, _micRetryAt;                       // a wanted microphone that is missing is looked for again
+    int _micRetryMs = 10000;                            // ... and after a failed attempt not at once: 10 s, 20 s, ... 60 s
     int _toneAt, _beepSeq;
     short[]? _file;
     int _fileAt;
@@ -101,7 +107,10 @@ public sealed class VoiceSession : IAsyncDisposable
     public string Identity { get; private set; } = "";
     public double MicDb => _micDb;
     /// <summary>The microphone was asked for and did not open: speakers only, nothing is published.</summary>
-    public bool MicrophoneMissing => _opt.Microphone && !_opt.Tone && !_micOpen;
+    public bool MicrophoneMissing => MicWanted && !_micOpen;
+    bool MicWanted => _opt.Microphone && !_opt.Tone;
+    /// <summary>What to ask the device for right now: the microphone, unless the test pretends it is unplugged.</summary>
+    bool MicNow => MicWanted && (_opt.NoMicUntilSec == 0 || Stopwatch.GetElapsedTime(_startedAt).TotalSeconds >= _opt.NoMicUntilSec);
     /// <summary>The sound device stopped and is being reopened: nothing is heard or sent meanwhile.</summary>
     public bool DeviceDown => Interlocked.Read(ref _deviceStoppedAt) != 0;
     public int DeviceDownSeconds
@@ -165,7 +174,9 @@ public sealed class VoiceSession : IAsyncDisposable
             _apm = r.NewApm.Apm.Handle.Id;
         }
         if (_opt.Tone && _opt.MicFile is { } mf) _file = ReadWav(mf);
-        var dev = AudioDevice.Open(_opt.Microphone && !_opt.Tone, OnAudio, OnDeviceNote, out _micOpen);
+        _startedAt = Stopwatch.GetTimestamp();
+        _micRetryAt = _startedAt + 3 * Stopwatch.Frequency;  // a microphone missing at the start is looked for from 3 s on, not at once
+        var dev = AudioDevice.Open(MicNow, OnAudio, OnDeviceNote, out _micOpen);
         Log($"sound: {dev}; echo canceller {(apm ? "on" : "off")}" +
             $"{(_file is not null ? $", {Path.GetFileName(_opt.MicFile)} ({_file.Length / AudioDevice.Rate} s) instead of the microphone" : _opt.Tone ? ", test tone instead of the microphone" : "")}, output gain {_opt.OutputGain:0.##}");
         _pump = new Thread(Pump) { IsBackground = true, Name = "voice pump", Priority = ThreadPriority.AboveNormal };
@@ -317,6 +328,7 @@ public sealed class VoiceSession : IAsyncDisposable
                     Log("test: stopping the sound device");
                     AudioDevice.Stop();
                 }
+                else if (MicrophoneMissing && Stopwatch.GetTimestamp() >= _micRetryAt) RetryMicrophone(ref recOut);
             }
             else if (Stopwatch.GetTimestamp() >= _deviceRetryAt) ReopenDevice(ref recOut);
             while (_played.Count >= Frame)
@@ -372,7 +384,7 @@ public sealed class VoiceSession : IAsyncDisposable
 
     void DeviceLost(string why)
     {
-        if (_stopping) return;
+        if (_stopping || _closingDevice) return;
         _deviceDead = true;
         long now = Stopwatch.GetTimestamp();
         if (Interlocked.CompareExchange(ref _deviceStoppedAt, now, 0) == 0)
@@ -394,10 +406,12 @@ public sealed class VoiceSession : IAsyncDisposable
         _deviceRetries++;
         _deviceRetryAt = Stopwatch.GetTimestamp() + 2 * Stopwatch.Frequency;
         bool micBefore = _micOpen;
+        _closingDevice = true;
         AudioDevice.Close();                                  // also ends the loopback recorder
+        _closingDevice = false;
         _deviceDead = false;                                  // after Close: a last note of the old device is not a new stop
         string dev;
-        try { dev = AudioDevice.Open(_opt.Microphone && !_opt.Tone, OnAudio, OnDeviceNote, out _micOpen); }
+        try { dev = AudioDevice.Open(MicNow, OnAudio, OnDeviceNote, out _micOpen); }
         catch (Exception e)
         {
             if (_deviceRetries == 1 || _deviceRetries % 15 == 0)
@@ -411,8 +425,41 @@ public sealed class VoiceSession : IAsyncDisposable
         foreach (var p in _mix) p.Reset();
         if (recOut is not null && AudioDevice.StartLoopback() is { } lerr) Log("recording out.wav did not resume: " + lerr);
         Log($"sound device back after {down} s (try {_deviceRetries}): {dev}; playback buffers cleared" +
-            (micBefore == _micOpen ? "" : _micOpen ? "; the microphone is back" : "; the microphone did not come back: nothing is sent"));
+            (micBefore == _micOpen ? "" : _micOpen ? "; the microphone is back" : "; the microphone did not come back: nothing is sent, looking for it"));
         _loop.Writer.TryWrite(Command.Device);
+    }
+
+    /// <summary>Pump thread, while a wanted microphone is missing (not there at the start, or not back
+    /// with the device): every 3 s asks Windows whether it lists a capture device at all, and only then
+    /// opens the device anew as duplex - a reopening is a short gap in what is played, so one that
+    /// cannot find a microphone is not tried. An attempt that still leaves the microphone missing
+    /// (listed but not openable: busy, denied in the privacy settings) backs off, 10 s up to 60 s.</summary>
+    void RetryMicrophone(ref WavRecorder? recOut)
+    {
+        long now = Stopwatch.GetTimestamp();
+        _micRetryAt = now + 3 * Stopwatch.Frequency;
+        int listed = AudioDevice.CaptureDevices();
+        if (listed <= 0) { _micRetryMs = 10000; return; }
+        int wait = _micRetryMs;
+        _micRetryAt = now + wait * (Stopwatch.Frequency / 1000);
+        _micRetryMs = Math.Min(60000, wait * 2);
+        _closingDevice = true;
+        AudioDevice.Close();                                  // a running device: its "stopped" note is ours, not a loss
+        _closingDevice = false;
+        _deviceDead = false;
+        string dev;
+        try { dev = AudioDevice.Open(MicNow, OnAudio, OnDeviceNote, out _micOpen); }
+        catch (Exception e) { DeviceLost("reopening for the microphone failed: " + e.Message); return; }
+        _lastCallback = Stopwatch.GetTimestamp();
+        foreach (var p in _mix) p.Reset();
+        if (recOut is not null && AudioDevice.StartLoopback() is { } lerr) Log("recording out.wav did not resume: " + lerr);
+        if (_micOpen)
+        {
+            _micRetryMs = 10000;
+            Log($"the microphone is back: {dev}");
+            _loop.Writer.TryWrite(Command.Device);
+        }
+        else Log($"microphone still missing ({listed} capture device(s) listed): {dev}; next try in {wait / 1000} s");
     }
 
     unsafe void Apm(short[] frame, bool reverse)

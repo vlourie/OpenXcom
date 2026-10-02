@@ -12,15 +12,17 @@ namespace Xp.Launcher;
 /// The voice prototype (docs/portal/VOICE_CHAT.md, part B): one test room, no site, no friends yet.
 ///   XPiratezLauncher.exe --voice wss://host token|@token-file [--tone] [--silent] [--listen]
 ///                        [--minimized] [--log file] [--quit-after seconds] [--apm] [--queue-ms n]
-///                        [--stop-device-after seconds]
+///                        [--stop-device-after seconds] [--no-mic-until seconds]
 /// --tone sends beeps instead of the microphone, --silent plays nothing, --listen opens no microphone,
 /// --apm runs the tone through the echo canceller, --stop-device-after stops the sound device as Windows
-/// would and lets the reopening be watched: the switches of the automatic local test.
+/// would and lets the reopening be watched, --no-mic-until keeps the microphone "unplugged" for a while:
+/// the switches of the automatic local test.
 /// Several copies may run at once - two of them on one machine are the local test.
 /// </summary>
 public sealed class VoiceWindow : Window
 {
     readonly VoiceSession _session;
+    readonly VoiceOptions _opt;
     readonly StreamWriter? _file;
     readonly TextBlock _state = new() { FontSize = 16, FontWeight = FontWeight.SemiBold };
     readonly TextBlock _micLabel = new() { VerticalAlignment = VerticalAlignment.Center, FontSize = 13 };
@@ -33,6 +35,7 @@ public sealed class VoiceWindow : Window
     readonly Lock _linesLock = new();
     bool _linesDirty;
     bool _closing;
+    bool _micMissingShown;
 
     public VoiceWindow(VoiceOptions opt, string? logPath, bool minimized, int quitAfter)
     {
@@ -46,6 +49,7 @@ public sealed class VoiceWindow : Window
             Directory.CreateDirectory(Path.GetDirectoryName(Path.GetFullPath(logPath))!);
             _file = new StreamWriter(logPath, append: false, new UTF8Encoding(true)) { AutoFlush = true };
         }
+        _opt = opt;
         _session = new VoiceSession(opt);
         _session.Line += Add;
 
@@ -91,12 +95,6 @@ public sealed class VoiceWindow : Window
             try { _session.Start(); }
             catch (Exception e) { Add("voice did not start: " + e.Message); }
             _apm.IsVisible = _session.HasEchoCanceller;
-            if (_session.MicrophoneMissing)
-            {
-                _micLabel.Text = "микрофон не открылся: вас никто не слышит";
-                _micLabel.Foreground = Skin.B(Skin.WarnText);
-                _mute.IsEnabled = false;
-            }
             if (quitAfter > 0) DispatcherTimer.RunOnce(Close, TimeSpan.FromSeconds(quitAfter));
         };
         Closing += async (_, e) =>
@@ -136,6 +134,16 @@ public sealed class VoiceWindow : Window
         };
         _state.Foreground = Skin.B(_session.State == VoiceState.Connected && !deviceDown ? Skin.Accent : Skin.WarnText);
         _mic.Value = Math.Max(-60, _session.MicDb);
+        // live, not once at the start: the microphone can go with a device change and come back
+        bool micMissing = _session.MicrophoneMissing;
+        if (micMissing != _micMissingShown)
+        {
+            _micMissingShown = micMissing;
+            _micLabel.Text = micMissing ? "микрофон не открылся: вас никто не слышит, ищу его" : _opt.Tone ? "тон" : "микрофон";
+            if (micMissing) _micLabel.Foreground = Skin.B(Skin.WarnText);
+            else _micLabel.ClearValue(ForegroundProperty);
+            _mute.IsEnabled = !micMissing && (_opt.Microphone || _opt.Tone);
+        }
 
         _peers.Children.Clear();
         var peers = _session.Peers();
@@ -175,11 +183,12 @@ public sealed class VoiceWindow : Window
         if (args.Length < 3) return 2;
         string token = args[2].StartsWith('@') ? File.ReadAllText(args[2][1..]).Trim() : args[2];
         string? log = null, record = null, micFile = null;
-        int quit = 0, queue = 0, stopDevice = 0;
+        int quit = 0, queue = 0, stopDevice = 0, noMic = 0;
         for (int i = 3; i < args.Length; i++)
         {
             if (args[i] == "--log" && i + 1 < args.Length) log = args[++i];
             else if (args[i] == "--stop-device-after" && i + 1 < args.Length) stopDevice = int.Parse(args[++i], System.Globalization.CultureInfo.InvariantCulture);
+            else if (args[i] == "--no-mic-until" && i + 1 < args.Length) noMic = int.Parse(args[++i], System.Globalization.CultureInfo.InvariantCulture);
             else if (args[i] == "--record" && i + 1 < args.Length) record = args[++i];
             else if (args[i] == "--mic-file" && i + 1 < args.Length) micFile = args[++i];
             else if (args[i] == "--quit-after" && i + 1 < args.Length) quit = int.Parse(args[++i], System.Globalization.CultureInfo.InvariantCulture);
@@ -198,6 +207,7 @@ public sealed class VoiceWindow : Window
             OutputGain = args.Contains("--silent") ? 0f : 1f,
             SendQueueMs = queue,
             StopDeviceAfterSec = stopDevice,
+            NoMicUntilSec = noMic,
         };
         App.Voice = () => new VoiceWindow(opt, log, args.Contains("--minimized"), quit);
         try { return build().StartWithClassicDesktopLifetime([]); }

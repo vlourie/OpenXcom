@@ -30,6 +30,13 @@ public static unsafe partial class AudioDevice
     private static partial void xpa_stop();
 
     [LibraryImport(Lib)]
+    private static partial int xpa_capture_count();
+
+    /// <summary>How many capture devices Windows lists now (-1: not open or unknown) - whether a
+    /// missing microphone is worth a reopening.</summary>
+    public static int CaptureDevices() => xpa_capture_count();
+
+    [LibraryImport(Lib)]
     private static partial nint xpa_error();
 
     [LibraryImport(Lib)]

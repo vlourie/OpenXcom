@@ -148,6 +148,18 @@ XPA_API int xpa_loopback_read(int16_t *dst, uint32_t max)
     return (int)got;
 }
 
+/* How many capture devices Windows lists right now; -1 when not open or the query failed. The launcher
+ * asks before reopening for a missing microphone: a reopening is a gap in what is played, so one that
+ * cannot find a microphone is not tried. Called from one thread at a time (the pump). */
+XPA_API int xpa_capture_count(void)
+{
+    ma_device_info *pb, *cap;
+    ma_uint32 npb = 0, ncap = 0;
+    if (!g_open) return -1;
+    if (ma_context_get_devices(g_device.pContext, &pb, &npb, &cap, &ncap) != MA_SUCCESS) return -1;
+    return (int)ncap;
+}
+
 /* Test hook: stops the device the way Windows does when it takes the card away - the callback ends
  * and the "stopped" notification fires - so the reopening in VoiceSession can be exercised on a
  * machine whose sound card is fine. Not called by the launcher otherwise. */
