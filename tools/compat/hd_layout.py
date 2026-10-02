@@ -2,9 +2,11 @@
 # docs/research/data/hd_split.tsv, next to the install and without touching it:
 #   hd_core - the rows of submod "hd_core" (TTF fonts, paths under hd/UI) with their licence texts:
 #             <family>-OFL.txt beside each font, FONTS-LICENSE.txt (DejaVu) of the mod root;
-#   hd      - everything else, "hd_core?" and "hd_shared?" candidates included; keeps the id hd, because
-#             the engine checks that id in three places (MainMenuState, AdultChoiceState, OptionsHdState),
-#             gets master: piratez as the plan says.
+#   hd      - everything else, "hd_core?" and "hd_shared?" candidates included; keeps the id hd (step 1:
+#             the engine checked that id in MainMenuState, AdultChoiceState, OptionsHdState; step 2 replaced
+#             the checks), gets master: piratez as the plan says. The rulesets whose strings moved to
+#             bin/common/Language/OXCE (step 2) are left out: their extraStrings would override the
+#             engine's strings in every other language (R-131).
 # The layout is <out>/mods: junctions to every other mod of the install, hd_core and hd as real folders
 # of hard links (no copy of gigabytes) and junctions to untouched subtrees. The install stays as it is,
 # so no release takes the split before its acceptance (fonts HD_FONTS §2, launcher migration).
@@ -17,6 +19,8 @@ ROOT = Path(__file__).resolve().parents[2]
 MODS = ROOT / "Пиратки" / "Dioxine_XPiratez" / "user" / "mods"
 TABLE = ROOT / "docs" / "research" / "data" / "hd_split.tsv"
 FILE_ATTRIBUTE_REPARSE_POINT = 0x400
+# strings now in the engine (docs/portal/HD_SUBMODS.md §5 step 2); the pack no longer ships them
+ENGINE_OWNED = {"Ruleset/reports.rul", "Ruleset/adult.rul", "Ruleset/fire.rul", "Ruleset/reticle.rul"}
 
 CORE_META = """name: "HD core: fonts"
 version: 0.2
@@ -120,7 +124,7 @@ def main():
     (core / "metadata.yml").write_text(CORE_META, encoding="utf-8", newline="\n")
 
     pack = mods / "hd"
-    place(hd, pack, "", set(files))
+    place(hd, pack, "", set(files) | ENGINE_OWNED)
     # the install's file has a BOM; the game reads it either way, the layout writes it without (R-001)
     meta = (hd / "metadata.yml").read_text(encoding="utf-8-sig")
     if "master:" not in meta or "id: hd" not in meta:
@@ -136,13 +140,17 @@ def main():
         lines.append(line)
     (pack / "metadata.yml").write_text("\n".join(lines) + "\n", encoding="utf-8", newline="\n")
 
-    # every file of the old hd is in exactly one of the two, metadata.yml in both by design
+    # every file of the old hd is in exactly one of the two, metadata.yml in both by design,
+    # the engine-owned rulesets in neither
     old = listing(hd) - {"metadata.yml"}
+    owned = old & ENGINE_OWNED
+    old -= owned
     a_core, a_pack = listing(core) - {"metadata.yml"}, listing(pack) - {"metadata.yml"}
     both, lost, extra = a_core & a_pack, old - a_core - a_pack, (a_core | a_pack) - old
     print(f"hd_core: {len(a_core)} file(s) ({fonts} font(s) of the table and their licences)")
     print(f"hd:      {len(a_pack)} file(s), master piratez, id hd")
-    print(f"old hd:  {len(old)} file(s); in both {len(both)}, lost {len(lost)}, new {len(extra)}")
+    print(f"engine:  {len(owned)} ruleset(s) of strings left out: {', '.join(sorted(owned))}")
+    print(f"old hd:  {len(old)} file(s) besides; in both {len(both)}, lost {len(lost)}, new {len(extra)}")
     if both or lost or extra:
         for f in sorted(both | lost | extra)[:20]:
             print("  !!", f)
