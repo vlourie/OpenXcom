@@ -795,14 +795,16 @@ function Invoke-LauncherStep {
     $out = Get-Cfg 'LauncherOut' (Join-Path $distDir '_launcher_rel')
     $dev = [bool](Get-Cfg 'LauncherDevKeys' $true)
     $mode = if ($dev) { 'dev' } else { 'prod' }
-    $files = @(Get-Cfg 'LauncherFiles' @('XPiratezLauncher.exe', 'xp-bootstrap.exe', 'libHarfBuzzSharp.dll', 'libSkiaSharp.dll', 'libsodium.dll'))
+    # livekit_ffi.dll и xpaudio.dll - голосовые комнаты (Xp.Voice): без них раздел «Голос» не откроет звук
+    $files = @(Get-Cfg 'LauncherFiles' @('XPiratezLauncher.exe', 'xp-bootstrap.exe', 'libHarfBuzzSharp.dll', 'libSkiaSharp.dll', 'libsodium.dll', 'livekit_ffi.dll', 'xpaudio.dll'))
     # пометка лежит вне папки публикации: оттуда xp-release собирает релиз лаунчера целиком
     $modeFile = Join-Path $workDir 'launcher_keys_mode.txt'
     $exe = Join-Path $out $files[0]
 
     Write-Step "лаунчер ($mode-ключи)"
     $newest = $null
-    $roots = @('Xp.Launcher', 'Xp.Launcher.Core', 'Xp.Manifest', 'Xp.Bootstrapper' | ForEach-Object { Join-Path $portal "src\$_" })
+    $roots = @('Xp.Launcher', 'Xp.Launcher.Core', 'Xp.Manifest', 'Xp.Bootstrapper', 'Xp.Voice' | ForEach-Object { Join-Path $portal "src\$_" })
+    $roots += Join-Path $portal 'third_party\voice'
     foreach ($r in $roots) {
         if (-not (Test-Path -LiteralPath $r)) { continue }
         foreach ($f in (New-Object IO.DirectoryInfo $r).EnumerateFiles('*', [IO.SearchOption]::AllDirectories)) {
