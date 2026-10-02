@@ -52,8 +52,9 @@ public static unsafe partial class AudioDevice
     static DataHandler? _handler;
     static Action<string>? _note;
 
-    /// <summary>Opens microphone and speakers (or speakers only). Returns what was opened, for the log.</summary>
-    public static string Open(bool microphone, DataHandler handler, Action<string> note)
+    /// <summary>Opens microphone and speakers (or speakers only). Returns what was opened, for the log;
+    /// <paramref name="microphoneOpened"/> says whether the microphone is among it.</summary>
+    public static string Open(bool microphone, DataHandler handler, Action<string> note, out bool microphoneOpened)
     {
         _handler = handler;
         _note = note;
@@ -61,6 +62,7 @@ public static unsafe partial class AudioDevice
         if (r < 0) throw new IOException("sound device: " + Marshal.PtrToStringUTF8(xpa_error()));
         var err = Marshal.PtrToStringUTF8(xpa_error());
         var what = Marshal.PtrToStringUTF8(xpa_describe()) ?? "";
+        microphoneOpened = r == 1;
         return r == 1 ? what : $"{what} (no microphone: {err})";
     }
 

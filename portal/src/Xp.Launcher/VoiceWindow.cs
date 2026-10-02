@@ -21,6 +21,7 @@ public sealed class VoiceWindow : Window
     readonly VoiceSession _session;
     readonly StreamWriter? _file;
     readonly TextBlock _state = new() { FontSize = 16, FontWeight = FontWeight.SemiBold };
+    readonly TextBlock _micLabel = new() { VerticalAlignment = VerticalAlignment.Center, FontSize = 13 };
     readonly ProgressBar _mic = new() { Minimum = -60, Maximum = 0, Height = 8, MinWidth = 200 };
     readonly StackPanel _peers = new() { Spacing = 6 };
     readonly TextBox _log = new() { IsReadOnly = true, AcceptsReturn = true, TextWrapping = TextWrapping.NoWrap, FontFamily = new FontFamily("Consolas"), FontSize = 12 };
@@ -63,7 +64,8 @@ public sealed class VoiceWindow : Window
         var top = new StackPanel { Spacing = 10 };
         top.Children.Add(_state);
         var micRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 12 };
-        micRow.Children.Add(new TextBlock { Text = opt.Tone ? "тон" : "микрофон", VerticalAlignment = VerticalAlignment.Center, FontSize = 13 });
+        _micLabel.Text = opt.Tone ? "тон" : "микрофон";
+        micRow.Children.Add(_micLabel);
         micRow.Children.Add(_mic);
         micRow.Children.Add(_mute);
         micRow.Children.Add(_apm);
@@ -87,6 +89,12 @@ public sealed class VoiceWindow : Window
             try { _session.Start(); }
             catch (Exception e) { Add("voice did not start: " + e.Message); }
             _apm.IsVisible = _session.HasEchoCanceller;
+            if (_session.MicrophoneMissing)
+            {
+                _micLabel.Text = "микрофон не открылся: вас никто не слышит";
+                _micLabel.Foreground = Skin.B(Skin.WarnText);
+                _mute.IsEnabled = false;
+            }
             if (quitAfter > 0) DispatcherTimer.RunOnce(Close, TimeSpan.FromSeconds(quitAfter));
         };
         Closing += async (_, e) =>

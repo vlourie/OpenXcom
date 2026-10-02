@@ -70,6 +70,7 @@ public sealed class VoiceSession : IAsyncDisposable
     volatile bool _stopping;
     volatile bool _muted;
     volatile bool _apmOn = true;
+    bool _micOpen;
     Room? _room;
     string _token;
     ulong _apm;
@@ -90,6 +91,8 @@ public sealed class VoiceSession : IAsyncDisposable
     public VoiceState State { get; private set; } = VoiceState.Connecting;
     public string Identity { get; private set; } = "";
     public double MicDb => _micDb;
+    /// <summary>The microphone was asked for and did not open: speakers only, nothing is published.</summary>
+    public bool MicrophoneMissing => _opt.Microphone && !_opt.Tone && !_micOpen;
 
     public bool Muted
     {
@@ -144,7 +147,7 @@ public sealed class VoiceSession : IAsyncDisposable
             _apm = r.NewApm.Apm.Handle.Id;
         }
         if (_opt.Tone && _opt.MicFile is { } mf) _file = ReadWav(mf);
-        var dev = AudioDevice.Open(_opt.Microphone && !_opt.Tone, OnAudio, Log);
+        var dev = AudioDevice.Open(_opt.Microphone && !_opt.Tone, OnAudio, Log, out _micOpen);
         Log($"sound: {dev}; echo canceller {(apm ? "on" : "off")}" +
             $"{(_file is not null ? $", {Path.GetFileName(_opt.MicFile)} ({_file.Length / AudioDevice.Rate} s) instead of the microphone" : _opt.Tone ? ", test tone instead of the microphone" : "")}, output gain {_opt.OutputGain:0.##}");
         _pump = new Thread(Pump) { IsBackground = true, Name = "voice pump", Priority = ThreadPriority.AboveNormal };
@@ -373,7 +376,7 @@ public sealed class VoiceSession : IAsyncDisposable
         var peers = string.Join("; ", _mix.Select(p => p.StatsLine()));
         Log($"stats: {State} sent {Interlocked.Exchange(ref _sent, 0)} frames/5s, dropped {Interlocked.Exchange(ref _sendDropped, 0)}, " +
             $"out of order {Interlocked.Exchange(ref _outOfOrder, 0)}, " +
-            $"mic {_micDb:0} dB{(_muted ? " (muted)" : "")}{(_apm != 0 && !_apmOn ? " (echo canceller off)" : "")}, device {Interlocked.Exchange(ref _callbacks, 0)} calls{(_oddCalls > 0 ? $" ({Interlocked.Exchange(ref _oddCalls, 0)} not 10 ms)" : "")}, max gap {_maxGapMs:0} ms, max busy {_maxBusyMs:0.0} ms | {(peers.Length > 0 ? peers : "nobody")}");
+            $"mic {_micDb:0} dB{(_muted ? " (muted)" : "")}{(MicrophoneMissing ? " (not opened)" : "")}{(_apm != 0 && !_apmOn ? " (echo canceller off)" : "")}, device {Interlocked.Exchange(ref _callbacks, 0)} calls{(_oddCalls > 0 ? $" ({Interlocked.Exchange(ref _oddCalls, 0)} not 10 ms)" : "")}, max gap {_maxGapMs:0} ms, max busy {_maxBusyMs:0.0} ms | {(peers.Length > 0 ? peers : "nobody")}");
         _maxGapMs = 0;
         _maxBusyMs = 0;
     }
@@ -536,7 +539,10 @@ public sealed class VoiceSession : IAsyncDisposable
         _retry = 0;
         State = VoiceState.Connected;
 
-        if (_opt.Microphone || _opt.Tone) await Publish(room).ConfigureAwait(false);
+        // a microphone that did not open has nothing to publish: an empty track would send the others
+        // exact zeros and look, from their side, like a working microphone
+        if (_opt.Tone || (_opt.Microphone && _micOpen)) await Publish(room).ConfigureAwait(false);
+        else if (_opt.Microphone) Log("microphone not opened: nothing published, the others cannot hear this machine");
     }
 
     void Retry(string why)
