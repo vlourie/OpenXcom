@@ -12,6 +12,9 @@
 #   .\station.ps1 smtp       настроить отправку писем: сервер, порт 587, логин, обратный адрес;
 #                            пароль спрашивает скрыто и пишет только в portal.env этой машины
 #   .\station.ps1 mail-test you@example.com    одно пробное письмо через SMTP; сбой - с причиной
+#   .\station.ps1 livekit    боевой медиасервер голоса (deploy\voice-server): адрес и ключ, секрет
+#                            спрашивает скрыто, пишет в portal.env и проверяет связь
+#   .\station.ps1 voice-test     проверить связь сайта с медиасервером ещё раз
 #   .\station.ps1 root-cert  выгрузить корневой сертификат Caddy (для лаунчера и чтобы браузер не ругался)
 #   .\station.ps1 internet [имя]  доступ из интернета: Let's Encrypt через Dynu на том же порту,
 #                            ddns держит имя на текущем IP. Нужен DYNU_API_KEY в .env и проброс
@@ -434,6 +437,38 @@ switch ($Command) {
         if (-not $Email) { Fail 'укажите адрес: .\station.ps1 mail-test you@example.com' }
         # отдельным контейнером с тем же portal.env: сайт сбои почты глотает, а здесь видна причина
         Invoke-Compose run --rm migrate mail test --to $Email
+    }
+    'livekit' {
+        # Боевой медиасервер ставится отдельно (deploy\voice-server\setup.sh на машине с публичным IP)
+        # и печатает адрес и ключ; секрет берётся из его .env и вводится здесь скрыто. Сайт ходит к нему
+        # по https на тот же адрес (API комнат), лаунчер - по wss. Проба голоса (voice) этим не задета
+        if (-not (Test-Path 'portal.env')) { Fail 'нет portal.env: сначала .\station.ps1 up' }
+        $penv = Read-DotEnv 'portal.env'
+        $a = Read-Host "адрес медиасервера, wss://имя [$($penv['LiveKit__Url'])]"
+        $url = if ($a.Trim()) { $a.Trim().TrimEnd('/') } else { $penv['LiveKit__Url'] }
+        if ($url -notmatch '^wss://[A-Za-z0-9.-]+(:\d+)?$') { Fail "нужен адрес вида wss://voice.example.org, а не '$url'" }
+        $a = Read-Host "ключ (LIVEKIT_API_KEY, его печатает setup.sh) [$($penv['LiveKit__ApiKey'])]"
+        $key = if ($a.Trim()) { $a.Trim() } else { $penv['LiveKit__ApiKey'] }
+        if ($key -notmatch '^[A-Za-z0-9_-]+$') { Fail "ключ '$key' - не имя ключа LiveKit" }
+        $secure = Read-Host 'секрет (LIVEKIT_API_SECRET из .env медиасервера; не отображается; пусто - оставить прежний)' -AsSecureString
+        $bstr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secure)
+        try { $secret = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($bstr) }
+        finally { [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr) }
+        $secret = $secret.Trim()
+        if ($secret -and $secret -notmatch '^[A-Za-z0-9+/=_-]{32,}$') { Fail 'секрет не похож на ключ LiveKit: нужно 32 знака и больше, без пробелов и кавычек' }
+        if (-not $secret -and -not $penv['LiveKit__ApiSecret']) { Fail 'секрет не задан' }
+        Set-DotEnv 'LiveKit__Url' $url 'portal.env'
+        Set-DotEnv 'LiveKit__ApiUrl' ('https://' + $url.Substring(6)) 'portal.env'
+        Set-DotEnv 'LiveKit__ApiKey' $key 'portal.env'
+        if ($secret) { Set-DotEnv 'LiveKit__ApiSecret' "'$secret'" 'portal.env' }
+        $secret = $null
+        Say 'перезапускаю сайт с медиасервером'
+        Invoke-Compose up -d --no-deps --force-recreate portal
+        Say 'проверка связи с медиасервером'
+        Invoke-Compose run --rm migrate voice check
+    }
+    'voice-test' {
+        Invoke-Compose run --rm migrate voice check
     }
     'root-cert' {
         # корень собственного центра Caddy: добавить в «Доверенные корневые центры» машины, с которой

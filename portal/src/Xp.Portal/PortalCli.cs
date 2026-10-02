@@ -4,6 +4,7 @@ using Xp.Portal.Auth;
 using Xp.Portal.Data;
 using Xp.Portal.Review;
 using Xp.Portal.Site;
+using Xp.Portal.Voice;
 
 namespace Xp.Portal;
 
@@ -15,6 +16,7 @@ namespace Xp.Portal;
 /// Xp.Portal packs --file F                            the sets of the game to review, from the census
 /// Xp.Portal wiki import --file F                      wiki pages built from a mod's rulesets
 /// Xp.Portal mail test --to E                          one letter through the configured SMTP; fails loudly
+/// Xp.Portal voice check                               the media server answers with these keys
 /// A SuperAdmin is never created from the web: whoever runs these already controls the server.
 /// </summary>
 public static class PortalCli
@@ -39,6 +41,7 @@ public static class PortalCli
                 ["packs", .. var rest] => await PacksAsync(sp, Opt(rest, "--file")),
                 ["wiki", "import", .. var rest] => await WikiImportAsync(sp, Opt(rest, "--file")),
                 ["mail", "test", .. var rest] => await MailTestAsync(sp, Opt(rest, "--to")),
+                ["voice", "check"] => await VoiceCheckAsync(sp),
                 _ => Usage(),
             };
         }
@@ -52,8 +55,33 @@ public static class PortalCli
     static int Usage()
     {
         Console.Error.WriteLine("usage: Xp.Portal migrate | admin create --email E [--name N] | admin reset-2fa --email E"
-            + " | seed --file F | packs --file F | wiki import --file F | mail test --to E");
+            + " | seed --file F | packs --file F | wiki import --file F | mail test --to E | voice check");
         return 2;
+    }
+
+    /// <summary>
+    /// One harmless call to the media server with the site's own keys: a wrong secret, a wrong
+    /// address and a closed port each show here instead of as a launcher that cannot join a room.
+    /// </summary>
+    static async Task<int> VoiceCheckAsync(IServiceProvider sp)
+    {
+        var o = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<LiveKitOptions>>().Value;
+        var secret = o.ApiSecret.Length == 0 ? "EMPTY" : o.ApiSecret.Length < 32 ? "TOO SHORT (LiveKit wants 32 characters or more)" : "set";
+        Console.WriteLine($"signalling '{o.Url}', API '{o.ApiUrl}', key '{o.ApiKey}', secret {secret}");
+        if (!o.Enabled) throw new ArgumentException("LiveKit__Url, LiveKit__ApiUrl, LiveKit__ApiKey and LiveKit__ApiSecret are all needed");
+        if (!o.Url.StartsWith("wss://", StringComparison.Ordinal))
+            Console.WriteLine("warning: the launcher gets a signalling address that is not wss:// - fine for a test, not for players");
+        try
+        {
+            var rooms = await sp.GetRequiredService<IVoiceServer>().RoomsAsync(CancellationToken.None);
+            Console.WriteLine($"the media server answers: {rooms.Count} room(s) open");
+            return 0;
+        }
+        catch (VoiceServerException e)
+        {
+            Console.Error.WriteLine("FAILED: " + e.Message);
+            return 1;
+        }
     }
 
     /// <summary>

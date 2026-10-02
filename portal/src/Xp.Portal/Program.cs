@@ -22,7 +22,7 @@ using Xp.Portal.Voice;
 
 // a word the command line knows means the command line, not the web server: an unknown word starting
 // the site by mistake is how a typo in a deployment script turns into a container that never exits
-if (args.Length > 0 && args[0] is "admin" or "migrate" or "seed" or "packs" or "wiki" or "mail")
+if (args.Length > 0 && args[0] is "admin" or "migrate" or "seed" or "packs" or "wiki" or "mail" or "voice")
     return await PortalCli.RunAsync(args);
 
 var app = PortalApp.Build(args);
