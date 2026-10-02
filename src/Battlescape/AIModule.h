@@ -108,6 +108,21 @@ private:
 	/// spotted the closest known target as this think started (-1: none).
 	const BattleUnit *knownOccupant(int &age) const;
 	int _knownOccAge = -1;
+	/// KNOWN_OCCUPANT_PATH_V2 (bench): the branch's target T (_aggroTarget) if the side spotted it this turn; old: there is a
+	/// target but it was not spotted this turn. Null with the flag off or for a unit not of the enemy.
+	const BattleUnit *knownOccupantV2(bool &old) const;
+	/// KNOWN_OCCUPANT_PATH_V2: this unit's own path search to pos, T's tile blocked if T is given; adds what it blocked to hits.
+	void calculateKnownOccupantV2(const Position &pos, const BattleUnit *target, int &hits);
+	/// KNOWN_OCCUPANT_PATH_V2: per think, what findFirePoint / setupAmbush supplied and blocked; the T of the point they chose
+	/// (setupAmbush keeps its point across thinks while _ambushTUs holds, so its T lives with _ambushAction).
+	const BattleUnit *_ko2FpTarget = 0, *_ko2AmbTarget = 0, *_ko2FpChosenTarget = 0, *_ko2AmbChosenTarget = 0;
+	bool _ko2FpOld = false, _ko2AmbOld = false, _ko2FpRan = false, _ko2AmbRan = false;
+	int _ko2FpHits = 0, _ko2AmbHits = 0;
+	/// KNOWN_OCCUPANT_PATH_V2: the walk this think decided on, if it goes to a point one of the two branches chose: its T and
+	/// branch ("fp", "amb"); null otherwise.
+	const BattleUnit *_ko2WalkTarget = 0;
+	const char *_ko2WalkBranch = 0;
+	Position _ko2WalkTo;
 	/// _reachableWithAttack for this attack, and what it left for the walk.
 	void reachableWithAttack(const BattleActionCost &cost);
 	int unitTurn() const;
@@ -234,6 +249,13 @@ public:
 	void knownOccupantDecided(const BattleAction &action);
 	/// KNOWN_OCCUPANT_PATH_V1: the walk's own path is calculated (found: it has a first step) - what that search blocked.
 	void knownOccupantWalked(const BattleAction &action, bool found);
+	/// KNOWN_OCCUPANT_PATH_V2 (bench, BattlescapeGame::handleAI): the decision is made - what findFirePoint / setupAmbush blocked.
+	void knownOccupantV2Decided(const BattleAction &action);
+	/// KNOWN_OCCUPANT_PATH_V2: the T whose tile the walk's own path search must take as blocked - only for the walk to the point
+	/// findFirePoint or setupAmbush chose this think; null for any other walk.
+	const BattleUnit *knownOccupantV2Walk(const BattleAction &action) const;
+	/// KNOWN_OCCUPANT_PATH_V2: the walk's own path is calculated with that T (found: it has a first step; hits: what it blocked).
+	void knownOccupantV2Walked(const BattleAction &action, bool found, int hits);
 	/// Frees up the destination node for another Unit to select
 	void freePatrolTarget();
 };

@@ -267,6 +267,18 @@ void knownOccupantDecided(const BattleUnit *unit, const BattleUnit *occupant, in
 /// KNOWN_OCCUPANT_PATH_V1: the walk's own path is calculated; if its search took the tile as blocked, knownocc.path_replanned
 /// (it found a path) or knownocc.no_path, and the trail step "knownocc.walk b<hits> <to> found|none".
 void knownOccupantWalked(const BattleUnit *unit, const BattleUnit *occupant, int hits, const Position &to, bool found);
+/// KNOWN_OCCUPANT_PATH_V2 (OXCE_AI_KNOWN_OCCUPANT_PATH_V2, bench only): the target T findFirePoint and setupAmbush chose
+/// (_aggroTarget), if the enemy's side spotted it this turn, blocks its tile for those two branches' own path searches and for
+/// the walk to the point they chose - nothing else: not findReachable, patrol, escape, melee, shots, psi, grenades, missiles.
+/// Off while V1 is on. False in a release build.
+bool knownOccupantPathV2();
+/// KNOWN_OCCUPANT_PATH_V2: an enemy's decision is made. Per branch (fp, amb) that ran this think: knownocc2.<b>.target_set
+/// (T supplied) or knownocc2.<b>.target_age_old (T not spotted this turn - held back); knownocc2.<b>.search_blocked if a search
+/// took T's tile as blocked (trail "knownocc2 <b> <id> <tile> b<hits>"); knownocc2.<b>.chosen if the decision walks there.
+void knownOccupantV2Decided(const BattleUnit *unit, const char *branch, const BattleUnit *target, bool old, int hits, bool chosen);
+/// KNOWN_OCCUPANT_PATH_V2: the walk to the branch's point is calculated with T's tile blocked: knownocc2.walk_<b>; if it took
+/// the tile (hits), knownocc2.walk_<b>.path_replanned or .no_path and the trail "knownocc2.walk <b> b<hits> <to> found|none".
+void knownOccupantV2Walked(const BattleUnit *unit, const char *branch, int hits, const Position &to, bool found);
 /// REPEATED_BLOCKED_STEP_V1 (OXCE_AI_BLOCKED_STEP, bench only): a walk stopped at a unit on the step in dir from where the
 /// unit stands (UnitWalkBState). Remembered for the rest of the unit-turn while knownRevision stays what it was then; another
 /// stop there at the same revision adds its step. No-op without the flag.

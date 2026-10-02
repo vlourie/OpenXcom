@@ -496,16 +496,32 @@ void BattlescapeGame::handleAI(BattleUnit *unit)
 	{
 		ai->knownOccupantDecided(action);
 	}
+	if (AiProbe::knownOccupantPathV2())
+	{
+		ai->knownOccupantV2Decided(action);
+	}
 	if (action.type == BA_WALK)
 	{
 		ss << "Walking to " << action.target;
 		_parentState->debug(ss.str());
 
 		auto* targetTile = _save->getTile(action.target);
+		// KNOWN_OCCUPANT_PATH_V2 (bench): the walk to the point findFirePoint / setupAmbush chose keeps that branch's target blocked
+		const BattleUnit *ko2 = AiProbe::knownOccupantPathV2() ? ai->knownOccupantV2Walk(action) : 0;
 		if (targetTile)
 		{
+			if (ko2)
+			{
+				_save->getPathfinding()->setKnownOccupant(action.actor, ko2);
+			}
 			_save->getPathfinding()->calculate(action.actor, action.target, BAM_NORMAL);
+			// its search again without the remembered step is the same walk's: the target stays blocked
 			AiProbe::blockedStepPlan(_save, unit, action);
+			if (ko2)
+			{
+				_save->getPathfinding()->setKnownOccupant(0, 0);
+				ai->knownOccupantV2Walked(action, _save->getPathfinding()->getStartDirection() != -1, _save->getPathfinding()->takeKnownOccupantHits());
+			}
 		}
 		if (AiProbe::knownOccupantPath())
 		{

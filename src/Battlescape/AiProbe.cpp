@@ -137,6 +137,9 @@ void firepointTargetCellRejected(const BattleUnit *, const Position &, bool, con
 bool knownOccupantPath() { return false; }
 void knownOccupantDecided(const BattleUnit *, const BattleUnit *, int, int, const BattleUnit *, const char *) {}
 void knownOccupantWalked(const BattleUnit *, const BattleUnit *, int, const Position &, bool) {}
+bool knownOccupantPathV2() { return false; }
+void knownOccupantV2Decided(const BattleUnit *, const char *, const BattleUnit *, bool, int, bool) {}
+void knownOccupantV2Walked(const BattleUnit *, const char *, int, const Position &, bool) {}
 void blockedStepStop(SavedBattleGame *, BattleUnit *, int) {}
 void blockedStepDecide(SavedBattleGame *, BattleUnit *) {}
 void blockedStepPlan(SavedBattleGame *, BattleUnit *, const BattleAction &) {}
@@ -3377,6 +3380,53 @@ void knownOccupantWalked(const BattleUnit *unit, const BattleUnit *occupant, int
 	++tallies[found ? "h.knownocc.path_replanned" : "h.knownocc.no_path"];
 	std::ostringstream s;
 	s << "knownocc.walk b" << hits << " " << to.x << "," << to.y << "," << to.z << " " << (found ? "found" : "none");
+	addTrail(unit, s.str().c_str());
+}
+
+bool knownOccupantPathV2()
+{
+	static const bool on = active() && envOn("OXCE_AI_KNOWN_OCCUPANT_PATH_V2") && !knownOccupantPath();
+	return on;
+}
+
+void knownOccupantV2Decided(const BattleUnit *unit, const char *branch, const BattleUnit *target, bool old, int hits, bool chosen)
+{
+	const std::string b = std::string("h.knownocc2.") + branch;
+	if (old)
+	{
+		++tallies[b + ".target_age_old"];
+	}
+	if (!target)
+	{
+		return;
+	}
+	++tallies[b + ".target_set"];
+	if (hits == 0)
+	{
+		return;
+	}
+	++tallies[b + ".search_blocked"];
+	if (chosen)
+	{
+		++tallies[b + ".search_blocked_chosen"];
+	}
+	const Position p = target->getPosition();
+	std::ostringstream s;
+	s << "knownocc2 " << branch << " " << target->getId() << " " << p.x << "," << p.y << "," << p.z << " b" << hits;
+	addTrail(unit, s.str().c_str());
+}
+
+void knownOccupantV2Walked(const BattleUnit *unit, const char *branch, int hits, const Position &to, bool found)
+{
+	const std::string b = std::string("h.knownocc2.walk_") + branch;
+	++tallies[b];
+	if (hits == 0)
+	{
+		return;
+	}
+	++tallies[b + (found ? ".path_replanned" : ".no_path")];
+	std::ostringstream s;
+	s << "knownocc2.walk " << branch << " b" << hits << " " << to.x << "," << to.y << "," << to.z << " " << (found ? "found" : "none");
 	addTrail(unit, s.str().c_str());
 }
 
