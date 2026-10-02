@@ -22,6 +22,20 @@ public sealed class Settings
     public double? WindowWidth { get; set; }
     public double? WindowHeight { get; set; }
 
+    // voice: the devices by id with the name as the fallback (Xp.Voice.VoiceOptions), null - the Windows default
+    public string? VoiceInputId { get; set; }
+    public string? VoiceInputName { get; set; }
+    public string? VoiceOutputId { get; set; }
+    public string? VoiceOutputName { get; set; }
+    /// <summary>The push-to-talk button, <see cref="Core.TalkKey"/>; null - the default one.</summary>
+    public string? VoiceKey { get; set; }
+    /// <summary>The microphone is on all the time instead of push-to-talk.</summary>
+    public bool VoiceOpenMic { get; set; }
+    /// <summary>The volume of everything heard, 1 as received.</summary>
+    public double VoiceVolume { get; set; } = 1;
+    /// <summary>The volume of each speaker at this machine, by the person's id; 0 - switched off here.</summary>
+    public Dictionary<string, double> VoicePeerVolume { get; set; } = new();
+
     public static string Dir => DirOverride ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "XPiratezLauncher");
     /// <summary>The window tests run the launcher on a folder of their own, never on the player's settings.</summary>
     internal static string? DirOverride { get; set; }

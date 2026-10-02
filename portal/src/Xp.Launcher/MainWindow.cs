@@ -62,6 +62,9 @@ public sealed class MainWindow : Window
     readonly ReportsPage _reportsPage;
     readonly ReviewPage _reviewPage;
     readonly AccountPanel _account;
+    readonly VoicePage _voicePage;
+    TrayIcon? _tray;
+    bool _quitting;     // a real exit: the window does not go to the tray even in a room
 
     GamePaths? _paths;
     BuildStore? _builds;
@@ -135,6 +138,8 @@ public sealed class MainWindow : Window
         _reportsPage.Changed += CountReports;
         _reviewPage = new ReviewPage(_settings, () => _paths?.GameDir);
         _account = new AccountPanel(_settings);
+        _voicePage = new VoicePage(_settings, _account, () => _builds, () => Navigate("settings"));
+        _voicePage.RoomChanged += RoomChanged;
         _setupPage = new SetupPage(_settings, () => _repo);
         _setupPage.Finished += (dir, play) => OnSetupFinished(dir, play);
         _setupPage.PickExisting += async () => await ChooseGameDirAsync();
@@ -147,6 +152,7 @@ public sealed class MainWindow : Window
         _pages["setup"] = _setupPage;
         _pages["reports"] = _reportsPage;
         _pages["review"] = _reviewPage;
+        _pages["voice"] = _voicePage;
         _pages["support"] = new SupportPage();
         _pages["settings"] = SettingsPage();
 
@@ -165,6 +171,12 @@ public sealed class MainWindow : Window
             e.Handled = true;
         }, RoutingStrategies.Tunnel);
         Navigate("home");
+        // started by an xpiratez://voice link: the voice page with that room on top
+        if (VoiceLink.Find(args) is { } linked)
+        {
+            _voicePage.OpenRoom(linked);
+            Navigate("voice");
+        }
 #if DEBUG
         // screenshots of every page without clicking through them
         if (Array.IndexOf(args, "--page") is var i and >= 0 && i + 1 < args.Length && _pages.ContainsKey(args[i + 1])) Navigate(args[i + 1]);
@@ -181,8 +193,19 @@ public sealed class MainWindow : Window
         };
         // back from a game started without us, or after it closed: the locks follow it
         Activated += (_, _) => { if (_paths is not null) Refresh(); };
-        Closing += (_, _) =>
+        Closing += async (_, e) =>
         {
+            if (_voicePage.InRoom)
+            {
+                e.Cancel = true;
+                // the cross of the window while talking: the conversation goes on from the tray
+                if (!_quitting && !e.IsProgrammatic && e.CloseReason == WindowCloseReason.WindowClosing) { ToTray(); return; }
+                // a real exit: the room is left and the microphone given back first, then the window closes
+                _quitting = true;
+                await _voicePage.LeaveAsync();
+                Close();
+                return;
+            }
             _cts?.Cancel();
             if (WindowState == WindowState.Normal)
             {
@@ -208,6 +231,7 @@ public sealed class MainWindow : Window
         _reportsBadge.Child = _reportsCount;
         top.Children.Add(NavButton("reports", "nav.reports", Skin.IconReports, _reportsBadge));
         top.Children.Add(NavButton("review", "nav.review", Skin.IconCheck, null));
+        top.Children.Add(NavButton("voice", "nav.voice", Skin.IconVoice, null));
         top.Children.Add(NavButton("support", "nav.support", Skin.IconHeart, null));
         top.Children.Add(NavButton("settings", "nav.settings", Skin.IconSettings, null));
 
@@ -217,7 +241,7 @@ public sealed class MainWindow : Window
         site.IsEnabled = portal.StartsWith("http", StringComparison.OrdinalIgnoreCase);
         site.Click += (_, _) => ReportWindow.OpenUrl(portal);
         var quit = NavLike(L.T("nav.quit"), Skin.IconQuit, null);
-        quit.Click += (_, _) => Close();
+        quit.Click += (_, _) => Quit();
 
         var bottom = new StackPanel();
         bottom.Children.Add(site);
@@ -265,6 +289,82 @@ public sealed class MainWindow : Window
         }
         if (page == "reports") _reportsPage.Shown();
         if (page == "review") _reviewPage.Shown();
+        if (page == "voice") _voicePage.Shown();
+        else _voicePage.Hidden();
+    }
+
+    // ------------------------------------------------------------------ voice, the tray, the second start
+
+    /// <summary>Exit for real: from the rail, the tray, the self-update. In a room the room is left first.</summary>
+    void Quit()
+    {
+        _quitting = true;
+        Close();
+    }
+
+    /// <summary>
+    /// Another start of the launcher (a second click on the shortcut, an xpiratez://voice link from the
+    /// browser) told this one to come forward, with the room of the link if there was one.
+    /// </summary>
+    public void Signal(string? room)
+    {
+        ShowWindow();
+        if (room is null) return;
+        _voicePage.OpenRoom(room);
+        Navigate("voice");
+    }
+
+    void ShowWindow()
+    {
+        Show();
+        if (WindowState == WindowState.Minimized) WindowState = WindowState.Maximized;
+        Activate();
+    }
+
+    void ToTray()
+    {
+        _voicePage.Hidden();
+        Hide();
+    }
+
+    /// <summary>The tray icon lives while the player is in a room: it is the way back to a hidden window.</summary>
+    void RoomChanged()
+    {
+        if (_voicePage.InRoom)
+        {
+            if (_tray is null)
+            {
+                var open = new NativeMenuItem(L.T("voice.trayOpen"));
+                open.Click += (_, _) => ShowWindow();
+                var leave = new NativeMenuItem(L.T("voice.trayLeave"));
+                leave.Click += async (_, _) => await _voicePage.LeaveAsync();
+                var quit = new NativeMenuItem(L.T("voice.trayQuit"));
+                quit.Click += (_, _) => Quit();
+                var menu = new NativeMenu();
+                menu.Items.Add(open);
+                menu.Items.Add(leave);
+                menu.Items.Add(new NativeMenuItemSeparator());
+                menu.Items.Add(quit);
+                _tray = new TrayIcon
+                {
+                    Icon = new WindowIcon(Avalonia.Platform.AssetLoader.Open(new Uri("avares://XPiratezLauncher/Assets/app.ico"))),
+                    Menu = menu,
+                };
+                _tray.Clicked += (_, _) => ShowWindow();
+                if (Application.Current is { } app) TrayIcon.SetIcons(app, [_tray]);
+            }
+            _tray.ToolTipText = L.T("voice.trayTip", _voicePage.RoomTitle ?? "");
+            _tray.IsVisible = true;
+            return;
+        }
+        if (_tray is not null) _tray.IsVisible = false;
+        // out of the room while hidden (left from the tray, sent away, refused): the window comes back,
+        // with the reason on the voice page - a hidden launcher without a tray icon could not be reached
+        if (!IsVisible && !_quitting)
+        {
+            ShowWindow();
+            Navigate("voice");
+        }
     }
 
     Control HomePage()
@@ -876,7 +976,8 @@ public sealed class MainWindow : Window
         var su = new SelfUpdate(_repo!, _settings, _fileLog!);
         var dir = await su.PrepareAsync(_launcherUpdate, _cts!.Token);
         su.Apply(dir, _launcherUpdate);
-        Close();
+        // a real exit even in a voice room: the bootstrapper waits for this process to swap its files
+        Quit();
     }
 
     void Play()
@@ -1114,18 +1215,19 @@ sealed class MessageDialog : Window
     }
 }
 
-/// <summary>One line of text, for a build's name: the text, or null on "Cancel".</summary>
+/// <summary>One line of text, for a build's name: the text, or null on "Cancel". allowEmpty: an optional
+/// answer (a reason), "" when left blank.</summary>
 sealed class TextDialog : Window
 {
-    public TextDialog(string prompt, string initial)
+    public TextDialog(string prompt, string initial, int maxLength = 60, bool allowEmpty = false)
     {
         Title = L.T("title");
         Width = 460; SizeToContent = SizeToContent.Height; CanResize = false;
         WindowStartupLocation = WindowStartupLocation.CenterOwner;
-        var box = new TextBox { Text = initial, FontSize = 14, MaxLength = 60 };
+        var box = new TextBox { Text = initial, FontSize = 14, MaxLength = maxLength };
         var ok = Skin.Btn(L.T("modified.ok"), "primary");
         ok.Margin = new Thickness(0, 0, 8, 0);
-        void Done() { if ((box.Text ?? "").Trim().Length > 0) Close((box.Text ?? "").Trim()); }
+        void Done() { if (allowEmpty || (box.Text ?? "").Trim().Length > 0) Close((box.Text ?? "").Trim()); }
         ok.Click += (_, _) => Done();
         box.KeyDown += (_, e) => { if (e.Key == Key.Enter) Done(); };
         var cancel = Skin.Btn(L.T("cancel"));

@@ -26,6 +26,9 @@ public sealed class AccountPanel : StackPanel
     DeviceAccount? _account;
     CancellationTokenSource? _waiting;
 
+    /// <summary>Shown anew: linked, unlinked, or the link was taken away on the site.</summary>
+    public event Action? Changed;
+
     public AccountPanel(Settings settings)
     {
         _settings = settings;
@@ -115,6 +118,7 @@ public sealed class AccountPanel : StackPanel
             : L.T("account.none");
         _who.Foreground = Skin.B(error is not null ? Skin.WarnText : _account is not null ? Skin.Text : Skin.Text2);
         _hint.Text = waiting ? L.T("account.codeHint") : _account is null ? L.T("account.hint") : L.T("account.unlinkHint");
+        Changed?.Invoke();
     }
 
     /// <summary>Asks the site for a code and then waits for the person to say yes over there.</summary>

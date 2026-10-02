@@ -22,14 +22,13 @@
   <ItemGroup>
     <ProjectReference Include="..\Xp.Launcher.Core\Xp.Launcher.Core.csproj" />
   </ItemGroup>
-  <!-- the voice prototype (the voice switch) only with -p:XpVoice=true (publish.ps1 -Voice): players' builds stay without it -->
-  <PropertyGroup Condition="'$(XpVoice)' == 'true'">
-    <DefineConstants>$(DefineConstants);XP_VOICE</DefineConstants>
-  </PropertyGroup>
-  <ItemGroup Condition="'$(XpVoice)' == 'true'">
+  <!-- voice rooms (the Voice page): livekit_ffi.dll and xpaudio.dll come along into the output -->
+  <ItemGroup>
     <ProjectReference Include="..\Xp.Voice\Xp.Voice.csproj" />
   </ItemGroup>
-  <ItemGroup Condition="'$(XpVoice)' != 'true'">
+  <!-- the prototype window (the voice switch with a token from the command line) is a developer's tool: Debug only,
+       so a player's launcher never enters a room with a token it did not get from the site -->
+  <ItemGroup Condition="'$(Configuration)' != 'Debug'">
     <Compile Remove="VoiceWindow.cs" />
   </ItemGroup>
   <ItemGroup>
