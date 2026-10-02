@@ -420,7 +420,7 @@ en-US:
   STR_HD_SCALE: "HD battlescape scale"
   STR_HD_SCALE_DESC: "1 = classic 32x40 tiles. 2-4 = the battlescape is drawn at that many times the resolution (needs OpenGL or a 32-bit filter; applies to the next battle). Sprites without HD art are upscaled by the engine."
   STR_HD_MODE: "HD sprites"
-  STR_HD_MODE_DESC: "0 = classic pixels, 1 = HD packs from mods (hd/ folder), 2 = HD packs + xBRZ smoothing of everything else. F9 in battle cycles it."
+  STR_HD_MODE_DESC: "0 = classic pixels, 1 = HD packs from mods (hd/ folder), 2 = HD packs + xBRZ smoothing of everything else. F11 in battle cycles it."
   STR_HD_LIGHT: "HD light"
   STR_HD_LIGHT_DESC: "In the HD sprite modes: light blends smoothly between tiles and has color (cool at night, warm from fire and lamps). The game's own visibility rules are not affected."
   STR_HD_GROUND_VARIANTS: "HD ground variants"

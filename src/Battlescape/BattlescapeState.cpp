@@ -3243,8 +3243,9 @@ inline void BattlescapeState::handle(Action *action)
 				{
 					hdTestDump();
 				}
-				// HD render: cycle how the canvas draws sprites (nearest / HD packs / HD packs + smoothing)
-				if (key == Options::keyBattleHdModeToggle)
+				// HD render: cycle how the canvas draws sprites (nearest / HD packs / HD packs + smoothing);
+				// never on a key that already loads the quick save or dumps the voxel map
+				if (key == Options::keyBattleHdModeToggle && key != Options::keyQuickLoad && !(Options::debug && key == SDLK_F11))
 				{
 					hdModeToggle();
 				}

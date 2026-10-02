@@ -369,7 +369,8 @@ void createOptionsOXCE()
 	// player feedback: screenshot, pause and the launcher's report form (see Engine/Feedback.h)
 	_info.push_back(OptionInfo(OPTION_OXCE, "keyFeedback", &keyFeedback, SDLK_F8));
 	// HD render: the key that cycles the sprite drawing mode of the true-color canvas (see Engine/HdCanvas.h HdMode)
-	_info.push_back(OptionInfo(OPTION_OXCE, "keyBattleHdModeToggle", &keyBattleHdModeToggle, SDLK_F9));
+	// F11: on F9 it shared the key with keyQuickLoad (load() moves configs saved with both there)
+	_info.push_back(OptionInfo(OPTION_OXCE, "keyBattleHdModeToggle", &keyBattleHdModeToggle, SDLK_F11));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceFirstPersonViewFisheyeProjection", &oxceFirstPersonViewFisheyeProjection, false));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceThumbButtons", &oxceThumbButtons, true));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceThrottleMouseMoveEvent", &oxceThrottleMouseMoveEvent, 0));
@@ -1326,6 +1327,12 @@ bool load(const std::string &filename)
 		for (auto& optionInfo : _info)
 		{
 			optionInfo.load(reader["options"]);
+		}
+		// the HD mode key used to default to F9, the quick load's key: one press did both. A config saved
+		// then has both on F9 - the HD key moves to its new default; a key the player chose stays
+		if (keyBattleHdModeToggle == SDLK_F9 && keyQuickLoad == SDLK_F9)
+		{
+			keyBattleHdModeToggle = SDLK_F11;
 		}
 
 		mods.clear();
