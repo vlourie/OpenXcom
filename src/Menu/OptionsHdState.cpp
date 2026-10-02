@@ -36,8 +36,6 @@
 namespace OpenXcom
 {
 
-/// The mod the HD settings act on.
-static const std::string HD_MOD = "hd";
 /// The categories of Options.cpp shown here, in this order; the first one also holds the art version row.
 static const char *const HD_CATEGORIES[] = { "STR_HD_ART", "STR_HD_GENTLE", "STR_HD_BATTLE", "STR_HD_INTERFACE", "STR_HD_SPEED" };
 /// Row markers in _rows.
@@ -89,14 +87,7 @@ OptionsHdState::OptionsHdState(OptionsOrigin origin) : OptionsBaseState(origin)
 	_colorGroup = _lstOptions->getSecondaryColor();
 
 	_adultShipped = AdultChoiceState::adultArtShipped();
-	_hdActive = false;
-	for (const auto& mod : Options::mods)
-	{
-		if (mod.first == HD_MOD)
-		{
-			_hdActive = mod.second;
-		}
-	}
+	_hdActive = _game->getMod()->hasHdArt();
 
 	for (const char *category : HD_CATEGORIES)
 	{

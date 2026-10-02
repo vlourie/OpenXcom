@@ -21,6 +21,7 @@
 #include "../Engine/FileMap.h"
 #include "../Engine/Game.h"
 #include "../Engine/HdSprites.h"
+#include "../Engine/Language.h"
 #include "../Engine/LocalizedText.h"
 #include "../Engine/Logger.h"
 #include "../Engine/Options.h"
@@ -31,9 +32,6 @@
 
 namespace OpenXcom
 {
-
-/// The mod that carries this screen's strings and the ordinary picture tree.
-static const std::string STRINGS_MOD = "hd";
 
 /**
  * Does the adult picture tree ship anything at all? Its folders are probed
@@ -55,28 +53,13 @@ bool AdultChoiceState::adultArtShipped()
 }
 
 /**
- * Is the mod holding this screen's strings active? Without it the question
- * would be asked in raw STR_ keys (rake R-036).
- */
-static bool stringsAvailable()
-{
-	for (const auto& mod : Options::mods)
-	{
-		if (mod.first == STRINGS_MOD)
-		{
-			return mod.second;
-		}
-	}
-	return false;
-}
-
-/**
  * Do we ask on this start? Every start, unless the player turned the question
- * off, and only when there is an adult tree to switch to.
+ * off, and only when there is an adult tree to switch to. Without the strings
+ * (bin/common/Language/OXCE) the question would be asked in raw STR_ keys (rake R-036).
  */
 bool AdultChoiceState::isNeeded()
 {
-	return Options::oxceAdultAsk && stringsAvailable() && adultArtShipped();
+	return Options::oxceAdultAsk && _game->getLanguage()->has("STR_ADULT_CHOICE_TITLE") && adultArtShipped();
 }
 
 /**
