@@ -953,6 +953,33 @@ int Pathfinding::dequeuePath()
 }
 
 /**
+ * PATROL_NO_PATH_CAUSE (bench, passive, AIModule::patrolReuseProbe): would calculate(unit, to, BAM_NORMAL) find a path if
+ * the units of the given kinds did not block? Leaves no path and the known occupant's hit count as they were; the node flags
+ * and the expanded count are this search's, so the caller searches the real way again after its probes.
+ * @param unit Unit taking the path.
+ * @param to The position asked for.
+ * @param ignore IGNORE_* flags.
+ * @param expanded Gets the nodes the search's A* closed (0 after a straight path or a refusal).
+ * @return 1 a path, 0 the search found none, -1 refused before searching.
+ */
+int Pathfinding::probeReach(BattleUnit *unit, Position to, int ignore, int &expanded)
+{
+	const int hits = _knownOccupantHits;
+	_probeIgnore = ignore;
+	int found = -1;
+	if (finalPositionFor(unit, to, BAM_NORMAL))
+	{
+		calculate(unit, to, BAM_NORMAL);
+		found = _path.empty() ? 0 : 1;
+	}
+	expanded = _expanded;
+	abortPath();
+	_probeIgnore = 0;
+	_knownOccupantHits = hits;
+	return found;
+}
+
+/**
  * Aborts the current path. Clears the path vector.
  */
 void Pathfinding::abortPath()
@@ -1039,12 +1066,13 @@ bool Pathfinding::isBlocked(const BattleUnit *unit, const Tile *tile, const int 
 	}
 	if (part == O_FLOOR)
 	{
-		if (tile->getUnit())
+		// PATROL_NO_PATH_CAUSE (bench, probeReach only): the kinds of units let through fall to the terrain checks below
+		if (tile->getUnit() && !(_probeIgnore & IGNORE_ALL_UNITS))
 		{
 			BattleUnit *u = tile->getUnit();
 			if (u == unit || u == missileTarget || u->isOut())
 				return false;
-			if (unit)
+			if (unit && !(_probeIgnore & (unit->getFaction() == u->getFaction() ? IGNORE_OWN : IGNORE_SEEN)))
 			{
 				if (unit->getFaction() == FACTION_PLAYER && u->getVisible())
 					return true; // player know all visible units
@@ -1067,7 +1095,7 @@ bool Pathfinding::isBlocked(const BattleUnit *unit, const Tile *tile, const int 
 			while (pos.z >= 0)
 			{
 				Tile *t = _save->getTile(pos);
-				BattleUnit *u = t->getUnit();
+				BattleUnit *u = (_probeIgnore & IGNORE_ALL_UNITS) ? 0 : t->getUnit();
 
 				if (u != 0 && u != unit)
 				{

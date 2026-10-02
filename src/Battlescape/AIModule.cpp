@@ -1201,6 +1201,7 @@ void AIModule::patrolReuseProbe()
 	Pathfinding *pf = _save->getPathfinding();
 	pf->calculate(_unit, node, BAM_NORMAL);
 	const std::vector<int> path = pf->copyPath();
+	const int expanded = pf->getExpanded();
 	pf->abortPath();
 
 	const BattleUnit *occ = unitAt(node), *route = 0;
@@ -1259,6 +1260,35 @@ void AIModule::patrolReuseProbe()
 	{
 		s << "-";
 	}
+	// PATROL_NO_PATH_CAUSE (bench, passive): the free node out of reach - the same search with the unit's own side, the units
+	// it knows of, both, or every unit not blocking. Unknown units never block isBlocked's floor rule (they are found on the
+	// walk), only the big-unit and falling rules, which stop at any unit: what only the last search reaches is that.
+	_prCause.clear();
+	if (!occ && path.empty() && AiProbe::patrolNoPathProbe())
+	{
+		const auto fin = pf->finalPositionFor(_unit, node, BAM_NORMAL);
+		int eOwn = 0, eSeen = 0, eBoth = 0, eAll = 0;
+		const int rOwn = pf->probeReach(_unit, node, Pathfinding::IGNORE_OWN, eOwn);
+		const int rSeen = pf->probeReach(_unit, node, Pathfinding::IGNORE_SEEN, eSeen);
+		const int rBoth = pf->probeReach(_unit, node, Pathfinding::IGNORE_OWN | Pathfinding::IGNORE_SEEN, eBoth);
+		const int rAll = pf->probeReach(_unit, node, Pathfinding::IGNORE_OWN | Pathfinding::IGNORE_SEEN | Pathfinding::IGNORE_ALL_UNITS, eAll);
+		// the real search again, so the node flags and the expanded count are those it left
+		pf->calculate(_unit, node, BAM_NORMAL);
+		pf->abortPath();
+		_prCause = rOwn > 0 && rSeen > 0 ? "own_or_seen" : rOwn > 0 ? "own" : rSeen > 0 ? "seen" : rBoth > 0 ? "own_and_seen"
+			: rAll > 0 ? "unit_rule" : rAll == 0 ? "geometry" : "geometry_refused";
+		s << " nopath " << _prCause << " fin ";
+		if (fin)
+		{
+			s << fin->x << "," << fin->y << "," << fin->z;
+		}
+		else
+		{
+			s << "none";
+		}
+		s << " r " << rOwn << "/" << rSeen << "/" << rBoth << "/" << rAll
+			<< " exp " << expanded << "/" << eOwn << "/" << eSeen << "/" << eBoth << "/" << eAll;
+	}
 	_prTrail = s.str();
 }
 
@@ -1273,6 +1303,11 @@ void AIModule::patrolReuseDecided(const BattleAction &action)
 	}
 	const bool chosen = action.type == BA_WALK && action.target == _prNode;
 	AiProbe::patrolReuseDecided(_unit, _prClass.c_str(), _prRoute.empty() ? 0 : _prRoute.c_str(), chosen, _prTrail);
+	if (!_prCause.empty())
+	{
+		AiProbe::patrolNoPathDecided(_unit, _prCause.c_str(), chosen);
+		_prCause.clear();
+	}
 	_prClass.clear();
 }
 

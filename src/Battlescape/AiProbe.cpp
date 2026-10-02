@@ -142,6 +142,8 @@ void knownOccupantV2Decided(const BattleUnit *, const char *, const BattleUnit *
 void knownOccupantV2Walked(const BattleUnit *, const char *, int, const Position &, bool) {}
 bool patrolReuseProbe() { return false; }
 void patrolReuseDecided(const BattleUnit *, const char *, const char *, bool, const std::string &) {}
+bool patrolNoPathProbe() { return false; }
+void patrolNoPathDecided(const BattleUnit *, const char *, bool) {}
 void blockedStepStop(SavedBattleGame *, BattleUnit *, int) {}
 void blockedStepDecide(SavedBattleGame *, BattleUnit *) {}
 void blockedStepPlan(SavedBattleGame *, BattleUnit *, const BattleAction &) {}
@@ -3451,6 +3453,22 @@ void patrolReuseDecided(const BattleUnit *unit, const char *cls, const char *rou
 		++tallies[b + "chosen." + cls];
 	}
 	addTrail(unit, trail.c_str());
+}
+
+bool patrolNoPathProbe()
+{
+	static const bool on = patrolReuseProbe() && envOn("OXCE_AI_PATROL_NOPATH_PROBE");
+	return on;
+}
+
+void patrolNoPathDecided(const BattleUnit *unit, const char *cause, bool chosen)
+{
+	const std::string b = std::string(unit->getFaction() == FACTION_PLAYER ? "p." : "h.") + "patrol.nopath.";
+	++tallies[b + cause];
+	if (chosen)
+	{
+		++tallies[b + "chosen." + cause];
+	}
 }
 
 namespace
