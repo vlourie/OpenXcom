@@ -246,6 +246,14 @@ unsigned long long knownRevision(SavedBattleGame *save, const BattleUnit *unit);
 /// OXCE_AI_FIREPOINT_BLOCKED_SALT (bench test of the invalidation, not a game fixture): the first check of a record in
 /// each unit-turn sees the revision changed. False in a release build.
 bool firepointBlockedSalt();
+/// FIREPOINT_TARGET_CELL_V1 (OXCE_AI_FIREPOINT_TARGET_CELL, bench only): findFirePoint does not take a tile where the unit
+/// would stand on its own aggro target as a firepoint - the target is not in the way of that path only because the unit
+/// did not spot it this turn (Pathfinding::isBlocked), and the walk stops on it. False in a release build.
+bool firepointTargetCell();
+/// FIREPOINT_TARGET_CELL_V1: one findFirePoint dropped the target's tile (cell) - found it another point or none; one step of
+/// the trail "firepoint.target_cell <cell> -> <point>|none" and the tallies firepoint.target_cell_rejected and
+/// firepoint.target_cell_rejected_then_found_other / _then_no_firepoint.
+void firepointTargetCellRejected(const BattleUnit *unit, const Position &cell, bool found, const Position &point);
 /// REPEATED_BLOCKED_STEP_V1 (OXCE_AI_BLOCKED_STEP, bench only): a walk stopped at a unit on the step in dir from where the
 /// unit stands (UnitWalkBState). Remembered for the rest of the unit-turn while knownRevision stays what it was then; another
 /// stop there at the same revision adds its step. No-op without the flag.
