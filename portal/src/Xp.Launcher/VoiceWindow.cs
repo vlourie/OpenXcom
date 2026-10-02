@@ -36,7 +36,7 @@ public sealed class VoiceWindow : Window
     bool _closing;
     bool _micMissingShown;
 
-    public VoiceWindow(VoiceOptions opt, string? logPath, bool minimized, int quitAfter)
+    public VoiceWindow(VoiceOptions opt, string url, string? logPath, bool minimized, int quitAfter)
     {
         Title = "X-Piratez - голос (проба)";
         Width = 760; Height = 560; MinWidth = 520; MinHeight = 380;
@@ -90,7 +90,7 @@ public sealed class VoiceWindow : Window
         timer.Start();
         Opened += (_, _) =>
         {
-            Add($"launcher {typeof(VoiceWindow).Assembly.GetName().Version}, pid {Environment.ProcessId}, {opt.Url}");
+            Add($"launcher {typeof(VoiceWindow).Assembly.GetName().Version}, pid {Environment.ProcessId}, {url}");
             try { _session.Start(); }
             catch (Exception e) { Add("voice did not start: " + e.Message); }
             _apm.IsVisible = _session.HasEchoCanceller;
@@ -129,7 +129,7 @@ public sealed class VoiceWindow : Window
             VoiceState.Connected => "в комнате" + (_session.Identity.Length > 0 ? " как " + _session.Identity : ""),
             VoiceState.Reconnecting => "связь прервалась, восстанавливаю…",
             VoiceState.Disconnected => "нет связи, пробую снова",
-            _ => "выключено",
+            _ => _session.DeniedReason is { } why ? $"вход закрыт ({why})" : "выключено",
         };
         _state.Foreground = Skin.B(_session.State == VoiceState.Connected && !deviceDown ? Skin.Accent : Skin.WarnText);
         _mic.Value = Math.Max(-60, _session.MicDb);
@@ -180,7 +180,8 @@ public sealed class VoiceWindow : Window
     public static int Run(string[] args, Func<AppBuilder> build)
     {
         if (args.Length < 3) return 2;
-        string token = args[2].StartsWith('@') ? File.ReadAllText(args[2][1..]).Trim() : args[2];
+        string url = args[1], tokenArg = args[2];
+        if (tokenArg.StartsWith('@') && !File.Exists(tokenArg[1..])) return 2;
         string? log = null, output = null, input = null;
         int quit = 0, queue = 0;
         for (int i = 3; i < args.Length; i++)
@@ -198,8 +199,10 @@ public sealed class VoiceWindow : Window
         var inDev = devices.FirstOrDefault(d => d.IsCapture && d.Id == input);
         var opt = new VoiceOptions
         {
-            Url = args[1],
-            Token = token,
+            // the prototype's pass: the token from the command line; @file is read again on every
+            // entry, so a fresh token written there is picked up after a break
+            Pass = _ => Task.FromResult(new VoicePass(url,
+                tokenArg.StartsWith('@') ? File.ReadAllText(tokenArg[1..]).Trim() : tokenArg)),
             Microphone = !args.Contains("--listen"),
             OutputGain = args.Contains("--silent") ? 0f : 1f,
             SendQueueMs = queue,
@@ -209,7 +212,7 @@ public sealed class VoiceWindow : Window
             InputId = inDev?.Id,
             InputName = inDev?.Name ?? (string.IsNullOrWhiteSpace(input) ? null : input),
         };
-        App.Voice = () => new VoiceWindow(opt, log, args.Contains("--minimized"), quit);
+        App.Voice = () => new VoiceWindow(opt, url, log, args.Contains("--minimized"), quit);
         try { return build().StartWithClassicDesktopLifetime([]); }
         finally { VoiceSession.ShutdownRuntime(); }
     }

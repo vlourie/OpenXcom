@@ -6,10 +6,32 @@ using LiveKit.Proto;
 
 namespace Xp.Voice;
 
+/// <summary>What the portal gives for one entry into a room: the media server's address and a LiveKit
+/// pass (a JWT that lives a minute, docs/portal/VOICE_CHAT.md §6).</summary>
+public sealed record VoicePass(string Url, string Token);
+
+/// <summary>Thrown by <see cref="VoiceOptions.Pass"/> when the portal refuses the entry: the session
+/// does not try again. <see cref="Reason"/> is the portal's word for it (the constants below, or any
+/// other the portal sends).</summary>
+public sealed class VoiceDeniedException(string reason, string? message = null)
+    : Exception(message ?? "voice access denied: " + reason)
+{
+    public const string NoAccess = "no_access";
+    public const string Banned = "banned";
+    public const string RoomClosed = "room_closed";
+    public const string AccountBanned = "account_banned";
+
+    public string Reason { get; } = reason;
+}
+
 public sealed class VoiceOptions
 {
-    public required string Url { get; init; }
-    public required string Token { get; init; }
+    /// <summary>Asked before EVERY full entry into the room - the first one and each one after a break -
+    /// so a ban or a taken right to speak holds at the next entry (VOICE_CHAT.md §3, §7). Throws
+    /// <see cref="VoiceDeniedException"/> when the portal refuses: the session stops for good. Any other
+    /// exception (network, timeout) is retried like a lost connection. Called on the session's room loop,
+    /// one call at a time; the token is cancelled when the session is disposed.</summary>
+    public required Func<CancellationToken, Task<VoicePass>> Pass { get; init; }
     /// <summary>false: the microphone is not opened at all (listen only).</summary>
     public bool Microphone { get; init; } = true;
     /// <summary>0 plays nothing - automatic tests must not sound on the speakers of the machine.</summary>
@@ -75,7 +97,8 @@ public sealed class VoiceSession : IAsyncDisposable
     volatile bool _apmOn = true;
     bool _micOpen;
     Room? _room;
-    string _token;
+    readonly CancellationTokenSource _cts = new();      // cancels a pass being asked for when the session goes
+    volatile string? _denied;
     ulong _apm;
     Thread? _pump;
     Task? _loopTask;
@@ -98,6 +121,12 @@ public sealed class VoiceSession : IAsyncDisposable
 
     public event Action<string>? Line;
     public VoiceState State { get; private set; } = VoiceState.Connecting;
+    /// <summary>The portal refused the entry (<see cref="VoiceDeniedException.Reason"/>): the session is
+    /// <see cref="VoiceState.Stopped"/> and does not try again; null otherwise.</summary>
+    public string? DeniedReason => _denied;
+    /// <summary>Raised once, on the room loop, when the portal refuses the entry. The sound device stays
+    /// open until the session is disposed - dispose it.</summary>
+    public event Action<string>? Denied;
     public string Identity { get; private set; } = "";
     public double MicDb => _micDb;
     /// <summary>The microphone was asked for and did not open: speakers only, nothing is published.</summary>
@@ -141,7 +170,6 @@ public sealed class VoiceSession : IAsyncDisposable
     public VoiceSession(VoiceOptions opt)
     {
         _opt = opt;
-        _token = opt.Token;
     }
 
     /// <summary>Releases the LiveKit runtime: once, at process exit, after every session is disposed.</summary>
@@ -184,6 +212,7 @@ public sealed class VoiceSession : IAsyncDisposable
     {
         if (_stopping) return;
         _stopping = true;
+        _cts.Cancel();
         _loop.Writer.TryWrite(Command.Stop);
         if (_loopTask is not null) await _loopTask.WaitAsync(TimeSpan.FromSeconds(8)).ConfigureAwait(false);
         _wake.Set();
@@ -193,6 +222,7 @@ public sealed class VoiceSession : IAsyncDisposable
         Ffi.Events -= OnFfiEvent;
         Ffi.Log -= Log;
         Pace.Release();
+        _cts.Dispose();
         State = VoiceState.Stopped;
         Log("voice stopped");
     }
@@ -527,7 +557,7 @@ public sealed class VoiceSession : IAsyncDisposable
                 switch (item)
                 {
                     case Command.Join:
-                        if (_room is null && !_stopping) await Join().ConfigureAwait(false);
+                        if (_room is null && !_stopping && _denied is null) await Join().ConfigureAwait(false);
                         break;
                     case Command.Mute:
                         if (_room is { Track: not 0 } r)
@@ -571,8 +601,34 @@ public sealed class VoiceSession : IAsyncDisposable
 
     async Task Join()
     {
+        if (_denied is not null || _stopping) return;
         State = _breakAt != 0 ? VoiceState.Reconnecting : VoiceState.Connecting;
+        // a new pass at every full entry: the portal checks the ban, the invitation and the right to speak
+        // each time it gives one. The pass LiveKit refreshes for its own resume is never reused here -
+        // it could outlive a ban (VOICE_CHAT.md §7)
         long started = Stopwatch.GetTimestamp();
+        VoicePass pass;
+        try
+        {
+            pass = await _opt.Pass(_cts.Token).WaitAsync(TimeSpan.FromSeconds(20), _cts.Token).ConfigureAwait(false);
+        }
+        catch (VoiceDeniedException d)
+        {
+            Deny(d.Reason);
+            return;
+        }
+        catch (OperationCanceledException) when (_stopping)
+        {
+            return;
+        }
+        catch (Exception ex)
+        {
+            Retry($"pass: {(ex is TimeoutException ? "no answer in 20 s" : ex.GetType().Name + ": " + ex.Message)}");
+            return;
+        }
+        if (_stopping) return;
+        Diag($"pass in {Stopwatch.GetElapsedTime(started).TotalMilliseconds:0} ms");
+        started = Stopwatch.GetTimestamp();
         ulong id = Ffi.NextAsyncId();
         FfiEvent e;
         try
@@ -581,8 +637,8 @@ public sealed class VoiceSession : IAsyncDisposable
             {
                 Connect = new ConnectRequest
                 {
-                    Url = _opt.Url,
-                    Token = _token,
+                    Url = pass.Url,
+                    Token = pass.Token,
                     RequestAsyncId = id,
                     Options = new RoomOptions { AutoSubscribe = true, AdaptiveStream = false, Dynacast = false, JoinRetries = 1, ConnectTimeoutMs = 5000 },
                 },
@@ -624,6 +680,16 @@ public sealed class VoiceSession : IAsyncDisposable
         // exact zeros and look, from their side, like a working microphone
         if (_opt.Microphone && _micOpen) await Publish(room).ConfigureAwait(false);
         else if (_opt.Microphone) Log("microphone not opened: nothing published, the others cannot hear this machine");
+    }
+
+    /// <summary>The portal refused the entry: no more tries, ever, in this session.</summary>
+    void Deny(string reason)
+    {
+        _denied = reason;
+        _breakAt = 0;
+        State = VoiceState.Stopped;
+        Log($"not joining: the portal refused the entry ({reason})");
+        try { Denied?.Invoke(reason); } catch { }
     }
 
     void Retry(string why)
@@ -758,7 +824,7 @@ public sealed class VoiceSession : IAsyncDisposable
                 State = VoiceState.Connected;
                 break;
             case RoomEvent.MessageOneofCase.TokenRefreshed:
-                _token = re.TokenRefreshed.Token;
+                // the SDK keeps it for its own resume; a full entry asks the portal (Join), never this
                 break;
             case RoomEvent.MessageOneofCase.Disconnected:
                 Log($"disconnected by the server: {re.Disconnected.Reason}");
