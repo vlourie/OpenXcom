@@ -36,6 +36,13 @@ public sealed class VoiceOptions
     /// <summary>Test only: during the first N seconds the microphone is not opened, as if it were
     /// unplugged, and is let in after - exercises the microphone coming back. 0 = no such pretence.</summary>
     public int NoMicUntilSec { get; init; }
+    /// <summary>Diagnostics of the "robot": WASAPI switches, one at a time against None (the control).</summary>
+    public AudioDevice.Switches Audio { get; init; }
+    /// <summary>Names --audio gave that are not switches - logged, not applied.</summary>
+    public string? AudioUnknown { get; init; }
+    /// <summary>Output / microphone chosen by a part of the name; null - the Windows default.</summary>
+    public string? Output { get; init; }
+    public string? Input { get; init; }
 }
 
 public enum VoiceState { Connecting, Connected, Reconnecting, Disconnected, Stopped }
@@ -176,9 +183,14 @@ public sealed class VoiceSession : IAsyncDisposable
         if (_opt.Tone && _opt.MicFile is { } mf) _file = ReadWav(mf);
         _startedAt = Stopwatch.GetTimestamp();
         _micRetryAt = _startedAt + 3 * Stopwatch.Frequency;  // a microphone missing at the start is looked for from 3 s on, not at once
+        AudioDevice.SetOptions(_opt.Audio, _opt.Output, _opt.Input);
+        Log($"audio: {AudioDevice.SwitchText(_opt.Audio)}{(string.IsNullOrEmpty(_opt.AudioUnknown) ? "" : $" (unknown, ignored: {_opt.AudioUnknown})")}, " +
+            $"period {AudioDevice.DevicePeriod * 1000 / AudioDevice.Rate} ms, output {_opt.Output ?? "default"}, microphone {_opt.Input ?? "default"}");
+        Log("devices: " + AudioDevice.Devices());
         var dev = AudioDevice.Open(MicNow, OnAudio, OnDeviceNote, out _micOpen);
         Log($"sound: {dev}; echo canceller {(apm ? "on" : "off")}" +
             $"{(_file is not null ? $", {Path.GetFileName(_opt.MicFile)} ({_file.Length / AudioDevice.Rate} s) instead of the microphone" : _opt.Tone ? ", test tone instead of the microphone" : "")}, output gain {_opt.OutputGain:0.##}");
+        LogDevice();
         _pump = new Thread(Pump) { IsBackground = true, Name = "voice pump", Priority = ThreadPriority.AboveNormal };
         _pump.Start();
         _loopTask = Task.Run(RoomLoop);
@@ -214,7 +226,7 @@ public sealed class VoiceSession : IAsyncDisposable
         }
         _lastCallback = now;
         _callbacks++;
-        if (output.Length != AudioDevice.Period) _oddCalls++;
+        if (output.Length != AudioDevice.DevicePeriod) _oddCalls++;
         try { Render(input, output); }
         finally
         {
@@ -296,8 +308,9 @@ public sealed class VoiceSession : IAsyncDisposable
         var frame = new short[Frame];
         long lastStats = Stopwatch.GetTimestamp(), started = lastStats;
         bool testStopped = false;
-        WavRecorder? recMic = null, recSent = null, recHeard = null, recOut = null;
+        WavRecorder? recMic = null, recSent = null, recHeard = null, recOut = null, recRaw = null;
         var loopBuf = new short[AudioDevice.Rate / 10];
+        byte[] rawBuf = [];
         if (_opt.RecordDir is { } dir)
         {
             try
@@ -309,7 +322,17 @@ public sealed class VoiceSession : IAsyncDisposable
                 // what Windows really rendered on the output - every app's sound, after the system mix
                 if (AudioDevice.StartLoopback() is { } lerr) Log("recording out.wav off: " + lerr);
                 else recOut = new WavRecorder(Path.Combine(dir, "out.wav"), RecordSeconds);
-                Log($"recording the first {RecordSeconds / 60} min to {Path.GetFullPath(dir)}: mic.wav, sent.wav, heard.wav{(recOut is null ? "" : ", out.wav")}");
+                // the same tap in the engine's own format, nothing converted: is a defect in out.wav in
+                // the mix itself or in the conversion to 16-bit mono
+                if (AudioDevice.StartRawLoopback(out _rawFormat) is { } rerr) Log("recording loop_raw.wav off: " + rerr);
+                else
+                {
+                    recRaw = new WavRecorder(Path.Combine(dir, "loop_raw.wav"), RawSeconds, _rawFormat.Tag, _rawFormat.Channels, _rawFormat.Rate, _rawFormat.Bits);
+                    rawBuf = new byte[_rawFormat.Channels * (_rawFormat.Bits / 8) * 4096];
+                }
+                Log($"recording the first {RecordSeconds / 60} min to {Path.GetFullPath(dir)}: mic.wav, sent.wav, heard.wav{(recOut is null ? "" : ", out.wav")}" +
+                    (recRaw is null ? "" : $", loop_raw.wav (first {RawSeconds} s, {_rawFormat} as the engine gives it)"));
+                LogDevice();
             }
             catch (Exception e) { Log("recording off: " + e.Message); }
         }
@@ -328,9 +351,9 @@ public sealed class VoiceSession : IAsyncDisposable
                     Log("test: stopping the sound device");
                     AudioDevice.Stop();
                 }
-                else if (MicrophoneMissing && Stopwatch.GetTimestamp() >= _micRetryAt) RetryMicrophone(ref recOut);
+                else if (MicrophoneMissing && Stopwatch.GetTimestamp() >= _micRetryAt) RetryMicrophone(ref recOut, ref recRaw);
             }
-            else if (Stopwatch.GetTimestamp() >= _deviceRetryAt) ReopenDevice(ref recOut);
+            else if (Stopwatch.GetTimestamp() >= _deviceRetryAt) ReopenDevice(ref recOut, ref recRaw);
             while (_played.Count >= Frame)
             {
                 _played.Read(frame);
@@ -343,6 +366,8 @@ public sealed class VoiceSession : IAsyncDisposable
             }
             if (recOut is not null)
                 for (int got; (got = AudioDevice.ReadLoopback(loopBuf)) > 0;) recOut.Write(loopBuf.AsSpan(0, got));
+            if (recRaw is not null)
+                for (int got; (got = AudioDevice.ReadRawLoopback(rawBuf)) > 0;) recRaw.Write(rawBuf.AsSpan(0, got));
             while (_mic.Count >= Frame)
             {
                 _mic.Read(frame);
@@ -353,6 +378,7 @@ public sealed class VoiceSession : IAsyncDisposable
                 Send(frame);
             }
             while (_notes.TryDequeue(out var note)) Log(note);
+            LogMiniaudio();
             if (Stopwatch.GetElapsedTime(lastStats).TotalSeconds >= 5)
             {
                 lastStats = Stopwatch.GetTimestamp();
@@ -361,15 +387,52 @@ public sealed class VoiceSession : IAsyncDisposable
                 recSent?.Patch();
                 recHeard?.Patch();
                 recOut?.Patch();
+                recRaw?.Patch();
             }
         }
         recMic?.Dispose();
         recSent?.Dispose();
         recHeard?.Dispose();
         recOut?.Dispose();
+        recRaw?.Dispose();
     }
 
     const int RecordSeconds = 10 * 60;
+    /// <summary>The raw loopback is the engine's mix as is - up to 8 channels of 32-bit float at 96 kHz
+    /// on some cards, 3 MB a second - so only the first two minutes: one test phrase per run.</summary>
+    const int RawSeconds = 2 * 60;
+    AudioDevice.RawFormat _rawFormat;
+
+    /// <summary>What WASAPI really gave each stream, after every open: one log line per stream.</summary>
+    void LogDevice()
+    {
+        LogMiniaudio();
+        foreach (var line in AudioDevice.Detail().Split('\n', StringSplitOptions.RemoveEmptyEntries)) Log("device " + line);
+    }
+
+    /// <summary>miniaudio's own lines ("[WASAPI] Using IAudioClient3", the formats it chose) - any thread.</summary>
+    void LogMiniaudio()
+    {
+        var text = AudioDevice.TakeLog();
+        if (text.Length == 0) return;
+        foreach (var line in text.Split('\n', StringSplitOptions.RemoveEmptyEntries))
+            if (!line.StartsWith("debug: Loading ", StringComparison.Ordinal)) Log("miniaudio " + line);   // 21 lines of DLLs and symbols, nothing about sound
+    }
+
+    /// <summary>After a reopening: the loopbacks went with the old device (xpa_close ends them) - start
+    /// them again. loop_raw.wav stops for good if the engine's format is no longer the one in its header.</summary>
+    void ResumeLoopbacks(ref WavRecorder? recOut, ref WavRecorder? recRaw)
+    {
+        if (recOut is not null && AudioDevice.StartLoopback() is { } lerr) Log("recording out.wav did not resume: " + lerr);
+        if (recRaw is null) return;
+        if (AudioDevice.StartRawLoopback(out var f) is { } rerr) Log("recording loop_raw.wav did not resume: " + rerr);
+        else if (f != _rawFormat)
+        {
+            Log($"recording loop_raw.wav stopped: the engine now gives {f}, the file is {_rawFormat}");
+            recRaw.Dispose();
+            recRaw = null;
+        }
+    }
 
     // ---------------------------------------------------------------- the sound device going away
 
@@ -401,7 +464,7 @@ public sealed class VoiceSession : IAsyncDisposable
     /// (xpaudio keeps one device per process, so there is never a second one) and open anew. After a
     /// success the others' rings are cleared - what piled up while nothing was played is half a second
     /// of stale sound - and the room loop puts the track in step with the microphone that came back.</summary>
-    void ReopenDevice(ref WavRecorder? recOut)
+    void ReopenDevice(ref WavRecorder? recOut, ref WavRecorder? recRaw)
     {
         _deviceRetries++;
         _deviceRetryAt = Stopwatch.GetTimestamp() + 2 * Stopwatch.Frequency;
@@ -423,9 +486,10 @@ public sealed class VoiceSession : IAsyncDisposable
         _lastCallback = Stopwatch.GetTimestamp();             // the watchdog counts from here, not from before the stop
         Interlocked.Exchange(ref _deviceStoppedAt, 0);
         foreach (var p in _mix) p.Reset();
-        if (recOut is not null && AudioDevice.StartLoopback() is { } lerr) Log("recording out.wav did not resume: " + lerr);
+        ResumeLoopbacks(ref recOut, ref recRaw);
         Log($"sound device back after {down} s (try {_deviceRetries}): {dev}; playback buffers cleared" +
             (micBefore == _micOpen ? "" : _micOpen ? "; the microphone is back" : "; the microphone did not come back: nothing is sent, looking for it"));
+        LogDevice();
         _loop.Writer.TryWrite(Command.Device);
     }
 
@@ -434,7 +498,7 @@ public sealed class VoiceSession : IAsyncDisposable
     /// opens the device anew as duplex - a reopening is a short gap in what is played, so one that
     /// cannot find a microphone is not tried. An attempt that still leaves the microphone missing
     /// (listed but not openable: busy, denied in the privacy settings) backs off, 10 s up to 60 s.</summary>
-    void RetryMicrophone(ref WavRecorder? recOut)
+    void RetryMicrophone(ref WavRecorder? recOut, ref WavRecorder? recRaw)
     {
         long now = Stopwatch.GetTimestamp();
         _micRetryAt = now + 3 * Stopwatch.Frequency;
@@ -452,7 +516,7 @@ public sealed class VoiceSession : IAsyncDisposable
         catch (Exception e) { DeviceLost("reopening for the microphone failed: " + e.Message); return; }
         _lastCallback = Stopwatch.GetTimestamp();
         foreach (var p in _mix) p.Reset();
-        if (recOut is not null && AudioDevice.StartLoopback() is { } lerr) Log("recording out.wav did not resume: " + lerr);
+        ResumeLoopbacks(ref recOut, ref recRaw);
         if (_micOpen)
         {
             _micRetryMs = 10000;
@@ -460,6 +524,7 @@ public sealed class VoiceSession : IAsyncDisposable
             _loop.Writer.TryWrite(Command.Device);
         }
         else Log($"microphone still missing ({listed} capture device(s) listed): {dev}; next try in {wait / 1000} s");
+        LogDevice();
     }
 
     unsafe void Apm(short[] frame, bool reverse)
@@ -512,7 +577,7 @@ public sealed class VoiceSession : IAsyncDisposable
         var peers = string.Join("; ", _mix.Select(p => p.StatsLine()));
         Log($"stats: {State} sent {Interlocked.Exchange(ref _sent, 0)} frames/5s, dropped {Interlocked.Exchange(ref _sendDropped, 0)}, " +
             $"out of order {Interlocked.Exchange(ref _outOfOrder, 0)}, " +
-            $"mic {_micDb:0} dB{(_muted ? " (muted)" : "")}{(MicrophoneMissing ? " (not opened)" : "")}{(_apm != 0 && !_apmOn ? " (echo canceller off)" : "")}, device {Interlocked.Exchange(ref _callbacks, 0)} calls{(_oddCalls > 0 ? $" ({Interlocked.Exchange(ref _oddCalls, 0)} not 10 ms)" : "")}{(DeviceDown ? $" (stopped {DeviceDownSeconds} s ago, {_deviceRetries} tries)" : "")}, max gap {_maxGapMs:0} ms, max busy {_maxBusyMs:0.0} ms | {(peers.Length > 0 ? peers : "nobody")}");
+            $"mic {_micDb:0} dB{(_muted ? " (muted)" : "")}{(MicrophoneMissing ? " (not opened)" : "")}{(_apm != 0 && !_apmOn ? " (echo canceller off)" : "")}, device {Interlocked.Exchange(ref _callbacks, 0)} calls{(_oddCalls > 0 ? $" ({Interlocked.Exchange(ref _oddCalls, 0)} not {AudioDevice.DevicePeriod * 1000 / AudioDevice.Rate} ms)" : "")}{(DeviceDown ? $" (stopped {DeviceDownSeconds} s ago, {_deviceRetries} tries)" : "")}, max gap {_maxGapMs:0} ms, max busy {_maxBusyMs:0.0} ms | {(peers.Length > 0 ? peers : "nobody")}");
         _maxGapMs = 0;
         _maxBusyMs = 0;
     }
