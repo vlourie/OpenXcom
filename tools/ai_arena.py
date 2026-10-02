@@ -19,7 +19,7 @@
 
 Таблица боёв - <label>.tsv рядом с логами прогона (%TEMP%/oxce_ai_probe/arena), сводка - в stdout и --out.
 """
-import argparse, collections, gzip, os, queue, re, statistics, sys, time
+import argparse, collections, gzip, json, os, queue, re, statistics, sys, time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
@@ -27,6 +27,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 import ai_probe
 
 ENC_W = "utf-8-sig"
+ENC_R = "utf-8-sig"
 # поведение из [AIDECIDE]: p - сторона игрока (бот), h - враг
 MOVES = ("decisions", "run", "kneel", "throw", "psi", "melee")
 COLS = ("seed", "want", "how", "mission", "kind", "month", "units", "terrain", "race", "craft", "shade", "turn", "player", "pdead", "pout",
@@ -65,6 +66,84 @@ def seeds_of(spec):
     return out
 
 
+MECH_EXT = (".rul", ".map", ".rmp", ".mcd")  # рулсеты, карты, маршруты, свойства тайлов: картинки, звук и строки не входят
+PATH_KEYS = ("OXCE_AI_EXE", "OXCE_AI_GAME", "OXCE_AI_WORK", "OXCE_AI_BUILD")  # где лежит, а не что играет: exe - своим отпечатком
+
+
+def sha_file(path, h=None):
+    import hashlib
+    h = h or hashlib.sha256()
+    with open(path, "rb") as f:
+        for b in iter(lambda: f.read(1 << 20), b""):
+            h.update(b)
+    return h
+
+
+def data_fingerprint(a):
+    """Данные механики, которые читает бой: файлы MECH_EXT установки (ai_probe.GAME) по пути без регистра, сейв кампании,
+    файл миссий. Хэш по файлам кэшируется в arena/.data_hash.json по (размер, время изменения)."""
+    import hashlib
+    cache_path = ai_probe.WORK / "arena" / ".data_hash.json"
+    try:
+        cache = json.loads(cache_path.read_text(encoding=ENC_R))
+    except (OSError, ValueError):
+        cache = {}
+    files = []
+    for root, dirs, names in os.walk(ai_probe.GAME):
+        dirs[:] = sorted(d for d in dirs if d.lower() != "language")
+        files += [Path(root) / n for n in names if n.lower().endswith(MECH_EXT)]
+    if not a.recruits:
+        files.append(ai_probe.campaign_path(a.campaign))
+    if a.missions.startswith("@"):
+        files.append(Path(a.missions[1:]).resolve())
+    total, fresh = hashlib.sha256(), {}
+    for p in sorted(files, key=lambda p: str(p).lower()):
+        try:
+            st = p.stat()
+        except OSError:
+            total.update(f"{p}|missing\n".encode())
+            continue
+        key = f"{p}|{st.st_size}|{st.st_mtime_ns}"
+        fresh[key] = cache.get(key) or sha_file(p).hexdigest()
+        rel = os.path.relpath(p, ai_probe.GAME) if str(p).lower().startswith(str(ai_probe.GAME).lower()) else p.name
+        total.update(f"{rel.lower()}|{fresh[key]}\n".encode())
+    try:
+        cache_path.write_text(json.dumps(fresh), encoding=ENC_W)
+    except OSError:
+        pass
+    return total.hexdigest(), len(files)
+
+
+def effective_flags():
+    """Окружение боя OXCE_AI_* после --env и значений по умолчанию ai_probe.bench_defaults, без путей, каноническим текстом."""
+    env = ai_probe.bench_defaults({k: v for k, v in os.environ.items() if k.startswith("OXCE_AI_") and k not in PATH_KEYS})
+    return ";".join(f"{k}={env[k]}" for k in sorted(env))
+
+
+def fingerprints(a):
+    """Четыре отпечатка серии (контракт конфигурации 02.10): exe, ai_probe.py, данные механики, флаги. Пары A/B и
+    продолжение серии сравнивают их: разные - INVALID_CONFIG."""
+    import hashlib
+    try:
+        exe = sha_file(ai_probe.EXE).hexdigest()
+    except OSError:
+        exe = "missing"
+    data, n = data_fingerprint(a)
+    flags = effective_flags()
+    return {"exe": exe, "ai_probe": sha_file(ai_probe.__file__).hexdigest(), "data": data,
+            "flags": hashlib.sha256(flags.encode()).hexdigest()}, flags, n
+
+
+def read_fingerprint(prov):
+    """Отпечатки последнего старта из arena/<label>.prov.txt, или None (старые серии их не писали)."""
+    try:
+        lines = prov.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return None
+    last = next((ln for ln in reversed(lines) if ln.startswith("fingerprint: ")), None)
+    return dict(kv.split("=", 1) for kv in last[len("fingerprint: "):].split()) if last else None
+
+
 def provenance(a):
     """Происхождение серии - перед КАЖДЫМ стартом (и при --resume): хэш exe, сборка, коммит, окружение боя.
     Пишется в stdout (журнал воркера logs/<label>.out) и дописывается в arena/<label>.prov.txt рядом с таблицей.
@@ -97,11 +176,20 @@ def provenance(a):
              "effective_env: " + ", ".join(f"{k}={eff.get(k, '<unset>')}" for k in keys),
              "all_oxce_ai_env: " + " ".join(f"{k}={eff[k]}" for k in sorted(eff)),
              "args: " + " ".join(sys.argv[1:])]
+    fp, flags, n = fingerprints(a)
+    lines += [f"effective_flags={flags}", f"data_files={n}", "fingerprint: " + " ".join(f"{k}={v}" for k, v in fp.items())]
     print("\n".join(lines), flush=True)
     prov = ai_probe.WORK / "arena" / f"{a.label}.prov.txt"
     prov.parent.mkdir(parents=True, exist_ok=True)
+    before = read_fingerprint(prov)
     with open(prov, "a", encoding="utf-8") as f:
         f.write("\n".join(lines) + "\n")
+    # продолжение серии с другой конфигурацией смешало бы две серии в одной таблице
+    table = ai_probe.WORK / "arena" / f"{a.label}.tsv"
+    if a.resume and before and table.exists() and before != fp:
+        diff = " ".join(k for k in fp if before.get(k) != fp[k])
+        print(f"INVALID_CONFIG: серия {a.label} продолжается с другими отпечатками: {diff}", flush=True)
+        sys.exit(3)
 
 
 SLOTS = queue.Queue()
@@ -131,7 +219,7 @@ def one(seed, turns, diff, timeout, campaign, mission=None, tactics=False, caref
            "_path": [l for l in r.lines if l.startswith("[AIPATROL]")],
            # итоги боя со счётчиками приборов стенда (свет, отход, FOV на шаге) - по ним читается шлюз серии; в сверку
            # series_eq.py не входят (в них время)
-           "_result": [l for l in r.lines if l.startswith(("[AIRESULT]", "[AILIGHT]", "[AIESCRF]", "[AIWALKFOV]", "[AIWALKFOVSKIP]"))]}
+           "_result": [l for l in r.lines if l.startswith(("[AIRESULT]", "[AILIGHT]", "[AIESCRF]", "[AIWALKFOV]", "[AIWALKFOVSKIP]", "[AIAMBMEMO]"))]}
     row.update(moves)
     battle = r.tagged("[AIPROBE] battle")
     if battle:
@@ -342,6 +430,8 @@ def main():
     ap.add_argument("--out", default="")
     ap.add_argument("--env", action="append", default=[], metavar="K=V",
                     help="переменная окружения боя OXCE_AI_*, повторяемый: --env OXCE_AI_EVAL=1 --env OXCE_AI_EVAL_RISK=0.12")
+    ap.add_argument("--strict-flags", action="store_true",
+                    help="каждый флаг стенда (ai_probe.BENCH_FLAGS) обязан быть задан через --env, иначе INVALID_CONFIG")
     a = ap.parse_args()
     global LABEL
     LABEL = a.label
@@ -350,6 +440,12 @@ def main():
         if not k.startswith("OXCE_AI_"):
             raise SystemExit(f"--env {kv}: только OXCE_AI_*")
         os.environ[k] = v  # ai_probe.run копирует окружение в процесс боя
+    if a.strict_flags:
+        given = {kv.partition("=")[0] for kv in a.env}
+        missing = [k for k in ai_probe.BENCH_FLAGS if k not in given]
+        if missing:
+            print("INVALID_CONFIG: не заданы явно флаги стенда: " + " ".join(missing), flush=True)
+            sys.exit(2)
 
     provenance(a)
     seeds = seeds_of(a.seeds)

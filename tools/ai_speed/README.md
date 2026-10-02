@@ -270,6 +270,27 @@ py -3.13 tools/ai_speed/cmp_runs.py amb_st0u amb_st1u am_st2
 py -3.13 tools/ai_speed/ambush_prof.py amb_st0u amb_st1u am_st2
 ```
 
+**V2 (build-ai53, AMBUSH_NEGATIVE_MEMO_V2, 02.10).** V1 сверяла с закрытыми клетками сам узел `pos`,
+а `calculate` ищет путь к `tryCalculateFinalPosition(pos)`: на лестнице z+1, у не летающего над пустотой —
+опускание на землю. Узел дрона на z=3 вне закрытых, а путь к земле под ним есть — ответ «нет пути» там,
+где путь есть (GUNS 2352, режим 2: 173 проверено, 9 расхождений, R-169). V2 сверяет конечную клетку
+поиска: `Pathfinding::finalPositionFor(врага, pos, BAM_NORMAL)` — та же `tryCalculateFinalPosition`, с
+юнитом запроса на месте `_unit` (её `isBlocked` смотрит на член); отказ до поиска — тоже «нет пути», как у
+`calculate`. Приёмка: fair22 — прежняя сборка против новой при памяти выкл, режим 2 и режим 1 против выкл —
+IDENTICAL 22/22 (`g52m0`/`g53m0`/`g53m2`/`g53m1`), режим 2 — 124 проверено, 0 расхождений; четыре карты
+(GUNS — летают, станция, тяжёлый крейсер и SOTL — двери и этажи), зёрна 2351–2360, режим 2: V2 (`v53m2`)
+928 проверено, 0 расхождений; контрольный опыт V1 (`v52m2`, build-ai52) — 953, 25 расхождений (GUNS 9,
+SOTL 16). До решения второго мнения по этим цифрам `ai_probe.py` ставит `OXCE_AI_AMBUSH_MEMO=0`.
+
+**Контракт конфигурации серии (02.10).** Флаги стенда по умолчанию — одна функция `ai_probe.bench_defaults`
+(`BENCH_FLAGS` — их имена). `ai_arena.py --strict-flags`: каждый из `BENCH_FLAGS` обязан прийти через
+`--env`, иначе `INVALID_CONFIG` и код 2 до первого боя — станции с разной версией `ai_probe.py` не
+расходятся молча (R-169). В `arena/<метка>.prov.txt` — `effective_flags=` (все `OXCE_AI_*` после
+умолчаний, по алфавиту, без путей) и `fingerprint: exe= ai_probe= data= flags=` (sha256 exe, файла
+`ai_probe.py`, данных механики — `.rul/.map/.rmp/.mcd` игры без `Language`, сейв кампании и файл
+`@missions`, кэш `arena/.data_hash.json` — и строки флагов). `--resume` с другим отпечатком —
+`INVALID_CONFIG`, код 3. Проверка — `tools/test_ai_arena_contract.py`.
+
 База для сравнения — прогон **той же сборки** с `OXCE_AI_AMBUSH_MEMO=0`: прогон прежней сборки
 расходится по `rec`/`cand`/`path` из-за своей записи (R-087; строка `[AIREUSE]` в логе выдаёт сборку).
 С build-ai43 `run_one.py` пишет в json отпечаток exe (`exe_sha256`, размер, время), а `cmp_runs.py`

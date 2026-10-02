@@ -87,6 +87,8 @@ private:
 	bool bannedFirst(int dir) const { return std::find(_bannedFirst.begin(), _bannedFirst.end(), dir) != _bannedFirst.end(); }
 
   public:
+	/// Where calculate(unit, endPosition, bam) would search to, or none if it refuses before searching (AMBUSH_NEGATIVE_MEMO_V2).
+	std::optional<Position> finalPositionFor(BattleUnit *unit, Position endPosition, BattleActionMove bam);
 	/// Determines whether the unit is going up a stairs.
 	bool isOnStairs(Position startPosition, Position endPosition) const;
 	/// Determines whether or not movement between start tile and end tile is possible in the direction.
