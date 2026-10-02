@@ -112,7 +112,7 @@ stable); инструкция для станции — `.editq/release_last.txt
 |---|---|
 | дамп кадра | Ctrl+F8 в бою или на геоскейпе (опция `keyBattleHdTestDump`; просто F8 — отчёт игрока) → `hdtestNNN_map.png`, `_frame.png`, `.json` |
 | сравнение | `python tools\hdtest_compare.py` — описание в `tools\hdtest_README.md` |
-| режимы HD | F9 или опция `oxceHdMode`: 0 nearest, 1 паки, 2 паки + xBRZ |
+| режимы HD | F11 в бою или опция `oxceHdMode`: 0 nearest, 1 паки, 2 паки + xBRZ |
 | масштаб | `oxceHdScale` 1–4; режим 0 при любом `k` обязан быть IDENTICAL |
 
 В поле `canvas` внутри `.json` записано, какая сборка снимала дамп, — при сравнении смотреть его.
