@@ -51,7 +51,7 @@ private:
 	Uint8 _colorGroup, _greyedOutColor;
 	/// Is the adult art tree shipped at all? Without it the art version is only classic or HD.
 	bool _adultShipped;
-	/// Is the hd mod active? Without it the settings change nothing.
+	/// Is there HD art for this game in the active mods (Mod::hasHdArt)? Without it the settings change nothing.
 	bool _hdActive;
 
 	void addRow(int group, int index, const std::string &name, const std::string &value);

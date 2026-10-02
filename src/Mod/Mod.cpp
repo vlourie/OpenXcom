@@ -1152,6 +1152,39 @@ SurfaceSet *Mod::getHdSurfaceSet(SurfaceSet *set)
 }
 
 /**
+ * HD render: is there HD art for this game in the active mods - a pack for
+ * one of its sprite sets (hd/<set>/) or terrains (hd/TERRAIN/<name>.PCK/)?
+ * A mod of fonts only (hd/UI) has none. The file map is asked, not the
+ * registry of loaded frames, which lazy loading leaves empty until a battle.
+ * @return True if a pack of this game's sets is found.
+ */
+bool Mod::hasHdArt() const
+{
+	for (const auto &set : _sets)
+	{
+		if (!HdSprites::artFolder(set.first).empty())
+		{
+			return true;
+		}
+	}
+	for (const auto &set : _extraSprites)
+	{
+		if (!HdSprites::artFolder(set.first).empty())
+		{
+			return true;
+		}
+	}
+	for (const auto &terrain : _mapDataSets)
+	{
+		if (!HdSprites::artFolder("TERRAIN/" + terrain.first + ".PCK").empty())
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+/**
  * HD render: returns a single picture scaled k times for drawing on the
  * battlescape (the indicators over a body on the floor, the arrow over the
  * selected unit). The copy is upscaled nearest-neighbour on first use and

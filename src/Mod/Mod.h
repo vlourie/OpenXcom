@@ -517,6 +517,9 @@ public:
 	SurfaceSet *getHdSurfaceSet(const std::string &name, bool error = true);
 	/// HD render: gets the k-times-scaled copy of a set (the set itself when k = 1 or null).
 	SurfaceSet *getHdSurfaceSet(SurfaceSet *set);
+	/// HD render: does an active mod ship an HD pack (hd/<set>/) for a sprite set of this game? Asks the
+	/// file map only, so it holds with lazy loading too; fonts alone (hd/UI) do not count.
+	bool hasHdArt() const;
 	/// HD render: the reticle styles oxceHdReticle picks from 2 on (folders hd/CURSOR.PCK/reticle_<style>/).
 	static const std::vector<std::string> HD_RETICLES;
 	/// HD render: registers frames 6..10 of the battle cursor as oxceHdReticle says (call again after it changes).

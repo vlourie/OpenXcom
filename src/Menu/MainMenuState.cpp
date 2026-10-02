@@ -30,6 +30,7 @@
 #include "../version.h"
 #include "../Engine/Game.h"
 #include "../Mod/Mod.h"
+#include "../Engine/Language.h"
 #include "../Engine/LocalizedText.h"
 #include "../Engine/Screen.h"
 #include "../Interface/TextButton.h"
@@ -80,16 +81,8 @@ MainMenuState::MainMenuState(bool updateCheck)
 
 	// Create objects
 	_window = new Window(this, 256, 160, 32, 20, POPUP_BOTH);
-	// "My reports" needs the strings of the hd mod (rake R-036): without it the menu stays as it was
-	bool reports = false;
-	for (const auto& mod : Options::mods)
-	{
-		if (mod.first == "hd")
-		{
-			reports = mod.second;
-			break;
-		}
-	}
+	// "My reports" needs its strings (rake R-036; bin/common/Language/OXCE): without them the menu stays as it was
+	const bool reports = _game->getLanguage()->has("STR_MY_REPORTS") && _game->getLanguage()->has("STR_LAUNCHER");
 	const int row1 = reports ? 82 : 90, row2 = reports ? 106 : 118, row3 = reports ? 130 : 146;
 	_btnNewGame = new TextButton(92, 20, 64, row1);
 	_btnNewBattle = new TextButton(92, 20, 164, row1);
