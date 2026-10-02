@@ -375,7 +375,7 @@ public sealed class SetupPage : UserControl
                 var profiles = await _updater.ProfilesAsync(_manifest, CancellationToken.None);
                 _profile = Setup.Master(_manifest, (IEnumerable<string>?)state.Components ?? Setup.Defaults(_manifest, null, _lang)) is { } master
                     ? profiles?.For(master) : null;
-                _picked = state.Components is { } mine ? Setup.Normalize(_manifest, mine) : Setup.Defaults(_manifest, _profile, _lang);
+                _picked = Setup.Initial(_manifest, state, _profile, _lang);
             }
             catch (Exception e) when (e is HttpRequestException or TrustException or ManifestException or IOException or FileNotFoundException or System.Text.Json.JsonException)
             {
@@ -503,13 +503,17 @@ public sealed class SetupPage : UserControl
                 _ufoFrom = null;
             }
 
-            var state = u.LoadState();
-            var before = new HashSet<string>(state.Components ?? []);
-            state.Components = [.. Setup.Normalize(_manifest!, _picked).Order(StringComparer.Ordinal)];
+            // removing installed components takes a yes; no - back to the list, files and saved choice as they were
+            var commit = await Setup.CommitAsync(u, _manifest!, _picked, ConfirmRemovalAsync);
+            if (commit is null)
+            {
+                Go(Step.Parts);
+                return;
+            }
+            var (state, before) = commit.Value;
             // what the player has just ticked is switched on in the game too, even in a mods list they set themselves
-            var ticked = _manifest!.Components.Where(c => c.Mod.Length > 0 && state.Components.Contains(c.Id) && !before.Contains(c.Id))
+            var ticked = _manifest!.Components.Where(c => c.Mod.Length > 0 && state.Components!.Contains(c.Id) && !before.Contains(c.Id))
                                               .Select(c => c.Mod).ToList();
-            state.Save(u.Paths);
             var progress = new Progress<Core.Progress>(ShowProgress);
             var plan = await Task.Run(() => u.Scan(state, _manifest!, full: false, progress, ct), ct);
             // an installed game the player edited: the wizard keeps their files, Settings can replace them
@@ -539,7 +543,7 @@ public sealed class SetupPage : UserControl
         catch (Exception e) when (e is OperationCanceledException or HttpRequestException or TrustException or ManifestException
                                       or UpdateBlockedException or IOException or UnauthorizedAccessException or InvalidOperationException)
         {
-            Fail(L.T("setup.failed", e.Message));
+            Fail(e is UpdateBlockedException && e.Message.StartsWith("the game is running") ? L.T("err.gameRunning") : L.T("setup.failed", e.Message));
             var retry = Skin.Btn(L.T("setup.retry"), "primary");
             retry.Click += (_, _) => Go(Step.Install);
             var back = Skin.Btn(L.T("setup.back"));
@@ -554,6 +558,13 @@ public sealed class SetupPage : UserControl
             _cts.Dispose();
             _cts = null;
         }
+    }
+
+    /// <summary>The names of the installed components the ticks remove, and a yes or no.</summary>
+    async Task<bool> ConfirmRemovalAsync(IReadOnlyList<ComponentInfo> removing)
+    {
+        var names = string.Join("\n", removing.Select(c => "• " + Setup.Title(c)));
+        return await new MessageDialog(L.T("setup.removeAsk", names), withNo: true).ShowDialog<bool>((Window)TopLevel.GetTopLevel(this)!);
     }
 
     void ShowProgress(Core.Progress p)

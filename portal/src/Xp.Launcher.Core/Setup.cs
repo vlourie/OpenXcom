@@ -73,6 +73,61 @@ public static class Setup
         return set;
     }
 
+    /// <summary>Components of the release that have a file this launcher installed and still records.</summary>
+    public static HashSet<string> Installed(ReleaseManifest m, LauncherState state)
+    {
+        var ids = m.Components.Select(c => c.Id).ToHashSet(StringComparer.Ordinal);
+        return m.Files.Where(f => ids.Contains(f.Component) && state.Installed.ContainsKey(f.Path))
+                      .Select(f => f.Component).ToHashSet(StringComparer.Ordinal);
+    }
+
+    /// <summary>
+    /// The wizard's first ticks: the player's saved choice; on an installed game that has none (installs
+    /// from before the wizard) what is installed - an unknown choice keeps the files (R-183); the
+    /// defaults only for a folder with nothing of ours.
+    /// </summary>
+    public static HashSet<string> Initial(ReleaseManifest m, LauncherState state, ModProfile? profile, string language)
+    {
+        if (state.Components is { } mine) return Normalize(m, mine);
+        var installed = Installed(m, state);
+        return installed.Count > 0 ? Normalize(m, installed) : Defaults(m, profile, language);
+    }
+
+    /// <summary>Installed components the ticks leave out: the install removes their files.</summary>
+    public static List<ComponentInfo> Removing(ReleaseManifest m, LauncherState state, IEnumerable<string> picked)
+    {
+        var keep = Normalize(m, picked);
+        var installed = Installed(m, state);
+        return m.Components.Where(c => installed.Contains(c.Id) && !keep.Contains(c.Id)).ToList();
+    }
+
+    /// <summary>
+    /// Saves the ticks as the player's choice. When they remove installed components, <paramref name="confirm"/>
+    /// gets the list first; no - nothing is saved and the files stay. Returns the saved state and the
+    /// choice it had before (the installed components when there was none), or null when cancelled.
+    /// A running game - before the question or after it - throws <see cref="UpdateBlockedException"/>, nothing saved.
+    /// </summary>
+    public static async Task<(LauncherState State, HashSet<string> Before)?> CommitAsync(Updater u, ReleaseManifest m,
+        IEnumerable<string> picked, Func<IReadOnlyList<ComponentInfo>, Task<bool>> confirm)
+    {
+        var state = u.LoadState();
+        var keep = Normalize(m, picked);
+        var removing = Removing(m, state, keep);
+        BlockUnderGame(u);
+        if (removing.Count > 0 && !await confirm(removing)) return null;
+        BlockUnderGame(u);   // the game may have been started while the question was open
+        var before = state.Components is { } mine ? new HashSet<string>(mine, StringComparer.Ordinal) : Installed(m, state);
+        state.Components = [.. keep.Order(StringComparer.Ordinal)];
+        state.Save(u.Paths);
+        return (state, before);
+    }
+
+    static void BlockUnderGame(Updater u)
+    {
+        if (u.IsGameRunning(u.Paths.GameDir))
+            throw new UpdateBlockedException("the game is running: close it before changing components");
+    }
+
     /// <summary>The list as the wizard shows it: ticks after <see cref="Normalize"/>, and why a line is grey.</summary>
     public static List<SetupRow> Rows(ReleaseManifest m, IEnumerable<string> picked)
     {

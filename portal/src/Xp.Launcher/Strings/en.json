@@ -174,6 +174,7 @@
  "setup.wrongEngine": "needs the {0} engine",
  "setup.always": "always installed",
  "setup.adult": "\"{0}\" is for adults only. Are you 18 or older?",
+ "setup.removeAsk": "These installed components are unticked, their files will be removed:\n\n{0}\n\nRemove them?",
  "setup.total": "Total: {0}",
  "setup.install": "Install",
  "setup.installing": "Installing",

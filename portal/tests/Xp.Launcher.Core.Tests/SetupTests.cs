@@ -267,4 +267,146 @@ public sealed class SetupTests : IDisposable
     {
         Assert.Null(ProfileWriter.ApplyForGame(new GamePaths(f.Game), null, null, 1080));
     }
+
+    // ------------------------------------------- R-183: the wizard on an installed game without a saved choice
+
+    /// <summary>
+    /// A game installed before the wizard: the whole release on disk, the 18+ art and the Czech names
+    /// included, and no saved choice (state.Components null) - as on Vitali's machine on 02.10.
+    /// </summary>
+    async Task<(ReleaseManifest M, ModProfile? Profile)> InstalledWithoutChoiceAsync()
+    {
+        Fixture.Write(f.Stage, "user/mods/hd/hd_18+/UI/a.png", "adult art");
+        StageRelease();
+        await f.UpdateAsync();
+        var m = await LatestAsync();
+        Assert.Null(f.Updater.LoadState().Components);
+        Assert.True(f.GameHas("user/mods/hd/hd_18+/UI/a.png"));
+        Assert.True(f.GameHas("user/mods/Piratez Czech Names/SoldierName/Czech.nam"));
+        return (m, (await f.Updater.ProfilesAsync(m, default))!.For("piratez"));
+    }
+
+    static string AdultId(ReleaseManifest m) => m.Components.Single(c => c.Adult).Id;
+
+    static Func<IReadOnlyList<ComponentInfo>, Task<bool>> Answer(bool yes, List<IReadOnlyList<ComponentInfo>> asked) =>
+        r => { asked.Add(r); return Task.FromResult(yes); };
+
+    [Fact]
+    public async Task On_an_installed_game_without_a_saved_choice_Next_removes_nothing()
+    {
+        var (m, pz) = await InstalledWithoutChoiceAsync();
+        var before = f.Snapshot();
+
+        var picked = Setup.Initial(m, f.Updater.LoadState(), pz, "ru");   // the ticks the list opens with
+        Assert.Contains(AdultId(m), picked);
+        Assert.Contains(Id(m, "piratezCzechNames"), picked);
+        var asked = new List<IReadOnlyList<ComponentInfo>>();
+        Assert.NotNull(await Setup.CommitAsync(f.Updater, m, picked, Answer(false, asked)));
+        Assert.Empty(asked);   // nothing to remove: no question
+
+        var plan = await f.UpdateAsync();
+        Assert.Empty(plan.Deletes);
+        Assert.Equal(before, f.Snapshot());
+    }
+
+    [Fact]
+    public async Task Control_the_old_first_ticks_remove_installed_components()
+    {
+        // what SetupPage did before R-183: no saved choice - the defaults, and Next saved them unasked
+        var (m, pz) = await InstalledWithoutChoiceAsync();
+        var state = f.Updater.LoadState();
+        var old = state.Components is { } mine ? Setup.Normalize(m, mine) : Setup.Defaults(m, pz, "ru");
+        Assert.Equal([AdultId(m), Id(m, "piratezCzechNames")], Setup.Removing(m, state, old).Select(c => c.Id).Order());
+        state.Components = [.. old];
+        state.Save(f.Updater.Paths);
+
+        var plan = await f.UpdateAsync();
+        Assert.Contains("user/mods/hd/hd_18+/UI/a.png", plan.Deletes);
+        Assert.False(f.GameHas("user/mods/hd/hd_18+/UI/a.png"));
+        Assert.False(f.GameHas("user/mods/Piratez Czech Names/SoldierName/Czech.nam"));
+    }
+
+    [Fact]
+    public async Task Unticking_an_installed_component_names_it_and_removes_it_on_yes()
+    {
+        var (m, pz) = await InstalledWithoutChoiceAsync();
+        var picked = Setup.Initial(m, f.Updater.LoadState(), pz, "ru");
+        picked.Remove(Id(m, "piratezCzechNames"));
+
+        var asked = new List<IReadOnlyList<ComponentInfo>>();
+        Assert.NotNull(await Setup.CommitAsync(f.Updater, m, picked, Answer(true, asked)));
+        Assert.Equal(["Piratez Czech Names"], asked.Single().Select(Setup.Title));
+
+        var plan = await f.UpdateAsync();
+        Assert.Equal(["user/mods/Piratez Czech Names/SoldierName/Czech.nam", "user/mods/Piratez Czech Names/metadata.yml"], plan.Deletes.Order(StringComparer.Ordinal));
+        Assert.False(f.GameHas("user/mods/Piratez Czech Names/SoldierName/Czech.nam"));
+        Assert.True(f.GameHas("user/mods/hd/hd_18+/UI/a.png"));
+    }
+
+    [Fact]
+    public async Task Cancel_keeps_the_components_and_the_saved_choice()
+    {
+        var (m, pz) = await InstalledWithoutChoiceAsync();
+        var before = f.Snapshot();
+        var picked = Setup.Initial(m, f.Updater.LoadState(), pz, "ru");
+        picked.Remove(AdultId(m));
+
+        // no saved choice yet: it stays unknown
+        var asked = new List<IReadOnlyList<ComponentInfo>>();
+        Assert.Null(await Setup.CommitAsync(f.Updater, m, picked, Answer(false, asked)));
+        Assert.Equal([AdultId(m)], asked.Single().Select(c => c.Id));
+        Assert.Null(f.Updater.LoadState().Components);
+        Assert.Empty((await f.UpdateAsync()).Deletes);
+        Assert.Equal(before, f.Snapshot());
+
+        // a saved choice: it stays as saved
+        var all = Setup.Initial(m, f.Updater.LoadState(), pz, "ru");
+        Assert.NotNull(await Setup.CommitAsync(f.Updater, m, all, Answer(true, asked)));
+        var saved = f.Updater.LoadState().Components;
+        Assert.Null(await Setup.CommitAsync(f.Updater, m, picked, Answer(false, asked)));
+        Assert.Equal(saved, f.Updater.LoadState().Components);
+        Assert.Empty((await f.UpdateAsync()).Deletes);
+        Assert.Equal(before, f.Snapshot());
+    }
+
+    [Fact]
+    public async Task The_wizard_opens_again_with_the_choice_made()
+    {
+        var (m, pz) = await InstalledWithoutChoiceAsync();
+        var picked = Setup.Initial(m, f.Updater.LoadState(), pz, "ru");
+        picked.Remove(Id(m, "piratezCzechNames"));
+        Assert.NotNull(await Setup.CommitAsync(f.Updater, m, picked, Answer(true, [])));
+        await f.UpdateAsync();
+
+        var again = Setup.Initial(m, f.Updater.LoadState(), pz, "ru");
+        Assert.Equal(Setup.Normalize(m, picked).Order(), again.Order());
+        Assert.DoesNotContain(Id(m, "piratezCzechNames"), again);
+        Assert.Contains(AdultId(m), again);   // not the defaults: 18+ stays as the player left it
+    }
+
+    [Fact]
+    public async Task A_game_started_during_the_question_blocks_saving_and_installing()
+    {
+        var (m, pz) = await InstalledWithoutChoiceAsync();
+        var before = f.Snapshot();
+        var stateFile = f.Updater.Paths.StateFile;
+        var stateBytes = File.ReadAllBytes(stateFile);
+        var picked = Setup.Initial(m, f.Updater.LoadState(), pz, "ru");
+        picked.Remove(Id(m, "piratezCzechNames"));
+
+        var running = false;
+        f.Updater.IsGameRunning = _ => running;
+        await Assert.ThrowsAsync<UpdateBlockedException>(() =>
+            Setup.CommitAsync(f.Updater, m, picked, _ => { running = true; return Task.FromResult(true); }));
+
+        Assert.Equal(stateBytes, File.ReadAllBytes(stateFile));   // the choice is not saved
+        Assert.Null(f.Updater.LoadState().Components);
+        await Assert.ThrowsAsync<UpdateBlockedException>(() => f.UpdateAsync());   // and nothing is installed
+        Assert.Equal(before, f.Snapshot());
+
+        // closed again: the same choice goes through
+        running = false;
+        Assert.NotNull(await Setup.CommitAsync(f.Updater, m, picked, Answer(true, [])));
+        Assert.Equal(Setup.Normalize(m, picked).Order(StringComparer.Ordinal), f.Updater.LoadState().Components!);
+    }
 }
