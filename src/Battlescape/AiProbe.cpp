@@ -134,6 +134,9 @@ unsigned long long knownRevision(SavedBattleGame *, const BattleUnit *) { return
 bool firepointBlockedSalt() { return false; }
 bool firepointTargetCell() { return false; }
 void firepointTargetCellRejected(const BattleUnit *, const Position &, bool, const Position &) {}
+bool knownOccupantPath() { return false; }
+void knownOccupantDecided(const BattleUnit *, const BattleUnit *, int, int, const BattleUnit *, const char *) {}
+void knownOccupantWalked(const BattleUnit *, const BattleUnit *, int, const Position &, bool) {}
 void blockedStepStop(SavedBattleGame *, BattleUnit *, int) {}
 void blockedStepDecide(SavedBattleGame *, BattleUnit *) {}
 void blockedStepPlan(SavedBattleGame *, BattleUnit *, const BattleAction &) {}
@@ -1200,6 +1203,11 @@ void beforeThink(SavedBattleGame *save, BattleUnit *unit)
 	{
 		return;
 	}
+	if (knownOccupantPath())
+	{
+		// KNOWN_OCCUPANT_PATH_V1: the decision's count of blocked tiles starts with its first think
+		save->getPathfinding()->takeKnownOccupantHits();
+	}
 	rngBefore = RNG::getSeed();
 	aiBefore = unit->getAIModule() ? unit->getAIModule()->probeHash() : 0;
 	pathOpen(save, unit);
@@ -2089,6 +2097,11 @@ void sideEnds(SavedBattleGame *save)
 	if (record())
 	{
 		flushExec(save);
+	}
+	if (knownOccupantPath())
+	{
+		// KNOWN_OCCUPANT_PATH_V1: the last enemy's target is no longer blocked for its paths outside its decisions
+		save->getPathfinding()->setKnownOccupant(0, 0);
 	}
 }
 
@@ -3319,6 +3332,51 @@ void firepointTargetCellRejected(const BattleUnit *unit, const Position &cell, b
 	s << "firepoint.target_cell " << cell.x << "," << cell.y << "," << cell.z << " -> ";
 	if (found) s << point.x << "," << point.y << "," << point.z;
 	else s << "none";
+	addTrail(unit, s.str().c_str());
+}
+
+bool knownOccupantPath()
+{
+	static const bool on = active() && envOn("OXCE_AI_KNOWN_OCCUPANT_PATH");
+	return on;
+}
+
+void knownOccupantDecided(const BattleUnit *unit, const BattleUnit *occupant, int age, int hits, const BattleUnit *aggro, const char *walk)
+{
+	if (unit->getFaction() != FACTION_HOSTILE)
+	{
+		return;
+	}
+	if (occupant)
+	{
+		++tallies["h.knownocc.target_set"];
+	}
+	else if (age > 0)
+	{
+		++tallies["h.knownocc.target_age_old"];
+	}
+	if (!occupant || hits == 0)
+	{
+		return;
+	}
+	++tallies["h.knownocc.blocked"];
+	++tallies[std::string("h.knownocc.blocked_") + walk];
+	++tallies[aggro == occupant ? "h.knownocc.target_is_aggro" : "h.knownocc.target_not_aggro"];
+	const Position p = occupant->getPosition();
+	std::ostringstream s;
+	s << "knownocc " << occupant->getId() << " " << p.x << "," << p.y << "," << p.z << " b" << hits;
+	addTrail(unit, s.str().c_str());
+}
+
+void knownOccupantWalked(const BattleUnit *unit, const BattleUnit *occupant, int hits, const Position &to, bool found)
+{
+	if (!occupant || hits == 0)
+	{
+		return;
+	}
+	++tallies[found ? "h.knownocc.path_replanned" : "h.knownocc.no_path"];
+	std::ostringstream s;
+	s << "knownocc.walk b" << hits << " " << to.x << "," << to.y << "," << to.z << " " << (found ? "found" : "none");
 	addTrail(unit, s.str().c_str());
 }
 

@@ -85,6 +85,10 @@ private:
 	/// REPEATED_BLOCKED_STEP_V1 (bench, AiProbe::blockedStepPlan): first steps calculate() must not take; empty but there
 	std::vector<int> _bannedFirst;
 	bool bannedFirst(int dir) const { return std::find(_bannedFirst.begin(), _bannedFirst.end(), dir) != _bannedFirst.end(); }
+	/// KNOWN_OCCUPANT_PATH_V1 (bench, AIModule::think): the unit whose paths take the occupant's tiles as blocked, and how
+	/// many times isBlocked did so since the hits were last taken
+	const BattleUnit *_knownOccupantFor = nullptr, *_knownOccupant = nullptr;
+	mutable int _knownOccupantHits = 0;
 
   public:
 	/// Where calculate(unit, endPosition, bam) would search to, or none if it refuses before searching (AMBUSH_NEGATIVE_MEMO_V2).
@@ -302,6 +306,13 @@ private:
 	std::vector<char> closedTiles() const;
 	/// REPEATED_BLOCKED_STEP_V1 (bench): the first steps the next calculate() calls must not take; empty clears.
 	void setBannedFirst(const std::vector<int> &dirs) { _bannedFirst = dirs; }
+	/// KNOWN_OCCUPANT_PATH_V1 (bench): the tiles of occupant are blocked for unit's paths (not for missiles) until the next
+	/// call; null clears. Other units' paths are not touched.
+	void setKnownOccupant(const BattleUnit *unit, const BattleUnit *occupant) { _knownOccupantFor = unit; _knownOccupant = occupant; }
+	/// KNOWN_OCCUPANT_PATH_V1: the occupant set for unit's paths, or null.
+	const BattleUnit *getKnownOccupant(const BattleUnit *unit) const { return unit && unit == _knownOccupantFor ? _knownOccupant : nullptr; }
+	/// KNOWN_OCCUPANT_PATH_V1: how many times isBlocked blocked the occupant's tile since the last take; starts the count again.
+	int takeKnownOccupantHits() { const int n = _knownOccupantHits; _knownOccupantHits = 0; return n; }
 	/// Gets the path preview setting.
 	bool isPathPreviewed() const;
 	/// Gets the modifier setting.
