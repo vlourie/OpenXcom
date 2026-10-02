@@ -161,7 +161,8 @@ public sealed class ReleaseRepo(string root, Action<string>? log = null)
     /// a game release that owned them would overwrite the running launcher.
     /// </summary>
     public static readonly string[] LauncherFiles =
-        ["XPiratezLauncher.exe", "xp-bootstrap.exe", "libHarfBuzzSharp.dll", "libSkiaSharp.dll", "libsodium.dll"];
+        ["XPiratezLauncher.exe", "xp-bootstrap.exe", "libHarfBuzzSharp.dll", "libSkiaSharp.dll", "libsodium.dll",
+         "livekit_ffi.dll", "xpaudio.dll"];
 
     /// <summary>A stage file that does not belong in this kind of release: launcher files in a game
     /// release, debug symbols anywhere at the top level; a launcher release takes its own files and

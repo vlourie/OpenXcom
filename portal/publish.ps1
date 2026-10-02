@@ -1,14 +1,13 @@
 ﻿# Сборка лаунчера и bootstrapper'а (NativeAOT) в одну папку.
 #   .\publish.ps1 -Out ..\dist\_launcher              - релиз, нужен prod-ключ в keys\release-keys.txt
 #   .\publish.ps1 -Out ..\dist\_launcher -DevKeys     - локальная проверка на dev-ключе
-#   .\publish.ps1 -Out <папка> -DevKeys -Voice        - с прототипом голоса (--voice, docs/portal/VOICE_CHAT.md, часть Б);
-#                                                       без -Voice лаунчер собирается без него, как игрокам
+# Голос (раздел «Голос», docs/portal/VOICE_CHAT.md) входит всегда: рядом с exe ложатся livekit_ffi.dll
+# и xpaudio.dll из third_party\voice (tools\voice_deps.py). Прототип с токеном из командной строки - только Debug.
 # NativeAOT линкует через MSVC и ищет его vswhere'ом, а vswhere не в PATH (грабли R-002):
 # скрипт находит оба инструмента сам и останавливается с понятной ошибкой, если чего-то нет.
 param(
     [Parameter(Mandatory)] [string] $Out,
-    [switch] $DevKeys,
-    [switch] $Voice
+    [switch] $DevKeys
 )
 $ErrorActionPreference = 'Stop'
 
@@ -23,7 +22,6 @@ if (-not $vs) { throw 'нет MSVC (VC.Tools.x86.x64): NativeAOT нечем ли
 
 $extra = @()
 if ($DevKeys) { $extra += '-p:AllowDevKeys=true' }
-if ($Voice) { $extra += '-p:XpVoice=true' }
 $Out = [IO.Path]::GetFullPath([IO.Path]::Combine((Get-Location).Path, $Out))
 foreach ($proj in 'src\Xp.Launcher', 'src\Xp.Bootstrapper') {
     dotnet publish (Join-Path $PSScriptRoot $proj) -c Release -r win-x64 -o $Out @extra
