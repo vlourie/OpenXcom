@@ -10,6 +10,7 @@ using Xp.Portal.Auth;
 using Xp.Portal.Data;
 using Xp.Portal.Files;
 using Xp.Portal.Tickets;
+using Xp.Portal.Voice;
 
 namespace Xp.Portal.Tests;
 
@@ -208,10 +209,64 @@ public sealed partial class WebUiTests(PortalFactory f) : IClassFixture<PortalFa
         var admin = await SignInAsync(await MakeUserAsync(Roles.Admin, true, "tickets.code"));
         Assert.Equal(HttpStatusCode.OK, (await admin.GetAsync("/admin")).StatusCode);
         Assert.StartsWith("/account/denied", (await admin.GetAsync("/admin/super/users")).Headers.Location!.PathAndQuery());
+        Assert.StartsWith("/account/denied", (await admin.GetAsync("/admin/super/voice")).Headers.Location!.PathAndQuery());
 
         var super = await SignInAsync(await MakeUserAsync(Roles.SuperAdmin, true));
-        foreach (var p in new[] { "/admin", "/admin/super/users", "/admin/super/telegram", "/admin/super/audit" })
+        foreach (var p in new[] { "/admin", "/admin/super/users", "/admin/super/telegram", "/admin/super/voice", "/admin/super/audit" })
             Assert.Equal(HttpStatusCode.OK, (await super.GetAsync(p)).StatusCode);
+    }
+
+    [Fact]
+    public async Task SuperAdmin_shuts_voice_for_an_account_and_closes_a_room_only_with_a_reason()
+    {
+        var player = await MakeUserAsync(Roles.User, false);
+        var (playerId, code, roomId) = await f.ScopedAsync(async sp =>
+        {
+            var u = await sp.GetRequiredService<UserManager<PortalUser>>().FindByEmailAsync(player.Email);
+            var room = await sp.GetRequiredService<VoiceService>().CreateRoomAsync(u!.Id, "Шумная", default);
+            var id = await sp.GetRequiredService<PortalDb>().VoiceRooms.Where(r => r.PublicId == room.PublicId).Select(r => r.Id).SingleAsync();
+            return (u.Id, room.PublicId, id);
+        });
+        var super = await SignInAsync(await MakeUserAsync(Roles.SuperAdmin, true));
+        var page = $"/admin/super/voice?Q={Uri.EscapeDataString(player.Email)}";
+        Assert.Contains(player.Email, await super.GetStringAsync(page));
+
+        // no reason, no ban
+        var r = await PostForm(super, $"/admin/super/voice?handler=Ban&Q={Uri.EscapeDataString(player.Email)}", new() { ["user"] = playerId.ToString(), ["reason"] = " " }, tokenFrom: page);
+        Assert.Equal(HttpStatusCode.OK, r.StatusCode);
+        Assert.Contains("Укажите причину.", System.Net.WebUtility.HtmlDecode(await r.Content.ReadAsStringAsync()));
+        Assert.False(await f.DbAsync(db => db.VoiceAccountBans.AnyAsync(b => b.UserId == playerId)));
+
+        r = await PostForm(super, $"/admin/super/voice?handler=Ban&Q={Uri.EscapeDataString(player.Email)}", new() { ["user"] = playerId.ToString(), ["reason"] = "спам в комнатах" }, tokenFrom: page);
+        Assert.Equal(HttpStatusCode.Redirect, r.StatusCode);
+        Assert.True(await f.DbAsync(db => db.VoiceAccountBans.AnyAsync(b => b.UserId == playerId && b.LiftedAt == null && b.Reason == "спам в комнатах")));
+        Assert.True(await f.DbAsync(db => db.AuditLogs.AnyAsync(a => a.Action == "voice.account.ban" && a.Target == player.Email && a.Detail == "спам в комнатах")));
+
+        // a room is closed by its link; its owner cannot open it again
+        r = await PostForm(super, "/admin/super/voice?handler=Close", new() { ["room"] = $"https://portal.test/voice/rooms/{code}", ["reason"] = "жалобы" }, tokenFrom: "/admin/super/voice");
+        Assert.Equal(HttpStatusCode.Redirect, r.StatusCode);
+        var room = await f.DbAsync(db => db.VoiceRooms.SingleAsync(x => x.Id == roomId));
+        Assert.Equal(VoiceRoomStatus.Closed, room.Status);
+        Assert.Equal("жалобы", room.ClosedReason);
+        Assert.NotEqual(playerId, room.ClosedById);
+        Assert.True(await f.DbAsync(db => db.AuditLogs.AnyAsync(a => a.Action == "voice.room.close" && a.Target == code && a.Detail == "жалобы")));
+        Assert.Contains("close:жалобы", await f.DbAsync(db => db.VoiceEvents.Where(e => e.RoomId == roomId).Select(e => e.Kind + ":" + (e.Reason ?? "")).ToListAsync()));
+        var refused = await Assert.ThrowsAsync<VoiceException>(() => f.ScopedAsync(async sp =>
+        {
+            await sp.GetRequiredService<VoiceService>().ReopenRoomAsync(playerId, code, staff: false, default);
+            return 0;
+        }));
+        Assert.Equal("closed_by_staff", refused.Code);
+        Assert.Contains(code, await super.GetStringAsync("/admin/super/voice"));
+
+        // and both are lifted from the same page
+        r = await PostForm(super, "/admin/super/voice?handler=Reopen", new() { ["room"] = code }, tokenFrom: "/admin/super/voice");
+        Assert.Equal(HttpStatusCode.Redirect, r.StatusCode);
+        r = await PostForm(super, "/admin/super/voice?handler=Lift", new() { ["user"] = playerId.ToString() }, tokenFrom: "/admin/super/voice");
+        Assert.Equal(HttpStatusCode.Redirect, r.StatusCode);
+        Assert.Equal(VoiceRoomStatus.Open, await f.DbAsync(db => db.VoiceRooms.Where(x => x.Id == roomId).Select(x => x.Status).SingleAsync()));
+        Assert.False(await f.DbAsync(db => db.VoiceAccountBans.AnyAsync(b => b.UserId == playerId && b.LiftedAt == null)));
+        Assert.True(await f.DbAsync(db => db.AuditLogs.AnyAsync(a => a.Action == "voice.account.unban" && a.Target == player.Email)));
     }
 
     [Fact]

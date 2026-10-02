@@ -7,6 +7,8 @@
     var path = Context.Request.Path.Value ?? "/";
     // a section stays lit while the reader is anywhere inside it
     string On(string prefix) => path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) ? "on" : "";
+    // friends live under /me but belong to voice
+    var friends = path.StartsWith("/me/friends", StringComparison.OrdinalIgnoreCase);
 }
 <!DOCTYPE html>
 <html lang="@Text.Lang">
@@ -29,7 +31,8 @@
         <a href="/tickets/new" class="@On("/tickets")">@T["nav.report"]</a>
         @if (signedIn)
         {
-            <a href="/me" class="@On("/me")">@T["nav.my"]</a>
+            <a href="/me" class="@(friends ? "" : On("/me"))">@T["nav.my"]</a>
+            <a href="/voice" class="@(friends ? "on" : On("/voice"))">@T["nav.voice"]</a>
             @if (user.IsInRole(Roles.Admin) || user.IsInRole(Roles.SuperAdmin))
             {
                 <a href="/admin" class="@On("/admin")">@T["nav.admin"]</a>

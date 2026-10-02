@@ -1,0 +1,81 @@
+@page "/voice"
+@model Xp.Portal.Pages.Voice.RoomsModel
+@{
+    ViewData["Title"] = T["voice.title"];
+}
+<h1>@T["voice.title"]</h1>
+<partial name="_Errors" model="Model.Errors" />
+<p class="hint">@T["voice.intro"]</p>
+<p>
+    <a class="button secondary" href="/me/friends">@T["friends.title"]</a>
+    @if (Model.Incoming > 0)
+    {
+        <span class="tag warn">@T.Format("voice.incoming", Model.Incoming)</span>
+    }
+</p>
+
+<div class="panel">
+    <h2>@T["voice.mine"]</h2>
+    @if (Model.Owned.Count == 0)
+    {
+        <p class="hint">@T["voice.mine.empty"]</p>
+    }
+    else
+    {
+        <table>
+            @foreach (var r in Model.Owned)
+            {
+                <tr>
+                    <td><a href="/voice/rooms/@r.PublicId">@r.Title</a></td>
+                    <td>
+                        @if (r.Status != "open")
+                        {
+                            <span class="tag">@T["voice.state.room_closed"]</span>
+                        }
+                    </td>
+                    <td class="hint">@r.CreatedAt.ToString("yyyy-MM-dd")</td>
+                </tr>
+            }
+        </table>
+    }
+    <form method="post" asp-page-handler="Create">
+        <label for="title">@T["voice.create.title"]</label>
+        <input type="text" id="title" name="title" required maxlength="@VoiceLimits.TitleMax" autocomplete="off" />
+        <button type="submit">@T["voice.create"]</button>
+    </form>
+    <p class="hint">@T.Format("voice.create.hint", VoiceLimits.RoomsPerOwner)</p>
+</div>
+
+<div class="panel">
+    <h2>@T["voice.invited"]</h2>
+    @if (Model.Invited.Count == 0)
+    {
+        <p class="hint">@T["voice.invited.empty"]</p>
+    }
+    else
+    {
+        <table>
+            @foreach (var r in Model.Invited)
+            {
+                <tr>
+                    <td><a href="/voice/rooms/@r.PublicId">@r.Title</a></td>
+                    <td>@r.Owner.Name</td>
+                    <td>
+                        @if (r.State == "ok")
+                        {
+                            <a class="button" href="xpiratez://voice/@r.PublicId">@T["voice.open"]</a>
+                            <form method="post" asp-page-handler="Decline" class="inline">
+                                <input type="hidden" name="room" value="@r.PublicId" />
+                                <button type="submit" class="link">@T["voice.decline"]</button>
+                            </form>
+                        }
+                        else
+                        {
+                            <span class="tag">@T["voice.state." + r.State]</span>
+                        }
+                    </td>
+                </tr>
+            }
+        </table>
+    }
+</div>

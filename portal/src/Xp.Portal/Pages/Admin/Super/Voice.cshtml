@@ -1,0 +1,102 @@
+@page "/admin/super/voice"
+@model Xp.Portal.Pages.Voice.SuperVoiceModel
+@{
+    ViewData["Title"] = T["super.voice"];
+}
+<partial name="_SuperNav" />
+<h1>@T["super.voice"]</h1>
+<partial name="_Errors" model="Model.Errors" />
+<p class="hint">@T["super.voice.intro"]</p>
+
+<div class="panel">
+    <h2>@T["super.voice.account"]</h2>
+    <form method="get">
+        <label for="Q">@T["admin.search"]</label>
+        <input type="text" id="Q" name="Q" value="@Model.Q" maxlength="256" />
+        <button type="submit" class="secondary">@T["admin.filter.apply"]</button>
+    </form>
+    @foreach (var (u, banned) in Model.Found)
+    {
+        <form method="post" class="panel quiet">
+            <input type="hidden" name="user" value="@u.Id" />
+            <p><strong>@u.DisplayName</strong> &lt;@u.Email&gt;
+                @if (banned)
+                {
+                    <span class="tag warn">@T["super.voice.banned"]</span>
+                }
+            </p>
+            @if (banned)
+            {
+                <button type="submit" class="secondary" asp-page-handler="Lift" asp-route-Q="@Model.Q">@T["super.voice.lift"]</button>
+            }
+            else
+            {
+                <input type="text" name="reason" required maxlength="@VoiceLimits.ReasonMax" placeholder="@T["super.voice.reason"]" aria-label="@T["super.voice.reason"]" />
+                <button type="submit" class="secondary" asp-page-handler="Ban" asp-route-Q="@Model.Q">@T["super.voice.ban"]</button>
+            }
+        </form>
+    }
+</div>
+
+<div class="panel">
+    <h2>@T["super.voice.bans"] (@Model.Bans.Count)</h2>
+    @if (Model.Bans.Count == 0)
+    {
+        <p class="hint">@T["super.voice.bans.empty"]</p>
+    }
+    else
+    {
+        <table>
+            <tr><th>@T["super.voice.who"]</th><th>@T["super.voice.reason"]</th><th>@T["super.audit.who"]</th><th>@T["field.created"]</th><th></th></tr>
+            @foreach (var b in Model.Bans)
+            {
+                <tr>
+                    <td>@b.Name @if (b.Email is { } e) { <span class="hint">&lt;@e&gt;</span> }</td>
+                    <td>@b.Ban.Reason</td>
+                    <td>@b.By</td>
+                    <td>@b.Ban.CreatedAt.ToString("yyyy-MM-dd HH:mm")</td>
+                    <td>
+                        <form method="post" asp-page-handler="Lift" class="inline">
+                            <input type="hidden" name="user" value="@b.Ban.UserId" />
+                            <button type="submit" class="secondary">@T["super.voice.lift"]</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </table>
+    }
+</div>
+
+<div class="panel">
+    <h2>@T["super.voice.room"]</h2>
+    <form method="post" asp-page-handler="Close">
+        <label for="room">@T["super.voice.room.code"]</label>
+        <input type="text" id="room" name="room" required maxlength="256" autocomplete="off" />
+        <label for="close-reason">@T["super.voice.reason"]</label>
+        <input type="text" id="close-reason" name="reason" required maxlength="@VoiceLimits.ReasonMax" />
+        <button type="submit" class="secondary">@T["voice.close"]</button>
+    </form>
+    <p class="hint">@T["super.voice.room.hint"]</p>
+    @if (Model.Closed.Count > 0)
+    {
+        <h3>@T["super.voice.closed"]</h3>
+        <table>
+            @foreach (var c in Model.Closed)
+            {
+                <tr>
+                    <td>@c.Room.Title <span class="hint">@c.Room.PublicId</span></td>
+                    <td>@c.Owner</td>
+                    <td>@c.Room.ClosedReason</td>
+                    <td>@c.By</td>
+                    <td>@c.Room.ClosedAt?.ToString("yyyy-MM-dd HH:mm")</td>
+                    <td>
+                        <form method="post" asp-page-handler="Reopen" class="inline">
+                            <input type="hidden" name="room" value="@c.Room.PublicId" />
+                            <button type="submit" class="secondary">@T["voice.reopen"]</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </table>
+    }
+</div>

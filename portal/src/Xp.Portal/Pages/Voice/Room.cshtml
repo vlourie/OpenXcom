@@ -1,0 +1,196 @@
+@page "/voice/rooms/{room}"
+@model Xp.Portal.Pages.Voice.RoomModel
+@{
+    var v = Model.View;
+    ViewData["Title"] = v?.Room.Title ?? T["voice.state.no_access"];
+}
+@if (v is null)
+{
+    <h1>@T["voice.state.no_access"]</h1>
+    <p>@T["voice.state.no_access.text"]</p>
+    <p><a href="/voice">@T["voice.title"]</a></p>
+}
+else
+{
+    var r = v.Room;
+    <h1>@r.Title</h1>
+    <partial name="_Errors" model="Model.Errors" />
+    <p class="hint">@T.Format("voice.room.owner", r.Owner.Name) · <a href="/voice">@T["voice.title"]</a></p>
+
+    @if (r.State != "ok")
+    {
+        <div class="panel">
+            <h2>@T["voice.state." + r.State]</h2>
+            <p>@T["voice.state." + r.State + ".text"]</p>
+            @if (r.State == "room_closed" && v.ClosedByStaff)
+            {
+                <p class="hint">@T["voice.closed.staff"]@(v.ClosedReason is { Length: > 0 } why ? ": " + why : "")</p>
+            }
+            @if (r.Mine && r.State == "room_closed" && !v.ClosedByStaff)
+            {
+                <form method="post" asp-page-handler="Reopen" class="inline">
+                    <button type="submit">@T["voice.reopen"]</button>
+                </form>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="panel">
+            <a class="button" href="@Model.LauncherLink">@T["voice.open"]</a>
+            <p class="hint">@T["voice.open.hint"] <a href="/download/launcher" download>@T["nav.download"]</a></p>
+            @if (Model.LiveDown)
+            {
+                <p class="hint">@T["voice.live.down"]</p>
+            }
+            else if (Model.Live.Count == 0)
+            {
+                <p class="hint">@T["voice.live.empty"]</p>
+            }
+            else
+            {
+                <p>
+                    @T["voice.live"]:
+                    @foreach (var l in Model.Live)
+                    {
+                        <span class="tag @(l.CanPublish ? "open" : "")">@l.Person.Name@(l.CanPublish ? "" : " · " + T["voice.member.muted"])</span>
+                    }
+                </p>
+            }
+            @if (!r.Mine)
+            {
+                <form method="post" asp-page-handler="Decline" class="inline">
+                    <button type="submit" class="link">@T["voice.decline"]</button>
+                </form>
+            }
+        </div>
+    }
+
+    @if (v.Members is { } members)
+    {
+        <div class="panel">
+            <h2>@T["voice.room.link"]</h2>
+            <input type="text" readonly value="@Model.Link" aria-label="@T["voice.room.link"]" />
+            <p class="hint">@T["voice.room.link.hint"]</p>
+        </div>
+
+        <div class="panel">
+            <h2>@T["voice.invite"]</h2>
+            @if (Model.Invitable.Count == 0)
+            {
+                <p class="hint">@T["voice.invite.none"] <a href="/me/friends">@T["friends.title"]</a></p>
+            }
+            else
+            {
+                <form method="post" asp-page-handler="Invite">
+                    <label for="invite-user">@T["voice.invite.who"]</label>
+                    <select id="invite-user" name="user">
+                        @foreach (var x in Model.Invitable)
+                        {
+                            <option value="@x.Id">@x.Name</option>
+                        }
+                    </select>
+                    <button type="submit">@T["voice.invite.send"]</button>
+                </form>
+            }
+        </div>
+
+        <div class="panel">
+            <h2>@T["voice.members"] (@members.Count)</h2>
+            @if (members.Count == 0)
+            {
+                <p class="hint">@T["voice.members.empty"]</p>
+            }
+            @foreach (var m in members)
+            {
+                <form method="post" class="panel quiet">
+                    <input type="hidden" name="user" value="@m.Person.Id" />
+                    <p>
+                        <strong>@m.Person.Name</strong>
+                        @if (m.Banned)
+                        {
+                            <span class="tag warn">@T["voice.member.banned"]</span>
+                        }
+                        else if (m.Invite != "none")
+                        {
+                            <span class="tag @(m.Invite == "active" ? "open" : "")">@T["voice.invite." + m.Invite]</span>
+                        }
+                        @if (m.Restricted)
+                        {
+                            <span class="tag">@T["voice.member.muted"]</span>
+                        }
+                        @if (!m.Friend)
+                        {
+                            <span class="tag">@T["voice.member.not_friend"]</span>
+                        }
+                    </p>
+                    @if (m.Banned)
+                    {
+                        <button type="submit" class="secondary" asp-page-handler="Unban">@T["voice.unban"]</button>
+                    }
+                    else
+                    {
+                        <input type="text" name="reason" maxlength="@VoiceLimits.ReasonMax" placeholder="@T["voice.reason"]" aria-label="@T["voice.reason"]" />
+                        @if (m.Invite == "revoked")
+                        {
+                            @if (m.Friend)
+                            {
+                                <button type="submit" asp-page-handler="Invite">@T["voice.invite.again"]</button>
+                            }
+                        }
+                        else
+                        {
+                            @if (m.Restricted)
+                            {
+                                <button type="submit" class="secondary" asp-page-handler="Speaking" name="allowed" value="true">@T["voice.unmute"]</button>
+                            }
+                            else
+                            {
+                                <button type="submit" class="secondary" asp-page-handler="Speaking" name="allowed" value="false">@T["voice.mute"]</button>
+                            }
+                            <button type="submit" class="secondary" asp-page-handler="Kick">@T["voice.kick"]</button>
+                        }
+                        <button type="submit" class="secondary" asp-page-handler="Ban">@T["voice.ban"]</button>
+                    }
+                </form>
+            }
+            <p class="hint">@T["voice.members.hint"]</p>
+        </div>
+
+        <div class="panel">
+            <h2>@T["voice.manage"]</h2>
+            @if (r.Status == "open")
+            {
+                <form method="post" asp-page-handler="Close">
+                    <input type="text" name="reason" maxlength="@VoiceLimits.ReasonMax" placeholder="@T["voice.reason"]" aria-label="@T["voice.reason"]" />
+                    <button type="submit" class="secondary">@T["voice.close"]</button>
+                </form>
+                <p class="hint">@T["voice.close.hint"]</p>
+            }
+            <form method="post" asp-page-handler="Delete">
+                <label class="check"><input type="checkbox" name="sure" value="true" /> <span>@T["voice.delete.sure"]</span></label>
+                <button type="submit" class="secondary">@T["voice.delete"]</button>
+            </form>
+        </div>
+    }
+
+    @if (Model.Reportable.Count > 0)
+    {
+        <details class="panel">
+            <summary>@T["voice.complain"]</summary>
+            <form method="post" asp-page-handler="Complain">
+                <label for="complain-user">@T["voice.complain.who"]</label>
+                <select id="complain-user" name="user">
+                    @foreach (var p in Model.Reportable)
+                    {
+                        <option value="@p.Id">@p.Name</option>
+                    }
+                </select>
+                <label for="complain-text">@T["voice.complain.text"]</label>
+                <textarea id="complain-text" name="text" required maxlength="2000" rows="4"></textarea>
+                <button type="submit">@T["voice.complain.send"]</button>
+            </form>
+            <p class="hint">@T["voice.complain.hint"]</p>
+        </details>
+    }
+}
