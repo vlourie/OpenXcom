@@ -543,7 +543,9 @@ void Map::draw()
 		|| (_projectileInFOV && (!ignoreAllButAlliesHits || (unitVisible && !unitEnemy)))
 		|| (_explosionInFOV && (!ignoreAllButAlliesHits || ((unitVisible && !unitEnemy) || hitExplosion))))
 	{
+		_camera->beginShown();
 		drawTerrain(_canvas);
+		_camera->endShown();
 		_messageOnCanvas = false;
 	}
 	else
@@ -555,6 +557,10 @@ void Map::draw()
 	_canvas->setLight(nullptr);
 	_canvas->flush();
 	_lastDrawMs = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - drawStart).count();
+	if (_camera->isGliding())
+	{
+		_redraw = true; // gentle mode: the picture is on its way, every frame until it is there
+	}
 
 	if (_hdTestFrozen)
 	{

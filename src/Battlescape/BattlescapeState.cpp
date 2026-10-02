@@ -1110,6 +1110,9 @@ void BattlescapeState::mapClick(Action *action)
 	if (_mouseOverIcons) return;
 
 
+	// gentle mode: no click into a tile of a picture still on its way (a fraction of a second)
+	if (_map->getCamera()->isGliding()) return;
+
 	// don't accept leftclicks if there is no cursor or there is an action busy
 	if (_map->getCursorType() == CT_NONE || _battleGame->isBusy()) return;
 
@@ -1363,7 +1366,7 @@ void BattlescapeState::btnNextStopRClick(Action *)
 			_save->setUndoUnit(nullptr);
 
 			updateSoldierInfo();
-			if (candidate && !_game->isShiftPressed(true)) _map->getCamera()->centerOnPosition(candidate->getPosition());
+			if (candidate && !_game->isShiftPressed(true)) _map->getCamera()->focusOn(candidate->getPosition());
 			_battleGame->cancelAllActions();
 			_battleGame->getCurrentAction()->actor = candidate;
 			_battleGame->setupCursor();
@@ -1400,7 +1403,7 @@ void BattlescapeState::selectNextPlayerUnit(bool checkReselect, bool setReselect
 			? _save->selectNextPlayerUnitByDistance(checkReselect, setReselect, checkInventory)
 			: _save->selectNextPlayerUnit(checkReselect, setReselect, checkInventory);
 		updateSoldierInfo(checkFOV);
-		if (unit && !_game->isShiftPressed(true)) _map->getCamera()->centerOnPosition(unit->getPosition());
+		if (unit && !_game->isShiftPressed(true)) _map->getCamera()->focusOn(unit->getPosition());
 		_battleGame->cancelAllActions();
 		_battleGame->getCurrentAction()->actor = unit;
 		_battleGame->setupCursor();
@@ -1419,7 +1422,7 @@ void BattlescapeState::selectPreviousPlayerUnit(bool checkReselect, bool setRese
 	{
 		BattleUnit *unit = _save->selectPreviousPlayerUnit(checkReselect, setReselect, checkInventory);
 		updateSoldierInfo();
-		if (unit && !_game->isShiftPressed(true)) _map->getCamera()->centerOnPosition(unit->getPosition());
+		if (unit && !_game->isShiftPressed(true)) _map->getCamera()->focusOn(unit->getPosition());
 		_battleGame->cancelAllActions();
 		_battleGame->getCurrentAction()->actor = unit;
 		_battleGame->setupCursor();
@@ -1705,7 +1708,7 @@ void BattlescapeState::btnVisibleUnitClick(Action *action)
 				_battleGame->cancelAllActions();
 				Position position = sortSpotters.front().first->getPosition();
 				_battleGame->primaryAction(position);
-				_map->getCamera()->centerOnPosition(position);
+				_map->getCamera()->focusOn(position);
 			}
 		}
 	}
@@ -1732,7 +1735,7 @@ void BattlescapeState::btnVisibleUnitClick(Action *action)
 				if (found) break;
 			}
 		}
-		_map->getCamera()->centerOnPosition(position);
+		_map->getCamera()->focusOn(position);
 	}
 
 	action->getDetails()->type = SDL_NOEVENT; // consume the event
