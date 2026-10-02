@@ -35,6 +35,10 @@ DENY = {
     "python - без stdin": "python - ; echo done",
     "py -3.13 без аргументов": "PYTHONIOENCODING=utf-8 py -3.13",
     "python.exe по пути без скрипта": "E:/v/.venv/Scripts/python.exe -u > out.txt",
+    # третий раз R-184 (03.10): перенаправление с номером потока прятало питон без программы
+    "py - с 2>/dev/null": "cd $S && py -3.13 - 2>/dev/null; grep -n x f.py",
+    "python - с 2>&1": "python - 2>&1 | tail -3",
+    "py - с 2>/dev/null и пустым heredoc": "py -3.13 - 2>/dev/null <<'EOF'\nEOF",
 }
 
 ALLOW = {
@@ -58,6 +62,9 @@ ALLOW = {
     "python - с непустым heredoc": "python - <<'EOF'\nprint(1)\nEOF",
     "конвейер в python -": "cat x.py | python -",
     "python - < файл": "py -3.13 - < x.py",
+    "python - 2>&1 < файл": "py -3.13 - 2>&1 < x.py",
+    "python - 2>/dev/null с непустым heredoc": "py -3.13 - 2>/dev/null <<'EOF'\nprint(1)\nEOF",
+    "py -3.13 со скриптом и 2>&1": "py -3.13 tools/x.py 2>&1 | tail -3",
     "py -3.13 со скриптом": "py -3.13 tools/x.py --a 1",
     "python -m": "python -m pytest -q",
     "python --version": "python --version && py -0p",

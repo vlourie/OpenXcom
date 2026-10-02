@@ -82,7 +82,8 @@ function Test-SlashFlags([string]$cmd) {
 function Test-StdinPython([string]$cmd) {
     if (-not $cmd) { return $null }
     $lines = $cmd -split "`n"
-    $rx = '(?i)(?:^|[;&|(])\s*(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)*(?:\S*[/\\])?(python3?|py)(?:\.exe)?((?:\s+-(?:\d+(?:\.\d+)?|[uIBsSEOq]+))*)(\s+-)?(?=\s*(?:$|[;&|)<>]))'
+    # за питоном может идти перенаправление с номером потока (2>/dev/null, 2>&1) - третий раз R-184 прошёл именно так
+    $rx = '(?i)(?:^|[;&|(])\s*(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)*(?:\S*[/\\])?(python3?|py)(?:\.exe)?((?:\s+-(?:\d+(?:\.\d+)?|[uIBsSEOq]+))*)(\s+-)?(?=\s*(?:$|[;&|)<>]|\d+[<>]))'
     $tag = $null
     for ($i = 0; $i -lt $lines.Count; $i++) {
         $line = $lines[$i].TrimEnd("`r")
@@ -92,7 +93,9 @@ function Test-StdinPython([string]$cmd) {
             $lead = $m.Value.TrimStart()
             if ($lead.StartsWith('|') -and -not $lead.StartsWith('||') -and -not $before.EndsWith('||')) { continue }   # конвейер в питон
             $rest = $line.Substring($m.Index + $m.Length)
-            $h = [regex]::Match($rest, "^\s*<<-?[ \t]*(['""]?)([A-Za-z_][A-Za-z0-9_]*)\1")
+            # stdin ищется во всей команде питона, а не только сразу за ним: 2>/dev/null <<'EOF', 2>&1 < файл
+            $seg = ($rest -split '[;|]|&&')[0]
+            $h = [regex]::Match($seg, "(?:^|\s)<<-?[ \t]*(['""]?)([A-Za-z_][A-Za-z0-9_]*)\1")
             if ($h.Success) {
                 $body = New-Object Collections.Generic.List[string]
                 for ($j = $i + 1; $j -lt $lines.Count; $j++) {
@@ -102,7 +105,7 @@ function Test-StdinPython([string]$cmd) {
                 if ((($body -join '') -replace '\s', '') -eq '') { return "$($m.Groups[1].Value) с пустым heredoc" }
                 continue
             }
-            if ($rest -match '^\s*<') { continue }   # < файл, <<< строка
+            if ($seg -match '(?:^|\s)0?<') { continue }   # < файл, <<< строка
             return "$($m.Groups[1].Value)$($m.Groups[2].Value)$($m.Groups[3].Value) без stdin"
         }
         $hd = [regex]::Match($line, "<<-?[ \t]*(['""]?)([A-Za-z_][A-Za-z0-9_]*)\1")
