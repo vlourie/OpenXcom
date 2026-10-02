@@ -1,48 +1,48 @@
-﻿# Шрифты пакета `hd_core`: происхождение и условия распространения (02.10.2026)
+# Шрифты пакета `hd_core`: происхождение и условия распространения (02.10.2026, исправлено 03.10.2026)
 
 17 файлов TTF из `user/mods/hd/hd/UI` — всё содержимое будущего `hd_core` (HD_SUBMODS §2).
-Данные сняты с файлов в установке Пираток: таблица `name` шрифта (fontTools), размер, SHA-256
-(первые 12 знаков). Юридическая оценка не делалась: ниже — что написано в самих файлах и лицензиях,
-и где у нас расхождения с их условиями.
+Все файлы, тексты лицензий и запись источников пишет `tools/hdart/fetch_fonts.py`; источник каждого
+файла закреплён коммитом или выпуском и SHA-256, сборка воспроизводима байт в байт (метка времени `head`
+берётся у исходника). Юридическая оценка не делалась: ниже — что написано в самих файлах и лицензиях.
 
 ## 1. Таблица
 
-| Файл | Гарнитура, версия | Откуда | Лицензия | Изменён нами | Зарезервированное имя | SHA-256 |
-|---|---|---|---|---|---|---|
-| `FontBig.ttf` | Roboto Medium 2.138 (2017), © 2011 Google | не записано (набор «как было», `docs/research/hd-fonts.md`) | Apache 2.0 (в таблице `name`) | нет данных | — | `7984aafeaf43` |
-| `FontSmall.ttf` | Roboto 2.138 (2017), © 2011 Google | не записано | Apache 2.0 | нет данных | — | `797e35f7f5d6` |
-| `FontFallback.ttf` | DejaVu Sans 2.37 | не записано | лицензия Bitstream Vera + Arev, изменения DejaVu — общественное достояние | по размеру (757 076 байт) — исходный файл, не сверено | «Bitstream», «Vera» нельзя в имени изменённой версии | `7da195a74c55` |
-| `fonts/Comfortaa-Small.ttf`, `-Big.ttf` | Comfortaa 3.105 | `google/fonts`, ветка `main`, `ofl/comfortaa/Comfortaa[wght].ttf` (`tools/hdart/fetch_fonts.py`) | SIL OFL 1.1 | да: вес 400/700 из переменного, подрезка знаков | **«Comfortaa»** | `13c381c0ad6f` / `bfa40458729b` |
-| `fonts/Exo2-*.ttf` | Exo 2 2.010 | `ofl/exo2/Exo2[wght].ttf` | OFL 1.1 | да | нет | `9e953e370903` / `b0fd5aaec967` |
-| `fonts/Jura-*.ttf` | Jura 5.106 | `ofl/jura/Jura[wght].ttf` | OFL 1.1 | да | нет | `f60b1904c1cb` / `ab68f6baede4` |
-| `fonts/MPlusRounded-*.ttf` | Rounded Mplus 1c 1.059 | `ofl/mplusrounded1c/MPLUSRounded1c-Regular/Bold.ttf` | OFL 1.1 | да: подрезка | нет в © строке | `cf4eb396c539` / `15aab6860d1e` |
-| `fonts/Play-*.ttf` | Play 2.101 | `ofl/play/Play-Regular/Bold.ttf` | OFL 1.1 | да: подрезка | **«Play»** | `0c78af2612a2` / `0b1af3b96c6a` |
-| `fonts/Rubik-*.ttf` | Rubik 2.300 | `ofl/rubik/Rubik[wght].ttf` | OFL 1.1 | да | нет | `af83a870575b` / `27de2a6351d5` |
-| `fonts/Unbounded-*.ttf` | Unbounded 1.701 | `ofl/unbounded/Unbounded[wght].ttf` | OFL 1.1 | да | нет | `6f98edb5f75c` / `27c7204891ad` |
+| Файл | Гарнитура, версия | Откуда | Лицензия | Изменён нами | SHA-256 |
+|---|---|---|---|---|---|
+| `FontBig.ttf` | Roboto Medium 2.138, © 2011 Google | `googlefonts/roboto-2`, выпуск v2.138, `roboto-android.zip` → `Roboto-Medium.ttf` | Apache 2.0, `ROBOTO-LICENSE.txt` | нет, совпадает с файлом выпуска | `7984aafeaf43` |
+| `FontSmall.ttf` | Roboto 2.138 | тот же архив → `Roboto-Regular.ttf` | Apache 2.0 | нет | `797e35f7f5d6` |
+| `FontFallback.ttf` | DejaVu Sans 2.37 | `dejavu-fonts/dejavu-fonts`, выпуск `version_2_37`, `dejavu-fonts-ttf-2.37.tar.bz2` → `ttf/DejaVuSans.ttf` | Bitstream Vera + изменения DejaVu в общественном достоянии, `FONTS-LICENSE.txt` | нет | `7da195a74c55` |
+| `fonts/Curvy-Small.ttf`, `-Big.ttf` | **Curvy** — из Comfortaa 3.105 | `google/fonts@db64f6b`, `ofl/comfortaa/Comfortaa[wght].ttf` | OFL 1.1, `Curvy-OFL.txt` | да: вес 400/700, подрезка, **переименован** | `bc5ab7185690` / `3001458f1d92` |
+| `fonts/Exo2-*.ttf` | Exo 2 2.010 | `google/fonts@1796e34`, `ofl/exo2/Exo2[wght].ttf` | OFL 1.1, `Exo2-OFL.txt` | да: вес, подрезка | `8c5866b9202b` / `88518e746d9e` |
+| `fonts/Jura-*.ttf` | Jura 5.106 | `google/fonts@6e4b84c`, `ofl/jura/Jura[wght].ttf` | OFL 1.1, `Jura-OFL.txt` | да: вес, подрезка | `a3eed7402823` / `7223982605a0` |
+| `fonts/MPlusRounded-*.ttf` | Rounded Mplus 1c 1.059 | `google/fonts@84efd8a`, `ofl/mplusrounded1c/MPLUSRounded1c-Regular/Bold.ttf` | OFL 1.1, `MPlusRounded-OFL.txt` | да: подрезка | `b5a1ec695cfb` / `52a663e67b7a` |
+| `fonts/Pulse-*.ttf` | **Pulse** — из Play 2.101 | `google/fonts@51c6a42`, `ofl/play/Play-Regular/Bold.ttf` | OFL 1.1, `Pulse-OFL.txt` | да: подрезка, **переименован** | `8026ae7a90c8` / `58260ee7500d` |
+| `fonts/Rubik-*.ttf` | Rubik 2.300 | `google/fonts@8b0a1d0`, `ofl/rubik/Rubik[wght].ttf` | OFL 1.1, `Rubik-OFL.txt` | да: вес, подрезка | `1a76c58351c2` / `feb2909259ba` |
+| `fonts/Unbounded-*.ttf` | Unbounded 1.701 | `google/fonts@8b0a1d0`, `ofl/unbounded/Unbounded[wght].ttf` | OFL 1.1, `Unbounded-OFL.txt` | да: вес, подрезка | `ec69170d440c` / `938e8e5d3449` |
 
-Коммит `google/fonts`, с которого качали, не записан: `fetch_fonts.py` берёт `main` на момент запуска.
-Версия файла — только по таблице `name`.
+Полные коммиты, SHA-256 исходников и итоговых файлов — в `FONTS-SOURCES.txt` в корне мода (идёт в
+`hd_core`). Таблицы шрифтов, кроме переименованных `name`, совпадают с прежними файлами мода байт в байт
+(проверено fontTools по каждой таблице) — переименование и закрепление источников рисунок не изменили.
 
-## 2. Расхождения с условиями — надо исправить до выпуска `hd_core`
+## 2. Расхождения с условиями — закрыты 03.10.2026
 
-1. **Тексты OFL неверные у шести семейств из семи.** Все семь файлов `fonts/*-OFL.txt` начинаются
-   строкой авторов Comfortaa. Причина — кэш `fetch_fonts.fetch` по голому имени файла: `OFL.txt`
-   скачан один раз для Comfortaa и отдан остальным. Кэш исправлен (ключ — папка семейства и имя);
-   файлы в моде надо пересобрать запуском `fetch_fonts.py` и сверить первую строку каждого `*-OFL.txt`
-   с гарнитурой.
-2. **Нет текста Apache 2.0 для Roboto.** Лицензия требует отдавать её копию вместе с файлом (п. 4(a)).
-   В моде есть только `FONTS-LICENSE.txt`, и он — лицензия DejaVu. Нужен файл с текстом Apache 2.0
-   рядом с `FontBig.ttf` / `FontSmall.ttf` и запись, откуда взят Roboto.
-3. **Зарезервированные имена Comfortaa и Play.** OFL 1.1 п. 3: изменённая версия не может носить
-   зарезервированное имя без письменного разрешения. Наши файлы — инстанс веса и подрезка, а
-   таблица `name` оставлена прежней (`updateFontNames=False`, `name_IDs = *`). Относится ли подрезка к
-   изменению в смысле п. 3 — сверить с FAQ OFL; если да — переименовать гарнитуру в таблице `name`
-   (игра показывает это имя в опциях) или не брать эти два семейства.
-4. **Источник Roboto и DejaVu не записан.** Достаточно записать источник и сверить SHA-256 с
-   исходным файлом — тогда п. «изменён нами» станет фактом, а не догадкой.
+1. **Тексты OFL у шести семейств были чужие** (все начинались строкой Comfortaa: кэш `fetch` по голому
+   имени `OFL.txt`). Теперь у каждого семейства свой `<набор>-OFL.txt` с того же коммита, что и шрифт;
+   первая строка — авторы своей гарнитуры. У Rounded M+ в `google/fonts` нет `OFL.txt`: строка авторов
+   взята из его `METADATA.pb`, текст лицензии — стандартный OFL 1.1 (это записано в `FONTS-SOURCES.txt`).
+2. **Текст Apache 2.0 для Roboto** — `ROBOTO-LICENSE.txt` в корне мода, рядом с `FONTS-LICENSE.txt` (DejaVu).
+3. **Зарезервированные имена.** По FAQ OFL 2.6 подрезка и инстанс веса — изменение, и п. 3 запрещает
+   изменённой версии зарезервированное имя. Comfortaa переименован в **Curvy**, Play (RFN «Play»,
+   «Playtype», «Playtype Sans») — в **Pulse**: таблица `name` (семейство, полное и PostScript-имя,
+   уникальный ID) и имена файлов. `fetch_fonts.py` останавливается, если зарезервированное имя осталось
+   в любой записи `name`. Строки авторских прав и сам текст OFL с RFN сохранены, как требует п. 2.
+   У остальных пяти семейств RFN нет. Порядок наборов в опции `oxceHdUiFont` (по имени файла) у Curvy
+   и Pulse тот же, что был у Comfortaa и Play: выбор игрока не сдвигается.
+4. **Источник Roboto и DejaVu** записан в `FONTS-SOURCES.txt`: файлы мода совпадают байт в байт с
+   файлами официальных выпусков (SHA-256 архива и файла), то есть «не изменены» — факт, а не догадка.
 
 ## 3. Что значит для раздела
 
-`hd_core` с `targetGames: "*"` распространяется со всеми играми, поэтому эти четыре пункта — условие
-его выпуска, а не косметика. Раздел (HD_SUBMODS §5, шаг 1) можно делать и проверять раньше:
-пакет не уходит игрокам, пока не закрыты **все четыре** пункта §2.
+`hd_core` с `targetGames: "*"` распространяется со всеми играми; условия §2 этим закрыты. В `hd_core`
+идут шрифты, `*-OFL.txt` рядом с ними, `FONTS-LICENSE.txt`, `ROBOTO-LICENSE.txt` и `FONTS-SOURCES.txt`
+(`tools/compat/hd_layout.py`, `docs/research/data/hd_split.tsv`).

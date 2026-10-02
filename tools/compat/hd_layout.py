@@ -1,7 +1,8 @@
 # Step 1 of the HD split (docs/portal/HD_SUBMODS.md §5): lays the hd mod out as two mods by
 # docs/research/data/hd_split.tsv, next to the install and without touching it:
 #   hd_core - the rows of submod "hd_core" (TTF fonts, paths under hd/UI) with their licence texts:
-#             <family>-OFL.txt beside each font, FONTS-LICENSE.txt (DejaVu) of the mod root;
+#             <family>-OFL.txt beside each font; FONTS-LICENSE.txt (DejaVu), ROBOTO-LICENSE.txt and
+#             FONTS-SOURCES.txt of the mod root (all written by tools/hdart/fetch_fonts.py);
 #   hd      - everything else, "hd_core?" and "hd_shared?" candidates included; keeps the id hd (step 1:
 #             the engine checked that id in MainMenuState, AdultChoiceState, OptionsHdState; step 2 replaced
 #             the checks), gets master: piratez as the plan says. The rulesets whose strings moved to
@@ -67,7 +68,8 @@ def core_files():
         files.add(rel)
         if r["name"].startswith("fonts/"):
             files.add("hd/UI/fonts/" + r["name"][6:].rsplit("-", 1)[0] + "-OFL.txt")
-    files.add("FONTS-LICENSE.txt")
+    # licences of Roboto (Apache 2.0) and DejaVu, and where every font came from (tools/hdart/fetch_fonts.py)
+    files.update(("FONTS-LICENSE.txt", "ROBOTO-LICENSE.txt", "FONTS-SOURCES.txt"))
     return sorted(files), len(rows)
 
 
