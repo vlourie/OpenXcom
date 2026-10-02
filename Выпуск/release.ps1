@@ -187,6 +187,27 @@ try {
             }
         }
         if (-not $usedNotes) { Warn 'нет notes\next.ru.txt - выпуск уйдёт без «Что нового»' }
+        # лаунчер, без которого выпуск не ставится (MinLauncher в настройках выпуска). hd_core у игрока включает только
+        # миграция лаунчера 0.3.7 (HdCoreMigration): стейдж с ним без такого требования не выпускается
+        $minLauncher = if ($cfg.PSObject.Properties.Name -contains 'MinLauncher') { [string]$cfg.MinLauncher } else { '' }
+        if ((Test-Path -LiteralPath (Join-Path $cfg.Stage 'user\mods\hd_core')) -and
+            (-not $minLauncher -or [version]$minLauncher -lt [version]'0.3.7')) {
+            throw "в стейдже user\mods\hd_core, а MinLauncher '$minLauncher' ниже 0.3.7: игрок получил бы шрифты без миграции, которая их включает"
+        }
+        # мод и профиль едут вместе (tools\compat\hd_core_switch.py): профиль без мода или мод без профиля - полпереключения
+        $stageProfiles = Join-Path $cfg.Stage 'xp-profiles.json'
+        $coreInStage = Test-Path -LiteralPath (Join-Path $cfg.Stage 'user\mods\hd_core')
+        $coreInProfile = (Test-Path -LiteralPath $stageProfiles) -and ((Get-Content -LiteralPath $stageProfiles -Raw -Encoding UTF8) -match '"id":\s*"hd_core"')
+        if ($coreInStage -ne $coreInProfile) {
+            throw "hd_core в стейдже: $coreInStage, в его xp-profiles.json: $coreInProfile - переключение сделано наполовину (tools\compat\hd_core_switch.py)"
+        }
+        if ($minLauncher) {
+            $ownExe = Join-Path $cfg.LauncherDir 'XPiratezLauncher.exe'
+            $own = if (Test-Path -LiteralPath $ownExe) { ((Get-Item -LiteralPath $ownExe).VersionInfo.ProductVersion -split '\+')[0] } else { '0.0.0' }
+            if ([version]$own -lt [version]$minLauncher) { throw "выпуск требует лаунчер $minLauncher, а публикуется $own - игроку нечем было бы его поставить" }
+            $buildArgs += @('--min-launcher', $minLauncher)
+            Ok "требует лаунчер не ниже $minLauncher"
+        }
         Xpr $buildArgs
         Xpr @('publish', '--repo', $repo, '--channel', $channel, '--id', $id, '--key', $cfg.Key)
         foreach ($f in $usedNotes) {
