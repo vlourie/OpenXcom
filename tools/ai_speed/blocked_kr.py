@@ -15,7 +15,12 @@
   та же ревизия, другой шаг или не ходил - правило не меняет выбор;
   ревизия другая - правило память снимает.
 
-  py -3.13 tools/ai_speed/blocked_kr.py --arena E:/OXCE_AIWorker/results/arena b48kr1"""
+  py -3.13 tools/ai_speed/blocked_kr.py --arena E:/OXCE_AIWorker/results/arena b48kr1
+
+Только диагностика первого шага, не определение «затронут» и не доказательство безопасности (R-176): память здесь
+заводится лишь у остановки на первом шаге решения, а живое правило (AiProbe::blockedStepStop) помнит и остановку
+посреди пути. Прежний итог «0 ложных подавлений» верен для этого подмножества и неполон для правила целиком.
+Признак «затронут» по правилу движка - tools/ai_speed/blocked_pair.py (регрессия - tools/test_blocked_pair.py)."""
 import argparse
 import collections
 import gzip
