@@ -516,6 +516,11 @@ void AIModule::think(BattleAction *action)
 	_patrolRetry = _patrolRetry == 1 ? 2 : 0;
 	_firepointChosen = false;
 	_fpSuppressedNow = false;
+	_ko2FpTarget = _ko2AmbTarget = _ko2FpChosenTarget = 0;
+	_ko2FpOld = _ko2AmbOld = _ko2FpRan = _ko2AmbRan = false;
+	_ko2FpHits = _ko2AmbHits = 0;
+	_ko2WalkTarget = 0;
+	_ko2WalkBranch = 0;
 	_attackAction.diff = _save->getBattleState()->getGame()->getSavedGame()->getDifficultyCoefficient();
 	_attackAction.actor = _unit;
 	_attackAction.run = false;
@@ -874,6 +879,20 @@ void AIModule::think(BattleAction *action)
 	// FIREPOINT_BLOCKED_UNIT_STALL (bench): what the think did instead of the skipped point, and a walk to a blocked point
 	// another branch chose (not suppressed in V1, only counted)
 	const bool firepointWalk = action->type == BA_WALK && _firepointChosen && action->target == _firepointChosenAt;
+	// KNOWN_OCCUPANT_PATH_V2 (bench): the walk to the point findFirePoint or setupAmbush chose keeps that branch's T blocked
+	if (firepointWalk && _ko2FpChosenTarget)
+	{
+		_ko2WalkTarget = _ko2FpChosenTarget;
+		_ko2WalkBranch = "fp";
+		_ko2WalkTo = action->target;
+	}
+	else if (action->type == BA_WALK && _AIMode == AI_AMBUSH && _ambushAction.type == BA_WALK && action->target == _ambushAction.target
+		&& _ko2AmbChosenTarget)
+	{
+		_ko2WalkTarget = _ko2AmbChosenTarget;
+		_ko2WalkBranch = "amb";
+		_ko2WalkTo = action->target;
+	}
 	if (_fpSuppressedNow)
 	{
 		const char *after = "fpblocked.after.attack";
@@ -1056,6 +1075,82 @@ void AIModule::knownOccupantWalked(const BattleAction &action, bool found)
 {
 	Pathfinding *pf = _save->getPathfinding();
 	AiProbe::knownOccupantWalked(_unit, pf->getKnownOccupant(_unit), pf->takeKnownOccupantHits(), action.target, found);
+}
+
+/**
+ * KNOWN_OCCUPANT_PATH_V2 (bench): the target findFirePoint / setupAmbush just chose (_aggroTarget), if the unit's side spotted
+ * it this turn. The caller supplies it to its own path searches only; no search looks for the target by itself.
+ * @param old Set if there is a target, but the side did not spot it this turn (the rule holds back).
+ * @return The target, or null.
+ */
+const BattleUnit *AIModule::knownOccupantV2(bool &old) const
+{
+	old = false;
+	if (!AiProbe::knownOccupantPathV2() || _unit->getFaction() != FACTION_HOSTILE || !_aggroTarget)
+	{
+		return 0;
+	}
+	if (_aggroTarget->getTurnsSinceSpottedByFaction(_unit->getFaction()) == 0)
+	{
+		return _aggroTarget;
+	}
+	old = true;
+	return 0;
+}
+
+/**
+ * KNOWN_OCCUPANT_PATH_V2 (bench): this unit's own path search to pos, with the target's tile blocked for this search only.
+ */
+void AIModule::calculateKnownOccupantV2(const Position &pos, const BattleUnit *target, int &hits)
+{
+	Pathfinding *pf = _save->getPathfinding();
+	if (!target)
+	{
+		pf->calculate(_unit, pos, BAM_NORMAL);
+		return;
+	}
+	pf->setKnownOccupant(_unit, target);
+	pf->calculate(_unit, pos, BAM_NORMAL);
+	pf->setKnownOccupant(0, 0);
+	hits += pf->takeKnownOccupantHits();
+}
+
+/**
+ * KNOWN_OCCUPANT_PATH_V2 (bench): the decision is made - what the two branches' searches blocked this think.
+ */
+void AIModule::knownOccupantV2Decided(const BattleAction &action)
+{
+	const bool walk = action.type == BA_WALK && _ko2WalkBranch && action.target == _ko2WalkTo;
+	if (_ko2FpRan)
+	{
+		AiProbe::knownOccupantV2Decided(_unit, "fp", _ko2FpTarget, _ko2FpOld, _ko2FpHits, walk && _ko2WalkBranch[0] == 'f');
+	}
+	if (_ko2AmbRan)
+	{
+		AiProbe::knownOccupantV2Decided(_unit, "amb", _ko2AmbTarget, _ko2AmbOld, _ko2AmbHits, walk && _ko2WalkBranch[0] == 'a');
+	}
+}
+
+/**
+ * KNOWN_OCCUPANT_PATH_V2 (bench): the target whose tile the walk's own path search takes as blocked, if this is the walk to the
+ * point findFirePoint or setupAmbush chose and the side still has the target spotted this turn.
+ */
+const BattleUnit *AIModule::knownOccupantV2Walk(const BattleAction &action) const
+{
+	if (!_ko2WalkTarget || action.type != BA_WALK || action.target != _ko2WalkTo || _ko2WalkTarget->isOut()
+		|| _ko2WalkTarget->getTurnsSinceSpottedByFaction(_unit->getFaction()) != 0)
+	{
+		return 0;
+	}
+	return _ko2WalkTarget;
+}
+
+/**
+ * KNOWN_OCCUPANT_PATH_V2 (bench): the walk's own path is calculated with the target's tile blocked.
+ */
+void AIModule::knownOccupantV2Walked(const BattleAction &action, bool found, int hits)
+{
+	AiProbe::knownOccupantV2Walked(_unit, _ko2WalkBranch, hits, action.target, found);
 }
 
 /**
@@ -1305,9 +1400,20 @@ void AIModule::setupAmbush()
 	_ambushTUs = 0;
 	std::vector<int> path;
 	bool fastPass = false;
+	_ko2AmbChosenTarget = 0;
 
 	if (selectClosestKnownEnemy())
 	{
+		// KNOWN_OCCUPANT_PATH_V2 (bench): the target it hides from blocks its own tile for this unit's searches to the nodes;
+		// the target's own searches (can it reach the node) are not touched
+		bool ko2Old = false;
+		const BattleUnit *ko2 = knownOccupantV2(ko2Old);
+		if (AiProbe::knownOccupantPathV2() && _unit->getFaction() == FACTION_HOSTILE)
+		{
+			_ko2AmbRan = true;
+			_ko2AmbTarget = ko2;
+			_ko2AmbOld = ko2Old;
+		}
 		const int BASE_SYSTEMATIC_SUCCESS = 100;
 		const int COVER_BONUS = 25;
 		const int FAST_PASS_THRESHOLD = 80;
@@ -1351,7 +1457,7 @@ void AIModule::setupAmbush()
 			{
 				AiProbe::ambushNode(2);
 				AiProbe::ambushMark();
-				_save->getPathfinding()->calculate(_unit, pos, BAM_NORMAL);
+				calculateKnownOccupantV2(pos, ko2, _ko2AmbHits);
 				int ambushTUs = _save->getPathfinding()->getTotalTUCost();
 				// make sure we can move here
 				const bool ownPath = _save->getPathfinding()->getStartDirection() != -1;
@@ -1424,6 +1530,7 @@ void AIModule::setupAmbush()
 			AiProbe::ambushEnd(true, bestScore, _ambushAction.target, _ambushTUs, fastPass);
 			_probeScore = bestScore;
 			_ambushAction.type = BA_WALK;
+			_ko2AmbChosenTarget = ko2;
 			// i should really make a function for this
 			origin = _ambushAction.target.toVoxel() +
 				// 4 because -2 is eyes and 2 below that is the rifle (or at least that's my understanding)
@@ -2657,6 +2764,15 @@ bool AIModule::findFirePoint()
 {
 	if (!selectClosestKnownEnemy())
 		return false;
+	// KNOWN_OCCUPANT_PATH_V2 (bench): the target it aims at blocks its own tile for the searches to the points below
+	bool ko2Old = false;
+	const BattleUnit *ko2 = knownOccupantV2(ko2Old);
+	if (AiProbe::knownOccupantPathV2() && _unit->getFaction() == FACTION_HOSTILE)
+	{
+		_ko2FpRan = true;
+		_ko2FpTarget = ko2;
+		_ko2FpOld = ko2Old;
+	}
 	std::vector<Position> randomTileSearch = _save->getTileSearch(); // copy!
 	RNG::shuffle(randomTileSearch);
 	Position target;
@@ -2711,7 +2827,7 @@ bool AIModule::findFirePoint()
 
 		if (_save->getTileEngine()->canTargetUnit(&origin, _aggroTarget->getTile(), &target, _unit, false))
 		{
-			_save->getPathfinding()->calculate(_unit, pos, BAM_NORMAL);
+			calculateKnownOccupantV2(pos, ko2, _ko2FpHits);
 			// can move here
 			if (_save->getPathfinding()->getStartDirection() != -1)
 			{
@@ -2785,6 +2901,7 @@ bool AIModule::findFirePoint()
 		_attackAction.type = BA_WALK;
 		_firepointChosen = true;
 		_firepointChosenAt = _attackAction.target;
+		_ko2FpChosenTarget = ko2;
 		if (suppressedHere && bestDir == _fpBlockedDir)
 		{
 			AiProbe::tally(_unit, "fpblocked.same_first_step");
