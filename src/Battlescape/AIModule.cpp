@@ -528,6 +528,18 @@ void AIModule::think(BattleAction *action)
 	_melee = (_unit->getUtilityWeapon(BT_MELEE) != 0);
 	_rifle = false;
 	_blaster = false;
+	// KNOWN_OCCUPANT_PATH_V1 (bench): the enemy's paths, from here to the walk's own (BattlescapeGame::handleAI), do not go
+	// through the closest known target the side spotted this turn - findFirePoint aims at it where it stands
+	if (AiProbe::knownOccupantPath())
+	{
+		const BattleUnit *occupant = 0;
+		_knownOccAge = -1;
+		if (_unit->getFaction() == FACTION_HOSTILE)
+		{
+			occupant = knownOccupant(_knownOccAge);
+		}
+		_save->getPathfinding()->setKnownOccupant(_unit, occupant);
+	}
 	_reachable = _save->getPathfinding()->findReachable(_unit, BattleActionCost());
 	const bool revived = AiProbe::revive(_save, _unit, action, _reachable);
 	if (revived || AiProbe::flee(_save, _unit, action, _reachable))
@@ -993,6 +1005,57 @@ bool AIModule::firepointBlockedHolds()
 	AiProbe::tally(_unit, "fpblocked.invalidated");
 	AiProbe::note(_unit, ("fpblocked.why " + why.substr(1)).c_str());
 	return false;
+}
+
+/**
+ * KNOWN_OCCUPANT_PATH_V1 (bench): the closest known target, as selectClosestKnownEnemy picks it for findFirePoint, if the
+ * unit's side spotted it this turn. Its tile is the one the AI already aims at, but Pathfinding::isBlocked takes it for free
+ * ground unless the unit itself spotted it. Nothing older and no other target; leaves _aggroTarget alone.
+ * @param age How many turns ago the side spotted the closest known target; -1 if there is none.
+ * @return The target, or null.
+ */
+const BattleUnit *AIModule::knownOccupant(int &age) const
+{
+	const BattleUnit *closest = 0;
+	int minDist = 255;
+	for (auto* bu : *_save->getUnits())
+	{
+		if (validTarget(bu, true, false))
+		{
+			int dist = Position::distance2d(bu->getPosition(), _unit->getPosition());
+			if (dist < minDist)
+			{
+				minDist = dist;
+				closest = bu;
+			}
+		}
+	}
+	age = closest ? closest->getTurnsSinceSpottedByFaction(_unit->getFaction()) : -1;
+	return age == 0 ? closest : 0;
+}
+
+/**
+ * KNOWN_OCCUPANT_PATH_V1 (bench): the decision is made - whether the thinks' searches took the target's tile as blocked,
+ * and the walk that came of it (firepoint, patrol, another walk or none).
+ */
+void AIModule::knownOccupantDecided(const BattleAction &action)
+{
+	Pathfinding *pf = _save->getPathfinding();
+	const char *walk = "nowalk";
+	if (action.type == BA_WALK)
+	{
+		walk = _firepointChosen && action.target == _firepointChosenAt ? "firepoint" : isPatrolWalk(action) ? "patrol" : "walk_other";
+	}
+	AiProbe::knownOccupantDecided(_unit, pf->getKnownOccupant(_unit), _knownOccAge, pf->takeKnownOccupantHits(), _aggroTarget, walk);
+}
+
+/**
+ * KNOWN_OCCUPANT_PATH_V1 (bench): the walk's own path is calculated - whether its search took the target's tile as blocked.
+ */
+void AIModule::knownOccupantWalked(const BattleAction &action, bool found)
+{
+	Pathfinding *pf = _save->getPathfinding();
+	AiProbe::knownOccupantWalked(_unit, pf->getKnownOccupant(_unit), pf->takeKnownOccupantHits(), action.target, found);
 }
 
 /**

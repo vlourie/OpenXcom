@@ -254,6 +254,19 @@ bool firepointTargetCell();
 /// the trail "firepoint.target_cell <cell> -> <point>|none" and the tallies firepoint.target_cell_rejected and
 /// firepoint.target_cell_rejected_then_found_other / _then_no_firepoint.
 void firepointTargetCellRejected(const BattleUnit *unit, const Position &cell, bool found, const Position &point);
+/// KNOWN_OCCUPANT_PATH_V1 (OXCE_AI_KNOWN_OCCUPANT_PATH, bench only): an enemy AI unit's paths take the tile of its closest
+/// known target (the one selectClosestKnownEnemy gives findFirePoint) as blocked if its side spotted that target this turn -
+/// the AI aims at it there, but Pathfinding::isBlocked sees only the units this unit spotted itself. No other or older
+/// target, nothing the side has not spotted, not for missiles. False in a release build.
+bool knownOccupantPath();
+/// KNOWN_OCCUPANT_PATH_V1: an enemy's decision is made (after its thinks). Tallies knownocc.target_set (the closest known
+/// target was spotted this turn) or knownocc.target_age_old (it was not - the rule held back); if the thinks' searches took the
+/// target's tile as blocked (hits), knownocc.blocked, knownocc.blocked_<walk> (firepoint, patrol, walk_other, nowalk),
+/// knownocc.target_is_aggro / _not_aggro (the decision's _aggroTarget) and the trail step "knownocc <id> <tile> b<hits>".
+void knownOccupantDecided(const BattleUnit *unit, const BattleUnit *occupant, int age, int hits, const BattleUnit *aggro, const char *walk);
+/// KNOWN_OCCUPANT_PATH_V1: the walk's own path is calculated; if its search took the tile as blocked, knownocc.path_replanned
+/// (it found a path) or knownocc.no_path, and the trail step "knownocc.walk b<hits> <to> found|none".
+void knownOccupantWalked(const BattleUnit *unit, const BattleUnit *occupant, int hits, const Position &to, bool found);
 /// REPEATED_BLOCKED_STEP_V1 (OXCE_AI_BLOCKED_STEP, bench only): a walk stopped at a unit on the step in dir from where the
 /// unit stands (UnitWalkBState). Remembered for the rest of the unit-turn while knownRevision stays what it was then; another
 /// stop there at the same revision adds its step. No-op without the flag.

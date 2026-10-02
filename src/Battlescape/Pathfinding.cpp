@@ -1053,6 +1053,12 @@ bool Pathfinding::isBlocked(const BattleUnit *unit, const Tile *tile, const int 
 				if (unit->getFaction() == FACTION_HOSTILE &&
 					std::find(unit->getUnitsSpottedThisTurn().begin(), unit->getUnitsSpottedThisTurn().end(), u) != unit->getUnitsSpottedThisTurn().end())
 					return true;
+				// KNOWN_OCCUPANT_PATH_V1 (bench): the target the AI already aims at here, spotted by its side this turn
+				if (u == _knownOccupant && unit == _knownOccupantFor && bam != BAM_MISSILE)
+				{
+					++_knownOccupantHits;
+					return true;
+				}
 			}
 		}
 		else if (tile->hasNoFloor(0) && movementType != MT_FLY) // this whole section is devoted to making large units not take part in any kind of falling behaviour

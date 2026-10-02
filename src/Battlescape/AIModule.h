@@ -104,6 +104,10 @@ private:
 	bool firepointBlockedHolds();
 	/// The record of one blocked firepoint walk: a real stop or V1's suppression (FIREPOINT_BLOCKED_V2_INTEROP).
 	void recordFirepointBlockedAttempt(const BattleAction &action, int dir, bool v1Suppression);
+	/// KNOWN_OCCUPANT_PATH_V1 (bench): the closest known target if the side spotted it this turn; how long ago the side
+	/// spotted the closest known target as this think started (-1: none).
+	const BattleUnit *knownOccupant(int &age) const;
+	int _knownOccAge = -1;
 	/// _reachableWithAttack for this attack, and what it left for the walk.
 	void reachableWithAttack(const BattleActionCost &cost);
 	int unitTurn() const;
@@ -226,6 +230,10 @@ public:
 	/// V1 suppressed the first step in dir of that walk and found no way round (bench, FIREPOINT_BLOCKED_V2_INTEROP; called
 	/// by AiProbe::blockedStepPlan only): recorded as a stop on that step.
 	void firepointStepSuppressed(const BattleAction &action, int dir);
+	/// KNOWN_OCCUPANT_PATH_V1 (bench, BattlescapeGame::handleAI): the decision is made - what the thinks' searches blocked.
+	void knownOccupantDecided(const BattleAction &action);
+	/// KNOWN_OCCUPANT_PATH_V1: the walk's own path is calculated (found: it has a first step) - what that search blocked.
+	void knownOccupantWalked(const BattleAction &action, bool found);
 	/// Frees up the destination node for another Unit to select
 	void freePatrolTarget();
 };
