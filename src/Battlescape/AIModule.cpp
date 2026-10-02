@@ -1432,6 +1432,24 @@ void AIModule::setupPatrol()
 	{
 		patrolReuseProbe();
 	}
+	// STALE_PATROL_NODE_V1 (bench): the kept node passes the check a new one does below - no path by this unit's own search
+	// (which sees only what the unit may know) and it is dropped for a new choice; why there is none is not asked
+	const bool staleCheck = keptNode && AiProbe::stalePatrolNode();
+	Position staleOld(-1, -1, -1);
+	if (staleCheck)
+	{
+		Pathfinding *pf = _save->getPathfinding();
+		pf->calculate(_unit, _toNode->getPosition(), BAM_NORMAL);
+		const bool noPath = pf->getStartDirection() == -1;
+		pf->abortPath();
+		if (noPath)
+		{
+			staleOld = _toNode->getPosition();
+			freePatrolTarget();
+			_toNode = 0;
+		}
+	}
+	const int staleAge = _toNodeTurn < 0 ? -1 : _save->getTurn() - _toNodeTurn;
 
 	while (_toNode == 0 && triesLeft)
 	{
@@ -1538,9 +1556,14 @@ void AIModule::setupPatrol()
 		}
 	}
 
-	if (_toNode != 0 && !keptNode)
+	const bool staleCleared = staleOld.x != -1;
+	if (_toNode != 0 && (!keptNode || staleCleared))
 	{
 		_toNodeTurn = _save->getTurn();
+	}
+	if (staleCheck)
+	{
+		AiProbe::stalePatrolChecked(_unit, staleCleared, staleOld, staleAge, _toNode ? _toNode->getPosition() : Position(-1, -1, -1));
 	}
 	if (_toNode != 0)
 	{

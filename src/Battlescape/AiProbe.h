@@ -298,6 +298,13 @@ bool patrolNoPathProbe();
 /// destination refused even then). The reuse trail gets " nopath <cause> fin <xyz>|none r <own>/<seen>/<both>/<all>
 /// exp <real>/<own>/<seen>/<both>/<all>" (1 path, 0 none, -1 refused; nodes the A* closed).
 void patrolNoPathDecided(const BattleUnit *unit, const char *cause, bool chosen);
+/// STALE_PATROL_NODE_V1 (OXCE_AI_STALE_PATROL_NODE, bench only): setupPatrol drops the node it kept from an earlier think
+/// when this unit's own search finds no path to it, and chooses again as for a new node (which needs a path). False in a
+/// release build.
+bool stalePatrolNode();
+/// STALE_PATROL_NODE_V1: one check of a kept node. Tallies patrol_stale.checked; when dropped also patrol_stale.no_path,
+/// .cleared and .reselected or .reselect_failed, and the trail "patrol.stale old <xyz> age <turns> new <xyz>|-".
+void stalePatrolChecked(const BattleUnit *unit, bool cleared, const Position &old, int age, const Position &now);
 /// REPEATED_BLOCKED_STEP_V1 (OXCE_AI_BLOCKED_STEP, bench only): a walk stopped at a unit on the step in dir from where the
 /// unit stands (UnitWalkBState). Remembered for the rest of the unit-turn while knownRevision stays what it was then; another
 /// stop there at the same revision adds its step. No-op without the flag.

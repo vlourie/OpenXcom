@@ -144,6 +144,8 @@ bool patrolReuseProbe() { return false; }
 void patrolReuseDecided(const BattleUnit *, const char *, const char *, bool, const std::string &) {}
 bool patrolNoPathProbe() { return false; }
 void patrolNoPathDecided(const BattleUnit *, const char *, bool) {}
+bool stalePatrolNode() { return false; }
+void stalePatrolChecked(const BattleUnit *, bool, const Position &, int, const Position &) {}
 void blockedStepStop(SavedBattleGame *, BattleUnit *, int) {}
 void blockedStepDecide(SavedBattleGame *, BattleUnit *) {}
 void blockedStepPlan(SavedBattleGame *, BattleUnit *, const BattleAction &) {}
@@ -3459,6 +3461,36 @@ bool patrolNoPathProbe()
 {
 	static const bool on = patrolReuseProbe() && envOn("OXCE_AI_PATROL_NOPATH_PROBE");
 	return on;
+}
+
+bool stalePatrolNode()
+{
+	static const bool on = active() && envOn("OXCE_AI_STALE_PATROL_NODE");
+	return on;
+}
+
+void stalePatrolChecked(const BattleUnit *unit, bool cleared, const Position &old, int age, const Position &now)
+{
+	const std::string b = std::string(unit->getFaction() == FACTION_PLAYER ? "p." : "h.") + "patrol_stale.";
+	++tallies[b + "checked"];
+	if (!cleared)
+	{
+		return;
+	}
+	++tallies[b + "no_path"];
+	++tallies[b + "cleared"];
+	++tallies[b + (now.x != -1 ? "reselected" : "reselect_failed")];
+	std::ostringstream s;
+	s << "patrol.stale old " << old.x << "," << old.y << "," << old.z << " age " << age << " new ";
+	if (now.x != -1)
+	{
+		s << now.x << "," << now.y << "," << now.z;
+	}
+	else
+	{
+		s << "-";
+	}
+	addTrail(unit, s.str().c_str());
 }
 
 void patrolNoPathDecided(const BattleUnit *unit, const char *cause, bool chosen)
