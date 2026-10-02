@@ -92,10 +92,11 @@ def audio() -> None:
     if not (OUT / "miniaudio.h").exists():
         raise SystemExit("нет miniaudio.h - сначала py -3.13 tools/voice_deps.py")
     dll = OUT / "xpaudio.dll"
-    # the runtime switch for IAudioClient3 (wasapi.noLowLatencySharedMode) - a small local patch, idempotent
+    # local patches, idempotent: the duplex-loop fix of the "robot" at a 5.1/7.1 output and the runtime
+    # switch for IAudioClient3 (wasapi.noLowLatencySharedMode)
     sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
     import voice_ma_patch
-    print("miniaudio.h: " + ("patched" if voice_ma_patch.apply() else "already patched") + " (noLowLatencySharedMode)")
+    print("miniaudio.h: " + ("patched" if voice_ma_patch.apply() else "already patched") + " (duplex loop, noLowLatencySharedMode)")
     # -static: the DLL must not need MinGW runtime DLLs next to the launcher
     cmd = [str(GCC), "-O2", "-shared", "-static", "-s", f"-I{OUT}", "-o", str(dll),
            str(VOICE / "native" / "xpaudio.c"), "-lole32", "-lwinmm"]
