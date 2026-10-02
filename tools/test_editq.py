@@ -104,6 +104,18 @@ def main():
     check(denied(hook("pre", "B", "Bash", command="cd build-release && ninja")), "B: ninja отклонён")
     check(hook("pre", "B", "Bash", command="grep -n ninja CLAUDE.md") is None, "grep ninja - не сборка")
     check(hook("pre", "A", "Bash", command="ninja -C build-release") is None, "держателю сборка можно")
+    # R-158: копия скрипта сборки, поиск ninja в PATH и сборка черновика вне дерева - не сборка дерева
+    check(hook("pre", "B", "Bash", command="cp tools/build/build.ps1 /e/tmp/tree/tools/build/build.ps1") is None,
+          "cp build.ps1 - не сборка")
+    check(hook("pre", "B", "Bash", command="command -v cmake ninja c++") is None, "command -v ninja - не сборка")
+    check(hook("pre", "B", "Bash", command="ninja -C E:/tmp/scratch/build > n.log") is None,
+          "ninja -C вне дерева - не сборка")
+    check(hook("pre", "B", "Bash", command="cmake --build /e/tmp/scratch/build") is None,
+          "cmake --build вне дерева - не сборка")
+    check(denied(hook("pre", "B", "Bash", command="ninja -C " + os.path.join(REPO, "build-release"))),
+          "ninja -C в дереве (полный путь) - сборка")
+    check(denied(hook("pre", "B", "Bash", command="cp a b && ninja -C E:/tmp/x && ninja")),
+          "ninja без папки после черновика - сборка")
     check(denied(hook("pre", "C", "Bash", command="git add -A && git commit -m x")), "git add -A отклонён")
     check(denied(hook("pre", "C", "Bash", command="git commit -am 'x'")), "git commit -am отклонён")
     check(hook("pre", "C", "Bash", command="git add -A -- tools/x.py") is None,

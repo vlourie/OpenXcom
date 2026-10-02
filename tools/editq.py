@@ -356,7 +356,12 @@ def needs_build(files):
 BUILD_RX = re.compile(r"(?i)((^|[\s;&|(/\\\"'])ninja(\.exe)?[\"']?(\s|$)|cmake(\.exe)?[\"']?\s+--build"
                       r"|build\.ps1|OXCE_Build\.cmd|OXCE_Release\.cmd|release\.ps1)")
 READ_CMDS = {"git", "grep", "rg", "cat", "head", "tail", "sed", "less", "ls", "echo", "find",
-             "type", "get-content", "select-string", "wc", "diff"}
+             "type", "get-content", "select-string", "wc", "diff",
+             # build.ps1 или ninja здесь - аргумент: файл копируют, сверяют, ищут в PATH, а не запускают (R-158)
+             "cp", "mv", "robocopy", "copy-item", "move-item", "stat", "file", "cmp", "md5sum", "sha256sum",
+             "command", "which", "where", "get-command", "get-item", "test-path"}
+# ninja -C <папка> / cmake --build <папка> / -B <папка>: сборка той папки; вне репозитория - не сборка дерева (R-158)
+BUILD_DIR_RX = re.compile(r"(?:^|\s)(?:-C|--build|-B)\s+(\S+)")
 
 
 def strip_quotes(cmd):
@@ -398,8 +403,24 @@ def builds(cmd):
         if first in READ_CMDS:
             continue
         if BUILD_RX.search(part):
+            dirs = BUILD_DIR_RX.findall(part)
+            if dirs and all(outside_repo(d) for d in dirs):
+                continue
             return True
     return False
+
+
+def outside_repo(path):
+    """Абсолютный путь не в дереве (E:/tmp/..., /e/tmp/...); относительный - от дерева, значит в нём."""
+    p = path.replace("\\", "/")
+    m = re.match(r"^/([a-zA-Z])/(.*)$", p)            # путь Git Bash: /e/tmp -> e:/tmp
+    if m:
+        p = f"{m.group(1)}:/{m.group(2)}"
+    if not os.path.isabs(p):
+        return False
+    root = os.path.normcase(os.path.abspath(REPO))
+    full = os.path.normcase(os.path.abspath(p))
+    return not (full == root or full.startswith(root + os.sep))
 
 
 def out(obj):
