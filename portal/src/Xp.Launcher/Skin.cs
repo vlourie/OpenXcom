@@ -5,6 +5,7 @@ using Avalonia.Controls.Primitives;
 using Avalonia.Controls.Shapes;
 using Avalonia.Layout;
 using Avalonia.Media;
+using Avalonia.Platform;
 using Avalonia.Styling;
 using Avalonia.Themes.Fluent;
 using Path = Avalonia.Controls.Shapes.Path;
@@ -168,6 +169,8 @@ public static class Skin
                 new Setter(TemplatedControl.BackgroundProperty, B(Bg)),
                 new Setter(TemplatedControl.FontFamilyProperty, Regular),
                 new Setter(TemplatedControl.FontSizeProperty, 14.0),
+                // the same picture as the exe icon: tools/launcher_icon.py ico oxce_globe
+                new Setter(Window.IconProperty, new WindowIcon(AssetLoader.Open(new Uri("avares://XPiratezLauncher/Assets/app.ico")))),
             },
         });
         // "primary": the lime button (main button, Send); "warn": rollback and failures; "ghost": framed secondary

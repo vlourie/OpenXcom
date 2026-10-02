@@ -7,6 +7,8 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <BuiltInComInteropSupport>false</BuiltInComInteropSupport>
     <ApplicationManifest>app.manifest</ApplicationManifest>
+    <!-- OXCE HD over the geoscape globe: tools/launcher_icon.py ico oxce_globe (16..256) -->
+    <ApplicationIcon>Assets\app.ico</ApplicationIcon>
     <Version>0.3.5</Version>
     <!-- dev keys are trusted only in Debug or when explicitly allowed for a local test build -->
     <AllowDevKeys Condition="'$(AllowDevKeys)' == ''">false</AllowDevKeys>
@@ -39,6 +41,7 @@
     <!-- the home card art: tools/hdart/gen_promo.py, indigo duotone, <= 400 KB -->
     <AvaloniaResource Include="Assets\hero.jpg" />
     <AvaloniaResource Include="Assets\setup_*.jpg" />
+    <AvaloniaResource Include="Assets\app.ico" />
   </ItemGroup>
   <!-- rendering is WGL/software (Program.cs), ANGLE is never loaded -->
   <Target Name="DropAngle" AfterTargets="Publish">
