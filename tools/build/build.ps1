@@ -843,7 +843,8 @@ function Invoke-LauncherStep {
         $paths += $p
     }
     # профили мастер-модов: лаунчер читает их из корня игры и по ним пишет options.cfg
-    $profiles = Join-Path $portal 'profiles\xp-profiles.json'
+    # ProfilesFile - другой файл профилей (проба переключения на копиях, tools/compat/hd_core_switch.py)
+    $profiles = Get-Cfg 'ProfilesFile' (Join-Path $portal 'profiles\xp-profiles.json')
     if (-not (Test-Path -LiteralPath $profiles)) { throw "нет $profiles" }
     $paths += $profiles
     $ver = (Get-Item -LiteralPath $exe).VersionInfo.ProductVersion
@@ -932,7 +933,7 @@ try {
     $repoDir = Get-Cfg 'RepoDir' ''
     if (-not $repoDir) { $repoDir = (Resolve-Path (Join-Path $scriptDir '..\..')).Path }
     # пути в настройках могут быть от корня репозитория: тогда один файл годится обеим машинам
-    foreach ($key in 'BuildDir', 'GameDir', 'DistDir', 'CopyExeTo', 'LauncherOut', 'DataSource') {
+    foreach ($key in 'BuildDir', 'GameDir', 'DistDir', 'CopyExeTo', 'LauncherOut', 'DataSource', 'ProfilesFile') {
         $v = $script:cfg.$key
         if ($v -is [string] -and $v -ne '' -and -not [IO.Path]::IsPathRooted($v)) { $script:cfg.$key = Join-Path $repoDir $v }
     }
