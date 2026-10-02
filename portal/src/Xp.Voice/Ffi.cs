@@ -37,8 +37,10 @@ static partial class Ffi
 
     /// <summary>Room and audio stream events, called on the SDK's thread: handlers must be quick.</summary>
     public static event Action<FfiEvent>? Events;
-    /// <summary>The SDK's own log lines (info and above) and panics.</summary>
+    /// <summary>The SDK's own log lines (warn and above, info too when <see cref="Verbose"/>) and panics.</summary>
     public static event Action<string>? Log;
+    /// <summary>Diagnostics: the SDK's info lines too.</summary>
+    public static bool Verbose { get; set; }
 
     public static unsafe void Init()
     {
@@ -125,7 +127,7 @@ static partial class Ffi
             {
                 case FfiEvent.MessageOneofCase.Logs:
                     foreach (var r in e.Logs.Records)
-                        if (r.Level <= LogLevel.LogInfo && !(r.Level == LogLevel.LogInfo && r.Target == "libwebrtc"))
+                        if (r.Level <= (Verbose ? LogLevel.LogInfo : LogLevel.LogWarn) && !(r.Level == LogLevel.LogInfo && r.Target == "libwebrtc"))
                             Log?.Invoke($"lk {r.Level switch { LogLevel.LogError => "ERROR", LogLevel.LogWarn => "warn", _ => "info" }} {r.Target}: {r.Message}");
                     return;
                 case FfiEvent.MessageOneofCase.Panic:

@@ -5,12 +5,10 @@
  * the frame the LiveKit audio source and the echo canceller both expect. miniaudio converts to the
  * device's own rate and channel count and follows the default device when Windows switches it.
  *
- * Diagnostics (02.10, the "robot" the far end hears - docs/research/voice-robot-2026-10-02.md):
- * xpa_set_options chooses WASAPI switches tried one at a time (hardware offload, AUTOCONVERTPCM,
- * IAudioClient3 low-latency shared mode - the last one through a small patch of miniaudio,
- * tools/voice_ma_patch.py) and an output / input device by a part of its name; xpa_detail tells
- * what WASAPI really gave each stream; xpa_take_log hands over miniaudio's own log lines; a second,
- * raw loopback records the engine's mix in its own format, before any conversion.
+ * xpa_set_options chooses an output / input device by a part of its name. Diagnostics give numbers
+ * and names only, never sound: xpa_detail tells what WASAPI really gave each stream, xpa_take_log
+ * hands over miniaudio's own log lines. miniaudio.h carries a local fix of its duplex loop
+ * (tools/voice_ma_patch.py, R-190).
  *
  * Build: py -3.13 tools/voice_deps.py --audio (MinGW gcc, static, no runtime DLLs).
  */
@@ -106,21 +104,15 @@ XPA_API int xpa_take_log(char *dst, uint32_t cap)
     return (int)n;
 }
 
-/* ---------------------------------------------------------------- switches and device choice */
+/* ---------------------------------------------------------------- device choice */
 
-#define XPA_NO_OFFLOAD 1   /* wasapi.noHardwareOffloading: no IAudioClient2::SetClientProperties(bIsOffload) */
-#define XPA_NO_CONVERT 2   /* wasapi.noAutoConvertSRC: the stream runs at the engine's own rate, miniaudio resamples */
-#define XPA_NO_AC3     4   /* wasapi.noLowLatencySharedMode (patch): plain IAudioClient::Initialize, never IAudioClient3 */
-
-static uint32_t g_flags;
 static char g_outPick[128], g_inPick[128];   /* parts of device names, ASCII case-insensitive; empty = the Windows default */
 static ma_device_id g_outId, g_inId;         /* the ids behind the picks, valid while the picks are */
 static char g_outName[256], g_inName[256];   /* the names found, empty = default used */
 
 /* Before xpa_open; kept for every later open (the launcher reopens the device after Windows takes it away). */
-XPA_API void xpa_set_options(uint32_t flags, const char *output, const char *input)
+XPA_API void xpa_set_options(const char *output, const char *input)
 {
-    g_flags = flags;
     snprintf(g_outPick, sizeof g_outPick, "%s", output ? output : "");
     snprintf(g_inPick, sizeof g_inPick, "%s", input ? input : "");
 }
@@ -211,9 +203,6 @@ static ma_result try_open(ma_device_type type, uint32_t rate, uint32_t period)
     c.capture.channels = 1;
     c.dataCallback = on_data;
     c.notificationCallback = on_note;
-    c.wasapi.noHardwareOffloading = (g_flags & XPA_NO_OFFLOAD) != 0;
-    c.wasapi.noAutoConvertSRC = (g_flags & XPA_NO_CONVERT) != 0;
-    c.wasapi.noLowLatencySharedMode = (g_flags & XPA_NO_AC3) != 0;
     if (pick_device(ma_device_type_playback, g_outPick, &g_outId, g_outName, sizeof g_outName)) c.playback.pDeviceID = &g_outId;
     if (type == ma_device_type_duplex && pick_device(ma_device_type_capture, g_inPick, &g_inId, g_inName, sizeof g_inName)) c.capture.pDeviceID = &g_inId;
     return ma_device_init(&g_ctx, &c, &g_device);
@@ -254,149 +243,6 @@ XPA_API int xpa_open(uint32_t rate, uint32_t period, xpa_data_cb data, xpa_note_
     return mode;
 }
 
-/* ---------------------------------------------------------------- loopbacks: what Windows really renders on the output */
-
-/* Diagnostics: WASAPI loopback of the output (every app's sound, after the system mix) - 48 kHz mono
- * s16 converted by miniaudio, kept in a 2 s ring for xpa_loopback_read. The loopbacks always open with
- * miniaudio's defaults, whatever the switches: they are the measuring tap, not the thing measured. */
-static ma_device g_loop;
-static ma_pcm_rb g_loopRb;
-static int g_loopOpen = 0;
-
-static void on_loop(ma_device *dev, void *output, const void *input, ma_uint32 frames)
-{
-    (void)dev; (void)output;
-    const int16_t *src = (const int16_t *)input;
-    while (frames > 0) {
-        ma_uint32 n = frames;
-        void *dst;
-        if (ma_pcm_rb_acquire_write(&g_loopRb, &n, &dst) != MA_SUCCESS || n == 0) return;   /* full: drop */
-        memcpy(dst, src, n * sizeof(int16_t));
-        ma_pcm_rb_commit_write(&g_loopRb, n);
-        src += n; frames -= n;
-    }
-}
-
-/* 0 - recording, <0 - error (text in xpa_error) */
-XPA_API int xpa_loopback_start(uint32_t rate)
-{
-    if (g_loopOpen) return 0;
-    if (ctx_open() != MA_SUCCESS) return -1;
-    if (ma_pcm_rb_init(ma_format_s16, 1, rate * 2, NULL, NULL, &g_loopRb) != MA_SUCCESS) return -1;
-    ma_device_config c = ma_device_config_init(ma_device_type_loopback);
-    c.sampleRate = rate;
-    c.capture.format = ma_format_s16;
-    c.capture.channels = 1;
-    c.dataCallback = on_loop;
-    if (g_outName[0]) c.capture.pDeviceID = &g_outId;   /* the same output the voice plays on */
-    ma_result r = ma_device_init(&g_ctx, &c, &g_loop);
-    if (r == MA_SUCCESS) r = ma_device_start(&g_loop);
-    if (r != MA_SUCCESS) {
-        snprintf(g_error, sizeof g_error, "loopback: %s", ma_result_description(r));
-        ma_pcm_rb_uninit(&g_loopRb);
-        return -2;
-    }
-    g_loopOpen = 1;
-    return 0;
-}
-
-/* Copies up to max samples of the loopback ring into dst; returns how many. */
-XPA_API int xpa_loopback_read(int16_t *dst, uint32_t max)
-{
-    if (!g_loopOpen) return 0;
-    uint32_t got = 0;
-    while (got < max) {
-        ma_uint32 n = max - got;
-        void *src;
-        if (ma_pcm_rb_acquire_read(&g_loopRb, &n, &src) != MA_SUCCESS || n == 0) break;
-        memcpy(dst + got, src, n * sizeof(int16_t));
-        ma_pcm_rb_commit_read(&g_loopRb, n);
-        got += n;
-    }
-    return (int)got;
-}
-
-/* The same tap raw: format, channels and rate left unknown, so miniaudio opens the loopback in the
- * engine's own mix format and copies the frames through untouched (2 s byte ring). Tells whether a
- * defect seen in out.wav is in the mix itself or in the conversion to s16 mono. */
-static ma_device g_loopRaw;
-static ma_rb g_rawRb;
-static int g_rawOpen = 0;
-
-static void on_raw(ma_device *dev, void *output, const void *input, ma_uint32 frames)
-{
-    (void)output;
-    const uint8_t *src = (const uint8_t *)input;
-    size_t bytes = (size_t)frames * ma_get_bytes_per_frame(dev->capture.format, dev->capture.channels);
-    while (bytes > 0) {
-        size_t n = bytes;
-        void *dst;
-        if (ma_rb_acquire_write(&g_rawRb, &n, &dst) != MA_SUCCESS || n == 0) return;   /* full: drop */
-        memcpy(dst, src, n);
-        ma_rb_commit_write(&g_rawRb, n);
-        src += n; bytes -= n;
-    }
-}
-
-/* 0 - recording (format in xpa_loopback_raw_format), <0 - error (text in xpa_error) */
-XPA_API int xpa_loopback_raw_start(void)
-{
-    if (g_rawOpen) return 0;
-    if (ctx_open() != MA_SUCCESS) return -1;
-    ma_device_config c = ma_device_config_init(ma_device_type_loopback);
-    c.sampleRate = 0;
-    c.capture.format = ma_format_unknown;
-    c.capture.channels = 0;
-    c.dataCallback = on_raw;
-    if (g_outName[0]) c.capture.pDeviceID = &g_outId;
-    ma_result r = ma_device_init(&g_ctx, &c, &g_loopRaw);
-    if (r != MA_SUCCESS) {
-        snprintf(g_error, sizeof g_error, "raw loopback: %s", ma_result_description(r));
-        return -2;
-    }
-    size_t bpf = ma_get_bytes_per_frame(g_loopRaw.capture.format, g_loopRaw.capture.channels);
-    if (bpf == 0 || ma_rb_init(bpf * g_loopRaw.sampleRate * 2, NULL, NULL, &g_rawRb) != MA_SUCCESS) {
-        snprintf(g_error, sizeof g_error, "raw loopback: ring for %u bytes/frame at %u Hz", (unsigned)bpf, g_loopRaw.sampleRate);
-        ma_device_uninit(&g_loopRaw);
-        return -1;
-    }
-    r = ma_device_start(&g_loopRaw);
-    if (r != MA_SUCCESS) {
-        snprintf(g_error, sizeof g_error, "raw loopback start: %s", ma_result_description(r));
-        ma_rb_uninit(&g_rawRb);
-        ma_device_uninit(&g_loopRaw);
-        return -3;
-    }
-    g_rawOpen = 1;
-    return 0;
-}
-
-/* format: miniaudio's ma_format (1 u8, 2 s16, 3 s24, 4 s32, 5 f32). -1 when the raw loopback is not running. */
-XPA_API int xpa_loopback_raw_format(int *format, uint32_t *channels, uint32_t *rate)
-{
-    if (!g_rawOpen) return -1;
-    *format = (int)g_loopRaw.capture.format;
-    *channels = g_loopRaw.capture.channels;
-    *rate = g_loopRaw.sampleRate;
-    return 0;
-}
-
-/* Copies up to max bytes of the raw ring into dst; returns how many. */
-XPA_API int xpa_loopback_raw_read(uint8_t *dst, uint32_t max)
-{
-    if (!g_rawOpen) return 0;
-    size_t got = 0;
-    while (got < max) {
-        size_t n = max - got;
-        void *src;
-        if (ma_rb_acquire_read(&g_rawRb, &n, &src) != MA_SUCCESS || n == 0) break;
-        memcpy(dst + got, src, n);
-        ma_rb_commit_read(&g_rawRb, n);
-        got += n;
-    }
-    return (int)got;
-}
-
 /* ---------------------------------------------------------------- the rest */
 
 /* How many capture devices Windows lists right now; -1 when not open or the query failed. The launcher
@@ -411,26 +257,8 @@ XPA_API int xpa_capture_count(void)
     return (int)ncap;
 }
 
-/* Test hook: stops the device the way Windows does when it takes the card away - the callback ends
- * and the "stopped" notification fires - so the reopening in VoiceSession can be exercised on a
- * machine whose sound card is fine. Not called by the launcher otherwise. */
-XPA_API void xpa_stop(void)
-{
-    if (g_open) ma_device_stop(&g_device);
-}
-
 XPA_API void xpa_close(void)
 {
-    if (g_rawOpen) {
-        ma_device_uninit(&g_loopRaw);
-        ma_rb_uninit(&g_rawRb);
-        g_rawOpen = 0;
-    }
-    if (g_loopOpen) {
-        ma_device_uninit(&g_loop);
-        ma_pcm_rb_uninit(&g_loopRb);
-        g_loopOpen = 0;
-    }
     if (!g_open) return;
     ma_device_uninit(&g_device);   /* waits for the callback to finish */
     g_open = 0;
@@ -520,24 +348,21 @@ static void stream_line(char *s, size_t cap, size_t *at, const char *what, ma_de
     app(s, cap, at, "\n");
 }
 
-/* For the log, one line per open stream (playback, capture, the two loopbacks), after a first line
- * with the switches and the device picks in force. "asked" is what the launcher requested, "got" what
- * miniaudio initialized the stream with (with AUTOCONVERTPCM the rate is the requested one and the
- * engine converts; "mix" is the engine's own format either way). */
+/* For the log, one line per open stream (playback, capture), after a first line with the device picks
+ * in force. "asked" is what the launcher requested, "got" what miniaudio initialized the stream with
+ * (with AUTOCONVERTPCM the rate is the requested one and the engine converts; "mix" is the engine's
+ * own format either way). Formats and names only, no sound. */
 XPA_API const char *xpa_detail(void)
 {
-    static char s[6144];
+    static char s[4096];
     size_t at = 0;
     s[0] = 0;
-    app(s, sizeof s, &at, "switches: nooffload %d, noconvert %d, noac3 %d | output pick \"%s\"%s%s | input pick \"%s\"%s%s\n",
-        !!(g_flags & XPA_NO_OFFLOAD), !!(g_flags & XPA_NO_CONVERT), !!(g_flags & XPA_NO_AC3),
+    app(s, sizeof s, &at, "output pick \"%s\"%s%s | input pick \"%s\"%s%s\n",
         g_outPick, g_outName[0] ? " -> " : g_outPick[0] ? " -> not found, default used" : " (default)", g_outName,
         g_inPick, g_inName[0] ? " -> " : g_inPick[0] ? " -> not found, default used" : " (default)", g_inName);
     if (g_open) {
         stream_line(s, sizeof s, &at, "playback", &g_device, 1);
         if (g_device.type == ma_device_type_duplex) stream_line(s, sizeof s, &at, "capture", &g_device, 0);
     }
-    if (g_loopOpen) stream_line(s, sizeof s, &at, "loopback s16", &g_loop, 0);
-    if (g_rawOpen) stream_line(s, sizeof s, &at, "loopback raw", &g_loopRaw, 0);
     return s;
 }

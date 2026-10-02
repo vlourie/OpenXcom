@@ -10,16 +10,12 @@ namespace Xp.Launcher;
 
 /// <summary>
 /// The voice prototype (docs/portal/VOICE_CHAT.md, part B): one test room, no site, no friends yet.
-///   XPiratezLauncher.exe --voice wss://host token|@token-file [--tone] [--silent] [--listen]
-///                        [--minimized] [--log file] [--quit-after seconds] [--apm] [--queue-ms n]
-///                        [--stop-device-after seconds] [--no-mic-until seconds] [--record dir]
-///                        [--audio nooffload,noconvert,noac3,period20] [--output name-part] [--input name-part]
-/// --tone sends beeps instead of the microphone, --silent plays nothing, --listen opens no microphone,
-/// --apm runs the tone through the echo canceller, --stop-device-after stops the sound device as Windows
-/// would and lets the reopening be watched, --no-mic-until keeps the microphone "unplugged" for a while:
-/// the switches of the automatic local test. --audio, --output and --input are the diagnostics of the
-/// "robot" (docs/research/voice-robot-2026-10-02.md): WASAPI switches tried one at a time, and the
-/// output / microphone picked by a part of the name instead of the Windows default.
+///   XPiratezLauncher.exe --voice wss://host token|@token-file [--silent] [--listen] [--diagnostics]
+///                        [--minimized] [--log file] [--quit-after seconds] [--queue-ms n]
+///                        [--output name-part] [--input name-part]
+/// --silent plays nothing, --listen opens no microphone, --diagnostics writes the safe diagnostics of
+/// the sound to the log (numbers and names, no sound), --output and --input pick the output /
+/// microphone by a part of the name instead of the Windows default.
 /// Several copies may run at once - two of them on one machine are the local test.
 /// </summary>
 public sealed class VoiceWindow : Window
@@ -61,7 +57,7 @@ public sealed class VoiceWindow : Window
             _session.Muted = !_session.Muted;
             _mute.Content = _session.Muted ? "Включить микрофон" : "Выключить микрофон";
         };
-        _mute.IsEnabled = opt.Microphone || opt.Tone;
+        _mute.IsEnabled = opt.Microphone;
         // A/B in a real conversation: is the "robot" voice the echo canceller or the network?
         _apm.Click += (_, _) =>
         {
@@ -73,7 +69,7 @@ public sealed class VoiceWindow : Window
         var top = new StackPanel { Spacing = 10 };
         top.Children.Add(_state);
         var micRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 12 };
-        _micLabel.Text = opt.Tone ? "тон" : "микрофон";
+        _micLabel.Text = "микрофон";
         micRow.Children.Add(_micLabel);
         micRow.Children.Add(_mic);
         micRow.Children.Add(_mute);
@@ -142,10 +138,10 @@ public sealed class VoiceWindow : Window
         if (micMissing != _micMissingShown)
         {
             _micMissingShown = micMissing;
-            _micLabel.Text = micMissing ? "микрофон не открылся: вас никто не слышит, ищу его" : _opt.Tone ? "тон" : "микрофон";
+            _micLabel.Text = micMissing ? "микрофон не открылся: вас никто не слышит, ищу его" : "микрофон";
             if (micMissing) _micLabel.Foreground = Skin.B(Skin.WarnText);
             else _micLabel.ClearValue(ForegroundProperty);
-            _mute.IsEnabled = !micMissing && (_opt.Microphone || _opt.Tone);
+            _mute.IsEnabled = !micMissing && _opt.Microphone;
         }
 
         _peers.Children.Clear();
@@ -185,38 +181,25 @@ public sealed class VoiceWindow : Window
     {
         if (args.Length < 3) return 2;
         string token = args[2].StartsWith('@') ? File.ReadAllText(args[2][1..]).Trim() : args[2];
-        string? log = null, record = null, micFile = null, audio = null, output = null, input = null;
-        int quit = 0, queue = 0, stopDevice = 0, noMic = 0;
+        string? log = null, output = null, input = null;
+        int quit = 0, queue = 0;
         for (int i = 3; i < args.Length; i++)
         {
             if (args[i] == "--log" && i + 1 < args.Length) log = args[++i];
-            else if (args[i] == "--stop-device-after" && i + 1 < args.Length) stopDevice = int.Parse(args[++i], System.Globalization.CultureInfo.InvariantCulture);
-            else if (args[i] == "--no-mic-until" && i + 1 < args.Length) noMic = int.Parse(args[++i], System.Globalization.CultureInfo.InvariantCulture);
-            else if (args[i] == "--record" && i + 1 < args.Length) record = args[++i];
-            else if (args[i] == "--mic-file" && i + 1 < args.Length) micFile = args[++i];
             else if (args[i] == "--quit-after" && i + 1 < args.Length) quit = int.Parse(args[++i], System.Globalization.CultureInfo.InvariantCulture);
             else if (args[i] == "--queue-ms" && i + 1 < args.Length) queue = int.Parse(args[++i], System.Globalization.CultureInfo.InvariantCulture);
-            else if (args[i] == "--audio" && i + 1 < args.Length) audio = args[++i];
             else if (args[i] == "--output" && i + 1 < args.Length) output = args[++i];
             else if (args[i] == "--input" && i + 1 < args.Length) input = args[++i];
         }
         log ??= Path.Combine(Settings.Dir, "voice.log");
-        var switches = AudioDevice.ParseSwitches(audio ?? "", out var unknownSwitches);
         var opt = new VoiceOptions
         {
             Url = args[1],
             Token = token,
-            Tone = args.Contains("--tone") || micFile is not null,
-            MicFile = micFile,
-            RecordDir = record,
-            ForceEchoCanceller = args.Contains("--apm"),
             Microphone = !args.Contains("--listen"),
             OutputGain = args.Contains("--silent") ? 0f : 1f,
             SendQueueMs = queue,
-            StopDeviceAfterSec = stopDevice,
-            NoMicUntilSec = noMic,
-            Audio = switches,
-            AudioUnknown = unknownSwitches,
+            Diagnostics = args.Contains("--diagnostics"),
             Output = string.IsNullOrWhiteSpace(output) ? null : output,
             Input = string.IsNullOrWhiteSpace(input) ? null : input,
         };
