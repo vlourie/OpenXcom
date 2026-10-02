@@ -289,6 +289,15 @@ bool patrolReuseProbe();
 /// same classes) or patrol.reuse.route_free; patrol.reuse.chosen.<cls> if the decision walks to the node. The trail step
 /// "patrol.reuse <cls> node <xyz> age <turns> reach 0|1 first <xyz> occ <id>/<faction>/s<seen> route <id>/<faction>/s<seen>@<xyz>".
 void patrolReuseDecided(const BattleUnit *unit, const char *cls, const char *route, bool chosen, const std::string &trail);
+/// PATROL_NO_PATH_CAUSE (OXCE_AI_PATROL_NOPATH_PROBE with OXCE_AI_PATROL_REUSE_PROBE, bench only, passive): for a kept node
+/// that is free and has no path, the same search again with units let through (Pathfinding::probeReach). False in a release build.
+bool patrolNoPathProbe();
+/// PATROL_NO_PATH_CAUSE: one such decision. Tallies patrol.nopath.<cause> and patrol.nopath.chosen.<cause> if it walks to the
+/// node; the cause: own, seen, own_or_seen (either let through is enough), own_and_seen (only both), unit_rule (only every
+/// unit: the big-unit and falling rules, whatever the side knows), geometry (no path without any unit), geometry_refused (the
+/// destination refused even then). The reuse trail gets " nopath <cause> fin <xyz>|none r <own>/<seen>/<both>/<all>
+/// exp <real>/<own>/<seen>/<both>/<all>" (1 path, 0 none, -1 refused; nodes the A* closed).
+void patrolNoPathDecided(const BattleUnit *unit, const char *cause, bool chosen);
 /// REPEATED_BLOCKED_STEP_V1 (OXCE_AI_BLOCKED_STEP, bench only): a walk stopped at a unit on the step in dir from where the
 /// unit stands (UnitWalkBState). Remembered for the rest of the unit-turn while knownRevision stays what it was then; another
 /// stop there at the same revision adds its step. No-op without the flag.

@@ -89,8 +89,17 @@ private:
 	/// many times isBlocked did so since the hits were last taken
 	const BattleUnit *_knownOccupantFor = nullptr, *_knownOccupant = nullptr;
 	mutable int _knownOccupantHits = 0;
+	/// PATROL_NO_PATH_CAUSE (bench, probeReach only): the kinds of units isBlocked lets through (IGNORE_*); 0 outside it
+	int _probeIgnore = 0;
 
   public:
+	/// PATROL_NO_PATH_CAUSE (bench): units probeReach may let through - the unit's own side; the others isBlocked stops it at
+	/// because it knows of them (player: visible; hostile: spotted by this unit this turn; the known occupant); any unit at all,
+	/// whatever the unit knows (also the big-unit and falling rules)
+	enum { IGNORE_OWN = 1, IGNORE_SEEN = 2, IGNORE_ALL_UNITS = 4 };
+	/// PATROL_NO_PATH_CAUSE (bench, passive): would calculate(unit, to, BAM_NORMAL) find a path with those units not blocking?
+	/// 1 a path, 0 none, -1 refused before searching; expanded gets the nodes its A* closed.
+	int probeReach(BattleUnit *unit, Position to, int ignore, int &expanded);
 	/// Where calculate(unit, endPosition, bam) would search to, or none if it refuses before searching (AMBUSH_NEGATIVE_MEMO_V2).
 	std::optional<Position> finalPositionFor(BattleUnit *unit, Position endPosition, BattleActionMove bam);
 	/// Determines whether the unit is going up a stairs.
