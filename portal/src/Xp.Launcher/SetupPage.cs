@@ -513,8 +513,7 @@ public sealed class SetupPage : UserControl
             }
             var (state, before) = commit.Value;
             // what the player has just ticked is switched on in the game too, even in a mods list they set themselves
-            var ticked = _manifest!.Components.Where(c => c.Mod.Length > 0 && state.Components!.Contains(c.Id) && !before.Contains(c.Id))
-                                              .Select(c => c.Mod).ToList();
+            var tickedParts = _manifest!.Components.Where(c => state.Components!.Contains(c.Id) && !before.Contains(c.Id)).ToList();
             var progress = new Progress<Core.Progress>(ShowProgress);
             var plan = await Task.Run(() => u.Scan(state, _manifest!, full: false, progress, ct), ct);
             // an installed game the player edited: the wizard keeps their files, Settings can replace them
@@ -525,6 +524,8 @@ public sealed class SetupPage : UserControl
                 await Task.Run(() => u.Install(state, plan, progress, CancellationToken.None), CancellationToken.None);
             }
 
+            // every mod a ticked component brings (art.hd: hd_core and hd), read from the files just installed
+            var ticked = tickedParts.SelectMany(c => Setup.ModsOf(_manifest!, c, u.Paths.GameDir)).Distinct().ToList();
             var master = Setup.Master(_manifest!, _picked);
             var log = new FileLog(u.Paths);
             // the settings live in the build's folder (docs/portal/MULTIMOD.md §3): a fresh install gets its first build here

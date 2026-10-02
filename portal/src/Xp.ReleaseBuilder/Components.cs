@@ -4,7 +4,7 @@ namespace Xp.ReleaseBuilder;
 
 /// <summary>
 /// Splits a release into components by the rules of docs/portal/EDITIONS.md:
-/// user/mods/&lt;m&gt;/hd_18+/ is the adult art layer, user/mods/&lt;m&gt;/hd/ and the whole of mod "hd"
+/// user/mods/&lt;m&gt;/hd_18+/ is the adult art layer, user/mods/&lt;m&gt;/hd/ and the whole of mods "hd" and "hd_core"
 /// the HD art layer, the rest of a mod its own component (kind from its metadata.yml),
 /// top-level files, common/ and standard/ the engine. Anything else stops the build unless
 /// an explicit --map names its component.
@@ -18,6 +18,9 @@ public sealed class ComponentPlan
     public const string Hd18Folder = "hd_18+";
     /// <summary>The HD mod itself: all its files are the art layer, not a mod of their own.</summary>
     public const string HdModId = "hd";
+    /// <summary>The fonts of the HD interface (docs/portal/HD_SUBMODS.md): the art layer too, whole - its
+    /// metadata.yml and licence texts with its hd/ tree, so a player with HD gets it by the update, no new tick.</summary>
+    public const string HdCoreModId = "hd_core";
 
     public Dictionary<string, string> FileComponent { get; } = new(StringComparer.OrdinalIgnoreCase);
     public Dictionary<string, ComponentInfo> Components { get; } = new(StringComparer.Ordinal);
@@ -47,7 +50,7 @@ public sealed class ComponentPlan
                 if (!mods.TryGetValue(folder, out var meta))
                     mods[folder] = meta = plan.ReadMetadata(sources, folder);
                 if (Is(seg[3], Hd18Folder) && seg.Length > 4) id = Hd18Id;
-                else if ((Is(seg[3], HdFolder) && seg.Length > 4) || meta.Id == HdModId) id = HdId;
+                else if ((Is(seg[3], HdFolder) && seg.Length > 4) || meta.Id is HdModId or HdCoreModId) id = HdId;
                 else id = plan.ModComponent(meta);
             }
             else if (seg.Length == 1 || EngineDirs.Any(d => Is(seg[0], d))) id = EngineId;

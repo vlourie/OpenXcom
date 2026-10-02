@@ -8,7 +8,7 @@ namespace Xp.Launcher;
 /// XPiratezLauncher.exe --headless &lt;check|update|repair|rollback|self-update|ufo|builds&gt; [--game &lt;dir&gt;] [--channel &lt;ch&gt;] [--repo &lt;url&gt;]
 /// The same core as the window, for scripts and tests. "update" keeps player-modified files,
 /// "repair" replaces them, "check" changes nothing.
-/// Exit codes: 0 done / up to date, 1 error, 2 refused (signature, running game), 3 update available (check),
+/// Exit codes: 0 done / up to date, 1 error, 2 refused (signature, running game, the release needs a newer launcher), 3 update available (check),
 /// 4 the original UFO is nowhere on this machine (ufo).
 /// </summary>
 static partial class Headless
@@ -159,6 +159,10 @@ static partial class Headless
         }
 
         var latest = await u.CheckAsync(state, CancellationToken.None);
+        // a release that asks for a newer launcher is not installed by this one, as in the window (MainWindow.CheckAsync):
+        // its files may need what only the newer launcher does after the install (HdCoreMigration)
+        if (cmd != "check" && Version.TryParse(latest.Manifest.Release.MinLauncher, out var need) && need > BuiltIn.Version)
+            throw new UpdateBlockedException($"{latest.Manifest.Release.Id} needs launcher {need}, this is {BuiltIn.VersionText}: run self-update first");
         long lastPct = -1;
         var progress = new SyncProgress(p =>
         {

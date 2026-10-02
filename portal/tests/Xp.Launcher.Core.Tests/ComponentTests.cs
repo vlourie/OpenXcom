@@ -94,6 +94,22 @@ public sealed class ComponentTests : IDisposable
     }
 
     [Fact]
+    public void The_fonts_mod_goes_whole_into_the_art_layer()
+    {
+        StageEdition();
+        Fixture.Write(f.Stage, "user/mods/hd_core/metadata.yml", "id: hd_core\nmaster: \"*\"\nversion: 0.2\n");
+        Fixture.Write(f.Stage, "user/mods/hd_core/hd/UI/fonts/Curvy-Big.ttf", "font");
+        Fixture.Write(f.Stage, "user/mods/hd_core/ROBOTO-LICENSE.txt", "apache");
+        var m = BuildEdition();
+
+        // a component of its own would be a new tick a player's saved choice lacks: HD would come without its fonts
+        Assert.All(m.Files.Where(x => x.Path.StartsWith("user/mods/hd_core/")), x => Assert.Equal("art.hd", x.Component));
+        Assert.Equal(3, m.Files.Count(x => x.Path.StartsWith("user/mods/hd_core/")));
+        Assert.DoesNotContain(m.Components, c => c.Id == "mod.hd_core");
+        Assert.Equal("hd", m.Components.Single(c => c.Id == "art.hd").Mod);
+    }
+
+    [Fact]
     public void Our_mods_do_not_go_into_a_release_for_meridians_engine()
     {
         StageEdition();

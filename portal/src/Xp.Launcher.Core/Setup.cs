@@ -161,6 +161,27 @@ public static class Setup
         };
     }
 
+    /// <summary>
+    /// The mods a component brings, by the id in their metadata.yml: each user/mods/&lt;folder&gt;/metadata.yml the release
+    /// files under it (art.hd ships hd and hd_core), read from the game folder, so call it after the install. Its own
+    /// mod comes last - the ones it brings along load before it (hd_core before hd).
+    /// </summary>
+    public static List<string> ModsOf(ReleaseManifest m, ComponentInfo c, string gameDir)
+    {
+        var ids = new List<string>();
+        foreach (var f in m.Files.Where(f => f.Component == c.Id).OrderBy(f => f.Path, StringComparer.Ordinal))
+        {
+            var seg = f.Path.Split('/');
+            if (seg.Length != 4 || !Same(seg[0], "user") || !Same(seg[1], "mods") || !Same(seg[3], "metadata.yml")) continue;
+            var file = Path.Combine(gameDir, "user", "mods", seg[2], "metadata.yml");
+            if (!File.Exists(file)) continue;
+            var id = ModMetadata.Parse(File.ReadAllText(file), seg[2]).Id;
+            if (id != c.Mod && !ids.Contains(id)) ids.Add(id);
+        }
+        if (c.Mod.Length > 0) ids.Add(c.Mod);
+        return ids;
+    }
+
     /// <summary>The master mod the ticks make the game: its profile sets options.cfg up.</summary>
     public static string? Master(ReleaseManifest m, IEnumerable<string> picked)
     {

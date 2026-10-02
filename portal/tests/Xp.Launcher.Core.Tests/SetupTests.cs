@@ -58,6 +58,25 @@ public sealed class SetupTests : IDisposable
     }
 
     [Fact]
+    public async Task A_ticked_component_switches_on_every_mod_it_brings_its_own_last()
+    {
+        Fixture.Write(f.Stage, "user/mods/hd_core/metadata.yml", "id: hd_core\nmaster: \"*\"\n");
+        Fixture.Write(f.Stage, "user/mods/hd_core/hd/UI/fonts/Curvy-Big.ttf", "font");
+        StageRelease();
+        var m = await LatestAsync();
+        var hd = m.Components.Single(c => c.Mod == "hd");
+        var piratez = m.Components.Single(c => c.Mod == "piratez");
+
+        // read from the game folder: before the install the component brings nothing but its own mod
+        Assert.Equal(["hd"], Setup.ModsOf(m, hd, f.Game));
+        Fixture.Write(f.Game, "user/mods/hd/metadata.yml", "id: hd\nmaster: \"*\"\n");
+        Fixture.Write(f.Game, "user/mods/hd_core/metadata.yml", "id: hd_core\nmaster: \"*\"\n");
+        Fixture.Write(f.Game, "user/mods/Piratez/metadata.yml", "id: piratez\nisMaster: true\nmaster: xcom1\n");
+        Assert.Equal(["hd_core", "hd"], Setup.ModsOf(m, hd, f.Game));   // the fonts load before the art
+        Assert.Equal(["piratez"], Setup.ModsOf(m, piratez, f.Game));
+    }
+
+    [Fact]
     public async Task Without_its_master_an_addon_is_grey_and_says_what_it_needs()
     {
         StageRelease();
