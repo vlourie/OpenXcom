@@ -73,6 +73,23 @@ def core_files():
     return sorted(files), len(rows)
 
 
+def pack_meta(meta):
+    """metadata.yml of the hd pack after the split: master piratez and its own name, the rest as it was.
+    The install's file has a BOM; the game reads it either way, the result is written without (R-001)."""
+    if "master:" not in meta or "id: hd" not in meta:
+        sys.exit("hd/metadata.yml: no master or id line, the split would guess")
+    if not meta.startswith("name:"):
+        sys.exit("hd/metadata.yml does not start with name:, the split would leave the old name")
+    lines = []
+    for line in meta.splitlines():
+        if line.startswith("master:"):
+            line = "master: piratez"
+        elif line.startswith("name:"):
+            line = 'name: "HD graphics: X-Piratez"'
+        lines.append(line)
+    return "\n".join(lines) + "\n"
+
+
 def place(src_root, dst_root, rel_dir, taken):
     """Mirror src_root/rel_dir into dst_root: a subtree with nothing taken is one junction,
     otherwise a real folder of hard links that leaves the taken files out."""
@@ -127,20 +144,8 @@ def main():
 
     pack = mods / "hd"
     place(hd, pack, "", set(files) | ENGINE_OWNED)
-    # the install's file has a BOM; the game reads it either way, the layout writes it without (R-001)
-    meta = (hd / "metadata.yml").read_text(encoding="utf-8-sig")
-    if "master:" not in meta or "id: hd" not in meta:
-        sys.exit("hd/metadata.yml: no master or id line, the layout would guess")
-    if not meta.startswith("name:"):
-        sys.exit("hd/metadata.yml does not start with name:, the layout would leave the old name")
-    lines = []
-    for line in meta.splitlines():
-        if line.startswith("master:"):
-            line = "master: piratez"
-        elif line.startswith("name:"):
-            line = 'name: "HD graphics: X-Piratez"'
-        lines.append(line)
-    (pack / "metadata.yml").write_text("\n".join(lines) + "\n", encoding="utf-8", newline="\n")
+    (pack / "metadata.yml").write_text(pack_meta((hd / "metadata.yml").read_text(encoding="utf-8-sig")),
+                                       encoding="utf-8", newline="\n")
 
     # every file of the old hd is in exactly one of the two, metadata.yml in both by design,
     # the engine-owned rulesets in neither
