@@ -140,6 +140,8 @@ void knownOccupantWalked(const BattleUnit *, const BattleUnit *, int, const Posi
 bool knownOccupantPathV2() { return false; }
 void knownOccupantV2Decided(const BattleUnit *, const char *, const BattleUnit *, bool, int, bool) {}
 void knownOccupantV2Walked(const BattleUnit *, const char *, int, const Position &, bool) {}
+bool patrolReuseProbe() { return false; }
+void patrolReuseDecided(const BattleUnit *, const char *, const char *, bool, const std::string &) {}
 void blockedStepStop(SavedBattleGame *, BattleUnit *, int) {}
 void blockedStepDecide(SavedBattleGame *, BattleUnit *) {}
 void blockedStepPlan(SavedBattleGame *, BattleUnit *, const BattleAction &) {}
@@ -3428,6 +3430,27 @@ void knownOccupantV2Walked(const BattleUnit *unit, const char *branch, int hits,
 	std::ostringstream s;
 	s << "knownocc2.walk " << branch << " b" << hits << " " << to.x << "," << to.y << "," << to.z << " " << (found ? "found" : "none");
 	addTrail(unit, s.str().c_str());
+}
+
+bool patrolReuseProbe()
+{
+	static const bool on = active() && envOn("OXCE_AI_PATROL_REUSE_PROBE");
+	return on;
+}
+
+void patrolReuseDecided(const BattleUnit *unit, const char *cls, const char *route, bool chosen, const std::string &trail)
+{
+	const std::string b = std::string(unit->getFaction() == FACTION_PLAYER ? "p." : "h.") + "patrol.reuse.";
+	++tallies[b + cls];
+	if (route)
+	{
+		++tallies[b + "route_" + route];
+	}
+	if (chosen)
+	{
+		++tallies[b + "chosen." + cls];
+	}
+	addTrail(unit, trail.c_str());
 }
 
 namespace

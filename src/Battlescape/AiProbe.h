@@ -279,6 +279,16 @@ void knownOccupantV2Decided(const BattleUnit *unit, const char *branch, const Ba
 /// KNOWN_OCCUPANT_PATH_V2: the walk to the branch's point is calculated with T's tile blocked: knownocc2.walk_<b>; if it took
 /// the tile (hits), knownocc2.walk_<b>.path_replanned or .no_path and the trail "knownocc2.walk <b> b<hits> <to> found|none".
 void knownOccupantV2Walked(const BattleUnit *unit, const char *branch, int hits, const Position &to, bool found);
+/// PATROL_REUSE_PROBE (OXCE_AI_PATROL_REUSE_PROBE, bench only, passive): setupPatrol keeps the node it stored in an earlier
+/// think (_toNode, not reached) instead of choosing one - classify it as the decision is made. Play does not read any of it;
+/// the occupant is the bench's oracle, not what the AI knows. False in a release build.
+bool patrolReuseProbe();
+/// PATROL_REUSE_PROBE: one decision whose last setupPatrol kept the stored node. Tallies patrol.reuse.<cls> (valid,
+/// occupied_own, occupied_ally, occupied_enemy_seen_this_turn, occupied_enemy_known_old, occupied_enemy_never_seen,
+/// unreachable), for a free node also patrol.reuse.route_<who> (the first unit on the path the unit's own search takes, the
+/// same classes) or patrol.reuse.route_free; patrol.reuse.chosen.<cls> if the decision walks to the node. The trail step
+/// "patrol.reuse <cls> node <xyz> age <turns> reach 0|1 first <xyz> occ <id>/<faction>/s<seen> route <id>/<faction>/s<seen>@<xyz>".
+void patrolReuseDecided(const BattleUnit *unit, const char *cls, const char *route, bool chosen, const std::string &trail);
 /// REPEATED_BLOCKED_STEP_V1 (OXCE_AI_BLOCKED_STEP, bench only): a walk stopped at a unit on the step in dir from where the
 /// unit stands (UnitWalkBState). Remembered for the rest of the unit-turn while knownRevision stays what it was then; another
 /// stop there at the same revision adds its step. No-op without the flag.

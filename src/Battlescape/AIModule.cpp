@@ -18,6 +18,7 @@
  */
 #include <climits>
 #include <algorithm>
+#include <sstream>
 #include "AIModule.h"
 #include "../Savegame/BattleItem.h"
 #include "../Savegame/Node.h"
@@ -1154,6 +1155,128 @@ void AIModule::knownOccupantV2Walked(const BattleAction &action, bool found, int
 }
 
 /**
+ * PATROL_REUSE_PROBE (bench): a unit's class as this unit's side sees it - own, ally (player and neutral), or an enemy by
+ * how long ago the side spotted it (never: 255, what a unit starts the battle with; a battle is shorter than 255 turns).
+ */
+const char *AIModule::patrolReuseWho(const BattleUnit *other) const
+{
+	const UnitFaction own = _unit->getFaction(), f = other->getFaction();
+	if (f == own)
+	{
+		return "own";
+	}
+	if ((own == FACTION_PLAYER && f == FACTION_NEUTRAL) || (own == FACTION_NEUTRAL && f == FACTION_PLAYER))
+	{
+		return "ally";
+	}
+	const int seen = other->getTurnsSinceSpottedByFaction(own);
+	return seen == 0 ? "enemy_seen_this_turn" : seen >= 255 ? "enemy_never_seen" : "enemy_known_old";
+}
+
+/**
+ * PATROL_REUSE_PROBE (bench, passive): setupPatrol keeps the node it stored in an earlier think. What stands on the node,
+ * whether this unit's own search reaches it, and the first unit on that path (the search sees only the units the unit
+ * spotted, so the path may run through one it did not). The search is the one choosing a node does, aborted as there.
+ */
+void AIModule::patrolReuseProbe()
+{
+	const Position node = _toNode->getPosition();
+	const int size = _unit->getArmor()->getSize();
+	auto unitAt = [&](const Position &p) -> const BattleUnit*
+	{
+		for (int x = 0; x < size; ++x)
+		{
+			for (int y = 0; y < size; ++y)
+			{
+				const Tile *t = _save->getTile(p + Position(x, y, 0));
+				const BattleUnit *u = t ? t->getUnit() : 0;
+				if (u && u != _unit && !u->isOut())
+				{
+					return u;
+				}
+			}
+		}
+		return 0;
+	};
+	Pathfinding *pf = _save->getPathfinding();
+	pf->calculate(_unit, node, BAM_NORMAL);
+	const std::vector<int> path = pf->copyPath();
+	pf->abortPath();
+
+	const BattleUnit *occ = unitAt(node), *route = 0;
+	Position at = _unit->getPosition(), first(-1, -1, -1), routeAt;
+	for (auto i = path.rbegin(); i != path.rend(); ++i)
+	{
+		const PathfindingStep step = pf->getTUCost(at, *i, _unit, 0, BAM_NORMAL);
+		if (step.cost.time >= Pathfinding::INVALID_MOVE_COST)
+		{
+			break;
+		}
+		at = step.pos;
+		if (i == path.rbegin())
+		{
+			first = at;
+		}
+		if (!route && (route = unitAt(at)))
+		{
+			routeAt = at;
+		}
+	}
+
+	_prNode = node;
+	_prRoute.clear();
+	if (occ)
+	{
+		_prClass = std::string("occupied_") + patrolReuseWho(occ);
+	}
+	else
+	{
+		_prClass = path.empty() ? "unreachable" : "valid";
+		if (!path.empty())
+		{
+			_prRoute = route ? patrolReuseWho(route) : "free";
+		}
+	}
+	std::ostringstream s;
+	s << "patrol.reuse " << _prClass << " node " << node.x << "," << node.y << "," << node.z
+		<< " age " << (_toNodeTurn < 0 ? -1 : _save->getTurn() - _toNodeTurn) << " reach " << (path.empty() ? 0 : 1)
+		<< " first " << first.x << "," << first.y << "," << first.z << " occ ";
+	if (occ)
+	{
+		s << occ->getId() << "/" << (int)occ->getFaction() << "/s" << occ->getTurnsSinceSpottedByFaction(_unit->getFaction());
+	}
+	else
+	{
+		s << "-";
+	}
+	s << " route ";
+	if (route && !occ)
+	{
+		s << route->getId() << "/" << (int)route->getFaction() << "/s" << route->getTurnsSinceSpottedByFaction(_unit->getFaction())
+			<< "@" << routeAt.x << "," << routeAt.y << "," << routeAt.z;
+	}
+	else
+	{
+		s << "-";
+	}
+	_prTrail = s.str();
+}
+
+/**
+ * PATROL_REUSE_PROBE (bench): the decision is made - what its last setupPatrol found keeping the stored node, if it kept one.
+ */
+void AIModule::patrolReuseDecided(const BattleAction &action)
+{
+	if (_prClass.empty())
+	{
+		return;
+	}
+	const bool chosen = action.type == BA_WALK && action.target == _prNode;
+	AiProbe::patrolReuseDecided(_unit, _prClass.c_str(), _prRoute.empty() ? 0 : _prRoute.c_str(), chosen, _prTrail);
+	_prClass.clear();
+}
+
+/**
  * No more patrol walks for the rest of this unit-turn (ENERGY_PATROL_END_V2).
  */
 void AIModule::spendPatrol()
@@ -1222,6 +1345,7 @@ bool AIModule::getWasHitBy(int attacker) const
 void AIModule::setupPatrol()
 {
 	_patrolAction.clearTU();
+	_prClass.clear();
 	if (_toNode != 0 && _unit->getPosition() == _toNode->getPosition())
 	{
 		if (_traceAI)
@@ -1267,6 +1391,12 @@ void AIModule::setupPatrol()
 		}
 	}
 	int triesLeft = 5;
+	// PATROL_REUSE_PROBE (bench, passive): the node stored in an earlier think is kept without a new search
+	const bool keptNode = _toNode != 0;
+	if (keptNode && AiProbe::patrolReuseProbe())
+	{
+		patrolReuseProbe();
+	}
 
 	while (_toNode == 0 && triesLeft)
 	{
@@ -1373,6 +1503,10 @@ void AIModule::setupPatrol()
 		}
 	}
 
+	if (_toNode != 0 && !keptNode)
+	{
+		_toNodeTurn = _save->getTurn();
+	}
 	if (_toNode != 0)
 	{
 		_toNode->allocateNode();
