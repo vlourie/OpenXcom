@@ -11,14 +11,24 @@ r"""Наборы шрифтов HD-интерфейса: скачать, све�
     py -3 tools\hdart\fetch_fonts.py --dest <корень мода в установке игры>
     py -3 tools\hdart\fetch_fonts.py --check         - только покрытие знаков модов
 
+Запускать для обеих копий мода hd (R-087). Кроме наборов кладёт Roboto (FontBig/FontSmall), DejaVu Sans
+(FontFallback) и тексты лицензий: <набор>-OFL.txt у каждого семейства свой, ROBOTO-LICENSE.txt (Apache 2.0),
+FONTS-LICENSE.txt (DejaVu), FONTS-SOURCES.txt - откуда взят каждый файл и что с ним сделано (docs/portal/HD_FONTS.md).
+Источники закреплены: коммит google/fonts и SHA-256 каждого скачанного файла; не совпало - остановка.
+
 Нужен fonttools: py -3 -m pip install fonttools brotli
 """
 import argparse
+import hashlib
 import io
 import os
+import re
 import sys
+import tarfile
+import urllib.error
 import urllib.parse
 import urllib.request
+import zipfile
 import common
 
 if hasattr(sys.stdout, "reconfigure"):   # консоль msys бывает cp1252
@@ -26,25 +36,64 @@ if hasattr(sys.stdout, "reconfigure"):   # консоль msys бывает cp12
 
 ENC_W = "utf-8-sig"
 
-RAW = "https://raw.githubusercontent.com/google/fonts/main/ofl/"
+RAW = "https://raw.githubusercontent.com/google/fonts/%s/ofl/%s/%s"
 
-# Что качаем. weights: (обычный, жирный) для переменного шрифта, None у статических пар.
+# Что качаем: имя набора, папка в google/fonts, коммит, исходники с SHA-256, веса, описание, переименование.
+# weights: (обычный, жирный) для переменного шрифта, None у статических пар. Коммит - последний, что трогал
+# папку семейства до сборки 21.09.2026: файлы мода пересобираются из него байт в байт (кроме метки времени head).
+# rename: (зарезервированные имена из OFL.txt, новое имя). OFL 1.1 п. 3: изменённую версию (подрезка, вес
+# из переменного - изменение, OFL FAQ 2.6) нельзя называть зарезервированным именем - ни в файле, ни в игре.
+# copyright: строка авторов, если у семейства в google/fonts нет OFL.txt (M+: только METADATA.pb).
 # Все наборы под OFL и все с кириллицей - покрытие проверяется тут же, при сборке.
 FAMILIES = [
-    ("Comfortaa", "comfortaa", ["Comfortaa[wght].ttf"], (400, 700),
-     "самый круглый, мягкий геометрический"),
-    ("Exo2", "exo2", ["Exo2[wght].ttf"], (400, 700),
-     "техно со скруглениями, ближе всего к оригиналу X-COM"),
-    ("Jura", "jura", ["Jura[wght].ttf"], (400, 700),
-     "узкий техно, влезает в тесные колонки"),
-    ("MPlusRounded", "mplusrounded1c", ["MPLUSRounded1c-Regular.ttf", "MPLUSRounded1c-Bold.ttf"], None,
-     "круглые окончания штрихов"),
-    ("Play", "play", ["Play-Regular.ttf", "Play-Bold.ttf"], None,
-     "техно-гротеск, плотный"),
-    ("Rubik", "rubik", ["Rubik[wght].ttf"], (400, 700),
-     "гротеск со скруглёнными углами"),
-    ("Unbounded", "unbounded", ["Unbounded[wght].ttf"], (400, 700),
-     "широкий геометрический, круглые О"),
+    dict(set="Curvy", folder="comfortaa", commit="db64f6bde4ced22493138096badb4fe2f7f8f7a0",
+         sources={"Comfortaa[wght].ttf": "0fc3f45dc48b614db9c39181502544b37217ecbf8bee2fb35886992bc96c5bd3"},
+         weights=(400, 700), about="самый круглый, мягкий геометрический (Comfortaa)",
+         rename=(["Comfortaa"], "Curvy"), was="Comfortaa"),
+    dict(set="Exo2", folder="exo2", commit="1796e34455b893092713d206e7f23e3e07699f00",
+         sources={"Exo2[wght].ttf": "205a448676a2586f9c57c25f3d5c58ca8db7e6cf5edf7506783a010c6fe2bfb5"},
+         weights=(400, 700), about="техно со скруглениями, ближе всего к оригиналу X-COM"),
+    dict(set="Jura", folder="jura", commit="6e4b84c976cadb3c49a40fd9a1c203e4f7fcf2da",
+         sources={"Jura[wght].ttf": "188b415d44810d68b4d6b4a8c281f864184c2b8edc5e88e6357c89f7b44075bf"},
+         weights=(400, 700), about="узкий техно, влезает в тесные колонки"),
+    dict(set="MPlusRounded", folder="mplusrounded1c", commit="84efd8ad78c3710ad14bd909e3bc407151885628",
+         sources={"MPLUSRounded1c-Regular.ttf": "b75708b53e45b06d17d470aeeca5b766e3d1b3999f03f13ec4eb863ca846c14c",
+                  "MPLUSRounded1c-Bold.ttf": "c358630584e8e2d8fbd6121d0f4693255ffef6d1e6d4f3441fd6e5a963a11f9e"},
+         weights=None, about="круглые окончания штрихов",
+         copyright="Copyright 2016 The Rounded M+ Project Authors."),
+    dict(set="Pulse", folder="play", commit="51c6a423fbfbd78a5111241dfd07791644b4c5c6",
+         sources={"Play-Regular.ttf": "eed0da79005cab35d6ed0eacab594ed67cc643be0b2632fa9e440b3bc5078dc4",
+                  "Play-Bold.ttf": "45c572eccda4cf335165b750345258e753035bf48ee2fdf37faa07c7db88bce0"},
+         weights=None, about="техно-гротеск, плотный (Play)",
+         rename=(["Playtype Sans", "Playtype", "Play"], "Pulse"), was="Play"),
+    dict(set="Rubik", folder="rubik", commit="8b0a1d0f5983c89bc2b93f1b5fb55f9e252744b5",
+         sources={"Rubik[wght].ttf": "1b3a7437ba2af80e465e773ed60c5036d1ba6ace492d89046dbcf18fb31e4e88"},
+         weights=(400, 700), about="гротеск со скруглёнными углами"),
+    dict(set="Unbounded", folder="unbounded", commit="8b0a1d0f5983c89bc2b93f1b5fb55f9e252744b5",
+         sources={"Unbounded[wght].ttf": "323b511be380c8d474ef030686b71aedde501f8d9cd46da558b7c40454372c3f"},
+         weights=(400, 700), about="широкий геометрический, круглые О"),
+]
+# Имя набора - основа имени файла, а опция oxceHdUiFont - номер набора по алфавиту (HdUi::scanFontSets).
+# Новые имена стоят на тех же местах, что прежние (Comfortaa -> Curvy, Play -> Pulse), выбор игрока не съезжает.
+
+# Поля таблицы name, которые называют шрифт: в них не должно остаться зарезервированного имени.
+# Остальные (0 copyright, 7 trademark, 8-12 авторы и ссылки, 13-14 лицензия) - атрибуция, их не трогаем.
+NAMING_IDS = (1, 3, 4, 6, 16, 17, 18, 20, 21, 25)
+
+# Неизменённые файлы: Roboto 2.138 (Apache 2.0) и DejaVu Sans 2.37 (лицензия Bitstream Vera). Путь в архиве,
+# куда в моде, SHA-256 файла. Шрифты в моде - эти файлы байт в байт (сверено 02.10.2026, HD_FONTS.md).
+ARCHIVES = [
+    dict(name="Roboto 2.138", license="Apache License 2.0",
+         url="https://github.com/googlefonts/roboto-2/releases/download/v2.138/roboto-android.zip",
+         sha="c825453253f590cfe62557733e7173f9a421fff103b00f57d33c4ad28ae53baf",
+         files=[("Roboto-Medium.ttf", "hd/UI/FontBig.ttf", "7984aafeaf43"),
+                ("Roboto-Regular.ttf", "hd/UI/FontSmall.ttf", "797e35f7f5d6"),
+                ("LICENSE", "ROBOTO-LICENSE.txt", "c71d239df917")]),
+    dict(name="DejaVu Sans 2.37", license="Bitstream Vera Fonts license (DejaVu changes are in the public domain)",
+         url="https://github.com/dejavu-fonts/dejavu-fonts/releases/download/version_2_37/dejavu-fonts-ttf-2.37.tar.bz2",
+         sha="fa9ca4d13871dd122f61258a80d01751d603b4d3ee14095d65453b4e846e17d7",
+         files=[("dejavu-fonts-ttf-2.37/ttf/DejaVuSans.ttf", "hd/UI/FontFallback.ttf", "7da195a74c55"),
+                ("dejavu-fonts-ttf-2.37/LICENSE", "FONTS-LICENSE.txt", "7a083b136e64")]),
 ]
 
 # Знаки, которые остаются после подрезки: латиница с расширениями, греческий, кириллица,
@@ -64,16 +113,95 @@ def cache_dir():
     return path
 
 
-def fetch(folder, name):
-    """Качает файл из google/fonts один раз, дальше берёт из кэша.
-    Ключ кэша - папка семейства и имя: OFL.txt у каждого семейства свой (раньше все брали первый - Comfortaa)."""
-    dst = os.path.join(cache_dir(), folder + "__" + name.replace("[", "_").replace("]", ""))
-    if os.path.exists(dst) and os.path.getsize(dst) > 1000:
-        return dst
-    url = RAW + folder + "/" + urllib.parse.quote(name)
-    print("  качаю %s" % name)
-    urllib.request.urlretrieve(url, dst)
+def sha256(path):
+    with open(path, "rb") as handle:
+        return hashlib.sha256(handle.read()).hexdigest()
+
+
+def download(url, dst, sha=None):
+    """Качает файл один раз, дальше берёт из кэша; с sha - сверяет и в кэше, и после загрузки."""
+    if not (os.path.exists(dst) and (sha is None or sha256(dst) == sha)):
+        print("  качаю %s" % url)
+        urllib.request.urlretrieve(url, dst + ".part")
+        os.replace(dst + ".part", dst)
+    if sha is not None and sha256(dst) != sha:
+        sys.exit("%s: SHA-256 %s, а закреплён %s - источник сменился, сверить и закрепить заново" % (url, sha256(dst), sha))
     return dst
+
+
+def fetch(fam, name, sha=None):
+    """Файл семейства из google/fonts на закреплённом коммите.
+    Ключ кэша - коммит, папка семейства и имя: OFL.txt у каждого семейства свой (раньше все брали первый - Comfortaa)."""
+    dst = os.path.join(cache_dir(), "%s__%s__%s" % (fam["commit"][:12], fam["folder"], name.replace("[", "_").replace("]", "")))
+    return download(RAW % (fam["commit"], fam["folder"], urllib.parse.quote(name)), dst, sha)
+
+
+def ofl_text(fam):
+    """OFL.txt семейства. У M+ в google/fonts его нет: строка авторов из METADATA.pb (copyright в FAMILIES)
+    и текст OFL 1.1 с первой строки после авторов, взятый у другого семейства."""
+    try:
+        path = fetch(fam, "OFL.txt")
+    except urllib.error.HTTPError as error:
+        if error.code != 404 or "copyright" not in fam:
+            raise
+        body = io.open(fetch(FAMILIES[1], "OFL.txt"), encoding="utf-8").read()
+        start = body.index("This Font Software is licensed")
+        return fam["copyright"] + "\n\n" + body[start:]
+    return io.open(path, encoding="utf-8").read()
+
+
+def rename_face(font, reserved, new):
+    """Зарезервированное имя -> новое в полях, которые называют шрифт (OFL 1.1 п. 3). Проверяет, что не осталось."""
+    rx = re.compile("|".join(re.escape(name) for name in reserved), re.I)
+    for record in font["name"].names:
+        if record.nameID in NAMING_IDS:
+            record.string = rx.sub(new, record.toUnicode())
+    left = [(record.nameID, record.toUnicode()) for record in font["name"].names
+            if record.nameID in NAMING_IDS and rx.search(record.toUnicode())]
+    if left:
+        sys.exit("зарезервированное имя осталось: %r" % left)
+
+
+def same_font(a, b):
+    """Те же таблицы байт в байт; у head без метки сохранения (fontTools пишет время записи)."""
+    from fontTools.ttLib import TTFont
+    fa, fb = TTFont(a), TTFont(b)
+    try:
+        if sorted(fa.keys()) != sorted(fb.keys()):
+            return False
+        fb["head"].modified = fa["head"].modified
+        fb["head"].checkSumAdjustment = fa["head"].checkSumAdjustment
+        return all(fa.getTableData(tag) == fb.getTableData(tag) for tag in fa.keys() if tag not in ("GlyphOrder", "head")) \
+            and fa["head"].compile(fa) == fb["head"].compile(fb)
+    finally:
+        fa.close()
+        fb.close()
+
+
+def put(dst, data=None, font=None):
+    """Запись через временный файл и замену имени: жёсткие ссылки раскладок (hd_layout) на прежний файл
+    остаются на прежнем содержимом, а не меняются вместе с модом. Метка времени head остаётся от исходника
+    (recalcTimestamp выключен): сборка воспроизводима байт в байт, обе копии мода и SHA-256 в FONTS-SOURCES
+    совпадают. Прежний файл, отличный только меткой, переписывается один раз с пометкой 'метка времени'.
+    Возвращает 'новый', 'тот же' или 'метка времени'."""
+    tmp = dst + ".tmp"
+    if font is not None:
+        font.recalcTimestamp = False
+        font.save(tmp)
+        with open(tmp, "rb") as handle:
+            data = handle.read()
+    if os.path.exists(dst):
+        with open(dst, "rb") as handle:
+            if handle.read() == data:
+                if font is not None:
+                    os.remove(tmp)
+                return "тот же"
+    if font is None:
+        with open(tmp, "wb") as handle:
+            handle.write(data)
+    state = "метка времени" if font is not None and os.path.exists(dst) and same_font(dst, tmp) else "новый"
+    os.replace(tmp, dst)
+    return state
 
 
 def face_name(font):
@@ -208,7 +336,7 @@ def sheet(out, dest, path):
         strip = strip.convert("RGB").resize((strip.width * scale, strip.height * scale), Image.NEAREST)
         rows.append(("classic (game font)", strip))
 
-    for name in ["FontBig.ttf"] + ["%s-Big.ttf" % family[0] for family in FAMILIES]:
+    for name in ["FontBig.ttf"] + ["%s-Big.ttf" % fam["set"] for fam in FAMILIES]:
         file = os.path.join(dest, "hd", "UI", name) if name == "FontBig.ttf" else os.path.join(out, name)
         if not os.path.exists(file):
             continue
@@ -283,29 +411,82 @@ def main():
     for low, high in KEEP:
         keep.update(range(low, high + 1))
 
-    for setname, folder, sources, weights, about in FAMILIES:
-        print("%s - %s" % (setname, about))
-        if weights is None:
-            faces = [(fetch(folder, sources[0]), None, "Small"), (fetch(folder, sources[1]), None, "Big")]
+    from fontTools.ttLib import TTFont
+    notes = ["Fonts of the HD interface: where each file comes from and what was done to it.",
+             "Written by tools/hdart/fetch_fonts.py; every source is pinned by commit or release and SHA-256.", ""]
+
+    # неизменённые: Roboto и DejaVu из архивов выпуска, тексты их лицензий оттуда же
+    for arc in ARCHIVES:
+        print(arc["name"])
+        path = download(arc["url"], os.path.join(cache_dir(), os.path.basename(arc["url"])), arc["sha"])
+        for member, rel, pin in arc["files"]:
+            if path.endswith(".zip"):
+                with zipfile.ZipFile(path) as archive:
+                    data = archive.read(member)
+            else:
+                with tarfile.open(path) as archive:
+                    data = archive.extractfile(member).read()
+            digest = hashlib.sha256(data).hexdigest()
+            if not digest.startswith(pin):
+                sys.exit("%s в %s: SHA-256 %s, ожидался %s..." % (member, arc["url"], digest, pin))
+            dst = os.path.join(args.dest, *rel.split("/"))
+            print("  %-26s %s" % (rel, put(dst, data=data)))
+            if rel.endswith(".ttf"):
+                notes += [rel, "  %s, unmodified (SHA-256 %s)" % (arc["name"], digest),
+                          "  from %s (SHA-256 %s), file %s" % (arc["url"], arc["sha"], member),
+                          "  licence: %s - %s" % (arc["license"], arc["files"][-1][1]), ""]
+
+    for fam in FAMILIES:
+        setname = fam["set"]
+        print("%s - %s" % (setname, fam["about"]))
+        names = list(fam["sources"])
+        if fam["weights"] is None:
+            faces = [(fetch(fam, names[0], fam["sources"][names[0]]), None, "Small"),
+                     (fetch(fam, names[1], fam["sources"][names[1]]), None, "Big")]
         else:
-            src = fetch(folder, sources[0])
-            faces = [(src, weights[0], "Small"), (src, weights[1], "Big")]
+            src = fetch(fam, names[0], fam["sources"][names[0]])
+            faces = [(src, fam["weights"][0], "Small"), (src, fam["weights"][1], "Big")]
+        source = TTFont(faces[0][0], lazy=True)
+        version = "%s %s" % (face_name(source), str(source["name"].getName(5, 3, 1, 0x409)).replace("Version ", ""))
+        source.close()
         shown = ""
+        built = []
         for src, weight, role in faces:
             font = build_face(src, weight, keep)
+            if "rename" in fam:
+                rename_face(font, *fam["rename"])
             shown = shown or face_name(font)
             dst = os.path.join(out, "%s-%s.ttf" % (setname, role))
-            font.save(dst)
+            state = put(dst, font=font)
             font.close()
-            print("  %-6s %-28s %6.0f КБ" % (role, os.path.basename(dst), os.path.getsize(dst) / 1024.0))
-        with io.open(fetch(folder, "OFL.txt"), encoding="utf-8", errors="replace") as handle:
-            text = handle.read()
-        with io.open(os.path.join(out, "%s-OFL.txt" % setname), "w", encoding=ENC_W) as handle:
-            handle.write(text)
+            built.append("%s-%s.ttf" % (setname, role))
+            print("  %-6s %-28s %6.0f КБ  %s" % (role, os.path.basename(dst), os.path.getsize(dst) / 1024.0, state))
+        print("  %-6s %-28s %s" % ("OFL", setname + "-OFL.txt",
+                                    put(os.path.join(out, setname + "-OFL.txt"), data=ofl_text(fam).encode(ENC_W))))
+        # прежние файлы под зарезервированным именем - вон, иначе движок покажет их отдельным набором
+        for role in ("Big", "Small", "OFL"):
+            old = os.path.join(out, "%s-%s.%s" % (fam.get("was"), role, "txt" if role == "OFL" else "ttf"))
+            if fam.get("was") and os.path.exists(old):
+                os.remove(old)
+                print("  убран прежний %s" % os.path.basename(old))
+        done = "weight %d / %d instanced from the variable font, " % fam["weights"] if fam["weights"] else ""
+        if "rename" in fam:
+            done += "renamed \"%s\" (Reserved Font Name %s, OFL 1.1 clause 3), " % (
+                fam["rename"][1], ", ".join('"%s"' % name for name in fam["rename"][0]))
+        notes += [", ".join("hd/UI/fonts/" + name for name in built),
+                  "  %s, modified: %sglyphs reduced to Latin, Greek, Cyrillic and symbols" % (version, done),
+                  "  SHA-256 " + ", ".join(sha256(os.path.join(out, name))[:12] for name in built)]
+        for name, sha in fam["sources"].items():
+            notes.append("  from https://github.com/google/fonts/blob/%s/ofl/%s/%s (SHA-256 %s)" % (
+                fam["commit"], fam["folder"], urllib.parse.quote(name), sha))
+        notes += ["  licence: SIL Open Font License 1.1 - hd/UI/fonts/%s-OFL.txt" % setname
+                  + (" (copyright line from METADATA.pb: google/fonts has no OFL.txt for this family)"
+                     if "copyright" in fam else ""), ""]
         missing = coverage(os.path.join(out, "%s-Big.ttf" % setname), codes, fallback)
         print("  игра зовёт его %s, нет %d знаков из текстов%s" % (
             shown or setname, len(missing),
             (": " + " ".join("U+%04X" % c for c in missing[:10])) if missing else ""))
+    print("FONTS-SOURCES.txt", put(os.path.join(args.dest, "FONTS-SOURCES.txt"), data="\n".join(notes).encode(ENC_W)))
     return 0
 
 
