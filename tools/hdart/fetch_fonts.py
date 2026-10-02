@@ -65,8 +65,9 @@ def cache_dir():
 
 
 def fetch(folder, name):
-    """Качает файл из google/fonts один раз, дальше берёт из кэша."""
-    dst = os.path.join(cache_dir(), name.replace("[", "_").replace("]", ""))
+    """Качает файл из google/fonts один раз, дальше берёт из кэша.
+    Ключ кэша - папка семейства и имя: OFL.txt у каждого семейства свой (раньше все брали первый - Comfortaa)."""
+    dst = os.path.join(cache_dir(), folder + "__" + name.replace("[", "_").replace("]", ""))
     if os.path.exists(dst) and os.path.getsize(dst) > 1000:
         return dst
     url = RAW + folder + "/" + urllib.parse.quote(name)
