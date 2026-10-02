@@ -13,7 +13,7 @@
     <input type="hidden" asp-for="Form.Key" />
     <label asp-for="Form.Category">@T["field.category"]</label>
     <select asp-for="Form.Category">
-        @foreach (var c in Categories.All)
+        @foreach (var c in Categories.Open)
         {
             <option value="@c">@T["cat." + c]</option>
         }

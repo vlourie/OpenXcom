@@ -18,6 +18,7 @@ using Xp.Portal.Notifications;
 using Xp.Portal.Review;
 using Xp.Portal.Site;
 using Xp.Portal.Tickets;
+using Xp.Portal.Voice;
 
 // a word the command line knows means the command line, not the web server: an unknown word starting
 // the site by mistake is how a typo in a deployment script turns into a container that never exits
@@ -50,6 +51,7 @@ public static class PortalApp
         s.Configure<UpstreamOptions>(cfg.GetSection(UpstreamOptions.Section));
         s.Configure<EmailOptions>(cfg.GetSection(EmailOptions.Section));
         s.Configure<Argon2Options>(cfg.GetSection("Argon2"));
+        s.Configure<LiveKitOptions>(cfg.GetSection(LiveKitOptions.Section));
         s.AddSingleton(TimeProvider.System);
 
         s.AddDbContext<PortalDb>(o => o.UseNpgsql(cfg.GetConnectionString("Portal")
@@ -114,6 +116,7 @@ public static class PortalApp
             o.Conventions.AuthorizeFolder("/Admin", Policies.Staff);
             o.Conventions.AuthorizeFolder("/Admin/Super", Policies.SuperAdmin);
             o.Conventions.AuthorizeFolder("/Me");
+            o.Conventions.AuthorizeFolder("/Voice");
             // reading the forum and the wiki needs no account; writing does
             o.Conventions.AuthorizePage("/Forum/New");
             o.Conventions.AuthorizePage("/Wiki/Edit");
@@ -126,6 +129,8 @@ public static class PortalApp
         s.AddMemoryCache();
         s.AddHttpClient("telegram", c => c.Timeout = TimeSpan.FromSeconds(20));
         s.AddHttpClient("releases", c => c.Timeout = TimeSpan.FromSeconds(20));
+        // a pass waits on this: a media server that does not answer in seconds is down
+        s.AddHttpClient("livekit", c => c.Timeout = TimeSpan.FromSeconds(8));
         // an honest name: ModDB and GitHub serve it as is
         s.AddHttpClient("upstream", c =>
         {
@@ -152,11 +157,15 @@ public static class PortalApp
         s.AddScoped<CommunitySeed>();
         s.AddScoped<WikiImport>();
         s.AddSingleton<IEmailSender<PortalUser>, EmailSender>();
+        s.AddSingleton<LiveKitTokens>();
+        s.AddSingleton<IVoiceServer, LiveKitServer>();
+        s.AddScoped<VoiceService>();
         if (cfg.GetValue("Workers:Enabled", true))
         {
             s.AddHostedService<TelegramWorker>();
             s.AddHostedService<ScanWorker>();
             s.AddHostedService<UpstreamWorker>();
+            s.AddHostedService<VoiceWorker>();
         }
 
         s.Configure<RequestLocalizationOptions>(o =>
@@ -197,6 +206,10 @@ public static class PortalApp
             o.AddPolicy("devices", c => WritesByIp(c, cfg.GetValue("RateLimits:DevicesPer10Min", 20), TimeSpan.FromMinutes(10)));
             // an evening of reviewing is a few sends, not a few hundred: a set at a time, plus retries
             o.AddPolicy("review-write", c => WritesByIp(c, cfg.GetValue("RateLimits:ReviewPer10Min", 60), TimeSpan.FromMinutes(10)));
+            // friends, rooms, invites and an owner's moderation: an evening's worth, not a script's
+            o.AddPolicy("voice-write", c => WritesByIp(c, cfg.GetValue("RateLimits:VoicePer10Min", 120), TimeSpan.FromMinutes(10)));
+            // a pass per connection and per reconnect; a launcher that loops is stopped here, not at the media server
+            o.AddPolicy("voice-pass", c => WritesByIp(c, cfg.GetValue("RateLimits:VoicePassPerMin", 20), TimeSpan.FromMinutes(1)));
         });
     }
 
@@ -242,6 +255,7 @@ public static class PortalApp
         TicketApi.Map(app);
         DeviceApi.Map(app);
         ReviewApi.Map(app);
+        VoiceApi.Map(app);
         app.MapGet("/files/{id:guid}", ServeFileAsync).ExcludeFromDescription();
         // HEAD too: download managers ask the name and size first, and 405 made them give up
         app.MapMethods("/download/launcher", ["GET", "HEAD"], DownloadLauncherAsync).ExcludeFromDescription();
@@ -269,6 +283,19 @@ public static class PortalApp
         var web = Path.GetFullPath(app.Environment.WebRootPath ?? Path.Combine(app.Environment.ContentRootPath, "wwwroot"));
         if (root.StartsWith(web, StringComparison.OrdinalIgnoreCase))
             throw new InvalidOperationException("Attachments:StorageRoot must be outside wwwroot");
+        // voice may be off (no LiveKit:* at all); half a configuration, or a guessable secret, is a mistake
+        var v = app.Services.GetRequiredService<IOptions<LiveKitOptions>>().Value;
+        string[] set = [v.Url, v.ApiUrl, v.ApiKey, v.ApiSecret];
+        if (set.Any(x => x.Length > 0) && !v.Enabled)
+            throw new InvalidOperationException("LiveKit: set all of Url, ApiUrl, ApiKey and ApiSecret, or none");
+        if (v.Enabled)
+        {
+            if (v.ApiSecret.Length < 32) throw new InvalidOperationException("LiveKit:ApiSecret is shorter than 32 characters");
+            if (!app.Environment.IsDevelopment() && (v.ApiKey.StartsWith("devkey") || v.ApiSecret.Contains("secret", StringComparison.OrdinalIgnoreCase)))
+                throw new InvalidOperationException("LiveKit: the development key is set; put the production key in portal.env");
+            if (!app.Environment.IsDevelopment() && !v.Url.StartsWith("wss://"))
+                throw new InvalidOperationException("LiveKit:Url must be wss:// outside development");
+        }
     }
 
     static async Task SecurityHeaders(HttpContext c, Func<Task> next)

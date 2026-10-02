@@ -121,6 +121,8 @@ public sealed class TicketService(PortalDb db, TelegramNotices notices, IOptions
     static void Validate(NewTicket n, Guid? authorId)
     {
         if (!Categories.IsValid(n.Category)) throw new TicketException("category_invalid", "unknown category");
+        // a voice complaint carries the room's log with it: it comes from the voice service or not at all
+        if ((n.Category == Categories.Voice) != (n.Source == TicketSource.Voice)) throw new TicketException("category_invalid", "unknown category");
         if (string.IsNullOrWhiteSpace(n.Title)) throw new TicketException("title_required", "title is required");
         if (string.IsNullOrWhiteSpace(n.Description)) throw new TicketException("description_required", "description is required");
         if (n.Title.Length > Limits.TitleMax) throw new TicketException("title_too_long", $"title is longer than {Limits.TitleMax}");

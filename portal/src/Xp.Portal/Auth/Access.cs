@@ -18,8 +18,11 @@ public static class Categories
     public const string Balance = "balance";
     public const string Translation = "translation";
     public const string General = "general";
+    /// <summary>Complaints about somebody in a voice room. Only the voice service files them, never the public form.</summary>
+    public const string Voice = "voice";
     /// <summary>Order of the form's list. Crash tickets (stage 4) arrive as "code".</summary>
-    public static readonly string[] All = [Code, Graphics, Balance, Translation, General];
+    public static readonly string[] Open = [Code, Graphics, Balance, Translation, General];
+    public static readonly string[] All = [.. Open, Voice];
     public static bool IsValid(string? c) => c is not null && All.Contains(c);
 }
 

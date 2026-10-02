@@ -18,7 +18,7 @@ public sealed class UserPermission
 
 public enum TicketStatus { New, Triaged, InProgress, NeedsInfo, Resolved, Closed, Duplicate, Rejected }
 public enum TicketPriority { Low, Normal, High, Critical }
-public enum TicketSource { Web, F8, Crash }
+public enum TicketSource { Web, F8, Crash, Voice }
 
 public sealed class Ticket
 {

@@ -29,6 +29,17 @@ public sealed class PortalDb(DbContextOptions<PortalDb> options)
     public DbSet<PackReview> PackReviews => Set<PackReview>();
     public DbSet<PackReviewFrame> PackReviewFrames => Set<PackReviewFrame>();
     public DbSet<ArtPack> ArtPacks => Set<ArtPack>();
+    public DbSet<FriendRequest> FriendRequests => Set<FriendRequest>();
+    public DbSet<Friendship> Friendships => Set<Friendship>();
+    public DbSet<UserBlock> UserBlocks => Set<UserBlock>();
+    public DbSet<VoiceRoom> VoiceRooms => Set<VoiceRoom>();
+    public DbSet<RoomInvite> RoomInvites => Set<RoomInvite>();
+    public DbSet<RoomBan> RoomBans => Set<RoomBan>();
+    public DbSet<RoomSpeakingRestriction> RoomSpeakingRestrictions => Set<RoomSpeakingRestriction>();
+    public DbSet<VoiceAccountBan> VoiceAccountBans => Set<VoiceAccountBan>();
+    public DbSet<VoiceEvent> VoiceEvents => Set<VoiceEvent>();
+    public DbSet<VoiceEventTicket> VoiceEventTickets => Set<VoiceEventTicket>();
+    public DbSet<VoiceJob> VoiceJobs => Set<VoiceJob>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -37,6 +48,7 @@ public sealed class PortalDb(DbContextOptions<PortalDb> options)
         b.HasSequence<long>("forum_topic_numbers").StartsAt(1);
         Community(b);
         Art(b);
+        Voice(b);
 
         b.Entity<PortalUser>(e =>
         {
@@ -151,6 +163,105 @@ public sealed class PortalDb(DbContextOptions<PortalDb> options)
             e.HasIndex(c => c.ExpiresAt);
             e.Property(c => c.Code).HasMaxLength(DeviceLimits.CodeMax);
             e.Property(c => c.Name).HasMaxLength(DeviceLimits.NameMax);
+        });
+    }
+
+    /// <summary>
+    /// Friends and voice rooms. Everything hangs off the accounts and the room with a cascade: deleting
+    /// an account or a room leaves nothing of it behind (VOICE_CHAT.md section 7), only the name of
+    /// whoever acted on someone else is let go (set null) so the other person's record stays whole.
+    /// </summary>
+    static void Voice(ModelBuilder b)
+    {
+        b.Entity<FriendRequest>(e =>
+        {
+            e.HasIndex(r => new { r.SenderId, r.RecipientId }).IsUnique().HasFilter("\"Status\" = 'Pending'");
+            e.HasIndex(r => new { r.RecipientId, r.Status });
+            e.HasIndex(r => new { r.SenderId, r.CreatedAt });
+            e.Property(r => r.Status).HasConversion<string>().HasMaxLength(16);
+            e.HasOne<PortalUser>().WithMany().HasForeignKey(r => r.SenderId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<PortalUser>().WithMany().HasForeignKey(r => r.RecipientId).OnDelete(DeleteBehavior.Cascade);
+        });
+        b.Entity<Friendship>(e =>
+        {
+            e.HasKey(f => new { f.UserLowId, f.UserHighId });
+            e.HasIndex(f => f.UserHighId);
+            e.HasOne<PortalUser>().WithMany().HasForeignKey(f => f.UserLowId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<PortalUser>().WithMany().HasForeignKey(f => f.UserHighId).OnDelete(DeleteBehavior.Cascade);
+        });
+        b.Entity<UserBlock>(e =>
+        {
+            e.HasKey(x => new { x.BlockerId, x.BlockedId });
+            e.HasIndex(x => x.BlockedId);
+            e.HasOne<PortalUser>().WithMany().HasForeignKey(x => x.BlockerId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<PortalUser>().WithMany().HasForeignKey(x => x.BlockedId).OnDelete(DeleteBehavior.Cascade);
+        });
+        b.Entity<VoiceRoom>(e =>
+        {
+            e.HasIndex(r => r.PublicId).IsUnique();
+            e.HasIndex(r => r.OwnerId);
+            e.Property(r => r.PublicId).HasMaxLength(VoiceLimits.PublicIdLength);
+            e.Property(r => r.Title).HasMaxLength(VoiceLimits.TitleMax);
+            e.Property(r => r.ClosedReason).HasMaxLength(VoiceLimits.ReasonMax);
+            e.Property(r => r.Status).HasConversion<string>().HasMaxLength(16);
+            e.HasOne(r => r.Owner).WithMany().HasForeignKey(r => r.OwnerId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<PortalUser>().WithMany().HasForeignKey(r => r.ClosedById).OnDelete(DeleteBehavior.SetNull);
+        });
+        b.Entity<RoomInvite>(e =>
+        {
+            e.HasKey(i => new { i.RoomId, i.UserId });
+            e.HasIndex(i => new { i.UserId, i.Status });
+            e.Property(i => i.Status).HasConversion<string>().HasMaxLength(16);
+            e.HasOne<VoiceRoom>().WithMany().HasForeignKey(i => i.RoomId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<PortalUser>().WithMany().HasForeignKey(i => i.UserId).OnDelete(DeleteBehavior.Cascade);
+        });
+        b.Entity<RoomBan>(e =>
+        {
+            e.HasKey(x => new { x.RoomId, x.UserId });
+            e.HasIndex(x => x.UserId);
+            e.HasOne<VoiceRoom>().WithMany().HasForeignKey(x => x.RoomId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<PortalUser>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<PortalUser>().WithMany().HasForeignKey(x => x.ById).OnDelete(DeleteBehavior.SetNull);
+        });
+        b.Entity<RoomSpeakingRestriction>(e =>
+        {
+            e.HasKey(x => new { x.RoomId, x.UserId });
+            e.HasIndex(x => x.UserId);
+            e.HasOne<VoiceRoom>().WithMany().HasForeignKey(x => x.RoomId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<PortalUser>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+        });
+        b.Entity<VoiceAccountBan>(e =>
+        {
+            e.HasIndex(x => x.UserId).IsUnique().HasFilter("\"LiftedAt\" IS NULL");
+            e.Property(x => x.Reason).HasMaxLength(VoiceLimits.ReasonMax);
+            e.HasOne<PortalUser>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<PortalUser>().WithMany().HasForeignKey(x => x.ById).OnDelete(DeleteBehavior.SetNull);
+            e.HasOne<PortalUser>().WithMany().HasForeignKey(x => x.LiftedById).OnDelete(DeleteBehavior.SetNull);
+        });
+        b.Entity<VoiceEvent>(e =>
+        {
+            e.HasIndex(x => new { x.RoomId, x.UserId, x.At });
+            e.HasIndex(x => new { x.Kind, x.At });
+            e.Property(x => x.Kind).HasMaxLength(32);
+            e.Property(x => x.Reason).HasMaxLength(VoiceLimits.ReasonMax);
+            // the room is a plain id: deleting a room must not take a complaint's evidence with it
+            e.HasOne<PortalUser>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<PortalUser>().WithMany().HasForeignKey(x => x.ActorId).OnDelete(DeleteBehavior.SetNull);
+        });
+        b.Entity<VoiceEventTicket>(e =>
+        {
+            e.HasKey(x => new { x.EventId, x.TicketId });
+            e.HasIndex(x => x.TicketId);
+            e.HasOne<VoiceEvent>().WithMany().HasForeignKey(x => x.EventId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<Ticket>().WithMany().HasForeignKey(x => x.TicketId).OnDelete(DeleteBehavior.Cascade);
+        });
+        b.Entity<VoiceJob>(e =>
+        {
+            e.HasIndex(j => new { j.State, j.NextAttemptAt });
+            e.Property(j => j.Kind).HasConversion<string>().HasMaxLength(16);
+            e.Property(j => j.State).HasConversion<string>().HasMaxLength(16);
+            e.Property(j => j.LastError).HasMaxLength(512);
+            e.Property(j => j.Identity).HasMaxLength(128);
         });
     }
 
