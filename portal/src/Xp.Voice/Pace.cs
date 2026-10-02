@@ -34,11 +34,26 @@ static partial class Pace
     /// <returns>a line for the log</returns>
     public static string Hold()
     {
-        // ControlMask names the policies we decide, StateMask 0 means "off" for each of them
-        var s = new PowerThrottlingState { Version = 1, ControlMask = ExecutionSpeed | IgnoreTimerResolution, StateMask = 0 };
-        bool ok = SetProcessInformation(GetCurrentProcess(), ProcessPowerThrottling, ref s, (uint)Marshal.SizeOf<PowerThrottlingState>());
+        // one call for both policies; a Windows that does not know one of the flags rejects the whole
+        // call (a friend's machine: "no, error 0" for both), so then each is asked for alone
+        bool both = Off(ExecutionSpeed | IgnoreTimerResolution, out int err);
+        string eco = "yes", timer = "yes";
+        if (!both)
+        {
+            eco = Off(ExecutionSpeed, out err) ? "yes (alone)" : "no, error " + err;
+            timer = Off(IgnoreTimerResolution, out err) ? "yes (alone)" : "no, error " + err;
+        }
         uint t = timeBeginPeriod(1);
-        return $"pace: no EcoQoS, timer honoured when hidden: {(ok ? "yes" : "no, error " + Marshal.GetLastPInvokeError())}; 1 ms timer: {(t == 0 ? "yes" : "no")}";
+        return $"pace: no EcoQoS: {eco}; timer honoured when hidden: {timer}; 1 ms timer: {(t == 0 ? "yes" : "no")}; {Environment.OSVersion.VersionString}";
+    }
+
+    /// <summary>ControlMask names the policies we decide, StateMask 0 means "off" for each of them.</summary>
+    static bool Off(uint policies, out int error)
+    {
+        var s = new PowerThrottlingState { Version = 1, ControlMask = policies, StateMask = 0 };
+        bool ok = SetProcessInformation(GetCurrentProcess(), ProcessPowerThrottling, ref s, (uint)Marshal.SizeOf<PowerThrottlingState>());
+        error = ok ? 0 : Marshal.GetLastPInvokeError();
+        return ok;
     }
 
     public static void Release() => timeEndPeriod(1);
