@@ -510,7 +510,11 @@ public sealed class MainWindow : Window
             SetStatus(L.T("err.generic", e.Message));
         }
         // the first start with builds copies user/options.cfg; under a running game it waits for "Play"
-        if (!GameIsRunning()) CurrentBuild();
+        if (!GameIsRunning())
+        {
+            CurrentBuild();
+            _updater.MigrateSettings();
+        }
         FillBuilds();
         TellGameWhereWeAre();
         CountReports();
@@ -884,6 +888,8 @@ public sealed class MainWindow : Window
         if (exe is null) { Fail(L.T("err.noLaunch")); Refresh(); return; }
         // the build's own options.cfg, given to the game with -cfg (MULTIMOD §3); without one the game cannot be told where its settings are
         if (CurrentBuild() is not { } build) { Fail(L.T("err.generic", "builds")); Refresh(); return; }
+        // a start-up under a running game skipped it; before the profile, which reads the mods list as migrated
+        _updater.MigrateSettings();
         try
         {
             // the profile of the master mod: fixed options and the mod order, before every start

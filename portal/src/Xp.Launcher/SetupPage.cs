@@ -220,6 +220,7 @@ public sealed class SetupPage : UserControl
             var log = new FileLog(_paths);
             _updater = new Updater(_paths, _repo() ?? throw new InvalidOperationException("no repository"), log);
             _updater.Recover();
+            _updater.MigrateSettings();
             return true;
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or ArgumentException or NotSupportedException or InvalidOperationException)

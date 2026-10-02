@@ -141,6 +141,7 @@ static partial class Headless
         var repo = new RepoClient(http, new Uri(Opt(args, "--repo") ?? settings.RepoUrl ?? BuiltIn.Defaults.RepoUrl), BuiltIn.Keys);
         var u = new Updater(paths, repo, log);
         if (u.Recover()) Console.WriteLine(u.RecoveryFinished ? "an interrupted install was finished" : "an interrupted install was undone");
+        if (cmd != "check") u.MigrateSettings();
 
         var state = u.LoadState();
         if (Opt(args, "--channel") is { } ch) { state.Channel = ch; state.Save(paths); }

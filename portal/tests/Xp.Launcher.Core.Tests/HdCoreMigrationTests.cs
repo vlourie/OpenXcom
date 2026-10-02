@@ -135,6 +135,115 @@ public sealed class HdCoreMigrationTests : IDisposable
         Assert.False(File.Exists(HdCoreMigration.DoneFile(P)));
     }
 
+    static Action<string> CutAt(string step, int nth = 1)
+    {
+        int n = 0;
+        return s => { if (s == step && ++n == nth) throw new IOException("power cut (test)"); };
+    }
+
+    string HdOnMigrated => HdOn.Replace("  - active: true\n    id: hd\n", "  - active: true\n    id: hd_core\n  - active: true\n    id: hd\n");
+
+    [Fact]
+    public void Broken_off_between_the_write_and_the_mark_the_next_run_keeps_what_the_player_chose_since()
+    {
+        Install();
+        Assert.Throws<IOException>(() => HdCoreMigration.Run(P, _ => false, false, CutAt("written")));
+        Assert.Equal(HdOnMigrated, File.ReadAllText(Legacy));
+        Assert.True(File.Exists(HdCoreMigration.PendingFile(P)));
+        Assert.False(File.Exists(HdCoreMigration.DoneFile(P)));
+        // before the launcher comes back, the game started by hand: the player switched hd_core off
+        var off = HdOnMigrated.Replace("  - active: true\n    id: hd_core\n", "  - active: false\n    id: hd_core\n");
+        File.WriteAllText(Legacy, off);
+
+        var r = HdCoreMigration.Run(P, _ => false);
+
+        Assert.Equal(HdCoreStep.Done, r.Single().Step);
+        Assert.Equal(off, File.ReadAllText(Legacy));
+        Assert.Equal("user/options.cfg\n", File.ReadAllText(HdCoreMigration.DoneFile(P)));
+        Assert.False(File.Exists(HdCoreMigration.PendingFile(P)));
+        Assert.Equal(HdOn, File.ReadAllText(Path.Combine(P.Backup, "hd_core", "user", "options.cfg")));
+    }
+
+    [Fact]
+    public void Broken_off_between_the_write_and_the_mark_the_next_run_only_marks_it()
+    {
+        Install();
+        Assert.Throws<IOException>(() => HdCoreMigration.Run(P, _ => false, false, CutAt("written")));
+
+        var r = HdCoreMigration.Run(P, _ => false);
+
+        Assert.Equal(HdCoreStep.Done, r.Single().Step);
+        Assert.Equal(HdOnMigrated, File.ReadAllText(Legacy));
+        Assert.False(File.Exists(HdCoreMigration.PendingFile(P)));
+    }
+
+    [Fact]
+    public void Broken_off_before_the_write_the_next_run_writes_it()
+    {
+        Install();
+        Assert.Throws<IOException>(() => HdCoreMigration.Run(P, _ => false, false, CutAt("pending")));
+        Assert.Equal(HdOn, File.ReadAllText(Legacy));
+
+        var r = HdCoreMigration.Run(P, _ => false);
+
+        Assert.Equal(HdCoreStep.Added, r.Single().Step);
+        Assert.Equal(HdOnMigrated, File.ReadAllText(Legacy));
+        Assert.Equal("user/options.cfg\n", File.ReadAllText(HdCoreMigration.DoneFile(P)));
+        Assert.False(File.Exists(HdCoreMigration.PendingFile(P)));
+    }
+
+    [Fact]
+    public void Broken_off_on_the_second_file_the_first_stays_marked()
+    {
+        Install();
+        Builds();
+        // the build with HD on is written and marked, the one without is marked unwritten, user/ is cut after its write
+        Assert.Throws<IOException>(() => HdCoreMigration.Run(P, _ => false, false, CutAt("written", 2)));
+        Assert.Equal(2, File.ReadAllLines(HdCoreMigration.DoneFile(P)).Count(l => l.Length > 0));
+
+        var r = HdCoreMigration.Run(P, _ => false);
+
+        Assert.All(r, x => Assert.Equal(HdCoreStep.Done, x.Step));
+        Assert.Equal(HdOnMigrated, File.ReadAllText(Legacy));
+        Assert.Equal(3, File.ReadAllLines(HdCoreMigration.DoneFile(P)).Count(l => l.Length > 0));
+    }
+
+    [Fact]
+    public void The_launchers_record_of_its_mods_list_follows_so_the_next_play_still_orders_it()
+    {
+        Install();
+        var state = new ProfileState(P);
+        state.SaveMods(new() { ["piratez"] = "piratez\nXPZ_EX_RU-patch\nhd\nhd_18+" });
+        HdCoreMigration.Run(P, _ => false);
+        // only the installed mods count (ModsSignature): xcom1 is off, the patch and hd_18+ are not installed here
+        Assert.Equal("piratez\nhd_core\nhd", state.LoadMods()["piratez"]);
+    }
+
+    [Fact]
+    public void A_mods_list_the_player_made_theirs_is_not_recorded_as_the_launchers()
+    {
+        Install();
+        var state = new ProfileState(P);
+        state.SaveMods(new() { ["piratez"] = "piratez" });   // the launcher wrote hd off; the player switched it on in the game
+        HdCoreMigration.Run(P, _ => false);
+        Assert.Equal("piratez", state.LoadMods()["piratez"]);
+        Assert.Equal(HdOnMigrated, File.ReadAllText(Legacy));
+    }
+
+    [Fact]
+    public async Task An_update_that_brings_hd_core_migrates_the_settings_at_once()
+    {
+        f.StageV1();
+        Fixture.Write(f.Stage, "user/mods/hd_core/metadata.yml", "id: hd_core\nmaster: \"*\"\n");
+        File.WriteAllText(Legacy, HdOn);
+        f.BuildAndPublish("v1");
+        await f.UpdateAsync();
+
+        Assert.Equal(HdOnMigrated, File.ReadAllText(Legacy));
+        Assert.Contains("hd_core: user/options.cfg - Added", f.Log.Lines);
+        Assert.Equal("user/options.cfg\n", File.ReadAllText(HdCoreMigration.DoneFile(P)));
+    }
+
     [Fact]
     public void A_list_not_in_the_engine_layout_is_left_for_a_human()
     {

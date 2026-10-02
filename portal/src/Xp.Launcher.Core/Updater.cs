@@ -283,6 +283,25 @@ public sealed class Updater(GamePaths paths, RepoClient repo, ILauncherLog log)
         Checkpoint("committed");
         FinishCommit(journal, backup);
         log.Info($"installed {journal.ReleaseId}: {writes.Count} written, {journal.Deletes.Count} removed");
+        MigrateSettings();
+    }
+
+    /// <summary>
+    /// The player's settings a release asks to carry over (HdCoreMigration: hd_core on wherever hd is on). Runs after
+    /// every install and at start-up after <see cref="Recover"/>, so a run broken off is finished by the next start;
+    /// a file once migrated is not touched again. Never fails the caller: what is not done now is done next time.
+    /// </summary>
+    public void MigrateSettings()
+    {
+        try
+        {
+            foreach (var f in HdCoreMigration.Run(Paths, IsGameRunning))
+                if (f.Step is not HdCoreStep.Done) log.Info($"hd_core: {f.Path} - {f.Step}");
+        }
+        catch (Exception e) when (e is UpdateBlockedException or IOException or UnauthorizedAccessException or InvalidOperationException)
+        {
+            log.Error("hd_core: settings not migrated now: " + e.Message);
+        }
     }
 
     /// <summary>Test seam: called at the named steps of an install, to break it off exactly there.</summary>
