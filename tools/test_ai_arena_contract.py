@@ -1,6 +1,7 @@
 """Контракт конфигурации стенда (02.10, R-169): ai_arena --strict-flags без флага стенда - INVALID_CONFIG (код 2) до первого
 боя; продолжение серии с другими отпечатками - INVALID_CONFIG (код 3); отпечаток данных меняет правка рулсета и не меняет
-картинка; effective_flags включает значения по умолчанию ai_probe.bench_defaults. Без игры и сборки.
+картинка; effective_flags включает значения по умолчанию ai_probe.bench_defaults; отклонённый старт не становится эталоном
+продолжения; --expect с чужим отпечатком - код 3 и список файлов данных. Без игры и сборки.
   py -3.13 tools/test_ai_arena_contract.py"""
 import argparse, os, subprocess, sys, tempfile
 from pathlib import Path
@@ -80,6 +81,39 @@ with tempfile.TemporaryDirectory() as tmp:
     check("продолжение: другие флаги - код 3", code == 3)
     fp = ai_arena.read_fingerprint(arena / "t.prov.txt")
     check("отпечатки: четыре", fp is not None and sorted(fp) == ["ai_probe", "data", "exe", "flags"])
+    # отклонённый старт не становится эталоном: продолжение с прежней конфигурацией идёт
+    check("отклонённый старт: эталон - последний принятый", fp is not None and fp["flags"] != ai_arena.fingerprints(a)[0]["flags"])
+    os.environ["OXCE_AI_FAST"] = "0"
+    try:
+        ai_arena.provenance(a)
+        code = 0
+    except SystemExit as e:
+        code = e.code
+    check("продолжение после отклонённого: та же конфигурация - идёт", code == 0)
+
+    # 5. ожидаемые отпечатки задания (--expect): совпали - идёт, данные другие - код 3 и список файлов
+    good = ai_arena.fingerprints(a)[0]
+    b = argparse.Namespace(label="e", recruits=True, campaign="", missions="", resume=False, expect=dict(good))
+    try:
+        ai_arena.provenance(b)
+        code = 0
+    except SystemExit as e:
+        code = e.code
+    check("ожидаемые: все совпали - идёт", code == 0)
+    man = (arena / "e.data_manifest.tsv").read_text(encoding="utf-8").splitlines()
+    check("ожидаемые: список файлов данных", len(man) == 1 and man[0].startswith("user\\mods\\m\\ruleset\\a.rul\t"))
+    rul.write_text("items: [y]\n", encoding="utf-8")
+    try:
+        ai_arena.provenance(b)
+        code = 0
+    except SystemExit as e:
+        code = e.code
+    check("ожидаемые: данные другие - код 3", code == 3)
+    text = (arena / "e.prov.txt").read_text(encoding="utf-8")
+    check("ожидаемые: причина и отклонённый отпечаток в prov", "INVALID_CONFIG: отпечаток data" in text and "rejected_fingerprint:" in text)
+    r = subprocess.run([sys.executable, str(HERE / "ai_arena.py"), "--expect", "dat=1", "--label", "contract_test"],
+                       capture_output=True, text=True, encoding="utf-8", env=env, timeout=60)
+    check("ожидаемые: неизвестный ключ отклонён", r.returncode != 0 and "--expect" in r.stderr)
 
 print("итог:", "OK" if not fails else f"FAIL {len(fails)}")
 sys.exit(1 if fails else 0)

@@ -291,7 +291,12 @@ SOTL 16). По этим цифрам второе мнение 02.10 включ�
 умолчаний, по алфавиту, без путей) и `fingerprint: exe= ai_probe= data= flags=` (sha256 exe, файла
 `ai_probe.py`, данных механики — `.rul/.map/.rmp/.mcd` игры без `Language`, сейв кампании и файл
 `@missions`, кэш `arena/.data_hash.json` — и строки флагов). `--resume` с другим отпечатком —
-`INVALID_CONFIG`, код 3. Проверка — `tools/test_ai_arena_contract.py`.
+`INVALID_CONFIG`, код 3. `--expect exe=.. ai_probe=.. data=.. flags=..` (02.10) — ожидаемые отпечатки
+задания: любое расхождение — `INVALID_CONFIG`, код 3, ноль боёв; рядом `arena/<метка>.data_manifest.tsv`
+(файл, размер, sha256 каждого файла данных) — им сверять станцию с эталоном, какой файл устарел. Отклонённый
+старт пишется в prov строкой `rejected_fingerprint:` и эталоном продолжения не становится. Проверка —
+`tools/test_ai_arena_contract.py`. `series_eq.py`: поток, которого нет ни у одной серии, — `NOT_RECORDED`,
+в вердикт не входит.
 
 База для сравнения — прогон **той же сборки** с `OXCE_AI_AMBUSH_MEMO=0`: прогон прежней сборки
 расходится по `rec`/`cand`/`path` из-за своей записи (R-087; строка `[AIREUSE]` в логе выдаёт сборку).

@@ -16,6 +16,8 @@
 
 С --missions каждая миссия играется на всех зёрнах (местность, раса и отряд - по зерну), в сводке строка на миссию.
 Таблица пишется по строке после каждого боя; --resume продолжает прерванную серию с того же места.
+Контракт серии: --strict-flags (флаги стенда явно), --expect exe=.. ai_probe=.. data=.. flags=.. (отпечатки, которые
+задание ждёт от машины) - не совпало, ни одного боя; список файлов отпечатка данных - <label>.data_manifest.tsv.
 
 Таблица боёв - <label>.tsv рядом с логами прогона (%TEMP%/oxce_ai_probe/arena), сводка - в stdout и --out.
 """
@@ -79,9 +81,10 @@ def sha_file(path, h=None):
     return h
 
 
-def data_fingerprint(a):
+def data_fingerprint(a, manifest=None):
     """Данные механики, которые читает бой: файлы MECH_EXT установки (ai_probe.GAME) по пути без регистра, сейв кампании,
-    файл миссий. Хэш по файлам кэшируется в arena/.data_hash.json по (размер, время изменения)."""
+    файл миссий. Хэш по файлам кэшируется в arena/.data_hash.json по (размер, время изменения).
+    manifest (список) получает строки «путь без регистра, размер, sha256» в порядке хэша - сверить две машины файл в файл."""
     import hashlib
     cache_path = ai_probe.WORK / "arena" / ".data_hash.json"
     try:
@@ -102,11 +105,15 @@ def data_fingerprint(a):
             st = p.stat()
         except OSError:
             total.update(f"{p}|missing\n".encode())
+            if manifest is not None:
+                manifest.append(f"{p}\tmissing\t")
             continue
         key = f"{p}|{st.st_size}|{st.st_mtime_ns}"
         fresh[key] = cache.get(key) or sha_file(p).hexdigest()
         rel = os.path.relpath(p, ai_probe.GAME) if str(p).lower().startswith(str(ai_probe.GAME).lower()) else p.name
         total.update(f"{rel.lower()}|{fresh[key]}\n".encode())
+        if manifest is not None:
+            manifest.append(f"{rel.lower()}\t{st.st_size}\t{fresh[key]}")
     try:
         cache_path.write_text(json.dumps(fresh), encoding=ENC_W)
     except OSError:
@@ -120,7 +127,10 @@ def effective_flags():
     return ";".join(f"{k}={env[k]}" for k in sorted(env))
 
 
-def fingerprints(a):
+FP_KEYS = ("exe", "ai_probe", "data", "flags")
+
+
+def fingerprints(a, manifest=None):
     """Четыре отпечатка серии (контракт конфигурации 02.10): exe, ai_probe.py, данные механики, флаги. Пары A/B и
     продолжение серии сравнивают их: разные - INVALID_CONFIG."""
     import hashlib
@@ -128,7 +138,7 @@ def fingerprints(a):
         exe = sha_file(ai_probe.EXE).hexdigest()
     except OSError:
         exe = "missing"
-    data, n = data_fingerprint(a)
+    data, n = data_fingerprint(a, manifest)
     flags = effective_flags()
     return {"exe": exe, "ai_probe": sha_file(ai_probe.__file__).hexdigest(), "data": data,
             "flags": hashlib.sha256(flags.encode()).hexdigest()}, flags, n
@@ -176,19 +186,34 @@ def provenance(a):
              "effective_env: " + ", ".join(f"{k}={eff.get(k, '<unset>')}" for k in keys),
              "all_oxce_ai_env: " + " ".join(f"{k}={eff[k]}" for k in sorted(eff)),
              "args: " + " ".join(sys.argv[1:])]
-    fp, flags, n = fingerprints(a)
-    lines += [f"effective_flags={flags}", f"data_files={n}", "fingerprint: " + " ".join(f"{k}={v}" for k, v in fp.items())]
-    print("\n".join(lines), flush=True)
-    prov = ai_probe.WORK / "arena" / f"{a.label}.prov.txt"
-    prov.parent.mkdir(parents=True, exist_ok=True)
+    manifest = []
+    fp, flags, n = fingerprints(a, manifest)
+    arena = ai_probe.WORK / "arena"
+    arena.mkdir(parents=True, exist_ok=True)
+    # файлы, из которых сложен отпечаток данных: при расхождении машин сравнить два таких списка (diff), а не гадать
+    (arena / f"{a.label}.data_manifest.tsv").write_text("\n".join(manifest) + "\n", encoding="utf-8")
+    prov = arena / f"{a.label}.prov.txt"
     before = read_fingerprint(prov)
-    with open(prov, "a", encoding="utf-8") as f:
-        f.write("\n".join(lines) + "\n")
+    errors = []
     # продолжение серии с другой конфигурацией смешало бы две серии в одной таблице
-    table = ai_probe.WORK / "arena" / f"{a.label}.tsv"
-    if a.resume and before and table.exists() and before != fp:
-        diff = " ".join(k for k in fp if before.get(k) != fp[k])
-        print(f"INVALID_CONFIG: серия {a.label} продолжается с другими отпечатками: {diff}", flush=True)
+    if a.resume and before and (arena / f"{a.label}.tsv").exists() and before != fp:
+        errors.append(f"серия {a.label} продолжается с другими отпечатками: "
+                      + " ".join(k for k in fp if before.get(k) != fp[k]))
+    # ожидаемые отпечатки из задания (--expect): устаревший exe, ai_probe или game\ станции не играет ни одного боя
+    for k, v in getattr(a, "expect", {}).items():
+        if fp[k] != v:
+            errors.append(f"отпечаток {k}: ожидался {v}, на машине {fp[k]}"
+                          + (f" (файлы данных - {arena / (a.label + '.data_manifest.tsv')})" if k == "data" else ""))
+    # отклонённый старт пишется под другим именем: read_fingerprint берёт последний ПРИНЯТЫЙ, иначе следующее
+    # продолжение с верной конфигурацией сверялось бы с отклонённой
+    tag = "rejected_fingerprint: " if errors else "fingerprint: "
+    lines += [f"effective_flags={flags}", f"data_files={n}", tag + " ".join(f"{k}={v}" for k, v in fp.items())]
+    print("\n".join(lines), flush=True)
+    with open(prov, "a", encoding="utf-8") as f:
+        f.write("\n".join(lines + [f"INVALID_CONFIG: {e}" for e in errors]) + "\n")
+    if errors:
+        for e in errors:
+            print(f"INVALID_CONFIG: {e}", flush=True)
         sys.exit(3)
 
 
@@ -432,7 +457,17 @@ def main():
                     help="переменная окружения боя OXCE_AI_*, повторяемый: --env OXCE_AI_EVAL=1 --env OXCE_AI_EVAL_RISK=0.12")
     ap.add_argument("--strict-flags", action="store_true",
                     help="каждый флаг стенда (ai_probe.BENCH_FLAGS) обязан быть задан через --env, иначе INVALID_CONFIG")
+    ap.add_argument("--expect", action="append", default=[], metavar="K=SHA",
+                    help="ожидаемый отпечаток (exe, ai_probe, data, flags - как в строке fingerprint prov.txt), повторяемый:"
+                         " не совпал хоть один - INVALID_CONFIG (код 3) до первого боя")
     a = ap.parse_args()
+    exp = {}
+    for kv in a.expect:
+        k, _, v = kv.partition("=")
+        if k not in FP_KEYS or not v:
+            raise SystemExit(f"--expect {kv}: ключ из {', '.join(FP_KEYS)} и значение")
+        exp[k] = v.lower()
+    a.expect = exp
     global LABEL
     LABEL = a.label
     for kv in a.env:
