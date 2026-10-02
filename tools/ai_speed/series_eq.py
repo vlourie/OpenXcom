@@ -9,7 +9,8 @@
 --strip <регэксп> - вырезать совпадения из строк перед сравнением (поле прибора, добавленного между сборками;
 элемент trail walk.stop сборки build-ai38+ против build-ai37: --strip '("walk[.]stop[.][^"]*",|,?"walk[.]stop[.][^"]*")',
 так p37a = p39a 22 из 22); без него сравнение побайтное.
-Вердикт IDENTICAL - только при совпадении всего; печатает, какие бои и потоки разошлись.
+Вердикт IDENTICAL - только при совпадении всего; печатает, какие бои и потоки разошлись. Поток, которого нет ни у
+одной серии (запись выключена в обеих), - NOT_RECORDED и в вердикт не входит; есть только у одной - DIFFERENT.
 """
 import argparse
 import csv
@@ -76,6 +77,9 @@ def compare(a, b, arena, strip=""):
     verdict = same == len(keys) and len(A) == len(B)
     for ext in STREAMS:
         sa, sb = stream(arena / f"{a}{ext}", strip), stream(arena / f"{b}{ext}", strip)
+        if sa is None and sb is None:
+            out.append(f"{ext}: NOT_RECORDED - нет ни у одной серии, в вердикт не входит")
+            continue
         if sa is None or sb is None:
             out.append(f"{ext}: нет файла у {a if sa is None else b}")
             verdict = False
