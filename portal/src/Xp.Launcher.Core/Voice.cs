@@ -208,11 +208,11 @@ public static class VoiceLink
         if (!Uri.TryCreate(arg.Trim(), UriKind.Absolute, out var u)) return null;
         if (!u.Scheme.Equals(Scheme, StringComparison.OrdinalIgnoreCase) || !u.Host.Equals("voice", StringComparison.OrdinalIgnoreCase)) return null;
         var id = u.AbsolutePath.Trim('/');
-        if (id.Length is 0 or > 32) return null;
-        foreach (var c in id)
-            if (!char.IsAsciiLetterOrDigit(c)) return null;
-        return id.ToLowerInvariant();
+        return IsRoomId(id) ? id.ToLowerInvariant() : null;
     }
+
+    /// <summary>Looks like a room's public id: letters and digits only, nothing a path or a query is made of.</summary>
+    public static bool IsRoomId(string? id) => id is { Length: > 0 and <= 32 } && id.All(char.IsAsciiLetterOrDigit);
 
     /// <summary>The first link among the command line arguments (the browser passes it as the only one).</summary>
     public static string? Find(IEnumerable<string> args) => args.Select(Parse).FirstOrDefault(id => id is not null);
