@@ -121,10 +121,11 @@ public static class Setup
     /// on and off stays with the game's Mods menu.
     /// </summary>
     /// <param name="master">the master mod the ticks make the game, or null when none is ticked</param>
-    public static List<OwnMod> OwnMods(string gameDir, ReleaseManifest m, string? master)
+    /// <param name="cfgPath">the options.cfg that says which are on (the current build's); null - user/options.cfg</param>
+    public static List<OwnMod> OwnMods(string gameDir, ReleaseManifest m, string? master, string? cfgPath = null)
     {
         var ours = new HashSet<string>(m.Components.Select(c => c.Mod).Where(id => id.Length > 0), StringComparer.Ordinal);
-        var cfgPath = Path.Combine(gameDir, "user", "options.cfg");
+        cfgPath ??= Path.Combine(gameDir, "user", "options.cfg");
         var cfg = OptionsCfg.Parse(File.Exists(cfgPath) ? File.ReadAllText(cfgPath) : "");
         var result = new List<OwnMod>();
         var root = Path.Combine(gameDir, "user", "mods");

@@ -10,6 +10,7 @@
   </Folder>
   <Folder Name="/tests/">
     <Project Path="tests/Xp.Launcher.Core.Tests/Xp.Launcher.Core.Tests.csproj" />
+    <Project Path="tests/Xp.Launcher.Ui.Tests/Xp.Launcher.Ui.Tests.csproj" />
     <Project Path="tests/Xp.Portal.Tests/Xp.Portal.Tests.csproj" />
   </Folder>
 </Solution>

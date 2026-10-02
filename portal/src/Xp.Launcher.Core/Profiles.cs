@@ -235,11 +235,14 @@ public static class ProfileWriter
     /// When options.cfg no longer matches it, the player changed the mods in the game, and the list is theirs</param>
     /// <param name="resetMods">"back to recommended": the profile's mods list and recommended options, whatever the player did</param>
     /// <param name="switchOn">mods the player has just ticked in the launcher: on, whichever way the list is kept</param>
+    /// <param name="cfgDir">the folder of the options.cfg to write (a build's); null - user/</param>
+    /// <param name="stateKey">the key of recommendedDone and writtenMods (a build's id); null - the master</param>
     public static ProfileResult Apply(string gameDir, ModProfile profile, IReadOnlyList<InstalledMod> installed,
         string? language, int? screenHeight, IDictionary<string, int> recommendedDone, bool dryRun = false,
-        IDictionary<string, string>? writtenMods = null, bool resetMods = false, IReadOnlyCollection<string>? switchOn = null)
+        IDictionary<string, string>? writtenMods = null, bool resetMods = false, IReadOnlyCollection<string>? switchOn = null,
+        string? cfgDir = null, string? stateKey = null)
     {
-        var path = Path.Combine(gameDir, "user", "options.cfg");
+        var path = Path.Combine(cfgDir ?? Path.Combine(gameDir, "user"), "options.cfg");
         var before = File.Exists(path) ? File.ReadAllText(path) : "";
         var cfg = OptionsCfg.Parse(before);
         var changes = new List<ProfileChange>();
@@ -247,7 +250,7 @@ public static class ProfileWriter
         if (!byId.TryGetValue(profile.Master, out var master) || !master.IsMaster)
             throw new InvalidOperationException($"master mod '{profile.Master}' is not installed");
 
-        var doneKey = profile.Master.ToLowerInvariant();
+        var doneKey = (stateKey ?? profile.Master).ToLowerInvariant();
         if (resetMods) recommendedDone.Remove(doneKey);
         var lang = LangOf(language ?? cfg.Get("language") ?? "");
         bool playersList = !resetMods && writtenMods is not null && writtenMods.TryGetValue(doneKey, out var wrote)
@@ -314,20 +317,27 @@ public static class ProfileWriter
     /// The launcher's call: the profile shipped in the game folder for <paramref name="master"/>, or for
     /// the master on in options.cfg. Null when there is nothing to apply (no profiles in this release,
     /// no profile for that master, the master not installed) - the game still starts.
+    /// With a build, its options.cfg and its own memory of the profile; never while the game runs (MULTIMOD §3.6).
     /// </summary>
     public static ProfileResult? ApplyForGame(GamePaths paths, string? master, string? language, int? screenHeight,
-        bool resetMods = false, IReadOnlyCollection<string>? switchOn = null)
+        bool resetMods = false, IReadOnlyCollection<string>? switchOn = null, Build? build = null,
+        Func<string, bool>? isGameRunning = null)
     {
+        if ((isGameRunning ?? GameProcess.IsRunningIn)(paths.GameDir))
+            throw new UpdateBlockedException("the game is running: its options are not changed under it");
         if (ProfileSet.Load(paths.GameDir) is not { } set) return null;
         var installed = ScanMods(paths.GameDir);
-        var cfgPath = Path.Combine(paths.GameDir, "user", "options.cfg");
+        var cfgDir = build is not null ? paths.Full(build.Cfg.TrimEnd('/')) : Path.Combine(paths.GameDir, "user");
+        var cfgPath = Path.Combine(cfgDir, "options.cfg");
+        master ??= build?.EngineMaster;
         master ??= OptionsCfg.Parse(File.Exists(cfgPath) ? File.ReadAllText(cfgPath) : "").Mods
             .Where(m => m.Active && installed.Any(i => i.IsMaster && i.Id == m.Id)).Select(m => m.Id).FirstOrDefault();
         if (master is null || set.For(master) is not { } profile || !installed.Any(i => i.IsMaster && i.Id == profile.Master)) return null;
         var state = new ProfileState(paths);
         var done = state.Load();
         var written = state.LoadMods();
-        var r = Apply(paths.GameDir, profile, installed, language, screenHeight, done, false, written, resetMods, switchOn);
+        var r = Apply(paths.GameDir, profile, installed, language, screenHeight, done, false, written, resetMods, switchOn,
+            cfgDir, build?.Id);
         state.Save(done);
         state.SaveMods(written);
         return r;

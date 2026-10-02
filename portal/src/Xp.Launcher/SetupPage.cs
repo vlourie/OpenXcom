@@ -414,7 +414,7 @@ public sealed class SetupPage : UserControl
     void AddOwnMods(StackPanel s, ReleaseManifest m)
     {
         List<OwnMod> own;
-        try { own = Setup.OwnMods(_dir, m, Setup.Master(m, _picked)); }
+        try { own = Setup.OwnMods(_dir, m, Setup.Master(m, _picked), new BuildStore(new GamePaths(_dir)).CurrentOptionsFile()); }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException) { return; }
         if (own.Count == 0) return;
         var head = Skin.Note(L.T("setup.own"), 14, Skin.Text);
@@ -521,11 +521,14 @@ public sealed class SetupPage : UserControl
             }
 
             var master = Setup.Master(_manifest!, _picked);
-            var r = ProfileWriter.ApplyForGame(u.Paths, master, Setup.GameLanguage(_lang), ScreenHeight(), switchOn: ticked);
+            var log = new FileLog(u.Paths);
+            // the settings live in the build's folder (docs/portal/MULTIMOD.md §3): a fresh install gets its first build here
+            var build = new BuildStore(u.Paths).Ensure(master, log);
+            var r = ProfileWriter.ApplyForGame(u.Paths, master, Setup.GameLanguage(_lang), ScreenHeight(), switchOn: ticked, build: build);
             // without this line a game with every mod off is a guess: was the profile written, and where
-            new FileLog(u.Paths).Info(r is null
+            log.Info(r is null
                 ? $"setup: no profile applied (master '{master}', {ProfileSet.FileName} {(File.Exists(Path.Combine(u.Paths.GameDir, ProfileSet.FileName)) ? "found" : "missing")}, mods {string.Join(",", ProfileWriter.ScanMods(u.Paths.GameDir).Select(m => m.Id + (m.IsMaster ? "*" : "")))})"
-                : $"setup: options.cfg by the profile in {u.Paths.GameDir}: {string.Join("; ", r.Changes)}");
+                : $"setup: {build.Cfg}options.cfg by the profile in {u.Paths.GameDir}: {string.Join("; ", r.Changes)}");
             _doneText = L.T("setup.doneText", _manifest!.Release.Version)
                         + (r is { Changes.Count: > 0 } ? "\n\n" + L.T("setup.doneChanges", ProfileText.Lines(r.Items)) : "");
             _settings.GameDir = _dir;

@@ -3,6 +3,8 @@ using System.Text.Json;
 using System.Text.Json.Serialization;
 using Xp.Manifest;
 
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("Xp.Launcher.Ui.Tests")]
+
 namespace Xp.Launcher;
 
 /// <summary>User-level settings, in %LOCALAPPDATA%\XPiratezLauncher\settings.json. No secrets here.</summary>
@@ -20,7 +22,9 @@ public sealed class Settings
     public double? WindowWidth { get; set; }
     public double? WindowHeight { get; set; }
 
-    public static string Dir => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "XPiratezLauncher");
+    public static string Dir => DirOverride ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "XPiratezLauncher");
+    /// <summary>The window tests run the launcher on a folder of their own, never on the player's settings.</summary>
+    internal static string? DirOverride { get; set; }
     static string FilePath => Path.Combine(Dir, "settings.json");
 
     public static Settings Load()

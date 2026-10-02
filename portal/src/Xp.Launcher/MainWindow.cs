@@ -53,12 +53,18 @@ public sealed class MainWindow : Window
     readonly TextBlock _log = new() { FontFamily = new FontFamily("Consolas,monospace"), FontSize = 11, TextWrapping = TextWrapping.Wrap, Foreground = Skin.B(Skin.Muted), LineHeight = 16 };
     readonly Button _check, _repair, _rollback, _selfUpdate, _choose, _updateOnly, _components, _resetProfile;
 
+    // builds (docs/portal/MULTIMOD.md §3, §7): the switcher on the home page, the rest in Settings
+    readonly ComboBox _build = new() { MinWidth = 260, FontSize = 14 };
+    readonly Button _buildNew, _buildCopy, _buildRename, _buildDelete;
+    bool _fillingBuilds;
+
     readonly SetupPage _setupPage;
     readonly ReportsPage _reportsPage;
     readonly ReviewPage _reviewPage;
     readonly AccountPanel _account;
 
     GamePaths? _paths;
+    BuildStore? _builds;
     Updater? _updater;
     FileLog? _fileLog;
     RepoClient? _repo;
@@ -113,6 +119,15 @@ public sealed class MainWindow : Window
         _components.Click += (_, _) => OpenSetup(_paths?.GameDir);
         _resetProfile = Skin.Btn(L.T("settings.resetProfile"));
         _resetProfile.Click += async (_, _) => await ResetProfileAsync();
+        _buildNew = Skin.Btn(L.T("builds.new"));
+        _buildNew.Click += async (_, _) => await NewBuildAsync();
+        _buildCopy = Skin.Btn(L.T("builds.copy"));
+        _buildCopy.Click += async (_, _) => await CopyBuildAsync();
+        _buildRename = Skin.Btn(L.T("builds.rename"));
+        _buildRename.Click += async (_, _) => await RenameBuildAsync();
+        _buildDelete = Skin.Btn(L.T("builds.delete"), "warn");
+        _buildDelete.Click += async (_, _) => await DeleteBuildAsync();
+        _build.SelectionChanged += (_, _) => SelectBuild();
         _main.Content = _mainText;
         _main.Click += async (_, _) => await OnMainAsync();
 
@@ -164,6 +179,8 @@ public sealed class MainWindow : Window
             if (Array.IndexOf(args, "--setup") is var j and >= 0 && j + 1 < args.Length) OpenSetup(args[j + 1] == "new" ? null : args[j + 1]);
 #endif
         };
+        // back from a game started without us, or after it closed: the locks follow it
+        Activated += (_, _) => { if (_paths is not null) Refresh(); };
         Closing += (_, _) =>
         {
             _cts?.Cancel();
@@ -272,8 +289,14 @@ public sealed class MainWindow : Window
         Grid.SetColumn(_updateOnly, 1);
         mainArea.Children.Add(_updateOnly);
 
+        // the build "Play" starts, right over the button (MULTIMOD §7)
+        var buildRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 10 };
+        buildRow.Children.Add(new TextBlock { Text = L.T("home.build"), FontSize = 14, Foreground = Skin.B(Skin.Text2), VerticalAlignment = VerticalAlignment.Center });
+        buildRow.Children.Add(_build);
+
         var content = new StackPanel { Spacing = 14, VerticalAlignment = VerticalAlignment.Bottom };
         content.Children.Add(heading);
+        content.Children.Add(buildRow);
         content.Children.Add(mainArea);
         content.Children.Add(_sub);
         content.Children.Add(_current);
@@ -376,6 +399,15 @@ public sealed class MainWindow : Window
         };
         game.Children.Add(_language);
         game.Children.Add(_languageNote);
+        game.Children.Add(Skin.H2(L.T("settings.builds")));
+        var buildsRow = new WrapPanel { Orientation = Orientation.Horizontal };
+        foreach (var b in new[] { _buildNew, _buildCopy, _buildRename, _buildDelete })
+        {
+            b.Margin = new Thickness(0, 0, 8, 6);
+            buildsRow.Children.Add(b);
+        }
+        game.Children.Add(buildsRow);
+        game.Children.Add(Skin.Note(L.T("builds.hint"), 13, Skin.Text2));
 
         var updates = Group("settings.updates");
         updates.Children.Add(_installed);
@@ -464,6 +496,7 @@ public sealed class MainWindow : Window
         _fileLog = new FileLog(_paths);
         _fileLog.Written += line => Dispatcher.UIThread.Post(() => AppendLog(line));
         _updater = new Updater(_paths, _repo!, _fileLog);
+        _builds = new BuildStore(_paths);
         _gameDir.Text = _paths.GameDir;
         // the review page may already be on screen: until now it had no folder to read packs from
         if (_reviewPage.IsVisible) _reviewPage.Shown();
@@ -476,8 +509,117 @@ public sealed class MainWindow : Window
         {
             SetStatus(L.T("err.generic", e.Message));
         }
+        // the first start with builds copies user/options.cfg; under a running game it waits for "Play"
+        if (!GameIsRunning()) CurrentBuild();
+        FillBuilds();
         TellGameWhereWeAre();
         CountReports();
+    }
+
+    // ----------------------------------------------------------------- builds
+
+    /// <summary>The build "Play" starts, migrating on the first start; null when that cannot be done now (logged).</summary>
+    Build? CurrentBuild()
+    {
+        if (_builds is null) return null;
+        try { return _builds.Ensure(log: _fileLog); }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or UpdateBlockedException or InvalidOperationException)
+        {
+            _fileLog?.Error("builds: " + e.Message);
+            return null;
+        }
+    }
+
+    void FillBuilds()
+    {
+        _fillingBuilds = true;
+        _build.Items.Clear();
+        if (_builds is { Exists: true })
+        {
+            var set = _builds.Load(_fileLog);
+            foreach (var b in set.Builds) _build.Items.Add(new ComboBoxItem { Content = b.Title, Tag = b.Id });
+            _build.SelectedIndex = set.Current is { } c ? set.Builds.IndexOf(c) : -1;
+        }
+        _fillingBuilds = false;
+    }
+
+    void SelectBuild()
+    {
+        if (_fillingBuilds || _builds is null || _build.SelectedItem is not ComboBoxItem { Tag: string id }) return;
+        if (!BuildsWritable()) { FillBuilds(); return; }
+        try
+        {
+            _builds.Select(id);
+            _fileLog?.Info($"build '{id}' picked");
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or UpdateBlockedException or InvalidOperationException)
+        {
+            Fail(L.T("err.generic", e.Message));
+            FillBuilds();
+        }
+        Refresh();
+    }
+
+    /// <summary>Builds change only with the launcher idle and the game closed (MULTIMOD §3.6).</summary>
+    bool BuildsWritable()
+    {
+        if (_builds is null || _work != Work.None) return false;
+        if (!GameIsRunning()) return true;
+        SetStatus(L.T("builds.running"));
+        Refresh();
+        return false;
+    }
+
+    async Task NewBuildAsync()
+    {
+        if (!BuildsWritable() || CurrentBuild() is not { } cur) return;
+        var title = await new TextDialog(L.T("builds.newName"), L.T("builds.defaultNew")).ShowDialog<string?>(this);
+        if (title is null) return;
+        await BuildChangeAsync(() =>
+        {
+            var cfg = _builds!.OptionsFile(cur);
+            var lang = OptionsCfg.Parse(File.Exists(cfg) ? File.ReadAllText(cfg) : "").Get("language") ?? Setup.GameLanguage(L.Language);
+            var b = _builds.Create(title, cur.Template ?? cur.EngineMaster ?? "piratez", lang, Screens.ScreenFromWindow(this)?.Bounds.Height);
+            _fileLog?.Info($"build '{b.Id}' created from the profile '{b.Template}'");
+        });
+    }
+
+    async Task CopyBuildAsync()
+    {
+        if (!BuildsWritable() || CurrentBuild() is not { } cur) return;
+        var title = await new TextDialog(L.T("builds.copyName", cur.Title), L.T("builds.defaultCopy", cur.Title)).ShowDialog<string?>(this);
+        if (title is null) return;
+        await BuildChangeAsync(() => _fileLog?.Info($"build '{_builds!.Copy(cur.Id, title).Id}' copied from '{cur.Id}'"));
+    }
+
+    async Task RenameBuildAsync()
+    {
+        if (!BuildsWritable() || CurrentBuild() is not { } cur) return;
+        var title = await new TextDialog(L.T("builds.renameName", cur.Title), cur.Title).ShowDialog<string?>(this);
+        if (title is null) return;
+        await BuildChangeAsync(() => _builds!.Rename(cur.Id, title));
+    }
+
+    async Task DeleteBuildAsync()
+    {
+        if (!BuildsWritable() || CurrentBuild() is not { } cur) return;
+        if (_builds!.Load().Builds.Count < 2) { await new MessageDialog(L.T("builds.onlyOne"), withNo: false).ShowDialog<bool>(this); return; }
+        if (!await ConfirmAsync(L.T("builds.deleteConfirm", cur.Title))) return;
+        await BuildChangeAsync(() => _fileLog?.Info($"build '{cur.Id}' deleted, its settings kept in {_builds.Delete(cur.Id)}"));
+    }
+
+    /// <summary>A change of the builds; the game may have started while a dialog was open, so the store checks again.</summary>
+    async Task BuildChangeAsync(Action change)
+    {
+        if (!BuildsWritable()) return;
+        try { change(); }
+        catch (UpdateBlockedException) { SetStatus(L.T("builds.running")); }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or InvalidOperationException or System.Text.Json.JsonException)
+        {
+            await new MessageDialog(L.T("err.generic", e.Message), withNo: false).ShowDialog<bool>(this);
+        }
+        FillBuilds();
+        Refresh();
     }
 
     /// <summary>
@@ -567,12 +709,14 @@ public sealed class MainWindow : Window
         string text;
         try
         {
-            var r = ProfileWriter.ApplyForGame(_paths, null, null, Screens.ScreenFromWindow(this)?.Bounds.Height, resetMods: true);
+            var r = ProfileWriter.ApplyForGame(_paths, null, null, Screens.ScreenFromWindow(this)?.Bounds.Height, resetMods: true,
+                build: _builds?.Ensure(log: _fileLog));
             text = r is null ? L.T("settings.resetNothing")
                  : r.Changes.Count == 0 ? L.T("settings.resetSame")
                  : L.T("settings.resetDone", ProfileText.Lines(r.Items));
             if (r is { Written: true }) _fileLog?.Info("options.cfg back to the profile: " + string.Join("; ", r.Changes));
         }
+        catch (UpdateBlockedException) { text = L.T("builds.running"); }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or System.Text.Json.JsonException or InvalidOperationException)
         {
             text = L.T("err.generic", e.Message);
@@ -738,21 +882,27 @@ public sealed class MainWindow : Window
         var exe = new[] { state.InstalledLaunch, "openxcom_hd.exe", "OpenXcomEx.exe" }
             .FirstOrDefault(e => e.Length > 0 && File.Exists(Path.Combine(_updater.Paths.GameDir, e)));
         if (exe is null) { Fail(L.T("err.noLaunch")); Refresh(); return; }
+        // the build's own options.cfg, given to the game with -cfg (MULTIMOD §3); without one the game cannot be told where its settings are
+        if (CurrentBuild() is not { } build) { Fail(L.T("err.generic", "builds")); Refresh(); return; }
         try
         {
             // the profile of the master mod: fixed options and the mod order, before every start
             try
             {
                 var screen = Screens.ScreenFromWindow(this)?.Bounds.Height;
-                if (ProfileWriter.ApplyForGame(_updater.Paths, null, null, screen) is { Written: true } r)
-                    _fileLog?.Info("options.cfg by the profile: " + string.Join("; ", r.Changes));
+                if (ProfileWriter.ApplyForGame(_updater.Paths, null, null, screen, build: build) is { Written: true } r)
+                    _fileLog?.Info($"{build.Cfg}options.cfg by the profile: " + string.Join("; ", r.Changes));
             }
             catch (Exception e) when (e is IOException or UnauthorizedAccessException or System.Text.Json.JsonException or InvalidOperationException)
             {
                 _fileLog?.Error("profile not applied: " + e.Message);   // the game still starts, as the player left it
             }
-            _game = GameProcess.Start(_updater.Paths, exe);
-            _fileLog?.Info($"game started: {exe}");
+            // before the start: once the game runs, nothing of the builds is written
+            try { _builds!.MarkPlayed(build.Id); }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException) { _fileLog?.Error("builds.json: " + e.Message); }
+            var args = _builds!.LaunchArgs(build);
+            _game = GameProcess.Start(_updater.Paths, exe, args);
+            _fileLog?.Info($"game started: {exe} {string.Join(' ', args)} (build '{build.Id}')");
             _game.EnableRaisingEvents = true;
             _game.Exited += (_, _) => Dispatcher.UIThread.Post(() =>
             {
@@ -762,6 +912,7 @@ public sealed class MainWindow : Window
                 Refresh();
             });
         }
+        catch (UpdateBlockedException) { SetStatus(L.T("builds.running")); }   // started from elsewhere a moment ago: one game at a time
         catch (Exception e) when (e is IOException or System.ComponentModel.Win32Exception or InvalidOperationException)
         {
             Fail(L.T("err.generic", e.Message));
@@ -826,7 +977,8 @@ public sealed class MainWindow : Window
         _launcherLine.Text = _launcherUpdate is { } lu ? L.T("settings.launcherNew", BuiltIn.VersionText, lu.Release.Version) : L.T("settings.launcherLatest", BuiltIn.VersionText);
 
         bool idle = _updater is not null && _work == Work.None;
-        bool running = _game is { HasExited: false };
+        // not only the game "Play" started: one started from its own exe, or before the launcher, locks the same
+        bool running = _game is { HasExited: false } || (idle && GameIsRunning());
         _check.IsEnabled = idle;
         _updateOnly.IsEnabled = idle && !running && _paths is not null;
         _repair.IsEnabled = idle && !running && state?.InstalledReleaseId is not null;
@@ -834,6 +986,10 @@ public sealed class MainWindow : Window
         _choose.IsEnabled = _work == Work.None;
         _components.IsEnabled = idle && !running && _paths is not null;
         _resetProfile.IsEnabled = idle && !running && _paths is not null;
+        // under a running game the builds are read only (MULTIMOD §3.6, §7)
+        bool buildsOn = idle && !running && _builds is { Exists: true };
+        _build.IsEnabled = buildsOn;
+        foreach (var b in new[] { _buildNew, _buildCopy, _buildRename, _buildDelete }) b.IsEnabled = buildsOn;
         _selfUpdate.IsVisible = _launcherUpdate is not null;
         _selfUpdate.IsEnabled = idle;
         if (_launcherUpdate is not null) _selfUpdate.Content = L.T("self.install") + " " + _launcherUpdate.Release.Version;
@@ -949,6 +1105,34 @@ sealed class MessageDialog : Window
         panel.Children.Add(new TextBlock { Text = text, TextWrapping = TextWrapping.Wrap });
         panel.Children.Add(buttons);
         Content = Skin.Panel(panel, new Thickness(0));
+    }
+}
+
+/// <summary>One line of text, for a build's name: the text, or null on "Cancel".</summary>
+sealed class TextDialog : Window
+{
+    public TextDialog(string prompt, string initial)
+    {
+        Title = L.T("title");
+        Width = 460; SizeToContent = SizeToContent.Height; CanResize = false;
+        WindowStartupLocation = WindowStartupLocation.CenterOwner;
+        var box = new TextBox { Text = initial, FontSize = 14, MaxLength = 60 };
+        var ok = Skin.Btn(L.T("modified.ok"), "primary");
+        ok.Margin = new Thickness(0, 0, 8, 0);
+        void Done() { if ((box.Text ?? "").Trim().Length > 0) Close((box.Text ?? "").Trim()); }
+        ok.Click += (_, _) => Done();
+        box.KeyDown += (_, e) => { if (e.Key == Key.Enter) Done(); };
+        var cancel = Skin.Btn(L.T("cancel"));
+        cancel.Click += (_, _) => Close(null);
+        var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
+        buttons.Children.Add(ok);
+        buttons.Children.Add(cancel);
+        var panel = new StackPanel { Margin = new Thickness(20), Spacing = 16 };
+        panel.Children.Add(new TextBlock { Text = prompt, TextWrapping = TextWrapping.Wrap });
+        panel.Children.Add(box);
+        panel.Children.Add(buttons);
+        Content = Skin.Panel(panel, new Thickness(0));
+        Opened += (_, _) => { box.Focus(); box.SelectAll(); };
     }
 }
 

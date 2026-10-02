@@ -5,7 +5,7 @@ using Xp.Manifest;
 namespace Xp.Launcher;
 
 /// <summary>
-/// XPiratezLauncher.exe --headless &lt;check|update|repair|rollback|self-update|ufo&gt; [--game &lt;dir&gt;] [--channel &lt;ch&gt;] [--repo &lt;url&gt;]
+/// XPiratezLauncher.exe --headless &lt;check|update|repair|rollback|self-update|ufo|builds&gt; [--game &lt;dir&gt;] [--channel &lt;ch&gt;] [--repo &lt;url&gt;]
 /// The same core as the window, for scripts and tests. "update" keeps player-modified files,
 /// "repair" replaces them, "check" changes nothing.
 /// Exit codes: 0 done / up to date, 1 error, 2 refused (signature, running game), 3 update available (check),
@@ -53,8 +53,8 @@ static partial class Headless
     }
 
     /// <summary>
-    /// "profile [--master piratez] [--lang ru] [--screen 1440] [--profiles file] [--dry-run]": sets user/options.cfg
-    /// up for the master mod by xp-profiles.json. --dry-run only prints what would change.
+    /// "profile [--master piratez] [--lang ru] [--screen 1440] [--profiles file] [--dry-run]": sets the options.cfg
+    /// of the current build up for the master mod by xp-profiles.json; refused (2) while the game runs. --dry-run only prints what would change.
     /// </summary>
     static int ApplyProfile(string? game, string[] args)
     {
@@ -66,9 +66,17 @@ static partial class Headless
         var profile = set.For(master) ?? throw new InvalidOperationException($"no profile for master '{master}'");
         int? screen = int.TryParse(Opt(args, "--screen"), out var h) ? h : null;
         bool dry = args.Contains("--dry-run");
-        var state = new ProfileState(new GamePaths(game));
+        var paths = new GamePaths(game);
+        if (!dry && GameProcess.IsRunningIn(game))
+            throw new UpdateBlockedException("the game is running: its options are not changed under it");
+        // the options of the current build (the first call migrates user/options.cfg); a dry run writes nothing
+        var store = new BuildStore(paths);
+        var build = dry ? (store.Exists ? store.Load().Current : null) : store.Ensure(master);
+        Console.WriteLine("options: " + (build?.Cfg ?? "user/") + "options.cfg");
+        var state = new ProfileState(paths);
         var done = state.Load();
-        var r = ProfileWriter.Apply(game, profile, ProfileWriter.ScanMods(game), Opt(args, "--lang"), screen, done, dry);
+        var r = ProfileWriter.Apply(game, profile, ProfileWriter.ScanMods(game), Opt(args, "--lang"), screen, done, dry,
+            cfgDir: build is null ? null : paths.Full(build.Cfg.TrimEnd('/')), stateKey: build?.Id);
         foreach (var c in r.Changes) Console.WriteLine((dry ? "would set " : "set ") + c);
         if (r.Changes.Count == 0) Console.WriteLine("options.cfg already matches the profile");
         if (r.Backup is not null) Console.WriteLine("previous file kept as " + r.Backup);
@@ -76,9 +84,52 @@ static partial class Headless
         return 0;
     }
 
+    /// <summary>
+    /// "builds [list|new|copy|rename|delete|select|args] [--id b] [--title t] [--template piratez] [--lang ru] [--screen 1440]":
+    /// the builds of the installation (docs/portal/MULTIMOD.md §3); the first call migrates user/options.cfg.
+    /// "args" prints the engine arguments "Play" starts the build with, one per line: a check starts the game
+    /// with them itself, out of sight. Refused (2) while the game runs.
+    /// </summary>
+    static int Builds(string? game, string[] args)
+    {
+        if (game is null || !GamePaths.LooksLikeGameDir(game)) throw new InvalidOperationException("not a game folder: " + game);
+        var paths = new GamePaths(game);
+        var log = new FileLog(paths);
+        log.Written += Console.WriteLine;
+        var store = new BuildStore(paths);
+        var what = args.Length > 2 && !args[2].StartsWith("--") ? args[2] : "list";
+        var current = store.Ensure(log: log);
+        string Id() => Opt(args, "--id") ?? current.Id;
+        string TitleArg() => Opt(args, "--title") ?? throw new InvalidOperationException("--title is needed");
+        switch (what)
+        {
+            case "list": break;
+            case "new":
+                int? screen = int.TryParse(Opt(args, "--screen"), out var h) ? h : null;
+                var cfg = store.OptionsFile(current);
+                var lang = Opt(args, "--lang") ?? OptionsCfg.Parse(File.Exists(cfg) ? File.ReadAllText(cfg) : "").Get("language");
+                Console.WriteLine("created " + store.Create(TitleArg(), Opt(args, "--template") ?? current.Template ?? "piratez", lang, screen).Id);
+                break;
+            case "copy": Console.WriteLine("created " + store.Copy(Id(), TitleArg()).Id); break;
+            case "rename": store.Rename(Id(), TitleArg()); break;
+            case "select": store.Select(Id()); break;
+            case "delete": Console.WriteLine("settings kept in " + store.Delete(Id())); break;
+            case "args":
+                var b = store.Load().Find(Id()) ?? throw new InvalidOperationException($"no build '{Id()}'");
+                foreach (var a in store.LaunchArgs(b)) Console.WriteLine(a);
+                return 0;
+            default: throw new InvalidOperationException("builds: list, new, copy, rename, delete, select or args");
+        }
+        var set = store.Load();
+        foreach (var b in set.Builds)
+            Console.WriteLine($"{(b.Id == set.Current?.Id ? "*" : " ")} {b.Id} | {b.Title} | {b.EngineMaster ?? "-"} | {b.Cfg}");
+        return 0;
+    }
+
     static async Task<int> RunAsync(string[] args, Settings settings)
     {
         var cmd = args.Length > 1 ? args[1] : "check";
+        if (cmd == "builds") return Builds(Opt(args, "--game") ?? settings.GameDir, args);
         if (cmd == "ufo") return FindUfo(Opt(args, "--game") ?? settings.GameDir);
         if (cmd == "profile") return ApplyProfile(Opt(args, "--game") ?? settings.GameDir, args);
         var game = Opt(args, "--game") ?? settings.GameDir ?? throw new InvalidOperationException("no game folder: pass --game");
