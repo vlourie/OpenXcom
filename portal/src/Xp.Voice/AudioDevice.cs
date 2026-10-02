@@ -27,6 +27,9 @@ public static unsafe partial class AudioDevice
     private static partial void xpa_close();
 
     [LibraryImport(Lib)]
+    private static partial void xpa_stop();
+
+    [LibraryImport(Lib)]
     private static partial nint xpa_error();
 
     [LibraryImport(Lib)]
@@ -71,6 +74,10 @@ public static unsafe partial class AudioDevice
         xpa_close();
         _handler = null;
     }
+
+    /// <summary>Test only: stops the device as Windows does when it takes the card away (the callback
+    /// ends, the "stopped" note fires). Close and Open again to recover, as after a real stop.</summary>
+    public static void Stop() => xpa_stop();
 
     [UnmanagedCallersOnly(CallConvs = [typeof(CallConvCdecl)])]
     static void OnData(nint user, short* input, short* output, uint frames)

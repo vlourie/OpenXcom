@@ -148,6 +148,14 @@ XPA_API int xpa_loopback_read(int16_t *dst, uint32_t max)
     return (int)got;
 }
 
+/* Test hook: stops the device the way Windows does when it takes the card away - the callback ends
+ * and the "stopped" notification fires - so the reopening in VoiceSession can be exercised on a
+ * machine whose sound card is fine. Not called by the launcher otherwise. */
+XPA_API void xpa_stop(void)
+{
+    if (g_open) ma_device_stop(&g_device);
+}
+
 XPA_API void xpa_close(void)
 {
     if (g_loopOpen) {

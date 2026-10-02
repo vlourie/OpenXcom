@@ -30,6 +30,9 @@ public sealed class VoiceOptions
     /// <summary>With Tone: a 48 kHz mono 16-bit WAV played in a loop instead of the beeps - speech
     /// through the whole chain without a person at the microphone.</summary>
     public string? MicFile { get; init; }
+    /// <summary>Test only: after this many seconds the sound device is stopped as if Windows had taken
+    /// it away, to exercise the reopening. 0 = never.</summary>
+    public int StopDeviceAfterSec { get; init; }
 }
 
 public enum VoiceState { Connecting, Connected, Reconnecting, Disconnected, Stopped }
@@ -83,6 +86,12 @@ public sealed class VoiceSession : IAsyncDisposable
     double _maxGapMs, _maxBusyMs, _micDb = -90;
     long _oddCalls;
     long _lastCallback;
+    // the sound device went away (the friend's log 02.10: "device stopped" at 00:48, then 74 min of a
+    // launcher that sent nothing and played nothing while the window said "in the room"); the pump
+    // reopens it every 2 s. Timestamp of the stop, 0 = running; set by the device thread or the watchdog
+    long _deviceStoppedAt, _deviceRetryAt;
+    int _deviceRetries;
+    volatile bool _deviceDead;                          // a "stopped" note since the last open attempt
     int _toneAt, _beepSeq;
     short[]? _file;
     int _fileAt;
@@ -93,6 +102,15 @@ public sealed class VoiceSession : IAsyncDisposable
     public double MicDb => _micDb;
     /// <summary>The microphone was asked for and did not open: speakers only, nothing is published.</summary>
     public bool MicrophoneMissing => _opt.Microphone && !_opt.Tone && !_micOpen;
+    /// <summary>The sound device stopped and is being reopened: nothing is heard or sent meanwhile.</summary>
+    public bool DeviceDown => Interlocked.Read(ref _deviceStoppedAt) != 0;
+    public int DeviceDownSeconds
+    {
+        get { long t = Interlocked.Read(ref _deviceStoppedAt); return t == 0 ? 0 : (int)Stopwatch.GetElapsedTime(t).TotalSeconds; }
+    }
+    /// <summary>What the published track's mute must be: the user's choice, or a microphone that is
+    /// not there (after a device change it may fail to come back while the track lives on).</summary>
+    bool TrackMuted => _muted || MicrophoneMissing;
 
     public bool Muted
     {
@@ -147,7 +165,7 @@ public sealed class VoiceSession : IAsyncDisposable
             _apm = r.NewApm.Apm.Handle.Id;
         }
         if (_opt.Tone && _opt.MicFile is { } mf) _file = ReadWav(mf);
-        var dev = AudioDevice.Open(_opt.Microphone && !_opt.Tone, OnAudio, Log, out _micOpen);
+        var dev = AudioDevice.Open(_opt.Microphone && !_opt.Tone, OnAudio, OnDeviceNote, out _micOpen);
         Log($"sound: {dev}; echo canceller {(apm ? "on" : "off")}" +
             $"{(_file is not null ? $", {Path.GetFileName(_opt.MicFile)} ({_file.Length / AudioDevice.Rate} s) instead of the microphone" : _opt.Tone ? ", test tone instead of the microphone" : "")}, output gain {_opt.OutputGain:0.##}");
         _pump = new Thread(Pump) { IsBackground = true, Name = "voice pump", Priority = ThreadPriority.AboveNormal };
@@ -265,7 +283,8 @@ public sealed class VoiceSession : IAsyncDisposable
     unsafe void Pump()
     {
         var frame = new short[Frame];
-        long lastStats = Stopwatch.GetTimestamp();
+        long lastStats = Stopwatch.GetTimestamp(), started = lastStats;
+        bool testStopped = false;
         WavRecorder? recMic = null, recSent = null, recHeard = null, recOut = null;
         var loopBuf = new short[AudioDevice.Rate / 10];
         if (_opt.RecordDir is { } dir)
@@ -286,6 +305,20 @@ public sealed class VoiceSession : IAsyncDisposable
         while (!_stopping)
         {
             _wake.WaitOne(50);
+            if (Interlocked.Read(ref _deviceStoppedAt) == 0)
+            {
+                // watchdog for a device that died without a "stopped" note (miniaudio skips the note
+                // when the backend's own stop fails, which an unplugged card can make it do)
+                long lc = _lastCallback;
+                if (lc != 0 && Stopwatch.GetElapsedTime(lc).TotalSeconds > 3) DeviceLost("no device callback for 3 s");
+                else if (_opt.StopDeviceAfterSec > 0 && !testStopped && Stopwatch.GetElapsedTime(started).TotalSeconds >= _opt.StopDeviceAfterSec)
+                {
+                    testStopped = true;
+                    Log("test: stopping the sound device");
+                    AudioDevice.Stop();
+                }
+            }
+            else if (Stopwatch.GetTimestamp() >= _deviceRetryAt) ReopenDevice(ref recOut);
             while (_played.Count >= Frame)
             {
                 _played.Read(frame);
@@ -326,6 +359,62 @@ public sealed class VoiceSession : IAsyncDisposable
 
     const int RecordSeconds = 10 * 60;
 
+    // ---------------------------------------------------------------- the sound device going away
+
+    /// <summary>Device thread: miniaudio's notes. "stopped" is the device going away - Windows took the
+    /// card, the driver reset, a USB headset unplugged; the callback has ended and nothing is heard or
+    /// sent until the device is opened anew.</summary>
+    void OnDeviceNote(string note)
+    {
+        Log(note);
+        if (note == "device stopped") DeviceLost(note);
+    }
+
+    void DeviceLost(string why)
+    {
+        if (_stopping) return;
+        _deviceDead = true;
+        long now = Stopwatch.GetTimestamp();
+        if (Interlocked.CompareExchange(ref _deviceStoppedAt, now, 0) == 0)
+        {
+            _deviceRetries = 0;
+            _deviceRetryAt = now + Stopwatch.Frequency;       // first try in 1 s, then every 2 s
+            _micDb = -90;
+            Log($"sound device down ({why}): reopening it every 2 s; until then this machine hears nothing and sends nothing");
+        }
+        _wake.Set();
+    }
+
+    /// <summary>Pump thread, every 2 s while the device is down: close what is left of the old device
+    /// (xpaudio keeps one device per process, so there is never a second one) and open anew. After a
+    /// success the others' rings are cleared - what piled up while nothing was played is half a second
+    /// of stale sound - and the room loop puts the track in step with the microphone that came back.</summary>
+    void ReopenDevice(ref WavRecorder? recOut)
+    {
+        _deviceRetries++;
+        _deviceRetryAt = Stopwatch.GetTimestamp() + 2 * Stopwatch.Frequency;
+        bool micBefore = _micOpen;
+        AudioDevice.Close();                                  // also ends the loopback recorder
+        _deviceDead = false;                                  // after Close: a last note of the old device is not a new stop
+        string dev;
+        try { dev = AudioDevice.Open(_opt.Microphone && !_opt.Tone, OnAudio, OnDeviceNote, out _micOpen); }
+        catch (Exception e)
+        {
+            if (_deviceRetries == 1 || _deviceRetries % 15 == 0)
+                Log($"sound device still down after {DeviceDownSeconds} s (try {_deviceRetries}): {e.Message}");
+            return;
+        }
+        if (_deviceDead) return;                              // stopped again at once: next try in 2 s
+        int down = DeviceDownSeconds;
+        _lastCallback = Stopwatch.GetTimestamp();             // the watchdog counts from here, not from before the stop
+        Interlocked.Exchange(ref _deviceStoppedAt, 0);
+        foreach (var p in _mix) p.Reset();
+        if (recOut is not null && AudioDevice.StartLoopback() is { } lerr) Log("recording out.wav did not resume: " + lerr);
+        Log($"sound device back after {down} s (try {_deviceRetries}): {dev}; playback buffers cleared" +
+            (micBefore == _micOpen ? "" : _micOpen ? "; the microphone is back" : "; the microphone did not come back: nothing is sent"));
+        _loop.Writer.TryWrite(Command.Device);
+    }
+
     unsafe void Apm(short[] frame, bool reverse)
     {
         fixed (short* p = frame)
@@ -344,7 +433,7 @@ public sealed class VoiceSession : IAsyncDisposable
     unsafe void Send(short[] frame)
     {
         var room = _room;
-        if (room is null || room.Source == 0 || _muted || State != VoiceState.Connected) return;
+        if (room is null || room.Source == 0 || TrackMuted || State != VoiceState.Connected) return;
         // the SDK answers each frame with a callback; frames it has not taken yet stay ours
         if (_captures.Count > 20) { _sendDropped++; return; }
         nint buf = (nint)NativeMemory.Alloc((nuint)(Frame * 2));
@@ -376,7 +465,7 @@ public sealed class VoiceSession : IAsyncDisposable
         var peers = string.Join("; ", _mix.Select(p => p.StatsLine()));
         Log($"stats: {State} sent {Interlocked.Exchange(ref _sent, 0)} frames/5s, dropped {Interlocked.Exchange(ref _sendDropped, 0)}, " +
             $"out of order {Interlocked.Exchange(ref _outOfOrder, 0)}, " +
-            $"mic {_micDb:0} dB{(_muted ? " (muted)" : "")}{(MicrophoneMissing ? " (not opened)" : "")}{(_apm != 0 && !_apmOn ? " (echo canceller off)" : "")}, device {Interlocked.Exchange(ref _callbacks, 0)} calls{(_oddCalls > 0 ? $" ({Interlocked.Exchange(ref _oddCalls, 0)} not 10 ms)" : "")}, max gap {_maxGapMs:0} ms, max busy {_maxBusyMs:0.0} ms | {(peers.Length > 0 ? peers : "nobody")}");
+            $"mic {_micDb:0} dB{(_muted ? " (muted)" : "")}{(MicrophoneMissing ? " (not opened)" : "")}{(_apm != 0 && !_apmOn ? " (echo canceller off)" : "")}, device {Interlocked.Exchange(ref _callbacks, 0)} calls{(_oddCalls > 0 ? $" ({Interlocked.Exchange(ref _oddCalls, 0)} not 10 ms)" : "")}{(DeviceDown ? $" (stopped {DeviceDownSeconds} s ago, {_deviceRetries} tries)" : "")}, max gap {_maxGapMs:0} ms, max busy {_maxBusyMs:0.0} ms | {(peers.Length > 0 ? peers : "nobody")}");
         _maxGapMs = 0;
         _maxBusyMs = 0;
     }
@@ -431,7 +520,7 @@ public sealed class VoiceSession : IAsyncDisposable
 
     // ---------------------------------------------------------------- room loop
 
-    enum Command { Join, Mute, Hang, Net, Stop }
+    enum Command { Join, Mute, Hang, Net, Stop, Device }
 
     sealed class Room(ulong handle, ulong local)
     {
@@ -459,8 +548,17 @@ public sealed class VoiceSession : IAsyncDisposable
                         break;
                     case Command.Mute:
                         if (_room is { Track: not 0 } r)
-                            Ffi.Request(new FfiRequest { LocalTrackMute = new LocalTrackMuteRequest { TrackHandle = r.Track, Mute = _muted } });
+                            Ffi.Request(new FfiRequest { LocalTrackMute = new LocalTrackMuteRequest { TrackHandle = r.Track, Mute = TrackMuted } });
                         Log(_muted ? "microphone muted" : "microphone on");
+                        break;
+                    case Command.Device:
+                        // the sound device came back: publish only if the microphone exists only now (the track
+                        // outlives the device - never a second publication), else put its mute in step with it
+                        if (_room is { } dr && State == VoiceState.Connected)
+                        {
+                            if (dr.Track != 0) Ffi.Request(new FfiRequest { LocalTrackMute = new LocalTrackMuteRequest { TrackHandle = dr.Track, Mute = TrackMuted } });
+                            else if (_opt.Tone || (_opt.Microphone && _micOpen)) await Publish(dr).ConfigureAwait(false);
+                        }
                         break;
                     case Command.Hang:
                         // only a room stuck in the SDK's own reconnection; a lost room is retried by Retry
