@@ -1,0 +1,19 @@
+@page "/account/resend"
+@model Xp.Portal.Pages.Account.ResendModel
+@{
+    ViewData["Title"] = T["resend.title"];
+}
+<h1>@T["resend.title"]</h1>
+@if (Model.Sent)
+{
+    <p class="flash">@T["resend.sent"]</p>
+}
+else
+{
+    <form method="post" class="panel">
+        <input type="hidden" name="ReturnUrl" value="@Model.ReturnUrl" />
+        <label for="Email">@T["field.email"]</label>
+        <input type="email" id="Email" name="Email" value="@Model.Email" required maxlength="256" autocomplete="email" />
+        <button type="submit">@T["resend.submit"]</button>
+    </form>
+}

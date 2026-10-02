@@ -9,6 +9,9 @@
 #   .\station.ps1 admin you@example.com Имя    первый SuperAdmin (пароль спросит)
 #   .\station.ps1 reset-2fa you@example.com    сбросить двухфакторную проверку
 #   .\station.ps1 mail       письма, которые сайт «отправил» (SMTP не задан)
+#   .\station.ps1 smtp       настроить отправку писем: сервер, порт 587, логин, обратный адрес;
+#                            пароль спрашивает скрыто и пишет только в portal.env этой машины
+#   .\station.ps1 mail-test you@example.com    одно пробное письмо через SMTP; сбой - с причиной
 #   .\station.ps1 root-cert  выгрузить корневой сертификат Caddy (для лаунчера и чтобы браузер не ругался)
 #   .\station.ps1 internet [имя]  доступ из интернета: Let's Encrypt через Dynu на том же порту,
 #                            ddns держит имя на текущем IP. Нужен DYNU_API_KEY в .env и проброс
@@ -392,6 +395,45 @@ switch ($Command) {
     'mail' {
         # без двойных кавычек внутри: PowerShell 5.1 портит их в аргументах внешних программ (R-045)
         Invoke-Compose exec portal sh -c 'd=/data/files/_mail; [ -d $d ] || { echo no mail yet; exit 0; }; for f in $(ls -t $d | head -5); do echo === $f; cat $d/$f; echo; done'
+    }
+    'smtp' {
+        # Секреты почты живут только в portal.env этой машины: в чат, в гит и в архивы они не попадают.
+        # Пустой ответ оставляет прежнее значение. Пароль - в одинарных кавычках: так compose не
+        # разбирает в нём $ и #. Порт 465 (TLS сразу при подключении) сайт не умеет, только 587 (STARTTLS)
+        if (-not (Test-Path 'portal.env')) { Fail 'нет portal.env: сначала .\station.ps1 up' }
+        $penv = Read-DotEnv 'portal.env'
+        function Ask([string] $what, [string] $key, [string] $default) {
+            $now = if ($penv[$key]) { $penv[$key] } else { $default }
+            $a = Read-Host "$what [$now]"
+            if ($a.Trim()) { $a.Trim() } else { $now }
+        }
+        $smtpHost = Ask 'SMTP-сервер (например smtp.yandex.ru)' 'Email__SmtpHost' ''
+        if (-not $smtpHost) { Fail 'сервер не задан: без него письма только складываются в папку (.\station.ps1 mail)' }
+        $port = Ask 'порт' 'Email__SmtpPort' '587'
+        if ($port -eq '465') { Fail 'порт 465 сайт не умеет (TLS сразу при подключении). Почти все почтовые службы принимают и 587 - укажите его' }
+        if ($port -notmatch '^\d+$') { Fail "порт - число, а не '$port'" }
+        $user = Ask 'логин SMTP (обычно полный адрес ящика)' 'Email__SmtpUser' ''
+        $from = Ask 'обратный адрес писем (у большинства служб обязан совпадать с ящиком или его доменом)' 'Email__From' $user
+        $secure = Read-Host 'пароль SMTP (не отображается; пусто - оставить прежний)' -AsSecureString
+        $bstr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($secure)
+        try { $password = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($bstr) }
+        finally { [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($bstr) }
+        if ($password.Contains("'")) { Fail 'в пароле одинарная кавычка: её нельзя записать в portal.env. Задайте пароль приложения без неё' }
+        Set-DotEnv 'Email__SmtpHost' $smtpHost 'portal.env'
+        Set-DotEnv 'Email__SmtpPort' $port 'portal.env'
+        Set-DotEnv 'Email__SmtpUser' $user 'portal.env'
+        Set-DotEnv 'Email__From' $from 'portal.env'
+        if ($password) { Set-DotEnv 'Email__SmtpPassword' "'$password'" 'portal.env' }
+        $password = $null
+        if (-not (Read-DotEnv 'portal.env')['Email__SmtpPassword']) { Write-Host 'Пароль не задан: большинство служб без него письмо не примут.' -ForegroundColor Yellow }
+        Say 'перезапускаю сайт с новыми настройками почты'
+        Invoke-Compose up -d --no-deps --force-recreate portal
+        Say 'готово. Проверка: .\station.ps1 mail-test <ваш адрес>'
+    }
+    'mail-test' {
+        if (-not $Email) { Fail 'укажите адрес: .\station.ps1 mail-test you@example.com' }
+        # отдельным контейнером с тем же portal.env: сайт сбои почты глотает, а здесь видна причина
+        Invoke-Compose run --rm migrate mail test --to $Email
     }
     'root-cert' {
         # корень собственного центра Caddy: добавить в «Доверенные корневые центры» машины, с которой

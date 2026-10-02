@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.AspNetCore.WebUtilities;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using Xp.Portal.Auth;
 using Xp.Portal.Data;
@@ -19,6 +20,24 @@ static class Codes
         try { return Encoding.UTF8.GetString(WebEncoders.Base64UrlDecode(code)); }
         catch (FormatException) { return null; }
     }
+
+    /// <summary>
+    /// Only a path of this site goes on: the launcher sends people to /me/devices?code=..., and that
+    /// address has to survive registration, the letter and the first sign-in.
+    /// </summary>
+    public static string? Local(string? url) =>
+        !string.IsNullOrEmpty(url) && url.Length <= 512 && url[0] == '/' && !url.StartsWith("//") && !url.StartsWith("/\\") ? url : null;
+
+    /// <summary>The address in the confirmation letter, carrying where the person was going.</summary>
+    public static async Task<string> ConfirmLinkAsync(UserManager<PortalUser> users, PortalUser u, PortalOptions portal, string? returnUrl)
+    {
+        var code = Encode(await users.GenerateEmailConfirmationTokenAsync(u));
+        var link = $"{portal.PublicUrl.TrimEnd('/')}/account/confirm?user={u.Id}&code={code}";
+        return Local(returnUrl) is { } back ? link + "&returnUrl=" + Uri.EscapeDataString(back) : link;
+    }
+
+    public static string Login(string? returnUrl) =>
+        Local(returnUrl) is { } back ? "/account/login?ReturnUrl=" + Uri.EscapeDataString(back) : "/account/login";
 }
 
 [EnableRateLimiting("login")]
@@ -27,13 +46,15 @@ public sealed class RegisterModel(UserManager<PortalUser> users, IEmailSender<Po
     [BindProperty] public string Email { get; set; } = "";
     [BindProperty] public string DisplayName { get; set; } = "";
     [BindProperty] public string Password { get; set; } = "";
+    [BindProperty(SupportsGet = true)] public string? ReturnUrl { get; set; }
     public List<string> Errors { get; } = new();
     public bool Sent { get; private set; }
 
-    public void OnGet() { }
+    public void OnGet() => ReturnUrl = Codes.Local(ReturnUrl);
 
     public async Task<IActionResult> OnPostAsync()
     {
+        ReturnUrl = Codes.Local(ReturnUrl);
         Email = Email.Trim();
         DisplayName = DisplayName.Trim();
         if (Email.Length is 0 or > 256 || !Email.Contains('@')) Errors.Add("email_invalid");
@@ -49,8 +70,7 @@ public sealed class RegisterModel(UserManager<PortalUser> users, IEmailSender<Po
                 return Page();
             }
             await users.AddToRoleAsync(u, Roles.User);
-            var code = Codes.Encode(await users.GenerateEmailConfirmationTokenAsync(u));
-            await mail.SendConfirmationLinkAsync(u, Email, $"{portal.Value.PublicUrl.TrimEnd('/')}/account/confirm?user={u.Id}&code={code}");
+            await mail.SendConfirmationLinkAsync(u, Email, await Codes.ConfirmLinkAsync(users, u, portal.Value, ReturnUrl));
         }
         // the same answer whether the address was free or not: registration is not an address oracle
         Sent = true;
@@ -61,12 +81,44 @@ public sealed class RegisterModel(UserManager<PortalUser> users, IEmailSender<Po
 public sealed class ConfirmModel(UserManager<PortalUser> users) : PageModel
 {
     public bool Ok { get; private set; }
+    public string LoginUrl { get; private set; } = "/account/login";
 
-    public async Task OnGetAsync(Guid user, string? code)
+    public async Task OnGetAsync(Guid user, string? code, string? returnUrl)
     {
         var u = await users.FindByIdAsync(user.ToString());
         var token = Codes.Decode(code);
         Ok = u is not null && token is not null && (await users.ConfirmEmailAsync(u, token)).Succeeded;
+        LoginUrl = Codes.Login(returnUrl);
+    }
+}
+
+/// <summary>
+/// Another confirmation letter, for whoever lost the first. The same answer whatever the address,
+/// and at most one letter per address in a few minutes, so the page cannot be used to flood a mailbox.
+/// </summary>
+[EnableRateLimiting("login")]
+public sealed class ResendModel(UserManager<PortalUser> users, IEmailSender<PortalUser> mail, IOptions<PortalOptions> portal,
+    IMemoryCache cache) : PageModel
+{
+    static readonly TimeSpan Pause = TimeSpan.FromMinutes(3);
+
+    [BindProperty] public string Email { get; set; } = "";
+    [BindProperty(SupportsGet = true)] public string? ReturnUrl { get; set; }
+    public bool Sent { get; private set; }
+
+    public void OnGet() => ReturnUrl = Codes.Local(ReturnUrl);
+
+    public async Task<IActionResult> OnPostAsync()
+    {
+        ReturnUrl = Codes.Local(ReturnUrl);
+        var u = await users.FindByEmailAsync(Email.Trim());
+        if (u is not null && !await users.IsEmailConfirmedAsync(u) && !cache.TryGetValue("resend:" + u.Id, out _))
+        {
+            cache.Set("resend:" + u.Id, true, Pause);
+            await mail.SendConfirmationLinkAsync(u, u.Email!, await Codes.ConfirmLinkAsync(users, u, portal.Value, ReturnUrl));
+        }
+        Sent = true;
+        return Page();
     }
 }
 
@@ -90,6 +142,9 @@ public sealed class LoginModel(SignInManager<PortalUser> signIn) : PageModel
     }
 
     internal string Safe(string? url) => !string.IsNullOrEmpty(url) && Url.IsLocalUrl(url) ? url : "/";
+
+    /// <summary>A link to another account page that keeps where the person was going.</summary>
+    public string Keep(string path) => Codes.Local(ReturnUrl) is { } back ? path + "?returnUrl=" + Uri.EscapeDataString(back) : path;
 }
 
 [EnableRateLimiting("login")]

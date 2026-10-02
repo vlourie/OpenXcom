@@ -136,28 +136,46 @@ public sealed class EmailOptions
     public string From { get; set; } = "noreply@localhost";
     /// <summary>SMTP host; empty = messages are written as .eml files into PickupDir (development).</summary>
     public string SmtpHost { get; set; } = "";
+    /// <summary>STARTTLS port; SmtpClient cannot speak implicit TLS, so 465 does not work.</summary>
     public int SmtpPort { get; set; } = 587;
     public string SmtpUser { get; set; } = "";
     public string SmtpPassword { get; set; } = "";
     public string PickupDir { get; set; } = "";
 }
 
-public sealed class EmailSender(IOptions<EmailOptions> options, Text text) : IEmailSender<PortalUser>
+/// <summary>
+/// Account letters never fail the page that sends them: the answer there is the same whether a letter
+/// went or not, and the person can ask for another one. A failure goes to the log with the domain
+/// only; the server checks the mail setup with <see cref="SendTestAsync"/>, which does throw.
+/// </summary>
+public sealed class EmailSender(IOptions<EmailOptions> options, Text text, ILogger<EmailSender> log) : IEmailSender<PortalUser>
 {
     public Task SendConfirmationLinkAsync(PortalUser user, string email, string link) =>
-        SendAsync(email, text["mail.confirm.subject"], text.Format("mail.confirm.body", link));
+        TrySendAsync(email, text["mail.confirm.subject"], text.Format("mail.confirm.body", link));
 
     public Task SendPasswordResetLinkAsync(PortalUser user, string email, string link) =>
-        SendAsync(email, text["mail.reset.subject"], text.Format("mail.reset.body", link));
+        TrySendAsync(email, text["mail.reset.subject"], text.Format("mail.reset.body", link));
 
     public Task SendPasswordResetCodeAsync(PortalUser user, string email, string code) =>
-        SendAsync(email, text["mail.reset.subject"], code);
+        TrySendAsync(email, text["mail.reset.subject"], code);
+
+    public Task SendTestAsync(string to) =>
+        SendAsync(to, text["mail.test.subject"], text["mail.test.body"]);
+
+    async Task TrySendAsync(string to, string subject, string body)
+    {
+        try { await SendAsync(to, subject, body); }
+        catch (Exception e) when (e is SmtpException or InvalidOperationException or IOException or FormatException)
+        {
+            log.LogError("Mail to *@{Domain} failed: {Error}: {Message}", to[(to.LastIndexOf('@') + 1)..], e.GetType().Name, e.Message);
+        }
+    }
 
     async Task SendAsync(string to, string subject, string body)
     {
         var o = options.Value;
         using var msg = new MailMessage(o.From, to, subject, body) { IsBodyHtml = false };
-        using var smtp = new SmtpClient();
+        using var smtp = new SmtpClient { Timeout = 20_000 };
         if (string.IsNullOrWhiteSpace(o.SmtpHost))
         {
             Directory.CreateDirectory(o.PickupDir);

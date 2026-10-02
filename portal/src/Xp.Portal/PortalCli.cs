@@ -14,6 +14,7 @@ namespace Xp.Portal;
 /// Xp.Portal seed --file F                             mods and forum boards from a catalogue file
 /// Xp.Portal packs --file F                            the sets of the game to review, from the census
 /// Xp.Portal wiki import --file F                      wiki pages built from a mod's rulesets
+/// Xp.Portal mail test --to E                          one letter through the configured SMTP; fails loudly
 /// A SuperAdmin is never created from the web: whoever runs these already controls the server.
 /// </summary>
 public static class PortalCli
@@ -37,6 +38,7 @@ public static class PortalCli
                 ["seed", .. var rest] => await SeedAsync(sp, Opt(rest, "--file")),
                 ["packs", .. var rest] => await PacksAsync(sp, Opt(rest, "--file")),
                 ["wiki", "import", .. var rest] => await WikiImportAsync(sp, Opt(rest, "--file")),
+                ["mail", "test", .. var rest] => await MailTestAsync(sp, Opt(rest, "--to")),
                 _ => Usage(),
             };
         }
@@ -50,8 +52,31 @@ public static class PortalCli
     static int Usage()
     {
         Console.Error.WriteLine("usage: Xp.Portal migrate | admin create --email E [--name N] | admin reset-2fa --email E"
-            + " | seed --file F | packs --file F | wiki import --file F");
+            + " | seed --file F | packs --file F | wiki import --file F | mail test --to E");
         return 2;
+    }
+
+    /// <summary>
+    /// The site swallows mail failures so a page never breaks on them; this is where they show.
+    /// Prints the setup it used, never the password.
+    /// </summary>
+    static async Task<int> MailTestAsync(IServiceProvider sp, string? to)
+    {
+        if (string.IsNullOrWhiteSpace(to) || !to.Contains('@')) throw new ArgumentException("--to ADDRESS is required");
+        var o = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<EmailOptions>>().Value;
+        Console.WriteLine(string.IsNullOrWhiteSpace(o.SmtpHost)
+            ? $"no SMTP host: the letter goes to {Path.GetFullPath(o.PickupDir)} as an .eml file"
+            : $"SMTP {o.SmtpHost}:{o.SmtpPort} STARTTLS, user '{o.SmtpUser}', password {(o.SmtpPassword.Length > 0 ? "set" : "EMPTY")}, from {o.From}");
+        if (o.SmtpPort == 465) throw new ArgumentException("port 465 is implicit TLS, which the site cannot speak: use 587");
+        var mail = (EmailSender)sp.GetRequiredService<IEmailSender<PortalUser>>();
+        try { await mail.SendTestAsync(to.Trim()); }
+        catch (Exception e)
+        {
+            Console.Error.WriteLine($"FAILED: {e.GetType().Name}: {e.Message}" + (e.InnerException is { } i ? $" ({i.Message})" : ""));
+            return 1;
+        }
+        Console.WriteLine($"sent to {to.Trim()}: check the inbox and the spam folder");
+        return 0;
     }
 
     static string? Opt(string[] a, string name)

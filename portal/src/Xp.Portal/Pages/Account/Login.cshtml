@@ -5,6 +5,10 @@
 }
 <h1>@T["login.title"]</h1>
 <partial name="_Errors" model="Model.Errors" />
+@if (Model.Errors.Contains("email_not_confirmed"))
+{
+    <p><a href="@Model.Keep("/account/resend")">@T["login.resend"]</a></p>
+}
 <form method="post" class="panel">
     <input type="hidden" name="ReturnUrl" value="@Model.ReturnUrl" />
     <label for="Email">@T["field.email"]</label>
@@ -13,4 +17,4 @@
     <input type="password" id="Password" name="Password" required autocomplete="current-password" />
     <button type="submit">@T["login.submit"]</button>
 </form>
-<p><a href="/account/forgot">@T["login.forgot"]</a> · <a href="/account/register">@T["nav.register"]</a></p>
+<p><a href="/account/forgot">@T["login.forgot"]</a> · <a href="@Model.Keep("/account/register")">@T["nav.register"]</a></p>

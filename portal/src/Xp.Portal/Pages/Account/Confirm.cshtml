@@ -7,9 +7,10 @@
 @if (Model.Ok)
 {
     <p class="flash">@T["confirm.ok"]</p>
-    <a class="button" href="/account/login">@T["nav.login"]</a>
+    <a class="button" href="@Model.LoginUrl">@T["nav.login"]</a>
 }
 else
 {
     <p class="errors">@T["confirm.bad"]</p>
+    <p><a href="/account/resend">@T["resend.title"]</a></p>
 }
