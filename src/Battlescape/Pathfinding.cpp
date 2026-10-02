@@ -142,6 +142,25 @@ std::optional<Position> Pathfinding::tryCalculateFinalPosition(Position endPosit
 }
 
 /**
+ * AMBUSH_NEGATIVE_MEMO_V2 (bench, AIModule::setupAmbush): the destination calculate() would hand to its search - the asked
+ * position after tryCalculateFinalPosition (stairs and -24 floors lift it, a walker over empty air drops to the ground) - or
+ * none when calculate() would refuse before any search. tryCalculateFinalPosition checks blocking against the member _unit,
+ * which only calculate() sets, so it is set to the asking unit here and given back after: nothing else is touched.
+ * @param unit Unit taking the path.
+ * @param endPosition The position asked for.
+ * @param bam The move type.
+ * @return The final position, or none.
+ */
+std::optional<Position> Pathfinding::finalPositionFor(BattleUnit *unit, Position endPosition, BattleActionMove bam)
+{
+	BattleUnit *const was = _unit;
+	_unit = unit;
+	const auto finalPosition = tryCalculateFinalPosition(endPosition, unit, bam, nullptr);
+	_unit = was;
+	return finalPosition;
+}
+
+/**
  * Calculates the shortest path.
  * @param unit Unit taking the path.
  * @param endPosition The position we want to reach.

@@ -1231,9 +1231,9 @@ void AIModule::setupAmbush()
 		const int FAST_PASS_THRESHOLD = 80;
 		Position origin = _save->getTileEngine()->getSightOriginVoxel(_aggroTarget);
 		AiProbe::ambushBegin(_save, _unit, _aggroTarget);
-		// AMBUSH_NEGATIVE_MEMO_V1 (bench, AiProbe::ambushMemo): the tiles the enemy's first search of this call that ran out of
-		// open nodes closed - everything it can reach from where it stands (Pathfinding::closedTiles); a node outside them has
-		// no path from it, and that search is skipped. Empty until such a search; dies with this call, nothing crosses decisions.
+		// AMBUSH_NEGATIVE_MEMO_V2 (bench, AiProbe::ambushMemo): the tiles the enemy's first search of this call that ran out of
+		// open nodes closed - everything it can reach from where it stands (Pathfinding::closedTiles); a node whose search would
+		// end outside them (Pathfinding::finalPositionFor) has no path from it, and that search is skipped. Empty until such a search; dies with this call, nothing crosses decisions.
 		// Invariant (accepted 01.10): only NO_PATH proven by a full A* - open list emptied, no early refusal, no cap hit
 		// (closedTiles is empty otherwise) - is remembered; a positive answer is never reused; the memo lives in this call only.
 		// Widening any of the three (another search's result, a cap, a longer life) is a new change with its own acceptance:
@@ -1281,7 +1281,15 @@ void AIModule::setupAmbush()
 					score -= ambushTUs;
 
 					// make sure our enemy can reach here too.
-					const bool memoNoPath = !enemyReach.empty() && !enemyReach[_save->getTileIndex(pos)];
+					// V2: the memo is asked about the tile the enemy's search would end on (Pathfinding::finalPositionFor), not the node:
+					// a walker's search to a node over empty air goes to the ground under it (GUNS 2352: verify 173, bad 9 under V1).
+					// A destination calculate() refuses before searching is no path there as well.
+					bool memoNoPath = false;
+					if (!enemyReach.empty())
+					{
+						const auto end = _save->getPathfinding()->finalPositionFor(_aggroTarget, pos, BAM_NORMAL);
+						memoNoPath = !end || !enemyReach[_save->getTileIndex(*end)];
+					}
 					if (memoNoPath && memo == 1)
 					{
 						AiProbe::ambushMemoNode(pos, true, false, ambushTUs, score, bestScore);

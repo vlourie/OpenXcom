@@ -32,7 +32,7 @@ WORK = Path(tempfile.gettempdir()) / "oxce_ai_probe"
 TAGS = ("[AISTATE]", "[AIDECIDE]", "[AIPROBE]", "[AIRESULT]", "[AICASUALTY]", "[AIMELEE]", "[AIPATH]", "[AIRECHEAD]", "[AIREC]",
         "[AIEXEC]", "[AIAFTER]", "[AITRACE]", "[AICAND]", "[AIPATROL]", "[AIPF]",
         # итоги приборов стенда после [AIRESULT] (свет, отход, FOV на шаге) - архив <метка>.result.txt серии ai_arena.py
-        "[AILIGHT]", "[AIESCRF]", "[AIWALKFOV]", "[AIWALKFOVSKIP]")
+        "[AILIGHT]", "[AIESCRF]", "[AIWALKFOV]", "[AIWALKFOVSKIP]", "[AIAMBMEMO]")
 
 
 class Probe:
@@ -83,6 +83,49 @@ def campaign_path(name):
     """Сейв кампании: путь как есть или имя в user/piratez установки (сам файл не трогаем, берём копию)."""
     p = Path(name)
     return p if p.is_file() else GAME / "user" / "piratez" / name
+
+
+def bench_defaults(env):
+    """Флаги стенда: меняют то, КАК считается, а не как играет; у каждого своя приёмка (tools/ai_speed/README.md).
+    Не заданный явно флаг получает значение ниже. ai_arena --strict-flags требует все явно (контракт конфигурации
+    02.10, R-169): у станций свои версии этого файла, и setdefault разных версий тихо даёт разные серии.
+    Возвращает env; имена флагов - BENCH_FLAGS."""
+    # быстрый режим стенда (AiProbe::fast, с build-ai39): ни кадра, ни анимации кроме дверей НЛО, ни сцены добивания,
+    # ни звука, один открытый лог, выход сразу за строкой итога - решения, запись и итог те же (p39a = p39f2 на fair22, 22 из 22,
+    # tools/ai_speed/README.md). Выключить для контрольного опыта: OXCE_AI_FAST=0 (ai_arena --env OXCE_AI_FAST=0).
+    # Сборки до build-ai39 переменную не знают и играют как прежде
+    env.setdefault("OXCE_AI_FAST", "1")
+    # свет (AiProbe::lightSkip, с build-ai41): шаг юнита, который сам не светит, не пересчитывает освещение карты - все
+    # события, меняющие свет, пересчитывают его сами. Приёмка отдельно от FAST: 8 карт парами без/с флагом (в том числе
+    # ночь и квады-фонари с personalLightHostile 26), все потоки =, fair22 IDENTICAL 22 из 22 (tools/ai_speed/README.md).
+    # Контрольный опыт: OXCE_AI_LIGHTSKIP=0. Сборки до build-ai41 переменную не знают и играют как прежде
+    env.setdefault("OXCE_AI_LIGHTSKIP", "1")
+    # память засады (AiProbe::ambushMemo, с build-ai43, AMBUSH_NEGATIVE_MEMO_V1): внутри одного setupAmbush узел, куда враг
+    # заведомо не дойдёт (закрытые узлы его первого неудачного A* в этом вызове), пропускает поиск врага; помнится только
+    # «нет пути», только до выхода из вызова. Приёмка: семь потоков = на станции и бомбардировщике, режим 2 (проверка) - 99
+    # ответов, 0 расхождений, fair22 IDENTICAL 22 из 22 (tools/ai_speed/README.md); включено по умолчанию 01.10 по второму
+    # мнению. Контрольный опыт обязателен: OXCE_AI_AMBUSH_MEMO=0. Сборки до build-ai43 переменную не знают и играют как прежде.
+    # 02.10 выключено по умолчанию: V1 спрашивал память про узел, а враг ищет к tryCalculateFinalPosition(узел) - GUNS 2352
+    # режим 2: 173 ответа, 9 неверных (R-169). V2 (build-ai53, Pathfinding::finalPositionFor) включать после своей приёмки
+    env.setdefault("OXCE_AI_AMBUSH_MEMO", "0")
+    # отход (AiProbe::escapeReachFirst, с build-ai45, ESCAPE_REACH_FIRST_V1): setupEscape отбрасывает недосягаемую клетку ДО
+    # трасс canTargetUnit к ней, а не после (трассы const, RNG не трогают; счёт, выбор клетки и действие те же). Приёмка: три
+    # карты флаг 0/1 - шесть потоков =, трассы оценок [AITRACE] те же, трасс на недосягаемых 0, досягаемых столько же; fair22
+    # IDENTICAL 22 из 22 против p43d1 и p44f2 (tools/ai_speed/README.md); включено по умолчанию 01.10 по второму мнению.
+    # Контрольный опыт обязателен: OXCE_AI_ESCAPE_REACH_FIRST=0. Сборки до build-ai45 переменную не знают и играют как прежде
+    env.setdefault("OXCE_AI_ESCAPE_REACH_FIRST", "1")
+    # FOV экрана на шаге бота (AiProbe::walkFovKeep, с build-ai48, BOT_WALKFOV_UI_SKIP_V1): после законченного шага ходока бота
+    # updateSoldierInfo обновляет только панель, без полного FOV выбранного (его юнитовую часть тут же заново считает FOV шага
+    # UnitWalkBState 228, тайловую между шагами никто не читает); только когда бот играет сторону игрока, выбранный - ходок и
+    # sneakyAI выключен, иначе как в движке. Приёмка: 8 карт флаг 0/1/2 (в том числе тень 11-12) - шесть потоков =, тень (=2:
+    # что вызов ставил под старым светом, а FOV шага не повторил) - все счётчики 0; fair22 зерно 201 и 301 IDENTICAL 22 из 22
+    # (tools/ai_speed/README.md); включено по умолчанию 01.10 по второму мнению. Контрольный опыт обязателен:
+    # OXCE_AI_WALKFOV_SKIP=0; тень - =2. Сборки до build-ai48 переменную не знают и играют как прежде
+    env.setdefault("OXCE_AI_WALKFOV_SKIP", "1")
+    return env
+
+
+BENCH_FLAGS = tuple(bench_defaults({}))
 
 
 def run(save, turns=1, save_as="", name="probe", timeout=900, bot=False, seed=None, diff=None, campaign=None,
@@ -137,36 +180,7 @@ def run(save, turns=1, save_as="", name="probe", timeout=900, bot=False, seed=No
     env["OXCE_AI_TACTICS"] = "1" if tactics else ""
     env["OXCE_AI_CAREFUL"] = "1" if careful else ""
     env["OXCE_AI_SQUAD"] = str(squad) if squad else ""  # отряд: n самых опытных бойцов самого опытного экипажа
-    # быстрый режим стенда (AiProbe::fast, с build-ai39): ни кадра, ни анимации кроме дверей НЛО, ни сцены добивания,
-    # ни звука, один открытый лог, выход сразу за строкой итога - решения, запись и итог те же (p39a = p39f2 на fair22, 22 из 22,
-    # tools/ai_speed/README.md). Выключить для контрольного опыта: OXCE_AI_FAST=0 (ai_arena --env OXCE_AI_FAST=0).
-    # Сборки до build-ai39 переменную не знают и играют как прежде
-    env.setdefault("OXCE_AI_FAST", "1")
-    # свет (AiProbe::lightSkip, с build-ai41): шаг юнита, который сам не светит, не пересчитывает освещение карты - все
-    # события, меняющие свет, пересчитывают его сами. Приёмка отдельно от FAST: 8 карт парами без/с флагом (в том числе
-    # ночь и квады-фонари с personalLightHostile 26), все потоки =, fair22 IDENTICAL 22 из 22 (tools/ai_speed/README.md).
-    # Контрольный опыт: OXCE_AI_LIGHTSKIP=0. Сборки до build-ai41 переменную не знают и играют как прежде
-    env.setdefault("OXCE_AI_LIGHTSKIP", "1")
-    # память засады (AiProbe::ambushMemo, с build-ai43, AMBUSH_NEGATIVE_MEMO_V1): внутри одного setupAmbush узел, куда враг
-    # заведомо не дойдёт (закрытые узлы его первого неудачного A* в этом вызове), пропускает поиск врага; помнится только
-    # «нет пути», только до выхода из вызова. Приёмка: семь потоков = на станции и бомбардировщике, режим 2 (проверка) - 99
-    # ответов, 0 расхождений, fair22 IDENTICAL 22 из 22 (tools/ai_speed/README.md); включено по умолчанию 01.10 по второму
-    # мнению. Контрольный опыт обязателен: OXCE_AI_AMBUSH_MEMO=0. Сборки до build-ai43 переменную не знают и играют как прежде
-    env.setdefault("OXCE_AI_AMBUSH_MEMO", "1")
-    # отход (AiProbe::escapeReachFirst, с build-ai45, ESCAPE_REACH_FIRST_V1): setupEscape отбрасывает недосягаемую клетку ДО
-    # трасс canTargetUnit к ней, а не после (трассы const, RNG не трогают; счёт, выбор клетки и действие те же). Приёмка: три
-    # карты флаг 0/1 - шесть потоков =, трассы оценок [AITRACE] те же, трасс на недосягаемых 0, досягаемых столько же; fair22
-    # IDENTICAL 22 из 22 против p43d1 и p44f2 (tools/ai_speed/README.md); включено по умолчанию 01.10 по второму мнению.
-    # Контрольный опыт обязателен: OXCE_AI_ESCAPE_REACH_FIRST=0. Сборки до build-ai45 переменную не знают и играют как прежде
-    env.setdefault("OXCE_AI_ESCAPE_REACH_FIRST", "1")
-    # FOV экрана на шаге бота (AiProbe::walkFovKeep, с build-ai48, BOT_WALKFOV_UI_SKIP_V1): после законченного шага ходока бота
-    # updateSoldierInfo обновляет только панель, без полного FOV выбранного (его юнитовую часть тут же заново считает FOV шага
-    # UnitWalkBState 228, тайловую между шагами никто не читает); только когда бот играет сторону игрока, выбранный - ходок и
-    # sneakyAI выключен, иначе как в движке. Приёмка: 8 карт флаг 0/1/2 (в том числе тень 11-12) - шесть потоков =, тень (=2:
-    # что вызов ставил под старым светом, а FOV шага не повторил) - все счётчики 0; fair22 зерно 201 и 301 IDENTICAL 22 из 22
-    # (tools/ai_speed/README.md); включено по умолчанию 01.10 по второму мнению. Контрольный опыт обязателен:
-    # OXCE_AI_WALKFOV_SKIP=0; тень - =2. Сборки до build-ai48 переменную не знают и играют как прежде
-    env.setdefault("OXCE_AI_WALKFOV_SKIP", "1")
+    bench_defaults(env)
     args = [str(EXE), "-data", str(GAME), "-user", str(work), "-cfg", str(work),
             "-fullscreen", "false", "-borderless", "false", "-displayWidth", "1280", "-displayHeight", "720",
             "-soundVolume", "0", "-musicVolume", "0", "-uiVolume", "0"]
