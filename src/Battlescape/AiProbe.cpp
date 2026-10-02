@@ -3464,6 +3464,13 @@ void blockedStepPlan(SavedBattleGame *save, BattleUnit *unit, const BattleAction
 	}
 	else blockedBump(unit, &BlockedStepCount::rerouted, "rerouted");
 	note(unit, ("blockstep.suppressed d" + std::to_string(first) + " -> " + (now == -1 ? std::string("none") : "d" + std::to_string(now))).c_str());
+	// FIREPOINT_BLOCKED_V2_INTEROP: no way round the remembered step, and blockedStepDecide kept the memory at this revision -
+	// the FP record gets the stop on that step the old walk would have made (the AI module checks it is the firepoint walk)
+	static const bool interop = envOn("OXCE_AI_FIREPOINT_BLOCKED") && envOn("OXCE_AI_FIREPOINT_BLOCKED_V1_INTEROP");
+	if (now == -1 && interop && unit->getAIModule())
+	{
+		unit->getAIModule()->firepointStepSuppressed(action, first);
+	}
 }
 
 void logState(SavedBattleGame *save, const char *when)
