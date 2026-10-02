@@ -12,10 +12,10 @@ namespace Xp.Launcher;
 /// The voice prototype (docs/portal/VOICE_CHAT.md, part B): one test room, no site, no friends yet.
 ///   XPiratezLauncher.exe --voice wss://host token|@token-file [--silent] [--listen] [--diagnostics]
 ///                        [--minimized] [--log file] [--quit-after seconds] [--queue-ms n]
-///                        [--output name-part] [--input name-part]
+///                        [--output id|name-part] [--input id|name-part]
 /// --silent plays nothing, --listen opens no microphone, --diagnostics writes the safe diagnostics of
 /// the sound to the log (numbers and names, no sound), --output and --input pick the output /
-/// microphone by a part of the name instead of the Windows default.
+/// microphone by its id or a part of the name instead of the Windows default.
 /// Several copies may run at once - two of them on one machine are the local test.
 /// </summary>
 public sealed class VoiceWindow : Window
@@ -192,6 +192,10 @@ public sealed class VoiceWindow : Window
             else if (args[i] == "--input" && i + 1 < args.Length) input = args[++i];
         }
         log ??= Path.Combine(Settings.Dir, "voice.log");
+        // --output / --input take an id (the diagnostics list them in braces) or a part of the name
+        IReadOnlyList<AudioDeviceInfo> devices = output is null && input is null ? [] : AudioDevice.List();
+        var outDev = devices.FirstOrDefault(d => !d.IsCapture && d.Id == output);
+        var inDev = devices.FirstOrDefault(d => d.IsCapture && d.Id == input);
         var opt = new VoiceOptions
         {
             Url = args[1],
@@ -200,8 +204,10 @@ public sealed class VoiceWindow : Window
             OutputGain = args.Contains("--silent") ? 0f : 1f,
             SendQueueMs = queue,
             Diagnostics = args.Contains("--diagnostics"),
-            Output = string.IsNullOrWhiteSpace(output) ? null : output,
-            Input = string.IsNullOrWhiteSpace(input) ? null : input,
+            OutputId = outDev?.Id,
+            OutputName = outDev?.Name ?? (string.IsNullOrWhiteSpace(output) ? null : output),
+            InputId = inDev?.Id,
+            InputName = inDev?.Name ?? (string.IsNullOrWhiteSpace(input) ? null : input),
         };
         App.Voice = () => new VoiceWindow(opt, log, args.Contains("--minimized"), quit);
         try { return build().StartWithClassicDesktopLifetime([]); }

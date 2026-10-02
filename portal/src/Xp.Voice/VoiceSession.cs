@@ -27,9 +27,13 @@ public sealed class VoiceOptions
     /// of sound. Off: rare lines about states only (joined, reconnecting, the device went away).</summary>
     public bool Diagnostics { get; init; }
     public int DiagnosticsEverySec { get; init; } = 5;
-    /// <summary>Output / microphone chosen by a part of the name; null - the Windows default.</summary>
-    public string? Output { get; init; }
-    public string? Input { get; init; }
+    /// <summary>The output and the microphone: <see cref="AudioDeviceInfo.Id"/> from <see cref="AudioDevice.List"/>,
+    /// and its name as the fallback when that id is no longer listed (exact, then a part, case-insensitive).
+    /// Looked up again at every opening of the device. All null - the Windows default.</summary>
+    public string? OutputId { get; init; }
+    public string? OutputName { get; init; }
+    public string? InputId { get; init; }
+    public string? InputName { get; init; }
 }
 
 public enum VoiceState { Connecting, Connected, Reconnecting, Disconnected, Stopped }
@@ -164,8 +168,8 @@ public sealed class VoiceSession : IAsyncDisposable
         }
         _startedAt = Stopwatch.GetTimestamp();
         _micRetryAt = _startedAt + 3 * Stopwatch.Frequency;  // a microphone missing at the start is looked for from 3 s on, not at once
-        AudioDevice.SetOptions(_opt.Output, _opt.Input);
-        Diag($"audio: period {AudioDevice.Period * 1000 / AudioDevice.Rate} ms, output {_opt.Output ?? "default"}, microphone {_opt.Input ?? "default"}");
+        AudioDevice.Choose(_opt.OutputId, _opt.OutputName, _opt.InputId, _opt.InputName);
+        Diag($"audio: period {AudioDevice.Period * 1000 / AudioDevice.Rate} ms");
         Diag("devices: " + AudioDevice.Devices());
         var dev = AudioDevice.Open(MicWanted, OnAudio, OnDeviceNote, out _micOpen);
         Log($"sound: {dev}; echo canceller {(apm ? "on" : "off")}, output gain {_opt.OutputGain:0.##}");
@@ -275,11 +279,14 @@ public sealed class VoiceSession : IAsyncDisposable
         }
     }
 
-    /// <summary>Diagnostics: what WASAPI really gave each stream, after every open - one line per stream.</summary>
+    /// <summary>After every open: how the chosen devices were found (always when a chosen one was not
+    /// found by its id), and with diagnostics what WASAPI really gave each stream - one line per stream.</summary>
     void LogDevice()
     {
         LogMiniaudio();
+        if (AudioDevice.Fallback) Log("devices: " + AudioDevice.Choice);
         if (!_opt.Diagnostics) return;
+        if (!AudioDevice.Fallback) Log("devices: " + AudioDevice.Choice);
         foreach (var line in AudioDevice.Detail().Split('\n', StringSplitOptions.RemoveEmptyEntries)) Log("device " + line);
     }
 

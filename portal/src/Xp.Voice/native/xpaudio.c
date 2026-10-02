@@ -5,7 +5,8 @@
  * the frame the LiveKit audio source and the echo canceller both expect. miniaudio converts to the
  * device's own rate and channel count and follows the default device when Windows switches it.
  *
- * xpa_set_options chooses an output / input device by a part of its name. Diagnostics give numbers
+ * xpa_list_devices lists what Windows has, with ids xpa_open takes back to open the same output /
+ * microphone (empty - the Windows default). Diagnostics give numbers
  * and names only, never sound: xpa_detail tells what WASAPI really gave each stream, xpa_take_log
  * hands over miniaudio's own log lines. miniaudio.h carries a local fix of its duplex loop
  * (tools/voice_ma_patch.py, R-190).
@@ -104,51 +105,7 @@ XPA_API int xpa_take_log(char *dst, uint32_t cap)
     return (int)n;
 }
 
-/* ---------------------------------------------------------------- device choice */
-
-static char g_outPick[128], g_inPick[128];   /* parts of device names, ASCII case-insensitive; empty = the Windows default */
-static ma_device_id g_outId, g_inId;         /* the ids behind the picks, valid while the picks are */
-static char g_outName[256], g_inName[256];   /* the names found, empty = default used */
-
-/* Before xpa_open; kept for every later open (the launcher reopens the device after Windows takes it away). */
-XPA_API void xpa_set_options(const char *output, const char *input)
-{
-    snprintf(g_outPick, sizeof g_outPick, "%s", output ? output : "");
-    snprintf(g_inPick, sizeof g_inPick, "%s", input ? input : "");
-}
-
-static int lower_ascii(int c) { return c >= 'A' && c <= 'Z' ? c + 32 : c; }
-
-static int contains_ci(const char *hay, const char *needle)
-{
-    size_t n = strlen(needle);
-    if (n == 0) return 0;
-    for (; *hay; hay++) {
-        size_t i = 0;
-        while (i < n && hay[i] && lower_ascii((unsigned char)hay[i]) == lower_ascii((unsigned char)needle[i])) i++;
-        if (i == n) return 1;
-    }
-    return 0;
-}
-
-/* The first device of the type whose name contains pick: 1 with *id and name filled, 0 = none (default then). */
-static int pick_device(ma_device_type type, const char *pick, ma_device_id *id, char *name, size_t cap)
-{
-    ma_device_info *pb, *cp;
-    ma_uint32 npb = 0, ncp = 0;
-    name[0] = 0;
-    if (!pick[0] || ma_context_get_devices(&g_ctx, &pb, &npb, &cp, &ncp) != MA_SUCCESS) return 0;
-    ma_device_info *list = type == ma_device_type_capture ? cp : pb;
-    ma_uint32 n = type == ma_device_type_capture ? ncp : npb;
-    for (ma_uint32 i = 0; i < n; i++) {
-        if (contains_ci(list[i].name, pick)) {
-            *id = list[i].id;
-            snprintf(name, cap, "%s", list[i].name);
-            return 1;
-        }
-    }
-    return 0;
-}
+/* ---------------------------------------------------------------- device list and choice by id */
 
 static void app(char *s, size_t cap, size_t *at, const char *fmt, ...)
 {
@@ -162,20 +119,55 @@ static void app(char *s, size_t cap, size_t *at, const char *fmt, ...)
     if (*at > cap - 1) *at = cap - 1;
 }
 
-/* "playback: [*] name; name | capture: [*] name" - what Windows lists, [*] its default; for the log. */
-XPA_API const char *xpa_devices(void)
+/* A WASAPI id (the endpoint id string, "{0.0.0.00000000}.{guid}") as UTF-8: opaque to the launcher,
+ * stable across runs, enough to open the same device again. 0 on failure. */
+static int id_to_utf8(const ma_device_id *id, char *dst, int cap)
 {
-    static char s[2048];
+    int n = WideCharToMultiByte(CP_UTF8, 0, (const wchar_t *)id->wasapi, -1, dst, cap, NULL, NULL);
+    if (n <= 0) { dst[0] = 0; return 0; }
+    return 1;
+}
+
+/* The reverse; empty or too long - 0, the Windows default is used then. */
+static int id_from_utf8(const char *s, ma_device_id *id)
+{
+    memset(id, 0, sizeof *id);
+    if (!s || !s[0]) return 0;
+    int n = MultiByteToWideChar(CP_UTF8, MB_ERR_INVALID_CHARS, s, -1, (wchar_t *)id->wasapi, (int)(sizeof id->wasapi / sizeof id->wasapi[0]));
+    return n > 0;
+}
+
+/* Strips what would break the line format: tabs and line ends of a device name become spaces. */
+static void app_name(char *s, size_t cap, size_t *at, const char *name)
+{
+    for (; *name && *at < cap - 1; name++) s[(*at)++] = (*name == '\t' || *name == '\n' || *name == '\r') ? ' ' : *name;
+    s[*at] = 0;
+}
+
+/* What Windows lists now, one device per line: "p|c <TAB> 1|0 (default) <TAB> id <TAB> name <LF>".
+ * Only whole lines go into dst; returns the bytes written, -1 when Windows could not be asked. */
+XPA_API int xpa_list_devices(char *dst, uint32_t cap)
+{
     ma_device_info *pb, *cp;
     ma_uint32 npb = 0, ncp = 0;
+    char id[260];
     size_t at = 0;
-    s[0] = 0;
-    if (ctx_open() != MA_SUCCESS || ma_context_get_devices(&g_ctx, &pb, &npb, &cp, &ncp) != MA_SUCCESS) return "?";
-    app(s, sizeof s, &at, "playback:");
-    for (ma_uint32 i = 0; i < npb; i++) app(s, sizeof s, &at, "%s %s%s", i ? ";" : "", pb[i].isDefault ? "[*] " : "", pb[i].name);
-    app(s, sizeof s, &at, " | capture:");
-    for (ma_uint32 i = 0; i < ncp; i++) app(s, sizeof s, &at, "%s %s%s", i ? ";" : "", cp[i].isDefault ? "[*] " : "", cp[i].name);
-    return s;
+    if (cap == 0) return -1;
+    dst[0] = 0;
+    if (ctx_open() != MA_SUCCESS || ma_context_get_devices(&g_ctx, &pb, &npb, &cp, &ncp) != MA_SUCCESS) return -1;
+    for (int capture = 0; capture <= 1; capture++) {
+        ma_device_info *list = capture ? cp : pb;
+        ma_uint32 n = capture ? ncp : npb;
+        for (ma_uint32 i = 0; i < n; i++) {
+            size_t line = at;
+            if (!id_to_utf8(&list[i].id, id, sizeof id)) continue;
+            app(dst, cap, &at, "%c\t%d\t%s\t", capture ? 'c' : 'p', list[i].isDefault ? 1 : 0, id);
+            app_name(dst, cap, &at, list[i].name);
+            app(dst, cap, &at, "\n");
+            if (at >= cap - 1) { at = line; dst[at] = 0; return (int)at; }   /* no room for the whole line */
+        }
+    }
+    return (int)at;
 }
 
 /* ---------------------------------------------------------------- the duplex device */
@@ -191,7 +183,9 @@ static void on_note(const ma_device_notification *n)
     if (g_note) g_note(g_user, (int)n->type);
 }
 
-static ma_result try_open(ma_device_type type, uint32_t rate, uint32_t period)
+static ma_device_id g_outId, g_inId;   /* the ids asked for by the last xpa_open */
+
+static ma_result try_open(ma_device_type type, uint32_t rate, uint32_t period, int haveOut, int haveIn)
 {
     ma_device_config c = ma_device_config_init(type);
     c.sampleRate = rate;
@@ -203,13 +197,16 @@ static ma_result try_open(ma_device_type type, uint32_t rate, uint32_t period)
     c.capture.channels = 1;
     c.dataCallback = on_data;
     c.notificationCallback = on_note;
-    if (pick_device(ma_device_type_playback, g_outPick, &g_outId, g_outName, sizeof g_outName)) c.playback.pDeviceID = &g_outId;
-    if (type == ma_device_type_duplex && pick_device(ma_device_type_capture, g_inPick, &g_inId, g_inName, sizeof g_inName)) c.capture.pDeviceID = &g_inId;
+    if (haveOut) c.playback.pDeviceID = &g_outId;
+    if (type == ma_device_type_duplex && haveIn) c.capture.pDeviceID = &g_inId;
     return ma_device_init(&g_ctx, &c, &g_device);
 }
 
-/* Returns 1 - microphone and speakers, 2 - speakers only (no microphone could be opened), <0 - error. */
-XPA_API int xpa_open(uint32_t rate, uint32_t period, xpa_data_cb data, xpa_note_cb note, void *user, int capture)
+/* outId / inId: ids from xpa_list_devices, NULL or empty - the Windows default (which miniaudio follows
+ * when Windows switches it). Returns 1 - microphone and speakers, 2 - speakers only (no microphone
+ * could be opened), <0 - error. */
+XPA_API int xpa_open(uint32_t rate, uint32_t period, xpa_data_cb data, xpa_note_cb note, void *user, int capture,
+                     const char *outId, const char *inId)
 {
     if (g_open) return -1;
     g_data = data; g_note = note; g_user = user;
@@ -219,15 +216,16 @@ XPA_API int xpa_open(uint32_t rate, uint32_t period, xpa_data_cb data, xpa_note_
         snprintf(g_error, sizeof g_error, "context: %s", ma_result_description(r));
         return -4;
     }
+    int haveOut = id_from_utf8(outId, &g_outId), haveIn = id_from_utf8(inId, &g_inId);
     int mode = 2;
     r = MA_ERROR;
     if (capture) {
-        r = try_open(ma_device_type_duplex, rate, period);
+        r = try_open(ma_device_type_duplex, rate, period, haveOut, haveIn);
         if (r == MA_SUCCESS) mode = 1;
         else snprintf(g_error, sizeof g_error, "microphone: %s", ma_result_description(r));
     }
     if (r != MA_SUCCESS) {
-        r = try_open(ma_device_type_playback, rate, period);
+        r = try_open(ma_device_type_playback, rate, period, haveOut, 0);
         if (r != MA_SUCCESS) {
             snprintf(g_error, sizeof g_error, "speakers: %s", ma_result_description(r));
             return -2;
@@ -348,18 +346,14 @@ static void stream_line(char *s, size_t cap, size_t *at, const char *what, ma_de
     app(s, cap, at, "\n");
 }
 
-/* For the log, one line per open stream (playback, capture), after a first line with the device picks
- * in force. "asked" is what the launcher requested, "got" what miniaudio initialized the stream with
- * (with AUTOCONVERTPCM the rate is the requested one and the engine converts; "mix" is the engine's
- * own format either way). Formats and names only, no sound. */
+/* For the log, one line per open stream (playback, capture). "asked" is what the launcher requested,
+ * "got" what miniaudio initialized the stream with (with AUTOCONVERTPCM the rate is the requested one
+ * and the engine converts; "mix" is the engine's own format either way). Formats and names only, no sound. */
 XPA_API const char *xpa_detail(void)
 {
     static char s[4096];
     size_t at = 0;
     s[0] = 0;
-    app(s, sizeof s, &at, "output pick \"%s\"%s%s | input pick \"%s\"%s%s\n",
-        g_outPick, g_outName[0] ? " -> " : g_outPick[0] ? " -> not found, default used" : " (default)", g_outName,
-        g_inPick, g_inName[0] ? " -> " : g_inPick[0] ? " -> not found, default used" : " (default)", g_inName);
     if (g_open) {
         stream_line(s, sizeof s, &at, "playback", &g_device, 1);
         if (g_device.type == ma_device_type_duplex) stream_line(s, sizeof s, &at, "capture", &g_device, 0);
