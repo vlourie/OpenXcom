@@ -132,6 +132,8 @@ void firepointDropped(const BattleUnit *, int, int) {}
 void firepointBlocked(BattleUnit *, const BattleAction &, int) {}
 unsigned long long knownRevision(SavedBattleGame *, const BattleUnit *) { return 0; }
 bool firepointBlockedSalt() { return false; }
+bool firepointTargetCell() { return false; }
+void firepointTargetCellRejected(const BattleUnit *, const Position &, bool, const Position &) {}
 void blockedStepStop(SavedBattleGame *, BattleUnit *, int) {}
 void blockedStepDecide(SavedBattleGame *, BattleUnit *) {}
 void blockedStepPlan(SavedBattleGame *, BattleUnit *, const BattleAction &) {}
@@ -3300,6 +3302,24 @@ bool firepointBlockedSalt()
 {
 	static const bool on = active() && envOn("OXCE_AI_FIREPOINT_BLOCKED_SALT");
 	return on;
+}
+
+bool firepointTargetCell()
+{
+	static const bool on = active() && envOn("OXCE_AI_FIREPOINT_TARGET_CELL");
+	return on;
+}
+
+void firepointTargetCellRejected(const BattleUnit *unit, const Position &cell, bool found, const Position &point)
+{
+	const std::string side = unit->getFaction() == FACTION_PLAYER ? "p." : "h.";
+	++tallies[side + "firepoint.target_cell_rejected"];
+	++tallies[side + (found ? "firepoint.target_cell_rejected_then_found_other" : "firepoint.target_cell_rejected_then_no_firepoint")];
+	std::ostringstream s;
+	s << "firepoint.target_cell " << cell.x << "," << cell.y << "," << cell.z << " -> ";
+	if (found) s << point.x << "," << point.y << "," << point.z;
+	else s << "none";
+	addTrail(unit, s.str().c_str());
 }
 
 namespace

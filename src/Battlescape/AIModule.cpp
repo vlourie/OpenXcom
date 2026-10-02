@@ -2608,6 +2608,11 @@ bool AIModule::findFirePoint()
 	const bool suppress = _fpBlocked && firepointBlockedHolds();
 	bool suppressedHere = false;
 	int bestDir = -1;
+	// FIREPOINT_TARGET_CELL_V1 (bench): not the tile the target stands on - the path there is open only because the target was
+	// not spotted this turn (Pathfinding::isBlocked), and the walk stops on it; the target's tile is the one it already aims at
+	const bool skipTargetCell = AiProbe::firepointTargetCell();
+	bool targetCellRejected = false;
+	Position targetCell;
 	_attackAction.type = BA_RETHINK;
 	for (const auto& randomPosition : randomTileSearch)
 	{
@@ -2616,6 +2621,25 @@ bool AIModule::findFirePoint()
 		if (tile == 0  ||
 			std::find(_reachableWithAttack.begin(), _reachableWithAttack.end(), _save->getTileIndex(pos))  == _reachableWithAttack.end())
 			continue;
+		if (skipTargetCell)
+		{
+			bool onTarget = false;
+			const int size = _unit->getArmor()->getSize();
+			for (int x = 0; x < size && !onTarget; ++x)
+			{
+				for (int y = 0; y < size && !onTarget; ++y)
+				{
+					const Tile *part = _save->getTile(pos + Position(x, y, 0));
+					onTarget = part && part->getUnit() == _aggroTarget;
+				}
+			}
+			if (onTarget)
+			{
+				targetCellRejected = true;
+				targetCell = pos;
+				continue;
+			}
+		}
 		int score = 0;
 		// i should really make a function for this
 		Position origin = pos.toVoxel() +
@@ -2686,6 +2710,10 @@ bool AIModule::findFirePoint()
 	if (droppedByEnergy || overByTu)
 	{
 		AiProbe::firepointDropped(_unit, droppedByEnergy, overByTu);
+	}
+	if (targetCellRejected)
+	{
+		AiProbe::firepointTargetCellRejected(_unit, targetCell, bestScore > 70, _attackAction.target);
 	}
 
 	if (bestScore > 70)
