@@ -68,9 +68,19 @@ namespace HdFx
 		std::string clip;
 		Position voxel;
 		Uint32 start;
+		int item;               ///< the weapon fired (BattleItem id), -1: none
+		bool tip;               ///< the weapon was drawn this frame: the flash goes to its muzzle
+		int tipX, tipY;         ///< that muzzle on the map surface
 	};
-	/// Starts a muzzle flash at a voxel.
-	void spawn(const std::string &clip, Position voxel);
+	/// Starts a muzzle flash at a voxel; `item` - the weapon fired, its drawn muzzle is used when seen.
+	void spawn(const std::string &clip, Position voxel, int item = -1);
+	/// A new map frame: the muzzles drawn last frame are forgotten.
+	void clearTips();
+	/// Does a running flash wait for the muzzle of weapon `item`?
+	bool wantsTip(int item);
+	/// The muzzle of weapon `item` (its hand frame `frame` as drawn - already k times the classic one -
+	/// facing `direction`, its corner at x, y on the map surface), for the flashes it fired.
+	void noteTip(int item, const Surface *frame, int direction, int x, int y);
 	/// Is any flash still running at `now` (the finished ones are dropped)?
 	bool active(Uint32 now);
 	/// The flashes still running at `now`, with the frame of each (the finished ones are dropped).

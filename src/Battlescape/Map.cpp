@@ -1341,6 +1341,7 @@ void Map::drawTerrain(HdCanvas *surface)
 	_isCtrlPressed = _game->isCtrlPressed(true);
 	// HD render: combat effect clips not drawn for a while go, before this frame records any
 	HdFx::trim();
+	HdFx::clearTips();
 	int frameNumber = 0;
 	SurfaceRaw<const Uint8> tmpSurface;
 	Tile *tile;
@@ -2564,7 +2565,13 @@ void Map::drawTerrain(HdCanvas *surface)
 		HdFx::running(SDL_GetTicks(), _k, flashes);
 		for (const auto &f : flashes)
 		{
+			// at the muzzle of the weapon as drawn this frame (see UnitSprite::blitItem), else where the shot leaves
 			_camera->convertVoxelToScreen(f.first->voxel, &bulletPositionScreen);
+			if (f.first->tip)
+			{
+				bulletPositionScreen.x = f.first->tipX;
+				bulletPositionScreen.y = f.first->tipY;
+			}
 			surface->blitFrame(*f.second, bulletPositionScreen.x - f.second->width / 2, bulletPositionScreen.y - f.second->height / 2);
 		}
 	}

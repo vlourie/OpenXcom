@@ -18,6 +18,7 @@
  */
 #include "UnitSprite.h"
 #include "../Engine/HdCanvas.h"
+#include "../Engine/HdFx.h"
 #include "../Engine/SurfaceSet.h"
 #include "../Mod/RuleItem.h"
 #include "../Mod/Armor.h"
@@ -155,6 +156,13 @@ void UnitSprite::blitItem(Part& item)
 	_dest->blitScripted(work, item.src, _x + item.offX * _scale, _y + item.offY * _scale, _shade, _mask);
 
 	_dest->unlock();
+
+	// HD render: a muzzle flash of this weapon starts at the end of its barrel as drawn, not at the voxel the shot leaves from
+	const BattleItem *weapon = item.bodyPart == BODYPART_ITEM_RIGHTHAND ? _itemR : _itemL;
+	if (weapon && HdFx::wantsTip(weapon->getId()))
+	{
+		HdFx::noteTip(weapon->getId(), item.src, _unit->getDirection(), _x + item.offX * _scale, _y + item.offY * _scale);
+	}
 }
 
 /**
