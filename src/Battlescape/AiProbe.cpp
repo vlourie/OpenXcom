@@ -154,6 +154,7 @@ void blockedStepStop(SavedBattleGame *, BattleUnit *, int) {}
 void blockedStepDecide(SavedBattleGame *, BattleUnit *) {}
 void blockedStepPlan(SavedBattleGame *, BattleUnit *, const BattleAction &) {}
 void sideEnds(SavedBattleGame *) {}
+void turnStage(SavedBattleGame *, const char *) {}
 void logCasualty(SavedBattleGame *, const BattleUnit *, const BattleUnit *, const std::string &, bool, int, bool) {}
 void event(SavedBattleGame *, const char *, const BattleUnit *, const Position &) {}
 
@@ -722,6 +723,14 @@ bool record()
 	return on && phase != FINISHED;
 }
 
+/// ESCAPE_DEATH_ATTRIBUTION probe (OXCE_AI_ATTRIB_PROBE, with the record): energy, smoke and fire in [AISTATE], every unit an
+/// action changed in [AIEXEC] "hits", and what the turn's start did to each unit, stage by stage ([AITURNFX]). Reads only.
+bool attrib()
+{
+	static const bool on = envOn("OXCE_AI_ATTRIB_PROBE");
+	return on && record();
+}
+
 /// The record takes the think's reach (OXCE_AI_RECORD_REUSE, on unless set to 0).
 bool reachReuse()
 {
@@ -889,6 +898,9 @@ void flushExec(SavedBattleGame *save)
 	}
 	BattleUnit *self = unitById(save, exec.unit);
 	int dmg = 0, stunned = 0, downed = 0, fdmg = 0, fdowned = 0, born = 0;
+	// OXCE_AI_ATTRIB_PROBE: each unit the action changed, the actor too (reaction fire, the stun cost of the action):
+	// [id, hp before, hp after, stun before, stun after, knocked down now, dead now]
+	std::ostringstream hits;
 	for (const auto *bu : *save->getUnits())
 	{
 		auto b = exec.units.find(bu->getId());
@@ -896,6 +908,12 @@ void flushExec(SavedBattleGame *save)
 		{
 			++born; // spawned by the action (a zombie, a split unit)
 			continue;
+		}
+		if (attrib() && (bu->getHealth() != b->second.hp || bu->getStunlevel() != b->second.stun || (!b->second.down && isDown(bu))))
+		{
+			const bool dead = bu->getStatus() == STATUS_DEAD || bu->getHealth() <= 0;
+			hits << (hits.tellp() > 0 ? "," : "") << "[" << bu->getId() << "," << b->second.hp << "," << bu->getHealth() << ","
+				<< b->second.stun << "," << bu->getStunlevel() << "," << (!b->second.down && isDown(bu) ? 1 : 0) << "," << (dead ? 1 : 0) << "]";
 		}
 		if (bu->getId() == exec.unit)
 			continue;
@@ -933,6 +951,10 @@ void flushExec(SavedBattleGame *save)
 			<< ",\"hp\":" << self->getHealth() << ",\"hp_lost\":" << std::max(0, b.hp - self->getHealth())
 			<< ",\"stun\":" << self->getStunlevel() << ",\"down\":" << (isDown(self) ? 1 : 0)
 			<< ",\"seen\":" << seen << ",\"spotted\":" << spottedBy(save, self);
+		if (attrib())
+		{
+			line << ",\"en\":" << self->getEnergy();
+		}
 		if (exec.side >= 0 && exec.side < 3)
 		{
 			After &a = afterOf[exec.side][exec.unit];
@@ -945,7 +967,12 @@ void flushExec(SavedBattleGame *save)
 		}
 	}
 	line << ",\"dmg\":" << dmg << ",\"stunned\":" << stunned << ",\"downed\":" << downed << ",\"fdmg\":" << fdmg << ",\"fdowned\":" << fdowned
-		<< ",\"born\":" << born << ",\"trail\":[" << trail.str() << "]}";
+		<< ",\"born\":" << born << ",\"trail\":[" << trail.str() << "]";
+	if (attrib())
+	{
+		line << ",\"hits\":[" << hits.str() << "]";
+	}
+	line << "}";
 	Log(LOG_INFO) << line.str();
 	exec = Exec();
 }
@@ -975,9 +1002,72 @@ void flushAfter(SavedBattleGame *save, int side, bool end)
 	afterOf[side].clear();
 }
 
+/// OXCE_AI_ATTRIB_PROBE: how each unit was at the last stage of a turn change - taken when a side's turn ends (sideEnds),
+/// compared at each stage of SavedBattleGame::endTurn and at the first decision or think of the new side.
+struct FxSnap { int hp, stun, energy, status; };
+std::map<int, FxSnap> fxPrev;
+bool fxArmed = false;
+int fxSide = -1, fxTurn = -1;
+
+void fxTake(SavedBattleGame *save)
+{
+	fxPrev.clear();
+	for (const auto *bu : *save->getUnits())
+	{
+		fxPrev[bu->getId()] = { bu->getHealth(), bu->getStunlevel(), bu->getEnergy(), (int)bu->getStatus() };
+	}
+}
+
+/// One [AITURNFX] line per unit whose health, stun or status changed since the previous stage.
+void fxStage(SavedBattleGame *save, const char *stage)
+{
+	if (!attrib() || !fxArmed)
+	{
+		return;
+	}
+	for (const auto *bu : *save->getUnits())
+	{
+		const auto p = fxPrev.find(bu->getId());
+		if (p == fxPrev.end())
+		{
+			continue;
+		}
+		const FxSnap &a = p->second;
+		if (a.hp == bu->getHealth() && a.stun == bu->getStunlevel() && a.status == (int)bu->getStatus())
+		{
+			continue;
+		}
+		const Tile *tile = bu->getTile();
+		Log(LOG_INFO) << "[AITURNFX] {\"v\":1,\"stage\":\"" << stage << "\",\"turn\":" << save->getTurn() << ",\"side\":" << (int)save->getSide()
+			<< ",\"unit\":" << bu->getId() << ",\"faction\":" << (int)bu->getFaction()
+			<< ",\"hp\":[" << a.hp << "," << bu->getHealth() << "],\"stun\":[" << a.stun << "," << bu->getStunlevel()
+			<< "],\"en\":[" << a.energy << "," << bu->getEnergy() << "],\"status\":[" << a.status << "," << (int)bu->getStatus()
+			<< "],\"wounds\":" << bu->getFatalWounds() << ",\"burn\":" << bu->getFire()
+			<< ",\"smoke\":" << (tile ? tile->getSmoke() : -1) << ",\"fire\":" << (tile ? tile->getFire() : -1) << "}";
+	}
+	fxTake(save);
+	if (std::string(stage) == "start")
+	{
+		fxArmed = false;
+	}
+}
+
+/// The first decision or think of the new side: what came after the turn change's last stage (terrain explosions).
+void fxStart(SavedBattleGame *save)
+{
+	if (fxArmed && fxSide != (int)save->getSide())
+	{
+		fxStage(save, "start");
+	}
+}
+
 void recordTurn(SavedBattleGame *save)
 {
 	const int side = save->getSide();
+	if (attrib())
+	{
+		fxStart(save);
+	}
 	if (!record() || (side == seenSide && save->getTurn() == seenTurn))
 	{
 		return;
@@ -1227,6 +1317,10 @@ void beforeThink(SavedBattleGame *save, BattleUnit *unit)
 	if (record())
 	{
 		flushExec(save);
+		if (attrib())
+		{
+			fxStart(save);
+		}
 		pending = Pending();
 		pending.unit = unit->getId();
 		pending.pos = unit->getPosition();
@@ -2111,11 +2205,24 @@ void sideEnds(SavedBattleGame *save)
 	{
 		flushExec(save);
 	}
+	// endTurn comes back here after each explosion at the turn's end: the snapshot is the first call's
+	if (attrib() && !(fxArmed && fxSide == (int)save->getSide() && fxTurn == save->getTurn()))
+	{
+		fxSide = (int)save->getSide();
+		fxTurn = save->getTurn();
+		fxArmed = true;
+		fxTake(save);
+	}
 	if (knownOccupantPath())
 	{
 		// KNOWN_OCCUPANT_PATH_V1: the last enemy's target is no longer blocked for its paths outside its decisions
 		save->getPathfinding()->setKnownOccupant(0, 0);
 	}
+}
+
+void turnStage(SavedBattleGame *save, const char *stage)
+{
+	fxStage(save, stage);
 }
 
 namespace
@@ -2866,6 +2973,20 @@ void threatOf(SavedBattleGame *save, BattleUnit *unit, double &threat, int &reac
 		}
 		threat += tried ? (double)hits / tried : 0.0;
 	}
+}
+
+/// OXCE_AI_ATTRIB_PROBE: energy, burning turns, smoke and fire on the unit's tile; empty without the flag.
+std::string attribState(const BattleUnit *unit)
+{
+	if (!attrib())
+	{
+		return std::string();
+	}
+	const Tile *tile = unit->getTile();
+	std::ostringstream out;
+	out << " en=" << unit->getEnergy() << "/" << unit->getBaseStats()->stamina << " burn=" << unit->getFire()
+		<< " smoke=" << (tile ? tile->getSmoke() : -1) << " fire=" << (tile ? tile->getFire() : -1);
+	return out.str();
 }
 
 /// What the unit holds and carries: each hand as type:1 (loaded or needs no ammo) / type:0 (empty),
@@ -3808,7 +3929,8 @@ void logState(SavedBattleGame *save, const char *when)
 			<< " wounds=" << bu->getFatalWounds()
 			<< " threat=" << threat
 			<< " reach=" << reachable
-			<< handsOf(bu);
+			<< handsOf(bu)
+			<< attribState(bu);
 	}
 }
 

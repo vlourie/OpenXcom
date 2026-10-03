@@ -333,6 +333,9 @@ void blockedStepDecide(SavedBattleGame *save, BattleUnit *unit);
 void blockedStepPlan(SavedBattleGame *save, BattleUnit *unit, const BattleAction &action);
 /// A side's turn ends (BattlescapeGame::endTurn): the last decision's action is over.
 void sideEnds(SavedBattleGame *save);
+/// A stage of SavedBattleGame::endTurn (OXCE_AI_ATTRIB_PROBE): one [AITURNFX] line per unit whose health, stun or status
+/// changed since the side's turn ended or since the previous stage. Reads only; no-op without the flag.
+void turnStage(SavedBattleGame *save, const char *stage);
 /// One line per unit killed or knocked out ([AICASUALTY]): by whom, with what, from how far, on whose turn.
 void logCasualty(SavedBattleGame *save, const BattleUnit *victim, const BattleUnit *killer, const std::string &weapon,
 	bool dead, int hitSide, bool terrain);
