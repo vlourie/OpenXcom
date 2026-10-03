@@ -70,6 +70,7 @@ Inventory::Inventory(Game *game, int width, int height, int x, int y, bool base)
 	_depth = _game->getSavedGame()->getSavedBattle()->getDepth();
 	_grid = new Surface(width, height, 0, 0);
 	_items = new Surface(width, height, 0, 0);
+	_itemsTop = new Surface(width, height, 0, 0);
 	_gridLabels = new Surface(width, height, 0, 0);
 	_selection = new Surface(RuleInventory::HAND_W * RuleInventory::SLOT_W, RuleInventory::HAND_H * RuleInventory::SLOT_H, x, y);
 	_warning = new WarningMessage(224, 24, 48, 176);
@@ -127,6 +128,7 @@ Inventory::~Inventory()
 {
 	delete _grid;
 	delete _items;
+	delete _itemsTop;
 	delete _gridLabels;
 	delete _hdLabel;
 	delete _selection;
@@ -146,6 +148,7 @@ void Inventory::setPalette(const SDL_Color *colors, int firstcolor, int ncolors)
 	Surface::setPalette(colors, firstcolor, ncolors);
 	_grid->setPalette(colors, firstcolor, ncolors);
 	_items->setPalette(colors, firstcolor, ncolors);
+	_itemsTop->setPalette(colors, firstcolor, ncolors);
 	_gridLabels->setPalette(colors, firstcolor, ncolors);
 	_hdLabel->setPalette(colors, firstcolor, ncolors);
 	_selection->setPalette(colors, firstcolor, ncolors);
@@ -337,13 +340,33 @@ void Inventory::drawItems()
 	const int Pulsate[8] = { 0, 1, 2, 3, 4, 3, 2, 1 };
 	const SavedBattleGame* save = _game->getSavedGame()->getSavedBattle();
 	Surface *tempSurface = _game->getMod()->getSurfaceSet("SCANG.DAT")->getFrame(6);
+	// with HD pictures of items the overlays go over them, in a layer of their own (see blit)
+	_hdItems.clear();
+	_hdItemsScale = HdItems::enabled() ? HdUi::scale() : 0;
+	Surface *over = _items;
+	if (_hdItemsScale)
+	{
+		_itemsTop->clear();
+		over = _itemsTop;
+	}
 	auto primers = [&](int x, int y, bool a)
 	{
-		tempSurface->blitNShade(_items, x, y, Pulsate[_animFrame % 8], false, a ? 0 : 32);
+		tempSurface->blitNShade(over, x, y, Pulsate[_animFrame % 8], false, a ? 0 : 32);
 	};
 	auto indicators = [&](Surface *surf, int x, int y)
 	{
-		surf->blitNShade(_items, x, y, Pulsate[_animFrame % 8]);
+		surf->blitNShade(over, x, y, Pulsate[_animFrame % 8]);
+	};
+	// the HD picture of an item instead of its classic sprite; x, y: where the classic sprite or hand frame goes
+	auto hdPicture = [&](const BattleItem *item, const Surface *frame, const SurfaceSet *set, HdItems::Context context, int x, int y)
+	{
+		HdItems::Pick pick;
+		if (!_hdItemsScale || !HdItems::pick(item->getRules(), item, save, _animFrame, HdItems::indexOf(set, frame), set, context, _hdItemsScale, pick))
+		{
+			return false;
+		}
+		_hdItems.push_back({ pick, x, y });
+		return true;
 	};
 
 	ScriptWorkerBlit work;
@@ -376,8 +399,13 @@ void Inventory::drawItems()
 			{
 				continue;
 			}
-			BattleItem::ScriptFill(&work, invItem, save, BODYPART_ITEM_INVENTORY, _animFrame, 0);
-			work.executeBlit(frame, _items, x, y, 0);
+			const bool hand = invItem->getSlot()->getType() == INV_HAND;
+			if (!hdPicture(invItem, frame, texture, hand ? HdItems::HAND : HdItems::GRID,
+				hand ? invItem->getSlot()->getX() : x, hand ? invItem->getSlot()->getY() : y))
+			{
+				BattleItem::ScriptFill(&work, invItem, save, BODYPART_ITEM_INVENTORY, _animFrame, 0);
+				work.executeBlit(frame, _items, x, y, 0);
+			}
 
 			// two-handed indicator
 			if (invItem->getSlot()->getType() == INV_HAND)
@@ -391,7 +419,7 @@ void Inventory::drawItems()
 					text.setX(invItem->getSlot()->getX() + RuleInventory::HAND_W * RuleInventory::SLOT_W - 5);
 					text.setY(invItem->getSlot()->getY() + RuleInventory::HAND_H * RuleInventory::SLOT_H - 7);
 					text.setValue(2);
-					text.blit(_items->getSurface());
+					text.blit(over->getSurface());
 				}
 			}
 
@@ -433,8 +461,11 @@ void Inventory::drawItems()
 			int x, y;
 			x = (groundItem->getSlot()->getX() + (groundItem->getSlotX() - _groundOffset) * RuleInventory::SLOT_W);
 			y = (groundItem->getSlot()->getY() + groundItem->getSlotY() * RuleInventory::SLOT_H);
-			BattleItem::ScriptFill(&work, groundItem, save, BODYPART_ITEM_INVENTORY, _animFrame, 0);
-			work.executeBlit(frame, _items, x, y, 0);
+			if (!hdPicture(groundItem, frame, texture, HdItems::GRID, x, y))
+			{
+				BattleItem::ScriptFill(&work, groundItem, save, BODYPART_ITEM_INVENTORY, _animFrame, 0);
+				work.executeBlit(frame, _items, x, y, 0);
+			}
 
 			// grenade primer indicators
 			if (groundItem->getFuseTimer() >= 0 && groundItem->getRules()->getInventoryWidth() > 0)
@@ -498,7 +529,7 @@ void Inventory::drawItems()
 			}
 		}
 
-		stackLayer.blitNShade(_items, 0, 0);
+		stackLayer.blitNShade(over, 0, 0);
 	}
 }
 
@@ -507,10 +538,19 @@ void Inventory::drawItems()
  */
 void Inventory::drawSelectedItem()
 {
+	_hdSelected = HdItems::Pick();
 	if (_selItem)
 	{
 		_selection->clear();
-		_selItem->getRules()->drawHandSprite(_game->getMod()->getSurfaceSet("BIGOBS.PCK"), _selection, _selItem, _game->getSavedGame()->getSavedBattle(), _animFrame);
+		SurfaceSet *texture = _game->getMod()->getSurfaceSet("BIGOBS.PCK");
+		const SavedBattleGame *save = _game->getSavedGame()->getSavedBattle();
+		const int k = HdItems::enabled() ? HdUi::scale() : 0;
+		if (k && HdItems::pick(_selItem->getRules(), _selItem, save, _animFrame,
+			HdItems::indexOf(texture, _selItem->getBigSprite(texture, save, _animFrame)), texture, HdItems::HAND, k, _hdSelected))
+		{
+			return;   // drawn by blit over the classic layers
+		}
+		_selItem->getRules()->drawHandSprite(texture, _selection, _selItem, _game->getSavedGame()->getSavedBattle(), _animFrame);
 	}
 }
 
@@ -674,27 +714,58 @@ void Inventory::think()
  */
 void Inventory::blit(SDL_Surface *surface)
 {
+	if ((HdItems::enabled() ? HdUi::scale() : 0) != _hdItemsScale)
+	{
+		// the HD interface was switched on or off or changed its k: lay the items out for it again
+		drawItems();
+		drawSelectedItem();
+	}
 	clear();
 	_grid->blitNShade(this, 0, 0);
 	_items->blitNShade(this, 0, 0);
-	if (hdLabels(surface))
+	const bool fonts = hdLabels(surface);
+	const bool hdItems = _hdItemsScale && HdUi::isScreen(surface);
+	if (fonts || hdItems)
 	{
 		// the layers go to the screen one by one, in the same order: the classic pixels come out the
-		// same, and the HD layer gets the names in its own fonts under the dragged item and the warning
+		// same, and the HD layer gets the names in its own fonts under the dragged item and the warning,
+		// and the items' own pictures under their overlays
 		Surface::blit(surface);
-		SDL_Rect target {};
-		target.x = getX();
-		target.y = getY();
-		SDL_BlitSurface(_gridLabels->getSurface(), nullptr, surface, &target);
-		drawHdLabels();
-		for (Surface *over : { _selection, (Surface*)_warning })
+		auto layer = [&](Surface *over)
 		{
 			over->setX(over->getX() + getX());
 			over->setY(over->getY() + getY());
 			over->blit(surface);
 			over->setX(over->getX() - getX());
 			over->setY(over->getY() - getY());
+		};
+		const SDL_Rect window = { (Sint16)getX(), (Sint16)getY(), (Uint16)getWidth(), (Uint16)getHeight() };
+		if (hdItems)
+		{
+			for (const HdPlaced &placed : _hdItems)
+			{
+				HdItems::draw(placed.pick, getX() + placed.x, getY() + placed.y, window);
+			}
+			layer(_itemsTop);
 		}
+		if (fonts)
+		{
+			SDL_Rect target {};
+			target.x = getX();
+			target.y = getY();
+			SDL_BlitSurface(_gridLabels->getSurface(), nullptr, surface, &target);
+			drawHdLabels();
+		}
+		else
+		{
+			layer(_gridLabels);
+		}
+		layer(_selection);
+		if (hdItems && _hdSelected.frame)
+		{
+			HdItems::draw(_hdSelected, getX() + _selection->getX(), getY() + _selection->getY(), window);
+		}
+		layer(_warning);
 		return;
 	}
 	_gridLabels->blitNShade(this, 0, 0);

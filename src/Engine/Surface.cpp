@@ -19,6 +19,7 @@
 #include "Surface.h"
 #include "HdUiArt.h"
 #include "HdUi.h"
+#include "HdItems.h"
 #include "ShaderDraw.h"
 #include "ShaderMove.h"
 #include <vector>
@@ -285,7 +286,7 @@ Surface::Surface(const Surface& other) : Surface{ }
  */
 Surface::~Surface()
 {
-
+	HdItems::detach(this);
 }
 
 /**
@@ -729,6 +730,7 @@ void Surface::blit(SDL_Surface *surface)
 			{
 				HdUi::instance().drawHighlight(getX(), getY(), getWidth(), getHeight());
 			}
+			HdItems::drawAttached(this);
 		}
 	}
 }

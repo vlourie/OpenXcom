@@ -32,6 +32,8 @@
 #include "../Savegame/BattleUnit.h"
 #include "../Savegame/SavedGame.h"
 #include "../Ufopaedia/Ufopaedia.h"
+#include "../Engine/HdItems.h"
+#include "../Engine/HdUi.h"
 
 namespace OpenXcom
 {
@@ -156,6 +158,8 @@ void AlienInventory::drawItems()
 	const SavedBattleGame* save = _game->getSavedGame()->getSavedBattle();
 	ScriptWorkerBlit work;
 	_items->clear();
+	HdItems::detach(this);
+	const int k = HdItems::enabled() ? HdUi::scale() : 0;
 	if (_selUnit != 0)
 	{
 		SurfaceSet *texture = _game->getMod()->getSurfaceSet("BIGOBS.PCK");
@@ -178,6 +182,12 @@ void AlienInventory::drawItems()
 
 				int y = item->getSlot()->getY() + item->getRules()->getHandSpriteOffY();
 
+				HdItems::Pick pick;
+				if (k && HdItems::pick(item->getRules(), item, save, _animFrame, HdItems::indexOf(texture, frame), texture, HdItems::GRID, k, pick))
+				{
+					HdItems::attach(this, pick, x, y);
+					continue;
+				}
 				BattleItem::ScriptFill(&work, item, save, BODYPART_ITEM_INVENTORY, _animFrame, 0);
 				work.executeBlit(frame, _items, x, y, 0);
 			}

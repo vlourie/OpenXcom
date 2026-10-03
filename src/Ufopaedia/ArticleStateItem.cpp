@@ -35,6 +35,7 @@
 #include "../Mod/RuleInterface.h"
 #include "../fmath.h"
 #include "StatsForNerdsState.h"
+#include "../Engine/HdItems.h"
 
 namespace OpenXcom
 {
@@ -182,7 +183,10 @@ namespace OpenXcom
 		_image = new Surface(32, 48, 157, 5);
 		add(_image, "image", "articleItem", _bg);
 
-		item->drawHandSprite(_game->getMod()->getSurfaceSet("BIGOBS.PCK"), _image);
+		if (!HdItems::attachHand(item, nullptr, nullptr, 0, _game->getMod()->getSurfaceSet("BIGOBS.PCK"), _image))
+		{
+			item->drawHandSprite(_game->getMod()->getSurfaceSet("BIGOBS.PCK"), _image);
+		}
 
 		_txtWeaponClipSize = new NumberText(30, 5, 157, 5);
 		add(_txtWeaponClipSize, "image", "articleItem", _bg);
@@ -405,7 +409,10 @@ namespace OpenXcom
 
 							addAmmoDamagePower(currShow, type, item);
 
-							type->drawHandSprite(_game->getMod()->getSurfaceSet("BIGOBS.PCK"), _imageAmmo[currShow]);
+							if (!HdItems::attachHand(type, nullptr, nullptr, 0, _game->getMod()->getSurfaceSet("BIGOBS.PCK"), _imageAmmo[currShow]))
+							{
+								type->drawHandSprite(_game->getMod()->getSurfaceSet("BIGOBS.PCK"), _imageAmmo[currShow]);
+							}
 							_txtAmmoClipSize[currShow]->setValue(type->getClipSize());
 							_txtAmmoClipSize[currShow]->setVisible(Options::oxcePediaShowClipSize && type->getClipSize() > 0);
 

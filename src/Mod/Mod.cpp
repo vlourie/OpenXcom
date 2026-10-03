@@ -34,6 +34,7 @@
 #include "../Engine/HdBlit.h"
 #include "../Engine/HdUiArt.h"
 #include "../Engine/HdBase.h"
+#include "../Engine/HdItems.h"
 #include "../Engine/HdCraftLights.h"
 #include "../Engine/HdFx.h"
 #include "../Engine/HdOutline.h"
@@ -2998,6 +2999,7 @@ void Mod::loadHdUiArt()
 	HdBase::clear(masterOffset);
 	HdCraftLights::clear(masterOffset);
 	HdFx::clear();
+	HdItems::clear();
 	HdOutline::clear();
 	// both trees at once: the adult one only holds the pictures that differ
 	const std::vector<std::string> files = HdSprites::artFolder("UI");
