@@ -355,6 +355,13 @@ void logCasualty(SavedBattleGame *save, const BattleUnit *victim, const BattleUn
 /// One line per event the gentle on/off check must cover ([AIEVENT]): a reaction shot, an area explosion; the camera's
 /// floor is logged by think. Separate from [AIRESULT] tac=, so the AI series comparing builds do not see it.
 void event(SavedBattleGame *save, const char *what, const BattleUnit *unit, const Position &pos);
+/// WOUNDED_COMBAT_DECISION_V1 (OXCE_AI_MEDIPROBE with the record): BattleUnit::think runs AIModule::medikit_think once a turn,
+/// before the AI picks its mode. medikitBefore snaps the unit before the loop of one kind (1 heal, 2 stimulant), medikitAfter
+/// writes one [AIMEDI] line: the unit's state before and after, the medikits it carries, which of them it may use on itself
+/// now, the chance medikit_think would roll, how many uses the loop made, and the first gate it stopped at. Mirrors the gates,
+/// never the dice: reads only, no random numbers. Off (the default): nothing.
+void medikitBefore(const BattleUnit *unit, int kind);
+void medikitAfter(const BattleUnit *unit, int kind, int used);
 
 }
 

@@ -52,6 +52,7 @@
 #include "../Savegame/SavedGame.h"
 #include "../Savegame/Tile.h"
 #include "TileEngine.h"
+#include "../fmath.h"
 
 #ifdef _WIN32
 #define PROBE_ENVIRON _environ
@@ -160,6 +161,8 @@ void sideEnds(SavedBattleGame *) {}
 void turnStage(SavedBattleGame *, const char *) {}
 void logCasualty(SavedBattleGame *, const BattleUnit *, const BattleUnit *, const std::string &, bool, int, bool) {}
 void event(SavedBattleGame *, const char *, const BattleUnit *, const Position &) {}
+void medikitBefore(const BattleUnit *, int) {}
+void medikitAfter(const BattleUnit *, int, int) {}
 
 #else
 
@@ -1305,8 +1308,15 @@ void pathAsk(int kind, int algo, const BattleUnit *unit, const Position &from, c
 	else if (algo == 3) ++pathNow.nopath;
 }
 
+namespace
+{
+// the battle of the think that comes next: BattleUnit::think runs the medikit check (medikitBefore / medikitAfter) right after
+const SavedBattleGame *thinkSave = nullptr;
+}
+
 void beforeThink(SavedBattleGame *save, BattleUnit *unit)
 {
+	thinkSave = save;
 	if (!active())
 	{
 		return;
@@ -4130,6 +4140,117 @@ void logState(SavedBattleGame *save, const char *when)
 			<< handsOf(bu)
 			<< attribState(bu);
 	}
+}
+
+namespace
+{
+struct MedikitSnap { int unit = -1, hp = 0, stun = 0, fatal = 0, energy = 0, tu = 0, morale = 0; };
+MedikitSnap medikitSnap;
+
+bool medikitOn()
+{
+	static const bool on = envOn("OXCE_AI_MEDIPROBE");
+	return on && record();
+}
+}
+
+void medikitBefore(const BattleUnit *unit, int)
+{
+	if (!medikitOn())
+	{
+		return;
+	}
+	medikitSnap = { unit->getId(), unit->getHealth(), unit->getStunlevel(), unit->getFatalWounds(), unit->getEnergy(),
+		unit->getTimeUnits(), unit->getMorale() };
+}
+
+void medikitAfter(const BattleUnit *unit, int kind, int used)
+{
+	const SavedBattleGame *save = thinkSave;
+	if (!medikitOn() || !save || medikitSnap.unit != unit->getId())
+	{
+		return;
+	}
+	const MedikitSnap &s = medikitSnap;
+	const int health = unit->getBaseStats()->health, stamina = unit->getBaseStats()->stamina;
+	const bool heal = kind == BMT_HEAL;
+	// AIModule::medikit_think step 2, on the state before the loop
+	const int pctHealth = health > 0 ? Clamp((s.hp - s.stun) * 100 / health, 0, 100) : 0;
+	const int pctEnergy = stamina > 0 ? Clamp(s.energy * 100 / stamina, 0, 100) : 0;
+	const bool urgent = s.stun + s.fatal >= s.hp;
+	int chance = 0, chanceEnergy = 0;
+	if (heal && s.fatal > 0)
+	{
+		chance = urgent ? 100 : 120 - pctHealth * 4;
+		chance = urgent ? 100 : chance <= 0 ? 5 : std::min(chance, 100);
+	}
+	else if (!heal)
+	{
+		chance = s.stun > 0 ? (urgent ? 100 : Clamp(140 - pctHealth * 7, 0, 100)) : 0;
+		chanceEnergy = pctEnergy < 40 ? Clamp(120 - pctEnergy * 3, 0, 100) : 0;
+	}
+	// step 3: what the unit carries and what it may use on itself now
+	int present = 0, typeOk = 0, self = 0, usable = 0, charged = 0, affordable = 0;
+	for (BattleItem *bi : *unit->getInventory())
+	{
+		const RuleItem *r = bi->getRules();
+		if (r->getBattleType() != BT_MEDIKIT)
+		{
+			continue;
+		}
+		++present;
+		if (r->getMediKitType() != kind && r->getMediKitType() != BMT_NORMAL)
+		{
+			continue;
+		}
+		++typeOk;
+		if (!r->getAllowTargetSelf())
+		{
+			continue;
+		}
+		++self;
+		if (save->getTurn() < r->getAIUseDelay(save->getMod()))
+		{
+			continue;
+		}
+		++usable;
+		// step 5: a charge for the wish and the time units for it (the action's cost plus the hardcoded 4)
+		const bool charge = heal ? bi->getHealQuantity() > 0
+			: bi->getStimulantQuantity() > 0 && ((s.stun > 0 && r->getStunRecovery() > 0) || (pctEnergy < 40 && r->getEnergyRecovery() > 0));
+		if (!charge)
+		{
+			continue;
+		}
+		++charged;
+		BattleAction a;
+		a.weapon = bi;
+		a.type = BA_USE;
+		a.actor = const_cast<BattleUnit *>(unit);
+		a.updateTU();
+		a.Time += 4;
+		affordable += a.haveTU();
+	}
+	const char *why = "used";
+	if (used <= 0)
+	{
+		why = health <= 0 || stamina <= 0 ? "sanity"
+			: (heal ? s.fatal <= 0 : s.stun <= 0 && pctEnergy >= 40) ? "no_need"
+			: !present ? "no_medikit"
+			: !typeOk ? "wrong_type"
+			: !self ? "no_self"
+			: !usable ? "delay"
+			: !charged ? "no_charge"
+			: !affordable ? "no_tu"
+			: "dice_no";
+	}
+	Log(LOG_INFO) << "[AIMEDI] {\"v\":1,\"unit\":" << unit->getId() << ",\"turn\":" << save->getTurn() << ",\"side\":" << (int)unit->getFaction()
+		<< ",\"bot\":" << (careful(unit) ? 1 : 0) << ",\"kind\":\"" << (heal ? "heal" : "stim") << "\",\"hp\":" << s.hp << ",\"maxhp\":" << health
+		<< ",\"stun\":" << s.stun << ",\"fatal\":" << s.fatal << ",\"en\":" << s.energy << ",\"maxen\":" << stamina << ",\"tu\":" << s.tu
+		<< ",\"mor\":" << s.morale << ",\"present\":" << present << ",\"typeok\":" << typeOk << ",\"self\":" << self << ",\"usable\":" << usable
+		<< ",\"charged\":" << charged << ",\"afford\":" << affordable << ",\"urgent\":" << (urgent ? 1 : 0) << ",\"chance\":" << chance
+		<< ",\"chance_en\":" << chanceEnergy << ",\"used\":" << used << ",\"why\":\"" << why << "\",\"hp1\":" << unit->getHealth()
+		<< ",\"stun1\":" << unit->getStunlevel() << ",\"fatal1\":" << unit->getFatalWounds() << ",\"tu1\":" << unit->getTimeUnits() << "}";
+	medikitSnap.unit = -1;
 }
 
 #endif

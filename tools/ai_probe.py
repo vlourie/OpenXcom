@@ -35,6 +35,8 @@ TAGS = ("[AISTATE]", "[AIDECIDE]", "[AIPROBE]", "[AIRESULT]", "[AICASUALTY]", "[
         "[AITURNFX]",
         # зонд ESCAPE_ALT (OXCE_AI_ESCAPE_ALT_PROBE, build-ai68): достижимые клетки рядом с выбранной клеткой побега
         "[AIESCALT]",
+        # зонд WOUNDED_COMBAT_DECISION_V1 (OXCE_AI_MEDIPROBE, build-ai70): проверка аптечки в начале хода
+        "[AIMEDI]",
         # итоги приборов стенда после [AIRESULT] (свет, отход, FOV на шаге) - архив <метка>.result.txt серии ai_arena.py
         "[AILIGHT]", "[AIESCRF]", "[AIWALKFOV]", "[AIWALKFOVSKIP]", "[AIAMBMEMO]")
 
