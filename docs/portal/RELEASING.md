@@ -55,6 +55,14 @@ xp-release publish --repo D:\xp-repo --channel launcher-stable --id launcher-0.2
 Версию поднять в `src\Xp.Launcher\Xp.Launcher.csproj` (`<Version>`): лаунчер сравнивает её
 со своей. `publish.ps1` сам находит vswhere и MSVC — без них NativeAOT не линкуется (грабли R-002).
 
+Перед публикацией в `launcher-stable` прогнать готовую выпускную сборку:
+`py -3.13 tools/launcher_smoke.py --rel dist\_launcher_rel --dir D:\xp-smoke-launcher`. Проверяет три
+вещи: обновление работает (`--headless check/update/check/self-update` против `xp-release serve`
+в пустую папку), лаунчер открывается, игра запускается по кнопке «Играть» и жива через 90 с.
+Всё невидимо, на отдельном рабочем столе (R-124). `settings.json` лаунчера возвращается
+побайтно, ссылка `xpiratez://` убирается, если её не было. Итог — `ALL PASS`. Папку `--dir`
+(около 4 ГБ) удалить руками после просмотра.
+
 ## Локальная проверка без сервера
 
 ```powershell
