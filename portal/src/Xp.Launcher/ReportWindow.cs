@@ -379,8 +379,12 @@ public sealed class ReportWindow : Window
         Content = root;
     }
 
+    /// <summary>Tests catch the address here instead of a browser opening on the screen.</summary>
+    public static Action<string>? OpenUrlOverride;
+
     public static void OpenUrl(string url)
     {
+        if (OpenUrlOverride is { } open) { open(url); return; }
         try { Process.Start(new ProcessStartInfo(url) { UseShellExecute = true })?.Dispose(); }
         catch (Exception e) when (e is System.ComponentModel.Win32Exception or InvalidOperationException) { }
     }

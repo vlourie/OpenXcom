@@ -29,23 +29,31 @@ public sealed class AccountPanel : StackPanel
     /// <summary>Shown anew: linked, unlinked, or the link was taken away on the site.</summary>
     public event Action? Changed;
 
+    public bool Linked => _account is not null;
+
+    /// <summary>The code the site is waiting to see confirmed, or empty.</summary>
+    public string PendingCode => _pendingCode;
+
+    /// <summary>The last refusal or failure, shown until the next attempt; null when all is well.</summary>
+    public string? Error { get; private set; }
+
     public AccountPanel(Settings settings)
     {
         _settings = settings;
         _store = new DeviceStore(Path.Combine(Settings.Dir, "device.json"));
         Spacing = 10;
 
-        _link = Skin.Btn(L.T("account.link"));
+        _link = Skin.Btn(L.T("account.link"), "primary");
         _link.HorizontalAlignment = HorizontalAlignment.Stretch;
         _link.Click += async (_, _) => await StartAsync();
         _open = Skin.Btn(L.T("account.open"), "primary");
         _open.HorizontalAlignment = HorizontalAlignment.Stretch;
         _open.IsVisible = false;
-        _open.Click += (_, _) => ReportWindow.OpenUrl(SiteUrl());
+        _open.Click += (_, _) => OpenSite();
         _cancel = Skin.Btn(L.T("account.cancel"), "ghost");
         _cancel.HorizontalAlignment = HorizontalAlignment.Stretch;
         _cancel.IsVisible = false;
-        _cancel.Click += (_, _) => { _waiting?.Cancel(); Show(); };
+        _cancel.Click += (_, _) => CancelLink();
         _unlink = Skin.Btn(L.T("account.unlink"), "warn");
         _unlink.HorizontalAlignment = HorizontalAlignment.Stretch;
         _unlink.IsVisible = false;
@@ -103,8 +111,14 @@ public sealed class AccountPanel : StackPanel
         return _pendingCode.Length > 0 ? $"{b}/me/devices?code={Uri.EscapeDataString(_pendingCode)}" : $"{b}/me/devices";
     }
 
+    /// <summary>The site's devices page, with the pending code in it when there is one.</summary>
+    public void OpenSite() => ReportWindow.OpenUrl(SiteUrl());
+
+    public void CancelLink() { _waiting?.Cancel(); Show(); }
+
     void Show(string? error = null)
     {
+        Error = error;
         bool waiting = _pendingCode.Length > 0;
         _code.IsVisible = waiting;
         _code.Text = _pendingCode;
@@ -121,9 +135,14 @@ public sealed class AccountPanel : StackPanel
         Changed?.Invoke();
     }
 
-    /// <summary>Asks the site for a code and then waits for the person to say yes over there.</summary>
-    async Task StartAsync()
+    /// <summary>
+    /// Asks the site for a code and then waits for the person to say yes over there. Reached from
+    /// Settings and from the strip on the home page; a second press while waiting just reopens the site.
+    /// </summary>
+    public async Task StartAsync()
     {
+        if (_pendingCode.Length > 0) { OpenSite(); return; }
+        if (!_link.IsEnabled || _account is not null) return;
         if (Portal() is not { } portal) { Show(L.T("account.noPortal")); return; }
         _link.IsEnabled = false;
         try

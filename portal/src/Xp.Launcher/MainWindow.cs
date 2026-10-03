@@ -33,6 +33,13 @@ public sealed class MainWindow : Window
 
     // home
     readonly Border _notice = new() { Background = Skin.B(Skin.WarnFill), BorderBrush = Skin.B(Skin.WarnFrame), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(2), Padding = new Thickness(14, 8), IsVisible = false, Margin = new Thickness(0, 0, 0, 16) };
+    // the strip over the picture while the launcher is not linked: a running line and one button
+    readonly Border _linkStrip = new() { Background = Skin.B(Skin.Fill), BorderBrush = Skin.B(Skin.FrameInner), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(2), Padding = new Thickness(14, 6), IsVisible = false, Margin = new Thickness(0, 0, 0, 16) };
+    readonly TextBlock _linkRun = new() { FontSize = 14, FontFamily = Skin.Medium, Foreground = Skin.B(Skin.Accent), RenderTransform = new TranslateTransform() };
+    readonly Border _linkLane = new() { ClipToBounds = true, Height = 22, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 12, 0) };
+    readonly TextBlock _linkSay = new() { FontSize = 14, TextWrapping = TextWrapping.Wrap, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 12, 0) };
+    readonly DispatcherTimer _linkTimer = new() { Interval = TimeSpan.FromMilliseconds(30) };
+    bool _linkHeld;     // the pointer is over the line: it stands still to be read
     readonly TextBlock _version = new() { FontSize = 14, Foreground = Skin.B(Skin.Muted) };
     readonly Button _main = new() { Height = 64, HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Center, VerticalContentAlignment = VerticalAlignment.Center, FontFamily = Skin.Medium, FontSize = 22 };
     readonly TextBlock _mainText = new();
@@ -432,8 +439,73 @@ public sealed class MainWindow : Window
         var page = new DockPanel { Margin = new Thickness(28, 24, 28, 28) };
         DockPanel.SetDock(_notice, Dock.Top);
         page.Children.Add(_notice);
+        DockPanel.SetDock(_linkStrip, Dock.Top);
+        page.Children.Add(LinkStrip());
         page.Children.Add(body);
         return page;
+    }
+
+    /// <summary>
+    /// Voice, art verdicts and the rest work under the player's account on the site. Until the launcher
+    /// is linked, the home page says so in a running line over the picture, and its button starts the
+    /// link right here: the site opens with the code already in it, so a signed-in player only says yes.
+    /// </summary>
+    Control LinkStrip()
+    {
+        var icon = new Border { Width = 18, Height = 18, Margin = new Thickness(0, 0, 12, 0), VerticalAlignment = VerticalAlignment.Center, Child = new Avalonia.Controls.Shapes.Path { Data = Geometry.Parse(Skin.IconGlobe), Stroke = Skin.B(Skin.Accent), StrokeThickness = 2, Stretch = Stretch.Uniform } };
+        var go = Skin.Btn(L.T("link.go"), "primary", 32);
+        go.Click += async (_, _) => await _account.StartAsync();
+        var open = Skin.Btn(L.T("account.open"), "primary", 32);
+        open.Click += (_, _) => _account.OpenSite();
+        var cancel = Skin.Btn(L.T("account.cancel"), "ghost", 32);
+        cancel.Click += (_, _) => _account.CancelLink();
+        var buttons = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, VerticalAlignment = VerticalAlignment.Center };
+        buttons.Children.Add(go);
+        buttons.Children.Add(open);
+        buttons.Children.Add(cancel);
+
+        _linkRun.Text = L.T("link.strip");
+        _linkLane.Child = new Canvas { Children = { _linkRun } };
+        _linkLane.PointerEntered += (_, _) => _linkHeld = true;
+        _linkLane.PointerExited += (_, _) => _linkHeld = false;
+        _linkTimer.Tick += (_, _) => StepLinkLine();
+
+        var row = new DockPanel();
+        DockPanel.SetDock(icon, Dock.Left);
+        row.Children.Add(icon);
+        DockPanel.SetDock(buttons, Dock.Right);
+        row.Children.Add(buttons);
+        row.Children.Add(new Panel { Children = { _linkLane, _linkSay } });
+        _linkStrip.Child = row;
+
+        void Update()
+        {
+            bool waiting = _account.PendingCode.Length > 0;
+            _linkStrip.IsVisible = !_account.Linked;
+            go.IsVisible = !waiting;
+            open.IsVisible = cancel.IsVisible = waiting;
+            // waiting or refused: words that must be read whole stand still; otherwise the line runs
+            string? say = waiting ? L.T("link.waiting", _account.PendingCode) : _account.Error;
+            _linkSay.Text = say ?? "";
+            _linkSay.Foreground = Skin.B(!waiting && say is not null ? Skin.WarnText : Skin.Text);
+            _linkSay.IsVisible = say is not null;
+            _linkLane.IsVisible = say is null;
+            _linkTimer.IsEnabled = _linkStrip.IsVisible && say is null;
+        }
+        _account.Changed += Update;
+        Update();
+        return _linkStrip;
+    }
+
+    void StepLinkLine()
+    {
+        // nothing to move while the window is in the tray or another page is open
+        if (_linkHeld || !_linkLane.IsEffectivelyVisible || _linkRun.RenderTransform is not TranslateTransform move) return;
+        double lane = _linkLane.Bounds.Width, text = _linkRun.Bounds.Width;
+        if (lane <= 0 || text <= 0) return;
+        move.Y = (_linkLane.Bounds.Height - _linkRun.Bounds.Height) / 2;
+        move.X -= 1.5;
+        if (move.X < -text) move.X = lane;
     }
 
     static Avalonia.Media.Imaging.Bitmap? HeroArt()
@@ -554,13 +626,14 @@ public sealed class MainWindow : Window
 
         var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("*,14,*"), RowDefinitions = new RowDefinitions("Auto,14,Auto,14,Auto") };
         void Put(Control c, int row, int col) { Grid.SetRow(c, row); Grid.SetColumn(c, col); grid.Children.Add(c); }
-        Put(Skin.Panel(game), 0, 0);
-        Put(Skin.Panel(updates), 0, 2);
-        Put(Skin.Panel(broken), 2, 0);
-        Put(Skin.Panel(log), 2, 2);
+        // the account first: the strip on the home page sends the player here, and it has to be in sight on arrival
         var account = Skin.Panel(_account);
         Grid.SetColumnSpan(account, 3);
-        Put(account, 4, 0);
+        Put(account, 0, 0);
+        Put(Skin.Panel(game), 2, 0);
+        Put(Skin.Panel(updates), 2, 2);
+        Put(Skin.Panel(broken), 4, 0);
+        Put(Skin.Panel(log), 4, 2);
 
         var page = new StackPanel { Spacing = 14, Margin = new Thickness(28, 24, 28, 28) };
         page.Children.Add(Skin.H1(L.T("nav.settings")));
