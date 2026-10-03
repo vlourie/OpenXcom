@@ -14,6 +14,8 @@ static class Program
     internal static TimeSpan ConfirmWait { get; set; } = TimeSpan.FromSeconds(30);
     /// <summary>Tests only: stands in for starting the launcher (the job, whether it is the updated one).</summary>
     internal static Func<Job, bool, Process?>? StartOverride { get; set; }
+    /// <summary>After a confirmed update: shortcuts and the shell (Installer.AfterUpdate); tests stub it.</summary>
+    internal static Action<string, Action<string>> AfterUpdate { get; set; } = Installer.AfterUpdate;
     static StreamWriter? _log;
 
     static int Main(string[] args)
@@ -110,6 +112,7 @@ static class Program
         TryDelete(backup);
         TryDelete(job.Source);
         Log("update done");
+        AfterUpdate(SafePath.Resolve(job.Target, job.Exe), Log);
         return 0;
     }
 

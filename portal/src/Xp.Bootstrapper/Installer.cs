@@ -169,14 +169,65 @@ static class Installer
         log("install: libsodium from " + path);
     }
 
+    static string[] ShortcutDirs => [
+        Environment.GetFolderPath(Environment.SpecialFolder.DesktopDirectory),
+        Environment.GetFolderPath(Environment.SpecialFolder.Programs)];
+
+    /// <summary>Set once shortcuts were made, so an update does not bring back one the player deleted.</summary>
+    static string ShortcutsMarker => Path.Combine(LogDir, "shortcuts.made");
+
     static void MakeShortcuts(string exe, Action<string> log)
     {
-        foreach (var folder in new[] { Environment.SpecialFolder.DesktopDirectory, Environment.SpecialFolder.Programs })
+        foreach (var dir in ShortcutDirs)
         {
-            var lnk = Path.Combine(Environment.GetFolderPath(folder), ProductName + ".lnk");
-            try { Shortcut(lnk, exe); log("install: shortcut " + lnk); }
+            var lnk = Path.Combine(dir, ProductName + ".lnk");
+            try { Shortcut(lnk, exe); Notify(ShcneCreate, lnk); log("install: shortcut " + lnk); }
             catch (Exception e) { log($"install: shortcut {lnk} failed: {e.GetType().Name} 0x{e.HResult:X8}"); }   // not worth failing the install
         }
+        Notify(ShcneAssocChanged, null);
+        TryMark(ShortcutsMarker, log);
+    }
+
+    /// <summary>
+    /// After a confirmed self-update. A launcher unpacked from a zip never ran the setup and has no
+    /// shortcuts: they are made once (a missing one only - a shortcut of the same name the player keeps
+    /// is not replaced). Then the shell is told: without SHChangeNotify the desktop shows a new shortcut,
+    /// or the new icon of an old one, only after a manual refresh (report of kondrak001, 02.10).
+    /// </summary>
+    public static void AfterUpdate(string exe, Action<string> log) => AfterUpdate(exe, ShortcutDirs, ShortcutsMarker, log);
+
+    internal static void AfterUpdate(string exe, IEnumerable<string> dirs, string marker, Action<string> log)
+    {
+        var first = !File.Exists(marker);
+        foreach (var dir in dirs)
+        {
+            var lnk = Path.Combine(dir, ProductName + ".lnk");
+            try
+            {
+                if (File.Exists(lnk)) Notify(ShcneUpdateItem, lnk);
+                else if (first && Directory.Exists(dir)) { Shortcut(lnk, exe); Notify(ShcneCreate, lnk); log("update: shortcut " + lnk); }
+            }
+            catch (Exception e) { log($"update: shortcut {lnk} failed: {e.GetType().Name} 0x{e.HResult:X8}"); }   // the update itself is done
+        }
+        Notify(ShcneAssocChanged, null);   // drops the cached icon of the old exe
+        if (first) TryMark(marker, log);
+    }
+
+    static void TryMark(string marker, Action<string> log)
+    {
+        try { Directory.CreateDirectory(Path.GetDirectoryName(marker)!); File.WriteAllText(marker, DateTime.Now.ToString("s")); }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { log("shortcuts marker: " + e.Message); }
+    }
+
+    const uint ShcneCreate = 0x2, ShcneUpdateItem = 0x2000, ShcneAssocChanged = 0x08000000;
+    const uint ShcnfIdList = 0x0, ShcnfPathW = 0x5, ShcnfFlush = 0x1000;
+
+    static void Notify(uint e, string? path)
+    {
+        if (path is null) { SHChangeNotify(e, ShcnfIdList | ShcnfFlush, IntPtr.Zero, IntPtr.Zero); return; }
+        var p = Marshal.StringToHGlobalUni(path);
+        try { SHChangeNotify(e, ShcnfPathW | ShcnfFlush, p, IntPtr.Zero); }
+        finally { Marshal.FreeHGlobal(p); }
     }
 
     static void Shortcut(string lnk, string exe)
@@ -202,6 +253,7 @@ static class Installer
 
     [DllImport("kernel32.dll")] static extern bool AllocConsole();
     [DllImport("kernel32.dll")] static extern ushort GetUserDefaultUILanguage();
+    [DllImport("shell32.dll")] static extern void SHChangeNotify(uint eventId, uint flags, IntPtr item1, IntPtr item2);
     [DllImport("ole32.dll")] static extern int CoInitializeEx(IntPtr reserved, uint coInit);
     [DllImport("ole32.dll")] static extern int CoCreateInstance(ref Guid clsid, IntPtr outer, uint ctx, ref Guid iid, out IntPtr obj);
 }

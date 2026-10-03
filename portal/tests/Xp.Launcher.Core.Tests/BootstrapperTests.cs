@@ -15,9 +15,11 @@ public sealed class BootstrapperTests : IDisposable
     string Target => Path.Combine(_root, "launcher");
     string Source => Path.Combine(_root, "update");
     readonly List<bool> _starts = [];
+    readonly List<string> _afterUpdate = [];
 
     public BootstrapperTests()
     {
+        Boot.AfterUpdate = (exe, _) => _afterUpdate.Add(exe);   // never the real desktop
         Write(Target, "xp-launcher.exe", "old exe");
         Write(Target, "lib/core.dll", "old core");
         Write(Target, "keep.txt", "not part of the update");
@@ -29,6 +31,7 @@ public sealed class BootstrapperTests : IDisposable
     public void Dispose()
     {
         Boot.StartOverride = null;
+        Boot.AfterUpdate = Xp.Bootstrapper.Installer.AfterUpdate;
         Boot.ConfirmWait = TimeSpan.FromSeconds(30);
         try { Directory.Delete(_root, true); } catch (IOException) { }
     }
@@ -64,6 +67,7 @@ public sealed class BootstrapperTests : IDisposable
         Assert.Equal("new file", Read("lib/added.dll"));
         Assert.Equal("not part of the update", Read("keep.txt"));
         Assert.Equal([true], _starts);
+        Assert.Equal([Path.Combine(Target, "xp-launcher.exe")], _afterUpdate);   // shortcuts for the new exe
         Assert.Empty(Directory.GetDirectories(Target, ".old-*"));
         Assert.False(File.Exists(Path.Combine(Target, ".update-ok")));
         Assert.False(Directory.Exists(Source));
@@ -80,6 +84,7 @@ public sealed class BootstrapperTests : IDisposable
         Assert.False(File.Exists(Path.Combine(Target, "lib/added.dll")));   // new in this update: gone again
         Assert.Equal("not part of the update", Read("keep.txt"));
         Assert.Equal([true, false], _starts);
+        Assert.Empty(_afterUpdate);   // rolled back: shortcuts untouched
         Assert.Empty(Directory.GetDirectories(Target, ".old-*"));
         Assert.True(Directory.Exists(Source));   // the prepared files stay for the next attempt
     }
