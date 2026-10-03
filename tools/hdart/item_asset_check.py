@@ -8,6 +8,11 @@
   <кадр>.<ТИП>.hand.png  - рамка руки 32x48: допуск - клетки предмета после штатного сдвига руки
                            ((2-w)*8, (3-h)*8) внутри линий рамки [1, 31) x [1, 47); всю рамку получают
                            только 3x2 и 3x3 - они больше рамки
+  <кадр>.<ТИП>.wide.png  - сетка с допуском рамки (M-01, автомат, решение Vitali 03.10): ассет, нарисованный
+                           за свои клетки, как его классика (магазин АК во втором столбце). Допуск - весь
+                           свой кадр [0, W) x [0, H), как классика в сетке, у предмета до 2x3 ещё и
+                           внутренность рамки руки после сдвига [1, 31) x [1, 47): в руке тот же файл. Метка -
+                           явно, ассету по одному; без неё правило прежнее
   <кадр>.png, <кадр>.hand.png - общий файл кадра: проверяется против КАЖДОГО предмета этого кадра
 Без .hand предмет до 2x3 показывается в руке своей картинкой со штатным сдвигом: допуск тот же, поэтому
 чистая сетка - чистая и в руке; у 3x2 и 3x3 без .hand в руке классика.
@@ -26,7 +31,7 @@ from PIL import Image
 ROOT = Path(__file__).resolve().parents[2]
 ENC_R, ENC_W = "utf-8-sig", "utf-8-sig"
 HAND_W, HAND_H = 32, 48
-NAME = re.compile(r"^(\d+)(?:\.(.+?))?(\.hand)?\.png$", re.I)
+NAME = re.compile(r"^(\d+)(?:\.(.+?))?(\.wide)?(\.hand)?\.png$", re.I)
 
 
 def read_tsv(path):
@@ -46,6 +51,17 @@ def hand_rect(w, h):
     return max(1, dx), max(1, dy), min(HAND_W - 1, dx + 16 * w), min(HAND_H - 1, dy + 16 * h)
 
 
+def wide_rect(w, h, frame_size):
+    """Допуск .wide, как HdItems::pick: весь свой кадр (как классика в сетке); до 2x3 - и внутренность рамки руки
+    после сдвига (в руке тот же файл)."""
+    x0, y0, (x1, y1) = 0, 0, frame_size
+    if w <= 2 and h <= 3:
+        dx, dy = (2 - w) * 8, (3 - h) * 8
+        x0, y0 = max(x0, 1 - dx), max(y0, 1 - dy)
+        x1, y1 = min(x1, HAND_W - 1 - dx), min(y1, HAND_H - 1 - dy)
+    return x0, y0, x1, y1
+
+
 def outside(alpha, rect, k):
     """Непрозрачные пиксели картинки вне прямоугольника базы rect (x0, y0, x1, y1), увеличенного в k раз."""
     x0, y0, x1, y1 = (v * k for v in rect)
@@ -57,7 +73,7 @@ def outside(alpha, rect, k):
 def check_file(path, users, frame_size):
     """Строки отчёта по одному файлу. users - [(тип, w, h)] предметов, против которых он проверяется."""
     m = NAME.match(path.name)
-    hand = bool(m.group(3))
+    wide, hand = bool(m.group(3)), bool(m.group(4))
     img = Image.open(path)
     if img.mode != "RGBA":
         img = img.convert("RGBA")
@@ -67,18 +83,25 @@ def check_file(path, users, frame_size):
     rows = []
     k = iw // bw if bw else 0
     scale_ok = bw > 0 and iw % bw == 0 and ih % bh == 0 and iw // bw == ih // bh and k >= 1
+    if wide and hand:
+        return [dict(file=path.name, item="-", variant="hand", cells="-", k=k, outside="-", verdict="FAIL",
+                     note=".wide бывает только у картинки сетки")]
     if not users:
         return [dict(file=path.name, item="-", variant="hand" if hand else "grid", cells="-", k=k,
                      outside="-", verdict="FAIL", note="нет предмета с этим кадром и типом")]
     for typ, w, h in users:
-        row = dict(file=path.name, item=typ, variant="hand" if hand else "grid", cells=f"{w}x{h}", k=k)
+        row = dict(file=path.name, item=typ, variant="hand" if hand else "wide" if wide else "grid",
+                   cells=f"{w}x{h}", k=k)
         if not scale_ok:
             row.update(outside="-", verdict="FAIL", note=f"{iw}x{ih} не кратно кадру {bw}x{bh}")
         else:
-            rect = hand_rect(w, h) if hand else grid_rect(w, h)
+            rect = hand_rect(w, h) if hand else wide_rect(w, h, frame_size) if wide else grid_rect(w, h)
             n = outside(alpha, rect, k)
             note = ""
-            if not hand:
+            if wide:
+                note = "за клетки до рамки кадра; в руке - со штатным сдвигом" if w <= 2 and h <= 3 \
+                    else "в руке без .hand - классика"
+            elif not hand:
                 note = "в руке - со штатным сдвигом" if w <= 2 and h <= 3 else "в руке без .hand - классика"
             row.update(outside=n, verdict="PASS" if n == 0 else "FAIL", note=note)
         rows.append(row)
