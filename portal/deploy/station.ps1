@@ -2,7 +2,8 @@
 # Порты 80 и 443 не трогает: сайт открывается по https://<адрес машины>:<HTTPS_PORT>.
 #
 #   .\station.ps1            первый запуск: .env и portal.env с секретами, сборка, старт, проверка
-#   .\station.ps1 up         то же самое (повторно - пересобрать и перезапустить)
+#   .\station.ps1 up         то же самое (повторно - пересобрать и перезапустить); сначала копия базы
+#   .\station.ps1 backup     копия базы в deploy\backups\xp_portal_<время>.dump (pg_dump, формат custom)
 #   .\station.ps1 status     контейнеры и ответ /ready
 #   .\station.ps1 content    разделы модов и вики из файлов seed\ и wiki\ (up делает это сам)
 #   .\station.ps1 logs       журнал сайта (Ctrl+C - выйти)
@@ -238,6 +239,34 @@ function Test-Ready {
     $answer -eq 'Healthy'
 }
 
+# Копия базы (pg_dump, формат custom) в deploy\backups. up снимает её сам до сборки: миграции применяет
+# контейнер migrate, и откатить их можно только из копии. Пока база не запущена (первый up), снимать нечего.
+function Backup-Db([switch] $IfRunning) {
+    # при Stop PowerShell 5.1 превращает stderr программы (2>$null) в исключение раньше проверки ниже;
+    # коды возврата проверяем сами, Invoke-Compose - тоже
+    $ErrorActionPreference = 'Continue'
+    $compose = Get-Compose
+    $running = @(& docker @compose ps --status running --services 2>$null)
+    if ($running -notcontains 'db') {
+        if ($IfRunning) { Say 'база ещё не запущена - копию снимать не с чего'; return }
+        Fail 'база не запущена: .\station.ps1 status'
+    }
+    New-Item -ItemType Directory -Force -Path 'backups' | Out-Null
+    $name = 'backups\xp_portal_{0}.dump' -f (Get-Date -Format 'yyyy-MM-dd_HHmmss')
+    Say "копия базы -> $(Join-Path $PSScriptRoot $name)"
+    # в файл внутри контейнера и оттуда docker compose cp: двоичный поток через конвейер PowerShell 5.1 портится
+    Invoke-Compose exec -T db pg_dump -U xp -d xp_portal -Fc -f /tmp/xp_portal.dump
+    # оглавление копии: читается - копия цела; у пустой базы объектов 0, но заголовок есть
+    $list = @(& docker @compose exec -T db pg_restore -l /tmp/xp_portal.dump 2>$null)
+    if ($LASTEXITCODE -ne 0 -or -not ($list -match '^;\s+Format: CUSTOM')) { Fail 'pg_restore не читает снятую копию базы - дальше не иду' }
+    $toc = @($list -match '^\d+;')
+    Invoke-Compose cp db:/tmp/xp_portal.dump $name
+    Invoke-Compose exec -T db rm -f /tmp/xp_portal.dump
+    $size = if (Test-Path -LiteralPath $name) { (Get-Item -LiteralPath $name).Length } else { 0 }
+    if ($size -le 0) { Fail "копия базы не легла на диск: $name" }
+    Write-Host ("копия базы: {0}  ({1:N1} МБ, {2} объектов)" -f (Join-Path $PSScriptRoot $name), ($size / 1MB), $toc.Count) -ForegroundColor Green
+}
+
 # ---- проба голоса ----
 
 function ConvertTo-B64Url([byte[]] $b) { [Convert]::ToBase64String($b).TrimEnd('=').Replace('+', '-').Replace('/', '_') }
@@ -347,6 +376,7 @@ switch ($Command) {
         Assert-Docker
         Initialize-Config
         $url = Get-Url
+        Backup-Db -IfRunning
         Say "сборка и запуск (первый раз - несколько минут: образы .NET SDK, PostgreSQL, ClamAV)"
         Invoke-Compose up -d --build
         $internet = (Read-DotEnv '.env')['STATION_MODE'] -eq 'internet'
@@ -381,6 +411,10 @@ switch ($Command) {
     'content' {
         Assert-Docker
         Update-Content -Build
+    }
+    'backup' {
+        Assert-Docker
+        Backup-Db
     }
     'logs' {
         # в режиме internet видно и выдачу сертификата (caddy), и обновление адреса (ddns)
@@ -628,5 +662,5 @@ switch ($Command) {
         Write-Host "Лаунчеры берут обновления с $url/releases/"
     }
     'down' { Invoke-Compose down }
-    default { Fail "неизвестная команда '$Command'. Есть: up, status, content, logs, admin, reset-2fa, mail, smtp, mail-test, livekit, voice-testers, voice-test, root-cert, internet, lan, releases, voice, voice-check, voice-token, voice-off, down" }
+    default { Fail "неизвестная команда '$Command'. Есть: up, backup, status, content, logs, admin, reset-2fa, mail, smtp, mail-test, livekit, voice-testers, voice-test, root-cert, internet, lan, releases, voice, voice-check, voice-token, voice-off, down" }
 }

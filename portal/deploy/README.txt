@@ -28,7 +28,12 @@
   .\station.ps1 mail-test you@example.com. Пока SMTP не задан, письма видны в .\station.ps1 mail
 
 Схема базы МЕНЯЕТСЯ: новая миграция Voice (друзья, комнаты, приглашения, журнал голоса).
-Её применяет само обновление; тикеты, пользователи и вложения на месте.
+Её применяет само обновление; тикеты, пользователи и вложения на месте. Откатить миграцию можно
+только из копии базы: на станции её снимает сам up (portal\deploy\backups), на Linux-сервере -
+руками до update.sh:
+
+       docker compose exec -T db pg_dump -U xp -d xp_portal -Fc -f /tmp/xp_portal.dump
+       docker compose cp db:/tmp/xp_portal.dump ./xp_portal.dump
 
 
 ОБНОВЛЕНИЕ СЕРВЕРА (Linux, docker compose)
@@ -64,6 +69,8 @@
        powershell -ExecutionPolicy Bypass -File .\station.ps1
 
 Команда up делает всё то же самое: сборка, схема, каталог, вики, проверка. Обновление - это она.
+Если база уже запущена, up сначала снимает её копию в portal\deploy\backups\xp_portal_<время>.dump
+и не идёт дальше, если копия не читается. Снять копию отдельно: .\station.ps1 backup
 
 Команда .\station.ps1 content перезагружает только каталог и вики (образ при этом сверяется с
 исходниками: старый образ не знает слова seed и вместо загрузки молча поднял бы веб-сервер).
