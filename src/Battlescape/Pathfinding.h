@@ -100,6 +100,14 @@ private:
 	/// PATROL_NO_PATH_CAUSE (bench, passive): would calculate(unit, to, BAM_NORMAL) find a path with those units not blocking?
 	/// 1 a path, 0 none, -1 refused before searching; expanded gets the nodes its A* closed.
 	int probeReach(BattleUnit *unit, Position to, int ignore, int &expanded);
+	/// STALE_REACH_SHADOW (bench, passive): does a path for calculate(unit, to, BAM_NORMAL) exist - asked by a search of its own
+	/// that touches none of calculate's state. 1 found (cost gets it), 0 none (the reachable part exhausted, the cap dropped
+	/// nothing left unreached), 2 undecided (exhausted, the cap dropped a tile never reached), 3 not asked (the unit stands on
+	/// the destination), -1 refused before searching.
+	int witnessReach(BattleUnit *unit, Position to, int weight, int &expanded, int &cost);
+	/// EXACT_STALE_REACH_V1 (bench): leave the state calculate(unit, ..., BAM_NORMAL) and abortPath() would, when witnessReach
+	/// answered in their place.
+	void settleWitness(BattleUnit *unit);
 	/// Where calculate(unit, endPosition, bam) would search to, or none if it refuses before searching (AMBUSH_NEGATIVE_MEMO_V2).
 	std::optional<Position> finalPositionFor(BattleUnit *unit, Position endPosition, BattleActionMove bam);
 	/// Determines whether the unit is going up a stairs.
