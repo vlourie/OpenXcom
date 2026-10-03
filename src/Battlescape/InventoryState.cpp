@@ -62,6 +62,7 @@
 #include "../Mod/RuleInterface.h"
 #include "../Ufopaedia/Ufopaedia.h"
 #include "AiProbe.h"
+#include "../Engine/HdItems.h"
 
 namespace OpenXcom
 {
@@ -1285,6 +1286,7 @@ void InventoryState::btnUnloadClick(Action *)
 		_txtItem->setText("");
 		_txtAmmo->setText("");
 		_selAmmo->clear();
+		HdItems::detach(_selAmmo);
 		updateStats();
 		_game->getMod()->getSoundByDepth(0, Mod::ITEM_DROP)->play();
 	}
@@ -2052,6 +2054,7 @@ void InventoryState::invMouseOver(Action *)
 		}
 
 		_selAmmo->clear();
+		HdItems::detach(_selAmmo);
 		bool hasSelfAmmo = item->getRules()->getBattleType() != BT_AMMO && item->getRules()->getClipSize() > 0;
 		if ((item->isWeaponWithAmmo() || hasSelfAmmo) && item->haveAnyAmmo())
 		{
@@ -2082,6 +2085,7 @@ void InventoryState::invMouseOver(Action *)
 		}
 		_txtAmmo->setText("");
 		_selAmmo->clear();
+		HdItems::detach(_selAmmo);
 		updateTemplateButtons(!_tu);
 	}
 }
@@ -2095,6 +2099,7 @@ void InventoryState::invMouseOut(Action *)
 	_txtItem->setText("");
 	_txtAmmo->setText("");
 	_selAmmo->clear();
+	HdItems::detach(_selAmmo);
 	_inv->setMouseOverItem(0);
 	_mouseHoverItem = nullptr;
 	_currentDamageTooltipItem = nullptr;
@@ -2385,11 +2390,15 @@ void InventoryState::think()
 			r.w -= 2;
 			r.h -= 2;
 			_selAmmo->drawRect(&r, Palette::blockOffset(0)+15);
-			firstAmmo->getRules()->drawHandSprite(_game->getMod()->getSurfaceSet("BIGOBS.PCK"), _selAmmo, firstAmmo, _game->getSavedGame()->getSavedBattle(), anim);
+			if (!HdItems::attachHand(firstAmmo->getRules(), firstAmmo, _game->getSavedGame()->getSavedBattle(), anim, _game->getMod()->getSurfaceSet("BIGOBS.PCK"), _selAmmo))
+			{
+				firstAmmo->getRules()->drawHandSprite(_game->getMod()->getSurfaceSet("BIGOBS.PCK"), _selAmmo, firstAmmo, _game->getSavedGame()->getSavedBattle(), anim);
+			}
 		}
 		else
 		{
 			_selAmmo->clear();
+			HdItems::detach(_selAmmo);
 		}
 	}
 	State::think();
