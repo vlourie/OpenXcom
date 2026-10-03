@@ -31,6 +31,8 @@ WORK = Path(tempfile.gettempdir()) / "oxce_ai_probe"
 # запись решений по OXCE_AI_RECORD ([AIREC], списки ходов [AICAND]) - план V2, шаг 2
 TAGS = ("[AISTATE]", "[AIDECIDE]", "[AIPROBE]", "[AIRESULT]", "[AICASUALTY]", "[AIMELEE]", "[AIPATH]", "[AIRECHEAD]", "[AIREC]",
         "[AIEXEC]", "[AIAFTER]", "[AITRACE]", "[AICAND]", "[AIPATROL]", "[AIPF]",
+        # зонд ESCAPE_DEATH_ATTRIBUTION (OXCE_AI_ATTRIB_PROBE, build-ai64): что сделала смена хода с юнитом, по стадиям
+        "[AITURNFX]",
         # итоги приборов стенда после [AIRESULT] (свет, отход, FOV на шаге) - архив <метка>.result.txt серии ai_arena.py
         "[AILIGHT]", "[AIESCRF]", "[AIWALKFOV]", "[AIWALKFOVSKIP]", "[AIAMBMEMO]")
 
