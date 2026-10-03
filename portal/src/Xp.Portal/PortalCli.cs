@@ -71,6 +71,10 @@ public static class PortalCli
         if (!o.Enabled) throw new ArgumentException("LiveKit__Url, LiveKit__ApiUrl, LiveKit__ApiKey and LiveKit__ApiSecret are all needed");
         if (!o.Url.StartsWith("wss://", StringComparison.Ordinal))
             Console.WriteLine("warning: the launcher gets a signalling address that is not wss:// - fine for a test, not for players");
+        var site = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<PortalOptions>>().Value.PublicUrl;
+        Console.WriteLine(o.IsProbeFor(site)
+            ? $"PROBE: the media server is on the site's own host - passes only for {o.Testers.Length} tester(s) (LiveKit__Testers__N), not for players"
+            : "production: passes for everyone the site lets into a room");
         try
         {
             var rooms = await sp.GetRequiredService<IVoiceServer>().RoomsAsync(CancellationToken.None);

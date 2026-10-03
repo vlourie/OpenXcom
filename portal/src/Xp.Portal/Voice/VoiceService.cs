@@ -42,7 +42,7 @@ public sealed record PassView(string Url, string Token, string Room, string Room
 /// that the next pass does not see.
 /// </summary>
 public sealed class VoiceService(PortalDb db, TimeProvider clock, IVoiceServer server, IOptions<LiveKitOptions> options,
-    LiveKitTokens tokens, TicketService tickets, Text text, ILogger<VoiceService> log)
+    IOptions<PortalOptions> portal, LiveKitTokens tokens, TicketService tickets, Text text, ILogger<VoiceService> log)
 {
     readonly List<VoiceJob> _fresh = [];
 
@@ -552,6 +552,13 @@ public sealed class VoiceService(PortalDb db, TimeProvider clock, IVoiceServer s
         if (access == RoomAccess.NoAccess) throw NoAccess();
         if (access != RoomAccess.Ok) throw Fail(StateCode(access), 403);
         if (!server.Enabled) throw Fail("voice_unavailable", 503);
+        var o = options.Value;
+        // the station's probe is for the closed acceptance: it must never become the players' voice server
+        if (o.IsProbeFor(portal.Value.PublicUrl) && !await TesterAsync(me, o, ct))
+        {
+            log.LogInformation("voice pass for {User}: the media server is the station's probe, and only testers get passes", me);
+            throw Fail("voice_unavailable", 503);
+        }
         var identity = me.ToString();
         try
         {
@@ -569,8 +576,14 @@ public sealed class VoiceService(PortalDb db, TimeProvider clock, IVoiceServer s
         await db.RoomInvites.Where(i => i.RoomId == room.Id && i.UserId == me && i.Status == RoomInviteStatus.Declined)
             .ExecuteUpdateAsync(s => s.SetProperty(i => i.Status, RoomInviteStatus.Active).SetProperty(i => i.UpdatedAt, clock.GetUtcNow()), ct);
         var name = (await PersonAsync(me, ct)).Name;
-        var o = options.Value;
         return new PassView(o.Url, tokens.Pass(room.Id, me, name, canPublish), room.PublicId, room.Id.ToString(), identity, name, canPublish, o.PassSeconds);
+    }
+
+    async Task<bool> TesterAsync(Guid me, LiveKitOptions o, CancellationToken ct)
+    {
+        if (o.Testers.Length == 0) return false;
+        var email = await db.Users.Where(u => u.Id == me).Select(u => u.Email).FirstOrDefaultAsync(ct);
+        return email is not null && o.Testers.Any(t => string.Equals(t.Trim(), email, StringComparison.OrdinalIgnoreCase));
     }
 
     /// <summary>Who is in the room right now. Only for those who may be in it themselves.</summary>

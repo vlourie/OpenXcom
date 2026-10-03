@@ -13,7 +13,10 @@
 #                            пароль спрашивает скрыто и пишет только в portal.env этой машины
 #   .\station.ps1 mail-test you@example.com    одно пробное письмо через SMTP; сбой - с причиной
 #   .\station.ps1 livekit    боевой медиасервер голоса (deploy\voice-server): адрес и ключ, секрет
-#                            спрашивает скрыто, пишет в portal.env и проверяет связь
+#                            спрашивает скрыто, пишет в portal.env и проверяет связь. Адрес самой
+#                            станции не примет: это проба, она - только для тестеров
+#   .\station.ps1 voice-testers a@example.com,b@example.com   закрытая приёмка голоса на пробе
+#                            станции (voice): пропуска в лаунчере только этим адресам, игрокам - нет
 #   .\station.ps1 voice-test     проверить связь сайта с медиасервером ещё раз
 #   .\station.ps1 root-cert  выгрузить корневой сертификат Caddy (для лаунчера и чтобы браузер не ругался)
 #   .\station.ps1 internet [имя]  доступ из интернета: Let's Encrypt через Dynu на том же порту,
@@ -447,6 +450,13 @@ switch ($Command) {
         $a = Read-Host "адрес медиасервера, wss://имя [$($penv['LiveKit__Url'])]"
         $url = if ($a.Trim()) { $a.Trim().TrimEnd('/') } else { $penv['LiveKit__Url'] }
         if ($url -notmatch '^wss://[A-Za-z0-9.-]+(:\d+)?$') { Fail "нужен адрес вида wss://voice.example.org, а не '$url'" }
+        # медиасервер на адресе самой станции - это проба: сайт выдаёт её пропуска только тестерам
+        $env_ = Read-DotEnv '.env'
+        $mine = @($env_['PORTAL_HOST'], $env_['DYNU_HOSTNAME'], $env_['LAN_HOST'])
+        if (Get-Url) { $mine += ([uri](Get-Url)).Host }
+        if ($mine -contains ([uri]('https://' + $url.Substring(6))).Host) {
+            Fail "$url - адрес самой станции, то есть проба. Боевой медиасервер - отдельная машина со своим именем; для приёмки на пробе: .\station.ps1 voice-testers a@example.com,b@example.com"
+        }
         $a = Read-Host "ключ (LIVEKIT_API_KEY, его печатает setup.sh) [$($penv['LiveKit__ApiKey'])]"
         $key = if ($a.Trim()) { $a.Trim() } else { $penv['LiveKit__ApiKey'] }
         if ($key -notmatch '^[A-Za-z0-9_-]+$') { Fail "ключ '$key' - не имя ключа LiveKit" }
@@ -468,7 +478,42 @@ switch ($Command) {
         Invoke-Compose run --rm migrate voice check
     }
     'voice-test' {
-        Invoke-Compose run --rm migrate voice check
+        # из контейнера сайта: migrate живёт только в сети back и пробу (livekit:7880) не видит
+        Invoke-Compose exec -T portal dotnet Xp.Portal.dll voice check
+    }
+    'voice-testers' {
+        # Закрытая приёмка голоса на пробе станции. Сайт сам узнаёт пробу (медиасервер на его же
+        # адресе) и выдаёт пропуска только этим адресам; игрокам - 'голосовой сервер недоступен',
+        # даже если выйдет лаунчер с голосом. Боевой медиасервер - .\station.ps1 livekit
+        Assert-Docker
+        $env_ = Read-DotEnv '.env'
+        if ($env_['VOICE_PROBE'] -ne '1' -or -not $env_['LIVEKIT_API_KEY'] -or -not $env_['LIVEKIT_API_SECRET']) { Fail 'пробы голоса нет - сначала .\station.ps1 voice' }
+        if (-not (Test-Path 'portal.env')) { Fail 'нет portal.env: сначала .\station.ps1 up' }
+        $testers = @("$Email" -split '[,;\s]+' | Where-Object { $_ })
+        if (-not $testers) { Fail 'укажите адреса тестеров (их почта на сайте) через запятую: .\station.ps1 voice-testers a@example.com,b@example.com' }
+        foreach ($t in $testers) { if ($t -notmatch '^[^@\s]+@[^@\s]+\.[^@\s]+$') { Fail "'$t' - не адрес почты" } }
+        $site = [uri](Get-Url)
+        $penv = Read-DotEnv 'portal.env'
+        if ($penv['LiveKit__Url'] -and ([uri]($penv['LiveKit__Url'] -replace '^wss://', 'https://')).Host -ne $site.Host) {
+            Write-Host "Сейчас сайт выдаёт пропуска на боевой медиасервер $($penv['LiveKit__Url']); проба его заменит." -ForegroundColor Yellow
+            if ((Read-Host 'заменить? (да/нет)') -ne 'да') { Fail 'оставлено как было' }
+        }
+        # прежний список целиком долой: остаток от длинного списка остался бы тестером
+        $path = Join-Path $PSScriptRoot 'portal.env'
+        $lines = @(Get-Content -LiteralPath $path -Encoding UTF8 | Where-Object { $_ -notmatch '^\s*LiveKit__Testers__\d+\s*=' })
+        [IO.File]::WriteAllText($path, ($lines -join "`n") + "`n", $utf8)
+        # сигнализация через Caddy на порту сайта (/rtc), API комнат - внутри сети Docker
+        Set-DotEnv 'LiveKit__Url' "wss://$($site.Authority)" 'portal.env'
+        Set-DotEnv 'LiveKit__ApiUrl' 'http://livekit:7880' 'portal.env'
+        Set-DotEnv 'LiveKit__ApiKey' $env_['LIVEKIT_API_KEY'] 'portal.env'
+        Set-DotEnv 'LiveKit__ApiSecret' "'$($env_['LIVEKIT_API_SECRET'])'" 'portal.env'
+        for ($i = 0; $i -lt $testers.Count; $i++) { Set-DotEnv "LiveKit__Testers__$i" $testers[$i] 'portal.env' }
+        Say 'перезапускаю сайт с пробой голоса'
+        Invoke-Compose up -d --no-deps --force-recreate portal
+        Start-Sleep -Seconds 5
+        Say 'проверка связи с медиасервером (строка PROBE и число тестеров)'
+        Invoke-Compose exec -T portal dotnet Xp.Portal.dll voice check
+        Write-Host "Пропуска в лаунчере только для: $($testers -join ', '). Тестеру нужен аккаунт сайта с этой почтой и лаунчер, привязанный к нему." -ForegroundColor Green
     }
     'root-cert' {
         # корень собственного центра Caddy: добавить в «Доверенные корневые центры» машины, с которой
@@ -583,5 +628,5 @@ switch ($Command) {
         Write-Host "Лаунчеры берут обновления с $url/releases/"
     }
     'down' { Invoke-Compose down }
-    default { Fail "неизвестная команда '$Command'. Есть: up, status, content, logs, admin, reset-2fa, mail, root-cert, internet, lan, releases, voice, voice-check, voice-token, voice-off, down" }
+    default { Fail "неизвестная команда '$Command'. Есть: up, status, content, logs, admin, reset-2fa, mail, smtp, mail-test, livekit, voice-testers, voice-test, root-cert, internet, lan, releases, voice, voice-check, voice-token, voice-off, down" }
 }

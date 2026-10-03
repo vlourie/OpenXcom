@@ -22,8 +22,18 @@ public sealed class LiveKitOptions
     public int Capacity { get; set; } = 16;
     /// <summary>Life of a pass. One minute: a pass handed out before a ban is worth nothing a minute later.</summary>
     public int PassSeconds { get; set; } = 60;
+    /// <summary>
+    /// E-mails that get a pass while the media server is the station's probe (<see cref="IsProbeFor"/>):
+    /// the closed acceptance. Everybody else hears that the voice server is unavailable.
+    /// </summary>
+    public string[] Testers { get; set; } = [];
 
     public bool Enabled => Url.Length > 0 && ApiUrl.Length > 0 && ApiKey.Length > 0 && ApiSecret.Length > 0;
+
+    /// <summary>The media server sits on the site's own host: that is the station's probe, not the production machine with its own name.</summary>
+    public bool IsProbeFor(string publicUrl) =>
+        Uri.TryCreate(Url, UriKind.Absolute, out var media) && Uri.TryCreate(publicUrl, UriKind.Absolute, out var site)
+        && string.Equals(media.Host, site.Host, StringComparison.OrdinalIgnoreCase);
 }
 
 /// <summary>

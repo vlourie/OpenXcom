@@ -570,6 +570,44 @@ public sealed partial class VoiceTests(VoiceFactory f) : IClassFixture<VoiceFact
         Assert.Equal(1, await f.DbAsync(db => db.RoomBans.CountAsync(b => b.RoomId == roomId && b.UserId == guest)));
     }
 
+    /// <summary>The service as it runs on the station with the probe for its media server: the site's own host.</summary>
+    Task<T> Probe<T>(Func<VoiceService, Task<T>> act, params string[] testers) => f.ScopedAsync(sp =>
+    {
+        var real = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<LiveKitOptions>>().Value;
+        var probe = new LiveKitOptions { Url = "wss://station.test:8443", ApiUrl = "http://livekit:7880", ApiKey = real.ApiKey, ApiSecret = real.ApiSecret, Testers = testers };
+        var site = new PortalOptions { PublicUrl = "https://station.test:8443" };
+        return act(ActivatorUtilities.CreateInstance<VoiceService>(sp,
+            Microsoft.Extensions.Options.Options.Create(probe), Microsoft.Extensions.Options.Options.Create(site)));
+    });
+
+    [Fact]
+    public async Task The_stations_probe_gives_passes_to_the_testers_only()
+    {
+        var email = $"tester-{Guid.NewGuid():N}@x.test";
+        var tester = await UserAsync("Тестер", email: email);
+        var player = await UserAsync("Игрок");
+        await FriendsAsync(tester, player);
+        var (room, _) = await RoomAsync(tester);
+        await V(v => v.InviteAsync(tester, room, player, default));
+
+        var pass = await Probe(v => v.PassAsync(tester, room, default), " " + email.ToUpperInvariant());
+        Assert.Equal("wss://station.test:8443", pass.Url);
+        var player1 = await Assert.ThrowsAsync<VoiceException>(() => Probe(v => v.PassAsync(player, room, default), email));
+        Assert.Equal(("voice_unavailable", 503), (player1.Code, player1.Status));
+        // nobody named: nobody at all
+        var none = await Assert.ThrowsAsync<VoiceException>(() => Probe(v => v.PassAsync(tester, room, default)));
+        Assert.Equal("voice_unavailable", none.Code);
+        // the room is still judged first: a stranger hears no_access, as anywhere
+        var stranger = await UserAsync("Чужой");
+        var s = await Assert.ThrowsAsync<VoiceException>(() => Probe(v => v.PassAsync(stranger, room, default), email));
+        Assert.Equal(("no_access", 404), (s.Code, s.Status));
+
+        // a media server with a name of its own is for everybody the site lets in
+        Assert.Equal("wss://voice.test", (await V(v => v.PassAsync(player, room, default))).Url);
+        Assert.True(new LiveKitOptions { Url = "wss://x-piratez.mywire.org:8443" }.IsProbeFor("https://X-Piratez.mywire.org:8443"));
+        Assert.False(new LiveKitOptions { Url = "wss://voice.x-piratez.org" }.IsProbeFor("https://x-piratez.mywire.org:8443"));
+    }
+
     [Fact]
     public async Task A_complaint_is_a_voice_ticket_that_holds_its_log_until_a_year_after_closing()
     {
