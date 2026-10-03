@@ -138,19 +138,20 @@ def read_meta(d: Path):
     return meta
 
 
-def piratez_chain():
+def piratez_chain(pz=None):
     """[(id, папка)] в порядке загрузки: xcom1, затем активные моды из options.cfg."""
     import yaml
-    cfg = yaml.safe_load((PZ / "user" / "options.cfg").read_text(encoding="utf-8"))
+    pz = pz or PZ
+    cfg = yaml.safe_load((pz / "user" / "options.cfg").read_text(encoding="utf-8"))
     active = [m["id"] for m in cfg.get("mods", []) if m.get("active")]
     dirs = {}
-    for base in (PZ / "user" / "mods", PZ / "standard"):
+    for base in (pz / "user" / "mods", pz / "standard"):
         for d in base.iterdir():
             if d.is_dir():
                 # без id в metadata.yml движок берёт имя папки (UFOextender_Psionic_Line_Of_Fire)
                 mid = read_meta(d).get("id") or d.name
                 dirs.setdefault(mid, d)
-    chain = [("xcom1", PZ / "standard" / "xcom1")]
+    chain = [("xcom1", pz / "standard" / "xcom1")]
     for mid in active:
         if mid in dirs and mid != "xcom1":
             chain.append((mid, dirs[mid]))
@@ -187,7 +188,8 @@ HD_ADULT = PZ / "user" / "mods" / "hd" / "hd_18+"
 def mod_offsets(chain):
     off, cur = {}, 0
     for mid, d in chain:
-        size = int(read_meta(d).get("reservedSpace") or 1)
+        # ModInfo::load: reservedSpace зажат в 1..100
+        size = min(max(int(read_meta(d).get("reservedSpace") or 1), 1), 100)
         off[mid] = (1000 * cur, 1000 * size)
         cur += size
     return off
