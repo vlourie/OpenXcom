@@ -45,6 +45,10 @@ for _p in (HERE, os.path.dirname(HERE)):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 ROOT = os.path.dirname(os.path.dirname(HERE))
+# --engine edit: веса только из кэша. Флаг ставится ДО импорта diffusers - он читает HF_HUB_OFFLINE один раз при
+# импорте, а huggingface_hub - при каждом запросе: поставленный позже, флаг роняет загрузку шардов (OfflineModeIsEnabled)
+if "edit" in [b for a, b in zip(sys.argv, sys.argv[1:]) if a == "--engine"]:
+    os.environ["HF_HUB_OFFLINE"] = "1"
 
 import numpy as np                      # noqa: E402
 from PIL import Image, ImageDraw        # noqa: E402
@@ -157,7 +161,10 @@ AK_PARTS = {
     "front": {"keep": (0, 0, 9999, 106), "P": (262.5, 10), "Q": (4, 0), "x_to": (140, 0)},
     "magazine": {"keep": (355, 600, 9999, 983), "P": (355, 905), "zone": (8.5, -99, 99, 28), "cap_x": 6.2,
                  "cap_r": 19.0,     # правый край - не дальше габарита оригинала (допуск размера)
-                 "pts": (((664, 677), CTRL_AK[2]), ((773, 762), CTRL_AK[3]))},    # кончик и угол торца
+                 "pts": (((664, 677), CTRL_AK[2]), ((773, 762), CTRL_AK[3])),     # кончик и угол торца
+                 # торец под оригинал (рецензия 03.10: кончик эталона v7 в 1.66 пикс базы от края): изгиб конца
+                 # магазина, середина и корень стоят (anchors - верх и низ магазина у коробки и посередине)
+                 "bend": {"sigma": 2.5, "anchors": ((7, 22), (7, 27), (11, 21.5), (11, 25.5))}},
     "grip": {"keep": (353, 1128, 9999, 1345), "P": (353, 1200), "zone": (8, 30, 99, 38), "cap_x": 6.2,
              "pts": (((580, 1322), CTRL_AK[4]),)},                                 # нижний угол торца рукояти
     "w_pts": 0.05,                  # цена пикселя базы между точкой части и контрольной точкой - в долях IoU
@@ -168,6 +175,28 @@ AK_PARTS = {
     "stock_light": 1.3,             # светотень стоек и затыльника: отклонение от средней яркости части x1.3
 }
 REFS = {"M-01": ("art/items/refs/M-01.png", REF_AK_V7, CTRL_AK, AK_PARTS)}  # art/items/refs/README.txt - откуда фото
+
+# --engine edit (решение 03.10 после v7: Qwen-2.1 сужает и вытягивает вещь при любом входе): Qwen-Image-Edit-2511 +
+# Lightning ПРАВИТ собранный эталон (ref_parts_input), одна картинка на входе (R-205), свободной генерации нет.
+# Задание - швы, свет, материалы; геометрия эталона - закон. LoRA Anime-to-Photoreal не грузится: вход уже фото.
+# Веса - только из кэша (HF_HUB_OFFLINE), снимок main сверяется с EDIT_MODEL_REV (R-145)
+EDIT_RUN = {"steps": 8, "cfg": 1.0, "mp": pr.RENDER_V1["mp"], "lora": 0.0, "lightning": "8steps-V1.0-bf16"}
+EDIT_MODEL_REV = "6f3ccc0b56e431dc6a0c2b2039706d7d26f22cb9"
+EDIT_ITEM = ("<image1> is a studio photograph of {what}, assembled from separate photos of its parts, on a flat "
+             "panel of colour RGB({r}, {g}, {b}). Retouch it into one seamless real product photograph of the same "
+             "object. Fix the seams where the parts were joined, make the lighting consistent over the whole object "
+             "with soft light from the upper left, and improve the materials: the wood is a warm red-brown, lighter "
+             "than walnut, with clear lengthwise grain and a moderate satin lacquer sheen; the steel is dark "
+             "gunmetal with worn bright edges and small local reflections, crisp and solid. Do not change the "
+             "geometry: keep exactly the outline, the size, the position and the thickness of every part - the "
+             "muzzle, the front sight, the magazine, the pistol grip, the two stock struts and the butt plate stay "
+             "exactly where they are in <image1>; do not move, bend, shorten, lengthen, thin or straighten "
+             "anything, add nothing and remove nothing. Make the two struts and the butt plate of the skeleton "
+             "stock read clearly through light and shade: a bright worn highlight along one edge, a deep shadow "
+             "along the other, crisp edges. The gap between the struts stays fully open, the panel shows through "
+             "it. Keep the flat plain panel exactly as it is: no shadow on it, no other objects, no frame, no text.")
+EDIT_WHAT = {"M-01": "an old worn Kalashnikov-pattern assault rifle with a metal skeleton stock, standing vertically "
+                     "with the muzzle at the top"}
 
 # (мастер, тип, кадр, описание для модели) - по masters.md; M-06 нет до решения о стволах
 WHAT = [
@@ -254,7 +283,8 @@ CODE = (
     ("item_photo.py", ("ITEM", "NEGATIVE_EXTRA", "WHAT", "item_prompt", "load_frame", "REF_AK", "REF_NEGATIVE",
                        "REFS", "ref_input", "item_inputs", "REF_AK_V6", "REF_NEGATIVE_V6", "CTRL_AK",
                        "PART_WOOD", "PART_STEEL", "part_map", "REF_AK_V7", "AK_PARTS", "part_affine", "place_part",
-                       "keep_part", "fit_part", "rod_part", "ref_parts_input")),
+                       "keep_part", "fit_part", "rod_part", "ref_parts_input", "bend_part", "part_point",
+                       "light_part")),
     ("struct_guide.py", ("GUIDE_V1", "coverage", "smooth_loop", "loops")),
     ("photo_render.py", ("RENDER_V1", "PANEL_TEXT", "flat_input", "detect_panel")),
     ("struct_probe.py", ("C_TEXT", "run_multi", "inputs")),
@@ -281,12 +311,70 @@ def item_prompt(what, name, rgb):
     return ITEM.format(what=what, r=r, g=g, b=b) + " " + pr.PANEL_TEXT.format(kind=kind, r=r, g=g, b=b)
 
 
-def generator_rev(lock):
+def generator_rev(lock, engine="qwen21"):
     import obj_gen_spec as ogs
     refs = {m: [sha256_file(r[0])[:12]] + list(r[1:]) for m, r in sorted(REFS.items())}
-    return ar.h12({"params": pr.RENDER_V1, "prompt": ITEM, "negative_extra": NEGATIVE_EXTRA, "c_text": sp.C_TEXT,
-                   "refs": refs, "ref_negative": REF_NEGATIVE, "ref_negative_v6": REF_NEGATIVE_V6,
-                   "lock_rev": ogs.lock_rev(lock), "code": ogs.code_parts(CODE)})
+    d = {"params": pr.RENDER_V1, "prompt": ITEM, "negative_extra": NEGATIVE_EXTRA, "c_text": sp.C_TEXT,
+         "refs": refs, "ref_negative": REF_NEGATIVE, "ref_negative_v6": REF_NEGATIVE_V6,
+         "lock_rev": ogs.lock_rev(lock), "code": ogs.code_parts(CODE)}
+    if engine == "edit":
+        d.update(engine={"run": EDIT_RUN, "model_rev": EDIT_MODEL_REV, "prompt": EDIT_ITEM, "what": EDIT_WHAT,
+                         "code": ogs.code_parts((("item_photo.py", ("EditPainter", "edit_prompt", "edit_inputs",
+                                                                     "edit_model_check")),
+                                                 ("photo_ui.py", ("MODEL", "LIGHTNING", "Painter"))))})
+    return ar.h12(d)
+
+
+def edit_prompt(what, name, rgb):
+    """Вместо pr.prompt_for при --engine edit: подложка названа цветом (R-157)."""
+    r, g, b = [int(v) for v in rgb]
+    return EDIT_ITEM.format(what=what, r=r, g=g, b=b)
+
+
+def edit_inputs(ref):
+    """Вместо struct_probe.inputs при --engine edit: одна картинка - собранный эталон (R-205), без эскиза и карты."""
+    def inputs(variant, frame, rgb):
+        im, rrep = ref_parts_input(ref[0], frame, rgb, pr.RENDER_V1["zoom"], ref[3])
+        return [im], "", {"ref": rrep, "inputs": "ref_parts_input"}
+    return inputs
+
+
+def edit_model_check(models):
+    """Снимок Edit-2511 в кэше - тот, что записан в EDIT_MODEL_REV; качать нечего и нельзя (R-145)."""
+    p = os.path.join(models, "hub", "models--Qwen--Qwen-Image-Edit-2511", "refs", "main")
+    got = open(p).read().strip() if os.path.exists(p) else ""
+    if got != EDIT_MODEL_REV:
+        raise SystemExit("Edit-2511 в кэше %s, ждал %s - не рисую (R-145)" % (got or "нет", EDIT_MODEL_REV))
+    if os.environ.get("HF_HUB_OFFLINE") != "1":
+        raise SystemExit("HF_HUB_OFFLINE не выставлен до импорта - не рисую (R-145)")
+
+
+class EditPainter:
+    """Переходник photo_ui.Painter (Edit-2511 + Lightning) под struct_probe.run_multi: pipe(**kw).images[0].
+    Модель грузится при первом рендере; --dry-run и --recut её не трогают."""
+    accepts = ("image", "negative_prompt", "true_cfg_scale", "width")
+
+    def __init__(self, models):
+        self.models, self.p = models, None
+
+    @property
+    def torch(self):
+        import torch
+        return torch
+
+    def pipe(self, prompt, image, num_inference_steps, generator, negative_prompt="", true_cfg_scale=1.0,
+             width=None, height=None):
+        import photo_ui as pu
+        if self.p is None:
+            # папка снимка, а не имя репозитория: diffusers 0.41 и при HF_HUB_OFFLINE спрашивает HF про шарды
+            # (model_info в _get_checkpoint_shard_files), а локальную папку читает без сети - и ревизия ровно та
+            pu.MODEL = os.path.join(self.models, "hub", "models--Qwen--Qwen-Image-Edit-2511", "snapshots",
+                                    EDIT_MODEL_REV)
+            self.p = pu.Painter(self.models, fast=True, steps=EDIT_RUN["steps"], photoreal=EDIT_RUN["lora"] > 0)
+        ims = image if isinstance(image, list) else [image]
+        out = self.p.edit(ims, prompt, negative_prompt, generator.initial_seed(), num_inference_steps,
+                          true_cfg_scale, width, height, photoreal=EDIT_RUN["lora"])
+        return argparse.Namespace(images=[Image.fromarray(out)])
 
 
 def ref_input(path, frame, rgb, zoom):
@@ -418,6 +506,34 @@ def rod_part(img, top, bot, Qtop, Qbot, s, res, ob, size, cut=0.35):
     return cv, {"rot": round(th, 2), "cut_photo_px": round(drop, 1)}
 
 
+def bend_part(layer, moves, anchors, sigma, res, ob, iters=24):
+    """Местный изгиб поставленной части (торец магазина под торец оригинала): точки части moves ((откуда, куда),
+    пиксели k=1 от угла габарита) сдвигаются в свои места, точки anchors стоят. Поле сдвига - гауссовы ядра sigma
+    (пиксели базы) с весами, решёнными так, чтобы поле точно давало эти сдвиги; картинка тянется гладко, пиксели
+    части не перерисовываются, а переезжают - фактура и светотень те же. Обратное отображение - подбор x = y - d(x)
+    (сдвиг на пиксель базы меньше sigma - сходится), выборка билинейная по умноженной альфе. -> RGBA."""
+    a = np.asarray(layer.convert("RGBa"), np.float32)
+    H, W = a.shape[:2]
+    C = np.asarray([s for s, _t in moves] + list(anchors), np.float64)
+    D = np.asarray([(t[0] - s[0], t[1] - s[1]) for s, t in moves] + [(0.0, 0.0)] * len(anchors), np.float64)
+    K = np.exp(-((C[:, None] - C[None]) ** 2).sum(-1) / (2 * sigma ** 2))
+    Wt = np.linalg.solve(K, D)
+    ys, xs = np.mgrid[0:H, 0:W]
+    yb = np.stack([(xs + 0.5) / res - ob[0], (ys + 0.5) / res - ob[1]], -1)
+    x = yb.copy()
+    for _ in range(iters):
+        g = np.exp(-((x[..., None, :] - C) ** 2).sum(-1) / (2 * sigma ** 2))
+        x = yb - g @ Wt
+    px, py = (x[..., 0] + ob[0]) * res - 0.5, (x[..., 1] + ob[1]) * res - 0.5
+    x0, y0 = np.floor(px).astype(int), np.floor(py).astype(int)
+    fx, fy = (px - x0)[..., None], (py - y0)[..., None]
+    pad = np.pad(a, ((1, 1), (1, 1), (0, 0)))
+    at = lambda yy, xx: pad[np.clip(yy + 1, 0, H + 1), np.clip(xx + 1, 0, W + 1)]
+    out = (at(y0, x0) * (1 - fx) * (1 - fy) + at(y0, x0 + 1) * fx * (1 - fy) +
+           at(y0 + 1, x0) * (1 - fx) * fy + at(y0 + 1, x0 + 1) * fx * fy)
+    return Image.fromarray(np.clip(out + 0.5, 0, 255).astype(np.uint8), "RGBa").convert("RGBA")
+
+
 def light_part(img, k):
     """Светотень части: отклонение яркости от средней по непрозрачному - x k (цветность та же)."""
     a = np.asarray(img).astype(np.float32)
@@ -470,7 +586,13 @@ def ref_parts_input(path, frame, rgb, zoom, spec):
     light = spec.get("stock_light", 1.0)
     cv = Image.new("RGBA", size, tuple(int(v) for v in rgb) + (255,))
     img, _sc, s, th, Q = fits["magazine"][:5]
-    cv.alpha_composite(place_part(img, spec["magazine"]["P"], Q, s, th, zoom, ob, size))
+    mag = place_part(img, spec["magazine"]["P"], Q, s, th, zoom, ob, size)
+    bend = spec["magazine"].get("bend")
+    if bend:                    # торец фото косой, у оригинала почти отвесный: кончик и угол - на точки оригинала
+        mv = [(part_point(p, spec["magazine"]["P"], Q, s, th), t) for p, t in spec["magazine"]["pts"]]
+        mag = bend_part(mag, mv, bend["anchors"], bend["sigma"], zoom, ob)
+        rep["magazine"]["bend"] = [[round(t[0] - q[0], 2), round(t[1] - q[1], 2)] for q, t in mv]
+    cv.alpha_composite(mag)
     rep["struts"] = []
     for keep, top, bot, xb in spec["struts"]:
         qt = part_point(top, b["P"], b["Q"], g, 0)             # верх - хвост коробки тела
@@ -807,6 +929,8 @@ def main():
     ap.add_argument("--recut", action="store_true")
     ap.add_argument("--models", default=None)
     ap.add_argument("--max-renders", type=int, default=0, dest="max_renders")
+    ap.add_argument("--engine", default="qwen21", choices=("qwen21", "edit"),
+                    help="qwen21 - рендер по эскизу (RENDER_V1); edit - правка собранного эталона Edit-2511 (EDIT_RUN)")
     args = ap.parse_args()
     os.chdir(ROOT)
     only = set(filter(None, args.only.split(",")))
@@ -843,7 +967,20 @@ def main():
     base_inputs = sp.inputs                  # Render.job зовёт sp.inputs - на задание с эталоном своя обёртка
     pr.prompt_for = item_prompt              # Render.job зовёт pr.prompt_for - здесь свой промпт
     pb.cut = cut_fixed                       # и pb.cut - здесь вырезка без подгонки по содержимому
-    R.grev = generator_rev(R.lock)
+    R.grev = generator_rev(R.lock, args.engine)
+    edit = args.engine == "edit"
+    if edit:
+        bad = [j["master"] for j in jobs if not (REFS.get(j["master"]) and len(REFS[j["master"]]) > 3)
+               or j["master"] not in EDIT_WHAT]
+        if bad:
+            raise SystemExit("--engine edit - только мастера с собранным эталоном и EDIT_WHAT, а не %s" % bad)
+        for j in jobs:
+            j["what"] = EDIT_WHAT[j["master"]]
+        pr.prompt_for = edit_prompt
+        R.run = argparse.Namespace(mp=EDIT_RUN["mp"], steps=EDIT_RUN["steps"], cfg=EDIT_RUN["cfg"])
+        R.painter = EditPainter(R.ns.models)
+        if not args.dry_run:
+            edit_model_check(R.ns.models)
     import obj_gen_spec as ogs
     R.cut_rev = ar.h12({"photo_base": R.cut_rev, "code": ogs.code_parts(CUT_CODE)})
     print("items_pilot_v1: generator_rev %s, guide_rev %s, cut_rev %s, мастеров %d" % (
@@ -876,6 +1013,11 @@ def main():
             f.write("# items_pilot_v1 - план (generator_rev %s)\n\n" % R.grev)
             f.write("negative: %s\n\n" % neg0)
             for j, panels, _g in plan:
+                if edit:
+                    f.write("## %s %s, кадр %d, %dx%d - Edit-2511 %s\n\nвход 1: эталон %s\n\n%s\n\n" % (
+                        j["master"], j["asset_id"], j["frame"], j["cells"][0], j["cells"][1], EDIT_RUN,
+                        j["ref_rep"], edit_prompt(j["what"], panels[0][0], panels[0][1])))
+                    continue
                 f.write("## %s %s, кадр %d, %dx%d\n\n%s %s%s\n\n" % (
                     j["master"], j["asset_id"], j["frame"], j["cells"][0], j["cells"][1],
                     item_prompt(j["what"], panels[0][0], panels[0][1]),
@@ -899,7 +1041,7 @@ def main():
     t0, cells = time.time(), []
     try:
         for n, (j, panels, g) in enumerate(plan, 1):
-            sp.inputs = item_inputs(base_inputs, j["ref"])
+            sp.inputs = edit_inputs(j["ref"]) if edit else item_inputs(base_inputs, j["ref"])
             gen_fire.NEGATIVE = R.po.gen_fire.NEGATIVE = neg0 + ((REF_NEGATIVE_V6 if len(j["ref"]) > 2 else REF_NEGATIVE) if j["ref"] else "")
             final, attempts = R.job("C", j, j["crop"], panels, raw_dir)
             if final is None:
@@ -946,6 +1088,8 @@ def main():
           "params": pr.RENDER_V1, "prompt": ITEM, "negative": gen_fire.NEGATIVE, "c_text": sp.C_TEXT,
           "items": len(plan), "renders_last_process": R.renders, "gpuq_job": os.environ.get("GPUQ_JOB_ID", ""),
           "finished": time.strftime("%Y-%m-%dT%H:%M:%S")}
+    if edit:
+        ex.update(engine="edit", params=EDIT_RUN, model_rev=EDIT_MODEL_REV, prompt=EDIT_ITEM, c_text="")
     if not args.recut:
         with open(os.path.join(args.out, "execution.json"), "w", encoding=ENC) as f:
             json.dump(ex, f, ensure_ascii=False, indent=1)
