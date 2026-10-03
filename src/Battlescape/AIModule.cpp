@@ -2126,6 +2126,12 @@ void AIModule::setupEscape()
 			if (bestTileScore > FAST_PASS_THRESHOLD) coverFound = true; // good enough, gogogo
 		}
 	}
+	if (bestTileScore > -100000 && AiProbe::escapeAlt(_unit))
+	{
+		// ESCAPE_ALT_PROBE (stand only): the reachable tiles next to the chosen one, read only - getSpottingUnits is const
+		AiProbe::escapeAltWrite(_save, _unit, _reachable, bestTile, bestTileScore, _escapeTUs, run,
+			[this](const Position &p) { return getSpottingUnits(p); });
+	}
 	_escapeAction.target = bestTile;
 	_escapeAction.run = run;
 	if (bestTileScore > -100000)

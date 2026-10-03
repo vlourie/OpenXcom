@@ -93,6 +93,9 @@ void escapeMark() {}
 void escapeProbe(const BattleUnit *, int) {}
 bool escapeReachFirst() { return false; }
 void escapeSkipped() {}
+bool escapeAlt(const BattleUnit *) { return false; }
+void escapeAltWrite(SavedBattleGame *, BattleUnit *, const std::vector<int> &, const Position &, int, int, bool,
+	const std::function<int(const Position &)> &) {}
 bool walkFovProf() { return false; }
 void walkFovBefore(BattlescapeGame *, const BattleUnit *) {}
 void walkFovAfter(BattlescapeGame *, const BattleUnit *) {}
@@ -3037,6 +3040,197 @@ std::string handsOf(const BattleUnit *unit)
 	return out.str();
 }
 
+}
+
+bool escapeAlt(const BattleUnit *unit)
+{
+	static const bool on = envOn("OXCE_AI_ESCAPE_ALT_PROBE");
+	return on && record() && careful(unit);
+}
+
+void escapeAltWrite(SavedBattleGame *save, BattleUnit *unit, const std::vector<int> &reachable, const Position &chosen, int score,
+	int escapeTUs, bool run, const std::function<int(const Position &)> &spotting)
+{
+	const Position at = unit->getPosition();
+	// the cost of each tile: the think's own findReachable, as the record took it (the same ask setupEscape's reachable comes from)
+	const bool haveTu = pending.unit == unit->getId() && !pending.wantReach;
+	std::map<int, int> tuOf;
+	if (haveTu)
+	{
+		for (const auto &m : pending.set.moves)
+		{
+			if (m.kind == AiCandidates::MOVE && m.tu >= 0)
+			{
+				tuOf[save->getTileIndex(m.tile)] = m.tu;
+			}
+		}
+	}
+	tuOf[save->getTileIndex(at)] = 0;
+	auto tuAt = [&](const Position &p) { auto it = tuOf.find(save->getTileIndex(p)); return it != tuOf.end() ? it->second : -1; };
+	const int tuChosen = tuAt(chosen) >= 0 ? tuAt(chosen) : escapeTUs;
+	const int cap = (int)param("OXCE_AI_ESCAPE_ALT_CAP", 8);
+
+	// the side's knowledge: a copy of its sightings with the enemies it sees now put where they stand (updateSightings would
+	// change what the other rules of the bot read later - the probe must not), the speed estimate read as it is
+	const int f = (int)unit->getFaction();
+	std::map<int, const BattleUnit *> byId;
+	std::vector<BattleUnit *> now;
+	std::map<int, Sighting> seen = lastSeen[f];
+	for (auto *e : *save->getUnits())
+	{
+		byId[e->getId()] = e;
+		if (!e->isOut() && e->getFaction() == FACTION_HOSTILE && e->getTurnsSinceSpottedByFaction((UnitFaction)f) == 0)
+		{
+			now.push_back(e);
+			seen[e->getId()] = { e->getPosition(), save->getTurn() };
+		}
+	}
+	struct Mem { Position pos; double radius; bool now; };
+	std::vector<Mem> mem;
+	for (const auto &s : seen)
+	{
+		auto e = byId.find(s.first);
+		if (e == byId.end() || e->second->isOut() || e->second->getFaction() != FACTION_HOSTILE)
+		{
+			continue;
+		}
+		auto r = seenReach.find(s.first);
+		const double radius = std::max(REACH_PRIOR, r != seenReach.end() ? r->second : 0.0) * (save->getTurn() - s.second.turn + 1);
+		mem.push_back({ s.second.pos, radius, e->second->getTurnsSinceSpottedByFaction((UnitFaction)f) == 0 });
+	}
+	static const double ring[16][2] = { {0, 0},
+		{0.5, 0}, {-0.25, 0.43}, {-0.25, -0.43}, {0.25, 0.43}, {0.25, -0.43},
+		{1, 0}, {0.81, 0.59}, {0.31, 0.95}, {-0.31, 0.95}, {-0.81, 0.59}, {-1, 0}, {-0.81, -0.59}, {-0.31, -0.95}, {0.31, -0.95}, {0.81, -0.59} };
+
+	// pass 1, every listed tile: the cheap features (line of fire from the seen and the remembered, reach, nearest, flags)
+	struct Row { Position p; int tu, shoot, remembered, reach, near10, flags; long thr; int spot; };
+	std::vector<Row> rows;
+	auto one = [&](const Position &p, int tu)
+	{
+		Tile *tile = save->getTile(p);
+		if (!tile)
+		{
+			return;
+		}
+		// a tile the unit does not stand on is checked as if it stood there, as getSpottingUnits does
+		BattleUnit *potential = p == at ? nullptr : unit;
+		int shoot = 0, remembered = 0, reach = 0;
+		for (auto *e : now)
+		{
+			if (Position::distance2d(p, e->getPosition()) > 20)
+			{
+				continue;
+			}
+			Position origin = save->getTileEngine()->getSightOriginVoxel(e), scan;
+			origin.z -= 2;
+			shoot += save->getTileEngine()->canTargetUnit(&origin, tile, &scan, e, false, potential) ? 1 : 0;
+		}
+		double nearest = 1e9;
+		for (const auto &m : mem)
+		{
+			const Position d = p - m.pos;
+			const double dist = std::sqrt((double)(d.x * d.x + d.y * d.y));
+			nearest = std::min(nearest, dist);
+			reach += dist <= m.radius + 3 ? 1 : 0;
+			if (!m.now && dist <= 20)
+			{
+				Position origin = m.pos.toVoxel() + Position(8, 8, 20), scan;
+				remembered += save->getTileEngine()->canTargetUnit(&origin, tile, &scan, nullptr, false, potential) ? 1 : 0;
+			}
+		}
+		const int flags = (tile->getFire() ? 1 : 0) | (tile->getDangerous() ? 2 : 0) | (tile->getSmoke() ? 4 : 0);
+		rows.push_back({ p, tu, shoot, remembered, reach, mem.empty() ? -1 : (int)std::lround(nearest * 10), flags, -1, -1 });
+	};
+	// the threat after the enemies' move (16 points of each remembered one's reach ring) - the dear part
+	auto threatAt = [&](const Position &p) -> long
+	{
+		Tile *tile = save->getTile(p);
+		BattleUnit *potential = p == at ? nullptr : unit;
+		double threat = 0;
+		for (const auto &m : mem)
+		{
+			const Position d = p - m.pos;
+			if (std::sqrt((double)(d.x * d.x + d.y * d.y)) > m.radius + 30)
+			{
+				continue;
+			}
+			int hits = 0, tried = 0;
+			for (const auto &q0 : ring)
+			{
+				const Position q(m.pos.x + (int)std::lround(q0[0] * m.radius), m.pos.y + (int)std::lround(q0[1] * m.radius), m.pos.z);
+				if (!save->getTile(q))
+				{
+					continue;
+				}
+				++tried;
+				Position origin = q.toVoxel() + Position(8, 8, 20), scan;
+				hits += save->getTileEngine()->canTargetUnit(&origin, tile, &scan, nullptr, false, potential) ? 1 : 0;
+			}
+			threat += tried ? (double)hits / tried : 0.0;
+		}
+		return std::lround(threat * 100);
+	};
+	one(at, 0);
+	bool chosenIn = chosen == at;
+	for (int index : reachable)
+	{
+		const Position p = save->getTileCoords(index);
+		if (p == at)
+		{
+			continue;
+		}
+		const int tu = tuAt(p);
+		chosenIn = chosenIn || p == chosen;
+		if (p == chosen || (tu >= 0 && tu <= tuChosen + cap))
+		{
+			one(p, tu);
+		}
+	}
+	if (!chosenIn)
+	{
+		one(chosen, tuAt(chosen));
+	}
+	// pass 2: threat and the oracle only for the chosen tile and the tiles that could still dominate it - no worse on shoot,
+	// reach and nearest, no fire or danger the chosen has not, better in anything of shoot, remembered, reach, nearest
+	// (dominance wants two strict gains and threat gives one at most); the rest are written with -1
+	const Row *ch = nullptr;
+	for (const auto &r : rows)
+	{
+		if (r.p == chosen)
+		{
+			ch = &r;
+		}
+	}
+	auto nearOf = [](int n) { return n < 0 ? INT_MAX : n; };
+	int dear = 0;
+	for (auto &r : rows)
+	{
+		bool full = &r == ch;
+		if (!full && ch)
+		{
+			full = r.shoot <= ch->shoot && r.reach <= ch->reach && nearOf(r.near10) >= nearOf(ch->near10) && !(r.flags & 3 & ~ch->flags)
+				&& (r.shoot < ch->shoot || r.remembered < ch->remembered || r.reach < ch->reach || nearOf(r.near10) > nearOf(ch->near10));
+		}
+		if (full)
+		{
+			r.thr = threatAt(r.p);
+			r.spot = spotting(r.p);
+			++dear;
+		}
+	}
+	std::ostringstream tiles;
+	int written = 0;
+	for (const auto &r : rows)
+	{
+		tiles << (written++ ? "," : "") << "[" << r.p.x << "," << r.p.y << "," << r.p.z << "," << r.tu << "," << r.spot << "," << r.shoot
+			<< "," << r.remembered << "," << r.thr << "," << r.reach << "," << r.near10 << "," << r.flags << "]";
+	}
+	Log(LOG_INFO) << "[AIESCALT] {\"v\":2,\"unit\":" << unit->getId() << ",\"rec\":" << recordNo << ",\"turn\":" << save->getTurn()
+		<< ",\"at\":[" << at.x << "," << at.y << "," << at.z << "],\"chosen\":[" << chosen.x << "," << chosen.y << "," << chosen.z
+		<< "],\"score\":" << score << ",\"etu\":" << escapeTUs << ",\"run\":" << (run ? 1 : 0) << ",\"tuc\":" << tuChosen
+		<< ",\"cap\":" << cap << ",\"havetu\":" << (haveTu ? 1 : 0) << ",\"inreach\":" << (chosenIn ? 1 : 0)
+		<< ",\"n\":" << reachable.size() << ",\"now\":" << now.size() << ",\"mem\":" << mem.size() << ",\"m\":" << written
+		<< ",\"dear\":" << dear << ",\"tiles\":[" << tiles.str() << "]}";
 }
 
 bool watchPoint(SavedBattleGame *save, const BattleUnit *unit, Position &out)

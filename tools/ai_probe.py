@@ -33,6 +33,8 @@ TAGS = ("[AISTATE]", "[AIDECIDE]", "[AIPROBE]", "[AIRESULT]", "[AICASUALTY]", "[
         "[AIEXEC]", "[AIAFTER]", "[AITRACE]", "[AICAND]", "[AIPATROL]", "[AIPF]",
         # зонд ESCAPE_DEATH_ATTRIBUTION (OXCE_AI_ATTRIB_PROBE, build-ai64): что сделала смена хода с юнитом, по стадиям
         "[AITURNFX]",
+        # зонд ESCAPE_ALT (OXCE_AI_ESCAPE_ALT_PROBE, build-ai68): достижимые клетки рядом с выбранной клеткой побега
+        "[AIESCALT]",
         # итоги приборов стенда после [AIRESULT] (свет, отход, FOV на шаге) - архив <метка>.result.txt серии ai_arena.py
         "[AILIGHT]", "[AIESCRF]", "[AIWALKFOV]", "[AIWALKFOVSKIP]", "[AIAMBMEMO]")
 
