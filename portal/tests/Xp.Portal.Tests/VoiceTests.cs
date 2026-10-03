@@ -571,10 +571,13 @@ public sealed partial class VoiceTests(VoiceFactory f) : IClassFixture<VoiceFact
     }
 
     /// <summary>The service as it runs on the station with the probe for its media server: the site's own host.</summary>
-    Task<T> Probe<T>(Func<VoiceService, Task<T>> act, params string[] testers) => f.ScopedAsync(sp =>
+    Task<T> Probe<T>(Func<VoiceService, Task<T>> act, params string[] testers) => Station(act, false, testers);
+
+    /// <summary>The media server on the station's own host: its probe, or opened to everybody.</summary>
+    Task<T> Station<T>(Func<VoiceService, Task<T>> act, bool open, string[] testers) => f.ScopedAsync(sp =>
     {
         var real = sp.GetRequiredService<Microsoft.Extensions.Options.IOptions<LiveKitOptions>>().Value;
-        var probe = new LiveKitOptions { Url = "wss://station.test:8443", ApiUrl = "http://livekit:7880", ApiKey = real.ApiKey, ApiSecret = real.ApiSecret, Testers = testers };
+        var probe = new LiveKitOptions { Url = "wss://station.test:8443", ApiUrl = "http://livekit:7880", ApiKey = real.ApiKey, ApiSecret = real.ApiSecret, Testers = testers, Open = open };
         var site = new PortalOptions { PublicUrl = "https://station.test:8443" };
         return act(ActivatorUtilities.CreateInstance<VoiceService>(sp,
             Microsoft.Extensions.Options.Options.Create(probe), Microsoft.Extensions.Options.Options.Create(site)));
@@ -606,6 +609,27 @@ public sealed partial class VoiceTests(VoiceFactory f) : IClassFixture<VoiceFact
         Assert.Equal("wss://voice.test", (await V(v => v.PassAsync(player, room, default))).Url);
         Assert.True(new LiveKitOptions { Url = "wss://x-piratez.mywire.org:8443" }.IsProbeFor("https://X-Piratez.mywire.org:8443"));
         Assert.False(new LiveKitOptions { Url = "wss://voice.x-piratez.org" }.IsProbeFor("https://x-piratez.mywire.org:8443"));
+    }
+
+    [Fact]
+    public async Task The_station_opened_to_everybody_gives_passes_to_players()
+    {
+        var owner = await UserAsync("Владелец");
+        var player = await UserAsync("Игрок");
+        await FriendsAsync(owner, player);
+        var (room, _) = await RoomAsync(owner);
+        await V(v => v.InviteAsync(owner, room, player, default));
+
+        // the same station without LiveKit__Open is the probe and turns the player away
+        var probe = await Assert.ThrowsAsync<VoiceException>(() => Station(v => v.PassAsync(player, room, default), false, []));
+        Assert.Equal(("voice_unavailable", 503), (probe.Code, probe.Status));
+        var pass = await Station(v => v.PassAsync(player, room, default), true, []);
+        Assert.Equal("wss://station.test:8443", pass.Url);
+        // opening the server opens no room: a stranger hears no_access, as anywhere
+        var stranger = await UserAsync("Чужой");
+        var s = await Assert.ThrowsAsync<VoiceException>(() => Station(v => v.PassAsync(stranger, room, default), true, []));
+        Assert.Equal(("no_access", 404), (s.Code, s.Status));
+        Assert.False(new LiveKitOptions { Url = "wss://x-piratez.mywire.org:8443", Open = true }.IsProbeFor("https://x-piratez.mywire.org:8443"));
     }
 
     [Fact]

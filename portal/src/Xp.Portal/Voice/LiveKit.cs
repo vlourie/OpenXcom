@@ -27,12 +27,18 @@ public sealed class LiveKitOptions
     /// the closed acceptance. Everybody else hears that the voice server is unavailable.
     /// </summary>
     public string[] Testers { get; set; } = [];
+    /// <summary>
+    /// The media server on the site's own host is the production one, open to everybody the room lets in
+    /// (Vitali 03.10: the station is the voice server of the release). Said in so many words, by
+    /// 'station.ps1 voice-open', so that a probe never opens by itself.
+    /// </summary>
+    public bool Open { get; set; }
 
     public bool Enabled => Url.Length > 0 && ApiUrl.Length > 0 && ApiKey.Length > 0 && ApiSecret.Length > 0;
 
-    /// <summary>The media server sits on the site's own host: that is the station's probe, not the production machine with its own name.</summary>
+    /// <summary>The media server sits on the site's own host and is not <see cref="Open"/>: that is the station's probe, for its testers only.</summary>
     public bool IsProbeFor(string publicUrl) =>
-        Uri.TryCreate(Url, UriKind.Absolute, out var media) && Uri.TryCreate(publicUrl, UriKind.Absolute, out var site)
+        !Open && Uri.TryCreate(Url, UriKind.Absolute, out var media) && Uri.TryCreate(publicUrl, UriKind.Absolute, out var site)
         && string.Equals(media.Host, site.Host, StringComparison.OrdinalIgnoreCase);
 }
 
