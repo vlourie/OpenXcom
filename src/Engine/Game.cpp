@@ -22,6 +22,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <vector>
+#include <tuple>
 #include "../resource.h"
 #include <algorithm>
 #include <cmath>
@@ -517,6 +518,41 @@ void Game::run()
 						ev.type = SDL_MOUSEBUTTONUP;
 						ev.button.state = SDL_RELEASED;
 						SDL_PushEvent(&ev);
+					}
+					// OXCE_HD_SET=<ms>:<what>=<n>[;...]: <ms> before the dump switches the HD interface (oxceHdUi=n,
+					// as the options do on leaving) or the world layer's k (k=n) - with a screen left open
+					static const char *autoSet = getenv("OXCE_HD_SET");
+					static std::vector<std::tuple<Uint32, std::string, int>> autoSets;
+					static size_t autoSetDone = 0;
+					if (autoSets.empty() && autoSet && *autoSet)
+					{
+						for (const char *c = autoSet; c && *c; )
+						{
+							unsigned ms = 0;
+							char what[32] = {};
+							int value = 0;
+							if (sscanf(c, "%u:%31[^=]=%d", &ms, what, &value) == 3)
+							{
+								autoSets.emplace_back((Uint32)ms, what, value);
+							}
+							c = strchr(c, ';');
+							if (c) ++c;
+						}
+					}
+					while (autoSetDone < autoSets.size() && now + std::get<0>(autoSets[autoSetDone]) >= autoDumpAt)
+					{
+						const std::string &what = std::get<1>(autoSets[autoSetDone]);
+						const int value = std::get<2>(autoSets[autoSetDone++]);
+						Log(LOG_INFO) << "HD test: " << what << " = " << value;
+						if (what == "oxceHdUi")
+						{
+							Options::oxceHdUi = value;
+							_screen->resetDisplay(false);
+						}
+						else if (what == "k")
+						{
+							_screen->setWorldScale(value);
+						}
 					}
 					// OXCE_HD_KEY=<SDL key number>: presses that key 1.0 s before the dump (289 = F8);
 					// "ctrl+289" holds Ctrl for the next few frames (Ctrl+F8: the battle's full dump - map, frame, json);

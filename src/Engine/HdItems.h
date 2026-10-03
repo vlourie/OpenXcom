@@ -17,6 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <functional>
 #include <memory>
 #include <string>
 #include "HdSprites.h"
@@ -47,8 +48,10 @@ class SavedBattleGame;
  * grid picture with the usual hand offset, else (3x2, 3x3) classic. Each classic fallback logs one line
  * per type. A picture is a whole number of times bigger than the classic frame (32x48, or the frame's
  * own size) and is scaled to the interface's k. It is drawn clipped to the item's cells (the GRID
- * context: grid, ground) or to the hand frame (the HAND context: hands, the dragged item, the ammo
- * preview, the battle's hand buttons, Ufopaedia, the alien inventory's hands).
+ * context: grid, ground) or, in the hand frame (the HAND context: hands, the dragged item, the ammo
+ * preview, the battle's hand buttons, Ufopaedia, the alien inventory's hands), to the item's cells after
+ * the usual hand offset inside the frame's lines - a .hand picture too; only a 3x2 or 3x3 item, bigger
+ * than the frame, gets the whole frame inside its lines.
  *
  * Items whose sprite a script recolours stay classic: the interface has no brightness transfer yet. A mod's
  * recolour scripts can be global (X-Piratez runs its shield script on every item), so what counts is
@@ -84,8 +87,18 @@ namespace HdItems
 	/// `x`, `y` base pixels from the surface's top left, clipped to the surface. For widgets that keep a
 	/// sprite drawn (the ammo preview, the battle's hand buttons, Ufopaedia, the alien inventory).
 	void attach(const Surface *surface, const Pick &pick, int x = 0, int y = 0);
-	/// Forgets what was attached to a surface: its owner cleared it, or it is going away.
+	/// Forgets what was attached to a surface: its owner cleared it.
 	void detach(const Surface *surface);
+	/// Keeps a surface's item sprite right while it lives: when the HD pictures are switched on or off or
+	/// change k (enabled(), HdUi::scale()), `redraw` runs just before the surface is next blitted - the owner
+	/// draws the sprite again, its HD picture or the classic one. For widgets drawn once (Ufopaedia, the
+	/// battle's hand buttons); a picked HD picture leaves the surface's classic pixels out, so without it the
+	/// sprite would be missing when HD goes off, or stay at the old k.
+	void watch(const Surface *surface, std::function<void()> redraw);
+	/// Surface::blit calls it first: runs the surface's `redraw` when the HD state changed since.
+	void refresh(const Surface *surface);
+	/// Forgets everything about a surface that is going away.
+	void forget(const Surface *surface);
 	/// Draws what is attached to a surface just blitted onto the screen at its x, y.
 	void drawAttached(const Surface *surface);
 	/// RuleItem::drawHandSprite's HD version: the item's picture for the hand frame attached to `surface`
@@ -93,6 +106,9 @@ namespace HdItems
 	/// (Ufopaedia: the rule's own frame).
 	bool attachHand(const RuleItem *rule, const BattleItem *item, const SavedBattleGame *save, int animFrame,
 		const SurfaceSet *set, const Surface *surface);
+	/// A rule's hand sprite on a surface of its own (Ufopaedia): the surface cleared, then the HD picture
+	/// attached or the classic sprite drawn, and watched - drawn again when the HD state changes.
+	void drawRuleHand(const RuleItem *rule, const SurfaceSet *set, Surface *surface);
 	/// Forgets everything (mod reload).
 	void clear();
 }

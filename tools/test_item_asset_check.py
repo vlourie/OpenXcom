@@ -36,7 +36,9 @@ def main():
         pack = d / "BIGOBS.PCK"
         pack.mkdir()
         png(pack / "10.STR_A.png", (32, 48), (1, 1, 16, 47))                          # чистая 1x3
-        png(pack / "10.STR_A.hand.png", (32, 48), (1, 1, 31, 47))                     # чистая рамка
+        png(pack / "10.STR_A.hand.png", (32, 48), (9, 1, 24, 47))                     # 1x3 в руке: клетки со сдвигом 8
+        png(pack / "12.STR_D.hand.png", (32, 48), (1, 1, 31, 47))                     # 3x3 больше рамки: вся рамка
+        png(pack / "11.STR_B.hand.png", (32, 48), (1, 1, 31, 47))                     # 2x3: клетки = вся рамка
         png(pack / "11.STR_B.png", (32, 48), (1, 1, 31, 47), extra=(31 * K, 10))      # 2x3: столбец 31 - линия
         png(pack / "11.STR_C.hand.png", (32, 48), (1, 1, 31, 47), extra=(0, 0), alpha=1)   # альфа 1 в углу
         png(pack / "12.png", (48, 48), (1, 1, 47, 47))                                # 3x3 общий, чистый
@@ -47,15 +49,26 @@ def main():
         rows = {(r["file"], r["item"]): r for r in C.read_tsv(out)}
         want = {("10.STR_A.png", "STR_A"): "PASS", ("10.STR_A.hand.png", "STR_A"): "PASS",
                 ("11.STR_B.png", "STR_B"): "FAIL", ("11.STR_C.hand.png", "STR_C"): "FAIL",
-                ("12.png", "STR_D"): "PASS", ("10.png", "STR_A"): "FAIL", ("10.STR_X.png", "-"): "FAIL"}
+                ("12.png", "STR_D"): "PASS", ("10.png", "STR_A"): "FAIL", ("10.STR_X.png", "-"): "FAIL",
+                ("12.STR_D.hand.png", "STR_D"): "PASS", ("11.STR_B.hand.png", "STR_B"): "PASS"}
         bad = [(k, rows.get(k, {}).get("verdict"), v) for k, v in want.items() if rows.get(k, {}).get("verdict") != v]
         assert not bad, bad
         assert rows[("11.STR_B.png", "STR_B")]["outside"] == "1"
         assert "не кратно" in rows[("10.png", "STR_A")]["note"]
         assert code == 1
+        # маленький предмет на всю рамку руки: 1x1 в руке - клетка [8, 24) x [16, 32) (сдвиг 8, 16; ТЗ §5.4)
+        assert C.hand_rect(1, 1) == (8, 16, 24, 32) and C.hand_rect(2, 2) == (1, 8, 31, 40)
+        assert C.hand_rect(1, 3) == (8, 1, 24, 47) and C.hand_rect(2, 3) == (1, 1, 31, 47)
+        assert C.hand_rect(3, 2) == C.hand_rect(3, 3) == (1, 1, 31, 47)
+        full = d / "full.png"
+        png(full, (32, 48), (1, 1, 31, 47))
+        alpha = np.asarray(Image.open(full))[:, :, 3]
+        assert C.outside(alpha, C.hand_rect(1, 1), K) > 0
+        # контроль: прежнее правило (вся рамка всем) этот файл пропускало
+        assert C.outside(alpha, (1, 1, 31, 47), K) == 0
         # контроль: тот же файл без лишнего пикселя проходит
         png(pack / "11.STR_B.png", (32, 48), (1, 1, 31, 47))
-        for p in (pack / "11.STR_C.hand.png", pack / "10.png", pack / "10.STR_X.png"):
+        for p in (pack / "11.STR_C.hand.png", pack / "10.png", pack / "10.STR_X.png", full):
             p.unlink()
         assert C.main([str(pack), "--items", str(items), "--frames", str(frames)]) == 0
     print("test_item_asset_check: OK")
