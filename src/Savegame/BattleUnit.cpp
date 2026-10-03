@@ -31,6 +31,7 @@
 #include "../Battlescape/Pathfinding.h"
 #include "../Battlescape/BattlescapeGame.h"
 #include "../Battlescape/AIModule.h"
+#include "../Battlescape/AiProbe.h"
 #include "../Battlescape/Inventory.h"
 #include "../Battlescape/TileEngine.h"
 #include "../Battlescape/ExplosionBState.h"
@@ -3391,8 +3392,14 @@ void BattleUnit::think(BattleAction *action)
 	{
 		// only perform once per turn
 		_aiMedikitUsed = true;
-		while (_currentAIState->medikit_think(BMT_HEAL)) {}
-		while (_currentAIState->medikit_think(BMT_STIMULANT)) {}
+		int used = 0;
+		AiProbe::medikitBefore(this, BMT_HEAL);
+		while (_currentAIState->medikit_think(BMT_HEAL)) { ++used; }
+		AiProbe::medikitAfter(this, BMT_HEAL, used);
+		used = 0;
+		AiProbe::medikitBefore(this, BMT_STIMULANT);
+		while (_currentAIState->medikit_think(BMT_STIMULANT)) { ++used; }
+		AiProbe::medikitAfter(this, BMT_STIMULANT, used);
 	}
 	_currentAIState->think(action);
 }
