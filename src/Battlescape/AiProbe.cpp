@@ -146,6 +146,10 @@ bool patrolNoPathProbe() { return false; }
 void patrolNoPathDecided(const BattleUnit *, const char *, bool) {}
 bool stalePatrolNode() { return false; }
 void stalePatrolChecked(const BattleUnit *, bool, const Position &, int, const Position &) {}
+bool staleShadow() { return false; }
+void staleShadowAsk(SavedBattleGame *, BattleUnit *, const Position &, bool, int, int, long long) {}
+int staleExact() { return 0; }
+void staleExactAsked(const BattleUnit *, const Position &, int, int, int) {}
 void blockedStepStop(SavedBattleGame *, BattleUnit *, int) {}
 void blockedStepDecide(SavedBattleGame *, BattleUnit *) {}
 void blockedStepPlan(SavedBattleGame *, BattleUnit *, const BattleAction &) {}
@@ -3491,6 +3495,63 @@ void stalePatrolChecked(const BattleUnit *unit, bool cleared, const Position &ol
 		s << "-";
 	}
 	addTrail(unit, s.str().c_str());
+}
+
+bool staleShadow()
+{
+	static const bool on = stalePatrolNode() && envOn("OXCE_AI_STALE_SHADOW");
+	return on;
+}
+
+void staleShadowAsk(SavedBattleGame *save, BattleUnit *unit, const Position &node, bool noPath, int expanded, int cost, long long ns)
+{
+	// the real search: b straight path, a A* found, f A* found none, r refused before searching
+	const char real = expanded > 0 ? (noPath ? 'f' : 'a') : (noPath ? 'r' : 'b');
+	std::ostringstream s;
+	s << "[AIPF] stale unit=" << unit->getId() << " side=" << (unit->getFaction() == FACTION_PLAYER ? "p" : "h")
+		<< " from=" << unit->getPosition().x << "," << unit->getPosition().y << "," << unit->getPosition().z
+		<< " to=" << node.x << "," << node.y << "," << node.z << " d=" << (int)Position::distance(unit->getPosition(), node)
+		<< " real=" << real << " exp=" << expanded << " cost=" << (noPath ? -1 : cost) << " ns=" << ns;
+	static const int weights[] = { 1, 2, 4, 1000 };
+	for (int w : weights)
+	{
+		int wexp = 0, wcost = -1;
+		const auto t0 = std::chrono::steady_clock::now();
+		const int ans = save->getPathfinding()->witnessReach(unit, node, w, wexp, wcost);
+		const long long wns = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - t0).count();
+		s << " w" << w << "=" << ans << "/" << wexp << "/" << wcost << "/" << wns;
+	}
+	Log(LOG_INFO) << s.str();
+}
+
+int staleExact()
+{
+	static const int mode = [] { const int m = stalePatrolNode() ? (int)param("OXCE_AI_STALE_EXACT", 0) : 0; return m >= 0 && m <= 3 ? m : 0; }();
+	return mode;
+}
+
+void staleExactAsked(const BattleUnit *unit, const Position &node, int ans, int expanded, int full)
+{
+	const std::string b = std::string(unit->getFaction() == FACTION_PLAYER ? "p." : "h.") + "stale_witness_";
+	++tallies[b + (ans == 1 ? "yes" : ans == 0 ? "no" : "unknown")];
+	tallies[b + "expanded"] += expanded;
+	if (ans != 1 && ans != 0)
+	{
+		++tallies[b + "fallback_full"];
+		return;
+	}
+	if (full < 0)
+	{
+		return;
+	}
+	++tallies[b + "verified"];
+	if (full != ans)
+	{
+		++tallies[b + "mismatch"];
+		Log(LOG_INFO) << "[AIPF] stale_exact mismatch unit=" << unit->getId() << " from=" << unit->getPosition().x << ","
+			<< unit->getPosition().y << "," << unit->getPosition().z << " to=" << node.x << "," << node.y << "," << node.z
+			<< " witness=" << ans << " full=" << full;
+	}
 }
 
 void patrolNoPathDecided(const BattleUnit *unit, const char *cause, bool chosen)

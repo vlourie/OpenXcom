@@ -32,6 +32,8 @@
 #include "../Engine/Logger.h"
 #include <optional>
 #include <chrono>
+#include <climits>
+#include <queue>
 
 namespace OpenXcom
 {
@@ -977,6 +979,124 @@ int Pathfinding::probeReach(BattleUnit *unit, Position to, int ignore, int &expa
 	_probeIgnore = 0;
 	_knownOccupantHits = hits;
 	return found;
+}
+
+/**
+ * STALE_REACH_SHADOW (bench, passive, AIModule::setupPatrol's STALE check): does calculate(unit, to, BAM_NORMAL) have a path,
+ * asked by a search of its own. The same destination rule (finalPositionFor), steps (getTUCost, banned first steps, sneak
+ * doubling) and cap as calculate's A*, but best-first by g + weight * 4 * distance and on its own arrays: the path, the
+ * nodes, the expanded count and the known occupant's hits stay calculate's. A found path is one that exists under the cap.
+ * When the open list runs out, every tile joined to the start by steps was taken unless the cap dropped one: if no dropped
+ * tile stayed unreached, A* (the same steps from the same start) cannot reach the target either. calculate's straight path
+ * (bresenhamPath) is not asked: its steps are the same getTUCost steps under stricter rules but under no cap, so when it finds
+ * a path this search finds one too or drops a tile on it - 1 or 2, never 0. EXACT_STALE_REACH_V1 hands 2, 3 and anything it
+ * cannot prove to the full search.
+ * @param unit Unit taking the path.
+ * @param to The position asked for.
+ * @param weight Multiplier of the distance guess (1 orders as calculate's A*).
+ * @param expanded Gets the nodes it closed.
+ * @param cost Gets the found path's TU cost, -1 without one.
+ * @return 1 found, 0 none, 2 undecided (the cap dropped a tile it never reached), 3 not asked (the unit stands on the
+ * destination: calculate gives an empty path there, which its callers read as none), -1 refused before searching.
+ */
+int Pathfinding::witnessReach(BattleUnit *unit, Position to, int weight, int &expanded, int &cost)
+{
+	expanded = 0;
+	cost = -1;
+	const auto fin = finalPositionFor(unit, to, BAM_NORMAL);
+	if (!fin)
+	{
+		return -1;
+	}
+	const Position end = *fin;
+	if (end == unit->getPosition())
+	{
+		return 3;
+	}
+	const int hits = _knownOccupantHits;
+	const bool sneak = Options::sneakyAI && unit->getFaction() == FACTION_HOSTILE;
+	const int cap = 1000;
+	std::vector<int> g(_nodes.size(), INT_MAX);
+	std::vector<char> closed(_nodes.size(), 0);
+	std::vector<int> dropped;
+	typedef std::pair<int, int> Item; // guess, tile index
+	std::priority_queue<Item, std::vector<Item>, std::greater<Item>> open;
+	auto guess = [&](const Position &p) { return weight * (int)(4 * Position::distance(end, p)); };
+	const int startIdx = _save->getTileIndex(unit->getPosition());
+	g[startIdx] = 0;
+	open.push({guess(unit->getPosition()), startIdx});
+	bool found = false;
+	while (!open.empty())
+	{
+		const int i = open.top().second;
+		open.pop();
+		if (closed[i])
+		{
+			continue;
+		}
+		closed[i] = 1;
+		++expanded;
+		const Position pos = _nodes[i].getPosition();
+		if (pos == end)
+		{
+			cost = g[i];
+			found = true;
+			break;
+		}
+		for (int direction = 0; direction < 10; direction++)
+		{
+			if (!_bannedFirst.empty() && i == startIdx && bannedFirst(direction))
+				continue;
+			PathfindingStep r = getTUCost(pos, direction, unit, 0, BAM_NORMAL);
+			if (r.cost.time == INVALID_MOVE_COST)
+				continue;
+			if (sneak && _save->getTile(r.pos)->getVisible()) r.cost.time *= 2;
+			const int j = _save->getTileIndex(r.pos);
+			if (closed[j])
+				continue;
+			const int t = g[i] + r.cost.time + r.penalty.time;
+			if (t > cap)
+			{
+				dropped.push_back(j);
+				continue;
+			}
+			if (t < g[j])
+			{
+				g[j] = t;
+				open.push({t + guess(r.pos), j});
+			}
+		}
+	}
+	_knownOccupantHits = hits;
+	if (found)
+	{
+		return 1;
+	}
+	for (int j : dropped)
+	{
+		if (!closed[j])
+		{
+			return 2;
+		}
+	}
+	return 0;
+}
+
+/**
+ * EXACT_STALE_REACH_V1 (bench, AIModule::setupPatrol's STALE check): the state calculate(unit, ..., BAM_NORMAL) and abortPath()
+ * would leave when witnessReach answered in their place - no path, no cost, no teleport or strafe, the unit set. The expanded
+ * count is 0 as after a straight path, so closedTiles() gives nothing; the nodes keep an older search's flags, which nothing
+ * reads without a calculate of its own first.
+ * @param unit Unit the check was for.
+ */
+void Pathfinding::settleWitness(BattleUnit *unit)
+{
+	_totalTUCost = {};
+	_path.clear();
+	_expanded = 0;
+	_unit = unit;
+	_teleportDestination.reset();
+	_strafeMove = false;
 }
 
 /**

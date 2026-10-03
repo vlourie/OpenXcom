@@ -305,6 +305,22 @@ bool stalePatrolNode();
 /// STALE_PATROL_NODE_V1: one check of a kept node. Tallies patrol_stale.checked; when dropped also patrol_stale.no_path,
 /// .cleared and .reselected or .reselect_failed, and the trail "patrol.stale old <xyz> age <turns> new <xyz>|-".
 void stalePatrolChecked(const BattleUnit *unit, bool cleared, const Position &old, int age, const Position &now);
+/// STALE_REACH_SHADOW (OXCE_AI_STALE_SHADOW with OXCE_AI_STALE_PATROL_NODE, bench only, passive): profile the STALE check's
+/// search and ask the same question by Pathfinding::witnessReach at several weights. False in a release build.
+bool staleShadow();
+/// STALE_REACH_SHADOW: one STALE check - the real search's answer, the nodes its A* closed (0 after a straight path or a
+/// refusal), its path cost and time; logs "[AIPF] stale ..." with the witness searches' answers, nodes, costs and times.
+/// Leaves the pathfinder's path, nodes and counts as they were.
+void staleShadowAsk(SavedBattleGame *save, BattleUnit *unit, const Position &node, bool noPath, int expanded, int cost, long long ns);
+/// EXACT_STALE_REACH_V1 (OXCE_AI_STALE_EXACT with OXCE_AI_STALE_PATROL_NODE, bench only): how the STALE check is answered.
+/// 0 the full search (calculate); 1 Pathfinding::witnessReach at weight 4 - a found path or a proven none decide, anything
+/// else goes to the full search; 2 the same, and the full search runs every time to compare (the witness still decides);
+/// 3 the broken control: a found path dearer than 300 TU is called none - the bench's play must change. 0 in a release build.
+int staleExact();
+/// EXACT_STALE_REACH_V1: one check. ans 1 path, 0 none, 2 unknown (the full search decided); expanded the witness's nodes;
+/// full the full search's answer (1 path, 0 none) or -1 when it did not run. Tallies p./h.stale_witness_yes, _no, _unknown,
+/// _fallback_full, _expanded, and with a decided ans and full run _verified, _mismatch (logs "[AIPF] stale_exact mismatch").
+void staleExactAsked(const BattleUnit *unit, const Position &node, int ans, int expanded, int full);
 /// REPEATED_BLOCKED_STEP_V1 (OXCE_AI_BLOCKED_STEP, bench only): a walk stopped at a unit on the step in dir from where the
 /// unit stands (UnitWalkBState). Remembered for the rest of the unit-turn while knownRevision stays what it was then; another
 /// stop there at the same revision adds its step. No-op without the flag.

@@ -17,6 +17,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <climits>
+#include <chrono>
 #include <algorithm>
 #include <sstream>
 #include "AIModule.h"
@@ -1439,9 +1440,50 @@ void AIModule::setupPatrol()
 	if (staleCheck)
 	{
 		Pathfinding *pf = _save->getPathfinding();
-		pf->calculate(_unit, _toNode->getPosition(), BAM_NORMAL);
-		const bool noPath = pf->getStartDirection() == -1;
-		pf->abortPath();
+		// EXACT_STALE_REACH_V1 (bench): the same question answered by Pathfinding::witnessReach where it proves the answer - a
+		// path found under the cap, or every reachable tile taken with nothing the cap dropped left unreached; the rest goes
+		// to the full search
+		const int exact = AiProbe::staleExact();
+		int ans = 2, wexp = 0;
+		if (exact)
+		{
+			int wcost = -1;
+			const int w = pf->witnessReach(_unit, _toNode->getPosition(), 4, wexp, wcost);
+			ans = w == 1 ? 1 : (w == 0 || w == -1) ? 0 : 2; // -1: calculate refuses before searching, no path either
+			if (exact == 3 && ans == 1 && wcost > 300)
+			{
+				ans = 0; // the broken control: a search's own limit taken for no path
+			}
+		}
+		bool noPath = ans == 0;
+		int full = -1;
+		if (ans == 2 || exact == 2)
+		{
+			// STALE_REACH_SHADOW (bench, passive): the check's own time, then the same question by other searches
+			const bool shadow = AiProbe::staleShadow();
+			const auto t0 = shadow ? std::chrono::steady_clock::now() : std::chrono::steady_clock::time_point();
+			pf->calculate(_unit, _toNode->getPosition(), BAM_NORMAL);
+			const bool fullNoPath = pf->getStartDirection() == -1;
+			if (shadow)
+			{
+				const long long ns = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - t0).count();
+				AiProbe::staleShadowAsk(_save, _unit, _toNode->getPosition(), fullNoPath, pf->getExpanded(), pf->getTotalTUCost(), ns);
+			}
+			pf->abortPath();
+			full = fullNoPath ? 0 : 1;
+			if (ans == 2)
+			{
+				noPath = fullNoPath;
+			}
+		}
+		else
+		{
+			pf->settleWitness(_unit);
+		}
+		if (exact)
+		{
+			AiProbe::staleExactAsked(_unit, _toNode->getPosition(), ans, wexp, full);
+		}
 		if (noPath)
 		{
 			staleOld = _toNode->getPosition();
