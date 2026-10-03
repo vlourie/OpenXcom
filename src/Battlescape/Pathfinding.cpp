@@ -985,7 +985,10 @@ int Pathfinding::probeReach(BattleUnit *unit, Position to, int ignore, int &expa
  * STALE_REACH_SHADOW (bench, passive, AIModule::setupPatrol's STALE check): does calculate(unit, to, BAM_NORMAL) have a path,
  * asked by a search of its own. The same destination rule (finalPositionFor), steps (getTUCost, banned first steps, sneak
  * doubling) and cap as calculate's A*, but best-first by g + weight * 4 * distance and on its own arrays: the path, the
- * nodes, the expanded count and the known occupant's hits stay calculate's. A found path is one that exists under the cap.
+ * nodes, the expanded count and the known occupant's hits stay calculate's. A found path is one that exists under the cap,
+ * but calculate's A* is not sure to find it: a fall costs nothing, so A* may close a tile above its least cost for good.
+ * The path counts as found only while its cost plus the guess drops its steps left unpaid fits the cap (then A* reaches
+ * the target too); otherwise 2.
  * When the open list runs out, every tile joined to the start by steps was taken unless the cap dropped one: if no dropped
  * tile stayed unreached, A* (the same steps from the same start) cannot reach the target either. calculate's straight path
  * (bresenhamPath) is not asked: its steps are the same getTUCost steps under stricter rules but under no cap, so when it finds
@@ -993,17 +996,20 @@ int Pathfinding::probeReach(BattleUnit *unit, Position to, int ignore, int &expa
  * cannot prove to the full search.
  * @param unit Unit taking the path.
  * @param to The position asked for.
- * @param weight Multiplier of the distance guess (1 orders as calculate's A*).
+ * @param weight Multiplier of the distance guess (calculate's A* orders by 4 * g + 4 * distance, no weight here repeats it).
  * @param expanded Gets the nodes it closed.
  * @param cost Gets the found path's TU cost, -1 without one.
- * @return 1 found, 0 none, 2 undecided (the cap dropped a tile it never reached), 3 not asked (the unit stands on the
+ * @return 1 found, 0 none, 2 undecided (the cap dropped a tile it never reached, or the path found is too near the cap for
+ * A* to be sure of it), 3 not asked (the unit stands on the
  * destination: calculate gives an empty path there, which its callers read as none), -1 refused before searching.
  */
 int Pathfinding::witnessReach(BattleUnit *unit, Position to, int weight, int &expanded, int &cost)
 {
 	expanded = 0;
 	cost = -1;
+	const int hits = _knownOccupantHits;
 	const auto fin = finalPositionFor(unit, to, BAM_NORMAL);
+	_knownOccupantHits = hits;
 	if (!fin)
 	{
 		return -1;
@@ -1013,11 +1019,11 @@ int Pathfinding::witnessReach(BattleUnit *unit, Position to, int weight, int &ex
 	{
 		return 3;
 	}
-	const int hits = _knownOccupantHits;
 	const bool sneak = Options::sneakyAI && unit->getFaction() == FACTION_HOSTILE;
 	const int cap = 1000;
 	std::vector<int> g(_nodes.size(), INT_MAX);
 	std::vector<char> closed(_nodes.size(), 0);
+	std::vector<int> prev(_nodes.size(), -1);
 	std::vector<int> dropped;
 	typedef std::pair<int, int> Item; // guess, tile index
 	std::priority_queue<Item, std::vector<Item>, std::greater<Item>> open;
@@ -1063,6 +1069,7 @@ int Pathfinding::witnessReach(BattleUnit *unit, Position to, int weight, int &ex
 			if (t < g[j])
 			{
 				g[j] = t;
+				prev[j] = i;
 				open.push({t + guess(r.pos), j});
 			}
 		}
@@ -1070,7 +1077,16 @@ int Pathfinding::witnessReach(BattleUnit *unit, Position to, int weight, int &ex
 	_knownOccupantHits = hits;
 	if (found)
 	{
-		return 1;
+		// calculate's A* closes a tile for good, and its order 4 * g + guess is not consistent: a fall costs nothing yet the
+		// guess drops. A tile on this path can close up to the guess drop its steps did not pay for above its cost here, so
+		// A* still reaches the target under the cap when 4 * cost plus those unpaid drops stays within 4 * cap
+		auto guessA = [&](int k) { return (int)(Sint16)(4 * Position::distance(end, _nodes[k].getPosition())); };
+		int unpaid = 0;
+		for (int k = _save->getTileIndex(end); prev[k] >= 0; k = prev[k])
+		{
+			unpaid += std::max(0, guessA(prev[k]) - guessA(k) - 4 * (g[k] - g[prev[k]]));
+		}
+		return 4 * cost + unpaid <= 4 * cap ? 1 : 2;
 	}
 	for (int j : dropped)
 	{

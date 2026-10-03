@@ -1442,10 +1442,10 @@ void AIModule::setupPatrol()
 		Pathfinding *pf = _save->getPathfinding();
 		// EXACT_STALE_REACH_V1 (bench): the same question answered by Pathfinding::witnessReach where it proves the answer - a
 		// path found under the cap, or every reachable tile taken with nothing the cap dropped left unreached; the rest goes
-		// to the full search
+		// to the full search; so does a check with KNOWN_OCCUPANT_PATH_V1's target set, whose hits only calculate counts
 		const int exact = AiProbe::staleExact();
 		int ans = 2, wexp = 0;
-		if (exact)
+		if (exact && !pf->getKnownOccupant(_unit))
 		{
 			int wcost = -1;
 			const int w = pf->witnessReach(_unit, _toNode->getPosition(), 4, wexp, wcost);
