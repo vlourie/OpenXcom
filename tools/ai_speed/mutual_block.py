@@ -22,7 +22,7 @@ def main():
             for line in f:
                 if "[AIEXEC]" not in line or "walk.stop.unit" not in line:
                     continue
-                seed = line.split(" ", 1)[0][5:]
+                seed = line.partition(" [")[0]  # бой = seed + want: seed повторяется в миссиях (R-206)
                 r = json.loads(line[line.index("{"):])
                 for t in r.get("trail") or []:
                     m = RX.search(t)

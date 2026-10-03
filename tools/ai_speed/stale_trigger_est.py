@@ -38,7 +38,7 @@ def battles(path):
                 r = json.loads(line[i + len(tag):])
             except ValueError:
                 continue
-            seed = line.split("seed=", 1)[1].split(" ", 1)[0] if "seed=" in line else "?"
+            seed = line.partition(" [")[0] if "seed=" in line else "?"  # бой = seed + want: seed повторяется в миссиях (R-206)
             if tag == "[AIREC] ":
                 b = r.get("base") or {}
                 d = {"rec": r["rec"], "unit": r["unit"], "side": "p" if r.get("side") == 0 else "h", "base": b,
