@@ -58,12 +58,15 @@ struct Mask
 struct Shape
 {
 	int side = 0;
-	std::vector<Uint8> fill, rim, halo, around;
+	std::vector<Uint8> fill, rim, halo, state, around;
 };
 /// The halo's colour and strength.
 const float HALO_RGB = 16.0f, HALO_ALPHA = 0.6f;
 /// The state line's strength where it takes the halo's place.
 const float STATE_ALPHA = 0.9f;
+/// How far the state line reaches out from the hull, in screen pixels: the dark halo is one pixel,
+/// the red, green or white line three, so that it reads on the globe (testers, 04.10).
+const int STATE_REACH = 3;
 
 bool indexRead = false;
 std::unordered_map<std::string, float> factors;
@@ -147,7 +150,7 @@ const Shape &shape(const std::string &type, const Mask &m, int length, int turn)
 		shapes.clear();
 	}
 	Shape &s = shapes[key];
-	const int side = (int)std::ceil(length * 1.1f) + 4;
+	const int side = (int)std::ceil(length * 1.1f) + 4 + 2 * (STATE_REACH - 1);
 	const size_t n = (size_t)side * side;
 	s.side = side;
 	const float c = (side - 1) * 0.5f;
@@ -181,12 +184,29 @@ const Shape &shape(const std::string &type, const Mask &m, int length, int turn)
 	s.fill.resize(n);
 	s.rim.resize(n);
 	s.halo.resize(n);
+	s.state.resize(n);
 	s.around.resize(n);
 	for (int y = 0; y < side; ++y)
 	{
 		for (int x = 0; x < side; ++x)
 		{
 			const size_t i = (size_t)y * side + x;
+			// the state line: the hull grown by a disc of STATE_REACH pixels, its edge smoothed over a pixel
+			float grown = cov[i];
+			for (int dy = -STATE_REACH; dy <= STATE_REACH; ++dy)
+			{
+				for (int dx = -STATE_REACH; dx <= STATE_REACH; ++dx)
+				{
+					const int yy = y + dy, xx = x + dx;
+					if (yy < 0 || xx < 0 || yy >= side || xx >= side)
+					{
+						continue;
+					}
+					const float edge = std::min(std::max(STATE_REACH + 0.5f - std::sqrt((float)(dx * dx + dy * dy)), 0.0f), 1.0f);
+					grown = std::max(grown, cov[(size_t)yy * side + xx] * edge);
+				}
+			}
+			s.state[i] = (Uint8)std::lround(std::min(std::max(grown - cov[i], 0.0f), 1.0f) * 255.0f);
 			float lowest = cov[i], highest = cov[i];
 			for (int dy = -1; dy <= 1; ++dy)
 			{
@@ -257,7 +277,7 @@ void draw(const std::string &type, float cx, float cy, float length, float angle
 	{
 		// the rim, and the hull faintly inside it (craft_outline: ring 1, fill 0.22)
 		float alpha = std::min(1.0f, s.rim[i] / 255.0f + s.fill[i] / 255.0f * 0.22f) * strength;
-		float dark = s.halo[i] / 255.0f * haloAlpha * strength;
+		float dark = (stated ? s.state[i] : s.halo[i]) / 255.0f * haloAlpha * strength;
 		const float t = s.around[i] / 256.0f;
 		if (reveal < 1.0f)
 		{

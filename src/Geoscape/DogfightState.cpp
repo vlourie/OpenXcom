@@ -2402,6 +2402,10 @@ void DogfightState::blit()
 	// nose up: the UFO flies on, away from the craft at the bottom that chases it
 	HdOutline::draw(_ufo->getRules()->getType(), cx * k, cy * k, (x1 - x0 + 1) * 1.3f * k, -1.5707963f, color,
 		(now % 100000u) / 1000.0f * 2.4f, std::min(1.0f, (now - _hdOutlineSince) / 1200.0f));
+	// the point the distance is counted to, as on the globe: when it comes within a weapon's reach,
+	// that weapon fires (update: _currentDist <= range * 8; the row is _battle's height - _currentDist / 8)
+	const float px = _battle->getX() + _battle->getWidth() / 2 + 0.5f;
+	HdOutline::beacon(px * k, cy * k, 0.5f + 0.55f * k, std::min(1.0f, (now - _hdOutlineSince) / 1200.0f));
 	ui.clearClip();
 }
 
