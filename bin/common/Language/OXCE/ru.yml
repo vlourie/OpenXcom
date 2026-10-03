@@ -27,8 +27,6 @@ ru:
   STR_NOT_EQUIPPED: "Не снаряженное"
   STR_NOT_PURCHASABLE: "Не продается"
   STR_UNASSIGNED: "Прочее"
-  STR_LOAD_ALL_SHORT: "Загр"
-  STR_UNLOAD_ALL_SHORT: "Выгр"
   STR_NO_MORE_EQUIPMENT_ALLOWED_BY_SIZE: "ГРУЗОВОЙ ОТСЕК ЗАПОЛНЕН!{SMALLLINE}Объем отсека: {0}"
   STR_PILOTS: "ПИЛОТЫ"
   STR_SHIELD: "ЩИТ>{ALT}{0}"
