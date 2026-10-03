@@ -42,7 +42,7 @@ class Base;
 class CraftEquipmentState : public ItemCountTooltipMixin<TouchState>
 {
 private:
-	TextButton *_btnOk, *_btnLoadAll, *_btnClear, *_btnInventory;
+	TextButton *_btnOk, *_btnClear, *_btnInventory;
 	TextEdit *_btnQuickSearch;
 	Window *_window;
 	Text *_txtTitle, *_txtItem, *_txtStores, *_txtAvailable, *_txtUsed, *_txtCrew;
@@ -109,6 +109,8 @@ public:
 	void btnLoadAllClick(Action *action);
 	/// Empties the contents of the craft, moving all of the items back to the base.
 	void btnClearClick(Action *action);
+	/// Hotkey: empties the listed items, or loads them all if none is on board.
+	void btnClearOrLoadAll(Action *action);
 	/// Handler for clicking the Inventory button.
 	void btnInventoryClick(Action *action);
 	/// Methods for handling the global craft loadout save/load hotkeys.
