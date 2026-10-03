@@ -41,6 +41,7 @@
 #include "../Engine/Unicode.h"
 #include "Globe.h"
 #include "../Mod/RuleInterface.h"
+#include "../Engine/HdCraftBack.h"
 
 namespace OpenXcom
 {
@@ -147,6 +148,11 @@ GeoscapeCraftState::GeoscapeCraftState(Craft *craft, Globe *globe, Waypoint *way
 
 	// Set up objects
 	setWindowBackground(_window, "geoCraft");
+	// the craft's own picture (its ufopaedia article's) in the window's colours, when it has one
+	if (const Surface *bg = HdCraftBack::get(_game->getMod(), _craft->getRules()->getType(), _window->getPalette()))
+	{
+		_window->setBackground(bg);
+	}
 
 	_btnBase->setText(tr("STR_RETURN_TO_BASE"));
 	_btnBase->onMouseClick((ActionHandler)&GeoscapeCraftState::btnBaseClick);
