@@ -288,21 +288,37 @@ def cut_fixed(frame, hd, asked):
     return im, rep, g, m_c
 
 
-def place_fixed(cut4, box, w, h):
+def place_fixed(cut4, box, w, h, full, inherit):
     """Вырезка x4 кропа -> кадр k=4 128x192 на месте оригинала x4: ни уменьшения, ни сдвига, ни обрезки.
-    Вне клеток и вне допуска руки - замер до обрезки движком, не правка. -> (RGBA, отчёт)."""
+    Вне клеток и вне допуска руки - замер до обрезки движком, не правка. Решение Vitali 03.10 разрешает выход
+    за клетки только унаследованный от оригинала (census/items/geometry/decisions.tsv): вне клеток HD не дальше
+    контура оригинала x4 (sil_x4, как у вырезки, плюс полпикселя базы) - кромка срезается по нему
+    (contour_clip_px), дальше полосы вырезки - beyond_orig_px, REWORK. -> (RGBA, отчёт)."""
     W, H = iac.HAND_W * K, iac.HAND_H * K
     canvas = Image.new("RGBA", ((iac.HAND_W + 2 * PAD) * K, (iac.HAND_H + 2 * PAD) * K), (0, 0, 0, 0))
     canvas.paste(cut4, (box[0] * K, box[1] * K))
     out = canvas.crop((PAD * K, PAD * K, PAD * K + W, PAD * K + H))
-    alpha = np.asarray(out)[..., 3]
-    lost = int((np.asarray(canvas)[..., 3] > 0).sum() - (alpha > 0).sum())
+    lost = int((np.asarray(canvas)[..., 3] > 0).sum() - (np.asarray(out)[..., 3] > 0).sum())
+    x0, y0, x1, y1 = (v * K for v in iac.grid_rect(w, h))
+    cells = np.zeros((H, W), bool)
+    cells[y0:y1, x0:x1] = True
+    contour = pb.grow(pb.sil_x4(np.asarray(full)[..., 3] > 0) > 0.5, K // 2)
+    # кромка вырезки (полоса managed_alpha и размытие) вне разрешённого - срезается явно, с числом в отчёте;
+    # разрешено - клетки, а с решением inherit ещё и контур оригинала. Дальше полосы вырезки от контура быть
+    # нечему - это уже не кромка, REWORK
+    a = np.asarray(out).copy()
+    fringe = (a[..., 3] > 0) & ~(cells | contour) if inherit else (a[..., 3] > 0) & ~cells
+    beyond = int((fringe & ~pb.grow(contour, pb.BAND)).sum())
+    a[..., 3][fringe] = 0
+    out = Image.fromarray(a, "RGBA")
+    alpha = a[..., 3]
     dx, dy = (2 - w) * 8 * K, (3 - h) * 8 * K          # сдвиг руки, RuleItem::getHandSpriteOffX/Y
     hand = np.zeros_like(alpha)
     ys, xs = np.nonzero(alpha)
     ok = (ys + dy >= 0) & (ys + dy < H) & (xs + dx >= 0) & (xs + dx < W)
     hand[ys[ok] + dy, xs[ok] + dx] = 255
     return out, {"scale": 1.0, "shift": [0, 0], "lost_off_frame_px": lost,
+                 "contour_clip_px": int(fringe.sum()), "beyond_orig_px": beyond,
                  "outside_grid_px": iac.outside(alpha, iac.grid_rect(w, h), K),
                  "outside_hand_px": iac.outside(hand, iac.hand_rect(w, h), K) + int((~ok).sum())}
 
@@ -447,15 +463,20 @@ def main():
                 print("%-20s нет ответа (--recut)" % j["asset_id"], flush=True)
                 continue
             im, rep, _g, m_c, c, verdict = final
-            hd, prep = place_fixed(im, j["box"], *j["cells"])
+            hd, prep = place_fixed(im, j["box"], *j["cells"], j["full"],
+                                   j["geometry_decision"] == "inherit_overflow")
             pp = os.path.join(pack, "%d.%s.png" % (j["frame"], j["asset_id"]))
             hd.save(pp)
             mg = rep["model"]
             blocked = j["geometry_orig"] != "OK" and not j["geometry_decision"]
             # статус контракта v4 §7: BLOCKED_GEOMETRY - до решения Vitali; REWORK - размер или место модели не
             # те, или HD вне клеток при оригинале в клетках; иначе CANDIDATE - смотреть глазами, не приёмка
-            status = ("BLOCKED_GEOMETRY" if blocked else "REWORK" if mg["geometry"] == "REWORK" or (
-                j["geometry_orig"] == "OK" and prep["outside_grid_px"]) else "CANDIDATE")
+            over = prep["beyond_orig_px"]
+            if over:
+                mg["geometry_why"] = "; ".join(filter(None, [mg["geometry_why"],
+                                                             "вне клеток дальше контура оригинала %d пикс" % over]))
+            status = ("BLOCKED_GEOMETRY" if blocked else
+                      "REWORK" if mg["geometry"] == "REWORK" or over else "CANDIDATE")
             meta = {"asset_id": j["asset_id"], "master": j["master"], "frame": j["frame"], "cells": j["cells"],
                     "what": j["what"], "src": j["src"], "generator_rev": R.grev, "guide_rev": R.guide_rev,
                     "cut_rev": R.cut_rev, "attempts": attempts, "report": rep,
@@ -468,9 +489,9 @@ def main():
             with open(os.path.join(meta_dir, j["name"] + ".json"), "w", encoding=ENC) as f:
                 json.dump(meta, f, ensure_ascii=False, indent=1)
             cells.append(("%s %s" % (j["master"], status), j, attempts[-1]["raw"], hd, mg))
-            print("%-5s %-20s %-16s модель %s / %s, края %s, вне клеток %d | готово %d из %d, прошло %.0f мин" % (
+            print("%-5s %-20s %-16s модель %s / %s, края %s, вне клеток %d, дальше оригинала %d | готово %d из %d, прошло %.0f мин" % (
                 j["master"], j["asset_id"], status, mg.get("dw_pct"), mg.get("dh_pct"), mg.get("edges"),
-                prep["outside_grid_px"], n, len(plan), (time.time() - t0) / 60), flush=True)
+                prep["outside_grid_px"], prep["beyond_orig_px"], n, len(plan), (time.time() - t0) / 60), flush=True)
     except sp.Budget:
         print("лимит процесса: новых рендеров %d из %d - выхожу, продолжит новый процесс" % (R.renders, R.max),
               flush=True)
