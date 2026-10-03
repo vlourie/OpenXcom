@@ -10,6 +10,7 @@ param(
     [switch] $DevKeys
 )
 $ErrorActionPreference = 'Stop'
+try { [Console]::OutputEncoding = New-Object Text.UTF8Encoding $false } catch {}
 
 if (-not (Get-Command dotnet -ErrorAction SilentlyContinue)) { throw 'dotnet не найден: нужен .NET SDK 10 (global.json)' }
 if (-not (Get-Command vswhere -ErrorAction SilentlyContinue)) {
@@ -19,6 +20,12 @@ if (-not (Get-Command vswhere -ErrorAction SilentlyContinue)) {
 }
 $vs = vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
 if (-not $vs) { throw 'нет MSVC (VC.Tools.x86.x64): NativeAOT нечем линковать' }
+
+# части голоса (third_party\voice) не в гите: до сборки - есть ли они и собраны ли из нынешних исходников,
+# иначе в выпуск уйдёт xpaudio.dll без поздней заплатки miniaudio
+if (-not (Get-Command py -ErrorAction SilentlyContinue)) { throw 'py не найден: нужен Python 3 (py launcher) для проверки tools\voice_deps.py --check' }
+& py -3 (Join-Path $PSScriptRoot '..\tools\voice_deps.py') --check
+if ($LASTEXITCODE -ne 0) { throw 'части голоса не годятся для сборки лаунчера - выполните команду починки из строки выше' }
 
 $extra = @()
 if ($DevKeys) { $extra += '-p:AllowDevKeys=true' }
