@@ -60,7 +60,9 @@ for kv in filter(None, o.mods.split(";")):
 # имя - из user/piratez установки; путь к существующему файлу - своя копия сейва (установку не трогаем)
 if o.save:
     save = Path(o.save) if Path(o.save).is_file() else GAME / "user" / "piratez" / o.save
-    shutil.copy(save, u / "piratez" / "hiddentest.sav")
+    # игра читает сейвы из user/<мастер> (-master xcom1 - user/xcom1)
+    (u / (o.master or "piratez")).mkdir(parents=True, exist_ok=True)
+    shutil.copy(save, u / (o.master or "piratez") / "hiddentest.sav")
 
 dump = Path(o.out).resolve()
 if dump.exists():
