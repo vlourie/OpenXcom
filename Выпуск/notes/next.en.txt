@@ -1,0 +1,2 @@
+- The Thunderer (dropship) no longer flies backwards on the globe: its cockpit now points along the course and the engine pods trail behind. The police version of this craft among the UFOs is turned the same way.
+- 14 new battle reticles (Options → HD → "HD reticle"): thin versions of Ring 45, Plasma, Techno and Predator, plus Lasers, Laser cross, Lock-on, Closing rings, Sniper, Chevrons, Dashed, Trefoil, Dot and the almost transparent Ghost, which shows only a spark running to the target. The old reticles stay, and your choice is kept.
