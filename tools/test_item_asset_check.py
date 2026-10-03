@@ -71,6 +71,33 @@ def main():
         for p in (pack / "11.STR_C.hand.png", pack / "10.png", pack / "10.STR_X.png", full):
             p.unlink()
         assert C.main([str(pack), "--items", str(items), "--frames", str(frames)]) == 0
+        # .wide (M-01, магазин АК во втором столбце): за свои клетки до рамки кадра и рамки руки после сдвига
+        assert C.wide_rect(1, 3, (32, 48)) == (0, 1, 23, 47)        # в руке сдвиг 8: 23 + 8 = 31, линия рамки
+        assert C.wide_rect(2, 3, (32, 48)) == (1, 1, 31, 47) and C.wide_rect(3, 3, (48, 48)) == (0, 0, 48, 48)
+        assert C.wide_rect(1, 1, (32, 48)) == (0, 0, 23, 31)
+        png(pack / "10.STR_A.wide.png", (32, 48), (0, 1, 20, 47))                    # магазин до x = 20, ствол на линии 0
+        png(pack / "11.STR_B.wide.hand.png", (32, 48), (1, 1, 31, 47))               # .wide у .hand не бывает
+        rows = {}
+        code = C.main([str(pack), "--items", str(items), "--frames", str(frames), "--out", str(out)])
+        rows = {(r["file"], r["item"]): r for r in C.read_tsv(out)}
+        assert rows[("10.STR_A.wide.png", "STR_A")]["verdict"] == "PASS"
+        assert rows[("10.STR_A.wide.png", "STR_A")]["variant"] == "wide"
+        assert rows[("11.STR_B.wide.hand.png", "-")]["verdict"] == "FAIL" and code == 1
+        # контроль: тот же рисунок без метки - FAIL (за клеткой 1x3), метка не снимает правило с остальных
+        png(pack / "10.STR_A.png", (32, 48), (1, 1, 20, 47))
+        C.main([str(pack), "--items", str(items), "--frames", str(frames), "--out", str(out)])
+        rows = {(r["file"], r["item"]): r for r in C.read_tsv(out)}
+        assert rows[("10.STR_A.png", "STR_A")]["verdict"] == "FAIL"
+        # за рамку руки после сдвига: столбец 23 у 1x3 - уже линия рамки
+        png(pack / "10.STR_A.wide.png", (32, 48), (0, 1, 20, 47), extra=(23 * K, 40))
+        C.main([str(pack), "--items", str(items), "--frames", str(frames), "--out", str(out)])
+        rows = {(r["file"], r["item"]): r for r in C.read_tsv(out)}
+        assert rows[("10.STR_A.wide.png", "STR_A")]["verdict"] == "FAIL"
+        # строка 0 у 1x3 - в руке верхняя линия рамки (сдвиг по высоте 0), альфа 1 - уже FAIL
+        png(pack / "10.STR_A.wide.png", (32, 48), (0, 1, 20, 47), extra=(4 * K, 0), alpha=1)
+        C.main([str(pack), "--items", str(items), "--frames", str(frames), "--out", str(out)])
+        rows = {(r["file"], r["item"]): r for r in C.read_tsv(out)}
+        assert rows[("10.STR_A.wide.png", "STR_A")]["outside"] == "1"
     print("test_item_asset_check: OK")
 
 

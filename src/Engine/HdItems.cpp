@@ -52,6 +52,9 @@ const char *FOLDER = "BIGOBS.PCK";
 struct Asset
 {
 	std::string path, hand;
+	/// "<frame>.<type>.wide.png": the grid picture is drawn past the item's cells as its classic frame is
+	/// (the AK's magazine in the next column) - the whole frame in the grid, the hand frame's inside in the hand
+	bool wide = false;
 };
 
 /// (frame, item type in lower case; "" = the frame's common picture) -> files.
@@ -130,6 +133,11 @@ void scan()
 		{
 			stem.resize(stem.size() - 5);
 		}
+		const bool wide = !hand && endsWith(stem, ".wide");
+		if (wide)
+		{
+			stem.resize(stem.size() - 5);
+		}
 		const size_t dot = stem.find('.');
 		const std::string number = stem.substr(0, dot);
 		char *stop = nullptr;
@@ -141,6 +149,10 @@ void scan()
 		const std::string type = dot == std::string::npos ? std::string() : stem.substr(dot + 1);
 		Asset &asset = assets[std::make_pair((int)frame, type)];
 		(hand ? asset.hand : asset.path) = HdSprites::artPath(std::string(FOLDER) + "/" + file);
+		if (!hand)
+		{
+			asset.wide = wide;
+		}
 	}
 	if (!assets.empty())
 	{
@@ -317,7 +329,14 @@ bool pick(const RuleItem *rule, const BattleItem *item, const SavedBattleGame *s
 			return false;
 		}
 		out.frame = get(key, asset.path, classic->getWidth() * k, classic->getHeight() * k);
-		setClip(out, 1, 1, xMax, yMax);
+		if (asset.wide)
+		{
+			setClip(out, 0, 0, classic->getWidth(), classic->getHeight());
+		}
+		else
+		{
+			setClip(out, 1, 1, xMax, yMax);
+		}
 	}
 	else if (!asset.hand.empty())
 	{
@@ -341,8 +360,15 @@ bool pick(const RuleItem *rule, const BattleItem *item, const SavedBattleGame *s
 		out.frame = get(key, asset.path, classic->getWidth() * k, classic->getHeight() * k);
 		out.dx = offX;
 		out.dy = offY;
-		setClip(out, std::max(1, offX + 1), std::max(1, offY + 1),
-			std::min(handW - 1, offX + xMax), std::min(handH - 1, offY + yMax));
+		if (asset.wide)
+		{
+			setClip(out, 1, 1, handW - 1, handH - 1);
+		}
+		else
+		{
+			setClip(out, std::max(1, offX + 1), std::max(1, offY + 1),
+				std::min(handW - 1, offX + xMax), std::min(handH - 1, offY + yMax));
+		}
 	}
 	else
 	{
