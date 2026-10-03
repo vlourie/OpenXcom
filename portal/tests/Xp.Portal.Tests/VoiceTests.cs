@@ -504,6 +504,72 @@ public sealed partial class VoiceTests(VoiceFactory f) : IClassFixture<VoiceFact
         Assert.Equal(HttpStatusCode.Unauthorized, (await browser.PostAsJsonAsync("/api/v1/voice/rooms", new CreateRoomBody("Через сессию"))).StatusCode);
     }
 
+    /// <summary>
+    /// The ban window (VOICE_CHAT.md section 7) the way the launchers meet it: a guest inside with a pass
+    /// taken before the ban is taken out, gets no new pass, and the old one, used again within its
+    /// minute, lets them in only until the join is checked - or until the sweep, if the webhook is lost.
+    /// </summary>
+    [Fact]
+    public async Task A_ban_through_the_launcher_api_takes_the_guest_out_and_no_old_pass_keeps_them_in()
+    {
+        var (owner, guest, room, roomId) = await PartyAsync();
+        var ownerApp = await LauncherAsync(owner);
+        var guestApp = await LauncherAsync(guest);
+        string Url(string tail) => $"/api/v1/voice/rooms/{room}{tail}";
+        bool Inside() { lock (f.Voice.Rooms) return f.Voice.Rooms.TryGetValue(roomId, out var l) && l.Any(p => p.Identity == guest.ToString()); }
+        void Enter() => f.Voice.Inside(roomId, new LivePeer(owner.ToString(), "Хозяин", true, null), new LivePeer(guest.ToString(), "Гость", true, null));
+        int Removes() => f.Voice.Calls.Count(c => c == $"remove {roomId} {guest}");
+
+        var issued = f.Clock.GetUtcNow().ToUnixTimeSeconds();
+        var taken = await guestApp.PostAsync(Url("/pass"), null);
+        Assert.Equal(HttpStatusCode.OK, taken.StatusCode);
+        var old = (await taken.Content.ReadFromJsonAsync<PassView>())!;
+        Enter();
+
+        var ban = await ownerApp.PostAsJsonAsync(Url($"/members/{guest}/ban"), new ReasonBody("грубит"));
+        Assert.True(ban.IsSuccessStatusCode, $"ban: {(int)ban.StatusCode}");
+        Assert.Equal(1, Removes());
+        Assert.False(Inside());
+
+        // no new pass and no look inside, however often asked
+        for (int i = 0; i < 3; i++)
+        {
+            var again = await guestApp.PostAsync(Url("/pass"), null);
+            Assert.Equal((HttpStatusCode.Forbidden, "banned"), (again.StatusCode, await CodeOf(again)));
+        }
+        var live = await guestApp.GetAsync(Url("/live"));
+        Assert.Equal((HttpStatusCode.Forbidden, "banned"), (live.StatusCode, await CodeOf(live)));
+
+        // the pass from before the ban lives one minute from its issue, not from the ban
+        Assert.Equal(60, Claims(old.Token)["exp"]!.GetValue<long>() - issued);
+        Assert.Equal(60, old.ExpiresIn);
+
+        // used again within that minute: the media server lets them in, the join is checked, they are out
+        Enter();
+        var body = JsonSerializer.Serialize(new
+        {
+            @event = "participant_joined",
+            room = new { name = roomId.ToString() },
+            participant = new { identity = guest.ToString(), permission = new { canPublish = true } },
+        });
+        var hook = await PostHook(body, Webhook(VoiceFactory.Secret, VoiceFactory.Key, body, issued + 300));
+        Assert.Equal(HttpStatusCode.OK, hook.StatusCode);
+        Assert.Equal(2, Removes());
+        Assert.False(Inside());
+
+        // the webhook lost, or a token the media server renewed itself: the sweep finds them all the same
+        Enter();
+        await ActivatorUtilities.CreateInstance<VoiceWorker>(f.Services).SweepAsync(default);
+        Assert.Equal(3, Removes());
+        Assert.False(Inside());
+        lock (f.Voice.Rooms) Assert.Contains(f.Voice.Rooms[roomId], p => p.Identity == owner.ToString());
+
+        var log = await LogAsync(roomId, guest);
+        Assert.Contains("ban:грубит", log);
+        Assert.Equal(2, log.Count(l => l == "ejected:banned"));
+        Assert.Equal(1, await f.DbAsync(db => db.RoomBans.CountAsync(b => b.RoomId == roomId && b.UserId == guest)));
+    }
+
     [Fact]
     public async Task A_complaint_is_a_voice_ticket_that_holds_its_log_until_a_year_after_closing()
     {
