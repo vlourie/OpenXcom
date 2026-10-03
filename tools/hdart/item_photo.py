@@ -99,7 +99,37 @@ REF_AK = ("<image3> is a studio photograph of the real object, already laid over
             "solid and crisply drawn, with visible edges, joints and controlled highlights. The skeleton stock "
             "must read clearly against a dark background. No overall darkening, no blur, no cropped parts.")
 REF_NEGATIVE = ", pixelated, stair-stepped edges, blurry, dull, underexposed, thin slim object, flat shading"
-REFS = {"M-01": ("art/items/refs/M-01.png", REF_AK)}    # art/items/refs/README.txt - откуда каждое фото
+# v6 (рецензия 03.10 к v5): второй картинкой вместо размытого пиксельного оригинала - карта частей (part_map):
+# гладкие зоны дерева и стали плоскими цветами, контур и контрольные точки частей, которые в v5 съехали
+# (мушка, магазин, затыльник); материалы - по частям: цевьё как есть, рукоять - тёплое дерево с волокном и
+# умеренным лаком (одно слово walnut делает дерево слишком тёмным), сталь - тёмные плоскости, светлые кромки
+REF_AK_V6 = ("<image3> is a studio photograph of the real object, already laid over the outline of <image1>: it is "
+             "the main source for the construction and the material quality. Take from <image3> the volume, the "
+             "shape and joints of every part, the wood grain, the metal finish, the sharpness and the reflections. "
+             "Take from <image1> the size, the view, the outline and the placement of the parts. <image2> is a part "
+             "map of the same object: the red-brown zones are wood, the dark grey zones are steel, the thin dark "
+             "line is the exact outline, and the small yellow dots are control points - they are guides only and "
+             "are never drawn. The top of the muzzle, the left tip of the front sight, the tip and the lower right "
+             "corner of the magazine, the end of the pistol grip and the two lower corners of the butt plate lie "
+             "exactly on these dots; do not shift, shorten or lengthen any part. The handguard keeps the wood "
+             "grain and the grooves of <image3>. The pistol grip is real wood, a warm red-brown, lighter than "
+             "walnut and not bright red, with clearly visible lengthwise wood grain and a moderate satin lacquer "
+             "sheen with one soft highlight; it must not look like plastic. The steel: the main flat surfaces are "
+             "dark gunmetal, the edges and corners are worn bright, rounded parts carry small local reflections; "
+             "no uniform light grey metal. The two struts of the skeleton stock are solid dark steel, thick enough "
+             "to read at a small size, and the gap between them is fully open, the panel shows through it. "
+             "Do not copy the pixel steps of any picture. No overall darkening, no blur, no cropped parts.")
+REF_NEGATIVE_V6 = (REF_NEGATIVE + ", red plastic, glossy plastic grip, uniform light grey metal, yellow dots, "
+                   "markers, outline drawn on the object")
+# контрольные точки части - (x, y) в пикселях кадра k=1 от левого верхнего угла габарита оригинала, по краям
+# пикселей (дамп маски BIGOBS 1168, габарит x 0-18 y 1-46): дуло, кончик мушки, кончик и нижний правый угол
+# магазина, конец рукояти, нижние углы затыльника
+CTRL_AK = ((4, 0), (0, 1.5), (18, 18), (19, 23), (15, 36), (2, 46), (10, 45))
+PART_WOOD = (128, 62, 38)       # карта частей: тёплый красно-коричневый, не цвет пиксельного оригинала
+PART_STEEL = (54, 56, 60)
+PART_LINE = (22, 22, 22)
+PART_DOT = (255, 214, 0)
+REFS = {"M-01": ("art/items/refs/M-01.png", REF_AK_V6, CTRL_AK)}    # art/items/refs/README.txt - откуда каждое фото
 
 # (мастер, тип, кадр, описание для модели) - по masters.md; M-06 нет до решения о стволах
 WHAT = [
@@ -184,7 +214,9 @@ WHAT = [
 ]
 CODE = (
     ("item_photo.py", ("ITEM", "NEGATIVE_EXTRA", "WHAT", "item_prompt", "load_frame", "REF_AK", "REF_NEGATIVE",
-                       "REFS", "ref_input", "item_inputs")),
+                       "REFS", "ref_input", "item_inputs", "REF_AK_V6", "REF_NEGATIVE_V6", "CTRL_AK",
+                       "PART_WOOD", "PART_STEEL", "PART_LINE", "PART_DOT", "part_map")),
+    ("struct_guide.py", ("GUIDE_V1", "coverage", "smooth_loop", "loops")),
     ("photo_render.py", ("RENDER_V1", "PANEL_TEXT", "flat_input", "detect_panel")),
     ("struct_probe.py", ("C_TEXT", "run_multi", "inputs")),
     ("obj_photo.py", ("NEGATIVE",)),
@@ -212,9 +244,9 @@ def item_prompt(what, name, rgb):
 
 def generator_rev(lock):
     import obj_gen_spec as ogs
-    refs = {m: [sha256_file(p)[:12], t] for m, (p, t) in sorted(REFS.items())}
+    refs = {m: [sha256_file(r[0])[:12]] + list(r[1:]) for m, r in sorted(REFS.items())}
     return ar.h12({"params": pr.RENDER_V1, "prompt": ITEM, "negative_extra": NEGATIVE_EXTRA, "c_text": sp.C_TEXT,
-                   "refs": refs, "ref_negative": REF_NEGATIVE,
+                   "refs": refs, "ref_negative": REF_NEGATIVE, "ref_negative_v6": REF_NEGATIVE_V6,
                    "lock_rev": ogs.lock_rev(lock), "code": ogs.code_parts(CODE)})
 
 
@@ -245,8 +277,41 @@ def item_inputs(base, ref):
         if ref is None or variant == "B":
             return ims, extra, rep
         im, rrep = ref_input(ref[0], frame, rgb, pr.RENDER_V1["zoom"])
+        if len(ref) > 2:                     # v6: вторая картинка - карта частей с контрольными точками
+            ims = [ims[0], part_map(frame, rgb, ref[2], pr.RENDER_V1["zoom"])] + ims[2:]
+            extra = ""                       # C_TEXT говорит про пиксельный оригинал, его здесь нет
         return ims + [im], extra + " " + ref[1], dict(rep, ref=rrep)
     return inputs
+
+
+def part_map(frame, rgb, ctrl, zoom):
+    """Карта частей кропа (гладкие контуры, как struct_guide.build: кадр x zoom на подложке rgb), но зоны -
+    плоскими цветами материала: дерево - пиксели оригинала красноватее серого (R - G от 10, R - B от 5 - не
+    сиреневый блик стойки (125,113,146): бордовое дерево
+    BIGOBS 1168 от (29,15,18) до (156,121,103); median cut частей смешивает его с серым), остальное сталь;
+    контур силуэта линией и контрольные точки ctrl (от габарита оригинала, пиксели k=1) кружками."""
+    from PIL import ImageDraw
+    P = sg.GUIDE_V1
+    a0 = np.asarray(frame.convert("RGBA")).astype(int)
+    m = pb.guide(frame)["m"]
+    wood = m & (a0[..., 3] > 0) & (a0[..., 0] - a0[..., 1] >= 10) & (a0[..., 0] - a0[..., 2] >= 5)
+    h, w = m.shape
+    sil = sg.coverage([sg.smooth_loop(L, P["min_corners"]) for L in sg.loops(m)], w, h, zoom, P["ss"])
+    cw = sg.coverage([sg.smooth_loop(L, P["min_corners"]) for L in sg.loops(wood)], w, h, zoom, P["ss"])[..., None]
+    a = sil[..., None]
+    body = np.asarray(PART_WOOD, np.float32) * cw + np.asarray(PART_STEEL, np.float32) * (1 - cw)
+    out = body * a + np.asarray(rgb, np.float32) * (1 - a)
+    s = sil > 0.5
+    line = s & ~pb.shrink(s, max(1, zoom // 8))
+    out[line] = PART_LINE
+    im = Image.fromarray(np.clip(out + 0.5, 0, 255).astype(np.uint8), "RGB")
+    ob = main_bbox(np.asarray(frame.convert("RGBA"))[..., 3] > 0, 4)
+    d = ImageDraw.Draw(im)
+    r = max(3, zoom * 3 // 8)
+    for x, y in ctrl:
+        cx, cy = (ob[0] + x) * zoom, (ob[1] + y) * zoom
+        d.ellipse((cx - r, cy - r, cx + r, cy + r), fill=PART_DOT)
+    return im
 
 
 def load_frame(t, frame):
@@ -544,6 +609,9 @@ def main():
         if j["ref"]:
             ri, j["ref_rep"] = ref_input(j["ref"][0], j["crop"], panels[0][1], pr.RENDER_V1["zoom"])
             ri.save(os.path.join(gd, j["name"] + ".ref.png"))
+            if len(j["ref"]) > 2:
+                part_map(j["crop"], panels[0][1], j["ref"][2], pr.RENDER_V1["zoom"]).save(
+                    os.path.join(gd, j["name"] + ".parts.png"))
             print("      эталон %s" % j["ref_rep"], flush=True)
         plan.append((j, panels, g))
         print("%-5s %-20s %dx%d seed %d подложка %s guide %s" % (j["master"], j["asset_id"], j["cells"][0],
@@ -555,10 +623,13 @@ def main():
             for j, panels, _g in plan:
                 f.write("## %s %s, кадр %d, %dx%d\n\n%s %s%s\n\n" % (
                     j["master"], j["asset_id"], j["frame"], j["cells"][0], j["cells"][1],
-                    item_prompt(j["what"], panels[0][0], panels[0][1]), sp.C_TEXT,
-                    " " + j["ref"][1] if j["ref"] else ""))
+                    item_prompt(j["what"], panels[0][0], panels[0][1]),
+                    "" if j["ref"] and len(j["ref"]) > 2 else sp.C_TEXT, " " + j["ref"][1] if j["ref"] else ""))
                 if j["ref"]:
-                    f.write("входов 3, эталон %s; negative + `%s`\n\n" % (j["ref_rep"], REF_NEGATIVE))
+                    v6 = len(j["ref"]) > 2
+                    f.write("входов 3, эталон %s%s; negative + `%s`\n\n" % (
+                        j["ref_rep"], ", вторая - карта частей, точки %s" % (j["ref"][2],) if v6 else "",
+                        REF_NEGATIVE_V6 if v6 else REF_NEGATIVE))
         print("план: %s" % os.path.join(args.out, "plan.md"))
         return
     raw_dir, meta_dir = os.path.join(args.out, "raw"), os.path.join(args.out, "meta")
@@ -574,7 +645,7 @@ def main():
     try:
         for n, (j, panels, g) in enumerate(plan, 1):
             sp.inputs = item_inputs(base_inputs, j["ref"])
-            gen_fire.NEGATIVE = R.po.gen_fire.NEGATIVE = neg0 + (REF_NEGATIVE if j["ref"] else "")
+            gen_fire.NEGATIVE = R.po.gen_fire.NEGATIVE = neg0 + ((REF_NEGATIVE_V6 if len(j["ref"]) > 2 else REF_NEGATIVE) if j["ref"] else "")
             final, attempts = R.job("C", j, j["crop"], panels, raw_dir)
             if final is None:
                 print("%-20s нет ответа (--recut)" % j["asset_id"], flush=True)
