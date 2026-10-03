@@ -234,7 +234,8 @@ UfoDetectedState::UfoDetectedState(Ufo *ufo, GeoscapeState *state, bool detected
 	ss << Unicode::TOK_COLOR_FLIP << tr(_ufo->getRules()->getType());
 	_lstInfo2->addRow(2, tr("STR_CRAFT_TYPE").c_str(), ss.str().c_str());
 	{
-		ArticleDefinition *craftArticle = _game->getMod()->getUfopaediaArticle(_ufo->getRules()->getType(), false);
+		// variants share their base craft's article: STR_VESSEL_FIGHTER_HUNT -> STR_VESSEL_FIGHTER
+		ArticleDefinition *craftArticle = findArticleWithFallback(_game->getMod(), _ufo->getRules()->getType(), _craftTypeArticleId);
 		_craftTypeArticleAvailable = craftArticle != 0 && Ufopaedia::isArticleAvailable(_game->getSavedGame(), craftArticle);
 		if (_craftTypeArticleAvailable)
 		{
@@ -326,7 +327,7 @@ void UfoDetectedState::lstInfo2Click(Action *)
 	size_t row = _lstInfo2->getSelectedRow();
 	if (row == 0 && _craftTypeArticleAvailable)
 	{
-		Ufopaedia::openArticle(_game, _ufo->getRules()->getType());
+		Ufopaedia::openArticle(_game, _craftTypeArticleId);
 	}
 	else if (row == 1 && _raceArticleAvailable)
 	{

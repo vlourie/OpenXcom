@@ -43,8 +43,15 @@ namespace HdOutline
 	/// Draws the outline centred at the world pixel (cx, cy), `length` world pixels along the hull, the
 	/// nose at `angle` radians on the screen (0 = right, growing clockwise since y points down), in
 	/// 0xRRGGBB. `phase` (radians) moves the light that runs around the hull; `reveal` (0..1) draws it
-	/// stroke by stroke when it first appears; `strength` dims a wreck (0.75 on the globe). Clipped by HdUi's clip.
-	void draw(const std::string &type, float cx, float cy, float length, float angle, Uint32 color, float phase, float reveal = 1.0f, float strength = 1.0f);
+	/// stroke by stroke when it first appears; `strength` dims a wreck (0.75 on the globe); `state` is the
+	/// colour of the thin line just outside the rim (stateColor), NO_STATE keeps it dark. Clipped by HdUi's clip.
+	void draw(const std::string &type, float cx, float cy, float length, float angle, Uint32 color, float phase, float reveal = 1.0f, float strength = 1.0f, Uint32 state = 0xFF000000u);
+	/// No state line: the dark halo that lets the rim read on sea and on land alike.
+	const Uint32 NO_STATE = 0xFF000000u;
+	/// The state line of a UFO: white shot down, green landed, red in flight.
+	Uint32 stateColor(bool crashed, bool landed);
+	/// The point at the centre of an outline: where the game puts the craft. `radius` in world pixels.
+	void beacon(float cx, float cy, float radius, float reveal = 1.0f);
 	/// The colour of a UFO crew's race: a hue picked from the race's name, never the player's blue.
 	Uint32 raceColor(const std::string &race);
 	/// The colour of the player's own craft.

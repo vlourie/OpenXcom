@@ -102,6 +102,7 @@ private:
 		Uint32 color;            ///< 0xRRGGBB
 		float strength;          ///< a wreck is dimmer
 		Uint32 since;            ///< SDL_GetTicks when it came into sight: drawn stroke by stroke at first
+		Uint32 state;            ///< 0xRRGGBB of the line round a UFO's hull by what it does; HdOutline::NO_STATE = the dark one
 	};
 	/// What an outlined target looked like last time: its heading (kept while it stands) and when it came into sight.
 	struct HdHeading
@@ -155,7 +156,7 @@ private:
 	/// Is the HD layer drawing the own craft and the decoded UFOs as outlines?
 	bool hdOutlines() const;
 	/// Keeps a craft or a UFO as an outline instead of a marker; false when its type has none (the marker stays).
-	bool keepHdMark(MovingTarget *target, const std::string &type, Uint32 color, float strength, std::unordered_map<const Target*, HdHeading> &seen);
+	bool keepHdMark(MovingTarget *target, const std::string &type, Uint32 color, float strength, Uint32 state, std::unordered_map<const Target*, HdHeading> &seen);
 	/// Draws the kept outlines over the upscaled globe.
 	void drawHdMarks();
 	/// The world pixels one pixel of the globe takes in the HD layer when it has a scale of its own; 0 = as the geoscape.

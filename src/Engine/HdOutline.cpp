@@ -62,6 +62,8 @@ struct Shape
 };
 /// The halo's colour and strength.
 const float HALO_RGB = 16.0f, HALO_ALPHA = 0.6f;
+/// The state line's strength where it takes the halo's place.
+const float STATE_ALPHA = 0.9f;
 
 bool indexRead = false;
 std::unordered_map<std::string, float> factors;
@@ -224,7 +226,7 @@ bool has(const std::string &type, float *factor)
 	return true;
 }
 
-void draw(const std::string &type, float cx, float cy, float length, float angle, Uint32 color, float phase, float reveal, float strength)
+void draw(const std::string &type, float cx, float cy, float length, float angle, Uint32 color, float phase, float reveal, float strength, Uint32 state)
 {
 	if (!has(type))
 	{
@@ -245,11 +247,17 @@ void draw(const std::string &type, float cx, float cy, float length, float angle
 	const size_t n = (size_t)s.side * s.side;
 	scratch.assign(n, 0);
 	const float r0 = (float)((color >> 16) & 0xFF), g0 = (float)((color >> 8) & 0xFF), b0 = (float)(color & 0xFF);
+	// the halo: dark, or the state line in its colour and stronger
+	const bool stated = state != NO_STATE;
+	const float haloR = stated ? (float)((state >> 16) & 0xFF) : HALO_RGB;
+	const float haloG = stated ? (float)((state >> 8) & 0xFF) : HALO_RGB;
+	const float haloB = stated ? (float)(state & 0xFF) : HALO_RGB;
+	const float haloAlpha = stated ? STATE_ALPHA : HALO_ALPHA;
 	for (size_t i = 0; i < n; ++i)
 	{
 		// the rim, and the hull faintly inside it (craft_outline: ring 1, fill 0.22)
 		float alpha = std::min(1.0f, s.rim[i] / 255.0f + s.fill[i] / 255.0f * 0.22f) * strength;
-		float dark = s.halo[i] / 255.0f * HALO_ALPHA * strength;
+		float dark = s.halo[i] / 255.0f * haloAlpha * strength;
 		const float t = s.around[i] / 256.0f;
 		if (reveal < 1.0f)
 		{
@@ -268,15 +276,52 @@ void draw(const std::string &type, float cx, float cy, float length, float angle
 		const float w = std::max(0.0f, std::cos(t * TAU - phase));
 		const float lum = 0.65f + 0.35f * w * w * w;
 		const float lift = std::max(0.0f, lum - 0.65f) * 0.8f;
-		auto channel = [&](float c0)
+		auto channel = [&](float c0, float h0)
 		{
 			const float lit = std::min(255.0f, c0 * lum + (255.0f - c0) * lift);
-			return (Uint32)std::min(255.0f, (lit * alpha + HALO_RGB * dark) / total + 0.5f);
+			return (Uint32)std::min(255.0f, (lit * alpha + h0 * dark) / total + 0.5f);
 		};
-		scratch[i] = ((Uint32)std::lround(total * 255.0f) << 24) | (channel(r0) << 16) | (channel(g0) << 8) | channel(b0);
+		scratch[i] = ((Uint32)std::lround(total * 255.0f) << 24) | (channel(r0, haloR) << 16) | (channel(g0, haloG) << 8) | channel(b0, haloB);
 	}
 	const int x0 = (int)std::lround(cx - (s.side - 1) * 0.5f), y0 = (int)std::lround(cy - (s.side - 1) * 0.5f);
 	HdUi::instance().drawImage(scratch.data(), s.side, s.side, x0, y0);
+}
+
+Uint32 stateColor(bool crashed, bool landed)
+{
+	return crashed ? 0xFFFFFFu : landed ? 0x40E060u : 0xFF3828u;
+}
+
+void beacon(float cx, float cy, float radius, float reveal)
+{
+	// a white core in a dark ring, smoothed over its edge; it lights up last, after the hull is drawn
+	const float a = std::min(std::max((reveal - 0.8f) / 0.2f, 0.0f), 1.0f);
+	if (a <= 0.0f || radius <= 0.0f)
+	{
+		return;
+	}
+	const float ring = radius + 1.0f;
+	const int side = (int)std::ceil(ring * 2.0f) + 2;
+	const float c = (side - 1) * 0.5f;
+	scratch.assign((size_t)side * side, 0);
+	for (int y = 0; y < side; ++y)
+	{
+		for (int x = 0; x < side; ++x)
+		{
+			const float d = std::sqrt((x - c) * (x - c) + (y - c) * (y - c));
+			const float core = std::min(std::max(radius + 0.5f - d, 0.0f), 1.0f);
+			const float outer = std::min(std::max(ring + 0.5f - d, 0.0f), 1.0f) * 0.7f;
+			const float total = std::max(core, outer) * a;
+			if (total <= 0.004f)
+			{
+				continue;
+			}
+			const Uint32 v = (Uint32)std::lround(std::min(255.0f, 255.0f * core / std::max(core, outer) + HALO_RGB * (1.0f - core / std::max(core, outer))));
+			scratch[(size_t)y * side + x] = ((Uint32)std::lround(total * 255.0f) << 24) | (v << 16) | (v << 8) | v;
+		}
+	}
+	const int x0 = (int)std::lround(cx - c), y0 = (int)std::lround(cy - c);
+	HdUi::instance().drawImage(scratch.data(), side, side, x0, y0);
 }
 
 Uint32 raceColor(const std::string &race)
