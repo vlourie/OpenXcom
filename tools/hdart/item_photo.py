@@ -17,6 +17,9 @@ r"""Пилот этапа 1 HD-BIGOBS (ТЗ docs/research/inventory-items-hd.md 
     (R-089): где модель не дорисовала - подложка в теле, это видно на листе и в core_panel.
   * мастера BLOCKED_GEOMETRY (census/items/geometry/geometry.tsv, item_geometry.py) без записанного решения
     Vitali (census/items/geometry/decisions.tsv: мастер<TAB>решение) не рендерятся; --recut готовых - можно.
+  * фото-эталон (REFS, решение 03.10): у мастера с фото настоящей вещи третья картинка - фото, габарит на
+    габарит оригинала (ref_input), и текст ролей: фото - устройство и материалы, эскиз - размер и места частей,
+    оригинал - цветовые зоны; тон к оригиналу выключен (ITEM_TONE 0) - пиксельный кадр не задаёт яркость.
 Описания - census/items/cards/masters.md, принятые для пилота 04.10; здесь - их перевод для модели (WHAT).
 M-06 не утверждён (стволы) - в пилот не идёт. M-19 - шаг 1: этикетка пустая, SOY - отдельным шагом.
 
@@ -76,6 +79,23 @@ ITEM = ("<image1> is a clean shape sketch of {what}, shown on a flat preview pan
         "Output one isolated object on the same flat panel. No hands, no straps, no other objects, "
         "no shadow outside the object, no frame, no text, no letters, no logos.")
 NEGATIVE_EXTRA = ", hand, fingers, letters, logo, label text, perspective"
+
+# Фото-эталон (решение 03.10, «75 % фото / 25 % описания» как разделение ролей): фото настоящей вещи нужной
+# комплектации - устройство, объём, фактура, обработка, резкость; эскиз и оригинал - размер, ракурс, силуэт,
+# места частей, цветовые зоны; описание - уточнения и запреты. Фото кладётся третьей картинкой на ту же подложку,
+# по габариту оригинала (ref_input). Мастер без эталона рендерится как прежде.
+REF_AK = ("<image3> is a studio photograph of the real object, already laid over the outline of <image1>: it is "
+            "the main source for the construction and the material quality. Take from <image3> the volume, the "
+            "shape and joints of every part, the wood grain, the metal finish, the sharpness and the reflections. "
+            "Take from <image1> only the size, the view, the outline and the placement of the parts; <image2> "
+            "gives only the colour areas. Keep the full size of <image1>: the muzzle at the top, the front sight, "
+            "the edge of the magazine and the butt plate exactly where <image1> has them; the receiver, the "
+            "barrel and the stock not thinner than <image1>. Do not copy the pixel steps or the simplified flat "
+            "surfaces of <image2>. The wood is a saturated red-brown with clear grain and relief. The metal is "
+            "solid and crisply drawn, with visible edges, joints and controlled highlights. The skeleton stock "
+            "must read clearly against a dark background. No overall darkening, no blur, no cropped parts.")
+REF_NEGATIVE = ", pixelated, stair-stepped edges, blurry, dull, underexposed, thin slim object, flat shading"
+REFS = {"M-01": ("art/items/refs/M-01.png", REF_AK)}    # art/items/refs/README.txt - откуда каждое фото
 
 # (мастер, тип, кадр, описание для модели) - по masters.md; M-06 нет до решения о стволах
 WHAT = [
@@ -160,7 +180,8 @@ WHAT = [
 ]
 CODE = (
     ("item_photo.py", ("ITEM", "NEGATIVE_EXTRA", "WHAT", "item_prompt", "load_frame", "canvas_map", "cut_fixed",
-                       "place_fixed", "ITEM_TONE")),
+                       "place_fixed", "ITEM_TONE", "REF_AK", "REF_NEGATIVE", "REFS", "ref_input",
+                       "item_inputs")),
     ("photo_render.py", ("RENDER_V1", "PANEL_TEXT", "flat_input", "detect_panel")),
     ("struct_probe.py", ("C_TEXT", "run_multi", "inputs")),
     ("obj_photo.py", ("NEGATIVE",)),
@@ -183,8 +204,41 @@ def item_prompt(what, name, rgb):
 
 def generator_rev(lock):
     import obj_gen_spec as ogs
+    refs = {m: [sha256_file(p)[:12], t] for m, (p, t) in sorted(REFS.items())}
     return ar.h12({"params": pr.RENDER_V1, "prompt": ITEM, "negative_extra": NEGATIVE_EXTRA, "c_text": sp.C_TEXT,
+                   "refs": refs, "ref_negative": REF_NEGATIVE,
                    "lock_rev": ogs.lock_rev(lock), "code": ogs.code_parts(CODE)})
+
+
+def ref_input(path, frame, rgb, zoom):
+    """Фото-эталон -> картинка размером кадр x zoom на той же подложке: габарит фото (альфа > 128) ложится на
+    габарит оригинала x zoom - части фото попадают на места частей оригинала. Масштаб по осям свой: у
+    стилизованного кадра пропорции не как у настоящей вещи, место части важнее её пропорций на фото; сколько
+    растянуто - в отчёте (stretch_pct, + шире). -> (RGB, отчёт)."""
+    ph = Image.open(path).convert("RGBA")
+    pa_ = np.asarray(ph)[..., 3] > 128
+    ys, xs = np.nonzero(pa_)
+    pbb = (int(xs.min()), int(ys.min()), int(xs.max()) + 1, int(ys.max()) + 1)
+    ob = main_bbox(np.asarray(frame.convert("RGBA"))[..., 3] > 0, 4)
+    tw, th = (ob[2] - ob[0]) * zoom, (ob[3] - ob[1]) * zoom
+    part = ph.crop(pbb).resize((tw, th), Image.LANCZOS)
+    flat = Image.new("RGBA", (frame.width * zoom, frame.height * zoom), tuple(int(v) for v in rgb) + (255,))
+    flat.alpha_composite(part, (ob[0] * zoom, ob[1] * zoom))
+    sx, sy = tw / (pbb[2] - pbb[0]), th / (pbb[3] - pbb[1])
+    return flat.convert("RGB"), {"photo": path.replace("\\", "/"), "photo_sha256": sha256_file(path)[:12],
+                                 "photo_bbox": list(pbb), "orig_bbox": list(ob),
+                                 "stretch_pct": round(100 * (sx / sy - 1), 1)}
+
+
+def item_inputs(base, ref):
+    """struct_probe.inputs с фото-эталоном третьей картинкой (ref - (путь, текст) или None)."""
+    def inputs(variant, frame, rgb):
+        ims, extra, rep = base(variant, frame, rgb)
+        if ref is None or variant == "B":
+            return ims, extra, rep
+        im, rrep = ref_input(ref[0], frame, rgb, pr.RENDER_V1["zoom"])
+        return ims + [im], extra + " " + ref[1], dict(rep, ref=rrep)
+    return inputs
 
 
 def load_frame(t, frame):
@@ -423,7 +477,9 @@ def main():
     R = sp.Render(args.out, args.models, args.max_renders, args.recut)
     import gen_fire
     import obj_photo as op
-    gen_fire.NEGATIVE = R.po.gen_fire.NEGATIVE = op.NEGATIVE + NEGATIVE_EXTRA
+    neg0 = op.NEGATIVE + NEGATIVE_EXTRA
+    gen_fire.NEGATIVE = R.po.gen_fire.NEGATIVE = neg0
+    base_inputs = sp.inputs                  # Render.job зовёт sp.inputs - на задание с эталоном своя обёртка
     pr.prompt_for = item_prompt              # Render.job зовёт pr.prompt_for - здесь свой промпт
     pb.cut = cut_fixed                       # и pb.cut - здесь вырезка без подгонки по содержимому
     R.grev = generator_rev(R.lock)
@@ -436,17 +492,25 @@ def main():
         panels = pr.panels_by_margin(j["crop"])
         g, rep = sg.build(j["crop"], pr.RENDER_V1["zoom"], panels[0][1])
         g.save(os.path.join(gd, j["name"] + ".png"))
+        j["ref"] = REFS.get(j["master"])
+        if j["ref"]:
+            ri, j["ref_rep"] = ref_input(j["ref"][0], j["crop"], panels[0][1], pr.RENDER_V1["zoom"])
+            ri.save(os.path.join(gd, j["name"] + ".ref.png"))
+            print("      эталон %s" % j["ref_rep"], flush=True)
         plan.append((j, panels, g))
         print("%-5s %-20s %dx%d seed %d подложка %s guide %s" % (j["master"], j["asset_id"], j["cells"][0],
                                                                 j["cells"][1], j["seed"], panels[0][0], rep), flush=True)
     if args.dry_run:
         with open(os.path.join(args.out, "plan.md"), "w", encoding=ENC) as f:
             f.write("# items_pilot_v1 - план (generator_rev %s)\n\n" % R.grev)
-            f.write("negative: %s\n\n" % gen_fire.NEGATIVE)
+            f.write("negative: %s\n\n" % neg0)
             for j, panels, _g in plan:
-                f.write("## %s %s, кадр %d, %dx%d\n\n%s %s\n\n" % (
+                f.write("## %s %s, кадр %d, %dx%d\n\n%s %s%s\n\n" % (
                     j["master"], j["asset_id"], j["frame"], j["cells"][0], j["cells"][1],
-                    item_prompt(j["what"], panels[0][0], panels[0][1]), sp.C_TEXT))
+                    item_prompt(j["what"], panels[0][0], panels[0][1]), sp.C_TEXT,
+                    " " + j["ref"][1] if j["ref"] else ""))
+                if j["ref"]:
+                    f.write("входов 3, эталон %s; negative + `%s`\n\n" % (j["ref_rep"], REF_NEGATIVE))
         print("план: %s" % os.path.join(args.out, "plan.md"))
         return
     raw_dir, meta_dir = os.path.join(args.out, "raw"), os.path.join(args.out, "meta")
@@ -461,6 +525,8 @@ def main():
     t0, cells = time.time(), []
     try:
         for n, (j, panels, g) in enumerate(plan, 1):
+            sp.inputs = item_inputs(base_inputs, j["ref"])
+            gen_fire.NEGATIVE = R.po.gen_fire.NEGATIVE = neg0 + (REF_NEGATIVE if j["ref"] else "")
             final, attempts = R.job("C", j, j["crop"], panels, raw_dir)
             if final is None:
                 print("%-20s нет ответа (--recut)" % j["asset_id"], flush=True)
@@ -486,6 +552,7 @@ def main():
                     "checks": {x: list(c[x]) for x in sp.pa.MACHINE_CHECKS}, "machine": verdict,
                     "outcome": sp.pa.outcome(verdict, len(attempts)), "place": prep,
                     "geometry_orig": j["geometry_orig"], "geometry_decision": j["geometry_decision"],
+                    "ref": j.get("ref_rep"), "negative": gen_fire.NEGATIVE,
                     "file": pp.replace("\\", "/"), "sha256": sha256_file(pp), "status": status,
                     "status_why": mg["geometry_why"] if status == "REWORK" else "",
                     "created": time.strftime("%Y-%m-%dT%H:%M:%S")}
