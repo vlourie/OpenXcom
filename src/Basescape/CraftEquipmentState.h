@@ -42,7 +42,7 @@ class Base;
 class CraftEquipmentState : public ItemCountTooltipMixin<TouchState>
 {
 private:
-	TextButton *_btnOk, *_btnClear, *_btnInventory;
+	TextButton *_btnOk, *_btnLoadAll, *_btnClear, *_btnInventory;
 	TextEdit *_btnQuickSearch;
 	Window *_window;
 	Text *_txtTitle, *_txtItem, *_txtStores, *_txtAvailable, *_txtUsed, *_txtCrew;
@@ -105,6 +105,8 @@ public:
 	void moveRight();
 	/// Moves the given number of items to the craft.
 	void moveRightByValue(int change, bool suppressErrors = false);
+	/// Moves all of the listed items (except vehicles) to the craft, as far as space allows.
+	void btnLoadAllClick(Action *action);
 	/// Empties the contents of the craft, moving all of the items back to the base.
 	void btnClearClick(Action *action);
 	/// Handler for clicking the Inventory button.

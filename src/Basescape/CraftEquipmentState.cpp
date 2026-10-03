@@ -76,9 +76,12 @@ CraftEquipmentState::CraftEquipmentState(Base *base, size_t craft) :
 	// Create objects
 	_window = new Window(this, 320, 200, 0, 0);
 	_btnQuickSearch = new TextEdit(this, 48, 9, Options::oxceBaseTouchButtons ? 10 : 264, Options::oxceBaseTouchButtons ? 13 : 12);
-	_btnOk = new TextButton((craftHasACrew || _isNewBattle)?30:140, 16, (craftHasACrew || _isNewBattle)?274:164, 176);
-	_btnClear = new TextButton(102, 16, 164, 176);
-	_btnInventory = new TextButton(102, 16, 164, 176);
+	// one row: filter | load all | unload all | inventory (crew only) | ok
+	bool showInventory = craftHasACrew && !_isNewBattle;
+	_btnOk = new TextButton(showInventory?34:102, 16, showInventory?270:202, 176);
+	_btnLoadAll = new TextButton(36, 16, 122, 176);
+	_btnClear = new TextButton(36, 16, 162, 176);
+	_btnInventory = new TextButton(64, 16, 202, 176);
 	_txtTitle = new Text(300, 17, 16, 7);
 	_txtItem = new Text(144, 9, 16, 32);
 	_txtStores = new Text(150, 9, 160, 32);
@@ -86,7 +89,7 @@ CraftEquipmentState::CraftEquipmentState(Base *base, size_t craft) :
 	_txtUsed = new Text(110, 9, 130, 24);
 	_txtCrew = new Text(71, 9, 244, 24);
 	_lstEquipment = new TextList(288, 128, 8, 40);
-	_cbxFilterBy = new ComboBox(this, 140, 16, 16, 176, true);
+	_cbxFilterBy = new ComboBox(this, 102, 16, 16, 176, true);
 
 	touchComponentsCreate(_txtTitle);
 
@@ -98,6 +101,7 @@ CraftEquipmentState::CraftEquipmentState(Base *base, size_t craft) :
 	add(_window, "window", "craftEquipment");
 	add(_btnQuickSearch, "button", "craftEquipment");
 	add(_btnOk, "button", "craftEquipment");
+	add(_btnLoadAll, "button", "craftEquipment");
 	add(_btnClear, "button", "craftEquipment");
 	add(_btnInventory, "button", "craftEquipment");
 	add(_txtTitle, "text", "craftEquipment");
@@ -125,13 +129,15 @@ CraftEquipmentState::CraftEquipmentState(Base *base, size_t craft) :
 	_btnOk->onKeyboardPress((ActionHandler)&CraftEquipmentState::btnLoadClick, Options::keyCraftLoadoutLoad);
 	_btnOk->onKeyboardPress((ActionHandler)&CraftEquipmentState::btnSaveClick, Options::keyCraftLoadoutSave);
 
-	_btnClear->setText(tr("STR_UNLOAD_CRAFT"));
+	_btnLoadAll->setText(tr("STR_LOAD_ALL_SHORT"));
+	_btnLoadAll->onMouseClick((ActionHandler)&CraftEquipmentState::btnLoadAllClick);
+
+	_btnClear->setText(tr("STR_UNLOAD_ALL_SHORT"));
 	_btnClear->onMouseClick((ActionHandler)&CraftEquipmentState::btnClearClick);
-	_btnClear->setVisible(_isNewBattle);
 
 	_btnInventory->setText(tr("STR_INVENTORY"));
 	_btnInventory->onMouseClick((ActionHandler)&CraftEquipmentState::btnInventoryClick);
-	_btnInventory->setVisible(craftHasACrew && !_isNewBattle);
+	_btnInventory->setVisible(showInventory);
 	_btnInventory->onKeyboardPress((ActionHandler)&CraftEquipmentState::btnInventoryClick, Options::keyBattleInventory);
 
 	_txtTitle->setBig();
@@ -944,6 +950,23 @@ void CraftEquipmentState::moveRightByValue(int change, bool suppressErrors)
 		}
 	}
 	updateQuantity();
+}
+
+/**
+ * Moves all of the listed items to the craft, as far as space allows.
+ * Respects the current filter and quick search. Vehicles are skipped:
+ * they take crew seats and are loaded one by one on purpose.
+ */
+void CraftEquipmentState::btnLoadAllClick(Action *)
+{
+	for (_sel = 0; _sel != _items.size(); ++_sel)
+	{
+		const RuleItem *rule = _game->getMod()->getItem(_items[_sel], true);
+		if (!rule->getVehicleUnit())
+		{
+			moveRightByValue(INT_MAX, true);
+		}
+	}
 }
 
 /**
