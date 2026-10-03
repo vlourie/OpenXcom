@@ -47,7 +47,8 @@ a.add_argument("--channel", default="stable")
 a.add_argument("--port", type=int, default=8787)
 a.add_argument("--out", default=str(Path(tempfile.gettempdir()) / "launcher_smoke"), help="журналы прогона")
 o = a.parse_args()
-REL, SMOKE, OUT = Path(o.rel), Path(o.dir), Path(o.out)
+# полные пути: скрипт нажатия «Играть» идёт с cwd = OUT, относительный путь журнала удвоился бы
+REL, SMOKE, OUT = Path(o.rel).resolve(), Path(o.dir).resolve(), Path(o.out).resolve()
 LAUNCHER, GAME = SMOKE / "launcher", SMOKE / "game"
 URL = f"http://localhost:{o.port}/"
 results = []
