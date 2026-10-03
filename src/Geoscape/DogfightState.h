@@ -82,6 +82,11 @@ private:
 	unsigned _hdOutlineSince = 0;   ///< SDL_GetTicks when the HD outline of the UFO first showed (0 = not shown)
 	/// Is the HD layer drawing the UFO as an outline instead of the blob (oxceHdCraftOutlines)?
 	bool hdOutline() const;
+	/// OXCE-HD: hit chances of each craft weapon and of the UFO (oxceDogfightHitChance).
+	Text *_txtHitChance[RuleCraft::WeaponMax] = {}, *_txtUfoHitChance = nullptr;
+	bool _ufoStatsKnown = false;   ///< the UFO is researched: its own bonuses go into the chances
+	/// Refreshes the hit chances for the current mode, ammo and distance.
+	void updateHitChances();
 
 public:
 	/// Creates the Dogfight state.

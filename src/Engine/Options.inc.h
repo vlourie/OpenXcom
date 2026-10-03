@@ -84,6 +84,7 @@ OPT int oxceInterceptTableSize;
 OPT bool oxceEnableSlackingIndicator;
 OPT int oxceInterceptGuiMaintenanceTime;
 OPT bool oxceCraftWeaponIcons;
+OPT bool oxceDogfightHitChance;
 OPT int oxceShowETAMode;
 OPT bool oxceUfoLandingAlert;
 OPT bool oxceRememberDisabledCraftWeapons;
