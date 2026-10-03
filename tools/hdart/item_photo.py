@@ -183,19 +183,17 @@ REFS = {"M-01": ("art/items/refs/M-01.png", REF_AK_V7, CTRL_AK, AK_PARTS)}  # ar
 EDIT_RUN = {"steps": 8, "cfg": 1.0, "mp": pr.RENDER_V1["mp"], "lora": 0.0, "lightning": "8steps-V1.0-bf16"}
 EDIT_MODEL_REV = "6f3ccc0b56e431dc6a0c2b2039706d7d26f22cb9"
 EDIT_ITEM = ("<image1> is a studio photograph of {what}, assembled from separate photos of its parts, on a flat "
-             "panel of colour RGB({r}, {g}, {b}). Retouch it into one seamless real product photograph of the same "
-             "object. Fix the seams where the parts were joined, make the lighting consistent over the whole object "
-             "with soft light from the upper left, and improve the materials: the wood is a warm red-brown, lighter "
-             "than walnut, with clear lengthwise grain and a moderate satin lacquer sheen; the steel is dark "
-             "gunmetal with worn bright edges and small local reflections, crisp and solid. Do not change the "
-             "geometry: keep exactly the outline, the size, the position and the thickness of every part - the "
-             "muzzle, the front sight, the magazine, the pistol grip, the two stock struts and the butt plate stay "
-             "exactly where they are in <image1>; do not move, bend, shorten, lengthen, thin or straighten "
-             "anything, add nothing and remove nothing. Make the two struts and the butt plate of the skeleton "
-             "stock read clearly through light and shade: a bright worn highlight along one edge, a deep shadow "
-             "along the other, crisp edges. The gap between the struts stays fully open, the panel shows through "
-             "it. Keep the flat plain panel exactly as it is: no shadow on it, no other objects, no frame, no text.")
-EDIT_WHAT = {"M-01": "an old worn Kalashnikov-pattern assault rifle with a metal skeleton stock, standing vertically "
+             "panel of colour RGB({r}, {g}, {b}). Fix only the visible assembly seams where the parts were joined "
+             "and the local inconsistencies of lighting between the parts. Keep the original details, the "
+             "sharpness, the wood grain texture and the neutral colour of the steel exactly as they are. Do not "
+             "add wear, rust, a light outline or uniform highlights along the contour. Keep the existing metal "
+             "reflections. Do not redraw the whole object. The geometry and the openings stay unchanged: keep "
+             "exactly the outline, the size, the position and the thickness of every part - the muzzle, the front "
+             "sight, the magazine, the pistol grip, the two stock struts and the butt plate stay exactly where they "
+             "are in <image1>; do not move, bend, shorten, lengthen, thin or straighten anything, add nothing and "
+             "remove nothing. The gap between the struts stays fully open, the panel shows through it. Keep the "
+             "flat plain panel exactly as it is: no shadow on it, no other objects, no frame, no text.")
+EDIT_WHAT = {"M-01": "a Kalashnikov-pattern assault rifle with a metal skeleton stock, standing vertically "
                      "with the muzzle at the top"}
 
 # (мастер, тип, кадр, описание для модели) - по masters.md; M-06 нет до решения о стволах
