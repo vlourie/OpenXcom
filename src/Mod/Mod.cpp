@@ -1070,7 +1070,10 @@ SurfaceSet *Mod::getHdSurfaceSet(const std::string &name, bool error)
 	return scaled;
 }
 
-const std::vector<std::string> Mod::HD_RETICLES = { "ring45", "plasma", "techno", "predator" };
+// the number in options.cfg is the position here: new styles go to the end (tools/hdart/gen_reticle_v2.py)
+const std::vector<std::string> Mod::HD_RETICLES = { "ring45", "plasma", "techno", "predator",
+	"thin_ring45", "thin_plasma", "thin_techno", "thin_predator",
+	"lasers", "lasercross", "brackets", "ripple", "sniper", "chevrons", "dashed", "trilock", "dot", "ghost" };
 
 /**
  * HD render: the reticle is frames 6..10 of CURSOR.PCK (6 red, 7..10 the yellow loop). The player
