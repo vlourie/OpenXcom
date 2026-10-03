@@ -1,11 +1,17 @@
-# Voice probe (docs/portal/VOICE_CHAT.md, stage 1): LiveKit next to the site, laid over the station files.
+# Voice on the station (docs/portal/VOICE_CHAT.md): LiveKit next to the site, laid over the station files.
 # station.ps1 adds it by itself once .env has VOICE_PROBE=1 ('.\station.ps1 voice' sets it up):
-#   docker compose -f compose.yaml -f compose.station.yaml [-f compose.internet.yaml] -f compose.voice.yaml ...
+#   docker compose -f compose.yaml -f compose.station.yaml [-f compose.internet.yaml] -f compose.voice.yaml [-f compose.voice-probe.yaml] ...
+# Two modes:
+#   probe (VOICE_OPEN is not 1) - compose.voice-probe.yaml adds the echo bot and the probe page, rooms
+#     appear by themselves (voice-probe/livekit.yaml), the site gives passes to its testers only;
+#   open (VOICE_OPEN=1, '.\station.ps1 voice-open'; Vitali 03.10: the station is the voice server of
+#     the release) - the config that command writes to voice-open/livekit.yaml: only the site creates
+#     rooms, LiveKit tells the site who came and who left (webhook), passes for every player.
 # Signalling goes through Caddy on HTTPS_PORT (/rtc), media straight to LiveKit:
 #   7882/udp - every participant on one UDP port (rtc.udp_port), the main path;
 #   7881/tcp - ICE over TCP when a player's network lets no UDP through.
-# Both have to be forwarded on the router to this machine. This is the probe layout, not the
-# production one: the voice server of the release lives on a machine with a public IP.
+# Both have to be forwarded on the router to this machine. There is no TURN here: a player whose
+# network lets out neither of them stays without voice (deploy/voice-server has TURN on 443).
 services:
   livekit:
     # pinned: the probe records which version it passed on (LIVEKIT_TAG in .env to try another)
@@ -13,30 +19,12 @@ services:
     restart: unless-stopped
     command: ["--config", "/etc/livekit.yaml"]
     environment:
-      # "key: secret"; station.ps1 voice writes both into .env
+      # "key: secret"; station.ps1 voice writes both into .env, voice-open replaces them
       LIVEKIT_KEYS: "${LIVEKIT_API_KEY:?run station.ps1 voice}: ${LIVEKIT_API_SECRET:?run station.ps1 voice}"
     volumes:
-      - ./voice-probe/livekit.yaml:/etc/livekit.yaml:ro
+      # the probe's config, or the one 'station.ps1 voice-open' writes (VOICE_LIVEKIT_YAML in .env)
+      - ${VOICE_LIVEKIT_YAML:-./voice-probe/livekit.yaml}:/etc/livekit.yaml:ro
     ports:
       - "7881:7881/tcp"
       - "7882:7882/udp"
     networks: [front]
-
-  # answers every "probe-beep" track with an "echo:<identity>" track: the probe page measures the
-  # round trip of its own beep through the server, on one clock
-  voice-echo:
-    build: ./voice-probe/echo
-    image: xp-voice-echo
-    restart: unless-stopped
-    environment:
-      LIVEKIT_URL: ws://livekit:7880
-      LIVEKIT_API_KEY: ${LIVEKIT_API_KEY}
-      LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET}
-      PROBE_ROOM: probe
-    depends_on: [livekit]
-    networks: [front]
-
-  caddy:
-    # the probe page, /voice-probe/ in both Caddyfiles
-    volumes:
-      - ./voice-probe/web:/srv/voice-probe:ro

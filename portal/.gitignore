@@ -19,3 +19,6 @@ deploy/releases/
 
 # native parts of the launcher voice: tools/voice_deps.py downloads them (pinned by SHA-256)
 third_party/
+
+# station voice config, written by station.ps1 voice-open
+deploy/voice-open/

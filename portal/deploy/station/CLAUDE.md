@@ -162,12 +162,19 @@ Vitali привозит новый архив. Распаковать повер
 и `portal\deploy\portal.env` (в архиве их нет, так что распаковка их не затрёт), затем `station.ps1 up`.
 Схема базы обновляется сервисом `migrate` сама. Откатиться — распаковать прежний архив и `up`.
 
-## Проба голоса (этап 1 голосовых комнат)
+## Голос станции
 
-Инструкция и протокол — `docs/portal/VOICE_PROBE.md`, проект — `docs/portal/VOICE_CHAT.md`.
-Коротко: `station.ps1 voice` поднимает LiveKit и эхо-бот поверх сайта (`compose.voice.yaml`, пока в
-`.env` стоит `VOICE_PROBE=1`); `voice-check` — проверка изнутри; `voice-token <имя>` — ссылка на
-страницу пробы; `voice-off` — убрать. Нужен режим `internet` и проброс на роутере 7882/UDP и
+С 03.10 станция — голосовой сервер выпуска (решение Vitali): `station.ps1 voice-open` открывает голос
+всем игрокам — новые ключи LiveKit, без эхо-бота и страницы пробы, комнаты создаёт сайт, LiveKit
+шлёт ему события на `http://portal:8080/api/v1/voice/webhook`. Настройки LiveKit пишет сама команда
+в `deploy\voice-open\livekit.yaml` (в архиве его нет); в `.env` стоят `VOICE_PROBE=1` и `VOICE_OPEN=1`,
+в `portal.env` — `LiveKit__Open=true`. После смены внешнего IP — `voice-open` ещё раз.
+
+Проба (этап 1 голосовых комнат) — инструкция и протокол в `docs/portal/VOICE_PROBE.md`, проект —
+`docs/portal/VOICE_CHAT.md`. `station.ps1 voice` поднимает LiveKit и эхо-бот поверх сайта
+(`compose.voice.yaml` и `compose.voice-probe.yaml`, пока в `.env` стоит `VOICE_PROBE=1`, а `VOICE_OPEN`
+не 1); `voice-check` — проверка изнутри; `voice-token <имя>` — ссылка на страницу пробы; `voice-off` —
+убрать голос станции (и пробу, и открытый). Нужен режим `internet` и проброс на роутере 7882/UDP и
 7881/TCP (это делает Vitali). LiveKit публикует эти два порта на машине — проверить, что их не
 занимает чужой контейнер (правило 1). Результаты — в таблицу «Протокол» из `VOICE_PROBE.md`,
 копией в `REPORT.md`; отчёты страницы (кнопка «Скопировать отчёт») — туда же целиком.

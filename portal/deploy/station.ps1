@@ -13,11 +13,15 @@
 #   .\station.ps1 smtp       настроить отправку писем: сервер, порт 587, логин, обратный адрес;
 #                            пароль спрашивает скрыто и пишет только в portal.env этой машины
 #   .\station.ps1 mail-test you@example.com    одно пробное письмо через SMTP; сбой - с причиной
-#   .\station.ps1 livekit    боевой медиасервер голоса (deploy\voice-server): адрес и ключ, секрет
+#   .\station.ps1 livekit    отдельный медиасервер голоса (deploy\voice-server): адрес и ключ, секрет
 #                            спрашивает скрыто, пишет в portal.env и проверяет связь. Адрес самой
-#                            станции не примет: это проба, она - только для тестеров
-#   .\station.ps1 voice-testers a@example.com,b@example.com   закрытая приёмка голоса на пробе
-#                            станции (voice): пропуска в лаунчере только этим адресам, игрокам - нет
+#                            станции не примет: голос станции - voice-testers или voice-open
+#   .\station.ps1 voice-testers "a@example.com,b@example.com"   закрытая приёмка голоса на пробе
+#                            станции (voice): пропуска в лаунчере только этим адресам, игрокам - нет.
+#                            Адреса - в кавычках: без них PowerShell передаст список, а не строку
+#   .\station.ps1 voice-open голос станции для всех игроков: новые ключи LiveKit (ключи пробы и
+#                            ссылки voice-token больше не действуют), без эхо-бота и страницы пробы,
+#                            комнаты создаёт сайт, LiveKit сообщает ему, кто вошёл и вышел
 #   .\station.ps1 voice-test     проверить связь сайта с медиасервером ещё раз
 #   .\station.ps1 root-cert  выгрузить корневой сертификат Caddy (для лаунчера и чтобы браузер не ругался)
 #   .\station.ps1 internet [имя]  доступ из интернета: Let's Encrypt через Dynu на том же порту,
@@ -30,8 +34,9 @@
 #   .\station.ps1 voice      проба голоса (docs/portal/VOICE_PROBE.md): LiveKit и эхо-бот поверх сайта,
 #                            ключи LiveKit в .env. Нужен режим internet и проброс 7882/UDP и 7881/TCP
 #   .\station.ps1 voice-check    что видно изнутри: контейнеры, /rtc через Caddy, порты, брандмауэр
-#   .\station.ps1 voice-token <имя> [часы]   ссылка на страницу пробы с пропуском (по умолчанию 24 ч)
-#   .\station.ps1 voice-off  убрать пробу голоса; сайт остаётся
+#   .\station.ps1 voice-token <имя> [часы]   ссылка на страницу пробы с пропуском (по умолчанию 24 ч);
+#                            только пока голос - проба
+#   .\station.ps1 voice-off  убрать голос станции (пробу или открытый); сайт остаётся
 #   .\station.ps1 down       остановить; данные в томах остаются
 #
 # Никогда не звать 'docker compose down -v': это удаляет базу, файлы и ключи.
@@ -54,8 +59,12 @@ function Get-Compose {
     $env_ = Read-DotEnv '.env'
     $files = @('compose', '-f', 'compose.yaml', '-f', 'compose.station.yaml')
     if ($env_['STATION_MODE'] -eq 'internet') { $files += @('-f', 'compose.internet.yaml') }
-    # проба голоса (docs/portal/VOICE_PROBE.md): последним, чтобы её том Caddy лёг поверх !override
-    if ($env_['VOICE_PROBE'] -eq '1') { $files += @('-f', 'compose.voice.yaml') }
+    # голос станции: VOICE_PROBE=1 - LiveKit поднят. Пока голос не открыт всем (VOICE_OPEN), к нему
+    # эхо-бот и страница пробы (docs/portal/VOICE_PROBE.md) - последними, чтобы том Caddy лёг поверх !override
+    if ($env_['VOICE_PROBE'] -eq '1') {
+        $files += @('-f', 'compose.voice.yaml')
+        if ($env_['VOICE_OPEN'] -ne '1') { $files += @('-f', 'compose.voice-probe.yaml') }
+    }
     if ($env_['STATION_MODE'] -eq 'internet') { $files += @('--profile', 'ddns') }
     $files
 }
@@ -297,7 +306,9 @@ function Test-Rtc {
 
 function Show-VoiceCheck {
     $env_ = Read-DotEnv '.env'
-    Invoke-Compose ps -a livekit voice-echo caddy
+    $open = $env_['VOICE_OPEN'] -eq '1'
+    Write-Host $(if ($open) { 'голос станции: открыт всем игрокам (voice-open)' } else { 'голос станции: проба, пропуска только тестерам' })
+    if ($open) { Invoke-Compose ps -a livekit caddy } else { Invoke-Compose ps -a livekit voice-echo caddy }
     $code = Test-Rtc
     if ($code -match '^4\d\d$' -and $code -ne '404') { Write-Host "сигналинг /rtc через Caddy: отвечает LiveKit (HTTP $code)" -ForegroundColor Green }
     else { Write-Host "сигналинг /rtc через Caddy: HTTP '$code' - 404 значит старый Caddyfile, 502 - livekit не запущен" -ForegroundColor Red }
@@ -324,6 +335,14 @@ function Show-VoiceCheck {
     $lines = @(& docker @compose logs livekit 2>&1 | Select-String -Pattern 'nodeIP|external|STUN' | Select-Object -Last 3)
     if ($lines) { $lines | ForEach-Object { Write-Host "livekit: $($_.Line.Trim())" } }
     else { Write-Host 'livekit: строки с внешним IP в журнале не нашлось - смотреть docker compose logs livekit' -ForegroundColor Yellow }
+    if ($open) {
+        # webhook на сайт (http://portal:8080 внутри сети Docker): без него сайт узнаёт о входе и
+        # выходе только от сторожа раз в 30 секунд. Пусто - событий ещё не было или всё дошло
+        $hooks = @(& docker @compose logs livekit 2>&1 | Select-String -Pattern 'webhook.*(fail|error)|(fail|error).*webhook' | Select-Object -Last 3)
+        if ($hooks) { $hooks | ForEach-Object { Write-Host "livekit: $($_.Line.Trim())" -ForegroundColor Yellow } }
+        else { Write-Host 'livekit: ошибок webhook в журнале нет' -ForegroundColor Green }
+        return
+    }
     $echo = @(& docker @compose logs --tail 5 voice-echo 2>&1)
     Write-Host 'эхо-бот, последние строки:'
     $echo | ForEach-Object { Write-Host "  $_" }
@@ -334,6 +353,7 @@ switch ($Command) {
         Assert-Docker
         Initialize-Config
         $env_ = Read-DotEnv '.env'
+        if ($env_['VOICE_OPEN'] -eq '1') { Fail 'голос станции открыт всем (voice-open): проба поверх него не ставится. Перезапуск - .\station.ps1 voice-open, вернуться к пробе - .\station.ps1 voice-off, затем voice' }
         if ($env_['STATION_MODE'] -ne 'internet') {
             Write-Host 'Сайт в режиме lan: снаружи проба не пройдёт (свой сертификат, локальный адрес). Сначала .\station.ps1 internet' -ForegroundColor Yellow
         }
@@ -357,6 +377,7 @@ switch ($Command) {
     }
     'voice-token' {
         $env_ = Read-DotEnv '.env'
+        if ($env_['VOICE_OPEN'] -eq '1') { Fail 'голос станции открыт всем (voice-open): страницы пробы и её пропусков больше нет, игроки входят из лаунчера' }
         if (-not $env_['LIVEKIT_API_SECRET']) { Fail 'ключей LiveKit нет - сначала .\station.ps1 voice' }
         if ($Email -notmatch '^[A-Za-z0-9_-]{1,32}$') { Fail 'имя участника - латиница, цифры, _ и -, до 32 знаков: .\station.ps1 voice-token vitali' }
         $hours = if ($Name) { [int]$Name } else { 24 }
@@ -366,11 +387,24 @@ switch ($Command) {
     }
     'voice-off' {
         Assert-Docker
-        if ((Read-DotEnv '.env')['VOICE_PROBE'] -eq '1') { Invoke-Compose rm -s -f livekit voice-echo }
+        $env_ = Read-DotEnv '.env'
+        $open = $env_['VOICE_OPEN'] -eq '1'
+        if ($env_['VOICE_PROBE'] -eq '1') {
+            if ($open) { Invoke-Compose rm -s -f livekit } else { Invoke-Compose rm -s -f livekit voice-echo }
+        }
         Set-DotEnv 'VOICE_PROBE' '0'
+        Set-DotEnv 'VOICE_OPEN' '0'
+        Set-DotEnv 'VOICE_LIVEKIT_YAML' ''
         # Caddy без тома страницы пробы
         Invoke-Compose up -d caddy
-        Write-Host 'Проба голоса убрана; ключи LiveKit остались в .env. Проброс 7881/7882 на роутере можно снять.'
+        if ($open -and (Test-Path 'portal.env')) {
+            # сайт снова считает медиасервер на своём адресе пробой: следующий voice - только для тестеров
+            $path = Join-Path $PSScriptRoot 'portal.env'
+            $lines = @(Get-Content -LiteralPath $path -Encoding UTF8 | Where-Object { $_ -notmatch '^\s*LiveKit__Open\s*=' })
+            [IO.File]::WriteAllText($path, ($lines -join "`n") + "`n", $utf8)
+            Invoke-Compose up -d --no-deps --force-recreate portal
+        }
+        Write-Host 'Голос станции убран; ключи LiveKit остались в .env. Сайт отвечает игрокам «голос недоступен». Проброс 7881/7882 на роутере можно снять.'
     }
     'up' {
         Assert-Docker
@@ -484,12 +518,12 @@ switch ($Command) {
         $a = Read-Host "адрес медиасервера, wss://имя [$($penv['LiveKit__Url'])]"
         $url = if ($a.Trim()) { $a.Trim().TrimEnd('/') } else { $penv['LiveKit__Url'] }
         if ($url -notmatch '^wss://[A-Za-z0-9.-]+(:\d+)?$') { Fail "нужен адрес вида wss://voice.example.org, а не '$url'" }
-        # медиасервер на адресе самой станции - это проба: сайт выдаёт её пропуска только тестерам
+        # медиасервер на адресе самой станции ставят voice-testers (проба) и voice-open (для всех)
         $env_ = Read-DotEnv '.env'
         $mine = @($env_['PORTAL_HOST'], $env_['DYNU_HOSTNAME'], $env_['LAN_HOST'])
         if (Get-Url) { $mine += ([uri](Get-Url)).Host }
         if ($mine -contains ([uri]('https://' + $url.Substring(6))).Host) {
-            Fail "$url - адрес самой станции, то есть проба. Боевой медиасервер - отдельная машина со своим именем; для приёмки на пробе: .\station.ps1 voice-testers a@example.com,b@example.com"
+            Fail "$url - адрес самой станции. Здесь - отдельная машина со своим именем; голос станции для всех: .\station.ps1 voice-open, приёмка на пробе: .\station.ps1 voice-testers `"a@example.com,b@example.com`""
         }
         $a = Read-Host "ключ (LIVEKIT_API_KEY, его печатает setup.sh) [$($penv['LiveKit__ApiKey'])]"
         $key = if ($a.Trim()) { $a.Trim() } else { $penv['LiveKit__ApiKey'] }
@@ -521,10 +555,11 @@ switch ($Command) {
         # даже если выйдет лаунчер с голосом. Боевой медиасервер - .\station.ps1 livekit
         Assert-Docker
         $env_ = Read-DotEnv '.env'
+        if ($env_['VOICE_OPEN'] -eq '1') { Fail 'голос станции открыт всем (voice-open): список тестеров не нужен. Закрыть обратно в пробу - .\station.ps1 voice-off, затем voice и voice-testers' }
         if ($env_['VOICE_PROBE'] -ne '1' -or -not $env_['LIVEKIT_API_KEY'] -or -not $env_['LIVEKIT_API_SECRET']) { Fail 'пробы голоса нет - сначала .\station.ps1 voice' }
         if (-not (Test-Path 'portal.env')) { Fail 'нет portal.env: сначала .\station.ps1 up' }
         $testers = @("$Email" -split '[,;\s]+' | Where-Object { $_ })
-        if (-not $testers) { Fail 'укажите адреса тестеров (их почта на сайте) через запятую: .\station.ps1 voice-testers a@example.com,b@example.com' }
+        if (-not $testers) { Fail 'укажите адреса тестеров (их почта на сайте) через запятую, в кавычках: .\station.ps1 voice-testers "a@example.com,b@example.com"' }
         foreach ($t in $testers) { if ($t -notmatch '^[^@\s]+@[^@\s]+\.[^@\s]+$') { Fail "'$t' - не адрес почты" } }
         $site = [uri](Get-Url)
         $penv = Read-DotEnv 'portal.env'
@@ -548,6 +583,80 @@ switch ($Command) {
         Say 'проверка связи с медиасервером (строка PROBE и число тестеров)'
         Invoke-Compose exec -T portal dotnet Xp.Portal.dll voice check
         Write-Host "Пропуска в лаунчере только для: $($testers -join ', '). Тестеру нужен аккаунт сайта с этой почтой и лаунчер, привязанный к нему." -ForegroundColor Green
+    }
+    'voice-open' {
+        # Голос станции для всех игроков (Vitali 03.10: станция - голосовой сервер выпуска). При
+        # переходе с пробы ключи LiveKit меняются: пропуска тестеров и ссылки voice-token перестают
+        # действовать. Эхо-бот и страница пробы уходят; комнаты создаёт только сайт, LiveKit сообщает
+        # ему о входе и выходе (webhook). Повторный запуск ключей не меняет - пишет настройки заново
+        # и перезапускает LiveKit и сайт, то есть рвёт идущие разговоры на несколько секунд
+        Assert-Docker
+        $env_ = Read-DotEnv '.env'
+        if ($env_['STATION_MODE'] -ne 'internet') { Fail 'сайт в режиме lan: игроки снаружи не войдут. Сначала .\station.ps1 internet' }
+        if (-not (Test-Path 'portal.env')) { Fail 'нет portal.env: сначала .\station.ps1 up' }
+        $site = [uri](Get-Url)
+        $penv = Read-DotEnv 'portal.env'
+        if ($penv['LiveKit__Url'] -and ([uri]($penv['LiveKit__Url'] -replace '^wss://', 'https://')).Host -ne $site.Host) {
+            Write-Host "Сейчас сайт выдаёт пропуска на отдельный медиасервер $($penv['LiveKit__Url']); голос станции его заменит." -ForegroundColor Yellow
+            if ((Read-Host 'заменить? (да/нет)') -ne 'да') { Fail 'оставлено как было' }
+        }
+        if ($env_['VOICE_OPEN'] -ne '1') {
+            # эхо-бота убрать, пока compose.voice-probe.yaml ещё в списке: после этого compose о нём не знает
+            if ($env_['VOICE_PROBE'] -eq '1') { Invoke-Compose rm -s -f voice-echo }
+            Say 'новые ключи LiveKit: ключи пробы больше не действуют'
+            Set-DotEnv 'LIVEKIT_API_KEY' ('API' + (-join ((New-Secret 6) | ForEach-Object { $_.ToString('x2') })))
+            Set-DotEnv 'LIVEKIT_API_SECRET' (-join ((New-Secret 32) | ForEach-Object { $_.ToString('x2') }))
+            $env_ = Read-DotEnv '.env'
+        }
+        # настройки LiveKit по образцу deploy\voice-server\setup.sh, без TURN: его на станции нет.
+        # Пишутся только здесь, в гит и в архив сайта не идут (.gitignore)
+        $dir = Join-Path $PSScriptRoot 'voice-open'
+        New-Item -ItemType Directory -Force -Path $dir | Out-Null
+        $yaml = @(
+            '# Пишет station.ps1 voice-open: правка руками пропадёт при следующем запуске.'
+            '# Ключи - в LIVEKIT_KEYS (compose.voice.yaml), здесь только имя ключа для подписи событий.'
+            'port: 7880'
+            'rtc:'
+            '  tcp_port: 7881'
+            '  # все участники на одном UDP-порту: один проброс на роутере вместо диапазона'
+            '  udp_port: 7882'
+            '  # внешний адрес - через STUN при старте; сменился IP станции - .\station.ps1 voice-open заново'
+            '  use_external_ip: true'
+            'room:'
+            '  # комнаты создаёт только сайт, перед каждым пропуском, со своей вместимостью'
+            '  auto_create: false'
+            '  max_participants: 16'
+            '  empty_timeout: 300'
+            'webhook:'
+            "  api_key: $($env_['LIVEKIT_API_KEY'])"
+            '  urls:'
+            '    # сайт внутри сети Docker, мимо Caddy'
+            '    - http://portal:8080/api/v1/voice/webhook'
+            'logging:'
+            '  level: info'
+        )
+        [IO.File]::WriteAllText((Join-Path $dir 'livekit.yaml'), ($yaml -join "`n") + "`n", $utf8)
+        Set-DotEnv 'VOICE_LIVEKIT_YAML' './voice-open/livekit.yaml'
+        Set-DotEnv 'VOICE_PROBE' '1'
+        Set-DotEnv 'VOICE_OPEN' '1'
+        # сайту: медиасервер на своём адресе, открыт всем; список тестеров больше не нужен
+        $path = Join-Path $PSScriptRoot 'portal.env'
+        $lines = @(Get-Content -LiteralPath $path -Encoding UTF8 | Where-Object { $_ -notmatch '^\s*LiveKit__Testers__\d+\s*=' })
+        [IO.File]::WriteAllText($path, ($lines -join "`n") + "`n", $utf8)
+        Set-DotEnv 'LiveKit__Url' "wss://$($site.Authority)" 'portal.env'
+        Set-DotEnv 'LiveKit__ApiUrl' 'http://livekit:7880' 'portal.env'
+        Set-DotEnv 'LiveKit__ApiKey' $env_['LIVEKIT_API_KEY'] 'portal.env'
+        Set-DotEnv 'LiveKit__ApiSecret' "'$($env_['LIVEKIT_API_SECRET'])'" 'portal.env'
+        Set-DotEnv 'LiveKit__Open' 'true' 'portal.env'
+        Say 'перезапускаю LiveKit и сайт, Caddy - без страницы пробы'
+        Invoke-Compose up -d --no-deps --force-recreate livekit portal
+        Invoke-Compose up -d --no-deps caddy
+        Start-Sleep -Seconds 5
+        Show-VoiceCheck
+        Say 'проверка связи сайта с медиасервером (строка production)'
+        Invoke-Compose exec -T portal dotnet Xp.Portal.dll voice check
+        Write-Host 'Голос станции открыт всем: пропуск в комнату получает любой игрок с аккаунтом сайта и привязанным лаунчером, которого сайт в неё пускает. Нужен проброс на роутере 7882/UDP и 7881/TCP.' -ForegroundColor Green
+        Write-Host 'Сменится внешний IP станции - LiveKit узнаёт его только при старте: .\station.ps1 voice-open ещё раз.' -ForegroundColor DarkGray
     }
     'root-cert' {
         # корень собственного центра Caddy: добавить в «Доверенные корневые центры» машины, с которой
