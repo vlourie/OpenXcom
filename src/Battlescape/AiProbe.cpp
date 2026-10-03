@@ -1003,8 +1003,9 @@ void flushAfter(SavedBattleGame *save, int side, bool end)
 }
 
 /// OXCE_AI_ATTRIB_PROBE: how each unit was at the last stage of a turn change - taken when a side's turn ends (sideEnds),
-/// compared at each stage of SavedBattleGame::endTurn and at the first decision or think of the new side.
-struct FxSnap { int hp, stun, energy, status; };
+/// compared at each stage of SavedBattleGame::endTurn, at each frame of the new side before its first decision ("frame")
+/// and at that decision, or at the side's end when it made none ("start").
+struct FxSnap { int hp, stun, energy, mana, status; };
 std::map<int, FxSnap> fxPrev;
 bool fxArmed = false;
 int fxSide = -1, fxTurn = -1;
@@ -1014,7 +1015,7 @@ void fxTake(SavedBattleGame *save)
 	fxPrev.clear();
 	for (const auto *bu : *save->getUnits())
 	{
-		fxPrev[bu->getId()] = { bu->getHealth(), bu->getStunlevel(), bu->getEnergy(), (int)bu->getStatus() };
+		fxPrev[bu->getId()] = { bu->getHealth(), bu->getStunlevel(), bu->getEnergy(), bu->getMana(), (int)bu->getStatus() };
 	}
 }
 
@@ -1041,7 +1042,7 @@ void fxStage(SavedBattleGame *save, const char *stage)
 		Log(LOG_INFO) << "[AITURNFX] {\"v\":1,\"stage\":\"" << stage << "\",\"turn\":" << save->getTurn() << ",\"side\":" << (int)save->getSide()
 			<< ",\"unit\":" << bu->getId() << ",\"faction\":" << (int)bu->getFaction()
 			<< ",\"hp\":[" << a.hp << "," << bu->getHealth() << "],\"stun\":[" << a.stun << "," << bu->getStunlevel()
-			<< "],\"en\":[" << a.energy << "," << bu->getEnergy() << "],\"status\":[" << a.status << "," << (int)bu->getStatus()
+			<< "],\"en\":[" << a.energy << "," << bu->getEnergy() << "],\"mana\":[" << a.mana << "," << bu->getMana() << "],\"status\":[" << a.status << "," << (int)bu->getStatus()
 			<< "],\"wounds\":" << bu->getFatalWounds() << ",\"burn\":" << bu->getFire()
 			<< ",\"smoke\":" << (tile ? tile->getSmoke() : -1) << ",\"fire\":" << (tile ? tile->getFire() : -1) << "}";
 	}
@@ -1052,7 +1053,8 @@ void fxStage(SavedBattleGame *save, const char *stage)
 	}
 }
 
-/// The first decision or think of the new side: what came after the turn change's last stage (terrain explosions).
+/// The first decision of the new side, or the end of its turn when none of its units decided: what came after the turn
+/// change's last stage - terrain explosions, units falling unconscious or dying when the state machine plays it out.
 void fxStart(SavedBattleGame *save)
 {
 	if (fxArmed && fxSide != (int)save->getSide())
@@ -1064,9 +1066,9 @@ void fxStart(SavedBattleGame *save)
 void recordTurn(SavedBattleGame *save)
 {
 	const int side = save->getSide();
-	if (attrib())
+	if (attrib() && fxArmed && fxSide != side)
 	{
-		fxStart(save);
+		fxStage(save, "frame"); // the new side's first frame, before its turn record; "start" comes at its first decision
 	}
 	if (!record() || (side == seenSide && save->getTurn() == seenTurn))
 	{
@@ -2208,6 +2210,7 @@ void sideEnds(SavedBattleGame *save)
 	// endTurn comes back here after each explosion at the turn's end: the snapshot is the first call's
 	if (attrib() && !(fxArmed && fxSide == (int)save->getSide() && fxTurn == save->getTurn()))
 	{
+		fxStart(save); // none of the side's units decided this turn
 		fxSide = (int)save->getSide();
 		fxTurn = save->getTurn();
 		fxArmed = true;
@@ -2985,7 +2988,8 @@ std::string attribState(const BattleUnit *unit)
 	const Tile *tile = unit->getTile();
 	std::ostringstream out;
 	out << " en=" << unit->getEnergy() << "/" << unit->getBaseStats()->stamina << " burn=" << unit->getFire()
-		<< " smoke=" << (tile ? tile->getSmoke() : -1) << " fire=" << (tile ? tile->getFire() : -1);
+		<< " smoke=" << (tile ? tile->getSmoke() : -1) << " fire=" << (tile ? tile->getFire() : -1)
+		<< " mana=" << unit->getMana() << "/" << unit->getBaseStats()->mana; // stun recovery of most armors counts it
 	return out.str();
 }
 
