@@ -771,5 +771,5 @@ switch ($Command) {
         Write-Host "Лаунчеры берут обновления с $url/releases/"
     }
     'down' { Invoke-Compose down }
-    default { Fail "неизвестная команда '$Command'. Есть: up, backup, status, content, logs, admin, reset-2fa, mail, smtp, mail-test, livekit, voice-testers, voice-test, root-cert, internet, lan, releases, voice, voice-check, voice-token, voice-off, down" }
+    default { Fail "неизвестная команда '$Command'. Есть: up, backup, status, content, logs, admin, reset-2fa, mail, smtp, mail-test, livekit, voice-testers, voice-test, root-cert, internet, lan, releases, voice, voice-open, voice-check, voice-token, voice-off, down" }
 }
