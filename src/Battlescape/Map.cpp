@@ -555,6 +555,10 @@ void Map::draw()
 	}
 	// the true-color canvas records the frame and draws it on all cores now
 	_canvas->setLight(nullptr);
+	if (HdDrawStats::on)
+	{
+		HdDrawStats::frame.recordUs += std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - drawStart).count();
+	}
 	_canvas->flush();
 	_lastDrawMs = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - drawStart).count();
 	if (_camera->isGliding())
@@ -1291,6 +1295,7 @@ void Map::drawUnit(UnitSprite &unitSprite, Tile *unitTile, Tile *currTile, Posit
 	{
 		shade = std::min(+NIGHT_VISION_SHADE, shade);
 	}
+	HdDrawTimer timer(HdDrawStats::frame.unitsUs);
 	unitSprite.draw(bu, part, tileScreenPosition.x + offsets.ScreenOffset.x, tileScreenPosition.y + offsets.ScreenOffset.y, shade, mask, _isAltPressed && !_isCtrlPressed);
 }
 

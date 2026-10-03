@@ -28,6 +28,7 @@
 #include <iterator>
 #include <sstream>
 #include "HdUi.h"
+#include "HdCanvas.h"
 #include "HdTest.h"
 #include "HdSprites.h"
 #include "HdFx.h"
@@ -650,7 +651,8 @@ void Game::run()
 					if (path && *path && (hdFrameLog = fopen(path, "w")) != nullptr)
 					{
 						hdFrameLogZero = hdLoopStart;
-						fprintf(hdFrameLog, "t_ms\tloop_us\tthink_us\tdraw_us\tflip_us\tpack_fr\tpack_ms\tui_ms\tdump\tstate\n");
+						fprintf(hdFrameLog, "t_ms\tloop_us\tthink_us\tdraw_us\tflip_us\tpack_fr\tpack_ms\tui_ms\tdump\tstate"
+							"\trecord_us\tunits_us\tscript_us\tsmooth_us\tsmooth_n\ttoned_us\ttoned_n\tflush_us\tstrip_max_us\tcmds\n");
 					}
 				}
 				if (hdFrameLog)
@@ -659,10 +661,15 @@ void Game::run()
 					{
 						return (long long)std::chrono::duration_cast<std::chrono::microseconds>(b - a).count();
 					};
-					fprintf(hdFrameLog, "%lld\t%lld\t%lld\t%lld\t%lld\t%u\t%.2f\t%.2f\t%d\t%s\n",
+					// where the map's drawing went (HdDrawStats, counted only while this log is on)
+					const HdDrawStats &st = HdDrawStats::frame;
+					fprintf(hdFrameLog, "%lld\t%lld\t%lld\t%lld\t%lld\t%u\t%.2f\t%.2f\t%d\t%s\t%lld\t%lld\t%lld\t%lld\t%u\t%lld\t%u\t%lld\t%lld\t%u\n",
 						us(hdFrameLogZero, hdLoopStart) / 1000, us(hdLoopStart, hdLogFlip1), us(hdLogThink0, hdLogThink1),
 						us(hdLogDraw0, hdLogDraw1), us(hdLogDraw1, hdLogFlip1), packFrames, packMs,
-						HdUi::instance().lastFrameMs(), hdDumped ? 1 : 0, state);
+						HdUi::instance().lastFrameMs(), hdDumped ? 1 : 0, state,
+						st.recordUs, st.unitsUs, st.scriptUs, st.smoothUs, st.smoothNew, st.tonedUs, st.tonedNew,
+						st.flushUs, st.stripMaxUs, st.cmds);
+					HdDrawStats::frame = HdDrawStats();
 					if (++hdFrameLogLines % 60 == 0)
 					{
 						fflush(hdFrameLog);

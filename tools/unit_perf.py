@@ -78,7 +78,39 @@ def summarize(frames):
     late = [f["loop_us"] / 1000 for f in battle if f["t_ms"] - t0 >= 10000]
     out["first10s_loop_p95"] = round(pct(early, 95), 3) if early else None
     out["after10s_loop_p95"] = round(pct(late, 95), 3) if late else None
+    # куда ушло рисование (столбцы HdDrawStats): медленные кадры по одному и медиана обычного кадра
+    if "record_us" in battle[0]:
+        parts = ("record_us", "units_us", "script_us", "smooth_us", "smooth_n", "toned_us", "toned_n",
+                 "flush_us", "strip_max_us", "cmds")
+        out["draw_parts_p50"] = {c: pct([f[c] for f in battle], 50) for c in parts}
+        slow = sorted((f for f in battle if f["draw_us"] >= 50000), key=lambda f: -f["draw_us"])
+        out["slow_draw"] = [dict({"t_ms": f["t_ms"], "draw_us": f["draw_us"], "pack_fr": f["pack_fr"],
+                                  "ui_ms": f["ui_ms"]}, **{c: f[c] for c in parts}) for f in slow[:20]]
     return out
+
+
+def log_summary(text):
+    """То же, что движок пишет и без журнала кадров: окна HD frame по 2 с и строки HD stall, только бой.
+    По ним сравниваются прогоны с журналом и без (цена самого журнала)."""
+    body = [l.split("\t", 2)[-1] for l in text.splitlines()]
+    start = next((i for i, l in enumerate(body) if "BattlescapeState" in l and l.startswith("HD ")), None)
+    if start is None:
+        return {}
+    end = next((i for i, l in enumerate(body) if l.startswith("[AIPROBE] done")), len(body))
+    wins, stalls = [], []
+    for l in body[start:end]:
+        m = re.match(r"HD frame: (\d+) fr, worst (\d+) ms \((\S+)\), >=33 ms (\d+), >=100 ms (\d+)", l)
+        if m:
+            wins.append(tuple(int(m.group(i)) for i in (1, 2, 4, 5)))
+        m = re.match(r"HD stall: (\d+) ms on \S+ \|.* think (\d+) blit (\d+) flip (\d+)", l)
+        if m:
+            stalls.append(tuple(int(x) for x in m.groups()))
+    worst = [w[1] for w in wins]
+    return {"windows": len(wins), "loops": sum(w[0] for w in wins), "loops_per_window": round(sum(w[0] for w in wins) / len(wins), 1) if wins else None,
+            "window_worst_p50": pct(worst, 50), "window_worst_p95": pct(worst, 95), "window_worst_max": max(worst, default=None),
+            "ge33": sum(w[2] for w in wins), "ge100": sum(w[3] for w in wins),
+            "stalls_think": sum(1 for s in stalls if s[1] >= 100), "stalls_blit": sum(1 for s in stalls if s[2] >= 100),
+            "stall_blit_max": max((s[2] for s in stalls), default=0)}
 
 
 def read_frames(path):
@@ -90,8 +122,10 @@ def read_frames(path):
             if len(p) != len(head):
                 continue  # хвост, оборванный на выходе
             r = dict(zip(head, p))
-            for k in ("t_ms", "loop_us", "think_us", "draw_us", "flip_us", "pack_fr", "dump"):
-                r[k] = int(r[k])
+            for k in ("t_ms", "loop_us", "think_us", "draw_us", "flip_us", "pack_fr", "dump", "record_us", "units_us",
+                      "script_us", "smooth_us", "smooth_n", "toned_us", "toned_n", "flush_us", "strip_max_us", "cmds"):
+                if k in r:
+                    r[k] = int(r[k])
             r["pack_ms"], r["ui_ms"] = float(r["pack_ms"]), float(r["ui_ms"])
             rows.append(r)
     return rows
@@ -111,6 +145,8 @@ def main():
     ap.add_argument("--turns", type=int, default=3)
     ap.add_argument("--timeout", type=int, default=900)
     ap.add_argument("--opt", action="append", default=[], help="ещё ключ options.cfg прогона: oxceHdLight=false")
+    ap.add_argument("--no-framelog", action="store_true",
+                    help="без журнала кадров: только строки HD frame / HD stall лога - замер цены самого журнала")
     a = ap.parse_args()
 
     os.environ["OXCE_AI_BUILD"] = a.build
@@ -152,7 +188,8 @@ def main():
 
     class Measured(base_hidden):
         def __init__(self, args, cwd, env):
-            env["OXCE_HD_FRAMELOG"] = str(framelog)
+            if not a.no_framelog:
+                env["OXCE_HD_FRAMELOG"] = str(framelog)
             wdt, hgt = a.display.split("x")
             args[args.index("-displayWidth") + 1] = wdt
             args[args.index("-displayHeight") + 1] = hgt
@@ -165,17 +202,20 @@ def main():
     res = ai_probe.run(None, a.turns, name="perf_" + a.name, timeout=a.timeout, bot=True, seed=a.seed,
                        campaign="NoCodexCatZ.sav", mission=a.mission, careful=True, squad=8)
     wall = time.time() - t0
-    if not framelog.is_file():
+    if not a.no_framelog and not framelog.is_file():
         sys.exit(f"нет журнала кадров {framelog}: сборка без OXCE_HD_FRAMELOG? лог {res.log}")
-    shutil.copyfile(framelog, run_dir / "frames.tsv")
+    if not a.no_framelog:
+        shutil.copyfile(framelog, run_dir / "frames.tsv")
     shutil.copyfile(res.log, run_dir / "openxcom.log")
     mem = holder["mem"].rows
     with open(run_dir / "memory.tsv", "w", encoding=ENC) as f:
         f.write("t_s\trss_mb\tprivate_mb\n")
         for t, rss, priv in mem:
             f.write(f"{t}\t{rss / 2**20:.0f}\t{priv / 2**20:.0f}\n")
-    s = summarize(read_frames(framelog))
+    s = {} if a.no_framelog else summarize(read_frames(framelog))
     log = res.log.read_text(encoding="utf-8", errors="replace")
+    s["framelog"] = not a.no_framelog
+    s["log"] = log_summary(log)
     perf = re.findall(r"HD perf: (\d+x\d+ k=\d+ mode=\d+[^\n]*)", log)
     st = ai_probe.EXE.stat()
     s.update({"name": a.name, "mission": a.mission, "seed": a.seed, "mode": a.mode, "scale": a.scale,
@@ -191,8 +231,11 @@ def main():
     fields = ("when", "host", "name", "mission", "seed", "mode", "scale", "display", "frames_battle", "fps_drawn",
               "entry_ms", "loop_p50", "loop_p95", "loop_p99", "loop_max", "draw_p50", "draw_p95", "draw_p99",
               "flip_p95", "think_p95", "over_33ms", "over_100ms", "pack_sprites", "pack_ms", "rss_peak_mb",
-              "private_peak_mb", "finished")
+              "private_peak_mb", "finished", "framelog", "log_loops", "log_ge33", "log_ge100", "log_stalls_blit",
+              "log_stall_blit_max", "exe_sha256")
     row = dict(s)
+    for k in ("loops", "ge33", "ge100", "stalls_blit", "stall_blit_max"):
+        row["log_" + k] = s["log"].get(k, "")
     for c in ("loop", "draw", "flip", "think"):
         for q in ("p50", "p95", "p99", "max"):
             row[f"{c}_{q}"] = s.get(f"{c}_ms", {}).get(q, "")
