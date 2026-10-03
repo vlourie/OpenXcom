@@ -64,6 +64,8 @@ EDGE_TOL = 0.015                # ... или до половины допуск�
 CRUMB = 4 * K * K               # кусок силуэта модели меньше 4 пикселей базы - крошка матта, не часть предмета
 PAD = pr.RENDER_V1["pad"]
 SEED0 = 4100
+ITEM_TONE = 0.0                 # тон к оригиналу: 0 - пиксельный кадр задаёт размещение, а не яркость поверхности
+                                # (03.10: photo_base.TONE 0.7 гасил ответ модели - яркость -43 %, разброс -34 %)
 
 ITEM = ("<image1> is a clean shape sketch of {what}, shown on a flat preview panel of colour RGB({r}, {g}, {b}). "
         "The panel is background, not part of the object. "
@@ -158,7 +160,7 @@ WHAT = [
 ]
 CODE = (
     ("item_photo.py", ("ITEM", "NEGATIVE_EXTRA", "WHAT", "item_prompt", "load_frame", "canvas_map", "cut_fixed",
-                       "place_fixed")),
+                       "place_fixed", "ITEM_TONE")),
     ("photo_render.py", ("RENDER_V1", "PANEL_TEXT", "flat_input", "detect_panel")),
     ("struct_probe.py", ("C_TEXT", "run_multi", "inputs")),
     ("obj_photo.py", ("NEGATIVE",)),
@@ -283,7 +285,7 @@ def cut_fixed(frame, hd, asked):
     clean = pb.decontaminate(rgb, alpha, bg)
     rep.update(pb.qa(g, clean, alpha, tri, bg))
     rgba = np.dstack([clean, alpha * 255.0]).clip(0, 255).astype(np.uint8)
-    im = po.match_tone(Image.fromarray(rgba, "RGBA"), frame, pb.TONE)
+    im = po.match_tone(Image.fromarray(rgba, "RGBA"), frame, ITEM_TONE)
     rep["verdict"] = {"FAIL": "FAIL", "UNVERIFIABLE": "RERENDER"}.get(rep["geometry"]) or (
         "REVIEW" if "REVIEW" in (rep["geometry"], rep["alpha"]) else "PASS")
     return im, rep, g, m_c
