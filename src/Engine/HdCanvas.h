@@ -17,6 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <chrono>
 #include <deque>
 #include <list>
 #include <string>
@@ -31,6 +32,53 @@ namespace OpenXcom
 {
 
 class ScriptWorkerBlit;
+
+/**
+ * Where the drawing of one battle frame went, for the frame log (OXCE_HD_FRAMELOG, Game.cpp):
+ * counted only while the log is on, read and cleared by it after every frame. Measurement only.
+ */
+struct HdDrawStats
+{
+	/// The frame log is on (read once from the environment).
+	static const bool on;
+	/// The current frame's counts.
+	static HdDrawStats frame;
+	/// Map::draw recording the commands (the classic routines, units included), microseconds.
+	long long recordUs = 0;
+	/// Of the recording: the unit sprites (UnitSprite::draw).
+	long long unitsUs = 0;
+	/// Of the recording: the units' scripts and their recolour of the HD frames (blitScripted).
+	long long scriptUs = 0;
+	/// Of the recording: frames smoothed or recoloured on first use, and their number.
+	long long smoothUs = 0;
+	unsigned smoothNew = 0;
+	/// Of the recording: shaded copies made on first use, and their number.
+	long long tonedUs = 0;
+	unsigned tonedNew = 0;
+	/// Running the commands on the workers: wall time, and the longest strip
+	/// (a wall much longer than the longest strip means the threads waited for a CPU).
+	long long flushUs = 0;
+	long long stripMaxUs = 0;
+	unsigned cmds = 0;
+};
+
+/// Adds the time of its scope to a counter of HdDrawStats while the frame log is on.
+class HdDrawTimer
+{
+	long long *_acc;
+	std::chrono::steady_clock::time_point _start;
+public:
+	explicit HdDrawTimer(long long &acc) : _acc(HdDrawStats::on ? &acc : nullptr)
+	{
+		if (_acc) _start = std::chrono::steady_clock::now();
+	}
+	~HdDrawTimer()
+	{
+		if (_acc) *_acc += std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - _start).count();
+	}
+	HdDrawTimer(const HdDrawTimer &) = delete;
+	HdDrawTimer &operator=(const HdDrawTimer &) = delete;
+};
 
 /**
  * The light over one tile for the HD canvas: the shade and the color of the

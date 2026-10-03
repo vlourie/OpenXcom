@@ -19,6 +19,7 @@
 #include "HdCanvas.h"
 #include "HdSmooth.h"
 #include <algorithm>
+#include <atomic>
 #include <cmath>
 #include <cstring>
 #include <tuple>
@@ -34,6 +35,9 @@
 
 namespace OpenXcom
 {
+
+const bool HdDrawStats::on = [] { const char *p = getenv("OXCE_HD_FRAMELOG"); return p && *p; }();
+HdDrawStats HdDrawStats::frame;
 
 void Canvas8::fill(Uint8 color)
 {
@@ -607,6 +611,7 @@ void Canvas32::blitScripted(ScriptWorkerBlit &work, const Surface *src, int x, i
 		blit(src, x, y, shade, range);
 		return;
 	}
+	HdDrawTimer timer(HdDrawStats::frame.scriptUs);
 	const int w = src->getWidth();
 	const int h = src->getHeight();
 	int k = _scale;
@@ -692,6 +697,8 @@ void Canvas32::blitScripted(ScriptWorkerBlit &work, const Surface *src, int x, i
 			auto it = _smoothScripted.find(hash);
 			if (it == _smoothScripted.end())
 			{
+				HdDrawTimer recolourTimer(HdDrawStats::frame.smoothUs);
+				HdDrawStats::frame.smoothNew += HdDrawStats::on;
 				HdFrame made;
 				made.width = w;
 				made.height = h;
@@ -783,6 +790,8 @@ void Canvas32::blitScripted(ScriptWorkerBlit &work, const Surface *src, int x, i
 		auto it = _smoothScripted.find(hash);
 		if (it == _smoothScripted.end())
 		{
+			HdDrawTimer smoothTimer(HdDrawStats::frame.smoothUs);
+			HdDrawStats::frame.smoothNew += HdDrawStats::on;
 			HdFrame made;
 			if (smoothBase(_scriptDst.getRaw(0, 0), bw, bh, _scriptDst.getPitch(), made))
 			{
@@ -924,8 +933,13 @@ void Canvas32::flush()
 	const int threads = pool.threads();
 	const int strips = std::max(1, std::min(_height / 16, threads == 1 ? 1 : threads * 4));
 	const std::vector<Cmd> &cmds = _cmds;
+	// frame log: the wall time of the flush and its longest strip (HdDrawStats)
+	const bool timed = HdDrawStats::on;
+	std::atomic<long long> stripMax{ 0 };
+	const auto flushStart = timed ? std::chrono::steady_clock::now() : std::chrono::steady_clock::time_point();
 	pool.run(strips, [&](int strip)
 	{
+		const auto stripStart = timed ? std::chrono::steady_clock::now() : std::chrono::steady_clock::time_point();
 		const int y0 = (int)((long long)_height * strip / strips);
 		const int y1 = (int)((long long)_height * (strip + 1) / strips);
 		for (const Cmd &cmd : cmds)
@@ -935,7 +949,20 @@ void Canvas32::flush()
 				execute(cmd, std::max(cmd.y0, y0), std::min(cmd.y1, y1));
 			}
 		}
+		if (timed)
+		{
+			const long long us = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - stripStart).count();
+			long long seen = stripMax.load();
+			while (us > seen && !stripMax.compare_exchange_weak(seen, us)) {}
+		}
 	});
+	if (timed)
+	{
+		HdDrawStats &st = HdDrawStats::frame;
+		st.flushUs += std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - flushStart).count();
+		st.stripMaxUs = std::max(st.stripMaxUs, stripMax.load());
+		st.cmds += (unsigned)_cmds.size();
+	}
 	_cmds.clear();
 	_arena.clear();
 	_arenaInt.clear();
@@ -1836,6 +1863,8 @@ const HdFrame *Canvas32::smoothFor(SurfaceRaw<const Uint8> src)
 		it->second.used = _smoothClock;
 		return it->second.frame.empty() ? nullptr : &it->second.frame;
 	}
+	HdDrawTimer timer(HdDrawStats::frame.smoothUs);
+	HdDrawStats::frame.smoothNew += HdDrawStats::on;
 	HdFrame made;
 	if (!smoothFrame(src, made))
 	{
@@ -1915,6 +1944,8 @@ const HdFrame *Canvas32::tonedFor(const HdFrame &hd, int shade, Uint16 tintKey)
 			return &it->second.frame;
 		}
 	}
+	HdDrawTimer timer(HdDrawStats::frame.tonedUs);
+	HdDrawStats::frame.tonedNew += HdDrawStats::on;
 	const size_t bytes = hd.pixels.size() * sizeof(Uint32);
 	TonedEntry *entry = nullptr;
 	if (stale)
