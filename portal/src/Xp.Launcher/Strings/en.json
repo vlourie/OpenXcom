@@ -227,7 +227,7 @@
  "settings.resetNothing": "We have no settings of our own for this mod — the game starts as it is.",
  "home.build": "Build",
  "settings.builds": "Builds",
- "builds.hint": "A build is a set of mods with its own game settings. The mods sit in one folder for all builds; builds of the same mod share saves. While the game runs, builds cannot be changed.",
+ "builds.hint": "The green one is the build \"Play\" starts; click another to pick it. The buttons act on the green one. A build is a set of mods with its own game settings. The mods sit in one folder for all builds; builds of the same mod share saves. While the game runs, builds cannot be changed.",
  "builds.new": "New…",
  "builds.copy": "Copy…",
  "builds.rename": "Rename…",

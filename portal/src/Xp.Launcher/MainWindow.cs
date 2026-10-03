@@ -63,6 +63,8 @@ public sealed class MainWindow : Window
     // builds (docs/portal/MULTIMOD.md §3, §7): the switcher on the home page, the rest in Settings
     readonly ComboBox _build = new() { MinWidth = 260, FontSize = 14 };
     readonly Button _buildNew, _buildCopy, _buildRename, _buildDelete;
+    // every build in Settings, the chosen one lit: the buttons below act on it, so it has to be in sight
+    readonly StackPanel _buildList = new() { Spacing = 6, Margin = new Thickness(0, 0, 0, 8) };
     bool _fillingBuilds;
 
     readonly SetupPage _setupPage;
@@ -572,6 +574,7 @@ public sealed class MainWindow : Window
         game.Children.Add(_language);
         game.Children.Add(_languageNote);
         game.Children.Add(Skin.H2(L.T("settings.builds")));
+        game.Children.Add(_buildList);
         var buildsRow = new WrapPanel { Orientation = Orientation.Horizontal };
         foreach (var b in new[] { _buildNew, _buildCopy, _buildRename, _buildDelete })
         {
@@ -718,6 +721,25 @@ public sealed class MainWindow : Window
             _build.SelectedIndex = set.Current is { } c ? set.Builds.IndexOf(c) : -1;
         }
         _fillingBuilds = false;
+        FillBuildList();
+    }
+
+    /// <summary>The list in Settings, built from the switcher: a click on a row picks it the same way.</summary>
+    void FillBuildList()
+    {
+        _buildList.Children.Clear();
+        for (int i = 0; i < _build.Items.Count; i++)
+        {
+            if (_build.Items[i] is not ComboBoxItem { Content: string title }) continue;
+            bool chosen = i == _build.SelectedIndex;
+            var row = Skin.Btn(chosen ? "✓  " + title : title, chosen ? "primary" : null);
+            row.HorizontalAlignment = HorizontalAlignment.Stretch;
+            row.HorizontalContentAlignment = HorizontalAlignment.Left;
+            row.IsEnabled = _build.IsEnabled;
+            int index = i;
+            row.Click += (_, _) => { if (_build.SelectedIndex != index) _build.SelectedIndex = index; };
+            _buildList.Children.Add(row);
+        }
     }
 
     void SelectBuild()
@@ -728,6 +750,7 @@ public sealed class MainWindow : Window
         {
             _builds.Select(id);
             _fileLog?.Info($"build '{id}' picked");
+            FillBuildList();
         }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or UpdateBlockedException or InvalidOperationException)
         {
@@ -1170,6 +1193,7 @@ public sealed class MainWindow : Window
         bool buildsOn = idle && !running && _builds is { Exists: true };
         _build.IsEnabled = buildsOn;
         foreach (var b in new[] { _buildNew, _buildCopy, _buildRename, _buildDelete }) b.IsEnabled = buildsOn;
+        foreach (var r in _buildList.Children) r.IsEnabled = buildsOn;
         _selfUpdate.IsVisible = _launcherUpdate is not null;
         _selfUpdate.IsEnabled = idle;
         if (_launcherUpdate is not null) _selfUpdate.Content = L.T("self.install") + " " + _launcherUpdate.Release.Version;

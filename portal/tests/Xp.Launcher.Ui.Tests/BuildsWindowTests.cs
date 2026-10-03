@@ -210,6 +210,16 @@ public sealed class BuildsWindowTests : IDisposable
         Assert.Equal(["X-Piratez", "Испытание", "Копия испытания"], Items(combo));
         Shot(w, "5-settings-three-builds");
 
+        // the list in Settings: every build, the chosen one lit; a click on a row picks it like the switcher
+        var list = F<StackPanel>(w, "_buildList");
+        Assert.Equal(3, list.Children.Count);
+        Assert.Equal("✓  Копия испытания", (string)((Button)list.Children[2]).Content!);
+        Click((Button)list.Children[1]);
+        Pump(() => Last() == created, "the pick from the list");
+        Assert.Equal(1, combo.SelectedIndex);
+        Assert.Equal("✓  Испытание", (string)((Button)F<StackPanel>(w, "_buildList").Children[1]).Content!);
+        Shot(w, "5b-settings-picked-from-list");
+
         // the switcher on the home page: open the list, click the first build
         Click(F<Dictionary<string, Button>>(w, "_nav")["home"]);
         Click(combo);
@@ -264,6 +274,7 @@ public sealed class BuildsWindowTests : IDisposable
         ComeBack(w);
         Pump(() => !combo.IsEnabled, "the lock");
         Assert.All(buttons, b => Assert.False(b.IsEnabled));
+        Assert.All(F<StackPanel>(w, "_buildList").Children, r => Assert.False(r.IsEnabled));
         Assert.All(update, b => Assert.False(b.IsEnabled));
         Shot(w, "10-settings-locked-under-game");
 
