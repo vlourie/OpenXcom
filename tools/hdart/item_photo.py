@@ -3,13 +3,20 @@
 r"""Пилот этапа 1 HD-BIGOBS (ТЗ docs/research/inventory-items-hd.md §8, §10): мастера M-01..M-20 предметной съёмкой.
 
 Цикл рендера - struct_probe.Render как есть (прошёл PHOTO_STRUCT_ACCEPTANCE_V1, вариант C): эскиз struct_guide
-первой картинкой, оригинал bicubic второй, Qwen-Image-2.1 по замку (RENDER_V1: 40 шагов, cfg 4, 1 Мп), вырезка
-photo_base.cut (альфа из силуэта оригинала, R-089), проверки photo_accept. Своё здесь:
+первой картинкой, оригинал bicubic второй, Qwen-Image-2.1 по замку (RENDER_V1: 40 шагов, cfg 4, 1 Мп),
+проверки photo_accept. Своё здесь:
   * промпт ITEM - предметная съёмка ортографически в ориентации оригинала, а не изометрия obj_photo.PHOTO
     (ТЗ §8 п.4: новый generator_rev, утверждается заново; obj_photo.py и photo_render.py не правятся);
   * вход - кадр BIGOBS 32x48 из cards/originals (индексы, 0 прозрачный - как движок, R-043);
-  * укладка в прямоугольник §5.3 после вырезки, в HD: сдвиг, при нужде равномерное уменьшение, ориентация
-    та же (уменьшать эскиз 32x48 нельзя - лесенка, R-160). Вне прямоугольника после укладки - 0 пикселей.
+  * подготовка по контракту v4 (docs/research/inventory-items-redraw-contract-v4.md §3): ответ модели на холст
+    кропа x4 ОДНИМ известным преобразованием - обратным тому, которым вход растянут под размер рендера
+    (struct_probe.run_multi), без подгонки по содержимому; вырезка cut_fixed - как photo_base.cut, но без fit
+    (правка пропорций до 1.3) и без fit_shape; кадр k=4 - вырезка на месте оригинала x4, без уменьшения,
+    сдвига и центрирования. Размер и место силуэта МОДЕЛИ против оригинала x4 - замер (model_geometry):
+    больше 3 % по оси или край не на месте - REWORK, а не подгонка. Альфа по-прежнему из силуэта оригинала
+    (R-089): где модель не дорисовала - подложка в теле, это видно на листе и в core_panel.
+  * мастера BLOCKED_GEOMETRY (census/items/geometry/geometry.tsv, item_geometry.py) без записанного решения
+    Vitali (census/items/geometry/decisions.tsv: мастер<TAB>решение) не рендерятся; --recut готовых - можно.
 Описания - census/items/cards/masters.md, принятые для пилота 04.10; здесь - их перевод для модели (WHAT).
 M-06 не утверждён (стволы) - в пилот не идёт. M-19 - шаг 1: этикетка пустая, SOY - отдельным шагом.
 
@@ -20,6 +27,7 @@ M-06 не утверждён (стволы) - в пилот не идёт. M-19 
         E:/OpenXCom/tools/hdart/.venv-qwen21/Scripts/python.exe tools/hdart/item_photo.py
 Без модели: --dry-run (план, эскизы, промпты, generator_rev), --recut (готовые raw; нет ответа - стоп, R-127).
 Выход: <out>/pack/BIGOBS.PCK/<кадр>.<ТИП>.png (k=4, 128x192), <out>/meta/<ТИП>.json, <out>/sheet.png.
+--out другой папки - чтобы не затереть прежний пилот (pilot-v1 - RECHECK_REQUIRED, лист и кадры прежней укладки).
 """
 import argparse
 import hashlib
@@ -47,7 +55,13 @@ import struct_probe as sp               # noqa: E402
 ENC = "utf-8-sig"
 OUT = "art/items/pilot-v1"
 CARDS = "census/items/cards"
+GEOMETRY = "census/items/geometry/geometry.tsv"
+DECISIONS = "census/items/geometry/decisions.tsv"
 K = 4
+TOL = 0.03                      # контракт v4 §3: размер по оси 100 % +-3 %
+EDGE_MIN = K                    # край силуэта на месте: до пикселя базы (точность лесенки оригинала) ...
+EDGE_TOL = 0.015                # ... или до половины допуска размера
+CRUMB = 4 * K * K               # кусок силуэта модели меньше 4 пикселей базы - крошка матта, не часть предмета
 PAD = pr.RENDER_V1["pad"]
 SEED0 = 4100
 
@@ -64,10 +78,12 @@ NEGATIVE_EXTRA = ", hand, fingers, letters, logo, label text, perspective"
 # (мастер, тип, кадр, описание для модели) - по masters.md; M-06 нет до решения о стволах
 WHAT = [
     ("M-01", "STR_RIFLE_AK", 1168,
-     "an old worn Kalashnikov-pattern assault rifle standing vertically with the muzzle at the top, blued steel "
-     "rubbed to grey in places, a dark red-brown wooden handguard with lengthwise grooves, a curved banana "
-     "magazine and a pistol grip sticking out to the right in the lower half, the stock at the bottom; no scope, "
-     "no rails, no suppressor, no modern plastic"),
+     "an old worn Kalashnikov-pattern assault rifle standing vertically with the muzzle and front sight at the "
+     "top, blued steel rubbed to grey in places, a bright red-brown wooden handguard with lengthwise grooves under "
+     "the barrel, a curved banana magazine and a bright red-brown wooden pistol grip sticking out to the right in "
+     "the lower half, a METAL steel stock at the bottom with exactly the outline of <image1>; the full "
+     "width and height of <image1>, not slimmer; no wooden stock, no scope, no rails, no suppressor, no modern "
+     "plastic"),
     ("M-02", "STR_RIFLE_AK_CLIP", 1169,
      "a curved steel 30-round rifle magazine lying horizontally, dark blued metal with stiffening ribs; "
      "no loose cartridges, no bright plastic"),
@@ -140,7 +156,8 @@ WHAT = [
      "whole machines, no bones, no skulls, no fire"),
 ]
 CODE = (
-    ("item_photo.py", ("ITEM", "NEGATIVE_EXTRA", "WHAT", "item_prompt", "load_frame", "place")),
+    ("item_photo.py", ("ITEM", "NEGATIVE_EXTRA", "WHAT", "item_prompt", "load_frame", "canvas_map", "cut_fixed",
+                       "place_fixed")),
     ("photo_render.py", ("RENDER_V1", "PANEL_TEXT", "flat_input", "detect_panel")),
     ("struct_probe.py", ("C_TEXT", "run_multi", "inputs")),
     ("obj_photo.py", ("NEGATIVE",)),
@@ -191,53 +208,145 @@ def crop_job(full):
     return big.crop(box), box
 
 
-def place(cut4, box, w, h):
-    """Вырезка x4 кропа -> кадр k=4 128x192 в прямоугольнике §5.3: сдвиг, при нужде равномерное уменьшение
-    (на премультиплицированном), ориентация та же. -> (RGBA, отчёт)."""
+def canvas_map(hd, frame):
+    """Ответ модели -> холст кропа x4 одним преобразованием, не глядя на содержимое: вход (кроп x zoom)
+    run_multi растянул под размер рендера (qwen21_size, кратность 32), здесь - ровно обратно. Небольшая
+    анизотропия - от округления размера рендера, она у входа и у ответа одна и та же, это не правка
+    пропорций предмета. -> (RGB float32, матт ответа 0..1, отчёт)."""
+    cw, ch = frame.width * K, frame.height * K
+    m_raw, bg, own = pb.render_matte(hd)
+    rgb = np.asarray(hd.convert("RGB").resize((cw, ch), Image.LANCZOS), np.float32)
+    mi = Image.fromarray((np.clip(m_raw, 0, 1) * 255).astype(np.uint8), "L").resize((cw, ch), Image.LANCZOS)
+    info = {"render": list(hd.size), "canvas": [cw, ch],
+            "anisotropy_pct": round(100 * ((hd.width / hd.height) / (cw / ch) - 1), 2)}
+    return rgb, np.asarray(mi, np.float32) / 255.0, m_raw, bg, own, info
+
+
+def main_bbox(mask, crumb):
+    """Габарит силуэта без крошек: 8-связные куски от crumb пикселей (тонкий ствол и антенна остаются)."""
+    lab, n = pb.label(mask, 8)
+    if not n:
+        return None
+    sizes = np.bincount(lab.ravel())
+    keep = np.isin(lab, [i for i in range(1, n + 1) if sizes[i] >= crumb])
+    ys, xs = np.nonzero(keep)
+    if not len(xs):
+        return None
+    return int(xs.min()), int(ys.min()), int(xs.max()) + 1, int(ys.max()) + 1
+
+
+def model_geometry(m_c, frame):
+    """Размер и место силуэта МОДЕЛИ (матт ответа на холсте x4) против оригинала x4 - то, что прежде
+    правил fit. Края - x0, y0, x1, y1 в пикселях HD, + вправо и вниз."""
+    ob = main_bbox(np.asarray(frame)[..., 3] > 0, 4)
+    mb = main_bbox(m_c > 0.5, CRUMB)
+    r = {"orig_bbox4": [v * K for v in ob] if ob else None, "model_bbox4": list(mb) if mb else None}
+    if not (ob and mb):
+        r.update(geometry="REWORK", geometry_why="силуэт модели не найден")
+        return r
+    o = [v * K for v in ob]
+    w0, h0 = o[2] - o[0], o[3] - o[1]
+    dw, dh = (mb[2] - mb[0]) / w0 - 1, (mb[3] - mb[1]) / h0 - 1
+    edges = [mb[i] - o[i] for i in range(4)]
+    tol = [max(EDGE_MIN, EDGE_TOL * (w0 if i % 2 == 0 else h0)) for i in range(4)]
+    r.update(dw_pct=round(100 * dw, 1), dh_pct=round(100 * dh, 1), edges=edges,
+             edge_tol=[round(t, 1) for t in tol])
+    why = []
+    if abs(dw) > TOL or abs(dh) > TOL:
+        why.append("размер %+.1f%% / %+.1f%% (допуск 3%%)" % (100 * dw, 100 * dh))
+    bad = ["%s %+d" % (n, e) for n, e, t in zip(("лево", "верх", "право", "низ"), edges, tol) if abs(e) > t]
+    if bad:
+        why.append("края не на месте: %s HD-пикс" % ", ".join(bad))
+    r["geometry"] = "REWORK" if why else "GEOMETRY_OK"
+    r["geometry_why"] = "; ".join(why)
+    return r
+
+
+def cut_fixed(frame, hd, asked):
+    """photo_base.cut без подгонки по содержимому: canvas_map вместо fit (правка пропорций до 1.3, низ к низу,
+    центр к центру) и вместо fit_shape (лучший масштаб и якорь). Проверки формы - на том же холсте, где ответ
+    лежит на самом деле. Альфа, очистка кромки и тон - как в photo_base.cut. -> (RGBA x4, отчёт, g, матт)."""
+    import probe_object as po
+    g = pb.guide(frame)
+    rgb, m_c, m_raw, bg, own, info = canvas_map(hd, frame)
+    rep = {"panel_rgb": [round(float(v), 1) for v in bg], "own_alpha": own, "canvas_map": info,
+           "px": g["px"], "open_px": g["open_px"], "thin_px": g["thin_px"], "lum": round(g["lum"], 1)}
+    a = np.asarray(frame.convert("RGBA"), np.float64)
+    body = a[..., :3][a[..., 3] > 128]
+    margin = round(float(np.percentile(np.abs(body - bg).max(-1), 10)), 1) if len(body) else None
+    rep["panel_should"] = "%s %.0f" % (pb.panel_for(frame)[0], pb.panel_for(frame)[2])
+    rep["panel_drift"] = round(float(np.abs(bg - np.asarray(asked, np.float64)).max()), 1)
+    rep.update(pb.conformity(g, m_c, {"aspect_raw": None, "aspect_fix": 1.0}, margin, rgb, bg))
+    rep["model"] = model_geometry(m_c, frame)
+    alpha, tri, rep["pockets_cut"] = pb.managed_alpha(g, rgb, m_c, bg)
+    clean = pb.decontaminate(rgb, alpha, bg)
+    rep.update(pb.qa(g, clean, alpha, tri, bg))
+    rgba = np.dstack([clean, alpha * 255.0]).clip(0, 255).astype(np.uint8)
+    im = po.match_tone(Image.fromarray(rgba, "RGBA"), frame, pb.TONE)
+    rep["verdict"] = {"FAIL": "FAIL", "UNVERIFIABLE": "RERENDER"}.get(rep["geometry"]) or (
+        "REVIEW" if "REVIEW" in (rep["geometry"], rep["alpha"]) else "PASS")
+    return im, rep, g, m_c
+
+
+def place_fixed(cut4, box, w, h):
+    """Вырезка x4 кропа -> кадр k=4 128x192 на месте оригинала x4: ни уменьшения, ни сдвига, ни обрезки.
+    Вне клеток и вне допуска руки - замер до обрезки движком, не правка. -> (RGBA, отчёт)."""
     W, H = iac.HAND_W * K, iac.HAND_H * K
     canvas = Image.new("RGBA", ((iac.HAND_W + 2 * PAD) * K, (iac.HAND_H + 2 * PAD) * K), (0, 0, 0, 0))
     canvas.paste(cut4, (box[0] * K, box[1] * K))
-    whole = canvas.crop((PAD * K, PAD * K, PAD * K + W, PAD * K + H))
-    lost = int((np.asarray(canvas)[..., 3] > 0).sum() - (np.asarray(whole)[..., 3] > 0).sum())
-    x0, y0, x1, y1 = (v * K for v in iac.grid_rect(w, h))
-    bb = canvas.split()[3].getbbox()
-    obj = canvas.crop(bb)
-    bw, bh = obj.size
-    s = min(1.0, (x1 - x0) / bw, (y1 - y0) / bh)
-    if s < 1.0:
-        a = np.asarray(obj, np.float32) / 255.0
-        pm = np.dstack([a[..., :3] * a[..., 3:], a[..., 3:]])
-        nw, nh = max(1, int(bw * s)), max(1, int(bh * s))
-        ch = [np.asarray(Image.fromarray((pm[..., i] * 255).astype(np.float32), "F").resize((nw, nh), Image.LANCZOS))
-              for i in range(4)]
-        al = np.clip(ch[3], 0, 255)
-        rgb = np.dstack([np.where(al > 0, np.clip(c, 0, 255) * 255.0 / np.maximum(al, 1e-3), 0) for c in ch[:3]])
-        obj = Image.fromarray(np.dstack([np.clip(rgb, 0, 255), al]).astype(np.uint8), "RGBA")
-        bw, bh = nw, nh
-    # место - как было (центр габарита в кадре), затем ближайшее внутри прямоугольника
-    cx, cy = (bb[0] + bb[2]) / 2 - PAD * K, (bb[1] + bb[3]) / 2 - PAD * K
-    px = int(round(min(max(cx - bw / 2, x0), x1 - bw)))
-    py = int(round(min(max(cy - bh / 2, y0), y1 - bh)))
-    out = Image.new("RGBA", (W, H), (0, 0, 0, 0))
-    out.alpha_composite(obj, (px, py))
+    out = canvas.crop((PAD * K, PAD * K, PAD * K + W, PAD * K + H))
     alpha = np.asarray(out)[..., 3]
-    return out, {"scale": round(s, 3), "shift": [px - int(round(cx - bw / 2)), py - int(round(cy - bh / 2))],
-                 "outside_px": iac.outside(alpha, iac.grid_rect(w, h), K), "lost_off_frame_px": lost}
+    lost = int((np.asarray(canvas)[..., 3] > 0).sum() - (alpha > 0).sum())
+    dx, dy = (2 - w) * 8 * K, (3 - h) * 8 * K          # сдвиг руки, RuleItem::getHandSpriteOffX/Y
+    hand = np.zeros_like(alpha)
+    ys, xs = np.nonzero(alpha)
+    ok = (ys + dy >= 0) & (ys + dy < H) & (xs + dx >= 0) & (xs + dx < W)
+    hand[ys[ok] + dy, xs[ok] + dx] = 255
+    return out, {"scale": 1.0, "shift": [0, 0], "lost_off_frame_px": lost,
+                 "outside_grid_px": iac.outside(alpha, iac.grid_rect(w, h), K),
+                 "outside_hand_px": iac.outside(hand, iac.hand_rect(w, h), K) + int((~ok).sum())}
+
+
+def geometry_gate():
+    """{мастер: (статус замера оригинала, решение Vitali или '')} - item_geometry.py и decisions.tsv."""
+    import csv
+    st, dec = {}, {}
+    with open(GEOMETRY, encoding=ENC, newline="") as f:
+        for r in csv.DictReader(f, delimiter="\t", quoting=csv.QUOTE_NONE):
+            st[r["master"]] = r["status"]
+    if os.path.exists(DECISIONS):
+        with open(DECISIONS, encoding=ENC) as f:
+            for line in f:
+                p = line.rstrip("\n").split("\t")
+                if len(p) >= 2 and p[0].startswith("M-"):
+                    dec[p[0]] = p[1].strip()
+    return {m: (s, dec.get(m, "")) for m, s in st.items()}
 
 
 def sheet(cells, path):
-    """Оригинал x4 | эскиз | HD на тёмном фоне инвентаря с рамкой прямоугольника §5.3 | HD в сетке 1:1 (k=4)."""
-    W, H, gap, top = iac.HAND_W * K, iac.HAND_H * K, 8, 18
+    """Оригинал x4 | ответ модели на холсте кадра тем же преобразованием, что и в вырезке (зелёная рамка -
+    габарит оригинала x4, красная - габарит модели) | HD на тёмном фоне с рамкой клеток §5.3 | HD в сетке
+    инвентаря 1:1 (k=4). Подпись - статус и размер модели по ширине / высоте."""
+    W, H, gap, top = iac.HAND_W * K, iac.HAND_H * K, 8, 30
     im = Image.new("RGB", (gap + len(cells) * (W + gap), top + 4 * (H + gap)), (24, 24, 30))
     d = ImageDraw.Draw(im)
-    for n, (label, orig, guide, hd, rect) in enumerate(cells):
+    for n, (label, j, raw, hd, mg) in enumerate(cells):
         x = gap + n * (W + gap)
         d.text((x, 3), label, fill=(230, 230, 230))
-        o = orig.resize((W, H), Image.NEAREST)
+        d.text((x, 15), "%s / %s %%" % (mg.get("dw_pct"), mg.get("dh_pct")), fill=(230, 200, 120))
+        o = j["full"].resize((W, H), Image.NEAREST)
         im.paste(o, (x, top), o)
-        gd = guide.copy()
-        gd.thumbnail((W, H))
-        im.paste(gd.convert("RGB"), (x, top + H + gap))
+        rgb = canvas_map(Image.open(raw).convert("RGB"), j["crop"])[0]
+        mod = Image.new("RGB", ((iac.HAND_W + 2 * PAD) * K, (iac.HAND_H + 2 * PAD) * K), (60, 60, 60))
+        mod.paste(Image.fromarray(rgb.clip(0, 255).astype(np.uint8), "RGB"), (j["box"][0] * K, j["box"][1] * K))
+        mod = mod.crop((PAD * K, PAD * K, PAD * K + W, PAD * K + H))
+        md = ImageDraw.Draw(mod)
+        for bb, col in ((mg.get("orig_bbox4"), (60, 220, 60)), (mg.get("model_bbox4"), (230, 50, 50))):
+            if bb:
+                ox, oy = (j["box"][0] - PAD) * K, (j["box"][1] - PAD) * K
+                md.rectangle([ox + bb[0], oy + bb[1], ox + bb[2] - 1, oy + bb[3] - 1], outline=col)
+        im.paste(mod, (x, top + H + gap))
+        rect = iac.grid_rect(*j["cells"])
         for row in (2, 3):
             y = top + row * (H + gap)
             bg = Image.new("RGBA", (W, H), (16, 18, 26, 255))
@@ -279,11 +388,25 @@ def main():
         jobs.append({"asset_id": t, "name": t, "master": m, "frame": frame, "cells": [w, h], "what": what,
                      "seed": SEED0 + n, "src": src, "full": full, "crop": crop, "box": box})
 
+    gate = geometry_gate()
+    for j in jobs:
+        st, dec = gate.get(j["master"], ("нет замера", ""))
+        j["geometry_orig"], j["geometry_decision"] = st, dec
+        if st != "OK" and not dec and not args.dry_run:
+            raw =os.path.join(args.out, "raw", j["name"] + ".a0.png")
+            if args.recut and os.path.exists(raw):
+                print("%-5s %s: %s - только перевырезка готового ответа, статус не меняется" % (
+                    j["master"], j["asset_id"], st), flush=True)
+                continue
+            raise SystemExit("%s %s: %s, решения Vitali в %s нет - рендер запрещён (контракт v4 §3); "
+                             "--only без него" % (j["master"], j["asset_id"], st, DECISIONS))
+
     R = sp.Render(args.out, args.models, args.max_renders, args.recut)
     import gen_fire
     import obj_photo as op
     gen_fire.NEGATIVE = R.po.gen_fire.NEGATIVE = op.NEGATIVE + NEGATIVE_EXTRA
     pr.prompt_for = item_prompt              # Render.job зовёт pr.prompt_for - здесь свой промпт
+    pb.cut = cut_fixed                       # и pb.cut - здесь вырезка без подгонки по содержимому
     R.grev = generator_rev(R.lock)
     print("items_pilot_v1: generator_rev %s, guide_rev %s, cut_rev %s, мастеров %d" % (
         R.grev, R.guide_rev, R.cut_rev, len(jobs)), flush=True)
@@ -323,25 +446,31 @@ def main():
             if final is None:
                 print("%-20s нет ответа (--recut)" % j["asset_id"], flush=True)
                 continue
-            im, rep, _g, _m, c, verdict = final
-            hd, prep = place(im, j["box"], *j["cells"])
-            if prep["outside_px"]:
-                raise SystemExit("%s: после укладки вне прямоугольника %d px" % (j["asset_id"], prep["outside_px"]))
+            im, rep, _g, m_c, c, verdict = final
+            hd, prep = place_fixed(im, j["box"], *j["cells"])
             pp = os.path.join(pack, "%d.%s.png" % (j["frame"], j["asset_id"]))
             hd.save(pp)
+            mg = rep["model"]
+            blocked = j["geometry_orig"] != "OK" and not j["geometry_decision"]
+            # статус контракта v4 §7: BLOCKED_GEOMETRY - до решения Vitali; REWORK - размер или место модели не
+            # те, или HD вне клеток при оригинале в клетках; иначе CANDIDATE - смотреть глазами, не приёмка
+            status = ("BLOCKED_GEOMETRY" if blocked else "REWORK" if mg["geometry"] == "REWORK" or (
+                j["geometry_orig"] == "OK" and prep["outside_grid_px"]) else "CANDIDATE")
             meta = {"asset_id": j["asset_id"], "master": j["master"], "frame": j["frame"], "cells": j["cells"],
                     "what": j["what"], "src": j["src"], "generator_rev": R.grev, "guide_rev": R.guide_rev,
                     "cut_rev": R.cut_rev, "attempts": attempts, "report": rep,
                     "checks": {x: list(c[x]) for x in sp.pa.MACHINE_CHECKS}, "machine": verdict,
                     "outcome": sp.pa.outcome(verdict, len(attempts)), "place": prep,
-                    "file": pp.replace("\\", "/"), "sha256": sha256_file(pp), "status": "AGENT_PROPOSED",
+                    "geometry_orig": j["geometry_orig"], "geometry_decision": j["geometry_decision"],
+                    "file": pp.replace("\\", "/"), "sha256": sha256_file(pp), "status": status,
+                    "status_why": mg["geometry_why"] if status == "REWORK" else "",
                     "created": time.strftime("%Y-%m-%dT%H:%M:%S")}
             with open(os.path.join(meta_dir, j["name"] + ".json"), "w", encoding=ENC) as f:
                 json.dump(meta, f, ensure_ascii=False, indent=1)
-            cells.append(("%s %s" % (j["master"], meta["outcome"]), j["full"], g, hd, iac.grid_rect(*j["cells"])))
-            print("%-5s %-20s %-16s попыток %d, укладка x%.2f | готово %d из %d, прошло %.0f мин" % (
-                j["master"], j["asset_id"], meta["outcome"], len(attempts), prep["scale"], n, len(plan),
-                (time.time() - t0) / 60), flush=True)
+            cells.append(("%s %s" % (j["master"], status), j, attempts[-1]["raw"], hd, mg))
+            print("%-5s %-20s %-16s модель %s / %s, края %s, вне клеток %d | готово %d из %d, прошло %.0f мин" % (
+                j["master"], j["asset_id"], status, mg.get("dw_pct"), mg.get("dh_pct"), mg.get("edges"),
+                prep["outside_grid_px"], n, len(plan), (time.time() - t0) / 60), flush=True)
     except sp.Budget:
         print("лимит процесса: новых рендеров %d из %d - выхожу, продолжит новый процесс" % (R.renders, R.max),
               flush=True)
