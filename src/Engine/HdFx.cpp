@@ -494,10 +494,72 @@ const HdFrame *frame(const std::string &name, int step, int steps, int k)
 	return hd.empty() ? nullptr : &hd;
 }
 
-void spawn(const std::string &clip, Position voxel)
+void spawn(const std::string &clip, Position voxel, int item)
 {
-	live.push_back(Live{ clip, voxel, SDL_GetTicks() });
+	live.push_back(Live{ clip, voxel, SDL_GetTicks(), item, false, 0, 0 });
 	noteForTest(clip);
+}
+
+void clearTips()
+{
+	for (Live &l : live)
+	{
+		l.tip = false;
+	}
+}
+
+bool wantsTip(int item)
+{
+	for (const Live &l : live)
+	{
+		if (l.item == item && item >= 0)
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+void noteTip(int item, const Surface *frame, int direction, int x, int y)
+{
+	if (!frame || direction < 0 || direction > 7)
+	{
+		return;
+	}
+	// the facing on screen, as Pathfinding::dir_x / dir_y through the isometric view
+	static const int dirX[8] = { 0, 1, 1, 1, 0, -1, -1, -1 };
+	static const int dirY[8] = { -1, -1, 0, 1, 1, 1, 0, -1 };
+	const double sx = dirX[direction] - dirY[direction], sy = (dirX[direction] + dirY[direction]) * 0.5;
+	// the muzzle: the drawn pixels furthest along the facing (the end of the barrel), averaged
+	double best = -1e9;
+	for (int py = 0; py < frame->getHeight(); ++py)
+		for (int px = 0; px < frame->getWidth(); ++px)
+			if (frame->getPixel(px, py))
+				best = std::max(best, px * sx + py * sy);
+	if (best < -1e8)
+	{
+		return;
+	}
+	const double band = 0.75 * frame->getWidth() / 32.0;   // a classic pixel, in the pixels of this frame
+	double mx = 0, my = 0;
+	int n = 0;
+	for (int py = 0; py < frame->getHeight(); ++py)
+		for (int px = 0; px < frame->getWidth(); ++px)
+			if (frame->getPixel(px, py) && px * sx + py * sy >= best - band)
+			{
+				mx += px;
+				my += py;
+				++n;
+			}
+	for (Live &l : live)
+	{
+		if (l.item == item)
+		{
+			l.tip = true;
+			l.tipX = x + (int)std::lround(mx / n + 0.5);
+			l.tipY = y + (int)std::lround(my / n + 0.5);
+		}
+	}
 }
 
 namespace

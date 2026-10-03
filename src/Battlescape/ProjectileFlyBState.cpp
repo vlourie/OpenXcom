@@ -443,7 +443,7 @@ void ProjectileFlyBState::hdMuzzle(Position origin)
 		return;
 	}
 	const Surface *hitFrame = _parent->getMod()->getSurfaceSet("SMOKE.PCK")->getFrame(ammoRule->getHitAnimation());
-	HdFx::spawn(HdFx::colour(clip, hitFrame, map->getPalette()), origin);
+	HdFx::spawn(HdFx::colour(clip, hitFrame, map->getPalette()), origin, _action.weapon->getId());
 }
 
 bool ProjectileFlyBState::createNewProjectile()
