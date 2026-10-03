@@ -9,7 +9,7 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <!-- OXCE HD over the geoscape globe: tools/launcher_icon.py ico oxce_globe (16..256) -->
     <ApplicationIcon>Assets\app.ico</ApplicationIcon>
-    <Version>0.3.6</Version>
+    <Version>0.3.7</Version>
     <!-- dev keys are trusted only in Debug or when explicitly allowed for a local test build -->
     <AllowDevKeys Condition="'$(AllowDevKeys)' == ''">false</AllowDevKeys>
     <DefineConstants Condition="'$(Configuration)' == 'Debug' Or '$(AllowDevKeys)' == 'true'">$(DefineConstants);ALLOW_DEV_KEYS</DefineConstants>

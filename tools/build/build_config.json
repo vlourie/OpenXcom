@@ -7,14 +7,15 @@
   "SevenZip": "",
 
   "GameDir": "Пиратки\\Dioxine_XPiratez",
-  "Mods": ["hd", "intro_voice", "Piratez", "OAK patch for RU Piratez", "Piratez Cities Lore", "Piratez Cyrillic Names", "Piratez Czech Names", "XPZ RU-patch", "piratez_tank_turret", "Apple_Processing", "XPZ_Kisya_Brysya_Sisters"],
+  "Mods": ["hd_core", "hd", "intro_voice", "Piratez", "OAK patch for RU Piratez", "Piratez Cities Lore", "Piratez Cyrillic Names", "Piratez Czech Names", "XPZ RU-patch", "piratez_tank_turret", "Apple_Processing", "XPZ_Kisya_Brysya_Sisters"],
   "ModRequire": {
     "piratez_tank_turret": ["metadata.yml", "Ruleset/tank_turret.rul", "Resources", "hd/PIR_TANK_TURRET.PCK/pack.hdp", "hd/PIR_TANK_L_TURRET.PCK/pack.hdp"],
     "Apple_Processing": ["metadata.yml", "Ruleset/Apple_Processing.rul", "Resources/AppleProcessing"],
     "XPZ_Kisya_Brysya_Sisters": ["metadata.yml", "Ruleset/Kisya_Brysya.rul", "Resources/Awards"],
     "Piratez": ["metadata.yml", "Ruleset", "Language", "Resources", "Ruleset/zz_award_pages_en.rul"],
     "XPZ RU-patch": ["metadata.yml", "Language/ru.yml"],
-    "hd": ["metadata.yml", "hd/UI/FontBig.ttf", "hd/UI/FontSmall.ttf", "hd/UI/FontFallback.ttf", "hd/UI/fonts", "Ruleset"],
+    "hd_core": ["metadata.yml", "hd/UI/FontBig.ttf", "hd/UI/FontSmall.ttf", "hd/UI/FontFallback.ttf", "hd/UI/fonts", "FONTS-LICENSE.txt", "ROBOTO-LICENSE.txt", "FONTS-SOURCES.txt"],
+    "hd": ["metadata.yml", "hd/UI", "hd/TERRAIN"],
     "intro_voice": ["metadata.yml", "Ruleset", "SOUND"]
   },
   "ModExcludeDirs": ["UI_photo", "preview", "__pycache__", "UI_esrgan", "UI_FAST", "UI_FIXED", "hdart_sheets", "_cmp"],

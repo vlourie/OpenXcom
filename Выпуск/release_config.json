@@ -7,6 +7,7 @@
   "Stage": "dist\\_stage",
   "LauncherDir": "dist\\_launcher_rel",
   "Launch": "openxcom_hd.exe",
+  "MinLauncher": "0.3.7",
   "VerifyDeep": true,
   "StationDrop": "",
   "OpenExplorer": true

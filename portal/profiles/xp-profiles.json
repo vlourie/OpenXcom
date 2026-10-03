@@ -18,6 +18,7 @@
         { "id": "piratezCitiesLore" },
         { "id": "*" },
         { "id": "intro_voice" },
+        { "id": "hd_core" },
         { "id": "hd" }
       ],
       "options": [
@@ -25,7 +26,7 @@
         { "key": "oxceHdMode", "value": "2", "needsMod": "hd" },
         { "key": "oxceHdUi", "value": "2", "needsMod": "hd" },
         { "key": "oxceHdUiSkin", "value": "1", "needsMod": "hd" },
-        { "key": "oxceHdUiFont", "value": "1", "needsMod": "hd" },
+        { "key": "oxceHdUiFont", "value": "1", "needsMod": "hd_core" },
         { "key": "oxceHdPictures", "value": "true", "needsMod": "hd" }
       ]
     }
