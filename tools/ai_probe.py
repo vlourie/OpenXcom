@@ -37,6 +37,8 @@ TAGS = ("[AISTATE]", "[AIDECIDE]", "[AIPROBE]", "[AIRESULT]", "[AICASUALTY]", "[
         "[AIESCALT]",
         # зонд WOUNDED_COMBAT_DECISION_V1 (OXCE_AI_MEDIPROBE, build-ai70): проверка аптечки в начале хода
         "[AIMEDI]",
+        # правило PATROL_STUN_RESERVE_V1 (OXCE_AI_PATROL_STUN_RESERVE, build-ai71): проверка патрульного шага на восстановление оглушения
+        "[AISTUNRES]",
         # итоги приборов стенда после [AIRESULT] (свет, отход, FOV на шаге) - архив <метка>.result.txt серии ai_arena.py
         "[AILIGHT]", "[AIESCRF]", "[AIWALKFOV]", "[AIWALKFOVSKIP]", "[AIAMBMEMO]")
 

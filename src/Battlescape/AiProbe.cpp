@@ -46,6 +46,7 @@
 #include "../Mod/Armor.h"
 #include "../Mod/RuleInventory.h"
 #include "../Mod/RuleItem.h"
+#include "../Mod/RuleSoldierBonus.h"
 #include "../Savegame/BattleItem.h"
 #include "../Savegame/BattleUnit.h"
 #include "../Savegame/SavedBattleGame.h"
@@ -131,6 +132,7 @@ void traceTile(const BattleUnit *, const char *, const Position &, int) {}
 void walkPlanned(SavedBattleGame *, BattleUnit *, bool, bool) {}
 void walkStop(const BattleUnit *, const char *, const Position &, int, int, int, int, int, SavedBattleGame *) {}
 bool patrolOutOfEnergy(SavedBattleGame *, BattleUnit *, const BattleAction &, bool) { return false; }
+bool patrolStunReserve(SavedBattleGame *, BattleUnit *, const BattleAction &, bool) { return false; }
 int firepointPathOver(SavedBattleGame *, const BattleUnit *, int, int) { return 0; }
 void firepointDropped(const BattleUnit *, int, int) {}
 void firepointBlocked(BattleUnit *, const BattleAction &, int) {}
@@ -3579,6 +3581,124 @@ bool patrolOutOfEnergy(SavedBattleGame *save, BattleUnit *unit, const BattleActi
 	int snEn, snN;
 	staticStep(save, unit, bam, snEn, snN);
 	return snN > 0 && unit->getEnergy() < snEn;
+}
+
+namespace
+{
+/// The energy at the start of the unit's next turn and the armor's stun recovery then, if it had `energy` now: the turn
+/// first gives the energy back (BattleUnit::prepareNewTurn -> updateUnitStats(true, false) -> prepareEnergy), then
+/// prepareStun reads the armor's recovery at that energy (updateUnitStats(false, true)). The rest of the unit as it is now.
+/// The energy is set for the formulas and put back: a negative spendEnergy adds.
+void stunRecoveryAt(BattleUnit *unit, int energy, int &energyNext, int &stunRecovery)
+{
+	const int was = unit->getEnergy();
+	unit->spendEnergy(was - energy);
+	Soldier *soldier = unit->getGeoscapeSoldier();
+	int bonus = 0;
+	if (soldier)
+	{
+		for (const auto *b : *soldier->getBonuses(nullptr))
+		{
+			bonus += b->getEnergyRecovery(unit);
+		}
+	}
+	int recovery = unit->getArmor()->getEnergyRecovery(unit, bonus);
+	recovery -= (energy * (unit->getFatalWound(BODYPART_TORSO) * 10)) / 100;
+	energyNext = Clamp(energy + recovery, 0, (int)unit->getBaseStats()->stamina);
+	unit->spendEnergy(energy - energyNext);
+	bonus = 0;
+	if (soldier)
+	{
+		for (const auto *b : *soldier->getBonuses(nullptr))
+		{
+			bonus += b->getStunRegeneration(unit);
+		}
+	}
+	stunRecovery = unit->getArmor()->getStunRegeneration(unit, bonus);
+	unit->spendEnergy(energyNext - was);
+}
+}
+
+bool patrolStunReserve(SavedBattleGame *save, BattleUnit *unit, const BattleAction &action, bool pushed)
+{
+	static const bool v1 = active() && envOn("OXCE_AI_PATROL_STUN_RESERVE");
+	static const bool v2 = active() && envOn("OXCE_AI_PATROL_STUN_PREFIX");
+	if (!(v1 || v2) || !pushed || !careful(unit))
+	{
+		return false;
+	}
+	// the steps UnitWalkBState will pay for: each one while the time units and the energy left cover it
+	Pathfinding *pf = save->getPathfinding();
+	const std::vector<int> &path = pf->getPath();
+	const size_t requested = path.size();
+	int tu = 0, energy = 0, steps = 0;
+	std::vector<PathfindingCost> spent; // what the walk has spent after each of those steps
+	Position p = unit->getPosition();
+	for (auto it = path.rbegin(); it != path.rend(); ++it) // paths are stored in reverse order
+	{
+		PathfindingStep r = pf->getTUCost(p, *it, unit, nullptr, action.getMoveType());
+		if (r.cost.time == Pathfinding::INVALID_MOVE_COST || tu + r.cost.time > unit->getTimeUnits()
+			|| energy + r.cost.energy > unit->getEnergy())
+		{
+			break;
+		}
+		tu += r.cost.time;
+		energy += r.cost.energy;
+		++steps;
+		spent.push_back(PathfindingCost(tu, energy));
+		p = r.pos;
+	}
+	const int now = unit->getEnergy(), stamina = (int)unit->getBaseStats()->stamina;
+	int restNext, rest, afterNext, after, fullNext, full;
+	stunRecoveryAt(unit, now, restNext, rest);
+	stunRecoveryAt(unit, now - energy, afterNext, after);
+	stunRecoveryAt(unit, stamina, fullNext, full);
+	const bool block = energy > 0 && after <= 0 && after < full;
+	// V2: the longest prefix of these steps after which the same check passes; 0 steps - stay and recover
+	int keep = steps, keepSt = after;
+	if (v2 && block)
+	{
+		keep = 0;
+		keepSt = rest;
+		for (int k = steps - 1; k >= 1; --k)
+		{
+			const int e = spent[k - 1].energy;
+			int n, st;
+			stunRecoveryAt(unit, now - e, n, st);
+			if (!(e > 0 && st <= 0 && st < full))
+			{
+				keep = k;
+				keepSt = st;
+				break;
+			}
+		}
+	}
+	const PathfindingCost keepCost = keep > 0 ? spent[keep - 1] : PathfindingCost();
+	tally(unit, !block ? (after <= 0 && energy > 0 ? "patrol.stunres.flat" : "patrol.stunres.pass")
+		: !v2 ? "patrol.stunres.block" : keep > 0 ? "patrol.stunres.cut" : "patrol.stunres.stay");
+	Log(LOG_INFO) << "[AISTUNRES] {\"v\":" << (v2 ? 2 : 1) << ",\"unit\":" << unit->getId() << ",\"turn\":" << save->getTurn()
+		<< ",\"block\":" << (block ? 1 : 0) << ",\"en\":" << now << ",\"maxen\":" << stamina << ",\"tu\":" << unit->getTimeUnits()
+		<< ",\"path\":" << requested << ",\"steps\":" << steps << ",\"step_tu\":" << tu << ",\"step_en\":" << energy
+		<< ",\"en_next_rest\":" << restNext << ",\"st_rest\":" << rest << ",\"en_next_after\":" << afterNext << ",\"st_after\":" << after
+		<< ",\"st_full\":" << full << ",\"keep\":" << (v2 ? keep : block ? 0 : steps) << ",\"keep_tu\":" << keepCost.time
+		<< ",\"keep_en\":" << keepCost.energy << ",\"st_keep\":" << keepSt
+		<< ",\"stun\":" << unit->getStunlevel() << ",\"hp\":" << unit->getHealth()
+		<< ",\"mana\":" << unit->getMana() << ",\"armor\":\"" << unit->getArmor()->getType() << "\"}";
+	if (block)
+	{
+		std::ostringstream s;
+		s << "stunres e" << now << "-" << energy << " st" << rest << ">" << after;
+		if (v2)
+		{
+			s << " keep" << keep << "/" << steps;
+		}
+		addTrail(unit, s.str().c_str());
+	}
+	if (v2 && block && keep > 0)
+	{
+		pf->keepPathPrefix(keep, keepCost);
+	}
+	return block && (!v2 || keep == 0);
 }
 
 int firepointPathOver(SavedBattleGame *save, const BattleUnit *unit, int tuMax, int energyMax)

@@ -1984,6 +1984,22 @@ std::vector<int> Pathfinding::copyPath() const
 
 #ifdef OXCE_AI_DEV
 /**
+ * PATROL_STUN_RESERVE_V2 (bench): keeps the first steps of the current path. The path is stored in reverse order
+ * (dequeuePath takes the back), so the first steps are its last elements.
+ * @param steps How many steps to keep; no more than the path has.
+ * @param cost What the kept steps cost (becomes _totalTUCost).
+ */
+void Pathfinding::keepPathPrefix(size_t steps, PathfindingCost cost)
+{
+	if (steps >= _path.size())
+	{
+		return;
+	}
+	_path.erase(_path.begin(), _path.end() - steps);
+	_totalTUCost = cost;
+}
+
+/**
  * The bench (plan V2, L0-B): TU of the cheapest path between two tiles, summed step by step as a walk spends them
  * (after A* _totalTUCost is the last node tried, not the path).
  * @return TU, or -1 if there is no path within maxTUCost.
