@@ -243,8 +243,8 @@ def one(seed, turns, diff, timeout, campaign, mission=None, tactics=False, caref
            # по OXCE_AI_RECORD_PATH - путь патруля и что держит первый шаг ([AIPATROL], план V2, L0-B)
            "_path": [l for l in r.lines if l.startswith("[AIPATROL]")],
            # итоги боя со счётчиками приборов стенда (свет, отход, FOV на шаге) - по ним читается шлюз серии; в сверку
-           # series_eq.py не входят (в них время)
-           "_result": [l for l in r.lines if l.startswith(("[AIRESULT]", "[AILIGHT]", "[AIESCRF]", "[AIWALKFOV]", "[AIWALKFOVSKIP]", "[AIAMBMEMO]"))]}
+           # series_eq.py не входят (в них время); [AIPF] - профиль пути по OXCE_AI_PATHPROF=1 (лог боя станция убирает)
+           "_result": [l for l in r.lines if l.startswith(("[AIRESULT]", "[AILIGHT]", "[AIESCRF]", "[AIWALKFOV]", "[AIWALKFOVSKIP]", "[AIAMBMEMO]", "[AIPF]"))]}
     row.update(moves)
     battle = r.tagged("[AIPROBE] battle")
     if battle:
