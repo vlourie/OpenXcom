@@ -32,6 +32,14 @@ public sealed record RoomSummary(string PublicId, string Title, PersonView Owner
 public sealed record MemberView(PersonView Person, string Invite, bool Banned, bool Restricted, bool Friend);
 public sealed record RoomView(RoomSummary Room, IReadOnlyList<MemberView>? Members, bool ClosedByStaff, string? ClosedReason);
 public sealed record LiveView(PersonView Person, bool CanPublish, DateTimeOffset? JoinedAt);
+/// <summary>Somebody whose launcher is running now. Asked: a friend request from me waits for them.</summary>
+public sealed record OnlineView(PersonView Person, bool Friend, bool Asked);
+/// <summary>An open room of somebody else, from the list everybody sees. State: request (may ask to enter), requested, banned.</summary>
+public sealed record CatalogRoom(string PublicId, string Title, PersonView Owner, string State, int Capacity, DateTimeOffset CreatedAt);
+/// <summary>Somebody waiting at the door of one of my rooms.</summary>
+public sealed record JoinRequestView(string Room, string RoomTitle, PersonView Person, DateTimeOffset At);
+/// <summary>The lobby in one answer: who is here, which rooms there are, who asks to come in.</summary>
+public sealed record LobbyView(IReadOnlyList<OnlineView> Online, IReadOnlyList<CatalogRoom> Rooms, IReadOnlyList<JoinRequestView> Requests);
 public sealed record PassView(string Url, string Token, string Room, string RoomName, string Identity, string Name, bool CanPublish, int ExpiresIn);
 
 /// <summary>
@@ -476,6 +484,12 @@ public sealed class VoiceService(PortalDb db, TimeProvider clock, IVoiceServer s
             if (!ban || !await db.Users.AnyAsync(u => u.Id == user, ct)) throw Fail("user_not_found", 404);
         }
         if (invite is not null && invite.Status != RoomInviteStatus.Revoked) { invite.Status = RoomInviteStatus.Revoked; invite.UpdatedAt = now; }
+        // a ban answers the knock at the door too
+        if (ban && await db.RoomJoinRequests.FirstOrDefaultAsync(r => r.RoomId == room.Id && r.UserId == user && r.Status == RoomJoinStatus.Pending, ct) is { } knock)
+        {
+            knock.Status = RoomJoinStatus.Declined;
+            knock.UpdatedAt = now;
+        }
         if (ban && !banned) db.RoomBans.Add(new RoomBan { RoomId = room.Id, UserId = user, ById = me, CreatedAt = now });
         db.VoiceEvents.Add(new VoiceEvent { RoomId = room.Id, UserId = user, ActorId = me, Kind = kind, Reason = reason, At = now });
         Enqueue(VoiceJobKind.Remove, room.Id, user);
@@ -518,10 +532,160 @@ public sealed class VoiceService(PortalDb db, TimeProvider clock, IVoiceServer s
         await RunFreshAsync(ct);
     }
 
+    // ---------------------------------------------------------------- the lobby: who is here, open rooms, knocks at the door
+
+    /// <summary>The launcher is running: "here" for the next <see cref="VoiceLimits.OnlineWindow"/>.</summary>
+    public async Task SeenAsync(Guid me, CancellationToken ct)
+    {
+        var now = clock.GetUtcNow();
+        if (await db.VoicePresences.Where(p => p.UserId == me).ExecuteUpdateAsync(s => s.SetProperty(p => p.SeenAt, now), ct) > 0) return;
+        var row = new VoicePresence { UserId = me, SeenAt = now };
+        db.VoicePresences.Add(row);
+        // two launchers of one person at the same moment: the other one wrote the row, and that is the same answer
+        try { await db.SaveChangesAsync(ct); }
+        catch (DbUpdateException) { db.Entry(row).State = EntityState.Detached; }
+    }
+
+    /// <summary>The launcher is closing: gone at once rather than after the window.</summary>
+    public Task GoneAsync(Guid me, CancellationToken ct) =>
+        db.VoicePresences.Where(p => p.UserId == me).ExecuteDeleteAsync(ct);
+
+    public async Task<LobbyView> LobbyAsync(Guid me, CancellationToken ct) =>
+        new(await OnlineAsync(me, ct), await CatalogAsync(me, ct), await JoinRequestsAsync(me, ct));
+
+    /// <summary>Everybody whose launcher is running, but nobody either side has blocked.</summary>
+    public async Task<IReadOnlyList<OnlineView>> OnlineAsync(Guid me, CancellationToken ct)
+    {
+        var since = clock.GetUtcNow() - VoiceLimits.OnlineWindow;
+        var ids = await db.VoicePresences.AsNoTracking()
+            .Where(p => p.SeenAt >= since && p.UserId != me)
+            .Where(p => !db.UserBlocks.Any(x => (x.BlockerId == me && x.BlockedId == p.UserId) || (x.BlockerId == p.UserId && x.BlockedId == me)))
+            .OrderByDescending(p => p.SeenAt).Take(VoiceLimits.OnlineMax).Select(p => p.UserId).ToListAsync(ct);
+        var names = await NamesAsync(ids, ct);
+        var friends = await db.Friendships.AsNoTracking()
+            .Where(f => (f.UserLowId == me && ids.Contains(f.UserHighId)) || (f.UserHighId == me && ids.Contains(f.UserLowId)))
+            .Select(f => f.UserLowId == me ? f.UserHighId : f.UserLowId).ToListAsync(ct);
+        var asked = await db.FriendRequests.AsNoTracking()
+            .Where(r => r.SenderId == me && r.Status == FriendRequestStatus.Pending && ids.Contains(r.RecipientId))
+            .Select(r => r.RecipientId).ToListAsync(ct);
+        return ids.Where(names.ContainsKey)
+            .Select(id => new OnlineView(new PersonView(id, names[id]), friends.Contains(id), asked.Contains(id)))
+            .OrderBy(o => o.Person.Name, StringComparer.CurrentCultureIgnoreCase).ToList();
+    }
+
+    /// <summary>
+    /// The open rooms of everybody else, to ask to enter. A room the person already has an invite to
+    /// (active, declined or revoked) is in their own list instead; a room of somebody blocked either
+    /// way is not shown at all. Who is inside is still only for those let in.
+    /// </summary>
+    public async Task<IReadOnlyList<CatalogRoom>> CatalogAsync(Guid me, CancellationToken ct)
+    {
+        var rooms = await db.VoiceRooms.AsNoTracking()
+            .Where(r => r.Status == VoiceRoomStatus.Open && r.OwnerId != me)
+            .Where(r => !db.RoomInvites.Any(i => i.RoomId == r.Id && i.UserId == me))
+            .Where(r => !db.UserBlocks.Any(x => (x.BlockerId == me && x.BlockedId == r.OwnerId) || (x.BlockerId == r.OwnerId && x.BlockedId == me)))
+            .OrderByDescending(r => r.CreatedAt).Take(VoiceLimits.CatalogMax).ToListAsync(ct);
+        var ids = rooms.Select(r => r.Id).ToList();
+        var banned = await db.RoomBans.AsNoTracking().Where(b => b.UserId == me && ids.Contains(b.RoomId)).Select(b => b.RoomId).ToListAsync(ct);
+        var asked = await db.RoomJoinRequests.AsNoTracking()
+            .Where(r => r.UserId == me && r.Status == RoomJoinStatus.Pending && ids.Contains(r.RoomId)).Select(r => r.RoomId).ToListAsync(ct);
+        var names = await NamesAsync(rooms.Select(r => r.OwnerId), ct);
+        return rooms.Select(r => new CatalogRoom(r.PublicId, r.Title, new PersonView(r.OwnerId, names.GetValueOrDefault(r.OwnerId, "")),
+            banned.Contains(r.Id) ? "banned" : asked.Contains(r.Id) ? "requested" : "request", r.Capacity, r.CreatedAt)).ToList();
+    }
+
+    /// <summary>Who waits at the doors of my rooms, oldest first.</summary>
+    public async Task<IReadOnlyList<JoinRequestView>> JoinRequestsAsync(Guid me, CancellationToken ct)
+    {
+        var rows = await db.RoomJoinRequests.AsNoTracking().Where(r => r.Status == RoomJoinStatus.Pending)
+            .Join(db.VoiceRooms.AsNoTracking().Where(r => r.OwnerId == me), q => q.RoomId, r => r.Id, (q, r) => new { q, r })
+            .OrderBy(x => x.q.UpdatedAt).Take(VoiceLimits.PendingJoinPerRoom).ToListAsync(ct);
+        var names = await NamesAsync(rows.Select(x => x.q.UserId), ct);
+        return rows.Select(x => new JoinRequestView(x.r.PublicId, x.r.Title, new PersonView(x.q.UserId, names.GetValueOrDefault(x.q.UserId, "")), x.q.UpdatedAt))
+            .ToList();
+    }
+
+    /// <summary>
+    /// Knocks at the door of an open room. "sent" (also when already waiting) or "already" when the person
+    /// may come in anyway. A room of somebody blocked either way answers like a room that is not there.
+    /// </summary>
+    public async Task<string> AskToEnterAsync(Guid me, string? publicId, CancellationToken ct)
+    {
+        var room = await RoomAsync(publicId, ct) ?? throw NoAccess();
+        if (room.OwnerId == me) throw Fail("owner_target");
+        if (await BlockedEitherWayAsync(me, room.OwnerId, ct)) throw NoAccess();
+        await using var tx = await LockAsync("room", room.Id, null, ct);
+        if (room.Status != VoiceRoomStatus.Open) throw Fail("room_closed", 403);
+        if (await db.RoomBans.AnyAsync(b => b.RoomId == room.Id && b.UserId == me, ct)) throw Fail("banned", 403);
+        if (await db.VoiceAccountBans.AnyAsync(b => b.UserId == me && b.LiftedAt == null, ct)) throw Fail("account_banned", 403);
+        if ((await AccessAsync(me, room, ct)).Access == RoomAccess.Ok) { await tx.CommitAsync(ct); return "already"; }
+        var now = clock.GetUtcNow();
+        var row = await db.RoomJoinRequests.FirstOrDefaultAsync(r => r.RoomId == room.Id && r.UserId == me, ct);
+        if (row?.Status == RoomJoinStatus.Pending) { await tx.CommitAsync(ct); return "sent"; }
+        if (row?.Status == RoomJoinStatus.Declined && now - row.UpdatedAt < VoiceLimits.JoinRetryAfterDecline) throw Fail("request_declined", 409);
+        if (await db.RoomJoinRequests.CountAsync(r => r.UserId == me && r.Status == RoomJoinStatus.Pending, ct) >= VoiceLimits.PendingJoinOutgoing
+            || await db.RoomJoinRequests.CountAsync(r => r.RoomId == room.Id && r.Status == RoomJoinStatus.Pending, ct) >= VoiceLimits.PendingJoinPerRoom)
+            throw Fail("limit_requests", 409);
+        if (row is null) db.RoomJoinRequests.Add(new RoomJoinRequest { RoomId = room.Id, UserId = me, CreatedAt = now, UpdatedAt = now });
+        else { row.Status = RoomJoinStatus.Pending; row.CreatedAt = now; row.UpdatedAt = now; }
+        await db.SaveChangesAsync(ct);
+        await tx.CommitAsync(ct);
+        return "sent";
+    }
+
+    /// <summary>Takes one's own knock back.</summary>
+    public async Task CancelAskAsync(Guid me, string? publicId, CancellationToken ct)
+    {
+        var room = await RoomAsync(publicId, ct) ?? throw NoAccess();
+        await db.RoomJoinRequests.Where(r => r.RoomId == room.Id && r.UserId == me && r.Status == RoomJoinStatus.Pending)
+            .ExecuteUpdateAsync(s => s.SetProperty(r => r.Status, RoomJoinStatus.Cancelled).SetProperty(r => r.UpdatedAt, clock.GetUtcNow()), ct);
+    }
+
+    /// <summary>The owner lets the person in: an invite, which needs no friendship when it answers a request.</summary>
+    public async Task AcceptEntryAsync(Guid me, string? publicId, Guid user, CancellationToken ct)
+    {
+        var room = await OwnedAsync(me, publicId, ct);
+        await using var tx = await LockAsync("room", room.Id, null, ct);
+        var row = await db.RoomJoinRequests.FirstOrDefaultAsync(r => r.RoomId == room.Id && r.UserId == user && r.Status == RoomJoinStatus.Pending, ct)
+                  ?? throw Fail("request_not_found", 404);
+        var now = clock.GetUtcNow();
+        if (await BlockedEitherWayAsync(me, user, ct) || await db.RoomBans.AnyAsync(b => b.RoomId == room.Id && b.UserId == user, ct))
+        {
+            // nobody to let in any more: the knock is answered, and the owner told why
+            row.Status = RoomJoinStatus.Declined;
+            row.UpdatedAt = now;
+            await db.SaveChangesAsync(ct);
+            await tx.CommitAsync(ct);
+            throw Fail("banned_in_room", 409);
+        }
+        var invite = await db.RoomInvites.FirstOrDefaultAsync(i => i.RoomId == room.Id && i.UserId == user, ct);
+        if (invite is null)
+        {
+            if (await db.RoomInvites.CountAsync(i => i.RoomId == room.Id, ct) >= VoiceLimits.InvitesPerRoom) throw Fail("limit_invites", 409);
+            db.RoomInvites.Add(new RoomInvite { RoomId = room.Id, UserId = user, CreatedAt = now, UpdatedAt = now });
+        }
+        else { invite.Status = RoomInviteStatus.Active; invite.UpdatedAt = now; }
+        row.Status = RoomJoinStatus.Accepted;
+        row.UpdatedAt = now;
+        db.VoiceEvents.Add(new VoiceEvent { RoomId = room.Id, UserId = user, ActorId = me, Kind = VoiceEventKinds.Invite, Reason = "request", At = now });
+        await db.SaveChangesAsync(ct);
+        await tx.CommitAsync(ct);
+    }
+
+    /// <summary>The owner says no: the person may knock again after <see cref="VoiceLimits.JoinRetryAfterDecline"/>, or never after a ban.</summary>
+    public async Task DeclineEntryAsync(Guid me, string? publicId, Guid user, CancellationToken ct)
+    {
+        var room = await OwnedAsync(me, publicId, ct);
+        var n = await db.RoomJoinRequests.Where(r => r.RoomId == room.Id && r.UserId == user && r.Status == RoomJoinStatus.Pending)
+            .ExecuteUpdateAsync(s => s.SetProperty(r => r.Status, RoomJoinStatus.Declined).SetProperty(r => r.UpdatedAt, clock.GetUtcNow()), ct);
+        if (n == 0) throw Fail("request_not_found", 404);
+    }
+
     // ---------------------------------------------------------------- access and the pass
 
     /// <summary>
-    /// The one answer to "may this person be in this room": owner, or invited friend of the owner,
+    /// The one answer to "may this person be in this room": owner, or invited friend of the owner
+    /// (or invited by an accepted request to enter),
     /// with the room open, no ban of the room or of the account, no block. And whether they may talk.
     /// </summary>
     public async Task<(RoomAccess Access, bool CanPublish)> AccessAsync(Guid me, VoiceRoom? room, CancellationToken ct)
@@ -536,7 +700,11 @@ public sealed class VoiceService(PortalDb db, TimeProvider clock, IVoiceServer s
         if (owner) return (RoomAccess.Ok, true);
         if (await db.RoomBans.AnyAsync(b => b.RoomId == room.Id && b.UserId == me, ct)) return (RoomAccess.Banned, false);
         if (invite!.Status == RoomInviteStatus.Revoked) return (RoomAccess.InviteRevoked, false);
-        if (!await AreFriendsAsync(me, room.OwnerId, ct) || await BlockedEitherWayAsync(me, room.OwnerId, ct)) return (RoomAccess.NotFriends, false);
+        // a request to enter the owner accepted is their consent in place of the friendship; a block undoes either
+        if (await BlockedEitherWayAsync(me, room.OwnerId, ct)
+            || !(await AreFriendsAsync(me, room.OwnerId, ct)
+                 || await db.RoomJoinRequests.AnyAsync(r => r.RoomId == room.Id && r.UserId == me && r.Status == RoomJoinStatus.Accepted, ct)))
+            return (RoomAccess.NotFriends, false);
         var restricted = await db.RoomSpeakingRestrictions.AnyAsync(x => x.RoomId == room.Id && x.UserId == me && x.Restricted, ct);
         return (RoomAccess.Ok, !restricted);
     }

@@ -44,6 +44,14 @@ public static class VoiceApi
         api.MapDelete("/blocks/{user:guid}", (Guid user, HttpContext h, VoiceService v, PortalDb db, TimeProvider c, CancellationToken ct) =>
             Run(h, db, c, true, me => v.UnblockAsync(me, user, ct), ct)).RequireRateLimiting("voice-write").Write(204);
 
+        // the lobby: the running launcher says "here" every minute and reads who else is, the open rooms and the knocks
+        api.MapPost("/voice/presence", (HttpContext h, VoiceService v, PortalDb db, TimeProvider c, CancellationToken ct) =>
+            Run(h, db, c, true, me => v.SeenAsync(me, ct), ct)).RequireRateLimiting("api-read").Write(204);
+        api.MapDelete("/voice/presence", (HttpContext h, VoiceService v, PortalDb db, TimeProvider c, CancellationToken ct) =>
+            Run(h, db, c, true, me => v.GoneAsync(me, ct), ct)).RequireRateLimiting("api-read").Write(204);
+        api.MapGet("/voice/lobby", (HttpContext h, VoiceService v, PortalDb db, TimeProvider c, CancellationToken ct) =>
+            Answer(h, db, c, false, me => v.LobbyAsync(me, ct), ct)).RequireRateLimiting("api-read").Produces<LobbyView>().Auth();
+
         var rooms = api.MapGroup("/voice/rooms");
         rooms.MapGet("", RoomsAsync).RequireRateLimiting("api-read").Produces<RoomsResponse>().Auth();
         rooms.MapPost("", CreateRoomAsync).RequireRateLimiting("voice-write").Produces<RoomSummary>(StatusCodes.Status201Created).Write();
@@ -72,6 +80,15 @@ public static class VoiceApi
             Run(h, db, c, true, me => v.UnbanAsync(me, room, user, ct), ct)).RequireRateLimiting("voice-write").Write(204);
         rooms.MapPut("/{room}/members/{user:guid}/speaking", (string room, Guid user, SpeakingBody b, HttpContext h, VoiceService v, PortalDb db, TimeProvider c, CancellationToken ct) =>
             Run(h, db, c, true, me => v.SetSpeakingAsync(me, room, user, b.Allowed, b.Reason, ct), ct)).RequireRateLimiting("voice-write").Write(204);
+        rooms.MapPost("/{room}/requests", (string room, HttpContext h, VoiceService v, PortalDb db, TimeProvider c, CancellationToken ct) =>
+            Answer(h, db, c, true, async me => new FriendRequestResult(await v.AskToEnterAsync(me, room, ct)), ct))
+            .RequireRateLimiting("voice-write").Produces<FriendRequestResult>().Write();
+        rooms.MapDelete("/{room}/requests", (string room, HttpContext h, VoiceService v, PortalDb db, TimeProvider c, CancellationToken ct) =>
+            Run(h, db, c, true, me => v.CancelAskAsync(me, room, ct), ct)).RequireRateLimiting("voice-write").Write(204);
+        rooms.MapPost("/{room}/requests/{user:guid}/accept", (string room, Guid user, HttpContext h, VoiceService v, PortalDb db, TimeProvider c, CancellationToken ct) =>
+            Run(h, db, c, true, me => v.AcceptEntryAsync(me, room, user, ct), ct)).RequireRateLimiting("voice-write").Write(204);
+        rooms.MapPost("/{room}/requests/{user:guid}/decline", (string room, Guid user, HttpContext h, VoiceService v, PortalDb db, TimeProvider c, CancellationToken ct) =>
+            Run(h, db, c, true, me => v.DeclineEntryAsync(me, room, user, ct), ct)).RequireRateLimiting("voice-write").Write(204);
         rooms.MapPost("/{room}/complaints", ComplainAsync).RequireRateLimiting("tickets-create").Produces<ComplaintResult>(StatusCodes.Status201Created).Write();
 
         // the media server's side: signed with the API secret, not a person

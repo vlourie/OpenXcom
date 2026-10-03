@@ -30,6 +30,20 @@ public sealed class VoicePage : UserControl
     readonly Border _linked;
     readonly StackPanel _linkedBody = new() { Spacing = 8 };
 
+    // the lobby: everybody's open rooms, the knocks at my doors, who is online
+    readonly StackPanel _catalog = new() { Spacing = 8 };
+    readonly StackPanel _requests = new() { Spacing = 8 };
+    readonly Border _requestsBox;
+    readonly StackPanel _online = new() { Spacing = 6 };
+    readonly TextBlock _onlineTitle = Skin.H2(L.T("voice.online", 0));
+    readonly Border _side;
+    readonly Border _soundPanel;
+    readonly Button _settingsButton;
+    List<VoiceRoom> _mine = [];
+    readonly DispatcherTimer _beat = new() { Interval = TimeSpan.FromSeconds(20) };
+    int _beats;
+    bool _lobbyBusy;
+
     // in the room
     readonly TextBlock _roomTitle = new() { FontFamily = Skin.Medium, FontSize = 20, TextWrapping = TextWrapping.Wrap };
     readonly TextBlock _connection = new() { FontSize = 13 };
@@ -72,6 +86,8 @@ public sealed class VoicePage : UserControl
     /// <summary>Entered or left a room: the window decides about the tray by it.</summary>
     public event Action? RoomChanged;
     public bool InRoom => _session is not null;
+    /// <summary>The launcher is linked to an account: it shows up online and has something to say on closing.</summary>
+    public bool Linked => _store.Load() is not null;
     public string? RoomTitle => _room?.Title;
 
     public VoicePage(Settings settings, AccountPanel account, Func<BuildStore?> builds, Action openSettings)
@@ -95,15 +111,35 @@ public sealed class VoicePage : UserControl
         var actions = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 10 };
         actions.Children.Add(create);
         actions.Children.Add(refresh);
-        actions.Children.Add(Skin.Link(L.T("voice.friendsSite") + "  ↗", () => { if (SiteVoiceUrl() is { } u) ReportWindow.OpenUrl(u); }));
+        var friendsSite = Skin.Link(L.T("voice.friendsSite") + "  ↗", () => { if (SiteVoiceUrl() is { } u) ReportWindow.OpenUrl(u); });
+        friendsSite.VerticalAlignment = VerticalAlignment.Center;
+        actions.Children.Add(friendsSite);
         _lobby.Children.Add(actions);
         _linked = Skin.Panel(_linkedBody);
         _linked.IsVisible = false;
         _lobby.Children.Add(_linked);
         _lobby.Children.Add(Skin.H2(L.T("voice.mine")));
+        _lobby.Children.Add(Skin.Note(L.T("voice.adminHint")));
         _lobby.Children.Add(_owned);
         _lobby.Children.Add(Skin.H2(L.T("voice.invited")));
         _lobby.Children.Add(_invited);
+        _lobby.Children.Add(Skin.H2(L.T("voice.all")));
+        _lobby.Children.Add(_catalog);
+
+        // --- knocks at my doors: in the lobby and in the room
+        var knocks = new StackPanel { Spacing = 8 };
+        knocks.Children.Add(Skin.H2(L.T("voice.requests")));
+        knocks.Children.Add(_requests);
+        _requestsBox = Skin.Panel(knocks);
+        _requestsBox.IsVisible = false;
+
+        // --- who is online: beside the lobby and the room
+        var side = new StackPanel { Spacing = 8 };
+        side.Children.Add(_onlineTitle);
+        side.Children.Add(_online);
+        _side = Skin.Panel(side);
+        _side.VerticalAlignment = VerticalAlignment.Top;
+        _side.IsVisible = false;
 
         // --- in the room
         var leave = Skin.Btn(L.T("voice.leave"), "warn");
@@ -173,20 +209,48 @@ public sealed class VoicePage : UserControl
         sound.Children.Add(_keyNote);
         sound.Children.Add(_modeOpen);
 
-        var panel = new StackPanel { Spacing = 14, Margin = new Thickness(28, 24, 28, 28), MaxWidth = 820, HorizontalAlignment = HorizontalAlignment.Left };
-        panel.Children.Add(Skin.H1(L.T("voice.title")));
+        // the sound and the key are set once and then forgotten: behind a button, not on the way to the rooms
+        _soundPanel = Skin.Panel(sound);
+        _soundPanel.IsVisible = false;
+        _settingsButton = Skin.Btn(L.T("voice.settings"), "ghost");
+        _settingsButton.VerticalAlignment = VerticalAlignment.Center;
+        _settingsButton.Click += (_, _) => ShowSettings(!_soundPanel.IsVisible);
+        var top = new DockPanel();
+        DockPanel.SetDock(_settingsButton, Dock.Right);
+        top.Children.Add(_settingsButton);
+        top.Children.Add(Skin.H1(L.T("voice.title")));
+
+        var left = new StackPanel { Spacing = 12 };
+        left.Children.Add(_requestsBox);
+        left.Children.Add(_lobby);
+        left.Children.Add(_roomPanel);
+        var columns = new Grid { ColumnDefinitions = new ColumnDefinitions("*,20,280") };
+        columns.Children.Add(left);
+        Grid.SetColumn(_side, 2);
+        columns.Children.Add(_side);
+
+        var panel = new StackPanel { Spacing = 14, Margin = new Thickness(28, 24, 28, 28), MaxWidth = 1120, HorizontalAlignment = HorizontalAlignment.Left };
+        panel.Children.Add(top);
         panel.Children.Add(Skin.Note(L.T("voice.hint"), 14, Skin.Text2));
+        panel.Children.Add(_soundPanel);
         panel.Children.Add(_status);
         panel.Children.Add(_unlinked);
-        panel.Children.Add(_lobby);
-        panel.Children.Add(_roomPanel);
-        var soundPanel = Skin.Panel(sound);
-        panel.Children.Add(soundPanel);
+        panel.Children.Add(columns);
         Content = new ScrollViewer { Content = panel };
 
         _timer.Tick += (_, _) => Tick();
+        _beat.Tick += (_, _) => Beat();
+        _beat.Start();
+        Dispatcher.UIThread.Post(Beat);
         ShowKey();
         ShowCheck();
+    }
+
+    void ShowSettings(bool on)
+    {
+        _soundPanel.IsVisible = on;
+        _settingsButton.Content = L.T(on ? "voice.settingsHide" : "voice.settings");
+        if (!on) StopCheck();
     }
 
     static Control Labeled(string key, Control c)
@@ -260,7 +324,11 @@ public sealed class VoicePage : UserControl
         _unlinked.IsVisible = account is null;
         _lobby.IsVisible = account is not null;
         _roomPanel.IsVisible = false;
-        if (account is null) return;
+        if (account is null)
+        {
+            _side.IsVisible = _requestsBox.IsVisible = false;
+            return;
+        }
         if (Portal() is not { } portal) { Status(L.T("account.noPortal")); return; }
         _token = account.Token;
         _loading = true;
@@ -268,6 +336,7 @@ public sealed class VoicePage : UserControl
         {
             var client = new PortalClient(Http, portal);
             var rooms = await client.VoiceRoomsAsync(_token, CancellationToken.None);
+            _mine = rooms.Owned;
             Fill(_owned, rooms.Owned, "voice.noneMine");
             Fill(_invited, rooms.Invited, "voice.noneInvited");
             _linked.IsVisible = false;
@@ -285,12 +354,15 @@ public sealed class VoicePage : UserControl
                 _linked.IsVisible = true;
             }
             Status(null);
+            _loading = false;
+            await LobbyAsync();
         }
         catch (PortalException e) when (e.Status == 401)
         {
             await _account.CheckAsync();
             _unlinked.IsVisible = true;
             _lobby.IsVisible = false;
+            _side.IsVisible = _requestsBox.IsVisible = false;
             Status(L.T("voice.state.device_unknown"));
         }
         catch (Exception e) when (e is HttpRequestException or TaskCanceledException or PortalException)
@@ -309,29 +381,227 @@ public sealed class VoicePage : UserControl
 
     Control RoomRow(VoiceRoom r)
     {
-        var text = new StackPanel { Spacing = 2, VerticalAlignment = VerticalAlignment.Center };
-        text.Children.Add(new TextBlock { Text = r.Title, FontSize = 15, FontFamily = Skin.Medium, TextWrapping = TextWrapping.Wrap });
-        var line = r.Mine ? "" : L.T("voice.owner", r.Owner.Name) + " · ";
-        line += r.InviteDeclined && r.State == "ok" ? L.T("voice.declined") : StateText(r.State == "ok" && r.Status != "open" ? "room_closed" : r.State);
-        text.Children.Add(new TextBlock { Text = line, FontSize = 12, Foreground = Skin.B(r.CanJoin ? Skin.Muted : Skin.WarnText), TextWrapping = TextWrapping.Wrap });
+        var state = r.InviteDeclined && r.State == "ok" ? L.T("voice.declined") : StateText(r.State == "ok" && r.Status != "open" ? "room_closed" : r.State);
+        var line = !r.Mine ? L.T("voice.owner", r.Owner.Name) + " · " + state
+            : r.CanJoin ? L.T("voice.youAdmin") : L.T("voice.youAdmin") + " · " + state;
 
-        var buttons = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, VerticalAlignment = VerticalAlignment.Center };
-        var join = Skin.Btn(L.T("voice.join"), "primary");
+        var buttons = Buttons();
+        var join = Skin.Btn(L.T(r.Mine ? "voice.openAdmin" : "voice.join"), "primary");
         join.IsEnabled = r.CanJoin;
         join.Click += async (_, _) => await JoinAsync(r);
         buttons.Children.Add(join);
+        if (r.Mine && r.Status != "open")
+        {
+            var reopen = Skin.Btn(L.T("voice.reopen"));
+            reopen.Click += async (_, _) => await Act(c => c.ReopenVoiceRoomAsync(_token, r.PublicId, CancellationToken.None), null);
+            buttons.Children.Add(reopen);
+        }
         if (!r.Mine && !r.InviteDeclined && r.State is "ok" or "not_friends")
         {
             var decline = Skin.Btn(L.T("voice.decline"), "ghost");
             decline.Click += async (_, _) => await DeclineAsync(r);
             buttons.Children.Add(decline);
         }
+        // shut out by a kick or a lost friendship: the owner may still say yes at the door
+        if (!r.Mine && r.Status == "open" && r.State is "invite_revoked" or "not_friends")
+        {
+            var ask = Skin.Btn(L.T("voice.ask"));
+            ask.Click += async (_, _) => await AskAsync(r.PublicId);
+            buttons.Children.Add(ask);
+        }
+        return Row(r.Title, line, !r.CanJoin, buttons);
+    }
+
+    static StackPanel Buttons(double spacing = 8) =>
+        new() { Orientation = Orientation.Horizontal, Spacing = spacing, VerticalAlignment = VerticalAlignment.Center };
+
+    /// <summary>One line of a list: a title and a note under it, the buttons on the right.</summary>
+    static Control Row(string title, string line, bool warn, StackPanel buttons, double titleSize = 15)
+    {
+        var text = new StackPanel { Spacing = 2, VerticalAlignment = VerticalAlignment.Center };
+        text.Children.Add(new TextBlock { Text = title, FontSize = titleSize, FontFamily = Skin.Medium, TextWrapping = TextWrapping.Wrap });
+        if (line.Length > 0)
+            text.Children.Add(new TextBlock { Text = line, FontSize = 12, Foreground = Skin.B(warn ? Skin.WarnText : Skin.Muted), TextWrapping = TextWrapping.Wrap });
         var row = new DockPanel();
         DockPanel.SetDock(buttons, Dock.Right);
         row.Children.Add(buttons);
         row.Children.Add(text);
         return new Border { Background = Skin.B(Skin.Inactive), CornerRadius = new CornerRadius(2), Padding = new Thickness(12, 8), Child = row };
     }
+
+    // ------------------------------------------------------------------ the lobby: open rooms, knocks, who is online
+
+    /// <summary>Every 20 s: "here" to the site once a minute while linked, and a fresh lobby while the page is seen.</summary>
+    void Beat()
+    {
+        if (_store.Load() is not { } account || Portal() is not { } portal) return;
+        if (_beats++ % 3 == 0) _ = HereAsync(portal, account.Token);
+        if (TopLevel.GetTopLevel(this) is null || !IsEffectivelyVisible) return;
+        _token = account.Token;
+        if (InRoom) _ = LobbyAsync();
+        else _ = LoadAsync();
+    }
+
+    static async Task HereAsync(Uri portal, string token)
+    {
+        try { await new PortalClient(Http, portal).VoiceHereAsync(token, CancellationToken.None); }
+        catch (Exception e) when (e is HttpRequestException or TaskCanceledException or PortalException) { }
+    }
+
+    /// <summary>The launcher is closing: off the online list now rather than in two minutes. A second at most.</summary>
+    public async Task GoneAsync()
+    {
+        _beat.Stop();
+        if (_store.Load() is not { } account || Portal() is not { } portal) return;
+        using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(1));
+        try { await new PortalClient(Http, portal).VoiceGoneAsync(account.Token, cts.Token); }
+        catch (Exception e) when (e is HttpRequestException or TaskCanceledException or OperationCanceledException or PortalException) { }
+    }
+
+    async Task LobbyAsync()
+    {
+        if (_lobbyBusy || _token.Length == 0 || Portal() is not { } portal) return;
+        _lobbyBusy = true;
+        try
+        {
+            var lobby = await new PortalClient(Http, portal).VoiceLobbyAsync(_token, CancellationToken.None);
+            FillCatalog(lobby.Rooms);
+            FillRequests(lobby.Requests);
+            FillOnline(lobby.Online);
+            _side.IsVisible = true;
+        }
+        // the rooms' answer already tells what is wrong; a lobby that did not come keeps the last one
+        catch (Exception e) when (e is HttpRequestException or TaskCanceledException or PortalException) { }
+        finally { _lobbyBusy = false; }
+    }
+
+    void FillCatalog(List<VoiceCatalogRoom> rooms)
+    {
+        _catalog.Children.Clear();
+        if (rooms.Count == 0) _catalog.Children.Add(Skin.Note(L.T("voice.noneAll")));
+        foreach (var r in rooms)
+        {
+            var buttons = Buttons();
+            var line = L.T("voice.owner", r.Owner.Name);
+            if (r.State == "request")
+            {
+                var ask = Skin.Btn(L.T("voice.ask"), "primary");
+                ask.Click += async (_, _) => await AskAsync(r.PublicId);
+                buttons.Children.Add(ask);
+            }
+            else if (r.State == "requested")
+            {
+                line += " · " + L.T("voice.requested");
+                var cancel = Skin.Btn(L.T("voice.askCancel"), "ghost");
+                cancel.Click += async (_, _) => await Act(c => c.CancelVoiceRequestAsync(_token, r.PublicId, CancellationToken.None), null);
+                buttons.Children.Add(cancel);
+            }
+            else line += " · " + StateText(r.State);
+            _catalog.Children.Add(Row(r.Title, line, r.State == "banned", buttons));
+        }
+    }
+
+    void FillRequests(List<VoiceJoinRequest> knocks)
+    {
+        _requests.Children.Clear();
+        foreach (var q in knocks)
+        {
+            var buttons = Buttons();
+            var accept = Skin.Btn(L.T("voice.letIn"), "primary", 30);
+            accept.Click += async (_, _) => await Act(c => c.AcceptVoiceRequestAsync(_token, q.Room, q.Person.Id, CancellationToken.None),
+                L.T("voice.letInDone", q.Person.Name, q.RoomTitle));
+            var refuse = Skin.Btn(L.T("voice.refuse"), "ghost", 30);
+            refuse.Click += async (_, _) => await Act(c => c.DeclineVoiceRequestAsync(_token, q.Room, q.Person.Id, CancellationToken.None), null);
+            var ban = Skin.Btn(L.T("voice.ban"), "warn", 30);
+            ban.Click += async (_, _) =>
+            {
+                if (Owner() is not { } owner) return;
+                var reason = await new TextDialog(L.T("voice.banPrompt", q.Person.Name), "", VoiceRules.ReasonMax, allowEmpty: true).ShowDialog<string?>(owner);
+                if (reason is null) return;
+                await Act(c => c.BanFromVoiceRoomAsync(_token, q.Room, q.Person.Id, reason, CancellationToken.None), null);
+            };
+            buttons.Children.Add(accept);
+            buttons.Children.Add(refuse);
+            buttons.Children.Add(ban);
+            _requests.Children.Add(Row(q.Person.Name, L.T("voice.knocks", q.RoomTitle), false, buttons, 14));
+        }
+        _requestsBox.IsVisible = knocks.Count > 0;
+    }
+
+    void FillOnline(List<VoiceOnline> people)
+    {
+        _onlineTitle.Text = L.T("voice.online", people.Count);
+        _online.Children.Clear();
+        if (people.Count == 0) _online.Children.Add(Skin.Note(L.T("voice.nobodyOnline")));
+        // where "Invite" takes a friend: the own room I am in, else every open room of mine
+        var targets = InRoom && _room is { Mine: true } here ? [here] : _mine.Where(r => r.Status == "open").ToList();
+        foreach (var p in people)
+        {
+            var name = new TextBlock
+            {
+                Text = "● " + p.Person.Name, FontSize = 14, Foreground = Skin.B(Skin.Accent),
+                TextTrimming = TextTrimming.CharacterEllipsis,
+            };
+            var body = new StackPanel { Spacing = 4 };
+            body.Children.Add(name);
+            if (p.Friend || p.Asked) body.Children.Add(Skin.Note(L.T(p.Friend ? "voice.friend" : "voice.friendAsked"), 12, Skin.Muted));
+            var buttons = Buttons(6);
+            if (!p.Friend && !p.Asked)
+            {
+                var befriend = Skin.Btn(L.T("voice.befriend"), "ghost", 28);
+                befriend.Click += async (_, _) => await BefriendAsync(p);
+                buttons.Children.Add(befriend);
+            }
+            if (p.Friend && targets.Count > 0)
+            {
+                var invite = Skin.Btn(L.T("voice.invite"), "ghost", 28);
+                if (targets.Count == 1) invite.Click += async (_, _) => await InviteAsync(p.Person, targets[0]);
+                else
+                {
+                    var menu = new MenuFlyout();
+                    foreach (var t in targets)
+                    {
+                        var item = new MenuItem { Header = t.Title };
+                        item.Click += async (_, _) => await InviteAsync(p.Person, t);
+                        menu.Items.Add(item);
+                    }
+                    invite.Flyout = menu;
+                }
+                buttons.Children.Add(invite);
+            }
+            if (buttons.Children.Count > 0) body.Children.Add(buttons);
+            _online.Children.Add(new Border { Background = Skin.B(Skin.Inactive), CornerRadius = new CornerRadius(2), Padding = new Thickness(10, 6), Child = body });
+        }
+    }
+
+    /// <summary>One call to the site from a button, then the lists again; a refusal is read in the status line.</summary>
+    async Task Act(Func<PortalClient, Task> call, string? done)
+    {
+        if (Portal() is not { } portal) return;
+        try
+        {
+            await call(new PortalClient(Http, portal));
+            Status(done, warn: false);
+        }
+        catch (Exception e) when (e is HttpRequestException or TaskCanceledException or PortalException) { Status(Reason(e)); }
+        if (InRoom) { await LobbyAsync(); await LiveAsync(); }
+        else await LoadAsync();
+    }
+
+    Task AskAsync(string publicId) => Act(async c =>
+    {
+        var r = await c.AskToEnterVoiceRoomAsync(_token, publicId, CancellationToken.None);
+        Status(L.T(r == "already" ? "voice.askAlready" : "voice.asked"), warn: false);
+    }, null);
+
+    Task BefriendAsync(VoiceOnline p) => Act(async c =>
+    {
+        var r = await c.RequestFriendAsync(_token, p.Person.Id.ToString(), CancellationToken.None);
+        Status(L.T(r == "accepted" ? "voice.friendsNow" : "voice.friendSent", p.Person.Name), warn: false);
+    }, null);
+
+    Task InviteAsync(VoicePerson who, VoiceRoom room) =>
+        Act(c => c.InviteToVoiceRoomAsync(_token, room.PublicId, who.Id, CancellationToken.None), L.T("voice.invitedDone", who.Name, room.Title));
 
     static string StateText(string state) =>
         L.Has("voice.state." + state) ? L.T("voice.state." + state) : L.T("voice.state.other", state);
@@ -351,9 +621,11 @@ public sealed class VoicePage : UserControl
         if (title is null) return;
         try
         {
+            // "open your room": made and entered at once, the owner is its admin
             var room = await new PortalClient(Http, portal).CreateVoiceRoomAsync(_token, title, CancellationToken.None);
             await LoadAsync();
             Status(L.T("voice.created", room.Title), warn: false);
+            await JoinAsync(room);
         }
         catch (Exception e) when (e is HttpRequestException or TaskCanceledException or PortalException) { Status(Reason(e)); }
     }

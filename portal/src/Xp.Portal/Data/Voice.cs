@@ -68,6 +68,29 @@ public sealed class RoomInvite
     public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
 }
 
+public enum RoomJoinStatus { Pending, Accepted, Declined, Cancelled }
+
+/// <summary>
+/// Somebody asked the owner to be let into a room they found in the list of open rooms. One row per
+/// room and person: asking again reuses it. Accepted is the owner's consent, standing in for the
+/// friendship an invite otherwise needs (VOICE_CHAT.md §3, version 0.5).
+/// </summary>
+public sealed class RoomJoinRequest
+{
+    public Guid RoomId { get; set; }
+    public Guid UserId { get; set; }
+    public RoomJoinStatus Status { get; set; } = RoomJoinStatus.Pending;
+    public DateTimeOffset CreatedAt { get; set; } = DateTimeOffset.UtcNow;
+    public DateTimeOffset UpdatedAt { get; set; } = DateTimeOffset.UtcNow;
+}
+
+/// <summary>The person's launcher was running and linked a moment ago: it says so once a minute.</summary>
+public sealed class VoicePresence
+{
+    public Guid UserId { get; set; }
+    public DateTimeOffset SeenAt { get; set; }
+}
+
 /// <summary>Shut out of one room until its owner lets the person back.</summary>
 public sealed class RoomBan
 {
@@ -178,6 +201,15 @@ public static class VoiceLimits
     public const int PendingOutgoing = 50;
     public const int RequestsPerDay = 30;
     public const int Blocks = 500;
+    /// <summary>Requests to enter that one person may have waiting at once, and one room may have waiting.</summary>
+    public const int PendingJoinOutgoing = 20;
+    public const int PendingJoinPerRoom = 100;
+    /// <summary>After a "no" the same person waits this long before asking the same room again.</summary>
+    public static readonly TimeSpan JoinRetryAfterDecline = TimeSpan.FromMinutes(10);
+    /// <summary>The launcher says "here" every minute; missing two of them is "gone".</summary>
+    public static readonly TimeSpan OnlineWindow = TimeSpan.FromSeconds(150);
+    public const int OnlineMax = 200;
+    public const int CatalogMax = 200;
     public static readonly TimeSpan PresenceKeep = TimeSpan.FromDays(30);
     public static readonly TimeSpan ActionKeep = TimeSpan.FromDays(365);
     public static readonly TimeSpan ComplaintKeep = TimeSpan.FromDays(365);

@@ -37,6 +37,8 @@ public sealed class PortalDb(DbContextOptions<PortalDb> options)
     public DbSet<RoomBan> RoomBans => Set<RoomBan>();
     public DbSet<RoomSpeakingRestriction> RoomSpeakingRestrictions => Set<RoomSpeakingRestriction>();
     public DbSet<VoiceAccountBan> VoiceAccountBans => Set<VoiceAccountBan>();
+    public DbSet<RoomJoinRequest> RoomJoinRequests => Set<RoomJoinRequest>();
+    public DbSet<VoicePresence> VoicePresences => Set<VoicePresence>();
     public DbSet<VoiceEvent> VoiceEvents => Set<VoiceEvent>();
     public DbSet<VoiceEventTicket> VoiceEventTickets => Set<VoiceEventTicket>();
     public DbSet<VoiceJob> VoiceJobs => Set<VoiceJob>();
@@ -228,6 +230,21 @@ public sealed class PortalDb(DbContextOptions<PortalDb> options)
             e.HasKey(x => new { x.RoomId, x.UserId });
             e.HasIndex(x => x.UserId);
             e.HasOne<VoiceRoom>().WithMany().HasForeignKey(x => x.RoomId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<PortalUser>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+        });
+        b.Entity<RoomJoinRequest>(e =>
+        {
+            e.HasKey(x => new { x.RoomId, x.UserId });
+            e.HasIndex(x => new { x.UserId, x.Status });
+            e.HasIndex(x => new { x.RoomId, x.Status });
+            e.Property(x => x.Status).HasConversion<string>().HasMaxLength(16);
+            e.HasOne<VoiceRoom>().WithMany().HasForeignKey(x => x.RoomId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<PortalUser>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
+        });
+        b.Entity<VoicePresence>(e =>
+        {
+            e.HasKey(x => x.UserId);
+            e.HasIndex(x => x.SeenAt);
             e.HasOne<PortalUser>().WithMany().HasForeignKey(x => x.UserId).OnDelete(DeleteBehavior.Cascade);
         });
         b.Entity<VoiceAccountBan>(e =>

@@ -74,6 +74,7 @@ public sealed class MainWindow : Window
     readonly VoicePage _voicePage;
     TrayIcon? _tray;
     bool _quitting;     // a real exit: the window does not go to the tray even in a room
+    bool _gone;         // the site is told the launcher is off the online list (once, at most a second)
 
     GamePaths? _paths;
     BuildStore? _builds;
@@ -213,6 +214,14 @@ public sealed class MainWindow : Window
                 _quitting = true;
                 await _voicePage.LeaveAsync();
                 Close();
+                return;
+            }
+            if (!_gone && _voicePage.Linked)
+            {
+                e.Cancel = true;
+                _gone = true;
+                await _voicePage.GoneAsync();
+                Dispatcher.UIThread.Post(Close);
                 return;
             }
             _cts?.Cancel();

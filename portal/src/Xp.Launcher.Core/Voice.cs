@@ -40,6 +40,18 @@ public sealed record VoiceFriends(List<VoiceFriend> Friends, int FriendsTotal, L
 
 public sealed record VoiceComplaint(long Number, string DisplayNumber);
 
+/// <summary>Somebody whose launcher is running now. Asked: my friend request waits for them.</summary>
+public sealed record VoiceOnline(VoicePerson Person, bool Friend, bool Asked);
+
+/// <summary>An open room of somebody else. State: request (may ask to enter), requested, banned.</summary>
+public sealed record VoiceCatalogRoom(string PublicId, string Title, VoicePerson Owner, string State, int Capacity, DateTimeOffset CreatedAt);
+
+/// <summary>Somebody at the door of one of my rooms.</summary>
+public sealed record VoiceJoinRequest(string Room, string RoomTitle, VoicePerson Person, DateTimeOffset At);
+
+/// <summary>The lobby in one answer: who is online, the open rooms, the knocks at my doors.</summary>
+public sealed record VoiceLobby(List<VoiceOnline> Online, List<VoiceCatalogRoom> Rooms, List<VoiceJoinRequest> Requests);
+
 /// <summary>The site's limits on what a person types (Xp.Portal VoiceLimits): longer is refused there.</summary>
 public static class VoiceRules
 {
@@ -141,6 +153,10 @@ public sealed partial class PortalClient
 
     // ---------------------------------------------------------------- the owner
 
+    /// <summary>A closed room of one's own opened again (a room the site staff closed stays closed).</summary>
+    public Task ReopenVoiceRoomAsync(string deviceToken, string publicId, CancellationToken ct) =>
+        DoAsync(DeviceRequest(HttpMethod.Post, RoomPath(publicId, "reopen"), deviceToken), ct);
+
     public Task InviteToVoiceRoomAsync(string deviceToken, string publicId, Guid user, CancellationToken ct) =>
         DoAsync(DeviceRequest(HttpMethod.Post, RoomPath(publicId, "invites"), deviceToken,
             JsonContent.Create(new VoiceInviteBody(user), VoiceJson.Default.VoiceInviteBody)), ct);
@@ -171,6 +187,33 @@ public sealed partial class PortalClient
     public Task<VoiceComplaint> ComplainInVoiceRoomAsync(string deviceToken, string publicId, Guid user, string text, CancellationToken ct) =>
         AskAsync(DeviceRequest(HttpMethod.Post, RoomPath(publicId, "complaints"), deviceToken,
             JsonContent.Create(new VoiceComplaintBody(user, text.Trim()), VoiceJson.Default.VoiceComplaintBody)), VoiceJson.Default.VoiceComplaint, ct);
+
+    // ---------------------------------------------------------------- the lobby
+
+    /// <summary>"This launcher is running": once a minute, so the others see the person online.</summary>
+    public Task VoiceHereAsync(string deviceToken, CancellationToken ct) =>
+        DoAsync(DeviceRequest(HttpMethod.Post, "api/v1/voice/presence", deviceToken), ct);
+
+    /// <summary>The launcher is closing: off the online list at once.</summary>
+    public Task VoiceGoneAsync(string deviceToken, CancellationToken ct) =>
+        DoAsync(DeviceRequest(HttpMethod.Delete, "api/v1/voice/presence", deviceToken), ct);
+
+    public Task<VoiceLobby> VoiceLobbyAsync(string deviceToken, CancellationToken ct) =>
+        AskAsync(DeviceRequest(HttpMethod.Get, "api/v1/voice/lobby", deviceToken), VoiceJson.Default.VoiceLobby, ct);
+
+    /// <summary>Knocks at the door of a room: "sent", or "already" when the person may come in anyway.</summary>
+    public async Task<string> AskToEnterVoiceRoomAsync(string deviceToken, string publicId, CancellationToken ct) =>
+        (await AskAsync(DeviceRequest(HttpMethod.Post, RoomPath(publicId, "requests"), deviceToken), VoiceJson.Default.VoiceResultBody, ct)).Result;
+
+    public Task CancelVoiceRequestAsync(string deviceToken, string publicId, CancellationToken ct) =>
+        DoAsync(DeviceRequest(HttpMethod.Delete, RoomPath(publicId, "requests"), deviceToken), ct);
+
+    /// <summary>The owner lets the person in: an invite, without the friendship an invite otherwise needs.</summary>
+    public Task AcceptVoiceRequestAsync(string deviceToken, string publicId, Guid user, CancellationToken ct) =>
+        DoAsync(DeviceRequest(HttpMethod.Post, RoomPath(publicId, $"requests/{user}/accept"), deviceToken), ct);
+
+    public Task DeclineVoiceRequestAsync(string deviceToken, string publicId, Guid user, CancellationToken ct) =>
+        DoAsync(DeviceRequest(HttpMethod.Post, RoomPath(publicId, $"requests/{user}/decline"), deviceToken), ct);
 
     // ---------------------------------------------------------------- friends
 
@@ -228,6 +271,7 @@ public static class VoiceLink
 [JsonSerializable(typeof(List<VoiceLive>))]
 [JsonSerializable(typeof(VoiceFriends))]
 [JsonSerializable(typeof(VoiceComplaint))]
+[JsonSerializable(typeof(VoiceLobby))]
 [JsonSerializable(typeof(VoiceTitleBody))]
 [JsonSerializable(typeof(VoiceReasonBody))]
 [JsonSerializable(typeof(VoiceInviteBody))]
