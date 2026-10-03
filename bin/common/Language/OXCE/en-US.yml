@@ -375,6 +375,8 @@ en-US:
   STR_SHOW_MAINTENANCE_TIME_DESC: "{ALT}0>{ALT} Don't show {ALT}1>{ALT} Show only current activity duration {ALT}2>{ALT} Show all together (repair + rearm + refuel)."
   STR_CRAFT_WEAPON_ICONS: "Craft equipment icons before the name"
   STR_CRAFT_WEAPON_ICONS_DESC: "The icons of the weapons and equipment installed on a craft, as on the craft screen, before its name in the interception list and in the base's craft list."
+  STR_DOGFIGHT_HIT_CHANCE: "Hit chances in the interception window"
+  STR_DOGFIGHT_HIT_CHANCE_DESC: "Next to each craft weapon - its chance to hit the UFO, above the radar - the UFO's chance to hit the craft. Counts the pilots, the weapon's accuracy, the UFO size and both crafts' bonuses. A dash - the weapon will not fire in the chosen mode (out of range, no ammo, switched off). If the UFO is not researched yet: its own bonuses are not counted and a ? is added; the UFO's chance is ?."
   STR_SHOW_ETA: "Show estimated flight duration"
   STR_SHOW_ETA_DESC: "{ALT}0>{ALT} Don't show {ALT}1>{ALT} Show ETA for static targets only {ALT}2>{ALT} Show ETA also for moving targets."
   STR_UFO_LANDING_ALERT: "UFO landing alert"
