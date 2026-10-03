@@ -345,6 +345,9 @@ private:
 	/// The bench (plan V2, L0-B): TU of the cheapest path between two tiles for this unit, -1 if there is none. Uses this
 	/// object's nodes and path: call it on a Pathfinding of its own, never on the battle's.
 	int pathCost(BattleUnit *unit, Position from, Position to, BattleActionMove bam, int maxTUCost = 1000);
+	/// PATROL_STUN_RESERVE_V2 (bench): keeps only the first `steps` steps of the current path (the rest of it is dropped,
+	/// nothing searched again); cost is what those steps cost.
+	void keepPathPrefix(size_t steps, PathfindingCost cost);
 #endif
 };
 

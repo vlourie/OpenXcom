@@ -241,6 +241,15 @@ void walkStop(const BattleUnit *unit, const char *reason, const Position &to, in
 /// and the unit has less energy than the cheapest step to any neighbouring tile, other units aside - it has no step left
 /// this turn. Checked after walkPlanned, on the same path.
 bool patrolOutOfEnergy(SavedBattleGame *save, BattleUnit *unit, const BattleAction &action, bool pushed);
+/// PATROL_STUN_RESERVE_V1 (OXCE_AI_PATROL_STUN_RESERVE, bench only, the careful bot): the patrol walk handleAI just planned
+/// would leave the unit's armor stun recovery at the start of its next turn at or below zero - the energy the path takes
+/// (steps it can pay for in TU and energy), then the armor's energy recovery, then the armor's stun recovery at that energy,
+/// soldier bonuses included. Only when the energy matters (the recovery at full energy is higher). One [AISTUNRES] line per
+/// check. True: handleAI drops the walk; attack, escape and the bot's flee are not patrol walks and are never checked.
+/// PATROL_STUN_RESERVE_V2 (OXCE_AI_PATROL_STUN_PREFIX, over V1 when both are set): instead of dropping the walk, keeps the
+/// longest prefix of the same path after which the recovery stays above zero (the node and the path are not chosen again);
+/// true only when not even one step is safe.
+bool patrolStunReserve(SavedBattleGame *save, BattleUnit *unit, const BattleAction &action, bool pushed);
 /// FIREPOINT_ENERGY_PATH_V1 (OXCE_AI_FIREPOINT_ENERGY_PATH, bench only): the path the battle's Pathfinding holds - the one
 /// findFirePoint just asked for, and handleAI asks for the same before the walk - against what findReachable left for the
 /// walk when it let the tile into _reachableWithAttack. Bit 1: the path needs more energy (the walk would stop on energy,

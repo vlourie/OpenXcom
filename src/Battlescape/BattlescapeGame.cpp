@@ -532,6 +532,12 @@ void BattlescapeGame::handleAI(BattleUnit *unit)
 			ai->knownOccupantWalked(action, _save->getPathfinding()->getStartDirection() != -1);
 		}
 		AiProbe::walkPlanned(_save, unit, _save->getPathfinding()->getStartDirection() != -1, walkToItem);
+		if (!walkToItem && ai->isPatrolWalk(action) && AiProbe::patrolStunReserve(_save, unit, action, _save->getPathfinding()->getStartDirection() != -1))
+		{
+			// PATROL_STUN_RESERVE_V1 (bench): the walk would leave the armor's stun recovery at or below zero
+			// (V2 has already cut the path to its safe prefix and gets here only when no step is safe)
+			_save->getPathfinding()->abortPath();
+		}
 		if (!walkToItem && ai->isPatrolWalk(action) && AiProbe::patrolOutOfEnergy(_save, unit, action, _save->getPathfinding()->getStartDirection() != -1))
 		{
 			ai->spendPatrol();
