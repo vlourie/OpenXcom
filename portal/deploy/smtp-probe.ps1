@@ -6,7 +6,8 @@
 #   .\smtp-probe.ps1                       вход с паролем из portal.env
 #   .\smtp-probe.ps1 -Ask                  пароль спросить заново (скрытый ввод) - проверить до записи
 #   .\smtp-probe.ps1 -To ваш@адрес         после входа отправить пробное письмо
-param([switch] $Ask, [string] $To)
+#   .\smtp-probe.ps1 -Ask -Login ящик@gmail.com   другой логин, не трогая portal.env
+param([switch] $Ask, [string] $To, [string] $Login)
 $ErrorActionPreference = 'Stop'
 Set-Location $PSScriptRoot
 
@@ -24,7 +25,7 @@ foreach ($line in Get-Content -LiteralPath 'portal.env' -Encoding UTF8) {
 }
 $server = $penv['Email__SmtpHost']
 $port = if ($penv['Email__SmtpPort']) { [int]$penv['Email__SmtpPort'] } else { 587 }
-$user = [string]$penv['Email__SmtpUser']
+$user = if ($Login) { $Login } else { [string]$penv['Email__SmtpUser'] }
 $from = if ($penv['Email__From']) { $penv['Email__From'] } else { $user }
 $password = [string]$penv['Email__SmtpPassword']
 if (-not $server) { Fail 'в portal.env нет Email__SmtpHost: сначала .\station.ps1 smtp' }
@@ -38,6 +39,21 @@ if ($Ask) {
 $plain = $password -replace '\s', ''
 Write-Host "сервер $server`:$port, логин '$user', обратный адрес $from"
 Write-Host ("пароль: {0} знаков{1}" -f $password.Length, $(if ($plain.Length -ne $password.Length) { ", из них пробелов $($password.Length - $plain.Length) - у пароля приложения Google их быть не должно" } else { '' }))
+# скрытый ввод не показывает раскладку: набранный в русской пароль - те же 16 звёздочек, но кириллицей
+$cyr = ([regex]::Matches($password, '[Ѐ-ӿ]')).Count
+if ($cyr) { Write-Host "  в пароле $cyr кириллических букв - набран в русской раскладке? Переключите на английскую и введите снова" -ForegroundColor Red }
+if ($server -match 'gmail\.com$') {
+    if ($plain -cmatch '^[a-z]{16}$') { Write-Host '  по виду это пароль приложения Google: 16 строчных латинских букв' }
+    else {
+        $why = @()
+        if ($plain.Length -ne 16) { $why += "длина $($plain.Length), а не 16" }
+        if ($plain -cmatch '[A-Z]') { $why += 'есть заглавные (включён Caps Lock?)' }
+        if ($plain -match '[0-9]') { $why += 'есть цифры' }
+        if ($cyr) { $why += 'есть кириллица' }
+        if ($plain -match '[^A-Za-z0-9Ѐ-ӿ]') { $why += 'есть знаки' }
+        Write-Host ("  это НЕ пароль приложения Google (у него 16 строчных латинских букв): " + ($why -join ', ')) -ForegroundColor Red
+    }
+}
 
 $script:reader = $null
 $script:writer = $null
@@ -147,6 +163,11 @@ elseif ($step -eq 'QUIT' -and $To -and $code -eq 250) { Write-Host "ПИСЬМО
 elseif ($step -eq 'QUIT' -and -not $user) { Write-Host 'соединение и шифрование в порядке; вход не проверен' -ForegroundColor Yellow }
 elseif ($l -match '5\.7\.9') { Write-Host 'Gmail требует ПАРОЛЬ ПРИЛОЖЕНИЯ, а не обычный пароль ящика: myaccount.google.com/apppasswords (нужна двухэтапная проверка)' -ForegroundColor Red }
 elseif ($l -match '5\.7\.14|534') { Write-Host 'Google ЗАБЛОКИРОВАЛ ВХОД: откройте этот ящик в браузере, найдите письмо или уведомление о входе и подтвердите, что это вы; потом повторите' -ForegroundColor Red }
+elseif (($l -match '5\.7\.8|^535') -and $server -match 'gmail\.com$' -and $plain -cmatch '^[a-z]{16}$') {
+    # пароль по виду верный - значит он не от этого ящика: Google сам выбирает аккаунт по умолчанию, если вошли в несколько
+    Write-Host "НЕВЕРНЫЙ ЛОГИН ИЛИ ПАРОЛЬ, хотя пароль по виду - пароль приложения: он создан в ДРУГОМ аккаунте Google, чем '$user', или в логине опечатка, или пароль уже отозван" -ForegroundColor Red
+    Write-Host '  создайте пароль приложения в окне инкогнито, войдя только в этот ящик, и сверьте логин с адресом ящика по буквам' -ForegroundColor Red
+}
 elseif ($l -match '5\.7\.8|^535') { Write-Host 'НЕВЕРНЫЙ ЛОГИН ИЛИ ПАРОЛЬ: пароль приложения не тот, отозван или введён с пробелами - создайте новый и задайте его .\station.ps1 smtp' -ForegroundColor Red }
 elseif ($l -match '^4\d\d|4\.7\.') { Write-Host 'сервер ВРЕМЕННО ОТКАЗЫВАЕТ (часто после серии неудачных входов): подождите час и повторите, ничего не меняя' -ForegroundColor Red }
 else { Write-Host 'пришлите весь вывод: по нему видно, на каком шаге и что ответил сервер' -ForegroundColor Yellow }
