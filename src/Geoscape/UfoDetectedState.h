@@ -40,6 +40,7 @@ private:
 	bool _craftTypeArticleAvailable = false;
 	bool _raceArticleAvailable = false;
 	bool _missionArticleAvailable = false;
+	std::string _craftTypeArticleId;
 	std::string _raceArticleId;
 	std::string _missionArticleId;
 

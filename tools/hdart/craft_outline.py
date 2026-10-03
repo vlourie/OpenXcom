@@ -23,8 +23,17 @@ r"""craft_outline.py - очертания НЛО и кораблей сверх�
   * art/outline/outline.tsv - тип, размер в клетках, заполненность, откуда;
   * art/outline/sheet_NN.png - лист приёмки: план, нынешний маркер, контур на шести зумах
     при k=4 в настоящих пикселях экрана, на океане и на суше.
-Нос по умолчанию не известен (карта корабля повёрнута как угодно): длинная ось по PCA, а
-сторона - из art/outline/orient.json {тип: доп. поворот в градусах}, которую правят по листу.
+Нос. Карта корабля стоит по сетке клеток, поэтому план только поворачивается на 0/90/180/270
+(до 02.10 вертели по PCA, и знак оси был случайным - тестеры видели полёт боком и задом):
+  * корабль игрока - картинка ангара (BASEBITS sprite + 33) нарисована сверху НОСОМ ВВЕРХ,
+    у SIDEWAYS из gen_craft_lights - носом влево; план поворачивается так, чтобы лучше всего
+    совпасть с её силуэтом (IoU по четырём поворотам и отражению, запас до второго - на листе);
+  * корабль без карты боя (истребители) - силуэт самой картинки ангара, размер средний (1.0):
+    картинки ангара нарисованы не в одном масштабе;
+  * НЛО - длинная ось вдоль хода, нос - конец, дальний от центра площади (хвост и крылья
+    тяжелее носа); точность правила печатается по кораблям игрока, где нос известен;
+  * art/outline/orient.json {тип: доп. поворот по часовой, кратно 90} - поправка по листу.
+На листе у каждого контура стрелка курса: нос обязан смотреть по стрелке.
 
     py -3.13 tools\hdart\craft_outline.py               # всё: маски, таблица, листы
     py -3.13 tools\hdart\craft_outline.py --only STR_VESSEL_FRIGATE --no-write
@@ -47,6 +56,8 @@ from PIL import Image, ImageDraw, ImageFilter, ImageFont  # noqa: E402
 import map_mockup as mm                                 # noqa: E402
 import obj_struct as ost                                # noqa: E402
 import pck_census as pc                                 # noqa: E402
+from gen_base import basebits_map                       # noqa: E402
+from gen_craft_lights import SIDEWAYS, body_mask, load_frame  # noqa: E402
 
 ENC = "utf-8-sig"
 VALUES = os.path.join(".index", "mod", "Piratez", "rul", "values.tsv")
@@ -199,15 +210,102 @@ def main_part(mask):
     return (best / total if total else 0.0), mask & full
 
 
-def canonical(h, extra=0.0):
-    """Маска сверху, длинная ось горизонтально, сглаженная, в коробке со стороной до MASK_SIDE."""
-    filled = fill_holes(h > 0)
-    mask = Image.fromarray((filled * 255).astype(np.uint8))
-    ang = principal_angle(filled) + extra
-    big = mask.resize((mask.width * 4, mask.height * 4), Image.NEAREST)
-    big = big.rotate(ang, resample=Image.BILINEAR, expand=True)
-    # ступеньки вокселей стираем размытием примерно в пиксель итоговой маски, не больше
-    big = big.filter(ImageFilter.GaussianBlur(max(3.0, max(big.size) / MASK_SIDE * 1.2)))
+def crop(mask):
+    ys, xs = np.nonzero(mask)
+    if not len(xs):
+        return mask
+    return mask[ys.min():ys.max() + 1, xs.min():xs.max() + 1]
+
+
+def variants(mask):
+    """[(k, flip, маска)]: четыре поворота np.rot90 и их отражения слева направо.
+    Отражение не меняет, где нос (верх остаётся верхом)."""
+    out = []
+    for k in range(4):
+        r = np.rot90(mask, k)
+        out.append((k, False, r))
+        out.append((k, True, r[:, ::-1]))
+    return out
+
+
+def fit_iou(a, b, side=48):
+    """IoU двух масок, вписанных по большей стороне в квадрат side с сохранением пропорций и
+    поставленных по центру: неверный поворот вытянутого корабля проигрывает и формой, и боком."""
+    def norm(m):
+        m = crop(m)
+        f = side / max(m.shape)
+        im = Image.fromarray((m * 255).astype(np.uint8))
+        im = im.resize((max(1, round(m.shape[1] * f)), max(1, round(m.shape[0] * f))), Image.BILINEAR)
+        out = np.zeros((side, side), np.float32)
+        y0, x0 = (side - im.height) // 2, (side - im.width) // 2
+        out[y0:y0 + im.height, x0:x0 + im.width] = np.asarray(im, np.float32) / 255.0
+        return out
+    pa, pb = norm(a), norm(b)
+    inter = np.minimum(pa, pb).sum()
+    union = np.maximum(pa, pb).sum()
+    return float(inter / union) if union else 0.0
+
+
+def nose_by_hangar(mask, hangar):
+    """План носом вверх по совпадению с силуэтом ангара (нос вверх).
+    -> (маска носом вверх, лучший IoU, запас до лучшего поворота с ДРУГИМ носом)."""
+    scored = sorted(((fit_iou(m, hangar), k, fl, m) for k, fl, m in variants(mask)),
+                    key=lambda t: -t[0])
+    best = scored[0]
+    other = max((s for s in scored if s[1] != best[1]), key=lambda t: t[0])
+    return best[3], best[0], best[0] - other[0]
+
+
+def nose_by_centroid(mask):
+    """План носом вверх для НЛО: длинная сторона габарита вертикально, нос - конец, дальний от
+    самого широкого места. Почти квадратный план - та же проверка по обоим поворотам.
+    -> (маска носом вверх, сдвиг широкого места от середины в долях длины)."""
+    best = None
+    for k in range(4):
+        m = crop(np.rot90(mask, k))
+        hh, ww = m.shape
+        if hh < ww * 0.87:                                  # длинная ось лежит поперёк хода
+            continue
+        # самое широкое место (полоса от 90% наибольшей ширины) ближе к хвосту: крылья, оперение
+        # и двигатели тяжелее носа. Проверено на кораблях игрока с известным носом: 29 из 34,
+        # центр площади - 23, узкий конец - 18-23 (craft_outline печатает итог при каждом прогоне)
+        wp = m.sum(1)
+        skew = (np.nonzero(wp >= wp.max() * 0.9)[0].mean() - (hh - 1) / 2.0) / hh   # >0: ближе к низу
+        cand = (hh / max(ww, 1), skew, m)
+        if best is None or (cand[0], cand[1]) > (best[0], best[1]):
+            best = cand
+    return best[2], best[1]
+
+
+def hangar_mask(f, sprites):
+    """Силуэт картинки ангара корабля носом вверх (bool) или None. Тень снимается body_mask."""
+    s = f.get("sprite")
+    if not isinstance(s, int):
+        return None
+    loaded = load_frame(s + 33, sprites)
+    if loaded is None:
+        return None
+    body = body_mask(*loaded)
+    if s + 33 in SIDEWAYS:
+        body = body.T                                       # нос влево -> вверх
+    return crop(body) if body.any() else None
+
+
+def nose_up_to_right(m):
+    return np.rot90(m, -1)                                  # по часовой: верх уходит вправо
+
+
+def canonical(mask_right, extra=0):
+    """Маска сверху носом вправо (bool), сглаженная, в коробке со стороной до MASK_SIDE.
+    extra - доп. поворот по часовой, кратно 90 (orient.json)."""
+    filled = fill_holes(mask_right)
+    filled = np.rot90(filled, -int(round(extra / 90.0)) % 4)
+    mask = Image.fromarray((crop(filled) * 255).astype(np.uint8))
+    up = max(4, int(math.ceil(MASK_SIDE * 4 / max(mask.size))))   # картинка ангара 32x40 - x16
+    big = mask.resize((mask.width * up, mask.height * up), Image.NEAREST)
+    ang = 0.0
+    # ступеньки вокселей и пикселей ангара стираем размытием примерно в пиксель исходника
+    big = big.filter(ImageFilter.GaussianBlur(max(3.0, max(big.size) / MASK_SIDE * 1.2, up * 0.6)))
     a = np.asarray(big).astype(np.float32) / 255.0
     a = np.clip((a - 0.5) * 3 + 0.5, 0, 1)                    # обратно к краю, но мягко
     ys, xs = np.nonzero(a > 0.02)
@@ -288,6 +386,39 @@ def cell_bg(w, h):
     return im
 
 
+def arrow(d, x, y, angle, n=10, color=(255, 230, 80, 255)):
+    """Стрелка курса: куда летит контур, повёрнутый на angle (0 - вправо, по часовой)."""
+    a = math.radians(angle)
+    x2, y2 = x + n * math.cos(a), y + n * math.sin(a)
+    d.line([(x, y), (x2, y2)], fill=color, width=1)
+    for s in (2.6, -2.6):
+        d.line([(x2, y2), (x2 - 4 * math.cos(a + s * 0.25), y2 - 4 * math.sin(a + s * 0.25))], fill=color, width=1)
+
+
+def nose_sheet(rows, path, cols=12, side=72):
+    """Лист приёмки носа: каждый контур носом ВВЕРХ (стрелка над ним), номер и откуда нос.
+    Зелёная рамка - нос по картинке ангара, жёлтая - по правилу ширины, оранжевая -
+    неуверенно (симметричный план или малый запас). Поправка - orient.json по номеру строки."""
+    items = [r for r in rows if r["mask"] is not None]
+    W, H = side + 16, side + 40
+    im = Image.new("RGB", (cols * W, ((len(items) + cols - 1) // cols) * H), (14, 14, 18))
+    d = ImageDraw.Draw(im)
+    for n, r in enumerate(items):
+        x, y = (n % cols) * W, (n // cols) * H
+        sure = "нос неуверенно" not in r["note"]
+        frame = ((90, 200, 110) if r.get("nose", "").startswith(("ангар", "силуэт")) else (220, 200, 80)) \
+            if sure else (240, 140, 60)
+        d.rectangle([x + 2, y + 2, x + W - 3, y + H - 3], outline=frame)
+        o = render(r["mask"], side * 0.86, -90, r["color"])
+        im.paste(o.convert("RGB"), (x + (W - o.width) // 2, y + 18 + (side - o.height) // 2), o)
+        arrow(d, x + W // 2, y + 16, -90, n=10)
+        d.text((x + 5, y + 3), str(n + 1), fill=(230, 230, 230))
+        d.text((x + 5, y + H - 15), r["type"].replace("STR_VESSEL_", "").replace("STR_", "")[:13],
+               fill=(200, 200, 200))
+    im.save(path)
+    return items
+
+
 def sheet(rows, markers, path):
     lab_w, plan_w, cell = 230, 110, 84
     W = lab_w + plan_w + 40 + cell * 6 + cell * 2
@@ -307,13 +438,16 @@ def sheet(rows, markers, path):
         d.text((4, y + 36), "блок %s  запол. %.2f" % (r["block"], r["fill"]), fill=(150, 150, 150), font=font)
         if r.get("note"):
             d.text((4, y + 52), r["note"], fill=(240, 160, 90), font=font)
-        hm = r["height"]
-        if hm is not None and hm.max() > 0:
-            g = (hm.astype(np.float32) / hm.max() * 200 + 55) * (hm > 0)
-            pim = Image.fromarray(g.astype(np.uint8)).convert("RGB")
-            f = min((plan_w - 6) / pim.width, cell / pim.height)
+        if r.get("nose"):
+            d.text((4, y + 68), "нос: " + r["nose"], fill=(150, 200, 150), font=font)
+        # слева план носом вверх, справа картинка ангара носом вверх: обязаны совпасть
+        for j, pm in enumerate((r.get("up"), r.get("hangar"))):
+            if pm is None or not pm.any():
+                continue
+            pim = Image.fromarray((pm * 200 + 30).astype(np.uint8)).convert("RGB")
+            f = min((plan_w / 2 - 4) / pim.width, cell / pim.height)
             pim = pim.resize((max(1, int(pim.width * f)), max(1, int(pim.height * f))), Image.NEAREST)
-            im.paste(pim, (lab_w, y))
+            im.paste(pim, (lab_w + j * plan_w // 2, y))
         mk = r.get("marker")
         if markers is not None and mk is not None and 0 <= mk * 7 < markers.width:
             fr = markers.crop((mk * 7, 0, mk * 7 + 7, 7)).resize((7 * K, 7 * K), Image.NEAREST)
@@ -327,6 +461,7 @@ def sheet(rows, markers, path):
             bg = cell_bg(cell, cell)
             o = render(r["mask"], L, -30, r["color"], shimmer=1.0)
             bg.alpha_composite(o, ((cell - o.width) // 2, (cell - o.height) // 2))
+            arrow(ImageDraw.Draw(bg), 14, cell - 14, -30)
             im.paste(bg.convert("RGB"), (lab_w + plan_w + 40 + z * cell, y))
         for j, z in enumerate((2, 5)):
             L = ZOOM_LEN[z] * K * r["factor"]
@@ -360,6 +495,7 @@ def main(argv=None):
     skip_p = os.path.join(OUT_DIR, "skip.json")
     skip = set(json.load(open(skip_p, encoding=ENC)).get("skip", [])) if os.path.exists(skip_p) else set()
 
+    sprites = basebits_map(os.path.join(mm.INSTALL, "user", "mods", "Piratez"))
     fly = flying_ufos(vals)
     rows, grounded = [], []
     for (sec, typ), f in sorted(vals.items(), key=lambda kv: (kv[0][0] != "crafts", kv[0][1])):
@@ -377,6 +513,14 @@ def main(argv=None):
              "color": (255, 120, 90) if sec == "ufos" else (120, 230, 255), "note": ""}
         if sec == "ufos" and r["marker"] is None:
             r["marker"] = 2
+        r["body"] = None
+        r["hangar"] = None
+        if sec == "crafts":
+            if not f.get("speedMax"):
+                r["note"] = "не летает"
+                rows.append(r)
+                continue
+            r["hangar"] = hangar_mask(f, sprites)
         if not isinstance(t, dict) or not t.get("mapBlocks"):
             r["note"] = "нет карты боя"
             rows.append(r)
@@ -401,27 +545,97 @@ def main(argv=None):
         r["tiles"] = tile_len(h)
         r["factor"] = size_factor(r["tiles"])
         r["part"], body = main_part(mask) if mask.any() else (0.0, mask)
-        m, ang = canonical(np.where(body, h, 0), float(orient.get(typ, 0)))
-        r["mask"] = m
-        if m is None:
+        if not body.any():
             r["note"] = "пустой план"
         elif r["part"] < 0.5:
             r["note"] = "россыпь (%.0f%%) - маркер" % (r["part"] * 100)
-            r["mask"] = None
-        elif typ in skip:
-            r["note"] = "skip.json - маркер"
-            r["mask"] = None
+        else:
+            r["body"] = body
         rows.append(r)
-        print("%-40s %-8s %5.1f кл. запол. %.2f %s" % (typ, r["kind"], r["tiles"], r["fill"], r["note"]))
+
+    # длина в клетках у кораблей без карты: по отношению длины плана к длине картинки ангара
+    ratio = [r["tiles"] / max(crop(r["hangar"]).shape) for r in rows
+             if r["body"] is not None and r["hangar"] is not None and r["hangar"].sum() >= 60]
+    per_px = float(np.median(ratio)) if ratio else 0.25
+    print("клеток на пиксель ангара: %.3f (по %d кораблям)" % (per_px, len(ratio)))
+
+    # НЛО - тот же аппарат, что корабль игрока (STR_VESSEL_POL_DROPSHIP и STR_DROPSHIP):
+    # нос по картинке ангара близнеца, если силуэт с ней уверенно совпадает
+    by_name = {r["type"].replace("STR_", ""): r for r in rows
+               if r["kind"] == "корабль" and r["hangar"] is not None}
+    twins = {}
+    for r in rows:
+        if r["kind"] != "НЛО":
+            continue
+        s = r["type"].replace("STR_VESSEL_", "")
+        for p in ("CC_", "CE_", "CI_", "NIN_", "POL_", "BANDIT_"):
+            if s.startswith(p):
+                s = s[len(p):]
+        if s in by_name:
+            twins[r["type"]] = (by_name[s]["type"], by_name[s]["hangar"])
+
+    hits = total = 0
+    for r in rows:
+        typ = r["type"]
+        up = None
+        if r["body"] is not None and r["hangar"] is not None:
+            up, iou, margin = nose_by_hangar(r["body"], r["hangar"])
+            r["nose"] = "ангар %.2f, запас %.2f" % (iou, margin)
+            if margin < 0.03 or iou < 0.45:
+                r["note"] = "нос неуверенно"
+            # проверка правила НЛО на корабле, где нос известен
+            guess, _ = nose_by_centroid(r["body"])
+            if margin >= 0.03 and iou >= 0.45:
+                total += 1
+                hits += fit_iou(guess, up) > fit_iou(guess, np.rot90(up, 2))
+        elif r["body"] is not None:
+            twin = twins.get(typ)
+            if twin is not None:
+                up, iou, margin = nose_by_hangar(r["body"], twin[1])
+                if iou >= 0.6 and margin >= 0.03:
+                    r["nose"] = "ангар %s %.2f, запас %.2f" % (twin[0].replace("STR_", ""), iou, margin)
+                else:
+                    twin = None
+            if twin is None:
+                up, skew = nose_by_centroid(r["body"])
+                r["nose"] = "широкое место %+.2f" % skew
+                if abs(skew) < 0.04:
+                    r["note"] = "нос неуверенно"
+        elif r["hangar"] is not None and r["note"] == "нет карты боя" and r["hangar"].sum() >= 60:
+            part, hb = main_part(np.pad(r["hangar"], 4))
+            if part >= 0.5:
+                up = crop(hb)
+                # картинки ангара нарисованы не в одном масштабе: истребитель в ней не меньше
+                # драккара, и длина по ней - только для таблицы; на глобусе - средний размер
+                r["tiles"] = max(up.shape) * per_px
+                r["factor"] = 1.0
+                r["nose"] = "силуэт ангара"
+                r["note"] = ""
+        if up is None:
+            continue
+        if typ in skip:
+            r["note"] = "skip.json - маркер"
+            continue
+        if typ in orient:
+            r["nose"] += ", orient.json %+d" % int(orient[typ])
+        r["up"] = up
+        r["mask"], _ = canonical(nose_up_to_right(up), float(orient.get(typ, 0)))
+        if r["mask"] is None:
+            r["note"] = "пустой план"
+    for r in rows:
+        print("%-40s %-8s %5.1f кл. запол. %.2f  %-26s %s" % (r["type"], r["kind"], r["tiles"], r["fill"],
+                                                          r.get("nose", ""), r["note"]))
+    if total:
+        print("правило носа НЛО на кораблях с ангаром: верно %d из %d" % (hits, total))
 
     with open(os.path.join(OUT_DIR, "outline.tsv"), "w", encoding=ENC, newline="") as f:
         w = csv.writer(f, delimiter="\t", lineterminator="\n")
-        w.writerow(["type", "kind", "size", "block", "tiles", "factor", "fill", "note"])
+        w.writerow(["type", "kind", "size", "block", "tiles", "factor", "fill", "nose", "note"])
         for r in rows:
             w.writerow([r["type"], r["kind"], r["size"], r["block"], "%.2f" % r["tiles"],
-                        "%.2f" % r["factor"], "%.2f" % r["fill"], r["note"]])
+                        "%.2f" % r["factor"], "%.2f" % r["fill"], r.get("nose", ""), r["note"]])
         for typ in grounded:
-            w.writerow([typ, "НЛО", "", "", "", "", "", "не летает - маркер"])
+            w.writerow([typ, "НЛО", "", "", "", "", "", "", "не летает - маркер"])
     if not a.no_write and not a.only:
         # обе копии мода hd (R-087): репозиторная и та, что в установке, - игра читает вторую
         for d in MOD_OUT:
@@ -439,6 +653,13 @@ def main(argv=None):
                             os.path.join(d, r["type"] + ".png"))
                         f.write("%s %.3f\n" % (r["type"], r["factor"]))
             print("маски:", d)
+    items = nose_sheet(rows, os.path.join(OUT_DIR, "nose_review.png"))
+    with open(os.path.join(OUT_DIR, "nose_review.tsv"), "w", encoding=ENC, newline="") as f:
+        w = csv.writer(f, delimiter="\t", lineterminator="\n")
+        w.writerow(["n", "type", "kind", "nose", "note"])
+        for n, r in enumerate(items):
+            w.writerow([n + 1, r["type"], r["kind"], r.get("nose", ""), r["note"]])
+    print("лист носа", os.path.join(OUT_DIR, "nose_review.png"), len(items))
     markers = marker_frames(world)
     for n in range(0, len(rows), a.rows):
         p = os.path.join(OUT_DIR, "sheet_%02d.png" % (n // a.rows + 1))

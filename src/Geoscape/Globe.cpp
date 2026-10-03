@@ -1812,7 +1812,8 @@ void Globe::drawMarkers()
 	{
 		if (ufo->getStatus() == Ufo::IGNORE_ME) continue;
 		if (_hdMarksKept && ufo->getHdDecoded() &&
-			keepHdMark(ufo, ufo->getRules()->getType(), HdOutline::raceColor(ufo->getAlienRace()), ufo->getStatus() == Ufo::CRASHED ? 0.75f : 1.0f, seen))
+			keepHdMark(ufo, ufo->getRules()->getType(), HdOutline::raceColor(ufo->getAlienRace()), ufo->getStatus() == Ufo::CRASHED ? 0.75f : 1.0f,
+				HdOutline::stateColor(ufo->getStatus() == Ufo::CRASHED, ufo->getStatus() == Ufo::LANDED), seen))
 		{
 			continue;
 		}
@@ -1824,7 +1825,7 @@ void Globe::drawMarkers()
 	{
 		for (auto* xcraft : *xbase->getCrafts())
 		{
-			if (_hdMarksKept && keepHdMark(xcraft, xcraft->getRules()->getType(), HdOutline::OWN_COLOR, 1.0f, seen))
+			if (_hdMarksKept && keepHdMark(xcraft, xcraft->getRules()->getType(), HdOutline::OWN_COLOR, 1.0f, HdOutline::NO_STATE, seen))
 			{
 				continue;
 			}
@@ -1849,7 +1850,7 @@ bool Globe::hdOutlines() const
  * The heading is the projection of a step towards its destination; one that stands keeps the last.
  * @return false when its type has no outline: the marker is drawn as before.
  */
-bool Globe::keepHdMark(MovingTarget *target, const std::string &type, Uint32 color, float strength, std::unordered_map<const Target*, HdHeading> &seen)
+bool Globe::keepHdMark(MovingTarget *target, const std::string &type, Uint32 color, float strength, Uint32 state, std::unordered_map<const Target*, HdHeading> &seen)
 {
 	if (!HdOutline::has(type))
 	{
@@ -1873,16 +1874,18 @@ bool Globe::keepHdMark(MovingTarget *target, const std::string &type, Uint32 col
 	const Target *dest = target->getDestination();
 	if (dest && target->getSpeed() > 0)
 	{
-		double dLon = dest->getLongitude() - lon;
-		while (dLon > M_PI) dLon -= 2 * M_PI;
-		while (dLon < -M_PI) dLon += 2 * M_PI;
-		const double dLat = dest->getLatitude() - lat;
+		// the step MovingTarget::calculateSpeed makes: along the great circle to the destination,
+		// not along the straight line in longitude and latitude, which leaves the base sideways
+		const double mLon = dest->getLongitude(), mLat = dest->getLatitude();
+		const double dLon = std::sin(mLon - lon) * std::cos(mLat);
+		const double dLat = std::cos(lat) * std::sin(mLat) - std::sin(lat) * std::cos(mLat) * std::cos(mLon - lon);
 		const double len = std::sqrt(dLon * dLon + dLat * dLat);
-		if (len > 1e-6)
+		const double stepLat = len > 1e-9 ? dLat / len * 0.001 : 0.0;
+		const double cosLat = std::cos(lat + stepLat);
+		if (len > 1e-9 && std::fabs(cosLat) > 1e-6)
 		{
-			const double step = 0.001 / len;
 			double x2, y2;
-			polarToCart(lon + dLon * step, lat + dLat * step, &x2, &y2);
+			polarToCart(lon + dLon / len * 0.001 / cosLat, lat + stepLat, &x2, &y2);
 			if (std::fabs(x2 - x) + std::fabs(y2 - y) > 1e-9)
 			{
 				heading.angle = (float)std::atan2(y2 - y, x2 - x);
@@ -1890,7 +1893,7 @@ bool Globe::keepHdMark(MovingTarget *target, const std::string &type, Uint32 col
 		}
 	}
 	seen[target] = heading;
-	_hdMarks.push_back(HdMark{ type, x, y, heading.angle, color, strength, heading.since });
+	_hdMarks.push_back(HdMark{ type, x, y, heading.angle, color, strength, heading.since, state });
 	return true;
 }
 
@@ -1918,7 +1921,10 @@ void Globe::drawHdMarks()
 		// each hull has its own beat, so that a fleet does not flash in step
 		const float phase = ((now + m.since * 7u) % 100000u) / 1000.0f * 2.4f;
 		const float reveal = std::min(1.0f, (now - m.since) / 900.0f);
-		HdOutline::draw(m.type, (float)((getX() + m.x) * k), (float)((getY() + m.y) * k), length * k * factor, m.angle, m.color, phase, reveal, m.strength);
+		const float cx = (float)((getX() + m.x) * k), cy = (float)((getY() + m.y) * k);
+		HdOutline::draw(m.type, cx, cy, length * k * factor, m.angle, m.color, phase, reveal, m.strength, m.state);
+		// the point the game moves and measures from: how close two craft are, where to hold off
+		HdOutline::beacon(cx, cy, 0.5f + 0.55f * k, reveal);
 	}
 	ui.clearClip();
 }
