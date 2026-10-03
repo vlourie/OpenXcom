@@ -78,12 +78,13 @@ NEGATIVE_EXTRA = ", hand, fingers, letters, logo, label text, perspective"
 # (мастер, тип, кадр, описание для модели) - по masters.md; M-06 нет до решения о стволах
 WHAT = [
     ("M-01", "STR_RIFLE_AK", 1168,
-     "an old worn Kalashnikov-pattern assault rifle standing vertically with the muzzle and front sight at the "
-     "top, blued steel rubbed to grey in places, a bright red-brown wooden handguard with lengthwise grooves under "
-     "the barrel, a curved banana magazine and a bright red-brown wooden pistol grip sticking out to the right in "
-     "the lower half, a METAL steel stock at the bottom with exactly the outline of <image1>; the full "
-     "width and height of <image1>, not slimmer; no wooden stock, no scope, no rails, no suppressor, no modern "
-     "plastic"),
+     "an old worn Kalashnikov-pattern assault rifle standing vertically with the muzzle at the top and the front "
+     "sight sticking out to the left near the muzzle, blued steel rubbed to grey in places, a bright red-brown "
+     "wooden handguard with crosswise grooves under the barrel, a curved banana magazine and a bright red-brown "
+     "wooden pistol grip sticking out to the right in the lower half; at the bottom a METAL skeleton stock: two "
+     "parallel thin steel struts with an open gap between them, ending in a wide flat steel butt plate at the very "
+     "bottom, exactly the outline of <image1>; the full width and height of <image1>, not slimmer; no wooden "
+     "stock, no solid stock, no scope, no rails, no suppressor, no modern plastic"),
     ("M-02", "STR_RIFLE_AK_CLIP", 1169,
      "a curved steel 30-round rifle magazine lying horizontally, dark blued metal with stiffening ribs; "
      "no loose cartridges, no bright plastic"),
