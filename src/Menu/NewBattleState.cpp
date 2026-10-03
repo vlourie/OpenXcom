@@ -58,6 +58,12 @@
 #include "../Mod/AlienRace.h"
 #include "../Mod/RuleGlobe.h"
 #include "../Mod/Texture.h"
+#ifdef OXCE_AI_DEV
+#include "../Mod/Armor.h"
+#include "../Mod/RuleSoldier.h"
+#include "../Mod/RuleEnviroEffects.h"
+#include "../Mod/RuleStartingCondition.h"
+#endif
 
 namespace OpenXcom
 {
@@ -599,6 +605,106 @@ void NewBattleState::initSave()
 	cbxMissionChange(0);
 }
 
+#ifdef OXCE_AI_DEV
+/**
+ * The AI test bench (OXCE_AI_LOADOUT_FIX=1): the squad comes from a campaign save as is, so a mission
+ * whose starting condition forbids a soldier's armor puts that soldier into the condition's fallback.
+ * Where the fallback cannot move (BOXX_ARMOR in Piratez: a box, +25 stun a turn) the soldier is out of
+ * the battle from the start - a player would have read the briefing and re-armed. Re-arms the way
+ * SoldierArmorState lets a player: researched, usable by the soldier, in the base stores or of infinite
+ * supply, not bigger, and allowed by the condition; the soldier's default armor first, else the first
+ * such armor of the mod's list. A movable fallback (nudity, a space suit) is the game's own rule and stays.
+ * Mirrors BattlescapeGenerator::run and deployXCOM: the condition and the enviro of the deployment, the
+ * enviro of the terrain if the deployment has none, an enviro transformation wins over a replacement.
+ */
+static void probeFixLoadout(Game *game, const std::string &deploymentType, const RuleTerrain *terrain, Base *base, const Craft *craft)
+{
+	const char *fix = getenv("OXCE_AI_LOADOUT_FIX");
+	if (!fix || *fix != '1' || !base)
+	{
+		return;
+	}
+	Mod *mod = game->getMod();
+	SavedGame *save = game->getSavedGame();
+	const AlienDeployment *deployment = mod->getDeployment(deploymentType, true);
+	const RuleStartingCondition *condition = mod->getStartingCondition(deployment->getStartingCondition());
+	if (!condition)
+	{
+		return;
+	}
+	const RuleEnviroEffects *enviro = mod->getEnviroEffects(deployment->getEnviroEffects());
+	if (!enviro && terrain)
+	{
+		enviro = mod->getEnviroEffects(terrain->getEnviroEffects());
+	}
+	// RuleStartingCondition::getArmorReplacement's own test, without its roll
+	auto allowed = [condition](const Armor *a)
+	{
+		const auto &forbidden = condition->getForbiddenArmors();
+		const auto &permitted = condition->getAllowedArmors();
+		if (!forbidden.empty())
+		{
+			return std::find(forbidden.begin(), forbidden.end(), a->getType()) == forbidden.end();
+		}
+		return permitted.empty() || std::find(permitted.begin(), permitted.end(), a->getType()) != permitted.end();
+	};
+	for (auto *s : *base->getSoldiers())
+	{
+		// the soldiers BattlescapeGenerator::deployXCOM takes
+		const bool goes = craft ? s->getCraft() == craft
+			: (s->hasFullHealth() || s->canDefendBase()) && (s->getCraft() == 0 || s->getCraft()->getStatus() != "STR_OUT");
+		Armor *prev = s->getArmor();
+		if (!goes || (enviro && enviro->getArmorTransformation(prev)) || allowed(prev))
+		{
+			continue;
+		}
+		// what the generator would put on: the roll is taken and given back, so the battle's stream is not touched here
+		const uint64_t keep = RNG::getSeed();
+		const std::string fallbackType = condition->getArmorReplacement(s->getRules()->getType(), prev->getType());
+		RNG::setSeed(keep);
+		const Armor *fallback = fallbackType.empty() ? nullptr : mod->getArmor(fallbackType);
+		if (!fallback || fallback->getSize() > prev->getSize() || fallback->allowsMoving())
+		{
+			continue;
+		}
+		auto usable = [&](const Armor *a)
+		{
+			return a && a->allowsMoving() && a->getSize() <= prev->getSize() && allowed(a)
+				&& (!a->getRequiredResearch() || save->isResearched(a->getRequiredResearch()))
+				&& a->getCanBeUsedBy(s)
+				&& (a->hasInfiniteSupply() || base->getStorageItems()->getItem(a->getStoreItem()) > 0 || a->getStoreItem() == prev->getStoreItem());
+		};
+		const Armor *next = usable(s->getRules()->getDefaultArmor()) ? s->getRules()->getDefaultArmor() : nullptr;
+		for (auto *a : mod->getArmorsForSoldiers())
+		{
+			if (!next && usable(a))
+			{
+				next = a;
+			}
+		}
+		if (!next)
+		{
+			Log(LOG_INFO) << "[AIPROBE] loadout INVALID_LOADOUT soldier=" << s->getId() << " armor=" << prev->getType() << " fallback=" << fallbackType << " condition=" << condition->getType();
+			continue;
+		}
+		// SoldierArmorState::lstArmorClick
+		if (save->getMonthsPassed() != -1)
+		{
+			if (prev->getStoreItem())
+			{
+				base->getStorageItems()->addItem(prev->getStoreItem());
+			}
+			if (next->getStoreItem())
+			{
+				base->getStorageItems()->removeItem(next->getStoreItem());
+			}
+		}
+		s->setArmor(mod->getArmor(next->getType()), true);
+		Log(LOG_INFO) << "[AIPROBE] loadout soldier=" << s->getId() << " " << prev->getType() << " -> " << next->getType() << " (fallback " << fallbackType << ", condition " << condition->getType() << ")";
+	}
+}
+#endif
+
 /**
  * The AI test bench (OXCE_AI_SEED): the same seed gives the same battle, soldiers included.
  * OXCE_AI_CAMPAIGN=<save in the user folder>: the squad is the biggest crew of that campaign,
@@ -908,6 +1014,16 @@ void NewBattleState::btnOkClick(Action *)
 	bgen.setAlienRace(_alienRaces[_cbxAlienRace->getSelected()]);
 	bgen.setAlienItemlevel(_slrAlienTech->getValue());
 	bgame->setDepth(_slrDepth->getValue());
+
+#ifdef OXCE_AI_DEV
+	{
+		// the deployment BattlescapeGenerator::run takes: the UFO's own for an assault (the mission type was changed above)
+		const std::string &picked = _missionTypes[_cbxMission->getSelected()];
+		const bool ufo = bgame->getMissionType() != picked && _game->getMod()->getUfo(picked);
+		probeFixLoadout(_game, ufo ? picked : bgame->getMissionType(), _game->getMod()->getTerrain(_terrainTypes[_cbxTerrain->getSelected()]),
+			base ? base : (_craft ? _craft->getBase() : nullptr), _craft);
+	}
+#endif
 
 	bgen.run();
 
