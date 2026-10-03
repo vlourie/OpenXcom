@@ -1,4 +1,5 @@
 #pragma once
+#include <functional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -130,6 +131,18 @@ void escapeProbe(const BattleUnit *unit, int kind);
 bool escapeReachFirst();
 /// A candidate dropped before its traces by the flag (counted always, [AIESCRF] in the battle's result).
 void escapeSkipped();
+/// ESCAPE_ALT_PROBE (OXCE_AI_ESCAPE_ALT_PROBE with the record, the careful bot only, docs/research/ai-path-audit-2026-10-01.md
+/// п. 17.29): was there a reachable tile that dominated the escape tile setupEscape chose? Reads only, no random numbers,
+/// no pathfinding, the side's memory of the enemies is copied, never updated. Off (the default): false.
+bool escapeAlt(const BattleUnit *unit);
+/// One [AIESCALT] line per escape setupEscape chose: the unit's tile, the chosen one and every tile of reachable whose cost
+/// (the think's own reach, the record's move list) is at most the chosen tile's plus OXCE_AI_ESCAPE_ALT_CAP (8) time units.
+/// Per tile: cost; spot - what setupEscape itself counted (spotting, the engine's getSpottingUnits; it sees every enemy, the
+/// oracle column); and from the side's knowledge only: enemies seen now with a line of fire, enemies remembered and not seen
+/// now with a line of fire from where they were seen, the threat after their move and how many can come within 3 tiles
+/// (threatOf's disc), the distance to the nearest remembered enemy; fire and danger on the tile.
+void escapeAltWrite(SavedBattleGame *save, BattleUnit *unit, const std::vector<int> &reachable, const Position &chosen, int score,
+	int escapeTUs, bool run, const std::function<int(const Position &)> &spotting);
 /// The FOV-on-step audit (OXCE_AI_WALKFOVPROF, docs/research/ai-path-audit-2026-10-01.md, п. 14): what the
 /// updateSoldierInfo call after every finished step of UnitWalkBState changes in the selected unit's sight, what of it the
 /// step's own calculateFOV keeps, and how long the call takes. Reads only, snapshots before and after; [AIWALKFOV] at the end
