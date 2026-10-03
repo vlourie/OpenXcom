@@ -354,6 +354,37 @@ int Map::hdScale(Game *game)
 }
 
 /**
+ * Speed of the fire or smoke animation at a step of its pace option.
+ * @param pace Step of oxceHdFirePace / oxceHdSmokePace, clamped to 0..HD_ENVI_PACES - 1.
+ * @return Percent of the stock speed: 0 stock, every next step slower.
+ */
+int Map::hdEnviPercent(int pace)
+{
+	static const int Percent[HD_ENVI_PACES] = { 100, 75, 50, 35, 25 };
+	return Percent[Clamp(pace, 0, HD_ENVI_PACES - 1)];
+}
+
+/**
+ * The clock a burning or smoking tile animates by in the HD modes. Every tile starts at its
+ * own point of the loop and runs at its own pace (85..115 percent of the option's speed), so
+ * neighbouring fires and clouds drift apart and never move in step. The tile's share comes
+ * from a hash of its position, not from RNG: the picture only, the rolls of the game stay the same.
+ * @param animFrame The battle animation frame (SavedBattleGame::getAnimFrame, 100 ms ticks).
+ * @param pos Position of the tile.
+ * @param pace Step of the pace option (hdEnviPercent).
+ * @return Ticks: the frame of a 4-frame loop is clock / 2 % 4, its in-between picture clock % 2.
+ */
+int Map::hdEnviClock(int animFrame, Position pos, int pace)
+{
+	Uint32 h = (Uint32)pos.x * 73856093u ^ (Uint32)pos.y * 19349663u ^ (Uint32)pos.z * 83492791u;
+	h ^= h >> 13;
+	h *= 0x5bd1e995u;
+	h ^= h >> 15;
+	const Sint64 rate = (Sint64)hdEnviPercent(pace) * (85 + (int)(h % 31));   // percent of percent
+	return (int)((Sint64)animFrame * rate / 10000) + (int)((h >> 8) % 64);
+}
+
+/**
  * Deletes the map.
  */
 Map::~Map()
@@ -1873,23 +1904,30 @@ void Map::drawTerrain(HdCanvas *surface)
 							shade = tileShade;
 						}
 
-						if (halfAnimFrame + tile->getAnimationOffset() > 3)
+						// HD render: every tile animates by its own clock and at the pace of the options
+						// (hdEnviClock); the classic frame of mode 0 stays the stock one
+						const bool hdEnvi = surface->getHdMode() != HD_MODE_NEAREST;
+						const int enviClock = hdEnvi ? hdEnviClock(_animFrame, tile->getPosition(),
+							tile->getFire() ? Options::oxceHdFirePace : Options::oxceHdSmokePace) : 0;
+						const int enviHalf = hdEnvi ? (enviClock / 2) % 4 : halfAnimFrame;
+						const int enviRest = hdEnvi ? enviClock % 2 : halfAnimFrameRest;
+						if (enviHalf + tile->getAnimationOffset() > 3)
 						{
-							frameNumber += halfAnimFrame + tile->getAnimationOffset() - 4;
+							frameNumber += enviHalf + tile->getAnimationOffset() - 4;
 						}
 						else
 						{
-							frameNumber += halfAnimFrame + tile->getAnimationOffset();
+							frameNumber += enviHalf + tile->getAnimationOffset();
 						}
 						tmpSurface = _game->getMod()->getHdSurfaceSet("SMOKE.PCK")->getFrame(frameNumber);
-						if (surface->getHdMode() != HD_MODE_NEAREST)
+						if (hdEnvi)
 						{
 							// HD render: the fire burns on the tile's surface (a raised object, a bank), as the
 							// items lying there are drawn, not sunk into it; on the odd animation tick the
 							// pack's in-between picture of the frame (variant 1), if it has one, doubles the
 							// fire's frame rate; a fire style of oxceHdFire takes the pack's variants 2s and 2s + 1
 							// instead (a pack without them keeps its own fire)
-							const int variant = tile->getFire() ? (halfAnimFrameRest ? 1 : 0) + 2 * Options::oxceHdFire : 0;
+							const int variant = tile->getFire() ? (enviRest ? 1 : 0) + 2 * Options::oxceHdFire : 0;
 							if (variant)
 								surface->setFrameVariant(variant);
 							surface->blit(tmpSurface, screenPosition.x, screenPosition.y + (tile->getFire() ? tile->getTerrainLevel() * _k : 0), shade, false, _nvColor);

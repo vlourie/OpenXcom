@@ -840,6 +840,10 @@ en-US:
   STR_HD_FIRE_1: "Volumetric"
   STR_HD_FIRE_2: "Volumetric, rising"
   STR_HD_FIRE_3: "Steady, rising"
+  STR_HD_FIRE_PACE: "Fire speed"
+  STR_HD_FIRE_PACE_DESC: "How fast the fire on tiles animates in the HD sprite modes, percent of the original speed: lower = every picture stays longer. Every tile burns at its own pace and from its own point of the loop, so neighbouring tiles do not flicker in step. Picture only, the fire itself stays the same. Takes effect at once, in battle too."
+  STR_HD_SMOKE_PACE: "Smoke speed"
+  STR_HD_SMOKE_PACE_DESC: "How fast the smoke on tiles swirls in the HD sprite modes, percent of the original speed: lower = every picture stays longer. Every tile smokes at its own pace and from its own point of the loop, so a cloud does not move in step. Picture only, the smoke itself stays the same. Takes effect at once, in battle too."
 #reticle (moved from the hd mod, docs/portal/HD_SUBMODS.md step 2)
   STR_HD_RETICLE: "HD reticle"
   STR_HD_RETICLE_DESC: "The aiming reticle in battle. From the pack = the HD pack's own picture; Stock = the original game's reticle, only scaled up; Ring 45 = a ring with marks on the diagonals and an empty centre; Plasma, Techno, Predator = other drawn styles; the thin ones = the same styles in thin lines; Lasers, Laser cross, Lock-on, Closing rings, Sniper, Chevrons, Dashed, Trefoil, Dot = light thin reticles; Ghost = almost transparent, only the running spark shows. Takes effect at once, in battle too."

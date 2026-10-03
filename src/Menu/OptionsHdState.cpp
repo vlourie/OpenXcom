@@ -30,6 +30,7 @@
 #include "../Interface/TextButton.h"
 #include "../Interface/TextList.h"
 #include "../Interface/Window.h"
+#include "../Battlescape/Map.h"
 #include "../Mod/Mod.h"
 #include "../Mod/RuleInterface.h"
 #include "AdultChoiceState.h"
@@ -237,6 +238,11 @@ std::string OptionsHdState::valueText(const OptionInfo &info) const
 	{
 		return tr("STR_HD_FIRE_" + std::to_string(Options::oxceHdFire));
 	}
+	// the pace of fire and smoke as the speed it gives, percent of the stock one
+	if (info.asInt() == &Options::oxceHdFirePace || info.asInt() == &Options::oxceHdSmokePace)
+	{
+		return std::to_string(Map::hdEnviPercent(*info.asInt())) + "%";
+	}
 	if (info.asInt() == &Options::oxceHdEnemyNumber)
 	{
 		return tr("STR_HD_ENEMY_NUMBER_" + std::to_string(Options::oxceHdEnemyNumber));
@@ -415,6 +421,11 @@ void OptionsHdState::changeSetting(size_t sel, Uint8 button)
 		{
 			min = 0;                                  // 0 = the pack's own fire
 			max = 3;
+		}
+		else if (i == &Options::oxceHdFirePace || i == &Options::oxceHdSmokePace)
+		{
+			min = 0;                                  // 0 = the stock speed, higher = slower
+			max = Map::HD_ENVI_PACES - 1;
 		}
 		else if (i == &Options::oxceHdEnemyNumber)
 		{
