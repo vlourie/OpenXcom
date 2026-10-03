@@ -300,6 +300,12 @@ public:
 	int getFadeShade() const { return _fadeShade; }
 	/// HD render scale factor read from BLANKS.PCK (1 = original 32x40 tiles).
 	static int hdScale(Game *game);
+	/// Steps of oxceHdFirePace and oxceHdSmokePace.
+	static const int HD_ENVI_PACES = 5;
+	/// Speed of the fire or smoke animation at a step of its pace option, percent of the stock one.
+	static int hdEnviPercent(int pace);
+	/// The animation clock of a burning or smoking tile in the HD modes, in timer ticks (picture only).
+	static int hdEnviClock(int animFrame, Position pos, int pace);
 	/// Gets the HD render scale k of this map.
 	int getScale() const { return _k; }
 	/// Gets the name of the canvas type the map draws on (HD render test dumps).
