@@ -82,6 +82,20 @@ struct Placed
 /// Never destroyed: ~Surface asks it, and some surfaces outlive the static objects of this file.
 std::map<const Surface*, std::vector<Placed>> &attached = *new std::map<const Surface*, std::vector<Placed>>();
 
+/// A watched surface: the HD state its sprite was drawn for and how its owner draws it again.
+struct Watched
+{
+	int state;
+	std::function<void()> redraw;
+};
+std::map<const Surface*, Watched> &watched = *new std::map<const Surface*, Watched>();
+
+/// What an item sprite is drawn for: 0 classic, else the HD pictures' k.
+int hdState()
+{
+	return enabled() ? HdUi::scale() : 0;
+}
+
 std::string lower(const std::string &s)
 {
 	std::string out = s;
@@ -283,10 +297,12 @@ bool pick(const RuleItem *rule, const BattleItem *item, const SavedBattleGame *s
 		return false;
 	}
 	const int w = rule->getInventoryWidth(), h = rule->getInventoryHeight();
-	// the item's cells, the hand frame's lines left out (docs/research/inventory-items-hd.md §5.3)
+	// the item's cells, the grid's lines left out (docs/research/inventory-items-hd.md §5.3)
 	const int xMax = RuleInventory::SLOT_W * w - (w == 2 ? 1 : 0);
 	const int yMax = RuleInventory::SLOT_H * h - (h == 3 ? 1 : 0);
 	const int handW = RuleInventory::HAND_W * RuleInventory::SLOT_W, handH = RuleInventory::HAND_H * RuleInventory::SLOT_H;
+	const bool fitsHand = w <= RuleInventory::HAND_W && h <= RuleInventory::HAND_H;
+	const int offX = rule->getHandSpriteOffX(), offY = rule->getHandSpriteOffY();
 	const Key key(type, frame, w, h, (int)context, k);
 	// step 2: the version for the context
 	if (context == GRID)
@@ -306,16 +322,27 @@ bool pick(const RuleItem *rule, const BattleItem *item, const SavedBattleGame *s
 	else if (!asset.hand.empty())
 	{
 		out.frame = get(key, asset.hand, handW * k, handH * k);
-		setClip(out, 1, 1, handW - 1, handH - 1);
+		if (fitsHand)
+		{
+			// the item's cells after the usual hand offset, inside the frame's lines (§5.4): a small item
+			// does not get the whole frame
+			setClip(out, std::max(1, offX), std::max(1, offY),
+				std::min(handW - 1, offX + RuleInventory::SLOT_W * w), std::min(handH - 1, offY + RuleInventory::SLOT_H * h));
+		}
+		else
+		{
+			// 3x2, 3x3: bigger than the frame, all of it inside the lines
+			setClip(out, 1, 1, handW - 1, handH - 1);
+		}
 	}
-	else if (w <= RuleInventory::HAND_W && h <= RuleInventory::HAND_H)
+	else if (fitsHand)
 	{
-		// the grid picture with the usual hand offset: its cells, inside the hand frame's lines
+		// the grid picture with the usual hand offset: its cells' rectangle, inside the hand frame's lines
 		out.frame = get(key, asset.path, classic->getWidth() * k, classic->getHeight() * k);
-		out.dx = rule->getHandSpriteOffX();
-		out.dy = rule->getHandSpriteOffY();
-		setClip(out, std::max(1, out.dx + 1), std::max(1, out.dy + 1),
-			std::min(handW - 1, out.dx + xMax), std::min(handH - 1, out.dy + yMax));
+		out.dx = offX;
+		out.dy = offY;
+		setClip(out, std::max(1, offX + 1), std::max(1, offY + 1),
+			std::min(handW - 1, offX + xMax), std::min(handH - 1, offY + yMax));
 	}
 	else
 	{
@@ -367,6 +394,44 @@ void detach(const Surface *surface)
 	}
 }
 
+void watch(const Surface *surface, std::function<void()> redraw)
+{
+	watched[surface] = Watched{ hdState(), std::move(redraw) };
+}
+
+void refresh(const Surface *surface)
+{
+	if (watched.empty())
+	{
+		return;
+	}
+	auto got = watched.find(surface);
+	if (got == watched.end())
+	{
+		return;
+	}
+	const int now = hdState();
+	if (got->second.state != now)
+	{
+		got->second.state = now;
+		// a copy: the owner may watch the surface again while it draws
+		std::function<void()> redraw = got->second.redraw;
+		if (redraw)
+		{
+			redraw();
+		}
+	}
+}
+
+void forget(const Surface *surface)
+{
+	detach(surface);
+	if (!watched.empty())
+	{
+		watched.erase(surface);
+	}
+}
+
 void drawAttached(const Surface *surface)
 {
 	if (attached.empty())
@@ -405,9 +470,24 @@ bool attachHand(const RuleItem *rule, const BattleItem *item, const SavedBattleG
 	return true;
 }
 
+void drawRuleHand(const RuleItem *rule, const SurfaceSet *set, Surface *surface)
+{
+	auto draw = [rule, set, surface]()
+	{
+		surface->clear();
+		if (!attachHand(rule, nullptr, nullptr, 0, set, surface))
+		{
+			rule->drawHandSprite(set, surface);
+		}
+	};
+	draw();
+	watch(surface, draw);
+}
+
 void clear()
 {
 	attached.clear();
+	watched.clear();
 	assets.clear();
 	scanned = false;
 	ready.clear();

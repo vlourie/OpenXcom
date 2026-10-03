@@ -286,7 +286,7 @@ Surface::Surface(const Surface& other) : Surface{ }
  */
 Surface::~Surface()
 {
-	HdItems::detach(this);
+	HdItems::forget(this);
 }
 
 /**
@@ -705,6 +705,8 @@ void Surface::blit(SDL_Surface *surface)
 {
 	if (_visible && !_hidden)
 	{
+		// an item sprite drawn for another HD state (switched on or off, another k): its owner draws it again
+		HdItems::refresh(this);
 		if (_redraw)
 			draw();
 

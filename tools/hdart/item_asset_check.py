@@ -5,10 +5,12 @@
 
 Файлы папки hd/BIGOBS.PCK:
   <кадр>.<ТИП>.png       - сетка: допуск [1, 16w - (w==2)) x [1, 16h - (h==3)) базы
-  <кадр>.<ТИП>.hand.png  - рамка руки 32x48: допуск [1, 31) x [1, 47)
+  <кадр>.<ТИП>.hand.png  - рамка руки 32x48: допуск - клетки предмета после штатного сдвига руки
+                           ((2-w)*8, (3-h)*8) внутри линий рамки [1, 31) x [1, 47); всю рамку получают
+                           только 3x2 и 3x3 - они больше рамки
   <кадр>.png, <кадр>.hand.png - общий файл кадра: проверяется против КАЖДОГО предмета этого кадра
-Без .hand предмет до 2x3 показывается в руке своей картинкой со штатным сдвигом ((2-w)*8, (3-h)*8): его
-клетки после сдвига лежат внутри рамки, поэтому чистая сетка - чистая и в руке; у 3x2 и 3x3 в руке классика.
+Без .hand предмет до 2x3 показывается в руке своей картинкой со штатным сдвигом: допуск тот же, поэтому
+чистая сетка - чистая и в руке; у 3x2 и 3x3 без .hand в руке классика.
 Масштаб: картинка ровно в k раз больше классического кадра (сетка - размер кадра из переписи, рука - 32x48).
 
   py -3.13 tools/hdart/item_asset_check.py <папка hd/BIGOBS.PCK> [--items census/items/items.tsv]
@@ -34,6 +36,14 @@ def read_tsv(path):
 
 def grid_rect(w, h):
     return 1, 1, 16 * w - (1 if w == 2 else 0), 16 * h - (1 if h == 3 else 0)
+
+
+def hand_rect(w, h):
+    """Допуск .hand, как HdItems::pick (ТЗ §5.4): клетки после сдвига руки внутри линий рамки; 3x2 и 3x3 - вся рамка."""
+    if w > 2 or h > 3:
+        return 1, 1, HAND_W - 1, HAND_H - 1
+    dx, dy = (2 - w) * 8, (3 - h) * 8
+    return max(1, dx), max(1, dy), min(HAND_W - 1, dx + 16 * w), min(HAND_H - 1, dy + 16 * h)
 
 
 def outside(alpha, rect, k):
@@ -65,7 +75,7 @@ def check_file(path, users, frame_size):
         if not scale_ok:
             row.update(outside="-", verdict="FAIL", note=f"{iw}x{ih} не кратно кадру {bw}x{bh}")
         else:
-            rect = (1, 1, HAND_W - 1, HAND_H - 1) if hand else grid_rect(w, h)
+            rect = hand_rect(w, h) if hand else grid_rect(w, h)
             n = outside(alpha, rect, k)
             note = ""
             if not hand:
