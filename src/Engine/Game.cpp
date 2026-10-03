@@ -17,6 +17,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "Game.h"
+#include <chrono>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -166,7 +167,8 @@ void Game::run()
 	// the AI probe (OXCE_AI_PROBE, Battlescape/AiProbe.cpp): virtual clock, never paused, no frame cap,
 	// a frame drawn only every 16th loop - nobody watches, and the clock no longer waits for frames;
 	// in the fast mode (OXCE_AI_FAST) no frame at all
-	Timer::probeClock = AiProbe::active();
+	// OXCE_AI_REALTIME=1: the probe's bot plays on the real clock with the player's frame pacing (frame-time measurements)
+	Timer::probeClock = AiProbe::active() && !getenv("OXCE_AI_REALTIME");
 	const bool probeNoDraw = AiProbe::fast();
 	Uint32 probeLoops = 0;
 
@@ -177,6 +179,10 @@ void Game::run()
 		const Uint32 hdFrameStart = SDL_GetTicks();
 		// ... and which part of it took the time: HD UI alone does not account for every freeze
 		Uint32 hdInitMs = 0, hdThinkMs = 0, hdBlitMs = 0, hdFlipMs = 0, hdFreeMs = 0, hdEventMs = 0;
+		// OXCE_HD_FRAMELOG=<file>: one line per drawn frame in microseconds, for p50/p95/p99 (docs/HD_UNITS.md, 9)
+		const auto hdLoopStart = std::chrono::steady_clock::now();
+		std::chrono::steady_clock::time_point hdLogThink0, hdLogThink1, hdLogDraw0, hdLogDraw1, hdLogFlip1;
+		bool hdDrew = false, hdDumped = false;
 		// Clean up states
 		const Uint32 hdFreeStart = SDL_GetTicks();
 		while (!_deleted.empty())
@@ -392,7 +398,9 @@ void Game::run()
 		{
 			// Process logic
 			const Uint32 hdThinkStart = SDL_GetTicks();
+			hdLogThink0 = std::chrono::steady_clock::now();
 			_states.back()->think();
+			hdLogThink1 = std::chrono::steady_clock::now();
 			hdThinkMs = SDL_GetTicks() - hdThinkStart;
 			_fpsCounter->think();
 			if (Options::FPS > 0 && !(Options::useOpenGL && Options::vSyncForOpenGL))
@@ -415,6 +423,8 @@ void Game::run()
 			{
 				// make a note of when this frame update occurred.
 				_timeOfLastFrame = SDL_GetTicks();
+				hdDrew = true;
+				hdLogDraw0 = std::chrono::steady_clock::now();
 				_fpsCounter->addFrame();
 				_screen->clear();
 				std::list<State*>::iterator i = _states.end();
@@ -603,11 +613,14 @@ void Game::run()
 				{
 					// deterministic frame capture: game content only, no FPS counter, no cursor
 					_screen->writeHdTestDump();
+					hdDumped = true;
 				}
 				_fpsCounter->blit(_screen->getSurface());
 				_cursor->blit(_screen->getSurface());
 				const Uint32 hdFlipStart = SDL_GetTicks();
+				hdLogDraw1 = std::chrono::steady_clock::now();
 				_screen->flip();
+				hdLogFlip1 = std::chrono::steady_clock::now();
 				hdFlipMs = SDL_GetTicks() - hdFlipStart;
 			}
 		}
@@ -624,6 +637,38 @@ void Game::run()
 			unsigned packFrames = 0;
 			double packMs = 0;
 			HdSprites::takeLoadStats(packFrames, packMs);
+			if (hdDrew)
+			{
+				static FILE *hdFrameLog = nullptr;
+				static bool hdFrameLogTried = false;
+				static unsigned hdFrameLogLines = 0;
+				static std::chrono::steady_clock::time_point hdFrameLogZero;
+				if (!hdFrameLogTried)
+				{
+					hdFrameLogTried = true;
+					const char *path = getenv("OXCE_HD_FRAMELOG");
+					if (path && *path && (hdFrameLog = fopen(path, "w")) != nullptr)
+					{
+						hdFrameLogZero = hdLoopStart;
+						fprintf(hdFrameLog, "t_ms\tloop_us\tthink_us\tdraw_us\tflip_us\tpack_fr\tpack_ms\tui_ms\tdump\tstate\n");
+					}
+				}
+				if (hdFrameLog)
+				{
+					auto us = [](std::chrono::steady_clock::time_point a, std::chrono::steady_clock::time_point b)
+					{
+						return (long long)std::chrono::duration_cast<std::chrono::microseconds>(b - a).count();
+					};
+					fprintf(hdFrameLog, "%lld\t%lld\t%lld\t%lld\t%lld\t%u\t%.2f\t%.2f\t%d\t%s\n",
+						us(hdFrameLogZero, hdLoopStart) / 1000, us(hdLoopStart, hdLogFlip1), us(hdLogThink0, hdLogThink1),
+						us(hdLogDraw0, hdLogDraw1), us(hdLogDraw1, hdLogFlip1), packFrames, packMs,
+						HdUi::instance().lastFrameMs(), hdDumped ? 1 : 0, state);
+					if (++hdFrameLogLines % 60 == 0)
+					{
+						fflush(hdFrameLog);
+					}
+				}
+			}
 			if (spent >= 100)
 			{
 				++hdStalls;
