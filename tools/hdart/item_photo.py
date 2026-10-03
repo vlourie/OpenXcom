@@ -35,6 +35,7 @@ M-06 не утверждён (стволы) - в пилот не идёт. M-19 
 import argparse
 import hashlib
 import json
+import math
 import os
 import sys
 import time
@@ -127,9 +128,46 @@ REF_NEGATIVE_V6 = (REF_NEGATIVE + ", red plastic, glossy plastic grip, uniform l
 CTRL_AK = ((4, 0), (0, 1.5), (18, 18), (19, 23), (15, 36), (2, 46), (10, 45))
 PART_WOOD = (128, 62, 38)       # карта частей: тёплый красно-коричневый, не цвет пиксельного оригинала
 PART_STEEL = (54, 56, 60)
-PART_LINE = (22, 22, 22)
-PART_DOT = (255, 214, 0)
-REFS = {"M-01": ("art/items/refs/M-01.png", REF_AK_V6, CTRL_AK)}    # art/items/refs/README.txt - откуда каждое фото
+# v7 (рецензия 03.10 к v6: размеры не те, жёлтые точки перенесены в ответ - R-204): части фото-эталона
+# переставлены на места частей оригинала заранее (ref_parts_input), каждая - одним масштабом по обеим осям и
+# поворотом; меток во входах модели нет, контрольные точки - только на проверочном листе (ref_check_sheet)
+REF_AK_V7 = ("<image3> is a studio photograph of the real object whose parts are already arranged in their final "
+             "places: it is the main source for the construction and the material quality. Keep the position, the "
+             "size and the angle of the front sight, the magazine, the pistol grip, the two stock struts and the "
+             "butt plate exactly as they are in <image3>; do not move, shorten, lengthen or straighten any part. "
+             "Take from <image3> the volume, the joints, the wood grain, the metal finish, the sharpness and the "
+             "reflections, and join the parts cleanly where they meet. <image1> gives the outline and the view. "
+             "<image2> is a part map of the same object: the red-brown zones are wood, the dark grey zones are "
+             "steel. The handguard keeps the wood grain and the grooves of <image3>. The pistol grip is real "
+             "wood, a warm red-brown, lighter than walnut and not bright red, with clearly visible lengthwise "
+             "wood grain and a moderate satin lacquer sheen with one soft highlight; it must not look like "
+             "plastic. The steel: the main flat surfaces are dark gunmetal, the edges and corners are worn bright, "
+             "rounded parts carry small local reflections; no uniform light grey metal. The two struts and the "
+             "butt plate of the skeleton stock keep exactly the thickness they have in <image3>, and read clearly "
+             "through light and shade: a bright worn highlight along one edge, a deep shadow along the other, "
+             "crisp edges; the gap between the struts is fully open, the panel shows through it. "
+             "Do not copy the pixel steps of any picture. No overall darkening, no blur, no cropped parts.")
+# части M-01 (фото art/items/refs/M-01.png, пиксели фото; места - пиксели k=1 от угла габарита оригинала, по
+# дампу маски BIGOBS 1168): keep - прямоугольник части на фото (тело - без магазина и рукояти); тело - масштаб
+# по высоте дуло..хвост коробки (span: фото y0, y1 -> ряд), мушка - по ширине дуло..левое ухо (x_to), затыльник -
+# по двум углам; магазин и рукоять - подбор масштаба и угла по силуэту оригинала в зоне (fit_part), корень не
+# правее cap_x (стык с коробкой); стойки - от хвоста коробки до затыльника, середина вырезана (rod_part)
+AK_PARTS = {
+    "body": {"keep": (0, 100, 9999, 1333), "P": (262.5, 10), "Q": (4, 0), "span": (10, 1330, 35)},
+    "front": {"keep": (0, 0, 9999, 106), "P": (262.5, 10), "Q": (4, 0), "x_to": (140, 0)},
+    "magazine": {"keep": (355, 600, 9999, 983), "P": (355, 905), "zone": (8.5, -99, 99, 28), "cap_x": 6.2,
+                 "cap_r": 19.0,     # правый край - не дальше габарита оригинала (допуск размера)
+                 "pts": (((664, 677), CTRL_AK[2]), ((773, 762), CTRL_AK[3]))},    # кончик и угол торца
+    "grip": {"keep": (353, 1128, 9999, 1345), "P": (353, 1200), "zone": (8, 30, 99, 38), "cap_x": 6.2,
+             "pts": (((580, 1322), CTRL_AK[4]),)},                                 # нижний угол торца рукояти
+    "w_pts": 0.05,                  # цена пикселя базы между точкой части и контрольной точкой - в долях IoU
+    "butt": {"keep": (0, 1706, 9999, 9999), "P": (193, 1768), "Q": (2, 46), "P2": (416, 1768), "Q2": (10, 45)},
+    "struts": (((0, 1328, 290, 1706), (248.5, 1330), (242, 1706), 4.0),     # левая: ось фото, низ - x оригинала
+               ((266, 1328, 9999, 1706), (333, 1335), (366, 1706), 7.0)),
+    "fit_scale": (0.85, 1.6, 0.03), "fit_rot": (-24, 24, 2),        # от масштаба тела; градусы
+    "stock_light": 1.3,             # светотень стоек и затыльника: отклонение от средней яркости части x1.3
+}
+REFS = {"M-01": ("art/items/refs/M-01.png", REF_AK_V7, CTRL_AK, AK_PARTS)}  # art/items/refs/README.txt - откуда фото
 
 # (мастер, тип, кадр, описание для модели) - по masters.md; M-06 нет до решения о стволах
 WHAT = [
@@ -215,7 +253,8 @@ WHAT = [
 CODE = (
     ("item_photo.py", ("ITEM", "NEGATIVE_EXTRA", "WHAT", "item_prompt", "load_frame", "REF_AK", "REF_NEGATIVE",
                        "REFS", "ref_input", "item_inputs", "REF_AK_V6", "REF_NEGATIVE_V6", "CTRL_AK",
-                       "PART_WOOD", "PART_STEEL", "PART_LINE", "PART_DOT", "part_map")),
+                       "PART_WOOD", "PART_STEEL", "part_map", "REF_AK_V7", "AK_PARTS", "part_affine", "place_part",
+                       "keep_part", "fit_part", "rod_part", "ref_parts_input")),
     ("struct_guide.py", ("GUIDE_V1", "coverage", "smooth_loop", "loops")),
     ("photo_render.py", ("RENDER_V1", "PANEL_TEXT", "flat_input", "detect_panel")),
     ("struct_probe.py", ("C_TEXT", "run_multi", "inputs")),
@@ -270,27 +309,248 @@ def ref_input(path, frame, rgb, zoom):
                                  "stretch_pct": round(100 * (sx / sy - 1), 1)}
 
 
+def part_affine(P, Q, s, th, res, ob):
+    """Обратное отображение PIL AFFINE: холст кропа (res пикселей на пиксель базы) -> фото. Вперёд: точка фото P
+    -> Q (пиксели k=1 от угла габарита ob), масштаб s (база на пиксель фото) по обеим осям, поворот th градусов
+    по часовой на экране: out = Q + R(th) (in - P) s, R(th) = [[c, -s], [s, c]]."""
+    c, sn = math.cos(math.radians(th)), math.sin(math.radians(th))
+    qx, qy, k = (ob[0] + Q[0]) * res, (ob[1] + Q[1]) * res, 1.0 / (s * res)
+    a, b, d, e = c * k, sn * k, -sn * k, c * k
+    return (a, b, P[0] - a * qx - b * qy, d, e, P[1] - d * qx - e * qy)
+
+
+def part_point(p, P, Q, s, th):
+    """Точка фото p -> место (пиксели k=1 от угла габарита) тем же преобразованием, что part_affine."""
+    c, sn = math.cos(math.radians(th)), math.sin(math.radians(th))
+    dx, dy = (p[0] - P[0]) * s, (p[1] - P[1]) * s
+    return Q[0] + c * dx - sn * dy, Q[1] + sn * dx + c * dy
+
+
+def place_part(img, P, Q, s, th, res, ob, size):
+    """Часть фото (RGBA) на прозрачный холст size: умноженная альфа, чтобы край не тянул цвет фона фото."""
+    out = img.convert("RGBa").transform(size, Image.AFFINE, part_affine(P, Q, s, th, res, ob), resample=Image.BICUBIC)
+    return out.convert("RGBA")
+
+
+def keep_part(pa, keep, minus=(), sel=None):
+    """Фото с альфой только в прямоугольнике keep (x0, y0, x1, y1) без прямоугольников minus и вне маски sel."""
+    h, w = pa.shape[:2]
+    ys, xs = np.mgrid[0:h, 0:w]
+    inside = lambda r: (xs >= r[0]) & (ys >= r[1]) & (xs < r[2]) & (ys < r[3])
+    m = inside(keep)
+    for r in minus:
+        m &= ~inside(r)
+    if sel is not None:
+        m &= sel
+    a = pa.copy()
+    a[..., 3] = np.where(m, a[..., 3], 0)
+    return Image.fromarray(a, "RGBA")
+
+
+def fit_part(img, P, om, ob, zone, cap_x, scales, rots, res=4, cap_r=None, pts=(), w_pts=0.0):
+    """Подбор места части по силуэту оригинала: для каждой пары (масштаб, угол) сдвиг - по взаимной корреляции
+    (FFT) маски части с маской оригинала в зоне (x0, y0, x1, y1 от угла габарита); мера - IoU внутри зоны минус
+    w_pts x среднее расстояние (пиксели базы) точек части pts ((точка фото, контрольная точка), ...) до своих
+    мест; левый край части не правее cap_x (корень у коробки, а не в воздухе), правый - не правее cap_r.
+    -> (мера, s, th, Q точки P, iou, расстояния точек)."""
+    H, W = om.shape[0] * res, om.shape[1] * res
+    ys, xs = np.mgrid[0:H, 0:W]
+    bx, by = xs / res - ob[0], ys / res - ob[1]
+    zm = (bx >= zone[0]) & (by >= zone[1]) & (bx < zone[2]) & (by < zone[3])
+    T = (np.repeat(np.repeat(om, res, 0), res, 1) & zm).astype(float)
+    S = (3 * H, 3 * W)
+    FT, FZ = np.fft.rfft2(T, s=S), np.fft.rfft2(zm.astype(float), s=S)
+    c0 = (S[1] // 2, S[0] // 2)
+    q0 = (c0[0] / res - ob[0], c0[1] / res - ob[1])
+    dy = np.arange(S[0]); dy = np.where(dy > S[0] // 2, dy - S[0], dy)
+    dx = np.arange(S[1]); dx = np.where(dx > S[1] // 2, dx - S[1], dx)
+    best = None
+    for s in scales:
+        for th in rots:
+            A = np.asarray(place_part(img, P, q0, s, th, res, ob, (S[1], S[0])))[..., 3] > 127
+            if not A.any():
+                continue
+            FA = np.fft.rfft2(A.astype(float))
+            I = np.fft.irfft2(np.conj(FA) * FT, s=S)        # I[d] = сумма A[x] T[x + d]
+            AZ = np.fft.irfft2(np.conj(FA) * FZ, s=S)
+            iou = I / np.maximum(AZ + T.sum() - I, 1.0)
+            cols = np.nonzero(A.any(0))[0]
+            ok = cols.min() + dx <= (ob[0] + cap_x) * res
+            if cap_r is not None:
+                ok &= cols.max() + 1 + dx <= (ob[0] + cap_r) * res
+            dist = np.zeros(S)
+            for p, t in pts:                                 # точка части при сдвиге d: место при нуле + d / res
+                q = part_point(p, P, q0, s, th)
+                dist += np.sqrt((q[0] + dx[None, :] / res - t[0]) ** 2 + (q[1] + dy[:, None] / res - t[1]) ** 2)
+            dist /= max(1, len(pts))
+            score = np.where(ok[None, :], iou - w_pts * dist, -1.0)
+            iy, ix = np.unravel_index(np.argmax(score), score.shape)
+            if best is None or score[iy, ix] > best[0]:
+                best = (float(score[iy, ix]), float(s), float(th),
+                        (float((c0[0] + dx[ix]) / res - ob[0]), float((c0[1] + dy[iy]) / res - ob[1])),
+                        float(iou[iy, ix]), float(dist[iy, ix]))
+    return best
+
+
+def rod_part(img, top, bot, Qtop, Qbot, s, res, ob, size, cut=0.35):
+    """Стойка приклада: ось фото top -> bot ставится от Qtop к Qbot одним масштабом s по обеим осям, поворот - по
+    направлению оси; лишняя длина вырезается одним куском из середины (с доли cut от верха), толщина и концы
+    стойки - как на фото. -> (холст, отчёт)."""
+    ang_p = math.degrees(math.atan2(bot[0] - top[0], bot[1] - top[1]))
+    ang_q = math.degrees(math.atan2(Qbot[0] - Qtop[0], Qbot[1] - Qtop[1]))
+    th = ang_p - ang_q
+    Lp = math.hypot(bot[0] - top[0], bot[1] - top[1])
+    Lq = math.hypot(Qbot[0] - Qtop[0], Qbot[1] - Qtop[1]) / s
+    drop = max(0.0, Lp - Lq)
+    split = cut * Lp
+    ux, uy = (bot[0] - top[0]) / Lp, (bot[1] - top[1]) / Lp
+    a = np.asarray(img)
+    ys, xs = np.mgrid[0:a.shape[0], 0:a.shape[1]]
+    u = (xs - top[0]) * ux + (ys - top[1]) * uy
+    f = split / max(Lp - drop, 1e-6)
+    P2 = (top[0] + ux * (split + drop), top[1] + uy * (split + drop))
+    Q2 = (Qtop[0] + (Qbot[0] - Qtop[0]) * f, Qtop[1] + (Qbot[1] - Qtop[1]) * f)
+    cv = Image.new("RGBA", size, (0, 0, 0, 0))
+    for sel, P, Q in ((u < split, top, Qtop), (u >= split + drop, P2, Q2)):
+        b = a.copy()
+        b[..., 3] = np.where(sel, b[..., 3], 0)
+        cv.alpha_composite(place_part(Image.fromarray(b, "RGBA"), P, Q, s, th, res, ob, size))
+    return cv, {"rot": round(th, 2), "cut_photo_px": round(drop, 1)}
+
+
+def light_part(img, k):
+    """Светотень части: отклонение яркости от средней по непрозрачному - x k (цветность та же)."""
+    a = np.asarray(img).astype(np.float32)
+    op = a[..., 3] > 127
+    if k == 1 or not op.any():
+        return img
+    lum = a[..., :3] @ np.asarray([0.2126, 0.7152, 0.0722], np.float32)
+    m = float(lum[op].mean())
+    nl = m + (lum - m) * k
+    a[..., :3] *= (np.maximum(nl, 0) / np.maximum(lum, 1.0))[..., None]
+    a[..., :3] = np.clip(a[..., :3], 0, 255)
+    return Image.fromarray(a.astype(np.uint8), "RGBA")
+
+
+_PARTS_CACHE = {}
+
+
+def ref_parts_input(path, frame, rgb, zoom, spec):
+    """Фото-эталон, собранный по частям на местах частей оригинала (v7): тело одним масштабом по высоте дуло..
+    хвост коробки, мушка - по ширине до левого уха, магазин и рукоять - подбор масштаба и угла по силуэту
+    оригинала (fit_part), затыльник - по двум углам, стойки - от хвоста коробки до затыльника (rod_part); всё
+    одним масштабом по обеим осям у каждой части, растяжения нет. -> (RGB кадр x zoom на подложке, отчёт)."""
+    key = (path, tuple(int(v) for v in rgb), zoom, frame.tobytes(), json.dumps(spec, sort_keys=True))
+    if key in _PARTS_CACHE:
+        return _PARTS_CACHE[key]
+    pa = np.asarray(Image.open(path).convert("RGBA"))
+    om = np.asarray(frame.convert("RGBA"))[..., 3] > 0
+    ob = main_bbox(om, 4)
+    size = (frame.width * zoom, frame.height * zoom)
+    b = spec["body"]
+    g = b["span"][2] / float(b["span"][1] - b["span"][0])
+    rep = {"photo": path.replace("\\", "/"), "photo_sha256": sha256_file(path)[:12], "orig_bbox": list(ob),
+           "body_scale": round(g, 5)}
+    sc = np.arange(*spec["fit_scale"]) * g
+    rt = np.arange(spec["fit_rot"][0], spec["fit_rot"][1] + 1e-6, spec["fit_rot"][2])
+    fits = {}
+    for n in ("magazine", "grip"):
+        p = spec[n]
+        img = keep_part(pa, p["keep"])
+        fits[n] = (img,) + fit_part(img, p["P"], om, ob, p["zone"], p["cap_x"], sc, rt, cap_r=p.get("cap_r"),
+                                    pts=p.get("pts", ()), w_pts=spec.get("w_pts", 0.0))
+        rep[n] = {"iou": round(fits[n][5], 3), "pts_dist": round(fits[n][6], 2),
+                  "scale_vs_body": round(fits[n][2] / g, 3), "rot": fits[n][3],
+                  "at": [round(v, 2) for v in fits[n][4]]}
+    bt = spec["butt"]
+    vp = (bt["P2"][0] - bt["P"][0], bt["P2"][1] - bt["P"][1])
+    vq = (bt["Q2"][0] - bt["Q"][0], bt["Q2"][1] - bt["Q"][1])
+    sb = math.hypot(*vq) / math.hypot(*vp)
+    thb = math.degrees(math.atan2(vq[1], vq[0]) - math.atan2(vp[1], vp[0]))
+    light = spec.get("stock_light", 1.0)
+    cv = Image.new("RGBA", size, tuple(int(v) for v in rgb) + (255,))
+    img, _sc, s, th, Q = fits["magazine"][:5]
+    cv.alpha_composite(place_part(img, spec["magazine"]["P"], Q, s, th, zoom, ob, size))
+    rep["struts"] = []
+    for keep, top, bot, xb in spec["struts"]:
+        qt = part_point(top, b["P"], b["Q"], g, 0)             # верх - хвост коробки тела
+        # низ - верх затыльника под x оригинала: точку фото на верхней кромке ищем по x места
+        cand = [part_point((x, keep[3]), bt["P"], bt["Q"], sb, thb) for x in range(int(bt["P"][0]), int(bt["P2"][0]) + 1)]
+        qb = min(cand, key=lambda q: abs(q[0] - xb))
+        rod, rr = rod_part(light_part(keep_part(pa, keep), light), top, bot, qt, (xb, qb[1]), sb, zoom, ob, size)
+        cv.alpha_composite(rod)
+        rep["struts"].append(dict(rr, top=[round(v, 2) for v in qt], bottom=[xb, round(qb[1], 2)]))
+    cv.alpha_composite(place_part(light_part(keep_part(pa, bt["keep"]), light), bt["P"], bt["Q"], sb, thb, zoom, ob,
+                                  size))
+    rep["stock"] = {"scale_vs_body": round(sb / g, 3), "butt_rot": round(thb, 2), "light": light}
+    body = keep_part(pa, b["keep"], (spec["magazine"]["keep"], spec["grip"]["keep"]))
+    cv.alpha_composite(place_part(body, b["P"], b["Q"], g, 0, zoom, ob, size))
+    img, _sc, s, th, Q = fits["grip"][:5]
+    cv.alpha_composite(place_part(img, spec["grip"]["P"], Q, s, th, zoom, ob, size))
+    f = spec["front"]
+    sf = (f["Q"][0] - f["x_to"][1]) / float(f["P"][0] - f["x_to"][0])
+    cv.alpha_composite(place_part(keep_part(pa, f["keep"]), f["P"], f["Q"], sf, 0, zoom, ob, size))
+    rep["front"] = {"scale_vs_body": round(sf / g, 3)}
+    _PARTS_CACHE[key] = (cv.convert("RGB"), rep)
+    return _PARTS_CACHE[key]
+
+
+def ref_check_sheet(ref, frame, ctrl, zoom):
+    """Проверочный лист эталона (во вход модели не идёт): эталон | эталон + контур оригинала и контрольные
+    точки | оригинал x zoom + контур силуэта эталона; -> (картинка, числа охвата)."""
+    om = np.asarray(frame.convert("RGBA"))[..., 3] > 0
+    ob = main_bbox(om, 4)
+    O = np.repeat(np.repeat(om, zoom, 0), zoom, 1)
+    oe = O & ~pb.shrink(O, 2)
+    a = np.asarray(ref).astype(int)
+    panel = np.median(np.concatenate([a[:4].reshape(-1, 3), a[-4:].reshape(-1, 3)]), 0)
+    rm = np.abs(a - panel).sum(2) > 18
+    re = rm & ~pb.shrink(rm, 2)
+    c2 = np.asarray(ref).copy()
+    c2[oe] = (255, 40, 40)
+    c2 = Image.fromarray(c2)
+    d = ImageDraw.Draw(c2)
+    for x, y in ctrl:
+        cx, cy = (ob[0] + x) * zoom, (ob[1] + y) * zoom
+        d.ellipse((cx - 5, cy - 5, cx + 5, cy + 5), outline=(255, 230, 0), width=2)
+    o = Image.new("RGBA", frame.size, tuple(int(v) for v in panel) + (255,))
+    o.alpha_composite(frame.convert("RGBA"))
+    o = np.asarray(o.convert("RGB").resize(ref.size, Image.NEAREST)).copy()
+    o[re] = (0, 220, 255)
+    W, H = ref.size
+    s = Image.new("RGB", (3 * (W + 12) + 12, H + 24), (12, 12, 12))
+    for i, im in enumerate((ref, c2, Image.fromarray(o))):
+        s.paste(im, (12 + i * (W + 12), 12))
+    ys, xs = np.nonzero(rm)
+    num = {"ref_bbox": [round(float(v), 2) for v in (xs.min() / zoom - ob[0], ys.min() / zoom - ob[1],
+                                                       (xs.max() + 1) / zoom - ob[0], (ys.max() + 1) / zoom - ob[1])],
+           "orig_bbox": [0, 0, ob[2] - ob[0], ob[3] - ob[1]],
+           "iou": round(float((rm & O).sum() / (rm | O).sum()), 3)}
+    return s, num
+
+
 def item_inputs(base, ref):
-    """struct_probe.inputs с фото-эталоном третьей картинкой (ref - (путь, текст) или None)."""
+    """struct_probe.inputs с фото-эталоном третьей картинкой (ref - (путь, текст[, точки[, части]]) или None)."""
     def inputs(variant, frame, rgb):
         ims, extra, rep = base(variant, frame, rgb)
         if ref is None or variant == "B":
             return ims, extra, rep
-        im, rrep = ref_input(ref[0], frame, rgb, pr.RENDER_V1["zoom"])
-        if len(ref) > 2:                     # v6: вторая картинка - карта частей с контрольными точками
-            ims = [ims[0], part_map(frame, rgb, ref[2], pr.RENDER_V1["zoom"])] + ims[2:]
+        zoom = pr.RENDER_V1["zoom"]
+        im, rrep = ref_parts_input(ref[0], frame, rgb, zoom, ref[3]) if len(ref) > 3 else \
+            ref_input(ref[0], frame, rgb, zoom)
+        if len(ref) > 2:                     # вторая картинка - карта частей (зоны материала, без меток - R-204)
+            ims = [ims[0], part_map(frame, rgb, zoom)] + ims[2:]
             extra = ""                       # C_TEXT говорит про пиксельный оригинал, его здесь нет
         return ims + [im], extra + " " + ref[1], dict(rep, ref=rrep)
     return inputs
 
 
-def part_map(frame, rgb, ctrl, zoom):
+def part_map(frame, rgb, zoom):
     """Карта частей кропа (гладкие контуры, как struct_guide.build: кадр x zoom на подложке rgb), но зоны -
     плоскими цветами материала: дерево - пиксели оригинала красноватее серого (R - G от 10, R - B от 5 - не
     сиреневый блик стойки (125,113,146): бордовое дерево
-    BIGOBS 1168 от (29,15,18) до (156,121,103); median cut частей смешивает его с серым), остальное сталь;
-    контур силуэта линией и контрольные точки ctrl (от габарита оригинала, пиксели k=1) кружками."""
-    from PIL import ImageDraw
+    BIGOBS 1168 от (29,15,18) до (156,121,103); median cut частей смешивает его с серым), остальное сталь.
+    Ни контура линией, ни точек: метки во входе Qwen переносятся в ответ (R-204)."""
     P = sg.GUIDE_V1
     a0 = np.asarray(frame.convert("RGBA")).astype(int)
     m = pb.guide(frame)["m"]
@@ -301,17 +561,7 @@ def part_map(frame, rgb, ctrl, zoom):
     a = sil[..., None]
     body = np.asarray(PART_WOOD, np.float32) * cw + np.asarray(PART_STEEL, np.float32) * (1 - cw)
     out = body * a + np.asarray(rgb, np.float32) * (1 - a)
-    s = sil > 0.5
-    line = s & ~pb.shrink(s, max(1, zoom // 8))
-    out[line] = PART_LINE
-    im = Image.fromarray(np.clip(out + 0.5, 0, 255).astype(np.uint8), "RGB")
-    ob = main_bbox(np.asarray(frame.convert("RGBA"))[..., 3] > 0, 4)
-    d = ImageDraw.Draw(im)
-    r = max(3, zoom * 3 // 8)
-    for x, y in ctrl:
-        cx, cy = (ob[0] + x) * zoom, (ob[1] + y) * zoom
-        d.ellipse((cx - r, cy - r, cx + r, cy + r), fill=PART_DOT)
-    return im
+    return Image.fromarray(np.clip(out + 0.5, 0, 255).astype(np.uint8), "RGB")
 
 
 def load_frame(t, frame):
@@ -607,11 +857,16 @@ def main():
         g.save(os.path.join(gd, j["name"] + ".png"))
         j["ref"] = REFS.get(j["master"])
         if j["ref"]:
-            ri, j["ref_rep"] = ref_input(j["ref"][0], j["crop"], panels[0][1], pr.RENDER_V1["zoom"])
+            zoom = pr.RENDER_V1["zoom"]
+            if len(j["ref"]) > 3:
+                ri, j["ref_rep"] = ref_parts_input(j["ref"][0], j["crop"], panels[0][1], zoom, j["ref"][3])
+            else:
+                ri, j["ref_rep"] = ref_input(j["ref"][0], j["crop"], panels[0][1], zoom)
             ri.save(os.path.join(gd, j["name"] + ".ref.png"))
             if len(j["ref"]) > 2:
-                part_map(j["crop"], panels[0][1], j["ref"][2], pr.RENDER_V1["zoom"]).save(
-                    os.path.join(gd, j["name"] + ".parts.png"))
+                part_map(j["crop"], panels[0][1], zoom).save(os.path.join(gd, j["name"] + ".parts.png"))
+                ck, j["ref_rep"]["check"] = ref_check_sheet(ri, j["crop"], j["ref"][2], zoom)
+                ck.save(os.path.join(gd, j["name"] + ".ref_check.png"))
             print("      эталон %s" % j["ref_rep"], flush=True)
         plan.append((j, panels, g))
         print("%-5s %-20s %dx%d seed %d подложка %s guide %s" % (j["master"], j["asset_id"], j["cells"][0],
@@ -628,7 +883,7 @@ def main():
                 if j["ref"]:
                     v6 = len(j["ref"]) > 2
                     f.write("входов 3, эталон %s%s; negative + `%s`\n\n" % (
-                        j["ref_rep"], ", вторая - карта частей, точки %s" % (j["ref"][2],) if v6 else "",
+                        j["ref_rep"], ", вторая - карта частей без меток, точки только на листе %s" % (j["ref"][2],) if v6 else "",
                         REF_NEGATIVE_V6 if v6 else REF_NEGATIVE))
         print("план: %s" % os.path.join(args.out, "plan.md"))
         return
