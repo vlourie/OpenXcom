@@ -238,7 +238,7 @@ def one(seed, turns, diff, timeout, campaign, mission=None, tactics=False, caref
            "_decide": [l for l in r.lines if l.startswith(("[AIDECIDE]", "[AIMELEE]", "[AIPATH]"))] if os.environ.get("OXCE_AI_KEEP_DECIDE") else [],
            # по OXCE_AI_RECORD - запись решений (docs/AI_DECISION_RECORD.md): решение, исполнение, итог после хода врага,
            # разбор по OXCE_AI_TRACE_DECISION; списки кандидатов ([AICAND]) - отдельно, они тяжелее всего остального
-           "_rec": [l for l in r.lines if l.startswith(("[AIRECHEAD]", "[AIREC]", "[AIEXEC]", "[AIAFTER]", "[AITRACE]"))],
+           "_rec": [l for l in r.lines if l.startswith(("[AIRECHEAD]", "[AIREC]", "[AIEXEC]", "[AIAFTER]", "[AITRACE]", "[AITURNFX]"))],
            "_cand": r.tagged("[AICAND]"),
            # по OXCE_AI_RECORD_PATH - путь патруля и что держит первый шаг ([AIPATROL], план V2, L0-B)
            "_path": [l for l in r.lines if l.startswith("[AIPATROL]")],
