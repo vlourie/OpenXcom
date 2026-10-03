@@ -470,6 +470,8 @@ void Game::run()
 					static size_t autoClicked = 0;
 					// "c" before a click (c336,190) holds Ctrl for it (Ctrl + a sort criterion in the soldier lists)
 					static std::vector<bool> autoClicksCtrl;
+					// "m" before a click (m256,130) presses the middle button (a unit's hands in the battle)
+					static std::vector<Uint8> autoClicksButton;
 					static int autoClickCtrlFrames = 0;
 					if (autoClickCtrlFrames > 0 && --autoClickCtrlFrames == 0)
 					{
@@ -481,10 +483,12 @@ void Game::run()
 						{
 							int cx, cy;
 							const bool ctrl = *c == 'c';
-							if (sscanf(c + (ctrl ? 1 : 0), "%d,%d", &cx, &cy) == 2)
+							const bool middle = *c == 'm';
+							if (sscanf(c + (ctrl || middle ? 1 : 0), "%d,%d", &cx, &cy) == 2)
 							{
 								autoClicks.emplace_back(cx, cy);
 								autoClicksCtrl.push_back(ctrl);
+								autoClicksButton.push_back(middle ? SDL_BUTTON_MIDDLE : SDL_BUTTON_LEFT);
 							}
 							c = strchr(c, ';');
 							if (c) ++c;
@@ -493,6 +497,7 @@ void Game::run()
 					if (autoStep <= 1 && autoClicked < autoClicks.size() && now + 1200 * (Uint32)(autoClicks.size() - autoClicked) >= autoDumpAt)
 					{
 						const int cx = autoClicks[autoClicked].first, cy = autoClicks[autoClicked].second;
+						const Uint8 button = autoClicksButton[autoClicked];
 						if (autoClicksCtrl[autoClicked])
 						{
 							SDL_SetModState(KMOD_LCTRL);
@@ -505,7 +510,7 @@ void Game::run()
 						toDisplay(cx, cy, ev.motion.x, ev.motion.y);
 						SDL_PushEvent(&ev);
 						ev.type = SDL_MOUSEBUTTONDOWN;
-						ev.button.button = SDL_BUTTON_LEFT;
+						ev.button.button = button;
 						ev.button.state = SDL_PRESSED;
 						toDisplay(cx, cy, ev.button.x, ev.button.y);
 						SDL_PushEvent(&ev);

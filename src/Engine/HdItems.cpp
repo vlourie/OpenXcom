@@ -71,6 +71,7 @@ std::list<Key> uses;                          ///< most recently drawn first
 size_t bytes = 0;
 const size_t BUDGET = 64u * 1024u * 1024u;
 std::set<std::string> noHand;                 ///< types already logged as classic in the hand frame
+std::set<std::string> noGrid;                 ///< types already logged as classic in the grid
 
 /// A picture attached to a surface, where it goes relative to the surface.
 struct Placed
@@ -263,17 +264,14 @@ bool pick(const RuleItem *rule, const BattleItem *item, const SavedBattleGame *s
 	{
 		return false;
 	}
-	// step 1: the item's own picture, else the frame's common one; never the common one after the own
+	// step 1: the item's picture - its own when it has any file of its own, else the frame's common one.
+	// The common one never stands in for a version the own picture lacks (a junk pile stays a junk pile)
 	const std::string type = lower(rule->getType());
 	auto found = assets.find(std::make_pair(frame, type));
-	if (found == assets.end() || found->second.path.empty())
+	if (found == assets.end())
 	{
-		if (found != assets.end())
-		{
-			return false;   // only a hand version of its own: not enough to borrow the common picture
-		}
 		found = assets.find(std::make_pair(frame, std::string()));
-		if (found == assets.end() || found->second.path.empty())
+		if (found == assets.end())
 		{
 			return false;
 		}
@@ -293,6 +291,15 @@ bool pick(const RuleItem *rule, const BattleItem *item, const SavedBattleGame *s
 	// step 2: the version for the context
 	if (context == GRID)
 	{
+		if (asset.path.empty())
+		{
+			// only a hand version: the grid shows the classic frame, not the frame's common picture
+			if (noGrid.insert(type).second)
+			{
+				Log(LOG_INFO) << "HD BIGOBS " << rule->getType() << ": no grid picture, classic";
+			}
+			return false;
+		}
 		out.frame = get(key, asset.path, classic->getWidth() * k, classic->getHeight() * k);
 		setClip(out, 1, 1, xMax, yMax);
 	}
@@ -407,6 +414,7 @@ void clear()
 	uses.clear();
 	bytes = 0;
 	noHand.clear();
+	noGrid.clear();
 }
 
 }

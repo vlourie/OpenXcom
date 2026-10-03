@@ -182,10 +182,11 @@ void AlienInventory::drawItems()
 
 				int y = item->getSlot()->getY() + item->getRules()->getHandSpriteOffY();
 
+				// the hands here are hand frames (drawGrid): the pick carries the item's offset inside the frame
 				HdItems::Pick pick;
-				if (k && HdItems::pick(item->getRules(), item, save, _animFrame, HdItems::indexOf(texture, frame), texture, HdItems::GRID, k, pick))
+				if (k && HdItems::pick(item->getRules(), item, save, _animFrame, HdItems::indexOf(texture, frame), texture, HdItems::HAND, k, pick))
 				{
-					HdItems::attach(this, pick, x, y);
+					HdItems::attach(this, pick, x - item->getRules()->getHandSpriteOffX(), y - item->getRules()->getHandSpriteOffY());
 					continue;
 				}
 				BattleItem::ScriptFill(&work, item, save, BODYPART_ITEM_INVENTORY, _animFrame, 0);

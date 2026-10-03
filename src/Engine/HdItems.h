@@ -40,12 +40,15 @@ class SavedBattleGame;
  *     <frame>.png, <frame>.hand.png  the picture of every item of that frame, shipped only when the
  *                                    pack's builder allowed it (no other user, or the users agreed)
  *
- * An item with a picture of its own never falls back to the frame's common one. A picture is a whole
- * number of times bigger than the classic frame (32x48, or the frame's own size) and is scaled to the
- * interface's k. It is drawn clipped to the item's cells (the GRID context: grid, ground, alien
- * inventory) or to the hand frame (the HAND context: hands, the dragged item, the ammo preview, the
- * battle's hand buttons, Ufopaedia). Without a .hand version an item up to 2x3 shows its picture with
- * the usual hand offset, a 3x2 or 3x3 item stays classic there (one log line per type).
+ * The choice goes in two steps. First the picture: the item's own when any file of its own exists, else
+ * the frame's common one, else classic; an item with a file of its own never falls back to the common
+ * one. Then the version of that picture for where it is shown: the grid takes <picture>.png (only a .hand
+ * of its own - classic there); the hand frame takes <picture>.hand.png, else for an item up to 2x3 the
+ * grid picture with the usual hand offset, else (3x2, 3x3) classic. Each classic fallback logs one line
+ * per type. A picture is a whole number of times bigger than the classic frame (32x48, or the frame's
+ * own size) and is scaled to the interface's k. It is drawn clipped to the item's cells (the GRID
+ * context: grid, ground) or to the hand frame (the HAND context: hands, the dragged item, the ammo
+ * preview, the battle's hand buttons, Ufopaedia, the alien inventory's hands).
  *
  * Items whose sprite a script recolours stay classic: the interface has no brightness transfer yet. A mod's
  * recolour scripts can be global (X-Piratez runs its shield script on every item), so what counts is
