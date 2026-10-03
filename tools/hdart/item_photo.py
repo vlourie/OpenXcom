@@ -69,6 +69,10 @@ PAD = pr.RENDER_V1["pad"]
 SEED0 = 4100
 ITEM_TONE = 0.0                 # тон к оригиналу: 0 - пиксельный кадр задаёт размещение, а не яркость поверхности
                                 # (03.10: photo_base.TONE 0.7 гасил ответ модели - яркость -43 %, разброс -34 %)
+HOLE_SD = 1.2                   # отверстие ответа: разброс яркости как у подложки (снаружи медиана 0.5, p95 0.7;
+HOLE_DS = 16.0                  # серый металл цвета подложки - 4.2-4.7) и близко к ней с тенью (снаружи p95 9)
+HOLE_EDGE = 22.0                # кромка отверстия - до этого расстояния до подложки, на HOLE_GROW пикселей ответа
+HOLE_GROW = 3
 
 ITEM = ("<image1> is a clean shape sketch of {what}, shown on a flat preview panel of colour RGB({r}, {g}, {b}). "
         "The panel is background, not part of the object. "
@@ -179,14 +183,18 @@ WHAT = [
      "whole machines, no bones, no skulls, no fire"),
 ]
 CODE = (
-    ("item_photo.py", ("ITEM", "NEGATIVE_EXTRA", "WHAT", "item_prompt", "load_frame", "canvas_map", "cut_fixed",
-                       "place_fixed", "ITEM_TONE", "REF_AK", "REF_NEGATIVE", "REFS", "ref_input",
-                       "item_inputs")),
+    ("item_photo.py", ("ITEM", "NEGATIVE_EXTRA", "WHAT", "item_prompt", "load_frame", "REF_AK", "REF_NEGATIVE",
+                       "REFS", "ref_input", "item_inputs")),
     ("photo_render.py", ("RENDER_V1", "PANEL_TEXT", "flat_input", "detect_panel")),
     ("struct_probe.py", ("C_TEXT", "run_multi", "inputs")),
     ("obj_photo.py", ("NEGATIVE",)),
     ("gen_hd.py", ("QWEN21_REPO", "Qwen21Painter", "qwen21_size", "save_png")),
     ("model_lock.py", ("pin", "check_runtime")),
+)
+# вырезка - своя ревизия (cut_rev): перевырезка готового ответа не меняет generator_rev
+CUT_CODE = (
+    ("item_photo.py", ("canvas_map", "model_geometry", "model_holes", "cut_fixed", "place_fixed", "ITEM_TONE",
+                       "HOLE_SD", "HOLE_DS", "HOLE_EDGE", "HOLE_GROW")),
 )
 
 
@@ -319,6 +327,39 @@ def model_geometry(m_c, frame):
     return r
 
 
+def model_holes(hd, cw, ch, bg):
+    """Сквозные отверстия, которые нарисовала модель (просвет рамочного приклада, спусковая скоба): ответ - RGB
+    на подложке, своей прозрачности нет, а альфа managed_alpha идёт от силуэта оригинала и закрывает их подложкой.
+    Отверстие - кусок подложки в ответе: гладкий как подложка снаружи (local_std, HOLE_SD) и близкий к ней с тенью
+    (shadow_dist, HOLE_DS); замкнутый внутри предмета, от POCKET_MIN пикселей холста, или связанный с краем кадра
+    (там модель предмет просто не нарисовала). Тёмное углубление (окно мушки, нарисованное глухим) - не отверстие.
+    Ищется на разрешении ответа, кромка - расширением по близкому к подложке, на холст x4 - усреднением: доля
+    отверстия 0..1. -> (доля на холсте, отчёт)."""
+    import obj_photo as op
+    a = np.asarray(hd.convert("RGB"), np.float32)
+    ds = pb.shadow_dist(a, bg)
+    sd = op.local_std(a.mean(-1), 3)
+    seed = (ds < HOLE_DS) & (sd < HOLE_SD)
+    lab, n = pb.label(seed, 4)
+    border = np.unique(np.concatenate([lab[0], lab[-1], lab[:, 0], lab[:, -1]]))
+    sizes = np.bincount(lab.ravel(), minlength=n + 1)
+    px_min = pb.POCKET_MIN * (a.shape[0] * a.shape[1]) / float(cw * ch)
+    keep = sizes >= px_min
+    keep[border] = True
+    keep[0] = False
+    hole = pb.grow(keep[lab], HOLE_GROW) & (ds < HOLE_EDGE)
+    frac = np.asarray(Image.fromarray(hole.astype(np.uint8) * 255, "L").resize((cw, ch), Image.BOX),
+                      np.float32) / 255.0
+    inner = [i for i in range(1, n + 1) if keep[i] and i not in set(border.tolist())]
+    sx, sy = cw / float(a.shape[1]), ch / float(a.shape[0])
+    rep = []
+    for i in inner:
+        ys, xs = np.nonzero(lab == i)
+        rep.append({"bbox4": [round(xs.min() * sx), round(ys.min() * sy), round((xs.max() + 1) * sx),
+                              round((ys.max() + 1) * sy)], "px4": round(float(sizes[i]) * sx * sy)})
+    return frac, rep
+
+
 def cut_fixed(frame, hd, asked):
     """photo_base.cut без подгонки по содержимому: canvas_map вместо fit (правка пропорций до 1.3, низ к низу,
     центр к центру) и вместо fit_shape (лучший масштаб и якорь). Проверки формы - на том же холсте, где ответ
@@ -336,6 +377,11 @@ def cut_fixed(frame, hd, asked):
     rep.update(pb.conformity(g, m_c, {"aspect_raw": None, "aspect_fix": 1.0}, margin, rgb, bg))
     rep["model"] = model_geometry(m_c, frame)
     alpha, tri, rep["pockets_cut"] = pb.managed_alpha(g, rgb, m_c, bg)
+    # отверстия ответа сильнее силуэта оригинала: просвет, нарисованный моделью, прозрачен и там, где оригинал сплошной
+    hole, rep["model_holes"] = model_holes(hd, rgb.shape[1], rgb.shape[0], bg)
+    rep["holes_cut_px"] = int(((hole > 0.5) & (alpha > 0.5)).sum())
+    alpha = alpha * (1.0 - hole)
+    tri = np.where(hole > 0.5, 0, tri).astype(np.uint8)
     clean = pb.decontaminate(rgb, alpha, bg)
     rep.update(pb.qa(g, clean, alpha, tri, bg))
     rgba = np.dstack([clean, alpha * 255.0]).clip(0, 255).astype(np.uint8)
@@ -483,6 +529,8 @@ def main():
     pr.prompt_for = item_prompt              # Render.job зовёт pr.prompt_for - здесь свой промпт
     pb.cut = cut_fixed                       # и pb.cut - здесь вырезка без подгонки по содержимому
     R.grev = generator_rev(R.lock)
+    import obj_gen_spec as ogs
+    R.cut_rev = ar.h12({"photo_base": R.cut_rev, "code": ogs.code_parts(CUT_CODE)})
     print("items_pilot_v1: generator_rev %s, guide_rev %s, cut_rev %s, мастеров %d" % (
         R.grev, R.guide_rev, R.cut_rev, len(jobs)), flush=True)
     gd = os.path.join(args.out, "guide")
