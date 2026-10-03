@@ -389,6 +389,7 @@
  "voice.conn.connected": "В комнате",
  "voice.conn.reconnecting": "Связь прервалась, восстанавливаю…",
  "voice.conn.disconnected": "Нет связи, пробую снова…",
+ "voice.conn.unavailable": "Голос сейчас недоступен на сервере, пробую снова…",
  "voice.conn.device": "Звук остановился, переоткрываю устройство ({0} с)…",
  "voice.leave": "Выйти из комнаты",
  "voice.people": "В комнате",

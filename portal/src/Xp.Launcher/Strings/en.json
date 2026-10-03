@@ -389,6 +389,7 @@
  "voice.conn.connected": "In the room",
  "voice.conn.reconnecting": "Connection lost, restoring…",
  "voice.conn.disconnected": "No connection, trying again…",
+ "voice.conn.unavailable": "Voice is unavailable on the server right now, trying again…",
  "voice.conn.device": "The sound stopped, reopening the device ({0} s)…",
  "voice.leave": "Leave the room",
  "voice.people": "In the room",

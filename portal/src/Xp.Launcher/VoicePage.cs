@@ -61,6 +61,7 @@ public sealed class VoicePage : UserControl
     string _token = "";
     volatile string _me = "";                // set by the pass, on the session's room loop
     volatile bool _canPublish = true;
+    volatile bool _unavailable;              // the last pass was 503 voice_unavailable, not a network failure
     Dictionary<string, VoiceLive> _live = new(StringComparer.Ordinal);
     int _ticks;
     bool _liveBusy, _loading, _filling, _devicesFilled;
@@ -390,16 +391,25 @@ public sealed class VoicePage : UserControl
                 try
                 {
                     var p = await client.VoicePassAsync(_token, publicId, ct);
+                    _unavailable = false;
                     _canPublish = p.CanPublish;
                     _me = p.Identity;
                     return new VoicePass(p.Url, p.Token);
                 }
                 catch (VoicePassRefusedException e) { throw new VoiceDeniedException(e.Code); }
+                catch (Exception e)
+                {
+                    // the session asks again either way; the person reads why: the station's probe gives passes
+                    // to its testers only, and a media server that is down answers the same 503 - not "no connection"
+                    _unavailable = e is PortalException { Code: "voice_unavailable" };
+                    throw;
+                }
             },
             OutputGain = (float)Math.Clamp(_settings.VoiceVolume, 0, 2),
             InputId = _settings.VoiceInputId, InputName = _settings.VoiceInputName,
             OutputId = _settings.VoiceOutputId, OutputName = _settings.VoiceOutputName,
         };
+        _unavailable = false;                // before Start: the first pass may come back before the lines below
         var s = new VoiceSession(opt);
         s.Denied += reason => Dispatcher.UIThread.Post(() => _ = EndAsync(s, StateText(reason), reason == VoiceDeniedException.DeviceUnknown));
         s.SentAway += why => Dispatcher.UIThread.Post(() => _ = EndAsync(s, L.Has("voice.away." + why) ? L.T("voice.away." + why) : L.T("voice.away.other"), false));
@@ -478,7 +488,7 @@ public sealed class VoicePage : UserControl
             VoiceState.Connecting => L.T("voice.conn.connecting"),
             VoiceState.Connected => L.T("voice.conn.connected"),
             VoiceState.Reconnecting => L.T("voice.conn.reconnecting"),
-            _ => L.T("voice.conn.disconnected"),
+            _ => L.T(_unavailable ? "voice.conn.unavailable" : "voice.conn.disconnected"),
         };
         _connection.Foreground = Skin.B(s.State == VoiceState.Connected && !down ? Skin.Accent : Skin.WarnText);
         _micLevel.Value = s.Muted ? -60 : Math.Max(-60, s.MicDb);
