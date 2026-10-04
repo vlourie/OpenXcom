@@ -2399,8 +2399,10 @@ void DogfightState::blit()
 	const float cy = _battle->getY() + _battle->getHeight() - (_currentDist / 8) - 6 + 6.5f;
 	HdUi &ui = HdUi::instance();
 	ui.setClip(_battle->getX(), _battle->getY(), _battle->getWidth(), _battle->getHeight());
-	// nose up: the UFO flies on, away from the craft at the bottom that chases it
-	HdOutline::draw(_ufo->getRules()->getType(), cx * k, cy * k, (x1 - x0 + 1) * 1.3f * k, -1.5707963f, color,
+	// nose up: the UFO flies on, away from the craft at the bottom that chases it; a hunter-killer
+	// comes at the craft nose down, until it gives up the hunt and turns to run (update: setHunterKiller)
+	const bool hunting = _ufoIsAttacking && _ufo->isHunterKiller() && !_ufoBreakingOff;
+	HdOutline::draw(_ufo->getRules()->getType(), cx * k, cy * k, (x1 - x0 + 1) * 1.3f * k, hunting ? 1.5707963f : -1.5707963f, color,
 		(now % 100000u) / 1000.0f * 2.4f, std::min(1.0f, (now - _hdOutlineSince) / 1200.0f));
 	// the point the distance is counted to, as on the globe: when it comes within a weapon's reach,
 	// that weapon fires (update: _currentDist <= range * 8; the row is _battle's height - _currentDist / 8)
