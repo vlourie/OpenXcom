@@ -106,6 +106,45 @@
 namespace OpenXcom
 {
 
+namespace
+{
+
+/**
+ * The colour group of the yellow reticle (+ 1, as blit's newBaseColor wants): the group of the colour
+ * the mod gives the shot's damage type in the Ufopaedia (interface articleItem, ammoColorDT*). A loaded
+ * weapon shoots its ammo's type, a weapon that is its own ammo its own, a melee attack the melee type.
+ * 0 = the stock yellow: the option is off, nothing is loaded, or the mod gives the type no colour (vanilla gives none).
+ */
+int reticleColorGroup(const Mod *mod, BattleAction *action)
+{
+	static const char *const ids[DAMAGE_TYPES] = { "ammoColorDTNone", "ammoColorDTAP", "ammoColorDTIN", "ammoColorDTHE",
+		"ammoColorDTLaser", "ammoColorDTPlasma", "ammoColorDTStun", "ammoColorDTMelee", "ammoColorDTAcid", "ammoColorDTSmoke",
+		"ammoColorDT10", "ammoColorDT11", "ammoColorDT12", "ammoColorDT13", "ammoColorDT14",
+		"ammoColorDT15", "ammoColorDT16", "ammoColorDT17", "ammoColorDT18", "ammoColorDT19" };
+	if (!Options::oxceHdReticleDamageColor || !action || !action->weapon)
+	{
+		return 0;
+	}
+	const RuleDamageType *dt = nullptr;
+	if (action->type == BA_HIT)
+	{
+		dt = action->weapon->getRules()->getMeleeType();
+	}
+	else if (const BattleItem *ammo = action->weapon->getAmmoForAction(action->type))
+	{
+		dt = ammo->getRules()->getDamageType();
+	}
+	if (!dt || dt->ResistType < 0 || dt->ResistType >= DAMAGE_TYPES)
+	{
+		return 0;
+	}
+	const RuleInterface *ui = mod->getInterface("articleItem", false);
+	const Element *e = ui ? ui->getElementOptional(ids[dt->ResistType]) : nullptr;
+	return e && e->color > 0 && e->color < 256 ? e->color / 16 + 1 : 0;
+}
+
+}
+
 /**
  * Sets up a map with the specified size and position.
  * @param game Pointer to the core game.
@@ -1570,6 +1609,7 @@ void Map::drawTerrain(HdCanvas *surface)
 					{
 						if (_camera->getViewLevel() == itZ)
 						{
+							int reticleColor = 0;
 							if (_cursorType != CT_AIM)
 							{
 								if (unit && (unit->getVisible() || _save->getDebugMode()))
@@ -1580,12 +1620,15 @@ void Map::drawTerrain(HdCanvas *surface)
 							else
 							{
 								if (unit && (unit->getVisible() || _save->getDebugMode()))
-									frameNumber = 7 + halfAnimFrame; // yellow animated crosshairs
+								{
+									frameNumber = 7 + halfAnimFrame; // yellow animated crosshairs, in the shot's damage colour
+									reticleColor = reticleColorGroup(_game->getMod(), _save->getBattleGame()->getCurrentAction());
+								}
 								else
-									frameNumber = 6; // red static crosshairs
+									frameNumber = 6; // red static crosshairs (no target: keeps its red)
 							}
 							tmpSurface = _game->getMod()->getHdSurfaceSet("CURSOR.PCK")->getFrame(frameNumber);
-							surface->blit(tmpSurface, screenPosition.x, screenPosition.y, 0);
+							surface->blit(tmpSurface, screenPosition.x, screenPosition.y, 0, false, reticleColor);
 						}
 						else if (_camera->getViewLevel() > itZ)
 						{
@@ -1990,6 +2033,7 @@ void Map::drawTerrain(HdCanvas *surface)
 					{
 						if (_camera->getViewLevel() == itZ)
 						{
+							int reticleColor = 0;
 							if (_cursorType != CT_AIM)
 							{
 								if (unit && (unit->getVisible() || _save->getDebugMode()))
@@ -2000,12 +2044,15 @@ void Map::drawTerrain(HdCanvas *surface)
 							else
 							{
 								if (unit && (unit->getVisible() || _save->getDebugMode()))
-									frameNumber = 7 + halfAnimFrame; // yellow animated crosshairs
+								{
+									frameNumber = 7 + halfAnimFrame; // yellow animated crosshairs, in the shot's damage colour
+									reticleColor = reticleColorGroup(_game->getMod(), _save->getBattleGame()->getCurrentAction());
+								}
 								else
-									frameNumber = 6; // red static crosshairs
+									frameNumber = 6; // red static crosshairs (no target: keeps its red)
 							}
 							tmpSurface = _game->getMod()->getHdSurfaceSet("CURSOR.PCK")->getFrame(frameNumber);
-							surface->blit(tmpSurface, screenPosition.x, screenPosition.y, 0);
+							surface->blit(tmpSurface, screenPosition.x, screenPosition.y, 0, false, reticleColor);
 
 							// UFO extender accuracy: display adjusted accuracy value on crosshair in real-time.
 							if (_cursorType >= CT_AIM && _showInfoOnCursor && (_cursorType != CT_THROW || !Options::oxceDisableInfoOnThrowCursor))

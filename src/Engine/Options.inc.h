@@ -179,6 +179,8 @@ OPT bool oxceHdLight;
 OPT bool oxceHdGroundVariants;
 // HD render: the battle reticle (CURSOR.PCK 6..10): 0 the pack's own, 1 the stock picture, 2.. a style from hd/CURSOR.PCK/reticle_<style>/ (Mod::HD_RETICLES)
 OPT int oxceHdReticle;
+// Battlescape: the yellow reticle (CURSOR.PCK 7..10) takes the colour group the mod gives the shot's damage type in the Ufopaedia (articleItem ammoColorDT*); off = stock yellow
+OPT bool oxceHdReticleDamageColor;
 // HD base screen: facility pictures play their phases (hd/BASEBITS.PCK/<i>.vN.png); off = the first phase only
 OPT bool oxceHdBaseAnim;
 // HD base and craft screens: the lights of the crafts (hd/BASEBITS.PCK/<i>.lights.txt) and the phases of their pictures
