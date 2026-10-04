@@ -246,6 +246,30 @@ def fit_iou(a, b, side=48):
     return float(inter / union) if union else 0.0
 
 
+def diagonal_turn(mask):
+    """Карта корабля, поставленная по диагонали (истребитель VES_200, USO_ESCORT, PINK): ось
+    симметрии плана - диагональ, и поворотами на 90 её не навести на курс, корабль летит боком.
+    -> угол PIL (против часовой), ставящий ось вертикально, или None, если ось не диагональная."""
+    m = crop(mask)
+    h, w = m.shape
+    s = max(h, w)
+    q = np.zeros((s, s), bool)
+    q[(s - h) // 2:(s - h) // 2 + h, (s - w) // 2:(s - w) // 2 + w] = m
+
+    def iou(b):
+        return (q & b).sum() / max(1, (q | b).sum())
+    axis = max(iou(q[:, ::-1]), iou(q[::-1, :]))
+    main, anti = iou(q.T), iou(q[::-1, ::-1].T)
+    if max(main, anti) < 0.95 or max(main, anti) < axis + 0.1:     # HUMVEE 0.90 против 0.85 - не диагональ
+        return None
+    return -45 if main >= anti else 45                       # СЗ-ЮВ по часовой, СВ-ЮЗ против
+
+
+def turn_mask(mask, angle):
+    im = Image.fromarray((mask * 255).astype(np.uint8)).rotate(angle, resample=Image.BILINEAR, expand=True)
+    return crop(np.asarray(im) >= 128)
+
+
 def nose_by_hangar(mask, hangar):
     """План носом вверх по совпадению с силуэтом ангара (нос вверх).
     -> (маска носом вверх, лучший IoU, запас до лучшего поворота с ДРУГИМ носом)."""
@@ -256,15 +280,16 @@ def nose_by_hangar(mask, hangar):
     return best[3], best[0], best[0] - other[0]
 
 
-def nose_by_centroid(mask):
+def nose_by_centroid(mask, along=False):
     """План носом вверх для НЛО: длинная сторона габарита вертикально, нос - конец, дальний от
     самого широкого места. Почти квадратный план - та же проверка по обоим поворотам.
-    -> (маска носом вверх, сдвиг широкого места от середины в долях длины)."""
+    along - ось симметрии уже вертикальна (diagonal_turn): выбираются только её концы, шеврон
+    шире своей длины. -> (маска носом вверх, сдвиг широкого места от середины в долях длины)."""
     best = None
-    for k in range(4):
+    for k in ((0, 2) if along else range(4)):
         m = crop(np.rot90(mask, k))
         hh, ww = m.shape
-        if hh < ww * 0.87:                                  # длинная ось лежит поперёк хода
+        if not along and hh < ww * 0.87:                    # длинная ось лежит поперёк хода
             continue
         # самое широкое место (полоса от 90% наибольшей ширины) ближе к хвосту: крылья, оперение
         # и двигатели тяжелее носа. Проверено на кораблях игрока с известным носом: 29 из 34,
@@ -578,29 +603,36 @@ def main(argv=None):
     for r in rows:
         typ = r["type"]
         up = None
-        if r["body"] is not None and r["hangar"] is not None:
-            up, iou, margin = nose_by_hangar(r["body"], r["hangar"])
+        body, diag = r["body"], None
+        if body is not None:
+            diag = diagonal_turn(body)
+            if diag is not None:
+                body = turn_mask(body, diag)
+        if body is not None and r["hangar"] is not None:
+            up, iou, margin = nose_by_hangar(body, r["hangar"])
             r["nose"] = "ангар %.2f, запас %.2f" % (iou, margin)
             if margin < 0.03 or iou < 0.45:
                 r["note"] = "нос неуверенно"
             # проверка правила НЛО на корабле, где нос известен
-            guess, _ = nose_by_centroid(r["body"])
+            guess, _ = nose_by_centroid(body, diag is not None)
             if margin >= 0.03 and iou >= 0.45:
                 total += 1
                 hits += fit_iou(guess, up) > fit_iou(guess, np.rot90(up, 2))
-        elif r["body"] is not None:
+        elif body is not None:
             twin = twins.get(typ)
             if twin is not None:
-                up, iou, margin = nose_by_hangar(r["body"], twin[1])
+                up, iou, margin = nose_by_hangar(body, twin[1])
                 if iou >= 0.6 and margin >= 0.03:
                     r["nose"] = "ангар %s %.2f, запас %.2f" % (twin[0].replace("STR_", ""), iou, margin)
                 else:
                     twin = None
             if twin is None:
-                up, skew = nose_by_centroid(r["body"])
+                up, skew = nose_by_centroid(body, diag is not None)
                 r["nose"] = "широкое место %+.2f" % skew
                 if abs(skew) < 0.04:
                     r["note"] = "нос неуверенно"
+        if diag is not None and r.get("nose"):
+            r["nose"] = "диагональ, " + r["nose"]
         elif r["hangar"] is not None and r["note"] == "нет карты боя" and r["hangar"].sum() >= 60:
             part, hb = main_part(np.pad(r["hangar"], 4))
             if part >= 0.5:
