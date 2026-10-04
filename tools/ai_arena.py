@@ -81,10 +81,11 @@ def sha_file(path, h=None):
     return h
 
 
-def data_fingerprint(a, manifest=None):
+def data_fingerprint(a, manifest=None, missions=None):
     """Данные механики, которые читает бой: файлы MECH_EXT установки (ai_probe.GAME) по пути без регистра, сейв кампании,
     файл миссий. Хэш по файлам кэшируется в arena/.data_hash.json по (размер, время изменения).
-    manifest (список) получает строки «путь без регистра, размер, sha256» в порядке хэша - сверить две машины файл в файл."""
+    manifest (список) получает строки «путь без регистра, размер, sha256» в порядке хэша - сверить две машины файл в файл.
+    missions: None - файл миссий по задаче (a.missions «@файл»), "" - без него, путь - с этим файлом (подсказка R-216)."""
     import hashlib
     cache_path = ai_probe.WORK / "arena" / ".data_hash.json"
     try:
@@ -97,8 +98,10 @@ def data_fingerprint(a, manifest=None):
         files += [Path(root) / n for n in names if n.lower().endswith(MECH_EXT)]
     if not a.recruits:
         files.append(ai_probe.campaign_path(a.campaign))
-    if a.missions.startswith("@"):
-        files.append(Path(a.missions[1:]).resolve())
+    if missions is None:
+        missions = a.missions[1:] if a.missions.startswith("@") else ""
+    if missions:
+        files.append(Path(missions).resolve())
     total, fresh = hashlib.sha256(), {}
     for p in sorted(files, key=lambda p: str(p).lower()):
         try:
@@ -119,6 +122,21 @@ def data_fingerprint(a, manifest=None):
     except OSError:
         pass
     return total.hexdigest(), len(files)
+
+
+def data_hint(a, want):
+    """Отпечаток data не совпал: не другой ли это вид задачи (R-216)? Задача с «@файл миссий» включает этот файл в
+    отпечаток, задача с миссиями списком - нет. Пробует отпечаток без файла миссий и с каждым missions/*.txt; совпал -
+    строка-подсказка (данные станции те же, ожидание списано с задачи другого вида), иначе пустая строка."""
+    cur = a.missions[1:] if a.missions.startswith("@") else ""
+    cands = [("без файла миссий", "")] if cur else []
+    cands += [(f"с файлом {p.as_posix()}", str(p)) for p in sorted(Path("missions").glob("*.txt"))
+              if not cur or p.resolve() != Path(cur).resolve()]
+    for name, m in cands:
+        if data_fingerprint(a, missions=m)[0] == want:
+            return (f"; ожидание совпадает с отпечатком {name} - данные станции те же, ожидание data списано с задачи "
+                    f"другого вида (R-216): у «@файл миссий» файл входит в отпечаток, у миссий списком - нет")
+    return ""
 
 
 def effective_flags():
@@ -203,7 +221,8 @@ def provenance(a):
     for k, v in getattr(a, "expect", {}).items():
         if fp[k] != v:
             errors.append(f"отпечаток {k}: ожидался {v}, на машине {fp[k]}"
-                          + (f" (файлы данных - {arena / (a.label + '.data_manifest.tsv')})" if k == "data" else ""))
+                          + (f" (файлы данных - {arena / (a.label + '.data_manifest.tsv')}){data_hint(a, v)}"
+                             if k == "data" else ""))
     # отклонённый старт пишется под другим именем: read_fingerprint берёт последний ПРИНЯТЫЙ, иначе следующее
     # продолжение с верной конфигурацией сверялось бы с отклонённой
     tag = "rejected_fingerprint: " if errors else "fingerprint: "

@@ -115,5 +115,30 @@ with tempfile.TemporaryDirectory() as tmp:
                        capture_output=True, text=True, encoding="utf-8", env=env, timeout=60)
     check("ожидаемые: неизвестный ключ отклонён", r.returncode != 0 and "--expect" in r.stderr)
 
+    # 6. R-216: ожидание data списано с задачи другого вида (с «@файл миссий» против миссий списком) - подсказка в причине
+    cwd = os.getcwd()
+    os.chdir(tmp)
+    try:
+        (tmp / "missions").mkdir()
+        (tmp / "missions" / "fair.txt").write_text("STR_A\n", encoding="utf-8")
+        cohort = argparse.Namespace(label="c", recruits=True, campaign="", missions="@missions/fair.txt", resume=False)
+        listed = argparse.Namespace(label="l", recruits=True, campaign="", missions="STR_A", resume=False)
+        fp_cohort, fp_listed = ai_arena.data_fingerprint(cohort)[0], ai_arena.data_fingerprint(listed)[0]
+        check("R-216: файл миссий входит в отпечаток", fp_cohort != fp_listed)
+        check("R-216: миссии списком, ожидание с когорты - подсказка",
+              "R-216" in ai_arena.data_hint(listed, fp_cohort) and "fair.txt" in ai_arena.data_hint(listed, fp_cohort))
+        check("R-216: когорта, ожидание с задачи списком - подсказка", "без файла миссий" in ai_arena.data_hint(cohort, fp_listed))
+        check("R-216: данные правда другие - без подсказки", ai_arena.data_hint(listed, "0" * 64) == "")
+        listed.expect = {**ai_arena.fingerprints(listed)[0], "data": fp_cohort}
+        try:
+            ai_arena.provenance(listed)
+            code = 0
+        except SystemExit as e:
+            code = e.code
+        text = (arena / "l.prov.txt").read_text(encoding="utf-8")
+        check("R-216: код 3 и подсказка в prov", code == 3 and "R-216" in text)
+    finally:
+        os.chdir(cwd)
+
 print("итог:", "OK" if not fails else f"FAIL {len(fails)}")
 sys.exit(1 if fails else 0)
