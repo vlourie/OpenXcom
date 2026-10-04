@@ -1,0 +1,1 @@
+- "Apple Processing" add-on (version 1.5): apples left on the map after a mission come back to base as apples again, not as apple jam. Puree and jam themselves, their recipes and research are unchanged.
