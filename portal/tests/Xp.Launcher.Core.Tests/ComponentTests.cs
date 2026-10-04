@@ -110,6 +110,21 @@ public sealed class ComponentTests : IDisposable
     }
 
     [Fact]
+    public void A_mod_that_rides_in_another_component_is_not_the_players_own()
+    {
+        StageEdition();
+        Fixture.Write(f.Stage, "user/mods/hd_core/metadata.yml", "id: hd_core\nmaster: \"*\"\nversion: 0.2\n");
+        Fixture.Write(f.Stage, "user/mods/hd_core/hd/UI/fonts/Curvy-Big.ttf", "font");
+        var m = BuildEdition();
+        // the release installed: hd_core is no component's own mod, art.hd brings it along with hd
+        Fixture.Write(f.Game, "user/mods/hd/metadata.yml", "id: hd\nmaster: \"*\"\n");
+        Fixture.Write(f.Game, "user/mods/hd_core/metadata.yml", "id: hd_core\nmaster: \"*\"\nversion: 0.2\n");
+        Fixture.Write(f.Game, "user/mods/MoreGuns/metadata.yml", "id: moreGuns\nmaster: piratez\n");
+
+        Assert.Equal(["moreGuns"], Setup.OwnMods(f.Game, m, "piratez").Select(o => o.Id));
+    }
+
+    [Fact]
     public void Our_mods_do_not_go_into_a_release_for_meridians_engine()
     {
         StageEdition();

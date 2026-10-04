@@ -192,7 +192,8 @@ public static class Setup
     public static string Title(ComponentInfo c) => c.Name.Length > 0 ? c.Name : c.Mod.Length > 0 ? c.Mod : c.Id;
 
     /// <summary>
-    /// The mods the player put into user/mods themselves: none of our components is that mod.
+    /// The mods the player put into user/mods themselves: none of our components is that mod, and the release ships
+    /// nothing into its folder (art.hd brings hd_core along with hd - it is no component's own mod, yet ours).
     /// The launcher does not install or remove them, it only says what the engine will make of them;
     /// on and off stays with the game's Mods menu.
     /// </summary>
@@ -201,6 +202,12 @@ public static class Setup
     public static List<OwnMod> OwnMods(string gameDir, ReleaseManifest m, string? master, string? cfgPath = null)
     {
         var ours = new HashSet<string>(m.Components.Select(c => c.Mod).Where(id => id.Length > 0), StringComparer.Ordinal);
+        var shipped = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var f in m.Files)
+        {
+            var seg = f.Path.Split('/');
+            if (seg.Length > 3 && Same(seg[0], "user") && Same(seg[1], "mods")) shipped.Add(seg[2]);
+        }
         cfgPath ??= Path.Combine(gameDir, "user", "options.cfg");
         var cfg = OptionsCfg.Parse(File.Exists(cfgPath) ? File.ReadAllText(cfgPath) : "");
         var result = new List<OwnMod>();
@@ -209,6 +216,7 @@ public static class Setup
         foreach (var dir in Directory.EnumerateDirectories(root).Order(StringComparer.OrdinalIgnoreCase))
         {
             var folder = Path.GetFileName(dir);
+            if (shipped.Contains(folder)) continue;
             var meta = Path.Combine(dir, "metadata.yml");
             ModMetadata md;
             try { md = ModMetadata.Parse(File.Exists(meta) ? File.ReadAllText(meta) : "", folder); }
