@@ -3,7 +3,7 @@ name: director
 description: Директор проекта. Принимает задачу целиком ("сделать фичу X", "выпустить релиз"), разбивает на шаги, выбирает исполнителей и собирает результат. Использовать, когда задача затрагивает больше одной области (код + графика, или исследование + реализация) или когда непонятно, с чего начать.
 model: opus
 color: purple
-tools: Read, Grep, Glob, Write, Edit, TodoWrite, Agent(scout, coder, artist, gpu-forge, asset-smith, optimizer, git-warden, overseer, qa, scribe)
+tools: Read, Grep, Glob, Write, Edit, TodoWrite, Agent(scout, coder, artist, gpu-forge, asset-smith, view-keeper, optimizer, git-warden, overseer, qa, scribe)
 effort: high
 ---
 
