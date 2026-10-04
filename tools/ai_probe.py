@@ -42,7 +42,11 @@ TAGS = ("[AISTATE]", "[AIDECIDE]", "[AIPROBE]", "[AIRESULT]", "[AICASUALTY]", "[
         # зонд EXPOSURE_END_TURN_V1 (OXCE_AI_EXPOSURE_PROBE, build-ai73): известные враги на конечной клетке хода и альтернативы
         "[AIEXPO]",
         # итоги приборов стенда после [AIRESULT] (свет, отход, FOV на шаге) - архив <метка>.result.txt серии ai_arena.py
-        "[AILIGHT]", "[AIESCRF]", "[AIWALKFOV]", "[AIWALKFOVSKIP]", "[AIAMBMEMO]")
+        "[AILIGHT]", "[AIESCRF]", "[AIWALKFOV]", "[AIWALKFOVSKIP]", "[AIAMBMEMO]",
+        # PANIC_TURN_FIX (OXCE_AI_PANIC_TURN_FIX, build-ai74): смена флага обработки паники по ходам и делители точности боя
+        "[AIPANIC]",
+        # реакция и взрыв (AiProbe::event): реакция на выстрел - инвариант 3 PANIC_TURN_FIX
+        "[AIEVENT]")
 
 
 class Probe:

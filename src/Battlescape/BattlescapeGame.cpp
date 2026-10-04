@@ -226,8 +226,15 @@ int BattlescapeGame::think()
 			_save->setUnitsFalling(false);
 			return ret;
 		}
+		AiProbe::panicState(_save, _playerPanicHandled);
+		// the AI test bench's bot plays the player: its panicking units first, as the player branch below (PANIC_TURN_FIX)
+		if (_save->getSide() == FACTION_PLAYER && !_playerPanicHandled && AiProbe::botTurn(_save) && AiProbe::panicTurnFix())
+		{
+			_playerPanicHandled = handlePanickingPlayer();
+			_save->getBattleState()->updateSoldierInfo();
+		}
 		// it's a non player side (ALIENS or CIVILIANS), or the AI test bench's bot plays the player
-		if (_save->getSide() != FACTION_PLAYER || AiProbe::botTurn(_save))
+		else if (_save->getSide() != FACTION_PLAYER || AiProbe::botTurn(_save))
 		{
 			auto sideBackup = _save->getSide();
 			_save->resetUnitHitStates();

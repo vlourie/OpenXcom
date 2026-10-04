@@ -170,6 +170,16 @@ int walkFovSkip();
 bool walkFovKeep(BattlescapeGame *game, const BattleUnit *walker);
 /// Does the AI play the player's side right now (OXCE_AI_BOT)?
 bool botTurn(const SavedBattleGame *save);
+/// PANIC_TURN_FIX (OXCE_AI_PANIC_TURN_FIX, bench only, needs OXCE_AI_BOT): on the bot's turn of the player's side its
+/// panicking units are handled first, the way the player branch of BattlescapeGame::think does, and the panic-handled
+/// state becomes true as for a human. Without it the state stays false from turn 2 on every side's turn (R-120): half the
+/// accuracy, no reaction after a shot, walks not stopped by a newly spotted enemy, the bot's TU cleared after a walk.
+bool panicTurnFix();
+/// The panic-handled state BattlescapeGame::think sees: one [AIPANIC] line each time it changes (turn, side, value).
+void panicState(SavedBattleGame *save, bool handled);
+/// A projectile's accuracy divider (ProjectileFlyBState), counted by the shooter's faction, turn 1 or later and 100 or
+/// not, for the [AIPANIC] line of the result.
+void shotDivider(SavedBattleGame *save, const BattleUnit *shooter, double divider);
 /// The seed of a generated battle (OXCE_AI_SEED), or -1.
 long long battleSeed();
 /// Drives the probe from the battlescape's think: ends the player's turn, quits after the AI's.
