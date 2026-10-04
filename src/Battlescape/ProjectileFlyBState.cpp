@@ -40,6 +40,7 @@
 #include "Camera.h"
 #include "Explosion.h"
 #include "BattlescapeState.h"
+#include "AiProbe.h"
 #include "../Savegame/BattleUnitStatistics.h"
 #include "../fmath.h"
 
@@ -496,6 +497,7 @@ bool ProjectileFlyBState::createNewProjectile()
 	{
 		accuracyDivider = 200.0;
 	}
+	AiProbe::shotDivider(_parent->getSave(), _unit, accuracyDivider);
 
 	BattleActionAttack attack = BattleActionAttack::GetAferShoot(_action, _ammo);
 	if (_action.type == BA_THROW)

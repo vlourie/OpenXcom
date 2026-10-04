@@ -106,6 +106,9 @@ void walkFovConfirm(BattlescapeGame *, const BattleUnit *) {}
 int walkFovSkip() { return 0; }
 bool walkFovKeep(BattlescapeGame *, const BattleUnit *) { return true; }
 bool botTurn(const SavedBattleGame *) { return false; }
+bool panicTurnFix() { return false; }
+void panicState(SavedBattleGame *, bool) {}
+void shotDivider(SavedBattleGame *, const BattleUnit *, double) {}
 long long battleSeed() { return -1; }
 void think(BattlescapeState *, SavedBattleGame *) {}
 void battleOver(BattlescapeState *, SavedBattleGame *, bool) {}
@@ -180,6 +183,11 @@ bool envOn(const char *name)
 
 /// Lighting recalculations on a unit's step - done and skipped (lightSkip), for the [AILIGHT] line of the result.
 int lightRecalc = 0, lightSkipped = 0;
+
+/// The panic-handled state last logged (panicState), and the projectiles by accuracy divider (shotDivider):
+/// [shooter faction][turn 1, later][divider 100, other].
+int panicTurn = -1, panicSide = -1, panicValue = -1;
+int panicShots[3][2][2] = {};
 
 /// Does the AI play the player's side too (OXCE_AI_BOT)?
 bool bot()
@@ -318,6 +326,13 @@ void logResult(SavedBattleGame *save, const char *how)
 		<< " lighting_recalc_count=" << lightRecalc << " lighting_skipped_count=" << lightSkipped
 		<< " units_with_personalLightHostile=" << litHostile << " units_lit_now=" << litNow
 		<< " shade=" << save->getGlobalShade();
+	// the accuracy divider of the run's projectiles (PANIC_TURN_FIX): 200 means the panic-handled state was false
+	Log(LOG_INFO) << "[AIPANIC] result fix=" << panicTurnFix()
+		<< " p_t1_100=" << panicShots[0][0][0] << " p_t1_200=" << panicShots[0][0][1]
+		<< " p_t2_100=" << panicShots[0][1][0] << " p_t2_200=" << panicShots[0][1][1]
+		<< " h_t1_100=" << panicShots[1][0][0] << " h_t1_200=" << panicShots[1][0][1]
+		<< " h_t2_100=" << panicShots[1][1][0] << " h_t2_200=" << panicShots[1][1][1]
+		<< " n_t2_100=" << panicShots[2][1][0] << " n_t2_200=" << panicShots[2][1][1];
 	pathReport();
 	reachReport();
 	ambushReport();
@@ -356,6 +371,35 @@ bool lightSkip(const TileEngine *terrain, const BattleUnit *unit)
 bool botTurn(const SavedBattleGame *save)
 {
 	return bot() && save->getSide() == FACTION_PLAYER;
+}
+
+bool panicTurnFix()
+{
+	static const bool on = bot() && envOn("OXCE_AI_PANIC_TURN_FIX");
+	return on;
+}
+
+void panicState(SavedBattleGame *save, bool handled)
+{
+	if (!active() || (save->getTurn() == panicTurn && (int)save->getSide() == panicSide && (int)handled == panicValue))
+	{
+		return;
+	}
+	panicTurn = save->getTurn();
+	panicSide = (int)save->getSide();
+	panicValue = (int)handled;
+	Log(LOG_INFO) << "[AIPANIC] turn=" << panicTurn << " side=" << panicSide << " handled=" << panicValue
+		<< " fix=" << panicTurnFix();
+}
+
+void shotDivider(SavedBattleGame *save, const BattleUnit *shooter, double divider)
+{
+	if (!active() || !shooter)
+	{
+		return;
+	}
+	const int faction = std::min(std::max((int)shooter->getFaction(), 0), 2);
+	++panicShots[faction][save->getTurn() > 1][divider != 100.0];
 }
 
 bool tactics(const BattleUnit *unit)
