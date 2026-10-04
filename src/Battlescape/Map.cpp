@@ -110,6 +110,86 @@ namespace
 {
 
 /**
+ * The palette index the mod writes a damage type in in the Ufopaedia (interface articleItem, ammoColorDT*,
+ * drawn with the battlescape palette); 0 = none (vanilla gives none).
+ */
+int damageTypeColor(const Mod *mod, const RuleDamageType *dt)
+{
+	static const char *const ids[DAMAGE_TYPES] = { "ammoColorDTNone", "ammoColorDTAP", "ammoColorDTIN", "ammoColorDTHE",
+		"ammoColorDTLaser", "ammoColorDTPlasma", "ammoColorDTStun", "ammoColorDTMelee", "ammoColorDTAcid", "ammoColorDTSmoke",
+		"ammoColorDT10", "ammoColorDT11", "ammoColorDT12", "ammoColorDT13", "ammoColorDT14",
+		"ammoColorDT15", "ammoColorDT16", "ammoColorDT17", "ammoColorDT18", "ammoColorDT19" };
+	if (!dt || dt->ResistType < 0 || dt->ResistType >= DAMAGE_TYPES)
+	{
+		return 0;
+	}
+	const RuleInterface *ui = mod->getInterface("articleItem", false);
+	const Element *e = ui ? ui->getElementOptional(ids[dt->ResistType]) : nullptr;
+	return e && e->color > 0 && e->color < 256 ? e->color : 0;
+}
+
+/**
+ * The fill of the explosion area when the mod gives its damage type no colour (vanilla): fire orange,
+ * stun blue, acid green, smoke grey, laser red, plasma green, the rest (HE and modded types) amber.
+ */
+Uint32 blastFallbackRgb(const RuleDamageType *dt)
+{
+	switch (dt ? dt->ResistType : DT_HE)
+	{
+	case DT_IN: return 0xFF5A14;
+	case DT_LASER: return 0xFF3C3C;
+	case DT_PLASMA: return 0x50FF78;
+	case DT_STUN: return 0x5AAAFF;
+	case DT_ACID: return 0x96FF28;
+	case DT_SMOKE: return 0xC0C0C0;
+	default: return 0xFFA030;
+	}
+}
+
+/// The opacity of the explosion area's fill where the power is the strongest (60% transparent).
+const int BLAST_ALPHA_MAX = 102;
+/// The weakest fill, as a part of the strongest (where the power has almost run out): the edge stays visible.
+const float BLAST_ALPHA_FLOOR = 0.25f;
+/// The opacity steps the fill is drawn with (one cached diamond per step and colour).
+const int BLAST_ALPHA_STEPS = 32;
+
+/**
+ * The floor diamond of a tile (the bottom 32x16 of the 32x40 frame, k times) filled with one colour at one
+ * opacity. The diamonds of neighbouring tiles meet with no gap and no overlap: no pixel centre lies on an
+ * edge, so every pixel belongs to exactly one tile and a fill of many tiles is even.
+ * Kept for the battle (drawn by the strips after this frame records); at most a few colours by 32 steps.
+ */
+const HdFrame &blastDiamond(Uint32 rgb, int alpha, int k)
+{
+	static std::map<unsigned long long, HdFrame> cache;
+	const unsigned long long key = ((unsigned long long)rgb << 24) | ((unsigned long long)alpha << 8) | (unsigned long long)k;
+	auto it = cache.find(key);
+	if (it != cache.end())
+	{
+		return it->second;
+	}
+	HdFrame &f = cache[key];
+	f.width = 32 * k;
+	f.height = 16 * k;
+	f.pixels.assign((size_t)f.width * f.height, 0);
+	const Uint32 px = ((Uint32)alpha << 24) | (rgb & 0xFFFFFF);
+	const double hw = 16.0 * k, hh = 8.0 * k;
+	for (int y = 0; y < f.height; ++y)
+	{
+		for (int x = 0; x < f.width; ++x)
+		{
+			if (std::fabs(x + 0.5 - hw) / hw + std::fabs(y + 0.5 - hh) / hh < 1.0)
+			{
+				f.pixels[(size_t)y * f.width + x] = px;
+			}
+		}
+	}
+	f.generated = true;
+	f.buildSpans();
+	return f;
+}
+
+/**
  * The colour group of the yellow reticle (+ 1, as blit's newBaseColor wants): the group of the colour
  * the mod gives the shot's damage type in the Ufopaedia (interface articleItem, ammoColorDT*). A loaded
  * weapon shoots its ammo's type, a weapon that is its own ammo its own, a melee attack the melee type.
@@ -117,10 +197,6 @@ namespace
  */
 int reticleColorGroup(const Mod *mod, BattleAction *action)
 {
-	static const char *const ids[DAMAGE_TYPES] = { "ammoColorDTNone", "ammoColorDTAP", "ammoColorDTIN", "ammoColorDTHE",
-		"ammoColorDTLaser", "ammoColorDTPlasma", "ammoColorDTStun", "ammoColorDTMelee", "ammoColorDTAcid", "ammoColorDTSmoke",
-		"ammoColorDT10", "ammoColorDT11", "ammoColorDT12", "ammoColorDT13", "ammoColorDT14",
-		"ammoColorDT15", "ammoColorDT16", "ammoColorDT17", "ammoColorDT18", "ammoColorDT19" };
 	if (!Options::oxceHdReticleDamageColor || !action || !action->weapon)
 	{
 		return 0;
@@ -134,13 +210,8 @@ int reticleColorGroup(const Mod *mod, BattleAction *action)
 	{
 		dt = ammo->getRules()->getDamageType();
 	}
-	if (!dt || dt->ResistType < 0 || dt->ResistType >= DAMAGE_TYPES)
-	{
-		return 0;
-	}
-	const RuleInterface *ui = mod->getInterface("articleItem", false);
-	const Element *e = ui ? ui->getElementOptional(ids[dt->ResistType]) : nullptr;
-	return e && e->color > 0 && e->color < 256 ? e->color / 16 + 1 : 0;
+	const int color = damageTypeColor(mod, dt);
+	return color ? color / 16 + 1 : 0;
 }
 
 }
@@ -1374,10 +1445,109 @@ void Map::drawUnit(UnitSprite &unitSprite, Tile *unitTile, Tile *currTile, Posit
  * Keep this function as optimised as possible. It's big to minimise overhead of function calls.
  * @param surface The surface to draw on.
  */
+/**
+ * HD render: the area of the explosion the aimed shot or throw would make if it went off at the cursor
+ * tile, with the power it would reach every tile with (TileEngine::explosionArea - explode()'s own rays,
+ * nothing rolled or touched). The power is worked out the way ExplosionBState does: the damage item's power
+ * with the shooter's bonus, less the range reduction over the distance to the cursor (none for a throw).
+ * Only what explodes counts: a damage item with a blast radius, not melee or a psi amp. Picture only:
+ * drawn in the HD modes, never in mode 0, and the game reads none of it.
+ */
+void Map::updateBlastArea(HdCanvas *surface)
+{
+	Position center(-1, -1, -1);
+	const RuleDamageType *type = nullptr;
+	int power = 0, radius = 0;
+	BattleAction *action = nullptr;
+	if (Options::oxceHdBlastArea && surface->getHdMode() != HD_MODE_NEAREST
+		&& (_cursorType == CT_AIM || _cursorType == CT_THROW) && _save->getBattleGame()
+		&& !_save->getBattleState()->getMouseOverIcons())
+	{
+		action = _save->getBattleGame()->getCurrentAction();
+	}
+	const Position target(_selectorX, _selectorY, _camera->getViewLevel());
+	if (action && action->weapon && action->actor && action->type != BA_HIT && _save->getTile(target))
+	{
+		const BattleActionAttack attack = BattleActionAttack::GetBeforeShoot(*action);
+		const RuleItem *rule = attack.damage_item ? attack.damage_item->getRules() : nullptr;
+		const BattleType battleType = rule ? rule->getBattleType() : BT_NONE;
+		const bool explodes = rule && battleType != BT_MELEE && battleType != BT_PSIAMP
+			&& (action->type != BA_THROW || battleType == BT_GRENADE || battleType == BT_PROXIMITYGRENADE);
+		if (explodes)
+		{
+			radius = rule->getExplosionRadius(attack);
+		}
+		if (radius > 0)
+		{
+			const float range = action->type == BA_THROW ? 0.0f
+				: Position::distance(action->actor->getPosition().toVoxel(), target.toVoxel());
+			const RuleItem *weaponRule = action->weapon->getRules();
+			if (weaponRule->getIgnoreAmmoPower())
+			{
+				power += weaponRule->getPowerBonus(attack);
+				power -= weaponRule->getPowerRangeReduction(range);
+			}
+			else
+			{
+				power += rule->getPowerBonus(attack);
+				power -= rule->getPowerRangeReduction(range);
+			}
+			type = rule->getDamageType();
+			center = target;
+		}
+	}
+	if (power <= 0 || !type)
+	{
+		_blastMax = 0;
+		_blastCenter = Position(-1, -1, -1);
+		return;
+	}
+	if (center == _blastCenter && power == _blastKeyPower && radius == _blastKeyRadius && type == _blastKeyType
+		&& (int)_blastPower.size() == _save->getMapSizeXYZ())
+	{
+		return;
+	}
+	_blastCenter = center;
+	_blastKeyPower = power;
+	_blastKeyRadius = radius;
+	_blastKeyType = type;
+
+	const auto t0 = std::chrono::steady_clock::now();
+	std::map<Tile*, int> area;
+	_save->getTileEngine()->explosionArea(center.toVoxel() + Position(8, 8, 2), power, type, radius, area);
+	_blastPower.assign(_save->getMapSizeXYZ(), 0);
+	_blastMax = 0;
+	for (const auto &p : area)
+	{
+		if (p.second > 0)
+		{
+			_blastPower[_save->getTileIndex(p.first->getPosition())] = p.second;
+			_blastMax = std::max(_blastMax, p.second);
+		}
+	}
+	const int color = damageTypeColor(_game->getMod(), type);
+	const SDL_Color c = color ? getPalette()[color] : SDL_Color();
+	const int peak = std::max((int)c.r, std::max((int)c.g, (int)c.b));
+	if (peak >= 16)
+	{
+		// the hue and saturation of the mod's colour at full brightness: the pedia writes on a dark page and
+		// often picks a dark shade (Piratez HE is 84,8,0), which over the floor would read as a shadow
+		_blastRgb = ((Uint32)(c.r * 255 / peak) << 16) | ((Uint32)(c.g * 255 / peak) << 8) | (Uint32)(c.b * 255 / peak);
+	}
+	else
+	{
+		_blastRgb = blastFallbackRgb(type);
+	}
+	Log(LOG_DEBUG) << "HD blast area: " << area.size() << " tiles at " << center << ", power " << power << ", radius " << radius
+		<< ", type " << type->ResistType << ", colour " << color << ", "
+		<< std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count() << " ms";
+}
+
 void Map::drawTerrain(HdCanvas *surface)
 {
 	_isAltPressed = _game->isAltPressed(true);
 	_isCtrlPressed = _game->isCtrlPressed(true);
+	updateBlastArea(surface);
 	// HD render: combat effect clips not drawn for a while go, before this frame records any
 	HdFx::trim();
 	HdFx::clearTips();
@@ -1600,6 +1770,21 @@ void Map::drawTerrain(HdCanvas *surface)
 							surface->blit(tmpSurface, screenPosition.x, screenPosition.y - tile->getYOffset(O_FLOOR) * _k, tileShade, false, _nvColor);
 						if (_hdGroundVariants)
 							surface->setGroundCell(false, 0, 0, 0);
+					}
+
+					// HD render: the explosion area of what is aimed, on the floor of every tile it reaches that the player
+					// has seen (not in the air above a level): the colour of the damage type, the stronger the power the denser
+					if (_blastMax > 0 && tile->isDiscovered(O_FLOOR) && (itZ == 0 || tile->getMapData(O_FLOOR)))
+					{
+						const int blastPower = _blastPower[_save->getTileIndex(mapPosition)];
+						if (blastPower > 0)
+						{
+							const float share = std::max(BLAST_ALPHA_FLOOR, std::min(1.0f, (float)blastPower / _blastMax));
+							const int step = std::max(1, (int)std::lround(share * BLAST_ALPHA_STEPS));
+							const int alpha = BLAST_ALPHA_MAX * step / BLAST_ALPHA_STEPS;
+							surface->blitFrame(blastDiamond(_blastRgb, alpha, _k), screenPosition.x,
+								screenPosition.y + 24 * _k - tile->getYOffset(O_FLOOR) * _k);
+						}
 					}
 
 					auto* unit = tile->getUnit();

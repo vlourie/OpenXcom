@@ -159,6 +159,17 @@ private:
 	void drawGentleArrows(HdCanvas *surface);
 	/// The arrow sprite pointing one of GENTLE_ARROW_STEPS ways, in world pixels.
 	Surface *gentleArrow(int step);
+	/// HD render: the area of the explosion the shot or throw being aimed would make (option oxceHdBlastArea):
+	/// the power it would reach each tile with (by tile index, 0 = not reached), the strongest of them,
+	/// and the colour of the damage type (0xRRGGBB). Recomputed only when what is aimed changes.
+	std::vector<int> _blastPower;
+	int _blastMax = 0;
+	Uint32 _blastRgb = 0;
+	Position _blastCenter = Position(-1, -1, -1);
+	int _blastKeyPower = 0, _blastKeyRadius = 0;
+	const void *_blastKeyType = nullptr;
+	/// Works out the area for the current action and cursor (clears it when nothing explosive is aimed).
+	void updateBlastArea(HdCanvas *surface);
 
 	void drawUnit(UnitSprite &unitSprite, Tile *unitTile, Tile *currTile, Position tileScreenPosition, bool topLayer, BattleUnit* movingUnit = nullptr);
 	void drawTerrain(HdCanvas *canvas);
