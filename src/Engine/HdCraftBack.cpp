@@ -126,7 +126,16 @@ Surface *build(Mod *mod, const std::string &craftType, const SDL_Color *palette)
 
 	// the classic image: the ramp's 16 steps, the darkest outside the window
 	const int pw = pic->getWidth(), ph = pic->getHeight();
+	// the colours the ufopaedia shows the picture in (ArticleStateCraft): its own only with customPalette,
+	// otherwise PAL_UFOPAEDIA - a vanilla SPK's own palette is just whatever it was loaded with
 	const SDL_Color *picPal = pic->getPalette();
+	if (!article->customPalette)
+	{
+		if (const Palette *pedia = mod->getPalette("PAL_UFOPAEDIA", false))
+		{
+			picPal = pedia->getColors();
+		}
+	}
 	const Uint8 *picPx = pic->getBuffer();
 	const int picPitch = pic->getPitch();
 	std::vector<float> lum((size_t)WW * WH);
