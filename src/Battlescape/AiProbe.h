@@ -180,6 +180,20 @@ void panicState(SavedBattleGame *save, bool handled);
 /// A projectile's accuracy divider (ProjectileFlyBState), counted by the shooter's faction, turn 1 or later and 100 or
 /// not, for the [AIPANIC] line of the result.
 void shotDivider(SavedBattleGame *save, const BattleUnit *shooter, double divider);
+/// POSTWALK_FIX (OXCE_AI_POSTWALK_FIX, bench only, needs OXCE_AI_BOT): UnitWalkBState::postPathProcedures runs its AI
+/// branch for the bot's player units too - the walk's AIModule decision is carried out as for an AI unit (final facing,
+/// finalAction ends the unit's actions, a charge in melee range strikes, a hiding unit turns away). Without it the branch
+/// is only for factions other than the player's, and the bot's post-walk decisions are dropped.
+bool postWalkFix();
+/// Does postPathProcedures take its AI branch for this player unit: the fix is on, the bot plays the player's side, and
+/// the panic-handled state is true (a panicking unit's walk keeps the player branch, as for a human).
+bool postWalkAi(const SavedBattleGame *save, const BattleUnit *unit, bool panicHandled);
+/// What the walk's decision asks of postPathProcedures, as it begins (reads only), and what was done as it ends:
+/// one [AIPOSTWALK] line per walk with a post-walk request, counts in the [AIPOSTWALK] result line.
+void postWalkBegin(SavedBattleGame *save, BattleUnit *unit, const BattleAction &action, bool aiBranch);
+void postWalkEnd(SavedBattleGame *save, const BattleUnit *unit, bool meleePushed);
+/// A melee attack that has spent its TU (MeleeAttackBState): counted when it is the one postPathProcedures pushed.
+void postWalkMelee(const BattleUnit *unit);
 /// The seed of a generated battle (OXCE_AI_SEED), or -1.
 long long battleSeed();
 /// Drives the probe from the battlescape's think: ends the player's turn, quits after the AI's.

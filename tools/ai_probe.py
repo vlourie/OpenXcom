@@ -46,7 +46,9 @@ TAGS = ("[AISTATE]", "[AIDECIDE]", "[AIPROBE]", "[AIRESULT]", "[AICASUALTY]", "[
         # PANIC_TURN_FIX (OXCE_AI_PANIC_TURN_FIX, build-ai74): смена флага обработки паники по ходам и делители точности боя
         "[AIPANIC]",
         # реакция и взрыв (AiProbe::event): реакция на выстрел - инвариант 3 PANIC_TURN_FIX
-        "[AIEVENT]")
+        "[AIEVENT]",
+        # POSTWALK_FIX (OXCE_AI_POSTWALK_FIX, build-ai75): что решение ходьбы просило у post-walk ветки и что исполнено
+        "[AIPOSTWALK]")
 
 
 class Probe:
