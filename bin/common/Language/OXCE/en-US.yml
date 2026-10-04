@@ -867,3 +867,5 @@ en-US:
   STR_HD_RETICLE_trilock: "Trefoil"
   STR_HD_RETICLE_dot: "Dot"
   STR_HD_RETICLE_ghost: "Ghost"
+  STR_HD_RETICLE_DAMAGE_COLOR: "Reticle in damage colour"
+  STR_HD_RETICLE_DAMAGE_COLOR_DESC: "The yellow reticle on a target takes the colour of the shot's damage type - the one the mod writes that damage in in the Ufopaedia (armor piercing, fire, laser, plasma and so on). A loadable weapon uses the damage type of the loaded ammo, a weapon with its own charge its own, a melee attack its melee type. The red reticle with no target stays red. If the mod gives damage types no colours (vanilla UFO) or the weapon is not loaded, the reticle is the usual yellow. Off = always yellow."

@@ -520,6 +520,7 @@ void createAdvancedOptionsOXCE()
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdLight", &oxceHdLight, true, "STR_HD_LIGHT", "STR_HD_BATTLE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdGroundVariants", &oxceHdGroundVariants, true, "STR_HD_GROUND_VARIANTS", "STR_HD_BATTLE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdReticle", &oxceHdReticle, 0, "STR_HD_RETICLE", "STR_HD_BATTLE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdReticleDamageColor", &oxceHdReticleDamageColor, true, "STR_HD_RETICLE_DAMAGE_COLOR", "STR_HD_BATTLE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdHoverBob", &oxceHdHoverBob, true, "STR_HD_HOVER_BOB", "STR_HD_BATTLE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdFx", &oxceHdFx, true, "STR_HD_FX", "STR_HD_BATTLE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdFire", &oxceHdFire, 2, "STR_HD_FIRE", "STR_HD_BATTLE"));
