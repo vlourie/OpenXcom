@@ -489,6 +489,42 @@ void HdUi::drawImage(const Uint32 *argb, int w, int h, int x, int y)
 	}
 }
 
+void HdUi::shadeRows(int x, int y, int w, int h, const std::function<void(int, int, int, Uint32*)> &fn)
+{
+	FrameTiming timing(_frameMs);
+	SDL_Surface *dest;
+	int k;
+	const SDL_Color *pal;
+	if (!target(dest, k, pal) || w <= 0 || h <= 0) return;
+	const SDL_Rect clip = worldClip(dest, k);
+	const int x0 = std::max(x, (int)clip.x), y0 = std::max(y, (int)clip.y);
+	const int x1 = std::min(x + w, clip.x + clip.w), y1 = std::min(y + h, clip.y + clip.h);
+	if (x0 >= x1 || y0 >= y1) return;
+	auto rows = [&](int ra, int rb)
+	{
+		for (int py = ra; py < rb; ++py)
+		{
+			fn(py, x0, x1, (Uint32*)((Uint8*)dest->pixels + (size_t)py * dest->pitch));
+		}
+	};
+	const int n = y1 - y0;
+	if (n >= 64)
+	{
+		HdWorkers &pool = HdWorkers::instance();
+		const int jobs = std::max(1, std::min(n / 16, pool.threads() * 4));
+		pool.run(jobs, [&](int job) { rows(y0 + (int)((long long)n * job / jobs), y0 + (int)((long long)n * (job + 1) / jobs)); });
+	}
+	else
+	{
+		rows(y0, y1);
+	}
+}
+
+void HdUi::blend(Uint32 &d, Uint32 color, float cov)
+{
+	blendPixel(d, color, cov);
+}
+
 void HdUi::blendGlyph(SDL_Surface *dest, const SDL_Rect &clip, const HdFont::Glyph &g, int x, int y, Uint32 color)
 {
 	const int x0 = std::max(x, (int)clip.x), y0 = std::max(y, (int)clip.y);

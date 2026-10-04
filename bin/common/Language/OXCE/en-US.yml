@@ -448,6 +448,8 @@ en-US:
   STR_HD_CRAFT_LIGHTS_DESC: "Craft lights blink in the hangars and on the craft screen, and animated craft pictures play their phases. Off = crafts without lights, standing still."
   STR_HD_CRAFT_OUTLINES: "Craft outlines"
   STR_HD_CRAFT_OUTLINES_DESC: "On the globe your craft and every UFO once read by a hyper-wave decoder are small outlines seen from above, UFOs in the colour of their crew's race; in an interception the UFO is an outline instead of a blob. Off = the classic markers."
+  STR_HD_RADAR_PULSE: "Radar sweep (trial)"
+  STR_HD_RADAR_PULSE_DESC: "On the globe the radar coverage of your bases and craft is a light wash with one edge round all of it instead of a circle per radar. At the slow clock speeds (5 seconds, 1 minute) every detection cycle sends a wave from each base, one per radar, and the wave passes on to the bases it reaches; a craft out of its base turns a slow beam where no base covers. Only a picture: detection is unchanged. Off = the classic circles."
   STR_HD_UI: "HD interface"
   STR_HD_UI_DESC: "The interface is drawn again at the display's resolution: smooth letter edges, crisp windows and buttons, hd/UI pictures in place. 0 = off (classic), 1 = the rest scaled as it is, 2 = the rest smoothed with xBRZ. Needs a 32-bit display."
   STR_HD_UI_SKIN: "HD interface: modern look"

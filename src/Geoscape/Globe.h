@@ -23,6 +23,7 @@
 #include <unordered_map>
 #include "../Engine/InteractiveSurface.h"
 #include "../Engine/FastLineClip.h"
+#include "../Engine/HdRadar.h"
 #include "Cord.h"
 
 namespace OpenXcom
@@ -113,6 +114,8 @@ private:
 	std::vector<HdMark> _hdMarks;
 	std::unordered_map<const Target*, HdHeading> _hdHeadings;
 	bool _hdMarksKept = false;          ///< were the outlined targets kept out of _markers when it was last drawn
+	HdRadar _hdRadar;                   ///< the radar coverage as a wash with pulses (oxceHdRadarPulse)
+	bool _hdRadarKept = false;          ///< were the bases' and craft's radar circles kept out of _radars when it was last drawn
 
 	bool _isMouseScrolling, _isMouseScrolled;
 	int _xBeforeMouseScrolling, _yBeforeMouseScrolling;
@@ -159,6 +162,10 @@ private:
 	bool keepHdMark(MovingTarget *target, const std::string &type, Uint32 color, float strength, Uint32 state, std::unordered_map<const Target*, HdHeading> &seen);
 	/// Draws the kept outlines over the upscaled globe.
 	void drawHdMarks();
+	/// Is the HD layer drawing the bases' and craft's radar coverage instead of the circles?
+	bool hdRadar() const;
+	/// Draws the radar coverage, its pulses and the craft's beams over the upscaled globe.
+	void drawHdRadar();
 	/// The world pixels one pixel of the globe takes in the HD layer when it has a scale of its own; 0 = as the geoscape.
 	int hdEarthScale() const;
 	/// Draws the ocean, the land and the shadow into _hdEarth (w x h), f times finer than the base pixels.
@@ -273,6 +280,10 @@ public:
 	void setCraftRange(double lon, double lat, double range);
 	/// set the _radarLines variable
 	void toggleRadarLines();
+	/// HD radar: a detection cycle has run (the bases pulse); a picture only.
+	void hdRadarCycle() { _hdRadar.cycle(); }
+	/// HD radar: is the game clock slow enough for the pulses?
+	void setHdRadarSlow(bool slow) { _hdRadar.setSlow(slow); }
 	/// Update the resolution settings, we just resized the window.
 	void resize();
 	/// Move the mouse back to where it started after we finish drag scrolling.
