@@ -478,7 +478,12 @@ void UnitWalkBState::cancel()
 void UnitWalkBState::postPathProcedures()
 {
 	_action.clearTU();
-	if (_unit->getFaction() != FACTION_PLAYER)
+	// the bot's player units take the AI branch their walk's AIModule decision was made for (POSTWALK_FIX, bench only)
+	const bool aiBranch = _unit->getFaction() != FACTION_PLAYER
+		|| AiProbe::postWalkAi(_parent->getSave(), _unit, _parent->getPanicHandled());
+	AiProbe::postWalkBegin(_parent->getSave(), _unit, _action, aiBranch);
+	bool meleePushed = false;
+	if (aiBranch)
 	{
 		int dir = _action.finalFacing;
 		if (_action.finalAction)
@@ -499,6 +504,7 @@ void UnitWalkBState::postPathProcedures()
 				action.updateTU();
 				_unit->setCharging(0);
 				_parent->statePushBack(new MeleeAttackBState(_parent, action));
+				meleePushed = true;
 			}
 		}
 		else if (_unit->isHiding())
@@ -526,6 +532,7 @@ void UnitWalkBState::postPathProcedures()
 		//todo: set the unit to aggrostate and try to find cover?
 		_unit->clearTimeUnits();
 	}
+	AiProbe::postWalkEnd(_parent->getSave(), _unit, meleePushed);
 
 	// the light of the unit at the end of its walk (the bench may skip it for a unit that sheds no light, AiProbe::lightSkip)
 	if (!AiProbe::lightSkip(_terrain, _unit))

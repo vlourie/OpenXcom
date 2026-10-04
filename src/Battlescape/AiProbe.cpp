@@ -109,6 +109,11 @@ bool botTurn(const SavedBattleGame *) { return false; }
 bool panicTurnFix() { return false; }
 void panicState(SavedBattleGame *, bool) {}
 void shotDivider(SavedBattleGame *, const BattleUnit *, double) {}
+bool postWalkFix() { return false; }
+bool postWalkAi(const SavedBattleGame *, const BattleUnit *, bool) { return false; }
+void postWalkBegin(SavedBattleGame *, BattleUnit *, const BattleAction &, bool) {}
+void postWalkEnd(SavedBattleGame *, const BattleUnit *, bool) {}
+void postWalkMelee(const BattleUnit *) {}
 long long battleSeed() { return -1; }
 void think(BattlescapeState *, SavedBattleGame *) {}
 void battleOver(BattlescapeState *, SavedBattleGame *, bool) {}
@@ -188,6 +193,19 @@ int lightRecalc = 0, lightSkipped = 0;
 /// [shooter faction][turn 1, later][divider 100, other].
 int panicTurn = -1, panicSide = -1, panicValue = -1;
 int panicShots[3][2][2] = {};
+
+/// The walk postPathProcedures is finishing (postWalkBegin), the unit whose post-walk melee is pending (postWalkMelee),
+/// and the counts of the [AIPOSTWALK] result line: [player faction, other][PW_*].
+struct PostWalk
+{
+	int unit = -1, finalFacing = -1, want = -1, dir0 = -1;
+	bool ai = false, finalAction = false, charge = false, inRange = false, hide = false, resel0 = true;
+};
+PostWalk postWalkNow;
+int postWalkMeleeUnit = -1;
+enum { PW_WALKS, PW_FA_REQ, PW_FA_EXEC, PW_TURN_REQ, PW_TURN_EXEC, PW_MELEE_REQ, PW_MELEE_PUSH, PW_MELEE_BEGUN, PW_HIDE_REQ,
+	PW_HIDE_EXEC, PW_N };
+int postWalkCount[2][PW_N] = {};
 
 /// Does the AI play the player's side too (OXCE_AI_BOT)?
 bool bot()
@@ -333,6 +351,21 @@ void logResult(SavedBattleGame *save, const char *how)
 		<< " h_t1_100=" << panicShots[1][0][0] << " h_t1_200=" << panicShots[1][0][1]
 		<< " h_t2_100=" << panicShots[1][1][0] << " h_t2_200=" << panicShots[1][1][1]
 		<< " n_t2_100=" << panicShots[2][1][0] << " n_t2_200=" << panicShots[2][1][1];
+	// what the walks' decisions asked of postPathProcedures and what it did (POSTWALK_FIX): p - player faction, h - other
+	{
+		static const char *names[PW_N] = { "walks", "fa_req", "fa_exec", "turn_req", "turn_exec", "melee_req", "melee_push",
+			"melee_begun", "hide_req", "hide_exec" };
+		std::ostringstream line;
+		line << "[AIPOSTWALK] result fix=" << postWalkFix();
+		for (int s = 0; s < 2; ++s)
+		{
+			for (int k = 0; k < PW_N; ++k)
+			{
+				line << " " << (s ? "h_" : "p_") << names[k] << "=" << postWalkCount[s][k];
+			}
+		}
+		Log(LOG_INFO) << line.str();
+	}
 	pathReport();
 	reachReport();
 	ambushReport();
@@ -1568,6 +1601,107 @@ namespace
 const SavedBattleGame *thinkSave = nullptr;
 }
 
+bool postWalkFix()
+{
+	static const bool on = bot() && envOn("OXCE_AI_POSTWALK_FIX");
+	return on;
+}
+
+bool postWalkAi(const SavedBattleGame *save, const BattleUnit *unit, bool panicHandled)
+{
+	return postWalkFix() && botTurn(save) && unit->getFaction() == FACTION_PLAYER && panicHandled;
+}
+
+void postWalkBegin(SavedBattleGame *save, BattleUnit *unit, const BattleAction &action, bool aiBranch)
+{
+	if (!active())
+	{
+		return;
+	}
+	// what the AI branch of postPathProcedures would do with this walk's decision, in its order: a charge, else hiding,
+	// else the final facing
+	PostWalk &w = postWalkNow;
+	w = PostWalk();
+	postWalkMeleeUnit = -1;
+	w.unit = unit->getId();
+	w.ai = aiBranch;
+	w.finalFacing = action.finalFacing;
+	w.finalAction = action.finalAction;
+	w.dir0 = unit->getDirection();
+	w.resel0 = unit->reselectAllowed();
+	if (BattleUnit *charging = unit->getCharging())
+	{
+		w.charge = true;
+		w.want = save->getTileEngine()->getDirectionTo(unit->getPosition(), charging->getPosition());
+		w.inRange = save->getTileEngine()->validMeleeRange(unit, charging, w.want);
+	}
+	else if (unit->isHiding())
+	{
+		w.hide = true;
+		w.want = (unit->getDirection() + 4) % 8;
+	}
+	else
+	{
+		w.want = action.finalFacing >= 8 ? action.finalFacing - 8 : action.finalFacing;
+	}
+}
+
+void postWalkEnd(SavedBattleGame *save, const BattleUnit *unit, bool meleePushed)
+{
+	if (!active() || postWalkNow.unit != unit->getId())
+	{
+		return;
+	}
+	const PostWalk &w = postWalkNow;
+	int *c = postWalkCount[unit->getFaction() != FACTION_PLAYER];
+	const int dir1 = unit->getDirection();
+	const bool noresel = !unit->reselectAllowed();
+	const bool turnReq = w.want != -1 && w.want != w.dir0;
+	++c[PW_WALKS];
+	if (w.finalAction)
+	{
+		++c[PW_FA_REQ];
+		c[PW_FA_EXEC] += noresel;
+	}
+	if (turnReq)
+	{
+		++c[PW_TURN_REQ];
+		c[PW_TURN_EXEC] += dir1 == w.want;
+	}
+	if (w.charge && w.inRange)
+	{
+		++c[PW_MELEE_REQ];
+		c[PW_MELEE_PUSH] += meleePushed;
+	}
+	if (w.hide)
+	{
+		++c[PW_HIDE_REQ];
+		c[PW_HIDE_EXEC] += !unit->isHiding() && dir1 == w.want;
+	}
+	if (meleePushed)
+	{
+		postWalkMeleeUnit = unit->getId();
+	}
+	if (w.finalAction || turnReq || w.charge || w.hide)
+	{
+		Log(LOG_INFO) << "[AIPOSTWALK] rec=" << recordNo - 1 << " turn=" << save->getTurn() << " side=" << (int)save->getSide()
+			<< " unit=" << w.unit << " ai=" << w.ai << " fa=" << w.finalAction << " ff=" << w.finalFacing
+			<< " charge=" << w.charge << " range=" << w.inRange << " hide=" << w.hide << " want=" << w.want
+			<< " dir0=" << w.dir0 << " dir1=" << dir1 << " resel0=" << w.resel0 << " noresel=" << noresel
+			<< " melee=" << meleePushed;
+	}
+}
+
+void postWalkMelee(const BattleUnit *unit)
+{
+	if (!active() || postWalkMeleeUnit != unit->getId())
+	{
+		return;
+	}
+	postWalkMeleeUnit = -1;
+	++postWalkCount[unit->getFaction() != FACTION_PLAYER][PW_MELEE_BEGUN];
+}
+
 void beforeThink(SavedBattleGame *save, BattleUnit *unit)
 {
 	thinkSave = save;
@@ -1575,6 +1709,7 @@ void beforeThink(SavedBattleGame *save, BattleUnit *unit)
 	{
 		return;
 	}
+	postWalkMeleeUnit = -1;
 	if (knownOccupantPath())
 	{
 		// KNOWN_OCCUPANT_PATH_V1: the decision's count of blocked tiles starts with its first think
