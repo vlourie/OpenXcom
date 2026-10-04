@@ -18,6 +18,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <SDL.h>
+#include <functional>
 #include <list>
 #include <unordered_map>
 #include <unordered_set>
@@ -120,6 +121,11 @@ public:
 	void fillCircle(float cx, float cy, float r, Uint32 color);
 	/// Blends a picture of 0xAARRGGBB pixels (straight alpha) with its top left at world pixel (x, y), clipped.
 	void drawImage(const Uint32 *argb, int w, int h, int x, int y);
+	/// Shades the world rectangle (x, y, w, h) row by row in bands on the render threads: fn(y, x0, x1, row)
+	/// blends into row[x0, x1), the row already clipped (blend() below). A per-pixel picture computed in place.
+	void shadeRows(int x, int y, int w, int h, const std::function<void(int, int, int, Uint32*)> &fn);
+	/// Blends 0xAARRGGBB (straight alpha) times `cov` (0..1) into a world pixel.
+	static void blend(Uint32 &d, Uint32 color, float cov);
 	/// What a classic bitmap font is replaced with: the TrueType face (big or small), the capitals' height in
 	/// base pixels (a little lighter than the chunky bitmap's) and the classic line advance.
 	struct FontMetrics

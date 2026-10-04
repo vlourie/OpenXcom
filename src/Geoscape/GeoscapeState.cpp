@@ -892,6 +892,8 @@ void GeoscapeState::timeAdvance()
 	{
 		timeSpan = 12 * 5 * 6 * 2 * 24;
 	}
+	// the HD radar pulses only at 5 seconds and 1 minute a step: faster, a cycle is shorter than a pulse
+	_globe->setHdRadarSlow(timeSpan <= 12);
 
 
 	for (int i = 0; i < timeSpan && !_pause; ++i)
@@ -1888,6 +1890,9 @@ bool GeoscapeState::processMissionSite(MissionSite *site)
  */
 void GeoscapeState::time30Minutes()
 {
+	// the HD radar pulses with the detection below (a picture only)
+	_globe->hdRadarCycle();
+
 	// Decrease mission countdowns
 	for (auto* am : _game->getSavedGame()->getAlienMissions())
 	{

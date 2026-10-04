@@ -17,6 +17,8 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "Globe.h"
+#include <algorithm>
+#include <functional>
 #include "../fmath.h"
 #include "../Engine/Action.h"
 #include "../Engine/SurfaceSet.h"
@@ -1183,6 +1185,9 @@ void Globe::drawRadars()
 {
 	_radars->clear();
 
+	// the HD layer draws the bases' and the craft's coverage after the blit (hdRadar)
+	_hdRadarKept = hdRadar();
+
 	if (!Options::globeRadarLines)
 		return;
 
@@ -1225,7 +1230,7 @@ void Globe::drawRadars()
 			{
 				for (size_t j=0; j<ranges.size(); j++) drawGlobeCircle(lat,lon,ranges[j],48);
 			}
-			else
+			else if (!_hdRadarKept)
 			{
 				range = 0;
 				for (auto* fac : *xbase->getFacilities())
@@ -1246,7 +1251,7 @@ void Globe::drawRadars()
 		// Draw radars around player craft
 		for (auto* xcraft : *xbase->getCrafts())
 		{
-			if (xcraft->getStatus() != "STR_OUT")
+			if (xcraft->getStatus() != "STR_OUT" || _hdRadarKept)
 				continue;
 			lat = xcraft->getLatitude();
 			lon = xcraft->getLongitude();
@@ -1930,6 +1935,81 @@ void Globe::drawHdMarks()
 }
 
 /**
+ * Is the HD layer drawing the radar coverage of the bases and the craft (oxceHdRadarPulse)? Then
+ * their circles are kept out of _radars; the craft range, the new base's ranges and the enemy's
+ * radars stay circles.
+ */
+bool Globe::hdRadar() const
+{
+	return Options::oxceHdRadarPulse && Options::globeRadarLines && HdUi::active();
+}
+
+/**
+ * The radar coverage, as drawRadars would have had it: a base by its finished radars (the longest
+ * gives the circle, each one a wave), a craft out of its base by its own. Read from the game only.
+ */
+void Globe::drawHdRadar()
+{
+	const int k = HdUi::scale();
+	if (k <= 0)
+	{
+		return;
+	}
+	std::vector<HdRadar::Source> sources;
+	for (auto* xbase : *_game->getSavedGame()->getBases())
+	{
+		const double lat = xbase->getLatitude(), lon = xbase->getLongitude();
+		if (!(AreSame(lon, 0.0) && AreSame(lat, 0.0)))
+		{
+			std::vector<int> ranges;
+			for (auto* fac : *xbase->getFacilities())
+			{
+				const int r = fac->getRules()->getRadarRange();
+				if (fac->getBuildTime() == 0 && r > 0 && r < MAX_DRAW_RADAR_CIRCLE_RADIUS)
+				{
+					ranges.push_back(r);
+				}
+			}
+			if (!ranges.empty())
+			{
+				std::sort(ranges.begin(), ranges.end(), std::greater<int>());
+				HdRadar::Source s{ xbase, lon, lat, Nautical(ranges.front()), {} };
+				for (size_t i = 0; i < ranges.size() && i < (size_t)HdRadar::MAX_WAVES; ++i)
+				{
+					s.waves.push_back(Nautical(ranges[i]));
+				}
+				sources.push_back(s);
+			}
+		}
+		for (auto* xcraft : *xbase->getCrafts())
+		{
+			const double range = Nautical(xcraft->getCraftStats().radarRange);
+			if (xcraft->getStatus() == "STR_OUT" && range > 0)
+			{
+				sources.push_back(HdRadar::Source{ xcraft, xcraft->getLongitude(), xcraft->getLatitude(), range, {} });
+			}
+		}
+	}
+	HdRadar::View view;
+	view.cenLon = _cenLon;
+	view.cenLat = _cenLat;
+	view.cx = (getX() + _cenX) * (double)k;
+	view.cy = (getY() + _cenY) * (double)k;
+	view.radius = _radius * k;
+	view.x = getX() * k;
+	view.y = getY() * k;
+	view.w = getWidth() * k;
+	view.h = getHeight() * k;
+	view.k = k;
+	const GameTime *t = _game->getSavedGame()->getTime();
+	const long long minute = (((long long)t->getYear() * 12 + t->getMonth()) * 32 + t->getDay()) * 1440 + t->getHour() * 60 + t->getMinute();
+	HdUi &ui = HdUi::instance();
+	ui.setClip(getX(), getY(), getWidth(), getHeight());
+	_hdRadar.draw(view, sources, minute);
+	ui.clearClip();
+}
+
+/**
  * Is the HD interface going to draw the globe's labels with its own fonts? Then they are kept out
  * of _countries: that surface reaches the screen through the upscaler, and a name smeared by xBRZ
  * under a sharp one drawn over it reads worse than either alone.
@@ -2041,6 +2121,16 @@ void Globe::blit(SDL_Surface *surface)
 {
 	Surface::blit(surface);
 	_radars->blit(surface);
+	if (_hdRadarKept && hdRadar() && HdUi::isScreen(surface))
+	{
+		// over the paths and the other radars, under the borders, the names and the markers
+		drawHdRadar();
+	}
+	else if (_hdRadarKept != hdRadar())
+	{
+		// the option was switched: the circles come back, or go
+		invalidate();
+	}
 	_countries->blit(surface);
 	if (_hdLabelsKept && HdUi::isScreen(surface) && HdUi::active())
 	{
