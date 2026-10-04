@@ -3552,6 +3552,131 @@ void TileEngine::explode(BattleActionAttack attack, Position center, int power, 
 }
 
 /**
+ * The area of an explosion, for showing it before the shot: the same rays as explode() with the same
+ * power losses, but nothing is hit, damaged or rolled (no random numbers). Keep the two in step.
+ * @param center Center of the explosion in voxelspace.
+ * @param power Power of the explosion.
+ * @param type The damage type of the explosion.
+ * @param maxRadius The maximum radius of the explosion.
+ * @param area Gets every tile the explosion reaches and the power it reaches it with - that of the first
+ *  ray to arrive, the one explode() rolls the damage of units and items there from.
+ */
+void TileEngine::explosionArea(Position center, int power, const RuleDamageType *type, int maxRadius, std::map<Tile*, int> &area)
+{
+	const Position centetTile = center.toTile();
+	int hitSide = 0;
+	int diagonalWall = 0;
+	int power_;
+	area.clear();
+
+	if (type->FireBlastCalc)
+	{
+		power /= 2;
+	}
+
+	int exHeight = Clamp(Options::battleExplosionHeight, 0, 3);
+	int vertdec = 1000; //default flat explosion
+
+	switch (exHeight)
+	{
+	case 1:
+		vertdec = 3.0f * type->RadiusReduction;
+		break;
+	case 2:
+		vertdec = 1.0f * type->RadiusReduction;
+		break;
+	case 3:
+		vertdec = 0.5f * type->RadiusReduction;
+	}
+
+	Tile *origin = _save->getTile(Position(centetTile));
+	Tile *dest = nullptr;
+	if (!origin)
+	{
+		return;
+	}
+	if (origin->isBigWall()) //pre-calculations for bigwall deflection
+	{
+		diagonalWall = origin->getMapData(O_OBJECT)->getBigWall();
+		if (diagonalWall == Pathfinding::BIGWALLNWSE) //  3 |
+			hitSide = (center.x % 16 - center.y % 16) > 0 ? 1 : -1;
+		if (diagonalWall == Pathfinding::BIGWALLNESW) //  2 --
+			hitSide = (center.x % 16 + center.y % 16 - 15) > 0 ? 1 : -1;
+	}
+
+	for (int fi = -90; fi <= 90; fi += 5)
+	{
+		for (int te = 0; te <= 360; te += 3)
+		{
+			double cos_te = cos(Deg2Rad(te));
+			double sin_te = sin(Deg2Rad(te));
+			double sin_fi = sin(Deg2Rad(fi));
+			double cos_fi = cos(Deg2Rad(fi));
+
+			origin = _save->getTile(centetTile);
+			dest = origin;
+			double l = 0;
+			int tileX, tileY, tileZ;
+			power_ = power;
+			while (power_ > 0 && l <= maxRadius)
+			{
+				area.insert(std::make_pair(dest, power_)); // the first ray to arrive sets the power
+
+				l += 1.0;
+
+				tileX = int(floor(centetTile.x + 0.5 + l * sin_te * cos_fi));
+				tileY = int(floor(centetTile.y + 0.5 + l * cos_te * cos_fi));
+				tileZ = int(floor(centetTile.z + 0.5 + l * sin_fi));
+
+				origin = dest;
+				dest = _save->getTile(Position(tileX, tileY, tileZ));
+
+				if (!dest) break; // out of map!
+
+				power_ -= type->RadiusReduction;
+				if (origin->getPosition().z != tileZ)
+					power_ -= vertdec; //3d explosion factor
+
+				if (type->FireBlastCalc)
+				{
+					int dir;
+					Pathfinding::vectorToDirection(origin->getPosition() - dest->getPosition(), dir);
+					if (dir != -1 && dir %2) power_ -= 0.5f * type->RadiusReduction;
+				}
+				if (l > 0.5) {
+					if ( l > 1.5)
+					{
+						power_ -= verticalBlockage(origin, dest, type->ResistType, false) * 2;
+						power_ -= horizontalBlockage(origin, dest, type->ResistType, false) * 2;
+					}
+					else //tricky bigwall deflection /Volutar
+					{
+						bool skipObject = diagonalWall == 0;
+						if (diagonalWall == Pathfinding::BIGWALLNESW) // --
+						{
+							if (hitSide<0 && te >= 135 && te < 315)
+								skipObject = true;
+							if (hitSide>0 && ( te < 135 || te > 315))
+								skipObject = true;
+						}
+						if (diagonalWall == Pathfinding::BIGWALLNWSE) // |
+						{
+							if (hitSide>0 && te >= 45 && te < 225)
+								skipObject = true;
+							if (hitSide<0 && ( te < 45 || te > 225))
+								skipObject = true;
+						}
+						power_ -= verticalBlockage(origin, dest, type->ResistType, skipObject) * 2;
+						power_ -= horizontalBlockage(origin, dest, type->ResistType, skipObject) * 2;
+
+					}
+				}
+			}
+		}
+	}
+}
+
+/**
  * Applies the explosive power to the tile parts. This is where the actual destruction takes place.
  * Must affect 9 objects (6 box sides and the object inside plus 2 outer walls).
  * @param tile Tile affected.

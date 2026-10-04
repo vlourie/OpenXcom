@@ -181,6 +181,8 @@ OPT bool oxceHdGroundVariants;
 OPT int oxceHdReticle;
 // Battlescape: the yellow reticle (CURSOR.PCK 7..10) takes the colour group the mod gives the shot's damage type in the Ufopaedia (articleItem ammoColorDT*); off = stock yellow
 OPT bool oxceHdReticleDamageColor;
+// HD render, battlescape: the area the aimed explosive shot or throw would blast, filled on the floor in its damage type's colour, denser where the power is stronger
+OPT bool oxceHdBlastArea;
 // HD base screen: facility pictures play their phases (hd/BASEBITS.PCK/<i>.vN.png); off = the first phase only
 OPT bool oxceHdBaseAnim;
 // HD base and craft screens: the lights of the crafts (hd/BASEBITS.PCK/<i>.lights.txt) and the phases of their pictures
