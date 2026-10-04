@@ -29,6 +29,7 @@
 #include <memory>
 #include <set>
 #include <sstream>
+#include <tuple>
 #include <typeinfo>
 #include "AiCandidates.h"
 #include "AIModule.h"
@@ -686,6 +687,27 @@ struct Pending
 };
 Pending pending;
 
+/// EXPOSURE_END_TURN_V1 (OXCE_AI_EXPOSURE_PROBE, forensic): what the decision knew, kept until its action is over -
+/// then [AIEXPO] counts the known enemies on the end cell and on the cells of the same reach that keep the action's meaning.
+struct Expo
+{
+	bool on = false;
+	/// F firepoint, M melee walk, P patrol, A ambush, E escape, O other walk, S shot, H melee hit, X other (expoClass)
+	char cls = 'X';
+	std::string src;
+	int type = 0;
+	/// the action's target unit (firepoint, melee, shot; -1 none) and the walk's target tile
+	int tgt = -1;
+	Position goal, pos0;
+	/// time units as it decided, the follow-up attack's cost (-1 unknown)
+	int tu0 = 0, cost = -1;
+	bool haveTu = false;
+	std::vector<std::pair<Position, int>> moves;
+	/// hostile units it knew of as it decided (AiCandidates' rule), of them seen by its side now
+	std::vector<int> known;
+	int now = 0;
+};
+
 /// The action of the last decision until it is over: the next decision, the end of the side's turn or of the battle.
 struct Exec
 {
@@ -705,6 +727,7 @@ struct Exec
 	int known = 0, seen = 0, lof = 0, lofTu = 0;
 	/// REPEATED_BLOCKED_STEP: record the walk's first step (walk.first)
 	bool krWatch = false;
+	Expo expo;
 };
 Exec exec;
 
@@ -897,6 +920,183 @@ int spottedBy(SavedBattleGame *save, const BattleUnit *unit)
 	return n;
 }
 
+bool exposure(const BattleUnit *unit)
+{
+	static const bool on = envOn("OXCE_AI_EXPOSURE_PROBE");
+	return on && record() && careful(unit);
+}
+
+const char *expoClass(char c)
+{
+	switch (c)
+	{
+	case 'F': return "FIREPOINT";
+	case 'M': return "MELEE";
+	case 'P': return "PATROL";
+	case 'A': return "AMBUSH";
+	case 'E': return "ESCAPE";
+	case 'O': return "OTHER_MOVE";
+	case 'S': return "SHOT";
+	case 'H': return "MELEE_HIT";
+	default: return "OTHER";
+	}
+}
+
+/// [AIEXPO] (EXPOSURE_END_TURN_V1): the action is over - the end cell against the hostile units the decision knew of, and the
+/// cells of the decision's reach that keep the action's meaning: the same shot (a line of fire to the same target from the
+/// firepoint's own origin, the attack's cost left, not farther from it than the end + 1), the same melee target (a valid melee
+/// tile by it, the attack's cost left), the same patrol node (not farther from it). Per cell, of the known: how many see it
+/// (a line of fire within their view sector and distance), have a line of fire on it (from the eye, as getSpottingUnits), can
+/// attack it next turn (a firearm with that line, or a melee weapon within their walk: TU / 4 + 1 tiles), can walk to it.
+/// Positions are where the known stand (the engine's knowledge the AI uses); no RNG, no sighting update.
+void expoWrite(SavedBattleGame *save, BattleUnit *self)
+{
+	const Expo &x = exec.expo;
+	TileEngine *te = save->getTileEngine();
+	const Position at = self->getPosition();
+	struct Foe { BattleUnit *u; Position p, eye; bool gun, melee; int walk; };
+	std::vector<Foe> foes;
+	for (int id : x.known)
+	{
+		BattleUnit *e = unitById(save, id);
+		if (!e || e->isOut() || !e->getTile())
+			continue;
+		const BattleItem *w = e->getMainHandWeapon();
+		Position eye = te->getSightOriginVoxel(e);
+		eye.z -= 2;
+		foes.push_back({ e, e->getPosition(), eye, w && w->getRules()->getBattleType() == BT_FIREARM,
+			e->getUtilityWeapon(BT_MELEE) != nullptr, e->getBaseStats()->tu / 4 + 1 });
+	}
+	struct Ex { int see = 0, lof = 0, atk = 0, reach = 0, near = -1; };
+	auto expose = [&](const Position &p)
+	{
+		Ex r;
+		Tile *tile = save->getTile(p);
+		if (!tile)
+			return r;
+		// a tile the unit does not stand on is checked as if it stood there, as getSpottingUnits does
+		BattleUnit *potential = p == at ? nullptr : self;
+		for (const auto &f : foes)
+		{
+			const int d = Position::distance2d(p, f.p);
+			r.near = r.near < 0 ? d : std::min(r.near, d);
+			bool lof = false;
+			if (d <= 20)
+			{
+				Position origin = f.eye, scan;
+				lof = te->canTargetUnit(&origin, tile, &scan, f.u, false, potential);
+			}
+			const bool walk = d <= f.walk && std::abs(p.z - f.p.z) <= 1;
+			r.lof += lof ? 1 : 0;
+			r.see += lof && d <= te->getMaxViewDistance() && f.u->checkViewSector(p) ? 1 : 0;
+			r.atk += (lof && f.gun) || (walk && f.melee) ? 1 : 0;
+			r.reach += walk ? 1 : 0;
+		}
+		return r;
+	};
+	BattleUnit *tgt = x.tgt >= 0 ? unitById(save, x.tgt) : nullptr;
+	if (tgt && (tgt->isOut() || !tgt->getTile()))
+		tgt = nullptr;
+	const bool shot = x.cls == 'F' || x.cls == 'S', melee = x.cls == 'M' || x.cls == 'H';
+	const int dEnd = tgt ? Position::distance2d(at, tgt->getPosition()) : -1;
+	auto meaning = [&](const Position &c, int tu) -> bool
+	{
+		Tile *tile = save->getTile(c);
+		if (!tile)
+			return false;
+		if ((shot || melee) && (!tgt || (x.cost >= 0 && x.tu0 - tu < x.cost)))
+			return false;
+		if (shot)
+		{
+			if (Position::distance2d(c, tgt->getPosition()) > dEnd + 1)
+				return false;
+			Position origin = c.toVoxel() + Position(8, 8, self->getHeight() + self->getFloatHeight() - tile->getTerrainLevel() - 4), scan;
+			return te->canTargetUnit(&origin, tgt->getTile(), &scan, self, false);
+		}
+		if (melee)
+		{
+			const Position d = c - tgt->getPosition();
+			const int size = self->getArmor()->getSize(), sizeTarget = tgt->getArmor()->getSize();
+			if ((!d.x && !d.y) || d.x < -size || d.x > sizeTarget || d.y < -size || d.y > sizeTarget || d.z < -1 || d.z > 1)
+				return false;
+			return !tile->getDangerous() && te->validMeleeRange(c, te->getDirectionTo(c, tgt->getPosition()), self, tgt, nullptr);
+		}
+		if (x.cls == 'P')
+		{
+			return Position::distance2d(c, x.goal) <= Position::distance2d(at, x.goal) && std::abs(c.z - x.goal.z) <= std::abs(at.z - x.goal.z);
+		}
+		return false;
+	};
+	std::map<int, int> tuOf;
+	for (const auto &m : x.moves)
+	{
+		tuOf[save->getTileIndex(m.first)] = m.second;
+	}
+	tuOf[save->getTileIndex(x.pos0)] = 0;
+	auto it = tuOf.find(save->getTileIndex(at));
+	const bool tuFound = it != tuOf.end();
+	const int tuEnd = tuFound ? it->second : std::max(0, x.tu0 - self->getTimeUnits());
+	const Ex e = expose(at);
+	const bool endOk = meaning(at, tuEnd);
+
+	static const int caps[4] = { 0, 4, 8, 16 };
+	struct Tier { int n = 0, lower = 0, zero = 0, lowerLof = 0; bool best = false; Ex b; Position bp; int btu = 0; } tier[4];
+	int checked = 0, kept = 0;
+	const bool alts = x.haveTu && !foes.empty() && (e.atk || e.lof || e.see) && (shot || melee || x.cls == 'P');
+	if (alts)
+	{
+		for (const auto &c : tuOf)
+		{
+			const Position p = save->getTileCoords(c.first);
+			if (p == at || c.second > tuEnd + caps[3])
+				continue;
+			++checked;
+			if (!meaning(p, c.second))
+				continue;
+			++kept;
+			const Ex a = expose(p);
+			for (int t = 0; t < 4; ++t)
+			{
+				if (c.second > tuEnd + caps[t])
+					continue;
+				Tier &r = tier[t];
+				++r.n;
+				r.lower += a.atk < e.atk ? 1 : 0;
+				r.zero += a.atk == 0 ? 1 : 0;
+				r.lowerLof += a.atk <= e.atk && a.lof < e.lof ? 1 : 0;
+				if (!r.best || std::make_tuple(a.atk, a.lof, a.see, c.second) < std::make_tuple(r.b.atk, r.b.lof, r.b.see, r.btu))
+				{
+					r.best = true;
+					r.b = a;
+					r.bp = p;
+					r.btu = c.second;
+				}
+			}
+		}
+	}
+	std::ostringstream line;
+	line << "[AIEXPO] {\"v\":1,\"rec\":" << exec.rec << ",\"unit\":" << exec.unit << ",\"turn\":" << exec.turn << ",\"cls\":\"" << expoClass(x.cls)
+		<< "\",\"src\":\"" << x.src << "\",\"t\":" << x.type << ",\"tgt\":" << x.tgt << ",\"tgtok\":" << (tgt ? 1 : 0)
+		<< ",\"goal\":" << jpos(x.goal) << ",\"from\":" << jpos(x.pos0) << ",\"end\":" << jpos(at) << ",\"stop\":" << (x.type == BA_WALK && at != x.goal ? 1 : 0)
+		<< ",\"tu0\":" << x.tu0 << ",\"tu_end\":" << self->getTimeUnits() << ",\"tue\":" << tuEnd << ",\"tuf\":" << (tuFound ? 1 : 0)
+		<< ",\"cost\":" << x.cost << ",\"dt\":" << dEnd << ",\"known\":" << x.known.size() << ",\"now\":" << x.now << ",\"alive\":" << foes.size()
+		<< ",\"e\":[" << e.see << "," << e.lof << "," << e.atk << "," << e.reach << "," << e.near << "],\"endok\":" << (endOk ? 1 : 0)
+		<< ",\"havetu\":" << (x.haveTu ? 1 : 0) << ",\"checked\":" << checked << ",\"kept\":" << kept << ",\"alt\":[";
+	if (alts)
+	{
+		for (int t = 0; t < 4; ++t)
+		{
+			const Tier &r = tier[t];
+			line << (t ? "," : "") << "[" << caps[t] << "," << r.n << "," << r.lower << "," << r.zero << "," << r.lowerLof;
+			if (r.best)
+				line << "," << r.b.see << "," << r.b.lof << "," << r.b.atk << "," << r.b.reach << "," << r.btu << "," << jpos(r.bp);
+			line << "]";
+		}
+	}
+	line << "]}";
+	Log(LOG_INFO) << line.str();
+}
+
 /// The last decision's action is over: what it did ([AIEXEC], joined to [AIREC] by rec).
 void flushExec(SavedBattleGame *save)
 {
@@ -982,6 +1182,14 @@ void flushExec(SavedBattleGame *save)
 	}
 	line << "}";
 	Log(LOG_INFO) << line.str();
+	if (exec.expo.on)
+	{
+		if (self && !self->isOut() && self->getTile())
+			expoWrite(save, self);
+		else
+			Log(LOG_INFO) << "[AIEXPO] {\"v\":1,\"rec\":" << exec.rec << ",\"unit\":" << exec.unit << ",\"turn\":" << exec.turn << ",\"cls\":\""
+				<< expoClass(exec.expo.cls) << "\",\"out\":1}";
+	}
 	exec = Exec();
 }
 
@@ -2773,6 +2981,64 @@ void writeRecord(SavedBattleGame *save, BattleUnit *unit, const BattleAction &ac
 		}
 		exec.lof = (int)lof.size();
 		exec.lofTu = (int)lofTu.size();
+	}
+	if (exposure(unit) && (action.type == BA_WALK || attackType(action.type)))
+	{
+		// EXPOSURE_END_TURN_V1: what the decision knew - the reach, the target, the hostile units it knew of ([AIEXPO] at the end)
+		Expo &x = exec.expo;
+		x.on = true;
+		x.src = src ? src->src : std::string();
+		x.type = (int)action.type;
+		const bool walk = action.type == BA_WALK;
+		const bool shotType = action.type == BA_SNAPSHOT || action.type == BA_AUTOSHOT || action.type == BA_AIMEDSHOT;
+		auto starts = [&](const char *p) { return x.src.compare(0, std::string(p).size(), p) == 0; };
+		x.cls = !walk ? (action.type == BA_HIT ? 'H' : shotType ? 'S' : 'X')
+			: starts("firepoint") ? 'F' : starts("melee") ? 'M' : starts("patrol") ? 'P' : starts("ambush") ? 'A' : starts("escape") ? 'E' : 'O';
+		x.goal = action.target;
+		x.pos0 = pending.pos;
+		x.tu0 = pending.tu;
+		const Tile *tt = save->getTile(action.target);
+		const BattleUnit *tgt = !walk ? (tt ? tt->getUnit() : nullptr)
+			: (x.cls == 'F' || x.cls == 'M') && unit->getAIModule() ? unit->getAIModule()->getTarget() : nullptr;
+		x.tgt = tgt ? tgt->getId() : -1;
+		if (!walk)
+		{
+			x.cost = action.Time;
+		}
+		else if (x.cls == 'F' || x.cls == 'M')
+		{
+			// the follow-up attack: the cheapest listed attack of that kind on the target, else on anyone (-1: none listed)
+			int any = -1, on = -1;
+			for (const auto &c : set.acts)
+			{
+				const bool fits = x.cls == 'M' ? c.type == BA_HIT : (c.type == BA_SNAPSHOT || c.type == BA_AUTOSHOT || c.type == BA_AIMEDSHOT);
+				if (c.kind != AiCandidates::ATTACK || !fits || c.tu < 0)
+					continue;
+				any = any < 0 ? c.tu : std::min(any, c.tu);
+				if (c.target == x.tgt)
+					on = on < 0 ? c.tu : std::min(on, c.tu);
+			}
+			x.cost = on >= 0 ? on : any;
+		}
+		x.haveTu = !pending.wantReach;
+		for (const auto &m : set.moves)
+		{
+			if (m.kind == AiCandidates::MOVE && m.tu >= 0)
+				x.moves.push_back({ m.tile, m.tu });
+		}
+		const auto &visible = *unit->getVisibleUnits();
+		for (auto *bu : *save->getUnits())
+		{
+			if (bu->isOut() || bu->getFaction() != FACTION_HOSTILE)
+				continue;
+			const bool sees = std::find(visible.begin(), visible.end(), bu) != visible.end();
+			const int since = bu->getTurnsSinceSpottedByFaction(unit->getFaction());
+			if (sees || since <= unit->getIntelligence())
+			{
+				x.known.push_back(bu->getId());
+				x.now += since == 0 ? 1 : 0;
+			}
+		}
 	}
 	pending.unit = -1;
 }
