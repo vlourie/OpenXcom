@@ -29,8 +29,11 @@ try {
     if (-not $py) { $py = Get-Command python3 -ErrorAction SilentlyContinue }
     if (-not $py) { exit 0 }
 
-    $rel = $path
-    if ($rel.StartsWith($root)) { $rel = $rel.Substring($root.Length).TrimStart('\','/') }
+    # путь приходит и с обратными, и с прямыми косыми; без приведения абсолютный путь уходит
+    # в rake.py как есть, и глобы с папкой (.claude/hooks/*.ps1) не совпадают (аудит 05.10)
+    $rel = $path -replace '/', '\'
+    $rootN = $root -replace '/', '\'
+    if ($rel.StartsWith($rootN, [StringComparison]::OrdinalIgnoreCase)) { $rel = $rel.Substring($rootN.Length).TrimStart('\') }
 
     $hits = & $py.Source tools/rake.py match $rel 2>&1 | Out-String
     if (-not $hits.Trim()) { exit 0 }
@@ -50,7 +53,12 @@ try {
     #     exit 0
     # }
 
-    @{ systemMessage = "ГРАБЛИ на $rel`n$($hits.Trim())" } | ConvertTo-Json -Depth 5 -Compress
+    # systemMessage видит только человек в интерфейсе; модели грабли доходят лишь через
+    # hookSpecificOutput.additionalContext (аудит 05.10: правки docs/*.md шли без предупреждения)
+    $text = "ГРАБЛИ на $rel`n$($hits.Trim())"
+    @{ systemMessage = $text
+       hookSpecificOutput = @{ hookEventName = 'PreToolUse'; additionalContext = $text } } |
+       ConvertTo-Json -Depth 5 -Compress
     exit 0
 }
 catch { exit 0 }
