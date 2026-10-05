@@ -193,6 +193,13 @@ def build(roots: list[Path], full: bool) -> int:
 
 
 def main():
+    # хук session-start читает вывод через трубу: без этого python пишет в cp1252 и падает
+    # на первой кириллице уже после пересборки индекса (аудит 05.10, R-001)
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding="utf-8", errors="replace")
+        except (AttributeError, ValueError):
+            pass
     ap = argparse.ArgumentParser(description="Индекс проекта для агентов")
     ap.add_argument("--if-stale", action="store_true", help="пересобрать, только если устарел")
     ap.add_argument("--full", action="store_true", help="плюс doxygen (нужен Doxyfile)")

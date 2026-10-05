@@ -30,7 +30,8 @@ $ErrorActionPreference = 'Stop'
 
 $Path = (Resolve-Path -LiteralPath $Path).ProviderPath.TrimEnd('\')
 $exts     = @('.ps1', '.psm1', '.psd1')
-$skipDirs = @('\.git\', '\.index\', '\node_modules\', '\.venv\')
+# '\.venv' без закрывающей косой: окружения зовутся и .venv, и .venv-sa3, .venv-qwen21 (аудит 05.10)
+$skipDirs = @('\.git\', '\.index\', '\node_modules\', '\.venv')
 
 $bomBytes = [byte[]](0xEF, 0xBB, 0xBF)
 $utf8Bom    = New-Object System.Text.UTF8Encoding($true)
