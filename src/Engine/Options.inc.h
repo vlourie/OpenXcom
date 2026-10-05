@@ -167,6 +167,8 @@ OPT bool oxceHdUiSmooth;
 OPT int oxceHdUi;
 /// HD interface: the widget skin (0 classic shapes, 1 ramps with gradients, 2 dark panels, 3 flat).
 OPT int oxceHdUiSkin;
+// HD interface, modern skin: the battle's button panel drawn as tiles with vector pictograms (HdBattleHud); off = the mod's picture, smoothed
+OPT bool oxceHdBattleHud;
 /// HD interface: 0 the game's own font, smoothed (classic colours, widths and lines); 1 TrueType (hd/UI/Font*.ttf).
 OPT int oxceHdUiFont;
 /// HD interface: the globe's own scale, apart from the windows around it: 0 as the geoscape, N = one globe pixel is N display pixels.

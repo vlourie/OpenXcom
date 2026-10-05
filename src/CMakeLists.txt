@@ -162,6 +162,7 @@ set ( engine_src
   Engine/HdItems.cpp
   Engine/HdOutline.cpp
   Engine/HdRadar.cpp
+  Engine/HdBattleHud.cpp
   Engine/HdKillCam.cpp
   Engine/HdBlit.cpp
   Engine/HdCanvas.cpp
