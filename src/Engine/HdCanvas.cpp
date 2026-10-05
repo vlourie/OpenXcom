@@ -649,6 +649,17 @@ void Canvas32::blitScripted(ScriptWorkerBlit &work, const Surface *src, int x, i
 	if (_hdMode >= HD_MODE_PACKS && k >= 2)
 	{
 		const HdFrame *pack = HdSprites::find(src->getBuffer());
+		// another picture of the same frame for this blit (setFrameVariant: a unit's arm aiming), if the pack has one
+		int variant = 0;
+		if (pack && _frameVariant > 0 && !pack->generated)
+		{
+			const HdFrame *v = HdSprites::findVariant(src->getBuffer(), _frameVariant);
+			if (v && v->width == pack->width && v->height == pack->height)
+			{
+				pack = v;
+				variant = _frameVariant;
+			}
+		}
 		if (pack && pack->width == w && pack->height == h)
 		{
 			// a frame in its own colours (E-1): the same script run without the light tells the light
@@ -664,7 +675,7 @@ void Canvas32::blitScripted(ScriptWorkerBlit &work, const Surface *src, int x, i
 				}
 				unlit->executeBlit(&_scriptSrc, &_scriptLit, 0, 0, 0, GraphSubset(bw, bh));
 			}
-			Uint64 hash = (0x1234567887654321ULL ^ (Uint64)(uintptr_t)src->getBuffer()) + (Uint64)shade;
+			Uint64 hash = (0x1234567887654321ULL ^ (Uint64)(uintptr_t)src->getBuffer()) + (Uint64)shade + ((Uint64)variant << 40);
 			if (own)
 			{
 				for (int sy = 0; sy < bh; ++sy)
