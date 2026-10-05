@@ -26,7 +26,7 @@ r"""Пилот AGENT цельной фигурой (специалист 05.10):
 
     py -3.13 tools/hdart/agent_full.py gun        # HANDOB 1354 из M-01 (без модели)
     tools/hdart/.venv/Scripts/python.exe tools/hdart/agent_full.py prep    # холст, маска, лист
-    py -3 tools/gpuq.py add --name agent_full_ak -- E:/OpenXCom/tools/hdart/.venv-qwen21/Scripts/python.exe \
+    py -3.13 tools/gpuq.py add --name agent_full_ak -- E:/OpenXCom/tools/hdart/.venv-qwen21/Scripts/python.exe \
         E:/OpenXCom/tools/hdart/agent_full.py render --seeds 5401,5402,5403,5404
     tools/hdart/.venv/Scripts/python.exe tools/hdart/agent_full.py build --pick 5401 --mod <папка мода>
 
@@ -581,9 +581,9 @@ def cmd_build(a):
     os.makedirs(hand, exist_ok=True)
     g4 = down(g_rgb, g_a, 4)
     save_rgba(g4[0], g4[1], os.path.join(hand, "%d.png" % HANDOB_FRAME))
-    with open(os.path.join(pack, "color.txt"), "w", encoding="utf-8") as f:
+    with open(os.path.join(pack, "color.txt"), "w", encoding="utf-8-sig") as f:
         f.write("colorAuthority: pack\nframes: 2 10 18 34 242 250\n")
-    with open(os.path.join(hand, "color.txt"), "w", encoding="utf-8") as f:
+    with open(os.path.join(hand, "color.txt"), "w", encoding="utf-8-sig") as f:
         f.write("colorAuthority: pack\nframes: %d\n" % HANDOB_FRAME)
     info = {"pick": tag, "panel": [round(float(x), 1) for x in panel], "hem_x4": round(hem, 1),
             "near_arm_px": int(na4.sum()), "far_arm_px": int(fal4.sum())}

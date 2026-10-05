@@ -1194,7 +1194,7 @@ def hit_compare(out_dir, k, seed, glove=1, glove_dir=None):
         path = os.path.join(out_dir, "glove_colours.png")
         sheet.save(path)
         out.append(path)
-    with open(os.path.join(out_dir, "hit_styles.txt"), "w", encoding="utf-8") as f:
+    with open(os.path.join(out_dir, "hit_styles.txt"), "w", encoding="utf-8-sig") as f:
         f.write("--melee-style (HIT.PCK 0-3):\n")
         for st in sorted(MELEE_STYLES):
             f.write("%d %s\n" % (st, MELEE_STYLES[st]["ru"]))

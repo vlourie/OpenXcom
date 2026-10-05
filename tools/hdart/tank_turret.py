@@ -729,7 +729,7 @@ def main():
         else:
             for d in range(8):
                 save_indexed(big[d * 8 + d], sheet.palette, os.path.join(tdir, "%d.png" % d))
-        with open(os.path.join(work, "selectUnitSprite.txt"), "w", encoding="utf-8") as f:
+        with open(os.path.join(work, "selectUnitSprite.txt"), "w", encoding="utf-8-sig") as f:
             f.write(script or "(no script: the engine's default)\n")
         armors = find_armors(rulesets, name + ".PCK")
         sheets_info.append(dict(

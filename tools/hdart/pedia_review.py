@@ -8,8 +8,8 @@ picture drifted from the original: `colour` is the mean RGB distance after shrin
 back to the classic size, `shape` is how well the two still agree on where the edges are (1 = the
 same drawing, below ~0.5 = a different one).
 
-    py -3 tools\\hdart\\pedia_text.py --mod "...\\mods\\Piratez" --out tools\\hdart\\pedia_text.json
-    py -3 tools\\hdart\\pedia_review.py --hd "...\\mods\\hd\\hd\\UI" --orig "...\\mods\\Piratez\\Resources\\Pedia"
+    py -3.13 tools\\hdart\\pedia_text.py --mod "...\\mods\\Piratez" --out tools\\hdart\\pedia_text.json
+    py -3.13 tools\\hdart\\pedia_review.py --hd "...\\mods\\hd\\hd\\UI" --orig "...\\mods\\Piratez\\Resources\\Pedia"
         --text tools\\hdart\\pedia_text.json --names rejected_files.txt --out review
 """
 import argparse
@@ -147,7 +147,7 @@ def main():
                 if os.path.exists(p):
                     os.remove(p)
         rows = rows[:args.worst]
-    with io.open(os.path.join(args.out, "report.csv"), "w", encoding="utf-8", newline="") as f:
+    with io.open(os.path.join(args.out, "report.csv"), "w", encoding="utf-8-sig", newline="") as f:
         w = csv.DictWriter(f, fieldnames=["name", "file", "colour", "shape", "title"])
         w.writeheader()
         w.writerows(rows)
