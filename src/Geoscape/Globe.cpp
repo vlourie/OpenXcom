@@ -1935,13 +1935,13 @@ void Globe::drawHdMarks()
 }
 
 /**
- * Is the HD layer drawing the radar coverage of the bases and the craft (oxceHdRadarPulse)? Then
+ * Is the HD layer drawing the radar coverage of the bases and the craft (oxceHdRadar 1 and 2)? Then
  * their circles are kept out of _radars; the craft range, the new base's ranges and the enemy's
  * radars stay circles.
  */
 bool Globe::hdRadar() const
 {
-	return Options::oxceHdRadarPulse && Options::globeRadarLines && HdUi::active();
+	return Options::oxceHdRadar > 0 && Options::globeRadarLines && HdUi::active();
 }
 
 /**
@@ -2005,7 +2005,7 @@ void Globe::drawHdRadar()
 	const long long minute = (((long long)t->getYear() * 12 + t->getMonth()) * 32 + t->getDay()) * 1440 + t->getHour() * 60 + t->getMinute();
 	HdUi &ui = HdUi::instance();
 	ui.setClip(getX(), getY(), getWidth(), getHeight());
-	_hdRadar.draw(view, sources, minute);
+	_hdRadar.draw(view, sources, minute, Options::oxceHdRadar == 2);
 	ui.clearClip();
 }
 

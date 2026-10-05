@@ -114,7 +114,7 @@ private:
 	std::vector<HdMark> _hdMarks;
 	std::unordered_map<const Target*, HdHeading> _hdHeadings;
 	bool _hdMarksKept = false;          ///< were the outlined targets kept out of _markers when it was last drawn
-	HdRadar _hdRadar;                   ///< the radar coverage as a wash with pulses (oxceHdRadarPulse)
+	HdRadar _hdRadar;                   ///< the radar coverage as a wash, with pulses (oxceHdRadar)
 	bool _hdRadarKept = false;          ///< were the bases' and craft's radar circles kept out of _radars when it was last drawn
 
 	bool _isMouseScrolling, _isMouseScrolled;

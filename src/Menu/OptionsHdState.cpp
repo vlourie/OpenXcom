@@ -247,6 +247,10 @@ std::string OptionsHdState::valueText(const OptionInfo &info) const
 	{
 		return tr("STR_HD_ENEMY_NUMBER_" + std::to_string(Options::oxceHdEnemyNumber));
 	}
+	if (info.asInt() == &Options::oxceHdRadar)
+	{
+		return tr("STR_HD_RADAR_" + std::to_string(Options::oxceHdRadar));
+	}
 	// the same names as the geoscape scale in the video options: "3x" = a globe pixel is 3 display pixels
 	if (info.asInt() == &Options::oxceHdGlobeScale)
 	{
@@ -430,6 +434,11 @@ void OptionsHdState::changeSetting(size_t sel, Uint8 button)
 		else if (i == &Options::oxceHdEnemyNumber)
 		{
 			min = 0;                                  // 0 none, 1 blinking, 2 steady
+			max = 2;
+		}
+		else if (i == &Options::oxceHdRadar)
+		{
+			min = 0;                                  // 0 circles, 1 joint wash, 2 wash with the sweep
 			max = 2;
 		}
 		else if (i == &Options::oxceHdGlobeScale)

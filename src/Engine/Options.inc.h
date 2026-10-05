@@ -191,8 +191,8 @@ OPT bool oxceHdBaseAnim;
 OPT bool oxceHdCraftLights;
 // HD globe and dogfight: own craft and UFOs once read by a hyper-wave decoder as small outlines from above (Engine/HdOutline.h); off = the classic markers and blob
 OPT bool oxceHdCraftOutlines;
-// HD globe: the radar coverage of the bases and the craft as a light wash with one edge, a base pulsing with each detection cycle at the slow clock speeds, a craft's beam turning (Engine/HdRadar.h); off = the classic circles. A trial: off by default
-OPT bool oxceHdRadarPulse;
+// HD globe: how the radar coverage of the bases and the craft is drawn (Engine/HdRadar.h). 0 = the classic circles (default), 1 = a light wash with one joint edge, 2 = the same plus a base pulsing with each detection cycle at the slow clock speeds and a craft's beam turning (a trial)
+OPT int oxceHdRadar;
 // Battlescape: a unit hanging in the air or in the water with no floor below sways in place (Map::hoverBob); off = the classic still frame
 OPT bool oxceHdHoverBob;
 // HD render: combat effects of the HD mod (Engine/HdFx.h) - hits, swings, explosions, muzzle flashes; off = the classic animations
