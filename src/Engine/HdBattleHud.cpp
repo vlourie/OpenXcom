@@ -381,14 +381,14 @@ struct Raster
 int cacheScale = 0;
 std::unordered_map<Uint64, Raster> cache;
 
-const Raster &raster(HdBattleHud::Icon icon, int w, int h, int k, bool small = false)
+const Raster &raster(HdBattleHud::Icon icon, int w, int h, int k, float shrink = 1.0f)
 {
 	if (k != cacheScale)
 	{
 		cache.clear();
 		cacheScale = k;
 	}
-	const Uint64 key = ((Uint64)small << 40) | ((Uint64)icon << 32) | ((Uint64)(w & 0xFFFF) << 16) | (Uint64)(h & 0xFFFF);
+	const Uint64 key = ((Uint64)std::lround(shrink * 100.0f) << 40) | ((Uint64)icon << 32) | ((Uint64)(w & 0xFFFF) << 16) | (Uint64)(h & 0xFFFF);
 	auto found = cache.find(key);
 	if (found != cache.end()) return found->second;
 	Raster &r = cache[key];
@@ -398,8 +398,8 @@ const Raster &raster(HdBattleHud::Icon icon, int w, int h, int k, bool small = f
 	const Pic pic = makeIcon(icon);
 	// 4 x 4 samples a pixel; the rows are shared out to the render threads (a hand of pictograms a scale)
 	const int S = 4;
-	// small: shrunk about the button's centre, to sit inside a plaque's sunken field
-	const float grow = small ? 1.0f / 0.8f : 1.0f;
+	// shrink: about the button's centre, to keep clear of a plaque's edge
+	const float grow = 1.0f / shrink;
 	const float inv = grow / (float)k, cx = w * 0.5f * (1.0f - grow), cy = h * 0.5f * (1.0f - grow);
 	auto rows = [&](int ra, int rb)
 	{
@@ -621,7 +621,8 @@ const std::vector<Uint32> &plaque(HdBattleHud::Icon icon, int w, int h, int k, i
 	const Raster *sharp = nullptr;
 	if (icon != HdBattleHud::ICON_NONE && icon < HdBattleHud::ICON_COUNT)
 	{
-		sharp = &raster(icon, w, h, k, h < 14);
+		// a base pixel or so clear of the edge on every side
+		sharp = &raster(icon, w, h, k, h < 14 ? 0.8f : 0.86f);
 		cut = softCover(*sharp, std::max(1, (int)std::lround(0.25f * k)));
 	}
 	std::vector<float> height((size_t)W * H), dark((size_t)W * H), cover((size_t)W * H), brass;
