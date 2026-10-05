@@ -61,7 +61,13 @@ void ItemSprite::draw(const BattleItem* item, int x, int y, int shade)
 	{
 		ScriptWorkerBlit work;
 		BattleItem::ScriptFill(&work, item, _save, BODYPART_ITEM_FLOOR, _animationFrame, shade);
-		_dest->blitScripted(work, sprite, x, y, shade, _dest->fullArea());
+		// the same script without the light: an HD frame in its own colours keeps its hue in the shade
+		ScriptWorkerBlit unlit;
+		if (shade != 0)
+		{
+			BattleItem::ScriptFill(&unlit, item, _save, BODYPART_ITEM_FLOOR, _animationFrame, 0);
+		}
+		_dest->blitScripted(work, sprite, x, y, shade, _dest->fullArea(), shade != 0 ? &unlit : nullptr);
 	}
 }
 

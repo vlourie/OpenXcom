@@ -150,10 +150,16 @@ void UnitSprite::blitItem(Part& item)
 	}
 	ScriptWorkerBlit work;
 	BattleItem::ScriptFill(&work, (item.bodyPart == BODYPART_ITEM_RIGHTHAND ? _itemR : _itemL), _save, item.bodyPart, _animationFrame, _shade);
+	// the same script without the light: an HD frame in its own colours keeps its hue in the shade
+	ScriptWorkerBlit unlit;
+	if (_shade != 0)
+	{
+		BattleItem::ScriptFill(&unlit, (item.bodyPart == BODYPART_ITEM_RIGHTHAND ? _itemR : _itemL), _save, item.bodyPart, _animationFrame, 0);
+	}
 
 	_dest->lock();
 
-	_dest->blitScripted(work, item.src, _x + item.offX * _scale, _y + item.offY * _scale, _shade, _mask);
+	_dest->blitScripted(work, item.src, _x + item.offX * _scale, _y + item.offY * _scale, _shade, _mask, _shade != 0 ? &unlit : nullptr);
 
 	_dest->unlock();
 
@@ -177,10 +183,16 @@ void UnitSprite::blitBody(Part& body)
 	}
 	ScriptWorkerBlit work;
 	BattleUnit::ScriptFill(&work, _unit, _save, body.bodyPart, _animationFrame, _shade, _burn);
+	// the same script without the light: an HD frame in its own colours keeps its hue in the shade
+	ScriptWorkerBlit unlit;
+	if (_shade != 0)
+	{
+		BattleUnit::ScriptFill(&unlit, _unit, _save, body.bodyPart, _animationFrame, 0, _burn);
+	}
 
 	_dest->lock();
 
-	_dest->blitScripted(work, body.src, _x + body.offX * _scale, _y + body.offY * _scale, _shade, _mask);
+	_dest->blitScripted(work, body.src, _x + body.offX * _scale, _y + body.offY * _scale, _shade, _mask, _shade != 0 ? &unlit : nullptr);
 
 	_dest->unlock();
 }

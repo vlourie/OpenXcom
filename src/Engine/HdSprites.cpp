@@ -17,6 +17,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "HdSprites.h"
+#include <cctype>
 #include <cstdlib>
 #include <cstring>
 #include <algorithm>
@@ -136,6 +137,7 @@ namespace
 		int width = 0, height = 0; ///< the size of the palette frame it replaces
 		size_t lru = 0;            ///< when it was last found
 		bool failed = false;       ///< the file could not be read (not tried again)
+		bool ownColour = false;    ///< color.txt of the set keeps the frame's own colours (HdFrame::ownColour)
 	};
 	std::unordered_map<const void*, Entry> registry;
 	/// the variants of a registered frame: slot n - 1 holds variant n (an empty path = no such variant)
@@ -238,6 +240,7 @@ namespace
 			return;
 		}
 		entry.frame = std::move(frame);
+		entry.frame.ownColour = entry.ownColour;
 		loadedTotal += bytesOf(entry.frame);
 	}
 
@@ -946,6 +949,112 @@ namespace
 		}
 		return registered;
 	}
+
+	/**
+	 * Reads `hd/<setName>/color.txt`: which frames of the set the pack painted in
+	 * their own colours. "colorAuthority: pack" marks them, "frames: 2 10 18-20"
+	 * names them (no list - the whole set). The old upscales have no such file:
+	 * their sheet palette is off the battle one (R-030), they keep the ramp's hue.
+	 */
+	void readColour(const std::string &setName, SurfaceSet *surfaceSet)
+	{
+		const std::string path = artPath(setName + "/color.txt");
+		if (!FileMap::fileExists(path))
+		{
+			return;
+		}
+		std::unique_ptr<std::istream> in = FileMap::getIStream(path);
+		if (!in)
+		{
+			return;
+		}
+		bool pack = false, listed = false;
+		std::vector<int> frames;
+		std::string line;
+		while (std::getline(*in, line))
+		{
+			if (line.size() >= 3 && (unsigned char)line[0] == 0xEF && (unsigned char)line[1] == 0xBB && (unsigned char)line[2] == 0xBF)
+			{
+				line.erase(0, 3);
+			}
+			line.erase(std::find_if(line.rbegin(), line.rend(), [](unsigned char c) { return !std::isspace(c); }).base(), line.end());
+			const size_t start = line.find_first_not_of(" \t");
+			if (start == std::string::npos || line[start] == '#')
+			{
+				continue;
+			}
+			line.erase(0, start);
+			if (line == "colorAuthority: pack")
+			{
+				pack = true;
+			}
+			else if (line.compare(0, 7, "frames:") == 0)
+			{
+				listed = true;
+				std::istringstream words(line.substr(7));
+				std::string word;
+				while (words >> word)
+				{
+					char *end = nullptr;
+					const long from = std::strtol(word.c_str(), &end, 10);
+					long to = from;
+					if (end && *end == '-')
+					{
+						to = std::strtol(end + 1, &end, 10);
+					}
+					if (!end || *end != '\0' || from < 0 || to < from || to - from > 100000)
+					{
+						Log(LOG_WARNING) << "HD sprites: " << path << ": '" << word << "' is not a frame - ignored";
+						continue;
+					}
+					for (long i = from; i <= to; ++i)
+					{
+						frames.push_back((int)i);
+					}
+				}
+			}
+			else
+			{
+				Log(LOG_WARNING) << "HD sprites: " << path << ": '" << line << "' is not understood - ignored";
+			}
+		}
+		if (!pack)
+		{
+			return;
+		}
+		if (!listed)
+		{
+			for (int i = 0; i < (int)surfaceSet->getTotalFrames(); ++i)
+			{
+				frames.push_back(i);
+			}
+		}
+		beforeChange();
+		int marked = 0;
+		for (int index : frames)
+		{
+			Surface *frame = index < (int)surfaceSet->getTotalFrames() ? surfaceSet->getFrame(index) : nullptr;
+			auto found = frame ? registry.find(frame->getBuffer()) : registry.end();
+			if (found == registry.end())
+			{
+				continue;
+			}
+			found->second.ownColour = true;
+			found->second.frame.ownColour = true;
+			auto alt = variants.find(frame->getBuffer());
+			if (alt != variants.end())
+			{
+				for (Entry &entry : alt->second)
+				{
+					entry.ownColour = true;
+					entry.frame.ownColour = true;
+				}
+			}
+			++marked;
+		}
+		++registryGeneration;
+		Log(LOG_INFO) << "HD sprites: " << setName << ": " << marked << " frame(s) keep their own colours (color.txt)";
+	}
 }
 
 /**
@@ -1029,6 +1138,10 @@ int loadPack(const std::string &setName, SurfaceSet *surfaceSet, int scale)
 			setLazy(frame->getBuffer(), path, 0, 0, fw, fh);
 			++loaded;
 		}
+	}
+	if (loaded > 0 && std::find(files.begin(), files.end(), std::string("color.txt")) != files.end())
+	{
+		readColour(setName, surfaceSet);
 	}
 	return loaded;
 }

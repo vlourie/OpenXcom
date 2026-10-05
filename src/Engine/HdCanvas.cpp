@@ -66,7 +66,7 @@ void Canvas8::blit(SurfaceRaw<const Uint8> src, int x, int y, int shade, GraphSu
 	ShaderDraw<helper::StandardShade>(d, s, ShaderScalar(shade));
 }
 
-void Canvas8::blitScripted(ScriptWorkerBlit &work, const Surface *src, int x, int y, int shade, GraphSubset range)
+void Canvas8::blitScripted(ScriptWorkerBlit &work, const Surface *src, int x, int y, int shade, GraphSubset range, ScriptWorkerBlit *)
 {
 	work.executeBlit(src, _target, x, y, shade, range);
 }
@@ -155,7 +155,7 @@ Canvas32::~Canvas32()
 	liveCanvases.erase(std::remove(liveCanvases.begin(), liveCanvases.end(), this), liveCanvases.end());
 }
 
-Canvas32::Canvas32(int width, int height, int scale) : _width(width), _height(height), _scale(scale < 1 ? 1 : scale), _hdMode(HD_MODE_NEAREST), _deferred(true), _scriptSrc(1, 1), _scriptDst(1, 1)
+Canvas32::Canvas32(int width, int height, int scale) : _width(width), _height(height), _scale(scale < 1 ? 1 : scale), _hdMode(HD_MODE_NEAREST), _deferred(true), _scriptSrc(1, 1), _scriptDst(1, 1), _scriptLit(1, 1)
 {
 	liveCanvases.push_back(this);
 	HdSprites::setBeforeChange(flushLiveCanvases);
@@ -600,7 +600,7 @@ void Canvas32::blit(SurfaceRaw<const Uint8> src, int x, int y, int shade, GraphS
  * plain shaded blit. The script sees 0 as the pixel underneath (there is no
  * palette index under a true-color pixel); no known mod script reads it.
  */
-void Canvas32::blitScripted(ScriptWorkerBlit &work, const Surface *src, int x, int y, int shade, GraphSubset range)
+void Canvas32::blitScripted(ScriptWorkerBlit &work, const Surface *src, int x, int y, int shade, GraphSubset range, ScriptWorkerBlit *unlit)
 {
 	if (!src)
 	{
@@ -625,6 +625,7 @@ void Canvas32::blitScripted(ScriptWorkerBlit &work, const Surface *src, int x, i
 	{
 		_scriptSrc = Surface(bw, bh);
 		_scriptDst = Surface(bw, bh);
+		_scriptLit = Surface(bw, bh);
 	}
 	// the base sprite: every k-th pixel of the scaled frame
 	for (int sy = 0; sy < bh; ++sy)
@@ -663,7 +664,31 @@ void Canvas32::blitScripted(ScriptWorkerBlit &work, const Surface *src, int x, i
 		const HdFrame *pack = HdSprites::find(src->getBuffer());
 		if (pack && pack->width == w && pack->height == h)
 		{
+			// a frame in its own colours (E-1): the same script run without the light tells the light
+			// from the script's own work - where it leaves the pixel as it was, the change at the real
+			// shade is the light alone, and the pack keeps its hue there; elsewhere (a recolour, a hit
+			// flash, a shield) it is drawn as any other pack
+			const bool own = pack->ownColour && unlit && shade != 0;
+			if (own)
+			{
+				for (int sy = 0; sy < bh; ++sy)
+				{
+					memset(_scriptLit.getRaw(0, sy), 0, bw);
+				}
+				unlit->executeBlit(&_scriptSrc, &_scriptLit, 0, 0, 0, GraphSubset(bw, bh));
+			}
 			Uint64 hash = (0x1234567887654321ULL ^ (Uint64)(uintptr_t)src->getBuffer()) + (Uint64)shade;
+			if (own)
+			{
+				for (int sy = 0; sy < bh; ++sy)
+				{
+					const Uint8 *lit = _scriptLit.getRaw(0, sy);
+					for (int sx = 0; sx < bw; ++sx)
+					{
+						hash = (hash ^ lit[sx]) * 1099511628211ULL;
+					}
+				}
+			}
 			bool changed = false;
 			// a script that sets the level of the ramp itself - the hit flash of X-Piratez, set_shade 0
 			// over the whole body whatever the ramp and the light - asks for that brightness: the classic
@@ -708,12 +733,13 @@ void Canvas32::blitScripted(ScriptWorkerBlit &work, const Surface *src, int x, i
 				{
 					const Uint8 *in = _scriptSrc.getRaw(0, py / k);
 					const Uint8 *out = _scriptDst.getRaw(0, py / k);
+					const Uint8 *lit = _scriptLit.getRaw(0, py / k);
 					const Uint32 *from = pack->row(py);
 					Uint32 *to = &made.pixels[(size_t)py * w];
 					for (int px = 0; px < w; ++px)
 					{
 						const Uint32 p = from[px];
-						Uint8 a = in[px / k], b = out[px / k];
+						Uint8 a = in[px / k], b = out[px / k], z = own ? lit[px / k] : 0;
 						if (a == 0 && (p >> 24))
 						{
 							// the pack's outline reaches a pixel or two past the classic one: there the
@@ -735,6 +761,7 @@ void Canvas32::blitScripted(ScriptWorkerBlit &work, const Surface *src, int x, i
 										best = ex * ex + ey * ey;
 										a = *_scriptSrc.getRaw(nx, ny);
 										b = *_scriptDst.getRaw(nx, ny);
+										z = own ? *_scriptLit.getRaw(nx, ny) : 0;
 									}
 								}
 							}
@@ -750,6 +777,19 @@ void Canvas32::blitScripted(ScriptWorkerBlit &work, const Surface *src, int x, i
 							continue;
 						}
 						const SDL_Color &ca = _colors[a], &cb = _colors[b];
+						if (own && z == a && (a ^ b) < 16)
+						{
+							// the light alone, along the same ramp: darken the pack's own colour by as much
+							// as the palette darkens, the hue stays the pack's
+							const float lb = 0.299f * cb.r + 0.587f * cb.g + 0.114f * cb.b;
+							const float la = 0.299f * ca.r + 0.587f * ca.g + 0.114f * ca.b;
+							const float f = (lb + 2.0f) / (la + 2.0f);
+							const int r = std::min(255, (int)(((p >> 16) & 0xFF) * f + 0.5f));
+							const int g = std::min(255, (int)(((p >> 8) & 0xFF) * f + 0.5f));
+							const int bl = std::min(255, (int)((p & 0xFF) * f + 0.5f));
+							to[px] = (p & 0xFF000000u) | ((Uint32)r << 16) | ((Uint32)g << 8) | (Uint32)bl;
+							continue;
+						}
 						// the new color keeps the brightness the HD pixel had on the old ramp. A
 						// per-channel ratio would look the same on paper, but the HD pixel is only
 						// close to the palette entry, not equal to it, and where the old color has
