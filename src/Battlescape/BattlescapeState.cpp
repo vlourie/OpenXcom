@@ -63,6 +63,7 @@
 #include "../Engine/HdCanvas.h"
 #include "../Engine/HdWorkers.h"
 #include "../Engine/HdUi.h"
+#include "../Engine/HdBattleHud.h"
 #include "../Engine/HdKillCam.h"
 #include "../Engine/HdGentle.h"
 #include "../version.h"
@@ -143,7 +144,7 @@ BattlescapeState::BattlescapeState() :
 	_medikitOrange = _game->getMod()->getInterface("battlescape")->getElement("medikitOrange")->color;
 
 	// Create buttonbar - this should be on the centerbottom of the screen
-	_icons = new InteractiveSurface(iconsWidth, iconsHeight, x, y);
+	_icons = new HdHudPanel(iconsWidth, iconsHeight, x, y);
 
 	// Create the battlemap view
 	// the actual map height is the total height minus the height of the buttonbar
@@ -399,6 +400,37 @@ BattlescapeState::BattlescapeState() :
 	add(_warning, "warning", "battlescape", _icons);
 	add(_txtDebug);
 	add(_txtTooltip, "textTooltip", "battlescape", _icons);
+
+	// HD interface, modern skin: what the panel draws under the widgets (where the ruleset put them),
+	// and the pictogram of each button
+	{
+		HdHudPanel *panel = static_cast<HdHudPanel*>(_icons);
+		panel->addPart(HdHudPanel::PART_HAND, _btnLeftHandItem);
+		panel->addPart(HdHudPanel::PART_HAND, _btnRightHandItem);
+		panel->addPart(HdHudPanel::PART_CARD, _btnStats);
+		panel->addPart(HdHudPanel::PART_RANK, _rank);
+		for (NumberText *number : { _numTimeUnits, _numEnergy, _numHealth, _numMorale })
+		{
+			panel->addPart(HdHudPanel::PART_CHIP, number, number->getColor());
+		}
+		const bool links = Options::oxceLinks && _game->getMod()->getSurface("oxceLinks", false);
+		const std::pair<BattlescapeButton*, HdBattleHud::Icon> pictograms[] = {
+			{ _btnUnitUp, HdBattleHud::ICON_UNIT_UP }, { _btnUnitDown, HdBattleHud::ICON_UNIT_DOWN },
+			{ _btnMapUp, HdBattleHud::ICON_MAP_UP }, { _btnMapDown, HdBattleHud::ICON_MAP_DOWN },
+			{ _btnShowMap, HdBattleHud::ICON_SHOW_MAP }, { _btnKneel, HdBattleHud::ICON_KNEEL },
+			{ _btnInventory, HdBattleHud::ICON_INVENTORY }, { _btnCenter, HdBattleHud::ICON_CENTER },
+			{ _btnNextSoldier, HdBattleHud::ICON_NEXT_SOLDIER }, { _btnNextStop, HdBattleHud::ICON_NEXT_STOP },
+			{ _btnShowLayers, links ? HdBattleHud::ICON_LINKS : HdBattleHud::ICON_SHOW_LAYERS }, { _btnHelp, HdBattleHud::ICON_OPTIONS },
+			{ _btnEndTurn, HdBattleHud::ICON_END_TURN }, { _btnAbort, HdBattleHud::ICON_ABORT },
+			{ _btnReserveNone, HdBattleHud::ICON_RESERVE_NONE }, { _btnReserveSnap, HdBattleHud::ICON_RESERVE_SNAP },
+			{ _btnReserveAimed, HdBattleHud::ICON_RESERVE_AIMED }, { _btnReserveAuto, HdBattleHud::ICON_RESERVE_AUTO },
+			{ _btnReserveKneel, HdBattleHud::ICON_RESERVE_KNEEL }, { _btnZeroTUs, HdBattleHud::ICON_ZERO_TUS },
+		};
+		for (const auto &icon : pictograms)
+		{
+			icon.first->setHdIcon(icon.second);
+		}
+	}
 	add(_btnLaunch);
 	_game->getMod()->getSurfaceSet("SPICONS.DAT")->getFrame(0)->blitNShade(_btnLaunch, 0, 0);
 	add(_btnPsi);
