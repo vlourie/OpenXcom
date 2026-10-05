@@ -722,6 +722,27 @@ void Canvas32::blitScripted(ScriptWorkerBlit &work, const Surface *src, int x, i
 			auto it = _smoothScripted.find(hash);
 			if (it == _smoothScripted.end())
 			{
+				// the light alone darkens a frame in its own colours by ONE factor: how much the palette's
+				// ramps darken over `shade` steps, summed over every ramp. Per base pixel the ratio is
+				// uneven - a dark level clamps at the end of its ramp and hardly darkens - and on a pack
+				// drawn past the classic outline that shows as blocks of the base grid
+				float ownF = 1.0f;
+				if (own)
+				{
+					const int s = std::min(15, std::max(0, shade));
+					float la = 0.0f, lb = 0.0f;
+					for (int i = 1; i < 256; ++i)
+					{
+						if ((i & 0x0F) + s > 15)
+						{
+							continue;
+						}
+						const SDL_Color &c0 = _colors[i], &c1 = _colors[i + s];
+						la += 0.299f * c0.r + 0.587f * c0.g + 0.114f * c0.b;
+						lb += 0.299f * c1.r + 0.587f * c1.g + 0.114f * c1.b;
+					}
+					ownF = la > 0.0f ? lb / la : 1.0f;
+				}
 				HdDrawTimer recolourTimer(HdDrawStats::frame.smoothUs);
 				HdDrawStats::frame.smoothNew += HdDrawStats::on;
 				HdFrame made;
@@ -766,6 +787,19 @@ void Canvas32::blitScripted(ScriptWorkerBlit &work, const Surface *src, int x, i
 								}
 							}
 						}
+						// the light alone - along the ramp, or past its end, where the shade turns the pixel
+						// into index 15, black - or a pixel of the pack with no classic pixel under it or
+						// beside it, which nothing but the light reaches: darken the pack's own colour by the
+						// palette's darkening, the hue stays the pack's
+						if (own && (p >> 24) && (a == 0 || (z == a && b != 0)))
+						{
+							const float f = ownF;
+							const int r = std::min(255, (int)(((p >> 16) & 0xFF) * f + 0.5f));
+							const int g = std::min(255, (int)(((p >> 8) & 0xFF) * f + 0.5f));
+							const int bl = std::min(255, (int)((p & 0xFF) * f + 0.5f));
+							to[px] = (p & 0xFF000000u) | ((Uint32)r << 16) | ((Uint32)g << 8) | (Uint32)bl;
+							continue;
+						}
 						if (a == b || !(p >> 24))
 						{
 							to[px] = p;
@@ -777,19 +811,6 @@ void Canvas32::blitScripted(ScriptWorkerBlit &work, const Surface *src, int x, i
 							continue;
 						}
 						const SDL_Color &ca = _colors[a], &cb = _colors[b];
-						if (own && z == a && (a ^ b) < 16)
-						{
-							// the light alone, along the same ramp: darken the pack's own colour by as much
-							// as the palette darkens, the hue stays the pack's
-							const float lb = 0.299f * cb.r + 0.587f * cb.g + 0.114f * cb.b;
-							const float la = 0.299f * ca.r + 0.587f * ca.g + 0.114f * ca.b;
-							const float f = (lb + 2.0f) / (la + 2.0f);
-							const int r = std::min(255, (int)(((p >> 16) & 0xFF) * f + 0.5f));
-							const int g = std::min(255, (int)(((p >> 8) & 0xFF) * f + 0.5f));
-							const int bl = std::min(255, (int)((p & 0xFF) * f + 0.5f));
-							to[px] = (p & 0xFF000000u) | ((Uint32)r << 16) | ((Uint32)g << 8) | (Uint32)bl;
-							continue;
-						}
 						// the new color keeps the brightness the HD pixel had on the old ramp. A
 						// per-channel ratio would look the same on paper, but the HD pixel is only
 						// close to the palette entry, not equal to it, and where the old color has
