@@ -692,8 +692,13 @@ void Canvas32::blitScripted(ScriptWorkerBlit &work, const Surface *src, int x, i
 			bool changed = false;
 			// a script that sets the level of the ramp itself - the hit flash of X-Piratez, set_shade 0
 			// over the whole body whatever the ramp and the light - asks for that brightness: the classic
-			// sprite keeps none of its shading, so the pack keeps only a trace of its own
+			// sprite keeps none of its shading, so the pack keeps only a trace of its own. Flat means one
+			// level over most of the body. A script that only lifts the classic levels by a step (the shield of
+			// X-Piratez keeps the sprite's own shading, level by level) is not flat: squeezing the pack's
+			// texture there leaves the classic shading on it as blocks of the base grid
 			bool flat = false;
+			int lifted = 0;
+			int levels[16] = {};
 			for (int sy = 0; sy < bh; ++sy)
 			{
 				const Uint8 *in = _scriptSrc.getRaw(0, sy);
@@ -706,10 +711,15 @@ void Canvas32::blitScripted(ScriptWorkerBlit &work, const Surface *src, int x, i
 						changed = true;
 						if (in[sx] && out[sx] && (out[sx] & 0x0F) < std::min(15, (in[sx] & 0x0F) + std::max(0, shade)))
 						{
-							flat = true;
+							++lifted;
+							++levels[out[sx] & 0x0F];
 						}
 					}
 				}
+			}
+			if (lifted)
+			{
+				flat = *std::max_element(levels, levels + 16) * 10 >= lifted * 9;
 			}
 			if (!changed)
 			{
@@ -745,6 +755,53 @@ void Canvas32::blitScripted(ScriptWorkerBlit &work, const Surface *src, int x, i
 				}
 				HdDrawTimer recolourTimer(HdDrawStats::frame.smoothUs);
 				HdDrawStats::frame.smoothNew += HdDrawStats::on;
+				// what the script did to each colour of this frame, the most frequent result per index. A pack
+				// cut from a whole figure draws a part where the classic part is empty - the jacket in the torso
+				// frame where the classic sprite has the arm - far from any classic pixel; such a pixel takes
+				// the change of the frame's classic colour nearest to it, not none (a black band in the hit
+				// flash, blocks of the base grid in a shield). Built only when a frame has such pixels
+				std::vector<Uint32> votes;
+				Uint8 mapOut[256] = {}, mapLit[256] = {};
+				bool seen[256] = {};
+				auto buildMap = [&]()
+				{
+					votes.assign(256 * 256 * (own ? 2 : 1), 0);
+					for (int sy = 0; sy < bh; ++sy)
+					{
+						const Uint8 *in = _scriptSrc.getRaw(0, sy);
+						const Uint8 *out = _scriptDst.getRaw(0, sy);
+						const Uint8 *lit = _scriptLit.getRaw(0, sy);
+						for (int sx = 0; sx < bw; ++sx)
+						{
+							if (in[sx])
+							{
+								++votes[in[sx] * 256 + out[sx]];
+								if (own)
+								{
+									++votes[65536 + in[sx] * 256 + lit[sx]];
+								}
+							}
+						}
+					}
+					for (int i = 1; i < 256; ++i)
+					{
+						Uint32 bestOut = 0, bestLit = 0;
+						for (int j = 0; j < 256; ++j)
+						{
+							if (votes[i * 256 + j] > bestOut)
+							{
+								bestOut = votes[i * 256 + j];
+								mapOut[i] = (Uint8)j;
+							}
+							if (own && votes[65536 + i * 256 + j] > bestLit)
+							{
+								bestLit = votes[65536 + i * 256 + j];
+								mapLit[i] = (Uint8)j;
+							}
+						}
+						seen[i] = bestOut > 0;
+					}
+				};
 				HdFrame made;
 				made.width = w;
 				made.height = h;
@@ -786,12 +843,42 @@ void Canvas32::blitScripted(ScriptWorkerBlit &work, const Surface *src, int x, i
 									}
 								}
 							}
+							if (best == INT_MAX)
+							{
+								if (votes.empty())
+								{
+									buildMap();
+								}
+								const int pr = (p >> 16) & 0xFF, pg = (p >> 8) & 0xFF, pb = p & 0xFF;
+								int nearest = INT_MAX;
+								for (int i = 1; i < 256; ++i)
+								{
+									if (!seen[i])
+									{
+										continue;
+									}
+									const SDL_Color &c = _colors[i];
+									const int d = (c.r - pr) * (c.r - pr) + (c.g - pg) * (c.g - pg) + (c.b - pb) * (c.b - pb);
+									if (d < nearest)
+									{
+										nearest = d;
+										a = (Uint8)i;
+										b = mapOut[i];
+										z = own ? mapLit[i] : 0;
+									}
+								}
+							}
 						}
 						// the light alone - along the ramp, or past its end, where the shade turns the pixel
 						// into index 15, black - or a pixel of the pack with no classic pixel under it or
 						// beside it, which nothing but the light reaches: darken the pack's own colour by the
-						// palette's darkening, the hue stays the pack's
-						if (own && (p >> 24) && (a == 0 || (z == a && b != 0)))
+						// palette's darkening, the hue stays the pack's. The lit result must be the shaded
+						// index itself: a script whose work depends on the shade (the shield of X-Piratez
+						// recolours only levels 4..15 after the light) leaves the unlit pixel as it was
+						// and still recolours the lit one
+						const int lvl = a ? (a & 0x0F) + std::max(0, shade) : 0;
+						const Uint8 shaded = lvl > 15 ? (Uint8)15 : (Uint8)((a & 0xF0) | lvl);
+						if (own && (p >> 24) && (a == 0 || (z == a && b == shaded)))
 						{
 							const float f = ownF;
 							const int r = std::min(255, (int)(((p >> 16) & 0xFF) * f + 0.5f));
@@ -817,7 +904,14 @@ void Canvas32::blitScripted(ScriptWorkerBlit &work, const Surface *src, int x, i
 						// a near-empty channel the ratio turns that gap into a hue (R-030)
 						const float la = 0.299f * ca.r + 0.587f * ca.g + 0.114f * ca.b;
 						const float lp = 0.299f * ((p >> 16) & 0xFF) + 0.587f * ((p >> 8) & 0xFF) + 0.114f * (p & 0xFF);
-						const float f = flat ? 1.0f + ((lp + 2.0f) / (la + 2.0f) - 1.0f) * 0.3f : (lp + 2.0f) / (la + 2.0f);
+						float f = flat ? 1.0f + ((lp + 2.0f) / (la + 2.0f) - 1.0f) * 0.3f : (lp + 2.0f) / (la + 2.0f);
+						// a pack brighter than the old entry lifts the new colour past 255 in its strongest
+						// channel; clipped alone, the others keep growing and the hue turns (red into pink)
+						const int top = std::max(std::max((int)cb.r, (int)cb.g), (int)cb.b);
+						if (top > 0 && top * f > 255.0f)
+						{
+							f = 255.0f / top;
+						}
 						const int r = std::min(255, (int)(cb.r * f + 0.5f));
 						const int g = std::min(255, (int)(cb.g * f + 0.5f));
 						const int bl = std::min(255, (int)(cb.b * f + 0.5f));

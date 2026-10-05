@@ -84,6 +84,11 @@ LEG_OVERLAP = 2.0                      # пикселей базы
 NA = [(10.9, 12.4), (13.3, 12.6), (13.6, 15.2), (13.6, 17.3), (15.2, 18.3), (16.4, 18.6), (18.2, 19.0),
       (18.4, 20.4), (17.9, 21.6), (16.2, 21.8), (14.6, 20.9), (12.6, 20.0), (11.0, 19.3), (10.2, 17.6),
       (10.2, 14.2)]
+# правая рука в ответе 5401 (снято по листу сырого ответа с сеткой базы): низ предплечья и кисти по рисунку,
+# без приклада и рукояти, которые модель нарисовала под ними
+NA_TIGHT = [(10.9, 12.4), (13.3, 12.6), (13.6, 15.2), (13.6, 17.3), (15.2, 18.3), (16.4, 18.6), (18.2, 19.0),
+            (18.3, 20.2), (17.9, 21.15), (16.0, 21.15), (15.0, 20.7), (14.3, 20.45), (12.6, 19.95),
+            (11.2, 19.4), (10.2, 17.6), (10.2, 14.2)]
 NA_CUFF = [(15.0, 18.3), (15.6, 18.5), (15.4, 20.9), (14.8, 20.7)]
 NA_HAND = [(15.5, 18.5), (17.4, 18.7), (18.3, 19.2), (18.4, 20.4), (17.9, 21.6), (16.2, 21.7), (15.4, 20.9)]
 FA = [(19.4, 12.2), (20.7, 12.4), (21.4, 14.0), (21.9, 15.8), (22.9, 16.6), (23.1, 18.2), (22.3, 19.0),
@@ -417,6 +422,83 @@ def gun_colour(rgb, cuff=None):
     return metal | wood | near
 
 
+def _morph(m, r, op):
+    import cv2
+    k = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2 * r + 1, 2 * r + 1))
+    return cv2.morphologyEx(m.astype(np.uint8), op, k) > 0
+
+
+def hands_keep(rgb, scale):
+    """Кисти и манжеты в F_a: кожа в зоне кистей (щели между пальцами закрыты), белое в зоне манжет. Их чистка
+    автомата не трогает - пальцы поверх оружия и есть хват."""
+    import cv2
+    W, H = 32 * scale, 40 * scale
+    r, g, b = rgb[..., 0], rgb[..., 1], rgb[..., 2]
+    # кожа: g/r 0.6-0.85; тёмное дерево, смешанное с рукавом, по r-g похоже на кожу, но g/r у него ниже
+    skin = (r - g >= 12) & (r - g < 70) & (r > 100) & (b < g + 12) & (g > 0.58 * r)
+    # у кромки цевья смесь кожи с деревом: рядом с деревом кожа только светлая по g/r, иначе над пальцами
+    # остаётся рыжая полоска цевья
+    wood = (r - g >= 70) & (r >= 100)
+    skin &= ~(_morph(wood, max(1, scale // 4), cv2.MORPH_DILATE) & (g < 0.64 * r))
+    hz = np.maximum(poly_mask(NA_HAND, scale, (W, H)), poly_mask(FA_HAND, scale, (W, H))) > 0.3
+    hz = _morph(hz, int(scale * 0.4), cv2.MORPH_DILATE)
+    # манжета только у правой руки: у левой в ответе её нет, а светлое там - цевьё модели
+    cz = poly_mask(NA_CUFF, scale, (W, H)) > 0.3
+    cz = _morph(cz, int(scale * 0.3), cv2.MORPH_DILATE)
+    hand = _morph(skin & hz, max(1, scale // 5), cv2.MORPH_CLOSE)
+    return hand | ((rgb.min(axis=2) > 165) & cz)
+
+
+def model_gun(rgb, gun_a, scale):
+    """Автомат, который модель нарисовала сама (кадр x scale): место HD-автомата с запасом, красное дерево,
+    светлый металл у автомата, тёмные накладки приклада. Цвет один не отделяет магазин от костюма - нужна форма."""
+    import cv2
+    r, g = rgb[..., 0], rgb[..., 1]
+    mx, mn = rgb.max(axis=2), rgb.min(axis=2)
+    yy = np.arange(rgb.shape[0])[:, None]
+    hd = gun_a > 0.3
+    wood = (r - g >= 70) & (r >= 100) & (yy > 15 * scale)
+    wood = _morph(wood, max(1, scale // 16), cv2.MORPH_DILATE)        # кромка дерева смешана с соседями
+    metal = (mx - mn < 30) & (mx >= 75) & (mn < 190) & _morph(hd, scale, cv2.MORPH_DILATE)
+    stock = (mx < 75) & (mx - mn < 30) & _morph(wood, max(1, scale // 3), cv2.MORPH_DILATE)
+    m = _morph(hd, max(1, scale * 3 // 16), cv2.MORPH_DILATE) | wood | metal | stock
+    return _morph(m, max(1, scale // 6), cv2.MORPH_CLOSE)
+
+
+def clean_fa(rgb, al, gun_a, scale):
+    """F_a без автомата модели: его место (кроме кистей и манжет) закрашено из соседей - костюм под автоматом;
+    альфа закрашивается так же, поэтому за краем фигуры автомат уходит в прозрачность."""
+    import cv2
+    keep = hands_keep(rgb, scale)
+    inp = (model_gun(rgb, gun_a, scale) & ~keep).astype(np.uint8)
+    rgb_c = cv2.inpaint(np.clip(rgb, 0, 255).astype(np.uint8), inp, 5, cv2.INPAINT_TELEA).astype(np.float32)
+    # закраска - только там, где её замыкает костюм (вогнутость силуэта костюма без кистей до базы): магазин
+    # и приклад поверх пиджака и брюк становятся костюмом, автомат за контуром фигуры - прозрачностью; у кистей
+    # (ниже) - тоже прозрачность: кисть в этой позе всегда держит оружие, закраска размазала бы там кожу
+    suit = (al > 0.5) & (inp == 0) & ~keep
+    a_c = _morph(suit, scale, cv2.MORPH_CLOSE).astype(np.float32)
+    W, H = 32 * scale, 40 * scale
+    hz = _morph(poly_mask(NA_HAND, scale, (W, H)) > 0.3, int(scale * 0.5), cv2.MORPH_DILATE)
+    hz |= _morph(poly_mask(FA_HAND, scale, (W, H)) > 0.3, int(scale * 0.9), cv2.MORPH_DILATE)
+    a_c[hz] = 0.0
+    al2 = np.where(inp > 0, a_c, al)
+    # у кистей из нетронутого остаётся только кожа, манжета и тёмный рукав: тёмно-красная кромка цевья
+    # смешана с рукавом и в маску автомата не попадает
+    mx, mn = rgb.max(axis=2), rgb.min(axis=2)
+    sleeve = (mx < 70) & (mx - mn < 25)
+    al2[hz & (inp == 0) & ~keep & ~sleeve] = 0.0
+    # левое предплечье за цевьём: у модели его закрывал её автомат, HD-автомат лежит чуть иначе, и между
+    # пиджаком и кистью проступал фон. Мост от костюма к кисти - рукав, цвет закраской только от костюма
+    body = al2 > 0.5
+    fz = _morph(poly_mask(FA, scale, (W, H)) > 0.3, int(scale * 0.3), cv2.MORPH_DILATE)
+    bridge = _morph(body, int(scale * 0.6), cv2.MORPH_CLOSE) & ~body & fz
+    src = np.where(body[..., None] & ~keep[..., None], rgb_c, 0).astype(np.uint8)
+    fill = cv2.inpaint(src, (bridge | keep).astype(np.uint8), 7, cv2.INPAINT_TELEA).astype(np.float32)
+    rgb_c = np.where(bridge[..., None], fill, rgb_c)
+    al2 = np.where(bridge, 1.0, al2)
+    return rgb_c, al2, inp > 0, keep
+
+
 def cmd_build(a):
     fit = Fit()
     os.makedirs(OUT, exist_ok=True)
@@ -426,9 +508,17 @@ def cmd_build(a):
     fa_rgb32, fa_a32, panel = f_a_cell(raw)
     g_rgb, g_a = gun_x16()
     g32 = premul_resize(g_rgb, g_a, (32 * Z, 40 * Z))
-    na32 = arm_label(NA, fa_rgb32, fa_a32, g32[0], g32[1], Z)
-    fa32 = arm_label(FA, fa_rgb32, fa_a32, g32[0], g32[1], Z)
+    # автомат модели убирается из F_a целиком: в кадрах рук и тела остаются костюм, манжеты и кисти, а оружие -
+    # только HD-кадр 1354 (иначе с другим оружием куски этого автомата висели бы в воздухе, R-212)
+    fa_rgb32, fa_a32, gun32, keep32 = clean_fa(fa_rgb32, fa_a32, g32[1], Z)
+    W32 = (32 * Z, 40 * Z)
+    hand_zone = poly_mask(NA_HAND, Z, W32) > 0.5
+    na32 = (poly_mask(NA_TIGHT, Z, W32) > 0.5) & (fa_a32 > 0.05) & (~hand_zone | keep32)
+    fa32 = dilate((poly_mask(FA, Z, W32) > 0.5).astype(np.float32), max(1, Z // 8)) > 0.5
+    fa32 &= fa_a32 > 0.05
     fa_rgb, fa_a = down(fa_rgb32, fa_a32, Z // 4)
+    save_rgba(*down(fa_rgb32, fa_a32, Z // 4), os.path.join(OUT, "fa_clean_x4.png"))
+    Image.fromarray((gun32 * 255).astype(np.uint8)).save(os.path.join(OUT, "fa_gun_mask_x32.png"))
     na4 = down(np.zeros(na32.shape + (3,), np.float32), na32.astype(np.float32), Z // 4)[1] > 0.5
     fal4 = down(np.zeros(fa32.shape + (3,), np.float32), fa32.astype(np.float32), Z // 4)[1] > 0.5
     fb_rgb, fb_a = ref_in_cell(fit, 4)
@@ -441,8 +531,8 @@ def cmd_build(a):
     lower = yy >= hem - LEG_OVERLAP * 4
     # тело (торс + ноги): F_b вне рук без оружия; под правой рукой - F_a без самой руки (рука - в 250, иначе
     # её локоть торчал бы из-за руки 10 в позе без оружия)
-    # там же приклад, который модель дорисовала у бедра, - не тело: вместо него F_b
-    own = nb4 & ~gun_colour(fa_rgb)
+    # приклад, который модель дорисовала у бедра, уже закрашен костюмом (clean_fa)
+    own = nb4
     body_rgb = np.where(own[..., None], fa_rgb, fb_rgb)
     body_a = np.where(own, fa_a * ~na4, np.where(fbm4 | nb4, 0.0, fb_a))
     # левая рука с AK - всё F_a в зоне обеих левых рук: в FB торс пуст, и что не взято сюда, стало бы дырой
@@ -453,8 +543,33 @@ def cmd_build(a):
         34: (body_rgb, body_a * upper),
         18: (body_rgb, body_a * lower),
         250: (fa_rgb, fa_a * na4),
-        242: (fa_rgb, fa_a * (far_zone & ~gun_colour(fa_rgb, poly_mask(FA_CUFF, 4, S4)))),
+        242: (fa_rgb, fa_a * far_zone),
     }
+    # просветы позы с оружием: где у цельной F_a тело, а стопка 242+18+34+250 пуста внутри фигуры (закрытие на
+    # 2 пикселя x4) - добираются в 242: он нижний и ничего не перекрывает. Фон самой F_a (промежуток между рукой
+    # и телом, между ногами) не трогается - там альфа F_a мала
+    import cv2
+    nog = stack([frames[242], frames[18], frames[34], frames[250]])[1] > 0.5
+    close = cv2.morphologyEx(nog.astype(np.uint8), cv2.MORPH_CLOSE,
+                             cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))) > 0
+    gap = (fa_a > 0.5) & ~nog & close & (dilate((far_zone | na4).astype(np.float32), 3) > 0.5)
+    frames[242] = (fa_rgb, np.where(gap, fa_a, frames[242][1]))
+    print("просветов позы с оружием закрыто кадром 242: %d пикселей x4" % int(gap.sum()))
+    # островки рук с оружием: тёмный обрывок под кистью - остаток магазина модели, закрашенный костюмом
+    # руки без оружия не трогаются: полоска F_b у кисти кадра 10 закрывает бок брюк (без неё 2 дырки против F_b)
+    for n in (242, 250):
+        c, fa_n = frames[n]
+        k, lab, st, _ = cv2.connectedComponentsWithStats((fa_n > 0.05).astype(np.uint8), connectivity=8)
+        if k > 2:
+            big = st[1:, cv2.CC_STAT_AREA].max()
+            # кисть с манжетой бывает отделена от рукава щелью - островок с кожей или белым остаётся
+            cr, cg = c[..., 0], c[..., 1]
+            light = ((cr - cg >= 12) & (cr > 100)) | (c.min(axis=2) > 165)
+            drop = [i for i in range(1, k) if st[i, cv2.CC_STAT_AREA] < big * 0.25 and not light[lab == i].any()]
+            fa_n = np.where(np.isin(lab, drop), 0.0, fa_n)
+            print("кадр %d: убрано островков %d (%d пикселей x4)" % (n, len(drop),
+                                                                    int(st[drop, cv2.CC_STAT_AREA].sum()) if drop else 0))
+            frames[n] = (c, fa_n)
     pack = os.path.join(OUT, "pack", "GOV_1.PCK")
     os.makedirs(pack, exist_ok=True)
     for n, (rgb, al) in frames.items():
@@ -482,13 +597,32 @@ def cmd_build(a):
             shutil.copytree(os.path.join(OUT, "pack", sub), dst)
         print("в мод:", a.mod)
     # дырки: стопка кадров против цельной фигуры (F_b без оружия, F_a с AK)
+    import cv2
     bare = stack([frames[2], frames[18], frames[34], frames[10]])
     ak = stack([frames[242], frames[18], frames[34], g4, frames[250]])
-    for name, (_r, al), ref_a in (("без оружия", bare, fb_a), ("с AK", ak, fa_a)):
-        holes = int(((ref_a > 0.5) & (al < 0.5)).sum())
+    nogun = stack([frames[242], frames[18], frames[34], frames[250]])
+    # дырки - против собранной фигуры той же позы: без оружия - F_b, с оружием - F_a без автомата модели
+    # (плюс HD-автомат для стопки с ним); пятна в пикселях x4 с местом в базе
+    fa_gun = np.maximum(fa_a, g4[1])
+    for name, (_r, al), ref_a in (("без оружия", bare, fb_a), ("с AK", ak, fa_gun), ("руки AK без оружия", nogun, fa_a)):
+        hole = ((ref_a > 0.5) & (al < 0.5)).astype(np.uint8)
         extra = int(((ref_a < 0.5) & (al > 0.5)).sum())
-        print("%s: дырок %d, лишнего %d пикселей x4 (фигура %d)" % (name, holes, extra, int((ref_a > 0.5).sum())))
+        n, lab, st, cen = cv2.connectedComponentsWithStats(hole, connectivity=8)
+        spots = ["%d@(%.1f,%.1f)" % (st[i, cv2.CC_STAT_AREA], cen[i][0] / 4, cen[i][1] / 4) for i in range(1, n)]
+        print("%s: дырок %d, лишнего %d пикселей x4 (фигура %d); пятна: %s" % (
+            name, int(hole.sum()), extra, int((ref_a > 0.5).sum()), " ".join(spots) or "нет"))
     sheet_build(frames, g4)
+
+
+def battle_rifle_x4():
+    """Классический Battle Rifle (HANDOB 768, направление 2) nearest x4 - чужое оружие для проверки рук."""
+    im = Image.open(os.path.join(PZ, "Piratez", "Resources", "HANDOB", "BattleRifle.png"))
+    idx = np.asarray(im)[:, 64:96]
+    # палитра листа - не боевая; для проверки покрытия хватит тона по уровню рампы
+    tone = (16 - (idx % 16)).astype(np.float32) / 16.0
+    rgb = np.kron(tone[..., None] * np.asarray((150, 110, 80), np.float32) + 30, np.ones((4, 4, 1)))
+    a = np.kron((idx > 0).astype(np.float32), np.ones((4, 4)))
+    return rgb, a
 
 
 def stack(layers):
@@ -502,7 +636,9 @@ def stack(layers):
 def sheet_build(fr, gun):
     bare = stack([fr[2], fr[18], fr[34], fr[10]])
     ak = stack([fr[242], fr[18], fr[34], gun, fr[250]])
-    cells = [("без оружия: 2+18+34+10", bare), ("с AK: 242+18+34+AK+250", ak)]
+    cells = [("без оружия: 2+18+34+10", bare), ("с AK: 242+18+34+AK+250", ak),
+             ("с Battle Rifle", stack([fr[242], fr[18], fr[34], battle_rifle_x4(), fr[250]])),
+             ("руки AK, без оружия", stack([fr[242], fr[18], fr[34], fr[250]]))]
     for n in (2, 10, 18, 34, 242, 250):
         cells.append(("кадр %d" % n, fr[n]))
     cells.append(("AK 1354", gun))
