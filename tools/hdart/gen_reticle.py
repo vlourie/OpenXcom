@@ -16,8 +16,8 @@
   центр (15.5, 17.5); кольцо R = 12.0; клинья от R = 15.5 внутрь, полуширина 2.5 снаружи
   и 0.4 в центре, сужение начинается с R = 9.5; ромб клетки - центр (15.75, 33.5), 13.5 x 6.
 
-    py -3 tools\\hdart\\gen_reticle.py                      все три стиля в _cmp
-    py -3 tools\\hdart\\gen_reticle.py --style plasma --pack user\\mods\\hd\\hd\\CURSOR.PCK
+    py -3.13 tools\\hdart\\gen_reticle.py                      все три стиля в _cmp
+    py -3.13 tools\\hdart\\gen_reticle.py --style plasma --pack user\\mods\\hd\\hd\\CURSOR.PCK
 
 Смотреть петлю, а не кадр: reticle_<стиль>.gif.
 """

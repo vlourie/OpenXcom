@@ -1,7 +1,7 @@
 """Split `git diff -U0 <file>` into hunks: list them, or stage a chosen set.
 
-py -3 tools/git_hunks.py list <file>          - numbered hunks with their lines
-py -3 tools/git_hunks.py stage <file> 1,3,5   - put those hunks into the index version of the file
+py -3.13 tools/git_hunks.py list <file>          - numbered hunks with their lines
+py -3.13 tools/git_hunks.py stage <file> 1,3,5   - put those hunks into the index version of the file
 Hunks are numbered against the diff of the WORKING TREE vs the INDEX, so list again after each stage.
 
 Staging builds the new index blob itself (git apply --unidiff-zero puts a pure insertion at the

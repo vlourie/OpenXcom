@@ -2,7 +2,7 @@
 """
 Cuts a painted HD sheet back into the frames of an HD pack.
 
-    py -3 build_pack.py --sheets <sheets folder> --set CULTIVAT.PCK --hd <painted sheet.png> --mod <mod folder>
+    py -3.13 build_pack.py --sheets <sheets folder> --set CULTIVAT.PCK --hd <painted sheet.png> --mod <mod folder>
                         [--pack-path TERRAIN] [--alpha original|painted|both] [--feather 2] [--frames 0 3 7]
                         [--variants auto|off] [--variant-tone 1.0] [--no-preview]
 

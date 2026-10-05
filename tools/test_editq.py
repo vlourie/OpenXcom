@@ -12,7 +12,7 @@
   - после последнего done выпуск запускается сам и его правки коммитятся;
   - незакоммиченный файл игры не даёт начать выпуск.
 
-    py -3 tools/test_editq.py
+    py -3.13 tools/test_editq.py
 """
 import io
 import json

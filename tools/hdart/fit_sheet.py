@@ -5,7 +5,7 @@
 Судим по файлу, который читает игра - кадры пака, а не painted_x4.png (грабли R-019).
 Фон тёмный, как пол боя, иначе остаток подложки не виден (грабли R-041).
 
-    py -3 tools/hdart/fit_sheet.py --set CAVEBROWN.PCK --pack <мод>/hd/TERRAIN/CAVEBROWN.PCK
+    py -3.13 tools/hdart/fit_sheet.py --set CAVEBROWN.PCK --pack <мод>/hd/TERRAIN/CAVEBROWN.PCK
 """
 import argparse
 import os

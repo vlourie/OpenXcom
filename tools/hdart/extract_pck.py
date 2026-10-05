@@ -2,7 +2,7 @@
 """
 Extracts X-COM sprite sets to PNG sheets for the HD art pipeline.
 
-    py -3 extract_pck.py --data <UFO folder> --out <sheets folder> [--scale 4] [--columns 8] [--margin 4]
+    py -3.13 extract_pck.py --data <UFO folder> --out <sheets folder> [--scale 4] [--columns 8] [--margin 4]
                          [--sets TERRAIN/CULTIVAT.PCK UNITS/XCOM_0.PCK ...] [--all]
 
 For every set it writes into <out>/<SET NAME>/:

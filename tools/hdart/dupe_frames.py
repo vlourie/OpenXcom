@@ -12,7 +12,7 @@ r"""Повторяющиеся кадры набора: убрать лишне�
 
     ===== clean: убрать из папки с рисунками файлы-повторы =====
 
-    py -3 tools\hdart\dupe_frames.py clean --set FORESTSWAMP.PCK --in "gpt_swamp\Результат"
+    py -3.13 tools\hdart\dupe_frames.py clean --set FORESTSWAMP.PCK --in "gpt_swamp\Результат"
 
     Если оригинал группы не нарисован, а его копия - да, файл не удаляется, а
     ПЕРЕИМЕНОВЫВАЕТСЯ в номер оригинала: работа не пропадает.
@@ -20,7 +20,7 @@ r"""Повторяющиеся кадры набора: убрать лишне�
 
     ===== spread: размножить готовые клетки пака на номера копий =====
 
-    py -3 tools\hdart\dupe_frames.py spread --set FORESTSWAMP.PCK ^
+    py -3.13 tools\hdart\dupe_frames.py spread --set FORESTSWAMP.PCK ^
         --mod "Пиратки\Dioxine_XPiratez\user\mods\hd"
 
     Запускать ПОСЛЕ tile_forge.py fit. Берёт <mod>\hd\<pack-path>\<набор>\<оригинал>.png

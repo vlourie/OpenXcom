@@ -10,8 +10,8 @@ r"""map_queue.py - какие карты рисовать map_paint'ом дал�
 Клетки - из макетов (art/maps/usage.json, map_mockup.usage): каждая карта игры считается один раз,
 как в переписи census; как часто карта выпадает в игре, здесь не учтено.
 
-    py -3 tools\hdart\map_queue.py              docs\MAP_QUEUE.md, первые 60 карт
-    py -3 tools\hdart\map_queue.py --top 100
+    py -3.13 tools\hdart\map_queue.py              docs\MAP_QUEUE.md, первые 60 карт
+    py -3.13 tools\hdart\map_queue.py --top 100
 """
 import argparse
 import csv

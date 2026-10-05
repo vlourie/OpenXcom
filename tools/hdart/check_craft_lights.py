@@ -13,7 +13,7 @@ check_craft_lights.py - проверка огней кораблей в анга
 найден ли файл огней в ОБЕИХ копиях мода hd (R-081) и совпадают ли они, стоит ли
 каждый огонь на корпусе. Код выхода 1, если хоть один летающий корабль без огней.
 
-    py -3 tools/hdart/check_craft_lights.py --sheet art/_review/craft_lights_check.png
+    py -3.13 tools/hdart/check_craft_lights.py --sheet art/_review/craft_lights_check.png
 """
 import argparse
 import os

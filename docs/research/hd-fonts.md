@@ -34,7 +34,7 @@
 | 8 | Unbounded | широкий геометрический, круглые О — по ширине ближе всех к оригиналу |
 
 Лист сравнения с классическим шрифтом — `docs/research/hd-fonts.png`; собирается командой
-`py -3 tools\hdart\fetch_fonts.py --sheet docs\research\hd-fonts.png`.
+`py -3.13 tools\hdart\fetch_fonts.py --sheet docs\research\hd-fonts.png`.
 
 ## Ширина против классического шрифта
 
@@ -100,10 +100,10 @@ Unbounded шире Roboto на треть: по характеру он ближ
   текстов не хватает только ♥ U+2665, его закрывает запасная гарнитура.
 
 ```
-py -3 -m pip install fonttools brotli
-py -3 tools\hdart\fetch_fonts.py                                  # в user\mods\hd
-py -3 tools\hdart\fetch_fonts.py --dest <мод в установке игры>     # то же в Пиратки
-py -3 tools\hdart\fetch_fonts.py --check                          # только покрытие
+py -3.13 -m pip install fonttools brotli
+py -3.13 tools\hdart\fetch_fonts.py                                  # в user\mods\hd
+py -3.13 tools\hdart\fetch_fonts.py --dest <мод в установке игры>     # то же в Пиратки
+py -3.13 tools\hdart\fetch_fonts.py --check                          # только покрытие
 ```
 
 ## Чего эти шрифты не умеют

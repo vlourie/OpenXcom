@@ -6,8 +6,8 @@
 оригинале этого цвета и лежит дальше нескольких пикселей от фигуры, берём из оригинала как есть;
 кромку фигуры сводим мягким переходом.
 
-  py -3 tools/hdart/pedia_flatbg.py --names UPed_Human_8,Necrobomber [--out папка] [--dry-run]
-  py -3 tools/hdart/pedia_flatbg.py --all      все картинки серий hd_NN с ровным фоном
+  py -3.13 tools/hdart/pedia_flatbg.py --names UPed_Human_8,Necrobomber [--out папка] [--dry-run]
+  py -3.13 tools/hdart/pedia_flatbg.py --all      все картинки серий hd_NN с ровным фоном
 """
 import argparse
 import glob

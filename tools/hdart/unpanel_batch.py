@@ -9,8 +9,8 @@
 Пересчитывать генерацию для этого не нужно: подложка ровная, снимается арифметикой
 из уже сохранённых кадров (gen_fire.unpanel), а остаток гасится порогом (R-041).
 
-    py -3 tools/hdart/unpanel_batch.py --in art/TERRAIN/CAVEBROWN.PCK/returned/lora
-    py -3 tools/hdart/unpanel_batch.py --all           все наборы с папкой returned/lora
+    py -3.13 tools/hdart/unpanel_batch.py --in art/TERRAIN/CAVEBROWN.PCK/returned/lora
+    py -3.13 tools/hdart/unpanel_batch.py --all           все наборы с папкой returned/lora
 
 Кладёт рядом: <...>/returned/lora_cut/<N>.png. Исходные кадры не трогает.
 """

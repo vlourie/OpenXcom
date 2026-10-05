@@ -23,7 +23,7 @@ HD-паки к этому не привязаны и её не учитываю�
 
 ### 1. Перекраски на уровне данных: `census/frames.tsv`
 
-Строит `tools/pck_census.py` (`py -3 tools\pck_census.py --install "Пиратки\Dioxine_XPiratez" --out census`).
+Строит `tools/pck_census.py` (`py -3.13 tools\pck_census.py --install "Пиратки\Dioxine_XPiratez" --out census`).
 Для каждого кадра TERRAIN/UNITS/UFOGRAPH/GEOGRAPH считаются четыре отпечатка (`fingerprints()`,
 `tools/pck_census.py:218-237`):
 

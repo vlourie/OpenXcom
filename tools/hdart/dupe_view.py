@@ -7,8 +7,8 @@ dupe_frames.py говорит, СКОЛЬКО кадров повторяетс�
 Кадры в группе побайтово равны, поэтому строка обязана выглядеть одинаковой от края
 до края; если что-то в строке отличается - сломан не пак, а просмотр (грабли R-043).
 
-    py -3 tools/hdart/dupe_view.py --set FORESTSWAMP.PCK
-    py -3 tools/hdart/dupe_view.py --set FORESTSWAMP.PCK --zoom 4 --cols 1
+    py -3.13 tools/hdart/dupe_view.py --set FORESTSWAMP.PCK
+    py -3.13 tools/hdart/dupe_view.py --set FORESTSWAMP.PCK --zoom 4 --cols 1
 
 Кладёт art/_review/dupes/<НАБОР>_inside.png.
 """

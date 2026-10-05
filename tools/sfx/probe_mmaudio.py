@@ -5,7 +5,7 @@
 по нему потом собирается страница прослушивания.
 
 Запуск только через очередь видеокарты:
-    py -3 tools/gpuq.py add --name sfx-probe-mmaudio -- tools/sfx/.venv/Scripts/python.exe tools/sfx/probe_mmaudio.py
+    py -3.13 tools/gpuq.py add --name sfx-probe-mmaudio -- tools/sfx/.venv/Scripts/python.exe tools/sfx/probe_mmaudio.py
 """
 import argparse
 import json

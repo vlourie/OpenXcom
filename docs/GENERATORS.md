@@ -43,7 +43,7 @@ optimize_hd.py      сжатие пака на месте
 |---|---|
 | Qwen-Image-2.1 (`gen_tile.py`, `gen_fire.py`, `gen_hd.py --painter qwen21`) | `tools\hdart\.venv-qwen21\Scripts\python.exe` |
 | SDXL (`map_paint.py`, `gen_hd.py` без `--painter qwen21`) | `tools\hdart\.venv\Scripts\python.exe` (так в `art\maps\paint\run*.sh`) |
-| всё остальное (`tile_forge.py`, `build_pack.py`, `optimize_hd.py`, `extract_pck.py`) | `tools\hdart\.venv\Scripts\python.exe` или `py -3` |
+| всё остальное (`tile_forge.py`, `build_pack.py`, `optimize_hd.py`, `extract_pck.py`) | `tools\hdart\.venv\Scripts\python.exe` или `py -3.13` |
 
 Всё, что грузит модель на видеокарту (список — `tools\gpu_scripts.txt`), запускается только через очередь `gpuq.py`.
 
@@ -192,7 +192,7 @@ tools\hdart\.venv-qwen21\Scripts\python.exe tools\hdart\gen_fire.py `
 | `--list-missing` | выкл | назвать кадры, которых в папке нет |
 
 ```powershell
-py -3 tools\hdart\tile_forge.py fit --sheets art/TERRAIN --set DESERT.PCK `
+py -3.13 tools\hdart\tile_forge.py fit --sheets art/TERRAIN --set DESERT.PCK `
     --in gpt_desert\return --mod "Пиратки\Dioxine_XPiratez\user\mods\hd"
 ```
 
@@ -253,7 +253,7 @@ tools\hdart\.venv\Scripts\python.exe tools\hdart\optimize_hd.py `
 Опыт: вместо кадра 32×40 модель видит БЛОК карты (в игре это одна комната, 10×10 клеток) как сцену с соседями.
 Два режима: `whole` (весь этаж рисуется одной картинкой x4, `--g-whole 4`) и `context` (каждый кадр рисуется в окне соседей, вход x8, выход x4, `--g-context 8`).
 
-Грузит модель на видеокарту → запускается через `py -3 tools/gpuq.py add --name <имя> -- tools\hdart\.venv\Scripts\python.exe tools\hdart\map_paint.py ...`
+Грузит модель на видеокарту → запускается через `py -3.13 tools/gpuq.py add --name <имя> -- tools\hdart\.venv\Scripts\python.exe tools\hdart\map_paint.py ...`
 
 Кладёт в `art\maps\paint\<режим>\<НАБОР>.PCK\<кадр>.png`, листы в `art\maps\paint`.
 
@@ -286,7 +286,7 @@ tools\hdart\.venv\Scripts\python.exe tools\hdart\optimize_hd.py `
 Попадания, промахи, удары, вспышки выстрела, взрывы. Рисует процедурно (частицы, без модели):
 кадры воспроизводимы, управление числами. RGBA x4, прямая альфа, точка попадания в центре.
 
-Запуск: `py -3 tools/hdart/gen_combat_fx.py --out <мод>/hd [--only hit_bullet]`
+Запуск: `py -3.13 tools/hdart/gen_combat_fx.py --out <мод>/hd [--only hit_bullet]`
 
 Пишет в `<мод>/hd/FX/<клип>/<i>.png` (i = 0..L-1) и `fx.yml` (описание клипов).
 
@@ -303,7 +303,7 @@ tools\hdart\.venv\Scripts\python.exe tools\hdart\optimize_hd.py `
 Огонь, дым, попадания (SMOKE.PCK, HIT.PCK, X1.PCK) для классических сетов ванильного UFO.
 Рисует процедурно, кадры процедурные (как в `gen_combat_fx.py`) — воспроизводимы.
 
-Запуск: `py -3 tools/hdart/gen_fx.py --mod <мод>/hd [--only-fire]`
+Запуск: `py -3.13 tools/hdart/gen_fx.py --mod <мод>/hd [--only-fire]`
 
 | параметр | умолчание | что делает |
 |---|---|---|
@@ -347,7 +347,7 @@ tools\hdart\.venv\Scripts\python.exe tools\hdart\optimize_hd.py `
 Кадры 0-5 CURSOR (рамка выбора на карте): красная и жёлтая, задняя и передняя половины,
 линии верхних ярусов под пунктиром. Рисует геометрией, без модели.
 
-Запуск: `py -3 tools/hdart/gen_cursor_box.py --out <мод>/hd/CURSOR.PCK`
+Запуск: `py -3.13 tools/hdart/gen_cursor_box.py --out <мод>/hd/CURSOR.PCK`
 
 | параметр | умолчание | что делает |
 |---|---|---|
@@ -362,7 +362,7 @@ tools\hdart\.venv\Scripts\python.exe tools\hdart\optimize_hd.py `
 Pathfinding: 24 кадра. Восемь направлений, стрелка вверх, стрелка вниз, кольцо цели, ромб клетки,
 их же в шахматку (полупрозрачность). Рисует геометрией.
 
-Запуск: `py -3 tools/hdart/gen_path.py --out <папка превью>`
+Запуск: `py -3.13 tools/hdart/gen_path.py --out <папка превью>`
 
 | параметр | умолчание | что делает |
 |---|---|---|
@@ -379,7 +379,7 @@ Pathfinding: 24 кадра. Восемь направлений, стрелка 
 Кадры 6-10 CURSOR: анимированный прицел. Силуэт у всех пяти одинаковый (по строка, кадр — идеально);
 анимация — бегущий по клиньям свет. Рисует геометрией.
 
-Запуск: `py -3 tools/hdart/gen_reticle.py --style plasma --pack <мод>/hd/CURSOR.PCK`
+Запуск: `py -3.13 tools/hdart/gen_reticle.py --style plasma --pack <мод>/hd/CURSOR.PCK`
 
 | параметр | умолчание | что делает |
 |---|---|---|
@@ -395,7 +395,7 @@ Pathfinding: 24 кадра. Восемь направлений, стрелка 
 Огни на корпусе корабля в ангаре базы. Ставит по силуэту картинки корабля (спрайт в BASEBITS + офсет
 для каждого корабля). Рисует процедурно.
 
-Запуск: `py -3 tools/hdart/gen_craft_lights.py --src Пиратки/... --out Пиратки/.../hd`
+Запуск: `py -3.13 tools/hdart/gen_craft_lights.py --src Пиратки/... --out Пиратки/.../hd`
 
 | параметр | умолчание | что делает |
 |---|---|---|
@@ -411,7 +411,7 @@ Pathfinding: 24 кадра. Восемь направлений, стрелка 
 Процедурная HD-анимация построек: фазы по описанию в `base_anims.yml`. Каждая постройка собирается
 как её HD-зеркало в движке (BaseView): форма + картинка.
 
-Запуск: `py -3 tools/hdart/gen_base_anim.py --only RESIDENTIAL_QUARTERS`
+Запуск: `py -3.13 tools/hdart/gen_base_anim.py --only RESIDENTIAL_QUARTERS`
 
 | параметр | умолчание | что делает |
 |---|---|---|
@@ -427,7 +427,7 @@ Pathfinding: 24 кадра. Восемь направлений, стрелка 
 Бурлящая жидкость (хеллерий и т.п.) в постройке базы. Собирает постройку, ищет жидкость
 по цвету, рисует подвижные пузыри по фазам.
 
-Запуск: `py -3 tools/hdart/gen_base_bubbles.py --src Пиратки/... --indices 608,609,610,611 --size 2x2`
+Запуск: `py -3.13 tools/hdart/gen_base_bubbles.py --src Пиратки/... --indices 608,609,610,611 --size 2x2`
 
 | параметр | умолчание | что делает |
 |---|---|---|
@@ -446,7 +446,7 @@ Pathfinding: 24 кадра. Восемь направлений, стрелка 
 
 Иконки (Zzz оглушён, капли крови, огонь, призрак) 16×16 над поверженными юнитами. Рисует процедурно.
 
-Запуск: `py -3 tools/hdart/gen_icons.py --pack Пиратки/.../hd/UI`
+Запуск: `py -3.13 tools/hdart/gen_icons.py --pack Пиратки/.../hd/UI`
 
 | параметр | умолчание | что делает |
 |---|---|---|
@@ -515,7 +515,7 @@ Pathfinding: 24 кадра. Восемь направлений, стрелка 
 Слияние нескольких поколений арта (G1, G2, LoRA, G4 и т.п.) в единый TERRAIN. Основа — прежний пак;
 новое поколение ставится, только если оно годно, а основа не годна. Лучшие по кадру.
 
-Запуск: `py -3 tools/hdart/merge_gens.py --dry-run` (показать план) или без `--dry-run` (слить в мод).
+Запуск: `py -3.13 tools/hdart/merge_gens.py --dry-run` (показать план) или без `--dry-run` (слить в мод).
 
 | параметр | умолчание | что делает |
 |---|---|---|

@@ -15,9 +15,9 @@ gen_base_anim.py - процедурная HD-анимация построек �
 purple, white, grey, dark), яркость, прямоугольник в пикселях классики, размер связных кусков.
 Список эффектов и их ключи - в шапке base_anims.yml.
 
-    py -3 tools/hdart/gen_base_anim.py --probe art/_review/base_anims/probe
-    py -3 tools/hdart/gen_base_anim.py --preview art/_review/base_anims
-    py -3 tools/hdart/gen_base_anim.py --only STR_ONSEN --out user/mods/hd --out "Пиратки/Dioxine_XPiratez/user/mods/hd"
+    py -3.13 tools/hdart/gen_base_anim.py --probe art/_review/base_anims/probe
+    py -3.13 tools/hdart/gen_base_anim.py --preview art/_review/base_anims
+    py -3.13 tools/hdart/gen_base_anim.py --only STR_ONSEN --out user/mods/hd --out "Пиратки/Dioxine_XPiratez/user/mods/hd"
 
 Без --out ничего в мод не пишется: сначала превью, в мод - после выбора Vitali.
 """

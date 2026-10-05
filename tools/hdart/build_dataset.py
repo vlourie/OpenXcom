@@ -18,8 +18,8 @@
 Приёмка руками: открыть dataset/sheets/*.png, номера брака вписать в dataset/reject.txt
 (по строке «НАБОР кадр» или просто «кадр»), прогнать скрипт ещё раз - они выпадут.
 
-    py -3 tools\\hdart\\build_dataset.py --root . --out dataset
-    py -3 tools\\hdart\\build_dataset.py --root . --out dataset --only-kind floor
+    py -3.13 tools\\hdart\\build_dataset.py --root . --out dataset
+    py -3.13 tools\\hdart\\build_dataset.py --root . --out dataset --only-kind floor
 """
 
 import argparse

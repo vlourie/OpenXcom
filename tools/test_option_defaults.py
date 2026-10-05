@@ -5,8 +5,8 @@ options.cfg игрока хранит значение каждого ключа
 OptionInfo(..., "ключ", &переменная, умолчание, ...) в src/Engine/Options.cpp с последним
 коммитом выпуска (сообщение "release: ...") и падает на ключе, у которого умолчание другое.
 
-    py -3 tools/test_option_defaults.py                       # рабочее дерево против выпуска
-    py -3 tools/test_option_defaults.py --base 34c6a8ba5 --head 9c4283e8e   # контрольный опыт: падает
+    py -3.13 tools/test_option_defaults.py                       # рабочее дерево против выпуска
+    py -3.13 tools/test_option_defaults.py --base 34c6a8ba5 --head 9c4283e8e   # контрольный опыт: падает
 """
 import argparse
 import re

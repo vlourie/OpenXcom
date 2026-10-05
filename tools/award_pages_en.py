@@ -17,7 +17,7 @@
 Статью, где после перевода осталась кириллица (проза, имена), не трогает вовсе и
 называет в выводе: лучше один экран, чем половина по-русски.
 
-    py -3 tools/award_pages_en.py        пишет в Пиратки/.../user/mods/Piratez
+    py -3.13 tools/award_pages_en.py        пишет в Пиратки/.../user/mods/Piratez
 """
 import argparse
 import io

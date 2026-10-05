@@ -19,7 +19,7 @@ try:
     import yaml
     from yaml import CSafeLoader as Loader
 except ImportError:
-    print("Нужен PyYAML:  py -3 -m pip install pyyaml")
+    print("Нужен PyYAML:  py -3.13 -m pip install pyyaml")
     sys.exit(1)
 
 STATS = ["tu", "stamina", "health", "bravery", "reactions", "firing",

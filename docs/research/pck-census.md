@@ -123,8 +123,8 @@
 ## Как повторить
 
 ```powershell
-py -3 tools\pck_census.py --install "Пиратки\Dioxine_XPiratez" --out census
-py -3 tools\pck_roadmap.py --census census --out census --kind TERRAIN
+py -3.13 tools\pck_census.py --install "Пиратки\Dioxine_XPiratez" --out census
+py -3.13 tools\pck_roadmap.py --census census --out census --kind TERRAIN
 ```
 
 Перепись идёт около четырёх минут, очередь — секунды. Обе пишут UTF-8 со спецификацией.

@@ -7,8 +7,8 @@
 начинается с нулей, и если она нулём и осталась - никакого влияния на картинку не будет,
 сколько ни зови её в генерации. Проверять надо ДО того, как радоваться.
 
-    py -3 tools\\hdart\\check_lora.py E:\\train\\lora\\oxcehd
-    py -3 tools\\hdart\\check_lora.py E:\\train\\lora\\oxcehd\\epoch-4.safetensors
+    py -3.13 tools\\hdart\\check_lora.py E:\\train\\lora\\oxcehd
+    py -3.13 tools\\hdart\\check_lora.py E:\\train\\lora\\oxcehd\\epoch-4.safetensors
 """
 
 import os

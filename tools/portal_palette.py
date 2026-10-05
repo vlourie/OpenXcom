@@ -17,8 +17,8 @@
 и соседние дают и рамку, и заливку, и тень. Поэтому в CSS уходит не один цвет, а вся рампа
 блока - без неё двойная рамка получится плоской.
 
-    py -3 tools/portal_palette.py                      показать рампы и частоты
-    py -3 tools/portal_palette.py --css portal/src/Xp.Portal/wwwroot/css/palette.css
+    py -3.13 tools/portal_palette.py                      показать рампы и частоты
+    py -3.13 tools/portal_palette.py --css portal/src/Xp.Portal/wwwroot/css/palette.css
 """
 import argparse
 import os

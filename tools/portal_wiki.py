@@ -13,7 +13,7 @@
 
 Выход - один JSON со страницами на всех запрошенных языках. Его забирает портал:
 
-    py -3 tools\\portal_wiki.py --mod "Пиратки\\Dioxine_XPiratez\\user\\mods\\Piratez" ^
+    py -3.13 tools\\portal_wiki.py --mod "Пиратки\\Dioxine_XPiratez\\user\\mods\\Piratez" ^
         --slug piratez --lang ru --lang en --out dist\\wiki\\piratez.json
     dotnet run --project portal\\src\\Xp.Portal -- wiki import --file dist\\wiki\\piratez.json
 

@@ -7,8 +7,8 @@ r"""Лист оригинала набора: все кадры увеличен
 видеть каждый пиксель как он есть, а не сглаженную картинку (в конвейер генерации
 nearest подавать нельзя - R-004, но это не конвейер).
 
-    py -3 tools/hdart/orig_sheet.py --set ICEKING_RUINS.PCK
-    py -3 tools/hdart/orig_sheet.py --set POLAR.PCK --scale 4 --cols 8
+    py -3.13 tools/hdart/orig_sheet.py --set ICEKING_RUINS.PCK
+    py -3.13 tools/hdart/orig_sheet.py --set POLAR.PCK --scale 4 --cols 8
 
 Фон тёмный, как пол в бою: на шахматке не видно ни остатка подложки, ни потери
 плотности по краю (R-041).

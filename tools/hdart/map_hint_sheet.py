@@ -11,7 +11,7 @@ r"""map_hint_sheet.py - лист кадров, которые map_paint зака
 Фон - тёмный пол боя (R-041). Рядом json: {"НАБОР:кадр": подсказка}; где подсказки ещё нет, стоит
 текст hints_for набора из прежнего конвейера с пометкой "?" - его проверить по листу и поправить.
 
-    py -3 tools\hdart\map_hint_sheet.py --terrain CYDHANGAR --block SGR_TERMINAL_01 --root art\maps\paint\series
+    py -3.13 tools\hdart\map_hint_sheet.py --terrain CYDHANGAR --block SGR_TERMINAL_01 --root art\maps\paint\series
       -> art\maps\paint\hints\SGR_TERMINAL_01_NN.png и SGR_TERMINAL_01.draft.json
 """
 import argparse

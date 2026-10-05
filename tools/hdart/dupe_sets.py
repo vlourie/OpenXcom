@@ -12,9 +12,9 @@ dupe_frames.py ищет повторы ВНУТРИ набора. Здесь д�
 распаковке (грабли R-043 закрыты на шаге extract_pck). Хэш берётся по RGBA-пикселям:
 совпадение по хэшу - это совпадение картинки, а не имени файла.
 
-    py -3 tools/hdart/dupe_sets.py                     топ-30 самых частых кадров
-    py -3 tools/hdart/dupe_sets.py --top 100 --tsv census/dupe_sets.tsv
-    py -3 tools/hdart/dupe_sets.py --show 0 --out art/_review/dupes
+    py -3.13 tools/hdart/dupe_sets.py                     топ-30 самых частых кадров
+    py -3.13 tools/hdart/dupe_sets.py --top 100 --tsv census/dupe_sets.tsv
+    py -3.13 tools/hdart/dupe_sets.py --show 0 --out art/_review/dupes
 
 --show N выкладывает картинку группы N в PNG, чтобы посмотреть глазами, что это за плитка.
 """

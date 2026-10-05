@@ -10,14 +10,14 @@
 серии). Числа считаны по-разному, и это указано у каждой строки честно.
 
 Запуск:
-    py -3 tools\\aibench\\style_report.py logs\\style_pz_deaths.csv
+    py -3.13 tools\\aibench\\style_report.py logs\\style_pz_deaths.csv
         [--states logs\\style_pz_states.csv] [--rows logs\\style_pz.csv]
 """
 import argparse, csv, io, os
 
 ENC = "utf-8-sig"
 
-# Числа живого игрока: py -3 tools\save_profile.py, срез «последние 500 боёв»,
+# Числа живого игрока: py -3.13 tools\save_profile.py, срез «последние 500 боёв»,
 # сохранение NoCodexCatZ.sav от 20.09.2026. Разбор - docs/research/player-profile.md
 HUMAN = {
     "melee": 53.3,      # доля добиваний оружием ближе трёх клеток

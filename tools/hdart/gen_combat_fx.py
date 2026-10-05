@@ -15,7 +15,7 @@
     flash_<вид>_<dir>          вспышка у ствола
     boom_<семья>[_<цвет>]      взрыв по площади
 
-Запуск: py -3 tools/hdart/gen_combat_fx.py --out <мод>/hd [--only hit_bullet] [--preview <png/gif каталог>]
+Запуск: py -3.13 tools/hdart/gen_combat_fx.py --out <мод>/hd [--only hit_bullet] [--preview <png/gif каталог>]
 """
 import argparse, math, os, sys, time, zlib
 import numpy as np
