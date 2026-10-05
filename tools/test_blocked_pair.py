@@ -1,4 +1,4 @@
-"""Регрессия классификатора V1 (R-176): признак «затронут» в tools/ai_speed/blocked_pair.py обязан повторять правило движка
+"""Регрессия классификатора V1 (R-176): признак «затронут» в tools/attic/ai_speed/blocked_pair.py обязан повторять правило движка
 (AiProbe::blockedStepStop / blockedStepDecide / blockedStepPlan) - память у ЛЮБОЙ остановки юнитом, в том числе посреди
 пути, а не только на первом шаге решения. Образец - бой 1102 STR_ERIDIAN_TERROR из c53s23/v53s23 (юнит 1000061, ход 3,
 решения 555-556: встал на 5,11,0 посреди пути, следующее решение с той же клетки выбрало тот же шаг d3). Контроль:
@@ -8,7 +8,7 @@ import gzip, json, sys, tempfile
 from pathlib import Path
 
 sys.stdout.reconfigure(encoding="utf-8")
-HERE = Path(__file__).resolve().parent / "ai_speed"
+HERE = Path(__file__).resolve().parent / "attic" / "ai_speed"
 sys.path.insert(0, str(HERE))
 import blocked_pair as bp  # noqa: E402
 import blocked_kr as bk  # noqa: E402
