@@ -20,7 +20,7 @@ r"""AGENT направление 2: прицел и присед цельной 
 выше полы пиджака - всё, что не закрыто торсом и руками позы с AK; серая тень пола под фигурой снимается по яркости.
 
     tools/hdart/.venv/Scripts/python.exe tools/hdart/agent_pose.py prep
-    py -3 tools/gpuq.py add --name agent_pose -- E:/OpenXCom/tools/hdart/.venv-qwen21/Scripts/python.exe \
+    py -3.13 tools/gpuq.py add --name agent_pose -- E:/OpenXCom/tools/hdart/.venv-qwen21/Scripts/python.exe \
         E:/OpenXCom/tools/hdart/agent_pose.py render --jobs hands,aim,kneel3 --seeds 5501,5502,5503
     tools/hdart/.venv/Scripts/python.exe tools/hdart/agent_pose.py build --hands 5504 --aim 5504 \
         --kneel-job kneel3 --kneel 5603 [--mod <тестовый мод>]
@@ -504,9 +504,9 @@ def cmd_build(a):
         af.save_rgba(af.edge_fill(rgb, al), al, os.path.join(pack, "GOV_1.PCK", "%d.png" % n))
     af.save_rgba(*g2, os.path.join(pack, "HANDOB.PCK", "%d.png" % af.HANDOB_FRAME))
     af.save_rgba(af.edge_fill(*g4), g4[1], os.path.join(pack, "HANDOB.PCK", "%d.png" % AIM_FRAME))
-    with open(os.path.join(pack, "GOV_1.PCK", "color.txt"), "w", encoding="utf-8") as f:
+    with open(os.path.join(pack, "GOV_1.PCK", "color.txt"), "w", encoding="utf-8-sig") as f:
         f.write("colorAuthority: pack\nframes: %s\n" % " ".join(str(n) for n in sorted(fr)))
-    with open(os.path.join(pack, "HANDOB.PCK", "color.txt"), "w", encoding="utf-8") as f:
+    with open(os.path.join(pack, "HANDOB.PCK", "color.txt"), "w", encoding="utf-8-sig") as f:
         f.write("colorAuthority: pack\nframes: %d %d\n" % (af.HANDOB_FRAME, AIM_FRAME))
     info = {"hands": a.hands, "aim": a.aim, "kneel": a.kneel, "kneel_job": a.kneel_job, "aim_shift": [round(v, 2) for v in aim_shift()],
             "aim_gun": aim_gun_pts(), "hem_kneel_x4": round(hem4, 1)}
