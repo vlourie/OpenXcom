@@ -22,8 +22,7 @@ r"""AGENT направление 2: прицел и присед цельной 
     tools/hdart/.venv/Scripts/python.exe tools/hdart/agent_pose.py prep
     py -3.13 tools/gpuq.py add --name agent_pose -- E:/OpenXCom/tools/hdart/.venv-qwen21/Scripts/python.exe \
         E:/OpenXCom/tools/hdart/agent_pose.py render --jobs hands,aim,kneel3 --seeds 5501,5502,5503
-    (рука прицела под поднятый автомат AIM_RAISE: --jobs aim --seeds 5511,5512,5513,5514, выбран 5512)
-    tools/hdart/.venv/Scripts/python.exe tools/hdart/agent_pose.py build --hands 5504 --aim 5512 \
+    tools/hdart/.venv/Scripts/python.exe tools/hdart/agent_pose.py build --hands 5504 --aim 5504 \
         --kneel-job kneel3 --kneel 5603 [--mod <тестовый мод>]
 
 Выход art/units/pilot-agent/full/pose/.
@@ -53,12 +52,8 @@ AK_SHEET = os.path.join(af.PZ, "Piratez", "Resources", "HANDOB", "AK.png")
 Z = af.Z
 T = af.TOKEN
 CELL = (32 * Z, 40 * Z)
-# классика AK.png кадр 4: затыльник слева вверху (8, 15-17), дуло справа внизу (18-19, 21-22) - края пикселей.
-# HD-автомат в 3 раза тоньше классического (цевьё 1.2 пикселя базы против 3-4), и на тех же точках кулак дальней руки
-# 242 (общий с позой стоя) висел над цевьём с просветом 0.7-1 пиксель. Поднят на 1.5: цевьё закрывает низ кулака -
-# дальняя рука держит его с той стороны, как в классике, где толстый ствол накрывает кулак (специалист 05.10)
-AIM_RAISE = 1.5
-BUTT4, MUZZLE4 = (8.0, 16.3 - AIM_RAISE), (20.0, 22.0 - AIM_RAISE)
+# классика AK.png кадр 4: затыльник слева вверху (8, 15-17), дуло справа внизу (18-19, 21-22) - края пикселей
+BUTT4, MUZZLE4 = (8.0, 16.3), (20.0, 22.0)
 AIM_OFF = (7, 0)                # UnitSprite offX[2], offY[2]
 KNEEL_DY = 4                    # offYKneel
 AIM_FRAME = 1356                # 352 + 4 + сдвиг мастер-мода 1000 (R-082)
