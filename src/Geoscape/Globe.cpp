@@ -1876,25 +1876,38 @@ bool Globe::keepHdMark(MovingTarget *target, const std::string &type, Uint32 col
 	}
 	double x, y;
 	polarToCart(lon, lat, &x, &y);
-	const Target *dest = target->getDestination();
-	if (dest && target->getSpeed() > 0)
+	// the step MovingTarget::calculateSpeed makes: along the great circle to the destination,
+	// not along the straight line in longitude and latitude, which leaves the base sideways
+	auto course = [&](const Target *to) -> bool
 	{
-		// the step MovingTarget::calculateSpeed makes: along the great circle to the destination,
-		// not along the straight line in longitude and latitude, which leaves the base sideways
-		const double mLon = dest->getLongitude(), mLat = dest->getLatitude();
+		const double mLon = to->getLongitude(), mLat = to->getLatitude();
 		const double dLon = std::sin(mLon - lon) * std::cos(mLat);
 		const double dLat = std::cos(lat) * std::sin(mLat) - std::sin(lat) * std::cos(mLat) * std::cos(mLon - lon);
 		const double len = std::sqrt(dLon * dLon + dLat * dLat);
 		const double stepLat = len > 1e-9 ? dLat / len * 0.001 : 0.0;
 		const double cosLat = std::cos(lat + stepLat);
-		if (len > 1e-9 && std::fabs(cosLat) > 1e-6)
+		if (len <= 1e-9 || std::fabs(cosLat) <= 1e-6)
 		{
-			double x2, y2;
-			polarToCart(lon + dLon / len * 0.001 / cosLat, lat + stepLat, &x2, &y2);
-			if (std::fabs(x2 - x) + std::fabs(y2 - y) > 1e-9)
-			{
-				heading.angle = (float)std::atan2(y2 - y, x2 - x);
-			}
+			return false;
+		}
+		double x2, y2;
+		polarToCart(lon + dLon / len * 0.001 / cosLat, lat + stepLat, &x2, &y2);
+		if (std::fabs(x2 - x) + std::fabs(y2 - y) <= 1e-9)
+		{
+			return false;
+		}
+		heading.angle = (float)std::atan2(y2 - y, x2 - x);
+		return true;
+	};
+	const Target *dest = target->getDestination();
+	if (dest && target->getSpeed() > 0)
+	{
+		// an escort sits on its leader's point every step (MovingTarget::move), so there is no course
+		// to it: it flies the leader's course, else it keeps the one it came in on - often backwards
+		for (int hop = 0; dest && hop < 4 && !course(dest); ++hop)
+		{
+			const MovingTarget *leader = dynamic_cast<const MovingTarget*>(dest);
+			dest = leader && leader->getSpeed() > 0 ? leader->getDestination() : nullptr;
 		}
 	}
 	seen[target] = heading;
