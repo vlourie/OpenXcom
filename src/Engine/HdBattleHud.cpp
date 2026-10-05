@@ -169,26 +169,61 @@ struct Pic
 
 	// --- the pieces the pictograms are made of (x = the piece's centre line) ---
 
-	/// A standing figure, 11.5 base pixels tall, its feet at y = 13.6.
-	Pic &person(float x)
+	/// A standing figure, its head's top at y = top; s = 1 is 11.2 base pixels tall (feet at top + 11.2).
+	Pic &person(float x, float top = 2.45f, float s = 1.0f)
 	{
-		circle(x, 4.2f, 1.75f);
-		rect(x - 1.75f, 6.4f, x + 1.75f, 10.3f, 0.9f);
-		line(x - 2.15f, 7.0f, x - 2.7f, 10.0f, 1.0f);
-		line(x + 2.15f, 7.0f, x + 2.7f, 10.0f, 1.0f);
-		line(x - 0.85f, 10.0f, x - 1.05f, 13.3f, 1.4f);
-		line(x + 0.85f, 10.0f, x + 1.05f, 13.3f, 1.4f);
+		auto Y = [&](float v) { return top + (v - 2.45f) * s; };
+		circle(x, Y(4.2f), 1.75f * s);
+		rect(x - 1.75f * s, Y(6.4f), x + 1.75f * s, Y(10.3f), 0.9f * s);
+		line(x - 2.15f * s, Y(7.0f), x - 2.7f * s, Y(10.0f), 1.0f * s);
+		line(x + 2.15f * s, Y(7.0f), x + 2.7f * s, Y(10.0f), 1.0f * s);
+		line(x - 0.85f * s, Y(10.0f), x - 1.05f * s, Y(13.3f), 1.4f * s);
+		line(x + 0.85f * s, Y(10.0f), x + 1.05f * s, Y(13.3f), 1.4f * s);
 		return *this;
+	}
+	/// A figure shooting to the right, for the 17 x 11 reserve buttons: the gun at the hip (snap and
+	/// auto) or raised to the eye (aimed), as the mod draws them.
+	Pic &shooter(float x, bool aimed)
+	{
+		circle(x, 2.6f, 1.3f);
+		rect(x - 1.05f, 3.9f, x + 1.05f, 6.8f, 0.5f);
+		line(x - 0.45f, 6.5f, x - 1.7f, 9.2f, 1.15f);
+		line(x + 0.45f, 6.5f, x + 1.5f, 9.2f, 1.15f);
+		if (aimed)
+		{
+			line(x + 0.6f, 4.3f, x + 2.4f, 3.3f, 1.0f);
+			rect(x + 1.6f, 2.75f, x + 7.0f, 3.75f, 0.3f);
+		}
+		else
+		{
+			line(x + 0.6f, 4.6f, x + 2.6f, 4.9f, 1.0f);
+			rect(x + 2.0f, 4.35f, x + 7.0f, 5.35f, 0.3f);
+		}
+		return *this;
+	}
+	/// The levels of the map: a narrow column of three storeys.
+	Pic &storeys(float x)
+	{
+		rect(x - 2.4f, 3.0f, x + 2.4f, 13.0f, 0.5f);
+		cut(true);
+		for (int i = 0; i < 3; ++i)
+		{
+			rect(x - 1.25f, 4.15f + 2.95f * i, x + 1.25f, 6.05f + 2.95f * i, 0.2f);
+		}
+		return cut(false);
 	}
 	/// A kneeling figure, the same feet line.
 	Pic &kneeling(float x)
 	{
-		circle(x + 0.2f, 6.4f, 1.75f);
-		rect(x - 1.6f, 8.5f, x + 1.8f, 11.8f, 0.9f);
-		line(x + 1.5f, 9.1f, x + 3.0f, 10.6f, 1.0f);
-		line(x + 0.2f, 11.6f, x + 3.2f, 11.6f, 1.5f);
-		line(x + 3.2f, 11.6f, x + 3.2f, 13.4f, 1.4f);
-		line(x - 0.9f, 11.8f, x - 3.4f, 13.4f, 1.4f);
+		// upright, one knee on the ground, the other leg bent forward
+		circle(x, 5.3f, 1.75f);
+		rect(x - 1.65f, 7.5f, x + 1.65f, 10.9f, 0.9f);
+		line(x - 2.05f, 8.1f, x - 2.5f, 10.6f, 1.0f);
+		line(x + 2.05f, 8.1f, x + 2.5f, 10.6f, 1.0f);
+		line(x + 0.6f, 10.5f, x + 3.4f, 10.8f, 1.4f);
+		line(x + 3.4f, 10.8f, x + 3.6f, 13.4f, 1.4f);
+		line(x - 0.8f, 10.5f, x - 1.0f, 13.1f, 1.4f);
+		line(x - 1.0f, 13.3f, x - 3.6f, 13.4f, 1.3f);
 		return *this;
 	}
 	/// A triangle pointing up or down, centred at (x, y).
@@ -202,27 +237,10 @@ struct Pic
 	{
 		return poly({ x - 2.0f, y - 2.8f, x + 2.4f, y, x - 2.0f, y + 2.8f });
 	}
-	/// Three floors of a building.
-	Pic &floors(float x)
-	{
-		for (int i = 0; i < 3; ++i)
-		{
-			rect(x - 3.6f, 3.6f + 3.6f * i, x + 3.6f, 5.3f + 3.6f * i, 0.6f);
-		}
-		return *this;
-	}
-	/// A rifle, its stock at x and its muzzle about 12 base pixels to the right; the body's top at y.
-	Pic &rifle(float x, float y)
-	{
-		poly({ x, y + 0.2f, x + 2.6f, y, x + 2.6f, y + 1.8f, x + 1.2f, y + 3.2f, x, y + 3.2f });
-		rect(x + 2.3f, y, x + 8.8f, y + 1.8f, 0.4f);
-		rect(x + 8.6f, y + 0.4f, x + 12.0f, y + 1.3f, 0.3f);
-		poly({ x + 4.6f, y + 1.6f, x + 6.0f, y + 1.6f, x + 5.4f, y + 3.8f, x + 4.1f, y + 3.8f });
-		poly({ x + 6.8f, y + 1.6f, x + 8.0f, y + 1.6f, x + 8.5f, y + 3.6f, x + 7.4f, y + 3.8f });
-		return *this;
-	}
 };
 
+/// The pictograms follow the mod's own picture of the panel (the same sign on the same button), drawn
+/// again as clean shapes: what the player knows a button by stays.
 Pic makeIcon(HdBattleHud::Icon icon)
 {
 	Pic p;
@@ -230,34 +248,37 @@ Pic makeIcon(HdBattleHud::Icon icon)
 	{
 	case HdBattleHud::ICON_UNIT_UP: p.arrow(10.5f, 8.2f, true).person(20.5f); break;
 	case HdBattleHud::ICON_UNIT_DOWN: p.arrow(10.5f, 7.8f, false).person(20.5f); break;
-	case HdBattleHud::ICON_MAP_UP: p.arrow(10.5f, 8.2f, true).floors(20.5f); break;
-	case HdBattleHud::ICON_MAP_DOWN: p.arrow(10.5f, 7.8f, false).floors(20.5f); break;
+	case HdBattleHud::ICON_MAP_UP: p.arrow(10.5f, 8.2f, true).storeys(20.5f); break;
+	case HdBattleHud::ICON_MAP_DOWN: p.arrow(10.5f, 7.8f, false).storeys(20.5f); break;
 	case HdBattleHud::ICON_SHOW_MAP:
-		// a map sheet with its grid and a marker
-		p.rect(9.0f, 3.2f, 23.0f, 12.8f, 1.2f).cut(true).rect(10.2f, 4.4f, 21.8f, 11.6f, 0.4f).cut(false);
-		p.line(13.9f, 4.0f, 13.9f, 12.0f, 0.7f).line(18.1f, 4.0f, 18.1f, 12.0f, 0.7f).line(9.6f, 8.0f, 22.4f, 8.0f, 0.7f);
-		p.circle(16.0f, 6.2f, 1.1f);
+		// a map sheet with a tab, its left part a grid of squares
+		p.rect(8.6f, 4.2f, 23.4f, 13.0f, 0.9f).rect(17.0f, 2.6f, 23.4f, 5.2f, 0.7f);
+		p.cut(true).rect(9.8f, 5.4f, 22.2f, 11.8f, 0.3f).cut(false);
+		for (int i = 0; i < 9; ++i)
+		{
+			const float x = 10.5f + (i % 3) * 1.85f, y = 6.1f + (i / 3) * 1.85f;
+			p.rect(x, y, x + 1.3f, y + 1.3f, 0.15f);
+		}
 		break;
 	case HdBattleHud::ICON_KNEEL:
-		p.person(9.5f).line(14.9f, 6.2f, 16.9f, 8.2f, 1.1f).line(16.9f, 8.2f, 14.9f, 10.2f, 1.1f).kneeling(21.5f);
+		// stand / kneel
+		p.person(8.6f).line(13.6f, 12.8f, 18.4f, 3.2f, 1.0f).kneeling(22.8f);
 		break;
 	case HdBattleHud::ICON_INVENTORY:
-		// a backpack: the handle, the body, the flap's seam and a pocket
-		p.arc(16.0f, 5.0f, 2.1f, 1.0f, 180.0f, 360.0f);
-		p.rect(11.3f, 4.8f, 20.7f, 13.7f, 2.2f);
-		p.cut(true).rect(11.3f, 8.0f, 20.7f, 8.9f, 0.0f).rect(13.6f, 10.4f, 18.4f, 12.3f, 0.6f).cut(false);
-		p.rect(14.5f, 10.9f, 17.5f, 11.8f, 0.3f);
+		p.person(16.0f);
 		break;
 	case HdBattleHud::ICON_CENTER:
-		p.arc(16.0f, 8.0f, 4.0f, 1.1f);
-		p.line(16.0f, 1.8f, 16.0f, 4.6f, 1.1f).line(16.0f, 11.4f, 16.0f, 14.2f, 1.1f);
-		p.line(9.8f, 8.0f, 12.6f, 8.0f, 1.1f).line(19.4f, 8.0f, 22.2f, 8.0f, 1.1f);
-		p.circle(16.0f, 8.0f, 1.0f);
+		// the unit in the middle of the view: a small figure in four ticks
+		p.person(16.0f, 4.3f, 0.66f);
+		p.line(10.6f, 6.2f, 10.6f, 9.8f, 1.1f).line(21.4f, 6.2f, 21.4f, 9.8f, 1.1f);
+		p.line(14.2f, 2.6f, 17.8f, 2.6f, 1.1f).line(14.2f, 13.4f, 17.8f, 13.4f, 1.1f);
 		break;
 	case HdBattleHud::ICON_NEXT_SOLDIER: p.person(9.0f).arrowRight(16.3f, 8.2f).person(23.0f); break;
 	case HdBattleHud::ICON_NEXT_STOP:
-		// done with this one: a tick, then on to the next
-		p.line(6.6f, 8.6f, 8.6f, 10.9f, 1.3f).line(8.6f, 10.9f, 12.2f, 5.4f, 1.3f).arrowRight(16.3f, 8.2f).person(23.0f);
+		// done with this one (struck through), on to the next
+		p.person(8.4f).cut(true).line(4.6f, 13.4f, 12.2f, 2.8f, 2.6f).cut(false).line(4.6f, 13.4f, 12.2f, 2.8f, 1.0f);
+		p.line(13.6f, 8.2f, 17.2f, 8.2f, 1.1f).poly({ 16.4f, 6.0f, 19.2f, 8.2f, 16.4f, 10.4f });
+		p.person(23.6f);
 		break;
 	case HdBattleHud::ICON_SHOW_LAYERS:
 	{
@@ -271,54 +292,46 @@ Pic makeIcon(HdBattleHud::Icon icon)
 		break;
 	}
 	case HdBattleHud::ICON_LINKS:
-		// a menu of commands: three by three dots (three bars would read as the map levels beside it)
-		for (int i = 0; i < 9; ++i)
-		{
-			p.circle(12.4f + (i % 3) * 3.6f, 4.4f + (i / 3) * 3.6f, 1.15f);
-		}
+		p.rect(10.4f, 3.9f, 21.6f, 5.6f, 0.8f).rect(10.4f, 7.15f, 21.6f, 8.85f, 0.8f).rect(10.4f, 10.4f, 21.6f, 12.1f, 0.8f);
 		break;
 	case HdBattleHud::ICON_OPTIONS:
-	{
-		// a gear: a disc, eight teeth, a hole
-		p.circle(16.0f, 8.0f, 3.9f);
-		for (int i = 0; i < 8; ++i)
-		{
-			const float a = i * 0.7853982f, ca = std::cos(a), sa = std::sin(a);
-			const float r0 = 3.0f, r1 = 5.6f, hw = 1.05f;
-			p.poly({ 16.0f + ca * r0 - sa * hw, 8.0f + sa * r0 + ca * hw, 16.0f + ca * r1 - sa * hw * 0.8f, 8.0f + sa * r1 + ca * hw * 0.8f,
-				16.0f + ca * r1 + sa * hw * 0.8f, 8.0f + sa * r1 - ca * hw * 0.8f, 16.0f + ca * r0 + sa * hw, 8.0f + sa * r0 - ca * hw });
-		}
-		p.cut(true).circle(16.0f, 8.0f, 1.7f).cut(false);
+		// a question mark
+		p.arc(16.0f, 5.9f, 2.7f, 1.7f, 180.0f, 405.0f);
+		p.line(17.9f, 7.8f, 16.0f, 9.2f, 1.7f).line(16.0f, 9.2f, 16.0f, 10.1f, 1.7f);
+		p.circle(16.0f, 12.6f, 1.05f);
 		break;
-	}
 	case HdBattleHud::ICON_END_TURN:
-		// skip to the end: two triangles and a bar
-		p.poly({ 9.6f, 3.6f, 15.6f, 8.0f, 9.6f, 12.4f }).poly({ 15.0f, 3.6f, 21.0f, 8.0f, 15.0f, 12.4f });
-		p.rect(21.1f, 3.6f, 22.9f, 12.4f, 0.5f);
+		// a struck circle
+		p.arc(16.0f, 8.0f, 4.1f, 1.4f).line(13.3f, 10.7f, 18.7f, 5.3f, 1.4f);
 		break;
 	case HdBattleHud::ICON_ABORT:
-		// leave: a door's frame and an arrow out of it
-		p.line(13.2f, 3.4f, 9.6f, 3.4f, 1.2f).line(9.6f, 3.4f, 9.6f, 12.6f, 1.2f).line(9.6f, 12.6f, 13.2f, 12.6f, 1.2f);
-		p.line(13.0f, 8.0f, 20.0f, 8.0f, 1.4f).poly({ 19.0f, 4.7f, 23.4f, 8.0f, 19.0f, 11.3f });
+		// back on board: the craft, an arrow up to it
+		p.poly({ 8.6f, 6.6f, 10.0f, 5.2f, 20.4f, 4.7f, 22.4f, 2.0f, 24.0f, 2.0f, 23.4f, 5.4f, 22.2f, 6.9f, 10.2f, 7.5f });
+		p.poly({ 14.4f, 6.8f, 18.6f, 6.8f, 16.6f, 8.0f, 13.8f, 8.0f });
+		p.poly({ 13.4f, 11.8f, 18.6f, 11.8f, 16.0f, 9.2f }).line(16.0f, 11.4f, 16.0f, 13.8f, 1.3f);
 		break;
 	case HdBattleHud::ICON_RESERVE_NONE:
-		p.line(2.8f, 5.5f, 11.0f, 5.5f, 1.4f).poly({ 10.2f, 2.4f, 14.4f, 5.5f, 10.2f, 8.6f });
+		p.line(2.6f, 5.5f, 11.6f, 5.5f, 1.3f).poly({ 10.8f, 2.7f, 14.6f, 5.5f, 10.8f, 8.3f });
 		break;
 	case HdBattleHud::ICON_RESERVE_SNAP:
-		p.rifle(1.4f, 3.9f).line(14.2f, 4.75f, 15.6f, 4.75f, 0.9f);
+		p.shooter(4.4f, false).line(12.6f, 4.85f, 14.4f, 4.85f, 1.0f);
 		break;
 	case HdBattleHud::ICON_RESERVE_AIMED:
-		p.rifle(1.0f, 3.9f).arc(15.0f, 4.75f, 1.3f, 0.6f).circle(15.0f, 4.75f, 0.4f);
+		p.shooter(4.4f, true).line(12.6f, 3.25f, 14.4f, 3.25f, 1.0f);
 		break;
 	case HdBattleHud::ICON_RESERVE_AUTO:
-		p.rifle(1.0f, 3.9f).line(13.9f, 3.0f, 15.6f, 3.0f, 0.8f).line(13.9f, 4.75f, 15.6f, 4.75f, 0.8f).line(13.9f, 6.5f, 15.6f, 6.5f, 0.8f);
+		p.shooter(4.4f, false).line(10.4f, 4.85f, 11.0f, 4.85f, 1.0f).line(12.2f, 4.85f, 12.8f, 4.85f, 1.0f).line(14.0f, 4.85f, 14.6f, 4.85f, 1.0f);
 		break;
 	case HdBattleHud::ICON_RESERVE_KNEEL:
-		p.at(1.6f, 4.3f).kneeling(3.2f);
+		// down to the knee: an arrow over a kneeling figure
+		p.line(5.0f, 2.4f, 5.0f, 6.6f, 1.2f).poly({ 2.6f, 5.6f, 7.4f, 5.6f, 5.0f, 8.6f });
+		p.at(1.8f, 6.2f).kneeling(3.2f);
 		break;
 	case HdBattleHud::ICON_ZERO_TUS:
-		// none left: a nought struck through
-		p.arc(5.0f, 11.5f, 2.9f, 1.1f).line(2.4f, 14.3f, 7.6f, 8.7f, 1.1f);
+		// the unit's time units to nought: a figure over a struck zero
+		p.person(5.0f, 2.4f, 0.66f).rect(2.2f, 10.5f, 7.8f, 11.5f, 0.3f);
+		p.rect(2.9f, 13.0f, 7.1f, 19.6f, 2.1f).cut(true).rect(4.1f, 14.2f, 5.9f, 18.4f, 0.9f).cut(false);
+		p.line(4.2f, 17.9f, 5.8f, 14.7f, 0.8f);
 		break;
 	default:
 		break;
