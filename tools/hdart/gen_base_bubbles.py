@@ -16,7 +16,7 @@ gen_base_bubbles.py - бурлящая жижа в постройке базы (
 
 Номер кадра - как в рулсете мода (без сдвига 1000: движок ищет и так, см. HdBase).
 
-    py -3 tools/hdart/gen_base_bubbles.py --src "E:/OpenXCom/Пиратки/Dioxine_XPiratez/user/mods/Piratez"
+    py -3.13 tools/hdart/gen_base_bubbles.py --src "E:/OpenXCom/Пиратки/Dioxine_XPiratez/user/mods/Piratez"
         --indices 608-611 --size 2x2 --out <мод hd> --out <вторая копия мода hd>
         --preview art/_review/hplant_bubbles.gif
 """

@@ -112,7 +112,7 @@ X-Piratez (`Resources/Pals/geo_CC_Dark.pal` через `Recolr.rul`) и с ру�
 Вики. Страницы собираются ИЗ РУЛСЕТОВ мода, а не пишутся руками:
 
 ```
-py -3 tools\portal_wiki.py --mod "Пиратки\Dioxine_XPiratez\user\mods\Piratez" ^
+py -3.13 tools\portal_wiki.py --mod "Пиратки\Dioxine_XPiratez\user\mods\Piratez" ^
     --base bin\standard\xcom1 --slug piratez --lang ru --lang en --out dist\wiki\piratez.json
 Xp.Portal wiki import --file dist\wiki\piratez.json
 ```

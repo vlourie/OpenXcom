@@ -19,12 +19,12 @@ r"""Очередь правок игры: файлы игры правит од�
 Сессия узнаётся по CLAUDE_CODE_SESSION_ID (команды) и session_id (хуки) - это одно и то же.
 
 Команды сессии (номер билета не нужен - сессия узнаётся сама):
-    py -3 tools/editq.py wait [--name "щит в инвентаре"]   ждать очереди (до 9 мин, повторять)
-    py -3 tools/editq.py done -m "hdui: ..." [--add F ...] [--drop F ...] [--no-build]
+    py -3.13 tools/editq.py wait [--name "щит в инвентаре"]   ждать очереди (до 9 мин, повторять)
+    py -3.13 tools/editq.py done -m "hdui: ..." [--add F ...] [--drop F ...] [--no-build]
         собрать (если менялся src), закоммитить СВОИ файлы, отдать очередь следующему
-    py -3 tools/editq.py pause "жду ответа Vitali"          отдать очередь, правки остаются
-    py -3 tools/editq.py leave                             выйти из очереди без коммита
-    py -3 tools/editq.py list                              кто держит, кто ждёт, что с выпуском
+    py -3.13 tools/editq.py pause "жду ответа Vitali"          отдать очередь, правки остаются
+    py -3.13 tools/editq.py leave                             выйти из очереди без коммита
+    py -3.13 tools/editq.py list                              кто держит, кто ждёт, что с выпуском
 
 Команды человека:
     list | kick N | release now|off|on|cancel | log [-n 40]
@@ -38,7 +38,7 @@ stable, сборка -> подпись -> публикация -> архив д�
 инструкция для станции - в .editq/release_last.txt.
 
 Файлы - .editq/ в корне: state.json, release.log, release_last.txt, build.log.
-Проверка: py -3 tools/test_editq.py
+Проверка: py -3.13 tools/test_editq.py
 """
 import argparse
 import contextlib
@@ -452,9 +452,9 @@ def claim(sid, what, path=None):
     return False, (
         f"Очередь правок игры ({what}): {why}. Файлы игры сейчас правит другая сессия - "
         f"правка отклонена, чтобы не драться. Пока можно читать, искать и планировать. "
-        f"Жди очереди командой: py -3 tools/editq.py wait --name \"<о чём правка, 3-5 слов>\" "
+        f"Жди очереди командой: py -3.13 tools/editq.py wait --name \"<о чём правка, 3-5 слов>\" "
         f"(Bash, timeout 600000; вернётся кодом 3 через 9 минут - повторить). Когда wait скажет "
-        f"«твоя очередь» - повтори правку. Общее состояние: py -3 tools/editq.py list")
+        f"«твоя очередь» - повтори правку. Общее состояние: py -3.13 tools/editq.py list")
 
 
 def hook(kind):
@@ -475,7 +475,7 @@ def hook(kind):
             if sw:
                 deny(f"{sw} запрещено: в одном рабочем дереве работают несколько сессий, и такая "
                      f"команда заберёт в коммит их незаконченные правки. Добавляй файлы по именам "
-                     f"(git add -- путь). Правки игры коммитит сама очередь: py -3 tools/editq.py done")
+                     f"(git add -- путь). Правки игры коммитит сама очередь: py -3.13 tools/editq.py done")
                 return
             if builds(cmd):
                 ok, why = claim(sid, "сборка")
@@ -500,10 +500,10 @@ def hook(kind):
             t = e["t"]
         out({"hookSpecificOutput": {"hookEventName": "PostToolUse", "additionalContext": (
             f"Ты держишь очередь правок игры (билет #{t}): остальные сессии ждут, пока ты не отдашь "
-            f"её. Когда правка собрана и проверена: py -3 tools/editq.py done -m \"область: что "
+            f"её. Когда правка собрана и проверена: py -3.13 tools/editq.py done -m \"область: что "
             f"сделано\" [--add docs/...] - скрипт соберёт (если менялся src), закоммитит ТОЛЬКО "
             f"твои файлы и передаст очередь. Нужно ждать ответа Vitali - "
-            f"py -3 tools/editq.py pause \"причина\". Не коммить и не отдавай очередь, пока сборка "
+            f"py -3.13 tools/editq.py pause \"причина\". Не коммить и не отдавай очередь, пока сборка "
             f"не прошла.")}})
         return
 
@@ -518,8 +518,8 @@ def hook(kind):
             t, files, waiting = e["t"], len(e["files"]), sum(x["st"] == "wait" for x in st["q"])
         out({"decision": "block", "reason": (
             f"Ты держишь очередь правок игры (билет #{t}, файлов {files}), ждут ещё {waiting}. "
-            f"Работа закончена и собирается - py -3 tools/editq.py done -m \"область: что сделано\". "
-            f"Ждёшь ответа Vitali - py -3 tools/editq.py pause \"о чём спросил\", чтобы очередь "
+            f"Работа закончена и собирается - py -3.13 tools/editq.py done -m \"область: что сделано\". "
+            f"Ждёшь ответа Vitali - py -3.13 tools/editq.py pause \"о чём спросил\", чтобы очередь "
             f"не стояла. Ни то ни другое не подходит - просто закончи ход, это напоминание одно.")})
 
 
@@ -543,7 +543,7 @@ def cmd_wait(a):
             advance(st)
             if e["st"] == "hold":
                 print(f"твоя очередь: {label(e)}. Правь файлы игры; закончишь - "
-                      f"py -3 tools/editq.py done -m \"область: что сделано\"")
+                      f"py -3.13 tools/editq.py done -m \"область: что сделано\"")
                 return 0
             text = queue_text(st, e)
         if text != last:
@@ -656,7 +656,7 @@ def schedule_release(st):
     st["rel"] = {"st": "pending", "auto": True, "dirty": True, "due": now() + RELEASE_DELAY}
     spawn_worker()
     print(f"очередь пуста - выпуск для игроков в {stamp(st['rel']['due'])}, если никто не придёт "
-          f"(py -3 tools/editq.py release cancel - отменить)")
+          f"(py -3.13 tools/editq.py release cancel - отменить)")
 
 
 def spawn_worker():

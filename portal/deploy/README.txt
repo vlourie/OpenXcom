@@ -152,7 +152,7 @@
 
 Вики собирается на машине, где установлен сам мод, и пересобирается, когда мод обновился:
 
-   py -3 tools/portal_wiki.py --mod "Пиратки/Dioxine_XPiratez/user/mods/Piratez"
+   py -3.13 tools/portal_wiki.py --mod "Пиратки/Dioxine_XPiratez/user/mods/Piratez"
        --base bin/standard/xcom1 --slug piratez --lang ru --lang en --out dist/wiki/piratez.json
 
 Готовый файл положить в portal/deploy/wiki/ на сервере и повторить шаг 'wiki import'. Импорт

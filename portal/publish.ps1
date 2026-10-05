@@ -24,7 +24,7 @@ if (-not $vs) { throw 'нет MSVC (VC.Tools.x86.x64): NativeAOT нечем ли
 # части голоса (third_party\voice) не в гите: до сборки - есть ли они и собраны ли из нынешних исходников,
 # иначе в выпуск уйдёт xpaudio.dll без поздней заплатки miniaudio
 if (-not (Get-Command py -ErrorAction SilentlyContinue)) { throw 'py не найден: нужен Python 3 (py launcher) для проверки tools\voice_deps.py --check' }
-& py -3 (Join-Path $PSScriptRoot '..\tools\voice_deps.py') --check
+& py -3.13 (Join-Path $PSScriptRoot '..\tools\voice_deps.py') --check
 if ($LASTEXITCODE -ne 0) { throw 'части голоса не годятся для сборки лаунчера - выполните команду починки из строки выше' }
 
 $extra = @()

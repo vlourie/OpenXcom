@@ -7,16 +7,16 @@ r"""Наборы шрифтов HD-интерфейса: скачать, све�
 шрифта stb_truetype видит лишь начертание по умолчанию, поэтому жирный нужен отдельным
 файлом), затем подрезаются до знаков, которые вообще встречаются в интерфейсе.
 
-    py -3 tools\hdart\fetch_fonts.py                 - в user\mods\hd
-    py -3 tools\hdart\fetch_fonts.py --dest <корень мода в установке игры>
-    py -3 tools\hdart\fetch_fonts.py --check         - только покрытие знаков модов
+    py -3.13 tools\hdart\fetch_fonts.py                 - в user\mods\hd
+    py -3.13 tools\hdart\fetch_fonts.py --dest <корень мода в установке игры>
+    py -3.13 tools\hdart\fetch_fonts.py --check         - только покрытие знаков модов
 
 Запускать для обеих копий мода hd (R-087). Кроме наборов кладёт Roboto (FontBig/FontSmall), DejaVu Sans
 (FontFallback) и тексты лицензий: <набор>-OFL.txt у каждого семейства свой, ROBOTO-LICENSE.txt (Apache 2.0),
 FONTS-LICENSE.txt (DejaVu), FONTS-SOURCES.txt - откуда взят каждый файл и что с ним сделано (docs/portal/HD_FONTS.md).
 Источники закреплены: коммит google/fonts и SHA-256 каждого скачанного файла; не совпало - остановка.
 
-Нужен fonttools: py -3 -m pip install fonttools brotli
+Нужен fonttools: py -3.13 -m pip install fonttools brotli
 """
 import argparse
 import hashlib

@@ -12,8 +12,8 @@
 оригинала кадр уходит всего на 9.5. На карте это две разные вещи там, где в оригинале
 одна, повёрнутая.
 
-    py -3 tools/hdart/mirror_frames.py --in art/TERRAIN/COMMERCE.PCK/returned/lora_cut
-    py -3 tools/hdart/mirror_frames.py --all --dry-run
+    py -3.13 tools/hdart/mirror_frames.py --in art/TERRAIN/COMMERCE.PCK/returned/lora_cut
+    py -3.13 tools/hdart/mirror_frames.py --all --dry-run
 
 Перезаписывает младшим кадром пары старший. Ключ --dry-run только показывает.
 """

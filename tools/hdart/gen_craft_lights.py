@@ -21,7 +21,7 @@ gen_craft_lights.py - проблесковые огни кораблей в ан
 --preview пишет GIF со всеми кораблями и огнями по тем же формулам, что в движке,
 чтобы принять разметку глазами до игры.
 
-    py -3 tools/hdart/gen_craft_lights.py --src "E:/OpenXCom/Пиратки/Dioxine_XPiratez/user/mods/Piratez"
+    py -3.13 tools/hdart/gen_craft_lights.py --src "E:/OpenXCom/Пиратки/Dioxine_XPiratez/user/mods/Piratez"
         --out "E:/OpenXCom/Пиратки/Dioxine_XPiratez/user/mods/hd" --preview art/_review/craft_lights.gif
 """
 import argparse

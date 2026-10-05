@@ -14,7 +14,7 @@ gen_base.py - HD-картинки построек базы, с анимацие
 
 Пример (ангар Пираток - кадры 9..12):
 
-    py -3 tools\\hdart\\gen_base.py ^--src "E:\\OpenXCom\\Пиратки\\Dioxine_XPiratez\\user\\mods\\Piratez" ^
+    py -3.13 tools\\hdart\\gen_base.py ^--src "E:\\OpenXCom\\Пиратки\\Dioxine_XPiratez\\user\\mods\\Piratez" ^
         --out "E:\\OpenXCom\\Пиратки\\Dioxine_XPiratez\\user\\mods\\hd" --indices 9-12
 
 (в PowerShell перенос строки - обратная кавычка, а не ^)

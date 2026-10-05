@@ -46,7 +46,7 @@ if (-not $NoWiki) {
     $wiki = @(Get-ChildItem -Path (Join-Path $repo 'dist\wiki') -Filter '*.json' -ErrorAction SilentlyContinue)
     if (-not $wiki) {
         Write-Host 'В dist\wiki нет ни одного JSON - архив уедет без вики. Собрать:' -ForegroundColor Yellow
-        Write-Host '  py -3 tools\portal_wiki.py --mod "Пиратки\Dioxine_XPiratez\user\mods\Piratez" --base bin\standard\xcom1 --slug piratez --lang ru --lang en --out dist\wiki\piratez.json'
+        Write-Host '  py -3.13 tools\portal_wiki.py --mod "Пиратки\Dioxine_XPiratez\user\mods\Piratez" --base bin\standard\xcom1 --slug piratez --lang ru --lang en --out dist\wiki\piratez.json'
     }
     else {
         $z = [IO.Compression.ZipFile]::Open($zip, 'Update')

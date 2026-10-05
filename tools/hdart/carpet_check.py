@@ -6,9 +6,9 @@
 узором. Скрипт берёт из переписи частые кадры сплошного поля (census/frames.tsv - клеток,
 census/ground.tsv - поле) и смотрит в тот пак мода, который читает игра, сколько у них вариантов.
 
-    py -3 tools\\hdart\\carpet_check.py                  # отчёт, код 0
-    py -3 tools\\hdart\\carpet_check.py --strict         # код 1, если есть ковёр с HD-кадром и без вариантов
-    py -3 tools\\hdart\\carpet_check.py --min-cells 5000 --need 3
+    py -3.13 tools\\hdart\\carpet_check.py                  # отчёт, код 0
+    py -3.13 tools\\hdart\\carpet_check.py --strict         # код 1, если есть ковёр с HD-кадром и без вариантов
+    py -3.13 tools\\hdart\\carpet_check.py --min-cells 5000 --need 3
 
 Пак по умолчанию - копия мода в установке Пираток: её грузит игра и её берёт сборка (R-081, R-087).
 """

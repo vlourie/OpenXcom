@@ -13,7 +13,7 @@ r"""Кузница плиток: нарисованная картинка -> к
 
     ===== fit: из папки нарисованных плиток собрать пак =====
 
-    py -3 tools\hdart\tile_forge.py fit --sheets art/TERRAIN --set DESERT.PCK ^
+    py -3.13 tools\hdart\tile_forge.py fit --sheets art/TERRAIN --set DESERT.PCK ^
         --in gpt_desert\return --mod "Пиратки\Dioxine_XPiratez\user\mods\hd_gpt"
 
     Номер кадра берётся из имени файла (первое число: 45.png, frame_45.png, 45_skull_v2.png).

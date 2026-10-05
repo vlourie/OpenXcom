@@ -12,8 +12,8 @@ r"""pedia_push.py - готовые картинки педии из art\pedia_re
 
 Картинки из --hold (через запятую) не кладутся - их ещё переделывают.
 
-    py -3 tools\hdart\pedia_push.py --dry-run
-    py -3 tools\hdart\pedia_push.py
+    py -3.13 tools\hdart\pedia_push.py --dry-run
+    py -3.13 tools\hdart\pedia_push.py
 """
 import argparse
 import glob

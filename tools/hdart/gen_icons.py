@@ -19,7 +19,7 @@ FloorBurnIndicator / FloorShockIndicator как singleImage 16x16 (Piratez_Resou
 Палитры взяты с самих оригиналов (дамп пикселей), а не по памяти: тёмно-красный обод капли
 (84,8,0), жёлтое ядро огня (252,208,0), серые Z от 88 до 196.
 
-    py -3 tools\\hdart\\gen_icons.py --pack user\\mods\\hd\\hd\\UI
+    py -3.13 tools\\hdart\\gen_icons.py --pack user\\mods\\hd\\hd\\UI
     ... --scale 2            собрать для k = 2
     ... --sheet "Claude outputs\\indicators_cmp.png"
 

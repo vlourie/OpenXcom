@@ -10,7 +10,7 @@
   * ключ, который движок читает у другого раздела, помечается «не в классе»;
   * битая ссылка находится, а STR_NONE и dummy ссылками не считаются.
 
-    py -3 tools\\test_rul_map.py
+    py -3.13 tools\\test_rul_map.py
 """
 import os
 import subprocess

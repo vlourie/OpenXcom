@@ -16,6 +16,6 @@ docker compose run --rm migrate wiki import --file /wiki/piratez.json
 Собрать файл заново (на машине разработчика, там же где лежит мод):
 
 ```powershell
-py -3 tools/portal_wiki.py --mod "Пиратки/Dioxine_XPiratez/user/mods/Piratez" `
+py -3.13 tools/portal_wiki.py --mod "Пиратки/Dioxine_XPiratez/user/mods/Piratez" `
     --base bin/standard/xcom1 --slug piratez --lang ru --lang en --out dist/wiki/piratez.json
 ```

@@ -28,8 +28,8 @@
 новый отвечает «что получилось в игре» - с учётом того, что одну запись пишут до трёх файлов.
 
 ```
-py -3 tools\rul_map.py
-py -3 tools\test_rul_map.py
+py -3.13 tools\rul_map.py
+py -3.13 tools\test_rul_map.py
 ```
 
 Примеры запросов - в конце `RUL.md`. Главное: `values.tsv` грепается по `^раздел\tid\t`.

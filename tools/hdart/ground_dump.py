@@ -6,8 +6,8 @@
 JUNGLE, например, собран из ванильных bin/UFO, а не из Пираток (грабли R-015), и эталон
 получился бы врущим. Поэтому эталон снимается прямо с данных, по которым идёт приёмка.
 
-    py -3 tools\\hdart\\ground_dump.py
-    py -3 tools\\hdart\\ground_dump.py --data bin\\UFO --out census\\ground_ufo.tsv
+    py -3.13 tools\\hdart\\ground_dump.py
+    py -3.13 tools\\hdart\\ground_dump.py --data bin\\UFO --out census\\ground_ufo.tsv
 """
 import argparse
 import os

@@ -6,8 +6,8 @@
 (интервал шага, скорость снаряда, слежение камеры, добивание). Вызов в любом другом месте - падение:
 значит режим полез в правила (стрельба, видимость, ИИ, сохранение).
 
-    py -3 tools/test_gentle_scope.py            # дерево src
-    py -3 tools/test_gentle_scope.py --control  # контрольный опыт: вызов в TileEngine.cpp обязан поймать
+    py -3.13 tools/test_gentle_scope.py            # дерево src
+    py -3.13 tools/test_gentle_scope.py --control  # контрольный опыт: вызов в TileEngine.cpp обязан поймать
 """
 import argparse
 import re

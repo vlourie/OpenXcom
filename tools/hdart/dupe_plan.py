@@ -15,9 +15,9 @@ dupe_sets.py считает, СКОЛЬКО у нас повторов межд�
 в игре обязаны быть одинаковыми: те же заплатки, что в R-006, только между наборами.
 Копия снимает и это - у группы один рисунок по определению.
 
-    py -3 tools/hdart/dupe_plan.py --spread --dry-run     что разложилось бы
-    py -3 tools/hdart/dupe_plan.py --spread               разложить по-настоящему
-    py -3 tools/hdart/dupe_plan.py --rescan               пересчитать хэши листов
+    py -3.13 tools/hdart/dupe_plan.py --spread --dry-run     что разложилось бы
+    py -3.13 tools/hdart/dupe_plan.py --spread               разложить по-настоящему
+    py -3.13 tools/hdart/dupe_plan.py --rescan               пересчитать хэши листов
 
 Хэш кадра берётся из листа original.png, то есть ровно так, как его прочитала игра
 (R-043 закрыт на шаге extract_pck). Совпадение по хэшу - совпадение картинки, а не имени.

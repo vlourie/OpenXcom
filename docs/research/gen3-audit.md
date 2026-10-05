@@ -86,8 +86,8 @@
 dirt», снегу — «sand, brown soil», ровному — «cracks, bricks, noise».
 
 ```
-py -3 tools/hdart/prompt_writer.py --sets C_INT,MARSEC_EXT_2 --show 10
-py -3 tools/hdart/prompt_writer.py --sets C_INT --vlm        с описанием моделью
+py -3.13 tools/hdart/prompt_writer.py --sets C_INT,MARSEC_EXT_2 --show 10
+py -3.13 tools/hdart/prompt_writer.py --sets C_INT --vlm        с описанием моделью
 ```
 
 ### Шаг 2. Рисование — `tools/hdart/paint3.py`

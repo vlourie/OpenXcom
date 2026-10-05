@@ -13,7 +13,7 @@ BASEBITS.PCK модов, иначе - в ванильном BASEBITS.PCK (gen_cr
 педии, у которой id совпадает с постройкой (или которая ссылается на неё в requires нет -
 только по id). Колонка «HD сейчас» говорит, есть ли у клетки HD-картинка и сколько фаз.
 
-    py -3 tools/hdart/facility_sheet.py --out art/_review/base_facilities.xlsx
+    py -3.13 tools/hdart/facility_sheet.py --out art/_review/base_facilities.xlsx
 """
 import argparse
 import io

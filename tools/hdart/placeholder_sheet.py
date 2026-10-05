@@ -4,7 +4,7 @@ A stand-in for the painted sheet: the original sheet upscaled with a smooth
 filter and sharpened, so that the whole path sheet -> pack -> game can be
 tried before any real HD art exists.
 
-    py -3 placeholder_sheet.py --sheets <sheets folder> --set CULTIVAT.PCK [--out painted.png]
+    py -3.13 placeholder_sheet.py --sheets <sheets folder> --set CULTIVAT.PCK [--out painted.png]
 """
 import argparse
 import json

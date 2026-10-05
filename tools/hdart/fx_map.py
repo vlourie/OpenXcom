@@ -10,7 +10,7 @@
     swing <предмет> <вид>        удар: fist claw bite blade pierce club whip sting butt
     tracer <предмет> <опции>     трассер: classic | bright;fade=F | head=R,G,B | width=W
 
-Запуск: PYTHONIOENCODING=utf-8 py -3 tools/hdart/fx_map.py --out <мод>/hd [--out <вторая копия>/hd]
+Запуск: PYTHONIOENCODING=utf-8 py -3.13 tools/hdart/fx_map.py --out <мод>/hd [--out <вторая копия>/hd]
 """
 import argparse
 import os

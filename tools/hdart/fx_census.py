@@ -2,7 +2,7 @@
 
 Что носит урон на дистанции и в ближнем бою, какими кадрами SMOKE/X1/HIT.PCK и
 спрайтами Projectiles это рисуется. Разбор - docs/research/combat-fx.md.
-Запуск: PYTHONIOENCODING=utf-8 py -3 tools/hdart/fx_census.py -> census/fx_census2.json
+Запуск: PYTHONIOENCODING=utf-8 py -3.13 tools/hdart/fx_census.py -> census/fx_census2.json
 """
 import sys, os, glob, collections, json
 sys.path.insert(0, r"E:\OpenXCom\tools")

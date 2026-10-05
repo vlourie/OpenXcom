@@ -8,7 +8,7 @@ probe.json с параметрами каждого файла.
 Stable Audio 3 (Small SFX, Medium) - не здесь: формат не diffusers, своё окружение, probe_sa3.py.
 
 Запуск только через очередь видеокарты:
-    py -3 tools/gpuq.py add --name sfx-probe-sao -- tools/sfx/.venv/Scripts/python.exe tools/sfx/probe_stable_audio.py --model open
+    py -3.13 tools/gpuq.py add --name sfx-probe-sao -- tools/sfx/.venv/Scripts/python.exe tools/sfx/probe_stable_audio.py --model open
 """
 import argparse
 import json

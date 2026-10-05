@@ -33,7 +33,7 @@ New-Item -ItemType Directory -Force -Path $Dir | Out-Null
 
 if (-not (Test-Path $venv)) {
     Write-Host "== новое окружение в $venv (.venv-qwen21 не трогаем)"
-    py -3 -m venv $venv
+    py -3.13 -m venv $venv
 }
 $py = Join-Path $venv "Scripts\python.exe"
 & $py -m pip install --upgrade pip wheel

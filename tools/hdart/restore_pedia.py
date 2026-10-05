@@ -12,7 +12,7 @@ The original file names (with their .png / .gif extensions) come from --names, a
 name per line, so a picture that was AIRCAR_CPAL.gif is written as AIRCAR_CPAL.gif again; without the
 list everything is written as .png.
 
-    py -3 tools\\hdart\\restore_pedia.py --hd <folder with the HD pictures> --pal user\\mods\\hd\\hd\\UI --names tools\\hdart\\pedia_names.txt --out Pedia_restored
+    py -3.13 tools\\hdart\\restore_pedia.py --hd <folder with the HD pictures> --pal user\\mods\\hd\\hd\\UI --names tools\\hdart\\pedia_names.txt --out Pedia_restored
 """
 import argparse
 import glob

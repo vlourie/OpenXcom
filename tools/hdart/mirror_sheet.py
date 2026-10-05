@@ -12,8 +12,8 @@ r"""Лист приёмки зеркальных пар: стоит ли рис�
 неотличим от четвёртого, второй заказ был не нужен. Четвёртого может и не быть - тогда
 сравнивать не с чем, и это как раз те пары, которые мы ещё не успели потратить.
 
-    py -3 tools/hdart/mirror_sheet.py --set ICEKING_RUINS.PCK
-    py -3 tools/hdart/mirror_sheet.py --set POLAR.PCK --thr 40
+    py -3.13 tools/hdart/mirror_sheet.py --set ICEKING_RUINS.PCK
+    py -3.13 tools/hdart/mirror_sheet.py --set POLAR.PCK --thr 40
 
 Фон тёмный нарочно: остаток подложки и потерянная плотность краёв на шахматке не видны
 (грабли R-041), а в бою пол именно тёмный.

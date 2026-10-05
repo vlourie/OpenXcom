@@ -11,7 +11,7 @@ R-039 у ковровых плиток): всё решает то, как отт
 Расчёт круглой точки повторяет HdSprites::makeDots один в один. Меняешь формулу в
 движке - поменяй и здесь, иначе лист начнёт врать.
 
-    py -3 tools\\hdart\\tracer_preview.py
+    py -3.13 tools\\hdart\\tracer_preview.py
     ... --sheet <путь к PNG набора> --types 0,2,6,14
     ... --scale 4 --out "Claude outputs\\tracer.png"
     ... --style "bright;fade=0.35"     третья строка: стиль из hd/FX/weapons.txt (tracer)

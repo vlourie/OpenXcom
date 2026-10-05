@@ -15,7 +15,7 @@ gen_cursor_box.py - рамка курсора боя (CURSOR.PCK, кадры 0-5
     перелив рампы (красная 32-45, жёлтая 144-156) сохраняется;
   - пунктир 2 и 5 - круглые точки ровно в пикселях классики.
 
-    py -3 tools/hdart/gen_cursor_box.py --out user/mods/hd/hd/CURSOR.PCK --sheet art/_review/cursor_box.png
+    py -3.13 tools/hdart/gen_cursor_box.py --out user/mods/hd/hd/CURSOR.PCK --sheet art/_review/cursor_box.png
 """
 import argparse
 import os

@@ -2,7 +2,7 @@
 """
 Generates the demo HD frames of the hd_demo mod (stage 3c of the HD renderer).
 
-    py -3 make_demo_frames.py [--smoke <path to Smoke_DIO.gif>] [--scale 4]
+    py -3.13 make_demo_frames.py [--smoke <path to Smoke_DIO.gif>] [--scale 4]
 
 Two kinds of frames are made, both as RGBA PNGs the engine picks up from
 hd/<set>/<index>.png when the frame size matches the k-scaled sprite:
@@ -25,7 +25,7 @@ import sys
 try:
     from PIL import Image, ImageDraw, ImageFilter
 except ImportError:
-    print("error: Pillow is required (py -3 -m pip install pillow)")
+    print("error: Pillow is required (py -3.13 -m pip install pillow)")
     sys.exit(2)
 
 HERE = os.path.dirname(os.path.abspath(__file__))

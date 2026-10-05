@@ -32,7 +32,7 @@ powershell -ExecutionPolicy Bypass -File tools\hdart\setup_gen.ps1
 ## Первый прогон: ферма
 
 ```powershell
-py -3 tools\hdart\extract_pck.py --data bin\UFO --out hdart_sheets --sets TERRAIN/CULTIVAT.PCK
+py -3.13 tools\hdart\extract_pck.py --data bin\UFO --out hdart_sheets --sets TERRAIN/CULTIVAT.PCK
 tools\hdart\.venv\Scripts\python.exe tools\hdart\gen_hd.py --sheets hdart_sheets --set CULTIVAT.PCK --test
 ```
 
@@ -51,7 +51,7 @@ tools\hdart\.venv\Scripts\python.exe tools\hdart\gen_hd.py --sheets hdart_sheets
 второй проход, масштаб 16) в `crops\matrix.png` с подписями — быстрый способ понять, что помогает. Потом:
 
 ```powershell
-py -3 tools\hdart\build_pack.py --sheets hdart_sheets --set CULTIVAT.PCK --hd hdart_sheets\CULTIVAT.PCK\painted_x4.png --mod user\mods\hd --pack-path TERRAIN
+py -3.13 tools\hdart\build_pack.py --sheets hdart_sheets --set CULTIVAT.PCK --hd hdart_sheets\CULTIVAT.PCK\painted_x4.png --mod user\mods\hd --pack-path TERRAIN
 ```
 
 и в игре: масштаб 4, режим HD-спрайтов 1 или 2, Новая битва → террейн «Ферма» (или любой бой на ферме).
@@ -313,8 +313,8 @@ tools\hdart\.venv\Scripts\python.exe tools\hdart\optimize_hd.py --mod user\mods\
 для 2125 картинок.
 
 ```powershell
-py -3 tools\hdart\pedia_text.py --mod "E:\OpenXCom\Пиратки\Dioxine_XPiratez\user\mods\Piratez" --out tools\hdart\pedia_text.json
-py -3 tools\hdart\pedia_text.py --mod "...\mods\Piratez" --show MBT     # одну картинку в консоль
+py -3.13 tools\hdart\pedia_text.py --mod "E:\OpenXCom\Пиратки\Dioxine_XPiratez\user\mods\Piratez" --out tools\hdart\pedia_text.json
+py -3.13 tools\hdart\pedia_text.py --mod "...\mods\Piratez" --show MBT     # одну картинку в консоль
 ```
 
 `pedia_review.py` кладёт оригинал (слева, ×2 без сглаживания — пиксели остаются пикселями) и HD
@@ -323,12 +323,12 @@ py -3 tools\hdart\pedia_text.py --mod "...\mods\Piratez" --show MBT     # одн
 320×200, `shape` — насколько совпадают края (1 — тот же рисунок, ниже ~0.5 — уже другой).
 
 ```powershell
-py -3 tools\hdart\pedia_review.py --hd "...\mods\hd\hd\UI" --orig "...\mods\Piratez\Resources\Pedia" `
+py -3.13 tools\hdart\pedia_review.py --hd "...\mods\hd\hd\UI" --orig "...\mods\Piratez\Resources\Pedia" `
     --text tools\hdart\pedia_text.json --names tools\hdart\rejected_files.txt --out review
 # по всем картинкам, оставить 100 худших:
-py -3 tools\hdart\pedia_review.py --hd "...\hd\UI" --orig "...\Resources\Pedia" --text tools\hdart\pedia_text.json --out review --worst 100
+py -3.13 tools\hdart\pedia_review.py --hd "...\hd\UI" --orig "...\Resources\Pedia" --text tools\hdart\pedia_text.json --out review --worst 100
 # только посчитать расхождение, без листов:
-py -3 tools\hdart\pedia_review.py --hd "...\hd\UI" --orig "...\Resources\Pedia" --out review --no-sheets
+py -3.13 tools\hdart\pedia_review.py --hd "...\hd\UI" --orig "...\Resources\Pedia" --out review --no-sheets
 ```
 
 Разбор первых 102 картинок лежит в `pedia_mismatch.md` (по типам поломок) и `pedia_mismatch.csv`
@@ -338,7 +338,7 @@ py -3 tools\hdart\pedia_review.py --hd "...\hd\UI" --orig "...\Resources\Pedia" 
 
 ```powershell
 $P = "E:\OpenXCom\Пиратки\Dioxine_XPiratez\user\mods"
-py -3 tools\hdart\photo_ui.py --dir "$P\Piratez\Resources\Pedia" --hd "$P\hd\hd\UI_esrgan" --mod "$P\hd" --preset cinema --names @tools\hdart\rejected_files.txt --force
+py -3.13 tools\hdart\photo_ui.py --dir "$P\Piratez\Resources\Pedia" --hd "$P\hd\hd\UI_esrgan" --mod "$P\hd" --preset cinema --names @tools\hdart\rejected_files.txt --force
 ```
 
 `--hd` указывает на `UI_esrgan` (честный апскейл ×4), а не на `UI`: в `UI` лежат уже готовые
@@ -355,8 +355,8 @@ py -3 tools\hdart\photo_ui.py --dir "$P\Piratez\Resources\Pedia" --hd "$P\hd\hd\
 свечение, попадания — вспышку и искры.
 
 ```powershell
-py -3 tools\hdart\gen_fx.py --mod user\mods\hd
-py -3 tools\hdart\gen_fx.py --mod user\mods\hd --preview fx.png     # плюс лист всех кадров
+py -3.13 tools\hdart\gen_fx.py --mod user\mods\hd
+py -3.13 tools\hdart\gen_fx.py --mod user\mods\hd --preview fx.png     # плюс лист всех кадров
 ```
 
 `--seed` меняет случайность, `--scale` — масштаб пака (4 по умолчанию).
@@ -371,7 +371,7 @@ py -3 tools\hdart\gen_fx.py --mod user\mods\hd --preview fx.png     # плюс �
 Сравнить стили:
 
 ```powershell
-py -3 tools\hdart\gen_fx.py --fire-compare fire_compare
+py -3.13 tools\hdart\gen_fx.py --fire-compare fire_compare
 ```
 
 В папке `fire_compare`:
@@ -397,7 +397,7 @@ py -3 tools\hdart\gen_fx.py --fire-compare fire_compare
 Записать выбранный стиль в мод (переписываются только кадры огня):
 
 ```powershell
-py -3 tools\hdart\gen_fx.py --mod user\mods\hd --fire-style 4 --only-fire
+py -3.13 tools\hdart\gen_fx.py --mod user\mods\hd --fire-style 4 --only-fire
 ```
 
 Без `--only-fire` переписываются все эффекты, огонь — стилем 1. `--fire-style 0` — прежний огонь
@@ -420,7 +420,7 @@ py -3 tools\hdart\gen_fx.py --mod user\mods\hd --fire-style 4 --only-fire
 Сравнить стили:
 
 ```powershell
-py -3 tools\hdart\gen_fx.py --hit-compare hit_compare
+py -3.13 tools\hdart\gen_fx.py --hit-compare hit_compare
 ```
 
 В папке `hit_compare`: `melee_styles.gif` / `.png` и `bullet_styles.gif` / `.png` — каждый стиль в двух
@@ -445,7 +445,7 @@ py -3 tools\hdart\gen_fx.py --hit-compare hit_compare
 Записать выбранное (переписываются только кадры удара и попадания):
 
 ```powershell
-py -3 tools\hdart\gen_fx.py --mod user\mods\hd --melee-style 3 --bullet-style 2 --only-hits
+py -3.13 tools\hdart\gen_fx.py --mod user\mods\hd --melee-style 3 --bullet-style 2 --only-hits
 ```
 
 `--no-blood` — без крови: по юниту то же, что по стене (старые `.v1.png` удаляются). Попадания лазера

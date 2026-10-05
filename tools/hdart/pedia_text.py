@@ -7,8 +7,8 @@ The chain is: the picture file (Resources/Pedia/<name>.png) -> the sprite that p
 Cutscene slides (imagePath + caption) are picked up too, so a picture used only in an ending still
 gets its words.
 
-    py -3 tools\\hdart\\pedia_text.py --mod "...\\user\\mods\\Piratez" --out tools\\hdart\\pedia_text.json
-    py -3 tools\\hdart\\pedia_text.py --mod "...\\user\\mods\\Piratez" --show MBT
+    py -3.13 tools\\hdart\\pedia_text.py --mod "...\\user\\mods\\Piratez" --out tools\\hdart\\pedia_text.json
+    py -3.13 tools\\hdart\\pedia_text.py --mod "...\\user\\mods\\Piratez" --show MBT
 
 The json is keyed by the picture's base name in lower case; --text <folder> also writes one
 <name>.txt per picture, ready to read next to the picture itself.
@@ -209,7 +209,7 @@ def main():
     args = ap.parse_args()
 
     if yaml is None:
-        print("pyyaml is missing: py -3 -m pip install pyyaml")
+        print("pyyaml is missing: py -3.13 -m pip install pyyaml")
         return 2
     langs = [c.strip() for c in args.lang.split(",") if c.strip()]
     by_file, sprite_file = collect(args.mod, langs)
