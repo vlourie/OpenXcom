@@ -47,6 +47,7 @@ struct Theme
 	const Uint32 *ramp;
 	bool plated;      ///< cast hull plating (mottled) instead of brushed metal
 	Uint32 steel, wellBase, cardBase, lipLight, grooveTop, grooveBottom;
+	int hull;         ///< the hull's relief on the metal: 0 none, 1 the Consul's shingled plates, 2 the Cruiser's riveted panels
 };
 
 /// Pale brass, dark to light, at the shades 0, 0.15 ... 1: a flat face facing the light sits at 0.6.
@@ -66,6 +67,7 @@ const Theme SLATE = {
 	0xFF151A22u,
 	false,
 	nullptr, false, 0, 0, 0, 0, 0, 0,
+	0,
 };
 
 const Theme GOLD = {
@@ -78,6 +80,7 @@ const Theme GOLD = {
 	0xFF3A2D1Bu,
 	true,
 	BRASS, false, 0xFF8A8C90u, 0x48484Bu, 0x4E3E2Au, 0xF0D8A0u, 0xF0140E08u, 0xF0281E12u,
+	0,
 };
 
 // the ships' hulls (oxceHdBattleHudColor 2 the Consul's light lilac steel, 3 the Cruiser's dark one): the plaques
@@ -92,6 +95,7 @@ const Theme CONSUL = {
 	0xFF2E2840u,
 	true,
 	HULL_LIGHT, true, 0xFF6C6680u, 0x44404Eu, 0x3C3650u, 0xDCD8F4u, 0xF00E0C14u, 0xF01E1A28u,
+	1,
 };
 
 const Theme CRUISER = {
@@ -104,6 +108,7 @@ const Theme CRUISER = {
 	0xFF241F32u,
 	true,
 	HULL_DARK, true, 0xFF4E4860u, 0x3A3644u, 0x302A40u, 0xC8C0D8u, 0xF00A0810u, 0xF0161220u,
+	2,
 };
 
 /// The bars laid in grooves of the panel's card (HdHudPanel::PART_BAR).
@@ -602,7 +607,116 @@ float plating(int x, int y, float k)
 /// The face texture of the theme's metal: brushed brass, or hull plating.
 float texture(int x, int y, float k)
 {
-	return theme().plated ? 3.2f * plating(x, y, k) : brushed(x, y, k);
+	return theme().plated ? 2.0f * plating(x, y, k) : brushed(x, y, k);
+}
+
+/// Distance inside a box with its corners cut off at c (negative outside), at a pixel's centre.
+float insideChamfer(float x, float y, float x0, float y0, float x1, float y1, float c)
+{
+	const float dx = std::min(x - x0, x1 - x), dy = std::min(y - y0, y1 - y);
+	return std::min(std::min(dx, dy), (dx + dy - c) * 0.70710678f);
+}
+
+/// A height and a darkening the hull's relief adds to a flat face.
+struct Relief { float h = 0, dk = 0; };
+
+/// The Consul's sides: rows of small plates laid like shingles, each rising toward its lower edge and dropping
+/// onto the row below, the joints across a row a fine groove, every other row shifted by half a plate. pw x ph
+/// screen pixels a plate, a groove `seam` wide.
+Relief shingles(float x, float y, float pw, float ph, float seam)
+{
+	Relief r;
+	const float row = std::floor(y / ph);
+	const float sx = x + (std::fmod(row, 2.0f) != 0.0f ? pw * 0.5f : 0.0f);
+	const float u = sx - std::floor(sx / pw) * pw, v = y - row * ph;
+	const float across = std::min(u, pw - u);
+	const float joint = std::max(1.0f - across / (0.6f * seam), 0.0f);
+	const float bulge = 1.0f - std::pow(2.0f * u / pw - 1.0f, 2.0f);
+	r.h = 0.4f * (v / ph) * (v / ph) + 0.1f * bulge - 0.1f * joint;
+	r.dk = 0.05f * joint * joint + 0.04f * std::max(1.0f - (ph - v) / seam, 0.0f);
+	return r;
+}
+
+/// A round rivet head of radius rr at (cx, cy).
+void rivet(Relief &r, float x, float y, float cx, float cy, float rr)
+{
+	const float d = std::sqrt((x - cx) * (x - cx) + (y - cy) * (y - cy)) / rr;
+	if (d >= 1.25f) return;
+	r.h += 0.4f * std::sqrt(std::max(1.0f - d * d, 0.0f));
+	r.dk += 0.18f * std::max(1.0f - std::fabs(d - 1.05f) / 0.2f, 0.0f);
+}
+
+/// The hull's relief on a key's face W x H screen pixels: the Consul's shingles bowed as its sides are, or the
+/// Cruiser's panel - a fine groove round the face just inside its bevel (sd, see plaque) and a rivet in each corner.
+Relief keyRelief(float x, float y, int W, int H, float k, float sd)
+{
+	Relief r;
+	switch (theme().hull)
+	{
+	case 1:
+	{
+		const float bow = 2.0f * x / (float)W - 1.0f;
+		r = shingles(x, y + 2.4f * k * bow * bow, 3.0f * k, 2.2f * k, 0.45f * k);
+		break;
+	}
+	case 2:
+	{
+		const float g = std::fabs(sd - 1.6f * k);
+		if (g < 0.5f * k)
+		{
+			const float t = 1.0f - g / (0.5f * k);
+			r.h -= 0.18f * t;
+			r.dk += 0.14f * t;
+		}
+		const float in = 3.1f * k, rr = 0.75f * k;
+		for (float cx : { in, (float)W - in })
+			for (float cy : { in, (float)H - in })
+				rivet(r, x, y, cx, cy, rr);
+		break;
+	}
+	default:
+		break;
+	}
+	return r;
+}
+
+/// The hull's relief on the steel between the keys: larger shingles, or the Cruiser's big panels with chamfered
+/// corners, their seams lined with rivets.
+Relief steelRelief(float x, float y, float k)
+{
+	Relief r;
+	switch (theme().hull)
+	{
+	case 1:
+		r = shingles(x, y, 5.0f * k, 3.0f * k, 0.55f * k);
+		break;
+	case 2:
+	{
+		const float pw = 40.0f * k, ph = 20.0f * k;
+		const float u = x - std::floor(x / pw) * pw, v = y - std::floor(y / ph) * ph;
+		const float sd = insideChamfer(u, v, 0.0f, 0.0f, pw, ph, 3.0f * k);
+		const float seam = std::max(1.0f - sd / (0.7f * k), 0.0f);
+		r.h = -0.3f * seam;
+		r.dk = 0.2f * seam * seam;
+		// rivets along the seams, a few base pixels apart
+		const float step = 4.0f * k, in = 1.6f * k, rr = 0.6f * k;
+		const float cu = (std::floor(u / step) + 0.5f) * step, cv = (std::floor(v / step) + 0.5f) * step;
+		if (cu > 2.5f * k && cu < pw - 2.5f * k)
+		{
+			rivet(r, u, v, cu, in, rr);
+			rivet(r, u, v, cu, ph - in, rr);
+		}
+		if (cv > 2.5f * k && cv < ph - 2.5f * k)
+		{
+			rivet(r, u, v, in, cv, rr);
+			rivet(r, u, v, pw - in, cv, rr);
+		}
+		break;
+	}
+	default:
+		break;
+	}
+	return r;
 }
 
 /// Metal in relief, lit from the upper left as the original picture is: a height a pixel (1 = the top of a
@@ -724,7 +838,8 @@ const std::vector<Uint32> &plaque(HdBattleHud::Icon icon, int w, int h, int k, i
 		for (int x = 0; x < W; ++x)
 		{
 			const size_t i = (size_t)y * W + x;
-			const float sd = insideBox(x + 0.5f, y + 0.5f, g, g, W - g, H - g, R);
+			const float sd = theme().hull == 2 ? insideChamfer(x + 0.5f, y + 0.5f, g, g, W - g, H - g, 1.2f * R)
+				: insideBox(x + 0.5f, y + 0.5f, g, g, W - g, H - g, R);
 			cover[i] = std::min(std::max(sd + 0.5f, 0.0f), 1.0f);
 			float hgt = ease(sd / b1);
 			// a fine dark outline, the face a touch darker toward its ends
@@ -744,6 +859,14 @@ const std::vector<Uint32> &plaque(HdBattleHud::Icon icon, int w, int h, int k, i
 					dull[i] = 0.45f * ink;
 				}
 				else { hgt += 0.45f * c; dk -= 0.05f * ink; brass[i] = ink; }
+			}
+			if (theme().hull)
+			{
+				// the hull's relief on the flat of the face, worn away where the pictogram is cut
+				const float face = std::min(std::max((sd - b1) / (0.6f * k), 0.0f), 1.0f) * (1.0f - (cut.empty() ? 0.0f : cut[i]));
+				const Relief rel = keyRelief(x + 0.5f, y + 0.5f, W, H, (float)k, sd);
+				hgt += face * rel.h;
+				dk += face * rel.dk;
 			}
 			height[i] = hgt;
 			dark[i] = dk;
@@ -890,6 +1013,13 @@ const std::vector<Uint32> &panelMetal(int W, int H, int k)
 			const float t = std::min(std::max(sd / lip, 0.0f), 1.0f);
 			height[i] = t < 0.5f ? ease(t * 2.0f) : 1.0f - 0.6f * ease((t - 0.5f) * 2.0f);
 			dark[i] = t < 1.0f ? -0.05f : 0.3f;
+			if (t >= 1.0f && theme().hull)
+			{
+				// the hull's relief, twice as tall: the panel is shaded at half the keys' slope
+				const Relief rel = steelRelief(x + 0.5f, y + 0.5f, (float)k);
+				height[i] += 2.0f * rel.h;
+				dark[i] += rel.dk;
+			}
 			brass[i] = 1.0f - t;
 		}
 	}
