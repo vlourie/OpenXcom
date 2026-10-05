@@ -9,6 +9,12 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import ai_probe
+# вывод с кириллицей в трубу или файл без PYTHONIOENCODING падал в cp1252 (R-001, аудит 05.10)
+for _stream in (sys.stdout, sys.stderr):
+    try:
+        _stream.reconfigure(encoding="utf-8", errors="replace")
+    except (AttributeError, ValueError):
+        pass
 
 ROOT = Path(__file__).resolve().parents[1]
 GAME = ROOT / "Пиратки" / "Dioxine_XPiratez"
