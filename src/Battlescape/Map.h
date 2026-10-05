@@ -21,6 +21,7 @@
 #include "../Engine/HdCanvas.h"
 #include "../Engine/Options.h"
 #include "../Engine/Collections.h"
+#include "../Engine/Unicode.h"
 #include "../Mod/MapData.h"
 #include "Position.h"
 #include "Particle.h"
@@ -132,6 +133,22 @@ private:
 	NumberText *_numUnitMarker;
 	const BattleUnit *_unitMarkerUnit[UNIT_MARKER_MAX];
 	Uint8 _unitMarkerColor[UNIT_MARKER_MAX];
+	/// HD interface: the hit chance at the cursor and the numbers over the units seen are not baked into the
+	/// canvas (it reaches the screen scaled, and the pixel digits with it) - they are kept here, in canvas
+	/// pixels, and drawn with the interface's TrueType font on top of the map in blit(). Picture only.
+	struct HdLabel
+	{
+		UString text;
+		int x = 0, y = 0;
+		bool tag = false;
+		Uint32 face = 0, back = 0, edge = 0;
+	};
+	std::vector<HdLabel> _hdLabels;
+	bool _hdLabelsOn = false;
+	/// Are the labels drawn by the HD interface (its modern skin with the TrueType fonts)?
+	bool hdLabelsWanted() const;
+	/// The hit chance text as it stands in _txtAccuracy, at canvas (x, y): baked, or kept for the HD interface.
+	void drawAccuracy(HdCanvas *canvas, int x, int y);
 	SurfaceSet *_projectileSet;
 	/// Gentle mode: a reaction shot of this turn, for the arrow at the soldier fired at (picture only).
 	/// The arrow tells no more than the shot's trail did: it shows only once the bullet was drawn in view
