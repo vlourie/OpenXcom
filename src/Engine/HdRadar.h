@@ -26,16 +26,19 @@ namespace OpenXcom
 
 /**
  * HD globe: the player's radar coverage as a light wash with one edge round all of it, instead of
- * a circle per radar (oxceHdRadarPulse).
+ * a circle per radar (oxceHdRadar 1 and 2).
  *
- * A base pulses once per detection cycle (GeoscapeState::time30Minutes): a wave per radar runs from
- * the base to that radar's range, the next radar's a moment later. The first base starts the cycle
- * and its wave sets off every base it reaches, and theirs the next ones; a base no chain reaches
- * starts by itself. A base that pulsed less than ten game minutes ago is not set off again. The
- * pulses run only at the slow clock speeds; faster, the wash stands still.
+ * With the sweep (oxceHdRadar 2) a base pulses once per detection cycle (GeoscapeState::time30Minutes):
+ * a wave per radar runs from the base to that radar's range, the next radar's a moment later. The
+ * first base starts the cycle and its wave sets off every base it reaches, and theirs the next ones;
+ * a base no chain reaches starts by itself. A base that pulsed less than ten game minutes ago is not
+ * set off again. The pulses run only at the slow clock speeds; faster, the wash stands still. A craft
+ * out of its base turns a slow beam round its own circle; the part of it inside a base's coverage is
+ * not drawn. A craft never sets a base off.
  *
- * A craft out of its base turns a slow beam round its own circle; the part of it inside a base's
- * coverage is not drawn. A craft never sets a base off.
+ * The cost: the bases' wash and edge are worked out only when the globe turns or zooms or a base's
+ * radars change, and kept as runs of each row (a run of the plain wash is one colour); a frame blends
+ * those runs and works out per pixel only the craft's circles and the waves in flight.
  *
  * Pictures only: the ranges, the positions and the time are read from the game; the detection
  * itself, its chances and its timing are not touched.
@@ -66,9 +69,9 @@ public:
 	void cycle() { _cyclePending = _slow; }
 	/// Is the game clock slow enough for the pulses (5 seconds or 1 minute a step)?
 	void setSlow(bool slow) { _slow = slow; }
-	/// Draws the wash, the edge, the pulses and the beams; `minute` is the game time in minutes.
-	/// Clipped by HdUi's clip.
-	void draw(const View &view, const std::vector<Source> &sources, long long minute);
+	/// Draws the wash and the edge, and with `sweep` the pulses and the beams; `minute` is the game
+	/// time in minutes. Clipped by HdUi's clip.
+	void draw(const View &view, const std::vector<Source> &sources, long long minute, bool sweep);
 private:
 	struct Pulse
 	{
@@ -77,18 +80,36 @@ private:
 		Uint32 length = 0;           ///< ms from the start to the end of the last wave
 		long long minute = 0;        ///< the game minute it was set off
 	};
+	/// A stretch of a row of the bases' wash: one colour, or a colour per pixel.
+	struct Run
+	{
+		int x0, x1;                  ///< world pixels, [x0, x1)
+		Uint32 color;                ///< 0xAARRGGBB when the whole run is one colour
+		int px;                      ///< -1: one colour; else where its colours start in the row's px
+	};
+	struct Row
+	{
+		std::vector<Run> runs;
+		std::vector<Uint32> px;
+	};
 	std::unordered_map<const void*, Pulse> _pulses;
 	bool _slow = true;
 	bool _cyclePending = false;
 
-	/// The bases' signed distance to the edge of their joint coverage, 1/8 world pixel, positive inside:
-	/// drawn again only when the globe turns or zooms or a base's radars change.
+	/// The bases' signed distance to the edge of their joint coverage, 1/8 world pixel, positive inside,
+	/// saturated a little past the glow: worked out again only when the globe turns or zooms or a base's
+	/// radars change.
 	std::vector<Sint16> _dist;
 	int _distX = 0, _distY = 0, _distW = 0, _distH = 0;
 	std::vector<double> _distKey;
+	/// The same coverage as the colours to blend, a row of runs per row of _dist.
+	std::vector<Row> _rows;
+	/// The rows that have any: [_rowA, _rowB) of _dist.
+	int _rowA = 0, _rowB = 0;
 
 	void schedule(const std::vector<Source> &sources, Uint32 now, long long minute);
-	void updateDist(const View &view, const std::vector<Source> &sources);
+	/// Works out _dist and the runs again if the globe or the bases changed.
+	void updateCache(const View &view, const std::vector<Source> &sources);
 };
 
 }
