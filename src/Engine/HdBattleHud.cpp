@@ -459,7 +459,7 @@ Uint32 tintOf(Uint8 tint, const SDL_Color *pal)
 
 /// Pale brass, dark to light, at the shades 0, 0.15 ... 1: a flat face facing the light sits at 0.6.
 const float BRASS_AT[] = { 0.0f, 0.15f, 0.3f, 0.45f, 0.6f, 0.75f, 1.0f };
-const Uint32 BRASS[] = { 0xFF140E08u, 0xFF3A2C1Au, 0xFF6A5534u, 0xFFA8885Au, 0xFFEAD5ACu, 0xFFF3DDB0u, 0xFFFFF4D4u };
+const Uint32 BRASS[] = { 0xFF120C06u, 0xFF2F2212u, 0xFF55401Fu, 0xFF876936u, 0xFFBC9A60u, 0xFFCDAE74u, 0xFFE6CE9Cu };
 
 Uint32 mix(Uint32 a, Uint32 b, float t)
 {
@@ -549,7 +549,7 @@ std::vector<Uint32> shadeMetal(const std::vector<float> &height, const std::vect
 				const float gx = (height[(size_t)y * W + xr] - height[(size_t)y * W + xl]) * 0.5f * k;
 				const float gy = (height[(size_t)yd * W + x] - height[(size_t)yu * W + x]) * 0.5f * k;
 				const float d = (-gx * lx - gy * ly + lz) / std::sqrt(gx * gx + gy * gy + 1.0f);
-				const float glint = 0.25f * std::pow(std::max(d, 0.0f), 12.0f);
+				const float glint = 0.12f * std::pow(std::max(d, 0.0f), 12.0f);
 				const float s = 0.6f + 0.9f * (d - lz) + glint - dark[i] + lift + 0.05f * brushed(x, y, kb);
 				Uint32 c = rampColor(s, tint);
 				if (tint && brass && (*brass)[i] > 0.0f)
