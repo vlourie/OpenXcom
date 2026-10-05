@@ -503,7 +503,9 @@ def cmd_build(a):
     fit = Fit()
     os.makedirs(OUT, exist_ok=True)
     tag = "ak.s%02d.r%d" % (round(a.start * 100), a.pick)
-    raw = os.path.join(OUT, "raw", tag + ".png")
+    raw = a.raw or os.path.join(OUT, "raw", tag + ".png")
+    if a.raw:
+        tag += "+" + os.path.basename(a.raw)
     # F_a и автомат в клетке x32 - метки рук там, кадры - x4
     fa_rgb32, fa_a32, panel = f_a_cell(raw)
     g_rgb, g_a = gun_x16()
@@ -669,6 +671,7 @@ def main():
     b.add_argument("--pick", type=int, required=True, help="зерно выбранного ответа")
     b.add_argument("--start", type=float, default=START)
     b.add_argument("--mod", default="", help="папка тестового мода: hd/GOV_1.PCK и hd/HANDOB.PCK заменяются")
+    b.add_argument("--raw", default="", help="другой ответ вместо raw/<pick> (agent_pose: 5401 с новыми кистями)")
     a = ap.parse_args()
     {"gun": cmd_gun, "prep": cmd_prep, "render": cmd_render, "build": cmd_build}[a.cmd](a)
 
