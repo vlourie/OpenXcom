@@ -155,7 +155,7 @@ Canvas32::~Canvas32()
 	liveCanvases.erase(std::remove(liveCanvases.begin(), liveCanvases.end(), this), liveCanvases.end());
 }
 
-Canvas32::Canvas32(int width, int height, int scale) : _width(width), _height(height), _scale(scale < 1 ? 1 : scale), _hdMode(HD_MODE_NEAREST), _deferred(true), _scriptSrc(1, 1), _scriptDst(1, 1), _scriptLit(1, 1)
+Canvas32::Canvas32(int width, int height, int scale) : _width(width), _height(height), _scale(scale < 1 ? 1 : scale), _hdMode(HD_MODE_NEAREST), _scriptSrc(1, 1), _scriptDst(1, 1), _scriptLit(1, 1)
 {
 	liveCanvases.push_back(this);
 	HdSprites::setBeforeChange(flushLiveCanvases);
@@ -190,12 +190,6 @@ void Canvas32::setLight(const HdLight *light)
 	{
 		_light = *light;
 	}
-}
-
-void Canvas32::setDeferred(bool deferred)
-{
-	flush();
-	_deferred = deferred;
 }
 
 SDL_Surface *Canvas32::getSdlSurface()
@@ -445,18 +439,11 @@ void Canvas32::record(Cmd &cmd)
 	{
 		return;
 	}
-	if (_deferred)
+	if (_cmds.empty())
 	{
-		if (_cmds.empty())
-		{
-			_cmdsGeneration = HdSprites::generation();
-		}
-		_cmds.push_back(cmd);
+		_cmdsGeneration = HdSprites::generation();
 	}
-	else
-	{
-		execute(cmd, cmd.y0, cmd.y1);
-	}
+	_cmds.push_back(cmd);
 }
 
 void Canvas32::fill(Uint8 color)

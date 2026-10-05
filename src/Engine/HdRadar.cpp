@@ -44,8 +44,6 @@ const int SWEEP_MS = 5000;
 const double TRAIL = 1.3;
 /// The width of a wave's bright front, as a part of its radar's range; its tail is four times that.
 const double WAVE_WIDTH = 0.07;
-/// Distances in the cache are stored in 1/8 world pixel; this is "far outside".
-const Sint16 FAR_OUT = -32000;
 
 // colours, 0xAARRGGBB: the alpha is the strongest the part is ever drawn
 const Uint32 FILL = 0x1F48D8A8u;   // 12 %: the coverage itself
