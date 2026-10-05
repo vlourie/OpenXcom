@@ -61,8 +61,8 @@
 
 Всё, что грузит модель на карту, запускается только через очередь:
 ```powershell
-py -3 tools\gpuq.py add --name <имя> -- tools\hdart\.venv\Scripts\python.exe tools\hdart\<скрипт>.py ...
-py -3 tools\gpuq.py list
+py -3.13 tools\gpuq.py add --name <имя> -- tools\hdart\.venv\Scripts\python.exe tools\hdart\<скрипт>.py ...
+py -3.13 tools\gpuq.py list
 ```
 Прямой запуск останавливает хук `gpu-guard`; список скриптов с моделью — `tools\gpu_scripts.txt`.
 
@@ -78,7 +78,7 @@ py -3 tools\gpuq.py list
 | **universal-ctags** | `.index\symbols.tsv` | карта проекта пустая, агенты читают файлы целиком |
 | **clangd** (LLVM), **doxygen + graphviz** | точный индекс C++ и граф вызовов | ctags путает перегрузки |
 | **ImageMagick**, **oxipng** | ресайз, палитра, сжатие PNG | ассеты тяжелее, `asset-smith` бессилен |
-| **Ollama + qwen3.8:27b** | черновые описания модулей (`.index\files.md`) | остальное работает |
+| **Ollama + qwen3.8:27b** | черновые описания модулей (`.index\files.tsv`) | остальное работает |
 
 Локальная модель пишет только смысл: имена, сигнатуры и строки берутся из `.index\symbols.tsv`,
 27B уверенно выдумывает имена, которых в коде нет. В запросах к Ollama задавать `num_ctx`
