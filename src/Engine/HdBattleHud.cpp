@@ -619,13 +619,14 @@ const std::vector<Uint32> &plaque(HdBattleHud::Icon icon, int w, int h, int k, i
 	const int W = w * k, H = h * k;
 	const float g = 0.7f * k, R = 2.2f * k, b1 = 1.3f * k, line = 0.45f * k;
 	// the cut's walls from the softened pictogram, its colour from the sharp one: thin strokes stay legible
-	std::vector<float> cut;
+	std::vector<float> cut, deep;
 	const Raster *sharp = nullptr;
 	if (icon != HdBattleHud::ICON_NONE && icon < HdBattleHud::ICON_COUNT)
 	{
 		// a base pixel or so clear of the edge on every side
 		sharp = &raster(icon, w, h, k, h < 14 ? 0.8f : 0.86f, true);
 		cut = softCover(*sharp, std::max(1, (int)std::lround(0.2f * k)));
+		deep = softCover(*sharp, std::max(1, (int)std::lround(0.9f * k)));
 	}
 	std::vector<float> height((size_t)W * H), dark((size_t)W * H), cover((size_t)W * H), brass;
 	if (tint) brass.assign((size_t)W * H, 0.0f);
@@ -644,8 +645,8 @@ const std::vector<Uint32> &plaque(HdBattleHud::Icon icon, int w, int h, int k, i
 			if (!cut.empty())
 			{
 				const float c = cut[i], ink = sharp->cov[i] / 255.0f;
-				// a deep cut: its walls catch and lose the light, the floor dark but not black
-				if (!tint) { hgt -= 0.85f * c; dk += 0.08f * c + 0.22f * ink; }
+				// a chiselled cut: a dark line along its edge, chamfered faces that catch the light inside
+				if (!tint) { hgt -= 0.6f * c + 0.15f * deep[i]; dk += 0.45f * 4.0f * c * (1.0f - c) + 0.5f * ink * (1.0f - 0.45f * deep[i]); }
 				else { hgt += 0.45f * c; dk -= 0.05f * ink; brass[i] = ink; }
 			}
 			height[i] = hgt;
