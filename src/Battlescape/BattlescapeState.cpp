@@ -1274,6 +1274,8 @@ void BattlescapeState::toggleKneelButton(BattleUnit* unit)
 	else
 	{
 		_game->getMod()->getSurfaceSet("KneelButton")->getFrame((unit && unit->isKneeled()) ? 1 : 0)->blitNShade(_btnKneel, 0, 0);
+		// the HD panel draws a tile in place of these pixels: tell it the state the frame shows
+		_btnKneel->setHdLit(unit && unit->isKneeled());
 	}
 }
 

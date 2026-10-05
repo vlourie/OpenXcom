@@ -57,6 +57,8 @@ public:
 	static void drawButton(int x, int y, int w, int h, Icon icon, bool lit, Uint8 tint, const SDL_Color *pal);
 	/// Is this bar laid in a groove of the brass panel's card (Bar::hdMirror draws it as a tube in it)?
 	static bool grooved(const Surface *bar);
+	/// The colours of such a groove in the panel's metal: its floor top and bottom, the light on its lower lip (0xRRGGBB).
+	static void grooveColors(Uint32 &top, Uint32 &bottom, Uint32 &lip);
 };
 
 /**
