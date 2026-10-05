@@ -684,21 +684,111 @@ const std::vector<Uint32> &metalFrame(int w, int h, int k, float f)
 	const int fw = (int)std::ceil(f);
 	const int W = w + 2 * fw, H = h + 2 * fw;
 	std::vector<float> height((size_t)W * H), dark((size_t)W * H, 0.0f), cover((size_t)W * H);
-	const float R = 2.5f * k, half = f * 0.5f;
+	const float R = 2.5f * k;
 	for (int y = 0; y < H; ++y)
 	{
 		for (int x = 0; x < W; ++x)
 		{
 			const size_t i = (size_t)y * W + x;
 			const float sd = insideBox(x + 0.5f, y + 0.5f, 0.0f, 0.0f, (float)W, (float)H, R);
-			// a round profile across the tube, open inside, a dark line at both of its edges
-			const float t = (sd - half) / half;
-			height[i] = std::sqrt(std::max(1.0f - t * t, 0.0f));
-			dark[i] = 0.25f * std::max(std::fabs(t) - 0.75f, 0.0f) / 0.25f;
+			// across the frame, outside in: a round bead, a fine groove, a flat band and a chamfer down into the
+			// well, a dark line at both edges
+			const float t = std::min(std::max(sd / f, 0.0f), 1.0f);
+			float hgt;
+			if (t < 0.15f) { const float u = (t - 0.15f) / 0.15f; hgt = std::sqrt(std::max(1.0f - u * u, 0.0f)); }
+			else if (t < 0.3f) { const float u = (t - 0.15f) / 0.15f; hgt = 0.75f + 0.25f * std::sqrt(std::max(1.0f - u * u, 0.0f)); }
+			else if (t < 0.62f) hgt = 0.8f;
+			else hgt = 0.8f - 0.65f * ease((t - 0.62f) / 0.38f);
+			height[i] = hgt;
+			dark[i] = 0.3f * std::max(0.05f - t, 0.0f) / 0.05f + 0.12f * std::max(1.0f - std::fabs(t - 0.3f) / 0.04f, 0.0f)
+				+ 0.35f * std::max(t - 0.9f, 0.0f) / 0.1f;
 			cover[i] = std::min(std::max(sd + 0.5f, 0.0f), 1.0f) * std::min(std::max(f - sd + 0.5f, 0.0f), 1.0f);
 		}
 	}
 	return metalCache[key] = shadeMetal(height, dark, cover, W, H, (float)k * 0.6f, 0.0f, 0);
+}
+
+/// The floor of a hand's well, sunk under its frame: near black at the walls, a dull grey toward the middle,
+/// the frame's shadow deepest along its top and left. w x h screen pixels.
+const std::vector<Uint32> &wellFloor(int w, int h, int k)
+{
+	const Uint64 key = (1ull << 61) | ((Uint64)(w & 0xFFFF) << 16) | (Uint64)(h & 0xFFFF);
+	if (std::vector<Uint32> *hit = metalCached(key, k)) return *hit;
+	std::vector<Uint32> out((size_t)w * h, 0);
+	const float R = 2.5f * k, sx = 1.2f * k, sy = 1.6f * k, soft = 3.5f * k;
+	const float cx = w * 0.5f, cy = h * 0.5f;
+	auto rows = [&](int ra, int rb)
+	{
+		for (int y = ra; y < rb; ++y)
+		{
+			for (int x = 0; x < w; ++x)
+			{
+				const float px = x + 0.5f, py = y + 0.5f;
+				const float sd = insideBox(px, py, 0.0f, 0.0f, (float)w, (float)h, R);
+				if (sd <= -0.5f) continue;
+				// the light falls past the frame from the upper left: the lit part of the floor is the well moved down and right
+				const float lit = ease(insideBox(px, py, sx, sy, (float)w + sx, (float)h + sy, R) / soft);
+				const float ex = (px - cx) / cx, ey = (py - cy) / cy;
+				const float glow = 1.0f - 0.55f * std::min(ex * ex + ey * ey, 1.0f);
+				const float v = 14.0f + 58.0f * glow * (0.25f + 0.75f * lit) + 1.5f * brushed(x, y, (float)k);
+				const Uint32 c = (Uint32)std::min(std::max(v, 0.0f), 255.0f);
+				const Uint32 a = (Uint32)(std::min(sd + 0.5f, 1.0f) * 255.0f + 0.5f);
+				out[(size_t)y * w + x] = a << 24 | c << 16 | c << 8 | std::min(c + 3, 255u);
+			}
+		}
+	};
+	HdWorkers &pool = HdWorkers::instance();
+	const int jobs = std::max(1, std::min(h / 8, pool.threads() * 2));
+	pool.run(jobs, [&](int job) { rows((int)((long long)h * job / jobs), (int)((long long)h * (job + 1) / jobs)); });
+	return metalCache[key] = out;
+}
+
+/// The shadow an item in hand casts on the floor of its well: its silhouette softened, w x h world pixels at
+/// scale k plus pad on every side. Kept per silhouette, a few dozen at most.
+const std::vector<Uint32> &itemShadow(const Surface *s, int k, int pad)
+{
+	static std::unordered_map<Uint64, std::vector<Uint32>> shadows;
+	static int shadowScale = 0;
+	const int w = s->getWidth(), h = s->getHeight();
+	Uint64 hash = 1469598103934665603ull;
+	for (int y = 0; y < h; ++y)
+		for (int x = 0; x < w; ++x)
+			hash = (hash ^ (s->getPixel(x, y) ? 1u : 0u)) * 1099511628211ull;
+	hash ^= ((Uint64)w << 48) ^ ((Uint64)h << 32);
+	if (shadowScale != k || shadows.size() > 64)
+	{
+		shadows.clear();
+		shadowScale = k;
+	}
+	auto found = shadows.find(hash);
+	if (found != shadows.end()) return found->second;
+	const int W = w * k + 2 * pad, H = h * k + 2 * pad;
+	std::vector<float> a((size_t)W * H, 0.0f), b((size_t)W * H);
+	for (int y = 0; y < h * k; ++y)
+		for (int x = 0; x < w * k; ++x)
+			if (s->getPixel(x / k, y / k)) a[(size_t)(y + pad) * W + x + pad] = 1.0f;
+	const int rb = std::max(1, pad / 2);
+	const float n = 1.0f / (float)(2 * rb + 1);
+	for (int pass = 0; pass < 2; ++pass)
+	{
+		for (int y = 0; y < H; ++y)
+			for (int x = 0; x < W; ++x)
+			{
+				float sum = 0;
+				for (int d = -rb; d <= rb; ++d) sum += a[(size_t)y * W + std::min(std::max(x + d, 0), W - 1)];
+				b[(size_t)y * W + x] = sum * n;
+			}
+		for (int y = 0; y < H; ++y)
+			for (int x = 0; x < W; ++x)
+			{
+				float sum = 0;
+				for (int d = -rb; d <= rb; ++d) sum += b[(size_t)std::min(std::max(y + d, 0), H - 1) * W + x];
+				a[(size_t)y * W + x] = sum * n;
+			}
+	}
+	std::vector<Uint32> out((size_t)W * H);
+	for (size_t i = 0; i < out.size(); ++i) out[i] = (Uint32)(std::min(a[i], 1.0f) * 150.0f + 0.5f) << 24;
+	return shadows[hash] = out;
 }
 
 /// The panel itself in dark brushed steel, a bevelled brass lip along its top: W x H screen pixels.
@@ -827,19 +917,26 @@ void HdHudPanel::hdMirror()
 		case HdHudPanel::PART_HAND:
 		{
 			const float m = 1.5f * k;
-			ui.fillRoundRect(wx0 - m, wy0 - m, wx1 + m, wy1 + m, 2.5f * k, t.wellTop, t.wellBottom);
 			if (t.plaques)
 			{
-				// the original's gold frame round the hand, cast in the same metal as the keys
-				const float f = 2.8f * k;
-				const int fw = (int)std::ceil(f);
+				// the original's gold frame round the hand, cast in the same metal as the keys, its chamfer
+				// running a base pixel into the well, which lies sunk and shadowed under it
 				const int ix = (int)std::lround(wx0 - m), iy = (int)std::lround(wy0 - m);
 				const int iw = (int)std::lround(wx1 + m) - ix, ih = (int)std::lround(wy1 + m) - iy;
-				const std::vector<Uint32> &frame = metalFrame(iw, ih, k, f);
-				ui.drawImage(frame.data(), iw + 2 * fw, ih + 2 * fw, ix - fw, iy - fw);
+				ui.drawImage(wellFloor(iw, ih, k).data(), iw, ih, ix, iy);
+				// the item lies on that floor: its shadow falls down and to the right
+				const int pad = (int)std::lround(1.5f * k), off = (int)std::lround(1.2f * k);
+				ui.drawImage(itemShadow(s, k, pad).data(), s->getWidth() * k + 2 * pad, s->getHeight() * k + 2 * pad,
+					s->getX() * k - pad + off, s->getY() * k - pad + (int)std::lround(1.6f * k));
+				const int in = (int)std::lround(1.0f * k);
+				const float f = 2.8f * k + in;
+				const int fw = (int)std::ceil(f);
+				const std::vector<Uint32> &frame = metalFrame(iw - 2 * in, ih - 2 * in, k, f);
+				ui.drawImage(frame.data(), iw - 2 * in + 2 * fw, ih - 2 * in + 2 * fw, ix + in - fw, iy + in - fw);
 			}
 			else
 			{
+				ui.fillRoundRect(wx0 - m, wy0 - m, wx1 + m, wy1 + m, 2.5f * k, t.wellTop, t.wellBottom);
 				ui.strokeRoundRect(wx0 - m, wy0 - m, wx1 + m, wy1 + m, 2.5f * k, edge, t.wellEdge);
 			}
 			break;
