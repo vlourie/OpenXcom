@@ -288,7 +288,6 @@ private:
 	/// HD scale k the palette sprites were upscaled by (sprite width / 32).
 	int _scale;
 	int _hdMode;
-	bool _deferred;
 	SDL_Color _colors[256];
 	Uint32 _lut[256];
 	/// Pixel -> palette index, for the ops the classic canvas does on indices (vapor, flash):
@@ -459,10 +458,6 @@ public:
 	/// The same, enlarged `zoom` times (bilinear) with `pull` of the way to the point (fx, fy) in the
 	/// middle and black bars `bars` of the height at the top and the bottom (see HdKillCam).
 	void copyZoomed(SDL_Surface *dest, int x, int y, double fx, double fy, double zoom, double pull, double bars);
-	/// Records commands (default) or draws each call at once (tests, single-threaded use).
-	void setDeferred(bool deferred);
-	/// The shaded value of a grey pixel (exposed for tests).
-	Uint8 toneValue(int shade, int value, int channel = 1) const { return (Uint8)(((Uint32)value * _toneFactor[channel][shade][value] + 32768u) >> 16); }
 };
 
 }

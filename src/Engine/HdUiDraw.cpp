@@ -50,8 +50,6 @@ const char *FONT_FOLDER = "UI/fonts";
 const float CAP_RATIO_BIG = 0.78f, CAP_RATIO_SMALL = 0.80f;
 /// A classic font with capitals this tall (or taller) is a big one: the heavy TrueType face.
 const int BIG_CAP_ROWS = 11;
-/// The TrueType sizes standing in for the classic big and small fonts (NumberText, the caret...).
-const float CAP_BIG = 13.0f * CAP_RATIO_BIG, CAP_SMALL = 8.0f * CAP_RATIO_SMALL;
 /// The baseline of a line of capitals centred in a box of `boxH` base pixels.
 inline float centredBaseline(float boxH, float cap) { return (boxH + cap) * 0.5f; }
 /// The same baseline, lifted so that what hangs below it (`deep` base pixels: the tails of 'р', 'у', 'p')

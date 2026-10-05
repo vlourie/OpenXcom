@@ -211,8 +211,6 @@ public:
 	/// exact coverage): value and coverage per HD pixel. Public for tests.
 	static void scaleShape(const Uint8 *src, int w, int h, int k, std::vector<Uint8> &value, std::vector<Uint8> &cov,
 	                       std::vector<Uint8> *value2 = nullptr, std::vector<Uint8> *mix = nullptr);
-	/// Number of cached smoothed surfaces (statistics).
-	size_t cachedSurfaces() const { return _smooth.size(); }
 
 private:
 	struct SmoothEntry

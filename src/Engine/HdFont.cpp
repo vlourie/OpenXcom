@@ -328,11 +328,6 @@ float HdFont::measure(const UString &s, float px, float condense)
 	return w;
 }
 
-void HdFont::clearCache()
-{
-	_cache.clear();
-}
-
 /**
  * Every size and condensing a text was ever drawn at stays in the cache: a font switched a few times
  * in play, or a window resized, leaves glyphs nobody asks for again. Counted only when the cache grew

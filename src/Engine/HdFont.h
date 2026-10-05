@@ -65,8 +65,6 @@ public:
 	float kern(UCode a, UCode b, float px, float condense = 1.0f);
 	/// Width of a string at a pixel size (condensed).
 	float measure(const UString &s, float px, float condense = 1.0f);
-	/// Forgets the cached glyphs.
-	void clearCache();
 	/// Forgets them all when they take more than `capBytes`. Only between frames: the glyphs are handed
 	/// out by reference and must stay put while a line is drawn. True when it did.
 	bool trimCache(size_t capBytes);

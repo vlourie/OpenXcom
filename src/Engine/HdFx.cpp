@@ -596,7 +596,9 @@ std::string takeTestDump(Uint32 now)
 	{
 		if (!std::isalnum((unsigned char)c)) c = '_';
 	}
-	return std::string(getenv("OXCE_HD_DUMP_FX")) + "_" + std::to_string(++testDumped) + "_" + name + ".png";
+	// queued only by noteForTest, so the variable is set
+	static const std::string prefix = getenv("OXCE_HD_DUMP_FX");
+	return prefix + "_" + std::to_string(++testDumped) + "_" + name + ".png";
 }
 
 bool active(Uint32 now)
