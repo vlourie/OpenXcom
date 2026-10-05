@@ -18,6 +18,7 @@
  */
 #include "Bar.h"
 #include <algorithm>
+#include "../Engine/HdBattleHud.h"
 #include "../Engine/HdUi.h"
 #include <SDL.h>
 
@@ -195,7 +196,18 @@ void Bar::hdMirror()
 	const float x1 = std::min(x0 + ((float)(_scale * longest) + 1.0f) * k, xMax);
 	const float r = std::min(1.0f * k, (y1 - y0) * 0.5f);
 	const Uint32 border = HdUi::rgba(pal[_borderColor ? _borderColor : (Uint8)(_color + 4)], 200);
-	ui.fillRoundRect(x0, y0, x1, y1, r, 0xA0000000u, 0xA0000000u);
+	// the brass panel's card: the bar lies in a groove cut in the plate, and its fill is a glass tube in it
+	const bool groove = HdBattleHud::grooved(this);
+	if (groove)
+	{
+		ui.fillRoundRect(x0, y0, x1, y1, r, 0xF0140E08u, 0xF0281E12u);
+		ui.fillRoundRect(x0, y0, x1, y0 + 0.8f * k, r, 0x90000000u, 0x00000000u);
+		ui.fillRoundRect(x0 + r, y1 - 0.05f * k, x1 - r, y1 + 0.45f * k, 0.0f, 0x60F0D8A0u, 0x00F0D8A0u);
+	}
+	else
+	{
+		ui.fillRoundRect(x0, y0, x1, y1, r, 0xA0000000u, 0xA0000000u);
+	}
 	auto fill = [&](double value, Uint8 color)
 	{
 		// ends where the classic fill ends (its last pixel is the value's line of the soldier screen's
@@ -203,7 +215,18 @@ void Bar::hdMirror()
 		const float w = (float)(_scale * value) * k;
 		if (w <= 0.5f * k) return;
 		const Uint32 c = HdUi::rgba(pal[color]);
-		ui.fillRoundRect(x0 + 0.5f * k, y0 + 0.5f * k, std::min(x0 + w, x1 - 0.5f * k), y1 - 0.5f * k, std::max(r - 0.5f * k, 0.0f), HdUi::scaled(c, 1.12f), HdUi::scaled(c, 0.85f));
+		const float fx1 = std::min(x0 + w, x1 - 0.5f * k), fy0 = y0 + 0.5f * k, fy1 = y1 - 0.5f * k;
+		const float fr = std::max(r - 0.5f * k, 0.0f);
+		if (groove)
+		{
+			// lit from above: bright under the highlight, dark along the bottom, a white glint near the top
+			ui.fillRoundRect(x0 + 0.5f * k, fy0, fx1, fy1, fr, HdUi::scaled(c, 1.25f), HdUi::scaled(c, 0.62f));
+			ui.fillRoundRect(x0 + 0.5f * k + fr, fy0 + 0.15f * k, fx1 - fr, fy0 + 0.75f * k, 0.0f, 0x70FFFFFFu, 0x10FFFFFFu);
+		}
+		else
+		{
+			ui.fillRoundRect(x0 + 0.5f * k, fy0, fx1, fy1, fr, HdUi::scaled(c, 1.12f), HdUi::scaled(c, 0.85f));
+		}
 	};
 	if (_secondOnTop)
 	{
@@ -215,7 +238,7 @@ void Bar::hdMirror()
 		fill(_value2, _color2);
 		fill(_value, _color);
 	}
-	ui.strokeRoundRect(x0, y0, x1, y1, r, std::max(1.0f, k * 0.5f), border);
+	ui.strokeRoundRect(x0, y0, x1, y1, r, std::max(1.0f, k * 0.5f), groove ? 0xA0000000u : border);
 }
 
 void Bar::draw()

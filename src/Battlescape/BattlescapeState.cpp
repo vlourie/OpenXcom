@@ -413,6 +413,14 @@ BattlescapeState::BattlescapeState() :
 		{
 			panel->addPart(HdHudPanel::PART_CHIP, number, number->getColor());
 		}
+		for (Bar *bar : { _barTimeUnits, _barEnergy, _barHealth, _barMorale })
+		{
+			panel->addPart(HdHudPanel::PART_BAR, bar);
+		}
+		if (_manaBarVisible)
+		{
+			panel->addPart(HdHudPanel::PART_BAR, _barMana);
+		}
 		const bool links = Options::oxceLinks && _game->getMod()->getSurface("oxceLinks", false);
 		const std::pair<BattlescapeButton*, HdBattleHud::Icon> pictograms[] = {
 			{ _btnUnitUp, HdBattleHud::ICON_UNIT_UP }, { _btnUnitDown, HdBattleHud::ICON_UNIT_DOWN },

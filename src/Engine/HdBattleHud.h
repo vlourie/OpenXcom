@@ -55,6 +55,8 @@ public:
 	/// Draws a button of the panel: a tile at base (x, y, w, h) with the pictogram; `lit` = pressed or
 	/// selected. `tint` = the button's own palette colour (the reserve buttons' green and red), 0 = none.
 	static void drawButton(int x, int y, int w, int h, Icon icon, bool lit, Uint8 tint, const SDL_Color *pal);
+	/// Is this bar laid in a groove of the brass panel's card (Bar::hdMirror draws it as a tube in it)?
+	static bool grooved(const Surface *bar);
 };
 
 /**
@@ -71,9 +73,11 @@ public:
 		PART_HAND,    ///< a well under an item in hand
 		PART_CARD,    ///< the card under the unit's name, rank and stats
 		PART_RANK,    ///< the frame of the rank badge on the card
-		PART_CHIP     ///< a tinted chip under a stat's number
+		PART_CHIP,    ///< a tinted chip under a stat's number
+		PART_BAR      ///< a stat's bar, laid in a groove (HdBattleHud::grooved)
 	};
 	HdHudPanel(int width, int height, int x = 0, int y = 0) : InteractiveSurface(width, height, x, y) {}
+	~HdHudPanel() override;
 	/// Puts a part under a widget (its rectangle is read at drawing time); `color` = the chip's palette colour.
 	void addPart(Part part, const Surface *widget, Uint8 color = 0);
 	void hdMirror() override;

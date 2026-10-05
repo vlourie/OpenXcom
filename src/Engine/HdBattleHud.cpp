@@ -66,6 +66,9 @@ const Theme GOLD = {
 	true,
 };
 
+/// The bars laid in grooves of the panel's card (HdHudPanel::PART_BAR).
+std::vector<const Surface*> grooves;
+
 const Theme &theme()
 {
 	return Options::oxceHdBattleHudColor == 1 ? GOLD : SLATE;
@@ -708,11 +711,11 @@ const std::vector<Uint32> &metalFrame(int w, int h, int k, float f)
 	return metalCache[key] = shadeMetal(height, dark, cover, W, H, (float)k * 0.6f, 0.0f, 0);
 }
 
-/// The floor of a hand's well, sunk under its frame: near black at the walls, a dull grey toward the middle,
-/// the frame's shadow deepest along its top and left. w x h screen pixels.
-const std::vector<Uint32> &wellFloor(int w, int h, int k)
+/// The floor of a well (a hand's, the card's), sunk under its frame: near black at the walls, `base` (0xRRGGBB)
+/// toward the middle, the frame's shadow deepest along its top and left. w x h screen pixels.
+const std::vector<Uint32> &wellFloor(int w, int h, int k, Uint32 base)
 {
-	const Uint64 key = (1ull << 61) | ((Uint64)(w & 0xFFFF) << 16) | (Uint64)(h & 0xFFFF);
+	const Uint64 key = (1ull << 61) | ((Uint64)(base & 0xFFFFFF) << 32) | ((Uint64)(w & 0xFFFF) << 16) | (Uint64)(h & 0xFFFF);
 	if (std::vector<Uint32> *hit = metalCached(key, k)) return *hit;
 	std::vector<Uint32> out((size_t)w * h, 0);
 	const float R = 2.5f * k, sx = 1.2f * k, sy = 1.6f * k, soft = 3.5f * k;
@@ -730,10 +733,13 @@ const std::vector<Uint32> &wellFloor(int w, int h, int k)
 				const float lit = ease(insideBox(px, py, sx, sy, (float)w + sx, (float)h + sy, R) / soft);
 				const float ex = (px - cx) / cx, ey = (py - cy) / cy;
 				const float glow = 1.0f - 0.55f * std::min(ex * ex + ey * ey, 1.0f);
-				const float v = 14.0f + 58.0f * glow * (0.25f + 0.75f * lit) + 1.5f * brushed(x, y, (float)k);
-				const Uint32 c = (Uint32)std::min(std::max(v, 0.0f), 255.0f);
-				const Uint32 a = (Uint32)(std::min(sd + 0.5f, 1.0f) * 255.0f + 0.5f);
-				out[(size_t)y * w + x] = a << 24 | c << 16 | c << 8 | std::min(c + 3, 255u);
+				const float v = (14.0f + 58.0f * glow * (0.25f + 0.75f * lit) + 1.5f * brushed(x, y, (float)k)) / 72.0f;
+				Uint32 c = (Uint32)(std::min(sd + 0.5f, 1.0f) * 255.0f + 0.5f) << 24;
+				for (int sh = 0; sh <= 16; sh += 8)
+				{
+					c |= (Uint32)std::min(std::max((float)((base >> sh) & 0xFF) * v, 0.0f), 255.0f) << sh;
+				}
+				out[(size_t)y * w + x] = c;
 			}
 		}
 	};
@@ -873,9 +879,25 @@ void HdBattleHud::drawButton(int x, int y, int w, int h, Icon icon, bool lit, Ui
 	ui.drawImage(colored(pic, face).data(), pic.w, pic.h, x * k, y * k);
 }
 
+bool HdBattleHud::grooved(const Surface *bar)
+{
+	return on() && theme().plaques && std::find(grooves.begin(), grooves.end(), bar) != grooves.end();
+}
+
 void HdHudPanel::addPart(Part part, const Surface *widget, Uint8 color)
 {
+	if (part == PART_BAR)
+	{
+		grooves.push_back(widget);
+		return;
+	}
 	_parts.push_back(Item{ part, widget, color });
+}
+
+HdHudPanel::~HdHudPanel()
+{
+	// the bars go with the screen; a bar made later at the same address is not this one
+	grooves.clear();
 }
 
 void HdHudPanel::hdMirror()
@@ -923,7 +945,7 @@ void HdHudPanel::hdMirror()
 				// running a base pixel into the well, which lies sunk and shadowed under it
 				const int ix = (int)std::lround(wx0 - m), iy = (int)std::lround(wy0 - m);
 				const int iw = (int)std::lround(wx1 + m) - ix, ih = (int)std::lround(wy1 + m) - iy;
-				ui.drawImage(wellFloor(iw, ih, k).data(), iw, ih, ix, iy);
+				ui.drawImage(wellFloor(iw, ih, k, 0x48484Bu).data(), iw, ih, ix, iy);
 				// the item lies on that floor: its shadow falls down and to the right
 				const int pad = (int)std::lround(1.5f * k), off = (int)std::lround(1.2f * k);
 				ui.drawImage(itemShadow(s, k, pad).data(), s->getWidth() * k + 2 * pad, s->getHeight() * k + 2 * pad,
@@ -945,19 +967,20 @@ void HdHudPanel::hdMirror()
 		{
 			const float m = 1.0f * k;
 			const float cy1 = std::min(wy1 + m, y1 - 0.5f * k);
-			ui.fillRoundRect(wx0 - m, wy0 - m, wx1 + m, cy1, 2.2f * k, t.cardTop, t.cardBottom);
 			if (t.plaques)
 			{
-				// a dark inset plate in a brass frame: the mod's coloured figures stay legible on it
+				// a dark plate sunk in a brass frame: the mod's coloured figures stay legible on it
 				const float f = 1.6f * k;
 				const int fw = (int)std::ceil(f);
 				const int ix = (int)std::lround(wx0 - m), iy = (int)std::lround(wy0 - m);
 				const int iw = (int)std::lround(wx1 + m) - ix, ih = (int)std::lround(cy1) - iy;
+				ui.drawImage(wellFloor(iw, ih, k, 0x4E3E2Au).data(), iw, ih, ix, iy);
 				const std::vector<Uint32> &frame = metalFrame(iw, ih, k, f);
 				ui.drawImage(frame.data(), iw + 2 * fw, ih + 2 * fw, ix - fw, iy - fw);
 			}
 			else
 			{
+				ui.fillRoundRect(wx0 - m, wy0 - m, wx1 + m, cy1, 2.2f * k, t.cardTop, t.cardBottom);
 				ui.strokeRoundRect(wx0 - m, wy0 - m, wx1 + m, cy1, 2.2f * k, edge, t.cardEdge);
 			}
 			break;
@@ -968,9 +991,24 @@ void HdHudPanel::hdMirror()
 		case HdHudPanel::PART_CHIP:
 		{
 			const Uint32 c = pal ? HdUi::rgba(pal[item.color]) : t.accent;
-			ui.fillRoundRect(wx0 - 1.5f * k, wy0 - 1.0f * k, wx1 + 1.0f * k, wy1 + 1.0f * k, 1.4f * k, withAlpha(c, 0x40), withAlpha(c, 0x28));
+			const float cx0 = wx0 - 1.5f * k, cy0 = wy0 - 1.0f * k, cx1 = wx1 + 1.0f * k, cy1 = wy1 + 1.0f * k;
+			if (t.plaques)
+			{
+				// a pocket in the plate: darker than it, the stat's colour in its floor, its upper wall in
+				// shadow and its lower lip catching the light
+				ui.fillRoundRect(cx0, cy0, cx1, cy1, 1.4f * k, 0x70000000u, 0x50000000u);
+				ui.fillRoundRect(cx0, cy0, cx1, cy1, 1.4f * k, withAlpha(c, 0x30), withAlpha(c, 0x20));
+				ui.fillRoundRect(cx0, cy0, cx1, cy0 + 1.2f * k, 1.4f * k, 0x90000000u, 0x00000000u);
+				ui.fillRoundRect(cx0 + 1.2f * k, cy1 - 0.1f * k, cx1 - 1.2f * k, cy1 + 0.4f * k, 0.0f, 0x58F0D8A0u, 0x10F0D8A0u);
+			}
+			else
+			{
+				ui.fillRoundRect(cx0, cy0, cx1, cy1, 1.4f * k, withAlpha(c, 0x40), withAlpha(c, 0x28));
+			}
 			break;
 		}
+		case HdHudPanel::PART_BAR:
+			break; // the bar draws its groove itself (Bar::hdMirror)
 		}
 	}
 }
