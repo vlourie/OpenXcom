@@ -89,7 +89,7 @@ hob, hpal = sheet(HANDOB)
 
 def shifted(m, dx, dy):
     o = np.zeros_like(m)
-    h, w = m.shape
+    h, w = m.shape[:2]
     ys, xs = slice(max(dy, 0), min(h, h + dy)), slice(max(dx, 0), min(w, w + dx))
     yd, xd = slice(max(-dy, 0), min(h, h - dy)), slice(max(-dx, 0), min(w, w - dx))
     o[ys, xs] = m[yd, xd]
@@ -166,8 +166,8 @@ def hd_or(set_, n, frame, pal):
 
 
 def place(l, dx, dy):
-    r, a = l
-    return (np.roll(np.roll(r, dy * K, 0), dx * K, 1), np.roll(np.roll(a, dy * K, 0), dx * K, 1))
+    r, a = l    # сдвиг без заворота: ушедшее за край кадра обрезается, как в игре
+    return shifted(r, dx * K, dy * K), shifted(a, dx * K, dy * K)
 
 
 def stack(layers):
