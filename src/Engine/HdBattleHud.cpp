@@ -461,7 +461,7 @@ Uint32 tintOf(Uint8 tint, const SDL_Color *pal)
 
 /// Pale brass, dark to light, at the shades 0, 0.15 ... 1: a flat face facing the light sits at 0.6.
 const float BRASS_AT[] = { 0.0f, 0.15f, 0.3f, 0.45f, 0.6f, 0.75f, 1.0f };
-const Uint32 BRASS[] = { 0xFF120C06u, 0xFF2F2212u, 0xFF55401Fu, 0xFF876936u, 0xFFBC9A60u, 0xFFCDAE74u, 0xFFE6CE9Cu };
+const Uint32 BRASS[] = { 0xFF100C07u, 0xFF292016u, 0xFF4B3D26u, 0xFF786341u, 0xFFA9926Au, 0xFFBAA57Du, 0xFFD3C3A1u };
 
 Uint32 mix(Uint32 a, Uint32 b, float t)
 {
@@ -532,7 +532,7 @@ float brushed(int x, int y, float k)
 /// plaque), a darkening (the bottom of a cut, the outline of a plaque) and a coverage; the slopes catch or
 /// lose the light, the steepest ones facing it glint, the face is brushed. A key's own colour (tint) is
 /// laid where brass[i] is 0, brass where it is 1. The rows go to the render threads.
-std::vector<Uint32> shadeMetal(const std::vector<float> &height, const std::vector<float> &dark, const std::vector<float> &cover, int W, int H, float k, float lift, Uint32 tint, const std::vector<float> *brass = nullptr)
+std::vector<Uint32> shadeMetal(const std::vector<float> &height, const std::vector<float> &dark, const std::vector<float> &cover, int W, int H, float k, float lift, Uint32 tint, const std::vector<float> *brass = nullptr, const std::vector<float> *dull = nullptr)
 {
 	std::vector<Uint32> out((size_t)W * H, 0);
 	const float lx = -0.5f, ly = -0.6f, lz = 0.62f;
@@ -552,11 +552,18 @@ std::vector<Uint32> shadeMetal(const std::vector<float> &height, const std::vect
 				const float gy = (height[(size_t)yd * W + x] - height[(size_t)yu * W + x]) * 0.5f * k;
 				const float d = (-gx * lx - gy * ly + lz) / std::sqrt(gx * gx + gy * gy + 1.0f);
 				const float glint = 0.12f * std::pow(std::max(d, 0.0f), 12.0f);
-				const float s = 0.6f + 0.9f * (d - lz) + glint - dark[i] + lift + 0.05f * brushed(x, y, kb);
+				const float s = 0.6f + 0.9f * (d - lz) + glint - dark[i] + lift + 0.035f * brushed(x, y, kb);
 				Uint32 c = rampColor(s, tint);
 				if (tint && brass && (*brass)[i] > 0.0f)
 				{
 					c = mix(c, rampColor(s + 0.05f, 0), std::min((*brass)[i] * 1.5f, 1.0f));
+				}
+				if (dull && (*dull)[i] > 0.0f)
+				{
+					// the floor of a cut: greyer than the face, as tarnished metal is
+					const Uint32 r = (c >> 16) & 0xFF, gg = (c >> 8) & 0xFF, bb = c & 0xFF;
+					const Uint32 grey = (r * 3 + gg * 5 + bb * 2) / 10;
+					c = mix(c, 0xFF000000u | grey << 16 | grey << 8 | grey, (*dull)[i]);
 				}
 				out[i] = withAlpha(c, (Uint32)(std::min(a, 1.0f) * 255.0f + 0.5f));
 			}
@@ -628,8 +635,11 @@ const std::vector<Uint32> &plaque(HdBattleHud::Icon icon, int w, int h, int k, i
 		cut = softCover(*sharp, std::max(1, (int)std::lround(0.2f * k)));
 		deep = softCover(*sharp, std::max(1, (int)std::lround(0.9f * k)));
 	}
-	std::vector<float> height((size_t)W * H), dark((size_t)W * H), cover((size_t)W * H), brass;
+	std::vector<float> height((size_t)W * H), dark((size_t)W * H), cover((size_t)W * H), brass, dull;
 	if (tint) brass.assign((size_t)W * H, 0.0f);
+	else if (!cut.empty()) dull.assign((size_t)W * H, 0.0f);
+	// the lit lip under a cut: the cut seen from half a base pixel up and to the left
+	const int lo = std::max(1, (int)std::lround(0.5f * k));
 	const float cx = W * 0.5f, cy = H * 0.5f;
 	for (int y = 0; y < H; ++y)
 	{
@@ -646,7 +656,15 @@ const std::vector<Uint32> &plaque(HdBattleHud::Icon icon, int w, int h, int k, i
 			{
 				const float c = cut[i], ink = sharp->cov[i] / 255.0f;
 				// a chiselled cut: a dark line along its edge, chamfered faces that catch the light inside
-				if (!tint) { hgt -= 0.6f * c + 0.15f * deep[i]; dk += 0.45f * 4.0f * c * (1.0f - c) + 0.5f * ink * (1.0f - 0.45f * deep[i]); }
+				if (!tint)
+				{
+					const float e = 4.0f * c * (1.0f - c);
+					const float up = cut[(size_t)std::max(y - lo, 0) * W + std::max(x - lo, 0)];
+					const float lip = std::max(up - c, 0.0f) * (1.0f - ink);
+					hgt -= 0.6f * c + 0.15f * deep[i];
+					dk += 0.3f * e * e + 0.5f * ink * (1.0f - 0.45f * deep[i]) - 0.35f * lip;
+					dull[i] = 0.45f * ink;
+				}
 				else { hgt += 0.45f * c; dk -= 0.05f * ink; brass[i] = ink; }
 			}
 			height[i] = hgt;
@@ -654,7 +672,7 @@ const std::vector<Uint32> &plaque(HdBattleHud::Icon icon, int w, int h, int k, i
 		}
 	}
 	const float lift = (state == 2 ? 0.08f : (state == 1 ? 0.04f : 0.0f)) - (tint ? 0.28f : 0.0f);
-	return metalCache[key] = shadeMetal(height, dark, cover, W, H, (float)k, lift, tint ? vivid(tint) : 0, tint ? &brass : nullptr);
+	return metalCache[key] = shadeMetal(height, dark, cover, W, H, (float)k, lift, tint ? vivid(tint) : 0, tint ? &brass : nullptr, dull.empty() ? nullptr : &dull);
 }
 
 /// A brass frame cast round a box (the wells under the items in hand, the soldier's card): a rounded tube
