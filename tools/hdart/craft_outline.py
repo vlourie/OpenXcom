@@ -280,26 +280,44 @@ def nose_by_hangar(mask, hangar):
     return best[3], best[0], best[0] - other[0]
 
 
+def mirror_axis(mask):
+    """Ось зеркальной симметрии плана: 'v' (лево-право, ось вертикальна), 'h' или None, если
+    оси нет или обе оси почти равны (круг, квадрат, крест)."""
+    m = crop(mask)
+    def iou(b): return (m & b).sum() / max(1, (m | b).sum())
+    v, h = iou(m[:, ::-1]), iou(m[::-1, :])
+    if max(v, h) < 0.95 or abs(v - h) < 0.1:
+        return None
+    return "v" if v > h else "h"
+
+
 def nose_by_centroid(mask, along=False):
     """План носом вверх для НЛО: длинная сторона габарита вертикально, нос - конец, дальний от
     самого широкого места. Почти квадратный план - та же проверка по обоим поворотам.
     along - ось симметрии уже вертикальна (diagonal_turn): выбираются только её концы, шеврон
-    шире своей длины. -> (маска носом вверх, сдвиг широкого места от середины в долях длины)."""
+    шире своей длины. -> (маска носом вверх, сдвиг широкого места от середины в долях длины,
+    решил ли центр площади)."""
     best = None
-    for k in ((0, 2) if along else range(4)):
+    axis = "v" if along else mirror_axis(mask)
+    # ось симметрии плана - ось хода, даже если план поперёк неё шире: Эсминец и Страж (вилка
+    # из трёх отсеков) по длинной стороне летели боком
+    for k in ((0, 2) if axis == "v" else (1, 3) if axis == "h" else range(4)):
         m = crop(np.rot90(mask, k))
         hh, ww = m.shape
-        if not along and hh < ww * 0.87:                    # длинная ось лежит поперёк хода
+        if axis is None and hh < ww * 0.87:                 # длинная ось лежит поперёк хода
             continue
         # самое широкое место (полоса от 90% наибольшей ширины) ближе к хвосту: крылья, оперение
         # и двигатели тяжелее носа. Проверено на кораблях игрока с известным носом: 29 из 34,
         # центр площади - 23, узкий конец - 18-23 (craft_outline печатает итог при каждом прогоне)
         wp = m.sum(1)
         skew = (np.nonzero(wp >= wp.max() * 0.9)[0].mean() - (hh - 1) / 2.0) / hh   # >0: ближе к низу
-        cand = (hh / max(ww, 1), skew, m)
-        if best is None or (cand[0], cand[1]) > (best[0], best[1]):
+        # ничья (широкое место посередине: у Стража стык трёх отсеков) - центр площади ближе к хвосту
+        mass = (np.nonzero(m)[0].mean() - (hh - 1) / 2.0) / hh
+        # только точная ничья: при 0.01-0.04 центр площади на кораблях с ангаром хуже (31 из 39 против 33)
+        cand = (hh / max(ww, 1), skew if abs(skew) >= 0.005 else 0.0, mass, m, skew)
+        if best is None or cand[:3] > best[:3]:
             best = cand
-    return best[2], best[1]
+    return best[3], best[4], best[1] == 0.0 and abs(best[2]) >= 0.02
 
 
 def hangar_mask(f, sprites):
@@ -614,7 +632,7 @@ def main(argv=None):
             if margin < 0.03 or iou < 0.45:
                 r["note"] = "нос неуверенно"
             # проверка правила НЛО на корабле, где нос известен
-            guess, _ = nose_by_centroid(body, diag is not None)
+            guess, _, _ = nose_by_centroid(body, diag is not None)
             if margin >= 0.03 and iou >= 0.45:
                 total += 1
                 hits += fit_iou(guess, up) > fit_iou(guess, np.rot90(up, 2))
@@ -627,9 +645,9 @@ def main(argv=None):
                 else:
                     twin = None
             if twin is None:
-                up, skew = nose_by_centroid(body, diag is not None)
-                r["nose"] = "широкое место %+.2f" % skew
-                if abs(skew) < 0.04:
+                up, skew, by_mass = nose_by_centroid(body, diag is not None)
+                r["nose"] = "широкое место %+.2f" % skew + (", центр площади" if by_mass else "")
+                if abs(skew) < 0.04 and not by_mass:
                     r["note"] = "нос неуверенно"
         if diag is not None and r.get("nose"):
             r["nose"] = "диагональ, " + r["nose"]
