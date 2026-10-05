@@ -14,9 +14,15 @@ handSprite огнестрела и холодного (census/items/items.tsv, �
   touch - наименьшее расстояние от пикселя кисти до пикселя оружия (база), 0 - кисть лежит на оружии;
   держит <= 1, рядом <= 3, мимо > 3. Кисть, которую закрыли слои поверх (порядок слоёв по направлению), - «не видна».
 
+Касание - предварительный фильтр: чей пиксель под кистью (рукоять, магазин, ствол), он не знает.
+
   py -3.13 tools/hdart/grip_matrix.py            -> art/units/grip-contract/: grip_matrix.tsv, grip_summary.tsv,
                                                     compare_d2.png (одни руки x разное оружие), all_d2_NN.png,
                                                     aim_support.png/.tsv (цевьё при прицеле), hd_weapons.tsv
+  py -3.13 tools/hdart/grip_matrix.py --contexts -> процедуры 0, 10, 1, 6, 4 x все случаи двух рук (emulate):
+                                                    grip_contexts.tsv (что рисует движок, кто чем держит),
+                                                    grip_routines.tsv, grip_routines_summary.tsv (фильтр касания),
+                                                    grip_r4_drift.tsv (routine 4: уход двуручного в прицеле)
 Разбор и таблица видов хвата - docs/research/grip-contract.md.
 HD-кадры: руки пилота art/units/pilot-agent/full/pose/pack (без 242.v1 - она подогнана под AK, отдельная колонка),
 оружие - HANDOB.PCK пилота (только AK 1352+). Чего нет в HD - классика x4 nearest с красной подписью «HD нет».
@@ -377,7 +383,341 @@ def hd_check(per):
         print("HD оружие", r)
 
 
-REPS = [("STR_RIFLE_AK", "автомат AK (HD есть)"), ("STR_PISTOL", "пистолет"), ("STR_SMG", "ПП одноручный"),
+# --- Процедуры 1, 4, 6, 10 и две занятые руки -------------------------------------------------------------
+# Перенос выбора кадров из UnitSprite.cpp: sortRifles (:1536), drawRoutine0 (:324, routine 10 там же),
+# drawRoutine1 (:687), drawRoutine4 (:959), drawRoutine6 (:1112). Только стоя и в прицеле: ходьба и колено
+# сдвигают руки и предмет на одну величину везде, кроме routine 6 (xoffWalk у рук, у предмета нет).
+SPR = os.path.join(ROOT, "Пиратки", "Dioxine_XPiratez", "user", "mods", "Piratez", "Resources", "Sprites")
+_X2 = ([-8, 3, 5, 12, 6, -1, -5, -13], [1, -4, -2, 0, 3, 3, 5, 0])
+_X6 = ([0, 6, 6, 12, -4, -5, -5, -13], [-4, -4, -1, 0, 5, 0, 1, 0])
+_Z = ([0] * 8, [0] * 8)
+ROUT = {
+    0: dict(sheet="GOV_1", la=0, ra=8, r1H=232, l2H=240, r2H=248, rShoot=256, torso=32, legs=16,
+            aim=OFF["TWO_AIM"], l1=_X2, l2aim=_X6, r1=_Z, r2=_Z, r1H_arm="r1H",
+            order={0: "iR iL la lg to ra", 1: "la lg iL to iR ra", 2: "la lg to iL iR ra", 3: ("lg to la iR iL ra", "lg to la ra iR iL"),
+                   4: "lg ra to la iR iL", 5: ("ra lg to la iR iL", "ra lg iR iL to la"), 6: "ra iR iL lg to la",
+                   7: ("ra iR iL la lg to", "iR iL la ra lg to")}),
+    10: dict(sheet="MRC_4", la=0, ra=8, r1H=232, l2H=240, r2H=248, rShoot=256, torso=32, legs=16,
+             aim=OFF["TWO_AIM"], l1=([-8, 2, 7, 14, 7, -2, -4, -8], [-3, -3, -1, 0, 3, 3, 0, 1]),
+             l2aim=([0, 6, 8, 12, 2, -5, -5, -13], [-4, -6, -1, 0, 3, 0, 1, 0]),
+             r1=([-1, 1, 1, 2, 0, -1, 0, 0], [1, -1, -1, -1, -1, -1, -3, 0]),
+             r2=([0, 0, 2, 2, 0, 0, 0, 0], [-3, -3, -1, -1, -1, -3, -3, -2]), r1H_arm="r2H", order=None),
+    1: dict(sheet="COS_7", la=8, ra=0, r1H=91, l2H=67, r2H=75, rShoot=83, torso=16, legs=None,
+            aim=OFF["TWO_AIM"], l1=([-8, 3, 7, 13, 6, -3, -5, -13], [1, -4, -1, 0, 3, 3, 5, 0]), l2aim=_X6, r1=_Z, r2=_Z,
+            r1H_arm="r1H",
+            order={0: "iR iL la to ra", 1: "la to ra iR iL", 2: "la to ra iR iL", 3: "to la ra iR iL", 4: "to la ra iR iL",
+                   5: "ra to la iR iL", 6: "ra iR iL to la", 7: "ra iR iL la to"}),
+    6: dict(sheet="REB_4", la=0, ra=8, r1H=99, l2H=107, r2H=115, rShoot=123, torso=24, legs=16,
+            aim=([8, 10, 5, 2, -8, -10, -5, -2], [-6, -3, 0, 0, 2, -3, -7, -9]),
+            l1=([-8, 2, 7, 13, 7, 0, -3, -15], [1, -4, -2, 0, 3, 3, 5, 0]), l2aim=_X6,
+            r1=([0] * 8, [2, 1, 1, 0, 0, 0, 0, 0]), r2=_Z, r1H_arm="r1H",
+            order={0: "iR iL la lg to ra", 1: "la lg iL to iR ra", 2: "la lg to ra iR iL", 3: "lg to la ra iR iL",
+                   4: "ra lg to la iR iL", 5: "ra lg to la iR iL", 6: "ra lg iR iL to la", 7: "iR iL la ra lg to"}),
+    4: dict(sheet="PIR_360", body=0, aim=OFF["TWO_AIM"], l1=_X2, l2aim=_X6, r1=_Z, r2=_Z,
+            order={0: "iL iR to", 1: "iL to iR", 2: "to iL iR", 3: "to iR iL", 4: "to iR iL", 5: "iR to iL",
+                   6: "iR to iL", 7: "iR iL to"}),
+}
+ROUT[10]["order"] = ROUT[0]["order"]
+ROUT_WHO = {0: "люди-солдаты, 724 брони (GOV_1)", 10: "мутоны и громилы, 10 бронь (MRC_4)",
+            1: "плавуны, жрецы, 7 бронь (COS_7)", 6: "змеелюди и ламии, 27 бронь (REB_4)",
+            4: "цельный кадр без рук, 75 бронь (PIR_360)"}
+# Случаи «что в руках»: (правая, левая) - None / "1" одноручное / "2" двуручное
+HELD = [("1", None), ("2", None), (None, "1"), (None, "2"), ("1", "1"), ("2", "1"), ("1", "2"), ("2", "2")]
+
+
+def emulate(r, R, L, aiming):
+    """Что рисует процедура r: кадры рук, кадр и сдвиг каждого предмета, кто какой рукой держит.
+    Возвращает dict: la/ra - база кадра руки (None у routine 4), items {"iR"/"iL": (kind, rot, offx[8], offy[8], слот)},
+    hold {"ra"/"la": "iR"/"iL"/None}, alt - порядок слоёв «двуручное и не целится», drop - что движок не рисует."""
+    P = ROUT[r]
+    drop = []
+    # sortRifles
+    if R == "2":
+        if L == "2":
+            drop.append("левое двуручное (рисуется одно, активное - здесь правое)")
+            L = None
+        elif L and not aiming:
+            drop.append("левое одноручное (двуручное в правой, не целится)")
+            L = None
+    elif L == "2" and R and not aiming:
+        drop.append("правое одноручное (двуручное в левой, не целится)")
+        R = None
+    la, ra = P.get("la"), P.get("ra")
+    items, hold = {}, {"ra": None, "la": None}
+    if R:
+        if aiming and R == "2":
+            items["iR"] = (R, 2, *P["aim"], "R")
+        else:
+            items["iR"] = (R, 0, *(P["r2"] if R == "2" else P["r1"]), "R")
+        if r != 4:
+            if R == "2":
+                la = P["l2H"]
+                ra = P["rShoot"] if aiming else P["r2H"]
+                hold.update(ra="iR", la="iR")
+            else:
+                ra = P[P["r1H_arm"]]
+                hold["ra"] = "iR"
+    if L:
+        if L == "1":
+            items["iL"] = (L, 0, *P["l1"], "L")
+        else:
+            items["iL"] = (L, 0, *_Z, "L")
+        if r != 4:
+            la = P["l2H"]
+            hold["la"] = "iL"
+            if L == "2":
+                ra = P["r2H"]
+                if hold["ra"] is None:
+                    hold["ra"] = "iL"
+        if aiming and L == "2":
+            items["iL"] = (L, 2, *P["l2aim"], "L")
+            if r != 4:
+                ra = P["rShoot"]
+    if r == 4:
+        la = ra = None
+    two = (R == "2") or (L == "2")
+    return dict(la=la, ra=ra, items=items, hold=hold, alt=(not aiming) and two, drop=drop, R=R, L=L)
+
+
+def layer_order(r, d, alt):
+    o = ROUT[r]["order"][d]
+    if isinstance(o, tuple):
+        o = o[0] if alt else o[1]
+    return o.split()
+
+
+_sheets = {}
+
+
+def body_sheet(r):
+    n = ROUT[r]["sheet"]
+    if n not in _sheets:
+        p = GOV if n == "GOV_1" else os.path.join(SPR, n + ".png")
+        im = Image.open(p)
+        _sheets[n] = sheet(p, cols=im.size[0] // 32)
+    return _sheets[n][0]
+
+
+def arm_end(m):
+    """Дальний конец руки: плечо - середина трёх верхних строк руки, конец - точка руки, дальняя от плеча.
+    (Прежнее «ближайшая к центру торса» на балахоне COS_7 давало плечо вместо кисти: центр торса там низко.)"""
+    ys, xs = np.nonzero(m)
+    top = ys <= ys.min() + 2
+    sy, sx = ys[top].mean(), xs[top].mean()
+    i1 = np.argmax((ys - sy) ** 2 + (xs - sx) ** 2)
+    return ys, xs, i1
+
+
+def components(mask):
+    """Связные области маски (8 соседей), списки (y, x)."""
+    seen = np.zeros_like(mask, bool)
+    out = []
+    h, w = mask.shape
+    for y0, x0 in zip(*np.nonzero(mask)):
+        if seen[y0, x0]:
+            continue
+        stack, comp = [(y0, x0)], []
+        seen[y0, x0] = True
+        while stack:
+            y, x = stack.pop()
+            comp.append((y, x))
+            for dy in (-1, 0, 1):
+                for dx in (-1, 0, 1):
+                    yy, xx = y + dy, x + dx
+                    if 0 <= yy < h and 0 <= xx < w and mask[yy, xx] and not seen[yy, xx]:
+                        seen[yy, xx] = True
+                        stack.append((yy, xx))
+        out.append(comp)
+    return out
+
+
+def hand_mask(arm):
+    """Кисть в кадре руки. Рукав (кожи меньше 60% руки): связная область кожи, ближайшая к дальнему концу руки
+    (arm_end) - у GOV_1 это вся кожа, как в прежнем контракте, а у MRC_4 кисть, а не наплечник (рампа 96-111 там
+    ещё и цвет брони). Кожа - вся рука (COS_7, REB_4) или её нет: конец руки и всё в 2.5 пикс от него."""
+    m = arm > 0
+    if not m.any():
+        return m, "нет руки"
+    ys, xs, i1 = arm_end(m)
+    sk = np.isin(arm, SKIN)
+    if sk.any() and sk.sum() < 0.6 * m.sum():
+        comps = components(sk)
+        best = min(comps, key=lambda c: min((y - ys[i1]) ** 2 + (x - xs[i1]) ** 2 for y, x in c))
+        hm = np.zeros_like(m)
+        for y, x in best:
+            hm[y, x] = True
+        return hm, "кожа"
+    near = (ys - ys[i1]) ** 2 + (xs - xs[i1]) ** 2 <= 2.5 ** 2
+    hm = np.zeros_like(m)
+    hm[ys[near], xs[near]] = True
+    return hm, "конец руки"
+
+
+def measure_ctx(r, e, d, frames):
+    """frames {"iR": hs, "iL": hs}. Касание каждой руки с предметом, который она держит по emulate."""
+    fr = body_sheet(r)
+    P = ROUT[r]
+    layers, masks = {}, {}
+    for slot, (kind, rot, ox, oy, _) in e["items"].items():
+        m = shifted(hob(frames[slot] + (d + rot) % 8) > 0, ox[d], oy[d])
+        layers[slot] = m
+    if r == 4:
+        layers["to"] = fr(P["body"] + d) > 0
+        return {}, layers
+    layers["la"] = fr(e["la"] + d) > 0
+    layers["ra"] = fr(e["ra"] + d) > 0
+    layers["to"] = fr(P["torso"] + d) > 0
+    if P["legs"] is not None:
+        layers["lg"] = fr(P["legs"] + d) > 0
+    seq = [n for n in layer_order(r, d, e["alt"]) if n in layers]
+    res = {}
+    for arm in ("ra", "la"):
+        slot = e["hold"][arm]
+        if slot is None or slot not in layers:
+            continue
+        hand, how = hand_mask(fr(e[arm] + d))
+        above = np.zeros_like(hand)
+        for n in seq[seq.index(arm) + 1:]:
+            above |= layers[n]
+        vis = bool((hand & ~above).sum() >= max(1, hand.sum() // 3))
+        t = touch(hand, layers[slot])
+        res[arm] = (slot, t, vis, verdict(t, vis), how)
+    return res, layers
+
+
+def ctx_name(R, L, aiming):
+    s = {None: "-", "1": "1р", "2": "2р"}
+    return "П:%s Л:%s %s" % (s[R], s[L], "прицел" if aiming else "стоя")
+
+
+def routines_check(per):
+    """Контракт по всем процедурам с оружием и всем случаям двух рук: grip_contexts.tsv (что рисует движок),
+    grip_routines.tsv (касание - предварительный фильтр, не доказательство хвата), grip_routines_summary.tsv.
+    Контроль: для routine 0 emulate обязан совпасть с CASES, а кисть «конец руки» на GOV_1 - лечь рядом с кистью «кожа»."""
+    by_type = {r["type"]: hs for hs, p in per.items() for r in p["items"]}
+    partner = {"1": by_type["STR_PISTOL"], "2": by_type["STR_RIFLE_AK"]}
+    # контроль 1: emulate(0) против прежней таблицы CASES
+    for case, R, L, aim in (("ONE", "1", None, False), ("TWO_STAND", "2", None, False), ("TWO_AIM", "2", None, True),
+                            ("LEFT_ONE", None, "1", False), ("LEFT_TWO_AIM", None, "2", True)):
+        e = emulate(0, R, L, aim)
+        la, ra, rot, side, _ = CASES[case]
+        it = e["items"]["i" + side]
+        assert e["la"] == la and e["ra"] == ra, (case, e["la"], e["ra"], la, ra)
+        assert it[1] == rot and list(it[2]) == OFF[case][0] and list(it[3]) == OFF[case][1], case
+    print("контроль: emulate(routine 0) совпал с CASES на 5 видах")
+    # контроль 2: кисть «конец руки» против «кожи» на GOV_1 (там рукав, кожа - кисть)
+    dd = []
+    for base in (232, 240, 248, 256):
+        for d in range(8):
+            arm = gov(base + d)
+            sk = np.isin(arm, SKIN)
+            if not sk.any():
+                continue
+            ys, xs, i1 = arm_end(arm > 0)
+            sy, sx = np.nonzero(sk)
+            dd.append(float(np.hypot(ys[i1] - sy.mean(), xs[i1] - sx.mean())))
+    print("контроль: кисть «конец руки» от центра кожи на GOV_1, пикс базы: медиана %.1f, 90%% %.1f, макс %.1f (n=%d)"
+          % (np.median(dd), np.percentile(dd, 90), max(dd), len(dd)))
+    same = sum(bool((hand_mask(gov(b + d))[0] == np.isin(gov(b + d), SKIN)).all())
+               for b in (232, 240, 248, 256) for d in range(8))
+    print("контроль: на GOV_1 кисть совпала с прежней (вся кожа кадра) в %d кадрах из 32" % same)
+    ctx_rows, rows = [], []
+    for r in (0, 10, 1, 6, 4):
+        P = ROUT[r]
+        for R, L in HELD:
+            for aiming in (False, True):
+                e = emulate(r, R, L, aiming)
+                def item_txt(slot):
+                    if slot not in e["items"]:
+                        return "-"
+                    kind, rot, ox, oy, _ = e["items"][slot]
+                    return "%sр hs+%s %s" % (kind, "(d+2)%8" if rot else "d", "0" if not any(ox) and not any(oy) else
+                                             "(%s / %s)" % (",".join(map(str, ox)), ",".join(map(str, oy))))
+                need = ""
+                two_slots = [s for s, v in e["items"].items() if v[0] == "2"]
+                if two_slots and r != 4:
+                    s2 = two_slots[0]
+                    sup = [a for a in ("ra", "la") if e["hold"][a] == s2]
+                    if len(sup) < 2:
+                        need = "опоры нет: вторая рука держит одноручное"
+                ctx_rows.append({"routine": r, "held": ctx_name(R, L, aiming), "drawn": ctx_name(e["R"], e["L"], aiming),
+                                 "left_arm": "" if e["la"] is None else e["la"], "right_arm": "" if e["ra"] is None else e["ra"],
+                                 "item_right": item_txt("iR"), "item_left": item_txt("iL"),
+                                 "right_holds": e["hold"]["ra"] or "", "left_holds": e["hold"]["la"] or "",
+                                 "order_alt": e["alt"], "not_drawn": "; ".join(e["drop"]), "note": need})
+                if r == 4:
+                    continue
+                for slot, (kind, *_rest) in e["items"].items():
+                    other = "iL" if slot == "iR" else "iR"
+                    for hs, p in per.items():
+                        if p["two"] != (kind == "2"):
+                            continue
+                        frames = {slot: hs}
+                        if other in e["items"]:
+                            frames[other] = partner[e["items"][other][0]]
+                        for d in range(8):
+                            res, _ = measure_ctx(r, e, d, frames)
+                            for arm, (s, t, vis, v, how) in res.items():
+                                if s != slot:
+                                    continue
+                                rows.append({"routine": r, "held": ctx_name(R, L, aiming), "slot": slot, "arm": arm,
+                                             "dir": d, "handSprite": hs, "touch": "" if t is None else "%.2f" % t,
+                                             "visible": vis, "verdict": v, "hand_by": how})
+    with open(os.path.join(OUT, "grip_contexts.tsv"), "w", encoding=ENC, newline="") as f:
+        w = csv.DictWriter(f, list(ctx_rows[0]), delimiter="\t")
+        w.writeheader()
+        w.writerows(ctx_rows)
+    with open(os.path.join(OUT, "grip_routines.tsv"), "w", encoding=ENC, newline="") as f:
+        w = csv.DictWriter(f, list(rows[0]), delimiter="\t")
+        w.writeheader()
+        w.writerows(rows)
+    summ = defaultdict(Counter)
+    for x in rows:
+        v = x["verdict"]
+        k = "закрыта" if "не видна" in v else v
+        summ[(x["routine"], x["held"], x["slot"], x["arm"], x["hand_by"])][k] += 1
+    out = []
+    for k in sorted(summ, key=lambda k: (str(k[0]), k[1], k[2], k[3])):
+        c = summ[k]
+        n = sum(c.values())
+        out.append({"routine": k[0], "held": k[1], "item": k[2], "arm": k[3], "hand_by": k[4], "n": n,
+                    **{x: "%.1f" % (100 * c[x] / n) for x in ("держит", "рядом", "мимо", "закрыта", "нет кисти")}})
+    with open(os.path.join(OUT, "grip_routines_summary.tsv"), "w", encoding=ENC, newline="") as f:
+        w = csv.DictWriter(f, list(out[0]), delimiter="\t")
+        w.writeheader()
+        w.writerows(out)
+    for o in out:
+        print("%-3s %-22s %s %s %-10s n=%5d держит %5s рядом %5s мимо %5s закрыта %5s" %
+              (o["routine"], o["held"], o["item"], o["arm"], o["hand_by"], o["n"], o["держит"], o["рядом"], o["мимо"], o["закрыта"]))
+    r4_drift(per)
+
+
+def r4_drift(per):
+    """Routine 4: рук нет, тело - один кадр и стоя, и в прицеле. Насколько при прицеле двуручное уходит с места,
+    где оно было стоя (там его держат запечённые в тело руки): сдвиг центра и доля общей площади, по направлениям."""
+    two = [hs for hs, p in per.items() if p["two"]]
+    out = []
+    for d in range(8):
+        sh, io = [], []
+        for hs in two:
+            a = hob(hs + d) > 0
+            b = shifted(hob(hs + (d + 2) % 8) > 0, OFF["TWO_AIM"][0][d], OFF["TWO_AIM"][1][d])
+            if not a.any() or not b.any():
+                continue
+            ya, xa = np.nonzero(a)
+            yb, xb = np.nonzero(b)
+            sh.append(float(np.hypot(ya.mean() - yb.mean(), xa.mean() - xb.mean())))
+            io.append((a & b).sum() / (a | b).sum())
+        out.append({"dir": d, "n": len(sh), "shift_median": "%.1f" % np.median(sh), "iou_median": "%.2f" % np.median(io)})
+    with open(os.path.join(OUT, "grip_r4_drift.tsv"), "w", encoding=ENC, newline="") as f:
+        w = csv.DictWriter(f, list(out[0]), delimiter="\t")
+        w.writeheader()
+        w.writerows(out)
+    for o in out:
+        print("routine 4: двуручное стоя -> прицел", o)
+
+
+REPS = [("STR_RIFLE_AK", "автомат AK (HD есть)"),("STR_PISTOL", "пистолет"), ("STR_SMG", "ПП одноручный"),
         ("STR_SMG_BM_K", "короткий автомат, двуручный"), ("STR_BATTLE_RIFLE", "боевая винтовка"),
         ("STR_SNIPER_RIFLE", "длинная винтовка"), ("STR_SHOTGUN", "дробовик"), ("STR_LMG", "пулемёт, большой магазин"),
         ("STR_MINIGUN", "миниган, лента 300"), ("STR_ROCKET_LAUNCHER", "тяжёлое: ракетомёт"),
@@ -502,4 +842,12 @@ def all_pages(per, rows, d, per_page=48):
 
 
 if __name__ == "__main__":
-    main()
+    if "--contexts" in sys.argv:            # только процедуры 1, 4, 6, 10 и две занятые руки
+        sys.stdout.reconfigure(encoding="utf-8")
+        os.makedirs(OUT, exist_ok=True)
+        by_, _ = load_items()
+        per_ = {hs: {"two": Counter(r["twoHanded"] for r in its).most_common(1)[0][0] == "True", "items": its}
+                for hs, its in by_.items()}
+        routines_check(per_)
+    else:
+        main()
