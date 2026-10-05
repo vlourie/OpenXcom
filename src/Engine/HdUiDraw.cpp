@@ -842,6 +842,81 @@ void HdUi::drawTtfString(const UString &s, bool big, float capHeight, int x, int
 	}
 }
 
+void HdUi::drawMapText(const UString &s, float capHeight, float lineH, int wx, int wy, Uint32 face, Uint32 outline)
+{
+	FrameTiming timing(_frameMs);
+	SDL_Surface *dest;
+	int k;
+	const SDL_Color *pal;
+	if (!target(dest, k, pal) || !hasFonts() || s.empty()) return;
+	const SDL_Rect clip = worldClip(dest, k);
+	HdFont &f = font(true);
+	const float px = f.sizeForCapHeight(capHeight * k);
+	const float base = baselineWithTails(lineH, capHeight, f.descent(px) / k, lineH);
+	// the same edge as a line lying on an HD picture (drawTtfLine): it grows with the scale
+	const int outlineW = std::max(2, k);
+	for (int pass = 0; pass < 2; ++pass)
+	{
+		float pen = (float)wx;
+		int line = 0;
+		UCode prev = 0;
+		for (UCode c : s)
+		{
+			if (Unicode::isLinebreak(c))
+			{
+				pen = (float)wx;
+				++line;
+				prev = 0;
+				continue;
+			}
+			if (prev) pen += f.kern(prev, c, px);
+			const HdFont::Glyph &g = pass == 0 ? f.outline(c, px, 1.0f, outlineW) : f.glyph(c, px);
+			if (g.w > 0)
+			{
+				const int baseline = wy + (int)std::lround((line * lineH + base) * k);
+				blendGlyph(dest, clip, g, (int)std::lround(pen) + g.xoff, baseline + g.yoff, pass == 0 ? outline : face);
+			}
+			pen += g.advance;
+			prev = c;
+		}
+	}
+}
+
+void HdUi::drawMapTag(const UString &s, int wx, int wy, Uint32 face, Uint32 plate, Uint32 edge)
+{
+	SDL_Surface *dest;
+	int k;
+	const SDL_Color *pal;
+	if (!target(dest, k, pal) || !hasFonts() || s.empty()) return;
+	HdFont &f = font(true);
+	// the classic digit: 5 rows inside a border of one pixel all round
+	const float cap = 5.0f;
+	const float px = f.sizeForCapHeight(cap * k);
+	const float w = f.measure(s, px);
+	const float padX = 1.5f * k, padY = 1.0f * k;
+	const float x0 = wx - w * 0.5f - padX, x1 = wx + w * 0.5f + padX;
+	const float y0 = (float)wy, y1 = wy + cap * k + 2.0f * padY;
+	const float radius = std::min((y1 - y0) * 0.5f, 2.0f * k);
+	fillRoundRect(x0, y0, x1, y1, radius, plate, plate);
+	strokeRoundRect(x0, y0, x1, y1, radius, std::max(1.0f, 0.5f * k), edge);
+	FrameTiming timing(_frameMs);
+	const SDL_Rect clip = worldClip(dest, k);
+	const int baseline = (int)std::lround(y0 + padY + cap * k);
+	float pen = wx - w * 0.5f;
+	UCode prev = 0;
+	for (UCode c : s)
+	{
+		if (prev) pen += f.kern(prev, c, px);
+		const HdFont::Glyph &g = f.glyph(c, px);
+		if (g.w > 0)
+		{
+			blendGlyph(dest, clip, g, (int)std::lround(pen) + g.xoff, baseline + g.yoff, face);
+		}
+		pen += g.advance;
+		prev = c;
+	}
+}
+
 void HdUi::drawTtfCaret(const UString &value, size_t pos, const Font *classic, int x, int y, int textW, int textH, int align, Uint32 color)
 {
 	SDL_Surface *dest;

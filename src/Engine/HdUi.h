@@ -157,6 +157,13 @@ public:
 	/// Draws a string with a TrueType font at base position (x, y = the top of a classic glyph cell of the
 	/// font), capitals `capHeight` base pixels tall; colours 0xAARRGGBB, shadow 0 = none.
 	void drawTtfString(const UString &s, bool big, float capHeight, int x, int y, Uint32 face, Uint32 shadow);
+	/// A label lying on the battle map, in the heavy TrueType face: the lines of `s` from the world point
+	/// (wx, wy) = the top left of the classic text, capitals `capHeight` and lines `lineH` base pixels apart.
+	/// Every letter gets an outline of its own: what is under it is the map's picture, not a panel.
+	void drawMapText(const UString &s, float capHeight, float lineH, int wx, int wy, Uint32 face, Uint32 outline);
+	/// A number tag on the battle map: `s` centred on world x `wx` on a rounded plate whose top is world y `wy`
+	/// (the classic tag is a bordered 3x5 digit: face, plate and edge are its three shades).
+	void drawMapTag(const UString &s, int wx, int wy, Uint32 face, Uint32 plate, Uint32 edge);
 	/// Width of a string in base pixels at that size.
 	float ttfWidth(const UString &s, bool big, float capHeight);
 	/// The text caret of an edit field drawn with the TrueType fonts: after `pos` characters of `value`, laid out

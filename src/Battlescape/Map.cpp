@@ -619,6 +619,8 @@ void Map::draw()
 	// Note: un-hardcoded the color from 15 to ruleset value, default 15
 	_redraw = false;
 	const auto drawStart = std::chrono::steady_clock::now();
+	_hdLabels.clear();
+	_hdLabelsOn = hdLabelsWanted();
 	_canvas->fill(Palette::blockOffset(0) + _bgColor);
 	// HD light: smooth colored light only on the true-color canvas in the HD modes
 	_hdLightOn = Options::oxceHdLight && _canvas->getHdMode() != HD_MODE_NEAREST;
@@ -940,12 +942,18 @@ void Map::blit(SDL_Surface *surface)
 	}
 	if (_visible && !_hidden)
 	{
+		// the labels switch between baked and drawn on top with the interface options: the canvas follows
+		if (hdLabelsWanted() != _hdLabelsOn)
+		{
+			_redraw = true;
+		}
 		if (_redraw)
 		{
 			draw();
 		}
 		SDL_Surface *world = screen->getWorldSurface();
 		const int k = screen->getWorldScale();
+		bool zoomed = false;
 		// the canvas is already k times the base resolution (see _spriteWidth), so only its origin scales;
 		// a true-color canvas copies straight into the world (rows in parallel), a palette one is converted by SDL
 		if (Canvas32 *canvas32 = dynamic_cast<Canvas32*>(_canvas))
@@ -957,6 +965,7 @@ void Map::blit(SDL_Surface *surface)
 			{
 				_camera->convertVoxelToScreen(voxel, &focus);
 				canvas32->copyZoomed(world, getX() * k, getY() * k, focus.x, focus.y, zoom, pull, bars);
+				zoomed = true;
 			}
 			else
 			{
@@ -978,7 +987,55 @@ void Map::blit(SDL_Surface *surface)
 		{
 			_message->hdDrawAt(getX(), getY());
 		}
+		// the hit chance and the unit numbers, kept by the last draw() in canvas pixels (the kill camera's
+		// enlarged frame has no cursor of its own to stand by: they wait for the plain one)
+		if (_hdLabelsOn && !_hdLabels.empty() && !zoomed && HdUi::active())
+		{
+			HdUi &ui = HdUi::instance();
+			const HdUi::FontMetrics &m = ui.metrics(_game->getMod()->getFont("FONT_SMALL"));
+			ui.setClip(getX(), getY(), getWidth(), getHeight());
+			for (const HdLabel &label : _hdLabels)
+			{
+				const int wx = getX() * k + label.x, wy = getY() * k + label.y;
+				if (label.tag)
+				{
+					ui.drawMapTag(label.text, wx, wy, label.face, label.back, label.edge);
+				}
+				else
+				{
+					ui.drawMapText(label.text, m.cap, (float)m.lineH, wx, wy, label.face, label.edge);
+				}
+			}
+			ui.clearClip();
+		}
 	}
+}
+
+bool Map::hdLabelsWanted() const
+{
+	return HdUi::skin() && HdUi::instance().hasFonts();
+}
+
+void Map::drawAccuracy(HdCanvas *canvas, int x, int y)
+{
+	if (!_hdLabelsOn)
+	{
+		_txtAccuracy->draw();
+		canvas->blitClassic(_txtAccuracy, x, y, _k);
+		return;
+	}
+	// the colour rule of the high-contrast classic text: shade 1 x 3 is the face, shade 5 x 3 the outline;
+	// the colours are the map's, as the canvas paints the baked text's indices with them (the text keeps
+	// the palette it was made with, and that one is not the battle's)
+	const SDL_Color *pal = getPalette();
+	const Uint8 c = _txtAccuracy->getColor();
+	HdLabel label;
+	label.text = Unicode::convUtf8ToUtf32(_txtAccuracy->getText());
+	label.x = x;
+	label.y = y;
+	label.face = HdUi::rgba(pal[(Uint8)(c + 3)]);
+	label.edge = HdUi::rgba(pal[(Uint8)(c + 15)]);
+	_hdLabels.push_back(label);
 }
 
 /**
@@ -2428,8 +2485,7 @@ void Map::drawTerrain(HdCanvas *surface)
 								}
 
 								_txtAccuracy->setText(ss.str());
-								_txtAccuracy->draw();
-								surface->blitClassic(_txtAccuracy, screenPosition.x, screenPosition.y, _k);
+								drawAccuracy(surface, screenPosition.x, screenPosition.y);
 							}
 						}
 						else if (_camera->getViewLevel() > itZ)
@@ -2451,8 +2507,7 @@ void Map::drawTerrain(HdCanvas *surface)
 									ignore = true;
 									_txtAccuracy->setColor(Palette::blockOffset(Pathfinding::red - 1) - 1);
 									_txtAccuracy->setText("0%");
-									_txtAccuracy->draw();
-									surface->blitClassic(_txtAccuracy, screenPosition.x, screenPosition.y, _k);
+									drawAccuracy(surface, screenPosition.x, screenPosition.y);
 								}
 							}
 							if (!ignore)
@@ -2642,14 +2697,34 @@ void Map::drawTerrain(HdCanvas *surface)
 			{
 				markerOffset.y -= 2 * _k;
 			}
+			const int markerX = screenPosition.x + markerOffset.x + (_spriteWidth / 2) - (i < 9 ? 3 : 5) * _k;
+			const int markerY = screenPosition.y + markerOffset.y - 12 * _k;
+			if (_hdLabelsOn)
+			{
+				// the classic tag is the digit in shade 1 inside a border 8 and 11 shades darker, in the map's
+				// colours like the baked tag. The blinking colour runs the digit down its ramp, and the border
+				// then goes past the ramp's end into the next one: a thin edge of another colour is not seen,
+				// a whole plate of it is. So the plate stays in the digit's ramp: darker under a light digit,
+				// lighter under one from shade 6 on (a darker plate under it no longer reads)
+				const SDL_Color *pal = getPalette();
+				const int ramp = (_unitMarkerColor[i] + 1) & 0xF0, shade = (_unitMarkerColor[i] + 1) & 0x0F;
+				const int plate = shade < 6 ? shade + 8 : shade - 6;
+				const int edge = std::min(plate + 3, 15);
+				HdLabel label;
+				label.text = Unicode::convUtf8ToUtf32(std::to_string(i + 1));
+				label.x = markerX + (i < 9 ? 5 : 9) * _k / 2;
+				label.y = markerY;
+				label.tag = true;
+				label.face = HdUi::rgba(pal[(Uint8)(ramp + shade)]);
+				label.back = HdUi::rgba(pal[(Uint8)(ramp + plate)]);
+				label.edge = HdUi::rgba(pal[(Uint8)(ramp + edge)]);
+				_hdLabels.push_back(label);
+				continue;
+			}
 			_numUnitMarker->setColor(_unitMarkerColor[i]);
 			_numUnitMarker->setValue(i + 1);
 			_numUnitMarker->draw();
-			surface->blitClassic(
-				_numUnitMarker,
-				screenPosition.x + markerOffset.x + (_spriteWidth / 2) - (i < 9 ? 3 : 5) * _k,
-				screenPosition.y + markerOffset.y - 12 * _k,
-				_k);
+			surface->blitClassic(_numUnitMarker, markerX, markerY, _k);
 		}
 	}
 
