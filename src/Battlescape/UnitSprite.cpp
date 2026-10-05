@@ -192,7 +192,18 @@ void UnitSprite::blitBody(Part& body)
 
 	_dest->lock();
 
+	// HD render: while aiming, the pack's aiming picture of a body frame (variant 1), if it has one -
+	// a frame shared by the standing and the aiming pose (the far arm) can hold the weapon in both
+	const bool aiming = _unit->getStatus() == STATUS_AIMING;
+	if (aiming)
+	{
+		_dest->setFrameVariant(1);
+	}
 	_dest->blitScripted(work, body.src, _x + body.offX * _scale, _y + body.offY * _scale, _shade, _mask, _shade != 0 ? &unlit : nullptr);
+	if (aiming)
+	{
+		_dest->setFrameVariant(0);
+	}
 
 	_dest->unlock();
 }
