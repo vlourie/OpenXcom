@@ -257,11 +257,11 @@ struct Pic
 		line(x - 1.0f, 13.3f, x - 3.6f, 13.4f, 1.3f);
 		return *this;
 	}
-	/// A triangle pointing up or down, centred at (x, y).
-	Pic &arrow(float x, float y, bool up)
+	/// A triangle pointing up or down, centred at (x, y); big: as wide as on the brass keys.
+	Pic &arrow(float x, float y, bool up, bool big = false)
 	{
-		const float s = up ? 1.0f : -1.0f;
-		return poly({ x - 3.2f, y + 2.0f * s, x + 3.2f, y + 2.0f * s, x, y - 2.6f * s });
+		const float s = up ? 1.0f : -1.0f, hw = big ? 4.8f : 3.2f, lo = big ? 2.6f : 2.0f, hi = big ? 3.4f : 2.6f;
+		return poly({ x - hw, y + lo * s, x + hw, y + lo * s, x, y - hi * s });
 	}
 	/// A triangle pointing right, centred at (x, y).
 	Pic &arrowRight(float x, float y)
@@ -271,16 +271,18 @@ struct Pic
 };
 
 /// The pictograms follow the mod's own picture of the panel (the same sign on the same button), drawn
-/// again as clean shapes: what the player knows a button by stays.
-Pic makeIcon(HdBattleHud::Icon icon)
+/// again as clean shapes: what the player knows a button by stays. cast: for the brass keys, where the
+/// sign is cut into the metal and the small triangles would be lost.
+Pic makeIcon(HdBattleHud::Icon icon, bool cast = false)
 {
 	Pic p;
+	const float ax = cast ? 9.6f : 10.5f;
 	switch (icon)
 	{
-	case HdBattleHud::ICON_UNIT_UP: p.arrow(10.5f, 8.2f, true).person(20.5f); break;
-	case HdBattleHud::ICON_UNIT_DOWN: p.arrow(10.5f, 7.8f, false).person(20.5f); break;
-	case HdBattleHud::ICON_MAP_UP: p.arrow(10.5f, 8.2f, true).storeys(20.5f); break;
-	case HdBattleHud::ICON_MAP_DOWN: p.arrow(10.5f, 7.8f, false).storeys(20.5f); break;
+	case HdBattleHud::ICON_UNIT_UP: p.arrow(ax, 8.2f, true, cast).person(20.5f); break;
+	case HdBattleHud::ICON_UNIT_DOWN: p.arrow(ax, 7.8f, false, cast).person(20.5f); break;
+	case HdBattleHud::ICON_MAP_UP: p.arrow(ax, 8.2f, true, cast).storeys(20.5f); break;
+	case HdBattleHud::ICON_MAP_DOWN: p.arrow(ax, 7.8f, false, cast).storeys(20.5f); break;
 	case HdBattleHud::ICON_SHOW_MAP:
 		// a map sheet with a tab, its left part a grid of squares
 		p.rect(8.6f, 4.2f, 23.4f, 13.0f, 0.9f).rect(17.0f, 2.6f, 23.4f, 5.2f, 0.7f);
@@ -381,21 +383,21 @@ struct Raster
 int cacheScale = 0;
 std::unordered_map<Uint64, Raster> cache;
 
-const Raster &raster(HdBattleHud::Icon icon, int w, int h, int k, float shrink = 1.0f)
+const Raster &raster(HdBattleHud::Icon icon, int w, int h, int k, float shrink = 1.0f, bool cast = false)
 {
 	if (k != cacheScale)
 	{
 		cache.clear();
 		cacheScale = k;
 	}
-	const Uint64 key = ((Uint64)std::lround(shrink * 100.0f) << 40) | ((Uint64)icon << 32) | ((Uint64)(w & 0xFFFF) << 16) | (Uint64)(h & 0xFFFF);
+	const Uint64 key = ((Uint64)cast << 50) | ((Uint64)std::lround(shrink * 100.0f) << 40) | ((Uint64)icon << 32) | ((Uint64)(w & 0xFFFF) << 16) | (Uint64)(h & 0xFFFF);
 	auto found = cache.find(key);
 	if (found != cache.end()) return found->second;
 	Raster &r = cache[key];
 	r.w = w * k;
 	r.h = h * k;
 	r.cov.assign((size_t)r.w * r.h, 0);
-	const Pic pic = makeIcon(icon);
+	const Pic pic = makeIcon(icon, cast);
 	// 4 x 4 samples a pixel; the rows are shared out to the render threads (a hand of pictograms a scale)
 	const int S = 4;
 	// shrink: about the button's centre, to keep clear of a plaque's edge
@@ -622,8 +624,8 @@ const std::vector<Uint32> &plaque(HdBattleHud::Icon icon, int w, int h, int k, i
 	if (icon != HdBattleHud::ICON_NONE && icon < HdBattleHud::ICON_COUNT)
 	{
 		// a base pixel or so clear of the edge on every side
-		sharp = &raster(icon, w, h, k, h < 14 ? 0.8f : 0.86f);
-		cut = softCover(*sharp, std::max(1, (int)std::lround(0.25f * k)));
+		sharp = &raster(icon, w, h, k, h < 14 ? 0.8f : 0.86f, true);
+		cut = softCover(*sharp, std::max(1, (int)std::lround(0.2f * k)));
 	}
 	std::vector<float> height((size_t)W * H), dark((size_t)W * H), cover((size_t)W * H), brass;
 	if (tint) brass.assign((size_t)W * H, 0.0f);
@@ -642,7 +644,8 @@ const std::vector<Uint32> &plaque(HdBattleHud::Icon icon, int w, int h, int k, i
 			if (!cut.empty())
 			{
 				const float c = cut[i], ink = sharp->cov[i] / 255.0f;
-				if (!tint) { hgt -= 0.45f * c; dk += 0.08f * c + 0.24f * ink; }
+				// a deep cut: its walls catch and lose the light, the floor dark but not black
+				if (!tint) { hgt -= 0.85f * c; dk += 0.08f * c + 0.22f * ink; }
 				else { hgt += 0.45f * c; dk -= 0.05f * ink; brass[i] = ink; }
 			}
 			height[i] = hgt;
