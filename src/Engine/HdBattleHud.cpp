@@ -31,7 +31,7 @@ namespace
 {
 
 // the panel's own colours (0xAARRGGBB), the same in every mod: a dark slate with one warm accent, or
-// the gold of the original panel (oxceHdBattleHudColor 1, the ramp of the Piratez panel picture)
+// the brass of the original panel (oxceHdBattleHudColor 1: brushed brass keys on dark steel)
 struct Theme
 {
 	Uint32 panelTop, panelBottom, panelEdge;
@@ -60,9 +60,9 @@ const Theme GOLD = {
 	0xFFD8A73Du, 0xFFA36725u, 0x90FFF6AFu, 0xFFE4CA48u, 0xFFB77B2Cu, 0x38FFF6AFu, 0x04FFF6AFu,
 	0xFFFFF6AFu, 0xFFFFF6AFu, 0xFFE4CA48u,
 	0xFF43210Du, 0xFF221209u, 0xFF341A0Bu,
-	0xFF0A0603u, 0xFF1A0F06u, 0xB0C79033u,
-	0xFF22140Au, 0xFF150C05u, 0x90B77B2Cu,
-	0xFF341A0Bu,
+	0xFF56575Au, 0xFF2E2F31u, 0xB0C79033u,
+	0xFF2A2116u, 0xFF19130Bu, 0x90B77B2Cu,
+	0xFF3A2D1Bu,
 	true,
 };
 
@@ -457,11 +457,9 @@ Uint32 tintOf(Uint8 tint, const SDL_Color *pal)
 	return tint && pal ? HdUi::rgba(pal[tint]) : theme().accent;
 }
 
-/// The ramp the mod's panel picture is drawn with, dark to light.
-const Uint32 GOLD_RAMP[] = {
-	0xFF120B07u, 0xFF221209u, 0xFF341A0Bu, 0xFF43210Du, 0xFF52280Fu, 0xFF6C3B16u, 0xFF86511Eu, 0xFFA36725u,
-	0xFFB77B2Cu, 0xFFC79033u, 0xFFD8A73Du, 0xFFE4CA48u, 0xFFF8E57Bu, 0xFFFDF19Bu, 0xFFFFF6AFu, 0xFFFFFFD0u,
-};
+/// Pale brass, dark to light, at the shades 0, 0.15 ... 1: a flat face facing the light sits at 0.6.
+const float BRASS_AT[] = { 0.0f, 0.15f, 0.3f, 0.45f, 0.6f, 0.75f, 1.0f };
+const Uint32 BRASS[] = { 0xFF140E08u, 0xFF3A2C1Au, 0xFF6A5534u, 0xFFA8885Au, 0xFFEAD5ACu, 0xFFF3DDB0u, 0xFFFFF4D4u };
 
 Uint32 mix(Uint32 a, Uint32 b, float t)
 {
@@ -469,15 +467,15 @@ Uint32 mix(Uint32 a, Uint32 b, float t)
 	return 0xFF000000u | ch(16) | ch(8) | ch(0);
 }
 
-/// A shade 0..1 of the metal: the gold ramp, or a key's own colour from nearly black to nearly white.
+/// A shade 0..1 of the metal: brass, or a key's own colour from nearly black to nearly white.
 Uint32 rampColor(float s, Uint32 tint)
 {
 	s = std::min(std::max(s, 0.0f), 1.0f);
 	if (!tint)
 	{
-		const float f = s * 15.0f;
-		const int i = std::min((int)f, 14);
-		return mix(GOLD_RAMP[i], GOLD_RAMP[i + 1], f - (float)i);
+		int i = 0;
+		while (i < 5 && s > BRASS_AT[i + 1]) ++i;
+		return mix(BRASS[i], BRASS[i + 1], (s - BRASS_AT[i]) / (BRASS_AT[i + 1] - BRASS_AT[i]));
 	}
 	if (s < 0.6f) return mix(0xFF000000u, tint | 0xFF000000u, 0.12f + 0.88f * s / 0.6f);
 	return mix(tint | 0xFF000000u, 0xFFFFFFE0u, (s - 0.6f) / 0.4f * 0.5f);
@@ -491,7 +489,7 @@ Uint32 vivid(Uint32 c)
 	float top = 1.0f;
 	for (float &v : ch)
 	{
-		v = std::max(grey + 1.8f * (v - grey), 0.0f);
+		v = std::max(grey + 1.25f * (v - grey), 0.0f);
 		top = std::max(top, v);
 	}
 	Uint32 out = 0xFF000000u;
@@ -513,13 +511,30 @@ float insideBox(float x, float y, float x0, float y0, float x1, float y1, float 
 
 inline float ease(float t) { t = std::min(std::max(t, 0.0f), 1.0f); return t * (2.0f - t); }
 
+/// Brushed metal: fine streaks along the rows, -0.5..0.5, the same at the same pixel every time.
+float brushed(int x, int y, float k)
+{
+	auto hash = [](Uint32 a)
+	{
+		a ^= a >> 16; a *= 0x7FEB352Du; a ^= a >> 15; a *= 0x846CA68Bu; a ^= a >> 16;
+		return (float)(a & 0xFFFF) / 65535.0f;
+	};
+	const float fx = (float)x / (6.0f * k);
+	const int xi = (int)fx;
+	const Uint32 row = (Uint32)y * 0x9E3779B1u;
+	const float a = hash(row ^ ((Uint32)xi * 0x85EBCA77u)), b = hash(row ^ ((Uint32)(xi + 1) * 0x85EBCA77u));
+	return a + (b - a) * (fx - (float)xi) - 0.5f;
+}
+
 /// Metal in relief, lit from the upper left as the original picture is: a height a pixel (1 = the top of a
-/// plaque), a darkening (the bottom of a cut, the foot of a rim) and a coverage; the slopes catch or lose
-/// the light, the steepest ones facing it glint. The rows go to the render threads.
-std::vector<Uint32> shadeMetal(const std::vector<float> &height, const std::vector<float> &dark, const std::vector<float> &cover, int W, int H, float k, float lift, Uint32 tint)
+/// plaque), a darkening (the bottom of a cut, the outline of a plaque) and a coverage; the slopes catch or
+/// lose the light, the steepest ones facing it glint, the face is brushed. A key's own colour (tint) is
+/// laid where brass[i] is 0, brass where it is 1. The rows go to the render threads.
+std::vector<Uint32> shadeMetal(const std::vector<float> &height, const std::vector<float> &dark, const std::vector<float> &cover, int W, int H, float k, float lift, Uint32 tint, const std::vector<float> *brass = nullptr)
 {
 	std::vector<Uint32> out((size_t)W * H, 0);
 	const float lx = -0.5f, ly = -0.6f, lz = 0.62f;
+	const float kb = (float)HdUi::scale();
 	auto rows = [&](int ra, int rb)
 	{
 		for (int y = ra; y < rb; ++y)
@@ -534,9 +549,14 @@ std::vector<Uint32> shadeMetal(const std::vector<float> &height, const std::vect
 				const float gx = (height[(size_t)y * W + xr] - height[(size_t)y * W + xl]) * 0.5f * k;
 				const float gy = (height[(size_t)yd * W + x] - height[(size_t)yu * W + x]) * 0.5f * k;
 				const float d = (-gx * lx - gy * ly + lz) / std::sqrt(gx * gx + gy * gy + 1.0f);
-				const float glint = 0.32f * std::pow(std::max(d, 0.0f), 10.0f);
-				const float s = 0.6f + 0.9f * (d - lz) + glint - dark[i] + lift;
-				out[i] = withAlpha(rampColor(s, tint), (Uint32)(std::min(a, 1.0f) * 255.0f + 0.5f));
+				const float glint = 0.25f * std::pow(std::max(d, 0.0f), 12.0f);
+				const float s = 0.6f + 0.9f * (d - lz) + glint - dark[i] + lift + 0.05f * brushed(x, y, kb);
+				Uint32 c = rampColor(s, tint);
+				if (tint && brass && (*brass)[i] > 0.0f)
+				{
+					c = mix(c, rampColor(s + 0.05f, 0), std::min((*brass)[i] * 1.5f, 1.0f));
+				}
+				out[i] = withAlpha(c, (Uint32)(std::min(a, 1.0f) * 255.0f + 0.5f));
 			}
 		}
 	};
@@ -587,26 +607,26 @@ std::vector<Uint32> *metalCached(Uint64 key, int k)
 	return found != metalCache.end() ? &found->second : nullptr;
 }
 
-/// The original panel's key cast in metal: a plaque with rounded bevels, a sunken field, the pictogram
-/// struck into it (its own colour keys - the reserves - with the figure standing out unless lit).
-/// state 0 still, 1 under the mouse, 2 lit.
+/// The original panel's key as a brass plaque: a flat brushed face, rounded bevels, a fine dark outline,
+/// the pictogram engraved into it. A key with its own colour (the reserves) is enamel of that colour with
+/// the figure standing out in brass. state 0 still, 1 under the mouse, 2 lit.
 const std::vector<Uint32> &plaque(HdBattleHud::Icon icon, int w, int h, int k, int state, Uint32 tint)
 {
 	const Uint64 key = ((Uint64)(tint & 0xFFFFFF) << 32) | ((Uint64)state << 30) | ((Uint64)(icon & 0x3F) << 24) | ((Uint64)(w & 0xFFF) << 12) | (Uint64)(h & 0xFFF);
 	if (std::vector<Uint32> *hit = metalCached(key, k)) return *hit;
 	const int W = w * k, H = h * k;
-	const float g = 0.6f * k, R = 2.0f * k, b1 = 1.2f * k, b2 = 0.7f * k;
-	const float m = (h >= 14 ? 2.3f : 1.6f) * k;
-	const bool struck = !tint || state == 2;
+	const float g = 0.7f * k, R = 2.2f * k, b1 = 1.3f * k, line = 0.45f * k;
 	// the cut's walls from the softened pictogram, its colour from the sharp one: thin strokes stay legible
 	std::vector<float> cut;
 	const Raster *sharp = nullptr;
 	if (icon != HdBattleHud::ICON_NONE && icon < HdBattleHud::ICON_COUNT)
 	{
-		sharp = &raster(icon, w, h, k, true);
-		cut = softCover(*sharp, std::max(1, (int)std::lround(0.3f * k)));
+		sharp = &raster(icon, w, h, k, h < 14);
+		cut = softCover(*sharp, std::max(1, (int)std::lround(0.25f * k)));
 	}
-	std::vector<float> height((size_t)W * H), dark((size_t)W * H), cover((size_t)W * H);
+	std::vector<float> height((size_t)W * H), dark((size_t)W * H), cover((size_t)W * H), brass;
+	if (tint) brass.assign((size_t)W * H, 0.0f);
+	const float cx = W * 0.5f, cy = H * 0.5f;
 	for (int y = 0; y < H; ++y)
 	{
 		for (int x = 0; x < W; ++x)
@@ -614,30 +634,29 @@ const std::vector<Uint32> &plaque(HdBattleHud::Icon icon, int w, int h, int k, i
 			const size_t i = (size_t)y * W + x;
 			const float sd = insideBox(x + 0.5f, y + 0.5f, g, g, W - g, H - g, R);
 			cover[i] = std::min(std::max(sd + 0.5f, 0.0f), 1.0f);
-			const float rim = ease(sd / b1), sunk = ease((sd - m) / b2);
-			float hgt = rim - 0.6f * sunk;
-			// the field darker at the foot of the rim, the rim's top a little brighter than the field
-			float dk = 0.18f * sunk * (1.0f - std::min(std::max((sd - m) / (2.5f * k), 0.0f), 1.0f)) - 0.06f * (rim - sunk);
+			float hgt = ease(sd / b1);
+			// a fine dark outline, the face a touch darker toward its ends
+			const float ex = std::fabs(x + 0.5f - cx) / cx, ey = std::fabs(y + 0.5f - cy) / cy;
+			float dk = 0.3f * (1.0f - std::min(std::max(sd / line, 0.0f), 1.0f)) + 0.05f * (ex * ex + ey * ey);
 			if (!cut.empty())
 			{
 				const float c = cut[i], ink = sharp->cov[i] / 255.0f;
-				if (struck) { hgt -= 0.5f * c; dk += 0.15f * c + 0.3f * ink; }
-				else { hgt += 0.45f * c; dk -= 0.1f * c + 0.32f * ink; }
+				if (!tint) { hgt -= 0.45f * c; dk += 0.08f * c + 0.24f * ink; }
+				else { hgt += 0.45f * c; dk -= 0.05f * ink; brass[i] = ink; }
 			}
 			height[i] = hgt;
 			dark[i] = dk;
 		}
 	}
-	// a key's own colour sits a step lower, so its plaque keeps the colour instead of washing out
-	const float lift = (state == 2 ? 0.1f : (state == 1 ? 0.05f : 0.0f)) - (tint && state != 2 ? 0.1f : 0.0f);
-	return metalCache[key] = shadeMetal(height, dark, cover, W, H, (float)k, lift, tint ? vivid(tint) : 0);
+	const float lift = (state == 2 ? 0.08f : (state == 1 ? 0.04f : 0.0f)) - (tint ? 0.28f : 0.0f);
+	return metalCache[key] = shadeMetal(height, dark, cover, W, H, (float)k, lift, tint ? vivid(tint) : 0, tint ? &brass : nullptr);
 }
 
-/// A gold frame cast round a box (the wells under the items in hand): a rounded tube f wide, w x h world
-/// pixels inside it.
+/// A brass frame cast round a box (the wells under the items in hand, the soldier's card): a rounded tube
+/// f wide, w x h world pixels inside it.
 const std::vector<Uint32> &metalFrame(int w, int h, int k, float f)
 {
-	const Uint64 key = (1ull << 63) | ((Uint64)(w & 0xFFFF) << 16) | (Uint64)(h & 0xFFFF);
+	const Uint64 key = (1ull << 63) | ((Uint64)std::lround(f * 8.0f) << 40) | ((Uint64)(w & 0xFFFF) << 16) | (Uint64)(h & 0xFFFF);
 	if (std::vector<Uint32> *hit = metalCached(key, k)) return *hit;
 	const int fw = (int)std::ceil(f);
 	const int W = w + 2 * fw, H = h + 2 * fw;
@@ -649,21 +668,49 @@ const std::vector<Uint32> &metalFrame(int w, int h, int k, float f)
 		{
 			const size_t i = (size_t)y * W + x;
 			const float sd = insideBox(x + 0.5f, y + 0.5f, 0.0f, 0.0f, (float)W, (float)H, R);
-			// a round profile across the tube, open inside
+			// a round profile across the tube, open inside, a dark line at both of its edges
 			const float t = (sd - half) / half;
 			height[i] = std::sqrt(std::max(1.0f - t * t, 0.0f));
+			dark[i] = 0.25f * std::max(std::fabs(t) - 0.75f, 0.0f) / 0.25f;
 			cover[i] = std::min(std::max(sd + 0.5f, 0.0f), 1.0f) * std::min(std::max(f - sd + 0.5f, 0.0f), 1.0f);
 		}
 	}
 	return metalCache[key] = shadeMetal(height, dark, cover, W, H, (float)k * 0.6f, 0.0f, 0);
 }
 
-/// The original panel's key in metal (see plaque), drawn into its cell.
+/// The panel itself in dark brushed steel, a bevelled brass lip along its top: W x H screen pixels.
+const std::vector<Uint32> &panelMetal(int W, int H, int k)
+{
+	const Uint64 key = (1ull << 62) | ((Uint64)(W & 0xFFFF) << 16) | (Uint64)(H & 0xFFFF);
+	if (std::vector<Uint32> *hit = metalCached(key, k)) return *hit;
+	std::vector<float> height((size_t)W * H), dark((size_t)W * H), cover((size_t)W * H), brass((size_t)W * H);
+	const float lip = 1.6f * k;
+	for (int y = 0; y < H; ++y)
+	{
+		for (int x = 0; x < W; ++x)
+		{
+			const size_t i = (size_t)y * W + x;
+			const float sd = insideBox(x + 0.5f, y + 0.5f, 0.0f, 0.0f, (float)W, (float)H + 4.0f * k, 3.0f * k);
+			cover[i] = std::min(std::max(sd + 0.5f, 0.0f), 1.0f);
+			// the brass lip catches the light, the dark steel below it lies low
+			const float t = std::min(std::max(sd / lip, 0.0f), 1.0f);
+			height[i] = t < 0.5f ? ease(t * 2.0f) : 1.0f - 0.6f * ease((t - 0.5f) * 2.0f);
+			dark[i] = t < 1.0f ? -0.05f : 0.3f;
+			brass[i] = 1.0f - t;
+		}
+	}
+	return metalCache[key] = shadeMetal(height, dark, cover, W, H, (float)k * 0.5f, 0.0f, 0xFF8A8C90u, &brass);
+}
+
+/// The original panel's key in metal (see plaque), drawn into its cell over the shadow of its slot.
 void drawPlaque(int x, int y, int w, int h, HdBattleHud::Icon icon, bool lit, bool over, Uint32 tint)
 {
 	const int k = HdUi::scale();
+	HdUi &ui = HdUi::instance();
+	const float g = 0.7f * k, x0 = (float)x * k + g, y0 = (float)y * k + g, x1 = (float)(x + w) * k - g, y1 = (float)(y + h) * k - g;
+	ui.fillRoundRect(x0 - 0.3f * k, y0 + 0.2f * k, x1 + 0.5f * k, y1 + 0.8f * k, 2.6f * k, 0x60000000u, 0x90000000u);
 	const std::vector<Uint32> &img = plaque(icon, w, h, k, lit ? 2 : (over ? 1 : 0), tint);
-	HdUi::instance().drawImage(img.data(), w * k, h * k, x * k, y * k);
+	ui.drawImage(img.data(), w * k, h * k, x * k, y * k);
 }
 
 }
@@ -736,8 +783,16 @@ void HdHudPanel::hdMirror()
 	// the map fades into the panel instead of ending at a hard line
 	ui.fillRoundRect(x0, y0 - 4.0f * k, x1, y0, 0.0f, 0x00000000u, 0x70000000u);
 	// the panel: rounded at the top, a fine light edge along it
-	ui.fillRoundRect(x0, y0, x1, y1 + 3.0f * k, 3.0f * k, t.panelTop, t.panelBottom);
-	ui.fillRoundRect(x0 + 2.0f * k, y0, x1 - 2.0f * k, y0 + edge, 0.0f, t.panelEdge, t.panelEdge);
+	if (t.plaques)
+	{
+		const int pw = getWidth() * k, ph = getHeight() * k;
+		ui.drawImage(panelMetal(pw, ph, k).data(), pw, ph, getX() * k, getY() * k);
+	}
+	else
+	{
+		ui.fillRoundRect(x0, y0, x1, y1 + 3.0f * k, 3.0f * k, t.panelTop, t.panelBottom);
+		ui.fillRoundRect(x0 + 2.0f * k, y0, x1 - 2.0f * k, y0 + edge, 0.0f, t.panelEdge, t.panelEdge);
+	}
 	ui.notePanel(getX(), getY(), getWidth(), getHeight());
 	for (const Item &item : _parts)
 	{
@@ -753,7 +808,7 @@ void HdHudPanel::hdMirror()
 			if (t.plaques)
 			{
 				// the original's gold frame round the hand, cast in the same metal as the keys
-				const float f = 2.2f * k;
+				const float f = 2.8f * k;
 				const int fw = (int)std::ceil(f);
 				const int ix = (int)std::lround(wx0 - m), iy = (int)std::lround(wy0 - m);
 				const int iw = (int)std::lround(wx1 + m) - ix, ih = (int)std::lround(wy1 + m) - iy;
@@ -769,8 +824,22 @@ void HdHudPanel::hdMirror()
 		case HdHudPanel::PART_CARD:
 		{
 			const float m = 1.0f * k;
-			ui.fillRoundRect(wx0 - m, wy0 - m, wx1 + m, std::min(wy1 + m, y1 - 0.5f * k), 2.2f * k, t.cardTop, t.cardBottom);
-			ui.strokeRoundRect(wx0 - m, wy0 - m, wx1 + m, std::min(wy1 + m, y1 - 0.5f * k), 2.2f * k, edge, t.cardEdge);
+			const float cy1 = std::min(wy1 + m, y1 - 0.5f * k);
+			ui.fillRoundRect(wx0 - m, wy0 - m, wx1 + m, cy1, 2.2f * k, t.cardTop, t.cardBottom);
+			if (t.plaques)
+			{
+				// a dark inset plate in a brass frame: the mod's coloured figures stay legible on it
+				const float f = 1.6f * k;
+				const int fw = (int)std::ceil(f);
+				const int ix = (int)std::lround(wx0 - m), iy = (int)std::lround(wy0 - m);
+				const int iw = (int)std::lround(wx1 + m) - ix, ih = (int)std::lround(cy1) - iy;
+				const std::vector<Uint32> &frame = metalFrame(iw, ih, k, f);
+				ui.drawImage(frame.data(), iw + 2 * fw, ih + 2 * fw, ix - fw, iy - fw);
+			}
+			else
+			{
+				ui.strokeRoundRect(wx0 - m, wy0 - m, wx1 + m, cy1, 2.2f * k, edge, t.cardEdge);
+			}
 			break;
 		}
 		case HdHudPanel::PART_RANK:
