@@ -16,6 +16,7 @@ allowed-tools: Read, Glob, Grep, Bash
 ## `full` — плюс doxygen
 
 Добавляет граф вызовов и наследования. Нужен `Doxyfile` в корне и установленные doxygen с graphviz. Минуты, не секунды.
+`Doxyfile` в репозитории сейчас нет (аудит 05.10) — без него режим не работает; сначала завести файл.
 
 ```
 python tools/index_project.py --full
@@ -23,9 +24,12 @@ python tools/index_project.py --full
 
 ## `describe` — смысловые описания локальной моделью
 
+`describe_modules.py` грузит модель в Ollama, поэтому идёт только через очередь видеокарты (хук `gpu-guard`
+прямой запуск останавливает):
+
 ```
 python tools/describe_modules.py --check
-python tools/describe_modules.py
+py -3.13 tools/gpuq.py add --name describe --prio 2 -- python tools/describe_modules.py
 ```
 
 Гоняет Qwen3.8-27B через Ollama, пишет `.index/files.md` — по абзацу на файл. Долго, зато бесплатно и локально; можно оставить работать.
