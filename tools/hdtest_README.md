@@ -1,4 +1,4 @@
-# HD-render regression test (этап 0)
+﻿# HD-render regression test (этап 0)
 
 Цель: любая правка рендера проверяется побайтно, а не «на глаз».
 
@@ -30,9 +30,9 @@
 вызывайте системный интерпретатор явно (`py -3` или `C:\Python313\python.exe`).
 
 ```powershell
-py -3 -m pip install pillow
+py -3.13 -m pip install pillow
 $d = "C:\...\user\piratez"
-py -3 tools\hdtest_compare.py "$d\hdtest000" "$d\hdtest001"
+py -3.13 tools\hdtest_compare.py "$d\hdtest000" "$d\hdtest001"
 ```
 
 Выход: `RESULT: IDENTICAL` (код 0) или `RESULT: DIFFERENT` (код 1) с числом отличающихся
@@ -63,7 +63,7 @@ py -3 tools\hdtest_compare.py "$d\hdtest000" "$d\hdtest001"
 Снимок Ctrl+F8 с модом даёт карту и кадр в 4 раза больше; сравнивать с эталоном k=1 так:
 
 ```powershell
-py -3 tools\hdtest_compare.py "$d\hdtest000" "$d\hdtest00N" --scale 4
+py -3.13 tools\hdtest_compare.py "$d\hdtest000" "$d\hdtest00N" --scale 4
 ```
 
 Ожидание: `IDENTICAL` по карте и по кадру. Производительность на этом этапе не оценивается —
@@ -164,6 +164,10 @@ F9 в режим 2 (всё сглажено), посмотреть глазам�
 памяти до 768 МБ последних. Проверка без экрана: `OXCE_HD_DUMP=<png>`, `OXCE_HD_DUMP_AFTER=<с>`,
 `OXCE_HD_START=options|newbattle|load|geoscape|save|ufopaedia` (+ `OXCE_HD_ARTICLE=STR_...`),
 `OXCE_HD_MOUSE/CLICK/TYPE`, `SDL_VIDEODRIVER=dummy`; тест-мод в облаке: статьи `STR_HD_PEDIA_TEST`.
+Ещё две ручки того же прогона: `OXCE_HD_SET=<мс>:<что>=<n>[;...]` — за `<мс>` до дампа переключает
+HD-интерфейс (`oxceHdUi=n`) или масштаб мирового слоя (`k=n`) при открытом экране (`Game.cpp`);
+`OXCE_HD_SAVES=<n>` — при `OXCE_HD_START=save|geoscape|base` пишет n копий сейва `hdtest<i>.sav`
+(строки для проверки списка загрузки, `MainMenuState.cpp`).
 
 ## HD-юниты: паки `pack.hdp` и выгрузка наборов
 
@@ -184,6 +188,9 @@ F9 в режим 2 (всё сглажено), посмотреть глазам�
 
 Боевые эффекты без экрана: `OXCE_HD_DUMP_FX=<префикс>` — первые четыре эффекта (вспышка ствола, попадание,
 взмах, взрыв) сами просят дамп кадра через 50 мс после старта: `<префикс>_<n>_<клип>.png`, в логе «HD dump:».
+`OXCE_HD_DUMP_FX_ONLY=<часть имени клипа>` оставляет в дампах только такие клипы (попадания по юниту: `_unit`,
+`_armor`). `OXCE_HD_DUMP_KILLCAM=<префикс>` — пять дампов добивающего кадра (kill-cam) на 200, 700, 1500, 2600 и
+3700 мс от его старта: `<префикс>_<0..4>.png`, в логе «HD killcam: dump» (`HdKillCam.cpp`).
 По таймеру `OXCE_HD_DUMP` короткий эффект не ловится (R-085). Ваниль, выстрел из стартового боя при
 1280×800: `OXCE_HD_CLICK="210,92;58,184;160,173;254,12;295,172;160,140;60,70"` (новая битва → OK →
 брифинг → снаряжение → оружие в руке → выстрел → клетка), `OXCE_HD_DUMP_AFTER=50`.
