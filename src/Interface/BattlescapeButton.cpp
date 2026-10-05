@@ -31,7 +31,7 @@ namespace OpenXcom
  * @param x X position in pixels.
  * @param y Y position in pixels.
  */
-BattlescapeButton::BattlescapeButton(int width, int height, int x, int y) : InteractiveSurface(width, height, x, y), _color(0), _group(0), _inverted(false), _toggleMode(INVERT_NONE), _altSurface(0), _hdIcon(0)
+BattlescapeButton::BattlescapeButton(int width, int height, int x, int y) : InteractiveSurface(width, height, x, y), _color(0), _group(0), _inverted(false), _toggleMode(INVERT_NONE), _altSurface(0), _hdIcon(0), _hdLit(false)
 {
 }
 
@@ -224,7 +224,7 @@ void BattlescapeButton::blit(SDL_Surface *surface)
 	if (hud && _visible && !_hidden)
 	{
 		HdBattleHud::drawButton(getX(), getY(), getWidth(), getHeight(), (HdBattleHud::Icon)_hdIcon,
-			_inverted || isButtonPressed(SDL_BUTTON_LEFT), _color, HdUi::paletteOf(this));
+			_inverted || _hdLit || isButtonPressed(SDL_BUTTON_LEFT), _color, HdUi::paletteOf(this));
 	}
 }
 

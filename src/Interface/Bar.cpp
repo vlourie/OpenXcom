@@ -200,9 +200,12 @@ void Bar::hdMirror()
 	const bool groove = HdBattleHud::grooved(this);
 	if (groove)
 	{
-		ui.fillRoundRect(x0, y0, x1, y1, r, 0xF0140E08u, 0xF0281E12u);
+		Uint32 top, bottom, lip;
+		HdBattleHud::grooveColors(top, bottom, lip);
+		lip &= 0x00FFFFFFu;
+		ui.fillRoundRect(x0, y0, x1, y1, r, top, bottom);
 		ui.fillRoundRect(x0, y0, x1, y0 + 0.8f * k, r, 0x90000000u, 0x00000000u);
-		ui.fillRoundRect(x0 + r, y1 - 0.05f * k, x1 - r, y1 + 0.45f * k, 0.0f, 0x60F0D8A0u, 0x00F0D8A0u);
+		ui.fillRoundRect(x0 + r, y1 - 0.05f * k, x1 - r, y1 + 0.45f * k, 0.0f, 0x60000000u | lip, lip);
 	}
 	else
 	{
