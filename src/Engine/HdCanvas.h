@@ -148,7 +148,9 @@ public:
 	/// Draws a palette sprite clipped to a rectangle (Surface::blitNShade(range) semantics).
 	virtual void blit(SurfaceRaw<const Uint8> src, int x, int y, int shade, GraphSubset range) = 0;
 	/// Draws a unit or item sprite through its Y-script worker, clipped to a rectangle (ScriptWorkerBlit::executeBlit semantics).
-	virtual void blitScripted(ScriptWorkerBlit &work, const Surface *src, int x, int y, int shade, GraphSubset range) = 0;
+	/// `unlit` is the same script filled with shade 0 (the worker holds its shade): it tells the light from
+	/// the script's own work for an HD frame in its own colours; nullptr where there is no light.
+	virtual void blitScripted(ScriptWorkerBlit &work, const Surface *src, int x, int y, int shade, GraphSubset range, ScriptWorkerBlit *unlit = nullptr) = 0;
 	/// Draws a classic base-resolution element scaled by k (HdBlit::blitScaled semantics).
 	virtual void blitClassic(Surface *src, int x, int y, int scale, int shade = 0, int newBaseColor = 0) = 0;
 	/// Draws one vapor particle: every pixel of the pattern whose threshold is >= size is tinted
@@ -210,7 +212,7 @@ public:
 	void fill(Uint8 color) override;
 	void blit(SurfaceRaw<const Uint8> src, int x, int y, int shade, bool half = false, int newBaseColor = 0) override;
 	void blit(SurfaceRaw<const Uint8> src, int x, int y, int shade, GraphSubset range) override;
-	void blitScripted(ScriptWorkerBlit &work, const Surface *src, int x, int y, int shade, GraphSubset range) override;
+	void blitScripted(ScriptWorkerBlit &work, const Surface *src, int x, int y, int shade, GraphSubset range, ScriptWorkerBlit *unlit = nullptr) override;
 	void blitClassic(Surface *src, int x, int y, int scale, int shade = 0, int newBaseColor = 0) override;
 	void drawVapor(SurfaceRaw<int> pattern, int x, int y, int size, const Uint8 *transparencyLUT, SDL_Color tint) override;
 	void flash() override;
@@ -300,8 +302,9 @@ private:
 	/// Luminance -> palette ramp level 0..15 (for the night-vision recolor of HD pixels).
 	Uint8 _level[256];
 	int _rshift, _gshift, _bshift;
-	/// Base-resolution scratch frames the unit/item scripts run on.
-	Surface _scriptSrc, _scriptDst;
+	/// Base-resolution scratch frames the unit/item scripts run on (_scriptLit: the same script
+	/// without the light, for a pack frame in its own colours).
+	Surface _scriptSrc, _scriptDst, _scriptLit;
 	std::unordered_map<const void*, SpanTable> _spans;
 	/// xBRZ-smoothed frames made on demand (key: frame buffer, or the hash of a scripted result).
 	/// Trimmed by the flushes that used them longest ago once they hold more than their cap (see trimSmooth).
@@ -430,7 +433,7 @@ public:
 	void fill(Uint8 color) override;
 	void blit(SurfaceRaw<const Uint8> src, int x, int y, int shade, bool half = false, int newBaseColor = 0) override;
 	void blit(SurfaceRaw<const Uint8> src, int x, int y, int shade, GraphSubset range) override;
-	void blitScripted(ScriptWorkerBlit &work, const Surface *src, int x, int y, int shade, GraphSubset range) override;
+	void blitScripted(ScriptWorkerBlit &work, const Surface *src, int x, int y, int shade, GraphSubset range, ScriptWorkerBlit *unlit = nullptr) override;
 	void blitClassic(Surface *src, int x, int y, int scale, int shade = 0, int newBaseColor = 0) override;
 	void drawVapor(SurfaceRaw<int> pattern, int x, int y, int size, const Uint8 *transparencyLUT, SDL_Color tint) override;
 	void flash() override;

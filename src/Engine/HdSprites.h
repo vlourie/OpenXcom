@@ -44,6 +44,9 @@ struct HdFrame
 	std::vector<Span> solid;
 	/// Made by the engine (smooth fallback) rather than loaded from a pack.
 	bool generated = false;
+	/// The pack painted this frame in its own colours (hd/<set>/color.txt, colorAuthority: pack):
+	/// the light of the map darkens it keeping its hue, instead of taking the palette ramp's.
+	bool ownColour = false;
 
 	/// Pointer to a row of pixels.
 	const Uint32 *row(int y) const { return pixels.data() + (size_t)y * width; }
