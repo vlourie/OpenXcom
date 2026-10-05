@@ -30,15 +30,46 @@ namespace OpenXcom
 namespace
 {
 
-// the panel's own colours (0xAARRGGBB): a dark slate with one warm accent, the same in every mod
-const Uint32 PANEL_TOP = 0xF4171D26u, PANEL_BOTTOM = 0xF40B0E13u, PANEL_EDGE = 0x38FFFFFFu;
-const Uint32 TILE_TOP = 0xFF2A323Eu, TILE_BOTTOM = 0xFF1C222Bu, TILE_EDGE = 0x2EFFFFFFu;
-const Uint32 HOVER_TOP = 0xFF36414Fu, HOVER_BOTTOM = 0xFF252D38u;
-const Uint32 ACCENT = 0xFFE6A23Cu, LIT_TOP = 0xFFF2B655u, LIT_BOTTOM = 0xFFC2822Au;
-const Uint32 ICON = 0xFFCDD6E1u, ICON_HOVER = 0xFFFFFFFFu, ICON_LIT = 0xFF22180Bu;
-const Uint32 WELL_TOP = 0xFF05070Au, WELL_BOTTOM = 0xFF0D1015u, WELL_EDGE = 0x36FFFFFFu;
-const Uint32 CARD_TOP = 0xFF0E1218u, CARD_BOTTOM = 0xFF0A0D11u, CARD_EDGE = 0x22FFFFFFu;
-const Uint32 RANK_FILL = 0xFF151A22u;
+// the panel's own colours (0xAARRGGBB), the same in every mod: a dark slate with one warm accent, or
+// the gold of the original panel (oxceHdBattleHudColor 1, the ramp of the Piratez panel picture)
+struct Theme
+{
+	Uint32 panelTop, panelBottom, panelEdge;
+	Uint32 tileTop, tileBottom, tileEdge, hoverTop, hoverBottom, sheenTop, sheenBottom;
+	Uint32 accent, litTop, litBottom;
+	Uint32 icon, iconHover, iconLit;
+	Uint32 wellTop, wellBottom, wellEdge;
+	Uint32 cardTop, cardBottom, cardEdge;
+	Uint32 rankFill;
+	bool plaques;     ///< the keys are the original's plaques in relief, the pictograms struck in (drawPlaque)
+};
+
+const Theme SLATE = {
+	0xF4171D26u, 0xF40B0E13u, 0x38FFFFFFu,
+	0xFF2A323Eu, 0xFF1C222Bu, 0x2EFFFFFFu, 0xFF36414Fu, 0xFF252D38u, 0x14FFFFFFu, 0x02FFFFFFu,
+	0xFFE6A23Cu, 0xFFF2B655u, 0xFFC2822Au,
+	0xFFCDD6E1u, 0xFFFFFFFFu, 0xFF22180Bu,
+	0xFF05070Au, 0xFF0D1015u, 0x36FFFFFFu,
+	0xFF0E1218u, 0xFF0A0D11u, 0x22FFFFFFu,
+	0xFF151A22u,
+	false,
+};
+
+const Theme GOLD = {
+	0xF4301A0Au, 0xF4120904u, 0xA0F8E57Bu,
+	0xFFD8A73Du, 0xFFA36725u, 0x90FFF6AFu, 0xFFE4CA48u, 0xFFB77B2Cu, 0x38FFF6AFu, 0x04FFF6AFu,
+	0xFFFFF6AFu, 0xFFFFF6AFu, 0xFFE4CA48u,
+	0xFF43210Du, 0xFF221209u, 0xFF341A0Bu,
+	0xFF0A0603u, 0xFF1A0F06u, 0xB0C79033u,
+	0xFF22140Au, 0xFF150C05u, 0x90B77B2Cu,
+	0xFF341A0Bu,
+	true,
+};
+
+const Theme &theme()
+{
+	return Options::oxceHdBattleHudColor == 1 ? GOLD : SLATE;
+}
 
 inline Uint32 withAlpha(Uint32 c, Uint32 a) { return (c & 0x00FFFFFFu) | (a << 24); }
 
@@ -350,14 +381,14 @@ struct Raster
 int cacheScale = 0;
 std::unordered_map<Uint64, Raster> cache;
 
-const Raster &raster(HdBattleHud::Icon icon, int w, int h, int k)
+const Raster &raster(HdBattleHud::Icon icon, int w, int h, int k, bool small = false)
 {
 	if (k != cacheScale)
 	{
 		cache.clear();
 		cacheScale = k;
 	}
-	const Uint64 key = ((Uint64)icon << 32) | ((Uint64)(w & 0xFFFF) << 16) | (Uint64)(h & 0xFFFF);
+	const Uint64 key = ((Uint64)small << 40) | ((Uint64)icon << 32) | ((Uint64)(w & 0xFFFF) << 16) | (Uint64)(h & 0xFFFF);
 	auto found = cache.find(key);
 	if (found != cache.end()) return found->second;
 	Raster &r = cache[key];
@@ -367,7 +398,9 @@ const Raster &raster(HdBattleHud::Icon icon, int w, int h, int k)
 	const Pic pic = makeIcon(icon);
 	// 4 x 4 samples a pixel; the rows are shared out to the render threads (a hand of pictograms a scale)
 	const int S = 4;
-	const float inv = 1.0f / (float)k;
+	// small: shrunk about the button's centre, to sit inside a plaque's sunken field
+	const float grow = small ? 1.0f / 0.8f : 1.0f;
+	const float inv = grow / (float)k, cx = w * 0.5f * (1.0f - grow), cy = h * 0.5f * (1.0f - grow);
 	auto rows = [&](int ra, int rb)
 	{
 		for (int py = ra; py < rb; ++py)
@@ -377,10 +410,10 @@ const Raster &raster(HdBattleHud::Icon icon, int w, int h, int k)
 				int hits = 0;
 				for (int sy = 0; sy < S; ++sy)
 				{
-					const float y = (py + (sy + 0.5f) / S) * inv;
+					const float y = (py + (sy + 0.5f) / S) * inv + cy;
 					for (int sx = 0; sx < S; ++sx)
 					{
-						const float x = (px + (sx + 0.5f) / S) * inv;
+						const float x = (px + (sx + 0.5f) / S) * inv + cx;
 						bool in = false;
 						for (const Shape &s : pic.shapes)
 						{
@@ -421,7 +454,64 @@ const std::vector<Uint32> &colored(const Raster &r, Uint32 color)
 /// The colour of a palette entry, or the accent for none.
 Uint32 tintOf(Uint8 tint, const SDL_Color *pal)
 {
-	return tint && pal ? HdUi::rgba(pal[tint]) : ACCENT;
+	return tint && pal ? HdUi::rgba(pal[tint]) : theme().accent;
+}
+
+/// A rounded box in relief: dark along the bottom and right, light along the top and left, the body
+/// over both, `e` wide each; raised = the light on top, sunken = the light below.
+void relief(HdUi &ui, float x0, float y0, float x1, float y1, float r, float e, bool raised, Uint32 light, Uint32 dark, Uint32 top, Uint32 bottom)
+{
+	const Uint32 lower = raised ? dark : light, upper = raised ? light : dark;
+	ui.fillRoundRect(x0, y0, x1, y1, r, lower, lower);
+	ui.fillRoundRect(x0, y0, x1 - e, y1 - e, r, upper, upper);
+	ui.fillRoundRect(x0 + e, y0 + e, x1 - e, y1 - e, std::max(r - e, 0.0f), top, bottom);
+}
+
+/// The original panel's key: a raised gold plaque with a sunken field and the pictogram struck into it
+/// (dark, its lower right edge catching the light). A key with its own colour (the reserves) is a plaque
+/// of that colour with the figure standing out light, as the mod draws them; lit = brighter, struck in.
+void drawPlaque(int x, int y, int w, int h, HdBattleHud::Icon icon, bool lit, bool over, Uint32 tint)
+{
+	const int k = HdUi::scale();
+	HdUi &ui = HdUi::instance();
+	const float in = 0.6f * k;
+	const float x0 = (float)x * k + in, y0 = (float)y * k + in, x1 = (float)(x + w) * k - in, y1 = (float)(y + h) * k - in;
+	const float r = 1.6f * k, e = std::max(1.0f, 0.75f * k);
+	// the rim takes about 1.5 base pixels, less on the small reserve keys
+	const float m = std::min(1.5f * k, std::min(x1 - x0, y1 - y0) * 0.12f);
+	Uint32 light, dark, rimTop, rimBottom, fieldLight, fieldDark, faceTop, faceBottom, ink, glint;
+	bool struck = true;
+	if (tint)
+	{
+		const float b = lit ? 1.2f : (over ? 1.1f : 1.0f);
+		light = HdUi::scaled(tint, 1.45f * b); dark = HdUi::scaled(tint, 0.42f);
+		rimTop = HdUi::scaled(tint, 1.08f * b); rimBottom = HdUi::scaled(tint, 0.9f * b);
+		fieldLight = HdUi::scaled(tint, 1.3f * b); fieldDark = HdUi::scaled(tint, 0.5f);
+		faceTop = HdUi::scaled(tint, 0.82f * b); faceBottom = HdUi::scaled(tint, 0.95f * b);
+		struck = lit;
+		ink = struck ? HdUi::scaled(tint, 0.3f) : HdUi::scaled(tint, 1.55f * b);
+		glint = struck ? HdUi::scaled(tint, 1.6f) : HdUi::scaled(tint, 0.42f);
+	}
+	else
+	{
+		light = 0xFFFFF6AFu; dark = 0xFF43210Du;
+		rimTop = lit ? 0xFFF8E57Bu : 0xFFD8A73Du; rimBottom = lit ? 0xFFE4CA48u : 0xFFC79033u;
+		fieldLight = lit || over ? 0xFFFFFFD0u : 0xFFFDF19Bu; fieldDark = 0xFF52280Fu;
+		faceTop = lit ? 0xFFD8A73Du : (over ? 0xFFC79033u : 0xFFA36725u);
+		faceBottom = lit ? 0xFFF8E57Bu : (over ? 0xFFE4CA48u : 0xFFC79033u);
+		ink = over || lit ? 0xFF221209u : 0xFF341A0Bu;
+		glint = 0xFFFFF6AFu;
+	}
+	relief(ui, x0, y0, x1, y1, r, e, true, light, dark, rimTop, rimBottom);
+	relief(ui, x0 + m, y0 + m, x1 - m, y1 - m, std::max(r - m * 0.5f, 0.0f), e, false, fieldLight, fieldDark, faceTop, faceBottom);
+	if (icon == HdBattleHud::ICON_NONE || icon >= HdBattleHud::ICON_COUNT) return;
+	const Raster &pic = raster(icon, w, h, k, true);
+	// struck in: the light on the far (lower right) side of the cut; standing out: a shadow there
+	// as a bevel: strong next to the edge, fading further out
+	const int inner = std::max(1, (int)std::lround(0.4f * k)), outer = std::max(inner + 1, (int)std::lround(0.8f * k));
+	ui.drawImage(colored(pic, withAlpha(glint, 0x60)).data(), pic.w, pic.h, x * k + outer, y * k + outer);
+	ui.drawImage(colored(pic, withAlpha(glint, struck ? 0xF0 : 0xD0)).data(), pic.w, pic.h, x * k + inner, y * k + inner);
+	ui.drawImage(colored(pic, ink).data(), pic.w, pic.h, x * k, y * k);
 }
 
 }
@@ -442,23 +532,29 @@ void HdBattleHud::drawButton(int x, int y, int w, int h, Icon icon, bool lit, Ui
 	const float in = 0.6f * k;
 	const float x0 = (float)x * k + in, y0 = (float)y * k + in, x1 = (float)(x + w) * k - in, y1 = (float)(y + h) * k - in;
 	const float r = 2.2f * k, edge = std::max(1.0f, 0.5f * k);
+	const Theme &t = theme();
 	const Uint32 accent = tintOf(tint, pal);
+	if (t.plaques)
+	{
+		drawPlaque(x, y, w, h, icon, lit, over, tint ? accent : 0);
+		return;
+	}
 	Uint32 face;
 	if (lit)
 	{
 		// lit: the accent (the reserve buttons' own colour) filling the tile, the pictogram dark on it
-		const Uint32 top = tint ? HdUi::scaled(accent, 1.15f) : LIT_TOP, bottom = tint ? HdUi::scaled(accent, 0.78f) : LIT_BOTTOM;
+		const Uint32 top = tint ? HdUi::scaled(accent, 1.15f) : t.litTop, bottom = tint ? HdUi::scaled(accent, 0.78f) : t.litBottom;
 		ui.fillRoundRect(x0, y0, x1, y1, r, top, bottom);
 		ui.strokeRoundRect(x0, y0, x1, y1, r, edge, withAlpha(HdUi::scaled(top, 1.2f), 0xE0));
-		face = tint ? HdUi::scaled(accent, 0.22f) : ICON_LIT;
+		face = tint ? HdUi::scaled(accent, 0.22f) : t.iconLit;
 	}
 	else
 	{
-		ui.fillRoundRect(x0, y0, x1, y1, r, over ? HOVER_TOP : TILE_TOP, over ? HOVER_BOTTOM : TILE_BOTTOM);
+		ui.fillRoundRect(x0, y0, x1, y1, r, over ? t.hoverTop : t.tileTop, over ? t.hoverBottom : t.tileBottom);
 		// a sheen on the upper half, a light top edge; under the mouse the edge takes the accent
-		ui.fillRoundRect(x0 + edge, y0 + edge, x1 - edge, (y0 + y1) * 0.5f, std::max(r - edge, 0.0f), 0x14FFFFFFu, 0x02FFFFFFu);
-		ui.strokeRoundRect(x0, y0, x1, y1, r, edge, over ? withAlpha(accent, 0xD0) : (tint ? withAlpha(accent, 0x60) : TILE_EDGE));
-		face = tint ? HdUi::scaled(accent, over ? 1.25f : 1.1f) : (over ? ICON_HOVER : ICON);
+		ui.fillRoundRect(x0 + edge, y0 + edge, x1 - edge, (y0 + y1) * 0.5f, std::max(r - edge, 0.0f), t.sheenTop, t.sheenBottom);
+		ui.strokeRoundRect(x0, y0, x1, y1, r, edge, over ? withAlpha(accent, 0xD0) : (tint ? withAlpha(accent, 0x60) : t.tileEdge));
+		face = tint ? HdUi::scaled(accent, over ? 1.25f : 1.1f) : (over ? t.iconHover : t.icon);
 	}
 	if (icon == ICON_NONE || icon >= ICON_COUNT) return;
 	const Raster &pic = raster(icon, w, h, k);
@@ -481,14 +577,15 @@ void HdHudPanel::hdMirror()
 	if (k <= 0) return;
 	HdUi &ui = HdUi::instance();
 	const SDL_Color *pal = HdUi::paletteOf(this);
+	const Theme &t = theme();
 	const float x0 = (float)getX() * k, y0 = (float)getY() * k;
 	const float x1 = (float)(getX() + getWidth()) * k, y1 = (float)(getY() + getHeight()) * k;
 	const float edge = std::max(1.0f, 0.5f * k);
 	// the map fades into the panel instead of ending at a hard line
 	ui.fillRoundRect(x0, y0 - 4.0f * k, x1, y0, 0.0f, 0x00000000u, 0x70000000u);
 	// the panel: rounded at the top, a fine light edge along it
-	ui.fillRoundRect(x0, y0, x1, y1 + 3.0f * k, 3.0f * k, PANEL_TOP, PANEL_BOTTOM);
-	ui.fillRoundRect(x0 + 2.0f * k, y0, x1 - 2.0f * k, y0 + edge, 0.0f, PANEL_EDGE, PANEL_EDGE);
+	ui.fillRoundRect(x0, y0, x1, y1 + 3.0f * k, 3.0f * k, t.panelTop, t.panelBottom);
+	ui.fillRoundRect(x0 + 2.0f * k, y0, x1 - 2.0f * k, y0 + edge, 0.0f, t.panelEdge, t.panelEdge);
 	ui.notePanel(getX(), getY(), getWidth(), getHeight());
 	for (const Item &item : _parts)
 	{
@@ -500,23 +597,23 @@ void HdHudPanel::hdMirror()
 		case HdHudPanel::PART_HAND:
 		{
 			const float m = 1.5f * k;
-			ui.fillRoundRect(wx0 - m, wy0 - m, wx1 + m, wy1 + m, 2.5f * k, WELL_TOP, WELL_BOTTOM);
-			ui.strokeRoundRect(wx0 - m, wy0 - m, wx1 + m, wy1 + m, 2.5f * k, edge, WELL_EDGE);
+			ui.fillRoundRect(wx0 - m, wy0 - m, wx1 + m, wy1 + m, 2.5f * k, t.wellTop, t.wellBottom);
+			ui.strokeRoundRect(wx0 - m, wy0 - m, wx1 + m, wy1 + m, 2.5f * k, edge, t.wellEdge);
 			break;
 		}
 		case HdHudPanel::PART_CARD:
 		{
 			const float m = 1.0f * k;
-			ui.fillRoundRect(wx0 - m, wy0 - m, wx1 + m, std::min(wy1 + m, y1 - 0.5f * k), 2.2f * k, CARD_TOP, CARD_BOTTOM);
-			ui.strokeRoundRect(wx0 - m, wy0 - m, wx1 + m, std::min(wy1 + m, y1 - 0.5f * k), 2.2f * k, edge, CARD_EDGE);
+			ui.fillRoundRect(wx0 - m, wy0 - m, wx1 + m, std::min(wy1 + m, y1 - 0.5f * k), 2.2f * k, t.cardTop, t.cardBottom);
+			ui.strokeRoundRect(wx0 - m, wy0 - m, wx1 + m, std::min(wy1 + m, y1 - 0.5f * k), 2.2f * k, edge, t.cardEdge);
 			break;
 		}
 		case HdHudPanel::PART_RANK:
-			ui.fillRoundRect(wx0, wy0, wx1, wy1 - 0.5f * k, 1.6f * k, RANK_FILL, RANK_FILL);
+			ui.fillRoundRect(wx0, wy0, wx1, wy1 - 0.5f * k, 1.6f * k, t.rankFill, t.rankFill);
 			break;
 		case HdHudPanel::PART_CHIP:
 		{
-			const Uint32 c = pal ? HdUi::rgba(pal[item.color]) : ACCENT;
+			const Uint32 c = pal ? HdUi::rgba(pal[item.color]) : t.accent;
 			ui.fillRoundRect(wx0 - 1.5f * k, wy0 - 1.0f * k, wx1 + 1.0f * k, wy1 + 1.0f * k, 1.4f * k, withAlpha(c, 0x40), withAlpha(c, 0x28));
 			break;
 		}

@@ -193,6 +193,8 @@ OPT bool oxceHdCraftLights;
 OPT bool oxceHdCraftOutlines;
 // HD globe: how the radar coverage of the bases and the craft is drawn (Engine/HdRadar.h). 0 = the classic circles (default), 1 = a light wash with one joint edge, 2 = the same plus a base pulsing with each detection cycle at the slow clock speeds and a craft's beam turning (a trial)
 OPT int oxceHdRadar;
+// HD interface, modern skin: the colours of the battle's button panel (Engine/HdBattleHud.cpp). 0 = dark slate (default), 1 = gold, as the original panel
+OPT int oxceHdBattleHudColor;
 // Battlescape: a unit hanging in the air or in the water with no floor below sways in place (Map::hoverBob); off = the classic still frame
 OPT bool oxceHdHoverBob;
 // HD render: combat effects of the HD mod (Engine/HdFx.h) - hits, swings, explosions, muzzle flashes; off = the classic animations

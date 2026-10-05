@@ -251,6 +251,10 @@ std::string OptionsHdState::valueText(const OptionInfo &info) const
 	{
 		return tr("STR_HD_RADAR_" + std::to_string(Options::oxceHdRadar));
 	}
+	if (info.asInt() == &Options::oxceHdBattleHudColor)
+	{
+		return tr("STR_HD_BATTLE_HUD_COLOR_" + std::to_string(Options::oxceHdBattleHudColor));
+	}
 	// the same names as the geoscape scale in the video options: "3x" = a globe pixel is 3 display pixels
 	if (info.asInt() == &Options::oxceHdGlobeScale)
 	{
@@ -440,6 +444,11 @@ void OptionsHdState::changeSetting(size_t sel, Uint8 button)
 		{
 			min = 0;                                  // 0 circles, 1 joint wash, 2 wash with the sweep
 			max = 2;
+		}
+		else if (i == &Options::oxceHdBattleHudColor)
+		{
+			min = 0;                                  // 0 dark slate, 1 gold as the original
+			max = 1;
 		}
 		else if (i == &Options::oxceHdGlobeScale)
 		{
