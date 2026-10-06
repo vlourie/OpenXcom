@@ -58,7 +58,7 @@ def resolve_pair(a, b):
     return pairs, a + ".json", b + ".json"
 
 
-def compare_json(ja, jb, quiet, scale=1, same_mode=False):
+def compare_json(ja, jb, quiet, scale=1, same_mode=False, expect_save_change=False):
     if not (ja and jb and os.path.exists(ja) and os.path.exists(jb)):
         return True
     with open(ja, "r", encoding="utf-8") as f:
@@ -66,7 +66,7 @@ def compare_json(ja, jb, quiet, scale=1, same_mode=False):
     with open(jb, "r", encoding="utf-8") as f:
         db = json.load(f)
     # keys that make a pixel comparison meaningless when they differ
-    critical = ("master", "mods", "save", "cameraOffsetX", "cameraOffsetY", "cameraOffsetZ",
+    critical = ("master", "mods", "save", "mapWidth", "mapHeight", "mapDepth", "cameraOffsetX", "cameraOffsetY", "cameraOffsetZ",
                 "viewLevel", "showAllLayers", "baseWidth", "baseHeight", "iconHeight",
                 "nightVision", "debugVisionMode", "fadeShade", "globalShade", "turn", "side", "debugMode")
     # with --scale N the world-pixel values of A are expected to be N times smaller
@@ -95,6 +95,15 @@ def compare_json(ja, jb, quiet, scale=1, same_mode=False):
             # the HD test mod only switches the scale, it is not a content difference
             va = [m for m in va if m not in ("hd_test", "hd_demo")]
             vb = [m for m in vb if m not in ("hd_test", "hd_demo")]
+        if key == "save" and expect_save_change:
+            # --expect-save-change: dumps before and after a save/load round trip; the save name is supposed
+            # to change (the quick save of B), every other critical key is still checked
+            if va == vb:
+                print("!! save               A=%r  B=%r: expected a save/load between A and B" % (va, vb))
+                ok = False
+            else:
+                print("   save               A=%r  B=%r (expected: save/load)" % (va, vb))
+            continue
         if va != vb:
             flag = "!!" if key in critical else "  "
             if key in critical:
@@ -190,6 +199,8 @@ def main():
     ap.add_argument("--quiet", action="store_true")
     ap.add_argument("--same-mode", action="store_true",
                     help="A and B in the same HD mode 1 or 2 are compared pixel for pixel (by default only mode 0 is)")
+    ap.add_argument("--expect-save-change", action="store_true",
+                    help="A and B are dumps before and after a save/load: the save name must differ, the rest of the state must not")
     ap.add_argument("--max-slowdown", type=float, default=1.25, help="warn when drawMs/flipMs of B exceed A times this (R-009)")
     args = ap.parse_args()
 
@@ -202,7 +213,7 @@ def main():
         print("error: nothing to compare (check the prefixes: expected <prefix>_map.png / _frame.png)", file=sys.stderr)
         return 2
 
-    state_ok = compare_json(ja, jb, args.quiet, args.scale, args.same_mode)
+    state_ok = compare_json(ja, jb, args.quiet, args.scale, args.same_mode, args.expect_save_change)
     compare_perf(ja, jb, args.max_slowdown)
     all_same = True
     for label, pa, pb in pairs:
