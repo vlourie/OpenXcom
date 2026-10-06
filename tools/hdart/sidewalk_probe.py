@@ -725,12 +725,13 @@ def game_save():
     return sav
 
 
-def run_game(out, mods_dir, mode, after):
+def run_game(out, mods_dir, mode, after, user_name):
+    """user_name - своя папка пользователя на каждую метку: два прогона в одной папке делят options.cfg и лог."""
     if out.exists():
         print("есть:", out)
         return True
     sets = "oxceHdMode=%d;oxceHdScale=4;oxceHdGroundVariants=true" % mode
-    user = OUT / "_users" / out.stem
+    user = OUT / "_users" / user_name
     cmd = [sys.executable, str(ROOT / "tools" / "game_hidden.py"), "--out", str(out), "--save", str(game_save()),
            "--after", str(after), "--user", str(user), "--set", sets]
     if mods_dir:
@@ -752,8 +753,9 @@ def cmd_game(a):
     new_png = g / "new.png"
     if new_png.exists() and a.force:
         new_png.unlink()
-    ok = [run_game(ref / "classic.png", None, 0, a.after), run_game(ref / "hd_now.png", None, 1, a.after),
-          run_game(new_png, mods, 1, a.after)]
+    ok = [run_game(ref / "classic.png", None, 0, a.after, "classic"),
+          run_game(ref / "hd_now.png", None, 1, a.after, "hd_now"),
+          run_game(new_png, mods, 1, a.after, "new_" + a.tag)]
     if not all(ok):
         raise SystemExit("не все кадры сняты - смотреть openxcom.log в %s" % (OUT / "_users"))
     ims = [Image.open(p).convert("RGB") for p in (ref / "classic.png", ref / "hd_now.png", new_png)]
