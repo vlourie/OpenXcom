@@ -227,7 +227,7 @@ int reticleColorGroup(const Mod *mod, BattleAction *action)
  */
 Map::Map(Game *game, int width, int height, int x, int y, int visibleMapHeight) : InteractiveSurface(width * hdScale(game), height * hdScale(game), x, y),
 	_game(game), _isTFTD(false), _arrow(0), _anyIndicator(false), _isAltPressed(false), _isCtrlPressed(false),
-	_k(hdScale(game)), _messageScratch(0), _messageOnCanvas(false), _canvas(0), _hdGroundVariants(Options::oxceHdGroundVariants),
+	_k(hdScale(game)), _messageScratch(0), _messageOnCanvas(false), _canvas(0), _hdGroundVariants(Options::oxceHdGroundVariants), _hdTerrainAddress(Options::oxceHdTerrainAddress),
 	_selectorX(0), _selectorY(0), _mouseX(0), _mouseY(0), _cursorType(CT_NORMAL), _cursorSize(1), _animFrame(0),
 	_projectile(0), _followProjectile(true), _projectileInFOV(false), _explosionInFOV(false), _launch(false), _visibleMapHeight(visibleMapHeight * hdScale(game)),
 	_unitDying(false), _smoothingEngaged(false), _flashScreen(false), _bgColor(15), _projectileSet(0), _showObstacles(false), _showInfoOnCursor(false)
@@ -397,6 +397,7 @@ void Map::createCanvas()
 		_canvas->setPalette(getPalette(), 0, 256);
 		_canvas->setHdMode(Options::oxceHdMode);
 		_canvas->setGroundSeed(groundSeed());
+		_canvas->setWallField(_hdTerrainAddress ? &_wallField : nullptr);
 	}
 	else
 	{
@@ -429,6 +430,41 @@ Uint32 Map::groundSeed() const
 		}
 	}
 	return h;
+}
+
+/**
+ * Test hook of the SCC wall addressing (OXCE_HD_ADDRESS_RELOAD=<frame>:<file>): on that drawn frame the HD packs
+ * of the battle's terrain sets are registered again, reading <file> instead of address.txt - the field must
+ * follow before the frame is drawn. Off unless the variable is set.
+ */
+void Map::addressTestReload()
+{
+	static const char *env = getenv("OXCE_HD_ADDRESS_RELOAD");
+	if (!env || !*env)
+	{
+		return;
+	}
+	++_addressTestFrames;
+	const std::string spec = env;
+	const size_t colon = spec.find(':');
+	if (colon == std::string::npos || atoi(spec.substr(0, colon).c_str()) != _addressTestFrames)
+	{
+		return;
+	}
+	const std::string file = spec.substr(colon + 1);
+	Log(LOG_INFO) << "HD address: test reload of the terrain packs with " << file << " on frame " << _addressTestFrames;
+	HdSprites::setAddressFile(file);
+	for (MapDataSet *set : *_save->getMapDataSets())
+	{
+		SurfaceSet *frames = set->getSurfaceset();
+		if (!frames)
+		{
+			continue;
+		}
+		HdSprites::removeSet(frames);
+		HdSprites::loadPack("TERRAIN/" + set->getName() + ".PCK", frames, _k);
+		HdSprites::preload(frames);
+	}
 }
 
 /**
@@ -1605,6 +1641,14 @@ void Map::drawTerrain(HdCanvas *surface)
 	_isAltPressed = _game->isAltPressed(true);
 	_isCtrlPressed = _game->isCtrlPressed(true);
 	updateBlastArea(surface);
+	// HD render: the SCC field of addressed walls follows the map size and the packs; on other frames
+	// this is a comparison of four numbers
+	static const int addressObstacleEvery = [] { const char *p = getenv("OXCE_HD_ADDRESS_OBSTACLE"); return p ? atoi(p) : 0; }();
+	if (_hdTerrainAddress)
+	{
+		addressTestReload();
+		_wallField.update(_save->getMapSizeX(), _save->getMapSizeY(), _save->getMapSizeZ());
+	}
 	// HD render: combat effect clips not drawn for a while go, before this frame records any
 	HdFx::trim();
 	HdFx::clearTips();
@@ -1899,24 +1943,38 @@ void Map::drawTerrain(HdCanvas *surface)
 					// Draw walls
 					{
 						// Draw west wall
+						// HD render: the wall blits are labelled with their cell for the SCC addressing (paths W1, W2, N1..N4);
+						// the obstacle test hook only takes the obstacle path in the drawing, the tile is not touched
+						const bool addressObstacle = addressObstacleEvery > 0 && (mapPosition.x * 7 + mapPosition.y * 3 + mapPosition.z) % addressObstacleEvery == 0;
 						tmpSurface = tile->getSprite(O_WESTWALL);
 						if (tmpSurface)
 						{
 							int wallShade = getWallShade(O_WESTWALL, tile);
-							if (tile->getObstacle(O_WESTWALL))
+							const bool obstacle = tile->getObstacle(O_WESTWALL) || addressObstacle;
+							if (_hdTerrainAddress)
+								surface->setCellAddress(HdSprites::WALL_WEST, mapPosition.x, mapPosition.y, mapPosition.z, obstacle ? 2 : 1);
+							if (obstacle)
 								surface->blit(tmpSurface, screenPosition.x, screenPosition.y - tile->getYOffset(O_WESTWALL) * _k, obstacleShade, false, _nvColor);
 							else
 								surface->blit(tmpSurface, screenPosition.x, screenPosition.y - tile->getYOffset(O_WESTWALL) * _k, wallShade, false, _nvColor);
+							if (_hdTerrainAddress)
+								surface->setCellAddress(0, 0, 0, 0, 0);
 						}
 						// Draw north wall
 						tmpSurface = tile->getSprite(O_NORTHWALL);
 						if (tmpSurface)
 						{
 							int wallShade = getWallShade(O_NORTHWALL, tile);
-							if (tile->getObstacle(O_NORTHWALL))
-								surface->blit(tmpSurface, screenPosition.x, screenPosition.y - tile->getYOffset(O_NORTHWALL) * _k, obstacleShade, bool(tile->getSprite(O_WESTWALL)), _nvColor);
+							const bool obstacle = tile->getObstacle(O_NORTHWALL) || addressObstacle;
+							const bool half = bool(tile->getSprite(O_WESTWALL));
+							if (_hdTerrainAddress)
+								surface->setCellAddress(HdSprites::WALL_NORTH, mapPosition.x, mapPosition.y, mapPosition.z, (obstacle ? 5 : 3) + (half ? 1 : 0));
+							if (obstacle)
+								surface->blit(tmpSurface, screenPosition.x, screenPosition.y - tile->getYOffset(O_NORTHWALL) * _k, obstacleShade, half, _nvColor);
 							else
-								surface->blit(tmpSurface, screenPosition.x, screenPosition.y - tile->getYOffset(O_NORTHWALL) * _k, wallShade, bool(tile->getSprite(O_WESTWALL)), _nvColor);
+								surface->blit(tmpSurface, screenPosition.x, screenPosition.y - tile->getYOffset(O_NORTHWALL) * _k, wallShade, half, _nvColor);
+							if (_hdTerrainAddress)
+								surface->setCellAddress(0, 0, 0, 0, 0);
 						}
 						// Draw object
 						tmpSurface = tile->getSprite(O_OBJECT);
