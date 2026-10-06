@@ -58,7 +58,7 @@ def resolve_pair(a, b):
     return pairs, a + ".json", b + ".json"
 
 
-def compare_json(ja, jb, quiet, scale=1):
+def compare_json(ja, jb, quiet, scale=1, same_mode=False):
     if not (ja and jb and os.path.exists(ja) and os.path.exists(jb)):
         return True
     with open(ja, "r", encoding="utf-8") as f:
@@ -76,7 +76,10 @@ def compare_json(ja, jb, quiet, scale=1):
     # and any other mode changes the picture on purpose, so it cannot be compared
     for d in (da, db):
         d.setdefault("hdMode", 0)
-    if da["hdMode"] != 0 or db["hdMode"] != 0:
+    if same_mode and da["hdMode"] == db["hdMode"]:
+        # --same-mode: two builds in the same HD mode (packs, xBRZ) are meant to match each other pixel for pixel
+        pass
+    elif da["hdMode"] != 0 or db["hdMode"] != 0:
         print("!! hdMode A=%r B=%r: only HD mode 0 (nearest) is meant to be pixel-identical (F9 cycles the mode)" % (da["hdMode"], db["hdMode"]))
         ok = False
     for key in sorted(set(da) | set(db)):
@@ -185,6 +188,8 @@ def main():
     ap.add_argument("--out", default=None)
     ap.add_argument("--no-diff", action="store_true")
     ap.add_argument("--quiet", action="store_true")
+    ap.add_argument("--same-mode", action="store_true",
+                    help="A and B in the same HD mode 1 or 2 are compared pixel for pixel (by default only mode 0 is)")
     ap.add_argument("--max-slowdown", type=float, default=1.25, help="warn when drawMs/flipMs of B exceed A times this (R-009)")
     args = ap.parse_args()
 
@@ -197,7 +202,7 @@ def main():
         print("error: nothing to compare (check the prefixes: expected <prefix>_map.png / _frame.png)", file=sys.stderr)
         return 2
 
-    state_ok = compare_json(ja, jb, args.quiet, args.scale)
+    state_ok = compare_json(ja, jb, args.quiet, args.scale, args.same_mode)
     compare_perf(ja, jb, args.max_slowdown)
     all_same = True
     for label, pa, pb in pairs:
