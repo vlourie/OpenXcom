@@ -50,6 +50,22 @@ for s, r in seen:
             mech = env.copy()
         c1, c2 = centre(hole), centre(mech)
         d = (np.hypot(c1[0] - c2[0], c1[1] - c2[1]) if c1 and c2 else None)
+        # разложение сдвига центров точно: hole = mech - A + B, A - закрашено классикой в механическом проёме
+        # (косяки, переплёт, перемычка), B - прозрачное классики вне него; d = (|B|(cB-cM) - |A|(cA-cM)) / |hole|
+        A, B = mech & sil, hole & ~mech
+        split = None
+        if c1 and c2 and hole.any():
+            cm = np.array(c2)
+            fa = -(A.sum() * (np.array(centre(A)) - cm)) / hole.sum() if A.any() else np.zeros(2)
+            fb = (B.sum() * (np.array(centre(B)) - cm)) / hole.sum() if B.any() else np.zeros(2)
+            split = dict(shift_xy=[round(float(c1[0] - c2[0]), 2), round(float(c1[1] - c2[1]), 2)],
+                         from_painted_in_open=[round(float(v), 2) for v in fa],
+                         from_clear_outside_open=[round(float(v), 2) for v in fb],
+                         painted_left_right=[int((A[:, :int(cm[0])]).sum()), int((A[:, int(cm[0]):]).sum())],
+                         painted_up_down=[int((A[:int(cm[1])]).sum()), int((A[int(cm[1]):]).sum())],
+                         clear_outside_px=int(B.sum()))
+        # слои LOFT без единого сплошного вокселя: механический проём на всю ширину стены (косяков в LOFT нет)
+        empty_z = [z for z in range(24) if not g.voxels(rec)[z].any()]
         row = dict(rec="%s#%d" % (s, r), frame=f, type=rec["type"], door=rec["door"], ufo=rec["ufo_door"],
                    alt=rec["alt"], die=rec["die"], stop_los=rec["stop_los"],
                    hole_px=int(hole.sum()), mech_open_px=int(mech.sum()),
@@ -57,7 +73,8 @@ for s, r in seen:
                    centre_shift_x4=None if d is None else round(float(d), 1),
                    open_painted=round(float((mech & sil).sum() / max(1, mech.sum())), 3),
                    solid_unpainted=round(float((sol & ~sil).sum() / max(1, sol.sum())), 3),
-                   sil_outside_env=round(float((sil & ~env).sum() / max(1, sil.sum())), 3) if wall else None)
+                   sil_outside_env=round(float((sil & ~env).sum() / max(1, sil.sum())), 3) if wall else None,
+                   shift_split=split, loft_empty_z=("%d..%d" % (empty_z[0], empty_z[-1]) if empty_z else None))
         rows.append(row)
         # лист: классика, зелёное - механический проём, синее - видимый проём классики, белое - их общее
         idx, pal = fr["idx"], fr["pal"]
