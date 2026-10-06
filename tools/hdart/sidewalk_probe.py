@@ -49,6 +49,7 @@ import argparse
 import json
 import math
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -60,6 +61,7 @@ from PIL import Image, ImageDraw, ImageFont
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import ground_field as gf             # noqa: E402
 import pilot2_job_sheet as js         # noqa: E402
+import map_screen_check as msc        # noqa: E402
 
 ROOT = js.ROOT
 OUT = ROOT / "census" / "maps" / "pilot2" / "probe_sidewalk"
@@ -231,6 +233,10 @@ def make_cells(tex, a, mean_rgb, grain_std):
     grain_src, wear_src = lum - low, low - low.mean()
     grains = [fold(grain_src, p, cx, cy) for cx, cy in CENTRES]
     wears = [fold(wear_src, p, cx, cy) for cx, cy in CENTRES]
+    w_mean = [float(w.mean()) for w in wears]
+    # у каждого варианта средний износ 0: иначе клетка светлее или темнее соседей, а к краю сведена к 0 -
+    # на поле облако размером в клетку (s7101: средние -1.12..+1.58)
+    wears = [w - m for w, m in zip(wears, w_mean)] if a.wear_center else wears
     g_raw = [float(g.std()) for g in grains]
     w_raw = [float(w.std()) for w in wears]
     g_target = min(float(np.median(g_raw)), grain_std)
@@ -244,7 +250,8 @@ def make_cells(tex, a, mean_rgb, grain_std):
         wears[j] = wears[0] * co + wears[j] * si
     m_l = float(mean_rgb @ LUMA)
     cells = [np.clip(mean_rgb[None, None, :] * ((m_l + g + w) / m_l)[..., None], 0, 255) for g, w in zip(grains, wears)]
-    diag = dict(grain_raw=g_raw, grain_std=g_target, wear_raw=w_raw, wear_gain=gain,
+    diag = dict(grain_raw=g_raw, grain_std=g_target, wear_mean_raw=w_mean, wear_center=a.wear_center,
+                wear_raw=w_raw, wear_gain=gain,
                 wear_std_out=[float(w.std()) for w in wears], coherence=[coherence(g) for g in grains],
                 cell_pattern=[cell_pattern(np.tile(c @ LUMA, (4, 4))) for c in cells])
     # контроль меры узора: прежняя складка без деления на корень весов на тех же участках
@@ -522,6 +529,21 @@ def rgba(arr, crop=None, scale=1, resample=Image.NEAREST):
     return im
 
 
+def blotch(im, fw, fh, top):
+    """Крупные пятна поля: std яркости середины поля 480 x 240 после гаусса 16 пикс x4 (четверть клетки)."""
+    cx, cy = fw // 2, (fh + top) // 2
+    c = im[cy - 120:cy + 120, cx - 240:cx + 240]
+    if (c[..., 3] < 255).any():
+        raise SystemExit("середина поля задела фон")
+    lum = c[..., :3].astype(np.float64) @ LUMA          # в плавающей точке: размытие в 8 битах - шум округления
+    t = np.arange(-48, 49)
+    k = np.exp(-t * t / (2 * 16.0 ** 2))
+    k /= k.sum()
+    b = np.apply_along_axis(lambda r: np.convolve(r, k, "valid"), 1, lum)
+    b = np.apply_along_axis(lambda r: np.convolve(r, k, "valid"), 0, b)
+    return float(b.std())
+
+
 def cmd_sheet(a):
     new = load_frames(a.tag)
     info = json.loads((OUT / a.tag / "build.json").read_text(encoding=ENC))
@@ -599,6 +621,9 @@ def cmd_sheet(a):
     box = (fw // 2 - cw // 2, (fh + top) // 2 - ch // 2, fw // 2 + cw // 2, (fh + top) // 2 + ch // 2)
     sh.head("   середина того же поля x4 в натуральную величину")
     sh.row([(lbl, rgba(im, box)) for im, lbl in zip(fl[:3], ("классика", "HD сейчас", "новое"))])
+    sh.para("Крупные пятна поля - разброс яркости после размытия на четверть клетки (гаусс 16 пикс x4), середина "
+            "поля 480 x 240: " + ";   ".join("%s %.2f" % (lbl, blotch(im, fw, fh, top)) for im, lbl in
+                                             zip(fl, ("классика", "HD сейчас", "новое", "новое без вариантов"))))
 
     # 4. швы
     sh.head("4. Стыки: каждый кадр задания у каждого из четырёх краёв (полоса %.2f клетки) против непрерывного "
@@ -682,13 +707,31 @@ def layout(tag):
     return root
 
 
+GAME_AT = (49, 9, 0)   # клетка тротуара в окне CORNER_AT: выбранный юнит встаёт сюда, камера дампа - на угол
+
+
+def game_save():
+    """Копия сейва перекрёстка для игрового кадра: выбранный юнит на тротуаре (камера идёт за ним, иначе в кадре
+    корабль), дым снят, клетки открыты, день (globalshade 0). Сам js.CORNER не меняется."""
+    sav = OUT / "_game_ref" / "corner.sav"
+    if not sav.exists():
+        sav.parent.mkdir(parents=True, exist_ok=True)
+        msc.prep(str(js.CORNER), str(sav), center=GAME_AT, clear_smoke=True)
+        txt = sav.read_text(encoding="utf-8")
+        txt2, k = re.subn(r"(?m)^  globalshade: \d+$", "  globalshade: 0", txt)
+        if k != 1:
+            raise SystemExit("globalshade: %d мест" % k)
+        sav.write_text(txt2, encoding="utf-8")
+    return sav
+
+
 def run_game(out, mods_dir, mode, after):
     if out.exists():
         print("есть:", out)
         return True
     sets = "oxceHdMode=%d;oxceHdScale=4;oxceHdGroundVariants=true" % mode
     user = OUT / "_users" / out.stem
-    cmd = [sys.executable, str(ROOT / "tools" / "game_hidden.py"), "--out", str(out), "--save", str(js.CORNER),
+    cmd = [sys.executable, str(ROOT / "tools" / "game_hidden.py"), "--out", str(out), "--save", str(game_save()),
            "--after", str(after), "--user", str(user), "--set", sets]
     if mods_dir:
         cmd += ["--mods-dir", str(mods_dir)]
@@ -742,6 +785,8 @@ def main():
     b.add_argument("--grain", type=float, default=1.0, help="потолок разброса зерна в долях разброса классики")
     b.add_argument("--wear-std", type=float, default=1.0, help="разброс износа по яркости, единиц 0..255")
     b.add_argument("--wear-max", type=float, default=3.0, help="предел отклонения износа")
+    b.add_argument("--no-wear-center", dest="wear_center", action="store_false",
+                   help="не центрировать износ вариантов (контроль: облака размером в клетку)")
     b.add_argument("--edge-band", type=float, default=0.25, help="полоса у края клетки, где варианты сведены к 0")
     b.add_argument("--kerb-grain", type=float, default=1.0, help="зерно на камне бордюра, в долях зерна тротуара")
     b.add_argument("--kerb-wear", type=float, default=2.5, help="износ на камне бордюра, в долях износа тротуара")
