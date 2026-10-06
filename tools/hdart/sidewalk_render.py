@@ -15,7 +15,9 @@ battle_view.prompt_block("floor_unrolled"). Модель - Qwen-Image-2.1 по �
 Готовый ответ не перерисовывается: повтор задания после падения ничего не делает.
 """
 import argparse
+import hashlib
 import json
+import math
 import sys
 from pathlib import Path
 
@@ -26,10 +28,12 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 import battle_view          # noqa: E402
 import model_lock           # noqa: E402
-import sidewalk_probe as sp  # noqa: E402
+import pilot2_job_sheet as js  # noqa: E402
 
+# своё, а не из sidewalk_probe: сборщик правится и после постановки пробы в очередь (R-080)
 ENC = "utf-8-sig"
-OUT = sp.OUT
+OUT = js.ROOT / "census" / "maps" / "pilot2" / "probe_sidewalk"
+SIDE = 1024
 
 PROMPT = ("Flat speckled grey sidewalk pavement surface: a smooth even poured walkway with fine, evenly scattered, "
           "non-directional grit and tiny pale and dark specks, the same small grain size everywhere, a few very faint "
@@ -41,10 +45,22 @@ NEG_MATERIAL = ("paving slabs, tiles, flagstones, bricks, cobblestones, pavers, 
                 "pixel art, pixelated, blocky, dithering, blurry, smudged, noise pattern repetition")
 
 
+def classic_mean():
+    """Средний цвет непрозрачных пикселей классики ROADS:0 в боевой палитре."""
+    idx, _ = js.gm.classic("ROADS", 0)
+    return js.PAL[idx[idx > 0]].astype(np.float32).mean(0)
+
+
+def blur_wrap(arr, sigma):
+    fy = np.fft.fftfreq(arr.shape[0])[:, None]
+    fx = np.fft.fftfreq(arr.shape[1])[None, :]
+    return np.real(np.fft.ifft2(np.fft.fft2(arr) * np.exp(-2 * (math.pi * sigma) ** 2 * (fx * fx + fy * fy))))
+
+
 def sketch(seed, mean_rgb):
     """1024 x 1024: средний цвет классики плюс слабый мелкий шум (разброс 3 единицы) - без узора оригинала."""
     rng = np.random.default_rng(seed)
-    n = sp.blur_wrap(rng.normal(0, 1, (sp.SIDE, sp.SIDE)), 1.0)
+    n = blur_wrap(rng.normal(0, 1, (SIDE, SIDE)), 1.0)
     n *= 3.0 / n.std()
     img = mean_rgb[None, None, :] + n[..., None]
     return Image.fromarray(np.clip(img, 0, 255).astype(np.uint8), "RGB")
@@ -66,7 +82,7 @@ def main():
     if raw.exists():
         print("ответ уже есть: %s - не рисую" % raw)
         return
-    mean_rgb, _ = sp.classic_mean()
+    mean_rgb = classic_mean()
     sk = sketch(a.seed, mean_rgb)
     sk.save(OUT / "sketch.png")
     vb = battle_view.prompt_block("floor_unrolled")
@@ -85,6 +101,7 @@ def main():
     print("замок модели: %s@%s - совпадает (без LoRA)" % (pinned["model_repo"], pinned["model_revision"][:8]), flush=True)
     meta = dict(seed=a.seed, steps=a.steps, cfg=a.cfg, mp=a.mp, model=pinned["model_repo"],
                 revision=pinned["model_revision"], prompt=prompt, negative=negative,
+                script_sha256=hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
                 sketch="средний цвет классики ROADS:0 %s + шум 3" % [round(float(x), 1) for x in mean_rgb])
     print("промпт:", prompt, "\nнегатив:", negative, flush=True)
     if a.dry_run:
@@ -105,7 +122,7 @@ def main():
     (OUT / ("prompt_s%d.json" % a.seed)).write_text(json.dumps(meta, ensure_ascii=False, indent=1), encoding=ENC)
     print("ответ: %s %s" % (raw, hd.size), flush=True)
     print("дальше без модели: py -3.13 tools/hdart/sidewalk_probe.py build --raw %s && "
-          "py -3.13 tools/hdart/sidewalk_probe.py sheet --tag s%d" % (raw.relative_to(sp.ROOT).as_posix(), a.seed))
+          "py -3.13 tools/hdart/sidewalk_probe.py sheet --tag s%d" % (raw.relative_to(js.ROOT).as_posix(), a.seed))
 
 
 if __name__ == "__main__":
