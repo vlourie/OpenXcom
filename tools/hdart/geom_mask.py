@@ -254,14 +254,31 @@ def check(mdir, hd_path):
     f = int(Path(hd_path).name.split(".")[0])
     ld = lambda n: np.array(Image.open(mdir / n)) > 127
     sil, solid, op = ld("sil_%d.png" % f), ld("solid.png"), ld("open.png")
+    env = ld("envelope.png") if (mdir / "envelope.png").exists() else solid | op
     a = np.array(Image.open(hd_path).convert("RGBA").resize((FW * K, FH * K), Image.LANCZOS))[..., 3] > 127
+    # проём сверяется с ВИДИМЫМ проёмом классики (объём минус рисунок): классика вправе рисовать раму и переплёт
+    # там, где механика пропускает выстрел (окно URBAN 71/72: LOFT пуст на всю ширину в слоях 10..21). LOFT - отдельно,
+    # строкой механики: MCD мы не меняем, и HD её не меняет
+    hole_c, hole_h = env & ~sil, env & ~a
     res = dict(
         frame=f,
         silhouette_iou=round(iou(a, sil), 3),
         open_covered_new=int((a & op & ~sil).sum()),          # рама или стекло закрыли место, открытое в классике и в механике
         fake_hole=int((~a & solid & sil).sum()),              # дыра там, где стена сплошная и в механике, и в классике
         open_px=int(op.sum()), solid_px=int(solid.sum()))
-    res["verdict"] = "PASS" if res["open_covered_new"] <= 8 and res["fake_hole"] <= 8 and res["silhouette_iou"] >= 0.97 else "FAIL"
+    if hole_c.sum() >= 16:
+        ys, xs = np.nonzero(hole_c)
+        yh, xh = np.nonzero(hole_h)
+        res.update(hole_iou_vs_classic=round(iou(hole_h, hole_c), 3),
+                   hole_shift_vs_classic_x4=(round(float(np.hypot(xh.mean() - xs.mean(), yh.mean() - ys.mean())), 2)
+                                             if len(xh) else None),          # проём заложен целиком
+                   loft_open_painted=dict(classic=round(float((op & sil).sum() / max(1, op.sum())), 3),
+                                          hd=round(float((op & a).sum() / max(1, op.sum())), 3)))
+    ok = res["open_covered_new"] <= 8 and res["fake_hole"] <= 8 and res["silhouette_iou"] >= 0.97
+    if "hole_iou_vs_classic" in res:
+        ok = ok and res["hole_iou_vs_classic"] >= 0.90 and res["hole_shift_vs_classic_x4"] is not None \
+            and res["hole_shift_vs_classic_x4"] <= 2.0
+    res["verdict"] = "PASS" if ok else "FAIL"
     return res
 
 
