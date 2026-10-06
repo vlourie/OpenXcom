@@ -18,6 +18,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <string>
+#include <utility>
 #include <vector>
 #include <SDL.h>
 
@@ -116,6 +117,21 @@ namespace HdSprites
 	int variantCount(const void *key);
 	/// Finds variant `variant` of a palette frame's HD frame (0 = the frame itself, see find), or nullptr.
 	const HdFrame *findVariant(const void *key, int variant);
+	/// SCC wall addressing (option oxceHdTerrainAddress, hd/TERRAIN/<set>/address.txt): the parts of a wall slot.
+	const int WALL_WEST = 1, WALL_NORTH = 2;
+	/// How many pictures (the frame itself counted) wall `part` of a frame is addressed with; 0 = not addressed.
+	int wallCount(const void *key, int part);
+	/// Picture `variant` (1 .. n - 1) of an addressed wall frame (<index>.west<N>.png / .north<N>.png),
+	/// or nullptr - no such file, a wrong size or an unreadable one: that cell draws the frame itself.
+	const HdFrame *findWallVariant(const void *key, int part, int variant);
+	/// The (part, n) pairs the addressed wall frames use: the map builds one field per pair.
+	std::vector<std::pair<int, int>> wallFields();
+	/// A counter that changes only when the addressed wall frames do (the map's field checks it every frame).
+	unsigned wallGeneration();
+	/// "<set> <index>:<slot>" of an addressed wall frame (test logs), or an empty string.
+	std::string wallLabel(const void *key, int part);
+	/// Test hook: the declaration file the next loadPack reads instead of address.txt.
+	void setAddressFile(const std::string &name);
 	/// Is a frame registered at all? Unlike find, this never reads a file, so it can be asked about
 	/// every frame of a set.
 	bool registered(const void *key);

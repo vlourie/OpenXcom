@@ -179,6 +179,8 @@ OPT int oxceHdMode;
 OPT bool oxceHdLight;
 // HD render: the ground pattern - a floor with pack variants (<i>.v1.png ...) is laid over the map as patches
 OPT bool oxceHdGroundVariants;
+// HD render: SCC wall addressing - an addressed wall frame (hd/TERRAIN/<set>/address.txt) shows the picture the map's field puts in its cell (<i>.west<N>.png, <i>.north<N>.png); prototype, off, no row on the tab
+OPT bool oxceHdTerrainAddress;
 // HD render: the battle reticle (CURSOR.PCK 6..10): 0 the pack's own, 1 the stock picture, 2.. a style from hd/CURSOR.PCK/reticle_<style>/ (Mod::HD_RETICLES)
 OPT int oxceHdReticle;
 // Battlescape: the yellow reticle (CURSOR.PCK 7..10) takes the colour group the mod gives the shot's damage type in the Ufopaedia (articleItem ammoColorDT*); off = stock yellow

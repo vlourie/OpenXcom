@@ -101,6 +101,12 @@ private:
 	bool _hdGroundVariants;
 	/// The seed of this battle's ground pattern (from the map blocks: the same battle keeps its look after a load).
 	Uint32 groundSeed() const;
+	/// HD render: addressed wall frames draw the picture of their cell from the SCC field (option oxceHdTerrainAddress).
+	bool _hdTerrainAddress;
+	HdWallField _wallField;
+	/// Test hooks of the addressing (OXCE_HD_ADDRESS_OBSTACLE, OXCE_HD_ADDRESS_RELOAD): frames drawn so far.
+	int _addressTestFrames = 0;
+	void addressTestReload();
 	/// HD light: the light field of the tile being drawn, per-frame shade cache, and whether the field is in use this frame.
 	HdLight _hdLight;
 	std::vector<Sint8> _hdShadeCache;

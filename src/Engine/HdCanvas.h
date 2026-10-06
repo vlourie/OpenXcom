@@ -103,6 +103,34 @@ struct HdLight
 	bool flat = true;
 };
 
+/**
+ * SCC wall addressing (option oxceHdTerrainAddress): which picture of an addressed wall frame every map
+ * cell shows. One table per (part, n) the loaded packs use, built once for the map's size by a fixed
+ * formula of the cell's coordinates, so a cell keeps its picture whatever the camera, the drawing order
+ * or a saved game. Along a wall line two neighbours never repeat, nor a cell and the one below it.
+ */
+struct HdWallField
+{
+	struct Table { int part = 0, n = 0; std::vector<Uint8> v; };
+	int sizeX = 0, sizeY = 0, sizeZ = 0;
+	/// HdSprites::generation() the tables were checked against.
+	unsigned generation = 0;
+	std::vector<Table> tables;
+	/// The picture (0 .. n - 1, 0 = the frame itself) of cell (x, y, z) for wall `part` with n pictures; 0 without a table.
+	int at(int part, int n, int x, int y, int z) const
+	{
+		if (x < 0 || y < 0 || z < 0 || x >= sizeX || y >= sizeY || z >= sizeZ) return 0;
+		for (const Table &t : tables)
+			if (t.part == part && t.n == n) return t.v[((size_t)z * sizeY + y) * sizeX + x];
+		return 0;
+	}
+	/// Fills the table of wall `part` (HdSprites::WALL_WEST / WALL_NORTH) with n pictures for a map of X x Y x Z cells.
+	static void build(std::vector<Uint8> &f, int part, int n, int X, int Y, int Z);
+	/// Brings the tables up to the packs: rebuilt only when the map size or the registry changed and only the
+	/// (part, n) pairs that are new. Returns true when anything was built (a log line per table).
+	bool update(int X, int Y, int Z);
+};
+
 /// How a true-color canvas draws palette sprites (Canvas8 ignores it).
 enum HdMode
 {
@@ -190,6 +218,12 @@ public:
 	/// HD render: the blits that follow draw variant `variant` of a pack frame when it has one (0 = the
 	/// frame itself). The fire uses variant 1 as the picture half a step after the frame.
 	virtual void setFrameVariant(int variant) {}
+	/// HD render: the map's field of wall pictures (SCC addressing; nullptr: none). It must outlive the canvas use.
+	virtual void setWallField(const HdWallField *field) {}
+	/// HD render: the wall blits that follow are wall `part` (HdSprites::WALL_WEST / WALL_NORTH, 0 = not a
+	/// wall) of map cell (x, y, z), drawn by path `path` of Map::drawTerrain (1..6: W1, W2, N1..N4; test logs
+	/// only). An addressed frame then draws the picture the field gives that cell (no effect on the classic canvas).
+	virtual void setCellAddress(int part, int x, int y, int z, int path) {}
 	/// HD render: draws a true-color frame as it is (combat effects, see HdFx; no effect on the classic
 	/// canvas). The frame must stay alive until the canvas is flushed.
 	virtual void blitFrame(const HdFrame &hd, int x, int y) {}
@@ -390,6 +424,13 @@ private:
 	Uint32 _groundSeed = 0;
 	/// The variant the next blits draw (setFrameVariant).
 	int _frameVariant = 0;
+	/// SCC wall addressing: the map's field and the wall cell the next blits belong to (setCellAddress).
+	const HdWallField *_wallField = nullptr;
+	int _cellPart = 0, _cellX = 0, _cellY = 0, _cellZ = 0, _cellPath = 0;
+	/// The picture of an addressed wall frame for the current wall cell, or the frame itself.
+	const HdFrame *wallFrameFor(SurfaceRaw<const Uint8> src, const HdFrame *hd, bool half);
+	/// Test log (OXCE_HD_ADDRESS_TRACE): a blit made under a wall cell label by another branch than the wall one.
+	void traceForeign(const void *key, const char *branch);
 	/// A blend of two variants made for one map cell.
 	struct GroundEntry
 	{
@@ -447,6 +488,8 @@ public:
 	void setGroundCell(bool on, int x, int y, int z) override { _groundOn = on; _groundX = x; _groundY = y; _groundZ = z; }
 	void setGroundSeed(Uint32 seed) override;
 	void setFrameVariant(int variant) override { _frameVariant = variant; }
+	void setWallField(const HdWallField *field) override { _wallField = field; }
+	void setCellAddress(int part, int x, int y, int z, int path) override { _cellPart = part; _cellX = x; _cellY = y; _cellZ = z; _cellPath = path; }
 	void blitFrame(const HdFrame &hd, int x, int y) override;
 	/// The ground pattern at point (u, v) of level z (tiles; u along the map's x, v along its y) for
 	/// `count` variants: 0 .. count - 1, continuous (exposed for tests).

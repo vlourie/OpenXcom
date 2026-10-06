@@ -21,6 +21,7 @@
 #include <algorithm>
 #include <atomic>
 #include <cmath>
+#include <cstdio>
 #include <cstring>
 #include <tuple>
 #include <unordered_set>
@@ -456,6 +457,183 @@ void Canvas32::fill(Uint8 color)
 	record(cmd);
 }
 
+namespace
+{
+	Uint32 fmix32(Uint32 v)
+	{
+		v ^= v >> 16; v *= 0x85EBCA6Bu; v ^= v >> 13; v *= 0xC2B2AE35u; v ^= v >> 16;
+		return v;
+	}
+
+	/// Test log of the SCC wall addressing (OXCE_HD_ADDRESS_TRACE=<file>): every distinct line once.
+	/// Off unless the variable is set; measurement and tests only.
+	struct AddressTrace
+	{
+		FILE *file = nullptr;
+		std::unordered_set<std::string> seen;
+		AddressTrace()
+		{
+			const char *p = getenv("OXCE_HD_ADDRESS_TRACE");
+			if (p && *p) file = fopen(p, "w");
+		}
+		~AddressTrace() { if (file) fclose(file); }
+		void line(const std::string &s)
+		{
+			if (file && seen.insert(s).second)
+			{
+				fputs(s.c_str(), file);
+				fputc('\n', file);
+				fflush(file);
+			}
+		}
+	};
+	AddressTrace &addressTrace()
+	{
+		static AddressTrace trace;
+		return trace;
+	}
+
+	std::string keyText(const void *key)
+	{
+		char buf[32];
+		snprintf(buf, sizeof(buf), "%p", key);
+		return buf;
+	}
+}
+
+/**
+ * The SCC field (ADDRESSING_V1): on every wall line (x for the west part, y for the north part) the place
+ * runs along the other axis; the picture of a cell is the k-th of the n values left after removing the
+ * pictures of the cell before it on its line and of the cell below it, k = hash(x, y, z, part) mod count.
+ */
+void HdWallField::build(std::vector<Uint8> &f, int part, int n, int X, int Y, int Z)
+{
+	f.assign((size_t)X * Y * Z, 0);
+	const int L = part == HdSprites::WALL_WEST ? X : Y, A = part == HdSprites::WALL_WEST ? Y : X;
+	const size_t sa = part == HdSprites::WALL_WEST ? (size_t)X : 1;
+	const size_t sz = (size_t)X * Y;
+	for (int b = 0; b < L; ++b)
+	{
+		for (int z = 0; z < Z; ++z)
+		{
+			for (int a = 0; a < A; ++a)
+			{
+				const int x = part == HdSprites::WALL_WEST ? b : a, y = part == HdSprites::WALL_WEST ? a : b;
+				const size_t i = (size_t)z * sz + (size_t)y * X + x;
+				int b1 = -1, b2 = -1;
+				if (a > 0) b1 = f[i - sa];
+				if (z > 0) b2 = f[i - sz];
+				if (b2 == b1) b2 = -1;
+				const int cnt = n - (b1 >= 0) - (b2 >= 0);
+				const Uint32 hash = fmix32((Uint32)x * 73856093u ^ (Uint32)y * 19349663u ^ (Uint32)z * 83492791u ^ (Uint32)part * 2654435761u);
+				int k = (int)(hash % (Uint32)cnt);
+				int lo = b1, hi = b2;
+				if (lo > hi) std::swap(lo, hi);
+				if (lo >= 0 && k >= lo) ++k;
+				if (hi >= 0 && k >= hi) ++k;
+				f[i] = (Uint8)k;
+			}
+		}
+	}
+}
+
+bool HdWallField::update(int X, int Y, int Z)
+{
+	const unsigned gen = HdSprites::wallGeneration();
+	if (X == sizeX && Y == sizeY && Z == sizeZ && gen == generation)
+	{
+		return false;
+	}
+	if (X != sizeX || Y != sizeY || Z != sizeZ)
+	{
+		tables.clear();
+		sizeX = X;
+		sizeY = Y;
+		sizeZ = Z;
+	}
+	generation = gen;
+	const std::vector<std::pair<int, int>> fields = X > 0 && Y > 0 && Z > 0 ? HdSprites::wallFields() : std::vector<std::pair<int, int>>();
+	tables.erase(std::remove_if(tables.begin(), tables.end(), [&](const Table &t)
+		{ return std::find(fields.begin(), fields.end(), std::make_pair(t.part, t.n)) == fields.end(); }), tables.end());
+	bool built = false;
+	for (const std::pair<int, int> &pf : fields)
+	{
+		bool have = false;
+		for (const Table &t : tables)
+		{
+			have = have || (t.part == pf.first && t.n == pf.second);
+		}
+		if (have)
+		{
+			continue;
+		}
+		const auto t0 = std::chrono::steady_clock::now();
+		Table t;
+		t.part = pf.first;
+		t.n = pf.second;
+		build(t.v, t.part, t.n, X, Y, Z);
+		const double ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count();
+		Log(LOG_INFO) << "HD address: field " << X << "x" << Y << "x" << Z << " " << (t.part == HdSprites::WALL_WEST ? "west" : "north") << ":" << t.n << " built in " << ms << " ms";
+		if (const char *dir = getenv("OXCE_HD_ADDRESS_FIELD"))
+		{
+			// test hook: the table as built, compared byte for byte with the reference (scc_stab.py)
+			const std::string path = std::string(dir) + "/field_" + std::to_string(X) + "x" + std::to_string(Y) + "x" + std::to_string(Z)
+				+ "_" + std::to_string(t.part) + "_" + std::to_string(t.n) + ".bin";
+			if (FILE *out = fopen(path.c_str(), "wb"))
+			{
+				fwrite(t.v.data(), 1, t.v.size(), out);
+				fclose(out);
+			}
+		}
+		tables.push_back(std::move(t));
+		built = true;
+	}
+	return built;
+}
+
+/**
+ * The picture of an addressed wall frame for the wall cell set by setCellAddress: the one the map's field
+ * gives the cell, or the frame itself (picture 0, no field, a missing, unreadable or wrongly sized file).
+ * The half blit of a north wall takes the same picture: the cut never changes the choice.
+ */
+const HdFrame *Canvas32::wallFrameFor(SurfaceRaw<const Uint8> src, const HdFrame *hd, bool half)
+{
+	const void *key = src.getBuffer();
+	const int n = hd->generated ? 0 : HdSprites::wallCount(key, _cellPart);
+	int v = 0;
+	const HdFrame *out = hd;
+	if (n > 0 && _wallField)
+	{
+		v = _wallField->at(_cellPart, n, _cellX, _cellY, _cellZ);
+		if (v > 0)
+		{
+			const HdFrame *w = HdSprites::findWallVariant(key, _cellPart, v);
+			if (w && w->width == hd->width && w->height == hd->height)
+			{
+				out = w;
+			}
+		}
+	}
+	if (addressTrace().file)
+	{
+		const std::string label = n > 0 ? HdSprites::wallLabel(key, _cellPart) : std::string();
+		addressTrace().line("W " + std::to_string(_cellX) + " " + std::to_string(_cellY) + " " + std::to_string(_cellZ) + " "
+			+ std::to_string(_cellPart) + " " + std::to_string(n) + " " + std::to_string(v) + " " + std::to_string(_cellPath)
+			+ " " + (half ? "1" : "0") + " " + (out != hd ? "pic" : "main") + " " + (hd->generated ? "gen" : "pack")
+			+ " " + (label.empty() ? keyText(key) : "\"" + label + "\""));
+	}
+	return out;
+}
+
+void Canvas32::traceForeign(const void *key, const char *branch)
+{
+	if (addressTrace().file)
+	{
+		addressTrace().line("F " + std::string(branch) + " " + std::to_string(_cellX) + " " + std::to_string(_cellY) + " " + std::to_string(_cellZ)
+			+ " " + std::to_string(_cellPart) + " " + std::to_string(_cellPath) + " " + keyText(key));
+	}
+}
+
 void Canvas32::blit(SurfaceRaw<const Uint8> src, int x, int y, int shade, bool half, int newBaseColor)
 {
 	GraphSubset srcDomain(src.getWidth(), src.getHeight());
@@ -486,6 +664,10 @@ void Canvas32::blit(SurfaceRaw<const Uint8> src, int x, int y, int shade, bool h
 					hd = v;
 				}
 			}
+			else if (_cellPart)
+			{
+				hd = wallFrameFor(src, hd, half);
+			}
 			else if (_groundOn && !hd->generated)
 			{
 				hd = groundFrameFor(src, *hd);
@@ -515,6 +697,7 @@ void Canvas32::blit(SurfaceRaw<const Uint8> src, int x, int y, int shade, bool h
 
 void Canvas32::blitFrame(const HdFrame &hd, int x, int y)
 {
+	if (_cellPart) traceForeign(&hd, "frame");
 	if (_hdMode == HD_MODE_NEAREST || hd.empty())
 	{
 		return;
@@ -533,6 +716,7 @@ void Canvas32::blitFrame(const HdFrame &hd, int x, int y)
 
 void Canvas32::blit(SurfaceRaw<const Uint8> src, int x, int y, int shade, GraphSubset range)
 {
+	if (_cellPart) traceForeign(src.getBuffer(), "clip");
 	Cmd cmd {};
 	cmd.type = Cmd::BLIT;
 	cmd.x = x;
@@ -589,6 +773,7 @@ void Canvas32::blit(SurfaceRaw<const Uint8> src, int x, int y, int shade, GraphS
  */
 void Canvas32::blitScripted(ScriptWorkerBlit &work, const Surface *src, int x, int y, int shade, GraphSubset range, ScriptWorkerBlit *unlit)
 {
+	if (_cellPart) traceForeign(src, "scripted");
 	if (!src)
 	{
 		return;
@@ -979,6 +1164,7 @@ void Canvas32::blitScripted(ScriptWorkerBlit &work, const Surface *src, int x, i
 
 void Canvas32::blitClassic(Surface *src, int x, int y, int scale, int shade, int newBaseColor)
 {
+	if (_cellPart) traceForeign(src, "classic");
 	if (!src || scale < 1)
 	{
 		return;
@@ -1008,6 +1194,7 @@ void Canvas32::blitClassic(Surface *src, int x, int y, int scale, int shade, int
 
 void Canvas32::drawVapor(SurfaceRaw<int> pattern, int x, int y, int size, const Uint8 *transparencyLUT, SDL_Color tint)
 {
+	if (_cellPart) traceForeign(pattern.getBuffer(), "vapor");
 	if (tint.unused == 0)
 	{
 		return; // zero opacity keeps the pixel, as the palette LUT does
@@ -1037,6 +1224,7 @@ void Canvas32::drawVapor(SurfaceRaw<int> pattern, int x, int y, int size, const 
 
 void Canvas32::flash()
 {
+	if (_cellPart) traceForeign(nullptr, "flash");
 	Cmd cmd {};
 	cmd.type = Cmd::FLASH;
 	cmd.y0 = 0;

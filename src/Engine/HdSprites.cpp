@@ -143,6 +143,19 @@ namespace
 	/// the variants of a registered frame: slot n - 1 holds variant n (an empty path = no such variant)
 	std::unordered_map<const void*, std::vector<Entry>> variants;
 	const int MAX_VARIANTS = 15;
+	/// An addressed wall frame (address.txt): n pictures, slot N - 1 holds <index>.<slot><N>.png (an empty path = drawn as the frame itself).
+	struct WallSlots
+	{
+		int n = 0;
+		std::string label;        ///< "<set> <index>:<slot>" for the log
+		std::vector<Entry> slots;
+		std::vector<char> warned; ///< the failure of a slot is logged once
+	};
+	/// [part - 1]: the west and the north wall slot have their own pictures of the same frame
+	std::unordered_map<const void*, WallSlots> walls[2];
+	std::string addressFile = "address.txt";
+	/// Changes only when the addressed wall frames do (the map rebuilds its field then, see HdWallField::update).
+	unsigned wallsGeneration = 1;
 	/// Frames at most this big are dots, not pictures (makeDots): the bullet tracer is 3x3.
 	const int MAX_DOT = 4;
 	unsigned registryGeneration = 1;
@@ -340,6 +353,33 @@ namespace
 		}
 		variants.erase(it);
 	}
+
+	/// Forgets the addressed wall pictures of a key (both slots, their loaded bytes included).
+	void dropWalls(const void *key)
+	{
+		for (auto &part : walls)
+		{
+			auto it = part.find(key);
+			if (it == part.end())
+			{
+				continue;
+			}
+			for (Entry &entry : it->second.slots)
+			{
+				if (!entry.path.empty() && !entry.frame.pixels.empty())
+				{
+					loadedTotal -= bytesOf(entry.frame);
+				}
+			}
+			part.erase(it);
+			++wallsGeneration;
+		}
+	}
+
+	bool anyWalls()
+	{
+		return !walls[0].empty() || !walls[1].empty();
+	}
 }
 
 void setVariantLazy(const void *key, int variant, const std::string &path, Uint32 offset, Uint32 size, int width, int height)
@@ -390,6 +430,71 @@ const HdFrame *findVariant(const void *key, int variant)
 		return nullptr;
 	}
 	return frameOf(it->second[variant - 1]);
+}
+
+int wallCount(const void *key, int part)
+{
+	if (part < WALL_WEST || part > WALL_NORTH || walls[part - 1].empty())
+	{
+		return 0;
+	}
+	auto it = walls[part - 1].find(key);
+	return it == walls[part - 1].end() ? 0 : it->second.n;
+}
+
+const HdFrame *findWallVariant(const void *key, int part, int variant)
+{
+	if (part < WALL_WEST || part > WALL_NORTH)
+	{
+		return nullptr;
+	}
+	auto it = walls[part - 1].find(key);
+	if (it == walls[part - 1].end() || variant < 1 || variant >= it->second.n)
+	{
+		return nullptr;
+	}
+	WallSlots &wall = it->second;
+	Entry &entry = wall.slots[variant - 1];
+	const HdFrame *frame = frameOf(entry);
+	if (!frame && entry.failed && !wall.warned[variant - 1])
+	{
+		wall.warned[variant - 1] = 1;
+		Log(LOG_WARNING) << "HD address: " << wall.label << " variant " << variant << " decode";
+	}
+	return frame;
+}
+
+std::vector<std::pair<int, int>> wallFields()
+{
+	std::vector<std::pair<int, int>> out;
+	for (int part = WALL_WEST; part <= WALL_NORTH; ++part)
+	{
+		for (const auto &pair : walls[part - 1])
+		{
+			const std::pair<int, int> field(part, pair.second.n);
+			if (std::find(out.begin(), out.end(), field) == out.end())
+			{
+				out.push_back(field);
+			}
+		}
+	}
+	std::sort(out.begin(), out.end());
+	return out;
+}
+
+std::string wallLabel(const void *key, int part)
+{
+	if (part < WALL_WEST || part > WALL_NORTH)
+	{
+		return std::string();
+	}
+	auto it = walls[part - 1].find(key);
+	return it == walls[part - 1].end() ? std::string() : it->second.label;
+}
+
+void setAddressFile(const std::string &name)
+{
+	addressFile = name.empty() ? std::string("address.txt") : name;
 }
 
 const HdFrame *find(const void *key)
@@ -443,11 +548,16 @@ void remove(const void *key)
 		dropVariants(key);
 		++registryGeneration;
 	}
+	if (walls[0].count(key) || walls[1].count(key))
+	{
+		dropWalls(key);
+		++registryGeneration;
+	}
 }
 
 void removeSet(const SurfaceSet *surfaceSet)
 {
-	if (!surfaceSet || (registry.empty() && variants.empty()))
+	if (!surfaceSet || (registry.empty() && variants.empty() && !anyWalls()))
 	{
 		return;
 	}
@@ -467,6 +577,7 @@ void removeSet(const SurfaceSet *surfaceSet)
 				registry.erase(it);
 			}
 			dropVariants(frame->getBuffer());
+			dropWalls(frame->getBuffer());
 		}
 	}
 	++registryGeneration;
@@ -477,6 +588,9 @@ void clear()
 	beforeChange();
 	registry.clear();
 	variants.clear();
+	walls[0].clear();
+	walls[1].clear();
+	++wallsGeneration;
 	loadedTotal = 0;
 	++registryGeneration;
 }
@@ -503,6 +617,19 @@ size_t loaded()
 			if (!entry.path.empty() && !entry.frame.pixels.empty())
 			{
 				++n;
+			}
+		}
+	}
+	for (const auto &part : walls)
+	{
+		for (const auto &pair : part)
+		{
+			for (const Entry &entry : pair.second.slots)
+			{
+				if (!entry.path.empty() && !entry.frame.pixels.empty())
+				{
+					++n;
+				}
 			}
 		}
 	}
@@ -581,6 +708,17 @@ int preload(const SurfaceSet *surfaceSet)
 				want(variant);
 			}
 		}
+		for (auto &part : walls)
+		{
+			auto wit = part.find(frame->getBuffer());
+			if (wit != part.end())
+			{
+				for (Entry &variant : wit->second.slots)
+				{
+					want(variant);
+				}
+			}
+		}
 	}
 	if (todo.empty())
 	{
@@ -648,6 +786,19 @@ void trim()
 			}
 		}
 	}
+	for (auto &part : walls)
+	{
+		for (auto &pair : part)
+		{
+			for (Entry &entry : pair.second.slots)
+			{
+				if (!entry.path.empty() && !entry.frame.pixels.empty())
+				{
+					candidates.emplace_back(entry.lru, &entry);
+				}
+			}
+		}
+	}
 	std::sort(candidates.begin(), candidates.end(), [](const std::pair<size_t, Entry*> &a, const std::pair<size_t, Entry*> &b) { return a.first < b.first; });
 	const size_t target = budget - budget / 4;
 	size_t dropped = 0;
@@ -667,6 +818,11 @@ void trim()
 unsigned generation()
 {
 	return registryGeneration;
+}
+
+unsigned wallGeneration()
+{
+	return wallsGeneration;
 }
 
 void setBeforeChange(void (*hook)())
@@ -1055,6 +1211,251 @@ namespace
 		++registryGeneration;
 		Log(LOG_INFO) << "HD sprites: " << setName << ": " << marked << " frame(s) keep their own colours (color.txt)";
 	}
+
+	/// A whole decimal number (nothing else in the string).
+	bool parseWhole(const std::string &text, int &value)
+	{
+		if (text.empty() || text.size() > 6 || !std::all_of(text.begin(), text.end(), [](char c) { return c >= '0' && c <= '9'; }))
+		{
+			return false;
+		}
+		value = std::atoi(text.c_str());
+		return true;
+	}
+
+	/// The size of the pictures in a pack file (from its header), or false.
+	bool packPictureSize(const std::string &path, int &width, int &height)
+	{
+		SDL_RWops *rw = FileMap::getRWops(path);
+		if (!rw)
+		{
+			return false;
+		}
+		unsigned char head[24];
+		const bool ok = SDL_RWread(rw, head, 1, sizeof(head)) == sizeof(head) && memcmp(head, PACK_MAGIC, 8) == 0;
+		SDL_RWclose(rw);
+		if (!ok)
+		{
+			return false;
+		}
+		width = (int)(readU32(head + 8) * readU32(head + 12));
+		height = (int)(readU32(head + 8) * readU32(head + 16));
+		return width > 0 && height > 0;
+	}
+
+	/**
+	 * SCC wall addressing (option oxceHdTerrainAddress; docs/research/map-addressing-scc-contract-2026-10-06.md):
+	 * reads `hd/<setName>/address.txt` - the version of the formula and the pairs "<index>:<slot>:<n>" - and
+	 * registers the pictures `<index>.<slot><N>.png`, N = 1 .. n - 1. An unknown version turns the whole set
+	 * off, a bad pair only itself; a missing or ill-sized picture is drawn as the frame itself (its cell
+	 * alone - the numbers of the others do not move). Pictures no pair asks for are not used.
+	 * @param mainSize The size of each `<index>.png` of the folder (the pictures of pack.hdp are read from its header).
+	 */
+	void registerWalls(const std::string &setName, SurfaceSet *surfaceSet, int scale, const std::vector<std::string> &files,
+		const std::unordered_map<int, std::pair<int, int>> &mainSize)
+	{
+		// the wall pictures of the folder, to name those no pair uses
+		std::vector<std::string> wallFiles;
+		for (const std::string &file : files)
+		{
+			const size_t dot = file.find('.');
+			if (dot != std::string::npos && (file.compare(dot, 6, ".north") == 0 || file.compare(dot, 5, ".west") == 0))
+			{
+				wallFiles.push_back(file);
+			}
+		}
+		std::vector<std::string> used;
+		const std::string path = artPath(setName + "/" + addressFile);
+		std::unique_ptr<std::istream> in;
+		if (FileMap::fileExists(path))
+		{
+			in = FileMap::getIStream(path);
+		}
+		std::string version = "none";
+		std::vector<std::string> elements;
+		if (in)
+		{
+			std::string line;
+			while (std::getline(*in, line))
+			{
+				if (!line.empty() && line.back() == '\r')
+				{
+					line.pop_back();
+				}
+				const size_t first = line.find_first_not_of(" \t");
+				if (first == std::string::npos || line[first] == '#')
+				{
+					continue;
+				}
+				const size_t colon = line.find(':');
+				if (colon == std::string::npos)
+				{
+					continue;
+				}
+				std::string key = line.substr(first, colon - first);
+				key.erase(key.find_last_not_of(" \t") + 1);
+				std::istringstream value(line.substr(colon + 1));
+				if (key == "version")
+				{
+					value >> version;
+				}
+				else if (key == "frames")
+				{
+					std::string element;
+					while (value >> element)
+					{
+						elements.push_back(element);
+					}
+				}
+			}
+		}
+		struct Pair { int frame = -1, part = 0, n = 0; std::string token, bad; };
+		std::vector<Pair> pairs;
+		if (!in)
+		{
+			// no declaration: nothing is addressed
+		}
+		else if (version != "1")
+		{
+			Log(LOG_WARNING) << "HD address: " << setName << " version " << version << " unknown, off";
+		}
+		else
+		{
+			for (const std::string &token : elements)
+			{
+				Pair pair;
+				pair.token = token;
+				const size_t a = token.find(':'), b = a == std::string::npos ? a : token.find(':', a + 1);
+				int n = 0;
+				if (b == std::string::npos || token.find(':', b + 1) != std::string::npos
+					|| !parseWhole(token.substr(0, a), pair.frame) || !parseWhole(token.substr(b + 1), n))
+				{
+					pair.bad = "syntax";
+				}
+				else if (pair.frame >= (int)surfaceSet->getTotalFrames() || !surfaceSet->getFrame(pair.frame))
+				{
+					pair.bad = "frame";
+				}
+				else
+				{
+					const std::string slot = token.substr(a + 1, b - a - 1);
+					pair.part = slot == "west" ? WALL_WEST : slot == "north" ? WALL_NORTH : 0;
+					pair.n = n;
+					if (!pair.part)
+					{
+						pair.bad = "slot";
+					}
+				}
+				pairs.push_back(pair);
+			}
+			// a pair given twice: which n is meant is unknown - both go
+			for (Pair &pair : pairs)
+			{
+				if (pair.bad.empty() && std::count_if(pairs.begin(), pairs.end(),
+					[&pair](const Pair &other) { return other.part && other.frame == pair.frame && other.part == pair.part; }) > 1)
+				{
+					pair.bad = "duplicate";
+				}
+			}
+			for (Pair &pair : pairs)
+			{
+				if (pair.bad.empty() && pair.n < 4)
+				{
+					pair.bad = "n<4";
+				}
+				else if (pair.bad.empty() && pair.n > 16)
+				{
+					pair.bad = "n>16";
+				}
+			}
+		}
+		int on = 0, off = 0;
+		if (!pairs.empty())
+		{
+			beforeChange();
+		}
+		for (Pair &pair : pairs)
+		{
+			Surface *frame = pair.bad.empty() ? surfaceSet->getFrame(pair.frame) : nullptr;
+			auto main = frame ? registry.find(frame->getBuffer()) : registry.end();
+			if (pair.bad.empty() && main == registry.end())
+			{
+				pair.bad = "main";
+			}
+			if (!pair.bad.empty())
+			{
+				Log(LOG_WARNING) << "HD address: " << setName << " " << pair.token << " off: " << pair.bad;
+				++off;
+				continue;
+			}
+			// the size of the frame's own picture: every variant must have it
+			int mainW = 0, mainH = 0;
+			auto size = mainSize.find(pair.frame);
+			if (size != mainSize.end())
+			{
+				mainW = size->second.first;
+				mainH = size->second.second;
+			}
+			else if (!packPictureSize(main->second.path, mainW, mainH))
+			{
+				mainW = mainH = -1;
+			}
+			const std::string slot = pair.part == WALL_WEST ? "west" : "north";
+			const void *key = frame->getBuffer();
+			dropWalls(key);
+			WallSlots &wall = walls[pair.part - 1][key];
+			wall.n = pair.n;
+			wall.label = setName + " " + std::to_string(pair.frame) + ":" + slot;
+			wall.slots.resize(pair.n - 1);
+			wall.warned.assign(pair.n - 1, 0);
+			const int fw = frame->getWidth(), fh = frame->getHeight();
+			const int bw = fw / scale, bh = fh / scale;
+			for (int v = 1; v < pair.n; ++v)
+			{
+				const std::string file = std::to_string(pair.frame) + "." + slot + std::to_string(v) + ".png";
+				if (std::find(files.begin(), files.end(), file) == files.end())
+				{
+					Log(LOG_WARNING) << "HD address: " << wall.label << " variant " << v << " missing";
+					continue;
+				}
+				used.push_back(file);
+				const std::string picture = artPath(setName + "/" + file);
+				int width = 0, height = 0;
+				if (!pngSize(picture, width, height))
+				{
+					Log(LOG_WARNING) << "HD address: " << wall.label << " variant " << v << " decode";
+					continue;
+				}
+				const bool fits = (width == fw && height == fh) || (bw > 0 && bh > 0 && width % bw == 0 && height % bh == 0 && width / bw == height / bh);
+				if (!fits || width != mainW || height != mainH)
+				{
+					Log(LOG_WARNING) << "HD address: " << wall.label << " variant " << v << " size";
+					continue;
+				}
+				Entry &entry = wall.slots[v - 1];
+				entry.path = picture;
+				entry.width = fw;
+				entry.height = fh;
+			}
+			++on;
+		}
+		for (const std::string &file : wallFiles)
+		{
+			if (std::find(used.begin(), used.end(), file) == used.end())
+			{
+				Log(LOG_WARNING) << "HD address: " << setName << " " << file << " unused (no pair of " << addressFile << " asks for it)";
+			}
+		}
+		if (!pairs.empty())
+		{
+			++registryGeneration;
+			++wallsGeneration;
+		}
+		if (in)
+		{
+			Log(LOG_INFO) << "HD address: " << setName << " " << on << " pair(s) on, " << off << " off";
+		}
+	}
 }
 
 /**
@@ -1078,6 +1479,7 @@ int loadPack(const std::string &setName, SurfaceSet *surfaceSet, int scale)
 	{
 		loaded += registerPackFile(artPath(setName + "/pack.hdp"), surfaceSet, scale);
 	}
+	std::unordered_map<int, std::pair<int, int>> mainSize; // the size of each <index>.png (address.txt)
 	for (const std::string &file : files)
 	{
 		// "<index>.png", or "<index>.v<n>.png" (variant n of the frame)
@@ -1136,8 +1538,13 @@ int loadPack(const std::string &setName, SurfaceSet *surfaceSet, int scale)
 		else
 		{
 			setLazy(frame->getBuffer(), path, 0, 0, fw, fh);
+			mainSize[(int)index] = std::make_pair(width, height);
 			++loaded;
 		}
+	}
+	if (Options::oxceHdTerrainAddress && loaded > 0)
+	{
+		registerWalls(setName, surfaceSet, scale, files, mainSize);
 	}
 	if (loaded > 0 && std::find(files.begin(), files.end(), std::string("color.txt")) != files.end())
 	{
