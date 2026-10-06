@@ -49,3 +49,4 @@ ground_relief.py
 long_object.py
 vx_control.py
 gen_fire_real.py
+sidewalk_render.py
