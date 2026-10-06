@@ -81,13 +81,15 @@ def item(fi, miss):
     return l, ok
 
 
-def assemble(R, L, aim, d, hs, zones):
-    """Кадр routine 0 x4; возвращает картинку, список недостающего HD, зоны на кадре (прямоугольники x4) и кисти."""
+def assemble(R, L, aim, d, hs, zones, arms=None):
+    """Кадр routine 0 x4; возвращает картинку, список недостающего HD, зоны на кадре (прямоугольники x4) и кисти.
+    arms - подмена кадров рук {"la"/"ra": (rgb, a)}, пробный вариант руки (как .v1 при прицеле)."""
     e = G.emulate(0, R, L, aim)
     P = G.ROUT[0]
     miss, placed_zones, frames = [], [], []
     src = {"la": body(e["la"] + d, miss), "ra": body(e["ra"] + d, miss),
            "lg": body(P["legs"] + d, miss), "to": body(P["torso"] + d, miss)}
+    src.update(arms or {})
     for slot, (kind, rot, ox, oy, _) in e["items"].items():
         fi = hs[slot] + (d + rot) % 8
         frames.append(fi)
