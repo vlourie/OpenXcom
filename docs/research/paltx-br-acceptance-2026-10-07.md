@@ -3,7 +3,10 @@
 Задача: `art/paltx/handoff/HANDOFF.md`. Решение Vitali: террейн — BR, бойцы и предметы — M1t,
 допуск Стикса ±8, colorAuthority — пак подчиняется палитре миссии.
 
-**Итог на 07.10 (вторая редакция): все пять пунктов приёмки проверены, приёмку закрывает Vitali.**
+**Приёмка закрыта Vitali 07.10 с ограничениями из раздела «Пробелы»; дополнительных прогонов не
+будет. Окончательные эталоны — раздел «Эталоны и материалы».**
+
+**Итог на 07.10 (вторая редакция): все пять пунктов приёмки проверены.**
 Эталон — exe передачи; его код совпадает с деревом `4c69a7828`. Перекраска при декодировании
 однопоточна по смене и не повторяется. В одном процессе цвета восстанавливаются после выхода из
 боя и загрузки другого сейва, кадр совпадает со свежим процессом до пикселя. В движении Стикса BR
@@ -12,8 +15,35 @@
 
 Все прогоны невидимые (`tools/game_hidden.py`), на одном замороженном снимке паков, режим 1 k=4,
 если не сказано иное. Сравнение — `tools/hdtest_compare.py --same-mode` (R-241). Прогоны и
-журналы лежат в `E:/tmp/paltx/runs/<метка>`, листы и json — в `art/paltx/acceptance/` (папка
-`art/` в гит не идёт).
+журналы перенесены из `E:/tmp/paltx` в `art/paltx/acceptance/runs/<метка>`, листы и json — в
+`art/paltx/acceptance/` (папка `art/` в гит не идёт). Пути `E:/tmp/paltx/...` ниже читать как
+`art/paltx/acceptance/...`.
+
+## Эталоны и материалы
+
+Всё лежит в `art/paltx/acceptance/`, хэши — `ref/HASHES.txt`. Копии сверены по размеру и md5.
+
+| Файл | md5 | sha256 | Что это |
+|---|---|---|---|
+| `ref/openxcom_4c69a7828_clean.exe` | `b6c240ce8e414bfecaa216b5dc00ac96` | `257c5d3587185a493129d4726d8275ba3e7968cb9fff42ebe647a4316cc1830c` | **окончательный эталон**: чистая сборка worktree `4c69a7828` |
+| `ref/openxcom_63a1ba623_clean.exe` | `b9e9899b733efff03d9622feb62cb104` | `4523b31789ccaf63a7fd655b02dc3943a1ce430bdaf6be41cbc7499257090cf2` | **окончательная сборка BR**: чистая сборка worktree `63a1ba623` |
+| `ref/runs_exe/openxcom_base_4c69a7828.exe` | `405dc0ff1430681f5bf283c21931663f` | `bde2b2af531e5c44ee0112f68333cc216c5094cea1535979c72f841568ca4e8c` | эталон прогонов (exe передачи, сборка `0e9c4d32e`) |
+| `ref/runs_exe/openxcom_br.exe` | `f6d75b01a65d5fe25932713162f85ee1` | `c34eaf8388a702c0de93ab0720b2921717e8e5d647a6f6436df5c9a83faa4222` | BR прогонов (сборка `63a1ba623` в `build-release`) |
+
+Обе чистые сборки — тем же тулчейном в `git worktree` без изменений (`ref/build/clean_build.log`:
+`status: 0 changed`); рядом журналы cmake и ninja, `CMakeCache.txt`, `git_version.h`. От exe прогонов
+отличаются только метками PE и ресурсом версии (раздел 1, R-279).
+
+Остальное в той же папке:
+- `runs/` — дампы и снимки движка всех 66 прогонов приёмки (536 файлов);
+- `perf2/` — журналы кадров замера; `logs/` — журналы серий;
+- `saves/` — сейвы прогонов (`plain_noenv.asav`, `plain_geo.sav`, `forestswampstyx_7401.asav`,
+  `magma_*.asav`, `plain_finaltest.asav`);
+- листы: `sequence.png`, `motion_styx_switch.png`, `motion_styx_phases.png`, `motion_*.png`,
+  `styx.png`, `hot.png`, `magma.png`, `smoke.png`; проверки в json.
+
+Замороженный снимок модов (`E:/tmp/paltx/mods_frozen`, 5,2 ГБ) не переносился: его хэши
+зафиксированы в `art/paltx/handoff/inputs.json` и сверены (`inputs_verify.json`).
 
 ## Пройдено
 
