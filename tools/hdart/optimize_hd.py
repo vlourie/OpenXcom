@@ -2,8 +2,12 @@
 r"""
 Makes the HD mod's pictures smaller without changing what the game shows.
 
+LEGACY_DIRECT_WRITER (Pipeline v2, P1-B): writes into the pack folder bypassing the manifest and is not
+reworked. Whatever it writes, build_hd_pack status reports as an unadopted modification; only a human
+adopt puts it into the manifest.
+
     <venv>\Scripts\python.exe tools\hdart\optimize_hd.py --mod user\mods\hd [--dry-run]
-        [--mode palette|lossless] [--min-psnr 34] [--only UI] [--skip GLOBE] [--jobs 16] [--level 3]
+        [--mode palette|lossless] [--min-psnr 34] [--only UI] [--skip TERRAIN] [--jobs 16] [--level 3]
 
 `--only` and `--skip` take a folder under hd\ or a path below it, so a single set can be done on
 its own: `--only TERRAIN\DESERT.PCK`.
@@ -28,8 +32,7 @@ a file that cannot be made smaller is left as it is - and `--dry-run` only measu
 file that still has something to give, so a half-done folder can be told from a finished one.
 
 Typical: the ufopaedia pictures (hd\UI, ~1.2 MB each) come down to about a quarter, terrain frames to
-about an eighth, the unit packs to about two thirds; photographs (hd\GLOBE) are only recompressed,
-since a palette would band them.
+about an eighth, the unit packs to about two thirds.
 """
 import argparse
 import io
@@ -53,10 +56,6 @@ try:
     import imagequant          # libimagequant, the palettes of pngquant without the .exe
 except ImportError:
     imagequant = None
-
-# photographs: a palette would band them, so these folders are only recompressed
-PHOTO_DIRS = ("GLOBE",)
-
 
 def visible_psnr(orig, test):
     """How far two pictures are apart where something is drawn, composited over grey as the game
@@ -117,14 +116,14 @@ def quantize(im, raw, colors, pngquant):
         return None
 
 
-def best_png(rgba, args, pngquant, photo=False):
+def best_png(rgba, args, pngquant):
     """The smallest bytes of one picture: without the alpha channel when nothing is transparent, with a
     palette when that costs less than --min-psnr, packed by oxipng at the end."""
     opaque = rgba.getextrema()[3][0] == 255      # nothing transparent: the alpha channel is dead weight
     plain = rgba.convert("RGB") if opaque else rgba
     raw = to_png(plain)
     few = plain.getcolors(maxcolors=256) is not None   # fits a palette as it is: no loss at all
-    if not photo and (few or args.mode == "palette"):
+    if few or args.mode == "palette":
         pal = quantize(plain, raw, 256, pngquant)
         if pal and len(pal) < len(raw):
             need = 60.0 if few else args.min_psnr
@@ -136,14 +135,14 @@ def best_png(rgba, args, pngquant, photo=False):
 PACK_MAGIC = b"OXHDPCK1"
 
 
-def optimize_bytes(blob, args, pngquant, photo=False):
+def optimize_bytes(blob, args, pngquant):
     """One picture's bytes, made smaller; the old bytes when nothing helps."""
     try:
         im = Image.open(io.BytesIO(blob))
         im.load()
     except Exception:
         return blob
-    best, _ = best_png(im.convert("RGBA"), args, pngquant, photo)
+    best, _ = best_png(im.convert("RGBA"), args, pngquant)
     return best if len(best) < len(blob) else blob
 
 
@@ -194,8 +193,7 @@ def optimize_file(path, args, pngquant):
         im.load()
     except Exception as e:
         return old, old, "not a picture (%s)" % e
-    photo = any(part.upper() in PHOTO_DIRS for part in os.path.normpath(path).split(os.sep))
-    best, note = best_png(im.convert("RGBA"), args, pngquant, photo)
+    best, note = best_png(im.convert("RGBA"), args, pngquant)
     if len(best) >= old:
         return old, old, "already small"
     if not args.dry_run:

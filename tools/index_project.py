@@ -33,7 +33,7 @@ SKIP_DIRS = {".git", ".index", "build", "dist", "out", "node_modules", "__pycach
              ".vs", ".vscode", ".idea", "game", "assets", "venv", ".venv", "third_party",
              # каталоги сборки, данные и установленные игры: не исходники проекта
              "build-release", "obj", "deps", "libs", "bin", "user", "install",
-             "Пиратки", "мурукон", "Claude outputs", "hdglobe_dl", "hdart_sheets", "art"}
+             "Пиратки", "мурукон", "Claude outputs", "hdart_sheets", "art"}
 # и по маске: скрытые папки (.venv-qwen21 - 729 тысяч символов чужих библиотек) и готовые
 # решения конфликтов слияния (tools/merge/resolved_8.7 - копии src, символы двоились бы)
 SKIP_GLOBS = [".*", "resolved_*"]

@@ -40,7 +40,7 @@ namespace OpenXcom
  */
 bool AdultChoiceState::adultArtShipped()
 {
-	static const char *const branches[] = { "UI", "TERRAIN", "GLOBE", "BASEBITS.PCK" };
+	static const char *const branches[] = { "UI", "TERRAIN", "BASEBITS.PCK" };
 	for (const char *branch : branches)
 	{
 		const std::string path = std::string(HdSprites::ART_ROOT_ADULT) + "/" + branch;
