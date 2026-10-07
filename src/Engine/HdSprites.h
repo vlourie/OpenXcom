@@ -17,6 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <functional>
 #include <string>
 #include <utility>
 #include <vector>
@@ -25,6 +26,7 @@
 namespace OpenXcom
 {
 
+class Surface;
 class SurfaceSet;
 
 /**
@@ -166,6 +168,19 @@ namespace HdSprites
 	void setBeforeChange(void (*hook)());
 	/// Measurement: the frames read from their files since the last call, and the milliseconds it took.
 	void takeLoadStats(unsigned &frames, double &ms);
+	/// Recolours a picture read from its file before it is kept (any thread: it may only read
+	/// what does not change while it is set). `key` is the key of the frame the picture belongs to
+	/// (its variants and addressed walls included).
+	typedef void (*Recolour)(const void *key, HdFrame &frame);
+	/// Sets the recolouring of the pictures read from files from now on (nullptr: their own colours).
+	/// The loaded pictures recoloured by the previous one are dropped (read again when drawn);
+	/// with a new one the loaded pictures are recoloured at once, each exactly once.
+	void setRecolour(Recolour fn);
+	/// Calls fn on every lazy picture of the frames of the sets (the frames, their variants and the
+	/// addressed walls), with the classic frame it replaces and the picture in its own colours,
+	/// on all cores; `place` numbers the pictures in a fixed order (0 .. n - 1, the same for the
+	/// same sets). Pictures not loaded are read just for the call. Returns how many there were.
+	size_t scanPictures(const std::vector<const SurfaceSet*> &sets, const std::function<void(size_t place, const Surface &classic, const HdFrame &picture)> &fn);
 
 	/// The two trees the HD pictures live in, side by side in the mod: the ordinary one and the
 	/// adult one. Which is read is decided per path, so the adult tree only has to hold what
