@@ -8,6 +8,7 @@
 
   "GameDir": "Пиратки\\Dioxine_XPiratez",
   "Mods": ["hd_core", "hd", "intro_voice", "Piratez", "OAK patch for RU Piratez", "Piratez Cities Lore", "Piratez Cyrillic Names", "Piratez Czech Names", "XPZ RU-patch", "piratez_tank_turret", "Apple_Processing", "XPZ_Kisya_Brysya_Sisters"],
+  "ModSource": {"hd": "game"},
   "ModRequire": {
     "piratez_tank_turret": ["metadata.yml", "Ruleset/tank_turret.rul", "Resources", "hd/PIR_TANK_TURRET.PCK/pack.hdp", "hd/PIR_TANK_L_TURRET.PCK/pack.hdp"],
     "Apple_Processing": ["metadata.yml", "Ruleset/Apple_Processing.rul", "Resources/AppleProcessing"],

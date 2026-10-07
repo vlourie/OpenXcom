@@ -706,7 +706,8 @@ function Select-ModSource($mod, [string[]]$excludeDirs) {
         Show-ModOnlyElsewhere $chosen[0] $trees
         return $chosen[0].Root
     }
-    $best = @($trees | Sort-Object Newest -Descending)[0]
+    # $trees - хэштаблицы: в Windows PowerShell 5.1 «Sort-Object Newest» их ключей не видит и не сортирует
+    $best = @($trees | Sort-Object { $_.Newest } -Descending)[0]
     if ($trees.Count -gt 1) {
         Write-Warn ("у мода {0} две копии — беру свежую: {1}. Если правили другую, правка в релиз не попадёт (грабли R-015)" -f $mod.Name, $best.Root)
         # свежая, но заметно меньше другой — это не «новее», это недописанная копия
