@@ -607,8 +607,12 @@ def verdict(res):
     ловит 90-й процентиль (старые соседи 13.6, отклонённый пак 22.3, новое 1.42); нитка по стыку камня - профиль
     глубины бордюра, у классики -8.0. Порог сетки 2.0 - уровень ковра классики этого сейва (1.61-1.93); старые
     соседи 2.66, отклонённый пак 5.96. Каждая мера приёмки проверена контролем, который обязан её провалить:
-    crop - лесенка края штриха, patch - заплатка, old - ступень p90 тротуара и асфальта."""
-    v, diag = {}, set()
+    crop - лесенка края штриха, patch - заплатка, old - ступень p90 тротуара и асфальта.
+    Три класса: согласованность (швы, сетка, заплатка, разметка по маске классики) - классика её проходит, это
+    калибровка; требование HD (статус hd: прямой край штриха и бордюра) - классика по природе пиксельная
+    лесенка, её провал здесь не брак, а эталон того, что HD убирает (failed(..., reference=True) его не
+    считает); диагностика (diag) - в итог не идёт ни у кого."""
+    v, diag, hd = {}, set(), set()
     for mat, st in res["steps"].items():
         if mat in ("walk", "stone", "asphalt"):
             kk = "шов %s: ступень на стыке / посередине (медиана)" % mat
@@ -640,6 +644,7 @@ def verdict(res):
             rg = [d["edge_rag"] for d in m["dashes"] if d.get("edge_rag") is not None]
             if rg:
                 v["лесенка края штриха, пикс x4 (худший)"] = (max(rg), max(rg) <= PASS["mark_rag"])
+                hd.add("лесенка края штриха, пикс x4 (худший)")
             ln = [d["length"] for d in m["dashes"]]
             v["длина штриха с краской / длина у классики (худший)"] = (round(min(ln), 2), min(ln) >= PASS["mark_len"])
     if "patch" in res:
@@ -650,7 +655,14 @@ def verdict(res):
     if "kerb_edge" in res:
         ke = res["kerb_edge"]
         v["край бордюра: чужое в полосе асфальта, dY (худший отрезок)"] = (ke["worst_dy"], ke["worst_dy"] <= PASS["kerb_edge"])
-    return {kk: [a, ("diag " if kk in diag else "") + ("PASS" if b else "FAIL")] for kk, (a, b) in v.items()}
+        hd.add("край бордюра: чужое в полосе асфальта, dY (худший отрезок)")
+    return {kk: [a, ("diag " if kk in diag else "hd " if kk in hd else "") + ("PASS" if b else "FAIL")]
+            for kk, (a, b) in v.items()}
+
+
+def failed(verdict_, reference=False):
+    """Проваленные меры приёмки: согласованность всегда, требования HD - кроме эталона классики (reference)."""
+    return [kk for kk, x in verdict_.items() if x[1] == "FAIL" or (x[1] == "hd FAIL" and not reference)]
 
 
 def main(argv=None):
@@ -670,17 +682,18 @@ def main(argv=None):
     a = ap.parse_args(argv)
     r = analyse(a.save, a.dump, a.out, a.name or Path(a.dump).parent.name, a.mark_dy, a.pack, a.classic or None)
     print("%s: hdMode %s, камера %s, клеток участка %s" % (r["name"], r["hdMode"], r["camera"], r["tiles"]))
-    nfail = 0
     for kk, vv in r["verdict"].items():
         print("  %-52s %10s  %s" % (kk, vv[0], vv[1]))
-        nfail += vv[1] == "FAIL"
+    reference = r["name"].startswith("classic")
+    nfail = len(failed(r["verdict"], reference))
     print("  цвет:", r["colour"])
     print("  худшие швы:")
     for w in r["worst_seams"][:8]:
         print("    %5.2f (посередине p90 %.2f) %-7s край %s: %s %s | %s %s" % (
             w["step"], w["mid_p90"], w["material"], w["edge"], w["tiles"][0], w["slots"][0], w["tiles"][1],
             w["slots"][1]))
-    print("ИТОГ: %s (провалено мер %d)" % ("FAIL" if nfail else "PASS", nfail))
+    print("ИТОГ%s: %s (провалено мер %d)" % (" (эталон классики: требования HD не считаются)" if reference else "",
+                                         "FAIL" if nfail else "PASS", nfail))
     return 1 if nfail else 0
 
 
