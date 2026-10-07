@@ -22,10 +22,17 @@
     (индексы 1..3) - фактура снега пака (кадр 32, сам с собой), чтобы берег продолжал соседний снег;
     лиловый склон и льдины - premultiplied мягкое x4 классики; слои смешаны по плотности, за силуэтом цвет
     крайнего слоя. Альфа как у SEABITS. Ступени берега - геометрия классики, не трогаются.
+  FORESTSWAMP, _SNOW, _WASTE, FORESTSWAMPSTYX 51..110 - болота, раскладка POLAR (записи 63..80, открытая вода
+    56, 71, 86, 101). Вода - как у POLAR, своя рампа (SWAMP_RAMP). Суша берега - фактура пака пола-соседа
+    (SWAMP_LAND, кадр 0 сам с собой), умноженная на отношение яркости суши классики к яркости соседа: трава
+    и снег берега продолжают траву и снег соседних клеток. Суша темнее соседа больше чем вдвое (тень сугроба
+    на воде) остаётся цветом классики.
 
-    py -3.13 tools/hdart/water_build.py --out <папка>/TERRAIN [--sets SEAURBAN,SEABITS,CARGO2_IND,POLAR]
-Проверка - игровой кадр (море у борта пиратского круиза, полярные пруды STR_LOC_ACADEMY_TOWN_COLD), а не лист кадров.
-POLAR берёт снег из пака установки - пересобирать после замены снега POLAR 32.
+    py -3.13 tools/hdart/water_build.py --out <папка>/TERRAIN [--sets SEAURBAN,SEABITS,CARGO2_IND,POLAR,FORESTSWAMP,...]
+Проверка - игровой кадр (море у борта пиратского круиза, полярные пруды STR_LOC_ACADEMY_TOWN_COLD,
+болото STR_LOC_MONSTER_HUNT_PRIMAL_WEREWOLF), а не лист кадров.
+POLAR берёт снег из пака установки - пересобирать после замены снега POLAR 32; болота - после замены
+кадра 0 FOREST, FOREST_SNOW, FOREST_WASTE, FORESTJUNGLESTYX.
 """
 import argparse
 import os
@@ -52,6 +59,11 @@ POLAR_WATER = np.zeros(256, bool)
 POLAR_WATER[128:144] = True             # бирюзовая рампа воды POLAR
 POLAR_SNOW_IDX = [1, 2, 3]              # белый снег, как у кадра снега 32
 POLAR_SNOW = INST / "user" / "mods" / "hd" / "hd" / "TERRAIN" / "POLAR.PCK" / "32.png"
+# семья FORESTSWAMP: та же раскладка (записи 63..80, кадры 51..110, открытая вода - запись 68), своя рампа воды
+SWAMP_RAMP = {"FORESTSWAMP": 128, "FORESTSWAMP_SNOW": 128, "FORESTSWAMP_WASTE": 48, "FORESTSWAMPSTYX": 0}
+# пол-сосед берегов на картах (набор террейна, кадр 0 - чаще всего у воды): фактура суши берега берётся у его пака
+SWAMP_LAND = {"FORESTSWAMP": "FOREST", "FORESTSWAMP_SNOW": "FOREST_SNOW", "FORESTSWAMP_WASTE": "FOREST_WASTE",
+              "FORESTSWAMPSTYX": "FORESTJUNGLESTYX"}
 
 
 def palette():
@@ -197,10 +209,10 @@ def build_foam(pal, out, blur=1.0, gain=1.6):
     return len(FOAM)
 
 
-def polar_water(frame, pal, mean, blur):
-    """Вода кадра POLAR: кадр сам с собой на изорешётке, не-вода - средний цвет воды; мягкое x4 клетки кадра."""
+def polar_water(frame, pal, mean, blur, water=POLAR_WATER):
+    """Вода кадра берега: кадр сам с собой на изорешётке, не-вода - средний цвет воды; мягкое x4 клетки кадра."""
     col = pal[frame].astype(np.float32)
-    col[~(POLAR_WATER[frame] & (frame != 0))] = mean
+    col[~(water[frame] & (frame != 0))] = mean
     span = range(-2, 3)
     n = len(span)
     ox, oy = n * 16 + 8, 8
@@ -219,10 +231,10 @@ def polar_water(frame, pal, mean, blur):
     return hd[py * K:(py + 40) * K, px * K:(px + 32) * K]
 
 
-def polar_snow():
+def polar_snow(png=POLAR_SNOW):
     """Снег пака установки (POLAR 32) на изорешётке сам с собой, клетка в середине: за ромбом - то, что
     покажет соседний снег."""
-    s = np.asarray(Image.open(POLAR_SNOW).convert("RGBA")).astype(np.float32)
+    s = np.asarray(Image.open(png).convert("RGBA")).astype(np.float32)
     h, w = 40 * K, 32 * K
     big = np.zeros((h * 3, w * 3, 4), np.float32)
     for y in range(-2, 3):
@@ -237,14 +249,41 @@ def polar_snow():
 
 def build_polar(pal, out, blur=1.6):
     s = "POLAR"
-    frames = read_set(s)
     recs, _ = records(s)
     assert recs[68] == [68, 83, 98, 113] * 2 and recs[78] == [113, 68, 83, 98] * 2, (recs[68], recs[78])
+    return build_shore(pal, out, s, POLAR_WATER, (68, 83, 98, 113), range(63, 123), POLAR_SNOW_IDX, POLAR_SNOW, blur)
+
+
+def build_swamp(s):
+    def run(pal, out, blur=1.6):
+        recs, _ = records(s)
+        assert recs[68] == [56, 71, 86, 101] * 2 and recs[78] == [101, 56, 71, 86] * 2, (recs[68], recs[78])
+        water = np.zeros(256, bool)
+        water[SWAMP_RAMP[s]:SWAMP_RAMP[s] + 16] = True
+        nb = SWAMP_LAND[s]
+        a0 = read_set(nb)[0]
+        land = (nb, INST / "user" / "mods" / "hd" / "hd" / "TERRAIN" / (nb + ".PCK") / "0.png", luma(pal[a0[a0 != 0]]).mean())
+        return build_shore(pal, out, s, water, (56, 71, 86, 101), range(51, 111), blur=blur, land=land)
+    return run
+
+
+def luma(c):
+    return c[..., 0] * 0.299 + c[..., 1] * 0.587 + c[..., 2] * 0.114
+
+
+def build_shore(pal, out, s, water, open_frames, anim_range, snow_idx=(), snow_png=None, blur=1.6, land=None):
+    """Анимированная вода с берегами (POLAR, семья FORESTSWAMP): вода кадра - сам с собой на изорешётке;
+    суша - premultiplied мягкое x4 своих цветов; snow_idx - пиксели, которые берут фактуру пака snow_png.
+    land = (набор, png пака, яркость классики) пола-соседа: суша - его фактура на изорешётке, умноженная на
+    отношение яркости своей суши классики к яркости пола-соседа (скаляр, тон не уводит - R-030)."""
+    frames = read_set(s)
+    recs, _ = records(s)
     anim = sorted({f for r in recs if len(set(r)) > 1 for f in r})
-    assert anim == list(range(63, 123)), anim
-    mean = np.concatenate([pal[frames[f][POLAR_WATER[frames[f]] & (frames[f] != 0)]] for f in (68, 83, 98, 113)])
+    assert anim == list(anim_range), anim
+    mean = np.concatenate([pal[frames[f][water[frames[f]] & (frames[f] != 0)]] for f in open_frames])
     mean = mean.astype(np.float32).mean(0)
-    snow = polar_snow()
+    snow = polar_snow(snow_png) if snow_png is not None else 0.0
+    ltex = polar_snow(land[1]) if land is not None else None
 
     def dens(m, col=None):
         ch = [m.astype(np.float32)[..., None]] if col is None else [col * m[..., None], m.astype(np.float32)[..., None]]
@@ -253,20 +292,26 @@ def build_polar(pal, out, blur=1.6):
     for f in anim:
         a = frames[f]
         nz = a != 0
-        wm = nz & POLAR_WATER[a]
-        sm = nz & np.isin(a, POLAR_SNOW_IDX)
+        wm = nz & water[a]
+        sm = nz & np.isin(a, list(snow_idx))
         im = nz & ~wm & ~sm
-        wat = polar_water(a, pal, mean, blur)
+        wat = polar_water(a, pal, mean, blur, water)
         ui = dens(im, pal[a].astype(np.float32))
         d_i = np.clip(ui[..., 3], 0, None)
         icol = ui[..., :3] / np.maximum(d_i[..., None], 1e-3)
+        if land is not None:
+            # суша темнее пола-соседа больше чем вдвое - это рисунок берега (тень сугроба на воде), а не трава
+            # или снег: остаётся цветом классики, переход между 0.45 и 0.7 отношения
+            r = luma(icol) / land[2]
+            t = np.clip((r - 0.45) / 0.25, 0, 1)[..., None]
+            icol = ltex * np.clip(r, 0.5, 2.0)[..., None] * t + icol * (1 - t)
         d_s = np.clip(dens(sm)[..., 0], 0, None)
         d_w = np.clip(dens(wm)[..., 0], 0, None)
         tot = np.maximum(d_i + d_s + d_w, 1e-4)
         # доли слоёв по плотности: за силуэтом цвет того слоя, что у края (иначе кромка ромба цвета воды)
-        land = np.clip(((d_i + d_s) / tot - 0.5) * 2.2 + 0.5, 0, 1)[..., None]
+        lw = np.clip(((d_i + d_s) / tot - 0.5) * 2.2 + 0.5, 0, 1)[..., None]
         ls = (d_s / np.maximum(d_i + d_s, 1e-4))[..., None]
-        col = (icol * (1 - ls) + snow * ls) * land + wat * (1 - land)
+        col = (icol * (1 - ls) + snow * ls) * lw + wat * (1 - lw)
         alpha = np.maximum(soft_mask(nz), blk(nz))
         save(np.dstack([np.clip(col, 0, 255), alpha * 255]).round().astype(np.uint8), out, s, f)
     return len(anim)
@@ -279,6 +324,7 @@ def main():
     a = ap.parse_args()
     pal = palette()
     fn = {"SEAURBAN": build_seaurban, "SEABITS": build_seabits, "CARGO2_IND": build_foam, "POLAR": build_polar}
+    fn.update({s: build_swamp(s) for s in SWAMP_RAMP})
     for s in a.sets.split(","):
         print(s, "кадров", fn[s](pal, a.out), "->", Path(a.out) / (s + ".PCK"))
 
