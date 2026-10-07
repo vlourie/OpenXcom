@@ -104,6 +104,7 @@ KERB_N = {"+u": 11, "+v": 11, "-u": 5, "-v": 5}        # пикселей кам
 FACES = {"front": ((0, 0), (1, 1), (2, 5), (6, 6), (7, 10)), "back": ((0, 1), (2, 2), (3, 4))}
 OUTER = {"front": 4 / 11, "back": 3 / 5}
 MARK_LO, MARK_HI = 1 / 32, 5 / 32                      # полоса разметки классики (пиксели индекса 240)
+MARK_SIDE_END = 1.125                                   # боковой конец классики: низ строки 32 базы, u + v (горизонталь)
 MARK_INDEX = 240
 WEDGE = 3 / 16                                         # клин у верхней вершины асфальта
 REACH = WEDGE + 1 / 32                                 # выступ в клин соседа - с запасом
@@ -392,18 +393,19 @@ def stone_cells(seed, a, wrap=True):
 
 def band_cover(f, us, vs):
     """Разметка кадра f по подточкам: полоса классики вдоль края. Верхний конец (у верхней вершины) на карте всегда
-    свободный - срез поперёк, по ребру клетки. Боковой конец (левая вершина у -u, правая у -v) в узле (55,12)
-    сходится в V с соседним кадром, а за край картинки 32x40 кадр не рисует - срез вертикалью через вершину, тот же
-    у свободных боковых концов (кадр один на все места). Кадр с двумя полосами (12, на карте нет) - угол вертикалью."""
+    свободный - срез поперёк, по ребру клетки. Боковой конец (левая вершина у -u, правая у -v) - как в классике:
+    снизу горизонталь экрана по низу строки 32 базы (u + v = 1.125), сбоку край картинки 32x40 (вертикаль через
+    вершину); в узле (55,12) два таких конца дают V с плоским низом, как у классики (специалист 07.10). Кадр с двумя
+    полосами (12, на карте нет) - угол вертикалью."""
     m = np.zeros(us.shape, bool)
     both = len(cc.MARK_EDGES[f]) > 1
     for e in cc.MARK_EDGES[f]:
         if e == "-u":
             top = (vs - us >= 0) if both else (vs >= 0)
-            m |= (us >= MARK_LO) & (us < MARK_HI) & top & (vs - us <= 1)
+            m |= (us >= MARK_LO) & (us < MARK_HI) & top & (vs - us <= 1) & (us + vs <= MARK_SIDE_END)
         else:
             top = (us - vs >= 0) if both else (us >= 0)
-            m |= (vs >= MARK_LO) & (vs < MARK_HI) & top & (us - vs <= 1)
+            m |= (vs >= MARK_LO) & (vs < MARK_HI) & top & (us - vs <= 1) & (us + vs <= MARK_SIDE_END)
     return m.mean(-1)
 
 
@@ -456,15 +458,27 @@ def build(a):
                 mark_grain=a.mark_grain, wedge=WEDGE, reach=REACH,
                 walk_rgb=[round(float(x), 2) for x in walk_rgb], walk_std=round(walk_std, 2),
                 asphalt_rgb=[round(float(x), 2) for x in asph_rgb], asphalt_std=round(asph_std, 2),
-                mark_rgb=mark_rgb.tolist(), mark_band=[MARK_LO, MARK_HI], mark_ends="top: transverse along cell edge; side: vertical through vertex",
+                mark_rgb=mark_rgb.tolist(), mark_band=[MARK_LO, MARK_HI], mark_ends="top: transverse along cell edge; side: classic - horizontal u+v<=%.3f, vertical through vertex" % MARK_SIDE_END,
+                edge_over="own edge material (kerb_owner: beyond kerb side - asphalt, sidewalk side - sidewalk)",
                 kerb_profiles={s: np.round(prof[s], 1).tolist() for s in prof},
                 walk_diag={k: (np.round(v, 3).tolist() if isinstance(v, list) else v) for k, v in W[3].items()
                            if k in ("grain_raw", "grain_std", "wear_std_out", "coherence", "cell_pattern")},
                 asphalt_diag=A[2], grate=grate_info)
     # бордюр: владение и цвет профиля по подточкам, в пиксель - среднее
+    over_s = ((us >= 1) & (us < 1 + REACH) & (vs < REACH)) | ((vs >= 1) & (vs < 1 + REACH) & (us < REACH))
     kerb = {}
     for f in range(1, 9):
         sides, owner, x, beyond = kerb_owner(f, us, vs)
+        # зубцы силуэта за стороной бордюра вне клина соседа: внутри карты их закрывает ромб соседа, на краю карты
+        # они видны - лицо камня этой стороны, как у зубцов классики; асфальт за стороной только в over, где он
+        # заполняет клин асфальта соседа (R-248)
+        tooth = beyond & ~over_s
+        for k, (s, w) in enumerate(sides):
+            E = {"+u": 1 - us, "+v": 1 - vs, "-u": us, "-v": vs}[s]
+            m = tooth & (E < 0)
+            owner[m] = k
+            x[m] = KERB_N[s]
+        beyond = beyond & ~tooth
         col = np.zeros(us.shape + (3,))
         stone_m = np.zeros(us.shape, bool)
         for k, (s, w) in enumerate(sides):
@@ -488,8 +502,11 @@ def build(a):
         under = samp(P[0][j]) if a.control == "patch" else asph
         for f in FRAMES:
             alpha = np.where((js.classic_idx("ROADS", f) > 0) | diamond | over, 255.0, 0.0)
+            # выступ за ромбом (over и зубцы силуэта) - материал края своей клетки: внутри карты его закрывает сосед
+            # или он попадает в клин асфальта только за стороной бордюра (там kerb_owner даёт асфальт), а на краю
+            # карты он виден и обязан быть в тон краю (специалист 07.10); у тротуара 0 - тротуар
             if f == 0:
-                rgb = np.where(over[..., None], asph, walk)
+                rgb = walk
             elif f <= 8:
                 kc, kcov, bcov, wcol = kerb[f]
                 wcov = np.clip(1 - kcov - bcov, 0, 1)
@@ -497,7 +514,6 @@ def build(a):
                     rgb = kc * stone[..., None] + walk * wcov[..., None] + wcol
                 else:
                     rgb = kc * stone[..., None] + walk * wcov[..., None] + asph * bcov[..., None]
-                    rgb = np.where(over[..., None], asph, rgb)
             elif f == 9:
                 rgb = asph
             elif f in mark_cover:
