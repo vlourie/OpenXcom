@@ -147,6 +147,53 @@ function Close-StageChangelog([string] $path, [string] $id, [datetime] $day, [st
         $title, $items.Count, ($was - $now), $now)
 }
 
+# sha256 содержимого с концами строк LF: рабочее дерево с autocrlf даёт CRLF, коммит - LF (R-252)
+function Get-LfSha([string] $path) {
+    $latin = [Text.Encoding]::GetEncoding(28591)
+    $bytes = $latin.GetBytes($latin.GetString([IO.File]::ReadAllBytes($path)).Replace("`r`n", "`n"))
+    $sha = [Security.Cryptography.SHA256]::Create()
+    try { return ([BitConverter]::ToString($sha.ComputeHash($bytes)) -replace '-', '').ToLowerInvariant() } finally { $sha.Dispose() }
+}
+
+# Грабли R-044: с nobuild стейдж мог быть собран до последней правки движка. Выдаёт файлы исходников
+# и сборки (src, cmake, корневой CMakeLists.txt), изменённые позже exe стейджа. Отбор явный по имени и
+# расширению: в Windows PowerShell 5.1 -Include при -LiteralPath молча не действует, и прежняя проверка
+# брала любой файл src (txt, png) и CMakeLists.txt без разбора. Файл из $allow (Path, Sha - Get-LfSha содержимого, Exe - sha256 exe) не
+# выдаётся, только если совпали и содержимое, и сам exe: допуск дан одному стейджу, а не правке навсегда.
+function Get-StaleBuildFiles([string] $root, [string] $exe, [object[]] $allow) {
+    $exts = @('.cpp', '.cc', '.c', '.h', '.hpp', '.inl', '.rc', '.cmake')
+    $root = [IO.Path]::GetFullPath($root).TrimEnd('\', '/')
+    $exeTime = (Get-Item -LiteralPath $exe).LastWriteTime
+    $files = @()
+    foreach ($d in 'src', 'cmake') {
+        $p = Join-Path $root $d
+        if (Test-Path -LiteralPath $p) { $files += @(Get-ChildItem -LiteralPath $p -Recurse -File) }
+    }
+    $top = Join-Path $root 'CMakeLists.txt'
+    if (Test-Path -LiteralPath $top) { $files += @(Get-Item -LiteralPath $top) }
+    $exeSha = $null
+    foreach ($f in $files) {
+        if (-not ($f.Name -eq 'CMakeLists.txt' -or $exts -contains $f.Extension.ToLowerInvariant())) { continue }
+        if ($f.LastWriteTime -le $exeTime) { continue }
+        $rel = $f.FullName.Substring($root.Length + 1).Replace('\', '/')
+        $ok = $false
+        foreach ($a in @($allow)) {
+            if ($null -eq $a -or $a.Path -ne $rel) { continue }
+            if ($null -eq $exeSha) { $exeSha = (Get-FileHash -LiteralPath $exe -Algorithm SHA256).Hash.ToLowerInvariant() }
+            if ($a.Exe -eq $exeSha -and $a.Sha -eq (Get-LfSha $f.FullName)) { $ok = $true; break }
+        }
+        if (-not $ok) { $f }
+    }
+}
+
+# Допуски Get-StaleBuildFiles: правки сборки новее exe, проверенные для КОНКРЕТНОГО стейджа
+function Get-FreshAllow {
+    # 7dfcce560 (R-279): OBJECT_DEPENDS для OpenXcom.rc - только пересборка ресурса версии, код игры тот же;
+    # стейдж BR 07.10 23:05 (код 63a1ba623), допуск - решение 08.10
+    @{ Path = 'src/CMakeLists.txt'; Sha = 'aea51c29abdfb58dd58a9a98c30b63eddca54f33a2ec9636e099f45f5fdb21ab'
+       Exe = 'a3ad1147b0ac44339f7d3b6d85fe2d22f6e0c7baf3c633194c8485239db2dbc8' }
+}
+
 function Xpr([string[]] $a) {
     & $script:xpr @a | Out-Host
     if ($LASTEXITCODE -ne 0) { throw "xp-release $($a[0]) завершился с кодом $LASTEXITCODE" }
@@ -226,11 +273,12 @@ try {
         if (-not (Test-Path -LiteralPath $launchExe)) { throw "в $($cfg.Stage) нет $($cfg.Launch) - нужна сборка «Обе»" }
         Ok ("стейдж от {0:dd.MM HH:mm}" -f (Get-Item -LiteralPath $launchExe).LastWriteTime)
         # грабли R-044: с nobuild стейдж мог быть собран до последней правки движка
-        $newestSrc = Get-ChildItem -LiteralPath (Join-Path $root 'src') -Recurse -File -Include *.cpp, *.h |
-            Sort-Object LastWriteTime | Select-Object -Last 1
-        if ($newestSrc -and $newestSrc.LastWriteTime -gt (Get-Item -LiteralPath $launchExe).LastWriteTime) {
-            throw ("exe в стейдже старше исходников: {0} изменён {1:dd.MM HH:mm}. Выпуск без сборки выложил бы игру без этой правки - запустите без nobuild" -f $newestSrc.Name, $newestSrc.LastWriteTime)
+        $stale = @(Get-StaleBuildFiles $root $launchExe @(Get-FreshAllow) | Sort-Object LastWriteTime -Descending)
+        if ($stale.Count) {
+            $list = ($stale | Select-Object -First 5 | ForEach-Object { '{0} ({1:dd.MM HH:mm})' -f $_.FullName.Substring($root.Length + 1), $_.LastWriteTime }) -join ', '
+            throw ("exe в стейдже старше исходников или сборки: {0} файл(ов) новее exe - {1}. Выпуск без сборки выложил бы игру без этой правки - запустите без nobuild" -f $stale.Count, $list)
         }
+        Ok 'исходники и сборка не новее exe (допуски: только проверенные правки этого стейджа)'
 
         # ---- имя и версия выпуска по дате
         $today = Get-Date
