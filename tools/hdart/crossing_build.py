@@ -1,43 +1,65 @@
-r"""Сборка связанного участка перекрёстка ROADS 0-13 из одного ответа модели, без новой генерации.
+r"""Сборка связанного участка перекрёстка ROADS 0-13 без новой генерации (тротуар - ответ модели s7101, асфальт и
+камень - процедурные фактуры, видеокарта не нужна).
 
-Зачем (FAIL визуальной приёмки 07.10): проба тротуара заменила кадры 0, 1, 2, 7, а асфальт 9, разметка 10-12,
-решётка 13 и бордюры 3-6, 8 остались старыми. В игровом кадре это сетка клеток асфальта, заплатки другой фактуры под
-разметкой, разметка то широкая, то ниткой. Разбор по пикселям (crossing_check.py по дампу движка) - в отчёте.
+История: FAIL визуальной приёмки 07.10 (сетка асфальта, заплатки под разметкой) - собран весь участок из одного
+поля; второе замечание специалиста 07.10 (чистые кадры): ступеньки профиля во внутренних углах бордюров, выступ
+в вершине V, заострённые концы штрихов, решётка крупнее и контрастнее классики, бордюр читается тёмной канавкой,
+одна перекрашенная фактура тротуара на все материалы. Эта сборка - доводка по нему.
 
-Здесь собирается ВЕСЬ материал участка сразу:
-  тротуар  - клетки вариантов из ответа модели (sidewalk_probe.make_cells), тон и зерно классики ROADS:0;
-  асфальт  - те же клетки из другого места того же ответа (транспонированный ответ), тон и зерно классики ROADS:9;
-             ОДНИ И ТЕ ЖЕ клетки во всех кадрах 9-13, значит асфальт под разметкой и решёткой - тот же материал;
-  бордюры  - кадры 1-8: тротуар своего варианта плюс полосы камня по сторонам KERB_SIDES (crossing_check):
-             +u и +v - передний бордюр 88/256, -u и -v - задний 41/256; тон поперёк полосы - профиль классики
-             своей стороны (кадр 1, 2, 3 или 4), фактура камня - зерно и износ тротуара сильнее; у угла сторона
-             с большей глубиной (стык по линии равной глубины), покрытие пикселя x4 по 16 подточкам;
-  разметка - кадры 10-12: полоса классики вдоль края -u (10), -v (11) или обоих (12): u (v) от 1/32 до 5/32 -
-             ровно там, где лежат пиксели индекса 240 классики, по всей длине края; цвет - индекс 240; кладётся
-             поверх асфальта своего варианта покрытием по 16 подточкам, асфальт под ней не меняется;
-  решётка 13 - решётка стока у бордюра (по пикселям классики: пластина с прутьями индексов 11-13 вдоль оси u,
-             тёмная кромка 251-252 по краям -u и +v): пластина и кромка - геометрия классики, прутья - два тона
-             (светлый пруток, тёмная прорезь) по фазе шага, найденного по классике; поверх того же асфальта.
-             Прежняя сборка размывала пиксели 11-13 гауссом в пятно - конструкция терялась (чистый кадр 07.10).
-У каждого кадра 4 картинки (<N>.png, <N>.v1-v3.png) - вариант j у всех кадров из одних и тех же клеток j. Движок
-выбирает вариант по непрерывному полю (groundFrameFor: целиком или попиксельное смешение соседних), поэтому
-соседние клетки, любые кадры участка, показывают одно непрерывное поле материала - сводить края к варианту 0 не
-надо. Альфа - силуэт классики x4 плюс точный ромб x4: у силуэта классики в верхней половине зубцы до 1/16 клетки,
-и граница материала у края клетки (разметка, камень) шла этой лесенкой (разбор 07.10).
-Исключение - клин 1/8 x 1/8 у верхней вершины асфальта (кадры 9-13): там альфа - силуэт классики. В вершине «V»
-(штрих по краю -u одной клетки встречает штрих по краю -v другой) классика смыкает их выступами кадров 10 и 11
-сквозь зубцы третьей клетки; тем же выступом кончаются штрихи у вершины следующей клетки.
+Материалы (у каждого кадра 4 картинки <N>.png, <N>.v1-v3.png; вариант j всех кадров из одних клеток j - движок
+сшивает варианты сам, groundFrameFor):
+  тротуар  - клетки вариантов из ответа модели (sidewalk_probe.make_cells), тон и зерно классики ROADS:0; кладки
+             нет (ориентир - ровное крапчатое серое покрытие оригинала);
+  асфальт  - ПРОЦЕДУРНАЯ фактура заполнителя (aggregate_cells): мелкий крап связующего плюс зёрна щебня
+             2-7 пикселей текстуры, светлые и тёмные, с бликом от света сверху-слева; периодическая клетка, тон и
+             разброс яркости классики ROADS:9. Одни и те же клетки во всех кадрах 9-13 и в выступах кадров
+             бордюра - под разметкой и решёткой тот же асфальт;
+  камень   - ПРОЦЕДУРНАЯ поверхность (stone_cells): гранитный крап и слабые пятна - множитель к профилю бордюра;
+  бордюр   - кадры 1-8, стороны KERB_SIDES (crossing_check): +u, +v - передний 88/256 (виден торец), -u, -v -
+             задний 41/256 (только верх). Профиль поперёк полосы - ПИКСЕЛИ строки классики (row_profile: строки
+             кадра своей стороны, где камень идёт подряд ровно на ширину полосы, 11 или 5 пикселей), без размытия:
+             у переднего шов, блик кромки, верхняя грань 4 пикселя, ребро, боковая грань 4 пикселя (у +v
+             освещённая, у +u в тени); у заднего верх 2, дальнее ребро 1 и кромка у асфальта 2. Тон граней -
+             stone_profile: у классики верхняя грань по яркости равна асфальту (Y 21-28 при 23), и в HD полоса
+             читалась тёмной канавкой; оттенок камня один (средний верхней грани классики), яркость по грани -
+             верх 46, дальнее ребро 58 (блик), ближнее 52, шов 30, у заднего тень у асфальта 30/16; боковая грань
+             переднего - цвет классики. Внутри грани - интерполяция между
+             центрами пикселей, между гранями - ступень (прежняя сборка размывала профиль гауссом по 24 ячейкам,
+             и грани сливались в тёмную канавку). Владение у угла (kerb_owner): сначала боковая грань переднего
+             бордюра (до ребра), у двух передних - ближайшая к краю (угол 7 - по u = v); остальное - сторона, где
+             точка дальше по своей верхней грани в долях её ширины. Так верхние грани стыкуются по линии от
+             внутреннего угла к внешнему углу верхней грани (углы 5, 6), а не по линии равной доли всей полосы,
+             давшей ступеньку профиля (замечание 07.10); покрытие по 16 подточкам пикселя x4;
+  разметка - кадры 10-12: полоса классики u (v) от 1/32 до 5/32 вдоль края -u (10), -v (11) или обоих (12).
+             Верхний конец (у верхней вершины) на карте перекрёстка всегда свободный - срез ПОПЕРЁК полосы, по
+             ребру клетки (v = 0 у 10, u = 0 у 11). Боковой конец (левая вершина у 10, правая у 11) срезан
+             ВЕРТИКАЛЬЮ ЭКРАНА через вершину: v - u до 1 у 10, u - v до 1 у 11. В узле (55,12) боковые концы
+             штриха 10 клетки сверху и штриха 11 клетки слева сходятся в V, и V - точный стык по вертикали без
+             выступа. Поперечный боковой конец вместе с точным V невозможен: картинка кадра шириной ровно в клетку,
+             острие V лежит в клине клетки под узлом, правую его половину рисует только сосед сверху, левую -
+             только сосед слева, а кадр один на V и на свободные боковые концы. Свободный боковой конец поэтому под
+             63 градуса к полосе на экране (45 в мире). Кадр 12 (на карте нет) - угол Λ вертикалью;
+  решётка 13 - пластина по крайним пикселям прутьев классики (11-13) с запасом 1/64; прутья вдоль u, шаг -
+             сильнейшая гармоника; цвет - непрерывный профиль по фазе шага (12 ячеек средних классики, без деления
+             на пруток и прорезь - контраст классики, а не двух крайних тонов); рамка по пикселям классики:
+             снаружи кольцо 1/32 цвета 250 (Y 14) по -u, -v и +u, по +v кольца нет; тёмные 251/252 (Y 7-11) -
+             внутри пластины полосой 1/16 вдоль -u и +v, тень в углублении стока (прежняя сборка ставила тёмную
+             кромку снаружи со всех сторон - решётка читалась крупнее и контрастнее, замечание 07.10).
+Альфа: силуэт классики x4, точный ромб x4 (центр пикселя в [0, 1)^2) и выступы в клин соседей - Ru (u от 1 до
+1 + 3/16 + 1/32, v до 3/16 + 1/32: левая половина клина клетки справа) и Rv (то же с v): там все кадры рисуют
+асфальт поля и продолжение своей разметки. У асфальта (9-13) в своём клине (u, v < 3/16) альфа - только своя
+разметка: клин рисуют выступы соседей (асфальт и концы их штрихов), поверх - свой штрих. Выступ кадра бордюра
+за стороной к асфальту - асфальт того же поля (R-248). У края карты клин асфальта без соседа сверху или слева
+пуст (выемка у края карты).
 
 Контроли (обязаны ПРОВАЛИТЬ crossing_check по дампу игры):
-  --control crop   клетки - простые вырезы ответа без складки, альфа - только силуэт классики: лесенка у края
-                   разметки и бордюра (разрыв зерна на стыке в игре не виден - зерно мельче пикселя);
-  --control patch  асфальт кадров 10-12 из других мест ответа и на 15 процентов светлее: заплатки под разметкой;
-  --control old    кадры 2, 4, 9, 12 остаются картинками установки без вариантов - старые соседи, полосы
-                   тротуар | бордюр отклонённого кадра 07.10;
-  --control wedge  выступ кадров бордюра за стороной к асфальту - лицо камня (как в первой сборке 07.10): в клине
-                   у верхней вершины асфальта ступенька края бордюра на каждой вершине клетки.
-Выступ кадров бордюра 1-8 за стороной, обращённой к асфальту, - асфальт того же поля: в клин асфальта он и
-заглядывает.
+  --control crop   клетки без периодичности (тротуар - вырезы ответа, асфальт и камень - кусок поля вдвое
+                   больше клетки), альфа - только силуэт классики: лесенка у края разметки и бордюра;
+  --control patch  асфальт кадров 10-12 - другая клетка (другое зерно), на 15 процентов светлее и крупнее зерном:
+                   заплатки под разметкой;
+  --control old    кадры 2, 4, 9, 12 остаются картинками установки без вариантов - старые соседи;
+  --control wedge  выступ кадров бордюра за стороной к асфальту и в клин соседа - внешний цвет камня: ступенька
+                   края бордюра в клине у верхней вершины асфальта.
 
     py -3.13 tools/hdart/crossing_build.py build [--tag new] [--control crop|patch|old|wedge]
     py -3.13 tools/hdart/crossing_build.py preview --tag new        # участок без игры, раскладкой движка
@@ -51,6 +73,7 @@ r"""Сборка связанного участка перекрёстка ROAD
 """
 import argparse
 import json
+import math
 import shutil
 import sys
 from pathlib import Path
@@ -74,8 +97,21 @@ SUFFIX = ("", ".v1", ".v2", ".v3")
 FRAMES = tuple(range(14))
 OLD_FRAMES = (2, 4, 9, 12)                             # контроль old: кадры установки остаются как есть
 SIDE_FRAME = {"+u": 1, "+v": 2, "-v": 3, "-u": 4}      # кадр классики, где эта сторона бордюра одна
+FRONT = ("+u", "+v")
+KERB_N = {"+u": 11, "+v": 11, "-u": 5, "-v": 5}        # пикселей камня в строке классики поперёк полосы
+# грани профиля (пиксели от внутренней линии к краю, включительно): у переднего шов, блик кромки, верх, ребро,
+# боковая грань; у заднего верх, дальнее ребро и кромка у асфальта. Внешняя часть - всё за верхней гранью: доля OUTER ширины полосы
+FACES = {"front": ((0, 0), (1, 1), (2, 5), (6, 6), (7, 10)), "back": ((0, 1), (2, 2), (3, 4))}
+OUTER = {"front": 4 / 11, "back": 3 / 5}
 MARK_LO, MARK_HI = 1 / 32, 5 / 32                      # полоса разметки классики (пиксели индекса 240)
 MARK_INDEX = 240
+WEDGE = 3 / 16                                         # клин у верхней вершины асфальта
+REACH = WEDGE + 1 / 32                                 # выступ в клин соседа - с запасом
+LIGHT = np.array([-3.0, -1.0]) / math.sqrt(10.0)       # к свету в осях (u, v): экран сверху-слева
+
+
+def kind(side):
+    return "front" if side in FRONT else "back"
 
 
 # ------------------------------------------------------------------ классика
@@ -87,34 +123,100 @@ def classic_tone(f, sel):
     return px.mean(0), float((px @ LUMA).std())
 
 
-def side_profile(side, nb=24):
-    """Средний цвет камня (рампа 15, индексы 240+) поперёк полосы стороны side по глубине 0..1: nb ячеек."""
-    f = SIDE_FRAME[side]
-    w = cc.KERB_SIDES[f][side]
-    i4 = js.classic_idx("ROADS", f)
-    u, v = sp.frame_uv(1)
-    d = cc.side_depth(side, u, v, w)
-    m = (i4 >= 240) & (d >= 0) & (d <= 1)
-    b = np.clip((d[m] * nb).astype(int), 0, nb - 1)
-    rgb = js.PAL[i4[m]].astype(np.float64)
-    cnt = np.bincount(b, minlength=nb).astype(float)
-    prof = np.stack([np.bincount(b, rgb[:, c], minlength=nb) for c in range(3)], -1)
-    have = cnt > 0
-    if have.sum() < 3:
-        raise SystemExit("у кадра %d мало камня в полосе %s" % (f, side))
-    prof[have] /= cnt[have, None]
-    xs = np.arange(nb)
-    for c in range(3):
-        prof[:, c] = np.interp(xs, xs[have], prof[have, c])
-    k = np.exp(-0.5 * (np.arange(-2, 3) / 1.0) ** 2)
-    k /= k.sum()
-    pad = np.pad(prof, ((2, 2), (0, 0)), mode="edge")
-    return np.stack([np.convolve(pad[:, c], k, mode="valid") for c in range(3)], -1)
+def row_profile(side):
+    """Профиль камня поперёк полосы стороны side по пикселям классики: строки кадра SIDE_FRAME[side], где от края
+    (правый конец строки у +u и -v, левый у +v и -u) подряд идут ровно KERB_N пикселей рампы 15 (240+); средний
+    цвет каждой позиции, от внутренней линии к краю. Возвращает (n, 3) и число строк."""
+    f, n = SIDE_FRAME[side], KERB_N[side]
+    idx, _ = js.gm.classic("ROADS", f)
+    runs = []
+    for row in idx:
+        nz = np.nonzero(row)[0]
+        if not len(nz):
+            continue
+        seq = row[nz[0]:nz[-1] + 1]
+        if side in ("+u", "-v"):
+            seq = seq[::-1]
+        k = 0
+        while k < len(seq) and seq[k] >= 240:
+            k += 1
+        if k == n:
+            runs.append(seq[:n][::-1])
+    if len(runs) < 3:
+        raise SystemExit("у кадра %d мало строк с камнем ровно в %d пикселей (%d)" % (f, n, len(runs)))
+    runs = np.array(runs)
+    return js.PAL[runs].astype(np.float64).mean(0), len(runs), runs
 
 
-def at_depth(prof, d):
-    x = np.clip(d, 0, 1 - 1e-6) * len(prof) - 0.5
-    return np.stack([np.interp(x, np.arange(len(prof)), prof[:, c]) for c in range(3)], -1)
+def stone_profile(prof, side, a):
+    """Тон камня по граням поверх цветов классики: у классики верхняя грань бордюра по яркости равна асфальту
+    (Y 21-28 при асфальте 23 и тротуаре 65), и в HD полоса читается тёмной канавкой (замечание 07.10). Цвет
+    пикселя классики сохраняет оттенок, яркость ставится по грани: шов a.kerb_seam, ближнее ребро a.kerb_near,
+    верх a.kerb_top, дальнее ребро a.kerb_arris; боковая грань переднего - как у классики (+v освещена, +u в
+    тени); у заднего за дальним ребром - узкая тень у асфальта a.kerb_edge (две позиции)."""
+    out = prof.copy()
+    if kind(side) == "front":
+        target = {0: a.kerb_seam, 1: a.kerb_near, 2: a.kerb_top, 3: a.kerb_top, 4: a.kerb_top, 5: a.kerb_top,
+                  6: a.kerb_arris}
+        hue = prof[2:6].mean(0)
+    else:
+        e = [float(x) for x in a.kerb_edge.split(",")]
+        target = {0: a.kerb_top, 1: a.kerb_top, 2: a.kerb_arris, 3: e[0], 4: e[1]}
+        hue = prof[0:2].mean(0)
+    # оттенок - один на камень (верхняя грань классики): у 250-252 он лиловый, и при подъёме яркости ребро
+    # выходило фиолетовым
+    for i, y in target.items():
+        out[i] = hue * (y / max(float(hue @ LUMA), 1.0))
+    return np.clip(out, 0, 255)
+
+
+def profile_at(prof, faces, x):
+    """Цвет профиля в позиции x (пиксели от внутренней линии, 0..n): внутри грани - линейно между центрами
+    пикселей, между гранями - ступень."""
+    n = len(prof)
+    i = np.clip(np.floor(x).astype(np.int64), 0, n - 1)
+    out = np.empty(np.shape(x) + (3,))
+    for a, b in faces:
+        m = (i >= a) & (i <= b)
+        if a == b:
+            out[m] = prof[a]
+            continue
+        t = np.clip(x[m] - 0.5, a, b)
+        xs = np.arange(a, b + 1)
+        out[m] = np.stack([np.interp(t, xs, prof[a:b + 1, c]) for c in range(3)], -1)
+    return out
+
+
+def kerb_owner(f, us, vs):
+    """Владение подточек кадра бордюра f: (сторона-владелец: индекс в списке сторон или -1 - тротуар, позиция в
+    профиле, за стороной). Сначала боковая грань переднего бордюра (расстояние до края меньше внешней части; у
+    двух - ближайшая к краю), потом сторона с наибольшей долей по своей верхней грани (w - e) / (w - o)."""
+    sides = list(cc.KERB_SIDES[f].items())
+    E = [{"+u": 1 - us, "+v": 1 - vs, "-u": us, "-v": vs}[s] for s, _ in sides]
+    owner = np.full(us.shape, -1, np.int64)
+    best = np.full(us.shape, np.inf)
+    for k, (s, w) in enumerate(sides):
+        if kind(s) == "front":
+            o = w * OUTER["front"]
+            m = (E[k] >= 0) & (E[k] < o) & (E[k] < best)
+            owner[m] = k
+            best[m] = E[k][m]
+    free = owner < 0
+    bn = np.full(us.shape, -np.inf)
+    for k, (s, w) in enumerate(sides):
+        o = w * OUTER[kind(s)]
+        nn = (w - E[k]) / (w - o)
+        m = free & (E[k] >= 0) & (E[k] < w) & (nn > bn)
+        owner[m] = k
+        bn[m] = nn[m]
+    x = np.zeros(us.shape)
+    for k, (s, w) in enumerate(sides):
+        m = owner == k
+        x[m] = (w - E[k][m]) / w * KERB_N[s]
+    beyond = np.zeros(us.shape, bool)
+    for k in range(len(sides)):
+        beyond |= E[k] < 0
+    return sides, owner, x, beyond
 
 
 def gauss(a, s):
@@ -127,18 +229,18 @@ def gauss(a, s):
     return np.apply_along_axis(lambda r: np.convolve(r, k, "valid"), 0, b)
 
 
-def grate_layer():
-    """Решётка стока кадра 13 по пикселям классики. Пластина - квадрат в осях клетки по крайним пикселям прутьев
-    (индексы 11-13) с запасом в полпикселя базы; прутья идут вдоль u, шаг - сильнейшая гармоника яркости по v;
-    профиль по фазе шага делится по медиане на пруток и прорезь, каждый своим средним цветом классики (контур
-    чёткий, покрытие по 16 подточкам). Кромка - тёмные пиксели 251-252 классики по краям пластины -u и +v.
-    Возвращает цвет и покрытие пластины, цвет и покрытие кромки (x4) и описание для build.json."""
+def grate_layer(us, vs):
+    """Решётка стока кадра 13 по пикселям классики (подточки us, vs кадра x4). Пластина - по крайним пикселям
+    прутьев (11-13) с запасом 1/64; прутья вдоль u, шаг - сильнейшая гармоника яркости по v; цвет - профиль по
+    фазе шага (12 ячеек средних цветов классики, периодическая интерполяция по подточке). Рамка как у классики:
+    кольцо 1/32 цвета 250 снаружи по -u, -v и +u (по +v нет), тень 251-252 внутри пластины полосой 1/16 вдоль -u
+    и +v. Возвращает цвет пластины и кромки,
+    уже умноженные на покрытие (сумма по подточкам / 16), их покрытия и описание."""
     idx, _ = js.gm.classic("ROADS", 13)
     yy, xx = np.mgrid[0:idx.shape[0], 0:idx.shape[1]].astype(np.float64)
     U, V = sp.screen_to_uv(xx + 0.5, yy + 0.5)
     rgb = js.PAL[idx].astype(np.float64)
     g = (idx >= 11) & (idx <= 13)
-    r = (idx >= 251) & (idx <= 252) & (U < 0.75)        # одиночный 251 у правого угла - точка асфальта
     lum = rgb @ LUMA
     best = max((abs(((lum[g] - lum[g].mean()) * np.exp(2j * np.pi * V[g] / p)).sum()), p)
                for p in np.arange(0.14, 0.21, 0.0025))
@@ -152,35 +254,35 @@ def grate_layer():
     xs = np.arange(nb)
     for c in range(3):
         prof[:, c] = np.interp(xs, xs[have], prof[have, c], period=nb)
-    prof = (np.roll(prof, 1, 0) + 2 * prof + np.roll(prof, -1, 0)) / 4
-    py_ = prof @ LUMA
-    bright = py_ > np.median(py_)
-    bar_rgb = (prof[bright] * cnt[bright, None]).sum(0) / cnt[bright].sum()
-    slot_rgb = (prof[~bright] * cnt[~bright, None]).sum(0) / cnt[~bright].sum()
-    h = 0.03
+    h = 1 / 64
     u0, u1 = U[g].min() - h, U[g].max() + h
     v0, v1 = V[g].min() - h, V[g].max() + h
-    rim_rgb = rgb[r].mean(0)
-    w = 0.055                                          # кромка: пиксель базы по нормали к краю
-    us, vs = sp.frame_uv(4)
+    near = (U > u0 - 0.1) & (U < u1 + 0.1) & (V > v0 - 0.1) & (V < v1 + 0.1)
+    dark = rgb[(idx >= 251) & (idx <= 252) & near]
+    light = rgb[(idx == 250) & near]
+    dark_rgb, light_rgb = dark.mean(0), light.mean(0)
+    r, s = 1 / 32, 1 / 16
     plate = (us >= u0) & (us < u1) & (vs >= v0) & (vs < v1)
-    rim = ((np.abs(us - u0) < w / 2) & (vs >= v0 - w / 2) & (vs < v1 + w / 2)) | \
-          ((np.abs(vs - v1) < w / 2) & (us >= u0 - w / 2) & (us < u1 + w / 2))
-    on_bar = bright[np.floor((vs / step) % 1 * nb).astype(int) % nb] & plate
-    n_plate = np.maximum(plate.sum(-1), 1)
-    share = on_bar.sum(-1) / n_plate
-    colour = slot_rgb[None, None, :] * (1 - share[..., None]) + bar_rgb[None, None, :] * share[..., None]
-    info = dict(step=round(step, 4), plate_u=[round(float(u0), 3), round(float(u1), 3)],
-                plate_v=[round(float(v0), 3), round(float(v1), 3)], bar_rgb=np.round(bar_rgb, 1).tolist(),
-                slot_rgb=np.round(slot_rgb, 1).tolist(), rim_rgb=np.round(rim_rgb, 1).tolist(),
-                bar_share=round(float(bright.mean()), 3))
-    return colour, plate.mean(-1), rim_rgb, rim.mean(-1), info
+    ring = (us >= u0 - r) & (us < u1 + r) & (vs >= v0 - r) & (vs < v1 + r) & ~plate
+    # как у классики (замечание 07.10: «рамка оригинала»): снаружи кольцо 250 по -u, -v и +u, по +v кольца нет -
+    # там асфальт; тёмные 251-252 лежат ВНУТРИ пластины полосой 1/16 вдоль -u и +v - тень в углублении стока
+    ring = ring & ~((vs >= v1) & (us < u1))
+    shadow = plate & ((us < u0 + s) | (vs >= v1 - s))
+    ph = (vs / step) % 1 * nb - 0.5
+    col = np.stack([np.interp(ph, xs, prof[:, c], period=nb) for c in range(3)], -1)
+    plate_rgb = (col * (plate & ~shadow)[..., None] + dark_rgb * shadow[..., None]).mean(-2)
+    rim_rgb = (light_rgb * ring[..., None]).mean(-2)
+    info = dict(step=round(step, 4), plate_u=[round(float(u0), 4), round(float(u1), 4)],
+                plate_v=[round(float(v0), 4), round(float(v1), 4)], phase_profile=np.round(prof, 1).tolist(),
+                rim_dark_rgb=np.round(dark_rgb, 1).tolist(), rim_light_rgb=np.round(light_rgb, 1).tolist(),
+                rim_width=r, shadow_width=s, rim_dark_px=int(len(dark)), rim_light_px=int(len(light)))
+    return plate_rgb, plate.mean(-1), rim_rgb, ring.mean(-1), info
 
 
 # ------------------------------------------------------------------ материал
 
 def cells_of(tex, mean_rgb, grain_std, a, control_crop=False):
-    """Клетки 4 вариантов (независимых: сведения краёв нет - движок сам сшивает варианты)."""
+    """Клетки тротуара 4 вариантов из ответа модели (независимых: движок сам сшивает варианты)."""
     ns = argparse.Namespace(period=a.period, sigma_low=a.sigma_low, wear_center=True, edge_band=1e-6,
                             wear_std=a.wear_std * float(mean_rgb @ LUMA) / a.walk_l, wear_max=a.wear_max)
     cells, grains, wears, diag = sp.make_cells(tex, ns, mean_rgb, grain_std)
@@ -201,6 +303,110 @@ def cells_of(tex, mean_rgb, grain_std, a, control_crop=False):
     return cells, grains, wears, diag
 
 
+def unit(f):
+    f = f - f.mean()
+    return f / max(float(f.std()), 1e-9)
+
+
+def stones(rng, n, density, rmin, rmax, wrap):
+    """Зёрна щебня в поле n x n (столбец - u, строка - v): эллипсы радиуса rmin..rmax пикселей текстуры (мелких
+    больше), светлые и тёмные; возвращает тон зёрен и блик (освещённость купола светом LIGHT), оба в [-1, 1]."""
+    tone = np.zeros((n, n))
+    shade = np.zeros((n, n))
+    mean_area = math.pi * ((rmin + rmax) / 2) ** 2 * 0.6
+    count = int(density * n * n / mean_area)
+    for _ in range(count):
+        cx, cy = rng.uniform(0, n, 2)
+        r = rmin * (rmax / rmin) ** (rng.random() ** 1.6)
+        asp = rng.uniform(0.6, 1.0)
+        th = rng.uniform(0, math.pi)
+        t = (1 if rng.random() < 0.55 else -1) * rng.uniform(0.5, 1.3)
+        R = int(r) + 2
+        ix = np.arange(int(cx) - R, int(cx) + R + 1)
+        iy = np.arange(int(cy) - R, int(cy) + R + 1)
+        if not wrap:
+            ix, iy = ix[(ix >= 0) & (ix < n)], iy[(iy >= 0) & (iy < n)]
+            if not len(ix) or not len(iy):
+                continue
+        dx = (ix + 0.5 - cx)[None, :]
+        dy = (iy + 0.5 - cy)[:, None]
+        c, s = math.cos(th), math.sin(th)
+        a1 = dx * c + dy * s
+        a2 = -dx * s + dy * c
+        rb = r * asp
+        d2 = (a1 / r) ** 2 + (a2 / rb) ** 2
+        hgt = np.clip(1 - d2, 0, 1)
+        edge = np.clip((1 - d2) / 0.25, 0, 1)
+        # купол h = 1 - d2: grad h = -(2 a1 / r^2 * (c, s) + 2 a2 / rb^2 * (-s, c)); блик = -grad h . LIGHT
+        gu = -(2 * a1 / r ** 2 * c - 2 * a2 / rb ** 2 * s)
+        gv = -(2 * a1 / r ** 2 * s + 2 * a2 / rb ** 2 * c)
+        lit = -(gu * LIGHT[0] + gv * LIGHT[1]) * r / 2 * (hgt > 0)
+        sl = np.ix_(iy % n, ix % n)
+        tone[sl] += t * edge
+        shade[sl] += lit * edge
+    return tone, shade
+
+
+def aggregate_cells(seed, mean_rgb, grain_std, a, wrap=True):
+    """Асфальт: процедурная фактура заполнителя, 4 независимые периодические клетки a.period. Связующее - мелкий
+    крап (шум, размытый на a.agg_speck пикселей текстуры), щебень - stones(); слабые пятна a.agg_low. Яркость
+    нормирована к тону и разбросу классики. Возвращает (rgb[4], отклонение яркости[4], диагностика)."""
+    p = a.period
+    n = p if wrap else 2 * p
+    m_l = float(mean_rgb @ LUMA)
+    cells, grains, diag = [], [], dict(cell_pattern=[], coherence=[], grain_std=grain_std, stones=[])
+    for j in range(4):
+        rng = np.random.default_rng(seed * 10 + j)
+        speck = unit(sp.blur_wrap(rng.normal(0, 1, (n, n)), a.agg_speck))
+        tone, shade = stones(rng, n, a.agg_density, a.agg_rmin, a.agg_rmax, wrap)
+        low = unit(sp.blur_wrap(rng.normal(0, 1, (n, n)), 20.0))
+        f = a.agg_speck_amp * speck + a.agg_tone * tone + a.agg_shade * shade + a.agg_low * low
+        f = sp.blur_wrap(f, 0.6)
+        if not wrap:
+            f = f[:p, :p]
+        g = unit(f) * grain_std
+        cells.append(np.clip(mean_rgb[None, None, :] * ((m_l + g) / m_l)[..., None], 0, 255))
+        grains.append(g)
+        diag["cell_pattern"].append(round(sp.cell_pattern(np.tile(g, (4, 4))), 3))
+        diag["coherence"].append(round(sp.coherence(g), 3))
+    return cells, grains, diag
+
+
+def stone_cells(seed, a, wrap=True):
+    """Камень бордюра: множитель к профилю - гранитный крап (мелкий шум плюс редкие светлые и тёмные зёрна около
+    пикселя текстуры) и слабые пятна. 4 клетки a.period, среднее 1."""
+    p = a.period
+    n = p if wrap else 2 * p
+    out = []
+    for j in range(4):
+        rng = np.random.default_rng(seed * 10 + 5 + j)
+        fine = unit(sp.blur_wrap(rng.normal(0, 1, (n, n)), 0.7))
+        fl = unit(sp.blur_wrap(rng.normal(0, 1, (n, n)), 1.1))
+        fleck = np.where(fl > 1.7, fl - 1.7, 0) - np.where(fl < -1.9, -1.9 - fl, 0)
+        fleck = fleck / max(float(np.abs(fleck).max()), 1e-6)    # в [-1, 1]: без чёрных точек-дыр
+        mot = unit(sp.blur_wrap(rng.normal(0, 1, (n, n)), 14.0))
+        f = 1 + a.stone_grain * fine + a.stone_fleck * fleck + a.stone_mottle * mot
+        out.append(f[:p, :p] if not wrap else f)
+    return out
+
+
+def band_cover(f, us, vs):
+    """Разметка кадра f по подточкам: полоса классики вдоль края. Верхний конец (у верхней вершины) на карте всегда
+    свободный - срез поперёк, по ребру клетки. Боковой конец (левая вершина у -u, правая у -v) в узле (55,12)
+    сходится в V с соседним кадром, а за край картинки 32x40 кадр не рисует - срез вертикалью через вершину, тот же
+    у свободных боковых концов (кадр один на все места). Кадр с двумя полосами (12, на карте нет) - угол вертикалью."""
+    m = np.zeros(us.shape, bool)
+    both = len(cc.MARK_EDGES[f]) > 1
+    for e in cc.MARK_EDGES[f]:
+        if e == "-u":
+            top = (vs - us >= 0) if both else (vs >= 0)
+            m |= (us >= MARK_LO) & (us < MARK_HI) & top & (vs - us <= 1)
+        else:
+            top = (us - vs >= 0) if both else (us >= 0)
+            m |= (vs >= MARK_LO) & (vs < MARK_HI) & top & (us - vs <= 1)
+    return m.mean(-1)
+
+
 def build(a):
     raw = Path(a.raw)
     tex = np.asarray(Image.open(raw).convert("RGB").resize((sp.SIDE, sp.SIDE), Image.LANCZOS)).astype(np.float32)
@@ -210,109 +416,104 @@ def build(a):
     asph_l = float(asph_rgb @ LUMA)
     crop = a.control == "crop"
     W = cells_of(tex, walk_rgb, walk_std * a.grain, a, crop)
-    A = cells_of(np.ascontiguousarray(tex.transpose(1, 0, 2)[::-1]), asph_rgb, asph_std * a.grain, a, crop)
+    A = aggregate_cells(a.seed, asph_rgb, asph_std * a.grain, a, wrap=not crop)
     if a.control == "patch":
-        # контроль: под разметкой другой асфальт - клетки из других мест ответа, светлее на 15 процентов
-        P = cells_of(np.ascontiguousarray(np.roll(tex, (333, 517), (0, 1))), asph_rgb * 1.15, asph_std * 1.6, a)
+        # контроль: под разметкой другой асфальт - другая клетка, светлее на 15 процентов и крупнее зерном
+        P = aggregate_cells(a.seed + 100, asph_rgb * 1.15, asph_std * 1.6, a)
+    Sx = stone_cells(a.seed, a, wrap=not crop)
     mark_rgb = js.PAL[MARK_INDEX].astype(np.float64)
-    profiles = {s: side_profile(s) for s in SIDE_FRAME}
-    gr_col, gr_cov, rim_rgb, rim_cov, grate_info = grate_layer()
-
+    prof = {}
+    for s in SIDE_FRAME:
+        p0, nrows, runs = row_profile(s)
+        prof[s] = stone_profile(p0, s, a)
+        print("профиль %s: %d строк, индексы по средней строке %s, Y классики %s -> %s" % (
+            s, nrows, [int(round(x)) for x in np.median(runs, 0)], [int(round(x)) for x in p0 @ LUMA],
+            [int(round(x)) for x in prof[s] @ LUMA]))
     u, v = sp.frame_uv(1)
     us, vs = sp.frame_uv(4)
+    gr_rgb, gr_cov, rim_rgb, rim_cov, grate_info = grate_layer(us, vs)
+
     p = a.period
     su, sv = (u % 1.0) * p, (v % 1.0) * p
     if crop:
         su, sv = np.clip(u, 0, 0.9999) * p, np.clip(v, 0, 0.9999) * p     # вырез не заворачивается
     samp = (lambda c: sp.bilinear_wrap(c, su, sv))
-    # альфа - силуэт классики x4 ПЛЮС точный ромб x4 (центр пикселя в [0, 1)^2). Силуэт классики - лесенка базы:
-    # в верхней половине ромба он не доходит до края на зубец до 1/16 клетки (непрозрачно только с u >= 0.065),
-    # зубцы закрывал выступ соседа. Граница материала у края клетки (разметка, камень бордюра) тогда идёт этой
-    # лесенкой. Полуоткрытые ромбы делят плоскость без щелей и наложений, позже нарисованная клетка закрывает
-    # выступ прежней по прямой x4; выступ классики остаётся - стык со старыми наборами без щелей
-    # Исключение - клин у верхней вершины асфальта (кадры 9-13, u и v меньше 1/8): там классика прозрачна нарочно,
-    # сквозь зубцы видны выступы раньше нарисованных соседей. Так классика смыкает штрихи разметки в вершине «V»
-    # и даёт концы штрихов (выступ кадров 10 и 11 до u, v = 1.051 ложится в этот клин следующей клетки,
-    # разбор 07.10). Простой асфальт соседа в клине - то же поле, его не видно
-    if a.control == "crop":
+    if crop:
         diamond = np.zeros(u.shape, bool)
+        over = np.zeros(u.shape, bool)
     else:
         diamond = (u >= 0) & (u < 1) & (v >= 0) & (v < 1)
-    top_wedge = (u >= 0) & (v >= 0) & (u < 0.125) & (v < 0.125)
+        over = ((u >= 1) & (u < 1 + REACH) & (v < REACH)) | ((v >= 1) & (v < 1 + REACH) & (u < REACH))
+    wedge = (u >= 0) & (v >= 0) & (u < WEDGE) & (v < WEDGE)
     d = OUT / a.tag / "ROADS.PCK"
     d.mkdir(parents=True, exist_ok=True)
     info = dict(tag=a.tag, control=a.control or "", source=raw.resolve().relative_to(ROOT).as_posix(),
                 period=a.period, sigma_low=a.sigma_low, grain=a.grain, wear_std=a.wear_std, wear_max=a.wear_max,
-                kerb_grain=a.kerb_grain, kerb_wear=a.kerb_wear, kerb_pit=a.kerb_pit, mark_grain=a.mark_grain,
+                seed=a.seed, aggregate=dict(speck=a.agg_speck, speck_amp=a.agg_speck_amp, density=a.agg_density,
+                                            rmin=a.agg_rmin, rmax=a.agg_rmax, tone=a.agg_tone, shade=a.agg_shade,
+                                            low=a.agg_low),
+                stone=dict(grain=a.stone_grain, fleck=a.stone_fleck, mottle=a.stone_mottle),
+                mark_grain=a.mark_grain, wedge=WEDGE, reach=REACH,
                 walk_rgb=[round(float(x), 2) for x in walk_rgb], walk_std=round(walk_std, 2),
                 asphalt_rgb=[round(float(x), 2) for x in asph_rgb], asphalt_std=round(asph_std, 2),
-                mark_rgb=mark_rgb.tolist(), mark_band=[MARK_LO, MARK_HI],
+                mark_rgb=mark_rgb.tolist(), mark_band=[MARK_LO, MARK_HI], mark_ends="top: transverse along cell edge; side: vertical through vertex",
+                kerb_profiles={s: np.round(prof[s], 1).tolist() for s in prof},
                 walk_diag={k: (np.round(v, 3).tolist() if isinstance(v, list) else v) for k, v in W[3].items()
                            if k in ("grain_raw", "grain_std", "wear_std_out", "coherence", "cell_pattern")},
-                asphalt_diag={k: (np.round(v, 3).tolist() if isinstance(v, list) else v) for k, v in A[3].items()
-                              if k in ("grain_raw", "grain_std", "wear_std_out", "coherence", "cell_pattern")},
-                grate=grate_info)
-    # покрытие сторон бордюра по подточкам: у угла сторона с большей глубиной
-    side_cover = {}
+                asphalt_diag=A[2], grate=grate_info)
+    # бордюр: владение и цвет профиля по подточкам, в пиксель - среднее
+    kerb = {}
     for f in range(1, 9):
-        best = np.full(us.shape, -1.0)
-        who = np.full(us.shape, "", dtype=object)
-        for s, w in cc.KERB_SIDES[f].items():
-            dd = cc.side_depth(s, us, vs, w)
-            take = (dd >= 0) & (dd > best)
-            who[take] = s
-            best = np.where(take, dd, best)
-        side_cover[f] = {s: (who == s).mean(-1) for s in cc.KERB_SIDES[f]}
-    mark_cover = {}
-    for f, edges in cc.MARK_EDGES.items():
-        m = np.zeros(us.shape, bool)
-        for e in edges:
-            t = us if e == "-u" else vs
-            m |= (t >= MARK_LO) & (t < MARK_HI)
-        mark_cover[f] = m.mean(-1)
-    m_w = float(walk_rgb @ LUMA)
+        sides, owner, x, beyond = kerb_owner(f, us, vs)
+        col = np.zeros(us.shape + (3,))
+        stone_m = np.zeros(us.shape, bool)
+        for k, (s, w) in enumerate(sides):
+            m = (owner == k) & ~beyond
+            col[m] = profile_at(prof[s], FACES[kind(s)], x[m])
+            stone_m |= m
+        wedge_col = np.zeros(us.shape + (3,))
+        if a.control == "wedge":
+            # контроль: за стороной - внешний цвет камня этой стороны
+            E = {"+u": 1 - us, "+v": 1 - vs, "-u": us, "-v": vs}
+            for s, w in sides:
+                m = (E[s] < 0) & ~(wedge_col.any(-1))
+                wedge_col[m] = prof[s][-1]
+        kerb[f] = (col.mean(-2), stone_m.mean(-1), beyond.mean(-1), wedge_col.mean(-2))
+    mark_cover = {f: band_cover(f, us, vs) for f in cc.MARK_EDGES}
     for j, suf in enumerate(SUFFIX):
         walk = samp(W[0][j])
-        g = samp(W[1][j])
-        wr = samp(W[2][j])
-        gs = float(W[1][j].std())
-        stone = 1 + a.kerb_grain * g / m_w + a.kerb_wear * wr / m_w
-        stone = stone * np.where(g < -a.kerb_pit * gs, 0.82, 1.0)           # выщербины - самые глубокие точки зерна
+        stone = samp(Sx[j])
         asph = samp(A[0][j])
         ga = samp(A[1][j])
         under = samp(P[0][j]) if a.control == "patch" else asph
         for f in FRAMES:
+            alpha = np.where((js.classic_idx("ROADS", f) > 0) | diamond | over, 255.0, 0.0)
             if f == 0:
-                rgb = walk
+                rgb = np.where(over[..., None], asph, walk)
             elif f <= 8:
-                rgb = walk.copy()
-                tot = np.zeros(u.shape)
-                for s, cov in side_cover[f].items():
-                    w_s = cc.KERB_SIDES[f][s]
-                    kc = at_depth(profiles[s], cc.side_depth(s, u, v, w_s)) * stone[..., None]
-                    rgb = rgb + (kc - walk) * cov[..., None]
-                    tot += cov
-                if a.control != "wedge":
-                    # за стороной бордюра, обращённой к асфальту, - асфальт того же поля, а не лицо камня: выступ
-                    # силуэта классики за ромб виден в клине у верхней вершины асфальта (альфа классики, см. выше),
-                    # и лицо камня давало там ступеньку на 1/16 клетки у каждой вершины (разбор 07.10, R-248)
-                    beyond = np.zeros(u.shape, bool)
-                    for s in cc.KERB_SIDES[f]:
-                        beyond |= {"+u": u >= 1, "-u": u < 0, "+v": v >= 1, "-v": v < 0}[s]
-                    rgb = np.where(beyond[..., None], asph, rgb)
+                kc, kcov, bcov, wcol = kerb[f]
+                wcov = np.clip(1 - kcov - bcov, 0, 1)
+                if a.control == "wedge":
+                    rgb = kc * stone[..., None] + walk * wcov[..., None] + wcol
+                else:
+                    rgb = kc * stone[..., None] + walk * wcov[..., None] + asph * bcov[..., None]
+                    rgb = np.where(over[..., None], asph, rgb)
             elif f == 9:
                 rgb = asph
             elif f in mark_cover:
-                c = mark_cover[f][..., None]
+                c = mark_cover[f]
                 paint = mark_rgb[None, None, :] * (1 + a.mark_grain * ga / asph_l)[..., None]
-                rgb = under * (1 - c) + paint * c
+                rgb = under * (1 - c[..., None]) + paint * c[..., None]
+                rgb = np.where(wedge[..., None], paint, rgb)
+                alpha = np.where(wedge, 255.0 * c, alpha)
             else:
-                metal = gr_col * (1 + 0.3 * ga / asph_l)[..., None]
-                rgb = under * (1 - gr_cov[..., None]) + metal * gr_cov[..., None]
-                rgb = rgb * (1 - rim_cov[..., None]) + rim_rgb[None, None, :] * rim_cov[..., None]
-            own = diamond & ~top_wedge if f >= 9 else diamond
-            alpha = np.where((js.classic_idx("ROADS", f) > 0) | own, 255, 0)
-            fr = np.dstack([np.clip(rgb, 0, 255), alpha]).astype(np.uint8)
+                metal = 1 + 0.2 * ga / asph_l
+                rgb = under * (1 - gr_cov - rim_cov)[..., None] + gr_rgb * metal[..., None] + rim_rgb
+            if f in (9, 13):
+                alpha = np.where(wedge, 0.0, alpha)
+            if crop:
+                alpha = np.where(js.classic_idx("ROADS", f) > 0, 255.0, 0.0)
+            fr = np.dstack([np.clip(rgb, 0, 255), alpha]).round().astype(np.uint8)
             Image.fromarray(fr, "RGBA").save(d / ("%d%s.png" % (f, suf)))
     if a.control == "old":
         # контроль: старые соседи - кадры 2, 4, 9, 12 не заменяются, в моде остаются картинки установки (одна на
@@ -325,7 +526,10 @@ def build(a):
     print("тротуар %s зерно %.2f; асфальт %s зерно %.2f; разметка %s, полоса %.4f..%.4f" % (
         info["walk_rgb"], walk_std, info["asphalt_rgb"], asph_std, mark_rgb.tolist(), MARK_LO, MARK_HI))
     print("узор клетки тротуара %s, асфальта %s (шум без узора ~0.125)" % (
-        info["walk_diag"]["cell_pattern"], info["asphalt_diag"]["cell_pattern"]))
+        info["walk_diag"]["cell_pattern"], A[2]["cell_pattern"]))
+    print("решётка: шаг %.4f, пластина u %s v %s, кромка %s / %s" % (
+        grate_info["step"], grate_info["plate_u"], grate_info["plate_v"], grate_info["rim_dark_rgb"],
+        grate_info["rim_light_rgb"]))
 
 
 # ------------------------------------------------------------------ просмотр без игры
@@ -508,9 +712,23 @@ def main():
     b.add_argument("--grain", type=float, default=1.0)
     b.add_argument("--wear-std", type=float, default=1.0, help="износ тротуара; у асфальта - пропорционально тону")
     b.add_argument("--wear-max", type=float, default=3.0)
-    b.add_argument("--kerb-grain", type=float, default=1.0)
-    b.add_argument("--kerb-wear", type=float, default=2.5)
-    b.add_argument("--kerb-pit", type=float, default=1.8)
+    b.add_argument("--seed", type=int, default=7101, help="зерно процедурных фактур асфальта и камня")
+    b.add_argument("--agg-speck", type=float, default=1.2, help="крап связующего: размытие, пикселей текстуры")
+    b.add_argument("--agg-speck-amp", type=float, default=0.7)
+    b.add_argument("--agg-density", type=float, default=0.35, help="доля площади под щебнем")
+    b.add_argument("--agg-rmin", type=float, default=2.0)
+    b.add_argument("--agg-rmax", type=float, default=7.0)
+    b.add_argument("--agg-tone", type=float, default=1.0, help="тон зёрен (светлые и тёмные)")
+    b.add_argument("--agg-shade", type=float, default=0.6, help="блик зёрен от света сверху-слева")
+    b.add_argument("--agg-low", type=float, default=0.15, help="слабые пятна асфальта")
+    b.add_argument("--stone-grain", type=float, default=0.05, help="камень: мелкий крап, доля тона")
+    b.add_argument("--stone-fleck", type=float, default=0.12, help="камень: редкие зёрна, наибольшая доля тона")
+    b.add_argument("--kerb-top", type=float, default=46.0, help="яркость Y верхней грани камня (классика 21-28)")
+    b.add_argument("--kerb-arris", type=float, default=58.0, help="дальнее ребро верхней грани, блик")
+    b.add_argument("--kerb-near", type=float, default=52.0, help="ближнее к тротуару ребро переднего")
+    b.add_argument("--kerb-seam", type=float, default=30.0, help="шов тротуара и камня")
+    b.add_argument("--kerb-edge", default="30,16", help="задний: тень у асфальта за дальним ребром, две позиции")
+    b.add_argument("--stone-mottle", type=float, default=0.035, help="камень: слабые пятна")
     b.add_argument("--mark-grain", type=float, default=0.3, help="зерно асфальта на краске, доля")
     pv = sub.add_parser("preview")
     pv.add_argument("--tag", default="new")
