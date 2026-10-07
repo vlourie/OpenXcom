@@ -315,6 +315,11 @@ def speckle(c, a, pal, d, var=0, sig=1.5):
     w = (r > g + 12) | (g > r + 8)          # цветное по серому: тёплая земля или зелень (MOUNTROCK 0-1)
     q = float(w.mean())
     if not 0.03 < q < 0.97:
+        # цветного нет: серые крапины по белому (снег POLAR 32 - 29 процентов серого 208 по белому 255)
+        y = cc @ LUMA
+        w = y < y.mean() - 10
+        q = float(w.mean())
+    if not 0.03 < q < 0.97:
         return c
     mw, mg, ma = cc[w].mean(0), cc[~w].mean(0), cc.mean(0)
     # у края клетки зерно общее для всех вариантов (стык тот же), внутри своё - как маска --ramp
@@ -327,7 +332,7 @@ def speckle(c, a, pal, d, var=0, sig=1.5):
     return c * (((1 - m) * mg + m * mw) / np.maximum(ma, 1))
 
 
-def build_ramp(s, carpet, ramp, out, variants=3, sec_by="dark", iso=False, clip=0.0, spk=False):
+def build_ramp(s, carpet, ramp, out, variants=3, sec_by="dark", iso=False, clip=0.0, spk=False, sig=1.5):
     """Ступени густоты одного материала (MOUNTSAND 0..6: песок -> галька -> тёмный грунт): последний кадр ramp -
     чистый второй материал, промежуточные - смесь двух полей по ОБЩЕЙ маске зерна с порогом по доле второго
     материала в классике кадра. Каждая ступень своим полем давала у соседних клеток разной густоты прямую
@@ -353,9 +358,9 @@ def build_ramp(s, carpet, ramp, out, variants=3, sec_by="dark", iso=False, clip=
     # маска зерна: у края клетки общая (стык тот же), внутри своя у каждого варианта. Одна маска на все варианты
     # клала второй материал одинаково в каждую клетку - точки с периодом клетки (пустошь MOUNTWASTE2 3);
     # через periodic нельзя - в узле у всех клеток одно значение источника, точка в каждом узле
-    g0 = grain_noise(sig=1.5)
+    g0 = grain_noise(sig=sig)
     we = np.clip((d - 0.55) / 0.35, 0, 1)
-    noises = [g0 if v == 0 else (we * g0 + (1 - we) * grain_noise(sig=1.5, seed=7 + v)) / np.sqrt(we * we + (1 - we) ** 2)
+    noises = [g0 if v == 0 else (we * g0 + (1 - we) * grain_noise(sig=sig, seed=7 + v)) / np.sqrt(we * we + (1 - we) ** 2)
               for v in range(variants + 1)]
     n = 0
     for f in [carpet] + list(ramp):
@@ -385,7 +390,7 @@ def build_ramp(s, carpet, ramp, out, variants=3, sec_by="dark", iso=False, clip=
 
 
 def build(s, carpet, others, out, variants=3, alts=(), grass=None, mixes=(), recolor=(), clip=0.0, path=False,
-          keep_low=False, chroma=1.0, iso=False, edge_mat=False, spk=False):
+          keep_low=False, chroma=1.0, iso=False, edge_mat=False, spk=False, ragged=0.0):
     """carpet - ковёр (поле с вариантами), alts - другие кадры того же ковра (другим вариантом поля);
     others - полы с деталями: свой цвет, у ромба переход в поле травы (grass) или ковра;
     grass - (набор, кадр, собранный PNG) поля травы другого набора: им же продолжаются others и mixes;
@@ -441,6 +446,12 @@ def build(s, carpet, others, out, variants=3, alts=(), grass=None, mixes=(), rec
                 pa = p[..., 3:] / 255.0
                 # у ромба (и за ним, где пак непрозрачен) - переход в поле травы; выше ромба (стебли) - свой цвет
                 band = t * (d[..., None] <= 1.15) * (np.mgrid[0:160, 0:128][0][..., None] >= CY - HY)
+                if ragged:
+                    # яма во весь ромб (URBITS 22): у классики край рваный в пиксель, гладкий переход по d
+                    # давал на поле чёткий тёмный ромб - граница сдвигается периодическим шумом
+                    nz = grain_noise(sig=4.0, seed=11 + f)
+                    nz = nz / (nz.std() + 1e-6)
+                    band = np.clip((d + ragged * nz - 0.80) / 0.10, 0, 1)[..., None] * (d[..., None] <= 1.15)
                 if edge_mat:
                     # край - в поле только там, где у классики кадра по краю материал поля (CULTIVAT 1: участок
                     # до самого ромба, трава редкими точками - кольцо травы давало решётку у соседних клеток)
@@ -537,11 +548,17 @@ def main():
                     help="ковёр: доля отклонения цветности поля от средней (меньше 1 - без цветных клякс)")
     ap.add_argument("--iso", action="store_true", help="ковёр: фактура без направления (у классики нет ряби)")
     ap.add_argument("--speckle", action="store_true", help="ковёр: тёплые крапины классики маской зерна по полю")
+    ap.add_argument("--ragged", type=float, default=0.0,
+                    help="--other: край детали во весь ромб (яма) - рваная граница перехода в поле, амплитуда"
+                         " шума в мере ромба (0.08)")
     ap.add_argument("--edge-mat", action="store_true",
                     help="--other: край в поле только там, где у классики кадра по краю материал поля")
     ap.add_argument("--ramp", default="", help="ступени густоты от --carpet к последнему кадру по общей маске")
     ap.add_argument("--ramp-tone", default="dark", choices=["dark", "share"],
                     help="--ramp: тон второго материала - самые тёмные пиксели ступени или пиксели с его наибольшей долей")
+    ap.add_argument("--ramp-sig", type=float, default=1.5,
+                    help="--ramp: размер зерна маски (гаусс x4); крупнее - второй материал пучками, а не ровной"
+                         " крапиной по клетке (трава по земле URBITS 21: при 1.5 клетка читается зелёным ромбом)")
     ap.add_argument("--pack-root", default="", help="папка с <НАБОР>.PCK/ вместо пака установки")
     ap.add_argument("--tops", default="", help="верх сплошных блоков одним полем: блоки, фактура верха --carpet")
     ap.add_argument("--tops-up", default="96", choices=["96", "auto"],
@@ -562,11 +579,14 @@ def main():
         print(a.set, "кадров", n, "->", Path(a.out) / (a.set + ".PCK"))
         return
     if a.ramp:
-        n = build_ramp(a.set, a.carpet, ints(a.ramp), a.out, a.variants, a.ramp_tone, a.iso, a.clip, a.speckle)
+        if a.other or a.mix or a.alt:
+            raise SystemExit("--ramp не собирает --other/--mix/--alt - собрать их отдельным запуском без --ramp")
+        n = build_ramp(a.set, a.carpet, ints(a.ramp), a.out, a.variants, a.ramp_tone, a.iso, a.clip, a.speckle,
+                       a.ramp_sig)
         print(a.set, "кадров", n, "->", Path(a.out) / (a.set + ".PCK"))
         return
     n = build(a.set, a.carpet, ints(a.other), a.out, a.variants, ints(a.alt), grass, ints(a.mix), ints(a.recolor), a.clip, a.path,
-              a.keep_low, a.chroma, a.iso, a.edge_mat, a.speckle)
+              a.keep_low, a.chroma, a.iso, a.edge_mat, a.speckle, a.ragged)
     print(a.set, "кадров", n, "->", Path(a.out) / (a.set + ".PCK"))
 
 
