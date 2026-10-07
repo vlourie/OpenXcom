@@ -14,6 +14,13 @@ r"""Предметы фотореалистично: перерисовка от
   {"name": ..., "anim": "НАБОР:кадр,кадр,...", "what": ...}
       анимация (R-071): все кадры одним описанием и одним зерном; корпус - из первого кадра, из
       остальных - только то, что у оригинала меняется (вода в бочке), с запасом в пиксель.
+Задание партии из замороженного снимка (acceptance_run.py compile, P1-B 30.09) несёт ещё:
+  "seed" - своё зерно (а не --seed + номер в списке); "prompt" - готовый текст целиком (только
+  --engine turbo --rgba); "reference": {"raw": "raw/<имя>.png"} - готовый ответ другого задания второй
+  картинкой <image2> (второй бок multiview-группы); "batch_id" - такие задания идут только с --batch <id>,
+  и перед загрузкой модели снимок сверяется (BATCH_STALE - стоп) и задания сверяются с ним по хэшу.
+--engine turbo грузит модель и LoRA по замку art/models/qwen21_turbo_rgba.lock.json (R-145, model_lock.py):
+коммиты из замка, без сети; файлы слепка и версии библиотек сверяются с замком до загрузки.
 
     tools\hdart\.venv-qwen21\Scripts\python.exe tools\hdart\obj_photo.py --jobs art/objects/photo_jobs.json
 
@@ -36,6 +43,7 @@ from PIL import Image, ImageDraw, ImageFilter       # noqa: E402
 
 import map_mockup as mm                             # noqa: E402
 import map_paint as mp_                             # noqa: E402
+import model_lock                                   # noqa: E402
 import obj_series as osr                            # noqa: E402
 import probe_object as po                           # noqa: E402
 
@@ -278,13 +286,33 @@ def main():
     ap.add_argument("--model", default="")
     ap.add_argument("--offload", default="model", choices=["model", "seq", "none"])
     ap.add_argument("--dry-run", action="store_true", dest="dry_run")
+    ap.add_argument("--batch", default="", help="партия из замороженного снимка: acceptance_batch_id")
+    ap.add_argument("--lock", default=model_lock.LOCK,
+                    help="замок модели --engine turbo (R-145): коммиты, sha256 файлов, версии библиотек")
     args = ap.parse_args()
 
     with open(args.jobs, encoding=ENC) as f:
         jobs = [j for j in json.load(f) if not j.get("_skip")]
+    batched = {j.get("batch_id") for j in jobs if j.get("batch_id")}
+    arun = None
+    if batched or args.batch:
+        # заморозили одно - видеокарта получает то же самое (R-087): снимок свежий, задания - его, до байта
+        import acceptance_run as arun
+        if batched != {args.batch}:
+            raise SystemExit("задания партии %s, а --batch %r - не запускаю" % (sorted(batched), args.batch))
+        arun.verify_for_gpu(args.batch, jobs)
+        if args.engine != "turbo" or not args.rgba:
+            raise SystemExit("партия снимка рисуется только --engine turbo --rgba (готовый промпт под него)")
+        if any("at" not in j for j in jobs):
+            raise SystemExit("задание партии без мест на карте (at) - не запускаю")
     if args.only:
         names = set(args.only.split(","))
         jobs = [j for j in jobs if j["name"] in names]
+    for n, j in enumerate(jobs):
+        ref = j.get("reference")
+        if ref and not any(o["name"] == ref["job_name"] for o in jobs[:n]) \
+                and not os.path.exists(os.path.join(args.out, ref["raw"])):
+            raise SystemExit("%s: опорной картинки %s нет и её задание не стоит раньше" % (j["name"], ref["raw"]))
     world = mm.World()
     raw_dir = os.path.join(args.out, "raw")
     os.makedirs(raw_dir, exist_ok=True)
@@ -302,6 +330,25 @@ def main():
             fr = [int(v) for v in frames.split(",")]
             print("%s: анимация %s %s" % (j["name"], s, fr), flush=True)
             plan.append((j, (s.upper(), fr)))
+    # R-145: turbo рисует ровно тем, что в замке - коммит модели и LoRA, без сети; расхождение файлов
+    # или библиотек с замком - стоп до загрузки модели (--recut модель не грузит, ему замок не нужен)
+    # полный qwen21 --rgba (проба детали 30.09) - та же модель по тому же замку, без LoRA
+    pinned = None
+    if (args.engine == "turbo" or (args.engine == "qwen21" and args.rgba)) and not args.recut and not args.model:
+        lock = model_lock.load(args.lock)
+        if lock is None:
+            raise SystemExit("нет замка модели %s - снять: model_lock.py make" % args.lock)
+        pinned = model_lock.pin(lock)
+        if args.engine == "turbo" and (pinned["lora_repo"], pinned["lora_file"]) != (TURBO_REPO, TURBO_FILE):
+            raise SystemExit("LoRA в замке %s/%s, а в obj_photo %s/%s" % (
+                pinned["lora_repo"], pinned["lora_file"], TURBO_REPO, TURBO_FILE))
+        bad = model_lock.check_runtime(lock)
+        for b in bad:
+            print("   замок:", b, flush=True)
+        if bad:
+            raise SystemExit("расхождений с замком %d - не рисую" % len(bad))
+        print("замок модели: %s@%s, LoRA @%s - совпадает" % (
+            pinned["model_repo"], pinned["model_revision"][:8], pinned["lora_revision"][:8]), flush=True)
     if args.dry_run:
         return
 
@@ -309,12 +356,16 @@ def main():
                             qwen21_steps=args.steps, qwen21_cfg=args.cfg, qwen21_mp=args.mp,
                             qwen21_strength=0.0, qwen21_offload=args.offload, qwen21_thrifty=False,
                             qwen21_ref="", qwen21_ref_mp=1.0, qwen21_prompt="strict",
-                            qwen21_hint="off", qwen21_ref_order="ref-first")
+                            qwen21_hint="off", qwen21_ref_order="ref-first",
+                            qwen21_revision=pinned["model_revision"] if pinned else None,
+                            qwen21_local_only=bool(pinned and pinned["local_files_only"]))
+    lora_pin = {"revision": pinned["lora_revision"], "local_files_only": pinned["local_files_only"]} if pinned else {}
     painter = None                                  # модель грузится, только если нужен новый ответ
     po.gen_fire.NEGATIVE = NEGATIVE
 
-    def paint(full, what, seed, raw_path):
-        """Как obj_series.paint, промпт PHOTO. full k=1 -> x4 RGBA того же размера."""
+    def paint(full, what, seed, raw_path, text_override=None, extra=()):
+        """Как obj_series.paint, промпт PHOTO. full k=1 -> x4 RGBA того же размера.
+        text_override - готовый промпт задания снимка; extra - пути опорных картинок (<image2>...)."""
         nonlocal painter
         bb = full.split()[3].getbbox()
         box = (max(0, bb[0] - args.pad), max(0, bb[1] - args.pad),
@@ -357,19 +408,25 @@ def main():
                 painter = po.gen_hd.Qwen21Painter(ns, {"ground": ("", "")})
                 if args.engine == "turbo":
                     from diffusers import FlowMatchEulerDiscreteScheduler
-                    painter.pipe.load_lora_weights(TURBO_REPO, weight_name=TURBO_FILE)
+                    painter.pipe.load_lora_weights(TURBO_REPO, weight_name=TURBO_FILE, **lora_pin)
                     painter.pipe.scheduler = FlowMatchEulerDiscreteScheduler.from_pretrained(
-                        TURBO_REPO, subfolder="scheduler")
+                        TURBO_REPO, subfolder="scheduler", **lora_pin)
                     print("   LoRA Viggle turbo: %s, шагов %d" % (TURBO_FILE, len(TURBO_SIGMAS)), flush=True)
             W, H = po.gen_hd.qwen21_size(src.width, src.height, args.mp)
             if args.rgba:                           # оригинал без подложки: прозрачное - это фон
                 # бикубика x16 оставляет ступени пикселей, и с RGBA модель их копирует (R-004, 28.09)
                 import vx_control as vc
                 ref = vc.smooth_ref(frame, args.zoom)
-                text = RGBA_HEAD + PHOTO_RGBA.replace("{what}", what) + RGBA_TAIL
+                text = text_override or (RGBA_HEAD + PHOTO_RGBA.replace("{what}", what) + RGBA_TAIL)
             else:
                 ref, text = flat.convert("RGB"), PHOTO.replace("{what}", what)
-            kw = {"prompt": text, "image": [ref.resize((W, H), Image.LANCZOS)], "width": W, "height": H,
+            images = [ref.resize((W, H), Image.LANCZOS)]
+            for p in extra:                         # готовый первый бок - второй картинкой (<image2>)
+                im2 = Image.open(p).convert(ref.mode)
+                rw, rh = po.gen_hd.qwen21_size(im2.width, im2.height, 1.0)
+                images.append(im2.resize((rw, rh), Image.LANCZOS))
+                print("   опора: %s" % p, flush=True)
+            kw = {"prompt": text, "image": images, "width": W, "height": H,
                   "output_resolution": 32 * round((W * H) ** 0.5 / 32),
                   "generator": painter.torch.Generator("cuda").manual_seed(seed)}
             if args.engine == "turbo":              # без CFG негатив не действует (R-040) - не подаём
@@ -405,13 +462,22 @@ def main():
 
     t0, made = time.time(), []
     for n, (j, what) in enumerate(plan, 1):
-        seed = args.seed + n
+        seed = j.get("seed", args.seed + n)
+        extra = [os.path.join(args.out, j["reference"]["raw"])] if j.get("reference") else []
         if isinstance(what, dict):
             comp = what
             whole, at = osr.compose(comp)
-            cut = paint(whole, j["what"], seed, os.path.join(raw_dir, j["name"] + ".png"))
+            raw = os.path.join(raw_dir, j["name"] + ".png")
+            ref = None
+            if arun:
+                # партия: готовый raw - только свой записанный; опора B - ответ A этой партии по sha256
+                arun.check_raw(args.out, j, raw)
+                if j.get("reference"):
+                    ref = arun.check_reference(args.out, j)
+            cut = paint(whole, j["what"], seed, raw, j.get("prompt"), extra)
             pieces = osr.split(cut, comp, at, args.grow)
             keys = [k for k, _o in comp["members"]]
+            saved = []
             for t in j["take"]:
                 kk, i = t.split("@")
                 s, fr = parse_key(kk)
@@ -420,11 +486,14 @@ def main():
                     raise SystemExit("%s: кусок %s - это %s:%d, не %s" % (j["name"], i, key[0], key[1], kk))
                 save(pieces[key], s, fr)
                 made.append((s, fr))
+                saved.append(os.path.join(args.out, s + ".PCK", "%d.png" % fr))
+            if arun:
+                arun.record_output(args.out, j, raw, saved, ref)
         else:
             s, frs = what
             sprs = [world.sprite(s, f, None).convert("RGBA") for f in frs]
-            cuts = [paint(sp, j["what"], seed, os.path.join(raw_dir, "%s_%d.png" % (j["name"], f)))
-                    for sp, f in zip(sprs, frs)]
+            cuts = [paint(sp, j["what"], seed, os.path.join(raw_dir, "%s_%d.png" % (j["name"], f)),
+                          j.get("prompt"), extra) for sp, f in zip(sprs, frs)]
             a0 = np.asarray(sprs[0], np.int16)
             for sp, c, f in zip(sprs, cuts, frs):
                 diff = (np.abs(np.asarray(sp, np.int16) - a0).sum(-1) > 0).astype(np.uint8) * 255

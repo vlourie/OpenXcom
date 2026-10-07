@@ -19,6 +19,24 @@ r"""Очередь заданий на видеокарту: одно задан
 Те же места задаются и при постановке: add --urgent / --pos N / --before X / --after X.
 ID - номер задания или его имя (--name).
 
+Приоритеты (специалист 01.10): первым идёт задание с меньшим P, места выше - порядок ВНУТРИ одного P.
+    P0  приёмка, регрессия, контроль          P2  опыты опознания и структуры на карте
+    P1  пилот производства, пробы (умолчание)  P9  фоновое заполнение (сегодня педия)
+    add --prio N [--preemptible]   prio ID N [--preemptible | --no-preemptible]
+    urgent ставит заданию P0. move/before/after подтягивают P к соседям, prio порядок внутри уровня не трогает.
+Диспетчер знает только P и preemptible; как доделать картинку и продолжить с места - дело самого задания.
+Уступающее (preemptible) задание при появлении в очереди задания с меньшим P получает флаг: файл
+по пути из переменной GPUQ_YIELD_FILE. Задание проверяет его между готовыми картинками и выходит с
+кодом 75. Срок PREEMPT_GRACE считается от запроса; не вышло - снимается деревом (картинки пишутся
+через временный файл, оборванная запись готовой не считается). В daemon.log: PREEMPT_REQUESTED, затем
+PREEMPT_COOPERATIVE или PREEMPT_TIMEOUT + PREEMPT_FORCED; PREEMPT_CANCELLED - выше никого не осталось.
+Коды выхода:
+    0                         done
+    75 у уступающего          PREEMPTED, не ошибка: первым в своём P (без запроса больше 3 раз подряд - сбой)
+    прочее (и 75 у обычного)  failed и повторы по --retries
+Один процесс на задание: потомки вышедшего или снятого задания снимаются, и пока жив хоть один,
+задание заново не запускается.
+
 Прочее:
     rm ID                 убрать из очереди (идущее - снять деревом процессов)
     stop ID               снять идущее и НЕ возвращать в очередь
@@ -96,6 +114,10 @@ STATUS = os.path.join(HOME, "status.txt")
 TICK = 3            # секунд между проверками
 FREE_MB = 8000      # выше этого карта считается занятой кем-то посторонним
 KEEP_DONE = 30      # сколько законченных заданий помнить
+DEFAULT_PRIO = 1
+YIELD_CODE = 75     # «уступил карту», не ошибка: задание снова в очереди
+PREEMPT_GRACE = int(os.environ.get("GPUQ_PREEMPT_GRACE", "300"))  # секунд дождаться конца картинки
+YIELD_DIR = os.path.join(HOME, "yield")
 OLLAMA = "http://127.0.0.1:11434"
 
 # Скрипты, которые грузят модель на карту. Нужны, чтобы увидеть запуск мимо очереди.
@@ -198,12 +220,37 @@ def proc_of(rec):
     return None
 
 
-def kill_tree(p):
-    kids = p.children(recursive=True)
-    for k in kids + [p]:
+def kill_tree(p, known=()):
+    """Снять процесс и всех потомков (и тех, кого видели раньше: known). Вернуть тех, кто выжил."""
+    try:
+        kids = p.children(recursive=True) if p else []
+    except psutil.Error:
+        kids = []
+    tree = list({k.pid: k for k in list(known) + kids + ([p] if p else [])}.values())
+    for k in tree:
         with contextlib.suppress(psutil.Error):
             k.kill()
-    psutil.wait_procs(kids + [p], timeout=10)
+    _gone, alive = psutil.wait_procs(tree, timeout=10)
+    return alive
+
+
+def leftover(job):
+    """Выжившие процессы прошлого запуска задания: пока жив хоть один, второй запуск не начинается."""
+    out = []
+    for rec in job.get("leftover") or []:
+        q = proc_of(rec)
+        if q:
+            out.append(q)
+    if not out:
+        job.pop("leftover", None)
+    return out
+
+
+def note_leftover(job, alive):
+    if alive:
+        job["leftover"] = [{"pid": q.pid, "ctime": q.create_time()} for q in alive if q.is_running()]
+        dlog(f"#{job['id']} {job['name']}: после снятия живы PID "
+             + ", ".join(str(q.pid) for q in alive) + " - заново не запустится, пока они не умрут")
 
 
 def gpu_script(cmdline):
@@ -294,11 +341,52 @@ def dlog(msg):
         f.write(f"{now()}  {msg}\n")
 
 
+def prio(job):
+    return int(job.get("prio", DEFAULT_PRIO))
+
+
+def tidy(st):
+    """order по уровням: меньший P раньше, внутри уровня - прежний порядок."""
+    st["order"].sort(key=lambda j: prio(st["jobs"][j]))
+
+
+def settle(st, jid):
+    """Задание поставлено руками в место order: P подтянуть к соседям, чтобы место было настоящим
+    (move/before/after P9 перед P1 делает его P1, P0 после P1 - P1)."""
+    o = st["order"]
+    i = o.index(jid)
+    job = st["jobs"][jid]
+    p = prio(job)
+    if i > 0:
+        p = max(p, prio(st["jobs"][o[i - 1]]))
+    if i + 1 < len(o):
+        p = min(p, prio(st["jobs"][o[i + 1]]))
+    job["prio"] = p
+    tidy(st)
+
+
+def pick(st):
+    """Номер в order следующего задания: меньший P, при равном - кто раньше в order."""
+    return min(range(len(st["order"])), key=lambda i: (prio(st["jobs"][st["order"][i]]), i))
+
+
+def yield_file(jid):
+    return os.path.join(YIELD_DIR, str(jid))
+
+
+def drop_yield(jid):
+    with contextlib.suppress(OSError):
+        os.remove(yield_file(jid))
+
+
 def launch(job):
     os.makedirs(LOGS, exist_ok=True)
     env = dict(os.environ)
     env.update({"PYTHONIOENCODING": "utf-8", "PYTHONUTF8": "1"})
     env.update(job.get("env") or {})
+    drop_yield(job["id"])
+    if job.get("preemptible"):
+        env["GPUQ_YIELD_FILE"] = yield_file(job["id"])
     logf = open(os.path.join(LOGS, f"{job['id']}.log"), "ab")
     logf.write(f"\n===== {now()} запуск: {json.dumps(job['cmd'], ensure_ascii=False)}\n"
                .encode("utf-8"))
@@ -341,6 +429,7 @@ def serve(_args):
         st["daemon"] = {"pid": me.pid, "ctime": me.create_time()}
     dlog(f"диспетчер поднят, PID {os.getpid()}")
     popen = {}          # jid -> Popen: код возврата знаем только у своих детей
+    kids = {}           # jid -> потомки идущего задания на прошлом такте
     last_wait = ""
     while True:
         with locked() as st:
@@ -351,12 +440,17 @@ def serve(_args):
             if jid:
                 job = st["jobs"].get(jid)
                 p = proc_of(job and job.get("proc"))
+                if p:
+                    with contextlib.suppress(psutil.Error):
+                        kids[jid] = p.children(recursive=True)   # потомки переживают родителя - помнить их
                 if job and job.get("kill"):
-                    if p:
-                        kill_tree(p)
+                    note_leftover(job, kill_tree(p, kids.pop(jid, ())))
                     how = job.pop("kill")
                     st["running"] = None
                     popen.pop(jid, None)
+                    for k in ("yield_at", "yield_killed"):
+                        job.pop(k, None)
+                    drop_yield(jid)
                     if how == "requeue":
                         job["state"] = "queued"
                         dlog(f"#{jid} {job['name']}: снято ради срочного, стоит вторым")
@@ -365,16 +459,29 @@ def serve(_args):
                 elif not p:
                     code = popen.pop(jid).poll() if jid in popen else None
                     st["running"] = None
+                    orphans = [k for k in kids.pop(jid, ()) if k.is_running()]
+                    if job and orphans:
+                        dlog(f"#{jid} {job['name']}: вышел, а потомки живы (PID "
+                             + ", ".join(str(k.pid) for k in orphans) + ") - снимаются")
+                        note_leftover(job, kill_tree(None, orphans))
                     if job:
-                        finish(st, jid, code, "exit")
+                        exited(st, jid, job, code)
+                elif job:
+                    preempt(st, jid, job, p)
             wait = ""
             if not st["running"] and st["order"]:
                 if st.get("paused"):
                     wait = "пауза (resume)"
                 else:
                     wait = gpu_busy()
+                    nxt = st["jobs"][st["order"][pick(st)]]
+                    alive = leftover(nxt) if not wait else []
+                    if alive:
+                        # один процесс на задание: прошлое дерево не умерло - добивать, но не запускать второе
+                        note_leftover(nxt, kill_tree(None, alive))
+                        wait = f"#{nxt['id']} {nxt['name']}: живы процессы прошлого запуска"
                     if not wait:
-                        jid = st["order"].pop(0)
+                        jid = st["order"].pop(pick(st))
                         job = st["jobs"][jid]
                         try:
                             p = launch(job)
@@ -388,6 +495,7 @@ def serve(_args):
                             pp = psutil.Process(p.pid)
                             job.update(state="running", started=now(),
                                        tries=job.get("tries", 0) + 1,
+                                       yield_env=bool(job.get("preemptible")),
                                        proc={"pid": p.pid, "ctime": pp.create_time()})
                             st["running"] = jid
                             dlog(f"#{jid} {job['name']}: запущен, PID {p.pid}")
@@ -397,6 +505,66 @@ def serve(_args):
             last_wait = wait
             write_status(st)
         time.sleep(TICK)
+
+
+def preempt(st, jid, job, p):
+    """Уступающее задание и задание с меньшим P в очереди: флаг, а не выстрел - задание доделает картинку
+    и выйдет само (YIELD_CODE). Очередь выше опустела раньше - флаг снимается. Не вышло за PREEMPT_GRACE -
+    снять деревом (запись картинок атомарная, оборванное не считается готовым)."""
+    if not job.get("preemptible"):
+        return
+    higher = [i for i in st["order"] if prio(st["jobs"][i]) < prio(job)]
+    if not job.get("yield_at"):
+        if higher and not st.get("paused"):
+            os.makedirs(YIELD_DIR, exist_ok=True)
+            open(yield_file(jid), "w").close()
+            job["yield_at"] = time.time()       # срок PREEMPT_GRACE считается отсюда, от запроса
+            h = st["jobs"][higher[0]]
+            dlog(f"PREEMPT_REQUESTED #{jid} {job['name']} (P{prio(job)}) ради #{h['id']} {h['name']} (P{prio(h)}): "
+                 f"ждём конца картинки, не дольше {PREEMPT_GRACE} с"
+                 + ("" if job.get("yield_env") else "; запущен без GPUQ_YIELD_FILE - уступит только по сроку"))
+    elif not higher:
+        drop_yield(jid)
+        job.pop("yield_at", None)
+        dlog(f"PREEMPT_CANCELLED #{jid} {job['name']}: выше в очереди никого, продолжает без остановки")
+    elif not job.get("yield_killed") and time.time() - job["yield_at"] > PREEMPT_GRACE:
+        dlog(f"PREEMPT_TIMEOUT #{jid} {job['name']}: за {PREEMPT_GRACE} с после запроса карту не отдал - снимается деревом")
+        job["yield_killed"] = True
+        kill_tree(p)                            # потомков добирает выход задания в serve (kids)
+
+
+def exited(st, jid, job, code):
+    """Код выхода -> состояние. 0 - done; YIELD_CODE у уступающего - PREEMPTED, не ошибка: в голову своего
+    уровня P; снят по сроку после запроса - тоже PREEMPTED; прочее - failed и обычные повторы."""
+    asked = job.pop("yield_at", None)
+    killed = job.pop("yield_killed", None)
+    drop_yield(jid)
+    took = f"{time.time() - asked:.0f} с после запроса" if asked else "без запроса"
+    if asked and killed:
+        how = f"PREEMPT_FORCED #{jid} {job['name']}: снят по сроку ({took})"
+        job["yields_forced"] = job.get("yields_forced", 0) + 1
+    elif job.get("preemptible") and code == YIELD_CODE:
+        if not asked:
+            job["spurious"] = job.get("spurious", 0) + 1
+            if job["spurious"] > 3:             # 75 сам по себе, по кругу - это сбой, а не уступка
+                dlog(f"#{jid} {job['name']}: код {YIELD_CODE} без запроса {job['spurious']} раз подряд - сбой")
+                finish(st, jid, code, "exit")
+                return
+        how = f"PREEMPT_COOPERATIVE #{jid} {job['name']}: вышел с кодом {YIELD_CODE} ({took})"
+        job["yields_coop"] = job.get("yields_coop", 0) + 1
+    elif asked and code is None:
+        # принят прежним диспетчером, код выхода не узнать: продолжение безопасно - готовое пропускается
+        how = f"PREEMPT_COOPERATIVE? #{jid} {job['name']}: вышел, код неизвестен ({took})"
+    else:
+        job.pop("spurious", None)
+        finish(st, jid, code, "exit")
+        return
+    if asked:
+        job.pop("spurious", None)
+    job.update(state="queued", yields=job.get("yields", 0) + 1, tries=max(job.get("tries", 1) - 1, 0))
+    place(st["order"], jid, pos=1)
+    tidy(st)                                    # первым в своём уровне
+    dlog(f"{how}; снова в очереди первым в P{prio(job)}, продолжит с места")
 
 
 def gpu_busy():
@@ -432,6 +600,22 @@ def elapsed(start):
     return f"{int(s // 3600)} ч {int(s % 3600 // 60):02d} м"
 
 
+def tag(job, running=False):
+    """Видно сразу, задержит ли задание новое: уступает ли оно и как."""
+    if not job.get("preemptible"):
+        return f"P{prio(job)}" + ("  [не уступает]" if running else "")
+    if running and not job.get("yield_env"):
+        return f"P{prio(job)}  [уступит только по сроку {PREEMPT_GRACE} с: запущен без флага]"
+    return f"P{prio(job)}  [уступает" + (" после картинки]" if running else "]")
+
+
+def yield_stats(job):
+    n = job.get("yields_coop", 0), job.get("yields_forced", 0)
+    if not any(n):
+        return ""
+    return f"  уступал: сам {n[0]}" + (f", по сроку {n[1]}" if n[1] else "")
+
+
 def describe(st):
     lines = []
     d = "работает" if proc_of(st.get("daemon")) else "НЕ ЗАПУЩЕН (py -3 tools/gpuq.py start)"
@@ -440,18 +624,23 @@ def describe(st):
     if jid:
         j = st["jobs"][jid]
         last = [l.strip() for l in tail(os.path.join(LOGS, f"{jid}.log"), 5) if l.strip()]
-        lines.append(f"идёт:  #{jid} {j['name']}  {elapsed(j.get('started'))}"
-                     + (f"  попытка {j['tries']}" if j.get("tries", 1) > 1 else ""))
+        lines.append(f"идёт:  #{jid} {j['name']}  {elapsed(j.get('started'))}  {tag(j, running=True)}"
+                     + (f"  попытка {j['tries']}" if j.get("tries", 1) > 1 else "")
+                     + yield_stats(j)
+                     + (f"  УСТУПАЕТ КАРТУ: запрос {time.time() - j['yield_at']:.0f} с назад"
+                        if j.get("yield_at") else ""))
         if last:
             lines.append(f"       > {last[-1][:150]}")
     else:
         lines.append("идёт:  ничего")
     if st.get("wait"):
         lines.append(f"ждём:  {st['wait']}")
-    lines.append(f"очередь ({len(st['order'])}):")
-    for n, i in enumerate(st["order"], 1):
+    lines.append(f"очередь ({len(st['order'])}), в порядке запуска:")
+    run_order = sorted(range(len(st["order"])), key=lambda i: (prio(st["jobs"][st["order"][i]]), i))
+    for n, k in enumerate(run_order, 1):
+        i = st["order"][k]
         j = st["jobs"][i]
-        lines.append(f"  {n:>2}. #{i} {j['name']}   ({j['added']})")
+        lines.append(f"  {n:>2}. #{i} {j['name']}  {tag(j)}   ({j['added']})" + yield_stats(j))
     done = [j for j in st["jobs"].values()
             if j["state"] in ("done", "failed", "stopped", "ended")]
     done.sort(key=lambda j: int(j["id"]))
@@ -512,10 +701,16 @@ def cmd_add(a):
         st["jobs"][jid] = {"id": jid, "name": a.name or os.path.basename(
             (gpu_script(cmd) or cmd[-1]).replace("\\", "/")), "cmd": cmd,
             "cwd": os.path.abspath(a.cwd), "env": env, "retries": a.retries,
-            "state": "queued", "added": now()}
+            "state": "queued", "added": now(), "prio": 0 if a.urgent else a.prio,
+            "preemptible": a.preemptible}
+        tidy(st)
         place(st["order"], jid, pos=1 if a.urgent else a.pos,
               before=find(st, a.before) if a.before else None,
               after=find(st, a.after) if a.after else None)
+        if a.pos or a.before or a.after:
+            settle(st, jid)
+        else:
+            tidy(st)                            # в конец своего уровня
         n = st["order"].index(jid) + 1
         print(f"#{jid} {st['jobs'][jid]['name']}: в очереди {n}-м"
               + (", карта сейчас занята" if st["running"] else ""))
@@ -527,7 +722,12 @@ def reorder(a, **kw):
         jid = find(st, a.id)
         if jid not in st["order"]:
             raise SystemExit(f"#{jid} не в очереди (он {st['jobs'][jid]['state']})")
+        tidy(st)                                # соседи для settle - в порядке запуска
         place(st["order"], jid, **kw)
+        if kw:
+            settle(st, jid)
+        else:
+            tidy(st)                            # last - в конец своего уровня
         print("\n".join(describe(st)))
 
 
@@ -540,10 +740,25 @@ def cmd_urgent(a):
             place(st["order"], run, pos=1)
         if jid != run:
             place(st["order"], jid, pos=1)
+        st["jobs"][jid]["prio"] = 0                 # «срочно» - выше любого приоритета
+        tidy(st)
         print("\n".join(describe(st)))
         if a.now and run and run != jid:
             print(f"#{run} будет снят и встанет вторым; начнёт СНАЧАЛА, "
                   "если сам не умеет продолжать с места")
+
+
+def cmd_prio(a):
+    with locked() as st:
+        jid = find(st, a.id)
+        job = st["jobs"][jid]
+        job["prio"] = a.prio                    # место в order не трогаем: серия из нескольких prio не переворачивается
+        if a.preemptible is not None:
+            job["preemptible"] = a.preemptible
+        print("\n".join(describe(st)))
+        if jid == st["running"] and job.get("preemptible") and not job.get("yield_env"):
+            print(f"#{jid} запущен без флага уступки: если придётся уступить, доделать картинку он не сможет - "
+                  f"будет снят через {PREEMPT_GRACE} с и продолжит с места после")
 
 
 def cmd_rm(a, how="removed"):
@@ -602,8 +817,19 @@ def main():
     g.add_argument("--pos", type=int, help="N-м")
     g.add_argument("--before")
     g.add_argument("--after")
+    p.add_argument("--prio", type=int, default=DEFAULT_PRIO,
+                   help="0 приёмка/регрессия, 1 пилот/пробы (умолчание), 2 опыты, 9 педия")
+    p.add_argument("--preemptible", action="store_true",
+                   help="уступает карту заданию с меньшим P (на границе картинки, GPUQ_YIELD_FILE)")
     p.add_argument("cmd", nargs=argparse.REMAINDER)
     p.set_defaults(fn=cmd_add)
+    p = sub.add_parser("prio", help="сменить приоритет задания")
+    p.add_argument("id")
+    p.add_argument("prio", type=int)
+    g = p.add_mutually_exclusive_group()
+    g.add_argument("--preemptible", dest="preemptible", action="store_true", default=None)
+    g.add_argument("--no-preemptible", dest="preemptible", action="store_false")
+    p.set_defaults(fn=cmd_prio)
 
     p = sub.add_parser("urgent", help="первым; --now - снять идущее")
     p.add_argument("id")
@@ -619,7 +845,7 @@ def main():
         p.add_argument("other")
         p.set_defaults(fn=lambda a, op=op: reorder(
             a, **{op: find(load(), a.other)}))
-    p = sub.add_parser("last", help="в конец")
+    p = sub.add_parser("last", help="в конец своего уровня P")
     p.add_argument("id")
     p.set_defaults(fn=lambda a: reorder(a))
 

@@ -20,9 +20,9 @@ r"""map_mockup.py - блок карты X-Piratez, собранный из та�
   * порядок: z, потом y, потом x; в клетке пол, стена З, стена С, объект (Map::drawTerrain).
 Тени, свет, юниты и полустены (северная стена при западной) не рисуются - это макет.
 
-    py -3.13 tools\hdart\map_mockup.py --find BARN:16
-    py -3.13 tools\hdart\map_mockup.py --block FARM07 --terrain FARM
-    py -3.13 tools\hdart\map_mockup.py --mockup BARN:16
+    py -3 tools\hdart\map_mockup.py --find BARN:16
+    py -3 tools\hdart\map_mockup.py --block FARM07 --terrain FARM
+    py -3 tools\hdart\map_mockup.py --mockup BARN:16
 """
 import argparse
 import json

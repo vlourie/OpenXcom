@@ -1011,9 +1011,15 @@ class Qwen21Painter:
                 % (diffusers.__version__, ", ".join(self.NAMES)))
         repo = args.qwen21_model or QWEN21_REPO
         size = "размер как есть" if args.qwen21_mp <= 0 else "%.1f Мпикс" % args.qwen21_mp
-        print("Qwen-Image-2.1: %s (%s), шагов %d, cfg %.1f, %s"
-              % (repo, cls.__name__, args.qwen21_steps, args.qwen21_cfg, size))
-        pipe = cls.from_pretrained(repo, torch_dtype=torch.bfloat16)
+        # R-145: коммит из замка модели (obj_photo, model_lock.py) и без сети; без него - ветка main, как раньше
+        pinned = {}
+        if getattr(args, "qwen21_revision", None):
+            pinned["revision"] = args.qwen21_revision
+        if getattr(args, "qwen21_local_only", False):
+            pinned["local_files_only"] = True
+        print("Qwen-Image-2.1: %s@%s (%s), шагов %d, cfg %.1f, %s"
+              % (repo, pinned.get("revision", "main")[:8], cls.__name__, args.qwen21_steps, args.qwen21_cfg, size))
+        pipe = cls.from_pretrained(repo, torch_dtype=torch.bfloat16, **pinned)
         if args.qwen21_offload == "none":
             pipe.to("cuda")
         elif args.qwen21_offload == "seq":

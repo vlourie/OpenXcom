@@ -49,4 +49,16 @@ ground_relief.py
 long_object.py
 vx_control.py
 gen_fire_real.py
+identity_propose.py
+acceptance_run.py
+photo_render.py
+struct_probe.py
+photo_struct_render.py
+hd_e2e_v1_run.py
+restore_probe_v1.py
+restore_probe_v1b.py
+restore_batch_v1.py
+strict_ctl_v1.py
+prod_two_pass_v1.py
+prod_two_pass_v2.py
 sidewalk_render.py
