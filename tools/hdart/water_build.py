@@ -14,8 +14,18 @@
     умноженным на альфу, и над альфой, потом деление; альфа поднята (gain), чтобы капля в один пиксель
     классики осталась каплей. Корпус и остальные кадры набора не трогаются.
 
-    py -3.13 tools/hdart/water_build.py --out <папка>/TERRAIN [--sets SEAURBAN,SEABITS,CARGO2_IND]
-Проверка - игровой кадр моря у борта (сейв пиратского круиза), а не лист кадров.
+  POLAR 63..122 (записи 63..80, 4 фазы) - полярная вода и берега льда. Раскладка воды на карте случайная
+    (записи 68, 78, 79, 80 - одна вода со сдвигом фазы), поэтому общей текстуры на несколько клеток нет:
+    вода каждого кадра (индексы 128..143) - кадр сам с собой на изорешётке, мягкое x4; мелкий дизеринг
+    классики стыкуется с любым соседом без видимого шва. Общая кромка (полоса у края ромба из одного поля
+    на все кадры) пробовалась и отвергнута: на поле проступает решётка тонких линий. Берег: белый снег
+    (индексы 1..3) - фактура снега пака (кадр 32, сам с собой), чтобы берег продолжал соседний снег;
+    лиловый склон и льдины - premultiplied мягкое x4 классики; слои смешаны по плотности, за силуэтом цвет
+    крайнего слоя. Альфа как у SEABITS. Ступени берега - геометрия классики, не трогаются.
+
+    py -3.13 tools/hdart/water_build.py --out <папка>/TERRAIN [--sets SEAURBAN,SEABITS,CARGO2_IND,POLAR]
+Проверка - игровой кадр (море у борта пиратского круиза, полярные пруды STR_LOC_ACADEMY_TOWN_COLD), а не лист кадров.
+POLAR берёт снег из пака установки - пересобирать после замены снега POLAR 32.
 """
 import argparse
 import os
@@ -38,6 +48,10 @@ K = 4
 ARR = {(0, 0): 0, (1, 0): 2, (2, 0): 5, (0, 1): 1, (1, 1): 4, (2, 1): 7, (0, 2): 3, (1, 2): 6, (2, 2): 8}
 SKIRT = 143
 FOAM = range(31, 47)
+POLAR_WATER = np.zeros(256, bool)
+POLAR_WATER[128:144] = True             # бирюзовая рампа воды POLAR
+POLAR_SNOW_IDX = [1, 2, 3]              # белый снег, как у кадра снега 32
+POLAR_SNOW = INST / "user" / "mods" / "hd" / "hd" / "TERRAIN" / "POLAR.PCK" / "32.png"
 
 
 def palette():
@@ -183,13 +197,88 @@ def build_foam(pal, out, blur=1.0, gain=1.6):
     return len(FOAM)
 
 
+def polar_water(frame, pal, mean, blur):
+    """Вода кадра POLAR: кадр сам с собой на изорешётке, не-вода - средний цвет воды; мягкое x4 клетки кадра."""
+    col = pal[frame].astype(np.float32)
+    col[~(POLAR_WATER[frame] & (frame != 0))] = mean
+    span = range(-2, 3)
+    n = len(span)
+    ox, oy = n * 16 + 8, 8
+    img = np.zeros((2 * n * 8 + 64, 2 * n * 16 + 64, 3), np.float32)
+    have = np.zeros(img.shape[:2], bool)
+    org = lambda x, y: (ox + (x - y) * 16, oy + (x - span[0] + y - span[0]) * 8)   # noqa: E731
+    m = frame != 0
+    for y in span:
+        for x in span:
+            px, py = org(x, y)
+            img[py:py + 40, px:px + 32][m] = col[m]
+            have[py:py + 40, px:px + 32] |= m
+    img[~have] = mean
+    hd = up_smooth(np.clip(img, 0, 255).round().astype(np.uint8), blur)
+    px, py = org(0, 0)
+    return hd[py * K:(py + 40) * K, px * K:(px + 32) * K]
+
+
+def polar_snow():
+    """Снег пака установки (POLAR 32) на изорешётке сам с собой, клетка в середине: за ромбом - то, что
+    покажет соседний снег."""
+    s = np.asarray(Image.open(POLAR_SNOW).convert("RGBA")).astype(np.float32)
+    h, w = 40 * K, 32 * K
+    big = np.zeros((h * 3, w * 3, 4), np.float32)
+    for y in range(-2, 3):
+        for x in range(-2, 3):
+            px, py = w + (x - y) * 16 * K, h + (x + y) * 8 * K
+            x0, y0, x1, y1 = max(px, 0), max(py, 0), min(px + w, 3 * w), min(py + h, 3 * h)
+            if x1 > x0 and y1 > y0:
+                src = s[y0 - py:y1 - py, x0 - px:x1 - px]
+                big[y0:y1, x0:x1] = np.where(src[..., 3:] > 127, src, big[y0:y1, x0:x1])
+    return big[h:2 * h, w:2 * w, :3]
+
+
+def build_polar(pal, out, blur=1.6):
+    s = "POLAR"
+    frames = read_set(s)
+    recs, _ = records(s)
+    assert recs[68] == [68, 83, 98, 113] * 2 and recs[78] == [113, 68, 83, 98] * 2, (recs[68], recs[78])
+    anim = sorted({f for r in recs if len(set(r)) > 1 for f in r})
+    assert anim == list(range(63, 123)), anim
+    mean = np.concatenate([pal[frames[f][POLAR_WATER[frames[f]] & (frames[f] != 0)]] for f in (68, 83, 98, 113)])
+    mean = mean.astype(np.float32).mean(0)
+    snow = polar_snow()
+
+    def dens(m, col=None):
+        ch = [m.astype(np.float32)[..., None]] if col is None else [col * m[..., None], m.astype(np.float32)[..., None]]
+        return up_float(np.pad(np.dstack(ch), ((2, 2), (2, 2), (0, 0))), 1.2)[2 * K:-2 * K, 2 * K:-2 * K]
+
+    for f in anim:
+        a = frames[f]
+        nz = a != 0
+        wm = nz & POLAR_WATER[a]
+        sm = nz & np.isin(a, POLAR_SNOW_IDX)
+        im = nz & ~wm & ~sm
+        wat = polar_water(a, pal, mean, blur)
+        ui = dens(im, pal[a].astype(np.float32))
+        d_i = np.clip(ui[..., 3], 0, None)
+        icol = ui[..., :3] / np.maximum(d_i[..., None], 1e-3)
+        d_s = np.clip(dens(sm)[..., 0], 0, None)
+        d_w = np.clip(dens(wm)[..., 0], 0, None)
+        tot = np.maximum(d_i + d_s + d_w, 1e-4)
+        # доли слоёв по плотности: за силуэтом цвет того слоя, что у края (иначе кромка ромба цвета воды)
+        land = np.clip(((d_i + d_s) / tot - 0.5) * 2.2 + 0.5, 0, 1)[..., None]
+        ls = (d_s / np.maximum(d_i + d_s, 1e-4))[..., None]
+        col = (icol * (1 - ls) + snow * ls) * land + wat * (1 - land)
+        alpha = np.maximum(soft_mask(nz), blk(nz))
+        save(np.dstack([np.clip(col, 0, 255), alpha * 255]).round().astype(np.uint8), out, s, f)
+    return len(anim)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", required=True)
-    ap.add_argument("--sets", default="SEAURBAN,SEABITS,CARGO2_IND")
+    ap.add_argument("--sets", default="SEAURBAN,SEABITS,CARGO2_IND,POLAR")
     a = ap.parse_args()
     pal = palette()
-    fn = {"SEAURBAN": build_seaurban, "SEABITS": build_seabits, "CARGO2_IND": build_foam}
+    fn = {"SEAURBAN": build_seaurban, "SEABITS": build_seabits, "CARGO2_IND": build_foam, "POLAR": build_polar}
     for s in a.sets.split(","):
         print(s, "кадров", fn[s](pal, a.out), "->", Path(a.out) / (s + ".PCK"))
 
