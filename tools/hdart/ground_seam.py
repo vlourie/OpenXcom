@@ -260,7 +260,7 @@ PER_H = 64              # поле периодично по прямоугол�
 PER_Y0 = 96             # строки периода 96..159 - внутри кадра
 
 
-def isotropic(field):
+def isotropic(field, var=0):
     """Фактура без направления: амплитуда спектра поля - средняя по кольцу в координатах земли (экранный y
     сжат вдвое), фаза своя. Рябь пака, которой у классики нет (DESERT 0), иначе растягивается полем в
     направленные полосы. Считается на точном периоде 128 x 64, поэтому стык клеток не меняется."""
@@ -275,7 +275,9 @@ def isotropic(field):
     out = np.empty_like(F)
     # фаза случайная (одна на все каналы, эрмитова - из шума): своя фаза поля держит узлы решётки, и мелкая
     # деталь пака встаёт точкой на каждую клетку (DESERT 0 проба 07.10)
-    ph = np.fft.fft2(np.random.default_rng(11).standard_normal(tile.shape[:2]))
+    # у каждого варианта своя фаза: с одной на всех .v1-.v3 выходили одной картинкой, и рисунок вставал в каждую
+    # клетку (тёмные пятна в узлах на пустоши MOUNTWASTE2, 07.10)
+    ph = np.fft.fft2(np.random.default_rng(11 + var).standard_normal(tile.shape[:2]))
     ph = ph / np.maximum(np.abs(ph), 1e-9)
     ph[0, 0] = 1.0
     for c in range(F.shape[2]):
@@ -283,7 +285,8 @@ def isotropic(field):
         w = (r > 0).ravel()          # постоянная составляющая в кольцо не входит - иначе раздувает низкие частоты
         mean = (np.bincount(b.ravel(), amp.ravel() * w, minlength=35)
                 / np.maximum(np.bincount(b.ravel(), w.astype(np.float64), minlength=35), 1))
-        a2 = np.where(r == 0, amp, mean[b])
+        # волны длиннее 32 пикс x4 (кратные периоду клетки) - пятно на каждую клетку, на поле решётка пятен
+        a2 = np.where(r == 0, amp, mean[b] * np.minimum(1.0, (r * 32.0) ** 2))
         out[..., c] = a2 * ph
     t = np.real(np.fft.ifft2(out, axes=(0, 1))).astype(np.float32)
     rows = (np.arange(field.shape[0]) - y0) % PER_H
@@ -302,7 +305,29 @@ def grain_noise(w=128, sig=2.5, seed=7):
     return t[rows]
 
 
-def build_ramp(s, carpet, ramp, out, variants=3):
+def speckle(c, a, pal, d, var=0, sig=1.5):
+    """Пёстрость классики поверх поля: тёплые крапины по серому щебню (пустошь MOUNTWASTE2 0). Карта цвета
+    fit_map сравнивает с классикой, размытой на пиксель, - крапины в ней тонут в средний тон, а --iso гасит и
+    пятна пака: пол выходил однотонной бурой кашей. Здесь доля q тёплых пикселей классики кадра кладётся
+    маской зерна, тон каждой части - средний своей части классики, средний тон кадра не меняется."""
+    cc = np.asarray(pal, dtype=np.float32).reshape(-1, 3)[:256][a[a != 0]]
+    r, g = cc[:, 0], cc[:, 1]
+    w = (r > g + 12) | (g > r + 8)          # цветное по серому: тёплая земля или зелень (MOUNTROCK 0-1)
+    q = float(w.mean())
+    if not 0.03 < q < 0.97:
+        return c
+    mw, mg, ma = cc[w].mean(0), cc[~w].mean(0), cc.mean(0)
+    # у края клетки зерно общее для всех вариантов (стык тот же), внутри своё - как маска --ramp
+    g0 = grain_noise(sig=sig, seed=101)
+    we = np.clip((d - 0.55) / 0.35, 0, 1)
+    noise = g0 if var == 0 else (we * g0 + (1 - we) * grain_noise(sig=sig, seed=101 + var)) / np.sqrt(we * we + (1 - we) ** 2)
+    ni = noise[d < 0.9]
+    t = float(np.quantile(ni, 1.0 - q))
+    m = np.clip((noise - t) / (0.35 * float(ni.std())) + 0.5, 0, 1)[..., None]
+    return c * (((1 - m) * mg + m * mw) / np.maximum(ma, 1))
+
+
+def build_ramp(s, carpet, ramp, out, variants=3, sec_by="dark", iso=False, clip=0.0, spk=False):
     """Ступени густоты одного материала (MOUNTSAND 0..6: песок -> галька -> тёмный грунт): последний кадр ramp -
     чистый второй материал, промежуточные - смесь двух полей по ОБЩЕЙ маске зерна с порогом по доле второго
     материала в классике кадра. Каждая ступень своим полем давала у соседних клеток разной густоты прямую
@@ -315,31 +340,44 @@ def build_ramp(s, carpet, ramp, out, variants=3):
     fields = []
     for f in (carpet, last):
         p = load_pack(s, f)
-        tex, mean = flatten(p[..., :3], inner * (p[..., 3] > 127))
+        tex, mean = flatten(p[..., :3], inner * (p[..., 3] > 127), clip)
         tone = fit_map(s, [f], pal, frames)
-        fields.append([tone(periodic(tex, mean, var=v)) for v in range(variants + 1)])
+        # iso, clip - как у ковра: кустик или ямка пака иначе встают точкой на каждую клетку (снег MOUNTSNOW2 0)
+        fields.append([tone(isotropic(periodic(tex, mean, var=v), v) if iso else periodic(tex, mean, var=v))
+                       for v in range(variants + 1)])
+    if spk:
+        fields[0] = [speckle(c, frames[carpet], pal, d, v) for v, c in enumerate(fields[0])]
     share = 1.0 - index_share(frames[last], frames[carpet])      # доля второго материала у индекса
     prgb = np.asarray(pal, dtype=np.float32).reshape(-1, 3)[:256]
     mean2 = fields[1][0][inner > 0].mean(0)
-    noise = grain_noise(sig=1.5)
-    ni = noise[inner > 0]
-    sd = float(ni.std())
+    # маска зерна: у края клетки общая (стык тот же), внутри своя у каждого варианта. Одна маска на все варианты
+    # клала второй материал одинаково в каждую клетку - точки с периодом клетки (пустошь MOUNTWASTE2 3);
+    # через periodic нельзя - в узле у всех клеток одно значение источника, точка в каждом узле
+    g0 = grain_noise(sig=1.5)
+    we = np.clip((d - 0.55) / 0.35, 0, 1)
+    noises = [g0 if v == 0 else (we * g0 + (1 - we) * grain_noise(sig=1.5, seed=7 + v)) / np.sqrt(we * we + (1 - we) ** 2)
+              for v in range(variants + 1)]
     n = 0
     for f in [carpet] + list(ramp):
         a = frames[f]
         q = 0.0 if f == carpet else (1.0 if f == last else float(share[a[a != 0]].mean()))
-        t = float(np.quantile(ni, 1.0 - q)) if 0 < q < 1 else (ni.max() + 1 if q <= 0 else ni.min() - 1)
-        m = np.clip((noise - t) / (0.35 * sd) + 0.5, 0, 1)[..., None]
         # второй материал ступени - своего цвета классики: на редких ступенях это бурая галька, а не грунт
         # последнего кадра (MOUNTSAND 1: 142,102,56 против 43,24,29 у кадра 6); маска та же, меняется только тон
         # второй материал - самая тёмная доля q пикселей кадра (та же доля, что у маски)
+        # sec_by="share": доля q пикселей с наибольшей долей второго материала у индекса - когда второй материал
+        # светлее первого (MOUNTROCK 2-3: оранжевая земля светлее серого щебня, по тёмным выходил серый)
         cc = prgb[a[a != 0]]
-        yy = cc @ np.array([0.299, 0.587, 0.114], np.float32)
+        yy = cc @ np.array([0.299, 0.587, 0.114], np.float32) if sec_by == "dark" else -share[a[a != 0]]
         sec = cc[yy <= np.quantile(yy, q)] if 0 < q < 1 else cc[:0]
         k = (sec.mean(0) / np.maximum(mean2, 1)) if len(sec) else np.ones(3, np.float32)
         print("  ступень %d: доля второго материала %.2f, тон x%s" % (f, q, np.round(k, 2)))
         al = classic_alpha(a)
         for v in range(variants + 1):
+            noise = noises[v]
+            ni = noise[inner > 0]
+            sd = float(ni.std())
+            t = float(np.quantile(ni, 1.0 - q)) if 0 < q < 1 else (ni.max() + 1 if q <= 0 else ni.min() - 1)
+            m = np.clip((noise - t) / (0.35 * sd) + 0.5, 0, 1)[..., None]
             c = fields[0][v] * (1 - m) + fields[1][v] * k * m
             save_rgba(c, al, out, s, "%d" % f if v == 0 else "%d.v%d" % (f, v))
             n += 1
@@ -347,7 +385,7 @@ def build_ramp(s, carpet, ramp, out, variants=3):
 
 
 def build(s, carpet, others, out, variants=3, alts=(), grass=None, mixes=(), recolor=(), clip=0.0, path=False,
-          keep_low=False, chroma=1.0, iso=False, edge_mat=False):
+          keep_low=False, chroma=1.0, iso=False, edge_mat=False, spk=False):
     """carpet - ковёр (поле с вариантами), alts - другие кадры того же ковра (другим вариантом поля);
     others - полы с деталями: свой цвет, у ромба переход в поле травы (grass) или ковра;
     grass - (набор, кадр, собранный PNG) поля травы другого набора: им же продолжаются others и mixes;
@@ -362,9 +400,9 @@ def build(s, carpet, others, out, variants=3, alts=(), grass=None, mixes=(), rec
     a0 = frames[carpet]
     tone = fit_map(s, [carpet] + list(alts), pal, frames)
 
-    def ctone(field, f):
+    def ctone(field, f, var=0):
         # keep_low: крупный рисунок ковра (рябь дюн) - классики этого кадра, мелкая фактура - бесшовного поля
-        c = tone(isotropic(field) if iso else field)
+        c = tone(isotropic(field, var) if iso else field)
         if chroma != 1.0:
             # chroma: отклонение цветности от средней поля сжать (крупные камни пака - цветные кляксы,
             # у классики пёстрость в пиксель); средний тон и яркость не трогаются
@@ -372,6 +410,8 @@ def build(s, carpet, others, out, variants=3, alts=(), grass=None, mixes=(), rec
             ch = c - y
             mch = ch[inner > 0].mean(0)
             c = y + mch + (ch - mch) * chroma
+        if spk:
+            c = speckle(c, frames[f], pal, d, var)
         return detail_tone(frames[f], np.dstack([c, np.full(c.shape[:2], 255.0)]), pal) if keep_low else c
     ftone = ctone(periodic(tex, mean), carpet)
     al = classic_alpha(a0)
@@ -379,10 +419,10 @@ def build(s, carpet, others, out, variants=3, alts=(), grass=None, mixes=(), rec
     n = 1
     # варианты ковра (R-039): один кадр на всё поле - повтор; движок раскладывает .v1-.v3 пятнами
     for v in range(1, variants + 1):
-        save_rgba(ctone(periodic(tex, mean, var=v), carpet), al, out, s, "%d.v%d" % (carpet, v))
+        save_rgba(ctone(periodic(tex, mean, var=v), carpet, v), al, out, s, "%d.v%d" % (carpet, v))
         n += 1
     for k, f in enumerate(alts):
-        save_rgba(ctone(periodic(tex, mean, var=variants + 1 + k), f), classic_alpha(frames[f]), out, s, "%d" % f)
+        save_rgba(ctone(periodic(tex, mean, var=variants + 1 + k), f, variants + 1 + k), classic_alpha(frames[f]), out, s, "%d" % f)
         n += 1
     if grass:
         gs, gf, gpng = grass
@@ -432,30 +472,39 @@ def build(s, carpet, others, out, variants=3, alts=(), grass=None, mixes=(), rec
     return n
 
 
-def build_tops(s, src, blocks, out, sides=True, clip=0.0):
+def top_up(frame):
+    """Подъём верха блока над ромбом пола, пикселей x4: верх силуэта классики против строки 25 у пола."""
+    rows = np.where((frame != 0).any(1))[0]
+    return max(0, 25 - int(rows.min())) * K if len(rows) else 0
+
+
+def build_tops(s, src, blocks, out, sides=True, clip=0.0, auto_up=False):
     """Верх сплошных блоков рельефа (пещера CAVEBROWN 8-12) одним полем: у классики верх у всех блоков один, у
     пака у каждого свой рисунок - блоки чередуются по карте, и верх выходит шахматкой. Верх блока - ромб пола,
     поднятый на 24 пикселя базы; фактура - верх кадра src без низких частот, поле periodic, тон - верх классики
     всех блоков (fit_tone). Блок k - вариант поля k (стык тот же). sides: тон боков - к бокам классики кадра."""
-    up = 96
-    cyt = CY - up
     pal = wb.palette().astype(np.float32)[:, :3]
     frames = wb.read_set(s)
-    dt = dmap(cy=cyt)
+    # auto_up: у каждого блока свой подъём (плита и кубы разной высоты, DESERT 39-41), иначе 24 пикселя базы
+    ups = {f: (top_up(frames[f]) if auto_up else 96) for f in blocks}
+    src_up = top_up(frames[src]) if auto_up else 96
     yy = np.mgrid[0:160, 0:128][0] + 0.5
     p = load_pack(s, src)
     ps = np.zeros_like(p)
-    ps[up:] = p[:160 - up]          # верх src на место ромба пола: periodic берёт выборку вокруг (CX, CY)
+    ps[src_up:] = p[:160 - src_up]  # верх src на место ромба пола: periodic берёт выборку вокруг (CX, CY)
     tex, mean = flatten(ps[..., :3], ((dmap() < 0.9) * (ps[..., 3] > 127)).astype(np.float32), clip)
 
     def classic_rgb(f):
         return np.repeat(np.repeat(pal[frames[f]], K, 0), K, 1), wb.blk(frames[f] != 0) > 0.5
-    top_in = dt < 0.95
-    cls_top = np.concatenate([classic_rgb(f)[0][top_in & classic_rgb(f)[1]] for f in blocks])
-    tone = fit_tone(periodic(tex, mean, h=256)[up:up + 160][top_in], cls_top)
-    top = (dt <= 1.0) | ((yy < cyt) & (dt <= 1.25))      # ромб и выступ над ним (там виден верх соседа)
-    t = np.clip((dt - 0.97) / 0.06, 0, 1)                # мягкий шов верх|бок на нижних рёбрах ромба
+    cls_top = np.concatenate([classic_rgb(f)[0][(dmap(cy=CY - ups[f]) < 0.95) & classic_rgb(f)[1]] for f in blocks])
+    up0 = ups[blocks[0]]
+    tone = fit_tone(periodic(tex, mean, h=256)[up0:up0 + 160][dmap(cy=CY - up0) < 0.95], cls_top)
     for k, f in enumerate(blocks):
+        up = ups[f]
+        cyt = CY - up
+        dt = dmap(cy=cyt)
+        top = (dt <= 1.0) | ((yy < cyt) & (dt <= 1.25))      # ромб и выступ над ним (там виден верх соседа)
+        t = np.clip((dt - 0.97) / 0.06, 0, 1)                # мягкий шов верх|бок на нижних рёбрах ромба
         q = load_pack(s, f)
         rgb, al = q[..., :3].copy(), q[..., 3] / 255.0
         if sides:
@@ -487,11 +536,16 @@ def main():
     ap.add_argument("--chroma", type=float, default=1.0,
                     help="ковёр: доля отклонения цветности поля от средней (меньше 1 - без цветных клякс)")
     ap.add_argument("--iso", action="store_true", help="ковёр: фактура без направления (у классики нет ряби)")
+    ap.add_argument("--speckle", action="store_true", help="ковёр: тёплые крапины классики маской зерна по полю")
     ap.add_argument("--edge-mat", action="store_true",
                     help="--other: край в поле только там, где у классики кадра по краю материал поля")
     ap.add_argument("--ramp", default="", help="ступени густоты от --carpet к последнему кадру по общей маске")
+    ap.add_argument("--ramp-tone", default="dark", choices=["dark", "share"],
+                    help="--ramp: тон второго материала - самые тёмные пиксели ступени или пиксели с его наибольшей долей")
     ap.add_argument("--pack-root", default="", help="папка с <НАБОР>.PCK/ вместо пака установки")
     ap.add_argument("--tops", default="", help="верх сплошных блоков одним полем: блоки, фактура верха --carpet")
+    ap.add_argument("--tops-up", default="96", choices=["96", "auto"],
+                    help="--tops: подъём верха 24 пикселя базы у всех или по силуэту классики каждого блока и --carpet")
     a = ap.parse_args()
     sys.stdout.reconfigure(encoding="utf-8")
     global PACK_ROOT
@@ -504,15 +558,15 @@ def main():
         gs, gf, gp = a.grass.split(":", 2)
         grass = (gs, int(gf), gp)
     if a.tops:
-        n = build_tops(a.set, a.carpet, ints(a.tops), a.out, clip=a.clip)
+        n = build_tops(a.set, a.carpet, ints(a.tops), a.out, clip=a.clip, auto_up=a.tops_up == "auto")
         print(a.set, "кадров", n, "->", Path(a.out) / (a.set + ".PCK"))
         return
     if a.ramp:
-        n = build_ramp(a.set, a.carpet, ints(a.ramp), a.out, a.variants)
+        n = build_ramp(a.set, a.carpet, ints(a.ramp), a.out, a.variants, a.ramp_tone, a.iso, a.clip, a.speckle)
         print(a.set, "кадров", n, "->", Path(a.out) / (a.set + ".PCK"))
         return
     n = build(a.set, a.carpet, ints(a.other), a.out, a.variants, ints(a.alt), grass, ints(a.mix), ints(a.recolor), a.clip, a.path,
-              a.keep_low, a.chroma, a.iso, a.edge_mat)
+              a.keep_low, a.chroma, a.iso, a.edge_mat, a.speckle)
     print(a.set, "кадров", n, "->", Path(a.out) / (a.set + ".PCK"))
 
 
