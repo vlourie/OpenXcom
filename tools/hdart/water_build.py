@@ -68,6 +68,8 @@ SWAMP_RAMP = {"FORESTSWAMP": 128, "FORESTSWAMP_SNOW": 128, "FORESTSWAMP_WASTE": 
 # пол-сосед берегов на картах (набор террейна, кадр 0 - чаще всего у воды): фактура суши берега берётся у его пака
 SWAMP_LAND = {"FORESTSWAMP": "FOREST", "FORESTSWAMP_SNOW": "FOREST_SNOW", "FORESTSWAMP_WASTE": "FOREST_WASTE",
               "FORESTSWAMPSTYX": "FORESTJUNGLESTYX"}
+# откуда брать кадр 0 пола-соседа: по умолчанию пак установки; --land-dir - новые полы до установки
+LAND_DIR = INST / "user" / "mods" / "hd" / "hd" / "TERRAIN"
 
 
 def palette():
@@ -266,7 +268,7 @@ def build_swamp(s):
         water[SWAMP_RAMP[s]:SWAMP_RAMP[s] + 16] = True
         nb = SWAMP_LAND[s]
         a0 = read_set(nb)[0]
-        land = (nb, INST / "user" / "mods" / "hd" / "hd" / "TERRAIN" / (nb + ".PCK") / "0.png", luma(pal[a0[a0 != 0]]).mean())
+        land = (nb, LAND_DIR / (nb + ".PCK") / "0.png", luma(pal[a0[a0 != 0]]).mean())
         return build_shore(pal, out, s, water, (56, 71, 86, 101), range(51, 111), blur=blur, land=land)
     return run
 
@@ -375,7 +377,11 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", required=True)
     ap.add_argument("--sets", default="SEAURBAN,SEABITS,CARGO2_IND,POLAR")
+    ap.add_argument("--land-dir", default="", help="папка TERRAIN с кадром 0 пола-соседа болот (вместо установки)")
     a = ap.parse_args()
+    if a.land_dir:
+        global LAND_DIR
+        LAND_DIR = Path(a.land_dir)
     pal = palette()
     fn = {"SEAURBAN": build_seaurban, "SEABITS": build_seabits, "CARGO2_IND": build_foam, "POLAR": build_polar}
     fn.update({s: build_swamp(s) for s in SWAMP_RAMP})
