@@ -250,7 +250,8 @@ def hue_share(pal):
     return (m * m * (3 - 2 * m)).astype(np.float32)
 
 
-def build(s, carpet, others, out, variants=3, alts=(), grass=None, mixes=(), recolor=(), clip=0.0, path=False):
+def build(s, carpet, others, out, variants=3, alts=(), grass=None, mixes=(), recolor=(), clip=0.0, path=False,
+          keep_low=False, chroma=1.0):
     """carpet - ковёр (поле с вариантами), alts - другие кадры того же ковра (другим вариантом поля);
     others - полы с деталями: свой цвет, у ромба переход в поле травы (grass) или ковра;
     grass - (набор, кадр, собранный PNG) поля травы другого набора: им же продолжаются others и mixes;
@@ -264,16 +265,28 @@ def build(s, carpet, others, out, variants=3, alts=(), grass=None, mixes=(), rec
     tex, mean = flatten(p0[..., :3], inner * (p0[..., 3] > 127), clip)
     a0 = frames[carpet]
     tone = fit_map(s, [carpet] + list(alts), pal, frames)
-    ftone = tone(periodic(tex, mean))
+
+    def ctone(field, f):
+        # keep_low: крупный рисунок ковра (рябь дюн) - классики этого кадра, мелкая фактура - бесшовного поля
+        c = tone(field)
+        if chroma != 1.0:
+            # chroma: отклонение цветности от средней поля сжать (крупные камни пака - цветные кляксы,
+            # у классики пёстрость в пиксель); средний тон и яркость не трогаются
+            y = (c @ LUMA)[..., None]
+            ch = c - y
+            mch = ch[inner > 0].mean(0)
+            c = y + mch + (ch - mch) * chroma
+        return detail_tone(frames[f], np.dstack([c, np.full(c.shape[:2], 255.0)]), pal) if keep_low else c
+    ftone = ctone(periodic(tex, mean), carpet)
     al = classic_alpha(a0)
     save_rgba(ftone, al, out, s, "%d" % carpet)
     n = 1
     # варианты ковра (R-039): один кадр на всё поле - повтор; движок раскладывает .v1-.v3 пятнами
     for v in range(1, variants + 1):
-        save_rgba(tone(periodic(tex, mean, var=v)), al, out, s, "%d.v%d" % (carpet, v))
+        save_rgba(ctone(periodic(tex, mean, var=v), carpet), al, out, s, "%d.v%d" % (carpet, v))
         n += 1
     for k, f in enumerate(alts):
-        save_rgba(tone(periodic(tex, mean, var=variants + 1 + k)), classic_alpha(frames[f]), out, s, "%d" % f)
+        save_rgba(ctone(periodic(tex, mean, var=variants + 1 + k), f), classic_alpha(frames[f]), out, s, "%d" % f)
         n += 1
     if grass:
         gs, gf, gpng = grass
@@ -332,6 +345,10 @@ def main():
     ap.add_argument("--recolor", default="", help="только карта цвета")
     ap.add_argument("--clip", type=float, default=0.0, help="поджать выбросы яркости фактуры ковра до N сигм")
     ap.add_argument("--path", action="store_true", help="--mix - тропа: маска по оттенку, рисунок грунта классики")
+    ap.add_argument("--keep-low", action="store_true",
+                    help="ковёр: крупный рисунок классики (рябь дюн), фактура поля - для ковров с нарочным рисунком")
+    ap.add_argument("--chroma", type=float, default=1.0,
+                    help="ковёр: доля отклонения цветности поля от средней (меньше 1 - без цветных клякс)")
     a = ap.parse_args()
     sys.stdout.reconfigure(encoding="utf-8")
 
@@ -341,7 +358,8 @@ def main():
     if a.grass:
         gs, gf, gp = a.grass.split(":", 2)
         grass = (gs, int(gf), gp)
-    n = build(a.set, a.carpet, ints(a.other), a.out, a.variants, ints(a.alt), grass, ints(a.mix), ints(a.recolor), a.clip, a.path)
+    n = build(a.set, a.carpet, ints(a.other), a.out, a.variants, ints(a.alt), grass, ints(a.mix), ints(a.recolor), a.clip, a.path,
+              a.keep_low, a.chroma)
     print(a.set, "кадров", n, "->", Path(a.out) / (a.set + ".PCK"))
 
 
