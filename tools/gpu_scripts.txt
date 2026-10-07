@@ -62,3 +62,4 @@ strict_ctl_v1.py
 prod_two_pass_v1.py
 prod_two_pass_v2.py
 sidewalk_render.py
+wall_section.py
