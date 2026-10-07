@@ -94,10 +94,9 @@ Canvas32 работает в любой игре. Арт ищется по им�
 | 15 | Анимация базы | `hd/BASEBITS.PCK/<i>.v<n>.png`, `.anim.txt` | — | `oxceHdBaseAnim` (true) |
 | 16 | Огни кораблей в ангаре | `hd/BASEBITS.PCK/<i>.lights.txt` | стандартные | `oxceHdCraftLights` (true) |
 | 17′ | Картинки интерфейса и шрифты | `hd/UI/*.png` (по имени в нижнем регистре), `hd/UI/Font*.ttf`, `hd/UI/fonts` | — | `oxceHdUi` |
-| 20 | Экран выбора версии 18+ | проверяет `hd_18+/{UI,TERRAIN,GLOBE,BASEBITS.PCK}`; только при включённом `hd` | HDMOD `adult.rul` | `oxceAdultArt` (false), `oxceAdultAsk` (true) |
+| 20 | Экран выбора версии 18+ | проверяет `hd_18+/{UI,TERRAIN,BASEBITS.PCK}`; только при включённом `hd` | HDMOD `adult.rul` | `oxceAdultArt` (false), `oxceAdultAsk` (true) |
 
-**Картинки глобуса (день/ночь)** — в коде нет загрузчика ни сейчас, ни в истории. Ключи
-`oxceHdGlobe*`, `oxceAdultContent` в options.cfg установки остались от незакоммиченной сборки (вывод).
+Ключ `oxceAdultContent` в options.cfg установки остался от незакоммиченной сборки (вывод).
 
 ## 4. Сырые ключи `STR_` в игре без `hd`
 

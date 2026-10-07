@@ -62,7 +62,7 @@ RETURNED = ("Результат", "return", "returned", "Результаты")
 REVIEW = ["review", "review_field", "review_qwen", "_cmp", "floors_check", "floors_ru",
           "cmp_fast_slow", "hit_compare"]
 EXPERIMENTS = ["field_sweep", "qwen_sweep", "one_tile", "tank_work", "мурукон"]
-REFS = ["photo_refs", "hdglobe_dl", "pics"]
+REFS = ["photo_refs", "pics"]
 
 # Прежде чем снести папку-двойник, из неё вынимается всё, чего нет в рабочем дереве
 # ПОБАЙТОВО. Иначе вместе с 449 одинаковыми подсказками уедут 92 файла вчерашней работы:
