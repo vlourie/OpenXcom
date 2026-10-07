@@ -17,10 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <string>
 #include <vector>
 #include <list>
+#include <unordered_map>
 #include "../Engine/InteractiveSurface.h"
 #include "../Engine/FastLineClip.h"
+#include "../Engine/HdRadar.h"
 #include "Cord.h"
 
 namespace OpenXcom
@@ -31,9 +34,11 @@ class Polygon;
 class SurfaceSet;
 class Timer;
 class Target;
+class MovingTarget;
 class LocalizedText;
 class RuleGlobe;
 class Craft;
+class Text;
 
 /**
  * Interactive globe view of the world.
@@ -72,6 +77,46 @@ private:
 	///list of dimension of earth on screen per zoom level
 	std::vector<double> _zoomRadius;
 
+	/// A label the globe has drawn. Two uses: the HD interface redraws it with its own fonts (baked
+	/// into _countries it would only reach the screen through the upscaler, which is what made the
+	/// names look smeared), and a click is looked up against the letters' own rectangle.
+	struct Label
+	{
+		std::string text;
+		std::string id;          ///< what the ruleset calls it; empty when there is nothing to look up
+		int x, y, w, h;          ///< the widget the classic layout placed
+		int inkX, inkY, inkW, inkH;  ///< the letters themselves: what a click has to hit
+		Uint8 color;
+	};
+	std::vector<Label> _labels;
+	std::vector<Text*> _hdLabelText;    ///< one widget per label size, made on first use
+	bool _hdLabelsKept;                 ///< were the labels kept out of _countries when it was last drawn
+	Surface *_hdEarth = nullptr;        ///< ocean, land and shadow at the globe's own scale (oxceHdGlobeScale), for the HD layer
+	bool _hdEarthDirty = true;          ///< the globe was drawn again since _hdEarth was
+	double _hdEarthFactor = 0.0;        ///< how many _hdEarth pixels one base pixel was when it was drawn
+	/// A craft or a UFO the HD layer draws as an outline instead of its marker (oxceHdCraftOutlines).
+	struct HdMark
+	{
+		std::string type;        ///< the ruleset type: the outline's name
+		double x, y;             ///< the centre on the globe surface, base pixels
+		float angle;             ///< the nose on the screen, radians
+		Uint32 color;            ///< 0xRRGGBB
+		float strength;          ///< a wreck is dimmer
+		Uint32 since;            ///< SDL_GetTicks when it came into sight: drawn stroke by stroke at first
+		Uint32 state;            ///< 0xRRGGBB of the line round a UFO's hull by what it does; HdOutline::NO_STATE = the dark one
+	};
+	/// What an outlined target looked like last time: its heading (kept while it stands) and when it came into sight.
+	struct HdHeading
+	{
+		float angle;
+		Uint32 since;
+	};
+	std::vector<HdMark> _hdMarks;
+	std::unordered_map<const Target*, HdHeading> _hdHeadings;
+	bool _hdMarksKept = false;          ///< were the outlined targets kept out of _markers when it was last drawn
+	HdRadar _hdRadar;                   ///< the radar coverage as a wash, with pulses (oxceHdRadar)
+	bool _hdRadarKept = false;          ///< were the bases' and craft's radar circles kept out of _radars when it was last drawn
+
 	bool _isMouseScrolling, _isMouseScrolled;
 	int _xBeforeMouseScrolling, _yBeforeMouseScrolling;
 	double _lonBeforeMouseScrolling, _latBeforeMouseScrolling;
@@ -103,6 +148,28 @@ private:
 	void drawTarget(Target *target, Surface *surface);
 	/// Set up the radius of earth and stuff.
 	void setupRadii(int width, int height);
+	/// Is the HD interface going to draw the labels with its own fonts?
+	bool hdLabels() const;
+	/// Remembers a label and, unless the HD interface will draw it, blits it into _countries.
+	void putLabel(Text *label, const std::string &id);
+	/// The widget of that size the kept labels are laid out through.
+	Text *hdLabelText(int w, int h);
+	/// Draws the kept labels with the TrueType fonts, over the upscaled globe.
+	void drawHdLabels();
+	/// Is the HD layer drawing the own craft and the decoded UFOs as outlines?
+	bool hdOutlines() const;
+	/// Keeps a craft or a UFO as an outline instead of a marker; false when its type has none (the marker stays).
+	bool keepHdMark(MovingTarget *target, const std::string &type, Uint32 color, float strength, Uint32 state, std::unordered_map<const Target*, HdHeading> &seen);
+	/// Draws the kept outlines over the upscaled globe.
+	void drawHdMarks();
+	/// Is the HD layer drawing the bases' and craft's radar coverage instead of the circles?
+	bool hdRadar() const;
+	/// Draws the radar coverage, its pulses and the craft's beams over the upscaled globe.
+	void drawHdRadar();
+	/// The world pixels one pixel of the globe takes in the HD layer when it has a scale of its own; 0 = as the geoscape.
+	int hdEarthScale() const;
+	/// Draws the ocean, the land and the shadow into _hdEarth (w x h), f times finer than the base pixels.
+	void drawHdEarth(int w, int h, double f);
 public:
 	static Uint8 OCEAN_COLOR;
 	static bool OCEAN_SHADING;
@@ -189,6 +256,10 @@ public:
 	void drawMarkers();
 	/// Blits the globe onto another surface.
 	void blit(SDL_Surface *surface) override;
+	/// HD interface: the ocean and land at the globe's own scale when it has one.
+	void hdMirror() override;
+	/// What the label under this screen point is called in the rulesets ("" when there is none).
+	std::string getLabelAt(int x, int y) const;
 	/// Special handling for mouse hover.
 	void mouseOver(Action *action, State *state) override;
 	/// Special handling for mouse presses.
@@ -209,6 +280,10 @@ public:
 	void setCraftRange(double lon, double lat, double range);
 	/// set the _radarLines variable
 	void toggleRadarLines();
+	/// HD radar: a detection cycle has run (the bases pulse); a picture only.
+	void hdRadarCycle() { _hdRadar.cycle(); }
+	/// HD radar: is the game clock slow enough for the pulses?
+	void setHdRadarSlow(bool slow) { _hdRadar.setSlow(slow); }
 	/// Update the resolution settings, we just resized the window.
 	void resize();
 	/// Move the mouse back to where it started after we finish drag scrolling.

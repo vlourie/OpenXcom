@@ -17,6 +17,8 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "TextButton.h"
+#include <cstring>
+#include "../Engine/HdUi.h"
 #include <SDL.h>
 #include <SDL_mixer.h>
 #include "Text.h"
@@ -271,7 +273,41 @@ void TextButton::draw()
 	}
 	_text->setInvert(press);
 
+	if (HdUi::active())
+	{
+		_hdBase.resize((size_t)getWidth() * getHeight());
+		for (int y = 0; y < getHeight(); ++y)
+		{
+			memcpy(&_hdBase[(size_t)y * getWidth()], getBuffer() + (size_t)y * getPitch(), getWidth());
+		}
+	}
 	_text->blit(this->getSurface());
+}
+
+void TextButton::hdMirrorSkin(bool pressed)
+{
+	HdUi::instance().drawButton(getX(), getY(), getWidth(), getHeight(), _color, _contrast ? 2 : 1, pressed, HdUi::paletteOf(this));
+	// the label keeps off the rounded edges (narrow buttons: a pixel)
+	_text->hdDrawAt(getX() + _text->getX(), getY() + _text->getY(), getX(), getY(), getWidth(), getHeight(), getWidth() >= 40 ? 3 : 2);
+}
+
+void TextButton::hdMirror()
+{
+	if (HdUi::skin())
+	{
+		hdMirrorSkin(_group == 0 ? isButtonPressed() : (*_group == this));
+		return;
+	}
+	if (_hdBase.size() == (size_t)getWidth() * getHeight())
+	{
+		HdUi::instance().drawPixels(_hdBase.data(), getWidth(), getWidth(), getHeight(), getX(), getY(), HdUi::paletteOf(this));
+	}
+	else
+	{
+		HdUi::instance().drawSurface(this, getX(), getY(), false);
+		return;
+	}
+	_text->hdDrawAt(getX() + _text->getX(), getY() + _text->getY(), getX(), getY(), getWidth(), getHeight());
 }
 
 /**

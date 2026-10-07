@@ -111,6 +111,8 @@ private:
 	int _currentArmor[SIDE_MAX], _maxArmor[SIDE_MAX];
 	int _fatalWounds[BODYPART_MAX];
 	int _fire;
+	int _displayShieldHp = 0;
+	int _displayShieldCapacity = 0;
 	std::vector<BattleItem*> _inventory;
 	BattleItem* _specWeapon[SPEC_WEAPON_MAX];
 	AIModule *_currentAIState;
@@ -145,6 +147,7 @@ private:
 	UnitSide _fatalShotSide;
 	UnitBodyPart _fatalShotBodyPart;
 	std::string _murdererWeapon, _murdererWeaponAmmo;
+	std::optional<bool> _lightingState = std::nullopt;
 
 	// static data
 	std::string _type;
@@ -156,7 +159,8 @@ private:
 	int _lastReloadSound;
 	std::vector<int> _deathSound, _aggroSound;
 	std::vector<int> _selectUnitSound, _startMovingSound, _selectWeaponSound, _annoyedSound;
-	int _value, _moveSound;
+	int _valueKilled, _valueCaptured, _valueCapturedResearched, _valueCivilian, _valueCivilianKilledByXcom, _valueVIP;
+	int _moveSound;
 	int _intelligence, _aggression;
 	int _maxViewDistanceAtDark, _maxViewDistanceAtDay;
 	int _maxViewDistanceAtDarkSquared;
@@ -169,6 +173,7 @@ private:
 	Soldier *_geoscapeSoldier;
 	std::vector<int> _loftempsSet;
 	const Unit *_unitRules;
+	const RuleVoiceSet* _unitVoiceSet = nullptr;
 	int _rankInt;
 	int _rankIntUnified = 0;
 	int _turretType;
@@ -310,6 +315,8 @@ public:
 	bool isFloating() const;
 	/// Have unit floor below?
 	bool haveNoFloorBelow() const { return _haveNoFloorBelow; }
+	// Teleport unit.
+	void teleport(Tile* tile, SavedBattleGame* saveBattleGame = nullptr);
 
 	/// Aim.
 	void aim(bool aiming);
@@ -419,6 +426,16 @@ public:
 	void setFire(int fire);
 	/// Get fire.
 	int getFire() const;
+	/// Sets the shield charge value to display in the inventory screen.
+	void setDisplayShieldHp(int hp);
+	/// Gets the shield charge value to display in the inventory screen.
+	int getDisplayShieldHp() const;
+	/// Sets the shield max capacity to display in the inventory screen.
+	void setDisplayShieldCapacity(int capacity);
+	/// Gets the shield max capacity to display in the inventory screen.
+	int getDisplayShieldCapacity() const;
+	/// Gets the script tag values (read-only).
+	const ScriptValues<BattleUnit> &getScriptValuesRaw() const { return _scriptValues; }
 
 	/// Get the list of items in the inventory.
 	std::vector<BattleItem*> *getInventory();
@@ -435,6 +452,8 @@ public:
 	AIModule *getAIModule() const;
 	/// Set AI Module.
 	void setAIModule(AIModule *ai);
+	/// Increases the AI walk abort counter.
+	void increaseAIWalkAbortCounter();
 	/// Gets weight value as hostile unit.
 	AIAttackWeight getAITargetWeightAsHostile(const Mod *mod) const;
 	/// Gets weight value as civilian unit when consider by aliens.
@@ -483,6 +502,8 @@ public:
 	const BattleItem *getActiveHand(const BattleItem *left, const BattleItem *right) const;
 	/// Reloads a weapon if needed.
 	bool reloadAmmo();
+	/// Has the AI's once-a-turn medikit check (think) already run this turn?
+	bool isAiMedikitUsed() const { return _aiMedikitUsed; }
 
 	/// Toggle the right hand as main hand for reactions.
 	void toggleRightHandForReactions(bool isCtrl);
@@ -585,8 +606,13 @@ public:
 	int getKneelHeight() const;
 	/// Get the unit's loft ID.
 	int getLoftemps(int entry = 0) const;
-	/// Get the unit's value.
-	int getValue() const;
+	/// Get the unit's value. Used for score at debriefing.
+	int getValueKilled() const { return _valueKilled; }
+	int getValueCaptured() const { return _valueCaptured; }
+	int getValueCapturedResearched() const { return _valueCapturedResearched; }
+	int getValueCivilian() const { return _valueCivilian; }
+	int getValueCivilianKilledByXcom() const { return _valueCivilianKilledByXcom; }
+	int getValueVIP() const { return _valueVIP; }
 	/// Get the reload sound (of the last reloaded weapon).
 	int getReloadSound() const { return _lastReloadSound; }
 	/// Get the unit's death sounds.
@@ -717,6 +743,11 @@ public:
 	UnitFaction getOriginalFaction() const;
 	/// Get alien/HWP unit.
 	const Unit *getUnitRules() const { return _unitRules; }
+	/// Get unit voice set.
+	const RuleVoiceSet* getUnitVoiceSet() const { return _unitVoiceSet; }
+	/// Set unit voice set. Propagate to geoscape soldier if possible.
+	void setUnitAndSoldierVoiceSet(const RuleVoiceSet* voiceSet);
+
 	Position lastCover;
 	/// get the vector of units we've seen this turn.
 	std::vector<BattleUnit *> &getUnitsSpottedThisTurn();
@@ -882,6 +913,9 @@ public:
 	bool indicatorsAreEnabled() const { return !_disableIndicators; }
 	/// Disable showing indicators for this unit.
 	void disableIndicators();
+
+	std::optional<bool> getLightingState() const { return _lightingState; }
+	void setLightingState(bool val) { _lightingState = val; }
 
 	/// Multiplier of move cost.
 	ArmorMoveCost getMoveCostBase() const { return _moveCostBase; }

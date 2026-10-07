@@ -51,12 +51,19 @@
 #include "../Engine/Action.h"
 #include "../Engine/Options.h"
 #include "../Engine/Logger.h"
+#include "../Engine/Unicode.h"
 #include "../Basescape/CraftInfoState.h"
 #include "../Engine/CrossPlatform.h"
 #include "../Mod/RuleAlienMission.h"
 #include "../Mod/AlienRace.h"
 #include "../Mod/RuleGlobe.h"
 #include "../Mod/Texture.h"
+#ifdef OXCE_AI_DEV
+#include "../Mod/Armor.h"
+#include "../Mod/RuleSoldier.h"
+#include "../Mod/RuleEnviroEffects.h"
+#include "../Mod/RuleStartingCondition.h"
+#endif
 
 namespace OpenXcom
 {
@@ -230,6 +237,9 @@ NewBattleState::NewBattleState() :
 			_missionTypes.erase(itr);
 		}
 	}
+	// by what the player reads, not by the mod's listOrder: translated, that order looks like none at all
+	std::sort(_missionTypes.begin(), _missionTypes.end(),
+		[&](const std::string &a, const std::string &b) { return Unicode::naturalCompare(tr(a), tr(b)); });
 	_cbxMission->setOptions(_missionTypes, true);
 	_cbxMission->onChange((ActionHandler)&NewBattleState::cbxMissionChange);
 
@@ -241,6 +251,8 @@ NewBattleState::NewBattleState() :
 			_crafts.push_back(craftType);
 		}
 	}
+	std::sort(_crafts.begin(), _crafts.end(),
+		[&](const std::string &a, const std::string &b) { return Unicode::naturalCompare(tr(a), tr(b)); });
 	_cbxCraft->setOptions(_crafts, true);
 	_cbxCraft->onChange((ActionHandler)&NewBattleState::cbxCraftChange);
 
@@ -593,6 +605,320 @@ void NewBattleState::initSave()
 	cbxMissionChange(0);
 }
 
+#ifdef OXCE_AI_DEV
+/**
+ * The AI test bench (OXCE_AI_LOADOUT_FIX=1): the squad comes from a campaign save as is, so a mission
+ * whose starting condition forbids a soldier's armor puts that soldier into the condition's fallback.
+ * Where the fallback cannot move (BOXX_ARMOR in Piratez: a box, +25 stun a turn) the soldier is out of
+ * the battle from the start - a player would have read the briefing and re-armed. Re-arms the way
+ * SoldierArmorState lets a player: researched, usable by the soldier, in the base stores or of infinite
+ * supply, not bigger, and allowed by the condition; the soldier's default armor first, else the first
+ * such armor of the mod's list. A movable fallback (nudity, a space suit) is the game's own rule and stays.
+ * Mirrors BattlescapeGenerator::run and deployXCOM: the condition and the enviro of the deployment, the
+ * enviro of the terrain if the deployment has none, an enviro transformation wins over a replacement.
+ */
+static void probeFixLoadout(Game *game, const std::string &deploymentType, const RuleTerrain *terrain, Base *base, const Craft *craft)
+{
+	const char *fix = getenv("OXCE_AI_LOADOUT_FIX");
+	if (!fix || *fix != '1' || !base)
+	{
+		return;
+	}
+	Mod *mod = game->getMod();
+	SavedGame *save = game->getSavedGame();
+	const AlienDeployment *deployment = mod->getDeployment(deploymentType, true);
+	const RuleStartingCondition *condition = mod->getStartingCondition(deployment->getStartingCondition());
+	if (!condition)
+	{
+		return;
+	}
+	const RuleEnviroEffects *enviro = mod->getEnviroEffects(deployment->getEnviroEffects());
+	if (!enviro && terrain)
+	{
+		enviro = mod->getEnviroEffects(terrain->getEnviroEffects());
+	}
+	// RuleStartingCondition::getArmorReplacement's own test, without its roll
+	auto allowed = [condition](const Armor *a)
+	{
+		const auto &forbidden = condition->getForbiddenArmors();
+		const auto &permitted = condition->getAllowedArmors();
+		if (!forbidden.empty())
+		{
+			return std::find(forbidden.begin(), forbidden.end(), a->getType()) == forbidden.end();
+		}
+		return permitted.empty() || std::find(permitted.begin(), permitted.end(), a->getType()) != permitted.end();
+	};
+	for (auto *s : *base->getSoldiers())
+	{
+		// the soldiers BattlescapeGenerator::deployXCOM takes
+		const bool goes = craft ? s->getCraft() == craft
+			: (s->hasFullHealth() || s->canDefendBase()) && (s->getCraft() == 0 || s->getCraft()->getStatus() != "STR_OUT");
+		Armor *prev = s->getArmor();
+		if (!goes || (enviro && enviro->getArmorTransformation(prev)) || allowed(prev))
+		{
+			continue;
+		}
+		// what the generator would put on: the roll is taken and given back, so the battle's stream is not touched here
+		const uint64_t keep = RNG::getSeed();
+		const std::string fallbackType = condition->getArmorReplacement(s->getRules()->getType(), prev->getType());
+		RNG::setSeed(keep);
+		const Armor *fallback = fallbackType.empty() ? nullptr : mod->getArmor(fallbackType);
+		if (!fallback || fallback->getSize() > prev->getSize() || fallback->allowsMoving())
+		{
+			continue;
+		}
+		auto usable = [&](const Armor *a)
+		{
+			return a && a->allowsMoving() && a->getSize() <= prev->getSize() && allowed(a)
+				&& (!a->getRequiredResearch() || save->isResearched(a->getRequiredResearch()))
+				&& a->getCanBeUsedBy(s)
+				&& (a->hasInfiniteSupply() || base->getStorageItems()->getItem(a->getStoreItem()) > 0 || a->getStoreItem() == prev->getStoreItem());
+		};
+		const Armor *next = usable(s->getRules()->getDefaultArmor()) ? s->getRules()->getDefaultArmor() : nullptr;
+		for (auto *a : mod->getArmorsForSoldiers())
+		{
+			if (!next && usable(a))
+			{
+				next = a;
+			}
+		}
+		if (!next)
+		{
+			Log(LOG_INFO) << "[AIPROBE] loadout INVALID_LOADOUT soldier=" << s->getId() << " armor=" << prev->getType() << " fallback=" << fallbackType << " condition=" << condition->getType();
+			continue;
+		}
+		// SoldierArmorState::lstArmorClick
+		if (save->getMonthsPassed() != -1)
+		{
+			if (prev->getStoreItem())
+			{
+				base->getStorageItems()->addItem(prev->getStoreItem());
+			}
+			if (next->getStoreItem())
+			{
+				base->getStorageItems()->removeItem(next->getStoreItem());
+			}
+		}
+		s->setArmor(mod->getArmor(next->getType()), true);
+		Log(LOG_INFO) << "[AIPROBE] loadout soldier=" << s->getId() << " " << prev->getType() << " -> " << next->getType() << " (fallback " << fallbackType << ", condition " << condition->getType() << ")";
+	}
+}
+#endif
+
+/**
+ * The AI test bench (OXCE_AI_SEED): the same seed gives the same battle, soldiers included.
+ * OXCE_AI_CAMPAIGN=<save in the user folder>: the squad is the biggest crew of that campaign,
+ * with its equipment, difficulty and month; otherwise quick battle recruits in a craft of 8+.
+ * Difficulty from OXCE_AI_DIFF (default: the campaign's, else 4, as Vitali plays).
+ */
+void NewBattleState::probeRandomize(long long seed)
+{
+#ifndef OXCE_AI_DEV
+	(void)seed; // a release build: the bench is not compiled in
+#else
+	const char *campaign = getenv("OXCE_AI_CAMPAIGN");
+	int month = -1;
+	std::vector<Craft*> crews;
+	if (campaign && *campaign)
+	{
+		SavedGame *save = new SavedGame();
+		save->load(campaign, _game->getMod(), _game->getLanguage());
+		save->setIronman(false); // a copy, and nothing of it is ever saved
+		_game->setSavedGame(save);
+		_craft = nullptr;
+		// OXCE_AI_CRAFT=<type> or <type>#<id> pins the squad; otherwise one of the crews of 6+ by the seed, below
+		const char *pin = getenv("OXCE_AI_CRAFT");
+		const std::string pinned = pin ? pin : "";
+		for (auto *base : *save->getBases())
+		{
+			for (auto *craft : *base->getCrafts())
+			{
+				const std::string name = craft->getRules()->getType() + "#" + std::to_string(craft->getId());
+				if (!pinned.empty())
+				{
+					if (pinned == name || pinned == craft->getRules()->getType())
+					{
+						_craft = craft;
+						crews.push_back(craft);
+					}
+					continue;
+				}
+				if (craft->getNumTotalUnits() >= 6)
+				{
+					crews.push_back(craft);
+				}
+				if (!_craft || craft->getNumTotalUnits() > _craft->getNumTotalUnits())
+				{
+					_craft = craft;
+				}
+			}
+		}
+		if (!_craft)
+		{
+			Log(LOG_WARNING) << "[AIPROBE] no craft in " << campaign << ": quick battle recruits instead";
+			campaign = nullptr;
+		}
+	}
+	RNG::setSeed(seed); // after the load: a save brings its own seed
+	auto pick = [](size_t n) { return n > 1 ? (size_t)RNG::generate(0, (int)n - 1) : (size_t)0; };
+	if (campaign && *campaign)
+	{
+		// the biggest crew may be trainees (the dropship of pistols): the seed picks among all real squads
+		if (!crews.empty())
+		{
+			_craft = crews[pick(crews.size())];
+		}
+		// OXCE_AI_SQUAD=<n>: Vitali's way (8 in a battle) - the most seasoned crew, its n most seasoned soldiers,
+		// the rest stay home; the pick above still spends its roll, so the rest of the seed stays
+		const char *squad = getenv("OXCE_AI_SQUAD");
+		const int squadSize = squad ? atoi(squad) : 0;
+		if (squadSize > 0 && !crews.empty())
+		{
+			auto seasoned = [](const Soldier *s) { return s->getMissions() + s->getKills(); };
+			auto crewOf = [&](const Craft *craft)
+			{
+				std::vector<Soldier*> crew;
+				for (auto *s : *craft->getBase()->getSoldiers())
+				{
+					if (s->getCraft() == craft)
+					{
+						crew.push_back(s);
+					}
+				}
+				std::stable_sort(crew.begin(), crew.end(), [&](const Soldier *a, const Soldier *b) { return seasoned(a) > seasoned(b); });
+				return crew;
+			};
+			auto strength = [&](const Craft *craft)
+			{
+				int sum = 0;
+				auto crew = crewOf(craft);
+				for (size_t i = 0; i < crew.size() && (int)i < squadSize; ++i)
+				{
+					sum += seasoned(crew[i]);
+				}
+				return sum;
+			};
+			for (auto *craft : crews)
+			{
+				if (strength(craft) > strength(_craft))
+				{
+					_craft = craft;
+				}
+			}
+			auto crew = crewOf(_craft);
+			for (size_t i = squadSize; i < crew.size(); ++i)
+			{
+				crew[i]->setCraft(nullptr);
+			}
+		}
+		month = _game->getSavedGame()->getMonthsPassed();
+		_cbxDifficulty->setSelected((size_t)_game->getSavedGame()->getDifficulty());
+		auto it = std::find(_crafts.begin(), _crafts.end(), _craft->getRules()->getType());
+		if (it != _crafts.end())
+		{
+			_cbxCraft->setSelected(it - _crafts.begin());
+		}
+	}
+	_cbxMission->setSelected(pick(_missionTypes.size()));
+	// OXCE_AI_MISSION=<deployment> pins the mission; the pick above still spends its roll, so the rest of the seed stays
+	if (const char *wanted = getenv("OXCE_AI_MISSION"))
+	{
+		auto it = std::find(_missionTypes.begin(), _missionTypes.end(), std::string(wanted));
+		if (it != _missionTypes.end())
+		{
+			_cbxMission->setSelected(it - _missionTypes.begin());
+		}
+		else if (*wanted)
+		{
+			Log(LOG_WARNING) << "[AIPROBE] no mission " << wanted << " in the quick battle list: random instead";
+		}
+	}
+	if (month >= 0)
+	{
+		cbxMissionChange(nullptr);
+	}
+	else
+	{
+		// a real squad, not a two-seat interceptor: a craft that seats 8+, else the roomiest
+		std::vector<size_t> roomy;
+		size_t roomiest = 0;
+		for (size_t i = 0; i < _crafts.size(); ++i)
+		{
+			const int seats = _game->getMod()->getCraft(_crafts[i])->getMaxUnits();
+			if (seats >= 8)
+			{
+				roomy.push_back(i);
+			}
+			if (seats > _game->getMod()->getCraft(_crafts[roomiest])->getMaxUnits())
+			{
+				roomiest = i;
+			}
+		}
+		_cbxCraft->setSelected(roomy.empty() ? roomiest : roomy[pick(roomy.size())]);
+		initSave();
+	}
+	_cbxTerrain->setSelected(pick(_terrainTypes.size()));
+	cbxTerrainChange(nullptr);
+	_slrDarkness->setValue(RNG::generate(0, 15));
+	// the race the mod sends to this mission (a mission whose site it is), at a random month of the campaign
+	_cbxAlienRace->setSelected(pick(_alienRaces.size()));
+	{
+		const std::string &deployment = _missionTypes[_cbxMission->getSelected()];
+		std::vector<const RuleAlienMission*> senders;
+		for (const auto &id : _game->getMod()->getAlienMissionList())
+		{
+			const RuleAlienMission *m = _game->getMod()->getAlienMission(id);
+			if (m && m->getSiteType() == deployment)
+			{
+				senders.push_back(m);
+			}
+		}
+		if (!senders.empty())
+		{
+			const std::string race = senders[pick(senders.size())]->generateRace(month >= 0 ? month : RNG::generate(0, 120));
+			auto it = std::find(_alienRaces.begin(), _alienRaces.end(), race);
+			if (it != _alienRaces.end())
+			{
+				_cbxAlienRace->setSelected(it - _alienRaces.begin());
+			}
+		}
+	}
+	// OXCE_AI_RACE=<race> pins the enemy race; the rolls above are spent as usual, so the rest of the seed stays
+	if (const char *wantedRace = getenv("OXCE_AI_RACE"))
+	{
+		auto it = std::find(_alienRaces.begin(), _alienRaces.end(), std::string(wantedRace));
+		if (it != _alienRaces.end())
+		{
+			_cbxAlienRace->setSelected(it - _alienRaces.begin());
+		}
+		else if (*wantedRace)
+		{
+			Log(LOG_WARNING) << "[AIPROBE] no race " << wantedRace << " in the quick battle list: random instead";
+		}
+	}
+	const char *diff = getenv("OXCE_AI_DIFF");
+	if (diff && *diff)
+	{
+		_cbxDifficulty->setSelected(atoi(diff));
+	}
+	else if (month < 0)
+	{
+		_cbxDifficulty->setSelected(4);
+	}
+	const int levels = (int)_game->getMod()->getAlienItemLevels().size();
+	_slrAlienTech->setValue(month >= 0 ? std::min(month, levels - 1) : RNG::generate(0, std::max(0, levels - 1)));
+	Log(LOG_INFO) << "[AIPROBE] battle seed=" << seed
+		<< " campaign=" << (month >= 0 ? campaign : "-") << " month=" << month
+		<< " mission=" << _missionTypes[_cbxMission->getSelected()]
+		<< " craft=" << _craft->getRules()->getType() << "#" << _craft->getId() << " units=" << _craft->getNumTotalUnits()
+		<< " terrain=" << (_terrainTypes.empty() ? std::string("-") : _terrainTypes[_cbxTerrain->getSelected()])
+		<< " race=" << _alienRaces[_cbxAlienRace->getSelected()]
+		<< " shade=" << _slrDarkness->getValue()
+		<< " diff=" << _cbxDifficulty->getSelected()
+		<< " tech=" << _slrAlienTech->getValue();
+#endif
+}
+
 /**
  * Starts the battle.
  * @param action Pointer to an action.
@@ -689,6 +1015,16 @@ void NewBattleState::btnOkClick(Action *)
 	bgen.setAlienItemlevel(_slrAlienTech->getValue());
 	bgame->setDepth(_slrDepth->getValue());
 
+#ifdef OXCE_AI_DEV
+	{
+		// the deployment BattlescapeGenerator::run takes: the UFO's own for an assault (the mission type was changed above)
+		const std::string &picked = _missionTypes[_cbxMission->getSelected()];
+		const bool ufo = bgame->getMissionType() != picked && _game->getMod()->getUfo(picked);
+		probeFixLoadout(_game, ufo ? picked : bgame->getMissionType(), _game->getMod()->getTerrain(_terrainTypes[_cbxTerrain->getSelected()]),
+			base ? base : (_craft ? _craft->getBase() : nullptr), _craft);
+	}
+#endif
+
 	bgen.run();
 
 	_game->popState();
@@ -774,10 +1110,15 @@ void NewBattleState::cbxMissionChange(Action *)
 	}
 	_terrainTypes.clear();
 	std::vector<std::string> terrainStrings;
-	for (const auto& terrain : terrains)
 	{
-		_terrainTypes.push_back(terrain);
-		terrainStrings.push_back("MAP_" + terrain);
+		std::vector<std::string> sorted(terrains.begin(), terrains.end());
+		std::sort(sorted.begin(), sorted.end(), [&](const std::string &a, const std::string &b)
+			{ return Unicode::naturalCompare(tr("MAP_" + a), tr("MAP_" + b)); });
+		for (const auto& terrain : sorted)
+		{
+			_terrainTypes.push_back(terrain);
+			terrainStrings.push_back("MAP_" + terrain);
+		}
 	}
 
 	// Hide controls that don't apply to mission
@@ -912,6 +1253,8 @@ void NewBattleState::cbxTerrainChange(Action *)
 			}
 		}
 	}
+	std::sort(_alienRaces.begin(), _alienRaces.end(),
+		[&](const std::string &a, const std::string &b) { return Unicode::naturalCompare(tr(a), tr(b)); });
 	_cbxAlienRace->setOptions(_alienRaces, true);
 	if (_cbxAlienRace->getSelected() >= _alienRaces.size())
 	{

@@ -46,7 +46,7 @@ private:
 	std::map<std::string, int> _randomProductionInfo;
 	std::vector<std::string> _index;
 
-	TextButton *_btnOk, *_btnGotoBase, *_btnSummary;
+	TextButton *_btnOk, *_btnGotoBase, *_btnSummary, *_btnKeepWorking;
 	Window *_window;
 	Text *_txtMessage, *_txtItem, *_txtQuantity;
 	TextList *_lstSummary;
@@ -64,6 +64,8 @@ public:
 	void btnSummaryClick(Action *action);
 	/// Handler for clicking the Summary list.
 	void lstSummaryClick(Action *action);
+	/// Handler for clicking the Keep Working button.
+	void btnKeepWorkingClick(Action *action);
 };
 
 }

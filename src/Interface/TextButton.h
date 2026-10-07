@@ -17,6 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <vector>
 #include "../Engine/InteractiveSurface.h"
 
 namespace OpenXcom
@@ -43,6 +44,8 @@ private:
 	TextButton **_group;
 	bool _contrast, _geoscapeButton;
 	ComboBox *_comboBox;
+	/// The button's pixels before the label (the HD interface redraws the label itself).
+	std::vector<Uint8> _hdBase;
 	// for use by RuleInterface
 	void setSecondaryColor(Uint8 color)  override { setTextColor(color); }
 protected:
@@ -79,6 +82,10 @@ public:
 	void setPalette(const SDL_Color *colors, int firstcolor = 0, int ncolors = 256) override;
 	/// Draws the text button.
 	void draw() override;
+	/// HD interface: the bevel as drawn, crisp, and the label as HD text.
+	void hdMirror() override;
+	/// HD interface, modern skin: the button lit or not (for subclasses with their own pressed state).
+	void hdMirrorSkin(bool pressed);
 	/// Special handling for mouse presses.
 	void mousePress(Action *action, State *state) override;
 	/// Special handling for mouse releases.

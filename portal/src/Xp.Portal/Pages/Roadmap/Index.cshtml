@@ -1,0 +1,101 @@
+@page "/roadmap"
+@model Xp.Portal.Pages.Roadmap.RoadmapModel
+@{
+    ViewData["Title"] = T["nav.roadmap"];
+}
+<h1>@T["roadmap.title"]</h1>
+<p class="lead">@T["roadmap.lead"]</p>
+
+<div class="stats">
+    <div><div class="k">@T["roadmap.packs"]</div><div class="v">@Model.Totals.Packs</div></div>
+    <div><div class="k">@T["roadmap.frames"]</div><div class="v">@Model.Totals.Frames</div></div>
+    <div><div class="k">@T["roadmap.pictures"]</div><div class="v">@Model.Totals.Pictures</div></div>
+    <div><div class="k">@T["roadmap.started"]</div><div class="v">@Model.Totals.Started</div></div>
+    <div><div class="k">@T["roadmap.checked"]</div><div class="v">@Model.Totals.Checked</div></div>
+    <div><div class="k">@T["roadmap.confirmed"]</div><div class="v">@Model.Totals.Confirmed</div></div>
+    <div><div class="k">@T["roadmap.reviewers"]</div><div class="v">@Model.Totals.Reviewers</div></div>
+</div>
+
+<section class="panel">
+    <h2 class="title">@T["roadmap.help.title"]</h2>
+    <p>@T["roadmap.help.text"]</p>
+    <p><a class="button" href="/download/launcher" download>@T["home.download"]</a></p>
+</section>
+
+<section class="panel">
+    <h2 class="title">@T["roadmap.progress.title"]</h2>
+    @if (Model.InProgress.Count == 0)
+    {
+        <p class="hint">@T["roadmap.progress.none"]</p>
+    }
+    else
+    {
+        <table>
+            <tr>
+                <th>@T["roadmap.col.set"]</th><th>@T["roadmap.col.state"]</th>
+                <th>@T["roadmap.col.covered"]</th><th>@T["roadmap.col.people"]</th><th>@T["roadmap.col.bad"]</th>
+            </tr>
+            @foreach (var p in Model.InProgress)
+            {
+                <tr>
+                    <td><span class="mono">@p.Section</span> @p.Set</td>
+                    <td><span class="state @p.State">@T["roadmap.state." + p.State]</span></td>
+                    <td>
+                        <div class="bar" title="@p.Covered / @p.Denominator"><span style="width:@(p.Percent)%"></span></div>
+                        <span class="mono">@p.Covered / @p.Denominator</span>
+                    </td>
+                    <td class="mono">@p.Reviewers</td>
+                    <td class="mono">@p.Bad</td>
+                </tr>
+            }
+        </table>
+    }
+</section>
+
+<div class="row">
+    <section class="panel">
+        <h2 class="title">@T["roadmap.next.title"]</h2>
+        <p class="hint">@T["roadmap.next.text"]</p>
+        @if (Model.Next.Count == 0)
+        {
+            <p class="hint">@T["roadmap.next.none"]</p>
+        }
+        else
+        {
+            <table>
+                <tr><th>@T["roadmap.col.set"]</th><th>@T["roadmap.col.pictures"]</th><th>@T["roadmap.col.share"]</th></tr>
+                @foreach (var p in Model.Next)
+                {
+                    <tr>
+                        <td><span class="mono">@p.Section</span> @p.Set</td>
+                        <td class="mono">@p.Pictures</td>
+                        <td class="mono">@p.CellShare.ToString("0.00")%</td>
+                    </tr>
+                }
+            </table>
+        }
+    </section>
+    <section class="panel">
+        <h2 class="title">@T["roadmap.queue.title"]</h2>
+        <p class="hint">@T["roadmap.queue.text"]</p>
+        @if (Model.Queue.Count == 0)
+        {
+            <p class="hint">@T["roadmap.queue.none"]</p>
+        }
+        else
+        {
+            <table>
+                <tr><th>@T["roadmap.col.picture"]</th><th>@T["roadmap.col.complaints"]</th><th>@T["roadmap.col.reasons"]</th></tr>
+                @foreach (var r in Model.Queue)
+                {
+                    <tr>
+                        <td class="mono">@r.Sets</td>
+                        <td class="mono">@r.People</td>
+                        <td>@string.Join(", ", r.Reasons.Split(", ", StringSplitOptions.RemoveEmptyEntries).Select(x => T["reason." + x]))</td>
+                    </tr>
+                }
+            </table>
+            <a class="button secondary" href="/roadmap/queue">@T["roadmap.queue.all"]</a>
+        }
+    </section>
+</div>

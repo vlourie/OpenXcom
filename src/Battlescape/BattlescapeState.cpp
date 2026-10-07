@@ -19,6 +19,7 @@
 #include <algorithm>
 #include <sstream>
 #include <iomanip>
+#include "AiProbe.h"
 #include "../fmath.h"
 #include <SDL_gfxPrimitives.h>
 #include "Map.h"
@@ -58,6 +59,14 @@
 #include "../Engine/Logger.h"
 #include "../Engine/Timer.h"
 #include "../Engine/CrossPlatform.h"
+#include "../Engine/HdTest.h"
+#include "../Engine/HdCanvas.h"
+#include "../Engine/HdWorkers.h"
+#include "../Engine/HdUi.h"
+#include "../Engine/HdBattleHud.h"
+#include "../Engine/HdKillCam.h"
+#include "../Engine/HdGentle.h"
+#include "../version.h"
 #include "../Interface/Cursor.h"
 #include "../Interface/Text.h"
 #include "../Interface/Bar.h"
@@ -88,10 +97,56 @@
 #include "../Mod/RuleInventory.h"
 #include "../Mod/RuleSoldier.h"
 #include "../Mod/RuleVideo.h"
+#include "../Engine/HdItems.h"
+#include "../Engine/HdPaletteShift.h"
+#include "../Engine/HdSprites.h"
+#include "../Mod/MapDataSet.h"
 #include <algorithm>
 
 namespace OpenXcom
 {
+
+namespace
+{
+	/**
+	 * HD render: carries the battle's palette transformation over to the HD frames (HdPaletteShift),
+	 * once, when the HD frames are drawn at all and the palette of the battle's depth was swapped.
+	 * @param transformed Whether the enviroEffects swapped any palette (and it was not reset since).
+	 */
+	void syncHdPaletteShift(Game *game, SavedBattleGame *save, bool transformed)
+	{
+		if (!transformed || Options::oxceHdMode == 0 || HdSprites::count() == 0 || HdPaletteShift::active())
+		{
+			return;
+		}
+		auto *enviro = save->getEnviroEffects();
+		if (!enviro)
+		{
+			return;
+		}
+		const std::string name = save->getDepth() == 0 ? std::string("PAL_BATTLESCAPE") : "PAL_BATTLESCAPE_" + std::to_string(save->getDepth());
+		if (enviro->getPaletteTransformations().count(name) == 0)
+		{
+			return;
+		}
+		Palette *shown = game->getMod()->getPalette(name, false);
+		Palette *base = game->getMod()->getPalette("BACKUP_" + name, false);
+		if (!shown || !base)
+		{
+			return;
+		}
+		std::vector<const SurfaceSet*> terrain;
+		for (auto *data : *save->getMapDataSets())
+		{
+			if (data && data->getSurfaceset())
+			{
+				terrain.push_back(data->getSurfaceset());
+			}
+		}
+		Log(LOG_INFO) << "HD palette shift: " << name << " of the battle, " << terrain.size() << " terrain set(s)";
+		HdPaletteShift::install(shown->getColors(), base->getColors(), terrain);
+	}
+}
 
 /**
  * Initializes all the elements in the Battlescape screen.
@@ -134,10 +189,19 @@ BattlescapeState::BattlescapeState() :
 	_medikitOrange = _game->getMod()->getInterface("battlescape")->getElement("medikitOrange")->color;
 
 	// Create buttonbar - this should be on the centerbottom of the screen
-	_icons = new InteractiveSurface(iconsWidth, iconsHeight, x, y);
+	_icons = new HdHudPanel(iconsWidth, iconsHeight, x, y);
 
 	// Create the battlemap view
 	// the actual map height is the total height minus the height of the buttonbar
+	// HD render: the world layer must be k times the base resolution before the map draws into it
+	_game->getScreen()->setWorldScale(Map::hdScale(_game));
+	// HD render: drawing k times more pixels can take longer than the unit speed settings ask per step;
+	// let the game timer catch up a few steps per frame so that the settings still mean what they say
+	Timer::hdFrameSkip = Map::hdScale(_game) > 1 ? std::max(0, Options::oxceHdFrameSkip) : 0;
+	if (Map::hdScale(_game) > 1 && !_game->getScreen()->isLayered())
+	{
+		Log(LOG_WARNING) << "HD render: sprite scale " << Map::hdScale(_game) << "x needs a 32-bit display (OpenGL or an xBRZ/HQx filter); the battlescape will be drawn cropped";
+	}
 	_map = new Map(_game, screenWidth, screenHeight, 0, 0, visibleMapHeight);
 
 	_numLayers = new NumberText(3, 5, x + 232, y + 6);
@@ -267,6 +331,7 @@ BattlescapeState::BattlescapeState() :
 
 	// Set palette
 	_save->setPaletteByDepth(this);
+	syncHdPaletteShift(_game, _save, _paletteResetNeeded);
 
 	if (_game->getMod()->getInterface("battlescape")->getElementOptional("pathfinding"))
 	{
@@ -381,6 +446,45 @@ BattlescapeState::BattlescapeState() :
 	add(_warning, "warning", "battlescape", _icons);
 	add(_txtDebug);
 	add(_txtTooltip, "textTooltip", "battlescape", _icons);
+
+	// HD interface, modern skin: what the panel draws under the widgets (where the ruleset put them),
+	// and the pictogram of each button
+	{
+		HdHudPanel *panel = static_cast<HdHudPanel*>(_icons);
+		panel->addPart(HdHudPanel::PART_HAND, _btnLeftHandItem);
+		panel->addPart(HdHudPanel::PART_HAND, _btnRightHandItem);
+		panel->addPart(HdHudPanel::PART_CARD, _btnStats);
+		panel->addPart(HdHudPanel::PART_RANK, _rank);
+		for (NumberText *number : { _numTimeUnits, _numEnergy, _numHealth, _numMorale })
+		{
+			panel->addPart(HdHudPanel::PART_CHIP, number, number->getColor());
+		}
+		for (Bar *bar : { _barTimeUnits, _barEnergy, _barHealth, _barMorale })
+		{
+			panel->addPart(HdHudPanel::PART_BAR, bar);
+		}
+		if (_manaBarVisible)
+		{
+			panel->addPart(HdHudPanel::PART_BAR, _barMana);
+		}
+		const bool links = Options::oxceLinks && _game->getMod()->getSurface("oxceLinks", false);
+		const std::pair<BattlescapeButton*, HdBattleHud::Icon> pictograms[] = {
+			{ _btnUnitUp, HdBattleHud::ICON_UNIT_UP }, { _btnUnitDown, HdBattleHud::ICON_UNIT_DOWN },
+			{ _btnMapUp, HdBattleHud::ICON_MAP_UP }, { _btnMapDown, HdBattleHud::ICON_MAP_DOWN },
+			{ _btnShowMap, HdBattleHud::ICON_SHOW_MAP }, { _btnKneel, HdBattleHud::ICON_KNEEL },
+			{ _btnInventory, HdBattleHud::ICON_INVENTORY }, { _btnCenter, HdBattleHud::ICON_CENTER },
+			{ _btnNextSoldier, HdBattleHud::ICON_NEXT_SOLDIER }, { _btnNextStop, HdBattleHud::ICON_NEXT_STOP },
+			{ _btnShowLayers, links ? HdBattleHud::ICON_LINKS : HdBattleHud::ICON_SHOW_LAYERS }, { _btnHelp, HdBattleHud::ICON_OPTIONS },
+			{ _btnEndTurn, HdBattleHud::ICON_END_TURN }, { _btnAbort, HdBattleHud::ICON_ABORT },
+			{ _btnReserveNone, HdBattleHud::ICON_RESERVE_NONE }, { _btnReserveSnap, HdBattleHud::ICON_RESERVE_SNAP },
+			{ _btnReserveAimed, HdBattleHud::ICON_RESERVE_AIMED }, { _btnReserveAuto, HdBattleHud::ICON_RESERVE_AUTO },
+			{ _btnReserveKneel, HdBattleHud::ICON_RESERVE_KNEEL }, { _btnZeroTUs, HdBattleHud::ICON_ZERO_TUS },
+		};
+		for (const auto &icon : pictograms)
+		{
+			icon.first->setHdIcon(icon.second);
+		}
+	}
 	add(_btnLaunch);
 	_game->getMod()->getSurfaceSet("SPICONS.DAT")->getFrame(0)->blitNShade(_btnLaunch, 0, 0);
 	add(_btnPsi);
@@ -606,6 +710,7 @@ BattlescapeState::BattlescapeState() :
 	_btnStats->onKeyboardPress((ActionHandler)&BattlescapeState::btnReloadClick, Options::keyBattleReload);
 	_btnStats->onKeyboardPress((ActionHandler)&BattlescapeState::btnSelectMusicTrackClick, Options::keySelectMusicTrack);
 	_btnStats->onKeyboardPress((ActionHandler)&BattlescapeState::btnPersonalLightingClick, Options::keyBattlePersonalLighting);
+	_btnStats->onKeyboardPress((ActionHandler)&BattlescapeState::btnPersonalIndividualLightingClick, Options::QOL::ToggleInvidualLighting);
 	_btnStats->onKeyboardPress((ActionHandler)&BattlescapeState::btnNightVisionClick, Options::keyNightVisionToggle);
 	//_btnStats->onKeyboardPress((ActionHandler)&BattlescapeState::btnTouchButtonsClick, SDLK_t); // for debugging only
 
@@ -733,6 +838,7 @@ BattlescapeState::BattlescapeState() :
  */
 BattlescapeState::~BattlescapeState()
 {
+	Timer::hdFrameSkip = 0;
 	delete _animTimer;
 	delete _gameTimer;
 	delete _battleGame;
@@ -744,6 +850,8 @@ void BattlescapeState::resetPalettes()
 {
 	if (_paletteResetNeeded)
 	{
+		// HD render: the frames go back to their own colours (read again from their files)
+		HdPaletteShift::remove();
 		for (auto& origPal : _game->getMod()->getPalettes())
 		{
 			if (origPal.first.find("PAL_") == 0)
@@ -765,6 +873,12 @@ void BattlescapeState::resetPalettes()
  */
 void BattlescapeState::init()
 {
+	// HD render: the sprite drawing mode may have been changed in the options
+	if (_map->getHdMode() != Options::oxceHdMode)
+	{
+		_map->setHdMode(Options::oxceHdMode);
+		syncHdPaletteShift(_game, _save, _paletteResetNeeded);
+	}
 	if (_paletteResetRequested)
 	{
 		_paletteResetRequested = false;
@@ -839,7 +953,8 @@ void BattlescapeState::init()
 	_txtTooltip->setText("");
 	_btnReserveKneel->toggle(_save->getKneelReserved());
 	_battleGame->setKneelReserved(_save->getKneelReserved());
-	if (_autosave > 0 && !_save->isPreview())
+	// the AI test bench doesn't autosave: its generated battle has a UFO without a mission, which can't be saved
+	if (_autosave > 0 && !_save->isPreview() && !AiProbe::active())
 	{
 		int currentTurn = _autosave;
 		_autosave = 0;
@@ -866,6 +981,7 @@ void BattlescapeState::think()
 		if (_popups.empty())
 		{
 			State::think();
+			AiProbe::think(this, _save);
 			int ret = _battleGame->think();
 			if (ret > -1)
 			{
@@ -933,20 +1049,22 @@ void BattlescapeState::mapOver(Action *action)
 		}
 
 		// Scrolling
+		// (mouse deltas are in base pixels, the camera scrolls in world pixels = k times base)
+		const int k = _map->getScale();
 		if (Options::battleDragScrollInvert)
 		{
 			_map->getCamera()->setMapOffset(_mapOffsetBeforeMouseScrolling);
 			int scrollX = -(int)((double)_totalMouseMoveX / action->getXScale());
 			int scrollY = -(int)((double)_totalMouseMoveY / action->getYScale());
 			Position delta2 = _map->getCamera()->getMapOffset();
-			_map->getCamera()->scrollXY(scrollX, scrollY, true);
+			_map->getCamera()->scrollXY(scrollX * k, scrollY * k, true);
 			delta2 = _map->getCamera()->getMapOffset() - delta2;
 
 			// Keep the limits...
-			if (scrollX != delta2.x || scrollY != delta2.y)
+			if (scrollX * k != delta2.x || scrollY * k != delta2.y)
 			{
-				_totalMouseMoveX = -(int) (delta2.x * action->getXScale());
-				_totalMouseMoveY = -(int) (delta2.y * action->getYScale());
+				_totalMouseMoveX = -(int) ((double)delta2.x / k * action->getXScale());
+				_totalMouseMoveY = -(int) ((double)delta2.y / k * action->getYScale());
 			}
 
 			if (Options::touchEnabled == false)
@@ -963,21 +1081,21 @@ void BattlescapeState::mapOver(Action *action)
 			int scrollX = (int)((double)_totalMouseMoveX / action->getXScale());
 			int scrollY = (int)((double)_totalMouseMoveY / action->getYScale());
 			Position delta2 = _map->getCamera()->getMapOffset();
-			_map->getCamera()->scrollXY(scrollX, scrollY, true);
+			_map->getCamera()->scrollXY(scrollX * k, scrollY * k, true);
 			delta2 = _map->getCamera()->getMapOffset() - delta2;
 			delta = _map->getCamera()->getMapOffset() - delta;
 
 			// Keep the limits...
-			if (scrollX != delta2.x || scrollY != delta2.y)
+			if (scrollX * k != delta2.x || scrollY * k != delta2.y)
 			{
-				_totalMouseMoveX = (int) (delta2.x * action->getXScale());
-				_totalMouseMoveY = (int) (delta2.y * action->getYScale());
+				_totalMouseMoveX = (int) ((double)delta2.x / k * action->getXScale());
+				_totalMouseMoveY = (int) ((double)delta2.y / k * action->getYScale());
 			}
 
 			int barWidth = _game->getScreen()->getCursorLeftBlackBand();
 			int barHeight = _game->getScreen()->getCursorTopBlackBand();
-			int cursorX = _cursorPosition.x + Round(delta.x * action->getXScale());
-			int cursorY = _cursorPosition.y + Round(delta.y * action->getYScale());
+			int cursorX = _cursorPosition.x + Round((double)delta.x / k * action->getXScale());
+			int cursorY = _cursorPosition.y + Round((double)delta.y / k * action->getYScale());
 			_cursorPosition.x = Clamp(cursorX, barWidth, _game->getScreen()->getWidth() - barWidth - (int)(Round(action->getXScale())));
 			_cursorPosition.y = Clamp(cursorY, barHeight, _game->getScreen()->getHeight() - barHeight - (int)(Round(action->getYScale())));
 
@@ -1081,6 +1199,9 @@ void BattlescapeState::mapClick(Action *action)
 	// don't handle mouseclicks over the buttons (it overlaps with map surface)
 	if (_mouseOverIcons) return;
 
+
+	// gentle mode: no click into a tile of a picture still on its way (a fraction of a second)
+	if (_map->getCamera()->isGliding()) return;
 
 	// don't accept leftclicks if there is no cursor or there is an action busy
 	if (_map->getCursorType() == CT_NONE || _battleGame->isBusy()) return;
@@ -1189,7 +1310,8 @@ void BattlescapeState::btnShowMapClick(Action *)
 {
 	//MiniMapState
 	if (allowButtons())
-		_game->pushState (new MiniMapState (_map->getCamera(), _save));
+		// the minimap's shade cap: vanilla 7, lowered by night vision and the debug vision modes
+		_game->pushState (new MiniMapState (_map->getCamera(), _save, _map->reShadeMinimap(7)));
 }
 
 void BattlescapeState::toggleKneelButton(BattleUnit* unit)
@@ -1201,6 +1323,8 @@ void BattlescapeState::toggleKneelButton(BattleUnit* unit)
 	else
 	{
 		_game->getMod()->getSurfaceSet("KneelButton")->getFrame((unit && unit->isKneeled()) ? 1 : 0)->blitNShade(_btnKneel, 0, 0);
+		// the HD panel draws a tile in place of these pixels: tell it the state the frame shows
+		_btnKneel->setHdLit(unit && unit->isKneeled());
 	}
 }
 
@@ -1334,7 +1458,7 @@ void BattlescapeState::btnNextStopRClick(Action *)
 			_save->setUndoUnit(nullptr);
 
 			updateSoldierInfo();
-			if (candidate && !_game->isShiftPressed(true)) _map->getCamera()->centerOnPosition(candidate->getPosition());
+			if (candidate && !_game->isShiftPressed(true)) _map->getCamera()->focusOn(candidate->getPosition());
 			_battleGame->cancelAllActions();
 			_battleGame->getCurrentAction()->actor = candidate;
 			_battleGame->setupCursor();
@@ -1371,7 +1495,7 @@ void BattlescapeState::selectNextPlayerUnit(bool checkReselect, bool setReselect
 			? _save->selectNextPlayerUnitByDistance(checkReselect, setReselect, checkInventory)
 			: _save->selectNextPlayerUnit(checkReselect, setReselect, checkInventory);
 		updateSoldierInfo(checkFOV);
-		if (unit && !_game->isShiftPressed(true)) _map->getCamera()->centerOnPosition(unit->getPosition());
+		if (unit && !_game->isShiftPressed(true)) _map->getCamera()->focusOn(unit->getPosition());
 		_battleGame->cancelAllActions();
 		_battleGame->getCurrentAction()->actor = unit;
 		_battleGame->setupCursor();
@@ -1390,7 +1514,7 @@ void BattlescapeState::selectPreviousPlayerUnit(bool checkReselect, bool setRese
 	{
 		BattleUnit *unit = _save->selectPreviousPlayerUnit(checkReselect, setReselect, checkInventory);
 		updateSoldierInfo();
-		if (unit && !_game->isShiftPressed(true)) _map->getCamera()->centerOnPosition(unit->getPosition());
+		if (unit && !_game->isShiftPressed(true)) _map->getCamera()->focusOn(unit->getPosition());
 		_battleGame->cancelAllActions();
 		_battleGame->getCurrentAction()->actor = unit;
 		_battleGame->setupCursor();
@@ -1512,9 +1636,9 @@ void BattlescapeState::btnStatsClick(Action *action)
 			int posX = action->getXMouse();
 			int posY = action->getYMouse();
 			if ((posX < (Camera::SCROLL_BORDER * action->getXScale()) && posX > 0)
-				|| (posX > (_map->getWidth() - Camera::SCROLL_BORDER) * action->getXScale())
+				|| (posX > (_map->getWidth() / _map->getScale() - Camera::SCROLL_BORDER) * action->getXScale())
 				|| (posY < (Camera::SCROLL_BORDER * action->getYScale()) && posY > 0)
-				|| (posY > (_map->getHeight() - Camera::SCROLL_BORDER) * action->getYScale()))
+				|| (posY > (_map->getHeight() / _map->getScale() - Camera::SCROLL_BORDER) * action->getYScale()))
 				// To avoid handling this event as a click
 				// on the stats button when the mouse is on the scroll-border
 				scroll = true;
@@ -1676,7 +1800,7 @@ void BattlescapeState::btnVisibleUnitClick(Action *action)
 				_battleGame->cancelAllActions();
 				Position position = sortSpotters.front().first->getPosition();
 				_battleGame->primaryAction(position);
-				_map->getCamera()->centerOnPosition(position);
+				_map->getCamera()->focusOn(position);
 			}
 		}
 	}
@@ -1703,7 +1827,7 @@ void BattlescapeState::btnVisibleUnitClick(Action *action)
 				if (found) break;
 			}
 		}
-		_map->getCamera()->centerOnPosition(position);
+		_map->getCamera()->focusOn(position);
 	}
 
 	action->getDetails()->type = SDL_NOEVENT; // consume the event
@@ -1957,6 +2081,12 @@ void BattlescapeState::btnPersonalLightingClick(Action *)
 		_save->getTileEngine()->togglePersonalLighting();
 }
 
+void BattlescapeState::btnPersonalIndividualLightingClick(Action* action)
+{
+	if (allowButtons())
+		_save->getTileEngine()->togglePersonalIndividualLighting();
+}
+
 /**
  * Toggles night vision (purely cosmetic).
  * @param action Pointer to an action.
@@ -1983,6 +2113,7 @@ bool BattlescapeState::playableUnitSelected()
 void BattlescapeState::drawItem(BattleItem* item, Surface* hand, std::vector<NumberText*> &ammoText, std::vector<NumberText*> &medikitText, NumberText *twoHandedText, bool drawReactionIndicator, bool drawNoReactionIndicator)
 {
 	hand->clear();
+	HdItems::detach(hand);
 	for (int slot = 0; slot < RuleItem::AmmoSlotMax; ++slot)
 	{
 		ammoText[slot]->setVisible(false);
@@ -1995,7 +2126,10 @@ void BattlescapeState::drawItem(BattleItem* item, Surface* hand, std::vector<Num
 	if (item)
 	{
 		const RuleItem *rule = item->getRules();
-		rule->drawHandSprite(_game->getMod()->getSurfaceSet("BIGOBS.PCK"), hand, item, _save, _save->getAnimFrame());
+		if (!HdItems::attachHand(rule, item, _save, _save->getAnimFrame(), _game->getMod()->getSurfaceSet("BIGOBS.PCK"), hand))
+		{
+			rule->drawHandSprite(_game->getMod()->getSurfaceSet("BIGOBS.PCK"), hand, item, _save, _save->getAnimFrame());
+		}
 		for (int slot = 0; slot < RuleItem::AmmoSlotMax; ++slot)
 		{
 			if (item->isAmmoVisibleForSlot(slot))
@@ -2011,6 +2145,18 @@ void BattlescapeState::drawItem(BattleItem* item, Surface* hand, std::vector<Num
 					ammoText[slot]->setVisible(true);
 					ammoText[slot]->setValue(ammo->getAmmoQuantity());
 				}
+			}
+		}
+		{
+			static const std::vector<std::string> shieldItemTypes = {
+				"STR_ENERGY_SHIELD_SMALL", "STR_REFRACTOR_SHIELD_SMALL",
+				"STR_ARCANE_SHIELD_SMALL", "STR_ENERGY_MATRIX_SMALL",
+				"AUX_ENERGY_SHIELD_FAKK", "AUX_GORGON_SHIELD", "STR_HELLFIST"
+			};
+			if (std::find(shieldItemTypes.begin(), shieldItemTypes.end(), rule->getType()) != shieldItemTypes.end())
+			{
+				ammoText[0]->setVisible(true);
+				ammoText[0]->setValue(item->getAmmoQuantity());
 			}
 		}
 		twoHandedText->setVisible(rule->isTwoHanded());
@@ -2466,7 +2612,22 @@ void BattlescapeState::blinkVisibleUnitButtons()
 		{
 			_btnVisibleUnit[i]->drawRect(0, 0, 15, 12, 15);
 			int bgColor = i < _numberOfDirectlyVisibleUnits ? color : i < _numberOfEnemiesTotal ? _indicatorGreen : i < _numberOfEnemiesTotalPlusWounded ? _indicatorBlue : _indicatorPurple;
+			// gentle mode: the camera no longer goes to reaction fire, so its shooters stand out instead, steady
+			const bool reacted = HdGentle::on() && _map->firedReactionThisTurn(_visibleUnit[i]);
+			if (reacted)
+			{
+				bgColor = HdGentle::REACTION_COLOR;
+			}
 			_btnVisibleUnit[i]->drawRect(1, 1, 13, 10, bgColor);
+
+			// mirror the same number above the unit itself, but only for directly visible enemies;
+			// OXCE-HD: Options::oxceHdEnemyNumber - 0 no number, 1 blinking as the button, 2 steady at the ramp's start
+			const bool marked = i < _numberOfDirectlyVisibleUnits && Options::oxceHdEnemyNumber > 0;
+			_map->setUnitMarker(i, marked ? _visibleUnit[i] : 0, (Uint8)(Options::oxceHdEnemyNumber == 2 && !reacted ? 32 : bgColor));
+		}
+		else
+		{
+			_map->setUnitMarker(i, 0, 0);
 		}
 	}
 
@@ -2534,6 +2695,11 @@ void BattlescapeState::handleItemClick(BattleItem *item, bool middleClick)
  */
 void BattlescapeState::animate()
 {
+	if (AiProbe::fast())
+	{
+		_map->animate(false); // UFO doors only, nothing on the screen is animated
+		return;
+	}
 	_map->animate(!_battleGame->isBusy());
 
 	blinkVisibleUnitButtons();
@@ -2694,6 +2860,13 @@ std::string BattlescapeState::getMeleeDamagePreview(BattleUnit *actor, BattleIte
  */
 inline void BattlescapeState::handle(Action *action)
 {
+	// HD render: a key or a click (not the wheel) cuts the final blow short (HdKillCam)
+	const SDL_Event *ev = action->getDetails();
+	if ((ev->type == SDL_KEYDOWN || (ev->type == SDL_MOUSEBUTTONDOWN && ev->button.button != SDL_BUTTON_WHEELUP && ev->button.button != SDL_BUTTON_WHEELDOWN))
+		&& HdKillCam::running())
+	{
+		HdKillCam::skip();
+	}
 	if (!_firstInit)
 	{
 		if (_game->getCursor()->getVisible() || ((action->getDetails()->type == SDL_MOUSEBUTTONDOWN || action->getDetails()->type == SDL_MOUSEBUTTONUP) && _game->isRightClick(action)))
@@ -2702,7 +2875,7 @@ inline void BattlescapeState::handle(Action *action)
 
 			if (Options::touchEnabled == false && _isMouseScrolling && !Options::battleDragScrollInvert)
 			{
-				_map->setSelectorPosition((_cursorPosition.x - _game->getScreen()->getCursorLeftBlackBand()) / action->getXScale(), (_cursorPosition.y - _game->getScreen()->getCursorTopBlackBand()) / action->getYScale());
+				_map->setSelectorPosition((int)((_cursorPosition.x - _game->getScreen()->getCursorLeftBlackBand()) / action->getXScale()) * _map->getScale(), (int)((_cursorPosition.y - _game->getScreen()->getCursorTopBlackBand()) / action->getYScale()) * _map->getScale());
 			}
 
 			if (Options::oxceThumbButtons && action->getDetails()->type == SDL_MOUSEBUTTONDOWN)
@@ -2826,19 +2999,27 @@ inline void BattlescapeState::handle(Action *action)
 				// "ctrl-shift-Del" - clear TUs for all allied units
 				else if (key == SDLK_DELETE && ctrlPressed && shiftPressed)
 				{
-					for (auto* bu : *_save->getUnits())
+					if (_save->getSide() == FACTION_PLAYER)
 					{
-						if (bu->getFaction() == _save->getSide() && !bu->isOut())
+						for (auto* bu : *_save->getUnits())
 						{
-							bu->clearTimeUnits();
+							if (bu->getFaction() == _save->getSide() && !bu->isOut())
+							{
+								bu->clearTimeUnits();
+							}
 						}
+						updateSoldierInfo();
 					}
-					updateSoldierInfo();
 				}
 				// "ctrl-s" - switch xcom unit speed to max and back
 				else if (key == SDLK_s && ctrlPressed)
 				{
-					if (_save->getSide() == FACTION_PLAYER)
+					if (HdGentle::on())
+					{
+						// the gentle mode holds the unit speed (HdGentle::xcomSpeed): say so rather than claim a switch
+						warning("STR_GENTLE_QUICK_MODE_LOCKED");
+					}
+					else if (_save->getSide() == FACTION_PLAYER)
 					{
 						if (Options::battleXcomSpeedOrig >= 1 && Options::battleXcomSpeedOrig <= 40)
 						{
@@ -3075,7 +3256,9 @@ inline void BattlescapeState::handle(Action *action)
 								}
 							}
 						}
-						_battleGame->checkForCasualties(nullptr, BattleActionAttack{}, true, false);
+						// headless checks of the final blow (OXCE_HD_DUMP_KILLCAM): the debug kill counts as a blow, so the fall plays
+						const bool asBlow = !stunOnly && getenv("OXCE_HD_DUMP_KILLCAM");
+						_battleGame->checkForCasualties(asBlow ? _game->getMod()->getDamageType(DT_MELEE) : nullptr, BattleActionAttack{}, !asBlow, false);
 						_battleGame->handleState();
 					}
 					else if (_save->getDebugMode() && (key == SDLK_m || key == SDLK_p) && ctrlPressed && shiftPressed)
@@ -3149,6 +3332,18 @@ inline void BattlescapeState::handle(Action *action)
 				if (key == Options::keyBattleVoxelView)
 				{
 					saveVoxelView();
+				}
+
+				// HD render test dump (deterministic frame capture); the bare key is the feedback form
+				if (key == Options::keyBattleHdTestDump && _game->isCtrlPressed())
+				{
+					hdTestDump();
+				}
+				// HD render: cycle how the canvas draws sprites (nearest / HD packs / HD packs + smoothing);
+				// never on a key that already loads the quick save or dumps the voxel map
+				if (key == Options::keyBattleHdModeToggle && key != Options::keyQuickLoad && !(Options::debug && key == SDLK_F11))
+				{
+					hdModeToggle();
 				}
 			}
 		}
@@ -3280,6 +3475,118 @@ void BattlescapeState::saveAIMap()
 
 	CrossPlatform::writeFile(ss.str(), out);
 	Log(LOG_INFO) << "saveAIMap() completed in " << SDL_GetTicks() - start << "ms.";
+}
+
+/**
+ * HD render test: deterministic capture of the current battlescape frame.
+ * Writes three files into the user folder:
+ *   hdtestNNN_map.png   - the map surface (no UI), base resolution, before any scaling
+ *   hdtestNNN_frame.png - the whole base-resolution frame (UI included, no cursor)
+ *   hdtestNNN.json      - the state that produced them (camera, resolution, scale, mods)
+ * Animation is frozen at phase 0 for that frame and the 3D cursor is hidden, so two
+ * dumps of the same save with the same camera must be byte-identical.
+ */
+/**
+ * HD render: cycles the sprite drawing mode of the true-color canvas and shows which one is on.
+ */
+void BattlescapeState::hdModeToggle()
+{
+	if (std::string(_map->getCanvasName()) != "Canvas32")
+	{
+		warningRaw("HD: classic 8-bit canvas, no HD modes (needs a 32-bit display: OpenGL or a scaler)");
+		return;
+	}
+	const int mode = (_map->getHdMode() + 1) % HD_MODE_COUNT;
+	Options::oxceHdMode = mode;
+	_map->setHdMode(mode);
+	syncHdPaletteShift(_game, _save, _paletteResetNeeded);
+	static const char *names[HD_MODE_COUNT] = { "HD mode 0: nearest (classic pixels)", "HD mode 1: HD packs, nearest for the rest", "HD mode 2: HD packs + xBRZ smoothing" };
+	warningRaw(names[mode]);
+}
+
+void BattlescapeState::hdTestDump()
+{
+	const std::string prefix = HdTest::nextDumpPrefix();
+	Screen *screen = _game->getScreen();
+	Camera *camera = _map->getCamera();
+
+	_map->hdTestFreeze(prefix + "_map.png");
+	screen->requestHdTestDump(prefix + "_frame.png");
+
+	std::vector<std::pair<std::string, std::string> > f;
+	auto num = [](long long v) { return std::to_string(v); };
+	auto boolean = [](bool v) { return std::string(v ? "true" : "false"); };
+
+	f.emplace_back("format", num(1));
+	f.emplace_back("version", HdTest::jsonString(std::string(OPENXCOM_VERSION_SHORT) + OPENXCOM_VERSION_GIT));
+	f.emplace_back("master", HdTest::jsonString(Options::getActiveMaster()));
+	{
+		std::string mods = "[";
+		bool first = true;
+		for (const auto& pair : Options::mods)
+		{
+			if (!pair.second) continue;
+			if (!first) mods += ", ";
+			mods += HdTest::jsonString(pair.first);
+			first = false;
+		}
+		mods += "]";
+		f.emplace_back("mods", mods);
+	}
+	f.emplace_back("save", HdTest::jsonString(_game->getSavedGame()->getName()));
+	f.emplace_back("baseWidth", num(screen->getBaseWidth()));
+	f.emplace_back("baseHeight", num(screen->getBaseHeight()));
+	f.emplace_back("bufferBpp", num(screen->getBpp()));
+	f.emplace_back("layered", boolean(screen->isLayered()));
+	f.emplace_back("worldScale", num(screen->getWorldScale()));
+	f.emplace_back("canvas", HdTest::jsonString(_map->getCanvasName()));
+	f.emplace_back("hdMode", num(_map->getHdMode()));
+	f.emplace_back("hdUi", num(HdUi::active() ? Options::oxceHdUi : 0));
+	f.emplace_back("hdThreads", num(HdWorkers::instance().threads()));
+	f.emplace_back("drawMs", num((long long)(_map->getLastDrawMs() * 100)) + "e-2");
+	f.emplace_back("flipMs", num((long long)(screen->getLastFlipMs() * 100)) + "e-2");
+	f.emplace_back("uiMs", num((long long)(HdUi::instance().lastFrameMs() * 100)) + "e-2");
+	f.emplace_back("displayWidth", num(Options::displayWidth));
+	f.emplace_back("displayHeight", num(Options::displayHeight));
+	f.emplace_back("battlescapeScale", num(Options::battlescapeScale));
+	f.emplace_back("useOpenGL", boolean(Options::useOpenGL));
+	f.emplace_back("useOpenGLShader", HdTest::jsonString(Options::useOpenGLShader));
+	f.emplace_back("useXBRZFilter", boolean(Options::useXBRZFilter));
+	f.emplace_back("useHQXFilter", boolean(Options::useHQXFilter));
+	f.emplace_back("useScaleFilter", boolean(Options::useScaleFilter));
+	f.emplace_back("spriteWidth", num(_map->getSpriteWidth()));
+	f.emplace_back("spriteHeight", num(_map->getSpriteHeight()));
+	f.emplace_back("k", num(_map->getSpriteWidth() / 32));
+	f.emplace_back("mapWidth", num(_save->getMapSizeX()));
+	f.emplace_back("mapHeight", num(_save->getMapSizeY()));
+	f.emplace_back("mapDepth", num(_save->getMapSizeZ()));
+	f.emplace_back("iconHeight", num(_map->getIconHeight()));
+	f.emplace_back("iconWidth", num(_map->getIconWidth()));
+	f.emplace_back("mapSurfaceWidth", num(_map->getWidth()));
+	f.emplace_back("mapSurfaceHeight", num(_map->getHeight()));
+	{
+		Position off = camera->getMapOffset();
+		Position center = camera->getCenterPosition();
+		f.emplace_back("cameraOffsetX", num(off.x));
+		f.emplace_back("cameraOffsetY", num(off.y));
+		f.emplace_back("cameraOffsetZ", num(off.z));
+		f.emplace_back("cameraCenterX", num(center.x));
+		f.emplace_back("cameraCenterY", num(center.y));
+		f.emplace_back("cameraCenterZ", num(center.z));
+		f.emplace_back("viewLevel", num(camera->getViewLevel()));
+		f.emplace_back("showAllLayers", boolean(camera->getShowAllLayers()));
+	}
+	f.emplace_back("animFrame", num(_save->getAnimFrame()));
+	f.emplace_back("turn", num(_save->getTurn()));
+	f.emplace_back("side", num((int)_save->getSide()));
+	f.emplace_back("globalShade", num(_save->getGlobalShade()));
+	f.emplace_back("nightVision", boolean(_map->isNightVisionOn()));
+	f.emplace_back("debugVisionMode", num(_map->getDebugVisionMode()));
+	f.emplace_back("fadeShade", num(_map->getFadeShade()));
+	f.emplace_back("debugMode", boolean(_save->getDebugMode()));
+
+	HdTest::writeJson(prefix + ".json", f);
+	Log(LOG_INFO) << "HdTest: dump requested as " << prefix;
 }
 
 /**
@@ -3505,6 +3812,7 @@ void BattlescapeState::popup(State *state)
  */
 void BattlescapeState::finishBattle(bool abort, int inExitArea)
 {
+	AiProbe::battleOver(this, _save, abort);
 	bool isPreview = _save->isPreview();
 
 	while (!_game->isState(this))
@@ -4050,7 +4358,7 @@ void BattlescapeState::resize(int &dX, int &dY)
 	_map->setWidth(Options::baseXResolution);
 	_map->setHeight(Options::baseYResolution);
 	_map->getCamera()->resize();
-	_map->getCamera()->jumpXY(dX/2, dY/2);
+	_map->getCamera()->jumpXY(dX/2 * _map->getScale(), dY/2 * _map->getScale());
 
 	for (auto* surf : _surfaces)
 	{
@@ -4096,7 +4404,7 @@ void BattlescapeState::stopScrolling(Action *action)
 	{
 		SDL_WarpMouse(_cursorPosition.x, _cursorPosition.y);
 		action->setMouseAction(_cursorPosition.x, _cursorPosition.y, _map->getX(), _map->getY());
-		_map->setSelectorPosition(action->getAbsoluteXMouse(), action->getAbsoluteYMouse());
+		_map->setSelectorPosition((int)action->getAbsoluteXMouse() * _map->getScale(), (int)action->getAbsoluteYMouse() * _map->getScale());
 	}
 	// reset our "mouse position stored" flag
 	_cursorPosition.z = 0;

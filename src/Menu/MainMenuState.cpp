@@ -17,10 +17,20 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "MainMenuState.h"
+#include <cstdlib>
+#include "../Savegame/SavedGame.h"
+#include "../Geoscape/Globe.h"
+#include "../Geoscape/GeoscapeState.h"
+#include "../Basescape/BasescapeState.h"
+#include "../Savegame/Base.h"
+#include "OptionsAdvancedState.h"
+#include "../Ufopaedia/Ufopaedia.h"
+#include "ListSaveState.h"
 #include <sstream>
 #include "../version.h"
 #include "../Engine/Game.h"
 #include "../Mod/Mod.h"
+#include "../Engine/Language.h"
 #include "../Engine/LocalizedText.h"
 #include "../Engine/Screen.h"
 #include "../Interface/TextButton.h"
@@ -31,9 +41,12 @@
 #include "ListLoadState.h"
 #include "OptionsVideoState.h"
 #include "ModListState.h"
+#include "ReportsState.h"
+#include "../Engine/Feedback.h"
 #include "../Engine/Options.h"
 #include "../Engine/FileMap.h"
 #include "../Engine/SDL2Helpers.h"
+#include "../Battlescape/AiProbe.h"
 #include <fstream>
 
 namespace OpenXcom
@@ -68,12 +81,19 @@ MainMenuState::MainMenuState(bool updateCheck)
 
 	// Create objects
 	_window = new Window(this, 256, 160, 32, 20, POPUP_BOTH);
-	_btnNewGame = new TextButton(92, 20, 64, 90);
-	_btnNewBattle = new TextButton(92, 20, 164, 90);
-	_btnLoad = new TextButton(92, 20, 64, 118);
-	_btnOptions = new TextButton(92, 20, 164, 118);
-	_btnMods = new TextButton(92, 20, 64, 146);
-	_btnQuit = new TextButton(92, 20, 164, 146);
+	// "My reports" needs its strings (rake R-036; bin/common/Language/OXCE): without them the menu stays as it was
+	const bool reports = _game->getLanguage()->has("STR_MY_REPORTS") && _game->getLanguage()->has("STR_LAUNCHER");
+	const int row1 = reports ? 82 : 90, row2 = reports ? 106 : 118, row3 = reports ? 130 : 146;
+	_btnNewGame = new TextButton(92, 20, 64, row1);
+	_btnNewBattle = new TextButton(92, 20, 164, row1);
+	_btnLoad = new TextButton(92, 20, 64, row2);
+	_btnOptions = new TextButton(92, 20, 164, row2);
+	_btnMods = new TextButton(92, 20, 64, row3);
+	_btnQuit = new TextButton(92, 20, 164, row3);
+	// the fourth row: My reports | Launcher; without a launcher My reports takes the whole row
+	const bool launcher = reports && Feedback::hasLauncher();
+	_btnReports = new TextButton(launcher ? 92 : 192, 20, 64, 154);
+	_btnLauncher = new TextButton(92, 20, 164, 154);
 	_btnUpdate = new TextButton(72, 16, 209, 27);
 	_txtUpdateInfo = new Text(320, 17, 0, 11);
 	_txtTitle = new Text(256, 30, 32, 45);
@@ -88,6 +108,8 @@ MainMenuState::MainMenuState(bool updateCheck)
 	add(_btnOptions, "button", "mainMenu");
 	add(_btnMods, "button", "mainMenu");
 	add(_btnQuit, "button", "mainMenu");
+	add(_btnReports, "button", "mainMenu");
+	add(_btnLauncher, "button", "mainMenu");
 	add(_btnUpdate, "button", "mainMenu");
 	add(_txtUpdateInfo, "text", "mainMenu");
 	add(_txtTitle, "text", "mainMenu");
@@ -114,6 +136,14 @@ MainMenuState::MainMenuState(bool updateCheck)
 
 	_btnQuit->setText(tr("STR_QUIT"));
 	_btnQuit->onMouseClick((ActionHandler)&MainMenuState::btnQuitClick);
+
+	_btnReports->setText(tr("STR_MY_REPORTS"));
+	_btnReports->onMouseClick((ActionHandler)&MainMenuState::btnReportsClick);
+	_btnReports->setVisible(reports);
+
+	_btnLauncher->setText(tr("STR_LAUNCHER"));
+	_btnLauncher->onMouseClick((ActionHandler)&MainMenuState::btnLauncherClick);
+	_btnLauncher->setVisible(launcher);
 
 	_btnUpdate->setText(tr("STR_UPDATE"));
 	_btnUpdate->onMouseClick((ActionHandler)& MainMenuState::btnUpdateClick);
@@ -242,6 +272,99 @@ MainMenuState::MainMenuState(bool updateCheck)
 void MainMenuState::init()
 {
 	State::init();
+	// HD art tools: OXCE_HD_EXPORT=<folder> writes the sprite sets as 8-bit PNG sheets (OXCE_HD_EXPORT_SETS=units|all|names) and quits
+	static bool exported = false;
+	const char *exportDir = getenv("OXCE_HD_EXPORT");
+	if (exportDir && *exportDir && !exported)
+	{
+		exported = true;
+		const char *which = getenv("OXCE_HD_EXPORT_SETS");
+		const int sets = _game->getMod()->exportHdSets(exportDir, which ? which : "units");
+		Log(LOG_INFO) << "OXCE_HD_EXPORT: " << sets << " set(s) written to " << exportDir;
+		_game->quit();
+		return;
+	}
+	// HD test automation: OXCE_HD_START=newbattle|options|load|geoscape|base... opens that screen at once (headless dumps)
+	static bool autoStarted = false;
+	const char *autoStart = getenv("OXCE_HD_START");
+	if (autoStart && *autoStart && !autoStarted)
+	{
+		autoStarted = true;
+		const std::string what = autoStart;
+		if (what == "newbattle")
+		{
+			_game->pushState(new NewBattleState);
+		}
+		else if (what == "options")
+		{
+			_game->pushState(new OptionsAdvancedState(OPT_MENU));
+		}
+		else if (what == "load")
+		{
+			_game->pushState(new ListLoadState(OPT_MENU));
+		}
+		else if (what == "battle")
+		{
+			// the mission generator's OK with its defaults: straight into a battle
+			NewBattleState *nb = new NewBattleState;
+			_game->pushState(nb);
+			if (AiProbe::battleSeed() >= 0)
+			{
+				nb->probeRandomize(AiProbe::battleSeed());
+			}
+			nb->btnOkClick(nullptr);
+		}
+		else if (what == "geoscape" || what == "save" || what == "base")
+		{
+			// a new game on the geoscape, zoomed a step in, the globe centred on Europe (no base placing)
+			SavedGame *save = _game->getMod()->newSave(DIFF_BEGINNER);
+			save->setDifficulty(DIFF_BEGINNER);
+			_game->setSavedGame(save);
+			GeoscapeState *gs = new GeoscapeState;
+			_game->setState(gs);
+			gs->init();
+			gs->getGlobe()->center(0.2, -0.8);
+			gs->getGlobe()->zoomIn();
+			gs->timerReset();
+			// OXCE_HD_SAVES=n writes n saves of it (rows for the load list's checks)
+			const char *saves = getenv("OXCE_HD_SAVES");
+			for (int i = 0; saves && i < atoi(saves); ++i)
+			{
+				save->setName("HD test " + std::to_string(i + 1));
+				save->save("hdtest" + std::to_string(i + 1) + ".sav", _game->getMod());
+			}
+			if (what == "save")
+			{
+				// the save list over it (an edit field: OXCE_HD_CLICK on a row, OXCE_HD_TYPE a name)
+				_game->pushState(new ListSaveState(OPT_GEOSCAPE));
+			}
+			if (what == "base" && !save->getBases()->empty())
+			{
+				// the starting base's screen (its facilities' HD pictures)
+				_game->pushState(new BasescapeState(save->getBases()->front(), gs->getGlobe()));
+			}
+		}
+		else if (what == "ufopaedia")
+		{
+			// a new game and the ufopaedia article OXCE_HD_ARTICLE (or the ufopaedia's index) over the globe
+			SavedGame *save = _game->getMod()->newSave(DIFF_BEGINNER);
+			save->setDifficulty(DIFF_BEGINNER);
+			_game->setSavedGame(save);
+			GeoscapeState *gs = new GeoscapeState;
+			_game->setState(gs);
+			gs->init();
+			const char *article = getenv("OXCE_HD_ARTICLE");
+			if (article && *article)
+			{
+				Ufopaedia::openArticle(_game, std::string(article));
+			}
+			else
+			{
+				Ufopaedia::open(_game);
+			}
+		}
+		return;
+	}
 	if (Options::getLoadLastSave() && !Options::getLoadThisSave().empty())
 	{
 		Log(LOG_INFO) << "Loading saved game passed as parameter";
@@ -306,6 +429,24 @@ void MainMenuState::btnOptionsClick(Action *)
 void MainMenuState::btnModsClick(Action *)
 {
 	_game->pushState(new ModListState);
+}
+
+/**
+ * Opens the list of this player's F8 reports.
+ * @param action Pointer to an action.
+ */
+void MainMenuState::btnReportsClick(Action *)
+{
+	_game->pushState(new ReportsState);
+}
+
+/**
+ * Opens the launcher's window beside the game.
+ * @param action Pointer to an action.
+ */
+void MainMenuState::btnLauncherClick(Action *)
+{
+	Feedback::openLauncher();
 }
 
 /**

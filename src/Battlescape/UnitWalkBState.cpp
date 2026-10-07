@@ -29,10 +29,12 @@
 #include "../Savegame/Tile.h"
 #include "../Engine/Sound.h"
 #include "../Engine/Options.h"
+#include "../Engine/HdGentle.h"
 #include "../Engine/Logger.h"
 #include "../Mod/Armor.h"
 #include "../Mod/Mod.h"
 #include "UnitFallBState.h"
+#include "AiProbe.h"
 
 namespace OpenXcom
 {
@@ -196,8 +198,11 @@ void UnitWalkBState::think()
 		// is the step finished?
 		if (_unit->getStatus() == STATUS_STANDING)
 		{
-			// update the TU display
-			_parent->getSave()->getBattleState()->updateSoldierInfo();
+			// update the TU display (the bench may watch what its FOV changes in the selected unit's sight, AiProbe::walkFov*: reads only;
+			// BOT_WALKFOV_UI_SKIP_V1 skips the display's FOV for the bot's own walker, AiProbe::walkFovKeep - the step's own FOV below stays)
+			AiProbe::walkFovBefore(_parent, _unit);
+			_parent->getSave()->getBattleState()->updateSoldierInfo(AiProbe::walkFovKeep(_parent, _unit));
+			AiProbe::walkFovAfter(_parent, _unit);
 			// if the unit burns floor tiles, burn floor tiles as long as we're not falling
 			if (!_falling && (_unit->getSpecialAbility() == SPECAB_BURNFLOOR || _unit->getSpecialAbility() == SPECAB_BURN_AND_EXPLODE))
 			{
@@ -219,9 +224,13 @@ void UnitWalkBState::think()
 			}
 
 			int change = _parent->checkForProximityGrenades(_unit);
-			// move our personal lighting with us
-			_terrain->calculateLighting(change ? LL_ITEMS : LL_UNITS, _unit->getPosition(), 2);
+			// move our personal lighting with us (the bench may skip it for a unit that sheds no light, AiProbe::lightSkip)
+			if (change || !AiProbe::lightSkip(_terrain, _unit))
+			{
+				_terrain->calculateLighting(change ? LL_ITEMS : LL_UNITS, _unit->getPosition(), 2);
+			}
 			_terrain->calculateFOV(_unit->getPosition(), 2, false); //update unit visibility for all units which can see last and current position.
+			AiProbe::walkFovConfirm(_parent, _unit); // did the step's own FOV keep what updateSoldierInfo had added (the audit and the shadow above, reads only)
 			//tile visibility for this unit is handled later.
 			unitSpotted = (!_action.ignoreSpottedEnemies && !_falling && !_action.desperate && _parent->getPanicHandled() && _numUnitsSpotted != _unit->getUnitsSpottedThisTurn().size());
 
@@ -232,6 +241,7 @@ void UnitWalkBState::think()
 			}
 			if (unitSpotted)
 			{
+				AiProbe::walkStop(_unit, "spotted", _unit->getDestination(), _unit->getDirection(), (int)_action.getMoveType(), -1, -1, -1);
 				return cancelCurentMove();
 			}
 			// check for reaction fire
@@ -240,6 +250,7 @@ void UnitWalkBState::think()
 				if (_terrain->checkReactionFire(_unit, _action))
 				{
 					// unit got fired upon - stop walking
+					AiProbe::walkStop(_unit, "reaction", _unit->getDestination(), _unit->getDirection(), (int)_action.getMoveType(), -1, -1, -1);
 					return cancelCurentMove();
 				}
 			}
@@ -300,6 +311,7 @@ void UnitWalkBState::think()
 
 			if (tu == Pathfinding::INVALID_MOVE_COST)
 			{
+				AiProbe::walkStop(_unit, "invalid", destination, dir, (int)_action.getMoveType(), tu, energy, -1);
 				return cancelCurentMove();
 			}
 
@@ -309,6 +321,7 @@ void UnitWalkBState::think()
 				{
 					_action.result = "STR_NOT_ENOUGH_TIME_UNITS";
 				}
+				AiProbe::walkStop(_unit, "tu", destination, dir, (int)_action.getMoveType(), tu, energy, -1);
 				return cancelCurentMove();
 			}
 
@@ -318,11 +331,13 @@ void UnitWalkBState::think()
 				{
 					_action.result = "STR_NOT_ENOUGH_ENERGY";
 				}
+				AiProbe::walkStop(_unit, "energy", destination, dir, (int)_action.getMoveType(), tu, energy, -1);
 				return cancelCurentMove();
 			}
 
 			if (_parent->getPanicHandled() && !_falling && _parent->checkReservedTU(_unit, tu, energy) == false)
 			{
+				AiProbe::walkStop(_unit, "reserve", destination, dir, (int)_action.getMoveType(), tu, energy, -1);
 				return cancelCurentMove();
 			}
 
@@ -361,6 +376,10 @@ void UnitWalkBState::think()
 					if (!_falling && unitInMyWay && unitInMyWay != _unit)
 					{
 						_action.clearTU();
+						_unit->increaseAIWalkAbortCounter();
+						AiProbe::walkStop(_unit, "unit", destination, dir, (int)_action.getMoveType(), tu, energy, unitInMyWay->getId(), _parent->getSave());
+						AiProbe::firepointBlocked(_unit, _action, dir);
+						AiProbe::blockedStepStop(_parent->getSave(), _unit, dir);
 						return cancelCurentMove();
 					}
 				}
@@ -432,6 +451,7 @@ void UnitWalkBState::think()
 			if (Options::traceAI) { Log(LOG_INFO) << "Egads! A turn reveals new units! I must pause!"; }
 			_unit->setHiding(false); // not hidden, are we...
 			_unit->abortTurn(); //revert to a standing state.
+			AiProbe::walkStop(_unit, "turnspot", _unit->getPosition(), _unit->getDirection(), (int)_action.getMoveType(), -1, -1, -1);
 			return cancelCurentMove();
 		}
 	}
@@ -458,7 +478,12 @@ void UnitWalkBState::cancel()
 void UnitWalkBState::postPathProcedures()
 {
 	_action.clearTU();
-	if (_unit->getFaction() != FACTION_PLAYER)
+	// the bot's player units take the AI branch their walk's AIModule decision was made for (POSTWALK_FIX, bench only)
+	const bool aiBranch = _unit->getFaction() != FACTION_PLAYER
+		|| AiProbe::postWalkAi(_parent->getSave(), _unit, _parent->getPanicHandled());
+	AiProbe::postWalkBegin(_parent->getSave(), _unit, _action, aiBranch);
+	bool meleePushed = false;
+	if (aiBranch)
 	{
 		int dir = _action.finalFacing;
 		if (_action.finalAction)
@@ -479,6 +504,7 @@ void UnitWalkBState::postPathProcedures()
 				action.updateTU();
 				_unit->setCharging(0);
 				_parent->statePushBack(new MeleeAttackBState(_parent, action));
+				meleePushed = true;
 			}
 		}
 		else if (_unit->isHiding())
@@ -506,8 +532,13 @@ void UnitWalkBState::postPathProcedures()
 		//todo: set the unit to aggrostate and try to find cover?
 		_unit->clearTimeUnits();
 	}
+	AiProbe::postWalkEnd(_parent->getSave(), _unit, meleePushed);
 
-	_terrain->calculateLighting(LL_UNITS, _unit->getPosition());
+	// the light of the unit at the end of its walk (the bench may skip it for a unit that sheds no light, AiProbe::lightSkip)
+	if (!AiProbe::lightSkip(_terrain, _unit))
+	{
+		_terrain->calculateLighting(LL_UNITS, _unit->getPosition());
+	}
 	_terrain->calculateFOV(_unit);
 	if (!_falling)
 		_parent->popState();
@@ -519,9 +550,9 @@ void UnitWalkBState::postPathProcedures()
 void UnitWalkBState::setNormalWalkSpeed()
 {
 	if (_unit->getFaction() == FACTION_PLAYER)
-		_parent->setStateInterval(Options::battleXcomSpeed);
+		_parent->setStateInterval(HdGentle::xcomSpeed());
 	else
-		_parent->setStateInterval(Options::battleAlienSpeed);
+		_parent->setStateInterval(HdGentle::alienSpeed());
 }
 
 

@@ -17,6 +17,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "CraftInfoState.h"
+#include <climits>
 #include <cmath>
 #include <sstream>
 #include "../Engine/Game.h"
@@ -24,6 +25,8 @@
 #include "../Engine/LocalizedText.h"
 #include "../Engine/Logger.h"
 #include "../Engine/Options.h"
+#include "../Engine/Screen.h"
+#include "../Engine/HdCraftLights.h"
 #include "../Engine/Unicode.h"
 #include "../Interface/TextButton.h"
 #include "../Interface/Window.h"
@@ -46,9 +49,92 @@
 #include "CraftArmorState.h"
 #include "CraftPilotsState.h"
 #include "../Ufopaedia/Ufopaedia.h"
+#include "../Engine/Palette.h"
+#include "../Mod/RuleInterface.h"
 
 namespace OpenXcom
 {
+
+/**
+ * OXCE-HD: the craft screen draws its weapon pictures in its own palette; a list on
+ * another screen (interception: the geoscape palette) takes the nearest colours of its own.
+ * @param mod The mod.
+ * @param palette The list's palette (copied).
+ */
+CraftWeaponIcons::CraftWeaponIcons(Mod *mod, const SDL_Color *palette) : _mod(mod)
+{
+	std::copy(palette, palette + 256, _palette);
+	const RuleInterface *info = mod->getInterface("craftInfo", false);
+	const Palette *own = mod->getPalette(info && !info->getPalette().empty() ? info->getPalette() : "PAL_BASESCAPE", false);
+	for (int c = 0; c < 256; ++c)
+	{
+		_remap[c] = (Uint8)c;
+		if (c == 0 || !own)
+		{
+			continue;
+		}
+		const SDL_Color from = own->getColors()[c];
+		int best = 1, bestDist = INT_MAX;
+		for (int d = 1; d < 256; ++d)
+		{
+			const int dr = from.r - _palette[d].r, dg = from.g - _palette[d].g, db = from.b - _palette[d].b;
+			const int dist = dr * dr + dg * dg + db * db;
+			if (dist < bestDist)
+			{
+				best = d;
+				bestDist = dist;
+			}
+		}
+		_remap[c] = (Uint8)best;
+	}
+}
+
+CraftWeaponIcons::~CraftWeaponIcons()
+{
+	for (auto &pair : _icons)
+	{
+		delete pair.second;
+	}
+}
+
+/**
+ * The pictures of the weapons and equipment installed on a craft: what the craft
+ * screen shows of them, the top left 15x17 of the frame, in the list's colours.
+ * @param craft The craft.
+ * @return One picture per installed weapon, empty slots skipped.
+ */
+std::vector<Surface*> CraftWeaponIcons::of(Craft *craft)
+{
+	std::vector<Surface*> result;
+	SurfaceSet *texture = _mod->getSurfaceSet("BASEBITS.PCK");
+	for (const CraftWeapon *weapon : *craft->getWeapons())
+	{
+		if (!weapon)
+		{
+			continue;
+		}
+		Surface *&icon = _icons[weapon->getRules()];
+		if (!icon)
+		{
+			Surface *frame = texture->getFrame(weapon->getRules()->getSprite() + 48);
+			if (!frame)
+			{
+				continue;
+			}
+			icon = new Surface(15, 17);
+			icon->setPalette(_palette);
+			for (int y = 0; y < 17 && y < frame->getHeight(); ++y)
+			{
+				for (int x = 0; x < 15 && x < frame->getWidth(); ++x)
+				{
+					icon->setPixel(x, y, _remap[frame->getPixel(x, y)]);
+				}
+			}
+		}
+		result.push_back(icon);
+	}
+	return result;
+}
 
 /**
  * Initializes all the elements in the Craft Info screen.
@@ -477,6 +563,29 @@ std::string CraftInfoState::formatTime(int total)
 	}
 	ss << ")";
 	return ss.str();
+}
+
+/**
+ * Draws the state, then the blinking lights of the craft picture: they go into the HD world
+ * layer after the classic layer has been mirrored there, as in the hangar (BaseView::drawHdLights).
+ */
+void CraftInfoState::blit()
+{
+	State::blit();
+	Screen *screen = Screen::current();
+	if (!_craft || !_sprite->getVisible() || !Options::oxceHdPictures || !Options::oxceHdCraftLights || !screen || !screen->isLayered())
+	{
+		return;
+	}
+	SDL_Surface *world = screen->getWorldSurface();
+	const int k = screen->getWorldScale();
+	const int index = _craft->getSkinSprite() + 33;
+	if (!world || k < 2 || !HdCraftLights::has(index))
+	{
+		return;
+	}
+	HdCraftLights::draw(world, index, _sprite->getX() * k, _sprite->getY() * k, k, HdCraftLights::statusOf(_craft),
+		(Uint32)_craft->getId(), SDL_GetTicks());
 }
 
 /**

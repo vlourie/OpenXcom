@@ -1,0 +1,42 @@
+Hi Dioxine! Same checker, this time Piratez_Mapscripts.rul. I ported the map generator (generateMap, MapScript, getRandomMapBlock, starting conditions) to a script and built every map the game can make: every script x terrain x map size x UFO x player craft, 8,477 combinations, 200 maps each, about 1.7 million maps. Not a single crash and not a single half-filled map. No unknown keys, no duplicate labels, no conditional pointing at a label that doesn't exist yet, freqs/maxUses all match, and every UFOName/craftName/terrain/digTunnel reference resolves. The only "craft can't be placed" crashes it found (Avenger on BANDIT_AIRFIELD and TLETH_COLONY_P1, Zeppelin on COMRCURBAN_WORKCAMP) are all blocked by the startingConditions, so those conditions are load-bearing. Worth knowing if you ever widen allowedCraft on the airfield: no row there has three free cells in a row, so a 3-wide craft would crash 100% of the time. What's left is below. Line numbers are from the current release.
+
+1) The crashed plane gets cut in half on small UFO crash sites (Piratez_Mapscripts.rul:2142, CRASHEDPLANE).
+TUNDRAPLANE, DESERTPLANE and POLARPLANE are in the globe texture lists (Piratez_Planet.rul:29, 179, 221, 261, 295, 303, weight 5 each, 4-17% of the texture). So any UFO crash/landing without its own terrains can roll them, including the 40x40 ones: Small Scout, Medium Scout, ~25 small vessels. CRASHEDPLANE needs at least 5x5: the plane sits in fixed columns 0-4 with 20x20 pieces at [2,0] and [2,3]. On 4x4:
+  - column 4 (blocks 4/5) never exists;
+  - 15/16 (20x20 at [2,3]) never fits, only the 19/20 fallback;
+  - the [2,0] piece is missing entirely in ~15%.
+On 5x5 UFO sites the UFO is placed first and takes the room: the [2,3] piece is missing in 30-38%, the [2,0] one in ~20%. On the plane's own missions (DISTRESS_CALL, SUNKEN_PLANE, HITMAN, DISTRESS_BUNKER, MEGASCORPION) it's only 2-14%, where the player's craft landed on it, which is fine.
+Fix: drop the *PLANE entries from the globe textures. The missions that want the plane already list those terrains themselves. Or keep them, if a half-plane on small crash sites is OK with you.
+
+2) The island town has no sea on 4x4 and 5x5 maps (Piratez_Mapscripts.rul:3295, ISLANDURBAN).
+The script is written for 6x6: shore groups 2/3 as 20x20 in [0,4,6,2] (lines 3297, 3302), water group 4 in [0,5,6,1] (line 3307). The ISLANDURBAN terrain is also in the terrains of STR_LOC_LUCKY_GUY (4x4), STR_LOC_BANDIT_TOWN, STR_LOC_TRAITORS and STR_LOC_MONSTER_HUNT_GIANTSPIDER (5x5). There, not a single shore or water block is ever placed (0 of 200). It turns into a plain town.
+Fix: a script can't depend on map size, so either add a copy of the ISLANDURBAN terrain with a 5x5 script (shore in [0,3,5,2], water in [0,4,5,1]) to those four deployments, like ISLANDURBAN_7 does for 7x7, or take ISLANDURBAN out of their terrains.
+
+3) Two scripts are defined twice, and the later one wins, so the first is dead.
+  - STANDARDROADS7: lines 68 and 187. Line 187 is the live one (STR_ERIDIAN_TERROR_MSDF, STR_LOC_HT_HOUSE, the URBANJUNKUFO_MSDF terrain). They really differ:
+      line 68: UFO first, road chances 25/25, blocks 2 + 3 + 2x3
+      line 187: craft first, road chances 33/50, blocks 3 + 2x4 + 2x2
+    If you meant the first, it isn't the one being played.
+  - BEACH_SAVANNA: lines 380 and 2769. Line 2769 is live and correct for its only user, LOC_BEACH_SWEEP 5x5 (beach in row 4). Line 380 (6-wide, beach in row 5) can go.
+
+4) UAC_VAULTS_UFQ: no fourth room, and six fallback blocks never fire (Piratez_Mapscripts.rul:5335).
+There are three big rooms: label 1 at [1,1] (line 5367), label 2 at [1,4] (5373), label 3 at [4,1] (5379), each with conditional edge walls. Nothing is placed for the [4,4] quarter or its edges. The rooms have no executionChances, so they always get placed, and six of the eight unconditional 10x10 blocks after them land inside a room and never fit (0 of 200): lines 5445, 5449, 5453, 5461, 5469, 5473. Only 5457 and 5465 in the empty quarter get placed.
+Question: were the rooms meant to have executionChances, with the 10x10s as the fallback? Is a label-4 room missing? The terrain has one 20x20 room each for groups 4, 5 and 6.
+
+5) MAGE_VILLA: two 20x20 blocks never fit (Piratez_Mapscripts.rul:2588, 2591).
+On 6x6, the fence ring, the 30x30 villa at [1,1] and the alley at [2,4] leave no free 2x2 square, so "addBlock size 2 groups 6" and "groups 7" never place anything. Probably left over from MAGE_VILLA_OLD. Harmless, can go.
+
+Small stuff, no rush:
+- Scripts nothing runs: STANDARDROADS5 (229), BOSSBATTLE_CHECKMATE_ALT (551), CAVE_A..CAVE_E (1249-1405), MAGE_VILLA_OLD (2518), BEACH_SAVANNA_SHORE_DESCENT (2798). SEWERS (4694), VAMPCASTLE (5590) and XBASE (6004) belong to terrains that no deployment or texture uses.
+- Commands that silently fail because the terrain has no block of that size:
+    JUNGLE2NEO/JUNGLE2BLACK, no 2x2: CANNIBAL_CAMP_LANDING 574, DARK_TOWER_LANDING 2278, MILCONVOY_7_1_3 3367
+    CULTA_VR, no 2x2: FARM_VR_* 2943-2985
+    MARS_NO_PYRAMIDS, no 2x2 or 3x3: STANDARDMAX 41-65 (Labyrinthus Noctis)
+    DESERT2RED, no 3x3: DESERT 2695
+    URBANJUNKUFO_MSDF, no 3x3: STANDARDROADS7 210
+    JUNGLETEMPLE, no 3x3: MUJUNGLE 3868, 3876
+    GUNS_OF_THE_PATRIOTS 2679, size 3, missing on five of its terrains
+- A second size-3 block near the end that never finds room on any map size its script runs on: COMRCURBAN 2074, COMRCURBAN_WORKCAMP 2124/2128, PORTTFTD6 4014, RURALUFO 4121.
+- Labels no conditional uses: COMMS_TOWER_LANDING 2231 (label 3), WESTOWN_SALOON 5110 (label 1).
+
+That's all. It's from the ruleset and the engine code only, none of it tested in game. Upper vertical levels and the MAP/RMP contents (nodes, spawn points) weren't checked.

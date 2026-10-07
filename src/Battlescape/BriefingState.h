@@ -49,6 +49,8 @@ public:
 	~BriefingState();
 	/// Initialization
 	void init() override;
+	/// The AI test bench has nobody to read the briefing: closes itself.
+	void think() override;
 	/// Handler for clicking the Ok button.
 	void btnOkClick(Action *action);
 };

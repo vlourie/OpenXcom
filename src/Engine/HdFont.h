@@ -1,0 +1,104 @@
+#pragma once
+/*
+ * Copyright 2010-2026 OpenXcom Developers.
+ *
+ * This file is part of OpenXcom.
+ *
+ * OpenXcom is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * OpenXcom is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
+ */
+#include <SDL.h>
+#include <string>
+#include <unordered_map>
+#include <vector>
+#include "Unicode.h"
+
+namespace OpenXcom
+{
+
+/**
+ * A TrueType font for the HD interface (hd/UI/FontBig.ttf, FontSmall.ttf in a
+ * mod): glyphs rasterized with anti-aliasing at any pixel size, cached. The
+ * classic bitmap fonts still lay the text out (line breaks, alignment,
+ * everything the game measures); this only draws the lines.
+ */
+class HdFont
+{
+public:
+	struct Glyph
+	{
+		int w = 0, h = 0;          ///< bitmap size
+		int xoff = 0, yoff = 0;    ///< bitmap origin relative to the pen (x) and the baseline (y)
+		float advance = 0;         ///< pen advance
+		std::vector<Uint8> cov;    ///< coverage 0..255, w * h
+	};
+
+	HdFont();
+	~HdFont();
+	/// Loads a TTF/OTF from the mods' virtual file system; false when missing or not a font.
+	bool load(const std::string &path);
+	/// Loads the face that draws the code points the main one has no glyph for; same rules as load().
+	bool loadFallback(const std::string &path);
+	bool loaded() const { return _face.loaded; }
+	/// The face's own family name ("Exo 2"), Latin letters only; empty when the font does not say.
+	std::string familyName() const;
+	/// The pixel size (ascent + descent) at which capital letters are `capHeight` pixels tall.
+	float sizeForCapHeight(float capHeight) const;
+	/// How deep the face's tails ('р', 'у', 'p') hang below the baseline at a pixel size.
+	float descent(float px) const { return _face.descRatio * px; }
+	/// The glyph of a code point at a pixel size, horizontally condensed by `condense` (1 = as designed).
+	const Glyph &glyph(UCode c, float px, float condense = 1.0f);
+	/// The same glyph spread by `thickness` pixels in every direction: the outline drawn under a line of
+	/// text that sits on a picture, so the letters keep an edge of their own. Cached like the glyphs.
+	const Glyph &outline(UCode c, float px, float condense, int thickness);
+	/// Kerning between two code points at a pixel size (condensed).
+	float kern(UCode a, UCode b, float px, float condense = 1.0f);
+	/// Width of a string at a pixel size (condensed).
+	float measure(const UString &s, float px, float condense = 1.0f);
+	/// Forgets them all when they take more than `capBytes`. Only between frames: the glyphs are handed
+	/// out by reference and must stay put while a line is drawn. True when it did.
+	bool trimCache(size_t capBytes);
+
+private:
+	struct Key
+	{
+		UCode c;
+		int px;      ///< pixel size * 4
+		int cond;    ///< condense * 64
+		int t = 0;   ///< outline thickness in pixels (0 = the glyph itself)
+		bool operator==(const Key &o) const { return c == o.c && px == o.px && cond == o.cond && t == o.t; }
+	};
+	struct KeyHash
+	{
+		size_t operator()(const Key &k) const { return (size_t)k.c * 0x9E3779B9u ^ ((size_t)k.px << 16) ^ ((size_t)k.cond << 28) ^ ((size_t)k.t * 0x85EBCA6Bu); }
+	};
+	/// One loaded face: the bytes stb reads from, and how tall its capitals stand.
+	struct Face
+	{
+		std::vector<unsigned char> data;
+		void *info = nullptr;      ///< stbtt_fontinfo
+		bool loaded = false;
+		float capRatio = 0.7f;     ///< cap height / pixel size
+		float descRatio = 0.21f;   ///< how far the tails reach below the baseline / pixel size
+	};
+	static bool loadFace(Face &face, const std::string &path);
+	/// Says once in the log that a code point has no glyph anywhere, so a lost sign is not found by eye.
+	void warnMissing(UCode c);
+	Face _face;                ///< the main font
+	Face _fallback;            ///< what draws the code points the main font is missing
+	std::unordered_map<Key, Glyph, KeyHash> _cache;
+	size_t _measured = 0;      ///< the cache's size when trimCache last counted its bytes
+	std::vector<UCode> _warned;
+};
+
+}

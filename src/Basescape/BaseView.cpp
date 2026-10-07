@@ -30,7 +30,75 @@
 #include "../Engine/Timer.h"
 #include "../Engine/Options.h"
 #include <climits>
+#include <map>
 #include "../Mod/Texture.h"
+#include "../Engine/HdBase.h"
+#include "../Engine/HdCraftLights.h"
+#include "../Engine/HdSmooth.h"
+#include "../Engine/HdUi.h"
+#include "../Engine/HdUiArt.h"
+#include "../Engine/Screen.h"
+
+namespace
+{
+
+/// The base screen draws its HD pictures when the option is on and the screen has a world layer of 2x or more.
+bool hdBaseActive()
+{
+	OpenXcom::Screen *screen = OpenXcom::Screen::current();
+	return OpenXcom::Options::oxceHdPictures && screen && screen->isLayered() && screen->getWorldScale() >= 2;
+}
+
+/// A classic BASEBITS frame k times bigger (xBRZ, or nearest with the nearest HD interface), made once.
+const OpenXcom::HdFrame *classicHd(OpenXcom::SurfaceSet *texture, int index, int k, const SDL_Color *colors)
+{
+	static std::map<std::pair<int, int>, OpenXcom::HdFrame> cache;
+	static const SDL_Color *cachedColors = nullptr;
+	static OpenXcom::SurfaceSet *cachedTexture = nullptr;
+	if (colors != cachedColors || texture != cachedTexture)
+	{
+		cache.clear();
+		cachedColors = colors;
+		cachedTexture = texture;
+	}
+	const bool smooth = OpenXcom::HdUi::mode() != 1;
+	const std::pair<int, int> key(index, k * 2 + (smooth ? 1 : 0));
+	auto it = cache.find(key);
+	if (it != cache.end())
+	{
+		return it->second.empty() ? nullptr : &it->second;
+	}
+	OpenXcom::HdFrame &out = cache[key];
+	OpenXcom::Surface *frame = texture ? texture->getFrame(index) : nullptr;
+	if (!frame || !colors)
+	{
+		return nullptr;
+	}
+	const Uint8 *pixels = (const Uint8*)frame->getBuffer();
+	const int w = frame->getWidth(), h = frame->getHeight(), pitch = frame->getPitch();
+	if (smooth && OpenXcom::HdSmooth::smoothPalette(pixels, w, h, pitch, colors, k, out))
+	{
+		return &out;
+	}
+	out.width = w * k;
+	out.height = h * k;
+	out.pixels.assign((size_t)out.width * out.height, 0u);
+	for (int y = 0; y < out.height; ++y)
+	{
+		for (int x = 0; x < out.width; ++x)
+		{
+			const Uint8 i = pixels[(size_t)(y / k) * pitch + x / k];
+			if (i)
+			{
+				out.pixels[(size_t)y * out.width + x] = 0xFF000000u | ((Uint32)colors[i].r << 16) | ((Uint32)colors[i].g << 8) | colors[i].b;
+			}
+		}
+	}
+	out.buildSpans();
+	return &out;
+}
+
+}
 
 namespace OpenXcom
 {
@@ -47,7 +115,7 @@ BaseView::BaseView(int width, int height, int x, int y) : InteractiveSurface(wid
 	_gridX(0), _gridY(0), _selSizeX(0), _selSizeY(0),
 	_selector(0), _blink(true),
 	_redColor(0), _yellowColor(0), _greenColor(0), _highContrast(true),
-	_cellColor(0), _selectorColor(0)
+	_cellColor(0), _selectorColor(0), _animPhase(0), _animTick(0), _hdNextChange(0), _hdNumbersKept(false)
 {
 	// Clear grid
 	for (int i = 0; i < BASE_SIZE; ++i)
@@ -70,6 +138,36 @@ BaseView::~BaseView()
 {
 	delete _selector;
 	delete _timer;
+	for (auto* text : _hdNumbers)
+	{
+		delete text;
+	}
+}
+
+/**
+ * Is the HD interface going to draw the numbers over the facilities with its own fonts? Then they
+ * are kept out of the classic layer: it reaches the HD layer through the upscaler, which smears
+ * letters (R-022).
+ */
+bool BaseView::hdNumbers() const
+{
+	return HdUi::skin() && HdUi::instance().hasFonts();
+}
+
+/**
+ * A number over a facility, laid out: blitted into the classic layer and dropped, or kept for
+ * the HD interface to draw with its own fonts (blit).
+ */
+void BaseView::keepNumber(Text *text)
+{
+	if (_hdNumbersKept)
+	{
+		text->draw();   // lays the string out; hdDrawAt reads that layout
+		_hdNumbers.push_back(text);
+		return;
+	}
+	text->blit(this->getSurface());
+	delete text;
 }
 
 /**
@@ -439,6 +537,166 @@ void BaseView::updateNeighborFacilityBuildTime(BaseFacility* facility, BaseFacil
 }
 
 /**
+ * The frame whose HD picture stands for a tile of the facility: its graphic, or its shape
+ * when the graphic is not drawn (a big facility without spriteEnabled keeps it all in the shape).
+ */
+int BaseView::hdTileIndex(const BaseFacility *facility, int num)
+{
+	const RuleBaseFacility *rules = facility->getRules();
+	return (rules->getSpriteEnabled() ? rules->getSpriteFacility() : rules->getSpriteShape()) + num;
+}
+
+/**
+ * A facility with an HD picture of every one of its tiles is not drawn on the classic
+ * layer at all - neither its shape nor its graphic - so that the picture in the world
+ * layer under it is what is seen (see BaseView::blit).
+ * The pictures come with the facility animations: with them off the base is drawn from the
+ * classic sprites, as before the pictures were made. The option is read once per run, so it
+ * applies after a restart.
+ * @param facility The facility.
+ * @return True when the mod has a picture of every tile of the facility.
+ */
+bool BaseView::isHdFacility(const BaseFacility *facility) const
+{
+	static const bool pictures = Options::oxceHdBaseAnim;
+	if (!pictures || !facility || facility->getBuildTime() != 0)
+	{
+		return false;
+	}
+	const int tiles = facility->getRules()->getSizeX() * facility->getRules()->getSizeY();
+	for (int num = 0; num < tiles; ++num)
+	{
+		if (HdBase::phases(hdTileIndex(facility, num)) == 0)
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
+/**
+ * Draws the HD pictures of the facilities into the true-color world layer, where
+ * the holes left in the classic layer (see draw) show them.
+ */
+void BaseView::drawHd()
+{
+	if (!_visible || _hidden || !_base || !_texture || !hdBaseActive())
+	{
+		return;
+	}
+	Screen *screen = Screen::current();
+	SDL_Surface *world = screen ? screen->getWorldSurface() : 0;
+	const int k = screen ? screen->getWorldScale() : 1;
+	if (!world || k < 2)
+	{
+		return;
+	}
+	const int rock = _base->getGlobeTexture() ? _base->getGlobeTexture()->getBaseGridSprite() : 0;
+	// every phase of the base's tiles at once, before the first of them is drawn
+	std::vector<HdBase::Want> want;
+	for (const auto* fac : *_base->getFacilities())
+	{
+		if (!isHdFacility(fac))
+		{
+			continue;
+		}
+		const int tiles = fac->getRules()->getSizeX() * fac->getRules()->getSizeY();
+		for (int num = 0; num < tiles; ++num)
+		{
+			const int index = hdTileIndex(fac, num);
+			if (Surface *classic = _texture->getFrame(index))
+			{
+				want.push_back({ index, classic->getWidth(), classic->getHeight() });
+			}
+		}
+	}
+	HdBase::preload(want, k, Options::oxceHdBaseAnim);
+	// the pictures run on the display clock, never the game's: a still picture, a loop, a burst now and then
+	const Uint32 now = SDL_GetTicks();
+	Uint32 next = 0xFFFFFFFFu;
+	for (const auto* fac : *_base->getFacilities())
+	{
+		if (!isHdFacility(fac))
+		{
+			continue;
+		}
+		// every tile of a facility bursts at once, facilities one after another
+		const Uint32 seed = (Uint32)(fac->getX() * 7 + fac->getY() * 31 + 1);
+		int num = 0;
+		for (int y = fac->getY(); y < fac->getY() + fac->getRules()->getSizeY(); ++y)
+		{
+			for (int x = fac->getX(); x < fac->getX() + fac->getRules()->getSizeX(); ++x)
+			{
+				// the rock the classic layer leaves out under the picture (it shows through its holes)
+				if (const HdFrame *ground = classicHd(_texture, rock, k, getPalette()))
+				{
+					HdUiArt::drawFrame(world, *ground, (getX() + x * GRID_SIZE) * k, (getY() + y * GRID_SIZE) * k);
+				}
+				const int index = hdTileIndex(fac, num);
+				Surface *classic = _texture->getFrame(index);
+				if (classic)
+				{
+					next = std::min(next, HdBase::draw(world, index, (getX() + x * GRID_SIZE) * k, (getY() + y * GRID_SIZE) * k,
+						k, classic->getWidth(), classic->getHeight(), Options::oxceHdBaseAnim, now, seed));
+				}
+				++num;
+			}
+		}
+	}
+	// the craft over its HD hangar (a classic hangar keeps its craft on the classic layer)
+	for (const HdCraft &craft : _hdCrafts)
+	{
+		Surface *classic = _texture->getFrame(craft.index);
+		if (!craft.inWorld || !classic)
+		{
+			continue;
+		}
+		const HdFrame *picture = HdBase::phases(craft.index) > 0
+			? HdBase::frame(craft.index, Options::oxceHdCraftLights ? _animPhase : 0, k, classic->getWidth(), classic->getHeight())
+			: classicHd(_texture, craft.index, k, getPalette());
+		if (picture)
+		{
+			HdUiArt::drawFrame(world, *picture, (getX() + craft.x) * k, (getY() + craft.y) * k);
+		}
+		if (Options::oxceHdCraftLights && HdBase::phases(craft.index) > 1)
+		{
+			next = now;         // a craft picture with phases steps with _animPhase
+		}
+	}
+	_hdNextChange = next;
+}
+
+/**
+ * Draws the lights of the crafts into the world layer. Called after the classic layer has been
+ * mirrored there: a classic hangar and its craft come with the mirror and would cover them.
+ */
+void BaseView::drawHdLights()
+{
+	if (!_visible || _hidden || !_base || _hdCrafts.empty() || !hdBaseActive() || !Options::oxceHdCraftLights)
+	{
+		return;
+	}
+	Screen *screen = Screen::current();
+	SDL_Surface *world = screen ? screen->getWorldSurface() : 0;
+	const int k = screen ? screen->getWorldScale() : 1;
+	if (!world || k < 2)
+	{
+		return;
+	}
+	const Uint32 ticks = SDL_GetTicks();
+	for (const HdCraft &craft : _hdCrafts)
+	{
+		HdCraftLights::draw(world, craft.index, (getX() + craft.x) * k, (getY() + craft.y) * k, k,
+			(HdCraftLights::Status)craft.status, craft.seed, ticks);
+		if (craft.fuel >= 0)
+		{
+			HdCraftLights::drawFuel(world, (getX() + craft.fuelX) * k, (getY() + craft.fuelY) * k, k,
+				craft.fuel, craft.seed, ticks);
+		}
+	}
+}
+
+/**
  * Keeps the animation timers running.
  */
 void BaseView::think()
@@ -452,6 +710,22 @@ void BaseView::think()
 void BaseView::blink()
 {
 	_blink = !_blink;
+
+	// HD pictures of facilities change on their own clock (HdBase::draw, steps of 200 ms): the classic
+	// layer, which holds the craft and numbers over them, is drawn again only when one of them does
+	if (HdBase::animated() && hdBaseActive() && (Options::oxceHdBaseAnim || Options::oxceHdCraftLights))
+	{
+		if (++_animTick >= 2)
+		{
+			_animTick = 0;
+			++_animPhase;       // phases of the craft pictures
+		}
+		if (SDL_GetTicks() >= _hdNextChange)
+		{
+			_hdNextChange = 0xFFFFFFFFu;   // drawHd sets it again
+			_redraw = true;
+		}
+	}
 
 	if (_selSizeX > 0 && _selSizeY > 0)
 	{
@@ -488,11 +762,24 @@ void BaseView::draw()
 {
 	Surface::draw();
 
-	// Draw grid squares
+	const bool hdTiles = hdBaseActive();
+	_hdCrafts.clear();
+	for (auto* text : _hdNumbers)
+	{
+		delete text;
+	}
+	_hdNumbers.clear();
+	_hdNumbersKept = hdNumbers();
+
+	// Draw grid squares (under an HD facility the rock goes to the world layer with it, see drawHd)
 	for (int x = 0; x < BASE_SIZE; ++x)
 	{
 		for (int y = 0; y < BASE_SIZE; ++y)
 		{
+			if (hdTiles && isHdFacility(_facilities[x][y]))
+			{
+				continue;
+			}
 			Surface *frame = _texture->getFrame(_base->getGlobeTexture() ? _base->getGlobeTexture()->getBaseGridSprite() : 0);
 			int fx = (x * GRID_SIZE);
 			int fy = (y * GRID_SIZE);
@@ -504,7 +791,11 @@ void BaseView::draw()
 
 	for (const auto* fac : *_base->getFacilities())
 	{
-		// Draw facility shape
+		// Draw facility shape (an HD facility is drawn in the world layer instead, see blit)
+		if (hdTiles && isHdFacility(fac))
+		{
+			continue;
+		}
 		int num = 0;
 		for (int y = fac->getY(); y < fac->getY() + fac->getRules()->getSizeY(); ++y)
 		{
@@ -569,13 +860,14 @@ void BaseView::draw()
 	// TODO: make const in the future
 	for (auto* fac : *_base->getFacilities())
 	{
-		// Draw facility graphic
+		// Draw facility graphic (an HD facility is drawn in the world layer instead, see blit)
+		const bool hdFacility = hdTiles && isHdFacility(fac);
 		int num = 0;
 		for (int y = fac->getY(); y < fac->getY() + fac->getRules()->getSizeY(); ++y)
 		{
 			for (int x = fac->getX(); x < fac->getX() + fac->getRules()->getSizeX(); ++x)
 			{
-				if (fac->getRules()->getSpriteEnabled())
+				if (fac->getRules()->getSpriteEnabled() && !hdFacility)
 				{
 					Surface *frame = _texture->getFrame(fac->getRules()->getSpriteFacility() + num);
 					int fx = (x * GRID_SIZE);
@@ -595,10 +887,33 @@ void BaseView::draw()
 			{
 				if ((*craftIt)->getStatus() != "STR_OUT")
 				{
-					Surface *frame = _texture->getFrame((*craftIt)->getSkinSprite() + 33);
+					const int index = (*craftIt)->getSkinSprite() + 33;
+					Surface *frame = _texture->getFrame(index);
 					int fx = (fac->getX() * GRID_SIZE + (fac->getRules()->getSizeX() - 1) * GRID_SIZE / 2 + 2);
 					int fy = (fac->getY() * GRID_SIZE + (fac->getRules()->getSizeY() - 1) * GRID_SIZE / 2 - 4);
-					frame->blitNShade(this, fx, fy);
+					// an HD picture of the craft goes to the world layer over an HD hangar (a classic
+					// hangar comes with the mirror of this layer and would cover it); its lights go
+					// over everything (see drawHdLights)
+					const bool inWorld = hdFacility && HdBase::phases(index) > 0;
+					// every craft in an HD hangar: its fuel garland is drawn even without lights
+					if (hdTiles)
+					{
+						HdCraft craft;
+						craft.index = index;
+						craft.x = fx;
+						craft.y = fy;
+						craft.status = HdCraftLights::statusOf(*craftIt);
+						craft.seed = (Uint32)(fac->getX() * 7 + fac->getY() * 31);
+						craft.inWorld = inWorld;
+						// the garland along the bottom edge of the hangar, under the craft
+						craft.fuel = (*craftIt)->getFuelMax() > 0 ? (*craftIt)->getFuelPercentage() : -1;
+						craft.fuelX = fac->getX() * GRID_SIZE + fac->getRules()->getSizeX() * GRID_SIZE / 2;
+						craft.fuelY = (fac->getY() + fac->getRules()->getSizeY()) * GRID_SIZE - 7;						_hdCrafts.push_back(craft);
+					}
+					if (!inWorld)
+					{
+						frame->blitNShade(this, fx, fy);
+					}
 					fac->setCraftForDrawing(*craftIt);
 				}
 				++craftIt;
@@ -624,8 +939,7 @@ void BaseView::draw()
 			text->setAlign(ALIGN_CENTER);
 			text->setColor(_cellColor);
 			text->setText(ss.str());
-			text->blit(this->getSurface());
-			delete text;
+			keepNumber(text);
 		}
 
 		// Draw ammo indicator
@@ -646,8 +960,7 @@ void BaseView::draw()
 			std::ostringstream ss;
 			ss << fac->getAmmo() << "/" << fac->getRules()->getAmmoMax();
 			text->setText(ss.str());
-			text->blit(this->getSurface());
-			delete text;
+			keepNumber(text);
 		}
 	}
 }
@@ -658,7 +971,31 @@ void BaseView::draw()
  */
 void BaseView::blit(SDL_Surface *surface)
 {
+	// first: with the HD interface the classic layer is mirrored into the world layer by
+	// Surface::blit, and its connectors, numbers and craft must stay over the pictures
+	// (draw first: it decides which crafts go to the world layer)
+	if (_visible && !_hidden && _redraw)
+	{
+		draw();
+	}
+	drawHd();
 	Surface::blit(surface);
+	if (_hdNumbersKept && HdUi::isScreen(surface) && HdUi::active())
+	{
+		// the numbers lie on the facilities' pictures, light ones too: an outline, as on any HD picture,
+		// in place of the thin drop shadow (the classic big font has its dark edge drawn in)
+		HdUi::instance().notePicture(getX(), getY(), getWidth(), getHeight());
+		for (auto* text : _hdNumbers)
+		{
+			text->hdDrawAt(getX() + text->getX(), getY() + text->getY());
+		}
+	}
+	else if (_hdNumbersKept != hdNumbers())
+	{
+		// the option was switched while the base stood still: lay the numbers out the other way round
+		_redraw = true;
+	}
+	drawHdLights();
 	if (_selector != 0)
 	{
 		_selector->blit(surface);

@@ -1,0 +1,324 @@
+﻿#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""Вступление из твоих картинок и твоего голоса - без единой правки движка.
+
+  1. сцены берёт из tools/intro/scenes.json (его пишет make_script.py);
+  2. на каждую сцену берёт твою картинку и твой файл голоса;
+  3. длительность слайда ставит ПО ДЛИНЕ ГОЛОСА, а не на глаз;
+  4. склеивает голос в одну дорожку (музыка тише голоса) -> SOUND/intro_voice.ogg;
+  5. картинку кладёт дважды: 320x200 с палитрой - классическому слою,
+     ровно k x 320x200 - в hd/UI, HD-слой находит её по содержимому базовой;
+  6. пишет рулсет, который перекрывает катсцену intro.
+
+Что готовишь ты:
+    <вход>/photo/01.png ... 16.png   картинки, лучше 4:2.5 (1280x800 и крупнее)
+    <вход>/voice/01.wav ... 16.wav   голос на каждую сцену (wav, mp3, ogg - всё равно)
+    <вход>/music.ogg                 подложка, необязательно
+
+  python tools/intro/build_intro.py --in E:/intro --mod user/mods/hd
+"""
+
+import argparse
+import io
+import json
+import os
+import shutil
+import subprocess
+import sys
+
+ENC = "utf-8-sig"
+BASE_W, BASE_H = 320, 200
+# Приставка имён. НЕ "intro": у X-Piratez свои картинки вступления называются
+# Intro_06_CPAL и Intro_10, а HD-слой привязывает снимок к картинке ПО ИМЕНИ
+# (Mod.cpp, карта names). Совпали имена - и на шестом кадре показывалась чужая
+# картинка вместо нашей фотографии
+STEM = "voiceintro"
+PHOTO_COLORS = 239          # цвета картинки живут в индексах 1..239
+TEXT_BASE = 240             # подпись: движок рисует буквы в TEXT_BASE+1 .. +5
+TEXT_RAMP = [(255, 255, 255), (214, 214, 214), (160, 160, 160), (96, 96, 96), (16, 16, 16)]
+
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+
+
+def with_pillow():
+    """PIL живёт в окружении генерации арта - уходим туда, если в этом его нет."""
+    try:
+        import PIL  # noqa: F401
+        return
+    except ImportError:
+        pass
+    venv = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                        "..", "hdart", ".venv", "Scripts", "python.exe")
+    venv = os.path.normpath(venv)
+    if not os.path.exists(venv) or os.path.normcase(venv) == os.path.normcase(sys.executable):
+        raise SystemExit("нет Pillow. Поставь его или запусти через " + venv)
+    sys.exit(subprocess.call([venv, os.path.abspath(__file__)] + sys.argv[1:]))
+
+
+def need(tool):
+    path = shutil.which(tool)
+    if not path:
+        raise SystemExit("нет в PATH: " + tool)
+    return path
+
+
+def duration(ffprobe, path):
+    out = subprocess.run([ffprobe, "-v", "error", "-show_entries", "format=duration",
+                          "-of", "default=nw=1:nk=1", path],
+                         capture_output=True, text=True).stdout.strip()
+    return float(out) if out else 0.0
+
+
+def find_one(folder, number):
+    """Файл сцены по номеру, расширение любое.
+
+    Номер сверяем ЧИСЛОМ, а не строкой: 1.png, 01.png и "1 - причал.png" -
+    это одна и та же сцена. Сравнение строк ловило только 10..16 и молча
+    объявляло пропавшими первые девять."""
+    if not os.path.isdir(folder):
+        return None
+    for name in sorted(os.listdir(folder)):
+        base = name.rsplit(".", 1)[0].strip()
+        digits = ""
+        for ch in base:
+            if not ch.isdigit():
+                break
+            digits += ch
+        if digits and int(digits) == number:
+            return os.path.join(folder, name)
+    return None
+
+
+def make_slide(src, base_png, hd_png, k):
+    """Классический кадр 320x200 с палитрой и HD-кадр ровно в k раз больше.
+
+    Индекс 0 картинкой не занят: движок считает его прозрачным. Хвост палитры -
+    лесенка для подписи, иначе цвет подписи попал бы в цвет фотографии."""
+    from PIL import Image, ImageOps
+    import numpy as np
+
+    photo = Image.open(src).convert("RGB")
+    hd = ImageOps.fit(photo, (BASE_W * k, BASE_H * k), Image.LANCZOS)
+    hd.save(hd_png)
+
+    small = hd.resize((BASE_W, BASE_H), Image.LANCZOS)
+    q = small.quantize(colors=PHOTO_COLORS, method=Image.MEDIANCUT, dither=Image.FLOYDSTEINBERG)
+    idx = np.asarray(q, dtype=np.uint8) + 1
+
+    pal = [0, 0, 0] + q.getpalette()[: PHOTO_COLORS * 3]
+    pal += [0, 0, 0] * (TEXT_BASE - len(pal) // 3)      # промежуток и сам TEXT_BASE
+    for c in TEXT_RAMP:
+        pal += list(c)
+    pal += [0, 0, 0] * (256 - len(pal) // 3)
+
+    out = Image.frombytes("P", (BASE_W, BASE_H), idx.tobytes())
+    out.putpalette(pal)
+    out.save(base_png, optimize=True)
+
+
+def build_track(ffmpeg, parts, total, music, music_db, out):
+    """Голос по своим местам, музыка под ним - одна дорожка на всё вступление."""
+    cmd = [ffmpeg, "-y", "-v", "error"]
+    for _, f in parts:
+        cmd += ["-i", f]
+    if music:
+        # без -stream_loop: музыка играет один раз и кончается там, где кончается.
+        # Зацикленная противоречила бы правилу «последний кадр ждёт конца музыки»
+        cmd += ["-i", music]
+    chains, names = [], []
+    for i, (start, _) in enumerate(parts):
+        chains.append("[%d:a]aformat=sample_rates=44100:channel_layouts=stereo,"
+                      "adelay=%d:all=1[v%d]" % (i, int(start * 1000), i))
+        names.append("[v%d]" % i)
+    graph = ";".join(chains) + ";" + "".join(names) + \
+        "amix=inputs=%d:normalize=0:duration=longest[voice]" % len(names)
+    if music:
+        graph += (";[%d:a]aformat=sample_rates=44100:channel_layouts=stereo,"
+                  "volume=%.1fdB,atrim=0:%.2f[bed];"
+                  "[voice][bed]amix=inputs=2:normalize=0:duration=longest[out]"
+                  % (len(parts), music_db, total))
+        tap = "[out]"
+    else:
+        tap = "[voice]"
+    cmd += ["-filter_complex", graph, "-map", tap, "-t", "%.2f" % total,
+            "-c:a", "libvorbis", "-q:a", "5", out]
+    subprocess.run(cmd, check=True)
+
+
+def write_metadata(mod, mod_id, name):
+    """Своя metadata.yml, если её нет: без неё игра папку модом не считает.
+
+    Чужую не трогаем - в HD-моде она своя и сложнее. Спецификацию не пишем:
+    этот файл читает игра, а не PowerShell (R-001)."""
+    path = os.path.join(mod, "metadata.yml")
+    if os.path.exists(path):
+        return
+    mod_id = mod_id or os.path.basename(mod.rstrip("/" + os.sep))
+    os.makedirs(mod, exist_ok=True)
+    body = ["# Сделано tools/intro/build_intro.py",
+            'name: "%s"' % (name or mod_id),
+            "version: 0.1",
+            'author: "Vitali"',
+            'description: "Вступление: свои кадры под свой голос. Заменяет катсцену intro."',
+            'id: "%s"' % mod_id,
+            'master: "*"']
+    io.open(path, "w", encoding="utf-8", newline="\n").write("\n".join(body) + "\n")
+    print("мод:     ", path)
+
+
+def write_readme(mod):
+    """Инструкция по установке рядом с модом: без неё мод - папка без объяснений.
+
+    Образец лежит в репозитории и переписывается каждую сборку: править
+    надо его, а не копию в моде. Спецификация нужна: этот файл читает
+    человек блокнотом и PowerShell, а не игра (R-001)."""
+    src = os.path.join(os.path.dirname(os.path.abspath(__file__)), "УСТАНОВКА.txt")
+    if not os.path.exists(src):
+        return
+    dst = os.path.join(mod, "УСТАНОВКА.txt")
+    text = io.open(src, encoding=ENC).read()
+    io.open(dst, "w", encoding=ENC, newline="\r\n").write(text)
+    print("инструкция:", dst)
+
+
+def main():
+    p = argparse.ArgumentParser()
+    p.add_argument("--in", dest="src", required=True, help="папка с photo/ и voice/")
+    p.add_argument("--mod", default="user/mods/hd", help="куда класть - наш HD-мод")
+    p.add_argument("--id", default="", help="id самостоятельного мода (по умолчанию имя папки)")
+    p.add_argument("--name", default="", help="как мод называется в списке модов")
+    p.add_argument("--scenes", default="tools/intro/scenes.json", help="сцены от make_script.py")
+    p.add_argument("--scale", type=int, default=4, help="во сколько раз HD-кадр больше базы")
+    p.add_argument("--pause", type=float, default=1.2, help="тишина после голоса, секунд")
+    p.add_argument("--first", type=float, default=6.0, help="сколько держать первый кадр")
+    p.add_argument("--music-db", type=float, default=-16.0, help="насколько тише голоса подложка")
+    p.add_argument("--no-captions", action="store_true", help="без подписей, только голос")
+    p.add_argument("--dry", action="store_true", help="только посчитать, ничего не писать")
+    args = p.parse_args()
+
+    ffmpeg, ffprobe = need("ffmpeg"), need("ffprobe")
+    scenes = json.loads(io.open(args.scenes, encoding=ENC).read())
+
+    plan, missing = [], []
+    for i, sc in enumerate(scenes, 1):
+        photo = find_one(os.path.join(args.src, "photo"), i)
+        voice = find_one(os.path.join(args.src, "voice"), i)
+        if not photo:
+            missing.append("photo/%d.*" % i)
+        secs = duration(ffprobe, voice) if voice else 0.0
+        item = {"n": i, "photo": photo, "voice": voice, "secs": secs,
+                "caption": sc.get("caption", ""), "text": sc.get("text", "")}
+        for key in ("pos", "size", "align", "valign"):
+            if key in sc:
+                item[key] = sc[key]
+        plan.append(item)
+    if missing:
+        raise SystemExit("нет файлов: " + ", ".join(missing))
+
+    music = os.path.join(args.src, "music.ogg")
+    music_secs = duration(ffprobe, music) if os.path.exists(music) else 0.0
+
+    # Первый кадр держится назначенное время: на нём голоса нет, он заставка.
+    # Средние - по длине своей реплики плюс пауза. Последний ждёт конца музыки,
+    # чтобы показ и дорожка кончились вместе и игра ушла в меню не под обрыв
+    for i, s in enumerate(plan):
+        if i == 0:
+            s["hold"] = int(round(args.first))
+        elif s["voice"]:
+            s["hold"] = int(round(max(3.0, s["secs"] + args.pause)))
+        else:
+            s["hold"] = 4
+    head = sum(s["hold"] for s in plan[:-1])
+    if music_secs > 0 and len(plan) > 1:
+        # своя реплика последнего кадра важнее: недоговорить хуже, чем помолчать
+        tail = max(3, int(round(music_secs)) - head, plan[-1]["hold"])
+        if head + tail > int(round(music_secs)):
+            print("музыка кончится на %d с раньше показа - последние секунды пойдут без неё"
+                  % (head + tail - int(round(music_secs))))
+        plan[-1]["hold"] = tail
+
+    total = sum(s["hold"] for s in plan)
+    print("%-3s %-24s %7s  %s" % ("#", "картинка", "секунд", "голос"))
+    for s in plan:
+        print("%-3d %-24s %7d  %s" % (s["n"], os.path.basename(s["photo"]), s["hold"],
+                                      os.path.basename(s["voice"]) if s["voice"] else "-"))
+    print("всего %d:%02d" % (total // 60, total % 60), end="")
+    if music_secs > 0:
+        print(", музыка %d:%02d, последний кадр %d с"
+              % (int(music_secs) // 60, int(music_secs) % 60, plan[-1]["hold"]))
+    else:
+        print(", музыки нет")
+    if args.dry:
+        return
+
+    mod = os.path.abspath(args.mod)
+    write_metadata(mod, args.id, args.name)
+    write_readme(mod)
+    res = os.path.join(mod, "Resources", "Intro")
+    hdui = os.path.join(mod, "hd", "UI")
+    sound = os.path.join(mod, "SOUND")
+    rules = os.path.join(mod, "Ruleset")
+    for d in (res, hdui, sound, rules):
+        os.makedirs(d, exist_ok=True)
+
+    for s in plan:
+        stem = "%s_%02d" % (STEM, s["n"])
+        make_slide(s["photo"], os.path.join(res, stem + ".png"),
+                   os.path.join(hdui, stem + ".png"), args.scale)
+
+    parts, at = [], 0
+    for s in plan:
+        if s["voice"]:
+            parts.append((float(at), s["voice"]))
+        at += s["hold"]
+    track = os.path.join(sound, "intro_voice.ogg")
+    if parts or music_secs > 0:
+        build_track(ffmpeg, parts, float(total), music if music_secs > 0 else "",
+                    args.music_db, track)
+
+    lines = ["# Сделано tools/intro/build_intro.py - руками не править", "",
+             "extraSprites:"]
+    for s in plan:
+        stem = "%s_%02d" % (STEM, s["n"])
+        # _CPAL в имени: без него движок кладёт на картинку палитру состояния
+        # (Mod::loadExtraSprite), и HD-снимок сверяется с чужими цветами
+        lines += ["  - type: %s_CPAL" % stem.upper(),
+                  "    singleImage: true",
+                  "    width: %d" % BASE_W,
+                  "    height: %d" % BASE_H,
+                  "    files:",
+                  "      0: Resources/Intro/%s.png" % stem]
+    lines += ["", "musics:", "  - type: INTRO_VOICE", "",
+              "cutscenes:",
+              "  # без delete слайды не заменяются, а ДОПИСЫВАЮТСЯ к чужим (RuleVideo::load)",
+              "  - delete: intro",
+              "  - type: intro", "    slideshow:",
+              "      transitionSeconds: 8",
+              "      musicId: INTRO_VOICE",
+              "      slides:"]
+    for s in plan:
+        lines.append("        - imagePath: Resources/Intro/%s_%02d.png" % (STEM, s["n"]))
+        lines.append("          transitionSeconds: %d" % s["hold"])
+        if s["caption"] and not args.no_captions:
+            # Рамка - та же, что в оригинальной катсцене: реплики длинные, и рамки
+            # под них выверены под сами картинки, где-то с местом, оставленным под
+            # текст. Своя рамка 300x46 обрезала половину текста. Цвет остаётся НАШ:
+            # индекс из чужой палитры в нашей означает другой цвет
+            pos = s.get("pos") or [10, 148]
+            size = s.get("size") or [300, 46]
+            lines += ["          caption: %s" % s["caption"],
+                      "          captionPos: [%d, %d]" % (pos[0], pos[1]),
+                      "          captionSize: [%d, %d]" % (size[0], size[1]),
+                      "          captionColor: %d" % TEXT_BASE,
+                      "          captionAlign: %d" % s.get("align", 1),
+                      "          captionVerticalAlign: %d" % s.get("valign", 0)]
+    rul = os.path.join(rules, "intro.rul")
+    io.open(rul, "w", encoding="utf-8", newline="\n").write("\n".join(lines) + "\n")
+    print("рулсет: ", rul)
+    print("дорожка:", track if parts else "голоса нет - дорожку не делал")
+
+
+if __name__ == "__main__":
+    with_pillow()
+    main()

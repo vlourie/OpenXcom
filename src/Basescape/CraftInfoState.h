@@ -17,12 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <map>
+#include <vector>
 #include "../Engine/State.h"
 #include "../Mod/RuleCraft.h"
 
 namespace OpenXcom
 {
 
+class Mod;
+class RuleCraftWeapon;
 class Base;
 class InteractiveSurface;
 class TextButton;
@@ -31,6 +35,24 @@ class Text;
 class TextEdit;
 class Surface;
 class Craft;
+
+/**
+ * OXCE-HD: the craft screen's pictures of the weapons and equipment on a craft,
+ * for the rows of a list (Options::oxceCraftWeaponIcons).
+ */
+class CraftWeaponIcons
+{
+	Mod *_mod;
+	SDL_Color _palette[256];
+	Uint8 _remap[256];
+	std::map<const RuleCraftWeapon*, Surface*> _icons;
+public:
+	/// The pictures for a list drawn in `palette`.
+	CraftWeaponIcons(Mod *mod, const SDL_Color *palette);
+	~CraftWeaponIcons();
+	/// The pictures of the craft's installed weapons in slot order (owned here).
+	std::vector<Surface*> of(Craft *craft);
+};
 
 /**
  * Craft Info screen that shows all the
@@ -60,6 +82,8 @@ public:
 	~CraftInfoState();
 	/// Updates the craft info.
 	void init() override;
+	/// Draws the state, then the lights of the craft picture in the HD world layer.
+	void blit() override;
 	/// Handler for clicking the OK button.
 	void btnOkClick(Action *action);
 	/// Handler for clicking the Ufopedia button.

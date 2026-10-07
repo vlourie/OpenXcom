@@ -1,0 +1,359 @@
+<title>Звуковая проба</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Russo+One&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+:root {
+  --bg: #eef0ec;
+  --surface: #f8f9f6;
+  --raised: #ffffff;
+  --ink: #1b221f;
+  --muted: #5d6862;
+  --line: #d3d9d3;
+  --accent: #a8701a;
+  --accent-ink: #ffffff;
+  --m0: #2c7a74;
+  --m1: #7b4d8f;
+  --m2: #b3542d;
+  --orig: #3c4843;
+  --warn: #9a6a00;
+  --warn-bg: #fbf0d4;
+  --bad: #b02a2a;
+  --bad-bg: #fbe1de;
+  --wave: #9aa69f;
+  --wave-on: #1b221f;
+  --display: "Russo One", "Arial Black", Impact, sans-serif;
+  --body: "IBM Plex Sans", "Segoe UI", Roboto, Arial, sans-serif;
+  --mono: "JetBrains Mono", Consolas, "Courier New", monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --bg: #111513;
+    --surface: #181e1b;
+    --raised: #1f2622;
+    --ink: #e4e9e5;
+    --muted: #97a39c;
+    --line: #2d3631;
+    --accent: #d9a441;
+    --accent-ink: #1a1405;
+    --m0: #5cb8b0;
+    --m1: #b58ac8;
+    --m2: #e08257;
+    --orig: #66746d;
+    --warn: #e6b94a;
+    --warn-bg: #3a2f12;
+    --bad: #f07b70;
+    --bad-bg: #3d1d1a;
+    --wave: #52605a;
+    --wave-on: #e4e9e5;
+  }
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #111513;
+  --surface: #181e1b;
+  --raised: #1f2622;
+  --ink: #e4e9e5;
+  --muted: #97a39c;
+  --line: #2d3631;
+  --accent: #d9a441;
+  --accent-ink: #1a1405;
+  --m0: #5cb8b0;
+  --m1: #b58ac8;
+  --m2: #e08257;
+  --orig: #66746d;
+  --warn: #e6b94a;
+  --warn-bg: #3a2f12;
+  --bad: #f07b70;
+  --bad-bg: #3d1d1a;
+  --wave: #52605a;
+  --wave-on: #e4e9e5;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font: 15px/1.5 var(--body);
+  padding-inline: 16px;
+  padding-block: 24px 64px;
+}
+.wrap { max-width: 1180px; margin: 0 auto; display: grid; gap: 28px; }
+h1 { font: 30px/1.1 var(--display); letter-spacing: .02em; margin: 0; text-wrap: balance; }
+h2 { font: 19px/1.2 var(--display); letter-spacing: .02em; margin: 0; text-wrap: balance; }
+.lede { max-width: 68ch; color: var(--muted); margin: 8px 0 0; }
+.lede b { color: var(--ink); font-weight: 600; }
+.mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+.status {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+  padding: 10px 14px; display: flex; flex-wrap: wrap; align-items: center; gap: 10px 18px;
+}
+.status .count { font: 17px var(--display); }
+.tally { display: flex; flex-wrap: wrap; gap: 6px 14px; }
+.tally span { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; }
+.dot { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+.save { margin-left: auto; font-size: 13px; color: var(--muted); }
+.save.off { color: var(--warn); }
+button.copy {
+  font: 600 13px var(--body); color: var(--ink); background: var(--raised);
+  border: 1px solid var(--line); border-radius: 6px; padding: 6px 10px; cursor: pointer;
+}
+
+.models { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; }
+.model { border-top: 3px solid var(--c); padding-top: 8px; display: grid; gap: 2px; font-size: 13px; color: var(--muted); }
+.model b { color: var(--ink); font-size: 15px; font-weight: 600; }
+
+.task { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 16px; display: grid; gap: 14px; }
+.task.done { border-color: var(--accent); }
+.thead { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; }
+.thead .prompt { flex-basis: 100%; font-size: 13px; color: var(--muted); font-family: var(--mono); }
+.thead .len { font-size: 13px; color: var(--muted); }
+.cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; }
+.col { display: grid; gap: 8px; align-content: start; }
+.col h3 { margin: 0; font: 600 13px var(--body); letter-spacing: .06em; text-transform: uppercase; color: var(--c); }
+
+.clip {
+  display: grid; grid-template-columns: auto 1fr auto; gap: 4px 10px; align-items: center;
+  background: var(--raised); border: 1px solid var(--line); border-radius: 8px; padding: 8px;
+}
+.clip.picked { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+.play {
+  width: 36px; height: 36px; border-radius: 50%; border: 0; cursor: pointer;
+  background: var(--c); color: #fff; display: grid; place-items: center;
+}
+.play svg { width: 14px; height: 14px; fill: currentColor; }
+.clip.playing .play { outline: 2px solid var(--ink); outline-offset: 2px; }
+.wave { width: 100%; height: 34px; display: block; }
+.wave rect { fill: var(--wave); }
+.clip.playing .wave rect { fill: var(--wave-on); }
+.wave line { stroke: var(--line); }
+.pick {
+  font: 600 12px var(--body); border: 1px solid var(--line); background: transparent; color: var(--ink);
+  border-radius: 6px; padding: 5px 8px; cursor: pointer; white-space: nowrap;
+}
+.clip.picked .pick { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+.clip.orig { background: transparent; border-style: dashed; }
+.olabel { font: 600 12px var(--body); color: var(--muted); white-space: nowrap; }
+.meta { grid-column: 2 / 4; display: flex; flex-wrap: wrap; gap: 4px 8px; font-size: 12px; color: var(--muted); }
+.chip { font-family: var(--mono); font-size: 11px; padding: 1px 6px; border-radius: 4px; background: var(--bg); }
+.chip.warn { background: var(--warn-bg); color: var(--warn); }
+.chip.bad { background: var(--bad-bg); color: var(--bad); }
+
+.tfoot { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; }
+.tfoot label { display: inline-flex; gap: 6px; align-items: center; font-size: 14px; cursor: pointer; }
+.tfoot input[type=text] {
+  flex: 1 1 260px; min-width: 0; font: 14px var(--body); color: var(--ink); background: var(--raised);
+  border: 1px solid var(--line); border-radius: 6px; padding: 7px 10px;
+}
+button:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.note { font-size: 13px; color: var(--muted); max-width: 68ch; }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Звуковая проба</h1>
+    <p class="lede">Три модели, десять звуков боя, по три варианта на каждый. Слева в каждом звуке —
+      <b>то, что игра играет на этом событии сейчас</b>; длина заказа взята от него, а не на глаз.
+      Послушай и отметь <b>лучший вариант на каждый звук</b>, или «ничего не годится». Выбор сохраняется сам,
+      я его прочитаю. Это сырые ответы моделей: тишину в начале, стерео и громкость обработка выравнивает
+      автоматически, слушать надо сам звук. Огибающие внутри одного звука нарисованы в общем масштабе времени:
+      вариант длиннее оригинала виден сразу.</p>
+  </header>
+
+  <div class="status" id="status"></div>
+  <div class="models" id="models"></div>
+  <main class="wrap" id="tasks"></main>
+  <p class="note">Метки: <span class="chip warn">тишина 360 мс</span> звук начинается поздно, в игре отстанет от кадра, срежется;
+    <span class="chip warn">пик 0 dB</span> упирается в потолок, возможен хрип; <span class="chip bad">пусто</span> модель выдала почти тишину.</p>
+</div>
+
+<script>
+const DATA = /*DATA*/null;
+const COLORS = ["var(--m0)", "var(--m1)", "var(--m2)"];
+const PLAY = '<svg viewBox="0 0 14 14" aria-hidden="true"><path d="M3 1.5v11l9-5.5z"/></svg>';
+const STOP = '<svg viewBox="0 0 14 14" aria-hidden="true"><path d="M2.5 2.5h9v9h-9z"/></svg>';
+const picks = {};
+let db = null, dbState = "wait";
+const audio = new Audio();
+let playingEl = null;
+
+const esc = s => String(s).replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
+const modelById = id => DATA.models.find(m => m.id === id);
+const colorOf = id => COLORS[DATA.models.findIndex(m => m.id === id)] || "var(--muted)";
+
+// span - число столбиков самого длинного звука в задании: все огибающие задания в одном времени
+function wave(env, span) {
+  const n = Math.max(span || env.length, env.length), w = 2;
+  let bars = "";
+  env.forEach((v, i) => {
+    const h = Math.max(0.6, v * 32);
+    bars += `<rect x="${i * w * 1.5}" y="${17 - h / 2}" width="${w}" height="${h}"/>`;
+  });
+  return `<svg class="wave" viewBox="0 0 ${n * w * 1.5} 34" preserveAspectRatio="none" aria-hidden="true"><line x1="0" y1="17" x2="${env.length * w * 1.5}" y2="17"/>${bars}</svg>`;
+}
+
+const sec = s => `${Number(s).toFixed(2)} с`;
+
+function chips(c) {
+  const out = [];
+  if (c.rms < -60) out.push('<span class="chip bad">пусто</span>');
+  if (c.lead > 50) out.push(`<span class="chip warn">тишина ${c.lead} мс</span>`);
+  if (c.peak > -0.1 && c.rms >= -60) out.push('<span class="chip warn">пик 0 dB</span>');
+  out.push(`<span class="chip">${sec(c.dur)}</span>`);
+  out.push(`<span class="chip">${c.rms} dB</span>`);
+  return out.join("");
+}
+
+function renderModels() {
+  document.getElementById("models").innerHTML = DATA.models.map((m, i) =>
+    `<div class="model" style="--c:${COLORS[i]}"><b>${esc(m.title)}</b>
+      <span class="mono">${m.files} файлов за ${m.gen} с · ${m.steps} шагов · CFG ${m.cfg}</span>
+      <span>${esc(m.license)}</span></div>`).join("");
+}
+
+function renderTasks() {
+  document.getElementById("tasks").innerHTML = DATA.tasks.map(t => {
+    const own = Object.keys(DATA.clips).filter(k => k.split("/")[1] === t.id).map(k => DATA.clips[k]);
+    const span = Math.max(...own.map(c => c.env.length));
+    const origs = (t.refs || []).map(n => DATA.clips[`orig/${t.id}/${n}`]).filter(Boolean);
+    const orig = origs.map((c, n) => `<div class="clip orig" style="--c:var(--orig)">
+          <button class="play" data-src="${esc(c.file)}" aria-label="Слушать оригинал: ${esc(c.label)}">${PLAY}</button>
+          ${wave(c.env, span)}
+          <span class="olabel">оригинал</span>
+          <div class="meta"><span>${esc(c.label)}</span>${chips(c)}</div></div>`).join("");
+    const cols = (orig ? `<div class="col" style="--c:var(--orig)"><h3>В игре сейчас</h3>${orig}</div>` : "") +
+      DATA.models.map((m, i) => {
+      let clips = "";
+      for (let v = 1; v <= DATA.variants; v++) {
+        const key = `${m.id}/${t.id}/${v}`, c = DATA.clips[key];
+        if (!c) continue;
+        clips += `<div class="clip" data-key="${key}" data-task="${t.id}" style="--c:${COLORS[i]}">
+          <button class="play" data-src="${esc(c.file)}" aria-label="Слушать ${esc(m.title)}, вариант ${v}">${PLAY}</button>
+          ${wave(c.env, span)}
+          <button class="pick" data-task="${t.id}" data-model="${m.id}" data-v="${v}">вариант ${v}</button>
+          <div class="meta">${chips(c)}</div></div>`;
+      }
+      return `<div class="col" style="--c:${COLORS[i]}"><h3>${esc(m.title)}</h3>${clips}</div>`;
+    }).join("");
+    const inGame = origs.length ? ` · в игре ${origs.map(c => sec(c.dur)).join(", ")}` : "";
+    return `<section class="task" id="t-${t.id}">
+      <div class="thead"><h2>${esc(t.ru)}</h2><span class="len mono">заказано ${t.dur} с${inGame}</span>
+        <span class="prompt">${esc(t.prompt)}</span></div>
+      <div class="cols">${cols}</div>
+      <div class="tfoot">
+        <label><input type="checkbox" id="none-${t.id}" data-none="${t.id}"> ничего не годится</label>
+        <input type="text" id="note-${t.id}" data-note="${t.id}" placeholder="Заметка: чего не хватает, что лишнее">
+      </div></section>`;
+  }).join("");
+}
+
+function applyPicks() {
+  document.querySelectorAll(".clip[data-key]").forEach(el => {
+    const p = picks[el.dataset.task], [mid, , v] = el.dataset.key.split("/");
+    el.classList.toggle("picked", !!p && !p.none && p.model === mid && String(p.variant) === v);
+  });
+  DATA.tasks.forEach(t => {
+    const p = picks[t.id] || {};
+    const sec = document.getElementById("t-" + t.id);
+    sec.classList.toggle("done", !!(p.model || p.none));
+    document.getElementById("none-" + t.id).checked = !!p.none;
+    const note = document.getElementById("note-" + t.id);
+    if (document.activeElement !== note) note.value = p.note || "";
+  });
+  renderStatus();
+}
+
+function renderStatus() {
+  const done = DATA.tasks.filter(t => picks[t.id] && (picks[t.id].model || picks[t.id].none)).length;
+  const tally = DATA.models.map((m, i) => {
+    const n = DATA.tasks.filter(t => picks[t.id] && !picks[t.id].none && picks[t.id].model === m.id).length;
+    return `<span><i class="dot" style="background:${COLORS[i]}"></i>${esc(m.title)} <b class="mono">${n}</b></span>`;
+  }).join("");
+  const none = DATA.tasks.filter(t => picks[t.id] && picks[t.id].none).length;
+  const save = dbState === "on" ? '<span class="save">выбор сохраняется</span>'
+    : dbState === "off" ? '<span class="save off">сохранение недоступно: скопируй итог и пришли в чат</span>'
+    : '<span class="save">подключаю сохранение…</span>';
+  document.getElementById("status").innerHTML =
+    `<span class="count mono">${done} / ${DATA.tasks.length}</span><div class="tally">${tally}
+     <span>не годится <b class="mono">${none}</b></span></div>${save}
+     <button class="copy" id="copy">Скопировать итог</button>`;
+}
+
+function summary() {
+  return DATA.tasks.map(t => {
+    const p = picks[t.id] || {};
+    const what = p.none ? "ничего не годится" : p.model ? `${modelById(p.model).title}, вариант ${p.variant}` : "не выбрано";
+    return `${t.ru}: ${what}${p.note ? " (" + p.note + ")" : ""}`;
+  }).join("\n");
+}
+
+async function save(task, patch) {
+  const next = Object.assign({task}, picks[task] || {}, patch, {at: new Date().toISOString()});
+  picks[task] = next;
+  applyPicks();
+  if (!db) return;
+  try { await db.doc("picks/" + task).set(next); }
+  catch (e) { dbState = "off"; renderStatus(); }
+}
+
+function stopAudio() {
+  audio.pause();
+  if (playingEl) { playingEl.classList.remove("playing"); playingEl.querySelector(".play").innerHTML = PLAY; }
+  playingEl = null;
+}
+
+document.addEventListener("click", e => {
+  const play = e.target.closest(".play");
+  if (play) {
+    const clip = play.closest(".clip");
+    if (playingEl === clip) { stopAudio(); return; }
+    stopAudio();
+    audio.src = play.dataset.src;
+    audio.currentTime = 0;
+    audio.play().catch(() => {});
+    playingEl = clip; clip.classList.add("playing"); play.innerHTML = STOP;
+    return;
+  }
+  const pick = e.target.closest(".pick");
+  if (pick) {
+    const t = pick.dataset.task, p = picks[t] || {};
+    const same = p.model === pick.dataset.model && String(p.variant) === pick.dataset.v && !p.none;
+    save(t, same ? {model: null, variant: null} : {model: pick.dataset.model, variant: Number(pick.dataset.v), none: false});
+    return;
+  }
+  if (e.target.id === "copy") {
+    const text = summary();
+    navigator.clipboard.writeText(text).then(() => { e.target.textContent = "Скопировано"; })
+      .catch(() => { e.target.textContent = "Не вышло, выдели текст ниже"; showSummary(text); });
+  }
+});
+audio.addEventListener("ended", stopAudio);
+
+document.addEventListener("change", e => {
+  const none = e.target.dataset && e.target.dataset.none;
+  if (none) save(none, e.target.checked ? {none: true, model: null, variant: null} : {none: false});
+  const note = e.target.dataset && e.target.dataset.note;
+  if (note !== undefined && note) save(note, {note: e.target.value.trim()});
+});
+
+function showSummary(text) {
+  let pre = document.getElementById("sum");
+  if (!pre) { pre = document.createElement("pre"); pre.id = "sum"; pre.className = "note mono"; document.querySelector(".wrap").appendChild(pre); }
+  pre.textContent = text;
+}
+
+renderModels();
+renderTasks();
+applyPicks();
+
+(async () => {
+  try { db = await window.claude?.use?.("db"); } catch (e) { db = null; }
+  if (!db) { dbState = "off"; renderStatus(); return; }
+  dbState = "on"; renderStatus();
+  db.collection("picks").onSnapshot(snap => {
+    snap.docs.forEach(d => { if (d.exists) picks[d.id] = d.data(); });
+    applyPicks();
+  }, () => { dbState = "off"; renderStatus(); });
+})();
+</script>

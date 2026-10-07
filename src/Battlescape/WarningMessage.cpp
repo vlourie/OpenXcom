@@ -22,6 +22,7 @@
 #include "../fmath.h"
 #include "../Engine/Timer.h"
 #include "../Interface/Text.h"
+#include "../Engine/HdUi.h"
 
 namespace OpenXcom
 {
@@ -33,7 +34,7 @@ namespace OpenXcom
  * @param x X position in pixels.
  * @param y Y position in pixels.
  */
-WarningMessage::WarningMessage(int width, int height, int x, int y) : Surface(width, height, x, y), _color(0), _fade(0)
+WarningMessage::WarningMessage(int width, int height, int x, int y) : Surface(width, height, x, y), _color(0), _fade(0), _textKept(false)
 {
 	_text = new Text(width, height, 0, 0);
 	_text->setHighContrast(true);
@@ -143,7 +144,29 @@ void WarningMessage::draw()
 {
 	Surface::draw();
 	drawRect(0, 0, getWidth(), getHeight(), _color + Clamp(24 - _fade, 0, 12));
-	_text->blit(this->getSurface());
+	// with the HD interface's fonts the text stays out of the box: the box reaches the HD layer through
+	// the upscaler, which smears letters (R-022); hdMirror draws it over the box instead
+	_textKept = HdUi::skin() && HdUi::instance().hasFonts();
+	if (_textKept)
+	{
+		_text->draw();   // lays the string out; hdDrawAt reads that layout
+	}
+	else
+	{
+		_text->blit(this->getSurface());
+	}
+}
+
+/**
+ * The box mirrored as any surface, then the text with the TrueType fonts where the classic layout put it.
+ */
+void WarningMessage::hdMirror()
+{
+	Surface::hdMirror();
+	if (_textKept)
+	{
+		_text->hdDrawAt(getX(), getY());
+	}
 }
 
 }

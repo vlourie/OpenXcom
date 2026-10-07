@@ -121,7 +121,7 @@ CraftEquipmentState::CraftEquipmentState(Base *base, size_t craft) :
 	_btnOk->setText(tr("STR_OK"));
 	_btnOk->onMouseClick((ActionHandler)&CraftEquipmentState::btnOkClick);
 	_btnOk->onKeyboardPress((ActionHandler)&CraftEquipmentState::btnOkClick, Options::keyCancel);
-	_btnOk->onKeyboardPress((ActionHandler)&CraftEquipmentState::btnClearClick, Options::keyRemoveEquipmentFromCraft);
+	_btnOk->onKeyboardPress((ActionHandler)&CraftEquipmentState::btnClearOrLoadAll, Options::keyRemoveEquipmentFromCraft);
 	_btnOk->onKeyboardPress((ActionHandler)&CraftEquipmentState::btnLoadClick, Options::keyCraftLoadoutLoad);
 	_btnOk->onKeyboardPress((ActionHandler)&CraftEquipmentState::btnSaveClick, Options::keyCraftLoadoutSave);
 
@@ -201,6 +201,7 @@ CraftEquipmentState::CraftEquipmentState(Base *base, size_t craft) :
 		_categoryStrings.push_back("STR_UNASSIGNED");
 	}
 	_categoryStrings.push_back("STR_NOT_EQUIPPED");
+	_categoryStrings.push_back("STR_NOT_PURCHASABLE");
 
 	_cbxFilterBy->setOptions(_categoryStrings, true);
 	_cbxFilterBy->setSelected(0);
@@ -218,6 +219,7 @@ CraftEquipmentState::CraftEquipmentState(Base *base, size_t craft) :
 	_lstEquipment->onRightArrowRelease((ActionHandler)&CraftEquipmentState::lstEquipmentRightArrowRelease);
 	_lstEquipment->onRightArrowClick((ActionHandler)&CraftEquipmentState::lstEquipmentRightArrowClick);
 	_lstEquipment->onMousePress((ActionHandler)&CraftEquipmentState::lstEquipmentMousePress);
+	ItemCountTooltipMixin::BindToSurface(_lstEquipment);
 
 	_btnQuickSearch->setText(""); // redraw
 	_btnQuickSearch->onEnter((ActionHandler)&CraftEquipmentState::btnQuickSearchApply);
@@ -337,6 +339,7 @@ void CraftEquipmentState::initList()
 	bool categoryUnassigned = (selectedCategory == "STR_UNASSIGNED");
 	bool categoryEquipped = (selectedCategory == "STR_EQUIPPED");
 	bool categoryNotEquipped = (selectedCategory == "STR_NOT_EQUIPPED");
+	bool categoryNotPurchasable = (selectedCategory == "STR_NOT_PURCHASABLE");
 	bool shareAmmoCategories = _game->getMod()->getShareAmmoCategories();
 
 	Craft *c = _base->getCrafts()->at(_craft);
@@ -400,6 +403,13 @@ void CraftEquipmentState::initList()
 				else if (categoryNotEquipped)
 				{
 					if (cQty > 0)
+					{
+						continue;
+					}
+				}
+				else if (categoryNotPurchasable)
+				{
+					if (rule->getBuyCost() != 0)
 					{
 						continue;
 					}
@@ -520,7 +530,7 @@ void CraftEquipmentState::initList()
  */
 void CraftEquipmentState::think()
 {
-	State::think();
+	ItemCountTooltipMixin::think();
 
 	_timerLeft->think(this, 0);
 	_timerRight->think(this, 0);
@@ -937,6 +947,43 @@ void CraftEquipmentState::moveRightByValue(int change, bool suppressErrors)
 }
 
 /**
+ * Moves all of the listed items to the craft, as far as space allows.
+ * Respects the current filter and quick search. Vehicles are skipped:
+ * they take crew seats and are loaded one by one on purpose.
+ */
+void CraftEquipmentState::btnLoadAllClick(Action *)
+{
+	for (_sel = 0; _sel != _items.size(); ++_sel)
+	{
+		const RuleItem *rule = _game->getMod()->getItem(_items[_sel], true);
+		if (!rule->getVehicleUnit())
+		{
+			moveRightByValue(INT_MAX, true);
+		}
+	}
+}
+
+/**
+ * The "remove equipment" hotkey: empties the listed items from the craft,
+ * or, if none of them is on board, loads them all instead.
+ */
+void CraftEquipmentState::btnClearOrLoadAll(Action *action)
+{
+	Craft *c = _base->getCrafts()->at(_craft);
+	for (const auto& itemType : _items)
+	{
+		const RuleItem *rule = _game->getMod()->getItem(itemType, true);
+		int cQty = rule->getVehicleUnit() ? c->getVehicleCount(itemType) : c->getItems()->getItem(rule);
+		if (cQty > 0)
+		{
+			btnClearClick(action);
+			return;
+		}
+	}
+	btnLoadAllClick(action);
+}
+
+/**
  * Empties the contents of the craft, moving all of the items back to the base.
  */
 void CraftEquipmentState::btnClearClick(Action *)
@@ -1168,6 +1215,20 @@ void CraftEquipmentState::btnSaveClick(Action *)
 		_game->pushState(new CraftEquipmentSaveState(this));
 		_returningFromGlobalTemplates = true;
 	}
+}
+
+const RuleItem* CraftEquipmentState::GetItemForTooltip()
+{
+	const auto row = _lstEquipment->getSelectedRow();
+	if (row < 0)
+		return nullptr;
+
+	return _game->getMod()->getItem(_items[row]);
+}
+
+const Base* CraftEquipmentState::GetBase()
+{
+	return _base;
 }
 
 }

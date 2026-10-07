@@ -1,0 +1,9 @@
+﻿Craft lights, a choice of reticle, an even cursor box.
+
+— On the base screen, craft in the hangars show their lights: navigation lights, a strobe and a beacon. A craft ready for launch is fully lit; while refuelling only the red beacon blinks, under repair a yellow one.
+— The battle reticle is picked in the HD options: from the pack, stock, "Ring 45" (marks on the diagonals, empty centre), "Plasma", "Techno", "Predator". It changes at once, in battle too.
+— Cursor box: the dotted outline on the levels below now sits exactly under the red box.
+— The icons over a unit lying on the floor (burning, wounded, stunned) pulse as they do in the inventory.
+— A soldier's stat bars end exactly on their mark of the ruler, and the armour bonus is no longer cut off.
+— The path arrows in battle are back (turn on path preview in the battle options).
+— The English version now has the "BY LEVEL" pages of the Condemnations, like the Russian one.

@@ -51,6 +51,8 @@ public:
 	void setPalette(const SDL_Color *colors, int firstcolor = 0, int ncolors = 256) override;
 	/// Draws the number text.
 	void draw() override;
+	/// HD interface, modern skin: the digits with the TrueType font.
+	void hdMirror() override;
 	/// sets this numbertext to have a border or not
 	void setBordered(bool bordered);
 

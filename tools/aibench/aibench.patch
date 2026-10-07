@@ -1,0 +1,1302 @@
+diff --git a/src/Battlescape/AIModule.cpp b/src/Battlescape/AIModule.cpp
+index 48b7d1b..63f17bb 100644
+--- a/src/Battlescape/AIModule.cpp
++++ b/src/Battlescape/AIModule.cpp
+@@ -19,6 +19,7 @@
+ #include <climits>
+ #include <algorithm>
+ #include "AIModule.h"
++#include <chrono>   // BOXCE-BENCH
+ #include "../Savegame/BattleItem.h"
+ #include "../Savegame/Node.h"
+ #include "../Savegame/SavedBattleGame.h"
+@@ -427,8 +428,163 @@ bool AIModule::medikit_think(BattleMediKitType healOrStim)
+  * Runs any code the state needs to keep updating every AI cycle.
+  * @param action (possible) AI action to execute after thinking is done.
+  */
++
++// --- BOXCE-BENCH: профайлер времени ИИ -------------------------------------
++namespace
++{
++	struct AiProfSlot { long long usTotal = 0; long long usMax = 0; int calls = 0; long long reachSum = 0; int reachMax = 0; };
++	AiProfSlot g_aiProf[4];
++}
++
++void aiProfAdd(int faction, long long us, int reachable)
++{
++	if (faction < 0 || faction > 3) return;
++	AiProfSlot &p = g_aiProf[faction];
++	p.usTotal += us;
++	if (us > p.usMax) p.usMax = us;
++	p.calls++;
++	p.reachSum += reachable;
++	if (reachable > p.reachMax) p.reachMax = reachable;
++}
++
++void aiProfDump(int turn, int faction)
++{
++	if (faction < 0 || faction > 3) return;
++	AiProfSlot &p = g_aiProf[faction];
++	if (p.calls == 0) return;
++	const char *fname = (faction == 0) ? "PLAYER" : (faction == 1) ? "HOSTILE" : "NEUTRAL";
++	Log(LOG_INFO) << "[AIBENCH] turn=" << turn
++		<< " side=" << fname
++		<< " brutal=" << Options::brutalAI
++		<< " perfOpt=" << (Options::aiPerformanceOptimization ? 1 : 0)
++		<< " cheat=" << Options::aiCheatMode
++		<< " calls=" << p.calls
++		<< " totalMs=" << (p.usTotal / 1000)
++		<< " avgMs=" << (p.usTotal / 1000.0 / p.calls)
++		<< " maxMs=" << (p.usMax / 1000)
++		<< " avgReach=" << (p.calls ? p.reachSum / p.calls : 0)
++		<< " maxReach=" << p.reachMax;
++	p = AiProfSlot();
++}
++
++namespace
++{
++	struct AiProfScope
++	{
++		int faction; const std::vector<int> *reach;
++		std::chrono::steady_clock::time_point t0;
++		AiProfScope(int f, const std::vector<int> *r) : faction(f), reach(r), t0(std::chrono::steady_clock::now()) {}
++		~AiProfScope()
++		{
++			auto us = std::chrono::duration_cast<std::chrono::microseconds>(
++				std::chrono::steady_clock::now() - t0).count();
++			aiProfAdd(faction, (long long)us, reach ? (int)reach->size() : 0);
++		}
++	};
++}
++namespace
++{
++	// BOXCE-BENCH: отпечаток решения. Сколько раз спросят ИИ за ход - зависит от кадров
++	// (грабли R-025), поэтому сравнивать сборки можно только по ПЕРВОМУ решению юнита
++	// в ходу: состояние в этот момент у всех сборок одно и то же.
++	std::map<int, int> g_aiDecideTurn;
++
++	struct AiDecideScope
++	{
++		const BattleUnit* unit; const BattleAction* action; int turn; bool write;
++		AiDecideScope(const BattleUnit* u, const BattleAction* a, int t)
++			: unit(u), action(a), turn(t), write(false)
++		{
++			if (!Options::aiBench) return;
++			auto it = g_aiDecideTurn.find(u->getId());
++			if (it != g_aiDecideTurn.end() && it->second == turn) return;
++			g_aiDecideTurn[u->getId()] = turn;
++			write = true;
++		}
++		~AiDecideScope()
++		{
++			if (!write) return;
++			Log(LOG_INFO) << "[AIDECIDE] turn=" << turn
++				<< " side=" << (int)unit->getFaction()
++				<< " unit=" << unit->getId()
++				<< " from=" << unit->getPosition()
++				<< " type=" << (int)action->type
++				<< " target=" << action->target;
++		}
++	};
++}
++namespace
++{
++	// BOXCE-BENCH: getReachableBy отдаёт ссылку, по const-карте operator[] не берётся;
++	// отсутствующая клетка - это ноль, ровно как раньше давал operator[] у копии
++	inline int tuAtOrZero(const std::map<Position, int, PositionComparator>& reachable, Position pos)
++	{
++		auto it = reachable.find(pos);
++		return it != reachable.end() ? it->second : 0;
++	}
++
++	// фазы brutalThink: 0 ожидание союзника, 1 построение достижимости,
++	// 2 предобход юнитов, 3 главный перебор позиций
++	long long g_aiPhaseUs[4] = {0, 0, 0, 0};
++	long long g_aiPhaseCalls[4] = {0, 0, 0, 0};
++	long long g_aiPosScanned = 0;
++	// BOXCE-FAIR: сколько оценок урона прошло вслепую и сколько по настоящим числам
++	long long g_aiFairBlind = 0;
++	long long g_aiFairKnown = 0;
++	// BOXCE-BENCH: сколько на самом деле стоит оценка урона. R-012: цену называем
++	// по замеру, а не по тому, что функция выглядит дорогой
++	long long g_aiDmgPotUs = 0;
++	// BOXCE-BENCH: сколько раз карта достижимых клеток взята из кэша, а сколько
++	// посчитана заново разливом по карте
++	long long g_aiReachHit = 0;
++	long long g_aiReachMiss = 0;
++
++	struct AiPhaseTimer
++	{
++		int phase; bool running;
++		std::chrono::steady_clock::time_point t0;
++		AiPhaseTimer(int p) : phase(p), running(true), t0(std::chrono::steady_clock::now()) {}
++		void stop()
++		{
++			if (!running) return;
++			running = false;
++			g_aiPhaseUs[phase] += std::chrono::duration_cast<std::chrono::microseconds>(
++				std::chrono::steady_clock::now() - t0).count();
++			g_aiPhaseCalls[phase]++;
++		}
++		~AiPhaseTimer() { stop(); }
++	};
++}
++
++void aiPhaseDump()
++{
++	if (g_aiPhaseCalls[0] == 0) return;
++	Log(LOG_INFO) << "[AIPHASE] waitAllyMs=" << (g_aiPhaseUs[0] / 1000)
++		<< " reachMs=" << (g_aiPhaseUs[1] / 1000)
++		<< " unitScanMs=" << (g_aiPhaseUs[2] / 1000)
++		<< " posLoopMs=" << (g_aiPhaseUs[3] / 1000)
++		<< " posScanned=" << g_aiPosScanned
++		<< " posLoopRuns=" << g_aiPhaseCalls[3]
++		<< " fairBlind=" << g_aiFairBlind
++		<< " fairKnown=" << g_aiFairKnown
++		<< " dmgPotMs=" << (g_aiDmgPotUs / 1000)
++		<< " reachHit=" << g_aiReachHit
++		<< " reachMiss=" << g_aiReachMiss;
++	for (int i = 0; i < 4; ++i) { g_aiPhaseUs[i] = 0; g_aiPhaseCalls[i] = 0; }
++	g_aiPosScanned = 0;
++	g_aiFairBlind = 0;
++	g_aiFairKnown = 0;
++	g_aiDmgPotUs = 0;
++	g_aiReachHit = 0;
++	g_aiReachMiss = 0;
++}
++
++// --- конец BOXCE-BENCH ------------------------------------------------------
++
+ void AIModule::think(BattleAction *action)
+ {
++	AiProfScope _boxceBench((int)_unit->getFaction(), &_reachable);
++	AiDecideScope _boxceDecide(_unit, action, _save->getTurn());
+ 	// Workaround: AI freeze
+ 	if (_walkAbortCounter > 200)
+ 	{
+@@ -3188,6 +3344,7 @@ bool AIModule::visibleToAnyFriend(BattleUnit* target) const
+ 
+ void AIModule::brutalThink(BattleAction* action)
+ {
++	AiPhaseTimer _ph0(0);   // BOXCE-BENCH
+ 	// Step 1: Check whether we wait for someone else on our team to move first
+ 	int myReachable = getReachableBy(_unit, _ranOutOfTUs, true).size();
+ 	float myDist = 0;
+@@ -3317,6 +3474,7 @@ void AIModule::brutalThink(BattleAction* action)
+ 		}
+ 	}
+ 
++	_ph0.stop();   // BOXCE-BENCH
+ 	// Create reachabiliy and turncost-list for the entire map
+ 	if (_traceAI)
+ 	{
+@@ -3339,7 +3497,9 @@ void AIModule::brutalThink(BattleAction* action)
+ 	BattleActionMove bam = BAM_NORMAL;
+ 	if (Options::strafe && wantToRun())
+ 		bam = BAM_RUN;
++	AiPhaseTimer _ph1(1);   // BOXCE-BENCH
+ 	_allPathFindingNodes = _save->getPathfinding()->findReachablePathFindingNodes(_unit, BattleActionCost(), dummy, true, NULL, NULL, false, false, bam);
++	_ph1.stop();   // BOXCE-BENCH
+ 	BattleUnit* unitToFaceTo = NULL;
+ 
+ 	float shortestDist = FLT_MAX;
+@@ -3367,6 +3527,7 @@ void AIModule::brutalThink(BattleAction* action)
+ 	bool visibleToEnemy = false;
+ 	bool enemyFarAwayFromStart = false;
+ 	float damagePotentialFromCurrentPosition = 0;
++	AiPhaseTimer _ph2(2);   // BOXCE-BENCH
+ 	for (BattleUnit* target : *(_save->getUnits()))
+ 	{
+ 		if (target->isOut())
+@@ -3493,6 +3654,7 @@ void AIModule::brutalThink(BattleAction* action)
+ 			enemyFarAwayFromStart = isFarAwayFromStart;
+ 		}
+ 	}
++	_ph2.stop();   // BOXCE-BENCH
+ 	int myMaxTU = getMaxTU(_unit);
+ 	//Log(LOG_INFO) << "friendReachable[myPos]: " << friendReachable[myPos]
+ 	//			  << " myMaxTU: " << myMaxTU;
+@@ -3659,6 +3821,16 @@ void AIModule::brutalThink(BattleAction* action)
+ 	Position bestIndirectPeakPosition = myPos;
+ 	float bestFallbackScore = 0;
+ 	Position bestFallbackPosition = myPos;
++	// BOXCE-BENCH: тот же набор клеток, отсортированный по убыванию очков.
++	// В переборе позиций угроза считается как second/(дистанция+1), то есть никогда
++	// не превышает second. Значит, дойдя до записи, чьё second не больше уже найденного
++	// максимума, остаток списка можно не смотреть: ответ от этого не меняется.
++	std::vector<std::pair<int, Position> > enemyReachableByThreat;
++	enemyReachableByThreat.reserve(enemyReachable.size());
++	for (auto& reachable : enemyReachable)
++		enemyReachableByThreat.push_back(std::make_pair(reachable.second, reachable.first));
++	std::sort(enemyReachableByThreat.begin(), enemyReachableByThreat.end(),
++		[](const std::pair<int, Position>& a, const std::pair<int, Position>& b) { return a.first > b.first; });
+ 	bool saveDistance = true;
+ 	for (auto& reachable : enemyReachable)
+ 	{
+@@ -3747,8 +3919,10 @@ void AIModule::brutalThink(BattleAction* action)
+ 		if (pathThroughLift && targetPosition.z > myPos.z && !IAmMindControlled)
+ 			enemyHasHighGround = true;
+ 
++		AiPhaseTimer _ph3(3);   // BOXCE-BENCH
+ 		for (auto pu : _allPathFindingNodes)
+ 		{
++			++g_aiPosScanned;   // BOXCE-BENCH
+ 			Position pos = pu->getPosition();
+ 			Tile* tile = _save->getTile(pos);
+ 			if (tile == NULL)
+@@ -4088,17 +4262,20 @@ void AIModule::brutalThink(BattleAction* action)
+ 				validCover = false;
+ 			if (!sweepMode && validCover)
+ 			{
+-				for (auto& reachable : enemyReachable)
++				for (auto& reachable : enemyReachableByThreat)
+ 				{
++					// дальше по списку очков только меньше, а угроза не бывает больше них
++					if (reachable.first <= discoverThreat)
++						break;
+ 					for (int x = 0; x < _unit->getArmor()->getSize(); ++x)
+ 					{
+ 						for (int y = 0; y < _unit->getArmor()->getSize(); ++y)
+ 						{
+ 							Position compPos = pos;
+-							float currThreat = reachable.second / (Position::distance(reachable.first, compPos) + 1);
++							float currThreat = reachable.first / (Position::distance(reachable.second, compPos) + 1);
+ 							compPos.x += x;
+ 							compPos.y += y;
+-							if (currThreat > discoverThreat && hasTileSight(compPos, reachable.first))
++							if (currThreat > discoverThreat && hasTileSight(compPos, reachable.second))
+ 								discoverThreat = currThreat;
+ 						}
+ 					}
+@@ -4289,6 +4466,7 @@ void AIModule::brutalThink(BattleAction* action)
+ 			//	tile->setTUMarker(highestDamage);
+ 			//}
+ 		}
++		_ph3.stop();   // BOXCE-BENCH
+ 		if (_traceAI)
+ 		{
+ 			if (bestAttackScore > 0)
+@@ -4419,7 +4597,7 @@ void AIModule::brutalThink(BattleAction* action)
+ 		travelTarget = bestFallbackPosition;
+ 		shouldEndTurnAfterMove = true;
+ 	}
+-	else if (bestPeekPreserveScore > 0 && bestFriendReachable[peekPreserveCompromise] <= getReachableBy(_unit, _ranOutOfTUs, false, true)[peekPreserveCompromise])
++	else if (bestPeekPreserveScore > 0 && bestFriendReachable[peekPreserveCompromise] <= tuAtOrZero(getReachableBy(_unit, _ranOutOfTUs, false, true), peekPreserveCompromise))
+ 	{
+ 		if (_traceAI)
+ 			Log(LOG_INFO) << "peekPreserveCompromise: " << peekPreserveCompromise << " score: " << bestPeekPreserveScore;
+@@ -5135,6 +5313,20 @@ float AIModule::brutalScoreFiringMode(BattleAction* action, BattleUnit* target,
+ 		distanceSq = Position::distanceSq(originPosition, _save->getTileCoords(target->getTileLastSpotted(_unit->getFaction(), true)));
+ 	float distance = Position::distance(originPosition, target->getPosition());
+ 
++	// BOXCE-FAIR: броня, сопротивления и уклонение цели - закрытые числа, человеку их
++	// не показывают. В честном режиме ИИ берёт их только после того, как хоть раз
++	// в эту цель попал; до того считает, что цель такая же, как он сам.
++	const Armor* knownArmor = target->getArmor();
++	BattleUnit* knownUnit = target;
++	if (Options::aiFairDamage && !target->isToughnessSeen())
++	{
++		knownArmor = _unit->getArmor();
++		knownUnit = _unit;
++		++g_aiFairBlind;
++	}
++	else
++		++g_aiFairKnown;
++
+ 	int tuTotal = _unit->getTimeUnits();
+ 	int energyTotal = _unit->getEnergy();
+ 	float dangerMod = 1;
+@@ -5193,9 +5385,9 @@ float AIModule::brutalScoreFiringMode(BattleAction* action, BattleUnit* target,
+ 		Position attackVexel = originPosition.toVoxel();
+ 		attackVexel += Position(8, 8, 0) * _unit->getArmor()->getSize();
+ 		int arc = _save->getTileEngine()->getArcDirection(_save->getTileEngine()->getDirectionTo(target->getPositionVexels(), attackVexel), target->getDirection());
+-		float penalty = 1.0f - arc * target->getArmor()->getMeleeDodgeBackPenalty() / 4.0f;
+-		if (target->getArmor()->getMeleeDodge(target) * penalty < accuracy)
+-			accuracy -= target->getArmor()->getMeleeDodge(target) * penalty;
++		float penalty = 1.0f - arc * knownArmor->getMeleeDodgeBackPenalty() / 4.0f;
++		if (knownArmor->getMeleeDodge(knownUnit) * penalty < accuracy)
++			accuracy -= knownArmor->getMeleeDodge(knownUnit) * penalty;
+ 		else
+ 			accuracy = 0.01;
+ 		// We can definitely assume we'll be facing the target
+@@ -5281,24 +5473,24 @@ float AIModule::brutalScoreFiringMode(BattleAction* action, BattleUnit* target,
+ 	float relevantArmor = 0;
+ 	if (action->type == BA_THROW)
+ 	{
+-		relevantArmor = target->getArmor()->getUnderArmor();
++		relevantArmor = knownArmor->getUnderArmor();
+ 	}
+ 	else
+ 	{
+ 		UnitSide side = getSideFacingToPosition(target, originPosition);
+ 		if (side == SIDE_FRONT || side == SIDE_RIGHT || side == SIDE_LEFT || side == SIDE_REAR || side == SIDE_UNDER)
+-			relevantArmor = target->getArmor()->getArmor(side);
++			relevantArmor = knownArmor->getArmor(side);
+ 		else if (side == SIDE_LEFT_FRONT)
+-			relevantArmor = (target->getArmor()->getArmor(SIDE_LEFT) + target->getArmor()->getArmor(SIDE_FRONT)) / 2.0;
++			relevantArmor = (knownArmor->getArmor(SIDE_LEFT) + knownArmor->getArmor(SIDE_FRONT)) / 2.0;
+ 		else if (side == SIDE_RIGHT_FRONT)
+-			relevantArmor = (target->getArmor()->getArmor(SIDE_RIGHT) + target->getArmor()->getArmor(SIDE_FRONT)) / 2.0;
++			relevantArmor = (knownArmor->getArmor(SIDE_RIGHT) + knownArmor->getArmor(SIDE_FRONT)) / 2.0;
+ 		else if (side == SIDE_LEFT_REAR)
+-			relevantArmor = (target->getArmor()->getArmor(SIDE_LEFT) + target->getArmor()->getArmor(SIDE_REAR)) / 2.0;
++			relevantArmor = (knownArmor->getArmor(SIDE_LEFT) + knownArmor->getArmor(SIDE_REAR)) / 2.0;
+ 		else if (side == SIDE_RIGHT_REAR)
+-			relevantArmor = (target->getArmor()->getArmor(SIDE_RIGHT) + target->getArmor()->getArmor(SIDE_REAR)) / 2.0;
++			relevantArmor = (knownArmor->getArmor(SIDE_RIGHT) + knownArmor->getArmor(SIDE_REAR)) / 2.0;
+ 	}
+ 	float damageRange = 1.0 + _save->getMod()->DAMAGE_RANGE / 100.0;
+-	damage *= target->getArmor()->getDamageModifier(damageType.ResistType);
++	damage *= knownArmor->getDamageModifier(damageType.ResistType);
+ 	float armorPreDamage = damageType.getArmorPreFinalDamage(damage);
+ 	damage = (damage * damageRange - relevantArmor) / 2.0f;
+ 	if (reactionCheck)
+@@ -5396,7 +5588,7 @@ float AIModule::brutalScoreFiringMode(BattleAction* action, BattleUnit* target,
+ 	//{
+ 	//	Log(LOG_INFO) << action->weapon->getRules()->getName() << " attack-type: " << (int)action->type
+ 	//				  << " No LOS-Penalty: "<< action->weapon->getRules()->getNoLOSAccuracyPenalty(_save->getMod())
+-	//				  << " damage: " << damage + armorPreDamage << " armor: " << relevantArmor << " damage-mod: " << target->getArmor()->getDamageModifier(action->weapon->getRules()->getDamageType()->ResistType)
++	//				  << " damage: " << damage + armorPreDamage << " armor: " << relevantArmor << " damage-mod: " << knownArmor->getDamageModifier(action->weapon->getRules()->getDamageType()->ResistType)
+ 	//				  << " accuracy : " << accuracy << " numberOfShots : " << numberOfShots << " tuCost : " << tuCost << " tuTotal: " << tuTotal
+ 	//				  << " from: " << originPosition << " to: "<<action->target
+ 	//				  << " distance: " << distance << " dangerMod: " << dangerMod << " explosionMod: " << explosionMod << " grenade ridding urgency: " << grenadeRiddingUrgency()
+@@ -6616,23 +6808,27 @@ int AIModule::getEnergyRecovery(BattleUnit* unit)
+ 	return recovery;
+ }
+ 
+-std::map<Position, int, PositionComparator> AIModule::getReachableBy(BattleUnit* unit, bool& ranOutOfTUs, bool forceRecalc, bool useMaxTUs, bool pruneAirTiles)
++// BOXCE-BENCH: карта достижимости отдаётся ссылкой; пустой ответ берём отсюда
++static const std::map<Position, int, PositionComparator> g_noReachable;
++
++const std::map<Position, int, PositionComparator>& AIModule::getReachableBy(BattleUnit* unit, bool& ranOutOfTUs, bool forceRecalc, bool useMaxTUs, bool pruneAirTiles)
+ {
+ 	std::map<Position, int, PositionComparator> tuAtPositionMap;
+ 	Position startPosition = _save->getTileCoords(unit->getTileLastSpotted(_unit->getFaction()));
+ 	if (_unit->isCheatOnMovement() || unit->getFaction() == _unit->getFaction())
+ 		startPosition = unit->getPosition();
+ 	if (startPosition == TileEngine::invalid)
+-		return tuAtPositionMap;
+-	if (unit->getPositionOfUpdate() == startPosition && unit->wasMaxTusOfUpdate() == useMaxTUs && !forceRecalc)
++		return g_noReachable;
++	const int wantTUs = useMaxTUs ? getMaxTU(unit) : unit->getTimeUnits();
++	if (unit->getPositionOfUpdate(useMaxTUs) == startPosition && unit->getTUsOfUpdate(useMaxTUs) == wantTUs && !forceRecalc)
+ 	{
+-		ranOutOfTUs = unit->getRanOutOfTUs();
+-		return unit->getReachablePositions();
++		++g_aiReachHit;   // BOXCE-BENCH
++		ranOutOfTUs = unit->getRanOutOfTUs(useMaxTUs);
++		return unit->getReachablePositions(useMaxTUs);
+ 	}
++	++g_aiReachMiss;   // BOXCE-BENCH
+ 	std::vector<PathfindingNode*> reachable = _save->getPathfinding()->findReachablePathFindingNodes(unit, BattleActionCost(), ranOutOfTUs, false, NULL, &startPosition, false, useMaxTUs);
+-	int TUs = unit->getTimeUnits();
+-	if (useMaxTUs)
+-		TUs = getMaxTU(unit);
++	const int TUs = wantTUs;
+ 	for (std::vector<PathfindingNode*>::const_iterator it = reachable.begin(); it != reachable.end(); ++it)
+ 	{
+ 		if (pruneAirTiles && _save->getTile((*it)->getPosition())->hasNoFloor())
+@@ -6646,10 +6842,10 @@ std::map<Position, int, PositionComparator> AIModule::getReachableBy(BattleUnit*
+ 		//	tile->setTUMarker(TUs - (*it)->getTUCost(false).time);
+ 		//}
+ 	}
+-	unit->setPositionOfUpdate(startPosition, useMaxTUs);
+-	unit->setReachablePositions(tuAtPositionMap);
+-	unit->setRanOutOfTUs(ranOutOfTUs);
+-	return tuAtPositionMap;
++	unit->setPositionOfUpdate(startPosition, useMaxTUs, wantTUs);
++	unit->setReachablePositions(std::move(tuAtPositionMap), useMaxTUs);
++	unit->setRanOutOfTUs(ranOutOfTUs, useMaxTUs);
++	return unit->getReachablePositions(useMaxTUs);
+ }
+ 
+ std::map<Position, int, PositionComparator> AIModule::getSmokeFearMap()
+@@ -6670,10 +6866,10 @@ bool AIModule::hasTileSight(Position from, Position to)
+ {
+ 	if (from == to)
+ 		return true;
+-	if (_save->getTileEngine()->hasEntry(from, to))
+-	{
+-		return _save->getTileEngine()->getVisibilityCache(from, to);
+-	}
++	// BOXCE-BENCH: один поиск в кэше вместо двух
++	int cached = _save->getTileEngine()->peekVisibilityCache(from, to);
++	if (cached >= 0)
++		return cached != 0;
+ 	Tile* tile = _save->getTile(from);
+ 	if (!tile)
+ 		return false;
+@@ -6966,6 +7162,22 @@ BattleAction* AIModule::grenadeThrowAction(Position pos)
+ 
+ float AIModule::damagePotential(Position pos, BattleUnit* target, int tuTotal, int energyTotal)
+ {
++	// BOXCE-BENCH: эта оценка считается заново для каждой достижимой клетки, а их
++	// в крупном бою десятки тысяч. От КЛЕТКИ в ней зависит ровно три вещи: расстояние
++	// до цели, сторона брони, которой цель к нам повёрнута, и ближний бой - он смотрит
++	// на точную клетку, поэтому рядом с целью кэш не трогаем вовсе
++	const auto dmgPotT0 = std::chrono::steady_clock::now();
++	struct DmgPotTimer
++	{
++		std::chrono::steady_clock::time_point t0;
++		~DmgPotTimer()
++		{
++			g_aiDmgPotUs += std::chrono::duration_cast<std::chrono::microseconds>(
++				std::chrono::steady_clock::now() - t0).count();
++		}
++	} dmgPotTimer{dmgPotT0};
++
++
+ 	float overallMaxDamage = 0;
+ 	std::vector<BattleItem*> weapons;
+ 	if (_unit->getRightHandWeapon())
+@@ -6989,6 +7201,22 @@ float AIModule::damagePotential(Position pos, BattleUnit* target, int tuTotal, i
+ 	int distanceSq = Position::distanceSq(pos, target->getPosition());
+ 	float distance = Position::distance(pos, target->getPosition());
+ 
++	// BOXCE-FAIR: броня, сопротивления, уклонение и здоровье цели - закрытые числа,
++	// человеку они не показываются. В честном режиме ИИ пользуется ими только после
++	// того, как хоть раз в эту цель попал; до того считает, что цель такая же, как он сам.
++	const Armor* knownArmor = target->getArmor();
++	BattleUnit* knownUnit = target;
++	float knownHealth = target->getHealth();
++	if (Options::aiFairDamage && !target->isToughnessSeen())
++	{
++		knownArmor = _unit->getArmor();
++		knownUnit = _unit;
++		knownHealth = _unit->getBaseStats()->health;
++		++g_aiFairBlind;
++	}
++	else
++		++g_aiFairKnown;
++
+ 	for (auto weapon : weapons)
+ 	{
+ 		float maxFinalDamageForThisWeapon = 0; // Tracks the best *calculated* damage for the current weapon
+@@ -7090,9 +7318,9 @@ float AIModule::damagePotential(Position pos, BattleUnit* target, int tuTotal, i
+ 				Position attackVexel = pos.toVoxel();
+ 				attackVexel += Position(8, 8, 0) * _unit->getArmor()->getSize();
+ 				int arc = _save->getTileEngine()->getArcDirection(_save->getTileEngine()->getDirectionTo(target->getPositionVexels(), attackVexel), target->getDirection());
+-				float penalty = 1.0f - arc * target->getArmor()->getMeleeDodgeBackPenalty() / 4.0f;
+-				if (target->getArmor()->getMeleeDodge(target) * penalty < accuracy)
+-					accuracy -= target->getArmor()->getMeleeDodge(target) * penalty;
++				float penalty = 1.0f - arc * knownArmor->getMeleeDodgeBackPenalty() / 4.0f;
++				if (knownArmor->getMeleeDodge(knownUnit) * penalty < accuracy)
++					accuracy -= knownArmor->getMeleeDodge(knownUnit) * penalty;
+ 				else
+ 					accuracy = 0.01;
+ 				// We can definitely assume we'll be facing the target
+@@ -7157,28 +7385,28 @@ float AIModule::damagePotential(Position pos, BattleUnit* target, int tuTotal, i
+ 
+ 			float relevantArmor = 0;
+ 			if (bat == BA_THROW) // BA_THROW uses underarmor
+-				relevantArmor = target->getArmor()->getUnderArmor();
++				relevantArmor = knownArmor->getUnderArmor();
+ 			else
+ 			{
+ 				UnitSide side = getSideFacingToPosition(target, pos);
+ 				// Simplified armor logic for brevity
+ 				if (side == SIDE_FRONT || side == SIDE_RIGHT || side == SIDE_LEFT || side == SIDE_REAR || side == SIDE_UNDER)
+-					relevantArmor = target->getArmor()->getArmor(side);
++					relevantArmor = knownArmor->getArmor(side);
+ 				else if (side == SIDE_LEFT_FRONT)
+-					relevantArmor = (target->getArmor()->getArmor(SIDE_LEFT) + target->getArmor()->getArmor(SIDE_FRONT)) / 2.0f;
++					relevantArmor = (knownArmor->getArmor(SIDE_LEFT) + knownArmor->getArmor(SIDE_FRONT)) / 2.0f;
+ 				else if (side == SIDE_RIGHT_FRONT)
+-					relevantArmor = (target->getArmor()->getArmor(SIDE_RIGHT) + target->getArmor()->getArmor(SIDE_FRONT)) / 2.0f;
++					relevantArmor = (knownArmor->getArmor(SIDE_RIGHT) + knownArmor->getArmor(SIDE_FRONT)) / 2.0f;
+ 				else if (side == SIDE_LEFT_REAR)
+-					relevantArmor = (target->getArmor()->getArmor(SIDE_LEFT) + target->getArmor()->getArmor(SIDE_REAR)) / 2.0f;
++					relevantArmor = (knownArmor->getArmor(SIDE_LEFT) + knownArmor->getArmor(SIDE_REAR)) / 2.0f;
+ 				else if (side == SIDE_RIGHT_REAR)
+-					relevantArmor = (target->getArmor()->getArmor(SIDE_RIGHT) + target->getArmor()->getArmor(SIDE_REAR)) / 2.0f;
++					relevantArmor = (knownArmor->getArmor(SIDE_RIGHT) + knownArmor->getArmor(SIDE_REAR)) / 2.0f;
+ 			}
+ 
+ 			// Start with the raw power of THIS specific action
+ 			float damageForCalc = currentActionRawPower;
+ 
+ 			// Apply resistance modifier
+-			damageForCalc *= target->getArmor()->getDamageModifier(weapon->getRules()->getDamageType()->ResistType);
++			damageForCalc *= knownArmor->getDamageModifier(weapon->getRules()->getDamageType()->ResistType);
+ 			float armorPreDamage = weapon->getRules()->getDamageType()->getArmorPreFinalDamage(damageForCalc);
+ 
+ 			float damageRangeFactor = 1.0f + _save->getMod()->DAMAGE_RANGE / 100.0f;
+@@ -7198,7 +7426,7 @@ float AIModule::damagePotential(Position pos, BattleUnit* target, int tuTotal, i
+ 
+ 			// --- FIX 2: Kill Efficiency Calculation ---
+ 
+-			float hp = target->getHealth();
++			float hp = knownHealth;
+ 
+ 			// Step A: Calculate how many actions it takes to actually kill this specific target
+ 			// We use a small epsilon or ceil to ensure we don't under-estimate.
+diff --git a/src/Battlescape/AIModule.h b/src/Battlescape/AIModule.h
+index 0c2bf31..b653b71 100644
+--- a/src/Battlescape/AIModule.h
++++ b/src/Battlescape/AIModule.h
+@@ -24,6 +24,8 @@
+ #include "../Savegame/BattleUnit.h"
+ #include <vector>
+ #include <set>
++#include <unordered_map>   // BOXCE-BENCH: кэш оценки урона
++#include <cstdint>
+ 
+ 
+ namespace OpenXcom
+@@ -251,7 +253,7 @@ public:
+ 	/// returns how much energy the unit can recover each turn
+ 	int getEnergyRecovery(BattleUnit* unit);
+ 	/// returns reachable tile-Ids by a particular unit
+-	std::map<Position, int, PositionComparator> getReachableBy(BattleUnit* unit, bool& ranOutOfTUs, bool forceRecalc = false, bool useMaxTUs = false, bool pruneAirTiles = false);
++	const std::map<Position, int, PositionComparator>& getReachableBy(BattleUnit* unit, bool& ranOutOfTUs, bool forceRecalc = false, bool useMaxTUs = false, bool pruneAirTiles = false);
+ 	/// checks whether it would be possible to see one tile from another
+ 	bool hasTileSight(Position from, Position to);
+ 	/// returns the amount of blaster-waypoints to reach a target-positon
+@@ -286,6 +288,11 @@ public:
+ 	bool isPositionVisibleToEnemy(Position pos, bool tileLOSMode = false);
+ };
+ 
++// --- BOXCE-BENCH: профайлер времени ИИ ---
++void aiProfAdd(int faction, long long us, int reachable);
++void aiProfDump(int turn, int faction);
++void aiPhaseDump();
++
+ struct MoveEvaluation
+ {
+ 	int remainingTU;
+diff --git a/src/Battlescape/AbortMissionState.cpp b/src/Battlescape/AbortMissionState.cpp
+index 69e28f9..c4974f7 100644
+--- a/src/Battlescape/AbortMissionState.cpp
++++ b/src/Battlescape/AbortMissionState.cpp
+@@ -191,6 +191,18 @@ AbortMissionState::~AbortMissionState()
+ 
+ }
+ 
++/**
++ * BOXCE-BENCH: без ответа прогон висит до потолка времени. Отвечаем сами.
++ */
++void AbortMissionState::init()
++{
++	State::init();
++	if (Options::aiBench)
++	{
++		btnOkClick(0);
++	}
++}
++
+ /**
+  * Confirms mission abort.
+  * @param action Pointer to an action.
+diff --git a/src/Battlescape/AbortMissionState.h b/src/Battlescape/AbortMissionState.h
+index 886ad49..33b7a69 100644
+--- a/src/Battlescape/AbortMissionState.h
++++ b/src/Battlescape/AbortMissionState.h
+@@ -46,6 +46,8 @@ public:
+ 	/// Cleans up the Abort Mission state.
+ 	~AbortMissionState();
+ 	/// Handler for clicking the OK button.
++	/// BOXCE-BENCH: в автобое окно «прервать миссию?» нажать некому.
++	void init() override;
+ 	void btnOkClick(Action *action);
+ 	/// Handler for clicking the Cancel button.
+ 	void btnCancelClick(Action *action);
+diff --git a/src/Battlescape/BattlescapeState.cpp b/src/Battlescape/BattlescapeState.cpp
+index 0893be6..e7b5354 100644
+--- a/src/Battlescape/BattlescapeState.cpp
++++ b/src/Battlescape/BattlescapeState.cpp
+@@ -778,6 +778,18 @@ void BattlescapeState::resetPalettes()
+  */
+ void BattlescapeState::init()
+ {
++	// BOXCE-BENCH: сохранить разыгранный бой и выйти - дальше все прогоны грузят его
++	if (Options::aiBench && !Options::aiBenchSave.empty())
++	{
++		static bool saved = false;
++		if (!saved)
++		{
++			saved = true;
++			_game->getSavedGame()->save(Options::aiBenchSave, _game->getMod());
++			Log(LOG_INFO) << "[AIBENCH] battle saved: " << Options::aiBenchSave;
++			exit(0);
++		}
++	}
+ 	if (_paletteResetRequested)
+ 	{
+ 		_paletteResetRequested = false;
+@@ -3541,6 +3553,17 @@ void BattlescapeState::finishBattle(bool abort, int inExitArea)
+ {
+ 	bool isPreview = _save->isPreview();
+ 
++	// BOXCE-BENCH: исход боя снимается ЗДЕСЬ, пока бой ещё жив. В дебрифинге его уже нет:
++	// в быстром бою (monthsPassed == -1) игра не считает ни очков, ни потерь
++	if (Options::aiBench && !isPreview)
++	{
++		_save->benchLogResult("battleover", abort ? 1 : 0, inExitArea);
++		// Выходим прямо здесь: у загруженного боя дебрифинга нет, игра вернулась бы
++		// в меню, а автозагрузка запустила бы тот же бой заново - процесс крутился бы вечно
++		Log(LOG_INFO) << "[AIBENCH] run finished: battle over";
++		exit(0);
++	}
++
+ 	while (!_game->isState(this))
+ 	{
+ 		_game->popState();
+diff --git a/src/Battlescape/BriefingState.cpp b/src/Battlescape/BriefingState.cpp
+index 119096f..4076a0b 100644
+--- a/src/Battlescape/BriefingState.cpp
++++ b/src/Battlescape/BriefingState.cpp
+@@ -247,6 +247,11 @@ BriefingState::~BriefingState()
+ void BriefingState::init()
+ {
+ 	State::init();
++	if (Options::aiBench)   // BOXCE-BENCH
++	{
++		btnOkClick(0);
++		return;
++	}
+ 	if (_disableCutsceneAndMusic) return;
+ 
+ 	if (!_cutsceneId.empty())
+diff --git a/src/Battlescape/ConfirmEndMissionState.cpp b/src/Battlescape/ConfirmEndMissionState.cpp
+index fa6d412..4d91781 100644
+--- a/src/Battlescape/ConfirmEndMissionState.cpp
++++ b/src/Battlescape/ConfirmEndMissionState.cpp
+@@ -95,6 +95,19 @@ ConfirmEndMissionState::~ConfirmEndMissionState()
+ 
+ }
+ 
++/**
++ * BOXCE-BENCH: в автобое это окно останавливает бой навсегда - нажать «да» некому,
++ * и прогон висит до потолка времени. Отвечаем сами, ответ тот же, что у игрока по умолчанию.
++ */
++void ConfirmEndMissionState::init()
++{
++	State::init();
++	if (Options::aiBench)
++	{
++		btnOkClick(0);
++	}
++}
++
+ /**
+  * Confirms mission end.
+  * @param action Pointer to an action.
+diff --git a/src/Battlescape/ConfirmEndMissionState.h b/src/Battlescape/ConfirmEndMissionState.h
+index 213633e..7d4c0bf 100644
+--- a/src/Battlescape/ConfirmEndMissionState.h
++++ b/src/Battlescape/ConfirmEndMissionState.h
+@@ -47,6 +47,8 @@ public:
+ 	/// Cleans up the ConfirmEndMission state.
+ 	~ConfirmEndMissionState();
+ 	/// Handler for clicking the OK button.
++	/// BOXCE-BENCH: в автобое окно «завершить миссию?» нажать некому.
++	void init() override;
+ 	void btnOkClick(Action *action);
+ 	/// Handler for clicking the Cancel button.
+ 	void btnCancelClick(Action *action);
+diff --git a/src/Battlescape/DebriefingState.cpp b/src/Battlescape/DebriefingState.cpp
+index b7c5bc4..8e7236b 100644
+--- a/src/Battlescape/DebriefingState.cpp
++++ b/src/Battlescape/DebriefingState.cpp
+@@ -393,6 +393,11 @@ void DebriefingState::applyVisibility()
+ 
+ void DebriefingState::init()
+ {
++	if (Options::aiBench)   // BOXCE-BENCH
++	{
++		Log(LOG_INFO) << "[AIBENCH] run finished: battle over before the turn limit";
++		exit(0);
++	}
+ 	State::init();
+ 
+ 	if (_initDone)
+diff --git a/src/Battlescape/InfoboxOKState.cpp b/src/Battlescape/InfoboxOKState.cpp
+index e680e84..b8b5d11 100644
+--- a/src/Battlescape/InfoboxOKState.cpp
++++ b/src/Battlescape/InfoboxOKState.cpp
+@@ -84,6 +84,15 @@ InfoboxOKState::~InfoboxOKState()
+  * Returns to the previous screen.
+  * @param action Pointer to an action.
+  */
++void InfoboxOKState::init()
++{
++	State::init();
++	if (Options::aiBench)   // BOXCE-BENCH
++	{
++		btnOkClick(0);
++	}
++}
++
+ void InfoboxOKState::btnOkClick(Action *)
+ {
+ 	_game->popState();
+diff --git a/src/Battlescape/InfoboxOKState.h b/src/Battlescape/InfoboxOKState.h
+index 9c949c7..313d0d8 100644
+--- a/src/Battlescape/InfoboxOKState.h
++++ b/src/Battlescape/InfoboxOKState.h
+@@ -42,6 +42,7 @@ public:
+ 	/// Cleans up the InfoboxOKState.
+ 	~InfoboxOKState();
+ 	/// Handler for clicking the OK button.
++	void init() override;   // BOXCE-BENCH
+ 	void btnOkClick(Action *action);
+ };
+ 
+diff --git a/src/Battlescape/InventoryState.cpp b/src/Battlescape/InventoryState.cpp
+index 2e2a1c3..1dcb544 100644
+--- a/src/Battlescape/InventoryState.cpp
++++ b/src/Battlescape/InventoryState.cpp
+@@ -399,6 +399,11 @@ void InventoryState::setGlobalLayoutIndex(int index, bool armorChanged)
+ void InventoryState::init()
+ {
+ 	State::init();
++	if (Options::aiBench && !_tu)   // BOXCE-BENCH
++	{
++		btnOkClick(0);
++		return;
++	}
+ 	BattleUnit *unit = _battleGame->getSelectedUnit();
+ 
+ 	// no selected unit, close inventory
+diff --git a/src/Battlescape/NextTurnState.cpp b/src/Battlescape/NextTurnState.cpp
+index be67d77..055258a 100644
+--- a/src/Battlescape/NextTurnState.cpp
++++ b/src/Battlescape/NextTurnState.cpp
+@@ -307,9 +307,9 @@ NextTurnState::NextTurnState(SavedBattleGame *battleGame, BattlescapeState *stat
+ 		}
+ 	}
+ 
+-	if (Options::skipNextTurnScreen && message.empty() && messageReinforcements.empty())
++	if (Options::aiBench || (Options::skipNextTurnScreen && message.empty() && messageReinforcements.empty()))
+ 	{
+-		_timer = new Timer(NEXT_TURN_DELAY);
++		_timer = new Timer(Options::aiBench ? 1 : NEXT_TURN_DELAY);   // BOXCE-BENCH
+ 		_timer->onTimer((StateHandler)&NextTurnState::close);
+ 		_timer->start();
+ 	}
+diff --git a/src/Battlescape/TileEngine.cpp b/src/Battlescape/TileEngine.cpp
+index a5489c0..cbd7650 100644
+--- a/src/Battlescape/TileEngine.cpp
++++ b/src/Battlescape/TileEngine.cpp
+@@ -6845,24 +6845,34 @@ std::set<Tile*> TileEngine::visibleTilesFrom(BattleUnit* unit, Position pos, int
+ 	return visibleFrom;
+ }
+ 
++// BOXCE-BENCH: пара индексов тайлов в одном ключе
++static inline uint64_t visibilityKey(int from, int to)
++{
++	return ((uint64_t)(uint32_t)from << 32) | (uint32_t)to;
++}
++
+ void TileEngine::setVisibilityCache(Position from, Position to, bool visible)
+ {
+-	std::pair<int, int> key = std::make_pair(_save->getTileIndex(from), _save->getTileIndex(to));
+-	_visibilityCache.insert({key, visible});
++	_visibilityCache.insert({visibilityKey(_save->getTileIndex(from), _save->getTileIndex(to)), visible});
+ }
+ 
+ bool TileEngine::getVisibilityCache(Position from, Position to)
+ {
+-	std::pair<int, int> key = std::make_pair(_save->getTileIndex(from), _save->getTileIndex(to));
+-	return _visibilityCache[key];
++	auto it = _visibilityCache.find(visibilityKey(_save->getTileIndex(from), _save->getTileIndex(to)));
++	return it != _visibilityCache.end() ? it->second : false;
+ }
+ 
+ bool TileEngine::hasEntry(Position from, Position to)
+ {
+-	std::pair<int, int> key = std::make_pair(_save->getTileIndex(from), _save->getTileIndex(to));
+-	if (_visibilityCache.find(key) != _visibilityCache.end())
+-		return true;
+-	return false;
++	return _visibilityCache.find(visibilityKey(_save->getTileIndex(from), _save->getTileIndex(to))) != _visibilityCache.end();
++}
++
++int TileEngine::peekVisibilityCache(Position from, Position to)
++{
++	auto it = _visibilityCache.find(visibilityKey(_save->getTileIndex(from), _save->getTileIndex(to)));
++	if (it == _visibilityCache.end())
++		return -1;
++	return it->second ? 1 : 0;
+ }
+ 
+ void TileEngine::resetVisibilityCache()
+diff --git a/src/Battlescape/TileEngine.h b/src/Battlescape/TileEngine.h
+index dc5caef..9f83204 100644
+--- a/src/Battlescape/TileEngine.h
++++ b/src/Battlescape/TileEngine.h
+@@ -19,6 +19,8 @@
+  */
+ #include <vector>
+ #include <set>
++#include <unordered_map>
++#include <cstdint>
+ #include "Position.h"
+ #include "BattlescapeGame.h"
+ #include "../Mod/RuleItem.h"
+@@ -122,7 +124,8 @@ private:
+ 	Position _eventVisibilitySectorL, _eventVisibilitySectorR, _eventVisibilityObserverPos;
+ 	std::vector<BattleUnit*> _movingUnitPrev;
+ 	BattleUnit* _movingUnit = nullptr;
+-	std::map<std::pair<int, int>, bool> _visibilityCache;
++	// BOXCE-BENCH: ключ - два индекса тайлов в одном 64-битном числе, хэш вместо дерева
++	std::unordered_map<uint64_t, bool> _visibilityCache;
+ 
+ 	/// Add light source.
+ 	void addLight(MapSubset gs, Position center, int power, LightLayers layer);
+@@ -307,6 +310,8 @@ public:
+ 	bool getVisibilityCache(Position from, Position to);
+ 	/// checks whether there's an entry for a specific position-pair
+ 	bool hasEntry(Position from, Position to);
++	/// one lookup instead of hasEntry+getVisibilityCache: -1 unknown, 0 blocked, 1 visible
++	int peekVisibilityCache(Position from, Position to);
+ 	/// empties the visibility cache, call whenever a door is opened or destructive terrain is destroyed
+ 	void resetVisibilityCache();
+ };
+diff --git a/src/CMakeLists.txt b/src/CMakeLists.txt
+index ba65eef..ca8ab3f 100644
+--- a/src/CMakeLists.txt
++++ b/src/CMakeLists.txt
+@@ -629,7 +629,12 @@ if (WIN32)
+   set(WIN32_LIBS imagehlp dbghelp)
+ endif(WIN32)
+ 
+-target_link_libraries ( openxcom ${system_libs} ${PKG_DEPS_LDFLAGS} ${EXTRA_XCOM_LIBS} ${WIN32_LIBS} )
++if ( WIN32 )
++  # BOXCE-BENCH: static MSYS2/MinGW link set, same as the OXCE-HD build
++  target_link_libraries ( openxcom ${system_libs} ${PKG_DEPS_LDFLAGS} ${EXTRA_XCOM_LIBS} ${WIN32_LIBS} -Wl,--start-group jpeg png z tiff webp mad vorbisfile vorbis -l:libogg.a mikmod -l:libwinpthread.a winmm dxguid dinput8 ole32 oleaut32 imm32 version setupapi jbig zstd lzma lerc deflate sharpyuv -l:libFLAC.dll.a -Wl,--end-group )
++else ()
++  target_link_libraries ( openxcom ${system_libs} ${PKG_DEPS_LDFLAGS} ${EXTRA_XCOM_LIBS} ${WIN32_LIBS} )
++endif ()
+ 
+ # Pack libraries into bundle and link executable appropriately
+ if ( APPLE AND CREATE_BUNDLE )
+diff --git a/src/Engine/Game.cpp b/src/Engine/Game.cpp
+index 6381a60..0797d28 100644
+--- a/src/Engine/Game.cpp
++++ b/src/Engine/Game.cpp
+@@ -36,6 +36,7 @@
+ #include "Action.h"
+ #include "Exception.h"
+ #include "Options.h"
++#include "Timer.h"   // BOXCE-BENCH: виртуальные часы прогона
+ #include "CrossPlatform.h"
+ #include "FileMap.h"
+ #include "Unicode.h"
+@@ -331,6 +332,10 @@ void Game::run()
+ 		// Process rendering
+ 		if (runningState != PAUSED)
+ 		{
++			// BOXCE-BENCH: один шаг виртуальных часов на итерацию цикла. Логика боя
++			// перестаёт зависеть от того, сколько кадров успела нарисовать машина
++			if (Options::aiBench)
++				Timer::benchAdvance();
+ 			// Process logic
+ 			_states.back()->think();
+ 			_fpsCounter->think();
+diff --git a/src/Engine/Options.cpp b/src/Engine/Options.cpp
+index ba0e44e..030e6c1 100644
+--- a/src/Engine/Options.cpp
++++ b/src/Engine/Options.cpp
+@@ -618,6 +618,13 @@ void createAdvancedOptionsOTHER()
+ 	_info.push_back(OptionInfo(OPTION_OTHER, "avoidMines", &avoidMines, true, "STR_AVOIDMINES", "STR_AI"));
+ 	_info.push_back(OptionInfo(OPTION_OTHER, "aiPeformance", &aiPerformanceOptimization, false, "STR_AI_PERFORMANCE", "STR_AI"));
+ 	_info.push_back(OptionInfo(OPTION_OTHER, "aiCheatMode", &aiCheatMode, 0, "STR_AICHEATMODE", "STR_AI"));
++	// BOXCE-BENCH: headless-ish autoplay for AI timing runs
++	_info.push_back(OptionInfo(OPTION_OTHER, "aiBench", &aiBench, false, "STR_AIBENCH", "STR_AI"));
++	_info.push_back(OptionInfo(OPTION_OTHER, "aiFairDamage", &aiFairDamage, false, "STR_AI_FAIR_DAMAGE", "STR_AI"));
++	_info.push_back(OptionInfo(OPTION_OTHER, "aiBenchSave", &aiBenchSave, ""));
++	_info.push_back(OptionInfo(OPTION_OTHER, "aiBenchLoad", &aiBenchLoad, ""));
++	_info.push_back(OptionInfo(OPTION_OTHER, "aiBenchTurns", &aiBenchTurns, 8, "STR_AIBENCH_TURNS", "STR_AI"));
++	_info.push_back(OptionInfo(OPTION_OTHER, "aiBenchSeed", &aiBenchSeed, 0, "STR_AIBENCH_SEED", "STR_AI"));
+ 
+ 	// OTHER options Autoplay
+ 	_info.push_back(OptionInfo(OPTION_OTHER, "autoCombat", &autoCombat, false, "STR_AUTOCOMBAT", "STR_AUTO"));
+@@ -1313,6 +1320,15 @@ void updateOptions()
+ 	{
+ 		optionInfo.load(_commandLine, true);
+ 	}
++
++	// BOXCE-BENCH: замеру звук не нужен, а SDL_mixer стоит времени на старте
++	if (aiBench)
++	{
++		mute = true;
++		soundVolume = 0;
++		musicVolume = 0;
++		uiVolume = 0;
++	}
+ }
+ 
+ /**
+diff --git a/src/Engine/Options.inc.h b/src/Engine/Options.inc.h
+index 2fdbf20..269447d 100644
+--- a/src/Engine/Options.inc.h
++++ b/src/Engine/Options.inc.h
+@@ -48,6 +48,13 @@ OPT bool sneakyAI, ignoreDelay, allowPreprime, autoCombat, aiPerformanceOptimiza
+ OPT int aiCheatMode, brutalAI, brutalCivilians;
+ OPT bool autoCombatEachCombat, autoCombatEachTurn, autoCombatControlPerUnit;
+ OPT bool autoCombatDefaultSoldier, autoCombatDefaultHWP, autoCombatDefaultMindControl, autoCombatDefaultRemain;
++// BOXCE-BENCH
++OPT bool aiBench;
++OPT bool aiFairDamage;
++// BOXCE-BENCH: фиксированный бой - один раз сохранить, дальше грузить его же
++OPT std::string aiBenchSave, aiBenchLoad;
++OPT int aiBenchTurns;
++OPT int aiBenchSeed;
+ 
+ // Extra hotkeys (OXCE)
+ OPT SDLKey keyGeoDailyPilotExperience, keyGeoUfoTracker, keyGeoTechTreeViewer, keyGeoGlobalResearch, keyGeoGlobalProduction, keyGeoGlobalAlienContainment,
+diff --git a/src/Engine/Timer.cpp b/src/Engine/Timer.cpp
+index 7c65c71..b3fa598 100644
+--- a/src/Engine/Timer.cpp
++++ b/src/Engine/Timer.cpp
+@@ -29,6 +29,10 @@ namespace
+ const Uint32 accurate = 4;
+ Uint32 slowTick()
+ {
++	// BOXCE-BENCH: в прогоне время идёт ровными шагами цикла. Иначе одна и та же
++	// сборка на одном seed играет бой по-разному, и сравнивать правки нечем (R-025)
++	if (Options::aiBench)
++		return Timer::benchTicks;
+ 	static Uint32 old_time = SDL_GetTicks();
+ 	static Uint64 false_time = static_cast<Uint64>(old_time) << accurate;
+ 	Uint64 new_time = ((Uint64)SDL_GetTicks()) << accurate;
+@@ -40,6 +44,10 @@ Uint32 slowTick()
+ }//namespace
+ 
+ Uint32 Timer::gameSlowSpeed = 1;
++// BOXCE-BENCH: 10 мс на итерацию - столько же, сколько успевает обычный кадр
++Uint32 Timer::benchTicks = 0;
++const Uint32 Timer::benchStep = 10;
++void Timer::benchAdvance() { benchTicks += benchStep; }
+ int Timer::maxFrameSkip = 8; // this is a pretty good default at 60FPS.
+ 
+ 
+diff --git a/src/Engine/Timer.h b/src/Engine/Timer.h
+index d4e91b8..983a542 100644
+--- a/src/Engine/Timer.h
++++ b/src/Engine/Timer.h
+@@ -37,6 +37,10 @@ class Timer
+ public:
+ 	static int maxFrameSkip;
+ 	static Uint32 gameSlowSpeed;
++	/// BOXCE-BENCH: виртуальные часы прогона - шаг на итерацию цикла, а не реальное время
++	static Uint32 benchTicks;
++	static const Uint32 benchStep;
++	static void benchAdvance();
+ 
+ private:
+ 	Uint32 _start;
+diff --git a/src/Menu/MainMenuState.cpp b/src/Menu/MainMenuState.cpp
+index 543a45c..827e840 100644
+--- a/src/Menu/MainMenuState.cpp
++++ b/src/Menu/MainMenuState.cpp
+@@ -29,6 +29,8 @@
+ #include "NewGameState.h"
+ #include "NewBattleState.h"
+ #include "ListLoadState.h"
++#include "LoadGameState.h"   // BOXCE-BENCH
++#include "../Engine/Palette.h"   // BOXCE-BENCH
+ #include "OptionsVideoState.h"
+ #include "ModListState.h"
+ #include "../Engine/Options.h"
+@@ -54,6 +56,31 @@ void GoToMainMenuState::init()
+ 	Screen::updateScale(Options::geoscapeScale, Options::baseXGeoscape, Options::baseYGeoscape, true);
+ 	_game->getScreen()->resetDisplay(false);
+ 	_game->setState(new MainMenuState(_updateCheck));
++	if (Options::aiBench)   // BOXCE-BENCH
++	{
++		// BOXCE-BENCH: что РЕАЛЬНО включено в этом процессе. Опция, не переданная
++		// в командной строке, берётся из options.cfg папки прогона, где она осталась
++		// с прошлого боя, - без этой строки подмена варианта не видна ничем
++		Log(LOG_INFO) << "[AIBENCH] options: brutalAI=" << Options::brutalAI
++			<< " aiFairDamage=" << (Options::aiFairDamage ? 1 : 0)
++			<< " aiPeformance=" << (Options::aiPerformanceOptimization ? 1 : 0)
++			<< " aiCheatMode=" << Options::aiCheatMode
++			<< " brutalCivilians=" << Options::brutalCivilians;
++		if (!Options::aiBenchLoad.empty())
++		{
++			// BOXCE-BENCH: тот же самый бой из файла - розыгрыш не воспроизводится
++			// между запусками, потому что часть контейнеров движка упорядочена
++			// по адресам в памяти, а они у каждого процесса свои
++			Log(LOG_INFO) << "[AIBENCH] autostart: load " << Options::aiBenchLoad
++				<< ", turns=" << Options::aiBenchTurns;
++			_game->pushState(new LoadGameState(OPT_MENU, Options::aiBenchLoad, _game->getMod()->getPalette("PAL_GEOSCAPE")->getColors()));
++		}
++		else
++		{
++			Log(LOG_INFO) << "[AIBENCH] autostart: quick battle, turns=" << Options::aiBenchTurns;
++			_game->pushState(new NewBattleState());
++		}
++	}
+ }
+ 
+ /**
+diff --git a/src/Menu/NewBattleState.cpp b/src/Menu/NewBattleState.cpp
+index 3f87dad..1d663ae 100644
+--- a/src/Menu/NewBattleState.cpp
++++ b/src/Menu/NewBattleState.cpp
+@@ -379,6 +379,43 @@ void NewBattleState::init()
+ 	{
+ 		load();
+ 	}
++
++	// BOXCE-BENCH: roll a battle nobody has to click through
++	if (Options::aiBench)
++	{
++		static bool started = false;
++		if (started) return;
++		started = true;
++		if (Options::aiBenchSeed != 0)
++		{
++			RNG::setSeed((uint64_t)Options::aiBenchSeed);
++			Log(LOG_INFO) << "[AIBENCH] seed=" << Options::aiBenchSeed;
++		}
++		for (int tries = 0; tries < 20; ++tries)
++		{
++			btnRandomClick(0);
++			if (_craft && _craft->getNumTotalUnits() > 0)
++			{
++				Log(LOG_INFO) << "[AIBENCH] battle: mission=" << _missionTypes[_cbxMission->getSelected()]
++					<< " terrain=" << _terrainTypes[_cbxTerrain->getSelected()]
++					<< " race=" << _alienRaces[_cbxAlienRace->getSelected()]
++					<< " xcom=" << _craft->getNumTotalUnits()
++					<< " diff=" << _cbxDifficulty->getSelected()
++					<< " shade=" << _slrDarkness->getValue();
++				try
++				{
++					btnOkClick(0);
++					return;
++				}
++				catch (const std::exception &e)
++				{
++					// в Пиратках случайная пара «корабль + задание» часто не ложится на карту
++					Log(LOG_WARNING) << "[AIBENCH] battle rejected: " << e.what();
++				}
++			}
++		}
++		Log(LOG_ERROR) << "[AIBENCH] could not roll a playable battle in 20 tries";
++	}
+ }
+ 
+ /**
+diff --git a/src/Savegame/BattleUnit.cpp b/src/Savegame/BattleUnit.cpp
+index 9de4e25..7e0b3dd 100644
+--- a/src/Savegame/BattleUnit.cpp
++++ b/src/Savegame/BattleUnit.cpp
+@@ -711,6 +711,7 @@ void BattleUnit::load(const YAML::YamlNodeReader& node, const Mod *mod, const Sc
+ 	_toDirectionTurret = _directionTurret;
+ 	reader.tryRead("tu", _tu);
+ 	reader.tryRead("health", _health);
++	reader.tryRead("toughnessSeen", _toughnessSeen);   // BOXCE-FAIR
+ 	reader.tryRead("mana", _mana);
+ 	reader.tryRead("stunlevel", _stunlevel);
+ 	reader.tryRead("energy", _energy);
+@@ -844,6 +845,7 @@ void BattleUnit::save(YAML::YamlNodeWriter writer, const ScriptGlobal *shared) c
+ 	writer.write("directionTurret", _directionTurret);
+ 	writer.write("tu", _tu);
+ 	writer.write("health", _health);
++	if (_toughnessSeen) writer.write("toughnessSeen", _toughnessSeen);   // BOXCE-FAIR
+ 	writer.write("mana", _mana);
+ 	writer.write("stunlevel", _stunlevel);
+ 	writer.write("energy", _energy);
+@@ -1820,6 +1822,7 @@ int BattleUnit::damage(Position relative, int damage, const RuleDamageType *type
+ 	UnitBodyPart bodypart = BODYPART_TORSO;
+ 
+ 	_hitByAnything = true;
++	_toughnessSeen = true;   // BOXCE-FAIR
+ 	if (_health <= 0)
+ 	{
+ 		return 0;
+@@ -6475,30 +6478,26 @@ void BattleUnit::checkForReactivation(const SavedBattleGame* battle)
+ 	}
+ }
+ 
+-void BattleUnit::setReachablePositions(std::map<Position, int, PositionComparator> reachable)
++void BattleUnit::setReachablePositions(std::map<Position, int, PositionComparator> reachable, bool withMaxTUs)
+ {
+-	_reachablePositions = reachable;
++	// BOXCE-BENCH: карта до 28 тысяч клеток, забираем её, а не копируем
++	_reachablePositions[withMaxTUs ? 1 : 0] = std::move(reachable);
+ }
+ 
+-std::map<Position, int, PositionComparator> BattleUnit::getReachablePositions()
++const std::map<Position, int, PositionComparator>& BattleUnit::getReachablePositions(bool withMaxTUs)
+ {
+-	return _reachablePositions;
++	return _reachablePositions[withMaxTUs ? 1 : 0];
+ }
+ 
+-void BattleUnit::setPositionOfUpdate(Position pos, bool withMaxTUs)
++void BattleUnit::setPositionOfUpdate(Position pos, bool withMaxTUs, int tus)
+ {
+-	_positionWhenReachableWasUpdated = pos;
+-	_maxTUsWhenReachableWasUpdated = withMaxTUs;
++	_positionWhenReachableWasUpdated[withMaxTUs ? 1 : 0] = pos;
++	_tuWhenReachableWasUpdated[withMaxTUs ? 1 : 0] = tus;
+ }
+ 
+-Position BattleUnit::getPositionOfUpdate()
++Position BattleUnit::getPositionOfUpdate(bool withMaxTUs)
+ {
+-	return _positionWhenReachableWasUpdated;
+-}
+-
+-bool BattleUnit::wasMaxTusOfUpdate()
+-{
+-	return _maxTUsWhenReachableWasUpdated;
++	return _positionWhenReachableWasUpdated[withMaxTUs ? 1 : 0];
+ }
+ 
+ bool BattleUnit::isLeeroyJenkins() const
+diff --git a/src/Savegame/BattleUnit.h b/src/Savegame/BattleUnit.h
+index 15a999f..7b531e5 100644
+--- a/src/Savegame/BattleUnit.h
++++ b/src/Savegame/BattleUnit.h
+@@ -128,6 +128,8 @@ private:
+ 	int _faceDirection; // used only during strafing moves
+ 	std::vector<int> _meleeAttackedBy;
+ 	bool _hitByFire, _hitByAnything, _alreadyExploded;
++	// BOXCE-FAIR: в юнит хоть раз попадали, значит его прочность уже видели
++	bool _toughnessSeen = false;
+ 	int _fireMaxHit;
+ 	int _smokeMaxHit;
+ 	int _moraleRestored;
+@@ -191,7 +193,7 @@ private:
+ 	bool _summonedPlayerUnit, _resummonedFakeCivilian;
+ 	bool _pickUpWeaponsMoreActively;
+ 	bool _disableIndicators;
+-	bool _ranOutOfTUs;
++	bool _ranOutOfTUs[2] = { false, false };
+ 	MovementType _movementType;
+ 	MovementType _originalMovementType;
+ 	ArmorMoveCost _moveCostBase = { 0, 0 };
+@@ -199,9 +201,13 @@ private:
+ 	ArmorMoveCost _moveCostBaseClimb = { 0, 0 };
+ 	ArmorMoveCost _moveCostBaseNormal = { 0, 0 };
+ 	std::vector<std::pair<Uint8, Uint8> > _recolor;
+-	std::map<Position, int, PositionComparator> _reachablePositions;
+-	Position _positionWhenReachableWasUpdated = Position(-1, -1, -1);
+-	bool _maxTUsWhenReachableWasUpdated;
++	// BOXCE-BENCH: [0] - по текущим ОВ, [1] - по максимальным. Раньше ячейка была одна
++	// на оба вопроса, и каждый следующий вопрос стирал ответ на предыдущий
++	std::map<Position, int, PositionComparator> _reachablePositions[2];
++	Position _positionWhenReachableWasUpdated[2] = { Position(-1, -1, -1), Position(-1, -1, -1) };
++	// BOXCE-BENCH: в карте лежит ОСТАТОК ОВ на клетке, поэтому запас, с которым её
++	// считали, - часть ключа: потратил ОВ на поворот - карта устарела
++	int _tuWhenReachableWasUpdated[2] = { -1, -1 };
+ 	bool _capturable;
+ 	bool _vip;
+ 	bool _bannedInNextStage;
+@@ -926,6 +932,8 @@ public:
+ 	bool getHitState();
+ 	/// reset the unit hit state.
+ 	void resetHitState();
++	/// BOXCE-FAIR: попадали ли в юнит хоть раз за бой
++	bool isToughnessSeen() const { return _toughnessSeen; }
+ 	/// Was this unit melee attacked by a given attacker this turn (both hit and miss count)?
+ 	bool wasMeleeAttackedBy(int attackerId) const;
+ 	/// Set the "melee attacked by" flag.
+@@ -983,15 +991,15 @@ public:
+ 	/// Checks whether it makes sense to reactivate a unit that wanted to end it's turn and do so if it's the case
+ 	void checkForReactivation(const SavedBattleGame* battle);
+ 	/// Cache inside the unit what positions it can reach for reference by AI
+-	void setReachablePositions(std::map<Position, int, PositionComparator> reachable);
+-	std::map<Position, int, PositionComparator> getReachablePositions();
++	void setReachablePositions(std::map<Position, int, PositionComparator> reachable, bool withMaxTUs);
++	const std::map<Position, int, PositionComparator>& getReachablePositions(bool withMaxTUs);
+ 	/// Remember this value in order to check whether an update is due
+-	void setPositionOfUpdate(Position posOfUpdate, bool withMaxTUs);
+-	Position getPositionOfUpdate();
+-	bool wasMaxTusOfUpdate();
++	void setPositionOfUpdate(Position posOfUpdate, bool withMaxTUs, int tus);
++	Position getPositionOfUpdate(bool withMaxTUs);
++	int getTUsOfUpdate(bool withMaxTUs) { return _tuWhenReachableWasUpdated[withMaxTUs ? 1 : 0]; }
+ 	/// Remember whether it ran out of TUs while doing the reachability-check
+-	void setRanOutOfTUs(bool ranOutOfTUs) { _ranOutOfTUs = ranOutOfTUs; }
+-	bool getRanOutOfTUs() { return _ranOutOfTUs; }
++	void setRanOutOfTUs(bool ranOutOfTUs, bool withMaxTUs) { _ranOutOfTUs[withMaxTUs ? 1 : 0] = ranOutOfTUs; }
++	bool getRanOutOfTUs(bool withMaxTUs) { return _ranOutOfTUs[withMaxTUs ? 1 : 0]; }
+ 
+ 	/// Multiplier of move cost.
+ 	ArmorMoveCost getMoveCostBase() const { return _moveCostBase; }
+diff --git a/src/Savegame/SavedBattleGame.cpp b/src/Savegame/SavedBattleGame.cpp
+index 6105a90..f7dc0f5 100644
+--- a/src/Savegame/SavedBattleGame.cpp
++++ b/src/Savegame/SavedBattleGame.cpp
+@@ -1485,8 +1485,62 @@ const RuleCraftDeployment& SavedBattleGame::getCustomDeployment(const RuleCraft*
+ /**
+  * Ends the current turn and progresses to the next one.
+  */
++void SavedBattleGame::benchLogResult(const char* why, int abort, int inExit) const
++{
++	// BOXCE-BENCH: исход боя одной строкой. Пишется на КАЖДОМ выходе из боя,
++	// иначе прогон, кончившийся не так, как ждали, молча выпадает из статистики
++	int cnt[4][3] = {};   // фракция -> живые, без сознания, убитые
++	for (const auto* unit : _units)
++	{
++		int f = (int)unit->getOriginalFaction();
++		if (f < 0 || f > 3)
++			continue;
++		if (unit->getStatus() == STATUS_DEAD)
++			++cnt[f][2];
++		else if (unit->getStatus() == STATUS_UNCONSCIOUS)
++			++cnt[f][1];
++		else
++			++cnt[f][0];
++	}
++	Log(LOG_INFO) << "[AIRESULT] why=" << why
++		<< " turns=" << _turn
++		<< " abort=" << abort
++		<< " inExit=" << inExit
++		<< " xcomAlive=" << cnt[FACTION_PLAYER][0]
++		<< " xcomStunned=" << cnt[FACTION_PLAYER][1]
++		<< " xcomDead=" << cnt[FACTION_PLAYER][2]
++		<< " alienAlive=" << cnt[FACTION_HOSTILE][0]
++		<< " alienStunned=" << cnt[FACTION_HOSTILE][1]
++		<< " alienDead=" << cnt[FACTION_HOSTILE][2]
++		<< " civAlive=" << cnt[FACTION_NEUTRAL][0]
++		<< " civDead=" << cnt[FACTION_NEUTRAL][2];
++}
++
+ void SavedBattleGame::endTurn()
+ {
++	aiProfDump(_turn, (int)_side);   // BOXCE-BENCH
++	aiPhaseDump();   // BOXCE-BENCH
++	// BOXCE-BENCH: слепок состояния на границе хода. Два прогона одной сборки обязаны
++	// дать одинаковые слепки; первый разошедшийся показывает, где теряется повторяемость
++	if (Options::aiBench)
++	{
++		for (auto* bu : _units)
++		{
++			if (bu->isOut()) continue;
++			Log(LOG_INFO) << "[AISTATE] turn=" << _turn << " side=" << (int)_side
++				<< " unit=" << bu->getId()
++				<< " pos=" << bu->getPosition()
++				<< " tu=" << bu->getTimeUnits()
++				<< " hp=" << bu->getHealth()
++				<< " en=" << bu->getEnergy();
++		}
++	}
++	if (Options::aiBench && _turn >= Options::aiBenchTurns && _side == FACTION_NEUTRAL)
++	{
++		benchLogResult("turnlimit");
++		Log(LOG_INFO) << "[AIBENCH] run finished: turns=" << _turn;
++		exit(0);
++	}
+ 	// reset turret direction for all hostile and neutral units (as it may have been changed during reaction fire)
+ 	for (auto* bu : _units)
+ 	{
+diff --git a/src/Savegame/SavedBattleGame.h b/src/Savegame/SavedBattleGame.h
+index 5326459..2e30e6a 100644
+--- a/src/Savegame/SavedBattleGame.h
++++ b/src/Savegame/SavedBattleGame.h
+@@ -397,6 +397,8 @@ public:
+ 	/// Can unit use that weapon?
+ 	bool canUseWeapon(const BattleItem *weapon, const BattleUnit *unit, bool isBerserking, BattleActionType actionType, std::string* message = nullptr) const;
+ 	/// Gets the turn number.
++	/// BOXCE-BENCH: пишет строку исхода боя [AIRESULT] и говорит, чем бой кончился.
++	void benchLogResult(const char* why, int abort = 0, int inExit = 0) const;
+ 	int getTurn() const;
+ 	/// Sets the bug hunt turn number.
+ 	void setBughuntMinTurn(int bughuntMinTurn);

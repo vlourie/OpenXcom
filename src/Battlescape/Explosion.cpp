@@ -32,8 +32,8 @@ const int Explosion::BULLET_FRAMES = 10;
  * @param hit True for melee and psi attacks.
  * @param frames Override for number of frames in the animation.
  */
-Explosion::Explosion(Position position, int startFrame, int frameDelay, bool big, bool hit, int frames) :
-	_position(position), _currentFrame(startFrame), _startFrame(startFrame), _frameDelay(frameDelay), _big(big), _hit(hit), _frames(frames)
+Explosion::Explosion(Position position, int startFrame, int frameDelay, bool big, bool hit, int frames, bool onUnit) :
+	_position(position), _currentFrame(startFrame), _startFrame(startFrame), _frameDelay(frameDelay), _big(big), _hit(hit), _onUnit(onUnit), _frames(frames)
 {
 
 }
@@ -121,6 +121,16 @@ bool Explosion::isBig() const
 bool Explosion::isHit() const
 {
 	return _hit;
+}
+
+/**
+ * Returns flag to indicate if the hit landed on a unit: the HD renderer then draws
+ * the pack's other picture of the frame (blood) when it has one.
+ * @return True if a unit was hit.
+ */
+bool Explosion::isOnUnit() const
+{
+	return _onUnit;
 }
 
 }

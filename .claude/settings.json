@@ -1,0 +1,141 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "defaultMode": "acceptEdits",
+    "allow": [
+      "Read",
+      "Glob",
+      "Grep",
+      "Bash(git status:*)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)",
+      "Bash(git add:*)",
+      "Bash(git branch:*)",
+      "Bash(python tools/:*)",
+      "Bash(ctags:*)",
+      "Bash(grep:*)",
+      "WebSearch",
+      "WebFetch"
+    ],
+    "ask": [
+      "Bash(git push:*)",
+      "Bash(git reset:*)",
+      "Bash(git rebase:*)"
+    ],
+    "deny": [
+      "Bash(git push --force:*)",
+      "Bash(rm -rf:*)"
+    ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "powershell",
+            "command": "& \"$env:CLAUDE_PROJECT_DIR/.claude/hooks/session-start.ps1\"",
+            "timeout": 120,
+            "statusMessage": "Поднимаю карту проекта и грабли"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "powershell",
+            "command": "& \"$env:CLAUDE_PROJECT_DIR/.claude/hooks/bom-guard.ps1\"",
+            "timeout": 15,
+            "statusMessage": "Дописываю BOM в PowerShell-скрипт"
+          },
+          {
+            "type": "command",
+            "command": "py -3 \"$CLAUDE_PROJECT_DIR/tools/editq.py\" hook post",
+            "timeout": 20,
+            "statusMessage": "Очередь правок игры"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "py -3 \"$CLAUDE_PROJECT_DIR/tools/editq.py\" hook stop",
+            "timeout": 20,
+            "statusMessage": "Очередь правок игры: не забыт ли done"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "shell": "powershell",
+            "command": "& \"$env:CLAUDE_PROJECT_DIR/.claude/hooks/backslash-guard.ps1\"",
+            "timeout": 15,
+            "statusMessage": "Проверяю, нет ли обратной косой во встроенном скрипте (R-035)"
+          },
+          {
+            "type": "command",
+            "shell": "powershell",
+            "command": "& \"$env:CLAUDE_PROJECT_DIR/.claude/hooks/gpu-guard.ps1\"",
+            "timeout": 15,
+            "statusMessage": "Проверяю, что видеокарта идёт через очередь"
+          },
+          {
+            "type": "command",
+            "shell": "powershell",
+            "command": "& \"$env:CLAUDE_PROJECT_DIR/.claude/hooks/game-guard.ps1\"",
+            "timeout": 15,
+            "statusMessage": "Проверяю, что игра запускается невидимо (R-124)"
+          },
+          {
+            "type": "command",
+            "command": "py -3 \"$CLAUDE_PROJECT_DIR/tools/editq.py\" hook pre",
+            "timeout": 20,
+            "statusMessage": "Очередь правок игры: сборка и git add -A"
+          }
+        ]
+      },
+      {
+        "matcher": "Edit|Write|NotebookEdit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "py -3 \"$CLAUDE_PROJECT_DIR/tools/editq.py\" hook pre",
+            "timeout": 20,
+            "statusMessage": "Очередь правок игры: чья сейчас очередь"
+          },
+          {
+            "type": "command",
+            "shell": "powershell",
+            "command": "& \"$env:CLAUDE_PROJECT_DIR/.claude/hooks/guard-paths.ps1\"",
+            "timeout": 15,
+            "statusMessage": "Проверяю, что правка не лезет в файлы игры"
+          },
+          {
+            "type": "command",
+            "shell": "powershell",
+            "command": "& \"$env:CLAUDE_PROJECT_DIR/.claude/hooks/rake-check.ps1\"",
+            "timeout": 20,
+            "statusMessage": "Смотрю, нет ли граблей на этом файле"
+          }
+        ]
+      }
+    ]
+  },
+  "env": {
+    "MOD_GAME": "OpenXcom Extended",
+    "MOD_NAME": "OXCE-HD",
+    "LOCAL_MODEL": "qwen3.8:27b"
+  }
+}

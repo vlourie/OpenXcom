@@ -18,6 +18,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "../Engine/InteractiveSurface.h"
+#include "../Engine/HdItems.h"
 #include <locale>
 #include <map>
 #include <string>
@@ -31,6 +32,7 @@ class WarningMessage;
 class BattleItem;
 class BattleUnit;
 class NumberText;
+class Text;
 class Timer;
 
 /**
@@ -62,7 +64,23 @@ private:
 	RuleInventory *_inventorySlotBackPack = nullptr;
 	RuleInventory *_inventorySlotBelt = nullptr;
 	RuleInventory *_inventorySlotGround = nullptr;
+	/// a slot name as the classic layout put it, for the HD interface to draw with its own fonts
+	struct GridLabel { std::string text; int x, y; };
+	std::vector<GridLabel> _labels;
+	Text *_hdLabel;
+	/// the items the HD interface draws from their own pictures (hd/BIGOBS.PCK), with where the classic sprite goes
+	struct HdPlaced { HdItems::Pick pick; int x, y; };
+	std::vector<HdPlaced> _hdItems;
+	HdItems::Pick _hdSelected;
+	/// the k drawItems() laid the HD pictures out for (0: every item classic, the overlays in _items)
+	int _hdItemsScale = 0;
+	/// the primers, "2" and numbers of the items when HD pictures lie under them
+	Surface *_itemsTop;
 
+	/// Is the HD interface going to draw the slot names with its own fonts on that surface?
+	bool hdLabels(const SDL_Surface *surface) const;
+	/// Draws the slot names with the TrueType fonts where the classic layout put them.
+	void drawHdLabels();
 	/// Clear all occupied slots markers.
 	std::vector<std::vector<char>>* clearOccupiedSlotsCache();
 	/// Moves an item to a specified slot.

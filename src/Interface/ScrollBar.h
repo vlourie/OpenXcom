@@ -66,6 +66,8 @@ public:
 	void setPalette(const SDL_Color *colors, int firstcolor = 0, int ncolors = 256) override;
 	/// Blits the scrollbar onto another surface.
 	void blit(SDL_Surface *surface) override;
+	/// HD interface, modern skin: a rounded track and thumb.
+	void hdMirror() override;
 	/// Moves the scrollbar.
 	void handle(Action *action, State *state) override;
 	/// Special handling for mouse presses.

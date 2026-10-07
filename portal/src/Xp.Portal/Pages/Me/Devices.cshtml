@@ -1,0 +1,65 @@
+@page "/me/devices"
+@model Xp.Portal.Pages.Me.DevicesModel
+@{
+    ViewData["Title"] = T["devices.title"];
+}
+<h1>@T["devices.title"]</h1>
+<partial name="_Errors" model="Model.Errors" />
+<p>@T["devices.intro"]</p>
+
+@if (Model.Pending is { } code)
+{
+    <div class="panel">
+        <h2>@T["devices.confirm.title"]</h2>
+        <p>@T.Format("devices.confirm.text", code)</p>
+        @if (Model.PendingName.Length > 0)
+        {
+            <p class="hint">@Model.PendingName</p>
+        }
+        <form method="post" asp-page-handler="Confirm" class="inline">
+            <input type="hidden" name="code" value="@code" />
+            <button type="submit">@T["devices.confirm"]</button>
+        </form>
+    </div>
+}
+else
+{
+    <div class="panel">
+        <h2>@T["devices.add.title"]</h2>
+        <p class="hint">@T["devices.add.hint"]</p>
+        <form method="post" asp-page-handler="Confirm">
+            <label for="code">@T["devices.code"]</label>
+            <input type="text" id="code" name="code" required maxlength="16" autocomplete="off" spellcheck="false" placeholder="XXX-XXX" />
+            <button type="submit">@T["devices.confirm"]</button>
+        </form>
+    </div>
+}
+
+<div class="panel">
+    <h2>@T["devices.list.title"]</h2>
+    @if (Model.Devices.Count == 0)
+    {
+        <p class="hint">@T["devices.empty"]</p>
+    }
+    else
+    {
+        <table>
+            <tr><th>@T["devices.name"]</th><th>@T["devices.linkedAt"]</th><th>@T["devices.used"]</th><th></th></tr>
+            @foreach (var d in Model.Devices)
+            {
+                <tr>
+                    <td>@(d.Name.Length > 0 ? d.Name : T["devices.unnamed"])</td>
+                    <td>@d.CreatedAt.ToString("yyyy-MM-dd HH:mm")</td>
+                    <td>@(d.LastUsedAt is { } used ? used.ToString("yyyy-MM-dd HH:mm") : T["devices.never"])</td>
+                    <td>
+                        <form method="post" asp-page-handler="Revoke" class="inline">
+                            <input type="hidden" name="id" value="@d.Id" />
+                            <button type="submit" class="secondary">@T["devices.revoke"]</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </table>
+        <p class="hint">@T["devices.revoke.hint"]</p>
+    }
+</div>

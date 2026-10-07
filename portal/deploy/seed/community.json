@@ -1,0 +1,161 @@
+{
+  "$comment": "Catalogue of the site: mods and forum boards. Apply with: Xp.Portal seed --file deploy/seed/community.json. This file is the source of truth - applying it again matches rows by slug and rewrites them, so the mod texts are edited here, not on the site. Nothing is ever deleted: a board dropped from the file keeps its topics and is hidden by hand.",
+  "mods": [
+    {
+      "slug": "piratez",
+      "order": 10,
+      "published": true,
+      "author": "Dioxine / NocturnalProductions",
+      "homeUrl": "https://www.moddb.com/mods/x-piratez",
+      "downloadUrl": "https://www.moddb.com/mods/x-piratez/downloads/xpz-o1-19-jun-2026-reincarnated-in-another-world-but-everything-here-is-ai-slop",
+      "version": "O1.1.1",
+      "image": "piratez.jpg",
+      "texts": {
+        "ru": {
+          "name": "X-Piratez",
+          "summary": "2601 год. Земля давно завоёвана пришельцами. Возглавьте банду пираток-мутанток, добывайте снаряжение, исследуйте технологии и выбирайте собственный путь среди враждующих фракций.",
+          "body": "## X-Piratez — оригинальный мод для OpenXcom Extended\n\n**X-Piratez** — масштабная сюжетная модификация X-COM: UFO Defense для движка OpenXcom Extended. После победы пришельцев мир изменился до неузнаваемости. Вы начинаете с небольшой команды пираток-мутанток и постепенно превращаете её в силу, с которой приходится считаться.\n\nСобирайте трофеи, развивайте базу, изучайте обширное дерево технологий и участвуйте в пошаговых тактических боях. В кампании встречаются разные фракции, необычные бойцы, техника, оружие и сюжетные развилки. Мод рассчитан на долгую игру и поощряет чтение внутриигровой энциклопедии.\n\n**[Скачать оригинальный X-Piratez O1.1.1](https://www.moddb.com/mods/x-piratez/downloads/xpz-o1-19-jun-2026-reincarnated-in-another-world-but-everything-here-is-ai-slop)** — ModDB, `Dioxine_XPiratez_o1.1.1.rar`, 470 МБ.\n\n## Что нового в O1.1.1\n\nOpenXcom Extended обновлён до ветки 8.6; переработаны иллюстрации энциклопедии и сюжетных сцен; добавлены задания, карты, оружие, броня и тактический центр. Обновление O1.1.1 исправляет сбой при обороне базы с тактическим центром.\n\n## Как установить\n\n1. Скачать архив со [страницы релиза на ModDB](https://www.moddb.com/mods/x-piratez/downloads/xpz-o1-19-jun-2026-reincarnated-in-another-world-but-everything-here-is-ai-slop). Архив целиком — 493 287 761 байт, MD5 `79c89ba604606b86614dcfeb0f376061`.\n2. Распаковать.\n3. Скопировать файлы оригинальной игры в `OpenXcom_XPiratez/UFO`. Нужна легальная копия X-COM: UFO Defense / UFO: Enemy Unknown (1994).\n4. Запустить `OpenXcomEx.exe`.\n\nВ Windows-архив уже включён подходящий OpenXcom Extended; для других платформ движок устанавливается отдельно. Подробности — в инструкциях внутри архива и в [руководстве автора](https://www.moddb.com/news/installation-guide2).\n\nHD-графика ставится поверх готовой установки — см. [OXCE-HD](/mods/hd).\n\n## Для кого\n\nВ игре есть жестокость, взрослые темы и несексуальная нагота. На странице автора стоит предупреждение 15+.\n\n## Вики\n\nМод огромный: несколько тысяч предметов, дерево исследований на сотни узлов, десятки типов карт. Поэтому у него на сайте отдельная вики, собранная прямо из рулсетов мода, — числа в ней те же, что в игре.\n\n## Скриншоты\n\nОфициальные скриншоты — в [галерее автора на ModDB](https://www.moddb.com/mods/x-piratez/images).\n\n## Где спрашивать\n\nВ ветке форума этого мода. Вопрос «как это работает» почти всегда быстрее закрывается страницей вики, чем ответом в теме. Новости и новые версии — на [странице проекта](https://www.moddb.com/mods/x-piratez/downloads).\n\n*Автор мода — Dioxine / NocturnalProductions. Жанр: пошаговая тактика, стратегия, сюжетная модификация. Платформа архива: Windows.*"
+        },
+        "en": {
+          "name": "X-Piratez",
+          "summary": "It is the year 2601, and aliens have long ruled Earth. Lead a gang of mutant pirates, scavenge equipment, research new technology, and make your way through a world of rival factions.",
+          "body": "## X-Piratez - the original OpenXcom Extended mod\n\n**X-Piratez** is a large, story rich total conversion of X-COM: UFO Defense for OpenXcom Extended. In a world transformed by alien conquest, you begin with a small pirate crew and build it into a force to be reckoned with.\n\nGather loot, develop your base, explore a vast research tree, and fight turn based tactical battles. The campaign features competing factions, unusual recruits, vehicles, weapons, and branching choices. It rewards experimentation and close attention to the in game encyclopedia.\n\n**[Download original X-Piratez O1.1.1](https://www.moddb.com/mods/x-piratez/downloads/xpz-o1-19-jun-2026-reincarnated-in-another-world-but-everything-here-is-ai-slop)** - ModDB, `Dioxine_XPiratez_o1.1.1.rar`, 470 MB.\n\n## What is new in O1.1.1\n\nUpdates OpenXcom Extended to the 8.6 series, refreshes illustrations in the encyclopedia and cutscenes, and adds missions, maps, weapons, armor, and a Tactical Center. Version O1.1.1 fixes a crash during Tactical Center base defense.\n\n## Installing\n\n1. Download the archive from the [release page on ModDB](https://www.moddb.com/mods/x-piratez/downloads/xpz-o1-19-jun-2026-reincarnated-in-another-world-but-everything-here-is-ai-slop). The whole archive is 493,287,761 bytes, MD5 `79c89ba604606b86614dcfeb0f376061`.\n2. Extract it.\n3. Copy the original game's files into `OpenXcom_XPiratez/UFO`. A legitimate copy of X-COM: UFO Defense / UFO: Enemy Unknown (1994) is required.\n4. Launch `OpenXcomEx.exe`.\n\nThe Windows package includes a compatible OpenXcom Extended build; other platforms need a separate engine download. Check the readme inside the archive and the [author's installation guide](https://www.moddb.com/news/installation-guide2) for details.\n\nThe HD graphics go on top of a working install - see [OXCE-HD](/mods/hd).\n\n## Content note\n\nIncludes violence, mature themes, and nonsexual nudity. The author's page carries a 15+ warning.\n\n## Wiki\n\nThe mod is huge: several thousand items, a research tree of hundreds of nodes, dozens of map types. That is why it gets a wiki of its own here, built straight out of the mod's rulesets - the numbers in it are the numbers in the game.\n\n## Screenshots\n\nOfficial screenshots are in the [author's gallery on ModDB](https://www.moddb.com/mods/x-piratez/images).\n\n## Where to ask\n\nOn this mod's board. A how-does-this-work question is almost always answered faster by a wiki page than by a reply in a topic. News and new versions are on the [project page](https://www.moddb.com/mods/x-piratez/downloads).\n\n*Created by Dioxine / NocturnalProductions. Genre: turn based tactics, strategy, total conversion. Package platform: Windows.*"
+        }
+      }
+    },
+    {
+      "slug": "hd",
+      "order": 20,
+      "published": true,
+      "author": "Vitali, OXCE-HD",
+      "homeUrl": "",
+      "downloadUrl": "",
+      "version": "",
+      "image": "hd.jpg",
+      "texts": {
+        "ru": {
+          "name": "OXCE-HD",
+          "summary": "Новый графический слой поверх OXCE: то же 320×200 в основе, но рисуется в полном разрешении экрана. Механика не меняется ни на число.",
+          "body": "## Что это\n\nМы переписываем **графику** OpenXcom Extended и не трогаем механику. Те же числа, тот же порядок хода, те же сейвы. Отличие одно: картинка.\n\nПоверх классического 8-битного слоя живёт второй, 32-битный. При масштабе 1 он обязан давать побайтно тот же кадр, что и раньше, — это не пожелание, а приёмка: кадр сравнивается с эталонным дампом.\n\n## Что уже есть\n\n- HD-паки для местности, юнитов и интерфейса;\n- шрифты TTF вместо растровых;\n- сглаживание классических элементов там, где HD-кадра ещё нет;\n- масштаб до 4× при нативном разрешении монитора.\n\n## Что в работе\n\nОтрисовка оставшихся наборов плиток. Очередь считается по охвату карт: сначала то, что игрок видит чаще."
+        },
+        "en": {
+          "name": "OXCE-HD",
+          "summary": "A new graphics layer over OXCE: the same 320x200 underneath, drawn at the screen's full resolution. Not a single number of the mechanics changes.",
+          "body": "## What it is\n\nWe are rewriting the **graphics** of OpenXcom Extended and touching no mechanics. Same numbers, same turn order, same saves. One difference: the picture.\n\nOver the classic 8-bit layer lives a second, 32-bit one. At scale 1 it must produce the very same frame byte for byte - that is not a wish but the acceptance test: the frame is compared against a reference dump.\n\n## What is in already\n\n- HD packs for terrain, units and the interface;\n- TTF fonts instead of bitmap ones;\n- smoothing of classic elements where an HD frame does not exist yet;\n- scaling up to 4x at the monitor's native resolution.\n\n## What is being worked on\n\nDrawing the remaining tile sets. The queue is ordered by map coverage: whatever the player sees most often comes first."
+        }
+      }
+    },
+    {
+      "slug": "tank-turret",
+      "order": 30,
+      "published": true,
+      "author": "Vitali, OXCE-HD",
+      "homeUrl": "",
+      "downloadUrl": "/download/launcher",
+      "version": "1.3",
+      "image": "",
+      "texts": {
+        "ru": {
+          "name": "Пиратские танки: поворотная башня",
+          "summary": "Танки пираток становятся настоящими танками: корпус едет сам по себе, а башня поворачивается отдельно, туда, куда стреляет. Меняется только картинка.",
+          "body": "## Что делает\n\nВ X-Piratez танки пираток (**ТАНК\\*60-ММ АП**, **ТАНК\\*85ММ ПУШКА**, **ТАНК\\*ТЯЖ.ЛАЗПУШКА**) нарисованы одним спрайтом: пушка всегда смотрит туда же, куда корпус. Мод рисует их так, как движок рисует танки оригинального X-COM, — корпус и башня отдельно. Башня стоит там, где она нарисована на корпусе, у кормы, и поворачивается к цели независимо от того, куда едет танк.\n\nВ HD у мода свои кадры: корпус и все положения башни нарисованы в увеличенном разрешении, в тех же цветах, что и остальная графика.\n\n## Что не меняется\n\nНи одного числа: броня, ОД, оружие, стрельба и обзор те же, что без мода. Его можно включить и выключить посреди кампании — сейвы совместимы.\n\n## Что нужно\n\nX-Piratez и наш движок OXCE-HD: большие кадры башни рисует только он.\n\n## Как поставить\n\nМод ставится лаунчером, отдельной галочкой:\n\n1. [Скачать лаунчер](/download/launcher) и поставить игру, если она ещё не стоит.\n2. В лаунчере открыть **Настройки → Компоненты игры…**.\n3. Поставить галочку «Piratez tanks: turning turret» и подтвердить установку. Лаунчер скачает мод и включит его.\n\nУбрать мод — снять ту же галочку. Включать и выключать его можно и в меню модов самой игры."
+        },
+        "en": {
+          "name": "Pirate tanks: turning turret",
+          "summary": "The pirates' tanks become real tanks: the hull drives on its own and the turret turns separately, towards whatever it shoots. Only the picture changes.",
+          "body": "## What it does\n\nIn X-Piratez the pirates' tanks (**TANK\\*60AC**, **TANK\\*85BC**, **TANK\\*H-LAS**) are drawn as a single sprite: the gun always points where the hull points. The mod draws them the way the engine draws the tanks of the original X-COM - hull and turret apart. The turret sits where it is drawn on the hull, at the rear, and turns towards the target whichever way the tank is driving.\n\nIn HD the mod brings frames of its own: the hull and every turret position are drawn at high resolution, in the same colours as the rest of the graphics.\n\n## What stays the same\n\nEvery number: armour, TUs, weapons, shooting and sight are the same as without the mod. It can be switched on and off in the middle of a campaign - saves stay compatible.\n\n## Requirements\n\nX-Piratez and our OXCE-HD engine: only it draws the big turret frames.\n\n## Installing\n\nThe launcher installs the mod as a separate tick:\n\n1. [Download the launcher](/download/launcher) and install the game if it is not installed yet.\n2. In the launcher open **Settings → Game components…**.\n3. Tick \"Piratez tanks: turning turret\" and confirm the install. The launcher downloads the mod and switches it on.\n\nTo remove the mod, untick it there. You can also switch it on and off in the game's own Mods menu."
+        }
+      }
+    },
+    {
+      "slug": "apple-processing",
+      "order": 40,
+      "published": true,
+      "author": "Vitali Lourie",
+      "homeUrl": "",
+      "downloadUrl": "/download/launcher",
+      "version": "1.5",
+      "image": "",
+      "texts": {
+        "ru": {
+          "name": "Яблочное пюре и джем",
+          "summary": "Переработка яблок после «Кухни Пост-Апок»: туба пюре равна трём яблокам, банка джема — пяти. Меньше возни с яблоками в бою, баланс почти прежний.",
+          "body": "## Зачем\n\nЯблоко в X-Piratez — ценная вещь, но съедается по одному: бойцу, которому нужно пять яблок, приходится кормить его пять раз подряд. Мод убирает эту однообразную возню, не меняя заметно баланс и не обесценивая само яблоко: пюре и джем дают примерно то же, что исходные яблоки, со своими небольшими плюсами и минусами.\n\n## Пюре — первая стадия\n\n**Туба 2×1, как три яблока.**\n\n- Здоровье — как от 3 яблок; в рюкзаке на клетку меньше; ОД на 5% меньше (упаковка вскрывается быстро).\n- Весит на 1 больше трёх яблок (сама туба); боевого духа на 2 меньше — несвежий фрукт без ложки посреди боя.\n- **Исследование** «Переработка яблок: пюре» открывается после «Кухни Пост-Апок», 72 часа одного лаботряса.\n- **Производство** в Убежище с Личными лабораториями и Мастерской: 5 Фляг Свежести, 1 Сектопля и 16 яблок (одно сожрал кустарь) — 5 туб пюре и 1 Счет за уборку в Убежище. Денег не стоит.\n\n## Джем — вторая стадия\n\n**Банка 2×2, как пять яблок.**\n\n- Здоровье — как от 5 яблок; в рюкзаке на клетку меньше; ОД на 10% меньше (очень вкусно, глотается быстро).\n- Весит на 3 больше пяти яблок (банка); боевого духа на 3 и бодрости на 2 меньше.\n- **Исследование** «Переработка яблок: джем» тоже после «Кухни Пост-Апок», 144 часа одного лаботряса.\n- **Производство** в Убежище с Промышленным принтером и Библиотекой: 1 Железная руда, 25 Картошки (мешок), 1 Сектопля и 26 яблок — 5 банок джема и 3 Счета за уборку. Денег не стоит.\n\nУ каждого исследования своя статья в энциклопедии с этим рецептом, у пюре и джема — своя кухонная история и свои картинки в рюкзаке и на земле.\n\n## Что нужно\n\nX-Piratez. Работает и на OXCE-HD, и на обычном OpenXcom Extended.\n\n## Как поставить\n\nМод ставится лаунчером, отдельной галочкой:\n\n1. [Скачать лаунчер](/download/launcher) и поставить игру, если она ещё не стоит.\n2. В лаунчере открыть **Настройки → Компоненты игры…**.\n3. Поставить галочку «Apple Processing» и подтвердить установку. Лаунчер скачает мод и включит его.\n\nУбрать мод — снять ту же галочку. Включать и выключать его можно и в меню модов самой игры."
+        },
+        "en": {
+          "name": "Apple puree and jam",
+          "summary": "Apple processing after the Post-Apoc Kitchen: a tube of puree equals three apples, a jar of jam five. Less apple fiddling in battle, the balance nearly unchanged.",
+          "body": "## Why\n\nAn apple in X-Piratez is a valuable thing, but it is eaten one at a time: a fighter who needs five apples has to be fed five times in a row. The mod removes that tedium without noticeably changing the balance or devaluing the apple itself: puree and jam give about what the apples would, with small pluses and minuses of their own.\n\n## Puree - the first stage\n\n**A 2x1 tube, worth three apples.**\n\n- Health as from 3 apples; one backpack cell less; 5% fewer TUs (the pack opens fast).\n- Weighs 1 more than three apples (the tube itself); 2 less morale - stale fruit, no spoon, mid-battle.\n- **Research** \"Apple Processing: Puree\" opens after the Post-Apoc Kitchen, 72 hours of one scientist.\n- **Manufacturing** in a hideout with Personal Labs and a Workshop: 5 Canteens, 1 Sectoweed and 16 apples (the worker ate one) make 5 tubes of puree and 1 Hideout Cleaning Bill. Costs no money.\n\n## Jam - the second stage\n\n**A 2x2 jar, worth five apples.**\n\n- Health as from 5 apples; one backpack cell less; 10% fewer TUs (very tasty, goes down fast).\n- Weighs 3 more than five apples (the jar); 3 less morale and 2 less energy.\n- **Research** \"Apple Processing: Jam\", also after the Post-Apoc Kitchen, 144 hours of one scientist.\n- **Manufacturing** in a hideout with an Industrial Printer and a Library: 1 Iron Ore, 25 Potatoes (a sack), 1 Sectoweed and 26 apples make 5 jars of jam and 3 Hideout Cleaning Bills. Costs no money.\n\nEach research has its own encyclopedia article with this recipe; puree and jam have their kitchen stories and their own inventory and floor sprites.\n\n## Requirements\n\nX-Piratez. Works on OXCE-HD and on plain OpenXcom Extended alike.\n\n## Installing\n\nThe launcher installs the mod as a separate tick:\n\n1. [Download the launcher](/download/launcher) and install the game if it is not installed yet.\n2. In the launcher open **Settings → Game components…**.\n3. Tick \"Apple Processing\" and confirm the install. The launcher downloads the mod and switches it on.\n\nTo remove the mod, untick it there. You can also switch it on and off in the game's own Mods menu."
+        }
+      }
+    },
+    {
+      "slug": "kisya-brysya",
+      "order": 50,
+      "published": true,
+      "author": "Vitali",
+      "homeUrl": "",
+      "downloadUrl": "/download/launcher",
+      "version": "1.0.1",
+      "image": "",
+      "texts": {
+        "ru": {
+          "name": "Сёстры Кися и Брыся",
+          "summary": "Возвращает в кампанию сестёр Пума — Кисю и Брысю, двух кошкодевочек-охотниц за головами из старой версии X-Piratez. Они приходят в банду сами, когда о ней пойдёт слава.",
+          "body": "## Что это\n\nВ X-Piratez N11 были героини-близнецы Анна и Уни Пума — пара кошкодевочек-охотниц за головами. В новых версиях мода они пропали из кампании, хотя их портреты, броня и бонусы в игре остались. Мод возвращает события, по которым сёстры приходят в банду. В русском переводе их зовут Кися и Брыся.\n\n## Как они приходят\n\n1. Когда у банды ранг IV «Пахан» и решён вопрос о достойном задании, сёстры её замечают — событие «Сёстры Кися и Брыся». На пути «Кошки это жизнь» это случается заметно скорее.\n2. На ранге VII «Враг народа» (на сложности 4 и 5 — на ранге VIII «Авторитет») обе приходят в банду: событие «Близнецы с Лапуты», +200 рейтинга за каждую.\n\n## Кто они\n\n- **Кися (Анна Пума)** — «мозги» дуэта, спокойная и рассудительная: +1 к восстановлению ОВ и от оглушения, +2 к восстановлению боевого духа, +5 к Н.Вуду.\n- **Брыся (Уни Пума)** — «мускулы»: +3 к обзору ночью, +5 к точности стрельбы и к реакции, меньше теряет здоровья от ран.\n\nОбе приходят опытными, со своим снаряжением, у каждой — статья в энциклопедии и портрет.\n\n## Что нужно\n\nX-Piratez O1.1.1. Мод можно включить и в начатой кампании: условия событий проверяются по ходу игры.\n\n## Как поставить\n\nМод ставится лаунчером, отдельной галочкой:\n\n1. [Скачать лаунчер](/download/launcher) и поставить игру, если она ещё не стоит.\n2. В лаунчере открыть **Настройки → Компоненты игры…**.\n3. Поставить галочку «Kisya and Brysya Sisters» и подтвердить установку. Лаунчер скачает мод и включит его.\n\nУбрать мод — снять ту же галочку. Включать и выключать его можно и в меню модов самой игры."
+        },
+        "en": {
+          "name": "Kisya and Brysya Sisters",
+          "summary": "Brings the Puma Sisters back into the campaign: Anna and Uni Puma, two catgirl bounty hunters from an older X-Piratez. They join the gang on their own once it gets famous.",
+          "body": "## What it is\n\nX-Piratez N11 had twin heroines, Anna and Uni Puma - a pair of catgirl bounty hunters. Newer versions of the mod dropped them from the campaign, though their portraits, armour and bonuses are still in the game. This mod restores the events that bring the sisters into the gang. The Russian translation calls them Kisya and Brysya.\n\n## How they come\n\n1. Once the gang has Rank IV (Entrepreneur) and the Bounty Challenge is confronted, the sisters notice it - the \"Puma Sisters\" event. On the Cats 4 Life path this happens noticeably sooner.\n2. At Rank VII (Public Enemy) - Rank VIII (Crime Lord) on difficulty 4 and 5 - both join: the \"Twins from Laputa\" event, +200 infamy each.\n\n## Who they are\n\n- **Anna Puma** - the brains of the duo, calm and judicious: +1 stamina and stun regeneration, +2 morale regeneration, +5 voodoo skill.\n- **Uni Puma** - the muscles: +3 night vision, +5 firing and reactions, loses less health to wounds.\n\nBoth arrive experienced and with their own kit; each has an encyclopedia article and a portrait.\n\n## Requirements\n\nX-Piratez O1.1.1. The mod can be switched on in a running campaign too: the event conditions are checked as the game goes.\n\n## Installing\n\nThe launcher installs the mod as a separate tick:\n\n1. [Download the launcher](/download/launcher) and install the game if it is not installed yet.\n2. In the launcher open **Settings → Game components…**.\n3. Tick \"Kisya and Brysya Sisters\" and confirm the install. The launcher downloads the mod and switches it on.\n\nTo remove the mod, untick it there. You can also switch it on and off in the game's own Mods menu."
+        }
+      }
+    }
+  ],
+  "sections": [
+    {
+      "slug": "news",
+      "order": 10,
+      "staffOnly": true,
+      "published": true,
+      "texts": {
+        "ru": { "name": "Объявления", "summary": "Версии, планы и всё, что команда хочет сказать вслух." },
+        "en": { "name": "Announcements", "summary": "Releases, plans and whatever the team wants said out loud." }
+      }
+    },
+    {
+      "slug": "hd",
+      "order": 20,
+      "mod": "hd",
+      "texts": {
+        "ru": { "name": "OXCE-HD", "summary": "Графический слой: как ставится, что тормозит, что нарисовано криво." },
+        "en": { "name": "OXCE-HD", "summary": "The graphics layer: installing it, what runs slow, what is drawn wrong." }
+      }
+    },
+    {
+      "slug": "piratez",
+      "order": 30,
+      "mod": "piratez",
+      "texts": {
+        "ru": { "name": "X-Piratez", "summary": "Прохождение, сборки, вопросы по моду Dioxine." },
+        "en": { "name": "X-Piratez", "summary": "Playthroughs, builds and questions about Dioxine's mod." }
+      }
+    },
+    {
+      "slug": "help",
+      "order": 40,
+      "texts": {
+        "ru": { "name": "Помощь", "summary": "Не ставится, падает, не находит мод — сюда. К сообщению полезно приложить openxcom.log." },
+        "en": { "name": "Help", "summary": "Will not install, crashes, cannot find the mod - here. Attaching openxcom.log helps." }
+      }
+    },
+    {
+      "slug": "talk",
+      "order": 50,
+      "texts": {
+        "ru": { "name": "Разговоры", "summary": "Всё остальное: другие моды, другие игры, просто поговорить." },
+        "en": { "name": "Talk", "summary": "Everything else: other mods, other games, or just talking." }
+      }
+    }
+  ]
+}

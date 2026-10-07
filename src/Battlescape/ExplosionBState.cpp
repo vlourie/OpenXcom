@@ -18,6 +18,7 @@
  */
 
 #include "ExplosionBState.h"
+#include "AiProbe.h"
 #include "BattlescapeState.h"
 #include "Explosion.h"
 #include "TileEngine.h"
@@ -31,6 +32,7 @@
 #include "../Mod/RuleItem.h"
 #include "../Mod/Armor.h"
 #include "../Engine/RNG.h"
+#include "../Engine/HdFx.h"
 
 namespace OpenXcom
 {
@@ -206,6 +208,7 @@ void ExplosionBState::init()
 	{
 		if (_power > 0)
 		{
+			AiProbe::event(_parent->getSave(), "explosion", _attack.attacker, _center.toTile());
 			_parent->getSave()->getTileEngine()->explode(_attack, _center, _power, _damageType, _radius, range);
 
 			int powerForAnimation = _power;
@@ -232,6 +235,8 @@ void ExplosionBState::init()
 			int counter = std::max(1, (powerForAnimation / 5) / 5);
 			_parent->getMap()->setBlastFlash(true);
 			int lowerLimit = std::max(1, powerForAnimation / 5);
+			const std::string hdFx = HdFx::boomClip(itemRule);
+			HdFx::noteForTest(hdFx);
 			for (int i = 0; i < lowerLimit; i++)
 			{
 				int X = RNG::generate(-powerForAnimation / 2, powerForAnimation / 2);
@@ -239,6 +244,7 @@ void ExplosionBState::init()
 				Position p = _center;
 				p.x += X; p.y += Y;
 				Explosion *explosion = new Explosion(p, frame, frameDelay, true, false, frameCount);
+				explosion->setHdFx(hdFx);
 				// add the explosion on the map
 				_parent->getMap()->getExplosions()->push_back(explosion);
 				if (i > 0 && i % counter == 0)
@@ -260,7 +266,7 @@ void ExplosionBState::init()
 			_parent->playSound(sound);
 			if (_parent->getMap()->getFollowProjectile() || _explosionCounter > 0)
 			{
-				_parent->getMap()->getCamera()->centerOnPosition(_center.toTile(), false);
+				_parent->getMap()->getCamera()->focusOn(_center.toTile(), false);
 			}
 		}
 		else
@@ -271,6 +277,11 @@ void ExplosionBState::init()
 	else
 	// create a bullet hit
 	{
+		// HD render: what the hit lands on picks its combat effect (read only, before and after the hit)
+		const Tile *hdTile = _parent->getSave()->getTile(_center.toTile());
+		const BattleUnit *hdUnit = _hit ? _targetPsiOrHit : (hdTile ? hdTile->getOverlappingUnit(_parent->getSave()) : nullptr);
+		const int hdBefore = hdUnit ? hdUnit->getHealth() * 1000 + hdUnit->getStunlevel() : 0;
+
 		_parent->getSave()->getTileEngine()->hit(_attack, _center, _power, _damageType, range, _terrainMeleeTilePart);
 
 		_parent->setStateInterval(std::max(1, ((BattlescapeState::DEFAULT_ANIM_SPEED/2) - (10 * itemRule->getExplosionSpeed()))));
@@ -348,7 +359,24 @@ void ExplosionBState::init()
 
 		if (anim != -1)
 		{
-			Explosion *explosion = new Explosion(_center, anim, 0, false, (_hit || _psi), animFrames); // Don't burn the tile
+			// a hit that landed on a unit: the HD pack may have another picture of these frames (blood)
+			bool onUnit = false;
+			if (!miss && !_psi)
+			{
+				const Tile *hitTile = _parent->getSave()->getTile(_center.toTile());
+				onUnit = (_hit ? _targetPsiOrHit : (hitTile ? hitTile->getOverlappingUnit(_parent->getSave()) : nullptr)) != nullptr;
+			}
+			Explosion *explosion = new Explosion(_center, anim, 0, false, (_hit || _psi), animFrames, onUnit); // Don't burn the tile
+			// a missed shot keeps the classic miss animation; a missed swing still swings
+			if (!_psi && !(miss && !_hit))
+			{
+				const bool armorHeld = onUnit && hdUnit && hdUnit->getHealth() * 1000 + hdUnit->getStunlevel() == hdBefore;
+				const std::string clip = _hit
+					? HdFx::swingClip(weaponRule, damageRule, _attack.attacker ? _attack.attacker->getDirection() : 0)
+					: HdFx::hitClip(itemRule, onUnit, hdUnit, armorHeld, hdTile, _center.z);
+				explosion->setHdFx(clip);
+				HdFx::noteForTest(clip);
+			}
 			_parent->getMap()->getExplosions()->push_back(explosion);
 		}
 		if (_parent->getMap()->getFollowProjectile())
@@ -358,7 +386,7 @@ void ExplosionBState::init()
 
 		if (_targetPsiOrHit && _parent->getSave()->getSide() == FACTION_HOSTILE && _targetPsiOrHit->getFaction() == FACTION_PLAYER)
 		{
-			_parent->getMap()->getCamera()->centerOnPosition(_center.toTile(), false);
+			_parent->getMap()->getCamera()->focusOn(_center.toTile(), false);
 		}
 		// bullet hit sound
 		_parent->playSound(sound, _center.toTile());

@@ -17,9 +17,11 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "ActionMenuItem.h"
+#include <algorithm>
 #include "../Interface/Text.h"
 #include "../Interface/Frame.h"
 #include "../Engine/Game.h"
+#include "../Engine/HdUi.h"
 #include "../Mod/Mod.h"
 #include "../Mod/RuleInterface.h"
 
@@ -157,6 +159,46 @@ void ActionMenuItem::draw()
 	_txtDescription->blit(this->getSurface());
 	_txtAcc->blit(this->getSurface());
 	_txtTU->blit(this->getSurface());
+}
+
+/**
+ * The modern skin's menu item: a rounded panel in the frame's fill colour
+ * (lighter while highlighted) with the frame's border, and the texts.
+ */
+void ActionMenuItem::hdMirror()
+{
+	if (!HdUi::skin())
+	{
+		Surface::hdMirror();
+		return;
+	}
+	HdUi &ui = HdUi::instance();
+	const SDL_Color *pal = HdUi::paletteOf(this);
+	const int k = HdUi::scale();
+	const float x0 = (float)getX() * k, y0 = (float)getY() * k, x1 = (float)(getX() + getWidth()) * k, y1 = (float)(getY() + getHeight()) * k;
+	const float r = 1.5f * k, edge = std::max(1.0f, k * 0.5f);
+	const Uint32 fill = HdUi::rgba(pal[_frame->getSecondaryColor()]);
+	ui.fillRoundRect(x0, y0, x1, y1, r, (HdUi::scaled(fill, 1.1f) & 0x00FFFFFFu) | 0xF0000000u, (HdUi::scaled(fill, 0.85f) & 0x00FFFFFFu) | 0xF0000000u);
+	if (_highlighted)
+	{
+		ui.fillRoundRect(x0 + edge, y0 + edge, x1 - edge, y0 + (y1 - y0) * 0.5f, std::max(r - edge, 0.0f), 0x24FFFFFFu, 0x06FFFFFFu);
+	}
+	ui.strokeRoundRect(x0, y0, x1, y1, r, edge, HdUi::rgba(pal[(Uint8)(_frame->getColor() + 2)], 220));
+	// the three columns overlap on paper (10..210, 140..240, 210..290) and the classic layout gets away
+	// with it because the bitmap letters are narrow: a name ending at 149 is simply overpainted by the
+	// accuracy. The TrueType face is about half again as wide at the same cap height, so a long action
+	// name ran straight through the accuracy number. Every column gets the room up to the next one and
+	// the line condenses into it.
+	Text *columns[] = { _txtDescription, _txtAcc, _txtTU };
+	const int count = (int)(sizeof(columns) / sizeof(columns[0]));
+	for (int i = 0; i < count; ++i)
+	{
+		Text *text = columns[i];
+		const int left = text->getX();
+		const int next = i + 1 < count ? columns[i + 1]->getX() : getWidth();
+		const int room = std::max(1, std::min(left + text->getWidth(), next) - left);
+		text->hdDrawAt(getX() + left, getY() + text->getY(), getX() + left, getY(), room, getHeight());
+	}
 }
 
 /**

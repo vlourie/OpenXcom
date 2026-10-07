@@ -127,8 +127,10 @@ void OpenGL::resize(unsigned width, unsigned height)
 	glErrorCheck();
 	glPixelStorei(GL_UNPACK_ROW_LENGTH, surface->pitch / surface->format->BytesPerPixel);
 	glErrorCheck();
+	// HD render: 8-bit RGBA storage matches the BGRA8 frames that are uploaded every frame, so the
+	// driver copies them straight in (the old 16-bit storage made it convert 3.7 Mpx per frame at 4x)
 	glTexImage2D(GL_TEXTURE_2D,
-		/* mip-map level = */ 0, /* internal format = */ GL_RGB16_EXT,
+		/* mip-map level = */ 0, /* internal format = */ GL_RGBA8,
 		width, height, /* border = */ 0, /* format = */ GL_BGRA,
 		iformat, buffer);
 	glErrorCheck();
@@ -149,7 +151,7 @@ void OpenGL::clear() {
 	glErrorCheck();
 }
 
-void OpenGL::refresh(bool smooth, unsigned inwidth, unsigned inheight, unsigned outwidth, unsigned outheight, int topBlackBand, int bottomBlackBand, int leftBlackBand, int rightBlackBand)
+void OpenGL::refresh(bool smooth, unsigned inwidth, unsigned inheight, unsigned outwidth, unsigned outheight, int topBlackBand, int bottomBlackBand, int leftBlackBand, int rightBlackBand, const void *pixels, int pitch)
 {
 	while (glGetError() != GL_NO_ERROR); // clear possible error from who knows where
 	clear();
@@ -190,13 +192,13 @@ void OpenGL::refresh(bool smooth, unsigned inwidth, unsigned inheight, unsigned 
 
 	glErrorCheck();
 
-	glPixelStorei(GL_UNPACK_ROW_LENGTH, surface->pitch / surface->format->BytesPerPixel);
+	glPixelStorei(GL_UNPACK_ROW_LENGTH, (pixels ? pitch : surface->pitch) / surface->format->BytesPerPixel);
 
 	glErrorCheck();
 
 	glTexSubImage2D(GL_TEXTURE_2D,
 		/* mip-map level = */ 0, /* x = */ 0, /* y = */ 0,
-		iwidth, iheight, GL_BGRA, iformat, buffer);
+		iwidth, iheight, GL_BGRA, iformat, pixels ? pixels : buffer);
 
 
 	//OpenGL projection sets 0,0 as *bottom-left* of screen.

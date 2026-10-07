@@ -48,6 +48,8 @@ public:
 	int getValue() const;
 	/// Draws the progress bar.
 	void draw() override;
+	/// The HD interface's version: the skin draws the bar's geometry crisply instead of scaling its pixels.
+	void hdMirror() override;
 };
 
 }

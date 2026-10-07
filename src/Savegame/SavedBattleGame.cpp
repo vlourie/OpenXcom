@@ -40,6 +40,7 @@
 #include "../Engine/Sound.h"
 #include "../Mod/RuleInventory.h"
 #include "../Battlescape/AIModule.h"
+#include "../Battlescape/AiProbe.h"
 #include "../Engine/RNG.h"
 #include "../Engine/Options.h"
 #include "../Engine/Logger.h"
@@ -447,9 +448,11 @@ void SavedBattleGame::load(const YAML::YamlNodeReader& node, Mod *mod, SavedGame
  */
 void SavedBattleGame::loadMapResources(Mod *mod)
 {
+	// HD render: a loaded battle picks up the HD scale option before its terrain loads
+	mod->refreshHdScale();
 	for (auto* mds : _mapDataSets)
 	{
-		mds->loadData(mod->getMCDPatch(mds->getName()));
+		mds->loadData(mod->getMCDPatch(mds->getName()), true, mod->getHdScale());
 	}
 
 	int mdsID, mdID;
@@ -1478,6 +1481,7 @@ const RuleCraftDeployment& SavedBattleGame::getCustomDeployment(const RuleCraft*
  */
 void SavedBattleGame::endTurn()
 {
+	AiProbe::turnStage(this, "endturn");
 	// reset turret direction for all hostile and neutral units (as it may have been changed during reaction fire)
 	for (auto* bu : _units)
 	{
@@ -1519,6 +1523,7 @@ void SavedBattleGame::endTurn()
 	else if (_side == FACTION_NEUTRAL)
 	{
 		prepareNewTurn();
+		AiProbe::turnStage(this, "envi");
 		_turn++;
 		_side = FACTION_PLAYER;
 		if (_lastSelectedUnit && _lastSelectedUnit->isSelectable(FACTION_PLAYER, false, false))
@@ -1610,8 +1615,10 @@ void SavedBattleGame::endTurn()
 		}
 	}
 
+	AiProbe::turnStage(this, "rest");
 	//scripts update
 	newTurnUpdateScripts();
+	AiProbe::turnStage(this, "script");
 
 	//fov check will be done by `BattlescapeGame::endTurn`
 

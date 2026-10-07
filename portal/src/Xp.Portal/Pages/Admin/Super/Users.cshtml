@@ -1,0 +1,49 @@
+@page "/admin/super/users"
+@model Xp.Portal.Pages.Admin.Super.UsersModel
+@{
+    ViewData["Title"] = T["super.users"];
+}
+<partial name="_SuperNav" />
+<h1>@T["super.users"]</h1>
+<partial name="_Errors" model="Model.Errors" />
+<form method="get" class="panel">
+    <label for="Q">@T["admin.search"]</label>
+    <input type="text" id="Q" name="Q" value="@Model.Q" maxlength="256" />
+    <button type="submit" class="secondary">@T["admin.filter.apply"]</button>
+</form>
+@foreach (var row in Model.Rows)
+{
+    var u = row.User;
+    <form method="post" class="panel">
+        <input type="hidden" name="id" value="@u.Id" />
+        <p>
+            <strong>@u.DisplayName</strong> &lt;@u.Email&gt;
+            @if (!u.EmailConfirmed)
+            {
+                <span class="tag">@T["super.unconfirmed"]</span>
+            }
+            @if (u.TwoFactorEnabled)
+            {
+                <span class="tag">2FA</span>
+            }
+        </p>
+        <div class="row">
+            <div>
+                <label for="role-@u.Id">@T["super.role"]</label>
+                <select id="role-@u.Id" name="role">
+                    @foreach (var r in Roles.All)
+                    {
+                        <option value="@r" selected="@(r == row.Role)">@r</option>
+                    }
+                </select>
+            </div>
+            <div>
+                @foreach (var p in Permissions.All)
+                {
+                    <label class="check"><input type="checkbox" name="perms" value="@p" checked="@row.Permissions.Contains(p)" /> <span>@T["perm." + p]</span></label>
+                }
+            </div>
+        </div>
+        <button type="submit" class="secondary">@T["admin.apply"]</button>
+    </form>
+}

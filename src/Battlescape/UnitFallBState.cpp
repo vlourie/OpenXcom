@@ -17,7 +17,6 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <algorithm>
 #include "UnitFallBState.h"
 #include <algorithm>
 #include "TileEngine.h"
@@ -26,6 +25,7 @@
 #include "../Savegame/SavedBattleGame.h"
 #include "../Savegame/Tile.h"
 #include "../Engine/Options.h"
+#include "../Engine/HdGentle.h"
 #include "../Mod/Armor.h"
 #include "../Mod/Mod.h"
 
@@ -56,9 +56,9 @@ void UnitFallBState::init()
 {
 	_terrain = _parent->getTileEngine();
 	if (_parent->getSave()->getSide() == FACTION_PLAYER)
-		_parent->setStateInterval(Options::battleXcomSpeed);
+		_parent->setStateInterval(HdGentle::xcomSpeed());
 	else
-		_parent->setStateInterval(Options::battleAlienSpeed);
+		_parent->setStateInterval(HdGentle::alienSpeed());
 
 }
 

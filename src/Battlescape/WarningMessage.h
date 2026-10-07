@@ -36,6 +36,7 @@ private:
 	Text *_text;
 	Timer *_timer;
 	Uint8 _color, _fade;
+	bool _textKept;     ///< was the text kept out of the box when it was last drawn (the HD interface draws it)
 public:
 	/// Creates a new warning message with the specified size and position.
 	WarningMessage(int width, int height, int x = 0, int y = 0);
@@ -57,6 +58,8 @@ public:
 	void fade();
 	/// Draws the message.
 	void draw() override;
+	/// The HD interface's version: the box, then the text in its own fonts.
+	void hdMirror() override;
 };
 
 }

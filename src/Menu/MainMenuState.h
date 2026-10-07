@@ -44,7 +44,7 @@ public:
 class MainMenuState : public State
 {
 private:
-	TextButton *_btnNewGame, *_btnNewBattle, *_btnLoad, *_btnOptions, *_btnMods, *_btnQuit, *_btnUpdate;
+	TextButton *_btnNewGame, *_btnNewBattle, *_btnLoad, *_btnOptions, *_btnMods, *_btnQuit, *_btnUpdate, *_btnReports, *_btnLauncher;
 	Window *_window;
 	Text *_txtTitle, *_txtUpdateInfo;
 #ifdef _WIN32
@@ -66,6 +66,10 @@ public:
 	void btnOptionsClick(Action *action);
 	/// Handler for clicking the Mods button.
 	void btnModsClick(Action *action);
+	/// Handler for clicking the My Reports button.
+	void btnReportsClick(Action *action);
+	/// Handler for clicking the Launcher button.
+	void btnLauncherClick(Action *action);
 	/// Handler for clicking the Quit button.
 	void btnQuitClick(Action *action);
 	/// Handler for clicking the Update button.

@@ -418,6 +418,8 @@ public:
 	int getAnimFrame() const;
 	/// Increase animation frame.
 	void nextAnimFrame();
+	/// Sets animation frame (HD render test: deterministic frame capture).
+	void setAnimFrame(int frame) { _animFrame = frame; }
 	/// Sets debug mode.
 	void setDebugMode();
 	void revealMap();

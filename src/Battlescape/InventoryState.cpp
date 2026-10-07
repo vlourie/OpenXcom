@@ -24,6 +24,7 @@
 #include "Inventory.h"
 #include "../Basescape/SoldierArmorState.h"
 #include "../Basescape/SoldierAvatarState.h"
+#include "../Basescape/SoldierVoiceState.h"
 #include "../Basescape/SoldierDiaryLightState.h"
 #include "../Engine/Game.h"
 #include "../Engine/FileMap.h"
@@ -60,6 +61,8 @@
 #include "TileEngine.h"
 #include "../Mod/RuleInterface.h"
 #include "../Ufopaedia/Ufopaedia.h"
+#include "AiProbe.h"
+#include "../Engine/HdItems.h"
 
 namespace OpenXcom
 {
@@ -179,6 +182,15 @@ InventoryState::InventoryState(bool tu, BattlescapeState *parent, Base *base, bo
 	if (Options::showMoreStatsInInventoryView)
 	{
 		_txtTus->setY(_txtTus->getY() + 8);
+		if (_tu)
+		{
+			// in battle TU takes the first stat row, the stat rows move one down;
+			// the last one (shield) comes out below the unload button, its long text is not covered
+			_txtStatLine1->setY(_txtStatLine1->getY() + 8);
+			_txtStatLine2->setY(_txtStatLine2->getY() + 8);
+			_txtStatLine3->setY(_txtStatLine3->getY() + 8);
+			_txtStatLine4->setY(_txtStatLine4->getY() + 8);
+		}
 	}
 
 	centerAllSurfaces();
@@ -323,9 +335,12 @@ InventoryState::InventoryState(bool tu, BattlescapeState *parent, Base *base, bo
 	_inv->draw();
 	_inv->setTuMode(_tu);
 	_inv->setSelectedUnit(_game->getSavedGame()->getSavedBattle()->getSelectedUnit(), true);
-	_inv->onMouseClick((ActionHandler)&InventoryState::invClick, 0);
+	_inv->onMouseClick((ActionHandler)&InventoryState::invLeftClick, SDL_BUTTON_LEFT);
+	_inv->onMouseClick((ActionHandler)&InventoryState::invRightClick, SDL_BUTTON_RIGHT);
 	_inv->onMouseOver((ActionHandler)&InventoryState::invMouseOver);
 	_inv->onMouseOut((ActionHandler)&InventoryState::invMouseOut);
+	_inv->onMouseClick((ActionHandler)&InventoryState::btnGroundClickForward, SDL_BUTTON_WHEELDOWN);
+	_inv->onMouseClick((ActionHandler)&InventoryState::btnGroundClickBackward, SDL_BUTTON_WHEELUP);
 
 	if (_battleGame->getDebugMode() && _game->isShiftPressed())
 	{
@@ -340,10 +355,10 @@ InventoryState::InventoryState(bool tu, BattlescapeState *parent, Base *base, bo
 
 	_txtTus->setVisible(_tu);
 	_txtWeight->setVisible(Options::showMoreStatsInInventoryView);
-	_txtStatLine1->setVisible(Options::showMoreStatsInInventoryView && !_tu);
-	_txtStatLine2->setVisible(Options::showMoreStatsInInventoryView && !_tu);
-	_txtStatLine3->setVisible(Options::showMoreStatsInInventoryView && !_tu);
-	_txtStatLine4->setVisible(Options::showMoreStatsInInventoryView && !_tu);
+	_txtStatLine1->setVisible(Options::showMoreStatsInInventoryView);
+	_txtStatLine2->setVisible(Options::showMoreStatsInInventoryView);
+	_txtStatLine3->setVisible(Options::showMoreStatsInInventoryView);
+	_txtStatLine4->setVisible(Options::showMoreStatsInInventoryView || _tu);
 }
 
 static void _clearInventoryTemplate(std::vector<EquipmentLayoutItem*> &inventoryTemplate)
@@ -644,11 +659,36 @@ void InventoryState::edtSoldierChange(Action *)
 }
 
 /**
+ * Gets the armour energy shield of the unit: charge and capacity.
+ * A mod script may push them with setDisplayShieldHp/Capacity; without that they are read
+ * straight from the tags Yankes' scripts keep (unit UNIT_ENERGY_SHIELD_HP, armour ARMOR_ENERGY_SHIELD_CAPACITY).
+ */
+static void getUnitShield(const Mod *mod, const BattleUnit *unit, int &hp, int &capacity)
+{
+	hp = unit->getDisplayShieldHp();
+	capacity = unit->getDisplayShieldCapacity();
+	if (capacity > 0)
+	{
+		return;
+	}
+	auto hpTag = mod->getScriptGlobal()->getTag<ScriptTag<BattleUnit>>("Tag.UNIT_ENERGY_SHIELD_HP");
+	auto capacityTag = mod->getScriptGlobal()->getTag<ScriptTag<Armor>>("Tag.ARMOR_ENERGY_SHIELD_CAPACITY");
+	if (hpTag && capacityTag)
+	{
+		hp = unit->getScriptValuesRaw().get(hpTag);
+		capacity = unit->getArmor()->getScriptValuesRaw().get(capacityTag);
+	}
+}
+
+/**
  * Updates the soldier stats (Weight, TU).
  */
 void InventoryState::updateStats()
 {
 	BattleUnit *unit = _battleGame->getSelectedUnit();
+
+	int shieldHp, shieldCapacity;
+	getUnitShield(_game->getMod(), unit, shieldHp, shieldCapacity);
 
 	_txtTus->setText(tr("STR_TIME_UNITS_SHORT").arg(unit->getTimeUnits()));
 
@@ -705,7 +745,11 @@ void InventoryState::updateStats()
 					txtField->setText(tr("STR_MELEE_SHORT").arg(unit->getBaseStats()->melee));
 					break;
 				case 14:
-					if (showPsiStrength)
+					if (shieldCapacity > 0)
+					{
+						txtField->setText(tr("STR_SHIELD_SHORT").arg(shieldHp).arg(shieldCapacity));
+					}
+					else if (showPsiStrength)
 					{
 						txtField->setText(tr("STR_PSI_SHORT")
 							.arg(unit->getBaseStats()->psiStrength)
@@ -716,6 +760,16 @@ void InventoryState::updateStats()
 						txtField->setText("");
 					}
 					break;
+						case 20:
+							if (shieldCapacity > 0)
+							{
+								txtField->setText(tr("STR_SHIELD_SHORT").arg(shieldHp).arg(shieldCapacity));
+							}
+							else
+							{
+								txtField->setText("");
+							}
+							break;
 				default:
 					txtField->setText("");
 					break;
@@ -801,6 +855,17 @@ void InventoryState::btnArmorClick(Action *action)
 		return;
 	}
 
+	// voice set can be changed at any time
+	if ((_game->isCtrlPressed() || _base == 0) && _game->getMod()->getEnableUnitResponseSounds())
+	{
+		BattleUnit* unit = _battleGame->getSelectedUnit();
+		if (unit->getOriginalFaction() == FACTION_PLAYER)
+		{
+			_game->pushState(new SoldierVoiceState(unit, nullptr, SV_BATTLESCAPE));
+			return;
+		}
+	}
+
 	// only allowed during base equipment
 	if (_base == 0)
 	{
@@ -851,16 +916,7 @@ void InventoryState::btnArmorClickRight(Action *action)
 
 	if (!(s->getCraft() && s->getCraft()->getStatus() == "STR_OUT"))
 	{
-		size_t soldierIndex = 0;
-		for (auto soldierIt = _base->getSoldiers()->begin(); soldierIt != _base->getSoldiers()->end(); ++soldierIt)
-		{
-			if ((*soldierIt)->getId() == s->getId())
-			{
-				soldierIndex = soldierIt - _base->getSoldiers()->begin();
-			}
-		}
-
-		_game->pushState(new SoldierAvatarState(_base, soldierIndex));
+		_game->pushState(new SoldierAvatarState(unit));
 	}
 }
 
@@ -1230,6 +1286,7 @@ void InventoryState::btnUnloadClick(Action *)
 		_txtItem->setText("");
 		_txtAmmo->setText("");
 		_selAmmo->clear();
+		HdItems::detach(_selAmmo);
 		updateStats();
 		_game->getMod()->getSoundByDepth(0, Mod::ITEM_DROP)->play();
 	}
@@ -1775,9 +1832,21 @@ void InventoryState::onAutoequip(Action *)
  * Updates item info.
  * @param action Pointer to an action.
  */
-void InventoryState::invClick(Action *act)
+void InventoryState::invLeftClick(Action *act)
 {
-	updateStats();
+	if (_game->isCtrlPressed() && _game->isAltPressed())
+		onMoveGroundInventoryToBaseClick(true);
+	else
+		updateStats();
+
+	_prev_key = 0, _key_repeats = 0;
+}
+
+void InventoryState::invRightClick(Action* action)
+{
+	if (_game->isCtrlPressed() && _game->isAltPressed())
+		onMoveGroundInventoryToBaseClick(false);
+
 	_prev_key = 0, _key_repeats = 0;
 }
 
@@ -1985,6 +2054,7 @@ void InventoryState::invMouseOver(Action *)
 		}
 
 		_selAmmo->clear();
+		HdItems::detach(_selAmmo);
 		bool hasSelfAmmo = item->getRules()->getBattleType() != BT_AMMO && item->getRules()->getClipSize() > 0;
 		if ((item->isWeaponWithAmmo() || hasSelfAmmo) && item->haveAnyAmmo())
 		{
@@ -2015,6 +2085,7 @@ void InventoryState::invMouseOver(Action *)
 		}
 		_txtAmmo->setText("");
 		_selAmmo->clear();
+		HdItems::detach(_selAmmo);
 		updateTemplateButtons(!_tu);
 	}
 }
@@ -2028,6 +2099,7 @@ void InventoryState::invMouseOut(Action *)
 	_txtItem->setText("");
 	_txtAmmo->setText("");
 	_selAmmo->clear();
+	HdItems::detach(_selAmmo);
 	_inv->setMouseOverItem(0);
 	_mouseHoverItem = nullptr;
 	_currentDamageTooltipItem = nullptr;
@@ -2110,6 +2182,100 @@ void InventoryState::onMoveGroundInventoryToBase(Action *)
 	_game->getMod()->getSoundByDepth(_battleGame->getDepth(), Mod::ITEM_DROP)->play();
 }
 
+void InventoryState::onMoveGroundInventoryToBaseClick(bool leftClick)
+{
+	if (_inv->getSelectedItem() != nullptr || _base == nullptr || _noCraft)
+		return;
+
+	BattleUnit* unit = _battleGame->getSelectedUnit();
+	Craft* craft = unit->getGeoscapeSoldier()->getCraft();
+
+	if (craft == 0 || craft->getStatus() == "STR_OUT")
+		return;
+
+	auto* selectedItem = _inv->getMouseOverItem();
+	if (!selectedItem || selectedItem->getRules()->isFixed())
+		return;
+
+	std::vector<BattleItem*> sameSlotItems{ selectedItem };
+	if (!leftClick)
+	{
+		auto* selectedItemSlot = selectedItem->getSlot();
+		auto type = selectedItemSlot->getType();
+		auto id = selectedItemSlot->getId();
+		auto slotX = selectedItemSlot->getX();
+		auto slotY = selectedItemSlot->getY();
+		auto invX = selectedItem->getSlotX();
+		auto invY = selectedItem->getSlotY();
+
+		auto& itemInventory = selectedItem->getOwner() == unit
+			? *unit->getInventory()
+			: *unit->getTile()->getInventory();
+
+		for (auto* bi : itemInventory)
+		{
+			if (!bi || bi == selectedItem)
+				continue;
+
+			auto slot = bi->getSlot();
+			if (!slot)
+				continue;
+
+			if (!(bi->getSlotX() == invX && bi->getSlotY() == invY))
+				continue;
+
+			if (!(slot->getId() == id && slot->getType() == type && slot->getX() == slotX && slot->getY() == slotY))
+				continue;
+
+			sameSlotItems.push_back(bi);
+		}
+	}
+
+	for (auto* item : sameSlotItems)
+	{
+		// step 1: move stuff from craft to base
+		const auto& weaponType = item->getRules();
+		// check all ammo slots first
+		for (int slot = 0; slot < RuleItem::AmmoSlotMax; ++slot)
+		{
+			if (item->getAmmoForSlot(slot))
+			{
+				const auto& ammoType = item->getAmmoForSlot(slot)->getRules();
+				// only real ammo
+				if (weaponType != ammoType)
+				{
+					craft->getItems()->removeItem(ammoType);
+					_base->getStorageItems()->addItem(ammoType);
+				}
+			}
+		}
+		// and the weapon as last
+		craft->getItems()->removeItem(weaponType);
+		_base->getStorageItems()->addItem(weaponType);
+
+		// step 2: remove from inventory/ground
+		if (item->getOwner() != nullptr && item->getOwner() == unit)
+		{
+			Collections::removeIf(*unit->getInventory(), 1, [item](BattleItem* i) { return i == item; });
+			updateStats();
+			_game->getSavedGame()->getSavedBattle()->removeItem(item);
+		}
+		else
+		{
+			auto& groundInventory = *unit->getTile()->getInventory();
+			Collections::removeIf(groundInventory, 1, [item](BattleItem* i) { return i == item; });
+			_inv->arrangeGround();
+		}
+
+		_game->getSavedGame()->getSavedBattle()->removeItem(item);
+	}
+
+	refreshMouse();
+
+	// give audio feedback
+	_game->getMod()->getSoundByDepth(_battleGame->getDepth(), Mod::ITEM_DROP)->play();
+}
+
 /**
  * Takes care of any events from the core game engine.
  * @param action Pointer to an action.
@@ -2162,6 +2328,18 @@ void InventoryState::handle(Action *action)
  */
 void InventoryState::think()
 {
+	// the AI test bench: the pre-battle equipment screen has nobody to press OK
+	if (!_tu && _parent && AiProbe::active())
+	{
+		btnOkClick(nullptr);
+		return;
+	}
+	if (_tu && Options::showMoreStatsInInventoryView)
+	{
+		// in battle the last stat row sits where the ammo counter of a weapon appears
+		_txtStatLine4->setVisible(_txtAmmo->getText().empty());
+	}
+
 	if (_mouseHoverItem)
 	{
 		int anim = _inv->getAnimFrame();
@@ -2212,11 +2390,15 @@ void InventoryState::think()
 			r.w -= 2;
 			r.h -= 2;
 			_selAmmo->drawRect(&r, Palette::blockOffset(0)+15);
-			firstAmmo->getRules()->drawHandSprite(_game->getMod()->getSurfaceSet("BIGOBS.PCK"), _selAmmo, firstAmmo, _game->getSavedGame()->getSavedBattle(), anim);
+			if (!HdItems::attachHand(firstAmmo->getRules(), firstAmmo, _game->getSavedGame()->getSavedBattle(), anim, _game->getMod()->getSurfaceSet("BIGOBS.PCK"), _selAmmo))
+			{
+				firstAmmo->getRules()->drawHandSprite(_game->getMod()->getSurfaceSet("BIGOBS.PCK"), _selAmmo, firstAmmo, _game->getSavedGame()->getSavedBattle(), anim);
+			}
 		}
 		else
 		{
 			_selAmmo->clear();
+			HdItems::detach(_selAmmo);
 		}
 	}
 	State::think();

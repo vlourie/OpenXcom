@@ -18,6 +18,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <map>
+#include <set>
 #include <unordered_map>
 #include <vector>
 #include <string>
@@ -58,6 +59,7 @@ class RuleCraft;
 class RuleCraftWeapon;
 class RuleItemCategory;
 class RuleItem;
+class RuleVoiceSet;
 class RuleWeaponSet;
 struct RuleDamageType;
 class RuleUfo;
@@ -162,6 +164,13 @@ private:
 	std::map<std::string, Font*> _fonts;
 	std::map<std::string, Surface*> _surfaces;
 	std::map<std::string, SurfaceSet*> _sets;
+	/// HD render: scale factor k (0 = not determined yet) and the k-times-bigger copies of battle sprite sets, keyed by source set.
+	int _hdScale = 0;
+	std::map<const SurfaceSet*, SurfaceSet*> _hdSets;
+	std::set<const SurfaceSet*> _hdPacksLoaded;
+	std::map<const Surface*, Surface*> _hdSurfaces;
+	/// HD render: the animation phases of a single picture (hd/UI/anim/<name>/<i>.png), keyed by the classic picture.
+	std::map<const Surface*, std::vector<Surface*> > _hdSurfaceFrames;
 	std::map<std::string, SoundSet*> _sounds;
 	std::map<std::string, Music*> _musics;
 	std::vector<Uint16> _voxelData;
@@ -174,6 +183,7 @@ private:
 	std::map<std::string, RuleCraftWeapon*> _craftWeapons;
 	std::map<std::string, RuleItemCategory*> _itemCategories;
 	std::map<std::string, RuleItem*> _items;
+	std::map<std::string, RuleVoiceSet*> _voiceSets;
 	std::map<std::string, RuleWeaponSet*> _weaponSets;
 	std::map<std::string, RuleUfo*> _ufos;
 	std::map<std::string, RuleTerrain*> _terrains;
@@ -190,6 +200,10 @@ private:
 	std::map<std::string, RuleInventory*> _invs;
 	bool _inventoryOverlapsPaperdoll;
 	std::map<std::string, RuleResearch *> _research;
+	// HD: темы, на которые мод ссылается, но не объявляет. С 8.7.1 апстрим падает на
+	// такой ссылке при загрузке; мы держим для каждой пустышку, которую нельзя открыть,
+	// - поведение остаётся прежним (условие не выполняется никогда), а игра запускается
+	mutable std::map<std::string, RuleResearch *> _missingResearch;
 	std::map<std::string, RuleManufacture *> _manufacture;
 	std::map<std::string, RuleManufactureShortcut *> _manufactureShortcut;
 	std::map<std::string, RuleSoldierBonus *> _soldierBonus;
@@ -253,7 +267,8 @@ private:
 	int _healthMissingWoundThreshold = 100;
 	bool _manaEnabled, _manaBattleUI, _manaTrainingPrimary, _manaTrainingSecondary, _manaReplenishAfterMission;
 	bool _healthReplenishAfterMission = true;
-	std::string _manaUnlockResearch;
+	std::string _manaUnlockResearchName;
+	const RuleResearch* _manaUnlockResearch = nullptr;
 
 	std::string _loseMoney, _loseRating, _loseDefeat;
 	int _ufoGlancingHitThreshold, _ufoBeamWidthParameter;
@@ -280,8 +295,19 @@ private:
 	bool _difficultyDemigod;
 	std::pair<std::string, int> _alienFuel;
 	RuleResearch* _finalResearch = nullptr;
-	std::string _fontName, _psiUnlockResearch, _fakeUnderwaterBaseUnlockResearch, _newBaseUnlockResearch;
-	std::string _hireScientistsUnlockResearch, _hireEngineersUnlockResearch;
+	std::string _fontName;
+
+	std::string _psiUnlockResearchName;
+	const RuleResearch* _psiUnlockResearch = nullptr;
+	std::string _fakeUnderwaterBaseUnlockResearchName;
+	const RuleResearch* _fakeUnderwaterBaseUnlockResearch = nullptr;
+	std::string _newBaseUnlockResearchName;
+	const RuleResearch* _newBaseUnlockResearch = nullptr;
+	std::string _hireScientistsUnlockResearchName;
+	const RuleResearch* _hireScientistsUnlockResearch = nullptr;
+	std::string _hireEngineersUnlockResearchName;
+	const RuleResearch* _hireEngineersUnlockResearch = nullptr;
+
 	RuleBaseFacilityFunctions _hireScientistsRequiresBaseFunc, _hireEngineersRequiresBaseFunc;
 
 	std::string _destroyedFacility;
@@ -315,17 +341,17 @@ private:
 	std::map<std::string, int> _ufopaediaSections;
 	std::vector<std::string> _countriesIndex, _extraGlobeLabelsIndex, _regionsIndex, _facilitiesIndex, _craftsIndex, _craftWeaponsIndex, _itemCategoriesIndex, _itemsIndex, _invsIndex, _ufosIndex;
 	std::vector<std::string> _aliensIndex, _enviroEffectsIndex, _startingConditionsIndex, _deploymentsIndex, _armorsIndex, _ufopaediaIndex, _ufopaediaCatIndex, _researchIndex, _manufactureIndex;
-	std::vector<std::string> _skillsIndex, _soldiersIndex, _soldierTransformationIndex, _soldierBonusIndex;
+	std::vector<std::string> _skillsIndex, _soldiersIndex, _soldierTransformationIndex, _soldierBonusIndex, _voiceSetsIndex;
 	std::vector<std::string> _alienMissionsIndex, _terrainIndex, _customPalettesIndex, _arcScriptIndex, _eventScriptIndex, _eventIndex, _missionScriptIndex, _adhocScriptIndex;
 	std::vector<std::vector<int> > _alienItemLevels;
 	std::vector<std::array<SDL_Color, TransparenciesOpacityLevels>> _transparencies;
 	int _facilityListOrder, _craftListOrder, _itemCategoryListOrder, _itemListOrder, _armorListOrder, _alienRaceListOrder, _researchListOrder,  _manufactureListOrder;
-	int _soldierBonusListOrder, _transformationListOrder, _ufopaediaListOrder, _invListOrder, _soldierListOrder;
+	int _soldierBonusListOrder, _transformationListOrder, _ufopaediaListOrder, _invListOrder, _soldierListOrder, _voiceSetsListOrder;
 	std::vector<ModData> _modData;
 	ModData* _modCurrent;
 	const SDL_Color *_statePalette;
 
-	std::vector<std::string> _psiRequirements; // it's a cache for psiStrengthEval
+	std::vector<const RuleResearch*> _psiRequirements; // it's a cache for psiStrengthEval
 	std::vector<const Armor*> _armorsForSoldiersCache;
 	std::vector<const RuleItem*> _armorStorageItemsCache;
 	std::vector<const RuleItem*> _craftWeaponStorageItemsCache;
@@ -441,6 +467,7 @@ public:
 	static int UNIT_RESPONSE_SOUNDS_FREQUENCY[4];
 	static int PEDIA_FACILITY_RENDER_PARAMETERS[4];
 	static bool EXTENDED_ITEM_RELOAD_COST;
+	static bool EXTENDED_IGNORE_OVERWEIGHT_RULE;
 	static bool EXTENDED_INVENTORY_SLOT_SORTING;
 	static bool EXTENDED_RUNNING_COST;
 	static int EXTENDED_MOVEMENT_COST_ROUNDING;
@@ -482,6 +509,25 @@ public:
 	Surface *getSurface(const std::string &name, bool error = true);
 	/// Gets a particular surface set.
 	SurfaceSet *getSurfaceSet(const std::string &name, bool error = true);
+	/// HD render: scale factor k of the battlescape sprites (BLANKS.PCK frame width / 32), 1 = original.
+	int getHdScale();
+	/// HD render: re-reads the HD scale option (call at the start of a battle, before its terrain loads); drops the scaled sets when it changed.
+	void refreshHdScale();
+	/// HD render: gets a surface set scaled k times for the battlescape (the set itself when k = 1).
+	SurfaceSet *getHdSurfaceSet(const std::string &name, bool error = true);
+	/// HD render: gets the k-times-scaled copy of a set (the set itself when k = 1 or null).
+	SurfaceSet *getHdSurfaceSet(SurfaceSet *set);
+	/// HD render: does an active mod ship an HD pack (hd/<set>/) for a sprite set of this game? Asks the
+	/// file map only, so it holds with lazy loading too; fonts alone (hd/UI) do not count.
+	bool hasHdArt() const;
+	/// HD render: the reticle styles oxceHdReticle picks from 2 on (folders hd/CURSOR.PCK/reticle_<style>/).
+	static const std::vector<std::string> HD_RETICLES;
+	/// HD render: registers frames 6..10 of the battle cursor as oxceHdReticle says (call again after it changes).
+	void applyHdReticle();
+	/// HD render: gets a single picture scaled k times for the battlescape (the picture itself when k = 1).
+	Surface *getHdSurface(const std::string &name, bool error = true);
+	/// HD render: the animation phases of a single picture for the battlescape (just getHdSurface when none are shipped).
+	std::vector<Surface*> getHdSurfaceFrames(const std::string &name, bool error = true);
 	/// Gets a particular music.
 	Music *getMusic(const std::string &name, bool error = true) const;
 	/// Gets the available music tracks.
@@ -502,6 +548,8 @@ public:
 	Sound *getSoundByDepth(unsigned int depth, unsigned int sound) const;
 	/// Gets list of LUT data.
 	const std::vector<std::vector<Uint8> > *getLUTs() const;
+	/// Gets the transparency tints (color x opacity level) the LUTs were built from.
+	const std::vector<std::array<SDL_Color, TransparenciesOpacityLevels>> &getTransparencies() const { return _transparencies; }
 
 
 	/// Check for obsolete error based on year.
@@ -595,7 +643,7 @@ public:
 		}
 		else if constexpr (std::is_same_v<T, RuleResearch>)
 		{
-			rule = getResearch(name, true);
+			rule = getResearchOrPlaceholder(name);
 		}
 		else if constexpr (std::is_same_v<T, Unit>)
 		{
@@ -629,6 +677,10 @@ public:
 		{
 			rule = getCommendation(name, true);
 		}
+		else if constexpr (std::is_same_v<T, RuleVoiceSet>)
+		{
+			rule = getVoiceSet(name, true);
+		}
 		else
 		{
 			static_assert(sizeof(T) == 0, "Unsupported type to link");
@@ -661,6 +713,12 @@ public:
 
 	/// Loads a list of mods.
 	void loadAll();
+	/// Registers the HD pictures (hd/UI) of the mods' images.
+	void loadHdUiArt();
+	/// True for an image the engine redraws itself after loading (no HD picture of it can match).
+	static bool isPatchedSurface(const std::string &name);
+	/// Writes surface sets as 8-bit PNG sheets for the HD art tools (`which`: units, all, or set names).
+	int exportHdSets(const std::string &folder, const std::string &which) const;
 	/// Generates the starting saved game.
 	SavedGame *newSave(GameDifficulty diff) const;
 	/// Gets the ruleset for a country type.
@@ -699,6 +757,10 @@ public:
 	RuleItem *getItem(const std::string &id, bool error = false) const;
 	/// Gets the available items.
 	const std::vector<std::string> &getItemsList() const;
+	/// Gets the ruleset for a voice set type.
+	RuleVoiceSet* getVoiceSet(const std::string& type, bool error = false) const;
+	/// Gets the available voice sets.
+	const std::vector<std::string> &getVoiceSetsList() const;
 	/// Gets the ruleset for a weapon set type.
 	RuleWeaponSet* getWeaponSet(const std::string& type, bool error = false) const;
 	/// Gets the ruleset for a UFO type.
@@ -789,13 +851,13 @@ public:
 	/// Gets the cost of hiring an engineer.
 	int getHireEngineerCost() const;
 	/// Gets the research topic required for hiring new engineers.
-	const std::string &getHireEngineersUnlockResearch() const { return _hireEngineersUnlockResearch; }
+	const RuleResearch* getHireEngineersUnlockResearch() const { return _hireEngineersUnlockResearch; }
 	/// Gets the base functions required for hiring new engineers.
 	RuleBaseFacilityFunctions getHireEngineersRequiresBaseFunc() const { return _hireEngineersRequiresBaseFunc; }
 	/// Gets the cost of hiring a scientist.
 	int getHireScientistCost() const;
 	/// Gets the research topic required for hiring new scientists.
-	const std::string &getHireScientistsUnlockResearch() const { return _hireScientistsUnlockResearch; }
+	const RuleResearch* getHireScientistsUnlockResearch() const { return _hireScientistsUnlockResearch; }
 	/// Gets the base functions topic required for hiring new scientists.
 	RuleBaseFacilityFunctions getHireScientistsRequiresBaseFunc() const { return _hireScientistsRequiresBaseFunc; }
 	/// Gets the monthly cost of an engineer.
@@ -915,7 +977,7 @@ public:
 	/// Is the mana trained as a secondary skill (e.g. like strength)?
 	bool isManaTrainingSecondary() const { return _manaTrainingSecondary; }
 	/// Gets the mana unlock research topic (default empty)?
-	const std::string &getManaUnlockResearch() const { return _manaUnlockResearch; }
+	const RuleResearch* getManaUnlockResearch() const { return _manaUnlockResearch; }
 
 	/// How much missing mana will act as "fatal wounds" and prevent the soldier from going into battle.
 	int getManaWoundThreshold() const { return _manaMissingWoundThreshold; }
@@ -935,9 +997,9 @@ public:
 	const std::string &getLoseDefeatCutscene() const { return _loseDefeat; }
 
 	/// Gets the research topic required for building XCOM bases on fakeUnderwater globe textures.
-	const std::string &getFakeUnderwaterBaseUnlockResearch() const { return _fakeUnderwaterBaseUnlockResearch; }
+	const RuleResearch* getFakeUnderwaterBaseUnlockResearch() const { return _fakeUnderwaterBaseUnlockResearch; }
 	/// Gets the research topic required for building XCOM bases.
-	const std::string &getNewBaseUnlockResearch() const { return _newBaseUnlockResearch; }
+	const RuleResearch* getNewBaseUnlockResearch() const { return _newBaseUnlockResearch; }
 
 	/// Gets the threshold for defining a glancing hit on a ufo during interception
 	int getUfoGlancingHitThreshold() const { return _ufoGlancingHitThreshold; }
@@ -1015,6 +1077,8 @@ public:
 
 	/// Gets the ruleset for a specific research project.
 	RuleResearch *getResearch(const std::string &id, bool error = false) const;
+	/// Gets the research, or an unobtainable placeholder if the mod never declared it.
+	const RuleResearch *getResearchOrPlaceholder(const std::string &id) const;
 	/// Gets the ruleset for a specific research project.
 	std::vector<const RuleResearch*> getResearch(const std::vector<std::string> &id) const;
 	/// Gets the ruleset for a specific research project.
@@ -1065,7 +1129,7 @@ public:
 	/// Gets the list of StatStrings.
 	const std::vector<StatString *> &getStatStrings() const;
 	/// Gets the research-requirements for Psi-Lab (it's a cache for psiStrengthEval)
-	const std::vector<std::string> &getPsiRequirements() const;
+	const std::vector<const RuleResearch*> &getPsiRequirements() const;
 	/// Returns the sorted list of inventories.
 	const std::vector<std::string> &getInvsList() const;
 	/// Generates a new soldier.

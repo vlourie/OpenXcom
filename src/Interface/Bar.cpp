@@ -17,6 +17,9 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "Bar.h"
+#include <algorithm>
+#include "../Engine/HdBattleHud.h"
+#include "../Engine/HdUi.h"
 #include <SDL.h>
 
 namespace OpenXcom
@@ -168,6 +171,79 @@ void Bar::setSecondValueOnTop(bool onTop)
  * Draws the bordered bar filled according
  * to its values.
  */
+/**
+ * The HD interface's bar: the modern skin draws a rounded track and fill.
+ */
+void Bar::hdMirror()
+{
+	if (!HdUi::skin())
+	{
+		Surface::hdMirrorNearest();
+		return;
+	}
+	HdUi &ui = HdUi::instance();
+	const SDL_Color *pal = HdUi::paletteOf(this);
+	const int k = HdUi::scale();
+	const float x0 = (float)getX() * k, y0 = (float)getY() * k, y1 = (float)(getY() + getHeight()) * k;
+	// cut at the widget's own width, the way the classic bar is cut: draw() fills its own surface and
+	// SDL drops whatever is wider, while here the bar is drawn straight into the screen. A stat above
+	// the widget's width (X-Piratez goes well past the 170 the soldier screen was drawn for) ran the
+	// track off the right edge of the screen
+	const float xMax = (float)(getX() + getWidth()) * k;
+	// the track holds the fill too: an armor bonus runs past the stat's own maximum, and the classic
+	// bar draws it past its frame; a track cut at the maximum hid it
+	const double longest = std::max(_max, std::max(_value, _value2));
+	const float x1 = std::min(x0 + ((float)(_scale * longest) + 1.0f) * k, xMax);
+	const float r = std::min(1.0f * k, (y1 - y0) * 0.5f);
+	const Uint32 border = HdUi::rgba(pal[_borderColor ? _borderColor : (Uint8)(_color + 4)], 200);
+	// the brass panel's card: the bar lies in a groove cut in the plate, and its fill is a glass tube in it
+	const bool groove = HdBattleHud::grooved(this);
+	if (groove)
+	{
+		Uint32 top, bottom, lip;
+		HdBattleHud::grooveColors(top, bottom, lip);
+		lip &= 0x00FFFFFFu;
+		ui.fillRoundRect(x0, y0, x1, y1, r, top, bottom);
+		ui.fillRoundRect(x0, y0, x1, y0 + 0.8f * k, r, 0x90000000u, 0x00000000u);
+		ui.fillRoundRect(x0 + r, y1 - 0.05f * k, x1 - r, y1 + 0.45f * k, 0.0f, 0x60000000u | lip, lip);
+	}
+	else
+	{
+		ui.fillRoundRect(x0, y0, x1, y1, r, 0xA0000000u, 0xA0000000u);
+	}
+	auto fill = [&](double value, Uint8 color)
+	{
+		// ends where the classic fill ends (its last pixel is the value's line of the soldier screen's
+		// ruler, one pixel per point), not half a pixel later: the start is inset, the end is not
+		const float w = (float)(_scale * value) * k;
+		if (w <= 0.5f * k) return;
+		const Uint32 c = HdUi::rgba(pal[color]);
+		const float fx1 = std::min(x0 + w, x1 - 0.5f * k), fy0 = y0 + 0.5f * k, fy1 = y1 - 0.5f * k;
+		const float fr = std::max(r - 0.5f * k, 0.0f);
+		if (groove)
+		{
+			// lit from above: bright under the highlight, dark along the bottom, a white glint near the top
+			ui.fillRoundRect(x0 + 0.5f * k, fy0, fx1, fy1, fr, HdUi::scaled(c, 1.25f), HdUi::scaled(c, 0.62f));
+			ui.fillRoundRect(x0 + 0.5f * k + fr, fy0 + 0.15f * k, fx1 - fr, fy0 + 0.75f * k, 0.0f, 0x70FFFFFFu, 0x10FFFFFFu);
+		}
+		else
+		{
+			ui.fillRoundRect(x0 + 0.5f * k, fy0, fx1, fy1, fr, HdUi::scaled(c, 1.12f), HdUi::scaled(c, 0.85f));
+		}
+	};
+	if (_secondOnTop)
+	{
+		fill(_value, _color);
+		fill(_value2, _color2);
+	}
+	else
+	{
+		fill(_value2, _color2);
+		fill(_value, _color);
+	}
+	ui.strokeRoundRect(x0, y0, x1, y1, r, std::max(1.0f, k * 0.5f), groove ? 0xA0000000u : border);
+}
+
 void Bar::draw()
 {
 	Surface::draw();

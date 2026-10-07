@@ -1,0 +1,35 @@
+Hi Dioxine! Me again, with the same checker, this time on Piratez_Armors.rul. Good news first: the file is very clean. All 366 layered dolls have every layer sprite and file, all have M0 and F0, all inventory images resolve, corpses and loftemps match unit size, no broken references. Only two things look like real mistakes, both in damageModifier. When the list is shorter than 19 values, OXCE silently fills the missing types with 1.0. Line numbers are from the current release.
+
+1) TANK_MSDF_ARMOR (Piratez_Armors.rul:40125). Looks like a typo: one value is missing and the tail shifted by one. The list has 16 values. Compare with the other two tanks in the same file:
+
+                 ELEC  EMP   WARP  MIND  STAB  HEAT  COLD
+  TANK_ARMOR     0.5   0.75  1.5   0.0   0.45  0.0   0.0
+  HOVERTANK      0.75  1.1   1.5   0.0   0.6   0.0   0.0
+  TANK_MSDF      0.4   1.5   0.75  0.4   (1.0) (1.0) (1.0)
+
+So right now the MSDF tank takes 40% MIND damage (every other vehicle is immune), and knives, arrows, spears, harpoons and flechettes (68 items with damageType 16) hit it at 100% instead of ~45-60%.
+My guess is the MIND 0.0 got lost:
+Now:
+      - 0.4     # ELECTRIC
+      - 1.5     # EMP
+      - 0.75    # WARP
+      - 0.4     # MIND  <- probably meant for STABBING
+Fix:
+      - 0.4     # ELECTRIC
+      - 1.5     # EMP
+      - 0.75    # WARP
+      - 0.0     # MIND
+      - 0.4     # STABBING
+      - 0.0     # HEAT
+      - 0.0     # COLD
+Also: EMP 1.5 / WARP 0.75 is the reverse of the other two tanks. Intended, or swapped?
+
+2) STR_HITLUR_ARMOR (Piratez_Armors.rul:32083). 16 values, STABBING isn't set, so it's 1.0. Everything else is 0.2-0.5, except the two weaknesses you wrote explicitly (BURN 1.0, WARP 1.0). So a knife or an arrow does 5x what a bullet does (PIERCING 0.2) and 2x what a blade does (CUTTING 0.5). Is stabbing a real weakness, or was the armor written before type 16 existed? If not intended, add e.g. `- 0.2` (plus HEAT/COLD).
+
+Small stuff, no rush:
+- 349 armors in this file have 17 values, so HEAT/COLD are 1.0. Harmless today, because the heat/cold enviro effects only hit STR_FRIENDLY and these are all enemies/NPCs. It would matter if weather ever hits the other side too.
+- Seven zombie armors have CHARM = -0.99 (ZOMBIE_STERILE, GRUBAS, TROOPER_1, TROOPER_2, SENTINEL, PIMP, MEGAZOMBIE, lines 37157-37618). The engine treats it exactly like 0.0 (negative damage is simply dropped, no healing). I also checked the vampirism script: it doesn't break, because every vampiric item/armor sets its resist type explicitly. It only shows as "-99%" in stats. 0.0 would be cleaner.
+- Two armors nothing uses: SECTOPOD_ARMOR_2 (39687; its research and pedia are commented out in Piratez.rul) and STR_UNARMORED_HUMAN (28548).
+- Duplicate keys with identical values (harmless): STR_PEASANT_GLITTERARMOR_UC M52-M59 twice (7351-7358); `personalLight: 5` twice in ARMOR_SURVIVOR, ARMOR_HALF_UBER_GIRL, ARMOR_AWAKENED_CORPSE, HUMAN_ARMOR_MG.
+
+That's all. I haven't tested 1 and 2 in actual combat, this is from the ruleset only.

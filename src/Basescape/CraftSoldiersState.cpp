@@ -20,7 +20,6 @@
 #include <algorithm>
 #include <functional>
 #include <climits>
-#include <algorithm>
 #include "../Engine/Action.h"
 #include "../Engine/Game.h"
 #include "../Mod/Mod.h"
@@ -32,7 +31,6 @@
 #include "../Interface/Text.h"
 #include "../Interface/TextList.h"
 #include "../Menu/ErrorMessageState.h"
-#include "../Savegame/Base.h"
 #include "../Savegame/Soldier.h"
 #include "../Savegame/Craft.h"
 #include "../Savegame/SavedGame.h"
@@ -54,7 +52,7 @@ namespace OpenXcom
  * @param craft ID of the selected craft.
  */
 CraftSoldiersState::CraftSoldiersState(Base *base, size_t craft)
-		:  _base(base), _craft(craft), _otherCraftColor(0), _origSoldierOrder(*_base->getSoldiers()), _dynGetter(NULL)
+		:  SortSoldiersMixin(base), _craft(craft), _otherCraftColor(0), _origSoldierOrder(*_base->getSoldiers()), _dynGetter(NULL)
 {
 	bool hidePreview = _game->getSavedGame()->getMonthsPassed() == -1;
 	Craft *c = _base->getCrafts()->at(_craft);
@@ -70,7 +68,7 @@ CraftSoldiersState::CraftSoldiersState(Base *base, size_t craft)
 	_btnPreview = new TextButton(102, 16, 164, 176);
 	_txtTitle = new Text(300, 17, 16, 7);
 	_txtName = new Text(114, 9, 16, 32);
-	_txtRank = new Text(102, 9, 122, 32);
+	_txtRank = new Text(102 - RANK_SHIFT, 9, 122 + RANK_SHIFT, 32);
 	_txtCraft = new Text(84, 9, 220, 32);
 	_txtAvailable = new Text(110, 9, 16, 24);
 	_txtUsed = new Text(110, 9, 122, 24);
@@ -134,50 +132,25 @@ CraftSoldiersState::CraftSoldiersState(Base *base, size_t craft)
 	_txtCraft->setText(tr("STR_CRAFT"));
 
 	// populate sort options
-	std::vector<std::string> sortOptions;
-	sortOptions.push_back(tr("STR_ORIGINAL_ORDER"));
-	_sortFunctors.push_back(NULL);
-
-#define PUSH_IN(strId, functor) \
-	sortOptions.push_back(tr(strId)); \
-	_sortFunctors.push_back(new SortFunctor(_game, functor));
-
-	PUSH_IN("STR_ID", idStat);
-	PUSH_IN("STR_NAME_UC", nameStat);
-	PUSH_IN("STR_CRAFT", craftIdStat);
-	PUSH_IN("STR_SOLDIER_TYPE", typeStat);
-	PUSH_IN("STR_RANK", rankStat);
-	PUSH_IN("STR_IDLE_DAYS", idleDaysStat);
-	PUSH_IN("STR_MISSIONS2", missionsStat);
-	PUSH_IN("STR_KILLS2", killsStat);
-	PUSH_IN("STR_WOUND_RECOVERY2", woundRecoveryStat);
-	if (_game->getMod()->isManaFeatureEnabled() && !_game->getMod()->getReplenishManaAfterMission())
+	FillSorters(_sortFunctors, *_cbxSortBy, (ActionHandler)&CraftSoldiersState::cbxSortByChange);
+	ChangeDynSorter(_dynGetter);
+	// OXCE 8.7: default info column (Alt+select remembers it); sorting stays with our QOL default sorter
 	{
-		PUSH_IN("STR_MANA_MISSING", manaMissingStat);
+		size_t selIdx = Options::oxceBaseSoldierInfoColumnDefault;
+		if (selIdx >= _sortFunctors.size())
+		{
+			selIdx = 0;
+			Options::oxceBaseSoldierInfoColumnDefault = 0;
+		}
+		if (selIdx != 0)
+		{
+			_cbxSortBy->setSelected(selIdx);
+			if (_sortFunctors[selIdx] && selIdx != 2 && selIdx != 3)
+			{
+				_dynGetter = _sortFunctors[selIdx]->getGetter();
+			}
+		}
 	}
-	PUSH_IN("STR_TIME_UNITS", tuStat);
-	PUSH_IN("STR_STAMINA", staminaStat);
-	PUSH_IN("STR_HEALTH", healthStat);
-	PUSH_IN("STR_BRAVERY", braveryStat);
-	PUSH_IN("STR_REACTIONS", reactionsStat);
-	PUSH_IN("STR_FIRING_ACCURACY", firingStat);
-	PUSH_IN("STR_THROWING_ACCURACY", throwingStat);
-	PUSH_IN("STR_MELEE_ACCURACY", meleeStat);
-	PUSH_IN("STR_STRENGTH", strengthStat);
-	if (_game->getMod()->isManaFeatureEnabled())
-	{
-		// "unlock" is checked later
-		PUSH_IN("STR_MANA_POOL", manaStat);
-	}
-	PUSH_IN("STR_PSIONIC_STRENGTH", psiStrengthStat);
-	PUSH_IN("STR_PSIONIC_SKILL", psiSkillStat);
-
-#undef PUSH_IN
-
-	_cbxSortBy->setOptions(sortOptions);
-	_cbxSortBy->setSelected(0);
-	_cbxSortBy->onChange((ActionHandler)&CraftSoldiersState::cbxSortByChange);
-	_cbxSortBy->setText(tr("STR_SORT_BY"));
 
 	_lstSoldiers->setArrowColumn(188, ARROW_VERTICAL);
 	_lstSoldiers->setColumns(3, 106, 98, 76);
@@ -214,6 +187,10 @@ void CraftSoldiersState::cbxSortByChange(Action *)
 	{
 		return;
 	}
+	if (_game->isAltPressed(true))
+	{
+		Options::oxceBaseSoldierInfoColumnDefault = selIdx;
+	}
 
 	SortFunctor *compFunc = _sortFunctors[selIdx];
 	_dynGetter = NULL;
@@ -227,50 +204,11 @@ void CraftSoldiersState::cbxSortByChange(Action *)
 		// if CTRL is pressed, we only want to show the dynamic column, without actual sorting
 		if (!ctrlPressed)
 		{
-			if (selIdx == 2)
-			{
-				std::stable_sort(_base->getSoldiers()->begin(), _base->getSoldiers()->end(),
-					[](const Soldier* a, const Soldier* b)
-					{
-						return Unicode::naturalCompare(a->getName(), b->getName());
-					}
-				);
-			}
-			else if (selIdx == 3)
-			{
-				std::stable_sort(_base->getSoldiers()->begin(), _base->getSoldiers()->end(),
-					[](const Soldier* a, const Soldier* b)
-					{
-						if (a->getCraft())
-						{
-							if (b->getCraft())
-							{
-								if (a->getCraft()->getRules() == b->getCraft()->getRules())
-								{
-									return a->getCraft()->getId() < b->getCraft()->getId();
-								}
-								else
-								{
-									return a->getCraft()->getRules() < b->getCraft()->getRules();
-								}
-							}
-							else
-							{
-								return true; // a < b
-							}
-						}
-						return false; // b > a
-					}
-				);
-			}
-			else
-			{
-				std::stable_sort(_base->getSoldiers()->begin(), _base->getSoldiers()->end(), *compFunc);
-			}
-			if (_game->isShiftPressed(true))
-			{
-				std::reverse(_base->getSoldiers()->begin(), _base->getSoldiers()->end());
-			}
+			DoSort(selIdx, compFunc);
+		}
+		else
+		{
+			SortSecond(selIdx, _sortFunctors, *_cbxSortBy); // OXCE-HD: second criterion inside the first
 		}
 	}
 	else
@@ -287,6 +225,7 @@ void CraftSoldiersState::cbxSortByChange(Action *)
 				_base->getSoldiers()->insert(_base->getSoldiers()->end(), s);
 			}
 		}
+		DoSort(selIdx, nullptr); // OXCE-HD: the groups over the original order
 	}
 
 	size_t originalScrollPos = _lstSoldiers->getScroll();
@@ -339,13 +278,22 @@ void CraftSoldiersState::initList(size_t scrl)
 	int row = 0;
 	_lstSoldiers->clearList();
 
+	// OXCE-HD: the race picture of the soldier info screen before the name and the rank badge before the rank
+	// (Options::oxceBaseSoldierTypeIcon): 32x20 fits the row as 13x8. The rank stands RANK_SHIFT to the right,
+	// near the arrows (the header too); the craft column stays where it was
+	const int icon = Options::oxceBaseSoldierTypeIcon ? 13 : 0;
+	SurfaceSet *badges = icon ? _game->getMod()->getSurfaceSet("BASEBITS.PCK") : nullptr;
+	_lstSoldiers->setIconColumn(8, icon);
+	_lstSoldiers->setIconColumn(106 + RANK_SHIFT - 3, badges ? 10 : 0, 1);
+	_lstSoldiers->setMargin(8 + icon);
 	if (_dynGetter != NULL)
 	{
-		_lstSoldiers->setColumns(4, 106, 98, 60, 16);
+		// OXCE-HD: the stat column wider (22, not 16) - kills in thousands (X-Piratez) ran over the craft name
+		_lstSoldiers->setColumns(4, 106 - icon + RANK_SHIFT, 98 - RANK_SHIFT, 54, 22);
 	}
 	else
 	{
-		_lstSoldiers->setColumns(3, 106, 98, 76);
+		_lstSoldiers->setColumns(3, 106 - icon + RANK_SHIFT, 98 - RANK_SHIFT, 76);
 	}
 
 	Craft *c = _base->getCrafts()->at(_craft);
@@ -378,7 +326,13 @@ void CraftSoldiersState::initList(size_t scrl)
 		{
 			color = _lstSoldiers->getColor();
 		}
-		_lstSoldiers->setRowColor(row, color);
+		setListRowColor(*_lstSoldiers, row, color, *soldier);
+		if (icon)
+		{
+			_lstSoldiers->setRowIcon(row, SoldierFlag(soldier));
+			_lstSoldiers->setRowIcon(row, badges->getFrame(soldier->getRankSprite()), 1);
+		}
+
 		row++;
 	}
 	if (scrl)
@@ -428,6 +382,7 @@ void CraftSoldiersState::lstItemsLeftArrowClick(Action *action)
 	}
 	_cbxSortBy->setText(tr("STR_SORT_BY"));
 	_cbxSortBy->setSelected(-1);
+	ForgetSort();
 }
 
 /**
@@ -481,6 +436,7 @@ void CraftSoldiersState::lstItemsRightArrowClick(Action *action)
 	}
 	_cbxSortBy->setText(tr("STR_SORT_BY"));
 	_cbxSortBy->setSelected(-1);
+	ForgetSort();
 }
 
 /**
@@ -529,15 +485,15 @@ void CraftSoldiersState::lstSoldiersClick(Action *action)
 	{
 		Craft *c = _base->getCrafts()->at(_craft);
 		Soldier *s = _base->getSoldiers()->at(_lstSoldiers->getSelectedRow());
+		Uint8 color = _lstSoldiers->getColor();
 		if (s->getCraft() == c)
 		{
 			s->setCraftAndMoveEquipment(0, _base, _game->getSavedGame()->getMonthsPassed() == -1);
 			_lstSoldiers->setCellText(row, 2, tr("STR_NONE_UC"));
-			_lstSoldiers->setRowColor(row, _lstSoldiers->getColor());
 		}
 		else if (s->getCraft() && s->getCraft()->getStatus() == "STR_OUT")
 		{
-			// nothing
+			color = _otherCraftColor;
 		}
 		else if (s->hasFullHealth())
 		{
@@ -547,7 +503,7 @@ void CraftSoldiersState::lstSoldiersClick(Action *action)
 			{
 				s->setCraftAndMoveEquipment(c, _base, _game->getSavedGame()->getMonthsPassed() == -1, true);
 				_lstSoldiers->setCellText(row, 2, c->getName(_game->getLanguage()));
-				_lstSoldiers->setRowColor(row, _lstSoldiers->getSecondaryColor());
+				color = _lstSoldiers->getSecondaryColor();
 
 				// update the label to indicate absence of a saved craft deployment
 				_btnPreview->setText(tr("STR_CRAFT_DEPLOYMENT_PREVIEW"));
@@ -569,6 +525,7 @@ void CraftSoldiersState::lstSoldiersClick(Action *action)
 				_game->pushState(new ErrorMessageState(tr("STR_NOT_ENOUGH_CRAFT_SPACE"), _palette, _game->getMod()->getInterface("soldierInfo")->getElement("errorMessage")->color, "BACK01.SCR", _game->getMod()->getInterface("soldierInfo")->getElement("errorPalette")->color));
 			}
 		}
+		setListRowColor(*_lstSoldiers, row, color, *s);
 
 		_txtAvailable->setText(tr("STR_SPACE_AVAILABLE").arg(c->getSpaceAvailable()));
 		_txtUsed->setText(tr("STR_SPACE_USED").arg(c->getSpaceUsed()));
@@ -618,12 +575,18 @@ void CraftSoldiersState::btnDeassignAllSoldiersClick(Action *action)
 	int row = 0;
 	for (auto* soldier : *_base->getSoldiers())
 	{
+		auto color = _lstSoldiers->getColor();
 		if (soldier->getCraft() && soldier->getCraft()->getStatus() != "STR_OUT")
 		{
 			soldier->setCraftAndMoveEquipment(0, _base, _game->getSavedGame()->getMonthsPassed() == -1);
 			_lstSoldiers->setCellText(row, 2, tr("STR_NONE_UC"));
-			_lstSoldiers->setRowColor(row, _lstSoldiers->getColor());
 		}
+		else if (soldier->getCraft() && soldier->getCraft()->getStatus() == "STR_OUT")
+		{
+			color = _otherCraftColor;
+		}
+		setListRowColor(*_lstSoldiers, row, color, *soldier);
+
 		row++;
 	}
 
@@ -646,7 +609,7 @@ void CraftSoldiersState::btnDeassignCraftSoldiersClick(Action *action)
 		{
 			soldier->setCraftAndMoveEquipment(0, _base, _game->getSavedGame()->getMonthsPassed() == -1);
 			_lstSoldiers->setCellText(row, 2, tr("STR_NONE_UC"));
-			_lstSoldiers->setRowColor(row, _lstSoldiers->getColor());
+			setListRowColor(*_lstSoldiers, row, _lstSoldiers->getColor(), *soldier);
 		}
 		row++;
 	}
@@ -654,5 +617,4 @@ void CraftSoldiersState::btnDeassignCraftSoldiersClick(Action *action)
 	_txtAvailable->setText(tr("STR_SPACE_AVAILABLE").arg(c->getSpaceAvailable()));
 	_txtUsed->setText(tr("STR_SPACE_USED").arg(c->getSpaceUsed()));
 }
-
 }

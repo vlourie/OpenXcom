@@ -17,10 +17,24 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "Game.h"
+#include <chrono>
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#include <vector>
+#include <tuple>
 #include "../resource.h"
 #include <algorithm>
 #include <cmath>
+#include <iterator>
 #include <sstream>
+#include "HdUi.h"
+#include "HdCanvas.h"
+#include "HdTest.h"
+#include "HdSprites.h"
+#include "HdFx.h"
+#include "HdKillCam.h"
+#include "Feedback.h"
 #include <SDL_mixer.h>
 #include "State.h"
 #include "Screen.h"
@@ -28,6 +42,7 @@
 #include "Music.h"
 #include "Language.h"
 #include "Logger.h"
+#include <typeinfo>
 #include "../Interface/Cursor.h"
 #include "../Interface/FpsCounter.h"
 #include "../Mod/Mod.h"
@@ -36,6 +51,7 @@
 #include "Action.h"
 #include "Exception.h"
 #include "Options.h"
+#include "Timer.h"
 #include "CrossPlatform.h"
 #include "FileMap.h"
 #include "Unicode.h"
@@ -43,6 +59,7 @@
 #include "../Menu/NotesState.h"
 #include "../Geoscape/GeoscapeState.h"
 #include "../Menu/TestState.h"
+#include "../Battlescape/AiProbe.h"
 #include <algorithm>
 #include "../fallthrough.h"
 
@@ -149,17 +166,36 @@ void Game::run()
 	Uint32 lastMouseMoveEvent = 0;
 	Sint16 xrel = 0;
 	Sint16 yrel = 0;
+	// the AI probe (OXCE_AI_PROBE, Battlescape/AiProbe.cpp): virtual clock, never paused, no frame cap,
+	// a frame drawn only every 16th loop - nobody watches, and the clock no longer waits for frames;
+	// in the fast mode (OXCE_AI_FAST) no frame at all
+	// OXCE_AI_REALTIME=1: the probe's bot plays on the real clock with the player's frame pacing (frame-time measurements)
+	Timer::probeClock = AiProbe::active() && !getenv("OXCE_AI_REALTIME");
+	const bool probeNoDraw = AiProbe::fast();
+	Uint32 probeLoops = 0;
 
 	while (!_quit)
 	{
+		// HD measurement: when the frame took too long. The F8 dump only samples good frames,
+		// so freezes are invisible in it (see docs/PERF.md)
+		const Uint32 hdFrameStart = SDL_GetTicks();
+		// ... and which part of it took the time: HD UI alone does not account for every freeze
+		Uint32 hdInitMs = 0, hdThinkMs = 0, hdBlitMs = 0, hdFlipMs = 0, hdFreeMs = 0, hdEventMs = 0;
+		// OXCE_HD_FRAMELOG=<file>: one line per drawn frame in microseconds, for p50/p95/p99 (docs/HD_UNITS.md, 9)
+		const auto hdLoopStart = std::chrono::steady_clock::now();
+		std::chrono::steady_clock::time_point hdLogThink0, hdLogThink1, hdLogDraw0, hdLogDraw1, hdLogFlip1;
+		bool hdDrew = false, hdDumped = false;
 		// Clean up states
+		const Uint32 hdFreeStart = SDL_GetTicks();
 		while (!_deleted.empty())
 		{
 			delete _deleted.back();
 			_deleted.pop_back();
 		}
+		hdFreeMs = SDL_GetTicks() - hdFreeStart;
 
 		// Initialize active state
+		const Uint32 hdInitStart = SDL_GetTicks();
 		if (!_init)
 		{
 			_init = true;
@@ -177,9 +213,11 @@ void Game::run()
 			ev.motion.y = y;
 			Action action = Action(&ev, _screen->getXScale(), _screen->getYScale(), _screen->getCursorTopBlackBand(), _screen->getCursorLeftBlackBand());
 			_states.back()->handle(&action);
+			hdInitMs = SDL_GetTicks() - hdInitStart;
 		}
 
 		// Process events
+		const Uint32 hdEventStart = SDL_GetTicks();
 		while (SDL_PollEvent(&_event))
 		{
 			if (CrossPlatform::isQuitShortcut(_event))
@@ -317,7 +355,30 @@ void Game::run()
 							}
 						}
 					}
+					// the feedback key: the report form opens over a paused game and the world never sees the key.
+					// Ctrl goes to the HD dump on the same key, Alt to the debug slow motion
+					if (action.getDetails()->type == SDL_KEYDOWN
+						&& action.getDetails()->key.keysym.sym == Options::keyFeedback
+						&& !isCtrlPressed() && !isAltPressed())
+					{
+						if (!dynamic_cast<FeedbackState*>(_states.back()))
+						{
+							Feedback::open(this, _states.back());
+						}
+						break;
+					}
 					_states.back()->handle(&action);
+					// the HD dump key outside the battlescape (which writes a richer dump of its own):
+					// the frame as it is drawn, into the master's user folder
+					if (action.getDetails()->type == SDL_KEYDOWN
+						&& action.getDetails()->key.keysym.sym == Options::keyBattleHdTestDump
+						&& isCtrlPressed()
+						&& !_screen->hasHdTestDumpRequest())
+					{
+						const std::string path = HdTest::nextDumpPrefix() + "_frame.png";
+						_screen->requestHdTestDump(path);
+						Log(LOG_INFO) << "HD dump: " << path;
+					}
 					break;
 			}
 			if (!_init)
@@ -327,12 +388,22 @@ void Game::run()
 				break;
 			}
 		}
+		hdEventMs = SDL_GetTicks() - hdEventStart;
+		if (Timer::probeClock)
+		{
+			runningState = RUNNING;
+			Timer::probeAdvance();
+		}
 
 		// Process rendering
 		if (runningState != PAUSED)
 		{
 			// Process logic
+			const Uint32 hdThinkStart = SDL_GetTicks();
+			hdLogThink0 = std::chrono::steady_clock::now();
 			_states.back()->think();
+			hdLogThink1 = std::chrono::steady_clock::now();
+			hdThinkMs = SDL_GetTicks() - hdThinkStart;
 			_fpsCounter->think();
 			if (Options::FPS > 0 && !(Options::useOpenGL && Options::vSyncForOpenGL))
 			{
@@ -345,11 +416,17 @@ void Game::run()
 			{
 				_timeUntilNextFrame = 0;
 			}
+			if (Timer::probeClock)
+			{
+				_timeUntilNextFrame = (probeNoDraw || (++probeLoops % 16)) ? 1 : 0;
+			}
 
 			if (_init && _timeUntilNextFrame <= 0)
 			{
 				// make a note of when this frame update occurred.
 				_timeOfLastFrame = SDL_GetTicks();
+				hdDrew = true;
+				hdLogDraw0 = std::chrono::steady_clock::now();
 				_fpsCounter->addFrame();
 				_screen->clear();
 				std::list<State*>::iterator i = _states.end();
@@ -359,13 +436,308 @@ void Game::run()
 				}
 				while (i != _states.begin() && !(*i)->isScreen());
 
-				for (; i != _states.end(); ++i)
+				// HD test automation: OXCE_HD_DUMP=<file.png> dumps the frame after OXCE_HD_DUMP_AFTER
+				// seconds (default 8) and quits (headless checks of the HD interface without a display or a player)
+				static const char *autoDump = getenv("OXCE_HD_DUMP");
+				static const Uint32 autoDumpAt = SDL_GetTicks() + (getenv("OXCE_HD_DUMP_AFTER") ? 1000 * atoi(getenv("OXCE_HD_DUMP_AFTER")) : 8000);
+				// Headless checks: OXCE_HD_MOUSE=x,y pins the position (base pixels) and moves the mouse there
+				// 1.5 s before the dump; OXCE_HD_CLICK=x,y left-clicks there 1.2 s before; OXCE_HD_TYPE=text
+				// types it 0.8 s before.
 				{
-					(*i)->blit();
+					static const char *autoMouse = getenv("OXCE_HD_MOUSE");
+					static const char *autoClick = getenv("OXCE_HD_CLICK");
+					static const char *autoType = getenv("OXCE_HD_TYPE");
+					static int autoStep = 0;
+					int mx = _cursor->getX(), my = _cursor->getY();
+					if (autoMouse && *autoMouse) sscanf(autoMouse, "%d,%d", &mx, &my);
+					auto toDisplay = [&](int bx, int by, Uint16 &dx, Uint16 &dy)
+					{
+						dx = (Uint16)(bx * _screen->getXScale() + _screen->getCursorLeftBlackBand());
+						dy = (Uint16)(by * _screen->getYScale() + _screen->getCursorTopBlackBand());
+					};
+					const Uint32 now = SDL_GetTicks();
+					if (autoStep == 0 && autoMouse && *autoMouse && now + 1500 >= autoDumpAt)
+					{
+						// a real motion event too, so the states' own hover handling (list rows) sees it
+						autoStep = 1;
+						SDL_Event ev;
+						memset(&ev, 0, sizeof(ev));
+						ev.type = SDL_MOUSEMOTION;
+						toDisplay(mx, my, ev.motion.x, ev.motion.y);
+						SDL_PushEvent(&ev);
+					}
+					// OXCE_HD_CLICK=x,y[;x,y...]: several clicks 1.2 s apart, the last 1.2 s before the dump
+					static std::vector<std::pair<int, int>> autoClicks;
+					static size_t autoClicked = 0;
+					// "c" before a click (c336,190) holds Ctrl for it (Ctrl + a sort criterion in the soldier lists)
+					static std::vector<bool> autoClicksCtrl;
+					// "m" before a click (m256,130) presses the middle button (a unit's hands in the battle)
+					static std::vector<Uint8> autoClicksButton;
+					static int autoClickCtrlFrames = 0;
+					if (autoClickCtrlFrames > 0 && --autoClickCtrlFrames == 0)
+					{
+						SDL_SetModState(KMOD_NONE);
+					}
+					if (autoClicks.empty() && autoClick && *autoClick)
+					{
+						for (const char *c = autoClick; c && *c; )
+						{
+							int cx, cy;
+							const bool ctrl = *c == 'c';
+							const bool middle = *c == 'm';
+							if (sscanf(c + (ctrl || middle ? 1 : 0), "%d,%d", &cx, &cy) == 2)
+							{
+								autoClicks.emplace_back(cx, cy);
+								autoClicksCtrl.push_back(ctrl);
+								autoClicksButton.push_back(middle ? SDL_BUTTON_MIDDLE : SDL_BUTTON_LEFT);
+							}
+							c = strchr(c, ';');
+							if (c) ++c;
+						}
+					}
+					if (autoStep <= 1 && autoClicked < autoClicks.size() && now + 1200 * (Uint32)(autoClicks.size() - autoClicked) >= autoDumpAt)
+					{
+						const int cx = autoClicks[autoClicked].first, cy = autoClicks[autoClicked].second;
+						const Uint8 button = autoClicksButton[autoClicked];
+						if (autoClicksCtrl[autoClicked])
+						{
+							SDL_SetModState(KMOD_LCTRL);
+							autoClickCtrlFrames = 5;
+						}
+						if (++autoClicked == autoClicks.size()) autoStep = 2;
+						SDL_Event ev;
+						memset(&ev, 0, sizeof(ev));
+						ev.type = SDL_MOUSEMOTION;
+						toDisplay(cx, cy, ev.motion.x, ev.motion.y);
+						SDL_PushEvent(&ev);
+						ev.type = SDL_MOUSEBUTTONDOWN;
+						ev.button.button = button;
+						ev.button.state = SDL_PRESSED;
+						toDisplay(cx, cy, ev.button.x, ev.button.y);
+						SDL_PushEvent(&ev);
+						ev.type = SDL_MOUSEBUTTONUP;
+						ev.button.state = SDL_RELEASED;
+						SDL_PushEvent(&ev);
+					}
+					// OXCE_HD_SET=<ms>:<what>=<n>[;...]: <ms> before the dump switches the HD interface (oxceHdUi=n,
+					// as the options do on leaving) or the world layer's k (k=n) - with a screen left open
+					static const char *autoSet = getenv("OXCE_HD_SET");
+					static std::vector<std::tuple<Uint32, std::string, int>> autoSets;
+					static size_t autoSetDone = 0;
+					if (autoSets.empty() && autoSet && *autoSet)
+					{
+						for (const char *c = autoSet; c && *c; )
+						{
+							unsigned ms = 0;
+							char what[32] = {};
+							int value = 0;
+							if (sscanf(c, "%u:%31[^=]=%d", &ms, what, &value) == 3)
+							{
+								autoSets.emplace_back((Uint32)ms, what, value);
+							}
+							c = strchr(c, ';');
+							if (c) ++c;
+						}
+					}
+					while (autoSetDone < autoSets.size() && now + std::get<0>(autoSets[autoSetDone]) >= autoDumpAt)
+					{
+						const std::string &what = std::get<1>(autoSets[autoSetDone]);
+						const int value = std::get<2>(autoSets[autoSetDone++]);
+						Log(LOG_INFO) << "HD test: " << what << " = " << value;
+						if (what == "oxceHdUi")
+						{
+							Options::oxceHdUi = value;
+							_screen->resetDisplay(false);
+						}
+						else if (what == "k")
+						{
+							_screen->setWorldScale(value);
+						}
+					}
+					// OXCE_HD_KEY=<SDL key number>: presses that key 1.0 s before the dump (289 = F8);
+					// "ctrl+289" holds Ctrl for the next few frames (Ctrl+F8: the battle's full dump - map, frame, json);
+					// several keys "ctrl+100;ctrl+107" go 1.2 s apart, the last 1.0 s before the dump
+					static const char *autoKey = getenv("OXCE_HD_KEY");
+					static size_t autoKeyed = 0;
+					static int autoCtrlFrames = 0;
+					if (autoCtrlFrames > 0 && --autoCtrlFrames == 0)
+					{
+						SDL_SetModState(KMOD_NONE);
+					}
+					static std::vector<std::string> autoKeys;
+					if (autoKeys.empty() && autoKey && *autoKey)
+					{
+						for (const char *c = autoKey; c && *c; )
+						{
+							const char *end = strchr(c, ';');
+							autoKeys.emplace_back(c, end ? (size_t)(end - c) : strlen(c));
+							c = end ? end + 1 : nullptr;
+						}
+					}
+					if (autoKeyed < autoKeys.size() && now + 1000 + 1200 * (Uint32)(autoKeys.size() - 1 - autoKeyed) >= autoDumpAt)
+					{
+						const char *key = autoKeys[autoKeyed++].c_str();
+						const bool ctrl = strncmp(key, "ctrl+", 5) == 0;
+						if (ctrl)
+						{
+							SDL_SetModState(KMOD_LCTRL);
+							autoCtrlFrames = 5;
+						}
+						SDL_Event ev;
+						memset(&ev, 0, sizeof(ev));
+						ev.type = SDL_KEYDOWN;
+						ev.key.state = SDL_PRESSED;
+						ev.key.keysym.sym = (SDLKey)atoi(key + (ctrl ? 5 : 0));
+						ev.key.keysym.mod = ctrl ? KMOD_LCTRL : KMOD_NONE;
+						SDL_PushEvent(&ev);
+						ev.type = SDL_KEYUP;
+						ev.key.state = SDL_RELEASED;
+						SDL_PushEvent(&ev);
+					}
+					if (autoStep <= 2 && autoType && *autoType && now + 800 >= autoDumpAt)
+					{
+						autoStep = 3;
+						for (const char *c = autoType; *c; ++c)
+						{
+							SDL_Event ev;
+							memset(&ev, 0, sizeof(ev));
+							ev.type = SDL_KEYDOWN;
+							ev.key.state = SDL_PRESSED;
+							ev.key.keysym.sym = (SDLKey)(unsigned char)*c;
+							ev.key.keysym.unicode = (Uint16)(unsigned char)*c;
+							SDL_PushEvent(&ev);
+							ev.type = SDL_KEYUP;
+							ev.key.state = SDL_RELEASED;
+							SDL_PushEvent(&ev);
+						}
+					}
+					const Uint32 hdBlitStart = SDL_GetTicks();
+					for (; i != _states.end(); ++i)
+					{
+						// the HD interface's hover effects follow the cursor, in the top state only
+						HdUi::instance().setMouse(mx, my, std::next(i) == _states.end());
+						(*i)->blit();
+					}
+					hdBlitMs = SDL_GetTicks() - hdBlitStart;
+				}
+				{
+					static int autoDumpState = 0;
+					if (autoDump && *autoDump && autoDumpState < 2 && SDL_GetTicks() >= autoDumpAt)
+					{
+						if (autoDumpState == 0)
+						{
+							_screen->requestHdTestDump(autoDump);
+							autoDumpState = 1;
+						}
+						else if (!HdKillCam::running())
+						{
+							// a final blow on screen is let run to its end, for its own dumps (OXCE_HD_DUMP_KILLCAM)
+							_quit = true;
+							autoDumpState = 2;
+						}
+					}
+				}
+				if (!_screen->hasHdTestDumpRequest())
+				{
+					// OXCE_HD_DUMP_FX=<prefix>: the frame just after a combat effect started (HdFx::noteForTest)
+					std::string fx = HdFx::takeTestDump(SDL_GetTicks());
+					if (fx.empty())
+					{
+						fx = HdKillCam::takeTestDump(SDL_GetTicks());
+					}
+					if (!fx.empty())
+					{
+						_screen->requestHdTestDump(fx);
+						Log(LOG_INFO) << "HD dump: " << fx;
+					}
+				}
+				if (_screen->hasHdTestDumpRequest())
+				{
+					// deterministic frame capture: game content only, no FPS counter, no cursor
+					_screen->writeHdTestDump();
+					hdDumped = true;
 				}
 				_fpsCounter->blit(_screen->getSurface());
 				_cursor->blit(_screen->getSurface());
+				const Uint32 hdFlipStart = SDL_GetTicks();
+				hdLogDraw1 = std::chrono::steady_clock::now();
 				_screen->flip();
+				hdLogFlip1 = std::chrono::steady_clock::now();
+				hdFlipMs = SDL_GetTicks() - hdFlipStart;
+			}
+		}
+
+		{
+			static Uint32 hdWatchStart = 0, hdWorst = 0, hdSlow = 0, hdStalls = 0, hdFrames = 0;
+			static const char *hdWorstState = "-";
+			const char *state = _states.empty() ? "-" : typeid(*_states.back()).name();
+			const Uint32 now = SDL_GetTicks();
+			const Uint32 spent = now - hdFrameStart;
+			++hdFrames;
+			if (spent > hdWorst) { hdWorst = spent; hdWorstState = state; }
+			if (spent >= 33) ++hdSlow;
+			unsigned packFrames = 0;
+			double packMs = 0;
+			HdSprites::takeLoadStats(packFrames, packMs);
+			if (hdDrew)
+			{
+				static FILE *hdFrameLog = nullptr;
+				static bool hdFrameLogTried = false;
+				static unsigned hdFrameLogLines = 0;
+				static std::chrono::steady_clock::time_point hdFrameLogZero;
+				if (!hdFrameLogTried)
+				{
+					hdFrameLogTried = true;
+					const char *path = getenv("OXCE_HD_FRAMELOG");
+					if (path && *path && (hdFrameLog = fopen(path, "w")) != nullptr)
+					{
+						hdFrameLogZero = hdLoopStart;
+						fprintf(hdFrameLog, "t_ms\tloop_us\tthink_us\tdraw_us\tflip_us\tpack_fr\tpack_ms\tui_ms\tdump\tstate"
+							"\trecord_us\tunits_us\tscript_us\tsmooth_us\tsmooth_n\ttoned_us\ttoned_n\tflush_us\tstrip_max_us\tcmds\n");
+					}
+				}
+				if (hdFrameLog)
+				{
+					auto us = [](std::chrono::steady_clock::time_point a, std::chrono::steady_clock::time_point b)
+					{
+						return (long long)std::chrono::duration_cast<std::chrono::microseconds>(b - a).count();
+					};
+					// where the map's drawing went (HdDrawStats, counted only while this log is on)
+					const HdDrawStats &st = HdDrawStats::frame;
+					fprintf(hdFrameLog, "%lld\t%lld\t%lld\t%lld\t%lld\t%u\t%.2f\t%.2f\t%d\t%s\t%lld\t%lld\t%lld\t%lld\t%u\t%lld\t%u\t%lld\t%lld\t%u\n",
+						us(hdFrameLogZero, hdLoopStart) / 1000, us(hdLoopStart, hdLogFlip1), us(hdLogThink0, hdLogThink1),
+						us(hdLogDraw0, hdLogDraw1), us(hdLogDraw1, hdLogFlip1), packFrames, packMs,
+						HdUi::instance().lastFrameMs(), hdDumped ? 1 : 0, state,
+						st.recordUs, st.unitsUs, st.scriptUs, st.smoothUs, st.smoothNew, st.tonedUs, st.tonedNew,
+						st.flushUs, st.stripMaxUs, st.cmds);
+					HdDrawStats::frame = HdDrawStats();
+					if (++hdFrameLogLines % 60 == 0)
+					{
+						fflush(hdFrameLog);
+					}
+				}
+			}
+			if (spent >= 100)
+			{
+				++hdStalls;
+				Log(LOG_INFO) << "HD stall: " << spent << " ms on " << state
+					<< " | free " << hdFreeMs << " init " << hdInitMs << " event " << hdEventMs
+					<< " think " << hdThinkMs << " blit " << hdBlitMs << " flip " << hdFlipMs
+					<< " | HD UI " << (int)(HdUi::instance().lastFrameMs() + 0.5) << " ms over "
+					<< HdUi::instance().lastCalls() << " surfaces, worst "
+					<< (int)(HdUi::instance().lastWorstMs() + 0.5) << " ms on "
+					<< HdUi::instance().lastWorstW() << "x" << HdUi::instance().lastWorstH()
+					<< " (" << HdUi::instance().lastWorstWhy() << ")"
+					<< " | packs read " << packFrames << " fr in " << (int)(packMs + 0.5) << " ms";
+			}
+			if (now - hdWatchStart >= 2000)
+			{
+				if (hdWatchStart)
+				{
+					Log(LOG_INFO) << "HD frame: " << hdFrames << " fr, worst " << hdWorst << " ms (" << hdWorstState
+						<< "), >=33 ms " << hdSlow << ", >=100 ms " << hdStalls;
+				}
+				hdWatchStart = now; hdWorst = 0; hdSlow = 0; hdStalls = 0; hdFrames = 0;
 			}
 		}
 
@@ -373,13 +745,19 @@ void Game::run()
 		switch (runningState)
 		{
 			case RUNNING:
-				SDL_Delay(1); //Save CPU from going 100%
+				if (!Timer::probeClock)
+					SDL_Delay(1); //Save CPU from going 100%
 				break;
 			case SLOWED: case PAUSED:
 				SDL_Delay(100); break; //More slowing down.
 		}
 	}
 
+	if (AiProbe::fast())
+	{
+		// the result line is in the log and nobody reads the options back: leave without unloading the mod
+		CrossPlatform::exitNow();
+	}
 	Options::save();
 }
 
@@ -644,6 +1022,7 @@ void Game::loadLanguages()
 	const std::string dirLanguageAndroid = "Language/Android/";
 	const std::string dirLanguageOXCE = "Language/OXCE/";
 	const std::string dirLanguageTechnical = "Language/Technical/";
+	const std::string dirLanguageOXCEN = "Language/QOL/";
 
 	const std::string defaultLangYml = defaultLang + ".yml";
 	const std::string currentLangYml = currentLang + ".yml";
@@ -655,22 +1034,46 @@ void Game::loadLanguages()
 	auto sliceAndroid = FileMap::getSlice(dirLanguageAndroid + defaultLangYml);
 	auto sliceOXCE = FileMap::getSlice(dirLanguageOXCE + defaultLangYml);
 	auto sliceTechnical = FileMap::getSlice(dirLanguageTechnical + defaultLangYml);
+	auto sliceOXCEN = FileMap::getSlice(dirLanguageOXCEN + defaultLangYml);
 
 	auto slice2 = FileMap::getSlice(dirLanguage + currentLangYml);
 	auto sliceAndroid2 = FileMap::getSlice(dirLanguageAndroid + currentLangYml);
 	auto sliceOXCE2 = FileMap::getSlice(dirLanguageOXCE + currentLangYml);
 	auto sliceTechnical2 = FileMap::getSlice(dirLanguageTechnical + currentLangYml);
+	auto sliceOXCEN2 = FileMap::getSlice(dirLanguageOXCEN + currentLangYml);
 
 	bool twoLangs = currentLang != defaultLang;
-	for (size_t i = 0; i < slice.size(); ++i) {
-		if (slice[i]) { _lang->loadFile(slice[i]); }
-		if (twoLangs && slice2[i]) { _lang->loadFile(slice2[i]); }
-		if (sliceAndroid[i]) { _lang->loadFile(sliceAndroid[i]); }
-		if (twoLangs && sliceAndroid2[i]) { _lang->loadFile(sliceAndroid2[i]); }
-		if (sliceOXCE[i]) { _lang->loadFile(sliceOXCE[i]); }
-		if (twoLangs && sliceOXCE2[i]) { _lang->loadFile(sliceOXCE2[i]); }
-		if (sliceTechnical[i]) { _lang->loadFile(sliceTechnical[i]); }
-		if (twoLangs && sliceTechnical2[i]) { _lang->loadFile(sliceTechnical2[i]); }
+	for (size_t i = 0; i < slice.size(); ++i)
+	{
+		if (slice[i])
+			_lang->loadFile(slice[i]);
+
+		if (twoLangs && slice2[i])
+			_lang->loadFile(slice2[i]);
+
+		if (sliceAndroid[i])
+			_lang->loadFile(sliceAndroid[i]);
+
+		if (twoLangs && sliceAndroid2[i])
+			_lang->loadFile(sliceAndroid2[i]);
+
+		if (sliceOXCE[i])
+			_lang->loadFile(sliceOXCE[i]);
+
+		if (twoLangs && sliceOXCE2[i])
+			_lang->loadFile(sliceOXCE2[i]);
+
+		if (sliceTechnical[i])
+			_lang->loadFile(sliceTechnical[i]);
+
+		if (twoLangs && sliceTechnical2[i])
+			_lang->loadFile(sliceTechnical2[i]);
+
+		if (sliceOXCEN[i])
+			_lang->loadFile(sliceOXCEN[i]);
+
+		if (twoLangs && sliceOXCEN2[i])
+			_lang->loadFile(sliceOXCEN2[i]);
 	}
 
 	_lang->loadRule(_mod->getExtraStrings(), defaultLang);
@@ -683,6 +1086,12 @@ void Game::loadLanguages()
  */
 void Game::initAudio()
 {
+	if (AiProbe::fast())
+	{
+		// nobody listens: no sound is loaded or played, as with no sound device
+		Options::mute = true;
+		return;
+	}
 	if (SDL_InitSubSystem(SDL_INIT_AUDIO) < 0)
 	{
 		Log(LOG_ERROR) << SDL_GetError();

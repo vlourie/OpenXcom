@@ -25,6 +25,7 @@
 #include "../Engine/Language.h"
 #include "../Engine/Font.h"
 #include "../Engine/Action.h"
+#include "../Engine/HdUi.h"
 #include "../Engine/Options.h"
 #include "../Engine/Screen.h"
 
@@ -342,7 +343,14 @@ void ComboBox::blit(SDL_Surface *surface)
 	if (_visible && !_hidden)
 	{
 		_button->blit(surface);
+		// the modern skin draws its own chevron over the button
+		const bool skin = HdUi::skin() && HdUi::isScreen(surface);
+		_arrow->setHdKind(skin ? HD_SKIP : HD_NORMAL);
 		_arrow->blit(surface);
+		if (skin)
+		{
+			HdUi::instance().drawChevron(_arrow->getX(), _arrow->getY(), _arrow->getWidth(), _arrow->getHeight(), _color, HdUi::paletteOf(_arrow));
+		}
 		_window->blit(surface);
 		_list->blit(surface);
 	}

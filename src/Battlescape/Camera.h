@@ -35,6 +35,10 @@ class Camera
 private:
 	Timer *_scrollMouseTimer, *_scrollKeyTimer;
 	int _spriteWidth, _spriteHeight;
+	/// HD render scale k = _spriteWidth / 32; _screenWidth/_screenHeight/_visibleMapHeight/_mapOffset are in world pixels (k times base).
+	int _k;
+	/// Half of a world-pixel size, computed as k times half of the base size (exactly what the original code did at k = 1).
+	int halfWorld(int worldSize) const { return (worldSize / _k / 2) * _k; }
 	int _mapsize_x, _mapsize_y, _mapsize_z;
 	int _screenWidth, _screenHeight;
 	Position _mapOffset, _center;
@@ -44,6 +48,14 @@ private:
 	bool _showAllLayers;
 	bool _showSingleLayer;
 	Map *_map;
+	/// Gentle mode: the offset the map is drawn at glides after the logical one (docs/research/gentle-mode.md).
+	/// The game reads only _mapOffset; the shown offset is put in its place between beginShown and endShown alone.
+	double _shownX = 0, _shownY = 0, _shownVX = 0, _shownVY = 0;
+	Position _lastLogical, _savedOffset, _drawnOffset;
+	unsigned _shownTicks = 0;
+	bool _shownValid = false, _glideNext = false, _gliding = false, _inShown = false;
+	/// Is this tile well inside the visible part of the map at the logical offset?
+	bool inView(Position mapPos) const;
 public:
 	static const int SCROLL_BORDER = 5;
 	static const int SCROLL_DIAGONAL_EDGE = 60;
@@ -85,6 +97,14 @@ public:
 	void convertScreenToMap(int screenX, int screenY, int *mapX, int *mapY) const;
 	/// Center map on a position.
 	void centerOnPosition(Position pos, bool redraw = true);
+	/// Centers map on a position, but in gentle mode only shows its level if it is in view already.
+	void focusOn(Position pos, bool redraw = true);
+	/// Gentle mode: puts the shown (gliding) offset in place for drawing the map.
+	void beginShown();
+	/// Gentle mode: brings the logical offset back after drawing the map.
+	void endShown();
+	/// Gentle mode: is the picture still on its way to the logical offset?
+	bool isGliding() const;
 	/// Gets map's center position.
 	Position getCenterPosition();
 	/// Gets the map displayed level.

@@ -20,8 +20,10 @@
 #include <cstdarg>
 #include <cmath>
 #include <algorithm>
+#include <functional>
 #include "../Engine/Action.h"
 #include "../Engine/Font.h"
+#include "../Engine/HdUi.h"
 #include "../Engine/Palette.h"
 #include "../Engine/Options.h"
 #include "ArrowButton.h"
@@ -82,6 +84,11 @@ TextList::~TextList()
 	delete _up;
 	delete _down;
 	delete _scrollbar;
+	for (auto& entry : _iconCache)
+	{
+		delete entry.second.trimmed;
+		delete entry.second.fitted;
+	}
 }
 
 /**
@@ -204,6 +211,14 @@ void TextList::setCellText(size_t row, size_t column, const std::string &text)
 int TextList::getColumnX(size_t column) const
 {
 	return getX() + _texts[0][column]->getX();
+}
+
+int TextList::getLastColumnIndex() const noexcept
+{
+	if (_columns.empty())
+		return -1;
+
+	return _columns.size() - 1;
 }
 
 /**
@@ -425,6 +440,91 @@ void TextList::addRow(int cols, ...)
 	updateArrows();
 }
 
+bool TextList::expandLastRow(const std::string& text)
+{
+	if (_texts.empty() || _texts.back().empty() || _texts.back().size() >= _columns.size())
+		return false;
+
+	auto& lastRowTexts = _texts.back();
+	auto& lastText = _texts.back().back();
+	const auto newTextIndex = lastRowTexts.size();
+
+	auto newTextX = lastText->getX();
+	if (_condensed)
+	{
+		newTextX += lastText->getTextWidth();
+	}
+	else
+	{
+		newTextX += _columns[newTextIndex - 1];
+	}
+
+	const auto newTextY = lastText->getY();
+
+	const int width = _flooding ? 340 : _columns[newTextIndex];
+	// Place text
+	Text* newText = new Text(width, _font->getHeight(), _margin + newTextX, newTextY);
+	newText->setPalette(this->getPalette());
+	newText->initText(_big, _small, _lang);
+	newText->setColor(_color);
+	newText->setSecondaryColor(_color2);
+
+	if (_align[newTextIndex])
+		newText->setAlign(_align[newTextIndex]);
+
+	newText->setHighContrast(_contrast);
+	if (_font == _big)
+		newText->setBig();
+	else
+		newText->setSmall();
+
+	newText->setText(text);
+
+	// grab this before we enable word wrapping so we can use it to calculate
+	// the total row height below
+	int vmargin = _font->getHeight() - newText->getTextHeight();
+	// Wordwrap text if necessary
+	int rows = _rows.back();
+	if (_wrap && newText->getTextWidth() > newText->getWidth())
+	{
+		newText->setWordWrap(true, true, _ignoreSeparators);
+		rows = std::max(rows, newText->getNumLines());
+	}
+
+	// Places dots between text
+	if (_dot)
+	{
+		std::string buf = lastText->getText();
+		unsigned int w = lastText->getTextWidth();
+		while (w < _columns[newTextIndex - 1])
+		{
+			if (_align[newTextIndex - 1] != ALIGN_RIGHT)
+			{
+				w += _font->getChar('.').getCrop()->w + _font->getSpacing();
+				buf += '.';
+			}
+			if (_align[newTextIndex - 1] != ALIGN_LEFT)
+			{
+				w += _font->getChar('.').getCrop()->w + _font->getSpacing();
+				buf.insert(0, 1, '.');
+			}
+		}
+		lastText->setText(buf);
+	}
+
+	lastRowTexts.push_back(newText);
+	lastText = *std::prev(lastRowTexts.end(), 2);
+
+	const auto rowHeight = std::max(lastText->getHeight(), newText->getTextHeight() + vmargin);
+	for (int i = 0; i < lastRowTexts.size(); ++i)
+	{
+		lastRowTexts[i]->setHeight(rowHeight);
+	}
+
+	_redraw = true;
+	return true;
+}
+
 /**
  * Removes the last row from the text list.
  */
@@ -478,6 +578,11 @@ void TextList::setColumns(int cols, ...)
 	va_end(args);
 }
 
+void TextList::addColumn(size_t width)
+{
+	_columns.push_back(width);
+}
+
 /**
  * Replaces a certain amount of colors in the palette of all
  * the text contained in the list.
@@ -510,6 +615,11 @@ void TextList::setPalette(const SDL_Color *colors, int firstcolor, int ncolors)
 	_up->setPalette(colors, firstcolor, ncolors);
 	_down->setPalette(colors, firstcolor, ncolors);
 	_scrollbar->setPalette(colors, firstcolor, ncolors);
+	for (auto& entry : _iconCache)
+	{
+		if (entry.second.trimmed) entry.second.trimmed->setPalette(colors, firstcolor, ncolors);
+		if (entry.second.fitted) entry.second.fitted->setPalette(colors, firstcolor, ncolors);
+	}
 }
 
 /**
@@ -710,7 +820,7 @@ void TextList::setCondensed(bool condensed)
  * list is selectable.
  * @return Selected row, -1 if none.
  */
-unsigned int TextList::getSelectedRow() const
+int TextList::getSelectedRow() const
 {
 	if (_rows.empty() || _selRow >= _rows.size())
 	{
@@ -901,6 +1011,10 @@ void TextList::clearList()
 	scrollUp(true, false);
 	_texts.clear();
 	_rows.clear();
+	for (auto& icons : _rowIcons)
+	{
+		icons.clear();
+	}
 	_redraw = true;
 }
 
@@ -1007,37 +1121,95 @@ void TextList::setScrolling(bool scrolling, int scrollPos)
 }
 
 /**
+ * The visible rows as draw() lays them out: for wrapped items the draw
+ * height starts above the visible surface, so that the correct row appears
+ * at the top, and every row takes its first line's height and the spacing.
+ */
+void TextList::forVisibleRows(const std::function<void(size_t, int, int)> &fn) const
+{
+	if (_rows.empty())
+	{
+		return;
+	}
+	int y = 0;
+	for (int row = _scroll; row > 0 && _rows[row] == _rows[row - 1]; --row)
+	{
+		y -= _font->getHeight() + _font->getSpacing();
+	}
+	for (size_t i = _rows[_scroll]; i < _texts.size() && i < _rows[_scroll] + _visibleRows; ++i)
+	{
+		const int h = (!_texts[i].empty() ? _texts[i].front()->getHeight() : _font->getHeight()) + _font->getSpacing();
+		fn(i, y, h);
+		y += h;
+	}
+}
+
+/**
  * Draws the text list and all the text contained within.
  */
 void TextList::draw()
 {
 	Surface::draw();
-	int y = 0;
-	if (!_rows.empty())
+	forVisibleRows([&](size_t i, int y, int)
 	{
-		// for wrapped items, offset the draw height above the visible surface
-		// so that the correct row appears at the top
-		for (int row = _scroll; row > 0 && _rows[row] == _rows[row - 1]; --row)
+		forRowIcons(i, [&](const Icon &icon, int x)
 		{
-			y -= _font->getHeight() + _font->getSpacing();
-		}
-		for (size_t i = _rows[_scroll]; i < _texts.size() && i < _rows[_scroll] + _visibleRows; ++i)
+			icon.fitted->setX(x);
+			icon.fitted->setY(y + icon.y);
+			icon.fitted->blit(this->getSurface());
+		});
+		for (auto* text : _texts[i])
 		{
-			for (auto* text : _texts[i])
-			{
-				text->setY(y);
-				text->blit(this->getSurface());
-			}
-			if (!_texts[i].empty())
-			{
-				y += _texts[i].front()->getHeight() + _font->getSpacing();
-			}
-			else
-			{
-				y += _font->getHeight() + _font->getSpacing();
-			}
+			text->setY(y);
+			text->blit(this->getSurface());
 		}
+	});
+}
+
+/**
+ * The HD interface's version of the list: the visible rows' texts, laid out
+ * as draw() lays them out, rendered as HD text within the list's rectangle.
+ */
+void TextList::hdMirror()
+{
+	if (_rows.empty())
+	{
+		return;
 	}
+	if (HdUi::skin())
+	{
+		// the modern skin: the selected row's highlight with an accent bar. Rows are not banded: the
+		// stripes read as part of the text on every screen that shows figures under a caption
+		HdUi &ui = HdUi::instance();
+		ui.setClip(getX(), getY(), getWidth(), getHeight());
+		if (_selector->getVisible())
+		{
+			// the accent bar in the selected row's text colour (its face shade)
+			const SDL_Color *pal = HdUi::paletteOf(this);
+			int color = _color;
+			if (_selRow < _rows.size() && !_texts[_rows[_selRow]].empty())
+			{
+				color = _texts[_rows[_selRow]].front()->getColor();
+			}
+			ui.drawHighlight(_selector->getX(), _selector->getY(), _selector->getWidth(), _selector->getHeight(), HdUi::rgba(pal[(Uint8)(color + (_contrast ? 2 : 1))]));
+		}
+		ui.clearClip();
+	}
+	forVisibleRows([&](size_t i, int y, int)
+	{
+		forRowIcons(i, [&](const Icon &icon, int x)
+		{
+			// from the whole frame, not from the classic picture: that one is a few pixels big
+			HdUi &ui = HdUi::instance();
+			ui.setClip(getX(), getY(), getWidth(), getHeight());
+			ui.drawSurfaceFit(icon.trimmed, getX() + x, getY() + y + icon.y, icon.fitted->getWidth(), icon.fitted->getHeight());
+			ui.clearClip();
+		});
+		for (auto* text : _texts[i])
+		{
+			text->hdDrawAt(getX() + text->getX(), getY() + y, getX(), getY(), getWidth(), getHeight());
+		}
+	});
 }
 
 /**
@@ -1048,6 +1220,8 @@ void TextList::blit(SDL_Surface *surface)
 {
 	if (_visible && !_hidden)
 	{
+		// the skin draws the highlight itself (under the rows, see hdMirror)
+		_selector->setHdKind(HD_SKIP);
 		_selector->blit(surface);
 	}
 	Surface::blit(surface);
@@ -1388,6 +1562,182 @@ void TextList::setFlooding(bool flooding)
 void TextList::setIgnoreSeparators(bool ignoreSeparators)
 {
 	_ignoreSeparators = ignoreSeparators;
+}
+
+/**
+ * OXCE-HD: sets the column the row pictures are drawn in.
+ * @param x Left edge in list pixels.
+ * @param width Width in pixels; 0 = no pictures.
+ * @param col Which of the two picture columns.
+ * @param slots The column split into that many places, one picture each.
+ */
+void TextList::setIconColumn(int x, int width, int col, int slots)
+{
+	if (col < 0 || col >= ICON_COLUMNS)
+	{
+		return;
+	}
+	slots = std::max(1, slots);
+	if (width != _iconW[col] || x != _iconX[col] || slots != _iconSlots[col])
+	{
+		// the classic pictures were made for the old column
+		for (auto it = _iconCache.begin(); it != _iconCache.end();)
+		{
+			if (it->first.second == col)
+			{
+				delete it->second.trimmed;
+				delete it->second.fitted;
+				it = _iconCache.erase(it);
+			}
+			else
+			{
+				++it;
+			}
+		}
+	}
+	_iconX[col] = x;
+	_iconW[col] = std::max(0, width);
+	_iconSlots[col] = slots;
+	_redraw = true;
+}
+
+/**
+ * OXCE-HD: sets the picture of a row.
+ * @param row Row number (as setRowColor counts them).
+ * @param frame A sprite frame (kept by its owner, not copied); nullptr = none.
+ * @param col Which of the two picture columns.
+ */
+void TextList::setRowIcon(size_t row, Surface *frame, int col)
+{
+	setRowIcons(row, frame ? std::vector<Surface*>(1, frame) : std::vector<Surface*>(), col);
+}
+
+/**
+ * OXCE-HD: sets the pictures of a row, one per slot of the column.
+ * @param row Row number (as setRowColor counts them).
+ * @param frames Sprite frames (kept by their owner, not copied); nullptr leaves its slot empty.
+ * @param col Which of the two picture columns.
+ */
+void TextList::setRowIcons(size_t row, const std::vector<Surface*> &frames, int col)
+{
+	if (col < 0 || col >= ICON_COLUMNS)
+	{
+		return;
+	}
+	if (row >= _rowIcons[col].size())
+	{
+		_rowIcons[col].resize(row + 1);
+	}
+	_rowIcons[col][row] = frames;
+	_redraw = true;
+}
+
+/**
+ * OXCE-HD: calls fn(icon, x) for the pictures of a row, x in list pixels.
+ */
+template<typename Fn>
+void TextList::forRowIcons(size_t row, Fn fn)
+{
+	for (int col = 0; col < ICON_COLUMNS; ++col)
+	{
+		if (_iconW[col] <= 0 || row >= _rowIcons[col].size())
+		{
+			continue;
+		}
+		const std::vector<Surface*> &frames = _rowIcons[col][row];
+		const int slotW = _iconW[col] / _iconSlots[col];
+		for (size_t slot = 0; slot < frames.size() && slot < (size_t)_iconSlots[col]; ++slot)
+		{
+			if (const Icon *icon = frames[slot] ? frameIcon(frames[slot], col) : nullptr)
+			{
+				fn(*icon, _iconX[col] + (int)slot * slotW + icon->x);
+			}
+		}
+	}
+}
+
+/**
+ * OXCE-HD: the picture of a frame. Made once per frame: the frame's drawn part,
+ * and from it the classic picture as big as fits the slot and the line with
+ * the shape kept; every pixel of it takes the commonest colour of the part it
+ * covers, or stays empty where that part is mostly empty (a mean of palette
+ * indices would be a colour from another ramp).
+ */
+const TextList::Icon *TextList::frameIcon(Surface *frame, int col)
+{
+	auto found = _iconCache.find(std::make_pair(frame, col));
+	if (found != _iconCache.end())
+	{
+		return found->second.fitted ? &found->second : nullptr;
+	}
+	Icon &icon = _iconCache[std::make_pair(frame, col)];
+	const int w = frame->getWidth(), h = frame->getHeight();
+	int x0 = w, y0 = h, x1 = -1, y1 = -1;
+	for (int y = 0; y < h; ++y)
+	{
+		for (int x = 0; x < w; ++x)
+		{
+			if (frame->getPixel(x, y))
+			{
+				x0 = std::min(x0, x); x1 = std::max(x1, x);
+				y0 = std::min(y0, y); y1 = std::max(y1, y);
+			}
+		}
+	}
+	if (x1 < 0)
+	{
+		return nullptr; // an empty frame: nothing to draw
+	}
+	const int bw = x1 - x0 + 1, bh = y1 - y0 + 1;
+	icon.trimmed = new Surface(bw, bh);
+	icon.trimmed->setPalette(getPalette());
+	for (int y = 0; y < bh; ++y)
+	{
+		for (int x = 0; x < bw; ++x)
+		{
+			icon.trimmed->setPixel(x, y, frame->getPixel(x0 + x, y0 + y));
+		}
+	}
+	const int lineH = _font->getHeight();
+	const int slotW = _iconW[col] / _iconSlots[col];
+	const double s = std::min(1.0, std::min((double)slotW / bw, (double)lineH / bh));
+	const int dw = std::max(1, (int)std::lround(bw * s)), dh = std::max(1, (int)std::lround(bh * s));
+	icon.fitted = new Surface(dw, dh);
+	icon.fitted->setPalette(getPalette());
+	for (int y = 0; y < dh; ++y)
+	{
+		const int sy0 = y * bh / dh, sy1 = std::max(sy0 + 1, (y + 1) * bh / dh);
+		for (int x = 0; x < dw; ++x)
+		{
+			const int sx0 = x * bw / dw, sx1 = std::max(sx0 + 1, (x + 1) * bw / dw);
+			int count[256] = {};
+			int drawn = 0;
+			for (int sy = sy0; sy < sy1; ++sy)
+			{
+				for (int sx = sx0; sx < sx1; ++sx)
+				{
+					const Uint8 c = icon.trimmed->getPixel(sx, sy);
+					if (c)
+					{
+						++count[c];
+						++drawn;
+					}
+				}
+			}
+			if (drawn * 2 >= (sx1 - sx0) * (sy1 - sy0))
+			{
+				int best = 1;
+				for (int c = 2; c < 256; ++c)
+				{
+					if (count[c] > count[best]) best = c;
+				}
+				icon.fitted->setPixel(x, y, (Uint8)best);
+			}
+		}
+	}
+	icon.x = (slotW - dw) / 2;
+	icon.y = (lineH - dh) / 2;
+	return &icon;
 }
 
 }

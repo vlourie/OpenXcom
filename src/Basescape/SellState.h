@@ -22,6 +22,7 @@
 #include "../Menu/OptionsBaseState.h"
 #include <vector>
 #include <string>
+#include "ItemCountTooltipMixin.h"
 
 namespace OpenXcom
 {
@@ -36,12 +37,13 @@ class Timer;
 class Base;
 class DebriefingState;
 class RuleItem;
+class ItemCountTooltip;
 
 /**
  * Sell/Sack screen that lets the player sell
  * any items in a particular base.
  */
-class SellState : public TouchState
+class SellState : public ItemCountTooltipMixin<TouchState>
 {
 private:
 	Base *_base;
@@ -124,6 +126,10 @@ public:
 	void updateItemStrings();
 	/// Handler for changing the category filter.
 	void cbxCategoryChange(Action *action);
+
+protected:
+	const RuleItem* GetItemForTooltip() override;
+	const Base* GetBase() override;
 };
 
 }

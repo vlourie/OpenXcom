@@ -30,6 +30,9 @@
 #include "../Mod/Mod.h"
 #include "../Engine/Sound.h"
 #include "../Engine/RNG.h"
+#include "../Engine/HdFx.h"
+#include "../Engine/HdGentle.h"
+#include "../Engine/SurfaceSet.h"
 #include "../Mod/Armor.h"
 #include "../Mod/RuleItem.h"
 #include "../Engine/Options.h"
@@ -37,6 +40,7 @@
 #include "Camera.h"
 #include "Explosion.h"
 #include "BattlescapeState.h"
+#include "AiProbe.h"
 #include "../Savegame/BattleUnitStatistics.h"
 #include "../fmath.h"
 
@@ -394,11 +398,17 @@ void ProjectileFlyBState::init()
 	if (createNewProjectile())
 	{
 		auto* conf = weapon->getActionConf(_action.type);
-		if (_parent->getMap()->isAltPressed() || (conf && !conf->followProjectiles))
+
+		const bool byAltPressed = _parent->getMap()->isAltPressed();
+		const bool byRules = conf && !conf->followProjectiles;
+		const bool byOptions = (HdGentle::traceProjectiles() >= 2) || (_unit->getFaction() == UnitFaction::FACTION_PLAYER && HdGentle::traceProjectiles() == 1);
+
+		if (byAltPressed || byRules || byOptions)
 		{
 			// temporarily turn off camera following projectiles to prevent annoying flashing effects (e.g. on minigun-like weapons)
 			_parent->getMap()->setFollowProjectile(false);
 		}
+
 		if (_range == 0) _action.spendTU();
 		_parent->getMap()->setCursorType(CT_NONE);
 		_parent->getMap()->getCamera()->stopMouseScrolling();
@@ -415,6 +425,28 @@ void ProjectileFlyBState::init()
  * calculating its trajectory.
  * @return True, if the projectile was successfully created.
  */
+/**
+ * HD render: the muzzle flash of the shot, in the HD modes and only for a shooter the player can see.
+ * Pictures only: no timing, no random numbers.
+ * @param origin The voxel the projectile leaves from.
+ */
+void ProjectileFlyBState::hdMuzzle(Position origin)
+{
+	Map *map = _parent->getMap();
+	if (!Options::oxceHdFx || map->getHdMode() == HD_MODE_NEAREST || !(_unit->getFaction() == FACTION_PLAYER || _unit->getVisible()))
+	{
+		return;
+	}
+	const RuleItem *ammoRule = _ammo->getRules();
+	const std::string clip = HdFx::flashClip(_action.weapon->getRules(), ammoRule, _unit->getDirection());
+	if (clip.empty())
+	{
+		return;
+	}
+	const Surface *hitFrame = _parent->getMod()->getSurfaceSet("SMOKE.PCK")->getFrame(ammoRule->getHitAnimation());
+	HdFx::spawn(HdFx::colour(clip, hitFrame, map->getPalette()), origin, _action.weapon->getId());
+}
+
 bool ProjectileFlyBState::createNewProjectile()
 {
 	++_action.autoShotCounter;
@@ -465,6 +497,7 @@ bool ProjectileFlyBState::createNewProjectile()
 	{
 		accuracyDivider = 200.0;
 	}
+	AiProbe::shotDivider(_parent->getSave(), _unit, accuracyDivider);
 
 	BattleActionAttack attack = BattleActionAttack::GetAferShoot(_action, _ammo);
 	if (_action.type == BA_THROW)
@@ -517,6 +550,7 @@ bool ProjectileFlyBState::createNewProjectile()
 			{
 				_parent->getMod()->getSoundByDepth(_parent->getDepth(), _action.weapon->getRules()->getFireSound())->play(-1, _parent->getMap()->getSoundAngle(_unit->getPosition()));
 			}
+			hdMuzzle(projectile->getPosition(0));
 			if (_action.type != BA_LAUNCH)
 			{
 				_action.weapon->spendAmmoForAction(_action.type, _parent->getSave());
@@ -559,6 +593,7 @@ bool ProjectileFlyBState::createNewProjectile()
 			{
 				_parent->getMod()->getSoundByDepth(_parent->getDepth(), _action.weapon->getRules()->getFireSound())->play(-1, _parent->getMap()->getSoundAngle(projectile->getOrigin()));
 			}
+			hdMuzzle(projectile->getPosition(0));
 			if (_action.type != BA_LAUNCH)
 			{
 				_action.weapon->spendAmmoForAction(_action.type, _parent->getSave());
@@ -816,7 +851,15 @@ void ProjectileFlyBState::think()
 										power = _ammo->getRules()->getPowerBonus(attack) - _ammo->getRules()->getPowerRangeReduction(proj->getDistance());
 									}
 									_parent->getMap()->getExplosions()->push_back(explosion);
+									// HD render: each pellet gets the combat effect of what it lands on (read only, before and after the hit)
+									const Position hdAt = proj->getPosition(offset);
+									const Tile *hdTile = _parent->getSave()->getTile(hdAt.toTile());
+									const BattleUnit *hdUnit = hdTile ? hdTile->getOverlappingUnit(_parent->getSave()) : nullptr;
+									const int hdBefore = hdUnit ? hdUnit->getHealth() * 1000 + hdUnit->getStunlevel() : 0;
 									_parent->getSave()->getTileEngine()->hit(attack, proj->getPosition(offset), power, _ammo->getRules()->getDamageType());
+									const bool hdOnUnit = secondaryImpact == V_UNIT && hdUnit;
+									const bool hdArmorHeld = hdOnUnit && hdUnit->getHealth() * 1000 + hdUnit->getStunlevel() == hdBefore;
+									explosion->setHdFx(HdFx::hitClip(_ammo->getRules(), hdOnUnit, hdUnit, hdArmorHeld, hdTile, hdAt.z));
 
 									//do not work yet
 //									if (_ammo->getRules()->getExplosionRadius(_unit) != 0)

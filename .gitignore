@@ -1,4 +1,4 @@
-# autotools
+﻿# autotools
 aclocal.m4
 m4/pkg.m4
 missing
@@ -66,7 +66,10 @@ _ReSharper.*/
 bin/UFO
 bin/TFTD
 docs/html/
-build/
+/build/
+build-release/
+build-ai*/
+apply_ai_tactical_module_replacements.py
 Dependencies/
 translations/
 *.*.user
@@ -83,3 +86,63 @@ bin/Win32/user*
 bin/user
 /.kdev4/
 /*.kdev4
+/src/OpenXcom.2010.vcxproj.user
+
+# HD art pipeline: local python environment and extracted sheets
+tools/hdart/.venv/
+# sound effects pipeline: own environments (MMAudio pins numpy < 2.1, stable-audio-3 pins torch 2.7.1)
+tools/sfx/.venv*/
+hdart_sheets/
+__pycache__/
+
+# one-click build output (tools/build)
+dist/
+
+# HD-мод (картинки, паки) — в гит не кладём
+/user/
+
+# --- mod-ai-agents ---
+/.index/
+/game
+/.claude/state/
+
+# --- рабочие папки: в гит не идут -------------------------------------
+# установка X-Piratez (3.6 ГБ) — копия игры, не исходники
+/Пиратки/
+/мурукон/
+# выгрузки Claude, референсы, скачанные снимки, эксперименты
+/Claude outputs/
+/photo_refs/
+/hdglobe_dl/
+/tank_work/
+/hit_compare/
+/_cmp/
+/cmp_fast_slow/
+/art/
+/hdart_sheets_pz/
+/pics/
+/Multiplayer/
+# дампы upstream-версий для ручного сравнения при слиянии
+/head_*.txt
+/head_*.cpp
+/build_log.txt
+/obj/
+# клон Brutal-OXCE для замеров ИИ, в гит не идёт
+/BrutalAI/
+# замеры и дампы прогонов, в гит не идут
+/logs/
+# перепись PCK (пересоздаёт tools/pck_census.py), данные обучения LoRA, скачанные моды
+/census/
+/dataset/
+/lora_*/
+/X-Files*/
+
+# очередь видеокарты tools/gpuq.py
+.gpuq/
+# очередь правок игры tools/editq.py
+.editq/
+
+# датасеты, вторая копия мода, окружения моделей (аудит 2026-09-26)
+/dataset*/
+/new mod/
+tools/hdart/.venv*/

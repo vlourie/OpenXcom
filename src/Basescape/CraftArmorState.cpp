@@ -121,6 +121,7 @@ CraftArmorState::CraftArmorState(Base *base, size_t craft) : _base(base), _craft
 	PUSH_IN("STR_WOUND_RECOVERY2", woundRecoveryStat);
 	if (_game->getMod()->isManaFeatureEnabled() && !_game->getMod()->getReplenishManaAfterMission())
 	{
+		PUSH_IN("STR_MANA_CURRENT", currentManaStat);
 		PUSH_IN("STR_MANA_MISSING", manaMissingStat);
 	}
 	PUSH_IN("STR_TIME_UNITS", tuStat);
@@ -288,15 +289,19 @@ void CraftArmorState::initList(size_t scrl)
 	int row = 0;
 	_lstSoldiers->clearList();
 
+	// OXCE-HD: the soldier's race picture before the name, as in the soldier lists (no rank badge here)
+	const int icon = Options::oxceBaseSoldierTypeIcon ? 13 : 0;
+	_lstSoldiers->setIconColumn(8, icon);
+	_lstSoldiers->setMargin(8 + icon);
 	if (_dynGetter != NULL)
 	{
 		_lstSoldiers->setArrowColumn(160, ARROW_VERTICAL);
-		_lstSoldiers->setColumns(4, 106, 70, 88, 16);
+		_lstSoldiers->setColumns(4, 106 - icon, 70, 88, 16);
 	}
 	else
 	{
 		_lstSoldiers->setArrowColumn(-1, ARROW_VERTICAL);
-		_lstSoldiers->setColumns(3, 106, 70, 104);
+		_lstSoldiers->setColumns(3, 106 - icon, 70, 104);
 	}
 
 	Craft *c = _base->getCrafts()->at(_craft);
@@ -330,6 +335,10 @@ void CraftArmorState::initList(size_t scrl)
 			color = _lstSoldiers->getColor();
 		}
 		_lstSoldiers->setRowColor(row, color);
+		if (icon)
+		{
+			_lstSoldiers->setRowIcon(row, soldierFlag(_game->getMod(), soldier));
+		}
 		row++;
 	}
 	if (scrl)

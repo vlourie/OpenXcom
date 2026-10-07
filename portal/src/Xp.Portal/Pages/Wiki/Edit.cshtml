@@ -1,0 +1,49 @@
+@page "/wiki/{mod}/{slug}/edit"
+@model Xp.Portal.Pages.Wiki.EditModel
+@inject Markup Md
+@{
+    ViewData["Title"] = T["wiki.edit"];
+}
+<p class="crumbs">
+    <a href="/wiki/@Model.ModSlug">@Model.ModName</a> / @T["wiki.edit"]
+</p>
+<h1>@(Model.IsNew ? T["wiki.new"] : T["wiki.edit"])</h1>
+
+@if (Model.WasGenerated)
+{
+    <p class="derived">@T["wiki.derived.warn"]</p>
+}
+
+<partial name="_Errors" model="Model.Errors" />
+
+@if (Model.Preview is { Length: > 0 })
+{
+    <section class="panel article">
+        <h2 class="title">@T["wiki.preview"]</h2>
+        @Md.Render(Model.Preview)
+    </section>
+}
+
+<form method="post">
+    <label for="title">@T["field.title"]</label>
+    <input type="text" id="title" name="title" value="@Model.Title" maxlength="160" required>
+
+    <label for="slug">@T["wiki.slug"]</label>
+    <input type="text" id="slug" name="pageSlug" value="@Model.Slug" maxlength="64">
+    <p class="hint">@T["wiki.slug.hint"]</p>
+
+    <label for="section">@T["wiki.section"]</label>
+    <input type="text" id="section" name="section" value="@Model.Section" maxlength="64">
+
+    <label for="body">@T["wiki.body"]</label>
+    <textarea id="body" name="body" rows="24" maxlength="120000" required>@Model.Body</textarea>
+    <p class="hint">@T["wiki.body.hint"]</p>
+
+    <label for="comment">@T["wiki.comment"]</label>
+    <input type="text" id="comment" name="comment" value="" maxlength="400">
+
+    <label class="check"><input type="checkbox" name="published" value="true" checked="@Model.Published"> @T["wiki.published"]</label>
+
+    <button type="submit" asp-page-handler="Save">@T["wiki.save"]</button>
+    <button type="submit" class="secondary" asp-page-handler="Preview">@T["wiki.preview"]</button>
+</form>

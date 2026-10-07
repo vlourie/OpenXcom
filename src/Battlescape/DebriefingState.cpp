@@ -32,6 +32,7 @@
 #include "../Interface/Window.h"
 #include "PromotionsState.h"
 #include "CommendationState.h"
+#include "SoldierStatChangeState.h"
 #include "CommendationLateState.h"
 #include "../Mod/Mod.h"
 #include "../Mod/RuleCountry.h"
@@ -289,6 +290,9 @@ DebriefingState::DebriefingState() :
 	_lstSoldierStats->setAlign(ALIGN_CENTER);
 	_lstSoldierStats->setAlign(ALIGN_LEFT, 0);
 	_lstSoldierStats->setDot(true);
+	_lstSoldierStats->setSelectable(true);
+	_lstSoldierStats->setBackground(_window);
+	_lstSoldierStats->onMouseClick((ActionHandler)&DebriefingState::lstSoldierStatsClick);
 
 	// Third page
 	int firstColumnWidth = Clamp(_game->getMod()->getInterface("debriefing")->getElement("list")->custom, 90, 254);
@@ -388,6 +392,8 @@ void DebriefingState::init()
 		return;
 	}
 	_initDone = true;
+
+	captureStatsBefore();
 
 	prepareDebriefing();
 
@@ -790,6 +796,8 @@ void DebriefingState::init()
 		_promotions = _game->getSavedGame()->handlePromotions(participants, _game->getMod());
 	}
 
+	captureStatsAfter();
+
 	_game->getSavedGame()->setBattleGame(0);
 
 	if (_positiveScore)
@@ -821,6 +829,90 @@ void DebriefingState::txtTooltipOut(Action *action)
 	if (_currentTooltip == action->getSender()->getTooltip())
 	{
 		_txtTooltip->setText("");
+	}
+}
+
+/**
+ * Takes the "before" snapshot of every soldier of the mission. Called before anything
+ * of the debriefing is applied: the geoscape soldier stats don't change during a battle
+ * (experience is applied only now), and the armor worn before the mission is restored
+ * from the replaced/transformed armor backups, so this equals the stats before the battle
+ * (and works for battles loaded from older saves too).
+ */
+void DebriefingState::captureStatsBefore()
+{
+	_statChanges = std::make_shared<std::vector<SoldierStatChange>>();
+	auto *battle = _game->getSavedGame()->getSavedBattle();
+	if (!battle)
+	{
+		return;
+	}
+	for (auto *bu : *battle->getUnits())
+	{
+		Soldier *soldier = bu->getGeoscapeSoldier();
+		if (!soldier || bu->getOriginalFaction() != FACTION_PLAYER)
+		{
+			continue;
+		}
+		if (SoldierStatChangeState::findSoldier(*_statChanges, soldier) >= 0)
+		{
+			continue;
+		}
+		SoldierStatChange change;
+		change.soldier = soldier;
+		change.before = SoldierStatSnapshot::capture(_game->getMod(), soldier, true);
+		_statChanges->push_back(change);
+	}
+}
+
+/**
+ * Takes the "after" snapshot of the soldiers who returned (the ones in the stat increase list),
+ * in the order of that list. Dead/missing soldiers are dropped.
+ */
+void DebriefingState::captureStatsAfter()
+{
+	if (!_statChanges)
+	{
+		return;
+	}
+	std::vector<SoldierStatChange> ordered;
+	for (auto *soldier : _soldierStatsSoldiers)
+	{
+		for (auto &change : *_statChanges)
+		{
+			if (change.soldier == soldier && !change.done)
+			{
+				soldier->prepareStatsWithBonuses(_game->getMod()); // refresh the cache for the geoscape too
+				change.name = soldier->getName();
+				change.after = SoldierStatSnapshot::capture(_game->getMod(), soldier, false);
+				change.done = true;
+				ordered.push_back(change);
+				break;
+			}
+		}
+	}
+	*_statChanges = ordered;
+}
+
+/**
+ * Opens the stat change screen of the clicked soldier.
+ * @param action Pointer to an action.
+ */
+void DebriefingState::lstSoldierStatsClick(Action *)
+{
+	if (!_statChanges || _statChanges->empty())
+	{
+		return;
+	}
+	size_t row = _lstSoldierStats->getSelectedRow();
+	if (row >= _soldierStatsSoldiers.size())
+	{
+		return;
+	}
+	int index = SoldierStatChangeState::findSoldier(*_statChanges, _soldierStatsSoldiers[row]);
+	if (index >= 0)
+	{
+		_game->pushState(new SoldierStatChangeState(_statChanges, index));
 	}
 }
 
@@ -895,7 +987,7 @@ void DebriefingState::btnOkClick(Action *)
 		}
 		if (!_soldiersCommended.empty())
 		{
-			_game->pushState(new CommendationState(_soldiersCommended));
+			_game->pushState(new CommendationState(_soldiersCommended, _statChanges));
 		}
 		if (!_destroyBase)
 		{
@@ -1481,7 +1573,6 @@ void DebriefingState::prepareDebriefing()
 		UnitStatus status = bunit->getStatus();
 		UnitFaction faction = bunit->getFaction();
 		UnitFaction oldFaction = bunit->getOriginalFaction();
-		int value = bunit->getValue();
 		Soldier *soldier = save->getSoldier(bunit->getId());
 
 		if (!bunit->getTile())
@@ -1511,13 +1602,13 @@ void DebriefingState::prepareDebriefing()
 		{ // so this is a dead unit
 			if (oldFaction == FACTION_HOSTILE && bunit->killedBy() == FACTION_PLAYER)
 			{
-				addStat("STR_ALIENS_KILLED", 1, value);
+				addStat("STR_ALIENS_KILLED", 1, bunit->getValueKilled());
 			}
 			else if (oldFaction == FACTION_PLAYER)
 			{
 				if (soldier != 0)
 				{
-					addStat("STR_XCOM_OPERATIVES_KILLED", 1, -value);
+					addStat("STR_XCOM_OPERATIVES_KILLED", 1, -bunit->getValueKilled());
 					bunit->updateGeoscapeStats(soldier);
 
 					// starting conditions: recover armor backup
@@ -1537,7 +1628,7 @@ void DebriefingState::prepareDebriefing()
 				}
 				else
 				{ // non soldier player = tank
-					addStat("STR_TANKS_DESTROYED", 1, -value);
+					addStat("STR_TANKS_DESTROYED", 1, -bunit->getValueKilled());
 					save->increaseVehiclesLost();
 				}
 			}
@@ -1547,14 +1638,14 @@ void DebriefingState::prepareDebriefing()
 				{
 					if (!bunit->isCosmetic())
 					{
-						addStat("STR_CIVILIANS_KILLED_BY_XCOM_OPERATIVES", 1, -bunit->getValue() - (2 * (bunit->getValue() / 3)));
+						addStat("STR_CIVILIANS_KILLED_BY_XCOM_OPERATIVES", 1, -bunit->getValueCivilianKilledByXcom());
 					}
 				}
 				else // if civilians happen to kill themselves XCOM shouldn't get penalty for it
 				{
 					if (!bunit->isCosmetic())
 					{
-						addStat("STR_CIVILIANS_KILLED_BY_ALIENS", 1, -bunit->getValue());
+						addStat("STR_CIVILIANS_KILLED_BY_ALIENS", 1, -bunit->getValueCivilian());
 					}
 				}
 			}
@@ -1571,7 +1662,10 @@ void DebriefingState::prepareDebriefing()
 					StatAdjustment statIncrease;
 					bunit->postMissionProcedures(_game->getMod(), save, battle, statIncrease);
 					if (bunit->getGeoscapeSoldier())
+					{
 						_soldierStats.push_back(std::pair<std::string, UnitStats>(bunit->getGeoscapeSoldier()->getName(), statIncrease.statGrowth));
+						_soldierStatsSoldiers.push_back(bunit->getGeoscapeSoldier());
+					}
 					playersInExitArea2++;
 
 					recoverItems(bunit->getInventory(), base, craft);
@@ -1615,7 +1709,7 @@ void DebriefingState::prepareDebriefing()
 				}
 				else
 				{ // so game is aborted and unit is not on exit area
-					addStat("STR_XCOM_OPERATIVES_MISSING_IN_ACTION", 1, -value);
+					addStat("STR_XCOM_OPERATIVES_MISSING_IN_ACTION", 1, -bunit->getValueKilled());
 					playersSurvived--;
 					if (soldier != 0)
 					{
@@ -1673,23 +1767,26 @@ void DebriefingState::prepareDebriefing()
 					}
 				}
 			}
-			else if (oldFaction == FACTION_NEUTRAL && !ignoreLivingCivilians)
+			else if (oldFaction == FACTION_NEUTRAL)
 			{
 				// if mission fails, all civilians die
 				if ((aborted && !success) || playersSurvived == 0)
 				{
-					if (!bunit->isResummonedFakeCivilian() && !bunit->isCosmetic())
+					if (!bunit->isResummonedFakeCivilian() && !bunit->isCosmetic() && !ignoreLivingCivilians)
 					{
-						addStat("STR_CIVILIANS_KILLED_BY_ALIENS", 1, -bunit->getValue());
+						addStat("STR_CIVILIANS_KILLED_BY_ALIENS", 1, -bunit->getValueCivilian());
 					}
 				}
 				else
 				{
-					if (!bunit->isResummonedFakeCivilian() && !bunit->isCosmetic())
+					if (!bunit->isResummonedFakeCivilian() && !bunit->isCosmetic() && !ignoreLivingCivilians)
 					{
-						addStat("STR_CIVILIANS_SAVED", 1, bunit->getValue());
+						addStat("STR_CIVILIANS_SAVED", 1, bunit->getValueCivilian());
 					}
-					recoverCivilian(bunit, base, craft);
+					if (!ignoreLivingCivilians || bunit->isResummonedFakeCivilian())
+					{
+						recoverCivilian(bunit, base, craft);
+					}
 				}
 			}
 		}
@@ -2743,16 +2840,16 @@ void DebriefingState::recoverAlien(BattleUnit *from, Base *base, Craft* craft)
 		if (research != 0 && !_game->getSavedGame()->isResearched(research))
 		{
 			// more points if it's not researched
-			addStat(surrendered ? "STR_LIVE_ALIENS_SURRENDERED" : "STR_LIVE_ALIENS_RECOVERED", 1, from->getValue() * 2);
+			addStat(surrendered ? "STR_LIVE_ALIENS_SURRENDERED" : "STR_LIVE_ALIENS_RECOVERED", 1, from->getValueCaptured());
 		}
 		else if (_game->getMod()->getGiveScoreAlsoForResearchedArtifacts())
 		{
-			addStat(surrendered ? "STR_LIVE_ALIENS_SURRENDERED" : "STR_LIVE_ALIENS_RECOVERED", 1, from->getValue() * 2);
+			addStat(surrendered ? "STR_LIVE_ALIENS_SURRENDERED" : "STR_LIVE_ALIENS_RECOVERED", 1, from->getValueCaptured());
 		}
 		else
 		{
 			// 10 points for recovery
-			addStat(surrendered ? "STR_LIVE_ALIENS_SURRENDERED" : "STR_LIVE_ALIENS_RECOVERED", 1, 10);
+			addStat(surrendered ? "STR_LIVE_ALIENS_SURRENDERED" : "STR_LIVE_ALIENS_RECOVERED", 1, from->getValueCapturedResearched());
 		}
 
 		addItemsToBaseStores(ruleLiveAlienItem, base, 1, false);

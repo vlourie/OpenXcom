@@ -54,6 +54,11 @@
 #include "DogfightErrorState.h"
 #include "../Mod/RuleInterface.h"
 #include "../Mod/Mod.h"
+#include "../Engine/HdOutline.h"
+#include "../Engine/HdUi.h"
+#include "../Engine/Options.h"
+#include "../Ufopaedia/Ufopaedia.h"
+#include "../Mod/ArticleDefinition.h"
 
 namespace OpenXcom
 {
@@ -340,7 +345,22 @@ DogfightState::DogfightState(GeoscapeState *state, Craft *craft, Ufo *ufo, bool 
 		_weapon[i] = new InteractiveSurface(15, 17, _x + w_off, _y + y_off);
 		_range[i] = new Surface(21, 74, _x + r_off, _y + 3);
 		_txtAmmo[i] = new Text(16, 9, _x + w_off, _y + y_off + 18);
+		// OXCE-HD: the hit chance above the weapon icon; beside it, toward the radar, when the ammo
+		// of a weapon in the slot above takes that place
+		bool sideways = false;
+		if (i < 2 && i + 2 < _weaponNum)
+		{
+			CraftWeapon *above = _craft->getWeapons()->at(i + 2);
+			sideways = above && above->getRules()->getAmmoMax() > 0;
+		}
+		if (sideways)
+			_txtHitChance[i] = new Text(20, 9, _x + (i % 2 ? w_off - 21 : w_off + 16), _y + y_off + 9);
+		else
+			_txtHitChance[i] = new Text(24, 9, _x + (i % 2 ? w_off + 15 - 24 : w_off), _y + y_off - 9);
+		// flush with the icon's outer edge, so "100%?" stays inside the radar
+		_txtHitChance[i]->setAlign(i % 2 ? ALIGN_RIGHT : ALIGN_LEFT);
 	}
+	_txtUfoHitChance = new Text(30, 9, _x + 14, _y + 4);
 	_craftSprite = new Surface(22, 25, _x + 93, _y + 40);
 	_damage = new Surface(22, 25, _x + 93, _y + 40);
 	_craftShield = new Surface(22, 25, _x + 93, _y + 40);
@@ -388,6 +408,11 @@ DogfightState::DogfightState(GeoscapeState *state, Craft *craft, Ufo *ufo, bool 
 	{
 		add(_txtAmmo[i], "numbers", "dogfight", _window);
 	}
+	for (int i = 0; i < _weaponNum; ++i)
+	{
+		add(_txtHitChance[i], "numbers", "dogfight", _window);
+	}
+	add(_txtUfoHitChance, "numbers", "dogfight", _window);
 	add(_txtDistance, "distance", "dogfight", _window);
 	add(_txtOceanIndicator, "oceanIndicator", "dogfight", _window);
 	add(_preview);
@@ -566,6 +591,30 @@ DogfightState::DogfightState(GeoscapeState *state, Craft *craft, Ufo *ufo, bool 
 	_colors[DISABLED_AMMO] = dogfightInterface->getElement("disabledAmmo")->color;
 	_colors[SHIELD_MIN] = dogfightInterface->getElement("shieldRange")->color;
 	_colors[SHIELD_MAX] = dogfightInterface->getElement("shieldRange")->color2;
+
+	// OXCE-HD: the UFO's chance in the enemy colour; the UFO counts as known when its Ufopaedia article
+	// is open (and the race's one, if the crew race changes its hit/avoid bonuses)
+	_txtUfoHitChance->setColor(_colors[DAMAGE_MAX]);
+	{
+		auto articleOpen = [&](std::string id)
+		{
+			// same suffix fallback as UfoDetectedState: STR_VESSEL_FIGHTER_G -> STR_VESSEL_FIGHTER
+			while (!id.empty())
+			{
+				ArticleDefinition *article = _game->getMod()->getUfopaediaArticle(id, false);
+				if (article)
+					return Ufopaedia::isArticleAvailable(_game->getSavedGame(), article);
+				size_t pos = id.find_last_of('_');
+				if (pos == std::string::npos)
+					break;
+				id = id.substr(0, pos);
+			}
+			return false;
+		};
+		const RuleUfoStats &race = _ufo->getRules()->getRaceBonus(_ufo->getAlienRace());
+		_ufoStatsKnown = articleOpen(_ufo->getRules()->getType())
+			&& ((race.hitBonus == 0 && race.avoidBonus == 0) || articleOpen(_ufo->getAlienRace()));
+	}
 
 	for (int i = 0; i < _weaponNum; ++i)
 	{
@@ -775,6 +824,7 @@ void DogfightState::think()
 	{
 		update();
 		_craftDamageAnimTimer->think(this, 0);
+		updateHitChances();
 	}
 	if (!_ufoIsAttacking || _ufo->getStatus() == Ufo::LANDED)
 	{
@@ -2240,7 +2290,7 @@ void DogfightState::previewClick(Action *)
  */
 void DogfightState::drawUfo()
 {
-	if (_ufoBlobSize < 0 || _ufo->isDestroyed())
+	if (_ufoBlobSize < 0 || _ufo->isDestroyed() || hdOutline())
 	{
 		return;
 	}
@@ -2289,6 +2339,76 @@ void DogfightState::drawUfo()
 			}
 		}
 	}
+}
+
+/**
+ * Does the HD layer draw the UFO as its outline? Then the blob is left out of _battle and the
+ * outline is drawn over the radar in blit(), where the blob stood and as wide as it.
+ */
+bool DogfightState::hdOutline() const
+{
+	return Options::oxceHdCraftOutlines && HdUi::active() && HdOutline::has(_ufo->getRules()->getType());
+}
+
+/**
+ * Blits the window; in the HD layer then the UFO's outline over the radar: the blob's place and width
+ * (it grows with the UFO's size and shrinks as a wreck falls), drawn stroke by stroke when the
+ * dogfight opens, white when hit or falling, bluish while the shield holds.
+ */
+void DogfightState::blit()
+{
+	State::blit();
+	if (!hdOutline() || !_battle->getVisible() || _ufoBlobSize < 0 || _ufo->isDestroyed())
+	{
+		return;
+	}
+	const int blob = _ufoBlobSize + _ufo->getHitFrame();
+	int x0 = 13, x1 = -1;
+	for (int y = 0; y < 13; ++y)
+	{
+		for (int x = 0; x < 13; ++x)
+		{
+			if (_ufoBlobs[blob][y][x])
+			{
+				x0 = std::min(x0, x);
+				x1 = std::max(x1, x);
+			}
+		}
+	}
+	if (x1 < x0)
+	{
+		return;
+	}
+	const Uint32 now = SDL_GetTicks();
+	if (_hdOutlineSince == 0)
+	{
+		_hdOutlineSince = now ? now : 1;
+	}
+	Uint32 color = 0xA8F0B4;
+	if (_ufo->isCrashed() || _ufo->getHitFrame() > 0)
+	{
+		color = 0xFFFFFF;
+	}
+	else if (_ufo->getShield() != 0 && _ufo->getCraftStats().shieldCapacity != 0)
+	{
+		color = HdUi::mixed(color, 0x8CC8FF, 0.7f * _ufo->getShield() / _ufo->getCraftStats().shieldCapacity) & 0xFFFFFF;
+	}
+	const int k = HdUi::scale();
+	// the blob's own place (drawUfo): its 13 x 13 box sits so in _battle
+	const float cx = _battle->getX() + _battle->getWidth() / 2 - 6 + (x0 + x1 + 1) * 0.5f;
+	const float cy = _battle->getY() + _battle->getHeight() - (_currentDist / 8) - 6 + 6.5f;
+	HdUi &ui = HdUi::instance();
+	ui.setClip(_battle->getX(), _battle->getY(), _battle->getWidth(), _battle->getHeight());
+	// nose up: the UFO flies on, away from the craft at the bottom that chases it; a hunter-killer
+	// comes at the craft nose down, until it gives up the hunt and turns to run (update: setHunterKiller)
+	const bool hunting = _ufoIsAttacking && _ufo->isHunterKiller() && !_ufoBreakingOff;
+	HdOutline::draw(_ufo->getRules()->getType(), cx * k, cy * k, (x1 - x0 + 1) * 1.3f * k, hunting ? 1.5707963f : -1.5707963f, color,
+		(now % 100000u) / 1000.0f * 2.4f, std::min(1.0f, (now - _hdOutlineSince) / 1200.0f));
+	// the point the distance is counted to, as on the globe: when it comes within a weapon's reach,
+	// that weapon fires (update: _currentDist <= range * 8; the row is _battle's height - _currentDist / 8)
+	const float px = _battle->getX() + _battle->getWidth() / 2 + 0.5f;
+	HdOutline::beacon(px * k, cy * k, 0.5f + 0.55f * k, std::min(1.0f, (now - _hdOutlineSince) / 1200.0f));
+	ui.clearClip();
 }
 
 /*
@@ -2413,6 +2533,80 @@ void DogfightState::recolor(const int weaponNo, const bool currentState)
 }
 
 /**
+ * OXCE-HD: shows the chance to hit for each craft weapon and for the UFO - the same numbers update()
+ * rolls against, clamped to 0..100 as RNG::percent treats them. A dash: the weapon won't fire in the
+ * chosen mode (standoff/disengage, switched off, no ammo, the mode's distance is out of its range).
+ * An unresearched UFO: our chance without its avoid bonus plus "?", its own chance "?".
+ */
+void DogfightState::updateHitChances()
+{
+	if (!Options::oxceDogfightHitChance)
+	{
+		return;
+	}
+	auto setChance = [](Text *txt, const std::string &s)
+	{
+		if (txt->getText() != s)
+			txt->setText(s);
+	};
+	auto percent = [](int chance, bool known)
+	{
+		std::ostringstream ss;
+		ss << std::max(0, std::min(100, chance)) << '%';
+		if (!known)
+			ss << '?';
+		return ss.str();
+	};
+	const bool holdFire = _mode == _btnStandoff || _mode == _btnDisengage;
+	// the craft heads for _targetDist, but already fires at whatever is in reach on the way
+	const int dist = std::min(_currentDist, _targetDist);
+	for (int i = 0; i < _weaponNum; ++i)
+	{
+		CraftWeapon *w = _craft->getWeapons()->at(i);
+		std::string s;
+		if (w && w->getRules()->getAmmoMax() > 0 && !_missileCraft)
+		{
+			if (holdFire || !_weaponEnabled[i] || w->getAmmo() <= 0 || w->getRules()->getRange() * 8 < dist)
+			{
+				s = "-";
+			}
+			else
+			{
+				int chance = (w->getRules()->getAccuracy() * (100 + 300 / (5 - _ufoSize)) + 100) / 200;
+				if (_ufoStatsKnown)
+					chance -= _ufo->getCraftStats().avoidBonus;
+				chance += _craft->getCraftStats().hitBonus;
+				chance += _pilotAccuracyBonus;
+				s = percent(chance, _ufoStatsKnown);
+			}
+		}
+		setChance(_txtHitChance[i], s);
+	}
+	std::string s;
+	if (!_ufoStatsKnown)
+	{
+		s = "?";
+	}
+	else if (_ufo->getRules()->getWeaponRange() <= 0 || _ufo->getRules()->getWeaponRange() * 8 < dist)
+	{
+		s = "-";
+	}
+	else
+	{
+		int chance = 60; // ufoFireWeapon
+		chance -= _craft->getCraftStats().avoidBonus;
+		chance += _ufo->getCraftStats().hitBonus;
+		chance -= _pilotDodgeBonus;
+		if (_ufoIsAttacking && _mode == _btnCautious)
+		{
+			chance = chance / 2; // evasive maneuvers
+		}
+		s = percent(chance, true);
+	}
+	setChance(_txtUfoHitChance, s);
+}
+
+/**
  * Returns true if state is minimized. Otherwise returns false.
  * @return Is the dogfight minimized?
  */
@@ -2479,7 +2673,9 @@ void DogfightState::setMinimized(const bool minimized)
 		_weapon[i]->setVisible(!minimized);
 		_range[i]->setVisible(!minimized);
 		_txtAmmo[i]->setVisible(!minimized);
+		_txtHitChance[i]->setVisible(!minimized && Options::oxceDogfightHitChance);
 	}
+	_txtUfoHitChance->setVisible(!minimized && Options::oxceDogfightHitChance);
 	_craftSprite->setVisible(!minimized);
 	_damage->setVisible(!minimized);
 	_craftShield->setVisible(!minimized);

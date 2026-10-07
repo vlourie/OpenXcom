@@ -17,7 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <algorithm>
 #include <vector>
+#include <optional>
 #include "Position.h"
 #include "PathfindingNode.h"
 #include "../Mod/MapData.h"
@@ -71,8 +73,44 @@ private:
 	bool canFallDown(const Tile *destinationTile) const;
 	/// Determines whether a unit can fall down from this tile.
 	bool canFallDown(const Tile *destinationTile, int size) const;
+	/// Calculates final destination of path if possible
+	std::optional<Position> tryCalculateFinalPosition(Position endPosition, const BattleUnit* unit, BattleActionMove bam, const BattleUnit* missileTarget);
+
 	std::vector<int> _path;
-public:
+	std::optional<Position> _teleportDestination;
+	/// nodes the last calculate's A* took off its open list (0 after a straight path or no search): what the search cost, for the bench
+	int _expanded = 0;
+	/// The cap the last A* ran under (closedTiles).
+	int _searchCap = 0;
+	/// REPEATED_BLOCKED_STEP_V1 (bench, AiProbe::blockedStepPlan): first steps calculate() must not take; empty but there
+	std::vector<int> _bannedFirst;
+	bool bannedFirst(int dir) const { return std::find(_bannedFirst.begin(), _bannedFirst.end(), dir) != _bannedFirst.end(); }
+	/// KNOWN_OCCUPANT_PATH_V1 (bench, AIModule::think): the unit whose paths take the occupant's tiles as blocked, and how
+	/// many times isBlocked did so since the hits were last taken
+	const BattleUnit *_knownOccupantFor = nullptr, *_knownOccupant = nullptr;
+	mutable int _knownOccupantHits = 0;
+	/// PATROL_NO_PATH_CAUSE (bench, probeReach only): the kinds of units isBlocked lets through (IGNORE_*); 0 outside it
+	int _probeIgnore = 0;
+
+  public:
+	/// PATROL_NO_PATH_CAUSE (bench): units probeReach may let through - the unit's own side; the others isBlocked stops it at
+	/// because it knows of them (player: visible; hostile: spotted by this unit this turn; the known occupant); any unit at all,
+	/// whatever the unit knows (also the big-unit and falling rules)
+	enum { IGNORE_OWN = 1, IGNORE_SEEN = 2, IGNORE_ALL_UNITS = 4 };
+	/// PATROL_NO_PATH_CAUSE (bench, passive): would calculate(unit, to, BAM_NORMAL) find a path with those units not blocking?
+	/// 1 a path, 0 none, -1 refused before searching; expanded gets the nodes its A* closed.
+	int probeReach(BattleUnit *unit, Position to, int ignore, int &expanded);
+	/// STALE_REACH_SHADOW (bench, passive): does a path for calculate(unit, to, BAM_NORMAL) exist - asked by a search of its own
+	/// that touches none of calculate's state. 1 found (cost gets it), 0 none (the reachable part exhausted, the cap dropped
+	/// nothing left unreached), 2 undecided (exhausted, the cap dropped a tile never reached; or found too near the cap for
+	/// calculate's A* to be sure of it), 3 not asked (the unit stands on
+	/// the destination), -1 refused before searching.
+	int witnessReach(BattleUnit *unit, Position to, int weight, int &expanded, int &cost);
+	/// EXACT_STALE_REACH_V1 (bench): leave the state calculate(unit, ..., BAM_NORMAL) and abortPath() would, when witnessReach
+	/// answered in their place.
+	void settleWitness(BattleUnit *unit);
+	/// Where calculate(unit, endPosition, bam) would search to, or none if it refuses before searching (AMBUSH_NEGATIVE_MEMO_V2).
+	std::optional<Position> finalPositionFor(BattleUnit *unit, Position endPosition, BattleActionMove bam);
 	/// Determines whether the unit is going up a stairs.
 	bool isOnStairs(Position startPosition, Position endPosition) const;
 	/// Determines whether or not movement between start tile and end tile is possible in the direction.
@@ -204,6 +242,11 @@ public:
 	/// Calculates the shortest path.
 	void calculate(BattleUnit *unit, Position endPosition, BattleActionMove bam, const BattleUnit *missileTarget = 0, int maxTUCost = 1000);
 
+	/// Calculates teleport destination.
+	void calculateTeleportDestination(BattleUnit* unit, Position endPosition, BattleActionMove bam);
+	/// Get teleport destination
+	std::optional<Position> getTeleportDestination() const noexcept;
+
 	/**
 	 * Converts direction to a vector. Direction starts north = 0 and goes clockwise.
 	 * @param direction Source direction.
@@ -262,13 +305,32 @@ public:
 	bool removePreview();
 	/// Refresh the path preview.
 	void refreshPath();
+	/// Refresh the teleport preview.
+	void refreshTeleportPreview();
 
 	/// Sets _unit in order to abuse low-level pathfinding functions from outside the class.
 	void setUnit(BattleUnit *unit);
 	/// Gets all reachable tiles, based on cost.
 	std::vector<int> findReachable(const BattleUnit *unit, const BattleActionCost &cost);
+	/// The time units the last findReachable spent to get to pos, or -1 if it did not get there.
+	int reachedTU(Position pos);
 	/// Gets _totalTUCost; finds out whether we can hike somewhere in this turn or not.
 	int getTotalTUCost() const { return _totalTUCost.time; }
+	/// Nodes the last calculate's A* expanded; 0 when the straight path did or nothing was searched.
+	int getExpanded() const { return _expanded; }
+	/// AMBUSH_NEGATIVE_MEMO_V1 (bench, AIModule::setupAmbush): the tiles the last calculate() closed when its A* ran out of open
+	/// nodes - every tile the unit can reach from where it stands under that search's costs; empty unless the last search failed
+	/// that way with every closed tile under half its cap. Read only; the next search overwrites the flags it reads.
+	std::vector<char> closedTiles() const;
+	/// REPEATED_BLOCKED_STEP_V1 (bench): the first steps the next calculate() calls must not take; empty clears.
+	void setBannedFirst(const std::vector<int> &dirs) { _bannedFirst = dirs; }
+	/// KNOWN_OCCUPANT_PATH_V1 (bench): the tiles of occupant are blocked for unit's paths (not for missiles) until the next
+	/// call; null clears. Other units' paths are not touched.
+	void setKnownOccupant(const BattleUnit *unit, const BattleUnit *occupant) { _knownOccupantFor = unit; _knownOccupant = occupant; }
+	/// KNOWN_OCCUPANT_PATH_V1: the occupant set for unit's paths, or null.
+	const BattleUnit *getKnownOccupant(const BattleUnit *unit) const { return unit && unit == _knownOccupantFor ? _knownOccupant : nullptr; }
+	/// KNOWN_OCCUPANT_PATH_V1: how many times isBlocked blocked the occupant's tile since the last take; starts the count again.
+	int takeKnownOccupantHits() { const int n = _knownOccupantHits; _knownOccupantHits = 0; return n; }
 	/// Gets the path preview setting.
 	bool isPathPreviewed() const;
 	/// Gets the modifier setting.
@@ -279,6 +341,14 @@ public:
 	const std::vector<int> &getPath() const;
 	/// Makes a copy to the path.
 	std::vector<int> copyPath() const;
+#ifdef OXCE_AI_DEV
+	/// The bench (plan V2, L0-B): TU of the cheapest path between two tiles for this unit, -1 if there is none. Uses this
+	/// object's nodes and path: call it on a Pathfinding of its own, never on the battle's.
+	int pathCost(BattleUnit *unit, Position from, Position to, BattleActionMove bam, int maxTUCost = 1000);
+	/// PATROL_STUN_RESERVE_V2 (bench): keeps only the first `steps` steps of the current path (the rest of it is dropped,
+	/// nothing searched again); cost is what those steps cost.
+	void keepPathPrefix(size_t steps, PathfindingCost cost);
+#endif
 };
 
 }

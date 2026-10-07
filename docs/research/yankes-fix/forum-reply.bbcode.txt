@@ -1,0 +1,191 @@
+Sure, here are 2, 3, 4, 7 and 8 as plain "find this, replace with that" edits, plus 1 in the same format in case it isn't done yet.
+
+Everything below is for [i]Ruleset/Yankes_Scripts.rul[/i]. Line numbers are from the unmodified file. The easiest way to find each spot is Ctrl+F on the text in the "Find" box. Keep the indentation exactly as shown: it's spaces, not tabs, and this is YAML, so indentation matters.
+
+I tested it: I loaded the game with the fixed file and got no script errors, and the error/warning list in openxcom.log was identical to the unmodified file. As a control, I put a deliberate typo into the new part, and the game reported it right away, so the check does catch mistakes. The complete fixed file and a diff are attached if you'd rather just drop it in.
+
+[hr]
+
+[b]1. STR_DOOMED_VEST — daze resistance never applies[/b] (line 205)
+
+Find:
+[code]      ITEM_RESIST_TYPE_6: 60
+      ITEM_MINIMUM_RESIST_TYPE_5: 30[/code]
+Replace with:
+[code]      ITEM_RESIST_TYPE_6: 60
+      ITEM_MINIMUM_RESIST_TYPE_6: 30[/code]
+
+[hr]
+
+[b]2. Extra secondary stat gains push a stat 1 point over its cap[/b] (lines 5966, 5978, 5990, 6002)
+
+This line appears exactly 4 times in the file, all in YSCRIPT_EXTRA_SECONDARY_XP_GAINS. Use "Replace All".
+
+Find:
+[code]        if le statCurrent statCap;[/code]
+Replace with:
+[code]        if lt statCurrent statCap;[/code]
+
+[hr]
+
+[b]3. Left-hand shield skips the right-hand shield[/b] (line 4598)
+
+The fix splits YSCRIPT_ENERGY_SHIELDS_HIT_ITEM into two scripts: one for the left hand, one for the right. Now, when the left shield lets a damage type through ("return power part side;"), only the left-hand script ends, and the right-hand one still runs.
+Nothing inside the left or right block changes. You only replace one comment line, the one just before "unit.getRightHandWeapon shieldItem;".
+
+Find (it's in the file only once):
+[code]          # Now do it for a right hand shield[/code]
+Replace with:
+[code]          return power part side;
+
+      - new: YSCRIPT_ENERGY_SHIELDS_HIT_ITEM_RIGHT
+        offset: 1.5
+        code: |
+          var ptre BattleItem shieldItem;
+          var ptr RuleItem shieldRule;
+          var int shieldCapacity;
+          var int shieldNeedsPriming;
+          var int shieldTimer;
+          var int shieldType;
+          var int shieldResistCoeff;
+          var int shieldHp;
+          var int temp;
+
+          # Now do it for a right hand shield[/code]
+
+Why this works:
+- Several hitUnit scripts run one after another, and each one gets the power left over by the previous one. So the left shield reduces the hit first, then the right shield gets what's left, exactly as before.
+- Offset 1.5 puts the new script between the item shields (offset 1) and the armor shields (offset 2). The engine accepts fractional offsets; it multiplies them by 100.
+- The "- new:" line must line up with "- new: YSCRIPT_ENERGY_SHIELDS_HIT_ITEM" above it (6 spaces). "offset:" and "code:" get 8 spaces, and the code gets 10 spaces.
+
+[hr]
+
+[b]4. Vampirism: limit_lower on the wrong variable[/b] (line 2890)
+
+Find (only once in the file):
+[code]            limit_lower stunReturned 0;[/code]
+Replace with:
+[code]            limit_lower statAttacker 0;[/code]
+
+[hr]
+
+[b]7. Sea and land armor variants differ in the extra secondary stat bonus[/b]
+
+Right now only the SEA versions have the bonus: Force Armor 5, Hybrid Psicrystal 10. Pick one option.
+
+[b]Option A — give the land versions the same bonus as the sea ones[/b] (the attached fixed file uses this option)
+
+Force Armor, line 1372. Find:
+[code]  - type: STR_FORCE_ARMOR_UC
+    tags:
+      ARMOR_ENERGY_SHIELD_CAPACITY: 66
+      ARMOR_ENERGY_SHIELD_PER_TURN: 6
+      ARMOR_ENERGY_SHIELD_FLASH_COLOR: 9
+      ARMOR_ENERGY_SHIELD_TYPE: 1[/code]
+Replace with:
+[code]  - type: STR_FORCE_ARMOR_UC
+    tags:
+      ARMOR_ENERGY_SHIELD_CAPACITY: 66
+      ARMOR_ENERGY_SHIELD_PER_TURN: 6
+      ARMOR_ENERGY_SHIELD_FLASH_COLOR: 9
+      ARMOR_ENERGY_SHIELD_TYPE: 1
+      ARMOR_GAINS_EXTRA_SECONDARY_STATS_PERCENT: 5[/code]
+
+Hybrid Psicrystal, land version, line 1589. Find:
+[code]  - type: STR_HYBRID_PSICRYSTAL_UC
+    tags:
+      ARMOR_ENERGY_SHIELD_CAPACITY: 60
+      ARMOR_ENERGY_SHIELD_PER_TURN: 20
+      ARMOR_ENERGY_SHIELD_FLASH_COLOR: 12
+      ARMOR_ENERGY_SHIELD_TYPE: 3[/code]
+Replace with:
+[code]  - type: STR_HYBRID_PSICRYSTAL_UC
+    tags:
+      ARMOR_ENERGY_SHIELD_CAPACITY: 60
+      ARMOR_ENERGY_SHIELD_PER_TURN: 20
+      ARMOR_ENERGY_SHIELD_FLASH_COLOR: 12
+      ARMOR_ENERGY_SHIELD_TYPE: 3
+      ARMOR_GAINS_EXTRA_SECONDARY_STATS_PERCENT: 10[/code]
+
+Hybrid Psicrystal, Dreamland version, line 1602. Find:
+[code]  - type: STR_HYBRID_PSICRYSTAL_DREAMLAND_UC
+    tags:
+      ARMOR_ENERGY_SHIELD_CAPACITY: 60
+      ARMOR_ENERGY_SHIELD_PER_TURN: 20
+      ARMOR_ENERGY_SHIELD_FLASH_COLOR: 12
+      ARMOR_ENERGY_SHIELD_TYPE: 3[/code]
+Replace with:
+[code]  - type: STR_HYBRID_PSICRYSTAL_DREAMLAND_UC
+    tags:
+      ARMOR_ENERGY_SHIELD_CAPACITY: 60
+      ARMOR_ENERGY_SHIELD_PER_TURN: 20
+      ARMOR_ENERGY_SHIELD_FLASH_COLOR: 12
+      ARMOR_ENERGY_SHIELD_TYPE: 3
+      ARMOR_GAINS_EXTRA_SECONDARY_STATS_PERCENT: 10[/code]
+
+[b]Option B — take the bonus away from the sea versions[/b]
+
+Force Armor, sea version, line 1378. Find:
+[code]  - type: STR_FORCE_ARMOR_SEA_UC
+    tags:
+      ARMOR_ENERGY_SHIELD_CAPACITY: 66
+      ARMOR_ENERGY_SHIELD_PER_TURN: 6
+      ARMOR_ENERGY_SHIELD_FLASH_COLOR: 9
+      ARMOR_ENERGY_SHIELD_TYPE: 1
+      ARMOR_GAINS_EXTRA_SECONDARY_STATS_PERCENT: 5[/code]
+Replace with:
+[code]  - type: STR_FORCE_ARMOR_SEA_UC
+    tags:
+      ARMOR_ENERGY_SHIELD_CAPACITY: 66
+      ARMOR_ENERGY_SHIELD_PER_TURN: 6
+      ARMOR_ENERGY_SHIELD_FLASH_COLOR: 9
+      ARMOR_ENERGY_SHIELD_TYPE: 1[/code]
+
+Hybrid Psicrystal, sea version, line 1595. Find:
+[code]  - type: STR_HYBRID_PSICRYSTAL_SEA_UC
+    tags:
+      ARMOR_ENERGY_SHIELD_CAPACITY: 60
+      ARMOR_ENERGY_SHIELD_PER_TURN: 20
+      ARMOR_ENERGY_SHIELD_FLASH_COLOR: 12
+      ARMOR_ENERGY_SHIELD_TYPE: 3
+      ARMOR_GAINS_EXTRA_SECONDARY_STATS_PERCENT: 10[/code]
+Replace with:
+[code]  - type: STR_HYBRID_PSICRYSTAL_SEA_UC
+    tags:
+      ARMOR_ENERGY_SHIELD_CAPACITY: 60
+      ARMOR_ENERGY_SHIELD_PER_TURN: 20
+      ARMOR_ENERGY_SHIELD_FLASH_COLOR: 12
+      ARMOR_ENERGY_SHIELD_TYPE: 3[/code]
+
+(The swimsuit and bikini sea/land pairs, 20 vs 10, look deliberate, so I left them alone.)
+
+[hr]
+
+[b]8. Cydonia remote control: the overcharge shield penalty wears off[/b] (line 3507)
+
+Overcharge (YSCRIPT_CYDONIA_REMOTE_CONTROL) drops the turret's shield to 750 / 6 = 125. But YSCRIPT_ENERGY_SHIELDS_SET_ARMOR regenerates it by 75 per turn, up to the armor's full 750. After a few turns an overcharged turret is back at full shields and still keeps its tripled TU and reactions.
+YSCRIPT_DEPOWERED_SHIELDS already holds shields at 0 while a turret is powered off (status 1). The fix makes the same script also keep them at no more than 125 while the turret is overcharged (status 3). It runs every turn after the regeneration (offset 22 vs 2), so the shield still regenerates, just never above 125.
+
+Find (in YSCRIPT_DEPOWERED_SHIELDS, only once in the file):
+[code]          if eq powerStatus 1;
+            unit.setTag Tag.UNIT_ENERGY_SHIELD_HP 0;
+          end;
+          return;[/code]
+Replace with:
+[code]          if eq powerStatus 1;
+            unit.setTag Tag.UNIT_ENERGY_SHIELD_HP 0;
+          end;
+
+          # Overcharged (status 3): shields stay capped at 125 = 750 / 6,
+          # the value YSCRIPT_CYDONIA_REMOTE_CONTROL sets on overcharge
+          if eq powerStatus 3;
+            var int shieldHp;
+            unit.getTag shieldHp Tag.UNIT_ENERGY_SHIELD_HP;
+            limit_upper shieldHp 125;
+            unit.setTag Tag.UNIT_ENERGY_SHIELD_HP shieldHp;
+          end;
+          return;[/code]
+
+The two "#" comment lines need the same 10 spaces as "if". If a comment line starts further left than the code, it ends the "code: |" block: the game then fails to load Yankes_Scripts.rul ("Rapidyaml ERROR: parse error") and disables X-Piratez completely. If in doubt, just delete the comment lines.
+
+If you change the 750 in YSCRIPT_CYDONIA_REMOTE_CONTROL ("var int defaultShields 750;"), change the 125 here to match. If instead the penalty is [i]meant[/i] to wear off, just skip this one.

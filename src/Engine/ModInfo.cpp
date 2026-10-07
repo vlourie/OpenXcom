@@ -181,7 +181,8 @@ struct EngineData
  */
 const EngineData supportedEngines[] = {
 	{ OPENXCOM_VERSION_ENGINE, { OPENXCOM_VERSION_NUMBER }},
-	{ "", { 0, 0, 0, 0 } }, // assume that every engine support mods from base game, remove if its not true.
+	{ "OXCE-HD", { OPENXCOM_VERSION_NUMBER }}, // this fork: mods that need the HD layer ask for it by name
+	{ "",{ 0, 0, 0, 0 } }, // assume that every engine support mods from base game, remove if its not true.
 };
 
 template<int I>
@@ -317,6 +318,7 @@ static auto dummy = ([]
 	assert(findCompatibleEngine(supportedEngines, "Extended", create(OPENXCOM_VERSION_NUMBER)));
 	assert(findCompatibleEngine(supportedEngines, "Extended", create(1, 0, 0, 0)));
 	assert(findCompatibleEngine(supportedEngines, "", create(0, 0, 0, 0)));
+	assert(findCompatibleEngine(supportedEngines, "OXCE-HD", create(OPENXCOM_VERSION_NUMBER)));
 	assert(!findCompatibleEngine(supportedEngines, "Extended", create(OPENXCOM_VERSION_NUMBER + 1)));
 	assert(!findCompatibleEngine(supportedEngines, "XYZ", create(OPENXCOM_VERSION_NUMBER)));
 	assert(!findCompatibleEngine(supportedEngines, "XYZ", create(0, 0, 0, 0)));

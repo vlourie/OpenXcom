@@ -112,7 +112,7 @@ CraftsState::CraftsState(Base *base) : _base(base)
  */
 CraftsState::~CraftsState()
 {
-
+	delete _weaponIcons;
 }
 
 /**
@@ -132,13 +132,39 @@ void CraftsState::init()
 void CraftsState::initList(size_t scrl)
 {
 	_lstCrafts->clearList();
-	for (const auto* craft : *_base->getCrafts())
+
+	// OXCE-HD: the pictures of the installed weapons and equipment before the name (Options::oxceCraftWeaponIcons),
+	// 9 pixels each, taken from the name column (the status caption cannot move: the weapons caption starts
+	// right after it). Counted anew: the list comes back here from the craft screen
+	int icons = 0;
+	if (Options::oxceCraftWeaponIcons)
+	{
+		for (const auto* craft : *_base->getCrafts())
+		{
+			icons = std::max(icons, craft->getNumWeapons());
+		}
+	}
+	if (icons > 0 && !_weaponIcons)
+	{
+		_weaponIcons = new CraftWeaponIcons(_game->getMod(), _lstCrafts->getPalette());
+	}
+	_lstCrafts->setIconColumn(8, 9 * icons, 0, std::max(1, icons));
+	_lstCrafts->setMargin(8 + 9 * icons);
+	_lstCrafts->setColumns(5, 94 - 9 * icons, 68, 44, 46, 28);
+
+	int row = 0;
+	for (auto* craft : *_base->getCrafts())
 	{
 		std::ostringstream ss, ss2, ss3;
 		ss << craft->getNumWeapons() << "/" << craft->getRules()->getWeapons();
 		ss2 << craft->getNumTotalSoldiers();
 		ss3 << craft->getNumTotalVehicles();
 		_lstCrafts->addRow(5, craft->getName(_game->getLanguage()).c_str(), tr(craft->getStatus()).c_str(), ss.str().c_str(), ss2.str().c_str(), ss3.str().c_str());
+		if (icons > 0)
+		{
+			_lstCrafts->setRowIcons(row, _weaponIcons->of(craft));
+		}
+		++row;
 	}
 
 	if (scrl)

@@ -1,0 +1,468 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Проба голоса</title>
+<!-- Voice probe page (docs/portal/VOICE_PROBE.md). Not a product page: a tool for stage 1.
+     The pass comes in the address after #t= (station.ps1 voice-token), so it never reaches a server log. -->
+<style>
+:root {
+  --bg: #f6f7f9; --card: #ffffff; --text: #1b1f24; --muted: #5d6673; --line: #d9dde3;
+  --accent: #3b5bdb; --ok: #2b8a3e; --warn: #b7791f; --bad: #c92a2a; --speak: #2f9e44;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --bg: #121417; --card: #1b1f24; --text: #e6e8eb; --muted: #9aa3ad; --line: #2c323a;
+          --accent: #748ffc; --ok: #51cf66; --warn: #fcc419; --bad: #ff6b6b; --speak: #69db7c; }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 15px/1.45 system-ui, sans-serif; }
+main { max-width: 860px; margin: 0 auto; padding: 16px; }
+h1 { font-size: 20px; margin: 0 0 4px; }
+h2 { font-size: 15px; margin: 0 0 8px; color: var(--muted); font-weight: 600; }
+section { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 12px 14px; margin: 12px 0; }
+button, select { font: inherit; padding: 7px 12px; border-radius: 8px; border: 1px solid var(--line); background: var(--card); color: var(--text); }
+button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+button:disabled { opacity: .5; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.muted { color: var(--muted); }
+.ok { color: var(--ok); } .warn { color: var(--warn); } .bad { color: var(--bad); }
+table { border-collapse: collapse; width: 100%; }
+td, th { text-align: left; padding: 4px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+th { color: var(--muted); font-weight: 600; width: 45%; }
+#people li { display: flex; gap: 10px; align-items: center; padding: 4px 0; flex-wrap: wrap; }
+#people ul { list-style: none; margin: 0; padding: 0; }
+.dot { width: 10px; height: 10px; border-radius: 50%; background: var(--line); flex: none; }
+.dot.on { background: var(--speak); }
+#log { font: 12px/1.4 ui-monospace, Consolas, monospace; white-space: pre-wrap; max-height: 260px; overflow: auto; margin: 0; }
+input[type=range] { width: 120px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Проба голоса</h1>
+  <div class="muted" id="who">Пропуск не найден в адресе.</div>
+
+  <section>
+    <div class="row">
+      <button class="primary" id="connect" disabled>Подключиться</button>
+      <button id="mic" disabled>Микрофон: выкл</button>
+      <select id="micDev" disabled><option>микрофон по умолчанию</option></select>
+      <button id="leave" disabled>Выйти</button>
+    </div>
+    <div id="state" class="muted" style="margin-top:8px">не подключено</div>
+  </section>
+
+  <section id="people">
+    <h2>Участники</h2>
+    <ul id="list"><li class="muted">—</li></ul>
+  </section>
+
+  <section>
+    <h2>Сеть</h2>
+    <table id="net"><tr><td class="muted">появится после подключения</td></tr></table>
+  </section>
+
+  <section>
+    <h2>Задержка</h2>
+    <div class="row">
+      <button id="beep" disabled>Замерить (30 сигналов, ~20 с)</button>
+      <span id="beepState" class="muted"></span>
+    </div>
+    <p class="muted" style="margin:8px 0 0">Страница посылает короткий писк, эхо-бот на сервере возвращает его, страница ловит
+      его по тем же часам. Круг — это сеть дважды, сервер, кодек и собственная задержка эхо-бота, поэтому половина
+      круга — не задержка разговора. Рядом отдельно — сетевой RTT до сервера. Качество решает разговор двух людей.</p>
+    <table id="beepRes" style="margin-top:8px"></table>
+  </section>
+
+  <section>
+    <h2>Журнал</h2>
+    <div class="row" style="margin-bottom:8px">
+      <button id="copy">Скопировать отчёт</button>
+      <span id="copied" class="muted"></span>
+    </div>
+    <pre id="log"></pre>
+  </section>
+</main>
+
+<script>
+const LIBS = [
+  'https://cdn.jsdelivr.net/npm/livekit-client@2/dist/livekit-client.umd.js',
+  'https://unpkg.com/livekit-client@2/dist/livekit-client.umd.js',
+];
+const $ = id => document.getElementById(id);
+const t0 = performance.now();
+const events = [];      // everything that goes into the report
+const beeps = [];       // round trips in ms, null = lost
+const netRtts = [];     // ICE RTT to the server at each beep, ms: the network alone, without codec and bot
+let LK, room, ctx, token, claims, echoTap = null, lastNet = {};
+
+function log(kind, text) {
+  const ms = Math.round(performance.now() - t0);
+  events.push({ at: new Date().toISOString(), ms, kind, text });
+  $('log').textContent += `${(ms / 1000).toFixed(1).padStart(7)} с  ${kind}: ${text}\n`;
+  $('log').scrollTop = $('log').scrollHeight;
+}
+
+function loadLib(i = 0) {
+  return new Promise((ok, fail) => {
+    if (i >= LIBS.length) return fail(new Error('библиотека LiveKit не загрузилась ни с одного адреса'));
+    const s = document.createElement('script');
+    s.src = LIBS[i];
+    s.onload = () => ok(window.LivekitClient);
+    s.onerror = () => { log('lib', 'не загрузилась ' + LIBS[i]); loadLib(i + 1).then(ok, fail); };
+    document.head.appendChild(s);
+  });
+}
+
+function readToken() {
+  const m = location.hash.match(/[#&]t=([^&]+)/);
+  if (!m) return null;
+  try {
+    const part = m[1].split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+    return { jwt: m[1], claims: JSON.parse(atob(part + '==='.slice((part.length + 3) % 4))) };
+  } catch { return null; }
+}
+
+// ---- people ----
+const speaking = new Set();
+function renderPeople() {
+  if (!room) return;
+  const list = $('list');
+  list.innerHTML = '';
+  const all = [room.localParticipant, ...room.remoteParticipants.values()];
+  for (const p of all) {
+    if (p.identity === 'echo-bot') continue;
+    const li = document.createElement('li');
+    const dot = document.createElement('span');
+    dot.className = 'dot' + (speaking.has(p.identity) ? ' on' : '');
+    li.appendChild(dot);
+    const name = document.createElement('span');
+    name.textContent = p.identity + (p === room.localParticipant ? ' (вы)' : '');
+    li.appendChild(name);
+    const q = document.createElement('span');
+    q.className = 'muted';
+    q.textContent = 'связь: ' + (p.connectionQuality || '?');
+    li.appendChild(q);
+    if (p !== room.localParticipant) {
+      const vol = document.createElement('input');
+      vol.type = 'range'; vol.min = 0; vol.max = 1; vol.step = 0.05; vol.value = p.__vol ?? 1;
+      vol.oninput = () => { p.__vol = +vol.value; try { p.setVolume(+vol.value); } catch (e) { log('vol', e.message); } };
+      li.appendChild(vol);
+    }
+    list.appendChild(li);
+  }
+}
+
+// ---- subscriptions: other people's microphones and our own echo, nothing else ----
+function wanted(pub, who) {
+  const name = pub.trackName || '';
+  if (name.startsWith('echo:')) return name === 'echo:' + room.localParticipant.identity;
+  if (name === 'probe-beep') return false;
+  return pub.kind === 'audio';
+}
+function consider(pub, who) {
+  if (wanted(pub, who) && !pub.isSubscribed) pub.setSubscribed(true);
+}
+function onSubscribed(track, pub, who) {
+  const name = pub.trackName || '';
+  const el = track.attach();
+  el.style.display = 'none';
+  document.body.appendChild(el);
+  if (name.startsWith('echo:')) {
+    el.muted = true;           // the element only keeps Chrome's remote stream flowing into Web Audio
+    tapEcho(track);
+    log('echo', 'эхо-дорожка получена');
+  } else {
+    log('track', `слышу ${who.identity}`);
+  }
+}
+
+// ---- latency: beep out, echo back ----
+let beepGain = null, beepPub = null, pending = null;
+async function ensureBeepTrack() {
+  if (beepPub) return;
+  const osc = ctx.createOscillator();
+  osc.frequency.value = 1000;
+  beepGain = ctx.createGain();
+  beepGain.gain.value = 0;
+  const dest = ctx.createMediaStreamDestination();
+  osc.connect(beepGain).connect(dest);
+  osc.start();
+  const track = new LK.LocalAudioTrack(dest.stream.getAudioTracks()[0]);
+  beepPub = await room.localParticipant.publishTrack(track, {
+    name: 'probe-beep', source: LK.Track.Source.Unknown, dtx: false, red: false,
+  });
+  log('beep', 'дорожка сигнала опубликована, жду эхо');
+}
+function tapEcho(track) {
+  if (echoTap) { try { echoTap.disconnect(); } catch {} }
+  const src = ctx.createMediaStreamSource(new MediaStream([track.mediaStreamTrack]));
+  const proc = ctx.createScriptProcessor(512, 1, 1);
+  const sink = ctx.createGain();
+  sink.gain.value = 0;
+  src.connect(proc); proc.connect(sink); sink.connect(ctx.destination);
+  proc.onaudioprocess = e => {
+    if (!pending) return;
+    const now = ctx.currentTime;
+    const x = e.inputBuffer.getChannelData(0);
+    for (let i = 0; i < x.length; i++) {
+      if (Math.abs(x[i]) > 0.08) {
+        const at = now - (x.length - i) / ctx.sampleRate;
+        if (at > pending.sent + 0.005) { pending.done(Math.round((at - pending.sent) * 1000)); }
+        return;
+      }
+    }
+  };
+  echoTap = src;
+}
+function oneBeep() {
+  return new Promise(ok => {
+    const sent = ctx.currentTime + 0.05;
+    beepGain.gain.setValueAtTime(0.6, sent);
+    beepGain.gain.setValueAtTime(0, sent + 0.05);
+    const timer = setTimeout(() => { pending = null; ok(null); }, 1300);
+    pending = { sent, done: ms => { clearTimeout(timer); pending = null; ok(ms); } };
+  });
+}
+function pct(a, p) { const s = [...a].sort((x, y) => x - y); return s[Math.min(s.length - 1, Math.floor(p * (s.length - 1) + 0.5))]; }
+function showBeeps() {
+  const got = beeps.filter(v => v !== null);
+  const lost = beeps.length - got.length;
+  const rows = [['сигналов', `${beeps.length}, потеряно ${lost}`]];
+  if (got.length) {
+    rows.push(['круг: мин / медиана / 95% / макс, мс', `${Math.min(...got)} / ${pct(got, .5)} / ${pct(got, .95)} / ${Math.max(...got)}`]);
+    rows.push(['точность замера', `±${Math.round(512 / ctx.sampleRate * 1000)} мс`]);
+  }
+  if (netRtts.length)
+    rows.push(['сеть: RTT до сервера, медиана / макс, мс', `${pct(netRtts, .5)} / ${Math.max(...netRtts)}`]);
+  $('beepRes').innerHTML = rows.map(r => `<tr><th>${r[0]}</th><td>${r[1]}</td></tr>`).join('');
+}
+async function measure() {
+  $('beep').disabled = true;
+  try {
+    await ensureBeepTrack();
+    // the echo track appears a moment after the beep track: wait for it before counting
+    for (let i = 0; i < 20 && !echoTap; i++) await new Promise(r => setTimeout(r, 250));
+    if (!echoTap) { log('beep', 'эхо-бот не ответил за 5 с - он запущен? (station.ps1 voice-check)'); return; }
+    beeps.length = 0; netRtts.length = 0;
+    for (let n = 1; n <= 30; n++) {
+      $('beepState').textContent = `сигнал ${n} из 30`;
+      const rtt = (lastNet.send || lastNet.recv)?.rttMs;
+      if (rtt != null) netRtts.push(rtt);
+      beeps.push(await oneBeep());
+      showBeeps();
+      await new Promise(r => setTimeout(r, 400));
+    }
+    const got = beeps.filter(v => v !== null);
+    log('beep', `готово: медиана круга ${got.length ? pct(got, .5) : '—'} мс, потеряно ${beeps.length - got.length}`);
+    $('beepState').textContent = 'готово';
+  } finally { $('beep').disabled = false; }
+}
+
+// ---- network: the selected candidate pair and audio counters, every 2 s ----
+async function statsOf(track) { try { return await track?.getRTCStatsReport?.(); } catch { return undefined; } }
+function pairInfo(rep) {
+  if (!rep) return null;
+  let pair = null;
+  rep.forEach(s => { if (s.type === 'transport' && s.selectedCandidatePairId) pair = rep.get(s.selectedCandidatePairId); });
+  if (!pair) rep.forEach(s => { if (s.type === 'candidate-pair' && s.nominated && s.state === 'succeeded') pair = s; });
+  if (!pair) return null;
+  const l = rep.get(pair.localCandidateId) || {}, r = rep.get(pair.remoteCandidateId) || {};
+  return {
+    protocol: l.protocol, localType: l.candidateType, relay: l.relayProtocol,
+    server: `${r.address || r.ip || '?'}:${r.port}`, serverProtocol: r.protocol,
+    rttMs: pair.currentRoundTripTime != null ? Math.round(pair.currentRoundTripTime * 1000) : null,
+  };
+}
+async function refreshNet() {
+  if (!room || room.state !== 'connected') return;
+  const out = {};
+  const mic = room.localParticipant.getTrackPublication(LK.Track.Source.Microphone)?.track;
+  const up = await statsOf(mic || beepPub?.track);
+  if (up) {
+    out.send = pairInfo(up);
+    up.forEach(s => {
+      if (s.type === 'remote-inbound-rtp' && s.kind === 'audio') {
+        out.sendRttMs = s.roundTripTime != null ? Math.round(s.roundTripTime * 1000) : null;
+        out.sendLostPct = s.fractionLost != null ? +(s.fractionLost * 100).toFixed(1) : null;
+      }
+    });
+  }
+  let recv = null;
+  for (const p of room.remoteParticipants.values())
+    for (const pub of p.trackPublications.values())
+      if (pub.track && pub.kind === 'audio' && !recv) recv = pub.track;
+  const down = await statsOf(recv);
+  if (down) {
+    out.recv = pairInfo(down);
+    down.forEach(s => {
+      if (s.type === 'inbound-rtp' && s.kind === 'audio') {
+        out.jitterMs = Math.round((s.jitter || 0) * 1000);
+        out.lostPct = s.packetsReceived ? +(100 * s.packetsLost / (s.packetsLost + s.packetsReceived)).toFixed(2) : null;
+        if (s.jitterBufferEmittedCount) out.jitterBufferMs = Math.round(1000 * s.jitterBufferDelay / s.jitterBufferEmittedCount);
+        out.concealedPct = s.totalSamplesReceived ? +(100 * (s.concealedSamples || 0) / s.totalSamplesReceived).toFixed(2) : null;
+      }
+    });
+  }
+  const pair = out.send || out.recv;
+  if (pair && pair.protocol !== lastNet.protocol) log('net', `путь: ${pair.protocol} ${pair.localType}${pair.relay ? ' через ' + pair.relay : ''}, сервер ${pair.server}`);
+  lastNet = { ...out, protocol: pair?.protocol };
+  const rows = [];
+  if (pair) {
+    rows.push(['транспорт', `<b class="${pair.protocol === 'udp' ? 'ok' : 'warn'}">${pair.protocol || '?'}</b> (${pair.localType}${pair.relay ? ', relay ' + pair.relay : ''})`]);
+    rows.push(['адрес медиасервера', pair.server]);
+    rows.push(['RTT до сервера, мс', pair.rttMs ?? '—']);
+  } else rows.push(['транспорт', '<span class="warn">пока не выбран</span>']);
+  if (out.sendRttMs != null) rows.push(['RTT по RTCP (отправка), мс', out.sendRttMs]);
+  if (out.sendLostPct != null) rows.push(['потери на отправке, %', out.sendLostPct]);
+  if (out.jitterMs != null) rows.push(['джиттер приёма, мс', out.jitterMs]);
+  if (out.lostPct != null) rows.push(['потери приёма, %', out.lostPct]);
+  if (out.jitterBufferMs != null) rows.push(['джиттер-буфер, мс', out.jitterBufferMs]);
+  if (out.concealedPct != null) rows.push(['дорисовано кодеком, %', out.concealedPct]);
+  $('net').innerHTML = rows.map(r => `<tr><th>${r[0]}</th><td>${r[1]}</td></tr>`).join('');
+}
+
+// ---- connection ----
+let reconnectAt = null, hangTimer = null, rejoining = false;
+const reconnects = [], hangs = [];
+// livekit-client may keep "reconnecting" for minutes after a full server restart, especially in a
+// background tab (seen locally with 2.22.3): after 20 s count the break as hung and join again
+const HANG_MS = 20000;
+function breakStarts() {
+  reconnectAt ??= performance.now();
+  hangTimer ??= setTimeout(rejoin, HANG_MS);
+}
+function breakEnds() {
+  reconnectAt = null;
+  clearTimeout(hangTimer); hangTimer = null;
+}
+async function rejoin() {
+  hangTimer = null;
+  const since = reconnectAt;
+  log('state', `переподключение висит больше ${HANG_MS / 1000} с - захожу заново`);
+  rejoining = true;
+  try { await Promise.race([room.disconnect(), new Promise(r => setTimeout(r, 3000))]); } catch {}
+  room.removeAllListeners();
+  rejoining = false;
+  setButtons(false);
+  await connect();
+  if (room.state === 'connected') {
+    const ms = Math.round(performance.now() - since);
+    hangs.push(ms);
+    log('state', `зашёл заново через ${ms} мс после обрыва (это зависание, а не переподключение)`);
+  }
+}
+async function connect() {
+  $('connect').disabled = true;
+  ctx = ctx || new AudioContext({ latencyHint: 'interactive' });
+  await ctx.resume();
+  room = new LK.Room({ adaptiveStream: false, dynacast: false });
+  const E = LK.RoomEvent;
+  room.on(E.ConnectionStateChanged, s => { $('state').textContent = 'состояние: ' + s; log('state', s); });
+  // the break starts at whichever comes first: a signal break often precedes the media one by seconds
+  room.on(E.SignalReconnecting, () => { breakStarts(); log('state', 'сигнальный канал переподключается'); });
+  room.on(E.Reconnecting, () => { breakStarts(); log('state', 'обрыв медиа, переподключаюсь'); });
+  room.on(E.Reconnected, () => {
+    if (reconnectAt != null) { const ms = Math.round(performance.now() - reconnectAt); reconnects.push(ms); log('state', `переподключено за ${ms} мс`); }
+    breakEnds();
+  });
+  room.on(E.Disconnected, reason => { breakEnds(); if (!rejoining) { log('state', 'отключено, причина: ' + reason); setButtons(false); } });
+  room.on(E.ParticipantConnected, p => { log('room', 'вошёл ' + p.identity); renderPeople(); });
+  room.on(E.ParticipantDisconnected, p => { log('room', 'вышел ' + p.identity); speaking.delete(p.identity); renderPeople(); });
+  room.on(E.TrackPublished, (pub, who) => consider(pub, who));
+  room.on(E.TrackSubscribed, onSubscribed);
+  room.on(E.TrackUnsubscribed, (track, pub) => {
+    // the echo bot left (a LiveKit restart): without this the series would count 30 lost beeps
+    if ((pub.trackName || '').startsWith('echo:') && echoTap) {
+      try { echoTap.disconnect(); } catch {}
+      echoTap = null;
+      log('echo', 'эхо-дорожка пропала');
+    }
+    track.detach().forEach(el => el.remove());
+  });
+  room.on(E.TrackSubscriptionFailed, (sid, who) => log('track', `не подписался на ${who.identity}`));
+  room.on(E.ActiveSpeakersChanged, list => { speaking.clear(); list.forEach(p => speaking.add(p.identity)); renderPeople(); });
+  room.on(E.ConnectionQualityChanged, () => renderPeople());
+  room.on(E.MediaDevicesError, e => log('mic', 'ошибка устройства: ' + e.message));
+  // &u=ws://127.0.0.1:7880 - only for a local check of the page against livekit-server --dev
+  const over = location.hash.match(/[#&]u=([^&]+)/);
+  const url = over ? decodeURIComponent(over[1]) : 'wss://' + location.host;
+  log('state', 'подключаюсь к ' + url);
+  try {
+    await room.connect(url, token, { autoSubscribe: false });
+  } catch (e) {
+    log('state', 'не подключилось: ' + e.message);
+    $('connect').disabled = false;
+    return;
+  }
+  for (const p of room.remoteParticipants.values())
+    for (const pub of p.trackPublications.values()) consider(pub, p);
+  setButtons(true);
+  renderPeople();
+  await listMics();
+}
+function setButtons(on) {
+  $('connect').disabled = on;
+  $('mic').disabled = $('leave').disabled = $('beep').disabled = $('micDev').disabled = !on;
+  if (!on) { beepPub = null; echoTap = null; }
+}
+async function toggleMic() {
+  const on = !room.localParticipant.isMicrophoneEnabled;
+  try { await room.localParticipant.setMicrophoneEnabled(on); }
+  catch (e) { log('mic', 'микрофон не включился: ' + e.message); return; }
+  $('mic').textContent = 'Микрофон: ' + (on ? 'вкл' : 'выкл');
+  log('mic', on ? 'включён' : 'выключен');
+  await listMics();
+}
+async function listMics() {
+  try {
+    const list = await LK.Room.getLocalDevices('audioinput');
+    const sel = $('micDev');
+    sel.innerHTML = list.map(d => `<option value="${d.deviceId}">${(d.label || 'микрофон').replace(/</g, '&lt;')}</option>`).join('');
+    const cur = room.getActiveDevice?.('audioinput');
+    if (cur) sel.value = cur;
+  } catch (e) { log('mic', 'список устройств: ' + e.message); }
+}
+
+function report() {
+  const got = beeps.filter(v => v !== null);
+  return JSON.stringify({
+    page: 'voice-probe 1', at: new Date().toISOString(), userAgent: navigator.userAgent,
+    identity: claims?.sub, server: location.host,
+    net: lastNet,
+    latency: got.length ? { sent: beeps.length, lost: beeps.length - got.length,
+      rttMin: Math.min(...got), rttMedian: pct(got, .5), rttP95: pct(got, .95), rttMax: Math.max(...got), raw: beeps } : null,
+    // the round trip above includes the echo bot's own delay: it is not the delay of a conversation
+    netRttMs: netRtts.length ? { median: pct(netRtts, .5), max: Math.max(...netRtts), raw: netRtts } : null,
+    reconnectsMs: reconnects,
+    hungRejoinsMs: hangs,
+    events,
+  }, null, 1);
+}
+
+// ---- start ----
+(async () => {
+  const t = readToken();
+  if (!t) return;
+  token = t.jwt; claims = t.claims;
+  const left = Math.round((claims.exp * 1000 - Date.now()) / 3600000);
+  $('who').textContent = `Вы: ${claims.sub} · комната ${claims.video?.room} · пропуск ещё ${left} ч`;
+  if (left < 0) { $('who').className = 'bad'; $('who').textContent += ' - истёк, нужен новый'; return; }
+  try { LK = await loadLib(); log('lib', 'LiveKit ' + (LK.version || '')); }
+  catch (e) { log('lib', e.message); return; }
+  $('connect').disabled = false;
+})();
+$('connect').onclick = connect;
+$('mic').onclick = toggleMic;
+$('micDev').onchange = e => room.switchActiveDevice('audioinput', e.target.value).then(() => log('mic', 'выбран ' + e.target.selectedOptions[0].text));
+$('leave').onclick = () => room?.disconnect();
+$('beep').onclick = measure;
+$('copy').onclick = async () => {
+  try { await navigator.clipboard.writeText(report()); $('copied').textContent = 'скопировано'; }
+  catch { $('log').textContent = report(); $('copied').textContent = 'буфер недоступен - отчёт в поле ниже'; }
+};
+setInterval(refreshNet, 2000);
+</script>
+</body>
+</html>

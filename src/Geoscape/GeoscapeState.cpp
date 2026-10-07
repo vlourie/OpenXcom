@@ -87,6 +87,7 @@
 #include "DogfightErrorState.h"
 #include "DogfightExperienceState.h"
 #include "../Ufopaedia/Ufopaedia.h"
+#include "../Mod/ArticleDefinition.h"
 #include "../Savegame/ResearchProject.h"
 #include "ResearchCompleteState.h"
 #include "../Mod/RuleResearch.h"
@@ -282,6 +283,7 @@ GeoscapeState::GeoscapeState() : _pause(false), _zoomInEffectDone(false), _zoomO
 	_btnIntercept->onKeyboardPress((ActionHandler)&GeoscapeState::btnGlobalProductionClick, Options::keyGeoGlobalProduction);
 	_btnIntercept->onKeyboardPress((ActionHandler)&GeoscapeState::btnGlobalResearchClick, Options::keyGeoGlobalResearch);
 	_btnIntercept->onKeyboardPress((ActionHandler)&GeoscapeState::btnGlobalAlienContainmentClick, Options::keyGeoGlobalAlienContainment);
+	_btnIntercept->onKeyboardPress((ActionHandler)&GeoscapeState::btnGlobalTransfersClick, Options::keyGeoGlobalTransfers);
 	_btnIntercept->onKeyboardPress((ActionHandler)&GeoscapeState::btnDogfightExperienceClick, Options::keyGeoDailyPilotExperience);
 	_btnIntercept->setGeoscapeButton(true);
 
@@ -712,6 +714,8 @@ void GeoscapeState::init()
 	updateSlackingIndicator();
 
 	_globe->onMouseClick((ActionHandler)&GeoscapeState::globeClick);
+	// the wheel button on a globe label opens its ufopaedia article
+	_globe->onMouseClick((ActionHandler)&GeoscapeState::globeClick, SDL_BUTTON_MIDDLE);
 	_globe->onMouseOver(0);
 	_globe->rotateStop();
 	_globe->setFocus(true);
@@ -888,6 +892,8 @@ void GeoscapeState::timeAdvance()
 	{
 		timeSpan = 12 * 5 * 6 * 2 * 24;
 	}
+	// the HD radar pulses only at 5 seconds and 1 minute a step: faster, a cycle is shorter than a pulse
+	_globe->setHdRadarSlow(timeSpan <= 12);
 
 
 	for (int i = 0; i < timeSpan && !_pause; ++i)
@@ -1884,6 +1890,9 @@ bool GeoscapeState::processMissionSite(MissionSite *site)
  */
 void GeoscapeState::time30Minutes()
 {
+	// the HD radar pulses with the detection below (a picture only)
+	_globe->hdRadarCycle();
+
 	// Decrease mission countdowns
 	for (auto* am : _game->getSavedGame()->getAlienMissions())
 	{
@@ -2050,7 +2059,7 @@ void GeoscapeState::time30Minutes()
 		if (ge->isOver())
 		{
 			bool interrupted = false;
-			if (!ge->getRules().getInterruptResearch().empty())
+			if (ge->getRules().getInterruptResearch())
 			{
 				if (_game->getSavedGame()->isResearched(ge->getRules().getInterruptResearch(), false))
 				{
@@ -2960,6 +2969,22 @@ void GeoscapeState::globeClick(Action *action)
 		}
 	}
 
+	// The wheel button on a name written on the globe: its ufopaedia article, when the mod has one
+	// and the player has earned it. Nothing happens otherwise - an article the game hides everywhere
+	// else should not be announced here either.
+	if (action->getDetails()->button.button == SDL_BUTTON_MIDDLE && !buttonsDisabled())
+	{
+		const std::string id = _globe->getLabelAt(mouseX, mouseY);
+		if (!id.empty())
+		{
+			ArticleDefinition *article = _game->getMod()->getUfopaediaArticle(id);
+			if (article && Ufopaedia::isArticleAvailable(_game->getSavedGame(), article))
+			{
+				Ufopaedia::openArticle(_game, article);
+			}
+		}
+	}
+
 	if (_game->getSavedGame()->getDebugMode())
 	{
 		double lon, lat;
@@ -3575,7 +3600,7 @@ void GeoscapeState::handleBaseDefense(Base *base, Ufo *ufo)
 /**
  * Determine the alien missions to start this month.
  */
-void GeoscapeState::determineAlienMissions(bool isNewMonth, const RuleEvent* eventRules)
+void GeoscapeState::determineAlienMissions(bool isNewMonth, const RuleEvent* p_eventRules)
 {
 	SavedGame *save = _game->getSavedGame();
 	AlienStrategy &strategy = save->getAlienStrategy();
@@ -3755,29 +3780,42 @@ void GeoscapeState::determineAlienMissions(bool isNewMonth, const RuleEvent* eve
 			int arcsEnabled = 0;
 			// level four condition check: check maxArcs (duplicates count, arcs enabled by other commands or in any other way count too!)
 			{
-				for (auto& seqArc : arcCommand->getSequentialArcs())
+				for (auto* seqArc : arcCommand->getSequentialArcs())
 				{
 					if (save->isResearched(seqArc))
 						++arcsEnabled;
 					else
-						disabledSeqArcs.push_back(seqArc);
+						disabledSeqArcs.push_back(seqArc->getName());
 				}
 				WeightedOptions tmp = arcCommand->getRandomArcs(); // copy for the iterator, because of getNames()
 				disabledRngArcs = tmp; // copy for us to modify
 				for (auto& rngArc : tmp.getNames())
 				{
-					if (save->isResearched(rngArc))
+					// HD: имя дуги может оказаться пустышкой - тогда темы в _research нет
+					auto* research = mod->getResearchOrPlaceholder(rngArc);
+					if (save->isResearched(research))
 					{
 						++arcsEnabled;
-						disabledRngArcs.set(rngArc, 0); // delete
+						disabledRngArcs.set(research->getName(), 0); // delete
+					}
+					else if (!mod->getResearch(rngArc))
+					{
+						// HD: пустышку открывать нельзя - она ушла бы в сейв открытым исследованием без правила
+						Log(LOG_ERROR) << "Arc script refers to research '" << rngArc << "', which no mod declares; skipping it.";
+						disabledRngArcs.set(rngArc, 0);
 					}
 				}
 			}
 			Base* hq = save->getBases()->front();
 			bool canAddOneMore = arcCommand->getMaxArcs() == -1 || arcCommand->getMaxArcs() > arcsEnabled;
-			if (canAddOneMore && !disabledSeqArcs.empty())
+			if (canAddOneMore && !disabledSeqArcs.empty() && !mod->getResearch(disabledSeqArcs.front()))
 			{
-				auto* ruleResearchSeq = mod->getResearch(disabledSeqArcs.front(), true); // take first
+				// HD: следующая по порядку дуга - пустышка: последовательность стоит на дыре, в сейв ничего не пишем
+				Log(LOG_ERROR) << "Arc script refers to research '" << disabledSeqArcs.front() << "', which no mod declares; sequence stops here.";
+			}
+			else if (canAddOneMore && !disabledSeqArcs.empty())
+			{
+				auto* ruleResearchSeq = mod->getResearchOrPlaceholder(disabledSeqArcs.front()); // take first
 				save->addFinishedResearch(ruleResearchSeq, mod, hq, true);
 				++arcsEnabled;
 				if (ruleResearchSeq)
@@ -3796,7 +3834,7 @@ void GeoscapeState::determineAlienMissions(bool isNewMonth, const RuleEvent* eve
 			canAddOneMore = arcCommand->getMaxArcs() == -1 || arcCommand->getMaxArcs() > arcsEnabled;
 			if (canAddOneMore && !disabledRngArcs.empty())
 			{
-				auto* ruleResearchRng = mod->getResearch(disabledRngArcs.choose(), true); // take random
+				auto* ruleResearchRng = mod->getResearchOrPlaceholder(disabledRngArcs.choose()); // take random
 				save->addFinishedResearch(ruleResearchRng, mod, hq, true);
 				++arcsEnabled; // for good measure :)
 				if (ruleResearchRng)
@@ -3824,10 +3862,10 @@ void GeoscapeState::determineAlienMissions(bool isNewMonth, const RuleEvent* eve
 		RuleMissionScript *command = isNewMonth ? mod->getMissionScript(missionScriptName) : mod->getAdhocScript(missionScriptName);
 
 		// level zero condition check: filter adhoc mission scripts by tags
-		if (!isNewMonth && eventRules)
+		if (!isNewMonth && p_eventRules)
 		{
 			bool matchFound = false;
-			for (auto& atag : eventRules->getAdhocMissionScriptTags())
+			for (auto& atag : p_eventRules->getAdhocMissionScriptTags())
 			{
 				for (auto& btag : command->getAdhocMissionScriptTags())
 				{
@@ -4277,7 +4315,7 @@ bool GeoscapeState::attemptAlienRaceEvolution(int month, AlienBase* ab) const
 {
 	for (const auto& tuple : ab->getDeployment()->getAlienRaceEvolution())
 	{
-		if (std::get<0>(tuple) <= month && std::get<1>(tuple) == ab->getAlienRace())
+		if ((int)std::get<0>(tuple) <= month && std::get<1>(tuple) == ab->getAlienRace())
 		{
 			auto* newRace = _game->getMod()->getAlienRace(std::get<2>(tuple), false);
 			if (newRace)

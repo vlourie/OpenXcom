@@ -137,6 +137,7 @@ AllocatePsiTrainingState::AllocatePsiTrainingState(Base *base) : _sel(0), _base(
 	PUSH_IN("STR_WOUND_RECOVERY2", woundRecoveryStat);
 	if (_game->getMod()->isManaFeatureEnabled() && !_game->getMod()->getReplenishManaAfterMission())
 	{
+		PUSH_IN("STR_MANA_CURRENT", currentManaStat);
 		PUSH_IN("STR_MANA_MISSING", manaMissingStat);
 	}
 
@@ -305,6 +306,13 @@ void AllocatePsiTrainingState::initList(size_t scrl)
 {
 	int row = 0;
 	_lstSoldiers->clearList();
+
+	// OXCE-HD: the soldier's race picture before the name, as in the soldier lists
+	const int icon = Options::oxceBaseSoldierTypeIcon ? 13 : 0;
+	_lstSoldiers->setIconColumn(2, icon);
+	_lstSoldiers->setMargin(2 + icon);
+	_lstSoldiers->setColumns(4, 114 - icon, 80, 66, 40);
+
 	for (auto* soldier : *_base->getSoldiers())
 	{
 		const UnitStats* stats = _btnPlus->getPressed() ? soldier->getStatsWithSoldierBonusesOnly() : soldier->getCurrentStats();
@@ -358,6 +366,10 @@ void AllocatePsiTrainingState::initList(size_t scrl)
 		{
 			_lstSoldiers->addRow(4, soldier->getName(true).c_str(), ssStr.str().c_str(), ssSkl.str().c_str(), tr("STR_NO").c_str());
 			_lstSoldiers->setRowColor(row, _lstSoldiers->getColor());
+		}
+		if (icon)
+		{
+			_lstSoldiers->setRowIcon(row, soldierFlag(_game->getMod(), soldier));
 		}
 		row++;
 	}

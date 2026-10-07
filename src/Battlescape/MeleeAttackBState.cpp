@@ -24,6 +24,7 @@
 #include "Map.h"
 #include "Camera.h"
 #include "AIModule.h"
+#include "AiProbe.h"
 #include "../Savegame/Tile.h"
 #include "../Savegame/SavedBattleGame.h"
 #include "../Savegame/BattleUnit.h"
@@ -115,6 +116,7 @@ void MeleeAttackBState::init()
 		_parent->popState();
 		return;
 	}
+	AiProbe::postWalkMelee(_unit);
 
 	// terrain melee
 	if (terrainMeleeTilePart > 0)

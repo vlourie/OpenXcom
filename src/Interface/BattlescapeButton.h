@@ -39,6 +39,8 @@ protected:
 	bool _inverted;
 	InversionType _toggleMode;
 	Surface *_altSurface;
+	Uint8 _hdIcon;
+	bool _hdLit;
 public:
 	/// Creates a new image button with the specified size and position.
 	BattlescapeButton(int width, int height, int x = 0, int y = 0);
@@ -64,6 +66,10 @@ public:
 	void initSurfaces(Surface* custom = nullptr);
 	/// Blits this surface onto another one.
 	void blit(SDL_Surface *surface) override;
+	/// HD interface, modern skin: the pictogram the battle panel draws this button with (HdBattleHud::Icon, 0 = its own pixels).
+	void setHdIcon(int icon) { _hdIcon = (Uint8)icon; }
+	/// HD interface, modern skin: shows the pictogram lit, for a state the classic panel paints into the button's own pixels (the UFO kneel frame).
+	void setHdLit(bool lit) { _hdLit = lit; }
 	/// Alters both versions of the button's X pos.
 	void setX(int x) override;
 	/// Alters both versions of the button's Y pos.

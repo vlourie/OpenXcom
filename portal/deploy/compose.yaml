@@ -1,0 +1,120 @@
+# Server side of the portal: site, database, antivirus, HTTPS, dynamic DNS.
+#   cp .env.example .env               (compose-level: DNS, database password, host name)
+#   cp portal.env.example portal.env   (the site's own settings and secrets)
+#   docker compose up -d --build
+# The database schema is brought up to date by the one-shot "migrate" service before the site starts.
+# A fixed project name: the folder is called "deploy", and so may another stack's on the same machine.
+name: xp-portal
+services:
+  ddns:
+    build: ./ddns
+    # exit code 2 = bad password or hostname: after 3 tries it stays down until .env is fixed
+    restart: on-failure:3
+    # only its own variables: the updater has no business seeing the database password
+    environment:
+      DYNU_HOSTNAME: ${DYNU_HOSTNAME:-}
+      DYNU_API_KEY: ${DYNU_API_KEY:-}
+      DYNU_PASSWORD_SHA256: ${DYNU_PASSWORD_SHA256:-}
+      DYNU_PASSWORD: ${DYNU_PASSWORD:-}
+      DYNU_INTERVAL: ${DYNU_INTERVAL:-300}
+      TZ: ${TZ:-UTC}
+    volumes:
+      - ddns-state:/state
+
+  db:
+    image: postgres:18
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: xp_portal
+      POSTGRES_USER: xp
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    volumes:
+      - db-data:/var/lib/postgresql
+    networks: [back]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U xp -d xp_portal"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  clamav:
+    image: clamav/clamav:stable
+    restart: unless-stopped
+    # needs about 1.5 GB of RAM once the signatures are loaded; files wait as "being scanned" until it is up
+    volumes:
+      - clamav-db:/var/lib/clamav
+    networks: [back]
+
+  migrate:
+    build: ..
+    image: xp-portal
+    command: ["migrate"]
+    env_file: portal.env
+    # the same container also applies the catalogue and imports the wiki:
+    #   docker compose run --rm migrate seed --file /seed/community.json
+    #   docker compose run --rm migrate wiki import --file /wiki/piratez.json
+    # the image carries no deploy/ folder on purpose, so both files come in as read-only mounts
+    volumes:
+      - ./seed:/seed:ro
+      - ./wiki:/wiki:ro
+    environment: &portal-env
+      ConnectionStrings__Portal: Host=db;Port=5432;Database=xp_portal;Username=xp;Password=${POSTGRES_PASSWORD}
+      Portal__PublicUrl: https://${PORTAL_HOST:?set PORTAL_HOST in .env}
+      Portal__TrustedNetworks__0: ${FRONT_SUBNET:-172.30.10.0/24}
+      # releases as Caddy serves them inside the Docker network (Caddyfile, :8081); the keys the
+      # site trusts are Portal__ReleaseKeys__N in portal.env
+      Portal__ReleaseRepo: http://caddy:8081/
+      Attachments__ClamdAddress: clamav:3310
+    depends_on:
+      db: { condition: service_healthy }
+    networks: [back]
+    restart: "no"
+
+  portal:
+    image: xp-portal
+    restart: unless-stopped
+    env_file: portal.env
+    environment: *portal-env
+    volumes:
+      - portal-files:/data/files
+      - portal-keys:/data/keys
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      clamav: { condition: service_started }
+    networks: [back, front]
+
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      PORTAL_HOST: ${PORTAL_HOST}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      # release repository, served at /releases/: filled by 'station.ps1 releases' (or by hand,
+      # blobs first, channels last); RELEASES_DIR in .env to keep it elsewhere
+      - ${RELEASES_DIR:-./releases}:/srv/releases:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on: [portal]
+    networks: [front]
+
+networks:
+  back:
+  # fixed subnet: the portal believes X-Forwarded-For only from here (Portal__TrustedNetworks__0).
+  # FRONT_SUBNET in .env when this one is taken by another network on the machine
+  front:
+    ipam:
+      config:
+        - subnet: ${FRONT_SUBNET:-172.30.10.0/24}
+
+volumes:
+  ddns-state:
+  db-data:
+  clamav-db:
+  portal-files:
+  portal-keys:
+  caddy-data:
+  caddy-config:

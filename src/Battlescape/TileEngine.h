@@ -18,6 +18,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <vector>
+#include <map>
 #include "Position.h"
 #include "BattlescapeGame.h"
 #include "../Mod/RuleItem.h"
@@ -185,6 +186,8 @@ public:
 	void calculateFOV(Position position, int eventRadius = -1, const bool updateTiles = true, const bool appendToTileVisibility = false);
 	/// Checks reaction fire.
 	bool checkReactionFire(BattleUnit *unit, const BattleAction &originalAction);
+	/// The light a unit sheds by itself (personal light, a glowing hand item, fire), before the clamp of calculateUnitLighting; 0 - none.
+	int unitLightPower(const BattleUnit *unit) const;
 	/// Recalculate all lighting in some area.
 	void calculateLighting(LightLayers layer, Position position = invalid, int eventRadius = 0, bool terrianChanged = false);
 	/// Handles tile hit.
@@ -197,6 +200,8 @@ public:
 	void hit(BattleActionAttack attack, Position center, int power, const RuleDamageType *type, bool rangeAtack = true, int terrainMeleeTilePart = 0);
 	/// Handles explosions.
 	void explode(BattleActionAttack attack, Position center, int power, const RuleDamageType *type, int maxRadius, bool rangeAtack = true);
+	/// The tiles an explosion would reach and the power it would reach them with, without touching anything.
+	void explosionArea(Position center, int power, const RuleDamageType *type, int maxRadius, std::map<Tile*, int> &area);
 	/// Checks if a destroyed tile starts an explosion.
 	Tile *checkForTerrainExplosions();
 	/// Unit opens door?
@@ -217,6 +222,9 @@ public:
 	bool isTileInLOS(BattleAction *action, Tile *tile, bool drawing);
 	/// Turn XCom soldier's personal lighting on or off.
 	void togglePersonalLighting();
+	/// Turn XCom soldier's individual personal lighting on or off.
+	void togglePersonalIndividualLighting();
+
 	/// Checks the horizontal blockage of a tile.
 	int horizontalBlockage(Tile *startTile, Tile *endTile, ItemDamageType type, bool skipObject = false);
 	/// Checks the vertical blockage of a tile.

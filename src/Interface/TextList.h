@@ -17,6 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <functional>
 #include <vector>
 #include <map>
 #include "../Engine/InteractiveSurface.h"
@@ -60,11 +61,29 @@ private:
 	int _arrowsLeftEdge, _arrowsRightEdge;
 	int _noScrollLeftEdge, _noScrollRightEdge;
 	ComboBox *_comboBox;
+	/// OXCE-HD: pictures before the rows (setIconColumn / setRowIcon / setRowIcons).
+	struct Icon
+	{
+		Surface *trimmed = nullptr;       ///< the frame without its transparent edge: what the HD mirror scales
+		Surface *fitted = nullptr;        ///< the classic picture, scaled down to the slot and the line
+		int x = 0, y = 0;                 ///< where it sits in its slot and the line
+	};
+	static const int ICON_COLUMNS = 2;
+	int _iconX[ICON_COLUMNS] = {}, _iconW[ICON_COLUMNS] = {}, _iconSlots[ICON_COLUMNS] = { 1, 1 };
+	std::vector<std::vector<Surface*> > _rowIcons[ICON_COLUMNS];  ///< by column and row: the frames given, one per slot (not owned)
+	std::map<std::pair<Surface*, int>, Icon> _iconCache;          ///< by frame and column (owned)
+	/// The picture of a frame in a column, made when first asked for; nullptr when the frame is empty.
+	const Icon *frameIcon(Surface *frame, int col);
+	/// Calls fn(icon, x in the list) for every picture of a row.
+	template<typename Fn> void forRowIcons(size_t row, Fn fn);
 
 	/// Updates the arrow buttons.
 	void updateArrows();
 	/// Updates the visible rows.
 	void updateVisible();
+	/// Calls `fn(row, y, height)` for every visible row as draw() lays them out, y relative to the list
+	/// (above 0 for the hidden lines of a wrapped row at the top). One layout for draw() and hdMirror().
+	void forVisibleRows(const std::function<void(size_t, int, int)> &fn) const;
 public:
 	/// Creates a text list with the specified size and position.
 	TextList(int width, int height, int x = 0, int y = 0);
@@ -90,6 +109,8 @@ public:
 	void setCellText(size_t row, size_t column, const std::string &text);
 	/// Gets the X position of a certain column.
 	int getColumnX(size_t column) const;
+
+	int getLastColumnIndex() const noexcept;
 	/// Gets the Y position of a certain row.
 	int getRowY(size_t row) const;
 	/// Gets the height of the row text in pixels
@@ -106,10 +127,12 @@ public:
 	size_t getVisibleRows() const;
 	/// Adds a new row to the text list.
 	void addRow(int cols, ...);
+	bool expandLastRow(const std::string& text);
 	/// Removes the last row from the text list.
 	void removeLastRow();
 	/// Sets the columns in the text list.
 	void setColumns(int cols, ...);
+	void addColumn(size_t width);
 	/// Sets the palette of the text list.
 	void setPalette(const SDL_Color *colors, int firstcolor = 0, int ncolors = 256) override;
 	/// Initializes the resources for the text list.
@@ -143,7 +166,7 @@ public:
 	/// Sets the background for the selector.
 	void setBackground(Surface *bg);
 	/// Gets the selected row in the list.
-	unsigned int getSelectedRow() const;
+	int getSelectedRow() const;
 	/// Sets the margin of the text list.
 	void setMargin(int margin);
 	/// Gets the margin of the text list.
@@ -178,6 +201,8 @@ public:
 	void setScrolling(bool scrolling, int scrollPos = 4);
 	/// Draws the text onto the text list.
 	void draw() override;
+	/// HD interface: the visible rows as HD text.
+	void hdMirror() override;
 	/// Blits the text list onto another surface.
 	void blit(SDL_Surface *surface) override;
 	/// Thinks arrow buttons.
@@ -210,6 +235,15 @@ public:
 	void setFlooding(bool flooding);
 	/// Treat separators as spaces (false) or as normal text (true)?
 	void setIgnoreSeparators(bool ignoreSeparators);
+	/// OXCE-HD: the column of row pictures, `width` pixels from `x` (in the list); width 0 = no pictures.
+	/// The columns of text are not moved: leave them room with setMargin / setColumns. `col` 0 or 1: two such columns.
+	/// `slots`: the column split into that many equal places, the row's pictures one after another (setRowIcons).
+	void setIconColumn(int x, int width, int col = 0, int slots = 1);
+	/// OXCE-HD: the picture of a row: a sprite frame, its transparent edge trimmed and the rest scaled
+	/// to fit the column and the line (the HD mirror scales it from the full frame); nullptr = none.
+	void setRowIcon(size_t row, Surface *frame, int col = 0);
+	/// OXCE-HD: several pictures of a row, from the left slot of the column on; those past its slots are not drawn.
+	void setRowIcons(size_t row, const std::vector<Surface*> &frames, int col = 0);
 };
 
 }

@@ -18,12 +18,16 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "../Engine/InteractiveSurface.h"
+#include "../Engine/HdCanvas.h"
 #include "../Engine/Options.h"
 #include "../Engine/Collections.h"
+#include "../Engine/Unicode.h"
 #include "../Mod/MapData.h"
 #include "Position.h"
 #include "Particle.h"
 #include <vector>
+#include <string>
+#include <unordered_map>
 
 namespace OpenXcom
 {
@@ -40,6 +44,8 @@ class Timer;
 class Text;
 class Tile;
 class UnitSprite;
+class NumberText;
+class HdCanvas;
 
 enum CursorType { CT_NONE, CT_NORMAL, CT_AIM, CT_PSI, CT_WAYPOINT, CT_THROW };
 enum TilePart : int;
@@ -65,6 +71,10 @@ private:
 	static const int NIGHT_VISION_SHADE = 4;
 	static const int NIGHT_VISION_MAX_SHADE = 8;
 	static const int BULLET_SPRITES = 35;
+	static const int UNIT_MARKER_MAX = 10;
+	/// Original tile sprite size the map geometry was designed around.
+	static const int BASE_SPRITE_WIDTH = 32;
+	static const int BASE_SPRITE_HEIGHT = 40;
 	Timer *_scrollMouseTimer, *_scrollKeyTimer, *_obstacleTimer;
 	Timer *_fadeTimer;
 	int _fadeShade;
@@ -75,9 +85,32 @@ private:
 	SavedBattleGame *_save;
 	bool _isTFTD;
 	Surface *_arrow;
-	Surface *_stunIndicator, *_woundIndicator, *_burnIndicator, *_shockIndicator;
+	/// The indicators over a body on the floor, each as its animation phases (one when the HD mod ships none).
+	std::vector<Surface*> _stunIndicator, _woundIndicator, _burnIndicator, _shockIndicator;
 	bool _anyIndicator, _isAltPressed, _isCtrlPressed;
 	int _spriteWidth, _spriteHeight;
+	/// HD render scale k = _spriteWidth / 32: the map surface and all screen offsets are k times the base resolution.
+	int _k;
+	/// Base-resolution scratch surface used to draw the hidden movement message before scaling it.
+	Surface *_messageScratch;
+	/// true while the canvas holds the hidden movement message and not the terrain
+	bool _messageOnCanvas;
+	/// The canvas all battlescape drawing goes to (classic 8-bit surface or the true-color world).
+	HdCanvas *_canvas;
+	/// HD render: floors with pack variants are drawn by the ground pattern (option oxceHdGroundVariants).
+	bool _hdGroundVariants;
+	/// The seed of this battle's ground pattern (from the map blocks: the same battle keeps its look after a load).
+	Uint32 groundSeed() const;
+	/// HD render: addressed wall frames draw the picture of their cell from the SCC field (option oxceHdTerrainAddress).
+	bool _hdTerrainAddress;
+	HdWallField _wallField;
+	/// Test hooks of the addressing (OXCE_HD_ADDRESS_OBSTACLE, OXCE_HD_ADDRESS_RELOAD): frames drawn so far.
+	int _addressTestFrames = 0;
+	void addressTestReload();
+	/// HD light: the light field of the tile being drawn, per-frame shade cache, and whether the field is in use this frame.
+	HdLight _hdLight;
+	std::vector<Sint8> _hdShadeCache;
+	bool _hdLightOn = false;
 	int _selectorX, _selectorY;
 	int _mouseX, _mouseY;
 	CursorType _cursorType;
@@ -87,6 +120,7 @@ private:
 	Position _cacheCursorPosition;
 	int _cacheHasLOS; // -1 = unknown, 0 = no LOS, 1 = has LOS
 	int _animFrame;
+	std::unordered_map<int, int> _hoverFade; // unit id -> 1..HOVER_FADE_STEPS, how far the sway of a hanging unit has faded in
 	Projectile *_projectile;
 	bool _followProjectile;
 	bool _projectileInFOV;
@@ -102,10 +136,75 @@ private:
 	int _bgColor;
 	bool _previewSettingArrows, _previewSettingTu, _previewSettingEnergy;
 	Text *_txtAccuracy;
+	NumberText *_numUnitMarker;
+	const BattleUnit *_unitMarkerUnit[UNIT_MARKER_MAX];
+	Uint8 _unitMarkerColor[UNIT_MARKER_MAX];
+	/// HD interface: the hit chance at the cursor and the numbers over the units seen are not baked into the
+	/// canvas (it reaches the screen scaled, and the pixel digits with it) - they are kept here, in canvas
+	/// pixels, and drawn with the interface's TrueType font on top of the map in blit(). Picture only.
+	struct HdLabel
+	{
+		UString text;
+		int x = 0, y = 0;
+		bool tag = false;
+		Uint32 face = 0, back = 0, edge = 0;
+	};
+	std::vector<HdLabel> _hdLabels;
+	bool _hdLabelsOn = false;
+	/// Are the labels drawn by the HD interface (its modern skin with the TrueType fonts)?
+	bool hdLabelsWanted() const;
+	/// The hit chance text as it stands in _txtAccuracy, at canvas (x, y): baked, or kept for the HD interface.
+	void drawAccuracy(HdCanvas *canvas, int x, int y);
 	SurfaceSet *_projectileSet;
+	/// Gentle mode: a reaction shot of this turn, for the arrow at the soldier fired at (picture only).
+	/// The arrow tells no more than the shot's trail did: it shows only once the bullet was drawn in view
+	/// (seen), and the shooter's number turns only once it was drawn by the shooter (seenOrigin).
+	struct GentleShot
+	{
+		const BattleUnit *shooter;
+		Position from, at;
+		int height;
+		Uint32 ticks, id;
+		bool seen, seenOrigin;
+	};
+	std::vector<GentleShot> _gentleShots;
+	std::vector<const BattleUnit*> _gentleShooters;
+	int _gentleTurn = -1;
+	Uint32 _gentleShotId = 0, _gentleFlying = 0;
+	/// Gentle mode: the bullet of the shot in flight was drawn at this voxel, this screen point.
+	void noteGentleTrail(const Position &voxel, const Position &screen, int width);
+	static const int GENTLE_ARROW_STEPS = 32;
+	Surface *_gentleArrow[GENTLE_ARROW_STEPS] = {};
+	int _gentleArrowScale = 0;
+	/// Notes a reaction shot fired at the player's side (gentle mode).
+	void noteGentleShot(const Projectile *projectile);
+	/// Draws the arrows from the soldiers fired at towards their shooters (gentle mode).
+	void drawGentleArrows(HdCanvas *surface);
+	/// The arrow sprite pointing one of GENTLE_ARROW_STEPS ways, in world pixels.
+	Surface *gentleArrow(int step);
+	/// HD render: the area of the explosion the shot or throw being aimed would make (option oxceHdBlastArea):
+	/// the power it would reach each tile with (by tile index, 0 = not reached), the strongest of them,
+	/// and the colour of the damage type (0xRRGGBB). Recomputed only when what is aimed changes.
+	std::vector<int> _blastPower;
+	int _blastMax = 0;
+	Uint32 _blastRgb = 0;
+	Position _blastCenter = Position(-1, -1, -1);
+	int _blastKeyPower = 0, _blastKeyRadius = 0;
+	const void *_blastKeyType = nullptr;
+	/// Works out the area for the current action and cursor (clears it when nothing explosive is aimed).
+	void updateBlastArea(HdCanvas *surface);
 
 	void drawUnit(UnitSprite &unitSprite, Tile *unitTile, Tile *currTile, Position tileScreenPosition, bool topLayer, BattleUnit* movingUnit = nullptr);
-	void drawTerrain(Surface *surface);
+	void drawTerrain(HdCanvas *canvas);
+	void blitMessage();
+	void createCanvas();
+	SDL_Color vaporTint(const Particle &p) const;
+	/// HD light: the drawing shade of a tile, cached for the frame (reShade is not cheap in night vision).
+	int hdShadeOf(Tile *tile);
+	/// HD light: the color of the light on a tile from its light layers (ambient/fire/items/units).
+	void hdTintOf(const Tile *tile, float *tint) const;
+	/// HD light: computes the light field of a tile from its corners and hands it to the canvas.
+	void updateHdLight(Tile *tile, int tileShade, const Position &pos);
 	int getTerrainLevel(const Position& pos, int size) const;
 	int getWallShade(TilePart part, Tile* tileFrot);
 	int _iconHeight, _iconWidth, _messageColor;
@@ -113,6 +212,12 @@ private:
 	const std::vector<Uint8> *_transparencies;
 	bool _showObstacles;
 	bool _showInfoOnCursor;
+	// HD render test (deterministic frame capture), see Engine/HdTest.h
+	bool _hdTestFrozen = false;
+	std::string _hdTestMapDumpPath;
+	CursorType _hdTestSavedCursorType = CT_NORMAL;
+	int _hdTestSavedCursorSize = 1;
+	double _lastDrawMs = 0.0;
 public:
 	/// Creates a new map at the specified position and size.
 	Map(Game* game, int width, int height, int x, int y, int visibleMapHeight);
@@ -146,6 +251,8 @@ public:
 	void getSelectorPosition(Position *pos) const;
 	/// Calculates the offset of a soldier, when it is walking in the middle of 2 tiles.
 	UnitWalkingOffset calculateWalkingOffset(const BattleUnit *unit) const;
+	/// Screen offset of a unit hanging with no floor below: a sway in the air, a slow drift in the water.
+	Position hoverBob(const BattleUnit *unit) const;
 	/// Sets the 3D cursor type.
 	void setCursorType(CursorType type, int size = 1);
 	/// Gets the 3D cursor type.
@@ -180,12 +287,20 @@ public:
 	void fadeShade();
 	/// Get waypoints vector.
 	std::vector<Position> *getWaypoints();
+	/// Clears all on-map markers of the visible unit indicators.
+	void clearUnitMarkers();
+	/// Sets an on-map marker for one visible unit indicator (0 clears the slot).
+	void setUnitMarker(int index, const BattleUnit *unit, Uint8 color);
+	/// Gentle mode: has this unit fired a reaction shot at the player's side in this turn?
+	bool firedReactionThisTurn(const BattleUnit *unit) const;
 	/// Set mouse-buttons' pressed state.
 	void setButtonsPressed(Uint8 button, bool pressed);
 	/// Sets the unitDying flag.
 	void setUnitDying(bool flag);
 	/// Refreshes the battlescape selector after scrolling.
 	void refreshSelectorPosition();
+	/// Blits the map: into the screen's world layer when the output is layered, else like any surface.
+	void blit(SDL_Surface *surface) override;
 	/// Special handling for updating map height.
 	void setHeight(int height) override;
 	/// Special handling for updating map width.
@@ -205,7 +320,40 @@ public:
 	/// Check if the screen is flashing this.
 	bool getBlastFlash() const;
 	/// Modify shade for fading
-	int reShade(Tile *tile);
+	int reShade(Tile *tile) const;
+	int reShadeMinimap(int maxShade) const;
+	/// HD render test: freeze all animation for one drawn frame and optionally dump the map surface.
+	void hdTestFreeze(const std::string &mapDumpPath);
+	/// HD render test: true while the frozen frame has not been drawn yet.
+	bool isHdTestFrozen() const { return _hdTestFrozen; }
+	/// Is night vision currently on?
+	bool isNightVisionOn() const { return _nightVisionOn; }
+	/// Gets the debug vision mode (0 = off).
+	int getDebugVisionMode() const { return _debugVisionMode; }
+	/// Gets the current fade shade (night vision transition).
+	int getFadeShade() const { return _fadeShade; }
+	/// HD render scale factor read from BLANKS.PCK (1 = original 32x40 tiles).
+	static int hdScale(Game *game);
+	/// Steps of oxceHdFirePace and oxceHdSmokePace.
+	static const int HD_ENVI_PACES = 5;
+	/// Speed of the fire or smoke animation at a step of its pace option, percent of the stock one.
+	static int hdEnviPercent(int pace);
+	/// The animation clock of a burning or smoking tile in the HD modes, in timer ticks (picture only).
+	static int hdEnviClock(int animFrame, Position pos, int pace);
+	/// Gets the HD render scale k of this map.
+	int getScale() const { return _k; }
+	/// Gets the name of the canvas type the map draws on (HD render test dumps).
+	const char *getCanvasName() const;
+	/// Selects how the canvas draws palette sprites (HdMode) and redraws the map.
+	void setHdMode(int mode);
+	/// Gets the mode the canvas draws palette sprites with.
+	int getHdMode() const;
+	/// Time the last full map draw took, milliseconds (HD render profiling).
+	double getLastDrawMs() const { return _lastDrawMs; }
+	/// Gets the tile sprite width the map geometry is based on (32 in vanilla).
+	int getSpriteWidth() const { return _spriteWidth; }
+	/// Gets the tile sprite height the map geometry is based on (40 in vanilla).
+	int getSpriteHeight() const { return _spriteHeight; }
 	/// toggle the night-vision mode
 	void enableNightVision();
 	void toggleNightVision();

@@ -17,6 +17,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "OptionsAdvancedState.h"
+#include "OptionDetailState.h"
 #include <sstream>
 #include "../Engine/Game.h"
 #include "../Mod/Mod.h"
@@ -27,6 +28,7 @@
 #include "../Interface/TextButton.h"
 #include "../Interface/TextList.h"
 #include "../Engine/Options.h"
+#include "../Engine/HdGentle.h"
 #include "../Engine/Action.h"
 #include <algorithm>
 
@@ -91,7 +93,6 @@ OptionsAdvancedState::OptionsAdvancedState(OptionsOrigin origin) : OptionsBaseSt
 	_btnOTHER->setText(tr("STR_ENGINE_OTHER")); // rename in your fork
 	_btnOTHER->setGroup(&_owner);
 	_btnOTHER->onMousePress((ActionHandler)&OptionsAdvancedState::btnGroupPress, SDL_BUTTON_LEFT);
-	_btnOTHER->setVisible(false); // enable in your fork
 
 	// how much room do we need for YES/NO
 	Text text = Text(100, 9, 0, 0);
@@ -250,21 +251,34 @@ void OptionsAdvancedState::addSettings(const std::vector<OptionInfo> &settings)
 	for (const auto& optionInfo : settings)
 	{
 		std::string name = tr(optionInfo.description());
+		// a setting the gentle mode holds (Engine/HdGentle.h) shows the value it is held at, with a note
+		const bool gentle = HdGentle::locks(optionInfo);
+		if (gentle)
+		{
+			name += " " + std::string(tr("STR_GENTLE_LOCKED"));
+		}
 		std::string value;
+		bool no = false;
 		if (optionInfo.type() == OPTION_BOOL)
 		{
-			value = *optionInfo.asBool() ? tr("STR_YES") : tr("STR_NO");
+			no = gentle ? HdGentle::lockedValue(optionInfo.asBool()) == 0 : !*optionInfo.asBool();
+			value = no ? tr("STR_NO") : tr("STR_YES");
 		}
 		else if (optionInfo.type() == OPTION_INT)
 		{
 			std::ostringstream ss;
-			ss << *optionInfo.asInt();
+			ss << (gentle ? HdGentle::lockedValue(optionInfo.asInt()) : *optionInfo.asInt());
 			value = ss.str();
 		}
 		_lstOptions->addRow(2, name.c_str(), value.c_str());
+		// a "no" reads apart from a "yes" at a glance: in the color of a disabled option
+		if (no)
+		{
+			_lstOptions->setCellColor(_lstOptions->getLastRowIndex(), 1, _greyedOutColor);
+		}
 		// grey out fixed options
 		auto search = fixeduserOptions.find(optionInfo.id());
-		if (search != fixeduserOptions.end())
+		if (gentle || search != fixeduserOptions.end())
 		{
 			_lstOptions->setRowColor(_lstOptions->getLastRowIndex(), _greyedOutColor);
 		}
@@ -314,18 +328,47 @@ OptionInfo *OptionsAdvancedState::getSetting(size_t sel)
 void OptionsAdvancedState::lstOptionsClick(Action *action)
 {
 	Uint8 button = action->getDetails()->button.button;
+	size_t sel = _lstOptions->getSelectedRow();
+	// middle button: the setting on a window of its own, with the whole description and the
+	// value as a button that changes it just like a click here
+	if (button == SDL_BUTTON_MIDDLE)
+	{
+		OptionInfo *setting = getSetting(sel);
+		if (!setting) return;
+		const std::string desc = std::string(tr(setting->description() + "_DESC")) + (HdGentle::locks(*setting) ? " " + std::string(tr("STR_GENTLE_LOCKED_DESC")) : std::string());
+		_game->pushState(new OptionDetailState(_origin, tr(setting->description()), desc,
+			[this, sel, setting](Uint8 b)
+			{
+				if (b != 0)
+				{
+					changeSetting(sel, b);
+				}
+				const bool no = HdGentle::locks(*setting) || (setting->type() == OPTION_BOOL && !*setting->asBool());
+				return std::make_pair(_lstOptions->getCellText(sel, 1), no ? _greyedOutColor : (Uint8)0);
+			}));
+		return;
+	}
+	changeSetting(sel, button);
+}
+
+/**
+ * Changes a setting as a click on its row does.
+ * @param sel Row of the setting.
+ * @param button Mouse button: left steps forward, right back.
+ */
+void OptionsAdvancedState::changeSetting(size_t sel, Uint8 button)
+{
 	if (button != SDL_BUTTON_LEFT && button != SDL_BUTTON_RIGHT)
 	{
 		return;
 	}
-	size_t sel = _lstOptions->getSelectedRow();
 	OptionInfo *setting = getSetting(sel);
 	if (!setting) return;
 
 	// greyed out options are fixed, cannot be changed by the user
 	auto& fixeduserOptions = _game->getMod()->getFixedUserOptions();
 	auto it = fixeduserOptions.find(setting->id());
-	if (it != fixeduserOptions.end())
+	if (it != fixeduserOptions.end() || HdGentle::locks(*setting))
 	{
 		return;
 	}
@@ -336,6 +379,7 @@ void OptionsAdvancedState::lstOptionsClick(Action *action)
 		bool *b = setting->asBool();
 		*b = !*b;
 		settingText = *b ? tr("STR_YES") : tr("STR_NO");
+		_lstOptions->setCellColor(sel, 1, *b ? _lstOptions->getColor() : _greyedOutColor);
 		if (b == &Options::lazyLoadResources && !*b)
 		{
 			Options::reload = true; // reload when turning lazy loading off
@@ -405,6 +449,11 @@ void OptionsAdvancedState::lstOptionsClick(Action *action)
 			min = 0;
 			max = 2;
 		}
+		else if (i == &Options::oxceBaseSoldierGroupBy)
+		{
+			min = 0;
+			max = 3;
+		}
 		else if (i == &Options::oxceInterceptTableSize)
 		{
 			min = 8;
@@ -433,6 +482,31 @@ void OptionsAdvancedState::lstOptionsClick(Action *action)
 			min = _isTFTD ? 2 : 1;
 			max = _isTFTD ? 16 : 15;
 		}
+		else if (i == &Options::QOL::ItemTooltipMode)
+		{
+			min = 0;
+			max = 2;
+		}
+		else if (i == &Options::QOL::ItemTooltipHoverDelayInTenths)
+		{
+			min = 5;
+			max = 30;
+		}
+		else if (i == &Options::QOL::highlightLowManaSoldiersMode)
+		{
+			min = 0;
+			max = 2;
+		}
+		else if (i == &Options::QOL::defaultSoldiersSorter)
+		{
+			min = 0;
+			max = 3;
+		}
+		else if (i == &Options::QOL::dontTraceProjectiles)
+		{
+			min = 0;
+			max = 4;
+		}
 
 		if (*i < min)
 		{
@@ -458,6 +532,10 @@ void OptionsAdvancedState::lstOptionsMouseOver(Action *)
 	if (setting)
 	{
 		desc = tr(setting->description() + "_DESC");
+		if (HdGentle::locks(*setting))
+		{
+			desc += " " + std::string(tr("STR_GENTLE_LOCKED_DESC"));
+		}
 	}
 	_txtTooltip->setText(desc);
 }

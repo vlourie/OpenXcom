@@ -43,6 +43,8 @@ public:
 	std::string getName(Language *lang) const override;
 	/// Gets the city's marker.
 	int getMarker() const override;
+	/// Gets the name as the ruleset spells it (STR_...), which is also what the ufopaedia calls it.
+	const std::string &getNameId() const { return _name; }
 };
 
 }

@@ -143,6 +143,11 @@ private:
 	bool _endTurnRequested;
 	bool _endConfirmationHandled;
 	bool _allEnemiesNeutralized;
+	std::vector<int> _guardedUnits; // bench bot: units that already turned to face the enemy this turn
+	int _guardedTurn = -1;
+
+	/// Bench bot: ends a unit's turn facing the nearest enemy its side sees.
+	bool carefulGuard(BattleUnit *unit);
 
 	helper::SingleRun _endTurnProcessed;
 	helper::SingleRun _triggerProcessed;
@@ -168,6 +173,10 @@ public:
 	~BattlescapeGame();
 	/// Checks for units panicking or falling and so on.
 	int think();
+	/// The queue of battle states (the AI turn probe fingerprints it before each decision).
+	const std::list<BattleState*> &getStates() const { return _states; }
+	/// AI actions of the current unit so far (the AI turn probe fingerprints it before each decision).
+	int getAIActionCounter() const { return _AIActionCounter; }
 	/// Initializes the Battlescape game.
 	void init();
 	/// Determines whether a playable unit is selected.
@@ -258,6 +267,8 @@ public:
 	int takeItemFromGround(BattleItem* item, BattleAction *action);
 	/// Assigns the item to a slot (stolen from battlescapeGenerator::addItem()).
 	bool takeItem(BattleItem* item, BattleAction *action);
+	/// The careful bot: the nearest loaded gun or fitting ammo on the ground near by - takes it, or walks to it.
+	bool findBotWeapon(BattleAction *action, bool &walkToItem);
 	/// Returns the type of action that is reserved.
 	BattleActionType getReservedAction();
 	/// Tallies the living units, converting them if necessary.

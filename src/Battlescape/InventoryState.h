@@ -135,8 +135,10 @@ public:
 	void onClearInventory(Action *action);
 	/// Handler for hitting the Auto-equip hotkey.
 	void onAutoequip(Action *action);
-	/// Handler for clicking on the inventory.
-	void invClick(Action *action);
+	/// Handler for left clicking on the inventory.
+	void invLeftClick(Action *action);
+	/// Handler for right clicking on the inventory.
+	void invRightClick(Action* action);
 	/// Handler for showing item info.
 	void calculateCurrentDamageTooltip();
 	void invMouseOver(Action *action);
@@ -144,6 +146,8 @@ public:
 	void invMouseOut(Action *action);
 	/// Handler for hitting the [Move Ground Inventory To Base] hotkey.
 	void onMoveGroundInventoryToBase(Action *action);
+	/// Handler for hitting the [Move Ground Inventory To Base] click.
+	void onMoveGroundInventoryToBaseClick(bool leftClick);
 	/// Handles keypresses.
 	void handle(Action *action) override;
 	/// Runs state functionality every cycle.

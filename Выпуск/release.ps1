@@ -1,0 +1,273 @@
+﻿<#
+  OXCE HD — выпуск одним запуском: сборка «Обе» -> подпись -> публикация -> проверка -> архив для станции.
+
+    OXCE_Release.cmd                  канал из release_config.json (stable)
+    OXCE_Release.cmd test             другой канал
+    OXCE_Release.cmd nobuild          без сборки: подписать то, что лежит в dist\_stage
+    OXCE_Release.cmd launcher         только лаунчер: игра в канале остаётся прежней
+
+  Имя выпуска выбирается само по дате: 2026.09.24, второй за день 2026.09.24-2; в канале test -
+  2026.09.24-test, 2026.09.24-test2. Версия - 2026.9.24 (2026.9.24.2 для второго за день).
+  «Что нового»: по-русски - раздел «[Не выпущено]» CHANGELOG.md сам, плюс notes\next.ru.txt (только то,
+  чего в CHANGELOG нет); по-английски - notes\next.en.txt. После выпуска они переименовываются в
+  notes\<имя выпуска>.ru.txt, чтобы следующий выпуск не показал старый текст. В канале stable
+  раздел «[Не выпущено]» CHANGELOG.md становится разделом «<имя выпуска> — <дата>».
+  Лаунчер выпускается, только если его версии (<Version> в Xp.Launcher.csproj) ещё нет в хранилище.
+
+  Приватный ключ скрипт не читает: путь к нему передаётся xp-release, и всё.
+  Настройки - release_config.json рядом. Журнал - dist\release_<имя>.log.
+#>
+param([Parameter(ValueFromRemainingArguments = $true)] [string[]] $Rest)
+
+$ErrorActionPreference = 'Stop'
+try { [Console]::OutputEncoding = [Text.Encoding]::UTF8 } catch {}
+$clock = [Diagnostics.Stopwatch]::StartNew()
+$root = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
+
+function Step([string] $t) { Write-Host ''; Write-Host "==> $t" -ForegroundColor Cyan }
+function Ok([string] $t)   { Write-Host "    $t" -ForegroundColor Green }
+function Warn([string] $t) { Write-Host "    ВНИМАНИЕ: $t" -ForegroundColor Yellow }
+
+# xp-release печатает в консоль сам; ненулевой код - остановка
+# CHANGELOG.md: всё, что копилось под «[Не выпущено]», становится разделом выпуска $id, а сверху
+# остаётся пустой «[Не выпущено]» для следующего. Иначе выпуски сливаются в один раздел (аудит 26.09)
+function Close-Changelog([string] $path, [string] $id, [datetime] $day) {
+    if (-not (Test-Path -LiteralPath $path)) { Warn "нет $path"; return }
+    $text = [IO.File]::ReadAllText($path, [Text.Encoding]::UTF8)
+    $nl = if ($text.Contains("`r`n")) { "`r`n" } else { "`n" }
+    $mark = '## [Не выпущено]'
+    $at = $text.IndexOf($mark)
+    if ($at -lt 0) { Warn "в CHANGELOG.md нет раздела «[Не выпущено]» - раздел выпуска не записан"; return }
+    $from = $at + $mark.Length
+    $next = $text.IndexOf("$nl## ", $from)
+    if ($next -lt 0) { $next = $text.Length }
+    $body = $text.Substring($from, $next - $from)
+    if (-not $body.Trim()) { Warn 'в CHANGELOG.md под «[Не выпущено]» пусто - раздел выпуска не записан'; return }
+    $months = 'января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'
+    $title = '## {0} — {1} {2} {3}' -f $id, $day.Day, $months[$day.Month - 1], $day.Year
+    $text = $text.Substring(0, $at) + $mark + $nl + $nl + $title + $nl + $body.TrimStart("`r", "`n") + $text.Substring($next)
+    [IO.File]::WriteAllText($path, $text, (New-Object Text.UTF8Encoding $true))
+    Ok "CHANGELOG.md: раздел «$title» - закоммитьте его вместе с notes"
+}
+
+# «Что нового» по-русски из раздела «[Не выпущено]» CHANGELOG.md: пункты «- » становятся «— », заголовки ### уходят.
+# Выпуски 27.09-5..28.09-3 ушли без описания, потому что notes\next.ru.txt никто не написал (R-130)
+function Get-UnreleasedNotes([string] $path) {
+    if (-not (Test-Path -LiteralPath $path)) { return '' }
+    $text = [IO.File]::ReadAllText($path, [Text.Encoding]::UTF8)
+    $nl = if ($text.Contains("`r`n")) { "`r`n" } else { "`n" }
+    $mark = '## [Не выпущено]'
+    $at = $text.IndexOf($mark)
+    if ($at -lt 0) { return '' }
+    $from = $at + $mark.Length
+    $next = $text.IndexOf("$nl## ", $from)
+    if ($next -lt 0) { $next = $text.Length }
+    $lines = foreach ($l in $text.Substring($from, $next - $from) -split "`r?`n") {
+        $l = $l.TrimEnd()
+        if ($l -match '^\s*- (.+)$') { '— ' + $Matches[1] }
+        elseif ($l -and $l -notmatch '^#') { $l }
+    }
+    return (@($lines) -join "`r`n").Trim()
+}
+
+function Xpr([string[]] $a) {
+    & $script:xpr @a | Out-Host
+    if ($LASTEXITCODE -ne 0) { throw "xp-release $($a[0]) завершился с кодом $LASTEXITCODE" }
+}
+
+# другой файл настроек (для пробы на одноразовом ключе): любой аргумент, кончающийся на .json
+$args_ = @($Rest | Where-Object { $_ })
+$cfgFile = $args_ | Where-Object { $_ -like '*.json' } | Select-Object -Last 1
+if (-not $cfgFile) { $cfgFile = Join-Path $PSScriptRoot 'release_config.json' }
+$cfg = Get-Content -LiteralPath $cfgFile -Raw -Encoding UTF8 | ConvertFrom-Json
+# пути в настройках могут быть от корня репозитория (ключи и хранилище на своём диске - полными)
+foreach ($key in 'Key', 'Pub', 'Repo', 'XpRelease', 'Stage', 'LauncherDir', 'StationDrop') {
+    $v = $cfg.$key
+    if ($v -is [string] -and $v -ne '' -and -not [IO.Path]::IsPathRooted($v)) { $cfg.$key = Join-Path $root $v }
+}
+$channel = $cfg.Channel
+$noBuild = $false
+$launcherOnly = $false
+foreach ($a in $args_ | Where-Object { $_ -notlike '*.json' }) {
+    if ($a -ieq 'nobuild') { $noBuild = $true }
+    elseif ($a -ieq 'launcher') { $launcherOnly = $true }
+    else { $channel = $a.ToLowerInvariant() }
+}
+if ($channel -notmatch '^[a-z0-9][a-z0-9-]*$') { throw "плохое имя канала: $channel" }
+$launcherChannel = "launcher-$channel"
+$repo = $cfg.Repo
+$notes = Join-Path $PSScriptRoot 'notes'
+$dist = Join-Path $root 'dist'
+$failed = $false
+$logFile = Join-Path $dist ('release_{0:yyyy-MM-dd_HHmmss}.log' -f (Get-Date))
+New-Item -ItemType Directory -Force -Path $dist | Out-Null
+try { Start-Transcript -LiteralPath $logFile -Force | Out-Null } catch {}
+
+try {
+    Step "Выпуск в канал $channel$(if ($launcherOnly) { ' (только лаунчер)' } elseif ($noBuild) { ' (без сборки)' })"
+    if (-not (Test-Path -LiteralPath $cfg.Key)) { throw "нет приватного ключа $($cfg.Key) - подключите диск с ключом" }
+    if (-not (Test-Path -LiteralPath $cfg.Pub)) { throw "нет открытого ключа $($cfg.Pub)" }
+    New-Item -ItemType Directory -Force -Path $repo | Out-Null
+
+    # ---- xp-release: пересобрать, если его исходники новее
+    $script:xpr = $cfg.XpRelease
+    $srcDirs = 'Xp.ReleaseBuilder', 'Xp.Manifest' | ForEach-Object { Join-Path $root "portal\src\$_" }
+    $newest = Get-ChildItem -LiteralPath $srcDirs -Recurse -File -Include *.cs, *.csproj |
+        Where-Object { $_.FullName -notmatch '\\(bin|obj)\\' } | Sort-Object LastWriteTime | Select-Object -Last 1
+    if (-not (Test-Path -LiteralPath $xpr) -or (Get-Item -LiteralPath $xpr).LastWriteTime -lt $newest.LastWriteTime) {
+        Step 'Собираю xp-release'
+        if (-not (Get-Command dotnet -ErrorAction SilentlyContinue)) { throw 'dotnet не найден в PATH' }
+        & dotnet publish (Join-Path $root 'portal\src\Xp.ReleaseBuilder') -c Release -o (Split-Path -Parent $xpr) --nologo -v quiet | Out-Host
+        if ($LASTEXITCODE -ne 0) { throw "dotnet publish завершился с кодом $LASTEXITCODE" }
+    }
+
+    # ---- только лаунчер: публикация на prod-ключах в dist\_launcher_rel, игра не собирается и не выпускается
+    if ($launcherOnly -and -not $noBuild) {
+        Step 'Публикую лаунчер (portal\publish.ps1, prod-ключи)'
+        & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $root 'portal\publish.ps1') -Out $cfg.LauncherDir
+        if ($LASTEXITCODE -ne 0) { throw "publish.ps1 завершился с кодом $LASTEXITCODE" }
+        # та же пометка, что пишет build.ps1: следующая сборка «Обе» не станет публиковать лаунчер заново
+        $work = Join-Path $dist '_work'
+        New-Item -ItemType Directory -Force -Path $work | Out-Null
+        [IO.File]::WriteAllText((Join-Path $work 'launcher_keys_mode.txt'), 'prod', (New-Object Text.UTF8Encoding $false))
+    }
+
+    # ---- сборка «Обе»: exe, моды, лаунчер -> dist\_stage и dist\_launcher_rel
+    if (-not $noBuild -and -not $launcherOnly) {
+        # -StageOnly: выпуску нужен только стейдж; full.zip на 3.8 ГБ - это «большой архив», его без надобности не собирать
+        Step 'Сборка «Обе» (tools\build\build.ps1 -Target Both -StageOnly)'
+        & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $root 'tools\build\build.ps1') -Target Both -StageOnly
+        if ($LASTEXITCODE -ne 0) { throw "сборка не удалась (код $LASTEXITCODE) - смотрите её вывод выше" }
+    }
+    if (-not $launcherOnly) {
+        $launchExe = Join-Path $cfg.Stage $cfg.Launch
+        if (-not (Test-Path -LiteralPath $launchExe)) { throw "в $($cfg.Stage) нет $($cfg.Launch) - нужна сборка «Обе»" }
+        Ok ("стейдж от {0:dd.MM HH:mm}" -f (Get-Item -LiteralPath $launchExe).LastWriteTime)
+        # грабли R-044: с nobuild стейдж мог быть собран до последней правки движка
+        $newestSrc = Get-ChildItem -LiteralPath (Join-Path $root 'src') -Recurse -File -Include *.cpp, *.h |
+            Sort-Object LastWriteTime | Select-Object -Last 1
+        if ($newestSrc -and $newestSrc.LastWriteTime -gt (Get-Item -LiteralPath $launchExe).LastWriteTime) {
+            throw ("exe в стейдже старше исходников: {0} изменён {1:dd.MM HH:mm}. Выпуск без сборки выложил бы игру без этой правки - запустите без nobuild" -f $newestSrc.Name, $newestSrc.LastWriteTime)
+        }
+
+        # ---- имя и версия выпуска по дате
+        $today = Get-Date
+        $base = $today.ToString('yyyy.MM.dd')
+        $n = 1
+        while ($true) {
+            $suffix = if ($channel -eq 'stable') { if ($n -eq 1) { '' } else { "-$n" } } else { "-$channel$(if ($n -gt 1) { $n })" }
+            $id = "$base$suffix"
+            if (-not (Test-Path -LiteralPath (Join-Path $repo "releases\$id"))) { break }
+            $n++
+        }
+        $version = '{0}.{1}.{2}' -f $today.Year, $today.Month, $today.Day
+        if ($n -gt 1) { $version += ".$n" }
+        Ok "выпуск $id, версия $version"
+
+        # ---- игра
+        Step "Подписываю игру: $id"
+        $buildArgs = @('build', '--repo', $repo, '--id', $id, '--version', $version, '--channel', $channel,
+            '--stage', $cfg.Stage, '--launch', $cfg.Launch, '--key', $cfg.Key)
+        # русское «Что нового» = notes\next.ru.txt (то, чего нет в CHANGELOG) + раздел «[Не выпущено]» CHANGELOG.md.
+        # Английское - только notes\next.en.txt; без него лаунчер покажет русское
+        $fromLog = Get-UnreleasedNotes (Join-Path $root 'CHANGELOG.md')
+        if ($fromLog) {
+            $ruFile = Join-Path $notes 'next.ru.txt'
+            $hand = if (Test-Path -LiteralPath $ruFile) { (Get-Content -LiteralPath $ruFile -Raw -Encoding UTF8).Trim() } else { '' }
+            $ru = if ($hand) { $hand + "`r`n" + $fromLog } else { $fromLog }
+            [IO.File]::WriteAllText($ruFile, $ru + "`r`n", (New-Object Text.UTF8Encoding $true))
+            Ok ("«Что нового» из CHANGELOG: {0} пункт(ов){1}" -f @($fromLog -split "`r`n" | Where-Object { $_ -like '— *' }).Count, $(if ($hand) { ' + notes\next.ru.txt' } else { '' }))
+        }
+        if (-not (Test-Path -LiteralPath (Join-Path $notes 'next.en.txt'))) { Warn 'нет notes\next.en.txt - английским игрокам лаунчер покажет русское «Что нового»' }
+        $usedNotes = @()
+        foreach ($lang in 'ru', 'en') {
+            $f = Join-Path $notes "next.$lang.txt"
+            if ((Test-Path -LiteralPath $f) -and (Get-Content -LiteralPath $f -Raw -Encoding UTF8).Trim()) {
+                $buildArgs += @("--changelog-$lang", $f); $usedNotes += $f
+            }
+        }
+        if (-not $usedNotes) { Warn 'нет notes\next.ru.txt - выпуск уйдёт без «Что нового»' }
+        # лаунчер, без которого выпуск не ставится (MinLauncher в настройках выпуска). hd_core у игрока включает только
+        # миграция лаунчера 0.3.7 (HdCoreMigration): стейдж с ним без такого требования не выпускается
+        $minLauncher = if ($cfg.PSObject.Properties.Name -contains 'MinLauncher') { [string]$cfg.MinLauncher } else { '' }
+        if ((Test-Path -LiteralPath (Join-Path $cfg.Stage 'user\mods\hd_core')) -and
+            (-not $minLauncher -or [version]$minLauncher -lt [version]'0.3.7')) {
+            throw "в стейдже user\mods\hd_core, а MinLauncher '$minLauncher' ниже 0.3.7: игрок получил бы шрифты без миграции, которая их включает"
+        }
+        # мод и профиль едут вместе (tools\compat\hd_core_switch.py): профиль без мода или мод без профиля - полпереключения
+        $stageProfiles = Join-Path $cfg.Stage 'xp-profiles.json'
+        $coreInStage = Test-Path -LiteralPath (Join-Path $cfg.Stage 'user\mods\hd_core')
+        $coreInProfile = (Test-Path -LiteralPath $stageProfiles) -and ((Get-Content -LiteralPath $stageProfiles -Raw -Encoding UTF8) -match '"id":\s*"hd_core"')
+        if ($coreInStage -ne $coreInProfile) {
+            throw "hd_core в стейдже: $coreInStage, в его xp-profiles.json: $coreInProfile - переключение сделано наполовину (tools\compat\hd_core_switch.py)"
+        }
+        if ($minLauncher) {
+            $ownExe = Join-Path $cfg.LauncherDir 'XPiratezLauncher.exe'
+            $own = if (Test-Path -LiteralPath $ownExe) { ((Get-Item -LiteralPath $ownExe).VersionInfo.ProductVersion -split '\+')[0] } else { '0.0.0' }
+            if ([version]$own -lt [version]$minLauncher) { throw "выпуск требует лаунчер $minLauncher, а публикуется $own - игроку нечем было бы его поставить" }
+            $buildArgs += @('--min-launcher', $minLauncher)
+            Ok "требует лаунчер не ниже $minLauncher"
+        }
+        Xpr $buildArgs
+        Xpr @('publish', '--repo', $repo, '--channel', $channel, '--id', $id, '--key', $cfg.Key)
+        foreach ($f in $usedNotes) {
+            $lang = [IO.Path]::GetFileNameWithoutExtension($f).Split('.')[-1]
+            Move-Item -LiteralPath $f -Destination (Join-Path $notes "$id.$lang.txt") -Force
+        }
+        if ($channel -eq 'stable') { Close-Changelog (Join-Path $root 'CHANGELOG.md') $id $today }
+    }
+
+    # ---- лаунчер: только новая версия
+    $launcherExe = Join-Path $cfg.LauncherDir 'XPiratezLauncher.exe'
+    if (-not (Test-Path -LiteralPath $launcherExe)) { throw "нет $launcherExe - сборка «Обе» его не положила" }
+    $lv = ((Get-Item -LiteralPath $launcherExe).VersionInfo.ProductVersion -split '\+')[0]
+    $lid = if ($channel -eq 'stable') { "launcher-$lv" } else { "launcher-$lv-$channel" }
+    $ptrFile = Join-Path $repo "channels\$launcherChannel.json"
+    $current = if (Test-Path -LiteralPath $ptrFile) { (Get-Content -LiteralPath $ptrFile -Raw | ConvertFrom-Json).releaseId }
+    if ($launcherOnly) { $id = $lid }
+    if ($current -eq $lid) {
+        if ($launcherOnly) { throw "лаунчер $lv уже в канале $launcherChannel - поднимите <Version> в Xp.Launcher.csproj" }
+        Ok "лаунчер $lv уже в канале $launcherChannel"
+    } else {
+        Step "Подписываю лаунчер $lv -> $launcherChannel"
+        if (-not (Test-Path -LiteralPath (Join-Path $repo "releases\$lid"))) {
+            Xpr @('build', '--repo', $repo, '--id', $lid, '--version', $lv, '--channel', $launcherChannel,
+                '--stage', $cfg.LauncherDir, '--launcher-kind', '--key', $cfg.Key)
+        }
+        Xpr @('publish', '--repo', $repo, '--channel', $launcherChannel, '--id', $lid, '--key', $cfg.Key)
+    }
+
+    # ---- проверка подписей и файлов
+    Step 'Проверяю хранилище'
+    foreach ($ch in $channel, $launcherChannel) {
+        $v = @('verify', '--repo', $repo, '--channel', $ch, '--pub', $cfg.Pub)
+        if ($cfg.VerifyDeep) { $v += '--deep' }
+        Xpr $v
+    }
+
+    # ---- архив для станции
+    Step 'Упаковываю для станции'
+    & powershell.exe -NoProfile -ExecutionPolicy Bypass -File (Join-Path $root 'portal\deploy\pack-releases.ps1') -Repo $repo
+    if ($LASTEXITCODE -ne 0) { throw "pack-releases завершился с кодом $LASTEXITCODE" }
+    $zip = Get-ChildItem -LiteralPath $dist -Filter 'xp-releases_*.zip' | Sort-Object LastWriteTime | Select-Object -Last 1
+    if ($cfg.StationDrop) {
+        Step "Копирую на станцию: $($cfg.StationDrop)"
+        if (-not (Test-Path -LiteralPath $cfg.StationDrop -PathType Container)) { throw "нет папки $($cfg.StationDrop) (StationDrop) - станция выключена или папка не расшарена; архив остался в dist" }
+        Copy-Item -LiteralPath $zip.FullName -Destination $cfg.StationDrop -Force
+        Ok 'скопировано'
+    }
+
+    Write-Host ''
+    Write-Host ("ГОТОВО за {0:hh\:mm\:ss}: {1} в канале {2}" -f $clock.Elapsed, $id, $(if ($launcherOnly) { $launcherChannel } else { $channel })) -ForegroundColor Green
+    Write-Host "Архив: $($zip.FullName)"
+    Write-Host 'На станции (PowerShell из C:\xp-portal\portal\deploy):'
+    Write-Host "    powershell -ExecutionPolicy Bypass -File .\station.ps1 releases <папка>\$($zip.Name)"
+    if ($cfg.OpenExplorer) { Start-Process explorer.exe "/select,`"$($zip.FullName)`"" }
+} catch {
+    $failed = $true
+    Write-Host ''
+    Write-Host "ОШИБКА: $($_.Exception.Message)" -ForegroundColor Red
+    Write-Host 'Уже опубликованное можно откатить: xp-release revoke --repo <хранилище> --channel <канал> --id <имя> --key <ключ>'
+}
+try { Stop-Transcript | Out-Null } catch {}
+if ($failed) { exit 1 } else { exit 0 }

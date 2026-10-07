@@ -21,10 +21,12 @@ set ( basescape_src
   Basescape/CraftWeaponsState.cpp
   Basescape/DismantleFacilityState.cpp
   Basescape/GlobalAlienContainmentState.cpp
+  Basescape/GlobalTransfersState.cpp
   Basescape/GlobalManufactureState.cpp
   Basescape/GlobalResearchDiaryState.cpp
   Basescape/GlobalResearchState.cpp
   Basescape/ItemLocationsState.cpp
+  Basescape/ItemCountTooltip.cpp
   Basescape/ManageAlienContainmentState.cpp
   Basescape/ManufactureDependenciesTreeState.cpp
   Basescape/ManufactureInfoState.cpp
@@ -58,6 +60,7 @@ set ( basescape_src
   Basescape/SoldierTransformationState.cpp
   Basescape/SoldierTransformationListState.cpp
   Basescape/SoldierTransformState.cpp
+  Basescape/SoldierVoiceState.cpp
   Basescape/StoresState.cpp
   Basescape/TechTreeSelectState.cpp
   Basescape/TechTreeViewerState.cpp
@@ -72,6 +75,8 @@ set ( battlescape_src
   Battlescape/ActionMenuItem.cpp
   Battlescape/ActionMenuState.cpp
   Battlescape/AIModule.cpp
+  Battlescape/AiCandidates.cpp
+  Battlescape/AiProbe.cpp
   Battlescape/AlienInventory.cpp
   Battlescape/AlienInventoryState.cpp
   Battlescape/AliensCrashState.cpp
@@ -122,6 +127,7 @@ set ( battlescape_src
   Battlescape/ScannerState.cpp
   Battlescape/ScannerView.cpp
   Battlescape/SkillMenuState.cpp
+  Battlescape/SoldierStatChangeState.cpp
   Battlescape/TileEngine.cpp
   Battlescape/TurnDiaryState.cpp
   Battlescape/UnitDieBState.cpp
@@ -129,6 +135,7 @@ set ( battlescape_src
   Battlescape/UnitInfoState.cpp
   Battlescape/UnitPanicBState.cpp
   Battlescape/UnitSprite.cpp
+  Battlescape/UnitTeleportingState.cpp
   Battlescape/UnitTurnBState.cpp
   Battlescape/UnitWalkBState.cpp
   Battlescape/WarningMessage.cpp
@@ -142,11 +149,32 @@ set ( engine_src
   Engine/CatFile.cpp
   Engine/CrossPlatform.cpp
   Engine/FastLineClip.cpp
+  Engine/Feedback.cpp
   Engine/FileMap.cpp
   Engine/FlcPlayer.cpp
   Engine/Font.cpp
   Engine/Game.cpp
   Engine/GMCat.cpp
+  Engine/HdBase.cpp
+  Engine/HdCraftBack.cpp
+  Engine/HdCraftLights.cpp
+  Engine/HdFx.cpp
+  Engine/HdItems.cpp
+  Engine/HdOutline.cpp
+  Engine/HdRadar.cpp
+  Engine/HdBattleHud.cpp
+  Engine/HdKillCam.cpp
+  Engine/HdBlit.cpp
+  Engine/HdCanvas.cpp
+  Engine/HdSmooth.cpp
+  Engine/HdUi.cpp
+  Engine/HdSprites.cpp
+  Engine/HdPaletteShift.cpp
+  Engine/HdUiArt.cpp
+  Engine/HdFont.cpp
+  Engine/HdUiDraw.cpp
+  Engine/HdTest.cpp
+  Engine/HdWorkers.cpp
   Engine/InteractiveSurface.cpp
   Engine/Language.cpp
   Engine/LanguagePlurality.cpp
@@ -202,6 +230,7 @@ set ( geoscape_src
   Geoscape/FundingState.cpp
   Geoscape/GeoscapeCraftState.cpp
   Geoscape/GeoscapeEventState.cpp
+  Geoscape/GeoscapeGlobalTransfers.cpp
   Geoscape/GeoscapeState.cpp
   Geoscape/Globe.cpp
   Geoscape/GraphsState.cpp
@@ -253,14 +282,17 @@ set ( interface_src
 
 set ( menu_src
   Menu/AbandonGameState.cpp
+  Menu/AdultChoiceState.cpp
   Menu/ConfirmLoadState.cpp
   Menu/CutsceneState.cpp
   Menu/DeleteGameState.cpp
   Menu/ErrorMessageState.cpp
+  Menu/GentleChoiceState.cpp
   Menu/ListGamesState.cpp
   Menu/ListLoadOriginalState.cpp
   Menu/ListLoadState.cpp
   Menu/ListSaveState.cpp
+  Menu/LanguageChoiceState.cpp
   Menu/LoadGameState.cpp
   Menu/MainMenuState.cpp
   Menu/NewBattleState.cpp
@@ -274,9 +306,12 @@ set ( menu_src
   Menu/OptionsControlsState.cpp
   Menu/OptionsDefaultsState.cpp
   Menu/OptionsFoldersState.cpp
+  Menu/OptionDetailState.cpp
+  Menu/OptionsHdState.cpp
   Menu/OptionsGeoscapeState.cpp
   Menu/ModConfirmExtendedState.cpp
   Menu/ModListState.cpp
+  Menu/ReportsState.cpp
   Menu/OptionsNoAudioState.cpp
   Menu/OptionsVideoState.cpp
   Menu/PauseState.cpp
@@ -340,6 +375,7 @@ set ( mod_src
   Mod/RuleTerrain.cpp
   Mod/RuleUfo.cpp
   Mod/RuleVideo.cpp
+  Mod/RuleVoiceSet.cpp
   Mod/RuleWeaponSet.cpp
   Mod/SoldierNamePool.cpp
   Mod/SoundDefinition.cpp
@@ -625,7 +661,14 @@ if (WIN32)
   set(WIN32_LIBS imagehlp dbghelp)
 endif(WIN32)
 
-target_link_libraries ( openxcom ${system_libs} ${PKG_DEPS_LDFLAGS} ${EXTRA_XCOM_LIBS} ${WIN32_LIBS} )
+if ( WIN32 )
+  # static MSYS2/MinGW link set for the portable Windows build
+  target_link_libraries ( openxcom ${system_libs} ${PKG_DEPS_LDFLAGS} ${EXTRA_XCOM_LIBS} ${WIN32_LIBS} -Wl,--start-group jpeg png z tiff webp mad vorbisfile vorbis -l:libogg.a mikmod -l:libwinpthread.a winmm dxguid dinput8 ole32 oleaut32 imm32 version setupapi jbig zstd lzma lerc deflate sharpyuv -l:libFLAC.dll.a -Wl,--end-group )
+else ()
+  # the HD renderer draws on std::thread workers
+  find_package ( Threads REQUIRED )
+  target_link_libraries ( openxcom ${system_libs} ${PKG_DEPS_LDFLAGS} ${EXTRA_XCOM_LIBS} ${WIN32_LIBS} Threads::Threads )
+endif ()
 
 # Pack libraries into bundle and link executable appropriately
 if ( APPLE AND CREATE_BUNDLE )
@@ -652,7 +695,7 @@ if ( NOT EMBED_ASSETS )
 endif ()
 
 # Copy Windows DLLs to bin folder
-if ( WIN32 )
+if ( FALSE )
   if ( CMAKE_CL_64 )
     file ( GLOB Windows_dll "${DEPS_DIR}/lib/x64/*.dll" )
   else ( )

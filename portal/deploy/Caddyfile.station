@@ -1,0 +1,52 @@
+# HTTPS for a test station (compose.station.yaml): Caddy's own certificate authority instead of
+# Let's Encrypt, so no public name and no ports 80/443 are needed. The browser warns about the
+# certificate once. PORTAL_HOST may be an IP address: browsers send no SNI for one, hence default_sni.
+{
+	auto_https disable_redirects
+	default_sni {$PORTAL_HOST}
+	# No HTTP/3: inside the container Caddy listens on 443 and advertises Alt-Svc h3=":443", but the
+	# station publishes it on another port - clients would try QUIC on a port that is not ours.
+	servers {
+		protocols h1 h2
+	}
+}
+
+{$PORTAL_HOST} {
+	tls internal
+	# release repository (xp-release): plain files, Range requests for resumed downloads.
+	# Not compressed: blobs are fetched by byte ranges and checked by hash, gzip would break both
+	handle_path /releases/* {
+		root * /srv/releases
+		# a blob is named by its hash and never changes; channels and manifests' status do
+		header /blobs/* Cache-Control "public, max-age=31536000, immutable"
+		header /channels/* Cache-Control "no-cache"
+		header /catalog.json* Cache-Control "no-cache"
+		file_server
+	}
+	# voice probe (compose.voice.yaml): LiveKit signalling and the probe page. Without the voice
+	# overlay /rtc answers 502 and /voice-probe/ 404, nothing else changes
+	handle /rtc* {
+		reverse_proxy livekit:7880
+	}
+	redir /voice-probe /voice-probe/
+	handle_path /voice-probe/* {
+		root * /srv/voice-probe
+		file_server
+	}
+	handle {
+		encode zstd gzip
+		# uploads are limited by the portal itself; this only stops absurd bodies at the door
+		request_body {
+			max_size 600MB
+		}
+		reverse_proxy portal:8080
+	}
+}
+
+# The same repository for the portal itself, inside the Docker network only (not published):
+# the site reads its releases without going out to its own public address and back through
+# the router, which many routers do not allow
+:8081 {
+	root * /srv/releases
+	file_server
+}

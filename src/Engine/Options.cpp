@@ -364,6 +364,13 @@ void createOptionsOXCE()
 	// OXCE hidden
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceModValidationLevel", &oxceModValidationLevel, (int)LOG_WARNING));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceRawScreenShots", &oxceRawScreenShots, false));
+	// HD render regression test: deterministic dump of the battlescape frame (see Engine/HdTest.h), taken with Ctrl
+	_info.push_back(OptionInfo(OPTION_OXCE, "keyBattleHdTestDump", &keyBattleHdTestDump, SDLK_F8));
+	// player feedback: screenshot, pause and the launcher's report form (see Engine/Feedback.h)
+	_info.push_back(OptionInfo(OPTION_OXCE, "keyFeedback", &keyFeedback, SDLK_F8));
+	// HD render: the key that cycles the sprite drawing mode of the true-color canvas (see Engine/HdCanvas.h HdMode)
+	// F11: on F9 it shared the key with keyQuickLoad (load() moves configs saved with both there)
+	_info.push_back(OptionInfo(OPTION_OXCE, "keyBattleHdModeToggle", &keyBattleHdModeToggle, SDLK_F11));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceFirstPersonViewFisheyeProjection", &oxceFirstPersonViewFisheyeProjection, false));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceThumbButtons", &oxceThumbButtons, true));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceThrottleMouseMoveEvent", &oxceThrottleMouseMoveEvent, 0));
@@ -377,6 +384,9 @@ void createOptionsOXCE()
 
 	// OXCE hidden but moddable
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceStartUpTextMode", &oxceStartUpTextMode, 0, "", "HIDDEN"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceResetUnitResponseSoundsOnAvatarChange", &oxceResetUnitResponseSoundsOnAvatarChange, true, "", "HIDDEN"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceBaseSoldierInfoColumnDefault", &oxceBaseSoldierInfoColumnDefault, 0, "", "HIDDEN"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceMaximizeCutsceneScreens", &oxceMaximizeCutsceneScreens, true, "", "HIDDEN"));
 
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceGeoscapeDebugLogMaxEntries", &oxceGeoscapeDebugLogMaxEntries, 1000, "", "HIDDEN"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceGeoSlowdownFactor", &oxceGeoSlowdownFactor, 1, "", "HIDDEN"));
@@ -391,6 +401,7 @@ void createOptionsOXCE()
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceBaseSoldierTransformationShowOnlyEligible", &oxceBaseSoldierTransformationShowOnlyEligible, false, "", "HIDDEN"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceBaseFilterResearchable", &oxceBaseFilterResearchable, false, "", "HIDDEN"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceBaseResearchReorder", &oxceBaseResearchReorder, false, "", "HIDDEN"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceBaseManufactureReorder", &oxceBaseManufactureReorder, false, "", "HIDDEN"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceBaseManufactureFallbackButton", &oxceBaseManufactureFallbackButton, false, "", "HIDDEN"));
 #ifdef __MOBILE__
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceBaseManufactureInfinityButton", &oxceBaseManufactureInfinityButton, true, "", "HIDDEN"));
@@ -466,6 +477,8 @@ void createAdvancedOptionsOXCE()
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceInterceptTableSize", &oxceInterceptTableSize, 8, "STR_INTERCEPT_TABLE_SIZE", "STR_GEOSCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceEnableSlackingIndicator", &oxceEnableSlackingIndicator, true, "STR_SHOW_SLACKING_INDICATOR", "STR_GEOSCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceInterceptGuiMaintenanceTime", &oxceInterceptGuiMaintenanceTime, 2, "STR_SHOW_MAINTENANCE_TIME", "STR_GEOSCAPE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceCraftWeaponIcons", &oxceCraftWeaponIcons, true, "STR_CRAFT_WEAPON_ICONS", "STR_GEOSCAPE")); // OXCE-HD
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceDogfightHitChance", &oxceDogfightHitChance, true, "STR_DOGFIGHT_HIT_CHANCE", "STR_GEOSCAPE")); // OXCE-HD
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceShowETAMode", &oxceShowETAMode, 0, "STR_SHOW_ETA", "STR_GEOSCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceUfoLandingAlert", &oxceUfoLandingAlert, false, "STR_UFO_LANDING_ALERT", "STR_GEOSCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceRememberDisabledCraftWeapons", &oxceRememberDisabledCraftWeapons, false, "STR_REMEMBER_DISABLED_CRAFT_WEAPONS", "STR_GEOSCAPE"));
@@ -482,11 +495,57 @@ void createAdvancedOptionsOXCE()
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceManufactureScrollSpeedWithCtrl", &oxceManufactureScrollSpeedWithCtrl, 10, "STR_MANUFACTURE_SCROLL_SPEED_CTRL", "STR_BASESCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxcePersonalLayoutIncludingArmor", &oxcePersonalLayoutIncludingArmor, true, "STR_PERSONAL_LAYOUT_INCLUDING_ARMOR", "STR_BASESCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceManualPromotions", &oxceManualPromotions, false, "STR_MANUALPROMOTIONS", "STR_BASESCAPE"));
+	// OXCE-HD: the keys are new on purpose - release 2026.09.27-2 saved 0/false under the old ones
+	// (oxceBaseSoldierGroupBy, oxceBaseSoldierTypeIcon), and a saved value beats the default
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceSoldierListGroupBy", &oxceBaseSoldierGroupBy, 1, "STR_SOLDIER_GROUP_BY", "STR_BASESCAPE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceSoldierListRaceBadge", &oxceBaseSoldierTypeIcon, true, "STR_SOLDIER_TYPE_ICON", "STR_BASESCAPE"));
 
 	// OXCE options battlescape
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceWoundedDefendBaseIf", &oxceWoundedDefendBaseIf, 100, "STR_WOUNDED_DEFEND_BASE_IF", "STR_BATTLESCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxcePlayBriefingMusicDuringEquipment", &oxcePlayBriefingMusicDuringEquipment, false, "STR_PLAY_BRIEFING_MUSIC_DURING_EQUIPMENT", "STR_BATTLESCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceNightVisionColor", &oxceNightVisionColor, 5, "STR_NIGHT_VISION_COLOR", "STR_BATTLESCAPE"));
+	// Everything HD lives on its own tab (Menu/OptionsHdState.h), grouped by the STR_HD_* categories and
+	// shown in this order; the advanced list does not know these categories and leaves them out.
+	// Which HD art tree is loaded: the tab shows it together with oxceHdMode as one "art version" row,
+	// so it has no row of its own. AdultChoiceState asks about it at every start while oxceAdultAsk is on.
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceAdultArt", &oxceAdultArt, false, "", "STR_HD_ART"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceAdultAsk", &oxceAdultAsk, true, "STR_HD_ADULT_ASK", "STR_HD_ART"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceLanguageChosen", &oxceLanguageChosen, false, "", "STR_GENERAL"));
+	// Gentle mode (Engine/HdGentle.h): its own group on the HD tab. The warning is asked once (GentleChoiceState), no row.
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceGentle", &oxceGentle, false, "STR_GENTLE_MODE", "STR_HD_GENTLE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceGentleAsk", &oxceGentleAsk, true, "", "STR_GENERAL"));
+	// HD render (see Engine/HdCanvas.h): sprite scale of the battlescape and how sprites are drawn on the true-color canvas
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdScale", &oxceHdScale, 1, "STR_HD_SCALE", "STR_HD_BATTLE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdMode", &oxceHdMode, 2, "STR_HD_MODE", "STR_HD_BATTLE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdLight", &oxceHdLight, true, "STR_HD_LIGHT", "STR_HD_BATTLE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdGroundVariants", &oxceHdGroundVariants, true, "STR_HD_GROUND_VARIANTS", "STR_HD_BATTLE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdTerrainAddress", &oxceHdTerrainAddress, false, "", "STR_HD_BATTLE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdReticle", &oxceHdReticle, 0, "STR_HD_RETICLE", "STR_HD_BATTLE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdReticleDamageColor", &oxceHdReticleDamageColor, true, "STR_HD_RETICLE_DAMAGE_COLOR", "STR_HD_BATTLE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdBlastArea", &oxceHdBlastArea, true, "STR_HD_BLAST_AREA", "STR_HD_BATTLE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdHoverBob", &oxceHdHoverBob, true, "STR_HD_HOVER_BOB", "STR_HD_BATTLE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdFx", &oxceHdFx, true, "STR_HD_FX", "STR_HD_BATTLE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdFire", &oxceHdFire, 2, "STR_HD_FIRE", "STR_HD_BATTLE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdFirePace", &oxceHdFirePace, 1, "STR_HD_FIRE_PACE", "STR_HD_BATTLE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdSmokePace", &oxceHdSmokePace, 2, "STR_HD_SMOKE_PACE", "STR_HD_BATTLE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdKillCam", &oxceHdKillCam, true, "STR_HD_KILLCAM", "STR_HD_BATTLE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdEnemyNumber", &oxceHdEnemyNumber, 1, "STR_HD_ENEMY_NUMBER", "STR_HD_BATTLE"));
+	// HD interface (see Engine/HdUi.h): the widgets drawn again in the world layer at the display's resolution
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdUi", &oxceHdUi, 0, "STR_HD_UI", "STR_HD_INTERFACE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdUiSkin", &oxceHdUiSkin, 2, "STR_HD_UI_SKIN", "STR_HD_INTERFACE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdBattleHud", &oxceHdBattleHud, true, "STR_HD_BATTLE_HUD", "STR_HD_INTERFACE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdBattleHudColor", &oxceHdBattleHudColor, 0, "STR_HD_BATTLE_HUD_COLOR", "STR_HD_INTERFACE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdUiFont", &oxceHdUiFont, 0, "STR_HD_UI_FONT", "STR_HD_INTERFACE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdGlobeScale", &oxceHdGlobeScale, 0, "STR_HD_GLOBE_SCALE", "STR_HD_INTERFACE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdPictures", &oxceHdPictures, true, "STR_HD_PICTURES", "STR_HD_INTERFACE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdUiSmooth", &oxceHdUiSmooth, true, "STR_HD_UI_SMOOTH", "STR_HD_INTERFACE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdBaseAnim", &oxceHdBaseAnim, true, "STR_HD_BASE_ANIM", "STR_HD_INTERFACE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdCraftLights", &oxceHdCraftLights, true, "STR_HD_CRAFT_LIGHTS", "STR_HD_INTERFACE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdCraftOutlines", &oxceHdCraftOutlines, true, "STR_HD_CRAFT_OUTLINES", "STR_HD_INTERFACE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdRadar", &oxceHdRadar, 0, "STR_HD_RADAR", "STR_HD_INTERFACE"));
+	// HD render workers (Engine/HdWorkers.h) and how far the battle timer may run ahead of slow frames
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdThreads", &oxceHdThreads, 0, "STR_HD_THREADS", "STR_HD_SPEED"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdFrameSkip", &oxceHdFrameSkip, 4, "STR_HD_FRAME_SKIP", "STR_HD_SPEED"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceAutoNightVisionThreshold", &oxceAutoNightVisionThreshold, 15, "STR_AUTO_NIGHT_VISION_THRESHOLD", "STR_BATTLESCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceShowAccuracyOnCrosshair", &oxceShowAccuracyOnCrosshair, 1, "STR_SHOW_ACCURACY_ON_CROSSHAIR", "STR_BATTLESCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceReactionFireThreshold", &oxceReactionFireThreshold, 0, "STR_REACTION_FIRE_THRESHOLD", "STR_BATTLESCAPE"));
@@ -509,6 +568,7 @@ void createControlsOXCE()
 	_info.push_back(OptionInfo(OPTION_OXCE, "keyGeoGlobalProduction", &keyGeoGlobalProduction, SDLK_p, "STR_PRODUCTION_OVERVIEW", "STR_GEOSCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "keyGeoGlobalResearch", &keyGeoGlobalResearch, SDLK_c, "STR_RESEARCH_OVERVIEW", "STR_GEOSCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "keyGeoGlobalAlienContainment", &keyGeoGlobalAlienContainment, SDLK_j, "STR_PRISONER_OVERVIEW", "STR_GEOSCAPE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "keyGeoGlobalTransfers", &keyGeoGlobalTransfers, SDLK_UNKNOWN, "STR_TRANSFER_OVERVIEW", "STR_GEOSCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "keyGeoDailyPilotExperience", &keyGeoDailyPilotExperience, SDLK_e, "STR_DAILY_PILOT_EXPERIENCE", "STR_GEOSCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "keyGraphsZoomIn", &keyGraphsZoomIn, SDLK_KP_PLUS, "STR_GRAPHS_ZOOM_IN", "STR_GEOSCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "keyGraphsZoomOut", &keyGraphsZoomOut, SDLK_KP_MINUS, "STR_GRAPHS_ZOOM_OUT", "STR_GEOSCAPE"));
@@ -568,7 +628,12 @@ void createControlsOXCE()
 
 void createOptionsOTHER()
 {
-	// your fork's hidden options here
+	_info.push_back(OptionInfo(OPTION_OTHER, "qolItemTooltipMode", &QOL::ItemTooltipMode, 1, "STR_ITEM_TOOLTIP_MODE", "STR_GENERAL"));
+	_info.push_back(OptionInfo(OPTION_OTHER, "qolItemTooltipHoverDelay", &QOL::ItemTooltipHoverDelayInTenths, 15, "STR_ITEM_TOOLTIP_HOVER_DELAY", "STR_GENERAL"));
+	_info.push_back(OptionInfo(OPTION_OTHER, "qolHighlightLowManaSoldiersMode", &QOL::highlightLowManaSoldiersMode, 2, "STR_HIGHLIGHT_LOW_MANA_SOLDIERS", "STR_BASESCAPE"));
+	_info.push_back(OptionInfo(OPTION_OTHER, "qolDefaultSoldiersSorter", &QOL::defaultSoldiersSorter, 0, "STR_DEFAULT_SOLDIERS_SORTER", "STR_BASESCAPE"));
+	_info.push_back(OptionInfo(OPTION_OTHER, "qolHideEnemyTurnBackground", &QOL::hideEnemyTurnBackground, false, "STR_HIDE_ENEMY_TURN_BACKGROUND", "STR_GENERAL"));
+	_info.push_back(OptionInfo(OPTION_OTHER, "qolDontTraceProjectiles", &QOL::dontTraceProjectiles, 0, "STR_DONT_TRACE_PROJECTILES", "STR_GENERAL"));
 }
 
 void createAdvancedOptionsOTHER()
@@ -578,7 +643,8 @@ void createAdvancedOptionsOTHER()
 
 void createControlsOTHER()
 {
-	// your fork's controls here
+	_info.push_back(OptionInfo(OPTION_OTHER, "qolItemTooltipHotkey", &QOL::ItemTooltipHotkey, SDLK_TAB, "STR_ITEM_TOOLTIP_HOTKEY", "STR_GENERAL"));
+	_info.push_back(OptionInfo(OPTION_OTHER, "qolKeyBattlePersonalIndividualLighting", &QOL::ToggleInvidualLighting, SDLK_p, "STR_TOGGLE_INDIVIDUAL_LIGHTING_HOTKEY", "STR_GENERAL"));
 }
 
 
@@ -1270,6 +1336,12 @@ bool load(const std::string &filename)
 		for (auto& optionInfo : _info)
 		{
 			optionInfo.load(reader["options"]);
+		}
+		// the HD mode key used to default to F9, the quick load's key: one press did both. A config saved
+		// then has both on F9 - the HD key moves to its new default; a key the player chose stays
+		if (keyBattleHdModeToggle == SDLK_F9 && keyQuickLoad == SDLK_F9)
+		{
+			keyBattleHdModeToggle = SDLK_F11;
 		}
 
 		mods.clear();

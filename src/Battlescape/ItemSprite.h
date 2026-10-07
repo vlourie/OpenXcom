@@ -26,6 +26,7 @@ class BattleUnit;
 class BattleItem;
 class SavedBattleGame;
 class SurfaceSet;
+class HdCanvas;
 class Mod;
 
 /**
@@ -37,13 +38,13 @@ class ItemSprite
 private:
 	const SurfaceSet *_itemSurface;
 	int _animationFrame;
-	Surface *_dest;
+	HdCanvas *_dest;
 	const SavedBattleGame *_save;
 
 
 public:
 	/// Creates a new ItemSprite at the specified position and size.
-	ItemSprite(Surface* dest, const Mod* mod, const SavedBattleGame *_save, int frame);
+	ItemSprite(HdCanvas* dest, const Mod* mod, const SavedBattleGame *_save, int frame);
 	/// Cleans up the ItemSprite.
 	~ItemSprite();
 	/// Draws the item.

@@ -28,6 +28,12 @@
 #include "../Engine/Options.h"
 #include "../fmath.h"
 #include "BattlescapeGame.h"
+#include "AiProbe.h"
+#include "../Engine/Logger.h"
+#include <optional>
+#include <chrono>
+#include <climits>
+#include <queue>
 
 namespace OpenXcom
 {
@@ -75,36 +81,32 @@ PathfindingNode *Pathfinding::getNode(Position pos)
 }
 
 /**
- * Calculates the shortest path.
+ * Calculates the final position of path if possible.
  * @param unit Unit taking the path.
  * @param endPosition The position we want to reach.
- * @param missileTarget Target of the path.
- * @param maxTUCost Maximum time units the path can cost.
  */
-void Pathfinding::calculate(BattleUnit *unit, Position endPosition, BattleActionMove bam, const BattleUnit *missileTarget, int maxTUCost)
+std::optional<Position> Pathfinding::tryCalculateFinalPosition(Position endPosition,
+															const BattleUnit* unit,
+															BattleActionMove bam,
+															const BattleUnit* missileTarget)
 {
-	_totalTUCost = {};
-	_path.clear();
-
 	const int size = bam != BAM_MISSILE ? unit->getArmor()->getSize() : 1;
 
 	// i'm DONE with these out of bounds errors.
-	if (endPosition.x > _save->getMapSizeX() - size || endPosition.y > _save->getMapSizeY() - size || endPosition.x < 0 || endPosition.y < 0) return;
-
-	bool sneak = Options::sneakyAI && unit->getFaction() == FACTION_HOSTILE;
+	if (endPosition.x > _save->getMapSizeX() - size
+		|| endPosition.y > _save->getMapSizeY() - size
+		|| endPosition.x < 0 || endPosition.y < 0)
+		return {};
 
 	Position startPosition = unit->getPosition();
 	MovementType movementType = getMovementType(unit, missileTarget, bam);
-	if (missileTarget != 0 && maxTUCost == -1 && bam == BAM_MISSILE)  // pathfinding for missile
-	{
-		maxTUCost = 10000;
-	}
-	_unit = unit;
 
 	const Tile* destinationTile = _save->getTile(endPosition);
 
 	// check if destination is not blocked
-	if (isBlocked(_unit, destinationTile, O_FLOOR, bam, missileTarget) || isBlocked(_unit, destinationTile, O_OBJECT, bam, missileTarget)) return;
+	if (isBlocked(_unit, destinationTile, O_FLOOR, bam, missileTarget)
+		|| isBlocked(_unit, destinationTile, O_OBJECT, bam, missileTarget))
+		return {};
 
 	// the following check avoids that the unit walks behind the stairs if we click behind the stairs to make it go up the stairs.
 	// it only works if the unit is on one of the 2 tiles on the stairs, or on the tile right in front of the stairs.
@@ -123,7 +125,7 @@ void Pathfinding::calculate(BattleUnit *unit, Position endPosition, BattleAction
 	// and is considered passable terrain for whatever reason (usually bigwall type objects)
 	if (endPosition.z == _save->getMapSizeZ())
 	{
-		return; // Icarus is a bad role model for XCom soldiers.
+		return {}; // Icarus is a bad role model for XCom soldiers.
 	}
 	if (movementType != MT_FLY && bam != BAM_MISSILE)
 	{
@@ -135,7 +137,99 @@ void Pathfinding::calculate(BattleUnit *unit, Position endPosition, BattleAction
 		}
 	}
 	// check if destination is not blocked
-	if (isBlocked(_unit, destinationTile, O_FLOOR, bam, missileTarget) || isBlocked(_unit, destinationTile, O_OBJECT, bam, missileTarget)) return;
+	if (isBlocked(_unit, destinationTile, O_FLOOR, bam, missileTarget) || isBlocked(_unit, destinationTile, O_OBJECT, bam, missileTarget))
+		return {};
+
+	return destinationTile->getPosition();
+}
+
+/**
+ * AMBUSH_NEGATIVE_MEMO_V2 (bench, AIModule::setupAmbush): the destination calculate() would hand to its search - the asked
+ * position after tryCalculateFinalPosition (stairs and -24 floors lift it, a walker over empty air drops to the ground) - or
+ * none when calculate() would refuse before any search. tryCalculateFinalPosition checks blocking against the member _unit,
+ * which only calculate() sets, so it is set to the asking unit here and given back after: nothing else is touched.
+ * @param unit Unit taking the path.
+ * @param endPosition The position asked for.
+ * @param bam The move type.
+ * @return The final position, or none.
+ */
+std::optional<Position> Pathfinding::finalPositionFor(BattleUnit *unit, Position endPosition, BattleActionMove bam)
+{
+	BattleUnit *const was = _unit;
+	_unit = unit;
+	const auto finalPosition = tryCalculateFinalPosition(endPosition, unit, bam, nullptr);
+	_unit = was;
+	return finalPosition;
+}
+
+/**
+ * Calculates the shortest path.
+ * @param unit Unit taking the path.
+ * @param endPosition The position we want to reach.
+ * @param missileTarget Target of the path.
+ * @param maxTUCost Maximum time units the path can cost.
+ */
+void Pathfinding::calculate(BattleUnit *unit, Position endPosition, BattleActionMove bam, const BattleUnit *missileTarget, int maxTUCost)
+{
+	// the determinism hunt (OXCE_AI_TRACE_PATH, bench builds only): every path asked for and what came back, on any return
+	static const bool trace = AiProbe::param("OXCE_AI_TRACE_PATH", 0) > 0;
+	// both watchers are built in place (emplace with arguments, copying forbidden): emplace(Trace{...}) would destroy the temporary
+	// at once and report the previous ask's answer as this one's, then report again on return - every ask twice
+	struct Trace
+	{
+		Pathfinding *pf; BattleUnit *unit; Position from, to; int bam, maxTU;
+		Trace(Pathfinding *p, BattleUnit *u, Position f, Position t, int b, int m) : pf(p), unit(u), from(f), to(t), bam(b), maxTU(m) {}
+		Trace(const Trace &) = delete;
+		Trace &operator=(const Trace &) = delete;
+		~Trace()
+		{
+			Log(LOG_INFO) << "[AIPATH] unit=" << unit->getId() << " from=" << from << " to=" << to << " bam=" << bam << " max=" << maxTU
+				<< " len=" << pf->_path.size() << " start=" << pf->getStartDirection() << " tu=" << pf->_totalTUCost.time;
+		}
+	};
+	std::optional<Trace> traced;
+	if (trace && AiProbe::active())
+	{
+		traced.emplace(this, unit, unit->getPosition(), endPosition, (int)bam, maxTUCost);
+	}
+	// the pathfinding profile (OXCE_AI_PATHPROF, bench builds only): the ask, its answer's fingerprint and its time, on any return
+	struct Ask
+	{
+		Pathfinding *pf; const BattleUnit *unit; Position from, to; int bam; const BattleUnit *missile; int maxTU; int algo;
+		std::chrono::steady_clock::time_point t0; const void *site;
+		Ask(Pathfinding *p, const BattleUnit *u, Position f, Position t, int b, const BattleUnit *m, int mt, const void *s)
+			: pf(p), unit(u), from(f), to(t), bam(b), missile(m), maxTU(mt), algo(0), t0(std::chrono::steady_clock::now()), site(s) {}
+		Ask(const Ask &) = delete;
+		Ask &operator=(const Ask &) = delete;
+		~Ask()
+		{
+			unsigned long long h = 1469598103934665603ULL;
+			auto mix = [&h](long long v) { for (int i = 0; i < 8; ++i) h = (h ^ (unsigned long long)((v >> (i * 8)) & 0xff)) * 1099511628211ULL; };
+			for (int d : pf->_path) mix(d);
+			mix(pf->_totalTUCost.time); mix(pf->_totalTUCost.energy); mix(pf->_strafeMove ? 1 : 0);
+			mix(pf->_teleportDestination ? pf->_teleportDestination->x + pf->_teleportDestination->y * 1000 + pf->_teleportDestination->z * 1000000 : -1);
+			const long long ns = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - t0).count();
+			AiProbe::pathAsk(1, algo, unit, from, to, bam, missile, maxTU, unit->getTimeUnits(), unit->getEnergy(), h,
+				(int)pf->_path.size(), pf->_totalTUCost.time, ns, site);
+		}
+	};
+	std::optional<Ask> asked;
+	if (AiProbe::pathProf())
+	{
+		asked.emplace(this, unit, unit->getPosition(), endPosition, (int)bam, missileTarget, maxTUCost, __builtin_return_address(0));
+	}
+	_totalTUCost = {};
+	_path.clear();
+	_expanded = 0;
+	_unit = unit;
+	_teleportDestination.reset();
+
+	const auto finalPosition = tryCalculateFinalPosition(endPosition, unit, bam, missileTarget);
+	if (!finalPosition)
+		return;
+
+	endPosition = *finalPosition;
+	Position startPosition = unit->getPosition();
 
 	// Strafing move allowed only to adjacent squares on same z. "Same z" rule mainly to simplify walking render.
 	_strafeMove = bam == BAM_STRAFE && (startPosition.z == endPosition.z) &&
@@ -157,21 +251,97 @@ void Pathfinding::calculate(BattleUnit *unit, Position endPosition, BattleAction
 		}
 	}
 
+	const bool sneak = Options::sneakyAI && unit->getFaction() == FACTION_HOSTILE;
+
 	// look for a possible fast and accurate bresenham path and skip A*
-	if (bresenhamPath(startPosition, endPosition, bam, missileTarget, sneak))
+	// a banned first step (REPEATED_BLOCKED_STEP_V1, bench): the straight path is refused and A* goes round it
+	if (bresenhamPath(startPosition, endPosition, bam, missileTarget, sneak) && (_bannedFirst.empty() || _path.empty() || !bannedFirst(_path.front())))
 	{
 		std::reverse(_path.begin(), _path.end()); //paths are stored in reverse order
+		if (asked)
+		{
+			asked->algo = 1;
+		}
 		return;
 	}
 	else
 	{
 		abortPath(); // if bresenham failed, we shouldn't keep the path it was attempting, in case A* fails too.
 	}
+
+	if (missileTarget != 0 && maxTUCost == -1 && bam == BAM_MISSILE) // pathfinding for missile
+	{
+		maxTUCost = 10000;
+	}
 	// Now try through A*.
+	_searchCap = maxTUCost;
 	if (!aStarPath(startPosition, endPosition, bam, missileTarget, sneak, maxTUCost))
 	{
 		abortPath();
+		if (asked)
+		{
+			asked->algo = 3;
+		}
 	}
+	else if (asked)
+	{
+		asked->algo = 2;
+	}
+}
+
+/**
+ * AMBUSH_NEGATIVE_MEMO_V1 (bench, AIModule::setupAmbush): the tiles the last calculate() closed when its A* ran out of open
+ * nodes. aStarPath resets every node, pops the open list until it is empty and marks each popped node checked, so after a
+ * failure the checked nodes are every tile the unit can reach from where it stands under that search's costs - and a tile
+ * outside them has no path for the same unit, start and move type. Empty unless the last search failed in A* (expanded nodes
+ * and no path: a destination refused before the search leaves the flags of an older one) and every closed tile cost under
+ * half the cap: near the cap another search's order could close a tile at another cost and push or drop a neighbour
+ * differently, so the closed set would not be the whole reachable component. These guards are what AIModule::setupAmbush's
+ * memo relies on: loosening one changes what it may remember and needs that memo's acceptance again.
+ * @return A flag per tile index, or empty.
+ */
+std::vector<char> Pathfinding::closedTiles() const
+{
+	std::vector<char> out;
+	if (_expanded == 0 || getStartDirection() != -1)
+	{
+		return out;
+	}
+	out.assign(_nodes.size(), 0);
+	for (size_t i = 0; i < _nodes.size(); ++i)
+	{
+		if (_nodes[i].isChecked())
+		{
+			if (_nodes[i].getTUCost(false).time * 2 > _searchCap)
+			{
+				out.clear();
+				return out;
+			}
+			out[i] = 1;
+		}
+	}
+	return out;
+}
+
+/**
+ * Calculates teleport destination.
+ * @param unit Unit taking the path.
+ * @param endPosition The position we want to reach.
+ * @return Position to teleport.
+ */
+void Pathfinding::calculateTeleportDestination(BattleUnit* unit, Position endPosition, BattleActionMove bam)
+{
+	_totalTUCost = {};
+	_path.clear();
+	_unit = unit;
+	_teleportDestination.reset();
+
+	_teleportDestination = tryCalculateFinalPosition(endPosition, unit, bam, nullptr);
+}
+
+std::optional<Position> Pathfinding::getTeleportDestination() const noexcept
+{
+	return _teleportDestination;
 }
 
 /**
@@ -203,6 +373,7 @@ bool Pathfinding::aStarPath(Position startPosition, Position endPosition, Battle
 	while (!openList.empty())
 	{
 		PathfindingNode *currentNode = openList.pop();
+		++_expanded;
 		Position const &currentPos = currentNode->getPosition();
 		currentNode->setChecked();
 		if (currentPos == endPosition) // We found our target.
@@ -220,6 +391,8 @@ bool Pathfinding::aStarPath(Position startPosition, Position endPosition, Battle
 		// Try all reachable neighbours.
 		for (int direction = 0; direction < 10; direction++)
 		{
+			if (!_bannedFirst.empty() && currentNode == start && bannedFirst(direction))
+				continue;
 			PathfindingStep r = getTUCost(currentPos, direction, _unit, missileTarget, bam);
 			if (r.cost.time == INVALID_MOVE_COST) // Skip unreachable / blocked
 				continue;
@@ -782,12 +955,174 @@ int Pathfinding::dequeuePath()
 }
 
 /**
+ * PATROL_NO_PATH_CAUSE (bench, passive, AIModule::patrolReuseProbe): would calculate(unit, to, BAM_NORMAL) find a path if
+ * the units of the given kinds did not block? Leaves no path and the known occupant's hit count as they were; the node flags
+ * and the expanded count are this search's, so the caller searches the real way again after its probes.
+ * @param unit Unit taking the path.
+ * @param to The position asked for.
+ * @param ignore IGNORE_* flags.
+ * @param expanded Gets the nodes the search's A* closed (0 after a straight path or a refusal).
+ * @return 1 a path, 0 the search found none, -1 refused before searching.
+ */
+int Pathfinding::probeReach(BattleUnit *unit, Position to, int ignore, int &expanded)
+{
+	const int hits = _knownOccupantHits;
+	_probeIgnore = ignore;
+	int found = -1;
+	if (finalPositionFor(unit, to, BAM_NORMAL))
+	{
+		calculate(unit, to, BAM_NORMAL);
+		found = _path.empty() ? 0 : 1;
+	}
+	expanded = _expanded;
+	abortPath();
+	_probeIgnore = 0;
+	_knownOccupantHits = hits;
+	return found;
+}
+
+/**
+ * STALE_REACH_SHADOW (bench, passive, AIModule::setupPatrol's STALE check): does calculate(unit, to, BAM_NORMAL) have a path,
+ * asked by a search of its own. The same destination rule (finalPositionFor), steps (getTUCost, banned first steps, sneak
+ * doubling) and cap as calculate's A*, but best-first by g + weight * 4 * distance and on its own arrays: the path, the
+ * nodes, the expanded count and the known occupant's hits stay calculate's. A found path is one that exists under the cap,
+ * but calculate's A* is not sure to find it: a fall costs nothing, so A* may close a tile above its least cost for good.
+ * The path counts as found only while its cost plus the guess drops its steps left unpaid fits the cap (then A* reaches
+ * the target too); otherwise 2.
+ * When the open list runs out, every tile joined to the start by steps was taken unless the cap dropped one: if no dropped
+ * tile stayed unreached, A* (the same steps from the same start) cannot reach the target either. calculate's straight path
+ * (bresenhamPath) is not asked: its steps are the same getTUCost steps under stricter rules but under no cap, so when it finds
+ * a path this search finds one too or drops a tile on it - 1 or 2, never 0. EXACT_STALE_REACH_V1 hands 2, 3 and anything it
+ * cannot prove to the full search.
+ * @param unit Unit taking the path.
+ * @param to The position asked for.
+ * @param weight Multiplier of the distance guess (calculate's A* orders by 4 * g + 4 * distance, no weight here repeats it).
+ * @param expanded Gets the nodes it closed.
+ * @param cost Gets the found path's TU cost, -1 without one.
+ * @return 1 found, 0 none, 2 undecided (the cap dropped a tile it never reached, or the path found is too near the cap for
+ * A* to be sure of it), 3 not asked (the unit stands on the
+ * destination: calculate gives an empty path there, which its callers read as none), -1 refused before searching.
+ */
+int Pathfinding::witnessReach(BattleUnit *unit, Position to, int weight, int &expanded, int &cost)
+{
+	expanded = 0;
+	cost = -1;
+	const int hits = _knownOccupantHits;
+	const auto fin = finalPositionFor(unit, to, BAM_NORMAL);
+	_knownOccupantHits = hits;
+	if (!fin)
+	{
+		return -1;
+	}
+	const Position end = *fin;
+	if (end == unit->getPosition())
+	{
+		return 3;
+	}
+	const bool sneak = Options::sneakyAI && unit->getFaction() == FACTION_HOSTILE;
+	const int cap = 1000;
+	std::vector<int> g(_nodes.size(), INT_MAX);
+	std::vector<char> closed(_nodes.size(), 0);
+	std::vector<int> prev(_nodes.size(), -1);
+	std::vector<int> dropped;
+	typedef std::pair<int, int> Item; // guess, tile index
+	std::priority_queue<Item, std::vector<Item>, std::greater<Item>> open;
+	auto guess = [&](const Position &p) { return weight * (int)(4 * Position::distance(end, p)); };
+	const int startIdx = _save->getTileIndex(unit->getPosition());
+	g[startIdx] = 0;
+	open.push({guess(unit->getPosition()), startIdx});
+	bool found = false;
+	while (!open.empty())
+	{
+		const int i = open.top().second;
+		open.pop();
+		if (closed[i])
+		{
+			continue;
+		}
+		closed[i] = 1;
+		++expanded;
+		const Position pos = _nodes[i].getPosition();
+		if (pos == end)
+		{
+			cost = g[i];
+			found = true;
+			break;
+		}
+		for (int direction = 0; direction < 10; direction++)
+		{
+			if (!_bannedFirst.empty() && i == startIdx && bannedFirst(direction))
+				continue;
+			PathfindingStep r = getTUCost(pos, direction, unit, 0, BAM_NORMAL);
+			if (r.cost.time == INVALID_MOVE_COST)
+				continue;
+			if (sneak && _save->getTile(r.pos)->getVisible()) r.cost.time *= 2;
+			const int j = _save->getTileIndex(r.pos);
+			if (closed[j])
+				continue;
+			const int t = g[i] + r.cost.time + r.penalty.time;
+			if (t > cap)
+			{
+				dropped.push_back(j);
+				continue;
+			}
+			if (t < g[j])
+			{
+				g[j] = t;
+				prev[j] = i;
+				open.push({t + guess(r.pos), j});
+			}
+		}
+	}
+	_knownOccupantHits = hits;
+	if (found)
+	{
+		// calculate's A* closes a tile for good, and its order 4 * g + guess is not consistent: a fall costs nothing yet the
+		// guess drops. A tile on this path can close up to the guess drop its steps did not pay for above its cost here, so
+		// A* still reaches the target under the cap when 4 * cost plus those unpaid drops stays within 4 * cap
+		auto guessA = [&](int k) { return (int)(Sint16)(4 * Position::distance(end, _nodes[k].getPosition())); };
+		int unpaid = 0;
+		for (int k = _save->getTileIndex(end); prev[k] >= 0; k = prev[k])
+		{
+			unpaid += std::max(0, guessA(prev[k]) - guessA(k) - 4 * (g[k] - g[prev[k]]));
+		}
+		return 4 * cost + unpaid <= 4 * cap ? 1 : 2;
+	}
+	for (int j : dropped)
+	{
+		if (!closed[j])
+		{
+			return 2;
+		}
+	}
+	return 0;
+}
+
+/**
+ * EXACT_STALE_REACH_V1 (bench, AIModule::setupPatrol's STALE check): the state calculate(unit, ..., BAM_NORMAL) and abortPath()
+ * would leave when witnessReach answered in their place - no path, no cost, no teleport or strafe, the unit set. The expanded
+ * count is 0 as after a straight path, so closedTiles() gives nothing; the nodes keep an older search's flags, which nothing
+ * reads without a calculate of its own first.
+ * @param unit Unit the check was for.
+ */
+void Pathfinding::settleWitness(BattleUnit *unit)
+{
+	_totalTUCost = {};
+	_path.clear();
+	_expanded = 0;
+	_unit = unit;
+	_teleportDestination.reset();
+	_strafeMove = false;
+}
+
+/**
  * Aborts the current path. Clears the path vector.
  */
 void Pathfinding::abortPath()
 {
 	_totalTUCost = {};
 	_path.clear();
+	_teleportDestination.reset();
 }
 
 /**
@@ -867,12 +1202,13 @@ bool Pathfinding::isBlocked(const BattleUnit *unit, const Tile *tile, const int 
 	}
 	if (part == O_FLOOR)
 	{
-		if (tile->getUnit())
+		// PATROL_NO_PATH_CAUSE (bench, probeReach only): the kinds of units let through fall to the terrain checks below
+		if (tile->getUnit() && !(_probeIgnore & IGNORE_ALL_UNITS))
 		{
 			BattleUnit *u = tile->getUnit();
 			if (u == unit || u == missileTarget || u->isOut())
 				return false;
-			if (unit)
+			if (unit && !(_probeIgnore & (unit->getFaction() == u->getFaction() ? IGNORE_OWN : IGNORE_SEEN)))
 			{
 				if (unit->getFaction() == FACTION_PLAYER && u->getVisible())
 					return true; // player know all visible units
@@ -881,6 +1217,12 @@ bool Pathfinding::isBlocked(const BattleUnit *unit, const Tile *tile, const int 
 				if (unit->getFaction() == FACTION_HOSTILE &&
 					std::find(unit->getUnitsSpottedThisTurn().begin(), unit->getUnitsSpottedThisTurn().end(), u) != unit->getUnitsSpottedThisTurn().end())
 					return true;
+				// KNOWN_OCCUPANT_PATH_V1 (bench): the target the AI already aims at here, spotted by its side this turn
+				if (u == _knownOccupant && unit == _knownOccupantFor && bam != BAM_MISSILE)
+				{
+					++_knownOccupantHits;
+					return true;
+				}
 			}
 		}
 		else if (tile->hasNoFloor(0) && movementType != MT_FLY) // this whole section is devoted to making large units not take part in any kind of falling behaviour
@@ -889,7 +1231,7 @@ bool Pathfinding::isBlocked(const BattleUnit *unit, const Tile *tile, const int 
 			while (pos.z >= 0)
 			{
 				Tile *t = _save->getTile(pos);
-				BattleUnit *u = t->getUnit();
+				BattleUnit *u = (_probeIgnore & IGNORE_ALL_UNITS) ? 0 : t->getUnit();
 
 				if (u != 0 && u != unit)
 				{
@@ -1179,7 +1521,7 @@ bool Pathfinding::validateUpDown(const BattleUnit *bu, const Position& startPosi
  */
 bool Pathfinding::previewPath(bool bRemove)
 {
-	if (_path.empty())
+	if (_path.empty() && !_teleportDestination)
 		return false;
 
 	if (!bRemove && _pathPreviewed)
@@ -1197,7 +1539,10 @@ bool Pathfinding::previewPath(bool bRemove)
 		_altUsed = Options::strafe && _save->isAltPressed(true);
 	}
 
-	refreshPath();
+	if (!_path.empty())
+		refreshPath();
+	else
+		refreshTeleportPreview();
 
 	return true;
 }
@@ -1307,6 +1652,42 @@ void Pathfinding::refreshPath()
 	if (switchBack)
 	{
 		_save->getBattleGame()->setTUReserved(BA_NONE);
+	}
+}
+
+/**
+ * Refresh the path preview.
+ */
+void Pathfinding::refreshTeleportPreview()
+{
+	if (!_teleportDestination)
+	{
+		Log(LOG_ERROR) << "No teleport destination for preview";
+		return;
+	}
+
+	const MovementType movementType = getMovementType(_unit, nullptr, BAM_NORMAL);
+	Tile* tile = _save->getTile(*_teleportDestination);
+	Tile* tileAbove = _save->getTile(*_teleportDestination + Position(0, 0, 1));
+	if (_pathPreviewed)
+	{
+		tile->setPreview(10);
+		tile->setTUMarker(0);
+		tile->setEnergyMarker(0);
+
+		if (tileAbove && tileAbove->getPreview() == 0 && movementType != MT_FLY) // unit fell down, retroactively make the tile above's direction marker to DOWN
+		{
+			tileAbove->setPreview(DIR_DOWN);
+		}
+
+		tile->setMarkerColor(Pathfinding::green);
+	}
+	else
+	{
+		tile->setPreview(-1);
+		tile->setTUMarker(-1);
+		tile->setEnergyMarker(-1);
+		tile->setMarkerColor(0);
 	}
 }
 
@@ -1463,6 +1844,10 @@ bool Pathfinding::bresenhamPath(Position origin, Position target, BattleActionMo
  */
 std::vector<int> Pathfinding::findReachable(const BattleUnit *unit, const BattleActionCost &cost)
 {
+	// the pathfinding profile (OXCE_AI_PATHPROF, bench builds only): the ask, its answer's fingerprint and its time
+	const bool asked = AiProbe::pathProf();
+	const auto t0 = asked ? std::chrono::steady_clock::now() : std::chrono::steady_clock::time_point();
+	const void *site = asked ? __builtin_return_address(0) : nullptr;
 	const Position start = unit->getPosition();
 	int tuMax = unit->getTimeUnits() - cost.Time;
 	int energyMax = unit->getEnergy() - cost.Energy;
@@ -1512,7 +1897,44 @@ std::vector<int> Pathfinding::findReachable(const BattleUnit *unit, const Battle
 	{
 		tiles.push_back(_save->getTileIndex(pn->getPosition()));
 	}
+	if (asked)
+	{
+		// the answer is the tiles in their order with the cost to each (reachedTU reads it from the nodes)
+		unsigned long long h = 1469598103934665603ULL;
+		auto mix = [&h](long long v) { for (int i = 0; i < 8; ++i) h = (h ^ (unsigned long long)((v >> (i * 8)) & 0xff)) * 1099511628211ULL; };
+		for (auto* pn : reachable)
+		{
+			mix(_save->getTileIndex(pn->getPosition()));
+			mix(pn->getTUCost(false).time);
+			mix(pn->getTUCost(false).energy);
+		}
+		const long long ns = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - t0).count();
+		AiProbe::pathAsk(2, 0, unit, start, start, (int)BAM_NORMAL, nullptr, tuMax, unit->getTimeUnits(), energyMax, h, (int)tiles.size(), tuMax, ns, site);
+	}
+	if (AiProbe::reachWanted(unit, cost))
+	{
+		// the decision record (OXCE_AI_RECORD_REUSE, bench builds only) takes this answer - the tiles in their order with the cost to
+		// each, as reachedTU would read it - instead of asking the same once more before the unit thinks
+		std::vector<std::pair<int, int>> got;
+		got.reserve(reachable.size());
+		for (auto* pn : reachable)
+		{
+			got.emplace_back(_save->getTileIndex(pn->getPosition()), pn->getTUCost(false).time);
+		}
+		AiProbe::reachTaken(_save, std::move(got));
+	}
 	return tiles;
+}
+
+/**
+ * The cost of the path findReachable found to a tile; valid until the next pathfinding call.
+ * @param pos The tile.
+ * @return Time units spent to get there, or -1 if findReachable did not reach it.
+ */
+int Pathfinding::reachedTU(Position pos)
+{
+	PathfindingNode *node = getNode(pos);
+	return node->isChecked() ? node->getTUCost(false).time : -1;
 }
 
 /**
@@ -1559,5 +1981,52 @@ std::vector<int> Pathfinding::copyPath() const
 {
 	return _path;
 }
+
+#ifdef OXCE_AI_DEV
+/**
+ * PATROL_STUN_RESERVE_V2 (bench): keeps the first steps of the current path. The path is stored in reverse order
+ * (dequeuePath takes the back), so the first steps are its last elements.
+ * @param steps How many steps to keep; no more than the path has.
+ * @param cost What the kept steps cost (becomes _totalTUCost).
+ */
+void Pathfinding::keepPathPrefix(size_t steps, PathfindingCost cost)
+{
+	if (steps >= _path.size())
+	{
+		return;
+	}
+	_path.erase(_path.begin(), _path.end() - steps);
+	_totalTUCost = cost;
+}
+
+/**
+ * The bench (plan V2, L0-B): TU of the cheapest path between two tiles, summed step by step as a walk spends them
+ * (after A* _totalTUCost is the last node tried, not the path).
+ * @return TU, or -1 if there is no path within maxTUCost.
+ */
+int Pathfinding::pathCost(BattleUnit *unit, Position from, Position to, BattleActionMove bam, int maxTUCost)
+{
+	_unit = unit;
+	_path.clear();
+	if (from == to)
+	{
+		return 0;
+	}
+	int sum = -1;
+	if (aStarPath(from, to, bam, nullptr, false, maxTUCost))
+	{
+		sum = 0;
+		Position p = from;
+		for (auto it = _path.rbegin(); it != _path.rend(); ++it) // paths are stored in reverse order
+		{
+			PathfindingStep r = getTUCost(p, *it, unit, nullptr, bam);
+			sum += r.cost.time;
+			p = r.pos;
+		}
+	}
+	_path.clear();
+	return sum;
+}
+#endif
 
 }

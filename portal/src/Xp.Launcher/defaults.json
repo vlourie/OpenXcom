@@ -1,0 +1,8 @@
+{
+  "repoUrl": "https://x-piratez.mywire.org:8443/releases/",
+  "channels": ["stable"],
+  "portalUrl": "https://x-piratez.mywire.org:8443/",
+  "reportMaxFileBytes": 52428800,
+  "supportModUrl": "",
+  "supportHdUrl": "https://www.donationalerts.ru/r/pepelatzigravetzappa"
+}

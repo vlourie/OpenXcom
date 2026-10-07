@@ -17,6 +17,9 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "Surface.h"
+#include "HdUiArt.h"
+#include "HdUi.h"
+#include "HdItems.h"
 #include "ShaderDraw.h"
 #include "ShaderMove.h"
 #include <vector>
@@ -227,7 +230,7 @@ void Surface::UniqueSurfaceDeleter::operator ()(SDL_Surface* surf)
 /**
  * Default empty surface.
  */
-Surface::Surface() : _x{ }, _y{ }, _width{ }, _height{ }, _pitch{ }, _visible(true), _hidden(false), _redraw(false)
+Surface::Surface() : _x{ }, _y{ }, _width{ }, _height{ }, _pitch{ }, _visible(true), _hidden(false), _redraw(false), _hdKind(0)
 {
 
 }
@@ -244,7 +247,7 @@ Surface::Surface() : _x{ }, _y{ }, _width{ }, _height{ }, _pitch{ }, _visible(tr
  * @param y Y position in pixels.
  * @param bpp Bits-per-pixel depth.
  */
-Surface::Surface(int width, int height, int x, int y) : _x(x), _y(y), _visible(true), _hidden(false), _redraw(false)
+Surface::Surface(int width, int height, int x, int y) : _x(x), _y(y), _visible(true), _hidden(false), _redraw(false), _hdKind(0)
 {
 	std::tie(_alignedBuffer, _surface) = Surface::NewPair8Bit(width, height);
 	_width = _surface->w;
@@ -283,7 +286,7 @@ Surface::Surface(const Surface& other) : Surface{ }
  */
 Surface::~Surface()
 {
-
+	HdItems::forget(this);
 }
 
 /**
@@ -702,14 +705,50 @@ void Surface::blit(SDL_Surface *surface)
 {
 	if (_visible && !_hidden)
 	{
+		// an item sprite drawn for another HD state (switched on or off, another k): its owner draws it again
+		HdItems::refresh(this);
 		if (_redraw)
 			draw();
 
+		// the HD interface draws every surface again in the world layer; without it, only an image
+		// with an HD picture goes there (its classic pixels stay out, so that the picture shows
+		// through under what is drawn over it)
+		const bool hdUi = HdUi::isScreen(surface) && HdUi::active();
+		if (!hdUi && HdUiArt::active() && HdUiArt::drawIfPicture(this, surface))
+		{
+			return;
+		}
 		SDL_Rect target {};
 		target.x = getX();
 		target.y = getY();
 		SDL_BlitSurface(_surface.get(), nullptr, surface, &target);
+		if (hdUi)
+		{
+			if (_hdKind == HD_NORMAL || !HdUi::skin())
+			{
+				hdMirror();
+			}
+			else if (_hdKind == HD_HIGHLIGHT)
+			{
+				HdUi::instance().drawHighlight(getX(), getY(), getWidth(), getHeight());
+			}
+			HdItems::drawAttached(this);
+		}
 	}
+}
+
+/**
+ * The HD interface's version of this surface: its pixels k times bigger,
+ * smoothed (mode 2) or nearest (mode 1), index 0 transparent.
+ */
+void Surface::hdMirror()
+{
+	HdUi::instance().drawSurface(this, getX(), getY(), HdUi::mode() >= 2);
+}
+
+void Surface::hdMirrorNearest()
+{
+	HdUi::instance().drawSurface(this, getX(), getY(), false);
 }
 
 /**

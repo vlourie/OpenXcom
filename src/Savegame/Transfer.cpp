@@ -334,4 +334,9 @@ Soldier *Transfer::getSoldier()
 	return _soldier;
 }
 
+const Soldier* Transfer::getSoldier() const noexcept
+{
+	return _soldier;
+}
+
 }

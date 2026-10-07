@@ -17,6 +17,8 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "GeoscapeCraftState.h"
+#include "../Engine/Action.h"
+#include "../Engine/Logger.h"
 #include <sstream>
 #include "../fmath.h"
 #include "../Engine/Game.h"
@@ -38,6 +40,8 @@
 #include "../Engine/Options.h"
 #include "../Engine/Unicode.h"
 #include "Globe.h"
+#include "../Mod/RuleInterface.h"
+#include "../Engine/HdCraftBack.h"
 
 namespace OpenXcom
 {
@@ -56,6 +60,19 @@ GeoscapeCraftState::GeoscapeCraftState(Craft *craft, Globe *globe, Waypoint *way
 	_weaponNum = _craft->getRules()->getWeapons();
 	if (_weaponNum > RuleCraft::WeaponMax)
 		_weaponNum = RuleCraft::WeaponMax;
+
+	_weaponOnColor = 0;
+	_weaponOnColor2 = 0;
+	// disabled weapon: red letters on a dark green box in the UFO geoscape palette
+	// (high contrast text uses indices color+3, +6, +9, +12, +15 -> 13 red, 16, 19, 22, 25 dark greens)
+	_weaponOffColor = 10;
+	_weaponOffContrast = true;
+	if (auto *off = _game->getMod()->getInterface("geoCraft")->getElementOptional("weaponDisabled"))
+	{
+		if (off->color != INT_MAX)
+			_weaponOffColor = off->color;
+		_weaponOffContrast = off->custom != 0; // custom: 1 = high contrast font shades, 0 = normal
+	}
 
 	const int offset_upper = -8;
 	const int offset_lower = 120;
@@ -85,7 +102,7 @@ GeoscapeCraftState::GeoscapeCraftState(Craft *craft, Globe *globe, Waypoint *way
 
 	for (int i = 0; i < _weaponNum; ++i)
 	{
-		_txtWeaponName[i] = new Text(130, 9, 32, offset_upper + 92 + 8*i);
+		_txtWeaponName[i] = new Text(120, 9, 42, offset_upper + 92 + 8*i);
 		_txtWeaponAmmo[i] = new Text(80, 9, 164, offset_upper + 92 + 8*i);
 	}
 	_txtRedirect = new Text(230, 17, 13, offset_lower + 0);
@@ -116,6 +133,11 @@ GeoscapeCraftState::GeoscapeCraftState(Craft *craft, Globe *globe, Waypoint *way
 	{
 		add(_txtWeaponName[i], "text3", "geoCraft");
 		add(_txtWeaponAmmo[i], "text3", "geoCraft");
+		if (i == 0)
+		{
+			_weaponOnColor = _txtWeaponName[i]->getColor();
+			_weaponOnColor2 = _txtWeaponName[i]->getSecondaryColor();
+		}
 	}
 	add(_txtRedirect, "text3", "geoCraft");
 	add(_txtETA, "text3", "geoCraft");
@@ -126,6 +148,11 @@ GeoscapeCraftState::GeoscapeCraftState(Craft *craft, Globe *globe, Waypoint *way
 
 	// Set up objects
 	setWindowBackground(_window, "geoCraft");
+	// the craft's own picture (its ufopaedia article's) in the window's colours, when it has one
+	if (const Surface *bg = HdCraftBack::get(_game->getMod(), _craft->getRules()->getType(), _window->getPalette()))
+	{
+		_window->setBackground(bg);
+	}
 
 	_btnBase->setText(tr("STR_RETURN_TO_BASE"));
 	_btnBase->onMouseClick((ActionHandler)&GeoscapeCraftState::btnBaseClick);
@@ -235,6 +262,9 @@ GeoscapeCraftState::GeoscapeCraftState(Craft *craft, Globe *globe, Waypoint *way
 		if (w1 != 0)
 		{
 			_txtWeaponName[i]->setText(tr(wName).arg(tr(w1->getRules()->getType())));
+			_txtWeaponName[i]->setAlign(ALIGN_CENTER);
+			_txtWeaponName[i]->onMouseClick((ActionHandler)&GeoscapeCraftState::txtWeaponClick);
+			updateWeaponColor(i);
 			if (w1->getRules()->getAmmoMax())
 				_txtWeaponAmmo[i]->setText(tr("STR_ROUNDS_").arg(w1->getAmmo()));
 			else
@@ -376,6 +406,53 @@ void GeoscapeCraftState::btnCancelClick(Action *)
 	}
 	// Cancel
 	_game->popState();
+}
+
+/**
+ * Toggles a craft weapon on/off (won't be used in the next dogfight if disabled).
+ * Recolors the weapon label: normal colors = enabled, grey = disabled.
+ * @param action Pointer to an action.
+ */
+void GeoscapeCraftState::txtWeaponClick(Action *action)
+{
+	for (int i = 0; i < _weaponNum; ++i)
+	{
+		if (action->getSender() == _txtWeaponName[i])
+		{
+			CraftWeapon *w = _craft->getWeapons()->at(i);
+			if (w)
+			{
+				w->setDisabled(!w->isDisabled());
+				updateWeaponColor(i);
+			}
+			return;
+		}
+	}
+}
+
+/**
+ * Colors a weapon label by its state.
+ * Text colors must be the start of a 5-shade palette ramp (the font adds 1..5 to it),
+ * so fixed indices like 2/3 give garbage (the glyph box turns bright); enabled uses
+ * the interface colors (text3), disabled red high-contrast text or the optional
+ * "weaponDisabled" element of the geoCraft interface (color, custom: 1 = high contrast).
+ * @param slot Weapon slot.
+ */
+void GeoscapeCraftState::updateWeaponColor(int slot)
+{
+	CraftWeapon *w = _craft->getWeapons()->at(slot);
+	if (w && w->isDisabled())
+	{
+		_txtWeaponName[slot]->setColor(_weaponOffColor);
+		_txtWeaponName[slot]->setSecondaryColor(_weaponOffColor);
+		_txtWeaponName[slot]->setHighContrast(_weaponOffContrast);
+	}
+	else
+	{
+		_txtWeaponName[slot]->setColor(_weaponOnColor);
+		_txtWeaponName[slot]->setSecondaryColor(_weaponOnColor2);
+		_txtWeaponName[slot]->setHighContrast(false);
+	}
 }
 
 }

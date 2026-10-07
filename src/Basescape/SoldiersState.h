@@ -20,6 +20,8 @@
 #include "../Engine/State.h"
 #include <vector>
 #include "SoldierSortUtil.h"
+#include "HighlightLowManaSoldiersMixin.h"
+#include "SortSoldiersMixin.h"
 
 namespace OpenXcom
 {
@@ -29,7 +31,6 @@ class Window;
 class Text;
 class TextList;
 class ComboBox;
-class Base;
 class Soldier;
 struct SortFunctor;
 
@@ -37,7 +38,7 @@ struct SortFunctor;
  * Soldiers screen that lets the player
  * manage all the soldiers in a base.
  */
-class SoldiersState : public State
+class SoldiersState : public SortSoldiersMixin<HighlightLowManaSoldiersMixin<State>>
 {
 private:
 	TextButton *_btnOk, *_btnPsiTraining, *_btnTraining, *_btnMemorial;
@@ -45,7 +46,6 @@ private:
 	Text *_txtTitle, *_txtName, *_txtRank, *_txtCraft;
 	ComboBox *_cbxSortBy, *_cbxScreenActions;
 	TextList *_lstSoldiers;
-	Base *_base;
 	std::vector<Soldier *> _origSoldierOrder, _filteredListOfSoldiers;
 	std::vector<int> _filteredIndicesOfSoldiers;
 	std::vector<SortFunctor *> _sortFunctors;

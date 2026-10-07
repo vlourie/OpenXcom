@@ -20,6 +20,7 @@
 #include <set>
 #include "TileEngine.h"
 #include "AIModule.h"
+#include "AiProbe.h"
 #include "Map.h"
 #include "Camera.h"
 #include "Projectile.h"
@@ -1057,6 +1058,57 @@ void TileEngine::calculateTerrainItems(MapSubset gs)
 }
 
 /**
+ * The light a unit sheds by itself, before the clamp of calculateUnitLighting.
+ * @param unit The unit.
+ * @return Light power; 0 - the unit lights nothing, so its step changes no light source.
+ */
+int TileEngine::unitLightPower(const BattleUnit *unit) const
+{
+	int currLight = 0;
+	// add lighting of unit
+	if (unit->getFaction() == FACTION_PLAYER)
+	{
+		auto lighting = _personalLighting;
+		auto unitLightingState = unit->getLightingState();
+		if (unitLightingState)
+			lighting = *unitLightingState;
+
+		currLight = std::max(currLight, lighting ? unit->getArmor()->getPersonalLightFriend() : 0);
+	}
+	else if (unit->getFaction() == FACTION_HOSTILE)
+	{
+		currLight = std::max(currLight, unit->getArmor()->getPersonalLightHostile());
+	}
+	else if (unit->getFaction() == FACTION_NEUTRAL)
+	{
+		currLight = std::max(currLight, unit->getArmor()->getPersonalLightNeutral());
+	}
+
+	const BattleItem *handWeapons[] = { unit->getLeftHandWeapon(), unit->getRightHandWeapon() };
+	for (const BattleItem *w : handWeapons)
+	{
+		if (!w) continue;
+
+		if (w->getGlow())
+		{
+			currLight = std::max(currLight, w->getGlowRange());
+		}
+
+		auto* u = w->getUnit();
+		if (u && u->getFire())
+		{
+			currLight = std::max(currLight, unitFireLightPowerStunned);
+		}
+	}
+	// add lighting of units on fire
+	if (unit->getFire())
+	{
+		currLight = std::max(currLight, unitFireLightPower);
+	}
+	return currLight;
+}
+
+/**
   * Recalculates lighting for the units.
   */
 void TileEngine::calculateUnitLighting(MapSubset gs)
@@ -1068,42 +1120,7 @@ void TileEngine::calculateUnitLighting(MapSubset gs)
 			continue;
 		}
 
-		int currLight = 0;
-		// add lighting of unit
-		if (unit->getFaction() == FACTION_PLAYER)
-		{
-			currLight = std::max(currLight, _personalLighting ? unit->getArmor()->getPersonalLightFriend() : 0);
-		}
-		else if (unit->getFaction() == FACTION_HOSTILE)
-		{
-			currLight = std::max(currLight, unit->getArmor()->getPersonalLightHostile());
-		}
-		else if (unit->getFaction() == FACTION_NEUTRAL)
-		{
-			currLight = std::max(currLight, unit->getArmor()->getPersonalLightNeutral());
-		}
-
-		const BattleItem *handWeapons[] = { unit->getLeftHandWeapon(), unit->getRightHandWeapon() };
-		for (const BattleItem *w : handWeapons)
-		{
-			if (!w) continue;
-
-			if (w->getGlow())
-			{
-				currLight = std::max(currLight, w->getGlowRange());
-			}
-
-			auto* u = w->getUnit();
-			if (u && u->getFire())
-			{
-				currLight = std::max(currLight, unitFireLightPowerStunned);
-			}
-		}
-		// add lighting of units on fire
-		if (unit->getFire())
-		{
-			currLight = std::max(currLight, unitFireLightPower);
-		}
+		int currLight = unitLightPower(unit);
 
 		if (currLight >= getMaxDynamicLightDistance())
 		{
@@ -2875,6 +2892,7 @@ bool TileEngine::tryReaction(ReactionScore *reaction, BattleUnit *target, const 
 			if (RNG::percent(arg.getFirst()))
 			{
 				_save->appendToHitLog(HITLOG_REACTION_FIRE, unit->getFaction());
+				AiProbe::event(_save, "reaction", unit, target->getPosition());
 
 				if (action.type == BA_HIT)
 				{
@@ -3530,6 +3548,131 @@ void TileEngine::explode(BattleActionAttack attack, Position center, int power, 
 	{
 		// unit is away from blast but its visibility can be affected by scripts.
 		calculateFOV(centetTile, 1, false);
+	}
+}
+
+/**
+ * The area of an explosion, for showing it before the shot: the same rays as explode() with the same
+ * power losses, but nothing is hit, damaged or rolled (no random numbers). Keep the two in step.
+ * @param center Center of the explosion in voxelspace.
+ * @param power Power of the explosion.
+ * @param type The damage type of the explosion.
+ * @param maxRadius The maximum radius of the explosion.
+ * @param area Gets every tile the explosion reaches and the power it reaches it with - that of the first
+ *  ray to arrive, the one explode() rolls the damage of units and items there from.
+ */
+void TileEngine::explosionArea(Position center, int power, const RuleDamageType *type, int maxRadius, std::map<Tile*, int> &area)
+{
+	const Position centetTile = center.toTile();
+	int hitSide = 0;
+	int diagonalWall = 0;
+	int power_;
+	area.clear();
+
+	if (type->FireBlastCalc)
+	{
+		power /= 2;
+	}
+
+	int exHeight = Clamp(Options::battleExplosionHeight, 0, 3);
+	int vertdec = 1000; //default flat explosion
+
+	switch (exHeight)
+	{
+	case 1:
+		vertdec = 3.0f * type->RadiusReduction;
+		break;
+	case 2:
+		vertdec = 1.0f * type->RadiusReduction;
+		break;
+	case 3:
+		vertdec = 0.5f * type->RadiusReduction;
+	}
+
+	Tile *origin = _save->getTile(Position(centetTile));
+	Tile *dest = nullptr;
+	if (!origin)
+	{
+		return;
+	}
+	if (origin->isBigWall()) //pre-calculations for bigwall deflection
+	{
+		diagonalWall = origin->getMapData(O_OBJECT)->getBigWall();
+		if (diagonalWall == Pathfinding::BIGWALLNWSE) //  3 |
+			hitSide = (center.x % 16 - center.y % 16) > 0 ? 1 : -1;
+		if (diagonalWall == Pathfinding::BIGWALLNESW) //  2 --
+			hitSide = (center.x % 16 + center.y % 16 - 15) > 0 ? 1 : -1;
+	}
+
+	for (int fi = -90; fi <= 90; fi += 5)
+	{
+		for (int te = 0; te <= 360; te += 3)
+		{
+			double cos_te = cos(Deg2Rad(te));
+			double sin_te = sin(Deg2Rad(te));
+			double sin_fi = sin(Deg2Rad(fi));
+			double cos_fi = cos(Deg2Rad(fi));
+
+			origin = _save->getTile(centetTile);
+			dest = origin;
+			double l = 0;
+			int tileX, tileY, tileZ;
+			power_ = power;
+			while (power_ > 0 && l <= maxRadius)
+			{
+				area.insert(std::make_pair(dest, power_)); // the first ray to arrive sets the power
+
+				l += 1.0;
+
+				tileX = int(floor(centetTile.x + 0.5 + l * sin_te * cos_fi));
+				tileY = int(floor(centetTile.y + 0.5 + l * cos_te * cos_fi));
+				tileZ = int(floor(centetTile.z + 0.5 + l * sin_fi));
+
+				origin = dest;
+				dest = _save->getTile(Position(tileX, tileY, tileZ));
+
+				if (!dest) break; // out of map!
+
+				power_ -= type->RadiusReduction;
+				if (origin->getPosition().z != tileZ)
+					power_ -= vertdec; //3d explosion factor
+
+				if (type->FireBlastCalc)
+				{
+					int dir;
+					Pathfinding::vectorToDirection(origin->getPosition() - dest->getPosition(), dir);
+					if (dir != -1 && dir %2) power_ -= 0.5f * type->RadiusReduction;
+				}
+				if (l > 0.5) {
+					if ( l > 1.5)
+					{
+						power_ -= verticalBlockage(origin, dest, type->ResistType, false) * 2;
+						power_ -= horizontalBlockage(origin, dest, type->ResistType, false) * 2;
+					}
+					else //tricky bigwall deflection /Volutar
+					{
+						bool skipObject = diagonalWall == 0;
+						if (diagonalWall == Pathfinding::BIGWALLNESW) // --
+						{
+							if (hitSide<0 && te >= 135 && te < 315)
+								skipObject = true;
+							if (hitSide>0 && ( te < 135 || te > 315))
+								skipObject = true;
+						}
+						if (diagonalWall == Pathfinding::BIGWALLNWSE) // |
+						{
+							if (hitSide>0 && te >= 45 && te < 225)
+								skipObject = true;
+							if (hitSide<0 && ( te < 45 || te > 225))
+								skipObject = true;
+						}
+						power_ -= verticalBlockage(origin, dest, type->ResistType, skipObject) * 2;
+						power_ -= horizontalBlockage(origin, dest, type->ResistType, skipObject) * 2;
+
+					}
+				}
+			}
+		}
 	}
 }
 
@@ -4661,6 +4804,23 @@ void TileEngine::togglePersonalLighting()
 	recalculateFOV();
 }
 
+void TileEngine::togglePersonalIndividualLighting()
+{
+	auto* unit = _save->getSelectedUnit();
+	if (!(unit && unit->getFaction() == UnitFaction::FACTION_PLAYER))
+	{
+		return;
+	}
+
+	const auto lightingState = unit->getLightingState();
+	if (lightingState)
+		unit->setLightingState(!lightingState.value());
+	else
+		unit->setLightingState(!_personalLighting);
+	calculateLighting(LL_UNITS);
+	recalculateFOV();
+}
+
 /**
  * Calculate strength of psi attack based on range and victim.
  * @param type Type of attack.
@@ -4847,6 +5007,7 @@ int TileEngine::meleeAttackCalculate(BattleActionAttack::ReadOnly attack, const 
 	BattleActionType type = attack.type;
 	auto* attacker = attack.attacker;
 	auto* weapon = attack.weapon_item;
+	int isSameFaction = (attacker->getFaction() == victim->getFaction()) ? 1 : 0;
 
 	auto rng = RNG::globalRandomState().subSequence();
 
@@ -4855,7 +5016,7 @@ int TileEngine::meleeAttackCalculate(BattleActionAttack::ReadOnly attack, const 
 	meleeAttackResult = ModScript::scriptFunc1<ModScript::TryMeleeAttackItem>(
 		weapon->getRules(),
 		meleeAttackResult,
-		weapon, attacker, victim, attack.skill_rules, attackStrength, defenseStrength, type, &rng, arc, defenseStrengthPenalty,
+		weapon, attacker, victim, isSameFaction, attack.skill_rules, attackStrength, defenseStrength, type, &rng, arc, defenseStrengthPenalty,
 		_save
 	);
 

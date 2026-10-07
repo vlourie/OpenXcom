@@ -1,0 +1,5 @@
+— Ships and UFOs on the globe no longer fly sideways or backwards. The nose now points where the ship actually travels over the globe, and which end is the nose is taken from the ship's hangar picture. Before, some ships (the Drakkar among them) and some UFOs could fly sideways.
+— Ship and UFO silhouettes on the globe have a white dot in the centre, so you can see exactly where the ship is even when the silhouette is large.
+— UFO silhouettes have a thin edge line that shows their state: red is flying, green is landed, white is crashed. The silhouette colour still shows the crew's race.
+— Ships with no globe picture in the mod (fighters, for example) now get a silhouette too: its shape is taken from the ship's hangar picture.
+— In the UFO detected window, the craft type line opens the Ufopaedia article again when this UFO variant has no article of its own but its base type does (for example, the hunter variant of a fighter). If there is no article at all, the line stays inactive, as before.

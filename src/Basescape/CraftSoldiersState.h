@@ -20,6 +20,8 @@
 #include "../Engine/TouchState.h"
 #include <vector>
 #include "SoldierSortUtil.h"
+#include "HighlightLowManaSoldiersMixin.h"
+#include "SortSoldiersMixin.h"
 
 namespace OpenXcom
 {
@@ -29,7 +31,6 @@ class Window;
 class Text;
 class TextList;
 class ComboBox;
-class Base;
 class Soldier;
 struct SortFunctor;
 
@@ -37,7 +38,7 @@ struct SortFunctor;
  * Select Squad screen that lets the player
  * pick the soldiers to assign to a craft.
  */
-class CraftSoldiersState : public TouchState
+class CraftSoldiersState : public SortSoldiersMixin<HighlightLowManaSoldiersMixin<TouchState>>
 {
 private:
 	TextButton *_btnOk;
@@ -47,7 +48,6 @@ private:
 	ComboBox *_cbxSortBy;
 	TextList *_lstSoldiers;
 
-	Base *_base;
 	size_t _craft;
 	Uint8 _otherCraftColor;
 	std::vector<Soldier *> _origSoldierOrder;

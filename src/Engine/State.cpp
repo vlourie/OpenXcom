@@ -251,6 +251,24 @@ void State::add(Surface *surface, const std::string &id, const std::string &cate
 	preAdd(surface);
 }
 
+void State::remove(Surface* surface, bool del /*= true*/)
+{
+	if (!surface)
+		return;
+
+	auto it = std::find(_surfaces.begin(), _surfaces.end(), surface);
+	if (it != _surfaces.end())
+		_surfaces.erase(it);
+
+	auto it2 = std::find(_surfacesOwned.begin(), _surfacesOwned.end(), surface);
+	if (it2 != _surfacesOwned.end())
+	{
+		_surfacesOwned.erase(it2);
+		if (del)
+			delete surface;
+	}
+}
+
 /**
  * Returns whether this is a full-screen state.
  * This is used to optimize the state machine since full-screen

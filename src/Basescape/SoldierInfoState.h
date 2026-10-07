@@ -19,10 +19,8 @@
  */
 #include "../Engine/State.h"
 #include <vector>
-
 namespace OpenXcom
 {
-
 class Base;
 class Surface;
 class TextButton;
@@ -30,7 +28,6 @@ class Text;
 class TextEdit;
 class Bar;
 class Soldier;
-
 /**
  * Soldier Info screen that shows all the
  * info of a specific soldier.
@@ -38,61 +35,63 @@ class Soldier;
 class SoldierInfoState : public State
 {
 private:
-	Base *_base;
-	size_t _soldierId;
-	bool _forceLimits;
-	bool _readOnly;
-	bool _noTransformations;
-	Soldier *_soldier;
-	std::vector<Soldier*> *_list;
-
-	Surface *_bg;
-	InteractiveSurface *_rank;
-	InteractiveSurface *_flag;
-	TextButton *_btnOk, *_btnPrev, *_btnNext, *_btnArmor, *_btnSack, *_btnDiary, *_btnBonuses, *_btnTransformations;
-	Text *_txtRank, *_txtMissions, *_txtKills, *_txtCraft, *_txtRecovery, *_txtPsionic, *_txtDead;
-	Text *_txtStuns;
-	TextEdit *_edtSoldier;
-
-	Text *_txtTimeUnits, *_txtStamina, *_txtHealth, *_txtBravery, *_txtReactions, *_txtFiring, *_txtThrowing, *_txtMelee, *_txtStrength, *_txtPsiStrength, *_txtPsiSkill, *_txtMana;
-	Text *_numTimeUnits, *_numStamina, *_numHealth, *_numBravery, *_numReactions, *_numFiring, *_numThrowing, *_numMelee, *_numStrength, *_numPsiStrength, *_numPsiSkill, *_numMana;
-	Bar *_barTimeUnits, *_barStamina, *_barHealth, *_barBravery, *_barReactions, *_barFiring, *_barThrowing, *_barMelee, *_barStrength, *_barPsiStrength, *_barPsiSkill, *_barMana;
-
+        Base *_base;
+        size_t _soldierId;
+        bool _forceLimits;
+        bool _readOnly;
+        bool _noTransformations;
+        Soldier *_soldier;
+        std::vector<Soldier*> *_list;
+        Surface *_bg;
+        InteractiveSurface *_rank;
+        InteractiveSurface *_flag;
+        TextButton *_btnOk, *_btnPrev, *_btnNext, *_btnArmor, *_btnSack, *_btnDiary, *_btnBonuses, *_btnTransformations;
+        Text *_txtRank, *_txtMissions, *_txtKills, *_txtCraft, *_txtRecovery, *_txtPsionic, *_txtDead;
+        Text *_txtStuns;
+        TextEdit *_edtSoldier;
+        Text *_txtTimeUnits, *_txtStamina, *_txtHealth, *_txtBravery, *_txtReactions, *_txtFiring, *_txtThrowing, *_txtMelee, *_txtStrength, *_txtPsiStrength, *_txtPsiSkill, *_txtMana;
+        Text *_numTimeUnits, *_numStamina, *_numHealth, *_numBravery, *_numReactions, *_numFiring, *_numThrowing, *_numMelee, *_numStrength, *_numPsiStrength, *_numPsiSkill, *_numMana;
+        Bar *_barTimeUnits, *_barStamina, *_barHealth, *_barBravery, *_barReactions, *_barFiring, *_barThrowing, *_barMelee, *_barStrength, *_barPsiStrength, *_barPsiSkill, *_barMana;
+        /// Index into the bar scale cycle (0 = x160, 1 = x800, 2 = x2000).
+        int _barScaleMode;
 public:
-	/// Creates the Soldier Info state.
-	SoldierInfoState(Base *base, size_t soldierId, bool forceLimits = true, bool readOnly = false);
-	/// Cleans up the Soldier Info state.
-	~SoldierInfoState();
-	/// Updates the soldier info.
-	void init() override;
-	/// Handles keypresses.
-	void handle(Action* action) override;
-	/// Set the soldier Id.
-	void setSoldierId(size_t soldier);
-	/// Handler for pressing on the Name edit.
-	void edtSoldierPress(Action *action);
-	/// Handler for changing text on the Name edit.
-	void edtSoldierChange(Action *action);
-	/// Handler for clicking the OK button.
-	void btnOkClick(Action *action);
-	/// Handler for clicking the Previous button.
-	void btnPrevClick(Action *action);
-	/// Handler for clicking the Next button.
-	void btnNextClick(Action *action);
-	/// Handler for clicking the Armor button.
-	void btnArmorClick(Action *action);
-	/// Handler for clicking the Bonuses button.
-	void btnBonusesClick(Action *action);
-	/// Handler for clicking the Transformations button.
-	void btnTransformationsClick(Action* action);
-	/// Handler for clicking the Sack button.
-	void btnSackClick(Action *action);
-	/// Handler for clicking the Diary button.
-	void btnDiaryClick(Action *action);
-	/// Handler for clicking the flag.
-	void btnFlagClick(Action *action);
-	/// Handler for clicking the rank.
-	void btnRankClick(Action *action);
+        /// Creates the Soldier Info state.
+        SoldierInfoState(Base *base, size_t soldierId, bool forceLimits = true, bool readOnly = false);
+        /// Cleans up the Soldier Info state.
+        ~SoldierInfoState();
+        /// Updates the soldier info.
+        void init() override;
+        /// Handles keypresses.
+        void handle(Action* action) override;
+        /// Set the soldier Id.
+        void setSoldierId(size_t soldier);
+        /// Handler for pressing on the Name edit.
+        void edtSoldierPress(Action *action);
+        /// Handler for changing text on the Name edit.
+        void edtSoldierChange(Action *action);
+        /// Handler for clicking the OK button.
+        void btnOkClick(Action *action);
+        /// Handler for clicking the Previous button.
+        void btnPrevClick(Action *action);
+        /// Handler for clicking the Next button.
+        void btnNextClick(Action *action);
+        /// Handler for clicking the Armor button.
+        void btnArmorClick(Action *action);
+        /// Handler for right-clicking the Armor button: cycles the stat bar scale.
+        void btnBarScaleClick(Action *action);
+        /// Applies the currently selected bar scale to every stat bar.
+        void applyBarScale();
+        /// Handler for clicking the Bonuses button.
+        void btnBonusesClick(Action *action);
+        /// Handler for clicking the Transformations button.
+        void btnTransformationsClick(Action* action);
+        /// Handler for clicking the Sack button.
+        void btnSackClick(Action *action);
+        /// Handler for clicking the Diary button.
+        void btnDiaryClick(Action *action);
+        /// Handler for clicking the flag.
+        void btnFlagClick(Action *action);
+        /// Handler for clicking the rank.
+        void btnRankClick(Action *action);
 };
-
 }

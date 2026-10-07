@@ -54,7 +54,7 @@ namespace OpenXcom
  * @param game Pointer to the core game.
  * @param base Pointer to the base to get info from.
  */
-SoldiersState::SoldiersState(Base *base) : _base(base), _origSoldierOrder(*_base->getSoldiers()), _dynGetter(NULL), _mainOffset(0)
+SoldiersState::SoldiersState(Base *base) : SortSoldiersMixin(base), _origSoldierOrder(*_base->getSoldiers()), _dynGetter(NULL)
 {
 	bool isPsiBtnVisible = Options::anytimePsiTraining && _base->getAvailablePsiLabs() > 0;
 	bool isTrnBtnVisible = _base->getAvailableTraining() > 0;
@@ -85,7 +85,7 @@ SoldiersState::SoldiersState(Base *base) : _base(base), _origSoldierOrder(*_base
 	_txtTitle = new Text(168, 17, 16, 8);
 	_cbxSortBy = new ComboBox(this, 120, 16, 192, 8, false);
 	_txtName = new Text(114, 9, 16, 32);
-	_txtRank = new Text(102, 9, 122, 32);
+	_txtRank = new Text(102 - RANK_SHIFT, 9, 122 + RANK_SHIFT, 32);
 	_txtCraft = new Text(82, 9, 220, 32);
 	_lstSoldiers = new TextList(288, 128, 8, 40);
 
@@ -189,50 +189,25 @@ SoldiersState::SoldiersState(Base *base) : _base(base), _origSoldierOrder(*_base
 	_txtCraft->setText(tr("STR_CRAFT"));
 
 	// populate sort options
-	std::vector<std::string> sortOptions;
-	sortOptions.push_back(tr("STR_ORIGINAL_ORDER"));
-	_sortFunctors.push_back(NULL);
-
-#define PUSH_IN(strId, functor) \
-	sortOptions.push_back(tr(strId)); \
-	_sortFunctors.push_back(new SortFunctor(_game, functor));
-
-	PUSH_IN("STR_ID", idStat);
-	PUSH_IN("STR_NAME_UC", nameStat);
-	PUSH_IN("STR_CRAFT", craftIdStat);
-	PUSH_IN("STR_SOLDIER_TYPE", typeStat);
-	PUSH_IN("STR_RANK", rankStat);
-	PUSH_IN("STR_IDLE_DAYS", idleDaysStat);
-	PUSH_IN("STR_MISSIONS2", missionsStat);
-	PUSH_IN("STR_KILLS2", killsStat);
-	PUSH_IN("STR_WOUND_RECOVERY2", woundRecoveryStat);
-	if (_game->getMod()->isManaFeatureEnabled() && !_game->getMod()->getReplenishManaAfterMission())
+	FillSorters(_sortFunctors, *_cbxSortBy, (ActionHandler)&SoldiersState::cbxSortByChange);
+	ChangeDynSorter(_dynGetter);
+	// OXCE 8.7: default info column (Alt+select remembers it); sorting stays with our QOL default sorter
 	{
-		PUSH_IN("STR_MANA_MISSING", manaMissingStat);
+		size_t selIdx = Options::oxceBaseSoldierInfoColumnDefault;
+		if (selIdx >= _sortFunctors.size())
+		{
+			selIdx = 0;
+			Options::oxceBaseSoldierInfoColumnDefault = 0;
+		}
+		if (selIdx != 0)
+		{
+			_cbxSortBy->setSelected(selIdx);
+			if (_sortFunctors[selIdx] && selIdx != 2 && selIdx != 3)
+			{
+				_dynGetter = _sortFunctors[selIdx]->getGetter();
+			}
+		}
 	}
-	PUSH_IN("STR_TIME_UNITS", tuStat);
-	PUSH_IN("STR_STAMINA", staminaStat);
-	PUSH_IN("STR_HEALTH", healthStat);
-	PUSH_IN("STR_BRAVERY", braveryStat);
-	PUSH_IN("STR_REACTIONS", reactionsStat);
-	PUSH_IN("STR_FIRING_ACCURACY", firingStat);
-	PUSH_IN("STR_THROWING_ACCURACY", throwingStat);
-	PUSH_IN("STR_MELEE_ACCURACY", meleeStat);
-	PUSH_IN("STR_STRENGTH", strengthStat);
-	if (_game->getMod()->isManaFeatureEnabled())
-	{
-		// "unlock" is checked later
-		PUSH_IN("STR_MANA_POOL", manaStat);
-	}
-	PUSH_IN("STR_PSIONIC_STRENGTH", psiStrengthStat);
-	PUSH_IN("STR_PSIONIC_SKILL", psiSkillStat);
-
-#undef PUSH_IN
-
-	_cbxSortBy->setOptions(sortOptions);
-	_cbxSortBy->setSelected(0);
-	_cbxSortBy->onChange((ActionHandler)&SoldiersState::cbxSortByChange);
-	_cbxSortBy->setText(tr("STR_SORT_BY"));
 
 	//_lstSoldiers->setArrowColumn(188, ARROW_VERTICAL);
 	_lstSoldiers->setColumns(3, 106, 98, 76);
@@ -270,6 +245,10 @@ void SoldiersState::cbxSortByChange(Action *action)
 	{
 		return;
 	}
+	if (_game->isAltPressed(true))
+	{
+		Options::oxceBaseSoldierInfoColumnDefault = selIdx;
+	}
 
 	SortFunctor *compFunc = _sortFunctors[selIdx];
 	_dynGetter = NULL;
@@ -283,50 +262,11 @@ void SoldiersState::cbxSortByChange(Action *action)
 		// if CTRL is pressed, we only want to show the dynamic column, without actual sorting
 		if (!ctrlPressed)
 		{
-			if (selIdx == 2)
-			{
-				std::stable_sort(_base->getSoldiers()->begin(), _base->getSoldiers()->end(),
-					[](const Soldier* a, const Soldier* b)
-					{
-						return Unicode::naturalCompare(a->getName(), b->getName());
-					}
-				);
-			}
-			else if (selIdx == 3)
-			{
-				std::stable_sort(_base->getSoldiers()->begin(), _base->getSoldiers()->end(),
-					[](const Soldier* a, const Soldier* b)
-					{
-						if (a->getCraft())
-						{
-							if (b->getCraft())
-							{
-								if (a->getCraft()->getRules() == b->getCraft()->getRules())
-								{
-									return a->getCraft()->getId() < b->getCraft()->getId();
-								}
-								else
-								{
-									return a->getCraft()->getRules() < b->getCraft()->getRules();
-								}
-							}
-							else
-							{
-								return true; // a < b
-							}
-						}
-						return false; // b > a
-					}
-				);
-			}
-			else
-			{
-				std::stable_sort(_base->getSoldiers()->begin(), _base->getSoldiers()->end(), *compFunc);
-			}
-			if (_game->isShiftPressed())
-			{
-				std::reverse(_base->getSoldiers()->begin(), _base->getSoldiers()->end());
-			}
+			DoSort(selIdx, compFunc);
+		}
+		else
+		{
+			SortSecond(selIdx, _sortFunctors, *_cbxSortBy); // OXCE-HD: second criterion inside the first
 		}
 	}
 	else
@@ -343,6 +283,7 @@ void SoldiersState::cbxSortByChange(Action *action)
 				_base->getSoldiers()->insert(_base->getSoldiers()->end(), s);
 			}
 		}
+		DoSort(selIdx, nullptr); // OXCE-HD: the groups over the original order
 	}
 
 	size_t originalScrollPos = _lstSoldiers->getScroll();
@@ -424,15 +365,24 @@ void SoldiersState::initList(size_t scrl)
 		}
 	}
 
+	// OXCE-HD: the race picture of the soldier info screen before the name and the rank badge before the rank
+	// (Options::oxceBaseSoldierTypeIcon): 32x20 fits the row as 13x8. The rank stands RANK_SHIFT to the right,
+	// near the arrows (the header too); the craft column stays where it was
+	const int icon = Options::oxceBaseSoldierTypeIcon ? 13 : 0;
+	SurfaceSet *badges = icon ? _game->getMod()->getSurfaceSet("BASEBITS.PCK") : nullptr;
+	_lstSoldiers->setIconColumn(8, icon);
+	_lstSoldiers->setIconColumn(106 + RANK_SHIFT - 3, badges ? 10 : 0, 1);
+	_lstSoldiers->setMargin(8 + icon);
 	if (_dynGetter != NULL)
 	{
-		_lstSoldiers->setColumns(4, 106, 98 - offset, 60 + offset, 16);
+		// OXCE-HD: the stat column wider (22, not 16) - kills in thousands (X-Piratez) ran over the craft name
+		_lstSoldiers->setColumns(4, 106 - icon + RANK_SHIFT, 98 - offset - RANK_SHIFT, 54 + offset, 22);
 	}
 	else
 	{
-		_lstSoldiers->setColumns(3, 106, 98 - offset, 76 + offset);
+		_lstSoldiers->setColumns(3, 106 - icon + RANK_SHIFT, 98 - offset - RANK_SHIFT, 76 + offset);
 	}
-	_txtCraft->setX(_txtRank->getX() + 98 - offset);
+	_txtCraft->setX(_txtRank->getX() + 98 - offset - RANK_SHIFT);
 
 	BaseSumDailyRecovery recovery = _base->getSumRecoveryPerDay();
 	unsigned int row = 0;
@@ -455,12 +405,21 @@ void SoldiersState::initList(size_t scrl)
 
 		if (soldier->getCraft() == 0)
 		{
-			_lstSoldiers->setRowColor(row, _lstSoldiers->getSecondaryColor());
+			setListRowColor(*_lstSoldiers, row, _lstSoldiers->getSecondaryColor(), *soldier);
 		}
+		else
+			setListRowColor(*_lstSoldiers, row, _lstSoldiers->getColor(), *soldier);
+
 		if (soldier->getDeath())
 		{
 			_lstSoldiers->setRowColor(row, _txtCraft->getColor());
 		}
+		if (icon)
+		{
+			_lstSoldiers->setRowIcon(row, SoldierFlag(soldier));
+			_lstSoldiers->setRowIcon(row, badges->getFrame(soldier->getRankSprite()), 1);
+		}
+
 		row++;
 	}
 	if (scrl)
@@ -489,6 +448,7 @@ void SoldiersState::lstItemsLeftArrowClick(Action *action)
 	}
 	_cbxSortBy->setText(tr("STR_SORT_BY"));
 	_cbxSortBy->setSelected(-1);
+	ForgetSort();
 }
 
 /**
@@ -542,6 +502,7 @@ void SoldiersState::lstItemsRightArrowClick(Action *action)
 	}
 	_cbxSortBy->setText(tr("STR_SORT_BY"));
 	_cbxSortBy->setSelected(-1);
+	ForgetSort();
 }
 
 /**
@@ -790,5 +751,4 @@ void SoldiersState::lstSoldiersMousePress(Action *action)
 		}
 	}
 }
-
 }

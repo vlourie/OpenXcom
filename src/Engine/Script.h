@@ -867,6 +867,11 @@ public:
 		_proc = nullptr;
 		_events = nullptr;
 	}
+	/// Is a script set (false: the blit is a plain shaded copy)?
+	bool hasScript() const
+	{
+		return _proc != nullptr;
+	}
 };
 
 ////////////////////////////////////////////////////////////

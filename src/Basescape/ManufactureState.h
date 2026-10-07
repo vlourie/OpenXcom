@@ -18,6 +18,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "../Engine/State.h"
+#include "ItemCountTooltipMixin.h"
 
 namespace OpenXcom
 {
@@ -27,12 +28,13 @@ class Window;
 class Text;
 class TextList;
 class Base;
+class ItemCountTooltip;
 
 /**
  * Manufacture screen that lets the player manage
  * all the manufacturing operations of a base.
  */
-class ManufactureState : public State
+class ManufactureState : public ItemCountTooltipMixin<State>
 {
 private:
 	Base *_base;
@@ -40,6 +42,7 @@ private:
 	Window *_window;
 	Text *_txtTitle, *_txtAvailable, *_txtAllocated, *_txtSpace, *_txtFunds, *_txtItem, *_txtEngineers, *_txtProduced, *_txtCost, *_txtTimeLeft;
 	TextList *_lstManufacture;
+
 	void lstManufactureClickLeft(Action * action);
 	void lstManufactureClickMiddle(Action * action);
 	void lstManufactureMousePress(Action *action);
@@ -58,6 +61,19 @@ public:
 	void btnNewProductionClick(Action * action);
 	/// Fills the list of base productions.
 	void fillProductionList(size_t scrl);
+
+	/// Handler for clicking the reordering up button.
+	void lstManufactureLeftArrowClick(Action* action);
+	/// Moves a production topic up.
+	void moveTopicUp(Action* action, unsigned int row, bool max = false);
+	/// Handler for clicking the reordering down button.
+	void lstManufactureRightArrowClick(Action* action);
+	/// Moves a production topic down.
+	void moveTopicDown(Action* action, unsigned int row, bool max = false);
+
+protected:
+	const RuleItem* GetItemForTooltip() override;
+	const Base* GetBase() override;
 };
 
 }

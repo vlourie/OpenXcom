@@ -17,7 +17,9 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <climits>
+#include <chrono>
 #include <algorithm>
+#include <sstream>
 #include "AIModule.h"
 #include "../Savegame/BattleItem.h"
 #include "../Savegame/Node.h"
@@ -33,7 +35,9 @@
 #include "../Mod/Armor.h"
 #include "../Mod/Mod.h"
 #include "../Mod/RuleItem.h"
+#include "../Mod/RuleDamageType.h"
 #include "../fmath.h"
+#include "AiProbe.h"
 
 namespace OpenXcom
 {
@@ -47,7 +51,7 @@ namespace OpenXcom
  */
 AIModule::AIModule(SavedBattleGame *save, BattleUnit *unit, Node *node) :
 	_save(save), _unit(unit), _aggroTarget(0), _knownEnemies(0), _visibleEnemies(0), _spottingEnemies(0),
-	_escapeTUs(0), _ambushTUs(0), _weaponPickedUp(false), _rifle(false), _melee(false), _blaster(false), _grenade(false),
+	_escapeTUs(0), _ambushTUs(0), _walkAbortCounter(0), _weaponPickedUp(false), _rifle(false), _melee(false), _blaster(false), _grenade(false),
 	_didPsi(false), _AIMode(AI_PATROL), _closestDist(100), _fromNode(node), _toNode(0), _foundBaseModuleToDestroy(false)
 {
 	_traceAI = Options::traceAI;
@@ -75,6 +79,76 @@ AIModule::~AIModule()
 }
 
 /**
+ * The fingerprint of this module's own state: two runs of one battle with the same world and the same random generator
+ * can still decide differently if what the module remembers differs (target, patrol nodes, reachable tiles, who hit it).
+ */
+unsigned long long AIModule::probeHash() const
+{
+	unsigned long long h = 1469598103934665603ULL;
+	auto add = [&h](long long v)
+	{
+		for (int i = 0; i < 8; ++i)
+		{
+			h = (h ^ (unsigned long long)((v >> (i * 8)) & 0xff)) * 1099511628211ULL;
+		}
+	};
+	add(_aggroTarget ? _aggroTarget->getId() : -1);
+	add(_knownEnemies); add(_visibleEnemies); add(_spottingEnemies);
+	add(_escapeTUs); add(_ambushTUs); add(_walkAbortCounter);
+	add(_weaponPickedUp); add(_rifle); add(_melee); add(_blaster); add(_grenade); add(_didPsi);
+	add(_AIMode); add(_intelligence); add(_closestDist);
+	add(_fromNode ? _fromNode->getID() : -1); add(_toNode ? _toNode->getID() : -1);
+	add(_foundBaseModuleToDestroy); add((int)_reserve); add((int)_targetFaction);
+	add((long long)_reachable.size());
+	for (int i : _reachable) { add(i); }
+	add((long long)_reachableWithAttack.size());
+	for (int i : _reachableWithAttack) { add(i); }
+	for (int i : _wasHitBy) { add(i); }
+	if (_patrolSpent != -1)
+	{
+		// only once the bench rule has spent a patrol: without OXCE_AI_ENERGY_PATROL_END the fingerprint stays as it was
+		add(_patrolSpent); add(_patrolSpentAt.x); add(_patrolSpentAt.y); add(_patrolSpentAt.z); add(_patrolSpentEnergy); add(_patrolRetry);
+	}
+	if (_fpBlocked || _fpInvalidated)
+	{
+		// only once the bench rule has recorded a blocked firepoint (OXCE_AI_FIREPOINT_BLOCKED)
+		add(_fpBlocked); add(_fpBlockedPoint.x); add(_fpBlockedPoint.y); add(_fpBlockedPoint.z); add(_fpBlockedDir);
+		add(_fpBlockedFrom.x); add(_fpBlockedFrom.y); add(_fpBlockedFrom.z); add(_fpBlockedTu); add(_fpBlockedTurn);
+		add(_fpBlockedAggro); add((long long)_fpBlockedRev); add(_fpInvalidated);
+	}
+	return h;
+}
+
+/**
+ * The action slot of the bench's decision record: p patrol, a ambush, e escape, s psi, x attack.
+ */
+const BattleAction &AIModule::probeAction(char slot) const
+{
+	return slot == 'p' ? _patrolAction : slot == 'a' ? _ambushAction : slot == 'e' ? _escapeAction : slot == 's' ? _psiAction : _attackAction;
+}
+
+AIModule::ProbeMark AIModule::probeMark(char slot) const
+{
+	const BattleAction &a = probeAction(slot);
+	return { a.type, a.target, a.weapon };
+}
+
+/**
+ * Tells the decision record (OXCE_AI_RECORD) which rule filled a slot, if the rule that just ran changed it.
+ */
+void AIModule::probeSlot(char slot, const char *source, const ProbeMark &before)
+{
+	const BattleAction &a = probeAction(slot);
+	if (AiProbe::active() && a.type != BA_RETHINK && a.type != BA_NONE
+		&& (a.type != before.type || a.target != before.target || a.weapon != before.weapon))
+	{
+		AiProbe::propose(_unit, slot, _probeSource ? _probeSource : source, _probeScore, a);
+	}
+	_probeScore = INT_MIN;
+	_probeSource = nullptr;
+}
+
+/**
  * Sets the target faction.
  */
 void AIModule::setTargetFaction(UnitFaction f)
@@ -90,6 +164,9 @@ void AIModule::reset()
 	// these variables are not saved in save() and also not initiated in think()
 	_escapeTUs = 0;
 	_ambushTUs = 0;
+
+	// temp counter to prevent infinite loops, reset every turn
+	_walkAbortCounter = 0;
 }
 
 /**
@@ -177,7 +254,9 @@ void AIModule::dont_think(BattleAction *action)
 		{
 			Log(LOG_INFO) << "LEEROY: LEEROYIN' at someone!";
 		}
+		const ProbeMark mark = probeMark('x');
 		meleeActionLeeroy(canRun);
+		probeSlot('x', "leeroy", mark);
 		action->type = _attackAction.type;
 		action->run = _attackAction.run;
 		action->target = _attackAction.target;
@@ -191,11 +270,16 @@ void AIModule::dont_think(BattleAction *action)
 		{
 			Log(LOG_INFO) << "LEEROY: No one to LEEROY!, patrolling...";
 		}
+		const ProbeMark mark = probeMark('p');
 		setupPatrol();
+		probeSlot('p', _patrolAction.type == BA_WALK ? "patrol.node" : "patrol.module", mark);
+		AiProbe::chosen(_unit, 'p');
 		_unit->setCharging(0);
 		_reserve = BA_NONE;
 		action->type = _patrolAction.type;
 		action->target = _patrolAction.target;
+		// a charge's choice has no dice to throw again
+		endPatrolIfSpent(action, false);
 	}
 }
 
@@ -421,9 +505,24 @@ bool AIModule::medikit_think(BattleMediKitType healOrStim)
  */
 void AIModule::think(BattleAction *action)
 {
+	// Workaround: AI freeze
+	if (_walkAbortCounter > 200)
+	{
+		_unit->clearTimeUnits();
+	}
+
 	action->type = BA_RETHINK;
 	action->actor = _unit;
 	action->weapon = _unit->getMainHandWeapon(false);
+	_patrolWalk = false;
+	_patrolRetry = _patrolRetry == 1 ? 2 : 0;
+	_firepointChosen = false;
+	_fpSuppressedNow = false;
+	_ko2FpTarget = _ko2AmbTarget = _ko2FpChosenTarget = 0;
+	_ko2FpOld = _ko2AmbOld = _ko2FpRan = _ko2AmbRan = false;
+	_ko2FpHits = _ko2AmbHits = 0;
+	_ko2WalkTarget = 0;
+	_ko2WalkBranch = 0;
 	_attackAction.diff = _save->getBattleState()->getGame()->getSavedGame()->getDifficultyCoefficient();
 	_attackAction.actor = _unit;
 	_attackAction.run = false;
@@ -436,7 +535,29 @@ void AIModule::think(BattleAction *action)
 	_melee = (_unit->getUtilityWeapon(BT_MELEE) != 0);
 	_rifle = false;
 	_blaster = false;
+	// KNOWN_OCCUPANT_PATH_V1 (bench): the enemy's paths, from here to the walk's own (BattlescapeGame::handleAI), do not go
+	// through the closest known target the side spotted this turn - findFirePoint aims at it where it stands
+	if (AiProbe::knownOccupantPath())
+	{
+		const BattleUnit *occupant = 0;
+		_knownOccAge = -1;
+		if (_unit->getFaction() == FACTION_HOSTILE)
+		{
+			occupant = knownOccupant(_knownOccAge);
+		}
+		_save->getPathfinding()->setKnownOccupant(_unit, occupant);
+	}
 	_reachable = _save->getPathfinding()->findReachable(_unit, BattleActionCost());
+	const bool revived = AiProbe::revive(_save, _unit, action, _reachable);
+	if (revived || AiProbe::flee(_save, _unit, action, _reachable))
+	{
+		AiProbe::propose(_unit, 'b', revived ? "revive" : "flee", INT_MIN, *action);
+		AiProbe::chosen(_unit, 'b');
+		// walking onto a downed comrade's body (the stimulant goes on the next think) or away from the enemy it cannot fight
+		_escapeTUs = 0;
+		_ambushTUs = 0;
+		return;
+	}
 	_wasHitBy.clear();
 	_foundBaseModuleToDestroy = false;
 
@@ -476,6 +597,7 @@ void AIModule::think(BattleAction *action)
 
 	if (_unit->isLeeroyJenkins())
 	{
+		AiProbe::chosen(_unit, 'l');
 		dont_think(action);
 		return;
 	}
@@ -490,18 +612,18 @@ void AIModule::think(BattleAction *action)
 				if (action->weapon->getCurrentWaypoints() != 0)
 				{
 					_blaster = true;
-					_reachableWithAttack = _save->getPathfinding()->findReachable(_unit, BattleActionCost(BA_AIMEDSHOT, _unit, action->weapon));
+					reachableWithAttack(BattleActionCost(BA_AIMEDSHOT, _unit, action->weapon));
 				}
 				else
 				{
 					_rifle = true;
-					_reachableWithAttack = _save->getPathfinding()->findReachable(_unit, BattleActionCost(BA_SNAPSHOT, _unit, action->weapon));
+					reachableWithAttack(BattleActionCost(BA_SNAPSHOT, _unit, action->weapon));
 				}
 			}
 			else if (rule->getBattleType() == BT_MELEE)
 			{
 				_melee = true;
-				_reachableWithAttack = _save->getPathfinding()->findReachable(_unit, BattleActionCost(BA_HIT, _unit, action->weapon));
+				reachableWithAttack(BattleActionCost(BA_HIT, _unit, action->weapon));
 			}
 		}
 		else
@@ -513,21 +635,32 @@ void AIModule::think(BattleAction *action)
 	BattleItem *grenadeItem = _unit->getGrenadeFromBelt(_save);
 	_grenade = grenadeItem != 0;
 
-	if (_spottingEnemies && !_escapeTUs)
+	// the tactical rules need cover reachable with the TU left now, not with those of the turn's start
+	const bool tactical = AiProbe::tactics(_unit) || AiProbe::careful(_unit);
+	if (_spottingEnemies && (!_escapeTUs || tactical))
 	{
+		const ProbeMark mark = probeMark('e');
 		setupEscape();
+		probeSlot('e', "escape", mark);
 	}
 
 	if (_knownEnemies && !_melee && !_ambushTUs)
 	{
+		const ProbeMark mark = probeMark('a');
 		setupAmbush();
+		probeSlot('a', "ambush", mark);
 	}
 
 	setupAttack();
-	setupPatrol();
+	{
+		const ProbeMark mark = probeMark('p');
+		setupPatrol();
+		probeSlot('p', _patrolAction.type == BA_WALK ? "patrol.node" : "patrol.module", mark);
+	}
 
 	if (_psiAction.type != BA_NONE && !_didPsi && _save->getTurn() >= _psiAction.weapon->getRules()->getAIUseDelay(_save->getMod()))
 	{
+		AiProbe::chosen(_unit, 's');
 		_didPsi = true;
 		action->type = _psiAction.type;
 		action->target = _psiAction.target;
@@ -601,7 +734,20 @@ void AIModule::think(BattleAction *action)
 		}
 	}
 
+	// a shot the evaluator found worth its risk is combat whatever mode the dice gave
+	if (_evalChosen)
+	{
+		_AIMode = AI_COMBAT;
+	}
+
+	if (tactical)
+	{
+		tacticalMode();
+	}
+
 	_reserve = BA_NONE;
+	// the careful bot kneels by the player's rule (soldiers may), the AI by its own (armor must allow)
+	const bool kneelDefault = AiProbe::careful(_unit) && _unit->getType() == "SOLDIER";
 
 	switch (_AIMode)
 	{
@@ -639,6 +785,7 @@ void AIModule::think(BattleAction *action)
 		}
 		action->type = _patrolAction.type;
 		action->target = _patrolAction.target;
+		endPatrolIfSpent(action, true);
 		break;
 	case AI_COMBAT:
 		action->type = _attackAction.type;
@@ -666,7 +813,11 @@ void AIModule::think(BattleAction *action)
 		}
 		else if (action->type == BA_AIMEDSHOT || action->type == BA_AUTOSHOT)
 		{
-			action->kneel = _unit->getArmor()->allowsKneeling(false);
+			action->kneel = _unit->getArmor()->allowsKneeling(kneelDefault);
+		}
+		if (_evalChosen && action->type != BA_WALK)
+		{
+			action->kneel = _evalKneel;
 		}
 		break;
 	case AI_AMBUSH:
@@ -677,10 +828,39 @@ void AIModule::think(BattleAction *action)
 		action->finalFacing = _ambushAction.finalFacing;
 		// end this unit's turn.
 		action->finalAction = true;
-		action->kneel = _unit->getArmor()->allowsKneeling(false);
+		action->kneel = _unit->getArmor()->allowsKneeling(kneelDefault);
 		break;
 	default:
 		break;
+	}
+	if (_AIMode >= AI_PATROL && _AIMode <= AI_ESCAPE)
+	{
+		AiProbe::chosen(_unit, "paxe"[_AIMode]);
+	}
+
+	// the careful bot on patrol in contact walks half its time units at most and keeps the rest for reaction fire and cover:
+	// it ended 77 % of turns with nothing left, 54 % of them in someone's sight (OXCE_AI_HALF)
+	if (action->type == BA_WALK && _AIMode == AI_PATROL && AiProbe::halfWalk(_save, _unit))
+	{
+		BattleActionCost keep;
+		keep.Time = _unit->getBaseStats()->tu / 2;
+		Position best = _unit->getPosition();
+		int bestDist = Position::distanceSq(best, action->target);
+		for (int index : _save->getPathfinding()->findReachable(_unit, keep))
+		{
+			const Position pos = _save->getTileCoords(index);
+			const int d = Position::distanceSq(pos, action->target);
+			if (d < bestDist)
+			{
+				bestDist = d;
+				best = pos;
+			}
+		}
+		if (best != action->target)
+		{
+			AiProbe::tally(_unit, best == _unit->getPosition() ? "half.stay" : "half.cut");
+			action->target = best;
+		}
 	}
 
 	if (action->type == BA_WALK)
@@ -693,11 +873,480 @@ void AIModule::think(BattleAction *action)
 		}
 		else
 		{
+			AiProbe::note(_unit, "walk.self");
+			action->type = BA_NONE;
+		}
+	}
+
+	// FIREPOINT_BLOCKED_UNIT_STALL (bench): what the think did instead of the skipped point, and a walk to a blocked point
+	// another branch chose (not suppressed in V1, only counted)
+	const bool firepointWalk = action->type == BA_WALK && _firepointChosen && action->target == _firepointChosenAt;
+	// KNOWN_OCCUPANT_PATH_V2 (bench): the walk to the point findFirePoint or setupAmbush chose keeps that branch's T blocked
+	if (firepointWalk && _ko2FpChosenTarget)
+	{
+		_ko2WalkTarget = _ko2FpChosenTarget;
+		_ko2WalkBranch = "fp";
+		_ko2WalkTo = action->target;
+	}
+	else if (action->type == BA_WALK && _AIMode == AI_AMBUSH && _ambushAction.type == BA_WALK && action->target == _ambushAction.target
+		&& _ko2AmbChosenTarget)
+	{
+		_ko2WalkTarget = _ko2AmbChosenTarget;
+		_ko2WalkBranch = "amb";
+		_ko2WalkTo = action->target;
+	}
+	if (_fpSuppressedNow)
+	{
+		const char *after = "fpblocked.after.attack";
+		if (action->type == BA_WALK)
+			after = firepointWalk ? "fpblocked.after.firepoint" : (_AIMode == AI_PATROL ? "fpblocked.after.patrol" : "fpblocked.after.move");
+		else if (action->type == BA_NONE)
+			after = "fpblocked.after.end";
+		else if (action->type == BA_RETHINK)
+			after = "fpblocked.after.rethink";
+		else if (action->type == BA_TURN)
+			after = "fpblocked.after.turn";
+		AiProbe::tally(_unit, after);
+	}
+	if (_fpBlocked && action->type == BA_WALK && !firepointWalk && action->target == _fpBlockedPoint
+		&& _unit->getPosition() == _fpBlockedFrom && _unit->getTimeUnits() == _fpBlockedTu && unitTurn() == _fpBlockedTurn)
+	{
+		AiProbe::tally(_unit, "fpblocked.other_branch");
+	}
+}
+
+
+/**
+ * The unit-turn now: a unit acts once per turn and side.
+ */
+int AIModule::unitTurn() const
+{
+	return _save->getTurn() * 8 + (int)_save->getSide();
+}
+
+/**
+ * Is this the walk of a patrol to its node, as the last think chose it?
+ */
+bool AIModule::isPatrolWalk(const BattleAction &action) const
+{
+	return _patrolWalk && action.type == BA_WALK;
+}
+
+/**
+ * The tiles the unit can walk to and still attack at, and what they leave for the walk (FIREPOINT_ENERGY_PATH_V1 reads it).
+ * @param cost The attack.
+ */
+void AIModule::reachableWithAttack(const BattleActionCost &cost)
+{
+	_reachableWithAttack = _save->getPathfinding()->findReachable(_unit, cost);
+	// the same budget as findReachable's own
+	_reachableTuMax = _unit->getTimeUnits() - cost.Time;
+	_reachableEnergyMax = _unit->getEnergy() - cost.Energy;
+}
+
+/**
+ * The walk being done stopped at a unit (walk.stop.unit) on the step in dir (FIREPOINT_BLOCKED_UNIT_STALL, bench): if
+ * findFirePoint chose it, records the point, the step and the state it was asked in. Nothing of the unit in the way is
+ * read - the side may not see it.
+ */
+void AIModule::firepointWalkBlocked(const BattleAction &action, int dir)
+{
+	recordFirepointBlockedAttempt(action, dir, false);
+}
+
+/**
+ * REPEATED_BLOCKED_STEP_V1 suppressed the first step of the walk handleAI calculated and found no way round it
+ * (FIREPOINT_BLOCKED_V2_INTEROP, bench): the walk the old code took here stopped at the unit on that step at once, so the
+ * record gets the fact walk.stop.unit would have given it. Only the suppressed step is known - nothing of the unit.
+ */
+void AIModule::firepointStepSuppressed(const BattleAction &action, int dir)
+{
+	recordFirepointBlockedAttempt(action, dir, true);
+}
+
+/**
+ * One blocked attempt of the firepoint walk, from a real stop or from V1's suppression: recorded if findFirePoint chose the
+ * walk. The tallies tell the two apart (fpblocked.recorded / .retry against fpblocked.v1.recorded / .retry).
+ */
+void AIModule::recordFirepointBlockedAttempt(const BattleAction &action, int dir, bool v1Suppression)
+{
+	if (!_firepointChosen || action.type != BA_WALK || action.target != _firepointChosenAt)
+	{
+		return;
+	}
+	if (_fpInvalidated && _fpInvalidatedFrom == _unit->getPosition() && _fpInvalidatedDir == dir)
+	{
+		AiProbe::tally(_unit, v1Suppression ? "fpblocked.v1.retry" : "fpblocked.retry");
+	}
+	_fpInvalidated = false;
+	_fpBlocked = true;
+	_fpBlockedPoint = action.target;
+	_fpBlockedDir = dir;
+	_fpBlockedFrom = _unit->getPosition();
+	_fpBlockedTu = _unit->getTimeUnits();
+	_fpBlockedTurn = unitTurn();
+	_fpBlockedAggro = _aggroTarget ? _aggroTarget->getId() : -1;
+	_fpBlockedAggroPos = _aggroTarget ? _aggroTarget->getPosition() : Position(-1, -1, -1);
+	_fpBlockedRev = AiProbe::knownRevision(_save, _unit);
+	AiProbe::tally(_unit, v1Suppression ? "fpblocked.v1.recorded" : "fpblocked.recorded");
+}
+
+/**
+ * Does the blocked firepoint's record hold for the ask findFirePoint is making (FIREPOINT_BLOCKED_UNIT_STALL)? The same
+ * unit-turn, place, TU, target where it was and the same revision of what the side knows; anything else drops the record
+ * with the list of what changed, and the point may be tried again.
+ */
+bool AIModule::firepointBlockedHolds()
+{
+	std::string why;
+	if (unitTurn() != _fpBlockedTurn) why += ",turn";
+	if (_unit->getPosition() != _fpBlockedFrom) why += ",unit_pos";
+	if (_unit->getTimeUnits() != _fpBlockedTu) why += ",TU";
+	if ((_aggroTarget ? _aggroTarget->getId() : -1) != _fpBlockedAggro) why += ",target";
+	else if (_aggroTarget && _aggroTarget->getPosition() != _fpBlockedAggroPos) why += ",target_pos";
+	if (why.empty())
+	{
+		unsigned long long rev = AiProbe::knownRevision(_save, _unit);
+		if (AiProbe::firepointBlockedSalt() && _fpSaltTurn != unitTurn())
+		{
+			// the test of the invalidation: once per unit-turn the revision is seen changed
+			_fpSaltTurn = unitTurn();
+			rev ^= 1;
+		}
+		if (rev != _fpBlockedRev) why += ",known_revision";
+	}
+	if (why.empty())
+	{
+		return true;
+	}
+	_fpBlocked = false;
+	_fpInvalidated = true;
+	_fpInvalidatedFrom = _fpBlockedFrom;
+	_fpInvalidatedDir = _fpBlockedDir;
+	AiProbe::tally(_unit, "fpblocked.invalidated");
+	AiProbe::note(_unit, ("fpblocked.why " + why.substr(1)).c_str());
+	return false;
+}
+
+/**
+ * KNOWN_OCCUPANT_PATH_V1 (bench): the closest known target, as selectClosestKnownEnemy picks it for findFirePoint, if the
+ * unit's side spotted it this turn. Its tile is the one the AI already aims at, but Pathfinding::isBlocked takes it for free
+ * ground unless the unit itself spotted it. Nothing older and no other target; leaves _aggroTarget alone.
+ * @param age How many turns ago the side spotted the closest known target; -1 if there is none.
+ * @return The target, or null.
+ */
+const BattleUnit *AIModule::knownOccupant(int &age) const
+{
+	const BattleUnit *closest = 0;
+	int minDist = 255;
+	for (auto* bu : *_save->getUnits())
+	{
+		if (validTarget(bu, true, false))
+		{
+			int dist = Position::distance2d(bu->getPosition(), _unit->getPosition());
+			if (dist < minDist)
+			{
+				minDist = dist;
+				closest = bu;
+			}
+		}
+	}
+	age = closest ? closest->getTurnsSinceSpottedByFaction(_unit->getFaction()) : -1;
+	return age == 0 ? closest : 0;
+}
+
+/**
+ * KNOWN_OCCUPANT_PATH_V1 (bench): the decision is made - whether the thinks' searches took the target's tile as blocked,
+ * and the walk that came of it (firepoint, patrol, another walk or none).
+ */
+void AIModule::knownOccupantDecided(const BattleAction &action)
+{
+	Pathfinding *pf = _save->getPathfinding();
+	const char *walk = "nowalk";
+	if (action.type == BA_WALK)
+	{
+		walk = _firepointChosen && action.target == _firepointChosenAt ? "firepoint" : isPatrolWalk(action) ? "patrol" : "walk_other";
+	}
+	AiProbe::knownOccupantDecided(_unit, pf->getKnownOccupant(_unit), _knownOccAge, pf->takeKnownOccupantHits(), _aggroTarget, walk);
+}
+
+/**
+ * KNOWN_OCCUPANT_PATH_V1 (bench): the walk's own path is calculated - whether its search took the target's tile as blocked.
+ */
+void AIModule::knownOccupantWalked(const BattleAction &action, bool found)
+{
+	Pathfinding *pf = _save->getPathfinding();
+	AiProbe::knownOccupantWalked(_unit, pf->getKnownOccupant(_unit), pf->takeKnownOccupantHits(), action.target, found);
+}
+
+/**
+ * KNOWN_OCCUPANT_PATH_V2 (bench): the target findFirePoint / setupAmbush just chose (_aggroTarget), if the unit's side spotted
+ * it this turn. The caller supplies it to its own path searches only; no search looks for the target by itself.
+ * @param old Set if there is a target, but the side did not spot it this turn (the rule holds back).
+ * @return The target, or null.
+ */
+const BattleUnit *AIModule::knownOccupantV2(bool &old) const
+{
+	old = false;
+	if (!AiProbe::knownOccupantPathV2() || _unit->getFaction() != FACTION_HOSTILE || !_aggroTarget)
+	{
+		return 0;
+	}
+	if (_aggroTarget->getTurnsSinceSpottedByFaction(_unit->getFaction()) == 0)
+	{
+		return _aggroTarget;
+	}
+	old = true;
+	return 0;
+}
+
+/**
+ * KNOWN_OCCUPANT_PATH_V2 (bench): this unit's own path search to pos, with the target's tile blocked for this search only.
+ */
+void AIModule::calculateKnownOccupantV2(const Position &pos, const BattleUnit *target, int &hits)
+{
+	Pathfinding *pf = _save->getPathfinding();
+	if (!target)
+	{
+		pf->calculate(_unit, pos, BAM_NORMAL);
+		return;
+	}
+	pf->setKnownOccupant(_unit, target);
+	pf->calculate(_unit, pos, BAM_NORMAL);
+	pf->setKnownOccupant(0, 0);
+	hits += pf->takeKnownOccupantHits();
+}
+
+/**
+ * KNOWN_OCCUPANT_PATH_V2 (bench): the decision is made - what the two branches' searches blocked this think.
+ */
+void AIModule::knownOccupantV2Decided(const BattleAction &action)
+{
+	const bool walk = action.type == BA_WALK && _ko2WalkBranch && action.target == _ko2WalkTo;
+	if (_ko2FpRan)
+	{
+		AiProbe::knownOccupantV2Decided(_unit, "fp", _ko2FpTarget, _ko2FpOld, _ko2FpHits, walk && _ko2WalkBranch[0] == 'f');
+	}
+	if (_ko2AmbRan)
+	{
+		AiProbe::knownOccupantV2Decided(_unit, "amb", _ko2AmbTarget, _ko2AmbOld, _ko2AmbHits, walk && _ko2WalkBranch[0] == 'a');
+	}
+}
+
+/**
+ * KNOWN_OCCUPANT_PATH_V2 (bench): the target whose tile the walk's own path search takes as blocked, if this is the walk to the
+ * point findFirePoint or setupAmbush chose and the side still has the target spotted this turn.
+ */
+const BattleUnit *AIModule::knownOccupantV2Walk(const BattleAction &action) const
+{
+	if (!_ko2WalkTarget || action.type != BA_WALK || action.target != _ko2WalkTo || _ko2WalkTarget->isOut()
+		|| _ko2WalkTarget->getTurnsSinceSpottedByFaction(_unit->getFaction()) != 0)
+	{
+		return 0;
+	}
+	return _ko2WalkTarget;
+}
+
+/**
+ * KNOWN_OCCUPANT_PATH_V2 (bench): the walk's own path is calculated with the target's tile blocked.
+ */
+void AIModule::knownOccupantV2Walked(const BattleAction &action, bool found, int hits)
+{
+	AiProbe::knownOccupantV2Walked(_unit, _ko2WalkBranch, hits, action.target, found);
+}
+
+/**
+ * PATROL_REUSE_PROBE (bench): a unit's class as this unit's side sees it - own, ally (player and neutral), or an enemy by
+ * how long ago the side spotted it (never: 255, what a unit starts the battle with; a battle is shorter than 255 turns).
+ */
+const char *AIModule::patrolReuseWho(const BattleUnit *other) const
+{
+	const UnitFaction own = _unit->getFaction(), f = other->getFaction();
+	if (f == own)
+	{
+		return "own";
+	}
+	if ((own == FACTION_PLAYER && f == FACTION_NEUTRAL) || (own == FACTION_NEUTRAL && f == FACTION_PLAYER))
+	{
+		return "ally";
+	}
+	const int seen = other->getTurnsSinceSpottedByFaction(own);
+	return seen == 0 ? "enemy_seen_this_turn" : seen >= 255 ? "enemy_never_seen" : "enemy_known_old";
+}
+
+/**
+ * PATROL_REUSE_PROBE (bench, passive): setupPatrol keeps the node it stored in an earlier think. What stands on the node,
+ * whether this unit's own search reaches it, and the first unit on that path (the search sees only the units the unit
+ * spotted, so the path may run through one it did not). The search is the one choosing a node does, aborted as there.
+ */
+void AIModule::patrolReuseProbe()
+{
+	const Position node = _toNode->getPosition();
+	const int size = _unit->getArmor()->getSize();
+	auto unitAt = [&](const Position &p) -> const BattleUnit*
+	{
+		for (int x = 0; x < size; ++x)
+		{
+			for (int y = 0; y < size; ++y)
+			{
+				const Tile *t = _save->getTile(p + Position(x, y, 0));
+				const BattleUnit *u = t ? t->getUnit() : 0;
+				if (u && u != _unit && !u->isOut())
+				{
+					return u;
+				}
+			}
+		}
+		return 0;
+	};
+	Pathfinding *pf = _save->getPathfinding();
+	pf->calculate(_unit, node, BAM_NORMAL);
+	const std::vector<int> path = pf->copyPath();
+	const int expanded = pf->getExpanded();
+	pf->abortPath();
+
+	const BattleUnit *occ = unitAt(node), *route = 0;
+	Position at = _unit->getPosition(), first(-1, -1, -1), routeAt;
+	for (auto i = path.rbegin(); i != path.rend(); ++i)
+	{
+		const PathfindingStep step = pf->getTUCost(at, *i, _unit, 0, BAM_NORMAL);
+		if (step.cost.time >= Pathfinding::INVALID_MOVE_COST)
+		{
+			break;
+		}
+		at = step.pos;
+		if (i == path.rbegin())
+		{
+			first = at;
+		}
+		if (!route && (route = unitAt(at)))
+		{
+			routeAt = at;
+		}
+	}
+
+	_prNode = node;
+	_prRoute.clear();
+	if (occ)
+	{
+		_prClass = std::string("occupied_") + patrolReuseWho(occ);
+	}
+	else
+	{
+		_prClass = path.empty() ? "unreachable" : "valid";
+		if (!path.empty())
+		{
+			_prRoute = route ? patrolReuseWho(route) : "free";
+		}
+	}
+	std::ostringstream s;
+	s << "patrol.reuse " << _prClass << " node " << node.x << "," << node.y << "," << node.z
+		<< " age " << (_toNodeTurn < 0 ? -1 : _save->getTurn() - _toNodeTurn) << " reach " << (path.empty() ? 0 : 1)
+		<< " first " << first.x << "," << first.y << "," << first.z << " occ ";
+	if (occ)
+	{
+		s << occ->getId() << "/" << (int)occ->getFaction() << "/s" << occ->getTurnsSinceSpottedByFaction(_unit->getFaction());
+	}
+	else
+	{
+		s << "-";
+	}
+	s << " route ";
+	if (route && !occ)
+	{
+		s << route->getId() << "/" << (int)route->getFaction() << "/s" << route->getTurnsSinceSpottedByFaction(_unit->getFaction())
+			<< "@" << routeAt.x << "," << routeAt.y << "," << routeAt.z;
+	}
+	else
+	{
+		s << "-";
+	}
+	// PATROL_NO_PATH_CAUSE (bench, passive): the free node out of reach - the same search with the unit's own side, the units
+	// it knows of, both, or every unit not blocking. Unknown units never block isBlocked's floor rule (they are found on the
+	// walk), only the big-unit and falling rules, which stop at any unit: what only the last search reaches is that.
+	_prCause.clear();
+	if (!occ && path.empty() && AiProbe::patrolNoPathProbe())
+	{
+		const auto fin = pf->finalPositionFor(_unit, node, BAM_NORMAL);
+		int eOwn = 0, eSeen = 0, eBoth = 0, eAll = 0;
+		const int rOwn = pf->probeReach(_unit, node, Pathfinding::IGNORE_OWN, eOwn);
+		const int rSeen = pf->probeReach(_unit, node, Pathfinding::IGNORE_SEEN, eSeen);
+		const int rBoth = pf->probeReach(_unit, node, Pathfinding::IGNORE_OWN | Pathfinding::IGNORE_SEEN, eBoth);
+		const int rAll = pf->probeReach(_unit, node, Pathfinding::IGNORE_OWN | Pathfinding::IGNORE_SEEN | Pathfinding::IGNORE_ALL_UNITS, eAll);
+		// the real search again, so the node flags and the expanded count are those it left
+		pf->calculate(_unit, node, BAM_NORMAL);
+		pf->abortPath();
+		_prCause = rOwn > 0 && rSeen > 0 ? "own_or_seen" : rOwn > 0 ? "own" : rSeen > 0 ? "seen" : rBoth > 0 ? "own_and_seen"
+			: rAll > 0 ? "unit_rule" : rAll == 0 ? "geometry" : "geometry_refused";
+		s << " nopath " << _prCause << " fin ";
+		if (fin)
+		{
+			s << fin->x << "," << fin->y << "," << fin->z;
+		}
+		else
+		{
+			s << "none";
+		}
+		s << " r " << rOwn << "/" << rSeen << "/" << rBoth << "/" << rAll
+			<< " exp " << expanded << "/" << eOwn << "/" << eSeen << "/" << eBoth << "/" << eAll;
+	}
+	_prTrail = s.str();
+}
+
+/**
+ * PATROL_REUSE_PROBE (bench): the decision is made - what its last setupPatrol found keeping the stored node, if it kept one.
+ */
+void AIModule::patrolReuseDecided(const BattleAction &action)
+{
+	if (_prClass.empty())
+	{
+		return;
+	}
+	const bool chosen = action.type == BA_WALK && action.target == _prNode;
+	AiProbe::patrolReuseDecided(_unit, _prClass.c_str(), _prRoute.empty() ? 0 : _prRoute.c_str(), chosen, _prTrail);
+	if (!_prCause.empty())
+	{
+		AiProbe::patrolNoPathDecided(_unit, _prCause.c_str(), chosen);
+		_prCause.clear();
+	}
+	_prClass.clear();
+}
+
+/**
+ * No more patrol walks for the rest of this unit-turn (ENERGY_PATROL_END_V2).
+ */
+void AIModule::spendPatrol()
+{
+	_patrolSpent = unitTurn();
+	_patrolSpentAt = _unit->getPosition();
+	_patrolSpentEnergy = _unit->getEnergy();
+}
+
+/**
+ * The patrol's walk chosen by think or dont_think (isLeeroyJenkins): marks it for spendPatrol and, if no step is left by
+ * energy this unit-turn, drops it (ENERGY_PATROL_END_V2). The empty walk it replaces was followed by another think in the
+ * same selection, which may throw the dice for combat; with retry the first drop keeps that think (handleAI runs it at
+ * once on BA_RETHINK) and only a patrol chosen again ends the selection.
+ */
+void AIModule::endPatrolIfSpent(BattleAction *action, bool retry)
+{
+	_patrolWalk = _patrolAction.type == BA_WALK;
+	if (_patrolWalk && _patrolSpent == unitTurn() && _unit->getPosition() == _patrolSpentAt && _unit->getEnergy() <= _patrolSpentEnergy)
+	{
+		// the walk would stop where it stands
+		if (retry && _patrolRetry == 0)
+		{
+			AiProbe::tally(_unit, "patrol.retry");
+			_patrolRetry = 1;
+			action->type = BA_RETHINK;
+		}
+		else
+		{
+			AiProbe::tally(_unit, "patrol.spent");
 			action->type = BA_NONE;
 		}
 	}
 }
-
 
 /*
  * sets the "was hit" flag to true.
@@ -732,6 +1381,7 @@ bool AIModule::getWasHitBy(int attacker) const
 void AIModule::setupPatrol()
 {
 	_patrolAction.clearTU();
+	_prClass.clear();
 	if (_toNode != 0 && _unit->getPosition() == _toNode->getPosition())
 	{
 		if (_traceAI)
@@ -777,6 +1427,71 @@ void AIModule::setupPatrol()
 		}
 	}
 	int triesLeft = 5;
+	// PATROL_REUSE_PROBE (bench, passive): the node stored in an earlier think is kept without a new search
+	const bool keptNode = _toNode != 0;
+	if (keptNode && AiProbe::patrolReuseProbe())
+	{
+		patrolReuseProbe();
+	}
+	// STALE_PATROL_NODE_V1 (bench): the kept node passes the check a new one does below - no path by this unit's own search
+	// (which sees only what the unit may know) and it is dropped for a new choice; why there is none is not asked
+	const bool staleCheck = keptNode && AiProbe::stalePatrolNode();
+	Position staleOld(-1, -1, -1);
+	if (staleCheck)
+	{
+		Pathfinding *pf = _save->getPathfinding();
+		// EXACT_STALE_REACH_V1 (bench): the same question answered by Pathfinding::witnessReach where it proves the answer - a
+		// path found under the cap, or every reachable tile taken with nothing the cap dropped left unreached; the rest goes
+		// to the full search; so does a check with KNOWN_OCCUPANT_PATH_V1's target set, whose hits only calculate counts
+		const int exact = AiProbe::staleExact();
+		int ans = 2, wexp = 0;
+		if (exact && !pf->getKnownOccupant(_unit))
+		{
+			int wcost = -1;
+			const int w = pf->witnessReach(_unit, _toNode->getPosition(), 4, wexp, wcost);
+			ans = w == 1 ? 1 : (w == 0 || w == -1) ? 0 : 2; // -1: calculate refuses before searching, no path either
+			if (exact == 3 && ans == 1 && wcost > 300)
+			{
+				ans = 0; // the broken control: a search's own limit taken for no path
+			}
+		}
+		bool noPath = ans == 0;
+		int full = -1;
+		if (ans == 2 || exact == 2)
+		{
+			// STALE_REACH_SHADOW (bench, passive): the check's own time, then the same question by other searches
+			const bool shadow = AiProbe::staleShadow();
+			const auto t0 = shadow ? std::chrono::steady_clock::now() : std::chrono::steady_clock::time_point();
+			pf->calculate(_unit, _toNode->getPosition(), BAM_NORMAL);
+			const bool fullNoPath = pf->getStartDirection() == -1;
+			if (shadow)
+			{
+				const long long ns = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - t0).count();
+				AiProbe::staleShadowAsk(_save, _unit, _toNode->getPosition(), fullNoPath, pf->getExpanded(), pf->getTotalTUCost(), ns);
+			}
+			pf->abortPath();
+			full = fullNoPath ? 0 : 1;
+			if (ans == 2)
+			{
+				noPath = fullNoPath;
+			}
+		}
+		else
+		{
+			pf->settleWitness(_unit);
+		}
+		if (exact)
+		{
+			AiProbe::staleExactAsked(_unit, _toNode->getPosition(), ans, wexp, full);
+		}
+		if (noPath)
+		{
+			staleOld = _toNode->getPosition();
+			freePatrolTarget();
+			_toNode = 0;
+		}
+	}
+	const int staleAge = _toNodeTurn < 0 ? -1 : _save->getTurn() - _toNodeTurn;
 
 	while (_toNode == 0 && triesLeft)
 	{
@@ -883,6 +1598,15 @@ void AIModule::setupPatrol()
 		}
 	}
 
+	const bool staleCleared = staleOld.x != -1;
+	if (_toNode != 0 && (!keptNode || staleCleared))
+	{
+		_toNodeTurn = _save->getTurn();
+	}
+	if (staleCheck)
+	{
+		AiProbe::stalePatrolChecked(_unit, staleCleared, staleOld, staleAge, _toNode ? _toNode->getPosition() : Position(-1, -1, -1));
+	}
 	if (_toNode != 0)
 	{
 		_toNode->allocateNode();
@@ -909,13 +1633,35 @@ void AIModule::setupAmbush()
 	int bestScore = 0;
 	_ambushTUs = 0;
 	std::vector<int> path;
+	bool fastPass = false;
+	_ko2AmbChosenTarget = 0;
 
 	if (selectClosestKnownEnemy())
 	{
+		// KNOWN_OCCUPANT_PATH_V2 (bench): the target it hides from blocks its own tile for this unit's searches to the nodes;
+		// the target's own searches (can it reach the node) are not touched
+		bool ko2Old = false;
+		const BattleUnit *ko2 = knownOccupantV2(ko2Old);
+		if (AiProbe::knownOccupantPathV2() && _unit->getFaction() == FACTION_HOSTILE)
+		{
+			_ko2AmbRan = true;
+			_ko2AmbTarget = ko2;
+			_ko2AmbOld = ko2Old;
+		}
 		const int BASE_SYSTEMATIC_SUCCESS = 100;
 		const int COVER_BONUS = 25;
 		const int FAST_PASS_THRESHOLD = 80;
 		Position origin = _save->getTileEngine()->getSightOriginVoxel(_aggroTarget);
+		AiProbe::ambushBegin(_save, _unit, _aggroTarget);
+		// AMBUSH_NEGATIVE_MEMO_V2 (bench, AiProbe::ambushMemo): the tiles the enemy's first search of this call that ran out of
+		// open nodes closed - everything it can reach from where it stands (Pathfinding::closedTiles); a node whose search would
+		// end outside them (Pathfinding::finalPositionFor) has no path from it, and that search is skipped. Empty until such a search; dies with this call, nothing crosses decisions.
+		// Invariant (accepted 01.10): only NO_PATH proven by a full A* - open list emptied, no early refusal, no cap hit
+		// (closedTiles is empty otherwise) - is remembered; a positive answer is never reused; the memo lives in this call only.
+		// Widening any of the three (another search's result, a cap, a longer life) is a new change with its own acceptance:
+		// seven streams = against the memo off, mode 2 (verify) with 0 disagreements, fair22 IDENTICAL.
+		const int memo = AiProbe::ambushMemo();
+		std::vector<char> enemyReach;
 
 		// we'll use node positions for this, as it gives map makers a good degree of control over how the units will use the environment.
 		for (const auto* node : *_save->getNodes())
@@ -924,11 +1670,13 @@ void AIModule::setupAmbush()
 			{
 				continue;
 			}
+			AiProbe::ambushNode(0);
 			Position pos = node->getPosition();
 			Tile *tile = _save->getTile(pos);
 			if (tile == 0 || Position::distance2d(pos, _unit->getPosition()) > 10 || pos.z != _unit->getPosition().z || tile->getDangerous() ||
 				std::find(_reachableWithAttack.begin(), _reachableWithAttack.end(), _save->getTileIndex(pos))  == _reachableWithAttack.end())
 				continue; // just ignore unreachable tiles
+			AiProbe::ambushNode(1);
 
 			if (_traceAI)
 			{
@@ -941,25 +1689,60 @@ void AIModule::setupAmbush()
 			Position target;
 			if (!_save->getTileEngine()->canTargetUnit(&origin, tile, &target, _aggroTarget, false, _unit) && !getSpottingUnits(pos))
 			{
-				_save->getPathfinding()->calculate(_unit, pos, BAM_NORMAL);
+				AiProbe::ambushNode(2);
+				AiProbe::ambushMark();
+				calculateKnownOccupantV2(pos, ko2, _ko2AmbHits);
 				int ambushTUs = _save->getPathfinding()->getTotalTUCost();
 				// make sure we can move here
-				if (_save->getPathfinding()->getStartDirection() != -1)
+				const bool ownPath = _save->getPathfinding()->getStartDirection() != -1;
+				AiProbe::ambushOwn(ownPath, ambushTUs, _save->getPathfinding()->getExpanded());
+				if (ownPath)
 				{
+					AiProbe::ambushNode(3);
 					int score = BASE_SYSTEMATIC_SUCCESS;
 					score -= ambushTUs;
 
 					// make sure our enemy can reach here too.
+					// V2: the memo is asked about the tile the enemy's search would end on (Pathfinding::finalPositionFor), not the node:
+					// a walker's search to a node over empty air goes to the ground under it (GUNS 2352: verify 173, bad 9 under V1).
+					// A destination calculate() refuses before searching is no path there as well.
+					bool memoNoPath = false;
+					if (!enemyReach.empty())
+					{
+						const auto end = _save->getPathfinding()->finalPositionFor(_aggroTarget, pos, BAM_NORMAL);
+						memoNoPath = !end || !enemyReach[_save->getTileIndex(*end)];
+					}
+					if (memoNoPath && memo == 1)
+					{
+						AiProbe::ambushMemoNode(pos, true, false, ambushTUs, score, bestScore);
+						continue;
+					}
+					AiProbe::ambushMark();
 					_save->getPathfinding()->calculate(_aggroTarget, pos, BAM_NORMAL);
 
-					if (_save->getPathfinding()->getStartDirection() != -1)
+					const bool enemyPath = _save->getPathfinding()->getStartDirection() != -1;
+					AiProbe::ambushEnemy(pos, enemyPath, _save->getPathfinding()->getTotalTUCost(), (int)_save->getPathfinding()->getPath().size(),
+						_save->getPathfinding()->getExpanded(), ambushTUs, score, bestScore);
+					if (memoNoPath)
+					{
+						AiProbe::ambushMemoNode(pos, false, enemyPath, ambushTUs, score, bestScore);
+					}
+					else if (memo && !enemyPath && enemyReach.empty())
+					{
+						enemyReach = _save->getPathfinding()->closedTiles();
+					}
+					if (enemyPath)
 					{
 						// ideally we'd like to be behind some cover, like say a window or a low wall.
-						if (_save->getTileEngine()->faceWindow(pos) != -1)
+						const bool cover = _save->getTileEngine()->faceWindow(pos) != -1;
+						if (cover)
 						{
 							score += COVER_BONUS;
 						}
-						if (score > bestScore)
+						AiProbe::traceTile(_unit, "ambush", pos, score);
+						const bool taken = score > bestScore;
+						AiProbe::ambushScored(score, cover, taken);
+						if (taken)
 						{
 							path = _save->getPathfinding()->copyPath();
 							bestScore = score;
@@ -967,6 +1750,7 @@ void AIModule::setupAmbush()
 							_ambushAction.target = pos;
 							if (bestScore > FAST_PASS_THRESHOLD)
 							{
+								fastPass = true;
 								break;
 							}
 						}
@@ -977,7 +1761,10 @@ void AIModule::setupAmbush()
 
 		if (bestScore > 0)
 		{
+			AiProbe::ambushEnd(true, bestScore, _ambushAction.target, _ambushTUs, fastPass);
+			_probeScore = bestScore;
 			_ambushAction.type = BA_WALK;
+			_ko2AmbChosenTarget = ko2;
 			// i should really make a function for this
 			origin = _ambushAction.target.toVoxel() +
 				// 4 because -2 is eyes and 2 below that is the rifle (or at least that's my understanding)
@@ -1008,6 +1795,7 @@ void AIModule::setupAmbush()
 			return;
 		}
 	}
+	AiProbe::ambushEnd(false, bestScore, _ambushAction.target, _ambushTUs, fastPass);
 	if (_traceAI)
 	{
 		Log(LOG_INFO) << "Ambush estimation failed";
@@ -1024,28 +1812,48 @@ void AIModule::setupAttack()
 {
 	_attackAction.type = BA_RETHINK;
 	_psiAction.type = BA_NONE;
+	_evalChosen = false;
 
 	bool sniperAttack = false;
 
 	// if enemies are known to us but not necessarily visible, we can attack them with a blaster launcher or psi or a sniper attack.
 	if (_knownEnemies)
 	{
-		if (psiAction())
+		const ProbeMark psiMark = probeMark('s');
+		const bool psi = psiAction();
+		probeSlot('s', "psi", psiMark);
+		if (psi)
 		{
 			// at this point we can save some time with other calculations - the unit WILL make a psionic attack this turn.
 			return;
 		}
 		if (_blaster)
 		{
+			const ProbeMark mark = probeMark('x');
 			wayPointAction();
+			probeSlot('x', "waypoint", mark);
 		}
 		else if (_unit->getUnitRules()) // xcom soldiers (under mind control) lack unit rules!
 		{
 			// don't always act on spotter information unless modder says so
 			if (RNG::percent(_unit->getUnitRules()->getSniperPercentage()))
 			{
+				const ProbeMark mark = probeMark('x');
 				sniperAttack = sniperAction();
+				probeSlot('x', "sniper", mark);
 			}
+		}
+	}
+
+	// the bench's evaluator weighs every reachable tile itself: neither the nearest-target shot nor findFirePoint after it
+	if (!sniperAttack && _rifle && AiProbe::evalFire(_unit))
+	{
+		const ProbeMark mark = probeMark('x');
+		const bool evaluated = evalFireAction();
+		probeSlot('x', "eval", mark);
+		if (evaluated)
+		{
+			return;
 		}
 	}
 
@@ -1060,15 +1868,21 @@ void AIModule::setupAttack()
 		}
 		if (_grenade)
 		{
+			const ProbeMark mark = probeMark('x');
 			grenadeAction();
+			probeSlot('x', "grenade", mark);
 		}
 		if (_melee)
 		{
+			const ProbeMark mark = probeMark('x');
 			meleeAction();
+			probeSlot('x', "melee", mark);
 		}
 		if (_rifle)
 		{
+			const ProbeMark mark = probeMark('x');
 			projectileAction();
+			probeSlot('x', "shot", mark);
 		}
 	}
 
@@ -1090,7 +1904,10 @@ void AIModule::setupAttack()
 	else if (_spottingEnemies || _unit->getAggression() < RNG::generate(0, 3))
 	{
 		// if enemies can see us, or if we're feeling lucky, we can try to spot the enemy.
-		if (findFirePoint())
+		const ProbeMark mark = probeMark('x');
+		const bool found = findFirePoint();
+		probeSlot('x', "firepoint", mark);
+		if (found)
 		{
 			if (_traceAI)
 			{
@@ -1113,6 +1930,7 @@ void AIModule::setupAttack()
  */
 void AIModule::setupEscape()
 {
+	AiProbe::escapeBegin(_unit);
 	int unitsSpottingMe = getSpottingUnits(_unit->getPosition());
 	int currentTilePreference = 15;
 	int tries = -1;
@@ -1135,6 +1953,8 @@ void AIModule::setupEscape()
 	const int BASE_SYSTEMATIC_SUCCESS = 100;
 	const int BASE_DESPERATE_SUCCESS = 110;
 	const int FAST_PASS_THRESHOLD = 100; // a score that's good enough to quit the while loop early; it's subjective, hand-tuned and may need tweaking
+	const int GAP_PENALTY = 60; // per enemy seen within 2 tiles of the tile, the careful bot only (OXCE_AI_GAP)
+	const int TURRET_PENALTY = 100; // per known turret with a line of fire to the tile at any distance, the careful bot only (OXCE_AI_TURRET)
 
 	std::vector<Position> randomTileSearch = _save->getTileSearch();
 	RNG::shuffle(randomTileSearch);
@@ -1142,7 +1962,8 @@ void AIModule::setupEscape()
 	while (tries < 150 && !coverFound)
 	{
 		_escapeAction.target = _unit->getPosition(); // start looking in a direction away from the enemy
-		_escapeAction.run = _unit->getArmor()->allowsRunning(false) && (tries & 1); // every odd try, i.e. roughly 50%
+		// the careful bot runs by the player's rule (small units may), the AI by its own (armor must allow)
+		_escapeAction.run = _unit->getArmor()->allowsRunning(AiProbe::careful(_unit) && _unit->isSmallUnit()) && (tries & 1); // every odd try, i.e. roughly 50%
 
 		if (!_save->getTile(_escapeAction.target))
 		{
@@ -1222,11 +2043,26 @@ void AIModule::setupEscape()
 		if (!tile)
 		{
 			score = -100001; // no you can't quit the battlefield by running off the map.
+			AiProbe::escapeProbe(_unit, 2);
 		}
 		else
 		{
+			// the escape audit (OXCE_AI_ESCAPEPROF) counts the traces and the time spent on a tile dropped as unreachable right after
+			AiProbe::escapeMark();
+			const bool inReach = std::find(_reachable.begin(), _reachable.end(), _save->getTileIndex(_escapeAction.target)) != _reachable.end();
+			if (!inReach && AiProbe::escapeReachFirst())
+			{
+				// ESCAPE_REACH_FIRST_V1 (stand only, OXCE_AI_ESCAPE_REACH_FIRST): the unreachable tile is dropped before the enemies'
+				// lines of fire to it are traced - getSpottingUnits is const and touches no RNG, the tile would be dropped right after
+				// the traces anyway, so the reachable tiles score the same and the same tile is chosen (audit п. 12-13). Without the
+				// flag the traces come first, as in OXCE (std::find above is a pure read of _reachable, its place changes nothing)
+				AiProbe::escapeSkipped();
+				AiProbe::escapeProbe(_unit, 0);
+				continue;
+			}
 			spotters = getSpottingUnits(_escapeAction.target);
-			if (std::find(_reachable.begin(), _reachable.end(), _save->getTileIndex(_escapeAction.target))  == _reachable.end())
+			AiProbe::escapeProbe(_unit, inReach ? 1 : 0);
+			if (!inReach)
 				continue; // just ignore unreachable tiles
 
 			if (_spottingEnemies || spotters)
@@ -1248,6 +2084,9 @@ void AIModule::setupEscape()
 			{
 				score -= BASE_SYSTEMATIC_SUCCESS;
 			}
+			// the careful bot does not take cover next to an enemy it sees: melee comes to the back on the enemy turn (OXCE_AI_GAP)
+			score -= AiProbe::closeEnemies(_save, _unit, _escapeAction.target) * GAP_PENALTY;
+			score -= AiProbe::turretsSeeing(_save, _unit, _escapeAction.target) * TURRET_PENALTY;
 
 			if (_traceAI)
 			{
@@ -1258,6 +2097,10 @@ void AIModule::setupEscape()
 
 		}
 
+		if (tile)
+		{
+			AiProbe::traceTile(_unit, "escape", _escapeAction.target, score);
+		}
 		if (tile && score > bestTileScore)
 		{
 			// calculate TUs to tile; we could be getting this from findReachable() somehow but that would break something for sure...
@@ -1283,8 +2126,27 @@ void AIModule::setupEscape()
 			if (bestTileScore > FAST_PASS_THRESHOLD) coverFound = true; // good enough, gogogo
 		}
 	}
+	if (bestTileScore > -100000 && AiProbe::escapeAlt(_unit))
+	{
+		// ESCAPE_ALT_PROBE (stand only): the reachable tiles next to the chosen one, read only - getSpottingUnits is const
+		AiProbe::escapeAltWrite(_save, _unit, _reachable, bestTile, bestTileScore, _escapeTUs, run,
+			[this](const Position &p) { return getSpottingUnits(p); });
+	}
 	_escapeAction.target = bestTile;
 	_escapeAction.run = run;
+	if (bestTileScore > -100000)
+	{
+		const int closeNow = AiProbe::closeEnemies(_save, _unit, _unit->getPosition());
+		if (closeNow > 0)
+		{
+			AiProbe::tally(_unit, AiProbe::closeEnemies(_save, _unit, bestTile) < closeNow ? "gap.away" : "gap.stuck");
+		}
+		const int turretsNow = AiProbe::turretsSeeing(_save, _unit, _unit->getPosition());
+		if (turretsNow > 0)
+		{
+			AiProbe::tally(_unit, AiProbe::turretsSeeing(_save, _unit, bestTile) < turretsNow ? "turret.away" : "turret.stuck");
+		}
+	}
 	if (_traceAI)
 	{
 		_save->getTile(_escapeAction.target)->setMarkerColor(13);
@@ -1305,6 +2167,7 @@ void AIModule::setupEscape()
 		{
 			Log(LOG_INFO) << "Escape estimation completed after " << tries << " tries, " << Position::distance2d(_unit->getPosition(), bestTile) << " squares or so away.";
 		}
+		_probeScore = bestTileScore;
 		_escapeAction.type = BA_WALK;
 	}
 }
@@ -1349,6 +2212,7 @@ int AIModule::getSpottingUnits(const Position& pos) const
 			Position originVoxel = _save->getTileEngine()->getSightOriginVoxel(bu);
 			originVoxel.z -= 2;
 			Position targetVoxel;
+			AiProbe::escapeTarget(); // the escape audit counts the traces (OXCE_AI_ESCAPEPROF)
 			if (checking)
 			{
 				if (_save->getTileEngine()->canTargetUnit(&originVoxel, _save->getTile(pos), &targetVoxel, bu, false, _unit))
@@ -1523,6 +2387,7 @@ bool AIModule::selectPointNearTarget(BattleUnit *target, int maxTUs)
 	int size = _unit->getArmor()->getSize();
 	int sizeTarget = target->getArmor()->getSize();
 	int dirTarget = target->getDirection();
+	// Note to self: AI doesn't attack units of the same faction, so we don't need to worry about ignoring melee dodge here
 	float dodgeChanceDiff = target->getArmor()->getMeleeDodge(target) * target->getArmor()->getMeleeDodgeBackPenalty() * _attackAction.diff / 160.0f;
 	bool returnValue = false;
 	int distance = 1000;
@@ -1541,12 +2406,25 @@ bool AIModule::selectPointNearTarget(BattleUnit *target, int maxTUs)
 					bool valid = _save->getTileEngine()->validMeleeRange(checkPath, dir, _unit, target, 0);
 					bool fitHere = _save->setUnitPosition(_unit, checkPath, true);
 
+					// the determinism hunt (OXCE_AI_TRACE_MELEE, bench builds only): every candidate tile with what decided it
+					static const bool trace = AiProbe::param("OXCE_AI_TRACE_MELEE", 0) > 0;
+					if (trace && AiProbe::active())
+					{
+						Log(LOG_INFO) << "[AIMELEE] unit=" << _unit->getId() << " target=" << target->getId() << " tile=" << checkPath
+							<< " valid=" << valid << " fit=" << fitHere << " danger=" << _save->getTile(checkPath)->getDangerous()
+							<< " dodge=" << dodgeChanceDiff << " maxtu=" << maxTUs;
+					}
 					if (valid && fitHere && !_save->getTile(checkPath)->getDangerous())
 					{
 						_save->getPathfinding()->calculate(_unit, checkPath, BAM_NORMAL, 0, maxTUs);
 
 						//for 100% dodge diff and on 4th difficulty it will allow aliens to move 10 squares around to made attack from behind.
 						int distanceCurrent = _save->getPathfinding()->getPath().size() - dodgeChanceDiff * _save->getTileEngine()->getArcDirection(dir - 4, dirTarget);
+						if (trace && AiProbe::active())
+						{
+							Log(LOG_INFO) << "[AIMELEE] unit=" << _unit->getId() << " tile=" << checkPath << " path=" << _save->getPathfinding()->getPath().size()
+								<< " start=" << _save->getPathfinding()->getStartDirection() << " dist=" << distanceCurrent << " best=" << distance;
+						}
 						if (_save->getPathfinding()->getStartDirection() != -1 && distanceCurrent < distance)
 						{
 							_attackAction.target = checkPath;
@@ -1666,6 +2544,7 @@ bool AIModule::selectSpottedUnitForSniper()
 
 	if (numberOfTargets) // Now that we have a list of valid targets, pick one and return.
 	{
+		_probeScore = INT_MIN; // each target was scored, the pick is random
 		int pick = RNG::generate(0, numberOfTargets - 1);
 		_aggroTarget = spottedTargets.at(pick).first;
 		_attackAction.target = _aggroTarget->getPosition();
@@ -1815,7 +2694,9 @@ void AIModule::evaluateAIMode()
 		patrolOdds = 0;
 		if (_escapeTUs == 0)
 		{
+			const ProbeMark mark = probeMark('e');
 			setupEscape();
+			probeSlot('e', "escape", mark);
 		}
 	}
 
@@ -1841,7 +2722,9 @@ void AIModule::evaluateAIMode()
 		{
 			if (selectClosestKnownEnemy())
 			{
+				const ProbeMark mark = probeMark('e');
 				setupEscape();
+				probeSlot('e', "escape.known", mark);
 			}
 			else
 			{
@@ -1989,6 +2872,7 @@ void AIModule::evaluateAIMode()
 	{
 		_AIMode = AI_COMBAT;
 	}
+	AiProbe::modeOdds(_unit, patrolOdds, ambushOdds, combatOdds, escapeOdds, decision, _AIMode);
 
 
 	// enforce the validity of our decision, and try fallback behaviour according to priority.
@@ -2002,14 +2886,24 @@ void AIModule::evaluateAIMode()
 			{
 				return;
 			}
-			if (findFirePoint())
+			const ProbeMark mark = probeMark('x');
+			const bool found = findFirePoint();
+			probeSlot('x', "firepoint.fallback", mark);
+			if (found)
 			{
 				return;
 			}
 		}
-		else if (selectRandomTarget() && findFirePoint())
+		else
 		{
-			return;
+			const bool picked = selectRandomTarget();
+			const ProbeMark mark = probeMark('x');
+			const bool found = picked && findFirePoint();
+			probeSlot('x', "firepoint.random", mark);
+			if (found)
+			{
+				return;
+			}
 		}
 		_AIMode = AI_PATROL;
 	}
@@ -2039,6 +2933,69 @@ void AIModule::evaluateAIMode()
 }
 
 /**
+ * The bench's tactical rules (docs/AI_ROADMAP.md, Ф2), on only for the smarter enemy (OXCE_AI_TACTICS)
+ * and the careful bot (OXCE_AI_CAREFUL): a unit the other side sees either attacks or goes to cover
+ * it can reach now, it does not walk around or stand in view; an aimed or auto shot that would leave
+ * no TU for cover becomes a snap shot; the careful bot also pulls its wounded out of view.
+ */
+void AIModule::tacticalMode()
+{
+	// every exit is counted: a rule that never fires is visible in the result line, not only in the outcome (R-034)
+	if (!_spottingEnemies)
+	{
+		return;
+	}
+	AiProbe::tally(_unit, "spotted");
+	if (_AIMode == AI_ESCAPE)
+	{
+		AiProbe::tally(_unit, "escaping");
+		return;
+	}
+	// cover is a tile fewer of them see than see us now
+	if (_escapeAction.type != BA_WALK || _escapeAction.target == _unit->getPosition()
+		|| getSpottingUnits(_escapeAction.target) >= _spottingEnemies)
+	{
+		AiProbe::tally(_unit, "nocover");
+		return;
+	}
+	const bool wounded = AiProbe::careful(_unit)
+		&& (_unit->getFatalWounds() > 0 || _unit->getHealth() < _unit->getBaseStats()->health / 2);
+	if (_AIMode == AI_AMBUSH && !wounded)
+	{
+		// an ambush holds its time units for reaction fire - the wall the player uses; sending it to cover throws that away
+		AiProbe::tally(_unit, "ambush");
+		return;
+	}
+	const bool attacking = _AIMode == AI_COMBAT && _attackAction.type != BA_RETHINK && _attackAction.type != BA_NONE;
+	if (attacking && !wounded)
+	{
+		if ((_attackAction.type == BA_AIMEDSHOT || _attackAction.type == BA_AUTOSHOT) && _attackAction.weapon)
+		{
+			const int left = _unit->getTimeUnits() - BattleActionCost(_attackAction.type, _unit, _attackAction.weapon).Time;
+			BattleActionCost snap(BA_SNAPSHOT, _unit, _attackAction.weapon);
+			if (left < _escapeTUs && snap.haveTU() && _unit->getTimeUnits() - snap.Time >= _escapeTUs)
+			{
+				_attackAction.type = BA_SNAPSHOT;
+				AiProbe::tally(_unit, "snap");
+			}
+		}
+		// the careful bot never ends a turn in the open after its shot: no time units left for cover - cover now, shoot next turn
+		if (AiProbe::careful(_unit) && _attackAction.weapon && _attackAction.type != BA_WALK
+			&& _unit->getTimeUnits() - BattleActionCost(_attackAction.type, _unit, _attackAction.weapon).Time < _escapeTUs)
+		{
+			_AIMode = AI_ESCAPE;
+			AiProbe::tally(_unit, "scoot");
+			return;
+		}
+		AiProbe::tally(_unit, "attack");
+		return;
+	}
+	// which mode gave way to cover: a patrol walking in view, or combat that found nothing to do
+	AiProbe::tally(_unit, wounded ? "pullback" : _AIMode == AI_PATROL ? "cover.patrol" : "cover.combat");
+	_AIMode = AI_ESCAPE;
+}
+
+/**
  * Find a position where we can see our target, and move there.
  * check the 11x11 grid for a position nearby where we can potentially target him.
  * @return True if a possible position was found.
@@ -2047,6 +3004,15 @@ bool AIModule::findFirePoint()
 {
 	if (!selectClosestKnownEnemy())
 		return false;
+	// KNOWN_OCCUPANT_PATH_V2 (bench): the target it aims at blocks its own tile for the searches to the points below
+	bool ko2Old = false;
+	const BattleUnit *ko2 = knownOccupantV2(ko2Old);
+	if (AiProbe::knownOccupantPathV2() && _unit->getFaction() == FACTION_HOSTILE)
+	{
+		_ko2FpRan = true;
+		_ko2FpTarget = ko2;
+		_ko2FpOld = ko2Old;
+	}
 	std::vector<Position> randomTileSearch = _save->getTileSearch(); // copy!
 	RNG::shuffle(randomTileSearch);
 	Position target;
@@ -2055,6 +3021,17 @@ bool AIModule::findFirePoint()
 	bool waitIfOutsideWeaponRange = _unit->getGeoscapeSoldier() ? false : _unit->getUnitRules()->waitIfOutsideWeaponRange();
 	bool extendedFireModeChoiceEnabled = _save->getMod()->getAIExtendedFireModeChoice();
 	int bestScore = 0;
+	int droppedByEnergy = 0, overByTu = 0;
+	// FIREPOINT_BLOCKED_UNIT_STALL (bench): points by the first step that met a unit, from where it stood, while nothing
+	// it may know has changed; the first step of the point chosen instead (same_first_step must stay 0)
+	const bool suppress = _fpBlocked && firepointBlockedHolds();
+	bool suppressedHere = false;
+	int bestDir = -1;
+	// FIREPOINT_TARGET_CELL_V1 (bench): not the tile the target stands on - the path there is open only because the target was
+	// not spotted this turn (Pathfinding::isBlocked), and the walk stops on it; the target's tile is the one it already aims at
+	const bool skipTargetCell = AiProbe::firepointTargetCell();
+	bool targetCellRejected = false;
+	Position targetCell;
 	_attackAction.type = BA_RETHINK;
 	for (const auto& randomPosition : randomTileSearch)
 	{
@@ -2063,6 +3040,25 @@ bool AIModule::findFirePoint()
 		if (tile == 0  ||
 			std::find(_reachableWithAttack.begin(), _reachableWithAttack.end(), _save->getTileIndex(pos))  == _reachableWithAttack.end())
 			continue;
+		if (skipTargetCell)
+		{
+			bool onTarget = false;
+			const int size = _unit->getArmor()->getSize();
+			for (int x = 0; x < size && !onTarget; ++x)
+			{
+				for (int y = 0; y < size && !onTarget; ++y)
+				{
+					const Tile *part = _save->getTile(pos + Position(x, y, 0));
+					onTarget = part && part->getUnit() == _aggroTarget;
+				}
+			}
+			if (onTarget)
+			{
+				targetCellRejected = true;
+				targetCell = pos;
+				continue;
+			}
+		}
 		int score = 0;
 		// i should really make a function for this
 		Position origin = pos.toVoxel() +
@@ -2071,10 +3067,30 @@ bool AIModule::findFirePoint()
 
 		if (_save->getTileEngine()->canTargetUnit(&origin, _aggroTarget->getTile(), &target, _unit, false))
 		{
-			_save->getPathfinding()->calculate(_unit, pos, BAM_NORMAL);
+			calculateKnownOccupantV2(pos, ko2, _ko2FpHits);
 			// can move here
 			if (_save->getPathfinding()->getStartDirection() != -1)
 			{
+				// FIREPOINT_ENERGY_PATH_V1 (bench): the walk goes by this path, not by the one findReachable found the tile by
+				const int over = AiProbe::firepointPathOver(_save, _unit, _reachableTuMax, _reachableEnergyMax);
+				overByTu += (over & 2) ? 1 : 0;
+				if (over & 1)
+				{
+					++droppedByEnergy;
+					continue;
+				}
+				if (suppress && _save->getPathfinding()->getStartDirection() == _fpBlockedDir)
+				{
+					// any point by the step that met the unit, not only the point it was walking to: another point by the
+					// same step meets it again (the observation seed 1458 - 81 such reselections with the point in the key)
+					if (!suppressedHere)
+					{
+						AiProbe::tally(_unit, "fpblocked.suppressed");
+					}
+					suppressedHere = true;
+					_fpSuppressedNow = true;
+					continue;
+				}
 				score = BASE_SYSTEMATIC_SUCCESS - getSpottingUnits(pos) * 10;
 				score += _unit->getTimeUnits() - _save->getPathfinding()->getTotalTUCost();
 				if (!_aggroTarget->checkViewSector(pos))
@@ -2095,9 +3111,11 @@ bool AIModule::findFirePoint()
 					}
 				}
 
+				AiProbe::traceTile(_unit, "firepoint", pos, score);
 				if (score > bestScore)
 				{
 					bestScore = score;
+					bestDir = _save->getPathfinding()->getStartDirection();
 					_attackAction.target = pos;
 					_attackAction.finalFacing = _save->getTileEngine()->getDirectionTo(pos, _aggroTarget->getPosition());
 					if (score > FAST_PASS_THRESHOLD)
@@ -2108,10 +3126,26 @@ bool AIModule::findFirePoint()
 			}
 		}
 	}
+	if (droppedByEnergy || overByTu)
+	{
+		AiProbe::firepointDropped(_unit, droppedByEnergy, overByTu);
+	}
+	if (targetCellRejected)
+	{
+		AiProbe::firepointTargetCellRejected(_unit, targetCell, bestScore > 70, _attackAction.target);
+	}
 
 	if (bestScore > 70)
 	{
+		_probeScore = bestScore;
 		_attackAction.type = BA_WALK;
+		_firepointChosen = true;
+		_firepointChosenAt = _attackAction.target;
+		_ko2FpChosenTarget = ko2;
+		if (suppressedHere && bestDir == _fpBlockedDir)
+		{
+			AiProbe::tally(_unit, "fpblocked.same_first_step");
+		}
 		if (_traceAI)
 		{
 			Log(LOG_INFO) << "Firepoint found at " << _attackAction.target << ", with a score of: " << bestScore;
@@ -2566,6 +3600,240 @@ void AIModule::projectileAction()
 	}
 }
 
+/**
+ * The bench's shot evaluator (OXCE_AI_EVAL, docs/AI_TRAINING.md): every tile the unit can reach and
+ * still shoot from, every enemy its side saw this turn, every fire mode standing and kneeling. A shot is
+ * worth the share of the target's health it is expected to take (one hit that kills: the chance of at
+ * least one hit), by the engine's own accuracy with range dropoff and the target's armor and resistance;
+ * the tile costs its exposure after the shot - the seen enemies with a line of fire to it, heavier for a
+ * wounded unit and lighter when time units are left to reach cover. A shot must leave the time units for
+ * cover (from here the careful bot's escape path); a unit the other side sees does not walk, and a walk
+ * costs OXCE_AI_EVAL_WALK. The best positive plan is a shot from here or a walk to its tile (the next
+ * think shoots from there); none positive - no attack, cover decides; the careful rules stay the safety net.
+ * @return False if the side sees no enemy (the old logic goes on), true if the evaluator decided.
+ */
+bool AIModule::evalFireAction()
+{
+	BattleItem *weapon = _attackAction.weapon;
+	if (!weapon)
+	{
+		return false;
+	}
+	std::vector<BattleUnit*> targets;
+	for (auto* bu : *_save->getUnits())
+	{
+		if (bu->getFaction() == _targetFaction && !bu->isOut() && bu->getTurnsSinceSpottedByFaction(_unit->getFaction()) == 0)
+		{
+			targets.push_back(bu);
+		}
+	}
+	if (targets.empty())
+	{
+		return false;
+	}
+
+	struct Mode { BattleActionType type; int time; int accuracy; int shots; BattleActionAttack attack; };
+	std::vector<Mode> modes;
+	const RuleItem *rule = weapon->getRules();
+	const int kneelBonus = rule->getKneelBonus(_save->getMod());
+	int cheapest = -1;
+	BattleActionCost cheapestCost;
+	for (BattleActionType type : { BA_AIMEDSHOT, BA_SNAPSHOT, BA_AUTOSHOT })
+	{
+		BattleActionCost cost(type, _unit, weapon);
+		if (!cost.Time || !cost.haveTU())
+		{
+			continue;
+		}
+		BattleActionAttack attack = BattleActionAttack::GetBeforeShoot(cost);
+		if (attack.damage_item == nullptr)
+		{
+			continue;
+		}
+		// accuracy standing: moving stands the unit up, kneeling is weighed as its own option
+		int accuracy = BattleUnit::getFiringAccuracy(attack, _save->getMod());
+		if (_unit->isKneeled() && kneelBonus > 0)
+		{
+			accuracy = accuracy * 100 / kneelBonus;
+		}
+		int shots = type == BA_AIMEDSHOT ? rule->getConfigAimed()->shots : type == BA_SNAPSHOT ? rule->getConfigSnap()->shots : rule->getConfigAuto()->shots;
+		modes.push_back({ type, cost.Time, accuracy, std::max(1, shots), attack });
+		if (cheapest < 0 || cost.Time < cheapest)
+		{
+			cheapest = cost.Time;
+			cheapestCost = cost;
+		}
+	}
+	if (modes.empty())
+	{
+		AiProbe::tally(_unit, "eval.nomode");
+		return false;
+	}
+
+	// tiles the unit reaches with the cheapest shot left, and what the walk costs; cheapest first, a bounded search
+	std::vector<std::pair<Position, int>> tiles;
+	{
+		Pathfinding *pf = _save->getPathfinding();
+		std::vector<int> reach = pf->findReachable(_unit, cheapestCost);
+		const size_t maxTiles = 250;
+		for (size_t i = 0; i < reach.size() && tiles.size() < maxTiles; ++i)
+		{
+			Position pos = _save->getTileCoords(reach[i]);
+			int tu = pf->reachedTU(pos);
+			if (tu >= 0)
+			{
+				tiles.push_back({ pos, tu });
+			}
+		}
+	}
+
+	const double riskPerSpotter = AiProbe::param("OXCE_AI_EVAL_RISK", 0.15);
+	const double coverRelief = AiProbe::param("OXCE_AI_EVAL_COVER", 0.5);
+	const double coverShare = AiProbe::param("OXCE_AI_EVAL_COVERTU", 0.25);
+	const double walkCost = AiProbe::param("OXCE_AI_EVAL_WALK", 0.1);
+	const double fragility = 2.0 - (double)_unit->getHealth() / std::max(1, (int)_unit->getBaseStats()->health);
+	const bool mayKneel = _unit->getArmor()->allowsKneeling(_unit->getType() == "SOLDIER") && !_unit->isFloating();
+	const int timeUnits = _unit->getTimeUnits();
+	const int coverTU = (int)(coverShare * _unit->getBaseStats()->tu);
+
+	double bestScore = 0.0;
+	Position bestTile, bestTarget;
+	BattleActionType bestType = BA_RETHINK;
+	bool bestKneel = false;
+	int evaluated = 0;
+	for (const auto& t : tiles)
+	{
+		const Position pos = t.first;
+		const int walk = t.second;
+		// moving in view draws reaction fire: a unit the other side sees shoots from where it stands or not at all (v1 walked 3.5 times per shot, +0.9 dead a battle)
+		if (walk > 0 && _spottingEnemies)
+		{
+			continue;
+		}
+		// time units that must remain after the shot: the careful bot's cover path from here, a share of the turn elsewhere
+		const int need = walk == 0 ? (_spottingEnemies ? _escapeTUs : 0) : coverTU;
+		Tile *tile = _save->getTile(pos);
+		if (!tile)
+		{
+			continue;
+		}
+		Position origin = pos.toVoxel() + Position(8, 8, _unit->getHeight() + _unit->getFloatHeight() - tile->getTerrainLevel() - 4);
+		// which seen enemies have a line of fire here - they are the targets and, the other way, the exposure
+		std::vector<BattleUnit*> inLine;
+		for (auto* e : targets)
+		{
+			Position scan;
+			if (_save->getTileEngine()->canTargetUnit(&origin, e->getTile(), &scan, _unit, false))
+			{
+				inLine.push_back(e);
+			}
+		}
+		if (inLine.empty())
+		{
+			continue;
+		}
+		const double exposure = riskPerSpotter * fragility * inLine.size();
+		for (auto* e : inLine)
+		{
+			const int distanceSq = Position::distanceSq(pos, e->getPosition());
+			const int distance = (int)std::ceil(std::sqrt((float)distanceSq));
+			if (rule->isOutOfRange(distanceSq))
+			{
+				continue;
+			}
+			const int hp = std::max(1, e->getHealth());
+			for (const auto& m : modes)
+			{
+				const RuleItem *ammo = m.attack.damage_item->getRules();
+				if (ammo->getExplosionRadius(m.attack) != 0)
+				{
+					continue; // area damage: the old logic with explosiveEfficacy
+				}
+				int upper, lower;
+				const int dropoff = rule->calculateLimits(upper, lower, _save->getDepth(), m.type);
+				int accuracy = m.accuracy;
+				if (distance > upper)
+				{
+					accuracy -= (distance - upper) * dropoff;
+				}
+				else if (distance < lower)
+				{
+					accuracy -= (lower - distance) * dropoff;
+				}
+				const RuleDamageType *type = ammo->getDamageType();
+				const int power = e->reduceByResistance(ammo->getPowerBonus(m.attack), type->ResistType);
+				const double perHit = std::max(0.0, power - e->getArmor(SIDE_FRONT) * (double)type->ArmorEffectiveness);
+				if (perHit <= 0.0)
+				{
+					continue;
+				}
+				for (int kneel = 0; kneel < 2; ++kneel)
+				{
+					if (kneel && !mayKneel)
+					{
+						continue;
+					}
+					// staying put keeps the kneel the unit already has; kneeling down costs its time units
+					const bool alreadyKneeled = walk == 0 && _unit->isKneeled();
+					const int kneelTU = kneel && !alreadyKneeled ? _unit->getKneelDownCost() : 0;
+					const int left = timeUnits - walk - m.time - kneelTU;
+					if (left < need)
+					{
+						continue;
+					}
+					const bool kneeled = kneel || alreadyKneeled;
+					const double hit = std::min(1.0, std::max(0.0, (kneeled ? accuracy * kneelBonus / 100.0 : accuracy) / 100.0));
+					const double gain = perHit >= hp
+						? 1.0 - std::pow(1.0 - hit, m.shots)
+						: 0.7 * std::min(1.0, hit * m.shots * perHit / hp);
+					const double risk = exposure * (left >= coverTU ? 1.0 - coverRelief : 1.0);
+					const double score = gain - risk - (walk > 0 ? walkCost : 0.0) + 0.0005 * left;
+					AiProbe::traceTile(_unit, "eval", pos, (int)std::lround(score * 1000));
+					++evaluated;
+					if (score > bestScore)
+					{
+						bestScore = score;
+						bestTile = pos;
+						bestTarget = e->getPosition();
+						bestType = m.type;
+						bestKneel = kneeled;
+					}
+				}
+			}
+		}
+	}
+
+	if (bestType == BA_RETHINK)
+	{
+		AiProbe::tally(_unit, "eval.none");
+		_attackAction.type = BA_RETHINK;
+		return true;
+	}
+	_probeScore = (int)std::lround(bestScore * 1000);
+	_evalChosen = true;
+	if (bestTile == _unit->getPosition())
+	{
+		_attackAction.type = bestType;
+		_attackAction.target = bestTarget;
+		_evalKneel = bestKneel;
+		AiProbe::tally(_unit, "eval.shot");
+	}
+	else
+	{
+		_attackAction.type = BA_WALK;
+		_attackAction.target = bestTile;
+		_attackAction.finalFacing = _save->getTileEngine()->getDirectionTo(bestTile, bestTarget);
+		_evalKneel = false;
+		AiProbe::tally(_unit, "eval.walk");
+	}
+	if (_traceAI)
+	{
+		Log(LOG_INFO) << "Shot evaluator: " << evaluated << " options on " << tiles.size() << " tiles, best " << bestScore
+			<< " - " << (int)bestType << " at " << bestTarget << " from " << bestTile << (bestKneel ? " kneeling" : "");
+	}
+	return true;
+}
+
 void AIModule::extendedFireModeChoice(BattleActionCost& costAuto, BattleActionCost& costSnap, BattleActionCost& costAimed, BattleActionCost& costThrow, bool checkLOF)
 {
 	std::vector<BattleActionType> attackOptions = { };
@@ -2634,6 +3902,7 @@ void AIModule::extendedFireModeChoice(BattleActionCost& costAuto, BattleActionCo
 		}
 	}
 
+	_probeScore = score;
 	_attackAction.type = chosenAction;
 }
 
@@ -2663,6 +3932,10 @@ void AIModule::grenadeAction()
 		else if (!getNodeOfBestEfficacy(&action, radius))
 		{
 			return;
+		}
+		else
+		{
+			_probeSource = "grenade.node";
 		}
 		std::vector<std::pair<Position, int>> shifts;
 		if (grenade->getRules()->getBattleType() == BT_PROXIMITYGRENADE)
@@ -2902,6 +4175,7 @@ bool AIModule::psiAction()
 			Log(LOG_INFO) << "making a psionic attack this turn";
 		}
 
+		_probeScore = weightToAttack;
 		_psiAction.type = typeToAttack;
 		_psiAction.target = _aggroTarget->getPosition();
 		_psiAction.weapon = item;
@@ -3065,7 +4339,7 @@ void AIModule::selectMeleeOrRanged()
 		{
 			_rifle = false;
 			_attackAction.weapon = melee;
-			_reachableWithAttack = _save->getPathfinding()->findReachable(_unit, BattleActionCost(BA_HIT, _unit, melee));
+			reachableWithAttack(BattleActionCost(BA_HIT, _unit, melee));
 			return;
 		}
 	}

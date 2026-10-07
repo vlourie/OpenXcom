@@ -40,10 +40,11 @@ OPT SDLKey keyBattleLeft, keyBattleRight, keyBattleUp, keyBattleDown, keyBattleL
 keyBattleUseLeftHand, keyBattleUseRightHand, keyBattleInventory, keyBattleMap, keyBattleOptions, keyBattleEndTurn, keyBattleAbort, keyBattleStats, keyBattleKneel,
 keyBattleReserveKneel, keyBattleReload, keyBattlePersonalLighting, keyBattleReserveNone, keyBattleReserveSnap, keyBattleReserveAimed, keyBattleReserveAuto,
 keyBattleCenterEnemy1, keyBattleCenterEnemy2, keyBattleCenterEnemy3, keyBattleCenterEnemy4, keyBattleCenterEnemy5, keyBattleCenterEnemy6, keyBattleCenterEnemy7, keyBattleCenterEnemy8,
-keyBattleCenterEnemy9, keyBattleCenterEnemy10, keyBattleVoxelView, keyBattleZeroTUs, keyInvCreateTemplate, keyInvApplyTemplate, keyInvClear, keyInvAutoEquip;
+keyBattleCenterEnemy9, keyBattleCenterEnemy10, keyBattleVoxelView, keyBattleZeroTUs, keyInvCreateTemplate, keyInvApplyTemplate, keyInvClear, keyInvAutoEquip,
+keyBattleHdTestDump, keyBattleHdModeToggle, keyFeedback;
 
 // Extra hotkeys (OXCE)
-OPT SDLKey keyGeoDailyPilotExperience, keyGeoUfoTracker, keyGeoTechTreeViewer, keyGeoGlobalResearch, keyGeoGlobalProduction, keyGeoGlobalAlienContainment,
+OPT SDLKey keyGeoDailyPilotExperience, keyGeoUfoTracker, keyGeoTechTreeViewer, keyGeoGlobalResearch, keyGeoGlobalProduction, keyGeoGlobalAlienContainment, keyGeoGlobalTransfers,
 	keyGraphsZoomIn, keyGraphsZoomOut,
 	keyToggleQuickSearch, keyInstaSave,
 	keyCraftLoadoutSave, keyCraftLoadoutLoad,
@@ -82,6 +83,8 @@ OPT int oxcePediaSortResistances; // hidden, unhide if becomes popular?
 OPT int oxceInterceptTableSize;
 OPT bool oxceEnableSlackingIndicator;
 OPT int oxceInterceptGuiMaintenanceTime;
+OPT bool oxceCraftWeaponIcons;
+OPT bool oxceDogfightHitChance;
 OPT int oxceShowETAMode;
 OPT bool oxceUfoLandingAlert;
 OPT bool oxceRememberDisabledCraftWeapons;
@@ -110,6 +113,24 @@ OPT bool oxceEnableOffCentreShooting;
 OPT bool oxceUniformShootingSpread;
 OPT int oxceCrashedOrLanded;
 
+namespace QOL
+{
+	enum class ItemTooltipMode;
+	OPT int ItemTooltipMode;
+	OPT int ItemTooltipHoverDelayInTenths;
+	OPT SDLKey ItemTooltipHotkey;
+
+	enum class HighlightLowManaSoldiersMode;
+	OPT int highlightLowManaSoldiersMode;
+
+	enum class DefaultSoldiersSorter;
+	OPT int defaultSoldiersSorter;
+
+	OPT bool hideEnemyTurnBackground;
+	OPT int dontTraceProjectiles;
+	OPT SDLKey ToggleInvidualLighting;
+}
+
 // OXCE hidden, accessible only via options.cfg
 /**
  * Verification level of mod data.
@@ -121,12 +142,88 @@ OPT bool oxceFirstPersonViewFisheyeProjection;
 OPT bool oxceThumbButtons;
 OPT int oxceThrottleMouseMoveEvent;
 OPT bool oxceDisableThinkingProgressBar;
+// OXCE: forget a soldier's voice set when the player changes the avatar (so the new look gets its own voice)
+OPT bool oxceResetUnitResponseSoundsOnAvatarChange;
+// OXCE: the soldier list's extra column (the "sort by" choice), remembered between screens
+OPT int oxceBaseSoldierInfoColumnDefault;
+// Soldier lists (soldiers, craft crew): sorting puts them into groups first and keeps the chosen order inside each (0 none, 1 soldier type, 2 rank, 3 craft)
+OPT int oxceBaseSoldierGroupBy;
+// Soldier lists: the soldier's rank badge (its type's own set, BASEBITS) before the name
+OPT bool oxceBaseSoldierTypeIcon;
+// OXCE: play cutscenes at the original 320x200 (as the classic game does); off = scaled like the geoscape
+OPT bool oxceMaximizeCutsceneScreens;
 
 OPT bool oxceEmbeddedOnly;
 OPT bool oxceListVFSContents;
 OPT bool oxceEnablePaletteFlickerFix;
 OPT bool oxceRecommendedOptionsWereSet;
 OPT std::string password;
+
+// HD render: battlescape sprite scale (1 = classic 32x40, 2..4 = HD; needs a 32-bit display), applied at the next battle
+OPT int oxceHdScale;
+OPT bool oxceHdPictures;
+OPT bool oxceHdUiSmooth;
+/// HD interface: 0 off, 1 crisp text and nearest-scaled art, 2 crisp text and xBRZ-smoothed art.
+OPT int oxceHdUi;
+/// HD interface: the widget skin (0 classic shapes, 1 ramps with gradients, 2 dark panels, 3 flat).
+OPT int oxceHdUiSkin;
+// HD interface, modern skin: the battle's button panel drawn as tiles with vector pictograms (HdBattleHud); off = the mod's picture, smoothed
+OPT bool oxceHdBattleHud;
+/// HD interface: 0 the game's own font, smoothed (classic colours, widths and lines); 1 TrueType (hd/UI/Font*.ttf).
+OPT int oxceHdUiFont;
+/// HD interface: the globe's own scale, apart from the windows around it: 0 as the geoscape, N = one globe pixel is N display pixels.
+OPT int oxceHdGlobeScale;
+// HD render: how the true-color battlescape canvas draws palette sprites (0 nearest, 1 HD packs, 2 HD packs + xBRZ smoothing)
+OPT int oxceHdMode;
+// HD render: smooth, colored light on the true-color canvas (HD modes only)
+OPT bool oxceHdLight;
+// HD render: the ground pattern - a floor with pack variants (<i>.v1.png ...) is laid over the map as patches
+OPT bool oxceHdGroundVariants;
+// HD render: SCC wall addressing - an addressed wall frame (hd/TERRAIN/<set>/address.txt) shows the picture the map's field puts in its cell (<i>.west<N>.png, <i>.north<N>.png); prototype, off, no row on the tab
+OPT bool oxceHdTerrainAddress;
+// HD render: the battle reticle (CURSOR.PCK 6..10): 0 the pack's own, 1 the stock picture, 2.. a style from hd/CURSOR.PCK/reticle_<style>/ (Mod::HD_RETICLES)
+OPT int oxceHdReticle;
+// Battlescape: the yellow reticle (CURSOR.PCK 7..10) takes the colour group the mod gives the shot's damage type in the Ufopaedia (articleItem ammoColorDT*); off = stock yellow
+OPT bool oxceHdReticleDamageColor;
+// HD render, battlescape: the area the aimed explosive shot or throw would blast, filled on the floor in its damage type's colour, denser where the power is stronger
+OPT bool oxceHdBlastArea;
+// HD base screen: facility pictures play their phases (hd/BASEBITS.PCK/<i>.vN.png); off = the first phase only
+OPT bool oxceHdBaseAnim;
+// HD base and craft screens: the lights of the crafts (hd/BASEBITS.PCK/<i>.lights.txt) and the phases of their pictures
+OPT bool oxceHdCraftLights;
+// HD globe and dogfight: own craft and UFOs once read by a hyper-wave decoder as small outlines from above (Engine/HdOutline.h); off = the classic markers and blob
+OPT bool oxceHdCraftOutlines;
+// HD globe: how the radar coverage of the bases and the craft is drawn (Engine/HdRadar.h). 0 = the classic circles (default), 1 = a light wash with one joint edge, 2 = the same plus a base pulsing with each detection cycle at the slow clock speeds and a craft's beam turning (a trial)
+OPT int oxceHdRadar;
+// HD interface, modern skin: the colours of the battle's button panel (Engine/HdBattleHud.cpp). 0 = dark slate (default), 1 = gold, as the original panel
+OPT int oxceHdBattleHudColor;
+// Battlescape: a unit hanging in the air or in the water with no floor below sways in place (Map::hoverBob); off = the classic still frame
+OPT bool oxceHdHoverBob;
+// HD render: combat effects of the HD mod (Engine/HdFx.h) - hits, swings, explosions, muzzle flashes; off = the classic animations
+OPT bool oxceHdFx;
+// HD render: the fire picture (SMOKE.PCK 0..7): 0 the pack's own (<i>.png, <i>.v1.png), style s = the pack's variants 2s and 2s + 1 (tools/hdart/fire_real_pack.py)
+OPT int oxceHdFire;
+// HD render: pace of the fire and smoke animation on tiles (Map::hdEnviClock), a step of HD_ENVI_PACE: 0 stock, higher = slower; picture only
+OPT int oxceHdFirePace;
+OPT int oxceHdSmokePace;
+// Battlescape: the numbers above the enemies the selected unit sees (Map::setUnitMarker): 0 none, 1 blinking as the buttons, 2 steady red
+OPT int oxceHdEnemyNumber;
+// HD render: the final blow (Engine/HdKillCam.h) - zoom in and slow motion on the last enemy's fall; picture and pace only
+OPT bool oxceHdKillCam;
+// HD render: threads the battlescape frame is drawn with (0 = one per core)
+OPT int oxceHdThreads;
+// HD render: extra game steps a slow frame may catch up on, so that the unit speed settings hold when drawing is slower than they ask (0 = one step per frame)
+OPT int oxceHdFrameSkip;
+// Art version currently loaded: false the ordinary HD pictures (hd/), true the adult ones (hd_18+/). Changing it reloads the resources.
+OPT bool oxceAdultArt;
+// Ask which art version to play at every start (AdultChoiceState). Off: play whatever oxceAdultArt says, without asking.
+OPT bool oxceAdultAsk;
+// The language was picked on the start screen (LanguageChoiceState); it is only asked until then. Changed later in Options > Video.
+OPT bool oxceLanguageChosen;
+// Gentle mode for players sensitive to flashing light (Engine/HdGentle.h): slower pace, no camera jumps. Picture and pace only.
+OPT bool oxceGentle;
+// The photosensitivity warning (GentleChoiceState) is shown once, until answered; then the mode is changed on the HD tab.
+OPT bool oxceGentleAsk;
 
 // OXCE hidden, but moddable via fixedUserOptions and/or recommendedUserOptions
 OPT int oxceStartUpTextMode;
@@ -144,6 +241,7 @@ OPT int oxceBaseInfoDefenseScaleMultiplier;
 OPT bool oxceBaseSoldierTransformationShowOnlyEligible;
 OPT bool oxceBaseFilterResearchable;
 OPT bool oxceBaseResearchReorder;
+OPT bool oxceBaseManufactureReorder;
 OPT bool oxceBaseManufactureFallbackButton;
 OPT bool oxceBaseManufactureInfinityButton;
 OPT bool oxceBaseTouchButtons;

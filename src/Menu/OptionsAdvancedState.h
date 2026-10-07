@@ -57,6 +57,8 @@ private:
 
 	void addSettings(const std::vector<OptionInfo> &settings);
 	OptionInfo *getSetting(size_t sel);
+	/// Changes a setting as a click on its row does.
+	void changeSetting(size_t sel, Uint8 button);
 public:
 	/// Creates the Advanced state.
 	OptionsAdvancedState(OptionsOrigin origin);

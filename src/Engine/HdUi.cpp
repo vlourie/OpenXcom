@@ -1,0 +1,1143 @@
+/*
+ * Copyright 2010-2026 OpenXcom Developers.
+ *
+ * This file is part of OpenXcom.
+ *
+ * OpenXcom is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * OpenXcom is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
+ */
+#include "HdUi.h"
+#include <algorithm>
+#include <cmath>
+#include <chrono>
+#include <cstring>
+#include <unordered_set>
+#include "Logger.h"
+#include "Font.h"
+#include "HdSmooth.h"
+#include "HdWorkers.h"
+#include "Options.h"
+#include "Screen.h"
+#include "Surface.h"
+
+namespace OpenXcom
+{
+
+namespace
+{
+
+const size_t SMOOTH_CACHE_BYTES = 192u << 20;
+
+inline Uint32 packColor(const SDL_Color &c)
+{
+	return 0xFF000000u | ((Uint32)c.r << 16) | ((Uint32)c.g << 8) | c.b;
+}
+
+/// Coverage of the triangle {i + j < legs} (the top-left corner of a k x k block) over the unit pixel (i, j).
+inline float cornerCoverage(int i, int j, int legs)
+{
+	const float s = (float)(legs - i - j);
+	if (s <= 0.0f) return 0.0f;
+	if (s >= 2.0f) return 1.0f;
+	if (s <= 1.0f) return s * s * 0.5f;
+	return 1.0f - (2.0f - s) * (2.0f - s) * 0.5f;
+}
+
+}
+
+HdUi &HdUi::instance()
+{
+	static HdUi ui;
+	return ui;
+}
+
+bool HdUi::active()
+{
+	Screen *screen = Screen::current();
+	return screen && Options::oxceHdUi > 0 && screen->isLayered() && screen->getWorldScale() >= 2;
+}
+
+bool HdUi::isScreen(const SDL_Surface *dest)
+{
+	Screen *screen = Screen::current();
+	return screen && dest == screen->getSurface();
+}
+
+int HdUi::mode()
+{
+	return Options::oxceHdUi;
+}
+
+bool HdUi::target(SDL_Surface *&dest, int &k, const SDL_Color *&colors) const
+{
+	Screen *screen = Screen::current();
+	if (!screen || !active())
+	{
+		return false;
+	}
+	dest = screen->getWorldSurface();
+	k = screen->getWorldScale();
+	colors = screen->getPalette();
+	return dest && dest->format->BytesPerPixel == 4 && colors;
+}
+
+SDL_Rect HdUi::worldClip(SDL_Surface *dest, int k) const
+{
+	SDL_Rect r;
+	if (_clipW > 0 && _clipH > 0)
+	{
+		r.x = (Sint16)std::max(0, _clipX * k);
+		r.y = (Sint16)std::max(0, _clipY * k);
+		const int x1 = std::min(dest->w, (_clipX + _clipW) * k), y1 = std::min(dest->h, (_clipY + _clipH) * k);
+		r.w = (Uint16)std::max(0, x1 - r.x);
+		r.h = (Uint16)std::max(0, y1 - r.y);
+	}
+	else
+	{
+		r.x = 0; r.y = 0; r.w = (Uint16)dest->w; r.h = (Uint16)dest->h;
+	}
+	return r;
+}
+
+void HdUi::setClip(int x, int y, int w, int h)
+{
+	_clipX = x; _clipY = y; _clipW = w; _clipH = h;
+}
+
+/**
+ * Nearest scaling of palette pixels (index 0 transparent) into the world.
+ * The rows are split between the render threads for big surfaces.
+ */
+void HdUi::drawPixels(const Uint8 *pixels, int pitch, int w, int h, int x, int y, const SDL_Color *colors)
+{
+	SDL_Surface *dest;
+	int k;
+	const SDL_Color *pal;
+	if (!target(dest, k, pal) || !pixels || w <= 0 || h <= 0)
+	{
+		return;
+	}
+	if (colors) pal = colors;
+	Uint32 lut[256];
+	for (int i = 0; i < 256; ++i) lut[i] = packColor(pal[i]);
+	const SDL_Rect clip = worldClip(dest, k);
+	const int cx0 = clip.x, cy0 = clip.y, cx1 = clip.x + clip.w, cy1 = clip.y + clip.h;
+	// the base rows that land inside the clip
+	const int y0 = std::max(0, (cy0 - y * k + k - 1) / k), y1 = std::min(h, (cy1 - y * k + k - 1) / k);
+	const int x0 = std::max(0, (cx0 - x * k + k - 1) / k), x1 = std::min(w, (cx1 - x * k + k - 1) / k);
+	if (y0 >= y1 || x0 >= x1)
+	{
+		return;
+	}
+	Uint8 *dp = (Uint8*)dest->pixels;
+	const int dpitch = dest->pitch;
+	auto rows = [&](int ra, int rb)
+	{
+		for (int sy = ra; sy < rb; ++sy)
+		{
+			const Uint8 *src = pixels + (size_t)sy * pitch;
+			for (int ky = 0; ky < k; ++ky)
+			{
+				const int dy = (y + sy) * k + ky;
+				if (dy < cy0 || dy >= cy1) continue;
+				Uint32 *drow = (Uint32*)(dp + (size_t)dy * dpitch);
+				for (int sx = x0; sx < x1; ++sx)
+				{
+					const Uint8 idx = src[sx];
+					if (!idx) continue;
+					const Uint32 v = lut[idx];
+					const int dx0 = std::max(cx0, (x + sx) * k), dx1 = std::min(cx1, (x + sx + 1) * k);
+					for (int dx = dx0; dx < dx1; ++dx) drow[dx] = v;
+				}
+			}
+		}
+	};
+	const int n = y1 - y0;
+	if (n >= 64)
+	{
+		HdWorkers &pool = HdWorkers::instance();
+		const int jobs = std::max(1, std::min(n / 16, pool.threads() * 2));
+		pool.run(jobs, [&](int job)
+		{
+			rows(y0 + (int)((long long)n * job / jobs), y0 + (int)((long long)n * (job + 1) / jobs));
+		});
+	}
+	else
+	{
+		rows(y0, y1);
+	}
+}
+
+const SDL_Color *HdUi::paletteOf(const Surface *surface)
+{
+	if (surface)
+	{
+		// (getSurface is not const; nothing is changed here)
+		SDL_Surface *sdl = const_cast<Surface*>(surface)->getSurface();
+		if (sdl && sdl->format->palette)
+		{
+			return sdl->format->palette->colors;
+		}
+	}
+	Screen *screen = Screen::current();
+	return screen ? screen->getPalette() : nullptr;
+}
+
+void HdUi::fillRect(int x, int y, int w, int h, Uint8 color, const SDL_Color *colors)
+{
+	SDL_Surface *dest;
+	int k;
+	const SDL_Color *pal;
+	if (!target(dest, k, pal) || w <= 0 || h <= 0)
+	{
+		return;
+	}
+	if (colors) pal = colors;
+	const SDL_Rect clip = worldClip(dest, k);
+	const int x0 = std::max((int)clip.x, x * k), y0 = std::max((int)clip.y, y * k);
+	const int x1 = std::min(clip.x + clip.w, (x + w) * k), y1 = std::min(clip.y + clip.h, (y + h) * k);
+	if (x0 >= x1 || y0 >= y1)
+	{
+		return;
+	}
+	const Uint32 v = packColor(pal[color]);
+	for (int dy = y0; dy < y1; ++dy)
+	{
+		Uint32 *row = (Uint32*)((Uint8*)dest->pixels + (size_t)dy * dest->pitch);
+		for (int dx = x0; dx < x1; ++dx) row[dx] = v;
+	}
+}
+
+/**
+ * The smoothed copy of a surface, kept while its pixels stay the same (a
+ * hash of the pixels is compared; surfaces change rarely compared to how
+ * often they are blitted). LRU, capped by size.
+ */
+const HdFrame *HdUi::smoothed(const Surface *surface, int k, const SDL_Color *colors, Uint64 pixelHash)
+{
+	const int w = surface->getWidth(), h = surface->getHeight();
+	const Uint8 *pixels = (const Uint8*)surface->getBuffer();
+	const int pitch = surface->getPitch();
+	// the palette is part of the content
+	const Uint64 hash = HdUiArt::foldPalette(pixelHash, colors);
+	if (SmoothEntry *e = cached(surface, hash, k))
+	{
+		return &e->frame;
+	}
+	// which half of a slow recompute costs, and why it had to be recomputed at all: an entry of the
+	// same surface with the same pixels means only the palette moved, and the answer is thrown away
+	// once every couple of seconds instead of being kept (measured 156 ms on a 96x96 preview)
+	const Uint32 t0 = SDL_GetTicks();
+	const Uint64 palette = HdUiArt::foldPalette(1469598103934665603ULL, colors);
+	auto old = _smooth.find(surface);
+	const char *miss = old == _smooth.end() ? "new"
+		: (old->second.k != k ? "scale" : (old->second.pixelHash == pixelHash ? "palette" : "pixels"));
+	HdFrame frame;
+	// a big surface that changed in places (the globe under the moving terminator, 576x360) is patched
+	// where it changed: smoothed whole it cost 20-40 ms a few times a second
+	int redone = -1;
+	if (old != _smooth.end() && old->second.k == k && old->second.palette == palette && !old->second.art
+		&& old->second.source.size() == (size_t)w * h)
+	{
+		HdFrame &prev = old->second.frame;
+		const size_t bytes = prev.pixels.size() * 4;
+		if (HdSmooth::smoothPatch(pixels, pitch, old->second.source.data(), w, h, colors, k, prev, &redone))
+		{
+			_smoothBytes -= bytes; // the frame moves on to the new entry, cache() finds the old one empty
+			frame = std::move(prev);
+		}
+		else
+		{
+			redone = -1;
+		}
+	}
+	// the interface is mirrored on the main thread, so the smoothing may use the whole pool
+	if (redone < 0 && !HdSmooth::smoothPalette(pixels, w, h, pitch, colors, k, frame, false, true))
+	{
+		return nullptr;
+	}
+	const Uint32 t1 = SDL_GetTicks();
+	const HdFrame *out = cache(surface, pixelHash, hash, k, std::move(frame));
+	SmoothEntry &e = _smooth[surface];
+	e.palette = palette;
+	if ((long long)w * h >= 65536)
+	{
+		e.source.resize((size_t)w * h);
+		for (int yy = 0; yy < h; ++yy)
+		{
+			memcpy(e.source.data() + (size_t)yy * w, pixels + (size_t)yy * pitch, w);
+		}
+	}
+	const Uint32 t2 = SDL_GetTicks();
+	if (t2 - t0 >= 20)
+	{
+		Log(LOG_INFO) << "HD smooth: " << w << "x" << h << " k" << k << " " << miss
+			<< (redone >= 0 ? ", patched " + std::to_string(redone) + " tile(s)" : std::string()) << " - xBRZ "
+			<< (t1 - t0) << " ms, cache " << (t2 - t1) << " ms, " << _smooth.size() << " kept ("
+			<< (_smoothBytes >> 20) << " MB)";
+	}
+	return out;
+}
+
+/**
+ * The globe's layers (radars, borders, markers) are the size of the globe, drawn on
+ * well under one percent of it and redrawn with every turn of it: smoothed whole,
+ * they cost 4-7 ms each a frame, and spinning the globe ran at 25 fps. Here only
+ * the 16x16 tiles with something on them are smoothed, a row of such tiles at a
+ * time, each with a margin of 8 pixels around it and drawn clipped to itself. Both
+ * the checkerboard pass and xBRZ look no further than 4 pixels away, so every
+ * pixel comes out as it would from the whole surface; the empty tiles would come
+ * out empty anyway.
+ */
+bool HdUi::drawSparse(SDL_Surface *dest, const Surface *surface, int x, int y, int k, const SDL_Color *colors, Uint64 pixelHash)
+{
+	const int w = surface->getWidth(), h = surface->getHeight();
+	const Uint8 *pixels = (const Uint8*)surface->getBuffer();
+	const int pitch = surface->getPitch();
+	const Uint64 hash = HdUiArt::foldPalette(pixelHash, colors);
+	auto it = _sparse.find(surface);
+	if (it == _sparse.end() || it->second.hash != hash || it->second.k != k)
+	{
+		if (_sparse.size() >= 64 && it == _sparse.end())
+		{
+			_sparse.clear();
+		}
+		SparseEntry &e = _sparse[surface];
+		e = SparseEntry();
+		e.hash = hash;
+		e.k = k;
+		const int T = 16, M = 8;
+		const int tw = (w + T - 1) / T, th = (h + T - 1) / T;
+		std::vector<Uint8> used((size_t)tw * th, 0);
+		int count = 0;
+		for (int yy = 0; yy < h; ++yy)
+		{
+			const Uint8 *row = pixels + (size_t)yy * pitch;
+			Uint8 *tiles = &used[(size_t)(yy / T) * tw];
+			for (int xx = 0; xx < w; ++xx)
+			{
+				if (row[xx] && !tiles[xx / T])
+				{
+					tiles[xx / T] = 1;
+					++count;
+				}
+			}
+		}
+		// a quarter of the tiles drawn: the pieces and their margins would cost about as much as the whole
+		e.dense = count * 4 > tw * th;
+		// the smoothing spills over the edge of a drawn pixel into an empty neighbour (a corner blended,
+		// a hole of a checkerboard filled), so the tiles next to a drawn one are drawn too: without them
+		// 3 pixels of the globe's borders went missing (compared against the whole surface smoothed)
+		if (!e.dense)
+		{
+			std::vector<Uint8> grown(used);
+			for (int ty = 0; ty < th; ++ty)
+				for (int tx = 0; tx < tw; ++tx)
+					if (used[(size_t)ty * tw + tx])
+						for (int dy = -1; dy <= 1; ++dy)
+							for (int dx = -1; dx <= 1; ++dx)
+								if (ty + dy >= 0 && ty + dy < th && tx + dx >= 0 && tx + dx < tw)
+									grown[(size_t)(ty + dy) * tw + tx + dx] = 1;
+			used.swap(grown);
+		}
+		for (int ty = 0; ty < th && !e.dense; ++ty)
+		{
+			for (int tx = 0; tx < tw; )
+			{
+				if (!used[(size_t)ty * tw + tx]) { ++tx; continue; }
+				const int tx0 = tx;
+				while (tx < tw && used[(size_t)ty * tw + tx]) ++tx;
+				SparsePiece p;
+				p.ix = tx0 * T;
+				p.iy = ty * T;
+				p.iw = std::min(w, tx * T) - p.ix;
+				p.ih = std::min(h, (ty + 1) * T) - p.iy;
+				p.ox = std::max(0, p.ix - M);
+				p.oy = std::max(0, p.iy - M);
+				const int ow = std::min(w, p.ix + p.iw + M) - p.ox, oh = std::min(h, p.iy + p.ih + M) - p.oy;
+				if (!HdSmooth::smoothPalette(pixels + (size_t)p.oy * pitch + p.ox, ow, oh, pitch, colors, k, p.frame, false, ow * oh >= 16384))
+				{
+					// half an entry under the full hash would be drawn next time as if it were whole
+					_sparse.erase(surface);
+					return false;
+				}
+				p.frame.buildSpans();
+				e.pieces.push_back(std::move(p));
+			}
+		}
+		it = _sparse.find(surface);
+	}
+	if (it->second.dense)
+	{
+		return false;
+	}
+	const SDL_Rect outer = worldClip(dest, k);
+	for (const SparsePiece &p : it->second.pieces)
+	{
+		SDL_Rect clip;
+		const int x0 = std::max((int)outer.x, (x + p.ix) * k), y0 = std::max((int)outer.y, (y + p.iy) * k);
+		const int x1 = std::min(outer.x + outer.w, (x + p.ix + p.iw) * k), y1 = std::min(outer.y + outer.h, (y + p.iy + p.ih) * k);
+		if (x1 <= x0 || y1 <= y0) continue;
+		clip.x = (Sint16)x0;
+		clip.y = (Sint16)y0;
+		clip.w = (Uint16)(x1 - x0);
+		clip.h = (Uint16)(y1 - y0);
+		HdUiArt::drawFrame(dest, p.frame, (x + p.ox) * k, (y + p.oy) * k, &clip);
+	}
+	return true;
+}
+
+HdUi::SmoothEntry *HdUi::cached(const Surface *key, Uint64 hash, int k)
+{
+	auto it = _smooth.find(key);
+	if (it != _smooth.end() && it->second.hash == hash && it->second.k == k)
+	{
+		_smoothLru.splice(_smoothLru.begin(), _smoothLru, it->second.lru);
+		return &it->second;
+	}
+	return nullptr;
+}
+
+const HdFrame *HdUi::cache(const Surface *key, Uint64 pixelHash, Uint64 hash, int k, HdFrame &&frame, const HdUiArt::Art *art, int artX, int artY)
+{
+	int misses = 0;
+	auto it = _smooth.find(key);
+	if (it != _smooth.end())
+	{
+		misses = it->second.artMisses;
+		_smoothBytes -= it->second.frame.pixels.size() * 4;
+		_smoothLru.erase(it->second.lru);
+		_smooth.erase(it);
+	}
+	if (!frame.pixels.empty())
+	{
+		frame.buildSpans();
+	}
+	SmoothEntry &e = _smooth[key];
+	e.hash = hash;
+	e.pixelHash = pixelHash;
+	e.k = k;
+	e.art = art;
+	e.artX = artX;
+	e.artY = artY;
+	e.artMisses = art ? 0 : misses + 1;
+	e.frame = std::move(frame);
+	_smoothLru.push_front(key);
+	e.lru = _smoothLru.begin();
+	_smoothBytes += e.frame.pixels.size() * 4;
+	while (_smoothBytes > SMOOTH_CACHE_BYTES && _smoothLru.size() > 1)
+	{
+		const Surface *old = _smoothLru.back();
+		auto oit = _smooth.find(old);
+		if (oit != _smooth.end())
+		{
+			_smoothBytes -= oit->second.frame.pixels.size() * 4;
+			_smooth.erase(oit);
+		}
+		_smoothLru.pop_back();
+	}
+	return &_smooth[key].frame;
+}
+
+/**
+ * An HD picture made ready for drawing: scaled to the world scale (bilinear
+ * when the picture's scale differs) and, when it came with its reference
+ * palette, re-tinted for the palette in force: every HD pixel is scaled by
+ * the ratio of the current to the reference colour of the classic pixel under
+ * it, so that screens that re-tint an image through their palette (the
+ * "backpals") re-tint the picture the same way.
+ */
+const HdFrame *HdUi::prepared(const HdUiArt::Art *art, const Surface *key, int k, const SDL_Color *colors)
+{
+	const Uint64 hash = art->palette.empty() ? art->hash ^ 0x9E3779B97F4A7C15ULL
+		: HdUiArt::foldPalette(art->hash ^ 0x9E3779B97F4A7C15ULL, colors);
+	if (SmoothEntry *e = cached(key, hash, k))
+	{
+		return &e->frame;
+	}
+	HdFrame frame;
+	if (!HdUiArt::prepare(art, k, colors, frame))
+	{
+		return nullptr;
+	}
+	return cache(key, art->hash, hash, k, std::move(frame));
+}
+
+/**
+ * Remembers an HD picture drawn over a base rectangle this frame.
+ */
+void HdUi::notePicture(int x, int y, int w, int h)
+{
+	if (w > 0 && h > 0)
+	{
+		noteCover({ x, y, w, h, true });
+	}
+}
+
+/**
+ * Remembers a panel of the skin drawn over a base rectangle this frame: a button or a window's fill
+ * hides the picture under it, so the text on it needs no outline of its own.
+ */
+void HdUi::notePanel(int x, int y, int w, int h)
+{
+	if (w > 0 && h > 0)
+	{
+		noteCover({ x, y, w, h, false });
+	}
+}
+
+/**
+ * Adds one rectangle to the frame's list, dropping the oldest when it is full: what was drawn LAST is
+ * what the text lands on, so the end of the list is the part worth keeping.
+ */
+void HdUi::noteCover(const Cover &c)
+{
+	if (_covers.size() >= 128)
+	{
+		_covers.erase(_covers.begin());
+	}
+	_covers.push_back(c);
+}
+
+/**
+ * Whether a base rectangle sits on an HD picture: the last thing drawn under its middle.
+ */
+bool HdUi::overPicture(int x, int y, int w, int h) const
+{
+	const int cx = x + w / 2, cy = y + h / 2;
+	for (size_t i = _covers.size(); i > 0; --i)
+	{
+		const Cover &c = _covers[i - 1];
+		if (cx >= c.x && cx < c.x + c.w && cy >= c.y && cy < c.y + c.h)
+		{
+			return c.picture;
+		}
+	}
+	return false;
+}
+
+void HdUi::drawArt(const HdUiArt::Art *art, const Surface *key, int x, int y, const SDL_Color *colors)
+{
+	SDL_Surface *dest;
+	int k;
+	const SDL_Color *pal;
+	if (!target(dest, k, pal) || !art || !key)
+	{
+		return;
+	}
+	if (colors) pal = colors;
+	const HdFrame *frame = prepared(art, key, k, pal);
+	if (frame)
+	{
+		const SDL_Rect clip = worldClip(dest, k);
+		HdUiArt::drawFrame(dest, *frame, x * k, y * k, &clip);
+		// a window's own background, drawn inside its frame and already shaded for the text on it: a panel,
+		// not the bare picture the outline is meant for
+		notePanel(x, y, key->getWidth(), key->getHeight());
+	}
+}
+
+void HdUi::drawSurface(const Surface *surface, int x, int y, bool smooth)
+{
+	SDL_Surface *dest;
+	int k;
+	const SDL_Color *pal;
+	if (!target(dest, k, pal) || !surface || surface->getWidth() <= 0 || surface->getHeight() <= 0)
+	{
+		return;
+	}
+	// a mod reload freed the pictures the cached entries point to
+	if (_artGeneration != HdUiArt::generation())
+	{
+		clearCaches();
+		_artGeneration = HdUiArt::generation();
+	}
+	const auto t0 = std::chrono::steady_clock::now();
+	++_calls;
+	++_frameCalls;
+	const int w = surface->getWidth(), h = surface->getHeight();
+	// the worst call of the frame, with the road it took: "HD UI 160 ms over 2 surfaces" says that the
+	// mirror is to blame but not which surface or why, and every road here costs a different amount
+	const char *why = "plain";
+	bool cropped = false;
+	struct Timing
+	{
+		HdUi &ui; std::chrono::steady_clock::time_point t; int w, h; const char *&why;
+		~Timing()
+		{
+			const double ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t).count();
+			ui._frameMs += ms;
+			if (ms > ui._worstMs) { ui._worstMs = ms; ui._worstW = w; ui._worstH = h; ui._worstWhy = why; }
+		}
+	} timing { *this, t0, w, h, why };
+	// the surface's own palette: an SDL blit shows a surface with the colours it was given, remapping
+	// them to the screen's palette by nearest colour when the two differ (a state's surfaces under a
+	// popup with another palette, a text with its own); indexing the screen's palette instead shows
+	// wrong colours there (black text, most visibly)
+	if (const SDL_Color *own = paletteOf(surface)) pal = own;
+	const Uint8 *pixels = (const Uint8*)surface->getBuffer();
+	const int pitch = surface->getPitch();
+	// a surface far larger than the screen is never a picture and never worth smoothing: hashing it
+	// costs megabytes a frame and xBRZ of it costs hundreds (NextTurnState makes its backdrop screen
+	// width BY screen width). drawPixels below clips to what is actually seen, so the frame is the
+	// same; measured 177 ms -> nothing on the end-of-turn screen
+	const bool oversize = (long long)w * h > 4LL * (dest->w / k) * (dest->h / k);
+	if (oversize)
+	{
+		why = "oversize";
+		static int said = 0;
+		if (said < 4) { ++said; Log(LOG_INFO) << "HD oversize surface: " << w << "x" << h << " drawn plainly"; }
+	}
+	const bool wantHash = !oversize && k >= 2 && (HdUiArt::count() > 0 || (smooth && k <= 6));
+	const Uint64 pixelHash = wantHash ? HdUiArt::hashPixels(pixels, pitch, w, h) : 0;
+	// an HD picture of this image (hd/UI): by content, so a state's copy of a mod image (or of a part
+	// of it) finds it too; the answer is remembered with the surface's content
+	if (!oversize && k >= 2 && HdUiArt::count() > 0)
+	{
+		const HdUiArt::Art *art = nullptr;
+		int artX = 0, artY = 0;
+		bool known = false;
+		auto it = _smooth.find(surface);
+		if (it != _smooth.end() && it->second.k == k && it->second.pixelHash == pixelHash)
+		{
+			// the same content as last time: the answer is known (a picture, or none)
+			art = it->second.art;
+			artX = it->second.artX;
+			artY = it->second.artY;
+			known = true;
+		}
+		if (!known)
+		{
+			art = HdUiArt::find(pixelHash, w, h);
+			// a part of an image: searched for surfaces of some size, and not for ever for a surface
+			// whose content keeps changing (counters, bars: they are never a picture)
+			const int misses = it == _smooth.end() ? 0 : it->second.artMisses;
+			// the scan costs 100-300 ms against the pack of X-Piratez (1675 pictures), and the misses above
+			// are counted per surface: a surface made anew for every frame (an item in the inventory, the
+			// item of a Ufopaedia page) was scanned again every frame. So a content once searched in vain
+			// is not searched again, whatever surface it comes in; and a sprite-sized surface (items are
+			// at most 32x48 = 1536 px) is not searched at all: every crop found so far is a strip of 220x18
+			if (_cropMissesArts != HdUiArt::count())
+			{
+				_cropMisses.clear();                       // another pack: what was not in the old one may be here
+				_cropMissesArts = HdUiArt::count();
+			}
+			const Uint64 cropKey = pixelHash ^ ((Uint64)w << 48) ^ ((Uint64)h << 32);
+			if (!art && w >= 24 && h >= 16 && w * h >= 2048 && misses < 3 && _cropMisses.count(cropKey) == 0)
+			{
+				// the whole pack compared against this surface: the only thing left in this path that
+				// can cost a hundred milliseconds. The label used to be overwritten by the smoothing
+				// branch below, which made the log name the wrong culprit
+				const auto cropStart = std::chrono::steady_clock::now();
+				art = HdUiArt::findCrop(pixels, pitch, w, h, artX, artY);
+				if (!art)
+				{
+					if (_cropMisses.size() >= 65536) _cropMisses.clear();
+					_cropMisses.insert(cropKey);
+				}
+				const double cropMs = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - cropStart).count();
+				if (cropMs >= 5) { why = "crop scan"; cropped = true; }
+				if (cropMs >= 20)
+				{
+					Log(LOG_INFO) << "HD crop scan: " << w << "x" << h << " against " << HdUiArt::count()
+						<< " pictures - " << (int)(cropMs + 0.5) << " ms, " << (art ? "found" : "nothing")
+						<< ", try " << (misses + 1) << " of 3";
+				}
+			}
+			if (art)
+			{
+				cache(surface, pixelHash, pixelHash ^ 0xA5A5A5A5A5A5A5A5ULL, k, HdFrame(), art, artX, artY);
+			}
+			else if (!(smooth && k <= 6))
+			{
+				cache(surface, pixelHash, pixelHash ^ 0x5A5A5A5A5A5A5A5AULL, k, HdFrame());
+			}
+			// (with smoothing on, the xBRZ entry made next remembers the miss)
+		}
+		if (art)
+		{
+			why = "picture";
+			const HdFrame *frame = prepared(art, art->baseSurface, k, pal);
+			if (frame)
+			{
+				// what the text above it will land on: an HD picture, so the outline is drawn instead of
+				// the shadow. Noted only here, where the picture really went onto the world layer
+				notePicture(x, y, w, h);
+				// the picture placed so that the surface's part of it lands here, clipped to the surface
+				const SDL_Rect outer = worldClip(dest, k);
+				SDL_Rect clip;
+				clip.x = (Sint16)std::max((int)outer.x, x * k);
+				clip.y = (Sint16)std::max((int)outer.y, y * k);
+				const int x1 = std::min(outer.x + outer.w, (x + w) * k), y1 = std::min(outer.y + outer.h, (y + h) * k);
+				clip.w = (Uint16)std::max(0, x1 - clip.x);
+				clip.h = (Uint16)std::max(0, y1 - clip.y);
+				HdUiArt::drawFrame(dest, *frame, (x - artX) * k, (y - artY) * k, &clip);
+			}
+			return;
+		}
+	}
+	if (!oversize && smooth && k >= 2 && k <= 6)
+	{
+		if (!cropped) why = "xBRZ";
+		if ((long long)w * h >= 65536 && drawSparse(dest, surface, x, y, k, pal, pixelHash))
+		{
+			if (!cropped) why = "xBRZ sparse";
+			return;
+		}
+		const HdFrame *frame = smoothed(surface, k, pal, pixelHash);
+		if (frame)
+		{
+			const SDL_Rect clip = worldClip(dest, k);
+			HdUiArt::drawFrame(dest, *frame, x * k, y * k, &clip);
+			return;
+		}
+	}
+	drawPixels(pixels, pitch, w, h, x, y, pal);
+}
+
+/**
+ * A surface drawn finer than the base grid (the globe at its own scale, oxceHdGlobeScale):
+ * each of its pixels takes s world pixels instead of k. Smoothed with xBRZ at s (mode 2)
+ * through the same cache as any surface, nearest otherwise; clipped to the world
+ * rectangle `area` and the current clip.
+ */
+void HdUi::drawSurfaceWorld(const Surface *surface, int wx, int wy, int s, const SDL_Rect &area)
+{
+	SDL_Surface *dest;
+	int k;
+	const SDL_Color *pal;
+	if (!target(dest, k, pal) || !surface || s < 1 || surface->getWidth() <= 0 || surface->getHeight() <= 0)
+	{
+		return;
+	}
+	if (_artGeneration != HdUiArt::generation())
+	{
+		clearCaches();
+		_artGeneration = HdUiArt::generation();
+	}
+	const auto t0 = std::chrono::steady_clock::now();
+	++_calls;
+	++_frameCalls;
+	if (const SDL_Color *own = paletteOf(surface)) pal = own;
+	const int w = surface->getWidth(), h = surface->getHeight();
+	const Uint8 *pixels = (const Uint8*)surface->getBuffer();
+	const int pitch = surface->getPitch();
+	const SDL_Rect outer = worldClip(dest, k);
+	const int cx0 = std::max((int)outer.x, (int)area.x), cy0 = std::max((int)outer.y, (int)area.y);
+	const int cx1 = std::min(outer.x + outer.w, area.x + area.w), cy1 = std::min(outer.y + outer.h, area.y + area.h);
+	const char *why = "world nearest";
+	if (cx0 < cx1 && cy0 < cy1)
+	{
+		const HdFrame *frame = nullptr;
+		if (mode() >= 2 && s >= 2 && s <= 6)
+		{
+			frame = smoothed(surface, s, pal, HdUiArt::hashPixels(pixels, pitch, w, h));
+		}
+		if (frame)
+		{
+			why = "world xBRZ";
+			SDL_Rect clip;
+			clip.x = (Sint16)cx0;
+			clip.y = (Sint16)cy0;
+			clip.w = (Uint16)(cx1 - cx0);
+			clip.h = (Uint16)(cy1 - cy0);
+			HdUiArt::drawFrame(dest, *frame, wx, wy, &clip);
+		}
+		else
+		{
+			Uint32 lut[256];
+			for (int i = 0; i < 256; ++i) lut[i] = packColor(pal[i]);
+			Uint8 *dp = (Uint8*)dest->pixels;
+			const int dpitch = dest->pitch;
+			const int y0 = std::max(cy0, wy), y1 = std::min(cy1, wy + h * s);
+			const int x0 = std::max(cx0, wx), x1 = std::min(cx1, wx + w * s);
+			auto rows = [&](int ra, int rb)
+			{
+				for (int dy = ra; dy < rb; ++dy)
+				{
+					const Uint8 *src = pixels + (size_t)((dy - wy) / s) * pitch;
+					Uint32 *drow = (Uint32*)(dp + (size_t)dy * dpitch);
+					for (int dx = x0; dx < x1; ++dx)
+					{
+						const Uint8 idx = src[(dx - wx) / s];
+						if (idx) drow[dx] = lut[idx];
+					}
+				}
+			};
+			const int n = y1 - y0;
+			if (n > 0 && x0 < x1)
+			{
+				HdWorkers &pool = HdWorkers::instance();
+				const int jobs = std::max(1, std::min(n / 32, pool.threads() * 2));
+				pool.run(jobs, [&](int job)
+				{
+					rows(y0 + (int)((long long)n * job / jobs), y0 + (int)((long long)n * (job + 1) / jobs));
+				});
+			}
+		}
+	}
+	const double ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count();
+	_frameMs += ms;
+	if (ms > _worstMs) { _worstMs = ms; _worstW = w; _worstH = h; _worstWhy = why; }
+}
+
+/**
+ * A sprite drawn smaller than it is (a 26x23 badge in a list row of 8): made
+ * from the xBRZ copy k times bigger (mode 2) or from the palette pixels as they
+ * are, every world pixel the mean of the source pixels it covers, weighted by
+ * their alpha. Once per content, palette, size and scale; drawing it is a blend.
+ */
+void HdUi::drawSurfaceFit(const Surface *surface, int x, int y, int w, int h)
+{
+	SDL_Surface *dest;
+	int k;
+	const SDL_Color *pal;
+	if (!target(dest, k, pal) || !surface || w <= 0 || h <= 0 || surface->getWidth() <= 0 || surface->getHeight() <= 0)
+	{
+		return;
+	}
+	if (_artGeneration != HdUiArt::generation())
+	{
+		clearCaches();
+		_artGeneration = HdUiArt::generation();
+	}
+	if (const SDL_Color *own = paletteOf(surface)) pal = own;
+	const int sw = surface->getWidth(), sh = surface->getHeight();
+	const Uint8 *pixels = (const Uint8*)surface->getBuffer();
+	const int pitch = surface->getPitch();
+	const bool smooth = mode() >= 2 && k >= 2 && k <= 6;
+	const Uint64 pixelHash = HdUiArt::hashPixels(pixels, pitch, sw, sh);
+	const Uint64 key = HdUiArt::foldPalette(pixelHash, pal) ^ ((Uint64)w << 48) ^ ((Uint64)h << 40) ^ ((Uint64)k << 32) ^ (smooth ? 1ULL << 63 : 0);
+	auto it = _fitted.find(key);
+	if (it == _fitted.end())
+	{
+		const HdFrame *big = smooth ? smoothed(surface, k, pal, pixelHash) : nullptr;
+		const int bw = big ? big->width : sw, bh = big ? big->height : sh;
+		auto at = [&](int sx, int sy) -> Uint32
+		{
+			if (big) return big->row(sy)[sx];
+			const Uint8 i = pixels[(size_t)sy * pitch + sx];
+			return i ? packColor(pal[i]) : 0u;
+		};
+		HdFrame out;
+		out.width = w * k;
+		out.height = h * k;
+		out.generated = true;
+		out.pixels.assign((size_t)out.width * out.height, 0u);
+		for (int dy = 0; dy < out.height; ++dy)
+		{
+			const int sy0 = dy * bh / out.height, sy1 = std::max(sy0 + 1, (dy + 1) * bh / out.height);
+			Uint32 *drow = out.pixels.data() + (size_t)dy * out.width;
+			for (int dx = 0; dx < out.width; ++dx)
+			{
+				const int sx0 = dx * bw / out.width, sx1 = std::max(sx0 + 1, (dx + 1) * bw / out.width);
+				Uint32 sa = 0, sr = 0, sg = 0, sb = 0, n = 0;
+				for (int sy = sy0; sy < sy1; ++sy)
+				{
+					for (int sx = sx0; sx < sx1; ++sx)
+					{
+						const Uint32 c = at(sx, sy), a = c >> 24;
+						sa += a;
+						sr += ((c >> 16) & 0xFF) * a;
+						sg += ((c >> 8) & 0xFF) * a;
+						sb += (c & 0xFF) * a;
+						++n;
+					}
+				}
+				if (sa)
+				{
+					drow[dx] = ((sa / n) << 24) | ((sr / sa) << 16) | ((sg / sa) << 8) | (sb / sa);
+				}
+			}
+		}
+		out.buildSpans();
+		if (_fitted.size() >= 256)
+		{
+			_fitted.clear();
+		}
+		it = _fitted.emplace(key, std::move(out)).first;
+	}
+	const SDL_Rect clip = worldClip(dest, k);
+	HdUiArt::drawFrame(dest, it->second, x * k, y * k, &clip);
+}
+
+/**
+ * A glyph k times bigger with smooth edges: every source pixel becomes a
+ * k x k block, and at the corners where the classic Scale2x rule applies
+ * (the two neighbours across the corner agree with each other and disagree
+ * with the two opposite ones) the block's corner is chamfered along the
+ * diagonal, with the exact coverage of the cut as anti-aliasing; a concave
+ * corner gets the triangle filled instead. Straight edges stay straight,
+ * dots and line ends stay square, staircases become 45-degree edges. The
+ * shape decisions use the silhouette; the palette offset of a pixel (the
+ * font's shading) is copied to its block.
+ */
+void HdUi::scaleShape(const Uint8 *src, int w, int h, int k, std::vector<Uint8> &value, std::vector<Uint8> &cov,
+                       std::vector<Uint8> *value2, std::vector<Uint8> *mix)
+{
+	const int W = w * k, H = h * k;
+	value.assign((size_t)W * H, 0);
+	cov.assign((size_t)W * H, 0);
+	if (value2) value2->assign((size_t)W * H, 0);
+	if (mix) mix->assign((size_t)W * H, 0);
+	if (k < 1 || k > 64)
+	{
+		return;
+	}
+	auto at = [&](int x, int y) -> int { return (x < 0 || y < 0 || x >= w || y >= h) ? 0 : src[(size_t)y * w + x]; };
+	std::vector<float> blockCov((size_t)k * k), blockMix((size_t)k * k);
+	std::vector<Uint8> blockVal((size_t)k * k), blockVal2((size_t)k * k);
+	for (int y = 0; y < h; ++y)
+	{
+		for (int x = 0; x < w; ++x)
+		{
+			const int e = at(x, y);
+			const int b = at(x, y - 1), d = at(x - 1, y), f = at(x + 1, y), hh = at(x, y + 1);
+			// per corner: the two neighbours across it and their opposites (the Scale2x rule compares
+			// the values: a corner is chamfered when the two neighbours across it agree and each
+			// differs from its opposite), flips of the coverage function
+			struct Corner { int s1, s2, o1, o2; bool flipX, flipY; };
+			const Corner corners[4] = {
+				{ b, d, hh, f, false, false },   // top-left: up & left
+				{ b, f, hh, d, true, false },    // top-right: up & right
+				{ hh, d, b, f, false, true },    // bottom-left: down & left
+				{ hh, f, b, d, true, true },     // bottom-right: down & right
+			};
+			for (int j = 0; j < k; ++j)
+				for (int i = 0; i < k; ++i)
+				{
+					blockCov[(size_t)j * k + i] = e ? 1.0f : 0.0f;
+					blockVal[(size_t)j * k + i] = (Uint8)e;
+					blockVal2[(size_t)j * k + i] = 0;
+					blockMix[(size_t)j * k + i] = 0.0f;
+				}
+			for (const Corner &cn : corners)
+			{
+				// the decisions use the silhouette (drawn or not): the shades inside a glyph (its bevel)
+				// keep their pixel boundaries, chamfering those cuts wedges into the letters
+				const bool S1 = cn.s1 != 0, S2 = cn.s2 != 0, O1 = cn.o1 != 0, O2 = cn.o2 != 0, E = e != 0;
+				if (S1 != S2 || S1 == O1 || S2 == O2 || S1 == E)
+				{
+					continue;
+				}
+				// the shade a filled corner gets: the main one (the lower offset) of the two neighbours
+				const int n = std::min(cn.s1, cn.s2);
+				// a cut takes the block's whole corner half (a staircase becomes a straight diagonal);
+				// a fill only half of that, as Scale2x does: a thin stroke's corner gets a small bridge,
+				// not a spike (its own pixels are line ends and are never cut)
+				const int legs = E ? k : (k + 1) / 2;
+				for (int j = 0; j < k; ++j)
+					for (int i = 0; i < k; ++i)
+					{
+						const float t = cornerCoverage(cn.flipX ? k - 1 - i : i, cn.flipY ? k - 1 - j : j, legs);
+						if (t <= 0.0f) continue;
+						const size_t o = (size_t)j * k + i;
+						if (E)
+						{
+							// convex corner of the shape: cut
+							blockCov[o] *= 1.0f - t;
+						}
+						else if (t > blockCov[o])
+						{
+							// concave corner: fill the triangle
+							blockCov[o] = t;
+							blockVal[o] = (Uint8)n;
+						}
+					}
+			}
+			for (int j = 0; j < k; ++j)
+				for (int i = 0; i < k; ++i)
+				{
+					const size_t o = (size_t)(y * k + j) * W + (x * k + i);
+					const size_t bo = (size_t)j * k + i;
+					const float cv = blockCov[bo];
+					if (cv > 0.002f)
+					{
+						cov[o] = (Uint8)std::min(255.0f, cv * 255.0f + 0.5f);
+						value[o] = blockVal[bo];
+						if (value2 && mix && blockMix[bo] > 0.002f)
+						{
+							(*value2)[o] = blockVal2[bo];
+							(*mix)[o] = (Uint8)std::min(255.0f, blockMix[bo] * 255.0f + 0.5f);
+						}
+					}
+				}
+		}
+	}
+}
+
+/**
+ * A glyph k times bigger with smooth edges: every source pixel becomes a
+ * k x k block, and at the corners where the classic Scale2x rule applies
+ * (the two neighbours across the corner agree with each other and disagree
+ * with the two opposite ones) the block's corner is chamfered along the
+ * diagonal, with the exact coverage of the cut as anti-aliasing; a concave
+ * corner gets the triangle filled instead. Straight edges stay straight,
+ * dots and line ends stay square, staircases become 45-degree edges. The
+ * shape decisions use the silhouette; the palette offset of a pixel (the
+ * font's shading) is copied to its block.
+ */
+/**
+ * A glyph k times bigger with smooth edges: every source pixel becomes a
+ * k x k block, and at the corners where the classic Scale2x rule applies
+ * (the two neighbours across the corner agree with each other and disagree
+ * with the two opposite ones) the block's corner is chamfered along the
+ * diagonal, with the exact coverage of the cut as anti-aliasing; a concave
+ * corner gets the triangle filled instead. Straight edges stay straight,
+ * dots and line ends stay square, staircases become 45-degree edges. The
+ * shape decisions use the silhouette; the palette offset of a pixel (the
+ * font's shading) is copied to its block.
+ */
+const HdUi::Glyph &HdUi::glyph(const Font *font, UCode c, int k)
+{
+	GlyphKey key = { font, c, k };
+	auto it = _glyphs.find(key);
+	if (it != _glyphs.end())
+	{
+		return it->second;
+	}
+	Glyph &g = _glyphs[key];
+	SurfaceCrop crop = font->getChar(c);
+	const Surface *sheet = crop.getSurface();
+	const SDL_Rect *r = crop.getCrop();
+	const int w = r->w, h = r->h;
+	if (!sheet || w <= 0 || h <= 0)
+	{
+		return g;
+	}
+	std::vector<Uint8> src((size_t)w * h);
+	for (int y = 0; y < h; ++y)
+		for (int x = 0; x < w; ++x)
+			src[(size_t)y * w + x] = sheet->getPixel(r->x + x, r->y + y);
+	g.w = w * k;
+	g.h = h * k;
+	scaleShape(src.data(), w, h, k, g.value, g.cov, &g.value2, &g.mix);
+	return g;
+}
+
+void HdUi::drawGlyph(const Font *font, UCode c, int x, int y, int color, int mul, int mid, const SDL_Color *colors)
+{
+	SDL_Surface *dest;
+	int k;
+	const SDL_Color *pal;
+	if (!target(dest, k, pal) || !font || k > 64)
+	{
+		return;
+	}
+	if (colors) pal = colors;
+	const Glyph &g = glyph(font, c, k);
+	if (g.w <= 0)
+	{
+		return;
+	}
+	const SDL_Rect clip = worldClip(dest, k);
+	const int cx0 = clip.x, cy0 = clip.y, cx1 = clip.x + clip.w, cy1 = clip.y + clip.h;
+	const int ox = x * k, oy = y * k;
+	const int x0 = std::max(cx0, ox), y0 = std::max(cy0, oy), x1 = std::min(cx1, ox + g.w), y1 = std::min(cy1, oy + g.h);
+	// the colours of the glyph's shades (font palettes use offsets 1-5); the index wraps like the
+	// classic byte arithmetic (Text::draw's PaletteShift)
+	Uint32 lut[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+	for (int v = 1; v < 8; ++v)
+	{
+		const int inverse = mid ? 2 * (mid - v) : 0;
+		const Uint8 idx = (Uint8)(color + v * mul + inverse);
+		lut[v] = packColor(pal[idx]);
+	}
+	for (int dy = y0; dy < y1; ++dy)
+	{
+		Uint32 *drow = (Uint32*)((Uint8*)dest->pixels + (size_t)dy * dest->pitch);
+		const size_t go = (size_t)(dy - oy) * g.w;
+		for (int dx = x0; dx < x1; ++dx)
+		{
+			const size_t gi = go + (dx - ox);
+			const Uint8 cv = g.cov[gi];
+			if (!cv) continue;
+			Uint32 s = lut[g.value[gi] & 7];
+			const Uint8 m = g.mix[gi];
+			if (m)
+			{
+				const Uint32 s2 = lut[g.value2[gi] & 7];
+				const Uint32 im = 255 - m;
+				s = 0xFF000000u | (((((s >> 16) & 0xFF) * im + ((s2 >> 16) & 0xFF) * m) / 255) << 16)
+					| (((((s >> 8) & 0xFF) * im + ((s2 >> 8) & 0xFF) * m) / 255) << 8) | (((s & 0xFF) * im + (s2 & 0xFF) * m) / 255);
+			}
+			if (cv == 255)
+			{
+				drow[dx] = s;
+				continue;
+			}
+			const Uint32 d = drow[dx];
+			const Uint32 a = cv, ia = 255 - cv;
+			const Uint32 r = (((s >> 16) & 0xFF) * a + ((d >> 16) & 0xFF) * ia) / 255;
+			const Uint32 gg = (((s >> 8) & 0xFF) * a + ((d >> 8) & 0xFF) * ia) / 255;
+			const Uint32 b = ((s & 0xFF) * a + (d & 0xFF) * ia) / 255;
+			drow[dx] = 0xFF000000u | (r << 16) | (gg << 8) | b;
+		}
+	}
+}
+
+void HdUi::frameDone()
+{
+	_covers.clear();
+	if (!active())
+	{
+		return;
+	}
+	// the font can be switched in play (the options list): pick it up between frames
+	applyFontOption();
+	// the glyph caches keep every size a text was drawn at: a ceiling, checked between frames (no glyph
+	// reference is held then)
+	const size_t GLYPH_CACHE_BYTES = 32u << 20;
+	for (HdFont *font : { &_fontBig, &_fontSmall })
+	{
+		if (font->trimCache(GLYPH_CACHE_BYTES / 2))
+		{
+			Log(LOG_INFO) << "HD interface: TrueType glyph cache over " << (GLYPH_CACHE_BYTES >> 21) << " MB, dropped";
+		}
+	}
+	if (_glyphs.size() > 16384)
+	{
+		Log(LOG_INFO) << "HD interface: " << _glyphs.size() << " classic glyphs cached, dropped";
+		_glyphs.clear();
+	}
+	_totalMs += _frameMs;
+	_lastFrameMs = _frameMs;
+	_lastCalls = _frameCalls;
+	_lastWorstMs = _worstMs;
+	_lastWorstW = _worstW;
+	_lastWorstH = _worstH;
+	_lastWorstWhy = _worstWhy;
+	_frameMs = 0;
+	_frameCalls = 0;
+	_worstMs = 0;
+	if (++_frames % 600 == 0)
+	{
+		Log(LOG_INFO) << "HD interface: " << _totalMs / 600 << " ms/frame, " << _calls / 600 << " surfaces/frame, "
+			<< _smooth.size() << " smoothed surfaces cached (" << (_smoothBytes >> 20) << " MB), " << _glyphs.size() << " glyphs";
+		_totalMs = 0;
+		_calls = 0;
+	}
+}
+
+void HdUi::clearCaches()
+{
+	_smooth.clear();
+	_smoothLru.clear();
+	_smoothBytes = 0;
+	_sparse.clear();
+	_cropMisses.clear();
+	_glyphs.clear();
+	_fitted.clear();
+}
+
+}

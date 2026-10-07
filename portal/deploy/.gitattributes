@@ -1,0 +1,7 @@
+*.py text eol=lf
+Dockerfile text eol=lf
+*.yaml text eol=lf
+.env.example text eol=lf
+Caddyfile* text eol=lf
+*.env.example text eol=lf
+*.sh text eol=lf

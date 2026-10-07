@@ -34,7 +34,11 @@
 #include "../Interface/Cursor.h"
 #include "../Interface/Text.h"
 #include "MainMenuState.h"
+#include "AdultChoiceState.h"
+#include "GentleChoiceState.h"
+#include "LanguageChoiceState.h"
 #include "CutsceneState.h"
+#include "../Battlescape/AiProbe.h"
 #include <SDL_mixer.h>
 #include <SDL_thread.h>
 
@@ -43,6 +47,7 @@ namespace OpenXcom
 
 LoadingPhase StartState::loading;
 std::string StartState::error;
+bool StartState::playIntroAfterReload = false;
 
 /**
  * Initializes all the elements in the Loading screen.
@@ -112,13 +117,23 @@ StartState::StartState() : _anim(0)
 }
 
 /**
- * Kill the thread in case the game is quit early.
+ * Join the finished loading thread, or kill it in case the game is quit early.
  */
 StartState::~StartState()
 {
 	if (_thread != 0)
 	{
-		SDL_KillThread(_thread);
+		if (loading != LOADING_STARTED)
+		{
+			// The loading thread sets `loading` as its last step and is about to return:
+			// wait for it. Killing it here caught it inside the CRT thread exit with the
+			// loader lock held, and the game hung at start-up or on exit (R-150).
+			SDL_WaitThread(_thread, 0);
+		}
+		else
+		{
+			SDL_KillThread(_thread);
+		}
 	}
 	delete _font;
 	delete _timer;
@@ -158,6 +173,13 @@ void StartState::think()
 	State::think();
 	_timer->think(this, 0);
 
+	if (loading == LOADING_STARTED && AiProbe::fast())
+	{
+		// the probe's fast mode draws no frame, so this loop would spin millions of times a second and
+		// starve the loading thread of the heap (the HD interface art took 28 s instead of 1 s)
+		SDL_Delay(1);
+	}
+
 	switch (loading)
 	{
 	case LOADING_FAILED:
@@ -175,9 +197,29 @@ void StartState::think()
 		CrossPlatform::flashWindow();
 		Log(LOG_INFO) << "OpenXcom started successfully!";
 		_game->setState(new GoToMainMenuState(true));
-		if (_oldMaster != Options::getActiveMaster() && Options::playIntro)
 		{
-			_game->pushState(new CutsceneState("intro"));
+			bool intro = (_oldMaster != Options::getActiveMaster() || playIntroAfterReload) && Options::playIntro;
+			playIntroAfterReload = false;
+			if (intro)
+			{
+				_game->pushState(new CutsceneState("intro"));
+			}
+			// Pushed last, so the questions come before the intro is played.
+			// The language screen hands over to the art one itself: that one
+			// builds its texts in its constructor and needs the language first.
+			// The photosensitivity warning goes next, still before the intro: the intro is the first thing that flashes.
+			if (LanguageChoiceState::isNeeded())
+			{
+				_game->pushState(new LanguageChoiceState(intro));
+			}
+			else if (GentleChoiceState::isNeeded())
+			{
+				_game->pushState(new GentleChoiceState(intro));
+			}
+			else if (AdultChoiceState::isNeeded())
+			{
+				_game->pushState(new AdultChoiceState(intro));
+			}
 		}
 		if (Options::reload)
 		{
