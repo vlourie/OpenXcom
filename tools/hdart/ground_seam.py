@@ -250,8 +250,98 @@ def hue_share(pal):
     return (m * m * (3 - 2 * m)).astype(np.float32)
 
 
+PER_H = 64              # поле периодично по прямоугольнику 128 x 64 (A + B, A - B)
+PER_Y0 = 96             # строки периода 96..159 - внутри кадра
+
+
+def isotropic(field):
+    """Фактура без направления: амплитуда спектра поля - средняя по кольцу в координатах земли (экранный y
+    сжат вдвое), фаза своя. Рябь пака, которой у классики нет (DESERT 0), иначе растягивается полем в
+    направленные полосы. Считается на точном периоде 128 x 64, поэтому стык клеток не меняется."""
+    y0 = PER_Y0
+    tile = field[y0:y0 + PER_H]
+    F = np.fft.fft2(tile, axes=(0, 1))
+    ky = np.fft.fftfreq(PER_H)[:, None]
+    kx = np.fft.fftfreq(field.shape[1])[None, :]
+    r = np.sqrt(kx * kx + (ky / 2) ** 2)
+    edges = np.linspace(0, r.max() + 1e-6, 33)
+    b = np.digitize(r, edges)
+    out = np.empty_like(F)
+    # фаза случайная (одна на все каналы, эрмитова - из шума): своя фаза поля держит узлы решётки, и мелкая
+    # деталь пака встаёт точкой на каждую клетку (DESERT 0 проба 07.10)
+    ph = np.fft.fft2(np.random.default_rng(11).standard_normal(tile.shape[:2]))
+    ph = ph / np.maximum(np.abs(ph), 1e-9)
+    ph[0, 0] = 1.0
+    for c in range(F.shape[2]):
+        amp = np.abs(F[..., c])
+        w = (r > 0).ravel()          # постоянная составляющая в кольцо не входит - иначе раздувает низкие частоты
+        mean = (np.bincount(b.ravel(), amp.ravel() * w, minlength=35)
+                / np.maximum(np.bincount(b.ravel(), w.astype(np.float64), minlength=35), 1))
+        a2 = np.where(r == 0, amp, mean[b])
+        out[..., c] = a2 * ph
+    t = np.real(np.fft.ifft2(out, axes=(0, 1))).astype(np.float32)
+    rows = (np.arange(field.shape[0]) - y0) % PER_H
+    return t[rows]
+
+
+def grain_noise(w=128, sig=2.5, seed=7):
+    """Периодическая маска зерна (общая для всех ступеней --ramp): белый шум на торе 128 x 64, гаусс sig x4."""
+    rng = np.random.default_rng(seed)
+    n = rng.standard_normal((PER_H, w))
+    F = np.fft.fft2(n)
+    ky = np.fft.fftfreq(PER_H)[:, None]
+    kx = np.fft.fftfreq(w)[None, :]
+    t = np.real(np.fft.ifft2(F * np.exp(-2 * (np.pi * sig) ** 2 * (kx * kx + ky * ky)))).astype(np.float32)
+    rows = (np.arange(160) - PER_Y0) % PER_H
+    return t[rows]
+
+
+def build_ramp(s, carpet, ramp, out, variants=3):
+    """Ступени густоты одного материала (MOUNTSAND 0..6: песок -> галька -> тёмный грунт): последний кадр ramp -
+    чистый второй материал, промежуточные - смесь двух полей по ОБЩЕЙ маске зерна с порогом по доле второго
+    материала в классике кадра. Каждая ступень своим полем давала у соседних клеток разной густоты прямую
+    границу по ромбу; с общей маской галька соседних ступеней лежит на тех же местах."""
+    pal = wb.palette()
+    frames = wb.read_set(s)
+    d = dmap()
+    inner = (d < 0.9).astype(np.float32)
+    last = ramp[-1]
+    fields = []
+    for f in (carpet, last):
+        p = load_pack(s, f)
+        tex, mean = flatten(p[..., :3], inner * (p[..., 3] > 127))
+        tone = fit_map(s, [f], pal, frames)
+        fields.append([tone(periodic(tex, mean, var=v)) for v in range(variants + 1)])
+    share = 1.0 - index_share(frames[last], frames[carpet])      # доля второго материала у индекса
+    prgb = np.asarray(pal, dtype=np.float32).reshape(-1, 3)[:256]
+    mean2 = fields[1][0][inner > 0].mean(0)
+    noise = grain_noise(sig=1.5)
+    ni = noise[inner > 0]
+    sd = float(ni.std())
+    n = 0
+    for f in [carpet] + list(ramp):
+        a = frames[f]
+        q = 0.0 if f == carpet else (1.0 if f == last else float(share[a[a != 0]].mean()))
+        t = float(np.quantile(ni, 1.0 - q)) if 0 < q < 1 else (ni.max() + 1 if q <= 0 else ni.min() - 1)
+        m = np.clip((noise - t) / (0.35 * sd) + 0.5, 0, 1)[..., None]
+        # второй материал ступени - своего цвета классики: на редких ступенях это бурая галька, а не грунт
+        # последнего кадра (MOUNTSAND 1: 142,102,56 против 43,24,29 у кадра 6); маска та же, меняется только тон
+        # второй материал - самая тёмная доля q пикселей кадра (та же доля, что у маски)
+        cc = prgb[a[a != 0]]
+        yy = cc @ np.array([0.299, 0.587, 0.114], np.float32)
+        sec = cc[yy <= np.quantile(yy, q)] if 0 < q < 1 else cc[:0]
+        k = (sec.mean(0) / np.maximum(mean2, 1)) if len(sec) else np.ones(3, np.float32)
+        print("  ступень %d: доля второго материала %.2f, тон x%s" % (f, q, np.round(k, 2)))
+        al = classic_alpha(a)
+        for v in range(variants + 1):
+            c = fields[0][v] * (1 - m) + fields[1][v] * k * m
+            save_rgba(c, al, out, s, "%d" % f if v == 0 else "%d.v%d" % (f, v))
+            n += 1
+    return n
+
+
 def build(s, carpet, others, out, variants=3, alts=(), grass=None, mixes=(), recolor=(), clip=0.0, path=False,
-          keep_low=False, chroma=1.0):
+          keep_low=False, chroma=1.0, iso=False):
     """carpet - ковёр (поле с вариантами), alts - другие кадры того же ковра (другим вариантом поля);
     others - полы с деталями: свой цвет, у ромба переход в поле травы (grass) или ковра;
     grass - (набор, кадр, собранный PNG) поля травы другого набора: им же продолжаются others и mixes;
@@ -268,7 +358,7 @@ def build(s, carpet, others, out, variants=3, alts=(), grass=None, mixes=(), rec
 
     def ctone(field, f):
         # keep_low: крупный рисунок ковра (рябь дюн) - классики этого кадра, мелкая фактура - бесшовного поля
-        c = tone(field)
+        c = tone(isotropic(field) if iso else field)
         if chroma != 1.0:
             # chroma: отклонение цветности от средней поля сжать (крупные камни пака - цветные кляксы,
             # у классики пёстрость в пиксель); средний тон и яркость не трогаются
@@ -349,6 +439,8 @@ def main():
                     help="ковёр: крупный рисунок классики (рябь дюн), фактура поля - для ковров с нарочным рисунком")
     ap.add_argument("--chroma", type=float, default=1.0,
                     help="ковёр: доля отклонения цветности поля от средней (меньше 1 - без цветных клякс)")
+    ap.add_argument("--iso", action="store_true", help="ковёр: фактура без направления (у классики нет ряби)")
+    ap.add_argument("--ramp", default="", help="ступени густоты от --carpet к последнему кадру по общей маске")
     a = ap.parse_args()
     sys.stdout.reconfigure(encoding="utf-8")
 
@@ -358,8 +450,12 @@ def main():
     if a.grass:
         gs, gf, gp = a.grass.split(":", 2)
         grass = (gs, int(gf), gp)
+    if a.ramp:
+        n = build_ramp(a.set, a.carpet, ints(a.ramp), a.out, a.variants)
+        print(a.set, "кадров", n, "->", Path(a.out) / (a.set + ".PCK"))
+        return
     n = build(a.set, a.carpet, ints(a.other), a.out, a.variants, ints(a.alt), grass, ints(a.mix), ints(a.recolor), a.clip, a.path,
-              a.keep_low, a.chroma)
+              a.keep_low, a.chroma, a.iso)
     print(a.set, "кадров", n, "->", Path(a.out) / (a.set + ".PCK"))
 
 
