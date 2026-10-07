@@ -54,8 +54,15 @@ def dmap(h=160, w=128, cx=CX, cy=CY):
 
 
 def load_pack(s, f):
-    p = wb.INST / "user" / "mods" / "hd" / "hd" / "TERRAIN" / (s + ".PCK") / ("%d.png" % f)
+    p = wb.INST / "user" / "mods" / "hd" / "hd" / "TERRAIN" / (s + ".PCK") / (f if isinstance(f, str) else "%d.png" % f)
     return np.asarray(Image.open(p).convert("RGBA")).astype(np.float32)
+
+
+def pack_variants(s, f):
+    """Имена вариантов кадра f в паке установки (f.v1.png ...): правка кадра обязана пройти и по ним, иначе
+    движок раскладывает прежние варианты пятнами среди нового (JUNGLE 45)."""
+    d = wb.INST / "user" / "mods" / "hd" / "hd" / "TERRAIN" / (s + ".PCK")
+    return sorted(p.name for p in d.glob("%d.v*.png" % f))
 
 
 def flatten(rgb, w, clip=0.0):
@@ -234,7 +241,16 @@ def index_share(a_dark, a_light):
     return np.where(hd + hl > 0, hl / np.maximum(hd + hl, 1e-9), 0.5).astype(np.float32)
 
 
-def build(s, carpet, others, out, variants=3, alts=(), grass=None, mixes=(), recolor=(), clip=0.0):
+def hue_share(pal):
+    """Доля травы по оттенку индекса: зелёный (G заметно больше R) - трава, бурое и чёрное - грунт. Для троп
+    (JUNGLYROAD): индексов грунта с колеями нет в чистом кадре грунта, и index_share давал им 0.5 - полкадра
+    тропы уходило в траву."""
+    p = pal.astype(np.float32)
+    m = np.clip((p[:, 1] - p[:, 0] - 8.0) / 30.0, 0, 1)
+    return (m * m * (3 - 2 * m)).astype(np.float32)
+
+
+def build(s, carpet, others, out, variants=3, alts=(), grass=None, mixes=(), recolor=(), clip=0.0, path=False):
     """carpet - ковёр (поле с вариантами), alts - другие кадры того же ковра (другим вариантом поля);
     others - полы с деталями: свой цвет, у ромба переход в поле травы (grass) или ковра;
     grass - (набор, кадр, собранный PNG) поля травы другого набора: им же продолжаются others и mixes;
@@ -268,25 +284,30 @@ def build(s, carpet, others, out, variants=3, alts=(), grass=None, mixes=(), rec
     if others:
         t = np.clip((d - EDGE) / (1.0 - EDGE), 0, 1)[..., None]
         for f in others:
-            p = load_pack(s, f)
-            # крупный тон - классики, мелкая фактура - пака (detail_tone); карта цвета на детали (камни,
-            # кочки) не годится - аффинная карта по траве уводит серое и бежевое в розовое
-            c = detail_tone(frames[f], p, pal)
-            pa = p[..., 3:] / 255.0
-            # у ромба (и за ним, где пак непрозрачен) - переход в поле травы; выше ромба (стебли) - свой цвет
-            band = t * (d[..., None] <= 1.15) * (np.mgrid[0:160, 0:128][0][..., None] >= CY - HY)
-            c = c * (1 - band) + gfield * band
-            alpha = np.maximum(pa[..., 0], (d <= 1.0).astype(np.float32) * (frames[f] != 0).any())
-            save_rgba(c, alpha, out, s, "%d" % f)
-            n += 1
+            for name in ["%d.png" % f] + pack_variants(s, f):
+                p = load_pack(s, name)
+                # крупный тон - классики, мелкая фактура - пака (detail_tone); карта цвета на детали (камни,
+                # кочки) не годится - аффинная карта по траве уводит серое и бежевое в розовое
+                c = detail_tone(frames[f], p, pal)
+                pa = p[..., 3:] / 255.0
+                # у ромба (и за ним, где пак непрозрачен) - переход в поле травы; выше ромба (стебли) - свой цвет
+                band = t * (d[..., None] <= 1.15) * (np.mgrid[0:160, 0:128][0][..., None] >= CY - HY)
+                c = c * (1 - band) + gfield * band
+                alpha = np.maximum(pa[..., 0], (d <= 1.0).astype(np.float32) * (frames[f] != 0).any())
+                save_rgba(c, alpha, out, s, name[:-4])
+                n += 1
     if mixes:
         if g_cls is None:
             raise SystemExit("--mix без --grass: не с чем смешивать")
-        share = index_share(a0, g_cls)
+        share = hue_share(pal) if path else index_share(a0, g_cls)
         for k, f in enumerate(mixes):
             m = mat_mask(frames[f], share)[..., None]
-            print("  смесь %d: доля травы %.2f" % (f, float(m.mean())))
-            c = tone(periodic(tex, mean, var=k % 4)) * (1 - m) + gfield * m
+            print("  смесь %d: доля травы %.2f" % (f, float(m[..., 0][dmap() < 1].mean())))
+            fld = tone(periodic(tex, mean, var=k % 4))
+            if path:
+                # тропа: крупный рисунок (колеи, кромка) - классики этого кадра, мелкая фактура - поля грунта
+                fld = detail_tone(frames[f], np.dstack([fld, np.full(fld.shape[:2], 255.0)]), pal)
+            c = fld * (1 - m) + gfield * m
             save_rgba(c, classic_alpha(frames[f]), out, s, "%d" % f)
             n += 1
     if recolor:
@@ -310,6 +331,7 @@ def main():
     ap.add_argument("--mix", default="", help="переходы ковёр | трава")
     ap.add_argument("--recolor", default="", help="только карта цвета")
     ap.add_argument("--clip", type=float, default=0.0, help="поджать выбросы яркости фактуры ковра до N сигм")
+    ap.add_argument("--path", action="store_true", help="--mix - тропа: маска по оттенку, рисунок грунта классики")
     a = ap.parse_args()
     sys.stdout.reconfigure(encoding="utf-8")
 
@@ -319,7 +341,7 @@ def main():
     if a.grass:
         gs, gf, gp = a.grass.split(":", 2)
         grass = (gs, int(gf), gp)
-    n = build(a.set, a.carpet, ints(a.other), a.out, a.variants, ints(a.alt), grass, ints(a.mix), ints(a.recolor), a.clip)
+    n = build(a.set, a.carpet, ints(a.other), a.out, a.variants, ints(a.alt), grass, ints(a.mix), ints(a.recolor), a.clip, a.path)
     print(a.set, "кадров", n, "->", Path(a.out) / (a.set + ".PCK"))
 
 
