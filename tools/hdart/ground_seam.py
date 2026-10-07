@@ -53,16 +53,22 @@ def dmap(h=160, w=128, cx=CX, cy=CY):
     return np.abs(x - cx) / HX + np.abs(y - cy) / HY
 
 
+PACK_ROOT = None       # --pack-root: папка с <НАБОР>.PCK/ вместо пака установки (прежний пак из резерва)
+
+
+def pack_dir(s):
+    return (Path(PACK_ROOT) if PACK_ROOT else wb.INST / "user" / "mods" / "hd" / "hd" / "TERRAIN") / (s + ".PCK")
+
+
 def load_pack(s, f):
-    p = wb.INST / "user" / "mods" / "hd" / "hd" / "TERRAIN" / (s + ".PCK") / (f if isinstance(f, str) else "%d.png" % f)
+    p = pack_dir(s) / (f if isinstance(f, str) else "%d.png" % f)
     return np.asarray(Image.open(p).convert("RGBA")).astype(np.float32)
 
 
 def pack_variants(s, f):
     """Имена вариантов кадра f в паке установки (f.v1.png ...): правка кадра обязана пройти и по ним, иначе
     движок раскладывает прежние варианты пятнами среди нового (JUNGLE 45)."""
-    d = wb.INST / "user" / "mods" / "hd" / "hd" / "TERRAIN" / (s + ".PCK")
-    return sorted(p.name for p in d.glob("%d.v*.png" % f))
+    return sorted(p.name for p in pack_dir(s).glob("%d.v*.png" % f))
 
 
 def flatten(rgb, w, clip=0.0):
@@ -341,7 +347,7 @@ def build_ramp(s, carpet, ramp, out, variants=3):
 
 
 def build(s, carpet, others, out, variants=3, alts=(), grass=None, mixes=(), recolor=(), clip=0.0, path=False,
-          keep_low=False, chroma=1.0, iso=False):
+          keep_low=False, chroma=1.0, iso=False, edge_mat=False):
     """carpet - ковёр (поле с вариантами), alts - другие кадры того же ковра (другим вариантом поля);
     others - полы с деталями: свой цвет, у ромба переход в поле травы (grass) или ковра;
     grass - (набор, кадр, собранный PNG) поля травы другого набора: им же продолжаются others и mixes;
@@ -395,6 +401,10 @@ def build(s, carpet, others, out, variants=3, alts=(), grass=None, mixes=(), rec
                 pa = p[..., 3:] / 255.0
                 # у ромба (и за ним, где пак непрозрачен) - переход в поле травы; выше ромба (стебли) - свой цвет
                 band = t * (d[..., None] <= 1.15) * (np.mgrid[0:160, 0:128][0][..., None] >= CY - HY)
+                if edge_mat:
+                    # край - в поле только там, где у классики кадра по краю материал поля (CULTIVAT 1: участок
+                    # до самого ромба, трава редкими точками - кольцо травы давало решётку у соседних клеток)
+                    band = band * mat_mask(frames[f], index_share(frames[f], g_cls if g_cls is not None else a0))[..., None]
                 c = c * (1 - band) + gfield * band
                 alpha = np.maximum(pa[..., 0], (d <= 1.0).astype(np.float32) * (frames[f] != 0).any())
                 save_rgba(c, alpha, out, s, name[:-4])
@@ -422,6 +432,43 @@ def build(s, carpet, others, out, variants=3, alts=(), grass=None, mixes=(), rec
     return n
 
 
+def build_tops(s, src, blocks, out, sides=True, clip=0.0):
+    """Верх сплошных блоков рельефа (пещера CAVEBROWN 8-12) одним полем: у классики верх у всех блоков один, у
+    пака у каждого свой рисунок - блоки чередуются по карте, и верх выходит шахматкой. Верх блока - ромб пола,
+    поднятый на 24 пикселя базы; фактура - верх кадра src без низких частот, поле periodic, тон - верх классики
+    всех блоков (fit_tone). Блок k - вариант поля k (стык тот же). sides: тон боков - к бокам классики кадра."""
+    up = 96
+    cyt = CY - up
+    pal = wb.palette().astype(np.float32)[:, :3]
+    frames = wb.read_set(s)
+    dt = dmap(cy=cyt)
+    yy = np.mgrid[0:160, 0:128][0] + 0.5
+    p = load_pack(s, src)
+    ps = np.zeros_like(p)
+    ps[up:] = p[:160 - up]          # верх src на место ромба пола: periodic берёт выборку вокруг (CX, CY)
+    tex, mean = flatten(ps[..., :3], ((dmap() < 0.9) * (ps[..., 3] > 127)).astype(np.float32), clip)
+
+    def classic_rgb(f):
+        return np.repeat(np.repeat(pal[frames[f]], K, 0), K, 1), wb.blk(frames[f] != 0) > 0.5
+    top_in = dt < 0.95
+    cls_top = np.concatenate([classic_rgb(f)[0][top_in & classic_rgb(f)[1]] for f in blocks])
+    tone = fit_tone(periodic(tex, mean, h=256)[up:up + 160][top_in], cls_top)
+    top = (dt <= 1.0) | ((yy < cyt) & (dt <= 1.25))      # ромб и выступ над ним (там виден верх соседа)
+    t = np.clip((dt - 0.97) / 0.06, 0, 1)                # мягкий шов верх|бок на нижних рёбрах ромба
+    for k, f in enumerate(blocks):
+        q = load_pack(s, f)
+        rgb, al = q[..., :3].copy(), q[..., 3] / 255.0
+        if sides:
+            crgb, cm = classic_rgb(f)
+            side = (al > 0.5) & (dt > 1.05) & (yy > cyt)
+            rgb = np.where(side[..., None], fit_tone(rgb[side], crgb[side & cm])(rgb), rgb)
+        fld = tone(periodic(tex, mean, h=256, var=k)[up:up + 160])
+        m = np.where(yy < cyt, 1.0, 1 - t)[..., None] * top[..., None] * (al[..., None] > 0)
+        m = np.maximum(m, (dt <= 0.97)[..., None].astype(np.float32))
+        save_rgba(rgb * (1 - m) + fld * m, np.maximum(al, (dt <= 1.0).astype(np.float32)), out, s, "%d" % f)
+    return len(blocks)
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--set", required=True)
@@ -440,9 +487,15 @@ def main():
     ap.add_argument("--chroma", type=float, default=1.0,
                     help="ковёр: доля отклонения цветности поля от средней (меньше 1 - без цветных клякс)")
     ap.add_argument("--iso", action="store_true", help="ковёр: фактура без направления (у классики нет ряби)")
+    ap.add_argument("--edge-mat", action="store_true",
+                    help="--other: край в поле только там, где у классики кадра по краю материал поля")
     ap.add_argument("--ramp", default="", help="ступени густоты от --carpet к последнему кадру по общей маске")
+    ap.add_argument("--pack-root", default="", help="папка с <НАБОР>.PCK/ вместо пака установки")
+    ap.add_argument("--tops", default="", help="верх сплошных блоков одним полем: блоки, фактура верха --carpet")
     a = ap.parse_args()
     sys.stdout.reconfigure(encoding="utf-8")
+    global PACK_ROOT
+    PACK_ROOT = a.pack_root or None
 
     def ints(v):
         return [int(x) for x in v.split(",") if x]
@@ -450,12 +503,16 @@ def main():
     if a.grass:
         gs, gf, gp = a.grass.split(":", 2)
         grass = (gs, int(gf), gp)
+    if a.tops:
+        n = build_tops(a.set, a.carpet, ints(a.tops), a.out, clip=a.clip)
+        print(a.set, "кадров", n, "->", Path(a.out) / (a.set + ".PCK"))
+        return
     if a.ramp:
         n = build_ramp(a.set, a.carpet, ints(a.ramp), a.out, a.variants)
         print(a.set, "кадров", n, "->", Path(a.out) / (a.set + ".PCK"))
         return
     n = build(a.set, a.carpet, ints(a.other), a.out, a.variants, ints(a.alt), grass, ints(a.mix), ints(a.recolor), a.clip, a.path,
-              a.keep_low, a.chroma, a.iso)
+              a.keep_low, a.chroma, a.iso, a.edge_mat)
     print(a.set, "кадров", n, "->", Path(a.out) / (a.set + ".PCK"))
 
 
