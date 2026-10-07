@@ -12,6 +12,8 @@
   чего в CHANGELOG нет); по-английски - notes\next.en.txt. После выпуска они переименовываются в
   notes\<имя выпуска>.ru.txt, чтобы следующий выпуск не показал старый текст. В канале stable
   раздел «[Не выпущено]» CHANGELOG.md становится разделом «<имя выпуска> — <дата>».
+  Если в готовый стейдж вошла только часть накопленного, «Что нового» кладётся в notes\stage.ru.txt и
+  stage.en.txt (только с nobuild): текст берётся из них, а из «[Не выпущено]» и next.* уходят ровно их пункты.
   Лаунчер выпускается, только если его версии (<Version> в Xp.Launcher.csproj) ещё нет в хранилище.
 
   Приватный ключ скрипт не читает: путь к нему передаётся xp-release, и всё.
@@ -62,12 +64,87 @@ function Get-UnreleasedNotes([string] $path) {
     $from = $at + $mark.Length
     $next = $text.IndexOf("$nl## ", $from)
     if ($next -lt 0) { $next = $text.Length }
-    $lines = foreach ($l in $text.Substring($from, $next - $from) -split "`r?`n") {
+    return Format-Notes $text.Substring($from, $next - $from)
+}
+
+function Format-Notes([string] $body) {
+    $lines = foreach ($l in $body -split "`r?`n") {
         $l = $l.TrimEnd()
         if ($l -match '^\s*- (.+)$') { '— ' + $Matches[1] }
         elseif ($l -and $l -notmatch '^#') { $l }
     }
     return (@($lines) -join "`r`n").Trim()
+}
+
+# Стейдж с заранее подготовленным «Что нового» - notes\stage.ru.txt и stage.en.txt (пункты «- », по-русски можно ###).
+# Нужен, когда в собранный стейдж вошла только часть накопленного в CHANGELOG: текст берётся только из этих файлов,
+# а после выпуска из «[Не выпущено]» и notes\next.*.txt уходят ровно выпущенные пункты, остальное ждёт следующего
+function Get-NoteItems([string] $path) {
+    foreach ($l in [IO.File]::ReadAllText($path, [Text.Encoding]::UTF8) -split "`r?`n") {
+        if ($l.TrimEnd() -match '^\s*- (.+)$') { $Matches[1] }
+    }
+}
+
+# есть ли notes\stage.*.txt и годны ли они: только выпуск без сборки, оба языка, пунктов поровну и не ноль
+function Test-StageNotes([string] $stageRu, [string] $stageEn, [bool] $noBuild) {
+    if (-not ((Test-Path -LiteralPath $stageRu) -or (Test-Path -LiteralPath $stageEn))) { return $false }
+    if (-not $noBuild) { throw 'есть notes\stage.*.txt - «Что нового» уже собранного стейджа; выпускайте с nobuild, а для новой сборки уберите их' }
+    if (-not ((Test-Path -LiteralPath $stageRu) -and (Test-Path -LiteralPath $stageEn))) { throw 'нужны оба файла: notes\stage.ru.txt и notes\stage.en.txt' }
+    $nRu = @(Get-NoteItems $stageRu).Count
+    $nEn = @(Get-NoteItems $stageEn).Count
+    if (-not $nRu -or $nRu -ne $nEn) { throw "в notes\stage.ru.txt $nRu пункт(ов), в stage.en.txt $nEn - нужно поровну и не ноль" }
+    Ok "«Что нового» готового стейджа: notes\stage.*.txt, $nRu пункт(ов)"
+    return $true
+}
+
+# убрать из списка строк пункты «- », выпущенные сейчас, и заголовки ###, под которыми не осталось пунктов
+function Remove-Items([string[]] $lines, [string[]] $items) {
+    $kept = @($lines | Where-Object { -not ($_.TrimEnd() -match '^\s*- (.+)$' -and $items -contains $Matches[1]) })
+    for ($i = 0; $i -lt $kept.Count; $i++) {
+        if ($kept[$i] -notmatch '^###') { $kept[$i]; continue }
+        $j = $i + 1
+        while ($j -lt $kept.Count -and $kept[$j] -notmatch '^#' -and $kept[$j] -notmatch '^\s*- ') { $j++ }
+        if ($j -lt $kept.Count -and $kept[$j] -match '^\s*- ') { $kept[$i] }
+    }
+}
+
+# notes\next.<язык>.txt: выпущенные пункты уходят, остальные строки и кодировка файла прежние
+function Remove-NextItems([string] $path, [string[]] $items) {
+    if (-not (Test-Path -LiteralPath $path)) { return }
+    $bytes = [IO.File]::ReadAllBytes($path)
+    $bom = $bytes.Length -ge 3 -and $bytes[0] -eq 0xEF -and $bytes[1] -eq 0xBB -and $bytes[2] -eq 0xBF
+    $text = [IO.File]::ReadAllText($path, [Text.Encoding]::UTF8)
+    $nl = if ($text.Contains("`r`n")) { "`r`n" } else { "`n" }
+    $before = @($text.TrimEnd() -split "`r?`n")
+    $after = @(Remove-Items $before $items)
+    [IO.File]::WriteAllText($path, (($after -join $nl).TrimEnd() + $nl), (New-Object Text.UTF8Encoding $bom))
+    Ok ("{0}: выпущено {1}, осталось {2} пункт(ов)" -f (Split-Path -Leaf $path), ($before.Count - $after.Count), @($after | Where-Object { $_ -match '^\s*- ' }).Count)
+}
+
+# CHANGELOG.md для такого выпуска: раздел выпуска - текст notes\stage.ru.txt, из «[Не выпущено]» уходят только его пункты
+function Close-StageChangelog([string] $path, [string] $id, [datetime] $day, [string] $stageRu) {
+    if (-not (Test-Path -LiteralPath $path)) { Warn "нет $path"; return }
+    $text = [IO.File]::ReadAllText($path, [Text.Encoding]::UTF8)
+    $nl = if ($text.Contains("`r`n")) { "`r`n" } else { "`n" }
+    $mark = '## [Не выпущено]'
+    $at = $text.IndexOf($mark)
+    if ($at -lt 0) { Warn "в CHANGELOG.md нет раздела «[Не выпущено]» - раздел выпуска не записан"; return }
+    $from = $at + $mark.Length
+    $next = $text.IndexOf("$nl## ", $from)
+    if ($next -lt 0) { $next = $text.Length }
+    $items = @(Get-NoteItems $stageRu)
+    $body = @($text.Substring($from, $next - $from).Trim("`r", "`n") -split "`r?`n" | Where-Object { $_ })
+    $left = @(Remove-Items $body $items)
+    $published = @([IO.File]::ReadAllText($stageRu, [Text.Encoding]::UTF8).Trim() -split "`r?`n" | Where-Object { $_.Trim() })
+    $months = 'января', 'февраля', 'марта', 'апреля', 'мая', 'июня', 'июля', 'августа', 'сентября', 'октября', 'ноября', 'декабря'
+    $title = '## {0} — {1} {2} {3}' -f $id, $day.Day, $months[$day.Month - 1], $day.Year
+    $head = $mark + $nl + $(if ($left) { ($left -join $nl) + $nl }) + $nl + $title + $nl + ($published -join $nl) + $nl
+    $text = $text.Substring(0, $at) + $head + $text.Substring($next)
+    [IO.File]::WriteAllText($path, $text, (New-Object Text.UTF8Encoding $true))
+    $was = @($body | Where-Object { $_ -match '^\s*- ' }).Count
+    $now = @($left | Where-Object { $_ -match '^\s*- ' }).Count
+    Ok ("CHANGELOG.md: раздел «{0}» из notes\stage.ru.txt ({1} пункт(ов), из них {2} сняты с «[Не выпущено]»); под «[Не выпущено]» осталось {3}" -f
+        $title, $items.Count, ($was - $now), $now)
 }
 
 function Xpr([string[]] $a) {
@@ -108,6 +185,11 @@ try {
     if (-not (Test-Path -LiteralPath $cfg.Key)) { throw "нет приватного ключа $($cfg.Key) - подключите диск с ключом" }
     if (-not (Test-Path -LiteralPath $cfg.Pub)) { throw "нет открытого ключа $($cfg.Pub)" }
     New-Item -ItemType Directory -Force -Path $repo | Out-Null
+
+    # ---- «Что нового» готового стейджа (notes\stage.*.txt): только для выпуска без сборки, оба языка, пунктов поровну
+    $stageRu = Join-Path $notes 'stage.ru.txt'
+    $stageEn = Join-Path $notes 'stage.en.txt'
+    $stageNotes = -not $launcherOnly -and (Test-StageNotes $stageRu $stageEn $noBuild)
 
     # ---- xp-release: пересобрать, если его исходники новее
     $script:xpr = $cfg.XpRelease
@@ -168,6 +250,19 @@ try {
         Step "Подписываю игру: $id"
         $buildArgs = @('build', '--repo', $repo, '--id', $id, '--version', $version, '--channel', $channel,
             '--stage', $cfg.Stage, '--launch', $cfg.Launch, '--key', $cfg.Key)
+        $usedNotes = @()
+        if ($stageNotes) {
+            # готовый стейдж: CHANGELOG и next.* не читаются и до публикации не меняются
+            $work = Join-Path $dist '_work'
+            New-Item -ItemType Directory -Force -Path $work | Out-Null
+            $ruOut = Join-Path $work "notes_$id.ru.txt"
+            $enOut = Join-Path $work "notes_$id.en.txt"
+            [IO.File]::WriteAllText($ruOut, (Format-Notes ([IO.File]::ReadAllText($stageRu, [Text.Encoding]::UTF8))) + "`r`n", (New-Object Text.UTF8Encoding $true))
+            Copy-Item -LiteralPath $stageEn -Destination $enOut -Force
+            $buildArgs += @('--changelog-ru', $ruOut, '--changelog-en', $enOut)
+            $usedNotes = @($ruOut, $enOut)
+            Ok '«Что нового» из notes\stage.ru.txt и stage.en.txt; CHANGELOG и next.* не читаются'
+        } else {
         # русское «Что нового» = notes\next.ru.txt (то, чего нет в CHANGELOG) + раздел «[Не выпущено]» CHANGELOG.md.
         # Английское - только notes\next.en.txt; без него лаунчер покажет русское
         $fromLog = Get-UnreleasedNotes (Join-Path $root 'CHANGELOG.md')
@@ -179,7 +274,6 @@ try {
             Ok ("«Что нового» из CHANGELOG: {0} пункт(ов){1}" -f @($fromLog -split "`r`n" | Where-Object { $_ -like '— *' }).Count, $(if ($hand) { ' + notes\next.ru.txt' } else { '' }))
         }
         if (-not (Test-Path -LiteralPath (Join-Path $notes 'next.en.txt'))) { Warn 'нет notes\next.en.txt - английским игрокам лаунчер покажет русское «Что нового»' }
-        $usedNotes = @()
         foreach ($lang in 'ru', 'en') {
             $f = Join-Path $notes "next.$lang.txt"
             if ((Test-Path -LiteralPath $f) -and (Get-Content -LiteralPath $f -Raw -Encoding UTF8).Trim()) {
@@ -187,6 +281,7 @@ try {
             }
         }
         if (-not $usedNotes) { Warn 'нет notes\next.ru.txt - выпуск уйдёт без «Что нового»' }
+        }
         # лаунчер, без которого выпуск не ставится (MinLauncher в настройках выпуска). hd_core у игрока включает только
         # миграция лаунчера 0.3.7 (HdCoreMigration): стейдж с ним без такого требования не выпускается
         $minLauncher = if ($cfg.PSObject.Properties.Name -contains 'MinLauncher') { [string]$cfg.MinLauncher } else { '' }
@@ -214,7 +309,15 @@ try {
             $lang = [IO.Path]::GetFileNameWithoutExtension($f).Split('.')[-1]
             Move-Item -LiteralPath $f -Destination (Join-Path $notes "$id.$lang.txt") -Force
         }
-        if ($channel -eq 'stable') { Close-Changelog (Join-Path $root 'CHANGELOG.md') $id $today }
+        if ($stageNotes) {
+            if ($channel -eq 'stable') {
+                Close-StageChangelog (Join-Path $root 'CHANGELOG.md') $id $today $stageRu
+                Remove-NextItems (Join-Path $notes 'next.ru.txt') @(Get-NoteItems $stageRu)
+                Remove-NextItems (Join-Path $notes 'next.en.txt') @(Get-NoteItems $stageEn)
+            }
+            Remove-Item -LiteralPath $stageRu, $stageEn
+        }
+        elseif ($channel -eq 'stable') { Close-Changelog (Join-Path $root 'CHANGELOG.md') $id $today }
     }
 
     # ---- лаунчер: только новая версия
