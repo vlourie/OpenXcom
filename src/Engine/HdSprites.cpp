@@ -138,6 +138,8 @@ namespace
 		size_t lru = 0;            ///< when it was last found
 		bool failed = false;       ///< the file could not be read (not tried again)
 		bool ownColour = false;    ///< color.txt of the set keeps the frame's own colours (HdFrame::ownColour)
+		const void *key = nullptr; ///< the key of the frame it belongs to (a variant and a wall slot: the frame's)
+		bool recoloured = false;   ///< the loaded picture went through the recolouring (setRecolour)
 	};
 	std::unordered_map<const void*, Entry> registry;
 	/// the variants of a registered frame: slot n - 1 holds variant n (an empty path = no such variant)
@@ -243,6 +245,23 @@ namespace
 		return true;
 	}
 
+	/// The recolouring of the pictures read from now on (setRecolour); changed on the main thread only, never during a batch.
+	Recolour recolourHook = nullptr;
+
+	/// decodeBlob, then the recolouring (any thread).
+	bool decodeShown(const Entry &entry, const std::vector<unsigned char> &data, HdFrame &out)
+	{
+		if (!decodeBlob(entry, data, out))
+		{
+			return false;
+		}
+		if (recolourHook)
+		{
+			recolourHook(entry.key, out);
+		}
+		return true;
+	}
+
 	/// Puts a decoded picture into its entry (or marks the entry as unreadable).
 	void settle(Entry &entry, bool ok, HdFrame &&frame)
 	{
@@ -254,6 +273,7 @@ namespace
 		}
 		entry.frame = std::move(frame);
 		entry.frame.ownColour = entry.ownColour;
+		entry.recoloured = recolourHook != nullptr;
 		loadedTotal += bytesOf(entry.frame);
 	}
 
@@ -269,7 +289,7 @@ namespace
 			return;
 		}
 		HdFrame frame;
-		const bool ok = decodeBlob(entry, data, frame);
+		const bool ok = decodeShown(entry, data, frame);
 		settle(entry, ok, std::move(frame));
 	}
 }
@@ -312,6 +332,7 @@ void setLazy(const void *key, const std::string &path, Uint32 offset, Uint32 siz
 	entry.size = size;
 	entry.width = width;
 	entry.height = height;
+	entry.key = key;
 	++registryGeneration;
 }
 
@@ -405,6 +426,7 @@ void setVariantLazy(const void *key, int variant, const std::string &path, Uint3
 	entry.size = size;
 	entry.width = width;
 	entry.height = height;
+	entry.key = key;
 	++registryGeneration;
 }
 
@@ -738,7 +760,7 @@ int preload(const SurfaceSet *surfaceSet)
 	std::vector<char> ok(todo.size(), 0);
 	HdWorkers::instance().run((int)todo.size(), [&](int i)
 	{
-		ok[i] = !todo[i]->failed && decodeBlob(*todo[i], blobs[i], frames[i]);
+		ok[i] = !todo[i]->failed && decodeShown(*todo[i], blobs[i], frames[i]);
 	});
 	int loaded = 0;
 	for (size_t i = 0; i < todo.size(); ++i)
@@ -836,6 +858,182 @@ void takeLoadStats(unsigned &frames, double &ms)
 	ms = loadMs;
 	loadFrames = 0;
 	loadMs = 0;
+}
+
+namespace
+{
+	/// Every lazy entry (the frames, their variants, the addressed walls).
+	template <typename Fn>
+	void forEachLazy(Fn fn)
+	{
+		for (auto &pair : registry)
+		{
+			fn(pair.second);
+		}
+		for (auto &pair : variants)
+		{
+			for (Entry &entry : pair.second)
+			{
+				fn(entry);
+			}
+		}
+		for (auto &part : walls)
+		{
+			for (auto &pair : part)
+			{
+				for (Entry &entry : pair.second.slots)
+				{
+					fn(entry);
+				}
+			}
+		}
+	}
+}
+
+void setRecolour(Recolour fn)
+{
+	if (fn == recolourHook && fn == nullptr)
+	{
+		return;
+	}
+	beforeChange();
+	// what the previous recolouring made goes: read again from the files when drawn
+	size_t dropped = 0;
+	forEachLazy([&](Entry &entry)
+	{
+		if (entry.recoloured && !entry.path.empty() && !entry.frame.pixels.empty())
+		{
+			loadedTotal -= bytesOf(entry.frame);
+			entry.frame = HdFrame();
+			++dropped;
+		}
+		entry.recoloured = false;
+	});
+	recolourHook = fn;
+	size_t recoloured = 0;
+	if (fn)
+	{
+		// the loaded pictures are in their own colours now: each goes through the new one once
+		std::vector<Entry*> todo;
+		forEachLazy([&](Entry &entry)
+		{
+			if (!entry.path.empty() && !entry.frame.pixels.empty())
+			{
+				todo.push_back(&entry);
+			}
+		});
+		HdWorkers::instance().run((int)todo.size(), [&](int i)
+		{
+			fn(todo[i]->key, todo[i]->frame);
+		});
+		for (Entry *entry : todo)
+		{
+			entry->recoloured = true;
+		}
+		recoloured = todo.size();
+	}
+	++registryGeneration;
+	Log(LOG_INFO) << "HD sprites: recolouring " << (fn ? "on" : "off") << ", " << dropped << " recoloured frame(s) dropped, "
+		<< recoloured << " loaded frame(s) recoloured";
+}
+
+size_t scanPictures(const std::vector<const SurfaceSet*> &sets, const std::function<void(size_t place, const Surface &classic, const HdFrame &picture)> &fn)
+{
+	struct Item
+	{
+		Entry *entry;
+		const Surface *classic;
+	};
+	std::vector<Item> items;
+	std::vector<const SurfaceSet*> seen;
+	for (const SurfaceSet *surfaceSet : sets)
+	{
+		if (!surfaceSet || std::find(seen.begin(), seen.end(), surfaceSet) != seen.end())
+		{
+			continue;
+		}
+		seen.push_back(surfaceSet);
+		for (size_t i = 0; i < surfaceSet->getTotalFrames(); ++i)
+		{
+			const Surface *frame = surfaceSet->getFrame((int)i);
+			if (!frame)
+			{
+				continue;
+			}
+			const void *key = frame->getBuffer();
+			auto want = [&](Entry &entry)
+			{
+				if (!entry.path.empty() && !entry.failed)
+				{
+					items.push_back(Item{ &entry, frame });
+				}
+			};
+			auto it = registry.find(key);
+			if (it != registry.end())
+			{
+				want(it->second);
+			}
+			auto vit = variants.find(key);
+			if (vit != variants.end())
+			{
+				for (Entry &variant : vit->second)
+				{
+					want(variant);
+				}
+			}
+			for (auto &part : walls)
+			{
+				auto wit = part.find(key);
+				if (wit != part.end())
+				{
+					for (Entry &slot : wit->second.slots)
+					{
+						want(slot);
+					}
+				}
+			}
+		}
+	}
+	// in batches: the bytes here (the file system is not shared between threads), decoding and fn on all cores
+	const size_t BATCH = 256;
+	std::vector<std::vector<unsigned char>> blobs;
+	std::vector<HdFrame> frames;
+	for (size_t first = 0; first < items.size(); first += BATCH)
+	{
+		const size_t n = std::min(BATCH, items.size() - first);
+		blobs.assign(n, std::vector<unsigned char>());
+		frames.assign(n, HdFrame());
+		std::vector<char> own(n, 0); // the loaded picture is in its own colours: given as it is
+		for (size_t i = 0; i < n; ++i)
+		{
+			Entry &entry = *items[first + i].entry;
+			if (!entry.frame.pixels.empty() && !entry.recoloured)
+			{
+				own[i] = 1;
+			}
+			else
+			{
+				// a failure to open is told and the entry marked; the picture is left out
+				if (!readBlob(entry, blobs[i]))
+				{
+					blobs[i].clear();
+				}
+			}
+		}
+		HdWorkers::instance().run((int)n, [&](int i)
+		{
+			const Item &item = items[first + i];
+			if (own[i])
+			{
+				fn(first + i, *item.classic, item.entry->frame);
+			}
+			else if (!blobs[i].empty() && decodeBlob(*item.entry, blobs[i], frames[i]))
+			{
+				fn(first + i, *item.classic, frames[i]);
+			}
+		});
+	}
+	return items.size();
 }
 
 /**
@@ -1436,6 +1634,7 @@ namespace
 				entry.path = picture;
 				entry.width = fw;
 				entry.height = fh;
+				entry.key = key;
 			}
 			++on;
 		}

@@ -98,10 +98,55 @@
 #include "../Mod/RuleSoldier.h"
 #include "../Mod/RuleVideo.h"
 #include "../Engine/HdItems.h"
+#include "../Engine/HdPaletteShift.h"
+#include "../Engine/HdSprites.h"
+#include "../Mod/MapDataSet.h"
 #include <algorithm>
 
 namespace OpenXcom
 {
+
+namespace
+{
+	/**
+	 * HD render: carries the battle's palette transformation over to the HD frames (HdPaletteShift),
+	 * once, when the HD frames are drawn at all and the palette of the battle's depth was swapped.
+	 * @param transformed Whether the enviroEffects swapped any palette (and it was not reset since).
+	 */
+	void syncHdPaletteShift(Game *game, SavedBattleGame *save, bool transformed)
+	{
+		if (!transformed || Options::oxceHdMode == 0 || HdSprites::count() == 0 || HdPaletteShift::active())
+		{
+			return;
+		}
+		auto *enviro = save->getEnviroEffects();
+		if (!enviro)
+		{
+			return;
+		}
+		const std::string name = save->getDepth() == 0 ? std::string("PAL_BATTLESCAPE") : "PAL_BATTLESCAPE_" + std::to_string(save->getDepth());
+		if (enviro->getPaletteTransformations().count(name) == 0)
+		{
+			return;
+		}
+		Palette *shown = game->getMod()->getPalette(name, false);
+		Palette *base = game->getMod()->getPalette("BACKUP_" + name, false);
+		if (!shown || !base)
+		{
+			return;
+		}
+		std::vector<const SurfaceSet*> terrain;
+		for (auto *data : *save->getMapDataSets())
+		{
+			if (data && data->getSurfaceset())
+			{
+				terrain.push_back(data->getSurfaceset());
+			}
+		}
+		Log(LOG_INFO) << "HD palette shift: " << name << " of the battle, " << terrain.size() << " terrain set(s)";
+		HdPaletteShift::install(shown->getColors(), base->getColors(), terrain);
+	}
+}
 
 /**
  * Initializes all the elements in the Battlescape screen.
@@ -286,6 +331,7 @@ BattlescapeState::BattlescapeState() :
 
 	// Set palette
 	_save->setPaletteByDepth(this);
+	syncHdPaletteShift(_game, _save, _paletteResetNeeded);
 
 	if (_game->getMod()->getInterface("battlescape")->getElementOptional("pathfinding"))
 	{
@@ -804,6 +850,8 @@ void BattlescapeState::resetPalettes()
 {
 	if (_paletteResetNeeded)
 	{
+		// HD render: the frames go back to their own colours (read again from their files)
+		HdPaletteShift::remove();
 		for (auto& origPal : _game->getMod()->getPalettes())
 		{
 			if (origPal.first.find("PAL_") == 0)
@@ -829,6 +877,7 @@ void BattlescapeState::init()
 	if (_map->getHdMode() != Options::oxceHdMode)
 	{
 		_map->setHdMode(Options::oxceHdMode);
+		syncHdPaletteShift(_game, _save, _paletteResetNeeded);
 	}
 	if (_paletteResetRequested)
 	{
@@ -3450,6 +3499,7 @@ void BattlescapeState::hdModeToggle()
 	const int mode = (_map->getHdMode() + 1) % HD_MODE_COUNT;
 	Options::oxceHdMode = mode;
 	_map->setHdMode(mode);
+	syncHdPaletteShift(_game, _save, _paletteResetNeeded);
 	static const char *names[HD_MODE_COUNT] = { "HD mode 0: nearest (classic pixels)", "HD mode 1: HD packs, nearest for the rest", "HD mode 2: HD packs + xBRZ smoothing" };
 	warningRaw(names[mode]);
 }

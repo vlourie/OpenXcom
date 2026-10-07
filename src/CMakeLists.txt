@@ -169,6 +169,7 @@ set ( engine_src
   Engine/HdSmooth.cpp
   Engine/HdUi.cpp
   Engine/HdSprites.cpp
+  Engine/HdPaletteShift.cpp
   Engine/HdUiArt.cpp
   Engine/HdFont.cpp
   Engine/HdUiDraw.cpp
