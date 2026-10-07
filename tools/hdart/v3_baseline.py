@@ -8,6 +8,7 @@ final_select. Следующая партия идёт тем же кодом; �
 
     py -3.13 tools/hdart/v3_baseline.py freeze     пишет замок (только если его ещё нет), файл только для чтения
     py -3.13 tools/hdart/v3_baseline.py check      код 0 - всё как в замке; 1 - список изменённых и пропавших
+                                                   (разница только в концах строк LF/CRLF - не изменение)
     py -3.13 tools/hdart/v3_baseline.py list       состав без записи
 
 Новый скрипт следующей партии (V4 и дальше) зовёт check перед build и перед каждым запуском модели.
@@ -89,6 +90,14 @@ def sha(p):
         return hashlib.sha256(f.read()).hexdigest()
 
 
+def eol_shas(p):
+    """sha256 файла в LF и в CRLF. Git с autocrlf выкладывает файл не теми концами строк, что в замке (на диске
+    при заморозке - смесь: 108 в LF, 15 в CRLF); содержимое при этом то же, а хэш байтов другой."""
+    with open(os.path.join(ROOT, p), "rb") as f:
+        lf = f.read().replace(b"\r\n", b"\n")
+    return {hashlib.sha256(lf).hexdigest(), hashlib.sha256(lf.replace(b"\n", b"\r\n")).hexdigest()}
+
+
 def main():
     if hasattr(sys.stdout, "reconfigure"):
         sys.stdout.reconfigure(encoding="utf-8")
@@ -115,12 +124,15 @@ def main():
         raise SystemExit("замка нет: %s" % LOCK)
     with open(lock, encoding=ENC) as f:
         files = json.load(f)["files"]
-    bad = []
+    bad, eol = [], 0
     for p, h in files.items():
         if not os.path.isfile(os.path.join(ROOT, p)):
             bad.append("нет      " + p)
         elif sha(p) != h:
-            bad.append("изменён  " + p)
+            if h in eol_shas(p):
+                eol += 1
+            else:
+                bad.append("изменён  " + p)
     new = sorted(set(members()) - set(files))
     for p in new:
         bad.append("новый в цепочке  " + p)
@@ -129,7 +141,8 @@ def main():
         for b in bad:
             print("  " + b)
         return 1
-    print("V3 baseline цел: %d файлов как в замке" % len(files))
+    print("V3 baseline цел: %d файлов как в замке%s" % (
+        len(files), "" if not eol else " (у %d отличаются только концы строк - checkout git)" % eol))
     return 0
 
 
