@@ -28,7 +28,7 @@ import gpuq  # noqa: E402  (только чистые функции, без HOM
 sys.stdout.reconfigure(encoding="utf-8")  # кириллица при перенаправлении (R-001)
 TMP = tempfile.mkdtemp(prefix="gpuq_test_")
 ENV = dict(os.environ, GPUQ_HOME=os.path.join(TMP, "q"), GPUQ_FAKE_GPU="1",
-           PYTHONIOENCODING="utf-8")
+           PYTHONIOENCODING="utf-8", GPUQ_PREEMPT_GRACE="4")
 MARKS = os.path.join(TMP, "marks.txt")
 
 
@@ -147,12 +147,150 @@ def test_now_retry_stop():
     print("  urgent --now, повторы и stop - как задумано")
 
 
+def frames(name, n, listen=True):
+    """Серия как педия: по картинке в секунду, готовую не рисует заново, флаг уступки - между картинками."""
+    d = os.path.join(TMP, name)
+    body = (f"import os,sys,time\n"
+            f"os.makedirs({d!r},exist_ok=True)\n"
+            f"for n in range({n}):\n"
+            f"    f=os.path.join({d!r},'%d.done'%n)\n"
+            f"    if os.path.exists(f): continue\n"
+            f"    y=os.environ.get('GPUQ_YIELD_FILE')\n"
+            f"    if {listen} and y and os.path.exists(y): sys.exit(75)\n"
+            f"    time.sleep(1)\n"
+            f"    open(f,'w').write('x')\n"
+            f"    open({MARKS!r},'a').write('frame {name} %d %.2f' % (n, time.time()) + chr(10))\n")
+    return ["--", sys.executable, "-c", body]
+
+
+def wait_mark(text, limit=30):
+    t = time.time()
+    while not os.path.exists(MARKS) or text not in io.open(MARKS, encoding="utf-8").read():
+        assert time.time() - t < limit, f"нет отметки '{text}': " + q("list")
+        time.sleep(0.2)
+
+
+def test_prio_order():
+    q("pause")
+    q("add", "--name", "p9", "--prio", "9", *job("p9", 0))
+    q("add", "--name", "p1", *job("p1", 0))
+    q("add", "--name", "p0", "--prio", "0", *job("p0", 0))
+    q("add", "--name", "p1b", *job("p1b", 0))
+    os.remove(MARKS) if os.path.exists(MARKS) else None
+    q("resume")
+    wait_idle()
+    starts = [x[1] for x in marks() if x[0] == "start"]
+    assert starts == ["p0", "p1", "p1b", "p9"], starts
+    # место, назначенное руками, настоящее: P подтягивается к соседям
+    q("pause")
+    q("add", "--name", "m1", *job("m1", 0))
+    q("add", "--name", "m9", "--prio", "9", *job("m9", 0))
+    q("add", "--name", "m1b", *job("m1b", 0))
+    st = state()
+    assert [st["jobs"][i]["name"] for i in st["order"]] == ["m1", "m1b", "m9"], "P9 не в конце своего уровня"
+    q("before", "m9", "m1")
+    q("last", "m1")
+    st = state()
+    assert [st["jobs"][i]["name"] for i in st["order"]] == ["m9", "m1b", "m1"], [st["jobs"][i]["name"] for i in st["order"]]
+    assert [st["jobs"][i]["prio"] for i in st["order"]] == [1, 1, 1]
+    # серия переведена в P9 по одному заданию - порядок серии прежний
+    q("add", "--name", "s1", *job("s1", 0))
+    q("add", "--name", "s2", *job("s2", 0))
+    for n in ("s1", "s2", "m9", "m1b"):
+        q("prio", n, "9")
+    names = [l.split()[2] for l in q("list").splitlines() if l.strip()[:1].isdigit()]
+    assert names == ["m1", "m9", "m1b", "s1", "s2"], names
+    q("resume")
+    wait_idle()
+    print("  приоритет: P0, затем P1 по порядку, P9 последним; before/last меняют P по соседям")
+
+
+def test_preempt():
+    os.remove(MARKS)
+    q("add", "--name", "pedia", "--prio", "9", "--preemptible", *frames("pedia", 6))
+    wait_mark("frame pedia 1")
+    q("add", "--name", "hot", "--prio", "1", *job("hot", 1))
+    wait_idle(60)
+    m = marks()
+    drawn = [x[2] for x in m if x[0] == "frame"]
+    assert sorted(drawn) == [str(i) for i in range(6)], f"картинки не по разу: {drawn}"
+    seq = [(x[0], x[1]) for x in m]
+    hot = seq.index(("start", "hot"))
+    assert ("frame", "pedia") in seq[:hot] and ("frame", "pedia") in seq[hot:], f"не уступила посередине: {seq}"
+    st = state()
+    pedia = [j for j in st["jobs"].values() if j["name"] == "pedia"][0]
+    assert pedia["state"] == "done" and pedia.get("yields") == 1, pedia
+    assert not os.path.exists(os.path.join(ENV["GPUQ_HOME"], "yield", pedia["id"])), "флаг уступки остался"
+    print(f"  уступка: педия отдала карту после картинки, продолжила с места, все 6 по разу")
+    # не слушает флаг - снимается по сроку (GPUQ_PREEMPT_GRACE 4 с) и тоже продолжает
+    os.remove(MARKS)
+    q("add", "--name", "deaf", "--prio", "9", "--preemptible", *frames("deaf", 12, listen=False))
+    wait_mark("frame deaf 0")
+    t = time.time()
+    q("add", "--name", "hot2", *job("hot2", 0))
+    wait_mark("start hot2", 30)
+    took = time.time() - t
+    wait_idle(60)
+    drawn = [x[2] for x in marks() if x[0] == "frame"]
+    deaf = [j for j in state()["jobs"].values() if j["name"] == "deaf"][0]
+    assert deaf["state"] == "done" and deaf.get("yields") == 1 and len(set(drawn)) == 12, (deaf, drawn)
+    assert took < 4 + 2 * gpuq.TICK + 4, f"снятие по сроку заняло {took:.0f} с"
+    print(f"  глухое к флагу снято по сроку за {took:.0f} с, дорисовало с места")
+    # уступающее и нет никого выше - не уступает; P1 не уступающее P0 не снимает
+    os.remove(MARKS)
+    q("add", "--name", "solid", *job("solid", 3))
+    wait_mark("start solid")
+    q("add", "--name", "p0late", "--prio", "0", *job("p0late", 0))
+    wait_idle(30)
+    seq = [(x[0], x[1]) for x in marks()]
+    assert seq.index(("end", "solid")) < seq.index(("start", "p0late")), seq
+    print("  не уступающее задание доработало, P0 пошло после")
+    st = state()
+    pedia = [j for j in st["jobs"].values() if j["name"] == "pedia"][0]
+    deaf = [j for j in st["jobs"].values() if j["name"] == "deaf"][0]
+    assert pedia.get("yields_coop") == 1 and not pedia.get("yields_forced"), pedia
+    assert deaf.get("yields_forced") == 1 and not deaf.get("yields_coop"), deaf
+    log = io.open(os.path.join(ENV["GPUQ_HOME"], "daemon.log"), encoding="utf-8-sig").read()
+    for ev in ("PREEMPT_REQUESTED", "PREEMPT_COOPERATIVE", "PREEMPT_TIMEOUT", "PREEMPT_FORCED"):
+        assert ev in log, f"в журнале диспетчера нет {ev}"
+    print("  журнал: PREEMPT_REQUESTED / COOPERATIVE / TIMEOUT / FORCED, счётчики сам 1 и по сроку 1")
+
+
+def test_exit_codes():
+    """75 у уступающего без запроса - PREEMPTED, по кругу больше 3 раз - сбой; 75 у обычного - сбой;
+    потомки вышедшего задания не переживают его."""
+    q("add", "--name", "loop75", "--prio", "9", "--preemptible", *job("loop75", 0, code=75))
+    q("add", "--name", "plain75", *job("plain75", 0, code=75))
+    st = wait_idle(60)
+    loop = [j for j in st["jobs"].values() if j["name"] == "loop75"][0]
+    plain = [j for j in st["jobs"].values() if j["name"] == "plain75"][0]
+    assert loop["state"] == "failed" and loop.get("yields_coop") == 3 and loop.get("spurious") == 4, loop
+    assert plain["state"] == "failed" and plain.get("code") == 75 and not plain.get("yields"), plain
+    print("  код 75: у уступающего - уступка (3 раза без запроса, потом сбой), у обычного - сбой")
+    os.remove(MARKS)
+    body = (f"import subprocess,sys\n"
+            f"c=subprocess.Popen([sys.executable,'-c','import time;time.sleep(60)'])\n"
+            f"open({MARKS!r},'a').write('child %d' % c.pid + chr(10))\n"
+            f"import time;time.sleep(2*{gpuq.TICK}+1)\n")
+    q("add", "--name", "parent", "--", sys.executable, "-c", body)
+    wait_idle(60)
+    child = int([x for x in marks() if x[0] == "child"][0][1])
+    t = time.time()
+    while gpuq.psutil.pid_exists(child) and time.time() - t < 15:
+        time.sleep(0.3)
+    assert not gpuq.psutil.pid_exists(child), "потомок вышедшего задания жив"
+    print("  потомок вышедшего задания снят: один процесс на задание")
+
+
 def main():
     try:
         test_place()
         print("place: порядок верный")
         test_run()
         test_now_retry_stop()
+        test_prio_order()
+        test_preempt()
+        test_exit_codes()
         print("OK")
     finally:
         subprocess.run([sys.executable, os.path.join(HERE, "gpuq.py"), "shutdown"],

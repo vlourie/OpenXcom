@@ -1,0 +1,225 @@
+﻿{
+ "lock": "qwen21_turbo_rgba",
+ "format": 1,
+ "model": {
+  "repo": "Qwen/Qwen-Image-2.1",
+  "commit": "d26bb61231c349cf6b7896fa83353113880e1ba3",
+  "files": {
+   "model_index.json": {
+    "size": 447,
+    "sha256": "cf1ecd104ea090855d60d8cec0895c1e9d6ee41b2f87e231b678beecd1cf7809"
+   },
+   "processor/added_tokens.json": {
+    "size": 707,
+    "sha256": "c0284b582e14987fbd3d5a2cb2bd139084371ed9acbae488829a1c900833c680"
+   },
+   "processor/chat_template.jinja": {
+    "size": 5292,
+    "sha256": "3636d0f0bd6bef02654cdffdc447b79cb2cef8ab02cc75267345946291a489e4"
+   },
+   "processor/merges.txt": {
+    "size": 1671853,
+    "sha256": "8831e4f1a044471340f7c0a83d7bd71306a5b867e95fd870f74d0c5308a904d5"
+   },
+   "processor/preprocessor_config.json": {
+    "size": 782,
+    "sha256": "93585062a80db5e8ca038efc7726a3e6411d9db948472d81d63c6303993be8c5"
+   },
+   "processor/special_tokens_map.json": {
+    "size": 613,
+    "sha256": "76862e765266b85aa9459767e33cbaf13970f327a0e88d1c65846c2ddd3a1ecd"
+   },
+   "processor/tokenizer.json": {
+    "size": 11422654,
+    "sha256": "aeb13307a71acd8fe81861d94ad54ab689df773318809eed3cbe794b4492dae4"
+   },
+   "processor/tokenizer_config.json": {
+    "size": 5445,
+    "sha256": "81ec7bb9530159b326c0bef1d0b6c33d392090524014ea3f0123a3c1eb9c2af5"
+   },
+   "processor/video_preprocessor_config.json": {
+    "size": 817,
+    "sha256": "59c5c9eb52182eb14c06ffb10ca9effd29adce5f238a95de23ca14a38dbd2cb1"
+   },
+   "processor/vocab.json": {
+    "size": 2776833,
+    "sha256": "ca10d7e9fb3ed18575dd1e277a2579c16d108e32f27439684afa0e10b1440910"
+   },
+   "scheduler/scheduler_config.json": {
+    "size": 485,
+    "sha256": "5895f3a167c14a967fe9ac70c64924ae5acc79799e0679fd12907e594a713cd1"
+   },
+   "text_encoder/config.json": {
+    "size": 1517,
+    "sha256": "6001331949f7f86ab6d791a80b12246d4f8da5159fa08c3e62368a39f36d63a9"
+   },
+   "text_encoder/model-00001-of-00004.safetensors": {
+    "size": 4998056552,
+    "sha256": "dde00291b5f7fb92013895310a3da0ddba78674df9f10d505d375243dc01fc6f"
+   },
+   "text_encoder/model-00002-of-00004.safetensors": {
+    "size": 4915962464,
+    "sha256": "9047faccc0a6d98496a52d55f27be1c94a9c259d1e283fbea0128d054a948d42"
+   },
+   "text_encoder/model-00003-of-00004.safetensors": {
+    "size": 4915962496,
+    "sha256": "8c54187654c0176b73ae73785bf791dc9a14c9df7fb4310083a09d42048cb57e"
+   },
+   "text_encoder/model-00004-of-00004.safetensors": {
+    "size": 2704357976,
+    "sha256": "5311532aaaeae3259eb6a7b2c600636be1159adf7ded35f53579f7d0e7d43cdd"
+   },
+   "text_encoder/model.safetensors.index.json": {
+    "size": 67795,
+    "sha256": "859146bff8db1d617fca8b457a5223edff963bb70076b3645f2189fe0540a147"
+   },
+   "transformer/config.json": {
+    "size": 370,
+    "sha256": "56ae3281c4e6c2d1aa3658252d187488071815fd79bef15808bb0205fc1a2241"
+   },
+   "transformer/diffusion_pytorch_model-00001-of-00002.safetensors": {
+    "size": 9968332504,
+    "sha256": "9e6bc2d641e67bf277895ea8777141044a38f3edb7101bc469b2961dd7c36b4b"
+   },
+   "transformer/diffusion_pytorch_model-00002-of-00002.safetensors": {
+    "size": 4261951904,
+    "sha256": "3aaf234dcbe128530479735854a346b5e3e66283b7c11db56f836bbd1c13ebaa"
+   },
+   "transformer/diffusion_pytorch_model.safetensors.index.json": {
+    "size": 30283,
+    "sha256": "17987f6623b1c814d0ef55a137d99142b7b3b040eb1bf241b5575dd35af803a2"
+   },
+   "vae/config.json": {
+    "size": 2079,
+    "sha256": "9785d527b278cb8b210e9f48a8028d92a4190968ce7e24c8fc85d9d1b82f6ba2"
+   },
+   "vae/diffusion_pytorch_model.safetensors": {
+    "size": 1350989512,
+    "sha256": "a07a1b7c4ee2966a1b3bdc37de9b4f983d56937e46619f709a80b6e490675417"
+   }
+  }
+ },
+ "lora": {
+  "repo": "Viggle/Qwen-Image-2.1-viggle-turbo",
+  "commit": "bb26a0f38e5fe6c124aaccc9187a87eed5d9ed13",
+  "files": {
+   "Qwen-Image-2.1-viggle-turbo-v0.2.1-6step-lora-r128.safetensors": {
+    "size": 679604800,
+    "sha256": "bafb91d0047df3f9b8a5a850b0c967f051164314d8aad778dfa34d9c24ec345b"
+   },
+   "scheduler/scheduler_config.json": {
+    "size": 484,
+    "sha256": "5d6ddf326e7a1f63a7920dac94f70df2adf3710a92fe7ce3f7bfd30d559f37e4"
+   }
+  },
+  "file": "Qwen-Image-2.1-viggle-turbo-v0.2.1-6step-lora-r128.safetensors"
+ },
+ "runtime": {
+  "pipeline": "QwenImage21Pipeline",
+  "dtype": "bfloat16",
+  "offload": "enable_model_cpu_offload",
+  "attention_slicing": false,
+  "vae_tiling": false,
+  "scheduler": "FlowMatchEulerDiscreteScheduler из репозитория LoRA, subfolder scheduler",
+  "lora": "load_lora_weights: репозиторий LoRA, weight_name = файл LoRA, вес 1.0",
+  "sigmas": [
+   1.0,
+   0.9375,
+   0.875,
+   0.75,
+   0.5,
+   0.25
+  ],
+  "num_inference_steps": 6,
+  "true_cfg_scale": 1.0,
+  "negative_prompt": null,
+  "mp": 2.0,
+  "size": "gen_hd.qwen21_size(w*zoom, h*zoom, mp)",
+  "output_resolution": "32 * round(sqrt(W * H) / 32)",
+  "generator": "torch.Generator('cuda').manual_seed(seed), seed задания",
+  "local_files_only": true
+ },
+ "libraries": {
+  "python": "3.13.7",
+  "torch": "2.11.0+cu128",
+  "diffusers": "0.41.0.dev0",
+  "transformers": "5.17.0",
+  "accelerate": "1.15.0",
+  "peft": "0.21.0",
+  "safetensors": "0.8.0",
+  "tokenizers": "0.23.2",
+  "huggingface_hub": "1.32.0",
+  "numpy": "2.5.3",
+  "pillow": "12.3.0",
+  "diffusers_git": "80c7ed262aeffbeb43ef13ae04baeb9b84515a69"
+ },
+ "created": "2026-10-01T00:38:15",
+ "created_by": "tools/hdart/model_lock.py make",
+ "source_run": "acc-5e9f63c421c0/run2 (gpuq #278): грузил main = d26bb612 из кэша, без загрузки",
+ "code": {
+  "rev": "7029c93c6473",
+  "parts": [
+   [
+    "obj_photo.py",
+    [
+     "TURBO_SIGMAS",
+     "TURBO_REPO",
+     "TURBO_FILE",
+     "RGBA_HEAD",
+     "RGBA_TAIL",
+     "PHOTO_RGBA",
+     "NEGATIVE",
+     "own_alpha",
+     "edge_matte",
+     "main"
+    ]
+   ],
+   [
+    "gen_hd.py",
+    [
+     "QWEN21_REPO",
+     "Qwen21Painter",
+     "qwen21_size",
+     "save_png"
+    ]
+   ],
+   [
+    "vx_control.py",
+    [
+     "smooth_ref"
+    ]
+   ],
+   [
+    "probe_object.py",
+    [
+     "cut_out",
+     "match_tone",
+     "pick_background"
+    ]
+   ],
+   [
+    "obj_series.py",
+    [
+     "compose",
+     "split"
+    ]
+   ],
+   [
+    "model_lock.py",
+    [
+     "pin",
+     "check_runtime"
+    ]
+   ]
+  ]
+ },
+ "hardware": {
+  "gpu": "NVIDIA GeForce RTX 5090, 617.14"
+ },
+ "verified": {
+  "hf_metadata": true,
+  "files_checked": 25,
+  "files": 25
+ },
+ "notes": "веса d26bb612 побайтно равны b3179ad3 и 790c9263 (LFS sha256, 30.09); в lock_rev не входят created*, source_run, code, hardware, verified, notes"
+}

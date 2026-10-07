@@ -74,7 +74,7 @@ def compose(frames, at):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--items", default="art/objects/queue/items.json")
+    ap.add_argument("--items", default="art/objects/discovery/items.json")
     ap.add_argument("--cand", action="append", default=[], help="имя=папка, можно несколько")
     ap.add_argument("--cover", default="art/objects/cover.tsv")
     ap.add_argument("--out", default="art/_review/ours_vs_pack")
