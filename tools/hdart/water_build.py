@@ -27,10 +27,14 @@
     (SWAMP_LAND, кадр 0 сам с собой), умноженная на отношение яркости суши классики к яркости соседа: трава
     и снег берега продолжают траву и снег соседних клеток. Суша темнее соседа больше чем вдвое (тень сугроба
     на воде) остаётся цветом классики.
+  IDT_FARM_WATER (28 кадров с водой 112..127) - рисовые чеки, статичная вода. Вода - как у POLAR (кадр сам
+    с собой, мягкое x4, средний цвет кадра 64); вал и земля берега - premultiplied мягкое x4 классики,
+    слои по плотности. Стебли риса кадра 83 (рампы 48..79) - из прежнего пака
+    (art/water/src/IDT_FARM_WATER_83_pack.png) поверх воды: в классике это точки, в паке нарисованы.
 
     py -3.13 tools/hdart/water_build.py --out <папка>/TERRAIN [--sets SEAURBAN,SEABITS,CARGO2_IND,POLAR,FORESTSWAMP,...]
 Проверка - игровой кадр (море у борта пиратского круиза, полярные пруды STR_LOC_ACADEMY_TOWN_COLD,
-болото STR_LOC_MONSTER_HUNT_PRIMAL_WEREWOLF), а не лист кадров.
+болото STR_LOC_MONSTER_HUNT_PRIMAL_WEREWOLF, рисовая ферма RICE_FARM), а не лист кадров.
 POLAR берёт снег из пака установки - пересобирать после замены снега POLAR 32; болота - после замены
 кадра 0 FOREST, FOREST_SNOW, FOREST_WASTE, FORESTJUNGLESTYX.
 """
@@ -317,6 +321,56 @@ def build_shore(pal, out, s, water, open_frames, anim_range, snow_idx=(), snow_p
     return len(anim)
 
 
+FARM_WATER = np.zeros(256, bool)
+FARM_WATER[112:128] = True
+FARM_PLANT = np.zeros(256, bool)
+FARM_PLANT[48:80] = True                  # рис кадра 83 (рампы 48 и 64)
+FARM_PLANTS_PNG = ROOT / "art" / "water" / "src" / "IDT_FARM_WATER_83_pack.png"
+
+
+def build_farm_water(pal, out, blur=1.6):
+    """Рисовые чеки IDT_FARM_WATER (07.10): статичная вода, у каждой записи один кадр. Кадры записей, где есть
+    вода (индексы 112..127): вода - кадр сам с собой на изорешётке, мягкое x4 (как POLAR); вал и островки -
+    premultiplied мягкое x4 своих цветов классики; слои по плотности, как build_shore. Рис кадра 83 - стебли
+    прежнего пака (FARM_PLANTS_PNG, сохранённая копия; маска по зелени), под ними новая вода: у прежнего
+    пака на 83 и 64 бурый затёк у левой вершины - на поле метка в каждой клетке."""
+    s = "IDT_FARM_WATER"
+    frames = read_set(s)
+    recs, _ = records(s)
+    used = sorted({r[0] for r in recs if (FARM_WATER[frames[r[0]]] & (frames[r[0]] != 0)).any()})
+    mean = pal[frames[64][FARM_WATER[frames[64]] & (frames[64] != 0)]].astype(np.float32).mean(0)
+
+    def dens(m, col=None):
+        ch = [m.astype(np.float32)[..., None]] if col is None else [col * m[..., None], m.astype(np.float32)[..., None]]
+        return up_float(np.pad(np.dstack(ch), ((2, 2), (2, 2), (0, 0))), 1.2)[2 * K:-2 * K, 2 * K:-2 * K]
+
+    for f in used:
+        a = frames[f]
+        nz = a != 0
+        pm = nz & FARM_PLANT[a]
+        wm = nz & (FARM_WATER[a] | pm)          # под стеблями - вода
+        im = nz & ~wm
+        wa = a.copy()
+        wa[pm] = 0                               # стебли не красят воду: там средний цвет воды
+        wat = polar_water(wa, pal, mean, blur, FARM_WATER)
+        ui = dens(im, pal[a].astype(np.float32))
+        d_i = np.clip(ui[..., 3], 0, None)
+        icol = ui[..., :3] / np.maximum(d_i[..., None], 1e-3)
+        d_w = np.clip(dens(wm)[..., 0], 0, None)
+        lw = np.clip((d_i / np.maximum(d_i + d_w, 1e-4) - 0.5) * 2.2 + 0.5, 0, 1)[..., None]
+        col = icol * lw + wat * (1 - lw)
+        alpha = np.maximum(soft_mask(nz), blk(nz))
+        if pm.any():
+            p = np.asarray(Image.open(FARM_PLANTS_PNG).convert("RGBA")).astype(np.float32)
+            g = p[..., 1] - np.maximum(p[..., 0], p[..., 2])
+            m = (np.clip((g - 4) / 16, 0, 1) * p[..., 3] / 255)[..., None]
+            col = p[..., :3] * m + col * (1 - m)
+            alpha = np.maximum(alpha, m[..., 0])
+        save(np.dstack([np.clip(col, 0, 255), alpha * 255]).round().astype(np.uint8), out, s, f)
+    print("  кадры:", used)
+    return len(used)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", required=True)
@@ -325,6 +379,7 @@ def main():
     pal = palette()
     fn = {"SEAURBAN": build_seaurban, "SEABITS": build_seabits, "CARGO2_IND": build_foam, "POLAR": build_polar}
     fn.update({s: build_swamp(s) for s in SWAMP_RAMP})
+    fn["IDT_FARM_WATER"] = build_farm_water
     for s in a.sets.split(","):
         print(s, "кадров", fn[s](pal, a.out), "->", Path(a.out) / (s + ".PCK"))
 
