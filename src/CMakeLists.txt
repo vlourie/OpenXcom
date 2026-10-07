@@ -574,6 +574,8 @@ endif ()
 if ( WIN32 )
   set ( application_type WIN32 )
   set ( openxcom_icon OpenXcom.rc )
+  # Ninja does not scan .rc includes: rebuild the version resource when version.h changes
+  set_source_files_properties ( OpenXcom.rc PROPERTIES OBJECT_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/version.h;${CMAKE_CURRENT_SOURCE_DIR}/resource.h" )
 endif ()
 
 if ( UNIX AND EMBED_ASSETS )
