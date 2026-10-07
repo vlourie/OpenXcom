@@ -1,13 +1,13 @@
 r"""Сборка связанного участка перекрёстка ROADS 0-13 из одного ответа модели, без новой генерации.
 
 Зачем (FAIL визуальной приёмки 07.10): проба тротуара заменила кадры 0, 1, 2, 7, а асфальт 9, разметка 10-12,
-пятно 13 и бордюры 3-6, 8 остались старыми. В игровом кадре это сетка клеток асфальта, заплатки другой фактуры под
+решётка 13 и бордюры 3-6, 8 остались старыми. В игровом кадре это сетка клеток асфальта, заплатки другой фактуры под
 разметкой, разметка то широкая, то ниткой. Разбор по пикселям (crossing_check.py по дампу движка) - в отчёте.
 
 Здесь собирается ВЕСЬ материал участка сразу:
   тротуар  - клетки вариантов из ответа модели (sidewalk_probe.make_cells), тон и зерно классики ROADS:0;
   асфальт  - те же клетки из другого места того же ответа (транспонированный ответ), тон и зерно классики ROADS:9;
-             ОДНИ И ТЕ ЖЕ клетки во всех кадрах 9-13, значит асфальт под разметкой и пятном - тот же материал;
+             ОДНИ И ТЕ ЖЕ клетки во всех кадрах 9-13, значит асфальт под разметкой и решёткой - тот же материал;
   бордюры  - кадры 1-8: тротуар своего варианта плюс полосы камня по сторонам KERB_SIDES (crossing_check):
              +u и +v - передний бордюр 88/256, -u и -v - задний 41/256; тон поперёк полосы - профиль классики
              своей стороны (кадр 1, 2, 3 или 4), фактура камня - зерно и износ тротуара сильнее; у угла сторона
@@ -15,7 +15,10 @@ r"""Сборка связанного участка перекрёстка ROAD
   разметка - кадры 10-12: полоса классики вдоль края -u (10), -v (11) или обоих (12): u (v) от 1/32 до 5/32 -
              ровно там, где лежат пиксели индекса 240 классики, по всей длине края; цвет - индекс 240; кладётся
              поверх асфальта своего варианта покрытием по 16 подточкам, асфальт под ней не меняется;
-  пятно 13 - пиксели индексов 11-13 классики, сглаженные (гаусс), поверх того же асфальта.
+  решётка 13 - решётка стока у бордюра (по пикселям классики: пластина с прутьями индексов 11-13 вдоль оси u,
+             тёмная кромка 251-252 по краям -u и +v): пластина и кромка - геометрия классики, прутья - два тона
+             (светлый пруток, тёмная прорезь) по фазе шага, найденного по классике; поверх того же асфальта.
+             Прежняя сборка размывала пиксели 11-13 гауссом в пятно - конструкция терялась (чистый кадр 07.10).
 У каждого кадра 4 картинки (<N>.png, <N>.v1-v3.png) - вариант j у всех кадров из одних и тех же клеток j. Движок
 выбирает вариант по непрерывному полю (groundFrameFor: целиком или попиксельное смешение соседних), поэтому
 соседние клетки, любые кадры участка, показывают одно непрерывное поле материала - сводить края к варианту 0 не
@@ -124,17 +127,54 @@ def gauss(a, s):
     return np.apply_along_axis(lambda r: np.convolve(r, k, "valid"), 0, b)
 
 
-def blob_layer():
-    """Пятно кадра 13: цвет и покрытие x4 из пикселей индексов 11-13 классики, сглаженные (гаусс 1.5 пикс x4)."""
+def grate_layer():
+    """Решётка стока кадра 13 по пикселям классики. Пластина - квадрат в осях клетки по крайним пикселям прутьев
+    (индексы 11-13) с запасом в полпикселя базы; прутья идут вдоль u, шаг - сильнейшая гармоника яркости по v;
+    профиль по фазе шага делится по медиане на пруток и прорезь, каждый своим средним цветом классики (контур
+    чёткий, покрытие по 16 подточкам). Кромка - тёмные пиксели 251-252 классики по краям пластины -u и +v.
+    Возвращает цвет и покрытие пластины, цвет и покрытие кромки (x4) и описание для build.json."""
     idx, _ = js.gm.classic("ROADS", 13)
-    m = ((idx >= 11) & (idx <= 13)).astype(np.float64)
-    col = js.PAL[idx].astype(np.float64) * m[..., None]
-    rep = lambda a: np.repeat(np.repeat(a, K, 0), K, 1)
-    m4 = gauss(rep(m), 1.5 * K / 4 * 2)
-    c4 = np.stack([gauss(rep(col[..., c]), 1.5 * K / 4 * 2) for c in range(3)], -1)
-    colour = c4 / np.maximum(m4, 1e-6)[..., None]
-    cover = np.clip((m4 - 0.5) / 0.3 + 0.5, 0, 1)
-    return colour, cover
+    yy, xx = np.mgrid[0:idx.shape[0], 0:idx.shape[1]].astype(np.float64)
+    U, V = sp.screen_to_uv(xx + 0.5, yy + 0.5)
+    rgb = js.PAL[idx].astype(np.float64)
+    g = (idx >= 11) & (idx <= 13)
+    r = (idx >= 251) & (idx <= 252) & (U < 0.75)        # одиночный 251 у правого угла - точка асфальта
+    lum = rgb @ LUMA
+    best = max((abs(((lum[g] - lum[g].mean()) * np.exp(2j * np.pi * V[g] / p)).sum()), p)
+               for p in np.arange(0.14, 0.21, 0.0025))
+    step = float(best[1])
+    nb = 12
+    b = np.floor((V[g] / step) % 1 * nb).astype(int) % nb
+    cnt = np.bincount(b, minlength=nb).astype(float)
+    prof = np.stack([np.bincount(b, rgb[g][:, c], minlength=nb) for c in range(3)], -1)
+    have = cnt > 0
+    prof[have] /= cnt[have, None]
+    xs = np.arange(nb)
+    for c in range(3):
+        prof[:, c] = np.interp(xs, xs[have], prof[have, c], period=nb)
+    prof = (np.roll(prof, 1, 0) + 2 * prof + np.roll(prof, -1, 0)) / 4
+    py_ = prof @ LUMA
+    bright = py_ > np.median(py_)
+    bar_rgb = (prof[bright] * cnt[bright, None]).sum(0) / cnt[bright].sum()
+    slot_rgb = (prof[~bright] * cnt[~bright, None]).sum(0) / cnt[~bright].sum()
+    h = 0.03
+    u0, u1 = U[g].min() - h, U[g].max() + h
+    v0, v1 = V[g].min() - h, V[g].max() + h
+    rim_rgb = rgb[r].mean(0)
+    w = 0.055                                          # кромка: пиксель базы по нормали к краю
+    us, vs = sp.frame_uv(4)
+    plate = (us >= u0) & (us < u1) & (vs >= v0) & (vs < v1)
+    rim = ((np.abs(us - u0) < w / 2) & (vs >= v0 - w / 2) & (vs < v1 + w / 2)) | \
+          ((np.abs(vs - v1) < w / 2) & (us >= u0 - w / 2) & (us < u1 + w / 2))
+    on_bar = bright[np.floor((vs / step) % 1 * nb).astype(int) % nb] & plate
+    n_plate = np.maximum(plate.sum(-1), 1)
+    share = on_bar.sum(-1) / n_plate
+    colour = slot_rgb[None, None, :] * (1 - share[..., None]) + bar_rgb[None, None, :] * share[..., None]
+    info = dict(step=round(step, 4), plate_u=[round(float(u0), 3), round(float(u1), 3)],
+                plate_v=[round(float(v0), 3), round(float(v1), 3)], bar_rgb=np.round(bar_rgb, 1).tolist(),
+                slot_rgb=np.round(slot_rgb, 1).tolist(), rim_rgb=np.round(rim_rgb, 1).tolist(),
+                bar_share=round(float(bright.mean()), 3))
+    return colour, plate.mean(-1), rim_rgb, rim.mean(-1), info
 
 
 # ------------------------------------------------------------------ материал
@@ -176,7 +216,7 @@ def build(a):
         P = cells_of(np.ascontiguousarray(np.roll(tex, (333, 517), (0, 1))), asph_rgb * 1.15, asph_std * 1.6, a)
     mark_rgb = js.PAL[MARK_INDEX].astype(np.float64)
     profiles = {s: side_profile(s) for s in SIDE_FRAME}
-    blob_col, blob_cov = blob_layer()
+    gr_col, gr_cov, rim_rgb, rim_cov, grate_info = grate_layer()
 
     u, v = sp.frame_uv(1)
     us, vs = sp.frame_uv(4)
@@ -210,7 +250,8 @@ def build(a):
                 walk_diag={k: (np.round(v, 3).tolist() if isinstance(v, list) else v) for k, v in W[3].items()
                            if k in ("grain_raw", "grain_std", "wear_std_out", "coherence", "cell_pattern")},
                 asphalt_diag={k: (np.round(v, 3).tolist() if isinstance(v, list) else v) for k, v in A[3].items()
-                              if k in ("grain_raw", "grain_std", "wear_std_out", "coherence", "cell_pattern")})
+                              if k in ("grain_raw", "grain_std", "wear_std_out", "coherence", "cell_pattern")},
+                grate=grate_info)
     # покрытие сторон бордюра по подточкам: у угла сторона с большей глубиной
     side_cover = {}
     for f in range(1, 9):
@@ -266,7 +307,9 @@ def build(a):
                 paint = mark_rgb[None, None, :] * (1 + a.mark_grain * ga / asph_l)[..., None]
                 rgb = under * (1 - c) + paint * c
             else:
-                rgb = under * (1 - blob_cov[..., None]) + blob_col * (1 + 0.5 * ga / asph_l)[..., None] * blob_cov[..., None]
+                metal = gr_col * (1 + 0.3 * ga / asph_l)[..., None]
+                rgb = under * (1 - gr_cov[..., None]) + metal * gr_cov[..., None]
+                rgb = rgb * (1 - rim_cov[..., None]) + rim_rgb[None, None, :] * rim_cov[..., None]
             own = diamond & ~top_wedge if f >= 9 else diamond
             alpha = np.where((js.classic_idx("ROADS", f) > 0) | own, 255, 0)
             fr = np.dstack([np.clip(rgb, 0, 255), alpha]).astype(np.uint8)
@@ -357,7 +400,7 @@ CLOSE = [((55, 12), "вершина V: штрих по -v клетки 54,12 (к
          ((52, 9.5), "передний бордюр 1 (51,9) | асфальт 9 (52,9)"),
          ((49, 12), "передний бордюр 2 (49,11) | асфальт"),
          ((50, 18), "задний бордюр 3 (50,18) | асфальт"),
-         ((52.5, 7.5), "пятно кадра 13 (52,7)"),
+         ((52.5, 7.5), "решётка стока кадра 13 (52,7)"),
          ((50, 12), "вершина асфальта (50,12) под передним бордюром 2: клин у верхней вершины, край бордюра"),
          ((58, 9), "задний бордюр 4 (58,9) | асфальт 9 (57,9), вершина бордюра")]
 
@@ -440,10 +483,13 @@ def sheet(a):
         for t in rows:
             r = json.loads((chk / ("check_%s.json" % t)).read_text(encoding=ENC))
             v = r["verdict"]
-            nf = sum(x[1] == "FAIL" for x in v.values())
+            ref = t.startswith("classic")
+            bad = cc.failed(v, ref)
+            nf = len(bad)
             sh.para("%s: %s, провалено мер %d%s" % (
                 names.get(t, t), "FAIL" if nf else "PASS", nf,
-                ": " + ", ".join(kk for kk, x in v.items() if x[1] == "FAIL") if nf else ""),
+                ": " + ", ".join(bad) if nf else ("  (эталон: требования HD - край штриха и бордюра - "
+                "классика по природе не проходит, не считаются)" if ref else "")),
                 fill=(255, 120, 120) if nf else (140, 255, 140))
             sh.para("     " + ";  ".join("%s %s %s" % (kk, x[0], "" if x[1] == "PASS" else x[1])
                                          for kk, x in v.items()), fill=(200, 200, 200), step=18)
