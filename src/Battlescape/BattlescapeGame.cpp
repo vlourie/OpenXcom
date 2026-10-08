@@ -20,6 +20,7 @@
 #include "BattlescapeGame.h"
 #include "BattlescapeState.h"
 #include "AiProbe.h"
+#include "CollapsePilot.h"
 #include "Map.h"
 #include "Camera.h"
 #include "NextTurnState.h"
@@ -193,6 +194,8 @@ BattlescapeGame::BattlescapeGame(SavedBattleGame *save, BattlescapeState *parent
 	_currentAction.skillRules = nullptr;
 
 	_debugPlay = false;
+
+	CollapsePilot::forget();
 
 	checkForCasualties(nullptr, BattleActionAttack{ }, true);
 	cancelCurrentAction();
@@ -764,6 +767,8 @@ void BattlescapeGame::endTurn()
 
 
 		_save->endTurn();
+		// fire may have burnt supports: the building collapse pilot (off by default)
+		CollapsePilot::settle(this, "end turn");
 		t = _save->getTileEngine()->checkForTerrainExplosions();
 		if (t)
 		{

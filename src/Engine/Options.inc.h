@@ -224,6 +224,8 @@ OPT bool oxceLanguageChosen;
 OPT bool oxceGentle;
 // The photosensitivity warning (GentleChoiceState) is shown once, until answered; then the mode is changed on the HD tab.
 OPT bool oxceGentleAsk;
+// Building collapse pilot (Battlescape/CollapsePilot.h): the barn house and the bunker fall apart when their supports are gone. Off by default, not on any screen.
+OPT bool oxceCollapse;
 
 // OXCE hidden, but moddable via fixedUserOptions and/or recommendedUserOptions
 OPT int oxceStartUpTextMode;
