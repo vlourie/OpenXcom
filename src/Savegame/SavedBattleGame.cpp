@@ -420,6 +420,55 @@ void SavedBattleGame::load(const YAML::YamlNodeReader& node, Mod *mod, SavedGame
 	reader.tryRead("togglePersonalLight", _togglePersonalLight);
 	reader.tryRead("toggleNightVision", _toggleNightVision);
 	reader.tryRead("toggleBrightness", _toggleBrightness);
+	// building collapse pilot, off by default: checked against the build in CollapsePilot
+	if (Options::oxceCollapse)
+	{
+		if (const auto& cp = reader["collapsePilot"])
+		{
+			// a damaged key must not stop the battle from loading: an entry that can't be read
+			// stays empty and CollapsePilot rejects it, a key that can't be read at all is one such entry
+			_collapsePilotVersion = -1;
+			try
+			{
+				if (cp.isMap())
+				{
+					cp.tryRead("version", _collapsePilotVersion);
+					const auto& buildings = cp["buildings"];
+					if (buildings && buildings.isSeq())
+					{
+						for (const auto& b : buildings.children())
+						{
+							std::string model;
+							Position at(-1, -1, -1);
+							try
+							{
+								if (b.isMap())
+								{
+									b.tryRead("model", model);
+									b.tryRead("at", at);
+								}
+							}
+							catch (const YAML::Exception&)
+							{
+								model.clear();
+								at = Position(-1, -1, -1);
+							}
+							_collapsePilot.push_back(std::make_pair(model, at));
+						}
+					}
+				}
+			}
+			catch (const YAML::Exception&)
+			{
+				_collapsePilotVersion = -1;
+				_collapsePilot.clear();
+			}
+			if (_collapsePilotVersion < 0 && _collapsePilot.empty())
+			{
+				_collapsePilot.push_back(std::make_pair(std::string(), Position(-1, -1, -1)));
+			}
+		}
+	}
 	_scriptValues.load(reader, _rule->getScriptGlobal());
 
 	// Sanity checks
@@ -621,6 +670,21 @@ void SavedBattleGame::save(YAML::YamlNodeWriter writer) const
 	writer.write("togglePersonalLight", _togglePersonalLight);
 	writer.write("toggleNightVision", _toggleNightVision);
 	writer.write("toggleBrightness", _toggleBrightness);
+	if (Options::oxceCollapse && _collapsePilotVersion > 0 && !_collapsePilot.empty())
+	{
+		auto cp = writer["collapsePilot"];
+		cp.setAsMap();
+		cp.write("version", _collapsePilotVersion);
+		auto buildings = cp["buildings"];
+		buildings.setAsSeq();
+		for (const auto& b : _collapsePilot)
+		{
+			auto w = buildings.write();
+			w.setAsMap();
+			w.write("model", b.first);
+			w.write("at", b.second);
+		}
+	}
 	_scriptValues.save(writer, _rule->getScriptGlobal());
 }
 

@@ -22,6 +22,7 @@ namespace OpenXcom
 {
 
 class BattlescapeGame;
+class SavedBattleGame;
 
 /**
  * Building collapse pilot (option oxceCollapse, off by default; docs/research/building-collapse-*.md):
@@ -37,8 +38,13 @@ namespace CollapsePilot
 /// Returns true if any part fell.
 bool settle(BattlescapeGame *battle, const char *why);
 
-/// Forgets the buildings found: a new battle (or a loaded one) is scanned anew.
-void forget();
+/// The map was just made (BattlescapeGenerator::run, nextStage): finds the whole pilot buildings before
+/// anything can damage them and keeps the list in the battle save.
+void scanNew(SavedBattleGame *save);
+
+/// A battle starts or is loaded: takes the building list from the save (checked against this build),
+/// or, for a save without one, looks for the buildings that are still whole.
+void begin(SavedBattleGame *save);
 
 }
 
