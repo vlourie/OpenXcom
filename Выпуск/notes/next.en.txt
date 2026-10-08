@@ -1,0 +1,1 @@
+HD roofs fixed: the alien ship roof and hull are back to the original colours without a seam between them; the light roof in the Eurosyndicate city and on farms no longer shows a diamond grid of dark spots; burnt parquet in the rich district has ash in the middle again. Visuals only: tiles, walkability and cover are unchanged.
