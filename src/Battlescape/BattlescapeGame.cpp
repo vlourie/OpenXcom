@@ -195,7 +195,7 @@ BattlescapeGame::BattlescapeGame(SavedBattleGame *save, BattlescapeState *parent
 
 	_debugPlay = false;
 
-	CollapsePilot::forget();
+	CollapsePilot::begin(_save);
 
 	checkForCasualties(nullptr, BattleActionAttack{ }, true);
 	cancelCurrentAction();

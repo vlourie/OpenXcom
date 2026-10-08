@@ -127,6 +127,8 @@ private:
 	int _toggleBrightness;
 	bool _togglePersonalLightTemp = false, _toggleNightVisionTemp = false;
 	int _toggleBrightnessTemp = 0, _toggleNightVisionColorTemp = 0;
+	int _collapsePilotVersion = 0;
+	std::vector<std::pair<std::string, Position> > _collapsePilot;
 	std::string _hiddenMovementBackground;
 	HitLog *_hitLog;
 	ScriptValues<SavedBattleGame> _scriptValues;
@@ -649,6 +651,11 @@ public:
 	int getToggleBrightness() const { return _toggleBrightness; }
 	/// sets brightness toggle
 	void setToggleBrightness(int toggleBrightness) { _toggleBrightness = toggleBrightness; }
+	/// Building collapse pilot (oxceCollapse): format of the building list, 0 - no list yet, -1 - list without a version.
+	int getCollapsePilotVersion() const { return _collapsePilotVersion; }
+	void setCollapsePilotVersion(int version) { _collapsePilotVersion = version; }
+	/// Building collapse pilot: the buildings found when the map was made, model name and block offset.
+	std::vector<std::pair<std::string, Position> > &getCollapsePilot() { return _collapsePilot; }
 
 	/// sets final value for personal light toggle (for scripts)
 	void setTogglePersonalLightTemp(bool togglePersonalLight) { _togglePersonalLightTemp = togglePersonalLight; }

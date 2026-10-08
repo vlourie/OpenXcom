@@ -62,6 +62,7 @@
 #include "../Mod/RuleBaseFacility.h"
 #include "../Mod/Texture.h"
 #include "Pathfinding.h"
+#include "CollapsePilot.h"
 
 namespace OpenXcom
 {
@@ -760,6 +761,8 @@ void BattlescapeGenerator::nextStage()
 	setMusic(ruleDeploy, true);
 	_save->setGlobalShade(_worldShade);
 	_save->getTileEngine()->calculateLighting(LL_AMBIENT, TileEngine::invalid, 0, true);
+	// building collapse pilot: the new stage's map, its own buildings
+	CollapsePilot::scanNew(_save);
 }
 
 /**
@@ -952,6 +955,12 @@ void BattlescapeGenerator::run()
 	_save->setGlobalShade(_worldShade);
 
 	_save->getTileEngine()->calculateLighting(LL_AMBIENT, TileEngine::invalid, 0, true);
+
+	// building collapse pilot: the buildings are found before anything below can damage them
+	if (!isPreview)
+	{
+		CollapsePilot::scanNew(_save);
+	}
 
 	if (!isPreview && _ufo && _ufo->getStatus() == Ufo::CRASHED)
 	{
