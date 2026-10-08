@@ -37,8 +37,10 @@ GRAIN_SIG = 2.0
 SEAM_DROP = 20
 
 
-def axis_profile(fr, rgb, mid, sg, periods=(8, 16, 32)):
-    """(период, профиль P x 3) оси sg: лучший по контрасту среди периодов, делящих 32."""
+def axis_profile(fr, rgb, mid, sg, periods=(8, 16, 32), mode=False):
+    """(период, профиль P x 3) оси sg: лучший по контрасту среди периодов, делящих 32.
+    mode - цвет фазы по самому частому индексу классики, а не средний: шов в один-два пикселя на краю клетки
+    (PORTROADS 0) средним размывается плитой."""
     h, w = fr.shape
     y, x = np.mgrid[0:h, 0:w]
     best = None
@@ -48,7 +50,11 @@ def axis_profile(fr, rgb, mid, sg, periods=(8, 16, 32)):
         for k in range(P):
             m = mid & (ph == k)
             if m.any():
-                prof[k] = rgb[m].mean(0)
+                if mode:
+                    v, n = np.unique(fr[m], return_counts=True)
+                    prof[k] = rgb[m][fr[m] == v[n.argmax()]][0]
+                else:
+                    prof[k] = rgb[m].mean(0)
         bad = np.isnan(prof[:, 0])
         if bad.all():
             continue
@@ -76,19 +82,20 @@ def cubic(prof, t):
     return np.clip(out, prof.min(0), prof.max(0))
 
 
-def build(s, f, pal, seed=7):
+def build(s, f, pal, seed=7, periods=(8, 16, 32), mode=False, edge=True, seam_drop=SEAM_DROP):
+    """edge=False - профиль по всему силуэту, с полосой у края клетки (шов по ребру клетки)."""
     fr = wb.read_set(s)[f]
     h, w = fr.shape
     d = gs.dmap(h * gs.K, w * gs.K)[gs.K // 2::gs.K, gs.K // 2::gs.K]
-    mid = (fr > 0) & (d < 1.0 - rr.EDGE)
+    mid = (fr > 0) & (d < 1.0 - rr.EDGE) if edge else fr > 0
     rgb = pal[fr].astype(np.float32)
-    Pa, pa, ra = axis_profile(fr, rgb, mid, 1)
-    Pb, pb, rb = axis_profile(fr, rgb, mid, -1)
+    Pa, pa, ra = axis_profile(fr, rgb, mid, 1, periods, mode)
+    Pb, pb, rb = axis_profile(fr, rgb, mid, -1, periods, mode)
     T = np.median(np.concatenate([pa, pb]), axis=0)
     # внутри плиты профиль несёт дизеринг классики с шагом 4 - в HD он встаёт вафлей вдоль швов;
-    # оставить только шов (фазы темнее плиты на SEAM_DROP), остальное - тон плиты, мотлинг даёт зерно
+    # оставить только шов (фазы темнее плиты на seam_drop), остальное - тон плиты, мотлинг даёт зерно
     for p in (pa, pb):
-        p[(p @ gs.LUMA) > (T @ gs.LUMA) - SEAM_DROP] = T
+        p[(p @ gs.LUMA) > (T @ gs.LUMA) - seam_drop] = T
     H, W = h * gs.K, w * gs.K
     Y, X = np.mgrid[0:H, 0:W].astype(np.float32) + 0.5
     xa, ya = X / gs.K - 0.5, Y / gs.K - 0.5
@@ -108,9 +115,15 @@ def main():
     ap.add_argument("--frame", type=int, required=True)
     ap.add_argument("--out", required=True)
     ap.add_argument("--copies", default="", help="НАБОР:кадр через запятую - побайтные копии классики, тот же файл")
+    ap.add_argument("--period", type=int, default=0, help="период обеих осей (по умолчанию перебор 8, 16, 32)")
+    ap.add_argument("--mode", action="store_true", help="цвет фазы - самый частый индекс классики, не средний")
+    ap.add_argument("--with-edge", action="store_true", help="профиль и по полосе у края клетки (шов по ребру)")
+    ap.add_argument("--seam-drop", type=float, default=SEAM_DROP, help="насколько шов темнее плиты по Y")
     a = ap.parse_args()
     pal = wb.palette()
-    rgb, al, (Pa, ra, Pb, rb), T, (pa, pb) = build(a.set, a.frame, pal)
+    rgb, al, (Pa, ra, Pb, rb), T, (pa, pb) = build(
+        a.set, a.frame, pal, periods=(a.period,) if a.period else (8, 16, 32), mode=a.mode,
+        edge=not a.with_edge, seam_drop=a.seam_drop)
     print("%s %d: ось x+2y период %d (объяснено %.2f), ось x-2y период %d (%.2f), тон плиты %s"
           % (a.set, a.frame, Pa, ra, Pb, rb, T.round().astype(int).tolist()))
     print("  профиль x+2y:", " ".join("%d" % v for v in (pa @ gs.LUMA).round()))
