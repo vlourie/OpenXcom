@@ -523,7 +523,9 @@ def build_tops(s, src, blocks, out, sides=True, clip=0.0, auto_up=False):
             side = (al > 0.5) & (dt > 1.05) & (yy > cyt)
             rgb = np.where(side[..., None], fit_tone(rgb[side], crgb[side & cm])(rgb), rgb)
         fld = tone(periodic(tex, mean, h=256, var=k)[up:up + 160])
-        m = np.where(yy < cyt, 1.0, 1 - t)[..., None] * top[..., None] * (al[..., None] > 0)
+        # внутри ромба поле кладётся и там, где пак прозрачен: альфа ниже ставится по ромбу, иначе в вершине
+        # остаётся чёрный rgb прозрачного пикселя пака - на карте крестик в каждом узле (U_BASE 63, 08.10)
+        m = np.where(yy < cyt, 1.0, 1 - t)[..., None] * top[..., None] * ((al > 0) | (dt <= 1.0))[..., None]
         m = np.maximum(m, (dt <= 0.97)[..., None].astype(np.float32))
         save_rgba(rgb * (1 - m) + fld * m, np.maximum(al, (dt <= 1.0).astype(np.float32)), out, s, "%d" % f)
     return len(blocks)
