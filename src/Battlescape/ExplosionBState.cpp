@@ -20,6 +20,7 @@
 #include "ExplosionBState.h"
 #include "AiProbe.h"
 #include "BattlescapeState.h"
+#include "CollapsePilot.h"
 #include "Explosion.h"
 #include "TileEngine.h"
 #include "Map.h"
@@ -501,6 +502,11 @@ void ExplosionBState::explode()
 
 	// check for terrain explosions
 	Tile *t = save->getTileEngine()->checkForTerrainExplosions();
+	// the building collapse pilot settles once the chain of terrain explosions is over (off by default)
+	if (!t && CollapsePilot::settle(_parent, "explosion"))
+	{
+		t = save->getTileEngine()->checkForTerrainExplosions();
+	}
 	if (t)
 	{
 		Position p = t->getPosition().toVoxel();

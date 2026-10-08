@@ -80,6 +80,8 @@ set ( battlescape_src
   Battlescape/AlienInventory.cpp
   Battlescape/AlienInventoryState.cpp
   Battlescape/AliensCrashState.cpp
+  Battlescape/CollapseCore.cpp
+  Battlescape/CollapsePilot.cpp
   Battlescape/BattlescapeGame.cpp
   Battlescape/BattlescapeGenerator.cpp
   Battlescape/BattlescapeMessage.cpp

@@ -1,0 +1,556 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+r"""Пилот обрушения в движке (этап 1): выгрузка модели M0j3 с разметкой v2 для двух зданий пилота
+(дом амбара и бункер, collapse_pilot_scen.PILOT) в C++ и проверка переноса.
+
+Модель под замками не меняется и не копируется целиком: на этих двух зданиях живы не все её ветки. Всё,
+что зависит только от целого блока (тип пола, настил, стойки навеса, несущее целого блока carry0, касание
+стены с предметом ниже, цели разметки, роль и класс), считается здесь моделью и выгружается готовым; в бою
+считается только ядро evaluate2j (плита Z, перемычки k, X, a, b) и слой разметки v7c.
+
+Ветки, которых в переносе нет (деревья D, корпус G/O, особые роли A, STRUCTURE разметки, половинная консоль c),
+останавливают выгрузку, если в здании есть хоть одна их часть.
+
+    py -3.13 tools\collapse_pilot_export.py check    упрощённая копия на Python против evaluate7c: сценарии
+                                                     pilot_scen.tsv и случайные наборы - бит в бит
+    py -3.13 tools\collapse_pilot_export.py export   src/Battlescape/CollapsePilotData.h и векторы
+                                                     census/collapse/pilot1/vectors.txt (с проверкой check)
+"""
+import hashlib
+import os
+import random
+import sys
+import time
+from collections import deque
+
+HERE = os.path.dirname(os.path.abspath(__file__))
+if HERE not in sys.path:
+    sys.path.insert(0, HERE)
+
+ENC = "utf-8-sig"
+OUT = "census/collapse/pilot1"
+HEADER = "src/Battlescape/CollapsePilotData.h"
+VECTORS = OUT + "/vectors.txt"
+BOX = {"амбар": (2, 11, 2, 11), "бункер": (1, 7, 1, 7)}     # здание пилота: клетки x0..x1, y0..y1
+LABEL_EN = {"амбар": "barn", "бункер": "bunker"}            # метка здания в логе игры
+KIND = {"f": 0, "w": 1, "n": 2, "o": 3}                   # O_FLOOR, O_WESTWALL, O_NORTHWALL, O_OBJECT
+N_RANDOM = 1500
+SEED = 20261008
+SOURCES = ["tools/collapse_v7c.py", "tools/collapse_v7b.py", "tools/collapse_v7.py", "tools/collapse_v6.py",
+           "tools/collapse_v5.py", "tools/collapse_v3.py", "tools/collapse_v2.py", "tools/collapse_attach_v2.py",
+           "tools/collapse_pilot_scen.py", "tools/collapse_pilot_export.py"]
+
+
+def sha(path):
+    with open(path, "rb") as f:
+        return hashlib.sha256(f.read()).hexdigest()
+
+
+def inside(k, b):
+    sl, x, y, z = k
+    x0, x1, y0, y1 = b
+    if sl == "w":
+        return x0 <= x <= x1 + 1 and y0 <= y <= y1
+    if sl == "n":
+        return x0 <= x <= x1 and y0 <= y <= y1 + 1
+    return x0 <= x <= x1 and y0 <= y <= y1
+
+
+# ------------------------------------------------------------------ статика из модели
+
+def static(C, blk, label):
+    """Плоские данные блока: всё, что считается по целому блоку, - готовым."""
+    import collapse_v2 as V
+    import collapse_v3 as T
+    import collapse_v5 as H
+    import collapse_v6 as M
+    import collapse_v7 as J
+    import collapse_v7b as K
+    flags = C.MODEL
+    f2 = "".join(c for c in flags if c not in T.V3_FLAGS).replace("V", "")
+    stop = []
+    if (blk.terrain.upper(), blk.name.upper()) in T.vessels() or blk.terrain.upper() in T.hull_terrains():
+        stop.append("судно или террейн без земли (G/O)")
+    keys = sorted(blk.parts, key=lambda k: (k[3], KIND[k[0]], k[2], k[1]))
+    idx = {k: i for i, k in enumerate(keys)}
+    with C.marked_roles(blk):
+        cls = {k: V.eff_cls(k, p, f2) for k, p in blk.parts.items()}
+        role = {k: p.get("role", "") for k, p in blk.parts.items()}
+        cols, crowns = H.tree_structure5(blk, cls, role)
+        if cols or crowns:
+            stop.append("деревья (D): стволов %d, крон %d" % (len(cols), len(crowns)))
+        for k, p in blk.parts.items():
+            if role[k] in V.SPECIAL:
+                stop.append("особая роль %s у %s" % (role[k], k))
+            if role[k] == "HULL":
+                stop.append("роль HULL у %s" % (k,))
+            m = p.get("mark")
+            if m and m[0] == "STRUCTURE":
+                stop.append("разметка STRUCTURE у %s" % (k,))
+        if "c" in flags:
+            stop.append("флаг c (половинная консоль)")
+        if stop:
+            raise SystemExit("выгрузка %s остановлена: %s" % (label, "; ".join(stop)))
+        with K.items_only():
+            attach_roles = set(J.ATTACH_ROLES)
+            carry0 = J.intact_carry(blk, f2, dict(C=2, L=12, mass_rule=True, order=2, carry_rule="any",
+                                                  run_c=2, roof_reach=1))
+        ft = T.floor_types(blk)
+        tg = C.marked_parts(blk)
+        parts = []
+        for k in keys:
+            p = blk.parts[k]
+            sl, x, y, z = k
+            e = dict(key=k, set=p["set"].upper(), mcd=p["idx"], kind=KIND[sl], x=x, y=y, z=z,
+                     bearing=cls[k] in V.BEARING, furn=cls[k] == "furniture",
+                     attach=role[k] in attach_roles or bool(p.get("attach")),
+                     carry0=k in carry0, edge=[], contact=0, liml=12, can=False, posted0=False, light=False,
+                     mark=0, targets=[], inbox=inside(k, BOX[label]))
+            if sl == "o":
+                e["edge"] = list(__import__("collapse_census").EDGE_NB.get(p["rec"]["big_wall"], ()))
+            if sl in ("w", "n") and z > 0:
+                ok = blk.lv[z - 1]["o"].get((x, y))
+                if ok is not None:
+                    e["contact"] = len(J.part_foot(blk, k, "bottom") & J.part_foot(blk, ok, "top"))
+            if sl == "f" and z > 0:
+                t = ft.get(k)
+                e["liml"] = max(12, T.L_ROOF) if t == ("помещ", "кровля") else 12
+                e["can"] = t == ("улица", "кровля")
+                e["posted0"] = (x, y) in M.canopy_posted_intact(blk, z, carry0)
+                e["light"] = (x, y) in H.light_intact(blk, z)
+            if k in tg:
+                kind_, ts = tg[k]
+                e["mark"] = 1 if ts else 2            # 1 - цели есть, 2 - место без цели (держится как ядро)
+                e["targets"] = [idx[t] for t in ts]
+            parts.append(e)
+    return dict(label=label, terrain=blk.terrain, name=blk.name, sx=blk.sx, sy=blk.sy, sz=blk.sz,
+                box=BOX[label], parts=parts, idx=idx)
+
+
+# ------------------------------------------------------------------ упрощённая копия расчёта
+
+def ref_eval(d, removed):
+    """evaluate7c на этих зданиях: ядро evaluate2j (Z, X, F, k, a, b; R U A Q I M без своих частей) и слой v7c.
+    removed - множество номеров частей. Возвращает множество номеров держащихся частей."""
+    P = d["parts"]
+    sx, sy, sz = d["sx"], d["sy"], d["sz"]
+    grid = [[{} for _ in range(4)] for _ in range(sz)]    # [z][kind][(x, y)] -> номер
+    for i, e in enumerate(P):
+        grid[e["z"]][e["kind"]][(e["x"], e["y"])] = i
+    C_, L_ = 2, 12
+    X = bool(removed)
+    sup, carry, fallen_x = set(), set(), set()
+    for z in range(sz):
+        lv = grid[z]
+        live = [{xy: i for xy, i in lv[k].items() if i not in removed} for k in range(4)]
+        if z == 0:
+            for k in range(4):
+                sup.update(live[k].values())
+                carry.update(i for i in live[k].values() if P[i]["bearing"])
+            continue
+        below = grid[z - 1]
+        props = set()
+        for (x, y), i in below[1].items():
+            if i in carry:
+                props.update(((x, y), (x - 1, y)))
+        for (x, y), i in below[2].items():
+            if i in carry:
+                props.update(((x, y), (x, y - 1)))
+        for (x, y), i in below[3].items():
+            if i in carry:
+                props.add((x, y))
+                for dx, dy in P[i]["edge"]:
+                    props.add((x + dx, y + dy))
+        floors = set(live[0])
+        mass = {xy for xy, i in live[3].items() if P[i]["bearing"]}
+        msup = set()
+        for xy in mass:
+            if below[3].get(xy) in carry or (xy in floors and xy in props):
+                msup.add(xy)
+        q = deque(msup)
+        while q:
+            x, y = q.popleft()
+            for nb in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)):
+                if nb in mass and nb not in msup:
+                    msup.add(nb)
+                    q.append(nb)
+        direct = floors & (props | msup)
+        direct_b = set(direct)
+        direct_b |= {(x, y) for (x, y) in floors - direct_b
+                     if ((x + 1, y) in direct_b or (x - 1, y) in direct_b) and
+                     ((x, y + 1) in direct_b or (x, y - 1) in direct_b)}
+        okf, strong = ref_slab(P, live, floors, direct_b, C_, L_)
+        nobase = set()
+        if X:
+            for k in (1, 2, 3):
+                for xy, i in live[k].items():
+                    if not P[i]["bearing"]:
+                        continue
+                    u = below[k].get(xy)
+                    if u is not None and P[u]["carry0"] and u not in carry:
+                        nobase.add(i)
+            x_fall_o = {xy for xy, i in live[3].items() if i in nobase and xy not in msup and xy not in strong}
+            tier = {xy for xy in okf - strong if xy in x_fall_o or below[3].get(xy) in fallen_x}
+            okf -= tier
+        for xy in floors:
+            if xy in okf:
+                sup.add(live[0][xy])
+        lint = ref_lintels(P, live, below, carry, strong)
+        for k, sides in ((1, lambda x, y: ((x, y), (x - 1, y))), (2, lambda x, y: ((x, y), (x, y - 1)))):
+            for (x, y), i in live[k].items():
+                u = below[k].get((x, y))
+                on_obj = 0
+                ob = below[3].get((x, y))
+                if ob is not None and ob in carry:
+                    on_obj = P[i]["contact"]
+                if i in nobase:
+                    held = any(s in strong for s in sides(x, y)) or i in lint
+                else:
+                    held = any(s in okf for s in sides(x, y)) or u in carry or i in lint or on_obj > 0
+                if held:
+                    sup.add(i)
+                    if P[i]["bearing"]:
+                        carry.add(i)
+                elif i in nobase:
+                    fallen_x.add(i)
+        furn = {xy for xy, i in live[3].items() if P[i]["furn"]}
+        fsup = set()
+        for (x, y), i in live[3].items():
+            u = below[3].get((x, y))
+            walls = [live[1].get((x, y)), live[1].get((x + 1, y)), live[2].get((x, y)), live[2].get((x, y + 1))]
+            by_wall = any(w in carry for w in walls if w is not None) and P[i]["attach"]
+            if i in nobase:
+                held = (x, y) in msup or (x, y) in strong
+            else:
+                held = (x, y) in okf or (x, y) in msup or u in carry or \
+                    (u is not None and u in sup and P[u]["furn"]) or by_wall
+            if held:
+                sup.add(i)
+                if P[i]["bearing"]:
+                    carry.add(i)
+                if (x, y) in furn:
+                    fsup.add((x, y))
+            elif i in nobase:
+                fallen_x.add(i)
+        q = deque(fsup | {xy for xy, i in live[3].items() if i in sup and P[i]["bearing"]})
+        while q:
+            x, y = q.popleft()
+            for nb in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)):
+                if nb in furn and nb not in fsup:
+                    fsup.add(nb)
+                    sup.add(live[3][nb])
+                    q.append(nb)
+    # слой разметки v7c
+    held = {i for i in sup if not (P[i]["mark"] and i not in removed)}
+    pending = {}
+    for i, e in enumerate(P):
+        if not e["mark"] or i in removed:
+            continue
+        if e["mark"] == 2:
+            if i in sup:
+                held.add(i)
+        else:
+            pending[i] = [t for t in e["targets"] if t not in removed]
+    changed = True
+    while changed:
+        changed = False
+        for i in list(pending):
+            if any(t in held for t in pending[i]):
+                held.add(i)
+                del pending[i]
+                changed = True
+    return held
+
+
+def ref_walk(xy, d, med, ends, slab, bridge, lim):
+    dx, dy = d
+    x, y = xy
+    dist = 0
+    while True:
+        x += dx
+        y += dy
+        dist += 1
+        if dist > lim:
+            return None
+        if (x, y) in ends:
+            return dist
+        if (x, y) in med:
+            continue
+        if not bridge:
+            return None
+        run = [(x, y)]
+        cx, cy = x, y
+        while True:
+            cx += dx
+            cy += dy
+            if dist + len(run) > lim:
+                return None
+            if (cx, cy) in med or (cx, cy) in ends:
+                break
+            run.append((cx, cy))
+        cover = [(x - dx, y - dy)] + run + [(cx, cy)]
+        px, py = dy, dx
+        if not any(all((a + px * s, b + py * s) in slab for a, b in cover) for s in (1, -1)):
+            return None
+        x, y = cx, cy
+        dist += len(run)
+        if (x, y) in ends:
+            return dist
+
+
+def ref_beam(xy, med, ends, slab, bridge, lim):
+    if xy in ends:
+        return 0
+    best = None
+    for ax in ((1, 0), (0, 1)):
+        a = ref_walk(xy, ax, med, ends, slab, bridge, lim)
+        if a is None:
+            continue
+        b = ref_walk(xy, (-ax[0], -ax[1]), med, ends, slab, bridge, lim)
+        if b is None:
+            continue
+        best = a + b if best is None else min(best, a + b)
+    return best
+
+
+def ref_bfs(start, floors):
+    dist = {xy: 0 for xy in start}
+    q = deque(start)
+    while q:
+        x, y = q.popleft()
+        for nb in ((x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)):
+            if nb in floors and nb not in dist:
+                dist[nb] = dist[(x, y)] + 1
+                q.append(nb)
+    return dist
+
+
+def ref_slab(P, live, floors, direct_b, C_, L_):
+    fk = live[0]
+    med = floors
+    slab = {xy for xy in floors if not P[fk[xy]]["light"]}
+
+    def lim_l(xy):
+        return P[fk[xy]]["liml"]
+
+    def lim_c(xy):
+        e = P[fk[xy]]
+        return 0 if e["can"] and not e["posted0"] else C_
+
+    held = set(direct_b)
+    for _ in range(2):
+        base = set(held)
+        for xy in floors:
+            nl = ref_beam(xy, med, base, slab, xy in slab, lim_l(xy))
+            if nl is not None and nl <= lim_l(xy):
+                held.add(xy)
+    okf = set(held)
+    geo_held = ref_bfs(held & med, floors)
+    geo_dir = ref_bfs(direct_b, floors)
+    for xy in floors - okf:
+        c = lim_c(xy)
+        if xy in slab:
+            if geo_held.get(xy) is not None and geo_held[xy] <= c:
+                okf.add(xy)
+                continue
+            for dd in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                w = ref_walk(xy, dd, med, held, slab, True, c)
+                if w is not None and w <= c:
+                    okf.add(xy)
+                    break
+        elif geo_dir.get(xy) is not None and geo_dir[xy] <= c:
+            okf.add(xy)
+    return okf, held
+
+
+def ref_lintels(P, live, below, carry, strong):
+    def based(k, xy, i):
+        if not P[i]["bearing"]:
+            return False
+        if below[k].get(xy) in carry:
+            return True
+        x, y = xy
+        sides = ((x, y), (x - 1, y)) if k == 1 else ((x, y), (x, y - 1))
+        return any(s in strong for s in sides)
+
+    base = {k: {xy for xy, i in live[k].items() if based(k, xy, i)} for k in (1, 2)}
+
+    def corner(k, px, py):
+        if k == 1:
+            return (px - 1, py) in base[2] or (px, py) in base[2]
+        return (px, py - 1) in base[1] or (px, py) in base[1]
+
+    out = set()
+    for k, (dx, dy) in ((1, (0, 1)), (2, (1, 0))):
+        lw = live[k]
+        for (x, y), i in lw.items():
+            if below[k].get((x, y)) in carry or not P[i]["bearing"]:
+                continue
+            run, ok = 1, True
+            for sgn in (1, -1):
+                cx, cy = x, y
+                while True:
+                    px, py = (cx + dx, cy + dy) if sgn > 0 else (cx, cy)
+                    if corner(k, px, py):
+                        break
+                    cx += dx * sgn
+                    cy += dy * sgn
+                    nk = lw.get((cx, cy))
+                    if nk is None or not P[nk]["bearing"]:
+                        ok = False
+                        break
+                    if (cx, cy) in base[k]:
+                        break
+                    run += 1
+                if not ok:
+                    break
+            if ok and run <= 4:
+                out.add(i)
+    return out
+
+
+# ------------------------------------------------------------------ наборы снятого
+
+def removal_sets(d, rows, rng):
+    """Сценарии pilot_scen.tsv этого здания и случайные наборы: одиночные, кучки у клетки, полосы, всё
+    здание этажа. Возвращает [(метка, frozenset номеров)]."""
+    import collapse_pilot_scen as PS
+    idx, P = d["idx"], d["parts"]
+    out = [("EMPTY", frozenset())]
+    for r in rows:
+        if r[1] != d["label"]:
+            continue
+        out.append(("%s/z%s" % (r[2], r[3]), frozenset(idx[PS.kparse(s)] for s in r[5].split())))
+    box = [i for i, e in enumerate(P) if e["inbox"]]
+    allp = list(range(len(P)))
+    for n in range(N_RANDOM):
+        kind = n % 5
+        if kind == 0:
+            s = rng.sample(box, rng.randint(1, 3))
+        elif kind == 1:
+            s = rng.sample(box, rng.randint(4, 40))
+        elif kind == 2:          # кучка: все части в квадрате клеток на 1-2 этажах
+            e = P[rng.choice(box)]
+            r_ = rng.randint(0, 2)
+            zs = {e["z"], e["z"] + rng.choice((-1, 0, 1))}
+            s = [i for i in box if abs(P[i]["x"] - e["x"]) <= r_ and abs(P[i]["y"] - e["y"]) <= r_ and P[i]["z"] in zs]
+        elif kind == 3:          # несущие этажа: доля стен и колонн
+            z = rng.randint(0, d["sz"] - 1)
+            cand = [i for i in box if P[i]["z"] == z and P[i]["bearing"]]
+            s = rng.sample(cand, rng.randint(1, len(cand))) if cand else []
+        else:                    # где угодно в блоке
+            s = rng.sample(allp, rng.randint(1, 60))
+        out.append(("R%d" % n, frozenset(s)))
+    return out
+
+
+def run_check(C, blds, write=None):
+    import collapse_pilot_scen as PS
+    rows = [ln.split("\t") for ln in open(PS.SCEN, encoding=PS.ENC).read().splitlines()[1:]]
+    rng = random.Random(SEED)
+    datas = []
+    bad = 0
+    for tn, bn, label, blk in blds:
+        d = static(C, blk, label)
+        keys = [e["key"] for e in d["parts"]]
+        sets = removal_sets(d, rows, rng)
+        t0 = time.time()
+        vec = []
+        for lab, rm in sets:
+            exp = C.evaluate7c(blk, frozenset(keys[i] for i in rm))[0]
+            exp_i = frozenset(d["idx"][k] for k in exp)
+            got = ref_eval(d, rm)
+            if got != exp_i:
+                bad += 1
+                if bad <= 10:
+                    print("  РАСХОЖДЕНИЕ %s %s: лишние %s, нет %s" % (
+                        label, lab, sorted(keys[i] for i in got - exp_i)[:6], sorted(keys[i] for i in exp_i - got)[:6]))
+            vec.append((lab, rm, exp_i))
+        nsc = sum(1 for lab, _ in sets if not lab.startswith("R") and lab != "EMPTY")
+        print("%s: частей %d (в здании %d), наборов %d (сценариев %d, случайных %d), %.1f с" % (
+            label, len(keys), sum(e["inbox"] for e in d["parts"]), len(sets), nsc, N_RANDOM, time.time() - t0))
+        falls = [len(keys) - len(rm) - len(h) for _, rm, h in vec]
+        print("   наборов с обрушением %d, частей упало всего %d, больше 20 частей - %d наборов" % (
+            sum(1 for f in falls if f), sum(falls), sum(1 for f in falls if f > 20)))
+        d["vectors"] = vec
+        datas.append(d)
+    print("расхождений упрощённой копии с evaluate7c: %d" % bad)
+    if bad:
+        raise SystemExit(1)
+    return datas
+
+
+# ------------------------------------------------------------------ выгрузка
+
+def cpp_header(datas):
+    L = ["// Сгенерировано tools/collapse_pilot_export.py - руками не править.",
+         "// Пилот обрушения: модель M0j3 с разметкой v2 (stage0l/stage0m), два здания пилота.",
+         "// Источники модели (sha256):"]
+    L += ["//   %s %s" % (p, sha(p)) for p in SOURCES]
+    L += ["#pragma once", "#include \"CollapseCore.h\"", "", "namespace OpenXcom", "{", "namespace CollapsePilotData",
+          "{", ""]
+    for bi, d in enumerate(datas):
+        P = d["parts"]
+        sets = sorted({e["set"] for e in P})
+        L.append("// %s: %s / %s, %dx%dx%d, частей %d" % (d["label"], d["terrain"], d["name"], d["sx"], d["sy"],
+                                                          d["sz"], len(P)))
+        L.append("static const char *const sets%d[] = { %s };" % (bi, ", ".join('"%s"' % s for s in sets)))
+        L.append("static const CollapsePart parts%d[] = {" % bi)
+        tg = []
+        for e in P:
+            off = len(tg)
+            tg += e["targets"]
+            ex, ey = (e["edge"] + [(0, 0), (0, 0)])[0], (e["edge"] + [(0, 0), (0, 0)])[1]
+            nedge = len(e["edge"])
+            fl = (1 if e["bearing"] else 0) | (2 if e["furn"] else 0) | (4 if e["attach"] else 0) | \
+                 (8 if e["carry0"] else 0) | (16 if e["can"] else 0) | (32 if e["posted0"] else 0) | \
+                 (64 if e["light"] else 0) | (128 if e["inbox"] else 0)
+            L.append("\t{ %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d },"
+                     % (e["kind"], e["x"], e["y"], e["z"], sets.index(e["set"]), e["mcd"], fl, e["contact"],
+                        e["liml"], nedge, ex[0], ex[1], ey[0], ey[1], e["mark"], off, len(e["targets"])))
+        L.append("};")
+        L.append("static const int targets%d[] = { %s };" % (bi, ", ".join(map(str, tg)) or "-1"))
+        L.append("")
+    L.append("static const CollapseBlock blocks[] = {")
+    for bi, d in enumerate(datas):
+        b = d["box"]
+        L.append('\t{ "%s", "%s", %d, %d, %d, %d, %d, %d, %d, sets%d, %d, parts%d, %d, targets%d },' % (
+            LABEL_EN[d["label"]], d["name"], d["sx"], d["sy"], d["sz"], b[0], b[1], b[2], b[3], bi,
+            len({e["set"] for e in d["parts"]}), bi, len(d["parts"]), bi))
+    L.append("};")
+    L.append("static const int blockCount = %d;" % len(datas))
+    L += ["", "}", "}", ""]
+    return "\n".join(L)
+
+
+def write_vectors(datas):
+    os.makedirs(OUT, exist_ok=True)
+    L = []
+    for bi, d in enumerate(datas):
+        for lab, rm, exp in d["vectors"]:
+            L.append("%d %s R %s H %s" % (bi, lab, " ".join(map(str, sorted(rm))) or "-",
+                                          " ".join(map(str, sorted(exp))) or "-"))
+    with open(VECTORS, "w", encoding="ascii", newline="\n") as f:
+        f.write("\n".join(L) + "\n")
+    print("векторов %d -> %s" % (len(L), VECTORS))
+
+
+def main():
+    os.chdir(os.path.dirname(HERE))
+    sys.stdout.reconfigure(encoding="utf-8")
+    import collapse_pilot_scen as PS
+    cmd = sys.argv[1] if len(sys.argv) > 1 else "check"
+    C, CT, blds = PS.load()
+    datas = run_check(C, blds)
+    if cmd == "export":
+        # третий аргумент - другой путь заголовка (проверка переноса в блокноте, без очереди правок)
+        header = sys.argv[2] if len(sys.argv) > 2 else HEADER
+        # ASCII-only заголовок не обязателен: исходники проекта - UTF-8 без спецификации (R-001, исключение .cpp/.h)
+        with open(header, "w", encoding="utf-8", newline="\n") as f:
+            f.write(cpp_header(datas))
+        print("заголовок ->", header)
+        write_vectors(datas)
+
+
+if __name__ == "__main__":
+    main()
