@@ -78,6 +78,7 @@ PANEL_HOLE_MIN = 64 * 64  # ровный кусок цвета подложки 
 PANEL_OPEN_SHARE = 0.3  # ...или если лежит на сквозном проёме оригинала хотя бы такой долей (окно, щели досок)
 LAYOUT_PANEL_MAX = 0.15 # раскладка ответа: доля силуэта, где в ответе подложка (C3: 0.03-0.06)
 LAYOUT_SHIFT_MAX = 12   # раскладка ответа: сдвиг ответа против входа, пикселей x4
+RENDER = None           # подмена рендера (wall_v2.py: менять можно только маску целевой стены)
 
 STYLE = (
     "<image1> is the low-resolution original of a connected section of walls from an X-COM-style isometric "
@@ -735,6 +736,10 @@ def main():
         os.makedirs(d, exist_ok=True)
         if painter is None:
             hd = Image.open(os.path.join(d, "raw.png")).convert("RGB")
+        elif RENDER is not None:
+            hd = RENDER(painter, args, prompt, frame, seed, d, dict(mem=mem, at=at, size=size, lab=lab, box=box,
+                                                                     paint=paint, ctx_img=ctx_img))
+            po.gen_hd.save_png(hd, os.path.join(d, "raw.png"))
         else:
             hd = po.gen_fire.run_pass(painter, args, prompt, model_input(frame, args.zoom), seed)
             po.gen_hd.save_png(hd, os.path.join(d, "raw.png"))
