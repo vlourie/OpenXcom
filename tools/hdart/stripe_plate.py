@@ -14,7 +14,11 @@
   3. Альфа - силуэт классики x4 плюс точный ромб (ground_seam.classic_alpha).
 Проверка - игровой кадр классика | пак установки | новое (R-249).
 
-    py -3.13 tools/hdart/stripe_plate.py --set AVENGER_EDIT --frame 37 --out <папка>/TERRAIN [--copies STATIONDECOR:35]
+    py -3.13 tools/hdart/stripe_plate.py --set AVENGER_EDIT --frame 37 --out <папка>/TERRAIN --checker [--copies STATIONDECOR:35]
+
+Поправка 09.10: у AVENGER_EDIT 37 цвет середины зависит от (x+2y) mod 4 и РАВНО от (x-2y) mod 4 - это шашечка
+клеток 2x1 базы (квадраты пола по диагонали к краю плиты), а не полосы вдоль одной оси. Полосы (без --checker)
+лист классика | новое не подтвердил.
 """
 import argparse
 import sys
@@ -37,10 +41,37 @@ def quadrant(xx, yy, cx, cy):
     return (yy >= cy).astype(np.int64) * 2 + (xx >= cx).astype(np.int64)
 
 
-def build(s, f, pal, seed=7):
+def checker_field(fr, pal, P, seed=7):
+    """Шашечка классики: цвет базового пикселя зависит от (x + 2y) mod P и так же от (x - 2y) mod P (при P = 4
+    это одно и то же) - клетки 2x1 базы по осям экрана, то есть квадраты пола, положенные по диагонали к краю
+    плиты. В HD клетка - тот же прямоугольник x4 (геометрия клетки, а не лесенка), край смягчён на пиксель x4.
+    Поле периодично по 128 x 160, поэтому сдвиг np.roll на краях не рвёт рисунок."""
+    h, w = fr.shape
+    y, x = np.mgrid[0:h, 0:w]
+    d = gs.dmap(h * gs.K, w * gs.K)[gs.K // 2::gs.K, gs.K // 2::gs.K]
+    mid = (fr > 0) & (d < 1.0 - rr.EDGE)
+    ph = (x + 2 * y) % P
+    rgb = pal[fr].astype(np.float32)
+    col = np.zeros((P, 3), np.float32)
+    for k in range(P):
+        col[k] = rgb[mid & (ph == k)].mean(0)
+    H, W = h * gs.K, w * gs.K
+    Y, X = np.mgrid[0:H, 0:W]
+    out = col[(X // gs.K + 2 * (Y // gs.K)) % P]
+    k3 = (0.25, 0.5, 0.25)
+    for ax in (0, 1):
+        out = sum(np.roll(out, o, axis=ax) * k3[o + 1] for o in (-1, 0, 1))
+    g = gs.grain_noise(W, sig=1.2, seed=seed)
+    g = g / (g.std() + 1e-6) * rr.GRAIN
+    return np.clip(out + g[..., None], 0, 255), col
+
+
+def build(s, f, pal, seed=7, checker=False):
     fr = wb.read_set(s)[f]
     (sg, P, q), _ = rr.find_stripes(fr, (4, 8, 16, 32))
     out, al, _, prof = rr.build(s, f, pal, seed=seed, period=P)
+    if checker:
+        out, prof = checker_field(fr, pal, P, seed=seed)
     h, w = fr.shape
     # фаска классики: пиксели у края ромба, по четвертям
     d0 = gs.dmap(h * gs.K, w * gs.K)[gs.K // 2::gs.K, gs.K // 2::gs.K]
@@ -67,9 +98,10 @@ def main():
     ap.add_argument("--frame", type=int, required=True)
     ap.add_argument("--out", required=True)
     ap.add_argument("--copies", default="", help="НАБОР:кадр через запятую - побайтные копии классики, тот же файл")
+    ap.add_argument("--checker", action="store_true", help="шашечка 2x1 базы (цвет и по x+2y, и по x-2y), а не полосы")
     a = ap.parse_args()
     pal = wb.palette()
-    rgb, al, (sg, P, q), prof, rimc = build(a.set, a.frame, pal)
+    rgb, al, (sg, P, q), prof, rimc = build(a.set, a.frame, pal, checker=a.checker)
     print("%s %d: полосы x%s2y, период %d (совпало %.2f); профиль Y %s; фаска Y %s"
           % (a.set, a.frame, "+" if sg > 0 else "-", P, q, (prof @ gs.LUMA).round().astype(int).tolist(),
              (rimc @ gs.LUMA).round().astype(int).tolist()))
