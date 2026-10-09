@@ -29,7 +29,8 @@ class SavedBattleGame;
  * the two pilot buildings (the barn house and the bunker) are found on the battle map by their
  * terrain parts, and after terrain damage everything the support model no longer holds is removed
  * (no debris part), then gravity on those tiles and the tiles above, then light and sight once,
- * in the order TileEngine::explode uses. Nothing happens with the option off.
+ * in the order TileEngine::explode uses. Nothing happens with the option off (in OXCE_AI_DEV builds the
+ * debug stand still damages the map then, as the control without the model).
  */
 namespace CollapsePilot
 {
@@ -45,6 +46,14 @@ void scanNew(SavedBattleGame *save);
 /// A battle starts or is loaded: takes the building list from the save (checked against this build),
 /// or, for a save without one, looks for the buildings that are still whole.
 void begin(SavedBattleGame *save);
+
+/// The units stopped falling (UnitFallBState): the debug stand (OXCE_AI_DEV builds) reports its units and their
+/// things once, at that moment (a unit knocked out below is not yet unconscious there).
+void afterFall(BattlescapeGame *battle);
+
+/// The state stack is empty (BattlescapeGame::think): after a reported fall the debug stand reports again and,
+/// with OXCE_COLLAPSE_FALL_SAVE, saves the game - the first moment a player could save, before the next side moves.
+void idle(SavedBattleGame *save);
 
 }
 

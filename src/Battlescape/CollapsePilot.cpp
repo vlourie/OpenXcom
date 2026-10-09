@@ -21,22 +21,28 @@
 #include <cctype>
 #include <chrono>
 #include <cstdlib>
+#include <cstring>
 #include <map>
 #include <sstream>
 #include <string>
 #include <vector>
+#include <set>
 #include "BattlescapeGame.h"
+#include "BattlescapeState.h"
 #include "CollapseCore.h"
 #include "CollapsePilotData.h"
 #include "TileEngine.h"
+#include "../Engine/Game.h"
 #include "../Engine/Logger.h"
 #include "../Engine/Options.h"
 #include "../Mod/MapData.h"
 #include "../Mod/MapDataSet.h"
 #include "../Mod/RuleDamageType.h"
+#include "../Mod/RuleItem.h"
 #include "../Savegame/BattleItem.h"
 #include "../Savegame/BattleUnit.h"
 #include "../Savegame/SavedBattleGame.h"
+#include "../Savegame/SavedGame.h"
 #include "../Savegame/Tile.h"
 
 namespace OpenXcom
@@ -68,6 +74,9 @@ struct State
 	std::vector<Instance> inst;
 	int runs = 0;
 	std::vector<int> dbgUnits, dbgItems;  // debug stand: what it placed, reported around the settle that removes
+	std::vector<std::pair<int, int> > dbgCarry;  // debug stand: (unit, item) the placed units carried when placed
+	bool fallReported = false;
+	bool fallPending = false;  // debug stand: report and save again once the state stack drains (idle)
 };
 
 State st;
@@ -108,8 +117,159 @@ int countInPlace(SavedBattleGame *save, const Instance &in, int *total)
 	return n;
 }
 
-/// Format of the building list in the battle save (SavedBattleGame "collapsePilot").
-const int FORMAT = 1;
+/// Format of the building list in the battle save (SavedBattleGame "collapsePilot"):
+/// 1 - model name and offset, 2 - plus the fingerprint of the model data (sig).
+const int FORMAT = 2;
+
+struct Fnv
+{
+	uint64_t h = 1469598103934665603ULL;
+	void add(const void *p, size_t n)
+	{
+		const unsigned char *c = (const unsigned char*)p;
+		for (size_t i = 0; i < n; ++i)
+		{
+			h ^= c[i];
+			h *= 1099511628211ULL;
+		}
+	}
+	void add(int v) { add(&v, sizeof(v)); }
+	void add(const char *s) { add(s, strlen(s) + 1); }
+};
+
+/// Fingerprint of the model data of block bi: a save made with other data of the same name is not this model.
+std::string modelSig(int bi)
+{
+	const CollapseBlock &b = CollapsePilotData::blocks[bi];
+	Fnv f;
+	f.add(b.name);
+	for (int v : { b.sx, b.sy, b.sz, b.x0, b.x1, b.y0, b.y1, b.nSets, b.nParts })
+		f.add(v);
+	for (int k = 0; k < b.nSets; ++k)
+		f.add(b.sets[k]);
+	int nTargets = 0;
+	for (int i = 0; i < b.nParts; ++i)
+	{
+		const CollapsePart &p = b.parts[i];
+		for (int v : { p.kind, p.x, p.y, p.z, p.set, p.mcd, p.flags, p.contact, p.limL, p.nEdge, p.e0x, p.e0y, p.e1x, p.e1y, p.mark, p.tOff, p.tCount })
+			f.add(v);
+		nTargets = std::max(nTargets, p.tOff + p.tCount);
+	}
+	for (int i = 0; i < nTargets; ++i)
+		f.add(b.targets[i]);
+	std::ostringstream s;
+	s << std::hex;
+	s.width(16);
+	s.fill('0');
+	s << f.h;
+	return s.str();
+}
+
+/**
+ * Records in the building's place that the building could not have left there: a record of another terrain,
+ * or of its own terrain that no part of the template on that tile turns into. A part turns into its die record
+ * when destroyed (Tile::destroy, into the slot of the die record) and into its alt record when a door opens
+ * (Tile::openDoor, slot of the alt record), along the whole chain; a lost floor at map level 0 becomes
+ * scorched earth. Checked are the building's cells (west walls one column east, north walls one row south)
+ * on every level of the block. This tells a key moved onto other buildings and onto ground with other records
+ * (grass, fences, rocks of the farm); a key moved where the cells hold no records at all (the air above the
+ * ground) or onto another copy of the same building passes.
+ */
+int foreignParts(SavedBattleGame *save, const Instance &in)
+{
+	const CollapseBlock &b = CollapsePilotData::blocks[in.bi];
+	const std::vector<MapDataSet*> &sets = *save->getMapDataSets();
+	const auto &setOf = st.setOf[in.bi];
+	std::vector<MapDataSet*> modelSet(b.nSets, nullptr);
+	for (size_t s = 0; s < setOf.size(); ++s)
+		if (setOf[s] >= 0) modelSet[setOf[s]] = sets[s];
+	const int w = b.x1 - b.x0 + 2, d = b.y1 - b.y0 + 2;
+	auto cell = [&](int x, int y, int z) { return (z * d + (y - b.y0)) * w + (x - b.x0); };
+	std::vector<std::set<std::pair<int, int> > > allowed(w * d * b.sz);
+	for (int i = 0; i < b.nParts; ++i)
+	{
+		const CollapsePart &p = b.parts[i];
+		if (p.x < b.x0 || p.x > b.x1 + 1 || p.y < b.y0 || p.y > b.y1 + 1) continue;
+		auto &ok = allowed[cell(p.x, p.y, p.z)];
+		MapDataSet *ds = modelSet[p.set];
+		std::vector<int> todo(1, p.mcd);
+		while (!todo.empty())
+		{
+			const int id = todo.back();
+			todo.pop_back();
+			if (!ok.insert(std::make_pair(p.set, id)).second || !ds || id < 0 || id >= (int)ds->getSize()) continue;
+			MapData *md = ds->getObject(id);
+			if (md->getDieMCD()) todo.push_back(md->getDieMCD());
+			if (md->getAltMCD()) todo.push_back(md->getAltMCD());
+		}
+	}
+	int foreign = 0;
+	for (int z = 0; z < b.sz; ++z)
+		for (int y = b.y0; y <= b.y1 + 1; ++y)
+			for (int x = b.x0; x <= b.x1 + 1; ++x)
+			{
+				Tile *t = save->getTile(in.off + Position(x, y, z));
+				if (!t) continue;
+				for (TilePart part : PARTS)
+				{
+					MapData *md = t->getMapData(part);
+					if (!md) continue;
+					if (part == O_FLOOR && t->getPosition().z == 0 && md == MapDataSet::getScorchedEarthTile()) continue;
+					int id, setId;
+					t->getMapData(&id, &setId, part);
+					const int k = setId >= 0 && setId < (int)setOf.size() ? setOf[setId] : -1;
+					if (k < 0 || !allowed[cell(x, y, z)].count(std::make_pair(k, id))) ++foreign;
+				}
+			}
+	return foreign;
+}
+
+/// Hash of every terrain record of the map: the debug stand compares what direct destruction left before the model.
+std::string terrainHash(SavedBattleGame *save)
+{
+	Fnv f;
+	const int n = save->getMapSizeXYZ();
+	for (int i = 0; i < n; ++i)
+	{
+		Tile *t = save->getTile(i);
+		for (TilePart part : PARTS)
+		{
+			int id = -1, setId = -1;
+			if (t->getMapData(part)) t->getMapData(&id, &setId, part);
+			f.add(id);
+			f.add(setId);
+		}
+	}
+	std::ostringstream s;
+	s << std::hex << f.h;
+	return s.str();
+}
+
+/// Is a debug stand variable set (tools/collapse_pilot_run.py, collapse_pilot2_run.py)?
+bool standEnv()
+{
+	static const bool on = getenv("OXCE_COLLAPSE_REMOVE") || getenv("OXCE_COLLAPSE_HIT") || getenv("OXCE_COLLAPSE_FIRE")
+		|| getenv("OXCE_COLLAPSE_BLAST") || getenv("OXCE_COLLAPSE_MODEL") || getenv("OXCE_COLLAPSE_UNIT") || getenv("OXCE_COLLAPSE_STUN")
+		|| getenv("OXCE_COLLAPSE_BIG") || getenv("OXCE_COLLAPSE_FLY") || getenv("OXCE_COLLAPSE_DROP");
+	return on;
+}
+
+/// The option is off, but the debug stand runs (OXCE_AI_DEV builds only): the same damage, no model -
+/// the control for what the collapse changes.
+bool standOnly()
+{
+#ifdef OXCE_AI_DEV
+	return !Options::oxceCollapse && standEnv();
+#else
+	return false;
+#endif
+}
+
+int dbgAt()
+{
+	const char *atS = getenv("OXCE_COLLAPSE_AT");
+	return atS && *atS ? atoi(atS) : 1;
+}
 
 /// Starts the state for this battle map: the save's terrain sets matched to the sets of every block.
 void bind(SavedBattleGame *save)
@@ -144,7 +304,7 @@ void store(SavedBattleGame *save)
 	auto &list = save->getCollapsePilot();
 	list.clear();
 	for (const Instance &in : st.inst)
-		list.push_back(std::make_pair(std::string(CollapsePilotData::blocks[in.bi].name), in.off));
+		list.push_back({ std::string(CollapsePilotData::blocks[in.bi].name), in.off, modelSig(in.bi) });
 }
 
 /// Finds the pilot buildings: offsets voted by the rarest parts of each block. Only a whole building counts
@@ -190,8 +350,9 @@ void scan(SavedBattleGame *save)
 			if (all > 0 && n == all)
 			{
 				st.inst.push_back(in);
+				// self-check of the load test: a whole building has nothing foreign in its place
 				Log(LOG_INFO) << "[COLLAPSE] found " << b.label << " (" << b.name << ") at " << off.x << "," << off.y << "," << off.z
-					<< ": " << n << " of " << all << " parts in place";
+					<< ": " << n << " of " << all << " parts in place, " << foreignParts(save, in) << " foreign";
 			}
 			else if (all > 0 && n * 2 >= all)
 			{
@@ -218,15 +379,18 @@ void adopt(SavedBattleGame *save)
 	bind(save);
 	for (const auto &e : save->getCollapsePilot())
 	{
-		const Position &off = e.second;
+		const Position &off = e.at;
 		const char *why = nullptr;
 		int bi = -1;
-		if (version != FORMAT)
+		if (version != 1 && version != FORMAT)
 			why = "unknown format";
 		for (int i = 0; !why && i < CollapsePilotData::blockCount; ++i)
-			if (e.first == CollapsePilotData::blocks[i].name) bi = i;
+			if (e.model == CollapsePilotData::blocks[i].name) bi = i;
 		if (!why && bi < 0)
 			why = "no such model in this build";
+		// format 1 kept no fingerprint: its entries are taken on the name alone
+		if (!why && version >= 2 && e.sig != modelSig(bi))
+			why = "model data changed";
 		if (!why)
 		{
 			const CollapseBlock &b = CollapsePilotData::blocks[bi];
@@ -235,22 +399,25 @@ void adopt(SavedBattleGame *save)
 			else if (!setsOnMap(bi))
 				why = "terrain of the model not on the map";
 		}
+		for (const Instance &had : st.inst)
+			if (!why && had.bi == bi && had.off == off)
+				why = "duplicate entry";
 		Instance in = { bi, off };
-		int all = 0;
+		int all = 0, foreign = 0;
 		const int n = why ? 0 : countInPlace(save, in, &all);
-		// a shifted or foreign entry still matches a few parts by chance (16 of 385 at 0,0,0);
-		// a building ruined below half is let go too - it then stays as the battle left it
-		if (!why && (all == 0 || n * 2 < all))
-			why = "too few parts of the model in place";
+		// a ruined building is kept however little of it stands; an entry pointing at other buildings
+		// is not: something there is no part of this one, nor what its parts turn into
+		if (!why && (foreign = foreignParts(save, in)) > 0)
+			why = "foreign parts in the building's place";
 		if (why)
 		{
-			Log(LOG_WARNING) << "[COLLAPSE] rejected " << e.first << " at " << off.x << "," << off.y << "," << off.z
-				<< " (format " << version << "): " << why;
+			Log(LOG_WARNING) << "[COLLAPSE] rejected " << e.model << " at " << off.x << "," << off.y << "," << off.z
+				<< " (format " << version << "): " << why << (foreign ? " (" + std::to_string(foreign) + ")" : std::string());
 			continue;
 		}
 		st.inst.push_back(in);
-		Log(LOG_INFO) << "[COLLAPSE] kept " << CollapsePilotData::blocks[bi].label << " (" << e.first << ") at "
-			<< off.x << "," << off.y << "," << off.z << ": " << n << " of " << all << " parts in place";
+		Log(LOG_INFO) << "[COLLAPSE] kept " << CollapsePilotData::blocks[bi].label << " (" << e.model << ") at "
+			<< off.x << "," << off.y << "," << off.z << ": " << n << " of " << all << " parts in place, 0 foreign";
 	}
 	store(save);
 	Log(LOG_INFO) << "[COLLAPSE] from the battle: " << st.inst.size() << " pilot building(s)";
@@ -336,6 +503,29 @@ std::vector<int> debugParts(const char *env, const char *label)
  * OXCE_COLLAPSE_DROP moves loose items from the ground there; OXCE_COLLAPSE_REMOVE takes parts away
  * (no debris) at settle number OXCE_COLLAPSE_AT (1 by default).
  */
+/// Where the things the placed units carried are now: carried by whom, on which tile, or gone.
+void reportCarry(SavedBattleGame *save, const char *when)
+{
+	for (const auto &c : st.dbgCarry)
+	{
+		std::ostringstream where;
+		where << " gone";
+		for (auto *it : *save->getItems())
+			if (it->getId() == c.second)
+			{
+				where.str("");
+				if (it->getOwner())
+					where << " carried by " << it->getOwner()->getId();
+				else if (it->getTile())
+					where << " on the ground at " << it->getTile()->getPosition().x << "," << it->getTile()->getPosition().y << "," << it->getTile()->getPosition().z;
+				else
+					where << " nowhere";
+				where << " " << it->getRules()->getType();
+			}
+		Log(LOG_INFO) << "[COLLAPSE] debug: " << when << " carry of unit " << c.first << ": item " << c.second << where.str();
+	}
+}
+
 void debugReport(SavedBattleGame *save, const char *when)
 {
 	for (int id : st.dbgUnits)
@@ -365,13 +555,22 @@ void debugReport(SavedBattleGame *save, const char *when)
 			}
 		Log(LOG_INFO) << "[COLLAPSE] debug: " << when << " item " << id << where.str();
 	}
+	reportCarry(save, when);
+}
+
+/// A unit the stand placed: reported later together with what it carried when placed.
+void placed(SavedBattleGame *save, BattleUnit *u)
+{
+	st.dbgUnits.push_back(u->getId());
+	for (auto *it : *save->getItems())
+		if (it->getOwner() == u)
+			st.dbgCarry.push_back(std::make_pair(u->getId(), it->getId()));
 }
 
 void debugStand(BattlescapeGame *battle, SavedBattleGame *save)
 {
 	std::vector<bool> seen(CollapsePilotData::blockCount, false);
-	const char *atS = getenv("OXCE_COLLAPSE_AT");
-	const int at = atS && *atS ? atoi(atS) : 1;
+	const int at = dbgAt();
 	size_t nextUnit = 0;
 	// the player's units first, then the others: a tile with no way out needs more bodies than the squad
 	std::vector<BattleUnit*> units, big, fly;
@@ -404,7 +603,7 @@ void debugStand(BattlescapeGame *battle, SavedBattleGame *save)
 					}
 					BattleUnit *u = from[next++];
 					const bool ok = save->setUnitPosition(u, in.off + p);
-					if (ok) st.dbgUnits.push_back(u->getId());
+					if (ok) placed(save, u);
 					Log(LOG_INFO) << "[COLLAPSE] debug: " << (kind ? "flying" : "large") << " unit " << u->getId() << " " << u->getType()
 						<< " size " << u->getArmor()->getSize() << " at " << b.label << " " << p.x << "," << p.y << "," << p.z << (ok ? "" : " - place refused");
 				}
@@ -415,7 +614,7 @@ void debugStand(BattlescapeGame *battle, SavedBattleGame *save)
 					BattleUnit *u = units[nextUnit++];
 					const bool ok = save->setUnitPosition(u, in.off + p);
 					if (ok && stun) u->knockOut(battle);
-					if (ok) st.dbgUnits.push_back(u->getId());
+					if (ok) placed(save, u);
 					Log(LOG_INFO) << "[COLLAPSE] debug: unit " << u->getId() << (stun ? " knocked out" : "") << " at " << b.label << " "
 						<< p.x << "," << p.y << "," << p.z << (ok ? "" : " - place refused");
 				}
@@ -483,9 +682,17 @@ void scanNew(SavedBattleGame *save)
 void begin(SavedBattleGame *save)
 {
 	st = decltype(st)();
-	if (!Options::oxceCollapse || save->isPreview())
+	if (save->isPreview())
 		return;
-	adopt(save);
+	if (Options::oxceCollapse)
+		adopt(save);
+	else if (standOnly())
+	{
+		scan(save);
+		Log(LOG_INFO) << "[COLLAPSE] debug: option off - stand only, no model";
+	}
+	else
+		return;
 	// debug stand OXCE_COLLAPSE_HIT: parts taken away before the first settle, as a hit that left the building standing
 	std::vector<bool> seen(CollapsePilotData::blockCount, false);
 	for (const Instance &in : st.inst)
@@ -503,21 +710,45 @@ void begin(SavedBattleGame *save)
 
 bool settle(BattlescapeGame *battle, const char *why)
 {
-	if (!Options::oxceCollapse)
+	const bool model = Options::oxceCollapse;
+	if (!model && !standOnly())
 		return false;
 	SavedBattleGame *save = battle->getSave();
 	const auto t0 = Clock::now();
 	if (st.owner != save || st.mx != save->getMapSizeX() || st.my != save->getMapSizeY() || st.mz != save->getMapSizeZ())
-		adopt(save);
+	{
+		if (model) adopt(save);
+		else scan(save);
+	}
 	if (st.inst.empty())
 		return false;
 	++st.runs;
-	const char *atS = getenv("OXCE_COLLAPSE_AT");
-	const int dbgAt = atS && *atS ? atoi(atS) : 1;
-	if (st.runs == dbgAt + 1)
+	const int atRun = dbgAt();
+	if (st.runs == atRun + 1)
 		debugReport(save, "next settle");
 	debugStand(battle, save);
 	const double scanMs = msSince(t0);
+	if (standEnv())
+	{
+		// the map as the damage left it, before the model: with the option on and off it must be the same
+		Log(LOG_INFO) << "[COLLAPSE] debug: before model settle " << st.runs << " (" << why << "): terrain " << terrainHash(save);
+		for (const Instance &in : st.inst)
+		{
+			const CollapseBlock &b = CollapsePilotData::blocks[in.bi];
+			std::ostringstream rm;
+			for (int i = 0; i < b.nParts; ++i)
+				if ((b.parts[i].flags & CPF_INBOX) && !inPlace(save, in.bi, b.parts[i], in.off))
+					rm << i << ",";
+			Log(LOG_INFO) << "[COLLAPSE] debug: before model " << b.label << " at " << in.off.x << "," << in.off.y << "," << in.off.z
+				<< " removed=" << rm.str();
+		}
+	}
+	if (!model)
+	{
+		if (st.runs == atRun)
+			debugReport(save, "right after");
+		return false;
+	}
 	TileEngine *te = save->getTileEngine();
 	bool any = false;
 	for (const Instance &in : st.inst)
@@ -535,9 +766,7 @@ bool settle(BattlescapeGame *battle, const char *why)
 		collapseEvaluate(b, removed, held);
 		const double evalMs = msSince(te0);
 		// debug stand: the exact input and output of the model, for the check against the reference (collapse_pilot_run.py)
-		static const bool stand = getenv("OXCE_COLLAPSE_REMOVE") || getenv("OXCE_COLLAPSE_HIT") || getenv("OXCE_COLLAPSE_FIRE")
-			|| getenv("OXCE_COLLAPSE_BLAST") || getenv("OXCE_COLLAPSE_MODEL");
-		if (stand)
+		if (standEnv())
 		{
 			std::ostringstream rm, fl;
 			for (int i = 0; i < b.nParts; ++i)
@@ -619,9 +848,63 @@ bool settle(BattlescapeGame *battle, const char *why)
 			<< ", falling units " << save->getFallingUnits()->size()
 			<< "; scan " << scanMs << " ms, eval " << evalMs << " ms, apply " << applyMs << " ms, light+fov " << msSince(tl0) << " ms";
 	}
-	if (st.runs == dbgAt)
+	if (st.runs == atRun)
 		debugReport(save, "right after");
 	return any;
+}
+
+#ifdef OXCE_AI_DEV
+static void reportFall(SavedBattleGame *save, const char *what)
+{
+	for (int id : st.dbgUnits)
+		for (auto *u : *save->getUnits())
+			if (u->getId() == id)
+			{
+				const Position &p = u->getPosition();
+				const Tile *t = save->getTile(p);
+				Log(LOG_INFO) << "[COLLAPSE] debug: " << what << " unit " << id << " at " << p.x << "," << p.y << "," << p.z
+					<< " status " << (int)u->getStatus() << " out " << u->isOut() << " health " << u->getHealth()
+					<< " stun " << u->getStunlevel() << " wounds " << u->getFatalWounds()
+					<< " tile unit " << (t && t->getUnit() ? t->getUnit()->getId() : -1);
+			}
+	reportCarry(save, what);
+}
+#endif
+
+void afterFall(BattlescapeGame *battle)
+{
+#ifdef OXCE_AI_DEV
+	SavedBattleGame *save = battle->getSave();
+	if (st.fallReported || st.dbgUnits.empty() || st.runs < dbgAt() || st.owner != save)
+		return;
+	st.fallReported = true;
+	st.fallPending = true;
+	Log(LOG_INFO) << "[COLLAPSE] debug: fall over at turn " << save->getTurn() << ", side " << (int)save->getSide();
+	reportFall(save, "fall over");
+#else
+	(void)battle;
+#endif
+}
+
+void idle(SavedBattleGame *save)
+{
+#ifdef OXCE_AI_DEV
+	if (!st.fallPending || st.owner != save)
+		return;
+	st.fallPending = false;
+	// the states the fall pushed (UnitDieBState of a unit knocked out below) are done: what a player's save would hold
+	Log(LOG_INFO) << "[COLLAPSE] debug: fall settled at turn " << save->getTurn() << ", side " << (int)save->getSide();
+	reportFall(save, "fall settled");
+	const char *saveAs = getenv("OXCE_COLLAPSE_FALL_SAVE");
+	if (saveAs && *saveAs && save->getBattleState())
+	{
+		Game *game = save->getBattleState()->getGame();
+		game->getSavedGame()->save(saveAs, game->getMod());
+		Log(LOG_INFO) << "[COLLAPSE] debug: fall settled saved " << saveAs;
+	}
+#else
+	(void)save;
+#endif
 }
 
 }
