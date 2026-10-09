@@ -50,6 +50,14 @@ class HitLog;
 enum HitLogEntryType : int;
 struct BattlescapeTally;
 
+/// Building collapse pilot: a building found when the map was made - model name, block offset, model fingerprint.
+struct CollapsePilotEntry
+{
+	std::string model;
+	Position at;
+	std::string sig;
+};
+
 /**
  * The battlescape data that gets written to disk when the game is saved.
  * A saved game holds all the variable info in a game like mapdata,
@@ -128,7 +136,7 @@ private:
 	bool _togglePersonalLightTemp = false, _toggleNightVisionTemp = false;
 	int _toggleBrightnessTemp = 0, _toggleNightVisionColorTemp = 0;
 	int _collapsePilotVersion = 0;
-	std::vector<std::pair<std::string, Position> > _collapsePilot;
+	std::vector<CollapsePilotEntry> _collapsePilot;
 	std::string _hiddenMovementBackground;
 	HitLog *_hitLog;
 	ScriptValues<SavedBattleGame> _scriptValues;
@@ -654,8 +662,8 @@ public:
 	/// Building collapse pilot (oxceCollapse): format of the building list, 0 - no list yet, -1 - list without a version.
 	int getCollapsePilotVersion() const { return _collapsePilotVersion; }
 	void setCollapsePilotVersion(int version) { _collapsePilotVersion = version; }
-	/// Building collapse pilot: the buildings found when the map was made, model name and block offset.
-	std::vector<std::pair<std::string, Position> > &getCollapsePilot() { return _collapsePilot; }
+	/// Building collapse pilot: the buildings found when the map was made.
+	std::vector<CollapsePilotEntry> &getCollapsePilot() { return _collapsePilot; }
 
 	/// sets final value for personal light toggle (for scripts)
 	void setTogglePersonalLightTemp(bool togglePersonalLight) { _togglePersonalLightTemp = togglePersonalLight; }

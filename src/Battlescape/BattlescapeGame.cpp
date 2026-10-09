@@ -229,6 +229,7 @@ int BattlescapeGame::think()
 			_save->setUnitsFalling(false);
 			return ret;
 		}
+		CollapsePilot::idle(_save);
 		AiProbe::panicState(_save, _playerPanicHandled);
 		// the AI test bench's bot plays the player: its panicking units first, as the player branch below (PANIC_TURN_FIX)
 		if (_save->getSide() == FACTION_PLAYER && !_playerPanicHandled && AiProbe::botTurn(_save) && AiProbe::panicTurnFix())

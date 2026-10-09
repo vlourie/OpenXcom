@@ -149,7 +149,7 @@ def sav_entities(path):
             continue
         m = re.match(r"^      (\w+): (.*)$", ln)
         if m and cur is not None and m.group(1) in ("position", "status", "faction", "type", "owner", "unit",
-                                                     "inventoryslot", "health", "stunlevel", "genUnitType"):
+                                                     "previousOwner", "inventoryslot", "health", "stunlevel", "genUnitType"):
             cur[m.group(1)] = m.group(2).strip()
     return units, items
 

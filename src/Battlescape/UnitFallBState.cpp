@@ -19,6 +19,7 @@
 
 #include "UnitFallBState.h"
 #include <algorithm>
+#include "CollapsePilot.h"
 #include "TileEngine.h"
 #include "Pathfinding.h"
 #include "../Savegame/BattleUnit.h"
@@ -267,6 +268,7 @@ void UnitFallBState::think()
 	{
 		tilesToFallInto.clear();
 		unitsToMove.clear();
+		CollapsePilot::afterFall(_parent);
 		_parent->popState();
 		return;
 	}

@@ -438,22 +438,21 @@ void SavedBattleGame::load(const YAML::YamlNodeReader& node, Mod *mod, SavedGame
 					{
 						for (const auto& b : buildings.children())
 						{
-							std::string model;
-							Position at(-1, -1, -1);
+							CollapsePilotEntry e = { std::string(), Position(-1, -1, -1), std::string() };
 							try
 							{
 								if (b.isMap())
 								{
-									b.tryRead("model", model);
-									b.tryRead("at", at);
+									b.tryRead("model", e.model);
+									b.tryRead("at", e.at);
+									b.tryRead("sig", e.sig);
 								}
 							}
 							catch (const YAML::Exception&)
 							{
-								model.clear();
-								at = Position(-1, -1, -1);
+								e = { std::string(), Position(-1, -1, -1), std::string() };
 							}
-							_collapsePilot.push_back(std::make_pair(model, at));
+							_collapsePilot.push_back(e);
 						}
 					}
 				}
@@ -465,7 +464,7 @@ void SavedBattleGame::load(const YAML::YamlNodeReader& node, Mod *mod, SavedGame
 			}
 			if (_collapsePilotVersion < 0 && _collapsePilot.empty())
 			{
-				_collapsePilot.push_back(std::make_pair(std::string(), Position(-1, -1, -1)));
+				_collapsePilot.push_back({ std::string(), Position(-1, -1, -1), std::string() });
 			}
 		}
 	}
@@ -681,8 +680,10 @@ void SavedBattleGame::save(YAML::YamlNodeWriter writer) const
 		{
 			auto w = buildings.write();
 			w.setAsMap();
-			w.write("model", b.first);
-			w.write("at", b.second);
+			w.write("model", b.model);
+			w.write("at", b.at);
+			if (!b.sig.empty())
+				w.write("sig", b.sig);
 		}
 	}
 	_scriptValues.save(writer, _rule->getScriptGlobal());
