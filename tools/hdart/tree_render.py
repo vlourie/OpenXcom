@@ -63,14 +63,44 @@ CUT_WHAT = {
                          "out of the roots that are already drawn at the bottom, with a pale sawn top and a "
                          "few bare twig stubs on its sides; the trunk reaches down to those roots without a "
                          "gap, one single trunk only",
+    # перекраски FOREST (решение 12.10: DERIVE_RECOLOR_SAFE_V1 отверг 45 из 48 - группой, геометрия FOREST)
+    ("FORESTRED", 0): "the lower part of one tall conifer trunk whose crown has been removed: one straight dark "
+                      "brown trunk as tall as the brown column in the image, rising directly out of the roots "
+                      "that are already drawn at the bottom, with a flat light brown sawn top and a few short "
+                      "branch stubs with rusty orange-red needles on its sides; the trunk reaches down to those "
+                      "roots without a gap, one single trunk only",
+    ("BLACKFOREST", 0): "the lower part of one tall conifer trunk whose crown has been removed: one straight dark "
+                        "violet-blue trunk as tall as the violet column in the image, rising directly out of the "
+                        "roots that are already drawn at the bottom, with a flat grey sawn top and a few short "
+                        "branch stubs with black needles on its sides; the trunk reaches down to those roots "
+                        "without a gap, one single trunk only",
+    ("FOREST_SNOW", 0): "the lower part of one tall conifer trunk whose crown has been removed: one straight dark "
+                        "brown trunk as tall as the brown column in the image, rising directly out of the roots "
+                        "that are already drawn at the bottom, with a flat light brown sawn top and a few short "
+                        "green branch stubs with small white patches of snow on their tops; the trunk reaches "
+                        "down to those roots without a gap, one single trunk only",
 }
+# MAIN перекрасок: только то, что на классике (R-016); снег - пятнами на верхних поверхностях ярусов
+TREE_WHAT = {
+    "FORESTRED": "one large dense conifer tree with rusty orange and red-brown needle foliage and a short dark "
+                 "brown trunk",
+    "BLACKFOREST": "one large dense conifer tree with almost black, very dark violet needle foliage and a short "
+                   "dark violet trunk",
+    "FOREST_SNOW": "one large dense conifer tree with dark green needle foliage and white snow lying in patches "
+                   "on the upper surfaces of its layered branches, and a short dark brown trunk",
+}
+DERIVED = ("FORESTRED", "BLACKFOREST", "FOREST_SNOW")   # раскладка и альфа кадров 42-57 - как у FOREST
 STUMPS = {
     ("FOREST", 58): "a sawn-off stump of a dark brown conifer trunk with spreading roots and small green moss "
                     "tufts at the base",
     ("BLACKFOREST", 58): "a broken dark violet-black tree stump with a jagged broken top and spreading roots",
+    # решение 12.10: SAFE_V1 отверг вывод от FOREST:58 (пятен 1) - свой рендер; цвета - по классике WASTE:58
+    ("FOREST_WASTE", 58): "a sawn-off stump of a dead charred conifer trunk with blackish green-grey bark, dark "
+                          "grey ridges and spreading roots",
 }
 LAYOUTS = {"FOREST": (("T1", 0), ("T1b", 2), ("T2", 1), ("T3", 6), ("clump", 4)),
            "FOREST_WASTE": (("T1", 0), ("T1b", 2), ("T2", 1), ("T3", 7))}
+LAYOUTS.update({S: LAYOUTS["FOREST"] for S in DERIVED})
 CUT_SEED = {0: 101, 1: 202}
 
 
@@ -199,8 +229,24 @@ def cut_geom(hd, frame, soft, floor=0.30, max_aspect=1.3):
     sw = min(max(sw, s / max_aspect), s * max_aspect)
     sh = min(max(sh, s / max_aspect), s * max_aspect)
     pw, ph = max(1, round((ab[2] - ab[0]) * sw)), max(1, round((ab[3] - ab[1]) * sh))
-    return dict(bg=bg, ab=ab, pw=pw, ph=ph, px=round((ox0 + ox1 - pw) / 2), py=oy1 - ph, cw=cw, ch=ch,
-                soft=soft, floor=floor, raw=hd.size)
+    g = dict(bg=bg, ab=ab, pw=pw, ph=ph, px=round((ox0 + ox1 - pw) / 2), py=oy1 - ph, cw=cw, ch=ch,
+             soft=soft, floor=floor, raw=hd.size)
+    g["key_bad"] = key_bad(hd, g, frame)
+    g["matte"] = "edge" if g["key_bad"] > KEY_BAD_MAX else "key"
+    return g
+
+
+KEY_BAD_MAX = 0.05     # доля неполной альфы ключа внутри сжатого силуэта классики: канон 0.000-0.004, SNOW 0.30
+
+
+def key_bad(hd, g, frame, E=8):
+    """Годен ли ключ подложки (R-089): доля пикселей с альфой < 250 внутри силуэта классики x4, сжатого на E пикс x4.
+    Подложка цвета тела (снег и хвоя на средне-серой 96) режет альфу по каждому переходу внутри кроны."""
+    al = np.asarray(to_body(hd, dict(g, matte="key")).split()[3])
+    sil = (np.asarray(frame.split()[3]) > 0).astype(np.uint8)
+    sil4 = cv2.resize(sil, (sil.shape[1] * 4, sil.shape[0] * 4), interpolation=cv2.INTER_NEAREST)
+    inn = cv2.erode(sil4, np.ones((2 * E + 1, 2 * E + 1), np.uint8)) > 0
+    return round(float((al[inn] < 250).mean()), 4) if inn.any() else 0.0
 
 
 def keyed_alpha(hd, bg, soft, floor):
@@ -213,6 +259,12 @@ def to_body(hd, g):
     """Ответ (холст рендера) -> кадр x4 габарита crop: подложка снята, перенос как у MAIN."""
     rgba = po.gen_fire.unpanel(hd, g["bg"], g["soft"])
     al = keyed_alpha(hd, g["bg"], g["soft"], g["floor"])
+    if g.get("matte") == "edge":                 # ключ негоден (key_bad): тело по контуру, obj_photo.edge_matte
+        import obj_photo
+        inner = obj_photo.edge_matte(hd) >= 0.99      # уверенно тело; кромка (< 0.99) - по ключу, как было
+        rgb = np.where(inner[..., None], np.asarray(hd.convert("RGB")), np.asarray(rgba)[..., :3])
+        al = np.where(inner, 1.0, al)
+        rgba = Image.fromarray(rgb.astype(np.uint8), "RGB").convert("RGBA")
     rgba.putalpha(Image.fromarray((al * 255).astype(np.uint8), "L"))
     piece = rgba.crop(g["ab"]).resize((g["pw"], g["ph"]), Image.LANCZOS)
     M = max(piece.width, piece.height)
@@ -349,7 +401,7 @@ class Job:
         self.whole = self.tree.compose()
         self.box = crop_box(self.whole, args.pad)
         self.frame = self.whole.crop(self.box)
-        self.what = hints[S + ":57"]
+        self.what = TREE_WHAT.get(S) or hints[S + ":57"]
         self.d = os.path.join(args.out, "s%d" % seed, S)
         os.makedirs(self.d, exist_ok=True)
         self.raw_main = os.path.join(self.d, "raw_main.png")
@@ -387,7 +439,11 @@ class Job:
         main = apply_tone(body, tp, self.args.tone)
         ref = po.match_tone(po.cut_out(hd, self.frame, self.args.grow, self.args.soft), self.frame, self.args.tone)
         dev = np.abs(np.asarray(ref, np.int16) - np.asarray(main, np.int16)).max()
-        if dev > 1:
+        if g["matte"] == "edge":                 # po.cut_out режет ключом - сверять не с чем
+            print("%s s%d: ключ подложки %s негоден (неполная альфа внутри силуэта %.3f > %.2f) - матт по контуру, "
+                  "сверка с po.cut_out пропущена" % (self.S, self.seed, tuple(round(v) for v in g["bg"]),
+                                                     g["key_bad"], KEY_BAD_MAX))
+        elif dev > 1:
             raise SystemExit("%s: вырезка MAIN разошлась с po.cut_out на %d - перенос неверен" % (self.S, dev))
         return hd, g, tp, main
 
@@ -487,7 +543,7 @@ def do_render(args, world, CL, hints):
             painter = painter_new(args)
 
     for seed in args.seeds:
-        for S in SETS:
+        for S in args.sets:
             job = Job(world, CL, hints, S, seed, args)
             if not os.path.exists(job.raw_main):
                 need()
@@ -499,7 +555,8 @@ def do_render(args, world, CL, hints):
             hd, g, _tp, _main = job.main_cut()
             job._g = g
             vraw = {}
-            for z in range(job.tree.top):
+            # перекраскам срез z1 модели не нужен: z1 собирает tree_render_v2 --z1-composite
+            for z in range(1 if S in DERIVED else job.tree.top):
                 known, cond, free, U_r = job.canvases(z, hd, g, vraw)
                 p = job.raw_cut(z)
                 if not os.path.exists(p):
@@ -517,9 +574,10 @@ def do_render(args, world, CL, hints):
                 vraw[z] = job.vraw(z, hd, Image.open(p).convert("RGB"), U_r, vraw)
         for (S, f), what in STUMPS.items():
             p = os.path.join(args.out, "s%d" % seed, "stump_%s_%d.png" % (S, f))
-            if os.path.exists(p):
+            if os.path.exists(p) or (args.stumps and "%s:%d" % (S, f) not in args.stumps):
                 continue
             need()
+            os.makedirs(os.path.dirname(p), exist_ok=True)   # --stumps в новую папку: деревьев нет, s<seed> не создан
             spr = sprite(world, S, f)
             hd = paint_strict(painter, args, spr.crop(crop_box(spr, args.pad)), what, seed)
             po.gen_hd.save_png(hd, p)
@@ -703,7 +761,7 @@ def do_assemble(args, world, CL, hints):
     summary = {}
     for seed in args.seeds:
         sd = os.path.join(args.out, "s%d" % seed)
-        for S in SETS:
+        for S in ([] if args.stumps else SETS):   # --stumps: только пни, деревья не трогать
             job = Job(world, CL, hints, S, seed, args)
             if not (os.path.exists(job.raw_main) and all(os.path.exists(job.raw_cut(z)) for z in range(job.tree.top))):
                 print("  %s s%d: ответов нет - пропуск" % (S, seed))
@@ -756,7 +814,7 @@ def do_assemble(args, world, CL, hints):
         prow = []
         for (S, f), _what in STUMPS.items():
             p = os.path.join(sd, "stump_%s_%d.png" % (S, f))
-            if not os.path.exists(p):
+            if not os.path.exists(p) or (args.stumps and "%s:%d" % (S, f) not in args.stumps):
                 continue
             spr = sprite(world, S, f)
             box = crop_box(spr, args.pad)
@@ -788,7 +846,7 @@ def crop_like(v, a):
 
 
 def do_masks(args, world, CL, hints):
-    for S in SETS:
+    for S in args.sets:
         job = Job(world, CL, hints, S, args.seeds[0], args)
         t = job.tree
         for z in range(t.top):
@@ -804,6 +862,7 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--out", default=OUT)
     ap.add_argument("--seeds", default="2711,2712")
+    ap.add_argument("--sets", default=",".join(SETS), help="наборы рендера: %s или %s" % (SETS, DERIVED))
     ap.add_argument("--steps", type=int, default=40)
     ap.add_argument("--cfg", type=float, default=4.0)
     ap.add_argument("--mp", type=float, default=1.0)
@@ -815,8 +874,15 @@ def main():
     ap.add_argument("--max-renders", type=int, default=4, dest="max_renders")
     ap.add_argument("--mask-only", action="store_true", dest="mask_only", help="листы масок, без модели")
     ap.add_argument("--assemble", action="store_true", help="кадры, сборки, листы из готовых ответов, без модели")
+    ap.add_argument("--stumps", default="", help="только эти пни, через запятую (FOREST_WASTE:58); пусто - все")
     args = ap.parse_args()
     args.seeds = [int(s) for s in args.seeds.split(",")]
+    args.sets = [s for s in args.sets.split(",") if s]
+    args.stumps = set(s for s in args.stumps.split(",") if s)
+    bad = [s for s in args.sets if s not in SETS + DERIVED] + \
+        ["пень %s" % s for s in args.stumps if tuple([s.split(":")[0], int(s.split(":")[1])]) not in STUMPS]
+    if bad:
+        raise SystemExit("неизвестные наборы %s" % bad)
     sys.stdout.reconfigure(encoding="utf-8")
     os.makedirs(args.out, exist_ok=True)
     world = mm.World()
