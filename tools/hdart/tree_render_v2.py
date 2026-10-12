@@ -33,7 +33,7 @@ for p in (HERE, os.path.dirname(HERE)):
         sys.path.insert(0, p)
 
 import numpy as np                                  # noqa: E402
-from PIL import Image, ImageDraw                    # noqa: E402
+from PIL import Image, ImageDraw, ImageFilter       # noqa: E402
 import cv2                                          # noqa: E402
 import probe_object as po                           # noqa: E402
 import map_mockup as mm                             # noqa: E402
@@ -82,6 +82,197 @@ def frame_from(view, q):
     v = np.asarray(view, np.uint8).copy()
     v[..., 3] = (v[..., 3] * tr.rep4(q["draw"])).astype(np.uint8)
     return Image.fromarray(v).crop(pos_box(q))
+
+
+# ---------------------------------------------------------------- кромка кадра по всем раскладкам
+# Один номер кадра - одна картинка, а соседи у кадра в раскладках разные (T1/T1b/T2/T3/clump, этажи z<=1,
+# z<=2, все). Край кадра, вырезанный по маске рисования, в T1 закрыт соседом из того же вида, а в другой
+# раскладке открывается: лесенка базы поверх чужого соседа или прямой срез рамкой кадра поверх фона.
+# Правило общее, без списка кадров: (1) у кадра ищем места, где хотя бы в одной раскладке виден не тот сосед,
+# что в T1 (или фон); (2) там - мягкая кромка наружу из того же вида (продолжение того же дерева, форма -
+# гладкий силуэт ядра плюс пучки хвои); у рамки кадра, где она режет крону поверх фона, - затухание внутрь,
+# RGB не меняется; (3) в T1 кромка не меняет картинку: где меняет больше EDGE_TOL - запрещена.
+
+EDGE_R = 8          # x4: кромка наружу от ядра кадра (как прежняя верхняя кромка: силуэт +2 пикс базы)
+EDGE_IN = 12        # x4: полоса затухания внутрь у рамки кадра
+EDGE_TOL = 6        # изменение T1 на полу сверх этого (из 255, макс. канала) - кромка там запрещена
+EDGE_FRAMES = tuple(range(42, 57))   # 57 (ствол z<=0) не трогаем
+
+
+def _lay_rows(world, S, sig, zmax):
+    rows = []
+    for f, p, x, y, z in sig:
+        if z <= zmax:
+            rows.append(((z, y, x, p), f, (x - y) * 64, ((x + y) * 8 - z * 24 - tr.plevel(world, S, f)) * 4))
+    rows.sort()
+    return rows
+
+
+def _compose(rows, get, M=16):
+    """Сборка x4 из массивов кадров (160x128x4, float 0..1): rgb на полу, альфа, владелец (последний с альфой
+    >= 0.5), начало холста."""
+    x0 = min(r[2] for r in rows) - M
+    y0 = min(r[3] for r in rows) - M
+    W = max(r[2] for r in rows) - x0 + 128 + M
+    H = max(r[3] for r in rows) - y0 + 160 + M
+    pm = np.zeros((H, W, 3), np.float32)
+    al = np.zeros((H, W), np.float32)
+    own = np.full((H, W), -1, np.int32)
+    for i, (_k, f, sx, sy) in enumerate(rows):
+        a = get(i, f)
+        ox, oy = sx - x0, sy - y0
+        sa = a[..., 3]
+        sl = (slice(oy, oy + 160), slice(ox, ox + 128))
+        pm[sl] = a[..., :3] * sa[..., None] + pm[sl] * (1 - sa[..., None])
+        al[sl] = sa + al[sl] * (1 - sa)
+        own[sl][sa >= 0.5] = i
+    fl = np.array(tr.FLOOR, np.float32) / 255.0
+    return pm + fl * (1 - al[..., None]), al, own, (x0, y0)
+
+
+def _rel_code(rows, i, own):
+    """Кто виден под местом i: код соседа (номер кадра и сдвиг клетки), 0 - фон, -2 - закрыто позже, -3 - сам."""
+    (z, y, x, _p), _f, _sx, _sy = rows[i]
+    code = np.zeros(own.shape, np.int64)
+    for g in np.unique(own):
+        if g < 0:
+            continue
+        m = own == g
+        if g == i:
+            code[m] = -3
+        elif g > i:
+            code[m] = -2
+        else:
+            (zg, yg, xg, _pg), fg, _a, _b = rows[g]
+            code[m] = fg * 1000000 + (zg - z + 50) * 10000 + (yg - y + 50) * 100 + (xg - x + 50)
+    return code
+
+
+def _local(arr, org, rows, i, M=0):
+    x0, y0 = org
+    _k, _f, sx, sy = rows[i]
+    ox, oy = sx - x0, sy - y0
+    return arr[oy - M:oy + 160 + M, ox - M:ox + 128 + M]
+
+
+def _layouts(world, CL, S):
+    out, seen = [], set()
+    for name, li in tr.LAYOUTS[S]:
+        sig = CL[S]["sigs"][li]["sig"]
+        for zmax in (1, 2, 99):
+            rows = _lay_rows(world, S, sig, zmax)
+            key = (name, tuple(r[:2] for r in rows))
+            if key in seen:
+                continue
+            seen.add(key)
+            out.append((name, zmax, rows))
+    return out
+
+
+def _soft(ch, draw_loc):
+    """Мягкая кромка наружу: альфа 0..1 по гладкому силуэту ядра (+EDGE_R) и пучкам хвои вида, как у прежней
+    верхней кромки; у рамки кадра сходит на нет."""
+    base = Image.fromarray((draw_loc * 255).astype(np.uint8), "L")
+    S4 = np.asarray(po.smooth_silhouette(base, 4), np.float32) / 255.0
+    inside = (S4 > 0.5).astype(np.uint8)
+    sd = cv2.distanceTransform(inside, cv2.DIST_L2, 5) - cv2.distanceTransform(1 - inside, cv2.DIST_L2, 5)
+    sd = cv2.GaussianBlur(sd.astype(np.float32), (0, 0), 4.0)
+    soft = np.clip((sd + EDGE_R + 2.5 * ch["tn"]) / 1.6 + 0.5, 0, 1)
+    yy, xx = np.mgrid[0:160, 0:128].astype(np.float32)
+    wbox = np.clip(np.minimum(xx, 127 - xx) / 12.0, 0, 1) * np.clip(np.minimum(yy, 159 - yy) / 6.0, 0, 1)
+    return soft * wbox
+
+
+def _fade(ch, side):
+    """Вес затухания у рамки кадра на стороне side: 0 на самой рамке, 1 глубже EDGE_IN, край - по пучкам хвои."""
+    yy, xx = np.mgrid[0:160, 0:128].astype(np.float32)
+    db = {"L": xx, "R": 127 - xx, "T": yy, "B": 159 - yy}[side]
+    return np.clip((db - EDGE_IN / 2 + 2.5 * ch["tn"]) / 1.6 + 0.5, 0, 1)
+
+
+def _smooth1(m):
+    """Отрезки рамки, где она режет крону поверх фона, -> вес 0..1 вдоль рамки с плавным сходом."""
+    d = np.convolve(m.astype(np.float32), np.ones(9, np.float32), "same") > 0
+    k = np.exp(-0.5 * (np.arange(-12, 13) / 4.0) ** 2)
+    return np.clip(np.convolve(d.astype(np.float32), k / k.sum(), "same") * 1.5, 0, 1)
+
+
+def edge_rule(world, CL, S, frames, srcs, fam):
+    """frames: {f: кадр ядра (вырез по маске рисования)}, srcs: {f: (вид x4, q)} - откуда кадр вырезан
+    (RGB кадра во всей рамке - RGB вида), fam: {f: источник (FULL, Z1_EXPOSED, Z0_EXPOSED)}.
+    Возвращает кадры с кромкой и сводку по кадрам."""
+    core = {f: np.asarray(frames[f], np.float32) / 255.0 for f in frames}
+    built = []
+    for name, zmax, rows in _layouts(world, CL, S):
+        rgb, al, own, org = _compose(rows, lambda i, f: core[f])
+        built.append((name, rows, rgb, al, own, org))
+    out, info = dict(frames), {}
+    for f in EDGE_FRAMES:
+        view, q = srcs[f]
+        v = np.asarray(Image.fromarray(np.asarray(view, np.uint8)).crop(pos_box(q)), np.float32)
+        Y = v[..., :3].mean(-1)
+        tuft = cv2.GaussianBlur(Y, (0, 0), 1.5) - cv2.GaussianBlur(Y, (0, 0), 6)
+        x, y = q["at"]
+        c = dict(tn=np.clip(tuft / 14.0, -1, 1))
+        ring = core[f][..., 3] < 0.5
+        t1, cand = [], []
+        cut = {s: np.zeros(160 if s in "LR" else 128, bool) for s in "LRTB"}
+        for name, rows, rgb, al, own, org in built:
+            for i in [i for i, r in enumerate(rows) if r[1] == f]:
+                ow = _local(own, org, rows, i)
+                (t1 if name == "T1" else cand).append(_rel_code(rows, i, ow))
+                big = _local(al, org, rows, i, 1)
+                for s, inn, outv in (("L", ow[:, 0], big[1:-1, 0]), ("R", ow[:, -1], big[1:-1, -1]),
+                                     ("T", ow[0, :], big[0, 1:-1]), ("B", ow[-1, :], big[-1, 1:-1])):
+                    cut[s] |= (inn == i) & (outv < 0.125)
+        # открыто: хотя бы в одной раскладке под краем виден не тот сосед, что в T1 (или фон)
+        exp = np.zeros((160, 128), bool)
+        for code in cand:
+            exp |= (code != -2) & (code != -3) & ring & np.all([code != k for k in t1], 0)
+        Ez = cv2.GaussianBlur(cv2.dilate(exp.astype(np.uint8), np.ones((5, 5), np.uint8)).astype(np.float32),
+                              (0, 0), 3.0)
+        skirt = (v[..., 3] / 255.0) * _soft(c, q["draw"][y:y + 40, x:x + 32]) * np.clip(Ez * 1.5, 0, 1)
+        fade = np.ones((160, 128), np.float32)
+        for s, m in cut.items():
+            if m.any():
+                e = _smooth1(m)
+                fade *= 1 - (e[:, None] if s in "LR" else e[None, :]) * (1 - _fade(c, s))
+        # в T1 кромка не меняет картинку: где меняет - запрещена (с плавным сходом рядом). Исключение - пиксель,
+        # где в T1 под кадром уже виден раньше нарисованный кусок ДРУГОГО источника: там шов двух видов есть и в
+        # T1, кромка его сглаживает, а не добавляет новое; и пиксель, который в T1 закрыт ПОЗЖЕ нарисованным кадром
+        # (кромка видна только сквозь его мягкий край). Фон и раньше нарисованные куски своего источника защищены
+        allowed = np.ones((160, 128), np.float32)
+        gated, t1_seam = 0, np.zeros((160, 128), bool)
+        for _it in range(4):
+            a = core[f].copy()
+            a[..., 3] = np.maximum(core[f][..., 3] * (1 - (1 - fade) * allowed), skirt * allowed)
+            bad = np.zeros((160, 128), bool)
+            for name, rows, rgb, al, own, org in built:
+                if name != "T1":
+                    continue
+                other = np.array([fam[r[1]] != fam[f] for r in rows] + [False])
+                for i in [i for i, r in enumerate(rows) if r[1] == f]:
+                    rgb2 = _compose(rows, lambda j, g, i=i, a=a: a if j == i else core[g])[0]
+                    ow = _local(own, org, rows, i)
+                    seam = ((ow >= 0) & (ow < i) & other[ow]) | (ow > i)
+                    ch = _local(np.abs(rgb2 - rgb).max(-1) * 255.0, org, rows, i) > EDGE_TOL
+                    bad |= ch & ~seam
+                    t1_seam |= ch & seam
+            if not bad.any():
+                break
+            gated += int(bad.sum())
+            forbid = cv2.dilate(bad.astype(np.uint8), np.ones((5, 5), np.uint8)).astype(np.float32)
+            allowed = np.minimum(allowed, 1 - np.clip(cv2.GaussianBlur(forbid, (0, 0), 2.0) * 2.0, 0, 1))
+            allowed[forbid > 0] = 0
+        else:
+            a[..., 3][bad] = core[f][..., 3][bad]       # последнее средство: в T1 как было
+        out[f] = Image.fromarray(np.clip(np.round(a * 255), 0, 255).astype(np.uint8), "RGBA")
+        a8 = np.asarray(out[f])[..., 3].astype(int)
+        c8 = np.asarray(frames[f])[..., 3].astype(int)
+        info[str(f)] = dict(exposed_px=int(exp.sum()), skirt_px=int(((a8 > 0) & (c8 == 0)).sum()),
+                            fade_px=int((a8 < c8).sum()), cut_sides="".join(s for s, m in cut.items() if m.any()),
+                            t1_gated_px=gated, t1_seam_px=int(t1_seam.sum()))
+    return out, info
 
 
 def place(t, frame, q):
@@ -499,12 +690,15 @@ class Job2(tr.Job):
             v0, v2, info["f57"] = f57_details(self, v0, v2, q57, i57, shift=self.S == "FOREST")
         info["z0"]["seam_v2"] = seam_numbers(v0, q57, zinfo["seam_row"], zinfo["classic_cx"])
         frames, src = {}, {}
+        self.views = {}                                   # откуда вырезан кадр - для кромки (edge_rule)
         for q in t.pcs:
             f = q["f"]
             if f in FULL_FRAMES and q["z"] == t.top:
                 frames[f], src[f] = frame_from(v2, q), "FULL"
+                self.views[f] = (v2, q)
             elif f == 57:
                 frames[f], src[f] = frame_from(v0, q), "Z0_EXPOSED"
+                self.views[f] = (v0, q)
         self.v0, self.v2, self.q57 = v0, v2, q57
         return frames, src, info
 
@@ -1094,19 +1288,23 @@ def do_assemble(args, world, CL, hints):
                         continue
                     v1, cut4 = job.view1(raw1, lockc, lock4)
                 frames, src = dict(frames0), dict(src0)
+                views = dict(job.views)
                 for j, q in enumerate(t.pcs):
                     if q["f"] in Z1_FRAMES:
                         vq = v1
-                        if rel is None:     # крышка чужого куска в кайму кадра не идёт: в T2 48 и 50 меняются местами
+                        if rel is None:     # крышка чужого куска в кадр не идёт: в T2 48 и 50 меняются местами
                             alien = (capown >= 0) & (capown != j)
                             if alien.any():
                                 a = np.asarray(v1, np.uint8).copy()
                                 a[alien] = v1n[alien]
                                 vq = Image.fromarray(a)
-                        frames[q["f"]], src[q["f"]] = frame_from(vq, q), "Z1_EXPOSED"
+                        frames[q["f"]] = frame_from(vq, q)
+                        views[q["f"]] = (vq, q)
+                        src[q["f"]] = "Z1_EXPOSED"
                 miss = [f for f in range(42, 58) if f not in frames]
                 if miss:
                     raise SystemExit("нет канона кадров %s" % miss)
+                frames, edge = edge_rule(world, CL, S, frames, views, src)
                 od = os.path.join(job.d2, tag)
                 fd = os.path.join(od, "frames", S + ".PCK")
                 os.makedirs(fd, exist_ok=True)
@@ -1115,6 +1313,7 @@ def do_assemble(args, world, CL, hints):
                 V = {2: job.v2, 1: v1, 0: job.v0}
                 st = dict(info)
                 st["frame_source"] = {str(f): src[f] for f in sorted(src)}
+                st["edge"] = edge
                 st["T1_assembled_vs_source"] = {"z<=%d" % z: tr.diff(tr.assemble(world, S, sig0, frames, z), V[z])
                                                 for z in (2, 1, 0)}
                 if rel is None:
