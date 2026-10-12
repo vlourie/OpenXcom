@@ -46,10 +46,20 @@ FULL_FRAMES = (42, 43, 44, 45, 46, 47, 53, 54, 55)
 Z1_FRAMES = (48, 49, 50, 51, 52, 56)
 LOCK_Z1 = (53, 54, 55)                 # на этаже 1 - канон FULL, срез вокруг них
 CUT_SPOT_FRAMES = (48, 50, 51)
+SPECK_MAX = 1.5      # пикс k=1: пятно меры spots_lab меньше - крапина, не спил (spot_gate)
+# цепочка переходного серого снег|хвоя (SNOW после матта по контуру, 13.10): заполненность рамки 0.20-0.36, толщина
+# 1.9-3.8 пикс x4; настоящие спилы пяти наборов - от 0.49 и 2.7, синтетический лишний спил r4-r8 - от 0.46 и 8.2
+CHAIN_FILL = 0.4
+CHAIN_THICK = 1.0    # пикс k=1
 BLEND = 40                             # строк x4 над швом, где профиль ствола сходится к корням MAIN
 TONE_DECAY = 48                        # строк x4 затухания поправки цвета над швом
 TOP_FLAT = 4                           # строк k=1 под спилом, ширина которых держит верх ствола
-SEAM_SOFT = 4                          # строк над и под швом z<=0, где волокна ствола размываются в корни
+NARROW_CUT = 0.8                       # срез V1 уже этой доли своей ширины - торец, источник ствола кончается выше
+NARROW_BACK = 3                        # строк x4 выше начала сужения: закругление начинается раньше заметного
+THIN_BAND = 8                          # строк x4 над и под швом z<=0, где ищутся тонкие обрывки вне ствола
+THIN_MAX = 3                           # обрывок не толще стольких строк x4 по столбцу
+THIN_LEN = 4                           # и не короче стольких столбцов: отдельный пиксель края - не штрих
+SEAM_SOFT = 4                         # строк над и под швом z<=0, где волокна ствола размываются в корни
 # составной срез z1 (--z1-composite): сдвиги клона тела яруса MAIN (x4) и материал крышек - пень FOREST:58 s2712
 CLONE_SHIFTS = ((16, 0), (32, 0), (16, 16), (16, -16), (48, 0), (32, 32), (32, -32), (64, 0))
 STUMP_SRC = "census/trees/forest42/render_v1/s2712/stumps/FOREST.PCK/58.png"
@@ -58,6 +68,25 @@ STUMP_SRC = "census/trees/forest42/render_v1/s2712/stumps/FOREST.PCK/58.png"
 # полоса HOLE_MARGIN у края: кромка из веток - силуэт, её не трогаем), заливка ПОД существующим - клон MAIN
 # того же дерева со сдвигом; непрозрачное, силуэт и спилы не меняются
 HOLE_FILL_SETS = ("FOREST_WASTE",)
+# производные деревья (решение 12.10): FORESTRED, BLACKFOREST, FOREST_SNOW - той же архитектурой, что FOREST. Альфа
+# кадров 42-57 у них та же, что у FOREST, а цвета свои: маски по цвету классики (ствол, хвоя веток, торец, спилы)
+# строятся по спрайту FOREST, средние цвета и материал - по классике своего набора; пень - свой канон, если есть
+GEOM_FROM = {S: "FOREST" for S in tr.DERIVED}
+STUMP_OWN = {"BLACKFOREST": "census/trees/forest42/render_v1/s2712/stumps/BLACKFOREST.PCK/58.png"}
+# кора кадра 57 по положению, а не по цвету: у RED хвоя рыжая, как кора, у BLACK чёрная, как тень коры - needles_hd
+# считал тень ствола хвоей, и сдвиг её не трогал (BLACK L 10 против 15.5). На z<=0 в рамке 57 только ствол и корни
+# (ветки дорисованы позже), поэтому там кора - всё непрозрачное. У SNOW хвоя зелёная, а на корнях снег - по цвету
+POS_BARK = ("FORESTRED", "BLACKFOREST")
+# кадр 57 канона геометрии (FOREST s2712): пятна классики, побайтно равные FOREST, берутся из него
+GEOM_F57 = "census/trees/forest42/render_v2/s2712/%s/comp/frames/%s.PCK/57.png"
+
+
+def geom(S):
+    return GEOM_FROM.get(S, S)
+
+
+def stump_src(S):
+    return STUMP_OWN.get(S, STUMP_SRC)
 HOLE_HULL = 15
 HOLE_MARGIN = 12
 HOLE_SHIFTS = CLONE_SHIFTS + ((-16, 0), (-32, 0), (0, 16), (0, -16), (-16, 16), (-16, -16), (0, 32), (0, -32),
@@ -463,7 +492,7 @@ def medfilt(v, k):
 
 def classic_trunk(world, S):
     """Профиль ствола классики 57 в строках x4: x0, x1 (сглажено), верх ствола."""
-    a = np.asarray(tr.sprite(world, S, 57), np.int16)
+    a = np.asarray(tr.sprite(world, geom(S), 57), np.int16)
     r, g, al = a[..., 0], a[..., 1], a[..., 3]
     m = (al > 0) & ~(g > r + 8)
     cols = np.where(m.any(0))[0]
@@ -482,6 +511,40 @@ def classic_trunk(world, S):
     X0 = np.repeat(x0, 4) * 4
     X1 = np.repeat(x1, 4) * 4
     return X0, X1, top * 4, cx * 4 + 2
+
+
+def classic_needle_bark(world, S):
+    """Lab (шкала cv2) хвои и коры классики 57 своего набора; какие пиксели хвоя - по маске FOREST (g > r+8).
+    Снег на хвое классики (светлее L 50, хрома меньше 12) в образец хвои не входит: у SNOW он поднимал L хвои
+    с ~18 до 29, и тёмная хвоя в тени оказывалась ближе к коре. У RED и BLACK таких пикселей нет."""
+    a = np.asarray(tr.sprite(world, S, 57), np.float32)
+    ag = np.asarray(tr.sprite(world, geom(S), 57), np.int16)
+    nm = (ag[..., 3] > 0) & (ag[..., 1] > ag[..., 0] + 8)
+    bm = (ag[..., 3] > 0) & ~nm
+    ln = _lab8(a[..., :3][nm])
+    sn = (ln[:, 0] > 128) & (np.hypot(ln[:, 1] - 128, ln[:, 2] - 128) < 12)
+    return ln[~sn].mean(0), _lab8(a[..., :3][bm]).mean(0), float(sn.mean())
+
+
+def needles_hd(world, S, rgba):
+    """Хвоя на HD производного дерева: пиксель ближе (Lab) к хвое классики 57 своего набора, чем к её коре."""
+    cn, cb, _s = classic_needle_bark(world, S)
+    rgba = np.asarray(rgba, np.float32)
+    L = _lab8(rgba[..., :3].reshape(-1, 3)).reshape(rgba.shape[:2] + (3,))
+    return np.linalg.norm(L - cn, axis=-1) < np.linalg.norm(L - cb, axis=-1)
+
+
+def snow_hd(world, S, rgba):
+    """Снег на кроне HD: светлее и хвои, и коры классики 57 своего набора на 20+ по L (0-100) и почти без цвета.
+    Снег на хвое - материал кроны (FOREST_SNOW), поэтому пятно для клона хвои его не отвергает. Только у набора,
+    где снег есть на хвое классики (доля от 2 процентов): у RED и BLACK серый блик снегом не станет."""
+    cn, cb, sf = classic_needle_bark(world, S)
+    top = max(cn[0], cb[0])
+    rgba = np.asarray(rgba, np.float32)
+    if sf < 0.02:
+        return np.zeros(rgba.shape[:2], bool)
+    L = _lab8(rgba[..., :3].reshape(-1, 3)).reshape(rgba.shape[:2] + (3,))
+    return (L[..., 0] > top + 51) & (np.hypot(L[..., 1] - 128, L[..., 2] - 128) < 12)
 
 
 def z0_trunk(job, world, v0, v2):
@@ -516,15 +579,32 @@ def z0_trunk(job, world, v0, v2):
         if rr and rr[1] - rr[0] >= 10:
             sx0[y], sx1[y] = rr
     have = np.where(~np.isnan(sx0))[0]
-    Tcut = int(have[0])
+    # источник - самый длинный непрерывный участок ствола V1 (разрыв до 3 строк): у срезов с зазором над
+    # корнями перенос иначе тянет пустые строки зазора (разрыв ствол|корни), а у срезов с веточками на спиле
+    # (FORESTRED: строки 21-29 - веточка у cx) верхний обрывок дал бы источник в две строки
+    parts, s0 = [], int(have[0])
+    for a_, b_ in zip(have[:-1], have[1:]):
+        if b_ - a_ > 3:
+            parts.append((s0, int(a_)))
+            s0 = int(b_)
+    parts.append((s0, int(have[-1])))
+    Tcut, last = max(parts, key=lambda p: p[1] - p[0])
+    sx0[:Tcut] = np.nan
+    sx1[:Tcut] = np.nan
+    wraw = sx1 - sx0
     sx0, sx1 = medfilt(sx0, 9), medfilt(sx1, 9)
     wid = sx1 - sx0
     mid = Tcut + (Ys - Tcut) // 2
     wmed = float(np.nanmedian(wid[Tcut + 4:mid]))
-    Bcut = Ys
-    for y in range(int(Tcut + 0.4 * (Ys - Tcut)), Ys + 1):
+    Bcut = min(Ys, last)
+    for y in range(int(Tcut + 0.4 * (Ys - Tcut)), Bcut + 1):
         if not np.isnan(wid[y]) and wid[y] > 1.25 * wmed:
             Bcut = y - 1
+            break
+        # срез V1 кончается закруглённым торцом над корнями (FORESTRED: 22 -> 11 пикс за три строки), медиана
+        # по 9 строкам его прячет - сырая ширина; иначе перенос растягивает закругление в шейку у шва
+        if not np.isnan(wraw[y]) and wraw[y] < NARROW_CUT * wmed:
+            Bcut = y - NARROW_BACK
             break
     # края источника - прямая (устойчиво, без выбросов): скачок края у основания сучка
     # иначе сдвигает фактуру строк и даёт ступень поперёк ствола
@@ -612,7 +692,10 @@ def z0_trunk(job, world, v0, v2):
         if not np.isnan(tx0s[y]):
             Rb[y, max(0, int(tx0s[y]) - 8):min(128, int(tx1s[y]) + 8)] = True
     # только яркая листва: оливковый край ствола V1 (g чуть больше r) - не сучок, иначе нитка вдоль ствола
-    green = (c0[..., 1] > c0[..., 0] + 30) & (c0[..., 1] > c0[..., 2] + 20) & (c0[..., 3] > 32) & (al[..., 0] <= 32)
+    if job.S in tr.DERIVED:
+        green = needles_hd(world, job.S, c0) & (c0[..., 3] > 32) & (al[..., 0] <= 32)
+    else:
+        green = (c0[..., 1] > c0[..., 0] + 30) & (c0[..., 1] > c0[..., 2] + 20) & (c0[..., 3] > 32) & (al[..., 0] <= 32)
     Rb &= ~green
     out[Rb] = 0
     newp = np.concatenate([np.clip(rgb, 0, 255), al], -1)
@@ -621,6 +704,37 @@ def z0_trunk(job, world, v0, v2):
     below = R.copy()
     below[:Ys + 1] = False
     out[below] = c2[below]
+    # у шва вне нового ствола - тонкие горизонтальные обрывки верха корней V1 (FORESTRED: рыжие штрихи
+    # в две строки, торчат из шейки влево и вправо; для производных они ещё и «хвоя» по цвету) - прочь.
+    # толщину меряем по столбцу всего кадра: юбка, сросшаяся с корнями MAIN ниже, толстая и остаётся.
+    # ниже шва - то же у корней MAIN (FORESTRED: штрих на строке Ys+1 левее корней)
+    ab = out[..., 3] > 32
+    thin = np.zeros((160, 128), bool)
+    for x in range(128):
+        col = ab[:, x]
+        y = Ys - THIN_BAND
+        while y <= min(159, Ys + THIN_BAND):
+            if col[y]:
+                y0 = y
+                while y0 > 0 and col[y0 - 1]:
+                    y0 -= 1
+                y1 = y
+                while y1 < 159 and col[y1 + 1]:
+                    y1 += 1
+                if y1 - y0 + 1 <= THIN_MAX:
+                    thin[y0:y1 + 1, x] = True
+                y = y1 + 1
+            else:
+                y += 1
+    for y in range(Ys - THIN_BAND, Ys + 1):
+        if not np.isnan(tx0s[y]):
+            thin[y, max(0, int(tx0s[y])):min(128, int(tx1s[y]) + 1)] = False
+    # не только в R: штрихи FORESTRED лежат и вне него (верх корней V1 справа, корни MAIN под швом слева)
+    n, lab, st, _c = cv2.connectedComponentsWithStats(thin.astype(np.uint8), connectivity=8)
+    for j in range(1, n):
+        if st[j, cv2.CC_STAT_WIDTH] < THIN_LEN:
+            thin[lab == j] = False
+    out[thin] = 0
     # сам шов: волокна ствола обрываются на строке Ys - размыть по вертикали +-SEAM_SOFT строк, только внутри ствола
     lo, hi = Ys - SEAM_SOFT, min(159, Ys + SEAM_SOFT + 1)
     band = out[lo - 3:hi + 4].copy()
@@ -655,13 +769,14 @@ def even_rows(world, S, view, q, Ys, sigma=10.0):
     bx = pos_box(q)
     v = np.asarray(view, np.float32).copy()
     c = v[bx[1]:bx[3], bx[0]:bx[2]]
+    nd = needles_hd(world, S, c) if S in tr.DERIVED else (c[..., 1] > c[..., 0] + 30)
     y1 = Ys - BLEND // 2
     ys = np.arange(Tc, y1 + 1)
     means = np.full((len(ys), 3), np.nan)
     for i, y in enumerate(ys):
         a, b = int(X0[y]) + 4, int(X1[y]) - 4
         seg = c[y, a:b]
-        ok = (seg[:, 3] > 200) & ~(seg[:, 1] > seg[:, 0] + 30)
+        ok = (seg[:, 3] > 200) & ~nd[y, a:b]
         if ok.sum() > 8:
             means[i] = seg[ok, :3].mean(0)
     good = ~np.isnan(means[:, 0])
@@ -676,7 +791,7 @@ def even_rows(world, S, view, q, Ys, sigma=10.0):
     fade = np.clip((y1 - ys) / 12.0, 0.0, 1.0)[:, None]
     off *= fade
     for i, y in enumerate(ys):
-        m = (c[y, :, 3] > 0) & ~(c[y, :, 1] > c[y, :, 0] + 30)
+        m = (c[y, :, 3] > 0) & ~nd[y]
         c[y, m, :3] = np.clip(c[y, m, :3] + off[i], 0, 255)
     v[bx[1]:bx[3], bx[0]:bx[2]] = c
     return Image.fromarray(v.astype(np.uint8), "RGBA"), round(float(np.abs(off).max()), 1)
@@ -711,28 +826,42 @@ def lab_of(rgb):
     return cv2.cvtColor((rgb / 255.0).astype(np.float32)[None], cv2.COLOR_RGB2LAB)[0]
 
 
+def bark_weight(rgb, world=None, S=None):
+    """Вес коры: FOREST и WASTE - trunk_weight (кора не зелёная); у производных хвоя не зелёная (красная, чёрная),
+    там кора - всё, что не хвоя по Lab классики своего набора (needles_hd)."""
+    if S not in tr.DERIVED:
+        return trunk_weight(rgb)
+    px = np.asarray(rgb, np.float32).reshape(-1, 3)
+    rgba = np.concatenate([px, np.full((len(px), 1), 255.0, np.float32)], 1)[:, None, :]
+    return (~needles_hd(world, S, rgba)[:, 0]).astype(np.float32)
+
+
 def trunk_shift(world, S, v0, q):
-    """Сдвиг a*b* (Lab): классика 57 (не зелёное) минус ствол HD в кадре 57 вида z<=0."""
+    """Сдвиг a*b* (Lab): классика 57 (не зелёное) минус ствол HD в кадре 57 вида z<=0.
+    У производных - сдвиг L*a*b*: их HD-ствол уходит от классики и по светлоте (BLACK темнее вдвое)."""
     a = np.asarray(tr.sprite(world, S, 57), np.float32)
-    m = (a[..., 3] > 0) & ~(a[..., 1] > a[..., 0] + 8)
+    ag = np.asarray(tr.sprite(world, geom(S), 57), np.float32)
+    m = (ag[..., 3] > 0) & ~(ag[..., 1] > ag[..., 0] + 8)
+    k = 0 if S in tr.DERIVED else 1
     lc = lab_of(a[..., :3][m])
     c = np.asarray(v0, np.float32)[pos_box(q)[1]:pos_box(q)[3], pos_box(q)[0]:pos_box(q)[2]]
     sel = c[..., 3] > 200
     rgb = c[..., :3][sel]
-    w = trunk_weight(rgb)
+    w = np.ones(len(rgb), np.float32) if S in POS_BARK else bark_weight(rgb, world, S)
     lh = lab_of(rgb)
-    mh = (lh[:, 1:] * w[:, None]).sum(0) / max(w.sum(), 1e-3)
-    return lc[:, 1:].mean(0) - mh, dict(classic_ab=[round(float(v), 1) for v in lc[:, 1:].mean(0)],
+    mh = (lh[:, k:] * w[:, None]).sum(0) / max(w.sum(), 1e-3)
+    return lc[:, k:].mean(0) - mh, dict(classic_ab=[round(float(v), 1) for v in lc[:, k:].mean(0)],
                                        hd_ab=[round(float(v), 1) for v in mh])
 
 
-def recolour(view, mask4, d_ab):
+def recolour(view, mask4, d_ab, world=None, S=None, pos=False):
+    """pos - в маске только ствол и корни (рамка 57 вида z<=0): у POS_BARK вес коры 1 всем пикселям."""
     v = np.asarray(view, np.float32).copy()
     sel = mask4 & (v[..., 3] > 0)
     rgb = v[..., :3][sel]
     lab = lab_of(rgb)
-    w = trunk_weight(rgb)
-    lab[:, 1:] += d_ab[None] * w[:, None]
+    w = np.ones(len(rgb), np.float32) if pos and S in POS_BARK else bark_weight(rgb, world, S)
+    lab[:, 3 - len(d_ab):] += d_ab[None] * w[:, None]
     back = cv2.cvtColor(lab[None], cv2.COLOR_LAB2RGB)[0] * 255.0
     v[..., :3][sel] = np.clip(back, 0, 255)
     return Image.fromarray(v.astype(np.uint8), "RGBA")
@@ -794,6 +923,8 @@ class Job2(tr.Job):
         self.world = world
         self.d2 = os.path.join(args.out, "s%d" % seed, S)
         os.makedirs(self.d2, exist_ok=True)
+        # дерево того же устройства в цветах FOREST: по нему маски спилов классики (альфа та же)
+        self.gtree = tr.Tree(world, geom(S), CL[geom(S)]["sigs"][0]["sig"], args.grow) if S in GEOM_FROM else None
 
     def raw_z1(self, rel):
         return os.path.join(self.d2, "raw_cut_z1_r%02d.png" % round(rel * 100))
@@ -830,8 +961,9 @@ class Job2(tr.Job):
             v0 = recolour(v0, m57, d_ab)
             v2 = recolour(v2, tr.rep4(t.lab[2] == i57), d_ab)
         v0, info["z0"]["row_band_max"] = even_rows(self.world, self.S, v0, q57, zinfo["seam_row"])
-        if self.S in ("FOREST", "FOREST_WASTE") and args.recolour:
-            v0, v2, info["f57"] = f57_details(self, v0, v2, q57, i57, shift=self.S == "FOREST")
+        if (self.S in ("FOREST", "FOREST_WASTE") or self.S in tr.DERIVED) and args.recolour:
+            v0, v2, info["f57"] = f57_details(self, v0, v2, q57, i57,
+                                               shift=self.S == "FOREST" or self.S in tr.DERIVED)
         info["z0"]["seam_v2"] = seam_numbers(v0, q57, zinfo["seam_row"], zinfo["classic_cx"])
         v2n = v2                                          # без заливки: из него кромка edge_rule
         if self.S in HOLE_FILL_SETS:                      # просветы кроны: под существующим - клон MAIN
@@ -1001,11 +1133,14 @@ class Job2(tr.Job):
         wg = np.clip(cv2.distanceTransform(zone.astype(np.uint8), cv2.DIST_L2, 3) / 24.0, 0, 1)
         col = col * (1 + (gain - 1) * wg)[..., None]
         # 4) крышки спилов: место и размер - пятна классики, материал - пень и кора HD
-        st = np.asarray(Image.open(STUMP_SRC).convert("RGBA"), np.float32)
+        st = np.asarray(Image.open(stump_src(self.S)).convert("RGBA"), np.float32)
         wood = _lab8(st[(st[..., 3] > 200) & (st[..., :3].mean(-1) > 60)][:, :3])
         bx = pos_box(self.q57)
         tr57 = np.asarray(self.v0, np.float32)[bx[1]:bx[1] + 120, bx[0]:bx[2]]
-        tm = (tr57[..., 3] > 200) & (np.abs(tr57[..., 1] - tr57[..., 0]) < 40) & (tr57[..., 0] >= tr57[..., 1])
+        if self.S in tr.DERIVED:
+            tm = (tr57[..., 3] > 200) & ~needles_hd(self.world, self.S, tr57)
+        else:
+            tm = (tr57[..., 3] > 200) & (np.abs(tr57[..., 1] - tr57[..., 0]) < 40) & (tr57[..., 0] >= tr57[..., 1])
         bm = _lab8(tr57[tm][:, :3]).mean(0)
         rng = np.random.default_rng(seed_noise)
         yy, xx = np.mgrid[0:H, 0:W].astype(np.float32)
@@ -1058,15 +1193,16 @@ def f57_details(job, v0, v2, q57, i57, iters=3, shift=True):
     for _ in range(iters if shift else 0):      # вес trunk_weight < 1 недодаёт сдвиг - дожать остаток
         d_ab, ci = trunk_shift(job.world, job.S, v0, q57)
         res.append(ci["hd_ab"])
-        if np.hypot(*d_ab) < 0.5:
+        if float(np.linalg.norm(d_ab)) < 0.5:
             break
-        v0 = recolour(v0, m57, d_ab)
-        v2 = recolour(v2, own2, d_ab)
+        v0 = recolour(v0, m57, d_ab, job.world, job.S, pos=True)
+        v2 = recolour(v2, own2, d_ab, job.world, job.S)
     _d, ci = trunk_shift(job.world, job.S, v0, q57)
     out = dict(trunk_ab_iter=res, trunk_ab_final=ci["hd_ab"], classic_ab=ci["classic_ab"])
     v = np.asarray(v0, np.float32).copy()
     fr = v[b57[1]:b57[3], b57[0]:b57[2]]        # вид, не копия: правки идут в v
     cl = np.asarray(tr.sprite(job.world, job.S, 57), np.int16)
+    cg = np.asarray(tr.sprite(job.world, geom(job.S), 57), np.int16)     # маски по цвету - по геометрии
     # торец: верх HD-ствола, ширина - ствол на 8 строк ниже верха
     a = fr[..., 3]
     rows = np.where((a > 200).sum(1) >= 8)[0]
@@ -1077,12 +1213,16 @@ def f57_details(job, v0, v2, q57, i57, iters=3, shift=True):
     x0, x1 = int(run.min()), int(run.max())
     clt = int(np.where(cl[..., 3].any(1))[0][0])
     top = cl[clt:clt + 4]
-    om = (top[..., 3] > 0) & (top[..., 0] > top[..., 1] + 25)
+    topg = cg[clt:clt + 4]
+    om = (top[..., 3] > 0) & (topg[..., 0] > topg[..., 1] + 25)
     face_lab = _lab8(top[..., :3][om].astype(np.float32)).mean(0)
-    st = np.asarray(Image.open(STUMP_SRC).convert("RGBA"), np.float32)
+    st = np.asarray(Image.open(stump_src(job.S)).convert("RGBA"), np.float32)
     wood = _lab8(st[(st[..., 3] > 200) & (st[..., :3].mean(-1) > 60)][:, :3])
     L0 = float(np.percentile(wood[:, 0], 60))
-    tm = (a > 200) & (fr[..., 0] >= fr[..., 1])
+    if job.S in tr.DERIVED:
+        tm = (a > 200) & ~needles_hd(job.world, job.S, fr)
+    else:
+        tm = (a > 200) & (fr[..., 0] >= fr[..., 1])
     bm = _lab8(fr[..., :3][tm]).mean(0)
     rx = (x1 - x0) / 2.0 - 2.0
     ry = max(rx * 0.32, 5.0)
@@ -1096,7 +1236,7 @@ def f57_details(job, v0, v2, q57, i57, iters=3, shift=True):
     out["cut_face"] = dict(top_row_x4=ht, x=[x0, x1], rx=round(rx, 1), ry=round(ry, 1),
                            ab=[round(float(face_lab[1] - 128), 1), round(float(face_lab[2] - 128), 1)])
     # веточки: зелёные пятна классики x4 (мягкий край), хвоя - клон MAIN с лучшим сдвигом
-    gm = (cl[..., 3] > 0) & (cl[..., 1] > cl[..., 0] + 8)
+    gm = (cg[..., 3] > 0) & (cg[..., 1] > cg[..., 0] + 8)
     n, lb, sts, cen = cv2.connectedComponentsWithStats(gm.astype(np.uint8), 8)
     # ветки: пиксели классики, отстоящие от HD-ствола на 2+ пикс базы (ближе - край ствола классики, он у HD
     # шире или сдвинут), выше корней, вместе с хвоей (хвоя потом ложится клоном MAIN поверх). Внутри пятна -
@@ -1178,7 +1318,17 @@ def f57_details(job, v0, v2, q57, i57, iters=3, shift=True):
         fr[sy, sx, 3] = np.maximum(fr[sy, sx, 3], w * 255)
     out["stems"] = stems
     mv = np.asarray(v2, np.float32)
-    dense = (mv[..., 3] > 235) & (mv[..., 1] > mv[..., 0] + 6) & ~own2
+    if job.S in tr.DERIVED:                       # хвоя производного дерева - не по зелёному: весь MAIN вне 57
+        # тёмные нейтральные щели между лапами в тени по Lab чуть ближе к коре - это крона, а не ствол: закрыть
+        nd = (needles_hd(job.world, job.S, mv) | snow_hd(job.world, job.S, mv)).astype(np.uint8)
+        nd = cv2.morphologyEx(nd, cv2.MORPH_CLOSE, cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (11, 11))) > 0
+        # у SNOW тёмная кайма снега близка к серой подложке ответа и после ключа полупрозрачна (линии по всей
+        # кроне, на полу читаются контуром): плотной считать хвою с альфой от половины, иначе ни одно место не плотное
+        dense = (mv[..., 3] > 128) & ~own2 & nd
+        cf = np.asarray(tr.sprite(job.world, geom(job.S), 57).convert("RGBA"), np.int16)
+        hf = np.asarray(Image.open(GEOM_F57 % ((geom(job.S),) * 2)).convert("RGBA"), np.float32)
+    else:
+        dense = (mv[..., 3] > 235) & (mv[..., 1] > mv[..., 0] + 6) & ~own2
     twigs = []
     for j in range(1, n):
         if sts[j, 4] < 2:
@@ -1187,17 +1337,28 @@ def f57_details(job, v0, v2, q57, i57, iters=3, shift=True):
         soft = np.clip((cv2.GaussianBlur(m4, (0, 0), 1.6) - 0.3) / 0.4, 0, 1)
         ys, xs_ = np.where(soft > 0)
         gy, gx = ys + b57[1], xs_ + b57[0]
+        if job.S in tr.DERIVED and (cl[lb == j] == cf[lb == j]).all():
+            # пятно классики побайтно как у FOREST (трава у корней) - тот же HD, что в каноне FOREST
+            src = hf[ys, xs_]
+            w = soft[ys, xs_] * src[:, 3] / 255.0
+            cur = fr[ys, xs_]
+            fr[ys, xs_, :3] = cur[:, :3] * (1 - w[:, None]) + src[:, :3] * w[:, None]
+            fr[ys, xs_, 3] = np.maximum(cur[:, 3], w * 255)
+            twigs.append([int(sts[j, 0]), int(sts[j, 1]), int(sts[j, 4]), "geom"])
+            continue
         best = None
-        for dy in range(-240, 1, 4):            # хвоя яруса выше: сдвиг вверх
-            for dx in range(-160, 161, 4):
+        top_cov = 0.0
+        for dy in range(-480, 1, 4):            # хвоя яруса выше: сдвиг вверх (у SNOW нижний ярус рваный -
+            for dx in range(-240, 241, 4):      # сплошная хвоя дальше 240); берётся ближайший, канон прежний
                 yy2, xx2 = gy + dy, gx + dx
                 if yy2.min() < 0 or xx2.min() < 0 or yy2.max() >= dense.shape[0] or xx2.max() >= dense.shape[1]:
                     continue
                 cov = dense[yy2, xx2].mean()
+                top_cov = max(top_cov, float(cov))
                 if cov >= 0.97 and (best is None or abs(dy) + abs(dx) < best[0]):
                     best = (abs(dy) + abs(dx), dy, dx)
         if best is None:
-            twigs.append([int(sts[j, 0]), int(sts[j, 1]), int(sts[j, 4]), None])
+            twigs.append([int(sts[j, 0]), int(sts[j, 1]), int(sts[j, 4]), None, round(top_cov, 3)])
             continue
         _s, dy, dx = best
         src = mv[gy + dy, gx + dx]
@@ -1243,8 +1404,9 @@ def _rgb8(lab):
 def classic_spots(job):
     """Пятна спилов классики вида z<=1 в свободной зоне F (k=1): место, размер, средний цвет."""
     c1 = np.asarray(job.tree.compose(1), np.int16)
-    r, g, al = c1[..., 0], c1[..., 1], c1[..., 3]
-    thr = 90 if job.S == "FOREST" else 70
+    g1 = np.asarray(job.gtree.compose(1), np.int16) if job.gtree is not None else c1    # место - по геометрии
+    r, g, al = g1[..., 0], g1[..., 1], g1[..., 3]
+    thr = 90 if geom(job.S) == "FOREST" else 70
     m = (al > 128) & (r > g + 15) & (r > thr)
     n, lb, st, cen = cv2.connectedComponentsWithStats(m.astype(np.uint8), 8)
     _U, _own, F = job.masks(1)
@@ -1274,13 +1436,75 @@ def spots(rgba, S, scale):
     return out
 
 
-def spot_gate(world, S, frames):
-    """Число, место, размер, высота спилов кадров 48/50/51 против классики."""
+def spot_ref(world, S):
+    """Цвета классики своего набора (Lab) кадров 48/50/51: спилы и остальное, маска спилов - по геометрии."""
+    sp, rest = [], []
+    for f in CUT_SPOT_FRAMES:
+        a = np.asarray(tr.sprite(world, S, f), np.float32)
+        ag = np.asarray(tr.sprite(world, geom(S), f), np.int16)
+        thr = 90 if geom(S) == "FOREST" else 70
+        m = (ag[..., 3] > 128) & (ag[..., 0] > ag[..., 1] + 15) & (ag[..., 0] > thr)
+        sp.append(a[..., :3][m])
+        rest.append(a[..., :3][(ag[..., 3] > 128) & ~m])
+    sp, rest = np.concatenate(sp), np.concatenate(rest)
+    # палитра классики: цвет - спил, если в маске спилов он встречается чаще, чем вне её
+    cols, inv = np.unique(np.concatenate([sp, rest]).astype(np.uint8), axis=0, return_inverse=True)
+    inv = inv.reshape(-1)
+    n_sp = np.bincount(inv[:len(sp)], minlength=len(cols))
+    n_rest = np.bincount(inv[len(sp):], minlength=len(cols))
+    return _lab8(sp).mean(0), _lab8(rest).mean(0), _lab8(cols.astype(np.float32)), n_sp > n_rest
+
+
+def spots_lab(rgba, ref, scale, chains=None):
+    """Спилы HD производного дерева: непрозрачное, у которого ближайший (Lab) цвет классики 48/50/51 своего
+    набора - цвет спила. Сравнение со средним «остального» не годится: у RED рыжая хвоя ближе к спилу, чем
+    к среднему кроны, у SNOW среднее серое от снега и тёмная хвоя ушла в спилы (41 и 25 ложных пятен).
+    Мера другая, чем у FOREST (там правило цвета r > g+15): проверяется контролем на каноне FOREST.
+    chains (список) - тонкие цепочки переходного серого по краю снега (заполненность рамки < CHAIN_FILL и
+    толщина < CHAIN_THICK пикс базы) пишутся туда и спилом не считаются."""
+    a = np.asarray(rgba, np.float32)
+    L = _lab8(a[..., :3].reshape(-1, 3))
+    pal, is_sp = ref[2], ref[3]
+    near = np.empty(len(L), np.int64)
+    for i in range(0, len(L), 4096):
+        near[i:i + 4096] = np.linalg.norm(L[i:i + 4096, None, :] - pal[None], axis=-1).argmin(1)
+    m = (a[..., 3] > 128) & is_sp[near].reshape(a.shape[:2])
+    n, lb, st, cen = cv2.connectedComponentsWithStats(m.astype(np.uint8), 8)
+    minpx = 2 if scale == 1 else 8
+    out = []
+    for j in range(1, n):
+        if st[j, 4] < minpx:
+            continue
+        if scale > 1 and chains is not None:
+            fill = st[j, 4] / float(st[j, 2] * st[j, 3])
+            thick = 2 * float(cv2.distanceTransform(np.pad((lb == j).astype(np.uint8), 1), cv2.DIST_L2, 3).max())
+            if fill < CHAIN_FILL and thick < CHAIN_THICK * scale:
+                chains.append([round(st[j, 4] / scale ** 2, 1), round(fill, 2), round(thick / scale, 2)])
+                continue
+        out.append((st[j, 4] / scale ** 2, (cen[j][0] / scale, cen[j][1] / scale), st[j, 3] / scale))
+    return out
+
+
+def spot_gate(world, S, frames, lab_measure=None):
+    """Число, место, размер, высота спилов кадров 48/50/51 против классики. Производное дерево (или
+    lab_measure=True, контроль на FOREST) - HD по мере spots_lab, классика - правилом цвета по геометрии."""
     rep = {}
     ok = True
+    der = (S in tr.DERIVED) if lab_measure is None else lab_measure
+    ref = spot_ref(world, S) if der else None
+    if der:
+        rep["measure"] = "spots_lab: Lab nearest classic colour, %d of %d spot colours (spot mean %s)" % (
+            int(ref[3].sum()), len(ref[3]), [round(float(v), 1) for v in ref[0]])
     for f in CUT_SPOT_FRAMES:
-        cl = spots(tr.sprite(world, S, f), S, 1)
-        hd = spots(frames[f], S, 4)
+        cl = spots(tr.sprite(world, geom(S), f), geom(S), 1)
+        chains = []
+        hd = spots_lab(frames[f], ref, 4, chains) if der else spots(frames[f], S, 4)
+        if der:
+            rep.setdefault("chains", {})[f] = chains
+            # спил классики - связное пятно от 2 пикселей; меньше SPECK_MAX - крапина края снега или блик хвои
+            # (замер 12.10: лишние у RED, BLACK, SNOW 0.5-1.2, настоящие спилы от 1.8, синтетический лишний ~3)
+            rep.setdefault("specks", {})[f] = [round(h[0], 1) for h in hd if h[0] < SPECK_MAX]
+            hd = [h for h in hd if h[0] >= SPECK_MAX]
         rows = []
         used = set()
         for ac, cc, hc in cl:
@@ -1351,7 +1575,7 @@ def do_render(args, world, CL, hints):
     done = 0
     t0 = time.time()
     for seed in args.seeds:
-        for S in tr.SETS:
+        for S in args.sets:
             job = Job2(world, CL, hints, S, seed, args)
             for rel in args.release:
                 p = job.raw_z1(rel)
@@ -1378,7 +1602,7 @@ def do_render(args, world, CL, hints):
 # ---------------------------------------------------------------- сборка
 
 def do_masks(args, world, CL, hints):
-    for S in tr.SETS:
+    for S in args.sets:
         for seed in args.seeds:
             job = Job2(world, CL, hints, S, seed, args)
             frames, src, info = job.base()
@@ -1408,11 +1632,12 @@ def z0_sheet(job, path):
 
 
 def do_assemble(args, world, CL, hints):
-    summary = {}
-    over = {S: [] for S in tr.SETS}
+    over = {S: [] for S in args.sets}
     suf = "_comp" if args.z1_composite else ""        # сводка V2 не затирается
+    sp = os.path.join(args.out, "summary%s.json" % suf)
+    summary = json.load(open(sp, encoding=ENC)) if os.path.exists(sp) else {}    # другие наборы не затираются
     for seed in args.seeds:
-        for S in tr.SETS:
+        for S in args.sets:
             job = Job2(world, CL, hints, S, seed, args)
             frames0, src0, info = job.base()
             t = job.tree
@@ -1554,6 +1779,8 @@ def main():
     ap.add_argument("--out", default=OUT)
     ap.add_argument("--v1", default=V1)
     ap.add_argument("--seeds", default="2711,2712")
+    ap.add_argument("--sets", default=",".join(tr.SETS), help="наборы через запятую (производные: %s)"
+                    % ",".join(tr.DERIVED))
     ap.add_argument("--release", default="0.85,0.7", help="сигмы, до которых свободное держится классикой")
     ap.add_argument("--steps", type=int, default=40)
     ap.add_argument("--cfg", type=float, default=4.0)
@@ -1573,6 +1800,10 @@ def main():
     args = ap.parse_args()
     args.seeds = [int(s) for s in args.seeds.split(",")]
     args.release = [float(s) for s in args.release.split(",")]
+    args.sets = [s for s in args.sets.split(",") if s]
+    bad = [s for s in args.sets if s not in tr.SETS + tr.DERIVED]
+    if bad:
+        raise SystemExit("неизвестные наборы %s" % bad)
     sys.stdout.reconfigure(encoding="utf-8")
     os.makedirs(args.out, exist_ok=True)
     world = mm.World()
