@@ -53,6 +53,15 @@ SEAM_SOFT = 4                          # строк над и под швом z<
 # составной срез z1 (--z1-composite): сдвиги клона тела яруса MAIN (x4) и материал крышек - пень FOREST:58 s2712
 CLONE_SHIFTS = ((16, 0), (32, 0), (16, 16), (16, -16), (48, 0), (32, 32), (32, -32), (64, 0))
 STUMP_SRC = "census/trees/forest42/render_v1/s2712/stumps/FOREST.PCK/58.png"
+# просветы внутри кроны (решение 12.10): MAIN мёртвого дерева сквозит между ветками, на сборке это квадраты пола.
+# Только набор из списка (канон FOREST не трогается), только дыры в глубине кроны (оболочка HOLE_HULL x4 минус
+# полоса HOLE_MARGIN у края: кромка из веток - силуэт, её не трогаем), заливка ПОД существующим - клон MAIN
+# того же дерева со сдвигом; непрозрачное, силуэт и спилы не меняются
+HOLE_FILL_SETS = ("FOREST_WASTE",)
+HOLE_HULL = 15
+HOLE_MARGIN = 12
+HOLE_SHIFTS = CLONE_SHIFTS + ((-16, 0), (-32, 0), (0, 16), (0, -16), (-16, 16), (-16, -16), (0, 32), (0, -32),
+                              (48, 48), (48, -48), (-32, 32), (-32, -32), (96, 0), (0, 64), (0, -64))
 def _js(o):
     """numpy-скаляры (bool_, float32) в json."""
     return o.item() if hasattr(o, "item") else str(o)
@@ -77,11 +86,63 @@ def pos_box(q):
     return (x * 4, y * 4, x * 4 + 128, y * 4 + 160)
 
 
-def frame_from(view, q):
-    """Кадр x4: вид под маской рисования куска на его месте."""
+def frame_from(view, q, extra=None):
+    """Кадр x4: вид под маской рисования куска на его месте; extra - добавка к маске x4 (0..1) в координатах кадра."""
     v = np.asarray(view, np.uint8).copy()
-    v[..., 3] = (v[..., 3] * tr.rep4(q["draw"])).astype(np.uint8)
+    d = tr.rep4(q["draw"]).astype(np.float32)
+    if extra is not None:
+        x0, y0, x1, y1 = pos_box(q)
+        d[y0:y1, x0:x1] = np.maximum(d[y0:y1, x0:x1], extra)
+    v[..., 3] = np.round(v[..., 3] * d).astype(np.uint8)
     return Image.fromarray(v).crop(pos_box(q))
+
+
+def draw_extra(t, q, view):
+    """Добавка к маске кадра q (x4, его координаты, 0..1): кайма других экземпляров того же кадра. У экземпляра
+    нижнего этажа соседей меньше и кайма шире - на срезе z<=1 кадр, вырезанный по верхнему экземпляру, оставлял
+    квадратные просветы. Только в глубине кроны (crown_interior) и на срезе экземпляра, и на полном виде; край
+    добавки - мягкий, пучками хвои вида (_soft), а не прямой срез по оболочке."""
+    deep = {}
+
+    def interior(z):
+        if z not in deep:
+            u = np.zeros_like(q["draw"])
+            for p in t.pcs:
+                if p["z"] <= z:
+                    u |= p["draw"]
+            deep[z] = crown_interior(tr.rep4(u).astype(np.float32) * 255.0)
+        return deep[z]
+
+    def win(m, p):
+        x0, y0, x1, y1 = pos_box(p)
+        return m[y0:y1, x0:x1]
+
+    ext = np.zeros((160, 128), bool)
+    for p in t.pcs:
+        if p["f"] == q["f"] and p is not q:
+            ext |= win(tr.rep4(p["draw"]), p) & win(interior(p["z"]), p)
+    own = win(tr.rep4(q["draw"]), q)
+    ext &= win(interior(t.top), q) & ~own
+    if not ext.any():
+        return None
+    eb = ext.reshape(40, 4, 32, 4).mean((1, 3)) > 0.5
+    x, y = q["at"]
+    v = np.asarray(Image.fromarray(np.asarray(view, np.uint8)).crop(pos_box(q)), np.float32)
+    Y = v[..., :3].mean(-1)
+    c = dict(tn=np.clip((cv2.GaussianBlur(Y, (0, 0), 1.5) - cv2.GaussianBlur(Y, (0, 0), 6)) / 14.0, -1, 1))
+    soft = _soft(c, eb | q["draw"][y:y + 40, x:x + 32])
+    near = cv2.dilate(ext.astype(np.uint8), np.ones((2 * EDGE_R + 1, 2 * EDGE_R + 1), np.uint8)) > 0
+    return np.where(near & ~own, soft, 0).astype(np.float32)
+
+
+def frame_filled(view0, view, q, extra=None):
+    """Кадр из вида с залитыми просветами (fill_crown_holes): под маской рисования - залитый вид, вне её RGB
+    незалитого view0 (кромка edge_rule берёт продолжение оттуда - край и обрезы кадра прежние)."""
+    a = np.asarray(frame_from(view, q, extra)).copy()
+    b = np.asarray(frame_from(view0, q))
+    out = a[..., 3] == 0
+    a[out] = b[out]
+    return Image.fromarray(a)
 
 
 # ---------------------------------------------------------------- кромка кадра по всем раскладкам
@@ -273,6 +334,89 @@ def edge_rule(world, CL, S, frames, srcs, fam):
                             fade_px=int((a8 < c8).sum()), cut_sides="".join(s for s, m in cut.items() if m.any()),
                             t1_gated_px=gated, t1_seam_px=int(t1_seam.sum()))
     return out, info
+
+
+def crown_interior(alpha):
+    """Глубина кроны: оболочка (замыкание HOLE_HULL и заливка закрытого) минус полоса HOLE_MARGIN x4 у её края.
+    Кружевная кромка и ступени нижнего края - это силуэт, в глубину они не входят."""
+    solid = (alpha >= 128).astype(np.uint8)
+    k = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (HOLE_HULL, HOLE_HULL))
+    cl = cv2.morphologyEx(solid, cv2.MORPH_CLOSE, k)
+    H, W = alpha.shape
+    pad = np.pad(1 - cl, 1, constant_values=1)
+    mk = np.zeros((H + 4, W + 4), np.uint8)
+    cv2.floodFill(pad, mk, (0, 0), 2)
+    hull = (pad[1:-1, 1:-1] != 2).astype(np.uint8)
+    e = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2 * HOLE_MARGIN + 1, 2 * HOLE_MARGIN + 1))
+    return cv2.erode(hull, e) > 0
+
+
+ENV_HULL = 31
+
+
+def envelope_gate(world, CL, S, frames, ref):
+    """Заливка просветов не выходит за прежний наружный силуэт: добавленное к ref (альфа выше прежней)
+    допускается только там, где место кадра во ВСЕХ раскладках и этажах лежит внутри оболочки сборки из ref
+    (замыкание ENV_HULL x4 и заливка закрытого); у края допуска - мягкий сход. Возвращает кадры и число
+    срезанных пикселей."""
+    core = {f: np.asarray(ref[f], np.float32) / 255.0 for f in ref}
+    allow = {f: np.ones((160, 128), bool) for f in frames}
+    k = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (ENV_HULL, ENV_HULL))
+    for _name, _zmax, rows in _layouts(world, CL, S):
+        _rgb, al, _own, org = _compose(rows, lambda i, f: core[f])
+        solid = np.pad((al >= 0.5).astype(np.uint8), ENV_HULL)
+        cl = cv2.morphologyEx(solid, cv2.MORPH_CLOSE, k)
+        pad = np.pad(1 - cl, 1, constant_values=1)
+        mk = np.zeros((pad.shape[0] + 2, pad.shape[1] + 2), np.uint8)
+        cv2.floodFill(pad, mk, (0, 0), 2)
+        hull = (pad[1:-1, 1:-1] != 2)[ENV_HULL:-ENV_HULL, ENV_HULL:-ENV_HULL]
+        for i, r in enumerate(rows):
+            if r[1] in allow:
+                allow[r[1]] &= _local(hull, org, rows, i)
+    out, cut = dict(frames), 0
+    for f in frames:
+        a = np.asarray(frames[f]).copy()
+        r = np.asarray(ref[f])
+        add = a[..., 3] > r[..., 3]
+        if not (add & ~allow[f]).any():
+            continue
+        w = cv2.GaussianBlur(cv2.erode(allow[f].astype(np.uint8), np.ones((3, 3), np.uint8)).astype(np.float32),
+                             (0, 0), 1.5) * allow[f]
+        lim = np.maximum(r[..., 3].astype(np.float32), a[..., 3] * w)
+        cut += int((add & (a[..., 3] >= 128) & (lim < 128)).sum())
+        a[..., 3] = np.where(add, np.minimum(a[..., 3], np.round(lim)), a[..., 3]).astype(np.uint8)
+        out[f] = Image.fromarray(a, "RGBA")
+    return out, cut
+
+
+def crown_holes(alpha):
+    """Просветы внутри кроны: прозрачное (< 128) в глубине кроны (crown_interior)."""
+    return crown_interior(alpha) & (alpha < 128)
+
+
+def fill_crown_holes(view, main):
+    """Вид x4 с залитыми просветами кроны: под существующим (вид поверх заливки) - клон MAIN того же дерева
+    со сдвигом (первый сдвиг, где MAIN плотный). Непрозрачные пиксели вида не меняются; вне просветов и их
+    каймы 2 пикс вид не меняется вовсе. Возвращает вид и число залитых пикселей."""
+    v = np.asarray(view, np.float32)
+    m = np.asarray(main, np.float32)
+    holes = crown_holes(v[..., 3])
+    zone = cv2.dilate(holes.astype(np.uint8), np.ones((5, 5), np.uint8)) > 0
+    fcol = np.zeros(v.shape[:2] + (3,), np.float32)
+    have = np.zeros(v.shape[:2], bool)
+    for dy, dx in HOLE_SHIFTS:
+        sh = np.roll(np.roll(m, -dy, 0), -dx, 1)
+        ok = zone & ~have & (sh[..., 3] > 230)
+        fcol[ok] = sh[..., :3][ok]
+        have |= ok
+    a = v[..., 3:] / 255.0
+    out = v.copy()
+    w = have[..., None]
+    out[..., :3] = np.where(w, v[..., :3] * a + fcol * (1 - a), v[..., :3])
+    out[..., 3] = np.where(have, 255.0, v[..., 3])
+    left = int((holes & ~have).sum())
+    return Image.fromarray(np.clip(np.round(out), 0, 255).astype(np.uint8), "RGBA"), \
+        dict(holes_px=int(holes.sum()), filled_px=int((have & (v[..., 3] < 255)).sum()), left_px=left)
 
 
 def place(t, frame, q):
@@ -689,16 +833,23 @@ class Job2(tr.Job):
         if self.S in ("FOREST", "FOREST_WASTE") and args.recolour:
             v0, v2, info["f57"] = f57_details(self, v0, v2, q57, i57, shift=self.S == "FOREST")
         info["z0"]["seam_v2"] = seam_numbers(v0, q57, zinfo["seam_row"], zinfo["classic_cx"])
+        v2n = v2                                          # без заливки: из него кромка edge_rule
+        if self.S in HOLE_FILL_SETS:                      # просветы кроны: под существующим - клон MAIN
+            v2, info["holes_v2"] = fill_crown_holes(v2, v2)
         frames, src = {}, {}
         self.views = {}                                   # откуда вырезан кадр - для кромки (edge_rule)
+        self.frames_ref = {}                              # кадры без заливки просветов - для envelope_gate
         for q in t.pcs:
             f = q["f"]
             if f in FULL_FRAMES and q["z"] == t.top:
-                frames[f], src[f] = frame_from(v2, q), "FULL"
-                self.views[f] = (v2, q)
+                ext = draw_extra(t, q, v2) if self.S in HOLE_FILL_SETS else None
+                frames[f], src[f] = frame_filled(v2n, v2, q, ext), "FULL"
+                self.views[f] = (v2n, q)
+                self.frames_ref[f] = frame_from(v2n, q)
             elif f == 57:
                 frames[f], src[f] = frame_from(v0, q), "Z0_EXPOSED"
                 self.views[f] = (v0, q)
+                self.frames_ref[f] = frames[f]
         self.v0, self.v2, self.q57 = v0, v2, q57
         return frames, src, info
 
@@ -1272,7 +1423,12 @@ def do_assemble(args, world, CL, hints):
                     lockc, _lock4 = job.lock_z1(frames0)
                     comp, terr, cinfo, comp0, capown = job.z1_composite()
                     v1 = job.view1_comp(comp, terr, lockc)
-                    v1n = np.asarray(job.view1_comp(comp0, terr, lockc), np.uint8)
+                    v1n = job.view1_comp(comp0, terr, lockc)
+                    v1_0, v1n_0 = v1, np.asarray(v1n, np.uint8)
+                    if S in HOLE_FILL_SETS:
+                        v1, info["holes_v1"] = fill_crown_holes(v1, job.v2)
+                        v1n, _hn = fill_crown_holes(v1n, job.v2)
+                    v1n = np.asarray(v1n, np.uint8)
                     tag = "comp"
                 else:
                     p = job.raw_z1(rel)
@@ -1287,23 +1443,31 @@ def do_assemble(args, world, CL, hints):
                         print("  %s s%d r%.2f: ответа нет - пропуск" % (S, seed, rel))
                         continue
                     v1, cut4 = job.view1(raw1, lockc, lock4)
+                    v1_0 = v1
                 frames, src = dict(frames0), dict(src0)
                 views = dict(job.views)
+                ref = dict(job.frames_ref)
                 for j, q in enumerate(t.pcs):
                     if q["f"] in Z1_FRAMES:
-                        vq = v1
+                        vq, vq0 = v1, v1_0
                         if rel is None:     # крышка чужого куска в кадр не идёт: в T2 48 и 50 меняются местами
                             alien = (capown >= 0) & (capown != j)
                             if alien.any():
                                 a = np.asarray(v1, np.uint8).copy()
                                 a[alien] = v1n[alien]
                                 vq = Image.fromarray(a)
-                        frames[q["f"]] = frame_from(vq, q)
-                        views[q["f"]] = (vq, q)
+                                a = np.asarray(v1_0, np.uint8).copy()
+                                a[alien] = v1n_0[alien]
+                                vq0 = Image.fromarray(a)
+                        frames[q["f"]] = frame_filled(vq0, vq, q)
+                        views[q["f"]] = (vq0, q)
+                        ref[q["f"]] = frame_from(vq0, q)
                         src[q["f"]] = "Z1_EXPOSED"
                 miss = [f for f in range(42, 58) if f not in frames]
                 if miss:
                     raise SystemExit("нет канона кадров %s" % miss)
+                if S in HOLE_FILL_SETS:
+                    frames, info["envelope_cut_px"] = envelope_gate(world, CL, S, frames, ref)
                 frames, edge = edge_rule(world, CL, S, frames, views, src)
                 od = os.path.join(job.d2, tag)
                 fd = os.path.join(od, "frames", S + ".PCK")
