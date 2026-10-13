@@ -492,6 +492,50 @@ RETRY = {
              "alternating left and right along the whole height of the trunk",
     "TG067": "one small palm with a very short light brown trunk and a low crown of long drooping bright green fronds "
              "spreading sideways to the left and right, much wider than tall",
+    # партия 5 (папка batch5_retry, вердикт специалиста 14.10): BU001 - густой разноцветный крап, зелень теряется;
+    # BU006 - правильный конус; BU008/BU034 - два стриженых шара; BU012 - круглая изгородь вместо саженца; BU013 -
+    # тёмный клубок вместо оранжевой массы; BU014/BU033 - пятнистый пиксельный снег; BU016/BU023/BU026 - клумбы
+    # с кирпичной кладкой вместо камней; BU018 - правильная пирамида; BU027 - блок с палками; BU029 - колонка
+    # плоских розеток; BU039 - плоская подложка; BU043 - тёмное пятно с грибом; BU044 - прямоугольная колонна;
+    # BU045 - розовые завитки главным; BU046 - густая колючая розетка; BU047 - пропала вода
+    "BU001": "a low flat bed of dense small green leaves filling the cell, mostly green, with only about ten tiny red "
+             "and light blue flowers here and there",
+    "BU006": "one tall uneven ragged bush of dark green leaves with a lumpy irregular outline, many small dark red "
+             "berries all over it",
+    "BU008": "a low wide sprawling bush of dark green leaves with a ragged outline, leafy branches reaching out to "
+             "the sides, the top dipping slightly in the middle",
+    "BU034": "a low wide sprawling bush of very dark green broad pointed leaves with a ragged outline, leaves hanging "
+             "outward over the sides, the top dipping slightly in the middle",
+    "BU012": "one tall narrow jungle sapling with a thin dark brown trunk and a few uneven tiers of dark and bright "
+             "green leaves on short branches, the trunk visible between the tiers",
+    "BU013": "a low wide dense mass of dry twigs and dead leaves in bright rust orange and reddish brown, the orange "
+             "filling the whole mass",
+    "BU014": "a low wide tangle of thin dark brown twigs, every twig coated in smooth solid white snow and frost, "
+             "mostly white with thin dark gaps",
+    "BU033": "a low wide tangle of thin dark red brown twigs, every twig coated in smooth solid white and light grey "
+             "snow, mostly white with thin dark red lines",
+    "BU016": "a low flat uneven carpet of dense dark green leaves with many small red berries lying on the ground, "
+             "one small rough grey rock at its left end, soft ragged edges",
+    "BU023": "a dense mound of dark green leaves with small red berries growing over a few rough natural grey "
+             "boulders, uneven rubble stones, the leaves hanging over the edges of the stones",
+    "BU026": "a dense mound of green and brown leaves with small red berries growing over a few rough natural grey "
+             "boulders, uneven rubble stones, the leaves hanging over the edges of the stones",
+    "BU018": "a low uneven rounded lumpy mound of green and brown leaves with a few small red berries",
+    "BU027": "a ledge of rough natural grey stones, its top completely covered by a dense layer of green plants with "
+             "dark red stems",
+    "BU029": "one tall narrow flower spike densely covered with small round fluffy yellow and orange blossom clusters "
+             "of different sizes like a bunch of grapes, dark red shadows between them",
+    "BU039": "one low dense clump of upright green grass and leafy weeds on a small patch of grey gravel",
+    "BU043": "one low jungle plant with a few broad dark green leaves spread apart and five pale pinkish grey curled "
+             "tips at the ends of the leaves, growing out of flat dark green grass covering the ground",
+    "BU044": "one tall upright oval bush with a rounded top, small green leaves mixed with dark brownish purple and "
+             "grey dry leaves",
+    "BU045": "one jungle plant made mostly of dark and bright green leaves, with one thin pinkish grey bare branch "
+             "curving up to the left",
+    "BU046": "one dry dead plant, about eight thick bare pinkish grey brown branches spreading out from a dark centre, "
+             "sparse with wide gaps between them",
+    "BU047": "a square patch of shallow dark teal water edged with grass, a low clump of thin dark green reeds "
+             "standing in the water at one side, the water clearly visible",
 }
 
 
