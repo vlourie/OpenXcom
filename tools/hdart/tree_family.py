@@ -121,6 +121,64 @@ MODULES = {
 # VILFRNITURE:101 (пень) отличается от FOREST:58 - отдельное решение после SAFE (не здесь)
 COPY_OF = {"TG060": dict(src="FOREST", shift=43,
                          frames="census/trees/forest42/render_v2/s2712/FOREST/comp/frames/FOREST.PCK")}
+# партия 1 конвейера (решение специалиста 13.10): одиночные деревья в одну клетку и один этаж - один рендер MAIN,
+# без срезов и кромок; раскладки - группы копий того же кадра по картам (batch1_layouts.json, строит перепись
+# hits.pkl), главная - одна клетка. Пни die - отдельный класс STUMP, здесь не рисуются. Подсказки - по классике
+SINGLE_OUT = "census/trees/groups/batch1"
+SINGLE_LAYOUTS = "census/trees/groups/batch1_layouts.json"
+GRASS = ", standing on a square patch of green grass"
+SINGLES = {
+    "TG002": "one apple tree with a dense rounded crown of dark green leaves dotted with small red apples and a "
+             "short dark brown trunk",
+    "TG006": "one apple tree with a dense rounded crown of dark green leaves dotted with small red apples and a "
+             "short dark brown trunk" + GRASS,
+    "TG008": "one small slender fir tree with a narrow cone of dark blue green needle branches and a thin dark "
+             "trunk",
+    "TG012": "one broadleaf tree with a dense rounded crown of green leaves and a short dark brown trunk" + GRASS,
+    "TG016": "one broadleaf tree with a dense rounded crown of light and dark green leaves and a thin dark brown "
+             "trunk with a few branches below the crown" + GRASS,
+    "TG017": "one small bare leafless sapling with a thin dark trunk and thin upright twigs covered with white "
+             "snow, standing on a square patch of white snow",
+    "TG018": "one small palm tree with a curved leaning light brown trunk and a crown of bright green fronds" + GRASS,
+    "TG022": "one palm tree with a thin curved light grey brown trunk and a crown of long bright and dark green "
+             "fronds" + GRASS,
+    "TG025": "one small young fir tree with a narrow cone of very dark green needle branches with white snow on "
+             "their upper surfaces and a thin dark trunk",
+    "TG026": "one bare dead tree with a dark brown trunk and a few thin twisted bare branches, standing on a "
+             "square patch of dark brown earth",
+    "TG027": "one broadleaf tree with a broad dense crown of dark green leaves and a short dark brown trunk with "
+             "roots",
+    "TG029": "one tall broadleaf tree with a dense crown of dark green leaves and a short dark trunk with roots",
+    "TG032": "one broadleaf tree with a rounded dense crown of green leaves and a short dark trunk with small "
+             "dark red roots",
+    "TG033": "one small bare dead tree with a black trunk forking into a few thin black bare branches",
+    "TG034": "one tall thin bare dead tree with a straight dark grey trunk and short thin bare dark grey branches",
+    "TG039": "one dead dry tree trunk leaning steeply to the left, pale orange brown wood with a few bare broken "
+             "branches at the top, on a small patch of bright orange sand at its base",
+    "TG040": "one bare dead tree with a twisted black trunk and twisted bare black branches, standing on a square "
+             "patch of grey and tan dirt",
+    "TG041": "one small round tree with a dense crown of bright and dark green leaves and a short dark brown trunk",
+    "TG042": "one broadleaf tree with a dense crown of dark green leaves, a dark brown trunk with branches visible "
+             "inside the crown" + GRASS,
+    "TG043": "one burnt dead tree with a charred black trunk and a few bare charred branches, on a small patch "
+             "of bright orange sand at its base",
+}
+
+# Повтор брака партии 1 (один на семейство, --retry, папка SINGLE_OUT + "_retry"): описание по классике кадра, а не
+# по слову (R-007). TG006 - яблоки шли полосами; TG012 - круглый дуб вместо дерева джунглей; TG017 - чёрные ветки,
+# у классики светло-серые в инее; TG022 - бледный ствол, у классики бурый; TG026 - гладкая плита вместо комковатой земли
+RETRY = {
+    "TG006": "one apple tree with a dense rounded crown of dark green leaves, small single round red apples scattered "
+             "sparsely and unevenly over the whole crown, and a short dark brown trunk" + GRASS,
+    "TG012": "one jungle tree with an irregular ragged crown made of separate clumps of pointed dark green leaves, "
+             "thin brown branches visible between the clumps, and a short brown trunk" + GRASS,
+    "TG017": "one small bare leafless sapling with a light grey frosted trunk and many thin upright pale grey twigs "
+             "coated with white frost, standing on a square patch of white snow",
+    "TG022": "one palm tree with a thin curved dark brown trunk and a crown of long bright and dark green fronds"
+             + GRASS,
+    "TG026": "one bare dead tree with a dark brown trunk and a few thin twisted bare branches, standing on a "
+             "square patch of rough lumpy dark reddish brown earth",
+}
 
 
 def module_layouts(M):
@@ -143,6 +201,8 @@ def module_layouts(M):
 def load(fams):
     """CL - на семейство: у модулей ели два семейства в одном наборе FOREST."""
     D = json.load(open(LAYOUTS, encoding=ENC))
+    if any(f in SINGLES for f in fams):
+        D.update(json.load(open(SINGLE_LAYOUTS, encoding=ENC)))
     CLs, sets = {}, {}
     for fid in fams:
         if fid in MODULES:
@@ -158,7 +218,7 @@ def load(fams):
 def patch(fid, S, CL):
     """Подсказки и пни одного семейства в ядро V1; свободный срез z1 не рисуется (S в tr.DERIVED -> только z0).
     Модуль без среза (крона ели на одном этаже) - DERIVED пуст, срезов нет вовсе."""
-    F = FAMILIES.get(fid) or MODULES[fid]
+    F = FAMILIES.get(fid) or MODULES.get(fid) or dict(main=SINGLES[fid])
     tr.TREE_WHAT.clear()
     tr.CUT_WHAT.clear()
     tr.STUMPS.clear()
@@ -192,17 +252,29 @@ def main():
     ap.add_argument("--max-renders", type=int, default=4, dest="max_renders")
     ap.add_argument("--mask-only", action="store_true", dest="mask_only", help="листы масок, без модели")
     ap.add_argument("--assemble", action="store_true", help="кадры, все раскладки, сканер швов - без модели")
+    ap.add_argument("--retry", action="store_true", help="повтор брака: описания RETRY, папка %s_retry" % SINGLE_OUT)
     args = ap.parse_args()
     sys.stdout.reconfigure(encoding="utf-8")
     fams = [f for f in args.fam.split(",") if f]
-    bad = [f for f in fams if f not in FAMILIES and f not in MODULES and not (args.assemble and f in COPY_OF)]
+    if args.retry:
+        miss = [f for f in fams if f not in RETRY]
+        if miss:
+            raise SystemExit("--retry: нет описания повтора у %s" % miss)
+        SINGLES.update({f: RETRY[f] for f in fams})
+        if args.out is None:
+            args.out = SINGLE_OUT + "_retry"
+    bad = [f for f in fams if f not in FAMILIES and f not in MODULES and f not in SINGLES
+           and not (args.assemble and f in COPY_OF)]
     if bad:
         raise SystemExit("неизвестные семейства %s" % bad)
     mods = [f for f in fams if f in MODULES]
     if mods and len(mods) != len(fams):
         raise SystemExit("модули пробы %s и семейства партии - разными запусками" % mods)
+    singles = [f for f in fams if f in SINGLES]
+    if singles and len(singles) != len(fams):
+        raise SystemExit("одиночные %s и семейства партии A - разными запусками" % singles)
     if args.out is None:
-        args.out = MODULE_OUT if mods else OUT
+        args.out = MODULE_OUT if mods else SINGLE_OUT if singles else OUT
     args.seeds = [int(s) for s in args.seeds.split(",")]
     args.stumps = set()
     D, CLs, sets = load(fams)

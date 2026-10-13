@@ -85,6 +85,52 @@ def view0(job, hd, g, tp, V):
                                     free_cells=round(float(free.mean()), 3))
 
 
+CROWN_FILL_MIN_GREEN = 256    # пикс x4 листвы классики в зоне U, ниже - заливку не делать
+
+
+def crown_fill(job, V):
+    """Вид z<=0, где классика кадра z0 несёт низ кроны (TG037 63): срез V1 там рисует обрубленную лесенкой
+    крону и оставляет пустым то, что у классики листва. Под срезом в зоне U (своя часть z0) - MAIN, ограниченный
+    силуэтом классики вида z<=0 с запасом grow; срез ложится поверх. Где срез непрозрачен, ничего не меняется."""
+    t, b = job.tree, job.box
+    lim = tr.sil_limit(job.frame_z(0), job.args.grow)
+    L4 = np.zeros((t.H * 4, t.W * 4), np.float32)
+    y0, x0 = b[1] * 4, b[0] * 4
+    L4[y0:y0 + lim.shape[0], x0:x0 + lim.shape[1]] = lim[:L4.shape[0] - y0, :L4.shape[1] - x0]
+    c = np.asarray(job.frame_z(0).convert("RGBA"), np.float32)
+    green = (c[..., 3] > 0) & (c[..., 1] > c[..., 0] + 8)
+    gw = cv2.GaussianBlur(np.repeat(np.repeat(green, 4, 0), 4, 1).astype(np.float32), (0, 0), 1.5)
+    G4 = np.zeros_like(L4)
+    G4[y0:y0 + gw.shape[0], x0:x0 + gw.shape[1]] = gw[:L4.shape[0] - y0, :L4.shape[1] - x0]
+    U, own, _F = job.masks(0)
+    R = tr.rep4(U) & (tr.rep4(own) == 0)
+    green_in_zone = int((R & (G4 > 0.5)).sum())
+    if green_in_zone < CROWN_FILL_MIN_GREEN:     # у классики в зоне нет листвы (пень пальмы TG021 64) - MAIN не нужен
+        return dict(skipped=True, green_in_zone_px=green_in_zone, zone_px=int(R.sum()))
+    v = np.asarray(V[0], np.float32)
+    m = np.asarray(V[t.top], np.float32)
+    v[R, 3] *= 1.0 - G4[R]                   # листва классики - из MAIN; срез остаётся на стволе и спиле
+    va = v[..., 3:] / 255.0
+    ba = (m[..., 3] * L4)[..., None] / 255.0 * (1.0 - va)
+    oa = va + ba
+    rgb = (v[..., :3] * va + m[..., :3] * ba) / np.maximum(oa, 1e-6)
+    out = v.copy()
+    out[R, :3] = rgb[R]
+    out[R, 3] = (oa[..., 0] * 255.0)[R]
+    if os.environ.get("CROWN_DEBUG"):
+        dbg = np.asarray(V[0]).copy()
+        dbg[R, 0] = 255
+        dbg[G4 > 0.5, 2] = 255
+        Image.fromarray(dbg).save(os.environ["CROWN_DEBUG"])
+    v0 = np.asarray(V[0])[..., 3]
+    filled = int((R & (v0 < 128) & (out[..., 3] >= 128)).sum())
+    replaced = int((R & (v0 >= 128) & (G4 > 0.5)).sum())
+    V[0] = Image.fromarray(np.clip(out + 0.5, 0, 255).astype(np.uint8))
+    return dict(filled_px=filled, replaced_px=replaced, zone_px=int(R.sum()),
+                zone_opaque_px=int((R & (v0 >= 128)).sum()), classic_green_px=int((G4 > 0.5).sum()),
+                green_in_zone_px=int((R & (G4 > 0.5)).sum()))
+
+
 def body_mask(a, S1):
     """Тело ствола пальмы в MAIN: плотный пиксель у силуэта классики. Ни насыщенность, ни оттенок кору от
     листьев не отличают: теневая сторона коры (29,48,17) насыщенна, как лист; светлый край ствола после матта
@@ -421,6 +467,8 @@ def assemble_v1(args, fid, S, world, CL, hints, seed):
         V = {t.top: tr.paste4(main, job.box, t)}
         V[0], st0 = view0(job, hd, g, tp, V)
         stats = {"z0": st0}
+    if t.top > 0:
+        stats["crown_fill"] = crown_fill(job, V)
     if t.top == 2:
         V[1], stats["z1_code"] = palm_view1(job, V, world)
     elif t.top > 2:
@@ -591,6 +639,68 @@ def grid_heal(world, S, frames, valpha=None):
             a[..., 3] = np.clip(np.round(new), 0, 255).astype(np.uint8)
         frames[f] = Image.fromarray(a, "RGBA")
         info[str(f)] = st
+    return info
+
+
+ACCENT_RATIO = 1.8           # красного HD больше, чем красного классики x16, во столько раз - кадр правится
+ACCENT_MIN = 150             # x4: и столько красного HD вне запаса классики (шум коры TG011 32/33 - 83-167)
+ACCENT_GROW = 3              # x4: запас вокруг красного классики
+ACCENT_SHIFTS = sorted(((dy, dx) for dy in range(-64, 65, 8) for dx in range(-48, 49, 8) if abs(dy) + abs(dx) >= 16),
+                       key=lambda s: (s[0] < 0, abs(s[0]) + abs(s[1])))    # сначала снизу: под спилом - листва
+
+
+def _accent(a):
+    r, g, b = (a[..., i].astype(np.int32) for i in range(3))
+    return (a[..., 3] > 128) & (r > g + 30) & (r > b + 10)
+
+
+def accent_limit(world, S, frames, fs):
+    """Спилы на верхах кроны (TG035 49/51): у классики мелкие красные обрубки и веточки, модель рисует их крупными
+    дисками торца. В кадре, где красного HD много больше, чем у классики, красное (с каймой) заменяется листвой
+    клоном из того же кадра в пределах силуэта классики (вне силуэта - прозрачно), поверх - обрубки по форме
+    красного классики x4 мягко, цвет классики, фактура - яркость прежнего красного HD. fs - кадры кроны, без
+    нижнего этажа (ствол у земли шире классики нарочно, R-319). Меняет frames на месте."""
+    info = {}
+    el = lambda r: cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2 * r + 1, 2 * r + 1))
+    for f in fs:
+        a = np.asarray(frames[f]).copy()
+        c = np.asarray(tr.sprite(world, S, f).convert("RGBA"))
+        c4 = tr.rep4(_accent(c))
+        hr = _accent(a)
+        out = hr & ~(cv2.dilate(c4.astype(np.uint8), el(ACCENT_GROW)) > 0)
+        if hr.sum() <= ACCENT_RATIO * c4.sum() or out.sum() < ACCENT_MIN:
+            continue
+        zone = cv2.dilate(hr.astype(np.uint8), el(3)) > 0
+        src = (a[..., 3] > 230) & ~(cv2.dilate(hr.astype(np.uint8), el(6)) > 0)
+        fol = np.zeros(a.shape[:2] + (3,), np.uint8)
+        have = np.zeros(a.shape[:2], bool)
+        for dy, dx in ACCENT_SHIFTS:
+            sh = np.roll(np.roll(a, -dy, 0), -dx, 1)
+            ok = zone & ~have & np.roll(np.roll(src, -dy, 0), -dx, 1)
+            fol[ok] = sh[..., :3][ok]
+            have |= ok
+        sil = cv2.GaussianBlur(cv2.dilate(tr.rep4(c[..., 3] > 0).astype(np.uint8), np.ones((5, 5), np.uint8))
+                               .astype(np.float32), (0, 0), 1.5)
+        L = a[..., :3].astype(np.float32) @ np.array([0.299, 0.587, 0.114], np.float32)
+        det = np.where(hr, L / np.maximum(cv2.GaussianBlur(L, (0, 0), 6.0), 1.0), 1.0)
+        rgb = a[..., :3].astype(np.float32)
+        al = a[..., 3].astype(np.float32)
+        rgb[zone & have] = fol[zone & have]
+        rgb[zone & ~have] = cv2.inpaint(np.ascontiguousarray(a[..., :3]), (zone & ~have).astype(np.uint8), 3,
+                                        cv2.INPAINT_TELEA)[zone & ~have]
+        al[zone] = np.minimum(np.where(have[zone], 255.0, al[zone]), 255.0 * sil[zone])
+        cm = c4.astype(np.float32)
+        c4rgb = np.repeat(np.repeat(c[..., :3].astype(np.float32), 4, 0), 4, 1)
+        k = (0, 0)
+        crgb = cv2.GaussianBlur(c4rgb * cm[..., None], k, 2.0) / np.maximum(cv2.GaussianBlur(cm, k, 2.0)[..., None], 1e-3)
+        sa = np.clip((cv2.GaussianBlur(cm, k, 1.4) - 0.35) * 4.0, 0, 1)
+        srgb = np.clip(crgb * np.clip(det, 0.7, 1.3)[..., None], 0, 255)
+        rgb = srgb * sa[..., None] + rgb * (1 - sa[..., None])
+        al = np.maximum(al, 255.0 * sa)
+        frames[f] = Image.fromarray(np.dstack([np.clip(np.round(rgb), 0, 255), np.clip(np.round(al), 0, 255)])
+                                    .astype(np.uint8), "RGBA")
+        info[str(f)] = dict(hd_red_px=int(hr.sum()), classic_red_x16=int(c4.sum()), out_px=int(out.sum()),
+                            zone_px=int(zone.sum()), cloned_px=int((zone & have).sum()))
     return info
 
 
@@ -932,6 +1042,68 @@ def bark_tone(world, S, frames, fs, floor_fs=()):
                 weighted_px=int(sum((w[f] > 0.5).sum() for f in fs)))
 
 
+FLOOR_COVER_MIN = 0.35   # доля пола, которую классика кадра повторяет пиксель в пиксель
+FLOOR_TOL = 24           # пиксель классики - земля, если от пиксела пола не дальше этого по каналу
+
+
+def _floor_sets(world, S):
+    out = [S]
+    for d in world.terrains.values():
+        ss = [str(x) for x in (d.get("mapDataSets") or [])]
+        if S in ss:
+            out += [x for x in ss if x not in out]
+    return out
+
+
+def floor_base(world, S, frames, z0):
+    """Земля под деревом из установленного HD-пола (R-006). Классика кадра z0 рисует дерево на своей клетке травы
+    или снега; модель рисует её отдельной плиткой с тёмной кромкой, и на поле деревья стоят островками (TG006, TG012,
+    TG016, TG017, TG018 партии 1). Пол ищется среди записей пола (type 0) наборов тех же террейнов: классика кадра
+    повторяет его пиксели на доле от FLOOR_COVER_MIN. В ромбе пола от ответа остаётся только дерево (классика не
+    равна полу, с запасом 2 пикс x4), под ним - HD этого пола как есть."""
+    out = {}
+    for f in z0:
+        a = np.asarray(tr.sprite(world, S, f)).astype(int)
+        best = None
+        for s2 in _floor_sets(world, S)[:40]:
+            for r in world.records(s2):
+                if r["type"] != 0 or (s2, r["frame"]) == (S, f):
+                    continue
+                o = world.sprite(s2, r["frame"], None)
+                if o is None or o.size != (32, 40):
+                    continue
+                b = np.asarray(o).astype(int)
+                fb = b[..., 3] > 0
+                if fb.sum() < 100:
+                    continue
+                c = (fb & (a[..., 3] > 0) & (np.abs(a[..., :3] - b[..., :3]).max(-1) == 0)).sum() / fb.sum()
+                if best is None or c > best[0]:
+                    best = (c, s2, r["frame"], b)
+        if best is None or best[0] < FLOOR_COVER_MIN:
+            continue
+        c, s2, f2, b = best
+        p = os.path.join(tr.OLD, s2.upper() + ".PCK", "%d.png" % f2)
+        if not os.path.exists(p):
+            out[f] = dict(floor="%s:%d" % (s2, f2), cover=round(float(c), 3), skipped="нет HD пола")
+            continue
+        fb = b[..., 3] > 0
+        ground = fb & (a[..., 3] > 0) & (np.abs(a[..., :3] - b[..., :3]).max(-1) <= FLOOR_TOL)
+        tree = (a[..., 3] > 0) & ~ground
+        t4 = cv2.dilate(tr.rep4(tree).astype(np.uint8), np.ones((5, 5), np.uint8))
+        w = cv2.GaussianBlur(t4.astype(np.float32), (0, 0), 1.2)[..., None]
+        new = np.asarray(frames[f].convert("RGBA")).astype(np.float32)
+        flo = np.asarray(Image.open(p).convert("RGBA")).astype(np.float32)
+        new[..., 3:] *= np.where(tr.rep4(fb)[..., None], w, 1.0)
+        ta = new[..., 3:] / 255.0
+        fa = flo[..., 3:] / 255.0 * (1 - ta)
+        oa = ta + fa
+        rgb = (new[..., :3] * ta + flo[..., :3] * fa) / np.maximum(oa, 1e-6)
+        frames[f] = Image.fromarray(np.clip(np.concatenate([rgb, oa * 255.0], -1) + 0.5, 0, 255).astype(np.uint8))
+        out[f] = dict(floor="%s:%d" % (s2, f2), cover=round(float(c), 3), ground_px=int(ground.sum()),
+                      tree_in_floor_px=int((tree & fb).sum()))
+    return out
+
+
 def assemble_copy(args, fid, S, world, CL, cp):
     """Семейство - побайтная копия канона: кадр канона под своим номером (f - shift в наборе src), рендера нет.
     Кадр без побайтной копии классики или без кадра канона в раскладках стоит прежним HD и в asm/frames не пишется."""
@@ -1025,6 +1197,7 @@ def assemble_family(args, fid, S, world, CL, hints):
         if p:
             stumps[f] = p
     summary = dict(family=fid, set=S, layouts=len(CL[S]["sigs"]), frames=fs, stumps=sorted(stumps))
+    upper = [f for f in fs if f not in {e[0] for e in CL[S]["sigs"][0]["sig"] if e[4] == 0}]
     if fid == "TG035":
         import argparse
         if 58 in stumps:
@@ -1076,6 +1249,9 @@ def assemble_family(args, fid, S, world, CL, hints):
         raise SystemExit("%s: нет кадров %s - раскладки не собрать" % (fid, miss))
     summary["bark_tone"] = bark_tone(world, S, frames, fs,
                                      {e[0] for L in CL[S]["sigs"] for e in L["sig"] if e[4] == 0})
+    summary["accent_limit"] = accent_limit(world, S, frames, upper)    # после тона коры: диск краснеет им
+    summary["floor_base"] = floor_base(world, S, frames,
+                                       sorted({e[0] for L in CL[S]["sigs"] for e in L["sig"] if e[4] == 0}))
     for f, im in frames.items():
         po.gen_hd.save_png(im, os.path.join(od, "frames", S + ".PCK", "%d.png" % f))
     if whole is not None:                                  # T1 из кадров - после сдвига коры
