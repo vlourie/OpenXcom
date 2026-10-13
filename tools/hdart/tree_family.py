@@ -131,6 +131,11 @@ SINGLE_LAYOUTS = "census/trees/groups/batch%d_layouts.json"
 SINGLE_BATCH = {f: 2 for f in ("TG014", "TG024", "TG045", "TG046", "TG047", "TG049", "TG050", "TG055", "TG064",
                                "TG065", "TG066", "TG067", "TG077", "TG080", "TG084", "TG085", "TG086", "TG091",
                                "TG094", "TG095")}
+# партия 3 (13.10): пни и сломанные стволы STUMP, бревна LOG, кусты BUSH и TG096 из singles/classes.tsv;
+# отложены горящие TG071 и TG092 (огонь - анимация, R-071), TG048 (отдельное решение), VR TG073 (R-314)
+SINGLE_BATCH.update({f: 3 for f in ("TG013", "TG023", "TG031", "TG044", "TG053", "TG054", "TG058", "TG059", "TG061",
+                                    "TG062", "TG063", "TG069", "TG072", "TG075", "TG078", "TG079", "TG082", "TG083",
+                                    "TG087", "TG096")})
 GRASS = ", standing on a square patch of green grass"
 SINGLES = {
     "TG002": "one apple tree with a dense rounded crown of dark green leaves dotted with small red apples and a "
@@ -203,6 +208,43 @@ SINGLES = {
     "TG094": "one tiny bare dead sapling with a dark grey forked trunk and a few short bare twigs",
     "TG095": "one bare dead tree with a dark brown black trunk forking into several long bare branches reaching "
              "upwards",
+    # партия 3
+    "TG013": "one fallen log lying on the ground, dark brown bark almost completely covered with a thick lumpy layer "
+             "of white snow",
+    "TG023": "one tall broken dead tree trunk, a hollow brown stump split into two jagged points at the top, dark "
+             "reddish brown fallen leaves around its roots, standing on a small patch of green grass",
+    "TG031": "one small dry dead bush, a few short twisted black bare branches, on a small patch of grey and pinkish "
+             "brown dirt",
+    "TG044": "a few fallen bare brown branches lying crossed on the ground, with white snow on their upper surfaces",
+    "TG053": "one tall broken tree stump split into jagged points at the top, brown bark, dark reddish brown fallen "
+             "leaves around its roots" + GRASS,
+    "TG054": "one low broken brown tree stump with a dark green leafy bush growing on its left side, on a small "
+             "patch of green grass",
+    "TG058": "one tall broken tree stump split into jagged points at the top, brown bark, dark reddish brown fallen "
+             "leaves around its roots, standing on a square patch of white snow",
+    "TG059": "one fallen log broken into two pieces lying on the ground, brown bark with white snow on the top",
+    "TG061": "one tall broken dead tree trunk split into jagged points at the top, brown bark, on a small patch of "
+             "grey gravel",
+    "TG062": "one tall broken dead tree trunk split into jagged points at the top, brown bark, on a small patch of "
+             "brown mud",
+    "TG063": "one tall broken dead tree trunk split into jagged points at the top, brown bark covered with white "
+             "snow on its upper parts",
+    "TG069": "one tall broken tree stump with a hollow top and a dark hole in its brown bark, dark reddish brown "
+             "fallen leaves around its roots" + GRASS,
+    "TG072": "one tall broken dead tree trunk split into jagged points at the top, reddish brown bark, on a small "
+             "patch of pale grey gravel",
+    "TG075": "one tall broken dead tree stump with very dark grey black bark, black thorny undergrowth around it and "
+             "dark violet grey roots spreading on the ground",
+    "TG078": "one low cut tree stump with a flat top, brown wood, on a small patch of brown mud",
+    "TG079": "one low broken tree stump, brown wood with white snow on its top",
+    "TG082": "one tall broken dead tree stump with very dark grey black bark split at the top and dark violet grey "
+             "roots spreading on the ground around it",
+    "TG083": "one tall cut tree stump with a flat top showing light wood, light brown bark with a dark hole, green "
+             "jungle leaves around its base" + GRASS,
+    "TG087": "one tall broken dead tree stump with very dark grey black bark, a dark hole in the trunk and dark "
+             "violet grey roots spreading on the ground around it",
+    "TG096": "one small bare dead sapling with a thin dark purplish brown trunk forking into two thin upright bare "
+             "branches",
 }
 
 # Повтор брака партии 1 (один на семейство, --retry, папка SINGLE_OUT + "_retry"): описание по классике кадра, а не
@@ -232,6 +274,19 @@ RETRY = {
     "TG039": "one thick fallen dead tree trunk leaning steeply to the left, as thick as a log, pale orange brown wood "
              "with split ends, several bare broken branches forking at the top end, and a small patch of bright "
              "orange sand at its base",
+    # партия 2 (папка batch2_retry): TG014 - круглые шары с полом между ними, у классики сплошной полог;
+    # TG024 - выдуманные доски поверх куста; TG045 - светло-зелёный, у классики тёмный; TG046 - голый шест без сучков;
+    # TG067 - симметричная розетка, у классики низкая крона вбок
+    "TG014": "a flat-topped dense mass of large overlapping dark and bright green jungle leaves in horizontal layers, "
+             "filling the whole cell from edge to edge like a piece of a continuous jungle canopy",
+    "TG024": "one dense jungle bush of large dark and bright green leaves layered in tiers, with a thin twisted "
+             "reddish brown trunk visible in the lower middle" + GRASS,
+    "TG045": "one broadleaf jungle tree with a wide dense crown of dark green leaves with a few lighter green "
+             "highlights, and thin orange brown branches visible through the lower part of the crown",
+    "TG046": "one tall bare dead tree with a thin straight dark grey trunk and many short broken bare branch stubs "
+             "alternating left and right along the whole height of the trunk",
+    "TG067": "one small palm with a very short light brown trunk and a low crown of long drooping bright green fronds "
+             "spreading sideways to the left and right, much wider than tall",
 }
 
 
