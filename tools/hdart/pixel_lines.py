@@ -32,6 +32,7 @@ K = 4
 OVERLAP = 0.04
 N = 5                    # копий поля по каждой оси
 PAD = 4                  # поле вокруг кадра для xBRZ, пикселей базы
+GATE = 3                 # с --holes непрозрачное не дальше GATE пикс x4 от своей копии (own_gate)
 
 
 def build_field(cl):
@@ -60,7 +61,26 @@ def render(cl, pal, holes=False):
     a = (sub > 0) if holes else np.ones(sub.shape, bool)
     rgba = np.concatenate([pal[sub], (a * 255.0).astype(np.float32)[..., None]], -1)[None]
     up = ss.xbrz_scale(rgba, K)[0][PAD * K:-PAD * K, PAD * K:-PAD * K]
-    return up[..., :3], up[..., 3] / 255.0
+    ha = up[..., 3] / 255.0
+    if holes:
+        ha = np.minimum(ha, own_gate(cl, pal))
+    return up[..., :3], ha
+
+
+def own_gate(cl, pal, r=GATE):
+    """Кадр обломков или края (CRASHEDPLANE 40, XB1BR 8): копии соседей в поле кладут свой край на рёбра ромба, и
+    перехлёст R-291 рисует рамку, которой у классики нет. Непрозрачное оставлять только в r пикс x4 от своей копии;
+    у решётки свои пиксели идут по всем рёбрам, и перехлёст между одинаковыми плитками остаётся."""
+    own = np.pad(np.where(cl > 0, cl, 0), PAD)
+    rgba = np.concatenate([pal[own], ((own > 0) * 255.0).astype(np.float32)[..., None]], -1)[None]
+    m = ss.xbrz_scale(rgba, K)[0][PAD * K:-PAD * K, PAD * K:-PAD * K, 3] > 0
+    p = np.pad(m, r)
+    g = np.zeros_like(m)
+    for dy in range(-r, r + 1):
+        for dx in range(-r, r + 1):
+            if dx * dx + dy * dy <= r * r:
+                g |= p[r + dy:r + dy + m.shape[0], r + dx:r + dx + m.shape[1]]
+    return g.astype(np.float32)
 
 
 def render_dither(cl, pal):

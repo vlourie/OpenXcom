@@ -247,8 +247,16 @@ def visible(dx, dy):
 def cmd_plan(a):
     q = load_queue()
     idx = load_index()
-    want = [r for r in sorted(q.values(), key=lambda r: -int(r["клеток"]))
-            if r["статус"] in (("queued",) + (("rejected",) if a.redo else ()))][: a.n]
+    if a.groups:
+        # пересборка названных групп после правки инструмента (own_gate): только незакрытые статусы
+        names = [g for g in a.groups.split(",") if g]
+        bad = [g for g in names if g not in q or q[g]["статус"] not in ("queued", "rejected", "need_view", "built")]
+        if bad:
+            raise SystemExit("не взять в партию (нет в очереди или статус закрыт): %s" % ", ".join(bad))
+        want = [q[g] for g in names]
+    else:
+        want = [r for r in sorted(q.values(), key=lambda r: -int(r["клеток"]))
+                if r["статус"] in (("queued",) + (("rejected",) if a.redo else ()))][: a.n]
     if not want:
         raise SystemExit("в очереди пусто")
     members = {r["группа"]: [r["группа"]] + [m for m in r["копии"].split(",") if m] for r in want}
@@ -753,6 +761,7 @@ def main():
     p.add_argument("--min-cells", type=int, default=3)
     p.add_argument("--max-shots", type=int, default=16)
     p.add_argument("--redo", action="store_true", help="брать и отклонённые (после смены метода)")
+    p.add_argument("--groups", default="", help="только эти группы через запятую (queued, rejected, need_view)")
     for nm in ("build", "sheet", "shoot", "install", "judge"):
         p = sp.add_parser(nm)
         p.add_argument("--batch", required=True)
