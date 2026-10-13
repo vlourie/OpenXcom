@@ -6,6 +6,7 @@
 census/trees/groups/batchA_layouts.json (все раскладки - для проверки), подсказки только по классике.
 
   tree_family.py --mask-only [--fam TG011,...]   листы классики и масок срезов, модель не грузится
+  tree_family.py --assemble [--fam TG011,...]    кадры, все раскладки, сканер швов, листы (CPU, без модели)
   tree_family.py [--max-renders 4]               рендер того, чего нет (возобновляемо; только через gpuq)
 
 Модель - только через очередь видеокарты (tools/gpu_scripts.txt).
@@ -81,6 +82,8 @@ FAMILIES = {
 }
 # TG060 VILFRNITURE 85-100 - побайтные копии FOREST 42-57: кадры из канона FOREST, рендера нет;
 # VILFRNITURE:101 (пень) отличается от FOREST:58 - отдельное решение после SAFE (не здесь)
+COPY_OF = {"TG060": dict(src="FOREST", shift=43,
+                         frames="census/trees/forest42/render_v2/s2712/FOREST/comp/frames/FOREST.PCK")}
 
 
 def load(fams):
@@ -129,10 +132,11 @@ def main():
     ap.add_argument("--tone", type=float, default=0.7)
     ap.add_argument("--max-renders", type=int, default=4, dest="max_renders")
     ap.add_argument("--mask-only", action="store_true", dest="mask_only", help="листы масок, без модели")
+    ap.add_argument("--assemble", action="store_true", help="кадры, все раскладки, сканер швов - без модели")
     args = ap.parse_args()
     sys.stdout.reconfigure(encoding="utf-8")
     fams = [f for f in args.fam.split(",") if f]
-    bad = [f for f in fams if f not in FAMILIES]
+    bad = [f for f in fams if f not in FAMILIES and not (args.assemble and f in COPY_OF)]
     if bad:
         raise SystemExit("неизвестные семейства %s" % bad)
     args.seeds = [int(s) for s in args.seeds.split(",")]
@@ -143,13 +147,21 @@ def main():
     root, left = args.out, args.max_renders
     for fid in fams:                     # своя папка на семейство: JUNGLE живёт и в TG011, и в TG010
         S = sets[fid]
-        patch(fid, S, CL)
         args.sets, args.out = [S], os.path.join(root, fid)
         os.makedirs(args.out, exist_ok=True)
+        if fid in COPY_OF:               # копия канона: без рендера и без подсказок
+            import tree_family_asm
+            tree_family_asm.assemble_copy(args, fid, S, world, CL, COPY_OF[fid])
+            continue
+        patch(fid, S, CL)
         print("== %s %s: раскладок %d, главная на %d мест" % (fid, S, len(CL[S]["sigs"]), CL[S]["sigs"][0]["n"]),
               flush=True)
         if args.mask_only:
             tr.do_masks(args, world, CL, hints)
+            continue
+        if args.assemble:
+            import tree_family_asm
+            tree_family_asm.assemble_family(args, fid, S, world, CL, hints)
             continue
         before = count_png(args.out)
         args.max_renders = left          # общий предел рендеров на процесс (R-215), а не на семейство
