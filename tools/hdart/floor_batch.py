@@ -16,7 +16,8 @@
 
 Статусы: queued, built, accepted, rejected (перерисовать другим методом), installed, keep_old (прежний пак
 лучше или равен - закрыто), problem (отдельная очередь проблем, партии их не берут), no_save (нет на картах
-сейвов - нечем проверить), skip (не трогать: KEEP, PORTROADS, U_BASE_VR).
+сейвов - нечем проверить), need_view (собрана, на картах есть, но в игровой кадр партии не попала - нужен
+другой ракурс; партии не берут, ждёт проверки), skip (не трогать: KEEP, PORTROADS, U_BASE_VR).
 
 Игровые кадры - только невидимо (tools/game_hidden.py, R-124). Камера кадра подбирается по совпадению с
 расчётным рисунком карты (map_screen_check.render), владелец пикселя даёт вырез каждой группы.
@@ -228,7 +229,8 @@ def stats(q):
     for r in q.values():
         cc[r["статус"]] += int(r["клеток"])
     say("групп %d:" % len(q))
-    for st in ("queued", "built", "accepted", "rejected", "installed", "keep_old", "problem", "no_save", "skip"):
+    for st in ("queued", "built", "accepted", "rejected", "installed", "keep_old", "problem", "no_save", "need_view",
+               "skip"):
         say("  %-10s %4d групп  %8d клеток" % (st, c[st], cc[st]))
 
 
@@ -651,6 +653,17 @@ def cmd_judge(a):
         q[g]["статус"] = "keep_old"
         q[g]["заметка"] = why.strip()
     save_queue(q)
+    # вердикты партии - отдельным файлом: в очереди только последнее состояние группы, а группа, возвращённая на
+    # пересборку, уходит в следующую партию, и счёт прежней партии из очереди уже не собрать
+    vp = WORK / a.batch / "verdicts.tsv"
+    old = {}
+    if vp.exists():
+        for row in csv.reader(vp.read_text(encoding=ENC_R).splitlines()[1:], delimiter="\t", quoting=csv.QUOTE_NONE):
+            old[row[0]] = row
+    for g in sh["order"]:
+        if q[g]["статус"] in ("accepted", "rejected", "keep_old"):
+            old[g] = [g, q[g]["статус"], q[g]["заметка"].replace("\t", " ")]
+    vp.write_text("группа\tвердикт\tзаметка\n" + "".join("\t".join(r) + "\n" for r in old.values()), encoding=ENC_W)
     stats(q)
 
 
