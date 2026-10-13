@@ -1325,8 +1325,9 @@ def f57_details(job, v0, v2, q57, i57, iters=3, shift=True):
         # у SNOW тёмная кайма снега близка к серой подложке ответа и после ключа полупрозрачна (линии по всей
         # кроне, на полу читаются контуром): плотной считать хвою с альфой от половины, иначе ни одно место не плотное
         dense = (mv[..., 3] > 128) & ~own2 & nd
-        cf = np.asarray(tr.sprite(job.world, geom(job.S), 57).convert("RGBA"), np.int16)
-        hf = np.asarray(Image.open(GEOM_F57 % ((geom(job.S),) * 2)).convert("RGBA"), np.float32)
+        # своя архитектура (геометрия не у FOREST, семейства tree_family): пятен «как у канона» нет
+        cf = np.asarray(tr.sprite(job.world, geom(job.S), 57).convert("RGBA"), np.int16) if job.S in GEOM_FROM else None
+        hf = np.asarray(Image.open(GEOM_F57 % ((geom(job.S),) * 2)).convert("RGBA"), np.float32) if cf is not None else None
     else:
         dense = (mv[..., 3] > 235) & (mv[..., 1] > mv[..., 0] + 6) & ~own2
     twigs = []
@@ -1337,7 +1338,7 @@ def f57_details(job, v0, v2, q57, i57, iters=3, shift=True):
         soft = np.clip((cv2.GaussianBlur(m4, (0, 0), 1.6) - 0.3) / 0.4, 0, 1)
         ys, xs_ = np.where(soft > 0)
         gy, gx = ys + b57[1], xs_ + b57[0]
-        if job.S in tr.DERIVED and (cl[lb == j] == cf[lb == j]).all():
+        if job.S in tr.DERIVED and cf is not None and (cl[lb == j] == cf[lb == j]).all():
             # пятно классики побайтно как у FOREST (трава у корней) - тот же HD, что в каноне FOREST
             src = hf[ys, xs_]
             w = soft[ys, xs_] * src[:, 3] / 255.0
