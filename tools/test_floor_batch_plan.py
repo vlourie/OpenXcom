@@ -35,7 +35,8 @@ def run(frames, rows, groups):
     fb.WORK = tmp
     fb.say = lambda *a: None
     sys.modules["map_screen_check"] = types.SimpleNamespace(units=lambda _p: ([], None))
-    a = types.SimpleNamespace(batch="t", groups=",".join(groups), redo=False, n=24, min_cells=3, max_shots=16)
+    a = types.SimpleNamespace(batch="t", groups=",".join(groups), redo=False, n=24, min_cells=3, max_shots=16,
+                              reviewed=True)      # проверка рецепта (recipe_guard) - не предмет этого теста
     fb.cmd_plan(a)
     plan = json.loads((tmp / "t" / "plan.json").read_text(encoding="utf-8-sig"))
     return {g: s["center"][2] for s in plan["shots"] for g in s["groups"]}
