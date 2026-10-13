@@ -84,6 +84,43 @@ FAMILIES = {
         cut0="the lower part of one thin dark brown fir trunk whose upper part has been removed: the trunk rises "
              "directly out of the base that is already drawn at the bottom, with a flat sawn top and a few short "
              "snowy branch stubs; it reaches down to that base without a gap, one single trunk only"),
+    # партия 7 (13.10): составные кусты, папоротники, кактусы и дерево, не взятые ни одним путём (batch7_pick.tsv,
+    # раскладки batch7_layouts.json); не рисуются CP002 (травяной откос ISLANDURBAN2 - рельеф) и CP009 (поле травы
+    # SAVANNABEACH, 1 место). Земля - только где она есть у классики (CP003 трава, CP001 оранжевый песок)
+    "CP001": dict(
+        main="one cactus clump of several tall upright green ribbed cactus stems of different heights with small "
+             "yellow flower buds at their tips, standing on a small patch of orange sand",
+        cut0="the lower part of one cactus clump whose upper part has been removed: several green ribbed cactus "
+             "stems rise directly out of the base that is already drawn at the bottom, each with a flat cut top; "
+             "they reach down to that base without a gap, one single clump only"),
+    "CP003": dict(
+        main="one young jungle plant of a few long arching broad bright and dark green leaves rising from the "
+             "ground and bending to the right, growing out of flat green grass covering the ground"),
+    "CP004": dict(
+        main="one tall tropical tree with a thick pinkish grey brown trunk curving to the left near the base and "
+             "flaring into roots, and a wide crown of drooping dark green fern-like fronds",
+        cut0="the lower part of one thick pinkish grey brown tree trunk whose crown has been removed: the trunk "
+             "rises directly out of the flared roots that are already drawn at the bottom, with a flat sawn top; "
+             "it reaches down to those roots without a gap, one single trunk only"),
+    "CP005": dict(
+        main="one low fern with a rosette of broad bright green fronds with lighter green edges spreading in all "
+             "directions, dark green at the centre"),
+    "CP006": dict(
+        main="one large dense cube-shaped bush of small dark and medium green leaves with one red flower on its "
+             "front side",
+        cut0="the lower part of one dense bush of small dark and medium green leaves whose upper part has been cut "
+             "away: the leaves rise directly out of the leaves that are already drawn at the bottom, with a flat "
+             "cut top showing the dense leaves from above; it reaches down to them without a gap, one single bush "
+             "only"),
+    "CP007": dict(
+        main="one fan of a few long narrow bright green fern fronds with lighter green tips, spreading upward and "
+             "sideways from one point"),
+    "CP008": dict(
+        main="one large dense rounded bush of black and very dark grey leaves with a few tiny red berries",
+        cut0="the lower part of one dense bush of black and very dark grey leaves whose upper part has been cut "
+             "away: the leaves rise directly out of the leaves that are already drawn at the bottom, with a flat "
+             "cut top showing the dense leaves from above; it reaches down to them without a gap, one single bush "
+             "only"),
 }
 # совместная проба ели и пальмы (решение специалиста 13.10): модуль = свой рендер со своей главной раскладкой,
 # проверочные - сочетания census/trees/groups/crown/combos.json своего набора из кадров модуля. Ствол со спилом -
@@ -151,6 +188,9 @@ SINGLE_BATCH.update({"BU%03d" % i: 5 for i in range(1, 51) if i not in (5, 19, 2
 SINGLE_BATCH.update({"OT%03d" % i: 6 for i in (2, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 25, 26, 27, 28,
                                                29, 30, 31, 32, 33, 34, 35, 36, 38, 39, 40, 41, 44, 48, 49, 50, 51,
                                                52, 53, 54, 55, 56, 57, 62, 63, 65, 66)})
+# партия 7 (13.10): составные CP (FAMILIES, папка batch7) и три одиночных другого вида из batch5_recolors
+SINGLE_BATCH.update({f: 7 for f in ("CP001", "CP003", "CP004", "CP005", "CP006", "CP007", "CP008",
+                                    "OT067", "OT068", "OT069")})
 GROUND = ", growing out of flat green grass covering the ground"
 GRASS = ", standing on a square patch of green grass"
 SINGLES = {
@@ -405,6 +445,11 @@ SINGLES = {
              "orange flowers on its side",
     "OT066": "one dark jungle plant of large dark blue violet and black leaves curling upward, growing out of a "
              "square patch of black earth",
+    "OT067": "a small flat scattered heap of dry black and dark grey broken twigs lying on the ground",
+    "OT068": "one small green ribbed cactus with two short upright arms and a few red flowers on top, standing on "
+             "a small patch of bright orange sand",
+    "OT069": "one jungle plant with several thick bare pale pinkish grey stems spreading sideways and broad dark "
+             "green leaves at its base" + GRASS,
 }
 
 # Повтор брака партии 1 (один на семейство, --retry, папка SINGLE_OUT + "_retry"): описание по классике кадра, а не
@@ -470,7 +515,7 @@ def module_layouts(M):
 def load(fams):
     """CL - на семейство: у модулей ели два семейства в одном наборе FOREST."""
     D = json.load(open(LAYOUTS, encoding=ENC))
-    for b in sorted({SINGLE_BATCH.get(f, 1) for f in fams if f in SINGLES}):
+    for b in sorted({SINGLE_BATCH.get(f, 1) for f in fams if f in SINGLES or f in SINGLE_BATCH}):
         D.update(json.load(open(SINGLE_LAYOUTS % b, encoding=ENC)))
     CLs, sets = {}, {}
     for fid in fams:
@@ -506,7 +551,7 @@ def count_png(d):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--fam", default=",".join(FAMILIES), help="семейства через запятую (или модули %s)"
+    ap.add_argument("--fam", default=",".join(f for f in FAMILIES if f not in SINGLE_BATCH), help="семейства через запятую (или модули %s)"
                     % ",".join(MODULES))
     ap.add_argument("--out", default=None, help="по умолчанию %s, у модулей %s" % (OUT, MODULE_OUT))
     ap.add_argument("--seeds", default="2712")
@@ -525,7 +570,7 @@ def main():
     args = ap.parse_args()
     sys.stdout.reconfigure(encoding="utf-8")
     fams = [f for f in args.fam.split(",") if f]
-    batches = {SINGLE_BATCH.get(f, 1) for f in fams if f in SINGLES or f in RETRY}
+    batches = {SINGLE_BATCH.get(f, 1) for f in fams if f in SINGLES or f in RETRY or f in SINGLE_BATCH}
     if len(batches) > 1:
         raise SystemExit("одиночные разных партий %s - разными запусками" % sorted(batches))
     batch = batches.pop() if batches else 1
@@ -547,7 +592,8 @@ def main():
     if singles and len(singles) != len(fams):
         raise SystemExit("одиночные %s и семейства партии A - разными запусками" % singles)
     if args.out is None:
-        args.out = MODULE_OUT if mods else SINGLE_OUT % batch if singles else OUT
+        # составные партий конвейера (CP, партия 7) - в папку своей партии, партия A - в OUT
+        args.out = MODULE_OUT if mods else SINGLE_OUT % batch if singles or batch != 1 else OUT
     args.seeds = [int(s) for s in args.seeds.split(",")]
     args.stumps = set()
     D, CLs, sets = load(fams)
