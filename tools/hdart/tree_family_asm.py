@@ -432,6 +432,8 @@ def assemble_v1(args, fid, S, world, CL, hints, seed):
     finally:
         v2.EDGE_FRAMES = keep
     stats["edge"] = edge
+    stats["valpha"] = {q["f"]: np.asarray(Image.fromarray(np.asarray(V[q["z"]], np.uint8))
+                                          .crop(v2.pos_box(q)))[..., 3] for q in t.pcs}
     stats["multi_position_frames"] = multi
     sig0 = CL[S]["sigs"][0]["sig"]
     stats["T1_assembled_vs_intended"] = {"z<=%d" % z: tr.diff(tr.assemble(world, S, sig0, frames, z),
@@ -514,6 +516,104 @@ def top_recede(world, S, frames, fs):
         frames[f] = Image.fromarray(np.clip(np.round(v), 0, 255).astype(np.uint8), "RGBA")
         done[f] = cut
     return done
+
+
+GRID_R = 8                   # x4: насколько кадр дорастает за прямой край по сетке базы (как v2.EDGE_R)
+
+
+def grid_heal(world, S, frames, valpha=None):
+    """След блочной маски (кадр = вид x rep4(маска рисования)) у ЛЮБОГО кадра семейства, не только у кроны
+    edge_rule: дырки - замкнутые прямоугольники по сетке 4x4 внутри силуэта (tree_qc.pinholes), и прямые жёсткие
+    края по сетке (tree_qc.hard_edges). Под прозрачным у кадра лежит RGB вида: дырка закрывается им (где вид сам
+    прозрачен - inpaint), за краем по сетке кадр дорастает видом с мягким сходом по пучкам листвы, не дальше
+    GRID_R x4 и не дальше силуэта СВОЕЙ классики (R-315). valpha: {f: альфа вида в рамке кадра}; без неё (путь
+    TG035) - вид там, где под прозрачным есть RGB. Выемки по сетке (tree_qc.notches) закрываются видом.
+    Меняет frames на месте, возвращает сводку по кадрам."""
+    import tree_qc as q
+    info = {}
+    yy, xx = np.mgrid[0:160, 0:128].astype(np.float32)
+    wbox = np.clip(np.minimum(xx, 127 - xx) / 12.0, 0, 1) * np.clip(np.minimum(yy, 159 - yy) / 6.0, 0, 1)
+    ker = cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (2 * GRID_R + 1, 2 * GRID_R + 1))
+    for f in sorted(frames):
+        a = np.asarray(frames[f]).copy()
+        al = a[..., 3]
+        if valpha is not None and f in valpha:
+            va = valpha[f].astype(np.float32)
+        else:
+            va = np.where((al > 0) | (a[..., :3].max(-1) > 8), 255.0, 0.0).astype(np.float32)
+        hole = q.pinholes(al)
+        notch = q.notches(al, a[..., :3])
+        _e, em, _ev = q.hard_edges(al)
+        if not hole.any() and not notch.any() and not em.any():
+            continue
+        st = {}
+        if notch.any():
+            # выемка по сетке, открытая с одной стороны (TG011 35, TG035 54, TG037 63): под ней RGB вида - тот же
+            # рисунок, срезанный клеткой маски; закрыть им, где вид непрозрачен
+            nm = notch & ((va >= 128) if valpha is not None and f in valpha else (a[..., :3].max(-1) > 8))
+            a[..., 3][nm] = 255
+            st["notch_px"] = int(nm.sum())
+            if (notch & ~nm).any():
+                st["notch_left_px"] = int((notch & ~nm).sum())
+        if hole.any():
+            bad = hole & (va < 128)
+            if bad.any():
+                rgb = cv2.inpaint(np.ascontiguousarray(a[..., :3]), bad.astype(np.uint8), 3, cv2.INPAINT_TELEA)
+                a[..., :3][bad] = rgb[bad]
+            a[..., 3][hole] = 255
+            st["holes_px"] = int(hole.sum())
+        if em.any():
+            c = np.asarray(tr.sprite(world, S, f).convert("RGBA"))[..., 3] > 0
+            lim = cv2.GaussianBlur(cv2.dilate(tr.rep4(c).astype(np.uint8), np.ones((5, 5), np.uint8))
+                                   .astype(np.float32), (0, 0), 1.5)
+            on = (a[..., 3] >= 128).astype(np.uint8)
+            d = cv2.distanceTransform(1 - on, cv2.DIST_L2, 5)
+            zone = np.clip(cv2.GaussianBlur(cv2.dilate(em.astype(np.uint8), ker).astype(np.float32), (0, 0), 3.0)
+                           * 1.5, 0, 1)
+            Y = a[..., :3].astype(np.float32).mean(-1)
+            tn = np.clip((cv2.GaussianBlur(Y, (0, 0), 1.5) - cv2.GaussianBlur(Y, (0, 0), 6)) / 14.0, -1, 1)
+            w = np.clip((GRID_R - d + 2.5 * tn) / 1.6 + 0.5, 0, 1) * wbox * lim * zone
+            # где вид за краем пуст, а своя классика там рисует (TG038 62, TG037 63: веточка классики, которой у
+            # вида нет), кадр дорастает своим же рисунком, отражённым через край: заливка из-под края
+            ref = grid_mirror(a, _e)
+            al0 = a[..., 3].astype(np.float32)
+            add_v, add_r = va * w, ref[..., 3].astype(np.float32) * w
+            use_r = (add_r > add_v + 32) & (add_r > al0)
+            a[..., :3][use_r] = ref[..., :3][use_r]
+            new = np.maximum(al0, np.maximum(add_v, np.where(use_r, add_r, 0)))
+            st["skirt_px"] = int(((new >= 128) & (a[..., 3] < 128)).sum())
+            st["mirror_px"] = int((use_r & (new >= 128)).sum())
+            st["grid_edges"] = len(_e)
+            a[..., 3] = np.clip(np.round(new), 0, 255).astype(np.uint8)
+        frames[f] = Image.fromarray(a, "RGBA")
+        info[str(f)] = st
+    return info
+
+
+def grid_mirror(a, edges):
+    """Рисунок кадра, отражённый через прямые края по сетке (tree_qc.hard_edges): за краем на GRID_R x4 - то, что
+    лежит под краем внутри кадра, зеркально. Остальное прозрачно."""
+    out = np.zeros_like(a)
+    H, W = a.shape[:2]
+    for side, pos, s0, n in edges:
+        for dd in range(1, GRID_R + 1):
+            if side == "T":
+                yo, yi = pos - dd, pos + dd - 1
+                if 0 <= yo and yi < H:
+                    out[yo, s0:s0 + n] = a[yi, s0:s0 + n]
+            elif side == "B":
+                yo, yi = pos + dd, pos - dd + 1
+                if yo < H and yi >= 0:
+                    out[yo, s0:s0 + n] = a[yi, s0:s0 + n]
+            elif side == "L":
+                xo, xi = pos - dd, pos + dd - 1
+                if 0 <= xo and xi < W:
+                    out[s0:s0 + n, xo] = a[s0:s0 + n, xi]
+            else:
+                xo, xi = pos + dd, pos - dd + 1
+                if xo < W and xi >= 0:
+                    out[s0:s0 + n, xo] = a[s0:s0 + n, xi]
+    return out
 
 
 def f57_v1(args, world, CL, hints, S, seed):
@@ -901,6 +1001,7 @@ def assemble_family(args, fid, S, world, CL, hints):
         summary["z0_bushes"] = z0_bushes(world, S, frames)
         summary["top_recede"] = top_recede(world, S, frames, fs)
         summary["ground_limit"] = ground_limit(world, S, frames)
+        summary["grid_heal"] = grid_heal(world, S, frames)
         fd = os.path.join(od, "frames", S + ".PCK")
         os.makedirs(fd, exist_ok=True)
         for f, im in frames.items():
@@ -911,9 +1012,11 @@ def assemble_family(args, fid, S, world, CL, hints):
         if r is None:
             return None
         job, V, frames, fam, stats = r
+        valpha = stats.pop("valpha")
         summary.update(stats)
         t = job.tree
         sig0 = CL[S]["sigs"][0]["sig"]
+        summary["grid_heal"] = grid_heal(world, S, frames, valpha)
         fd = os.path.join(od, "frames", S + ".PCK")
         os.makedirs(fd, exist_ok=True)
         for f, im in frames.items():
