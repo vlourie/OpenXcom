@@ -360,7 +360,21 @@ def load_plan(batch):
 
 # ------------------------------------------------------------------ build
 
+def frame_files(d, s, f):
+    """Кадр и его варианты .vN в папке сборки: <d>/<S>.PCK/<f>.png, <f>.v1.png..."""
+    sd = d / ("%s.PCK" % s)
+    base = sd / ("%s.png" % f)
+    return ([base] if base.exists() else []) + sorted(sd.glob("%s.v*.png" % f))
+
+
+def run_tool(cmd):
+    return subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace",
+                          env=dict(os.environ, PYTHONIOENCODING="utf-8"))
+
+
 def cmd_build(a):
+    """Метод группы - строка очереди: «pixel_lines [ключи]» или «ground_seam [ключи]» (ковёр с вариантами .vN,
+    ключи --set/--carpet/--out ставит сборка). Копии получают кадр и все его варианты под своими номерами."""
     plan = load_plan(a.batch)
     q = load_queue()
     out = WORK / a.batch / "TERRAIN"
@@ -368,32 +382,37 @@ def cmd_build(a):
     for g in plan["groups"]:
         r = q[g]
         meth = r["метод"] or "pixel_lines"
-        if meth.split()[0] != "pixel_lines":
+        tool, extra = meth.split()[0], meth.split()[1:]
+        s, f = g.split(":")
+        for old in frame_files(out, s, f):     # прежняя сборка группы в этой партии: варианты не должны остаться
+            old.unlink()
+        if tool == "pixel_lines":
+            cmd = [py, str(HERE / "pixel_lines.py"), "--out", str(out), "--frames", g] + extra
+            p = run_tool(cmd)
+            if p.returncode and "поле не закрывает кадр" in (p.stdout + p.stderr) and "--holes" not in extra:
+                extra = extra + ["--holes"]
+                p = run_tool(cmd + ["--holes"])
+        elif tool == "ground_seam":
+            p = run_tool([py, str(HERE / "ground_seam.py"), "--set", s, "--carpet", f, "--out", str(out)] + extra)
+        else:
             say("%-22s метод %s - не умею, пропуск" % (g, meth))
             continue
-        extra = meth.split()[1:]
-        cmd = [py, str(HERE / "pixel_lines.py"), "--out", str(out), "--frames", g] + extra
-        p = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace",
-                           env=dict(os.environ, PYTHONIOENCODING="utf-8"))
-        if p.returncode and "поле не закрывает кадр" in (p.stdout + p.stderr) and "--holes" not in extra:
-            extra = extra + ["--holes"]
-            cmd = cmd + ["--holes"]
-            p = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="replace",
-                               env=dict(os.environ, PYTHONIOENCODING="utf-8"))
         if p.returncode:
             say("%-22s ОШИБКА %s" % (g, (p.stderr or p.stdout).strip().splitlines()[-1:]))
             r["заметка"] = "сборка упала"
             continue
-        r["метод"] = " ".join(["pixel_lines"] + extra)
+        r["метод"] = " ".join([tool] + extra)
         r["статус"] = "built"
         say("%-22s %s" % (g, p.stdout.strip().splitlines()[-1]))
-        s, f = g.split(":")
-        src = out / ("%s.PCK" % s) / ("%s.png" % f)
+        files = frame_files(out, s, f)
         for m in [m for m in r["копии"].split(",") if m]:
             ms, mf = m.split(":")
-            dst = out / ("%s.PCK" % ms) / ("%s.png" % mf)
-            dst.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copyfile(src, dst)
+            for old in frame_files(out, ms, mf):
+                old.unlink()
+            for src in files:
+                dst = out / ("%s.PCK" % ms) / (mf + src.name[len(f):])
+                dst.parent.mkdir(parents=True, exist_ok=True)
+                shutil.copyfile(src, dst)
     save_queue(q)
 
 
@@ -451,12 +470,16 @@ def layout(batch):
                 shutil.copytree(src_t / s, terr / s)
             else:
                 (terr / s).mkdir(parents=True)
-        for p in (new / s).glob("*.png"):
+        got = sorted((new / s).glob("*.png"))
+        # сначала снять варианты всех заменённых кадров, потом класть новые: иначе .vN сборки ground_seam,
+        # положенный раньше своего кадра, снимется вместе со старыми
+        for p in got:
             f = p.name[:-4]
             if ".v" not in f:
                 for v in (terr / s).glob(f + ".v*.png"):
                     v.unlink()
                     gone += 1
+        for p in got:
             shutil.copy2(p, terr / s / p.name)
             n += 1
     say("раскладка %s: наборов %d, кадров %d, снято вариантов %d" % (root, len(sets), n, gone))
@@ -700,17 +723,23 @@ def cmd_install(a):
             if not (gd / ("%s.png" % mf)).exists():
                 say("%-22s нет пака в установке - пропуск" % m)
                 continue
-            src = out / ("%s.PCK" % ms) / ("%s.png" % mf)
-            plan.append(("TERRAIN/%s.PCK/%s.png" % (ms, mf), str(src), m, g,
-                         "конвейер полов %s: игровой кадр лучше прежнего пака (%s)" % (a.batch, r["метод"])))
+            files = frame_files(out, ms, mf)
+            if not files or files[0].name != "%s.png" % mf:
+                raise SystemExit("%s: нет собранного кадра в %s" % (m, out))
+            for src in files:
+                plan.append(("TERRAIN/%s.PCK/%s" % (ms, src.name), str(src), m, g,
+                             "конвейер полов %s: игровой кадр лучше прежнего пака (%s)" % (a.batch, r["метод"]),
+                             r["метод"].split()[0]))
+            new = {src.name for src in files}
             for v in sorted(gd.glob(mf + ".v*.png")):
-                drop.append("TERRAIN/%s.PCK/%s" % (ms, v.name))
+                if v.name not in new:           # прежние варианты, которых нет в новой сборке
+                    drop.append("TERRAIN/%s.PCK/%s" % (ms, v.name))
     say("групп %d, файлов %d, снять вариантов %d" % (len(take), len(plan), len(drop)))
     if not a.yes:
         raise SystemExit("сухой прогон; --yes - записать")
-    for rel, src, m, g, why in plan:
+    for rel, src, m, g, why, tool in plan:
         old = man["files"].get(rel, {}).get("sha256")
-        bp.stage(man, rel, src, generator="pixel_lines", generator_version="pixel_lines.py 13.10 floor_batch",
+        bp.stage(man, rel, src, generator=tool, generator_version="%s.py 13.10 floor_batch" % tool,
                  source_path=src, approved=True, approval=why, asset_id=m, source_frame=g, replaced=old)
     for rel in drop:
         man["files"].pop(rel, None)
