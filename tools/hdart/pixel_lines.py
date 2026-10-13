@@ -104,7 +104,7 @@ def render_dither(cl, pal):
     oa = la + ba * (1 - la)
     rgb = (lt * la + brgb * ba * (1 - la)) / np.maximum(oa, 1e-6)
     print("  сетка шахматкой: %d пикс базы подложкой nearest" % int(dith[PAD:-PAD, PAD:-PAD].sum()))
-    return rgb, oa[..., 0]
+    return rgb, np.minimum(oa[..., 0], own_gate(cl, pal))
 
 
 def own_edge(rgb, d, edge=0.97, src=0.95):
