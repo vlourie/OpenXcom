@@ -45,31 +45,37 @@ def build_field(cl):
     return f, ((N - 1) * 16, (c + c) * 8)        # начало кадра средней копии
 
 
-def render(cl, pal):
+def render(cl, pal, holes=False):
+    """RGB x4 и прозрачность x4 (0..1). Без holes прозрачность - 1: поле закрывает ромб целиком. С holes индекс 0
+    внутри поля - сквозная дыра решётки: xBRZ смешивает в премультиплицированном цвете, края дыр без каймы."""
     fld, (ox, oy) = build_field(cl)
     sub = fld[oy - PAD:oy + 40 + PAD, ox - PAD:ox + 32 + PAD]
-    if (sub[PAD:-PAD, PAD:-PAD][cl > 0] == 0).any():
+    if not holes and (sub[PAD:-PAD, PAD:-PAD][cl > 0] == 0).any():
         raise SystemExit("поле не закрывает кадр")
-    rgba = np.concatenate([pal[sub], np.full(sub.shape + (1,), 255.0, np.float32)], -1)[None]
-    up = ss.xbrz_scale(rgba, K)[0][..., :3]
-    return up[PAD * K:-PAD * K, PAD * K:-PAD * K]
+    a = (sub > 0) if holes else np.ones(sub.shape, bool)
+    rgba = np.concatenate([pal[sub], (a * 255.0).astype(np.float32)[..., None]], -1)[None]
+    up = ss.xbrz_scale(rgba, K)[0][PAD * K:-PAD * K, PAD * K:-PAD * K]
+    return up[..., :3], up[..., 3] / 255.0
 
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", required=True)
     ap.add_argument("--frames", default="DREAD_BASE:61")
+    ap.add_argument("--holes", action="store_true",
+                    help="решётка: прозрачные пиксели классики остаются сквозными (иначе ромб сплошной)")
     a = ap.parse_args()
     pal = wb.palette().astype(np.float32)
     al = (gs.dmap() <= 1.0 + OVERLAP).astype(np.float32)
     for it in a.frames.split(","):
         s, f = it.split(":")
         cl = wb.read_set(s)[int(f)]
-        rgb = render(cl, pal)
-        gs.save_rgba(rgb, al, a.out, s, f)
-        print("%s %s: средний цвет нового %s, классики %s" % (
-            s, f, np.round(rgb[al > 0].mean(axis=0)).astype(int).tolist(),
-            np.round(pal[cl[cl > 0]].mean(axis=0)).astype(int).tolist()))
+        rgb, ha = render(cl, pal, a.holes)
+        fa = al * ha
+        gs.save_rgba(rgb, fa, a.out, s, f)
+        print("%s %s: средний цвет нового %s, классики %s, сквозного в ромбе %.3f" % (
+            s, f, np.round(rgb[fa > 0.5].mean(axis=0)).astype(int).tolist(),
+            np.round(pal[cl[cl > 0]].mean(axis=0)).astype(int).tolist(), float((fa[al > 0] < 0.5).mean())))
 
 
 if __name__ == "__main__":
