@@ -373,15 +373,19 @@ def _longest(m):
     return best
 
 
-def _border(own, alpha, names, boxes):
+def _border(own, alpha, names, boxes, allow=None):
+    # allow: кадр -> маска 160x128 пикселей, которые у рамки срезом не считаются (вершины ромба подставленного пола)
     out = {}
     for i, (ox, oy, w, h) in enumerate(boxes):
+        ok = (allow or {}).get(int(names[i].split("@")[0]))
+        if ok is None:
+            ok = np.zeros((h, w), bool)
         for sd, ys, xin, xout in (("L", slice(oy, oy + h), ox, ox - 1), ("R", slice(oy, oy + h), ox + w - 1, ox + w)):
-            m = (own[ys, xin] == i) & (alpha[ys, xout] < 32)
+            m = (own[ys, xin] == i) & (alpha[ys, xout] < 32) & ~ok[:, xin - ox]
             if m.any():
                 out["%s|%s" % (names[i], sd)] = (_longest(m), int(m.sum()))
         for sd, yin, yout in (("T", oy, oy - 1), ("B", oy + h - 1, oy + h)):
-            m = (own[yin, ox:ox + w] == i) & (alpha[yout, ox:ox + w] < 32)
+            m = (own[yin, ox:ox + w] == i) & (alpha[yout, ox:ox + w] < 32) & ~ok[yin - oy]
             if m.any():
                 out["%s|%s" % (names[i], sd)] = (_longest(m), int(m.sum()))
     return out
@@ -394,7 +398,7 @@ def _rel(pair):
     return (a[0], b[0], b[1] - a[1], b[2] - a[2], b[3] - a[3])
 
 
-def scan(world, CL, S, frames):
+def scan(world, CL, S, frames, allow=None):
     res = {}
     for name, i in tr.LAYOUTS[S]:
         sig = CL[S]["sigs"][i]["sig"]
@@ -403,7 +407,8 @@ def scan(world, CL, S, frames):
             if not sg:
                 continue
             rgb, own, alpha, names, boxes = _build(world, S, sg, frames)
-            res["%s|z%d" % (name, zmax)] = {"inner": _inner(rgb, own, names), "border": _border(own, alpha, names, boxes)}
+            res["%s|z%d" % (name, zmax)] = {"inner": _inner(rgb, own, names),
+                                             "border": _border(own, alpha, names, boxes, allow)}
     ref = {}
     for lay, v in res.items():
         if lay.startswith("T1|"):
