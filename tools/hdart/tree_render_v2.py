@@ -1694,6 +1694,8 @@ def do_assemble(args, world, CL, hints):
                 if S in HOLE_FILL_SETS:
                     frames, info["envelope_cut_px"] = envelope_gate(world, CL, S, frames, ref)
                 frames, edge = edge_rule(world, CL, S, frames, views, src)
+                import snow_seam
+                frames, snow = snow_seam.apply(world, CL, S, frames, sys.modules[__name__])
                 od = os.path.join(job.d2, tag)
                 fd = os.path.join(od, "frames", S + ".PCK")
                 os.makedirs(fd, exist_ok=True)
@@ -1703,6 +1705,8 @@ def do_assemble(args, world, CL, hints):
                 st = dict(info)
                 st["frame_source"] = {str(f): src[f] for f in sorted(src)}
                 st["edge"] = edge
+                if snow is not None:
+                    st["snow_seam"] = snow
                 st["T1_assembled_vs_source"] = {"z<=%d" % z: tr.diff(tr.assemble(world, S, sig0, frames, z), V[z])
                                                 for z in (2, 1, 0)}
                 if rel is None:
