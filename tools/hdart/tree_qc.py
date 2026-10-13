@@ -146,7 +146,27 @@ def hard_edges(a):
     return out, mask, mask_v
 
 
-def check(world, CL, S, frames, classic):
+def floor_allow(root, fid, frames):
+    """Пиксели кадра, равные подставленному HD-полу (ta.floor_base): вершины ромба пола касаются рамки кадра по
+    построению, срезом рамкой они не считаются (TG018). Ствол и ветки у рамки проверяются как прежде."""
+    p = os.path.join(root, fid, "asm", "summary.json")
+    fb = json.load(open(p, encoding=ENC)).get("floor_base", {}) if os.path.exists(p) else {}
+    out = {}
+    for f, v in fb.items():
+        f = int(f)
+        if f not in frames or "floor" not in v:
+            continue
+        s2, f2 = v["floor"].split(":")
+        fp = os.path.join(tr.OLD, s2 + ".PCK", "%s.png" % f2)
+        if not os.path.exists(fp):
+            continue
+        fl = np.asarray(Image.open(fp).convert("RGBA")).astype(np.int16)
+        a = np.asarray(frames[f]).astype(np.int16)
+        out[f] = (fl[..., 3] > 0) & (a[..., 3] > 0) & (np.abs(a[..., :3] - fl[..., :3]).max(-1) <= 3)
+    return out
+
+
+def check(world, CL, S, frames, classic, allow=None):
     res = dict(size=[], pinholes={}, notches={}, grid_seams=[], hard_cuts={}, frame_cuts_new=[])
     for f, im in frames.items():
         if im.size != (128, 160) or im.mode != "RGBA":
@@ -216,7 +236,7 @@ def check(world, CL, S, frames, classic):
                                             edges=[list(map(int, x[1:])) + [x[0]] for x in hard[f][0]][:8])
         if f in vis_vcut:
             res.setdefault("warn_vertical", {})[str(f)] = dict(px=vis_vcut[(f, "px")][0], views=len(vis_vcut[f]))
-    new = ta.scan(world, CL, S, frames)["frame_cuts"]
+    new = ta.scan(world, CL, S, frames, allow)["frame_cuts"]
     old = {(c[0], c[1]) for c in ta.scan(world, CL, S, classic)["frame_cuts"]}
     res["frame_cuts_new"] = [c for c in new if (c[0], c[1]) not in old]
     bad = []
@@ -255,7 +275,7 @@ def run_family(root, fid, world):
         res = dict(verdict="FAIL", defects=["нет кадров %s" % miss])
     else:
         cl = {f: tr.sprite(world, S, f).convert("RGBA").resize((128, 160), Image.NEAREST) for f in fs}
-        res = check(world, CL, S, frames, cl)
+        res = check(world, CL, S, frames, cl, floor_allow(root, fid, frames))
     res.update(family=fid, set=S)
     with open(os.path.join(root, fid, "asm", "qc.json"), "w", encoding=ENC) as fh:
         json.dump(res, fh, ensure_ascii=False, indent=1)
