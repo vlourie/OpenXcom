@@ -136,6 +136,9 @@ SINGLE_BATCH = {f: 2 for f in ("TG014", "TG024", "TG045", "TG046", "TG047", "TG0
 SINGLE_BATCH.update({f: 3 for f in ("TG013", "TG023", "TG031", "TG044", "TG053", "TG054", "TG058", "TG059", "TG061",
                                     "TG062", "TG063", "TG069", "TG072", "TG075", "TG078", "TG079", "TG082", "TG083",
                                     "TG087", "TG096")})
+# партия 4 (13.10): остаток одиночных; газона GRASS нет ни у одного - вставленный газон специалист браковал в
+# партии 2 (TG047, TG065, TG086); TG098 CARGO1:50 по классике светильник, не растение - не рисуется
+SINGLE_BATCH.update({f: 4 for f in ("TG020", "TG028", "TG056", "TG070", "TG074", "TG088", "TG093")})
 GRASS = ", standing on a square patch of green grass"
 SINGLES = {
     "TG002": "one apple tree with a dense rounded crown of dark green leaves dotted with small red apples and a "
@@ -245,6 +248,20 @@ SINGLES = {
              "violet grey roots spreading on the ground around it",
     "TG096": "one small bare dead sapling with a thin dark purplish brown trunk forking into two thin upright bare "
              "branches",
+    # партия 4
+    "TG020": "one small mutant shrub, many thin dark blue grey stems spreading outward from a dark root in all "
+             "directions, every stem ending in small glowing pink and red buds",
+    "TG028": "one alien plant with a short dark green stem and broad pointed dark and bright green leaves spreading "
+             "outward like a star, a thin yellow stalk rising straight up from the centre",
+    "TG056": "one small bare dead tree with a thin twisted dark grey trunk and a few short bare twigs, a round ball "
+             "of rust orange dry leaves at the very top, standing on a square patch of white snow",
+    "TG070": "one long fallen log lying on the ground, reddish brown bark, a thick lumpy layer of white snow along "
+             "its top, the cut end showing light wood",
+    "TG074": "a low heap of fallen broken dry brown branches and torn bark lying flat on the ground",
+    "TG088": "a few fallen broken grey and brown branches lying crossed on the ground, with white snow on their upper "
+             "surfaces",
+    "TG093": "one small palm with a thin pinkish brown trunk leaning from the lower right up to the upper left and a "
+             "crown of long drooping dark green fronds hanging down",
 }
 
 # Повтор брака партии 1 (один на семейство, --retry, папка SINGLE_OUT + "_retry"): описание по классике кадра, а не
