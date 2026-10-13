@@ -143,6 +143,14 @@ SINGLE_BATCH.update({f: 4 for f in ("TG020", "TG028", "TG056", "TG070", "TG074",
 # не рисуются BU005, BU019, BU021 (край рельефа с травой, не куст), BU037 (GOTHIC:9 - ряд изгороди без одиночной
 # раскладки), BU040 и BU050 (обрывки в несколько пикселей); земля в подсказке - только где она есть у классики
 SINGLE_BATCH.update({"BU%03d" % i: 5 for i in range(1, 51) if i not in (5, 19, 21, 37, 40, 50)})
+# партия 6 (13.10): остаток одиночных census/trees/trees.tsv прочих видов (деревья, лианы, бревна, пни, тростник,
+# изгородь) и 4 перекраски, чья основа на картах не стоит (batch6_pick.tsv, OTnnn); не рисуются: куб изгороди
+# XB3BITZ3:17 и ряды COMDECOR 31/32 (замощение, не предмет), куски кроны JUNGLE 70/72/77/79 (составное), блоки
+# земли и края рельефа (OT009, OT024, OT047, OT058-OT061, OT064), гидрант ROADS:20, стеллаж MILWARE:14, навес
+# LINERSHIPA:89, VR CULTIVAT_VR:9 (R-314), обрывки OT037 и OT045
+SINGLE_BATCH.update({"OT%03d" % i: 6 for i in (2, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 25, 26, 27, 28,
+                                               29, 30, 31, 32, 33, 34, 35, 36, 38, 39, 40, 41, 44, 48, 49, 50, 51,
+                                               52, 53, 54, 55, 56, 57, 62, 63, 65, 66)})
 GROUND = ", growing out of flat green grass covering the ground"
 GRASS = ", standing on a square patch of green grass"
 SINGLES = {
@@ -328,6 +336,75 @@ SINGLES = {
     "BU048": "one dark purplish black plant with long pointed leaves radiating from the centre, on flat pink sand",
     "BU049": "one black plant with long pointed leaves with dark blue violet edges radiating from the centre, on flat "
              "dark ground",
+    "OT002": "one apple tree with a dense rounded crown of dark green leaves dotted with small red apples, a short "
+             "thin dark purplish brown trunk and a small round dark green shadow of grass at its foot",
+    "OT010": "one dead thorny bush of many thin twisted bare branches, very dark purplish black with a few dark red "
+             "brown tints, no leaves",
+    "OT011": "one bare dead tree with a dark grey trunk and many thin bare dark grey branches, a few dark red streaks "
+             "on the bark, no leaves",
+    "OT012": "a loose net of thin bright green vines with small leaves hanging down in separate strands",
+    "OT013": "a dense net of thin green vines with small dark and bright green leaves hanging down in many strands",
+    "OT014": "several thin bright green vines hanging straight down in long separate strands",
+    "OT015": "one small low tuft of thin green creeping vine with tiny leaves",
+    "OT016": "a few thick strands of glossy bright green leafy vines hanging straight down, dark gaps between them",
+    "OT017": "one tall thin bare dead tree with a straight dark grey trunk and short bare dark grey branches, a few "
+             "dark red streaks on the bark, no leaves",
+    "OT018": "a few thin green creeping vines with tiny leaves trailing diagonally down to the left",
+    "OT019": "a curtain of thin green vines with small leaves hanging down from a horizontal strand along the top",
+    "OT020": "one small dark green palm plant with broad pointed fronds spreading in all directions and one pale "
+             "green shoot rising from the centre",
+    "OT021": "one large broken hollow brown tree stump with a jagged top and a dark hollow in its side, thick "
+             "spreading roots, dark green leafy plants around its base" + GRASS,
+    "OT022": "one tall broken hollow brown tree stump split into two jagged prongs at the top, dark holes in its "
+             "bark, dark green leafy plants around its base" + GRASS,
+    "OT025": "one short fallen hollow brown log lying on its side with dark open ends",
+    "OT026": "one solid cube of trimmed dark green hedge with a few small pale pink and orange flowers on its sides",
+    "OT027": "one jungle plant with long arching green leaves and a few small blue flowers at the centre, standing "
+             "on a square patch of dark brown earth scattered with small green and reddish leaves",
+    "OT028": "a curtain of glossy bright green leafy vines hanging down in many short strands from a horizontal "
+             "strand along the top, a few dark red buds",
+    "OT029": "a small pile of dark brown logs stacked in two layers with light tan cut ends",
+    "OT030": "one small tuft of thin green creeping vine with tiny leaves spreading diagonally",
+    "OT031": "a square patch of brown mud densely covered with short green reeds and pale grey pink dry stalks",
+    "OT032": "one short fallen hollow brown log lying on its side with a dark open end and a dark hole in its side",
+    "OT033": "one short fallen hollow brown log lying on its side with dark open ends, white snow lying on top of it",
+    "OT034": "one short fallen hollow brown log lying on its side with a dark open end, a small streak of pale grey "
+             "ash beside it",
+    "OT035": "one broken tree trunk lying fallen diagonally with a split light brown end and two thick bare branches "
+             "pointing up, small dark green fir shrubs dusted with snow around it, on a square patch of white snow "
+             "strewn with dark red needles",
+    "OT036": "one small clump of bright green leafy vine with glossy leaves",
+    "OT038": "a square patch of brown mud sparsely covered with short green reeds and pale grey pink dry stalks",
+    "OT039": "one short fallen hollow reddish brown log lying on its side with broken branch stubs and a dark open "
+             "end",
+    "OT040": "one fallen light brown log lying diagonally with rough bark and dark hollow openings",
+    "OT041": "one small broken charred black and dark purplish brown tree stump with spreading roots",
+    "OT044": "one long fallen brown log lying horizontally with rough cracked bark, dark knot holes and splintered "
+             "ends",
+    "OT048": "one broken brown tree stump with splintered wood split and spread low, on a square patch of pale grey "
+             "gravel",
+    "OT049": "one cattail plant with a bunch of long pale green leaves and three tall brown seed heads on thin "
+             "stalks",
+    "OT050": "one dead dark grey tree with a short thick trunk and twisted bare dark branches spreading wide, "
+             "standing on a square patch of dark green moss",
+    "OT051": "one broken brown log lying on the ground with a split end and a short broken branch",
+    "OT052": "one large dense round bush of bright and dark green leaves filling the cell",
+    "OT053": "a hanging tangle of thin glowing purple and violet branching vines",
+    "OT054": "one thin upright brown stalk wrapped in pink and purple vines, thin roots spreading at its base",
+    "OT055": "one thin brown stalk wrapped in a pink vine, topped by a glowing pale yellow green cup shaped flower "
+             "with small red edges",
+    "OT056": "one burnt black tree stump leaning to the right, standing on a small round patch of scorched orange "
+             "sand",
+    "OT057": "one fallen broken brown tree stump with a thick split trunk and a bare broken branch, lying on a square "
+             "patch of pale grey gravel",
+    "OT062": "one tall plant with long pointed dark green leaves spreading in four directions from a thin green "
+             "stalk, small yellow green buds at the leaf tips",
+    "OT063": "one dense tall jungle bush of bright light green leaves with dark red and orange berries and small "
+             "orange flowers in its lower part",
+    "OT065": "one solid block of trimmed dark green hedge with a few dark purple flower petals on top and two small "
+             "orange flowers on its side",
+    "OT066": "one dark jungle plant of large dark blue violet and black leaves curling upward, growing out of a "
+             "square patch of black earth",
 }
 
 # Повтор брака партии 1 (один на семейство, --retry, папка SINGLE_OUT + "_retry"): описание по классике кадра, а не
