@@ -40,6 +40,13 @@ namespace OpenXcom
  * radars change, and kept as runs of each row (a run of the plain wash is one colour); a frame blends
  * those runs and works out per pixel only the craft's circles and the waves in flight.
  *
+ * The waves (oxceHdRadar 3, a trial) are the other way round: no wash at all, only the edge round the
+ * bases' joint coverage, and every game hour each base with a finished radar sends one wave out to
+ * its longest range, all at once (GeoscapeState::time1Hour), so the waves tell the time. A craft out
+ * of its base is a circle of its own, not joined with the bases' (it looks for other things), with a
+ * wave of its own every detection cycle, half an hour. A wave lasts at most PULSE_MS, and less when the
+ * clock is faster than that, so that one ends before the next sets off.
+ *
  * Pictures only: the ranges, the positions and the time are read from the game; the detection
  * itself, its chances and its timing are not touched.
  */
@@ -65,13 +72,19 @@ public:
 		int x, y, w, h;              ///< the globe's widget, world pixels
 		int k;                       ///< world pixels per base pixel
 	};
-	/// A detection cycle has run: the bases pulse at the next draw (when the clock is slow).
-	void cycle() { _cyclePending = _slow; }
+	/// How the coverage is drawn: oxceHdRadar 1, 2 and 3.
+	enum Mode { WASH = 1, SWEEP = 2, WAVES = 3 };
+	/// A detection cycle has run: the bases pulse (the craft with WAVES) at the next draw, when the clock is slow.
+	void cycle() { _cyclePending = _slow; note(_cycleTick, _cycleMs); }
+	/// A game hour has run: with WAVES the bases pulse at the next draw, when the clock is slow.
+	void hour() { _hourPending = _slow; note(_hourTick, _hourMs); }
 	/// Is the game clock slow enough for the pulses (5 seconds or 1 minute a step)?
 	void setSlow(bool slow) { _slow = slow; }
-	/// Draws the wash and the edge, and with `sweep` the pulses and the beams; `minute` is the game
-	/// time in minutes. Clipped by HdUi's clip.
-	void draw(const View &view, const std::vector<Source> &sources, long long minute, bool sweep);
+	/// Draws the coverage the `mode` way; `minute` is the game time in minutes. Clipped by HdUi's clip.
+	void draw(const View &view, const std::vector<Source> &sources, long long minute, Mode mode);
+	/// The main base's mark instead of its square (WAVES): a four-pointed star of `color` (0xRRGGBB) round
+	/// a dark middle, centred on world pixel (cx, cy), no wider than the 7 base pixels of a globe marker.
+	void drawMainBase(float cx, float cy, int k, Uint32 color);
 private:
 	struct Pulse
 	{
@@ -79,6 +92,7 @@ private:
 		Uint32 start = 0;            ///< SDL_GetTicks of its first wave (a base set off later starts in the future)
 		Uint32 length = 0;           ///< ms from the start to the end of the last wave
 		long long minute = 0;        ///< the game minute it was set off
+		Uint32 wave = 0;             ///< ms one wave takes from the middle to the rim
 	};
 	/// A stretch of a row of the bases' wash: one colour, or a colour per pixel.
 	struct Run
@@ -95,6 +109,13 @@ private:
 	std::unordered_map<const void*, Pulse> _pulses;
 	bool _slow = true;
 	bool _cyclePending = false;
+	bool _hourPending = false;
+	/// When the last cycle and hour came, and the real ms between the last two (0 = not known).
+	Uint32 _cycleTick = 0, _cycleMs = 0, _hourTick = 0, _hourMs = 0;
+	/// The main base's mark as last drawn, and what it was drawn for.
+	std::vector<Uint32> _mainMark;
+	int _mainK = 0;
+	Uint32 _mainColor = 0;
 
 	/// The bases' signed distance to the edge of their joint coverage, 1/8 world pixel, positive inside,
 	/// saturated a little past the glow: worked out again only when the globe turns or zooms or a base's
@@ -108,8 +129,12 @@ private:
 	int _rowA = 0, _rowB = 0;
 
 	void schedule(const std::vector<Source> &sources, Uint32 now, long long minute);
+	/// WAVES: sets off at once every base (or every craft), a wave that ends before the next one is due.
+	void scheduleAll(const std::vector<Source> &sources, Uint32 now, long long minute, bool bases, Uint32 gapMs);
+	/// Keeps when a signal came and the time from the one before it.
+	static void note(Uint32 &tick, Uint32 &ms);
 	/// Works out _dist and the runs again if the globe or the bases changed.
-	void updateCache(const View &view, const std::vector<Source> &sources);
+	void updateCache(const View &view, const std::vector<Source> &sources, bool fill);
 };
 
 }

@@ -52,6 +52,10 @@ const float GLOW = 0.25f;          // the glow just inside the edge, a part of E
 const Uint32 WAVE = 0x149CF5D6u;   // 8 %: a pulse on top of the fill
 const Uint32 TRAIL_COLOR = 0x1A9CF5D6u; // 10 %: the swept area behind a craft's beam
 const Uint32 BEAM = 0x80C8FFE8u;   // 50 %: the beam
+const Uint32 WAVE_BARE = 0x809CF5D6u; // 50 %: a wave with no wash under it (WAVES), the only sign of the coverage
+/// WAVES: a wave ends by this part of the time to the next one, and lasts no less than WAVE_MIN_MS.
+const double WAVE_FIT = 0.8;
+const int WAVE_MIN_MS = 1000;
 
 struct Vec
 {
@@ -186,9 +190,10 @@ inline void blendOwn(Uint32 &d, Uint32 color)
 
 /// The wash and the edge at the signed distance `d` (world pixels) to the coverage's edge, with the
 /// globe's soft rim `lim`: the fill, and the line and the glow over it, as one colour with its alpha.
-Uint32 washColor(double d, float lim, double lineW, double glowLen)
+/// Without `withFill` only the line and the glow.
+Uint32 washColor(double d, float lim, double lineW, double glowLen, bool withFill = true)
 {
-	const float fill = clamp01(d + 0.5) * lim;
+	const float fill = withFill ? clamp01(d + 0.5) * lim : 0.0f;
 	const float line = clamp01(lineW * 0.5 + 0.5 - std::fabs(d - lineW * 0.5));
 	const float glow = d > 0 && d < glowLen ? (float)((1 - d / glowLen) * (1 - d / glowLen)) * GLOW : 0.0f;
 	const float aF = (FILL >> 24) / 255.0f * fill;
@@ -221,6 +226,7 @@ struct WaveGroup
 {
 	Cap cap;          ///< the widest of their outer circles
 	int a, b;         ///< the waves, [a, b)
+	bool craft;       ///< a craft's (WAVES): not bounded by the bases' coverage
 };
 
 /// A craft's circle, and its beam.
@@ -297,6 +303,38 @@ void HdRadar::schedule(const std::vector<Source> &sources, Uint32 now, long long
 		p.start = now + (Uint32)std::lround(start[i]);
 		p.length = (Uint32)((std::min((int)s.waves.size(), MAX_WAVES) - 1) * WAVE_GAP_MS + PULSE_MS);
 		p.minute = minute;
+		p.wave = PULSE_MS;
+	}
+}
+
+void HdRadar::note(Uint32 &tick, Uint32 &ms)
+{
+	const Uint32 now = SDL_GetTicks();
+	ms = tick ? now - tick : 0;
+	tick = now;
+}
+
+/**
+ * WAVES: every base (`bases`) or every craft out sends one wave now; one still running starts again.
+ * The wave takes PULSE_MS, or WAVE_FIT of the real time between the last two signals of its kind
+ * when that is shorter, so that the clock at 1 minute a step does not lay one wave over the next.
+ */
+void HdRadar::scheduleAll(const std::vector<Source> &sources, Uint32 now, long long minute, bool bases, Uint32 gapMs)
+{
+	int wave = PULSE_MS;
+	if (gapMs > 0 && gapMs < (Uint32)PULSE_MS * 4)
+	{
+		wave = std::max(WAVE_MIN_MS, std::min(PULSE_MS, (int)(gapMs * WAVE_FIT)));
+	}
+	for (const Source &s : sources)
+	{
+		if (s.waves.empty() == bases) continue;
+		Pulse &p = _pulses[s.id];
+		p.any = true;
+		p.start = now;
+		p.length = (Uint32)wave;
+		p.minute = minute;
+		p.wave = (Uint32)wave;
 	}
 }
 
@@ -307,10 +345,10 @@ void HdRadar::schedule(const std::vector<Source> &sources, Uint32 now, long long
  * is not needed: there the wash is plain, so a pixel deep inside or far outside is settled by a bound
  * of the distance, without working it out.
  */
-void HdRadar::updateCache(const View &view, const std::vector<Source> &sources)
+void HdRadar::updateCache(const View &view, const std::vector<Source> &sources, bool fill)
 {
 	std::vector<double> key = { view.cenLon, view.cenLat, view.cx, view.cy, view.radius,
-		(double)view.x, (double)view.y, (double)view.w, (double)view.h, (double)view.k };
+		(double)view.x, (double)view.y, (double)view.w, (double)view.h, (double)view.k, fill ? 1.0 : 0.0 };
 	for (const Source &s : sources)
 	{
 		if (s.waves.empty()) continue;
@@ -404,7 +442,8 @@ void HdRadar::updateCache(const View &view, const std::vector<Source> &sources)
 				const double d = best * 0.125;
 				if (d < -lineW - 1) continue;
 				const float lim = limb(r2, radius);
-				cols[px - xa] = best >= SAT8 && lim >= 1.0f ? FILL : washColor(d, lim, lineW, glowLen);
+				if (best >= SAT8 && lim >= 1.0f) cols[px - xa] = fill ? FILL : 0;
+				else cols[px - xa] = washColor(d, lim, lineW, glowLen, fill);
 			}
 			// a long stretch of one colour blends as one, the rest pixel by pixel
 			Row &row = _rows[r];
@@ -446,16 +485,23 @@ void HdRadar::updateCache(const View &view, const std::vector<Source> &sources)
 	pool.run(jobs, [&](int job) { rows(_rowA + (int)((long long)n * job / jobs), _rowA + (int)((long long)n * (job + 1) / jobs)); });
 }
 
-void HdRadar::draw(const View &view, const std::vector<Source> &sources, long long minute, bool sweep)
+void HdRadar::draw(const View &view, const std::vector<Source> &sources, long long minute, Mode mode)
 {
 	if (view.radius <= 1 || view.w <= 0 || view.h <= 0) return;
+	const bool sweep = mode == SWEEP, bare = mode == WAVES;
 	const Uint32 now = SDL_GetTicks();
 	if (_cyclePending)
 	{
 		_cyclePending = false;
 		if (sweep) schedule(sources, now, minute);
+		else if (bare) scheduleAll(sources, now, minute, false, _cycleMs);
 	}
-	updateCache(view, sources);
+	if (_hourPending)
+	{
+		_hourPending = false;
+		if (bare) scheduleAll(sources, now, minute, true, _hourMs);
+	}
+	updateCache(view, sources, !bare);
 
 	const double k = view.k;
 	const double lineW = std::max(1.0, 0.75 * k);
@@ -480,7 +526,8 @@ void HdRadar::draw(const View &view, const std::vector<Source> &sources, long lo
 	std::vector<Sweep> sweeps;
 	for (const Source &s : sources)
 	{
-		if (s.waves.empty())
+		const bool craft = s.waves.empty();
+		if (craft)
 		{
 			Sweep sw;
 			sw.cap = makeCap(view, s.lon, s.lat, s.range, margin);
@@ -493,23 +540,26 @@ void HdRadar::draw(const View &view, const std::vector<Source> &sources, long lo
 			sw.angle = TAU * ((now + beat) % SWEEP_MS) / SWEEP_MS;
 			sweeps.push_back(sw);
 			grow(sw.cap);
-			continue;
+			if (!bare) continue;
 		}
-		if (!sweep) continue;
+		else if (mode == WASH) continue;
 		const auto pulse = _pulses.find(s.id);
 		if (pulse == _pulses.end() || !pulse->second.any) continue;
-		const int count = std::min((int)s.waves.size(), MAX_WAVES);
+		const Pulse &p = pulse->second;
+		const int dur = p.wave ? (int)p.wave : PULSE_MS;
+		// with WAVES one wave, out to the longest range (the craft: its own)
+		const int count = bare ? 1 : std::min((int)s.waves.size(), MAX_WAVES);
 		const int first = (int)waves.size();
 		double widest = 0;
 		for (int j = 0; j < count; ++j)
 		{
-			const int el = (int)(now - pulse->second.start) - j * WAVE_GAP_MS;
-			if (el < 0 || el >= PULSE_MS) continue;
-			const double t = (double)el / PULSE_MS;
-			const double range = s.waves[j];
+			const int el = (int)(now - p.start) - j * WAVE_GAP_MS;
+			if (el < 0 || el >= dur) continue;
+			const double t = (double)el / dur;
+			const double range = craft ? s.range : s.waves[j];
 			const double front = t * range, width = WAVE_WIDTH * range;
-			// the tail fades over four widths, but past 3.4 its light rounds to nothing (WAVE's alpha 20 x p^2)
-			const double lo = std::max(0.0, front - 3.4 * width), hi = std::min(range, front + width);
+			// the tail fades over four widths; under WAVE's alpha 20 x p^2 its light rounds to nothing past 3.4
+			const double lo = std::max(0.0, front - (bare ? 4.0 : 3.4) * width), hi = std::min(range, front + width);
 			waves.emplace_back();
 			Wave &w = waves.back();
 			w.cap = makeCap(view, s.lon, s.lat, hi, margin);
@@ -529,14 +579,14 @@ void HdRadar::draw(const View &view, const std::vector<Source> &sources, long lo
 			{
 				const double c = w.cosLo + (i + 0.5) / w.scale;
 				const double x = (std::acos(std::min(1.0, c)) - front) / width;
-				const double p = x >= 0 ? std::max(0.0, 1 - x) : std::max(0.0, 1 + x * 0.25);
-				w.light[i] = (float)(amp * p * p);
+				const double fall = x >= 0 ? std::max(0.0, 1 - x) : std::max(0.0, 1 + x * 0.25);
+				w.light[i] = (float)(amp * fall * fall);
 			}
 			widest = std::max(widest, hi);
 		}
 		if ((int)waves.size() > first)
 		{
-			groups.push_back({ makeCap(view, s.lon, s.lat, widest, margin), first, (int)waves.size() });
+			groups.push_back({ makeCap(view, s.lon, s.lat, widest, margin), first, (int)waves.size(), craft });
 			grow(groups.back().cap);
 		}
 	}
@@ -546,7 +596,9 @@ void HdRadar::draw(const View &view, const std::vector<Source> &sources, long lo
 	const int distX = _distX, distY = _distY, distW = _distW;
 	const int rowA = _rowA, rowB = _rowB;
 	const double radius = view.radius;
-	const Uint32 waveA = WAVE >> 24;
+	// with no wash under it a wave would be lost at the wash's own strength
+	const Uint32 waveColor = bare ? WAVE_BARE : WAVE;
+	const Uint32 waveA = waveColor >> 24;
 	HdUi::instance().shadeRows(ux0, uy0, ux1 - ux0, uy1 - uy0, [&](int py, int x0, int x1, Uint32 *row)
 	{
 		const double Y = (py + 0.5 - view.cy) / radius;
@@ -583,7 +635,8 @@ void HdRadar::draw(const View &view, const std::vector<Source> &sources, long lo
 		}
 		nIv = merged;
 
-		// 1. the bases' wash as it was worked out, but where the craft are
+		// 1. the bases' wash as it was worked out, but where the craft are (with WAVES the craft lie apart, on top)
+		const int nCut = bare ? 0 : nIv;
 		if (drow)
 		{
 			const Row &cached = _rows[r];
@@ -594,8 +647,8 @@ void HdRadar::draw(const View &view, const std::vector<Source> &sources, long lo
 				int iv = 0;
 				while (a < b)
 				{
-					while (iv < nIv && ivB[iv] <= a) ++iv;
-					const int stop = iv < nIv ? std::min(b, ivA[iv]) : b;
+					while (iv < nCut && ivB[iv] <= a) ++iv;
+					const int stop = iv < nCut ? std::min(b, ivA[iv]) : b;
 					if (a < stop)
 					{
 						if (run.px < 0)
@@ -610,7 +663,7 @@ void HdRadar::draw(const View &view, const std::vector<Source> &sources, long lo
 							for (int px = a; px < stop; ++px) blendOwn(row[px], src[px - run.x0]);
 						}
 					}
-					a = iv < nIv ? std::max(stop, ivB[iv]) : b;
+					a = iv < nCut ? std::max(stop, ivB[iv]) : b;
 				}
 			}
 		}
@@ -626,6 +679,20 @@ void HdRadar::draw(const View &view, const std::vector<Source> &sources, long lo
 				if (r2 >= 1) continue;
 				const double Z = std::sqrt(1 - r2);
 				const double Zc = std::max(Z, 0.08);
+				if (bare)
+				{
+					// each craft its own edge, not joined with the bases' nor with one another's
+					const float lim = limb(r2, radius);
+					for (int i = 0; i < nSweep; ++i)
+					{
+						const Cap &cap = sweeps[rowSweep[i]].cap;
+						if (px < cap.x0 || px >= cap.x1) continue;
+						const double d = capDist(cap, X, Y, Z, Zc, radius);
+						if (d < -lineW - 1 || d > glowLen + 1) continue;
+						blendOwn(row[px], washColor(d, lim, lineW, glowLen, false));
+					}
+					continue;
+				}
 				const double dB = drow && px >= distX && px < distX + distW ? drow[px - distX] * 0.125 : -4000.0;
 				double d = dB;
 				for (int i = 0; i < nSweep; ++i)
@@ -665,16 +732,18 @@ void HdRadar::draw(const View &view, const std::vector<Source> &sources, long lo
 			}
 		}
 
-		// 3. the bases' waves, inside the bases' coverage only
-		if (!drow) return;
+		// 3. the waves: a base's inside the bases' coverage only, a craft's inside its own circle
 		for (const WaveGroup &g : groups)
 		{
 			if (py < g.cap.y0 || py >= g.cap.y1) continue;
+			if (!g.craft && !drow) continue;
 			const Vec &cen = g.cap.c;
-			const int xa = std::max(x0, std::max(g.cap.x0, distX)), xb = std::min(x1, std::min(g.cap.x1, distX + distW));
+			const int xa = g.craft ? std::max(x0, g.cap.x0) : std::max(x0, std::max(g.cap.x0, distX));
+			const int xb = g.craft ? std::min(x1, g.cap.x1) : std::min(x1, std::min(g.cap.x1, distX + distW));
 			for (int px = xa; px < xb; ++px)
 			{
-				const int v = drow[px - distX];
+				// the wave ends at the range, so a craft's needs no bound; a base's fades with the joint edge
+				const int v = g.craft ? 8 * 8 : drow[px - distX];
 				if (v <= -4) continue;
 				const double X = (px + 0.5 - view.cx) / radius;
 				const double r2 = X * X + Y * Y;
@@ -715,10 +784,78 @@ void HdRadar::draw(const View &view, const std::vector<Source> &sources, long lo
 				if (light <= 0) continue;
 				const float a = light * clamp01(v * 0.125 + 0.5) * limb(r2, radius);
 				const Uint32 a256 = (Uint32)(a * waveA * (256.0f / 255.0f) + 0.5f);
-				if (a256) blendInt(row[px], WAVE, a256);
+				if (a256) blendInt(row[px], waveColor, a256);
 			}
 		}
 	});
+}
+
+/**
+ * The main base: a compass star of four points, each split along its axis into a light and a dark
+ * half (they turn the same way round), on a thin dark outline, with a dark dot in the middle. Worked
+ * out again only when the scale or the colour changes, at 4x4 samples a pixel.
+ */
+void HdRadar::drawMainBase(float cx, float cy, int k, Uint32 color)
+{
+	if (k <= 0) return;
+	const int size = 7 * k + 2;
+	if (k != _mainK || color != _mainColor || _mainMark.empty())
+	{
+		_mainK = k;
+		_mainColor = color;
+		_mainMark.assign((size_t)size * size, 0);
+		const double mid = size * 0.5;
+		// the outline's tips end at 3.5 base pixels, as far as a globe marker's edge
+		const double line = std::max(0.8, 0.5 * k), R = 3.5 * k - line, r = 1.3 * k, hole = 0.6 * k;
+		// a quadrant of the star is the triangles O-(tip,0)-(q,q) and O-(q,q)-(0,tip), q = waist / sqrt 2
+		auto inStar = [](double x, double y, double tip, double waist)
+		{
+			x = std::fabs(x); y = std::fabs(y);
+			const double q = waist * 0.70710678;
+			// on the centre's side of the edge from (tip,0) to (q,q), or of the one from (q,q) to (0,tip)
+			const bool a = y <= x && (q - tip) * y - q * (x - tip) >= 0;
+			const bool b = x <= y && (q - tip) * x - q * (y - tip) >= 0;
+			return a || b;
+		};
+		const double lr = ((color >> 16) & 0xFF), lg = ((color >> 8) & 0xFF), lb = (color & 0xFF);
+		const int S = 4;
+		for (int py = 0; py < size; ++py)
+		{
+			for (int px = 0; px < size; ++px)
+			{
+				double cr = 0, cg = 0, cb = 0, ca = 0;
+				for (int sy = 0; sy < S; ++sy)
+				{
+					for (int sx = 0; sx < S; ++sx)
+					{
+						const double X = px + (sx + 0.5) / S - mid, Y = py + (sy + 0.5) / S - mid;
+						double f, sr, sg, sb;
+						if (X * X + Y * Y < hole * hole)
+						{
+							f = 1; sr = sg = sb = 24;
+						}
+						else if (inStar(X, Y, R, r))
+						{
+							const bool light = std::fabs(Y) > std::fabs(X) ? X * Y > 0 : X * Y < 0;
+							const double m = light ? 1.0 : 0.62;
+							f = 1; sr = lr * m; sg = lg * m; sb = lb * m;
+						}
+						else if (inStar(X, Y, R + line, r + line))
+						{
+							f = 0.8; sr = sg = sb = 12;
+						}
+						else continue;
+						cr += sr * f; cg += sg * f; cb += sb * f; ca += f;
+					}
+				}
+				if (ca <= 0) continue;
+				const double a = ca / (S * S);
+				auto ch = [&](double v) { return (Uint32)std::min(255.0, v / ca + 0.5); };
+				_mainMark[(size_t)py * size + px] = (Uint32)(a * 255 + 0.5) << 24 | ch(cr) << 16 | ch(cg) << 8 | ch(cb);
+			}
+		}
+	}
+	HdUi::instance().drawImage(_mainMark.data(), size, size, (int)std::lround(cx - size * 0.5), (int)std::lround(cy - size * 0.5));
 }
 
 }

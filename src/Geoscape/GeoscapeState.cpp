@@ -2154,6 +2154,7 @@ void GeoscapeState::ufoDetection(Ufo* ufo, const std::vector<Craft*>* activeCraf
  */
 void GeoscapeState::time1Hour()
 {
+	_globe->hdRadarHour(); // a picture only: the HD radar's hourly waves
 	// Handle craft maintenance
 	for (auto* xbase : *_game->getSavedGame()->getBases())
 	{
