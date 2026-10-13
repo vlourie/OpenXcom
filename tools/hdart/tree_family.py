@@ -139,6 +139,11 @@ SINGLE_BATCH.update({f: 3 for f in ("TG013", "TG023", "TG031", "TG044", "TG053",
 # партия 4 (13.10): остаток одиночных; газона GRASS нет ни у одного - вставленный газон специалист браковал в
 # партии 2 (TG047, TG065, TG086); TG098 CARGO1:50 по классике светильник, не растение - не рисуется
 SINGLE_BATCH.update({f: 4 for f in ("TG020", "TG028", "TG056", "TG070", "TG074", "TG088", "TG093")})
+# партия 5 (13.10): кусты, папоротники, кактусы - основы census/trees/trees.tsv по охвату (batch5_pick.tsv, BUnnn);
+# не рисуются BU005, BU019, BU021 (край рельефа с травой, не куст), BU037 (GOTHIC:9 - ряд изгороди без одиночной
+# раскладки), BU040 и BU050 (обрывки в несколько пикселей); земля в подсказке - только где она есть у классики
+SINGLE_BATCH.update({"BU%03d" % i: 5 for i in range(1, 51) if i not in (5, 19, 21, 37, 40, 50)})
+GROUND = ", growing out of flat green grass covering the ground"
 GRASS = ", standing on a square patch of green grass"
 SINGLES = {
     "TG002": "one apple tree with a dense rounded crown of dark green leaves dotted with small red apples and a "
@@ -262,6 +267,67 @@ SINGLES = {
              "surfaces",
     "TG093": "one small palm with a thin pinkish brown trunk leaning from the lower right up to the upper left and a "
              "crown of long drooping dark green fronds hanging down",
+    # партия 5
+    "BU001": "a low dense rectangular bush filling the cell, many small dark and bright green leaves dotted with "
+             "small red and light blue flowers",
+    "BU002": "a low dry thorny bush of many thin bare dark purplish grey twigs",
+    "BU003": "a low dense clump of long thin green leaves filling the cell, with many orange lily flowers on top",
+    "BU004": "one small low plant of a few broad dark teal green leaves",
+    "BU006": "one tall dense bush of dark green leaves filling the cell, dotted with small dark red berries",
+    "BU007": "one low clump of thin bright orange and yellow spikes radiating outward like a sea coral",
+    "BU008": "a low wide dense bush of dark green leaves, two rounded mounds side by side",
+    "BU009": "one fern with long arching bright green fronds and a few small dark blue berries at the centre" + GROUND,
+    "BU010": "a low dry thorny bush of many thin bare black and dark purple twigs",
+    "BU011": "one jungle plant with long arching dark green leaves and four large dark blue flowers in the middle"
+             + GROUND,
+    "BU012": "one tall dense bush of layered dark and bright green leaves, a thin dark trunk visible at the bottom",
+    "BU013": "a low wide tangle of thin dry rust orange and dark brown twigs",
+    "BU014": "a low wide tangle of thin dark brown twigs heavily covered with white snow",
+    "BU015": "one small low plant with a few broad bright green leaves" + GROUND,
+    "BU016": "a low flat rectangular hedge of dark green leaves with small red berries, a small grey rock at its left "
+             "end",
+    "BU017": "one agave plant with a rosette of long broad pointed bright green leaves" + GROUND,
+    "BU018": "a low pyramid shaped mound of dense green and brown leaves with a few small red berries",
+    "BU020": "a low small dense bush of dark green leaves, two rounded clumps side by side",
+    "BU022": "one fern with arching dark green fronds in a grey metal pot, a few small dark teal and cyan spots on "
+             "the fronds",
+    "BU023": "a low rectangular block of dense dark green leaves with small red berries, on top of a low grey stone "
+             "wall base",
+    "BU024": "a low cluster of small bright crimson red flower heads with dark red shadows, close to the ground",
+    "BU025": "one tall jungle plant with a few long broad leaning light green leaves" + GROUND,
+    "BU026": "a low rectangular block of dense green and brown leaves with small red berries, on top of a low grey "
+             "stone wall base",
+    "BU027": "a low rectangular grey stone wall base with a sparse row of small green plants and dark red stems on "
+             "top",
+    "BU028": "one large fern with many long bright light green fronds spreading wide",
+    "BU029": "one tall narrow column of many bright yellow and orange round blossoms with dark red centres and a few "
+             "green leaves",
+    "BU030": "one tall green saguaro cactus with two short arms, small yellow and orange flowers on the tips, a little "
+             "orange soil at its base",
+    "BU031": "one small low round bush of dark teal green leaves with a short thin brown stem",
+    "BU032": "one large jungle plant with long bright green leaves and one tall red flower spike rising from the "
+             "centre",
+    "BU033": "a low wide tangle of thin dark red brown twigs heavily covered with white snow",
+    "BU034": "a low wide dense bush of very dark green broad leaves, two rounded mounds side by side",
+    "BU035": "one prickly pear cactus of a few flat green pads with small red fruits on the edges, a little orange "
+             "soil at its base",
+    "BU036": "two tall narrow columns of many bright yellow and orange round blossoms with dark red centres on thin "
+             "green stems",
+    "BU038": "one dense tropical bush of bright green leaves on twisted orange brown branches, with small yellow and "
+             "red berries",
+    "BU039": "a low flat patch of short green grass tufts on grey gravel",
+    "BU041": "one small low plant of a few curling bright green leaves with a dark red centre",
+    "BU042": "one tall plant of a few long upright broad light green leaves",
+    "BU043": "one low jungle plant with a few broad dark green leaves and pinkish grey cupped leaf tips, growing out "
+             "of flat dark green grass covering the ground",
+    "BU044": "a tall narrow column densely overgrown with small green leaves over dark grey and brownish purple stone",
+    "BU045": "one strange jungle plant with a thick curved pinkish grey stalk bending to the left and several dark and "
+             "bright green leaves",
+    "BU046": "one large dry plant of many long thin pinkish grey brown leaves radiating from a dark centre",
+    "BU047": "one low clump of tall thin dark green leaves standing in shallow dark teal water edged with green grass",
+    "BU048": "one dark purplish black plant with long pointed leaves radiating from the centre, on flat pink sand",
+    "BU049": "one black plant with long pointed leaves with dark blue violet edges radiating from the centre, on flat "
+             "dark ground",
 }
 
 # Повтор брака партии 1 (один на семейство, --retry, папка SINGLE_OUT + "_retry"): описание по классике кадра, а не
