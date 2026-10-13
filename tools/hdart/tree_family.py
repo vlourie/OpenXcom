@@ -124,8 +124,13 @@ COPY_OF = {"TG060": dict(src="FOREST", shift=43,
 # партия 1 конвейера (решение специалиста 13.10): одиночные деревья в одну клетку и один этаж - один рендер MAIN,
 # без срезов и кромок; раскладки - группы копий того же кадра по картам (batch1_layouts.json, строит перепись
 # hits.pkl), главная - одна клетка. Пни die - отдельный класс STUMP, здесь не рисуются. Подсказки - по классике
-SINGLE_OUT = "census/trees/groups/batch1"
-SINGLE_LAYOUTS = "census/trees/groups/batch1_layouts.json"
+SINGLE_OUT = "census/trees/groups/batch%d"
+SINGLE_LAYOUTS = "census/trees/groups/batch%d_layouts.json"
+# партия 2 (13.10): следующие 20 по классам переписи singles/classes.tsv - TREE и два куста джунглей BUSH;
+# отложены до опознания TG056 (рыжий шар на голом стволе) и TG093 (пальма, обрезанная краем кадра)
+SINGLE_BATCH = {f: 2 for f in ("TG014", "TG024", "TG045", "TG046", "TG047", "TG049", "TG050", "TG055", "TG064",
+                               "TG065", "TG066", "TG067", "TG077", "TG080", "TG084", "TG085", "TG086", "TG091",
+                               "TG094", "TG095")}
 GRASS = ", standing on a square patch of green grass"
 SINGLES = {
     "TG002": "one apple tree with a dense rounded crown of dark green leaves dotted with small red apples and a "
@@ -162,6 +167,42 @@ SINGLES = {
              "inside the crown" + GRASS,
     "TG043": "one burnt dead tree with a charred black trunk and a few bare charred branches, on a small patch "
              "of bright orange sand at its base",
+    # партия 2
+    "TG014": "one dense low jungle bush, a wide mound of large overlapping dark and bright green leaves filling the "
+             "whole cell" + GRASS,
+    "TG024": "one dense jungle bush of large dark and bright green leaves with thin reddish brown stems visible "
+             "between the leaves" + GRASS,
+    "TG045": "one broadleaf jungle tree with a wide dense crown of bright and dark green leaves and thin orange "
+             "brown branches visible through the lower part of the crown",
+    "TG046": "one tall thin bare dead tree with a straight dark grey trunk and short thin bare dark grey branches",
+    "TG047": "one palm tree with a tall curved light pinkish brown ringed trunk and a crown of long bright green "
+             "fronds" + GRASS,
+    "TG049": "one small dense fir bush shaped like a rounded cone of dark green needles, with no visible trunk",
+    "TG050": "one narrow fir tree with dark green needle branches heavily covered with white snow and a thin dark "
+             "trunk",
+    "TG055": "one broadleaf tree with a dense rounded crown of dark green leaves, brown branches visible inside the "
+             "crown, and a short dark brown trunk",
+    "TG064": "one bare dead tree with a thin black trunk and long thin black bare branches spreading sideways",
+    "TG065": "one broadleaf tree with a dense crown of green leaves covered with many bright yellow flowers and a "
+             "dark brown trunk" + GRASS,
+    "TG066": "one small palm tree with a short curved light brown trunk and a wide crown of long bright and dark "
+             "green fronds",
+    "TG067": "one small palm with a very short light brown trunk and a wide low spreading crown of long bright "
+             "green fronds",
+    "TG077": "one palm tree with a tall curved light pinkish brown ringed trunk and a crown of long bright and dark "
+             "green fronds",
+    "TG080": "one bare dead tree with a twisted dark grey trunk and a few twisted bare branches, standing on a "
+             "square patch of dark green grass",
+    "TG084": "one bare dead tree with a twisted dark purplish black trunk and a few twisted bare branches, "
+             "standing on a square patch of dark green grass",
+    "TG085": "one bare dead tree with a twisted dark grey trunk and a few twisted bare branches",
+    "TG086": "one palm tree with a curved light brown trunk leaning to the left and a crown of dark green fronds, "
+             "standing on a square patch of green grass with a small dark green pond at its base",
+    "TG091": "one bare dead tree with a split pale grey trunk leaning to the right and a few broken bare grey "
+             "branches, on a small patch of brown dirt at its base",
+    "TG094": "one tiny bare dead sapling with a dark grey forked trunk and a few short bare twigs",
+    "TG095": "one bare dead tree with a dark brown black trunk forking into several long bare branches reaching "
+             "upwards",
 }
 
 # Повтор брака партии 1 (один на семейство, --retry, папка SINGLE_OUT + "_retry"): описание по классике кадра, а не
@@ -178,6 +219,12 @@ RETRY = {
              + GRASS,
     "TG026": "one bare dead tree with a dark brown trunk and a few thin twisted bare branches, standing on a "
              "square patch of rough lumpy dark reddish brown earth",
+    "TG016": "one jungle tree with an irregular ragged crown made of separate clumps of dark green leaves with a few "
+             "lighter green tips, and a short dark brown trunk forking low into a few thick roots" + GRASS,
+    "TG032": "one jungle tree with an irregular ragged crown made of separate clumps of dark green leaves with a few "
+             "lighter green tips, and a short dark purplish brown trunk forking low into a few thick roots",
+    "TG042": "one broadleaf tree with a dense solid crown of dark green leaves filling it completely, thick dark "
+             "brown branches visible inside the crown, and a straight dark brown trunk" + GRASS,
 }
 
 
@@ -201,8 +248,8 @@ def module_layouts(M):
 def load(fams):
     """CL - на семейство: у модулей ели два семейства в одном наборе FOREST."""
     D = json.load(open(LAYOUTS, encoding=ENC))
-    if any(f in SINGLES for f in fams):
-        D.update(json.load(open(SINGLE_LAYOUTS, encoding=ENC)))
+    for b in sorted({SINGLE_BATCH.get(f, 1) for f in fams if f in SINGLES}):
+        D.update(json.load(open(SINGLE_LAYOUTS % b, encoding=ENC)))
     CLs, sets = {}, {}
     for fid in fams:
         if fid in MODULES:
@@ -252,17 +299,21 @@ def main():
     ap.add_argument("--max-renders", type=int, default=4, dest="max_renders")
     ap.add_argument("--mask-only", action="store_true", dest="mask_only", help="листы масок, без модели")
     ap.add_argument("--assemble", action="store_true", help="кадры, все раскладки, сканер швов - без модели")
-    ap.add_argument("--retry", action="store_true", help="повтор брака: описания RETRY, папка %s_retry" % SINGLE_OUT)
+    ap.add_argument("--retry", action="store_true", help="повтор брака: описания RETRY, папка batchN_retry")
     args = ap.parse_args()
     sys.stdout.reconfigure(encoding="utf-8")
     fams = [f for f in args.fam.split(",") if f]
+    batches = {SINGLE_BATCH.get(f, 1) for f in fams if f in SINGLES or f in RETRY}
+    if len(batches) > 1:
+        raise SystemExit("одиночные разных партий %s - разными запусками" % sorted(batches))
+    batch = batches.pop() if batches else 1
     if args.retry:
         miss = [f for f in fams if f not in RETRY]
         if miss:
             raise SystemExit("--retry: нет описания повтора у %s" % miss)
         SINGLES.update({f: RETRY[f] for f in fams})
         if args.out is None:
-            args.out = SINGLE_OUT + "_retry"
+            args.out = SINGLE_OUT % batch + "_retry"
     bad = [f for f in fams if f not in FAMILIES and f not in MODULES and f not in SINGLES
            and not (args.assemble and f in COPY_OF)]
     if bad:
@@ -274,7 +325,7 @@ def main():
     if singles and len(singles) != len(fams):
         raise SystemExit("одиночные %s и семейства партии A - разными запусками" % singles)
     if args.out is None:
-        args.out = MODULE_OUT if mods else SINGLE_OUT if singles else OUT
+        args.out = MODULE_OUT if mods else SINGLE_OUT % batch if singles else OUT
     args.seeds = [int(s) for s in args.seeds.split(",")]
     args.stumps = set()
     D, CLs, sets = load(fams)
