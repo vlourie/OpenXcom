@@ -124,6 +124,8 @@ namespace OpenXcom
 	{
 		// init background and navigation elements
 		_bg = new Surface(320, 200, 0, 0);
+		// the article's picture: its text lies straight on it, so the HD text is outlined over it
+		_bg->setHdKind(Surface::HD_PICTURE);
 		_btnOk = new TextButton(30, 14, 5, 5);
 		_btnPrev = new TextButton(30, 14, 40, 5);
 		_btnNext = new TextButton(30, 14, 75, 5);

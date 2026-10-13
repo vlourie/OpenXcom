@@ -150,7 +150,9 @@ public:
 	/// HD interface: this surface's pixels scaled crisply (nearest), for rectangles, bars and other geometry.
 	void hdMirrorNearest();
 	/// HD interface, modern skin: what this surface is, when its owner draws it another way there.
-	enum HdKind { HD_NORMAL, HD_SKIP, HD_HIGHLIGHT };
+	/// HD_PICTURE is drawn as usual, and the text lying on it is text on a picture (outlined) even when the
+	/// picture has no HD version of its own and goes through xBRZ.
+	enum HdKind { HD_NORMAL, HD_SKIP, HD_HIGHLIGHT, HD_PICTURE };
 	void setHdKind(HdKind kind) { _hdKind = (Uint8)kind; }
 	HdKind getHdKind() const { return (HdKind)_hdKind; }
 	/// Initializes the surface's various text resources.

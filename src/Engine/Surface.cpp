@@ -724,9 +724,16 @@ void Surface::blit(SDL_Surface *surface)
 		SDL_BlitSurface(_surface.get(), nullptr, surface, &target);
 		if (hdUi)
 		{
-			if (_hdKind == HD_NORMAL || !HdUi::skin())
+			if (_hdKind == HD_NORMAL || _hdKind == HD_PICTURE || !HdUi::skin())
 			{
 				hdMirror();
+				// a picture without an HD version (a mod's image smoothed by xBRZ): only an HD picture notes
+				// itself, and the text on this one would get the faint drop shadow and drown in it. Noted
+				// after the mirror, so it also marks an HD picture as one with text straight over it
+				if (_hdKind == HD_PICTURE)
+				{
+					HdUi::instance().notePicture(getX(), getY(), getWidth(), getHeight(), true);
+				}
 			}
 			else if (_hdKind == HD_HIGHLIGHT)
 			{

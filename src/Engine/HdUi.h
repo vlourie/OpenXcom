@@ -184,10 +184,12 @@ public:
 	/// Remembers that an HD picture fills a base rectangle in this frame, and that a panel (a button, a
 	/// window's fill) covers one: text drawn on a picture is given an outline so it stays readable, text
 	/// on a panel is not. Both are kept in drawing order and forgotten at the end of the frame.
-	void notePicture(int x, int y, int w, int h);
+	/// `busy`: a picture with text laid straight over it (a ufopaedia article's), whose text gets a darker
+	/// outline and a halo around it - a busy photograph swallows the plain outline.
+	void notePicture(int x, int y, int w, int h, bool busy = false);
 	void notePanel(int x, int y, int w, int h);
-	/// Is the last thing drawn under a base rectangle an HD picture?
-	bool overPicture(int x, int y, int w, int h) const;
+	/// Is the last thing drawn under a base rectangle an HD picture? `busy` gets whether it is a busy one.
+	bool overPicture(int x, int y, int w, int h, bool *busy = nullptr) const;
 	/// The skin's soft shadow around a base rectangle (under a window; `radius` in base pixels).
 	void drawShadow(int x, int y, int w, int h, float radius);
 	/// The skin's list-row highlight: a translucent light band, with an accent bar at its left in `accent` (0 = none).
@@ -275,6 +277,7 @@ private:
 	{
 		int x = 0, y = 0, w = 0, h = 0;
 		bool picture = false;
+		bool busy = false;
 	};
 	void noteCover(const Cover &c);
 	std::vector<Cover> _covers;       ///< what fills the screen under the text, in drawing order (this frame)

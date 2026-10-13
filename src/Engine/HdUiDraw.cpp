@@ -1058,12 +1058,17 @@ void HdUi::drawTtfLine(const std::vector<TextRun> &runs, int originX, int origin
 	// a line lying straight on an HD picture: the letters are given an outline of their own, because a
 	// light line over a bright photograph cannot be read at all. Over a panel or a plain background the
 	// classic drop shadow is what the text has always had, and it stays
-	const bool onPicture = overPicture(originX, originY, std::max(textW, 1), std::max(textH, 1));
+	bool busy = false;
+	const bool onPicture = overPicture(originX, originY, std::max(textW, 1), std::max(textH, 1), &busy);
 	// two base pixels' worth of edge: at k = 4 a fixed 2 would be a quarter of a base pixel and simply
 	// would not be seen, so the outline grows with the scale like everything else here
 	const int outlineW = std::max(2, k);
 	const int shadowOff = onPicture ? 0 : std::max(1, k / 2);
-	for (int pass = 0; pass < 2; ++pass)
+	// and on a busy picture (a ufopaedia article's) a soft dark halo around the outline, half a step wider:
+	// the outline in the text's own dark shade is still a mid tone in a light ramp, and over a busy
+	// photograph the letters ran into it (the cities' lore)
+	const int haloW = outlineW + std::max(1, k / 2);
+	for (int pass = busy ? -1 : 0; pass < 2; ++pass)
 	{
 		float x = pen;
 		for (size_t i = 0; i < runs.size(); ++i)
@@ -1076,14 +1081,20 @@ void HdUi::drawTtfLine(const std::vector<TextRun> &runs, int originX, int origin
 			const int faceV = m.classicCap >= 12 ? 2 : 1, shadowV = 5;
 			auto idx = [&](int v) { return (Uint8)(r.color + v * r.mul + (r.mid ? 2 * (r.mid - v) : 0)); };
 			const Uint32 face = rgba(pal[idx(faceV)]);
-			const Uint32 shadow = rgba(pal[idx(shadowV)], onPicture ? 255 : 150);
-			// pass 0 is the outline on a picture, the drop shadow anywhere else
+			const SDL_Color dark = pal[idx(shadowV)];
+			// on a busy picture the shade is taken down to two fifths: an outline the colour of the ramp's
+			// shadow is barely darker than a light photograph
+			const SDL_Color edge = { (Uint8)(dark.r * 2 / 5), (Uint8)(dark.g * 2 / 5), (Uint8)(dark.b * 2 / 5), 255 };
+			const Uint32 shadow = onPicture ? rgba(busy ? edge : dark, 255) : rgba(dark, 150);
+			const Uint32 halo = rgba(SDL_Color{ (Uint8)(dark.r / 5), (Uint8)(dark.g / 5), (Uint8)(dark.b / 5), 255 }, 110);
+			// pass -1 is the halo, pass 0 the outline on a picture, the drop shadow anywhere else
 			auto shape = [&](UCode ch) -> const HdFont::Glyph &
 			{
+				if (pass < 0) return f.outline(ch, p.px, condense, haloW);
 				return pass == 0 && onPicture ? f.outline(ch, p.px, condense, outlineW) : f.glyph(ch, p.px, condense);
 			};
-			const Uint32 color = pass == 0 ? shadow : face;
-			const int off = pass == 0 ? shadowOff : 0;
+			const Uint32 color = pass < 0 ? halo : pass == 0 ? shadow : face;
+			const int off = pass == 0 ? shadowOff : 0;   // the halo (pass -1) is only ever on a picture
 			// the baseline: the capitals centred in the classic line box, or in the text's own box when
 			// that is a single line of about the line's height (a button's label sits in its middle),
 			// then lifted if this line's own tails would leave the cell (the box when it is the text's)
