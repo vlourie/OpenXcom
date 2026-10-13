@@ -412,6 +412,10 @@ en-US:
   STR_SOLDIER_GROUP_BY_DESC: "Sorting the soldier list puts them into groups first, and by the chosen criterion inside each group. 0 - no groups, 1 - by race, 2 - by rank, 3 - by craft."
   STR_SOLDIER_TYPE_ICON: "Race and rank pictures in soldier lists"
   STR_SOLDIER_TYPE_ICON_DESC: "The race picture of the soldier info screen before the name, the rank badge before the rank."
+  STR_TRANSFER_EXCHANGE: "Two-way exchange on the transfer screen"
+  STR_TRANSFER_EXCHANGE_DESC: "Both bases send at once: the left arrow moves toward the first base, the right arrow toward the second, and the columns show what each base will have. Room is checked net of what each base sends away."
+  STR_TRANSFER_EXCHANGE_TITLE: "EXCHANGE"
+  STR_TRANSFER_EXCHANGE_AMOUNT: "Exchange"
 #==== Battlescape ===============
   STR_WOUNDED_DEFEND_BASE_IF: "Wounded defend (if HP above x%)"
   STR_WOUNDED_DEFEND_BASE_IF_DESC: "Wounded soldiers defend the base too, if their health is above the given percentage threshold."
