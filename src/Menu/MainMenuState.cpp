@@ -356,6 +356,8 @@ void MainMenuState::init()
 			const char *article = getenv("OXCE_HD_ARTICLE");
 			if (article && *article)
 			{
+				// whatever has been researched (the save's debug mode): a check of an article needs no campaign
+				save->setDebugMode();
 				Ufopaedia::openArticle(_game, std::string(article));
 			}
 			else

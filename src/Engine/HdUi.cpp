@@ -476,11 +476,11 @@ const HdFrame *HdUi::prepared(const HdUiArt::Art *art, const Surface *key, int k
 /**
  * Remembers an HD picture drawn over a base rectangle this frame.
  */
-void HdUi::notePicture(int x, int y, int w, int h)
+void HdUi::notePicture(int x, int y, int w, int h, bool busy)
 {
 	if (w > 0 && h > 0)
 	{
-		noteCover({ x, y, w, h, true });
+		noteCover({ x, y, w, h, true, busy });
 	}
 }
 
@@ -512,14 +512,22 @@ void HdUi::noteCover(const Cover &c)
 /**
  * Whether a base rectangle sits on an HD picture: the last thing drawn under its middle.
  */
-bool HdUi::overPicture(int x, int y, int w, int h) const
+bool HdUi::overPicture(int x, int y, int w, int h, bool *busy) const
 {
 	const int cx = x + w / 2, cy = y + h / 2;
+	if (busy)
+	{
+		*busy = false;
+	}
 	for (size_t i = _covers.size(); i > 0; --i)
 	{
 		const Cover &c = _covers[i - 1];
 		if (cx >= c.x && cx < c.x + c.w && cy >= c.y && cy < c.y + c.h)
 		{
+			if (busy)
+			{
+				*busy = c.busy;
+			}
 			return c.picture;
 		}
 	}
