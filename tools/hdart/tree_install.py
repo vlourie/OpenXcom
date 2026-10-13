@@ -58,8 +58,8 @@ def main():
     man = bp.load()
     plan, drop, seen = [], [], {}
     for g in a.groups:
-        r, fids = g.split(":", 1)
-        root = Path(r) if ("/" in r or "\\" in r) else GROUPS / r
+        r, fids = g.rsplit(":", 1)
+        root = ROOT / r if ("/" in r or "\\" in r) else GROUPS / r
         for fid in fids.split(","):
             for S, n, src in family_frames(root, fid):
                 k = fb.key_of(S, n)
