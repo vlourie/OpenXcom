@@ -17,7 +17,11 @@
 Статусы: queued, built, accepted, rejected (перерисовать другим методом), installed, keep_old (прежний пак
 лучше или равен - закрыто), problem (отдельная очередь проблем, партии их не берут), no_save (нет на картах
 сейвов - нечем проверить), need_view (собрана, на картах есть, но в игровой кадр партии не попала - нужен
-другой ракурс; партии не берут, ждёт проверки), skip (не трогать: KEEP, PORTROADS, U_BASE_VR).
+другой ракурс; партии не берут, ждёт проверки), hold (проверка рецепта recipe_guard по классике: ковру или
+pixel_lines кадр не подходит или сомнителен - нужен другой рецепт или просмотр; не отказ картинке, партии не
+берут, после просмотра - plan --groups ... --reviewed), skip (не трогать: KEEP, PORTROADS, U_BASE_VR).
+
+    py -3.13 tools/hdart/floor_batch.py queue --min-group 100   # группы от 100 клеток (по умолчанию 200)
 
 Игровые кадры - только невидимо (tools/game_hidden.py, R-124). Камера кадра подбирается по совпадению с
 расчётным рисунком карты (map_screen_check.render), владелец пикселя даёт вырез каждой группы.
@@ -181,6 +185,10 @@ def load_index():
 
 # ------------------------------------------------------------------ queue
 
+def rep_of(grp, cells):
+    return max(grp, key=lambda m: (cells.get(m, 0), m))
+
+
 def cmd_queue(a):
     hof, by = copies()
     cells = cells_on_maps()
@@ -198,9 +206,9 @@ def cmd_queue(a):
         grp = sorted(set(by.get(hof.get(k), [])) | {k})
         done.update(grp)
         n = sum(cells.get(m, 0) for m in grp)
-        if n < MIN_CELLS:
+        if n < a.min_group and rep_of(grp, cells) not in old:
             continue
-        rep = max(grp, key=lambda m: (cells.get(m, 0), m))
+        rep = rep_of(grp, cells)
         prev = old.get(rep)
         st, note = (prev["статус"], prev["заметка"]) if prev else ("queued", "")
         live = [m for m in grp if not skip_reason(m)]
@@ -229,8 +237,9 @@ def stats(q):
     for r in q.values():
         cc[r["статус"]] += int(r["клеток"])
     say("групп %d:" % len(q))
-    for st in ("queued", "built", "accepted", "rejected", "installed", "keep_old", "problem", "no_save", "need_view",
-               "skip"):
+    sts = ("queued", "built", "accepted", "rejected", "installed", "keep_old", "problem", "no_save", "need_view",
+           "hold", "skip")
+    for st in sts + tuple(sorted(set(c) - set(sts))):     # неизвестный статус тоже виден: сумма = всем группам
         say("  %-10s %4d групп  %8d клеток" % (st, c[st], cc[st]))
 
 
@@ -244,20 +253,47 @@ def visible(dx, dy):
     return abs(dx - dy) <= VIEW_DX and -VIEW_UP <= dx + dy <= VIEW_DOWN
 
 
+def guard_pass(r):
+    """Проверка рецепта группы по классике (recipe_guard, R-298 и R-325). Не ok - статус hold с причиной в
+    заметке: нужен другой рецепт или просмотр, картинка не отклонена. -> годится ли группа рецепту строки."""
+    import recipe_guard as rg
+    meth = r["метод"] or "pixel_lines"
+    v, why, _m = rg.check(r["группа"], meth)
+    if v == "ok":
+        return True
+    r["статус"] = "hold"
+    r["заметка"] = rg.note("carpet" if meth.split()[0] == "ground_seam" else "lines", v, why)
+    r["_new"] = True
+    return False
+
+
 def cmd_plan(a):
     q = load_queue()
     idx = load_index()
     if a.groups:
         # пересборка названных групп после правки инструмента (own_gate): только незакрытые статусы
         names = [g for g in a.groups.split(",") if g]
-        bad = [g for g in names if g not in q or q[g]["статус"] not in ("queued", "rejected", "need_view", "built")]
+        bad = [g for g in names if g not in q or q[g]["статус"] not in ("queued", "rejected", "need_view", "built",
+                                                                         "hold")]
         if bad:
             raise SystemExit("не взять в партию (нет в очереди или статус закрыт): %s" % ", ".join(bad))
         want = [q[g] for g in names]
+        if not getattr(a, "reviewed", False):
+            want = [r for r in want if guard_pass(r)]
     else:
-        want = [r for r in sorted(q.values(), key=lambda r: -int(r["клеток"]))
-                if r["статус"] in (("queued",) + (("rejected",) if a.redo else ()))][: a.n]
+        want = []
+        for r in sorted(q.values(), key=lambda r: -int(r["клеток"])):
+            if len(want) >= a.n:
+                break
+            if r["статус"] in (("queued",) + (("rejected",) if a.redo else ())) and guard_pass(r):
+                want.append(r)
+    held = [r["группа"] for r in q.values() if r["статус"] == "hold" and r.get("_new")]
+    if held:
+        say("проверка рецепта: на просмотр или другой рецепт (статус hold) %d: %s" % (len(held), ", ".join(held)))
+    for r in q.values():
+        r.pop("_new", None)
     if not want:
+        save_queue(q)
         raise SystemExit("в очереди пусто")
     members = {r["группа"]: [r["группа"]] + [m for m in r["копии"].split(",") if m] for r in want}
     # клетки групп по сейвам и этажам
@@ -326,7 +362,8 @@ def cmd_plan(a):
         left -= good
         say("кадр %2d: %-55s %-12s групп %d" % (len(shots), sv, "%d,%d,%d" % c, len(good)))
     plan = {"batch": a.batch, "made": time.strftime("%Y-%m-%d %H:%M"), "shots": shots,
-            "groups": sorted(set(members) - left), "unplaced": sorted(left)}
+            "groups": sorted(set(members) - left), "unplaced": sorted(left),
+            "reviewed": sorted(set(members) - left) if a.groups and getattr(a, "reviewed", False) else []}
     d = WORK / a.batch
     d.mkdir(parents=True, exist_ok=True)
     (d / "plan.json").write_text(json.dumps(plan, ensure_ascii=False, indent=1), encoding=ENC_W)
@@ -384,6 +421,11 @@ def cmd_build(a):
         meth = r["метод"] or "pixel_lines"
         tool, extra = meth.split()[0], meth.split()[1:]
         s, f = g.split(":")
+        # метод мог смениться после плана: проверка рецепта перед инструментом, просмотренное не трогать
+        if not (getattr(a, "reviewed", False) or g in plan.get("reviewed", [])) and not guard_pass(r):
+            r.pop("_new", None)
+            say("%-22s hold: %s" % (g, r["заметка"]))
+            continue
         for old in frame_files(out, s, f):     # прежняя сборка группы в этой партии: варианты не должны остаться
             old.unlink()
         if tool == "pixel_lines":
@@ -789,7 +831,8 @@ def main():
     p = sp.add_parser("index")
     p.add_argument("--saves", default="")
     p.add_argument("--force", action="store_true")
-    sp.add_parser("queue")
+    p = sp.add_parser("queue")
+    p.add_argument("--min-group", type=int, default=MIN_CELLS, help="группы от стольких клеток на картах")
     sp.add_parser("stats")
     p = sp.add_parser("plan")
     p.add_argument("--batch", required=True)
@@ -797,10 +840,14 @@ def main():
     p.add_argument("--min-cells", type=int, default=3)
     p.add_argument("--max-shots", type=int, default=16)
     p.add_argument("--redo", action="store_true", help="брать и отклонённые (после смены метода)")
-    p.add_argument("--groups", default="", help="только эти группы через запятую (queued, rejected, need_view)")
+    p.add_argument("--groups", default="", help="только эти группы через запятую (queued, rejected, need_view, hold)")
+    p.add_argument("--reviewed", action="store_true",
+                   help="группы --groups просмотрены человеком: проверку рецепта (recipe_guard) не применять")
     for nm in ("build", "sheet", "shoot", "install", "judge"):
         p = sp.add_parser(nm)
         p.add_argument("--batch", required=True)
+        if nm == "build":
+            p.add_argument("--reviewed", action="store_true", help="не применять проверку рецепта ко всей партии")
         if nm == "shoot":
             p.add_argument("--jobs", type=int, default=3)
             p.add_argument("--after", type=int, default=90)
