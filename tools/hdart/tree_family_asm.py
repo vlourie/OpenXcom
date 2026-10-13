@@ -1044,6 +1044,8 @@ def bark_tone(world, S, frames, fs, floor_fs=()):
 
 FLOOR_COVER_MIN = 0.35   # доля пола, которую классика кадра повторяет пиксель в пиксель
 FLOOR_TOL = 24           # пиксель классики - земля, если от пиксела пола не дальше этого по каналу
+LAWN_DY = 8              # газон модели в зоне дерева: светлее пола и классики на столько по Y
+LUMA = np.array([0.299, 0.587, 0.114], np.float32)
 
 
 def _floor_sets(world, S):
@@ -1090,17 +1092,26 @@ def floor_base(world, S, frames, z0):
         ground = fb & (a[..., 3] > 0) & (np.abs(a[..., :3] - b[..., :3]).max(-1) <= FLOOR_TOL)
         tree = (a[..., 3] > 0) & ~ground
         t4 = cv2.dilate(tr.rep4(tree).astype(np.uint8), np.ones((5, 5), np.uint8))
-        w = cv2.GaussianBlur(t4.astype(np.float32), (0, 0), 1.2)[..., None]
         new = np.asarray(frames[f].convert("RGBA")).astype(np.float32)
         flo = np.asarray(Image.open(p).convert("RGBA")).astype(np.float32)
-        new[..., 3:] *= np.where(tr.rep4(fb)[..., None], w, 1.0)
+        # своя трава модели в зоне дерева: классика под стволом рисует тень, модель - светлый газон, и на поле под
+        # каждым деревом светлый островок (TG006). Газон - зелёный пиксель ответа светлее HD-пола и светлее классики
+        # того же места (классика в тоне HD-пола); освещённая листва, где классика тоже светлая, не трогается
+        fb4 = tr.rep4(fb)
+        yn, yf = new[..., :3] @ LUMA, flo[..., :3] @ LUMA
+        yc = tr.rep4(a[..., :3].astype(np.float32) @ LUMA) * (yf[fb4].mean() / max(float((b[..., :3] @ LUMA)[fb].mean()), 1.0))
+        g = new[..., 1]
+        lawn = fb4 & (new[..., 3] > 0) & (g >= new[..., 0]) & (g >= new[..., 2]) & (yn > yf + LAWN_DY) & (yn > yc + LAWN_DY)
+        t4 = t4.astype(np.float32) * (1 - cv2.dilate(lawn.astype(np.uint8), np.ones((3, 3), np.uint8)))
+        w = cv2.GaussianBlur(t4, (0, 0), 1.2)[..., None]
+        new[..., 3:] *= np.where(fb4[..., None], w, 1.0)
         ta = new[..., 3:] / 255.0
         fa = flo[..., 3:] / 255.0 * (1 - ta)
         oa = ta + fa
         rgb = (new[..., :3] * ta + flo[..., :3] * fa) / np.maximum(oa, 1e-6)
         frames[f] = Image.fromarray(np.clip(np.concatenate([rgb, oa * 255.0], -1) + 0.5, 0, 255).astype(np.uint8))
         out[f] = dict(floor="%s:%d" % (s2, f2), cover=round(float(c), 3), ground_px=int(ground.sum()),
-                      tree_in_floor_px=int((tree & fb).sum()))
+                      tree_in_floor_px=int((tree & fb).sum()), lawn_px4=int(lawn.sum()))
     return out
 
 
