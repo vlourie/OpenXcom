@@ -241,8 +241,8 @@ def check(world, CL, S, frames, classic):
 
 
 def run_family(root, fid, world):
-    D, CL, sets = tf.load([fid])
-    S = sets[fid]
+    D, CLs, sets = tf.load([fid])
+    S, CL = sets[fid], CLs[fid]
     if fid not in tf.COPY_OF:
         tf.patch(fid, S, CL)
     ta.set_layouts(S, CL)
