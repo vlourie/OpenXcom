@@ -225,6 +225,13 @@ RETRY = {
              "lighter green tips, and a short dark purplish brown trunk forking low into a few thick roots",
     "TG042": "one broadleaf tree with a dense solid crown of dark green leaves filling it completely, thick dark "
              "brown branches visible inside the crown, and a straight dark brown trunk" + GRASS,
+    # TG034 - голый шест с тремя сучками, у классики ветки парами по всей высоте; TG039 - тонкая палка, у классики
+    # толстый ствол с расщепом и ветками у вершины
+    "TG034": "one tall bare dead tree with a straight dark grey trunk and many short bare dark grey branches sticking "
+             "out in pairs on both sides along the whole height of the trunk, from the bottom to the top",
+    "TG039": "one thick fallen dead tree trunk leaning steeply to the left, as thick as a log, pale orange brown wood "
+             "with split ends, several bare broken branches forking at the top end, and a small patch of bright "
+             "orange sand at its base",
 }
 
 
