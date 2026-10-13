@@ -516,6 +516,84 @@ def top_recede(world, S, frames, fs):
     return done
 
 
+def f57_v1(args, world, CL, hints, S, seed):
+    """Кадр 57 по пути V1: срез модели под силуэтом классики (limit_alpha, запас args.grow) и тоном MAIN, без
+    построчной подгонки ствола V2 (z0_trunk, even_rows, f57_details). У FJS эта подгонка тянет ствол под профиль
+    классики с высоким сучком: верх ствола - прямоугольник, по стволу горизонтальные полосы, шов с кроной
+    54@z1 скачок ширины 26.2 и цвета 35.4 против 2.5 и 4.2 у V1 (summary_comp.json, seam_v1 / seam_v2)."""
+    job = tr.Job(world, CL, hints, S, seed, args)
+    t = job.tree
+    hd, g, tp, main = job.main_cut()
+    job._g = g
+    V = {t.top: tr.paste4(main, job.box, t)}
+    _v0, st = view0(job, hd, g, tp, V)
+    # кадр целиком из среза: вид z<=0 (view0) берёт срез только в клетках, где кадр 57 виден на z<=0, а в
+    # остальных - MAIN; на границе клеток в кадре квадраты тёмной коры MAIN, в T1 - полосы торца (проба 13.10)
+    raw = Image.open(job.raw_cut(0)).convert("RGB")
+    cut = tr.apply_tone(tr.limit_alpha(tr.to_body(raw, g), job.frame_z(0), args.grow), tp, args.tone)
+    q57 = next(q for q in t.pcs if q["f"] == 57)
+    fr, st["cut_face"] = sawn_face(world, S, v2.frame_from(tr.paste4(cut, job.box, t), q57))
+    return fr, st
+
+
+def sawn_face(world, S, frame):
+    """Торец спила на верху ствола кадра 57: модель рисует спил ребром (тонкая линия), у классики - кольцо.
+    Как в v2.f57_details: эллипс под верхом ствола, только внутри непрозрачного (силуэт прежний), древесина -
+    пень HD, оттенок - торец классики (верхние 4 строки, красное), кора обода - средняя коры кадра."""
+    fr = np.asarray(frame, np.float32).copy()
+    a = fr[..., 3]
+    rows = np.where((a > 200).sum(1) >= 8)[0]
+    ht = int(rows[0])
+    xs = np.where(a[ht + 8] > 200)[0]
+    mid = int(np.median(xs))
+    run = xs[np.abs(xs - mid) <= 64]
+    x0, x1 = int(run.min()), int(run.max())
+    cl = np.asarray(tr.sprite(world, S, 57), np.int16)
+    clt = int(np.where(cl[..., 3].any(1))[0][0])
+    top = cl[clt:clt + 4]
+    om = (top[..., 3] > 0) & (top[..., 0] > top[..., 1] + 25)
+    face_lab = v2._lab8(top[..., :3][om].astype(np.float32)).mean(0)
+    sp = np.asarray(Image.open(v2.stump_src(S)).convert("RGBA"), np.float32)
+    wood = v2._lab8(sp[(sp[..., 3] > 200) & (sp[..., :3].mean(-1) > 60)][:, :3])
+    L0 = float(np.percentile(wood[:, 0], 60))
+    tm = (a > 200) & (fr[..., 0] >= fr[..., 1])
+    bm = v2._lab8(fr[..., :3][tm]).mean(0)
+    rx = (x1 - x0) / 2.0 - 2.0
+    ry = max(rx * 0.32, 5.0)
+    cx, cy = (x0 + x1) / 2.0, ht + ry + 1.0
+    yy, xx = np.mgrid[0:fr.shape[0], 0:fr.shape[1]].astype(np.float32)
+    box, crgb, wcap, _rr = v2.wood_face(xx, yy, cx, cy, rx, ry, L0, face_lab[1:], bm, np.random.default_rng(57))
+    wcap = wcap * np.clip((a - 200) / 55.0, 0, 1)
+    wb = wcap[box][..., None]
+    fr[..., :3][box] = fr[..., :3][box] * (1 - wb) + crgb * wb
+    return (Image.fromarray(np.clip(np.round(fr), 0, 255).astype(np.uint8), "RGBA"),
+            dict(top_row_x4=ht, x=[x0, x1], rx=round(rx, 1), ry=round(ry, 1)))
+
+
+GROUND_FROM = 80             # x4: строка, ниже которой у кадра 57 трава и корни (полоса ограничения)
+GROUND_GROW = 2              # пикс базы: запас силуэта классики наружу, как у limit_alpha срезов
+GROUND_EDGE = 16             # x4: у боковых рамок запас сходит на ноль
+
+
+def ground_limit(world, S, frames, f=57):
+    """Низ MAIN под стволом - круглая лужайка шире ромба классики (FJS 57: на y140 HD 11..127 против 24..103) и
+    упирается в правую рамку строками 91-142 - срезы 57|R во всех раскладках. В полосе ниже GROUND_FROM альфа не
+    шире силуэта классики (tr.sil_limit, гладкий край) с запасом GROUND_GROW, а у боковых рамок без запаса: ромб
+    классики касается рамки только вершиной, запас вдоль рамки дотянул бы его до среза. Выше полосы - как было."""
+    v = np.asarray(frames[f], np.float32)
+    cl = tr.sprite(world, S, f).convert("RGBA")
+    xs = np.arange(v.shape[1], dtype=np.float32)[None, :]
+    e = np.clip((GROUND_EDGE - np.minimum(xs, v.shape[1] - 1 - xs)) / GROUND_EDGE, 0.0, 1.0)
+    lim = tr.sil_limit(cl, GROUND_GROW) * (1.0 - e) + tr.sil_limit(cl, 0) * e
+    yy = np.arange(v.shape[0], dtype=np.float32)[:, None]
+    w = np.clip((yy - GROUND_FROM) / 12.0, 0.0, 1.0)
+    na = v[..., 3] * (1.0 - w * (1.0 - lim))
+    cut = int(((v[..., 3] > 32) & (na <= 32)).sum())
+    v[..., 3] = na
+    frames[f] = Image.fromarray(np.clip(np.round(v), 0, 255).astype(np.uint8), "RGBA")
+    return dict(cut_px=cut)
+
+
 BARK_SIGMA = 3.0             # x4: окно доли коры классики вокруг пикселя
 BARK_LOCAL = 8.0             # x4: окно местного тона коры (2 пикс базы) - мельче вернёт лесенку классики
 BARK_ITERS = 3
@@ -819,8 +897,10 @@ def assemble_family(args, fid, S, world, CL, hints):
         fd = os.path.join(a2.out, "s%d" % seed, S, "comp", "frames", S + ".PCK")
         frames = {f: Image.open(os.path.join(fd, "%d.png" % f)).convert("RGBA") for f in fs}
         summary["v2_summary"] = os.path.join(a2.out, "summary_comp.json")
+        frames[57], summary["f57_v1"] = f57_v1(args, world, CL, hints, S, seed)
         summary["z0_bushes"] = z0_bushes(world, S, frames)
         summary["top_recede"] = top_recede(world, S, frames, fs)
+        summary["ground_limit"] = ground_limit(world, S, frames)
         fd = os.path.join(od, "frames", S + ".PCK")
         os.makedirs(fd, exist_ok=True)
         for f, im in frames.items():
