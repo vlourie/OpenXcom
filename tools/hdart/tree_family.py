@@ -31,11 +31,16 @@ LAYOUTS = "census/trees/groups/batchA_layouts.json"
 # с закреплённым (R-305): ствол растёт из уже нарисованного основания, без зазора, один
 FAMILIES = {
     "TG035": dict(
-        main="one large dense broadleaf jungle tree with a rounded crown of bright green leaves, a few thin dark "
-             "red branches showing inside the leaves, and a short twisted crimson red trunk with crimson roots",
-        cut0="the lower part of one short twisted crimson red trunk whose leafy crown has been removed: the trunk "
-             "rises directly out of the crimson roots that are already drawn at the bottom, with a flat sawn top "
-             "and a few short red branch stubs; it reaches down to those roots without a gap, one single trunk only",
+        # 13.10 перерисовка по вердикту специалиста: «bright green» дал крону светлее классики на dL +15 (R-016),
+        # «twisted» - тонкий витой ствол вместо толстого прямого (кадр 57); слова - по классике
+        main="one large dense broadleaf jungle tree with a rounded crown of dense dark green leaves in deep shade, "
+             "only small lighter green highlights on the upper leaves, two or three thin dark red branches barely "
+             "visible deep inside the leaves, and a short thick crimson red trunk widening into crimson roots, "
+             "low green grass around the base",
+        cut0="the lower part of one short thick crimson red trunk whose leafy crown has been removed: the trunk "
+             "rises directly out of the crimson roots that are already drawn at the bottom, almost straight and "
+             "as thick as those roots, with a flat sawn top and one short red branch stub on its right side; "
+             "it reaches down to those roots without a gap, one single trunk only",
         stumps={58: "a broken short crimson red tree stump with twisted crimson roots"}),
     "TG011": dict(
         main="one tall tropical tree with a curved grey brown trunk and a crown of wide drooping dark green fern "
