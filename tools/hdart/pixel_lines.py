@@ -58,19 +58,68 @@ def render(cl, pal, holes=False):
     return up[..., :3], up[..., 3] / 255.0
 
 
+def render_dither(cl, pal):
+    """Решётка с мелкой сеткой шахматкой в пиксель (LINERSHIPA 24): xBRZ сводит шахматку с дырами в лабиринт.
+    Одиночный непрозрачный пиксель среди четырёх дыр - сетка: она идёт подложкой nearest x4 (как классика),
+    а xBRZ сглаживает только остальной рисунок (рамки, балки) и кладётся поверх в премультиплицированном цвете."""
+    fld, (ox, oy) = build_field(cl)
+    sub = fld[oy - PAD:oy + 40 + PAD, ox - PAD:ox + 32 + PAD]
+    op = sub > 0
+    p = np.pad(op, 1)
+    nb = p[:-2, 1:-1] | p[2:, 1:-1] | p[1:-1, :-2] | p[1:-1, 2:]
+    dith = op & ~nb
+    top = np.where(dith, 0, sub)
+    a = (top > 0).astype(np.float32) * 255.0
+    rgba = np.concatenate([pal[top], a[..., None]], -1)[None]
+    up = ss.xbrz_scale(rgba, K)[0][PAD * K:-PAD * K, PAD * K:-PAD * K]
+    lt, la = up[..., :3], up[..., 3:] / 255.0
+    bsub = np.where(dith, sub, 0)[PAD:-PAD, PAD:-PAD]
+    brgb = np.repeat(np.repeat(pal[bsub], K, 0), K, 1)
+    ba = np.repeat(np.repeat((bsub > 0).astype(np.float32), K, 0), K, 1)[..., None]
+    oa = la + ba * (1 - la)
+    rgb = (lt * la + brgb * ba * (1 - la)) / np.maximum(oa, 1e-6)
+    print("  сетка шахматкой: %d пикс базы подложкой nearest" % int(dith[PAD:-PAD, PAD:-PAD].sum()))
+    return rgb, oa[..., 0]
+
+
+def own_edge(rgb, d, edge=0.97, src=0.95):
+    """Кадр края материала (бортик крыши, кромка у другого пола): поле копий кладёт рядом ТАКОЙ ЖЕ кадр, и у стыка
+    xBRZ и перехлёст несут его рисунок - на карте, где сосед другой, это светлая нитка по краю (R-256). Пиксели у
+    границы ромба (d > edge) берут цвет своей клетки по лучу от центра на глубине src."""
+    h, w = d.shape
+    y, x = np.mgrid[0:h, 0:w].astype(np.float32) + 0.5
+    m = d > edge
+    k = src / np.maximum(d, 1e-6)
+    sx = np.clip((gs.CX + (x - gs.CX) * k).astype(int), 0, w - 1)
+    sy = np.clip((gs.CY + (y - gs.CY) * k).astype(int), 0, h - 1)
+    out = rgb.copy()
+    out[m] = rgb[sy[m], sx[m]]
+    print("  край своей клеткой: %d пикс x4" % int(m.sum()))
+    return out
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", required=True)
     ap.add_argument("--frames", default="DREAD_BASE:61")
     ap.add_argument("--holes", action="store_true",
                     help="решётка: прозрачные пиксели классики остаются сквозными (иначе ромб сплошной)")
+    ap.add_argument("--dither", action="store_true",
+                    help="решётка с сеткой шахматкой в пиксель: сетка nearest x4, рамки xBRZ (с --holes)")
+    ap.add_argument("--own-edge", action="store_true",
+                    help="кадр края материала: у границы ромба цвет своей клетки, а не копии соседа из поля")
     a = ap.parse_args()
+    if a.dither and not a.holes:
+        raise SystemExit("--dither только вместе с --holes")
     pal = wb.palette().astype(np.float32)
-    al = (gs.dmap() <= 1.0 + OVERLAP).astype(np.float32)
+    dm = gs.dmap()
+    al = (dm <= 1.0 + OVERLAP).astype(np.float32)
     for it in a.frames.split(","):
         s, f = it.split(":")
         cl = wb.read_set(s)[int(f)]
-        rgb, ha = render(cl, pal, a.holes)
+        rgb, ha = render_dither(cl, pal) if a.dither else render(cl, pal, a.holes)
+        if a.own_edge:
+            rgb = own_edge(rgb, dm)
         fa = al * ha
         gs.save_rgba(rgb, fa, a.out, s, f)
         print("%s %s: средний цвет нового %s, классики %s, сквозного в ромбе %.3f" % (
