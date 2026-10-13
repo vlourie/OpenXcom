@@ -52,6 +52,11 @@ def render(cl, pal, holes=False):
     sub = fld[oy - PAD:oy + 40 + PAD, ox - PAD:ox + 32 + PAD]
     if not holes and (sub[PAD:-PAD, PAD:-PAD][cl > 0] == 0).any():
         raise SystemExit("поле не закрывает кадр")
+    # кадр края или обломков (XB1BR 8, U_EXT_G 27): поле копий оставляет пустое внутри ромба, а без holes оно
+    # непрозрачно с цветом индекса 0 - чёрная заливка там, где у классики прозрачно
+    rh = gs.dmap()[K // 2::K, K // 2::K] <= 0.97
+    if not holes and (sub[PAD:-PAD, PAD:-PAD][rh] == 0).any():
+        raise SystemExit("поле не закрывает кадр: пусто внутри ромба")
     a = (sub > 0) if holes else np.ones(sub.shape, bool)
     rgba = np.concatenate([pal[sub], (a * 255.0).astype(np.float32)[..., None]], -1)[None]
     up = ss.xbrz_scale(rgba, K)[0][PAD * K:-PAD * K, PAD * K:-PAD * K]
