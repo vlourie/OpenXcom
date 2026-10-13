@@ -85,36 +85,89 @@ FAMILIES = {
              "directly out of the base that is already drawn at the bottom, with a flat sawn top and a few short "
              "snowy branch stubs; it reaches down to that base without a gap, one single trunk only"),
 }
+# совместная проба ели и пальмы (решение специалиста 13.10): модуль = свой рендер со своей главной раскладкой,
+# проверочные - сочетания census/trees/groups/crown/combos.json своего набора из кадров модуля. Ствол со спилом -
+# срез z0 под верхом (как столбы партии A); крона ели - один рендер без среза (на земле и над стволом 21)
+MODULE_OUT = "census/trees/groups/crown/probe"
+COMBOS = "census/trees/groups/crown/combos.json"
+MODULES = {
+    "SPRUCE": dict(                       # TG003: ствол 21 + верхушка 22 над ним (629 мест)
+        set="FOREST", kind="spruce", frames=(21, 22),
+        main="one tall spruce tree with a thin dark red brown trunk: the lower half has a few sparse dark green "
+             "needle branches spreading sideways with the trunk visible between them, the upper half is a dense "
+             "narrow cone of layered dark green needle branches with lighter green tips, dark roots at the base",
+        cut0="the lower part of one thin dark red brown spruce trunk whose top has been removed: the trunk rises "
+             "directly out of the dark roots that are already drawn at the bottom, with a few sparse dark green "
+             "needle branches spreading sideways and a flat sawn light brown top; it reaches down to those roots "
+             "without a gap, one single trunk only"),
+    "SPRUCE_CROWN": dict(                 # TG019: крона 23-26 2x2 (над стволом 21 - 127 мест, на земле - 33)
+        set="FOREST", kind="spruce", frames=(23, 24, 25, 26),
+        sig=[[23, 3, 0, 0, 0], [24, 3, 0, 1, 0], [25, 3, 1, 1, 0], [26, 3, 1, 0, 0]],
+        main="one very large dense rounded conifer crown of dark green needle foliage in many horizontal layered "
+             "tiers with lighter green tips and deep dark shade between the tiers"),
+    "PALM": dict(                         # TG004 + TG005: ствол 16 + крона 12-14 с пеньком 14 (97 мест)
+        set="COMDECOR", kind="palm", frames=(12, 13, 14, 16),
+        main="one palm tree with a thick light tan trunk with a dark brown shadow side, flaring into roots at the "
+             "base, and a crown of drooping dark green fronds",
+        cut0="the lower part of one thick light tan palm trunk whose crown has been removed: the trunk rises "
+             "directly out of the flared roots that are already drawn at the bottom, with a dark brown shadow side "
+             "and a flat sawn grey top; it reaches down to those roots without a gap, one single trunk only"),
+    # общая сборка ели без рендера: кадры обоих модулей во ВСЕХ сочетаниях набора (127 ствол + крона, 33 - кадр
+    # 23 на месте 25, 10 - смешанная пара), главная - самая частая (629)
+    "SPRUCE_JOINT": dict(set="FOREST", kind="spruce", frames=(21, 22, 23, 24, 25, 26),
+                         parts=("SPRUCE", "SPRUCE_CROWN"), main=""),
+}
 # TG060 VILFRNITURE 85-100 - побайтные копии FOREST 42-57: кадры из канона FOREST, рендера нет;
 # VILFRNITURE:101 (пень) отличается от FOREST:58 - отдельное решение после SAFE (не здесь)
 COPY_OF = {"TG060": dict(src="FOREST", shift=43,
                          frames="census/trees/forest42/render_v2/s2712/FOREST/comp/frames/FOREST.PCK")}
 
 
+def module_layouts(M):
+    """Главная раскладка модуля (своя sig или самое частое сочетание ровно из его кадров) и проверочные -
+    сочетания combos.json своего набора, собранные только из кадров модуля."""
+    C = json.load(open(COMBOS, encoding=ENC))[M["kind"]]
+    own = [c for c in C if M["set"] in c["sets"] and {e[0] for e in c["full"]} <= set(M["frames"])]
+    # главная - самое частое сочетание из ВСЕХ кадров модуля (у пальмы чаще всего один ствол 16 - он проверочный)
+    own.sort(key=lambda c: ({e[0] for e in c["full"]} != set(M["frames"]), -c["sets"][M["set"]]))
+    out = [{"sig": c["full"], "n": c["sets"][M["set"]]} for c in own]
+    if "parts" in M:                     # общая сборка: главная - просто самая частая
+        out.sort(key=lambda L: -L["n"])
+    elif "sig" in M:
+        out.insert(0, {"sig": M["sig"], "n": 0})
+    elif not out or {e[0] for e in out[0]["sig"]} != set(M["frames"]):
+        raise SystemExit("модуль %s: главной раскладки из кадров %s в %s нет" % (M["set"], M["frames"], COMBOS))
+    return out
+
+
 def load(fams):
+    """CL - на семейство: у модулей ели два семейства в одном наборе FOREST."""
     D = json.load(open(LAYOUTS, encoding=ENC))
-    CL, sets = {}, {}
+    CLs, sets = {}, {}
     for fid in fams:
-        d = D[fid]
-        S = d["set"]
-        if S in CL:
-            raise SystemExit("набор %s в двух семействах партии" % S)
-        CL[S] = {"sigs": [{"sig": L["sig"], "n": L["n"]} for L in d["layouts"]]}
+        if fid in MODULES:
+            S = MODULES[fid]["set"]
+            CLs[fid] = {S: {"sigs": module_layouts(MODULES[fid])}}
+        else:
+            S = D[fid]["set"]
+            CLs[fid] = {S: {"sigs": [{"sig": L["sig"], "n": L["n"]} for L in D[fid]["layouts"]]}}
         sets[fid] = S
-    return D, CL, sets
+    return D, CLs, sets
 
 
 def patch(fid, S, CL):
-    """Подсказки и пни одного семейства в ядро V1; свободный срез z1 не рисуется (S в tr.DERIVED -> только z0)."""
-    F = FAMILIES[fid]
+    """Подсказки и пни одного семейства в ядро V1; свободный срез z1 не рисуется (S в tr.DERIVED -> только z0).
+    Модуль без среза (крона ели на одном этаже) - DERIVED пуст, срезов нет вовсе."""
+    F = FAMILIES.get(fid) or MODULES[fid]
     tr.TREE_WHAT.clear()
     tr.CUT_WHAT.clear()
     tr.STUMPS.clear()
     tr.TREE_WHAT[S] = F["main"]
-    tr.CUT_WHAT[(S, 0)] = F["cut0"]
+    if "cut0" in F:
+        tr.CUT_WHAT[(S, 0)] = F["cut0"]
     for f, what in F.get("stumps", {}).items():
         tr.STUMPS[(S, f)] = what
-    tr.DERIVED = (S,)
+    tr.DERIVED = (S,) if "cut0" in F else ()
 
 
 def count_png(d):
@@ -124,8 +177,9 @@ def count_png(d):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--fam", default=",".join(FAMILIES), help="семейства через запятую")
-    ap.add_argument("--out", default=OUT)
+    ap.add_argument("--fam", default=",".join(FAMILIES), help="семейства через запятую (или модули %s)"
+                    % ",".join(MODULES))
+    ap.add_argument("--out", default=None, help="по умолчанию %s, у модулей %s" % (OUT, MODULE_OUT))
     ap.add_argument("--seeds", default="2712")
     ap.add_argument("--steps", type=int, default=40)
     ap.add_argument("--cfg", type=float, default=4.0)
@@ -141,17 +195,22 @@ def main():
     args = ap.parse_args()
     sys.stdout.reconfigure(encoding="utf-8")
     fams = [f for f in args.fam.split(",") if f]
-    bad = [f for f in fams if f not in FAMILIES and not (args.assemble and f in COPY_OF)]
+    bad = [f for f in fams if f not in FAMILIES and f not in MODULES and not (args.assemble and f in COPY_OF)]
     if bad:
         raise SystemExit("неизвестные семейства %s" % bad)
+    mods = [f for f in fams if f in MODULES]
+    if mods and len(mods) != len(fams):
+        raise SystemExit("модули пробы %s и семейства партии - разными запусками" % mods)
+    if args.out is None:
+        args.out = MODULE_OUT if mods else OUT
     args.seeds = [int(s) for s in args.seeds.split(",")]
     args.stumps = set()
-    D, CL, sets = load(fams)
+    D, CLs, sets = load(fams)
     world = tr.mm.World()
     hints = json.load(open(tr.HINTS, encoding=ENC))
     root, left = args.out, args.max_renders
     for fid in fams:                     # своя папка на семейство: JUNGLE живёт и в TG011, и в TG010
-        S = sets[fid]
+        S, CL = sets[fid], CLs[fid]
         args.sets, args.out = [S], os.path.join(root, fid)
         os.makedirs(args.out, exist_ok=True)
         if fid in COPY_OF:               # копия канона: без рендера и без подсказок
@@ -161,6 +220,12 @@ def main():
         patch(fid, S, CL)
         print("== %s %s: раскладок %d, главная на %d мест" % (fid, S, len(CL[S]["sigs"]), CL[S]["sigs"][0]["n"]),
               flush=True)
+        if "parts" in MODULES.get(fid, {}):   # общая сборка модулей: рендера и масок нет
+            if args.assemble:
+                import tree_family_asm
+                tree_family_asm.assemble_joint(args, fid, S, world, CL,
+                                               [os.path.join(root, p) for p in MODULES[fid]["parts"]])
+            continue
         if args.mask_only:
             tr.do_masks(args, world, CL, hints)
             continue

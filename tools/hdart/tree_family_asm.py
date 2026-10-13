@@ -406,10 +406,14 @@ def assemble_v1(args, fid, S, world, CL, hints, seed):
     """Двухэтажные и пальмы: вид верха - MAIN, вид z<=0 - срез V1, у пальм вид z<=1 - кодом."""
     job = tr.Job(world, CL, hints, S, seed, args)
     t = job.tree
-    if not (os.path.exists(job.raw_main) and os.path.exists(job.raw_cut(0))):
+    if not (os.path.exists(job.raw_main) and (t.top == 0 or os.path.exists(job.raw_cut(0)))):
         print("  %s %s s%d: ответов нет - пропуск" % (fid, S, seed), flush=True)
         return None
-    if t.top == 1:
+    if t.top == 0:                           # модуль в один этаж (крона ели): весь вид - MAIN, срезов нет
+        hd, g, tp, main = job.main_cut()
+        job._g = g
+        V, stats = {0: tr.paste4(main, job.box, t)}, {}
+    elif t.top == 1:
         V, stats = tr.views(job)
     else:
         hd, g, tp, main = job.main_cut()
@@ -419,8 +423,8 @@ def assemble_v1(args, fid, S, world, CL, hints, seed):
         stats = {"z0": st0}
     if t.top == 2:
         V[1], stats["z1_code"] = palm_view1(job, V, world)
-    elif t.top != 1:
-        raise SystemExit("%s: верх на этаже %d - не двух- и не трёхэтажное" % (S, t.top))
+    elif t.top > 2:
+        raise SystemExit("%s: верх на этаже %d - выше трёх этажей" % (S, t.top))
     frames, multi = tr.pieces(job, V)
     srcs = {q["f"]: (V[q["z"]], q) for q in t.pcs}
     fam = {q["f"]: ("FULL" if q["z"] == t.top else "Z%d_EXPOSED" % q["z"]) for q in t.pcs}
@@ -968,6 +972,44 @@ def assemble_copy(args, fid, S, world, CL, cp):
     return summary
 
 
+def assemble_joint(args, fid, S, world, CL, parts):
+    """Общая сборка модулей одного набора (ель: ствол 21/22 + крона 23-26) без рендера: кадры берутся из asm
+    модулей как есть, проверяются во всех сочетаниях набора - швы ствол|крона, кадр 23 на месте 25, смешанная пара."""
+    set_layouts(S, CL)
+    od = os.path.join(args.out, "asm")
+    fd = os.path.join(od, "frames", S + ".PCK")
+    os.makedirs(fd, exist_ok=True)
+    fs = sorted({e[0] for L in CL[S]["sigs"] for e in L["sig"]})
+    frames, src = {}, {}
+    for p in parts:
+        pd = os.path.join(p, "asm", "frames", S + ".PCK")
+        for f in fs:
+            q = os.path.join(pd, "%d.png" % f)
+            if os.path.exists(q):
+                if f in frames:
+                    raise SystemExit("%s: кадр %d в двух модулях (%s и %s)" % (fid, f, src[f], p))
+                frames[f], src[f] = Image.open(q).convert("RGBA"), p
+    miss = [f for f in fs if f not in frames]
+    if miss:
+        print("  %s: нет кадров %s - модули не собраны" % (fid, miss), flush=True)
+        return None
+    for f, im in frames.items():
+        po.gen_hd.save_png(im, os.path.join(fd, "%d.png" % f))
+    olds = old_frames(S, fs)
+    summary = dict(family=fid, set=S, layouts=len(CL[S]["sigs"]), frames=fs,
+                   parts={f: os.path.basename(p) for f, p in src.items()}, scan=scan(world, CL, S, frames))
+    sig0 = CL[S]["sigs"][0]["sig"]
+    whole = [("whole", [("classic", tr.assemble(world, S, sig0, None, 99)),
+                        ("old HD", tr.assemble(world, S, sig0, olds, 99)),
+                        ("T1 from frames", tr.assemble(world, S, sig0, frames, 99))])]
+    sheets(world, CL, S, frames, olds, whole, od, "%s %s" % (fid, S), fs)
+    with open(os.path.join(od, "summary.json"), "w", encoding=ENC) as fh:
+        json.dump(summary, fh, ensure_ascii=False, indent=1, default=v2._js)
+    print("  %s: раскладок %d, новых швов %d, срезов рамкой %d" % (fid, len(CL[S]["sigs"]),
+          len(summary["scan"]["open_seams"]), len(summary["scan"]["frame_cuts"])), flush=True)
+    return summary
+
+
 def assemble_family(args, fid, S, world, CL, hints):
     set_layouts(S, CL)
     seed = args.seeds[0]
@@ -1027,6 +1069,8 @@ def assemble_family(args, fid, S, world, CL, hints):
                             ("T1 from frames", tr.assemble(world, S, sig0, frames, 99))]),
                  ("floors", [("view z<=%d" % z, V[z]) for z in range(t.top - 1, -1, -1)] +
                             [("T1 z<=%d" % z, tr.assemble(world, S, sig0, frames, z)) for z in range(t.top - 1, -1, -1)])]
+        if t.top == 0:                                     # одноэтажный модуль: ряда этажей нет
+            whole.pop()
     miss = [f for f in fs if f not in frames]
     if miss:
         raise SystemExit("%s: нет кадров %s - раскладки не собрать" % (fid, miss))
@@ -1036,8 +1080,10 @@ def assemble_family(args, fid, S, world, CL, hints):
         po.gen_hd.save_png(im, os.path.join(od, "frames", S + ".PCK", "%d.png" % f))
     if whole is not None:                                  # T1 из кадров - после сдвига коры
         whole[0][1][3] = ("T1 from frames", tr.assemble(world, S, sig0, frames, 99))
-        whole[1] = ("floors", whole[1][1][:len(whole[1][1]) // 2] +
-                    [("T1 z<=%d" % z, tr.assemble(world, S, sig0, frames, z)) for z in range(t.top - 1, -1, -1)])
+        if len(whole) > 1:
+            whole[1] = ("floors", whole[1][1][:len(whole[1][1]) // 2] +
+                        [("T1 z<=%d" % z, tr.assemble(world, S, sig0, frames, z))
+                         for z in range(t.top - 1, -1, -1)])
     title = "%s %s s%d" % (fid, S, seed)
     summary["scan"] = scan(world, CL, S, frames)
     if whole is None:
