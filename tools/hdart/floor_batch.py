@@ -262,11 +262,18 @@ def cmd_plan(a):
     members = {r["группа"]: [r["группа"]] + [m for m in r["копии"].split(",") if m] for r in want}
     # клетки групп по сейвам и этажам
     occ = collections.defaultdict(lambda: collections.defaultdict(list))   # (сейв, z) -> группа -> клетки
+    stacked = 0
     for sv, v in idx.items():
         for g, ms in members.items():
-            for m in ms:
-                for x, y, z in v["frames"].get(m, []):
-                    occ[(sv, z)][g].append((x, y))
+            cells = {tuple(c) for m in ms for c in v["frames"].get(m, [])}
+            for x, y, z in cells:
+                # стопка одной группы по этажам: снимать только верхний этаж (R-324) - с нижнего клетки не видно
+                if (x, y, z + 1) in cells:
+                    stacked += 1
+                    continue
+                occ[(sv, z)][g].append((x, y))
+    if stacked:
+        say("клеток под той же группой этажом выше (не в счёт, R-324): %d" % stacked)
     import map_screen_check as msc
     busy = {sv: {p for _u, p, _f in msc.units(str(SAVES / sv))[0]} for sv in idx}
     R = 14
