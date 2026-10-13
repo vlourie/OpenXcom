@@ -1783,9 +1783,44 @@ void Globe::drawMarkers()
 {
 	_markers->clear();
 	_markers->lock();
-	// Draw the base markers
+	// Draw the base markers; the main base's square is left to the HD layer's own mark (oxceHdRadar 3)
+	_hdMainKept = hdMainBase();
+	_hdMainShow = false;
 	for (auto* xbase : *_game->getSavedGame()->getBases())
 	{
+		if (_hdMainKept && xbase == _game->getSavedGame()->getBases()->front() && xbase->getMarker() != -1)
+		{
+			if (!pointBack(xbase->getLongitude(), xbase->getLatitude()))
+			{
+				polarToCart(xbase->getLongitude(), xbase->getLatitude(), &_hdMainX, &_hdMainY);
+				// the square's colour, in the phase of the blink it would have been drawn in
+				Surface *marker = _markerSet->getFrame(xbase->getMarker());
+				int count[256] = {};
+				for (int my = 0; my < marker->getHeight(); ++my)
+				{
+					for (int mx = 0; mx < marker->getWidth(); ++mx)
+					{
+						++count[marker->getPixel(mx, my)];
+					}
+				}
+				int index = 1;
+				for (int c = 2; c < 256; ++c)
+				{
+					if (count[c] > count[index])
+					{
+						index = c;
+					}
+				}
+				if (_blink <= 0)
+				{
+					index = (index + 1) & 0xFF;
+				}
+				const SDL_Color &rgb = _markers->getPalette()[index];
+				_hdMainColor = ((Uint32)rgb.r << 16) | ((Uint32)rgb.g << 8) | rgb.b;
+				_hdMainShow = true;
+			}
+			continue;
+		}
 		drawTarget(xbase, _markers);
 	}
 
@@ -1948,13 +1983,22 @@ void Globe::drawHdMarks()
 }
 
 /**
- * Is the HD layer drawing the radar coverage of the bases and the craft (oxceHdRadar 1 and 2)? Then
+ * Is the HD layer drawing the radar coverage of the bases and the craft (oxceHdRadar 1 to 3)? Then
  * their circles are kept out of _radars; the craft range, the new base's ranges and the enemy's
  * radars stay circles.
  */
 bool Globe::hdRadar() const
 {
 	return Options::oxceHdRadar > 0 && Options::globeRadarLines && HdUi::active();
+}
+
+/**
+ * Is the HD layer drawing the main base (the first one) with a star of its own instead of its square
+ * (oxceHdRadar 3)? A picture only: the base, its marker and what clicking it does stay as they are.
+ */
+bool Globe::hdMainBase() const
+{
+	return Options::oxceHdRadar == 3 && HdUi::active();
 }
 
 /**
@@ -2018,7 +2062,7 @@ void Globe::drawHdRadar()
 	const long long minute = (((long long)t->getYear() * 12 + t->getMonth()) * 32 + t->getDay()) * 1440 + t->getHour() * 60 + t->getMinute();
 	HdUi &ui = HdUi::instance();
 	ui.setClip(getX(), getY(), getWidth(), getHeight());
-	_hdRadar.draw(view, sources, minute, Options::oxceHdRadar == 2);
+	_hdRadar.draw(view, sources, minute, (HdRadar::Mode)Options::oxceHdRadar);
 	ui.clearClip();
 }
 
@@ -2156,6 +2200,22 @@ void Globe::blit(SDL_Surface *surface)
 		invalidate();
 	}
 	_markers->blit(surface);
+	if (_hdMainKept && HdUi::isScreen(surface) && HdUi::active())
+	{
+		const int k = HdUi::scale();
+		if (_hdMainShow && k > 0)
+		{
+			HdUi &ui = HdUi::instance();
+			ui.setClip(getX(), getY(), getWidth(), getHeight());
+			_hdRadar.drawMainBase((getX() + _hdMainX + 0.5f) * k, (getY() + _hdMainY + 0.5f) * k, k, _hdMainColor);
+			ui.clearClip();
+		}
+	}
+	else if (_hdMainKept != hdMainBase())
+	{
+		// the option was switched: the main base's square comes back, or goes
+		invalidate();
+	}
 	if (_hdMarksKept && HdUi::isScreen(surface) && HdUi::active())
 	{
 		drawHdMarks();

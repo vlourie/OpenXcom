@@ -116,6 +116,10 @@ private:
 	bool _hdMarksKept = false;          ///< were the outlined targets kept out of _markers when it was last drawn
 	HdRadar _hdRadar;                   ///< the radar coverage as a wash, with pulses (oxceHdRadar)
 	bool _hdRadarKept = false;          ///< were the bases' and craft's radar circles kept out of _radars when it was last drawn
+	bool _hdMainKept = false;           ///< was the main base's square kept out of _markers when it was last drawn
+	bool _hdMainShow = false;           ///< is the main base on the visible side, at _hdMainX/_hdMainY
+	Sint16 _hdMainX = 0, _hdMainY = 0;  ///< the main base on the globe, base pixels
+	Uint32 _hdMainColor = 0;            ///< its marker's colour in this blink phase, 0xRRGGBB
 
 	bool _isMouseScrolling, _isMouseScrolled;
 	int _xBeforeMouseScrolling, _yBeforeMouseScrolling;
@@ -166,6 +170,8 @@ private:
 	bool hdRadar() const;
 	/// Draws the radar coverage, its pulses and the craft's beams over the upscaled globe.
 	void drawHdRadar();
+	/// Is the HD layer drawing the main base with a mark of its own (oxceHdRadar 3)?
+	bool hdMainBase() const;
 	/// The world pixels one pixel of the globe takes in the HD layer when it has a scale of its own; 0 = as the geoscape.
 	int hdEarthScale() const;
 	/// Draws the ocean, the land and the shadow into _hdEarth (w x h), f times finer than the base pixels.
@@ -282,6 +288,8 @@ public:
 	void toggleRadarLines();
 	/// HD radar: a detection cycle has run (the bases pulse); a picture only.
 	void hdRadarCycle() { _hdRadar.cycle(); }
+	/// HD radar: a game hour has run (the bases' waves of oxceHdRadar 3); a picture only.
+	void hdRadarHour() { _hdRadar.hour(); }
 	/// HD radar: is the game clock slow enough for the pulses?
 	void setHdRadarSlow(bool slow) { _hdRadar.setSlow(slow); }
 	/// Update the resolution settings, we just resized the window.

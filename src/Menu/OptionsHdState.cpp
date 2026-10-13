@@ -442,8 +442,8 @@ void OptionsHdState::changeSetting(size_t sel, Uint8 button)
 		}
 		else if (i == &Options::oxceHdRadar)
 		{
-			min = 0;                                  // 0 circles, 1 joint wash, 2 wash with the sweep
-			max = 2;
+			min = 0;                                  // 0 circles, 1 joint wash, 2 wash with the sweep, 3 waves
+			max = 3;
 		}
 		else if (i == &Options::oxceHdBattleHudColor)
 		{
