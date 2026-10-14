@@ -377,7 +377,8 @@ def cmd_plan(a):
             if len(want) >= a.n:
                 break
             if a.fix:                           # исправление установленного: рецепт тот же, проверка не нужна
-                if r["статус"] == "needs_fix":
+                # набор с подменой палитры боя (R-320) - только со слова Vitali, заметка «R-320» держит группу
+                if r["статус"] == "needs_fix" and not r["заметка"].startswith("R-320"):
                     want.append(r)
             elif r["статус"] in (("queued",) + (("rejected",) if a.redo else ())) and guard_pass(r):
                 want.append(r)
@@ -479,6 +480,9 @@ def cmd_plan(a):
         q[g]["партия"] = ""
     left = nowhere
     for g in left:                              # нечем проверить - из партий вон, пока не будет сейва
+        if q[g]["статус"] in INSTALLED:         # установленное не теряет статус: needs_fix остаётся в счёте дефектов
+            q[g]["партия"] = ""
+            continue
         q[g]["статус"] = "no_save"
         q[g]["заметка"] = "на картах сейвов нет места с %d клетками в кадре" % a.min_cells
     save_queue(q)
@@ -658,7 +662,11 @@ def cmd_shoot(a):
     mods = layout(a.batch)
     jobs = []
     for i, sh in enumerate(plan["shots"]):
-        sav = game_save(sh["save"], sh["center"])
+        try:            # один негодный сейв не роняет партию: его кадры просто не сняты, лист покажет пропуск
+            sav = game_save(sh["save"], sh["center"])
+        except (Exception, SystemExit) as e:
+            say("  %s %s: сейв не подготовлен - %s" % (sh["save"], sh["center"], str(e) or type(e).__name__))
+            continue
         cl, hn, nw = shot_paths(a.batch, sh)
         u = WORK / "_users"
         jobs += [(cl, None, 0, u / ("ref%d_c" % i + a.batch), sav), (hn, None, 1, u / ("ref%d_h" % i + a.batch), sav),
