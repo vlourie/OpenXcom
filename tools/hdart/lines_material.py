@@ -101,7 +101,7 @@ def detail_field(s, f, clip, var=0):
     return (fld @ LUMA) / max(ym, 1.0)
 
 
-def build(cl, pal, s, f, holes, k_rel, rsig, k_det, k_grain, clip, desp=0):
+def build(cl, pal, s, f, holes, k_rel, rsig, k_det, k_grain, clip, desp=0, stair=False):
     up = render_padded(cl, pal, holes, desp)
     sh = relief(up, k_rel, rsig) if k_rel > 0 else 1.0
     c = PAD * K
@@ -124,7 +124,34 @@ def build(cl, pal, s, f, holes, k_rel, rsig, k_det, k_grain, clip, desp=0):
     dm = gs.dmap()
     al = (dm <= 1.0 + pl.OVERLAP).astype(np.float32)
     rgb, fa = pl.beyond_diamond(cl, pal, rgb, al * ha, dm)
+    if stair:
+        rgb, fa = keep_stair(cl, pal, rgb, fa)
     return np.clip(rgb, 0, 255), fa, ("пак" if tx is not None else ("зерно" if r is not None else "нет"))
+
+
+def keep_stair(cl, pal, rgb, fa):
+    """Частичный кадр у чужого соседа (RET_SHIPS 38 - полуклетка у края палубы): лесенку классики за ромбом
+    закрывает не своя копия, а другой кадр, который её не закрывает, - в щели светлый фон. Силуэт своей копии
+    возвращается целиком (R-247), цвет - от ближайшего пикселя поля внутрь, не цвет классики."""
+    # сглаженная копия скругляет углы ступенек - щель остаётся; силуэт классики x4 закрывает их, как прежний пак
+    oa = np.maximum(pl.own_render(cl, pal)[1], np.repeat(np.repeat(cl > 0, K, 0), K, 1).astype(np.float32))
+    m = oa > fa + 0.02
+    known = (fa > 0.5) & ~m
+    out = rgb.copy()
+    for _ in range(16):
+        todo = m & ~known
+        if not todo.any():
+            break
+        kp = np.pad(known, 1).astype(np.float32)
+        vp = np.pad(out * known[..., None], ((1, 1), (1, 1), (0, 0)))
+        h, w = known.shape
+        n = sum(kp[1 + dy:1 + dy + h, 1 + dx:1 + dx + w] for dy in (-1, 0, 1) for dx in (-1, 0, 1))
+        s = sum(vp[1 + dy:1 + dy + h, 1 + dx:1 + dx + w] for dy in (-1, 0, 1) for dx in (-1, 0, 1))
+        g = todo & (n > 0)
+        out[g] = s[g] / n[g][:, None]
+        known = known | g
+    print("  лесенка классики возвращена: %d пикс x4" % int(m.sum()))
+    return out, np.maximum(fa, oa)
 
 
 def main():
@@ -139,6 +166,8 @@ def main():
     ap.add_argument("--clip", type=float, default=2.0, help="поджать выбросы фактуры пака (сигм)")
     ap.add_argument("--despeckle", type=int, default=0, help="проходов чистки одиночных пикселей дизеринга (0 - без)")
     ap.add_argument("--pack-root", default="", help="папка прежнего пака вместо установки")
+    ap.add_argument("--keep-stair", action="store_true",
+                    help="частичный кадр у чужого соседа: вернуть лесенку классики за ромбом (keep_stair)")
     a = ap.parse_args()
     if a.pack_root:
         gs.PACK_ROOT = a.pack_root
@@ -148,7 +177,8 @@ def main():
     for it in a.frames.split(","):
         s, f = it.split(":")
         cl = wb.read_set(s)[int(f)]
-        rgb, fa, src = build(cl, pal, s, int(f), a.holes, a.relief, a.rsig, a.detail, a.grain, a.clip, a.despeckle)
+        rgb, fa, src = build(cl, pal, s, int(f), a.holes, a.relief, a.rsig, a.detail, a.grain, a.clip, a.despeckle,
+                             a.keep_stair)
         v, why = cc.verdict(cl, fa, pal)
         if v != "ok":
             raise SystemExit("%s %s: %s" % (s, f, why))
