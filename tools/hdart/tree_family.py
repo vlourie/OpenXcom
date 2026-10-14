@@ -169,7 +169,7 @@ SINGLE_BATCH = {f: 2 for f in ("TG014", "TG024", "TG045", "TG046", "TG047", "TG0
                                "TG065", "TG066", "TG067", "TG077", "TG080", "TG084", "TG085", "TG086", "TG091",
                                "TG094", "TG095")}
 # партия 3 (13.10): пни и сломанные стволы STUMP, бревна LOG, кусты BUSH и TG096 из singles/classes.tsv;
-# отложены горящие TG071 и TG092 (огонь - анимация, R-071), TG048 (отдельное решение), VR TG073 (R-314)
+# отложены TG071 и TG092 (приняты было за горящие; 14.10 проверено - анимации в MCD нет), TG048, VR TG073 (R-314)
 SINGLE_BATCH.update({f: 3 for f in ("TG013", "TG023", "TG031", "TG044", "TG053", "TG054", "TG058", "TG059", "TG061",
                                     "TG062", "TG063", "TG069", "TG072", "TG075", "TG078", "TG079", "TG082", "TG083",
                                     "TG087", "TG096")})
@@ -209,6 +209,10 @@ SINGLE_BATCH.update({f: 11 for f in ("OT083", "OT084")})
 # партия 12 (14.10): основа анимации DUNGEON_DEAD 17-24 (специалист: единая анимация, R-071) - рисуется один кадр 17,
 # капли и круги на луже по фазам классики накладываются сборкой поверх этой основы, неподвижное у всех фаз одно
 SINGLE_BATCH.update({"OT092": 12})
+# партия 13 (14.10): TG092 CATACDECOR:8 (+ перекраска CATACDECOR_DOOM:8). Отложен партией 3 как горящий - по MCD
+# все 8 кадров записи один кадр, анимации нет, огонь в бою движок рисует своим слоем (Map.cpp, getFire) - в кадре
+# пламени нет. TG071 FOREST_WASTE:10 - тот же кадр, что OT073 (партия 8), второй раз не рисуется
+SINGLE_BATCH.update({"TG092": 13})
 GROUND = ", growing out of flat green grass covering the ground"
 GRASS = ", standing on a square patch of green grass"
 SINGLES = {
@@ -506,6 +510,9 @@ SINGLES = {
     "OT092": "one thick drooping mass of dark purple-black hanging vines tapering downwards, hanging high above "
              "the ground, and below it on the ground a flat irregular puddle of bright green slime with faint "
              "lighter diagonal streaks",
+    "TG092": "one small dead leafless tree with pale grey gnarled bark, several crooked bare branches spreading "
+             "upward and outward, small pale bone-coloured knobs at the branch tips, the trunk rising from a low "
+             "dark reddish-black mound of tangled roots on the ground",
 }
 
 # Повтор брака партии 1 (один на семейство, --retry, папка SINGLE_OUT + "_retry"): описание по классике кадра, а не
@@ -623,6 +630,12 @@ RETRY = {
     "OT076": "one jungle tree with a broad lopsided ragged crown of small dark and bright green leaves, uneven "
              "clumps of leaves sticking out at different heights, the crown wider than tall, a short dark "
              "purplish brown trunk with a few roots",
+    # партия 12 (папка batch12_retry, вердикт 14.10): основа DUNGEON_DEAD 17 - слово vines дало нитевидные
+    # свисающие корни, у классики один плотный сплошной ком, книзу сужается клином; лужа была верной
+    "OT092": "one dense solid heavy lump of dark purple-black matter hanging high above the ground, clumped "
+             "together into a single mass, its underside narrowing into one thick blunt wedge pointing down, faint "
+             "violet glints along its edges, and below it on the ground a flat irregular puddle of bright green "
+             "slime with faint lighter diagonal streaks",
 }
 
 
