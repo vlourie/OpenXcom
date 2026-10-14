@@ -24,6 +24,13 @@ GAME = ROOT / "Пиратки" / "Dioxine_XPiratez" / "user" / "mods" / "hd" / "
 K = 4
 
 
+def teeth():
+    """пиксели базы стандартной плоской плитки, центр которых за точным ромбом"""
+    yy, xx = np.mgrid[0:40, 0:32]
+    d = np.abs((xx + 0.5) * K - 64) / 64 + np.abs((yy + 0.5) * K - 130) / 32
+    return pl.STD_FLOOR & (d > 1.0)
+
+
 def blocks(a):
     """среднее по блокам 4x4: x4 -> база"""
     h, w = a.shape
@@ -39,7 +46,9 @@ def loss(cl, alpha, pal=None):
     # но это дыра, а не деталь
     ref = (cl > 0) & (blocks((pl.own_render(cl, pal)[1] > 0.5).astype(np.float32)) >= 0.5)
     got = blocks((alpha > 0.5).astype(np.float32)) >= 0.5
-    lost = ref & ~got
+    # зубцы лесенки стандартной плоской плитки за точным ромбом - не деталь: на карте их закрывает сосед, на краю
+    # площадки прямой край ромба вместо лесенки - так и задумано (R-247, R-331)
+    lost = ref & ~got & ~teeth()
     return lost, int(lost.any(axis=1).sum()), int(lost.any(axis=0).sum())
 
 
