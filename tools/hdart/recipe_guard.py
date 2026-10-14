@@ -358,7 +358,18 @@ def check(g, method):
     if r is None:
         return "review", ["в ромбе меньше 30 пикселей - мерить нечем"], None
     if tool == "pixel_lines":
-        return lines_verdict(r) + (r,)
+        v, why = lines_verdict(r)
+        if v == "hold" and why[0].startswith("ковёр шума"):
+            # мелкий рисунок в самой плитке, который ковёр сотрёт (R-332): рамка, дыры, крест - форма, а не шум.
+            # Деталь над ромбом не в счёт (она не рисунок пола); свечение (R-325) проверяется дальше как обычно
+            r.update(ornament(a))
+            ow = [ORNAMENT[k][2] + " %.2f" % r[k] for k in ORNAMENT if k != "out" and r[k] >= ORNAMENT[k][1]]
+            if ow:
+                v2, why2 = lines_verdict(dict(r, med=NOISE_MED_MAX + 1))
+                if v2 == "ok":
+                    return "review", [why[0] + ", но орнамент (" + ", ".join(ow) + ")"], r
+                return v2, why2, r
+        return v, why, r
     # ковёр: орнамент (R-332) и правильный рисунок (R-298) проверяются всегда, однородность крапа - только
     # у --speckle
     r.update(ornament(a))

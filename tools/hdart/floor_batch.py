@@ -712,6 +712,16 @@ def layout(batch):
                 shutil.copytree(src_t / s, terr / s)
             else:
                 (terr / s).mkdir(parents=True)
+        elif (src_t / s).exists():         # копия от прежней раскладки: прочие кадры набора - как в установке сейчас
+            mine = {p.name for p in (new / s).glob("*.png")}
+            for g in (src_t / s).iterdir():
+                d = terr / s / g.name
+                if g.name not in mine and (not d.exists() or d.stat().st_size != g.stat().st_size
+                                           or d.read_bytes() != g.read_bytes()):
+                    shutil.copy2(g, d)
+            for d in list((terr / s).iterdir()):
+                if d.name not in mine and not (src_t / s / d.name).exists():
+                    d.unlink()
         got = sorted((new / s).glob("*.png"))
         # сначала снять варианты всех заменённых кадров, потом класть новые: иначе .vN сборки ground_seam,
         # положенный раньше своего кадра, снимется вместе со старыми
@@ -765,6 +775,20 @@ def cmd_shoot(a):
             stale += 1
     if stale:
         say("снимков старше сборки партии: %d - переснимаю" % stale)
+    # эталон hd_now старше установки своих наборов - снят с прежнего пака: переснять (R-087)
+    src_t = GAME_MODS / "hd" / "hd" / "TERRAIN"
+    old_ref = 0
+    for sh in plan["shots"]:
+        hn = shot_paths(a.batch, sh)[1]
+        if not hn.exists():
+            continue
+        sets = {g.split(":")[0] + ".PCK" for g in sh["groups"]}
+        inst = max((p.stat().st_mtime for s in sets for p in (src_t / s).glob("*.png")), default=0)
+        if inst > hn.stat().st_mtime:
+            hn.unlink()
+            old_ref += 1
+    if old_ref:
+        say("эталонов hd_now старше установки: %d - переснимаю" % old_ref)
     jobs = []
     for i, sh in enumerate(plan["shots"]):
         try:            # один негодный сейв не роняет партию: его кадры просто не сняты, лист покажет пропуск
