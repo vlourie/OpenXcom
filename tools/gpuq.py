@@ -256,11 +256,19 @@ def note_leftover(job, alive):
 def gpu_script(cmdline):
     """Скрипт из списка, если процесс запускает именно его: смотрится первый скрипт после интерпретатора
     (python rake.py match gen_hd.py запускает rake.py, а не gen_hd.py)."""
-    for a in cmdline[1:]:
+    for i, a in enumerate(cmdline[1:], 1):
         base = os.path.basename(a.replace("\\", "/")).lower()
         if base.endswith((".py", ".ps1", ".sh")):
-            return base if base in GPU_SCRIPTS else None
+            if base in GPU_SCRIPTS and not NO_MODEL_KEYS.get(base, set()) & set(cmdline[i + 1:]):
+                return base
+            return None
     return None
+
+
+# ключи, с которыми скрипт из списка модель не грузит (сборка и листы на процессоре): такой запуск
+# карту не занимает и очередь не держит; тот же список, что разрешает GPUQ_BYPASS=1 (R-127)
+NO_MODEL_KEYS = {"tree_family.py": {"--assemble", "--mask-only"}, "obj_photo.py": {"--recut"},
+                 "ground_relief.py": {"--recut"}}
 
 
 def strays(own):
