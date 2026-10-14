@@ -63,10 +63,11 @@ struct CollapseBlock
 	const CollapsePart *parts;
 	int nParts;
 	const int *targets;
+	int experimental; ///< still fails some of its scenarios: only in the debug stand builds (OXCE_AI_DEV)
 };
 
 /**
- * Which parts of the block hold after the given parts are removed (model M0j3 with marks v2,
+ * Which parts of the block hold after the given parts are removed (model M0j4 with marks v2,
  * the branches alive on the pilot buildings). removed and held are indexed by part.
  */
 void collapseEvaluate(const CollapseBlock &blk, const std::vector<uint8_t> &removed, std::vector<uint8_t> &held);

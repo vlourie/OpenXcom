@@ -297,6 +297,16 @@ bool setsOnMap(int bi)
 	return std::find_if(setOf.begin(), setOf.end(), [](int k) { return k >= 0; }) != setOf.end();
 }
 
+/// Buildings that still fail some of their scenarios stay in the debug stand builds (OXCE_AI_DEV) only.
+bool inThisBuild(int bi)
+{
+#ifdef OXCE_AI_DEV
+	return true;
+#else
+	return !CollapsePilotData::blocks[bi].experimental;
+#endif
+}
+
 /// Keeps what was found in the battle save, so a loaded battle goes on with the same buildings.
 void store(SavedBattleGame *save)
 {
@@ -340,7 +350,7 @@ void scan(SavedBattleGame *save)
 	for (int bi = 0; bi < CollapsePilotData::blockCount; ++bi)
 	{
 		const CollapseBlock &b = CollapsePilotData::blocks[bi];
-		if (!setsOnMap(bi)) continue;
+		if (!inThisBuild(bi) || !setsOnMap(bi)) continue;
 		// the five rarest records of the building are the anchors
 		std::map<std::pair<int, int>, int> freq;
 		for (int i = 0; i < b.nParts; ++i)
@@ -432,7 +442,7 @@ void adopt(SavedBattleGame *save)
 		if (version != 1 && version != FORMAT)
 			why = "unknown format";
 		for (int i = 0; !why && i < CollapsePilotData::blockCount; ++i)
-			if (e.model == CollapsePilotData::blocks[i].name) bi = i;
+			if (e.model == CollapsePilotData::blocks[i].name && inThisBuild(i)) bi = i;
 		if (!why && bi < 0)
 			why = "no such model in this build";
 		// format 1 kept no fingerprint: its entries are taken on the name alone
