@@ -155,6 +155,13 @@ function Get-LfSha([string] $path) {
     try { return ([BitConverter]::ToString($sha.ComputeHash($bytes)) -replace '-', '').ToLowerInvariant() } finally { $sha.Dispose() }
 }
 
+# Грабли R-336: строка кода стенда ИИ (OXCE_AI_DEV) в exe - первая найденная, или пусто; та же, что ищет build.ps1
+function Get-BenchMark([string] $exe) {
+    $s = [Text.Encoding]::GetEncoding(28591).GetString([IO.File]::ReadAllBytes($exe))
+    foreach ($m in @('[AIPROBE] start')) { if ($s.Contains($m)) { return $m } }
+    return ''
+}
+
 # Грабли R-044: с nobuild стейдж мог быть собран до последней правки движка. Выдаёт файлы исходников
 # и сборки (src, cmake, корневой CMakeLists.txt), изменённые позже exe стейджа. Отбор явный по имени и
 # расширению: в Windows PowerShell 5.1 -Include при -LiteralPath молча не действует, и прежняя проверка
@@ -279,6 +286,10 @@ try {
             throw ("exe в стейдже старше исходников или сборки: {0} файл(ов) новее exe - {1}. Выпуск без сборки выложил бы игру без этой правки - запустите без nobuild" -f $stale.Count, $list)
         }
         Ok 'исходники и сборка не новее exe (допуски: только проверенные правки этого стейджа)'
+        # грабли R-336: exe, собранный со стендом ИИ (OXCE_AI_DEV), игрокам не выпускать - и с nobuild тоже
+        $bench = Get-BenchMark $launchExe
+        if ($bench) { throw "в $launchExe код стенда ИИ (строка '$bench') - собран с OXCE_AI_DEV, игрокам нельзя. Пересоберите без nobuild: build.ps1 перенастроит OXCE_AI_DEV=OFF" }
+        Ok 'в exe нет кода стенда ИИ'
 
         # ---- имя и версия выпуска по дате
         $today = Get-Date

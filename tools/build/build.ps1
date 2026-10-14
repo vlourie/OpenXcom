@@ -365,6 +365,53 @@ function Assert-ExeFresh([string]$exe) {
 }
 
 <#
+  Сборка для игроков - без стенда ИИ (грабли R-336). OXCE_AI_DEV собирает в exe пробу ИИ и бота,
+  включает режим ИИ 2.0 по умолчанию (опция oxceAi3) и экспериментальные дома обрушения. Кэш
+  build-release уже раз перенастроили с ON, и выпуск унаследовал его молча: проверка - по кэшу
+  до ninja и по байтам готового exe.
+#>
+$BenchMarks = @('[AIPROBE] start')
+
+function Get-CacheValue([string]$buildDir, [string]$name) {
+    $cache = Join-Path $buildDir 'CMakeCache.txt'
+    $m = Select-String -LiteralPath $cache -Pattern ('^' + [regex]::Escape($name) + ':[A-Z]+=(.*)$') | Select-Object -First 1
+    if ($m) { return $m.Matches[0].Groups[1].Value.Trim() }
+    return ''
+}
+
+function Test-CacheOn([string]$v) {
+    # истинные значения CMake: 1, ON, YES, TRUE, Y и любое ненулевое число
+    $u = $v.Trim().ToUpper()
+    if ($u -in 'ON', 'YES', 'TRUE', 'Y') { return $true }
+    $n = 0.0
+    return [double]::TryParse($u, [ref]$n) -and $n -ne 0
+}
+
+function Set-PlayerBuild([string]$buildDir, [bool]$canFix) {
+    $v = Get-CacheValue $buildDir 'OXCE_AI_DEV'
+    if (-not (Test-CacheOn $v)) { Write-Ok "стенд ИИ выключен (OXCE_AI_DEV=$v)"; return }
+    if (-not $canFix) {
+        throw "Папка сборки настроена со стендом ИИ: OXCE_AI_DEV=$v в $buildDir (грабли R-336). Без пересборки выпускать нельзя - запустите сборку без -NoNinja, она перенастроит OXCE_AI_DEV=OFF"
+    }
+    Write-Warn "OXCE_AI_DEV=$v в $buildDir - перенастраиваю OXCE_AI_DEV=OFF (грабли R-336)"
+    $cmake = Find-Tool (Get-Cfg 'Cmake' '') @((Join-Path (Get-Cfg 'MsysBin' 'C:\msys64\mingw64\bin') 'cmake.exe')) 'cmake'
+    if (-not $cmake) { throw 'cmake не найден (Cmake или MsysBin в build_config.json)' }
+    $code = Invoke-Native $cmake @('-DOXCE_AI_DEV=OFF', $buildDir)
+    if ($code -ne 0) { throw "cmake -DOXCE_AI_DEV=OFF завершился с ошибкой (код $code)" }
+    $v = Get-CacheValue $buildDir 'OXCE_AI_DEV'
+    if (Test-CacheOn $v) { throw "после cmake в $buildDir по-прежнему OXCE_AI_DEV=$v" }
+    Write-Ok "стенд ИИ выключен (OXCE_AI_DEV=$v)"
+}
+
+function Assert-ExeNoBench([string]$exe) {
+    $s = [Text.Encoding]::GetEncoding(28591).GetString([IO.File]::ReadAllBytes($exe))
+    foreach ($m in $BenchMarks) {
+        if ($s.Contains($m)) { throw "В $exe код стенда ИИ (строка '$m') - собран с OXCE_AI_DEV, игрокам нельзя (грабли R-336)" }
+    }
+    Write-Ok 'в exe нет кода стенда ИИ'
+}
+
+<#
   Святое правило (грабли R-003): common и standard в репозитории и в установке игры
   обязаны совпадать побайтно. Разошлись — значит правку не перенесли, и игрок увидит
   не то, что собрано, а на второй машине будет третий вариант.
@@ -577,6 +624,7 @@ function Invoke-ExeStep {
 
     Write-Step 'проверки перед сборкой'
     Assert-BuildTree $buildDir
+    Set-PlayerBuild $buildDir (-not $NoNinja)
 
     if (-not $NoNinja) {
         Write-Step "ninja  ($buildDir)"
@@ -594,6 +642,7 @@ function Invoke-ExeStep {
     $exeInfo = Get-Item -LiteralPath $exe
     Write-Info ("openxcom.exe: {0}, от {1:dd.MM HH:mm}" -f (Format-Size $exeInfo.Length), $exeInfo.LastWriteTime)
     Assert-ExeFresh $exe
+    Assert-ExeNoBench $exe
 
     Write-Step 'DLL, которые нужны exe'
     $dirs = @($msysBin) + @(Get-Cfg 'ExtraDllDirs' @()) + @((Join-Path $buildDir 'bin'))
