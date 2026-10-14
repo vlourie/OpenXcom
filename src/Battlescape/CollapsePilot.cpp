@@ -307,13 +307,36 @@ void store(SavedBattleGame *save)
 		list.push_back({ std::string(CollapsePilotData::blocks[in.bi].name), in.off, modelSig(in.bi) });
 }
 
+/// All parts of the block in place, the ones outside the building box too: of two models whose buildings are
+/// the same record for record (two templates of one house with different annexes) the block that matches more.
+int countAllInPlace(SavedBattleGame *save, const Instance &in)
+{
+	const CollapseBlock &b = CollapsePilotData::blocks[in.bi];
+	int n = 0;
+	for (int i = 0; i < b.nParts; ++i)
+		if (inPlace(save, in.bi, b.parts[i], in.off)) ++n;
+	return n;
+}
+
+/// Do the building boxes of two instances share a map cell?
+bool overlaps(const Instance &a, const Instance &b)
+{
+	const CollapseBlock &p = CollapsePilotData::blocks[a.bi], &q = CollapsePilotData::blocks[b.bi];
+	return a.off.x + p.x0 <= b.off.x + q.x1 && b.off.x + q.x0 <= a.off.x + p.x1
+		&& a.off.y + p.y0 <= b.off.y + q.y1 && b.off.y + q.y0 <= a.off.y + p.y1
+		&& a.off.z < b.off.z + q.sz && b.off.z < a.off.z + p.sz;
+}
+
 /// Finds the pilot buildings: offsets voted by the rarest parts of each block. Only a whole building counts
 /// (every part in place, the whole block inside the map): the model was checked on the intact template, and
-/// a partial match is often another building of the same terrain. Found once per battle, kept to its end.
+/// a partial match is often another building of the same terrain. One map cell belongs to one building: of
+/// whole matches whose boxes overlap only the one with most of its block in place is taken. Found once per
+/// battle, kept to its end.
 void scan(SavedBattleGame *save)
 {
 	const auto t0 = Clock::now();
 	bind(save);
+	std::vector<std::pair<int, Instance> > whole;  // (all parts of the block in place, instance)
 	for (int bi = 0; bi < CollapsePilotData::blockCount; ++bi)
 	{
 		const CollapseBlock &b = CollapsePilotData::blocks[bi];
@@ -349,10 +372,7 @@ void scan(SavedBattleGame *save)
 			const int n = countInPlace(save, in, &all);
 			if (all > 0 && n == all)
 			{
-				st.inst.push_back(in);
-				// self-check of the load test: a whole building has nothing foreign in its place
-				Log(LOG_INFO) << "[COLLAPSE] found " << b.label << " (" << b.name << ") at " << off.x << "," << off.y << "," << off.z
-					<< ": " << n << " of " << all << " parts in place, " << foreignParts(save, in) << " foreign";
+				whole.push_back(std::make_pair(countAllInPlace(save, in), in));
 			}
 			else if (all > 0 && n * 2 >= all)
 			{
@@ -360,6 +380,33 @@ void scan(SavedBattleGame *save)
 					<< ": " << n << " of " << all << " parts in place - left alone";
 			}
 		}
+	}
+	// most of the block first; a tie keeps the order of the blocks in the data, then of the offsets
+	std::stable_sort(whole.begin(), whole.end(),
+		[](const std::pair<int, Instance> &a, const std::pair<int, Instance> &b) { return a.first > b.first; });
+	for (const auto &w : whole)
+	{
+		const Instance &in = w.second;
+		const CollapseBlock &b = CollapsePilotData::blocks[in.bi];
+		const Position &off = in.off;
+		const Instance *taken = nullptr;
+		for (const Instance &had : st.inst)
+			if (overlaps(had, in)) taken = &had;
+		if (taken)
+		{
+			const CollapseBlock &tb = CollapsePilotData::blocks[taken->bi];
+			Log(LOG_INFO) << "[COLLAPSE] overlaps " << b.label << " at " << off.x << "," << off.y << "," << off.z
+				<< ": " << w.first << " of " << b.nParts << " block parts in place, the place is " << tb.label << " at "
+				<< taken->off.x << "," << taken->off.y << "," << taken->off.z << " - left alone";
+			continue;
+		}
+		st.inst.push_back(in);
+		int all = 0;
+		const int n = countInPlace(save, in, &all);
+		// self-check of the load test: a whole building has nothing foreign in its place
+		Log(LOG_INFO) << "[COLLAPSE] found " << b.label << " (" << b.name << ") at " << off.x << "," << off.y << "," << off.z
+			<< ": " << n << " of " << all << " parts in place, " << foreignParts(save, in) << " foreign; block "
+			<< w.first << " of " << b.nParts;
 	}
 	Log(LOG_INFO) << "[COLLAPSE] scan: " << st.inst.size() << " pilot building(s), " << msSince(t0) << " ms";
 }
@@ -399,10 +446,12 @@ void adopt(SavedBattleGame *save)
 			else if (!setsOnMap(bi))
 				why = "terrain of the model not on the map";
 		}
+		Instance in = { bi, off };
 		for (const Instance &had : st.inst)
 			if (!why && had.bi == bi && had.off == off)
 				why = "duplicate entry";
-		Instance in = { bi, off };
+			else if (!why && overlaps(had, in))
+				why = "overlaps another building";
 		int all = 0, foreign = 0;
 		const int n = why ? 0 : countInPlace(save, in, &all);
 		// a ruined building is kept however little of it stands; an entry pointing at other buildings

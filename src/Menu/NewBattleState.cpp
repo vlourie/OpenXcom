@@ -858,6 +858,19 @@ void NewBattleState::probeRandomize(long long seed)
 		initSave();
 	}
 	_cbxTerrain->setSelected(pick(_terrainTypes.size()));
+	// OXCE_AI_TERRAIN=<terrain> pins the terrain of the mission the same way
+	if (const char *wanted = getenv("OXCE_AI_TERRAIN"))
+	{
+		auto it = std::find(_terrainTypes.begin(), _terrainTypes.end(), std::string(wanted));
+		if (it != _terrainTypes.end())
+		{
+			_cbxTerrain->setSelected(it - _terrainTypes.begin());
+		}
+		else if (*wanted)
+		{
+			Log(LOG_WARNING) << "[AIPROBE] no terrain " << wanted << " for this mission: random instead";
+		}
+	}
 	cbxTerrainChange(nullptr);
 	_slrDarkness->setValue(RNG::generate(0, 15));
 	// the race the mod sends to this mission (a mission whose site it is), at a random month of the campaign
