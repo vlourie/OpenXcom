@@ -20,6 +20,12 @@
 другой ракурс; партии не берут, ждёт проверки), hold (проверка рецепта recipe_guard по классике: ковру или
 pixel_lines кадр не подходит или сомнителен - нужен другой рецепт или просмотр; не отказ картинке, партии не
 берут, после просмотра - plan --groups ... --reviewed), skip (не трогать: KEEP, PORTROADS, U_BASE_VR).
+Установленные: installed (ещё не проверены контуром), verified (контур цел), needs_fix (в моде кадр с
+потерей контура классики, R-326; причина в столбце «дефект»), fixed (был дефект, исправленный прошёл проверку).
+failed - сборка группы упала, партия идёт дальше.
+
+    py -3.13 tools/hdart/floor_batch.py audit [--groups K1,K2]   # контур всех установленных (contour_check)
+    py -3.13 tools/hdart/floor_batch.py plan --batch fx1 --fix --edges   # партия исправления, кадры краёв площадок
 
     py -3.13 tools/hdart/floor_batch.py queue --min-group 100   # группы от 100 клеток (по умолчанию 200)
 
@@ -63,7 +69,12 @@ KEEP_PREFIX = ("PORTROADS:", "U_BASE_VR:")
 PROBLEMS = {"ROADS_WASTE:0": "отдельная очередь проблем (рецензия 13.10)",
             "CARGO1:48": "R-320: подмена палитры боя - почти чёрные индексы становятся бирюзой",
             "C_INT:6": "в игре не виден - закрыт бортом поезда"}
-COLS = ["группа", "копии", "клеток", "статус", "партия", "метод", "заметка"]
+COLS = ["группа", "копии", "клеток", "статус", "партия", "метод", "заметка", "дефект"]
+# аудит контура (contour_check, R-326): потеря только в клине у верхней вершины - нарочно (R-247, перекрёсток ROADS:
+# сквозь клин виден выступ соседей); FREIGHTER_MAIN:0 - тот же асфальт ROADS 9 на копиях CYBERWAREAN, METRO1 и др.
+WEDGE = {"ROADS:9", "ROADS:13", "FREIGHTER_MAIN:0"}
+WEDGE_BOX = (14, 17, 24, 27)            # x0, x1, y0, y1 пикселей базы: клин 1/8 x 1/8 у верхней вершины
+INSTALLED = ("installed", "verified", "fixed", "needs_fix")   # кадр группы стоит в моде
 # окно игрового кадра 1920x1080 при k = 4: база 480x270, внизу панель боя
 VIEW_DX, VIEW_UP, VIEW_DOWN = 13, 14, 8
 
@@ -226,7 +237,7 @@ def cmd_queue(a):
             st = "queued" if any(m in seen for m in grp) else "no_save"
         q[rep] = {"группа": rep, "копии": ",".join(m for m in grp if m != rep), "клеток": n, "статус": st,
                   "партия": prev["партия"] if prev else "", "метод": prev["метод"] if prev else "",
-                  "заметка": note}
+                  "заметка": note, "дефект": prev.get("дефект", "") if prev else ""}
     save_queue(q)
     stats(q)
 
@@ -237,14 +248,94 @@ def stats(q):
     for r in q.values():
         cc[r["статус"]] += int(r["клеток"])
     say("групп %d:" % len(q))
-    sts = ("queued", "built", "accepted", "rejected", "installed", "keep_old", "problem", "no_save", "need_view",
-           "hold", "skip")
+    sts = ("queued", "built", "accepted", "rejected", "installed", "verified", "fixed", "needs_fix", "failed",
+           "keep_old", "problem", "no_save", "need_view", "hold", "skip")
     for st in sts + tuple(sorted(set(c) - set(sts))):     # неизвестный статус тоже виден: сумма = всем группам
         say("  %-10s %4d групп  %8d клеток" % (st, c[st], cc[st]))
+    # группа с дефектом в партии исправления (built, accepted, failed) - в моде всё ещё прежний кадр с дефектом
+    work = sum(1 for r in q.values() if r.get("дефект") and r["статус"] not in INSTALLED)
+    inst = sum(c[s] for s in INSTALLED) + work
+    say("установлено %d: требует исправления %d (из них в партии исправления %d), исправлено %d, проверено %d, "
+        "ещё не проверено %d" % (inst, c["needs_fix"] + work, work, c["fixed"], c["verified"], c["installed"]))
 
 
 def cmd_stats(a):
     stats(load_queue())
+
+
+# ------------------------------------------------------------------ audit
+
+def audit_group(r, root=GAME, cache=None):
+    """Контур установленных кадров группы (R-326): каждая копия и каждый её вариант .vN в моде, против своей
+    классики (копии побайтно одна классика). -> ("ok" | "wedge" | "lost", текст)"""
+    import contour_check as cc
+    import water_build as wb
+    cache = {} if cache is None else cache
+    if "pal" not in cache:
+        cache["pal"] = wb.palette().astype(np.float32)
+    g = r["группа"]
+    s, f = g.split(":")
+    if s not in cache:
+        cache[s] = wb.read_set(s)
+    cl = cache[s][int(f)]
+    bad, wedge, n = [], [], 0
+    for m in [g] + [m for m in r["копии"].split(",") if m]:
+        if skip_reason(m):
+            continue
+        ms, mf = m.split(":")
+        sd = root / "TERRAIN" / ("%s.PCK" % ms)
+        for p in ([sd / ("%s.png" % mf)] if (sd / ("%s.png" % mf)).exists() else []) + sorted(sd.glob(mf + ".v*.png")):
+            n += 1
+            lost, _r, _c = cc.loss(cl, cc.read_alpha(p), cache["pal"])
+            if not lost.any():
+                continue
+            ys, xs = np.nonzero(lost)
+            x0, x1, y0, y1 = WEDGE_BOX
+            name = "%s/%s" % (m, p.name)
+            if g in WEDGE and xs.min() >= x0 and xs.max() <= x1 and ys.min() >= y0 and ys.max() <= y1:
+                wedge.append(name)
+            else:
+                bad.append("%s %d пикс (x %d-%d y %d-%d)" % (name, int(lost.sum()), xs.min(), xs.max(), ys.min(),
+                                                              ys.max()))
+    if not n:
+        return "lost", "нет кадра в моде"
+    if bad:
+        return "lost", "потеря контура: " + "; ".join(bad[:4]) + (" и ещё %d" % (len(bad) - 4) if len(bad) > 4 else "")
+    if wedge:
+        return "wedge", "контур цел, кроме клина у верхней вершины (R-247, нарочно): %d файлов" % len(wedge)
+    return "ok", "контур цел: %d файлов" % n
+
+
+def audit_set(r, v, why):
+    """статус установленной группы по аудиту: потеря - needs_fix с причиной в «дефект»; цел - fixed, если раньше
+    был дефект, иначе verified"""
+    if v == "lost":
+        r["статус"] = "needs_fix"
+        r["дефект"] = why
+    else:
+        r["статус"] = "fixed" if r.get("дефект") else "verified"
+        if v == "wedge" and "клина у верхней вершины" not in r["заметка"]:
+            r["заметка"] = (r["заметка"] + "; " if r["заметка"] else "") + why
+
+
+def cmd_audit(a):
+    """Установленные группы (installed, verified, fixed, needs_fix или --groups) - контур каждого файла в копии мода
+    игры. Это проверка геометрии, а не картинки: verified = лист партии принят и контур цел."""
+    q = load_queue()
+    names = [g for g in a.groups.split(",") if g] or [g for g, r in q.items() if r["статус"] in INSTALLED]
+    cache, cnt = {}, collections.Counter()
+    for g in names:
+        r = q[g]
+        if r["статус"] not in INSTALLED:
+            raise SystemExit("%s: статус %s - не установлена" % (g, r["статус"]))
+        v, why = audit_group(r, cache=cache)
+        audit_set(r, v, why)
+        cnt[r["статус"]] += 1
+        if v != "ok":
+            say("%-24s %-9s %s" % (g, r["статус"], why))
+    save_queue(q)
+    say("аудит: %d групп - %s" % (len(names), ", ".join("%s %d" % kv for kv in sorted(cnt.items()))))
+    stats(q)
 
 
 # ------------------------------------------------------------------ plan
@@ -274,7 +365,7 @@ def cmd_plan(a):
         # пересборка названных групп после правки инструмента (own_gate): только незакрытые статусы
         names = [g for g in a.groups.split(",") if g]
         bad = [g for g in names if g not in q or q[g]["статус"] not in ("queued", "rejected", "need_view", "built",
-                                                                         "hold")]
+                                                                         "hold", "needs_fix", "failed")]
         if bad:
             raise SystemExit("не взять в партию (нет в очереди или статус закрыт): %s" % ", ".join(bad))
         want = [q[g] for g in names]
@@ -285,7 +376,10 @@ def cmd_plan(a):
         for r in sorted(q.values(), key=lambda r: -int(r["клеток"])):
             if len(want) >= a.n:
                 break
-            if r["статус"] in (("queued",) + (("rejected",) if a.redo else ())) and guard_pass(r):
+            if a.fix:                           # исправление установленного: рецепт тот же, проверка не нужна
+                if r["статус"] == "needs_fix":
+                    want.append(r)
+            elif r["статус"] in (("queued",) + (("rejected",) if a.redo else ())) and guard_pass(r):
                 want.append(r)
     held = [r["группа"] for r in q.values() if r["статус"] == "hold" and r.get("_new")]
     if held:
@@ -306,6 +400,10 @@ def cmd_plan(a):
                 # стопка одной группы по этажам: снимать только верхний этаж (R-324) - с нижнего клетки не видно
                 if (x, y, z + 1) in cells:
                     stacked += 1
+                    continue
+                # край площадки (R-326): сосед со стороны камеры (+x, +y) - не та же группа; там боковину и
+                # кромку не закрывает следующий кадр, и срез контура виден
+                if a.edges and (x + 1, y, z) in cells and (x, y + 1, z) in cells:
                     continue
                 occ[(sv, z)][g].append((x, y))
     if stacked:
@@ -440,8 +538,12 @@ def cmd_build(a):
             say("%-22s метод %s - не умею, пропуск" % (g, meth))
             continue
         if p.returncode:
-            say("%-22s ОШИБКА %s" % (g, (p.stderr or p.stdout).strip().splitlines()[-1:]))
-            r["заметка"] = "сборка упала"
+            # отдельный статус, остальная партия идёт дальше; установленный кадр остаётся, дефект не теряется
+            err = ((p.stderr or p.stdout).strip().splitlines() or ["?"])[-1]
+            say("%-22s ОШИБКА %s" % (g, err))
+            if r["статус"] != "needs_fix":
+                r["статус"] = "failed"
+            r["заметка"] = "сборка упала: " + err[:200]
             continue
         r["метод"] = " ".join([tool] + extra)
         r["статус"] = "built"
@@ -732,6 +834,10 @@ def cmd_judge(a):
         g = g_of(k.strip())
         q[g]["статус"] = "keep_old"
         q[g]["заметка"] = why.strip()
+    fixq = [g for g in sh["order"] if q[g].get("дефект") and q[g]["статус"] in ("rejected", "keep_old")]
+    for g in fixq:                              # в моде по-прежнему кадр с дефектом: он не закрыт, ждёт исправления
+        q[g]["заметка"] = "%s: %s" % (q[g]["статус"], q[g]["заметка"])
+        q[g]["статус"] = "needs_fix"
     save_queue(q)
     # вердикты партии - отдельным файлом: в очереди только последнее состояние группы, а группа, возвращённая на
     # пересборку, уходит в следующую партию, и счёт прежней партии из очереди уже не собрать
@@ -741,7 +847,7 @@ def cmd_judge(a):
         for row in csv.reader(vp.read_text(encoding=ENC_R).splitlines()[1:], delimiter="\t", quoting=csv.QUOTE_NONE):
             old[row[0]] = row
     for g in sh["order"]:
-        if q[g]["статус"] in ("accepted", "rejected", "keep_old"):
+        if q[g]["статус"] in ("accepted", "rejected", "keep_old") or g in fixq:
             old[g] = [g, q[g]["статус"], q[g]["заметка"].replace("\t", " ")]
     vp.write_text("группа\tвердикт\tзаметка\n" + "".join("\t".join(r) + "\n" for r in old.values()), encoding=ENC_W)
     stats(q)
@@ -818,8 +924,13 @@ def cmd_install(a):
             bad += 1
     say("сверка: расхождений", bad)
     if not bad:
-        for r in take:
+        cache = {}
+        for r in take:                          # контур установленного (R-326): потеря - needs_fix, не verified
             r["статус"] = "installed"
+            v, why = audit_group(r, cache=cache)
+            audit_set(r, v, why)
+            if v == "lost":
+                say("%-22s КОНТУР: %s" % (r["группа"], why))
         save_queue(q)
     stats(q)
 
@@ -840,9 +951,15 @@ def main():
     p.add_argument("--min-cells", type=int, default=3)
     p.add_argument("--max-shots", type=int, default=16)
     p.add_argument("--redo", action="store_true", help="брать и отклонённые (после смены метода)")
-    p.add_argument("--groups", default="", help="только эти группы через запятую (queued, rejected, need_view, hold)")
+    p.add_argument("--groups", default="",
+                   help="только эти группы через запятую (queued, rejected, need_view, hold, needs_fix, failed)")
     p.add_argument("--reviewed", action="store_true",
                    help="группы --groups просмотрены человеком: проверку рецепта (recipe_guard) не применять")
+    p.add_argument("--fix", action="store_true", help="партия исправления: установленные группы со статусом needs_fix")
+    p.add_argument("--edges", action="store_true",
+                   help="снимать края площадок: клетки, у которых сосед по +x и по +y - та же группа, не брать")
+    p = sp.add_parser("audit")
+    p.add_argument("--groups", default="", help="только эти группы через запятую (по умолчанию все установленные)")
     for nm in ("build", "sheet", "shoot", "install", "judge"):
         p = sp.add_parser(nm)
         p.add_argument("--batch", required=True)
@@ -861,7 +978,8 @@ def main():
             p.add_argument("--keep", default="")
     a = ap.parse_args()
     {"index": cmd_index, "queue": cmd_queue, "stats": cmd_stats, "plan": cmd_plan, "build": cmd_build,
-     "shoot": cmd_shoot, "sheet": cmd_sheet, "judge": cmd_judge, "install": cmd_install}[a.cmd](a)
+     "shoot": cmd_shoot, "sheet": cmd_sheet, "judge": cmd_judge, "install": cmd_install,
+     "audit": cmd_audit}[a.cmd](a)
 
 
 if __name__ == "__main__":
