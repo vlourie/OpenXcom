@@ -49,8 +49,10 @@ def build_field(cl):
     ox, oy = (N - 1) * 16, (c + c) * 8           # начало кадра средней копии
     # своя копия поверх всех: у приподнятой плиты (URBAN_WASTE 82, TAVERN 32) копии ниже рисуются позже и
     # закрывали свою боковину внутри ромба. Кадр рисует себя, соседи - только контекст xBRZ и заливка
-    # своих прозрачных мест; кто кого закрывает на карте, решает порядок рисования игры (R-326)
-    if os.environ.get("PIXEL_LINES_DIAMOND_ONLY") != "1":
+    # своих прозрачных мест; кто кого закрывает на карте, решает порядок рисования игры (R-326).
+    # Только у кадра, который рисует сверх стандартной плоской плитки: у плоской своя копия поверх меняет xBRZ
+    # на стыке клеток, и по полю выходит сетка (R-331)
+    if os.environ.get("PIXEL_LINES_DIAMOND_ONLY") != "1" and ((cl > 0) & ~STD_FLOOR).any():
         m = cl > 0
         f[oy:oy + 40, ox:ox + 32][m] = cl[m]
     return f, (ox, oy)
@@ -147,16 +149,51 @@ def beyond_diamond(cl, pal, rgb, fa, dm):
     контроля теста и сверки установленного с прежним pixel_lines."""
     if os.environ.get("PIXEL_LINES_DIAMOND_ONLY") == "1":
         return rgb, fa
-    orgb, oa = own_render(cl, pal)
-    # перехлёст нижних сторон тоже свой: там поле несёт верх соседней плиты, и на краю площадки без соседа это
-    # светлая нитка вдоль кромки. На карте его закрывает сосед, который рисуется позже; просвет вершины четырёх
-    # клеток закрывает перехлёст верхних сторон того же соседа (R-291)
-    y = np.mgrid[0:dm.shape[0], 0:dm.shape[1]][0] + 0.5
-    out = (dm > 1.0 + OVERLAP) | ((dm > 1.0) & (y > gs.CY))
+    oa = own_render(cl, pal)[1]
+    # выступ - только то, что классика рисует сверх ромба плоской плитки. Лесенка самой плитки за точным ромбом
+    # (у полной плитки 318 пикс x4 до dm 1.15) своей копией не рисуется: она ложится поверх раньше нарисованных
+    # соседей скруглёнными зубцами, и на карте выходит сетка по границам клеток (R-331)
+    pm = (cl > 0) & ~STD_FLOOR
+    pr = dilate(np.repeat(np.repeat(pm, K, 0), K, 1), 3)
+    out = pr & (dm > 1.0)
     n = int((out & (oa > 0.5)).sum())
     if n:
-        print("  за ромбом своя копия: %d пикс x4" % n)
-    return np.where(out[..., None], orgb, rgb), np.where(out, oa, fa)
+        print("  выступ за ромбом своей копией: %d пикс x4" % n)
+    # цвет выступа - из поля: своя копия там лежит последней (build_field) и сглажена вместе с соседями
+    fa = np.where(out, oa, fa)
+    # нижний перехлёст плоской плитки: поле несёт там верх соседней плиты - на краю площадки без соседа светлая
+    # нитка; цвет своей клетки по лучу, альфа по ромбу
+    h, w = dm.shape
+    y, x = np.mgrid[0:h, 0:w].astype(np.float32) + 0.5
+    low = ~pr & (dm > 1.0) & (y > gs.CY)
+    k = 0.95 / np.maximum(dm, 1e-6)
+    sx = np.clip((gs.CX + (x - gs.CX) * k).astype(int), 0, w - 1)
+    sy = np.clip((gs.CY + (y - gs.CY) * k).astype(int), 0, h - 1)
+    rgb = rgb.copy()
+    rgb[low] = rgb[sy[low], sx[low]]
+    return rgb, fa
+
+
+def dilate(m, r):
+    p = np.pad(m, r)
+    g = np.zeros_like(m)
+    for dy in range(-r, r + 1):
+        for dx in range(-r, r + 1):
+            if dx * dx + dy * dy <= r * r:
+                g |= p[r + dy:r + dy + m.shape[0], r + dx:r + dx + m.shape[1]]
+    return g
+
+
+def std_floor():
+    """Силуэт полной плоской плитки классики (ряды 24-39, ширина 4..32..4): у всех полных плиток он один."""
+    m = np.zeros((40, 32), bool)
+    for yy in range(24, 40):
+        k = yy - 23 if yy <= 31 else 40 - yy
+        m[yy, 16 - 2 * k:16 + 2 * k] = True
+    return m
+
+
+STD_FLOOR = std_floor()
 
 
 def build(cl, pal, holes=False, dither=False, edge=False):

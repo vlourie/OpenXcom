@@ -9,6 +9,8 @@
 Mod::getMapDataSet, loadMapResources). Записи с анимацией (Frame[0..7] не все равны) не выкладываются -
 петля только целиком (R-071); кадр, который не стоит первым ни в одной записи, - тоже.
 enviroEffectsType снимается (--keep-env оставить): подмена палитры боя красит HD сеткой сдвигов (R-314, R-267).
+--env STR_ENVIRO_X ставит окружение: так снимаются группы pixel_lines из наборов, которые игра показывает под
+подменой палитры (floor_batch plan берёт их клетки только из сейвов с таким окружением).
 
     py -3.13 tools/hdart/floor_scene.py --base mars_cydonia_landing_mars_9996.asav --out scene_nosave_1.asav
     py -3.13 tools/hdart/floor_batch.py index              # сцена попадает в индекс как обычный сейв
@@ -31,14 +33,17 @@ import map_screen_check as msc  # noqa: E402
 import map_truth as mt          # noqa: E402
 
 
-def pick_records(D, groups, q):
-    """Группа -> (набор, запись): статичная запись пола, у которой Frame[0] - кадр группы или её копии."""
+def pick_records(D, groups, q, only=None):
+    """Группа -> (набор, запись): статичная запись пола, у которой Frame[0] - кадр группы или её копии.
+    only(набор) -> ложь: копию этого набора не брать (--env: только наборы, которые окружение красит)."""
     out, skipped = {}, {}
     for g in groups:
         r = q[g]
         best = None
         for m in [g] + [m for m in r["копии"].split(",") if m]:
             s, f = m.split(":")
+            if only and not only(s):
+                continue
             for i, rc in enumerate(D.mcd(s)):
                 if rc["frames"][0] != int(f) or rc["type"] != 0:
                     continue
@@ -106,14 +111,23 @@ def main():
     p.add_argument("--gap", type=int, default=1)
     p.add_argument("--margin", type=int, default=2, help="столько клеток от юнитов и предметов на полу не трогать")
     p.add_argument("--keep-env", action="store_true")
+    p.add_argument("--env", default="", help="поставить окружение боя (STR_ENVIRO_...): сцена под подменой палитры")
     a = p.parse_args()
+    if a.env:
+        import palette_shift_sets as pss
+        if not any(a.env in v["to"] for v in pss.load().values()):
+            raise SystemExit("%s: ни у одного набора нет подмены палитры в этом окружении" % a.env)
     q = fb.load_queue()
     groups = [g for g in a.groups.split(",") if g] or sorted(
         (g for g, r in q.items() if r["статус"] == "no_save"), key=lambda g: -int(q[g]["клеток"]))
     src = fb.SAVES / a.base
     bt = mt.Battle(str(src))
     D = mt.Data(bt.mods)
-    recs, skipped = pick_records(D, groups, q)
+    only = None
+    if a.env:                                   # копия из набора, который окружение не красит, проверяет не то
+        ps, depth = pss.load(), pss.save_env(src)[1]
+        only = lambda s: s.upper() in ps and pss.shifted(ps[s.upper()], a.env, depth)  # noqa: E731
+    recs, skipped = pick_records(D, groups, q, only)
     # нейтральный пол полос - самый частый пол нулевого этажа сейва
     cnt = collections.Counter((int(bt.SET[0, y, x, 0]), int(bt.ID[0, y, x, 0])) for y in range(bt.Y)
                               for x in range(bt.X) if bt.SET[0, y, x, 0] >= 0)
@@ -153,9 +167,13 @@ def main():
         j = text.index("\n", j) + 1
     text = text[:i] + "\n  mapdatasets:\n" + "".join("    - %s\n" % s for s in sets) + text[j:]
     text, n = write_tiles(text, bt, ID, SET, keep)
-    if not a.keep_env:
+    if not a.keep_env or a.env:
         text, k = re.subn(r"(?m)^  enviroEffectsType: .*\n", "", text)
         print("enviroEffectsType снят: %d" % k)
+    if a.env:                                   # сцена под подменой палитры боя (R-314): окружение явно
+        i = text.find("\nbattleGame:\n") + len("\nbattleGame:\n")
+        text = text[:i] + "  enviroEffectsType: %s\n" % a.env + text[i:]
+        print("enviroEffectsType: %s" % a.env)
     out = fb.SAVES / a.out
     out.write_text(text, encoding="utf-8")
     # проверка чтением: каждая группа на своём месте

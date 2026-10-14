@@ -10,7 +10,13 @@
     чёткие швы и орнамент, принятые pixel_lines, - обязаны быть ok;
     ковёр шума (b11: FORESTSWAMP_WASTE, MOUNTTROP, SGR_CAVE, SIETCHDOOM...) - камуфляж из линий - обязан быть hold;
     решётки и доски с тем же мелким индексом, но с периодом (CYBERWAREBITS:20, LIGHTNIN_R:25...) - ok.
-Контроль: RECIPE_GUARD_OFF=1 снимает пороги (бесконечность) - тест обязан упасть на NUKE1, свечении и шуме.
+  любой ковёр ground_seam (R-332):
+    ISLANDURBAN1:48, LINERSHIPA:95/19, SIETCHDOOM:68, LAM_FLOOR:13 - орнамент (рамка, крест, дыры, деталь над
+    ромбом), ковёр его стёр (b12) - обязан быть hold; ковры шума и крапа без орнамента - ok.
+  любой ковёр ground_seam (R-298, cp1):
+    FORESTSWAMP_WASTE:111-118, CUNTTRYROAD_LT:13, AGROUND:13 - борозды, ряды ростков, сетка плит - обязан быть hold.
+Контроль: RECIPE_GUARD_OFF=1 снимает пороги (бесконечность) - тест обязан упасть на NUKE1, свечении, шуме,
+орнаменте и бороздах.
 Запуск: py -3.13 tools/test_recipe_guard.py
 """
 import os
@@ -46,8 +52,25 @@ CASES = [
     (g, LINES, "ok") for g in (
         "CYBERWAREBITS:20", "WAREBITS:20", "XOPSDESERTRUINS:11", "IDT_SNOWBARN:49", "LIGHTNIN_R:25",
         "SEAMSUNK1:35", "GOVT:25", "GDXOPSFLOORS:55")] + [
-    # рецепт без проверки: ground_seam без --speckle (поле, ступени) не судится ковровой проверкой
+    # ground_seam без --speckle (поле, ступени) не судится однородностью крапа
     ("NUKE1:16", "ground_seam --iso", "ok"),
+] + [
+    # R-332: орнамент под любым ковром ground_seam стирается - hold (b12: крест и кольцо, решётка, рамка
+    # с прозрачной серединой, крест над ромбом, шашечка в рамке)
+    (g, "ground_seam", "hold") for g in (
+        "ISLANDURBAN1:48", "LINERSHIPA:95", "LINERSHIPA:19", "SIETCHDOOM:68", "LAM_FLOOR:13")] + [
+    # ковры без орнамента: проверенные ground_seam и партии cp1/cp2 (шум R-329) - ok
+    # (CAVEBONE:7, CAVEDOOM:7, BARN_PP:0 из cp2 low2 0.35-0.38 - hold до листа cp2, в тест не взяты)
+    (g, "ground_seam", "ok") for g in (
+        "MARS:0", "MOUNTMOON:0", "CAVEMEAT:13", "CAVEAQUA:13", "CAVEAQUA:19", "REDDESERT:0", "ICEKING_VILLAGE:61",
+        "BROWNHILL:0", "CAVEMARS:13", "MUMMY_VILLAGE:61", "IDT_SNOWBARN:48", "FORESTSWAMP_WASTE:139", "MOUNTTROP:4", "BLACKFOREST:2",
+        "RUSTSHACKS:43", "SIETCH_DARK:68", "SGR_CAVE:20", "MANSIONGARDEN_MAG:8")] + [
+    # R-298 третий раз (cp1 14.10): борозды, ряды ростков и сетка плит под любым ковром стёрты - hold
+    (g, "ground_seam", "hold") for g in (
+        "FORESTSWAMP_WASTE:111", "FORESTSWAMP_WASTE:112", "FORESTSWAMP_WASTE:113", "FORESTSWAMP_WASTE:114",
+        "FORESTSWAMP_WASTE:117", "FORESTSWAMP_WASTE:118", "CUNTTRYROAD_LT:13", "AGROUND:13")] + [
+    # орнамент и у --speckle: брак крапа и орнамента складываются, худший вердикт
+    ("LINERSHIPA:19", CARPET, "hold"),
 ]
 
 
@@ -57,6 +80,8 @@ def main():
         rg.CARPET = {k: (inf, inf, v[2]) for k, v in rg.CARPET.items()}
         rg.GLOW_SMOOTH = (inf, inf)
         rg.NOISE_MED_MAX = -inf
+        rg.ORNAMENT = {k: (inf, inf, v[2]) for k, v in rg.ORNAMENT.items()}
+        rg.PATTERN = {k: (inf, inf, v[2]) for k, v in rg.PATTERN.items()}
     bad = []
     for g, meth, want in CASES:
         v, why, _m = rg.check(g, meth)
