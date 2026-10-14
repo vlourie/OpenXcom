@@ -618,8 +618,12 @@ RETRY = {
     "CP008": dict(
         main="one large dense rounded bush of black and very dark grey leaves with one bright red flower with "
              "open petals clearly visible on its front side"),
-    "OT069": "one jungle plant: a dense clump of broad bright and dark green leaves covering its lower half, and "
-             "several thick bare pale pinkish grey stems rising out of the leaves and spreading sideways" + GRASS,
+    # вердикт 14.10 (ночь, папка batch7_retry2): повтор выше дал пышный куст - стебли стали розовыми листьями;
+    # у классики голые древесные ветки с тупыми обломанными концами и отдельные зелёные листья между ними
+    "OT069": "one jungle plant: four or five thick bare woody branches of pale grey-pink bark like driftwood, "
+             "each ending in a blunt broken knobby stump, reaching out to the left, to the right and up, with wide "
+             "gaps between them, and a few separate broad bright and dark green leaves growing between the "
+             "branches near the ground" + GRASS,
     # партия 8 (папка batch8_retry, вердикт 14.10, FIXES.md): брак заложен словами первой подсказки (R-016) -
     # thin strands, embers, rounded crown; здесь только масса и неровность, как у классики
     "OT070": "several thick leafy jungle vines hanging down, every vine a heavy chain of large overlapping glossy "
@@ -630,6 +634,18 @@ RETRY = {
     "OT076": "one jungle tree with a broad lopsided ragged crown of small dark and bright green leaves, uneven "
              "clumps of leaves sticking out at different heights, the crown wider than tall, a short dark "
              "purplish brown trunk with a few roots",
+    # партия 6 (папка batch6_retry, вердикт 14.10 ночь): OT063 - ажурный куст стал плотной листвой на большой
+    # бурой земляной подложке (ягоды классики внизу прочитаны как земля); у классики просветы и земли нет
+    "OT063": "one tall loose open jungle bush of light green leaves on thin branches, with many holes and gaps "
+             "between the clumps of leaves, a few small dark red berries among the leaves and a short trailing "
+             "spray of small dark red and orange berries hanging at its lower right, floating with nothing under "
+             "it, no ground, no soil",
+    # партия 10 (папка batch10_retry, вердикт 14.10 ночь): OT089 - ствол слишком тонкий и ровный, локальная
+    # правка утолщением дала лесенку; у классики толстый низ с корнями, развилка с обломками, тонкая верхушка
+    "OT089": "one dead young tree, no leaves: a short thick dark reddish-brown lower trunk on three short flared "
+             "roots, at mid height a knobby fork with one short broken stub pointing right and a little grey frost "
+             "on it, above the fork a thin crooked bare stem leaning up to the left with one short bare twig on "
+             "its right side",
     # партия 12 (папка batch12_retry, вердикт 14.10): основа DUNGEON_DEAD 17 - слово vines дало нитевидные
     # свисающие корни, у классики один плотный сплошной ком, книзу сужается клином; лужа была верной
     "OT092": "one dense solid heavy lump of dark purple-black matter hanging high above the ground, clumped "
