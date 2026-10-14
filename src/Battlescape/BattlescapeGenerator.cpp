@@ -634,7 +634,7 @@ void BattlescapeGenerator::nextStage()
 			{
 				++soldiersTotal;
 				bu->resetTurnsSinceStunned();
-				bu->resetTurnsSince();
+				bu->resetTurnsSince(_save, "RESET_STAGE");
 				if (!selectedFirstSoldier && bu->getGeoscapeSoldier())
 				{
 					_save->setSelectedUnit(bu);

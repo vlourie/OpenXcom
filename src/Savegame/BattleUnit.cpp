@@ -760,6 +760,21 @@ void BattleUnit::load(const YAML::YamlNodeReader& node, const Mod *mod, const Sc
 	reader.tryRead("vip", _vip);
 	reader.tryRead("bannedInNextStage", _bannedInNextStage);
 	reader.tryRead("meleeAttackedBy", _meleeAttackedBy);
+	{
+		// AI2-H FAIR KNOWLEDGE: absent in older saves - never seen
+		std::vector<int> seen;
+		reader.tryRead("aiSeen", seen);
+		if (seen.size() == FACTION_MAX * 4)
+		{
+			int old[FACTION_MAX][4];
+			std::copy(&_aiSeen[0][0], &_aiSeen[0][0] + FACTION_MAX * 4, &old[0][0]);
+			for (int i = 0; i < FACTION_MAX * 4; ++i)
+			{
+				_aiSeen[i / 4][i % 4] = seen[i];
+			}
+			logAiSeenChange(old, nullptr, "LOAD", nullptr, -1, -1);
+		}
+	}
 	_scriptValues.load(reader, shared);
 }
 
@@ -919,6 +934,16 @@ void BattleUnit::save(YAML::YamlNodeWriter writer, const ScriptGlobal *shared) c
 		writer.write("bannedInNextStage", _bannedInNextStage);
 	if (!_meleeAttackedBy.empty())
 		writer.write("meleeAttackedBy", _meleeAttackedBy);
+	if (AiProbe::fairKnowledge() && (_aiSeen[0][0] >= 0 || _aiSeen[1][0] >= 0 || _aiSeen[2][0] >= 0))
+	{
+		// AI2-H FAIR KNOWLEDGE: x y z dir per side, x -1 - never seen; written only with the flag on
+		std::vector<int> seen;
+		for (const auto &s : _aiSeen)
+		{
+			seen.insert(seen.end(), s, s + 4);
+		}
+		writer.write("aiSeen", seen);
+	}
 
 	_scriptValues.save(writer, shared);
 }
@@ -1767,6 +1792,16 @@ int BattleUnit::damage(Position relative, int damage, const RuleDamageType *type
 	{
 		bodypart = bodypartOverride;
 	}
+	if (AiProbe::dmgNote.armed)
+	{
+		AiProbe::dmgNote.reached = true;
+		AiProbe::dmgNote.side = (int)side;
+		AiProbe::dmgNote.part = (int)bodypart;
+		AiProbe::dmgNote.resisted = orgDamage;
+		AiProbe::dmgNote.scripted = damage;
+		AiProbe::dmgNote.armor = getArmor(side);
+		AiProbe::dmgNote.afterArmor = damage;
+	}
 
 
 	const RuleItem *specialDamageTransform = attack.damage_item ? attack.damage_item->getRules() : nullptr;
@@ -1819,6 +1854,10 @@ int BattleUnit::damage(Position relative, int damage, const RuleDamageType *type
 		if (type->ArmorEffectiveness > 0.0f)
 		{
 			damage -= getArmor(side) * type->ArmorEffectiveness;
+		}
+		if (AiProbe::dmgNote.armed)
+		{
+			AiProbe::dmgNote.afterArmor = damage;
 		}
 
 		if (damage > 0)
@@ -1957,6 +1996,7 @@ int BattleUnit::damage(Position relative, int damage, const RuleDamageType *type
 		// AI direct hit tracking
 		std::get<arg_attackerTurnsSinceSpotted>(args.data) = 255;
 		std::get<arg_attackerTurnsLeftSpottedForSnipers>(args.data) = 0;
+		bool directShotReveal = false; // AI2-H FAIR KNOWLEDGE h6: the engine's spot-on-hit below applied (the projectile left the attacker's cell)
 		if (attack.attacker)
 		{
 			std::get<arg_attackerTurnsSinceSpotted>(args.data) = attack.attacker->getTurnsSinceSpottedByFaction(getFaction());
@@ -1974,6 +2014,7 @@ int BattleUnit::damage(Position relative, int damage, const RuleDamageType *type
 				}
 
 				std::get<arg_attackerTurnsSinceSpotted>(args.data) = 0;
+				directShotReveal = true;
 				if (Mod::EXTENDED_SPOT_ON_HIT_FOR_SNIPING > 0)
 				{
 					// 0 = don't spot
@@ -2049,6 +2090,15 @@ int BattleUnit::damage(Position relative, int damage, const RuleDamageType *type
 		{
 			attack.attacker->setTurnsSinceSpottedByFaction(getFaction(), std::get<arg_attackerTurnsSinceSpotted>(args.data));
 			attack.attacker->setTurnsLeftSpottedForSnipersByFaction(getFaction(), std::get<arg_attackerTurnsLeftSpottedForSnipers>(args.data));
+			if (std::get<arg_attackerTurnsSinceSpotted>(args.data) == 0 && attack.attacker->getFaction() != getFaction())
+			{
+				// AI2-H FAIR KNOWLEDGE h6: the engine reveals the attacker by turnsSinceSpotted == 0, which an older sighting or cheatTurn
+				// may have left; the victim's side gets the attacker's place only for a direct shot the engine spotted (a script
+				// un-spotting it keeps it hidden) or while the side sees the attacker now - the gate checks the latter
+				attack.attacker->updateHonestKnownPosition(getFaction(), save,
+					directShotReveal ? AI_REVEAL_DIRECT_SHOT : AI_REVEAL_ATTACKER_SEEN, this,
+					(int)attack.type, attack.weapon_item ? attack.weapon_item->getId() : -1);
+			}
 		}
 	}
 
@@ -4926,7 +4976,7 @@ int BattleUnit::getCarriedWeight(BattleItem *draggingItem) const
 /**
  * Set default state on unit.
  */
-void BattleUnit::resetTurnsSince()
+void BattleUnit::resetTurnsSince(const SavedBattleGame *save, const char *reason)
 {
 	for (auto& since : _turnsSinceSpotted)
 	{
@@ -4936,6 +4986,13 @@ void BattleUnit::resetTurnsSince()
 	{
 		left = 0;
 	}
+	int old[FACTION_MAX][4];
+	std::copy(&_aiSeen[0][0], &_aiSeen[0][0] + FACTION_MAX * 4, &old[0][0]);
+	for (auto& seen : _aiSeen)
+	{
+		seen[0] = seen[1] = seen[2] = seen[3] = -1;
+	}
+	logAiSeenChange(old, save, reason, nullptr, -1, -1);
 	//_turnsSinceStunned is reset elsewhere
 }
 
@@ -5052,6 +5109,107 @@ int BattleUnit::getTurnsLeftSpottedForSnipers() const
 int BattleUnit::getTurnsLeftSpottedForSnipersByFaction(UnitFaction faction) const
 {
 	return getUint8Array(_turnsLeftSpottedForSnipers, faction);
+}
+
+/**
+ * AI2-H FAIR KNOWLEDGE h6: the single write gate of honest memory - the side gets this unit's place and facing only for a
+ * proven reveal. FOV and REACTION come from inside the engine's visibility branches; DIRECT_SHOT only where the engine itself
+ * spots the shooter on a hit (BattleUnit::damage). ATTACKER_SEEN and KILLER_SEEN are no proof of the place by themselves (the
+ * engine reveals by turnsSinceSpotted, which an older sighting, cheatTurn or kill attribution may have zeroed): they write only
+ * while a unit of the side has this unit on its visible list. A refused reveal writes nothing and logs one deny line.
+ * Never reads turnsSinceSpotted; the cheat has no reveal kind. Called at every honest observation, so a visible walker is
+ * remembered at each step.
+ */
+bool BattleUnit::updateHonestKnownPosition(UnitFaction side, const SavedBattleGame *save, AiReveal why, const BattleUnit *observer, int a, int b)
+{
+	if (!AiProbe::fairKnowledge() || side < 0 || side >= FACTION_MAX)
+	{
+		return false;
+	}
+	const char *reason = "?";
+	const char *basis = nullptr;
+	switch (why)
+	{
+	case AI_REVEAL_FOV:
+		reason = "OBSERVATION_FOV";
+		basis = "fov";
+		break;
+	case AI_REVEAL_REACTION:
+		reason = "OBSERVATION_REACTION";
+		basis = "reaction";
+		break;
+	case AI_REVEAL_DIRECT_SHOT:
+		reason = "DIRECT_SHOT_REVEAL";
+		basis = "shot_from_cell";
+		break;
+	case AI_REVEAL_ATTACKER_SEEN:
+		reason = "HIT_REVEAL";
+		basis = AiProbe::fairSideSeesNow(save, side, this) ? "seen_now" : nullptr;
+		break;
+	case AI_REVEAL_KILLER_SEEN:
+		reason = "KILL_REVEAL";
+		basis = AiProbe::fairSideSeesNow(save, side, this) ? "seen_now" : nullptr;
+		break;
+	}
+	const bool change = _aiSeen[side][0] != _pos.x || _aiSeen[side][1] != _pos.y || _aiSeen[side][2] != _pos.z || _aiSeen[side][3] != _direction;
+	if (!basis)
+	{
+		AiProbe::fairDeny(save, this, side, reason, _aiSeen[side], change, observer, a, b);
+		return false;
+	}
+	int old[FACTION_MAX][4];
+	std::copy(&_aiSeen[0][0], &_aiSeen[0][0] + FACTION_MAX * 4, &old[0][0]);
+	_aiSeen[side][0] = _pos.x;
+	_aiSeen[side][1] = _pos.y;
+	_aiSeen[side][2] = _pos.z;
+	_aiSeen[side][3] = _direction;
+	logAiSeenChange(old, save, reason, observer, a, b, basis);
+	return true;
+}
+
+/**
+ * h5: the memory-write line - for every side whose memory of this unit differs from old, one [AITRACE] line. Reads only.
+ * h6: plus the reveal basis of the write.
+ */
+void BattleUnit::logAiSeenChange(const int (&old)[FACTION_MAX][4], const SavedBattleGame *save, const char *reason, const BattleUnit *observer, int a, int b,
+	const char *basis) const
+{
+	for (int f = 0; f < FACTION_MAX; ++f)
+	{
+		if (!std::equal(&old[f][0], &old[f][0] + 4, &_aiSeen[f][0]))
+		{
+			AiProbe::fairWrite(save, this, f, reason, old[f], _aiSeen[f], observer, a, b, basis);
+		}
+	}
+}
+
+/**
+ * AI2-H FAIR KNOWLEDGE: where the side last honestly saw this unit.
+ */
+bool BattleUnit::getAiSeen(UnitFaction side, Position &pos, int &dir) const
+{
+	if (side < 0 || side >= FACTION_MAX || _aiSeen[side][0] < 0)
+	{
+		return false;
+	}
+	pos = Position(_aiSeen[side][0], _aiSeen[side][1], _aiSeen[side][2]);
+	dir = _aiSeen[side][3];
+	return true;
+}
+
+/**
+ * AI2-H FAIR KNOWLEDGE: the side reached for the unit at the remembered place and found nobody there - forget the place.
+ */
+void BattleUnit::forgetAiSeen(UnitFaction side, const SavedBattleGame *save, const BattleUnit *observer)
+{
+	if (side < 0 || side >= FACTION_MAX)
+	{
+		return;
+	}
+	int old[FACTION_MAX][4];
+	std::copy(&_aiSeen[0][0], &_aiSeen[0][0] + FACTION_MAX * 4, &old[0][0]);
+	_aiSeen[side][0] = _aiSeen[side][1] = _aiSeen[side][2] = _aiSeen[side][3] = -1;
+	logAiSeenChange(old, save, "FORGET_PROBE", observer, -1, -1);
 }
 
 /**

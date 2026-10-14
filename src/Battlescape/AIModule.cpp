@@ -37,10 +37,316 @@
 #include "../Mod/RuleItem.h"
 #include "../Mod/RuleDamageType.h"
 #include "../fmath.h"
+#include <cmath>
 #include "AiProbe.h"
 
 namespace OpenXcom
 {
+
+/**
+ * Puts the target at the place the deciding side honestly knows (OXCE_AI_FAIR_KNOWLEDGE).
+ * Only the unit's own position, tile pointer and facing move; tile occupancy is untouched.
+ */
+AiKnownPlace::AiKnownPlace(SavedBattleGame *save, BattleUnit *unit, int kind, const Position &pos, int dir) :
+	_unit(unit), _pos(), _tile(0), _dir(0), _on(false)
+{
+	if (kind != 1 || !unit) return;
+	Tile *tile = save->getTile(pos);
+	if (!tile) return;
+	_pos = unit->_pos;
+	_tile = unit->_tile;
+	_dir = unit->_direction;
+	unit->_pos = pos;
+	unit->_tile = tile;
+	unit->_direction = dir;
+	_on = true;
+	_moved.push_back(unit);
+}
+
+AiKnownPlace::~AiKnownPlace()
+{
+	if (!_on) return;
+	_unit->_pos = _pos;
+	_unit->_tile = _tile;
+	_unit->_direction = _dir;
+	// scopes nest, so the last entry of this unit is this scope's
+	for (auto it = _moved.end(); it != _moved.begin(); )
+	{
+		--it;
+		if (*it == _unit)
+		{
+			_moved.erase(it);
+			break;
+		}
+	}
+}
+
+std::vector<BattleUnit *> AiKnownPlace::_moved;
+
+bool AiKnownPlace::trueBody()
+{
+	static const bool on = AiProbe::param("OXCE_AI_FAIR_TRUEBODY", 0) == 1;
+	return on;
+}
+
+bool AiKnownPlace::moved(const BattleUnit *unit)
+{
+	return unit && std::find(_moved.begin(), _moved.end(), unit) != _moved.end();
+}
+
+bool AiKnownPlace::atKnown(const SavedBattleGame *save, const BattleUnit *unit, const Tile *tile, bool pokeUp)
+{
+	const Position &k = unit->getPosition();
+	const Position &t = tile->getPosition();
+	const int size = unit->getArmor()->getSize();
+	if (t.x < k.x || t.x >= k.x + size || t.y < k.y || t.y >= k.y + size)
+	{
+		return false;
+	}
+	if (t.z == k.z)
+	{
+		return true;
+	}
+	if (!pokeUp || t.z != k.z + 1 || !tile->hasNoFloor(save) || tile->getMapData(O_OBJECT) != nullptr)
+	{
+		return false;
+	}
+	const Tile *below = save->getBelowTile(tile);
+	return below && unit->getHeight() + unit->getFloatHeight() - below->getTerrainLevel() > static_cast<int>(TUO_NORMAL);
+}
+
+BattleUnit *AiKnownPlace::knownOn(const Tile *tile)
+{
+	const Position &t = tile->getPosition();
+	for (auto it = _moved.rbegin(); it != _moved.rend(); ++it)
+	{
+		const Position &k = (*it)->getPosition();
+		const int size = (*it)->getArmor()->getSize();
+		if (t.z == k.z && t.x >= k.x && t.x < k.x + size && t.y >= k.y && t.y < k.y + size)
+		{
+			return *it;
+		}
+	}
+	return nullptr;
+}
+
+BattleUnit *AiKnownPlace::knownOverlapping(const SavedBattleGame *save, const Tile *tile)
+{
+	BattleUnit *bu = knownOn(tile);
+	if (!bu && tile->getPosition().z > 0 && tile->hasNoFloor(save) && tile->getMapData(O_OBJECT) == nullptr)
+	{
+		const Tile *below = save->getBelowTile(tile);
+		bu = below ? knownOn(below) : nullptr;
+		if (bu && bu->getHeight() + bu->getFloatHeight() - below->getTerrainLevel() <= static_cast<int>(TUO_NORMAL))
+		{
+			bu = nullptr;
+		}
+	}
+	return bu;
+}
+
+BattleUnit *AiKnownPlace::unitOn(const Tile *tile)
+{
+	BattleUnit *bu = tile->getUnit();
+	if (_moved.empty() || trueBody())
+	{
+		return bu;
+	}
+	if (bu && moved(bu) && knownOn(tile) != bu)
+	{
+		bu = nullptr; // the true tile of a unit the AI sees elsewhere
+	}
+	return bu ? bu : knownOn(tile);
+}
+
+/**
+ * Where this unit's side honestly knows the target to be.
+ * @return 0 - the current place (visible, cheat, flag off); 1 - the last seen place in pos/dir; 2 - never seen.
+ */
+int AIModule::knownPlace(const BattleUnit *target, const char *cons, Position &pos, int &dir) const
+{
+	int kind = AiProbe::fairPlace(_save, _unit, target, pos, dir);
+	if (kind == 1)
+	{
+		AiProbe::fairNote(_unit, target, cons, 1, pos, target->getPosition());
+	}
+	else if (kind == 2)
+	{
+		AiProbe::fairNote(_unit, target, cons, 2, Position(-1, -1, -1), target->getPosition());
+	}
+	return kind;
+}
+
+/**
+ * The grenade-danger mark of the tile where this side knows the target to be.
+ */
+bool AIModule::knownDangerous(const BattleUnit *target) const
+{
+	Position kp;
+	int kdir = 0;
+	int kind = knownPlace(target, "danger", kp, kdir);
+	if (kind == 2) return false;
+	if (kind == 1)
+	{
+		Tile *tile = _save->getTile(kp);
+		return tile && tile->getDangerous();
+	}
+	return target->getTile()->getDangerous();
+}
+
+/**
+ * The unit this side knows to stand on a tile: the one standing there if this side knows it there, else the first one
+ * this side remembers there (consumer "blast"); none if it knows nobody there.
+ */
+BattleUnit *AIModule::fairOccupant(Position at) const
+{
+	auto covers = [&](const BattleUnit *u, const Position &p)
+	{
+		const int size = u->getArmor()->getSize();
+		return p.z == at.z && at.x >= p.x && at.x < p.x + size && at.y >= p.y && at.y < p.y + size;
+	};
+	auto knownAt = [&](BattleUnit *u)
+	{
+		Position kp;
+		int kdir = 0;
+		const int kind = knownPlace(u, "blast", kp, kdir);
+		return kind != 2 && covers(u, kind == 1 ? kp : u->getPosition());
+	};
+	const Tile *tile = _save->getTile(at);
+	BattleUnit *real = tile ? tile->getUnit() : nullptr;
+	if (real && knownAt(real))
+	{
+		return real;
+	}
+	for (auto *bu : *_save->getUnits())
+	{
+		if (!bu->isOut() && bu != real && knownAt(bu))
+		{
+			return bu;
+		}
+	}
+	return nullptr;
+}
+
+/**
+ * The target's position as this side knows it.
+ */
+Position AIModule::knownPos(const BattleUnit *target, const char *cons) const
+{
+	Position kp;
+	int kdir = 0;
+	const int kind = knownPlace(target, cons, kp, kdir);
+	if (kind == 1) return kp;
+	if (kind == 2) return Position(-1, -1, -1);
+	return target->getPosition();
+}
+
+/**
+ * Melee reach from a tile to the place this side knows the target to be.
+ * Kind 0 is TileEngine::validMeleeRange exactly as the callers made it; kind 1 repeats its geometry against a body
+ * standing at kp (which tiles the target covers there), not against the unit the tile really holds.
+ */
+bool AIModule::knownMeleeRange(Position from, BattleUnit *target, int kind, const Position &kp, int kdir) const
+{
+	TileEngine *te = _save->getTileEngine();
+	if (kind == 0)
+	{
+		return te->validMeleeRange(from, te->getDirectionTo(from, target->getPosition()), _unit, target, 0);
+	}
+	if (kind != 1)
+	{
+		return false;
+	}
+	int direction = te->getDirectionTo(from, kp);
+	if (direction < 0 || direction > 7)
+	{
+		return false;
+	}
+	AiKnownPlace known(_save, target, kind, kp, kdir);
+	if (!known.on())
+	{
+		return false;
+	}
+	const int tsize = target->getArmor()->getSize();
+	auto covers = [&](const Position &p) { return p.z == kp.z && p.x >= kp.x && p.x < kp.x + tsize && p.y >= kp.y && p.y < kp.y + tsize; };
+	Position p;
+	Pathfinding::directionToVector(direction, &p);
+	int size = _unit->getArmor()->getSize() - 1;
+	int meleeOriginVoxelVerticalOffset = _unit->getArmor()->getMeleeOriginVoxelVerticalOffset();
+	for (int x = 0; x <= size; ++x)
+	{
+		for (int y = 0; y <= size; ++y)
+		{
+			Tile *origin = _save->getTile(Position(from + Position(x, y, 0)));
+			Tile *targetTile = _save->getTile(Position(from + Position(x, y, 0) + p));
+			if (!targetTile || !origin)
+			{
+				continue;
+			}
+			Tile *aboveTargetTile = _save->getAboveTile(targetTile);
+			Tile *belowTargetTile = _save->getBelowTile(targetTile);
+			if (origin->getTerrainLevel() <= -16 && aboveTargetTile && !aboveTargetTile->hasNoFloor(_save))
+			{
+				targetTile = aboveTargetTile;
+			}
+			else if (belowTargetTile && targetTile->hasNoFloor(_save) && !covers(targetTile->getPosition()) && belowTargetTile->getTerrainLevel() <= -16)
+			{
+				targetTile = belowTargetTile;
+			}
+			if (!covers(targetTile->getPosition()))
+			{
+				continue;
+			}
+			Position originVoxel = Position(origin->getPosition().toVoxel())
+				+ Position(8, 8, _unit->getHeight() + _unit->getFloatHeight() - 4 - origin->getTerrainLevel() + meleeOriginVoxelVerticalOffset);
+			Position targetVoxel;
+			if (te->canTargetUnit(&originVoxel, targetTile, &targetVoxel, _unit, false, target))
+			{
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+/**
+ * Melee reach from a tile to the target where this side knows it to be (consumer "melee").
+ */
+bool AIModule::knownMeleeFrom(Position from, BattleUnit *target) const
+{
+	Position kp;
+	int kdir = 0;
+	const int kind = knownPlace(target, "melee", kp, kdir);
+	return knownMeleeRange(from, target, kind, kp, kdir);
+}
+
+/**
+ * Melee reach from where this unit stands to the target where this side knows it to be.
+ */
+bool AIModule::knownAdjacent(BattleUnit *target) const
+{
+	Position kp;
+	int kdir = 0;
+	const int kind = knownPlace(target, "melee", kp, kdir);
+	if (!knownMeleeRange(_unit->getPosition(), target, kind, kp, kdir))
+	{
+		return false;
+	}
+	if (kind == 1)
+	{
+		// the player's rule: a blow at a tile with nobody on it is 'there is no one there' and is not made; the side now
+		// knows the target is not at the remembered place (a blow at whoever else stands there is not made either)
+		Tile *tile = _save->getTile(kp);
+		BattleUnit *occupant = tile ? tile->getUnit() : nullptr;
+		if (occupant != target)
+		{
+			AiProbe::fairProbe(_unit, target, kp, occupant);
+			target->forgetAiSeen(_unit->getFaction(), _save, _unit);
+			return false;
+		}
+	}
+	return true;
+}
 
 
 /**
@@ -109,6 +415,16 @@ unsigned long long AIModule::probeHash() const
 		// only once the bench rule has spent a patrol: without OXCE_AI_ENERGY_PATROL_END the fingerprint stays as it was
 		add(_patrolSpent); add(_patrolSpentAt.x); add(_patrolSpentAt.y); add(_patrolSpentAt.z); add(_patrolSpentEnergy); add(_patrolRetry);
 	}
+	if (_immRetry != 0)
+	{
+		add(_immRetry); // AI3-IMM: only once the bench rule has dropped a walk (OXCE_AI_IMMOBILE_NO_WALK)
+	}
+	if (_retryHaveLast || !_retryBans.empty())
+	{
+		// AI3-RETRY: only once the bench rule has remembered an action (OXCE_AI_FAILED_RETRY)
+		add(_retryHaveLast); add((long long)_retryLast.print); add((long long)_retryBans.size()); add(_retryTurn);
+		for (const RetryKey &k : _retryBans) { add(k.type); add(k.target.x); add(k.target.y); add(k.target.z); add(k.weapon); add(k.reserve); add(k.run); add((long long)k.print); }
+	}
 	if (_fpBlocked || _fpInvalidated)
 	{
 		// only once the bench rule has recorded a blocked firepoint (OXCE_AI_FIREPOINT_BLOCKED)
@@ -125,6 +441,103 @@ unsigned long long AIModule::probeHash() const
 const BattleAction &AIModule::probeAction(char slot) const
 {
 	return slot == 'p' ? _patrolAction : slot == 'a' ? _ambushAction : slot == 'e' ? _escapeAction : slot == 's' ? _psiAction : _attackAction;
+}
+
+/**
+ * AI3-RETRY (bench): the unit's state an action's outcome depends on - where it stands and faces, its time units, energy,
+ * health, stun, kneeling, the reserve the last think set, the units it sees and its own side where they stand. Own side and
+ * visible units only (FAIR_KNOWLEDGE). An action carried out changes at least time units, energy, place or facing.
+ */
+unsigned long long AIModule::retryPrint() const
+{
+	unsigned long long h = 1469598103934665603ULL;
+	auto add = [&h](long long v)
+	{
+		for (int i = 0; i < 8; ++i)
+		{
+			h = (h ^ (unsigned long long)((v >> (i * 8)) & 0xff)) * 1099511628211ULL;
+		}
+	};
+	const Position p = _unit->getPosition();
+	add(p.x); add(p.y); add(p.z); add(_unit->getDirection()); add(_unit->getTimeUnits()); add(_unit->getEnergy());
+	add(_unit->getHealth()); add(_unit->getStunlevel()); add(_unit->isKneeled()); add((int)_reserve);
+	for (const BattleUnit *v : *_unit->getVisibleUnits())
+	{
+		const Position q = v->getPosition();
+		add(v->getId()); add(q.x); add(q.y); add(q.z);
+	}
+	// AI3-RETRY (bench): where the own side stands - a mate that moved off the path (or opened a door) lets the same walk
+	// step where it stopped before (h9c: patrol walk stopped by the reserve, the next pass stepped once the others had moved)
+	for (const BattleUnit *u : *_save->getUnits())
+	{
+		if (u != _unit && u->getFaction() == _unit->getFaction() && !u->isOut())
+		{
+			const Position q = u->getPosition();
+			add(u->getId()); add(q.x); add(q.y); add(q.z);
+		}
+	}
+	return h;
+}
+
+/**
+ * AI3-RETRY (bench): called by handleAI before a selection's think. A new unit-turn forgets everything; the action handed on
+ * last that left the state as it was is banned in this state.
+ */
+void AIModule::retryBegin()
+{
+	if (_retryTurn != unitTurn())
+	{
+		_retryTurn = unitTurn();
+		_retryBans.clear();
+		_retryHaveLast = false;
+	}
+	_retryNow = retryPrint();
+	if (_retryHaveLast && _retryLast.print == _retryNow)
+	{
+		bool known = false;
+		for (const RetryKey &k : _retryBans)
+		{
+			known = known || (k.type == _retryLast.type && k.target == _retryLast.target && k.weapon == _retryLast.weapon
+				&& k.reserve == _retryLast.reserve && k.run == _retryLast.run && k.print == _retryNow);
+		}
+		if (!known)
+		{
+			_retryBans.push_back(_retryLast);
+		}
+	}
+	_retryHaveLast = false;
+}
+
+/**
+ * AI3-RETRY (bench): the ban's why if this action failed before in the state retryBegin saw, 0 otherwise.
+ */
+char AIModule::retryBanned(const BattleAction &action) const
+{
+	const int weapon = action.weapon ? action.weapon->getId() : -1;
+	for (const RetryKey &k : _retryBans)
+	{
+		if (k.print == _retryNow && k.type == (int)action.type && k.target == action.target && (action.type == BA_WALK || k.weapon == weapon)
+			&& k.reserve == (int)_reserve && k.run == action.run)
+		{
+			return k.why;
+		}
+	}
+	return 0;
+}
+
+/**
+ * AI3-RETRY (bench): the walk or attack handleAI hands on, with the state it was decided in; the next retryBegin finds out
+ * whether it was carried out.
+ */
+void AIModule::retryRemember(const BattleAction &action, char why)
+{
+	const BattleActionType t = action.type;
+	_retryHaveLast = t == BA_WALK || t == BA_SNAPSHOT || t == BA_AUTOSHOT || t == BA_AIMEDSHOT || t == BA_THROW || t == BA_HIT
+		|| t == BA_MINDCONTROL || t == BA_USE || t == BA_PANIC || t == BA_LAUNCH;
+	if (_retryHaveLast)
+	{
+		_retryLast = { (int)t, action.target, action.weapon ? action.weapon->getId() : -1, (int)_reserve, action.run, why, _retryNow };
+	}
 }
 
 AIModule::ProbeMark AIModule::probeMark(char slot) const
@@ -248,23 +661,43 @@ void AIModule::dont_think(BattleAction *action)
 	{
 		Log(LOG_INFO) << "LEEROY: visibleEnemiesToAttack: " << visibleEnemiesToAttack << " _melee: " << _melee << (canRun ? " run" : "");
 	}
-	if ((visibleEnemiesToAttack > 0) && _melee)
+	bool leeroy = (visibleEnemiesToAttack > 0) && _melee;
+	if (leeroy)
 	{
 		if (_traceAI)
 		{
 			Log(LOG_INFO) << "LEEROY: LEEROYIN' at someone!";
 		}
 		const ProbeMark mark = probeMark('x');
-		meleeActionLeeroy(canRun);
+		const int rejected = meleeActionLeeroy(canRun);
 		probeSlot('x', "leeroy", mark);
-		action->type = _attackAction.type;
-		action->run = _attackAction.run;
-		action->target = _attackAction.target;
-		// if this is a firepoint action, set our facing.
-		action->finalFacing = _attackAction.finalFacing;
-		action->updateTU();
+		if (rejected > 0 && _aggroTarget == 0)
+		{
+			// AI2-A1: AI2-A rejected every candidate, so meleeActionLeeroy built nothing and the attack slot still holds the
+			// previous decision's action. Upstream never gets here (the target selectNearestTargetLeeroy found stays a candidate):
+			// drop that action and take upstream's no-target branch, as if no leeroy target was seen.
+			static const bool fix = AiProbe::param("OXCE_AI_LEEROY_STALE_FIX", 1) != 0;
+			Log(LOG_INFO) << "[AITRACE] {\"ai2a\":\"leeroy_none\",\"rec\":" << AiProbe::nextRec() << ",\"turn\":" << _save->getTurn()
+				<< ",\"unit\":" << _unit->getId() << ",\"side\":" << (int)_unit->getFaction() << ",\"rejected\":" << rejected
+				<< ",\"stale\":" << (int)_attackAction.type << ",\"stale_to\":[" << _attackAction.target.x << "," << _attackAction.target.y
+				<< "," << _attackAction.target.z << "],\"fix\":" << (fix ? 1 : 0) << "}";
+			if (fix)
+			{
+				_attackAction.type = BA_RETHINK;
+				leeroy = false;
+			}
+		}
+		if (leeroy)
+		{
+			action->type = _attackAction.type;
+			action->run = _attackAction.run;
+			action->target = _attackAction.target;
+			// if this is a firepoint action, set our facing.
+			action->finalFacing = _attackAction.finalFacing;
+			action->updateTU();
+		}
 	}
-	else
+	if (!leeroy)
 	{
 		if (_traceAI)
 		{
@@ -280,6 +713,13 @@ void AIModule::dont_think(BattleAction *action)
 		action->target = _patrolAction.target;
 		// a charge's choice has no dice to throw again
 		endPatrolIfSpent(action, false);
+	}
+	// AI3-IMM (bench): a charge or patrol of an armor that cannot move is the same walk think drops (no dice here, so no retry)
+	static const bool immobileNoWalk = AiProbe::param("OXCE_AI_IMMOBILE_NO_WALK", 0) != 0;
+	if (immobileNoWalk && action->type == BA_WALK && !_unit->getArmor()->allowsMoving())
+	{
+		AiProbe::note(_unit, leeroy ? "immobile.nowalk.end l" : "immobile.nowalk.end p");
+		action->type = BA_NONE;
 	}
 }
 
@@ -516,6 +956,7 @@ void AIModule::think(BattleAction *action)
 	action->weapon = _unit->getMainHandWeapon(false);
 	_patrolWalk = false;
 	_patrolRetry = _patrolRetry == 1 ? 2 : 0;
+	_immRetry = _immRetry == 1 ? 2 : 0;
 	_firepointChosen = false;
 	_fpSuppressedNow = false;
 	_ko2FpTarget = _ko2AmbTarget = _ko2FpChosenTarget = 0;
@@ -556,6 +997,8 @@ void AIModule::think(BattleAction *action)
 		// walking onto a downed comrade's body (the stimulant goes on the next think) or away from the enemy it cannot fight
 		_escapeTUs = 0;
 		_ambushTUs = 0;
+		if (AiProbe::staleEscapeFix())
+			_escapePlan.valid = false; // U3-B: no reserve, no plan (as below, on a walk to another tile)
 		return;
 	}
 	_wasHitBy.clear();
@@ -637,6 +1080,13 @@ void AIModule::think(BattleAction *action)
 
 	// the tactical rules need cover reachable with the TU left now, not with those of the turn's start
 	const bool tactical = AiProbe::tactics(_unit) || AiProbe::careful(_unit);
+	// U3-B ESCAPE RESERVE FRESHNESS (clean1: always in the bench): the reserve is the plan's, so it holds only while the
+	// plan's contract does - a broken plan leaves no reserve, as upstream has none without a plan, and the line below
+	// recomputes it under fire.
+	if (_escapeTUs && AiProbe::staleEscapeFix() && escapePlanBroken())
+	{
+		_escapeTUs = 0;
+	}
 	if (_spottingEnemies && (!_escapeTUs || tactical))
 	{
 		const ProbeMark mark = probeMark('e');
@@ -749,6 +1199,30 @@ void AIModule::think(BattleAction *action)
 	// the careful bot kneels by the player's rule (soldiers may), the AI by its own (armor must allow)
 	const bool kneelDefault = AiProbe::careful(_unit) && _unit->getType() == "SOLDIER";
 
+	// U3-A STALE ESCAPE PLAN (clean1: always in the bench): the escape plan is reused while its contract holds, computed
+	// again here the moment it does not
+	if (_AIMode == AI_ESCAPE && AiProbe::staleEscapeFix() && escapePlanBroken() != 0)
+	{
+		const ProbeMark mark = probeMark('e');
+		setupEscape();
+		probeSlot('e', "escape.stale", mark);
+	}
+
+	// AI3-IMM (bench): an armor that cannot move has no walking mode - patrol, escape and ambush only plan a walk that
+	// UnitWalkBState drops at once; a legal attack from where it stands that setupAttack already made is taken instead
+	static const bool immobileNoWalk = AiProbe::param("OXCE_AI_IMMOBILE_NO_WALK", 0) != 0;
+	const bool immobile = immobileNoWalk && !_unit->getArmor()->allowsMoving();
+	if (immobile && _AIMode != AI_COMBAT)
+	{
+		const BattleActionType modeType = _AIMode == AI_ESCAPE ? _escapeAction.type : _AIMode == AI_PATROL ? _patrolAction.type
+			: _AIMode == AI_AMBUSH ? _ambushAction.type : BA_NONE;
+		if (modeType == BA_WALK && _attackAction.type != BA_WALK && _attackAction.type != BA_RETHINK && _attackAction.type != BA_NONE)
+		{
+			AiProbe::note(_unit, (std::string("immobile.attack ") + "paxe"[_AIMode]).c_str());
+			_AIMode = AI_COMBAT;
+		}
+	}
+
 	switch (_AIMode)
 	{
 	case AI_ESCAPE:
@@ -837,6 +1311,24 @@ void AIModule::think(BattleAction *action)
 	{
 		AiProbe::chosen(_unit, "paxe"[_AIMode]);
 	}
+	// AI3-IMM (bench): no attack from here - no walk either. The walk it replaces stopped at once and was followed by one more
+	// think in the selection (which may roll the sniper's dice): the first drop keeps that think (BA_RETHINK, handleAI runs it
+	// at once), a walk chosen again ends the selection, as endPatrolIfSpent does. No time units, no turn, no view change.
+	if (immobile && action->type == BA_WALK)
+	{
+		const char mode = _AIMode >= AI_PATROL && _AIMode <= AI_ESCAPE ? "paxe"[_AIMode] : '?';
+		if (_immRetry == 0)
+		{
+			AiProbe::note(_unit, (std::string("immobile.nowalk.retry ") + mode).c_str());
+			_immRetry = 1;
+			action->type = BA_RETHINK;
+		}
+		else
+		{
+			AiProbe::note(_unit, (std::string("immobile.nowalk.end ") + mode).c_str());
+			action->type = BA_NONE;
+		}
+	}
 
 	// the careful bot on patrol in contact walks half its time units at most and keeps the rest for reaction fire and cover:
 	// it ended 77 % of turns with nothing left, 54 % of them in someone's sight (OXCE_AI_HALF)
@@ -870,6 +1362,10 @@ void AIModule::think(BattleAction *action)
 		{
 			_escapeTUs = 0;
 			_ambushTUs = 0;
+			// U3-B (clean1: always in the bench): the reserve goes for re-evaluation, so does the plan it was the cost of - a walk
+			// that ends without a step (stopped on turning) left the plan valid with no reserve for its path
+			if (AiProbe::staleEscapeFix())
+				_escapePlan.valid = false;
 		}
 		else
 		{
@@ -986,7 +1482,7 @@ void AIModule::recordFirepointBlockedAttempt(const BattleAction &action, int dir
 	_fpBlockedTu = _unit->getTimeUnits();
 	_fpBlockedTurn = unitTurn();
 	_fpBlockedAggro = _aggroTarget ? _aggroTarget->getId() : -1;
-	_fpBlockedAggroPos = _aggroTarget ? _aggroTarget->getPosition() : Position(-1, -1, -1);
+	_fpBlockedAggroPos = _aggroTarget ? knownPos(_aggroTarget, "firepoint") : Position(-1, -1, -1);
 	_fpBlockedRev = AiProbe::knownRevision(_save, _unit);
 	AiProbe::tally(_unit, v1Suppression ? "fpblocked.v1.recorded" : "fpblocked.recorded");
 }
@@ -1003,7 +1499,7 @@ bool AIModule::firepointBlockedHolds()
 	if (_unit->getPosition() != _fpBlockedFrom) why += ",unit_pos";
 	if (_unit->getTimeUnits() != _fpBlockedTu) why += ",TU";
 	if ((_aggroTarget ? _aggroTarget->getId() : -1) != _fpBlockedAggro) why += ",target";
-	else if (_aggroTarget && _aggroTarget->getPosition() != _fpBlockedAggroPos) why += ",target_pos";
+	else if (_aggroTarget && knownPos(_aggroTarget, "firepoint") != _fpBlockedAggroPos) why += ",target_pos";
 	if (why.empty())
 	{
 		unsigned long long rev = AiProbe::knownRevision(_save, _unit);
@@ -1638,6 +2134,12 @@ void AIModule::setupAmbush()
 
 	if (selectClosestKnownEnemy())
 	{
+		// AI2-H FAIR KNOWLEDGE: the whole ambush estimation (the enemy's eyes, its paths to the nodes, the facing walk) runs with
+		// the target where this side knows it to be; no change unless that is not its current place
+		Position knownPos;
+		int knownDir = 0;
+		const int knownKind = knownPlace(_aggroTarget, "ambush", knownPos, knownDir);
+		AiKnownPlace known(_save, _aggroTarget, knownKind, knownPos, knownDir);
 		// KNOWN_OCCUPANT_PATH_V2 (bench): the target it hides from blocks its own tile for this unit's searches to the nodes;
 		// the target's own searches (can it reach the node) are not touched
 		bool ko2Old = false;
@@ -1653,6 +2155,7 @@ void AIModule::setupAmbush()
 		const int FAST_PASS_THRESHOLD = 80;
 		Position origin = _save->getTileEngine()->getSightOriginVoxel(_aggroTarget);
 		AiProbe::ambushBegin(_save, _unit, _aggroTarget);
+		AiProbe::hypoBegin(_unit, "ambush", _spottingEnemies);
 		// AMBUSH_NEGATIVE_MEMO_V2 (bench, AiProbe::ambushMemo): the tiles the enemy's first search of this call that ran out of
 		// open nodes closed - everything it can reach from where it stands (Pathfinding::closedTiles); a node whose search would
 		// end outside them (Pathfinding::finalPositionFor) has no path from it, and that search is skipped. Empty until such a search; dies with this call, nothing crosses decisions.
@@ -1687,6 +2190,14 @@ void AIModule::setupAmbush()
 
 			// make sure we can't be seen here.
 			Position target;
+			if (AiProbe::hypoLos())
+			{
+				// AI2-G HYPO_LOS (bench diagnostics): the same two checks as D1 answers them, for the line only
+				AiProbe::HypoOld old;
+				Position oldTarget;
+				AiProbe::hypoAmbushNode(pos, !_save->getTileEngine()->canTargetUnit(&origin, tile, &oldTarget, _aggroTarget, false, _unit)
+					&& !getSpottingUnits(pos));
+			}
 			if (!_save->getTileEngine()->canTargetUnit(&origin, tile, &target, _aggroTarget, false, _unit) && !getSpottingUnits(pos))
 			{
 				AiProbe::ambushNode(2);
@@ -1758,6 +2269,7 @@ void AIModule::setupAmbush()
 				}
 			}
 		}
+		AiProbe::hypoEnd(_unit, "ambush", bestScore > 0, _ambushAction.target, bestScore);
 
 		if (bestScore > 0)
 		{
@@ -1772,6 +2284,7 @@ void AIModule::setupAmbush()
 			Position currentPos = _aggroTarget->getPosition();
 			_save->getPathfinding()->setUnit(_aggroTarget);
 			size_t tries = path.size();
+			AiProbe::hypoBegin(_unit, "facing", _spottingEnemies);
 			// hypothetically walk the target through the path.
 			while (tries > 0)
 			{
@@ -1788,6 +2301,7 @@ void AIModule::setupAmbush()
 				}
 				--tries;
 			}
+			AiProbe::hypoEnd(_unit, "facing", tries > 0, currentPos, _ambushAction.finalFacing);
 			if (_traceAI)
 			{
 				Log(LOG_INFO) << "Ambush estimation will move to " << _ambushAction.target;
@@ -1813,11 +2327,36 @@ void AIModule::setupAttack()
 	_attackAction.type = BA_RETHINK;
 	_psiAction.type = BA_NONE;
 	_evalChosen = false;
+	_ffThrow = false;
 
 	bool sniperAttack = false;
 
+	// AI3-F (bench): OXCE_AI_BOT_SPECIAL - PLAYER-BOT special actions (OXCE_AI_CAREFUL): countKnownTargets counts for the
+	// hostile side only, so the bot asks psi and the waypoint launcher when its side honestly knows a hostile (seen now, or
+	// remembered under FAIR_KNOWLEDGE); asked only with such a weapon, so without one the bot's path is the old one; sniper
+	// stays as it was. Off - as before.
+	static const bool botSpecialOn = AiProbe::param("OXCE_AI_BOT_SPECIAL", 0) != 0;
+	bool botSpecial = false;
+	if (botSpecialOn && !_knownEnemies && AiProbe::careful(_unit) && (_blaster || _unit->getUtilityWeapon(BT_PSIAMP)))
+	{
+		for (auto* bu : *_save->getUnits())
+		{
+			if (bu->getFaction() != FACTION_HOSTILE || bu->isOut())
+			{
+				continue;
+			}
+			Position mem;
+			int dir = 0;
+			if (bu->getVisible() || (AiProbe::fairKnowledge() && bu->getAiSeen(_unit->getFaction(), mem, dir)))
+			{
+				botSpecial = true;
+				break;
+			}
+		}
+	}
+
 	// if enemies are known to us but not necessarily visible, we can attack them with a blaster launcher or psi or a sniper attack.
-	if (_knownEnemies)
+	if (_knownEnemies || botSpecial)
 	{
 		const ProbeMark psiMark = probeMark('s');
 		const bool psi = psiAction();
@@ -1833,7 +2372,7 @@ void AIModule::setupAttack()
 			wayPointAction();
 			probeSlot('x', "waypoint", mark);
 		}
-		else if (_unit->getUnitRules()) // xcom soldiers (under mind control) lack unit rules!
+		else if (!botSpecial && _unit->getUnitRules()) // xcom soldiers (under mind control) lack unit rules!
 		{
 			// don't always act on spotter information unless modder says so
 			if (RNG::percent(_unit->getUnitRules()->getSniperPercentage()))
@@ -1875,7 +2414,29 @@ void AIModule::setupAttack()
 		if (_melee)
 		{
 			const ProbeMark mark = probeMark('x');
+			// AI3-F (bench): OXCE_AI_BOT_WP_MELEE - a lawful waypoint launch the bot chose (U-71) is not overwritten by a
+			// charge: melee wins only with a blow it can strike now (the target adjacent, BA_HIT), else the launch and its
+			// target stay as they were (the charge's side effects undone). Off - as before.
+			static const bool wpMeleeOn = AiProbe::param("OXCE_AI_BOT_WP_MELEE", 0) != 0;
+			const bool keepLaunch = wpMeleeOn && AiProbe::careful(_unit) && _attackAction.type == BA_LAUNCH;
+			const BattleAction launch = _attackAction;
+			BattleUnit *const launchTarget = _aggroTarget;
+			BattleUnit *const charging = _unit->getCharging();
 			meleeAction();
+			if (keepLaunch)
+			{
+				if (_attackAction.type == BA_HIT)
+				{
+					AiProbe::note(_unit, "wpmelee.hit");
+				}
+				else
+				{
+					AiProbe::note(_unit, _attackAction.type == BA_LAUNCH ? "wpmelee.keep" : "wpmelee.keep.charge");
+					_attackAction = launch;
+					_aggroTarget = launchTarget;
+					_unit->setCharging(charging);
+				}
+			}
 			probeSlot('x', "melee", mark);
 		}
 		if (_rifle)
@@ -1883,6 +2444,10 @@ void AIModule::setupAttack()
 			const ProbeMark mark = probeMark('x');
 			projectileAction();
 			probeSlot('x', "shot", mark);
+		}
+		if (_ffThrow)
+		{
+			ffThrowOrShot();
 		}
 	}
 
@@ -1931,14 +2496,23 @@ void AIModule::setupAttack()
 void AIModule::setupEscape()
 {
 	AiProbe::escapeBegin(_unit);
+	AiProbe::hypoBegin(_unit, "escape", _spottingEnemies);
 	int unitsSpottingMe = getSpottingUnits(_unit->getPosition());
 	int currentTilePreference = 15;
 	int tries = -1;
 	bool coverFound = false;
-	selectNearestTarget();
+	selectNearestTarget(true); // AI2-H h8: a remembered target is taken at its remembered place
 	_escapeTUs = 0;
+	// U3 escape plan contract: every way out of here writes _escapeAction (a walk or BA_RETHINK), so this is its provenance
+	_escapePlan.valid = true;
+	_escapePlan.turn = _save->getTurn();
+	_escapePlan.side = (int)_save->getSide();
+	_escapePlan.origin = _unit->getPosition();
+	_escapePlan.aggro = _aggroTarget;
 
-	int dist = _aggroTarget ? Position::distance2d(_unit->getPosition(), _aggroTarget->getPosition()) : 0;
+	// AI2-H FAIR KNOWLEDGE: the distance to the target where this side knows it to be
+	const Position escapeAggroAt = _aggroTarget ? knownPos(_aggroTarget, "escape") : Position(-1, -1, -1);
+	int dist = _aggroTarget ? Position::distance2d(_unit->getPosition(), escapeAggroAt) : 0;
 
 	int bestTileScore = -100000;
 	int score = -100000;
@@ -2030,8 +2604,14 @@ void AIModule::setupEscape()
 
 		// THINK, DAMN YOU
 		tile = _save->getTile(_escapeAction.target);
-		int distanceFromTarget = _aggroTarget ? Position::distance2d(_aggroTarget->getPosition(), _escapeAction.target) : 0;
-		if (dist >= distanceFromTarget)
+		int distanceFromTarget = _aggroTarget ? Position::distance2d(escapeAggroAt, _escapeAction.target) : 0;
+		if (AiProbe::escapeSignFix())
+		{
+			// U2 SETUPESCAPE DISTANCE SIGN (clean1: always in the bench): farther from the target positive, closer negative,
+			// same distance 0; upstream below adds |distanceFromTarget - dist| * 10 in both branches
+			score += (distanceFromTarget - dist) * 10;
+		}
+		else if (dist >= distanceFromTarget)
 		{
 			score -= (distanceFromTarget - dist) * 10;
 		}
@@ -2126,6 +2706,7 @@ void AIModule::setupEscape()
 			if (bestTileScore > FAST_PASS_THRESHOLD) coverFound = true; // good enough, gogogo
 		}
 	}
+	AiProbe::hypoEnd(_unit, "escape", bestTileScore > -100000, bestTile, bestTileScore);
 	if (bestTileScore > -100000 && AiProbe::escapeAlt(_unit))
 	{
 		// ESCAPE_ALT_PROBE (stand only): the reachable tiles next to the chosen one, read only - getSpottingUnits is const
@@ -2173,6 +2754,37 @@ void AIModule::setupEscape()
 }
 
 /**
+ * U3 escape plan contract (bench): may the AI_ESCAPE branch hand out _escapeAction as setupEscape left it? One contract for
+ * every way a plan goes stale - the terms in their order, the first broken one named. Destination terms hold for a walk to
+ * another tile only: BA_RETHINK (no tile found) and a walk to the unit's own tile have no destination to lose.
+ * Reads _reachable as think made it this think.
+ */
+int AIModule::escapePlanBroken() const
+{
+	if (!_escapePlan.valid)
+		return 1;
+	if (_escapePlan.turn != _save->getTurn() || _escapePlan.side != (int)_save->getSide())
+		return 2;
+	if (_escapePlan.origin != _unit->getPosition())
+		return 3;
+	if (_escapeAction.type == BA_WALK && _escapeAction.target != _unit->getPosition())
+	{
+		const Tile *tile = _save->getTile(_escapeAction.target);
+		if (!tile)
+			return 4;
+		// a destination taken by a unit this unit knows of is not in _reachable: findReachable blocks it by the pathfinder's own
+		// rule of what the side knows (Pathfinding::isBlocked). So term 5 is also "taken so the walk is impossible" (6); a unit
+		// it does not know of is no reason - reading Tile::getUnit for it would be knowledge the AI does not have
+		const int index = _save->getTileIndex(_escapeAction.target);
+		if (std::find(_reachable.begin(), _reachable.end(), index) == _reachable.end())
+			return 5;
+	}
+	if (_escapePlan.aggro && _escapePlan.aggro->isOut())
+		return 7;
+	return 0;
+}
+
+/**
  * Counts how many targets, both xcom and civilian are known to this unit
  * @return how many targets are known to us.
  */
@@ -2207,6 +2819,11 @@ int AIModule::getSpottingUnits(const Position& pos) const
 	{
 		if (validTarget(bu, false, false))
 		{
+			Position kp;
+			int kdir = 0;
+			int kind = knownPlace(bu, "spotting", kp, kdir);
+			if (kind == 2) continue;
+			AiKnownPlace known(_save, bu, kind, kp, kdir);
 			int dist = Position::distance2d(pos, bu->getPosition());
 			if (dist > 20) continue;
 			Position originVoxel = _save->getTileEngine()->getSightOriginVoxel(bu);
@@ -2237,16 +2854,27 @@ int AIModule::getSpottingUnits(const Position& pos) const
  * This function includes civilians as viable targets.
  * @return viable targets.
  */
-int AIModule::selectNearestTarget()
+int AIModule::selectNearestTarget(bool escape)
 {
 	int tally = 0;
 	_closestDist= 100;
 	_aggroTarget = 0;
 	Position target;
+	const char *cons = escape ? "escape" : "nearest";
+	int pickState = AiProbe::FAIR_LEGACY;
 	for (auto* bu : *_save->getUnits())
 	{
-		if (validTarget(bu, true, true) &&
-			_save->getTileEngine()->visible(_unit, bu->getTile()))
+		// AI2-H h8: a geometric ray does not make the side know where a hidden enemy stands now
+		int kst = AiProbe::FAIR_LEGACY, kdir = 0, oldPass = -1;
+		Position kp;
+		const int mode = validTarget(bu, true, true) ? fairNearestMode(bu, escape, cons, kst, kp, kdir, oldPass) : 0;
+		AiKnownPlace known(_save, bu, mode == 2 && kp != bu->getPosition() ? 1 : 0, kp, kdir);
+		const bool seen = mode != 0 && _save->getTileEngine()->visible(_unit, bu->getTile());
+		if (mode == 2)
+		{
+			AiProbe::fairSel(_unit, bu, cons, kst, oldPass, seen ? 1 : 0, seen ? "mem" : "none", kp);
+		}
+		if (seen)
 		{
 			tally++;
 			int dist = Position::distance2d(_unit->getPosition(), bu->getPosition());
@@ -2266,24 +2894,70 @@ int AIModule::selectNearestTarget()
 				{
 					if (selectPointNearTarget(bu, _unit->getTimeUnits()))
 					{
-						int dir = _save->getTileEngine()->getDirectionTo(_attackAction.target, bu->getPosition());
-						valid = _save->getTileEngine()->validMeleeRange(_attackAction.target, dir, _unit, bu, 0);
+						valid = knownMeleeFrom(_attackAction.target, bu);
 					}
 				}
 				if (valid)
 				{
 					_closestDist = dist;
 					_aggroTarget = bu;
+					pickState = kst;
 				}
 			}
 		}
 	}
 	if (_aggroTarget)
 	{
+		AiProbe::fairPick(_unit, _aggroTarget, cons, pickState, pickState == AiProbe::FAIR_LAST_SEEN ? "mem" : "now", tally);
 		return tally;
 	}
 
 	return 0;
+}
+
+/**
+ * AI2-H h8 knowledge contract for selectNearestTarget / selectNearestTargetLeeroy (OXCE_AI_FAIR_KNOWLEDGE=1). The ray to the true tile
+ * (TileEngine::visible, 360 degrees) decides only for a target the side honestly observes now or knows by the cheat. A direct pick
+ * does not take a target the side does not observe now (it has no place to shoot at); the escape takes it at the remembered place.
+ * @return 0 - skip, 1 - the old ray to the true tile, 2 - the ray at the remembered place.
+ */
+int AIModule::fairNearestMode(BattleUnit *bu, bool escape, const char *cons, int &state, Position &mem, int &dir, int &oldPass) const
+{
+	if (!AiProbe::fairKnowledge() || bu->getFaction() == _unit->getFaction())
+	{
+		return 1;
+	}
+	TileEngine *te = _save->getTileEngine();
+	if (!escape)
+	{
+		// the same skip in every state: no ray to the true tile - not taken, whatever the side knows; so the ray is read
+		// only where the side may know the place
+		if (!te->visible(_unit, bu->getTile()))
+		{
+			return 0;
+		}
+		state = AiProbe::fairState(_save, _unit, bu, mem, dir);
+		if (state == AiProbe::FAIR_CURRENT || state == AiProbe::FAIR_CHEAT)
+		{
+			return 1;
+		}
+		oldPass = 1;
+		AiProbe::fairSel(_unit, bu, cons, state, oldPass, 0, "none", mem);
+		return 0;
+	}
+	state = AiProbe::fairState(_save, _unit, bu, mem, dir);
+	if (state == AiProbe::FAIR_CURRENT || state == AiProbe::FAIR_CHEAT)
+	{
+		return 1;
+	}
+	// diagnostics only: would the old ray have taken it (no AiKnownPlace scope is open, so this reads nothing moved)
+	oldPass = AiKnownPlace::any() ? -1 : (te->visible(_unit, bu->getTile()) ? 1 : 0);
+	if (state == AiProbe::FAIR_UNKNOWN)
+	{
+		AiProbe::fairSel(_unit, bu, cons, state, oldPass, 0, "none", mem);
+		return 0;
+	}
+	return 2;
 }
 
 /**
@@ -2297,9 +2971,13 @@ int AIModule::selectNearestTargetLeeroy(bool canRun)
 	int tally = 0;
 	_closestDist = 100;
 	_aggroTarget = 0;
+	int pickState = AiProbe::FAIR_LEGACY;
 	for (auto* bu : *_save->getUnits())
 	{
-		if (validTarget(bu, true, true) &&
+		// AI2-H h8: as selectNearestTarget, a direct pick
+		int kst = AiProbe::FAIR_LEGACY, kdir = 0, oldPass = -1;
+		Position kp;
+		if (validTarget(bu, true, true) && fairNearestMode(bu, false, "leeroy", kst, kp, kdir, oldPass) == 1 &&
 			_save->getTileEngine()->visible(_unit, bu->getTile()))
 		{
 			tally++;
@@ -2309,19 +2987,20 @@ int AIModule::selectNearestTargetLeeroy(bool canRun)
 				bool valid = false;
 				if (selectPointNearTargetLeeroy(bu, canRun))
 				{
-					int dir = _save->getTileEngine()->getDirectionTo(_attackAction.target, bu->getPosition());
-					valid = _save->getTileEngine()->validMeleeRange(_attackAction.target, dir, _unit, bu, 0);
+					valid = knownMeleeFrom(_attackAction.target, bu);
 				}
 				if (valid)
 				{
 					_closestDist = dist;
 					_aggroTarget = bu;
+					pickState = kst;
 				}
 			}
 		}
 	}
 	if (_aggroTarget)
 	{
+		AiProbe::fairPick(_unit, _aggroTarget, "leeroy", pickState, "now", tally);
 		return tally;
 	}
 
@@ -2341,7 +3020,11 @@ bool AIModule::selectClosestKnownEnemy()
 	{
 		if (validTarget(bu, true, false))
 		{
-			int dist = Position::distance2d(bu->getPosition(), _unit->getPosition());
+			Position kp;
+			int kdir = 0;
+			int kind = knownPlace(bu, "closest", kp, kdir);
+			if (kind == 2) continue;
+			int dist = Position::distance2d(kind == 1 ? kp : bu->getPosition(), _unit->getPosition());
 			if (dist < minDist)
 			{
 				minDist = dist;
@@ -2365,7 +3048,11 @@ bool AIModule::selectRandomTarget()
 	{
 		if (validTarget(bu, true, true))
 		{
-			int dist = RNG::generate(0,20) - Position::distance2d(_unit->getPosition(), bu->getPosition());
+			Position kp;
+			int kdir = 0;
+			int kind = knownPlace(bu, "random", kp, kdir);
+			if (kind == 2) continue;
+			int dist = RNG::generate(0,20) - Position::distance2d(_unit->getPosition(), kind == 1 ? kp : bu->getPosition());
 			if (dist > farthest)
 			{
 				farthest = dist;
@@ -2384,6 +3071,11 @@ bool AIModule::selectRandomTarget()
  */
 bool AIModule::selectPointNearTarget(BattleUnit *target, int maxTUs)
 {
+	Position kp;
+	int kdir = 0;
+	const int kind = knownPlace(target, "melee", kp, kdir);
+	if (kind == 2) return false;
+	AiKnownPlace known(_save, target, kind, kp, kdir);
 	int size = _unit->getArmor()->getSize();
 	int sizeTarget = target->getArmor()->getSize();
 	int dirTarget = target->getDirection();
@@ -2403,7 +3095,7 @@ bool AIModule::selectPointNearTarget(BattleUnit *target, int maxTUs)
 					if (_save->getTile(checkPath) == 0 || std::find(_reachable.begin(), _reachable.end(), _save->getTileIndex(checkPath))  == _reachable.end())
 						continue;
 					int dir = _save->getTileEngine()->getDirectionTo(checkPath, target->getPosition());
-					bool valid = _save->getTileEngine()->validMeleeRange(checkPath, dir, _unit, target, 0);
+					bool valid = knownMeleeRange(checkPath, target, kind, kp, kdir);
 					bool fitHere = _save->setUnitPosition(_unit, checkPath, true);
 
 					// the determinism hunt (OXCE_AI_TRACE_MELEE, bench builds only): every candidate tile with what decided it
@@ -2451,6 +3143,11 @@ bool AIModule::selectPointNearTarget(BattleUnit *target, int maxTUs)
  */
 bool AIModule::selectPointNearTargetLeeroy(BattleUnit *target, bool canRun)
 {
+	Position kp;
+	int kdir = 0;
+	const int kind = knownPlace(target, "melee", kp, kdir);
+	if (kind == 2) return false;
+	AiKnownPlace known(_save, target, kind, kp, kdir);
 	int size = _unit->getArmor()->getSize();
 	int targetsize = target->getArmor()->getSize();
 	bool returnValue = false;
@@ -2466,8 +3163,7 @@ bool AIModule::selectPointNearTargetLeeroy(BattleUnit *target, bool canRun)
 					Position checkPath = target->getPosition() + Position(x, y, z);
 					if (_save->getTile(checkPath) == 0)
 						continue;
-					int dir = _save->getTileEngine()->getDirectionTo(checkPath, target->getPosition());
-					bool valid = _save->getTileEngine()->validMeleeRange(checkPath, dir, _unit, target, 0);
+					bool valid = knownMeleeRange(checkPath, target, kind, kp, kdir);
 					bool fitHere = _save->setUnitPosition(_unit, checkPath, true);
 
 					if (valid && fitHere)
@@ -2521,6 +3217,13 @@ bool AIModule::selectSpottedUnitForSniper()
 	{
 		if (validTarget(bu, true, true) && bu->getTurnsLeftSpottedForSnipersByFaction(_unit->getFaction()))
 		{
+			// AI2-H FAIR KNOWLEDGE: the target is scored where the spotters last saw it
+			Position kp;
+			int kdir = 0;
+			const int kind = knownPlace(bu, "sniper", kp, kdir);
+			if (kind == 2)
+				continue;
+			AiKnownPlace known(_save, bu, kind, kp, kdir);
 			// Determine which firing mode to use based on how many hits we expect per turn and the unit's intelligence/aggression
 			_aggroTarget = bu;
 			_attackAction.type = BA_RETHINK;
@@ -2531,7 +3234,17 @@ bool AIModule::selectSpottedUnitForSniper()
 			if (chosenAction.type == BA_THROW)
 				chosenAction.weapon = costThrow.weapon;
 
-			if (_attackAction.type != BA_RETHINK)
+			const bool direct = chosenAction.type == BA_AUTOSHOT || chosenAction.type == BA_SNAPSHOT || chosenAction.type == BA_AIMEDSHOT;
+			// AI3-FF (bench): OXCE_AI_FF_RISK bit 4 - the line to the place the spotters saw it (projectileAction's rule)
+			static const int ffRisk = (int)AiProbe::param("OXCE_AI_FF_RISK", 0);
+			const bool ffSec = (ffRisk & 4) && direct && _attackAction.type != BA_RETHINK && ffLineRisk(kind == 1 ? kp : bu->getPosition());
+			if (ffSec && _ffSecRec != AiProbe::nextRec())
+			{
+				_ffSecRec = AiProbe::nextRec();
+				AiProbe::note(_unit, "ff.sec.sniper");
+			}
+			if (_attackAction.type != BA_RETHINK && !ffSec && !(direct && zeroEffectReject("sniper", chosenAction.type, chosenAction.weapon, bu))
+				&& !sniperAoeEfficacyReject(chosenAction, bu))
 			{
 				std::pair<BattleUnit*, BattleAction> spottedTarget;
 				spottedTarget = std::make_pair(bu, chosenAction);
@@ -2547,7 +3260,7 @@ bool AIModule::selectSpottedUnitForSniper()
 		_probeScore = INT_MIN; // each target was scored, the pick is random
 		int pick = RNG::generate(0, numberOfTargets - 1);
 		_aggroTarget = spottedTargets.at(pick).first;
-		_attackAction.target = _aggroTarget->getPosition();
+		_attackAction.target = knownPos(_aggroTarget, "sniper");
 		_attackAction.type = spottedTargets.at(pick).second.type;
 		_attackAction.weapon = spottedTargets.at(pick).second.weapon;
 	}
@@ -2653,6 +3366,7 @@ int AIModule::scoreFiringMode(BattleAction *action, BattleUnit *target, bool che
 		}
 		else
 		{
+			AiProbe::HypoTag hypoTag("sniper"); // AI2-G: a real target on its own tile - the call must keep D1 semantics
 			if (!_save->getTileEngine()->canTargetUnit(&origin, target->getTile(), &targetPosition, _unit, false, target))
 			{
 				return 0;
@@ -2661,6 +3375,181 @@ int AIModule::scoreFiringMode(BattleAction *action, BattleUnit *target, bool che
 	}
 
 	return accuracy * numberOfShots * tuTotal / tuCost;
+}
+
+/**
+ * AI3-E (bench, OXCE_AI_FIRE_MODE_EV): what a direct firing mode is expected to do to the target this turn - the engine's
+ * accuracy with the range dropoff (as scoreFiringMode, capped to 0..100) as the hit chance, times the shots of the mode, times
+ * the damage after the armour's ruleset modifier and the ruleset armour of the side the shot comes from (BattleUnit::damage,
+ * by the target's place and facing its side honestly knows), times the uses the unit's current time units allow. Read: the
+ * attacker's own weapon, ammo and stats, the target's armour rule, the remembered place; not read: current armour, health.
+ * @param why The reason when the mode cannot be modelled (the result is then negative).
+ * @return The expected damage, -1 when not modelled.
+ */
+double AIModule::fireModeEffect(BattleAction *action, BattleUnit *target, const char *&why)
+{
+	why = "";
+	if (action->type != BA_AIMEDSHOT && action->type != BA_SNAPSHOT && action->type != BA_AUTOSHOT)
+	{
+		why = "not_direct";
+		return -1.0;
+	}
+	const RuleItem *weapon = action->weapon->getRules();
+	BattleActionAttack attack = BattleActionAttack::GetBeforeShoot(*action);
+	if (!attack.damage_item)
+	{
+		why = "no_ammo";
+		return -1.0;
+	}
+	const RuleItem *item = attack.damage_item->getRules();
+	if (item->getExplosionRadius(attack) != 0)
+	{
+		why = "area";
+		return -1.0;
+	}
+	const RuleDamageType *dt = item->getDamageType();
+	if (!dt)
+	{
+		why = "no_damage_type";
+		return -1.0;
+	}
+
+	// the target's side as its side knows it: the remembered place and facing (FAIR_KNOWLEDGE), as AiProbe::fairPlace
+	Position tpos = target->getPosition();
+	int tdir = target->getDirection();
+	if (AiProbe::fairKnowledge() && target->getFaction() != _unit->getFaction()
+		&& !(_unit->getFaction() == FACTION_HOSTILE && _save->isCheating() && target->getFaction() == FACTION_PLAYER))
+	{
+		Position seen;
+		int seenDir = 0;
+		if (!target->getAiSeen(_unit->getFaction(), seen, seenDir))
+		{
+			why = "side_unknown";
+			return -1.0;
+		}
+		tpos = seen;
+		tdir = seenDir;
+	}
+
+	int accuracy = BattleUnit::getFiringAccuracy(attack, _save->getMod());
+	const int distanceSq = _unit->distance3dToPositionSq(tpos);
+	const int distance = (int)std::ceil(sqrt(float(distanceSq)));
+	{
+		int upperLimit, lowerLimit;
+		int dropoff = weapon->calculateLimits(upperLimit, lowerLimit, _save->getDepth(), action->type);
+		if (distance > upperLimit)
+		{
+			accuracy -= (distance - upperLimit) * dropoff;
+		}
+		else if (distance < lowerLimit)
+		{
+			accuracy -= (lowerLimit - distance) * dropoff;
+		}
+	}
+	if (weapon->isOutOfRange(distanceSq))
+	{
+		accuracy = 0;
+	}
+	const double hit = Clamp(accuracy, 0, 100) / 100.0;
+
+	int shots = 1;
+	if (action->type == BA_AIMEDSHOT)
+		shots = weapon->getConfigAimed()->shots;
+	else if (action->type == BA_SNAPSHOT)
+		shots = weapon->getConfigSnap()->shots;
+	else
+		shots = weapon->getConfigAuto()->shots;
+
+	const int tuCost = _unit->getActionTUs(action->type, action->weapon).Time;
+	if (tuCost <= 0)
+	{
+		why = "no_tu_cost";
+		return -1.0;
+	}
+	const int uses = std::max(1, _unit->getTimeUnits() / tuCost);
+
+	// ExplosionBState::init: the power at this range
+	int power = 0;
+	if (weapon->getIgnoreAmmoPower())
+	{
+		power += weapon->getPowerBonus(attack);
+		power -= weapon->getPowerRangeReduction(distance * 16);
+	}
+	else
+	{
+		power += item->getPowerBonus(attack);
+		power -= item->getPowerRangeReduction(distance * 16);
+	}
+	power = std::max(power, 0);
+
+	// BattleUnit::damage: the side of the hit by the direction from the target to the shooter
+	const Armor *armor = target->getArmor();
+	double sideArmor = armor->getFrontArmor();
+	if (!dt->IgnoreDirection)
+	{
+		const Position rel = (_unit->getPosition() - tpos) * Position(16, 16, 24);
+		if (rel.x == 0 && rel.y == 0 && rel.z <= 0)
+		{
+			sideArmor = armor->getUnderArmor();
+		}
+		else
+		{
+			int relativeDirection;
+			const int abs_x = abs(rel.x);
+			const int abs_y = abs(rel.y);
+			if (abs_y > abs_x * 2)
+				relativeDirection = 8 + 4 * (rel.y > 0);
+			else if (abs_x > abs_y * 2)
+				relativeDirection = 10 + 4 * (rel.x < 0);
+			else if (rel.x < 0)
+				relativeDirection = rel.y > 0 ? 13 : 15;
+			else
+				relativeDirection = rel.y > 0 ? 11 : 9;
+			const double front = armor->getFrontArmor(), right = armor->getRightSideArmor(), rear = armor->getRearArmor(),
+				left = armor->getLeftSideArmor();
+			switch ((relativeDirection - tdir) % 8)
+			{
+			case 0: sideArmor = front; break;
+			case 1: sideArmor = (2 * front + right) / 3; break;
+			case 2: sideArmor = right; break;
+			case 3: sideArmor = (2 * rear + right) / 3; break;
+			case 4: sideArmor = rear; break;
+			case 5: sideArmor = (2 * rear + left) / 3; break;
+			case 6: sideArmor = left; break;
+			default: sideArmor = (2 * front + left) / 3; break;
+			}
+		}
+	}
+
+	// the expected damage after the resistance modifier and the armour over the roll (two dice: the triangle)
+	const float modifier = armor->getDamageModifier(dt->ResistType);
+	const float armorCut = dt->ArmorEffectiveness > 0.0f ? (float)sideArmor * dt->ArmorEffectiveness : 0.0f;
+	auto afterArmor = [&](int roll)
+	{
+		int damage = (int)floor(roll * modifier);
+		damage -= armorCut;
+		return std::max(damage, 0);
+	};
+	double perHit = 0.0;
+	if (dt->RandomType == DRT_UFO_WITH_TWO_DICE)
+	{
+		const double n = (double)(power + 1) * (power + 1);
+		for (int s = 0; s <= 2 * power; ++s)
+		{
+			perHit += afterArmor(s) * (std::min(s, 2 * power - s) + 1) / n;
+		}
+	}
+	else
+	{
+		const int lo = dt->getRandomDamage(power, 1);
+		const int hi = dt->getRandomDamage(power, 2);
+		for (int d = lo; d <= hi; ++d)
+		{
+			perHit += afterArmor(d);
+		}
+		perHit /= (hi - lo + 1);
+	}
+	return hit * shots * perHit * uses;
 }
 
 /**
@@ -2952,12 +3841,15 @@ void AIModule::tacticalMode()
 		return;
 	}
 	// cover is a tile fewer of them see than see us now
+	AiProbe::hypoBegin(_unit, "tactical", _spottingEnemies);
 	if (_escapeAction.type != BA_WALK || _escapeAction.target == _unit->getPosition()
 		|| getSpottingUnits(_escapeAction.target) >= _spottingEnemies)
 	{
+		AiProbe::hypoEnd(_unit, "tactical", false, _escapeAction.target, 0);
 		AiProbe::tally(_unit, "nocover");
 		return;
 	}
+	AiProbe::hypoEnd(_unit, "tactical", true, _escapeAction.target, 0);
 	const bool wounded = AiProbe::careful(_unit)
 		&& (_unit->getFatalWounds() > 0 || _unit->getHealth() < _unit->getBaseStats()->health / 2);
 	if (_AIMode == AI_AMBUSH && !wounded)
@@ -3004,6 +3896,81 @@ bool AIModule::findFirePoint()
 {
 	if (!selectClosestKnownEnemy())
 		return false;
+	// AI2-H FAIR KNOWLEDGE: the whole search (lines to the target, its view sector, the distance, the final facing) runs with
+	// the target where this side knows it to be; no change unless that is not its current place
+	Position fkPos;
+	int fkDir = 0;
+	const int fkKind = knownPlace(_aggroTarget, "firepoint", fkPos, fkDir);
+	if (fkKind == 2)
+		return false;
+	// AI2-H5 MELEE FIREPOINT APPROACH (bench): a unit whose only usable attack is a melee blow treats the target as out of
+	// attack range while it cannot strike it from where it stands (where the side knows the target to be), so the approach
+	// bonus below applies to it as to a weapon out of range. Psi, grenades, any firearm (blaster included) - not melee-only.
+	bool meleeApproach = false;
+	if (AiProbe::meleeFirepointApproach())
+	{
+		BattleItem *meleeW = _unit->getUtilityWeapon(BT_MELEE);
+		const bool pure = _melee && meleeW && BattleActionCost(BA_HIT, _unit, meleeW).Time > 0
+			&& !_rifle && !_blaster && !_grenade
+			&& !_unit->getUtilityWeapon(BT_FIREARM) && !_unit->getUtilityWeapon(BT_PSIAMP)
+			&& !_unit->getUtilityWeapon(BT_GRENADE) && !_unit->getUtilityWeapon(BT_PROXIMITYGRENADE);
+		const bool adj = pure && knownMeleeRange(_unit->getPosition(), _aggroTarget, fkKind, fkPos, fkDir);
+		meleeApproach = pure && !adj;
+		Log(LOG_INFO) << "[AITRACE] {\"ai2h5\":\"mfa\",\"rec\":" << AiProbe::nextRec() << ",\"turn\":" << _save->getTurn()
+			<< ",\"unit\":" << _unit->getId() << ",\"target\":" << _aggroTarget->getId() << ",\"kind\":" << fkKind
+			<< ",\"pure\":" << (pure ? 1 : 0) << ",\"adj\":" << (adj ? 1 : 0)
+			<< ",\"d\":" << Position::distance2d(_unit->getPosition(), fkKind == 1 ? fkPos : _aggroTarget->getPosition()) << "}";
+	}
+	AiKnownPlace fkKnown(_save, _aggroTarget, fkKind, fkPos, fkDir);
+	BattleUnit *fkUnit = fkKnown.on() ? _aggroTarget : nullptr;
+	// AI2-A (mode 3): no fire point is sought for a target every direct shot mode of this weapon is proven useless against
+	if (zeroEffectMode() >= 1 && _attackAction.weapon)
+	{
+		int modes = 0, zero = 0, unk = 0, hzero = 0;
+		std::string terms;
+		for (BattleActionType t : { BA_AIMEDSHOT, BA_SNAPSHOT, BA_AUTOSHOT })
+		{
+			BattleActionCost c(t, _unit, _attackAction.weapon);
+			if (!c.Time)
+			{
+				continue;
+			}
+			++modes;
+			std::string one;
+			const int v1 = zeroEffectVerdict(_save, _unit, t, _attackAction.weapon, _aggroTarget, &one);
+			if (zeroHonestMode() >= 1 && zeroHonestLast == AIZ_ZERO)
+			{
+				++hzero;
+			}
+			if (v1 == AIZ_ZERO)
+			{
+				++zero;
+			}
+			else if (v1 == AIZ_UNKNOWN)
+			{
+				++unk;
+			}
+			if (terms.empty())
+			{
+				terms = one;
+			}
+		}
+		if (modes > 0)
+		{
+			const bool reject = zeroEffectMode() >= 3 && zero == modes;
+			Log(LOG_INFO) << "[AITRACE] {\"ai2a\":\"firepoint\",\"rec\":" << AiProbe::nextRec() << ",\"turn\":" << _save->getTurn()
+				<< ",\"unit\":" << _unit->getId() << ",\"side\":" << (int)_unit->getFaction() << ",\"target\":" << _aggroTarget->getId()
+				<< ",\"modes\":" << modes << ",\"zero\":" << zero << ",\"unk\":" << unk << ",\"tu\":" << _unit->getTimeUnits()
+				<< ",\"v\":" << (zero == modes ? (int)AIZ_ZERO : (int)AIZ_POTENTIAL) << ",\"rej\":" << (reject ? 1 : 0) << terms
+				<< (zeroHonestMode() >= 1 ? ",\"hzero\":" + std::to_string(hzero) : std::string()) << "}";
+			if (reject)
+			{
+				// AI2-A2: the same outcome as a search that found no point (below), without the search and its shuffle
+				_attackAction.type = BA_RETHINK;
+				return false;
+			}
+		}
+	}
 	// KNOWN_OCCUPANT_PATH_V2 (bench): the target it aims at blocks its own tile for the searches to the points below
 	bool ko2Old = false;
 	const BattleUnit *ko2 = knownOccupantV2(ko2Old);
@@ -3033,6 +4000,7 @@ bool AIModule::findFirePoint()
 	bool targetCellRejected = false;
 	Position targetCell;
 	_attackAction.type = BA_RETHINK;
+	AiProbe::hypoBegin(_unit, "firepoint", _spottingEnemies);
 	for (const auto& randomPosition : randomTileSearch)
 	{
 		Position pos = _unit->getPosition() + randomPosition;
@@ -3065,7 +4033,7 @@ bool AIModule::findFirePoint()
 			// 4 because -2 is eyes and 2 below that is the rifle (or at least that's my understanding)
 			Position(8,8, _unit->getHeight() + _unit->getFloatHeight() - tile->getTerrainLevel() - 4);
 
-		if (_save->getTileEngine()->canTargetUnit(&origin, _aggroTarget->getTile(), &target, _unit, false))
+		if (_save->getTileEngine()->canTargetUnit(&origin, _aggroTarget->getTile(), &target, _unit, false, fkUnit))
 		{
 			calculateKnownOccupantV2(pos, ko2, _ko2FpHits);
 			// can move here
@@ -3097,16 +4065,18 @@ bool AIModule::findFirePoint()
 				{
 					score += 10;
 				}
+				AiProbe::hypoPre(pos, score);
 
 				// Extended behavior: if we have a limited-range weapon, bump up the score for getting closer to the target, down for further
 				if (!waitIfOutsideWeaponRange && extendedFireModeChoiceEnabled)
 				{
 					int distanceToTargetSq = _unit->distance3dToUnitSq(_aggroTarget);
 					int distanceToTarget = (int)std::ceil(sqrt(float(distanceToTargetSq)));
-					if (_attackAction.weapon && _attackAction.weapon->getRules()->isOutOfRange(distanceToTargetSq)) // make sure we can get the ruleset before checking the range
+					if ((_attackAction.weapon && _attackAction.weapon->getRules()->isOutOfRange(distanceToTargetSq)) || meleeApproach) // make sure we can get the ruleset before checking the range
 					{
 						int proposedDistance = Position::distance2d(pos, _aggroTarget->getPosition());
 						proposedDistance = std::max(proposedDistance, 1);
+						AiProbe::hypoScale(pos, distanceToTarget, proposedDistance);
 						score = score * distanceToTarget / proposedDistance;
 					}
 				}
@@ -3126,6 +4096,7 @@ bool AIModule::findFirePoint()
 			}
 		}
 	}
+	AiProbe::hypoEnd(_unit, "firepoint", bestScore > 70, _attackAction.target, bestScore);
 	if (droppedByEnergy || overByTu)
 	{
 		AiProbe::firepointDropped(_unit, droppedByEnergy, overByTu);
@@ -3173,11 +4144,31 @@ bool AIModule::findFirePoint()
 int AIModule::explosiveEfficacy(Position targetPos, BattleUnit *attackingUnit, int radius, int diff, bool grenade) const
 {
 	Tile *targetTile = _save->getTile(targetPos);
+	// AI2-B2: the terms of this call, read only
+	const bool probe = AiProbe::blastProbe();
+	AiProbe::EffNote note;
+	auto done = [&](int result, const char *path)
+	{
+		if (probe)
+		{
+			note.unit = attackingUnit->getId();
+			note.x = targetPos.x;
+			note.y = targetPos.y;
+			note.z = targetPos.z;
+			note.radius = radius;
+			note.grenade = grenade;
+			note.targetFaction = (int)_targetFaction;
+			note.result = result;
+			note.path = path;
+			AiProbe::effDone(note);
+		}
+		return result;
+	};
 
 	// don't throw grenades at flying enemies.
 	if (grenade && targetPos.z > 0 && targetTile->hasNoFloor(_save))
 	{
-		return false;
+		return done(false, "fly");
 	}
 
 	if (diff == -1)
@@ -3193,26 +4184,98 @@ int AIModule::explosiveEfficacy(Position targetPos, BattleUnit *attackingUnit, i
 		desperation += 3;
 
 	int efficacy = AIW_SCALE * desperation;
+	// AI3-FF (bench): OXCE_AI_FF_RISK bit 1 - a blast that reaches our own side (or the thrower) is judged by the weights of
+	// the units it reaches alone: desperation and difficulty add to efficacy but cannot buy the trade of ours for theirs.
+	// A blast on enemies with none of ours in it is not touched. No RNG.
+	static const int ffRisk = (int)AiProbe::param("OXCE_AI_FF_RISK", 0);
+	const bool ffTrade = (ffRisk & 1) != 0;
+	int ffUnits = 0;
+	bool ffOwn = false;
+	if (probe)
+	{
+		note.diff = diff;
+		note.desp = desperation;
+		note.hurt = injurylevel > (attackingUnit->getBaseStats()->health / 3) * 2;
+	}
 
 	// don't go kamikaze unless we're already doomed.
 	if (abs(attackingUnit->getPosition().z - targetPos.z) <= Options::battleExplosionHeight && distance <= radius)
 	{
 		efficacy -= AIW_SCALE * 4;
+		ffUnits -= AIW_SCALE * 4;
+		ffOwn = true;
+		if (probe)
+		{
+			note.kamikaze = true;
+			note.units.push_back({ attackingUnit->getId(), (int)attackingUnit->getFaction(), 0, 6 });
+		}
 	}
 
 	// allow difficulty to have its influence
-	efficacy += AIW_SCALE * diff/2;
+	// AI2-B2a V1: OXCE_AI_EFFICACY_NO_DIFF=1 drops only the POSITIVE part of this term (min(0, term)): difficulty 2-4 lose
+	// their bonus, the penalty of difficulty 0 and the -50 of reaction fire (diff -1, TileEngine::tryReaction) stay.
+	// Desperation, kamikaze and the unit weights stay as they are, and diff keeps its other uses (waypoints, victim choice
+	// odds, dodge). No RNG here.
+	static const bool noDiff = AiProbe::param("OXCE_AI_EFFICACY_NO_DIFF", 0) != 0;
+	const int diffTerm = AIW_SCALE * diff/2;
+	if (!noDiff)
+	{
+		efficacy += diffTerm;
+	}
+	else
+	{
+		efficacy += std::min(0, diffTerm);
+		if (probe)
+		{
+			note.noDiff = true;
+		}
+	}
 
 	// account for the unit we're targetting
-	BattleUnit *target = targetTile->getUnit();
-	if (target && !targetTile->getDangerous())
+	// AI2-H FAIR KNOWLEDGE: the units count where this side knows them to be - the one on the target tile and those around it
+	const bool fair = AiProbe::fairKnowledge() != 0;
+	BattleUnit *target = fair ? fairOccupant(targetPos) : targetTile->getUnit();
+	if (ffTrade && target && getTargetAttackWeight(target) < 0)
+	{
+		// AI3-FF (bench) bit 1: one of ours on the target tile is no enemy, and a grenaded tile does not shield it
+		efficacy += getTargetAttackWeight(target);
+		ffUnits += getTargetAttackWeight(target);
+		ffOwn = true;
+		if (probe)
+			note.units.push_back({ target->getId(), (int)target->getFaction(), (int)getTargetAttackWeight(target), 4 });
+	}
+	else if (target && !targetTile->getDangerous())
 	{
 		++enemiesAffected;
 		efficacy += getTargetAttackWeight(target);
+		ffUnits += getTargetAttackWeight(target);
+		if (probe)
+			note.units.push_back({ target->getId(), (int)target->getFaction(), (int)getTargetAttackWeight(target), 4 });
+	}
+	else if (probe && target)
+	{
+		note.units.push_back({ target->getId(), (int)target->getFaction(), (int)getTargetAttackWeight(target), 5 });
 	}
 
 	for (auto* bu : *_save->getUnits())
 	{
+		Position bpos = bu->getPosition();
+		if (fair && !bu->isOut() && bu != attackingUnit && bu != target)
+		{
+			Position kp;
+			int kdir = 0;
+			const int kind = knownPlace(bu, "blast", kp, kdir);
+			if (kind == 2)
+			{
+				continue;
+			}
+			if (kind == 1)
+			{
+				bpos = kp;
+			}
+		}
+		// the body is not where it is counted: moved since seen, or set at the known place by a caller's scope
+		const bool hypo = fair && (bpos != bu->getPosition() || _save->getTile(bpos)->getUnit() != bu);
 			// don't grenade dead guys
 		if (!bu->isOut() &&
 			// don't count ourself twice
@@ -3220,12 +4283,16 @@ int AIModule::explosiveEfficacy(Position targetPos, BattleUnit *attackingUnit, i
 			// don't count the target twice
 			bu != target &&
 			// don't count units that probably won't be affected cause they're out of range
-			abs(bu->getPosition().z - targetPos.z) <= Options::battleExplosionHeight &&
-			Position::distance2d(bu->getPosition(), targetPos) <= radius)
+			abs(bpos.z - targetPos.z) <= Options::battleExplosionHeight &&
+			Position::distance2d(bpos, targetPos) <= radius)
 		{
-			if (bu->getTile()->getDangerous())
+			if ((bpos == bu->getPosition() ? bu->getTile() : _save->getTile(bpos))->getDangerous()
+				// AI3-FF (bench) bit 1: one of ours on a grenaded tile is still hit
+				&& !(ffTrade && getTargetAttackWeight(bu) < 0))
 			{
 				// don't count people who were already grenaded this turn
+				if (probe)
+					note.units.push_back({ bu->getId(), (int)bu->getFaction(), (int)getTargetAttackWeight(bu), 2 });
 				continue;
 			}
 
@@ -3234,16 +4301,19 @@ int AIModule::explosiveEfficacy(Position targetPos, BattleUnit *attackingUnit, i
 			if (weight == 0)
 			{
 				// AI do not know anything about this unit
+				if (probe)
+					note.units.push_back({ bu->getId(), (int)bu->getFaction(), 0, 3 });
 				continue;
 			}
 
 			// trace a line from the grenade origin to the unit we're checking against
 			Position voxelPosA = Position (targetPos.toVoxel() + TileEngine::voxelTileCenter);
-			Position voxelPosB = Position (bu->getPosition().toVoxel() + TileEngine::voxelTileCenter);
+			Position voxelPosB = Position (bpos.toVoxel() + TileEngine::voxelTileCenter);
 			std::vector<Position> traj;
 			int collidesWith = _save->getTileEngine()->calculateLineVoxel(voxelPosA, voxelPosB, false, &traj, target, bu);
 
-			if (collidesWith == V_UNIT && traj.front().toTile() == bu->getPosition())
+			// a body that is not there is reached when the line comes to its place unhit
+			if ((collidesWith == V_UNIT && traj.front().toTile() == bpos) || (hypo && collidesWith == V_EMPTY))
 			{
 				if (bu->getFaction() == _targetFaction)
 				{
@@ -3251,29 +4321,54 @@ int AIModule::explosiveEfficacy(Position targetPos, BattleUnit *attackingUnit, i
 				}
 
 				efficacy += weight;
+				ffUnits += weight;
+				ffOwn = ffOwn || weight < 0;
+				if (probe)
+					note.units.push_back({ bu->getId(), (int)bu->getFaction(), (int)weight, 0 });
+			}
+			else if (probe)
+			{
+				note.units.push_back({ bu->getId(), (int)bu->getFaction(), (int)weight, 1 });
 			}
 		}
+	}
+	if (probe)
+	{
+		note.enemies = enemiesAffected;
+		note.efficacy = efficacy;
+	}
+	_ffEnemies = enemiesAffected;
+	if (ffTrade && ffOwn && ffUnits <= 0)
+	{
+		// AI3-FF (bench) bit 1: noted once a decision, when the engine's rules below would have said yes
+		const bool engineYes = !(grenade && desperation < 6 && enemiesAffected < 2) && (enemiesAffected >= 10 || efficacy >= AIW_SCALE);
+		if (engineYes && _ffNoteRec != AiProbe::nextRec())
+		{
+			_ffNoteRec = AiProbe::nextRec();
+			AiProbe::note(attackingUnit, "ff.trade");
+		}
+		return done(0, "ff");
 	}
 	// don't throw grenades at single targets, unless morale is in the danger zone
 	// or we're halfway towards panicking while bleeding to death.
 	if (grenade && desperation < 6 && enemiesAffected < 2)
 	{
-		return 0;
+		return done(0, "single");
 	}
 
 	if (enemiesAffected >= 10)
 	{
 		// Ignore loses if we can kill lot of enemies.
-		return enemiesAffected;
+		return done(enemiesAffected, "mass");
 	}
 	else if (efficacy > 0)
 	{
 		// We kill more enemies than allies. Scale back to number of targets, can round down to zero
-		return efficacy / AIW_SCALE;
+		return done(efficacy / AIW_SCALE, "sum");
 	}
 	else
 	{
-		return 0;
+		return done(0, "neg");
 	}
 }
 
@@ -3291,7 +4386,8 @@ void AIModule::meleeAction()
 	}
 	if (_aggroTarget != 0 && !_aggroTarget->isOut())
 	{
-		if (_save->getTileEngine()->validMeleeRange(_unit, _aggroTarget, _save->getTileEngine()->getDirectionTo(_unit->getPosition(), _aggroTarget->getPosition())))
+		if (knownAdjacent(_aggroTarget)
+			&& !zeroEffectReject("melee_adj", BA_HIT, attackCost.weapon, _aggroTarget))
 		{
 			meleeAttack();
 			return;
@@ -3302,13 +4398,21 @@ void AIModule::meleeAction()
 	_aggroTarget = 0;
 	for (auto* bu : *_save->getUnits())
 	{
-		int newDistance = Position::distance2d(_unit->getPosition(), bu->getPosition());
-		if (newDistance > 20 ||
-			!validTarget(bu, true, true))
+		if (!validTarget(bu, true, true))
+			continue;
+		Position kp;
+		int kdir = 0;
+		const int kind = knownPlace(bu, "melee", kp, kdir);
+		if (kind == 2)
+			continue;
+		int newDistance = Position::distance2d(_unit->getPosition(), kind == 1 ? kp : bu->getPosition());
+		if (newDistance > 20)
 			continue;
 		//pick closest living unit that we can move to
 		if ((newDistance < distance || newDistance == 1) && !bu->isOut())
 		{
+			if (zeroEffectReject("melee_charge", BA_HIT, attackCost.weapon, bu))
+				continue;
 			if (newDistance == 1 || selectPointNearTarget(bu, chargeReserve))
 			{
 				_aggroTarget = bu;
@@ -3321,7 +4425,7 @@ void AIModule::meleeAction()
 	}
 	if (_aggroTarget != 0)
 	{
-		if (_save->getTileEngine()->validMeleeRange(_unit, _aggroTarget, _save->getTileEngine()->getDirectionTo(_unit->getPosition(), _aggroTarget->getPosition())))
+		if (knownAdjacent(_aggroTarget))
 		{
 			meleeAttack();
 		}
@@ -3330,31 +4434,68 @@ void AIModule::meleeAction()
 	if (_traceAI && _aggroTarget) { Log(LOG_INFO) << "CHARGE!"; }
 }
 
+namespace
+{
+/// AI3-LEEROY (bench, OXCE_AI_LEEROY_TU_FIX=1): Leeroy assigns a melee blow only if the unit can pay for it now,
+/// the same check meleeAction() makes; otherwise the standard BA_NONE. Flag 0: no change.
+bool leeroyHitUnaffordable(BattleUnit *unit, BattleAction &attack)
+{
+	static const bool fix = AiProbe::param("OXCE_AI_LEEROY_TU_FIX", 0) != 0;
+	if (!fix)
+		return false;
+	BattleActionCost hit(BA_HIT, unit, unit->getUtilityWeapon(BT_MELEE));
+	if (hit.haveTU())
+		return false;
+	attack.type = BA_NONE;
+	AiProbe::note(unit, ("leeroy.unaffordable tu" + std::to_string(unit->getTimeUnits()) + "/" + std::to_string(hit.Time)
+		+ " en" + std::to_string(unit->getEnergy()) + "/" + std::to_string(hit.Energy)).c_str());
+	return true;
+}
+}
+
 /**
  * Attempts to take a melee attack/charge an enemy we can see.
  * Melee targetting: we can see an enemy, we can move to it so we're charging blindly toward an enemy.
  * Note: Differs from meleeAction() in calling selectPointNearTargetLeeroy() and ignoring some more checks.
+ * @return How many candidates AI2-A rejected as proven ZERO (0 unless OXCE_AI_ZERO_EFFECT >= 2).
  */
-void AIModule::meleeActionLeeroy(bool canRun)
+int AIModule::meleeActionLeeroy(bool canRun)
 {
+	int rejected = 0;
 	if (_aggroTarget != 0 && !_aggroTarget->isOut())
 	{
-		if (_save->getTileEngine()->validMeleeRange(_unit, _aggroTarget, _save->getTileEngine()->getDirectionTo(_unit->getPosition(), _aggroTarget->getPosition())))
+		if (knownAdjacent(_aggroTarget))
 		{
-			meleeAttack();
-			return;
+			if (!zeroEffectReject("leeroy_adj", BA_HIT, _unit->getUtilityWeapon(BT_MELEE), _aggroTarget))
+			{
+				if (leeroyHitUnaffordable(_unit, _attackAction))
+					return rejected;
+				meleeAttack();
+				return rejected;
+			}
+			++rejected;
 		}
 	}
 	int distance = 1000;
 	_aggroTarget = 0;
 	for (auto* bu : *_save->getUnits())
 	{
-		int newDistance = Position::distance2d(_unit->getPosition(), bu->getPosition());
 		if (!validTarget(bu, true, true))
 			continue;
+		Position kp;
+		int kdir = 0;
+		const int kind = knownPlace(bu, "melee", kp, kdir);
+		if (kind == 2)
+			continue;
+		int newDistance = Position::distance2d(_unit->getPosition(), kind == 1 ? kp : bu->getPosition());
 		//pick closest living unit
 		if ((newDistance < distance || newDistance == 1) && !bu->isOut())
 		{
+			if (zeroEffectReject("leeroy_charge", BA_HIT, _unit->getUtilityWeapon(BT_MELEE), bu))
+			{
+				++rejected;
+				continue;
+			}
 			if (newDistance == 1 || selectPointNearTargetLeeroy(bu, canRun))
 			{
 				_aggroTarget = bu;
@@ -3368,13 +4509,15 @@ void AIModule::meleeActionLeeroy(bool canRun)
 	}
 	if (_aggroTarget != 0)
 	{
-		if (_save->getTileEngine()->validMeleeRange(_unit, _aggroTarget, _save->getTileEngine()->getDirectionTo(_unit->getPosition(), _aggroTarget->getPosition())))
+		if (knownAdjacent(_aggroTarget))
 		{
-			meleeAttack();
+			if (!leeroyHitUnaffordable(_unit, _attackAction))
+				meleeAttack();
 		}
 	}
 	if (_traceAI && _aggroTarget) { Log(LOG_INFO) << "AIModule::meleeAction:" << " [target]: " << (_aggroTarget->getId()) << " at: " << _attackAction.target; }
 	if (_traceAI && _aggroTarget) { Log(LOG_INFO) << "CHARGE!"; }
+	return rejected;
 }
 
 /**
@@ -3390,6 +4533,15 @@ void AIModule::wayPointAction()
 		// cannot make a launcher attack - consider some other behaviour, like running away, or standing motionless.
 		return;
 	}
+	// AI3-F (bench): OXCE_AI_BOT_SPECIAL - the bot launches only with BA_LAUNCH ammo loaded, only at a HOSTILE, and only
+	// where its side honestly knows it (seen now, or remembered under FAIR_KNOWLEDGE). Off - as before.
+	static const bool botSpecialOn = AiProbe::param("OXCE_AI_BOT_SPECIAL", 0) != 0;
+	const bool bot = botSpecialOn && AiProbe::careful(_unit);
+	if (bot && !_attackAction.weapon->getAmmoForAction(BA_LAUNCH))
+	{
+		AiProbe::note(_unit, "botwp.no_ammo");
+		return;
+	}
 	_aggroTarget = 0;
 	for (auto* bu : *_save->getUnits())
 	{
@@ -3398,10 +4550,20 @@ void AIModule::wayPointAction()
 		{
 			continue;
 		}
-		_save->getPathfinding()->calculate(_unit, bu->getPosition(), BAM_MISSILE, bu, -1);
+		if (bot && (bu->getFaction() != FACTION_HOSTILE || (!AiProbe::fairKnowledge() && !bu->getVisible())))
+		{
+			continue;
+		}
+		// AI2-H FAIR KNOWLEDGE: the missile is planned to where this side knows the target to be
+		const Position bp = knownPos(bu, "waypoint");
+		if (bp.x < 0)
+		{
+			continue;
+		}
+		_save->getPathfinding()->calculate(_unit, bp, BAM_MISSILE, bu, -1);
 		BattleItem* ammo = _attackAction.weapon->getAmmoForAction(BA_LAUNCH);
 		if (_save->getPathfinding()->getStartDirection() != -1 &&
-			explosiveEfficacy(bu->getPosition(), _unit, ammo->getRules()->getExplosionRadius({ BA_LAUNCH, _unit, _attackAction.weapon, ammo }), _attackAction.diff))
+			explosiveEfficacy(bp, _unit, ammo->getRules()->getExplosionRadius({ BA_LAUNCH, _unit, _attackAction.weapon, ammo }), _attackAction.diff))
 		{
 			_aggroTarget = bu;
 		}
@@ -3431,7 +4593,12 @@ void AIModule::wayPointAction()
 		Position CurrentPosition = _unit->getPosition();
 		Position DirectionVector;
 
-		_save->getPathfinding()->calculate(_unit, _aggroTarget->getPosition(), BAM_MISSILE, _aggroTarget, -1);
+		// AI2-H FAIR KNOWLEDGE: the path ends where this side knows the target to be; when that is not its place, the last
+		// waypoint is put there as the target's body would have caught the line there
+		const Position wpTarget = knownPos(_aggroTarget, "waypoint");
+		// AI3-F: for the bot "hypothetical" is decided by what its side sees, not by the target's true place
+		const bool wpHypo = bot ? !_aggroTarget->getVisible() : wpTarget != _aggroTarget->getPosition();
+		_save->getPathfinding()->calculate(_unit, wpTarget, BAM_MISSILE, _aggroTarget, -1);
 		PathDirection = _save->getPathfinding()->dequeuePath();
 		while (PathDirection != -1 && (int)_attackAction.waypoints.size() < maxWaypoints)
 		{
@@ -3441,7 +4608,12 @@ void AIModule::wayPointAction()
 			Position voxelPosA ((CurrentPosition.x * 16)+8, (CurrentPosition.y * 16)+8, (CurrentPosition.z * 24)+16);
 			Position voxelPosb ((LastWayPoint.x * 16)+8, (LastWayPoint.y * 16)+8, (LastWayPoint.z * 24)+16);
 			CollidesWith = _save->getTileEngine()->calculateLineVoxel(voxelPosA, voxelPosb, false, nullptr, _unit);
-			if (CollidesWith > V_EMPTY && CollidesWith < V_UNIT)
+			if (wpHypo && CurrentPosition == wpTarget)
+			{
+				_attackAction.waypoints.push_back(CurrentPosition);
+				LastWayPoint = CurrentPosition;
+			}
+			else if (CollidesWith > V_EMPTY && CollidesWith < V_UNIT)
 			{
 				_attackAction.waypoints.push_back(LastPosition);
 				LastWayPoint = LastPosition;
@@ -3449,7 +4621,7 @@ void AIModule::wayPointAction()
 			else if (CollidesWith == V_UNIT)
 			{
 				BattleUnit* target = _save->getTile(CurrentPosition)->getOverlappingUnit(_save);
-				if (target == _aggroTarget)
+				if (target == _aggroTarget && !wpHypo)
 				{
 					_attackAction.waypoints.push_back(CurrentPosition);
 					LastWayPoint = CurrentPosition;
@@ -3457,11 +4629,20 @@ void AIModule::wayPointAction()
 			}
 			PathDirection = _save->getPathfinding()->dequeuePath();
 		}
+		if (bot && _attackAction.waypoints.empty())
+		{
+			// AI3-F: no waypoint was laid (front() of an empty list); the launch is not made
+			AiProbe::note(_unit, "botwp.no_waypoints");
+			_attackAction.type = BA_RETHINK;
+			return;
+		}
 		_attackAction.target = _attackAction.waypoints.front();
-		if (LastWayPoint != _aggroTarget->getPosition())
+		if (LastWayPoint != wpTarget)
 		{
 			_attackAction.type = BA_RETHINK;
 		}
+		// AI2-B2: the target and the waypoints, read only
+		AiProbe::blastWaypoints(_unit, _aggroTarget, _attackAction.waypoints);
 	}
 }
 
@@ -3492,7 +4673,7 @@ bool AIModule::sniperAction()
  */
 void AIModule::projectileAction()
 {
-	_attackAction.target = _aggroTarget->getPosition();
+	_attackAction.target = knownPos(_aggroTarget, "shot");
 	auto testEffect = [&](BattleActionCost& cost)
 	{
 		if (cost.haveTU())
@@ -3505,7 +4686,16 @@ void AIModule::projectileAction()
 			else
 			{
 				int radius = attack.damage_item->getRules()->getExplosionRadius(attack);
-				if (radius != 0 && explosiveEfficacy(_attackAction.target, _unit, radius, _attackAction.diff) == 0)
+				const int eff = radius != 0 ? explosiveEfficacy(_attackAction.target, _unit, radius, _attackAction.diff) : -1;
+				if (radius != 0)
+				{
+					aoeEfficacyTrace("normal_shot", cost.type, cost.weapon, attack.damage_item, _aggroTarget, _attackAction.target, radius, false, eff, false);
+				}
+				if (radius != 0 && eff == 0)
+				{
+					cost.clearTU();
+				}
+				else if (radius == 0 && zeroEffectReject("shot", cost.type, cost.weapon, _aggroTarget))
 				{
 					cost.clearTU();
 				}
@@ -3523,6 +4713,20 @@ void AIModule::projectileAction()
 	testEffect(costAuto);
 	testEffect(costSnap);
 	testEffect(costAimed);
+
+	// AI3-FF (bench): OXCE_AI_FF_RISK bit 4 - no shot along a line past an explosive part whose blast would reach our own side
+	static const int ffRisk = (int)AiProbe::param("OXCE_AI_FF_RISK", 0);
+	if ((ffRisk & 4) && (costAuto.haveTU() || costSnap.haveTU() || costAimed.haveTU()) && ffLineRisk(_attackAction.target))
+	{
+		costAuto.clearTU();
+		costSnap.clearTU();
+		costAimed.clearTU();
+		if (_ffSecRec != AiProbe::nextRec())
+		{
+			_ffSecRec = AiProbe::nextRec();
+			AiProbe::note(_unit, "ff.sec");
+		}
+	}
 
 	// Is the unit willingly waiting outside of weapon's range (e.g. ninja camouflaged in ambush)?
 	bool waitIfOutsideWeaponRange = _unit->getGeoscapeSoldier() ? false : _unit->getUnitRules()->waitIfOutsideWeaponRange();
@@ -3857,8 +5061,73 @@ void AIModule::extendedFireModeChoice(BattleActionCost& costAuto, BattleActionCo
 	BattleActionType chosenAction = BA_RETHINK;
 	BattleAction testAction = _attackAction;
 	int score = 0;
+
+	// AI3-E (bench): OXCE_AI_FIRE_MODE_EV - the modes the old score allows (above 0) are compared by the expected damage this
+	// turn (fireModeEffect) instead of accuracy x shots x base TU / cost; the same RNG draws and the AUTO bonus follow. A mode
+	// that cannot be modelled (a throw, an area, the side unknown) or no expected damage at all - the old score for the whole
+	// choice, so no attack is lost. Off - the old loop as it was.
+	// 2 - the negative control of the bench only: the least expected damage wins.
+	static const int fireModeEvMode = AiProbe::param("OXCE_AI_FIRE_MODE_EV", 0);
+	static const bool fireModeEv = fireModeEvMode != 0;
+	std::vector<int> evOld, evNew;
+	bool evUse = false;
+	int evNewMax = 0;
+	const char *evWhy = "";
+	if (fireModeEv)
+	{
+		double evMax = 0.0;
+		bool modelled = true;
+		for (auto& i : attackOptions)
+		{
+			testAction.type = i;
+			if (i == BA_THROW)
+			{
+				if (!_grenade)
+				{
+					evOld.push_back(0);
+					evNew.push_back(0);
+					continue;
+				}
+				testAction.weapon = _unit->getGrenadeFromBelt(_save);
+			}
+			else
+			{
+				testAction.weapon = _attackAction.weapon;
+			}
+			const int old = scoreFiringMode(&testAction, _aggroTarget, checkLOF);
+			double ev = 0.0;
+			if (old > 0 && modelled)
+			{
+				const char *why = "";
+				ev = fireModeEffect(&testAction, _aggroTarget, why);
+				if (ev < 0.0)
+				{
+					modelled = false;
+					evWhy = why;
+					ev = 0.0;
+				}
+			}
+			evMax = std::max(evMax, ev);
+			evOld.push_back(old);
+			// thousandths, at least 100 so that the noise (down to 50 %) never zeroes a mode with an effect; capped so that the
+			// noise and the AUTO bonus cannot overflow
+			const int scaled = ev > 0.0 ? (int)std::min(1000000L, std::max(100L, std::lround(ev * 1000.0))) : 0;
+			evNew.push_back(scaled);
+			evNewMax = std::max(evNewMax, scaled);
+		}
+		evUse = modelled && evMax > 0.0;
+		if (modelled && !evUse)
+		{
+			evWhy = "no_effect";
+		}
+	}
+	BattleActionType evOldChosen = BA_RETHINK;
+	int evOldScore = 0;
+	size_t evIndex = 0;
+
 	for (auto& i : attackOptions)
 	{
+		const size_t k = evIndex++;
 		testAction.type = i;
 		if (i == BA_THROW)
 		{
@@ -3875,19 +5144,39 @@ void AIModule::extendedFireModeChoice(BattleActionCost& costAuto, BattleActionCo
 		{
 			testAction.weapon = _attackAction.weapon;
 		}
-		int newScore = scoreFiringMode(&testAction, _aggroTarget, checkLOF);
+		int newScore = fireModeEv ? evOld[k] : scoreFiringMode(&testAction, _aggroTarget, checkLOF);
 
 		// Add a random factor to the firing mode score based on intelligence
 		// An intelligence value of 10 will decrease this random factor to 0
 		// Default values for and intelligence value of 0 will make this a 50% to 150% roll
 		int intelligenceModifier = _save->getMod()->getAIFireChoiceIntelCoeff() * std::max(10 - _unit->getIntelligence(), 0);
-		newScore = newScore * (100 + RNG::generate(-intelligenceModifier, intelligenceModifier)) / 100;
+		const int noise = 100 + RNG::generate(-intelligenceModifier, intelligenceModifier);
+		const int aggro = 100 + (_unit->getAggression() - 1) * _save->getMod()->getAIFireChoiceAggroCoeff();
+		if (fireModeEv)
+		{
+			// the old choice under the same draw, for the record
+			int oldScore = newScore * noise / 100;
+			if (i == BA_AUTOSHOT)
+			{
+				oldScore = oldScore * aggro / 100;
+			}
+			if (oldScore > evOldScore)
+			{
+				evOldScore = oldScore;
+				evOldChosen = i;
+			}
+			if (evUse)
+			{
+				newScore = evOld[k] <= 0 ? 0 : fireModeEvMode == 2 ? evNewMax + 100 - evNew[k] : evNew[k];
+			}
+		}
+		newScore = newScore * noise / 100;
 
 		// More aggressive units get a modifier to the score for autoshots
 		// Aggression = 0 lowers the score, aggro = 1 is no modifier, aggro > 1 bumps up the score by 5% (configurable) for each increment over 1
 		if (i == BA_AUTOSHOT)
 		{
-			newScore = newScore * (100 + (_unit->getAggression() - 1) * _save->getMod()->getAIFireChoiceAggroCoeff()) / 100;
+			newScore = newScore * aggro / 100;
 		}
 
 		if (newScore > score)
@@ -3902,6 +5191,13 @@ void AIModule::extendedFireModeChoice(BattleActionCost& costAuto, BattleActionCo
 		}
 	}
 
+	if (fireModeEv && !attackOptions.empty())
+	{
+		// AI3-E: fmode.ev <chosen> <old choice under the same draw>; fmode.ev.fb <why> - the old score decided
+		const std::string evNote = evUse ? "fmode.ev " + std::to_string((int)chosenAction) + " " + std::to_string((int)evOldChosen)
+			: std::string("fmode.ev.fb ") + evWhy;
+		AiProbe::note(_unit, evNote.c_str());
+	}
 	_probeScore = score;
 	_attackAction.type = chosenAction;
 }
@@ -3925,9 +5221,12 @@ void AIModule::grenadeAction()
 	if (action.haveTU())
 	{
 		int radius = grenade->getRules()->getExplosionRadius(BattleActionAttack::GetBeforeShoot(action));
-		if (explosiveEfficacy(_aggroTarget->getPosition(), _unit, radius, _attackAction.diff, true))
+		const Position grenadeAt = knownPos(_aggroTarget, "grenade");
+		const int eff = grenadeAt.x < 0 ? 0 : explosiveEfficacy(grenadeAt, _unit, radius, _attackAction.diff, true);
+		aoeEfficacyTrace("normal_grenade", BA_THROW, grenade, grenade, _aggroTarget, grenadeAt, radius, true, eff, false);
+		if (eff)
 		{
-			action.target = _aggroTarget->getPosition();
+			action.target = grenadeAt;
 		}
 		else if (!getNodeOfBestEfficacy(&action, radius))
 		{
@@ -3964,6 +5263,19 @@ void AIModule::grenadeAction()
 			// are we within range?
 			if (_save->getTileEngine()->validateThrow(action, originVoxel, targetVoxel, _save->getDepth()))
 			{
+				// AI3-FF (bench): OXCE_AI_FF_RISK bit 2 - the throw waits for the shot (ffThrowOrShot) instead of taking the
+				// rifle's place; it still takes the melee's, as before
+				static const int ffRisk = (int)AiProbe::param("OXCE_AI_FF_RISK", 0);
+				if ((ffRisk & 2) && _rifle)
+				{
+					_ffThrow = true;
+					_ffThrowNode = !eff;
+					_ffThrowEnemies = eff ? _ffEnemies : 0;
+					_ffThrowAt = targetTile;
+					_ffThrowItem = grenade;
+					_melee = false;
+					break;
+				}
 				_attackAction.weapon = grenade;
 				_attackAction.target = targetTile;
 				_attackAction.type = BA_THROW;
@@ -3973,6 +5285,233 @@ void AIModule::grenadeAction()
 			}
 		}
 	}
+}
+
+/**
+ * AI3-FF (bench, OXCE_AI_FF_RISK bit 2): the throw grenadeAction found against the shot projectileAction chose, by
+ * scoreFiringMode's own terms (accuracy * shots * TU ratio), the throw's counted once per enemy explosiveEfficacy found
+ * in its blast. A throw at a node (no seen target in reach) is taken only when there is no shot. No RNG.
+ */
+void AIModule::ffThrowOrShot()
+{
+	_ffThrow = false;
+	const bool shot = _attackAction.type == BA_AUTOSHOT || _attackAction.type == BA_SNAPSHOT || _attackAction.type == BA_AIMEDSHOT;
+	if (shot)
+	{
+		bool take = false;
+		if (!_ffThrowNode)
+		{
+			BattleAction toss = _attackAction;
+			toss.type = BA_THROW;
+			toss.weapon = _ffThrowItem;
+			long long tossScore = (long long)ffFireScore(toss, _ffThrowAt) * std::max(1, _ffThrowEnemies);
+			long long shotScore = ffFireScore(_attackAction, _attackAction.target);
+			// AI3-FF (bench): OXCE_AI_FF_RISK bit 8 (with bit 2) - scoreFiringMode's terms know no damage, so a grenade's blast
+			// lost to any burst; each side is weighed by the power of what it hits with
+			static const int ffRisk = (int)AiProbe::param("OXCE_AI_FF_RISK", 0);
+			if (ffRisk & 8)
+			{
+				tossScore *= ffPower(toss);
+				shotScore *= ffPower(_attackAction);
+			}
+			take = tossScore > shotScore;
+		}
+		if (!take)
+		{
+			AiProbe::note(_unit, _ffThrowNode ? "ff.shot.node" : "ff.shot");
+			return;
+		}
+		AiProbe::note(_unit, "ff.throw");
+	}
+	const ProbeMark mark = probeMark('x');
+	_attackAction.weapon = _ffThrowItem;
+	_attackAction.target = _ffThrowAt;
+	_attackAction.type = BA_THROW;
+	_rifle = false;
+	_melee = false;
+	_probeSource = _ffThrowNode ? "grenade.node" : nullptr;
+	probeSlot('x', "grenade", mark);
+}
+
+/**
+ * AI3-FF (bench): scoreFiringMode's score without the line-of-fire check and its RNG-free part only, the distance taken to
+ * a place - the target's place this side knows (projectileAction's target) or the throw's tile.
+ */
+int AIModule::ffFireScore(const BattleAction &action, Position at) const
+{
+	if (!action.type || !action.weapon || at.x < 0)
+	{
+		return 0;
+	}
+	auto* weapon = action.weapon->getRules();
+	int accuracy = BattleUnit::getFiringAccuracy(BattleActionAttack::GetBeforeShoot(action), _save->getMod());
+	const int distanceSq = _unit->distance3dToPositionSq(at);
+	const int distance = (int)std::ceil(sqrt(float(distanceSq)));
+	{
+		int upperLimit, lowerLimit;
+		int dropoff = weapon->calculateLimits(upperLimit, lowerLimit, _save->getDepth(), action.type);
+		if (distance > upperLimit)
+		{
+			accuracy -= (distance - upperLimit) * dropoff;
+		}
+		else if (distance < lowerLimit)
+		{
+			accuracy -= (lowerLimit - distance) * dropoff;
+		}
+	}
+	if (action.type == BA_THROW ? weapon->isOutOfThrowRange(distanceSq, _save->getDepth()) : weapon->isOutOfRange(distanceSq))
+	{
+		accuracy = 0;
+	}
+	int numberOfShots = 1;
+	if (action.type == BA_AIMEDSHOT)
+	{
+		numberOfShots = weapon->getConfigAimed()->shots;
+	}
+	else if (action.type == BA_SNAPSHOT)
+	{
+		numberOfShots = weapon->getConfigSnap()->shots;
+	}
+	else if (action.type == BA_AUTOSHOT)
+	{
+		numberOfShots = weapon->getConfigAuto()->shots;
+	}
+	int tuCost = _unit->getActionTUs(action.type, action.weapon).Time;
+	if (action.type == BA_THROW)
+	{
+		tuCost += 4 + _unit->getActionTUs(BA_PRIME, action.weapon).Time;
+	}
+	if (!tuCost)
+	{
+		return 0;
+	}
+	return accuracy * numberOfShots * _unit->getBaseStats()->tu / tuCost;
+}
+
+/**
+ * AI3-FF (bench, OXCE_AI_FF_RISK bit 8): the power the action hits with - the ammo's (the grenade's for a throw), or the
+ * weapon's when it ignores the ammo's power, bonuses included (RuleItem::getPowerBonus), before resistances. No RNG.
+ */
+int AIModule::ffPower(const BattleAction &action) const
+{
+	if (!action.weapon)
+	{
+		return 0;
+	}
+	const BattleActionAttack attack = BattleActionAttack::GetBeforeShoot(action);
+	const RuleItem *rule = action.weapon->getRules();
+	if (!rule->getIgnoreAmmoPower() && attack.damage_item)
+	{
+		rule = attack.damage_item->getRules();
+	}
+	return std::max(0, rule->getPowerBonus(attack));
+}
+
+/**
+ * AI3-FF (bench, OXCE_AI_FF_RISK bit 4): is there a tile part with explosive, in the shooter's view, within 1.5 tiles
+ * of the line of fire (from the shooter up to a fifth past the target, the floors between them +-1), whose blast (power / 10
+ * tiles, as ExplosionBState sets it) reaches our own side - the shooter weighed as explosiveEfficacy's kamikaze - for no gain
+ * by the unit weights: our own where they stand, enemies only those the shooter sees now (FAIR_KNOWLEDGE). No RNG.
+ */
+bool AIModule::ffLineRisk(Position target) const
+{
+	if (target.x < 0)
+	{
+		return false;
+	}
+	const Position from = _unit->getPosition();
+	const int ax = target.x - from.x, ay = target.y - from.y;
+	const int len2 = ax * ax + ay * ay;
+	if (len2 == 0)
+	{
+		return false;
+	}
+	auto blastBad = [&](Position c, int radius)
+	{
+		int sum = 0;
+		bool own = false;
+		if (abs(from.z - c.z) <= Options::battleExplosionHeight && Position::distance2d(from, c) <= radius)
+		{
+			sum -= AIW_SCALE * 4;
+			own = true;
+		}
+		for (auto* bu : *_save->getUnits())
+		{
+			if (bu->isOut() || bu == _unit)
+			{
+				continue;
+			}
+			const int weight = getTargetAttackWeight(bu);
+			if (weight == 0 || (weight > 0 && !_unit->hasVisibleUnit(bu)))
+			{
+				continue;
+			}
+			const Position bp = bu->getPosition();
+			if (abs(bp.z - c.z) <= Options::battleExplosionHeight && Position::distance2d(bp, c) <= radius)
+			{
+				sum += weight;
+				own = own || weight < 0;
+			}
+		}
+		return own && sum <= 0;
+	};
+	const int xLo = std::max(0, std::min(from.x, target.x) - 2), xHi = std::min(_save->getMapSizeX() - 1, std::max(from.x, target.x) + 2);
+	const int yLo = std::max(0, std::min(from.y, target.y) - 2), yHi = std::min(_save->getMapSizeY() - 1, std::max(from.y, target.y) + 2);
+	const int zLo = std::max(0, std::min(from.z, target.z) - 1), zHi = std::min(_save->getMapSizeZ() - 1, std::max(from.z, target.z) + 1);
+	for (int z = zLo; z <= zHi; ++z)
+	{
+		for (int y = yLo; y <= yHi; ++y)
+		{
+			for (int x = xLo; x <= xHi; ++x)
+			{
+				const int px = x - from.x, py = y - from.y;
+				const int along = px * ax + py * ay;
+				const int across = px * ay - py * ax;
+				// along the line from the shooter to 1.2 of the target's distance, at most 1.5 tiles aside
+				if (along <= 0 || along * 5 > len2 * 6 || across * across * 4 > len2 * 9)
+				{
+					continue;
+				}
+				Tile *tile = _save->getTile(Position(x, y, z));
+				if (!tile)
+				{
+					continue;
+				}
+				bool seen = false;
+				for (int part = O_FLOOR; part < O_MAX; ++part)
+				{
+					const MapData *md = tile->getMapData((TilePart)part);
+					if (!md || md->getExplosive() <= 0)
+					{
+						continue;
+					}
+					if (!seen)
+					{
+						// in the shooter's view: within view distance and the tile line reaches it (calculateTilesInFOV keeps
+						// seen tiles for FACTION_PLAYER only, so hasVisibleTile never answers for the other sides)
+						const Position at(x, y, z);
+						if (Position::distance2dSq(from, at) > _save->getTileEngine()->getMaxViewDistanceSq())
+						{
+							break;
+						}
+						std::vector<Position> line;
+						if (_save->getTileEngine()->calculateLineTile(from, at, line) > 127 && (line.empty() || line.back() != at))
+						{
+							break;
+						}
+						seen = true;
+					}
+					// ExplosionBState: 0 HE, 5 incendiary, 6 stun; anything else is smoke
+					const int type = md->getExplosiveType();
+					if ((type == 0 || type == 5 || type == 6) && blastBad(Position(x, y, z), md->getExplosive() / 10))
+					{
+						return true;
+					}
+				}
+			}
+		}
+	}
+	return false;
 }
 
 /**
@@ -4009,6 +5548,8 @@ bool AIModule::psiAction()
 		}
 	}
 	bool LOSRequired = item->getRules()->isLOSRequired();
+	static const bool botSpecialOn = AiProbe::param("OXCE_AI_BOT_SPECIAL", 0) != 0;
+	const bool botPsi = botSpecialOn && AiProbe::careful(_unit);
 
 	_aggroTarget = 0;
 		// don't let mind controlled soldiers mind control other soldiers.
@@ -4028,10 +5569,20 @@ bool AIModule::psiAction()
 				validTarget(bu, true, false) &&
 				// they must be player units
 				bu->getOriginalFaction() != _unit->getFaction() &&
-				(!LOSRequired ||
-				std::find(_unit->getVisibleUnits()->begin(), _unit->getVisibleUnits()->end(), bu) != _unit->getVisibleUnits()->end()))
+				(!LOSRequired || AiProbe::upstreamSees(_unit, bu, 0)) && // UPSTREAM_VIS (bench, upstream 613ec4a28)
+				// AI3-F (bench): OXCE_AI_BOT_SPECIAL - the bot's psi only at a target it sees, which the amp may target
+				(!botPsi || (bu->getVisible() && item->getRules()->isTargetAllowed(bu->getFaction(), _unit->getFaction()))))
 			{
 				BattleUnit *victim = bu;
+				// AI2-H FAIR KNOWLEDGE: the victim is weighed where this side knows it to be
+				Position kp;
+				int kdir = 0;
+				const int kind = knownPlace(victim, "psi", kp, kdir);
+				if (kind == 2)
+				{
+					continue;
+				}
+				AiKnownPlace known(_save, victim, kind, kp, kdir);
 				if (item->getRules()->isOutOfRange(_unit->distance3dToUnitSq(victim)))
 				{
 					continue;
@@ -4177,7 +5728,7 @@ bool AIModule::psiAction()
 
 		_probeScore = weightToAttack;
 		_psiAction.type = typeToAttack;
-		_psiAction.target = _aggroTarget->getPosition();
+		_psiAction.target = knownPos(_aggroTarget, "psi");
 		_psiAction.weapon = item;
 		return true;
 	}
@@ -4189,11 +5740,14 @@ bool AIModule::psiAction()
  */
 void AIModule::meleeAttack()
 {
-	_unit->lookAt(_aggroTarget->getPosition() + Position(_unit->getArmor()->getSize()-1, _unit->getArmor()->getSize()-1, 0), false);
+	Position kp;
+	int kdir = 0;
+	const Position at = knownPlace(_aggroTarget, "melee", kp, kdir) == 1 ? kp : _aggroTarget->getPosition();
+	_unit->lookAt(at + Position(_unit->getArmor()->getSize()-1, _unit->getArmor()->getSize()-1, 0), false);
 	while (_unit->getStatus() == STATUS_TURNING)
 		_unit->turn();
 	if (_traceAI) { Log(LOG_INFO) << "Attack unit: " << _aggroTarget->getId(); }
-	_attackAction.target = _aggroTarget->getPosition();
+	_attackAction.target = at;
 	_attackAction.type = BA_HIT;
 	_attackAction.weapon = _unit->getUtilityWeapon(BT_MELEE);
 }
@@ -4263,7 +5817,7 @@ bool AIModule::validTarget(BattleUnit *target, bool assessDanger, bool includeCi
 	// 2. are dangerous (they have been grenaded)
 	// 3. are hostile/neutral units marked as ignored by the AI
 	if (target->isOut() ||
-		(assessDanger && target->getTile()->getDangerous()) ||
+		(assessDanger && knownDangerous(target)) ||
 		(target->getFaction() != FACTION_PLAYER && target->isIgnoredByAI()))
 	{
 		return false;
@@ -4369,6 +5923,19 @@ bool AIModule::getNodeOfBestEfficacy(BattleAction *action, int radius)
 			int nodePoints = 0;
 			for (auto* bu : *_save->getUnits())
 			{
+				// AI2-H FAIR KNOWLEDGE: the units around the node are counted where this side knows them to be
+				if (bu->isOut())
+				{
+					continue;
+				}
+				Position kp;
+				int kdir = 0;
+				const int kind = knownPlace(bu, "node", kp, kdir);
+				if (kind == 2)
+				{
+					continue;
+				}
+				AiKnownPlace known(_save, bu, kind, kp, kdir);
 				dist = Position::distance2d(node->getPosition(), bu->getPosition());
 				if (!bu->isOut() && dist < radius)
 				{
@@ -4411,6 +5978,724 @@ void AIModule::freePatrolTarget()
 	{
 		_toNode->freeNode();
 	}
+}
+
+/**
+ * AI2-A DAMAGE FEASIBILITY: the bench flag OXCE_AI_ZERO_EFFECT, read once (0 in a release build).
+ * 0 off, 1 shadow (verdicts logged, play unchanged), 2 reject ZERO melee/shot/sniper, 3 also skip findFirePoint.
+ */
+int AIModule::zeroEffectMode()
+{
+	static const int mode = (int)AiProbe::param("OXCE_AI_ZERO_EFFECT", 0);
+	return mode;
+}
+
+/**
+ * AI2-B1 SNIPER EXPLOSIVE EFFICACY PARITY: the bench flag OXCE_AI_SNIPER_AOE_EFFICACY, read once (0 in a release build).
+ * 0 off (AI2_BASELINE_A2), 1 shadow (verdicts logged, play unchanged), 2 reject.
+ */
+int AIModule::sniperAoeMode()
+{
+	static const int mode = (int)AiProbe::param("OXCE_AI_SNIPER_AOE_EFFICACY", 0);
+	return mode;
+}
+
+/**
+ * AI2-B1 V0: an area attack picked by selectSpottedUnitForSniper passes the same explosiveEfficacy check the regular
+ * branch passes: a throw as in grenadeAction (target = the unit's position, radius of the grenade's BA_THROW attack,
+ * grenade = true), a shot as in projectileAction (radius of the shot's GetBeforeShoot attack, grenade = false).
+ * Only the verdict is new here: no fallback node, no other mode, the candidate is just not offered.
+ * Nothing is changed and no RNG is used; true only in mode 2 when the check says 0.
+ */
+bool AIModule::sniperAoeEfficacyReject(const BattleAction &chosen, BattleUnit *target)
+{
+	const int mode = sniperAoeMode();
+	if (mode < 1 || !target || !chosen.weapon)
+	{
+		return false;
+	}
+	const bool grenade = chosen.type == BA_THROW;
+	if (!grenade && chosen.type != BA_AUTOSHOT && chosen.type != BA_SNAPSHOT && chosen.type != BA_AIMEDSHOT)
+	{
+		return false;
+	}
+	int radius = 0;
+	BattleItem *damageItem = nullptr;
+	if (grenade)
+	{
+		BattleActionCost cost(BA_THROW, _unit, chosen.weapon);
+		radius = chosen.weapon->getRules()->getExplosionRadius(BattleActionAttack::GetBeforeShoot(cost));
+		damageItem = chosen.weapon;
+	}
+	else
+	{
+		BattleActionCost cost(chosen.type, _unit, chosen.weapon);
+		BattleActionAttack attack = BattleActionAttack::GetBeforeShoot(cost);
+		if (attack.damage_item == nullptr)
+		{
+			return false; // as in projectileAction: no ammo is not this check's business
+		}
+		radius = attack.damage_item->getRules()->getExplosionRadius(attack);
+		damageItem = attack.damage_item;
+	}
+	if (radius == 0)
+	{
+		return false; // direct attack: unchanged, A2's zeroEffectReject already judged it
+	}
+	const Position tpos = target->getPosition();
+	const int eff = explosiveEfficacy(tpos, _unit, radius, _attackAction.diff, grenade);
+	const bool reject = mode >= 2 && eff == 0;
+	aoeEfficacyTrace("sniper_aoe", chosen.type, chosen.weapon, damageItem, target, tpos, radius, grenade, eff, reject);
+	return reject;
+}
+
+/**
+ * AI2-B1 diagnostics (mode >= 1 only): one [AITRACE] line per explosiveEfficacy verdict of an area attack, the same
+ * fields from the sniper path and from the regular branches, so the verdicts can be matched. Plain reads, no RNG.
+ */
+void AIModule::aoeEfficacyTrace(const char *site, BattleActionType type, BattleItem *weapon, BattleItem *damageItem, BattleUnit *target,
+	Position tpos, int radius, bool grenade, int eff, bool reject)
+{
+	if (sniperAoeMode() < 1 || !weapon)
+	{
+		return;
+	}
+	// who stands inside the radius by the check's own distance/height rule
+	std::ostringstream inr;
+	bool first = true;
+	for (auto* bu : *_save->getUnits())
+	{
+		if (!bu->isOut() && bu != _unit && abs(bu->getPosition().z - tpos.z) <= Options::battleExplosionHeight
+			&& Position::distance2d(bu->getPosition(), tpos) <= radius)
+		{
+			inr << (first ? "" : ",") << "[" << bu->getId() << "," << (int)bu->getFaction() << "]";
+			first = false;
+		}
+	}
+	const bool selfIn = abs(_unit->getPosition().z - tpos.z) <= Options::battleExplosionHeight
+		&& Position::distance2d(_unit->getPosition(), tpos) <= radius;
+	Log(LOG_INFO) << "[AITRACE] {\"ai2b\":\"" << site << "\",\"rec\":" << AiProbe::nextRec() << ",\"turn\":" << _save->getTurn()
+		<< ",\"unit\":" << _unit->getId() << ",\"side\":" << (int)_unit->getFaction() << ",\"target\":" << (target ? target->getId() : -1)
+		<< ",\"t\":" << (int)type << ",\"w\":\"" << weapon->getRules()->getType() << "\",\"di\":\""
+		<< (damageItem ? damageItem->getRules()->getType() : std::string()) << "\",\"r\":" << radius << ",\"g\":" << (grenade ? 1 : 0) << ",\"tpos\":[" << tpos.x << "," << tpos.y << "," << tpos.z
+		<< "],\"diff\":" << _attackAction.diff << ",\"mor\":" << _unit->getMorale() << ",\"hp\":" << _unit->getHealth()
+		<< ",\"self\":" << (selfIn ? 1 : 0) << ",\"tu\":" << _unit->getTimeUnits() << ",\"eff\":" << eff
+		<< ",\"rej\":" << (reject ? 1 : 0) << ",\"inr\":[" << inr.str() << "]}";
+}
+
+namespace
+{
+
+/// AI2-A: how many global events a script slot runs around its own script (ScriptWorkerBase::execute walks the same list).
+int ai2aEvents(const ScriptContainerEventsBase &c)
+{
+	int n = 0;
+	const ScriptContainerBase *p = c.dataEvents();
+	if (p)
+	{
+		while (*p) { ++n; ++p; }
+		++p;
+		while (*p) { ++n; ++p; }
+	}
+	return n;
+}
+
+/// AI2-A: a script tag's value, 0 when the mod has no such tag.
+template<typename T, typename V>
+int ai2aTag(const Mod *mod, const char *name, const V &values)
+{
+	auto tag = mod->getScriptGlobal()->getTag<ScriptTag<T>>(std::string(name));
+	return tag ? (int)values.get(tag) : 0;
+}
+
+/// AI2-A: a power bonus that reads a stat the attack itself changes (TU and energy are spent, morale and stun move) or a
+/// bonus script: its value at the decision is no bound for the value at the hit.
+bool ai2aDynamicBonus(const RuleStatBonus *bonus, std::string &which)
+{
+	if (bonus->isModded() && bonus->getBonusRaw()->empty())
+	{
+		which = "script";
+		return true;
+	}
+	for (const auto &b : *bonus->getBonusRaw())
+	{
+		const std::string &n = b.first;
+		if (n.find("Current") != std::string::npos || n.find("Normalized") != std::string::npos || n == "fatalWounds" || n == "energyRegen")
+		{
+			which = n;
+			return true;
+		}
+	}
+	return false;
+}
+
+}
+
+/**
+ * AI2-A: can this direct shot or blow change the target at all? Follows ExplosionBState::init, TileEngine::hit / hitUnit and
+ * BattleUnit::damage with the largest damage roll; reads only, no RNG. ZERO only when every step is proven: power, resistance,
+ * armour on its weakest side, armour wear before armour, fire, self-destruct, transformation, spawns, extinguishing and every
+ * script that could add to it (Piratez globals by count, tags that switch them on). Anything else is UNKNOWN, never ZERO.
+ */
+int AIModule::zeroEffectVerdictB2(SavedBattleGame *save, BattleUnit *attacker, BattleActionType type, BattleItem *weapon, const BattleUnit *target, std::string *terms)
+{
+	std::ostringstream w;
+	auto done = [&](int v, const char *why)
+	{
+		if (terms)
+		{
+			w << ",\"why\":\"" << why << "\"";
+			*terms = w.str();
+		}
+		return v;
+	};
+	if (!save || !attacker || !weapon || !target)
+	{
+		return done(AIZ_UNKNOWN, "no_input");
+	}
+	const Mod *mod = save->getMod();
+	const RuleItem *wrule = weapon->getRules();
+	w << ",\"w\":\"" << wrule->getType() << "\",\"tgt\":\"" << target->getType() << "\",\"arm\":\"" << target->getArmor()->getType() << "\"";
+	if (type != BA_HIT && type != BA_SNAPSHOT && type != BA_AUTOSHOT && type != BA_AIMEDSHOT)
+	{
+		return done(AIZ_UNKNOWN, "not_direct_action");
+	}
+	if (target->isOut() || target->getHealth() <= 0)
+	{
+		return done(AIZ_UNKNOWN, "target_out");
+	}
+	BattleActionAttack attack = BattleActionAttack::GetBeforeShoot(type, attacker, weapon);
+	if (!attack.damage_item)
+	{
+		return done(AIZ_UNKNOWN, "no_damage_item");
+	}
+	const RuleItem *item = attack.damage_item->getRules();
+	w << ",\"di\":\"" << item->getType() << "\",\"bt\":" << (int)item->getBattleType();
+
+	// ExplosionBState::init: which power and damage type the hit uses
+	const bool hit = type == BA_HIT;
+	const RuleStatBonus *bonus = nullptr;
+	const RuleDamageType *dt = nullptr;
+	int power = 0;
+	float rangeRaw = 0.0f;
+	const char *path = "";
+	if (hit && item->getBattleType() != BT_MELEE)
+	{
+		path = "melee_bonus";
+		bonus = item->getMeleeBonusRaw();
+		power = item->getMeleeBonus(attack);
+		dt = item->getMeleeType();
+	}
+	else
+	{
+		if (!hit && item->getBattleType() != BT_FIREARM && item->getBattleType() != BT_AMMO)
+		{
+			return done(AIZ_UNKNOWN, "not_firearm");
+		}
+		if (wrule->getIgnoreAmmoPower())
+		{
+			path = "weapon_power";
+			bonus = wrule->getDamageBonusRaw();
+			power = wrule->getPowerBonus(attack);
+			rangeRaw = wrule->getPowerRangeReductionRaw();
+		}
+		else
+		{
+			path = hit ? "melee_item" : "ammo_power";
+			bonus = item->getDamageBonusRaw();
+			power = item->getPowerBonus(attack);
+			rangeRaw = item->getPowerRangeReductionRaw();
+		}
+		dt = item->getDamageType();
+		if (!hit && item->getExplosionRadius(attack) != 0)
+		{
+			return done(AIZ_UNKNOWN, "area");
+		}
+	}
+	w << ",\"path\":\"" << path << "\",\"P\":" << power;
+	if (!dt)
+	{
+		return done(AIZ_UNKNOWN, "no_damage_type");
+	}
+	w << ",\"rt\":" << (int)dt->ResistType << ",\"rnd\":" << (int)dt->RandomType;
+	std::string dyn;
+	if (ai2aDynamicBonus(bonus, dyn))
+	{
+		w << ",\"dyn\":\"" << dyn << "\"";
+		return done(AIZ_UNKNOWN, "dynamic_bonus");
+	}
+	if (rangeRaw < 0.0f)
+	{
+		return done(AIZ_UNKNOWN, "range_adds_power");
+	}
+
+	// what the hit can do besides the damage: spawns (ExplosionBState::explode), transformation, extinguishing, self-destruct
+	if (item->getSpawnUnit() || item->getSpawnItem())
+	{
+		return done(AIZ_UNKNOWN, "spawn");
+	}
+	const Armor *armor = target->getArmor();
+	if (!item->getZombieUnit(target).empty() && !armor->getZombiImmune())
+	{
+		return done(AIZ_UNKNOWN, "transform");
+	}
+	if (target->getFire() > 0 && (wrule->isFireExtinguisher() || item->isFireExtinguisher()))
+	{
+		return done(AIZ_UNKNOWN, "extinguish");
+	}
+	if ((target->getSpecialAbility() == SPECAB_EXPLODEONDEATH || target->getSpecialAbility() == SPECAB_BURN_AND_EXPLODE) && target->isOutThresholdExceed())
+	{
+		return done(AIZ_UNKNOWN, "self_destruct");
+	}
+
+	// scripts: the armour's and the ammo's own must be absent, the globals exactly the audited Piratez set (or none)
+	const int evHit = ai2aEvents(armor->getScript<ModScript::HitUnit>());
+	const int evDmg = ai2aEvents(armor->getScript<ModScript::DamageUnit>());
+	const int evSpec = ai2aEvents(armor->getScript<ModScript::DamageSpecialUnit>());
+	const int evAmmo = ai2aEvents(item->getScript<ModScript::HitUnitAmmo>()) + ai2aEvents(item->getScript<ModScript::DamageUnitAmmo>())
+		+ ai2aEvents(item->getScript<ModScript::DamageSpecialUnitAmmo>());
+	w << ",\"ev\":\"" << evHit << "/" << evDmg << "/" << evSpec << "/" << evAmmo << "\"";
+	const bool known = (evHit == 7 && evDmg == 5 && evSpec == 2) || (evHit == 0 && evDmg == 0 && evSpec == 0);
+	if (!known || evAmmo != 0)
+	{
+		return done(AIZ_UNKNOWN, "script_set");
+	}
+	if (armor->getScript<ModScript::HitUnit>().data() || armor->getScript<ModScript::DamageUnit>().data()
+		|| armor->getScript<ModScript::DamageSpecialUnit>().data() || item->getScript<ModScript::HitUnitAmmo>().data()
+		|| item->getScript<ModScript::DamageUnitAmmo>().data() || item->getScript<ModScript::DamageSpecialUnitAmmo>().data())
+	{
+		return done(AIZ_UNKNOWN, "own_script");
+	}
+	// tags that switch the Piratez globals on: energy shields (unit, hand items), unit resistance, remote control, shield
+	// breaker, setting fire (Yankes_Scripts.rul hitUnit / damageUnit)
+	if (ai2aTag<BattleUnit>(mod, "Tag.UNIT_ENERGY_SHIELD_HP", target->getScriptValuesRaw()) > 0)
+	{
+		return done(AIZ_UNKNOWN, "tag_shield_hp");
+	}
+	for (const BattleItem *hand : { target->getLeftHandWeapon(), target->getRightHandWeapon() })
+	{
+		if (hand && ai2aTag<RuleItem>(mod, "Tag.ITEM_ENERGY_SHIELD_CAPACITY", hand->getRules()->getScriptValuesRaw()) != 0)
+		{
+			return done(AIZ_UNKNOWN, "tag_shield_item");
+		}
+	}
+	const std::string resistTag = "Tag.UNIT_RESIST_TYPE_" + std::to_string((int)dt->ResistType);
+	if (ai2aTag<BattleUnit>(mod, resistTag.c_str(), target->getScriptValuesRaw()) != 0)
+	{
+		return done(AIZ_UNKNOWN, "tag_unit_resist");
+	}
+	for (const RuleItem *r : { wrule, item })
+	{
+		if (ai2aTag<RuleItem>(mod, "Tag.ITEM_RC_FLAG", r->getScriptValuesRaw()) == 1
+			&& ai2aTag<Armor>(mod, "Tag.ARMOR_RC_FLAG", armor->getScriptValuesRaw()) == 1)
+		{
+			return done(AIZ_UNKNOWN, "tag_remote_control");
+		}
+		if (ai2aTag<RuleItem>(mod, "Tag.ITEM_SHIELD_BREAKER_FLAG", r->getScriptValuesRaw()) == 1)
+		{
+			return done(AIZ_UNKNOWN, "tag_shield_breaker");
+		}
+		if (ai2aTag<RuleItem>(mod, "Tag.ITEM_SETTING_FIRE_FLAG", r->getScriptValuesRaw()) > 0)
+		{
+			return done(AIZ_UNKNOWN, "tag_setting_fire");
+		}
+	}
+
+	// BattleUnit::damage with the largest roll
+	const float modifier = armor->getDamageModifier(dt->ResistType);
+	w << ",\"mod\":" << modifier << ",\"fth\":" << dt->FireThreshold;
+	if (modifier < 0.0f)
+	{
+		return done(AIZ_UNKNOWN, "negative_modifier");
+	}
+	if (dt->FireThreshold <= 0 && modifier > 0.0f)
+	{
+		return done(AIZ_UNKNOWN, "fire_at_zero");
+	}
+	if (power <= 0)
+	{
+		return done(AIZ_ZERO, "power");
+	}
+	const int dmax = dt->getRandomDamage(power, 2);
+	const int resisted = (int)floor(dmax * modifier); // BattleUnit::reduceByResistance
+	w << ",\"D\":" << dmax << ",\"R\":" << resisted;
+	if (resisted <= 0)
+	{
+		return done(AIZ_ZERO, "resistance");
+	}
+	w << ",\"eff\":" << dt->ArmorEffectiveness << ",\"pre\":" << dt->ToArmorPre;
+	if (dt->ArmorEffectiveness <= 0.0f)
+	{
+		return done(AIZ_POTENTIAL, "ignores_armor");
+	}
+	if (dt->ToArmorPre < 0.0f)
+	{
+		return done(AIZ_UNKNOWN, "armor_pre_negative");
+	}
+	if ((int)std::round(resisted * dt->ToArmorPre) > 0)
+	{
+		return done(AIZ_POTENTIAL, "armor_wear");
+	}
+	// the weakest side: the side roll on a diagonal, the direction and a script's side change all stay within these five
+	int armorMin = INT_MAX;
+	for (UnitSide side : { SIDE_FRONT, SIDE_LEFT, SIDE_RIGHT, SIDE_REAR, SIDE_UNDER })
+	{
+		armorMin = std::min(armorMin, target->getArmor(side));
+	}
+	int through = resisted;
+	through -= armorMin * dt->ArmorEffectiveness; // the same int -= float as BattleUnit::damage
+	w << ",\"amin\":" << armorMin << ",\"left\":" << through;
+	if (through > 0)
+	{
+		return done(AIZ_POTENTIAL, "through_armor");
+	}
+	return done(AIZ_ZERO, "armor");
+}
+
+int AIModule::zeroHonestLast = AIModule::AIZ_UNKNOWN;
+
+/**
+ * AI2-A HONEST: the bench flag OXCE_AI_ZERO_HONEST, read once (0 in a release build).
+ * 0 off (AI2_BASELINE_B2), 1 shadow (B2 decides, the honest verdict logged beside it), 2 the honest verdict decides.
+ */
+int AIModule::zeroHonestMode()
+{
+	static const int mode = (int)AiProbe::param("OXCE_AI_ZERO_HONEST", 0);
+	return mode;
+}
+
+namespace
+{
+
+/// AI2-A HONEST: can an item of this mod raise the damage of this resistance type above the armour's ruleset value?
+/// YSCRIPT_ITEMS_OF_RESISTANCE (Yankes_Scripts.rul newTurnItem) sets the unit's tag to res - (res - min) * (100 - coeff) / 100,
+/// and YSCRIPT_ITEMS_OF_RESISTANCE_EFFECT multiplies the power by tag / res: only coeff > 100 raises it (with min != 0, the
+/// script's switch). Ruleset only, the same for every target; cached per mod.
+bool ai2aItemMayRaise(const Mod *mod, int resistType)
+{
+	static const Mod *cachedMod = nullptr;
+	static std::map<int, bool> cache;
+	if (cachedMod != mod)
+	{
+		cachedMod = mod;
+		cache.clear();
+	}
+	auto it = cache.find(resistType);
+	if (it != cache.end())
+	{
+		return it->second;
+	}
+	const std::string minTag = "Tag.ITEM_MINIMUM_RESIST_TYPE_" + std::to_string(resistType);
+	const std::string coeffTag = "Tag.ITEM_RESIST_TYPE_" + std::to_string(resistType);
+	bool raise = false;
+	for (const std::string &id : mod->getItemsList())
+	{
+		const RuleItem *r = mod->getItem(id);
+		if (r && ai2aTag<RuleItem>(mod, minTag.c_str(), r->getScriptValuesRaw()) != 0
+			&& ai2aTag<RuleItem>(mod, coeffTag.c_str(), r->getScriptValuesRaw()) > 100)
+		{
+			raise = true;
+			break;
+		}
+	}
+	cache[resistType] = raise;
+	return raise;
+}
+
+}
+
+/**
+ * AI2-A HONEST: the B2 verdict with nothing hidden read. Allowed inputs: the visible target type (its armour rule, unit rule,
+ * special ability), whether it is down or burning, the items in its hands, the ruleset, the attacker's own weapon, ammo and
+ * stats. Not read: current armour (soldier bonuses, wear), shield HP, the unit's resistance tags (inventory items), health and
+ * stun. Changes against B2: target_out without health; a self-destructing type is UNKNOWN (no out threshold); an armour with a
+ * ruleset energy shield is UNKNOWN (no shield HP); no resistance tag - instead a ZERO by resistance needs a modifier of 0 or no
+ * item in the mod that raises that type; after the resistance step the armour decides, and the current armour is hidden:
+ * UNKNOWN (the ruleset value would be a false ZERO on worn armour, a minimum of 0 cannot prove it).
+ */
+int AIModule::zeroEffectVerdictHonest(SavedBattleGame *save, BattleUnit *attacker, BattleActionType type, BattleItem *weapon, const BattleUnit *target, std::string *terms, bool full)
+{
+	std::ostringstream w;
+	std::ostringstream h;
+	auto done = [&](int v, const char *why)
+	{
+		if (terms)
+		{
+			if (full)
+			{
+				w << ",\"why\":\"" << why << "\",\"hon\":1";
+				*terms = w.str();
+			}
+			else
+			{
+				*terms = ",\"hv\":" + std::to_string(v) + ",\"hwhy\":\"" + why + "\"" + h.str();
+			}
+		}
+		return v;
+	};
+	if (!save || !attacker || !weapon || !target)
+	{
+		return done(AIZ_UNKNOWN, "no_input");
+	}
+	const Mod *mod = save->getMod();
+	const RuleItem *wrule = weapon->getRules();
+	w << ",\"w\":\"" << wrule->getType() << "\",\"tgt\":\"" << target->getType() << "\",\"arm\":\"" << target->getArmor()->getType() << "\"";
+	if (type != BA_HIT && type != BA_SNAPSHOT && type != BA_AUTOSHOT && type != BA_AIMEDSHOT)
+	{
+		return done(AIZ_UNKNOWN, "not_direct_action");
+	}
+	if (target->isOut())
+	{
+		return done(AIZ_UNKNOWN, "target_out");
+	}
+	BattleActionAttack attack = BattleActionAttack::GetBeforeShoot(type, attacker, weapon);
+	if (!attack.damage_item)
+	{
+		return done(AIZ_UNKNOWN, "no_damage_item");
+	}
+	const RuleItem *item = attack.damage_item->getRules();
+	w << ",\"di\":\"" << item->getType() << "\",\"bt\":" << (int)item->getBattleType();
+
+	// ExplosionBState::init: which power and damage type the hit uses
+	const bool hit = type == BA_HIT;
+	const RuleStatBonus *bonus = nullptr;
+	const RuleDamageType *dt = nullptr;
+	int power = 0;
+	float rangeRaw = 0.0f;
+	const char *path = "";
+	if (hit && item->getBattleType() != BT_MELEE)
+	{
+		path = "melee_bonus";
+		bonus = item->getMeleeBonusRaw();
+		power = item->getMeleeBonus(attack);
+		dt = item->getMeleeType();
+	}
+	else
+	{
+		if (!hit && item->getBattleType() != BT_FIREARM && item->getBattleType() != BT_AMMO)
+		{
+			return done(AIZ_UNKNOWN, "not_firearm");
+		}
+		if (wrule->getIgnoreAmmoPower())
+		{
+			path = "weapon_power";
+			bonus = wrule->getDamageBonusRaw();
+			power = wrule->getPowerBonus(attack);
+			rangeRaw = wrule->getPowerRangeReductionRaw();
+		}
+		else
+		{
+			path = hit ? "melee_item" : "ammo_power";
+			bonus = item->getDamageBonusRaw();
+			power = item->getPowerBonus(attack);
+			rangeRaw = item->getPowerRangeReductionRaw();
+		}
+		dt = item->getDamageType();
+		if (!hit && item->getExplosionRadius(attack) != 0)
+		{
+			return done(AIZ_UNKNOWN, "area");
+		}
+	}
+	w << ",\"path\":\"" << path << "\",\"P\":" << power;
+	if (!dt)
+	{
+		return done(AIZ_UNKNOWN, "no_damage_type");
+	}
+	w << ",\"rt\":" << (int)dt->ResistType << ",\"rnd\":" << (int)dt->RandomType;
+	std::string dyn;
+	if (ai2aDynamicBonus(bonus, dyn))
+	{
+		w << ",\"dyn\":\"" << dyn << "\"";
+		return done(AIZ_UNKNOWN, "dynamic_bonus");
+	}
+	if (rangeRaw < 0.0f)
+	{
+		return done(AIZ_UNKNOWN, "range_adds_power");
+	}
+
+	// what the hit can do besides the damage: spawns, transformation, extinguishing, self-destruct (by type only)
+	if (item->getSpawnUnit() || item->getSpawnItem())
+	{
+		return done(AIZ_UNKNOWN, "spawn");
+	}
+	const Armor *armor = target->getArmor();
+	if (!item->getZombieUnit(target).empty() && !armor->getZombiImmune())
+	{
+		return done(AIZ_UNKNOWN, "transform");
+	}
+	if (target->getFire() > 0 && (wrule->isFireExtinguisher() || item->isFireExtinguisher()))
+	{
+		return done(AIZ_UNKNOWN, "extinguish");
+	}
+	if (target->getSpecialAbility() == SPECAB_EXPLODEONDEATH || target->getSpecialAbility() == SPECAB_BURN_AND_EXPLODE)
+	{
+		return done(AIZ_UNKNOWN, "self_destruct_type");
+	}
+
+	// scripts: the armour's and the ammo's own must be absent, the globals exactly the audited Piratez set (or none)
+	const int evHit = ai2aEvents(armor->getScript<ModScript::HitUnit>());
+	const int evDmg = ai2aEvents(armor->getScript<ModScript::DamageUnit>());
+	const int evSpec = ai2aEvents(armor->getScript<ModScript::DamageSpecialUnit>());
+	const int evAmmo = ai2aEvents(item->getScript<ModScript::HitUnitAmmo>()) + ai2aEvents(item->getScript<ModScript::DamageUnitAmmo>())
+		+ ai2aEvents(item->getScript<ModScript::DamageSpecialUnitAmmo>());
+	w << ",\"ev\":\"" << evHit << "/" << evDmg << "/" << evSpec << "/" << evAmmo << "\"";
+	const bool known = (evHit == 7 && evDmg == 5 && evSpec == 2) || (evHit == 0 && evDmg == 0 && evSpec == 0);
+	if (!known || evAmmo != 0)
+	{
+		return done(AIZ_UNKNOWN, "script_set");
+	}
+	if (armor->getScript<ModScript::HitUnit>().data() || armor->getScript<ModScript::DamageUnit>().data()
+		|| armor->getScript<ModScript::DamageSpecialUnit>().data() || item->getScript<ModScript::HitUnitAmmo>().data()
+		|| item->getScript<ModScript::DamageUnitAmmo>().data() || item->getScript<ModScript::DamageSpecialUnitAmmo>().data())
+	{
+		return done(AIZ_UNKNOWN, "own_script");
+	}
+	// energy shields: the armour type that carries one (its shield HP is not read) and the shield items in its hands
+	if (ai2aTag<Armor>(mod, "Tag.ARMOR_ENERGY_SHIELD_CAPACITY", armor->getScriptValuesRaw()) != 0)
+	{
+		return done(AIZ_UNKNOWN, "shield_armor");
+	}
+	for (const BattleItem *hand : { target->getLeftHandWeapon(), target->getRightHandWeapon() })
+	{
+		if (hand && ai2aTag<RuleItem>(mod, "Tag.ITEM_ENERGY_SHIELD_CAPACITY", hand->getRules()->getScriptValuesRaw()) != 0)
+		{
+			return done(AIZ_UNKNOWN, "tag_shield_item");
+		}
+	}
+	for (const RuleItem *r : { wrule, item })
+	{
+		if (ai2aTag<RuleItem>(mod, "Tag.ITEM_RC_FLAG", r->getScriptValuesRaw()) == 1
+			&& ai2aTag<Armor>(mod, "Tag.ARMOR_RC_FLAG", armor->getScriptValuesRaw()) == 1)
+		{
+			return done(AIZ_UNKNOWN, "tag_remote_control");
+		}
+		if (ai2aTag<RuleItem>(mod, "Tag.ITEM_SHIELD_BREAKER_FLAG", r->getScriptValuesRaw()) == 1)
+		{
+			return done(AIZ_UNKNOWN, "tag_shield_breaker");
+		}
+		if (ai2aTag<RuleItem>(mod, "Tag.ITEM_SETTING_FIRE_FLAG", r->getScriptValuesRaw()) > 0)
+		{
+			return done(AIZ_UNKNOWN, "tag_setting_fire");
+		}
+	}
+
+	// BattleUnit::damage with the largest roll, the armour's ruleset modifier
+	const float modifier = armor->getDamageModifier(dt->ResistType);
+	w << ",\"mod\":" << modifier << ",\"fth\":" << dt->FireThreshold;
+	if (modifier < 0.0f)
+	{
+		return done(AIZ_UNKNOWN, "negative_modifier");
+	}
+	if (dt->FireThreshold <= 0 && modifier > 0.0f)
+	{
+		return done(AIZ_UNKNOWN, "fire_at_zero");
+	}
+	if (power <= 0)
+	{
+		return done(AIZ_ZERO, "power");
+	}
+	const int dmax = dt->getRandomDamage(power, 2);
+	const int resisted = (int)floor(dmax * modifier); // BattleUnit::reduceByResistance
+	w << ",\"D\":" << dmax << ",\"R\":" << resisted;
+	if (resisted <= 0)
+	{
+		// a modifier of 0 stays 0 under the item script (it skips a resistance of 0); a positive one is ZERO only when no item
+		// of the mod can raise this type
+		if (modifier > 0.0f && ai2aItemMayRaise(mod, (int)dt->ResistType))
+		{
+			h << ",\"hraise\":1";
+			w << ",\"raise\":1";
+			return done(AIZ_UNKNOWN, "item_resist_may_raise");
+		}
+		return done(AIZ_ZERO, "resistance");
+	}
+	w << ",\"eff\":" << dt->ArmorEffectiveness << ",\"pre\":" << dt->ToArmorPre;
+	if (dt->ArmorEffectiveness <= 0.0f)
+	{
+		return done(AIZ_POTENTIAL, "ignores_armor");
+	}
+	if (dt->ToArmorPre < 0.0f)
+	{
+		return done(AIZ_UNKNOWN, "armor_pre_negative");
+	}
+	if ((int)std::round(resisted * dt->ToArmorPre) > 0)
+	{
+		return done(AIZ_POTENTIAL, "armor_wear");
+	}
+	// the armour decides: the ruleset values are logged for the record, the current armour (bonuses, wear) is not read
+	const int rmin = std::max(0, std::min({ armor->getFrontArmor(), armor->getLeftSideArmor(), armor->getRightSideArmor(), armor->getRearArmor(), armor->getUnderArmor() }));
+	w << ",\"rmin\":" << rmin;
+	h << ",\"hrmin\":" << rmin;
+	return done(AIZ_UNKNOWN, "armor_hidden");
+}
+
+/**
+ * AI2-A: the verdict the gates use. OXCE_AI_ZERO_HONEST 0: B2. 1: B2 decides, the line also gets the honest verdict ("hv",
+ * "hwhy") and the hidden values B2 read ("shp" shield HP, "rtag" resistance tag of the damage type, "hp" health). 2: the honest
+ * verdict decides and B2 is not called (nothing hidden is read).
+ */
+int AIModule::zeroEffectVerdict(SavedBattleGame *save, BattleUnit *attacker, BattleActionType type, BattleItem *weapon, const BattleUnit *target, std::string *terms)
+{
+	const int hm = zeroHonestMode();
+	if (hm <= 0)
+	{
+		return zeroEffectVerdictB2(save, attacker, type, weapon, target, terms);
+	}
+	if (hm >= 2)
+	{
+		zeroHonestLast = zeroEffectVerdictHonest(save, attacker, type, weapon, target, terms, true);
+		return zeroHonestLast;
+	}
+	const int v = zeroEffectVerdictB2(save, attacker, type, weapon, target, terms);
+	std::string hterms;
+	zeroHonestLast = zeroEffectVerdictHonest(save, attacker, type, weapon, target, terms ? &hterms : nullptr, false);
+	if (terms)
+	{
+		std::ostringstream x;
+		x << hterms;
+		if (save && target)
+		{
+			// the hidden state B2 read, for the shadow record only (play is B2's)
+			const Mod *mod = save->getMod();
+			x << ",\"shp\":" << ai2aTag<BattleUnit>(mod, "Tag.UNIT_ENERGY_SHIELD_HP", target->getScriptValuesRaw()) << ",\"hp\":" << target->getHealth();
+			if (weapon)
+			{
+				BattleActionAttack attack = BattleActionAttack::GetBeforeShoot(type, attacker, weapon);
+				const RuleDamageType *dt = nullptr;
+				if (attack.damage_item)
+				{
+					const RuleItem *item = attack.damage_item->getRules();
+					dt = (type == BA_HIT && item->getBattleType() != BT_MELEE) ? item->getMeleeType() : item->getDamageType();
+				}
+				if (dt)
+				{
+					const std::string resistTag = "Tag.UNIT_RESIST_TYPE_" + std::to_string((int)dt->ResistType);
+					x << ",\"rtag\":" << ai2aTag<BattleUnit>(mod, resistTag.c_str(), target->getScriptValuesRaw());
+				}
+			}
+		}
+		*terms += x.str();
+	}
+	return v;
+}
+
+/**
+ * AI2-A hook: judge one candidate attack, log it, reject it only in mode 2+ and only when proven ZERO.
+ */
+bool AIModule::zeroEffectReject(const char *site, BattleActionType type, BattleItem *weapon, const BattleUnit *target)
+{
+	const int mode = zeroEffectMode();
+	if (mode < 1)
+	{
+		return false;
+	}
+	std::string terms;
+	const int v = zeroEffectVerdict(_save, _unit, type, weapon, target, &terms);
+	const bool reject = mode >= 2 && v == AIZ_ZERO;
+	Log(LOG_INFO) << "[AITRACE] {\"ai2a\":\"" << site << "\",\"rec\":" << AiProbe::nextRec() << ",\"turn\":" << _save->getTurn()
+		<< ",\"unit\":" << _unit->getId() << ",\"side\":" << (int)_unit->getFaction() << ",\"target\":" << (target ? target->getId() : -1)
+		<< ",\"t\":" << (int)type << ",\"tu\":" << _unit->getTimeUnits() << ",\"v\":" << v << ",\"rej\":" << (reject ? 1 : 0) << terms << "}";
+	return reject;
 }
 
 }

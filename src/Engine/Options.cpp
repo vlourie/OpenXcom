@@ -517,6 +517,8 @@ void createAdvancedOptionsOXCE()
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceGentleAsk", &oxceGentleAsk, true, "", "STR_GENERAL"));
 	// Building collapse (Battlescape/CollapsePilot.h): its own group on the HD tab, off by default
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceCollapse", &oxceCollapse, false, "STR_HD_COLLAPSE", "STR_HD_PHYSICS"));
+	// AI3 tactical AI (Battlescape/AiProbe.h): its own group on the HD tab, on by default; applies after a restart
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceAi3", &oxceAi3, true, "STR_HD_AI3", "STR_HD_AI"));
 	// HD render (see Engine/HdCanvas.h): sprite scale of the battlescape and how sprites are drawn on the true-color canvas
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdScale", &oxceHdScale, 1, "STR_HD_SCALE", "STR_HD_BATTLE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdMode", &oxceHdMode, 2, "STR_HD_MODE", "STR_HD_BATTLE"));

@@ -267,7 +267,7 @@ void BriefingState::init()
 void BriefingState::think()
 {
 	State::think();
-	if (AiProbe::active())
+	if (AiProbe::autoClose())
 	{
 		btnOkClick(nullptr);
 	}

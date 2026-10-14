@@ -227,6 +227,8 @@ OPT bool oxceGentle;
 OPT bool oxceGentleAsk;
 // Building collapse pilot (Battlescape/CollapsePilot.h): the barn house and the bunker fall apart when their supports are gone. Off by default, not on any screen.
 OPT bool oxceCollapse;
+// AI3 (Battlescape/AiProbe.h): the tactical AI plays with the accepted AI2 base and the AI3 fixes built in; off = the stock AI. Read once, at the first battle of a run.
+OPT bool oxceAi3;
 
 // OXCE hidden, but moddable via fixedUserOptions and/or recommendedUserOptions
 OPT int oxceStartUpTextMode;

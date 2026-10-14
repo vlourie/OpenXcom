@@ -98,7 +98,7 @@ void InfoboxOKState::think()
 {
 	State::think();
 #ifdef OXCE_AI_DEV
-	if (AiProbe::active())
+	if (AiProbe::autoClose())
 	{
 		Log(LOG_INFO) << "[AIPROBE] closed: " << _txtTitle->getText();
 		btnOkClick(nullptr);

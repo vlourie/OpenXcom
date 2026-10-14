@@ -123,7 +123,7 @@ void ConfirmEndMissionState::think()
 {
 	State::think();
 #ifdef OXCE_AI_DEV
-	if (AiProbe::active())
+	if (AiProbe::autoClose())
 	{
 		Log(LOG_INFO) << "[AIPROBE] closed: end the turn with " << _wounded << " fatally wounded";
 		btnOkClick(nullptr);

@@ -283,6 +283,8 @@ public:
 	bool isVoxelVisible(Position voxel);
 	/// Checks what type of voxel occupies this space.
 	VoxelType voxelCheck(Position voxel, BattleUnit *excludeUnit, bool excludeAllUnits = false, bool onlyVisible = false, BattleUnit *excludeAllBut = 0);
+	/// AI2-H h7: voxelCheck's unit test while AiKnownPlace has moved units (a moved unit only at its known place).
+	VoxelType voxelCheckKnown(Position voxel, Tile *tile, BattleUnit *excludeUnit, bool onlyVisible, BattleUnit *excludeAllBut);
 	/// Flushes cache of voxel check
 	void voxelCheckFlush();
 	/// Blows this tile up.
