@@ -191,6 +191,24 @@ SINGLE_BATCH.update({"OT%03d" % i: 6 for i in (2, 10, 11, 12, 13, 14, 15, 16, 17
 # партия 7 (13.10): составные CP (FAMILIES, папка batch7) и три одиночных другого вида из batch5_recolors
 SINGLE_BATCH.update({f: 7 for f in ("CP001", "CP003", "CP004", "CP005", "CP006", "CP007", "CP008",
                                     "OT067", "OT068", "OT069")})
+# партия 8 (14.10): одиночные, отложенные партией 6 как 'другой бок?' (batch8_pick.tsv); не рисуются обрывки
+# OT072 и OT075 и стойка LINERSHIPA:88 OT074 (машина с зелёным верхом, не растение); OT076 JUNGLESTYX:5 -
+# перекраска FORESTJUNGLESTYX:17, вывод отказал (Stage A), своего HD нет - рисуется сам
+SINGLE_BATCH.update({f: 8 for f in ("OT070", "OT071", "OT073", "OT076")})
+# партия 9 (14.10): остаток нерисованных растений trees.tsv (left_pick, batch9_pick.tsv). Не взяты: анимация
+# DUNGEON_DEAD 17-24 (R-071, рисуется группой), разрушенные виды с опознанием UNKNOWN, кадры без мест на картах,
+# MOUNTMUD:47 и SGR_CAVE 108/109 (без решения специалиста), URBAN_WASTE:77 (UNKNOWN)
+SINGLE_BATCH.update({f: 9 for f in ("OT077", "OT078", "OT079", "OT080", "OT081", "OT082")})
+# партия 10 (14.10): разрушенные виды, опознанные по листу классики batch10_classic_1.png (batch10_pick.tsv).
+# Не взяты: MOUNTMUD:47 (OT085) - специалист 14.10 отдал в обработку грунта и декора; URBAN_WASTE:77 (OT090)
+# и MUSTYX:45 (OT091) - металл, не растение
+SINGLE_BATCH.update({f: 10 for f in ("OT086", "OT087", "OT088", "OT089")})
+# партия 11 (14.10, специалист: оба, приоритет - 359 мест): SGR_CAVE 108/109, синие ягоды по классике каждого кадра
+# (у прежнего HD кадра 108 ягоды оранжевые)
+SINGLE_BATCH.update({f: 11 for f in ("OT083", "OT084")})
+# партия 12 (14.10): основа анимации DUNGEON_DEAD 17-24 (специалист: единая анимация, R-071) - рисуется один кадр 17,
+# капли и круги на луже по фазам классики накладываются сборкой поверх этой основы, неподвижное у всех фаз одно
+SINGLE_BATCH.update({"OT092": 12})
 GROUND = ", growing out of flat green grass covering the ground"
 GRASS = ", standing on a square patch of green grass"
 SINGLES = {
@@ -450,6 +468,44 @@ SINGLES = {
              "a small patch of bright orange sand",
     "OT069": "one jungle plant with several thick bare pale pinkish grey stems spreading sideways and broad dark "
              "green leaves at its base" + GRASS,
+    "OT070": "a few thin strands of glossy bright green leafy vines hanging straight down, with short side shoots "
+             "and a few tiny dark red buds, dark gaps between the strands",
+    "OT071": "one short thick fallen brown log broken into two pieces lying crossed on the ground, with a thick "
+             "lumpy layer of white snow on top",
+    "OT073": "one tall broken charred black tree stump with a jagged split top and thick roots spreading at its "
+             "base, standing on a small patch of brown earth covered with glowing red and orange embers",
+    "OT076": "one jungle tree with a wide dense rounded crown of small dark green leaves and a short thin dark "
+             "purplish brown trunk forking at its base into a few thin roots",
+    "OT077": "one alien cave plant: a thin dark brown stalk with short roots spreading on the ground, wrapped in a "
+             "spiral of small glowing purple and blue leaves, topped by one wide glowing yellow-green cup-shaped "
+             "flower with a few small red buds under it",
+    "OT078": "one straight upright stalk densely wrapped from the ground to the top in small glowing pink and "
+             "purple leaves, no flower on top",
+    "OT079": "one charred dead tree stump of ragged grey and black burnt wood with several short broken branches "
+             "pointing up and a few small pale pink knots on them, standing on a low mound of black ash",
+    "OT080": "one low flat patch of dense bright green moss and grass lying on the ground with a few bare thin "
+             "dark brown twigs sticking up out of its middle",
+    "OT081": "one tiny low sprig of yellow-green leaves with a short brown base lying on the ground, much smaller "
+             "than the picture frame",
+    "OT082": "one thick broken stump of a pale sun-bleached wooden ship mast with a splintered hollow top and a "
+             "flared base, wrapped around its middle by a wide band of thick orange-yellow rope",
+    "OT086": "one low heap of broken dark brown wood, the shattered remains of a fallen tree trunk lying on the "
+             "ground, its top thickly covered with lumpy white snow",
+    "OT087": "one low flat heap of broken splintered brown wood, the shattered remains of a fallen tree trunk lying "
+             "on the ground, with jagged pointed splinters sticking up",
+    "OT088": "one broken stump of a dark purple-black tree, the trunk snapped off low with a hollow arched top, "
+             "standing on thick dark roots spreading wide on the ground",
+    "OT089": "one thin dead young tree, a bare crooked dark reddish-brown stem with two or three short bare "
+             "branches and a few small roots at its base, no leaves",
+    "OT083": "one wide cave shrub of several thin upright dark purple branching stems with short side twigs, "
+             "dotted all over with many small glowing bright blue berries, the stems rising from low arched dark "
+             "green roots on the ground",
+    "OT084": "one wide cave shrub of several thin upright dark purple branching stems with short side twigs, "
+             "dotted all over with many small glowing bright blue berries, the stems rising from low arched dark "
+             "green roots on the ground",
+    "OT092": "one thick drooping mass of dark purple-black hanging vines tapering downwards, hanging high above "
+             "the ground, and below it on the ground a flat irregular puddle of bright green slime with faint "
+             "lighter diagonal streaks",
 }
 
 # Повтор брака партии 1 (один на семейство, --retry, папка SINGLE_OUT + "_retry"): описание по классике кадра, а не
@@ -498,6 +554,16 @@ RETRY = {
     # с кирпичной кладкой вместо камней; BU018 - правильная пирамида; BU027 - блок с палками; BU029 - колонка
     # плоских розеток; BU039 - плоская подложка; BU043 - тёмное пятно с грибом; BU044 - прямоугольная колонна;
     # BU045 - розовые завитки главным; BU046 - густая колючая розетка; BU047 - пропала вода
+    # партия 9 (папка batch9_retry, вердикт специалиста 14.10): OT078 - сплошной розовый ёршик, у классики редкие
+    # листья по бурому стеблю; OT080 - салатовый мох без впадины; OT082 - пропал свободный конец каната справа
+    "OT078": "one thin straight upright dark brown stalk with a sparse zigzag vine of small separate glowing pink and "
+             "purple leaves climbing up it, the bare brown stalk clearly visible in the gaps between the leaves, a "
+             "few small glowing blue leaves here and there, no flower on top",
+    "OT080": "one low flat patch of dark muted green moss lying on the ground, with a very dark almost black hollow "
+             "sunk into its middle, and a few bare thin dark grey twigs sticking up out of the dark hollow",
+    "OT082": "one thick broken stump of a pale sun-bleached wooden ship mast with a splintered hollow top and a "
+             "flared base, a wide band of thick orange-yellow rope wrapped around its middle, and the loose free end "
+             "of that rope hanging down the right side of the stump all the way to the ground",
     "BU001": "a low flat bed of dense small green leaves filling the cell, mostly green, with only about ten tiny red "
              "and light blue flowers here and there",
     "BU006": "one tall uneven ragged bush of dark green leaves with a lumpy irregular outline, many small dark red "
@@ -547,6 +613,16 @@ RETRY = {
              "open petals clearly visible on its front side"),
     "OT069": "one jungle plant: a dense clump of broad bright and dark green leaves covering its lower half, and "
              "several thick bare pale pinkish grey stems rising out of the leaves and spreading sideways" + GRASS,
+    # партия 8 (папка batch8_retry, вердикт 14.10, FIXES.md): брак заложен словами первой подсказки (R-016) -
+    # thin strands, embers, rounded crown; здесь только масса и неровность, как у классики
+    "OT070": "several thick leafy jungle vines hanging down, every vine a heavy chain of large overlapping glossy "
+             "bright green and dark green leaves, as wide as the leaves themselves, with a few tiny dark red buds",
+    "OT073": "one tall broken charred black tree stump with a jagged split top, rough deeply cracked black bark, "
+             "and a thick heap of dry rust red, orange and black dead leaves piled around its base covering the "
+             "roots, on a small patch of brown earth",
+    "OT076": "one jungle tree with a broad lopsided ragged crown of small dark and bright green leaves, uneven "
+             "clumps of leaves sticking out at different heights, the crown wider than tall, a short dark "
+             "purplish brown trunk with a few roots",
 }
 
 
