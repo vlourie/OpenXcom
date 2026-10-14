@@ -40,7 +40,7 @@ namespace OpenXcom
 {
 
 /// The categories of Options.cpp shown here, in this order; the first one also holds the art version row.
-static const char *const HD_CATEGORIES[] = { "STR_HD_ART", "STR_HD_GENTLE", "STR_HD_BATTLE", "STR_HD_INTERFACE", "STR_HD_SPEED" };
+static const char *const HD_CATEGORIES[] = { "STR_HD_ART", "STR_HD_GENTLE", "STR_HD_BATTLE", "STR_HD_PHYSICS", "STR_HD_INTERFACE", "STR_HD_SPEED" };
 /// Row markers in _rows.
 static const int ROW_NONE = -1, ROW_ART = -2;
 
