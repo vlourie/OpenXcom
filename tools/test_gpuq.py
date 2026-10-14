@@ -282,8 +282,20 @@ def test_exit_codes():
     print("  потомок вышедшего задания снят: один процесс на задание")
 
 
+def test_no_model_keys():
+    """Сборка без модели (tree_family --assemble) не считается запуском мимо очереди, рендер - считается."""
+    py = "E:/x/python.exe"
+    assert gpuq.gpu_script([py, "tools/hdart/tree_family.py", "--fam", "A", "--assemble"]) is None
+    assert gpuq.gpu_script([py, "tools/hdart/tree_family.py", "--fam", "A", "--mask-only"]) is None
+    assert gpuq.gpu_script([py, "tools/hdart/tree_family.py", "--fam", "A", "--retry"]) == "tree_family.py"
+    # ключ до скрипта - ключ интерпретатора, не скрипта
+    assert gpuq.gpu_script([py, "--assemble", "tools/hdart/tree_family.py"]) == "tree_family.py"
+    print("  сборка --assemble/--mask-only очередь не держит, рендер держит")
+
+
 def main():
     try:
+        test_no_model_keys()
         test_place()
         print("place: порядок верный")
         test_run()
