@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-r"""Пилот обрушения в движке (этап 1): выгрузка модели M0j3 с разметкой v2 для двух зданий пилота
-(дом амбара и бункер, collapse_pilot_scen.PILOT) в C++ и проверка переноса.
+r"""Пилот обрушения в движке (этап 1): выгрузка модели M0j3 с разметкой v2 для зданий пилота
+(дом амбара и бункер - collapse_pilot_scen.PILOT, третья партия - collapse_pilot3_scen.PILOT) в C++ и
+проверка переноса.
 
-Модель под замками не меняется и не копируется целиком: на этих двух зданиях живы не все её ветки. Всё,
+Модель под замками не меняется и не копируется целиком: на этих зданиях живы не все её ветки. Всё,
 что зависит только от целого блока (тип пола, настил, стойки навеса, несущее целого блока carry0, касание
 стены с предметом ниже, цели разметки, роль и класс), считается здесь моделью и выгружается готовым; в бою
 считается только ядро evaluate2j (плита Z, перемычки k, X, a, b) и слой разметки v7c.
@@ -31,14 +32,17 @@ ENC = "utf-8-sig"
 OUT = "census/collapse/pilot1"
 HEADER = "src/Battlescape/CollapsePilotData.h"
 VECTORS = OUT + "/vectors.txt"
+SCENS = ["census/collapse/stage0m/pilot_scen.tsv", "census/collapse/pilot3/pilot_scen.tsv"]
 BOX = {"амбар": (2, 11, 2, 11), "бункер": (1, 7, 1, 7)}     # здание пилота: клетки x0..x1, y0..y1
 LABEL_EN = {"амбар": "barn", "бункер": "bunker"}            # метка здания в логе игры
+# третья партия: рамки и метки в collapse_pilot3_scen (метка обязана быть уникальной - по ней removal_sets
+# берёт сценарии здания)
 KIND = {"f": 0, "w": 1, "n": 2, "o": 3}                   # O_FLOOR, O_WESTWALL, O_NORTHWALL, O_OBJECT
 N_RANDOM = 1500
 SEED = 20261008
 SOURCES = ["tools/collapse_v7c.py", "tools/collapse_v7b.py", "tools/collapse_v7.py", "tools/collapse_v6.py",
            "tools/collapse_v5.py", "tools/collapse_v3.py", "tools/collapse_v2.py", "tools/collapse_attach_v2.py",
-           "tools/collapse_pilot_scen.py", "tools/collapse_pilot_export.py"]
+           "tools/collapse_pilot_scen.py", "tools/collapse_pilot3_scen.py", "tools/collapse_pilot_export.py"]
 
 
 def sha(path):
@@ -446,7 +450,9 @@ def removal_sets(d, rows, rng):
 
 def run_check(C, blds, write=None):
     import collapse_pilot_scen as PS
-    rows = [ln.split("\t") for ln in open(PS.SCEN, encoding=PS.ENC).read().splitlines()[1:]]
+    rows = []
+    for scen in SCENS:
+        rows += [ln.split("\t") for ln in open(scen, encoding=PS.ENC).read().splitlines()[1:]]
     rng = random.Random(SEED)
     datas = []
     bad = 0
@@ -484,7 +490,7 @@ def run_check(C, blds, write=None):
 
 def cpp_header(datas):
     L = ["// Сгенерировано tools/collapse_pilot_export.py - руками не править.",
-         "// Пилот обрушения: модель M0j3 с разметкой v2 (stage0l/stage0m), два здания пилота.",
+         "// Пилот обрушения: модель M0j3 с разметкой v2 (stage0l/stage0m, pilot3), здания пилота.",
          "// Источники модели (sha256):"]
     L += ["//   %s %s" % (p, sha(p)) for p in SOURCES]
     L += ["#pragma once", "#include \"CollapseCore.h\"", "", "namespace OpenXcom", "{", "namespace CollapsePilotData",
@@ -539,8 +545,18 @@ def main():
     os.chdir(os.path.dirname(HERE))
     sys.stdout.reconfigure(encoding="utf-8")
     import collapse_pilot_scen as PS
+    import collapse_pilot3_scen as P3
     cmd = sys.argv[1] if len(sys.argv) > 1 else "check"
+    # порядок в заголовке: сначала здания 0m (их векторы и номера блоков прежние), затем третья партия
     C, CT, blds = PS.load()
+    first = PS.PILOT
+    PS.PILOT = P3.PILOT
+    blds += PS.load()[2]
+    PS.PILOT = first
+    BOX.update(P3.BOX)
+    LABEL_EN.update(P3.LABEL_EN)
+    if len({b[2] for b in blds}) != len(blds) or len(set(LABEL_EN.values())) != len(LABEL_EN):
+        raise SystemExit("метки зданий пилота не уникальны")
     datas = run_check(C, blds)
     if cmd == "export":
         # третий аргумент - другой путь заголовка (проверка переноса в блокноте, без очереди правок)

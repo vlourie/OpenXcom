@@ -35,9 +35,11 @@ ROOT = HERE.parent
 ENC = "utf-8-sig"
 HEADER = ROOT / "src/Battlescape/CollapsePilotData.h"
 SCEN = ROOT / "census/collapse/stage0m/pilot_scen.tsv"
+SCEN3 = ROOT / "census/collapse/pilot3/pilot_scen.tsv"   # третья партия зданий (collapse_pilot3_scen)
 OUT = ROOT / "census/collapse/pilot1/runs"
 KIND = {"f": 0, "w": 1, "n": 2, "o": 3}
-LABEL_RU = {"barn": "амбар", "bunker": "бункер"}
+LABEL_RU = {"barn": "амбар", "bunker": "бункер",
+            "banditbarn1": "амбар бандитов 1", "banditbarn2": "амбар бандитов 2", "riceshed": "сарай"}
 CPF_INBOX = 128
 _collapse_on = threading.local()
 
@@ -96,6 +98,7 @@ def kparse(s):
 def scen_rows(label_en, cells=None, only=None):
     lines = SCEN.read_text(encoding=ENC).splitlines()
     head = lines[0].split("\t")
+    lines += SCEN3.read_text(encoding=ENC).splitlines()[1:]
     out = []
     for ln in lines[1:]:
         r = dict(zip(head, ln.split("\t")))
@@ -119,7 +122,14 @@ def model_fell(label_en, removed_keys):
     if not _model:
         import collapse_pilot_scen as PS
         import collapse_pilot_export as EX
+        import collapse_pilot3_scen as P3
         C, CT, blds = PS.load()
+        first = PS.PILOT
+        PS.PILOT = P3.PILOT
+        blds += PS.load()[2]
+        PS.PILOT = first
+        EX.BOX.update(P3.BOX)
+        EX.LABEL_EN.update(P3.LABEL_EN)
         for tn, bn, label, blk in blds:
             _model[EX.LABEL_EN[label]] = (C, blk, EX.BOX[label], EX.inside)
     C, blk, box, inside = _model[label_en]
@@ -240,7 +250,8 @@ def run_scen(a, r, blocks, label):
             "finished": res.finished, "lines": lines}
     off = None
     for l in lines:
-        m = re.match(r"\[COLLAPSE\] found %s .* at (\d+),(\d+),(\d+)" % label, l)
+        # сейв с ключом collapsePilot: здание не ищется заново, а берётся из записи - строка kept
+        m = re.match(r"\[COLLAPSE\] (?:found|kept) %s .* at (\d+),(\d+),(\d+)" % label, l)
         if m and off is None:  # отладка движка ставит юнитов в первый экземпляр блока
             off = tuple(map(int, m.groups()))
         m = re.match(r"\[COLLAPSE\] (.+) %s at .*: removed (\d+), fell (\d+) \(f (\d+) w (\d+) n (\d+) o (\d+)\).*falling units (\d+);"
@@ -336,7 +347,7 @@ def main():
     f.add_argument("saves", nargs="+")
     f.add_argument("--jobs", type=int, default=4)
     s = sub.add_parser("scen")
-    s.add_argument("--block", required=True, choices=["barn", "bunker"])
+    s.add_argument("--block", required=True, choices=sorted(LABEL_RU))
     s.add_argument("--save", required=True)
     s.add_argument("--cells", type=int)
     s.add_argument("--only", help="ALL:1,HOLE:2 ...")
