@@ -404,7 +404,7 @@ def cmd_plan(a):
                     continue
                 # край площадки (R-326): сосед со стороны камеры (+x, +y) - не та же группа; там боковину и
                 # кромку не закрывает следующий кадр, и срез контура виден
-                if a.edges and (x + 1, y, z) in cells and (x, y + 1, z) in cells:
+                if getattr(a, "edges", False) and (x + 1, y, z) in cells and (x, y + 1, z) in cells:
                     continue
                 occ[(sv, z)][g].append((x, y))
     if stacked:
