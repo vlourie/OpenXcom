@@ -1675,6 +1675,147 @@ bool BattlescapeGenerator::canPlaceXCOMUnit(Tile *tile)
  * @param race Pointer to the alien race.
  * @param deployment Pointer to the deployment rules.
  */
+/**
+ * Checks, before anything of the battle exists, that every alien rank the deployment asks of the race is
+ * a member of it (U-03). Pure: no RNG, no state. The depth and the race are resolved as run(), setDepth()
+ * and deployAliens() resolve them; a rank is reported only if it is missing at every depth the battle can
+ * get, so a landing that may be generated goes on exactly as before.
+ * @param ruleDeploy Deployment that picks the terrain and the depth (as in run()).
+ * @param alienDeploy Deployment passed to deployAliens().
+ * @param alienRace Race of the UFO, mission site or alien base.
+ * @param missionTexture Texture passed to the generator, may be 0.
+ * @param where Mission description for the log.
+ * @return Empty if the aliens can be generated, otherwise the details for the log.
+ */
+std::string BattlescapeGenerator::checkAlienRanks(const Mod *mod, const SavedGame *save, const AlienDeployment *ruleDeploy,
+	const AlienDeployment *alienDeploy, const std::string &alienRace, Texture *missionTexture, const std::string &where)
+{
+	if (!ruleDeploy || !alienDeploy)
+	{
+		return ""; // the generator reports a missing deployment itself
+	}
+
+	// depths the battle can get (setDepth())
+	bool dry = false, wet = false;
+	auto addDepths = [&](int minDepth, int maxDepth)
+	{
+		if (maxDepth > 0)
+		{
+			wet = true;
+			if (minDepth <= 0) dry = true;
+		}
+		else
+		{
+			dry = true;
+		}
+	};
+	if (ruleDeploy->getMaxDepth() > 0)
+	{
+		addDepths(ruleDeploy->getMinDepth(), ruleDeploy->getMaxDepth());
+	}
+	else
+	{
+		// terrains run() can pick
+		std::vector<std::string> terrains = ruleDeploy->getTerrains();
+		if (terrains.empty() && missionTexture && !missionTexture->getTerrain()->empty())
+		{
+			for (const auto& crit : *missionTexture->getTerrain())
+			{
+				if (crit.weight > 0) terrains.push_back(crit.name);
+			}
+		}
+		if (terrains.empty() && !mod->getTerrainList().empty())
+		{
+			terrains.push_back(mod->getTerrainList().front());
+		}
+		for (const auto& name : terrains)
+		{
+			const RuleTerrain *terrain = mod->getTerrain(name);
+			if (terrain) addDepths(terrain->getMinDepth(), terrain->getMaxDepth());
+		}
+	}
+
+	// race at each of these depths (deployAliens())
+	std::string raceName = alienRace;
+	if (!alienDeploy->getRace().empty() && save->getMonthsPassed() > -1)
+	{
+		raceName = alienDeploy->getRace();
+	}
+	bool underwater = raceName.find("_UNDERWATER") != std::string::npos;
+	std::vector<std::string> variants;
+	if (dry || (wet && underwater)) variants.push_back(raceName);
+	if (wet && !underwater) variants.push_back(raceName + "_UNDERWATER");
+	std::vector<const AlienRace*> races;
+	for (const auto& name : variants)
+	{
+		const AlienRace *race = mod->getAlienRace(name);
+		if (!race)
+		{
+			return ""; // the generator reports an unknown race itself
+		}
+		races.push_back(race);
+	}
+	if (races.empty())
+	{
+		return "";
+	}
+
+	for (const auto& dd : *alienDeploy->getDeploymentData())
+	{
+		if (!dd.customUnitType.empty())
+		{
+			continue;
+		}
+		// the largest quantity deployAliens() can roll; with none no member is asked for
+		int quantity;
+		switch (save->getDifficulty())
+		{
+		case DIFF_BEGINNER:
+			quantity = dd.lowQty;
+			break;
+		case DIFF_EXPERIENCED:
+			quantity = dd.medQty > 0 ? dd.lowQty + ((dd.medQty - dd.lowQty) / 2) : dd.lowQty;
+			break;
+		case DIFF_VETERAN:
+			quantity = dd.medQty > 0 ? dd.medQty : dd.lowQty + ((dd.highQty - dd.lowQty) / 2);
+			break;
+		case DIFF_GENIUS:
+			quantity = dd.medQty > 0 ? dd.medQty + ((dd.highQty - dd.medQty) / 2) : dd.lowQty + ((dd.highQty - dd.lowQty) / 2);
+			break;
+		case DIFF_SUPERHUMAN:
+		default:
+			quantity = dd.highQty;
+		}
+		quantity += mod->isDemigod() ? dd.dQty : std::max(0, dd.dQty);
+		quantity += mod->isDemigod() ? dd.extraQty : std::max(0, dd.extraQty);
+		if (quantity <= 0)
+		{
+			continue;
+		}
+
+		bool missingEverywhere = true;
+		for (const auto* race : races)
+		{
+			if (dd.alienRank >= 0 && dd.alienRank < race->getMembers())
+			{
+				missingEverywhere = false;
+			}
+		}
+		if (missingEverywhere)
+		{
+			std::ostringstream ss;
+			ss << "Invalid alien deployment: deployment=" << alienDeploy->getType();
+			for (const auto* race : races)
+			{
+				ss << " race=" << race->getId() << " members=" << race->getMembers();
+			}
+			ss << " rank=" << dd.alienRank << " " << where;
+			return ss.str();
+		}
+	}
+	return "";
+}
+
 void BattlescapeGenerator::deployAliens(const AlienDeployment *deployment)
 {
 	// race defined by deployment if there is one.
@@ -1739,6 +1880,13 @@ void BattlescapeGenerator::deployAliens(const AlienDeployment *deployment)
 				}
 			}
 
+			if (dd.customUnitType.empty() && (dd.alienRank < 0 || dd.alienRank >= race->getMembers()))
+			{
+				// U-03: the rank is missing only at this depth (checkAlienRanks() lets such landings through); getMember() throws below
+				Log(LOG_ERROR) << "Invalid alien deployment: deployment=" << deployment->getType() << " race=" << race->getId()
+					<< " rank=" << dd.alienRank << " members=" << race->getMembers() << " depth=" << _save->getDepth()
+					<< " mission=" << _save->getMissionType() << (_ufo ? " ufo=" + _ufo->getRules()->getType() : std::string());
+			}
 			std::string alienName = dd.customUnitType.empty() ? race->getMember(dd.alienRank) : dd.customUnitType;
 
 			bool outside = RNG::percent(dd.percentageOutsideUfo);
