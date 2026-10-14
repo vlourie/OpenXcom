@@ -536,6 +536,10 @@ RETRY = {
              "sparse with wide gaps between them",
     "BU047": "a square patch of shallow dark teal water edged with grass, a low clump of thin dark green reeds "
              "standing in the water at one side, the water clearly visible",
+    # партия 6 (папка batch6_retry, вердикт 14.10): OT012 - нитки вместо лиан, у классики плети в два пикселя
+    "OT012": "a loose net of thick hanging jungle vines, every vine a thick rope densely covered with overlapping "
+             "small green and dark green leaves, the vines branching and hanging down in separate strands with "
+             "wide dark gaps between them",
 }
 
 

@@ -821,6 +821,11 @@ BARK_AB_SQUEEZE = 0.85       # доля отклонения цветности 
 BARK_TRUNK_R = 24           # x4: ствол - в пределах 6 пикс базы от ядра коры HD (полоса мха)
 BARK_LEAF_K = 4             # центров цвета листвы HD (там, где классика зелёная)
 BARK_SNOW_L, BARK_SNOW_C = 60.0, 14.0   # светлое и почти серое у классики - снег, не кора
+BARK_ACCENT_C, BARK_ACCENT_SHARE = 30.0, 0.05   # яркое пятно классики (цветок, ягоды): цветность выше медианы
+                                                 # коры семейства на 30 и таких меньше 5 процентов - не кора
+BARK_CAP_C = 20.0           # цветность коры после тона - не выше своей цветности HD плюс 20
+BARK_FLOWER_C, BARK_TALL_MIN = 40.0, 0.5   # медиана цветности коры классики выше 40 и вытянутых по вертикали пятен
+                                           # меньше половины - это цветы или песок, ствола нет: тон не делается
 
 
 def _lab(rgb):
@@ -925,9 +930,27 @@ def _trunk_rows(core, alpha, wide=1.4):
         return out
     wmed = float(np.median([b - a + 1 for _, a, b in runs]))
     for y, a, b in runs:
-        if b - a + 1 <= wide * wmed:
+        cx = np.flatnonzero(core[y, a:b + 1])
+        # отрезок шире ядра плюс полоса мха - не ствол, а куст целиком: строка куста с цветком становилась
+        # корой во всю ширину - поперечные полосы (OT063, CP006:76)
+        if b - a + 1 <= wide * wmed and (os.environ.get("BARK_LEGACY") or
+                                         len(cx) and b - a + 1 <= cx[-1] - cx[0] + 1 + 2 * BARK_TRUNK_R):
             out[y, a:b + 1] = 1.0
     return out
+
+
+def _tall_share(masks):
+    """Доля пикселей в связных пятнах высотой от 5 строк и выше полуторной средней ширины - ствол, а не цветок."""
+    tot = tall = 0
+    for m in masks:
+        n, lab, st, _ = cv2.connectedComponentsWithStats(m.astype(np.uint8), connectivity=8)
+        for i in range(1, n):
+            x, y, w, h, a = st[i]
+            tot += int(a)
+            rows = (lab[y:y + h, x:x + w] == i).sum(1)
+            if h >= 5 and h >= 1.5 * float(np.median(rows[rows > 0])):
+                tall += int(a)
+    return tall / max(tot, 1)
 
 
 def bark_tone(world, S, frames, fs, floor_fs=()):
@@ -944,13 +967,31 @@ def bark_tone(world, S, frames, fs, floor_fs=()):
     тон коры классики (окно BARK_LOCAL), а не одно среднее: светлый ствол и тёмные ягоды в кроне - разные цели.
     Сдвиг - разность местных средних, дожим до BARK_ITERS раз; цветность коры дополнительно сжимается к местному
     среднему на BARK_AB_SQUEEZE (зелёный мох освещённой стороны). Яркость фактуры HD и альфа не меняются."""
-    wc, opq, labs, cb, cbn, bk = {}, {}, {}, {}, {}, {}
+    wc, opq, labs, cb, cbn, bk, cls = {}, {}, {}, {}, {}, {}, {}
     for f in fs:
         c = np.asarray(tr.sprite(world, S, f).convert("RGBA"), np.float32)
         op = c[..., 3] > 0
         cl = _lab(c[..., :3])
         snow = (cl[..., 0] > BARK_SNOW_L) & (np.hypot(cl[..., 1], cl[..., 2]) < BARK_SNOW_C)
-        bark = op & (c[..., 1] <= c[..., 0] + 2) & ~snow
+        cls[f] = (op, cl, op & (c[..., 1] <= c[..., 0] + 2) & ~snow)
+    ch = np.concatenate([np.hypot(cl[..., 1], cl[..., 2])[bark] for op, cl, bark in cls.values()])
+    tall = _tall_share([bark for op, cl, bark in cls.values()])
+    if (len(ch) and float(np.median(ch)) > BARK_FLOWER_C and tall < BARK_TALL_MIN
+            and not os.environ.get("BARK_LEGACY")):
+        # «кора» классики - яркие цветы или песок без ствола (CP006, CP001): тон красил листву HD пятном вокруг цветка
+        return dict(skipped="ствола нет: цветность коры классики %.1f, вытянутых %.2f" % (float(np.median(ch)), tall))
+    accent_c, accents = None, 0
+    if len(ch) and not os.environ.get("BARK_LEGACY"):
+        # цветок и ягоды классики - не кора: местный тон с ними красил тёмную листву HD налётом (CP008:76)
+        t = float(np.median(ch)) + BARK_ACCENT_C
+        if 0 < (ch > t).mean() < BARK_ACCENT_SHARE:
+            accent_c = t
+    for f in fs:
+        op, cl, bark = cls[f]
+        if accent_c is not None:
+            acc = bark & (np.hypot(cl[..., 1], cl[..., 2]) > accent_c)
+            accents += int(acc.sum())
+            bark = bark & ~acc
         b4 = tr.rep4(bark).astype(np.float32)
         b = _blur(b4, BARK_SIGMA)
         o = _blur(tr.rep4(op), BARK_SIGMA)
@@ -1033,6 +1074,16 @@ def bark_tone(world, S, frames, fs, floor_fs=()):
         hist.append([round(float(x), 1) for x in gap(cur)])
         if float(np.linalg.norm(hist[-1])) < 0.5:
             break
+    capped = 0
+    for f in fs:                               # тон меняет оттенок коры, но не красит: цветность не выше своей HD
+        if not w[f].any() or os.environ.get("BARK_LEGACY"):     # плюс BARK_CAP_C - тёмная листва краснела налётом
+            continue                                            # там, где у классики цветок (CP008:76)
+        c0 = np.hypot(labs[f][..., 1], labs[f][..., 2])
+        c1 = np.hypot(cur[f][..., 1], cur[f][..., 2])
+        cap = c0 + BARK_CAP_C
+        k = np.where(c1 > cap, cap / np.maximum(c1, 1e-3), 1.0)
+        capped += int(((k < 0.9) & (w[f] > 0.5)).sum())
+        cur[f][..., 1:] *= k[..., None]
     for f in fs:
         if not w[f].any():
             continue
@@ -1044,7 +1095,8 @@ def bark_tone(world, S, frames, fs, floor_fs=()):
     return dict(hd_bark_lab=[round(float(x), 1) for x in mb], gap_iter=hist,
                 leaf_centres=[[round(float(x), 1) for x in c] for c in ml] if ml is not None else None,
                 deep_unshifted=dict(n=int(len(deep)), lab=[round(float(x), 1) for x in deep.mean(0)] if len(deep) else None),
-                weighted_px=int(sum((w[f] > 0.5).sum() for f in fs)))
+                weighted_px=int(sum((w[f] > 0.5).sum() for f in fs)), chroma_capped_px=capped,
+                accent_c=None if accent_c is None else round(accent_c, 1), accent_px=accents)
 
 
 FLOOR_COVER_MIN = 0.35   # доля пола, которую классика кадра повторяет пиксель в пиксель
@@ -1263,8 +1315,11 @@ def assemble_family(args, fid, S, world, CL, hints):
     miss = [f for f in fs if f not in frames]
     if miss:
         raise SystemExit("%s: нет кадров %s - раскладки не собрать" % (fid, miss))
-    summary["bark_tone"] = bark_tone(world, S, frames, fs,
-                                     {e[0] for L in CL[S]["sigs"] for e in L["sig"] if e[4] == 0})
+    if os.environ.get("BARK_OFF"):                         # опыт: сборка без тона коры
+        summary["bark_tone"] = dict(skipped="BARK_OFF")
+    else:
+        summary["bark_tone"] = bark_tone(world, S, frames, fs,
+                                         {e[0] for L in CL[S]["sigs"] for e in L["sig"] if e[4] == 0})
     summary["accent_limit"] = accent_limit(world, S, frames, upper)    # после тона коры: диск краснеет им
     summary["floor_base"] = floor_base(world, S, frames,
                                        sorted({e[0] for L in CL[S]["sigs"] for e in L["sig"] if e[4] == 0}))
