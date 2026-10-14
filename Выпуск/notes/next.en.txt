@@ -1,0 +1,1 @@
+- HD: dots no longer flicker on walls, floors and rocks whose original tile animation repeats identical frames (lava, ash, beaches, base entrances and walls, ships - about two hundred frames in thirty sets). Picture only: tiles, walkability and cover are unchanged.
