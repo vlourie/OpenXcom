@@ -52,6 +52,8 @@ CASES = [
     (g, LINES, "ok") for g in (
         "CYBERWAREBITS:20", "WAREBITS:20", "XOPSDESERTRUINS:11", "IDT_SNOWBARN:49", "LIGHTNIN_R:25",
         "SEAMSUNK1:35", "GOVT:25", "GDXOPSFLOORS:55")] + [
+    # мелкий индекс, но в плитке орнамент (рамка, дыры, крест, R-332): ковёр его сотрёт - pixel_lines на просмотр
+    (g, LINES, "review") for g in ("ISLANDURBAN1:48", "LINERSHIPA:19", "LINERSHIPA:95")] + [
     # ground_seam без --speckle (поле, ступени) не судится однородностью крапа
     ("NUKE1:16", "ground_seam --iso", "ok"),
 ] + [
