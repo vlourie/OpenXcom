@@ -2329,7 +2329,7 @@ void InventoryState::handle(Action *action)
 void InventoryState::think()
 {
 	// the AI test bench: the pre-battle equipment screen has nobody to press OK
-	if (!_tu && _parent && AiProbe::active())
+	if (!_tu && _parent && AiProbe::autoClose())
 	{
 		btnOkClick(nullptr);
 		return;

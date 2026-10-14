@@ -199,6 +199,11 @@ public:
 	void checkForCasualties(const RuleDamageType *damageType, BattleActionAttack attack, bool hiddenExplosion = false, bool terrainExplosion = false);
 	/// Checks reserved tu and energy.
 	bool checkReservedTU(BattleUnit *bu, int tu, int energy, bool justChecking = false);
+	/// AI2-D RESERVE_AFFORDABLE (bench flag OXCE_AI_RESERVE_AFFORDABLE): 0 off, 1 shadow ([AITRACE] ai2d line, play unchanged),
+	/// 2 the hostile patrol reserve is dropped when it cannot buy the reaction snapshot.
+	static int reserveAffordableMode();
+	/// The hostile reserve type checkReservedTU goes on with: BA_NONE in mode 2 when the reaction snapshot is not affordable.
+	BattleActionType reserveAffordable(BattleUnit *bu, BattleActionType reserve, BattleItem *reserveWeapon, int tu, int energy, bool justChecking);
 	/// Handles unit AI.
 	void handleAI(BattleUnit *unit);
 	/// Drops an item and affects it with gravity.

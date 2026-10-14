@@ -334,7 +334,7 @@ void UnitDieBState::think()
 		{
 			_unit->instaKill();
 		}
-		_unit->resetTurnsSince();
+		_unit->resetTurnsSince(_parent->getSave(), "RESET_DEATH");
 		if (_unit->getSpawnUnit() && !_overKill)
 		{
 			if (!_unit->getAlreadyRespawned())

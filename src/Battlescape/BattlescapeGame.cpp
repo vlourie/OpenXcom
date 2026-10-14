@@ -383,9 +383,15 @@ void BattlescapeGame::handleAI(BattleUnit *unit)
 {
 	std::ostringstream ss;
 
+	AiProbe::passStartNote(_save, unit); // P0-D: the first unit of a side's turn - where its traversal began
 	if (unit->getTimeUnits() <= 5)
 	{
 		unit->dontReselect();
+	}
+	// COUNTER_FIX (clean1: always in the bench): a counter another unit left (it died, fell unconscious, lost the selection) does not carry over
+	if (AiProbe::counterCheck(_save, unit, _AIActionCounter))
+	{
+		_AIActionCounter = 0;
 	}
 	if (_AIActionCounter >= AiProbe::maxActions(unit) || !unit->reselectAllowed() || unit->getTurnsSinceStunned() == 0) //stun check for restoring OXC behavior that AI does not attack after waking up even having full TU
 	{
@@ -410,7 +416,8 @@ void BattlescapeGame::handleAI(BattleUnit *unit)
 		{
 			_parentState->updateSoldierInfo();
 			getMap()->getCamera()->focusOn(_save->getSelectedUnit()->getPosition());
-			if (_save->getSelectedUnit()->getId() <= unit->getId())
+			// P0-D (clean2): the second pass begins when the selection wrapped round (the bot's turn: by index, upstream: by id)
+			if (AiProbe::secondPassWrapped(_save, unit, _save->getSelectedUnit()))
 			{
 				_AISecondMove = true;
 			}
@@ -440,6 +447,7 @@ void BattlescapeGame::handleAI(BattleUnit *unit)
 		ai->setTargetFaction(FACTION_HOSTILE);
 	}
 	_AIActionCounter++;
+	AiProbe::counterOwn(_save, unit, _AIActionCounter);
 	if (_AIActionCounter > 2)
 	{
 		AiProbe::tally(unit, "act.extra");
@@ -455,6 +463,13 @@ void BattlescapeGame::handleAI(BattleUnit *unit)
 	action.actor = unit;
 	action.number = _AIActionCounter;
 	AiProbe::beforeThink(_save, unit);
+	// AI3-RETRY (bench): a walk or attack handed on that left the unit's state as it was is not handed on again in that state
+	static const bool failedRetry = AiProbe::param("OXCE_AI_FAILED_RETRY", 0) != 0;
+	const bool retryRule = failedRetry && unit->getFaction() != FACTION_PLAYER;
+	if (retryRule)
+	{
+		ai->retryBegin();
+	}
 	unit->think(&action);
 
 	if (action.type == BA_RETHINK)
@@ -499,6 +514,32 @@ void BattlescapeGame::handleAI(BattleUnit *unit)
 		{
 			getMod()->getSoundByDepth(_save->getDepth(), unit->getRandomAggroSound())->play(-1, getMap()->getSoundAngle(unit->getPosition()));
 			_playedAggroSound = true;
+		}
+	}
+	// AI3-RETRY (bench): the action failed before in this very state - in place of the empty try, the think that followed it
+	// (it may roll other dice): within the selection's actions, counted as one; banned again, or none left - the selection ends
+	// (BA_NONE), as when the counter runs out. No time units, no turn, no view change.
+	if (retryRule)
+	{
+		char why = ai->retryBanned(action);
+		if (why != 0 && _AIActionCounter < AiProbe::maxActions(unit))
+		{
+			AiProbe::note(unit, (std::string("retry.rethink ") + why + std::to_string((int)action.type)).c_str());
+			_AIActionCounter++;
+			AiProbe::counterOwn(_save, unit, _AIActionCounter);
+			action.number = _AIActionCounter;
+			unit->think(&action);
+			if (action.type == BA_RETHINK)
+			{
+				unit->think(&action);
+			}
+			_AIActionCounter = action.number;
+			why = ai->retryBanned(action);
+		}
+		if (why != 0)
+		{
+			AiProbe::note(unit, (std::string("retry.end ") + why + std::to_string((int)action.type)).c_str());
+			action.type = BA_NONE;
 		}
 	}
 	AiProbe::logDecision(_save, unit, action);
@@ -588,6 +629,11 @@ void BattlescapeGame::handleAI(BattleUnit *unit)
 		}
 	}
 
+	if (retryRule)
+	{
+		// AI3-RETRY: p - the walk found no path, s - its walk was pushed (and may stop at once), a - an attack
+		ai->retryRemember(action, action.type == BA_WALK ? (_save->getPathfinding()->getStartDirection() != -1 ? 's' : 'p') : 'a');
+	}
 	if (action.type == BA_NONE)
 	{
 		if (carefulGuard(unit))
@@ -613,7 +659,8 @@ void BattlescapeGame::handleAI(BattleUnit *unit)
 		{
 			_parentState->updateSoldierInfo();
 			getMap()->getCamera()->focusOn(_save->getSelectedUnit()->getPosition());
-			if (_save->getSelectedUnit()->getId() <= unit->getId())
+			// P0-D (clean2): the second pass begins when the selection wrapped round (the bot's turn: by index, upstream: by id)
+			if (AiProbe::secondPassWrapped(_save, unit, _save->getSelectedUnit()))
 			{
 				_AISecondMove = true;
 			}
@@ -1036,6 +1083,7 @@ void BattlescapeGame::checkForCasualties(const RuleDamageType *damageType, Battl
 					int modifier = _save->getUnitMoraleModifier(victim);
 					int loserMod =  _save->getFactionMoraleModifier(victim->getOriginalFaction() != FACTION_HOSTILE);
 					int winnerMod = _save->getFactionMoraleModifier(victim->getOriginalFaction() == FACTION_HOSTILE);
+					bool killRevealTried = false; // AI2-H FAIR KNOWLEDGE h6: one gate call per kill, not one per member of the losing squad
 					for (auto* bu : *_save->getUnits())
 					{
 						if (!bu->isOut())
@@ -1050,6 +1098,15 @@ void BattlescapeGame::checkForCasualties(const RuleDamageType *damageType, Battl
 								if (victim->getFaction() == FACTION_HOSTILE && murderer)
 								{
 									murderer->setTurnsSinceSpotted(0);
+									if (murderer->getFaction() != FACTION_HOSTILE && !killRevealTried)
+									{
+										// AI2-H FAIR KNOWLEDGE h6: the kill credits the murderer (attribution kept as is) but is no proof of where it
+										// stands now - the gate writes the place only while the hostile side sees it (a = attack type, b = murderer
+										// source: 0 the attacker of this attack, 1 the killer of a unit whose death blast did it, 2 the last unit to hit the victim)
+										killRevealTried = true;
+										murderer->updateHonestKnownPosition(FACTION_HOSTILE, _save, BattleUnit::AI_REVEAL_KILLER_SEEN, victim, (int)attack.type,
+											murderer == attack.attacker ? 0 : (murderer == origMurderer ? 1 : 2));
+									}
 								}
 							}
 							// the winning squad all get a morale increase
@@ -1553,6 +1610,10 @@ bool BattlescapeGame::checkReservedTU(BattleUnit *bu, int tu, int energy, bool j
 		{
 			cost.type = ai->getReserveMode();
 		}
+		if (cost.type != BA_NONE && reserveAffordableMode() >= 1)
+		{
+			cost.type = reserveAffordable(bu, cost.type, cost.weapon, tu, energy, justChecking);
+		}
 		cost.updateTU();
 		cost.Energy += energy;
 		cost.Time = tu; //override original
@@ -1631,6 +1692,84 @@ bool BattlescapeGame::checkReservedTU(BattleUnit *bu, int tu, int energy, bool j
 	}
 
 	return true;
+}
+
+/**
+ * AI2-D RESERVE_AFFORDABLE: the bench flag OXCE_AI_RESERVE_AFFORDABLE, read once (0 in a release build).
+ * 0 off (AI2_BASELINE_A2H), 1 shadow (the verdict logged, play unchanged), 2 applied.
+ */
+int BattlescapeGame::reserveAffordableMode()
+{
+	static const int mode = (int)AiProbe::param("OXCE_AI_RESERVE_AFFORDABLE", 0);
+	return mode;
+}
+
+/**
+ * AI2-D RESERVE_AFFORDABLE: the hostile reserve (a share of base TU by aggression) exists to keep a reaction shot, and a hostile
+ * unit reacts at range only with a snapshot of the weapon TileEngine picks for it (getMainHandWeapon(true, true)), only when
+ * canUseWeapon, the weapon is a firearm with ammo for the snapshot and BattleActionCost(BA_SNAPSHOT).haveTU() - the same calls,
+ * nothing recomputed here. If that snapshot cannot be paid with the TU the unit has now, it cannot be paid after the step either,
+ * so the reserve buys nothing: like the player's rule ("current TU is less than the reserved shot, we can't reserve anything"),
+ * mode 2 goes on with BA_NONE - the step then needs only its own TU and energy. An affordable snapshot keeps the old reserve.
+ * Target-dependent parts of the reaction (range, line of fire) are not known here and are not judged. No RNG, no state.
+ * The [AITRACE] ai2d line is written (mode 1 and up) when the old reserve blocks a real move (not justChecking).
+ */
+BattleActionType BattlescapeGame::reserveAffordable(BattleUnit *bu, BattleActionType reserve, BattleItem *reserveWeapon, int tu, int energy, bool justChecking)
+{
+	BattleItem *w = bu->getMainHandWeapon(true, true); // the weapon TileEngine reacts with (AI: quickest)
+	BattleActionCost snap(BA_SNAPSHOT, bu, w);
+	const char *why = "ok";
+	if (!w)
+		why = "no_weapon";
+	else if (!_save->canUseWeapon(w, bu, false, BA_SNAPSHOT))
+		why = "cannot_use";
+	else if (w->getRules()->getBattleType() != BT_FIREARM)
+		why = "not_firearm";
+	else if (!w->getAmmoForAction(BA_SNAPSHOT))
+		why = "no_ammo";
+	else if (snap.Time <= 0)
+		why = "no_snap";
+	else if (!snap.haveTU())
+		why = bu->getTimeUnits() < snap.Time ? "tu" : "energy";
+	const bool affordable = (why[0] == 'o' && why[1] == 'k');
+	const int mode = reserveAffordableMode();
+	if (!justChecking)
+	{
+		// the old reserve, as checkReservedTU computes it
+		BattleActionCost old;
+		old.actor = bu;
+		old.type = reserve;
+		old.weapon = reserveWeapon;
+		old.updateTU();
+		old.Energy += energy;
+		old.Time = tu;
+		int share = 0;
+		switch (reserve)
+		{
+		case BA_SNAPSHOT: share = (bu->getBaseStats()->tu / 3); break;
+		case BA_AUTOSHOT: share = ((bu->getBaseStats()->tu / 5)*2); break;
+		case BA_AIMEDSHOT: share = (bu->getBaseStats()->tu / 2); break;
+		default: break;
+		}
+		old.Time += share;
+		const bool oldOk = old.Time <= 0 || old.haveTU();
+		if (!oldOk)
+		{
+			Log(LOG_INFO) << "[AITRACE] {\"ai2d\":\"reserve\",\"rec\":" << AiProbe::nextRec() << ",\"turn\":" << _save->getTurn()
+				<< ",\"unit\":" << bu->getId() << ",\"rt\":" << (int)reserve << ",\"share\":" << share
+				<< ",\"rw\":\"" << (reserveWeapon ? reserveWeapon->getRules()->getType() : std::string()) << "\""
+				<< ",\"w\":\"" << (w ? w->getRules()->getType() : std::string()) << "\""
+				<< ",\"why\":\"" << why << "\",\"snapT\":" << snap.Time << ",\"snapE\":" << snap.Energy
+				<< ",\"tu\":" << bu->getTimeUnits() << ",\"en\":" << bu->getEnergy() << ",\"stepT\":" << tu << ",\"stepE\":" << energy
+				<< ",\"stepOk\":" << ((tu <= bu->getTimeUnits() && energy <= bu->getEnergy()) ? 1 : 0)
+				<< ",\"afford\":" << (affordable ? 1 : 0) << ",\"applied\":" << ((mode >= 2 && !affordable) ? 1 : 0) << "}";
+		}
+	}
+	if (mode >= 2 && !affordable)
+	{
+		return BA_NONE;
+	}
+	return reserve;
 }
 
 
@@ -1974,7 +2113,7 @@ void BattlescapeGame::primaryAction(Position pos)
 			{
 				if (!_currentAction.weapon->getRules()->isLOSRequired() ||
 					(_currentAction.actor->getFaction() == FACTION_PLAYER && targetUnit->getFaction() != FACTION_HOSTILE) ||
-					std::find(_currentAction.actor->getVisibleUnits()->begin(), _currentAction.actor->getVisibleUnits()->end(), targetUnit) != _currentAction.actor->getVisibleUnits()->end())
+					AiProbe::upstreamSees(_currentAction.actor, targetUnit, 1)) // UPSTREAM_VIS (bench, upstream 613ec4a28)
 				{
 					std::string error;
 					if (_currentAction.spendTU(&error))
@@ -2042,7 +2181,7 @@ void BattlescapeGame::primaryAction(Position pos)
 					_currentAction.target = pos;
 					if (!_currentAction.weapon->getRules()->isLOSRequired() ||
 						(attackerFaction == FACTION_PLAYER && targetFaction != FACTION_HOSTILE) ||
-						std::find(_currentAction.actor->getVisibleUnits()->begin(), _currentAction.actor->getVisibleUnits()->end(), targetUnit) != _currentAction.actor->getVisibleUnits()->end())
+						AiProbe::upstreamSees(_currentAction.actor, targetUnit, 2)) // UPSTREAM_VIS (bench, upstream 613ec4a28)
 					{
 						// get the sound/animation started
 						getMap()->setCursorType(CT_NONE);

@@ -33,6 +33,7 @@ class BattleUnit;
 struct BattleAction;
 class BattlescapeState;
 class Node;
+class Tile;
 
 enum AIMode { AI_PATROL, AI_AMBUSH, AI_COMBAT, AI_ESCAPE };
 enum AIAttackWeight : int
@@ -40,6 +41,44 @@ enum AIAttackWeight : int
 	/// Base scale of attack weights
 	AIW_SCALE = 100,
 	AIW_IGNORED = 0,
+};
+
+/**
+ * AI2-H FAIR KNOWLEDGE: for its scope the unit stands, for the geometry the AI computes, at the place where the AI's side
+ * last honestly saw it (its position, tile pointer and facing); the tiles' occupants and all else stay as they are, and all
+ * is restored at the end. Inactive unless the known place is not the current one (AIModule::knownPlace kind 1).
+ */
+class AiKnownPlace
+{
+	BattleUnit *_unit;
+	Position _pos;
+	Tile *_tile;
+	int _dir;
+	bool _on;
+public:
+	AiKnownPlace(SavedBattleGame *save, BattleUnit *unit, int kind, const Position &pos, int dir);
+	~AiKnownPlace();
+	AiKnownPlace(const AiKnownPlace &) = delete;
+	AiKnownPlace &operator=(const AiKnownPlace &) = delete;
+	bool on() const { return _on; }
+
+	/// h7 (variant B): the units moved now. For the AI's geometry a moved unit exists only at its known place: its body on
+	/// the true tiles stops no line (TileEngine::voxelCheck), and its virtual body stands on the known tiles. Empty with the
+	/// flag off, so the engine's paths are as before. OXCE_AI_FAIR_TRUEBODY=1 - the control: h6 geometry (the true body
+	/// stays, no virtual one), only a part outside a 2x2 body is no hit instead of the crash.
+	static bool any() { return !_moved.empty(); }
+	static bool trueBody();
+	static bool moved(const BattleUnit *unit);
+	/// The tile is one the moved unit stands on at its known place (pokeUp: or the tile above, which its body reaches).
+	static bool atKnown(const SavedBattleGame *save, const BattleUnit *unit, const Tile *tile, bool pokeUp);
+	/// The moved unit standing at its known place on this tile (as Tile::getUnit), 0 if none.
+	static BattleUnit *knownOn(const Tile *tile);
+	/// As Tile::getOverlappingUnit, for the known places: a moved unit on the tile, or one below whose body reaches into it.
+	static BattleUnit *knownOverlapping(const SavedBattleGame *save, const Tile *tile);
+	/// The unit on the tile as the AI's geometry sees it (Tile::getUnit when nothing is moved or in the control).
+	static BattleUnit *unitOn(const Tile *tile);
+private:
+	static std::vector<BattleUnit *> _moved;
 };
 
 /**
@@ -65,12 +104,34 @@ private:
 	UnitFaction _targetFaction;
 
 	BattleAction _escapeAction, _ambushAction, _attackAction, _patrolAction, _psiAction;
+	/// U3 escape plan contract (bench, clean1: always in the bench): what setupEscape computed _escapeAction for. The module is
+	/// the unit's own, so the unit is the same by construction. Written always, read only by escapePlanBroken.
+	struct EscapePlan
+	{
+		bool valid = false;           // setupEscape ran (a found tile or BA_RETHINK, both are a plan)
+		int turn = -1, side = -1;     // the turn of the side it ran in
+		Position origin;              // where the unit stood
+		BattleUnit *aggro = nullptr;  // the target it measured from, nullptr none
+	};
+	EscapePlan _escapePlan;
+	/// 0 the escape plan fits the unit now, else the first term it breaks: 1 never computed, 2 another turn of the side,
+	/// 3 another origin, 4 no destination tile, 5 destination not reachable (a known unit on it included), 7 aggro out.
+	/// (6, a unit on it, is not a term of its own: one the unit knows of makes it 5, one it does not is no reason.)
+	int escapePlanBroken() const;
 	/// The shot chosen by evalFireAction (OXCE_AI_EVAL): kneel for it, and whether it chose one this think.
 	bool _evalKneel = false, _evalChosen = false;
 	/// The bench's decision record (AiProbe::propose, docs/AI_DECISION_RECORD.md): the score the rule that ran last gave its
 	/// action and, if it names itself more exactly than its caller, its name. Written, never read by play.
 	int _probeScore = INT_MIN;
 	const char *_probeSource = nullptr;
+	/// AI3-FF (bench, OXCE_AI_FF_RISK): units of the target faction the last explosiveEfficacy counted (written always, read
+	/// only with the flag); the throw grenadeAction found and left for ffThrowOrShot (bit 2); the decision ff.trade was noted in.
+	mutable int _ffEnemies = 0;
+	mutable int _ffNoteRec = -1, _ffSecRec = -1;
+	bool _ffThrow = false, _ffThrowNode = false;
+	int _ffThrowEnemies = 0;
+	Position _ffThrowAt;
+	BattleItem *_ffThrowItem = nullptr;
 	/// ENERGY_PATROL_END_V2 (bench, AiProbe::patrolOutOfEnergy): the unit-turn (turn and side) its patrol walks are spent in.
 	int _patrolSpent = -1;
 	/// Where it stood and how much energy it had then: a unit moved or given energy (a stimulant) may walk again.
@@ -80,6 +141,20 @@ private:
 	bool _patrolWalk = false;
 	/// The think after a spent patrol dropped: 1 asked for it (BA_RETHINK), 2 this think is it (no second ask).
 	int _patrolRetry = 0;
+	/// AI3-IMM (bench): the think after an immobile unit's walk dropped - 1 asked for it (BA_RETHINK), 2 this think is it.
+	int _immRetry = 0;
+	/// AI3-RETRY (bench, OXCE_AI_FAILED_RETRY): an action handleAI handed on (walk or attack) and the unit's state when it was
+	/// decided; a ban is such an action after which the state did not change (it was not carried out), with why: p no path,
+	/// s the walk stopped at once, a the attack did nothing. Kept for one unit-turn. The reserve and running the think chose
+	/// belong to the action: a walk the patrol's reserve stopped is another walk without it.
+	struct RetryKey { int type; Position target; int weapon; int reserve; bool run; char why; unsigned long long print; };
+	std::vector<RetryKey> _retryBans;
+	RetryKey _retryLast = { 0, Position(), -1, 0, false, 0, 0 };
+	bool _retryHaveLast = false;
+	int _retryTurn = -1;
+	unsigned long long _retryNow = 0;
+	/// The unit's own state and what it sees (FAIR: own state and visible units only).
+	unsigned long long retryPrint() const;
 	/// What findReachable left for the walk when it made _reachableWithAttack: the unit's TU and energy less the attack's
 	/// (FIREPOINT_ENERGY_PATH_V1, bench, AiProbe::firepointPathOver).
 	int _reachableTuMax = 0, _reachableEnergyMax = 0;
@@ -149,7 +224,7 @@ private:
 
 	bool selectPointNearTargetLeeroy(BattleUnit *target, bool canRun);
 	int selectNearestTargetLeeroy(bool canRun);
-	void meleeActionLeeroy(bool canRun);
+	int meleeActionLeeroy(bool canRun);
 	void dont_think(BattleAction *action);
 public:
 	bool medikit_think(BattleMediKitType healOrStim);
@@ -160,6 +235,12 @@ public:
 	~AIModule();
 	/// The fingerprint of this module's own state (the AI turn probe logs it before and after each decision).
 	unsigned long long probeHash() const;
+	/// AI3-RETRY (bench): before a selection's think - the state now; the action handed on last left it unchanged: a ban.
+	void retryBegin();
+	/// AI3-RETRY: is this action banned in the state retryBegin saw? Returns the ban's why, 0 if not banned.
+	char retryBanned(const BattleAction &action) const;
+	/// AI3-RETRY: the action handleAI hands on (why as above for the case it fails); other types forget the last one.
+	void retryRemember(const BattleAction &action, char why);
 	/// Sets the target faction.
 	void setTargetFaction(UnitFaction f);
 	/// Resets the unsaved AI state.
@@ -192,10 +273,31 @@ public:
 	void setupEscape();
 	/// count how many xcom/civilian units are known to this unit.
 	int countKnownTargets() const;
+	/// AI2-H FAIR KNOWLEDGE: where this AI may place the target - 0 its current place, 1 the place its side last honestly saw it
+	/// (pos, dir), 2 nowhere (never seen). The one rule for every audited consumer (AiProbe::fairPlace); logs [AITRACE] ai2h once per
+	/// decision, consumer and target. Always 0 with the bench flag off.
+	int knownPlace(const BattleUnit *target, const char *cons, Position &pos, int &dir) const;
+	/// Is the tile where this side knows the target to be marked dangerous (grenaded)? Never seen - no tile, not dangerous.
+	bool knownDangerous(const BattleUnit *target) const;
+	/// The target's position as this side knows it: kp for kind 1, its position for kind 0, (-1,-1,-1) for never seen.
+	Position knownPos(const BattleUnit *target, const char *cons) const;
+	/// Melee reach from a tile to the target where this side knows it to be: the engine's validMeleeRange for kind 0, a
+	/// hypothetical body at kp for kind 1 (tile occupancy is not read), no reach for kind 2.
+	bool knownMeleeRange(Position from, BattleUnit *target, int kind, const Position &kp, int kdir) const;
+	/// knownMeleeRange from a tile with the target's known place looked up (consumer "melee").
+	bool knownMeleeFrom(Position from, BattleUnit *target) const;
+	/// knownMeleeFrom where this unit stands; a target remembered (kind 1) at a place it has left is probed and forgotten there.
+	bool knownAdjacent(BattleUnit *target) const;
+	/// The unit this side knows to stand on a tile (consumer "blast"), none if it knows nobody there.
+	BattleUnit *fairOccupant(Position at) const;
 	/// count how many known XCom units are able to see this unit.
 	int getSpottingUnits(const Position& pos) const;
 	/// Selects the nearest target we can see, and return the number of viable targets.
-	int selectNearestTarget();
+	/// AI2-H h8: escape - the pick for setupEscape (a target the side remembers is taken at its remembered place).
+	int selectNearestTarget(bool escape = false);
+	/// AI2-H h8 knowledge contract for the nearest-target selectors: 0 - skip, 1 - the old ray to the true tile, 2 - the ray at the
+	/// remembered place (escape only); state, mem, dir - AiProbe::fairState; oldPass - the old ray (diagnostics, -1 not asked).
+	int fairNearestMode(BattleUnit *bu, bool escape, const char *cons, int &state, Position &mem, int &dir, int &oldPass) const;
 	/// Selects the closest known xcom unit for ambushing.
 	bool selectClosestKnownEnemy();
 	/// Selects a random known target.
@@ -206,6 +308,8 @@ public:
 	bool selectSpottedUnitForSniper();
 	/// Scores a firing mode action based on distance to target and accuracy.
 	int scoreFiringMode(BattleAction *action, BattleUnit *target, bool checkLOF);
+	/// AI3-E (bench, OXCE_AI_FIRE_MODE_EV): the expected damage of a direct firing mode this turn, -1 (with why) if not modelled.
+	double fireModeEffect(BattleAction *action, BattleUnit *target, const char *&why);
 	/// re-evaluate our situation, and make a decision from our available options.
 	void evaluateAIMode();
 	/// The bench's tactical rules (OXCE_AI_TACTICS / OXCE_AI_CAREFUL): attack or take cover, never loiter in view.
@@ -229,6 +333,15 @@ public:
 	void extendedFireModeChoice(BattleActionCost& costAuto, BattleActionCost& costSnap, BattleActionCost& costAimed, BattleActionCost& costThrow, bool checkLOF = false);
 	/// Attempts to throw a grenade at an enemy (or group of enemies) we can see.
 	void grenadeAction();
+	/// AI3-FF (bench, OXCE_AI_FF_RISK bit 2): the deferred throw of grenadeAction against the shot projectileAction chose.
+	void ffThrowOrShot();
+	/// AI3-FF (bench): scoreFiringMode's accuracy * shots * TU ratio, the distance taken to a place (the side's known one).
+	int ffFireScore(const BattleAction &action, Position at) const;
+	/// AI3-FF (bench, OXCE_AI_FF_RISK bit 8): the power the action hits with, bonuses included, before resistances.
+	int ffPower(const BattleAction &action) const;
+	/// AI3-FF (bench, OXCE_AI_FF_RISK bit 4): a tile part with explosive the shooter sees near the line of fire to the target
+	/// whose blast reaches our own side for no gain by the weights of explosiveEfficacy.
+	bool ffLineRisk(Position target) const;
 	/// Performs a psionic attack.
 	bool psiAction();
 	/// Performs a melee attack action.
@@ -272,6 +385,34 @@ public:
 	void patrolReuseDecided(const BattleAction &action);
 	/// Frees up the destination node for another Unit to select
 	void freePatrolTarget();
+	/// AI2-A DAMAGE FEASIBILITY (bench flag OXCE_AI_ZERO_EFFECT): 0 off, 1 shadow (judge and log only), 2 a direct shot or blow
+	/// the real damage pipeline proves useless is not taken, 3 = 2 plus no fire-point search for a target only such shots reach.
+	static int zeroEffectMode();
+	enum { AIZ_POTENTIAL = 0, AIZ_ZERO = 1, AIZ_UNKNOWN = 2 };
+	/// Can this direct attack change the target at all, by BattleUnit::damage as it stands now (no RNG, no state change):
+	/// AIZ_ZERO only when the largest damage roll ends with nothing changed on the target; anything not proven is AIZ_UNKNOWN.
+	/// terms (when given) gets the proof as JSON fields.
+	static int zeroEffectVerdict(SavedBattleGame *save, BattleUnit *attacker, BattleActionType type, BattleItem *weapon, const BattleUnit *target, std::string *terms);
+	/// AI2-A HONEST (bench flag OXCE_AI_ZERO_HONEST): 0 off (AI2_BASELINE_B2 verdict), 1 shadow (B2 verdict decides, the honest
+	/// one and the hidden values B2 read are logged beside it), 2 the honest verdict decides (nothing hidden is read).
+	static int zeroHonestMode();
+	/// The verdict of AI2_BASELINE_B2, unchanged: reads the target's current armour, shield HP, resistance tags, health.
+	static int zeroEffectVerdictB2(SavedBattleGame *save, BattleUnit *attacker, BattleActionType type, BattleItem *weapon, const BattleUnit *target, std::string *terms);
+	/// The honest verdict: ZERO only when proven from the visible target type, the ruleset and the attacker's own weapon.
+	/// full: terms get the whole proof (keys as B2), else only the "h..." fields for the shadow line.
+	static int zeroEffectVerdictHonest(SavedBattleGame *save, BattleUnit *attacker, BattleActionType type, BattleItem *weapon, const BattleUnit *target, std::string *terms, bool full);
+	/// The honest verdict of the last zeroEffectVerdict call in shadow and applied modes (for the fire-point line).
+	static int zeroHonestLast;
+	/// The hook: judges, logs [AITRACE] ai2a (mode 1 and up), true when mode 2+ rejects this attack.
+	bool zeroEffectReject(const char *site, BattleActionType type, BattleItem *weapon, const BattleUnit *target);
+	/// AI2-B1 (bench flag OXCE_AI_SNIPER_AOE_EFFICACY): 0 off, 1 shadow (judge and log only), 2 a sniper area attack whose
+	/// explosiveEfficacy (same inputs as grenadeAction/projectileAction) is 0 is not offered.
+	static int sniperAoeMode();
+	/// The hook: logs [AITRACE] ai2b=sniper_aoe for a sniper area attack (mode 1 and up), true when mode 2 rejects it.
+	bool sniperAoeEfficacyReject(const BattleAction &chosen, BattleUnit *target);
+	/// AI2-B1 diagnostics: [AITRACE] ai2b=<site> with the explosiveEfficacy verdict and its inputs (mode 1 and up), no RNG.
+	void aoeEfficacyTrace(const char *site, BattleActionType type, BattleItem *weapon, BattleItem *damageItem, BattleUnit *target,
+		Position tpos, int radius, bool grenade, int eff, bool reject);
 };
 
 }

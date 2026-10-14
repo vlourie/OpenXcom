@@ -170,7 +170,7 @@ void Game::run()
 	// a frame drawn only every 16th loop - nobody watches, and the clock no longer waits for frames;
 	// in the fast mode (OXCE_AI_FAST) no frame at all
 	// OXCE_AI_REALTIME=1: the probe's bot plays on the real clock with the player's frame pacing (frame-time measurements)
-	Timer::probeClock = AiProbe::active() && !getenv("OXCE_AI_REALTIME");
+	Timer::probeClock = AiProbe::harness() && !getenv("OXCE_AI_REALTIME");
 	const bool probeNoDraw = AiProbe::fast();
 	Uint32 probeLoops = 0;
 

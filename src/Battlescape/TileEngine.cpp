@@ -1509,7 +1509,10 @@ bool TileEngine::calculateUnitsInFOV(BattleUnit* unit, const Position eventPos, 
 							{
 								bu->setVisible(true);
 							}
-							if ((( bu->getFaction() == FACTION_HOSTILE && unit->getFaction() == FACTION_PLAYER )
+							// UPSTREAM_SPOT (bench, upstream 6ee48e7d1): neutrals keep the hostile units they see too
+							const bool seesHostiles = unit->getFaction() == FACTION_PLAYER
+								|| (AiProbe::upstreamSpot() && unit->getFaction() != FACTION_HOSTILE);
+							if ((( bu->getFaction() == FACTION_HOSTILE && seesHostiles )
 								|| ( bu->getFaction() != FACTION_HOSTILE && unit->getFaction() == FACTION_HOSTILE ))
 								&& !unit->hasVisibleUnit(bu))
 							{
@@ -1524,6 +1527,7 @@ bool TileEngine::calculateUnitsInFOV(BattleUnit* unit, const Position eventPos, 
 									unit->getFaction(),
 									std::max(unit->getSpotterDuration(), bu->getTurnsLeftSpottedForSnipersByFaction(unit->getFaction()))
 								); // defaults to 0 = no information given to snipers
+								bu->updateHonestKnownPosition(unit->getFaction(), _save, BattleUnit::AI_REVEAL_FOV, unit, 1, 1); // AI2-H FAIR KNOWLEDGE: an honest sighting (h5: in sector, visible())
 							}
 
 							x = y = sizeOther; //If a unit's tile is visible there's no need to check the others: break the loops.
@@ -1864,13 +1868,15 @@ std::tuple<int, int, int, int, int> getTrajectoryDataHelper(TileEngine* te, cons
 bool TileEngine::visible(BattleUnit *currentUnit, Tile *tile)
 {
 	// if there is no tile or no unit, we can't see it
-	if (!tile || !tile->getUnit())
+	// AI2-H h7: the unit on the tile as the AI's geometry has it (Tile::getUnit unless AiKnownPlace has moved units)
+	BattleUnit *tileUnit = tile ? AiKnownPlace::unitOn(tile) : 0;
+	if (!tile || !tileUnit)
 	{
 		return false;
 	}
 
 	// friendlies are always seen
-	if (currentUnit->getFaction() == tile->getUnit()->getFaction()) return true;
+	if (currentUnit->getFaction() == tileUnit->getFaction()) return true;
 
 	// if beyond global max. range, nobody can see anyone
 	int currentDistanceSq = Position::distance2dSq(currentUnit->getPosition(), tile->getPosition());
@@ -1881,10 +1887,10 @@ bool TileEngine::visible(BattleUnit *currentUnit, Tile *tile)
 
 	// psi vision
 	int psiVisionDistance = currentUnit->getPsiVision();
-	bool fearImmune = tile->getUnit()->getArmor()->getFearImmune();
+	bool fearImmune = tileUnit->getArmor()->getFearImmune();
 	if (psiVisionDistance > 0 && !fearImmune)
 	{
-		int psiCamo = tile->getUnit()->getArmor()->getPsiCamouflage();
+		int psiCamo = tileUnit->getArmor()->getPsiCamouflage();
 		if (psiCamo > 0)
 		{
 			psiVisionDistance = std::min(psiVisionDistance, psiCamo);
@@ -1899,7 +1905,7 @@ bool TileEngine::visible(BattleUnit *currentUnit, Tile *tile)
 		}
 	}
 
-	const auto [visibleDistanceMaxVoxel, visibleDistanceUnitMaxTile] = getVisibleDistanceMaxHelper(this, tile, currentUnit, tile->getUnit());
+	const auto [visibleDistanceMaxVoxel, visibleDistanceUnitMaxTile] = getVisibleDistanceMaxHelper(this, tile, currentUnit, tileUnit);
 
 	Position originVoxel = getSightOriginVoxel(currentUnit);
 
@@ -1921,7 +1927,7 @@ bool TileEngine::visible(BattleUnit *currentUnit, Tile *tile)
 		// Even if MaxViewDistance will be increased via ruleset, smoke will keep effect.
 		int visibilityQuality = visibleDistanceMaxVoxel - visibleDistanceVoxels - ((densityOfSmoke - densityOfSmokeNearUnit / 2) * smokeDensityFactor + (densityOfFire - densityOfFireeNearUnit / 2) * fireDensityFactor) * visibleDistanceMaxVoxel/(3 * 20 * 100 * 16);
 		ModScript::VisibilityUnit::Output arg{ visibilityQuality, visibilityQuality, ScriptTag<BattleUnitVisibility>::getNullTag() };
-		ModScript::VisibilityUnit::Worker worker{ currentUnit, tile->getUnit(), tile, visibleDistanceVoxels, visibleDistanceMaxVoxel, visibleDistanceUnitMaxTile, densityOfSmoke, densityOfFire, densityOfSmokeNearUnit, densityOfFireeNearUnit };
+		ModScript::VisibilityUnit::Worker worker{ currentUnit, tileUnit, tile, visibleDistanceVoxels, visibleDistanceMaxVoxel, visibleDistanceUnitMaxTile, densityOfSmoke, densityOfFire, densityOfSmokeNearUnit, densityOfFireeNearUnit };
 		worker.execute(currentUnit->getArmor()->getScript<ModScript::VisibilityUnit>(), arg);
 		unitSeen = 0 < arg.getFirst();
 	}
@@ -2198,13 +2204,28 @@ bool TileEngine::canTargetUnit(Position *originVoxel, Tile *tile, Position *scan
 	Position targetVoxel = tile->getPosition().toVoxel() + Position(8, 8, 0);
 	std::vector<Position> _trajectory;
 	bool hypothetical = potentialUnit != 0;
+	// AI2-H h7: the unit on the tile as the AI's geometry has it (Tile::getUnit unless AiKnownPlace has moved units)
+	BattleUnit *tileUnit = AiKnownPlace::unitOn(tile);
 	if (potentialUnit == 0)
 	{
-		potentialUnit = tile->getUnit();
+		potentialUnit = tileUnit;
 		if (potentialUnit == 0) return false; //no unit in this tile, even if it elevated and appearing in it.
 	}
 
 	if (potentialUnit == excludeUnit) return false; //skip self
+
+	// AI2-G HYPO_LOS (bench flag OXCE_AI_HYPO_LOS, read once; 0 - as D1, and always 0 in a release build). With 1 a hypothetical
+	// unit - the AI asks whether it would be seen standing on a tile where it does not stand - is seen when a line reaches the
+	// place of its body unhit. A unit that does stand on the tile (a real target, the AI's own tile) keeps the ordinary check:
+	// a line by its body that misses it is no hit. The scan, the hit rule and the other calls are as before; no random numbers.
+	// The scan goes on to its end so that the old verdict is known too (AiProbe::hypoNote, diagnostics only); the answer and the
+	// returned voxel are those of the first line that gave a true one, as a return right at it would give.
+	static const bool hypoLos = AiProbe::param("OXCE_AI_HYPO_LOS", 0) == 1;
+	const bool diag = hypoLos && hypothetical && !AiProbe::hypoForceOld();
+	const bool fixLos = diag && tileUnit != potentialUnit;
+	const bool onTile = diag && !fixLos;
+	bool lineFree = false;
+	Position firstFree;
 
 	int targetMinHeight = targetVoxel.z - tile->getTerrainLevel();
 	targetMinHeight += potentialUnit->getFloatHeight();
@@ -2268,10 +2289,27 @@ bool TileEngine::canTargetUnit(Position *originVoxel, Tile *tile, Position *scan
 							_trajectory.at(0).z >= targetMinHeight &&
 							_trajectory.at(0).z <= targetMaxHeight)
 						{
+							if (diag)
+							{
+								if (fixLos && lineFree)
+								{
+									*scanVoxel = firstFree;
+								}
+								AiProbe::hypoNote(potentialUnit, excludeUnit, tile->getPosition(), true, true, onTile, lineFree);
+							}
 							return true;
 						}
 					}
 				}
+			}
+			else if (test == V_EMPTY && diag)
+			{
+				// AI2-G HYPO_LOS: the line reached this point of the body's place unhit
+				if (!lineFree)
+				{
+					firstFree = *scanVoxel;
+				}
+				lineFree = true;
 			}
 			else if (test == V_EMPTY && hypothetical && !_trajectory.empty())
 			{
@@ -2282,6 +2320,15 @@ bool TileEngine::canTargetUnit(Position *originVoxel, Tile *tile, Position *scan
 				Tile *tileObstacle = _save->getTile(_trajectory.at(0).toTile());
 				if (tileObstacle) tileObstacle->setObstacle(test);
 			}
+		}
+	}
+	if (diag)
+	{
+		AiProbe::hypoNote(potentialUnit, excludeUnit, tile->getPosition(), false, fixLos && lineFree, onTile, lineFree);
+		if (fixLos && lineFree)
+		{
+			*scanVoxel = firstFree;
+			return true;
 		}
 	}
 	return false;
@@ -2628,6 +2675,19 @@ std::vector<TileEngine::ReactionScore> TileEngine::getSpottingUnits(BattleUnit* 
 						unit->setVisible(true);
 					}
 					bu->addToVisibleUnits(unit);
+					if (AiProbe::upstreamSpot())
+					{
+						// UPSTREAM_SPOT (bench, upstream 6ee48e7d1): the reacting unit's side spotted the walker
+						unit->setTurnsSinceSpottedByFaction(bu->getFaction(), 0);
+						unit->setTurnsLeftSpottedForSnipersByFaction(
+							bu->getFaction(),
+							std::max(bu->getSpotterDuration(), unit->getTurnsLeftSpottedForSnipersByFaction(bu->getFaction()))
+						); // defaults to 0 = no information given to snipers
+						if (bu->getFaction() != unit->getFaction())
+						{
+							unit->updateHonestKnownPosition(bu->getFaction(), _save, BattleUnit::AI_REVEAL_REACTION, bu, gotHit ? 1 : 0, bu->checkViewSector(unit->getPosition()) ? 1 : 0); // AI2-H FAIR KNOWLEDGE: an honest sighting (h5: a = got hit, b = in sector)
+						}
+					}
 					ReactionScore rs = determineReactionType(bu, unit);
 					if (rs.attackType != BA_NONE)
 					{
@@ -2866,6 +2926,13 @@ bool TileEngine::tryReaction(ReactionScore *reaction, BattleUnit *target, const 
 				ai->explosiveEfficacy(action.target, unit, radius, -1) == 0)
 			{
 				action.targeting = false;
+			}
+			// AI3-FF (bench): OXCE_AI_FF_RISK bit 4 - the reaction shot keeps AIModule::projectileAction's rule
+			static const int ffRisk = (int)AiProbe::param("OXCE_AI_FF_RISK", 0);
+			if ((ffRisk & 4) && action.targeting && action.type != BA_HIT && ai->ffLineRisk(action.target))
+			{
+				action.targeting = false;
+				AiProbe::note(unit, "ff.sec.react");
 			}
 		}
 
@@ -3163,7 +3230,11 @@ bool TileEngine::hitUnit(BattleActionAttack attack, BattleUnit *target, const Po
 	const int healthOrig = target->getHealth();
 	const int stunLevelOrig = target->getStunlevel();
 
+	AiProbe::BlastPre blastPre;
+	const bool blastNote = AiProbe::blastBefore(target, blastPre);
 	target->damage(relative, damage, type, _save, attack);
+	if (blastNote)
+		AiProbe::blastAfter(_save, target, relative, damage, blastPre);
 
 	const int healthDamage = healthOrig - target->getHealth();
 	const int stunDamage = target->getStunlevel() - stunLevelOrig;
@@ -3354,11 +3425,13 @@ void TileEngine::explode(BattleActionAttack attack, Position center, int power, 
 	std::map<Tile*, int> tilesAffected;
 	std::vector<BattleItem*> toRemove;
 	std::pair<std::map<Tile*, int>::iterator, bool> ret;
+	const int powerIn = power;
 
 	if (type->FireBlastCalc)
 	{
 		power /= 2;
 	}
+	AiProbe::blastBegin(_save, attack, center, powerIn, power, type, maxRadius);
 
 	int exHeight = Clamp(Options::battleExplosionHeight, 0, 3);
 	int vertdec = 1000; //default flat explosion
@@ -3415,6 +3488,7 @@ void TileEngine::explode(BattleActionAttack attack, Position center, int power, 
 					if (ret.second)
 					{
 						const int damage = type->getRandomDamage(power_);
+						AiProbe::blastTile(power_, l, damage);
 						BattleUnit *bu = dest->getOverlappingUnit(_save);
 
 						toRemove.clear();
@@ -3526,6 +3600,8 @@ void TileEngine::explode(BattleActionAttack attack, Position center, int power, 
 			}
 		}
 	}
+
+	AiProbe::blastEnd(_save);
 
 	// now detonate the tiles affected by explosion
 	if (type->ToTile > 0.0f)
@@ -4695,7 +4771,8 @@ VoxelType TileEngine::voxelCheck(Position voxel, BattleUnit *excludeUnit, bool e
 		_cacheTileBelow = tileBelow;
  	}
 
-	if (tile->isVoid() && tile->getUnit() == 0 && (!tileBelow || tileBelow->getUnit() == 0))
+	if (tile->isVoid() && tile->getUnit() == 0 && (!tileBelow || tileBelow->getUnit() == 0)
+		&& (!AiKnownPlace::any() || (!AiKnownPlace::knownOn(tile) && (!tileBelow || !AiKnownPlace::knownOn(tileBelow)))))
 	{
 		return V_EMPTY;
 	}
@@ -4727,6 +4804,10 @@ VoxelType TileEngine::voxelCheck(Position voxel, BattleUnit *excludeUnit, bool e
 		}
 	}
 
+	if (!excludeAllUnits && AiKnownPlace::any())
+	{
+		return voxelCheckKnown(voxel, tile, excludeUnit, onlyVisible, excludeAllBut);
+	}
 	if (!excludeAllUnits)
 	{
 		BattleUnit *unit = tile->getOverlappingUnit(_save);
@@ -4764,6 +4845,126 @@ VoxelType TileEngine::voxelCheck(Position voxel, BattleUnit *excludeUnit, bool e
 				{
 					return V_UNIT;
 				}
+			}
+		}
+	}
+	return V_EMPTY;
+}
+
+/**
+ * AI2-H h7 (variant B): voxelCheck's unit test while AiKnownPlace has moved units (the terrain is already tested). A moved
+ * unit is, for the AI's geometry, only at its known place: its true body stops no line, its body at the known place does,
+ * with the part of a 2x2 body taken from the known place. OXCE_AI_FAIR_TRUEBODY=1 - the control: the h6 geometry (the true
+ * body stays, no body at the known place), only a part outside a 2x2 body is no hit instead of the crash.
+ * @return V_UNIT or V_EMPTY.
+ */
+VoxelType TileEngine::voxelCheckKnown(Position voxel, Tile *tile, BattleUnit *excludeUnit, bool onlyVisible, BattleUnit *excludeAllBut)
+{
+	// the voxelCheck test of one unit: 1 - hit, 0 - miss, -1 - the part of a 2x2 body is outside it
+	auto test = [&](BattleUnit *unit) -> int
+	{
+		Position unitpos = unit->getPosition();
+		int terrainHeight = 0;
+		for (int x = 0; x < unit->getArmor()->getSize(); ++x)
+		{
+			for (int y = 0; y < unit->getArmor()->getSize(); ++y)
+			{
+				Tile *tempTile = _save->getTile(unitpos + Position(x,y,0));
+				if (tempTile && tempTile->getTerrainLevel() < terrainHeight)
+				{
+					terrainHeight = tempTile->getTerrainLevel();
+				}
+			}
+		}
+		int tz = unitpos.z*24 + unit->getFloatHeight() - terrainHeight;
+		if (!((voxel.z > tz) && (voxel.z <= tz + unit->getHeight())))
+		{
+			return 0;
+		}
+		int x = 15 - voxel.x%16;
+		int y = voxel.y%16;
+		int part = 0;
+		if (unit->isBigUnit())
+		{
+			Position tilepos = tile->getPosition();
+			const int dx = tilepos.x - unitpos.x, dy = tilepos.y - unitpos.y;
+			if (dx < 0 || dx > 1 || dy < 0 || dy > 1)
+			{
+				return -1;
+			}
+			const static int parts[] = {1,0,3,2}; // as voxelCheck
+			part = parts[dx + dy*2];
+		}
+		int idx = (unit->getLoftemps(part) * 16) + y;
+		return (_voxelData->at(idx) & (1 << x)) ? 1 : 0;
+	};
+	auto counts = [&](BattleUnit *unit)
+	{
+		return unit != 0 && !unit->isOut() && unit != excludeUnit && (!excludeAllBut || unit == excludeAllBut) && (!onlyVisible || unit->getVisible());
+	};
+	const bool trueBody = AiKnownPlace::trueBody();
+	BattleUnit *unit = tile->getOverlappingUnit(_save);
+	BattleUnit *done = 0;
+	if (counts(unit))
+	{
+		if (AiKnownPlace::moved(unit) && !AiKnownPlace::atKnown(_save, unit, tile, true))
+		{
+			// the true body of a unit the AI has at another place
+			const int r = test(unit);
+			if (trueBody)
+			{
+				if (r < 0)
+				{
+					AiProbe::fairGeo(1, unit);
+				}
+				else if (r > 0)
+				{
+					AiProbe::fairGeo(0, unit);
+					return V_UNIT;
+				}
+			}
+			else if (r != 0)
+			{
+				AiProbe::fairGeo(r > 0 ? 2 : 3, unit);
+			}
+		}
+		else
+		{
+			const int r = test(unit);
+			if (r < 0)
+			{
+				AiProbe::fairGeo(1, unit);
+			}
+			else if (r > 0)
+			{
+				if (AiKnownPlace::moved(unit))
+				{
+					AiProbe::fairGeo(4, unit);
+				}
+				return V_UNIT;
+			}
+			done = unit;
+		}
+	}
+	if (!trueBody)
+	{
+		// the body at the known place; one from the tile below only if no unit stands on this tile for the AI
+		BattleUnit *known = AiKnownPlace::knownOn(tile);
+		if (!known && !AiKnownPlace::unitOn(tile))
+		{
+			known = AiKnownPlace::knownOverlapping(_save, tile);
+		}
+		if (known && known != done && counts(known))
+		{
+			const int r = test(known);
+			if (r < 0)
+			{
+				AiProbe::fairGeo(1, known);
+			}
+			else if (r > 0)
+			{
+				AiProbe::fairGeo(4, known);
+				return V_UNIT;
 			}
 		}
 	}

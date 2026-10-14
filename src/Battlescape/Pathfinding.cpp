@@ -385,6 +385,13 @@ bool Pathfinding::aStarPath(Position startPosition, Position endPosition, Battle
 				_path.push_back(pf->getPrevDir());
 				pf = pf->getPrevNode();
 			}
+			// U1 A* TOTAL TU COST (clean1: always in the bench): _totalTUCost holds the last neighbour the loop below tried,
+			// not this path; the terminal node's cost is the path's (every node on its chain was closed when it connected the
+			// next one)
+			if (AiProbe::astarCostFix())
+			{
+				_totalTUCost = currentNode->getTUCost(missile);
+			}
 			return true;
 		}
 
@@ -1214,7 +1221,13 @@ bool Pathfinding::isBlocked(const BattleUnit *unit, const Tile *tile, const int 
 					return true; // player know all visible units
 				if (unit->getFaction() == u->getFaction())
 					return true;
-				if (unit->getFaction() == FACTION_HOSTILE &&
+				if (AiProbe::upstreamSpot())
+				{
+					// UPSTREAM_SPOT (clean1: always in the bench, upstream 6ee48e7d1): the side knows every unit it spotted this turn
+					if (u->getTurnsSinceSpottedByFaction(unit->getFaction()) == 0)
+						return true;
+				}
+				else if (unit->getFaction() == FACTION_HOSTILE &&
 					std::find(unit->getUnitsSpottedThisTurn().begin(), unit->getUnitsSpottedThisTurn().end(), u) != unit->getUnitsSpottedThisTurn().end())
 					return true;
 				// KNOWN_OCCUPANT_PATH_V1 (bench): the target the AI already aims at here, spotted by its side this turn

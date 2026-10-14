@@ -24,6 +24,7 @@
 #include <cmath>
 #include <cstdint>
 #include <cstdlib>
+#include <cstring>
 #include <map>
 #include <unordered_map>
 #include <memory>
@@ -45,6 +46,8 @@
 #include "../Engine/RNG.h"
 #include "../Engine/Timer.h"
 #include "../Mod/Armor.h"
+#include "../Mod/Mod.h"
+#include "../Mod/RuleDamageType.h"
 #include "../Mod/RuleInventory.h"
 #include "../Mod/RuleItem.h"
 #include "../Mod/RuleSoldierBonus.h"
@@ -69,10 +72,24 @@ namespace OpenXcom
 namespace AiProbe
 {
 
+DmgNote dmgNote;
+
 #ifndef OXCE_AI_DEV
 
 // a release build: the bench is not compiled in, every entry point does nothing
+bool blastProbe() { return false; }
+void blastBegin(SavedBattleGame *, const BattleActionAttack &, const Position &, int, int, const RuleDamageType *, int) {}
+void blastTile(int, double, int) {}
+void blastEnd(SavedBattleGame *) {}
+bool blastBefore(const BattleUnit *, BlastPre &) { return false; }
+void blastAfter(SavedBattleGame *, const BattleUnit *, const Position &, int, const BlastPre &) {}
+void effDone(const EffNote &) {}
+void blastWaypoints(const BattleUnit *, const BattleUnit *, const std::list<Position> &) {}
+void blastDecision(SavedBattleGame *, const BattleUnit *, const BattleAction &, int) {}
 bool active() { return false; }
+bool harness() { return false; }
+bool play() { return false; }
+bool autoClose() { return false; }
 bool fast() { return false; }
 bool lightSkip(const TileEngine *, const BattleUnit *) { return false; }
 bool pathProf() { return false; }
@@ -106,14 +123,29 @@ void walkFovConfirm(BattlescapeGame *, const BattleUnit *) {}
 int walkFovSkip() { return 0; }
 bool walkFovKeep(BattlescapeGame *, const BattleUnit *) { return true; }
 bool botTurn(const SavedBattleGame *) { return false; }
+bool secondPassWrapped(SavedBattleGame *, const BattleUnit *left, const BattleUnit *selected) { return selected->getId() <= left->getId(); }
+void passStartNote(SavedBattleGame *, const BattleUnit *) {}
 bool panicTurnFix() { return false; }
 void panicState(SavedBattleGame *, bool) {}
 void shotDivider(SavedBattleGame *, const BattleUnit *, double) {}
 bool postWalkFix() { return false; }
+bool upstreamSpot() { return false; }
+bool upstreamVis() { return false; }
+bool upstreamSees(const BattleUnit *viewer, const BattleUnit *target, int)
+{
+	const auto *vis = const_cast<BattleUnit *>(viewer)->getVisibleUnits();
+	return std::find(vis->begin(), vis->end(), target) != vis->end();
+}
 bool postWalkAi(const SavedBattleGame *, const BattleUnit *, bool) { return false; }
 void postWalkBegin(SavedBattleGame *, BattleUnit *, const BattleAction &, bool) {}
 void postWalkEnd(SavedBattleGame *, const BattleUnit *, bool) {}
 void postWalkMelee(const BattleUnit *) {}
+bool counterFix() { return false; }
+bool counterCheck(SavedBattleGame *, const BattleUnit *, int) { return false; }
+void counterOwn(SavedBattleGame *, const BattleUnit *, int) {}
+bool astarCostFix() { return false; }
+bool escapeSignFix() { return false; }
+bool staleEscapeFix() { return false; }
 long long battleSeed() { return -1; }
 void think(BattlescapeState *, SavedBattleGame *) {}
 void battleOver(BattlescapeState *, SavedBattleGame *, bool) {}
@@ -132,6 +164,7 @@ int turretsSeeing(SavedBattleGame *, BattleUnit *, const Position &) { return 0;
 bool flee(SavedBattleGame *, BattleUnit *, BattleAction *, const std::vector<int> &) { return false; }
 int maxActions(const BattleUnit *) { return 2; }
 double param(const char *, double def) { return def; }
+int nextRec() { return 0; }
 void tally(const BattleUnit *, const char *) {}
 void note(const BattleUnit *, const char *) {}
 void propose(const BattleUnit *, char, const char *, int, const BattleAction &) {}
@@ -174,15 +207,92 @@ void logCasualty(SavedBattleGame *, const BattleUnit *, const BattleUnit *, cons
 void event(SavedBattleGame *, const char *, const BattleUnit *, const Position &) {}
 void medikitBefore(const BattleUnit *, int) {}
 void medikitAfter(const BattleUnit *, int, int) {}
+int hypoLos() { return 0; }
+bool hypoForceOld() { return false; }
+void hypoNote(const BattleUnit *, const BattleUnit *, const Position &, bool, bool, bool, bool) {}
+void hypoBegin(const BattleUnit *, const char *, int) {}
+void hypoEnd(const BattleUnit *, const char *, bool, const Position &, int) {}
+void hypoAmbushNode(const Position &, bool) {}
+void hypoPre(const Position &, int) {}
+void hypoScale(const Position &, int, int) {}
+HypoTag::HypoTag(const char *) : prev(nullptr) {}
+HypoTag::~HypoTag() {}
+HypoOld::HypoOld() : prev(false) {}
+HypoOld::~HypoOld() {}
+int fairKnowledge() { return 0; }
+int fairPlace(const SavedBattleGame *, const BattleUnit *, const BattleUnit *, Position &, int &) { return 0; }
+void fairNote(const BattleUnit *, const BattleUnit *, const char *, int, const Position &, const Position &) {}
+void fairDecision(SavedBattleGame *, const BattleUnit *, const BattleAction &) {}
+void fairProbe(const BattleUnit *, const BattleUnit *, const Position &, const BattleUnit *) {}
+void fairSaveCheck(SavedBattleGame *) {}
+void fairWrite(const SavedBattleGame *, const BattleUnit *, int, const char *, const int *, const int *, const BattleUnit *, int, int, const char *) {}
+void fairDeny(const SavedBattleGame *, const BattleUnit *, int, const char *, const int *, bool, const BattleUnit *, int, int) {}
+bool fairSideSeesNow(const SavedBattleGame *, int, const BattleUnit *) { return false; }
+void fairGeo(int, const BattleUnit *) {}
+int fairState(SavedBattleGame *, const BattleUnit *, BattleUnit *, Position &, int &) { return 0; }
+void fairSel(const BattleUnit *, const BattleUnit *, const char *, int, int, int, const char *, const Position &) {}
+void fairPick(const BattleUnit *, const BattleUnit *, const char *, int, const char *, int) {}
+bool meleeFirepointApproach() { return false; }
 
 #else
 
 namespace
 {
 
-bool envOn(const char *name)
+/// AI3 in the game (Options::oxceAi3, or OXCE_AI3_PLAY): the bench switches the shipped AI plays with - the accepted
+/// AI2 base h9c plus AI3 A (LEEROY_TU_FIX) and F (BOT_SPECIAL, BOT_WP_MELEE). Built in, not read from the environment.
+struct ProfileFlag { const char *name; const char *value; };
+const ProfileFlag AI3_PROFILE[] = {
+	{ "OXCE_AI_AMBUSH_MEMO", "1" }, { "OXCE_AI_BLOCKED_STEP", "1" }, { "OXCE_AI_EFFICACY_NO_DIFF", "1" },
+	{ "OXCE_AI_ESCAPE_REACH_FIRST", "1" }, { "OXCE_AI_FAIR_KNOWLEDGE", "1" }, { "OXCE_AI_HYPO_LOS", "1" },
+	{ "OXCE_AI_LEEROY_STALE_FIX", "1" }, { "OXCE_AI_LIGHTSKIP", "1" }, { "OXCE_AI_MELEE_FIREPOINT_APPROACH", "1" },
+	{ "OXCE_AI_PATROL_STUN_PREFIX", "1" }, { "OXCE_AI_RESERVE_AFFORDABLE", "2" }, { "OXCE_AI_SNIPER_AOE_EFFICACY", "2" },
+	{ "OXCE_AI_STALE_EXACT", "1" }, { "OXCE_AI_STALE_PATROL_NODE", "1" }, { "OXCE_AI_WALKFOV_SKIP", "1" },
+	{ "OXCE_AI_ZERO_EFFECT", "3" }, { "OXCE_AI_ZERO_HONEST", "2" },
+	{ "OXCE_AI_LEEROY_TU_FIX", "1" }, { "OXCE_AI_BOT_SPECIAL", "1" }, { "OXCE_AI_BOT_WP_MELEE", "1" },
+};
+/// What the game mode still reads from the environment: the record and its probes (they write logs, not decisions), and
+/// the player bot with its own switches (it plays only when OXCE_AI_BOT is set). Every other OXCE_AI_* switch - the
+/// rejected experiments and the smarter enemy (TACTICS) among them - keeps its built-in default in the game.
+const char *const AI3_ENV_OK[] = {
+	"OXCE_AI_RECORD", "OXCE_AI_RECORD_PATH", "OXCE_AI_RECORD_REUSE", "OXCE_AI_TRACE_DECISION", "OXCE_AI_MEDIPROBE",
+	"OXCE_AI_BLAST_PROBE", "OXCE_AI_FAIR_SAVECHECK", "OXCE_AI_PATHPROF", "OXCE_AI_AMBUSHPROF", "OXCE_AI_ESCAPEPROF",
+	"OXCE_AI_WALKFOVPROF", "OXCE_AI_SEED", "OXCE_AI_PROBE_SAVE", "OXCE_AI_PROBE_TURNS",
+	"OXCE_AI_BOT", "OXCE_AI_CAREFUL", "OXCE_AI_EVAL", "OXCE_AI_EVAL_RISK", "OXCE_AI_EVAL_COVER", "OXCE_AI_EVAL_COVERTU",
+	"OXCE_AI_EVAL_WALK", "OXCE_AI_ARMS", "OXCE_AI_WATCH", "OXCE_AI_HALF", "OXCE_AI_GAP", "OXCE_AI_REVIVE", "OXCE_AI_TURRET",
+	"OXCE_AI_FLEE", "OXCE_AI_ACTIONS",
+};
+
+bool rawOn(const char *name)
 {
 	const char *s = getenv(name);
+	return s && *s && *s != '0';
+}
+
+/// The value of a bench switch: under the harness and with AI3 off - the environment, as before; in the game mode - the
+/// built-in profile, the environment for AI3_ENV_OK, nothing for any other OXCE_AI_* switch.
+const char *ai3Env(const char *name)
+{
+	if (harness() || !play())
+	{
+		return getenv(name);
+	}
+	for (const auto &f : AI3_PROFILE)
+	{
+		if (strcmp(f.name, name) == 0)
+			return f.value;
+	}
+	for (const char *n : AI3_ENV_OK)
+	{
+		if (strcmp(n, name) == 0)
+			return getenv(name);
+	}
+	return strncmp(name, "OXCE_AI_", 8) == 0 ? nullptr : getenv(name);
+}
+
+bool envOn(const char *name)
+{
+	const char *s = ai3Env(name);
 	return s && *s && *s != '0';
 }
 
@@ -206,6 +316,13 @@ int postWalkMeleeUnit = -1;
 enum { PW_WALKS, PW_FA_REQ, PW_FA_EXEC, PW_TURN_REQ, PW_TURN_EXEC, PW_MELEE_REQ, PW_MELEE_PUSH, PW_MELEE_BEGUN, PW_HIDE_REQ,
 	PW_HIDE_EXEC, PW_N };
 int postWalkCount[2][PW_N] = {};
+
+/// COUNTER_FIX: the unit whose decision last raised the AI action counter (its id, turn and side).
+int counterUnit = -1, counterTurn = -1, counterSide = -1;
+
+/// P0-D SECOND_PASS: where the side's turn traversal began - the index of the first unit handleAI got in that turn.
+const SavedBattleGame *passStartSave = nullptr;
+int passStartTurn = -1, passStartSide = -1, passStartIdx = 0;
 
 /// Does the AI play the player's side too (OXCE_AI_BOT)?
 bool bot()
@@ -270,6 +387,10 @@ void walkFovReport();
 void walkFovSkipReport();
 /// REPEATED_BLOCKED_STEP_V1's totals at the end of the battle (defined with the rule below)
 void blockedStepReport();
+/// AI2-G HYPO_LOS: the battle's sums, and a caller's score of a candidate tile (defined at the end)
+void hypoReport();
+void hypoScore(const char *what, const Position &pos, int score);
+void hypoAmbushAccepted();
 
 void logStart(SavedBattleGame *save)
 {
@@ -339,7 +460,7 @@ void logResult(SavedBattleGame *save, const char *how)
 		litHostile += bu->getOriginalFaction() == FACTION_HOSTILE && bu->getArmor()->getPersonalLightHostile() > 0;
 		litNow += save->getTileEngine()->unitLightPower(bu) > 0;
 	}
-	const char *ls = getenv("OXCE_AI_LIGHTSKIP");
+	const char *ls = ai3Env("OXCE_AI_LIGHTSKIP");
 	Log(LOG_INFO) << "[AILIGHT] lightskip=" << (ls ? ls : "-")
 		<< " lighting_recalc_count=" << lightRecalc << " lighting_skipped_count=" << lightSkipped
 		<< " units_with_personalLightHostile=" << litHostile << " units_lit_now=" << litNow
@@ -373,19 +494,39 @@ void logResult(SavedBattleGame *save, const char *how)
 	walkFovReport();
 	walkFovSkipReport();
 	blockedStepReport();
+	hypoReport();
 }
 
+}
+
+bool harness()
+{
+	static const bool on = rawOn("OXCE_AI_PROBE");
+	return on;
+}
+
+bool play()
+{
+	static const bool on = !harness() && (Options::oxceAi3 || rawOn("OXCE_AI3_PLAY"));
+	return on;
 }
 
 bool active()
 {
-	static const bool on = envOn("OXCE_AI_PROBE");
+	static const bool on = harness() || play();
+	return on;
+}
+
+bool autoClose()
+{
+	static const bool on = harness() || (play() && bot());
 	return on;
 }
 
 bool fast()
 {
-	static const bool on = active() && envOn("OXCE_AI_FAST");
+	// the play mode draws and plays sound like any game
+	static const bool on = harness() && envOn("OXCE_AI_FAST");
 	return on;
 }
 
@@ -408,7 +549,7 @@ bool botTurn(const SavedBattleGame *save)
 
 bool panicTurnFix()
 {
-	static const bool on = bot() && envOn("OXCE_AI_PANIC_TURN_FIX");
+	static const bool on = bot(); // clean1: P0-A always in the bench
 	return on;
 }
 
@@ -461,7 +602,7 @@ bool pickUp(const BattleUnit *unit)
 
 double param(const char *name, double def)
 {
-	const char *s = getenv(name);
+	const char *s = ai3Env(name);
 	return s && *s ? atof(s) : def;
 }
 
@@ -517,6 +658,10 @@ void battleOver(BattlescapeState *state, SavedBattleGame *save, bool abort)
 	logState(save, "end");
 	logResult(save, abort ? "abort" : "over");
 	phase = FINISHED;
+	if (play())
+	{
+		return; // the game goes on to the debriefing
+	}
 	state->getGame()->quit();
 }
 
@@ -538,6 +683,29 @@ void think(BattlescapeState *state, SavedBattleGame *save)
 		viewLevel = view;
 	}
 	recordTurn(save);
+	if (play())
+	{
+		if (!started)
+		{
+			logStart(save);
+		}
+		if (save->getSide() == FACTION_HOSTILE && aiStartLogged != save->getTurn())
+		{
+			aiStartLogged = save->getTurn();
+			logState(save, "aistart");
+		}
+		// OXCE_AI3_QUIT_TURN=<n>: a headless check leaves on that turn (the log shows the battle so far); never set in play
+		static const int quitTurn = [] { const char *s = getenv("OXCE_AI3_QUIT_TURN"); return s ? atoi(s) : 0; }();
+		if (quitTurn > 0 && save->getTurn() > quitTurn && save->getSide() == FACTION_PLAYER)
+		{
+			recordEnd(save);
+			logState(save, "end");
+			logResult(save, "timeout");
+			phase = FINISHED;
+			state->getGame()->quit();
+		}
+		return;
+	}
 	if (bot())
 	{
 		// both sides are the AI's: watch, log the start of each hostile turn, stop at the turn cap
@@ -1028,6 +1196,7 @@ const char *expoClass(char c)
 /// Positions are where the known stand (the engine's knowledge the AI uses); no RNG, no sighting update.
 void expoWrite(SavedBattleGame *save, BattleUnit *self)
 {
+	HypoTag hypoTag("expo");
 	const Expo &x = exec.expo;
 	TileEngine *te = save->getTileEngine();
 	const Position at = self->getPosition();
@@ -1603,8 +1772,111 @@ const SavedBattleGame *thinkSave = nullptr;
 
 bool postWalkFix()
 {
-	static const bool on = bot() && envOn("OXCE_AI_POSTWALK_FIX");
+	static const bool on = bot(); // clean1: P0-B always in the bench
 	return on;
+}
+
+bool counterFix()
+{
+	static const bool on = active(); // clean1: P0-C always in the bench
+	return on;
+}
+
+bool counterCheck(SavedBattleGame *save, const BattleUnit *unit, int counter)
+{
+	if (!counterFix() || counter == 0)
+	{
+		return false;
+	}
+	// the counter is another unit's (or another turn's): reset
+	return unit->getId() != counterUnit || save->getTurn() != counterTurn || (int)save->getSide() != counterSide;
+}
+
+void counterOwn(SavedBattleGame *save, const BattleUnit *unit, int)
+{
+	if (!active())
+	{
+		return;
+	}
+	counterUnit = unit->getId();
+	counterTurn = save->getTurn();
+	counterSide = (int)save->getSide();
+}
+
+bool secondPassWrapped(SavedBattleGame *save, const BattleUnit *left, const BattleUnit *selected)
+{
+	if (!botTurn(save)) // clean2: P0-D always in the bench, on the bot's turn
+	{
+		return selected->getId() <= left->getId();
+	}
+	// selectPlayerUnit goes forward from the left unit and wraps to the vector's start: the new unit is not further on
+	// along this turn's traversal, which began at passStartIdx (the player's turn begins with the unit last selected)
+	const auto *units = save->getUnits();
+	const int n = (int)units->size();
+	auto along = [units, n](const BattleUnit *u)
+	{
+		auto i = std::find(units->begin(), units->end(), u);
+		const int k = i == units->end() ? -1 : (int)(i - units->begin());
+		return ((k - passStartIdx) % n + n) % n;
+	};
+	return along(selected) <= along(left);
+}
+
+void passStartNote(SavedBattleGame *save, const BattleUnit *unit)
+{
+	if (!active())
+	{
+		return;
+	}
+	if (save != passStartSave || save->getTurn() != passStartTurn || (int)save->getSide() != passStartSide)
+	{
+		const auto *units = save->getUnits();
+		auto i = std::find(units->begin(), units->end(), unit);
+		passStartSave = save;
+		passStartTurn = save->getTurn();
+		passStartSide = (int)save->getSide();
+		passStartIdx = i == units->end() ? 0 : (int)(i - units->begin());
+	}
+}
+
+bool astarCostFix()
+{
+	static const bool on = active(); // clean1: U1 always in the bench
+	return on;
+}
+
+bool escapeSignFix()
+{
+	static const bool on = active(); // clean1: U2 always in the bench
+	return on;
+}
+
+bool staleEscapeFix()
+{
+	static const bool on = active(); // clean1: U3-A and U3-B always in the bench
+	return on;
+}
+
+bool upstreamSpot()
+{
+	static const bool on = active(); // clean1: upstream 6ee48e7d1 always in the bench
+	return on;
+}
+
+bool upstreamVis()
+{
+	static const bool on = active(); // clean1: upstream 613ec4a28 always in the bench
+	return on;
+}
+
+bool upstreamSees(const BattleUnit *viewer, const BattleUnit *target, int)
+{
+	if (upstreamVis())
+	{
+		return viewer->hasVisibleUnit(target);
+	}
+	const auto *vis = const_cast<BattleUnit *>(viewer)->getVisibleUnits();
+	return std::find(vis->begin(), vis->end(), target) != vis->end();
 }
 
 bool postWalkAi(const SavedBattleGame *save, const BattleUnit *unit, bool panicHandled)
@@ -1933,6 +2205,10 @@ void ambushBegin(SavedBattleGame *save, const BattleUnit *unit, const BattleUnit
 
 void ambushNode(int stage)
 {
+	if (stage == 2)
+	{
+		hypoAmbushAccepted();
+	}
 	if (amb.open && stage >= 0 && stage < 4)
 	{
 		++amb.stage[stage];
@@ -2575,6 +2851,7 @@ void modeOdds(const BattleUnit *unit, int patrol, int ambush, int combat, int es
 
 void traceTile(const BattleUnit *unit, const char *what, const Position &pos, int score)
 {
+	hypoScore(what, pos, score);
 	if (pending.trace && pending.unit == unit->getId())
 	{
 		std::ostringstream s;
@@ -2609,6 +2886,7 @@ void sideEnds(SavedBattleGame *save)
 	{
 		flushExec(save);
 	}
+	fairSaveCheck(save);
 	// endTurn comes back here after each explosion at the turn's end: the snapshot is the first call's
 	if (attrib() && !(fxArmed && fxSide == (int)save->getSide() && fxTurn == save->getTurn()))
 	{
@@ -2932,14 +3210,28 @@ const std::string &cfgText()
 		static const std::set<std::string> skip = { "OXCE_AI_SEED", "OXCE_AI_RECORD", "OXCE_AI_TRACE_DECISION", "OXCE_AI_PROBE_SAVE",
 			"OXCE_AI_BUILD", "OXCE_AI_KEEP_DECIDE", "OXCE_AI_MISSION", "OXCE_AI_CAMPAIGN", "OXCE_AI_EXE", "OXCE_AI_GAME", "OXCE_AI_WORK", "OXCE_AI_RECORD_PATH",
 			"OXCE_AI_FAST", "OXCE_AI_LIGHTSKIP", "OXCE_AI_PATHPROF", "OXCE_AI_AMBUSHPROF", "OXCE_AI_ESCAPEPROF", "OXCE_AI_RECORD_REUSE",
-			"OXCE_AI_AMBUSH_MEMO", "OXCE_AI_ESCAPE_REACH_FIRST", "OXCE_AI_WALKFOVPROF", "OXCE_AI_WALKFOV_SKIP" }; // the fast mode, the light skip, the profiles, the record's reuse, the ambush memo, the escape order and the display's FOV skip change what is computed, not how the bench plays
+			"OXCE_AI_AMBUSH_MEMO", "OXCE_AI_ESCAPE_REACH_FIRST", "OXCE_AI_WALKFOVPROF", "OXCE_AI_WALKFOV_SKIP", "OXCE_AI_BLAST_PROBE" }; // the fast mode, the light skip, the profiles, the record's reuse, the ambush memo, the escape order and the display's FOV skip change what is computed, not how the bench plays
 		std::vector<std::string> vars;
 		for (char **e = PROBE_ENVIRON; e && *e; ++e)
 		{
 			const std::string v = *e;
-			if (v.compare(0, 8, "OXCE_AI_") == 0 && !skip.count(v.substr(0, v.find('='))))
-				vars.push_back(v);
+			const std::string name = v.substr(0, v.find('='));
+			if (v.compare(0, 8, "OXCE_AI_") == 0 && !skip.count(name) && (harness() || !play() || ai3Env(name.c_str())))
+			{
+				vars.push_back(harness() || !play() ? v : name + "=" + ai3Env(name.c_str()));
+			}
 		}
+		if (!harness() && play())
+		{
+			for (const auto &f : AI3_PROFILE)
+			{
+				const std::string name = f.name;
+				if (!skip.count(name) && !getenv(f.name))
+					vars.push_back(name + "=" + f.value);
+			}
+		}
+		// clean2: the correctness fixes are compiled in, not read from the environment (clean1's and P0-D SECOND_PASS)
+		vars.push_back("OXCE_AI_CLEAN2_FIXES=ASTAR_COST,COUNTER,ESCAPE_SIGN,PANIC_TURN,POSTWALK,SECOND_PASS,STALE_ESCAPE,UPSTREAM_SPOT,UPSTREAM_VIS");
 		std::sort(vars.begin(), vars.end());
 		std::string out;
 		for (const auto &v : vars)
@@ -3110,6 +3402,21 @@ void writeRecord(SavedBattleGame *save, BattleUnit *unit, const BattleAction &ac
 		<< ",\"reason\":{\"trail\":" << trail << ",\"odds\":" << jlist(pending.odds, false) << ",\"props\":" << jlist(props, false) << "}}"
 		<< ",\"rule\":null}";
 	Log(LOG_INFO) << line.str();
+	blastDecision(save, unit, action, rec);
+	// AI2-A: the direct attack that leaves the AI, judged against whoever stands on its target tile (a zero one here is a leak)
+	if (AIModule::zeroEffectMode() >= 1 && action.weapon
+		&& (action.type == BA_HIT || action.type == BA_SNAPSHOT || action.type == BA_AUTOSHOT || action.type == BA_AIMEDSHOT))
+	{
+		Tile *tt = save->getTile(action.target);
+		const BattleUnit *victim = tt ? tt->getOverlappingUnit(save) : nullptr;
+		if (victim)
+		{
+			std::string terms;
+			const int v = AIModule::zeroEffectVerdict(save, unit, action.type, action.weapon, victim, &terms);
+			Log(LOG_INFO) << "[AITRACE] {\"ai2a\":\"exit\",\"rec\":" << rec << ",\"unit\":" << unit->getId() << ",\"side\":" << (int)unit->getFaction()
+				<< ",\"target\":" << victim->getId() << ",\"t\":" << (int)action.type << ",\"v\":" << v << terms << "}";
+		}
+	}
 	if (pending.trace)
 	{
 		std::ostringstream tiles;
@@ -3273,6 +3580,7 @@ void logDecision(SavedBattleGame *save, BattleUnit *unit, const BattleAction &ac
 		<< " seen=" << (seen.tellp() > 0 ? seen.str() : std::string("-"))
 		<< " hu=" << std::hex << hashUnits << " hi=" << hashItems << " ho=" << hashOrder << " hou=" << own.h << " hm=" << hashMap << " hr=" << hashRng
 		<< " hr0=" << rngBefore << " ha0=" << aiBefore << " ha=" << (ai ? ai->probeHash() : 0) << std::dec;
+	fairDecision(save, unit, action);
 	if (record())
 	{
 		reachFallback(save, unit);
@@ -3508,6 +3816,7 @@ bool escapeAlt(const BattleUnit *unit)
 void escapeAltWrite(SavedBattleGame *save, BattleUnit *unit, const std::vector<int> &reachable, const Position &chosen, int score,
 	int escapeTUs, bool run, const std::function<int(const Position &)> &spotting)
 {
+	HypoTag hypoTag("alt");
 	const Position at = unit->getPosition();
 	// the cost of each tile: the think's own findReachable, as the record took it (the same ask setupEscape's reachable comes from)
 	const bool haveTu = pending.unit == unit->getId() && !pending.wantReach;
@@ -3887,6 +4196,7 @@ int turretsSeeing(SavedBattleGame *save, BattleUnit *unit, const Position &pos)
 	{
 		return 0;
 	}
+	HypoTag hypoTag("turret");
 	// 12 % of the base's dead: the NINJA_RAID_SITE chaingun turret, median 15 tiles away - the engine's spotter count stops at 20
 	Tile *tile = save->getTile(pos);
 	if (!tile)
@@ -3924,6 +4234,7 @@ bool flee(SavedBattleGame *save, BattleUnit *unit, BattleAction *action, const s
 	{
 		return false;
 	}
+	HypoTag hypoTag("flee");
 	// 5 % of the base's turns: the soldier sees an enemy, stays put and spends under a quarter of its time units - killed
 	// in the enemy's turn 2.7 % (empty hands 6.6 %, health under half 36 %), 15 % of the losses in the enemy's turn;
 	// the cover rules need a tile fewer see than now, and next to the enemy there is none
@@ -4244,7 +4555,8 @@ void firepointTargetCellRejected(const BattleUnit *unit, const Position &cell, b
 
 bool knownOccupantPath()
 {
-	static const bool on = active() && envOn("OXCE_AI_KNOWN_OCCUPANT_PATH");
+	// UPSTREAM_SPOT blocks every unit the side spotted this turn, the target included: one mechanism, not two
+	static const bool on = active() && envOn("OXCE_AI_KNOWN_OCCUPANT_PATH") && !upstreamSpot();
 	return on;
 }
 
@@ -4289,7 +4601,7 @@ void knownOccupantWalked(const BattleUnit *unit, const BattleUnit *occupant, int
 
 bool knownOccupantPathV2()
 {
-	static const bool on = active() && envOn("OXCE_AI_KNOWN_OCCUPANT_PATH_V2") && !knownOccupantPath();
+	static const bool on = active() && envOn("OXCE_AI_KNOWN_OCCUPANT_PATH_V2") && !knownOccupantPath() && !upstreamSpot();
 	return on;
 }
 
@@ -4816,6 +5128,985 @@ void medikitAfter(const BattleUnit *unit, int kind, int used)
 		<< ",\"chance_en\":" << chanceEnergy << ",\"used\":" << used << ",\"why\":\"" << why << "\",\"hp1\":" << unit->getHealth()
 		<< ",\"stun1\":" << unit->getStunlevel() << ",\"fatal1\":" << unit->getFatalWounds() << ",\"tu1\":" << unit->getTimeUnits() << "}";
 	medikitSnap.unit = -1;
+}
+
+namespace
+{
+
+/// AI2-B2: the explosion TileEngine::explode is applying now, the ray tile it is on, and its hits so far
+struct Blast
+{
+	bool on = false;
+	int id = -1, hits = 0, owner = -1, ownerFaction = -1;
+	int rayPower = 0;
+	double l = 0;
+	Position center;
+	std::string head;
+};
+Blast blast;
+int blastNo = 0;
+/// what each recorded decision aimed at, and the throw that put each grenade where it lies (a delayed explosion)
+/// a waypoint launch (wayPointAction): the target unit, its tile (explosiveEfficacy's targetPos), the first and the last waypoint
+struct Waypoints { bool on = false; int target = -1, targetFaction = -1, count = 0; Position tactical, first, last; };
+struct Aim { int unit = -1, type = 0, turn = 0; Position to; std::string weapon; Waypoints wp; };
+std::map<int, Aim> aimOf;
+std::map<int, int> thrownBy;
+/// wayPointAction's last pick per unit, until that unit's next recorded decision
+std::map<int, Waypoints> waypointsOf;
+/// explosiveEfficacy's terms since the last recorded decision
+std::vector<EffNote> effNotes;
+
+bool attackKind(int type)
+{
+	return type == BA_THROW || type == BA_LAUNCH || type == BA_AUTOSHOT || type == BA_SNAPSHOT || type == BA_AIMEDSHOT
+		|| type == BA_HIT || type == BA_USE;
+}
+
+}
+
+bool blastProbe()
+{
+	static const bool on = envOn("OXCE_AI_BLAST_PROBE");
+	return on && record();
+}
+
+void blastBegin(SavedBattleGame *save, const BattleActionAttack &attack, const Position &center, int power, int powerUsed,
+	const RuleDamageType *type, int radius)
+{
+	if (!blastProbe())
+	{
+		return;
+	}
+	const bool nested = blast.on;
+	blast = Blast();
+	blast.on = true;
+	blast.id = blastNo++;
+	blast.center = center.toTile();
+	BattleItem *di = attack.damage_item;
+	BattleUnit *owner = attack.attacker;
+	// a grenade lying on the ground explodes with no attacker: the unit that threw it last
+	if (!owner && di)
+		owner = di->getPreviousOwner();
+	blast.owner = owner ? owner->getId() : -1;
+	blast.ownerFaction = owner ? (int)owner->getFaction() : -1;
+	int rec = -1;
+	const char *src = "none";
+	auto thrown = di ? thrownBy.find(di->getId()) : thrownBy.end();
+	if (thrown != thrownBy.end())
+	{
+		rec = thrown->second;
+		src = "item";
+	}
+	const bool inExec = attack.attacker && exec.rec >= 0 && attack.attacker->getId() == exec.unit;
+	if (rec < 0 && inExec)
+	{
+		rec = exec.rec;
+		src = "exec";
+	}
+	else if (rec < 0 && attack.attacker)
+	{
+		src = "other";
+	}
+	std::ostringstream h;
+	h << "[AIBLAST] {\"v\":1,\"b\":" << blast.id << ",\"turn\":" << save->getTurn() << ",\"side\":" << (int)save->getSide() << ",\"rec\":" << rec
+		<< ",\"src\":\"" << src << "\",\"inexec\":" << (inExec ? 1 : 0) << ",\"exec_rec\":" << exec.rec
+		<< ",\"att\":" << (attack.attacker ? attack.attacker->getId() : -1) << ",\"own\":" << blast.owner << ",\"of\":" << blast.ownerFaction
+		<< ",\"oof\":" << (owner ? (int)owner->getOriginalFaction() : -1) << ",\"at\":" << (int)attack.type
+		<< ",\"w\":" << quoted(attack.weapon_item ? attack.weapon_item->getRules()->getType() : std::string())
+		<< ",\"di\":" << quoted(di ? di->getRules()->getType() : std::string()) << ",\"dbt\":" << (di ? (int)di->getRules()->getBattleType() : -1)
+		<< ",\"dt\":" << (int)type->ResistType << ",\"pw\":" << power << ",\"pwu\":" << powerUsed << ",\"r\":" << radius
+		<< ",\"rr\":" << type->RadiusReduction << ",\"c\":" << pos(blast.center) << ",\"cv\":" << pos(center) << ",\"nested\":" << (nested ? 1 : 0);
+	auto aim = aimOf.find(rec);
+	if (aim != aimOf.end())
+	{
+		h << ",\"aim\":" << pos(aim->second.to) << ",\"aim_t\":" << aim->second.type << ",\"aim_u\":" << aim->second.unit << ",\"aim_turn\":"
+			<< aim->second.turn << ",\"aim_w\":" << quoted(aim->second.weapon);
+		const Waypoints &wp = aim->second.wp;
+		if (wp.on)
+		{
+			// a waypoint launch: aim is the first waypoint; the tactical target (the tile explosiveEfficacy weighed) apart
+			h << ",\"wp\":1,\"tac\":" << pos(wp.tactical) << ",\"tac_u\":" << wp.target << ",\"tac_f\":" << wp.targetFaction
+				<< ",\"wp0\":" << pos(wp.first) << ",\"wpn\":" << wp.count << ",\"wpz\":" << pos(wp.last);
+		}
+	}
+	else
+	{
+		h << ",\"aim\":null";
+	}
+	blast.head = h.str();
+}
+
+void blastTile(int power, double l, int)
+{
+	if (blast.on)
+	{
+		blast.rayPower = power;
+		blast.l = l;
+	}
+}
+
+void blastEnd(SavedBattleGame *)
+{
+	if (!blast.on)
+	{
+		return;
+	}
+	Log(LOG_INFO) << blast.head << ",\"hits\":" << blast.hits << "}";
+	blast = Blast();
+}
+
+bool blastBefore(const BattleUnit *unit, BlastPre &pre)
+{
+	if (!blast.on || !unit)
+	{
+		return false;
+	}
+	pre.hp = unit->getHealth();
+	pre.stun = unit->getStunlevel();
+	pre.fire = unit->getFire();
+	pre.tu = unit->getTimeUnits();
+	pre.morale = unit->getMorale();
+	pre.status = (int)unit->getStatus();
+	pre.down = isDown(unit);
+	for (int s = 0; s < 5; ++s)
+		pre.armor[s] = unit->getArmor((UnitSide)s);
+	dmgNote = DmgNote();
+	dmgNote.armed = true;
+	return true;
+}
+
+void blastAfter(SavedBattleGame *, const BattleUnit *unit, const Position &relative, int damage, const BlastPre &pre)
+{
+	const DmgNote n = dmgNote;
+	dmgNote = DmgNote();
+	if (!blast.on || !unit)
+	{
+		return;
+	}
+	++blast.hits;
+	const int hp = unit->getHealth(), stun = unit->getStunlevel();
+	const bool dead = hp <= 0;
+	const bool ko = !dead && stun >= hp;
+	const char *rel = "other";
+	if (unit->getId() == blast.owner)
+		rel = "self";
+	else if (blast.ownerFaction >= 0 && (int)unit->getFaction() == blast.ownerFaction)
+		rel = "ally";
+	else if ((blast.ownerFaction == FACTION_HOSTILE && unit->getFaction() == FACTION_PLAYER)
+		|| (blast.ownerFaction == FACTION_PLAYER && unit->getFaction() == FACTION_HOSTILE))
+		rel = "enemy";
+	else if (unit->getFaction() == FACTION_NEUTRAL)
+		rel = "civ";
+	const Position up = unit->getPosition();
+	const int side = n.reached ? n.side : -1;
+	Log(LOG_INFO) << "[AIBHIT] {\"v\":1,\"b\":" << blast.id << ",\"u\":" << unit->getId() << ",\"ut\":" << quoted(unit->getType())
+		<< ",\"f\":" << (int)unit->getFaction() << ",\"of\":" << (int)unit->getOriginalFaction() << ",\"rel\":\"" << rel << "\""
+		<< ",\"st0\":" << pre.status << ",\"down0\":" << (pre.down ? 1 : 0) << ",\"pos\":" << pos(up)
+		<< ",\"d2\":" << Position::distance2d(up, blast.center) << ",\"dz\":" << (up.z - blast.center.z) << ",\"l\":" << blast.l
+		<< ",\"rp\":" << blast.rayPower << ",\"dmg\":" << damage << ",\"rv\":" << pos(relative)
+		<< ",\"reached\":" << (n.reached ? 1 : 0) << ",\"side\":" << side << ",\"part\":" << (n.reached ? n.part : -1)
+		<< ",\"res\":" << n.resisted << ",\"scr\":" << n.scripted << ",\"arm\":" << n.armor << ",\"aa\":" << n.afterArmor
+		<< ",\"arm1\":" << (side >= 0 && side < 5 ? unit->getArmor((UnitSide)side) : -1)
+		<< ",\"armall\":[" << pre.armor[0] << "," << pre.armor[1] << "," << pre.armor[2] << "," << pre.armor[3] << "," << pre.armor[4] << "]"
+		<< ",\"mhp\":" << unit->getBaseStats()->health << ",\"hp\":[" << pre.hp << "," << hp << "],\"stun\":[" << pre.stun << "," << stun
+		<< "],\"fire\":[" << pre.fire << "," << unit->getFire() << "],\"tu\":[" << pre.tu << "," << unit->getTimeUnits()
+		<< "],\"mor\":[" << pre.morale << "," << unit->getMorale() << "],\"dead\":" << (dead ? 1 : 0) << ",\"ko\":" << (ko ? 1 : 0) << "}";
+}
+
+void effDone(const EffNote &note)
+{
+	if (blastProbe())
+	{
+		if (effNotes.size() >= 100000)
+			effNotes.clear();
+		effNotes.push_back(note);
+	}
+}
+
+void blastDecision(SavedBattleGame *save, const BattleUnit *unit, const BattleAction &action, int rec)
+{
+	if (!blastProbe())
+	{
+		return;
+	}
+	const int type = (int)action.type;
+	if (attackKind(type))
+	{
+		Aim &a = aimOf[rec];
+		a.unit = unit->getId();
+		a.type = type;
+		a.turn = save->getTurn();
+		a.to = action.target;
+		a.weapon = action.weapon ? action.weapon->getRules()->getType() : std::string();
+		a.wp = Waypoints();
+		auto wp = waypointsOf.find(unit->getId());
+		// matched by the waypoints alone: meleeAction (selectPointNearTarget) may move action.target to a tile next to the
+		// target after wayPointAction and keep BA_LAUNCH, and the missile still flies by these waypoints (aim stays action.target)
+		if (wp != waypointsOf.end() && action.type == BA_LAUNCH && !action.waypoints.empty() && action.waypoints.front() == wp->second.first
+			&& action.waypoints.back() == wp->second.last && (int)action.waypoints.size() == wp->second.count)
+		{
+			a.wp = wp->second;
+		}
+		// the tile explosiveEfficacy weighed: the target's own tile for a waypoint launch, the action's target otherwise
+		const Position weighed = a.wp.on ? a.wp.tactical : action.target;
+		if (action.type == BA_THROW && action.weapon)
+		{
+			thrownBy[action.weapon->getId()] = rec;
+		}
+		// the terms of the calls for this unit and this target: one line per radius and grenade flag, the last call wins
+		std::map<std::pair<int, int>, std::pair<const EffNote *, int>> last;
+		for (const auto &e : effNotes)
+		{
+			if (e.unit == unit->getId() && e.x == weighed.x && e.y == weighed.y && e.z == weighed.z)
+			{
+				auto &slot = last[{ e.radius, e.grenade ? 1 : 0 }];
+				slot.first = &e;
+				++slot.second;
+			}
+		}
+		for (const auto &l : last)
+		{
+			const EffNote &e = *l.second.first;
+			std::ostringstream u;
+			for (const auto &v : e.units)
+			{
+				u << (u.tellp() > 0 ? "," : "") << "[" << v[0] << "," << v[1] << "," << v[2] << "," << v[3] << "]";
+			}
+			Log(LOG_INFO) << "[AIEFF] {\"v\":1,\"rec\":" << rec << ",\"unit\":" << e.unit << ",\"t\":" << type << ",\"tpos\":[" << e.x << ","
+				<< e.y << "," << e.z << "],\"r\":" << e.radius << ",\"g\":" << (e.grenade ? 1 : 0) << ",\"diff\":" << e.diff << ",\"desp\":"
+				<< e.desp << ",\"hurt\":" << (e.hurt ? 1 : 0) << ",\"kami\":" << (e.kamikaze ? 1 : 0) << ",\"tf\":" << e.targetFaction
+				<< ",\"u\":[" << u.str() << "],\"en\":" << e.enemies << ",\"eff\":" << e.efficacy << ",\"res\":" << e.result
+				<< ",\"path\":\"" << e.path << "\",\"calls\":" << l.second.second << (a.wp.on ? ",\"wp\":1" : "")
+				<< (e.noDiff ? ",\"nodiff\":1}" : "}");
+		}
+	}
+	effNotes.clear();
+	waypointsOf.erase(unit->getId());
+}
+
+void blastWaypoints(const BattleUnit *unit, const BattleUnit *target, const std::list<Position> &waypoints)
+{
+	if (!blastProbe() || !unit || !target || waypoints.empty())
+	{
+		return;
+	}
+	Waypoints &w = waypointsOf[unit->getId()];
+	w.on = true;
+	w.target = target->getId();
+	w.targetFaction = (int)target->getFaction();
+	w.count = (int)waypoints.size();
+	w.tactical = target->getPosition();
+	w.first = waypoints.front();
+	w.last = waypoints.back();
+}
+
+int nextRec()
+{
+	return recordNo;
+}
+
+// AI2-G HYPO_LOS diagnostics (OXCE_AI_HYPO_LOS=1): see AiProbe.h. Nothing here is read by play.
+namespace
+{
+
+/// One candidate tile of a caller's search, in the order the caller met it: canTargetUnit's hypothetical verdicts on it
+/// without the fix (old) and with it (new), the escape's turret checks apart, the caller's score.
+struct HypoEntry
+{
+	Position pos;
+	int calls = 0, oldN = 0, newN = 0, unknown = 0, onTile = 0, naive = 0, tOld = 0, tNew = 0;
+	bool scored = false;
+	int score = 0, pre = INT_MIN, scaleD = 0, scaleP = 0;
+	int ambOld = -1, ambNew = 0;
+};
+struct HypoCtx
+{
+	std::string ctx;
+	const BattleUnit *unit = nullptr;
+	int spotNow = 0, rec = 0;
+	std::vector<HypoEntry> entries;
+};
+struct HypoSum
+{
+	long long calls = 0, flips = 0, toSeen = 0, onTile = 0, naive = 0, unknown = 0;
+};
+/// per context: begun, ended, contexts with a changed entry, entries, changed entries
+struct HypoCtxSum
+{
+	long long begun = 0, ended = 0, changed = 0, entries = 0, entriesChanged = 0;
+};
+std::vector<HypoCtx> hypoStack;
+const char *hypoTagNow = nullptr;
+bool hypoOldNow = false;
+std::map<std::string, HypoSum> hypoSums;
+std::map<std::string, HypoCtxSum> hypoCtxSums;
+std::set<std::pair<int, std::string>> hypoTagLogged;
+
+HypoEntry &hypoEntryAt(HypoCtx &c, const Position &pos)
+{
+	if (c.entries.empty() || c.entries.back().pos != pos || c.entries.back().scored)
+	{
+		c.entries.emplace_back();
+		c.entries.back().pos = pos;
+	}
+	return c.entries.back();
+}
+
+bool hypoChanged(const HypoEntry &e)
+{
+	return e.oldN != e.newN || e.tOld != e.tNew || (e.ambOld >= 0 && e.ambOld != e.ambNew);
+}
+
+void hypoScore(const char *what, const Position &pos, int score)
+{
+	if (!hypoLos() || hypoStack.empty() || hypoStack.back().ctx != what)
+	{
+		return;
+	}
+	HypoEntry &e = hypoEntryAt(hypoStack.back(), pos);
+	e.scored = true;
+	e.score = score;
+}
+
+void hypoAmbushAccepted()
+{
+	// the ambush node passed both checks with the fix (hypoAmbushNode opened its entry)
+	if (hypoLos() && !hypoStack.empty() && hypoStack.back().ctx == "ambush" && !hypoStack.back().entries.empty())
+	{
+		hypoStack.back().entries.back().ambNew = 1;
+	}
+}
+
+void hypoReport()
+{
+	if (!hypoLos())
+	{
+		return;
+	}
+	std::ostringstream s;
+	s << "[AITRACE] {\"ai2g\":\"sum\",\"open\":" << hypoStack.size() << ",\"calls\":{";
+	bool first = true;
+	for (const auto &k : hypoSums)
+	{
+		s << (first ? "" : ",") << "\"" << k.first << "\":[" << k.second.calls << "," << k.second.flips << "," << k.second.toSeen << ","
+			<< k.second.onTile << "," << k.second.naive << "," << k.second.unknown << "]";
+		first = false;
+	}
+	s << "},\"ctx\":{";
+	first = true;
+	for (const auto &k : hypoCtxSums)
+	{
+		s << (first ? "" : ",") << "\"" << k.first << "\":[" << k.second.begun << "," << k.second.ended << "," << k.second.changed << ","
+			<< k.second.entries << "," << k.second.entriesChanged << "]";
+		first = false;
+	}
+	s << "}}";
+	Log(LOG_INFO) << s.str();
+}
+
+}
+
+int hypoLos()
+{
+	static const int on = param("OXCE_AI_HYPO_LOS", 0) == 1 ? 1 : 0;
+	return on;
+}
+
+bool hypoForceOld()
+{
+	return hypoOldNow;
+}
+
+void hypoNote(const BattleUnit *potential, const BattleUnit *exclude, const Position &pos, bool oldSeen, bool newSeen, bool onTile,
+	bool lineFree)
+{
+	if (!hypoLos())
+	{
+		return;
+	}
+	HypoCtx *c = hypoStack.empty() ? nullptr : &hypoStack.back();
+	// the AI unit the check is made for, and the other unit - the one whose knowledge decides whether the AI may ask
+	const BattleUnit *ai = c && c->unit ? c->unit : potential;
+	const BattleUnit *other = potential == ai ? exclude : potential;
+	const bool flip = oldSeen != newSeen;
+	const bool unknown = flip && ai && other && other != ai
+		&& other->getTurnsSinceSpottedByFaction(ai->getFaction()) > ai->getIntelligence();
+	const bool naive = onTile && !oldSeen && lineFree;
+	const std::string key = hypoTagNow ? std::string("tag:") + hypoTagNow : (c ? c->ctx : std::string("none"));
+	HypoSum &sum = hypoSums[key];
+	++sum.calls;
+	sum.flips += flip ? 1 : 0;
+	sum.toSeen += !oldSeen && newSeen ? 1 : 0;
+	sum.onTile += onTile ? 1 : 0;
+	sum.naive += naive ? 1 : 0;
+	sum.unknown += unknown ? 1 : 0;
+	if (hypoTagNow && !(c && c->ctx == "escape" && std::strcmp(hypoTagNow, "turret") == 0))
+	{
+		// the probe's own checks and the on-tile control: one line per record and tag that flipped, for the first divergence
+		if (flip && hypoTagLogged.insert(std::make_pair(recordNo, std::string(hypoTagNow))).second)
+		{
+			Log(LOG_INFO) << "[AITRACE] {\"ai2g\":\"tag\",\"tag\":\"" << hypoTagNow << "\",\"rec\":" << recordNo
+				<< ",\"unit\":" << (ai ? ai->getId() : -1) << ",\"at\":[" << pos.x << "," << pos.y << "," << pos.z << "]}";
+		}
+		return;
+	}
+	if (!c)
+	{
+		return;
+	}
+	HypoEntry &e = hypoEntryAt(*c, pos);
+	if (hypoTagNow)
+	{
+		e.tOld += oldSeen ? 1 : 0;
+		e.tNew += newSeen ? 1 : 0;
+	}
+	else
+	{
+		++e.calls;
+		e.oldN += oldSeen ? 1 : 0;
+		e.newN += newSeen ? 1 : 0;
+	}
+	e.unknown += unknown ? 1 : 0;
+	e.onTile += onTile ? 1 : 0;
+	e.naive += naive ? 1 : 0;
+}
+
+void hypoBegin(const BattleUnit *unit, const char *ctx, int spotNow)
+{
+	if (!hypoLos())
+	{
+		return;
+	}
+	hypoStack.emplace_back();
+	HypoCtx &c = hypoStack.back();
+	c.ctx = ctx;
+	c.unit = unit;
+	c.spotNow = spotNow;
+	c.rec = recordNo;
+	++hypoCtxSums[ctx].begun;
+}
+
+void hypoEnd(const BattleUnit *unit, const char *ctx, bool ok, const Position &at, int score)
+{
+	if (!hypoLos())
+	{
+		return;
+	}
+	if (hypoStack.empty() || hypoStack.back().ctx != ctx || hypoStack.back().unit != unit)
+	{
+		Log(LOG_INFO) << "[AITRACE] {\"ai2g\":\"mismatch\",\"ctx\":\"" << ctx << "\",\"rec\":" << recordNo << ",\"open\":" << hypoStack.size() << "}";
+		return;
+	}
+	HypoCtx c = hypoStack.back();
+	hypoStack.pop_back();
+	HypoCtxSum &cs = hypoCtxSums[ctx];
+	++cs.ended;
+	int changed = 0;
+	for (const auto &e : c.entries)
+	{
+		changed += hypoChanged(e) ? 1 : 0;
+	}
+	cs.entries += (long long)c.entries.size();
+	cs.entriesChanged += changed;
+	if (!changed)
+	{
+		return;
+	}
+	++cs.changed;
+	// every entry of a search that changed: the bench re-ranks the search as D1 would have scored it
+	std::ostringstream s;
+	s << "[AITRACE] {\"ai2g\":\"" << ctx << "\",\"rec\":" << c.rec << ",\"unit\":" << (unit ? unit->getId() : -1)
+		<< ",\"side\":" << (unit ? (int)unit->getFaction() : -1) << ",\"spot\":" << c.spotNow << ",\"ok\":" << (ok ? 1 : 0)
+		<< ",\"at\":[" << at.x << "," << at.y << "," << at.z << "],\"score\":" << score << ",\"e\":[";
+	bool first = true;
+	for (const auto &e : c.entries)
+	{
+		// x y z scored score old new tOld tNew pre D P ambOld ambNew calls unknown onTile naive
+		s << (first ? "" : ",") << "[" << e.pos.x << "," << e.pos.y << "," << e.pos.z << "," << (e.scored ? 1 : 0) << "," << e.score << ","
+			<< e.oldN << "," << e.newN << "," << e.tOld << "," << e.tNew << "," << (e.pre == INT_MIN ? -999999 : e.pre) << "," << e.scaleD << ","
+			<< e.scaleP << "," << e.ambOld << "," << e.ambNew << "," << e.calls << "," << e.unknown << "," << e.onTile << "," << e.naive << "]";
+		first = false;
+	}
+	s << "]}";
+	Log(LOG_INFO) << s.str();
+}
+
+void hypoAmbushNode(const Position &pos, bool oldAccept)
+{
+	if (!hypoLos() || hypoStack.empty())
+	{
+		return;
+	}
+	HypoCtx &c = hypoStack.back();
+	c.entries.emplace_back();
+	c.entries.back().pos = pos;
+	c.entries.back().ambOld = oldAccept ? 1 : 0;
+}
+
+void hypoPre(const Position &pos, int score)
+{
+	if (!hypoLos() || hypoStack.empty())
+	{
+		return;
+	}
+	hypoEntryAt(hypoStack.back(), pos).pre = score;
+}
+
+void hypoScale(const Position &pos, int distanceToTarget, int proposedDistance)
+{
+	if (!hypoLos() || hypoStack.empty())
+	{
+		return;
+	}
+	HypoEntry &e = hypoEntryAt(hypoStack.back(), pos);
+	e.scaleD = distanceToTarget;
+	e.scaleP = proposedDistance;
+}
+
+HypoTag::HypoTag(const char *tag) : prev(hypoTagNow)
+{
+	hypoTagNow = tag;
+}
+
+HypoTag::~HypoTag()
+{
+	hypoTagNow = prev;
+}
+
+HypoOld::HypoOld() : prev(hypoOldNow)
+{
+	hypoOldNow = true;
+}
+
+HypoOld::~HypoOld()
+{
+	hypoOldNow = prev;
+}
+
+int fairKnowledge()
+{
+	static const int on = param("OXCE_AI_FAIR_KNOWLEDGE", 0) == 1 ? 1 : 0;
+	return on;
+}
+
+bool meleeFirepointApproach()
+{
+	static const bool on = param("OXCE_AI_MELEE_FIREPOINT_APPROACH", 0) == 1;
+	return on;
+}
+
+namespace
+{
+int fairRec = -1;
+std::set<std::tuple<std::string, int, int>> fairLogged;
+int fairGeoN[5] = {0, 0, 0, 0, 0};
+std::set<int> fairGeoTargets;
+bool fairGeoAny = false;
+
+std::string fairPos(const Position &p)
+{
+	std::ostringstream s;
+	s << "[" << p.x << "," << p.y << "," << p.z << "]";
+	return s.str();
+}
+
+/// The deciding side's units have the target on their visible list now.
+bool fairSeenNow(const SavedBattleGame *save, UnitFaction side, const BattleUnit *target)
+{
+	for (const auto *bu : *const_cast<SavedBattleGame *>(save)->getUnits())
+	{
+		if (bu->getFaction() == side && !bu->isOut())
+		{
+			const auto *vis = const_cast<BattleUnit *>(bu)->getVisibleUnits();
+			if (std::find(vis->begin(), vis->end(), target) != vis->end())
+			{
+				return true;
+			}
+		}
+	}
+	return false;
+}
+}
+
+int fairPlace(const SavedBattleGame *save, const BattleUnit *decider, const BattleUnit *target, Position &known, int &dir)
+{
+	if (!fairKnowledge() || !decider || !target)
+	{
+		return 0;
+	}
+	const UnitFaction side = decider->getFaction();
+	if (target->getFaction() == side)
+	{
+		return 0;
+	}
+	Position seen;
+	int seenDir = 0;
+	const bool has = target->getAiSeen(side, seen, seenDir);
+	if (side == FACTION_HOSTILE && save->isCheating() && target->getFaction() == FACTION_PLAYER)
+	{
+		// the cheat: the hostile side knows where the player units are now, as before; its memory stays as it was
+		if (has && seen != target->getPosition())
+		{
+			fairNote(decider, target, "cheat", 3, seen, target->getPosition());
+		}
+		return 0;
+	}
+	if (!has)
+	{
+		return 2;
+	}
+	if (seen == target->getPosition())
+	{
+		return 0;
+	}
+	known = seen;
+	dir = seenDir;
+	return 1;
+}
+
+void fairNote(const BattleUnit *unit, const BattleUnit *target, const char *cons, int kind, const Position &known, const Position &now)
+{
+	if (!fairKnowledge())
+	{
+		return;
+	}
+	if (fairRec != recordNo)
+	{
+		fairRec = recordNo;
+		fairLogged.clear();
+	}
+	if (!fairLogged.insert(std::make_tuple(std::string(cons), target ? target->getId() : -1, kind)).second)
+	{
+		return;
+	}
+	Log(LOG_INFO) << "[AITRACE] {\"ai2h\":1,\"rec\":" << recordNo << ",\"unit\":" << (unit ? unit->getId() : -1)
+		<< ",\"side\":" << (unit ? (int)unit->getFaction() : -1) << ",\"cons\":\"" << cons << "\",\"kind\":" << kind
+		<< ",\"target\":" << (target ? target->getId() : -1) << ",\"tside\":" << (target ? (int)target->getFaction() : -1)
+		<< ",\"since\":" << (target && unit ? target->getTurnsSinceSpottedByFaction(unit->getFaction()) : -1)
+		<< ",\"known\":" << fairPos(known) << ",\"now\":" << fairPos(now) << "}";
+}
+
+void fairDecision(SavedBattleGame *save, const BattleUnit *unit, const BattleAction &action)
+{
+	if (!fairKnowledge() || !unit)
+	{
+		return;
+	}
+	const UnitFaction side = unit->getFaction();
+	// gate 12: an aim at the current place of a target the AI knows only at another place, or knows at no place
+	BattleUnit *target = unit->getAIModule() ? unit->getAIModule()->getTarget() : nullptr;
+	if (target && !target->isOut())
+	{
+		Position kp;
+		int kd = 0;
+		const int kind = fairPlace(save, unit, target, kp, kd);
+		if (kind != 0)
+		{
+			Log(LOG_INFO) << "[AITRACE] {\"ai2h\":1,\"aim\":" << recordNo << ",\"unit\":" << unit->getId() << ",\"side\":" << (int)side
+				<< ",\"target\":" << target->getId() << ",\"kind\":" << kind << ",\"act\":" << (int)action.type
+				<< ",\"to\":" << fairPos(action.target) << ",\"known\":" << fairPos(kp) << ",\"now\":" << fairPos(target->getPosition())
+				<< ",\"oracle\":" << (action.target == target->getPosition() ? 1 : 0)
+				<< ",\"seenNow\":" << (fairSeenNow(save, side, target) ? 1 : 0) << "}";
+		}
+	}
+	// gate 5: enemies the side has on its visible lists now, remembered elsewhere than they stand
+	int vis = 0, visOff = 0;
+	std::ostringstream off;
+	for (const auto *bu : *save->getUnits())
+	{
+		if (bu->getFaction() == side || bu->isOut() || !fairSeenNow(save, side, bu))
+		{
+			continue;
+		}
+		++vis;
+		Position p;
+		int d = 0;
+		if (!bu->getAiSeen(side, p, d) || p != bu->getPosition())
+		{
+			++visOff;
+			off << (off.tellp() > 0 ? "," : "") << bu->getId();
+		}
+	}
+	if (visOff)
+	{
+		Log(LOG_INFO) << "[AITRACE] {\"ai2h\":1,\"vis\":" << recordNo << ",\"side\":" << (int)side << ",\"n\":" << vis << ",\"off\":[" << off.str() << "]}";
+	}
+	// h7: the voxel tests that met a moved unit since the last record
+	if (fairGeoAny)
+	{
+		std::ostringstream ts;
+		for (int id : fairGeoTargets)
+		{
+			ts << (ts.tellp() > 0 ? "," : "") << id;
+		}
+		Log(LOG_INFO) << "[AITRACE] {\"ai2h\":1,\"vgeo\":" << recordNo << ",\"unit\":" << unit->getId() << ",\"side\":" << (int)side
+			<< ",\"trueBody\":" << (AiKnownPlace::trueBody() ? 1 : 0)
+			<< ",\"trueHit\":" << fairGeoN[0] << ",\"badPart\":" << fairGeoN[1] << ",\"skipHit\":" << fairGeoN[2]
+			<< ",\"skipBadPart\":" << fairGeoN[3] << ",\"virtHit\":" << fairGeoN[4] << ",\"targets\":[" << ts.str() << "]}";
+		for (auto &n : fairGeoN)
+		{
+			n = 0;
+		}
+		fairGeoTargets.clear();
+		fairGeoAny = false;
+	}
+}
+
+void fairGeo(int what, const BattleUnit *target)
+{
+	if (what < 0 || what > 4)
+	{
+		return;
+	}
+	++fairGeoN[what];
+	fairGeoAny = true;
+	if (target)
+	{
+		fairGeoTargets.insert(target->getId());
+	}
+}
+
+void fairProbe(const BattleUnit *unit, const BattleUnit *target, const Position &known, const BattleUnit *occupant)
+{
+	if (!fairKnowledge())
+	{
+		return;
+	}
+	Log(LOG_INFO) << "[AITRACE] {\"ai2h\":1,\"probe\":" << recordNo << ",\"unit\":" << (unit ? unit->getId() : -1)
+		<< ",\"side\":" << (unit ? (int)unit->getFaction() : -1) << ",\"target\":" << (target ? target->getId() : -1)
+		<< ",\"tside\":" << (target ? (int)target->getFaction() : -1) << ",\"known\":" << fairPos(known)
+		<< ",\"now\":" << (target ? fairPos(target->getPosition()) : fairPos(Position(-1, -1, -1)))
+		<< ",\"occ\":" << (occupant ? occupant->getId() : -1) << "}";
+}
+
+void fairSaveCheck(SavedBattleGame *save)
+{
+	static const bool on = fairKnowledge() && param("OXCE_AI_FAIR_SAVECHECK", 0) == 1;
+	if (!on)
+	{
+		return;
+	}
+	int units = 0, seen = 0, mismatch = 0, entries = 0;
+	for (auto *bu : *save->getUnits())
+	{
+		std::vector<int> expect;
+		bool any = false;
+		for (int f = 0; f < FACTION_MAX; ++f)
+		{
+			Position p(-1, -1, -1);
+			int d = -1;
+			const bool has = bu->getAiSeen((UnitFaction)f, p, d);
+			any = any || has;
+			entries += has ? 1 : 0;
+			if (has)
+			{
+				expect.insert(expect.end(), { p.x, p.y, p.z, d });
+			}
+			else
+			{
+				expect.insert(expect.end(), { -1, -1, -1, -1 });
+			}
+		}
+		YAML::YamlRootNodeWriter writer;
+		bu->save(writer.toBase(), save->getMod()->getScriptGlobal());
+		const YAML::YamlString text = writer.emit();
+		YAML::YamlRootNodeReader reader(text, "fair savecheck");
+		std::vector<int> back;
+		reader.toBase().useIndex().tryRead("aiSeen", back);
+		++units;
+		seen += any ? 1 : 0;
+		if (any ? back != expect : !back.empty())
+		{
+			++mismatch;
+			Log(LOG_INFO) << "[AITRACE] {\"ai2h\":1,\"savediff\":" << bu->getId() << ",\"want\":" << expect.size() << ",\"got\":" << back.size() << "}";
+		}
+	}
+	Log(LOG_INFO) << "[AITRACE] {\"ai2h\":1,\"savecheck\":1,\"turn\":" << save->getTurn() << ",\"side\":" << (int)save->getSide()
+		<< ",\"units\":" << units << ",\"seen\":" << seen << ",\"entries\":" << entries << ",\"mismatch\":" << mismatch << "}";
+}
+
+bool fairSideSeesNow(const SavedBattleGame *save, int side, const BattleUnit *target)
+{
+	return save && target && side >= 0 && side < FACTION_MAX && fairSeenNow(save, (UnitFaction)side, target);
+}
+
+namespace
+{
+int fairSelRec = -1;
+std::set<std::tuple<std::string, int>> fairSelLogged;
+std::set<std::string> fairPickLogged;
+
+/// A live unit of the side has a part of the target in its view sector and TileEngine::visible to it now: the proof that writes
+/// the honest memory (TileEngine::calculateUnitsInFOV, AI_REVEAL_FOV), side-shared. Not asked while AiKnownPlace moved units.
+bool fairFovNow(SavedBattleGame *save, UnitFaction side, BattleUnit *target)
+{
+	if (AiKnownPlace::any())
+	{
+		return false;
+	}
+	TileEngine *te = save->getTileEngine();
+	const int size = target->getArmor()->getSize();
+	for (auto *bu : *save->getUnits())
+	{
+		if (bu->getFaction() != side || bu->isOut() || bu == target)
+		{
+			continue;
+		}
+		const bool turret = Options::strafe && bu->getTurretType() > -1;
+		for (int x = 0; x < size; ++x)
+		{
+			for (int y = 0; y < size; ++y)
+			{
+				const Position p = target->getPosition() + Position(x, y, 0);
+				if (bu->checkViewSector(p, turret) && te->visible(bu, save->getTile(p)))
+				{
+					return true;
+				}
+			}
+		}
+	}
+	return false;
+}
+
+const char *fairStateName(int state)
+{
+	switch (state)
+	{
+	case FAIR_CURRENT: return "current";
+	case FAIR_LAST_SEEN: return "last";
+	case FAIR_UNKNOWN: return "unknown";
+	case FAIR_CHEAT: return "cheat";
+	default: return "legacy";
+	}
+}
+}
+
+int fairState(SavedBattleGame *save, const BattleUnit *decider, BattleUnit *target, Position &mem, int &dir)
+{
+	if (!fairKnowledge() || !save || !decider || !target)
+	{
+		return FAIR_LEGACY;
+	}
+	const UnitFaction side = decider->getFaction();
+	if (target->getFaction() == side)
+	{
+		return FAIR_LEGACY;
+	}
+	const bool has = target->getAiSeen(side, mem, dir);
+	if (side == FACTION_HOSTILE && save->isCheating() && target->getFaction() == FACTION_PLAYER)
+	{
+		return FAIR_CHEAT;
+	}
+	if (fairSeenNow(save, side, target) || fairFovNow(save, side, target))
+	{
+		return FAIR_CURRENT;
+	}
+	return has ? FAIR_LAST_SEEN : FAIR_UNKNOWN;
+}
+
+void fairSel(const BattleUnit *unit, const BattleUnit *target, const char *cons, int state, int oldPass, int newPass,
+	const char *used, const Position &mem)
+{
+	if (!fairKnowledge() || !unit || !target)
+	{
+		return;
+	}
+	if (fairSelRec != recordNo)
+	{
+		fairSelRec = recordNo;
+		fairSelLogged.clear();
+		fairPickLogged.clear();
+	}
+	if (!fairSelLogged.insert(std::make_tuple(std::string(cons), target->getId())).second)
+	{
+		return;
+	}
+	const bool hidden = state == FAIR_LAST_SEEN || state == FAIR_UNKNOWN;
+	Log(LOG_INFO) << "[AITRACE] {\"ai2h\":1,\"sel\":" << recordNo << ",\"unit\":" << unit->getId() << ",\"side\":" << (int)unit->getFaction()
+		<< ",\"upos\":" << fairPos(unit->getPosition()) << ",\"cons\":\"" << cons << "\",\"target\":" << target->getId()
+		<< ",\"tside\":" << (int)target->getFaction() << ",\"state\":\"" << fairStateName(state) << "\""
+		<< ",\"since\":" << target->getTurnsSinceSpottedByFaction(unit->getFaction())
+		<< ",\"mem\":" << (state == FAIR_UNKNOWN ? fairPos(Position(-1, -1, -1)) : fairPos(mem)) << ",\"now\":" << fairPos(target->getPosition())
+		<< ",\"memEq\":" << (state != FAIR_UNKNOWN && mem == target->getPosition() ? 1 : 0)
+		<< ",\"oldPass\":" << oldPass << ",\"newPass\":" << newPass << ",\"used\":\"" << used << "\""
+		<< ",\"hid\":" << (hidden && std::strcmp(used, "now") == 0 ? 1 : 0) << ",\"nested\":" << (AiKnownPlace::any() ? 1 : 0) << "}";
+}
+
+void fairPick(const BattleUnit *unit, const BattleUnit *target, const char *cons, int state, const char *used, int tally)
+{
+	if (!fairKnowledge() || !unit)
+	{
+		return;
+	}
+	if (fairSelRec != recordNo)
+	{
+		fairSelRec = recordNo;
+		fairSelLogged.clear();
+		fairPickLogged.clear();
+	}
+	if (!fairPickLogged.insert(std::string(cons)).second)
+	{
+		return;
+	}
+	Log(LOG_INFO) << "[AITRACE] {\"ai2h\":1,\"pick\":" << recordNo << ",\"unit\":" << unit->getId() << ",\"side\":" << (int)unit->getFaction()
+		<< ",\"cons\":\"" << cons << "\",\"target\":" << (target ? target->getId() : -1) << ",\"state\":\"" << fairStateName(state) << "\""
+		<< ",\"used\":\"" << used << "\",\"tally\":" << tally << ",\"hid\":"
+		<< ((state == FAIR_LAST_SEEN || state == FAIR_UNKNOWN) && std::strcmp(used, "now") == 0 ? 1 : 0) << "}";
+}
+
+void fairDeny(const SavedBattleGame *save, const BattleUnit *target, int side, const char *reason, const int *mem, bool change,
+	const BattleUnit *observer, int a, int b)
+{
+	if (!fairKnowledge() || !target)
+	{
+		return;
+	}
+	SavedBattleGame *s = const_cast<SavedBattleGame *>(save);
+	Log(LOG_INFO) << "[AITRACE] {\"ai2h\":1,\"deny\":" << recordNo << ",\"turn\":" << (s ? s->getTurn() : -1)
+		<< ",\"cur\":" << (s ? (int)s->getSide() : -1) << ",\"side\":" << side << ",\"target\":" << target->getId()
+		<< ",\"tside\":" << (int)target->getFaction() << ",\"reason\":\"" << (reason ? reason : "?") << "\""
+		<< ",\"mem\":" << fairPos(Position(mem[0], mem[1], mem[2])) << ",\"md\":" << mem[3] << ",\"chg\":" << (change ? 1 : 0)
+		<< ",\"tpos\":" << fairPos(target->getPosition()) << ",\"tdir\":" << target->getDirection() << ",\"tout\":" << (target->isOut() ? 1 : 0)
+		<< ",\"obs\":" << (observer ? observer->getId() : -1) << ",\"oside\":" << (observer ? (int)observer->getFaction() : -1)
+		<< ",\"opos\":" << (observer ? fairPos(observer->getPosition()) : fairPos(Position(-1, -1, -1)))
+		<< ",\"oout\":" << (observer ? (observer->isOut() ? 1 : 0) : -1)
+		<< ",\"a\":" << a << ",\"b\":" << b
+		<< ",\"since\":" << (side >= 0 && side < FACTION_MAX ? target->getTurnsSinceSpottedByFaction((UnitFaction)side) : -1)
+		<< ",\"seenNow\":" << (s && side >= 0 && side < FACTION_MAX && fairSeenNow(s, (UnitFaction)side, target) ? 1 : 0)
+		<< ",\"cheat\":" << (s && s->isCheating() ? 1 : 0) << "}";
+}
+
+void fairWrite(const SavedBattleGame *save, const BattleUnit *target, int side, const char *reason, const int *old, const int *now,
+	const BattleUnit *observer, int a, int b, const char *basis)
+{
+	if (!fairKnowledge() || !target)
+	{
+		return;
+	}
+	// OBSERVATION_FOV / OBSERVATION_REACTION -> reason OBSERVATION (first sighting) or OBSERVATION_UPDATE, via FOV / REACTION
+	std::string r = reason ? reason : "?";
+	std::string via;
+	if (r.compare(0, 12, "OBSERVATION_") == 0)
+	{
+		via = r.substr(12);
+		r = old[0] >= 0 ? "OBSERVATION_UPDATE" : "OBSERVATION";
+	}
+	SavedBattleGame *s = const_cast<SavedBattleGame *>(save);
+	const BattleUnit *sel = s ? s->getSelectedUnit() : nullptr;
+	Log(LOG_INFO) << "[AITRACE] {\"ai2h\":1,\"mw\":" << recordNo << ",\"turn\":" << (s ? s->getTurn() : -1)
+		<< ",\"cur\":" << (s ? (int)s->getSide() : -1) << ",\"side\":" << side << ",\"target\":" << target->getId()
+		<< ",\"tside\":" << (int)target->getFaction() << ",\"reason\":\"" << r << "\",\"via\":\"" << via << "\""
+		<< ",\"old\":" << fairPos(Position(old[0], old[1], old[2])) << ",\"od\":" << old[3]
+		<< ",\"new\":" << fairPos(Position(now[0], now[1], now[2])) << ",\"nd\":" << now[3]
+		<< ",\"tpos\":" << fairPos(target->getPosition()) << ",\"tdir\":" << target->getDirection() << ",\"tout\":" << (target->isOut() ? 1 : 0)
+		<< ",\"obs\":" << (observer ? observer->getId() : -1) << ",\"oside\":" << (observer ? (int)observer->getFaction() : -1)
+		<< ",\"opos\":" << (observer ? fairPos(observer->getPosition()) : fairPos(Position(-1, -1, -1)))
+		<< ",\"oout\":" << (observer ? (observer->isOut() ? 1 : 0) : -1)
+		<< ",\"a\":" << a << ",\"b\":" << b
+		<< ",\"since\":" << (side >= 0 && side < FACTION_MAX ? target->getTurnsSinceSpottedByFaction((UnitFaction)side) : -1)
+		<< ",\"seenNow\":" << (s && side >= 0 && side < FACTION_MAX && fairSeenNow(s, (UnitFaction)side, target) ? 1 : 0)
+		<< ",\"cheat\":" << (s && s->isCheating() ? 1 : 0) << ",\"sel\":" << (sel ? sel->getId() : -1)
+		<< ",\"basis\":\"" << (basis ? basis : "") << "\"}";
 }
 
 #endif

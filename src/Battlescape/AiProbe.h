@@ -1,5 +1,6 @@
 #pragma once
 #include <functional>
+#include <list>
 #include <string>
 #include <utility>
 #include <vector>
@@ -33,6 +34,8 @@ class Position;
 class TileEngine;
 struct BattleAction;
 struct BattleActionCost;
+struct BattleActionAttack;
+struct RuleDamageType;
 
 /**
  * The AI turn probe (OXCE_AI_PROBE=1, docs/AI_ROADMAP.md, stage 2.1): a loaded battle save
@@ -52,6 +55,12 @@ namespace AiProbe
 
 /// Is the probe on (the OXCE_AI_PROBE environment variable, OXCE_AI_DEV builds only)?
 bool active();
+/// The bench autopilot (OXCE_AI_PROBE): plays the player's turns, presses every OK, quits at the end. Off in the play mode.
+bool harness();
+/// The play mode (OXCE_AI3_PLAY, without OXCE_AI_PROBE): the AI flags work in an ordinary game, nobody presses for the player.
+bool play();
+/// Screens close by themselves: the bench, or the play mode with the bot on the player's side (headless checks).
+bool autoClose();
 /// The probe skips everything nobody watches (OXCE_AI_FAST): no frame is drawn, no tile but UFO doors is animated,
 /// every unit walks the short off-screen cycle, no final-blow scene, no audio, one log handle for the run, and the process
 /// leaves right after the result line. The decisions, the record and the outcome stay the same as without it.
@@ -185,6 +194,18 @@ void shotDivider(SavedBattleGame *save, const BattleUnit *shooter, double divide
 /// finalAction ends the unit's actions, a charge in melee range strikes, a hiding unit turns away). Without it the branch
 /// is only for factions other than the player's, and the bot's post-walk decisions are dropped.
 bool postWalkFix();
+/// UPSTREAM_SPOT (OXCE_AI_UPSTREAM_SPOT, bench only): upstream 6ee48e7d1 "Fix freeze when civilian try move pass alien" -
+/// Pathfinding::isBlocked blocks a tile whose unit the mover's SIDE spotted this turn (any faction, not only a hostile
+/// mover's own spotted list); calculateUnitsInFOV puts hostile units in the visible list of every non-hostile viewer
+/// (neutrals too); getSpottingUnits stamps the spotter side's spotted turn. KNOWN_OCCUPANT_PATH V1 and V2 are off under
+/// it (it covers them), unless OXCE_AI_UPSTREAM_KO_KEEP is set to count what they would add. False in a release build.
+bool upstreamSpot();
+/// UPSTREAM_VIS (OXCE_AI_UPSTREAM_VIS, bench only): upstream 613ec4a28 "Simplify visible enemies code" - five checks of
+/// the visible-units list use BattleUnit::hasVisibleUnit, which also says yes for a unit of the viewer's own faction.
+bool upstreamVis();
+/// UPSTREAM_VIS: does the viewer see the target (check site 0 psiAction, 1 and 2 primaryAction, 3 the visible-unit buttons,
+/// 4 eyesOnTarget): hasVisibleUnit with the flag, the visible-units list without it.
+bool upstreamSees(const BattleUnit *viewer, const BattleUnit *target, int site);
 /// Does postPathProcedures take its AI branch for this player unit: the fix is on, the bot plays the player's side, and
 /// the panic-handled state is true (a panicking unit's walk keeps the player branch, as for a human).
 bool postWalkAi(const SavedBattleGame *save, const BattleUnit *unit, bool panicHandled);
@@ -194,6 +215,35 @@ void postWalkBegin(SavedBattleGame *save, BattleUnit *unit, const BattleAction &
 void postWalkEnd(SavedBattleGame *save, const BattleUnit *unit, bool meleePushed);
 /// A melee attack that has spent its TU (MeleeAttackBState): counted when it is the one postPathProcedures pushed.
 void postWalkMelee(const BattleUnit *unit);
+/// COUNTER_FIX (OXCE_AI_COUNTER_FIX, bench only): the AI action counter of BattlescapeGame is reset when handleAI gets a
+/// unit other than the one whose decision last raised it (or the same one on another turn or side) - a new unit starts
+/// at action 1. Without it a counter left by a unit that died, fell unconscious or lost the selection otherwise goes on.
+bool counterFix();
+/// handleAI got this unit with this counter, before its checks: true when the counter is another unit's (or another turn's)
+/// and COUNTER_FIX resets it.
+bool counterCheck(SavedBattleGame *save, const BattleUnit *unit, int counter);
+/// handleAI raised the counter for this unit's decision.
+void counterOwn(SavedBattleGame *save, const BattleUnit *unit, int counter);
+/// P0-D SECOND_PASS (clean2: always in the bench): handleAI left `left` and selected `selected` - does the AI's second pass
+/// begin? On the bot's turn when the selection came round to where the turn's traversal began (the new unit is not further
+/// on from the start than the left one): the player's soldiers keep their campaign ids in the base's order, so the upstream
+/// test by id ends their first pass at the first lower id, and the player's turn begins with the unit last selected, not at the
+/// vector's start. Otherwise upstream's selected id <= left id (hostile and neutral ids are handed out in vector order and their
+/// turns begin with nothing selected).
+bool secondPassWrapped(SavedBattleGame *save, const BattleUnit *left, const BattleUnit *selected);
+/// P0-D SECOND_PASS: handleAI got `unit` - the first one of a side's turn is where that turn's traversal began.
+void passStartNote(SavedBattleGame *save, const BattleUnit *unit);
+/// U1 A* TOTAL TU COST (OXCE_AI_ASTAR_COST_FIX, bench only): when A* takes the destination off its open list,
+/// _totalTUCost becomes that terminal node's cost - the path's cumulative cost - instead of the last neighbour the search
+/// tried. The path and the search order stay the same.
+bool astarCostFix();
+/// U2 SETUPESCAPE DISTANCE SIGN (OXCE_AI_ESCAPE_SIGN_FIX, bench only): the distance term of setupEscape is
+/// (newDistance - oldDistance) * 10 - farther from the aggro target positive, closer negative, same 0 - instead of upstream's
+/// |newDistance - oldDistance| * 10. Nothing else of setupEscape changes.
+bool escapeSignFix();
+/// U3 fix (OXCE_AI_STALE_ESCAPE_FIX, bench only): the AI_ESCAPE branch of think runs setupEscape when the escape plan's
+/// contract (AIModule::escapePlanBroken) does not hold; a plan that holds is reused as it is, with no new RNG.
+bool staleEscapeFix();
 /// The seed of a generated battle (OXCE_AI_SEED), or -1.
 long long battleSeed();
 /// Drives the probe from the battlescape's think: ends the player's turn, quits after the AI's.
@@ -235,6 +285,8 @@ bool flee(SavedBattleGame *save, BattleUnit *unit, BattleAction *action, const s
 int maxActions(const BattleUnit *unit);
 /// A tuning number from the environment (OXCE_AI_EVAL_RISK and the like), or def; always def in a release build.
 double param(const char *name, double def);
+/// The number the next [AIREC] of this battle will carry (AI2-A trace lines refer to it); 0 in a release build.
+int nextRec();
 /// Counts one use of a tactical rule for the result line ([AIRESULT] tac=); also a step of the decision's reason trail.
 void tally(const BattleUnit *unit, const char *rule);
 /// A step of the decision's reason trail that is not counted in the result line (docs/AI_DECISION_RECORD.md).
@@ -395,6 +447,135 @@ void event(SavedBattleGame *save, const char *what, const BattleUnit *unit, cons
 /// never the dice: reads only, no random numbers. Off (the default): nothing.
 void medikitBefore(const BattleUnit *unit, int kind);
 void medikitAfter(const BattleUnit *unit, int kind, int used);
+
+/// AI2-B2 EXPLOSIVE UTILITY MEASUREMENT (OXCE_AI_BLAST_PROBE, with the record): what each explosion did to each unit it
+/// hit ([AIBHIT]), the explosion itself and the decision behind it ([AIBLAST]), and the terms of explosiveEfficacy for the
+/// decision's target ([AIEFF]). Plain reads and log lines: no random numbers, no game state is written.
+bool blastProbe();
+/// What BattleUnit::damage used for the hit being logged: filled only while armed (TileEngine::hitUnit inside an explosion).
+struct DmgNote
+{
+	bool armed = false, reached = false;
+	int side = -1, part = -1, resisted = 0, scripted = 0, armor = -1, afterArmor = 0;
+};
+extern DmgNote dmgNote;
+/// The unit as the explosion is about to hit it.
+struct BlastPre
+{
+	int hp = 0, stun = 0, fire = 0, tu = 0, morale = 0, status = 0;
+	int armor[5] = {};
+	bool down = false;
+};
+/// TileEngine::explode: the explosion begins, one ray reaches a new tile (its remaining power, distance, rolled damage), it ends.
+void blastBegin(SavedBattleGame *save, const BattleActionAttack &attack, const Position &center, int power, int powerUsed,
+	const RuleDamageType *type, int radius);
+void blastTile(int power, double l, int damage);
+void blastEnd(SavedBattleGame *save);
+/// TileEngine::hitUnit: true (and the unit read) only inside an explosion with the probe on.
+bool blastBefore(const BattleUnit *unit, BlastPre &pre);
+void blastAfter(SavedBattleGame *save, const BattleUnit *unit, const Position &relative, int damage, const BlastPre &pre);
+/// The terms of one explosiveEfficacy call; kept for the decision about to be recorded.
+struct EffNote
+{
+	int unit = -1, x = 0, y = 0, z = 0, radius = 0;
+	bool grenade = false;
+	int diff = 0, desp = 0, targetFaction = -1;
+	bool hurt = false, kamikaze = false, noDiff = false;
+	/// id, faction, weight, verdict: 0 counted, 1 line blocked, 2 tile already dangerous, 3 weight 0 (unknown to the AI),
+	/// 4 the target, 5 the target on a dangerous tile (not counted), 6 the attacker itself in range (never counted)
+	std::vector<std::vector<int>> units;
+	int enemies = 0, efficacy = 0, result = 0;
+	const char *path = "";
+};
+void effDone(const EffNote &note);
+/// AI2-B2 blaster: AIModule::wayPointAction picked its target (the unit, whose tile explosiveEfficacy was called for) and laid
+/// the waypoints; the launch aims at the first waypoint, so the probe keeps the target, the first waypoint and the last apart.
+void blastWaypoints(const BattleUnit *unit, const BattleUnit *target, const std::list<Position> &waypoints);
+/// The decision is recorded: its aim (for [AIBLAST]), the thrown item (a delayed grenade), the efficacy terms ([AIEFF]).
+void blastDecision(SavedBattleGame *save, const BattleUnit *unit, const BattleAction &action, int rec);
+
+/// AI2-G HYPO_LOS (bench flag OXCE_AI_HYPO_LOS; 0 - D1, 1 - TileEngine::canTargetUnit sees a hypothetical unit when a line
+/// reaches the place of its body unhit). Diagnostics only with 1: canTargetUnit reports each hypothetical call (hypoNote: the
+/// verdict without the fix and with it, whether the unit stands on the tile, whether a line reached the place unhit); the AI's
+/// callers open a context (hypoBegin/hypoEnd: escape, ambush, facing, firepoint, tactical) and the reports are summed per
+/// candidate tile into one [AITRACE] ai2g line; the probe's own checks run under a tag (HypoTag). Plain reads and log lines:
+/// no random numbers, no game state is written. 0 in a release build.
+int hypoLos();
+/// Inside HypoOld canTargetUnit answers as D1 and reports nothing (the old verdict of an ambush node, for the line only).
+bool hypoForceOld();
+void hypoNote(const BattleUnit *potential, const BattleUnit *exclude, const Position &pos, bool oldSeen, bool newSeen, bool onTile,
+	bool lineFree);
+void hypoBegin(const BattleUnit *unit, const char *ctx, int spotNow);
+void hypoEnd(const BattleUnit *unit, const char *ctx, bool ok, const Position &at, int score);
+/// setupAmbush: the node about to be checked and whether it passes the same two checks without the fix.
+void hypoAmbushNode(const Position &pos, bool oldAccept);
+/// findFirePoint: the score before the range scaling, and the scaling's two distances when it applies.
+void hypoPre(const Position &pos, int score);
+void hypoScale(const Position &pos, int distanceToTarget, int proposedDistance);
+struct HypoTag
+{
+	const char *prev;
+	explicit HypoTag(const char *tag);
+	~HypoTag();
+};
+struct HypoOld
+{
+	bool prev;
+	HypoOld();
+	~HypoOld();
+};
+
+/// AI2-H FAIR KNOWLEDGE (bench flag OXCE_AI_FAIR_KNOWLEDGE, read once; 0 - as AI2_BASELINE_HYPO_LOS, 1 - the AI places a known
+/// enemy it does not see now at the place its side last honestly saw it, BattleUnit::updateHonestKnownPosition; a known enemy its side never
+/// saw has no place). The hostile side under the cheat keeps the current place of player units. 0 in a release build.
+int fairKnowledge();
+/// AI2-H5 MELEE FIREPOINT APPROACH (bench flag OXCE_AI_MELEE_FIREPOINT_APPROACH, read once; 0 - baseline, 1 - in findFirePoint a
+/// unit whose only usable attack is a melee blow treats the target as out of attack range until the blow can be made). 0 in a release build.
+bool meleeFirepointApproach();
+/// The one rule of the known place (all AI consumers go through AIModule::knownPlace, which calls this): 0 - the current place
+/// (flag off, own side, the cheat, or the remembered place is the current one), 1 - the remembered place and facing (known, dir),
+/// 2 - no place (the side never saw the unit).
+int fairPlace(const SavedBattleGame *save, const BattleUnit *decider, const BattleUnit *target, Position &known, int &dir);
+/// One [AITRACE] {"ai2h":1,...} line per decision record, consumer and target: the place the AI used instead of the current one (kind 1), or
+/// no place at all (kind 2). Plain log lines.
+void fairNote(const BattleUnit *unit, const BattleUnit *target, const char *cons, int kind, const Position &known, const Position &now);
+/// The decision record is written: the gates' checks (an aim at the current place of a displaced target, visible enemies whose
+/// remembered place is not the current one). Plain reads and log lines.
+void fairDecision(SavedBattleGame *save, const BattleUnit *unit, const BattleAction &action);
+/// A melee probe: the unit stands in reach of the remembered place of the target and the target is not there (the player's
+/// 'there is no one there'); one [AITRACE] {"ai2h":1,"probe":...} line, occupant -1 for an empty tile.
+void fairProbe(const BattleUnit *unit, const BattleUnit *target, const Position &known, const BattleUnit *occupant);
+/// OXCE_AI_FAIR_SAVECHECK=1: each side's start writes every unit to YAML and reads it back, and compares the remembered places.
+void fairSaveCheck(SavedBattleGame *save);
+/// h5 (gate 6 proof): the side's memory of target changed from old to now (BattleUnit::logAiSeenChange) - one passive
+/// [AITRACE] {"ai2h":1,"mw":...} line with the reason, the observer and the state that allowed the write. Reads only.
+/// h6: plus basis - the proof of the reveal (fov, reaction, shot_from_cell, seen_now; LOAD / RESET / FORGET_PROBE pass "").
+void fairWrite(const SavedBattleGame *save, const BattleUnit *target, int side, const char *reason, const int *old, const int *now,
+	const BattleUnit *observer, int a, int b, const char *basis = "");
+/// h6: the honest-memory gate refused a reveal (no proof the side gets the place now) - one passive [AITRACE] {"ai2h":1,"deny":...}
+/// line: reason, the memory kept, whether the write would have changed it, the state. Reads only.
+void fairDeny(const SavedBattleGame *save, const BattleUnit *target, int side, const char *reason, const int *mem, bool change,
+	const BattleUnit *observer, int a, int b);
+/// h6: a live unit of the side has target on its visible list now (the engine's honest sighting state). false in a release build.
+bool fairSideSeesNow(const SavedBattleGame *save, int side, const BattleUnit *target);
+/// h7: a voxel test met a unit moved by AiKnownPlace. what: 0 trueHit - the true body stopped a line (the control
+/// OXCE_AI_FAIR_TRUEBODY=1; TRUE_BODY_INTERCEPT_WHILE_VIRTUAL), 1 badPart - a 2x2 part outside the body (no hit instead of the
+/// crash), 2 skipHit - the true body skipped where h6 would have hit it, 3 skipBadPart - skipped where h6 would have crashed,
+/// 4 virtHit - the body at the known place stopped a line. Counted; the decision record writes one [AITRACE] {"ai2h":1,"vgeo":...}.
+void fairGeo(int what, const BattleUnit *target);
+/// h8 knowledge contract: what the deciding side knows about the target's place now. FAIR_LEGACY - flag off or own side (no rule);
+/// FAIR_CURRENT - the side honestly observes it now (a live unit has it on its visible list, or has it in its view sector and
+/// TileEngine::visible - the same proof that writes the honest memory, AI_REVEAL_FOV); FAIR_LAST_SEEN - only the remembered place
+/// (mem, dir); FAIR_UNKNOWN - no place; FAIR_CHEAT - the hostile side under the cheat, as before. Reads only.
+enum FairState { FAIR_LEGACY = 0, FAIR_CURRENT = 1, FAIR_LAST_SEEN = 2, FAIR_UNKNOWN = 3, FAIR_CHEAT = 4 };
+int fairState(SavedBattleGame *save, const BattleUnit *decider, BattleUnit *target, Position &mem, int &dir);
+/// h8: one [AITRACE] {"ai2h":1,"sel":...} line per record, selector and target: the state, whether the old 360 ray to the true tile
+/// passed (oldPass, -1 not asked), whether the target passed now and which place the selector used ("now", "mem", "none").
+/// used "now" with state LAST_SEEN/UNKNOWN is TRUE_HIDDEN_POSITION_READ_AFFECTING_AI ("hid":1).
+void fairSel(const BattleUnit *unit, const BattleUnit *target, const char *cons, int state, int oldPass, int newPass,
+	const char *used, const Position &mem);
+/// h8: the selector's pick (one line per call that picked): target, state, place used, tally.
+void fairPick(const BattleUnit *unit, const BattleUnit *target, const char *cons, int state, const char *used, int tally);
 
 }
 

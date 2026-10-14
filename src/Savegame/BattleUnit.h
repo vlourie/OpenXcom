@@ -134,6 +134,10 @@ private:
 	Uint8 _turnsSinceSpotted[FACTION_MAX] = { 255, 255, 255 };
 	Uint8 _turnsLeftSpottedForSnipers[FACTION_MAX] = { 0, 0, 0 };
 	Uint8 _turnsSinceStunned = 255;
+	// AI2-H FAIR KNOWLEDGE (bench flag OXCE_AI_FAIR_KNOWLEDGE): per viewing side, where it last honestly saw this unit -
+	// x, y, z, direction; x -1 - never seen. Written only with the flag on, read only by the AI.
+	int _aiSeen[FACTION_MAX][4] = { { -1, -1, -1, -1 }, { -1, -1, -1, -1 }, { -1, -1, -1, -1 } };
+	friend class AiKnownPlace;
 
 	BattleUnit* _previousOwner = nullptr;
 	const Unit *_spawnUnit = nullptr;
@@ -713,7 +717,7 @@ public:
 	int getCarriedWeight(BattleItem *draggingItem = 0) const;
 
 	/// Set default state on unit.
-	void resetTurnsSince();
+	void resetTurnsSince(const SavedBattleGame *save = nullptr, const char *reason = "RESET");
 	/// Update counters on unit.
 	void updateTurnsSince();
 	/// Set how many turns this unit will be exposed for.
@@ -732,6 +736,27 @@ public:
 	int  getTurnsLeftSpottedForSnipers() const;
 	/// Get how many turns left snipers know about this target. For specific faction.
 	int  getTurnsLeftSpottedForSnipersByFaction(UnitFaction faction) const;
+	/// AI2-H FAIR KNOWLEDGE h6: the only kinds of event allowed to put this unit's place into a side's honest memory.
+	/// turnsSinceSpotted == 0 is not one of them (an older sighting, cheatTurn, kill attribution set it too).
+	enum AiReveal
+	{
+		AI_REVEAL_FOV,           ///< the side's unit sees it: in view sector and visible() (TileEngine FOV)
+		AI_REVEAL_REACTION,      ///< the side's unit spots it for reaction fire (canTargetUnit and visible())
+		AI_REVEAL_DIRECT_SHOT,   ///< it hit the side with a direct shot: the engine's own spot-on-hit (the projectile left its cell)
+		AI_REVEAL_ATTACKER_SEEN, ///< it hit the side some other way (melee, timed grenade, blast) - written only if the side sees it now
+		AI_REVEAL_KILLER_SEEN,   ///< it is credited with a kill - written only if the side sees it now
+	};
+	/// AI2-H FAIR KNOWLEDGE h6: the single write gate of honest memory. Writes this unit's place and facing for the side when
+	/// the reveal is proven (FOV, REACTION, DIRECT_SHOT; ATTACKER_SEEN / KILLER_SEEN only if a unit of the side has it on its
+	/// visible list now), otherwise writes nothing and logs the refusal. No-op with the flag off. a, b only go to the log.
+	bool updateHonestKnownPosition(UnitFaction side, const SavedBattleGame *save, AiReveal why, const BattleUnit *observer, int a = -1, int b = -1);
+	/// AI2-H FAIR KNOWLEDGE: the place and facing the side last honestly saw this unit at; false if it never saw it.
+	bool getAiSeen(UnitFaction side, Position &pos, int &dir) const;
+	/// AI2-H FAIR KNOWLEDGE: the side found the remembered place empty (a melee probe) - it no longer knows where the unit is.
+	void forgetAiSeen(UnitFaction side, const SavedBattleGame *save, const BattleUnit *observer);
+	/// h5: one [AITRACE] memory-write line per side whose memory of this unit differs from old (passive, flag 1 only).
+	void logAiSeenChange(const int (&old)[FACTION_MAX][4], const SavedBattleGame *save, const char *reason, const BattleUnit *observer, int a, int b,
+		const char *basis = "") const;
 	/// Reset how many turns passed since stunned last time.
 	void resetTurnsSinceStunned() { _turnsSinceStunned = 255; }
 	/// Increase how many turns passed since stunned last time.

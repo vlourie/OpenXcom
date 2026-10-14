@@ -954,7 +954,7 @@ void BattlescapeState::init()
 	_btnReserveKneel->toggle(_save->getKneelReserved());
 	_battleGame->setKneelReserved(_save->getKneelReserved());
 	// the AI test bench doesn't autosave: its generated battle has a UFO without a mission, which can't be saved
-	if (_autosave > 0 && !_save->isPreview() && !AiProbe::active())
+	if (_autosave > 0 && !_save->isPreview() && !AiProbe::harness())
 	{
 		int currentTurn = _autosave;
 		_autosave = 0;
@@ -2465,6 +2465,10 @@ void BattlescapeState::updateSoldierInfo(bool checkFOV)
 				{
 					alreadyShown = true;
 				}
+			}
+			if (AiProbe::upstreamVis())
+			{
+				alreadyShown = AiProbe::upstreamSees(battleUnit, bu, 3); // UPSTREAM_VIS (bench, upstream 613ec4a28)
 			}
 			if (!alreadyShown)
 			{
