@@ -342,7 +342,7 @@ def shift_risk(r, ps=None):
     боя. -> {НАБОР: инфо palette_shift_sets} таких копий; пусто - подмены нет или метод не pixel_lines.
     Пустой метод - pixel_lines только у группы, которую ещё будут собирать (cmd_build берёт его по умолчанию); у
     установленной пустой метод - кадр, правленный вне конвейера (ковры, перекрёстки с 07.10)"""
-    if (r["метод"] or ("" if r["статус"] in INSTALLED else "pixel_lines")).split()[:1] != ["pixel_lines"]:
+    if (r["метод"] or ("" if r["статус"] in INSTALLED else "pixel_lines")).split()[:1] not in (["pixel_lines"], ["lines_material"]):
         return {}
     if ps is None:
         import palette_shift_sets as pss
@@ -623,8 +623,8 @@ def cmd_build(a):
             continue
         for old in frame_files(out, s, f):     # прежняя сборка группы в этой партии: варианты не должны остаться
             old.unlink()
-        if tool == "pixel_lines":
-            cmd = [py, str(HERE / "pixel_lines.py"), "--out", str(out), "--frames", g] + extra
+        if tool in ("pixel_lines", "lines_material"):
+            cmd = [py, str(HERE / (tool + ".py")), "--out", str(out), "--frames", g] + extra
             p = run_tool(cmd)
             if p.returncode and "поле не закрывает кадр" in (p.stdout + p.stderr) and "--holes" not in extra:
                 extra = extra + ["--holes"]

@@ -351,6 +351,8 @@ def lines_verdict(r):
 def check(g, method):
     """Проверка группы под рецепт строки очереди. -> (вердикт, причины, меры). Рецепт без проверки - ok."""
     tool = (method or "pixel_lines").split()[0]
+    if tool == "lines_material":       # та же геометрия pixel_lines, рельеф и фактура поверх
+        tool = "pixel_lines"
     if tool not in ("pixel_lines", "ground_seam"):
         return "ok", [], None
     a = classic(g)
