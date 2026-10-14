@@ -36,10 +36,19 @@ ENC = "utf-8-sig"
 HEADER = ROOT / "src/Battlescape/CollapsePilotData.h"
 SCEN = ROOT / "census/collapse/stage0m/pilot_scen.tsv"
 SCEN3 = ROOT / "census/collapse/pilot3/pilot_scen.tsv"   # третья партия зданий (collapse_pilot3_scen)
+SCEN4 = ROOT / "census/collapse/pilot4/pilot_scen.tsv"   # четвёртая партия (collapse_pilot4_scen)
+SCEN5 = ROOT / "census/collapse/pilot5/pilot_scen.tsv"   # пятая партия (collapse_pilot5_scen)
+SCEN6 = ROOT / "census/collapse/pilot6/pilot_scen.tsv"   # шестая партия (collapse_pilot6_scen)
 OUT = ROOT / "census/collapse/pilot1/runs"
 KIND = {"f": 0, "w": 1, "n": 2, "o": 3}
 LABEL_RU = {"barn": "амбар", "bunker": "бункер",
             "banditbarn1": "амбар бандитов 1", "banditbarn2": "амбар бандитов 2", "riceshed": "сарай"}
+import collapse_pilot4_scen as P4  # noqa: E402
+LABEL_RU.update({en: ru for tn, bn, ru, en in P4.BUILDINGS})
+import collapse_pilot5_scen as P5  # noqa: E402
+LABEL_RU.update({en: ru for tn, bn, ru, en in P5.BUILDINGS})
+import collapse_pilot6_scen as P6  # noqa: E402
+LABEL_RU.update({en: ru for tn, bn, ru, en in P6.BUILDINGS})
 CPF_INBOX = 128
 _collapse_on = threading.local()
 
@@ -99,6 +108,9 @@ def scen_rows(label_en, cells=None, only=None):
     lines = SCEN.read_text(encoding=ENC).splitlines()
     head = lines[0].split("\t")
     lines += SCEN3.read_text(encoding=ENC).splitlines()[1:]
+    lines += SCEN4.read_text(encoding=ENC).splitlines()[1:]
+    lines += SCEN5.read_text(encoding=ENC).splitlines()[1:]
+    lines += SCEN6.read_text(encoding=ENC).splitlines()[1:]
     out = []
     for ln in lines[1:]:
         r = dict(zip(head, ln.split("\t")))
@@ -121,15 +133,35 @@ _model_lock = threading.Lock()
 def model_fell(label_en, removed_keys):
     """Части здания (внутри участка пилота), которые модель M0j4 (как в игре) роняет при снятом removed_keys."""
     with _model_lock:          # прогоны идут потоками: соседний не должен увидеть словарь заполненным наполовину
-        _load_model()
+        if label_en not in _model:
+            _load_model(label_en)
     C, blk, box, inside = _model[label_en]
     rm = frozenset(k for k in removed_keys if inside(k, box))
     held = C.evaluate7c(blk, rm)[0]
     return sorted(k for k in blk.parts if inside(k, box) and k not in held and k not in rm)
 
 
-def _load_model():
-    if not _model:
+def _load_model(label_en):
+    # здание четвёртой-шестой партии грузится одно: загрузка всех целых блоков карт идёт минутами (cc.all_blocks
+    # на каждое здание), а прогону нужен один
+    for M in (P4, P5, P6):
+        one = [b for b in M.BUILDINGS if b[3] == label_en]
+        if one:
+            import collapse_pilot_export as EX
+            import collapse_v7d as D
+            D.install()
+            keep = M.PILOT
+            M.PILOT = [(tn, bn, ru) for tn, bn, ru, en in one]
+            try:
+                C, CT, blds = M.load()
+            finally:
+                M.PILOT = keep
+            EX.BOX.update(M.BOX)
+            EX.LABEL_EN.update(M.LABEL_EN)
+            for tn, bn, label, blk in blds:
+                _model[EX.LABEL_EN[label]] = (C, blk, EX.BOX[label], EX.inside)
+            return
+    if True:                                      # здания 0m и третьей партии - прежняя загрузка всего списка
         import collapse_pilot_scen as PS
         import collapse_pilot_export as EX
         import collapse_pilot3_scen as P3
@@ -142,6 +174,15 @@ def _load_model():
         PS.PILOT = first
         EX.BOX.update(P3.BOX)
         EX.LABEL_EN.update(P3.LABEL_EN)
+        blds += P4.load()[2]
+        EX.BOX.update(P4.BOX)
+        EX.LABEL_EN.update(P4.LABEL_EN)
+        blds += P5.load()[2]
+        EX.BOX.update(P5.BOX)
+        EX.LABEL_EN.update(P5.LABEL_EN)
+        blds += P6.load()[2]
+        EX.BOX.update(P6.BOX)
+        EX.LABEL_EN.update(P6.LABEL_EN)
         for tn, bn, label, blk in blds:
             _model[EX.LABEL_EN[label]] = (C, blk, EX.BOX[label], EX.inside)
 

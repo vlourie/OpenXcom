@@ -33,12 +33,21 @@ ENC = "utf-8-sig"
 OUT = "census/collapse/pilot1"
 HEADER = "src/Battlescape/CollapsePilotData.h"
 VECTORS = OUT + "/vectors.txt"
-SCENS = ["census/collapse/stage0m/pilot_scen.tsv", "census/collapse/pilot3/pilot_scen.tsv"]
+SCENS = ["census/collapse/stage0m/pilot_scen.tsv", "census/collapse/pilot3/pilot_scen.tsv",
+         "census/collapse/pilot4/pilot_scen.tsv", "census/collapse/pilot5/pilot_scen.tsv",
+         "census/collapse/pilot6/pilot_scen.tsv"]
 BOX = {"амбар": (2, 11, 2, 11), "бункер": (1, 7, 1, 7)}     # здание пилота: клетки x0..x1, y0..y1
 LABEL_EN = {"амбар": "barn", "бункер": "bunker"}            # метка здания в логе игры
 # здания, у которых остались провальные сценарии (census/collapse/pilot3/fail_cases.md): в заголовке с флагом
 # experimental, движок берёт их только в сборке стенда (OXCE_AI_DEV), игрокам не выходят
-EXPERIMENTAL = {"banditbarn1", "banditbarn2"}
+EXPERIMENTAL = {"banditbarn1", "banditbarn2",
+                # четвёртая партия: провальные сценарии в census/collapse/pilot4/pilot_result.tsv
+                "urbandio04", "westown16", "chemtown94", "madurban27", "madurban28", "culta17", "culta30",
+                "cultafarm06", "cultasol01", "culthouse05",
+                # пятая партия: census/collapse/pilot5/pilot_result.tsv; chemtown13 - сценариев нет, не проверен
+                "cultafarm03", "cultafarm05", "cultnew17", "chemtown91", "chemtown92", "chemtown13",
+                # шестая партия: census/collapse/pilot6/pilot_result.tsv
+                "comrcurban22", "urbandio03", "induslum27", "culta19", "cultnew16"}
 # третья партия: рамки и метки в collapse_pilot3_scen (метка обязана быть уникальной - по ней removal_sets
 # берёт сценарии здания)
 KIND = {"f": 0, "w": 1, "n": 2, "o": 3}                   # O_FLOOR, O_WESTWALL, O_NORTHWALL, O_OBJECT
@@ -46,7 +55,8 @@ N_RANDOM = 1500
 SEED = 20261008
 SOURCES = ["tools/collapse_v7c.py", "tools/collapse_v7b.py", "tools/collapse_v7.py", "tools/collapse_v6.py",
            "tools/collapse_v5.py", "tools/collapse_v3.py", "tools/collapse_v2.py", "tools/collapse_attach_v2.py",
-           "tools/collapse_pilot_scen.py", "tools/collapse_pilot3_scen.py", "tools/collapse_v7d.py",
+           "tools/collapse_pilot_scen.py", "tools/collapse_pilot3_scen.py", "tools/collapse_pilot4_scen.py",
+           "tools/collapse_pilot5_scen.py", "tools/collapse_pilot6_scen.py", "tools/collapse_v7d.py",
            "tools/collapse_pilot_export.py"]
 
 
@@ -614,8 +624,23 @@ def main():
     PS.PILOT = first
     BOX.update(P3.BOX)
     LABEL_EN.update(P3.LABEL_EN)
+    # четвёртая партия - целые блоки карт, своя загрузка (collapse_pilot4_scen.load), номера блоков после третьей
+    import collapse_pilot4_scen as P4
+    blds += P4.load()[2]
+    BOX.update(P4.BOX)
+    LABEL_EN.update(P4.LABEL_EN)
+    import collapse_pilot5_scen as P5             # пятая партия так же, номера блоков после четвёртой
+    blds += P5.load()[2]
+    BOX.update(P5.BOX)
+    LABEL_EN.update(P5.LABEL_EN)
+    import collapse_pilot6_scen as P6             # шестая партия так же, номера блоков после пятой
+    blds += P6.load()[2]
+    BOX.update(P6.BOX)
+    LABEL_EN.update(P6.LABEL_EN)
     if len({b[2] for b in blds}) != len(blds) or len(set(LABEL_EN.values())) != len(LABEL_EN):
         raise SystemExit("метки зданий пилота не уникальны")
+    if EXPERIMENTAL - set(LABEL_EN.values()):
+        raise SystemExit("в EXPERIMENTAL метки не из пилота: %s" % sorted(EXPERIMENTAL - set(LABEL_EN.values())))
     datas = run_check(C, blds)
     if cmd == "export":
         # третий аргумент - другой путь заголовка (проверка переноса в блокноте, без очереди правок)
