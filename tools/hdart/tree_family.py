@@ -540,6 +540,13 @@ RETRY = {
     "OT012": "a loose net of thick hanging jungle vines, every vine a thick rope densely covered with overlapping "
              "small green and dark green leaves, the vines branching and hanging down in separate strands with "
              "wide dark gaps between them",
+    # партия 7 (14.10, до вердикта - один повтор явного брака): CP008 - у классики на кусте один крупный красный
+    # цветок, а не ягоды, он пропал; OT069 - пропали широкие зелёные листья у основания, остались голые стебли
+    "CP008": dict(
+        main="one large dense rounded bush of black and very dark grey leaves with one bright red flower with "
+             "open petals clearly visible on its front side"),
+    "OT069": "one jungle plant: a dense clump of broad bright and dark green leaves covering its lower half, and "
+             "several thick bare pale pinkish grey stems rising out of the leaves and spreading sideways" + GRASS,
 }
 
 
@@ -626,7 +633,11 @@ def main():
         miss = [f for f in fams if f not in RETRY]
         if miss:
             raise SystemExit("--retry: нет описания повтора у %s" % miss)
-        SINGLES.update({f: RETRY[f] for f in fams})
+        for f in fams:                   # словарь - повтор семейства: дополняет его описания (main, cut0...)
+            if isinstance(RETRY[f], dict):
+                FAMILIES[f] = {**FAMILIES[f], **RETRY[f]}
+            else:
+                SINGLES[f] = RETRY[f]
         if args.out is None:
             args.out = SINGLE_OUT % batch + "_retry"
     bad = [f for f in fams if f not in FAMILIES and f not in MODULES and f not in SINGLES
