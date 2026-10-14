@@ -7,6 +7,13 @@
 *.h text
 *.rc text
 
+# Замки модели обрушения (census/collapse/**/*.lock.txt) хэшируют байты файла, а не текст (грабли R-252):
+# при выкладке концы строк обязаны быть те, с которыми записан замок. collapse_v2.py и collapse_ctype_marks.py заперты в CRLF, остальные в LF.
+# Проверка - tools/test_collapse_lock_eol.py.
+tools/collapse_*.py text eol=lf
+tools/collapse_v2.py text eol=crlf
+tools/collapse_ctype_marks.py text eol=crlf
+
 # Declare files that will always have CRLF line endings on checkout.
 *.sln text eol=crlf
 *.vcxproj* text eol=crlf
