@@ -47,6 +47,13 @@ CARPET = {
 GLOW_SMOOTH = (0.55, 0.60)          # review, hold
 GLOW_FLAT_MAX = (0.52, 0.48)        # review, hold
 GLOW_BIG_MAX = 0.05
+# lines: ковёр шума - индекс лежит пятнами в 1-2 пикселя без периода (грунт, трава, щебень). pixel_lines ведёт
+# каждую границу индекса линией, и шум становится камуфляжем (b11: FORESTSWAMP_WASTE 111-139, MOUNTTROP 4/5,
+# SGR_CAVE 19/20, SIETCHDOOM 68 - med 1-2.5, per 0.17-0.52). Решётки при том же med - с периодом:
+# CYBERWAREBITS 20 0.76, WAREBITS 20 0.77, XOPSDESERTRUINS 11 0.75, IDT_SNOWBARN 49 0.73, LIGHTNIN_R 25 0.97,
+# доски SEAMSUNK1 35 0.68.
+NOISE_MED_MAX = 2.5
+NOISE_PER_MAX = 0.60
 
 
 def palette_y():
@@ -117,6 +124,48 @@ def _components(mask):
     return np.array(sizes, np.float64)
 
 
+def _region_med(a):
+    """Размер 4-связной области одного индекса, медиана по пикселям: у шума 1-2, у рисунка десятки."""
+    m = a != 0
+    seen = np.zeros_like(m)
+    H, W = a.shape
+    sizes = []
+    for y0, x0 in zip(*np.nonzero(m)):
+        if seen[y0, x0]:
+            continue
+        v = a[y0, x0]
+        st = [(y0, x0)]
+        seen[y0, x0] = True
+        n = 0
+        while st:
+            y, x = st.pop()
+            n += 1
+            for dy, dx in ((0, 1), (1, 0), (0, -1), (-1, 0)):
+                yy, xx = y + dy, x + dx
+                if 0 <= yy < H and 0 <= xx < W and not seen[yy, xx] and a[yy, xx] == v:
+                    seen[yy, xx] = True
+                    st.append((yy, xx))
+        sizes.append(n)
+    s = np.array(sizes, np.int64)
+    return float(np.median(np.repeat(s, s))) if s.size else 0.0
+
+
+def _period(a):
+    """Периодичность индексов: лучшая доля a[y,x] == a[y+dy,x+dx] по сдвигам до 8 (не ближе 2): решётка - высокая."""
+    H, W = a.shape
+    best = 0.0
+    for dy in range(0, 9):
+        for dx in range(-8, 9):
+            if (dy == 0 and dx <= 0) or max(abs(dx), dy) < 2:
+                continue
+            x0, x1 = max(0, -dx), W - max(0, dx)
+            A, B = a[0:H - dy, x0:x1], a[dy:H, x0 + dx:x1 + dx]
+            ok = (A != 0) & (B != 0)
+            if ok.sum() >= 100:
+                best = max(best, float((A == B)[ok].mean()))
+    return best
+
+
 def _pairs(y, m, dy, dx):
     """Пары соседей со сдвигом (dy, dx), dy и dx - 0 или 1."""
     H, W = y.shape
@@ -164,7 +213,7 @@ def measures(a):
         f2 += np.abs(r - 2 * c + l)[ok].sum()
     smooth = float(f1 / max(f2, 1e-9))
     return {"sd": sd, "low2": low2, "flat": flat, "big": big, "clump": clump, "coh": coh, "smooth": smooth,
-            "n": int(m.sum())}
+            "med": _region_med(a), "per": _period(a), "n": int(m.sum())}
 
 
 def carpet_verdict(r):
@@ -177,7 +226,10 @@ def carpet_verdict(r):
 
 
 def lines_verdict(r):
-    """ok / review / hold для pixel_lines: свечение без плоских участков и резких перепадов."""
+    """ok / review / hold для pixel_lines: свечение без плоских участков и резких перепадов, ковёр шума."""
+    if r["med"] <= NOISE_MED_MAX and r["per"] < NOISE_PER_MAX:
+        return "hold", ["ковёр шума: области индекса %.1f пикс, период %.2f - нужна фактура, не линии"
+                        % (r["med"], r["per"])]
     if r["big"] > GLOW_BIG_MAX:
         return "ok", []
     why = "мягкое свечение: плавность %.2f, плоских пар %.2f" % (r["smooth"], r["flat"])

@@ -7,8 +7,10 @@
   pixel_lines:
     SGR_COM:51, SGR_INT02:11, XB2BR:27 (b09), U_WALLCHURCH:23 (b07) - мягкое свечение стало вложенными
     контурами - обязан быть hold;
-    чёткие швы и орнамент, принятые pixel_lines, - обязаны быть ok.
-Контроль: RECIPE_GUARD_OFF=1 снимает пороги (бесконечность) - тест обязан упасть на NUKE1 и свечении.
+    чёткие швы и орнамент, принятые pixel_lines, - обязаны быть ok;
+    ковёр шума (b11: FORESTSWAMP_WASTE, MOUNTTROP, SGR_CAVE, SIETCHDOOM...) - камуфляж из линий - обязан быть hold;
+    решётки и доски с тем же мелким индексом, но с периодом (CYBERWAREBITS:20, LIGHTNIN_R:25...) - ok.
+Контроль: RECIPE_GUARD_OFF=1 снимает пороги (бесконечность) - тест обязан упасть на NUKE1, свечении и шуме.
 Запуск: py -3.13 tools/test_recipe_guard.py
 """
 import os
@@ -37,6 +39,13 @@ CASES = [
     "A_DECOR:92", "CRYPTEK1:0", "DAWNURBAN:80", "GDXOPSFLOORS:48", "SGR_WALLS_B:22", "THULBASES01:12",
     "U_EXT_P:26", "WHITECASTLE:1", "FREIGHTER_COMMAND:124", "FREIGHTER_TECHNICAL:7", "MARSEC_INT_2:74",
     "SGR_INT02:17", "ABUNKER:20", "UAC_WALL02_V:15")] + [
+    # b11: ковёр шума под pixel_lines стал камуфляжем - hold; решётки и доски с тем же мелким индексом - ok
+    (g, LINES, "hold") for g in (
+        "FORESTSWAMP_WASTE:139", "FORESTSWAMP_WASTE:112", "MOUNTTROP:4", "MOUNTTROP:5", "SGR_CAVE:19",
+        "SIETCHDOOM:68", "DESERTROCKS_RED:1", "IDT_FARM_WATER:84")] + [
+    (g, LINES, "ok") for g in (
+        "CYBERWAREBITS:20", "WAREBITS:20", "XOPSDESERTRUINS:11", "IDT_SNOWBARN:49", "LIGHTNIN_R:25",
+        "SEAMSUNK1:35", "GOVT:25", "GDXOPSFLOORS:55")] + [
     # рецепт без проверки: ground_seam без --speckle (поле, ступени) не судится ковровой проверкой
     ("NUKE1:16", "ground_seam --iso", "ok"),
 ]
@@ -47,6 +56,7 @@ def main():
         inf = float("inf")
         rg.CARPET = {k: (inf, inf, v[2]) for k, v in rg.CARPET.items()}
         rg.GLOW_SMOOTH = (inf, inf)
+        rg.NOISE_MED_MAX = -inf
     bad = []
     for g, meth, want in CASES:
         v, why, _m = rg.check(g, meth)
