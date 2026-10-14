@@ -6,7 +6,7 @@ r"""Пилот обрушения в движке (этап 1): невидимы
 CollapsePilot.cpp ставит бойцов на клетки участка (OXCE_COLLAPSE_UNIT, _STUN - без сознания, _DROP - предмет
 с земли) на первом обходе settle и снимает части сценария (OXCE_COLLAPSE_REMOVE, номера частей блока) на
 обходе OXCE_COLLAPSE_AT. Обходы - конец хода игрока (и цепочки взрывов местности). Итог сверяется с моделью
-M0j3 (collapse_v7c.evaluate7c - то же, что вывезено в CollapsePilotData.h): число упавших частей здания,
+M0j4 (collapse_v7c.evaluate7c после collapse_v7d.install() - то же, что вывезено в CollapsePilotData.h): число упавших частей здания,
 а бойцы, тело и предмет - по сохранению после хода ИИ.
 
     py -3.13 tools\collapse_pilot_run.py find  <сейв>...         в каком сейве стоит здание пилота (лог found)
@@ -115,14 +115,26 @@ def scen_rows(label_en, cells=None, only=None):
 # ------------------------------------------------------------------ модель
 
 _model = {}
+_model_lock = threading.Lock()
 
 
 def model_fell(label_en, removed_keys):
-    """Части здания (внутри участка пилота), которые модель M0j3 роняет при снятом removed_keys."""
+    """Части здания (внутри участка пилота), которые модель M0j4 (как в игре) роняет при снятом removed_keys."""
+    with _model_lock:          # прогоны идут потоками: соседний не должен увидеть словарь заполненным наполовину
+        _load_model()
+    C, blk, box, inside = _model[label_en]
+    rm = frozenset(k for k in removed_keys if inside(k, box))
+    held = C.evaluate7c(blk, rm)[0]
+    return sorted(k for k in blk.parts if inside(k, box) and k not in held and k not in rm)
+
+
+def _load_model():
     if not _model:
         import collapse_pilot_scen as PS
         import collapse_pilot_export as EX
         import collapse_pilot3_scen as P3
+        import collapse_v7d as D
+        D.install()                               # evaluate7c считает M0j4, как заголовок игры
         C, CT, blds = PS.load()
         first = PS.PILOT
         PS.PILOT = P3.PILOT
@@ -132,10 +144,6 @@ def model_fell(label_en, removed_keys):
         EX.LABEL_EN.update(P3.LABEL_EN)
         for tn, bn, label, blk in blds:
             _model[EX.LABEL_EN[label]] = (C, blk, EX.BOX[label], EX.inside)
-    C, blk, box, inside = _model[label_en]
-    rm = frozenset(k for k in removed_keys if inside(k, box))
-    held = C.evaluate7c(blk, rm)[0]
-    return sorted(k for k in blk.parts if inside(k, box) and k not in held and k not in rm)
 
 
 # ------------------------------------------------------------------ сохранение
@@ -265,7 +273,7 @@ def run_scen(a, r, blocks, label):
         m = re.match(r"\[AIPROBE\] done: (\d+) AI turn\(s\), (\d+) ms real", l)
         if m:
             summ["probe_ms"] = int(m.group(2))
-        # вход и выход модели движка на каждом обходе - против эталона M0j3 на том же входе
+        # вход и выход модели движка на каждом обходе - против эталона M0j4 на том же входе
         m = re.match(r"\[COLLAPSE\] debug: model %s at (\d+),(\d+),(\d+) removed=([\d,]*) fell=([\d,]*)" % label, l)
         if m:
             parts = blocks[label]["parts"]

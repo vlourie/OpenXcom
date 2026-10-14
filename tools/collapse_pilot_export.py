@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-r"""Пилот обрушения в движке (этап 1): выгрузка модели M0j3 с разметкой v2 для зданий пилота
+r"""Пилот обрушения в движке (этап 1): выгрузка модели M0j4 (M0j3 плюс консоль стены, tools/collapse_v7d.py)
+с разметкой v2 для зданий пилота
 (дом амбара и бункер - collapse_pilot_scen.PILOT, третья партия - collapse_pilot3_scen.PILOT) в C++ и
 проверка переноса.
 
 Модель под замками не меняется и не копируется целиком: на этих зданиях живы не все её ветки. Всё,
 что зависит только от целого блока (тип пола, настил, стойки навеса, несущее целого блока carry0, касание
 стены с предметом ниже, цели разметки, роль и класс), считается здесь моделью и выгружается готовым; в бою
-считается только ядро evaluate2j (плита Z, перемычки k, X, a, b) и слой разметки v7c.
+считается только ядро evaluate2w (плита Z, перемычки k с консолью стены, X, a, b) и слой разметки v7c.
 
 Ветки, которых в переносе нет (деревья D, корпус G/O, особые роли A, STRUCTURE разметки, половинная консоль c),
 останавливают выгрузку, если в здании есть хоть одна их часть.
@@ -35,6 +36,9 @@ VECTORS = OUT + "/vectors.txt"
 SCENS = ["census/collapse/stage0m/pilot_scen.tsv", "census/collapse/pilot3/pilot_scen.tsv"]
 BOX = {"амбар": (2, 11, 2, 11), "бункер": (1, 7, 1, 7)}     # здание пилота: клетки x0..x1, y0..y1
 LABEL_EN = {"амбар": "barn", "бункер": "bunker"}            # метка здания в логе игры
+# здания, у которых остались провальные сценарии (census/collapse/pilot3/fail_cases.md): в заголовке с флагом
+# experimental, движок берёт их только в сборке стенда (OXCE_AI_DEV), игрокам не выходят
+EXPERIMENTAL = {"banditbarn1", "banditbarn2"}
 # третья партия: рамки и метки в collapse_pilot3_scen (метка обязана быть уникальной - по ней removal_sets
 # берёт сценарии здания)
 KIND = {"f": 0, "w": 1, "n": 2, "o": 3}                   # O_FLOOR, O_WESTWALL, O_NORTHWALL, O_OBJECT
@@ -42,7 +46,8 @@ N_RANDOM = 1500
 SEED = 20261008
 SOURCES = ["tools/collapse_v7c.py", "tools/collapse_v7b.py", "tools/collapse_v7.py", "tools/collapse_v6.py",
            "tools/collapse_v5.py", "tools/collapse_v3.py", "tools/collapse_v2.py", "tools/collapse_attach_v2.py",
-           "tools/collapse_pilot_scen.py", "tools/collapse_pilot3_scen.py", "tools/collapse_pilot_export.py"]
+           "tools/collapse_pilot_scen.py", "tools/collapse_pilot3_scen.py", "tools/collapse_v7d.py",
+           "tools/collapse_pilot_export.py"]
 
 
 def sha(path):
@@ -70,6 +75,7 @@ def static(C, blk, label):
     import collapse_v6 as M
     import collapse_v7 as J
     import collapse_v7b as K
+    import collapse_v7d as D
     flags = C.MODEL
     f2 = "".join(c for c in flags if c not in T.V3_FLAGS).replace("V", "")
     stop = []
@@ -97,7 +103,7 @@ def static(C, blk, label):
             raise SystemExit("выгрузка %s остановлена: %s" % (label, "; ".join(stop)))
         with K.items_only():
             attach_roles = set(J.ATTACH_ROLES)
-            carry0 = J.intact_carry(blk, f2, dict(C=2, L=12, mass_rule=True, order=2, carry_rule="any",
+            carry0 = D.intact_carry(blk, f2, dict(C=2, L=12, mass_rule=True, order=2, carry_rule="any",
                                                   run_c=2, roof_reach=1))
         ft = T.floor_types(blk)
         tg = C.marked_parts(blk)
@@ -134,7 +140,7 @@ def static(C, blk, label):
 # ------------------------------------------------------------------ упрощённая копия расчёта
 
 def ref_eval(d, removed):
-    """evaluate7c на этих зданиях: ядро evaluate2j (Z, X, F, k, a, b; R U A Q I M без своих частей) и слой v7c.
+    """evaluate7c под M0j4 на этих зданиях: ядро evaluate2w (Z, X, F, k с консолью стены, a, b; R U A Q I M без своих частей) и слой v7c.
     removed - множество номеров частей. Возвращает множество номеров держащихся частей."""
     P = d["parts"]
     sx, sy, sz = d["sx"], d["sy"], d["sz"]
@@ -200,6 +206,8 @@ def ref_eval(d, removed):
             if xy in okf:
                 sup.add(live[0][xy])
         lint = ref_lintels(P, live, below, carry, strong)
+        cons = ref_consoles(P, live, below, carry, strong, lint)
+        lint |= cons
         for k, sides in ((1, lambda x, y: ((x, y), (x - 1, y))), (2, lambda x, y: ((x, y), (x, y - 1)))):
             for (x, y), i in live[k].items():
                 u = below[k].get((x, y))
@@ -211,9 +219,10 @@ def ref_eval(d, removed):
                     held = any(s in strong for s in sides(x, y)) or i in lint
                 else:
                     held = any(s in okf for s in sides(x, y)) or u in carry or i in lint or on_obj > 0
+                cons_only = i in cons and not (any(s in okf for s in sides(x, y)) or u in carry or on_obj > 0)
                 if held:
                     sup.add(i)
-                    if P[i]["bearing"]:
+                    if P[i]["bearing"] and not cons_only:
                         carry.add(i)
                 elif i in nobase:
                     fallen_x.add(i)
@@ -413,6 +422,52 @@ def ref_lintels(P, live, below, carry, strong):
     return out
 
 
+def ref_consoles(P, live, below, carry, strong, lint, wc=2):
+    """collapse_v7d.wall_consoles: ряд несущих стен до wc клеток, упёртый в базу или угол хотя бы с одной стороны."""
+    def based(k, xy, i):
+        if not P[i]["bearing"]:
+            return False
+        if below[k].get(xy) in carry:
+            return True
+        x, y = xy
+        sides = ((x, y), (x - 1, y)) if k == 1 else ((x, y), (x, y - 1))
+        return any(s in strong for s in sides)
+
+    base = {k: {xy for xy, i in live[k].items() if based(k, xy, i)} for k in (1, 2)}
+
+    def corner(k, px, py):
+        if k == 1:
+            return (px - 1, py) in base[2] or (px, py) in base[2]
+        return (px, py - 1) in base[1] or (px, py) in base[1]
+
+    out = set()
+    for k, (dx, dy) in ((1, (0, 1)), (2, (1, 0))):
+        lw = live[k]
+        for (x, y), i in lw.items():
+            if i in lint or below[k].get((x, y)) in carry or not P[i]["bearing"]:
+                continue
+            run, anchored = 1, 0
+            for sgn in (1, -1):
+                cx, cy = x, y
+                while True:
+                    px, py = (cx + dx, cy + dy) if sgn > 0 else (cx, cy)
+                    if corner(k, px, py):
+                        anchored += 1
+                        break
+                    cx += dx * sgn
+                    cy += dy * sgn
+                    nk = lw.get((cx, cy))
+                    if nk is None or not P[nk]["bearing"]:
+                        break
+                    if (cx, cy) in base[k]:
+                        anchored += 1
+                        break
+                    run += 1
+            if anchored >= 1 and run <= wc:
+                out.add(i)
+    return out
+
+
 # ------------------------------------------------------------------ наборы снятого
 
 def removal_sets(d, rows, rng):
@@ -490,7 +545,8 @@ def run_check(C, blds, write=None):
 
 def cpp_header(datas):
     L = ["// Сгенерировано tools/collapse_pilot_export.py - руками не править.",
-         "// Пилот обрушения: модель M0j3 с разметкой v2 (stage0l/stage0m, pilot3), здания пилота.",
+         "// Пилот обрушения: модель M0j4 (M0j3 плюс консоль стены) с разметкой v2 (stage0l/stage0m, pilot3), "
+         "здания пилота.",
          "// Источники модели (sha256):"]
     L += ["//   %s %s" % (p, sha(p)) for p in SOURCES]
     L += ["#pragma once", "#include \"CollapseCore.h\"", "", "namespace OpenXcom", "{", "namespace CollapsePilotData",
@@ -520,9 +576,10 @@ def cpp_header(datas):
     L.append("static const CollapseBlock blocks[] = {")
     for bi, d in enumerate(datas):
         b = d["box"]
-        L.append('\t{ "%s", "%s", %d, %d, %d, %d, %d, %d, %d, sets%d, %d, parts%d, %d, targets%d },' % (
+        L.append('\t{ "%s", "%s", %d, %d, %d, %d, %d, %d, %d, sets%d, %d, parts%d, %d, targets%d, %d },' % (
             LABEL_EN[d["label"]], d["name"], d["sx"], d["sy"], d["sz"], b[0], b[1], b[2], b[3], bi,
-            len({e["set"] for e in d["parts"]}), bi, len(d["parts"]), bi))
+            len({e["set"] for e in d["parts"]}), bi, len(d["parts"]), bi,
+            1 if LABEL_EN[d["label"]] in EXPERIMENTAL else 0))
     L.append("};")
     L.append("static const int blockCount = %d;" % len(datas))
     L += ["", "}", "}", ""]
@@ -546,7 +603,9 @@ def main():
     sys.stdout.reconfigure(encoding="utf-8")
     import collapse_pilot_scen as PS
     import collapse_pilot3_scen as P3
+    import collapse_v7d as D
     cmd = sys.argv[1] if len(sys.argv) > 1 else "check"
+    D.install()                                   # evaluate7c в этом процессе считает M0j4 (PS.load ORIG7 не трогает)
     # порядок в заголовке: сначала здания 0m (их векторы и номера блоков прежние), затем третья партия
     C, CT, blds = PS.load()
     first = PS.PILOT

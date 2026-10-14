@@ -19,7 +19,8 @@
 #include "CollapseCore.h"
 #include <algorithm>
 
-// Port of tools/collapse_pilot_export.py ref_eval (= collapse_v7c.evaluate7c on the pilot buildings).
+// Port of tools/collapse_pilot_export.py ref_eval (= model M0j4: collapse_v7c.evaluate7c after collapse_v7d.install(),
+// i.e. M0j3 plus wall consoles, on the pilot buildings).
 // Every set of the model is a byte array: cells of one level or parts of the block.
 
 namespace OpenXcom
@@ -30,6 +31,7 @@ namespace
 
 const int C_CONSOLE = 2;  // console from a support (collapse_v2 C)
 const int LINTEL = 4;     // lintel over an opening (collapse_v2 LINTEL)
+const int WALL_CONSOLE = 2; // wall console from one side (collapse_v7d WC, model M0j4)
 const int NONE = -1;
 
 /// Cell set of one level; anything outside the block is never in a set.
@@ -308,7 +310,7 @@ void collapseEvaluate(const CollapseBlock &blk, const std::vector<uint8_t> &remo
 			for (int x = 0; x < sx; ++x)
 				if (floors.has(x, y) && okf.has(x, y)) sup[fkey(x, y)] = 1;
 		// lintels with corners (collapse_v6.lintels6)
-		std::vector<uint8_t> lint(n, 0);
+		std::vector<uint8_t> lint(n, 0), cons(n, 0);
 		{
 			Cells base[3] = { Cells(sx, sy), Cells(sx, sy), Cells(sx, sy) };
 			for (int k = 1; k <= 2; ++k)
@@ -358,6 +360,38 @@ void collapseEvaluate(const CollapseBlock &blk, const std::vector<uint8_t> &remo
 						if (ok && run <= LINTEL) lint[i] = 1;
 					}
 			}
+			// wall consoles (collapse_v7d.wall_consoles): a run of up to WALL_CONSOLE bearing walls resting on a
+			// base or a corner on at least one side holds, but carries nothing
+			for (int k = 1; k <= 2; ++k)
+			{
+				const int dx = (k == 1) ? 0 : 1, dy = (k == 1) ? 1 : 0;
+				for (int y = 0; y < sy; ++y)
+					for (int x = 0; x < sx; ++x)
+					{
+						const int i = live(k, x, y);
+						if (i == NONE) continue;
+						if (lint[i] || in(carry, B.at(k, x, y)) || !bearing(i)) continue;
+						int run = 1, anchored = 0;
+						for (int sgn = 1; sgn >= -1; sgn -= 2)
+						{
+							int cx = x, cy = y;
+							while (true)
+							{
+								const int px = sgn > 0 ? cx + dx : cx, py = sgn > 0 ? cy + dy : cy;
+								if (corner(k, px, py)) { anchored += 1; break; }
+								cx += dx * sgn;
+								cy += dy * sgn;
+								const int nk = live(k, cx, cy);
+								if (nk == NONE || !bearing(nk)) break;
+								if (base[k].has(cx, cy)) { anchored += 1; break; }
+								run += 1;
+							}
+						}
+						if (anchored >= 1 && run <= WALL_CONSOLE) cons[i] = 1;
+					}
+			}
+			for (int i = 0; i < n; ++i)
+				if (cons[i]) lint[i] = 1;
 		}
 		// walls (w: sides (x,y) (x-1,y); n: (x,y) (x,y-1))
 		for (int k = 1; k <= 2; ++k)
@@ -375,10 +409,12 @@ void collapseEvaluate(const CollapseBlock &blk, const std::vector<uint8_t> &remo
 						h = strong.has(x, y) || strong.has(sx2, sy2) || lint[i];
 					else
 						h = okf.has(x, y) || okf.has(sx2, sy2) || in(carry, u) || lint[i] || onObj > 0;
+					// held by a wall console only: stands, but nothing rests on it
+					const bool consOnly = cons[i] && !(okf.has(x, y) || okf.has(sx2, sy2) || in(carry, u) || onObj > 0);
 					if (h)
 					{
 						sup[i] = 1;
-						if (bearing(i)) carry[i] = 1;
+						if (bearing(i) && !consOnly) carry[i] = 1;
 					}
 					else if (nobase[i])
 					{

@@ -1,5 +1,5 @@
 // Сгенерировано tools/collapse_pilot_export.py - руками не править.
-// Пилот обрушения: модель M0j3 с разметкой v2 (stage0l/stage0m, pilot3), здания пилота.
+// Пилот обрушения: модель M0j4 (M0j3 плюс консоль стены) с разметкой v2 (stage0l/stage0m, pilot3), здания пилота.
 // Источники модели (sha256):
 //   tools/collapse_v7c.py 20d412436de197cf2ebe3f4fb5eecc5705015434f14fa081f1c094d9ad9a74d0
 //   tools/collapse_v7b.py b1d9dfa285c540b88aed241affecd164d05092472d58ae633048c99567f8a683
@@ -11,7 +11,8 @@
 //   tools/collapse_attach_v2.py c2f02915d80b32bc3c5d6fe5462bc8a78d7b84074cf147e47191824fb6363096
 //   tools/collapse_pilot_scen.py 20cd57b5046f03a622f5127d2f6530f4a4201e830e7d802f04b6c927beb3d69c
 //   tools/collapse_pilot3_scen.py ad2d24de3a57e81ea2e73372da2e0e8e196212b92f558c0ec4fc1e029c154c3b
-//   tools/collapse_pilot_export.py 1590d78e60e4d81b7356a41011b59869e3eb0c210d8e5b3d99f65a693abf94e9
+//   tools/collapse_v7d.py e1e24e9f9bb8512f339321ce81ebe6012da578e0eb0566f881ad3b2603d60f17
+//   tools/collapse_pilot_export.py b4da676d36f80481bf2084a2d48a3c5910a43acfc211741f53f21b6effc7932b
 #pragma once
 #include "CollapseCore.h"
 
@@ -3024,11 +3025,11 @@ static const CollapsePart parts4[] = {
 static const int targets4[] = { -1 };
 
 static const CollapseBlock blocks[] = {
-	{ "barn", "STR_LOC_DOOMED_FARM_24@28,18-41,41", 14, 24, 10, 2, 11, 2, 11, sets0, 2, parts0, 895, targets0 },
-	{ "bunker", "GOVBASE_D_08", 10, 10, 4, 1, 7, 1, 7, sets1, 4, parts1, 194, targets1 },
-	{ "banditbarn1", "STR_LOC_BANDIT_TOWN_25@38,8-49,31", 12, 24, 9, 2, 11, 2, 11, sets2, 2, parts2, 714, targets2 },
-	{ "banditbarn2", "STR_LOC_BANDIT_TOWN_25@8,38-31,49", 24, 12, 9, 2, 11, 2, 11, sets3, 3, parts3, 703, targets3 },
-	{ "riceshed", "ALT_BARN_10", 20, 20, 4, 7, 10, 6, 8, sets4, 4, parts4, 467, targets4 },
+	{ "barn", "STR_LOC_DOOMED_FARM_24@28,18-41,41", 14, 24, 10, 2, 11, 2, 11, sets0, 2, parts0, 895, targets0, 0 },
+	{ "bunker", "GOVBASE_D_08", 10, 10, 4, 1, 7, 1, 7, sets1, 4, parts1, 194, targets1, 0 },
+	{ "banditbarn1", "STR_LOC_BANDIT_TOWN_25@38,8-49,31", 12, 24, 9, 2, 11, 2, 11, sets2, 2, parts2, 714, targets2, 1 },
+	{ "banditbarn2", "STR_LOC_BANDIT_TOWN_25@8,38-31,49", 24, 12, 9, 2, 11, 2, 11, sets3, 3, parts3, 703, targets3, 1 },
+	{ "riceshed", "ALT_BARN_10", 20, 20, 4, 7, 10, 6, 8, sets4, 4, parts4, 467, targets4, 0 },
 };
 static const int blockCount = 5;
 
