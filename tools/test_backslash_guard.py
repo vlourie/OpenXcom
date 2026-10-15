@@ -39,6 +39,25 @@ DENY = {
     "py - с 2>/dev/null": "cd $S && py -3.13 - 2>/dev/null; grep -n x f.py",
     "python - с 2>&1": "python - 2>&1 | tail -3",
     "py - с 2>/dev/null и пустым heredoc": "py -3.13 - 2>/dev/null <<'EOF'\nEOF",
+    # четвёртый раз R-184 (03.10): ключ с аргументом между версией и - , плюс < /dev/null
+    "py -3.13 -X utf8 -": "py -3.13 -X utf8 -",
+    "python -u -": "python -u -",
+    "py -X utf8 - < /dev/null (случай 03.10)":
+        "PYTHONIOENCODING=utf-8 py -3.13 -X utf8 - < /dev/null 2>/dev/null; grep -n x f.py",
+    "py -3.13 -W ignore - < /dev/null": "py -3.13 -W ignore - < /dev/null",
+    "py -Xutf8 слитно без скрипта": "py -3.13 -Xutf8 -u 2>&1 | tail -3",
+    "python -i без скрипта": "python -i > out.txt",
+    "py -V:3.13 -": "py -V:3.13 - ; echo x",
+    # пятый раз R-184 (07.10): питон за словом оболочки do / then не считался началом команды
+    "py - < /dev/null за do (случай 07.10)":
+        "cd /c/some/dir; for f in a.py b.py; do py -3.13 - < /dev/null 2>/dev/null; done; grep -n \"x\" a.py",
+    "while ... do python -": "while true; do python - ; done",
+    "if ... then py -X utf8 - < NUL": "if x; then py -3.13 -X utf8 - < NUL; fi",
+    "else python -": "if x; then echo; else python -; fi",
+    "{ python - ; }": "{ python - ; } 2>&1",
+    "! py -": "! py -3.13 - 2>/dev/null",
+    "time python -": "time python -",
+    "py -X utf8 -c с косой":"py -3.13 -X utf8 -c \"print('a" + BS + "nb')\"",
 }
 
 ALLOW = {
@@ -69,6 +88,17 @@ ALLOW = {
     "python -m": "python -m pytest -q",
     "python --version": "python --version && py -0p",
     "python в тексте": "grep -n python f.txt; echo use py",
+    "py -3.13 -X utf8 со скриптом": "py -3.13 -X utf8 tools/x.py",
+    "py -3.13 -m pytest": "py -3.13 -m pytest",
+    "py -3.13 -W ignore - < файл": "py -3.13 -W ignore - < f",
+    "py -3.13 -X utf8 -c без косой": "py -3.13 -X utf8 -c \"print(1)\"",
+    "python -V": "python -V",
+    "py -3.13 -u со скриптом 2>&1": "py -3.13 -u -X utf8 tools/x.py 2>&1 | tail",
+    "for ... do py \"$f\"": "for f in *.py; do py -3.13 \"$f\"; done",
+    "for ... do python скрипт": "for f in a; do python tools/x.py; done",
+    "if ... then py скрипт": "if x; then py -3.13 -X utf8 tools/x.py < NUL; fi",
+    "do python - с непустым heredoc": "for f in a; do python - <<'EOF'\nprint(1)\nEOF\ndone",
+    "слово do в тексте": "echo do python -m x; grep -n 'then py' f.txt",
 }
 
 

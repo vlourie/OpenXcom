@@ -2,6 +2,8 @@
 # Читают двое: tools/gpuq.py (видит запуск мимо очереди и ждёт его) и
 # .claude/hooks/gpu-guard.ps1 (не даёт агенту запустить такой скрипт мимо очереди).
 # Новый скрипт с моделью - дописать сюда. Проверка полноты: python tools/test_gpu_scripts.py
+# Здесь только запускаемые (класс GPU_MODEL_SCRIPT) и внешние программы, которые они зовут (train.py);
+# библиотеки без __main__ (vx_control.py) не пишутся - их запускает скрипт, который уже в списке.
 gen_hd.py
 gen_lora_batch.py
 gen_lora_test.py
@@ -47,20 +49,45 @@ floor_group.py
 obj_photo.py
 ground_relief.py
 long_object.py
-vx_control.py
 gen_fire_real.py
 identity_propose.py
 acceptance_run.py
+repro_smoke.py
+arbiter.py
+arbiter_v2.py
 photo_render.py
 struct_probe.py
 photo_struct_render.py
+item_photo.py
 hd_e2e_v1_run.py
+unit_pilot.py
+unit_refit.py
+unit_direct.py
 restore_probe_v1.py
 restore_probe_v1b.py
+restore_probe_v1c.py
 restore_batch_v1.py
 strict_ctl_v1.py
 prod_two_pass_v1.py
 prod_two_pass_v2.py
+prod_two_pass_v4.py
+unit_parts.py
+weapons_batch.py
+weapons_sr.py
+qwen_literal.py
+weapons_edit.py
+unit_turnaround.py
+weapons_probe3.py
+weapons_probe4.py
+weapons_probe5.py
+weapons_restore.py
+weapons_synth.py
+weapons_redraw.py
+agent_full.py
+qwen_judge.py
+handob_gpu.py
+handob_tommy_q21.py
+handob_edit1642.py
 sidewalk_render.py
 wall_section.py
 wall_thru.py

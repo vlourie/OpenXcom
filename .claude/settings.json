@@ -101,6 +101,13 @@
           {
             "type": "command",
             "shell": "powershell",
+            "command": "& \"$env:CLAUDE_PROJECT_DIR/.claude/hooks/pack-guard.ps1\"",
+            "timeout": 15,
+            "statusMessage": "Проверяю, что в папку HD-пака пишет только сборщик"
+          },
+          {
+            "type": "command",
+            "shell": "powershell",
             "command": "& \"$env:CLAUDE_PROJECT_DIR/.claude/hooks/junction-guard.ps1\"",
             "timeout": 15,
             "statusMessage": "Проверяю, нет ли соединений в переносимой папке (R-047)"

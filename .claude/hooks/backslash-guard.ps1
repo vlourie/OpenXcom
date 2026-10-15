@@ -37,7 +37,8 @@ function Test-Command([string]$cmd) {
     }
 
     # код прямо в командной строке интерпретатора
-    if ($cmd -match '(?i)(^|[\s;&|(])(python3?|py|perl|ruby|node)(\.exe)?\s+(-[A-Za-z0-9.]+\s+)*-(c|e|E)\s') { return "$($Matches[2]) $($Matches[5])" }
+    # ключи до -c пропускаются вместе с аргументом (py -3.13 -X utf8 -c), как в Test-StdinPython
+    if ($cmd -match '(?i)(^|[\s;&|(])(python3?|py|perl|ruby|node)(\.exe)?((?:\s+(?:-[XW]\s+[^\s;&|<>()-]\S*|-[A-Za-z0-9.:]+))*)\s+-(c|e|E)\s') { return "$($Matches[2]) $($Matches[5])" }
 
     # правка файла на месте
     if ($cmd -match '(^|[\s;&|(])sed\s+(-[A-Za-z]*\s+)*-[A-Za-z]*i') { return 'sed -i' }
@@ -78,12 +79,17 @@ function Test-SlashFlags([string]$cmd) {
 
 # Грабли R-184: питон без скрипта (python -, py -3.13 без аргументов) читает программу из stdin.
 # Пустой heredoc или нет stdin вовсе - и у фоновой команды без консоли поднимается REPL, который
-# печатает свою ошибку по кругу: гигабайты лога. Можно: конвейер в питон, < файл, непустой heredoc.
+# печатает свою ошибку по кругу: гигабайты лога. Можно: конвейер в питон, < файл (не /dev/null), непустой heredoc.
 function Test-StdinPython([string]$cmd) {
     if (-not $cmd) { return $null }
     $lines = $cmd -split "`n"
-    # за питоном может идти перенаправление с номером потока (2>/dev/null, 2>&1) - третий раз R-184 прошёл именно так
-    $rx = '(?i)(?:^|[;&|(])\s*(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)*(?:\S*[/\\])?(python3?|py)(?:\.exe)?((?:\s+-(?:\d+(?:\.\d+)?|[uIBsSEOq]+))*)(\s+-)?(?=\s*(?:$|[;&|)<>]|\d+[<>]))'
+    # за питоном может идти перенаправление с номером потока (2>/dev/null, 2>&1) - третий раз R-184 прошёл именно так.
+    # Ключи интерпретатора пропускаются вместе с аргументом (-X utf8, -W ignore, -Xutf8) - четвёртый раз прошёл
+    # py -3.13 -X utf8 -; селектор версии лаунчера (-3.13, -3.13-64, -V:3.13). Ключи с учётом регистра:
+    # -V и -h печатают и выходят, -c и -m несут программу - на них совпадение обрывается, команда проходит.
+    # Пятый раз (07.10): питон сразу за do (for ...; do py -3.13 - < /dev/null; done) не считался началом
+    # команды; слова оболочки do/then/else/if/while, { ( ! time nohup exec теперь пропускаются
+    $rx = '(?i)(?:^|[;&|(])\s*(?:(?:(?:do|then|else|elif|if|while|until|time|nohup|exec)\s|[!{(])\s*)*(?:[A-Za-z_][A-Za-z0-9_]*=\S*\s+)*(?:\S*[/\\])?(python3?|py)(?:\.exe)?((?-i:\s+-(?:\d+(?:\.\d+)?(?:-(?:32|64|arm64))?|V:[^\s;&|<>()]+|[bBdEiIOPqRsSuvx]*[XW]\s*[^\s;&|<>()]+|[bBdEiIOPqRsSuvx]+))*)(\s+-)?(?=\s*(?:$|[;&|)<>]|\d+[<>]))'
     $tag = $null
     for ($i = 0; $i -lt $lines.Count; $i++) {
         $line = $lines[$i].TrimEnd("`r")
@@ -105,6 +111,8 @@ function Test-StdinPython([string]$cmd) {
                 if ((($body -join '') -replace '\s', '') -eq '') { return "$($m.Groups[1].Value) с пустым heredoc" }
                 continue
             }
+            # < /dev/null не stdin: NUL на Windows - символьное устройство, isatty() верно, и REPL поднимается (03.10)
+            if ($seg -match '(?i)(?:^|\s)0?<\s*(?:/dev/null|nul)(?=\s|$)') { return "$($m.Groups[1].Value)$($m.Groups[2].Value)$($m.Groups[3].Value) < /dev/null" }
             if ($seg -match '(?:^|\s)0?<') { continue }   # < файл, <<< строка
             return "$($m.Groups[1].Value)$($m.Groups[2].Value)$($m.Groups[3].Value) без stdin"
         }
