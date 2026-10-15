@@ -7,7 +7,8 @@
 Зеркальные близнецы уже лежат в render/b2 и render/xbrz перевёрнутыми (wall_exact: «зеркало <картинка>»).
 Картинка из review/hold.tsv (зеркальная пара, стороны которой получили бы разный источник) не ставится
 вовсе до решения Vitali: лево и право одной стены - одним рисунком. Картинка из review/flicker.tsv (точный
-дал мигание петли анимации, R-341) не ставится: остаётся прежний пак.
+дал мигание петли анимации, R-341) не ставится: остаётся прежний пак. Картинка из review/reject.tsv
+(B2 теряет материал против текущего, R-357; с зеркальной парой) не ставится: остаётся прежний пак.
 
   wall_exact_install.py --batches 1-11 [--yes]
 
@@ -47,7 +48,7 @@ def batches(s):
     return sorted(out)
 
 
-def plan_of(bs, replace, hold=(), flicker=()):
+def plan_of(bs, replace, hold=(), flicker=(), reject=()):
     """[(rel, src_png, кадр, картинка, источник, почему)] и сводка."""
     out, cnt, nopack = [], {}, []
     for b in bs:
@@ -55,6 +56,9 @@ def plan_of(bs, replace, hold=(), flicker=()):
             p, prop, why = r["картинка"], r["предложение"], r["причина"]
             if p in flicker:
                 cnt["мигание петли"] = cnt.get("мигание петли", 0) + 1
+                continue
+            if p in reject:
+                cnt["отклонено по материалу"] = cnt.get("отклонено по материалу", 0) + 1
                 continue
             if p in hold and (prop in SRC or p in replace):
                 cnt["отложено по зеркалу"] = cnt.get("отложено по зеркалу", 0) + 1
@@ -94,7 +98,9 @@ def main():
     hold = {r["картинка"] for r in rows(hp)} if hp.exists() else set()
     fp = R / "review" / "flicker.tsv"
     flicker = {r["картинка"] for r in rows(fp)} if fp.exists() else set()
-    plan, cnt, nopack = plan_of(batches(a.batches), replace, hold, flicker)
+    jp = R / "review" / "reject.tsv"
+    reject = {r["картинка"] for r in rows(jp)} if jp.exists() else set()
+    plan, cnt, nopack = plan_of(batches(a.batches), replace, hold, flicker, reject)
     rels = sorted({p[0] for p in plan})
     print("картинок по источнику: %s; файлов %d; кадров без пака в установке %d %s"
           % (cnt, len(rels), len(nopack), nopack[:10]))
