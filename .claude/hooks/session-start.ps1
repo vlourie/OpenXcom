@@ -33,17 +33,18 @@ try {
         $lines.Add("Карты проекта нет. Собрать: python tools/index_project.py")
     }
 
-    # --- 2. Грабли ----------------------------------------------------------
+    # --- 2. Грабли: короткий индекс ------------------------------------------
+    # Полный текст (docs/RAKES.md, 570+ КБ) в контекст не грузится (аудит кредитов 15.10.2026):
+    # десять самых частых одной строкой плюс команды поиска по файлу и по теме.
     if ($py -and (Test-Path 'tools/rake.py')) {
         try {
-            # коротко: полный текст граблей уже в контексте через @docs/RAKES.md в CLAUDE.md
-            $rakes = & $py.Source tools/rake.py list --short 2>&1 | Out-String
+            $rakes = & $py.Source tools/rake.py list --top 10 2>&1 | Out-String
             if ($rakes.Trim()) {
                 $lines.Add("")
-                $lines.Add("=== ГРАБЛИ ПРОЕКТА (docs/RAKES.md) ===")
+                $lines.Add("=== ГРАБЛИ ПРОЕКТА (docs/RAKES.md; целиком не читать) ===")
                 $lines.Add($rakes.Trim())
-                $lines.Add("Наступил снова -> python tools/rake.py hit R-0NN. Новые -> python tools/rake.py add.")
-                $lines.Add("Счётчик 2 и больше без защиты = обязан сделать тест или хук, а не ещё одну запись.")
+                $lines.Add("Это только самые частые - они не заменяют относящиеся к задаче. Перед правкой файла: python tools/rake.py match <файл> (хук правки сам покажет до трёх правил). По теме: python tools/rake.py find <слово>. Запись целиком: python tools/rake.py show R-0NN.")
+                $lines.Add("Наступил снова -> python tools/rake.py hit R-0NN. Новые -> python tools/rake.py add. Счётчик 2 и больше без защиты = тест или хук, а не ещё одна запись.")
             }
         } catch {}
     }
