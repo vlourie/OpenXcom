@@ -35,7 +35,7 @@ HEADER = "src/Battlescape/CollapsePilotData.h"
 VECTORS = OUT + "/vectors.txt"
 SCENS = ["census/collapse/stage0m/pilot_scen.tsv", "census/collapse/pilot3/pilot_scen.tsv",
          "census/collapse/pilot4/pilot_scen.tsv", "census/collapse/pilot5/pilot_scen.tsv",
-         "census/collapse/pilot6/pilot_scen.tsv"]
+         "census/collapse/pilot6/pilot_scen.tsv", "census/collapse/pilot7/pilot_scen.tsv"]
 BOX = {"амбар": (2, 11, 2, 11), "бункер": (1, 7, 1, 7)}     # здание пилота: клетки x0..x1, y0..y1
 LABEL_EN = {"амбар": "barn", "бункер": "bunker"}            # метка здания в логе игры
 # здания, у которых остались провальные сценарии (census/collapse/pilot3/fail_cases.md): в заголовке с флагом
@@ -47,7 +47,11 @@ EXPERIMENTAL = {"banditbarn1", "banditbarn2",
                 # пятая партия: census/collapse/pilot5/pilot_result.tsv; chemtown13 - сценариев нет, не проверен
                 "cultafarm03", "cultafarm05", "cultnew17", "chemtown91", "chemtown92", "chemtown13",
                 # шестая партия: census/collapse/pilot6/pilot_result.tsv
-                "comrcurban22", "urbandio03", "induslum27", "culta19", "cultnew16"}
+                "comrcurban22", "urbandio03", "induslum27", "culta19", "cultnew16",
+                # седьмая партия: разбор census/collapse/pilot7/split.tsv (tools/collapse_pilot7_split.py) - провал
+                # рода МОДЕЛЬ или лишнее падение в частичных сценариях
+                "comrcurban11", "comrcurban53", "expterror24", "madurban33", "madurban37", "urban05", "urban18",
+                "urban19", "urbandio02"}
 # urban14, urban17, madurban19, 22-26, culta18, cultafarm21, urbanjunk11, comrcurban50: частичное падение
 # не доказано (census/collapse/partial/model_result.tsv, R-353), но по решению Vitali 15.10 в сборке игрока -
 # приёмку ведут игроки
@@ -59,7 +63,8 @@ SEED = 20261008
 SOURCES = ["tools/collapse_v7c.py", "tools/collapse_v7b.py", "tools/collapse_v7.py", "tools/collapse_v6.py",
            "tools/collapse_v5.py", "tools/collapse_v3.py", "tools/collapse_v2.py", "tools/collapse_attach_v2.py",
            "tools/collapse_pilot_scen.py", "tools/collapse_pilot3_scen.py", "tools/collapse_pilot4_scen.py",
-           "tools/collapse_pilot5_scen.py", "tools/collapse_pilot6_scen.py", "tools/collapse_v7d.py",
+           "tools/collapse_pilot5_scen.py", "tools/collapse_pilot6_scen.py", "tools/collapse_pilot7_scen.py",
+           "tools/collapse_v7d.py",
            "tools/collapse_pilot_export.py"]
 
 
@@ -640,6 +645,10 @@ def main():
     blds += P6.load()[2]
     BOX.update(P6.BOX)
     LABEL_EN.update(P6.LABEL_EN)
+    import collapse_pilot7_scen as P7             # седьмая партия так же, номера блоков после шестой
+    blds += P7.load()[2]
+    BOX.update(P7.BOX)
+    LABEL_EN.update(P7.LABEL_EN)
     if len({b[2] for b in blds}) != len(blds) or len(set(LABEL_EN.values())) != len(LABEL_EN):
         raise SystemExit("метки зданий пилота не уникальны")
     if EXPERIMENTAL - set(LABEL_EN.values()):
