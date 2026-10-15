@@ -32,6 +32,8 @@ stage, install в обе копии мода hd), как loop_twins. Режим 
     py -3.13 tools/hdart/anim_flicker.py --sets U_WALL_G_X LIGHTNIN_R --sheet 40
     py -3.13 tools/hdart/anim_flicker.py --fix                 # кандидаты правки и лист до/после, без установки
     py -3.13 tools/hdart/anim_flicker.py --fix --install       # то же через манифест в обе копии (после одобрения)
+    py -3.13 tools/hdart/anim_flicker.py --fix --mode delta --only <план>/install.tsv --install
+                                    # ровно кадры плана; байты сверяются с колонкой sha плана, иначе установки нет
 """
 import argparse
 import io
@@ -613,8 +615,8 @@ def main():
     ap.add_argument("--install", action="store_true", help="с --fix: через манифест в обе копии мода hd")
     ap.add_argument("--only", help="с --fix: только кадры install.tsv плана, байты сверяются с его sha до установки")
     ap.add_argument("--out", default=str(OUT_ART), help="папка листов и кандидатов")
+    sys.stdout.reconfigure(encoding="utf-8")          # до parse_args: --help и ошибки ключей - кириллица
     a = ap.parse_args()
-    sys.stdout.reconfigure(encoding="utf-8")
     if (a.install or a.only) and not a.fix:
         raise SystemExit("--install и --only только вместе с --fix")
     plan = read_plan(a.only) if a.only else None
