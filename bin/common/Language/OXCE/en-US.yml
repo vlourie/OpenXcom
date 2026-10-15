@@ -480,7 +480,7 @@ en-US:
   STR_HD_BATTLE: "Battlescape"
   STR_HD_PHYSICS: "Physics"
   STR_HD_COLLAPSE: "Building collapse"
-  STR_HD_COLLAPSE_DESC: "When an explosion knocks out supports, whatever they held collapses and units and items fall down. For now only the farm barn, the base bunker and the rice farm shed. Changes the battle; can be switched mid-battle."
+  STR_HD_COLLAPSE_DESC: "When an explosion knocks out supports, whatever they held collapses and units and items fall down. Not every building yet: farm barns and houses, the base bunker, city houses and blocks, the commercial quarter and the junkyard. Changes the battle; can be switched mid-battle."
   STR_HD_AI: "Tactical AI"
   STR_HD_AI3: "AI3 tactical AI"
   STR_HD_AI3_DESC: "The AI3 version of the computer's tactical AI: it no longer picks charges (Leeroy) the unit has no time units left to carry out, decides only from what its side has honestly seen, and several errors in paths and in the order units act are fixed. Off = the stock OXCE AI. Takes effect after the game is restarted."
