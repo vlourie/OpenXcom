@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using Xp.Portal.Review;
+using Xp.Portal.Site;
 
 namespace Xp.Portal.Pages.Roadmap;
 
@@ -8,8 +9,12 @@ namespace Xp.Portal.Pages.Roadmap;
 /// right now, and which nobody has opened yet. Everything here is counted from the verdicts people
 /// sent from the launcher — the page has no numbers of its own.
 /// </summary>
-public sealed class RoadmapModel(Xp.Portal.Review.Roadmap roadmap) : PageModel
+public sealed class RoadmapModel(Xp.Portal.Review.Roadmap roadmap, ReleaseFeed feed) : PageModel
 {
+    /// <summary>What is done, what is being done, what comes next — Markdown from the signed history
+    /// of the channel (Выпуск/roadmap.*.md, carried by every release). Empty until a release carries it.</summary>
+    public string Plan { get; private set; } = "";
+    public DateTimeOffset? PlanUpdated { get; private set; }
     public RoadmapTotals Totals { get; private set; } = new(0, 0, 0, 0, 0, 0, 0, 0);
     public List<PackProgress> InProgress { get; private set; } = new();
     public List<PackProgress> Next { get; private set; } = new();
@@ -19,6 +24,11 @@ public sealed class RoadmapModel(Xp.Portal.Review.Roadmap roadmap) : PageModel
 
     public async Task OnGetAsync(CancellationToken ct)
     {
+        if (await feed.NotesAsync(Text.Lang, ct) is { } notes)
+        {
+            Plan = notes.Roadmap;
+            PlanUpdated = notes.Releases.Count > 0 ? notes.Releases[0].Published : notes.Updated;
+        }
         Totals = await roadmap.TotalsAsync(ct);
         InProgress = await roadmap.ProgressAsync(null, 60, ct);
         Next = await roadmap.NextAsync(12, ct);

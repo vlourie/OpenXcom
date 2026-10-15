@@ -746,7 +746,8 @@ switch ($Command) {
         $check = @('-s', '--max-time', '10', '--resolve', "$($env_['PORTAL_HOST']):$($env_['HTTPS_PORT']):127.0.0.1")
         if ($env_['STATION_MODE'] -ne 'internet') { $check += '-k' }
         Start-Sleep -Seconds 3
-        foreach ($ch in @(Get-ChildItem -LiteralPath (Join-Path $dest 'channels') -Filter '*.json' | Where-Object { $_.Name -notlike '*.history.json' })) {
+        # только указатели: рядом лежат история (*.history.json) и история с дорожной картой (*.notes.json)
+        foreach ($ch in @(Get-ChildItem -LiteralPath (Join-Path $dest 'channels') -Filter '*.json' | Where-Object { $_.Name -notlike '*.history.json' -and $_.Name -notlike '*.notes.json' })) {
             $answer = & curl.exe @check "$url/releases/channels/$($ch.Name)" 2>$null
             $id = if ($answer -match '"releaseId":"([^"]+)"') { $Matches[1] } else { $null }
             if ($id) { Write-Host ("{0,-20} -> {1}" -f $ch.BaseName, $id) -ForegroundColor Green }

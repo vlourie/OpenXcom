@@ -308,6 +308,12 @@ tbody tr:hover { background: var(--ui-9); }
 .article table { margin: 16px 0; }
 
 .release { white-space: pre-wrap; }
+.release-entry > h2.title .when { margin-left: 10px; color: var(--ink-faint); font-family: ui-monospace, Consolas, monospace; font-size: 13px; font-weight: normal; }
+.release-entry { scroll-margin-top: 16px; }
+/* the roadmap: an article whose second-level headings are the stages (done, now, next) */
+.roadmap.article { max-width: 80ch; }
+.roadmap.article h2:first-child { margin-top: 0; }
+.roadmap.article li { margin: 4px 0; }
 .pre { white-space: pre-wrap; overflow-wrap: anywhere; }
 
 .crumbs { margin: 0 0 12px; color: var(--ink-faint); font-size: 13px; letter-spacing: 1px; }

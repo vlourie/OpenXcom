@@ -74,7 +74,7 @@ foreach ($p in $pick) { $picked[$p] = $true; $sentZip[$p] = $zipName }
 $lines = foreach ($k in ($now.Keys | Sort-Object)) { "$k`t$($now[$k])`t$($sentZip[$k])" }
 [IO.File]::WriteAllLines($sentFile, [string[]]$lines, (New-Object Text.UTF8Encoding $true))
 
-foreach ($c in @(Get-ChildItem -LiteralPath (Join-Path $Repo 'channels') -Filter '*.json' | Where-Object { $_.Name -notlike '*.history.json' })) {
+foreach ($c in @(Get-ChildItem -LiteralPath (Join-Path $Repo 'channels') -Filter '*.json' | Where-Object { $_.Name -notlike '*.history.json' -and $_.Name -notlike '*.notes.json' })) {
     $j = Get-Content -LiteralPath $c.FullName -Raw | ConvertFrom-Json
     Write-Host ("  {0,-18} -> {1}" -f $c.BaseName, $j.releaseId)
     # указатель канала едет всегда, а файлы выпуска - только те, что новые. Назвать архивы,

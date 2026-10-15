@@ -29,6 +29,8 @@ public static class BlobKeys
 {
     public static string For(string sha256) => $"blobs/sha256/{sha256[..2]}/{sha256}";
     public static string Channel(string channel) => $"channels/{channel}.json";
+    /// <summary>History and roadmap of a channel (<see cref="ChannelNotes"/>), signed like the pointer beside it.</summary>
+    public static string Notes(string channel) => $"channels/{channel}.notes.json";
     public static string Manifest(string releaseId) => $"releases/{releaseId}/manifest.json";
     public static string Sig(string key) => key + ".sig";
     public const string Catalog = "catalog.json";

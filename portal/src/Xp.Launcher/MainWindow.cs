@@ -70,6 +70,8 @@ public sealed class MainWindow : Window
     readonly SetupPage _setupPage;
     readonly ReportsPage _reportsPage;
     readonly ReviewPage _reviewPage;
+    readonly NewsPage _newsPage;
+    bool _newsRoadmap;      // which half of the news page the next Navigate("news") opens
     readonly AccountPanel _account;
     readonly VoicePage _voicePage;
     TrayIcon? _tray;
@@ -147,6 +149,9 @@ public sealed class MainWindow : Window
         _reportsPage = new ReportsPage(_settings, ReportRoots);
         _reportsPage.Changed += CountReports;
         _reviewPage = new ReviewPage(_settings, () => _paths?.GameDir);
+        // the channel of the last check, held in memory: LoadState may move a broken state file aside,
+        // and nothing is written from a page that only reads (R-179). Before any check — stable
+        _newsPage = new NewsPage(() => _repo, () => _latest?.Manifest.Release.Channel is { Length: > 0 } ch ? ch : "stable");
         _account = new AccountPanel(_settings);
         _voicePage = new VoicePage(_settings, _account, () => _builds, () => Navigate("settings"));
         _voicePage.RoomChanged += RoomChanged;
@@ -162,6 +167,7 @@ public sealed class MainWindow : Window
         _pages["setup"] = _setupPage;
         _pages["reports"] = _reportsPage;
         _pages["review"] = _reviewPage;
+        _pages["news"] = _newsPage;
         _pages["voice"] = _voicePage;
         _pages["support"] = new SupportPage();
         _pages["settings"] = SettingsPage();
@@ -249,6 +255,7 @@ public sealed class MainWindow : Window
         _reportsBadge.Child = _reportsCount;
         top.Children.Add(NavButton("reports", "nav.reports", Skin.IconReports, _reportsBadge));
         top.Children.Add(NavButton("review", "nav.review", Skin.IconCheck, null));
+        top.Children.Add(NavButton("news", "nav.news", Skin.IconNews, null));
         top.Children.Add(NavButton("voice", "nav.voice", Skin.IconVoice, null));
         top.Children.Add(NavButton("support", "nav.support", Skin.IconHeart, null));
         top.Children.Add(NavButton("settings", "nav.settings", Skin.IconSettings, null));
@@ -307,6 +314,8 @@ public sealed class MainWindow : Window
         }
         if (page == "reports") _reportsPage.Shown();
         if (page == "review") _reviewPage.Shown();
+        if (page == "news") _newsPage.Shown(_newsRoadmap);
+        _newsRoadmap = false;
         if (page == "voice") _voicePage.Shown();
         else _voicePage.Hidden();
     }
@@ -549,6 +558,12 @@ public sealed class MainWindow : Window
         _whatsNewTitle.Margin = new Thickness(0, 0, 0, 12);
         DockPanel.SetDock(_whatsNewTitle, Dock.Top);
         dock.Children.Add(_whatsNewTitle);
+        // under the latest "What's new": the way to every earlier one and to the plans
+        var more = new StackPanel { Spacing = 4, Margin = new Thickness(0, 12, 0, 0) };
+        more.Children.Add(Skin.Link(L.T("home.allUpdates"), () => Navigate("news")));
+        more.Children.Add(Skin.Link(L.T("home.roadmap"), () => { _newsRoadmap = true; Navigate("news"); }));
+        DockPanel.SetDock(more, Dock.Bottom);
+        dock.Children.Add(more);
         dock.Children.Add(new ScrollViewer { Content = _changelog });
         return dock;
     }

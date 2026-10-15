@@ -20,6 +20,7 @@ public sealed class RepoClient(HttpClient http, Uri baseUri, TrustedKeys keys)
     const int MaxPointerBytes = 64 * 1024;
     const int MaxSigBytes = 4 * 1024;
     const int MaxManifestBytes = 128 * 1024 * 1024;
+    const int MaxNotesBytes = 16 * 1024 * 1024;
 
     public Uri BaseUri { get; } = baseUri.AbsoluteUri.EndsWith('/') ? baseUri : new Uri(baseUri.AbsoluteUri + "/");
 
@@ -98,6 +99,24 @@ public sealed class RepoClient(HttpClient http, Uri baseUri, TrustedKeys keys)
         if (manifest.Release.Id != pointer.ReleaseId || manifest.Release.Channel != channel)
             throw new TrustException("manifest does not belong to this channel pointer");
         return new LatestRelease(pointer, manifest);
+    }
+
+    /// <summary>
+    /// History and roadmap of a channel, verified like the pointer. A repository that has none yet
+    /// answers with FileNotFoundException: callers show "no history yet" rather than an error.
+    /// </summary>
+    public async Task<ChannelNotes> GetNotesAsync(string channel, CancellationToken ct)
+    {
+        if (!ManifestValidator.IsValidId(channel)) throw new ArgumentException("bad channel name");
+        var key = BlobKeys.Notes(channel);
+        var bytes = await GetSmallAsync(key, MaxNotesBytes, ct);
+        var sig = await GetSmallAsync(BlobKeys.Sig(key), MaxSigBytes, ct);
+        if (!keys.Verify(bytes, sig)) throw new TrustException($"notes of '{channel}': signature check failed");
+        ChannelNotes notes;
+        try { notes = ManifestValidator.ParseNotes(bytes); }
+        catch (ManifestException e) { throw new TrustException("notes rejected: " + e.Message); }
+        if (notes.Channel != channel) throw new TrustException("notes name another channel");
+        return notes;
     }
 
     async Task<byte[]> GetSmallAsync(string key, int limit, CancellationToken ct)

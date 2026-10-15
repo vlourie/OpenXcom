@@ -12,6 +12,9 @@ namespace Xp.Portal.Site;
 
 public sealed record ReleaseView(string Id, string Version, DateTimeOffset Published, string Changelog);
 
+/// <summary>The history of the channel, newest first, and the roadmap in the reader's language (Markdown).</summary>
+public sealed record NotesView(List<ReleaseView> Releases, string Roadmap, DateTimeOffset Updated);
+
 /// <summary>What the entrance screen offers a new player: one file, its version and its size.</summary>
 public sealed record LauncherView(string Version, string Sha256, long Size, DateTimeOffset Published)
 {
@@ -37,6 +40,44 @@ public sealed class ReleaseFeed(IOptions<PortalOptions> options, IHttpClientFact
         var log_ = r.Changelog.TryGetValue(lang, out var c) ? c : r.Changelog.Values.FirstOrDefault() ?? "";
         return new ReleaseView(r.Id, r.Version, r.Published, log_);
     }
+
+    /// <summary>
+    /// Every release of the channel with its "What's new" in the reader's language, newest first, and
+    /// the roadmap. Null when the repository has no history yet (or it did not verify): the pages then
+    /// fall back to the current release alone.
+    /// </summary>
+    public async Task<NotesView?> NotesAsync(string lang, CancellationToken ct)
+    {
+        var o = options.Value;
+        if (string.IsNullOrWhiteSpace(o.ReleaseRepo) || o.ReleaseKeys.Length == 0 || string.IsNullOrWhiteSpace(o.ReleaseChannel)) return null;
+        var notes = await cache.GetOrCreateAsync("notes:" + o.ReleaseChannel, async e =>
+        {
+            e.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5);
+            try
+            {
+                var repo = new RepoClient(http.CreateClient("releases"), new Uri(o.ReleaseRepo), new TrustedKeys(o.ReleaseKeys));
+                return await repo.GetNotesAsync(o.ReleaseChannel, ct);
+            }
+            catch (Exception ex) when (ex is HttpRequestException or TrustException or ManifestException or IOException or TaskCanceledException)
+            {
+                // FileNotFoundException is an IOException: a repository from before the history is not an error
+                if (ex is not FileNotFoundException) log.LogWarning("release notes ({Channel}): {Error}", o.ReleaseChannel, ex.Message);
+                e.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(1);
+                return null;
+            }
+        });
+        if (notes is null) return null;
+        var releases = notes.Releases
+            .Select(r => new ReleaseView(r.Id, r.Version, r.Published, Pick(r.Changelog, lang).Trim()))
+            .ToList();
+        return new NotesView(releases, Pick(notes.Roadmap, lang).Trim(), notes.Updated);
+    }
+
+    /// <summary>The text in the reader's language, else Russian, else whatever there is.</summary>
+    static string Pick(Dictionary<string, string> texts, string lang) =>
+        texts.TryGetValue(lang, out var t) && !string.IsNullOrWhiteSpace(t) ? t
+        : texts.TryGetValue("ru", out var ru) ? ru
+        : texts.Values.FirstOrDefault() ?? "";
 
     /// <summary>
     /// The launcher to download, taken from the launcher channel of the same repository. Read from

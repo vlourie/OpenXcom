@@ -139,6 +139,35 @@ public sealed class ChannelPointer
     public DateTimeOffset Updated { get; set; }
 }
 
+/// <summary>
+/// Signed history of one channel: every release it has carried with its "What's new", newest first,
+/// and the roadmap — what is being done and what comes next. The launcher and the site both read it
+/// from the release repository, so the two never tell a player different things.
+/// </summary>
+public sealed class ChannelNotes
+{
+    public const int CurrentSchema = 1;
+
+    public int Schema { get; set; } = CurrentSchema;
+    public string Channel { get; set; } = "";
+    /// <summary>Grows with every rewrite, like a channel pointer's.</summary>
+    public long Sequence { get; set; }
+    public DateTimeOffset Updated { get; set; }
+    /// <summary>Newest first; revoked releases are left out.</summary>
+    public List<ReleaseNote> Releases { get; set; } = new();
+    /// <summary>Language code -> Markdown: headings, lists, paragraphs.</summary>
+    public Dictionary<string, string> Roadmap { get; set; } = new();
+}
+
+public sealed class ReleaseNote
+{
+    public string Id { get; set; } = "";
+    public string Version { get; set; } = "";
+    public DateTimeOffset Published { get; set; }
+    /// <summary>Language code -> text, as the release's own manifest has it.</summary>
+    public Dictionary<string, string> Changelog { get; set; } = new();
+}
+
 /// <summary>Detached signature stored next to the signed file as "&lt;file&gt;.sig".</summary>
 public sealed class SignatureFile
 {
@@ -154,6 +183,7 @@ public sealed class SignatureFile
 [JsonSerializable(typeof(ReleaseManifest))]
 [JsonSerializable(typeof(ChannelPointer))]
 [JsonSerializable(typeof(Catalog))]
+[JsonSerializable(typeof(ChannelNotes))]
 [JsonSerializable(typeof(SignatureFile))]
 public sealed partial class ManifestJson : JsonSerializerContext
 {

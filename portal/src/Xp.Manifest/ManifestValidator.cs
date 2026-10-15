@@ -37,6 +37,19 @@ public static partial class ManifestValidator
         return p;
     }
 
+    public static ChannelNotes ParseNotes(ReadOnlySpan<byte> json)
+    {
+        ChannelNotes? n;
+        try { n = JsonSerializer.Deserialize(json, ManifestJson.Default.ChannelNotes); }
+        catch (JsonException e) { throw new ManifestException("channel notes are not valid JSON: " + e.Message); }
+        if (n is null) throw new ManifestException("empty channel notes");
+        if (n.Schema != ChannelNotes.CurrentSchema) throw new ManifestException($"unsupported notes schema {n.Schema}");
+        if (!IsValidId(n.Channel)) throw new ManifestException("bad channel in notes");
+        foreach (var r in n.Releases)
+            if (!IsValidId(r.Id)) throw new ManifestException($"bad release id '{r.Id}' in notes");
+        return n;
+    }
+
     public static void Validate(ReleaseManifest m)
     {
         if (m.Schema != ReleaseManifest.CurrentSchema) throw new ManifestException($"unsupported schema {m.Schema}");

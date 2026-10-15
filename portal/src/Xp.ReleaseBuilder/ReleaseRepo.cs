@@ -265,6 +265,8 @@ public sealed class ReleaseRepo(string root, Action<string>? log = null)
         rec.Status = ReleaseStatus.Published;
         rec.Changed = DateTimeOffset.UtcNow;
         SaveRecord(rec);
+        // the history follows the channel, after the record says "published": it lists published releases only
+        WriteNotes(channel, privateSeed, null);
         return pointer;
     }
 
@@ -276,7 +278,11 @@ public sealed class ReleaseRepo(string root, Action<string>? log = null)
         rec.Changed = DateTimeOffset.UtcNow;
         SaveRecord(rec);
         var current = TryLoadPointer(channel);
-        if (current is null || current.ReleaseId != releaseId) return null;
+        if (current is null || current.ReleaseId != releaseId)
+        {
+            WriteNotes(channel, privateSeed, null);
+            return null;
+        }
 
         var previous = LoadHistory(channel)
             .Where(h => h.Action is "publish" or "rollback" && h.ReleaseId != releaseId)
@@ -285,7 +291,9 @@ public sealed class ReleaseRepo(string root, Action<string>? log = null)
             .FirstOrDefault(id => TryLoadRecord(id)?.Status == ReleaseStatus.Published)
             ?? throw new InvalidOperationException($"no earlier good release in '{channel}' to fall back to");
         _log($"channel {channel}: {releaseId} revoked, back to {previous}");
-        return WritePointer(channel, previous, privateSeed, "rollback");
+        var back = WritePointer(channel, previous, privateSeed, "rollback");
+        WriteNotes(channel, privateSeed, null);
+        return back;
     }
 
     ChannelPointer WritePointer(string channel, string releaseId, byte[] privateSeed, string action)
@@ -312,6 +320,52 @@ public sealed class ReleaseRepo(string root, Action<string>? log = null)
         WriteAtomic(HistoryPath(channel), JsonSerializer.SerializeToUtf8Bytes(history, RepoJson.Default.ListHistoryEntry));
         _log($"channel {channel} -> {releaseId} (sequence {pointer.Sequence}, {action})");
         return pointer;
+    }
+
+    // ---------------------------------------------------------------- notes
+
+    /// <summary>
+    /// Rewrites the signed history of a channel (<see cref="ChannelNotes"/>): every release the channel
+    /// was ever pointed at, newest first, revoked ones left out. Texts already in the old file are
+    /// reused; a release new to it is read from its manifest, so the first run over an old repository
+    /// reads every manifest once. <paramref name="roadmap"/> null keeps the roadmap the file had.
+    /// </summary>
+    public ChannelNotes WriteNotes(string channel, byte[] privateSeed, Dictionary<string, string>? roadmap)
+    {
+        if (!ManifestValidator.IsValidId(channel)) throw new ArgumentException($"bad channel '{channel}'");
+        var path = Full(BlobKeys.Notes(channel));
+        var old = File.Exists(path) ? ManifestValidator.ParseNotes(File.ReadAllBytes(path)) : null;
+        var known = old?.Releases.ToDictionary(r => r.Id, StringComparer.Ordinal) ?? new();
+
+        var releases = new List<ReleaseNote>();
+        var seen = new HashSet<string>(StringComparer.Ordinal);
+        foreach (var h in LoadHistory(channel).Where(h => h.Action is "publish" or "rollback"))
+        {
+            if (!seen.Add(h.ReleaseId)) continue;
+            if (TryLoadRecord(h.ReleaseId) is not { Status: ReleaseStatus.Published }) continue;
+            if (!known.TryGetValue(h.ReleaseId, out var note))
+            {
+                var r = LoadManifest(h.ReleaseId).Release;
+                note = new ReleaseNote { Id = r.Id, Version = r.Version, Published = r.Published };
+                foreach (var kv in r.Changelog) note.Changelog[kv.Key] = kv.Value;
+            }
+            releases.Add(note);
+        }
+        releases.Reverse();
+
+        var notes = new ChannelNotes
+        {
+            Channel = channel,
+            Sequence = (old?.Sequence ?? 0) + 1,
+            Updated = DateTimeOffset.UtcNow,
+            Releases = releases,
+            Roadmap = roadmap ?? old?.Roadmap ?? new(),
+        };
+        var bytes = JsonSerializer.SerializeToUtf8Bytes(notes, ManifestJson.Default.ChannelNotes);
+        WriteAtomic(Full(BlobKeys.Sig(BlobKeys.Notes(channel))), Signing.SerializeSignature(Signing.Sign(privateSeed, bytes)));
+        WriteAtomic(path, bytes);
+        _log($"notes {channel}: {releases.Count} releases, roadmap {(notes.Roadmap.Count == 0 ? "none" : string.Join("/", notes.Roadmap.Keys))} (sequence {notes.Sequence})");
+        return notes;
     }
 
     // -------------------------------------------------------------- catalog

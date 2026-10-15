@@ -1,9 +1,26 @@
 @page "/roadmap"
 @model Xp.Portal.Pages.Roadmap.RoadmapModel
+@inject Markup Md
 @{
     ViewData["Title"] = T["nav.roadmap"];
 }
 <h1>@T["roadmap.title"]</h1>
+<p class="lead">@T["roadmap.plan.lead"]</p>
+
+@if (Model.Plan.Length > 0)
+{
+    <section class="panel">
+        <h2 class="title">@T["roadmap.plan.title"]@if (Model.PlanUpdated is { } at) {<span class="hint"> · @T.Format("roadmap.plan.asof", at.ToString("yyyy-MM-dd"))</span>}</h2>
+        <div class="roadmap article">@Md.Render(Model.Plan)</div>
+    </section>
+}
+else
+{
+    <p class="hint">@T["roadmap.plan.none"]</p>
+}
+<p><a class="button secondary" href="/releases">@T["releases.all"]</a></p>
+
+<h2>@T["roadmap.review.title"]</h2>
 <p class="lead">@T["roadmap.lead"]</p>
 
 <div class="stats">

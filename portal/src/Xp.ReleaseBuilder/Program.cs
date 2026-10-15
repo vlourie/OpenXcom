@@ -21,6 +21,9 @@ xp-release <command> [options]
                                              check presets against the channels, sign catalog.json
   publish  --repo <dir> --channel <ch> --id <id> --key <file>
   revoke   --repo <dir> --channel <ch> --id <id> --key <file>
+  notes    --repo <dir> --channel <ch> [--roadmap-ru <file>] [--roadmap-en <file>] --key <file>
+                                             rewrite the signed history of the channel (publish and
+                                             revoke do it too), with a new roadmap if given
   verify   --repo <dir> --channel <ch> --pub <file> [--deep]
   list     --repo <dir>
   serve    --repo <dir> [--port 8787]          development server on localhost, with Range support
@@ -84,6 +87,14 @@ try
         case "publish":
             repo!.Publish(opt.Required("channel"), opt.Required("id"), LoadKey(opt));
             return 0;
+        case "notes":
+        {
+            Dictionary<string, string>? roadmap = null;
+            foreach (var lang in new[] { "ru", "en" })
+                if (opt.Get("roadmap-" + lang) is { } f) (roadmap ??= new())[lang] = File.ReadAllText(f).Trim();
+            repo!.WriteNotes(opt.Required("channel"), LoadKey(opt), roadmap);
+            return 0;
+        }
         case "revoke":
             if (repo!.Revoke(opt.Required("channel"), opt.Required("id"), LoadKey(opt)) is null)
                 Console.WriteLine("revoked; the channel did not point at it, pointer unchanged");

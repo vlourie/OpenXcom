@@ -36,6 +36,23 @@ public sealed class ReleaseRepoFactory : PortalFactory
         Blobs[BlobKeys.Channel("launcher-stable")] = pBytes;
         Blobs[BlobKeys.Sig(BlobKeys.Channel("launcher-stable"))] = Signing.SerializeSignature(Signing.Sign(key, pBytes));
         Blobs[BlobKeys.For(Hashing.Sha256Hex(setup))] = setup;
+
+        // the history of the game channel, as xp-release writes it: newest first, roadmap beside
+        Settings["Portal:ReleaseChannel"] = "stable";
+        var notes = new ChannelNotes
+        {
+            Channel = "stable", Sequence = 4,
+            Releases =
+            [
+                new ReleaseNote { Id = "2026.10.15-2", Version = "2026.10.15.2", Published = new DateTimeOffset(2026, 10, 15, 12, 0, 0, TimeSpan.Zero), Changelog = { ["ru"] = "- walls-ru-2", ["en"] = "- walls-en-2" } },
+                new ReleaseNote { Id = "2026.10.14", Version = "2026.10.14", Published = new DateTimeOffset(2026, 10, 14, 12, 0, 0, TimeSpan.Zero), Changelog = { ["ru"] = "- floors-ru-1" } },
+                new ReleaseNote { Id = "2026.10.13", Version = "2026.10.13", Published = new DateTimeOffset(2026, 10, 13, 12, 0, 0, TimeSpan.Zero) },
+            ],
+            Roadmap = { ["ru"] = "## Plan-ru\n\n- inventory-next", ["en"] = "## Plan-en\n\n- inventory-next" },
+        };
+        var nBytes = JsonSerializer.SerializeToUtf8Bytes(notes, ManifestJson.Default.ChannelNotes);
+        Blobs[BlobKeys.Notes("stable")] = nBytes;
+        Blobs[BlobKeys.Sig(BlobKeys.Notes("stable"))] = Signing.SerializeSignature(Signing.Sign(key, nBytes));
     }
 
     public string SetupKey => BlobKeys.For(Hashing.Sha256Hex(System.Text.Encoding.UTF8.GetBytes(Setup)));
@@ -90,5 +107,25 @@ public sealed class LauncherDownloadTests(ReleaseRepoFactory f) : IClassFixture<
             Assert.Equal(HttpStatusCode.InternalServerError, (await c.GetAsync("/download/launcher")).StatusCode);
         }
         finally { lock (f.Blobs) f.Blobs[f.SetupKey] = original; }
+    }
+
+    [Fact]
+    public async Task Every_update_is_listed_newest_first_with_its_own_text()
+    {
+        var html = await f.CreateClient().GetStringAsync("/releases");
+        int newest = html.IndexOf("2026.10.15.2", StringComparison.Ordinal), older = html.IndexOf("2026.10.14", StringComparison.Ordinal);
+        Assert.True(newest >= 0 && older > newest, "the newest update comes first");
+        Assert.Contains("walls-ru-2", html);
+        Assert.Contains("floors-ru-1", html);
+        Assert.Contains("id=\"r-2026.10.13\"", html);   // an update without a text is still in the list
+    }
+
+    [Fact]
+    public async Task The_roadmap_page_shows_the_plan_from_the_history_as_markup()
+    {
+        var html = await f.CreateClient().GetStringAsync("/roadmap");
+        Assert.Contains(">Plan-ru</h2>", html);
+        Assert.Contains("<li>inventory-next</li>", html);
+        Assert.Contains("href=\"/releases\"", html);
     }
 }
