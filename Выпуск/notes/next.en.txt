@@ -1,0 +1,1 @@
+- HD walls, consoles, monitors and lamps with blinking lights no longer flicker as a whole: between animation frames only the light itself changes, the rest of the picture stays still, as in the original. About 2300 frames in 224 sets - bases, ships, dungeons, mansions. Fire, water and rotation animate as before. Graphics only: tiles, walkability and cover are unchanged.
