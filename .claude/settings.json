@@ -100,6 +100,13 @@
           },
           {
             "type": "command",
+            "shell": "powershell",
+            "command": "& \"$env:CLAUDE_PROJECT_DIR/.claude/hooks/junction-guard.ps1\"",
+            "timeout": 15,
+            "statusMessage": "Проверяю, нет ли соединений в переносимой папке (R-047)"
+          },
+          {
+            "type": "command",
             "command": "py -3 \"$CLAUDE_PROJECT_DIR/tools/editq.py\" hook pre",
             "timeout": 20,
             "statusMessage": "Очередь правок игры: сборка и git add -A"
