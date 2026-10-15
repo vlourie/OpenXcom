@@ -2,16 +2,21 @@
 """
 Учёт граблей проекта — docs/RAKES.md и docs/rakes/*.md.
 
-    python tools/rake.py list                       активные грабли
+    python tools/rake.py list [--short] [--top 10]  активные грабли; --top N - короткий индекс (хук старта)
     python tools/rake.py match src/Foo/Bar.cpp      грабли, относящиеся к файлу
+        [--limit 3 --brief --seen <файл>]           так зовёт хук правки: до N кратких правил, без уже показанных
+    python tools/rake.py find <слово> [<слово>...]   грабли по теме, одной строкой каждая
+    python tools/rake.py show R-007 [R-008 ...]      запись целиком
     python tools/rake.py hit R-007                  наступил снова: +1 к счётчику
     python tools/rake.py disarm R-007 tests/t.py    обезврежены тестом
     python tools/rake.py add --title "..." --files "src/*.cpp" \
         --symptom "..." --cause "..." --rule "..." [--area portal]
 
 Формат записи описан в шапке docs/RAKES.md и парсится отсюда. Не меняй поля.
-docs/RAKES.md грузится в контекст каждой сессии (CLAUDE.md). docs/rakes/<область>.md - грабли
-отдельной области (aibench, portal): в контекст не грузятся, хук показывает их при правке файла.
+docs/RAKES.md в контекст целиком НЕ грузится (с 15.10.2026, аудит кредитов): хук старта даёт индекс
+(list --top), хук правки - до трёх кратких правил по файлу (match --limit 3 --brief --seen), остальное
+ищется match/find/show и грепом. docs/rakes/<область>.md - грабли отдельной области (aibench, portal):
+хук показывает их при правке файла так же.
 docs/rakes/merged.md - полные тексты граблей, слитых в семью: статус «слиты в R-0NN», hit по
 такому номеру уходит в семью.
 """
@@ -94,10 +99,23 @@ def norm(p: str) -> str:
     return p.replace("\\", "/").lstrip("./")
 
 
-def fmt(it, full=True):
+BRIEF_LEN = 350   # знаков правила в кратком виде: три правила хука правки - около 1 КБ
+
+
+def clip(s: str, n: int = BRIEF_LEN) -> str:
+    s = " ".join(s.split())
+    if len(s) <= n:
+        return s
+    return s[:n].rsplit(" ", 1)[0] + " …"
+
+
+def fmt(it, full=True, brief=False):
     mark = "!!" if it["count"] >= 2 and it["active"] else ("--" if not it["active"] else "  ")
     out = [f"{mark} {it['id']}  {it['title']}   (наступал: {it['count']})"]
-    if full:
+    if brief:
+        if it.get("Правило"):
+            out.append(f"     Правило: {clip(it['Правило'])}")
+    elif full:
         for f in ("Правило", "Причина", "Защита"):
             if it.get(f):
                 out.append(f"     {f}: {it[f]}")
@@ -110,8 +128,14 @@ def cmd_list(a):
     if not act:
         print("Граблей нет. Это либо хорошо, либо их просто не записывали.")
         return 0
+    ranked = sorted(act, key=lambda x: -x["count"])
+    if a.top:
+        print(f"Активных граблей: {len(act)}; чаще всего наступали:")
+        for it in ranked[: a.top]:
+            print(fmt(it, full=False))
+        return 0
     print(f"Активных граблей: {len(act)}")
-    for it in sorted(act, key=lambda x: -x["count"]):
+    for it in ranked:
         print(fmt(it, full=not a.short))
     unarmed = [i for i in act if i["count"] >= 2 and (not i.get("Защита") or i["Защита"].lower() in ("нет", "-"))]
     if unarmed:
@@ -121,16 +145,79 @@ def cmd_list(a):
     return 0
 
 
+def specificity(it, target: str) -> int:
+    """0 - глобы записи к файлу не подходят; иначе длина самого точного подошедшего глоба."""
+    best = 0
+    for g in it["globs"]:
+        g = norm(g)
+        if fnmatch.fnmatch(target, g) or g in target:
+            best = max(best, len(g.replace("*", "")))
+    return best
+
+
+def tidy_seen(folder: Path, days: int = 7):
+    """Файлы «уже показано» прошлых сессий - удалить старше недели."""
+    import time
+    old = time.time() - days * 86400
+    for p in folder.glob("*.txt"):
+        try:
+            if p.stat().st_mtime < old:
+                p.unlink()
+        except OSError:
+            pass
+
+
 def cmd_match(a):
     target = norm(a.path)
     items = [i for i in load_all() if i["active"]]
-    hits = [i for i in items
-            if any(fnmatch.fnmatch(target, norm(g)) or norm(g) in target for g in i["globs"])]
+    hits = [i for i in items if specificity(i, target) > 0]
     if not hits:
         return 0
-    print(f"ГРАБЛИ по файлу {a.path}:")
-    for it in hits:
-        print(fmt(it))
+    seen_path = Path(a.seen) if a.seen else None
+    seen = set()
+    if seen_path and seen_path.exists():
+        seen = set(seen_path.read_text(encoding="utf-8-sig").split())
+    fresh = [i for i in hits if i["id"] not in seen]
+    if not fresh:
+        return 0
+    # сначала самые точные глобы (tools/hdart/x.py точнее tools/*.py), среди равных - кого чаще наступали
+    fresh.sort(key=lambda i: (-specificity(i, target), -i["count"]))
+    shown = fresh[: a.limit] if a.limit else fresh
+    tail = ""
+    if len(shown) < len(hits):
+        tail = f" ({len(shown)} из {len(hits)}; все: python tools/rake.py match {a.path})"
+    print(f"ГРАБЛИ по файлу {a.path}{tail}:")
+    for it in shown:
+        print(fmt(it, brief=a.brief))
+    if seen_path:
+        seen_path.parent.mkdir(parents=True, exist_ok=True)
+        with seen_path.open("a", encoding="utf-8-sig") as f:
+            f.write("".join(i["id"] + "\n" for i in shown))
+        tidy_seen(seen_path.parent)
+    return 0
+
+
+def cmd_find(a):
+    words = [w.lower() for w in a.words]
+    hits = [i for i in load_all() if all(w in "\n".join(i["raw"]).lower() for w in words)]
+    if not hits:
+        print(f"Граблей по теме «{' '.join(a.words)}» нет: попробуй другое слово или grep -n по docs/RAKES.md")
+        return 1
+    hits.sort(key=lambda i: (not i["active"], -i["count"]))
+    print(f"Грабли по теме «{' '.join(a.words)}»: {len(hits)}. Запись целиком: python tools/rake.py show R-0NN")
+    for it in hits[: a.limit]:
+        print(fmt(it, full=False))
+    if len(hits) > a.limit:
+        print(f"  … и ещё {len(hits) - a.limit}: уточни слова или --limit {len(hits)}")
+    return 0
+
+
+def cmd_show(a):
+    items = load_all()
+    for rid in a.ids:
+        it = find(items, rid)
+        print("\n".join(it["raw"]).rstrip())
+        print()
     return 0
 
 
@@ -188,8 +275,17 @@ def main():
     p = argparse.ArgumentParser(description="Учёт граблей проекта")
     sub = p.add_subparsers(dest="cmd", required=True)
 
-    s = sub.add_parser("list"); s.add_argument("--short", action="store_true"); s.set_defaults(fn=cmd_list)
-    s = sub.add_parser("match"); s.add_argument("path"); s.set_defaults(fn=cmd_match)
+    s = sub.add_parser("list"); s.add_argument("--short", action="store_true")
+    s.add_argument("--top", type=int, default=0, help="короткий индекс: N самых частых, одной строкой каждая")
+    s.set_defaults(fn=cmd_list)
+    s = sub.add_parser("match"); s.add_argument("path")
+    s.add_argument("--limit", type=int, default=0, help="не больше N записей (0 - все)")
+    s.add_argument("--brief", action="store_true", help="заголовок и укороченное Правило вместо полного текста")
+    s.add_argument("--seen", default="", help="файл с уже показанными номерами: их пропустить, показанные дописать")
+    s.set_defaults(fn=cmd_match)
+    s = sub.add_parser("find"); s.add_argument("words", nargs="+")
+    s.add_argument("--limit", type=int, default=15); s.set_defaults(fn=cmd_find)
+    s = sub.add_parser("show"); s.add_argument("ids", nargs="+"); s.set_defaults(fn=cmd_show)
     s = sub.add_parser("hit"); s.add_argument("id"); s.set_defaults(fn=cmd_hit)
     s = sub.add_parser("disarm"); s.add_argument("id"); s.add_argument("test"); s.set_defaults(fn=cmd_disarm)
     s = sub.add_parser("add")

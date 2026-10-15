@@ -1,5 +1,5 @@
 ﻿# PreToolUse на Edit/Write: если по этому файлу уже есть грабли — показать их
-# ПЕРЕД правкой. Режим предупреждения: не блокирует.
+# ПЕРЕД правкой: не больше трёх, кратко, без повторов в пределах сессии. Режим предупреждения: не блокирует.
 #
 # Сделать жёстким: раскомментировать блок DENY ниже — тогда грабли со счётчиком
 # 2 и больше запрещают правку, пока не будет написан тест.
@@ -35,7 +35,16 @@ try {
     $rootN = $root -replace '/', '\'
     if ($rel.StartsWith($rootN, [StringComparison]::OrdinalIgnoreCase)) { $rel = $rel.Substring($rootN.Length).TrimStart('\') }
 
-    $hits = & $py.Source tools/rake.py match $rel 2>&1 | Out-String
+    # не больше трёх кратких правил и без повторов в сессии (аудит кредитов 15.10.2026: полный
+    # список давал 20-50 КБ на каждую правку). Показанные номера копятся в
+    # .index/rake-seen/<session_id>.txt; следующая правка того же файла покажет следующие
+    # подходящие. Полный список - python tools/rake.py match <файл>
+    $seenArgs = @()
+    if (($ev.PSObject.Properties.Name -contains 'session_id') -and $ev.session_id) {
+        $sid = ([string]$ev.session_id) -replace '[^A-Za-z0-9_.-]', ''
+        if ($sid) { $seenArgs = @('--seen', ".index/rake-seen/$sid.txt") }
+    }
+    $hits = & $py.Source tools/rake.py match $rel --limit 3 --brief @seenArgs 2>&1 | Out-String
     if (-not $hits.Trim()) { exit 0 }
 
     # журнал попаданий — видно, срабатывает ли система вообще
