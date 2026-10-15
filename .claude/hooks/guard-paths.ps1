@@ -29,6 +29,17 @@ try {
 
     $norm = ($path -replace '\\', '/')
 
+    # Папка пака (обе копии мода) - только выход сборщика build_hd_pack.py: что в ней лежит, решает манифест
+    # (Pipeline v2, семья R-087). Рулсеты и metadata.yml мода hd - по-прежнему можно.
+    if ($norm -match '(^|/)user/mods/hd/hd/') {
+        @{ hookSpecificOutput = @{
+            hookEventName            = 'PreToolUse'
+            permissionDecision       = 'deny'
+            permissionDecisionReason = "Запись в '$path' запрещена: папка HD-пака - только выход сборщика. Файл в хранилище и манифест - build_hd_pack.stage() + save(), в игру - build_hd_pack.py install. См. docs/HD_PIPELINE_V2.md."
+        } } | ConvertTo-Json -Depth 5 -Compress
+        exit 0
+    }
+
     # Наш мод — единственное, что можно менять внутри установки игры.
     if ($norm -match '(^|/)Пиратки/Dioxine_XPiratez/user/mods/hd/') { exit 0 }
 

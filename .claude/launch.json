@@ -6,6 +6,60 @@
       "runtimeExecutable": "E:/OpenXCom/tools/hdart/.venv/Scripts/python.exe",
       "runtimeArgs": ["tools/hdart/map_pick.py", "serve"],
       "port": 8772
+    },
+    {
+      "name": "voice-probe",
+      "runtimeExecutable": "py",
+      "runtimeArgs": ["-3.13", "-m", "http.server", "8765", "--bind", "127.0.0.1", "--directory", "portal/deploy/voice-probe/web"],
+      "port": 8765
+    },
+    {
+      "name": "pilot-sheet",
+      "runtimeExecutable": "py",
+      "runtimeArgs": ["-3.13", "-m", "http.server", "8776", "--bind", "127.0.0.1", "--directory", "art/objects/generation/pilot_v1"],
+      "port": 8776
+    },
+    {
+      "name": "pilot-review",
+      "runtimeExecutable": "py",
+      "runtimeArgs": ["-3.13", "-m", "http.server", "8777", "--bind", "127.0.0.1", "--directory", "art/objects/generation/runs"],
+      "port": 8777
+    },
+    {
+      "name": "detail-probe",
+      "runtimeExecutable": "py",
+      "runtimeArgs": ["-3.13", "-m", "http.server", "8778", "--bind", "127.0.0.1", "--directory", "art/objects/generation"],
+      "port": 8778
+    },
+    {
+      "name": "asset-review",
+      "runtimeExecutable": "py",
+      "runtimeArgs": ["-3.13", "tools/hdart/review_server.py"],
+      "port": 8774
+    },
+    {
+      "name": "struct-accept-review",
+      "runtimeExecutable": "py",
+      "runtimeArgs": ["-3.13", "tools/hdart/review_server.py", "--port", "8779", "--accept", "art/objects/generation/probes/photo-struct-accept-v1/identity_list.json"],
+      "port": 8779
+    },
+    {
+      "name": "prod-identity-review",
+      "runtimeExecutable": "py",
+      "runtimeArgs": ["-3.13", "tools/hdart/review_server.py", "--port", "8781", "--accept", "art/objects/generation/probes/prod-two-pass-v1/identity_list.json"],
+      "port": 8781
+    },
+    {
+      "name": "prod2-identity-review",
+      "runtimeExecutable": "py",
+      "runtimeArgs": ["-3.13", "tools/hdart/review_server.py", "--port", "8782", "--accept", "art/objects/generation/probes/prod-two-pass-v2/identity_list.json"],
+      "port": 8782
+    },
+    {
+      "name": "asset-review-test",
+      "runtimeExecutable": "py",
+      "runtimeArgs": ["-3.13", "tools/hdart/review_server.py", "--port", "8775", "--logs", "C:/Users/user/AppData/Local/Temp/claude/E--OpenXCom/05fcb89f-6dd8-4e1d-a32e-32a505f5ac32/scratchpad/review_logs"],
+      "port": 8775
     }
   ]
 }
