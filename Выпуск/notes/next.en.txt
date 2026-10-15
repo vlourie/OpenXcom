@@ -1,0 +1,1 @@
+﻿- Ships and UFOs in HD: hull walls - about 1200 frames of freighters, liners, UFOs and vehicles - now have a clean edge exactly along the original silhouette, with no stair-steps or halo. Material, panels, hatches and lights are unchanged. Graphics only: tiles, walkability and cover are unchanged.
