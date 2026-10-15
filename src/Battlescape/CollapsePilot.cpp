@@ -208,10 +208,15 @@ int foreignParts(SavedBattleGame *save, const Instance &in)
 		for (int y = b.y0; y <= b.y1 + 1; ++y)
 			for (int x = b.x0; x <= b.x1 + 1; ++x)
 			{
+				// the column east and the row south of the building: only its own west and north walls, and only
+				// inside the block - past the block's edge they are the next block's cells
+				const bool east = x > b.x1, south = y > b.y1;
+				if ((east && (south || x >= b.sx)) || (south && y >= b.sy)) continue;
 				Tile *t = save->getTile(in.off + Position(x, y, z));
 				if (!t) continue;
 				for (TilePart part : PARTS)
 				{
+					if ((east && part != O_WESTWALL) || (south && part != O_NORTHWALL)) continue;
 					MapData *md = t->getMapData(part);
 					if (!md) continue;
 					if (part == O_FLOOR && t->getPosition().z == 0 && md == MapDataSet::getScorchedEarthTile()) continue;
