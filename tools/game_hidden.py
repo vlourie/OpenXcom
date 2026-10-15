@@ -32,6 +32,9 @@ a.add_argument("--exe", default=str(EXE), help="другая сборка - эт
 a.add_argument("--mods-dir", default="", help="папка модов вместо user/mods установки (раскладка tools/compat/hd_layout.py)")
 a.add_argument("--mods", default="", help="список модов options.cfg: id=true;id2=false (нет в списке - дописать в конец)")
 a.add_argument("--master", default="", help="мастер-мод вместо записанного в options.cfg (x-com-files - XCF из --mods-dir)")
+# с dummy-звуком Mix_OpenAudio падает и звуковой код не выполняется вовсе (AUDIO_ROADMAP.md);
+# драйвер disk SDL 1.2 пишет всё, что сыграла игра, сырым PCM в файл
+a.add_argument("--audio-disk", default="", help="файл для записи звука игры (драйвер disk); пусто - без звука")
 o = a.parse_args()
 EXE = Path(o.exe).resolve()
 
@@ -78,10 +81,12 @@ env = {k.upper(): v for k, v in os.environ.items()}
 env["PATH"] = "C:\\msys64\\mingw64\\bin;" + env.get("PATH", "")
 env.update(SDL_VIDEODRIVER="dummy", SDL_AUDIODRIVER="dummy", OXCE_HD_DUMP=str(dump),
            OXCE_HD_DUMP_AFTER=str(o.after), OXCE_HD_CLICK=o.clicks, OXCE_HD_KEY=o.key)
+if o.audio_disk:
+    env.update(SDL_AUDIODRIVER="disk", SDL_DISKAUDIOFILE=str(Path(o.audio_disk).resolve()))
 args = [str(EXE), "-data", str(GAME), "-user", str(u), "-cfg", str(u)] + (["-load", "hiddentest.sav"] if o.save else []) + (
         ["-master", o.master] if o.master else []) + [
         "-fullscreen", "false", "-borderless", "false", "-displayWidth", "1920", "-displayHeight", "1080",
-        "-soundVolume", "0", "-musicVolume", "0", "-FPSInactive", "60"]
+        "-soundVolume", "100" if o.audio_disk else "0", "-musicVolume", "0", "-FPSInactive", "60"]
 p = ai_probe.Hidden(args, str(EXE.parent), env)
 print("pid", p.pid, "(скрытый рабочий стол)")
 t0 = time.time()

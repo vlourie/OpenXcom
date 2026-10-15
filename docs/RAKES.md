@@ -2530,3 +2530,12 @@
 Правило:  в разборе имён BIGOBS тип - не сама метка: (?!(?:wide|hand)\.)[^.]+; новый разбор имён - с той же проверкой на 10.wide.png и 10.hand.png
 Защита:   tools/test_item_asset_check.py: NAME и item_b2_install.OWN на 10.wide.png, 10.hand.png, 10.STR_A.wide.png
 Наступал: 2   Последний: 2026-10-15
+
+## R-365  Скрипт рулсета: return входного аргумента - мод не грузит скрипт
+Статус:   активны
+Файлы:    tools/sfx/build_test_mods.py;src/Engine/Script.cpp
+Симптом:  В openxcom.log: Invalid return argument 'base_fly_sound_index' - скрипт selectMoveSoundUnit брони молча не работает, шаги как в движке
+Причина:  В OXCE return принимает только выходные аргументы и локальные переменные; входные (base_*, tile_sound_index и т.п.) возвращать нельзя
+Правило:  Ветвиться через if/else <усл>;, присваивать set sound_index <арг>; и один return sound_index; в конце. После сборки мода - грепнуть лог скрытого запуска на Invalid/script
+Защита:   нет
+Наступал: 1   Последний: 2026-10-15
