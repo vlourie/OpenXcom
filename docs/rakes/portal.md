@@ -224,3 +224,12 @@
 Правило:  Сбой почты разбирать smtp-probe.ps1 (настоящие ответы сервера по шагам), а не mail-test. Пароль приложения Google создавать в окне инкогнито, войдя только в ящик сайта. Порядок: smtp-probe -Ask до ВХОД ПРИНЯТ, затем station.ps1 smtp с тем же паролем, затем smtp-probe без -Ask (пароль из portal.env), затем mail-test
 Защита:   portal/deploy/smtp-probe.ps1 - ответы сервера и что они значат, состав пароля без показа; в mail-test ответа сервера по-прежнему нет
 Наступал: 1   Последний: 2026-10-03
+
+## R-360  Новая папка исходников названа Release*/ - .gitignore её прячет, git archive собирает сайт без неё
+Статус:   активны
+Файлы:    portal/deploy/pack.ps1, .gitignore
+Симптом:  Новые Pages/Releases/*.cs и .cshtml не видны в git status (ни M, ни ??), архив сайта из git archive уходит на станцию без страницы - ссылки на /releases дают 404
+Причина:  Правило [Rr]elease*/ из шаблона Visual Studio в .gitignore ловит любую папку с именем Release*, в том числе страницу сайта
+Правило:  Новый файл исходников не появился в git status - проверить git check-ignore -v; папку исходника с именем Release*/Debug*/ открыть исключением ! в .gitignore
+Защита:   pack.ps1 останавливается, если в portal/src есть .cs/.cshtml/.json/.css/.js, скрытые .gitignore (git ls-files --others --ignored)
+Наступал: 1   Последний: 2026-10-15

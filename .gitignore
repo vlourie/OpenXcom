@@ -48,6 +48,8 @@ Thumbs.db
 *.lib
 *.sbr
 [Rr]elease*/
+# страница сайта /releases: правило выше прятало её от git archive (portal/deploy/pack.ps1)
+!portal/src/Xp.Portal/Pages/Releases/
 [Tt]est[Rr]esults/
 _UpgradeReport_Files/
 _ReSharper.*/

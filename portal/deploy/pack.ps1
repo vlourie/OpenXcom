@@ -22,6 +22,14 @@ if ($dirty) {
     Write-Host 'Незакоммиченные правки в portal/ или docs/portal/ - в архив они НЕ попадут:' -ForegroundColor Yellow
     $dirty | ForEach-Object { Write-Host "  $_" }
 }
+# исходник, спрятанный .gitignore (папка Releases под '[Rr]elease*/'), git status не покажет,
+# а git archive молча не возьмёт: сайт соберётся без страницы
+$hidden = & git -C $repo ls-files --others --ignored --exclude-standard -- portal/src |
+    Where-Object { $_ -notmatch '/(bin|obj)/' -and $_ -match '\.(cs|cshtml|json|css|js)$' }
+if ($hidden) {
+    $hidden | ForEach-Object { Write-Host "  $_" }
+    throw 'исходники сайта скрыты .gitignore и в архив не попадут: поправить .gitignore (грабли R-360)'
+}
 $hash = (& git -C $repo rev-parse --short HEAD).Trim()
 $stamp = Get-Date -Format 'yyyy-MM-dd_HHmm'
 $dist = Join-Path $repo 'dist'
