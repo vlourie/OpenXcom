@@ -11,7 +11,9 @@ wt.sil4_frame_open. Ни увеличитель, ни модель прозра�
 B2 грузит Real-ESRGAN на видеокарту - запуск только через очередь gpuq. --no-model даёт один A без модели.
 Готовые картинки пропускаются, прогон можно повторять.
 
-  wall_final_render.py [--out census/walls/final_select/render] [--no-model] [--limit N]
+  wall_final_render.py [--out census/walls/final_select/render] [--no-model] [--limit N] [--frames <tsv>]
+
+--frames - другой список картинок того же вида (так перерисован MI_24_HIND_A после R-075, 15.10).
 
 Выход: <out>/xbrz/<хэш>.png, <out>/esrgan/<хэш>.png (128x160 RGBA) и <out>/render.tsv
 (хэш, кадр-представитель, сквозная, кадров, расхождение классики между кадрами строки). В мод ничего не кладётся.
@@ -69,8 +71,8 @@ class Classic:
         return out
 
 
-def rows():
-    with open(FRAMES, encoding=ENC, newline="") as f:
+def rows(path=FRAMES):
+    with open(path, encoding=ENC, newline="") as f:
         return list(csv.DictReader(f, delimiter="\t", quoting=csv.QUOTE_NONE))
 
 
@@ -88,6 +90,7 @@ def main():
     ap.add_argument("--out", default="census/walls/final_select/render")
     ap.add_argument("--no-model", action="store_true", help="только A, модель не грузится")
     ap.add_argument("--limit", type=int, default=0, help="только первые N картинок (проба)")
+    ap.add_argument("--frames", default=FRAMES, help="список картинок (колонки картинка, кадры), по умолчанию стены")
     a = ap.parse_args()
     os.chdir(ROOT)
     sys.stdout.reconfigure(encoding="utf-8")
@@ -100,7 +103,7 @@ def main():
         up = uu.Upscaler(wr.MODELS["esrgan"])
     world = mm.World()
     cl = Classic(world)
-    rs = rows()
+    rs = rows(a.frames)
     if a.limit:
         rs = rs[:a.limit]
     out_rows, done, skipped, t0 = [], 0, 0, time.time()
