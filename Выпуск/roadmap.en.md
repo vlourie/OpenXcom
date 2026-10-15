@@ -19,7 +19,7 @@
 
 ## Under way
 
-- **Inventory and weapons** — all 1205 pictures are being redone: firearms and melee weapons, ammunition, medicine, grenades. The first layer is ready and waits for the choice on the comparison sheets; then a second, more detailed one, starting with the most common weapons.
+- **Inventory and weapons** — all 1205 pictures are being redone: firearms and melee weapons, ammunition, medicine, grenades. The first layer — about 1200 pictures with a clean outline — is chosen and comes with the next update; then a second, more detailed one, starting with the most common weapons.
 - **Walls and ships, finishing touches** — single sets where something stayed shifted or out of place after repainting.
 - **Floors and plants** — the next batches, by the maps met most often.
 
