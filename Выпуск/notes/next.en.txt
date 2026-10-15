@@ -1,0 +1,1 @@
+﻿- HD walls: every wall now has a clean edge along the original silhouette - about 430 more frames, including brick and wooden city walls, fences, hedges, posts and railings. The material and pattern are unchanged, only the edge is fixed: no stair-steps or halo. Graphics only: tiles, walkability and cover are unchanged.
