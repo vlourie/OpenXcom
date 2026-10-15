@@ -17,6 +17,7 @@ def map_to_screen(x, y, z):
 
 
 def main():
+    sys.stdout.reconfigure(encoding="utf-8")    # вывод в трубу у питона - cp1252 (R-001)
     fails = []
 
     def check(cond, what):
@@ -40,24 +41,39 @@ def main():
 
     # фразы
     for kind, k in bv.KINDS.items():
-        pb = bv.prompt_block(kind)
-        if k["iso"]:
+        pb, sh = bv.prompt_block(kind), bv.short(kind)
+        if k["iso"] is True:
             check(pb is not None, f"{kind}: нет фраз")
             if pb:
-                for word in ("orthographic", "45 degrees", "30 degrees", "2:1", "from the left"):
+                for word in ("orthographic", "45 degrees", "30 degrees", "2:1"):
                     check(word in pb["positive"], f"{kind}: в промпте нет '{word}'")
-                for word in ("perspective", "light from the right"):
-                    check(word in pb["negative"], f"{kind}: в негативе нет '{word}'")
+                check("perspective" in pb["negative"], f"{kind}: в негативе нет 'perspective'")
+                if k["light"] == "day":
+                    check("from the left" in pb["positive"], f"{kind}: нет света слева")
+                    check("light from the right" in pb["negative"], f"{kind}: в негативе нет света справа")
+                # юнит смотрит к зрителю и в профиль - негатив не должен запрещать его направления
+                for word in ("front view", "side view", "profile"):
+                    check(word not in pb["negative"], f"{kind}: негатив запрещает '{word}' - это направление юнита")
+                check(len(sh["positive"].split()) + len(sh["negative"].split()) < 40, f"{kind}: SDXL-блок длинный")
+        elif k["iso"] == "unrolled":
+            check(bool(pb) and "straight from above" in pb["positive"] and "isometric" in pb["negative"],
+                  f"{kind}: развёртка не сверху")
         else:
-            check(pb is None, f"{kind}: не боевой вид получил фразы ракурса боя")
+            check(pb is None and sh is None, f"{kind}: не боевой вид получил фразы ракурса боя")
         check(bool(bv.brief(kind)), f"{kind}: пустая справка")
     check(sorted(bv.FACING) == list(range(8)), "8 направлений словами")
     check("viewer" in bv.facing(3) and "back" in bv.facing(7), "dir 3 к зрителю, dir 7 спиной")
+    vs = bv.view_sentence("object")
+    check(vs.endswith(".") and vs[0].isupper(), "ракурс отдельным предложением")
+    check(bv.light_sentence("cursor") == "", "курсор без света")
 
-    # проверка охвата генераторов работает и видит хотя бы один генератор
+    # охват: каждый генератор с моделью берёт фразы отсюда или назван с причиной, почему нет
     rows = bv.audit()
     check(len(rows) > 0, "audit не нашёл генераторов из tools/gpu_scripts.txt")
-    check(all(st in ("USES", "MISSING", "no-words") for _, st in rows), "audit: неизвестный статус")
+    known = ("USES", "MISSING", "no-words", "NOT_BATTLE", "NO_PROMPT", "PROTECTED")
+    check(all(st in known for _, st, _ in rows), "audit: неизвестный статус")
+    for n, st, why in rows:
+        check(st not in ("MISSING", "no-words"), f"audit: {n} - {st} ({why})")
 
     for f in fails:
         print("FAIL", f)

@@ -1,0 +1,502 @@
+<title>Арсенал Пираток</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=PT+Mono&family=PT+Sans+Narrow:wght@400;700&family=PT+Sans:wght@400;700&display=swap">
+<style>
+/* Ledger of the ship's armory: sticky class index on the left, weapon rows with ammo chips on the right; stacks on phones */
+:root {
+  --bg: #f2f3ef; --panel: #ffffff; --ink: #1c2220; --muted: #5b6661; --rule: #d7dcd7;
+  --accent: #94540f; --accent-soft: #f3e6d1; --mark: #fff1b8;
+  --d-kin: #6b7280; --d-fire: #c2410c; --d-he: #a16207; --d-energy: #0e7490; --d-stun: #7c3aed;
+  --d-chem: #4d7c0f; --d-elec: #2563eb; --d-warp: #be185d; --d-cold: #0891b2;
+  --f-display: "PT Sans Narrow", "Arial Narrow", "Roboto Condensed", sans-serif;
+  --f-body: "PT Sans", "Segoe UI", Roboto, sans-serif;
+  --f-data: "PT Mono", Consolas, "Courier New", monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #141816; --panel: #1b201e; --ink: #e5eae7; --muted: #9aa49f; --rule: #2e3532;
+    --accent: #e3a95c; --accent-soft: #3a2c19; --mark: #5a4a12;
+    --d-kin: #a3acb5; --d-fire: #fb8a4c; --d-he: #e2b33a; --d-energy: #38bdd8; --d-stun: #b394fb;
+    --d-chem: #94c94a; --d-elec: #6f9cf7; --d-warp: #f472b6; --d-cold: #5fd3e8;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #141816; --panel: #1b201e; --ink: #e5eae7; --muted: #9aa49f; --rule: #2e3532;
+  --accent: #e3a95c; --accent-soft: #3a2c19; --mark: #5a4a12;
+  --d-kin: #a3acb5; --d-fire: #fb8a4c; --d-he: #e2b33a; --d-energy: #38bdd8; --d-stun: #b394fb;
+  --d-chem: #94c94a; --d-elec: #6f9cf7; --d-warp: #f472b6; --d-cold: #5fd3e8;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font: 15px/1.45 var(--f-body); }
+.wrap { max-width: 1280px; margin: 0 auto; padding-inline: 16px; padding-block: 20px 48px; }
+header.top { display: grid; gap: 10px; padding-bottom: 14px; border-bottom: 2px solid var(--ink); }
+h1 { font: 700 34px/1.05 var(--f-display); letter-spacing: .01em; margin: 0; text-wrap: balance; }
+.sub { color: var(--muted); font-size: 14px; }
+.controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+.controls input[type=search] { flex: 1 1 260px; min-width: 0; font: 15px var(--f-body); color: var(--ink);
+  background: var(--panel); border: 1px solid var(--rule); border-radius: 4px; padding: 8px 10px; }
+.controls input[type=search]:focus-visible, button:focus-visible, a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.seg { display: inline-flex; border: 1px solid var(--rule); border-radius: 4px; overflow: hidden; }
+.seg button { font: 700 14px var(--f-display); letter-spacing: .04em; text-transform: uppercase; color: var(--muted);
+  background: var(--panel); border: 0; padding: 8px 14px; cursor: pointer; }
+.seg button[aria-pressed=true] { background: var(--ink); color: var(--bg); }
+label.chk { display: inline-flex; gap: 6px; align-items: center; color: var(--muted); font-size: 14px; cursor: pointer; }
+.legend { display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 12.5px; color: var(--muted); }
+.legend span { display: inline-flex; align-items: center; gap: 5px; }
+.dot { width: 9px; height: 9px; border-radius: 50%; flex: none; display: inline-block; background: var(--d-kin); }
+.layout { display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 28px; margin-top: 18px; }
+nav.index { position: sticky; top: env(safe-area-inset-top, 0px); align-self: start; max-height: 100vh; overflow-y: auto; padding-block: 6px; }
+nav.index a { display: grid; grid-template-columns: 26px 1fr auto; gap: 6px; align-items: baseline; padding: 4px 6px;
+  color: var(--ink); text-decoration: none; border-radius: 3px; font-size: 14px; line-height: 1.25; }
+nav.index a:hover { background: var(--accent-soft); }
+nav.index a .no { font: 700 14px var(--f-data); color: var(--accent); }
+nav.index a .ct { font: 12px var(--f-data); color: var(--muted); font-variant-numeric: tabular-nums; }
+nav.index a.empty { opacity: .4; }
+section.cls { margin-bottom: 30px; scroll-margin-top: 12px; }
+section.cls > h2 { display: flex; align-items: baseline; gap: 10px; margin: 0 0 4px; padding-bottom: 6px;
+  border-bottom: 1px solid var(--ink); font: 700 23px/1.15 var(--f-display); text-wrap: balance; }
+section.cls > h2 .no { font: 700 20px var(--f-data); color: var(--accent); }
+section.cls > h2 .ct { margin-left: auto; font: 13px var(--f-data); color: var(--muted); }
+.w { display: grid; grid-template-columns: minmax(0, 15rem) minmax(0, 1fr); gap: 6px 18px; padding: 9px 0; border-bottom: 1px solid var(--rule); }
+.wn b { font-weight: 700; }
+.wn .id, .am .id { display: block; font: 11.5px var(--f-data); color: var(--muted); word-break: break-all; }
+.hide-id .id { display: none; }
+.wn .meta { display: block; font: 12.5px var(--f-data); color: var(--muted); margin-top: 2px; font-variant-numeric: tabular-nums; }
+.wn .why { display: block; font-size: 12px; color: var(--muted); font-style: italic; }
+.slots { display: grid; gap: 6px; align-content: start; }
+.slot { display: flex; flex-wrap: wrap; gap: 5px; align-items: baseline; }
+.slot .sl { font: 700 12px var(--f-display); letter-spacing: .05em; text-transform: uppercase; color: var(--accent); margin-right: 2px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; max-width: 100%; padding: 3px 8px; border: 1px solid var(--rule);
+  border-radius: 3px; background: var(--panel); font-size: 13.5px; line-height: 1.3; }
+.chip em { font: normal 12px var(--f-data); color: var(--muted); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.chip.own { border-style: dashed; background: transparent; }
+.chip.miss { text-decoration: line-through; }
+.chip .id { display: none; }
+.show-id .chip .id { display: inline; font: 11px var(--f-data); color: var(--muted); }
+mark { background: var(--mark); color: inherit; border-radius: 2px; }
+.am { display: grid; grid-template-columns: minmax(0, 17rem) minmax(0, 1fr); gap: 6px 18px; padding: 8px 0; border-bottom: 1px solid var(--rule); }
+.am .stat { display: block; font: 12.5px var(--f-data); color: var(--muted); }
+.am .wl { display: flex; flex-wrap: wrap; gap: 4px 6px; align-content: start; }
+.am .wl a { font-size: 13.5px; color: var(--ink); text-decoration: none; border-bottom: 1px dotted var(--muted); }
+.am .wl a .cn { font: 11px var(--f-data); color: var(--accent); margin-right: 3px; }
+.empty-note { color: var(--muted); padding: 24px 0; }
+/* поправки рецензента */
+.review { display: grid; gap: 8px; padding: 10px 12px; background: var(--panel); border: 1px solid var(--rule); border-left: 3px solid var(--accent); border-radius: 4px; }
+.review .how { margin: 0; font-size: 13.5px; color: var(--muted); max-width: 90ch; }
+.review .row { display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: center; }
+.review input[type=text], .editor select, .editor textarea, .review textarea { font: 14px var(--f-body); color: var(--ink); background: var(--bg);
+  border: 1px solid var(--rule); border-radius: 4px; padding: 6px 8px; min-width: 0; }
+.review input[type=text] { flex: 0 1 220px; }
+.review textarea { width: 100%; min-height: 3.2em; resize: vertical; }
+.review details summary { cursor: pointer; font-size: 13.5px; color: var(--muted); }
+.btn { font: 700 13px var(--f-display); letter-spacing: .04em; text-transform: uppercase; color: var(--ink); background: var(--panel);
+  border: 1px solid var(--rule); border-radius: 4px; padding: 6px 11px; cursor: pointer; }
+.btn:hover { border-color: var(--accent); }
+.btn.pri { background: var(--accent); border-color: var(--accent); color: var(--panel); }
+.btn.lite { text-transform: none; letter-spacing: 0; font: 13px var(--f-body); padding: 3px 8px; color: var(--muted); }
+.count { font: 700 14px var(--f-data); color: var(--accent); font-variant-numeric: tabular-nums; }
+.status { font-size: 12.5px; color: var(--muted); }
+.status.warn { color: var(--d-fire); font-weight: 700; }
+.wn .ed { margin-top: 4px; }
+.w.fixed { background: linear-gradient(90deg, var(--accent-soft), transparent 60%); }
+.moved { display: inline-block; margin-left: 6px; font: 700 11.5px var(--f-data); color: var(--accent); border: 1px solid var(--accent); border-radius: 3px; padding: 0 4px; }
+.fix, .editor { grid-column: 1 / -1; }
+.fix { font-size: 13.5px; padding: 6px 10px; border-left: 3px solid var(--accent); background: var(--panel); white-space: pre-wrap; }
+.fix b { font: 700 12px var(--f-display); letter-spacing: .05em; text-transform: uppercase; color: var(--accent); margin-right: 4px; }
+.editor { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 8px 12px; align-items: start; padding: 10px 12px;
+  background: var(--panel); border: 1px solid var(--accent); border-radius: 4px; }
+.editor label { font: 700 12px var(--f-display); letter-spacing: .05em; text-transform: uppercase; color: var(--muted); padding-top: 7px; }
+.editor select { max-width: 100%; }
+.editor textarea { width: 100%; min-height: 3.4em; resize: vertical; }
+.editor .acts { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px; }
+@media (max-width: 820px) { .editor { grid-template-columns: minmax(0, 1fr); } .editor label { padding-top: 0; } }
+@media print { .review, .ed, nav.index, .controls { display: none !important; } }
+.foot { margin-top: 28px; color: var(--muted); font-size: 13px; max-width: 70ch; }
+@media (max-width: 820px) {
+  .layout { grid-template-columns: minmax(0, 1fr); gap: 12px; }
+  nav.index { position: static; max-height: none; display: flex; flex-wrap: wrap; gap: 4px; }
+  nav.index a { display: inline-flex; gap: 5px; border: 1px solid var(--rule); }
+  nav.index a .nm { display: none; }
+  .w, .am { grid-template-columns: minmax(0, 1fr); }
+  h1 { font-size: 28px; }
+}
+@media (prefers-reduced-motion: no-preference) { html { scroll-behavior: smooth; } }
+</style>
+
+<div class="wrap hide-id" id="root">
+  <header class="top">
+    <h1>Арсенал Пираток</h1>
+    <div class="sub" id="sub"></div>
+    <div class="controls">
+      <input type="search" id="q" placeholder="Название оружия или патрона, id…" aria-label="Поиск">
+      <div class="seg" role="group" aria-label="Вид">
+        <button type="button" id="vw" aria-pressed="true">Оружие</button>
+        <button type="button" id="va" aria-pressed="false">Патроны</button>
+      </div>
+      <label class="chk"><input type="checkbox" id="ids"> показывать id</label>
+    </div>
+    <div class="legend" id="legend"></div>
+    <section class="review" aria-label="Поправки">
+      <p class="how">Нашли ошибку — нажмите «✎ поправка» у оружия: выберите верный класс, напишите, что не так с патронами, оставьте комментарий.
+      Поправки сохраняются в этом браузере сами. Закончив, нажмите «Скачать поправки» и пришлите файл обратно.</p>
+      <div class="row">
+        <input type="text" id="who" placeholder="Ваше имя" aria-label="Кто правил" autocomplete="name">
+        <span>Поправок: <span class="count" id="cnt">0</span></span>
+        <label class="chk"><input type="checkbox" id="only"> только с поправками</label>
+        <button type="button" class="btn pri" id="exJson">Скачать поправки</button>
+        <button type="button" class="btn" id="exTsv">Таблица для Excel</button>
+        <button type="button" class="btn" id="cp">Копировать</button>
+        <button type="button" class="btn" id="imp">Загрузить файл</button>
+        <button type="button" class="btn" id="clr">Очистить всё</button>
+        <input type="file" id="impFile" accept=".json,application/json" hidden>
+      </div>
+      <div class="status" id="st" role="status"></div>
+      <details id="genBox"><summary>Общие замечания по классификации (названия классов, лишние или недостающие классы)</summary>
+        <textarea id="gen" placeholder="Например: «13 разделить на пушки и ракетницы»"></textarea>
+      </details>
+    </section>
+  </header>
+  <div class="layout">
+    <nav class="index" id="nav" aria-label="Классы"></nav>
+    <main id="main"></main>
+  </div>
+  <p class="foot">Классы присвоены автоматически по полям рулсета; под названием оружия курсивом написано основание.
+  Ёмкость ∞ — заряд не кончается. ОВ — цена выстрела в очках времени (обычно в процентах от запаса бойца).
+  Слоты — у оружия с несколькими магазинами: в каждый заряжается свой набор патронов, рядом сказано, какие режимы огня из него стреляют.
+  Оружие с поправкой класса стоит уже в новом классе и помечено «было N». Файл поправок можно загрузить обратно («Загрузить файл») — так их сводят от нескольких людей.</p>
+</div>
+
+<script>
+const DATA = /*DATA*/null;
+const DT_TOKEN = ["stun","kin","fire","he","energy","energy","stun","kin","chem","chem","warp","chem","elec","elec","warp","warp","kin","fire","cold"];
+const MODE_ABBR = {"Прицельный":"Пр","Навскидку":"Нв","Очередь":"Оч","Удар":"Уд"};
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const clsName = Object.fromEntries(DATA.classes.map(c => [c.c, c.n]));
+const dtName = dt => (dt != null && DATA.damage[dt]) ? DATA.damage[dt] : "";
+const dtVar = dt => "var(--d-" + (DT_TOKEN[dt] || "kin") + ")";
+const clipTxt = c => c == null ? "" : (c < 0 ? "∞" : String(c));
+let view = "w", query = "";
+try { const v = localStorage.getItem("arsenal-view"); if (v === "a" || v === "w") view = v; } catch (e) {}
+
+// Поправки: items[id] = {c: номер класса | "x" (другой, см. комментарий), ammo, note}
+const STORE = "arsenal-corrections-v1";
+const byId = Object.fromEntries(DATA.weapons.map(w => [w.id, w]));
+let corr = {reviewer: "", general: "", items: {}};
+let onlyEdited = false, openEd = null, dirty = false, storageOk = true;
+try {
+  const s = JSON.parse(localStorage.getItem(STORE) || "null");
+  if (s && typeof s.items === "object") corr = {reviewer: s.reviewer || "", general: s.general || "", items: s.items};
+} catch (e) { storageOk = false; }
+const fixOf = w => corr.items[w.id];
+const effClass = w => { const f = fixOf(w); return f && typeof f.c === "number" ? f.c : w.c; };
+const clsLabel = c => c === "x" ? "другой класс (см. комментарий)" : (c || "—") + " · " + (clsName[c] ?? "?");
+function persist() {
+  dirty = true;
+  try { localStorage.setItem(STORE, JSON.stringify(corr)); storageOk = true; } catch (e) { storageOk = false; }
+  updateBar();
+}
+function updateBar() {
+  const n = Object.keys(corr.items).length;
+  $("#cnt").textContent = n;
+  const st = $("#st");
+  if (!storageOk) { st.textContent = "Браузер не даёт сохранять поправки — перед закрытием обязательно нажмите «Скачать поправки»."; st.className = "status warn"; }
+  else if (n && dirty) { st.textContent = "Сохранено в этом браузере. Файл ещё не скачан."; st.className = "status"; }
+  else st.textContent = "";
+}
+
+function hl(text) {
+  const t = esc(text);
+  if (!query) return t;
+  const i = t.toLowerCase().indexOf(esc(query).toLowerCase());
+  if (i < 0) return t;
+  return t.slice(0, i) + "<mark>" + t.slice(i, i + esc(query).length) + "</mark>" + t.slice(i + esc(query).length);
+}
+
+function statLine(o) {
+  const parts = [];
+  if (o.p != null) parts.push(o.p);
+  if (dtName(o.dt)) parts.push(dtName(o.dt));
+  if (o.pel) parts.push("×" + o.pel + " дробин");
+  if (o.br) parts.push("радиус " + o.br);
+  const c = clipTxt(o.clip);
+  if (c) parts.push("ёмк. " + c);
+  return parts.join(" · ");
+}
+
+function chip(id) {
+  const a = DATA.ammo[id] || {n: id, miss: true};
+  return `<span class="chip${a.miss ? " miss" : ""}" title="${esc(id)}"><i class="dot" style="background:${dtVar(a.dt)}"></i>`
+    + `${hl(a.n)} <em>${esc(statLine(a))}</em><span class="id">${esc(id)}</span></span>`;
+}
+
+function weaponMatches(w) {
+  if (onlyEdited && !fixOf(w)) return false;
+  if (!query) return true;
+  const q = query.toLowerCase();
+  if (w.n.toLowerCase().includes(q) || w.id.toLowerCase().includes(q)) return true;
+  const f = fixOf(w);
+  if (f && ((f.note || "") + " " + (f.ammo || "")).toLowerCase().includes(q)) return true;
+  return w.slots.some(s => s.a.some(id => ((DATA.ammo[id] || {}).n || "").toLowerCase().includes(q) || id.toLowerCase().includes(q)));
+}
+
+function weaponRow(w) {
+  const meta = [w.h === 2 ? "2 руки" : "1 рука"];
+  if (w.wt != null) meta.push("вес " + w.wt);
+  const modes = w.modes.map(m => (MODE_ABBR[m.m] || m.m) + " " + m.tu + (m.shots && m.m === "Очередь" ? "×" + m.shots : "")).join(" ");
+  if (modes) meta.push("ОВ: " + modes);
+  if (w.arm) meta.push("броней: " + w.arm);
+  let slots = "";
+  if (w.slots.length) {
+    const multi = w.slots.length > 1;
+    slots = w.slots.map(s => `<div class="slot">${multi ? `<span class="sl">Слот ${s.s + 1}${s.use.length ? " · " + esc(s.use.join(", ")) : ""}</span>` : ""}${s.a.map(chip).join("")}</div>`).join("");
+  } else if (w.own) {
+    slots = `<div class="slot"><span class="chip own"><i class="dot" style="background:${dtVar(w.own.dt)}"></i>свой заряд <em>${esc(statLine(w.own))}</em></span></div>`;
+  } else {
+    slots = `<div class="slot"><span class="chip own">без патронов</span></div>`;
+  }
+  const f = fixOf(w);
+  const moved = f && f.c != null && f.c !== w.c ? `<span class="moved">${f.c === "x" ? "→ другой" : "было " + (w.c || "—")}</span>` : "";
+  let extra = "";
+  if (openEd === w.id) extra = editor(w);
+  else if (f) {
+    const lines = [];
+    if (f.c != null && f.c !== w.c) lines.push(`<b>Класс</b>${esc(clsLabel(w.c))} → ${esc(clsLabel(f.c))}`);
+    if (f.ammo) lines.push(`<b>Патроны</b>${esc(f.ammo)}`);
+    if (f.note) lines.push(`<b>Комментарий</b>${esc(f.note)}`);
+    extra = `<div class="fix">${lines.join("\n")}</div>`;
+  }
+  return `<div class="w${f ? " fixed" : ""}" id="w-${esc(w.id)}"><div class="wn"><b>${hl(w.n)}</b>${moved}<span class="id">${hl(w.id)}</span>`
+    + `<span class="meta">${esc(meta.join(" · "))}</span><span class="why">${esc(w.why)}</span>`
+    + `<button type="button" class="btn lite ed" data-ed="${esc(w.id)}">✎ ${f ? "изменить поправку" : "поправка"}</button></div>`
+    + `<div class="slots">${slots}</div>${extra}</div>`;
+}
+
+function editor(w) {
+  const f = fixOf(w) || {};
+  const cur = f.c != null ? f.c : w.c;
+  const opts = DATA.classes.map(c => `<option value="${c.c}"${c.c === cur ? " selected" : ""}>${esc(clsLabel(c.c))}${c.c === w.c ? "  (сейчас)" : ""}</option>`).join("")
+    + `<option value="x"${cur === "x" ? " selected" : ""}>другой класс — опишу в комментарии</option>`;
+  return `<form class="editor" data-id="${esc(w.id)}">`
+    + `<label for="ec">Класс</label><select id="ec" name="c">${opts}</select>`
+    + `<label for="ea">Патроны</label><textarea id="ea" name="ammo" placeholder="Какой патрон лишний, какого не хватает">${esc(f.ammo || "")}</textarea>`
+    + `<label for="en">Комментарий</label><textarea id="en" name="note" placeholder="Почему так, что ещё не так">${esc(f.note || "")}</textarea>`
+    + `<div class="acts"><button type="submit" class="btn pri">Сохранить</button><button type="button" class="btn" data-act="cancel">Отмена</button>`
+    + (fixOf(w) ? `<button type="button" class="btn" data-act="drop">Убрать поправку</button>` : "") + `</div></form>`;
+}
+
+function saveEditor(form) {
+  const w = byId[form.dataset.id];
+  const v = form.elements.c.value;
+  const c = v === "x" ? "x" : Number(v);
+  const ammo = form.elements.ammo.value.trim(), note = form.elements.note.value.trim();
+  const fix = {};
+  if (c !== w.c) fix.c = c;
+  if (ammo) fix.ammo = ammo;
+  if (note) fix.note = note;
+  if (Object.keys(fix).length) corr.items[w.id] = fix; else delete corr.items[w.id];
+  openEd = null;
+  persist();
+  render();
+  flash(w.id);
+}
+
+function flash(id) {
+  const el = document.getElementById("w-" + id);
+  if (!el) return;
+  el.scrollIntoView({block: "center"});
+  el.style.outline = "2px solid var(--accent)";
+  setTimeout(() => el.style.outline = "", 1600);
+}
+
+function renderWeapons() {
+  const by = {};
+  for (const w of DATA.weapons) if (weaponMatches(w)) (by[effClass(w)] ||= []).push(w);
+  let nav = "", html = "";
+  for (const c of DATA.classes) {
+    const list = by[c.c] || [];
+    nav += `<a href="#c${c.c}" class="${list.length ? "" : "empty"}"><span class="no">${c.c || "—"}</span><span class="nm">${esc(c.n)}</span><span class="ct">${list.length}</span></a>`;
+    if (!list.length) continue;
+    html += `<section class="cls" id="c${c.c}"><h2><span class="no">${c.c || "—"}</span>${esc(c.n)}<span class="ct">${list.length}</span></h2>${list.map(weaponRow).join("")}</section>`;
+  }
+  $("#nav").innerHTML = nav;
+  $("#main").innerHTML = html || `<p class="empty-note">${onlyEdited && !query ? "Поправок пока нет." : `Ничего не нашлось по запросу «${esc(query)}».`}</p>`;
+}
+
+function renderAmmo() {
+  const users = {};
+  for (const w of DATA.weapons) for (const s of w.slots) for (const id of s.a) (users[id] ||= new Set()).add(w);
+  const q = query.toLowerCase();
+  const ids = Object.keys(DATA.ammo).filter(id => {
+    if (!q) return true;
+    const a = DATA.ammo[id];
+    return a.n.toLowerCase().includes(q) || id.toLowerCase().includes(q) || [...(users[id] || [])].some(w => w.n.toLowerCase().includes(q));
+  }).sort((x, y) => DATA.ammo[x].n.localeCompare(DATA.ammo[y].n, "ru"));
+  $("#nav").innerHTML = "";
+  const rows = ids.map(id => {
+    const a = DATA.ammo[id];
+    const ws = [...(users[id] || [])].sort((x, y) => effClass(x) - effClass(y) || x.n.localeCompare(y.n, "ru"));
+    return `<div class="am"><div><span class="chip"><i class="dot" style="background:${dtVar(a.dt)}"></i>${hl(a.n)}</span>`
+      + `<span class="id">${hl(id)}</span><span class="stat">${esc(statLine(a))}</span></div>`
+      + `<div class="wl">${ws.map(w => `<a href="#w-${esc(w.id)}" data-w="${esc(w.id)}"><span class="cn">${effClass(w)}</span>${hl(w.n)}</a>`).join("")}</div></div>`;
+  }).join("");
+  $("#main").innerHTML = `<section class="cls"><h2>Патрон → оружие<span class="ct">${ids.length}</span></h2>${rows || `<p class="empty-note">Ничего не нашлось.</p>`}</section>`;
+}
+
+function render() {
+  $("#vw").setAttribute("aria-pressed", view === "w");
+  $("#va").setAttribute("aria-pressed", view === "a");
+  $(".layout").style.gridTemplateColumns = view === "a" ? "minmax(0,1fr)" : "";
+  $("#nav").hidden = view === "a";
+  view === "w" ? renderWeapons() : renderAmmo();
+}
+
+function setView(v) { view = v; try { localStorage.setItem("arsenal-view", v); } catch (e) {} render(); }
+
+function payload() {
+  const items = {};
+  for (const [id, f] of Object.entries(corr.items)) {
+    const w = byId[id];
+    items[id] = {name: w ? w.n : id, class_was: w ? w.c : null, class_new: f.c ?? null, ammo: f.ammo || "", note: f.note || ""};
+  }
+  return {format: "piratez-weapons-corrections", version: 1, data_built: DATA.built, exported: new Date().toISOString(),
+          reviewer: corr.reviewer, general: corr.general, items};
+}
+
+function stamp() { return new Date().toISOString().slice(0, 10); }
+function slug() { return (corr.reviewer || "").trim().replace(/[^\p{L}\p{N}]+/gu, "_").slice(0, 24); }
+
+function download(name, text, type) {
+  const url = URL.createObjectURL(new Blob([text], {type}));
+  const a = document.createElement("a");
+  a.href = url; a.download = name; document.body.appendChild(a); a.click();
+  setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 2000);
+  dirty = false; updateBar();
+  $("#st").textContent = "Скачан файл " + name + " — пришлите его обратно."; $("#st").className = "status";
+}
+
+function tsv() {
+  const cell = v => String(v ?? "").replace(/[\t\r\n]+/g, " ");
+  const rows = [["оружие_id", "оружие", "класс_был", "класс_был_название", "класс_стал", "класс_стал_название", "патроны", "комментарий"]];
+  if (corr.general.trim()) rows.push(["(общее)", "", "", "", "", "", "", corr.general]);
+  for (const [id, f] of Object.entries(corr.items)) {
+    const w = byId[id];
+    const was = w ? w.c : "";
+    const now = f.c ?? was;
+    rows.push([id, w ? w.n : id, was, clsName[was] ?? "", now === "x" ? "?" : now, now === "x" ? "другой — см. комментарий" : (clsName[now] ?? ""), f.ammo || "", f.note || ""]);
+  }
+  return "﻿" + rows.map(r => r.map(cell).join("\t")).join("\r\n") + "\r\n";
+}
+
+function importText(text) {
+  let d;
+  try { d = JSON.parse(text); } catch (e) { alert("Это не файл поправок: " + e.message); return; }
+  if (!d || d.format !== "piratez-weapons-corrections" || typeof d.items !== "object") { alert("Это не файл поправок арсенала."); return; }
+  let n = 0, unknown = 0;
+  for (const [id, x] of Object.entries(d.items)) {
+    const w = byId[id];
+    if (!w) unknown++;
+    const fix = {};
+    const c = x.class_new;
+    if (c === "x" || (typeof c === "number" && clsName[c] !== undefined && (!w || c !== w.c))) fix.c = c;
+    if (x.ammo) fix.ammo = String(x.ammo);
+    if (x.note) fix.note = String(x.note);
+    if (Object.keys(fix).length) { corr.items[id] = fix; n++; }
+  }
+  if (d.reviewer && !corr.reviewer) corr.reviewer = d.reviewer;
+  if (d.general && !corr.general.includes(d.general)) corr.general = corr.general ? corr.general + "\n---\n" + d.general : d.general;
+  $("#who").value = corr.reviewer; $("#gen").value = corr.general;
+  if (corr.general) $("#genBox").open = true;
+  persist(); render();
+  $("#st").textContent = `Загружено поправок: ${n}` + (unknown ? `, из них ${unknown} к оружию, которого в этой версии таблицы нет` : "") + (d.reviewer ? ` (правил: ${d.reviewer})` : "") + ".";
+}
+
+(function init() {
+  const pairs = DATA.weapons.reduce((n, w) => n + w.slots.reduce((m, s) => m + s.a.length, 0), 0);
+  $("#sub").textContent = `X-Piratez с русским патчем: ${DATA.weapons.length} единиц оружия, ${Object.keys(DATA.ammo).length} видов патронов, ${pairs} сочетаний «оружие — патрон». Собрано из рулсетов ${DATA.built}.`;
+  const groups = [["kin","Бронебойный, режущий, колющий"],["fire","Огонь, тепло"],["he","Контузящий"],["energy","Лазер, плазма"],["stun","Оглушение, очарование"],["chem","Химия, удушье, био"],["elec","Электричество, ЭМИ"],["warp","Варп, пси, анти-Э511"],["cold","Холод"]];
+  $("#legend").innerHTML = groups.map(([k, t]) => `<span><i class="dot" style="background:var(--d-${k})"></i>${t}</span>`).join("");
+  let t;
+  $("#q").addEventListener("input", e => { clearTimeout(t); t = setTimeout(() => { query = e.target.value.trim(); render(); }, 120); });
+  $("#vw").addEventListener("click", () => setView("w"));
+  $("#va").addEventListener("click", () => setView("a"));
+  $("#ids").addEventListener("change", e => { $("#root").classList.toggle("hide-id", !e.target.checked); $("#root").classList.toggle("show-id", e.target.checked); });
+  $("#main").addEventListener("click", e => {
+    const ed = e.target.closest("button[data-ed]");
+    if (ed) {
+      openEd = ed.dataset.ed; render();
+      const el = document.getElementById("w-" + openEd);
+      if (el) { el.scrollIntoView({block: "nearest"}); const s = el.querySelector("select"); if (s) s.focus(); }
+      return;
+    }
+    const act = e.target.closest("button[data-act]");
+    if (act) {
+      const id = act.closest("form").dataset.id;
+      if (act.dataset.act === "drop") { delete corr.items[id]; persist(); }
+      openEd = null; render(); flash(id);
+      return;
+    }
+    const a = e.target.closest("a[data-w]");
+    if (!a) return;
+    e.preventDefault();
+    const id = a.dataset.w;
+    query = ""; $("#q").value = ""; onlyEdited = false; $("#only").checked = false; setView("w");
+    flash(id);
+  });
+  $("#main").addEventListener("submit", e => { e.preventDefault(); saveEditor(e.target); });
+  $("#main").addEventListener("keydown", e => {
+    if (e.key === "Escape" && openEd) { const id = openEd; openEd = null; render(); flash(id); }
+  });
+
+  $("#who").value = corr.reviewer;
+  $("#gen").value = corr.general;
+  if (corr.general) $("#genBox").open = true;
+  $("#who").addEventListener("input", e => { corr.reviewer = e.target.value.trim(); persist(); });
+  $("#gen").addEventListener("input", e => { corr.general = e.target.value.trim(); persist(); });
+  $("#only").addEventListener("change", e => { onlyEdited = e.target.checked; if (onlyEdited && view === "a") setView("w"); else render(); });
+  $("#exJson").addEventListener("click", () => {
+    corr.reviewer = $("#who").value.trim(); corr.general = $("#gen").value.trim();
+    download(`arsenal-popravki${slug() ? "-" + slug() : ""}-${stamp()}.json`, JSON.stringify(payload(), null, 1), "application/json");
+  });
+  $("#exTsv").addEventListener("click", () => {
+    corr.general = $("#gen").value.trim();
+    download(`arsenal-popravki${slug() ? "-" + slug() : ""}-${stamp()}.tsv`, tsv(), "text/tab-separated-values;charset=utf-8");
+  });
+  $("#cp").addEventListener("click", async () => {
+    corr.reviewer = $("#who").value.trim(); corr.general = $("#gen").value.trim();
+    const text = JSON.stringify(payload(), null, 1);
+    let ok = false;
+    try { await navigator.clipboard.writeText(text); ok = true; } catch (e) {
+      const t = document.createElement("textarea"); t.value = text; document.body.appendChild(t); t.select();
+      try { ok = document.execCommand("copy"); } catch (e2) {} t.remove();
+    }
+    $("#st").textContent = ok ? "Поправки скопированы — можно вставить в письмо или мессенджер." : "Скопировать не вышло — нажмите «Скачать поправки».";
+    $("#st").className = ok ? "status" : "status warn";
+    if (ok) dirty = false;
+  });
+  $("#imp").addEventListener("click", () => $("#impFile").click());
+  $("#impFile").addEventListener("change", e => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const r = new FileReader();
+    r.onload = () => importText(String(r.result).replace(/^﻿/, ""));
+    r.readAsText(file, "utf-8");
+    e.target.value = "";
+  });
+  $("#clr").addEventListener("click", () => {
+    const n = Object.keys(corr.items).length;
+    if (!n && !corr.general) return;
+    if (!confirm(`Удалить все поправки (${n}) и общие замечания? Отменить будет нельзя.`)) return;
+    corr.items = {}; corr.general = ""; $("#gen").value = ""; openEd = null;
+    persist(); dirty = false; updateBar(); render();
+  });
+  window.addEventListener("beforeunload", e => {
+    if (dirty && (Object.keys(corr.items).length || corr.general) && !storageOk) { e.preventDefault(); e.returnValue = ""; }
+  });
+  updateBar();
+  render();
+})();
+</script>

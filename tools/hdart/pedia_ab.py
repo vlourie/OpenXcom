@@ -37,6 +37,65 @@ PIR = common.MODS
 ORIG = os.path.join(PIR, "Piratez", "Resources", "Pedia")
 HD_IN = os.path.join(PIR, "hd", "hd", "UI_esrgan")
 OUT = os.path.join("art", "_refs", "pedia_ab")
+YIELD_CODE = 75     # gpuq: уступил карту заданию выше по приоритету, не ошибка
+
+
+def must_yield():
+    """Очередь gpuq просит отдать карту (флаг GPUQ_YIELD_FILE): выходить только между картинками."""
+    f = os.environ.get("GPUQ_YIELD_FILE")
+    return bool(f) and os.path.exists(f)
+
+
+# photo_ui.compose отдаёт RGBA, но 246 готовых кадров прежних серий (hd_01...) записаны в RGB - тоже годные
+OUT_MODES = ("RGBA", "RGB")
+
+
+def png_problem(path, size):
+    """Пусто - PNG целый, декодируется до конца, режим из OUT_MODES и размер size; иначе - что не так."""
+    try:
+        with Image.open(path) as im:
+            im.verify()
+        with Image.open(path) as im:
+            im.load()
+            if im.format != "PNG" or im.mode not in OUT_MODES:
+                return "%s %s вместо PNG %s" % (im.format, im.mode, "/".join(OUT_MODES))
+            if size and im.size != tuple(size):
+                return "размер %dx%d вместо %dx%d" % (im.size + tuple(size))
+    except Exception as e:                              # noqa: BLE001
+        return str(e) or type(e).__name__
+    return ""
+
+
+def finished(dst, size=None):
+    """Готовая картинка - целый PNG того размера и режима, что выходит у compose. Обрыв записи, чужой
+    или обрезанный файл готовым не считается: откладывается в .broken (не удаляется) и рисуется заново."""
+    if not os.path.exists(dst):
+        return False
+    why = png_problem(dst, size() if callable(size) else size)
+    if not why:
+        return True
+    bad = dst + ".broken"
+    os.replace(dst, bad)
+    print("%s: %s - отложен в %s, рисуется заново" % (os.path.basename(dst), why, bad), flush=True)
+    return False
+
+
+def expected_size(job, args):
+    """Размер готового кадра: compose отдаёт картинку размера входа hd (photo_ui.hd_input)."""
+    path = os.path.join(args.orig, job["file"])
+    hd, _k, _kind = pu.hd_input(pu.Source(path), path, args.hd, 0)
+    return hd.shape[1], hd.shape[0]
+
+
+def save_png(pic, dst):
+    """Через временный файл, проверенный до подмены: прерванная или битая запись не встаёт на место
+    готовой, а готовой кадр считается только после os.replace."""
+    tmp = dst + ".tmp"                                  # не *.png: обрывок не попадёт в листы и обходы папки
+    pic.save(tmp, format="PNG", compress_level=6)
+    why = png_problem(tmp, pic.size)
+    if why:
+        raise RuntimeError("%s: записанный PNG не прошёл проверку: %s" % (tmp, why))
+    os.replace(tmp, dst)
 
 
 class Old:
@@ -144,12 +203,15 @@ def main():
             if only_v and var not in only_v:
                 continue
             dst = os.path.join(args.out, "%s__%s__%s.png" % (name, var, args.tag or args.model))
-            if os.path.exists(dst) and not args.force:
+            if not args.force and finished(dst, lambda job=job: expected_size(job, args)):
                 continue
             todo.append((job, name, var, spec, dst))
     print("модель %s, шагов %d, cfg %.1f: заданий %d" % (args.model, args.steps, args.cfg, len(todo)), flush=True)
     if not todo:
         return 0
+    if must_yield():
+        print("очередь просит карту - выход до загрузки модели", flush=True)
+        return YIELD_CODE
 
     t0 = time.time()
     gen = Old(args) if args.model == "old" else New(args)
@@ -157,6 +219,10 @@ def main():
 
     t0 = time.time()
     for i, (job, name, var, spec, dst) in enumerate(todo):
+        if must_yield():
+            print("очередь просит карту - готово %d из %d, остальное продолжится с места" % (i, len(todo)),
+                  flush=True)
+            return YIELD_CODE
         path = os.path.join(args.orig, job["file"])
         src = pu.Source(path)
         mask, fill, box, parts = pu.layout(src, job.get("panel", "auto"))
@@ -181,7 +247,7 @@ def main():
         else:
             out = gen(img, spec["prompt"], spec.get("neg", ""), seed)
         pic = pu.compose(hd, out, box, k, mask, fill, src, 0)
-        pic.save(dst, compress_level=6)
+        save_png(pic, dst)
         el = time.time() - t0
         print("%d/%d %s %s: %.0f с (вход %s, панель %s) -> %s; осталось ~%.0f мин" % (
             i + 1, len(todo), name, var, time.time() - t1, kind, parts, dst,

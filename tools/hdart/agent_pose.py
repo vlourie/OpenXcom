@@ -15,7 +15,10 @@ r"""AGENT направление 2: прицел и присед цельной 
          автомат (затыльник и дуло кадра dir 2 -> кадра dir 4 со сдвигом), поэтому кисть встаёт на HD-рукоять;
   kneel  верх F_a опущен на 4, ноги - эскиз по силуэту классического кадра 26, сглаженный (без лесенки, R-160).
          Клякса по силуэту читалась моделью как тень на полу (поднятое бедро стало тенью), поэтому рабочий холст -
-         kneel3: ноги цилиндрами со светом по точкам кадра 26 (только эскиз позы, не эталон формы, R-208).
+         kneel3: ноги цилиндрами со светом по точкам кадра 26 (только эскиз позы, не эталон формы, R-208);
+  aimfar фигура прицела (ответ aim, принятый в пак), дальняя рука опущена кулаком на ось цевья автомата, стоящего
+         на своём месте -> кадр 242.v1 (движок берёт его при STATUS_AIMING, 242 остаётся позе стоя). Ответы 5701-5704
+         руку не вытянули; рабочий путь - build --far-lower 9,15.5: кисть 242 опущена на цевьё без генерации.
 Маска оригинала фигуру не режет: силуэт 26 - только эскиз позы, кадр берётся из нарисованной фигуры. В сборке ноги
 выше полы пиджака - всё, что не закрыто торсом и руками позы с AK; серая тень пола под фигурой снимается по яркости.
 
@@ -23,7 +26,7 @@ r"""AGENT направление 2: прицел и присед цельной 
     py -3.13 tools/gpuq.py add --name agent_pose -- E:/OpenXCom/tools/hdart/.venv-qwen21/Scripts/python.exe \
         E:/OpenXCom/tools/hdart/agent_pose.py render --jobs hands,aim,kneel3 --seeds 5501,5502,5503
     tools/hdart/.venv/Scripts/python.exe tools/hdart/agent_pose.py build --hands 5504 --aim 5504 \
-        --kneel-job kneel3 --kneel 5603 [--mod <тестовый мод>]
+        --kneel-job kneel3 --kneel 5603 [--far-lower 9,15.5 | --aimfar <сид>] [--mod <тестовый мод>]
 
 Выход art/units/pilot-agent/full/pose/.
 """
@@ -104,7 +107,17 @@ PROMPTS = {
                "exactly as in <image1>. "),
 }
 PROMPTS["kneel3"] = PROMPTS["kneel2"]
-JOBS = ("hands", "aim", "kneel", "kneel2", "kneel3")
+# дальняя рука прицела (вариант 242.v1): кулак на цевье автомата, который стоит на своём месте (специалист 05.10:
+# оружие и дуло - опора, подгоняется тело)
+PROMPTS["aimfar"] = ("The arm on the right side of the picture (his left arm) reaches forward: the elbow is bent, "
+                     "the forearm goes forward and down, and its hand is a loose fist turned palm up at the height "
+                     "of his belt, a little lower than in <image1>, its white shirt cuff joining the hand directly. "
+                     "The arm on the left side of the picture (his right arm) stays exactly as it is in <image1>. "
+                     "Both arms are whole, natural and as thick as the arms of the man in <image2>: black suit "
+                     "sleeves, white shirt cuffs, bare hands. The hands hold nothing. Keep the legs as in <image1>. ")
+JOBS = ("hands", "aim", "kneel", "kneel2", "kneel3", "aimfar")
+AIM_BASE = 5504                 # ответ aim, принятый в пак (build.json): холст aimfar - на нём
+FAR_AIM = "242.v1"              # кадр дальней руки в позе прицела (UnitSprite: вариант 1 при STATUS_AIMING)
 
 
 # ---------------------------------------------------------------- геометрия
@@ -136,6 +149,45 @@ def shift_arm(pts):
         w = min(1.0, max(0.0, (x - 11.0) / 4.0))
         out.append((x + w * dx, y + w * dy))
     return out
+
+
+def gun_line_y(x):
+    """y оси автомата прицела (затыльник -> дуло) в точке x, база."""
+    (bx, by), (mx, my) = aim_gun_pts()
+    return by + (x - bx) * (my - by) / (mx - bx)
+
+
+def far_shift():
+    """Сдвиг кисти дальней руки: центр кисти 242 -> на ось цевья автомата прицела (кулак снизу, ладонью вверх)."""
+    cx, cy = np.mean(np.asarray(af.FA_HAND), axis=0)
+    return 0.0, gun_line_y(cx) - cy + 0.2
+
+
+def shift_far(pts):
+    """Дальняя рука прицела: плечо (y до 14) на месте, предплечье и кисть (y от 16.5) сдвинуты целиком."""
+    dx, dy = far_shift()
+    out = []
+    for x, y in pts:
+        w = min(1.0, max(0.0, (y - 14.0) / 2.5))
+        out.append((x + w * dx, y + w * dy))
+    return out
+
+
+def lower_far(rgb, a, y0, y1):
+    """242.v1 без генерации: кадр 242 x4 сдвинут вниз на far_shift полем dy(y) = D * w(y), w от 0 на y0 до 1 на y1
+    (база): плечо на месте, предплечье плавно удлинено, кисть ниже y1 опущена целиком на ось цевья. Ответы aimfar
+    (05.10, сиды 5701-5704) руку вперёд не вытянули - висела вдоль бока, кисть уходила за цевьё обрывком."""
+    import cv2
+    D = far_shift()[1] * 4
+    ys = np.arange(a.shape[0], dtype=np.float32)
+    src = np.interp(ys, ys + D * np.clip((ys / 4 - y0) / (y1 - y0), 0, 1), ys).astype(np.float32)
+    my = np.repeat(src[:, None], a.shape[1], 1)
+    mx = np.repeat(np.arange(a.shape[1], dtype=np.float32)[None, :], a.shape[0], 0)
+    o = cv2.remap(np.dstack([rgb * a[..., None], a]).astype(np.float32), mx, my, cv2.INTER_LINEAR,
+                  borderMode=cv2.BORDER_CONSTANT, borderValue=0)
+    oa = o[..., 3]
+    return (np.where(oa[..., None] > 1e-4, o[..., :3] / np.maximum(oa[..., None], 1e-4), 0).astype(np.float32),
+            oa.astype(np.float32))
 
 
 def zone(pts, scale=Z, dy=0.0):
@@ -323,10 +375,33 @@ def canvas_kneel(fa, lit=False, caps=False):
     return to_ctx(c_rgb, c_a), tokens(m)
 
 
+def near_aim():
+    """Ближняя рука прицела (кисть и манжета) - её холст aimfar не трогает."""
+    return grow(zone(shift_arm(af.NA_HAND)) | zone(shift_arm(af.NA_CUFF)), Z // 4)
+
+
+def canvas_aimfar():
+    """Цельная фигура прицела (ответ aim, принятый в пак), дальняя рука опущена кулаком на ось цевья."""
+    rgb, a = raw_cell(os.path.join(OUT, "raw", "aim.r%d.png" % AIM_BASE))
+    W, H = CELL
+    yy, xx = np.mgrid[0:H, 0:W]
+    old = grow(zone(af.FA) & (yy >= 15 * Z), Z // 4) & ~near_aim()
+    # прежний кулак убран: у края торса - тёмный пиджак, дальше - фон
+    front = old & (xx < 20.2 * Z)
+    rgb2 = np.where(front[..., None], np.asarray((30, 30, 33), np.float32), rgb)
+    a2 = np.where(old, front.astype(np.float32), a)
+    fs, fc, fh = shift_far(af.FA), shift_far(af.FA_CUFF), shift_far(af.FA_HAND)
+    s_rgb, s_a = af.sketch_arm(fs, fc, fh, Z, CELL, (0.0, 0.0))
+    # дальняя рука в стопке под торсом: эскиз под фигурой
+    rgb3, a3 = af.over(s_rgb, s_a, rgb2, a2)
+    m = grow(old | zone(fs), Z // 2) & ~near_aim()
+    return to_ctx(rgb3, a3), tokens(m)
+
+
 def canvases():
     fa = fa_clean32()
     return {"hands": canvas_hands(fa), "aim": canvas_aim(fa), "kneel": canvas_kneel(fa),
-            "kneel2": canvas_kneel(fa, lit=True), "kneel3": canvas_kneel(fa, caps=True)}
+            "kneel2": canvas_kneel(fa, lit=True), "kneel3": canvas_kneel(fa, caps=True), "aimfar": canvas_aimfar()}
 
 
 def cmd_prep(a):
@@ -347,6 +422,7 @@ def cmd_prep(a):
         sheet.paste(t, (i * (w + 10), 0))
     sheet.resize((sheet.width // 2, sheet.height // 2), Image.LANCZOS).save(os.path.join(OUT, "ctx_sheet.png"))
     print("сдвиг кисти в прицеле (база): (%.2f, %.2f)" % aim_shift())
+    print("сдвиг дальней кисти в прицеле (база): (%.2f, %.2f)" % far_shift())
 
 
 # ---------------------------------------------------------------- модель
@@ -468,6 +544,27 @@ def cmd_build(a):
     c242, a242 = fr[242]
     fr[242] = (np.where(gap[..., None], a4_rgb, c242), np.where(gap, a4_a, a242))
     print("просветов прицела закрыто кадром 242: %d пикселей x4" % int(gap.sum()))
+    # 3a. дальняя рука прицела 242.v1 из ответа aimfar: кулак на цевье автомата, стоящего на своём месте
+    if a.aimfar:
+        f_rgb, f_a = raw_cell(os.path.join(OUT, "raw", "aimfar.r%d.png" % a.aimfar))
+        fz = grow(zone(af.FA) | zone(shift_far(af.FA)), Z // 8) & (f_a > 0.05) & ~near_aim()
+        junk = af.gun_colour(f_rgb, zone(shift_far(af.FA_CUFF)).astype(np.float32)) & fz
+        print("дальняя рука прицела: пикселей цвета оружия x32 %d (из %d)" % (int(junk.sum()), int(fz.sum())))
+        f4_rgb, f4_a = x4(f_rgb, f_a)
+        fz4 = x4(np.zeros(fz.shape + (3,), np.float32), (fz & ~junk).astype(np.float32))[1] > 0.5
+        fr[FAR_AIM] = (f4_rgb, f4_a * fz4)
+        nog = stack([fr[FAR_AIM], fr[18], fr[34], fr[AIM_ARM]])[1] > 0.5
+        close = cv2.morphologyEx(nog.astype(np.uint8), cv2.MORPH_CLOSE,
+                                 cv2.getStructuringElement(cv2.MORPH_ELLIPSE, (5, 5))) > 0
+        gap = (f4_a > 0.5) & ~nog & close
+        c, al = fr[FAR_AIM]
+        fr[FAR_AIM] = (np.where(gap[..., None], f4_rgb, c), np.where(gap, f4_a, al))
+        print("просветов прицела закрыто кадром %s: %d пикселей x4" % (FAR_AIM, int(gap.sum())))
+        aim_ref = np.maximum(f4_a, g4_aim[1])
+    elif a.far_lower:
+        y0, y1 = (float(v) for v in a.far_lower.split(","))
+        fr[FAR_AIM] = lower_far(*fr[242], y0, y1)
+        print("дальняя рука прицела %s: кадр 242 опущен на %.2f базы, рампа y %.1f..%.1f" % (FAR_AIM, far_shift()[1], y0, y1))
     # 4. ноги приседа 26 из ответа kneel: ниже полы пиджака (с перекрытием под торс), у рук - только под полой
     k_rgb, k_a = raw_cell(os.path.join(OUT, "raw", "%s.r%d.png" % (a.kneel_job, a.kneel)))
     k4_rgb, k4_a = x4(k_rgb, k_a)
@@ -500,15 +597,20 @@ def cmd_build(a):
     pack = os.path.join(OUT, "pack")
     for sub in ("GOV_1.PCK", "HANDOB.PCK"):
         os.makedirs(os.path.join(pack, sub), exist_ok=True)
+    v1 = os.path.join(pack, "GOV_1.PCK", FAR_AIM + ".png")
+    if os.path.exists(v1) and FAR_AIM not in fr:
+        os.remove(v1)
     for n, (rgb, al) in fr.items():
-        af.save_rgba(af.edge_fill(rgb, al), al, os.path.join(pack, "GOV_1.PCK", "%d.png" % n))
+        af.save_rgba(af.edge_fill(rgb, al), al, os.path.join(pack, "GOV_1.PCK", "%s.png" % n))
     af.save_rgba(*g2, os.path.join(pack, "HANDOB.PCK", "%d.png" % af.HANDOB_FRAME))
     af.save_rgba(af.edge_fill(*g4), g4[1], os.path.join(pack, "HANDOB.PCK", "%d.png" % AIM_FRAME))
     with open(os.path.join(pack, "GOV_1.PCK", "color.txt"), "w", encoding="utf-8-sig") as f:
-        f.write("colorAuthority: pack\nframes: %s\n" % " ".join(str(n) for n in sorted(fr)))
+        f.write("colorAuthority: pack\nframes: %s\n" % " ".join(str(n) for n in sorted(k for k in fr if isinstance(k, int))))
     with open(os.path.join(pack, "HANDOB.PCK", "color.txt"), "w", encoding="utf-8-sig") as f:
         f.write("colorAuthority: pack\nframes: %d %d\n" % (af.HANDOB_FRAME, AIM_FRAME))
-    info = {"hands": a.hands, "aim": a.aim, "kneel": a.kneel, "kneel_job": a.kneel_job, "aim_shift": [round(v, 2) for v in aim_shift()],
+    info = {"hands": a.hands, "aim": a.aim, "kneel": a.kneel, "kneel_job": a.kneel_job, "aimfar": a.aimfar,
+            "far_lower": a.far_lower,
+            "far_shift": [round(v, 2) for v in far_shift()], "aim_shift": [round(v, 2) for v in aim_shift()],
             "aim_gun": aim_gun_pts(), "hem_kneel_x4": round(hem4, 1)}
     with open(os.path.join(pack, "build.json"), "w", encoding=ENC) as f:
         json.dump(info, f, ensure_ascii=False, indent=1)
@@ -521,7 +623,7 @@ def cmd_build(a):
             shutil.copytree(os.path.join(pack, sub), dst)
         print("в мод:", a.mod)
     # 6. дырки против цельных фигур тех же поз
-    holes(aim_ref, stack([fr[242], fr[18], fr[34], g4, fr[AIM_ARM]], {3: AIM_OFF})[1], "целится с AK")
+    holes(aim_ref, stack([fr.get(FAR_AIM, fr[242]), fr[18], fr[34], g4, fr[AIM_ARM]], {3: AIM_OFF})[1], "целится с AK")
     holes(k4_a, stack([fr[242], fr[KNEEL_LEGS], fr[34], fr[250]], kd)[1], "присел, руки AK без оружия")
     sheet(fr, g2, g4)
 
@@ -529,14 +631,14 @@ def cmd_build(a):
 POSES = [
     ("стоит", lambda f, g2, g4: ([f[2], f[18], f[34], f[10]], {})),
     ("стоит, AK", lambda f, g2, g4: ([f[242], f[18], f[34], g2, f[250]], {})),
-    ("целится, AK", lambda f, g2, g4: ([f[242], f[18], f[34], g4, f[AIM_ARM]], {3: AIM_OFF})),
+    ("целится, AK", lambda f, g2, g4: ([f.get(FAR_AIM, f[242]), f[18], f[34], g4, f[AIM_ARM]], {3: AIM_OFF})),
     ("присел", lambda f, g2, g4: ([f[2], f[KNEEL_LEGS], f[34], f[10]], {0: (0, 4), 2: (0, 4), 3: (0, 4)})),
     ("присел, AK", lambda f, g2, g4: ([f[242], f[KNEEL_LEGS], f[34], g2, f[250]],
                                       {0: (0, 4), 2: (0, 4), 3: (0, 4), 4: (0, 4)})),
-    ("целится с колена, AK", lambda f, g2, g4: ([f[242], f[KNEEL_LEGS], f[34], g4, f[AIM_ARM]],
+    ("целится с колена, AK", lambda f, g2, g4: ([f.get(FAR_AIM, f[242]), f[KNEEL_LEGS], f[34], g4, f[AIM_ARM]],
                                                 {0: (0, 4), 2: (0, 4), 3: (7, 4), 4: (0, 4)})),
     ("руки AK без оружия", lambda f, g2, g4: ([f[242], f[18], f[34], f[250]], {})),
-    ("руки прицела без оружия", lambda f, g2, g4: ([f[242], f[18], f[34], f[AIM_ARM]], {})),
+    ("руки прицела без оружия", lambda f, g2, g4: ([f.get(FAR_AIM, f[242]), f[18], f[34], f[AIM_ARM]], {})),
     ("стоит, Battle Rifle", lambda f, g2, g4: ([f[242], f[18], f[34], af.battle_rifle_x4(), f[250]], {})),
 ]
 
@@ -572,6 +674,9 @@ def main():
     b.add_argument("--aim", type=int, required=True)
     b.add_argument("--kneel", type=int, required=True)
     b.add_argument("--kneel-job", default="kneel2", help="kneel (v1) или kneel2 (эскиз со светом)")
+    b.add_argument("--aimfar", type=int, default=0, help="сид ответа aimfar: дальняя рука прицела 242.v1 (0 - без варианта)")
+    b.add_argument("--far-lower", default="", help="y0,y1 (база): 242.v1 - кадр 242 с кистью, опущенной на цевьё "
+                                                    "(lower_far), без генерации; вместо --aimfar")
     b.add_argument("--mod", default="", help="папка тестового мода: hd/GOV_1.PCK и hd/HANDOB.PCK заменяются")
     a = ap.parse_args()
     {"prep": cmd_prep, "render": cmd_render, "build": cmd_build}[a.cmd](a)

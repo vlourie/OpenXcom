@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Карточки ассетов</title>
+<style>
+:root {
+  --bg: #f4f2ee; --card: #ffffff; --ink: #1d1c1a; --mute: #6b6760; --line: #dedad3;
+  --floor: #181412; --ok: #2f7d4f; --ok-bg: #e3f2e8; --warn: #9a5b00; --warn-bg: #fbeed7;
+  --bad: #a3302a; --bad-bg: #f8e1df; --acc: #2b5ea8; --acc-bg: #e2ebf8;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #151412; --card: #201e1b; --ink: #ece8e1; --mute: #9d978d; --line: #36332e;
+    --ok: #6cc592; --ok-bg: #1c3326; --warn: #e0a64a; --warn-bg: #3a2c14; --bad: #ec7c73; --bad-bg: #3c1d1a;
+    --acc: #86aef0; --acc-bg: #1d2a40;
+  }
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.4 system-ui, "Segoe UI", sans-serif; }
+header { position: sticky; top: 0; z-index: 5; background: var(--bg); border-bottom: 1px solid var(--line);
+  padding: 10px 16px; display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; }
+header h1 { font-size: 16px; margin: 0 8px 0 0; }
+.tabs button, .pager button, .act button, .rel button, #rebuild {
+  font: inherit; border: 1px solid var(--line); background: var(--card); color: var(--ink);
+  border-radius: 6px; padding: 4px 10px; cursor: pointer; }
+.tabs button.on { background: var(--acc-bg); border-color: var(--acc); color: var(--acc); }
+.mute { color: var(--mute); }
+main { padding: 16px; display: grid; grid-template-columns: repeat(auto-fill, minmax(560px, 1fr)); gap: 14px; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 12px; }
+.card.done { opacity: .62; }
+.head { display: flex; flex-wrap: wrap; gap: 6px; align-items: baseline; margin-bottom: 8px; }
+.head b { font-size: 15px; }
+.badge { font-size: 12px; border-radius: 10px; padding: 1px 8px; background: var(--line); }
+.badge.ok { background: var(--ok-bg); color: var(--ok); }
+.badge.warn { background: var(--warn-bg); color: var(--warn); }
+.badge.bad { background: var(--bad-bg); color: var(--bad); }
+.pics { display: flex; gap: 8px; align-items: flex-end; overflow-x: auto; }
+.pics figure { margin: 0; text-align: center; font-size: 11px; color: var(--mute); }
+.pics img { display: block; background: var(--floor); border-radius: 4px; image-rendering: pixelated; }
+.pics .ctx img { width: 260px; image-rendering: auto; }
+.what { display: flex; gap: 6px; margin: 10px 0 4px; }
+.what input { flex: 1; font: inherit; padding: 5px 8px; border: 1px solid var(--line); border-radius: 6px;
+  background: var(--bg); color: var(--ink); }
+.src { font-size: 12px; color: var(--mute); margin-bottom: 6px; }
+.act { display: flex; flex-wrap: wrap; gap: 6px; }
+.act .yes { background: var(--ok-bg); color: var(--ok); border-color: var(--ok); }
+.act .no { color: var(--bad); }
+.act .pick { outline: 2px solid var(--acc); }
+.cands { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 6px; margin: 6px 0; }
+.cand { border: 1px solid var(--line); border-radius: 6px; padding: 6px 8px; color: var(--ink); font-size: 13px; }
+.pickrow { margin-bottom: 6px; }
+.pickrow button.on { background: var(--acc-bg); border-color: var(--acc); color: var(--acc); }
+.why { font-size: 12px; color: var(--warn); margin: 6px 0; }
+.mem { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; border-top: 1px dashed var(--line); padding-top: 8px; }
+.m { width: 168px; font-size: 12px; border: 1px solid var(--line); border-radius: 8px; padding: 6px; }
+.m.rev { border-color: var(--warn); }
+.m img { width: 64px; background: var(--floor); image-rendering: pixelated; border-radius: 3px; }
+.m .rel { display: flex; flex-wrap: wrap; gap: 3px; margin-top: 4px; }
+.m .rel button { padding: 1px 6px; font-size: 11px; }
+.m .rel button.on { background: var(--acc-bg); border-color: var(--acc); color: var(--acc); }
+.m .rel button.off { background: var(--bad-bg); border-color: var(--bad); color: var(--bad); }
+.pager { padding: 0 16px 24px; display: flex; gap: 8px; align-items: center; }
+#rbstate { font-size: 12px; white-space: pre-wrap; }
+@media (max-width: 640px) { main { grid-template-columns: 1fr; } .pics .ctx img { width: 180px; } }
+</style>
+</head>
+<body>
+<header>
+  <h1>Карточки ассетов</h1>
+  <div class="tabs" id="tabs"></div>
+  <span class="mute" id="counts"></span>
+  <button id="rebuild" title="obj_families + obj_generation: решения входят в семейства и очередь">Пересобрать</button>
+  <span id="rbstate" class="mute"></span>
+</header>
+<main id="cards"></main>
+<div class="pager"><button id="prev">← назад</button><span id="pos" class="mute"></span><button id="next">дальше →</button></div>
+<script>
+const VIEWS = [["acceptance", "десятка"], ["pending", "ждут"], ["family", "с семейством"], ["class_check", "предмет или рельеф?"],
+  ["proposed", "есть предложение"], ["conflict", "модель не решила"], ["none", "без предложения"], ["done", "решено"]];
+const ACC = {recolor: "десятка: перекраска", mirror: "десятка: зеркало", alt_view: "десятка: другой бок",
+  composite: "десятка: составной", tileable: "десятка: плитка", single: "десятка: одиночный"};
+const REL = {recolor: "перекраска", mirror: "зеркало", alternate_view: "другой бок", unknown: "связь?", canonical: ""};
+const ST = {HUMAN_CONFIRMED: ["верно", "ok"], HUMAN_EDITED: ["свой текст", "ok"], AGENT_PROPOSED: ["предложено", "warn"],
+  NO_PROPOSAL: ["нет описания", "bad"], REVIEW_REQUIRED: ["модель не решила", "bad"], UNKNOWN: ["не знаю", "bad"], IDENTITY_REVIEW: ["вернули на проверку", "bad"], SKIP: ["не рисовать", ""], NOT_OBJECT: ["не предмет", ""]};
+let view = "pending", offset = 0; const LIMIT = 30;
+try { view = localStorage.getItem("view") || view; } catch (e) {}
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
+async function post(url, body) {
+  const r = await fetch(url, {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)});
+  const j = await r.json(); if (!r.ok) { alert(j.error || r.status); throw j; } return j;
+}
+function tabs() {
+  document.getElementById("tabs").innerHTML = VIEWS.map(([v, t]) =>
+    `<button data-v="${v}" class="${v === view ? "on" : ""}">${t}</button>`).join(" ");
+}
+function memberHtml(c, m) {
+  const cur = m.human ? (m.human === "HUMAN_REJECTED" ? "no" : (m.human_relation || m.relation)) :
+    (m.kind === "member" ? m.relation : "");
+  const btn = (rel, label) => `<button data-c="${esc(c.asset_id)}" data-m="${esc(m.key)}" data-rel="${rel}"
+    class="${cur === rel ? (rel === "no" ? "off" : "on") : ""}">${label}</button>`;
+  const why = m.kind === "review" ? (m.reason === "indirect_chain" ? `цепочка через ${esc(m.via)}` :
+    m.reason === "weak_mirror" ? "слабое зеркало" : m.reason === "alternate_view_possible" ? "возможно другой бок" :
+    m.reason === "alternate_view_weak" ? "вряд ли другой бок (можно не отвечать)" : esc(m.reason)) :
+    (m.decision === "AUTO" ? "авто" : "человек");
+  return `<div class="m ${m.kind === "review" && m.reason !== "alternate_view_weak" ? "rev" : ""}" title="${esc(m.why)}">
+    <img loading="lazy" src="/img/asset/${m.rank}.png" alt="${esc(m.key)}">
+    <div><b>${esc(m.key)}</b> ${REL[m.relation] ?? esc(m.relation)}</div>
+    <div class="mute">${why}${m.score !== "" ? " · " + esc(m.score) : ""}</div>
+    <div class="rel">${btn("recolor", "перекраска")}${btn("mirror", "зеркало")}${btn("alternate_view", "другой бок")}${btn("no", "другой предмет")}</div>
+  </div>`;
+}
+function modelHtml(m, aid) {  // P1-B: предложение модели - подсказка человеку, не решение
+  if (!m || !(m.proposed_name || m.ambiguity)) return "";
+  // два ответа модели - разные предметы (HARD): ни имени, ни уверенности; догадки рядом, равноправно,
+  // по алфавиту - ни одна не «основная» (замечания 30.09: меньше якоря, чем одна догадка на первом месте)
+  if (m.model_status === "REVIEW_REQUIRED") {
+    const names = (m.candidate_names || "").split(" | ").filter(Boolean);
+    const L = "ABCD";
+    return `<div class="src">модель: <b>не решила</b> - ${esc(m.ambiguity)}.` +
+      (names.length ? `<div class="cands">${names.map((n, i) => `<div class="cand">догадка ${L[i]}: <b>${esc(n)}</b></div>`).join("")}</div>` +
+        `<div class="pickrow act" data-a="${esc(aid)}">${names.map((n, i) => `<button data-pick="${esc(n)}" data-letter="${L[i]}" data-all="${esc(names.join(" | "))}">${L[i]}</button>`).join("")}` +
+        `<button data-other="1">Другое</button><button data-d="UNKNOWN">Не знаю</button></div>`
+        : " Опиши, что видишь, сам (свой текст).") +
+      `${m.candidates ? `<details><summary class="mute">весь разбор ответов (категории, подсказка карты)</summary>${esc(m.candidates)}</details>` : ""}</div>`;
+  }
+  const conf = m.model_confidence !== "" ? ` · уверенность ${esc(m.model_confidence)}` : "";
+  const amb = m.model_status === "PROPOSED_AMBIGUOUS" ? ` <span style="color:var(--warn)">(близко, разными словами)</span>` : "";
+  return `<div class="src">модель: <b>${esc(m.proposed_name || "UNKNOWN")}</b>${amb}` +
+    `${m.proposed_category ? " · " + esc(m.proposed_category) : ""}${m.proposed_material ? " · " + esc(m.proposed_material) : ""}${conf}` +
+    `${m.evidence ? `<br>по чему: ${esc(m.evidence)}` : ""}` +
+    `${m.ambiguity ? `<br><span style="color:var(--warn)">сомнение: ${esc(m.ambiguity)}</span>` : ""}` +
+    `${m.candidates ? `<details><summary class="mute">догадки модели скрыты - открыть</summary>${esc(m.candidates)}</details>` : ""}</div>`;
+}
+function cardHtml(c) {
+  const [stt, stc] = ST[c.status] || [c.status, ""];
+  const done = ["HUMAN_CONFIRMED", "HUMAN_EDITED", "SKIP", "NOT_OBJECT", "UNKNOWN"].includes(c.status);
+  const text = c.identity || c.proposed || "";
+  const cls = c.asset_class === "object_or_relief";
+  return `<section class="card ${done ? "done" : ""}" id="c-${esc(c.asset_id)}">
+    <div class="head"><b>#${c.rank} ${esc(c.asset_id)}</b>
+      <span class="mute">${esc(c.places)} мест · ${esc(c.kind)} · ${esc(c.map)}</span>
+      <span class="badge ${stc}">${stt}</span>
+      ${c.acceptance ? `<span class="badge">${ACC[c.acceptance] || esc(c.acceptance)}</span>` : ""}
+      ${cls ? '<span class="badge warn">предмет или рельеф?</span>' : ""}
+      ${c.members.length ? `<span class="badge">семейство ${c.members.length + 1}</span>` : ""}
+      ${c.review.length ? `<span class="badge warn">кандидатов ${c.review.length}</span>` : ""}</div>
+    <div class="pics">
+      <figure><img src="/img/asset/${c.rank}.png" alt="оригинал x4"><figcaption>оригинал x4</figcaption></figure>
+      <figure><img loading="lazy" src="/img/pack/${c.rank}.png" alt="в игре" onerror="this.parentNode.remove()"><figcaption>в игре сейчас</figcaption></figure>
+      <figure class="ctx"><img loading="lazy" src="/img/ctx/${c.rank}.png" alt="на карте" onerror="this.parentNode.remove()"><figcaption>на карте</figcaption></figure>
+    </div>
+    ${cls ? `<div class="why">${esc(c.class_why)}</div>` : ""}
+    <div class="what"><input value="${esc(text)}" data-orig="${esc(text)}" placeholder="что это (по-английски, для модели)"></div>
+    <div class="src">${c.identity ? "подтверждено" : c.proposed ? "предложил: " + esc(c.proposed_source) : "описания нет"}</div>
+    ${modelHtml(c.model, c.asset_id)}
+    <div class="act" data-a="${esc(c.asset_id)}">
+      <button class="yes" data-d="CONFIRM" ${text ? "" : 'disabled title="подтверждать нечего - напиши свой текст"'}>Верно</button>
+      <button data-d="EDIT">Мой текст</button>
+      <button data-d="UNKNOWN">Не знаю</button>
+      <button data-d="SKIP">Не рисовать</button>
+      <button class="no ${cls ? "pick" : ""}" data-d="NOT_OBJECT">Не предмет</button>
+    </div>
+    ${c.members.length || c.review.length ? `<div class="mem">${c.members.map(m => memberHtml(c, m)).join("")}${c.review.map(m => memberHtml(c, m)).join("")}</div>` : ""}
+  </section>`;
+}
+async function load() {
+  tabs();
+  const r = await fetch(`/api/cards?view=${view}&offset=${offset}&limit=${LIMIT}`); const j = await r.json();
+  document.getElementById("cards").innerHTML = j.cards.map(cardHtml).join("") || '<p class="mute">здесь пусто</p>';
+  const k = j.counts; document.getElementById("counts").textContent =
+    Object.entries(k).map(([s, n]) => `${(ST[s] || [s])[0]} ${n}`).join(" · ") + ` · данные ${j.loaded}`;
+  document.getElementById("pos").textContent = `${j.total ? offset + 1 : 0}–${Math.min(offset + LIMIT, j.total)} из ${j.total}`;
+  document.getElementById("prev").disabled = offset === 0;
+  document.getElementById("next").disabled = offset + LIMIT >= j.total;
+}
+document.addEventListener("click", async e => {
+  const b = e.target.closest("button"); if (!b) return;
+  if (b.dataset.v) { view = b.dataset.v; offset = 0; try { localStorage.setItem("view", view); } catch (x) {} return load(); }
+  if (b.dataset.d) {
+    const card = b.closest(".card"), inp = card.querySelector(".what input"), aid = b.parentNode.dataset.a;
+    let d = b.dataset.d;
+    if (d === "CONFIRM" && inp.value.trim() !== inp.dataset.orig.trim()) d = "EDIT";   // поправил текст и нажал «верно»
+    if (d === "CONFIRM" && !inp.value.trim()) { alert("описания нет - впиши своё и нажми «Мой текст»"); return; }
+    const j = await post("/api/identity", {asset_id: aid, decision: d, identity: inp.value});
+    const [t, c] = ST[j.status] || [j.status, ""];
+    const badge = card.querySelector(".head .badge"); badge.textContent = t; badge.className = "badge " + c;
+    card.classList.add("done");
+    return;
+  }
+  if (b.dataset.pick) {       // выбрана догадка модели: это решение человека, в журнал - с пометкой, какая из каких
+    const card = b.closest(".card"), aid = b.parentNode.dataset.a;
+    const j = await post("/api/identity", {asset_id: aid, decision: "EDIT", identity: b.dataset.pick,
+      note: `выбрана догадка модели ${b.dataset.letter} из: ${b.dataset.all}`});
+    card.querySelector(".what input").value = b.dataset.pick;
+    const [t, c] = ST[j.status] || [j.status, ""];
+    const badge = card.querySelector(".head .badge"); badge.textContent = t; badge.className = "badge " + c;
+    b.parentNode.querySelectorAll("button").forEach(x => x.className = "");
+    b.className = "on"; card.classList.add("done");
+    return;
+  }
+  if (b.dataset.other) {
+    const inp = b.closest(".card").querySelector(".what input");
+    inp.placeholder = "впиши, что это, и нажми «Мой текст»"; inp.focus();
+    return;
+  }
+  if (b.dataset.rel) {
+    const rel = b.dataset.rel;
+    await post("/api/member", {canonical: b.dataset.c, member: b.dataset.m,
+      decision: rel === "no" ? "HUMAN_REJECTED" : "HUMAN_APPROVED", relation: rel === "no" ? "" : rel});
+    b.parentNode.querySelectorAll("button").forEach(x => x.className = "");
+    b.className = rel === "no" ? "off" : "on";
+    return;
+  }
+  if (b.id === "prev") { offset = Math.max(0, offset - LIMIT); load(); scrollTo(0, 0); }
+  if (b.id === "next") { offset += LIMIT; load(); scrollTo(0, 0); }
+  if (b.id === "rebuild") { await post("/api/rebuild", {}); poll(); }
+});
+async function poll() {
+  const j = await (await fetch("/api/rebuild")).json();
+  document.getElementById("rbstate").textContent = j.state === "running" ? "пересборка идёт (~4 мин)…" :
+    j.state === "done" ? "пересобрано" : j.state === "failed" ? "ошибка пересборки:\n" + j.log : "";
+  if (j.state === "running") setTimeout(poll, 3000); else if (j.state === "done") load();
+}
+load(); poll();
+</script>
+</body>
+</html>

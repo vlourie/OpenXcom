@@ -9,20 +9,23 @@ r"""Очередь предметов по популярности: все пр
   * составной (лестница, дерево на несколько клеток) - все куски одной строкой (obj_series.composites);
   * анимация - все кадры записи одной строкой, одно описание и одно зерно (R-071);
   * копии одной картинки в разных наборах - одна строка, файл потом кладётся на все копии (R-049);
-  * точное зеркало более частой строки - выводится поворотом (R-051), своего заказа нет;
-  * кандидат в перекраску (та же форма, другие цвета) - выводится из более частой строки подгонкой
-    тона к своему оригиналу; это кандидат, а не доказательство: решает лист партии;
   * массив (скала, живая изгородь: стоит вплотную к своим копиям) - не предмет, а поле; рисуется
     способом полов, в очереди предметов его нет, он в massive.tsv.
 Популярность - число мест на всех блоках карт всех террейнов. Как часто игра выбирает сам блок
 в миссии, перепись не знает: это оговорка, а не учтено.
 
-Пишет в --out (art/objects/queue), всё UTF-8 со спецификацией:
-  queue.tsv   - строка на предмет: место, партия, вид, мест, клеток, блоков, ключи, пример на карте,
-                подсказка, что уже есть (strict / фото / в игре), из чего выводится;
-  items.json  - то же для следующих шагов (лист опознания, задания obj_photo: map и at как там);
+Pipeline v2 (docs/HD_PIPELINE_V2.md, разделы 10-12): это стадия DISCOVERY - что есть в игре, где стоит,
+составные, анимации. Кто чья перекраска или зеркало, здесь НЕ решается (раньше очередь сама назначала
+parent и сдвигала партии): это решает obj_families, а что рисовать - obj_generation. Партия здесь - только
+сотня по популярности, а не партия генерации. Столбец «есть» - аудит прежних папок, не статус:
+статус ведёт манифест (hd_manifest.py).
+
+Пишет в --out (art/objects/discovery), всё UTF-8 со спецификацией:
+  queue.tsv   - строка на предмет: место, сотня, вид, мест, клеток, блоков, ключи, пример на карте,
+                подсказка, что уже есть (аудит: strict / фото / в игре);
+  items.json  - то же для следующих шагов (семейства, листы, задания obj_photo: map и at как там);
   massive.tsv - массивы;
-  summary.txt - итоги и охват по партиям.
+  summary.txt - итоги и охват по сотням.
 
     py -3.13 tools/hdart/obj_queue.py
 """
@@ -41,7 +44,6 @@ for _p in (HERE, os.path.dirname(HERE)):
         sys.path.insert(0, _p)
 
 import numpy as np                                  # noqa: E402
-from PIL import Image                               # noqa: E402
 
 import map_mockup as mm                             # noqa: E402
 import map_paint as mp_                             # noqa: E402
@@ -56,17 +58,6 @@ TOUCH = ((16, 8), (-16, 8))
 
 def phash(im):
     return hashlib.md5(np.asarray(im.convert("RGBA")).tobytes()).hexdigest()[:16]
-
-
-def recolor_key(im):
-    """Форма и раскладка цветов без самих цветов: цвета нумеруются по первому появлению (как в переписи)."""
-    a = np.asarray(im.convert("RGBA"))
-    flat = a.reshape(-1, 4)
-    _u, first, inv = np.unique(flat, axis=0, return_index=True, return_inverse=True)
-    rank = np.argsort(np.argsort(first))
-    norm = rank[inv.ravel()].astype(np.int32)
-    norm[flat[:, 3] == 0] = -1
-    return hashlib.md5(norm.tobytes()).hexdigest()[:16]
 
 
 def kstr(k):
@@ -116,11 +107,13 @@ def comp_at(world, comp, anchor_where):
     for d in inst:
         if d["part"] == 3:
             by.setdefault((d["x"], d["y"] + d["p_level"], d["z"]), []).append(d)
-    first = comp["members"][0][0]
+    # сдвиги members - от начала графа кусков (osr.composites), а якорь - первый кусок в порядке рисования:
+    # сдвиг якоря вычитать, иначе у кровати и лестницы второй кусок не находится и заказ берёт один кусок
+    first, (fx, fy, fz) = comp["members"][0]
     a = next((d for d in by.get((x, y + comp["pl"][first], z), ()) if (d["set"], d["frame"]) == first), None)
     if a is None:
         return None
-    ax, ay, az = a["x"], a["y"] + a["p_level"], a["z"]
+    ax, ay, az = a["x"] - fx, a["y"] + a["p_level"] - fy, a["z"] - fz
     out = []
     for key, (dx, dy, dz) in comp["members"]:
         d = next((d for d in by.get((ax + dx, ay + dy, az + dz), ()) if (d["set"], d["frame"]) == key), None)
@@ -175,7 +168,7 @@ def done_of(keys):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--out", default="art/objects/queue")
+    ap.add_argument("--out", default="art/objects/discovery")
     ap.add_argument("--batch", type=int, default=100)
     ap.add_argument("--limit", type=int, default=0, help="только первые N блоков - для проверки скрипта")
     a = ap.parse_args()
@@ -222,28 +215,13 @@ def main():
             sig = "A" + hashlib.md5("|".join(phash(s) if s else "-" for s in sprs).encode()).hexdigest()[:16]
             add(sig, "анимация", [key], places[key], {"frames": sorted(set(anim[key]))})
         else:
-            add("S" + phash(spr[key]), "один", [key], places[key],
-                {"mirror": "S" + phash(spr[key].transpose(Image.FLIP_LEFT_RIGHT)),
-                 "recolor": recolor_key(spr[key])})
+            add("S" + phash(spr[key]), "один", [key], places[key], {})
 
     order = sorted(items.items(), key=lambda kv: (-kv[1]["places"], -kv[1]["cells"], kv[0]))
-    rank, by_mirror, by_recolor, n_draw = {}, {}, {}, 0
+    rank = {}
     for sig, it in order:
-        parent = None
-        if it["kind"] == "один":
-            if it["mirror"] != sig and it["mirror"] in rank:
-                parent, it["derive"] = it["mirror"], "зеркало"
-            elif it["recolor"] in by_recolor:
-                parent, it["derive"] = by_recolor[it["recolor"]], "перекраска?"
-        if parent:
-            it["parent"] = parent
-            it["batch"] = items[parent]["batch"]
-        else:
-            it["batch"] = n_draw // a.batch + 1
-            n_draw += 1
+        it["batch"] = len(rank) // a.batch + 1
         rank[sig] = len(rank) + 1
-        if it["kind"] == "один":
-            by_recolor.setdefault(it["recolor"], sig)
     hints = load_hints()
 
     total_cells = sum(places[k] for k in places if k not in mass)
@@ -259,21 +237,19 @@ def main():
         frames = keys
         if it["kind"] == "анимация":
             frames = [(anchor[0], f) for f in it["frames"]]
-        par = it.get("parent")
         cover[it["batch"]] += it["cells"]
         rows.append([rank[sig], it["batch"], it["kind"], it["places"], it["cells"], len(it["blocks"]),
                      " ".join(kstr(k) for k in keys), "%s/%s @%s" % (tr, b, ",".join(map(str, at[0]))),
-                     ("%s из %d" % (it["derive"], rank[par])) if par else "", done_of(frames), hint])
+                     done_of(frames), hint])
         jitems.append({"rank": rank[sig], "batch": it["batch"], "kind": it["kind"], "sig": sig,
                        "places": it["places"], "cells": it["cells"], "blocks": len(it["blocks"]),
                        "keys": [kstr(k) for k in keys], "frames": [kstr(k) for k in frames],
                        "src": [kstr(k) for k in it["src"][1]],
-                       "map": "%s/%s" % (tr, b), "at": at, "hint": hint,
-                       "derive": it.get("derive", ""), "parent": rank[par] if par else 0})
+                       "map": "%s/%s" % (tr, b), "at": at, "hint": hint})
 
     with open(os.path.join(a.out, "queue.tsv"), "w", encoding=ENC, newline="") as f:
-        f.write("\t".join(["место", "партия", "вид", "мест", "клеток", "блоков", "ключи", "пример",
-                           "выводится", "есть", "подсказка"]) + "\n")
+        f.write("\t".join(["место", "сотня", "вид", "мест", "клеток", "блоков", "ключи", "пример",
+                           "есть (аудит)", "подсказка"]) + "\n")
         for r in rows:
             f.write("\t".join(str(v).replace("\t", " ") for v in r) + "\n")
     with open(os.path.join(a.out, "items.json"), "w", encoding=ENC) as f:
@@ -284,17 +260,16 @@ def main():
             f.write("%s\t%d\t%d\n" % (kstr(k), places[k], massn[k]))
 
     kinds = Counter(it["kind"] for _s, it in order)
-    der = Counter(it.get("derive", "") for _s, it in order)
     n_batches = max(it["batch"] for _s, it in order) if order else 0
-    lines = ["Очередь предметов, %s" % time.strftime("%Y-%m-%d %H:%M"),
+    lines = ["Предметы на картах (discovery), %s" % time.strftime("%Y-%m-%d %H:%M"),
              "блоков карт (террейн + блок): %d" % len(pairs),
              "кадров-предметов на картах: %d, массивов (способ полов): %d" % (len(places), len(mass)),
-             "предметов (строк очереди): %d - один %d, составной %d, анимация %d"
+             "предметов (строк): %d - один %d, составной %d, анимация %d"
              % (len(order), kinds["один"], kinds["составной"], kinds["анимация"]),
-             "выводятся без заказа: зеркало %d, перекраска-кандидат %d" % (der["зеркало"], der["перекраска?"]),
-             "заказов модели: %d, партий по %d: %d" % (n_draw, a.batch, n_batches),
+             "перекраски и зеркала здесь не решаются: obj_families.py, заказы модели - gen_queue.py",
+             "сотен по популярности: %d" % n_batches,
              "мест предметов на картах (без массивов): %d" % total_cells, "",
-             "партия\tохват мест, %\tнакопленный, %"]
+             "сотня\tохват мест, %\tнакопленный, %"]
     acc = 0
     for bn in range(1, n_batches + 1):
         acc += cover[bn]

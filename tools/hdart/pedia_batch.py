@@ -111,6 +111,15 @@ Describe ONLY what is drawn, not what the article says. Answer strictly as JSON 
 "clothes": what the main woman wears, a short English phrase; empty string if no women."""
 
 
+YIELD_CODE = 75     # gpuq: уступил карту заданию выше по приоритету - продолжит с места
+
+
+def must_yield():
+    """Очередь gpuq просит отдать карту (флаг GPUQ_YIELD_FILE, педия - P9, уступающее задание)."""
+    f = os.environ.get("GPUQ_YIELD_FILE")
+    return bool(f) and os.path.exists(f)
+
+
 def load(path, default):
     if os.path.exists(path):
         with io.open(path, encoding=ENC) as f:
@@ -212,6 +221,9 @@ def caption(keys, info):
     todo = [k for k in keys if k not in caps]
     t0 = time.time()
     for i, k in enumerate(todo, 1):
+        if must_yield():
+            print("очередь просит карту - описания продолжатся с места", flush=True)
+            break
         it = info[k]
         facts = "%s. %s" % (it["title"], it["text"])
         try:
@@ -319,6 +331,8 @@ def run(a):
     info = p["info"]
     print("серия %s %d: картинок %d (%s .. %s)" % (a.variant, a.batch, len(keys), keys[0], keys[-1]), flush=True)
     caps = caption(keys, info)
+    if must_yield():
+        return YIELD_CODE
     out_dir = os.path.join(ROOT, "%s_%02d" % (a.variant, a.batch))
     os.makedirs(out_dir, exist_ok=True)
     jobs, skipped = [], {}
@@ -347,6 +361,8 @@ def run(a):
            "--out", out_dir, "--tag", a.tag]
     print(" ".join(cmd), flush=True)
     rc = subprocess.call(cmd)
+    if rc == YIELD_CODE:                    # серия не дорисована - лист после её конца
+        return rc
     sheet(out_dir, keys, info, a.tag, a.variant)
     return rc
 
@@ -421,6 +437,8 @@ def redo(a):
         cmd += ["--seed", str(a.seed)]
     print(" ".join(cmd), flush=True)
     rc = subprocess.call(cmd)
+    if rc == YIELD_CODE:
+        return rc
     sheet(out_dir, keys, info, a.tag, a.variant)
     return rc
 
