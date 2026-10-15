@@ -16,6 +16,7 @@ B2 грузит Real-ESRGAN на видеокарту - запуск тольк�
 
   item_b2_render.py [--out census/items/redo/b2] [--no-model] [--limit N]
   item_b2_render.py --sheets [--out census/items/redo/b2]
+  item_b2_render.py --rest [--sheets|--pack]   - остаток инвентаря (REST_ORDER) в census/items/redo/b2_rest
 
 Выход:
   <out>/xbrz/<кадр>.png, <out>/esrgan/<кадр>.png - 128x192 RGBA (k=4);
@@ -45,6 +46,11 @@ NONSTD = "census/items/originals/nonstandard/manifest.tsv"
 FW, FH, COLS, K = 32, 48, 16, 4
 TABLES = (("weapons.tsv", None), ("ammo.tsv", "ammo"), ("meds.tsv", "medical"), ("grenades.tsv", "grenade"))
 ORDER = ("firearm", "melee", "ammo", "medical", "grenade")
+# --rest (слово Vitali 15.10 «а броня, взрывчатка, всё остальное - делай»): все прочие кадры, которые игрок видит
+# в инвентаре. Не входят встроенное оружие (inventory_item False) и предметы без клеток (zero_size)
+REST_ORDER = ("armor", "misc", "flare", "psi", "prisoner", "corpse")
+REST_CLASS = {"flare": "flare", "psi_mind": "psi", "live_prisoner": "prisoner", "corpse": "corpse",
+              "corpse_geo": "corpse", "misc": "misc", "scanner": "misc"}
 
 
 def read_tsv(path):
@@ -52,8 +58,10 @@ def read_tsv(path):
         return list(csv.DictReader(f, delimiter="\t", quoting=csv.QUOTE_NONE))
 
 
-def frame_list():
+def frame_list(rest=False):
     """Кадр -> класс (первого пользователя по ORDER), типы, клетки, вылет хотя бы у одного."""
+    if rest:
+        return rest_frames()
     fr = {}
     for fn, cl in TABLES:
         for r in read_tsv(os.path.join(REDO, fn)):
@@ -64,6 +72,40 @@ def frame_list():
                 e["class"] = c
             e["types"].append(r["type"])
             if r["over_px"] not in ("", "0"):
+                e["over"] = True
+    return fr
+
+
+def rest_frames():
+    """Остаток после оружия, боеприпасов, медицины и гранат: кадры предметов инвентаря из items.tsv, которых
+    нет в frame_list(). Класс - первого пользователя по REST_ORDER (броня - misc с подклассом armors), вылет -
+    пиксель оригинала вне клеток хотя бы одного пользователя (item_asset_check.grid_rect)."""
+    import item_asset_check as iac
+    base = set(frame_list())
+    at = Atlas()
+    fr = {}
+    for r in read_tsv("census/items/items.tsv"):
+        try:
+            n, w, h = int(r["bigSprite"]), int(r["invWidth"] or 0), int(r["invHeight"] or 0)
+        except ValueError:
+            continue
+        c = REST_CLASS.get(r["class"])
+        if n < 0 or n in base or r["inventory_item"] != "True" or w <= 0 or h <= 0 or not c:
+            continue
+        if c == "misc" and "armors" in r["subclass"].split(","):
+            c = "armor"
+        e = fr.setdefault(n, {"class": c, "types": [], "cells": "%dx%d" % (w, h), "over": False, "wh": []})
+        if REST_ORDER.index(c) < REST_ORDER.index(e["class"]):
+            e["class"], e["cells"] = c, "%dx%d" % (w, h)
+        e["types"].append(r["type"])
+        e["wh"].append((w, h))
+    for n, e in fr.items():
+        m = at.frame(n)[..., 3] > 0
+        for w, h in e["wh"]:
+            x0, y0, x1, y1 = iac.grid_rect(w, h)
+            inside = np.zeros(m.shape, bool)
+            inside[y0:y1, x0:x1] = True
+            if (m & ~inside).any():
                 e["over"] = True
     return fr
 
@@ -114,7 +156,7 @@ def render(a):
         import upscale_units as uu
         up = uu.Upscaler(wr.MODELS["esrgan"])
     at = Atlas()
-    fr = frame_list()
+    fr = frame_list(a.rest)
     keys = sorted(fr)
     if a.limit:
         keys = keys[:a.limit]
@@ -171,7 +213,7 @@ def make_pack(a):
         if f >= 0 and w > 0 and h > 0:
             users.setdefault(f, []).append((w, h))
     at = Atlas()
-    keys = sorted(frame_list())
+    keys = sorted(frame_list(a.rest))
     have, trimmed = 0, 0
     for n in keys:
         src = os.path.join(a.out, "esrgan", "%d.png" % n)
@@ -212,7 +254,7 @@ def font(size):
 def sheets(a, per_row=8, rows_per=5):
     """Оригинал x4 (NEAREST) и B2 рядом, тёмный фон инвентаря, сетка клеток 64x64 на k=4."""
     at = Atlas()
-    fr = frame_list()
+    fr = frame_list(a.rest)
     ft, fs = font(22), font(15)
     # ячейка под самый широкий и высокий нестандартный кадр (44x53): вылет за 32x48 виден, а не обрезан
     tw, th, gap, lab = 44 * K, 53 * K, 10, 36
@@ -233,7 +275,7 @@ def sheets(a, per_row=8, rows_per=5):
         return t
 
     made = []
-    for cl in ORDER:
+    for cl in (REST_ORDER if a.rest else ORDER):
         keys = [n for n in sorted(fr) if fr[n]["class"] == cl]
         per = per_row * rows_per
         for p in range(0, len(keys), per):
@@ -267,12 +309,14 @@ def sheets(a, per_row=8, rows_per=5):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--out", default=os.path.join(REDO, "b2"))
+    ap.add_argument("--out", default="")
+    ap.add_argument("--rest", action="store_true", help="остаток: броня, документы, сокровища, пленники, трупы")
     ap.add_argument("--no-model", action="store_true", help="только A, модель не грузится")
     ap.add_argument("--limit", type=int, default=0, help="только первые N кадров (проба)")
     ap.add_argument("--sheets", action="store_true", help="только листы по готовым картинкам")
     ap.add_argument("--pack", action="store_true", help="только пак из готовых B2, модель не грузится")
     a = ap.parse_args()
+    a.out = a.out or os.path.join(REDO, "b2_rest" if a.rest else "b2")
     os.chdir(ROOT)
     sys.stdout.reconfigure(encoding="utf-8")
     if a.sheets:

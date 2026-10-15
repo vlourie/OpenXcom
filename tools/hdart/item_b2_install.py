@@ -35,7 +35,10 @@ OWN = re.compile(r"^(\d+)\.(?!(?:wide|hand)\.)[^.]+\.(?:wide\.)?(?:hand\.)?png$"
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--yes", action="store_true")
+    ap.add_argument("--pack", default=str(PACK), help="пак B2 (остаток: census/items/redo/b2_rest/pack/BIGOBS.PCK)")
+    ap.add_argument("--approval", default="Vitali 15.10: B2 годится, все 1205 кадров", help="чьё слово - в манифест")
     a = ap.parse_args()
+    pack = Path(a.pack).resolve()
     os.chdir(ROOT)
     sys.stdout.reconfigure(encoding="utf-8")
     import build_hd_pack as bp
@@ -52,7 +55,7 @@ def main():
             m = OWN.match(rel[len(SET):])
             if m:
                 own.add(int(m.group(1)))
-    files = sorted(PACK.glob("*.wide.png"), key=lambda p: int(p.name.split(".")[0]))
+    files = sorted(pack.glob("*.wide.png"), key=lambda p: int(p.name.split(".")[0]))
     plan = [(SET + p.name, p) for p in files if int(p.name.split(".")[0]) not in own]
     skip = [p.name for p in files if int(p.name.split(".")[0]) in own]
     print("в паке %d, ставится %d, пропущено (свой файл предмета) %d %s" % (len(files), len(plan), len(skip), skip))
@@ -62,7 +65,7 @@ def main():
         old = man["files"].get(rel, {}).get("sha256")
         bp.stage(man, rel, str(p), generator="item_b2", generator_version="item_b2_render.py 15.10 B2",
                  source_path=str(p.relative_to(ROOT)).replace(os.sep, "/"), approved=True,
-                 approval="Vitali 15.10: B2 годится, все 1205 кадров", source_frame="BIGOBS:" + p.name.split(".")[0],
+                 approval=a.approval, source_frame="BIGOBS:" + p.name.split(".")[0],
                  replaced=old)
     rels = [r for r, _ in plan]
     bp.save(man, why="item_b2: %d кадров BIGOBS" % len(rels))
@@ -71,6 +74,7 @@ def main():
     bad = 0
     for r in rels:
         for root in (GAME, REPO):
+            # сверка - только что поставленных; прошлые партии сверены своим запуском и посчитаны ниже числом
             if hashlib.sha256((root / r).read_bytes()).hexdigest() != man["files"][r]["sha256"]:
                 print("РАСХОДИТСЯ", root, r)
                 bad += 1
