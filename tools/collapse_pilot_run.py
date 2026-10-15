@@ -104,6 +104,57 @@ def kparse(s):
     return kind, x, y, z
 
 
+def partial_rows(label_en, only=None):
+    """Сценарии частичного обрушения (collapse_partial_scen): PFALL с ожиданиями must_fall и must_stand."""
+    import collapse_partial_scen as PF
+    PF.check_lock()
+    out = []
+    for i, r in enumerate(PF.rows()):
+        if r["label"] != LABEL_RU[label_en]:
+            continue
+        r["scenario"] = "PFALL%s" % r["side"]
+        if only and "%s:%s" % (r["scenario"], r["z"]) not in only:
+            continue
+        out.append(r)
+    return out
+
+
+def partial_verdict(label, r, blocks, lines):
+    """Вердикт PFALL по игре: упавшее - объединение fell= строк debug model на обходах, где снято всё, что снял
+    стенд; must_fall берётся только из частей, которые модель держит в целом здании (как в collapse_partial_scen)."""
+    import collapse_partial_scen as PF
+    parts = blocks[label]["parts"]
+    idx = blocks[label]["index"]
+    num = lambda k: idx[(KIND[k[0]],) + tuple(k[1:])]
+    key = lambda i: ("fwno"[parts[i][0]],) + tuple(parts[i][1:4])
+    want = {num(kparse(s)) for s in r["removed"].split()}
+    # только обход стенда и следующие без нового снятого: обход, где снято новое, - уже разрушения боя (R-301)
+    fell, seen, at, state = set(), 0, None, None
+    for l in lines:
+        m = re.match(r"\[COLLAPSE\] debug: model %s at (\d+,\d+,\d+) removed=([\d,]*) fell=([\d,]*)" % label, l)
+        if not m:
+            continue
+        rm = {int(s) for s in m.group(2).split(",") if s}
+        fl = {int(s) for s in m.group(3).split(",") if s}
+        if at is None:
+            if not want <= rm:
+                continue
+            at, state = m.group(1), rm
+        elif m.group(1) != at:
+            continue
+        elif rm - state:
+            break
+        seen += 1
+        fell |= fl
+        state = state | fl
+    C, blk, box, inside = _model[label]
+    base = {k for k in C.evaluate7c(blk, frozenset())[0] if inside(k, box)}
+    v, miss, extra = PF.verdict(r, {key(i) for i in fell}, base)
+    return {"verdict": v if seen else "NO_EVENT", "settles_seen": seen, "game_fell": len(fell),
+            "must_fall": len({kparse(s) for s in r["must_fall"].split()} & base), "missed": sorted(map(PF.kstr, miss)),
+            "must_stand_fallen": sorted(map(PF.kstr, extra))}
+
+
 def scen_rows(label_en, cells=None, only=None):
     lines = SCEN.read_text(encoding=ENC).splitlines()
     head = lines[0].split("\t")
@@ -355,13 +406,16 @@ def run_scen(a, r, blocks, label):
                     q = p[key]
                     p[key + "_block"] = (q[0] - off[0], q[1] - off[1], q[2] - off[2])
     summ["placed"] = placed
+    if "must_fall" in r:
+        summ["partial"] = partial_verdict(label, r, blocks, lines)
     (dest / "summary.json").write_text(json.dumps(summ, ensure_ascii=False, indent=1), encoding=ENC)
     return summ
 
 
 def cmd_scen(a):
     blocks = header_blocks()
-    rows = scen_rows(a.block, a.cells, set(a.only.split(",")) if a.only else None)
+    only = set(a.only.split(",")) if a.only else None
+    rows = partial_rows(a.block, only) if a.partial else scen_rows(a.block, a.cells, only)
     if not rows:
         raise SystemExit("сценариев нет")
     with ThreadPoolExecutor(max_workers=a.jobs) as ex:
@@ -376,6 +430,11 @@ def cmd_scen(a):
         print("       сверка с эталоном: %d обходов, совпало %d; %s" % (
             len(mc), sum(c["same"] for c in mc),
             " ".join("%d->%d/%d" % (c["removed"], c["engine_fell"], c["ref_fell"]) for c in mc if c["removed"])))
+        if "partial" in s:
+            pv = s["partial"]
+            print("       частичное: %s  упало в игре %d, должно упасть %d, не упало %d, лишнего %d %s" % (
+                pv["verdict"], pv["game_fell"], pv["must_fall"], len(pv["missed"]), len(pv["must_stand_fallen"]),
+                " ".join(pv["missed"][:4] + pv["must_stand_fallen"][:4])))
         for p in s["placed"]:
             print("      ", {k: v for k, v in p.items() if k not in ("after",)})
 
@@ -404,6 +463,7 @@ def main():
     s.add_argument("--at", type=int, default=2, help="обход settle, на котором снять части (1 - конец первого хода)")
     s.add_argument("--turns", type=int, default=2)
     s.add_argument("--hole-unit", action="store_true", help="второго бойца - над снятым полом")
+    s.add_argument("--partial", action="store_true", help="сценарии частичного обрушения (collapse_partial_scen)")
     s.add_argument("--jobs", type=int, default=3)
     w = sub.add_parser("raw")
     w.add_argument("--save", required=True)

@@ -47,7 +47,12 @@ EXPERIMENTAL = {"banditbarn1", "banditbarn2",
                 # пятая партия: census/collapse/pilot5/pilot_result.tsv; chemtown13 - сценариев нет, не проверен
                 "cultafarm03", "cultafarm05", "cultnew17", "chemtown91", "chemtown92", "chemtown13",
                 # шестая партия: census/collapse/pilot6/pilot_result.tsv
-                "comrcurban22", "urbandio03", "induslum27", "culta19", "cultnew16"}
+                "comrcurban22", "urbandio03", "induslum27", "culta19", "cultnew16",
+                # частичное падение не доказано (census/collapse/partial/model_result.tsv, проверка в игре 15.10):
+                # модель держит пол, который ожидание велит уронить; у восьми городских ожидание само себе
+                # противоречит (роняет пол на расстоянии, на котором он стоит в целом здании) - до правила v2
+                "urban14", "urban17", "madurban19", "madurban22", "madurban23", "madurban24", "madurban25",
+                "madurban26", "culta18", "cultafarm21", "urbanjunk11", "comrcurban50"}
 # третья партия: рамки и метки в collapse_pilot3_scen (метка обязана быть уникальной - по ней removal_sets
 # берёт сценарии здания)
 KIND = {"f": 0, "w": 1, "n": 2, "o": 3}                   # O_FLOOR, O_WESTWALL, O_NORTHWALL, O_OBJECT

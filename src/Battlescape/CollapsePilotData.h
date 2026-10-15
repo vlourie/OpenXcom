@@ -15,7 +15,7 @@
 //   tools/collapse_pilot5_scen.py 8a367582dd0530cdaf7c8354f252d4718d70adc66f6ec7317e0bc2cd130ba622
 //   tools/collapse_pilot6_scen.py c9eec8b8bcaf5851947e8fd0ce2f0d23c2b6c82f73b6598044a291fdb00b03de
 //   tools/collapse_v7d.py e1e24e9f9bb8512f339321ce81ebe6012da578e0eb0566f881ad3b2603d60f17
-//   tools/collapse_pilot_export.py e63b455922584dd045c7762f99336f3194238ef5a8fe3e730fe0901f6e56e9f5
+//   tools/collapse_pilot_export.py 32fbb519548ae8a6ad064e99933b2c860e96c73fedcd6826d906686618f9aded
 #pragma once
 #include "CollapseCore.h"
 
@@ -13861,29 +13861,29 @@ static const CollapseBlock blocks[] = {
 	{ "banditbarn1", "STR_LOC_BANDIT_TOWN_25@38,8-49,31", 12, 24, 9, 2, 11, 2, 11, sets2, 2, parts2, 714, targets2, 1 },
 	{ "banditbarn2", "STR_LOC_BANDIT_TOWN_25@8,38-31,49", 24, 12, 9, 2, 11, 2, 11, sets3, 3, parts3, 703, targets3, 1 },
 	{ "riceshed", "ALT_BARN_10", 20, 20, 4, 7, 10, 6, 8, sets4, 4, parts4, 467, targets4, 0 },
-	{ "urban14", "URBAN14", 10, 10, 2, 0, 9, 0, 9, sets5, 3, parts5, 205, targets5, 0 },
-	{ "urban17", "URBAN17", 10, 10, 3, 0, 9, 0, 9, sets6, 2, parts6, 271, targets6, 0 },
+	{ "urban14", "URBAN14", 10, 10, 2, 0, 9, 0, 9, sets5, 3, parts5, 205, targets5, 1 },
+	{ "urban17", "URBAN17", 10, 10, 3, 0, 9, 0, 9, sets6, 2, parts6, 271, targets6, 1 },
 	{ "urban99", "URBAN99", 10, 10, 3, 0, 9, 0, 9, sets7, 4, parts7, 230, targets7, 0 },
 	{ "urbandio04", "URBANDIO04", 10, 10, 2, 0, 9, 0, 9, sets8, 3, parts8, 219, targets8, 1 },
-	{ "madurban19", "MADURBAN19", 10, 10, 4, 0, 9, 0, 9, sets9, 2, parts9, 271, targets9, 0 },
-	{ "madurban22", "MADURBAN22", 10, 10, 4, 0, 9, 0, 9, sets10, 4, parts10, 205, targets10, 0 },
-	{ "madurban23", "MADURBAN23", 10, 10, 4, 0, 9, 0, 9, sets11, 4, parts11, 206, targets11, 0 },
+	{ "madurban19", "MADURBAN19", 10, 10, 4, 0, 9, 0, 9, sets9, 2, parts9, 271, targets9, 1 },
+	{ "madurban22", "MADURBAN22", 10, 10, 4, 0, 9, 0, 9, sets10, 4, parts10, 205, targets10, 1 },
+	{ "madurban23", "MADURBAN23", 10, 10, 4, 0, 9, 0, 9, sets11, 4, parts11, 206, targets11, 1 },
 	{ "madurban27", "MADURBAN27", 20, 20, 3, 0, 19, 0, 19, sets12, 3, parts12, 785, targets12, 1 },
 	{ "madurban28", "MADURBAN28", 20, 20, 3, 0, 19, 0, 19, sets13, 2, parts13, 782, targets13, 1 },
-	{ "culta18", "CULTA18", 10, 10, 3, 0, 9, 0, 9, sets14, 2, parts14, 366, targets14, 0 },
-	{ "cultafarm21", "CULTAFARM21", 10, 10, 4, 0, 9, 0, 9, sets15, 2, parts15, 366, targets15, 0 },
+	{ "culta18", "CULTA18", 10, 10, 3, 0, 9, 0, 9, sets14, 2, parts14, 366, targets14, 1 },
+	{ "cultafarm21", "CULTAFARM21", 10, 10, 4, 0, 9, 0, 9, sets15, 2, parts15, 366, targets15, 1 },
 	{ "culta17", "CULTA17", 10, 10, 2, 0, 9, 0, 9, sets16, 2, parts16, 192, targets16, 1 },
 	{ "cultafarm06", "CULTAFARM06", 10, 10, 4, 0, 9, 0, 9, sets17, 2, parts17, 195, targets17, 1 },
 	{ "culta30", "CULTA30", 10, 10, 3, 0, 9, 0, 9, sets18, 2, parts18, 155, targets18, 1 },
 	{ "cultasol01", "CULTASOL01", 10, 10, 4, 0, 9, 0, 9, sets19, 3, parts19, 167, targets19, 1 },
 	{ "vilban50", "VILBAN50", 10, 10, 4, 0, 9, 0, 9, sets20, 3, parts20, 190, targets20, 0 },
 	{ "westown16", "WESTOWN_16", 10, 10, 4, 0, 9, 0, 9, sets21, 6, parts21, 214, targets21, 1 },
-	{ "urbanjunk11", "URBANJUNK11", 10, 10, 2, 0, 9, 0, 9, sets22, 2, parts22, 181, targets22, 0 },
+	{ "urbanjunk11", "URBANJUNK11", 10, 10, 2, 0, 9, 0, 9, sets22, 2, parts22, 181, targets22, 1 },
 	{ "chemtown94", "CHEMTOWN94", 10, 10, 7, 0, 9, 0, 9, sets23, 4, parts23, 356, targets23, 1 },
 	{ "culthouse05", "CULTHOUSE05", 10, 10, 3, 0, 9, 0, 9, sets24, 3, parts24, 209, targets24, 1 },
-	{ "madurban24", "MADURBAN24", 10, 10, 4, 0, 9, 0, 9, sets25, 4, parts25, 205, targets25, 0 },
-	{ "madurban25", "MADURBAN25", 10, 10, 4, 0, 9, 0, 9, sets26, 2, parts26, 271, targets26, 0 },
-	{ "madurban26", "MADURBAN26", 10, 10, 4, 0, 9, 0, 9, sets27, 2, parts27, 271, targets27, 0 },
+	{ "madurban24", "MADURBAN24", 10, 10, 4, 0, 9, 0, 9, sets25, 4, parts25, 205, targets25, 1 },
+	{ "madurban25", "MADURBAN25", 10, 10, 4, 0, 9, 0, 9, sets26, 2, parts26, 271, targets26, 1 },
+	{ "madurban26", "MADURBAN26", 10, 10, 4, 0, 9, 0, 9, sets27, 2, parts27, 271, targets27, 1 },
 	{ "cultafarm03", "CULTAFARM03", 10, 10, 4, 0, 9, 0, 9, sets28, 2, parts28, 194, targets28, 1 },
 	{ "cultafarm05", "CULTAFARM05", 10, 10, 4, 0, 9, 0, 9, sets29, 2, parts29, 193, targets29, 1 },
 	{ "cultnew17", "CULT_NEW17", 10, 10, 2, 0, 9, 0, 9, sets30, 2, parts30, 187, targets30, 1 },
@@ -13894,7 +13894,7 @@ static const CollapseBlock blocks[] = {
 	{ "chemtown13", "CHEMTOWN13", 10, 10, 7, 0, 9, 0, 9, sets35, 3, parts35, 183, targets35, 1 },
 	{ "chemtown91", "CHEMTOWN91", 10, 10, 7, 0, 9, 0, 9, sets36, 4, parts36, 305, targets36, 1 },
 	{ "chemtown92", "CHEMTOWN92", 10, 10, 7, 0, 9, 0, 9, sets37, 5, parts37, 345, targets37, 1 },
-	{ "comrcurban50", "COMRCURBAN50", 10, 10, 4, 0, 9, 0, 9, sets38, 5, parts38, 177, targets38, 0 },
+	{ "comrcurban50", "COMRCURBAN50", 10, 10, 4, 0, 9, 0, 9, sets38, 5, parts38, 177, targets38, 1 },
 	{ "comrcurban51", "COMRCURBAN51", 10, 10, 4, 0, 9, 0, 9, sets39, 5, parts39, 241, targets39, 0 },
 	{ "comrcurban22", "COMRCURBAN22", 10, 10, 2, 0, 9, 0, 9, sets40, 3, parts40, 235, targets40, 1 },
 	{ "urbandio03", "URBANDIO03", 10, 10, 3, 0, 9, 0, 9, sets41, 3, parts41, 224, targets41, 1 },
