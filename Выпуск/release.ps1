@@ -364,6 +364,14 @@ try {
         }
         Xpr $buildArgs
         Xpr @('publish', '--repo', $repo, '--channel', $channel, '--id', $id, '--key', $cfg.Key)
+        # история обновлений канала (её publish уже переписал) - теперь с дорожной картой из roadmap.<язык>.md:
+        # вкладка «Обновления» лаунчера и страницы /releases и /roadmap сайта читают один подписанный файл
+        $notesArgs = @('notes', '--repo', $repo, '--channel', $channel, '--key', $cfg.Key)
+        foreach ($lang in 'ru', 'en') {
+            $rm = Join-Path $PSScriptRoot "roadmap.$lang.md"
+            if (Test-Path -LiteralPath $rm) { $notesArgs += @("--roadmap-$lang", $rm) } else { Warn "нет roadmap.$lang.md - в канале останется прежняя дорожная карта" }
+        }
+        Xpr $notesArgs
         foreach ($f in $usedNotes) {
             $lang = [IO.Path]::GetFileNameWithoutExtension($f).Split('.')[-1]
             Move-Item -LiteralPath $f -Destination (Join-Path $notes "$id.$lang.txt") -Force
