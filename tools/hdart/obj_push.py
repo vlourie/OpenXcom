@@ -7,10 +7,10 @@ r"""Установка принятых предметов в игру: стол
     (очередь obj_queue, R-049) получают тот же файл - копия находится по совпадению оригинала 32x40;
   * предметы очереди, выведенные из принятого точным зеркалом (derive = зеркало), получают
     перевёрнутый кадр (R-051);
-  * прежний файл пака, если он был, откладывается в --backup/<копия>/<НАБОР>.PCK/<кадр>.png -
-    откат = скопировать обратно;
-  * пишет в обе копии мода hd (R-087): репозиторную и ту, что в установке Пираток, и сверяет, что
-    файлы легли одинаковые (md5).
+  * Pipeline v2: в папку пака сам не пишет. Кадр кладётся в хранилище и в манифест с происхождением
+    (build_hd_pack.stage: вариант, источник, «принято Vitali», строка review), потом build_hd_pack.install
+    ставит ровно эти файлы в обе копии мода hd (R-087). Прежний файл остаётся в хранилище, прежний
+    манифест - в art/manifest/history: откат = вернуть манифест и install --yes.
 Список сделанного - push.tsv рядом с review.tsv.
 
 Файлы мода - файлы игры: запускать, держа очередь правок (py -3 tools/editq.py wait).
@@ -21,11 +21,10 @@ r"""Установка принятых предметов в игру: стол
 import argparse
 import csv
 import hashlib
+import io
 import json
 import os
-import shutil
 import sys
-import time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 for _p in (HERE, os.path.dirname(HERE)):
@@ -35,10 +34,11 @@ for _p in (HERE, os.path.dirname(HERE)):
 import numpy as np                                  # noqa: E402
 from PIL import Image                               # noqa: E402
 
+import build_hd_pack as bhp                         # noqa: E402
 import map_mockup as mm                             # noqa: E402
 
 ENC = "utf-8-sig"
-MODS = ["user/mods/hd/hd/TERRAIN", "Пиратки/Dioxine_XPiratez/user/mods/hd/hd/TERRAIN"]
+TARGETS = ("game", "repo")                          # обе копии мода hd (R-087), ставит build_hd_pack
 
 
 def key_of(s):
@@ -46,17 +46,11 @@ def key_of(s):
     return name.upper(), int(fr)
 
 
-def md5(p):
-    with open(p, "rb") as f:
-        return hashlib.md5(f.read()).hexdigest()
-
-
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--review", required=True)
-    ap.add_argument("--items", default="art/objects/queue/items.json")
+    ap.add_argument("--items", default="art/objects/discovery/items.json")
     ap.add_argument("--cand", action="append", default=[], help="имя=папка, как у obj_review")
-    ap.add_argument("--backup", default="art/_backup/hd_objects_" + time.strftime("%Y%m%d_%H%M"))
     ap.add_argument("--dry-run", action="store_true")
     a = ap.parse_args()
     cands = dict(c.split("=", 1) for c in a.cand)
@@ -74,6 +68,8 @@ def main():
         by_rank[it["rank"]] = it
         for k in it["frames"] + it["keys"]:
             by_key.setdefault(key_of(k), it)
+    # очередь discovery (Pipeline v2) derive/parent не пишет - зеркала выводит obj_derive; здесь только
+    # для прежних items.json из art/objects/queue
     mirrors = {}
     for it in items:
         if it.get("derive") == "зеркало":
@@ -108,29 +104,34 @@ def main():
                     for k in (key_of(x) for x in m["keys"]):
                         plan.append((p, k, True, "зеркало #%s" % r["номер"]))
 
-    seen, rows = set(), []
+    seen, rows, rels = set(), [], []
+    man = None if a.dry_run else bhp.load()
     for p, k, flip, why in plan:
         if k in seen:
             continue
         seen.add(k)
-        rel = os.path.join(k[0] + ".PCK", "%d.png" % k[1])
+        rel = "TERRAIN/%s.PCK/%d.png" % k
         rows.append([k[0], k[1], p, "да" if flip else "", why])
         if a.dry_run:
             continue
-        im = Image.open(p)
+        take = why.split(" ")[0]
         if flip:
-            im = im.transpose(Image.FLIP_LEFT_RIGHT)
-        for mi, mod in enumerate(MODS):
-            dst = os.path.join(mod, rel)
-            if os.path.exists(dst):
-                bk = os.path.join(a.backup, "repo" if mi == 0 else "game", rel)
-                if not os.path.exists(bk):
-                    os.makedirs(os.path.dirname(bk), exist_ok=True)
-                    shutil.copy2(dst, bk)
-            os.makedirs(os.path.dirname(dst), exist_ok=True)
-            im.save(dst)
-        if md5(os.path.join(MODS[0], rel)) != md5(os.path.join(MODS[1], rel)):
-            raise SystemExit("копии мода разошлись на " + rel)
+            buf = io.BytesIO()
+            Image.open(p).transpose(Image.FLIP_LEFT_RIGHT).save(buf, "PNG")
+            obj = buf.getvalue()
+        else:
+            obj = p                                    # байты варианта как есть: хэш сходится с источником
+        bhp.stage(man, rel, obj, generator=take, generator_version="obj_push", source_path=p.replace(os.sep, "/"),
+                  approved=True, approval="Vitali", push=why, source_frame="%s:%d" % k,
+                  derived_from=(p.replace(os.sep, "/") + " (перевёрнут)") if flip else None)
+        rels.append(rel)
+    if rels:
+        bhp.save(man, why="obj_push %d кадров из %s" % (len(rels), a.review))
+        for t in TARGETS:
+            bhp.install(man, t, only=rels)
+            res = bhp.diff({"files": {r: man["files"][r] for r in rels}}, bhp.TARGETS[t])
+            if res["MISSING"] or res["CHANGED"]:
+                raise SystemExit("копия %s не сошлась с манифестом: %s" % (t, (res["MISSING"] + res["CHANGED"])[:5]))
     out = os.path.join(os.path.dirname(a.review), "push.tsv")
     if not a.dry_run:
         with open(out, "w", encoding=ENC, newline="") as f:
@@ -138,8 +139,8 @@ def main():
             for r in rows:
                 f.write("\t".join(str(v) for v in r) + "\n")
     print("%s: кадров %d (из них зеркал %d) в %d копии мода hd%s"
-          % ("проба" if a.dry_run else "установлено", len(rows), sum(1 for r in rows if r[3]), len(MODS),
-             "" if a.dry_run else "; прежние - в " + a.backup))
+          % ("проба" if a.dry_run else "установлено", len(rows), sum(1 for r in rows if r[3]), len(TARGETS),
+             "" if a.dry_run else "; манифест %s, прежний - в %s" % (man["manifest_hash"], bhp.HISTORY)))
 
 
 if __name__ == "__main__":
