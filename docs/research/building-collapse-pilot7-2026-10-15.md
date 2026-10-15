@@ -118,6 +118,27 @@ PFALL в игре: 93 прогона. Вердикт по игре совпал 
 Загрузка сохранения (R-354), все 31 здание (scratchpad cp9/loadcheck7.py): бой с нуля — `found … 0 foreign`;
 тот же бой после сохранения и загрузки — `kept`, 0 foreign, ни одного `rejected`.
 
+## Сборка игрока
+
+build-release, `OXCE_AI_DEV:BOOL=OFF`, exe sha256 `f6ec439de5db9ba9da31bd30dcbf23050e0eaea1cead729214bd4beb3ccd73a2`,
+37 080 128 байт. Строк стенда `[AIPROBE] start` и `debug: fall over` в exe 0. Невидимый бой (scratchpad
+cp9/pb7.py), сейв CHURCH_OUTPOST_TEMPERATE_8 — в нём дома игроков madurban11, madurban20, madurban38 и
+экспериментальный expterror24:
+- бой с нуля: `found` madurban11, 20, 38, expterror13 и прежние madurban23, 24, у всех 0 foreign;
+  expterror24 не ищется;
+- сохранение стенда со списком: `rejected EXPANDEDTERROR24 ...: no such model in this build`, остальные `kept`,
+  `from the battle: 6 pilot building(s)`.
+
+Поиск зданий при начале боя, сборка игрока, парный замер (scratchpad cp9/scan_ab.py, прежний exe — выпуск
+2026.10.15-9, по 3 прогона):
+
+| Сейв | Прежний, 46 блоков | Новый, 77 блоков |
+|---|---|---|
+| CHURCH_OUTPOST_TEMPERATE_8 | 78–85 мс | 107–129 мс |
+| ERIDIAN_TERROR_9 | 31–34 мс | 49 мс |
+
+Это разовая пауза при входе в бой (и при загрузке боя без списка), а не на ходу.
+
 Поиск зданий при начале боя на сборке стенда (77 блоков, строка `scan:` лога): 14–22 мс один раз за бой
 (CHURCH_OUTPOST_TEMPERATE_4, EUROSYNDICATE_ELIMINATION_2). Для сравнения, на 46 блоках прогоны партии 4 давали
 7–14 мс, но на других сейвах — замер не парный.
