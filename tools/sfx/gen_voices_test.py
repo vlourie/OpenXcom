@@ -12,6 +12,8 @@
 
 Только через очередь видеокарты, интерпретатор VoiceFactory абсолютным путём (R-097):
     py -3 tools/gpuq.py add --name sfx-test-voices -- D:/VoiceFactory/runtime/venv/Scripts/python.exe tools/sfx/gen_voices_test.py
+Переделка части (остальные голоса и языки манифеста остаются): --voices bosun,brute --design bosun.
+Высота голоса (pyin) - полоса test_set.VOICES[*]["f0"]: вне её опорный и реплика в мод не идут.
 """
 import argparse
 import gc
@@ -68,6 +70,27 @@ def post(wav, sr):
     return A.loudness_normalize(wav, sr, target_lufs=-18.0, peak_ceiling_dbfs=-1.0)
 
 
+def pitch(wav, sr):
+    """Медиана высоты голоса (F0, Гц) по озвученным кадрам pyin; 0 - голоса не нашлось."""
+    import librosa
+    f0, voiced, _ = librosa.pyin(np.asarray(wav, dtype=np.float32), fmin=60, fmax=500, sr=sr,
+                                 frame_length=2048)
+    f0 = f0[voiced & ~np.isnan(f0)]
+    return round(float(np.median(f0)), 1) if len(f0) else 0.0
+
+
+def in_band(name, f0):
+    lo, hi = T.VOICES[name].get("f0", (0, 10000))
+    return lo <= f0 <= hi
+
+
+def margin(name, f0):
+    """Насколько высота внутри полосы от ближней границы - опорный берём подальше от неё:
+    Fish в репликах уводит голос ниже опорного (кошкодевочка 182 -> 150 Гц, 15.10)."""
+    lo, hi = T.VOICES[name].get("f0", (0, 10000))
+    return min(f0 - lo, hi - f0)
+
+
 def heard(path, lang):
     try:
         text, _ = Q.transcribe(str(path), language=lang)
@@ -108,18 +131,27 @@ def design_pass(cfg, voices, manifest):
     eng = engine(cfg, "voxcpm2", local_dir=local if os.path.isdir(local) else "")
     for name in voices:
         v = T.VOICES[name]
-        for k in range(T.DESIGN_TAKES):
+        for f in refs_dir.glob(f"{name}.d*.wav"):
+            f.unlink()
+        good = 0
+        for k in range(T.DESIGN_TAKES_MAX):
+            if good >= T.DESIGN_TAKES:
+                break
             p = GenParams(instruction=v["design"], seed=SEED_DESIGN + k, cfg_value=2.0,
                           inference_timesteps=10)
             wav, sr, meta = eng.generate(v["ref_text"], None, p)
             wav = post(wav, sr)
             path = refs_dir / f"{name}.d{k + 1}.wav"
             sf.write(str(path), wav, sr, subtype="PCM_16")
+            f0 = pitch(wav, sr)
+            good += in_band(name, f0)
             manifest["refs"].append({"voice": name, "take": k + 1, "file": rel(path),
-                                     "dur": round(len(wav) / sr, 2), "mode": meta.get("mode")})
-            log.info("голос %s, кандидат %d: %.1f с", name, k + 1, len(wav) / sr)
+                                     "dur": round(len(wav) / sr, 2), "mode": meta.get("mode"),
+                                     "f0": f0, "band": in_band(name, f0)})
+            log.info("голос %s, кандидат %d: %.1f с, %.0f Гц%s", name, k + 1, len(wav) / sr, f0,
+                     "" if in_band(name, f0) else " - вне полосы")
     free(eng)
-    # опорный - ближе всех к тексту по распознаванию, длина 3-14 с
+    # опорный: длина 3-14 с, высота в полосе, распознаётся близко к тексту, дальше от границы полосы
     for name in voices:
         best = None
         for r in manifest["refs"]:
@@ -128,13 +160,13 @@ def design_pass(cfg, voices, manifest):
             r["heard"] = heard(OUT.parent / r["file"], "ru")
             r["close"] = round(closeness(T.VOICES[name]["ref_text"], r["heard"]), 3)
             ok = 3.0 <= r["dur"] <= 14.0
-            key = (ok, r["close"])
+            key = (ok, r["band"], r["close"] >= 0.9, margin(name, r["f0"]), r["close"])
             if best is None or key > best[0]:
                 best = (key, r)
         best[1]["chosen"] = True
         manifest["chosen_ref"][name] = best[1]["file"]
-        log.info("опорный голос %s: кандидат %d, похожесть %.2f", name, best[1]["take"],
-                 best[1]["close"])
+        log.info("опорный голос %s: кандидат %d, похожесть %.2f, %.0f Гц", name, best[1]["take"],
+                 best[1]["close"], best[1]["f0"])
 
 
 def lines_pass(cfg, voices, langs, manifest):
@@ -148,13 +180,20 @@ def lines_pass(cfg, voices, langs, manifest):
             for cat in T.CATEGORIES:
                 for i, text in enumerate(v["lines"][lang][cat]):
                     jobs.append((name, prof, lang, cat, i + 1, text))
-    total = len(jobs) * T.VOICE_TAKES
-    done = 0
+    for name in voices:
+        for lang in langs:
+            for f in (OUT / lang / name).glob("*.wav"):
+                f.unlink()
+    done = takes = outside = 0
     t0 = last = time.time()
     for name, prof, lang, cat, i, text in jobs:
         d = OUT / lang / name
         d.mkdir(parents=True, exist_ok=True)
-        for k in range(T.VOICE_TAKES):
+        good = 0
+        # дубли, пока VOICE_TAKES не лягут в полосу высоты и длины (не больше VOICE_TAKES_MAX)
+        for k in range(T.VOICE_TAKES_MAX):
+            if good >= T.VOICE_TAKES:
+                break
             p = GenParams(instruction=T.CATEGORY_TAG[cat], seed=SEED_LINE + k)
             item = {"voice": name, "lang": lang, "cat": cat, "line": i, "take": k + 1,
                     "text": text}
@@ -163,27 +202,33 @@ def lines_pass(cfg, voices, langs, manifest):
                 wav = post(wav, sr)
                 path = d / f"{cat}_{i}.t{k + 1}.wav"
                 sf.write(str(path), wav, sr, subtype="PCM_16")
-                item.update(file=rel(path), dur=round(len(wav) / sr, 2))
+                f0 = pitch(wav, sr)
+                item.update(file=rel(path), dur=round(len(wav) / sr, 2), f0=f0,
+                            band=in_band(name, f0))
+                good += item["band"] and item["dur"] <= T.VOICE_MAX_S
+                outside += not item["band"]
             except Exception as e:
                 item.update(error=str(e)[:300])
                 log.warning("%s %s %s %d: %s", name, lang, cat, i, e)
             manifest["lines"].append(item)
-            done += 1
-            if time.time() - last > 60:
-                log.info("реплики: %d/%d за %.0f с", done, total, time.time() - t0)
-                last = time.time()
+            takes += 1
+        done += 1
+        if time.time() - last > 60:
+            log.info("реплики: %d/%d, дублей %d (вне полосы высоты %d) за %.0f с", done, len(jobs),
+                     takes, outside, time.time() - t0)
+            last = time.time()
     free(eng)
     save(manifest)          # если распознавание упадёт, сгенерированное не потеряется
-    # лучший дубль: влез по длине, ближе к тексту, короче
+    # лучший дубль: высота в полосе, влез по длине, ближе к тексту, короче
     groups = {}
     for it in manifest["lines"]:
-        if "file" not in it:
+        if "file" not in it or it["voice"] not in voices or it["lang"] not in langs:
             continue
         it["heard"] = heard(OUT.parent / it["file"], it["lang"])
         it["close"] = round(closeness(it["text"], it["heard"]), 3)
         groups.setdefault((it["voice"], it["lang"], it["cat"], it["line"]), []).append(it)
     for takes in groups.values():
-        best = max(takes, key=lambda t: (t["dur"] <= T.VOICE_MAX_S, t["close"], -t["dur"]))
+        best = max(takes, key=lambda t: (t["band"], t["dur"] <= T.VOICE_MAX_S, t["close"], -t["dur"]))
         best["chosen"] = True
 
 
@@ -201,6 +246,8 @@ def main():
     ap.add_argument("--voices", default="", help="через запятую; пусто - все")
     ap.add_argument("--langs", default="ru,en")
     ap.add_argument("--skip-design", action="store_true", help="опорные голоса взять из voices.json")
+    ap.add_argument("--design", default=None,
+                    help="через запятую: каким из --voices заново делать опорный голос; не задано - всем")
     a = ap.parse_args()
     for stream in (sys.stdout, sys.stderr):
         stream.reconfigure(encoding="utf-8")
@@ -208,16 +255,21 @@ def main():
 
     voices = [v for v in (a.voices.split(",") if a.voices else T.VOICES) if v]
     langs = [x for x in a.langs.split(",") if x]
+    design = [] if a.skip_design else voices if a.design is None else [v for v in a.design.split(",") if v]
     cfg = C.load(VF)
     mpath = OUT.parent / "voices.json"
     manifest = {"refs": [], "chosen_ref": {}, "lines": []}
-    if a.skip_design:
+    # прежний манифест: чужие голоса и языки остаются как были, свои - заменяются
+    if mpath.exists():
         with open(mpath, encoding="utf-8-sig") as f:
             old = json.load(f)
-        manifest["refs"], manifest["chosen_ref"] = old["refs"], old["chosen_ref"]
+        manifest["refs"] = [r for r in old["refs"] if r["voice"] not in design]
+        manifest["chosen_ref"] = {k: v for k, v in old["chosen_ref"].items() if k not in design}
+        manifest["lines"] = [it for it in old["lines"]
+                             if it["voice"] not in voices or it["lang"] not in langs]
     t0 = time.time()
-    if not a.skip_design:
-        design_pass(cfg, voices, manifest)
+    if design:
+        design_pass(cfg, design, manifest)
     lines_pass(cfg, voices, langs, manifest)
     Q.free_asr()
     save(manifest)
