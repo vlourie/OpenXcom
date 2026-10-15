@@ -95,6 +95,7 @@ wall_v2.py
 wall_restore.py
 wall_restore_c.py
 wall_final_render.py
+item_b2_render.py
 tree_render.py
 tree_render_v2.py
 tree_family.py

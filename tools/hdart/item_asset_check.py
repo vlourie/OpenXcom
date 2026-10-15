@@ -31,7 +31,8 @@ from PIL import Image
 ROOT = Path(__file__).resolve().parents[2]
 ENC_R, ENC_W = "utf-8-sig", "utf-8-sig"
 HAND_W, HAND_H = 32, 48
-NAME = re.compile(r"^(\d+)(?:\.(.+?))?(\.wide)?(\.hand)?\.png$", re.I)
+# тип - без точек и не сама метка: общий <кадр>.wide.png - кадр без типа с меткой, как его читает HdItems::scan
+NAME = re.compile(r"^(\d+)(?:\.(?!(?:wide|hand)\.)([^.]+))?(\.wide)?(\.hand)?\.png$", re.I)
 
 
 def read_tsv(path):

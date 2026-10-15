@@ -98,6 +98,24 @@ def main():
         C.main([str(pack), "--items", str(items), "--frames", str(frames), "--out", str(out)])
         rows = {(r["file"], r["item"]): r for r in C.read_tsv(out)}
         assert rows[("10.STR_A.wide.png", "STR_A")]["outside"] == "1"
+        # общий <кадр>.wide.png - кадр без типа с меткой (HdItems::scan), а не предмет с типом «wide»
+        m = C.NAME.match("10.wide.png")
+        assert m.group(2) is None and m.group(3) == ".wide"
+        m = C.NAME.match("10.STR_A.wide.png")
+        assert m.group(2) == "STR_A" and m.group(3) == ".wide"
+        assert C.NAME.match("10.hand.png").group(2) is None and C.NAME.match("10.hand.png").group(4) == ".hand"
+        for p in list(pack.iterdir()):
+            p.unlink()
+        png(pack / "10.wide.png", (32, 48), (0, 1, 20, 47))
+        C.main([str(pack), "--items", str(items), "--frames", str(frames), "--out", str(out)])
+        rows = {(r["file"], r["item"]): r for r in C.read_tsv(out)}
+        assert rows[("10.wide.png", "STR_A")]["variant"] == "wide"
+        assert rows[("10.wide.png", "STR_A")]["verdict"] == "PASS"
+    # установщик B2 делит набор на общие файлы и свои файлы предметов тем же правилом имени
+    import item_b2_install as I
+    for name, own in (("10.wide.png", False), ("10.hand.png", False), ("10.png", False),
+                      ("10.STR_A.png", True), ("10.STR_A.wide.png", True), ("10.STR_A.hand.png", True)):
+        assert bool(I.OWN.match(name)) == own, name
     print("test_item_asset_check: OK")
 
 
