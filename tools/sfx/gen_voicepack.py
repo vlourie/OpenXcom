@@ -56,11 +56,58 @@ SEED_DESIGN, SEED_LINE = 9100, 9300
 DESIGN_SEED_OFF = 0                                # --design-seed: другие кандидаты опорного при --redo
 COMPILE = True
 PART_TAG = {"Повторные нажатия": "[annoyed]", "Под огнём": "[angry]"}
+# 16.10 Vitali на слух: женские голоса - мужики, хотя высота в полосе. Тембр мужской: третья форманта
+# (длина тракта) у них 2408 Гц, у мужских 2304, у принятых женских 2611 (R-367). Этим - звонкое описание
+# и ворота по F3 и yin (pyin у Hologal ошибся октавой: 418 против 118)
+TIMBRE = set("V005 V012 V016 V017 V019 V032 V043 V055 V060 V063 V072 V086 V109 V129 V133 V141 V155".split())
+TIMBRE_WORD = "молодая женщина, звонкий высокий женский голос, сопрано, никаких мужских нот"
+F3_MIN_REF, F3_MIN_LINE, YIN_MIN = 2650, 2550, 175
+TIMBRE_DESIGN_MAX, TIMBRE_LINE_MAX = 20, 6
 
 
 def band_ok(v, f0):
     lo, hi = BAND.get(v["reg"], (0, 10000))
     return lo <= f0 <= hi
+
+
+def formant3(wav, sr):
+    """Медиана третьей форманты (LPC 12, 10 кГц) по громким кадрам: у женщин выше - тракт короче."""
+    import librosa
+    import numpy as np
+    y = librosa.resample(np.asarray(wav, dtype=np.float32), orig_sr=sr, target_sr=10000)
+    if len(y) < 800:
+        return 0.0
+    fr = librosa.util.frame(y, frame_length=400, hop_length=200).T
+    rms = np.sqrt((fr ** 2).mean(1))
+    out = []
+    for f in fr[rms > np.percentile(rms, 60)]:
+        f = f * np.hamming(len(f))
+        f = np.append(f[0], f[1:] - 0.97 * f[:-1])
+        try:
+            r = np.roots(librosa.lpc(f, order=12))
+        except Exception:
+            continue
+        r = r[np.imag(r) > 0]
+        ang = np.arctan2(np.imag(r), np.real(r)) * 10000 / (2 * np.pi)
+        bw = -0.5 * 10000 / np.pi * np.log(np.abs(r))
+        fs = sorted(a for a, b in zip(ang, bw) if a > 200 and b < 400)
+        if len(fs) >= 3:
+            out.append(fs[2])
+    return round(float(np.median(out)), 0) if out else 0.0
+
+
+def judge(v, wav, sr, f3_min=F3_MIN_LINE):
+    """Высота и полоса; голосам TIMBRE ещё F3 и yin (в полосе - только с женским трактом)."""
+    f0 = G.pitch(wav, sr)
+    res = {"f0": f0, "band": band_ok(v, f0)}
+    if v["id"] in TIMBRE:
+        import librosa
+        import numpy as np
+        yin = float(np.median(librosa.yin(np.asarray(wav, dtype=np.float32), fmin=60, fmax=500, sr=sr,
+                                          frame_length=2048)))
+        res.update(f3=formant3(wav, sr), yin=round(yin, 1))
+        res["band"] = res["band"] and res["f3"] >= f3_min and yin >= YIN_MIN
+    return res
 
 
 def safe_ok(v, f0):
@@ -80,7 +127,8 @@ def design_text(v):
     if v["reg"] == "Ж":
         direction = FEMALE_DROP.sub("", direction)
         direction = direction[:1].upper() + direction[1:]
-    return f"{REG_WORD[v['reg']]}. Персонаж: {v['name']}. {direction}"
+    reg = TIMBRE_WORD if v["id"] in TIMBRE else REG_WORD[v["reg"]]
+    return f"{reg}. Персонаж: {v['name']}. {direction}"
 
 
 def shift_into_safe(v, path, f0):
@@ -159,7 +207,7 @@ def design_pass(cfg, todo, states):
         d = vdir(v)
         d.mkdir(parents=True, exist_ok=True)
         good = 0
-        for k in range(DESIGN_MAX):
+        for k in range(TIMBRE_DESIGN_MAX if v["id"] in TIMBRE else DESIGN_MAX):
             if good >= DESIGN_GOOD:
                 break
             p = GenParams(instruction=st["design"], seed=SEED_DESIGN + DESIGN_SEED_OFF + k, cfg_value=2.0,
@@ -168,10 +216,12 @@ def design_pass(cfg, todo, states):
             wav = G.post(wav, sr)
             path = d / f"ref.d{k + 1}.wav"
             sf.write(str(path), wav, sr, subtype="PCM_16")
-            f0 = G.pitch(wav, sr)
-            good += safe_ok(v, f0)
-            st["refs"].append({"take": k + 1, "file": rel(path), "dur": round(len(wav) / sr, 2), "f0": f0,
-                               "band": band_ok(v, f0), "safe": safe_ok(v, f0)})
+            j = judge(v, wav, sr, F3_MIN_REF)
+            f0 = j["f0"]
+            safe = safe_ok(v, f0) and j["band"]
+            good += safe
+            st["refs"].append({"take": k + 1, "file": rel(path), "dur": round(len(wav) / sr, 2), **j,
+                               "safe": safe})
         log.info("%s %s: кандидатов %d, в полосе %d", v["id"], v["name"], len(st["refs"]), good)
     G.free(eng)
     # выбор опорного - распознаванием, модель синтеза уже выгружена
@@ -181,8 +231,8 @@ def design_pass(cfg, todo, states):
         for r in st["refs"]:
             r["heard"] = G.heard(OUT / r["file"], "ru")
             r["close"] = round(G.closeness(st["ref_text"], r["heard"]), 3)
-            key = (3.0 <= r["dur"] <= 14.0, r["safe"], r["close"] >= 0.9, r["band"], margin(v, r["f0"]),
-                   r["close"])
+            key = (3.0 <= r["dur"] <= 14.0, r["safe"], r["close"] >= 0.9, r["band"], r.get("f3", 0) // 100,
+                   margin(v, r["f0"]), r["close"])
             if best is None or key > best[0]:
                 best = (key, r)
         st["ref"] = best[1]["file"]
@@ -214,7 +264,7 @@ def lines_pass(cfg, todo, states):
                 f.unlink()
             for ln in v["lines"]:
                 good = 0
-                for k in range(LINE_MAX):
+                for k in range(TIMBRE_LINE_MAX if v["id"] in TIMBRE else LINE_MAX):
                     if good >= LINE_GOOD:
                         break
                     item = {"lang": lang, "n": ln["n"], "part": ln["part"], "take": k + 1, "text": ln[lang]}
@@ -223,8 +273,7 @@ def lines_pass(cfg, todo, states):
                         wav = G.post(wav, sr)
                         path = d / f"{ln['n']}.t{k + 1}.wav"
                         sf.write(str(path), wav, sr, subtype="PCM_16")
-                        f0 = G.pitch(wav, sr)
-                        item.update(file=rel(path), dur=round(len(wav) / sr, 2), f0=f0, band=band_ok(v, f0))
+                        item.update(file=rel(path), dur=round(len(wav) / sr, 2), **judge(v, wav, sr))
                         good += item["band"] and item["dur"] <= LINE_MAX_S
                         outside += not item["band"]
                     except Exception as e:
@@ -298,8 +347,7 @@ def fix_pass(cfg, todo, states):
                     wav = G.post(wav, sr)
                     path = vdir(v) / lang / f"{ln['n']}.t{k + 1}.wav"
                     sf.write(str(path), wav, sr, subtype="PCM_16")
-                    f0 = G.pitch(wav, sr)
-                    item.update(file=rel(path), dur=round(len(wav) / sr, 2), f0=f0, band=band_ok(v, f0))
+                    item.update(file=rel(path), dur=round(len(wav) / sr, 2), **judge(v, wav, sr))
                     st["lines"].append(item)
                     if item["band"] and item["dur"] <= LINE_MAX_S:
                         ok = True
