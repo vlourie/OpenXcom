@@ -19,9 +19,14 @@
 import argparse
 import csv
 import json
+import math
+import re
 import shutil
+import subprocess
 import sys
 from pathlib import Path
+
+import soundfile as sf
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import build_test_mods as B   # noqa: E402  to_ogg, robotize, pick, write
@@ -37,6 +42,35 @@ ROBOT = {"V025", "V026", "V027", "V029"}
 # 16.10 Vitali: женские, звучащие мужиком - на починке (gen_voicepack.TIMBRE)
 HOLD = "V005 V012 V016 V017 V019 V032 V043 V055 V060 V063 V072 V086 V109 V129 V133 V141 V155"
 GENDER = {"М": [0], "Ж": [1], "оба": [0, 1]}
+# 16.10 Vitali: «голоса ОЧЕНЬ тихие». Реплики были -18 LUFS (rms -18.6), звуки боя Пираток - rms -13.5 с пиком
+# под 0 (census/sounds.tsv), а канал голосов не громче файла. Два прохода: замер громкости, потом усиление
+# к -12 LUFS и лимитер на -1 dB (однопроходный loudnorm упирался в пик: выходило от -13 до -19)
+TARGET_LUFS = -12.0
+
+
+def loudness(path):
+    r = subprocess.run(["ffmpeg", "-hide_banner", "-nostats", "-i", str(path), "-af",
+                        "loudnorm=print_format=json", "-f", "null", "-"], capture_output=True, text=True)
+    m = re.search(r'"input_i"\s*:\s*"(-?[\d.]+|-inf)"', r.stderr)
+    return float(m.group(1)) if m and m.group(1) != "-inf" else None
+
+
+def loud_ogg(src, dst, robot=False):
+    tmp = dst.with_suffix(".tmp.wav")
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    x, sr = sf.read(str(src), dtype="float32", always_2d=True)
+    x = x.mean(axis=1)
+    sf.write(str(tmp), B.robotize(x, sr) if robot else x, sr, subtype="PCM_16")
+    # короче 0.6 с громкость по стандарту не меряется (ворота 400 мс) - тогда пик к -2 dB;
+    # лимитер на -2 dB: Vorbis при сжатии добавляет к пику около 1 dB
+    i = loudness(tmp) if len(x) >= 0.6 * sr else None
+    if i is None or i < -60:
+        peak = float(abs(x).max()) or 1.0
+        gain = -2.0 - 20 * math.log10(peak)
+    else:
+        gain = TARGET_LUFS - i
+    B.to_ogg(tmp, dst, af=f"volume={min(18.0, gain):.2f}dB,alimiter=limit=0.794:attack=3:release=50:level=disabled")
+    tmp.unlink()
 
 
 def read_tsv(name):
@@ -61,7 +95,7 @@ def build(lang, hold, events, rows, states, doge_steps):
             if ev["event"] not in EVENTS or ev["line"] not in chosen:
                 continue
             rel = f"Resources/Sounds/voices/{vid}/{ev['line']}.ogg"
-            B.to_ogg(SRC / chosen[ev["line"]]["file"], mod / rel, robot=vid in ROBOT)
+            loud_ogg(SRC / chosen[ev["line"]]["file"], mod / rel, robot=vid in ROBOT)
             files.append((idx, rel))
             sets.setdefault(vid, {}).setdefault(ev["event"], []).append(idx)
             idx += 1
@@ -70,7 +104,7 @@ def build(lang, hold, events, rows, states, doge_steps):
     for (d, name), cands in sorted(best.items()):
         cat = d.split("/")[1]
         rel = f"Resources/Sounds/voices/doge/{cat}_{name}.ogg"
-        B.to_ogg(B.SRC / cands[0]["file"], mod / rel)
+        loud_ogg(B.SRC / cands[0]["file"], mod / rel)
         files.append((idx, rel))
         sets.setdefault("doge", {}).setdefault(cat, []).append(idx)
         idx += 1

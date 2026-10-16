@@ -802,8 +802,8 @@ void Game::setVolume(int sound, int music, int ui)
 				// channel 3: reserved for ambient sound effect.
 				Mix_Volume(3, sound / 2);
 			}
-			// channel 4: reserved for unit responses
-			Mix_Volume(4, sound);
+			// channel 4: reserved for unit responses - own slider (HD), silent when sound is muted
+			Mix_Volume(4, sound > 0 ? (int)(volumeExponent(Options::oxceVoiceVolume) * (double)SDL_MIX_MAXVOLUME) : 0);
 		}
 		if (music >= 0)
 		{
