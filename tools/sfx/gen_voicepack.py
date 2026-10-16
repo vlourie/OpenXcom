@@ -67,6 +67,8 @@ TIMBRE_DESIGN_MAX, TIMBRE_LINE_MAX = 20, 6
 # ниже 180 Гц, выбран 93 Гц). Сценарий не правим - только текст для модели
 # 17.10 запасные женские (V4xx-V7xx) с обычным «женский голос»: высота 106-170 Гц, F3 2300 - мужчины, ворота
 # проходили 0-1 из 20. Им - звонкое описание, как у починенных, и без хрипотцы (основные голоса не трогаем)
+# кандидатов опорного запасному женскому: ворота проходит ~1 из 20 (даже у принятой V001 медиана 156 Гц)
+ALT_DESIGN_MAX = 40
 ALT_DROP = re.compile(r"\b(?:с\s+)?(?:лёгкой\s+)?(?:хрипотц|хрипл|прокурен|сипл|басовит)\w*,?\s*")
 DIRECTION = {"V086":"Сильная уверенная женщина-воин, звучный женский голос; насмешливая, спокойная."}
 
@@ -220,7 +222,8 @@ def design_pass(cfg, todo, states):
         d = vdir(v)
         d.mkdir(parents=True, exist_ok=True)
         good = 0
-        for k in range(TIMBRE_DESIGN_MAX if gated(v) else DESIGN_MAX):
+        for k in range(ALT_DESIGN_MAX if gated(v) and "same_as" in v else
+                       TIMBRE_DESIGN_MAX if gated(v) else DESIGN_MAX):
             if good >= DESIGN_GOOD:
                 break
             p = GenParams(instruction=st["design"], seed=SEED_DESIGN + DESIGN_SEED_OFF + k, cfg_value=2.0,
@@ -244,8 +247,10 @@ def design_pass(cfg, todo, states):
         for r in st["refs"]:
             r["heard"] = G.heard(OUT / r["file"], "ru")
             r["close"] = round(G.closeness(st["ref_text"], r["heard"]), 3)
-            key = (3.0 <= r["dur"] <= 14.0, r["safe"], r["close"] >= 0.9, r["band"], r.get("f3", 0) // 100,
-                   margin(v, r["f0"]), r["close"])
+            # высота в полосе - раньше форманты: иначе без прошедших ворота выигрывает мужик с высокой F3
+            # (V404 17.10: 117 Гц)
+            key = (3.0 <= r["dur"] <= 14.0, r["safe"], r["close"] >= 0.9, r["band"], band_ok(v, r["f0"]),
+                   r.get("f3", 0) // 100, margin(v, r["f0"]), r["close"])
             if best is None or key > best[0]:
                 best = (key, r)
         st["ref"] = best[1]["file"]
