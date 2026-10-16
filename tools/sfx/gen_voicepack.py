@@ -63,6 +63,9 @@ TIMBRE = set("V005 V012 V016 V017 V019 V032 V043 V055 V060 V063 V072 V086 V109 V
 TIMBRE_WORD = "молодая женщина, звонкий высокий женский голос, сопрано, никаких мужских нот"
 F3_MIN_REF, F3_MIN_LINE, YIN_MIN = 2650, 2550, 175
 TIMBRE_DESIGN_MAX, TIMBRE_LINE_MAX = 20, 6
+# описание голоса вместо карточки: «мощный... мужского стража» даёт модели мужчину (V086: 17 из 20 кандидатов
+# ниже 180 Гц, выбран 93 Гц). Сценарий не правим - только текст для модели
+DIRECTION = {"V086": "Сильная уверенная женщина-воин, звучный женский голос; насмешливая, спокойная."}
 
 
 def band_ok(v, f0):
@@ -123,7 +126,7 @@ def margin(v, f0):
 
 
 def design_text(v):
-    direction = v["direction"]
+    direction = DIRECTION.get(v["id"], v["direction"])
     if v["reg"] == "Ж":
         direction = FEMALE_DROP.sub("", direction)
         direction = direction[:1].upper() + direction[1:]
