@@ -18,23 +18,47 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPT = ROOT / "docs/research/voice-recording-script.md"
+# 16.10 Vitali: «1-2 фразы это мало». Дополнение к сценарию: «### V001+ — имя» - ещё реплики голоса
+# (extra), «### V401 — имя [Ж]» с «**Реплики как:** V001» - запасной голос того же типа бойца
+EXTRA = ROOT / "docs/research/voice-script-extra.md"
 
 HEAD = re.compile(r"^### (V\d{3}) — (.+?) \[([МЖН])\]\s*$")
+MORE = re.compile(r"^### (V\d{3})\+ — (.+?)\s*$")
 ROW = re.compile(r"^\| (\d{2}) \| (.+?) \| (.+?) \|\s*$")
-FIELD = re.compile(r"^\*\*(Для кого|По игре|Как играть голосом):\*\*\s*(.*)$")
+FIELD = re.compile(r"^\*\*(Для кого|По игре|Как играть голосом|Реплики как):\*\*\s*(.*)$")
 SUB = re.compile(r"^\*\*([^*:]+)\*\*\s*$")
-KEYS = {"Для кого": "for", "По игре": "game", "Как играть голосом": "direction"}
+KEYS = {"Для кого": "for", "По игре": "game", "Как играть голосом": "direction", "Реплики как": "same_as"}
 
 
-def parse(path=SCRIPT):
+def parse(path=SCRIPT, extra=EXTRA):
+    voices = _read(path, {})
+    if extra and Path(extra).exists():
+        by_id = {v["id"]: v for v in voices}
+        alts = _read(extra, by_id)
+        for v in alts:
+            src = by_id[v["same_as"]]
+            v.update(section=src["section"], game=src["game"], **{"for": src["for"]})
+        for v in alts:
+            v["lines"] = [dict(ln) for ln in by_id[v["same_as"]]["lines"]]
+        voices += alts
+    return voices
+
+
+def _read(path, by_id):
     voices = []
     section = ""
     cur = None
     sub = ""
+    extra = bool(by_id)
     for line in Path(path).read_text(encoding="utf-8-sig").splitlines():
         if line.startswith("## "):
             section = line[3:].strip()
             cur = None
+            continue
+        m = MORE.match(line) if extra else None
+        if m:
+            cur = by_id[m.group(1)]
+            sub = ""
             continue
         m = HEAD.match(line)
         if m:
@@ -55,8 +79,10 @@ def parse(path=SCRIPT):
             continue
         m = ROW.match(line)
         if m:
-            cur["lines"].append({"n": m.group(1), "ru": m.group(2).strip(), "en": m.group(3).strip(),
-                                 "part": sub})
+            ln = {"n": m.group(1), "ru": m.group(2).strip(), "en": m.group(3).strip(), "part": sub}
+            if extra:
+                ln["extra"] = True
+            cur["lines"].append(ln)
     return voices
 
 

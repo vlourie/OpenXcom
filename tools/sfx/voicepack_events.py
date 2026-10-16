@@ -45,12 +45,13 @@ OVERRIDE = {
 
 
 def classify(v, ln):
-    o = OVERRIDE.get(v["id"], {}).get(ln["n"])
+    o = OVERRIDE.get(v.get("same_as", v["id"]), {}).get(ln["n"])
     if o:
         return o, "руками"
     if ln["part"]:
         return PART_EVENT[ln["part"]], "раздел"
-    kind = "nation" if v["section"].startswith("Национальные") else len(v["lines"])
+    # место - по строкам самой карточки, без дополнения (voice-script-extra.md)
+    kind = "nation" if v["section"].startswith("Национальные") else sum(not x.get("extra") for x in v["lines"])
     ev = SLOTS[kind][ln["n"]]
     if kind == 8 and ln["n"] == "05" and TOUCH.search(ln["ru"] + " " + ln["en"]):
         return "annoyed", "место+слово"

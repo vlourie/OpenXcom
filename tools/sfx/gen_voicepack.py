@@ -68,6 +68,11 @@ TIMBRE_DESIGN_MAX, TIMBRE_LINE_MAX = 20, 6
 DIRECTION = {"V086": "Сильная уверенная женщина-воин, звучный женский голос; насмешливая, спокойная."}
 
 
+def gated(v):
+    """Ворота по F3 и yin: голоса на починке тембра и все новые женские запасные (V4xx-V7xx)."""
+    return v["id"] in TIMBRE or (v["reg"] == "Ж" and "same_as" in v)
+
+
 def band_ok(v, f0):
     lo, hi = BAND.get(v["reg"], (0, 10000))
     return lo <= f0 <= hi
@@ -103,7 +108,7 @@ def judge(v, wav, sr, f3_min=F3_MIN_LINE):
     """Высота и полоса; голосам TIMBRE ещё F3 и yin (в полосе - только с женским трактом)."""
     f0 = G.pitch(wav, sr)
     res = {"f0": f0, "band": band_ok(v, f0)}
-    if v["id"] in TIMBRE:
+    if gated(v):
         import librosa
         import numpy as np
         yin = float(np.median(librosa.yin(np.asarray(wav, dtype=np.float32), fmin=60, fmax=500, sr=sr,
@@ -210,7 +215,7 @@ def design_pass(cfg, todo, states):
         d = vdir(v)
         d.mkdir(parents=True, exist_ok=True)
         good = 0
-        for k in range(TIMBRE_DESIGN_MAX if v["id"] in TIMBRE else DESIGN_MAX):
+        for k in range(TIMBRE_DESIGN_MAX if gated(v) else DESIGN_MAX):
             if good >= DESIGN_GOOD:
                 break
             p = GenParams(instruction=st["design"], seed=SEED_DESIGN + DESIGN_SEED_OFF + k, cfg_value=2.0,
@@ -254,20 +259,26 @@ def design_pass(cfg, todo, states):
 def lines_pass(cfg, todo, states):
     eng = G.engine(cfg, "fish", compile=COMPILE)
     t0 = last = time.time()
-    total = sum(len(v["lines"]) * 2 for v in todo)
+    # дополнение сценария: готовые реплики голоса остаются, пишутся только новые (main, extend)
+    keep = {v["id"]: {(it["lang"], it["n"]) for it in states[v["id"]]["lines"]} for v in todo}
+    total = sum(1 for v in todo for lang in ("ru", "en") for ln in v["lines"] if (lang, ln["n"]) not in keep[v["id"]])
+    log.info("реплик к записи: %d (голосов %d)", total, len(todo))
     done = takes = outside = 0
     for v in todo:
         st = states[v["id"]]
         prof = VoiceProfile(v["id"], "fish", {"neutral": [{"wav": str(OUT / st["ref"]), "text": st["ref_text"]}]})
-        st["lines"] = []
+        have = keep[v["id"]]
         for lang in ("ru", "en"):
             d = vdir(v) / lang
             d.mkdir(parents=True, exist_ok=True)
             for f in d.glob("*.wav"):
-                f.unlink()
+                if (lang, f.name[:2]) not in have:
+                    f.unlink()
             for ln in v["lines"]:
+                if (lang, ln["n"]) in have:
+                    continue
                 good = 0
-                for k in range(TIMBRE_LINE_MAX if v["id"] in TIMBRE else LINE_MAX):
+                for k in range(TIMBRE_LINE_MAX if gated(v) else LINE_MAX):
                     if good >= LINE_GOOD:
                         break
                     item = {"lang": lang, "n": ln["n"], "part": ln["part"], "take": k + 1, "text": ln[lang]}
@@ -401,8 +412,16 @@ def main():
         states[v["id"]] = load_state(v)
         # заново: по просьбе или если в сценарии поменялись реплики голоса
         old = states[v["id"]]
-        if v["id"] in redo or old.get("script") != script(v) or old.get("design") != design_text(v):
+        new = script(v)
+        if v["id"] in redo or old.get("design") != design_text(v):
             states[v["id"]] = fresh(v)
+        elif old.get("script") != new:
+            n = len(old.get("script") or [])
+            if old.get("ref") and n and new[:n] == old["script"]:
+                # реплики дописаны в конец (voice-script-extra.md): опорный и готовые реплики остаются
+                old.update(script=new, lines_done=False, asr_done=False)
+            else:
+                states[v["id"]] = fresh(v)
     cfg = G.C.load(G.VF)
     t0 = time.time()
     if a.fix:

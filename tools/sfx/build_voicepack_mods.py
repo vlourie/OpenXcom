@@ -73,6 +73,17 @@ def loud_ogg(src, dst, robot=False):
     tmp.unlink()
 
 
+def alts(vid, states):
+    """Запасные голоса типа бойца (voice-script-extra.md): V001 -> V401 V501 V601 V701, только готовые."""
+    out = [f"V{k}{vid[2:]}" for k in range(4, 8)]
+    return [a for a in out if states.get(a, {}).get("asr_done")]
+
+
+def base(vid):
+    """Основной голос запасного: V425 -> V025 (робот обрабатывается как основной)."""
+    return f"V0{vid[2:]}" if vid[1] in "4567" else vid
+
+
 def read_tsv(name):
     with open(HERE / name, encoding="utf-8-sig") as f:
         return list(csv.DictReader(f, delimiter="\t"))
@@ -86,7 +97,8 @@ def build(lang, hold, events, rows, states, doge_steps):
     mod = B.MODS / f"hd_voices_{lang}"
     if mod.exists():
         shutil.rmtree(mod)
-    used = sorted({r["voice"] for r in rows} - hold)
+    used = sorted(({r["voice"] for r in rows} | {a for v in {r["voice"] for r in rows if r["kind"] == "soldier"}
+                                                  for a in alts(v, states)}) - hold)
     files, sets = [], {}          # sets: голос -> событие -> [номера]
     idx = FIRST
     for vid in used:
@@ -95,7 +107,7 @@ def build(lang, hold, events, rows, states, doge_steps):
             if ev["event"] not in EVENTS or ev["line"] not in chosen:
                 continue
             rel = f"Resources/Sounds/voices/{vid}/{ev['line']}.ogg"
-            loud_ogg(SRC / chosen[ev["line"]]["file"], mod / rel, robot=vid in ROBOT)
+            loud_ogg(SRC / chosen[ev["line"]]["file"], mod / rel, robot=base(vid) in ROBOT)
             files.append((idx, rel))
             sets.setdefault(vid, {}).setdefault(ev["event"], []).append(idx)
             idx += 1
@@ -108,20 +120,24 @@ def build(lang, hold, events, rows, states, doge_steps):
         files.append((idx, rel))
         sets.setdefault("doge", {}).setdefault(cat, []).append(idx)
         idx += 1
-    assert idx <= 1000 * RESERVED, idx
+    reserved = max(RESERVED, math.ceil(idx / 1000))
 
-    # кто чем звучит
+    # кто чем звучит; тип бойца - основной голос и запасные (V4xx-V7xx), боец получает один из них случайно
     soldier, choice, unit = {}, {}, {}
     for r in rows:
+        if r["kind"] == "soldier":
+            for vid in [r["voice"]] + alts(r["voice"], states):
+                if vid not in sets:
+                    continue
+                for g in GENDER[r["gender"]]:
+                    soldier.setdefault(r["target"], {0: [], 1: []})[g].append(vid)
+                choice.setdefault(vid, {"types": set(), "genders": set()})
+                choice[vid]["types"].add(r["target"])
+                choice[vid]["genders"].update(GENDER[r["gender"]])
+            continue
         if r["voice"] not in sets:
             continue
-        if r["kind"] == "soldier":
-            for g in GENDER[r["gender"]]:
-                soldier.setdefault(r["target"], {0: [], 1: []})[g].append(r["voice"])
-            choice.setdefault(r["voice"], {"types": set(), "genders": set()})
-            choice[r["voice"]]["types"].add(r["target"])
-            choice[r["voice"]]["genders"].update(GENDER[r["gender"]])
-        elif r["kind"] == "choice":
+        if r["kind"] == "choice":
             choice.setdefault(r["voice"], {"types": set(), "genders": set()})
             choice[r["voice"]]["types"].add(r["target"])
             choice[r["voice"]]["genders"].update(GENDER[r["gender"]])
@@ -177,7 +193,7 @@ def build(lang, hold, events, rows, states, doge_steps):
         f'name: "HD: голоса бойцов ({title})"\nversion: 1.0\nauthor: "Vitali + Claude"\n'
         f'description: "Голоса по сценарию записи: реплики на выбор бойца, ход, оружие и «отстань» '
         f'для команды, национальные голоса (выбор на базе), враги под контролем. Включать один язык."\n'
-        f"id: hd_voices_{lang}\nmaster: piratez\nreservedSpace: {RESERVED}\n"))
+        f"id: hd_voices_{lang}\nmaster: piratez\nreservedSpace: {reserved}\n"))
     return len(files), len(sets), len(soldier), len(unit), sum(len(us) for us in unit.values())
 
 
@@ -201,6 +217,8 @@ def main():
     for r in rows:
         if r["voice"] in states and r["target_en"]:
             states[r["voice"]].setdefault("for_en", r["target_en"])
+            for k, a in enumerate(alts(r["voice"], states), 2):
+                states[a].setdefault("for_en", f"{r['target_en']} #{k}")
     doge = B.load_json("steps.json")
     for lang in a.lang.split(","):
         n, k, s, u, nu = build(lang, hold, events, rows, states, doge)
