@@ -35,8 +35,8 @@ class OptionsAudioState : public OptionsBaseState
 {
 private:
 	static const std::string musFormats[], sndFormats[];
-	Text *_txtMusicVolume, *_txtSoundVolume, *_txtUiVolume;
-	Slider *_slrMusicVolume, *_slrSoundVolume, *_slrUiVolume;
+	Text *_txtMusicVolume, *_txtSoundVolume, *_txtUiVolume, *_txtVoiceVolume;
+	Slider *_slrMusicVolume, *_slrSoundVolume, *_slrUiVolume, *_slrVoiceVolume;
 	Text *_txtMusicFormat, *_txtCurrentMusic, *_txtSoundFormat, *_txtCurrentSound, *_txtVideoFormat;
 	ComboBox *_cbxMusicFormat, *_cbxSoundFormat, *_cbxVideoFormat;
 	Text* _txtOptions;
@@ -56,6 +56,8 @@ public:
 	void slrUiVolumeChange(Action *action);
 	/// Handler for sound slider button release.
 	void slrUiVolumeRelease(Action *action);
+	/// Updates the unit voice volume (HD).
+	void slrVoiceVolumeChange(Action *action);
 	/// Handler for changing the Music Format combobox.
 	void cbxMusicFormatChange(Action *action);
 	/// Handler for changing the Sound Format combobox.

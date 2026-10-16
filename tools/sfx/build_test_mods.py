@@ -40,7 +40,7 @@ def load_json(name):
         return json.load(f)
 
 
-def to_ogg(src, dst, robot=False, gain_db=0.0):
+def to_ogg(src, dst, robot=False, gain_db=0.0, af=""):
     dst.parent.mkdir(parents=True, exist_ok=True)
     if robot:
         x, sr = sf.read(str(src), dtype="float32", always_2d=True)
@@ -48,7 +48,7 @@ def to_ogg(src, dst, robot=False, gain_db=0.0):
         tmp = dst.with_suffix(".robot.wav")
         sf.write(str(tmp), x, sr, subtype="PCM_16")
         src = tmp
-    subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(src), "-af", f"volume={gain_db}dB",
+    subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(src), "-af", af or f"volume={gain_db}dB",
                     "-ac", "1", "-ar", str(RATE), "-c:a", "libvorbis", "-q:a", "5", str(dst)],
                    check=True)
     if robot:

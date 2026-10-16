@@ -69,6 +69,11 @@ OptionsAudioState::OptionsAudioState(OptionsOrigin origin) : OptionsBaseState(or
 	_txtOptions = new Text(114, 9, 94, 104);
 	_btnBackgroundMute = new ToggleTextButton(104, 16, 94, 114);
 
+	// HD: unit responses (channel 4) get their own slider, right column under the sound format
+	// (left column below the background mute is the tooltip, y 148)
+	_txtVoiceVolume = new Text(114, 9, 206, 122);
+	_slrVoiceVolume = new Slider(104, 16, 206, 132);
+
 	add(_txtMusicVolume, "text", "audioMenu");
 	add(_slrMusicVolume, "button", "audioMenu");
 
@@ -90,6 +95,9 @@ OptionsAudioState::OptionsAudioState(OptionsOrigin origin) : OptionsBaseState(or
 
 	add(_txtOptions, "text", "audioMenu");
 	add(_btnBackgroundMute, "button", "audioMenu");
+
+	add(_txtVoiceVolume, "text", "audioMenu");
+	add(_slrVoiceVolume, "button", "audioMenu");
 
 	centerAllSurfaces();
 
@@ -122,6 +130,15 @@ OptionsAudioState::OptionsAudioState(OptionsOrigin origin) : OptionsBaseState(or
 	_slrUiVolume->setTooltip("STR_UI_VOLUME_DESC");
 	_slrUiVolume->onMouseIn((ActionHandler)&OptionsAudioState::txtTooltipIn);
 	_slrUiVolume->onMouseOut((ActionHandler)&OptionsAudioState::txtTooltipOut);
+
+	_txtVoiceVolume->setText(tr("STR_VOICE_VOLUME"));
+
+	_slrVoiceVolume->setRange(0, SDL_MIX_MAXVOLUME);
+	_slrVoiceVolume->setValue(Options::oxceVoiceVolume);
+	_slrVoiceVolume->onChange((ActionHandler)&OptionsAudioState::slrVoiceVolumeChange);
+	_slrVoiceVolume->setTooltip("STR_VOICE_VOLUME_DESC");
+	_slrVoiceVolume->onMouseIn((ActionHandler)&OptionsAudioState::txtTooltipIn);
+	_slrVoiceVolume->onMouseOut((ActionHandler)&OptionsAudioState::txtTooltipOut);
 
 	std::vector<std::string> musicText, soundText, videoText;
 	/* MUSIC_AUTO, MUSIC_FLAC, MUSIC_OGG, MUSIC_MP3, MUSIC_MOD, MUSIC_WAV, MUSIC_ADLIB, MUSIC_GM, MUSIC_MIDI */
@@ -221,6 +238,16 @@ void OptionsAudioState::slrMusicVolumeChange(Action *)
 void OptionsAudioState::slrSoundVolumeChange(Action *)
 {
 	Options::soundVolume = _slrSoundVolume->getValue();
+	_game->setVolume(Options::soundVolume, Options::musicVolume, Options::uiVolume);
+}
+
+/**
+ * Updates the unit voice volume (HD): channel 4 is set together with the sound channels.
+ * @param action Pointer to an action.
+ */
+void OptionsAudioState::slrVoiceVolumeChange(Action *)
+{
+	Options::oxceVoiceVolume = _slrVoiceVolume->getValue();
 	_game->setVolume(Options::soundVolume, Options::musicVolume, Options::uiVolume);
 }
 
