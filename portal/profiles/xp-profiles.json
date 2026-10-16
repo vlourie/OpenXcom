@@ -18,6 +18,9 @@
         { "id": "piratezCitiesLore" },
         { "id": "*" },
         { "id": "intro_voice" },
+        { "id": "hd_test_steps" },
+        { "id": "hd_voices_ru", "lang": "ru" },
+        { "id": "hd_voices_en", "lang": "en" },
         { "id": "hd_core" },
         { "id": "hd" }
       ],
