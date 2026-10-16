@@ -65,7 +65,10 @@ F3_MIN_REF, F3_MIN_LINE, YIN_MIN = 2650, 2550, 175
 TIMBRE_DESIGN_MAX, TIMBRE_LINE_MAX = 20, 6
 # описание голоса вместо карточки: «мощный... мужского стража» даёт модели мужчину (V086: 17 из 20 кандидатов
 # ниже 180 Гц, выбран 93 Гц). Сценарий не правим - только текст для модели
-DIRECTION = {"V086": "Сильная уверенная женщина-воин, звучный женский голос; насмешливая, спокойная."}
+# 17.10 запасные женские (V4xx-V7xx) с обычным «женский голос»: высота 106-170 Гц, F3 2300 - мужчины, ворота
+# проходили 0-1 из 20. Им - звонкое описание, как у починенных, и без хрипотцы (основные голоса не трогаем)
+ALT_DROP = re.compile(r"\b(?:с\s+)?(?:лёгкой\s+)?(?:хрипотц|хрипл|прокурен|сипл|басовит)\w*,?\s*")
+DIRECTION = {"V086":"Сильная уверенная женщина-воин, звучный женский голос; насмешливая, спокойная."}
 
 
 def gated(v):
@@ -134,8 +137,10 @@ def design_text(v):
     direction = DIRECTION.get(v["id"], v["direction"])
     if v["reg"] == "Ж":
         direction = FEMALE_DROP.sub("", direction)
+        if "same_as" in v:
+            direction = ALT_DROP.sub("", direction)
         direction = direction[:1].upper() + direction[1:]
-    reg = TIMBRE_WORD if v["id"] in TIMBRE else REG_WORD[v["reg"]]
+    reg = TIMBRE_WORD if gated(v) else REG_WORD[v["reg"]]
     return f"{reg}. Персонаж: {v['name']}. {direction}"
 
 
