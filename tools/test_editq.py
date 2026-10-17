@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """Проверка очереди правок игры tools/editq.py на временном git-репозитории.
 
@@ -87,7 +87,8 @@ def main():
     git("config", "user.name", "t")
     write("CHANGELOG.md", "## [Не выпущено]\n")
     write("src/a.cpp", "a\n")
-    git("add", "--", "CHANGELOG.md", "src/a.cpp")
+    write("src/a.h", "header\n")
+    git("add", "--", "CHANGELOG.md", "src/a.cpp", "src/a.h")
     git("commit", "-qm", "init")
     with io.open(REL_SCRIPT, "w", encoding="utf-8") as f:
         f.write("import os\nr=os.environ['EDITQ_REPO']\n"
@@ -137,16 +138,20 @@ def main():
     check(hook("stop", "B", None, stop_hook_active=False) is None, "Stop не держателя - тихо")
 
     write("src/a.cpp", "a2\n")
+    # R-108: this header was changed by a script, without an Edit/Write hook.
+    write("src/a.h", "header2\n")
     write("docs/x.md", "чужое\n")
     bad = dict(ENV, EDITQ_BUILD_CMD="exit 1")
     r = cli("A", "done", "-m", "hdui: a", env=bad)
     check(r.returncode != 0 and state()["q"][0]["st"] == "hold", "упавшая сборка: очередь у A, коммита нет")
     check("hdui: a" not in git("log", "--format=%s"), "после упавшей сборки коммита нет")
 
-    r = cli("A", "done", "-m", "hdui: a")
+    r = cli("A", "done", "-m", "hdui: a", "--add", "src/a.h")
     check(r.returncode == 0, "A done: " + (r.stderr.strip() or "прошёл"))
     files = git("show", "--name-only", "--format=", "HEAD").split()
-    check(files == ["src/a.cpp"], f"в коммите только файл A: {files}")
+    check(files == ["src/a.cpp", "src/a.h"], f"в коммите только файлы A, включая --add: {files}")
+    check(git("show", "HEAD:src/a.h") == "header2\n", "R-108: коммит содержит правку заголовка без хука")
+    check("docs/x.md" in git("status", "--porcelain", "-uall"), "посторонний файл не включён через --add")
     st = state()
     check(st["q"] and st["q"][0]["sid"] == "B" and st["q"][0]["st"] == "hold", "очередь перешла к B")
     check(st["rel"]["st"] != "pending", "пока B держит, выпуска нет")
