@@ -198,7 +198,8 @@ void StartState::think()
 		Log(LOG_INFO) << "OpenXcom started successfully!";
 		_game->setState(new GoToMainMenuState(true));
 		{
-			bool intro = (_oldMaster != Options::getActiveMaster() || playIntroAfterReload) && Options::playIntro;
+			// The launcher can select the master before StartState is created.
+			bool intro = (!Options::reload || _oldMaster != Options::getActiveMaster() || playIntroAfterReload) && Options::playIntro;
 			playIntroAfterReload = false;
 			if (intro)
 			{
