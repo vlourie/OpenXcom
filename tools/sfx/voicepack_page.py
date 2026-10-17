@@ -1,4 +1,4 @@
-"""Страница прослушивания полного набора голосов: art/sfx/voicepack/listen.html (рядом с файлами, ссылки
+﻿"""Страница прослушивания полного набора голосов: art/sfx/voicepack/listen.html (рядом с файлами, ссылки
 относительные - открывать обычным браузером). Модели не грузит, можно запускать во время генерации:
 готовые голоса видны, остальные помечены «в работе».
 
@@ -54,6 +54,9 @@ def audio(f):
 def main():
     sys.stdout.reconfigure(encoding="utf-8")
     voices = voice_script.parse()
+    audit_path = OUT / 'audit.json'
+    audit = json.loads(audit_path.read_text(encoding='utf-8-sig')) if audit_path.exists() else None
+    approved = {(r['voice'], r['lang'], r['line']): r['file'] for r in audit['selected']} if audit else None
     sections = []
     for v in voices:
         if not sections or sections[-1][0] != v["section"]:
@@ -78,7 +81,11 @@ def main():
             ref = (f'<div class="meta">Образец голоса ({st["ref_f0"]:.0f} Гц'
                    + (f', сдвиг {st["ref_shift"]:+.1f} пт' if st.get("ref_shift") else "")
                    + f'): {audio(st["ref"])}</div>')
-            chosen = {(it["lang"], it["n"]): it for it in st["lines"] if it.get("chosen")}
+            if approved is None:
+                chosen = {(it['lang'], it['n']): it for it in st['lines'] if it.get('chosen')}
+            else:
+                chosen = {(it['lang'], it['n']): it for it in st['lines'] if 'file' in it
+                          and approved.get((v['id'], it['lang'], it['n'])) == it['file']}
             rows = []
             for ln in v["lines"]:
                 cells = [f'<td class="n">{ln["n"]}</td>']
@@ -87,13 +94,13 @@ def main():
                     if it:
                         lines += 1
                         alts = [x for x in st["lines"] if x["lang"] == lang and x["n"] == ln["n"]
-                                and "file" in x and not x.get("chosen")]
+                                and "file" in x and x['file'] != it['file']]
                         alt = ("<details><summary>другие дубли</summary>"
                                + "".join(f'<div>{audio(x["file"])}{badge(x)}</div>' for x in alts)
                                + "</details>") if alts else ""
                         cells.append(f'<td>{audio(it["file"])}{badge(it)}<div>{html.escape(ln[lang])}</div>{alt}</td>')
                     else:
-                        cells.append(f'<td class="bad">нет дубля — {html.escape(ln[lang])}</td>')
+                        cells.append(f'<td class="bad">не включено после проверки — {html.escape(ln[lang])}</td>')
                 rows.append("<tr>" + "".join(cells) + "</tr>")
             body.append(f'<div class="v">{head}{meta}{ref}<table>{"".join(rows)}</table></div>')
     nav = "".join(f'<a href="#s{i}">{html.escape(s)}</a>' for i, (s, _) in enumerate(sections))
