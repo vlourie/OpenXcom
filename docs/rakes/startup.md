@@ -10,3 +10,12 @@
 Правило:  Для первого запуска проверять !Options::reload; отдельно сохранять смену master, pending и playIntro, проверять реальное C++-условие и отрицательный контроль прежнего условия.
 Защита:   tools/test_intro_startup.py
 Наступал: 1   Последний: 2026-10-17
+
+## R-369  Вложенный Windows PowerShell 5 наследует смешанный PSModulePath и теряет Get-FileHash
+Статус:   активны
+Файлы:    Выпуск/release.ps1
+Симптом:  Первый запуск release.ps1 во вложенном Windows PowerShell 5 из Codex остановился: Get-FileHash не найден.
+Причина:  Дочерний Windows PowerShell 5 наследовал смешанный PSModulePath PowerShell 7 и Windows PowerShell; проблема была в окружении запуска, не в исправлении интро.
+Правило:  Перед таким запуском задать стандартный PSModulePath из путей WindowsPowerShell Modules в Program Files и System32, затем проверить Get-Command Get-FileHash. С этим окружением повторный выпуск завершился; кодовый guard в этой задаче не добавлялся.
+Защита:   нет
+Наступал: 1   Последний: 2026-10-17
