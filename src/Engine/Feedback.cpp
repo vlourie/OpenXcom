@@ -249,10 +249,11 @@ bool Feedback::open(Game *game, const State *top)
 	screen->screenshot(dir + "shot.png");
 
 	// the game exactly as it is now, for staff to load; never in ironman, where it would be a way around it,
-	// and not from a battle preview. save() is const and only reads, so the game goes on untouched
+	// and not from a battle preview, nor from a battle while battle saves are off (the same way around).
+	// save() is const and only reads, so the game goes on untouched
 	std::string snapshot;
 	SavedGame *saved = game->getSavedGame();
-	if (saved && !saved->isIronman() && !(saved->getSavedBattle() && saved->getSavedBattle()->isPreview()))
+	if (saved && !saved->isIronman() && !(saved->getSavedBattle() && (saved->getSavedBattle()->isPreview() || Options::oxceNoBattleSaves)))
 	{
 		const Uint32 t0 = SDL_GetTicks();
 		try

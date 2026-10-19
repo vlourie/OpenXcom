@@ -90,7 +90,13 @@ OptionsDefaultsState::~OptionsDefaultsState()
  */
 void OptionsDefaultsState::btnYesClick(Action *action)
 {
+	// the battle saves rule is fixed for the battle in progress: the defaults leave it as it is there
+	const bool noBattleSaves = Options::oxceNoBattleSaves;
 	Options::resetDefault(false);
+	if (_origin == OPT_BATTLESCAPE)
+	{
+		Options::oxceNoBattleSaves = noBattleSaves;
+	}
 	Options::save(true);
 	if (_game->isCtrlPressed())
 	{
