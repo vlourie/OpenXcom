@@ -27,6 +27,8 @@
 #include <string>
 #include <vector>
 #include <set>
+#include <unordered_map>
+#include <unordered_set>
 #include "BattlescapeGame.h"
 #include "BattlescapeState.h"
 #include "CollapseCore.h"
@@ -342,6 +344,34 @@ bool overlaps(const Instance &a, const Instance &b)
 		&& a.off.z < b.off.z + q.sz && b.off.z < a.off.z + p.sz;
 }
 
+/// Where each terrain record stands on the map: (save set, part kind, record) -> tiles in z, y, x order.
+typedef std::unordered_map<uint64_t, std::vector<Position> > Where;
+
+uint64_t whereKey(int setId, int kind, int id)
+{
+	return ((uint64_t)(uint16_t)setId << 34) | ((uint64_t)kind << 32) | (uint32_t)id;
+}
+
+/// One pass over the map instead of one per anchor of every block.
+Where mapIndex(SavedBattleGame *save)
+{
+	Where w;
+	for (int z = 0; z < st.mz; ++z)
+		for (int y = 0; y < st.my; ++y)
+			for (int x = 0; x < st.mx; ++x)
+			{
+				const Tile *t = save->getTile(Position(x, y, z));
+				for (int k = 0; k < 4; ++k)
+				{
+					if (!t || !t->getMapData(PARTS[k])) continue;
+					int id, setId;
+					t->getMapData(&id, &setId, PARTS[k]);
+					if (setId >= 0) w[whereKey(setId, k, id)].push_back(Position(x, y, z));
+				}
+			}
+	return w;
+}
+
 /// Finds the pilot buildings: offsets voted by the rarest parts of each block. Only a whole building counts
 /// (every part in place, the whole block inside the map): the model was checked on the intact template, and
 /// a partial match is often another building of the same terrain. One map cell belongs to one building: of
@@ -351,11 +381,21 @@ void scan(SavedBattleGame *save)
 {
 	const auto t0 = Clock::now();
 	bind(save);
+	// the log file is opened and closed for every Log line (several ms each): the lines of the scan go in one write
+	std::ostringstream out;
+	auto line = [&out]() -> std::ostringstream& { if (out.tellp() > 0) out << "\n"; return out; };
 	std::vector<std::pair<int, Instance> > whole;  // (all parts of the block in place, instance)
+	Where where;
+	bool indexed = false;
 	for (int bi = 0; bi < CollapsePilotData::blockCount; ++bi)
 	{
 		const CollapseBlock &b = CollapsePilotData::blocks[bi];
 		if (!inThisBuild(bi) || !setsOnMap(bi)) continue;
+		if (!indexed)
+		{
+			where = mapIndex(save);
+			indexed = true;
+		}
 		// the five rarest records of the building are the anchors
 		std::map<std::pair<int, int>, int> freq;
 		for (int i = 0; i < b.nParts; ++i)
@@ -365,33 +405,54 @@ void scan(SavedBattleGame *save)
 			if (b.parts[i].flags & CPF_INBOX)
 				order.push_back(std::make_pair(freq[std::make_pair(b.parts[i].set * 1000 + b.parts[i].kind, b.parts[i].mcd)], i));
 		std::sort(order.begin(), order.end());
+		// candidates in the order of the anchors, each anchor's tiles in z, y, x order
 		std::vector<Position> cand;
+		std::unordered_set<uint64_t> seen;
+		const auto &setOf = st.setOf[bi];
 		for (size_t a = 0; a < order.size() && a < 5; ++a)
 		{
 			const CollapsePart &p = b.parts[order[a].second];
-			for (int z = 0; z < st.mz; ++z)
-				for (int y = 0; y < st.my; ++y)
-					for (int x = 0; x < st.mx; ++x)
-					{
-						const Position off(x - p.x, y - p.y, z - p.z);
-						if (inPlace(save, bi, p, off) && std::find(cand.begin(), cand.end(), off) == cand.end())
-							cand.push_back(off);
-					}
+			std::vector<Position> at;
+			for (size_t s = 0; s < setOf.size(); ++s)
+			{
+				if (setOf[s] != p.set) continue;
+				const auto f = where.find(whereKey((int)s, p.kind, p.mcd));
+				if (f != where.end()) at.insert(at.end(), f->second.begin(), f->second.end());
+			}
+			std::sort(at.begin(), at.end(), [](const Position &u, const Position &v)
+				{ return u.z != v.z ? u.z < v.z : u.y != v.y ? u.y < v.y : u.x < v.x; });
+			for (const Position &t : at)
+			{
+				const Position off(t.x - p.x, t.y - p.y, t.z - p.z);
+				const uint64_t key = ((uint64_t)(uint32_t)(off.z + 4096) << 40) | ((uint64_t)(uint32_t)(off.y + 4096) << 20)
+					| (uint64_t)(uint32_t)(off.x + 4096);
+				if (seen.insert(key).second)
+					cand.push_back(off);
+			}
 		}
+		int all = 0;
+		for (int i = 0; i < b.nParts; ++i)
+			if (b.parts[i].flags & CPF_INBOX) ++all;
 		for (const Position &off : cand)
 		{
 			if (off.x < 0 || off.y < 0 || off.z < 0 || off.x + b.sx > st.mx || off.y + b.sy > st.my || off.z + b.sz > st.mz)
 				continue;
 			Instance in = { bi, off };
-			int all = 0;
-			const int n = countInPlace(save, in, &all);
-			if (all > 0 && n == all)
+			// counting stops once more than half is missing: then it is neither whole nor worth the line below
+			int n = 0, miss = 0;
+			for (int i = 0; i < b.nParts && miss * 2 <= all; ++i)
+			{
+				if (!(b.parts[i].flags & CPF_INBOX)) continue;
+				if (inPlace(save, bi, b.parts[i], off)) ++n;
+				else ++miss;
+			}
+			if (all > 0 && miss == 0)
 			{
 				whole.push_back(std::make_pair(countAllInPlace(save, in), in));
 			}
-			else if (all > 0 && n * 2 >= all)
+			else if (all > 0 && miss * 2 <= all)
 			{
-				Log(LOG_INFO) << "[COLLAPSE] not whole " << b.label << " at " << off.x << "," << off.y << "," << off.z
+				line() << "[COLLAPSE] not whole " << b.label << " at " << off.x << "," << off.y << "," << off.z
 					<< ": " << n << " of " << all << " parts in place - left alone";
 			}
 		}
@@ -410,7 +471,7 @@ void scan(SavedBattleGame *save)
 		if (taken)
 		{
 			const CollapseBlock &tb = CollapsePilotData::blocks[taken->bi];
-			Log(LOG_INFO) << "[COLLAPSE] overlaps " << b.label << " at " << off.x << "," << off.y << "," << off.z
+			line() << "[COLLAPSE] overlaps " << b.label << " at " << off.x << "," << off.y << "," << off.z
 				<< ": " << w.first << " of " << b.nParts << " block parts in place, the place is " << tb.label << " at "
 				<< taken->off.x << "," << taken->off.y << "," << taken->off.z << " - left alone";
 			continue;
@@ -419,11 +480,12 @@ void scan(SavedBattleGame *save)
 		int all = 0;
 		const int n = countInPlace(save, in, &all);
 		// self-check of the load test: a whole building has nothing foreign in its place
-		Log(LOG_INFO) << "[COLLAPSE] found " << b.label << " (" << b.name << ") at " << off.x << "," << off.y << "," << off.z
+		line() << "[COLLAPSE] found " << b.label << " (" << b.name << ") at " << off.x << "," << off.y << "," << off.z
 			<< ": " << n << " of " << all << " parts in place, " << foreignParts(save, in) << " foreign; block "
 			<< w.first << " of " << b.nParts;
 	}
-	Log(LOG_INFO) << "[COLLAPSE] scan: " << st.inst.size() << " pilot building(s), " << msSince(t0) << " ms";
+	line() << "[COLLAPSE] scan: " << st.inst.size() << " pilot building(s), " << msSince(t0) << " ms";
+	Log(LOG_INFO) << out.str();
 }
 
 /// Takes the buildings of this battle: the list kept in the save, each entry checked against this build
