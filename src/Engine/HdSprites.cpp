@@ -161,6 +161,61 @@ namespace
 	/// Frames at most this big are dots, not pictures (makeDots): the bullet tracer is 3x3.
 	const int MAX_DOT = 4;
 	unsigned registryGeneration = 1;
+	/// A frame that went or got another picture (nullptr: only its key is told), logged at the generation
+	/// it changed in (see changedSince).
+	struct Change
+	{
+		unsigned generation;
+		const void *frame;
+		const void *key;
+	};
+	/// In generation order. A set registered in battle is a few thousand entries; the older half goes past the cap.
+	std::vector<Change> changes;
+	const size_t MAX_CHANGES = 1u << 17;
+	/// A cache that checked the registry at this generation or before forgets everything.
+	unsigned changedAllUpTo = 0;
+	/// Logs a key and every frame it has now (its own, its variants, its wall pictures): told before
+	/// a change, the frames that go; after it, the ones that came (a vector of variants moves its frames).
+	void noteKey(const void *key)
+	{
+		if (changes.size() >= MAX_CHANGES)
+		{
+			const size_t cut = changes.size() / 2;
+			changedAllUpTo = std::max(changedAllUpTo, changes[cut - 1].generation);
+			changes.erase(changes.begin(), changes.begin() + cut);
+		}
+		changes.push_back(Change { registryGeneration, nullptr, key });
+		auto it = registry.find(key);
+		if (it != registry.end())
+		{
+			changes.push_back(Change { registryGeneration, &it->second.frame, key });
+		}
+		auto vit = variants.find(key);
+		if (vit != variants.end())
+		{
+			for (const Entry &entry : vit->second)
+			{
+				changes.push_back(Change { registryGeneration, &entry.frame, key });
+			}
+		}
+		for (const auto &part : walls)
+		{
+			auto wit = part.find(key);
+			if (wit != part.end())
+			{
+				for (const Entry &entry : wit->second.slots)
+				{
+					changes.push_back(Change { registryGeneration, &entry.frame, key });
+				}
+			}
+		}
+	}
+	/// Everything changed (the registry cleared, the pictures recoloured): the log starts again.
+	void noteAll()
+	{
+		changes.clear();
+		changedAllUpTo = registryGeneration;
+	}
 	void (*beforeChangeHook)() = nullptr;
 	/// Lets the canvases run the commands that point at the frames about to change.
 	void beforeChange()
@@ -311,6 +366,7 @@ void set(const void *key, HdFrame &&frame)
 	entry.width = frame.width;
 	entry.height = frame.height;
 	entry.frame = std::move(frame);
+	noteKey(key);
 	++registryGeneration;
 }
 
@@ -333,6 +389,7 @@ void setLazy(const void *key, const std::string &path, Uint32 offset, Uint32 siz
 	entry.width = width;
 	entry.height = height;
 	entry.key = key;
+	noteKey(key);
 	++registryGeneration;
 }
 
@@ -410,6 +467,7 @@ void setVariantLazy(const void *key, int variant, const std::string &path, Uint3
 		return;
 	}
 	beforeChange();
+	noteKey(key);
 	std::vector<Entry> &slots = variants[key];
 	if ((int)slots.size() < variant)
 	{
@@ -427,6 +485,7 @@ void setVariantLazy(const void *key, int variant, const std::string &path, Uint3
 	entry.width = width;
 	entry.height = height;
 	entry.key = key;
+	noteKey(key);
 	++registryGeneration;
 }
 
@@ -555,6 +614,7 @@ bool registered(const void *key)
 void remove(const void *key)
 {
 	beforeChange();
+	noteKey(key);
 	auto it = registry.find(key);
 	if (it != registry.end())
 	{
@@ -589,6 +649,7 @@ void removeSet(const SurfaceSet *surfaceSet)
 		const Surface *frame = surfaceSet->getFrame((int)i);
 		if (frame)
 		{
+			noteKey(frame->getBuffer());
 			auto it = registry.find(frame->getBuffer());
 			if (it != registry.end())
 			{
@@ -614,6 +675,7 @@ void clear()
 	walls[1].clear();
 	++wallsGeneration;
 	loadedTotal = 0;
+	noteAll();
 	++registryGeneration;
 }
 
@@ -842,6 +904,23 @@ unsigned generation()
 	return registryGeneration;
 }
 
+bool changedSince(unsigned since, std::unordered_set<const void*> &frames, std::unordered_set<const void*> &keys)
+{
+	if (since <= changedAllUpTo)
+	{
+		return false;
+	}
+	for (auto it = changes.rbegin(); it != changes.rend() && it->generation >= since; ++it)
+	{
+		if (it->frame)
+		{
+			frames.insert(it->frame);
+		}
+		keys.insert(it->key);
+	}
+	return true;
+}
+
 unsigned wallGeneration()
 {
 	return wallsGeneration;
@@ -932,6 +1011,7 @@ void setRecolour(Recolour fn)
 		}
 		recoloured = todo.size();
 	}
+	noteAll();
 	++registryGeneration;
 	Log(LOG_INFO) << "HD sprites: recolouring " << (fn ? "on" : "off") << ", " << dropped << " recoloured frame(s) dropped, "
 		<< recoloured << " loaded frame(s) recoloured";
@@ -1393,6 +1473,7 @@ namespace
 			{
 				continue;
 			}
+			noteKey(frame->getBuffer());
 			found->second.ownColour = true;
 			found->second.frame.ownColour = true;
 			auto alt = variants.find(frame->getBuffer());
@@ -1600,6 +1681,7 @@ namespace
 			}
 			const std::string slot = pair.part == WALL_WEST ? "west" : "north";
 			const void *key = frame->getBuffer();
+			noteKey(key);
 			dropWalls(key);
 			WallSlots &wall = walls[pair.part - 1][key];
 			wall.n = pair.n;
@@ -1636,6 +1718,7 @@ namespace
 				entry.height = fh;
 				entry.key = key;
 			}
+			noteKey(key);
 			++on;
 		}
 		for (const std::string &file : wallFiles)

@@ -23,6 +23,7 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include <unordered_set>
 #include <SDL.h>
 #include "Surface.h"
 #include "GraphSubset.h"
@@ -378,9 +379,19 @@ private:
 	size_t _tonedBytes = 0;
 	/// Counts the flushes: the copies the frame being recorded uses are not trimmed after it.
 	unsigned _tonedFrame = 1;
+	/// HdSprites::generation() the shaded copies and the ground blends were checked against (see forgetChanged).
 	unsigned _tonedGeneration = 0;
-	/// The registry changed while recording: the cache is cleared at the end of the flush (see tonedFor).
+	/// The registry changed while recording: what changed is dropped at the end of the flush (see tonedFor).
 	bool _tonedStale = false;
+	/// The generation the changes below were taken at (_tonedGeneration while there are none): the frames
+	/// and keys that changed - their copies and blends are one-offs until the end of the flush - or everything.
+	unsigned _changedGeneration = 0;
+	std::unordered_set<const void*> _changedFrames, _changedKeys;
+	bool _changedAll = false;
+	/// Takes the changes of the registry since _tonedGeneration (when the caches hold anything).
+	void noticeChanges();
+	/// The end of a flush: the shaded copies and the ground blends of what changed go, the rest is checked against the new generation.
+	void forgetChanged();
 	/// Shaded copies made while the cache is stale (dropped with it).
 	std::deque<HdFrame> _tonedTransient;
 	/// A shaded copy the recording reserved: the workers fill it before the commands run (makeJobs).
@@ -456,6 +467,7 @@ private:
 		HdFrame frame;
 		const void *src = nullptr;
 		int x = 0, y = 0, z = 0;
+		/// _tonedGeneration it is good for (0: to drop - a changed frame or an old pattern).
 		unsigned generation = 0;
 		size_t lru = 0;
 	};
@@ -491,7 +503,7 @@ private:
 	void makeJobs();
 	/// Drops the reserved frames unfilled (the registry changed under them: their sources may be gone).
 	void dropJobs();
-	/// Drops the blends of an old registry generation and the oldest ones over the cap (end of a flush).
+	/// Drops the blends of changed frames and the oldest ones over the cap (end of a flush).
 	void trimGround();
 	/// Runs one command on the rows [y0, y1).
 	void execute(const Cmd &cmd, int y0, int y1);
