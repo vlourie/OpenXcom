@@ -18,16 +18,23 @@
  */
 #include "HdItems.h"
 #include <algorithm>
+#include <chrono>
+#include <cmath>
 #include <cstddef>
 #include <cstdlib>
 #include <list>
 #include <map>
 #include <memory>
 #include <set>
+#include <sstream>
 #include <tuple>
 #include <vector>
+#include "FileMap.h"
 #include "HdUi.h"
+#include "HdUiArt.h"
+#include "HdWorkers.h"
 #include "Logger.h"
+#include "SDL2Helpers.h"
 #include "Script.h"
 #include "Surface.h"
 #include "SurfaceSet.h"
@@ -61,8 +68,15 @@ struct Asset
 std::map<std::pair<int, std::string>, Asset> assets;
 bool scanned = false;
 
-/// (item type, frame, w, h, context, k): a picture is the item's, never the frame's (R-056).
-typedef std::tuple<std::string, int, int, int, int, int> Key;
+/// The palette the pictures were made with (hd/BIGOBS.PCK/palette.pal.txt, 256 lines "r g b"); empty: they
+/// are drawn as they are whatever the palette.
+std::vector<SDL_Color> reference;
+/// Shown palettes other than the reference one: pictures recoloured, the time it took (the log).
+std::map<Uint64, std::pair<size_t, double>> recolouredFor;
+
+/// (item type, frame, w, h, context, k, palette): a picture is the item's, never the frame's (R-056);
+/// the palette is 0 for the pictures as they are, else the hash of the palette they are recoloured to.
+typedef std::tuple<std::string, int, int, int, int, int, Uint64> Key;
 struct Ready
 {
 	std::shared_ptr<const HdFrame> frame;     ///< null: the picture cannot be read
@@ -158,7 +172,161 @@ void scan()
 	{
 		Log(LOG_INFO) << "HD items: " << assets.size() << " pictures in hd/" << FOLDER;
 	}
+	const std::string palPath = HdSprites::artPath(std::string(FOLDER) + "/palette.pal.txt");
+	if (assets.empty() || !FileMap::fileExists(palPath))
+	{
+		return;
+	}
+	if (SDL_RWops *rw = FileMap::getRWops(palPath))
+	{
+		size_t size = 0;
+		void *data = SDL_LoadFile_RW(rw, &size, SDL_TRUE);
+		if (data)
+		{
+			std::istringstream in(std::string((const char*)data, size));
+			int r, g, b;
+			while (in >> r >> g >> b && reference.size() < 256)
+			{
+				SDL_Color c;
+				c.r = (Uint8)r; c.g = (Uint8)g; c.b = (Uint8)b; c.unused = 255;
+				reference.push_back(c);
+			}
+			SDL_free(data);
+		}
+	}
+	if (reference.size() != 256)
+	{
+		Log(LOG_WARNING) << "HD items: " << palPath << " should hold 256 lines 'r g b' - no recolouring to the shown palette";
+		reference.clear();
+	}
 }
+
+/// The palette a picture is drawn for: 0 when it is drawn as it is (no reference palette, no palette given,
+/// or the reference one), else the hash of the shown palette (the cache key of its recoloured pictures).
+Uint64 tintOf(const SDL_Color *shown)
+{
+	if (reference.empty() || !shown)
+	{
+		return 0;
+	}
+	for (int i = 1; i < 256; ++i)
+	{
+		if (shown[i].r != reference[i].r || shown[i].g != reference[i].g || shown[i].b != reference[i].b)
+		{
+			return HdUiArt::foldPalette(0x51ED270B27A3C1F5ULL, shown) | 1;
+		}
+	}
+	return 0;
+}
+
+/// V4 (docs/research/inventory-hd-enviro-palette.md §5): a picture made in the reference palette P0 shown
+/// with the palette P1 (a battle's weather). Every pixel moves by the shift D = P1 - P0 of the palette
+/// entries of the classic pixels around it (the 3x3 base pixels about its own), each weighted by how near
+/// the pixel's colour is to the entry's in P0 (a kernel of 12 colour units): the pixel follows the entry it
+/// was drawn from, not merely the nearest colour. With no classic pixel around (the outline's feather) - the
+/// same kernel over the whole palette (M1t). `index` is the classic frame under the picture, `bw` x `bh`
+/// base pixels; bands on all cores. Returns the pixels that had no classic pixel around.
+int recolour(HdFrame &frame, const std::vector<Uint8> &index, int bw, int bh, int k, const SDL_Color *shown)
+{
+	float P0[256][3], D[256][3];
+	for (int i = 0; i < 256; ++i)
+	{
+		P0[i][0] = reference[i].r; P0[i][1] = reference[i].g; P0[i][2] = reference[i].b;
+		D[i][0] = (float)shown[i].r - reference[i].r;
+		D[i][1] = (float)shown[i].g - reference[i].g;
+		D[i][2] = (float)shown[i].b - reference[i].b;
+	}
+	const float inv2s2 = 1.0f / (2 * 12.0f * 12.0f);
+	const int W = frame.width, H = frame.height;
+	HdWorkers &pool = HdWorkers::instance();
+	const int jobs = std::max(1, std::min(H / 16, pool.threads() * 2));
+	std::vector<int> lonely(jobs, 0);
+	pool.run(jobs, [&](int job)
+	{
+		for (int y = H * job / jobs, yEnd = H * (job + 1) / jobs; y < yEnd; ++y)
+		{
+			Uint32 *row = &frame.pixels[(size_t)y * W];
+			const int by = y / k;
+			for (int x = 0; x < W; ++x)
+			{
+				const Uint32 a = row[x] >> 24;
+				if (!a)
+				{
+					continue;
+				}
+				const float c[3] = { (float)((row[x] >> 16) & 0xFF), (float)((row[x] >> 8) & 0xFF), (float)(row[x] & 0xFF) };
+				const int bx = x / k;
+				int ids[9], n = 0;
+				float d2[9], lo = 1e30f;
+				for (int dy = -1; dy <= 1; ++dy)
+				{
+					for (int dx = -1; dx <= 1; ++dx)
+					{
+						const int xx = bx + dx, yy = by + dy;
+						if (xx < 0 || yy < 0 || xx >= bw || yy >= bh)
+						{
+							continue;
+						}
+						const Uint8 i = index[(size_t)yy * bw + xx];
+						if (!i)
+						{
+							continue;
+						}
+						const float e0 = c[0] - P0[i][0], e1 = c[1] - P0[i][1], e2 = c[2] - P0[i][2];
+						ids[n] = i;
+						d2[n] = e0 * e0 + e1 * e1 + e2 * e2;
+						lo = std::min(lo, d2[n]);
+						++n;
+					}
+				}
+				if (!n)
+				{
+					// the whole palette (entries 1..255)
+					for (int i = 1; i < 256; ++i)
+					{
+						const float e0 = c[0] - P0[i][0], e1 = c[1] - P0[i][1], e2 = c[2] - P0[i][2];
+						lo = std::min(lo, e0 * e0 + e1 * e1 + e2 * e2);
+					}
+					++lonely[job];
+				}
+				float d[3] = { 0, 0, 0 }, sw = 0;
+				for (int j = 0, end = n ? n : 255; j < end; ++j)
+				{
+					const int i = n ? ids[j] : j + 1;
+					const float e0 = c[0] - P0[i][0], e1 = c[1] - P0[i][1], e2 = c[2] - P0[i][2];
+					const float w = std::exp(-((n ? d2[j] : e0 * e0 + e1 * e1 + e2 * e2) - lo) * inv2s2);
+					sw += w;
+					d[0] += w * D[i][0];
+					d[1] += w * D[i][1];
+					d[2] += w * D[i][2];
+				}
+				Uint32 o[3];
+				for (int ch = 0; ch < 3; ++ch)
+				{
+					const long v = std::lrint(c[ch] + d[ch] / sw); // round half to even, as HdPaletteShift
+					o[ch] = (Uint32)std::min(255L, std::max(0L, v));
+				}
+				row[x] = (a << 24) | (o[0] << 16) | (o[1] << 8) | o[2];
+			}
+		}
+	});
+	int total = 0;
+	for (int l : lonely)
+	{
+		total += l;
+	}
+	return total;
+}
+
+/// What a picture is recoloured to, when it is: the shown palette, its hash, and the classic frame under the
+/// picture (`classic` with its top left `offX`, `offY` base pixels into the picture; k: the picture's scale).
+struct Tint
+{
+	const SDL_Color *shown = nullptr;
+	Uint64 hash = 0;
+	const Surface *classic = nullptr;
+	int offX = 0, offY = 0, k = 1;
+};
 
 /// Drops the pictures drawn longest ago while the ready ones exceed the budget.
 void trim()
@@ -172,8 +340,9 @@ void trim()
 	}
 }
 
-/// A picture at w x h, read now if it was not; null when it cannot be read.
-std::shared_ptr<const HdFrame> get(const Key &key, const std::string &path, int w, int h)
+/// A picture at w x h, read now if it was not (and recoloured to `tint`'s palette when its hash is not 0);
+/// null when it cannot be read.
+std::shared_ptr<const HdFrame> get(const Key &key, const std::string &path, int w, int h, const Tint &tint)
 {
 	auto got = ready.find(key);
 	if (got != ready.end())
@@ -192,6 +361,34 @@ std::shared_ptr<const HdFrame> get(const Key &key, const std::string &path, int 
 		HdFrame fitted;
 		HdSprites::resample(frame, w, h, fitted);
 		frame = std::move(fitted);
+	}
+	if (!frame.empty() && tint.hash && tint.classic)
+	{
+		const auto t0 = std::chrono::steady_clock::now();
+		const int bw = w / tint.k, bh = h / tint.k;
+		std::vector<Uint8> index((size_t)bw * bh, 0);
+		for (int y = 0; y < bh; ++y)
+		{
+			for (int x = 0; x < bw; ++x)
+			{
+				const int cx = x - tint.offX, cy = y - tint.offY;
+				if (cx >= 0 && cy >= 0 && cx < tint.classic->getWidth() && cy < tint.classic->getHeight())
+				{
+					index[(size_t)y * bw + x] = tint.classic->getPixel(cx, cy);
+				}
+			}
+		}
+		const int lonely = recolour(frame, index, bw, bh, tint.k, tint.shown);
+		const double ms = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count();
+		auto &done = recolouredFor[tint.hash];
+		++done.first;
+		done.second += ms;
+		// at 1, 2, 4, 8... pictures: how many and how long in all, for this palette
+		if ((done.first & (done.first - 1)) == 0)
+		{
+			Log(LOG_INFO) << "HD items: recoloured " << done.first << " picture(s) for palette " << std::hex << tint.hash << std::dec
+				<< " in " << (int)(done.second + 0.5) << " ms (last " << path << ", " << lonely << " pixel(s) with no classic pixel around)";
+		}
 	}
 	if (!frame.empty())
 	{
@@ -278,7 +475,7 @@ int indexOf(const SurfaceSet *set, const Surface *frame)
 }
 
 bool pick(const RuleItem *rule, const BattleItem *item, const SavedBattleGame *save, int animFrame,
-	int frame, const SurfaceSet *set, Context context, int k, Pick &out)
+	int frame, const SurfaceSet *set, Context context, int k, Pick &out, const SDL_Color *shown)
 {
 	out = Pick();
 	if (!rule || !set || frame < 0 || k < 2 || !enabled())
@@ -315,7 +512,12 @@ bool pick(const RuleItem *rule, const BattleItem *item, const SavedBattleGame *s
 	const int handW = RuleInventory::HAND_W * RuleInventory::SLOT_W, handH = RuleInventory::HAND_H * RuleInventory::SLOT_H;
 	const bool fitsHand = w <= RuleInventory::HAND_W && h <= RuleInventory::HAND_H;
 	const int offX = rule->getHandSpriteOffX(), offY = rule->getHandSpriteOffY();
-	const Key key(type, frame, w, h, (int)context, k);
+	Tint tint;
+	tint.hash = tintOf(shown);
+	tint.shown = shown;
+	tint.classic = classic;
+	tint.k = k;
+	const Key key(type, frame, w, h, (int)context, k, tint.hash);
 	// step 2: the version for the context
 	if (context == GRID)
 	{
@@ -328,7 +530,7 @@ bool pick(const RuleItem *rule, const BattleItem *item, const SavedBattleGame *s
 			}
 			return false;
 		}
-		out.frame = get(key, asset.path, classic->getWidth() * k, classic->getHeight() * k);
+		out.frame = get(key, asset.path, classic->getWidth() * k, classic->getHeight() * k, tint);
 		if (asset.wide)
 		{
 			setClip(out, 0, 0, classic->getWidth(), classic->getHeight());
@@ -340,7 +542,10 @@ bool pick(const RuleItem *rule, const BattleItem *item, const SavedBattleGame *s
 	}
 	else if (!asset.hand.empty())
 	{
-		out.frame = get(key, asset.hand, handW * k, handH * k);
+		// the hand frame: the classic sprite in it at the usual hand offset
+		tint.offX = offX;
+		tint.offY = offY;
+		out.frame = get(key, asset.hand, handW * k, handH * k, tint);
 		if (fitsHand)
 		{
 			// the item's cells after the usual hand offset, inside the frame's lines (§5.4): a small item
@@ -357,7 +562,7 @@ bool pick(const RuleItem *rule, const BattleItem *item, const SavedBattleGame *s
 	else if (fitsHand)
 	{
 		// the grid picture with the usual hand offset: its cells' rectangle, inside the hand frame's lines
-		out.frame = get(key, asset.path, classic->getWidth() * k, classic->getHeight() * k);
+		out.frame = get(key, asset.path, classic->getWidth() * k, classic->getHeight() * k, tint);
 		out.dx = offX;
 		out.dy = offY;
 		if (asset.wide)
@@ -488,7 +693,7 @@ bool attachHand(const RuleItem *rule, const BattleItem *item, const SavedBattleG
 	// the frame RuleItem::drawHandSprite would draw
 	const int frame = item ? indexOf(set, item->getBigSprite(set, save, animFrame)) : rule->getBigSprite();
 	Pick picked;
-	if (!pick(rule, item, save, animFrame, frame, set, HAND, k, picked))
+	if (!pick(rule, item, save, animFrame, frame, set, HAND, k, picked, surface->getPalette()))
 	{
 		return false;
 	}
@@ -521,6 +726,8 @@ void clear()
 	bytes = 0;
 	noHand.clear();
 	noGrid.clear();
+	reference.clear();
+	recolouredFor.clear();
 }
 
 }
