@@ -1310,13 +1310,14 @@ void Canvas32::flush()
 	_arenaInt.clear();
 	// the pack frames read longest ago go when their memory budget is exceeded (between frames: commands point at them)
 	HdSprites::trim();
+	// pack frames came or went while this frame was recorded (see tonedFor): the copies and blends made from them go
+	if (HdSprites::generation() != _changedGeneration)
+	{
+		noticeChanges();
+	}
 	if (_tonedStale)
 	{
-		// the shaded copies made before this frame's packs came (see tonedFor)
-		clearToned();
-		_tonedTransient.clear();
-		_tonedGeneration = HdSprites::generation();
-		_tonedStale = false;
+		forgetChanged();
 	}
 	// ground blends of old packs, and the oldest over their cap (commands of this frame pointed at them)
 	trimGround();
@@ -2005,11 +2006,18 @@ const HdFrame *Canvas32::groundFrameFor(SurfaceRaw<const Uint8> src, const HdFra
 		}
 	}
 	// a blend, from the cache or made now
-	const unsigned generation = HdSprites::generation();
+	if (HdSprites::generation() != _changedGeneration)
+	{
+		noticeChanges();
+	}
+	// the frames of this key changed while this frame is recorded: its cached blend is of the old
+	// pictures (it goes at the end of the flush), this one is a one-off
+	const bool changed = _tonedStale && (_changedAll || _changedKeys.count(key) != 0);
+	const unsigned generation = _tonedGeneration;
 	Uint64 hkey = (Uint64)(uintptr_t)key * 0x9E3779B97F4A7C15ULL;
-	hkey ^= ((Uint64)(Uint32)_groundX << 42) ^ ((Uint64)(Uint32)_groundY << 21) ^ (Uint64)(Uint32)_groundZ ^ ((Uint64)generation << 58) ^ ((Uint64)_groundSeed * 0xC2B2AE3D27D4EB4FULL);
+	hkey ^= ((Uint64)(Uint32)_groundX << 42) ^ ((Uint64)(Uint32)_groundY << 21) ^ (Uint64)(Uint32)_groundZ ^ ((Uint64)_groundSeed * 0xC2B2AE3D27D4EB4FULL);
 	auto it = _ground.find(hkey);
-	if (it != _ground.end())
+	if (it != _ground.end() && !changed)
 	{
 		GroundEntry &e = it->second;
 		if (e.src == key && e.x == _groundX && e.y == _groundY && e.z == _groundZ && e.generation == generation)
@@ -2019,7 +2027,7 @@ const HdFrame *Canvas32::groundFrameFor(SurfaceRaw<const Uint8> src, const HdFra
 		}
 	}
 	HdFrame *out;
-	const bool clash = it != _ground.end();
+	const bool clash = it != _ground.end() || changed;
 	if (clash)
 	{
 		_groundTransient.emplace_back();
@@ -2053,7 +2061,7 @@ const HdFrame *Canvas32::groundFrameFor(SurfaceRaw<const Uint8> src, const HdFra
 	job.key = hkey;
 	if (_groundJobs.empty() && _tonedJobs.empty())
 	{
-		_jobsGeneration = generation;
+		_jobsGeneration = HdSprites::generation();
 	}
 	_groundJobs.push_back(job);
 	if (!clash)
@@ -2310,14 +2318,15 @@ const HdFrame *Canvas32::tonedFor(const HdFrame &hd, int shade, Uint16 tintKey)
 	{
 		return &hd;
 	}
-	// pack frames came or went (a set registered while this frame is recorded): a frame pointer may
-	// now mean another picture, so the cache is not trusted until it is cleared - which waits for the
-	// end of the flush, as the recorded commands point into it; until then the copies are one-offs
-	const bool stale = _tonedGeneration != HdSprites::generation();
-	if (stale)
+	// pack frames came or went (a set registered while this frame is recorded): the pointer of a frame
+	// that changed may now mean another picture, so its copies are not trusted until they are dropped -
+	// which waits for the end of the flush, as the recorded commands point into the cache; until then
+	// its copies are one-offs. The frames that did not change keep theirs
+	if (HdSprites::generation() != _changedGeneration)
 	{
-		_tonedStale = true;
+		noticeChanges();
 	}
+	const bool stale = _tonedStale && (_changedAll || _changedFrames.count(&hd) != 0);
 	const TonedKey key { &hd, shade | ((int)tintKey << 8) };
 	if (!stale)
 	{
@@ -2466,6 +2475,86 @@ void Canvas32::clearToned()
 	_toned.clear();
 	_tonedLru.clear();
 	_tonedBytes = 0;
+}
+
+/**
+ * The registry changed since the caches were checked: notes which frames and
+ * keys did (see tonedFor, groundFrameFor). With nothing cached yet there is
+ * nothing to forget.
+ */
+void Canvas32::noticeChanges()
+{
+	const unsigned now = HdSprites::generation();
+	_changedGeneration = now;
+	if (!_tonedStale && _toned.empty() && _ground.empty())
+	{
+		_tonedGeneration = now;
+		return;
+	}
+	if (!_changedAll && !HdSprites::changedSince(_tonedGeneration, _changedFrames, _changedKeys))
+	{
+		_changedAll = true;
+	}	_tonedStale = true;
+}
+
+/**
+ * The end of a flush after the registry changed: the shaded copies of the
+ * frames that changed go, the ground blends of the keys that changed are left
+ * to trimGround (it drops their copies too), and the rest are good for the new
+ * generation - a set registered in battle does not make the view again.
+ */
+void Canvas32::forgetChanged()
+{
+	const unsigned now = HdSprites::generation();
+	const size_t tonedBefore = _toned.size();
+	if (_changedAll)
+	{
+		clearToned();
+	}
+	else if (!_changedFrames.empty())
+	{
+		for (auto it = _toned.begin(); it != _toned.end(); )
+		{
+			if (_changedFrames.count(it->first.frame))
+			{
+				_tonedBytes -= it->second.frame.pixels.size() * sizeof(Uint32);
+				_tonedLru.erase(it->second.lru);
+				it = _toned.erase(it);
+			}
+			else
+			{
+				++it;
+			}
+		}
+	}
+	size_t groundDropped = 0;
+	for (auto &pair : _ground)
+	{
+		GroundEntry &e = pair.second;
+		if (e.generation != _tonedGeneration)
+		{
+			continue; // already to drop (an old pattern)
+		}
+		if (_changedAll || _changedKeys.count(e.src))
+		{
+			e.generation = 0;
+			++groundDropped;
+		}
+		else
+		{
+			e.generation = now;
+		}
+	}
+	Log(LOG_INFO) << "HD canvas: pack frames changed (generation " << _tonedGeneration << " -> " << now << (_changedAll ? ", all" : "")
+		<< "): " << (tonedBefore - _toned.size()) << " shaded copie(s) and " << groundDropped << " ground blend(s) of them go, "
+		<< _toned.size() << " and " << (_ground.size() - groundDropped) << " stay";
+	_tonedTransient.clear();
+	_changedFrames.clear();
+	_changedKeys.clear();
+	_changedAll = false;
+	_tonedGeneration = now;
+	_changedGeneration = now;
+	_tonedStale = false;
 }
 
 namespace

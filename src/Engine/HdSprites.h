@@ -19,6 +19,7 @@
  */
 #include <functional>
 #include <string>
+#include <unordered_set>
 #include <utility>
 #include <vector>
 #include <SDL.h>
@@ -163,6 +164,11 @@ namespace HdSprites
 	int preload(const SurfaceSet *set);
 	/// A counter that changes whenever the registry does (caches keyed by frame pointers check it).
 	unsigned generation();
+	/// What the registry changed from generation `since` on: the frames (by address) that went or got
+	/// another picture, and the keys of the frames whose own picture, variants or wall pictures did - a
+	/// cache keyed by them keeps the rest. False when everything is to be forgotten (the registry was
+	/// cleared or recoloured, or its log no longer reaches back that far); the sets are added to.
+	bool changedSince(unsigned since, std::unordered_set<const void*> &frames, std::unordered_set<const void*> &keys);
 	/// Called before every change of the registry: drawing commands waiting for a flush point at
 	/// its frames, so the canvases run them first (Canvas32 sets it).
 	void setBeforeChange(void (*hook)());
