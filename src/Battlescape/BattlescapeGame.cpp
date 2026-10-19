@@ -753,6 +753,8 @@ void BattlescapeGame::endTurn()
 						if (rule->getBattleType() == BT_GRENADE) // it's a grenade to explode now
 						{
 							Position p = tile->getPosition().toVoxel() + Position(8, 8, -tile->getTerrainLevel() + (unit ? unit->getHeight() / 2 : 0));
+							// a raised tile of the top level (rock, crate) lifts the centre above the map: keep it on the topmost voxel
+							p.z = std::min<int>(p.z, _save->getMapSizeZ() * Position::TileZ - 1);
 							forRemoval.push_back(std::tuple(nullptr, new ExplosionBState(this, p, BattleActionAttack::GetBeforeShoot(BA_TRIGGER_TIMED_GRENADE, unit, item))));
 							exploded = true;
 						}
