@@ -131,6 +131,11 @@ PauseState::PauseState(OptionsOrigin origin) : _origin(origin)
 		_btnSave->setVisible(false);
 		_btnAbandon->setText(tr("STR_SAVE_AND_ABANDON_GAME"));
 	}
+	else if (origin == OPT_BATTLESCAPE && Options::oxceNoBattleSaves)
+	{
+		_btnLoad->setVisible(false);
+		_btnSave->setVisible(false);
+	}
 
 	// ENOUGH! No save corruption when trying to save/exit mid-action (e.g. during alien turn)
 	if (origin == OPT_BATTLESCAPE)

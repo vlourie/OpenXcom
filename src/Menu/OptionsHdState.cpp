@@ -40,7 +40,7 @@ namespace OpenXcom
 {
 
 /// The categories of Options.cpp shown here, in this order; the first one also holds the art version row.
-static const char *const HD_CATEGORIES[] = { "STR_HD_ART", "STR_HD_GENTLE", "STR_HD_BATTLE", "STR_HD_PHYSICS", "STR_HD_AI", "STR_HD_INTERFACE", "STR_HD_SPEED" };
+static const char *const HD_CATEGORIES[] = { "STR_HD_ART", "STR_HD_GENTLE", "STR_HD_BATTLE", "STR_HD_PHYSICS", "STR_HD_AI", "STR_HD_CHALLENGE", "STR_HD_INTERFACE", "STR_HD_SPEED" };
 /// Row markers in _rows.
 static const int ROW_NONE = -1, ROW_ART = -2;
 
@@ -190,8 +190,8 @@ void OptionsHdState::updateList()
 			const bool gentle = HdGentle::locks(info);
 			addRow((int)g, (int)i, gentle ? std::string(tr(info.description())) + " " + std::string(tr("STR_GENTLE_LOCKED")) : std::string(tr(info.description())), valueText(info));
 			_lstOptions->setCellColor(_lstOptions->getLastRowIndex(), 1, valueColor(info));
-			// grey out options a mod or the gentle mode fixes
-			if (gentle || fixeduserOptions.find(info.id()) != fixeduserOptions.end())
+			// grey out options a mod, the gentle mode or the battle in progress fixes
+			if (gentle || battleLocks(info) || fixeduserOptions.find(info.id()) != fixeduserOptions.end())
 			{
 				_lstOptions->setRowColor(_lstOptions->getLastRowIndex(), _greyedOutColor);
 			}
@@ -204,11 +204,19 @@ void OptionsHdState::updateList()
  */
 Uint8 OptionsHdState::valueColor(const OptionInfo &info) const
 {
-	if (HdGentle::locks(info))
+	if (HdGentle::locks(info) || battleLocks(info))
 	{
 		return _greyedOutColor;
 	}
 	return info.type() == OPTION_BOOL && !*info.asBool() ? _greyedOutColor : _lstOptions->getColor();
+}
+
+/**
+ * The battle saves rule holds for the whole battle: from a battle the tab shows it but does not change it.
+ */
+bool OptionsHdState::battleLocks(const OptionInfo &info) const
+{
+	return _origin == OPT_BATTLESCAPE && info.type() == OPTION_BOOL && info.asBool() == &Options::oxceNoBattleSaves;
 }
 
 std::string OptionsHdState::valueText(const OptionInfo &info) const
@@ -378,7 +386,7 @@ void OptionsHdState::changeSetting(size_t sel, Uint8 button)
 
 	// greyed out options are fixed, cannot be changed by the user
 	auto& fixeduserOptions = _game->getMod()->getFixedUserOptions();
-	if (fixeduserOptions.find(setting->id()) != fixeduserOptions.end() || HdGentle::locks(*setting))
+	if (fixeduserOptions.find(setting->id()) != fixeduserOptions.end() || HdGentle::locks(*setting) || battleLocks(*setting))
 	{
 		return;
 	}
@@ -518,6 +526,11 @@ std::string OptionsHdState::rowDescription(size_t sel) const
 				desc += " ";
 				desc += tr("STR_GENTLE_LOCKED_DESC");
 			}
+			if (battleLocks(info))
+			{
+				desc += " ";
+				desc += tr("STR_HD_NO_BATTLE_SAVES_LOCKED");
+			}
 		}
 	}
 	return desc;
@@ -543,7 +556,7 @@ void OptionsHdState::showDetail(size_t sel)
 				return std::make_pair(artText(), (Uint8)0);
 			}
 			const OptionInfo &info = _groups[row.group].settings[row.index];
-			return std::make_pair(valueText(info), HdGentle::locks(info) || (info.type() == OPTION_BOOL && !*info.asBool()) ? _greyedOutColor : (Uint8)0);
+			return std::make_pair(valueText(info), HdGentle::locks(info) || battleLocks(info) || (info.type() == OPTION_BOOL && !*info.asBool()) ? _greyedOutColor : (Uint8)0);
 		}));
 }
 

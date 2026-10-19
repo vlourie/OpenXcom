@@ -962,7 +962,7 @@ void BattlescapeState::init()
 		{
 			_game->pushState(new SaveGameState(OPT_BATTLESCAPE, SAVE_IRONMAN, _palette));
 		}
-		else if (Options::autosave)
+		else if (Options::autosave && !Options::oxceNoBattleSaves)
 		{
 			_game->pushState(new SaveGameState(OPT_BATTLESCAPE, SAVE_AUTO_BATTLESCAPE, _palette, currentTurn));
 		}
@@ -3316,7 +3316,7 @@ inline void BattlescapeState::handle(Action *action)
 					}
 				}
 				// quick save and quick load
-				if (!_game->getSavedGame()->isIronman() && !_save->isPreview())
+				if (!_game->getSavedGame()->isIronman() && !Options::oxceNoBattleSaves && !_save->isPreview())
 				{
 					if (key == Options::keyQuickSave)
 					{

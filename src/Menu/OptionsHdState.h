@@ -57,6 +57,8 @@ private:
 	void addRow(int group, int index, const std::string &name, const std::string &value);
 	std::string valueText(const OptionInfo &info) const;
 	Uint8 valueColor(const OptionInfo &info) const;
+	/// Is this setting fixed while the tab is open from a battle (the battle saves rule)?
+	bool battleLocks(const OptionInfo &info) const;
 	/// Opens the row's setting on a window of its own (middle button).
 	void showDetail(size_t sel);
 	/// Changes the setting of a row as a click on it does.
