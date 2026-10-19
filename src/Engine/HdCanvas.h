@@ -369,10 +369,14 @@ private:
 	{
 		HdFrame frame;
 		std::list<TonedKey>::iterator lru;
+		/// _tonedFrame of the last frame that drew this copy.
+		unsigned used = 0;
 	};
 	std::unordered_map<TonedKey, TonedEntry, TonedKeyHash> _toned;
 	std::list<TonedKey> _tonedLru;
 	size_t _tonedBytes = 0;
+	/// Counts the flushes: the copies the frame being recorded uses are not trimmed after it.
+	unsigned _tonedFrame = 1;
 	unsigned _tonedGeneration = 0;
 	/// The registry changed while recording: the cache is cleared at the end of the flush (see tonedFor).
 	bool _tonedStale = false;
@@ -445,6 +449,8 @@ private:
 	std::deque<HdFrame> _groundTransient;
 	size_t _groundBytes = 0;
 	size_t _groundClock = 0;
+	/// _groundClock when the frame being recorded began: blends stamped after it are in view.
+	size_t _groundFrameFrom = 0;
 	/// The frame to draw for a pack frame on the current ground cell: one of its variants, a blend of
 	/// two, or the frame itself (no variants, not ground).
 	const HdFrame *groundFrameFor(SurfaceRaw<const Uint8> src, const HdFrame &base);
