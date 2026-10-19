@@ -21,7 +21,10 @@ r"""Очередь правок игры: файлы игры правит од�
 Команды сессии (номер билета не нужен - сессия узнаётся сама):
     py -3.13 tools/editq.py wait [--name "щит в инвентаре"]   ждать очереди (до 9 мин, повторять)
     py -3.13 tools/editq.py done -m "hdui: ..." [--add F ...] [--drop F ...] [--no-build]
-        собрать (если менялся src), закоммитить СВОИ файлы, отдать очередь следующему
+        собрать (если менялся src), закоммитить СВОИ файлы, отдать очередь следующему.
+        Файл, у которого в индексе уже разложены куски (git_hunks.py stage), а в дереве есть
+        ещё правки, коммитится версией индекса, не целиком (R-271); изменённый, но не взятый
+        парный .h/.cpp в src/ - предупреждение (R-108)
     py -3.13 tools/editq.py pause "жду ответа Vitali"          отдать очередь, правки остаются
     py -3.13 tools/editq.py leave                             выйти из очереди без коммита
     py -3.13 tools/editq.py list                              кто держит, кто ждёт, что с выпуском
@@ -268,9 +271,9 @@ def queue_text(st, me=None):
 
 # ---------------------------------------------------------------- git и сборка
 
-def git(*args, check=True):
+def git(*args, check=True, env=None, inp=None):
     for attempt in range(20):
-        r = subprocess.run(["git", "-C", REPO] + list(args), capture_output=True,
+        r = subprocess.run(["git", "-C", REPO] + list(args), capture_output=True, input=inp, env=env,
                            text=True, encoding="utf-8", errors="replace", creationflags=NO_WINDOW)
         if r.returncode and "index.lock" in r.stderr and attempt < 19:
             time.sleep(0.5)          # другая сессия как раз делает git status
@@ -298,6 +301,65 @@ def changed(paths):
                     k += 1           # у переименования следом старое имя
             k += 1
     return sorted(out)
+
+
+def names(*args):
+    return [x for x in git(*args).stdout.split("\0") if x]
+
+
+def half_staged(paths):
+    """R-271: файлы, у которых в индексе уже свои куски (git_hunks.py stage), а в дереве - ещё
+    чужие. git add такого файла затёр бы разборку и унёс в коммит чужие строки."""
+    if not paths:
+        return []
+    staged = set(names("diff", "--cached", "--name-only", "-z", "HEAD", "--", *paths))
+    loose = set(names("diff", "--name-only", "-z", "--", *paths))
+    return [f for f in paths if f in staged and f in loose]
+
+
+PAIRS = {".h": (".cpp", ".c"), ".hpp": (".cpp",), ".cpp": (".h", ".hpp"), ".c": (".h",)}
+
+
+def lost_pairs(todo):
+    """R-108: парный файл src/ (.h к .cpp и обратно) изменён в дереве, а в коммит не идёт."""
+    want = set()
+    for f in todo:
+        stem, ext = os.path.splitext(f)
+        if f.lower().startswith("src/"):
+            want.update(stem + x for x in PAIRS.get(ext.lower(), ()))
+    want -= set(todo)
+    return [f for f in changed(sorted(want)) if f in want]
+
+
+def commit_files(todo, msg):
+    """Коммит ровно файлов todo. Обычный - из рабочего дерева; файлы из half_staged() идут
+    версией индекса через временный индекс: git commit -- <пути> взял бы их из дерева, а
+    git commit без путей - ещё и чужие куски, разложенные в общий индекс другими сессиями."""
+    half = half_staged(todo)
+    if not half:
+        git("add", "--", *todo)
+        return git("commit", "-q", "-m", msg, "--", *todo, check=False), half
+    whole = [f for f in todo if f not in half]
+    tmp = git("rev-parse", "--git-path", "editq-index").stdout.strip()
+    tmp = os.path.join(REPO, tmp) if not os.path.isabs(tmp) else tmp
+    env = dict(os.environ, GIT_INDEX_FILE=tmp)
+    try:
+        git("read-tree", "HEAD", env=env)
+        if whole:
+            git("add", "--", *whole, env=env)
+        for f in half:
+            entry = git("ls-files", "-s", "-z", "--", f).stdout
+            if entry:
+                git("update-index", "-z", "--index-info", inp=entry, env=env)
+            else:                    # в индексе файл удалён
+                git("update-index", "--force-remove", "--", f, env=env)
+        r = git("commit", "-q", "-m", msg, check=False, env=env)
+    finally:
+        with contextlib.suppress(OSError):
+            os.remove(tmp)
+    if not r.returncode and whole:
+        git("add", "--", *whole)     # общий индекс по ним - как новый HEAD
+    return r, half
 
 
 def dirty_game():
@@ -574,6 +636,11 @@ def cmd_done(a):
         raise SystemExit("эти файлы трогала и другая сессия, в коммит уйдут и её правки:\n  "
                          + "\n  ".join(clash) + "\nРазберись с ней (list) или --force")
     sha = None
+    lost = lost_pairs(todo)
+    if lost:
+        print("ВНИМАНИЕ (R-108): парные файлы изменены в дереве, но в коммит НЕ идут:\n  "
+              + "\n  ".join(lost) + "\nЕсли это правка этой задачи - done ещё раз с --add "
+              "(уже ушедший коммит не переписывать)", flush=True)
     if todo:
         if needs_build(todo) and not a.no_build:
             print("собираю (ninja, build-release) ...", flush=True)
@@ -589,12 +656,15 @@ def cmd_done(a):
                 msg = f.read()
         if not msg:
             raise SystemExit("нужно сообщение коммита: -m \"область: что сделано\" или -F файл")
-        git("add", "--", *todo)
-        r = git("commit", "-q", "-m", msg, "--", *todo, check=False)
+        r, half = commit_files(todo, msg)
         if r.returncode:
             raise SystemExit(f"git commit не прошёл - очередь осталась за тобой:\n{r.stdout}{r.stderr}")
         sha = git("rev-parse", "--short", "HEAD").stdout.strip()
         print(f"коммит {sha}: {msg.splitlines()[0]} ({len(todo)} файл.)")
+        if half:
+            print("R-271: эти файлы ушли в коммит ВЕРСИЕЙ ИНДЕКСА (куски, разложенные git_hunks.py "
+                  "stage), остальные правки в них остались в дереве незакоммиченными:\n  "
+                  + "\n  ".join(half) + f"\nСверь: git show --stat {sha}")
     else:
         print("изменённых файлов нет - коммита не будет")
     with locked() as st:

@@ -186,6 +186,41 @@ def main():
           "после паузы C очередь свободна для D")
     r = cli("D", "done", "-m", "x")
     check(r.returncode != 0 and "другая сессия" in (r.stdout + r.stderr), "done не забирает файл C на паузе")
+    cli("D", "leave")
+
+    # R-271: свои куски общего документа разложены в индекс (git_hunks.py stage), в дереве ещё
+    # чужие - done --add обязан взять версию индекса, а не файл целиком. Чужой файл, разложенный
+    # в общий индекс другой сессией, в коммит не идёт. R-108: парный .h без --add - предупреждение
+    body = "".join(f"строка {i}\n" for i in range(30))
+    write("docs/RAKES.md", body)
+    write("src/e.h", "eh\n")
+    write("src/e.cpp", "e\n")
+    git("add", "--", "docs/RAKES.md", "src/e.h", "src/e.cpp")
+    git("commit", "-qm", "base e")
+    mine = "## R-900 моя\n" + body
+    write("docs/RAKES.md", mine)
+    git("add", "--", "docs/RAKES.md")                      # как git_hunks.py stage
+    write("docs/RAKES.md", mine + "## R-901 чужая\n")
+    write("docs/other.md", "чужое в индексе\n")
+    git("add", "--", "docs/other.md")
+    check(hook("pre", "E", "Edit", file_path=os.path.join(REPO, "src", "e.cpp")) is None, "E правит")
+    write("src/e.cpp", "e2\n")
+    write("src/e.h", "eh2\n")                              # скриптом, без хука и без --add
+    r = cli("E", "done", "-m", "hd: e", "--add", "docs/RAKES.md")
+    out = r.stdout + r.stderr
+    check(r.returncode == 0, "E done: " + (r.stderr.strip() or "прошёл"))
+    files = git("show", "--name-only", "--format=", "HEAD").split()
+    check(files == ["docs/RAKES.md", "src/e.cpp"], f"R-271: в коммите ровно файлы E: {files}")
+    check(git("show", "HEAD:docs/RAKES.md") == mine, "R-271: документ ушёл версией индекса, без чужой записи")
+    check(git("show", "HEAD:src/e.cpp") == "e2\n", "свой файл целиком - из рабочего дерева")
+    check("R-901" in git("diff", "--", "docs/RAKES.md") and not git("diff", "--cached", "--", "docs/RAKES.md"),
+          "чужая запись осталась в дереве, индекс документа = новый HEAD")
+    check(not git("diff", "--cached", "--", "src/e.cpp"), "общий индекс по своему файлу = новый HEAD")
+    check(git("diff", "--cached", "--name-only").split() == ["docs/other.md"],
+          "чужое разложенное в индексе не тронуто и не закоммичено")
+    check("R-271" in out and "docs/RAKES.md" in out, "done сказал, что документ взят версией индекса")
+    check("R-108" in out and "src/e.h" in out, "R-108: предупреждение о парном src/e.h вне коммита")
+    check("src/a.h" not in out, "неизменённый парный файл не называется")
 
     shutil.rmtree(TMP, ignore_errors=True)
     print(f"\n{'ВСЁ ПРОШЛО' if not fails else f'УПАЛО {len(fails)}'}")
