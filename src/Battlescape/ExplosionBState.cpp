@@ -34,6 +34,7 @@
 #include "../Mod/Armor.h"
 #include "../Engine/RNG.h"
 #include "../Engine/HdFx.h"
+#include "../Engine/HdGentle.h"
 
 namespace OpenXcom
 {
@@ -52,7 +53,7 @@ namespace OpenXcom
  */
 ExplosionBState::ExplosionBState(BattlescapeGame *parent, LastPositions center, BattleActionAttack attack, Tile *tile, bool lowerWeapon, int range, int explosionCounter, int terrainMeleeTilePart) : BattleState(parent),
 	_explosionCounter(explosionCounter), _terrainMeleeTilePart(terrainMeleeTilePart), _attack(attack), _center(center.last), _before(center.before), _damageType(), _tile(tile), _targetPsiOrHit(nullptr),
-	_power(0), _radius(6), _range(range), _areaOfEffect(false), _lowerWeapon(lowerWeapon), _hit(false), _psi(false)
+	_power(0), _radius(6), _range(range), _areaOfEffect(false), _lowerWeapon(lowerWeapon), _hit(false), _psi(false), _loose(false), _looseMs(0)
 {
 
 }
@@ -285,7 +286,10 @@ void ExplosionBState::init()
 
 		_parent->getSave()->getTileEngine()->hit(_attack, _center, _power, _damageType, range, _terrainMeleeTilePart);
 
-		_parent->setStateInterval(std::max(1, ((BattlescapeState::DEFAULT_ANIM_SPEED/2) - (10 * itemRule->getExplosionSpeed()))));
+		_looseMs = std::max(1, ((BattlescapeState::DEFAULT_ANIM_SPEED/2) - (10 * itemRule->getExplosionSpeed())));
+		_parent->setStateInterval(_looseMs);
+		// loose hits: a shot's hit sprites go on by themselves (see think), melee and psi keep their pace
+		_loose = !_hit && !_psi && (action == BA_SNAPSHOT || action == BA_AUTOSHOT || action == BA_AIMEDSHOT) && AiProbe::hdPace() && HdGentle::looseHits();
 		int anim = -1;
 		int animFrames = -1;
 		int sound = -1;
@@ -410,6 +414,14 @@ void ExplosionBState::think()
 {
 	if (!_parent->getMap()->getBlastFlash())
 	{
+		if (_loose)
+		{
+			// loose hits: the sprites of the shot and its pellets play on by themselves and the burst goes on now;
+			// the results come in the same order as when they waited for the sprites, only sooner
+			_parent->getMap()->loosenExplosions(_looseMs);
+			explode();
+			return;
+		}
 		if (_parent->getMap()->getExplosions()->empty())
 			explode();
 

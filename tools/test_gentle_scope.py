@@ -34,9 +34,13 @@ LINES = {
     "Battlescape/UnitWalkBState.cpp": re.compile(r"setStateInterval\(HdGentle::(xcom|alien)Speed\(\)\);"),
     "Battlescape/UnitTurnBState.cpp": re.compile(r"setStateInterval\(HdGentle::(xcom|alien)Speed\(\)\);"),
     "Battlescape/UnitFallBState.cpp": re.compile(r"setStateInterval\(HdGentle::(xcom|alien)Speed\(\)\);"),
-    "Battlescape/Projectile.cpp": re.compile(r"_speed = HdGentle::fireSpeed\(\);"),
+    # быстрый полёт: шагов за тик больше, сами шаги те же (docs/research/burst-fire-pacing.md)
+    "Battlescape/Projectile.cpp": re.compile(r"_speed = HdGentle::fireSpeed\(\);"
+                                             r"|if \(const int ticks = AiProbe::hdPace\(\) \? HdGentle::flightTicks\(\) : 0\)"),
     "Battlescape/ProjectileFlyBState.cpp": re.compile(r"const bool byOptions = .*HdGentle::traceProjectiles\(\)"),
     "Battlescape/UnitDieBState.cpp": re.compile(r"if \(!HdGentle::killCam\(\) \|\|"),
+    # попадание без паузы: вспышка доигрывает сама, порядок расчёта прежний
+    "Battlescape/ExplosionBState.cpp": re.compile(r"_loose = .*AiProbe::hdPace\(\) && HdGentle::looseHits\(\);"),
 }
 
 

@@ -211,6 +211,9 @@ OPT int oxceHdSmokePace;
 OPT int oxceHdEnemyNumber;
 // HD render: the final blow (Engine/HdKillCam.h) - zoom in and slow motion on the last enemy's fall; picture and pace only
 OPT bool oxceHdKillCam;
+// Battlescape: a long shot flies no longer than HdGentle::QUICK_FLIGHT_TICKS, and a bullet hit plays on by itself
+// instead of holding up the next shot of the burst (docs/research/burst-fire-pacing.md); picture and pace only
+OPT bool oxceHdQuickFlight, oxceHdLooseHits;
 // HD render: threads the battlescape frame is drawn with (0 = one per core)
 OPT int oxceHdThreads;
 // HD render: extra game steps a slow frame may catch up on, so that the unit speed settings hold when drawing is slower than they ask (0 = one step per frame)

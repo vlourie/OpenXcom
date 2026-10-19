@@ -17,6 +17,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "Projectile.h"
+#include "AiProbe.h"
 #include "TileEngine.h"
 #include "Map.h"
 #include "Camera.h"
@@ -492,6 +493,10 @@ bool Projectile::move()
 		{
 			_distanceMax += TileEngine::trajectoryStepSize(_trajectory, i);
 		}
+		// quick flight: a long shot takes more steps a frame, the steps (and the vapor rolls on them) stay the same
+		if (const int ticks = AiProbe::hdPace() ? HdGentle::flightTicks() : 0)
+		{
+			_speed = std::max(_speed, ((int)_trajectory.size() + ticks - 1) / ticks);		}
 	}
 
 	for (int i = 0; i < _speed; ++i)

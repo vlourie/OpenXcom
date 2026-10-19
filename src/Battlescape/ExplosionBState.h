@@ -47,6 +47,10 @@ private:
 	int _radius;
 	int _range;
 	bool _areaOfEffect, _lowerWeapon, _hit, _psi;
+	/// A bullet hit with loose hits on: its sprites go on by themselves and the results come at the first step
+	bool _loose;
+	/// The hit animation's frame time, ms, for the sprites gone on by themselves
+	int _looseMs;
 
 	/// Calculates the effects of the explosion.
 	void explode();
