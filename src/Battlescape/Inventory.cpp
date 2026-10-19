@@ -361,7 +361,7 @@ void Inventory::drawItems()
 	auto hdPicture = [&](const BattleItem *item, const Surface *frame, const SurfaceSet *set, HdItems::Context context, int x, int y)
 	{
 		HdItems::Pick pick;
-		if (!_hdItemsScale || !HdItems::pick(item->getRules(), item, save, _animFrame, HdItems::indexOf(set, frame), set, context, _hdItemsScale, pick))
+		if (!_hdItemsScale || !HdItems::pick(item->getRules(), item, save, _animFrame, HdItems::indexOf(set, frame), set, context, _hdItemsScale, pick, getPalette()))
 		{
 			return false;
 		}
@@ -546,7 +546,7 @@ void Inventory::drawSelectedItem()
 		const SavedBattleGame *save = _game->getSavedGame()->getSavedBattle();
 		const int k = HdItems::enabled() ? HdUi::scale() : 0;
 		if (k && HdItems::pick(_selItem->getRules(), _selItem, save, _animFrame,
-			HdItems::indexOf(texture, _selItem->getBigSprite(texture, save, _animFrame)), texture, HdItems::HAND, k, _hdSelected))
+			HdItems::indexOf(texture, _selItem->getBigSprite(texture, save, _animFrame)), texture, HdItems::HAND, k, _hdSelected, getPalette()))
 		{
 			return;   // drawn by blit over the classic layers
 		}

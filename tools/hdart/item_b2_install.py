@@ -7,6 +7,11 @@
 файлом не дублируется: свой файл движок берёт первым (HdItems: шаг 1), общий был бы мёртвым.
 
   item_b2_install.py [--yes]
+  item_b2_install.py --palette [--yes]
+
+--palette ставит только BIGOBS.PCK/palette.pal.txt - палитру, в которой собран B2 (delicious_regular Пираток,
+256 строк "r g b"): по ней движок перекрашивает картинки под погодную палитру боя (HdItems, V4; слово Vitali
+19.10 «Делай V4»). Без файла картинки рисуются как есть.
 
 Без --yes - сухой прогон. С --yes - манифест (build_hd_pack.stage), установка в обе копии мода hd,
 сверка sha256 и числа файлов набора с манифестом (без своих файлов предметов, которых в манифесте нет).
@@ -28,6 +33,8 @@ PACK = ROOT / "census" / "items" / "redo" / "b2" / "pack" / "BIGOBS.PCK"
 GAME = ROOT / "Пиратки" / "Dioxine_XPiratez" / "user" / "mods" / "hd" / "hd"
 REPO = ROOT / "user" / "mods" / "hd" / "hd"
 SET = "BIGOBS.PCK/"
+PALS = ROOT / "Пиратки" / "Dioxine_XPiratez" / "user" / "mods" / "Piratez" / "Resources" / "Pals"
+PALETTE = ROOT / "census" / "items" / "redo" / "palette.pal.txt"
 # <кадр>.<ТИП>[.wide][.hand].png; тип - не сама метка: общий <кадр>.wide.png своим файлом не считается
 OWN = re.compile(r"^(\d+)\.(?!(?:wide|hand)\.)[^.]+\.(?:wide\.)?(?:hand\.)?png$", re.I)
 
@@ -37,12 +44,16 @@ def main():
     ap.add_argument("--yes", action="store_true")
     ap.add_argument("--pack", default=str(PACK), help="пак B2 (остаток: census/items/redo/b2_rest/pack/BIGOBS.PCK)")
     ap.add_argument("--approval", default="Vitali 15.10: B2 годится, все 1205 кадров", help="чьё слово - в манифест")
+    ap.add_argument("--palette", action="store_true", help="поставить только palette.pal.txt (перекраска под погоду)")
     a = ap.parse_args()
     pack = Path(a.pack).resolve()
     os.chdir(ROOT)
     sys.stdout.reconfigure(encoding="utf-8")
     import build_hd_pack as bp
     man = bp.load()
+    if a.palette:
+        install_palette(bp, man, a.yes)
+        return
     own = set()
     for root in (GAME / SET, REPO / SET):
         if root.is_dir():
@@ -86,6 +97,29 @@ def main():
             print("ЧИСЛО ФАЙЛОВ", root, "общих", len(common), "манифест", nm)
             bad += 1
         print(root, "файлов", len(names), "из них своих файлов предметов", len(names) - len(common))
+    print("сверка: расхождений", bad)
+    sys.exit(1 if bad else 0)
+
+
+def install_palette(bp, man, yes):
+    """palette.pal.txt: строки цветов JASC delicious_regular.pal, первые три числа (как Mod.cpp), без заголовка."""
+    lines = (PALS / "delicious_regular.pal").read_text(encoding="latin-1").splitlines()
+    assert lines[0].strip() == "JASC-PAL" and int(lines[2]) == 256, "не JASC на 256 цветов"
+    rows = [" ".join(l.split()[:3]) for l in lines[3:3 + 256]]
+    assert len(rows) == 256 and all(len(r.split()) == 3 for r in rows)
+    data = ("\n".join(rows) + "\n").encode("ascii")
+    rel = SET + "palette.pal.txt"
+    print("палитра: 256 цветов, цвет 1 =", rows[1], "->", rel)
+    if not yes:
+        raise SystemExit("сухой прогон; --yes - записать")
+    PALETTE.write_bytes(data)
+    bp.stage(man, rel, str(PALETTE), generator="item_b2", generator_version="item_b2_install.py 19.10 palette",
+             source_path=str(PALETTE.relative_to(ROOT)).replace(os.sep, "/"), approved=True,
+             approval="Vitali 19.10: делай V4", replaced=man["files"].get(rel, {}).get("sha256"))
+    bp.save(man, why="item_b2: палитра B2 для перекраски под погоду")
+    print("game:", bp.install(man, "game", only=[rel]))
+    print("repo:", bp.install(man, "repo", only=[rel]))
+    bad = sum(1 for root in (GAME, REPO) if (root / rel).read_bytes() != data)
     print("сверка: расхождений", bad)
     sys.exit(1 if bad else 0)
 

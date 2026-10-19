@@ -53,6 +53,11 @@ class SavedBattleGame;
  * the usual hand offset inside the frame's lines - a .hand picture too; only a 3x2 or 3x3 item, bigger
  * than the frame, gets the whole frame inside its lines.
  *
+ * A battle's weather swaps its palette (enviroEffects paletteTransformations), which recolours the classic
+ * sprites by itself; the pictures follow it when the mod ships hd/BIGOBS.PCK/palette.pal.txt, the palette
+ * they were made with (256 lines "r g b"): drawn over a surface of another palette, a picture is recoloured
+ * once by the shift of the palette entries of the classic pixels under it, and kept apart from its own colours.
+ *
  * Items whose sprite a script recolours stay classic: the interface has no brightness transfer yet. A mod's
  * recolour scripts can be global (X-Piratez runs its shield script on every item), so what counts is
  * whether the scripts change the frame's pixels now, not whether there are any.
@@ -78,8 +83,11 @@ namespace HdItems
 	int indexOf(const SurfaceSet *set, const Surface *frame);
 	/// The picture of an item in a context at the interface's scale k, or false: draw it classically - also
 	/// while a script recolours its sprite (`item` given: the scripts are run on the frame and compared).
+	/// `shown`: the palette of the surface it is drawn over; when the mod gives the palette the pictures were
+	/// made with (hd/BIGOBS.PCK/palette.pal.txt) and this one differs (a battle's weather), the picture is
+	/// recoloured to it as the classic sprite is (HdItems.cpp recolour); null or the same: as it is.
 	bool pick(const RuleItem *rule, const BattleItem *item, const SavedBattleGame *save, int animFrame,
-		int frame, const SurfaceSet *set, Context context, int k, Pick &out);
+		int frame, const SurfaceSet *set, Context context, int k, Pick &out, const SDL_Color *shown = nullptr);
 	/// Draws a picked picture into the world layer: `x`, `y` is where the classic sprite goes (base pixels,
 	/// screen coordinates); also clipped to the base rectangle `outer` when its w > 0 (the widget, the window).
 	void draw(const Pick &pick, int x, int y, const SDL_Rect &outer);
@@ -103,7 +111,7 @@ namespace HdItems
 	void drawAttached(const Surface *surface);
 	/// RuleItem::drawHandSprite's HD version: the item's picture for the hand frame attached to `surface`
 	/// (whatever was attached before is dropped), or false: draw it classically. `item` may be null
-	/// (Ufopaedia: the rule's own frame).
+	/// (Ufopaedia: the rule's own frame). Recoloured to `surface`'s palette (see pick).
 	bool attachHand(const RuleItem *rule, const BattleItem *item, const SavedBattleGame *save, int animFrame,
 		const SurfaceSet *set, const Surface *surface);
 	/// A rule's hand sprite on a surface of its own (Ufopaedia): the surface cleared, then the HD picture
