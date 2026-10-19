@@ -8,6 +8,8 @@
   - git add -A / git commit -a отклоняются, git add по имени и -m "... -a ..." - нет;
   - напоминания PostToolUse и Stop приходят по одному разу;
   - done коммитит только файлы своей сессии и передаёт очередь следующему;
+  - R-108: файл игры, изменённый скриптом мимо списка сессии, - done отказывает; с --add -
+    собирает и коммитит, с --drop - оставляет в дереве, с --force - коммитит без него;
   - упавшая сборка оставляет очередь за сессией и не коммитит;
   - после последнего done выпуск запускается сам и его правки коммитятся;
   - незакоммиченный файл игры не даёт начать выпуск.
@@ -141,13 +143,23 @@ def main():
     # R-108: this header was changed by a script, without an Edit/Write hook.
     write("src/a.h", "header2\n")
     write("docs/x.md", "чужое\n")
+    marker = os.path.join(TMP, "built.txt")
+    mark = dict(ENV, EDITQ_BUILD_CMD=f'"{sys.executable}" -c "open(r\'{marker}\',\'w\').write(\'1\')"')
+    r = cli("A", "done", "-m", "hdui: a", env=mark)
+    out = r.stdout + r.stderr
+    check(r.returncode != 0 and "R-108" in out and "src/a.h" in out and "--add" in out and "--drop" in out,
+          "R-108: src/a.h, правленный скриптом мимо списка, - done отказывает и называет файл")
+    check("src/a.cpp" not in out.split("НЕ идут:")[-1].split("Коммита нет")[0], "свой файл в отказ не попал")
+    check(state()["q"][0]["st"] == "hold" and not os.path.exists(marker)
+          and "hdui: a" not in git("log", "--format=%s"), "R-108: после отказа очередь у A, сборки и коммита нет")
     bad = dict(ENV, EDITQ_BUILD_CMD="exit 1")
-    r = cli("A", "done", "-m", "hdui: a", env=bad)
+    r = cli("A", "done", "-m", "hdui: a", "--add", "src/a.h", env=bad)
     check(r.returncode != 0 and state()["q"][0]["st"] == "hold", "упавшая сборка: очередь у A, коммита нет")
     check("hdui: a" not in git("log", "--format=%s"), "после упавшей сборки коммита нет")
 
-    r = cli("A", "done", "-m", "hdui: a", "--add", "src/a.h")
+    r = cli("A", "done", "-m", "hdui: a", "--add", "src/a.h", env=mark)
     check(r.returncode == 0, "A done: " + (r.stderr.strip() or "прошёл"))
+    check(os.path.exists(marker), "R-108: done с --add собирал")
     files = git("show", "--name-only", "--format=", "HEAD").split()
     check(files == ["src/a.cpp", "src/a.h"], f"в коммите только файлы A, включая --add: {files}")
     check(git("show", "HEAD:src/a.h") == "header2\n", "R-108: коммит содержит правку заголовка без хука")
@@ -208,6 +220,10 @@ def main():
     write("src/e.h", "eh2\n")                              # скриптом, без хука и без --add
     r = cli("E", "done", "-m", "hd: e", "--add", "docs/RAKES.md")
     out = r.stdout + r.stderr
+    check(r.returncode != 0 and "src/e.h" in out and "src/c.cpp" not in out,
+          "R-108: отказ из-за src/e.h; src/c.cpp сессии C на паузе - не в отказе")
+    r = cli("E", "done", "-m", "hd: e", "--add", "docs/RAKES.md", "--force")
+    out = r.stdout + r.stderr
     check(r.returncode == 0, "E done: " + (r.stderr.strip() or "прошёл"))
     files = git("show", "--name-only", "--format=", "HEAD").split()
     check(files == ["docs/RAKES.md", "src/e.cpp"], f"R-271: в коммите ровно файлы E: {files}")
@@ -219,8 +235,24 @@ def main():
     check(git("diff", "--cached", "--name-only").split() == ["docs/other.md"],
           "чужое разложенное в индексе не тронуто и не закоммичено")
     check("R-271" in out and "docs/RAKES.md" in out, "done сказал, что документ взят версией индекса")
-    check("R-108" in out and "src/e.h" in out, "R-108: предупреждение о парном src/e.h вне коммита")
-    check("src/a.h" not in out, "неизменённый парный файл не называется")
+    check("R-108" in out and "src/e.h" in out, "R-108 --force: коммит без src/e.h, предупреждение")
+    check("src/a.h" not in out, "неизменённый файл не называется")
+    git("checkout", "--", "src/e.h")
+
+    # R-108: в списке сессии только не-src файл, а src/ правил скрипт: --add src -> сборка и коммит;
+    # --drop - файл чужой, в коммит не идёт, в дереве остаётся
+    check(hook("pre", "F", "Edit", file_path=os.path.join(REPO, "CHANGELOG.md")) is None, "F правит CHANGELOG")
+    write("CHANGELOG.md", "## [Не выпущено]\n- f\n")
+    write("src/f.h", "fh\n")                               # новый, скриптом (как collapse_pilot_export.py)
+    write("src/g.cpp", "чужое\n")
+    if os.path.exists(marker):
+        os.remove(marker)
+    r = cli("F", "done", "-m", "tools: f", "--add", "src/f.h", "--drop", "src/g.cpp", env=mark)
+    check(r.returncode == 0, "F done --add src/f.h --drop src/g.cpp: " + (r.stderr.strip() or "прошёл"))
+    check(os.path.exists(marker), "R-108: src/ только через --add - сборка всё равно идёт")
+    files = git("show", "--name-only", "--format=", "HEAD").split()
+    check(files == ["CHANGELOG.md", "src/f.h"], f"R-108: --add src/f.h в коммите, --drop нет: {files}")
+    check("?? src/g.cpp" in git("status", "--porcelain", "-uall"), "--drop: файл остался в дереве")
 
     shutil.rmtree(TMP, ignore_errors=True)
     print(f"\n{'ВСЁ ПРОШЛО' if not fails else f'УПАЛО {len(fails)}'}")
