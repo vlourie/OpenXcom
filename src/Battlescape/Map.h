@@ -125,6 +125,10 @@ private:
 	bool _followProjectile;
 	bool _projectileInFOV;
 	std::list<Explosion *> _explosions;
+	/// Loose hits (Options::oxceHdLooseHits): bullet hit sprites no battle state waits for, each with its frame time
+	/// and when its next frame is due (picture clock); drawn with the others, animated in think
+	struct LooseHit { Explosion *explosion; Uint32 frameMs, next; };
+	std::vector<LooseHit> _looseHits;
 	std::vector<std::vector<Particle>> _vaporParticlesInit;
 	std::vector<std::vector<Particle>> _vaporParticles;
 	bool _explosionInFOV, _launch;
@@ -276,6 +280,8 @@ public:
 	Collections::Range<const Particle*> getVaporParticle(const Tile* tile, int topLayer) const;
 	/// Gets explosion set.
 	std::list<Explosion*> *getExplosions();
+	/// Hands the explosion set over to the loose hits: they play on by themselves, frameMs a frame.
+	void loosenExplosions(int frameMs);
 
 	/// Gets the pointer to the camera.
 	Camera *getCamera();

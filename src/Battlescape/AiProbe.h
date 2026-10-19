@@ -65,6 +65,9 @@ bool autoClose();
 /// every unit walks the short off-screen cycle, no final-blow scene, no audio, one log handle for the run, and the process
 /// leaves right after the result line. The decisions, the record and the outcome stay the same as without it.
 bool fast();
+/// May quick flight and loose hits (Options::oxceHdQuickFlight, oxceHdLooseHits) run? They shorten the time a burst
+/// takes, and a UFO door's frame goes by that time (R-155): the bench keeps the stock pace unless OXCE_AI_HDPACE asks.
+bool hdPace();
 /// The bench skips the lighting recalculation on a step of a unit that sheds no light (OXCE_AI_LIGHTSKIP, docs/research/
 /// ai-sim-speed-audit-2026-09-30.md, п. 6): its walk changes no light source, so the map's light stays what it is. Every other
 /// light event (a shot, a glowing item dropped or picked up, a death, a fall, a teleport, a toggle of the personal light,

@@ -46,6 +46,9 @@ namespace HdGentle
 	constexpr Uint8 REACTION_COLOR = 18;
 	/// How long the arrow towards a reaction shooter stays at the soldier fired at, ms (picture clock).
 	constexpr Uint32 REACTION_ARROW_MS = 3000;
+	/// Game steps a shot flies at the most with quick flight on (Options::oxceHdQuickFlight): 18 steps of 1000/60 ms,
+	/// some 0.3 s. A long shot takes more trajectory steps a frame; the steps themselves stay the same (Projectile::move).
+	constexpr int QUICK_FLIGHT_TICKS = 18;
 
 	inline bool on() { return Options::oxceGentle; }
 
@@ -56,13 +59,18 @@ namespace HdGentle
 	inline bool smoothCamera() { return on() || Options::battleSmoothCamera; }
 	/// The final blow zooms in at once: off while the mode is on.
 	inline bool killCam() { return !on() && Options::oxceHdKillCam; }
+	/// Game steps a shot may fly at the most, 0 for no cap: off while the mode is on, it keeps its own slow fire.
+	inline int flightTicks() { return !on() && Options::oxceHdQuickFlight ? QUICK_FLIGHT_TICKS : 0; }
+	/// A bullet hit plays on by itself and lets the burst go on (Map::loosenExplosions): off while the mode is on.
+	inline bool looseHits() { return !on() && Options::oxceHdLooseHits; }
 
 	/// Is this setting fixed by the mode? The option screens show it greyed with a note and ignore clicks.
 	inline bool locks(const void *option)
 	{
 		return on() && (option == &Options::battleXcomSpeed || option == &Options::battleAlienSpeed
 			|| option == &Options::battleFireSpeed || option == &Options::QOL::dontTraceProjectiles
-			|| option == &Options::battleSmoothCamera || option == &Options::oxceHdKillCam);
+			|| option == &Options::battleSmoothCamera || option == &Options::oxceHdKillCam
+			|| option == &Options::oxceHdQuickFlight || option == &Options::oxceHdLooseHits);
 	}
 
 	/// The variable behind a row of an option list (asBool throws on an option of another type).
@@ -89,7 +97,7 @@ namespace HdGentle
 			return TRACE_PROJECTILES;
 		if (option == &Options::battleSmoothCamera)
 			return 1;
-		return 0;                                     // oxceHdKillCam
+		return 0;                                     // oxceHdKillCam, oxceHdQuickFlight, oxceHdLooseHits
 	}
 }
 

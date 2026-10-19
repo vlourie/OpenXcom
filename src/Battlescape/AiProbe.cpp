@@ -91,6 +91,7 @@ bool harness() { return false; }
 bool play() { return false; }
 bool autoClose() { return false; }
 bool fast() { return false; }
+bool hdPace() { return true; }
 bool lightSkip(const TileEngine *, const BattleUnit *) { return false; }
 bool pathProf() { return false; }
 void pathAsk(int, int, const BattleUnit *, const Position &, const Position &, int, const BattleUnit *, int, int, int, unsigned long long, int, int, long long, const void *) {}
@@ -527,6 +528,12 @@ bool fast()
 {
 	// the play mode draws and plays sound like any game
 	static const bool on = harness() && envOn("OXCE_AI_FAST");
+	return on;
+}
+
+bool hdPace()
+{
+	static const bool on = !harness() || envOn("OXCE_AI_HDPACE");
 	return on;
 }
 

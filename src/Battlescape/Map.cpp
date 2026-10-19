@@ -550,6 +550,10 @@ Map::~Map()
 	{
 		delete arrow;
 	}
+	for (auto &loose : _looseHits)
+	{
+		delete loose.explosion;
+	}
 }
 
 /**
@@ -637,6 +641,30 @@ void Map::think()
 	{
 		_redraw = true;
 	}
+	// loose hits: each sprite goes on at its own frame time, whatever battle state runs now
+	if (!_looseHits.empty())
+	{
+		const Uint32 now = SDL_GetTicks();
+		for (auto loose = _looseHits.begin(); loose != _looseHits.end();)
+		{
+			bool alive = true;
+			while (alive && (Sint32)(now - loose->next) >= 0)
+			{
+				alive = loose->explosion->animate();
+				loose->next += loose->frameMs;
+				_redraw = true;
+			}
+			if (alive)
+			{
+				++loose;
+			}
+			else
+			{
+				delete loose->explosion;
+				loose = _looseHits.erase(loose);
+			}
+		}
+	}
 }
 
 /**
@@ -709,9 +737,19 @@ void Map::draw()
 						_camera->centerOnPosition(t->getPosition(), true);
 					}
 				}
-					
+
 				break;
 			}
+		}
+	}
+	// loose hits show wherever they are in view, but do not pull the camera: the next shot is already on its way
+	for (const auto &loose : _looseHits)
+	{
+		t = _save->getTile(loose.explosion->getPosition().toTile());
+		if (t && t->getVisible())
+		{
+			_explosionInFOV = true;
+			break;
 		}
 	}
 
@@ -2874,7 +2912,12 @@ void Map::drawTerrain(HdCanvas *surface)
 		}
 		else
 		{
-			for (const auto* explosion : _explosions)
+			std::vector<const Explosion*> drawn(_explosions.begin(), _explosions.end());
+			for (const auto &loose : _looseHits)
+			{
+				drawn.push_back(loose.explosion);
+			}
+			for (const auto* explosion : drawn)
 			{
 				_camera->convertVoxelToScreen(explosion->getPosition(), &bulletPositionScreen);
 				// HD render: the combat effect clip in place of the classic frames, frame for frame by progress
@@ -3764,6 +3807,29 @@ Collections::Range<const Particle*> Map::getVaporParticle(const Tile* tile, int 
 std::list<Explosion*> *Map::getExplosions()
 {
 	return &_explosions;
+}
+
+/**
+ * Hands the explosion sprites over to the loose hits (Options::oxceHdLooseHits): no battle state waits
+ * for them, think plays them on at their own frame time. The fast bench draws nothing, there they just go.
+ * @param frameMs Time of one frame, ms.
+ */
+void Map::loosenExplosions(int frameMs)
+{
+	const Uint32 now = SDL_GetTicks();
+	for (auto *explosion : _explosions)
+	{
+		if (AiProbe::fast())
+		{
+			delete explosion;
+		}
+		else
+		{
+			// the frame shown now has had its time while the battle state waited a step: the next one is due
+			_looseHits.push_back({ explosion, (Uint32)frameMs, now });
+		}
+	}
+	_explosions.clear();
 }
 
 /**
