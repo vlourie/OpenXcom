@@ -1320,17 +1320,24 @@ void Canvas32::flush()
 	// ground blends of old packs, and the oldest over their cap (commands of this frame pointed at them)
 	trimGround();
 	// the shaded copies used longest ago go when they exceed their cap (here, not while recording: commands point at them)
+	// - but not the ones this frame drew while they fit the hard cap, or a big view remakes them every frame
 	static const size_t tonedCap = 256u * 1024u * 1024u;
+	static const size_t tonedHardCap = 3 * tonedCap;
 	while (_tonedBytes > tonedCap && !_tonedLru.empty())
 	{
 		auto victim = _toned.find(_tonedLru.back());
 		if (victim != _toned.end())
 		{
+			if (victim->second.used == _tonedFrame && _tonedBytes <= tonedHardCap)
+			{
+				break;
+			}
 			_tonedBytes -= victim->second.frame.pixels.size() * sizeof(Uint32);
 			_toned.erase(victim);
 		}
 		_tonedLru.pop_back();
 	}
+	++_tonedFrame;
 	// the smoothed-frame caches are only trimmed between frames: commands point into them
 	trimSmooth();
 	++_smoothClock;
@@ -2117,6 +2124,7 @@ void Canvas32::trimGround()
 	}
 	_groundTransient.clear();
 	static const size_t groundCap = 192u * 1024u * 1024u;
+	static const size_t groundHardCap = 3 * groundCap;
 	const unsigned generation = HdSprites::generation();
 	std::vector<std::pair<size_t, Uint64>> order;
 	bool stale = false;
@@ -2140,7 +2148,10 @@ void Canvas32::trimGround()
 				continue;
 			}
 			const bool old = it->second.generation != generation;
-			if (!old && _groundBytes <= target)
+			// the blends this frame drew stay while they fit the hard cap: a view with more blend cells than the
+			// cap (an open cave, every level floored) otherwise drops and remakes hundreds of them every frame
+			const bool inView = it->second.lru > _groundFrameFrom && _groundBytes <= groundHardCap;
+			if (!old && (_groundBytes <= target || inView))
 			{
 				break;
 			}
@@ -2149,6 +2160,7 @@ void Canvas32::trimGround()
 			_ground.erase(it);
 		}
 	}
+	_groundFrameFrom = _groundClock;
 	if (dropped.empty())
 	{
 		return;
@@ -2282,6 +2294,7 @@ const HdFrame *Canvas32::tonedFor(const HdFrame &hd, int shade, Uint16 tintKey)
 		if (it != _toned.end())
 		{
 			_tonedLru.splice(_tonedLru.begin(), _tonedLru, it->second.lru);
+			it->second.used = _tonedFrame;
 			return &it->second.frame;
 		}
 	}
@@ -2334,6 +2347,7 @@ const HdFrame *Canvas32::tonedFor(const HdFrame &hd, int shade, Uint16 tintKey)
 	{
 		_tonedLru.push_front(key);
 		entry->lru = _tonedLru.begin();
+		entry->used = _tonedFrame;
 		_tonedBytes += bytes;
 	}
 	return &out;
