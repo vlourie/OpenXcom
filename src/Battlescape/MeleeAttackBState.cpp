@@ -147,6 +147,8 @@ void MeleeAttackBState::init()
 
 	int height = _target->getFloatHeight() + (_target->getHeight() / 2) - _parent->getSave()->getTile(_action.target)->getTerrainLevel();
 	_voxel = _action.target.toVoxel() + Position(8, 8, height);
+	// a target on a raised tile of the top level (rock, crate) sticks out above the map: aim at the topmost voxel instead
+	_voxel.z = std::min<int>(_voxel.z, _parent->getSave()->getMapSizeZ() * Position::TileZ - 1);
 
 	if (!_parent->getSave()->getTile(_voxel.toTile()))
 	{
