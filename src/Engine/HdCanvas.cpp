@@ -1251,6 +1251,7 @@ bool Canvas32::saveDump(const std::string &filename)
  */
 void Canvas32::flush()
 {
+	makeJobs();
 	if (_cmds.empty())
 	{
 		return;
@@ -2035,22 +2036,57 @@ const HdFrame *Canvas32::groundFrameFor(SurfaceRaw<const Uint8> src, const HdFra
 		e.lru = ++_groundClock;
 		out = &e.frame;
 	}
-	// the pattern and the ragged edge at every base pixel, then per HD pixel bilinear between them
+	// the picture is made on the workers before the commands run (makeJobs): a view coming into
+	// sight needs a thousand or two of them at once
+	out->width = base.width;
+	out->height = base.height;
+	out->generated = false;
+	GroundJob job;
+	job.out = out;
+	std::copy(frames, frames + count, job.frames);
+	job.count = count;
+	job.x = _groundX;
+	job.y = _groundY;
+	job.z = _groundZ;
+	job.seed = _groundSeed;
+	job.cached = !clash;
+	job.key = hkey;
+	if (_groundJobs.empty() && _tonedJobs.empty())
+	{
+		_jobsGeneration = generation;
+	}
+	_groundJobs.push_back(job);
+	if (!clash)
+	{
+		_groundBytes += (size_t)base.width * base.height * sizeof(Uint32);
+	}
+	return out;
+}
+
+/**
+ * Fills a reserved ground blend: the pattern and the ragged edge at every base
+ * pixel, then per HD pixel bilinear between them. It reads only the variants
+ * and writes only the blend, so the blends are made in parallel.
+ */
+void Canvas32::makeGround(const GroundJob &job) const
+{
+	const HdFrame *const *frames = job.frames;
+	const int count = job.count;
+	HdFrame *out = job.out;
+	const int k = std::max(1, _scale);
+	const int w = out->width, h = out->height;
+	const int bw = w / k, bh = h / k;
 	std::vector<float> level((size_t)bw * bh), ragged((size_t)bw * bh);
 	for (int by = 0; by < bh; ++by)
 	{
 		for (int bx = 0; bx < bw; ++bx)
 		{
 			float u, v;
-			groundPoint(_groundX, _groundY, bw, bh, bx, by, u, v);
-			level[(size_t)by * bw + bx] = groundLevel(_groundSeed, u, v, _groundZ, count);
-			ragged[(size_t)by * bw + bx] = groundRagged(_groundSeed, u, v, _groundZ);
+			groundPoint(job.x, job.y, bw, bh, bx, by, u, v);
+			level[(size_t)by * bw + bx] = groundLevel(job.seed, u, v, job.z, count);
+			ragged[(size_t)by * bw + bx] = groundRagged(job.seed, u, v, job.z);
 		}
 	}
-	const int w = base.width, h = base.height;
-	out->width = w;
-	out->height = h;
-	out->generated = false;
 	out->pixels.assign((size_t)w * h, 0);
 	auto sample = [&](const std::vector<float> &grid, float fx, float fy)
 	{
@@ -2102,11 +2138,6 @@ const HdFrame *Canvas32::groundFrameFor(SurfaceRaw<const Uint8> src, const HdFra
 		}
 	}
 	out->buildSpans();
-	if (!clash)
-	{
-		_groundBytes += out->pixels.size() * sizeof(Uint32);
-	}
-	return out;
 }
 
 /**
@@ -2298,9 +2329,9 @@ const HdFrame *Canvas32::tonedFor(const HdFrame &hd, int shade, Uint16 tintKey)
 			return &it->second.frame;
 		}
 	}
-	HdDrawTimer timer(HdDrawStats::frame.tonedUs);
 	HdDrawStats::frame.tonedNew += HdDrawStats::on;
-	const size_t bytes = hd.pixels.size() * sizeof(Uint32);
+	// the source may be a ground blend this recording reserved: the pixels come before the commands run (makeJobs)
+	const size_t bytes = (size_t)hd.width * hd.height * sizeof(Uint32);
 	TonedEntry *entry = nullptr;
 	if (stale)
 	{
@@ -2313,9 +2344,34 @@ const HdFrame *Canvas32::tonedFor(const HdFrame &hd, int shade, Uint16 tintKey)
 	HdFrame &out = entry ? entry->frame : _tonedTransient.back();
 	out.width = hd.width;
 	out.height = hd.height;
+	out.generated = true;
+	if (_groundJobs.empty() && _tonedJobs.empty())
+	{
+		_jobsGeneration = HdSprites::generation();
+	}
+	_tonedJobs.push_back(TonedJob { &hd, &out, shade, tintKey, entry != nullptr, key });
+	if (entry)
+	{
+		_tonedLru.push_front(key);
+		entry->lru = _tonedLru.begin();
+		entry->used = _tonedFrame;
+		_tonedBytes += bytes;
+	}
+	return &out;
+}
+
+/**
+ * Fills a reserved shaded copy. It reads only its source (made before, if it
+ * is a ground blend) and the tone tables, and writes only the copy.
+ */
+void Canvas32::makeToned(const TonedJob &job) const
+{
+	const HdFrame &hd = *job.src;
+	HdFrame &out = *job.out;
+	const int shade = job.shade;
+	const Uint16 tintKey = job.tintKey;
 	out.rows = hd.rows;
 	out.solid = hd.solid;
-	out.generated = true;
 	out.pixels.resize(hd.pixels.size());
 	const Uint32 *toneR = _toneFactor[0][shade];
 	const Uint32 *toneG = _toneFactor[1][shade];
@@ -2343,14 +2399,66 @@ const HdFrame *Canvas32::tonedFor(const HdFrame &hd, int shade, Uint16 tintKey)
 		}
 		out.pixels[i] = (p & 0xFF000000u) | (r << 16) | (g << 8) | b;
 	}
-	if (entry)
+}
+
+/**
+ * The start of a flush: the ground blends and shaded copies the recording
+ * reserved are made on the workers, the blends first (a shaded copy may be a
+ * copy of one), before any command reads them.
+ */
+void Canvas32::makeJobs()
+{
+	if (_groundJobs.empty() && _tonedJobs.empty())
 	{
-		_tonedLru.push_front(key);
-		entry->lru = _tonedLru.begin();
-		entry->used = _tonedFrame;
-		_tonedBytes += bytes;
+		return;
 	}
-	return &out;
+	if (HdSprites::generation() != _jobsGeneration)
+	{
+		dropJobs();
+		return;
+	}
+	HdDrawTimer timer(HdDrawStats::frame.tonedUs);
+	HdWorkers &pool = HdWorkers::instance();
+	if (!_groundJobs.empty())
+	{
+		pool.run((int)_groundJobs.size(), [&](int i) { makeGround(_groundJobs[i]); });
+	}
+	if (!_tonedJobs.empty())
+	{
+		pool.run((int)_tonedJobs.size(), [&](int i) { makeToned(_tonedJobs[i]); });
+	}
+	_groundJobs.clear();
+	_tonedJobs.clear();
+}
+
+/**
+ * The registry changed without running the commands first (see flush): the
+ * reserved frames are taken out of the caches unfilled, as the frames they
+ * would be made from may be gone. The one-off ones go with their lists.
+ */
+void Canvas32::dropJobs()
+{
+	for (const TonedJob &job : _tonedJobs)
+	{
+		auto it = job.cached ? _toned.find(job.key) : _toned.end();
+		if (it != _toned.end() && &it->second.frame == job.out)
+		{
+			_tonedBytes -= (size_t)job.out->width * job.out->height * sizeof(Uint32);
+			_tonedLru.erase(it->second.lru);
+			_toned.erase(it);
+		}
+	}
+	for (const GroundJob &job : _groundJobs)
+	{
+		auto it = job.cached ? _ground.find(job.key) : _ground.end();
+		if (it != _ground.end() && &it->second.frame == job.out)
+		{
+			_groundBytes -= (size_t)job.out->width * job.out->height * sizeof(Uint32);
+			_ground.erase(it);
+		}
+	}
+	_groundJobs.clear();
+	_tonedJobs.clear();
 }
 
 void Canvas32::clearToned()

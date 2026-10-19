@@ -52,7 +52,8 @@ struct HdDrawStats
 	/// Of the recording: frames smoothed or recoloured on first use, and their number.
 	long long smoothUs = 0;
 	unsigned smoothNew = 0;
-	/// Of the recording: shaded copies made on first use, and their number.
+	/// Shaded copies and ground blends made on first use (on the workers, before the commands run),
+	/// and the number of shaded copies.
 	long long tonedUs = 0;
 	unsigned tonedNew = 0;
 	/// Running the commands on the workers: wall time, and the longest strip
@@ -382,6 +383,20 @@ private:
 	bool _tonedStale = false;
 	/// Shaded copies made while the cache is stale (dropped with it).
 	std::deque<HdFrame> _tonedTransient;
+	/// A shaded copy the recording reserved: the workers fill it before the commands run (makeJobs).
+	struct TonedJob
+	{
+		const HdFrame *src;
+		HdFrame *out;
+		int shade;
+		Uint16 tintKey;
+		/// In the cache under `key` (not a one-off copy of a stale cache).
+		bool cached;
+		TonedKey key;
+	};
+	std::vector<TonedJob> _tonedJobs;
+	/// Fills a reserved shaded copy (on a worker).
+	void makeToned(const TonedJob &job) const;
 	/// True when the canvas pixel layout is 0x00RRGGBB, the layout of HD frames (plain copies possible).
 	bool _argbLayout;
 	/// The light field of the tile being drawn (HD modes).
@@ -454,6 +469,28 @@ private:
 	/// The frame to draw for a pack frame on the current ground cell: one of its variants, a blend of
 	/// two, or the frame itself (no variants, not ground).
 	const HdFrame *groundFrameFor(SurfaceRaw<const Uint8> src, const HdFrame &base);
+	/// A ground blend the recording reserved: the workers fill it before the commands run (makeJobs).
+	struct GroundJob
+	{
+		HdFrame *out;
+		/// The variants along the pattern's scale.
+		const HdFrame *frames[16];
+		int count;
+		int x, y, z;
+		Uint32 seed;
+		/// In the cache under `key` (not a one-off blend of a key clash).
+		bool cached;
+		Uint64 key;
+	};
+	std::vector<GroundJob> _groundJobs;
+	/// HdSprites::generation() when the first waiting job was reserved: the frames they read belong to it.
+	unsigned _jobsGeneration = 0;
+	/// Fills a reserved ground blend (on a worker).
+	void makeGround(const GroundJob &job) const;
+	/// Fills the reserved blends, then the shaded copies (some are copies of the blends), on the workers.
+	void makeJobs();
+	/// Drops the reserved frames unfilled (the registry changed under them: their sources may be gone).
+	void dropJobs();
 	/// Drops the blends of an old registry generation and the oldest ones over the cap (end of a flush).
 	void trimGround();
 	/// Runs one command on the rows [y0, y1).
