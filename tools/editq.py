@@ -23,8 +23,10 @@ r"""Очередь правок игры: файлы игры правит од�
     py -3.13 tools/editq.py done -m "hdui: ..." [--add F ...] [--drop F ...] [--no-build]
         собрать (если менялся src), закоммитить СВОИ файлы, отдать очередь следующему.
         Файл, у которого в индексе уже разложены куски (git_hunks.py stage), а в дереве есть
-        ещё правки, коммитится версией индекса, не целиком (R-271); изменённый, но не взятый
-        парный .h/.cpp в src/ - предупреждение (R-108)
+        ещё правки, коммитится версией индекса, не целиком (R-271). Изменённый в дереве файл
+        игры, которого нет ни в списке сессии (хук Edit/Write), ни в --add/--drop, ни за другой
+        сессией очереди, - отказ со списком (R-108: правка скриптом); --force - коммит без них.
+        Сборка - если в коммит идёт src/, cmake/ или CMakeLists.txt, в том числе через --add
     py -3.13 tools/editq.py pause "жду ответа Vitali"          отдать очередь, правки остаются
     py -3.13 tools/editq.py leave                             выйти из очереди без коммита
     py -3.13 tools/editq.py list                              кто держит, кто ждёт, что с выпуском
@@ -317,18 +319,21 @@ def half_staged(paths):
     return [f for f in paths if f in staged and f in loose]
 
 
-PAIRS = {".h": (".cpp", ".c"), ".hpp": (".cpp",), ".cpp": (".h", ".hpp"), ".c": (".h",)}
+def game_pathspecs():
+    try:
+        with io.open(PATHS_FILE, encoding=ENC) as f:
+            lines = [l.strip() for l in f]
+    except OSError:
+        lines = ["src/**"]
+    return [":(glob,icase)" + l for l in lines if l and not l.startswith("#")]
 
 
-def lost_pairs(todo):
-    """R-108: парный файл src/ (.h к .cpp и обратно) изменён в дереве, а в коммит не идёт."""
-    want = set()
-    for f in todo:
-        stem, ext = os.path.splitext(f)
-        if f.lower().startswith("src/"):
-            want.update(stem + x for x in PAIRS.get(ext.lower(), ()))
-    want -= set(todo)
-    return [f for f in changed(sorted(want)) if f in want]
+def stray(files, drop, others):
+    """R-108/R-376: файлы игры, изменённые в дереве мимо хука (скрипт, git apply, cp), - ни в
+    списке сессии, ни в --add, ни в --drop, ни за другой сессией в очереди."""
+    pats = game_patterns()
+    skip = {f.lower() for f in list(files) + list(drop) + list(others)}     # путь из хука - в регистре вызова
+    return [f for f in changed(game_pathspecs()) if is_game(f, pats) and f.lower() not in skip]
 
 
 def commit_files(todo, msg):
@@ -636,11 +641,20 @@ def cmd_done(a):
         raise SystemExit("эти файлы трогала и другая сессия, в коммит уйдут и её правки:\n  "
                          + "\n  ".join(clash) + "\nРазберись с ней (list) или --force")
     sha = None
-    lost = lost_pairs(todo)
+    # done доходит сюда, только если очередь держит эта сессия: файлы игры в дереве, ничьи по
+    # учёту очереди, правил скорее всего её скрипт - пусть держатель решит за каждый
+    lost = stray(files, drop, others)
     if lost:
-        print("ВНИМАНИЕ (R-108): парные файлы изменены в дереве, но в коммит НЕ идут:\n  "
-              + "\n  ".join(lost) + "\nЕсли это правка этой задачи - done ещё раз с --add "
-              "(уже ушедший коммит не переписывать)", flush=True)
+        head = ("R-108: файлы игры изменены в дереве, но не записаны за этой сессией (правка "
+                "скриптом, git apply, cp - мимо хука Edit/Write) и в коммит НЕ идут:\n  "
+                + "\n  ".join(lost))
+        if not a.force:
+            raise SystemExit(
+                head + "\nКоммита нет, очередь осталась за тобой. Каждый файл - в один из списков:\n"
+                "  --add <файл>   правка этой задачи: собрать и закоммитить вместе с остальным\n"
+                "  --drop <файл>  чужая или лишняя: в коммит не брать, в дереве не трогать\n"
+                "Или --force - коммитить без них (останутся в дереве)")
+        print("ВНИМАНИЕ (--force) " + head, flush=True)
     if todo:
         if needs_build(todo) and not a.no_build:
             print("собираю (ninja, build-release) ...", flush=True)
