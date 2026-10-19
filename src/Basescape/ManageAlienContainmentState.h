@@ -19,6 +19,7 @@
  */
 #include "../Engine/TouchState.h"
 #include "../Menu/OptionsBaseState.h"
+#include "BaseSwitch.h"
 #include <vector>
 #include <string>
 
@@ -36,7 +37,7 @@ class Base;
  * ManageAlienContainment screen that lets the player manage
  * alien numbers in a particular base.
  */
-class ManageAlienContainmentState : public TouchState
+class ManageAlienContainmentState : public BaseSwitchMixin<TouchState>
 {
 private:
 	Base *_base;

@@ -19,6 +19,7 @@
  */
 #include "../Engine/State.h"
 #include "ItemCountTooltipMixin.h"
+#include "BaseSwitch.h"
 
 namespace OpenXcom
 {
@@ -34,7 +35,7 @@ class ItemCountTooltip;
  * Manufacture screen that lets the player manage
  * all the manufacturing operations of a base.
  */
-class ManufactureState : public ItemCountTooltipMixin<State>
+class ManufactureState : public BaseSwitchMixin<ItemCountTooltipMixin<State>>
 {
 private:
 	Base *_base;

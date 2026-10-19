@@ -275,7 +275,7 @@ void GlobalAlienContainmentState::onSelectBase(Action*)
 		}
 
 		// open new window
-		_game->pushState(new ManageAlienContainmentState(base, prisonType, OPT_GEOSCAPE));
+		_game->pushState(withBaseSwitch(new ManageAlienContainmentState(base, prisonType, OPT_GEOSCAPE)));
 	}
 }
 

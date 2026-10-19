@@ -83,6 +83,10 @@ ManufactureState::ManufactureState(Base *base) : _base(base)
 	add(_txtTimeLeft, "text2", "manufactureMenu");
 	add(_lstManufacture, "list", "manufactureMenu");
 
+	addBaseSwitch(_base, "manufactureMenu", "text1", "button", 24,
+		[](const Base *other) { return other->getAvailableWorkshops() > 0; },
+		[](Base *other) { return withBaseSwitch(new ManufactureState(other)); });
+
 	centerAllSurfaces();
 
 	// Set up objects

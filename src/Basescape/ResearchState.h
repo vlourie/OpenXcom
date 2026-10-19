@@ -18,6 +18,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "../Engine/State.h"
+#include "BaseSwitch.h"
 
 namespace OpenXcom
 {
@@ -32,7 +33,7 @@ class Base;
  * Research screen that lets the player manage
  * all the researching operations of a base.
  */
-class ResearchState : public State
+class ResearchState : public BaseSwitchMixin<State>
 {
 private:
 	Base *_base;

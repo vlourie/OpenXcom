@@ -18,6 +18,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "../Engine/State.h"
+#include "BaseSwitch.h"
 #include <vector>
 
 namespace OpenXcom
@@ -64,7 +65,7 @@ struct StoredItem
  * Stores window that displays all
  * the items currently stored in a base.
  */
-class StoresState : public State
+class StoresState : public BaseSwitchMixin<State>
 {
 private:
 	Base *_base;

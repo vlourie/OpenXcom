@@ -88,6 +88,10 @@ AllocateTrainingState::AllocateTrainingState(Base *base) : _sel(0), _base(base),
 	add(_cbxSortBy, "button", "allocateMartial");
 	add(_btnPlus, "button", "allocateMartial");
 
+	addBaseSwitch(_base, "allocateMartial", "text", "button", 24,
+		[](const Base *other) { return other->getAvailableTraining() > 0; },
+		[](Base *other) { return withBaseSwitch(new AllocateTrainingState(other)); });
+
 	centerAllSurfaces();
 
 	// Set up objects

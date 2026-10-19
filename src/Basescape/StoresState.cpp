@@ -122,6 +122,9 @@ StoresState::StoresState(Base *base) : _base(base)
 	add(_sortSize, "text", "storesInfo");
 	add(_sortSpaceUsed, "text", "storesInfo");
 
+	addBaseSwitch(_base, "storesInfo", "text", "button", 30, nullptr,
+		[](Base *other) { return withBaseSwitch(new StoresState(other)); });
+
 	centerAllSurfaces();
 
 	// Set up objects

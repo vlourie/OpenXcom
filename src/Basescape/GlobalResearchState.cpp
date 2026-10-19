@@ -149,7 +149,7 @@ void GlobalResearchState::onSelectBase(Action *)
 		}
 
 		// open new window
-		_game->pushState(new ResearchState(base));
+		_game->pushState(withBaseSwitch(new ResearchState(base)));
 	}
 }
 

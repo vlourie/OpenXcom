@@ -18,6 +18,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "../Engine/State.h"
+#include "../Basescape/BaseSwitch.h"
 #include <vector>
 
 namespace OpenXcom
@@ -37,7 +38,7 @@ struct SortFunctor;
  * Screen shown monthly to allow changing
  * soldiers currently in psi training.
  */
-class AllocateTrainingState : public State
+class AllocateTrainingState : public BaseSwitchMixin<State>
 {
 private:
 	TextButton *_btnOk;

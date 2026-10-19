@@ -114,7 +114,7 @@ void TrainingState::btnBaseXClick(Action *action)
 	{
 		if (action->getSender() == _btnBases[i])
 		{
-			_game->pushState(new AllocateTrainingState(_bases.at(i)));
+			_game->pushState(withBaseSwitch(new AllocateTrainingState(_bases.at(i))));
 			break;
 		}
 	}
