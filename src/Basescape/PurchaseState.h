@@ -22,6 +22,7 @@
 #include <vector>
 #include <string>
 #include "ItemCountTooltipMixin.h"
+#include "BaseSwitch.h"
 
 namespace OpenXcom
 {
@@ -42,7 +43,7 @@ class ItemCountTooltip;
  * Purchase/Hire screen that lets the player buy
  * new items for a base.
  */
-class PurchaseState : public ItemCountTooltipMixin<TouchState>
+class PurchaseState : public BaseSwitchMixin<ItemCountTooltipMixin<TouchState>>
 {
 private:
 	Base *_base;

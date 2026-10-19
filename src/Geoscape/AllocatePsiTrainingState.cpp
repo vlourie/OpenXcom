@@ -78,6 +78,10 @@ AllocatePsiTrainingState::AllocatePsiTrainingState(Base *base) : _sel(0), _base(
 	add(_cbxSortBy, "button", "allocatePsi");
 	add(_btnPlus, "button", "allocatePsi");
 
+	addBaseSwitch(_base, "allocatePsi", "text", "button", 24,
+		[](const Base *other) { return other->getAvailablePsiLabs() > 0; },
+		[](Base *other) { return withBaseSwitch(new AllocatePsiTrainingState(other)); });
+
 	centerAllSurfaces();
 
 	// Set up objects

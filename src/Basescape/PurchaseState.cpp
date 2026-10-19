@@ -131,6 +131,10 @@ PurchaseState::PurchaseState(Base *base, CannotReequipState *parent) : _base(bas
 
 	touchComponentsAdd("button2", "buyMenu", _window);
 
+	addBaseSwitch(_base, "buyMenu", "text", "button", 24, nullptr,
+		[](Base *other) { return withBaseSwitch(new PurchaseState(other)); },
+		[this]() { return std::any_of(_items.begin(), _items.end(), [](const TransferRow &row) { return row.amount > 0; }); });
+
 	centerAllSurfaces();
 
 	// Set up objects
@@ -1335,6 +1339,7 @@ void PurchaseState::updateItemStrings()
 	}
 	ss5 << ":" << _base->getAvailableStores();
 	_txtSpaceUsed->setText(tr("STR_SPACE_USED").arg(ss5.str()));
+	updateBaseSwitch();
 }
 
 /**

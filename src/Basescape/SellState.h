@@ -23,6 +23,7 @@
 #include <vector>
 #include <string>
 #include "ItemCountTooltipMixin.h"
+#include "BaseSwitch.h"
 
 namespace OpenXcom
 {
@@ -43,7 +44,7 @@ class ItemCountTooltip;
  * Sell/Sack screen that lets the player sell
  * any items in a particular base.
  */
-class SellState : public ItemCountTooltipMixin<TouchState>
+class SellState : public BaseSwitchMixin<ItemCountTooltipMixin<TouchState>>
 {
 private:
 	Base *_base;

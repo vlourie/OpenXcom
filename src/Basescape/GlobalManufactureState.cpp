@@ -151,7 +151,7 @@ void GlobalManufactureState::onSelectBase(Action *)
 		}
 
 		// open new window
-		_game->pushState(new ManufactureState(base));
+		_game->pushState(withBaseSwitch(new ManufactureState(base)));
 	}
 }
 

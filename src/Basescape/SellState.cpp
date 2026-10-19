@@ -133,6 +133,15 @@ void SellState::delayedInit()
 
 	touchComponentsAdd("button2", "sellMenu", _window);
 
+	addBaseSwitch(_base, "sellMenu", "text", "button", 24, nullptr,
+		[](Base *other) { return withBaseSwitch(new SellState(other, 0)); },
+		[this]()
+		{
+			// an overfull store has to be sold down first
+			return (_debriefingState == 0 && Options::storageLimitsEnforced && _base->storesOverfull())
+				|| std::any_of(_items.begin(), _items.end(), [](const TransferRow &row) { return row.amount > 0; });
+		});
+
 	centerAllSurfaces();
 
 	// Set up objects
@@ -1286,6 +1295,7 @@ void SellState::updateItemStrings()
 	{
 		_btnOk->setVisible(!_base->storesOverfull(_spaceChange));
 	}
+	updateBaseSwitch();
 }
 
 /**

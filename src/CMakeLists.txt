@@ -7,6 +7,7 @@ set ( root_src
 set ( basescape_src
   Basescape/BaseInfoState.cpp
   Basescape/BasescapeState.cpp
+  Basescape/BaseSwitch.cpp
   Basescape/BaseView.cpp
   Basescape/BuildFacilitiesState.cpp
   Basescape/CraftArmorState.cpp
