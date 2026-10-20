@@ -2647,7 +2647,11 @@ void Map::drawTerrain(HdCanvas *surface)
 			SurfaceRaw<const Uint8> sprite = owner->getSprite(part);
 			if (!sprite)
 				continue;
-			if (left != (part == O_WESTWALL))
+			// a view painted for this turn stands as it is drawn: already on the diagonal of its slot
+			const SurfaceRaw<const Uint8> view = hdFrames ? _turn->painted(sprite, rot) : SurfaceRaw<const Uint8>();
+			if (view)
+				sprite = view;
+			else if (left != (part == O_WESTWALL))
 				sprite = _turn->mirrored(sprite, hdFrames);
 			int shade = getWallShade(part, owner);
 			if (owner->getObstacle(part))
@@ -2655,6 +2659,19 @@ void Map::drawTerrain(HdCanvas *surface)
 			surface->blit(sprite, screenPosition.x, screenPosition.y - owner->getYOffset(part) * _k, shade, !left && leftDrawn, _nvColor);
 			leftDrawn = leftDrawn || left;
 		}
+	};
+	// HD lab: the frame of an object of the turned view - a view painted for this turn stands as it is drawn, in
+	// its own place in the cell (no mirror, no shift); else the frame goes with its edge (turnedObject)
+	auto objectTurned = [&](TurnedObject &placed, SurfaceRaw<const Uint8> sprite) -> SurfaceRaw<const Uint8>
+	{
+		const SurfaceRaw<const Uint8> view = hdFrames ? _turn->painted(sprite, rot) : SurfaceRaw<const Uint8>();
+		if (view)
+		{
+			placed.dx = 0;
+			placed.dy = 0;
+			return view;
+		}
+		return placed.mirror ? _turn->mirrored(sprite, hdFrames) : sprite;
 	};
 	// HD render: the parts of a collapsed building falling (HdFx::fall), each drawn in its cell's turn, as the
 	// cells go here (by tile index)
@@ -2736,9 +2753,12 @@ void Map::drawTerrain(HdCanvas *surface)
 					tmpSurface = tile->getSprite(O_FLOOR);
 					if (tmpSurface)
 					{
-						// HD lab: a flat floor turns with the map
+						// HD lab: a flat floor turns with the map, unless a view is painted for this turn
 						if (turned)
-							tmpSurface = _turn->floorTurned(tmpSurface, rot, hdFrames);
+						{
+							const SurfaceRaw<const Uint8> view = hdFrames ? _turn->painted(tmpSurface, rot) : SurfaceRaw<const Uint8>();
+							tmpSurface = view ? view : _turn->floorTurned(tmpSurface, rot, hdFrames);
+						}
 						// HD render: a floor with pack variants shows the one the ground pattern puts here
 						if (_hdGroundVariants && !turned)
 							surface->setGroundCell(true, mapPosition.x, mapPosition.y, mapPosition.z);
@@ -2868,11 +2888,11 @@ void Map::drawTerrain(HdCanvas *surface)
 						if (tmpSurface)
 						{
 							// HD lab: an object on an edge of its tile goes with the edge
-							const TurnedObject placed = turned ? turnedObject(tile->getMapData(O_OBJECT)->getBigWall()) : TurnedObject{ tile->isBackTileObject(O_OBJECT), false, 0, 0 };
+							TurnedObject placed = turned ? turnedObject(tile->getMapData(O_OBJECT)->getBigWall()) : TurnedObject{ tile->isBackTileObject(O_OBJECT), false, 0, 0 };
 							if (placed.back)
 							{
-								if (placed.mirror)
-									tmpSurface = _turn->mirrored(tmpSurface, hdFrames);
+								if (turned)
+									tmpSurface = objectTurned(placed, tmpSurface);
 								if (tile->getObstacle(O_OBJECT))
 									surface->blit(tmpSurface, screenPosition.x + placed.dx, screenPosition.y + placed.dy - tile->getYOffset(O_OBJECT) * _k, obstacleShade, false, _nvColor);
 								else
@@ -3229,11 +3249,11 @@ void Map::drawTerrain(HdCanvas *surface)
 						if (tmpSurface)
 						{
 							// HD lab: an object on an edge of its tile goes with the edge
-							const TurnedObject placed = turned ? turnedObject(tile->getMapData(O_OBJECT)->getBigWall()) : TurnedObject{ tile->isBackTileObject(O_OBJECT), false, 0, 0 };
+							TurnedObject placed = turned ? turnedObject(tile->getMapData(O_OBJECT)->getBigWall()) : TurnedObject{ tile->isBackTileObject(O_OBJECT), false, 0, 0 };
 							if (!placed.back)
 							{
-								if (placed.mirror)
-									tmpSurface = _turn->mirrored(tmpSurface, hdFrames);
+								if (turned)
+									tmpSurface = objectTurned(placed, tmpSurface);
 								if (tile->getObstacle(O_OBJECT))
 									surface->blit(tmpSurface, screenPosition.x + placed.dx, screenPosition.y + placed.dy - tile->getYOffset(O_OBJECT) * _k, obstacleShade, false, _nvColor);
 								else

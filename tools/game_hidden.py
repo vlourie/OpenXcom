@@ -102,4 +102,10 @@ print("дамп", dump if dump.exists() else "НЕТ")
 log = (u / "openxcom.log").read_text(encoding="utf-8", errors="replace").splitlines()
 for line in [l for l in log if re.search(r"\[ERROR\]|\[FATAL\]|not found|rash", l)][-10:]:
     print(line)
+# R-384: Ctrl+F8 вне боя пишет только _frame.png (экран загрузки или геоскейп) - .json пишет лишь дамп боя
+if "ctrl+289" in o.key:
+    battle = [f for f in (u / (o.master or "piratez")).glob("hdtest*.json") if f.stat().st_mtime >= t0 - 5]
+    if not battle:
+        print(f"ДАМП НЕ ИЗ БОЯ (R-384): за {o.after} с бой не загрузился - нет hdtest*.json; больше --after или меньше прогонов разом")
+        sys.exit(2)
 sys.exit(0 if dump.exists() else 1)

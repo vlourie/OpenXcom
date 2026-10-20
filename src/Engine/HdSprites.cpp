@@ -21,6 +21,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <algorithm>
+#include <array>
 #include <chrono>
 #include <cmath>
 #include <sstream>
@@ -156,6 +157,14 @@ namespace
 	/// [part - 1]: the west and the north wall slot have their own pictures of the same frame
 	std::unordered_map<const void*, WallSlots> walls[2];
 	std::string addressFile = "address.txt";
+	/// A painted view of the turned map (setView): <index>.r<R>.png, `width` x `height` the size of the palette frame.
+	struct ViewFile
+	{
+		std::string path; ///< empty: no view painted for that turn
+		int width = 0, height = 0;
+	};
+	/// The views of a frame, slot R - 1 for turn R.
+	std::unordered_map<const void*, std::array<ViewFile, 3>> views;
 	/// Changes only when the addressed wall frames do (the map rebuilds its field then, see HdWallField::update).
 	unsigned wallsGeneration = 1;
 	/// Frames at most this big are dots, not pictures (makeDots): the bullet tracer is 3x3.
@@ -611,6 +620,32 @@ bool registered(const void *key)
 	return !registry.empty() && registry.find(key) != registry.end();
 }
 
+bool setView(const void *proxy, const void *key, int rot)
+{
+	if (!proxy || rot < 1 || rot > 3 || views.empty())
+	{
+		return false;
+	}
+	auto it = views.find(key);
+	if (it == views.end() || it->second[rot - 1].path.empty())
+	{
+		return false;
+	}
+	const ViewFile &view = it->second[rot - 1];
+	setLazy(proxy, view.path, 0, 0, view.width, view.height);
+	// the picture belongs to the frame: recoloured and lit as its own picture is
+	Entry &entry = registry[proxy];
+	entry.key = key;
+	auto own = registry.find(key);
+	entry.ownColour = own != registry.end() && own->second.ownColour;
+	return true;
+}
+
+bool anyViews()
+{
+	return !views.empty();
+}
+
 void remove(const void *key)
 {
 	beforeChange();
@@ -635,11 +670,12 @@ void remove(const void *key)
 		dropWalls(key);
 		++registryGeneration;
 	}
+	views.erase(key);
 }
 
 void removeSet(const SurfaceSet *surfaceSet)
 {
-	if (!surfaceSet || (registry.empty() && variants.empty() && !anyWalls()))
+	if (!surfaceSet || (registry.empty() && variants.empty() && !anyWalls() && views.empty()))
 	{
 		return;
 	}
@@ -661,6 +697,7 @@ void removeSet(const SurfaceSet *surfaceSet)
 			}
 			dropVariants(frame->getBuffer());
 			dropWalls(frame->getBuffer());
+			views.erase(frame->getBuffer());
 		}
 	}
 	++registryGeneration;
@@ -671,6 +708,7 @@ void clear()
 	beforeChange();
 	registry.clear();
 	variants.clear();
+	views.clear();
 	walls[0].clear();
 	walls[1].clear();
 	++wallsGeneration;
@@ -1756,7 +1794,7 @@ int loadPack(const std::string &setName, SurfaceSet *surfaceSet, int scale)
 	{
 		return 0;
 	}
-	int loaded = 0;
+	int loaded = 0, viewed = 0;
 	if (std::find(files.begin(), files.end(), std::string("pack.hdp")) != files.end())
 	{
 		loaded += registerPackFile(artPath(setName + "/pack.hdp"), surfaceSet, scale);
@@ -1764,15 +1802,19 @@ int loadPack(const std::string &setName, SurfaceSet *surfaceSet, int scale)
 	std::unordered_map<int, std::pair<int, int>> mainSize; // the size of each <index>.png (address.txt)
 	for (const std::string &file : files)
 	{
-		// "<index>.png", or "<index>.v<n>.png" (variant n of the frame)
+		// "<index>.png", "<index>.v<n>.png" (variant n of the frame) or "<index>.r<R>.png" (the frame seen at turn R)
 		const size_t dot = file.find('.');
 		if (dot == std::string::npos || dot == 0)
 		{
 			continue;
 		}
-		int variant = 0;
+		int variant = 0, view = 0;
 		const std::string rest = file.substr(dot);
-		if (rest != ".png")
+		if (rest.size() == 7 && rest.compare(0, 2, ".r") == 0 && rest[2] >= '1' && rest[2] <= '3' && rest.compare(3, 4, ".png") == 0)
+		{
+			view = rest[2] - '0';
+		}
+		else if (rest != ".png")
 		{
 			if (rest.size() < 7 || rest.compare(0, 2, ".v") != 0 || rest.compare(rest.size() - 4, 4, ".png") != 0)
 			{
@@ -1813,7 +1855,15 @@ int loadPack(const std::string &setName, SurfaceSet *surfaceSet, int scale)
 				<< ", the frame it replaces is " << fw << "x" << fh << " - ignored";
 			continue;
 		}
-		if (variant > 0)
+		if (view > 0)
+		{
+			ViewFile &slot = views[frame->getBuffer()][view - 1];
+			slot.path = path;
+			slot.width = fw;
+			slot.height = fh;
+			++viewed;
+		}
+		else if (variant > 0)
 		{
 			setVariantLazy(frame->getBuffer(), variant, path, 0, 0, fw, fh);
 		}
@@ -1831,6 +1881,10 @@ int loadPack(const std::string &setName, SurfaceSet *surfaceSet, int scale)
 	if (loaded > 0 && std::find(files.begin(), files.end(), std::string("color.txt")) != files.end())
 	{
 		readColour(setName, surfaceSet);
+	}
+	if (viewed > 0)
+	{
+		Log(LOG_INFO) << "HD sprite: " << setName << " has " << viewed << " painted view(s) of the turned map";
 	}
 	return loaded;
 }
