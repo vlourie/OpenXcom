@@ -589,9 +589,12 @@ public:
 	void flush() override;
 	/// Copies the drawn frame into a same-format 32-bit surface at (x, y), rows in parallel.
 	void copyTo(SDL_Surface *dest, int x, int y);
-	/// The same, enlarged `zoom` times (bilinear) with `pull` of the way to the point (fx, fy) in the
-	/// middle and black bars `bars` of the height at the top and the bottom (see HdKillCam).
-	void copyZoomed(SDL_Surface *dest, int x, int y, double fx, double fy, double zoom, double pull, double bars);
+	/// The same into a w x h area (bilinear: the battle view zoom), enlarged `zoom` times more with `pull`
+	/// of the way to the point (fx, fy) in the middle and black bars `bars` of the height at the top and
+	/// the bottom (see HdKillCam).
+	void copyZoomed(SDL_Surface *dest, int x, int y, int w, int h, double fx, double fy, double zoom, double pull, double bars);
+	/// Gives the canvas another size, keeping its tables and caches (the battle view zoom); the pixels are not kept.
+	void resize(int width, int height);
 };
 
 }

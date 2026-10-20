@@ -487,11 +487,13 @@ void Game::run()
 							const bool middle = *c == 'm';
 							// "h" (h96,121) only moves the mouse there: a hover after the clicks (an item's info)
 							const bool hover = *c == 'h';
-							if (sscanf(c + (ctrl || middle || hover ? 1 : 0), "%d,%d", &cx, &cy) == 2)
+							// "u" / "d" (u320,100) turns the mouse wheel up / down there with Ctrl held (the battle view zoom)
+							const bool wheelUp = *c == 'u', wheelDown = *c == 'd';
+							if (sscanf(c + (ctrl || middle || hover || wheelUp || wheelDown ? 1 : 0), "%d,%d", &cx, &cy) == 2)
 							{
 								autoClicks.emplace_back(cx, cy);
-								autoClicksCtrl.push_back(ctrl);
-								autoClicksButton.push_back(hover ? 0 : middle ? SDL_BUTTON_MIDDLE : SDL_BUTTON_LEFT);
+								autoClicksCtrl.push_back(ctrl || wheelUp || wheelDown);
+								autoClicksButton.push_back(hover ? 0 : middle ? SDL_BUTTON_MIDDLE : wheelUp ? SDL_BUTTON_WHEELUP : wheelDown ? SDL_BUTTON_WHEELDOWN : SDL_BUTTON_LEFT);
 							}
 							c = strchr(c, ';');
 							if (c) ++c;

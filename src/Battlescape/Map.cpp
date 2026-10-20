@@ -110,6 +110,14 @@ namespace OpenXcom
 namespace
 {
 
+/// HD render: the battle view zoom steps, percent (Ctrl + mouse wheel goes one step). The view shrinks at most
+/// twice, so the bilinear scale of the canvas to the screen still takes every pixel of it in.
+const int VIEW_ZOOMS[] = { 50, 59, 71, 84, 100, 119, 141, 168, 200 };
+const int VIEW_ZOOM_COUNT = (int)(sizeof(VIEW_ZOOMS) / sizeof(VIEW_ZOOMS[0]));
+const int VIEW_ZOOM_ONE = 4;
+/// The zoom the player chose last: the next battle of this run of the game starts with it.
+int lastViewZoomStep = VIEW_ZOOM_ONE;
+
 /**
  * The palette index the mod writes a damage type in in the Ufopaedia (interface articleItem, ammoColorDT*,
  * drawn with the battlescape palette); 0 = none (vanilla gives none).
@@ -261,7 +269,8 @@ int reticleColorGroup(const Mod *mod, BattleAction *action)
  */
 Map::Map(Game *game, int width, int height, int x, int y, int visibleMapHeight) : InteractiveSurface(width * hdScale(game), height * hdScale(game), x, y),
 	_game(game), _isTFTD(false), _arrow(0), _anyIndicator(false), _isAltPressed(false), _isCtrlPressed(false),
-	_k(hdScale(game)), _messageScratch(0), _messageOnCanvas(false), _canvas(0), _hdGroundVariants(Options::oxceHdGroundVariants), _hdTerrainAddress(Options::oxceHdTerrainAddress),
+	_k(hdScale(game)), _zoomStep(VIEW_ZOOM_ONE), _viewWidth(width * hdScale(game)), _viewHeight(height * hdScale(game)), _visibleBase(visibleMapHeight),
+	_messageScratch(0), _messageOnCanvas(false), _canvas(0), _hdGroundVariants(Options::oxceHdGroundVariants), _hdTerrainAddress(Options::oxceHdTerrainAddress),
 	_selectorX(0), _selectorY(0), _mouseX(0), _mouseY(0), _cursorType(CT_NORMAL), _cursorSize(1), _animFrame(0),
 	_projectile(0), _followProjectile(true), _projectileInFOV(false), _explosionInFOV(false), _launch(false), _visibleMapHeight(visibleMapHeight * hdScale(game)),
 	_unitDying(false), _smoothingEngaged(false), _flashScreen(false), _bgColor(15), _projectileSet(0), _showObstacles(false), _showInfoOnCursor(false)
@@ -405,9 +414,32 @@ Map::Map(Game *game, int width, int height, int x, int y, int visibleMapHeight) 
 	_vaporParticlesInit.resize(_camera->getMapSizeY() * _camera->getMapSizeX());
 	_vaporParticles.resize(_camera->getMapSizeY() * _camera->getMapSizeX());
 
+	// HD render: the battle view zoom the player chose last (OXCE_HD_VIEW_ZOOM=<percent>: the nearest step,
+	// for the headless checks); the 8-bit display has none
+	if (_game->getScreen()->isLayered())
+	{
+		_zoomStep = lastViewZoomStep;
+		if (const char *zoom = getenv("OXCE_HD_VIEW_ZOOM"))
+		{
+			const int percent = atoi(zoom);
+			for (int i = 0; i < VIEW_ZOOM_COUNT; ++i)
+			{
+				if (std::abs(VIEW_ZOOMS[i] - percent) < std::abs(VIEW_ZOOMS[_zoomStep] - percent))
+				{
+					_zoomStep = i;
+				}
+			}
+		}
+	}
+
 	// HD render: every drawing call goes through the canvas - the true-color one when the
 	// display is 32-bit (the world layer takes it as is), else the classic 8-bit surface
 	createCanvas();
+	if (_zoomStep != VIEW_ZOOM_ONE)
+	{
+		_camera->resize();
+		Log(LOG_INFO) << "HD view zoom: " << VIEW_ZOOMS[_zoomStep] << "% (view " << _viewWidth << "x" << _viewHeight << ")";
+	}
 	HdKillCam::clear();
 }
 
@@ -425,9 +457,12 @@ const char *Map::getCanvasName() const
 void Map::createCanvas()
 {
 	delete _canvas;
+	delete _messageCanvas;
+	_messageCanvas = nullptr;
 	if (_game->getScreen()->isLayered())
 	{
-		_canvas = new Canvas32(getWidth(), getHeight(), _k);
+		updateViewSize();
+		_canvas = new Canvas32(_viewWidth, _viewHeight, _k);
 		_canvas->setPalette(getPalette(), 0, 256);
 		_canvas->setHdMode(Options::oxceHdMode);
 		_canvas->setGroundSeed(groundSeed());
@@ -435,8 +470,67 @@ void Map::createCanvas()
 	}
 	else
 	{
+		_zoomStep = VIEW_ZOOM_ONE;
+		updateViewSize();
 		_canvas = new Canvas8(this);
 	}
+}
+
+/**
+ * HD render: the view size for the map's size and the battle view zoom - the map's size divided by
+ * the zoom, whole base pixels; at 100 % exactly the map's size.
+ */
+void Map::updateViewSize()
+{
+	const int percent = VIEW_ZOOMS[_zoomStep];
+	auto view = [&](int world) { return percent == 100 ? world : (int)std::lround(world / _k * 100.0 / percent) * _k; };
+	_viewWidth = view(getWidth());
+	_viewHeight = view(getHeight());
+	_visibleMapHeight = _viewHeight == getHeight() ? _visibleBase * _k : (int)std::lround(_visibleBase * (double)_viewHeight / getHeight()) * _k;
+}
+
+/**
+ * HD render: changes the battle view zoom by `steps` of the zoom table. The canvas takes the new view
+ * size (its caches stay), the camera counts in it, and the map moves so that the place under the mouse
+ * stays under it. The game sees nothing of it: the tiles, the units and the turn are as they were.
+ * @param steps Steps to go, positive to zoom in.
+ * @return false where the zoom is not available (the 8-bit display).
+ */
+bool Map::zoomView(int steps)
+{
+	Canvas32 *canvas32 = dynamic_cast<Canvas32*>(_canvas);
+	if (!canvas32)
+	{
+		return false;
+	}
+	const int step = Clamp(_zoomStep + steps, 0, VIEW_ZOOM_COUNT - 1);
+	if (step == _zoomStep)
+	{
+		return true;
+	}
+	// the view point under the mouse before and after: the camera moves by their difference
+	const int oldX = (int)((long long)_mouseX * _viewWidth / getWidth());
+	const int oldY = (int)((long long)_mouseY * _viewHeight / getHeight());
+	_zoomStep = step;
+	lastViewZoomStep = step;
+	updateViewSize();
+	canvas32->resize(_viewWidth, _viewHeight);
+	delete _messageCanvas;
+	_messageCanvas = nullptr;
+	_camera->resize();
+	const int newX = (int)((long long)_mouseX * _viewWidth / getWidth());
+	const int newY = (int)((long long)_mouseY * _viewHeight / getHeight());
+	_camera->scrollXY((newX - oldX) / _k * _k, (newY - oldY) / _k * _k, true);
+	Log(LOG_INFO) << "HD view zoom: " << VIEW_ZOOMS[_zoomStep] << "% (view " << _viewWidth << "x" << _viewHeight << ")";
+	return true;
+}
+
+/**
+ * HD render: the battle view zoom, percent.
+ */
+int Map::getViewZoomPercent() const
+{
+	return VIEW_ZOOMS[_zoomStep];
 }
 
 /**
@@ -577,6 +671,7 @@ Map::~Map()
 	delete _message;
 	delete _messageScratch;
 	delete _canvas;
+	delete _messageCanvas;
 	delete _camera;
 	delete _txtAccuracy;
 	delete _numUnitMarker;
@@ -798,10 +893,23 @@ void Map::draw()
 		drawTerrain(_canvas);
 		_camera->endShown();
 		_messageOnCanvas = false;
+		_messageApart = false;
 	}
 	else
 	{
-		blitMessage();
+		// the message is laid out on the screen: while the view is zoomed it goes to a canvas of the map's own size
+		_messageApart = _viewWidth != getWidth() || _viewHeight != getHeight();
+		if (_messageApart && !_messageCanvas)
+		{
+			_messageCanvas = new Canvas32(getWidth(), getHeight(), _k);
+			_messageCanvas->setPalette(getPalette(), 0, 256);
+			_messageCanvas->setHdMode(_canvas->getHdMode());
+		}
+		if (_messageApart)
+		{
+			_messageCanvas->fill(Palette::blockOffset(0) + _bgColor);
+		}
+		blitMessage(_messageApart ? _messageCanvas : _canvas);
 		_messageOnCanvas = true;
 	}
 	// the true-color canvas records the frame and draws it on all cores now
@@ -1011,7 +1119,7 @@ void Map::updateHdLight(Tile *tile, int tileShade, const Position &pos)
  * their base coordinates), so it is rendered into a base-resolution scratch
  * surface first and then scaled by k into the map.
  */
-void Map::blitMessage()
+void Map::blitMessage(HdCanvas *target)
 {
 	const int baseW = getWidth() / _k;
 	const int baseH = getHeight() / _k;
@@ -1030,7 +1138,7 @@ void Map::blitMessage()
 	}
 	_messageScratch->clear();
 	_message->blit(_messageScratch->getSurface());
-	_canvas->blitClassic(_messageScratch, 0, 0, _k);
+	target->blitClassic(_messageScratch, 0, 0, _k);
 }
 
 /**
@@ -1062,9 +1170,13 @@ void Map::blit(SDL_Surface *surface)
 		SDL_Surface *world = screen->getWorldSurface();
 		const int k = screen->getWorldScale();
 		bool zoomed = false;
+		// the hidden movement message of a zoomed view has its own canvas, the map's size
+		HdCanvas *shown = _messageOnCanvas && _messageApart && _messageCanvas ? _messageCanvas : _canvas;
+		// the battle view zoom: the canvas is the view, the map's size divided by the zoom, and is scaled to the map
+		const bool viewScaled = shown == _canvas && (_viewWidth != getWidth() || _viewHeight != getHeight());
 		// the canvas is already k times the base resolution (see _spriteWidth), so only its origin scales;
 		// a true-color canvas copies straight into the world (rows in parallel), a palette one is converted by SDL
-		if (Canvas32 *canvas32 = dynamic_cast<Canvas32*>(_canvas))
+		if (Canvas32 *canvas32 = dynamic_cast<Canvas32*>(shown))
 		{
 			// the final blow (HdKillCam): the frame goes to the screen enlarged around the victim
 			Position voxel, focus;
@@ -1072,8 +1184,12 @@ void Map::blit(SDL_Surface *surface)
 			if (HdKillCam::view(voxel, zoom, pull, bars))
 			{
 				_camera->convertVoxelToScreen(voxel, &focus);
-				canvas32->copyZoomed(world, getX() * k, getY() * k, focus.x, focus.y, zoom, pull, bars);
+				canvas32->copyZoomed(world, getX() * k, getY() * k, getWidth(), getHeight(), focus.x, focus.y, zoom, pull, bars);
 				zoomed = true;
+			}
+			else if (viewScaled)
+			{
+				canvas32->copyZoomed(world, getX() * k, getY() * k, getWidth(), getHeight(), 0, 0, 1.0, 0.0, 0.0);
 			}
 			else
 			{
@@ -1085,7 +1201,7 @@ void Map::blit(SDL_Surface *surface)
 			SDL_Rect target {};
 			target.x = getX() * k;
 			target.y = getY() * k;
-			SDL_BlitSurface(_canvas->getSdlSurface(), nullptr, world, &target);
+			SDL_BlitSurface(shown->getSdlSurface(), nullptr, world, &target);
 		}
 		// the message's two lines are not in the canvas when the HD interface can draw them
 		// itself: the canvas reaches the screen scaled, and a smeared line under a sharp one
@@ -1104,7 +1220,8 @@ void Map::blit(SDL_Surface *surface)
 			ui.setClip(getX(), getY(), getWidth(), getHeight());
 			for (const HdLabel &label : _hdLabels)
 			{
-				const int wx = getX() * k + label.x, wy = getY() * k + label.y;
+				// canvas pixels are view pixels: the battle view zoom moves the labels with the map, their letters keep their size
+				const int wx = getX() * k + label.x * getWidth() / _viewWidth, wy = getY() * k + label.y * getHeight() / _viewHeight;
 				if (label.tag)
 				{
 					ui.drawMapTag(label.text, wx, wy, label.face, label.back, label.edge);
@@ -1254,6 +1371,10 @@ void Map::setPalette(const SDL_Color *colors, int firstcolor, int ncolors)
 	if (_canvas)
 	{
 		_canvas->setPalette(colors, firstcolor, ncolors);
+	}
+	if (_messageCanvas)
+	{
+		_messageCanvas->setPalette(colors, firstcolor, ncolors);
 	}
 	for (auto* mds : *_save->getMapDataSets())
 	{
@@ -3113,6 +3234,12 @@ void Map::drawTerrain(HdCanvas *surface)
 void Map::mousePress(Action *action, State *state)
 {
 	InteractiveSurface::mousePress(action, state);
+	// HD render: Ctrl + mouse wheel zooms the view in and out; the wheel alone goes on changing the level
+	const Uint8 button = action->getDetails()->button.button;
+	if ((button == SDL_BUTTON_WHEELUP || button == SDL_BUTTON_WHEELDOWN) && _game->isCtrlPressed() && zoomView(button == SDL_BUTTON_WHEELUP ? 1 : -1))
+	{
+		return;
+	}
 	_camera->mousePress(action, state);
 }
 
@@ -3292,6 +3419,12 @@ void Map::setSelectorPosition(int mx, int my)
 {
 	int oldX = _selectorX, oldY = _selectorY;
 
+	// the mouse is on the screen, the map is counted in the view (the battle view zoom)
+	if (_viewWidth != getWidth() || _viewHeight != getHeight())
+	{
+		mx = (int)((long long)mx * _viewWidth / getWidth());
+		my = (int)((long long)my * _viewHeight / getHeight());
+	}
 	_camera->convertScreenToMap(mx, my + _spriteHeight/4, &_selectorX, &_selectorY);
 
 	if (oldX != _selectorX || oldY != _selectorY)
@@ -4054,9 +4187,9 @@ void Map::refreshSelectorPosition()
 void Map::setHeight(int height)
 {
 	Surface::setHeight(height * _k);
-	createCanvas();
 	const int visibleBase = height - _iconHeight;
-	_visibleMapHeight = visibleBase * _k;
+	_visibleBase = visibleBase;
+	createCanvas(); // the view's visible height (_visibleMapHeight) with it
 	_message->setHeight((visibleBase < 200)? visibleBase : 200);
 	_message->setY((visibleBase - _message->getHeight()) / 2);
 }
@@ -4106,7 +4239,7 @@ int Map::getIconWidth() const
  */
 int Map::getSoundAngle(const Position& pos) const
 {
-	int midPoint = getWidth() / 2;
+	int midPoint = _viewWidth / 2;
 	Position relativePosition;
 
 	_camera->convertMapToScreen(pos, &relativePosition);

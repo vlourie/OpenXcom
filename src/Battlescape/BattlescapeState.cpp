@@ -1058,22 +1058,25 @@ void BattlescapeState::mapOver(Action *action)
 		}
 
 		// Scrolling
-		// (mouse deltas are in base pixels, the camera scrolls in world pixels = k times base)
+		// (mouse deltas are in base pixels, the camera scrolls in world pixels = k times base;
+		// with the battle view zoom the view has zx, zy times fewer pixels than the screen)
 		const int k = _map->getScale();
+		const double zx = (double)_map->getWidth() / _map->getViewWidth(), zy = (double)_map->getHeight() / _map->getViewHeight();
 		if (Options::battleDragScrollInvert)
 		{
 			_map->getCamera()->setMapOffset(_mapOffsetBeforeMouseScrolling);
 			int scrollX = -(int)((double)_totalMouseMoveX / action->getXScale());
 			int scrollY = -(int)((double)_totalMouseMoveY / action->getYScale());
+			const int stepX = _map->getCamera()->viewStep(scrollX), stepY = _map->getCamera()->viewStep(scrollY);
 			Position delta2 = _map->getCamera()->getMapOffset();
-			_map->getCamera()->scrollXY(scrollX * k, scrollY * k, true);
+			_map->getCamera()->scrollXY(stepX, stepY, true);
 			delta2 = _map->getCamera()->getMapOffset() - delta2;
 
 			// Keep the limits...
-			if (scrollX * k != delta2.x || scrollY * k != delta2.y)
+			if (stepX != delta2.x || stepY != delta2.y)
 			{
-				_totalMouseMoveX = -(int) ((double)delta2.x / k * action->getXScale());
-				_totalMouseMoveY = -(int) ((double)delta2.y / k * action->getYScale());
+				_totalMouseMoveX = -(int) ((double)delta2.x / k * zx * action->getXScale());
+				_totalMouseMoveY = -(int) ((double)delta2.y / k * zy * action->getYScale());
 			}
 
 			if (Options::touchEnabled == false)
@@ -1089,22 +1092,23 @@ void BattlescapeState::mapOver(Action *action)
 			_map->getCamera()->setMapOffset(_mapOffsetBeforeMouseScrolling);
 			int scrollX = (int)((double)_totalMouseMoveX / action->getXScale());
 			int scrollY = (int)((double)_totalMouseMoveY / action->getYScale());
+			const int stepX = _map->getCamera()->viewStep(scrollX), stepY = _map->getCamera()->viewStep(scrollY);
 			Position delta2 = _map->getCamera()->getMapOffset();
-			_map->getCamera()->scrollXY(scrollX * k, scrollY * k, true);
+			_map->getCamera()->scrollXY(stepX, stepY, true);
 			delta2 = _map->getCamera()->getMapOffset() - delta2;
 			delta = _map->getCamera()->getMapOffset() - delta;
 
 			// Keep the limits...
-			if (scrollX * k != delta2.x || scrollY * k != delta2.y)
+			if (stepX != delta2.x || stepY != delta2.y)
 			{
-				_totalMouseMoveX = (int) ((double)delta2.x / k * action->getXScale());
-				_totalMouseMoveY = (int) ((double)delta2.y / k * action->getYScale());
+				_totalMouseMoveX = (int) ((double)delta2.x / k * zx * action->getXScale());
+				_totalMouseMoveY = (int) ((double)delta2.y / k * zy * action->getYScale());
 			}
 
 			int barWidth = _game->getScreen()->getCursorLeftBlackBand();
 			int barHeight = _game->getScreen()->getCursorTopBlackBand();
-			int cursorX = _cursorPosition.x + Round((double)delta.x / k * action->getXScale());
-			int cursorY = _cursorPosition.y + Round((double)delta.y / k * action->getYScale());
+			int cursorX = _cursorPosition.x + Round((double)delta.x / k * zx * action->getXScale());
+			int cursorY = _cursorPosition.y + Round((double)delta.y / k * zy * action->getYScale());
 			_cursorPosition.x = Clamp(cursorX, barWidth, _game->getScreen()->getWidth() - barWidth - (int)(Round(action->getXScale())));
 			_cursorPosition.y = Clamp(cursorY, barHeight, _game->getScreen()->getHeight() - barHeight - (int)(Round(action->getYScale())));
 
@@ -3577,6 +3581,7 @@ void BattlescapeState::hdTestDump()
 	f.emplace_back("iconWidth", num(_map->getIconWidth()));
 	f.emplace_back("mapSurfaceWidth", num(_map->getWidth()));
 	f.emplace_back("mapSurfaceHeight", num(_map->getHeight()));
+	f.emplace_back("viewZoom", num(_map->getViewZoomPercent()));
 	{
 		Position off = camera->getMapOffset();
 		Position center = camera->getCenterPosition();
