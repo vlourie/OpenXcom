@@ -18,6 +18,7 @@
  */
 #include "HdTurn.h"
 #include <cmath>
+#include <cstring>
 #include "HdSprites.h"
 
 namespace OpenXcom
@@ -122,7 +123,7 @@ HdTurn::~HdTurn()
 	{
 		for (auto &pair : frames)
 		{
-			if (pair.second->from)
+			if (pair.second->from || pair.second->painted)
 			{
 				HdSprites::remove(pair.second->pixels.data());
 			}
@@ -207,6 +208,43 @@ SurfaceRaw<const Uint8> HdTurn::floorTurned(SurfaceRaw<const Uint8> src, int qua
 	if (hd)
 	{
 		syncHd(src.getBuffer(), e, quarters);
+	}
+	return SurfaceRaw<const Uint8>(e.pixels.data(), e.width, e.height, e.width);
+}
+
+SurfaceRaw<const Uint8> HdTurn::painted(SurfaceRaw<const Uint8> src, int quarters)
+{
+	if (!src || quarters < 1 || quarters > 3 || !HdSprites::anyViews())
+	{
+		return SurfaceRaw<const Uint8>();
+	}
+	std::unique_ptr<Entry> &slot = _frames[3 + quarters][src.getBuffer()];
+	if (!slot)
+	{
+		slot.reset(new Entry());
+		Entry &e = *slot;
+		e.width = src.getWidth();
+		e.height = src.getHeight();
+		e.pixels.resize((size_t)e.width * e.height);
+		e.painted = HdSprites::setView(e.pixels.data(), src.getBuffer(), quarters);
+		e.made = e.painted;
+		if (e.painted)
+		{
+			// the copy keeps the original's pixels: what the canvas reads from the palette frame stays the same
+			for (int y = 0; y < e.height; ++y)
+			{
+				std::memcpy(e.pixels.data() + (size_t)y * e.width, src.getBuffer() + (size_t)y * src.getPitch(), e.width);
+			}
+		}
+		else
+		{
+			std::vector<Uint8>().swap(e.pixels);
+		}
+	}
+	Entry &e = *slot;
+	if (!e.painted || !HdSprites::find(e.pixels.data()))
+	{
+		return SurfaceRaw<const Uint8>();
 	}
 	return SurfaceRaw<const Uint8>(e.pixels.data(), e.width, e.height, e.width);
 }

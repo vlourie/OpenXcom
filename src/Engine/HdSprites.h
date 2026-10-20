@@ -135,6 +135,13 @@ namespace HdSprites
 	std::string wallLabel(const void *key, int part);
 	/// Test hook: the declaration file the next loadPack reads instead of address.txt.
 	void setAddressFile(const std::string &name);
+	/// HD lab (the turned battle map, HdTurn): registers the painted view of palette frame `key` at turn `rot`
+	/// (1..3) - hd/TERRAIN/<set>/<index>.r<R>.png - as the lazy HD frame of `proxy`, the palette frame the
+	/// turned map draws instead (a copy the size of the original). False, with nothing registered, when the
+	/// frame has no view painted for that turn.
+	bool setView(const void *proxy, const void *key, int rot);
+	/// Is a painted view registered for any frame? (Without one the turned map never asks setView.)
+	bool anyViews();
 	/// Is a frame registered at all? Unlike find, this never reads a file, so it can be asked about
 	/// every frame of a set.
 	bool registered(const void *key);
@@ -199,8 +206,9 @@ namespace HdSprites
 	std::vector<std::string> artFolder(const std::string &rest);
 
 	/// Registers hd/<setName>/pack.hdp and hd/<setName>/<index>.png for the frames of a set scaled
-	/// `scale` times (a loose PNG wins over the pack's frame of the same index), and the variants
-	/// hd/<setName>/<index>.v<n>.png (n = 1..15).
+	/// `scale` times (a loose PNG wins over the pack's frame of the same index), the variants
+	/// hd/<setName>/<index>.v<n>.png (n = 1..15) and the views of the turned map
+	/// hd/<setName>/<index>.r<R>.png (R = 1..3, see setView).
 	/// @return the number of frames registered.
 	int loadPack(const std::string &setName, SurfaceSet *set, int scale);
 	/// Decodes an RGBA PNG from the virtual file system into a frame.

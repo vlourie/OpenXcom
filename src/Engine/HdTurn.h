@@ -35,6 +35,11 @@ struct HdFrame;
  * HD frame of the original, mirrored or turned the same way, is registered for it (HdSprites::set),
  * so every drawing mode draws it as it draws the original.
  *
+ * A frame with a view painted for the turn (hd/TERRAIN/<set>/<index>.r<R>.png, HdSprites::setView)
+ * draws that instead: a copy of the palette frame whose HD frame is the painted one, read lazily
+ * within the pack budget like any pack frame. The turned map draws it as it stands, without the
+ * mirror and the shift it gives a computed frame (docs/research/map-rotation-2026-10-20.md).
+ *
  * The frames are made on first use and kept until the map goes: the canvas keys its caches by the
  * frame buffer (span tables, smoothed frames) for the whole battle, so a buffer may not be freed and
  * its address reused while the battle lasts. Nothing is made while the map is not turned.
@@ -47,11 +52,14 @@ class HdTurn
 		int width = 0, height = 0;
 		/// The HD frame of the original the registered one was made from (nullptr: none registered).
 		const HdFrame *from = nullptr;
-		/// The frame differs from the original (a floor with relief is not turned).
+		/// The frame differs from the original (a floor with relief is not turned; a frame without a painted view).
 		bool made = true;
+		/// The painted view of the original is registered for it (HdSprites::setView).
+		bool painted = false;
 	};
-	/// [0] mirrored frames, [1..3] floors turned by that many quarters; by the original's buffer.
-	std::unordered_map<const void*, std::unique_ptr<Entry>> _frames[4];
+	/// [0] mirrored frames, [1..3] floors turned by that many quarters, [4..6] the painted views of turns 1..3;
+	/// by the original's buffer.
+	std::unordered_map<const void*, std::unique_ptr<Entry>> _frames[7];
 	/// Makes the entry of a frame (kind 0 mirror, 1..3 quarters).
 	Entry &entry(SurfaceRaw<const Uint8> src, int kind);
 	/// Registers the HD frame of the original changed the same way (or drops it when the original has none).
@@ -64,6 +72,9 @@ public:
 	/// A floor frame turned by `quarters` (1..3) with the map; a frame with relief above its diamond
 	/// (grass, rubble) would be squashed, so it is drawn as it is.
 	SurfaceRaw<const Uint8> floorTurned(SurfaceRaw<const Uint8> src, int quarters, bool hd);
+	/// The frame whose HD frame is the view of `src` painted for turn `quarters` (1..3), or a null frame
+	/// when none is painted or its picture cannot be read (then the computed frame is drawn).
+	SurfaceRaw<const Uint8> painted(SurfaceRaw<const Uint8> src, int quarters);
 	/// How many frames were made (all kinds).
 	size_t count() const;
 };
