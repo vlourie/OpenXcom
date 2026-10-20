@@ -176,6 +176,7 @@ set ( engine_src
   Engine/HdUiArt.cpp
   Engine/HdFont.cpp
   Engine/HdUiDraw.cpp
+  Engine/HdScreens.cpp
   Engine/HdTest.cpp
   Engine/HdWorkers.cpp
   Engine/HdTurn.cpp

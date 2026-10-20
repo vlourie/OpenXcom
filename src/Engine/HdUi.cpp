@@ -488,6 +488,22 @@ void HdUi::notePicture(int x, int y, int w, int h, bool busy)
  * Remembers a panel of the skin drawn over a base rectangle this frame: a button or a window's fill
  * hides the picture under it, so the text on it needs no outline of its own.
  */
+void HdUi::noteBackdrop(const void *owner, int x, int y, int w, int h)
+{
+	if (w > 0 && h > 0)
+	{
+		Cover c = { x, y, w, h, true, true };
+		c.owner = owner;
+		noteCover(c);
+	}
+}
+
+const std::vector<SDL_Rect> *HdUi::backdropText(const void *owner) const
+{
+	auto it = _lastBackdropText.find(owner);
+	return it == _lastBackdropText.end() ? nullptr : &it->second;
+}
+
 void HdUi::notePanel(int x, int y, int w, int h)
 {
 	if (w > 0 && h > 0)
@@ -512,12 +528,16 @@ void HdUi::noteCover(const Cover &c)
 /**
  * Whether a base rectangle sits on an HD picture: the last thing drawn under its middle.
  */
-bool HdUi::overPicture(int x, int y, int w, int h, bool *busy) const
+bool HdUi::overPicture(int x, int y, int w, int h, bool *busy, const void **owner) const
 {
 	const int cx = x + w / 2, cy = y + h / 2;
 	if (busy)
 	{
 		*busy = false;
+	}
+	if (owner)
+	{
+		*owner = nullptr;
 	}
 	for (size_t i = _covers.size(); i > 0; --i)
 	{
@@ -527,6 +547,10 @@ bool HdUi::overPicture(int x, int y, int w, int h, bool *busy) const
 			if (busy)
 			{
 				*busy = c.busy;
+			}
+			if (owner)
+			{
+				*owner = c.owner;
 			}
 			return c.picture;
 		}
@@ -1099,6 +1123,8 @@ void HdUi::drawGlyph(const Font *font, UCode c, int x, int y, int color, int mul
 void HdUi::frameDone()
 {
 	_covers.clear();
+	_lastBackdropText.swap(_backdropText);
+	_backdropText.clear();
 	if (!active())
 	{
 		return;

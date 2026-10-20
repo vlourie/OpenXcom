@@ -23,6 +23,7 @@
 #include "../Engine/Timer.h"
 #include "../Engine/HdUi.h"
 #include "../Engine/HdUiArt.h"
+#include "../Engine/HdScreens.h"
 #include "../Engine/Options.h"
 #include "../Engine/Sound.h"
 #include "../Engine/RNG.h"
@@ -340,7 +341,15 @@ void Window::hdMirror()
 		{
 			ui.drawShadow(ox + sq.x, oy + sq.y, sq.w, sq.h, _thinBorder ? 1.0f : 2.0f);
 		}
-		if (art)
+		// the screen's theme picture (HdScreens), fitted to the whole window's inside even while it pops up
+		const bool themed = HdScreens::has(_interface);
+		if (themed)
+		{
+			ui.setClip(ox + sq.x + inset, oy + sq.y + inset, sq.w - 2 * inset, sq.h - 2 * inset);
+			HdScreens::drawBackdrop(this, _interface, ox + inset, oy + inset, getWidth() - 2 * inset, getHeight() - 2 * inset);
+			ui.clearClip();
+		}
+		else if (art)
 		{
 			ui.setClip(ox + sq.x + inset, oy + sq.y + inset, sq.w - 2 * inset, sq.h - 2 * inset);
 			ui.drawArt(art, _bg, ox + _dx, oy + _dy, pal);
@@ -367,7 +376,20 @@ void Window::hdMirror()
 				ui.fillRoundRect(ix0, iy0, ix1, iy1, 1.0f * k, HdUi::rgba(pal[_innerColor]), HdUi::rgba(pal[_innerColor]));
 			}
 		}
-		ui.drawPanelFrame(ox + sq.x, oy + sq.y, sq.w, sq.h, _color, mul, inset, _thinBorder, pal);
+		// the frame in the battle panel's metal once the window stands at its size (a popping one is cached by none)
+		if (HdScreens::metalFrames() && sq.w == getWidth() && sq.h == getHeight())
+		{
+			HdScreens::drawFrame(ox + sq.x, oy + sq.y, sq.w, sq.h, inset, _thinBorder, HdUi::rgba(pal[(Uint8)(_color + mul)]));
+		}
+		else
+		{
+			ui.drawPanelFrame(ox + sq.x, oy + sq.y, sq.w, sq.h, _color, mul, inset, _thinBorder, pal);
+		}
+		if (themed)
+		{
+			// after the frame's own note: the text inside lands on the picture, not on a panel
+			ui.noteBackdrop(this, ox + sq.x + inset, oy + sq.y + inset, sq.w - 2 * inset, sq.h - 2 * inset);
+		}
 		return;
 	}
 	if (!art)

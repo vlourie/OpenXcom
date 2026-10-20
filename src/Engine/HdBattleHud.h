@@ -67,6 +67,9 @@ public:
 	/// Is this number a counter lying on a hand's well of the painted panel (NumberText::hdMirror draws it on a dark
 	/// tab, HdUi::drawCounter)? `plate` and `edge` get the tab's colours (0xAARRGGBB).
 	static bool counter(const Surface *number, Uint32 &plate, Uint32 &edge);
+	/// A shade 0..1 (dark to light) of the panel's metal for the option's look (brass, hull steel, silver...):
+	/// the windows' metal frames (HdScreens) are cast in it.
+	static Uint32 metalShade(float s);
 };
 
 /**

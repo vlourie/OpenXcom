@@ -192,8 +192,14 @@ public:
 	/// outline and a halo around it - a busy photograph swallows the plain outline.
 	void notePicture(int x, int y, int w, int h, bool busy = false);
 	void notePanel(int x, int y, int w, int h);
-	/// Is the last thing drawn under a base rectangle an HD picture? `busy` gets whether it is a busy one.
-	bool overPicture(int x, int y, int w, int h, bool *busy = nullptr) const;
+	/// Is the last thing drawn under a base rectangle an HD picture? `busy` gets whether it is a busy one,
+	/// `owner` the window whose screen picture it is (HdScreens; null for any other picture).
+	bool overPicture(int x, int y, int w, int h, bool *busy = nullptr, const void **owner = nullptr) const;
+	/// Remembers that a window's screen picture (HdScreens) fills a base rectangle in this frame: a busy
+	/// picture for the text on it, and the lines of that text are kept for the window (backdropText).
+	void noteBackdrop(const void *owner, int x, int y, int w, int h);
+	/// The base rectangles of the text lines drawn on a window's screen picture in the last frame (null: none).
+	const std::vector<SDL_Rect> *backdropText(const void *owner) const;
 	/// The skin's soft shadow around a base rectangle (under a window; `radius` in base pixels).
 	void drawShadow(int x, int y, int w, int h, float radius);
 	/// The skin's list-row highlight: a translucent light band, with an accent bar at its left in `accent` (0 = none).
@@ -283,9 +289,12 @@ private:
 		int x = 0, y = 0, w = 0, h = 0;
 		bool picture = false;
 		bool busy = false;
+		const void *owner = nullptr;      ///< the window whose screen picture this is (noteBackdrop)
 	};
 	void noteCover(const Cover &c);
 	std::vector<Cover> _covers;       ///< what fills the screen under the text, in drawing order (this frame)
+	/// the text lines on the windows' screen pictures: this frame's, and the last one's (backdropText)
+	std::unordered_map<const void*, std::vector<SDL_Rect>> _backdropText, _lastBackdropText;
 	int _clipX = 0, _clipY = 0, _clipW = 0, _clipH = 0;
 	int _mouseX = -1, _mouseY = -1;
 	bool _hoverOn = false;

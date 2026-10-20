@@ -1802,6 +1802,19 @@ bool HdBattleHud::counter(const Surface *number, Uint32 &plate, Uint32 &edge)
 	return true;
 }
 
+Uint32 HdBattleHud::metalShade(float s)
+{
+	// the dark panel's graphite reads as no metal at all round a window: its frames are the pirate panel's brass
+	if (theme().ramp == GRAPHITE)
+	{
+		s = std::min(std::max(s, 0.0f), 1.0f);
+		int i = 0;
+		while (i < 5 && s > RAMP_AT[i + 1]) ++i;
+		return mix(SHIP_BRASS[i], SHIP_BRASS[i + 1], (s - RAMP_AT[i]) / (RAMP_AT[i + 1] - RAMP_AT[i]));
+	}
+	return rampColor(s, 0);
+}
+
 void HdBattleHud::grooveColors(Uint32 &top, Uint32 &bottom, Uint32 &lip)
 {
 	const Theme &t = theme();
