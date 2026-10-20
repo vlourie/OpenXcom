@@ -48,6 +48,7 @@ class UnitSprite;
 class NumberText;
 class HdCanvas;
 class HdTurn;
+class HdTurnGroups;
 
 enum CursorType { CT_NONE, CT_NORMAL, CT_AIM, CT_PSI, CT_WAYPOINT, CT_THROW };
 enum TilePart : int;
@@ -256,6 +257,8 @@ private:
 	int getWallShade(TilePart part, Tile* tileFrot);
 	/// HD lab: the mirrored and turned terrain frames of the turned map (made on first use, kept for the battle).
 	HdTurn *_turn = nullptr;
+	/// HD lab: the composite objects of the map, drawn whole in the turned view (found when it first turns).
+	HdTurnGroups *_turnGroups = nullptr;
 	/// HD lab: the wall on a back edge of a cell of the turned view - `left` the edge on the left of the screen
 	/// (where the west wall stands unturned), else the right one (the north wall's). Returns the tile that owns
 	/// it (nullptr off the map) and its part; its frame is mirrored when that part is the other one.

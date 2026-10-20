@@ -45,6 +45,7 @@
 #include "../Engine/HdLab.h"
 #include "../Engine/HdSprites.h"
 #include "../Engine/HdTurn.h"
+#include "../Engine/HdTurnGroups.h"
 #include "../Engine/HdUi.h"
 #include <chrono>
 #include <climits>
@@ -932,6 +933,7 @@ Map::~Map()
 	delete _canvas;
 	delete _messageCanvas;
 	delete _turn;
+	delete _turnGroups;
 	delete _camera;
 	delete _txtAccuracy;
 	delete _txtSkillBonus;
@@ -2458,6 +2460,11 @@ void Map::drawTerrain(HdCanvas *surface)
 	{
 		_turn = new HdTurn();
 	}
+	if (turned && !_turnGroups)
+	{
+		_turnGroups = new HdTurnGroups();
+		_turnGroups->build(_save);
+	}
 	unitSprite.setDirectionShift(2 * rot);
 
 	const int halfAnimFrame = (_animFrame / 2) % 4;
@@ -2673,6 +2680,45 @@ void Map::drawTerrain(HdCanvas *surface)
 		}
 		return placed.mirror ? _turn->mirrored(sprite, hdFrames) : sprite;
 	};
+	// HD lab: a tile whose object is a piece of a composite drawn whole (HdTurnGroups) does not draw it itself
+	auto groupDrawn = [&](int tileIndex)
+	{
+		const int group = _turnGroups->memberOf(tileIndex);
+		return group >= 0 && _turnGroups->active(group, rot, _turn, hdFrames);
+	};
+	// HD lab: the pieces of composites drawn whole that stand in the cell at mapPosition / screenPosition of the
+	// turned view, those before its units (`back`) or after them: the cell gets the piece at its place in the
+	// group's box as the view sees it - the whole as it is at turns 0 and 2, its mirror at turns 1 and 3
+	auto drawGroupPieces = [&](int tileIndex, bool back, int shade, int pulseShade)
+	{
+		int count = 0;
+		const int *groups = _turnGroups->covering(tileIndex, count);
+		const bool mirror = (rot & 1) != 0;
+		for (int i = 0; i < count; ++i)
+		{
+			const int group = groups[i];
+			if (!_turnGroups->active(group, rot, _turn, hdFrames))
+				continue;
+			const Position corner = _turnGroups->corner(group), size = _turnGroups->size(group);
+			const Position a = _camera->worldToView(corner);
+			const Position b = _camera->worldToView(corner + Position(size.x - 1, size.y - 1, 0));
+			const Position view = _camera->worldToView(mapPosition);
+			const Position at(view.x - std::min(a.x, b.x), view.y - std::min(a.y, b.y), view.z - corner.z);
+			Tile *source = _turnGroups->piece(group, mirror ? Position(at.y, at.x, at.z) : at);
+			if (!source)
+				continue;
+			const int bigWall = source->getMapData(O_OBJECT)->getBigWall();
+			if ((bigWall < 6 || bigWall == 9) != back)
+				continue;
+			SurfaceRaw<const Uint8> sprite = source->getSprite(O_OBJECT);
+			if (!sprite)
+				continue;
+			if (mirror)
+				sprite = _turn->mirrored(sprite, hdFrames);
+			surface->blit(sprite, screenPosition.x, screenPosition.y - source->getYOffset(O_OBJECT) * _k,
+				source->getObstacle(O_OBJECT) ? pulseShade : shade, false, _nvColor);
+		}
+	};
 	// HD render: the parts of a collapsed building falling (HdFx::fall), each drawn in its cell's turn, as the
 	// cells go here (by tile index)
 	std::vector<std::pair<int, std::pair<const HdFx::Piece*, int>>> pieces;
@@ -2885,7 +2931,7 @@ void Map::drawTerrain(HdCanvas *surface)
 						}
 						// Draw object
 						tmpSurface = tile->getSprite(O_OBJECT);
-						if (tmpSurface)
+						if (tmpSurface && !(turned && groupDrawn(_save->getTileIndex(mapPosition))))
 						{
 							// HD lab: an object on an edge of its tile goes with the edge
 							TurnedObject placed = turned ? turnedObject(tile->getMapData(O_OBJECT)->getBigWall()) : TurnedObject{ tile->isBackTileObject(O_OBJECT), false, 0, 0 };
@@ -2899,6 +2945,8 @@ void Map::drawTerrain(HdCanvas *surface)
 									surface->blit(tmpSurface, screenPosition.x + placed.dx, screenPosition.y + placed.dy - tile->getYOffset(O_OBJECT) * _k, tileShade, false, _nvColor);
 							}
 						}
+						if (turned)
+							drawGroupPieces(_save->getTileIndex(mapPosition), true, tileShade, obstacleShade);
 						// HD render: the collapsed parts that stood in this cell, on their way down
 						if (nextPiece < pieces.size())
 						{
@@ -3246,7 +3294,7 @@ void Map::drawTerrain(HdCanvas *surface)
 					{
 						// Draw object
 						tmpSurface = tile->getSprite(O_OBJECT);
-						if (tmpSurface)
+						if (tmpSurface && !(turned && groupDrawn(_save->getTileIndex(mapPosition))))
 						{
 							// HD lab: an object on an edge of its tile goes with the edge
 							TurnedObject placed = turned ? turnedObject(tile->getMapData(O_OBJECT)->getBigWall()) : TurnedObject{ tile->isBackTileObject(O_OBJECT), false, 0, 0 };
@@ -3260,6 +3308,8 @@ void Map::drawTerrain(HdCanvas *surface)
 									surface->blit(tmpSurface, screenPosition.x + placed.dx, screenPosition.y + placed.dy - tile->getYOffset(O_OBJECT) * _k, tileShade, false, _nvColor);
 							}
 						}
+						if (turned)
+							drawGroupPieces(_save->getTileIndex(mapPosition), false, tileShade, obstacleShade);
 					}
 					// Draw cursor front
 					if (_cursorType != CT_NONE && _selectorX > itX - _cursorSize && _selectorY > itY - _cursorSize && _selectorX < itX+1 && _selectorY < itY+1 && !_save->getBattleState()->getMouseOverIcons())

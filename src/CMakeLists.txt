@@ -179,6 +179,7 @@ set ( engine_src
   Engine/HdTest.cpp
   Engine/HdWorkers.cpp
   Engine/HdTurn.cpp
+  Engine/HdTurnGroups.cpp
   Engine/InteractiveSurface.cpp
   Engine/Language.cpp
   Engine/LanguagePlurality.cpp
