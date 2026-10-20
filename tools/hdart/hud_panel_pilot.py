@@ -82,6 +82,25 @@ PANEL = {
 }
 PANEL_BASE = (320, 56)   # the panel's classic size
 
+# the wells the items in hand lie in (--well): a brass frame along the picture's edges round a dark floor; the game
+# lays the item and its shadow on it, so it stays empty. Two linings of the floor to choose from
+WELL = {
+    "brass_ship": {
+        "leather": "dark worn leather, nearly black, with fine creases",
+        "velvet": "deep black-red velvet with a soft sheen",
+    },
+}
+WELL_PROMPT = ("Repaint this picture as a flat brass picture frame seen exactly straight on, like a scan, with no "
+               "perspective and no depth: a thick polished brass frame with bevelled edges and a small brass screw in "
+               "each corner fills the picture right to its edges, nothing outside it, and the flat area inside the "
+               "frame is a flat pad of %s, facing the viewer, only a narrow soft shadow along its upper and left "
+               "edges; warm light from the upper left, crisp highlights on the brass, rich high detail. Not a box, "
+               "not a cabinet, no inner walls, no back wall, no floor in perspective, no room. The frame and the pad "
+               "keep exactly the shapes and widths they have in the picture. Empty: no objects, no items, no text.")
+# (the first prompt said "recessed compartment ... sunken floor": all six came out as deep cabinets in perspective,
+# a back wall and a floor running away - an item drawn flat can't lie in that)
+WELL_BASE = (40, 56)   # the well with its frame, in classic pixels (a hand's 32 x 48 and the frame round it)
+
 MARGIN = 3     # base pixels of the panel kept round a button
 SCALE = 16     # the model's input: the button this many times bigger
 
@@ -132,6 +151,44 @@ def paint_panel(a):
         print("sheet:", os.path.join(a.out, style + "_panel_sheet.png"), flush=True)
 
 
+def paint_well(a):
+    """Variants of a hand's well, every lining x seeds a.seed .. a.seed + a.well - 1 -> <out>/<style>/well_<lining>_
+    <seed>.png and <out>/<style>_well_sheet.png. The input: a brass band along the edges round a near black floor."""
+    S = 12
+    pw, ph = WELL_BASE[0] * S, WELL_BASE[1] * S
+    band = 4 * S
+    inp = Image.new("RGB", (pw, ph), (150, 112, 50))
+    d = ImageDraw.Draw(inp)
+    d.rectangle([band, band, pw - band - 1, ph - band - 1], fill=(22, 14, 10))
+    painter = None
+    for style in [s for s in a.styles.split(",") if s in WELL]:
+        sdir = os.path.join(a.out, style)
+        os.makedirs(sdir, exist_ok=True)
+        inp.save(os.path.join(sdir, "well_input.png"))
+        paths = []
+        for lining, words in WELL[style].items():
+            for seed in range(a.seed, a.seed + a.well):
+                path = os.path.join(sdir, "well_%s_%d.png" % (lining, seed))
+                paths.append(path)
+                if os.path.exists(path):
+                    continue
+                if painter is None:
+                    painter = photo_ui.Painter(a.models, False, a.steps, photoreal=False)
+                W, H = photo_ui.target_size(pw, ph, 0.6)
+                t0 = time.time()
+                rgb = painter.edit([inp.resize((W, H), Image.LANCZOS)], WELL_PROMPT % words, NEGATIVE, seed, a.steps,
+                                   a.cfg, W, H)
+                Image.fromarray(rgb).resize((pw, ph), Image.LANCZOS).save(path)
+                print("%s / well %s %d: %.0f s -> %s" % (style, lining, seed, time.time() - t0, path), flush=True)
+        sheet = Image.new("RGB", ((pw + 12) * len(paths), ph + 28), (12, 12, 12))
+        dd = ImageDraw.Draw(sheet)
+        for i, p in enumerate(paths):
+            dd.text((i * (pw + 12) + 6, 6), os.path.basename(p), fill=(230, 230, 230))
+            sheet.paste(Image.open(p).convert("RGB"), (i * (pw + 12), 24))
+        sheet.save(os.path.join(a.out, style + "_well_sheet.png"))
+        print("sheet:", os.path.join(a.out, style + "_well_sheet.png"), flush=True)
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--models", default=r"E:\models")
@@ -145,9 +202,13 @@ def main():
                     help="the keys drawn clean and big by the engine's own code (<name>.png); empty = the mod's pixels")
     ap.add_argument("--match", action="store_true", help="show the first finished button with every other one (R-378: copies its sign)")
     ap.add_argument("--panel", type=int, default=0, help="paint this many variants of the panel's surface instead of keys")
+    ap.add_argument("--well", type=int, default=0, help="paint this many variants of a hand's well (per lining) instead")
     a = ap.parse_args()
     if a.panel:
         paint_panel(a)
+        return
+    if a.well:
+        paint_well(a)
         return
     names = list(BUTTONS) if a.buttons == "all" else [b for b in a.buttons.split(",") if b]
 
