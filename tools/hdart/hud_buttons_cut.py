@@ -30,6 +30,10 @@ SCALE = 8    # the cut button: this many times the key's classic size (the game 
 BOX = {
     "links": ("86373d92c3847f73", (168, 94, 466, 276)),
     "reserve_auto": ("07c500215c090673", (42, 40, 330, 228)),
+    # iron_bone keys5b: the green field's rise outdoes the iron frame round it
+    "reserve_none": ("0db812acc1336d73", (33, 38, 335, 232)),
+    # iron_bone keys5: a near square plate on the oak, the oak strip on the left passes the rim test
+    "options": ("48f9861009734a16", (120, 22, 507, 323)),
 }
 
 
@@ -55,6 +59,70 @@ def metal_mask(r, g, b, lum):
     # neutral black (10,9,5); the mahogany is red through and through, lit or in shadow (127,31,9), (14,1,0):
     # green under a third of red. So: green at least 0.42 of red, at any brightness
     return g * 100 >= r * 42
+
+
+# the later styles (keys5 run) ask for the button face filling the picture: the plate nearly fills the frame, with
+# a thin margin of whatever surface round it, so its box is the rim and not the colour
+RIM_STYLES = ("space_lilac", "silver", "iron_bone", "deep_bronze")
+RIM_BAND = 0.2      # how far in from each side of the frame the plate's edge may lie
+RIM_STRONG = 0.55   # a rise this strong against the strongest past the dark point counts; the first one wins
+RIM_DARK = 0.12     # how near the band's darkest a point counts as dark (rim_side's `nearest`)
+RIM_BY_COLOUR = ("space_lilac",)   # whose plate is told from its wall by metal_mask, not by brightness
+SKEW_MAX = 0.035    # find_rim's skew above this: the plate is a trapezoid, draw it again (a tall key: by eye -
+                    # its sides are too short for the measure)
+RIM_FILL = 0.8      # a rim style's plate narrower than this share of the picture stands on the wall: draw it again
+
+
+def rim_side(profile, n, nearest=False):
+    """Where the plate starts in profile[:n] (the profile runs from the frame's side inward). The plate is lighter
+    than its dark rim and the shadow it casts, whatever light falls on the wall: from the band's darkest point (or,
+    `nearest`, the dark point nearest the plate - a lit strip of wall may lie between the frame's side and the gap
+    round the plate) inward, the first strong rise."""
+    if STYLE in RIM_BY_COLOUR:
+        # the profile is the share of plate-coloured pixels: the plate starts where they are the most
+        over = np.where(profile[:n] >= 128)[0]
+        return int(over[0]) if len(over) else 0
+    if nearest:
+        lo, hi = float(profile[:n].min()), float(profile[:n].max())
+        v = int(np.where(profile[:n] <= lo + RIM_DARK * (hi - lo))[0][-1])
+    else:
+        v = int(np.argmin(profile[:n]))
+    g = np.diff(profile[v:n + 1])
+    if len(g) == 0 or g.max() <= 0:
+        return v
+    return v + int(np.where(g >= RIM_STRONG * g.max())[0][0]) + 1
+
+
+def find_rim(img, aspect):
+    """The plate's box: on each side where the plate starts (rim_side) in the outer band of the frame, on the
+    profile averaged over the middle half of the other axis (so no corner screws and no sign). Top and bottom have
+    two guesses each (darkest, nearest dark): the pair that gives the key's own proportions (`aspect`, width to
+    height) best wins. Also the skew: how far the left and right edges of the upper part and the lower part
+    disagree, of the width - a plate drawn as a trapezoid (seen from below) leaves wall in two corners of any box,
+    and is to be drawn again."""
+    from PIL import ImageFilter
+    lum = np.asarray(img.convert("L").filter(ImageFilter.GaussianBlur(1.5))).astype(np.float32)
+    if STYLE in RIM_BY_COLOUR:
+        # a plate sunk into a grey bezel: the bezel is lighter than the gap round it, the plate's colour alone tells
+        rgb = np.asarray(img.filter(ImageFilter.GaussianBlur(1.5))).astype(np.int32)
+        r, g, b = rgb[..., 0], rgb[..., 1], rgb[..., 2]
+        lum = metal_mask(r, g, b, (r + g + b) // 3).astype(np.float32) * 255
+    h, w = lum.shape
+    bx, by = int(w * RIM_BAND), int(h * RIM_BAND)
+
+    def xs(r0, r1):
+        prof = lum[r0:r1].mean(axis=0)
+        return rim_side(prof, bx), w - rim_side(prof[::-1], bx)
+    x0, x1 = xs(h // 4, 3 * h // 4)
+    cols = lum[:, w // 4:3 * w // 4].mean(axis=1)
+    tops = {rim_side(cols, by, k) for k in (False, True)}
+    bottoms = {h - rim_side(cols[::-1], by, k) for k in (False, True)}
+    y0, y1 = min(((t, b) for t in tops for b in bottoms if b - t > h // 3),
+                 key=lambda p: abs(np.log((x1 - x0) / float(p[1] - p[0]) / aspect)), default=(0, h))
+    ux0, ux1 = xs(y0 + (y1 - y0) // 4, y0 + 3 * (y1 - y0) // 8)
+    lx0, lx1 = xs(y0 + 5 * (y1 - y0) // 8, y0 + 3 * (y1 - y0) // 4)
+    skew = (abs(ux0 - lx0) + abs(ux1 - lx1)) / float(w)
+    return (x0, y0, x1, y1), skew
 
 
 def plate_mask(rgb, coloured):
@@ -189,8 +257,13 @@ def main():
         img = Image.open(path).convert("RGB")
         with open(path, "rb") as f:
             sha = hashlib.sha256(f.read()).hexdigest()[:16]
+        skew = 0.0
         if name in BOX and BOX[name][0] == sha:
             box = BOX[name][1]
+        elif STYLE in RIM_STYLES:
+            box, skew = find_rim(img, kw / float(kh))
+            if kh > kw:
+                skew = 0.0
         else:
             box = find_framed(img) if name in TINT else find_plate(img, False)
         if box is None:
@@ -200,7 +273,12 @@ def main():
         cut = img.crop(box).resize((kw * SCALE, kh * SCALE), Image.LANCZOS)
         cut.save(os.path.join(a.out, name + ".png"))
         stretch = (kw / kh) / ((x1 - x0) / (y1 - y0))
-        print("%-13s plate %4d,%4d - %4d,%4d of %dx%d  stretch x%.2f" % (name, x0, y0, x1, y1, img.width, img.height, stretch))
+        # a rim style's plate is to fill the picture: a small one stands on the wall, its proportions are not the
+        # key's - draw it again
+        small = STYLE in RIM_STYLES and (x1 - x0) < RIM_FILL * img.width
+        print("%-13s plate %4d,%4d - %4d,%4d of %dx%d  stretch x%.2f  skew %.3f%s%s" % (
+            name, x0, y0, x1, y1, img.width, img.height, stretch, skew, "  TRAPEZOID" if skew > SKEW_MAX else "",
+            "  SMALL" if small else ""))
         rows.append((name, img, box, cut))
     if not rows:
         return
