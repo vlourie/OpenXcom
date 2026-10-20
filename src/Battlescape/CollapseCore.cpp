@@ -479,6 +479,56 @@ void collapseEvaluate(const CollapseBlock &blk, const std::vector<uint8_t> &remo
 		}
 	}
 
+	// tree branch D (collapse_v4.tree_hold4, tie all): a column holds as a chain from its base, a crown piece while
+	// all its columns hold up to its need level; a part by a carrying wall of its own cell stays with the core
+	if (blk.nTreeCols)
+	{
+		auto onWall = [&](int i) {
+			const Level &L = lv[P[i].z];
+			const int x = P[i].x, y = P[i].y;
+			const int w[4] = { L.at(1, x, y), L.at(1, x + 1, y), L.at(2, x, y), L.at(2, x, y + 1) };
+			for (int j : w)
+				if (j != NONE && carry[j] && !removed[j]) return true;
+			return false;
+		};
+		std::vector<int> heldTo(blk.nTreeCols);
+		std::vector<uint8_t> treeHeld(n, 0), managed(n, 0);
+		const int *t = blk.treeCols;
+		for (int c = 0; c < blk.nTreeCols; ++c)
+		{
+			const int len = *t++;
+			int top = -1;
+			for (int z = 0; z < len; ++z)
+			{
+				const int i = t[z];
+				if (top == z - 1 && !removed[i])
+				{
+					top = z;
+					treeHeld[i] = 1;
+				}
+				if (z > 0 && !onWall(i)) managed[i] = 1;
+			}
+			heldTo[c] = top;
+			t += len;
+		}
+		t = blk.crowns;
+		for (int k = 0; k < blk.nCrowns; ++k)
+		{
+			const int i = t[0], need = t[1], nc = t[2];
+			const int *cs = t + 3;
+			t += 3 + nc;
+			if (onWall(i)) continue;
+			managed[i] = 1;
+			if (removed[i]) continue;
+			bool all = true;
+			for (int j = 0; j < nc; ++j)
+				all = all && heldTo[cs[j]] >= need;
+			if (all) treeHeld[i] = 1;
+		}
+		for (int i = 0; i < n; ++i)
+			if (managed[i]) sup[i] = treeHeld[i];
+	}
+
 	// marks v2 (collapse_v7c): SURFACE/ATTACHED hold while one of their targets holds
 	held.assign(n, 0);
 	for (int i = 0; i < n; ++i)
