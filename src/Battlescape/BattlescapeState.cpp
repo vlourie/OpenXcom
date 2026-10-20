@@ -453,6 +453,15 @@ BattlescapeState::BattlescapeState() :
 		HdHudPanel *panel = static_cast<HdHudPanel*>(_icons);
 		panel->addPart(HdHudPanel::PART_HAND, _btnLeftHandItem);
 		panel->addPart(HdHudPanel::PART_HAND, _btnRightHandItem);
+		for (auto *numbers : { &_numAmmoLeft, &_numAmmoRight, &_numMedikitLeft, &_numMedikitRight })
+		{
+			for (NumberText *number : *numbers)
+			{
+				panel->addPart(HdHudPanel::PART_COUNT, number);
+			}
+		}
+		panel->addPart(HdHudPanel::PART_COUNT, _numTwoHandedIndicatorLeft);
+		panel->addPart(HdHudPanel::PART_COUNT, _numTwoHandedIndicatorRight);
 		panel->addPart(HdHudPanel::PART_CARD, _btnStats);
 		panel->addPart(HdHudPanel::PART_RANK, _rank);
 		for (NumberText *number : { _numTimeUnits, _numEnergy, _numHealth, _numMorale })

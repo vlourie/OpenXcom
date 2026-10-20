@@ -17,6 +17,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "NumberText.h"
+#include "../Engine/HdBattleHud.h"
 #include "../Engine/HdUi.h"
 #include "../Engine/Unicode.h"
 #include <sstream>
@@ -286,6 +287,12 @@ void NumberText::hdMirror()
 	const UString s = Unicode::convUtf8ToUtf32(ss.str());
 	// the classic digits are 5 rows tall from the top of the surface
 	const Uint32 face = HdUi::rgba(pal[(Uint8)(_color + 1)]);
+	Uint32 plate, edge;
+	if (HdBattleHud::counter(this, plate, edge))
+	{
+		ui.drawCounter(s, getX(), getY(), 5.0f, face, plate, edge);
+		return;
+	}
 	ui.drawTtfString(s, false, 5.0f, getX(), getY() - 2, face, _bordered ? 0xE0000000u : 0x90000000u);
 }
 

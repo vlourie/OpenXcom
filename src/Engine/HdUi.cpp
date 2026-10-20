@@ -1106,7 +1106,7 @@ void HdUi::frameDone()
 	// the glyph caches keep every size a text was drawn at: a ceiling, checked between frames (no glyph
 	// reference is held then)
 	const size_t GLYPH_CACHE_BYTES = 32u << 20;
-	for (HdFont *font : { &_fontBig, &_fontSmall })
+	for (HdFont *font : { &_fontBig, &_fontSmall, &_fontCounter })
 	{
 		if (font->trimCache(GLYPH_CACHE_BYTES / 2))
 		{
