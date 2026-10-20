@@ -30,8 +30,10 @@ namespace OpenXcom
  * The classic panel is one picture (ICONS.PCK, the bottom 56 rows) with invisible buttons over it;
  * the buttons copy their piece of it, and a pressed one shows that piece with its colours turned.
  * Here, in the world layer only, the picture is replaced: a dark panel, wells for the hands and a
- * card under the unit's name and stats, and each button a tile with a vector pictogram that lights
- * under the mouse and when pressed. The pictograms are rasterized once per scale and cached.
+ * card under the unit's name and stats, and each button a key: a cap in a socket that goes down when
+ * pressed (by the mouse or by its hotkey) and springs back, stays down while it is on (the reserve
+ * chosen, the unit kneeling), its pictogram lit in a window of glass (or cut into the brass). The caps
+ * are built once per scale and step of the way down and cached; the motion is kept per key.
  *
  * Pictures only: the buttons stay where they are, the classic layer keeps the classic panel (what
  * the clicks and the k = 1 frame go by), and nothing the buttons do changes.
@@ -52,9 +54,12 @@ public:
 	};
 	/// Is the panel drawn the modern way (the HD skin is on and so is the option)?
 	static bool on();
-	/// Draws a button of the panel: a tile at base (x, y, w, h) with the pictogram; `lit` = pressed or
-	/// selected. `tint` = the button's own palette colour (the reserve buttons' green and red), 0 = none.
-	static void drawButton(int x, int y, int w, int h, Icon icon, bool lit, Uint8 tint, const SDL_Color *pal);
+	/// Draws a button of the panel, `key` (its motion is kept under it), at base (x, y, w, h) with the pictogram;
+	/// `lit` = on (the reserve chosen, the unit kneeling), `held` = a mouse button is down on it. `tint` = the
+	/// button's own palette colour (the reserve buttons' green and red), 0 = none; `hotkey` = its key's name or null.
+	static void drawButton(const void *key, int x, int y, int w, int h, Icon icon, bool lit, bool held, Uint8 tint, const SDL_Color *pal, const char *hotkey);
+	/// A button was pressed (clicked or its hotkey): its key goes down, even for a click quicker than a frame.
+	static void notePress(const void *key);
 	/// Is this bar laid in a groove of the brass panel's card (Bar::hdMirror draws it as a tube in it)?
 	static bool grooved(const Surface *bar);
 	/// The colours of such a groove in the panel's metal: its floor top and bottom, the light on its lower lip (0xRRGGBB).
