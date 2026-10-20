@@ -155,6 +155,7 @@ void OptionsHdState::addRow(int group, int index, const std::string &name, const
  */
 void OptionsHdState::updateList()
 {
+	const size_t scroll = _lstOptions->getScroll(); // clearList() scrolls to the top
 	_lstOptions->clearList();
 	_rows.clear();
 
@@ -197,6 +198,7 @@ void OptionsHdState::updateList()
 			}
 		}
 	}
+	_lstOptions->scrollTo(scroll); // the row just changed stays where the player looks at it
 }
 
 /**
