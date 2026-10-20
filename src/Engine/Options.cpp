@@ -502,6 +502,8 @@ void createAdvancedOptionsOXCE()
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceSoldierListGroupBy", &oxceBaseSoldierGroupBy, 1, "STR_SOLDIER_GROUP_BY", "STR_BASESCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceSoldierListRaceBadge", &oxceBaseSoldierTypeIcon, true, "STR_SOLDIER_TYPE_ICON", "STR_BASESCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceTransferExchange", &oxceTransferExchange, true, "STR_TRANSFER_EXCHANGE", "STR_BASESCAPE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceTradeConfirm", &oxceTradeConfirm, 5, "STR_TRADE_CONFIRM", "STR_BASESCAPE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceTradeStay", &oxceTradeStay, true, "STR_TRADE_STAY", "STR_BASESCAPE"));
 
 	// OXCE options battlescape
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceWoundedDefendBaseIf", &oxceWoundedDefendBaseIf, 100, "STR_WOUNDED_DEFEND_BASE_IF", "STR_BATTLESCAPE"));

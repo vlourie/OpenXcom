@@ -65,6 +65,7 @@ set ( basescape_src
   Basescape/StoresState.cpp
   Basescape/TechTreeSelectState.cpp
   Basescape/TechTreeViewerState.cpp
+  Basescape/TradeConfirmState.cpp
   Basescape/TransferBaseState.cpp
   Basescape/TransferConfirmState.cpp
   Basescape/TransferItemsState.cpp

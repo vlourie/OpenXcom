@@ -417,6 +417,13 @@ en-US:
   STR_TRANSFER_EXCHANGE_DESC: "Both bases send at once: the left arrow moves toward the first base, the right arrow toward the second, and the columns show what each base will have. Room is checked net of what each base sends away."
   STR_TRANSFER_EXCHANGE_TITLE: "EXCHANGE"
   STR_TRANSFER_EXCHANGE_AMOUNT: "Exchange"
+  STR_TRADE_CONFIRM: "Purchase and sale: confirm from this many lines"
+  STR_TRADE_CONFIRM_DESC: "Before the deal on the purchase and sell screens, show a window with the chosen lines and the total, when this many lines or more are chosen. 1 - always ask, 0 - never."
+  STR_TRADE_STAY: "Purchase and sale: stay on the screen after the deal"
+  STR_TRADE_STAY_DESC: "After the deal the purchase or sell screen opens anew on the same base, with the same category and scroll - the arrows take you straight to another base. Leave with the cancel button. Screens after a battle or with overfull stores close as before."
+  STR_TRADE_CONFIRM_BUY: "CONFIRM PURCHASE"
+  STR_TRADE_CONFIRM_SELL: "CONFIRM SALE"
+  STR_TRADE_CONFIRM_TOTAL: "Total: {0}"
 #==== Battlescape ===============
   STR_WOUNDED_DEFEND_BASE_IF: "Wounded defend (if HP above x%)"
   STR_WOUNDED_DEFEND_BASE_IF_DESC: "Wounded soldiers defend the base too, if their health is above the given percentage threshold."
