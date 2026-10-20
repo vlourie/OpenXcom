@@ -36,6 +36,7 @@ class SavedBattleGame;
 class Surface;
 class SurfaceSet;
 class BattleUnit;
+class BattleItem;
 class Projectile;
 class Explosion;
 class BattlescapeMessage;
@@ -216,6 +217,28 @@ private:
 	int _blastFallCount = 0;
 	/// Works out the area for the current action and cursor (clears it when nothing explosive is aimed).
 	void updateBlastArea(HdCanvas *surface);
+	/// HD render: the kind of shot aimed, for its reticle style (oxceHdReticleArtillery / oxceHdReticleExplosive).
+	enum AimKind { AIM_PLAIN, AIM_ARTILLERY, AIM_EXPLOSIVE };
+	AimKind _aimKind = AIM_PLAIN;
+	/// HD render: the arc of the aimed throw or arcing shot (option oxceHdAimArc), in voxels from the thrower; whether
+	/// it reaches the target, and the colour of its dashes (0xRRGGBB). Worked out again only when the aim moves.
+	std::vector<Position> _arcPath;
+	bool _arcReaches = false;
+	Uint32 _arcRgb = 0;
+	const BattleUnit *_arcKeyActor = nullptr;
+	const BattleItem *_arcKeyWeapon = nullptr;
+	int _arcKeyType = 0, _arcKeyWeight = 0, _arcKeyTurn = 0;
+	Position _arcKeyTarget, _arcKeyFrom;
+	bool _arcKeyKneeled = false, _arcKeyCtrl = false;
+	/// The dashes of the arc: ARC_DASH_ON voxels drawn of every ARC_DASH, running to the target one voxel an animation frame.
+	static const int ARC_DASH = 10, ARC_DASH_ON = 6;
+	/// Works out the aim kind, swaps its reticle style in and the arc for the current action and cursor.
+	void updateAimHints(HdCanvas *surface);
+	/// Draws the arc on top of the map.
+	void drawAimArc(HdCanvas *surface);
+	/// HD render: "+N" under the reticle at canvas (x, y) - the power the shooter's stats add (option oxceHdAimSkillBonus).
+	void drawSkillBonus(HdCanvas *surface, int x, int y);
+	Text *_txtSkillBonus = nullptr;
 
 	void drawUnit(UnitSprite &unitSprite, Tile *unitTile, Tile *currTile, Position tileScreenPosition, bool topLayer, BattleUnit* movingUnit = nullptr);
 	void drawTerrain(HdCanvas *canvas);

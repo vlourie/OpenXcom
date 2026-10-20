@@ -1080,9 +1080,10 @@ const std::vector<std::string> Mod::HD_RETICLES = { "ring45", "plasma", "techno"
  * HD render: the reticle is frames 6..10 of CURSOR.PCK (6 red, 7..10 the yellow loop). The player
  * picks it in the HD options: the pack's own frames, the stock picture (no HD frame, so it is
  * scaled like any classic sprite), or a style shipped in hd/CURSOR.PCK/reticle_<style>/6..10.png.
- * A style that is not shipped falls back to the pack's own frames.
+ * A style that is not shipped falls back to the pack's own frames. The battle swaps in the style of the kind of
+ * shot aimed (artillery, explosives) the same way, unforced: a swap only when the kind changes.
  */
-void Mod::applyHdReticle()
+void Mod::applyHdReticle(int pick, bool force)
 {
 	SurfaceSet *classic = getSurfaceSet("CURSOR.PCK", false);
 	if (!classic || getHdScale() <= 1)
@@ -1094,7 +1095,15 @@ void Mod::applyHdReticle()
 	{
 		return;                                       // not loaded yet: getHdSurfaceSet applies it on first use
 	}
-	const int pick = Options::oxceHdReticle;
+	if (pick < 0)
+	{
+		pick = Options::oxceHdReticle;
+	}
+	if (!force && pick == _hdReticleApplied)
+	{
+		return;
+	}
+	_hdReticleApplied = pick;
 	std::string folder;
 	if (pick >= 2 && pick - 2 < (int)HD_RETICLES.size())
 	{

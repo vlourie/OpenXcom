@@ -168,6 +168,8 @@ private:
 	int _hdScale = 0;
 	std::map<const SurfaceSet*, SurfaceSet*> _hdSets;
 	std::set<const SurfaceSet*> _hdPacksLoaded;
+	/// HD render: the reticle value registered in CURSOR.PCK 6..10 now (-1 = none yet).
+	int _hdReticleApplied = -1;
 	std::map<const Surface*, Surface*> _hdSurfaces;
 	/// HD render: the animation phases of a single picture (hd/UI/anim/<name>/<i>.png), keyed by the classic picture.
 	std::map<const Surface*, std::vector<Surface*> > _hdSurfaceFrames;
@@ -522,8 +524,9 @@ public:
 	bool hasHdArt() const;
 	/// HD render: the reticle styles oxceHdReticle picks from 2 on (folders hd/CURSOR.PCK/reticle_<style>/).
 	static const std::vector<std::string> HD_RETICLES;
-	/// HD render: registers frames 6..10 of the battle cursor as oxceHdReticle says (call again after it changes).
-	void applyHdReticle();
+	/// HD render: registers frames 6..10 of the battle cursor as reticle value `pick` says (-1 = oxceHdReticle; call
+	/// again after it changes). Not forced: nothing is done when that pick is the one registered already.
+	void applyHdReticle(int pick = -1, bool force = true);
 	/// HD render: gets a single picture scaled k times for the battlescape (the picture itself when k = 1).
 	Surface *getHdSurface(const std::string &name, bool error = true);
 	/// HD render: the animation phases of a single picture for the battlescape (just getHdSurface when none are shipped).
