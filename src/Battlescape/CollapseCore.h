@@ -66,6 +66,10 @@ struct CollapseBlock
 	int experimental; ///< still fails some of its scenarios: only in the debug stand builds (OXCE_AI_DEV)
 	const CollapsePart *keep; ///< records of the building outside the model (trees): they never fall, only their place is known (foreignParts)
 	int nKeep;
+	const int *treeCols; ///< tree branch D (collapse_v5.tree_structure5): columns "count, parts bottom to top" one after another
+	int nTreeCols;
+	const int *crowns;   ///< crown pieces "part, need level, count, columns" one after another
+	int nCrowns;
 };
 
 /**

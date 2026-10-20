@@ -36,7 +36,8 @@ VECTORS = OUT + "/vectors.txt"
 SCENS = ["census/collapse/stage0m/pilot_scen.tsv", "census/collapse/pilot3/pilot_scen.tsv",
          "census/collapse/pilot4/pilot_scen.tsv", "census/collapse/pilot5/pilot_scen.tsv",
          "census/collapse/pilot6/pilot_scen.tsv", "census/collapse/pilot7/pilot_scen.tsv",
-         "census/collapse/pilot8/pilot_scen.tsv"]
+         "census/collapse/pilot8/pilot_scen.tsv", "census/collapse/pilot9/pilot_scen.tsv",
+         "census/collapse/partial9/partial_scen.tsv"]
 BOX = {"амбар": (2, 11, 2, 11), "бункер": (1, 7, 1, 7)}     # здание пилота: клетки x0..x1, y0..y1
 LABEL_EN = {"амбар": "barn", "бункер": "bunker"}            # метка здания в логе игры
 # здания, у которых остались провальные сценарии (census/collapse/pilot3/fail_cases.md): в заголовке с флагом
@@ -63,14 +64,17 @@ EXPERIMENTAL = {"banditbarn1", "banditbarn2",
 # берёт сценарии здания)
 # восьмая партия (collapse_pilot8_scen.TREES_OUT): деревья вне модели - части keep заголовка
 TREES_OUT = set()
+# ветка D в переносе (лес и столбы, слово Vitali 20.10): колонны и кроны collapse_v5.tree_structure5 по целому
+# блоку выгружаются готовыми, в бою - только держание collapse_v4.tree_hold4 (tie all)
+TREES_IN = set()
 KIND = {"f": 0, "w": 1, "n": 2, "o": 3}                   # O_FLOOR, O_WESTWALL, O_NORTHWALL, O_OBJECT
 N_RANDOM = 1500
 SEED = 20261008
 SOURCES = ["tools/collapse_v7c.py", "tools/collapse_v7b.py", "tools/collapse_v7.py", "tools/collapse_v6.py",
-           "tools/collapse_v5.py", "tools/collapse_v3.py", "tools/collapse_v2.py", "tools/collapse_attach_v2.py",
+           "tools/collapse_v5.py", "tools/collapse_v4.py", "tools/collapse_v3.py", "tools/collapse_v2.py", "tools/collapse_attach_v2.py",
            "tools/collapse_pilot_scen.py", "tools/collapse_pilot3_scen.py", "tools/collapse_pilot4_scen.py",
            "tools/collapse_pilot5_scen.py", "tools/collapse_pilot6_scen.py", "tools/collapse_pilot7_scen.py",
-           "tools/collapse_pilot8_scen.py", "tools/collapse_v7d.py",
+           "tools/collapse_pilot8_scen.py", "tools/collapse_pilot9_scen.py", "tools/collapse_v7d.py",
            "tools/collapse_pilot_export.py"]
 
 
@@ -116,7 +120,7 @@ def static(C, blk, label):
         cls = {k: V.eff_cls(k, p, f2) for k, p in blk.parts.items()}
         role = {k: p.get("role", "") for k, p in blk.parts.items()}
         cols, crowns = H.tree_structure5(blk, cls, role)
-        if (cols or crowns) and label not in TREES_OUT:
+        if (cols or crowns) and label not in TREES_OUT and label not in TREES_IN:
             stop.append("деревья (D): стволов %d, крон %d" % (len(cols), len(crowns)))
         keys = sorted((k for k in blk.parts if k not in tree), key=lambda k: (k[3], KIND[k[0]], k[2], k[1]))
         idx = {k: i for i, k in enumerate(keys)}
@@ -168,8 +172,17 @@ def static(C, blk, label):
             parts.append(e)
         keep = [dict(key=k, set=blk.parts[k]["set"].upper(), mcd=blk.parts[k]["idx"], kind=KIND[k[0]], x=k[1],
                      y=k[2], z=k[3]) for k in sorted(tree, key=lambda k: (k[3], KIND[k[0]], k[2], k[1]))]
+        # ветка D: колонна - номера частей снизу вверх, кусок кроны - (номер, этаж нужды, номера колонн)
+        tcols, tcrowns = [], []
+        if label in TREES_IN:
+            cxy = sorted(cols)
+            tcols = [[idx[k] for k in cols[xy]] for xy in cxy]
+            for k, (how, cs) in sorted(crowns.items(), key=lambda kv: idx[kv[0]]):
+                if cs:
+                    need = min(k[3], max(len(cols[c]) - 1 for c in cs))
+                    tcrowns.append((idx[k], need, [cxy.index(c) for c in cs]))
     return dict(label=label, terrain=blk.terrain, name=blk.name, sx=blk.sx, sy=blk.sy, sz=blk.sz,
-                box=BOX[label], parts=parts, idx=idx, keep=keep)
+                box=BOX[label], parts=parts, idx=idx, keep=keep, tcols=tcols, tcrowns=tcrowns)
 
 
 # ------------------------------------------------------------------ упрощённая копия расчёта
@@ -288,6 +301,32 @@ def ref_eval(d, removed):
                     fsup.add(nb)
                     sup.add(live[3][nb])
                     q.append(nb)
+    # ветка D (collapse_v4.tree_hold4, tie all): колонна держится цепочкой от основания, кусок кроны - всеми
+    # своими колоннами до этажа нужды; часть у несущей стены своей клетки - по ядру
+    if d["tcols"]:
+        def on_wall(i):
+            e = P[i]
+            lv = grid[e["z"]]
+            ws = (lv[1].get((e["x"], e["y"])), lv[1].get((e["x"] + 1, e["y"])), lv[2].get((e["x"], e["y"])),
+                  lv[2].get((e["x"], e["y"] + 1)))
+            return any(w is not None and w in carry and w not in removed for w in ws)
+        held_to, tree_held, managed = [], set(), set()
+        for st in d["tcols"]:
+            top = -1
+            for z, i in enumerate(st):
+                if i in removed:
+                    break
+                top = z
+                tree_held.add(i)
+            held_to.append(top)
+            managed.update(i for i in st[1:] if not on_wall(i))
+        for i, need, cs in d["tcrowns"]:
+            if on_wall(i):
+                continue
+            managed.add(i)
+            if i not in removed and all(held_to[c] >= need for c in cs):
+                tree_held.add(i)
+        sup = (sup - managed) | (tree_held & managed)
     # слой разметки v7c
     held = {i for i in sup if not (P[i]["mark"] and i not in removed)}
     pending = {}
@@ -635,15 +674,22 @@ def cpp_header(datas):
                 L.append("\t{ %d, %d, %d, %d, %d, %d, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }," % (
                     e["kind"], e["x"], e["y"], e["z"], sets.index(e["set"]), e["mcd"]))
             L.append("};")
+        if d["tcols"]:
+            L.append("static const int treeCols%d[] = { %s };" % (
+                bi, ", ".join(str(v) for st in d["tcols"] for v in [len(st)] + st)))
+            L.append("static const int crowns%d[] = { %s };" % (
+                bi, ", ".join(str(v) for i, need, cs in d["tcrowns"] for v in [i, need, len(cs)] + cs) or "-1"))
         L.append("")
     L.append("static const CollapseBlock blocks[] = {")
     for bi, d in enumerate(datas):
         b = d["box"]
-        L.append('\t{ "%s", "%s", %d, %d, %d, %d, %d, %d, %d, sets%d, %d, parts%d, %d, targets%d, %d, %s, %d },' % (
+        L.append('\t{ "%s", "%s", %d, %d, %d, %d, %d, %d, %d, sets%d, %d, parts%d, %d, targets%d, %d, %s, %d, '
+                 '%s, %d, %s, %d },' % (
             LABEL_EN[d["label"]], d["name"], d["sx"], d["sy"], d["sz"], b[0], b[1], b[2], b[3], bi,
             len({e["set"] for e in d["parts"]} | {e["set"] for e in d["keep"]}), bi, len(d["parts"]), bi,
             1 if LABEL_EN[d["label"]] in EXPERIMENTAL else 0, "keep%d" % bi if d["keep"] else "nullptr",
-            len(d["keep"])))
+            len(d["keep"]), "treeCols%d" % bi if d["tcols"] else "nullptr", len(d["tcols"]),
+            "crowns%d" % bi if d["tcols"] else "nullptr", len(d["tcrowns"])))
     L.append("};")
     L.append("static const int blockCount = %d;" % len(datas))
     L += ["", "}", "}", ""]
@@ -699,7 +745,12 @@ def main():
     blds += P8.load()[2]
     BOX.update(P8.BOX)
     LABEL_EN.update(P8.LABEL_EN)
-    TREES_OUT.update(P8.TREES_OUT)
+    TREES_IN.update(P8.TREES_OUT)                 # 20.10: деревья партии 8 - уже в модели (ветка D)
+    import collapse_pilot9_scen as P9             # девятая партия - лес и столбы, ветка D в модели
+    blds += P9.load()[2]
+    BOX.update(P9.BOX)
+    LABEL_EN.update(P9.LABEL_EN)
+    TREES_IN.update(P9.TREES_IN)
     if len({b[2] for b in blds}) != len(blds) or len(set(LABEL_EN.values())) != len(LABEL_EN):
         raise SystemExit("метки зданий пилота не уникальны")
     if EXPERIMENTAL - set(LABEL_EN.values()):
