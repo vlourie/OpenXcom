@@ -1,0 +1,1 @@
+﻿- "Ship's brass" panel: the rounds left (and medikit doses) in the hand wells now sit on a dark tab with a brass edge, in a heavy outlined face - no longer blurred against the light frame and leather.

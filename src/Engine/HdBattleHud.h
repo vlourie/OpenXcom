@@ -64,6 +64,9 @@ public:
 	static bool grooved(const Surface *bar);
 	/// The colours of such a groove in the panel's metal: its floor top and bottom, the light on its lower lip (0xRRGGBB).
 	static void grooveColors(Uint32 &top, Uint32 &bottom, Uint32 &lip);
+	/// Is this number a counter lying on a hand's well of the painted panel (NumberText::hdMirror draws it on a dark
+	/// tab, HdUi::drawCounter)? `plate` and `edge` get the tab's colours (0xAARRGGBB).
+	static bool counter(const Surface *number, Uint32 &plate, Uint32 &edge);
 };
 
 /**
@@ -81,7 +84,8 @@ public:
 		PART_CARD,    ///< the card under the unit's name, rank and stats
 		PART_RANK,    ///< the frame of the rank badge on the card
 		PART_CHIP,    ///< a tinted chip under a stat's number
-		PART_BAR      ///< a stat's bar, laid in a groove (HdBattleHud::grooved)
+		PART_BAR,     ///< a stat's bar, laid in a groove (HdBattleHud::grooved)
+		PART_COUNT    ///< a number on a hand's well: the rounds left, the medikit's doses (HdBattleHud::counter)
 	};
 	HdHudPanel(int width, int height, int x = 0, int y = 0) : InteractiveSurface(width, height, x, y) {}
 	~HdHudPanel() override;

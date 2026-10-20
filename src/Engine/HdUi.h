@@ -164,6 +164,10 @@ public:
 	/// A number tag on the battle map: `s` centred on world x `wx` on a rounded plate whose top is world y `wy`
 	/// (the classic tag is a bordered 3x5 digit: face, plate and edge are its three shades).
 	void drawMapTag(const UString &s, int wx, int wy, Uint32 face, Uint32 plate, Uint32 edge);
+	/// A counter on the battle panel (the rounds left in a hand's item): `s` from base (x, y) = the top of its
+	/// capitals, `capHeight` base pixels tall, outlined, on a dark rounded tab with a metal edge. It has a face of
+	/// its own, heavy and narrow (hd/UI/fonts/Pulse-Big.ttf), whatever font the text is set in; the big one without it.
+	void drawCounter(const UString &s, int x, int y, float capHeight, Uint32 face, Uint32 plate, Uint32 edge);
 	/// Width of a string in base pixels at that size.
 	float ttfWidth(const UString &s, bool big, float capHeight);
 	/// The text caret of an edit field drawn with the TrueType fonts: after `pos` characters of `value`, laid out
@@ -264,6 +268,7 @@ private:
 	/// Lists the font sets the mods ship: hd/UI/Font{Big,Small}.ttf first, then the pairs in hd/UI/fonts.
 	void scanFontSets();
 	HdFont _fontBig, _fontSmall;
+	HdFont _fontCounter;              ///< the battle panel's counters (drawCounter), loaded with the mods
 	std::unordered_map<const Font*, FontMetrics> _metrics;
 	std::unordered_map<const Surface*, SmoothEntry> _smooth;
 	std::list<const Surface*> _smoothLru;

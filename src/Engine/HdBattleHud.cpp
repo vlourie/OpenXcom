@@ -136,8 +136,8 @@ const Theme PIRATE = {
 	3,
 };
 
-/// The bars laid in grooves of the panel's card (HdHudPanel::PART_BAR).
-std::vector<const Surface*> grooves;
+/// The bars laid in grooves of the panel's card (HdHudPanel::PART_BAR), the numbers on the hands' wells (PART_COUNT).
+std::vector<const Surface*> grooves, counters;
 
 const Theme &theme()
 {
@@ -1708,6 +1708,16 @@ bool HdBattleHud::grooved(const Surface *bar)
 	return on() && theme().plaques && std::find(grooves.begin(), grooves.end(), bar) != grooves.end();
 }
 
+bool HdBattleHud::counter(const Surface *number, Uint32 &plate, Uint32 &edge)
+{
+	if (!on() || !keyLook().gravure || std::find(counters.begin(), counters.end(), number) == counters.end()) return false;
+	// the painted well's frame and leather are light and busy under a thin digit: a dark enamel tab in the
+	// keys' metal
+	plate = 0xF0140C06u;
+	edge = theme().ramp[3];
+	return true;
+}
+
 void HdBattleHud::grooveColors(Uint32 &top, Uint32 &bottom, Uint32 &lip)
 {
 	const Theme &t = theme();
@@ -1718,9 +1728,9 @@ void HdBattleHud::grooveColors(Uint32 &top, Uint32 &bottom, Uint32 &lip)
 
 void HdHudPanel::addPart(Part part, const Surface *widget, Uint8 color)
 {
-	if (part == PART_BAR)
+	if (part == PART_BAR || part == PART_COUNT)
 	{
-		grooves.push_back(widget);
+		(part == PART_BAR ? grooves : counters).push_back(widget);
 		return;
 	}
 	_parts.push_back(Item{ part, widget, color });
@@ -1730,6 +1740,7 @@ HdHudPanel::~HdHudPanel()
 {
 	// the bars and the keys go with the screen; one made later at the same address is not this one
 	grooves.clear();
+	counters.clear();
 	anims.clear();
 }
 
@@ -1848,7 +1859,8 @@ void HdHudPanel::hdMirror()
 			break;
 		}
 		case HdHudPanel::PART_BAR:
-			break; // the bar draws its groove itself (Bar::hdMirror)
+		case HdHudPanel::PART_COUNT:
+			break; // the bar draws its groove itself (Bar::hdMirror), the counter its tab (NumberText::hdMirror)
 		}
 	}
 }

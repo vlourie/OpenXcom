@@ -246,6 +246,7 @@ void HdUi::scanFontSets()
 void HdUi::loadFonts()
 {
 	scanFontSets();
+	_fontCounter.load(HdSprites::artPath("UI/fonts/Pulse-Big.ttf"));
 	_fontSetLoaded = -1;
 	applyFontOption();
 	Log(LOG_INFO) << "HD interface: " << _fontSets.size() << " TrueType font set(s) in the mods";
@@ -914,6 +915,45 @@ void HdUi::drawMapTag(const UString &s, int wx, int wy, Uint32 face, Uint32 plat
 		}
 		pen += g.advance;
 		prev = c;
+	}
+}
+
+void HdUi::drawCounter(const UString &s, int x, int y, float capHeight, Uint32 face, Uint32 plate, Uint32 edge)
+{
+	SDL_Surface *dest;
+	int k;
+	const SDL_Color *pal;
+	if (!target(dest, k, pal) || !hasFonts() || s.empty()) return;
+	HdFont &f = _fontCounter.loaded() ? _fontCounter : font(true);
+	const float px = f.sizeForCapHeight(capHeight * k);
+	const float w = f.measure(s, px);
+	// a weapon's ammo slots are 6 base pixels apart: the tabs of 5-pixel digits just touch
+	const float padX = 1.0f * k, padY = 0.5f * k;
+	const float x0 = (float)x * k - padX, x1 = (float)x * k + w + padX;
+	const float y0 = (float)y * k - padY, y1 = (y + capHeight) * k + padY;
+	const float radius = std::min((y1 - y0) * 0.5f, 1.5f * k);
+	fillRoundRect(x0, y0, x1, y1, radius, plate, plate);
+	strokeRoundRect(x0, y0, x1, y1, radius, std::max(1.0f, 0.4f * k), edge);
+	FrameTiming timing(_frameMs);
+	const SDL_Rect clip = worldClip(dest, k);
+	const int baseline = (int)std::lround((y + capHeight) * k);
+	// a black edge round each digit first: the tab is dark, but its edge and the frame under it are not
+	const int outlineW = std::max(1, k / 3);
+	for (int pass = 0; pass < 2; ++pass)
+	{
+		float pen = (float)x * k;
+		UCode prev = 0;
+		for (UCode c : s)
+		{
+			if (prev) pen += f.kern(prev, c, px);
+			const HdFont::Glyph &g = pass == 0 ? f.outline(c, px, 1.0f, outlineW) : f.glyph(c, px);
+			if (g.w > 0)
+			{
+				blendGlyph(dest, clip, g, (int)std::lround(pen) + g.xoff, baseline + g.yoff, pass == 0 ? 0xE0000000u : face);
+			}
+			pen += f.glyph(c, px).advance;
+			prev = c;
+		}
 	}
 }
 
