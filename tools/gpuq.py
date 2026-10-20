@@ -34,6 +34,10 @@ PREEMPT_COOPERATIVE или PREEMPT_TIMEOUT + PREEMPT_FORCED; PREEMPT_CANCELLED -
     0                         done
     75 у уступающего          PREEMPTED, не ошибка: первым в своём P (без запроса больше 3 раз подряд - сбой)
     прочее (и 75 у обычного)  failed и повторы по --retries
+Сторож shared (R-213): раз в 45 с счётчик Windows '\GPU Process Memory(pid_N*)\Shared Usage' по дереву
+идущего задания; больше 0,5 ГБ дольше минуты - снимается (stopped, без повтора), в daemon.log и логе
+задания «shared N ГБ (R-213)». Карта в shared тормозит всё, а ошибки задание не даёт. Видео из F:\AIStudio
+(WanGP держит закреплённую RAM по замыслу) - только запись в daemon.log, без снятия (Vitali 20.10).
 Один процесс на задание: потомки вышедшего или снятого задания снимаются, и пока жив хоть один,
 задание заново не запускается.
 
@@ -65,6 +69,7 @@ import msvcrt
 import os
 import subprocess
 import sys
+import threading
 import time
 import urllib.request
 
@@ -119,6 +124,15 @@ YIELD_CODE = 75     # «уступил карту», не ошибка: зада
 PREEMPT_GRACE = int(os.environ.get("GPUQ_PREEMPT_GRACE", "300"))  # секунд дождаться конца картинки
 YIELD_DIR = os.path.join(HOME, "yield")
 OLLAMA = "http://127.0.0.1:11434"
+# Сторож shared (R-213): у идущего задания и его потомков раз в SHARED_EVERY с читается счётчик Windows
+# '\GPU Process Memory(pid_N*)\Shared Usage'; больше SHARED_LIMIT_GB дольше SHARED_HOLD с - задание снимается.
+SHARED_EVERY = float(os.environ.get("GPUQ_SHARED_EVERY", "45"))
+SHARED_HOLD = float(os.environ.get("GPUQ_SHARED_HOLD", "60"))
+SHARED_LIMIT_GB = 0.5
+FAKE_SHARED = os.environ.get("GPUQ_FAKE_SHARED")      # для теста: файл строк «PID байты» вместо счётчика
+# видео WanGP держит закреплённую RAM по замыслу (#725: 7,7 ГБ shared весь прогон): его задания сторож только
+# пишет в лог, не снимает (Vitali 20.10: «Видео - только лог»). Задание - из этих папок по cwd или аргументу.
+SHARED_LOG_ONLY = ("f:/aistudio/",)
 
 # Скрипты, которые грузят модель на карту. Нужны, чтобы увидеть запуск мимо очереди.
 # Тот же список читает хук .claude/hooks/gpu-guard.ps1.
@@ -327,6 +341,109 @@ def ollama_unload(log):
     return models
 
 
+def shared_by_pid():
+    """PID -> байты shared памяти карты по счётчику Windows (torch.cuda закреплённое не видит, R-213)."""
+    out = {}
+    if FAKE_SHARED:
+        with contextlib.suppress(OSError):
+            with io.open(FAKE_SHARED, encoding="utf-8") as f:
+                for line in f:
+                    pid, _s, v = line.strip().partition(" ")
+                    if pid.isdigit() and v:
+                        out[int(pid)] = out.get(int(pid), 0) + float(v)
+        return out
+    ps = ("(Get-Counter '\\GPU Process Memory(*)\\Shared Usage' -ErrorAction SilentlyContinue).CounterSamples"
+          "|?{$_.CookedValue -gt 0}|%{'{0} {1}' -f $_.InstanceName,$_.CookedValue}")
+    r = subprocess.run(["powershell", "-NoProfile", "-Command", ps], capture_output=True, text=True,
+                       timeout=60, creationflags=NO_WINDOW)
+    for line in r.stdout.splitlines():
+        name, _s, v = line.strip().rpartition(" ")
+        if name.startswith("pid_"):     # pid_62064_luid_0x..._phys_0
+            pid = name[4:].split("_", 1)[0]
+            if pid.isdigit():
+                with contextlib.suppress(ValueError):
+                    out[int(pid)] = out.get(int(pid), 0) + float(v)
+    return out
+
+
+class SharedWatch:
+    """Счётчик читается в своём потоке: Get-Counter идёт секунду-две, а очередь под замком ждать не должна.
+    Диспетчер каждый такт отдаёт PID дерева задания (watch) и берёт последний замер (take)."""
+
+    def __init__(self):
+        self.lock = threading.Lock()
+        self.jid, self.pids, self.result = None, set(), None
+        threading.Thread(target=self.loop, daemon=True).start()
+
+    def watch(self, jid, pids):
+        with self.lock:
+            if jid != self.jid:
+                self.result = None
+            self.jid, self.pids = jid, set(pids)
+
+    def take(self, jid):
+        """(время замера, байты) этого задания или None."""
+        with self.lock:
+            return self.result[1:] if self.result and self.result[0] == jid else None
+
+    def loop(self):
+        while True:
+            time.sleep(SHARED_EVERY)
+            with self.lock:
+                jid, pids = self.jid, set(self.pids)
+            if not jid or not pids:
+                continue
+            try:
+                by = shared_by_pid()
+            except Exception as e:
+                dlog(f"сторож shared: счётчик не прочитан: {e}")
+                continue
+            total = sum(v for pid, v in by.items() if pid in pids)
+            with self.lock:
+                if self.jid == jid:
+                    self.result = (jid, time.time(), total)
+
+
+def shared_log_only(job):
+    """Задание из SHARED_LOG_ONLY: сторож о нём только пишет."""
+    paths = [job.get("cwd") or ""] + list(job.get("cmd") or [])
+    return any(str(a).replace("\\", "/").lower().startswith(SHARED_LOG_ONLY) for a in paths)
+
+
+def guard_shared(watch, jid, job, pids):
+    """Shared больше SHARED_LIMIT_GB дольше SHARED_HOLD с - снять задание (R-213): карта, ушедшая в shared,
+    тормозит всё, а ошибки задание не даёт. Пометка - в daemon.log и в лог задания."""
+    watch.watch(jid, pids)
+    got = watch.take(jid)
+    if not got:
+        return
+    at, total = got
+    gb = total / 2 ** 30
+    job["shared_gb"] = round(gb, 1)
+    if gb <= SHARED_LIMIT_GB:
+        if job.pop("shared_since", None):
+            dlog(f"#{jid} {job['name']}: shared {gb:.1f} ГБ - снова в норме")
+        return
+    if shared_log_only(job):
+        if not job.get("shared_since"):
+            job["shared_since"] = at
+            dlog(f"#{jid} {job['name']}: shared {gb:.1f} ГБ больше {SHARED_LIMIT_GB} - видео, только в лог (R-213)")
+        return
+    if not job.get("shared_since"):
+        job["shared_since"] = at
+        dlog(f"#{jid} {job['name']}: shared {gb:.1f} ГБ больше {SHARED_LIMIT_GB} - снимется, если продержится "
+             f"{SHARED_HOLD:.0f} с (R-213)")
+    elif at - job["shared_since"] >= SHARED_HOLD and not job.get("kill"):
+        msg = f"shared {gb:.1f} ГБ (R-213)"
+        dlog(f"#{jid} {job['name']}: снято сторожем: {msg} дольше {at - job['shared_since']:.0f} с")
+        with contextlib.suppress(OSError):
+            with io.open(os.path.join(LOGS, f"{jid}.log"), "a", encoding="utf-8") as f:
+                f.write(f"\n===== {now()} снято очередью: {msg} - карта ушла в shared память, "
+                        f"а должна быть около нуля (docs/RAKES.md R-213)\n")
+        job["stop_reason"] = msg
+        job["kill"] = "shared"
+
+
 def wrap(cmd):
     """.ps1 и .cmd сами не запускаются - оборачиваем. Интерпретатор .py задаёт человек."""
     head = cmd[0].lower()
@@ -437,6 +554,7 @@ def serve(_args):
         st["daemon"] = {"pid": me.pid, "ctime": me.create_time()}
     dlog(f"диспетчер поднят, PID {os.getpid()}")
     popen = {}          # jid -> Popen: код возврата знаем только у своих детей
+    watch = SharedWatch()
     kids = {}           # jid -> потомки идущего задания на прошлом такте
     last_wait = ""
     while True:
@@ -456,7 +574,7 @@ def serve(_args):
                     how = job.pop("kill")
                     st["running"] = None
                     popen.pop(jid, None)
-                    for k in ("yield_at", "yield_killed"):
+                    for k in ("yield_at", "yield_killed", "shared_since"):
                         job.pop(k, None)
                     drop_yield(jid)
                     if how == "requeue":
@@ -476,6 +594,7 @@ def serve(_args):
                         exited(st, jid, job, code)
                 elif job:
                     preempt(st, jid, job, p)
+                    guard_shared(watch, jid, job, {p.pid} | {k.pid for k in kids.get(jid, ())})
             wait = ""
             if not st["running"] and st["order"]:
                 if st.get("paused"):
@@ -635,6 +754,7 @@ def describe(st):
         lines.append(f"идёт:  #{jid} {j['name']}  {elapsed(j.get('started'))}  {tag(j, running=True)}"
                      + (f"  попытка {j['tries']}" if j.get("tries", 1) > 1 else "")
                      + yield_stats(j)
+                     + (f"  shared {j['shared_gb']} ГБ" if j.get("shared_gb") else "")
                      + (f"  УСТУПАЕТ КАРТУ: запрос {time.time() - j['yield_at']:.0f} с назад"
                         if j.get("yield_at") else ""))
         if last:
@@ -656,7 +776,7 @@ def describe(st):
         lines.append("закончены:")
         for j in done[-8:]:
             lines.append(f"      #{j['id']} {j['name']}  {j['state']}  код {j.get('code')}"
-                         f"  {j.get('ended', '')}")
+                         f"  {j.get('ended', '')}" + (f"  снято: {j['stop_reason']}" if j.get("stop_reason") else ""))
     return lines
 
 
