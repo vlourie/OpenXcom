@@ -1,1 +1,0 @@
-﻿- Solid blocks of earth and rock in HD (in forests, deserts, caves, on Mars, islands and city blocks) now stack into slopes and roofs without seams: no grid on top, no stripes on the sides or between levels. The cables on the freighter are green again as in the original, and toxic water no longer has a green rim and blotches along its edge. 23 frames in total. Graphics only.
