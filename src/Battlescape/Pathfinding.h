@@ -296,6 +296,8 @@ private:
 	void abortPath();
 	/// Gets the strafe move setting.
 	bool getStrafeMove() const;
+	/// Does the unit back up for a walk whose first step goes this way (straight behind it, armor allowsReverse, the player's own move)?
+	bool reverseStart(const BattleUnit *unit, int dir) const;
 	/// Checks, for the up/down button, if the movement is valid.
 	bool validateUpDown(const BattleUnit *bu, const Position& startPosition, const int direction, bool missile = false) const;
 
