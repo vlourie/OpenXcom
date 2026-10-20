@@ -3,3 +3,4 @@
 - In the debriefing, a lone "1" in the quantity column is no longer squeezed to half size: the dot leaders make room for it now. Graphics only.
 - In the battle inventory, the Voodoo skill and the other stats of the bottom row no longer vanish when you hover over a weapon: the Piratez ammo counter starts with an empty line and leaves the row alone. Graphics only.
 - On the sell screen, ammo rows can be told apart again: their pale pink merged with the white of items chosen for sale, and is now deeper. Other small pale tinted HD interface text got the same richer shade. Graphics only.
+- Doors in HD: swinging doors of houses, bars, barns, warehouses and gates - about 160 frames, closed and open - now have a clean edge exactly along the original silhouette, with no stair-steps or halo. Panels, handles and planks are unchanged. Graphics only: doors open the same way, tiles, walkability and cover are unchanged.
