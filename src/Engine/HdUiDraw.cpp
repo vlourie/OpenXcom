@@ -1025,6 +1025,21 @@ void HdUi::drawTtfLine(const std::vector<TextRun> &runs, int originX, int origin
 	// the room: from the first run's classic x (the indent the layout gave it) to the text's right edge
 	const int lineStart = runs.front().x;
 	const float avail = (float)(textW - (align == 0 ? lineStart : 0)) * k;
+	// the dot leaders give way first: they were counted to fill the classic width, where a digit "1" is
+	// three pixels wide; a TrueType "1" is as wide as any digit, and a lone number in a dotted column
+	// was set at half size to leave the dots their length (the debriefing's quantity column)
+	for (size_t i = runs.size(); i-- > 0 && total > avail && avail > 0; )
+	{
+		Part &p = parts[i];
+		const float dot = (float)runs[i].dotW * k;
+		while (p.trail > 0 && total > avail)
+		{
+			--p.trail;
+			p.trailW -= dot;
+			total -= dot;
+			fixed -= dot;
+		}
+	}
 	float condense = 1.0f;
 	if (total > avail && avail > 0 && total > fixed)
 	{
@@ -1078,8 +1093,17 @@ void HdUi::drawTtfLine(const std::vector<TextRun> &runs, int originX, int origin
 			const FontMetrics &m = metrics(r.font);
 			HdFont &f = font(m.big);
 			// the colour rule of the classic text: shade 1/2 is the face, shade 5 the shadow
-			const int faceV = m.classicCap >= 12 ? 2 : 1, shadowV = 5;
+			int faceV = m.classicCap >= 12 ? 2 : 1;
+			const int shadowV = 5;
 			auto idx = [&](int v) { return (Uint8)(r.color + v * r.mul + (r.mid ? 2 * (r.mid - v) : 0)); };
+			// a pale tinted face in the small font (all channels light, a faint hue) reads as white next to
+			// a white row on the same list: the ramp's next shade carries the hue (the sale list's ammunition,
+			// face (236,200,192) by the rows picked for sale, (232,232,232)). Grey faces keep their shade
+			{
+				const SDL_Color c = pal[idx(faceV)];
+				const int hi = std::max({ (int)c.r, (int)c.g, (int)c.b }), lo = std::min({ (int)c.r, (int)c.g, (int)c.b });
+				if (faceV == 1 && lo >= 176 && hi - lo >= 24) faceV = 2;
+			}
 			const Uint32 face = rgba(pal[idx(faceV)]);
 			const SDL_Color dark = pal[idx(shadowV)];
 			// on a busy picture the shade is taken down to two fifths: an outline the colour of the ramp's
