@@ -66,6 +66,12 @@ const Uint32 HULL_DARK[] = { 0xFF0C0814u, 0xFF1A1129u, 0xFF2E2642u, 0xFF4B4365u,
 const Uint32 GRAPHITE[] = { 0xFF06080Bu, 0xFF10141Au, 0xFF1C222Bu, 0xFF2B333Eu, 0xFF3B4551u, 0xFF4C5764u, 0xFF7A8594u };
 /// Polished ship's brass, warmer and deeper than the original's pale gold (the pirate panel).
 const Uint32 SHIP_BRASS[] = { 0xFF140C05u, 0xFF33210Fu, 0xFF5E4220u, 0xFF94703Au, 0xFFC9A35Au, 0xFFDDBB72u, 0xFFF6E3A8u };
+/// The keys' metal of the painted panels after the brass one: lilac anodized alloy, sterling silver, blackened wrought
+/// iron, bronze green with verdigris (the shades of their painted plates).
+const Uint32 LILAC_ALLOY[] = { 0xFF0E0A16u, 0xFF241A36u, 0xFF3E2E5Eu, 0xFF5E4888u, 0xFF8466B0u, 0xFFA084C8u, 0xFFD8C6F0u };
+const Uint32 STERLING[] = { 0xFF0A0B0Du, 0xFF22262Bu, 0xFF444A52u, 0xFF6E767Fu, 0xFF9AA2ABu, 0xFFB8BFC7u, 0xFFEEF2F6u };
+const Uint32 WROUGHT_IRON[] = { 0xFF0A0908u, 0xFF1C1916u, 0xFF2E2A26u, 0xFF46403Au, 0xFF625A52u, 0xFF7C7268u, 0xFFB0A498u };
+const Uint32 VERDIGRIS[] = { 0xFF08100Cu, 0xFF16261Eu, 0xFF2A4436u, 0xFF436A54u, 0xFF5E9478u, 0xFF78AE92u, 0xFFB8E0CCu };
 
 const Theme SLATE = {
 	0xF4171D26u, 0xF40B0E13u, 0x38FFFFFFu,
@@ -136,6 +142,61 @@ const Theme PIRATE = {
 	3,
 };
 
+// the painted panels after it, built the same way, each with its own pictures (keyLook().folder): a starship's
+// bridge (5: lilac alloy keys on graphite plating), a nobleman's console (6: silver and niello on black lacquer),
+// a grim captain's (7: black iron inlaid with bone on charred oak), a diving vessel's (8: bronze on copper sheets)
+const Theme STARSHIP = {
+	0xF41A1826u, 0xF40A0A10u, 0xA0A084C8u,
+	0xFF8466B0u, 0xFF5E4888u, 0x90D8C6F0u, 0xFFA084C8u, 0xFF6A5294u, 0x38D8C6F0u, 0x04D8C6F0u,
+	0xFFE0C8FFu, 0xFFEEDDFFu, 0xFFB08EE8u,
+	0xFF140E20u, 0xFF0A0812u, 0xFF100A1Au,
+	0xFF1E1C26u, 0xFF0E0D14u, 0xB08466B0u,
+	0xFF1A1824u, 0xFF0E0C14u, 0x905E4888u,
+	0xFF2A2238u,
+	true,
+	LILAC_ALLOY, false, 0xFF3A3448u, 0x1A1A22u, 0x221E2Cu, 0xD8C6F0u, 0xF00A0812u, 0xF01A1626u,
+	2,
+};
+
+const Theme NIELLO = {
+	0xF4100E0Eu, 0xF4050404u, 0xA0D8DEE6u,
+	0xFF9AA2ABu, 0xFF6E767Fu, 0x90EEF2F6u, 0xFFB8BFC7u, 0xFF7E868Fu, 0x38EEF2F6u, 0x04EEF2F6u,
+	0xFFF2F6FAu, 0xFFFFFFFFu, 0xFFC2CAD2u,
+	0xFF0E1014u, 0xFF06070Au, 0xFF0A0C0Fu,
+	0xFF141C34u, 0xFF080C1Au, 0xB09AA2ABu,
+	0xFF121418u, 0xFF08090Bu, 0x906E767Fu,
+	0xFF1C2028u,
+	true,
+	STERLING, false, 0xFF5A6068u, 0x101A30u, 0x1A1E26u, 0xF0F4F8u, 0xF0050506u, 0xF0141618u,
+	3,
+};
+
+const Theme IRON_BONE = {
+	0xF4241810u, 0xF40E0805u, 0xA0A08870u,
+	0xFF625A52u, 0xFF46403Au, 0x90B0A498u, 0xFF7C7268u, 0xFF524A44u, 0x38B0A498u, 0x04B0A498u,
+	0xFFF0E2C0u, 0xFFFFF0D0u, 0xFFC8B48Cu,
+	0xFFE0D2B0u, 0xFFF4E8CCu, 0xFF2A1A0Cu,
+	0xFF3A1410u, 0xFF1E0A08u, 0xB07C7268u,
+	0xFF22160Eu, 0xFF120B07u, 0x9046403Au,
+	0xFF2E2218u,
+	true,
+	WROUGHT_IRON, false, 0xFF3A3530u, 0x3A1810u, 0x2A1E16u, 0xD8C8B0u, 0xF00A0806u, 0xF01A1612u,
+	3,
+};
+
+const Theme DEEP_BRONZE = {
+	0xF4122018u, 0xF4060C08u, 0xA078C8A8u,
+	0xFF5E9478u, 0xFF436A54u, 0x90B8E0CCu, 0xFF78AE92u, 0xFF4A765Eu, 0x38B8E0CCu, 0x04B8E0CCu,
+	0xFF9CF0D4u, 0xFFC0FFE8u, 0xFF5CC8A4u,
+	0xFF06120Cu, 0xFF030A06u, 0xFF050E09u,
+	0xFF0E3A30u, 0xFF06201Au, 0xB05E9478u,
+	0xFF0E1C16u, 0xFF07100Cu, 0x90436A54u,
+	0xFF1A3028u,
+	true,
+	VERDIGRIS, false, 0xFF2E5040u, 0x0E3A30u, 0x142A22u, 0xB8E8D0u, 0xF0040A08u, 0xF0102018u,
+	2,
+};
+
 /// The bars laid in grooves of the panel's card (HdHudPanel::PART_BAR), the numbers on the hands' wells (PART_COUNT).
 std::vector<const Surface*> grooves, counters;
 
@@ -147,6 +208,10 @@ const Theme &theme()
 	case 2: return CONSUL;
 	case 3: return CRUISER;
 	case 4: return PIRATE;
+	case 5: return STARSHIP;
+	case 6: return NIELLO;
+	case 7: return IRON_BONE;
+	case 8: return DEEP_BRONZE;
 	default: return SLATE;
 	}
 }
@@ -893,6 +958,11 @@ struct KeyLook
 	/// an engraver's plate (the pirate panel): the sign cut in outline and hatched, a screw in each corner, patina
 	/// at the edges; a reserve key is brass too, its sign filled with enamel of its colour; a key that is on glows warm
 	bool gravure;
+	// the painted panels (gravure) only:
+	Uint32 ember;                  ///< the light round a key that is on
+	Uint32 signLit;                ///< the colour its sign lights up in
+	bool paleSign;                 ///< the sign is lighter than the plate (bone in iron), not an engraving filled dark
+	const char *folder;            ///< where the panel's pictures lie in the hd mod (paintedFace)
 };
 
 /// The warm light of a pirate key that is on, and of the glow round it.
@@ -900,17 +970,27 @@ const Uint32 EMBER = 0xFFFFB04Au;
 
 const KeyLook &keyLook()
 {
-	static const KeyLook DARK = { true, 0xFF121A26u, 0xFF05080Cu, 0xFFDCE6F2u, 0xFFE6A23Cu, 0xFFE6A23Cu, false };
-	static const KeyLook BRASS_KEYS = { false, 0, 0, 0, 0xFFFFE9A6u, 0xFFF8E57Bu, false };
-	static const KeyLook CONSUL_KEYS = { true, 0xFF1D1934u, 0xFF0A0816u, 0xFFF2F0FFu, 0xFFB8AEFFu, 0xFFE6E4FAu, false };
-	static const KeyLook CRUISER_KEYS = { true, 0xFF141024u, 0xFF06050Du, 0xFFE8E2F6u, 0xFFA494F0u, 0xFFCFC6E0u, false };
-	static const KeyLook PIRATE_KEYS = { false, 0, 0, 0, 0xFFFFC870u, 0xFFF6D890u, true };
+	static const KeyLook DARK = { true, 0xFF121A26u, 0xFF05080Cu, 0xFFDCE6F2u, 0xFFE6A23Cu, 0xFFE6A23Cu, false, 0, 0, false, nullptr };
+	static const KeyLook BRASS_KEYS = { false, 0, 0, 0, 0xFFFFE9A6u, 0xFFF8E57Bu, false, 0, 0, false, nullptr };
+	static const KeyLook CONSUL_KEYS = { true, 0xFF1D1934u, 0xFF0A0816u, 0xFFF2F0FFu, 0xFFB8AEFFu, 0xFFE6E4FAu, false, 0, 0, false, nullptr };
+	static const KeyLook CRUISER_KEYS = { true, 0xFF141024u, 0xFF06050Du, 0xFFE8E2F6u, 0xFFA494F0u, 0xFFCFC6E0u, false, 0, 0, false, nullptr };
+	// a sign lit in a coal's orange, not the ember of the glow round the key: brass is light orange itself, and a sign
+	// lit in that colour sinks into it; each metal after it lights its signs in a colour that stands out of it
+	static const KeyLook PIRATE_KEYS = { false, 0, 0, 0, 0xFFFFC870u, 0xFFF6D890u, true, EMBER, 0xFFFF6A12u, false, "UI/battle_keys/" };
+	static const KeyLook STARSHIP_KEYS = { false, 0, 0, 0, 0xFFC8A0FFu, 0xFFE0D0FFu, true, 0xFFB070FFu, 0xFFFF48E0u, false, "UI/battle_keys_space/" };
+	static const KeyLook NIELLO_KEYS = { false, 0, 0, 0, 0xFFE8F0FFu, 0xFFF4F8FFu, true, 0xFF9FD0FFu, 0xFF30B0FFu, false, "UI/battle_keys_silver/" };
+	static const KeyLook IRON_KEYS = { false, 0, 0, 0, 0xFFFFB060u, 0xFFE8D8B8u, true, 0xFFFF8A30u, 0xFFFF6A12u, true, "UI/battle_keys_iron/" };
+	static const KeyLook BRONZE_KEYS = { false, 0, 0, 0, 0xFF80F0D0u, 0xFFB8F0DCu, true, 0xFF40F0C0u, 0xFF60FFF0u, false, "UI/battle_keys_bronze/" };
 	switch (Options::oxceHdBattleHudColor)
 	{
 	case 1: return BRASS_KEYS;
 	case 2: return CONSUL_KEYS;
 	case 3: return CRUISER_KEYS;
 	case 4: return PIRATE_KEYS;
+	case 5: return STARSHIP_KEYS;
+	case 6: return NIELLO_KEYS;
+	case 7: return IRON_KEYS;
+	case 8: return BRONZE_KEYS;
 	default: return DARK;
 	}
 }
@@ -1164,7 +1244,8 @@ const std::vector<Uint32> &cap(HdBattleHud::Icon icon, int w, int h, int k, int 
 }
 
 /// The painted keys of the pirate panel: hd/UI/battle_keys/<name>.png in the hd mod is the face of a key - a brass
-/// plate with its sign - painted by the image model at any size (tools/hdart/hud_panel_pilot.py, hud_buttons_cut.py).
+/// plate with its sign - painted by the image model at any size (tools/hdart/hud_panel_pilot.py, hud_buttons_cut.py);
+/// the panels after it have theirs in folders of their own (KeyLook::folder).
 const char *const PAINTED[HdBattleHud::ICON_COUNT] = {
 	nullptr, "unit_up", "unit_down", "map_up", "map_down", "show_map", "kneel",
 	"inventory", "center", "next_soldier", "next_stop", "show_layers", "links",
@@ -1176,6 +1257,7 @@ const char *const PAINTED[HdBattleHud::ICON_COUNT] = {
 struct PaintedFace { bool tried = false; HdFrame frame; };
 std::vector<PaintedFace> faces;
 unsigned facesGeneration = 0;
+int facesTheme = -1;
 
 /// The painted surface of the pirate panel under the keys, hd/UI/battle_keys/panel.png, and the well a hand's item
 /// lies in, well.png (its brass frame and floor): asked for as the slots after the last icon.
@@ -1186,11 +1268,13 @@ const int PANEL_FACE = HdBattleHud::ICON_COUNT, WELL_FACE = PANEL_FACE + 1;
 const HdFrame *paintedFace(int icon)
 {
 	if (!keyLook().gravure || icon <= HdBattleHud::ICON_NONE || icon > WELL_FACE || (icon < PANEL_FACE && !PAINTED[icon])) return nullptr;
-	if (faces.empty() || facesGeneration != HdUiArt::generation())
+	if (faces.empty() || facesGeneration != HdUiArt::generation() || facesTheme != Options::oxceHdBattleHudColor)
 	{
-		// the mods were loaded again: the pictures, and the keys made of them, may be others now
+		// the mods were loaded again, or another painted panel was chosen: the pictures, and the keys made of them,
+		// may be others now
 		faces.assign(WELL_FACE + 1, PaintedFace());
 		facesGeneration = HdUiArt::generation();
+		facesTheme = Options::oxceHdBattleHudColor;
 		metalCache.clear();
 	}
 	PaintedFace &f = faces[icon];
@@ -1198,7 +1282,7 @@ const HdFrame *paintedFace(int icon)
 	{
 		f.tried = true;
 		const char *name = icon == PANEL_FACE ? "panel" : icon == WELL_FACE ? "well" : PAINTED[icon];
-		if (!HdSprites::loadPng(HdSprites::artPath(std::string("UI/battle_keys/") + name + ".png"), f.frame)) f.frame = HdFrame();
+		if (!HdSprites::loadPng(HdSprites::artPath(std::string(keyLook().folder) + name + ".png"), f.frame)) f.frame = HdFrame();
 	}
 	return f.frame.pixels.empty() ? nullptr : &f.frame;
 }
@@ -1267,9 +1351,8 @@ const std::vector<Uint32> *paintedCap(HdBattleHud::Icon icon, int w, int h, int 
 	const std::vector<Uint32> inner = resampled(*face, iw, ih);
 	const float t = (float)step / (float)(CAP_STEPS - 1);
 	const Uint32 own = tint ? vivid(tint) : 0;
-	// a coal's orange, not the ember of the glow round the key: brass is light orange itself, and a sign lit in that
-	// colour sinks into it
-	const Uint32 glow = 0xFFFF6A12u;
+	const KeyLook &look = keyLook();
+	const Uint32 glow = look.signLit;
 	std::vector<Uint32> img((size_t)W * H, 0);
 	for (int y = 0; y < ih; ++y)
 	{
@@ -1290,8 +1373,9 @@ const std::vector<Uint32> *paintedCap(HdBattleHud::Icon icon, int w, int h, int 
 			{
 				// the dark engraving lights up, the brass round it takes a little of the warmth
 				const float lum = (float)(((col >> 16) & 0xFF) * 3 + ((col >> 8) & 0xFF) * 6 + (col & 0xFF)) / 10.0f;
-				// (the engraving is near black; brass in shadow is darker than its light but not that dark)
-				const float ink = std::min(std::max((70.0f - lum) / 45.0f, 0.0f), 1.0f);
+				// (the engraving is near black; brass in shadow is darker than its light but not that dark. A bone sign is
+				// the lightest thing on its iron, whose lit bevel stays under 150)
+				const float ink = std::min(std::max(look.paleSign ? (lum - 150.0f) / 45.0f : (70.0f - lum) / 45.0f, 0.0f), 1.0f);
 				col = HdUi::mixed(col, glow, 0.05f + 0.9f * ink) | 0xFF000000u;
 			}
 			if (t > 0.0f)
@@ -1648,7 +1732,7 @@ void HdBattleHud::drawButton(const void *key, int x, int y, int w, int h, Icon i
 	const CapGeom c = capGeom(w, h, k, own != 0);
 	const float X0 = (float)x * k, Y0 = (float)y * k, X1 = (float)(x + w) * k, Y1 = (float)(y + h) * k, in = 0.35f * k;
 	// a key that is on lights the panel round it and its socket: a reserve key in its own colour, the others green
-	const Uint32 glowColor = look.gravure ? (own ? enamel(own, true) : EMBER) : (own ? own : LAMP);
+	const Uint32 glowColor = look.gravure ? (own ? enamel(own, true) : look.ember) : (own ? own : LAMP);
 	if (lit)
 	{
 		for (int i = 0; i < 3; ++i)

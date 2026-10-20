@@ -33,15 +33,37 @@ BOX = {
 }
 
 
-def plate_mask(rgb, coloured):
-    """Where the picture is the button's face: brass (warm, bright), or for a coloured key its enamel too."""
-    a = rgb.astype(np.int32)
-    r, g, b = a[..., 0], a[..., 1], a[..., 2]
-    lum = (r * 3 + g * 6 + b) // 10
+STYLE = "brass_ship"   # whose metal plate_mask looks for (--style)
+
+
+def metal_mask(r, g, b, lum):
+    """The style's plate metal against its wall (medians measured on the pilot keys, plate | wall)."""
+    if STYLE == "space_lilac":
+        # lilac alloy (108,83,157) on neutral graphite (40,38,56): red and blue both above green
+        return (r * 100 >= g * 115) & (b * 100 >= g * 130) & (lum > 50)
+    if STYLE == "silver":
+        # sterling (94,104,115) on black lacquer (10,5,4): any light, neutral or cool
+        return lum > 60
+    if STYLE == "iron_bone":
+        # wrought iron (50,36,29) on charred oak (28,15,9): the iron is grey, the oak orange; the iron's lit bevel
+        # warms up (176,100,60), the lit oak stays orange (180,84,28)
+        return ((b * 100 >= r * 45) & (lum > 18)) | ((g * 100 >= r * 55) & (lum > 80))
+    if STYLE == "deep_bronze":
+        # verdigris bronze (50,94,71) on the same copper sheets in shadow (18,33,23): only brighter
+        return lum > 45
     # brass runs from dark orange in shadow (85,43,8) to near white in the highlights, the engraving is filled with
     # neutral black (10,9,5); the mahogany is red through and through, lit or in shadow (127,31,9), (14,1,0):
     # green under a third of red. So: green at least 0.42 of red, at any brightness
-    brass = g * 100 >= r * 42
+    return g * 100 >= r * 42
+
+
+def plate_mask(rgb, coloured):
+    """Where the picture is the button's face: the style's metal (brass: warm, bright), or for a coloured key its
+    enamel too."""
+    a = rgb.astype(np.int32)
+    r, g, b = a[..., 0], a[..., 1], a[..., 2]
+    lum = (r * 3 + g * 6 + b) // 10
+    brass = metal_mask(r, g, b, lum)
     if coloured:
         brass |= (lum > 30) & ((g > r + 25) | (r > g * 2))             # green or red enamel
     return brass
@@ -153,7 +175,10 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--src", default=os.path.join(ROOT, "art", "hud_buttons", "pilot2", "brass_ship"))
     ap.add_argument("--out", default=os.path.join(ROOT, "art", "hud_buttons", "cut", "brass_ship"))
+    ap.add_argument("--style", default="brass_ship", help="whose plate metal to look for (metal_mask)")
     a = ap.parse_args()
+    global STYLE
+    STYLE = a.style
     os.makedirs(a.out, exist_ok=True)
     from hud_panel_pilot import TINT
     rows = []
