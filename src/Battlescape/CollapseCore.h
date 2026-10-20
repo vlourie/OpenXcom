@@ -64,6 +64,8 @@ struct CollapseBlock
 	int nParts;
 	const int *targets;
 	int experimental; ///< still fails some of its scenarios: only in the debug stand builds (OXCE_AI_DEV)
+	const CollapsePart *keep; ///< records of the building outside the model (trees): they never fall, only their place is known (foreignParts)
+	int nKeep;
 };
 
 /**
