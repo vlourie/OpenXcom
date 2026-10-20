@@ -372,9 +372,9 @@ int foreignParts(SavedBattleGame *save, const Instance &in)
 	const int w = b.x1 - b.x0 + 2, d = b.y1 - b.y0 + 2;
 	auto cell = [&](int x, int y, int z) { return (z * d + (y - b.y0)) * w + (x - b.x0); };
 	std::vector<std::set<std::pair<int, int> > > allowed(w * d * b.sz);
-	for (int i = 0; i < b.nParts; ++i)
+	for (int i = 0; i < b.nParts + b.nKeep; ++i)
 	{
-		const CollapsePart &p = b.parts[i];
+		const CollapsePart &p = i < b.nParts ? b.parts[i] : b.keep[i - b.nParts];
 		if (p.x < b.x0 || p.x > b.x1 + 1 || p.y < b.y0 || p.y > b.y1 + 1) continue;
 		auto &ok = allowed[cell(p.x, p.y, p.z)];
 		MapDataSet *ds = modelSet[p.set];
