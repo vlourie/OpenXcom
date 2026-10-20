@@ -81,6 +81,9 @@ docker compose -f compose.yaml -f compose.station.yaml -f compose.internet.yaml 
 5. Регистрация: письмо подтверждения — `station.ps1 mail` (SMTP не задан, письма пишутся файлами).
 6. Администратор: `station.ps1 admin <почта> <имя>` → вход → 2FA → «Управление».
 7. `curl.exe -k <url>/openapi/v1.json` — API отвечает.
+8. Ключ бота для разбора тикетов: `station.ps1 bot` — строка ключа печатается один раз, её отдают Vitali
+   (на основной машине её принимает `py -3 tools/tickets.py setup`). Ключ в файлы станции и в REPORT.md
+   не записывать. `station.ps1 bot-list` — когда и откуда бот заходил, `bot-revoke` — отозвать.
 
 ## Типовые беды
 

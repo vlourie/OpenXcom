@@ -228,8 +228,8 @@ public sealed class TicketService(PortalDb db, TelegramNotices notices, IOptions
             throw new TicketException("ticket_closed", "the ticket is closed");
         var m = new TicketMessage { TicketId = t.Id, AuthorId = author, Body = text, FromStaff = fromStaff, Internal = isInternal, CreatedAt = clock.GetUtcNow() };
         db.TicketMessages.Add(m);
-        // the player answered the question: the ticket needs a look again
-        if (!fromStaff && t.Status == TicketStatus.NeedsInfo)
+        // the player answered the question, or says the fix did not help: the ticket needs a look again
+        if (!fromStaff && t.Status is TicketStatus.NeedsInfo or TicketStatus.Resolved)
         {
             await HistoryAsync(t, author, "status", t.Status.ToString(), TicketStatus.Triaged.ToString(), ct);
             t.Status = TicketStatus.Triaged;

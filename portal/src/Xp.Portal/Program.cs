@@ -210,6 +210,8 @@ public static class PortalApp
             o.AddPolicy("voice-write", c => WritesByIp(c, cfg.GetValue("RateLimits:VoicePer10Min", 120), TimeSpan.FromMinutes(10)));
             // a pass per connection and per reconnect; a launcher that loops is stopped here, not at the media server
             o.AddPolicy("voice-pass", c => WritesByIp(c, cfg.GetValue("RateLimits:VoicePassPerMin", 20), TimeSpan.FromMinutes(1)));
+            // the team's automation pulls a queue with its files in one go: reads and writes counted together
+            o.AddPolicy("bot", c => ByIp(c, cfg.GetValue("RateLimits:BotPerMin", 300), TimeSpan.FromMinutes(1)));
         });
     }
 
@@ -253,6 +255,7 @@ public static class PortalApp
         app.MapHealthChecks("/ready", new() { Predicate = c => c.Tags.Contains("ready") });
         app.MapOpenApi("/openapi/{documentName}.json");
         TicketApi.Map(app);
+        BotApi.Map(app);
         DeviceApi.Map(app);
         ReviewApi.Map(app);
         VoiceApi.Map(app);

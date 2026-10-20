@@ -9,6 +9,10 @@
 #   .\station.ps1 logs       журнал сайта (Ctrl+C - выйти)
 #   .\station.ps1 admin you@example.com Имя    первый SuperAdmin (пароль спросит)
 #   .\station.ps1 reset-2fa you@example.com    сбросить двухфакторную проверку
+#   .\station.ps1 bot        ключ бота «Автоматика» для разбора тикетов (tools\tickets.py): печатается один
+#                            раз - скопировать и передать; тикеты всех категорий, кроме жалоб голоса
+#   .\station.ps1 bot-list   ключи ботов: активен ли, когда и откуда заходил
+#   .\station.ps1 bot-revoke отозвать ключ «Автоматика» (сразу перестаёт работать)
 #   .\station.ps1 mail       письма, которые сайт «отправил» (SMTP не задан)
 #   .\station.ps1 smtp       настроить отправку писем: сервер, порт 587, логин, обратный адрес;
 #                            пароль спрашивает скрыто и пишет только в portal.env этой машины
@@ -466,6 +470,13 @@ switch ($Command) {
         if (-not $Email) { Fail 'укажите почту: .\station.ps1 reset-2fa you@example.com' }
         Invoke-Compose run --rm migrate admin reset-2fa --email $Email
     }
+    'bot' {
+        # имя ключа по умолчанию задаёт сам сайт: кириллица аргументом через docker - лотерея (R-090)
+        Say 'ключ бота для разбора тикетов: строка ниже показывается один раз'
+        Invoke-Compose run --rm migrate admin bot create
+    }
+    'bot-list' { Invoke-Compose run --rm migrate admin bot list }
+    'bot-revoke' { Invoke-Compose run --rm migrate admin bot revoke }
     'mail' {
         # без двойных кавычек внутри: PowerShell 5.1 портит их в аргументах внешних программ (R-045)
         Invoke-Compose exec portal sh -c 'd=/data/files/_mail; [ -d $d ] || { echo no mail yet; exit 0; }; for f in $(ls -t $d | head -5); do echo === $f; cat $d/$f; echo; done'
@@ -772,5 +783,5 @@ switch ($Command) {
         Write-Host "Лаунчеры берут обновления с $url/releases/"
     }
     'down' { Invoke-Compose down }
-    default { Fail "неизвестная команда '$Command'. Есть: up, backup, status, content, logs, admin, reset-2fa, mail, smtp, mail-test, livekit, voice-testers, voice-test, root-cert, internet, lan, releases, voice, voice-open, voice-check, voice-token, voice-off, down" }
+    default { Fail "неизвестная команда '$Command'. Есть: up, backup, status, content, logs, admin, reset-2fa, bot, bot-list, bot-revoke, mail, smtp, mail-test, livekit, voice-testers, voice-test, root-cert, internet, lan, releases, voice, voice-open, voice-check, voice-token, voice-off, down" }
 }

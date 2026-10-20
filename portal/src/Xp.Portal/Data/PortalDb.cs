@@ -18,6 +18,7 @@ public sealed class PortalDb(DbContextOptions<PortalDb> options)
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<DeviceToken> DeviceTokens => Set<DeviceToken>();
     public DbSet<DeviceLinkCode> DeviceLinkCodes => Set<DeviceLinkCode>();
+    public DbSet<BotKey> BotKeys => Set<BotKey>();
     public DbSet<GameMod> Mods => Set<GameMod>();
     public DbSet<ModText> ModTexts => Set<ModText>();
     public DbSet<WikiPage> WikiPages => Set<WikiPage>();
@@ -157,6 +158,16 @@ public sealed class PortalDb(DbContextOptions<PortalDb> options)
             e.Property(d => d.TokenHash).HasMaxLength(64);
             e.Property(d => d.Name).HasMaxLength(DeviceLimits.NameMax);
             e.HasOne(d => d.User).WithMany().HasForeignKey(d => d.UserId).OnDelete(DeleteBehavior.Cascade);
+        });
+        b.Entity<BotKey>(e =>
+        {
+            e.HasIndex(k => k.TokenHash).IsUnique();
+            e.Property(k => k.TokenHash).HasMaxLength(64);
+            e.Property(k => k.Name).HasMaxLength(BotLimits.NameMax);
+            e.Property(k => k.Categories).HasMaxLength(BotLimits.ListMax);
+            e.Property(k => k.Networks).HasMaxLength(BotLimits.ListMax);
+            e.Property(k => k.LastIp).HasMaxLength(64);
+            e.HasOne(k => k.User).WithMany().HasForeignKey(k => k.UserId).OnDelete(DeleteBehavior.Cascade);
         });
         b.Entity<DeviceLinkCode>(e =>
         {

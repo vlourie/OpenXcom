@@ -12,6 +12,9 @@ namespace Xp.Portal;
 /// Xp.Portal migrate                                   apply database migrations, create the roles
 /// Xp.Portal admin create --email E [--name N]         first SuperAdmin; password from XP_ADMIN_PASSWORD or stdin
 /// Xp.Portal admin reset-2fa --email E                 lost authenticator: turn the second factor off
+/// Xp.Portal admin bot create [--name N] [--categories C,C] [--networks CIDR,CIDR]
+///                                                     a key for the team's automation (/api/v1/bot); printed once
+/// Xp.Portal admin bot list | admin bot revoke [--name N]   the name defaults to «Автоматика»
 /// Xp.Portal seed --file F                             mods and forum boards from a catalogue file
 /// Xp.Portal packs --file F                            the sets of the game to review, from the census
 /// Xp.Portal wiki import --file F                      wiki pages built from a mod's rulesets
@@ -37,6 +40,9 @@ public static class PortalCli
                 ["migrate"] => await MigrateAsync(sp),
                 ["admin", "create", .. var rest] => await CreateAdminAsync(sp, Opt(rest, "--email"), Opt(rest, "--name")),
                 ["admin", "reset-2fa", .. var rest] => await Reset2faAsync(sp, Opt(rest, "--email")),
+                ["admin", "bot", "create", .. var rest] => await BotCreateAsync(sp, Opt(rest, "--name"), Opt(rest, "--categories"), Opt(rest, "--networks")),
+                ["admin", "bot", "list"] => await BotListAsync(sp),
+                ["admin", "bot", "revoke", .. var rest] => await BotRevokeAsync(sp, Opt(rest, "--name")),
                 ["seed", .. var rest] => await SeedAsync(sp, Opt(rest, "--file")),
                 ["packs", .. var rest] => await PacksAsync(sp, Opt(rest, "--file")),
                 ["wiki", "import", .. var rest] => await WikiImportAsync(sp, Opt(rest, "--file")),
@@ -55,8 +61,42 @@ public static class PortalCli
     static int Usage()
     {
         Console.Error.WriteLine("usage: Xp.Portal migrate | admin create --email E [--name N] | admin reset-2fa --email E"
+            + " | admin bot create [--name N] [--categories C,C] [--networks CIDR,CIDR] | admin bot list | admin bot revoke [--name N]"
             + " | seed --file F | packs --file F | wiki import --file F | mail test --to E | voice check");
         return 2;
+    }
+
+    /// <summary>The key is printed once, on stdout alone, so it can be piped straight into a file.</summary>
+    static async Task<int> BotCreateAsync(IServiceProvider sp, string? name, string? categories, string? networks)
+    {
+        // the default name is written here, not typed: Cyrillic through a Windows shell into docker is a gamble (R-090)
+        if (string.IsNullOrWhiteSpace(name)) name = DefaultBotName;
+        await EnsureRolesAsync(sp);
+        var c = await Tickets.BotAccounts.CreateAsync(sp, name, categories, networks);
+        Console.Error.WriteLine($"bot '{c.Key.Name}': categories {c.Key.Categories}; networks {(c.Key.Networks.Length > 0 ? c.Key.Networks : "any")}.");
+        Console.Error.WriteLine("The key below is shown once and never stored; send it as the X-Bot-Key header.");
+        Console.WriteLine(c.Secret);
+        return 0;
+    }
+
+    static async Task<int> BotListAsync(IServiceProvider sp)
+    {
+        var keys = await sp.GetRequiredService<PortalDb>().BotKeys.OrderBy(k => k.CreatedAt).ToListAsync();
+        if (keys.Count == 0) Console.WriteLine("no bot keys");
+        foreach (var k in keys)
+            Console.WriteLine($"{k.Name}\t{(k.Active ? "active" : $"revoked {k.RevokedAt:yyyy-MM-dd HH:mm}")}\tcategories {k.Categories}"
+                + $"\tnetworks {(k.Networks.Length > 0 ? k.Networks : "any")}\tlast used {(k.LastUsedAt is { } at ? $"{at:yyyy-MM-dd HH:mm} from {k.LastIp}" : "never")}");
+        return 0;
+    }
+
+    const string DefaultBotName = "Автоматика";
+
+    static async Task<int> BotRevokeAsync(IServiceProvider sp, string? name)
+    {
+        if (string.IsNullOrWhiteSpace(name)) name = DefaultBotName;
+        var n = await Tickets.BotAccounts.RevokeAsync(sp, name.Trim());
+        Console.WriteLine(n == 0 ? $"no active key named '{name}'" : $"revoked {n} key(s) named '{name}'");
+        return n == 0 ? 1 : 0;
     }
 
     /// <summary>
