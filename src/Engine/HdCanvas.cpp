@@ -670,7 +670,17 @@ void Canvas32::blit(SurfaceRaw<const Uint8> src, int x, int y, int shade, bool h
 			}
 			else if (_groundOn && !hd->generated)
 			{
-				hd = groundFrameFor(src, *hd);
+				bool toned = false;
+				hd = groundFrameFor(src, *hd, groundToneFor(shade, newBaseColor), toned);
+				if (toned)
+				{
+					// a blend made at the shade of this blit: a plain alpha copy
+					cmd.type = Cmd::BLIT_HD;
+					cmd.hd = hd;
+					cmd.shade = 0;
+					record(cmd);
+					return;
+				}
 			}
 			if (!newBaseColor && _hasLight && shade == _light.center)
 			{
@@ -1323,7 +1333,12 @@ void Canvas32::flush()
 	trimGround();
 	// the shaded copies used longest ago go when they exceed their cap (here, not while recording: commands point at them)
 	// - but not the ones this frame drew while they fit the hard cap, or a big view remakes them every frame
-	static const size_t tonedCap = 256u * 1024u * 1024u;
+	// OXCE_HD_TONED_CAP=<MB> overrides the cap (tests of the cache size)
+	static const size_t tonedCap = []
+	{
+		const char *env = getenv("OXCE_HD_TONED_CAP");
+		return (env && atoi(env) > 0) ? (size_t)atoi(env) << 20 : (size_t)256u << 20;
+	}();
 	static const size_t tonedHardCap = 3 * tonedCap;
 	while (_tonedBytes > tonedCap && !_tonedLru.empty())
 	{
@@ -1946,8 +1961,9 @@ void Canvas32::setGroundSeed(Uint32 seed)
  * Cells that show one variant everywhere draw that frame as it is; the
  * blends are cached per cell.
  */
-const HdFrame *Canvas32::groundFrameFor(SurfaceRaw<const Uint8> src, const HdFrame &base)
+const HdFrame *Canvas32::groundFrameFor(SurfaceRaw<const Uint8> src, const HdFrame &base, int tone, bool &toned)
 {
+	toned = false;
 	const void *key = src.getBuffer();
 	const int slots = HdSprites::variantCount(key);
 	if (slots <= 0)
@@ -2016,11 +2032,13 @@ const HdFrame *Canvas32::groundFrameFor(SurfaceRaw<const Uint8> src, const HdFra
 	const unsigned generation = _tonedGeneration;
 	Uint64 hkey = (Uint64)(uintptr_t)key * 0x9E3779B97F4A7C15ULL;
 	hkey ^= ((Uint64)(Uint32)_groundX << 42) ^ ((Uint64)(Uint32)_groundY << 21) ^ (Uint64)(Uint32)_groundZ ^ ((Uint64)_groundSeed * 0xC2B2AE3D27D4EB4FULL);
+	hkey ^= (Uint64)(Uint32)tone * 0xFF51AFD7ED558CCDULL;
+	toned = tone != GROUND_RAW;
 	auto it = _ground.find(hkey);
 	if (it != _ground.end() && !changed)
 	{
 		GroundEntry &e = it->second;
-		if (e.src == key && e.x == _groundX && e.y == _groundY && e.z == _groundZ && e.generation == generation)
+		if (e.src == key && e.x == _groundX && e.y == _groundY && e.z == _groundZ && e.tone == tone && e.generation == generation)
 		{
 			e.lru = ++_groundClock;
 			return &e.frame;
@@ -2040,6 +2058,7 @@ const HdFrame *Canvas32::groundFrameFor(SurfaceRaw<const Uint8> src, const HdFra
 		e.x = _groundX;
 		e.y = _groundY;
 		e.z = _groundZ;
+		e.tone = tone;
 		e.generation = generation;
 		e.lru = ++_groundClock;
 		out = &e.frame;
@@ -2057,7 +2076,10 @@ const HdFrame *Canvas32::groundFrameFor(SurfaceRaw<const Uint8> src, const HdFra
 	job.y = _groundY;
 	job.z = _groundZ;
 	job.seed = _groundSeed;
+	job.tone = tone;
 	job.cached = !clash;
+	// a shaded blend counts as the shaded copy it stands for (the frame log's toned_n)
+	HdDrawStats::frame.tonedNew += HdDrawStats::on && toned;
 	job.key = hkey;
 	if (_groundJobs.empty() && _tonedJobs.empty())
 	{
@@ -2145,6 +2167,15 @@ void Canvas32::makeGround(const GroundJob &job) const
 			to[px] = (a << 24) | (r << 16) | (g << 8) | b;
 		}
 	}
+	if (job.tone != GROUND_RAW)
+	{
+		// the shaded copy made in place (makeToned): no unshaded blend is kept beside it
+		const ToneOf tone(*this, job.tone & 0xFF, (Uint16)(job.tone >> 8));
+		for (Uint32 &p : out->pixels)
+		{
+			p = tone(p);
+		}
+	}
 	out->buildSpans();
 }
 
@@ -2162,7 +2193,14 @@ void Canvas32::trimGround()
 		dropped.insert(&frame);
 	}
 	_groundTransient.clear();
-	static const size_t groundCap = 192u * 1024u * 1024u;
+	// the blends of an open cave over a battle with every level floored (shaded ones made shaded, see
+	// groundToneFor) need about 600 MB: below it a camera jump back remakes thousands of them at once.
+	// OXCE_HD_GROUND_CAP=<MB> overrides the cap (tests of the cache size)
+	static const size_t groundCap = []
+	{
+		const char *env = getenv("OXCE_HD_GROUND_CAP");
+		return (env && atoi(env) > 0) ? (size_t)atoi(env) << 20 : (size_t)640u << 20;
+	}();
 	static const size_t groundHardCap = 3 * groundCap;
 	const unsigned generation = HdSprites::generation();
 	std::vector<std::pair<size_t, Uint64>> order;
@@ -2377,37 +2415,20 @@ void Canvas32::makeToned(const TonedJob &job) const
 {
 	const HdFrame &hd = *job.src;
 	HdFrame &out = *job.out;
-	const int shade = job.shade;
-	const Uint16 tintKey = job.tintKey;
 	out.rows = hd.rows;
 	out.solid = hd.solid;
 	out.pixels.resize(hd.pixels.size());
-	const Uint32 *toneR = _toneFactor[0][shade];
-	const Uint32 *toneG = _toneFactor[1][shade];
-	const Uint32 *toneB = _toneFactor[2][shade];
-	// the light color, 5 bits per channel in the key (31 = full)
-	const Uint32 tr = ((tintKey >> 10) & 31) * 65536u / 31, tg = ((tintKey >> 5) & 31) * 65536u / 31, tb = (tintKey & 31) * 65536u / 31;
+	const ToneOf tone(*this, job.shade, job.tintKey);
 	for (size_t i = 0; i < hd.pixels.size(); ++i)
 	{
-		const Uint32 p = hd.pixels[i];
-		if (!(p >> 24))
-		{
-			out.pixels[i] = 0;
-			continue;
-		}
-		Uint32 r = (p >> 16) & 0xFF, g = (p >> 8) & 0xFF, b = p & 0xFF;
-		const Uint32 m = r > g ? (r > b ? r : b) : (g > b ? g : b);
-		r = (r * toneR[m] + 32768u) >> 16;
-		g = (g * toneG[m] + 32768u) >> 16;
-		b = (b * toneB[m] + 32768u) >> 16;
-		if (tintKey != 0x7FFF)
-		{
-			r = (r * tr + 32768u) >> 16;
-			g = (g * tg + 32768u) >> 16;
-			b = (b * tb + 32768u) >> 16;
-		}
-		out.pixels[i] = (p & 0xFF000000u) | (r << 16) | (g << 8) | b;
+		out.pixels[i] = tone(hd.pixels[i]);
 	}
+}
+
+Canvas32::ToneOf::ToneOf(const Canvas32 &canvas, int shade, Uint16 tint) :
+	toneR(canvas._toneFactor[0][shade]), toneG(canvas._toneFactor[1][shade]), toneB(canvas._toneFactor[2][shade]), tintKey(tint),
+	tr(((tint >> 10) & 31) * 65536u / 31), tg(((tint >> 5) & 31) * 65536u / 31), tb((tint & 31) * 65536u / 31)
+{
 }
 
 /**
@@ -2601,6 +2622,36 @@ void Canvas32::recordHdLit(Cmd &cmd, const HdFrame &hd, int shade)
 	}
 	lightWeightsFor(hd.width, hd.height); // built on the recording thread
 	record(cmd);
+}
+
+/**
+ * The tone a floor blit draws its frame at, as blit and recordHdLit pick it:
+ * the shaded copy's key, or GROUND_RAW when the frame is drawn as it is
+ * (shaded by the command, interpolated per pixel, or not shaded at all).
+ */
+int Canvas32::groundToneFor(int shade, int newBaseColor) const
+{
+	if (newBaseColor)
+	{
+		return GROUND_RAW;
+	}
+	int s = shade;
+	Uint16 tintKey = 0x7FFF;
+	if (_hasLight && shade == _light.center)
+	{
+		if (!_light.flat)
+		{
+			return GROUND_RAW;
+		}
+		s = (int)std::floor(_light.shade[4] + 0.5f);
+		tintKey = tintKeyOf(_light.tint[4]);
+	}
+	s = std::max(0, std::min(16, s));
+	if (s == 0 && tintKey == 0x7FFF)
+	{
+		return GROUND_RAW;
+	}
+	return s | ((int)tintKey << 8);
 }
 
 /**
