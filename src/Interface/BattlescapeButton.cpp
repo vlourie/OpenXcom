@@ -94,7 +94,26 @@ void BattlescapeButton::mousePress(Action *action, State *state)
 	{
 		_inverted = true;
 	}
+	if (_hdIcon && isButtonHandled(action->getDetails()->button.button))
+	{
+		HdBattleHud::notePress(this);
+	}
 	InteractiveSurface::mousePress(action, state);
+}
+
+/**
+ * HD interface, modern skin: the key on the battle panel goes down with its hotkey, as if clicked.
+ * @param action Pointer to an action.
+ * @param state State that the action handlers belong to.
+ */
+void BattlescapeButton::keyboardPress(Action *action, State *state)
+{
+	const SDL_keysym &key = action->getDetails()->key.keysym;
+	if (_hdIcon && key.sym != SDLK_UNKNOWN && _keyPress.find(key.sym) != _keyPress.end() && !(key.mod & (KMOD_CTRL | KMOD_ALT | KMOD_SHIFT)))
+	{
+		HdBattleHud::notePress(this);
+	}
+	InteractiveSurface::keyboardPress(action, state);
 }
 
 /*
@@ -223,8 +242,18 @@ void BattlescapeButton::blit(SDL_Surface *surface)
 	}
 	if (hud && _visible && !_hidden)
 	{
-		HdBattleHud::drawButton(getX(), getY(), getWidth(), getHeight(), (HdBattleHud::Icon)_hdIcon,
-			_inverted || _hdLit || isButtonPressed(SDL_BUTTON_LEFT), _color, HdUi::paletteOf(this));
+		const char *hotkey = nullptr;
+		for (const auto &key : _keyPress)
+		{
+			if (key.first > SDLK_UNKNOWN && key.first < SDLK_LAST)
+			{
+				hotkey = SDL_GetKeyName(key.first);
+				break;
+			}
+		}
+		const bool held = isButtonPressed(SDL_BUTTON_LEFT) || (isButtonPressed(SDL_BUTTON_RIGHT) && isButtonHandled(SDL_BUTTON_RIGHT));
+		HdBattleHud::drawButton(this, getX(), getY(), getWidth(), getHeight(), (HdBattleHud::Icon)_hdIcon,
+			_inverted || _hdLit, held, _color, HdUi::paletteOf(this), hotkey);
 	}
 }
 

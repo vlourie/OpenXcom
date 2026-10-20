@@ -455,8 +455,8 @@ void OptionsHdState::changeSetting(size_t sel, Uint8 button)
 		}
 		else if (i == &Options::oxceHdBattleHudColor)
 		{
-			min = 0;                                  // 0 dark slate, 1 gold as the original, 2 Consul's hull, 3 Cruiser's
-			max = 3;
+			min = 0;                                  // 0 dark slate, 1 gold as the original, 2 Consul's hull, 3 Cruiser's, 4 ship's brass
+			max = 4;
 		}
 		else if (i == &Options::oxceHdGlobeScale)
 		{

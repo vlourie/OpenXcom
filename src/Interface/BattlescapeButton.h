@@ -56,6 +56,8 @@ public:
 	void mousePress(Action *action, State *state) override;
 	/// Special handling for mouse releases.
 	void mouseRelease(Action *action, State *state) override;
+	/// Shows a press of the button's hotkey on the HD panel.
+	void keyboardPress(Action *action, State *state) override;
 	/// Invert a button explicitly either ON or OFF.
 	void toggle(bool invert);
 	/// Allows this button to be toggled on/off with a click.
