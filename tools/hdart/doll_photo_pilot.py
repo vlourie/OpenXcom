@@ -5,12 +5,15 @@ Vitali.
 Порядок:
   1. манекен на трёх кожах: тело (слой 2, *_NUDE) + голова (слой 10) внешности -> Edit-2511 -> фото; тело и голова
      вырезаются каждое своей маской оригинала;
-  2. одежда двух броней (ADVENTURER и AMAZON) слой за слоем по номеру: на вход - фото того, что уже лежит под слоем
-     (манекен первой кожи и нижние вещи), сверху классический слой xBRZ; модель делает фото только этой вещи, из ответа
+  2. одежда двух броней (ADVENTURER и AMAZON) слой за слоем по номеру: на вход - то, что уже лежит под слоем
+     (фото манекена первой кожи и B2 нижних вещей), сверху классический слой xBRZ; модель делает фото только этой вещи, из ответа
      берётся только маска слоя. Голова в контекст одежды не идёт: волосы у внешностей разной длины, и одежда под
      волосами одной внешности вышла бы цвета волос у другой;
   3. сборка куклы в порядке слоёв, как в игре, на всех трёх кожах (одежда снята на первой - это и есть проверка);
      лист «классика x4 | B2 | фото».
+
+Модель - два круга (манекены, потом вся одежда), в каждом две фазы: текстовая модель одна на карте, потом трансформер
+(R-213: Painter со swap держит текстовую модель в pinned RAM - 18 ГБ shared карты).
 
 Геометрия - закон: ответ модели не растягивается (R-208), альфа - только маска оригинала x4 (R-089), подложку
 внутри силуэта снимает unit_parts.panel_matte - кадр тоньше оригинала, но не шире (R-212). Части называются по
@@ -159,21 +162,107 @@ def pick_looks(files, keys, n=3):
     return [lum[-1][1], lum[len(lum) // 2][1], lum[0][1]][:n]
 
 
-class Model:
-    def __init__(self, models):
-        self.models, self.p = models, None
+def gpu_mem(tag):
+    """Память карты этого процесса по счётчикам Windows (как weapons_probe5): Shared обязана быть около нуля."""
+    import subprocess
+    import torch
+    ps = ("$p='pid_%d_';(Get-Counter '\\GPU Process Memory(*)\\Shared Usage','\\GPU Process Memory(*)\\Dedicated Usage')"
+          ".CounterSamples|?{$_.InstanceName -like ($p+'*')}|%%{'{0} {1}' -f $_.Path.Split('\\')[-1],$_.CookedValue}"
+          % os.getpid())
+    sh = de = 0.0
+    try:
+        out = subprocess.run(["powershell", "-NoProfile", "-Command", ps], capture_output=True, text=True,
+                             timeout=60).stdout
+        for line in out.splitlines():
+            k, _s, v = line.rpartition(" ")
+            k = k.lower()
+            if "shared" in k:
+                sh += float(v)
+            elif "dedicated" in k:
+                de += float(v)
+    except Exception as e:
+        print("счётчики не прочитаны:", e, flush=True)
+    print("память [%s]: dedicated %.1f ГБ, shared %.1f ГБ, torch %.1f ГБ"
+          % (tag, de / 2 ** 30, sh / 2 ** 30, torch.cuda.memory_reserved() / 2 ** 30), flush=True)
+    if sh / 2 ** 30 > 0.5:
+        raise SystemExit("ушло в shared (%s) - стоп (R-213)" % tag)
 
-    def edit(self, img, prompt, seed):
-        if self.p is None:
-            import photo_ui as pu
-            ref = os.path.join(self.models, "hub", "models--Qwen--Qwen-Image-Edit-2511", "refs", "main")
-            got = open(ref).read().strip() if os.path.exists(ref) else ""
-            if got != EDIT_REV:
-                raise SystemExit("Edit-2511 в кэше %s, ждал %s - не рисую (R-145)" % (got or "нет", EDIT_REV))
-            pu.MODEL = os.path.join(self.models, "hub", "models--Qwen--Qwen-Image-Edit-2511", "snapshots", EDIT_REV)
-            self.p = pu.Painter(self.models, fast=True, steps=RUN["steps"], photoreal=False)
-        rgb = img.convert("RGB")
-        return self.p.edit([rgb], prompt, NEGATIVE, seed, RUN["steps"], RUN["cfg"], rgb.width, rgb.height)
+
+class Model:
+    """Edit-2511 в две фазы на каждый круг (R-213): сначала на карте ТОЛЬКО текстовая модель fp8, без pin_memory,
+    все вложения в RAM, модель удаляется; потом трансформер fp8 + Lightning LoRA и VAE. Вместе не лежат никогда."""
+
+    def __init__(self, models):
+        import photo_ui as pu
+        ref = os.path.join(models, "hub", "models--Qwen--Qwen-Image-Edit-2511", "refs", "main")
+        got = open(ref).read().strip() if os.path.exists(ref) else ""
+        if got != EDIT_REV:
+            raise SystemExit("Edit-2511 в кэше %s, ждал %s - не рисую (R-145)" % (got or "нет", EDIT_REV))
+        pu.MODEL = os.path.join(models, "hub", "models--Qwen--Qwen-Image-Edit-2511", "snapshots", EDIT_REV)
+        pu.models_env(models)
+        self.pu = pu
+
+    def run(self, jobs):
+        """jobs: [(картинка RGBA, промпт, сид)] -> [RGB numpy] того же размера."""
+        import gc
+        import torch
+        from diffusers import FlowMatchEulerDiscreteScheduler, QwenImageEditPlusPipeline, QwenImageTransformer2DModel
+        from diffusers.hooks import apply_layerwise_casting
+        from diffusers.pipelines.qwenimage import pipeline_qwenimage_edit_plus as m
+        from transformers import Qwen2_5_VLForConditionalGeneration
+        pu, dev = self.pu, torch.device("cuda")
+        imgs = [im.convert("RGB") for im, _p, _s in jobs]
+        t0 = time.time()
+        te = Qwen2_5_VLForConditionalGeneration.from_pretrained(pu.MODEL, subfolder="text_encoder",
+                                                                torch_dtype=torch.bfloat16)
+        apply_layerwise_casting(te, storage_dtype=torch.float8_e4m3fn, compute_dtype=torch.bfloat16,
+                                skip_modules_pattern=("embed", "norm", "lm_head", "rotary"))
+        te.to(dev)
+        pipe = QwenImageEditPlusPipeline.from_pretrained(pu.MODEL, transformer=None, text_encoder=te,
+                                                         torch_dtype=torch.bfloat16)
+        print("фаза 1: текстовая модель на карте за %.0f с" % (time.time() - t0), flush=True)
+        gpu_mem("текстовая модель")
+        embeds = []
+        with torch.no_grad():
+            for img, (_im, prompt, _s) in zip(imgs, jobs):
+                dims = m.calculate_dimensions(m.CONDITION_IMAGE_SIZE, img.width / float(img.height))
+                cond = [pipe.image_processor.resize(img, int(dims[1]), int(dims[0]))]
+                pe, pm = pipe._get_qwen_prompt_embeds(prompt, cond, dev, torch.bfloat16)
+                embeds.append((pe.to("cpu"), pm.to("cpu")))
+        pipe.register_modules(text_encoder=None)
+        del te
+        gc.collect()
+        torch.cuda.empty_cache()
+        gpu_mem("текстовая модель выгружена")
+        t1 = time.time()
+        tr = QwenImageTransformer2DModel.from_pretrained(pu.MODEL, subfolder="transformer", torch_dtype=torch.bfloat16)
+        pipe.register_modules(transformer=tr)
+        path = pu.pick_lora(pu.LIGHTNING[0], ("%dsteps" % (8 if RUN["steps"] >= 8 else 4), "bf16"))
+        pipe.load_lora_weights(os.path.dirname(path), weight_name=os.path.basename(path), adapter_name="lightning")
+        tr.enable_layerwise_casting(storage_dtype=torch.float8_e4m3fn, compute_dtype=torch.bfloat16,
+                                    skip_modules_pattern=("pos_embed", "patch_embed", "norm", r"^proj_in$",
+                                                          r"^proj_out$", "lora"))
+        tr.to(dev)
+        pipe.vae.to(dev)
+        pipe.scheduler = FlowMatchEulerDiscreteScheduler.from_config(pu.LIGHTNING_SCHEDULER)
+        pipe.set_progress_bar_config(disable=True)
+        gc.collect()
+        print("фаза 2: трансформер на карте за %.0f с (%s)" % (time.time() - t1, os.path.basename(path)), flush=True)
+        gpu_mem("трансформер")
+        out = []
+        with torch.no_grad():
+            for n, (img, (pe, pm), (_im, _p, seed)) in enumerate(zip(imgs, embeds, jobs), 1):
+                g = torch.Generator("cuda").manual_seed(seed)
+                res = pipe(image=[img], prompt=None, prompt_embeds=pe.to(dev), prompt_embeds_mask=pm.to(dev),
+                           true_cfg_scale=RUN["cfg"], num_inference_steps=RUN["steps"], height=img.height,
+                           width=img.width, generator=g).images[0]
+                out.append(np.array(res.convert("RGB")))
+                if n == 1:
+                    gpu_mem("кадр 1")
+        del pipe, tr
+        gc.collect()
+        torch.cuda.empty_cache()
+        return out
 
 
 def save_layer(name, im):
@@ -249,52 +338,63 @@ def main():
     photo = {}
     t0 = time.time()
 
-    def step(tag, inp, prompt, seed):
-        inp.convert("RGB").save(os.path.join(OUT, "raw", tag + "_in.png"))
+    def batch(jobs):
+        """jobs: [(метка, вход, промпт, сид)] -> ответы; круг модели - две фазы на все входы сразу (R-213)."""
+        for tag, inp, _p, _s in jobs:
+            inp.convert("RGB").save(os.path.join(OUT, "raw", tag + "_in.png"))
         if model is None:
-            return np.asarray(inp.convert("RGB"))
+            return [np.asarray(inp.convert("RGB")) for _t, inp, _p, _s in jobs]
         t = time.time()
-        rgb = model.edit(inp, prompt, seed)
-        Image.fromarray(rgb).save(os.path.join(OUT, "raw", tag + "_out.png"))
-        print("  %s: %.0f с" % (tag, time.time() - t), flush=True)
-        return rgb
+        res = model.run([(inp, p, s) for _t, inp, p, s in jobs])
+        for (tag, _i, _p, _s), rgb in zip(jobs, res):
+            Image.fromarray(rgb).save(os.path.join(OUT, "raw", tag + "_out.png"))
+        print("круг из %d картинок: %.0f с" % (len(jobs), time.time() - t), flush=True)
+        return res
 
-    # 1. манекен на трёх кожах
+    # 1. манекен на трёх кожах - один круг модели
+    jobs = []
     for i, look in enumerate(looks):
         body = "%s__%d__%s_NUDE" % (RACE, BODY, look)
         head = "%s__%d__HEAD_%s" % (RACE, HEAD, look)
-        rgb = step("mannequin_" + look, crop8(classic(files, pal, [body, head])), MANNEQUIN, RUN["seed"] + i)
-        for n in (body, head):
+        jobs.append(("mannequin_" + look, crop8(classic(files, pal, [body, head])), MANNEQUIN, RUN["seed"] + i))
+    for (tag, _i, _p, _s), rgb in zip(jobs, batch(jobs)):
+        look = tag[len("mannequin_"):]
+        for n in ("%s__%d__%s_NUDE" % (RACE, BODY, look), "%s__%d__HEAD_%s" % (RACE, HEAD, look)):
             photo[n], frac = cut(rgb, layer_mask(files, n))
             save_layer(n, photo[n])
             run["layers"][n] = {"panel_inside": frac, "prompt": "mannequin"}
-        print("манекен %s готов (%d/%d), %.0f с с начала" % (look, i + 1, len(looks), time.time() - t0), flush=True)
+    print("манекены готовы, %.0f с с начала" % (time.time() - t0), flush=True)
 
-    # 2. одежда двух броней на первой коже, снизу вверх
+    # 2. одежда двух броней на первой коже - второй круг: под вещью фото манекена и B2 нижних вещей (фото нижних
+    #    вещей потребовало бы круга модели на каждую вещь - перезагрузка трансформера на каждую картинку)
     base_look = looks[0]
+    jobs, meta = [], []
     for arm in ARMORS:
         names = outfits[arm][base_look]
-        under = [n for n in names if n in photo and not n.endswith("HEAD_" + base_look)]
+        under = [photo[n] for n in names if n in photo and not n.endswith("HEAD_" + base_look)]
         for j, n in enumerate(names):
             if n in photo:
                 continue
             item = n.split("__", 2)[2]
             what, mat = WHAT[item]
-            ctx = Image.new("RGBA", to8(photo[under[0]]).size, PANEL + (255,))
+            ctx = Image.new("RGBA", to8(under[0]).size, PANEL + (255,))
             for u in under:
-                ctx.alpha_composite(to8(photo[u]))
+                ctx.alpha_composite(to8(u))
             top = crop8(classic(files, pal, [n]))
             m8 = np.asarray(ws.xbrz(Image.fromarray((layer_mask(files, n) * 255).astype(np.uint8)).convert("RGBA")
                                     .crop(CROP), 4).resize(ctx.size, Image.LANCZOS))[..., 0] > 127
             arr = np.asarray(ctx).copy()
             arr[m8] = np.asarray(top)[m8]
             prompt = CLOTH.format(what=what, mat=mat)
-            rgb = step("%s_%s" % (arm, item), Image.fromarray(arr, "RGBA"), prompt, RUN["seed"] + 100 + j)
-            photo[n], frac = cut(rgb, layer_mask(files, n))
-            save_layer(n, photo[n])
-            run["layers"][n] = {"panel_inside": frac, "prompt": prompt}
-            under.append(n)
-            print("%s: %s готов, %.0f с с начала" % (arm, item, time.time() - t0), flush=True)
+            jobs.append(("%s_%s" % (arm, item), Image.fromarray(arr, "RGBA"), prompt, RUN["seed"] + 100 + j))
+            meta.append((n, prompt))
+            b2, _m = b2_layer(n)
+            under.append(b2 if b2 is not None else classic(files, pal, [n]).resize((db.W * K, db.H * K), Image.NEAREST))
+    for (n, prompt), rgb in zip(meta, batch(jobs)):
+        photo[n], frac = cut(rgb, layer_mask(files, n))
+        save_layer(n, photo[n])
+        run["layers"][n] = {"panel_inside": frac, "prompt": prompt}
+    print("одежда готова (%d вещей), %.0f с с начала" % (len(meta), time.time() - t0), flush=True)
 
     path, b2m = sheet(files, pal, looks, outfits, photo)
     run["sheet"], run["b2_method"], run["seconds"] = path, b2m, round(time.time() - t0)
