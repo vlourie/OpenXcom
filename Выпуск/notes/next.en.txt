@@ -1,0 +1,3 @@
+﻿- Radars on the globe, "Waves" mode: the bases no longer send their waves all at once - by default they take turns, a few at a time, spread over the hour. New option "Base waves": all at once each hour (as before), in turn each hour, each 3 hours or each 6 hours. A craft out of its base now turns a beam, like an old radar screen, instead of sending a wave; switch "Craft beam" off to get the wave back. Graphics only.
+- Radars on the globe: the waves and the craft's beam no longer run while the time stands - with a window open over the globe or during an interception they freeze along with the clock.
+- "Production complete" window: above the "Keep working" button it now says which job comes next - the top one on the list, which gets the free engineers.
