@@ -57,6 +57,12 @@ private:
 	Position _lastLogical, _savedOffset, _drawnOffset;
 	unsigned _shownTicks = 0;
 	bool _shownValid = false, _glideNext = false, _gliding = false, _inShown = false;
+	/// HD lab (Engine/HdLab.h): the view turned by this many quarters (0..3). Picture only: the world, the
+	/// positions the game reads and the camera's API stay in world tiles; the view tile (u, v) of the world
+	/// tile (x, y) is turned (see worldToView), and the screen is drawn from the view tiles.
+	int _rot = 0;
+	/// Converts view tile coordinates to screen coordinates (the unturned formula).
+	void viewToScreen(Position viewPos, Position *screenPos) const;
 	/// Is this tile well inside the visible part of the map at the logical offset?
 	bool inView(Position mapPos) const;
 public:
@@ -100,6 +106,21 @@ public:
 	void convertVoxelToScreen(Position voxelPos, Position *screenPos) const;
 	/// Converts screen coordinates to map coordinates.
 	void convertScreenToMap(int screenX, int screenY, int *mapX, int *mapY) const;
+	/// Converts screen coordinates to view tile coordinates (the map's when it is not turned).
+	void convertScreenToView(int screenX, int screenY, int *viewX, int *viewY) const;
+	/// HD lab: the quarter turns of the view (0..3).
+	int getRotation() const { return _rot; }
+	/// HD lab: turns the view; the tile at the centre of the view stays there.
+	void setRotation(int rot);
+	/// HD lab: the view tile of a world tile, and back (z stays).
+	Position worldToView(Position mapPos) const;
+	Position viewToWorld(Position viewPos) const;
+	/// HD lab: a step on the map as a step in the view, and back (z stays).
+	Position worldStepToView(Position step) const;
+	Position viewStepToWorld(Position step) const;
+	/// HD lab: the size of the map along the view's x and y.
+	int getViewSizeX() const { return (_rot & 1) ? _mapsize_y : _mapsize_x; }
+	int getViewSizeY() const { return (_rot & 1) ? _mapsize_x : _mapsize_y; }
 	/// Center map on a position.
 	void centerOnPosition(Position pos, bool redraw = true);
 	/// Centers map on a position, but in gentle mode only shows its level if it is in view already.

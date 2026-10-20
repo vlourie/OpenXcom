@@ -47,6 +47,7 @@ class Tile;
 class UnitSprite;
 class NumberText;
 class HdCanvas;
+class HdTurn;
 
 enum CursorType { CT_NONE, CT_NORMAL, CT_AIM, CT_PSI, CT_WAYPOINT, CT_THROW };
 enum TilePart : int;
@@ -253,6 +254,19 @@ private:
 	void updateHdLight(Tile *tile, int tileShade, const Position &pos);
 	int getTerrainLevel(const Position& pos, int size) const;
 	int getWallShade(TilePart part, Tile* tileFrot);
+	/// HD lab: the mirrored and turned terrain frames of the turned map (made on first use, kept for the battle).
+	HdTurn *_turn = nullptr;
+	/// HD lab: the wall on a back edge of a cell of the turned view - `left` the edge on the left of the screen
+	/// (where the west wall stands unturned), else the right one (the north wall's). Returns the tile that owns
+	/// it (nullptr off the map) and its part; its frame is mirrored when that part is the other one.
+	Tile *turnedWall(const Position &pos, bool left, TilePart &part) const;
+	/// HD lab: how an object stands in the turned view - drawn before the units of its cell (on its back
+	/// edges) or after them, mirrored or not, and how far its frame moves on the screen (world pixels):
+	/// an object on an edge of its tile goes to where that edge is now.
+	struct TurnedObject { bool back; bool mirror; int dx, dy; };
+	TurnedObject turnedObject(int bigWall) const;
+	/// HD lab: a direction 0..7 as the turned view shows it (other values as they are).
+	int turnedDir(int dir) const;
 	int _iconHeight, _iconWidth, _messageColor;
 	int _hostileBarColor, _neutralBarColor, _borderBarColor;
 	const std::vector<Uint8> *_transparencies;

@@ -178,6 +178,7 @@ set ( engine_src
   Engine/HdUiDraw.cpp
   Engine/HdTest.cpp
   Engine/HdWorkers.cpp
+  Engine/HdTurn.cpp
   Engine/InteractiveSurface.cpp
   Engine/Language.cpp
   Engine/LanguagePlurality.cpp
@@ -310,6 +311,7 @@ set ( menu_src
   Menu/OptionsDefaultsState.cpp
   Menu/OptionsFoldersState.cpp
   Menu/OptionDetailState.cpp
+  Menu/HdLabPasswordState.cpp
   Menu/OptionsHdState.cpp
   Menu/OptionsGeoscapeState.cpp
   Menu/ModConfirmExtendedState.cpp

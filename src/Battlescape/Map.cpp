@@ -42,7 +42,9 @@
 #include "../Engine/HdFx.h"
 #include "../Engine/HdGentle.h"
 #include "../Engine/HdKillCam.h"
+#include "../Engine/HdLab.h"
 #include "../Engine/HdSprites.h"
+#include "../Engine/HdTurn.h"
 #include "../Engine/HdUi.h"
 #include <chrono>
 #include <climits>
@@ -929,6 +931,7 @@ Map::~Map()
 	delete _messageScratch;
 	delete _canvas;
 	delete _messageCanvas;
+	delete _turn;
 	delete _camera;
 	delete _txtAccuracy;
 	delete _txtSkillBonus;
@@ -1069,6 +1072,8 @@ void Map::draw()
 	// we use colour 15 because that actually corresponds to the colour we DO want in all variations of the xcom and tftd palettes.
 	// Note: un-hardcoded the color from 15 to ruleset value, default 15
 	_redraw = false;
+	// HD lab: the battle map turned to another side (Engine/HdLab.h), as the options or the keys left it
+	_camera->setRotation(HdLab::mapRotation());
 	const auto drawStart = std::chrono::steady_clock::now();
 	_hdLabels.clear();
 	_hdLabelsOn = hdLabelsWanted();
@@ -1298,7 +1303,9 @@ void Map::updateHdLight(Tile *tile, int tileShade, const Position &pos)
 	{
 		for (int dx = -1; dx <= 1; ++dx)
 		{
-			Tile *t = (dx == 0 && dy == 0) ? tile : _save->getTile(Position(pos.x + dx, pos.y + dy, pos.z));
+			// (the grid is the view's: in a turned view (HD lab) its columns and rows are other directions of the map)
+			const Position step = _camera->getRotation() ? _camera->viewStepToWorld(Position(dx, dy, 0)) : Position(dx, dy, 0);
+			Tile *t = (dx == 0 && dy == 0) ? tile : _save->getTile(Position(pos.x + step.x, pos.y + step.y, pos.z));
 			int shade = 16;
 			if (t && t->isDiscovered(O_FLOOR))
 			{
@@ -1688,6 +1695,63 @@ int Map::getWallShade(TilePart part, Tile* tileFrot)
 	return shade;
 }
 
+Tile *Map::turnedWall(const Position &pos, bool left, TilePart &part) const
+{
+	const Position step = _camera->viewStepToWorld(left ? Position(-1, 0, 0) : Position(0, -1, 0));
+	// the edge between a tile and its neighbour belongs to the one on its east or south side
+	if (step.x != 0)
+	{
+		part = O_WESTWALL;
+		return _save->getTile(step.x < 0 ? pos : pos + Position(1, 0, 0));
+	}
+	part = O_NORTHWALL;
+	return _save->getTile(step.y < 0 ? pos : pos + Position(0, 1, 0));
+}
+
+Map::TurnedObject Map::turnedObject(int bigWall) const
+{
+	TurnedObject result = { bigWall < 6 || bigWall == 9, false, 0, 0 };
+	const int rot = _camera->getRotation();
+	// the edges of the tile as bits: west 1, north 2, east 4, south 8; a quarter turn moves each to the next
+	static const int edges[10] = { 0, 0, 0, 0, 1, 2, 4, 8, 12, 3 };
+	if (rot == 0 || bigWall < 4 || bigWall > 9)
+	{
+		return result;
+	}
+	const int set = edges[bigWall];
+	const int view = ((set << rot) | (set >> (4 - rot))) & 15;
+	result.back = (view & 12) == 0;
+	result.mirror = (rot & 1) != 0;
+	// mirroring the frame swaps west with north and east with south
+	const int drawn = result.mirror ? (((set & 5) << 1) | ((set & 10) >> 1)) : set;
+	// where a frame shows each edge set (base pixels of the 32x40 frame)
+	auto anchor = [](int s, int &x, int &y)
+	{
+		switch (s)
+		{
+		case 1: x = 8; y = 28; break;
+		case 2: x = 24; y = 28; break;
+		case 4: x = 24; y = 36; break;
+		case 8: x = 8; y = 36; break;
+		case 3: x = 16; y = 24; break;
+		case 6: x = 32; y = 32; break;
+		case 12: x = 16; y = 40; break;
+		default: x = 0; y = 32; break; // 9: south and west
+		}
+	};
+	int vx, vy, dx, dy;
+	anchor(view, vx, vy);
+	anchor(drawn, dx, dy);
+	result.dx = (vx - dx) * _k;
+	result.dy = (vy - dy) * _k;
+	return result;
+}
+
+int Map::turnedDir(int dir) const
+{
+	return (dir >= 0 && dir < 8) ? (dir + 2 * _camera->getRotation()) % 8 : dir;
+}
+
 /**
  * Check two positions if have same XY cords
  */
@@ -1787,6 +1851,18 @@ void Map::drawUnit(UnitSprite &unitSprite, Tile *unitTile, Tile *currTile, Posit
 	unitOffset.x = unitTile->getPosition().x - bu->getPosition().x;
 	unitOffset.y = unitTile->getPosition().y - bu->getPosition().y;
 	int part = unitOffset.x + unitOffset.y*2;
+	const bool turned = _camera->getRotation() != 0;
+	if (turned)
+	{
+		// HD lab: the part of a big unit is its quarter on the screen: the offset in the turned view, from
+		// the unit's corner nearest the top of the screen
+		const int s = bu->getArmor()->getSize() - 1;
+		const Position corner = _camera->worldStepToView(Position(s, s, 0));
+		Position viewOffset = _camera->worldStepToView(unitOffset);
+		if (corner.x < 0) viewOffset.x += s;
+		if (corner.y < 0) viewOffset.y += s;
+		part = viewOffset.x + viewOffset.y * 2;
+	}
 
 	bool moving = bu->getStatus() == STATUS_WALKING || bu->getStatus() == STATUS_FLYING;
 	int bonusWidth = moving ? 0 : tileFoorWidth;
@@ -1822,7 +1898,8 @@ void Map::drawUnit(UnitSprite &unitSprite, Tile *unitTile, Tile *currTile, Posit
 	{
 		GraphSubset leftMask = mask.offset(-tileFoorWidth/2, 0);
 		GraphSubset rightMask = mask.offset(+tileFoorWidth/2, 0);
-		int direction = bu->getDirection();
+		// (the masks are the screen's: the direction as the view shows it)
+		int direction = turnedDir(bu->getDirection());
 		Position partCurr = currTile->getPosition();
 		Position partDest = bu->getDestination() + unitOffset;
 		Position partLast = bu->getLastPosition() + unitOffset;
@@ -1904,8 +1981,9 @@ void Map::drawUnit(UnitSprite &unitSprite, Tile *unitTile, Tile *currTile, Posit
 		}
 		else
 		{
-			Position leftPos = partCurr + Position(-1, 0, 0);
-			Position rightPos = partCurr + Position(0, -1, 0);
+			// (the neighbours on the left and the right of the screen: in a turned view, other ones of the map)
+			Position leftPos = partCurr + (turned ? _camera->viewStepToWorld(Position(-1, 0, 0)) : Position(-1, 0, 0));
+			Position rightPos = partCurr + (turned ? _camera->viewStepToWorld(Position(0, -1, 0)) : Position(0, -1, 0));
 			if (!topLayer && (partDest.z > partCurr.z || partLast.z > partCurr.z))
 			{
 				//unit change layers, it will be drawn by upper layer not lower.
@@ -2372,6 +2450,15 @@ void Map::drawTerrain(HdCanvas *surface)
 		_isTFTD ? ArrowColorsTFTD[1] : ArrowColorsUFO[1], _isTFTD ? ArrowColorsTFTD[2] : ArrowColorsUFO[2]);
 	unitSprite.setScale(_k);
 	ItemSprite itemSprite(surface, _game->getMod(), _save, _animFrame);
+	// HD lab: the turned view - the cells go in the view's order, each drawing the world tile turned there
+	const int rot = _camera->getRotation();
+	const bool turned = rot != 0;
+	const bool hdFrames = surface->getHdMode() != HD_MODE_NEAREST;
+	if (turned && !_turn)
+	{
+		_turn = new HdTurn();
+	}
+	unitSprite.setDirectionShift(2 * rot);
 
 	const int halfAnimFrame = (_animFrame / 2) % 4;
 	const int halfAnimFrameRest = (_animFrame % 2);
@@ -2480,13 +2567,23 @@ void Map::drawTerrain(HdCanvas *surface)
 				while (!enough);
 			}
 		}
+		if (turned)
+		{
+			// HD lab: the box of the bullet in the view's tiles (its corners go to corners)
+			const Position a = _camera->worldToView(Position(bulletLowX, bulletLowY, 0));
+			const Position b = _camera->worldToView(Position(bulletHighX, bulletHighY, 0));
+			bulletLowX = std::min(a.x, b.x);
+			bulletHighX = std::max(a.x, b.x);
+			bulletLowY = std::min(a.y, b.y);
+			bulletHighY = std::max(a.y, b.y);
+		}
 	}
 
 	// get corner map coordinates to give rough boundaries in which tiles to redraw are
-	_camera->convertScreenToMap(0, 0, &beginX, &dummy);
-	_camera->convertScreenToMap(surface->getWidth(), 0, &dummy, &beginY);
-	_camera->convertScreenToMap(surface->getWidth() + _spriteWidth, surface->getHeight() + _spriteHeight, &endX, &dummy);
-	_camera->convertScreenToMap(0, surface->getHeight() + _spriteHeight, &dummy, &endY);
+	_camera->convertScreenToView(0, 0, &beginX, &dummy);
+	_camera->convertScreenToView(surface->getWidth(), 0, &dummy, &beginY);
+	_camera->convertScreenToView(surface->getWidth() + _spriteWidth, surface->getHeight() + _spriteHeight, &endX, &dummy);
+	_camera->convertScreenToView(0, surface->getHeight() + _spriteHeight, &dummy, &endY);
 	beginY -= (_camera->getViewLevel() * 2);
 	beginX -= (_camera->getViewLevel() * 2);
 	if (beginX < 0)
@@ -2519,6 +2616,46 @@ void Map::drawTerrain(HdCanvas *surface)
 		movingUnitPosition = movingUnit->getPosition();
 	}
 
+	// HD lab: the place of a tile in the order the cells go here (its index unturned)
+	auto cellOrder = [&](const Position &pos)
+	{
+		if (!turned)
+			return _save->getTileIndex(pos);
+		const Position view = _camera->worldToView(pos);
+		return (view.z * _camera->getViewSizeY() + view.y) * _camera->getViewSizeX() + view.x;
+	};
+	// HD lab: the view cell of a voxel (its tile unturned)
+	auto viewCellOf = [&](const Position &voxel)
+	{
+		const Position cell(voxel.x / 16, voxel.y / 16, 0);
+		return turned ? _camera->worldToView(cell) : cell;
+	};
+	// HD lab: the walls on the back edges of the view cell at mapPosition / screenPosition - the edge on the
+	// left of the screen shows the west wall unturned, the one on the right the north wall; a wall of the other
+	// part stands there mirrored. A cell past the map's far edges of the view draws only these (the walls of the
+	// last tiles that face away from the view, which no tile of the map draws).
+	auto drawTurnedWalls = [&]()
+	{
+		bool leftDrawn = false;
+		for (int side = 0; side < 2; ++side)
+		{
+			const bool left = side == 0;
+			TilePart part;
+			Tile *owner = turnedWall(mapPosition, left, part);
+			if (!owner)
+				continue;
+			SurfaceRaw<const Uint8> sprite = owner->getSprite(part);
+			if (!sprite)
+				continue;
+			if (left != (part == O_WESTWALL))
+				sprite = _turn->mirrored(sprite, hdFrames);
+			int shade = getWallShade(part, owner);
+			if (owner->getObstacle(part))
+				shade = getShadePulseForFrame(shade, _animFrame);
+			surface->blit(sprite, screenPosition.x, screenPosition.y - owner->getYOffset(part) * _k, shade, !left && leftDrawn, _nvColor);
+			leftDrawn = leftDrawn || left;
+		}
+	};
 	// HD render: the parts of a collapsed building falling (HdFx::fall), each drawn in its cell's turn, as the
 	// cells go here (by tile index)
 	std::vector<std::pair<int, std::pair<const HdFx::Piece*, int>>> pieces;
@@ -2529,23 +2666,37 @@ void Map::drawTerrain(HdCanvas *surface)
 		HdFx::falling(SDL_GetTicks(), falling);
 		for (const auto &f : falling)
 			if (_save->getTile(f.first->cell))
-				pieces.push_back(std::make_pair(_save->getTileIndex(f.first->cell), f));
+				pieces.push_back(std::make_pair(cellOrder(f.first->cell), f));
 		std::stable_sort(pieces.begin(), pieces.end(), [](const auto &a, const auto &b) { return a.first < b.first; });
 	}
 
 	surface->lock();
 	const Position cameraPos = _camera->getMapOffset();
+	// HD lab: the turned view goes a cell past the map's far edges, for the walls that face away there
+	const int rimX = endX + (turned && endX >= _camera->getViewSizeX() ? 1 : 0);
+	const int rimY = endY + (turned && endY >= _camera->getViewSizeY() ? 1 : 0);
 	for (int itZ = beginZ; itZ <= endZ; itZ++)
 	{
 		bool topLayer = itZ == endZ;
-		for (int itY = beginY; itY < endY; itY++)
+		for (int viewY = beginY; viewY < rimY; viewY++)
 		{
-			mapPosition = Position(beginX, itY, itZ);
-			tile = _save->getTile(mapPosition);
-			for (int itX = beginX; itX < endX; itX++, mapPosition.x++, tile++)
+			for (int viewX = beginX; viewX < rimX; viewX++)
 			{
+				// HD lab: the cell of the view and the world tile turned to it (the same one unturned)
+				const Position viewPosition(viewX, viewY, itZ);
+				mapPosition = turned ? _camera->viewToWorld(viewPosition) : viewPosition;
+				tile = _save->getTile(mapPosition);
+				const int itX = mapPosition.x, itY = mapPosition.y;
 				_camera->convertMapToScreen(mapPosition, &screenPosition);
 				screenPosition += cameraPos;
+				if (!tile)
+				{
+					// HD lab: a cell past the far edge of the view
+					if (_hdLightOn)
+						_canvas->setLight(nullptr);
+					drawTurnedWalls();
+					continue;
+				}
 
 				// only render cells that are inside the surface
 				if (screenPosition.x > -_spriteWidth && screenPosition.x < surface->getWidth() + _spriteWidth &&
@@ -2585,14 +2736,17 @@ void Map::drawTerrain(HdCanvas *surface)
 					tmpSurface = tile->getSprite(O_FLOOR);
 					if (tmpSurface)
 					{
+						// HD lab: a flat floor turns with the map
+						if (turned)
+							tmpSurface = _turn->floorTurned(tmpSurface, rot, hdFrames);
 						// HD render: a floor with pack variants shows the one the ground pattern puts here
-						if (_hdGroundVariants)
+						if (_hdGroundVariants && !turned)
 							surface->setGroundCell(true, mapPosition.x, mapPosition.y, mapPosition.z);
 						if (tile->getObstacle(O_FLOOR))
 							surface->blit(tmpSurface, screenPosition.x, screenPosition.y - tile->getYOffset(O_FLOOR) * _k, obstacleShade, false, _nvColor);
 						else
 							surface->blit(tmpSurface, screenPosition.x, screenPosition.y - tile->getYOffset(O_FLOOR) * _k, tileShade, false, _nvColor);
-						if (_hdGroundVariants)
+						if (_hdGroundVariants && !turned)
 							surface->setGroundCell(false, 0, 0, 0);
 					}
 
@@ -2664,17 +2818,22 @@ void Map::drawTerrain(HdCanvas *surface)
 
 						for (size_t b = 0; b < std::size(backPos); ++b)
 						{
-							drawUnit(unitSprite, _save->getTile(mapPosition + backPos[b]), tile, screenPosition, topLayer);
+							drawUnit(unitSprite, _save->getTile(mapPosition + (turned ? _camera->viewStepToWorld(backPos[b]) : backPos[b])), tile, screenPosition, topLayer);
 						}
 					}
 
 					// Draw walls
 					{
+						// HD lab: the walls on the back edges of the view cell
+						if (turned)
+						{
+							drawTurnedWalls();
+						}
 						// Draw west wall
 						// HD render: the wall blits are labelled with their cell for the SCC addressing (paths W1, W2, N1..N4);
 						// the obstacle test hook only takes the obstacle path in the drawing, the tile is not touched
 						const bool addressObstacle = addressObstacleEvery > 0 && (mapPosition.x * 7 + mapPosition.y * 3 + mapPosition.z) % addressObstacleEvery == 0;
-						tmpSurface = tile->getSprite(O_WESTWALL);
+						tmpSurface = turned ? SurfaceRaw<const Uint8>() : tile->getSprite(O_WESTWALL);
 						if (tmpSurface)
 						{
 							int wallShade = getWallShade(O_WESTWALL, tile);
@@ -2689,7 +2848,7 @@ void Map::drawTerrain(HdCanvas *surface)
 								surface->setCellAddress(0, 0, 0, 0, 0);
 						}
 						// Draw north wall
-						tmpSurface = tile->getSprite(O_NORTHWALL);
+						tmpSurface = turned ? SurfaceRaw<const Uint8>() : tile->getSprite(O_NORTHWALL);
 						if (tmpSurface)
 						{
 							int wallShade = getWallShade(O_NORTHWALL, tile);
@@ -2708,25 +2867,29 @@ void Map::drawTerrain(HdCanvas *surface)
 						tmpSurface = tile->getSprite(O_OBJECT);
 						if (tmpSurface)
 						{
-							if (tile->isBackTileObject(O_OBJECT))
+							// HD lab: an object on an edge of its tile goes with the edge
+							const TurnedObject placed = turned ? turnedObject(tile->getMapData(O_OBJECT)->getBigWall()) : TurnedObject{ tile->isBackTileObject(O_OBJECT), false, 0, 0 };
+							if (placed.back)
 							{
+								if (placed.mirror)
+									tmpSurface = _turn->mirrored(tmpSurface, hdFrames);
 								if (tile->getObstacle(O_OBJECT))
-									surface->blit(tmpSurface, screenPosition.x, screenPosition.y - tile->getYOffset(O_OBJECT) * _k, obstacleShade, false, _nvColor);
+									surface->blit(tmpSurface, screenPosition.x + placed.dx, screenPosition.y + placed.dy - tile->getYOffset(O_OBJECT) * _k, obstacleShade, false, _nvColor);
 								else
-									surface->blit(tmpSurface, screenPosition.x, screenPosition.y - tile->getYOffset(O_OBJECT) * _k, tileShade, false, _nvColor);
+									surface->blit(tmpSurface, screenPosition.x + placed.dx, screenPosition.y + placed.dy - tile->getYOffset(O_OBJECT) * _k, tileShade, false, _nvColor);
 							}
 						}
 						// HD render: the collapsed parts that stood in this cell, on their way down
 						if (nextPiece < pieces.size())
 						{
-							const int index = _save->getTileIndex(mapPosition);
+							const int index = cellOrder(mapPosition);
 							while (nextPiece < pieces.size() && pieces[nextPiece].first < index)
 								++nextPiece;
 							for (; nextPiece < pieces.size() && pieces[nextPiece].first == index; ++nextPiece)
 							{
 								const HdFx::Piece &piece = *pieces[nextPiece].second.first;
 								const int down = pieces[nextPiece].second.second;
-								const bool ground = piece.part == O_FLOOR && _hdGroundVariants;
+								const bool ground = piece.part == O_FLOOR && _hdGroundVariants && !turned;
 								if (ground)
 									surface->setGroundCell(true, mapPosition.x, mapPosition.y, mapPosition.z);
 								surface->blit(piece.sprite, screenPosition.x, screenPosition.y + (down - piece.yOffset) * _k, tileShade, false, _nvColor);
@@ -2797,10 +2960,10 @@ void Map::drawTerrain(HdCanvas *surface)
 							Position voxelPos = _projectile->getPosition();
 							// draw shadow on the floor
 							voxelPos.z = _save->getTileEngine()->castedShade(voxelPos);
-							if (voxelPos.x / 16 >= itX &&
-								voxelPos.y / 16 >= itY &&
-								voxelPos.x / 16 <= itX+1 &&
-								voxelPos.y / 16 <= itY+1 &&
+							if (viewCellOf(voxelPos).x >= viewX &&
+								viewCellOf(voxelPos).y >= viewY &&
+								viewCellOf(voxelPos).x <= viewX+1 &&
+								viewCellOf(voxelPos).y <= viewY+1 &&
 								voxelPos.z / 24 == itZ &&
 								_save->getTileEngine()->isVoxelVisible(voxelPos))
 							{
@@ -2814,10 +2977,10 @@ void Map::drawTerrain(HdCanvas *surface)
 
 							voxelPos = _projectile->getPosition();
 							// draw thrown object
-							if (voxelPos.x / 16 >= itX &&
-								voxelPos.y / 16 >= itY &&
-								voxelPos.x / 16 <= itX+1 &&
-								voxelPos.y / 16 <= itY+1 &&
+							if (viewCellOf(voxelPos).x >= viewX &&
+								viewCellOf(voxelPos).y >= viewY &&
+								viewCellOf(voxelPos).x <= viewX+1 &&
+								viewCellOf(voxelPos).y <= viewY+1 &&
 								voxelPos.z / 24 == itZ &&
 								_save->getTileEngine()->isVoxelVisible(voxelPos))
 							{
@@ -2837,7 +3000,7 @@ void Map::drawTerrain(HdCanvas *surface)
 						else
 						{
 							// draw bullet on the correct tile
-							if (itX >= bulletLowX && itX <= bulletHighX && itY >= bulletLowY && itY <= bulletHighY)
+							if (viewX >= bulletLowX && viewX <= bulletHighX && viewY >= bulletLowY && viewY <= bulletHighY)
 							{
 								int begin = 0;
 								int end = BULLET_SPRITES;
@@ -2960,7 +3123,7 @@ void Map::drawTerrain(HdCanvas *surface)
 
 						for (size_t f = 0; f < std::size(frontPos); ++f)
 						{
-							drawUnit(unitSprite, _save->getTile(mapPosition + frontPos[f]), tile, screenPosition, topLayer);
+							drawUnit(unitSprite, _save->getTile(mapPosition + (turned ? _camera->viewStepToWorld(frontPos[f]) : frontPos[f])), tile, screenPosition, topLayer);
 						}
 					}
 
@@ -3053,7 +3216,7 @@ void Map::drawTerrain(HdCanvas *surface)
 								surface->blit(tmpSurface, screenPosition.x, screenPosition.y + 2 * _k, 0, false, tile->getMarkerColor());
 							}
 						}
-						tmpSurface = _game->getMod()->getHdSurfaceSet("Pathfinding")->getFrame(tile->getPreview());
+						tmpSurface = _game->getMod()->getHdSurfaceSet("Pathfinding")->getFrame(turnedDir(tile->getPreview()));
 						if (tmpSurface)
 						{
 							surface->blit(tmpSurface, screenPosition.x, screenPosition.y + tile->getTerrainLevel() * _k, 0, false, tileColor);
@@ -3065,12 +3228,16 @@ void Map::drawTerrain(HdCanvas *surface)
 						tmpSurface = tile->getSprite(O_OBJECT);
 						if (tmpSurface)
 						{
-							if (!tile->isBackTileObject(O_OBJECT))
+							// HD lab: an object on an edge of its tile goes with the edge
+							const TurnedObject placed = turned ? turnedObject(tile->getMapData(O_OBJECT)->getBigWall()) : TurnedObject{ tile->isBackTileObject(O_OBJECT), false, 0, 0 };
+							if (!placed.back)
 							{
+								if (placed.mirror)
+									tmpSurface = _turn->mirrored(tmpSurface, hdFrames);
 								if (tile->getObstacle(O_OBJECT))
-									surface->blit(tmpSurface, screenPosition.x, screenPosition.y - tile->getYOffset(O_OBJECT) * _k, obstacleShade, false, _nvColor);
+									surface->blit(tmpSurface, screenPosition.x + placed.dx, screenPosition.y + placed.dy - tile->getYOffset(O_OBJECT) * _k, obstacleShade, false, _nvColor);
 								else
-									surface->blit(tmpSurface, screenPosition.x, screenPosition.y - tile->getYOffset(O_OBJECT) * _k, tileShade, false, _nvColor);
+									surface->blit(tmpSurface, screenPosition.x + placed.dx, screenPosition.y + placed.dy - tile->getYOffset(O_OBJECT) * _k, tileShade, false, _nvColor);
 							}
 						}
 					}
@@ -3375,7 +3542,8 @@ void Map::drawTerrain(HdCanvas *surface)
 			{
 				for (int itY = beginY; itY <= endY; itY++)
 				{
-					mapPosition = Position(itX, itY, itZ);
+					// HD lab: itX, itY go over the cells of the view
+					mapPosition = turned ? _camera->viewToWorld(Position(itX, itY, itZ)) : Position(itX, itY, itZ);
 					_camera->convertMapToScreen(mapPosition, &screenPosition);
 					screenPosition += _camera->getMapOffset();
 
@@ -3397,7 +3565,7 @@ void Map::drawTerrain(HdCanvas *surface)
 									surface->blit(tmpSurface, screenPosition.x, screenPosition.y + 2 * _k, 0, false, tile->getMarkerColor());
 								}
 							}
-							int overlay = tile->getPreview() + 12;
+							int overlay = turnedDir(tile->getPreview()) + 12;
 							tmpSurface = _game->getMod()->getHdSurfaceSet("Pathfinding")->getFrame(overlay);
 							if (tmpSurface)
 							{
@@ -4134,15 +4302,17 @@ UnitWalkingOffset Map::calculateWalkingOffset(const BattleUnit *unit) const
 	}
 	else if ((unit->getStatus() == STATUS_WALKING || unit->getStatus() == STATUS_FLYING))
 	{
+		// the phases are the game's (when the unit changes tiles); the step on the screen is the view's (HD lab)
+		const int screenDir = turnedDir(dir);
 		if (phase < midphase)
 		{
-			result.ScreenOffset.x = phase * 2 * offsetX[dir] * _k;
-			result.ScreenOffset.y = - phase * offsetY[dir] * _k;
+			result.ScreenOffset.x = phase * 2 * offsetX[screenDir] * _k;
+			result.ScreenOffset.y = - phase * offsetY[screenDir] * _k;
 		}
 		else
 		{
-			result.ScreenOffset.x = (phase - endphase) * 2 * offsetX[dir] * _k;
-			result.ScreenOffset.y = - (phase - endphase) * offsetY[dir] * _k;
+			result.ScreenOffset.x = (phase - endphase) * 2 * offsetX[screenDir] * _k;
+			result.ScreenOffset.y = - (phase - endphase) * offsetY[screenDir] * _k;
 		}
 	}
 

@@ -23,6 +23,7 @@
 #include "../Engine/FileMap.h"
 #include "../Engine/HdSprites.h"
 #include "../Engine/HdGentle.h"
+#include "../Engine/HdLab.h"
 #include "../Engine/HdUi.h"
 #include "../Engine/LocalizedText.h"
 #include "../Engine/Options.h"
@@ -34,15 +35,18 @@
 #include "../Mod/Mod.h"
 #include "../Mod/RuleInterface.h"
 #include "AdultChoiceState.h"
+#include "HdLabPasswordState.h"
 #include "OptionDetailState.h"
 
 namespace OpenXcom
 {
 
 /// The categories of Options.cpp shown here, in this order; the first one also holds the art version row.
-static const char *const HD_CATEGORIES[] = { "STR_HD_ART", "STR_HD_GENTLE", "STR_HD_BATTLE", "STR_HD_PHYSICS", "STR_HD_AI", "STR_HD_CHALLENGE", "STR_HD_INTERFACE", "STR_HD_SPEED" };
-/// Row markers in _rows.
-static const int ROW_NONE = -1, ROW_ART = -2;
+static const char *const HD_CATEGORIES[] = { "STR_HD_ART", "STR_HD_GENTLE", "STR_HD_BATTLE", "STR_HD_PHYSICS", "STR_HD_AI", "STR_HD_CHALLENGE", "STR_HD_INTERFACE", "STR_HD_SPEED", "STR_HD_LAB" };
+/// The category of the HD lab (Engine/HdLab.h): its rows show only once the password was given.
+static const std::string LAB_CATEGORY = "STR_HD_LAB";
+/// Row markers in _rows: ROW_LAB asks for the lab's password, ROW_LAB_LOCK closes the lab again.
+static const int ROW_NONE = -1, ROW_ART = -2, ROW_LAB = -3, ROW_LAB_LOCK = -4;
 
 /**
  * Initializes all the elements in the HD Options window.
@@ -172,6 +176,7 @@ void OptionsHdState::updateList()
 	{
 		const Group &group = _groups[g];
 		const bool withArt = g == 0;
+		const bool lab = group.title == LAB_CATEGORY;
 		if (group.settings.empty() && !withArt)
 		{
 			continue;
@@ -186,6 +191,12 @@ void OptionsHdState::updateList()
 		{
 			addRow(ROW_ART, 0, tr("STR_HD_ART_VERSION"), artText());
 		}
+		if (lab && !HdLab::unlocked())
+		{
+			// the lab's rows stay hidden: one row asks for the password
+			addRow(ROW_LAB, 0, tr("STR_HD_LAB_LOCKED"), tr("STR_HD_LAB_ENTER"));
+			continue;
+		}
 		for (size_t i = 0; i < group.settings.size(); ++i)
 		{
 			const OptionInfo &info = group.settings[i];
@@ -197,6 +208,10 @@ void OptionsHdState::updateList()
 			{
 				_lstOptions->setRowColor(_lstOptions->getLastRowIndex(), _greyedOutColor);
 			}
+		}
+		if (lab)
+		{
+			addRow(ROW_LAB_LOCK, 0, tr("STR_HD_LAB_RELOCK"), "");
 		}
 	}
 	_lstOptions->scrollTo(scroll); // the row just changed stays where the player looks at it
@@ -270,6 +285,10 @@ std::string OptionsHdState::valueText(const OptionInfo &info) const
 	if (info.asInt() == &Options::oxceHdRadar)
 	{
 		return tr("STR_HD_RADAR_" + std::to_string(Options::oxceHdRadar));
+	}
+	if (info.asInt() == &Options::oxceHdMapRotation)
+	{
+		return tr("STR_HD_MAP_ROTATION_" + std::to_string(((Options::oxceHdMapRotation % 4) + 4) % 4));
 	}
 	if (info.asInt() == &Options::oxceHdBattleHudColor)
 	{
@@ -390,6 +409,18 @@ void OptionsHdState::changeSetting(size_t sel, Uint8 button)
 		updateList();                                 // the HD sprites row shows the same option
 		return;
 	}
+	if (row.group == ROW_LAB)
+	{
+		// the list is filled again when the tab comes back on top (init)
+		_game->pushState(new HdLabPasswordState(_origin, nullptr));
+		return;
+	}
+	if (row.group == ROW_LAB_LOCK)
+	{
+		HdLab::lock();
+		updateList();
+		return;
+	}
 	if (row.group < 0)
 	{
 		return;
@@ -470,6 +501,11 @@ void OptionsHdState::changeSetting(size_t sel, Uint8 button)
 			min = 0;                                  // 0 circles, 1 joint wash, 2 wash with the sweep, 3 waves
 			max = 3;
 		}
+		else if (i == &Options::oxceHdMapRotation)
+		{
+			min = 0;                                  // quarter turns of the battle map
+			max = 3;
+		}
 		else if (i == &Options::oxceHdBattleHudColor)
 		{
 			min = 0;                                  // 0 dark slate, 1 gold as the original, 2 Consul's hull, 3 Cruiser's, 4 ship's brass,
@@ -525,7 +561,15 @@ std::string OptionsHdState::rowDescription(size_t sel) const
 	if (sel < _rows.size())
 	{
 		const Row row = _rows[sel];
-		if (row.group == ROW_ART)
+		if (row.group == ROW_LAB)
+		{
+			desc = tr("STR_HD_LAB_LOCKED_DESC");
+		}
+		else if (row.group == ROW_LAB_LOCK)
+		{
+			desc = tr("STR_HD_LAB_RELOCK_DESC");
+		}
+		else if (row.group == ROW_ART)
 		{
 			desc = tr("STR_HD_ART_VERSION_DESC");
 			if (_adultShipped && _origin != OPT_MENU)
@@ -558,6 +602,11 @@ void OptionsHdState::showDetail(size_t sel)
 	const Row row = _rows[sel];
 	if (row.group == ROW_NONE)
 	{
+		return;
+	}
+	if (row.group == ROW_LAB || row.group == ROW_LAB_LOCK)
+	{
+		changeSetting(sel, SDL_BUTTON_LEFT);
 		return;
 	}
 	const std::string name = row.group == ROW_ART ? tr("STR_HD_ART_VERSION") : tr(_groups[row.group].settings[row.index].description());

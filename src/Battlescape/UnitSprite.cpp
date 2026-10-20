@@ -67,6 +67,22 @@ UnitSprite::~UnitSprite()
 
 }
 
+/**
+ * HD lab: the unit's direction as the turned view shows it.
+ */
+int UnitSprite::shownDir() const
+{
+	return (_unit->getDirection() + _dirShift) % 8;
+}
+
+/**
+ * HD lab: the turret's direction as the turned view shows it.
+ */
+int UnitSprite::shownTurretDir() const
+{
+	return (_unit->getTurretDirection() + _dirShift) % 8;
+}
+
 namespace
 {
 
@@ -167,7 +183,7 @@ void UnitSprite::blitItem(Part& item)
 	const BattleItem *weapon = item.bodyPart == BODYPART_ITEM_RIGHTHAND ? _itemR : _itemL;
 	if (weapon && HdFx::wantsTip(weapon->getId()))
 	{
-		HdFx::noteTip(weapon->getId(), item.src, _unit->getDirection(), _x + item.offX * _scale, _y + item.offY * _scale);
+		HdFx::noteTip(weapon->getId(), item.src, shownDir(), _x + item.offX * _scale, _y + item.offY * _scale);
 	}
 }
 
@@ -302,7 +318,7 @@ void UnitSprite::draw(const BattleUnit* unit, int part, int x, int y, int shade,
 	if (drawFacingIndicator && part == 0)
 	{
 		// draw unit facing indicator
-		auto* tmpSurface = _facingArrowSurface->getFrame(7 + ((unit->getDirection() + 1) % 8));
+		auto* tmpSurface = _facingArrowSurface->getFrame(7 + ((shownDir() + 1) % 8));
 		if (unit->getOriginalFaction() == FACTION_PLAYER)
 		{
 			_dest->blit(tmpSurface, _x, _y, 0);
@@ -406,7 +422,7 @@ void UnitSprite::drawRoutine0()
 	const int offXAiming = 0;
 	const int soldierHeight = 22;
 
-	const int unitDir = _unit->getDirection();
+	const int unitDir = shownDir();
 	const int walkPhase = _unit->getWalkingPhase();
 
 	if (_unit->getStatus() == STATUS_COLLAPSING)
@@ -707,7 +723,7 @@ void UnitSprite::drawRoutine1()
 		return;
 	}
 
-	const int unitDir = _unit->getDirection();
+	const int unitDir = shownDir();
 	const int walkPhase = _unit->getWalkingPhase();
 
 	selectUnit(leftArm, larm, unitDir);
@@ -731,7 +747,7 @@ void UnitSprite::drawRoutine1()
 		// draw handob item
 		if (_unit->getStatus() == STATUS_AIMING && _itemR->getRules()->isTwoHanded())
 		{
-			int dir = (_unit->getDirection() + 2)%8;
+			int dir = (shownDir() + 2)%8;
 			selectItem(itemR, _itemR, dir);
 			itemR.offX = (offX[unitDir]);
 			itemR.offY = (offY[unitDir]);
@@ -858,14 +874,14 @@ void UnitSprite::drawRoutine2()
 	}
 
 	// draw the tank itself
-	selectUnit(s, hoverTank + (_part * 8), _unit->getDirection());
+	selectUnit(s, hoverTank + (_part * 8), shownDir());
 	blitBody(s);
 
 	// draw the turret, together with the last part
 	if (turret != -1)
 	{
 		Part t{ BODYPART_LARGE_TURRET };
-		selectUnit(t, 64 + (turret * 8), _unit->getTurretDirection());
+		selectUnit(t, 64 + (turret * 8), shownTurretDir());
 		// A turret frame bigger than the unit cell (e.g. 64x80 for a long barrel, loaded from a folder of
 		// images) is centred on the classic turret place and drawn with every part, each time through that
 		// part's clip: a moving unit is clipped to one tile column per part, so a turret drawn only with the
@@ -883,8 +899,8 @@ void UnitSprite::drawRoutine2()
 			int turretOffsetY = -4;
 			if (hoverTank)
 			{
-				turretOffsetX += offX[_unit->getDirection()];
-				turretOffsetY += offy[_unit->getDirection()];
+				turretOffsetX += offX[shownDir()];
+				turretOffsetY += offy[shownDir()];
 			}
 			if (bigTurret)
 			{
@@ -928,7 +944,7 @@ void UnitSprite::drawRoutine3()
 		}
 	}
 
-	selectUnit(s, (_part * 8), _unit->getDirection());
+	selectUnit(s, (_part * 8), shownDir());
 
 	blitBody(s);
 
@@ -981,7 +997,7 @@ void UnitSprite::drawRoutine4()
 		die = 148;
 	}
 
-	const int unitDir = _unit->getDirection();
+	const int unitDir = shownDir();
 
 	if (_unit->getStatus() == STATUS_COLLAPSING)
 	{
@@ -1092,15 +1108,15 @@ void UnitSprite::drawRoutine5()
 	// Mode 0 draws the classic frame as it is.
 	if (separateTurret)
 	{
-		selectUnit(s, 0, _unit->getTurretDirection());
+		selectUnit(s, 0, shownTurretDir());
 	}
 	else if (_unit->getStatus() == STATUS_WALKING)
 	{
-		selectUnit(s, 32 + (_part * 4), (_unit->getDirection() * 16) + ((_unit->getWalkingPhase() / 2) % 4));
+		selectUnit(s, 32 + (_part * 4), (shownDir() * 16) + ((_unit->getWalkingPhase() / 2) % 4));
 	}
 	else
 	{
-		selectUnit(s, 0 + (_part * 8), _unit->getDirection());
+		selectUnit(s, 0 + (_part * 8), shownDir());
 	}
 
 	blitBody(s);
@@ -1136,7 +1152,7 @@ void UnitSprite::drawRoutine6()
 		return;
 	}
 
-	const int unitDir = _unit->getDirection();
+	const int unitDir = shownDir();
 	const int walkPhase = _unit->getWalkingPhase();
 
 	selectUnit(torso, Torso, unitDir);
@@ -1311,7 +1327,7 @@ void UnitSprite::drawRoutine7()
 		return;
 	}
 
-	const int unitDir = _unit->getDirection();
+	const int unitDir = shownDir();
 	const int walkPhase = _unit->getWalkingPhase();
 
 	selectUnit(torso, Torso, unitDir);
@@ -1417,7 +1433,7 @@ void UnitSprite::drawRoutine11()
 	}
 
 	Part s{ BODYPART_LARGE_TORSO + _part };
-	selectUnit(s, body + (_part * 4), 16 * _unit->getDirection() + animFrame);
+	selectUnit(s, body + (_part * 4), 16 * shownDir() + animFrame);
 	s.offY = (4);
 	blitBody(s);
 
@@ -1426,12 +1442,12 @@ void UnitSprite::drawRoutine11()
 	if ((_part == 3 || _part == 0) && turret != -1 && !_unit->getFloorAbove())
 	{
 		Part t{ BODYPART_LARGE_TURRET };
-		selectUnit(t, 256 + (turret * 8), _unit->getTurretDirection());
-		t.offX = (offTurretX[_unit->getDirection()]);
+		selectUnit(t, 256 + (turret * 8), shownTurretDir());
+		t.offX = (offTurretX[shownDir()]);
 		if (_part == 3)
-			t.offY = (offTurretYBelow[_unit->getDirection()]);
+			t.offY = (offTurretYBelow[shownDir()]);
 		else
-			t.offY = (offTurretYAbove[_unit->getDirection()]);
+			t.offY = (offTurretYAbove[shownDir()]);
 		blitBody(t);
 	}
 
@@ -1489,11 +1505,11 @@ void UnitSprite::drawRoutine19()
 	}
 	else if (_unit->getStatus() == STATUS_WALKING)
 	{
-		selectUnit(s, move, _unit->getDirection());
+		selectUnit(s, move, shownDir());
 	}
 	else
 	{
-		selectUnit(s, stand, _unit->getDirection());
+		selectUnit(s, stand, shownDir());
 	}
 
 	blitBody(s);
@@ -1508,11 +1524,11 @@ void UnitSprite::drawRoutine20()
 
 	if (_unit->getStatus() == STATUS_WALKING)
 	{
-		selectUnit(s, (_part * 5), (_unit->getWalkingPhase()/2%4) + 5 * (4 * _unit->getDirection()));
+		selectUnit(s, (_part * 5), (_unit->getWalkingPhase()/2%4) + 5 * (4 * shownDir()));
 	}
 	else
 	{
-		selectUnit(s, (_part * 5), 5 * (4 * _unit->getDirection()));
+		selectUnit(s, (_part * 5), 5 * (4 * shownDir()));
 	}
 
 	blitBody(s);
@@ -1525,7 +1541,7 @@ void UnitSprite::drawRoutine21()
 {
 	Part s{ BODYPART_LARGE_TORSO + _part };
 
-	selectUnit(s, (_part * 4), (_unit->getDirection() * 16) + (_animationFrame % 4));
+	selectUnit(s, (_part * 4), (shownDir() * 16) + (_animationFrame % 4));
 
 	blitBody(s);
 }
