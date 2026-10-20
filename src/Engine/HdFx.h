@@ -101,6 +101,9 @@ namespace HdFx
 	/// The dust of a collapse on the floor of `cell`, `delay` ms from now: 'A' a part crumbled where it stood,
 	/// 'B' a floor or several parts came down there, 'C' one piece fell from above; `what` (what fell) gives the material.
 	void dust(char kind, Position cell, const MapData *what, Uint32 delay);
+	/// What a terrain part is made of, as its dust shows it: "stone", "wood", "metal", "dirt"... The collapse rubble
+	/// picks its record by it too (CollapsePilot) - a change here changes the battle, not only the picture.
+	const char *partMaterial(const MapData *data);
 	/// Is any flash, piece or dust still running at `now` (the finished ones are dropped)?
 	bool active(Uint32 now);
 	/// The flashes still running at `now`, with the frame of each (the finished ones are dropped).

@@ -665,6 +665,11 @@ void dust(char kind, Position cell, const MapData *what, Uint32 delay)
 	noteForTest(clip, delay + l.ms / 3);
 }
 
+const char *partMaterial(const MapData *data)
+{
+	return materialOf(data);
+}
+
 bool active(Uint32 now)
 {
 	dropLanded(now);
