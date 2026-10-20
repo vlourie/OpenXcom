@@ -95,6 +95,10 @@ SaveGameState::SaveGameState(OptionsOrigin origin, SaveType type, SDL_Color *pal
 	case SAVE_IRONMAN_END:
 		_filename = CrossPlatform::sanitizeFilename(_game->getSavedGame()->getName()) + ".sav";
 		break;
+	case SAVE_BATTLE_END:
+		// leaving a battle with no battle saves (Options::oxceNoBattleSaves): the turn autosave is off then, its slot is free
+		_filename = SavedGame::AUTOSAVE_BATTLESCAPE;
+		break;
 	default:
 		break;
 	}
@@ -176,6 +180,7 @@ void SaveGameState::think()
 		case SAVE_QUICK:
 		case SAVE_AUTO_GEOSCAPE:
 		case SAVE_AUTO_BATTLESCAPE:
+		case SAVE_BATTLE_END:
 			// automatic save, give it a default name
 			_game->getSavedGame()->setName(_filename);
 		default:
@@ -194,7 +199,7 @@ void SaveGameState::think()
 				throw Exception("Save backed up in " + backup);
 			}
 
-			if (_type == SAVE_IRONMAN_END)
+			if (_type == SAVE_IRONMAN_END || _type == SAVE_BATTLE_END)
 			{
 				Screen::updateScale(Options::geoscapeScale, Options::baseXGeoscape, Options::baseYGeoscape, true);
 				_game->getScreen()->resetDisplay(false);
