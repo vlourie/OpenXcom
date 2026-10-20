@@ -121,7 +121,7 @@ void NewPossibleCraftState::btnOkClick(Action *)
 void NewPossibleCraftState::btnPurchaseClick(Action *)
 {
 	_game->popState();
-	_game->pushState(new PurchaseState(_base));
+	_game->pushState(withBaseSwitch(new PurchaseState(_base)));
 }
 
 }

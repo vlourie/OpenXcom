@@ -288,6 +288,15 @@ size_t TextList::getVisibleRows() const
 }
 
 /**
+ * Returns the height of one row: the font height plus the line spacing.
+ * @return Height in pixels.
+ */
+int TextList::getRowHeight() const
+{
+	return _font->getHeight() + _font->getSpacing();
+}
+
+/**
  * Adds a new row of text to the list, automatically creating
  * the required Text objects lined up where they need to be.
  * @param cols Number of columns.

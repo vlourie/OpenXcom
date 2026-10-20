@@ -125,6 +125,8 @@ public:
 	int getLastRowIndex() const;
 	/// Gets the amount of visible rows in the list.
 	size_t getVisibleRows() const;
+	/// Gets the height of one row in the list.
+	int getRowHeight() const;
 	/// Adds a new row to the text list.
 	void addRow(int cols, ...);
 	bool expandLastRow(const std::string& text);

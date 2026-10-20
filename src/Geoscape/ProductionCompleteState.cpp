@@ -193,7 +193,7 @@ void ProductionCompleteState::btnGotoBaseClick(Action *)
 	_game->popState();
 	if (_endType != PROGRESS_CONSTRUCTION)
 	{
-		_game->pushState(new ManufactureState(_base));
+		_game->pushState(withBaseSwitch(new ManufactureState(_base)));
 	}
 	else
 	{

@@ -312,7 +312,7 @@ void BasescapeState::btnBaseInfoClick(Action *)
  */
 void BasescapeState::btnSoldiersClick(Action *)
 {
-	_game->pushState(new SoldiersState(_base));
+	_game->pushState(withBaseSwitch(new SoldiersState(_base)));
 }
 
 /**
@@ -497,7 +497,7 @@ void BasescapeState::viewRightClick(Action *)
 			case 3: _game->pushState(withBaseSwitch(new ResearchState(_base))); break;
 			case 4: _game->pushState(withBaseSwitch(new AllocateTrainingState(_base))); break;
 			case 5: if (Options::anytimePsiTraining) _game->pushState(withBaseSwitch(new AllocatePsiTrainingState(_base))); break;
-			case 6: _game->pushState(new SoldiersState(_base)); break;
+			case 6: _game->pushState(withBaseSwitch(new SoldiersState(_base))); break;
 			case 7: _game->pushState(withBaseSwitch(new SellState(_base, 0))); break;
 			default: _game->popState(); break;
 		}
@@ -533,7 +533,7 @@ void BasescapeState::viewRightClick(Action *)
 	}
 	else if (f->getRules()->getPersonnel() > 0)
 	{
-		_game->pushState(new SoldiersState(_base));
+		_game->pushState(withBaseSwitch(new SoldiersState(_base)));
 	}
 	else if (f->getRules()->getPsiLaboratories() > 0 && Options::anytimePsiTraining && _base->getAvailablePsiLabs() > 0)
 	{

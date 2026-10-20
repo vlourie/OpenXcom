@@ -119,6 +119,12 @@ ManufactureState::ManufactureState(Base *base) : _base(base)
 	_txtTimeLeft->setText(tr("STR_DAYS_HOURS_LEFT"));
 	_txtTimeLeft->setWordWrap(true);
 
+	// The item header stands on the second line of the column headers; when they all fit in one line (X-Piratez), on that line.
+	if (std::max(std::max(_txtEngineers->getNumLines(), _txtProduced->getNumLines()), std::max(_txtCost->getNumLines(), _txtTimeLeft->getNumLines())) < 2)
+	{
+		_txtItem->setY(_txtEngineers->getY());
+	}
+
 	if (Options::oxceBaseManufactureReorder)
 	{
 		_lstManufacture->setArrowColumn(137, ARROW_VERTICAL);

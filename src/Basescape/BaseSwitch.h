@@ -17,6 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <algorithm>
 #include <functional>
 #include <string>
 #include "../Engine/Game.h"
@@ -46,7 +47,7 @@ namespace BaseSwitch
  * Base name line under the title of a base screen, with the previous/next base buttons
  * (also the left/right keys): the same screen of the neighbouring base without going back
  * to the basescape. Switching is off until the opener calls allowBaseSwitch() - forced
- * screens (prison overflow after a battle, "cannot re-equip", news popups) never switch.
+ * screens (after a battle, prison or stores overflow, "cannot re-equip") never switch.
  */
 template<typename State_t>
 class BaseSwitchMixin : public State_t
@@ -76,6 +77,7 @@ private:
 		}
 	}
 protected:
+	using State_t::State_t;
 	/**
 	 * Makes room under the title and creates the base name line and the arrows;
 	 * call after adding the screen's own elements, before centerAllSurfaces().
@@ -95,9 +97,12 @@ protected:
 			if (surface->getY() < y || surface->getY() >= BUTTONS_Y || dynamic_cast<Window*>(surface))
 				continue;
 			surface->setY(surface->getY() + LINE);
-			if (dynamic_cast<TextList*>(surface))
+			if (auto *list = dynamic_cast<TextList*>(surface))
 			{
-				surface->setHeight(surface->getHeight() - LINE);
+				// whole rows only, down to just above the bottom buttons: a half row would show cut
+				int row = std::max(list->getRowHeight(), 1);
+				int height = std::min(list->getHeight(), BUTTONS_Y - 2 - list->getY());
+				list->setHeight(std::max(height - height % row, row));
 			}
 		}
 

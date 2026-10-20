@@ -1,0 +1,3 @@
+﻿- The "<" and ">" arrows with the hideout name are now also on the soldiers screen, and on the lab, workshop, market, gym and psi school screens when they are opened from a Geoscape message ("production finished", "new research available", "training finished" and the like).
+- On the screens with hideout switching arrows the bottom row of the list is no longer cut in half: the list holds whole rows only.
+- In the workshop the "ITEM" header now stands on the same line as the other column headers.
