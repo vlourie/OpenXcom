@@ -107,3 +107,4 @@ gen_voicepack.py
 voice_emotion_pilot.py
 doll_b2_render.py
 doll_photo_pilot.py
+cockpit_pilot.py
