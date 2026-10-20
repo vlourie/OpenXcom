@@ -84,6 +84,10 @@ struct State
 	std::vector<std::pair<int, int> > dbgCarry;  // debug stand: (unit, item) the placed units carried when placed
 	bool fallReported = false;
 	bool fallPending = false;  // debug stand: report and save again once the state stack drains (idle)
+	bool rubbleReady = false;
+	std::vector<std::vector<std::pair<int, int> > > rubble;  // [row of RUBBLE * 3 + kind]: (save set index, record)
+	std::map<std::pair<int, int>, int> rubbleKind;  // (save set index, record) of the rubble -> its kind
+	std::set<std::pair<int, int> > rubbleOrDead;  // the rubble and what it turns into
 };
 
 State st;
@@ -172,6 +176,179 @@ std::string modelSig(int bi)
 	return s.str();
 }
 
+/// The rubble of a collapse (docs/research/building-collapse-rubble-2026-10-20.md): low walkable debris of the
+/// terrain's own sets. The building's terrain is told by the first of the keys among its sets (a battle map may hold
+/// several terrains). What fell gives the kind, by the material of its dust (HdFx::partMaterial): stone (and the
+/// rest), wood (and furniture: its footstep is soft) or metal; a kind the terrain has no record of takes stone, then
+/// wood, then metal.
+enum RubbleKind { RK_STONE, RK_WOOD, RK_METAL, RK_KINDS };
+struct RubbleRow
+{
+	const char *key;
+	const char *kind[RK_KINDS];
+};
+const RubbleRow RUBBLE[] = {
+	{ "URBANWAR", { "URBANWAR:50 URBANWAR:57", "MADDECOR:80 MADDECOR:83 MADDECOR:84", "" } },
+	{ "URBAN", { "URBAN:50 URBAN:57", "URBAN:87 URBAN:88 MADDECOR:80 MADDECOR:83 MADDECOR:84", "" } },
+	{ "COMMERCE", { "COMMERCE:50 COMMERCE:57", "COMDECOR:68 COMDECOR:69", "" } },
+	{ "MILBARR", { "MILTECHDIO:26", "", "MILBARR:48 MILBARR:49" } },
+	{ "VILBAN", { "", "VILBAN:87 VILBAN:88", "" } },
+	{ "IDT_FARM", { "", "URBAN_GOODS:24 URBAN_GOODS:25", "" } },
+	{ "URBAN40K", { "URBAN40K:57", "", "" } },
+	{ "BARN_JUNK", { "", "FRNITURE:7 CULTIVAT:11", "" } },
+	{ "BARN", { "", "CULTIVAT:11", "" } },
+};
+const int RUBBLE_ROWS = sizeof(RUBBLE) / sizeof(RUBBLE[0]);
+
+/// The kind of rubble a fallen part gives.
+int rubbleKind(const MapData *md)
+{
+	const std::string m = HdFx::partMaterial(md);
+	return m == "wood" || m == "soft" ? RK_WOOD : m == "metal" ? RK_METAL : RK_STONE;
+}
+
+/// The rubble records of this battle, found once by the set names (a set the battle lacks gives none).
+void rubbleOf(SavedBattleGame *save)
+{
+	if (st.rubbleReady)
+		return;
+	st.rubbleReady = true;
+	st.rubble.assign(RUBBLE_ROWS * RK_KINDS, std::vector<std::pair<int, int> >());
+	const std::vector<MapDataSet*> &sets = *save->getMapDataSets();
+	auto setIndex = [&sets](const std::string &name) {
+		for (size_t i = 0; i < sets.size(); ++i)
+			if (upper(sets[i]->getName()) == name) return (int)i;
+		return -1;
+	};
+	for (int r = 0; r < RUBBLE_ROWS; ++r)
+	{
+		std::ostringstream found;
+		size_t any = 0;
+		for (int k = 0; k < RK_KINDS; ++k)
+		{
+			std::istringstream in(RUBBLE[r].kind[k]);
+			std::string rec;
+			while (in >> rec)
+			{
+				const size_t colon = rec.find(':');
+				const int s = setIndex(rec.substr(0, colon)), id = std::atoi(rec.c_str() + colon + 1);
+				if (s < 0 || id < 0 || id >= (int)sets[s]->getSize()) continue;
+				st.rubble[r * RK_KINDS + k].push_back(std::make_pair(s, id));
+				st.rubbleKind[std::make_pair(s, id)] = k;
+				// what the rubble turns into when it is shot or burnt is the collapse's too (foreignParts)
+				for (int dead = id; dead > 0 && dead < (int)sets[s]->getSize() && st.rubbleOrDead.insert(std::make_pair(s, dead)).second; )
+					dead = sets[s]->getObject(dead)->getDieMCD();
+			}
+			found << " " << st.rubble[r * RK_KINDS + k].size();
+			any += st.rubble[r * RK_KINDS + k].size();
+		}
+		if (any)
+		{
+			Log(LOG_INFO) << "[COLLAPSE] rubble of " << RUBBLE[r].key << " (stone wood metal):" << found.str();
+		}
+	}
+}
+
+/// The row of RUBBLE for the building of block bi, or -1.
+int rubbleRow(int bi)
+{
+	const CollapseBlock &b = CollapsePilotData::blocks[bi];
+	for (int r = 0; r < RUBBLE_ROWS; ++r)
+		for (int s = 0; s < b.nSets; ++s)
+			if (upper(b.sets[s]) == RUBBLE[r].key) return r;
+	return -1;
+}
+
+/// Is the tile's record in the slot rubble (or, with `orDead`, what rubble turns into)?
+bool isRubble(SavedBattleGame *save, const Tile *t, TilePart part, bool orDead)
+{
+	rubbleOf(save);
+	int id, setId;
+	t->getMapData(&id, &setId, part);
+	return orDead ? st.rubbleOrDead.count(std::make_pair(setId, id)) > 0 : st.rubbleKind.count(std::make_pair(setId, id)) > 0;
+}
+
+/// A part that fell in settle, for the rubble: where it stood, was it a floor, its kind of rubble.
+struct Drop
+{
+	Position cell;
+	bool floor;
+	int kind;
+};
+
+/// What became of the rubble of one settle.
+struct RubbleCount
+{
+	int laid = 0, merged = 0, unit = 0, object = 0, floor = 0, none = 0, again = 0;
+};
+
+/// Lays the rubble of what fell: one record on the floor each part comes down to (the way TileEngine::applyGravity
+/// takes items down), of the kind most of what came there was (stone on a tie), the record of its kind by the cell
+/// (no random numbers). None where a unit stands or will land, where an object still stands, on a lift or on no floor
+/// of its own. The tiles it lies on join `tiles` (gravity, light and sight).
+void lay(SavedBattleGame *save, int bi, const std::vector<Drop> &drops, std::vector<Tile*> &tiles, RubbleCount &n)
+{
+	rubbleOf(save);
+	static const std::vector<std::pair<int, int> > nothing;
+	const int row = rubbleRow(bi);
+	const std::vector<std::pair<int, int> > *list[RK_KINDS] = { &nothing, &nothing, &nothing };
+	for (int k = 0; row >= 0 && k < RK_KINDS; ++k)
+		list[k] = &st.rubble[row * RK_KINDS + k];
+	struct Heap
+	{
+		Tile *tile;
+		int top;
+		int kinds[RK_KINDS];
+	};
+	std::vector<Heap> heaps;
+	for (const Drop &d : drops)
+	{
+		Tile *t = save->getTile(Position(d.cell.x, d.cell.y, std::max(0, d.floor ? d.cell.z - 1 : d.cell.z)));
+		while (t && t->getPosition().z > 0 && t->hasNoFloor(save))
+			t = save->getBelowTile(t);
+		if (!t) continue;
+		auto h = std::find_if(heaps.begin(), heaps.end(), [t](const Heap &x) { return x.tile == t; });
+		if (h == heaps.end())
+		{
+			heaps.push_back(Heap{ t, d.cell.z, { 0, 0, 0 } });
+			h = heaps.end() - 1;
+		}
+		else
+			++n.merged;
+		h->top = std::max<int>(h->top, d.cell.z);
+		++h->kinds[d.kind];
+	}
+	const std::vector<MapDataSet*> &sets = *save->getMapDataSets();
+	for (const Heap &h : heaps)
+	{
+		const Position at = h.tile->getPosition();
+		bool unit = false;
+		for (int z = at.z; z <= h.top && !unit; ++z)
+		{
+			const Tile *c = save->getTile(Position(at.x, at.y, z));
+			unit = c && c->getUnit();
+		}
+		const MapData *floor = h.tile->getMapData(O_FLOOR);
+		int kind = RK_STONE;
+		for (int k = 1; k < RK_KINDS; ++k)
+			if (h.kinds[k] > h.kinds[kind]) kind = k;
+		for (int k = 0; list[kind]->empty() && k < RK_KINDS; ++k)
+			kind = k;
+		if (unit) ++n.unit;
+		else if (h.tile->getMapData(O_OBJECT)) ++n.object;
+		else if ((at.z > 0 && !floor) || (floor && floor->isGravLift())) ++n.floor;
+		else if (list[kind]->empty()) ++n.none;
+		else
+		{
+			const auto &rec = (*list[kind])[(at.x * 7 + at.y * 13 + at.z * 5) % list[kind]->size()];
+			h.tile->setMapData(sets[rec.first]->getObject(rec.second), rec.second, rec.first, O_OBJECT);
+			++n.laid;
+			if (std::find(tiles.begin(), tiles.end(), h.tile) == tiles.end())
+				tiles.push_back(h.tile);
+		}
+	}
+}
+
 /**
  * Records in the building's place that the building could not have left there: a record of another terrain,
  * or of its own terrain that no part of the template on that tile turns into. A part turns into its die record
@@ -227,6 +404,8 @@ int foreignParts(SavedBattleGame *save, const Instance &in)
 					MapData *md = t->getMapData(part);
 					if (!md) continue;
 					if (part == O_FLOOR && t->getPosition().z == 0 && md == MapDataSet::getScorchedEarthTile()) continue;
+					// the rubble of an earlier collapse (and what it turned into) may lie anywhere in the building
+					if (isRubble(save, t, part, true)) continue;
 					int id, setId;
 					t->getMapData(&id, &setId, part);
 					const int k = setId >= 0 && setId < (int)setOf.size() ? setOf[setId] : -1;
@@ -990,6 +1169,7 @@ bool settle(BattlescapeGame *battle, const char *why)
 		int fell[4] = { 0, 0, 0, 0 }, outside = 0, objectives = 0, lifts = 0;
 		std::vector<Tile*> tiles;
 		std::vector<Fallen> fallen;
+		std::vector<Drop> drops;
 		for (int i = 0; i < b.nParts; ++i)
 		{
 			if (held[i] || removed[i]) continue;
@@ -1018,6 +1198,7 @@ bool settle(BattlescapeGame *battle, const char *why)
 				const bool seen = t->isDiscovered(O_FLOOR) || (part != O_OBJECT && t->isDiscovered(part));
 				fallen.push_back(Fallen{ t->getSprite(part), t->getPosition(), part, t->getYOffset(part), md, seen });
 			}
+			drops.push_back(Drop{ t->getPosition(), PARTS[p.kind] == O_FLOOR, rubbleKind(md) });
 			t->setMapData(nullptr, -1, -1, PARTS[p.kind]);
 			if (md->getExplosive())
 				t->setExplosive(md->getExplosive(), md->getExplosiveType());
@@ -1035,6 +1216,20 @@ bool settle(BattlescapeGame *battle, const char *why)
 			continue;
 		}
 		any = true;
+		// the rubble of an earlier collapse on a floor that fell now goes down with it
+		RubbleCount rubble;
+		for (size_t i = 0, n = tiles.size(); i < n; ++i)
+		{
+			Tile *t = tiles[i];
+			if (t->getMapData(O_FLOOR) || !t->getMapData(O_OBJECT) || !isRubble(save, t, O_OBJECT, false))
+				continue;
+			int id, setId;
+			t->getMapData(&id, &setId, O_OBJECT);
+			drops.push_back(Drop{ t->getPosition(), false, st.rubbleKind[std::make_pair(setId, id)] });
+			t->setMapData(nullptr, -1, -1, O_OBJECT);
+			++rubble.again;
+		}
+		lay(save, in.bi, drops, tiles, rubble);
 		// gravity after all the geometry, on the tiles and the tiles above (TileEngine::explode)
 		for (Tile *t : tiles)
 		{
@@ -1070,6 +1265,8 @@ bool settle(BattlescapeGame *battle, const char *why)
 		Log(LOG_INFO) << "[COLLAPSE] " << why << " " << b.label << " at " << in.off.x << "," << in.off.y << "," << in.off.z
 			<< ": removed " << nRemoved << ", fell " << nFell << " (f " << fell[0] << " w " << fell[1] << " n " << fell[2] << " o " << fell[3]
 			<< "), outside " << outside << ", lifts " << lifts << ", objectives " << objectives << ", tiles " << tiles.size()
+			<< ", rubble " << rubble.laid << " (merged " << rubble.merged << ", again " << rubble.again << "; skipped: unit " << rubble.unit
+			<< ", object " << rubble.object << ", no floor " << rubble.floor << ", none " << rubble.none << ")"
 			<< ", falling units " << save->getFallingUnits()->size()
 			<< "; scan " << scanMs << " ms, eval " << evalMs << " ms, apply " << applyMs << " ms, light+fov " << msSince(tl0) << " ms";
 	}
