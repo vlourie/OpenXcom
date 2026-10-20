@@ -408,6 +408,33 @@ private:
 	std::vector<TonedJob> _tonedJobs;
 	/// Fills a reserved shaded copy (on a worker).
 	void makeToned(const TonedJob &job) const;
+	/// One pixel of a shaded copy: the tone curve by its brightest channel, then the light color (5 bits per channel, 31 = full).
+	struct ToneOf
+	{
+		const Uint32 *toneR, *toneG, *toneB;
+		Uint16 tintKey;
+		Uint32 tr, tg, tb;
+		ToneOf(const Canvas32 &canvas, int shade, Uint16 tint);
+		Uint32 operator()(Uint32 p) const
+		{
+			if (!(p >> 24))
+			{
+				return 0;
+			}
+			Uint32 r = (p >> 16) & 0xFF, g = (p >> 8) & 0xFF, b = p & 0xFF;
+			const Uint32 m = r > g ? (r > b ? r : b) : (g > b ? g : b);
+			r = (r * toneR[m] + 32768u) >> 16;
+			g = (g * toneG[m] + 32768u) >> 16;
+			b = (b * toneB[m] + 32768u) >> 16;
+			if (tintKey != 0x7FFF)
+			{
+				r = (r * tr + 32768u) >> 16;
+				g = (g * tg + 32768u) >> 16;
+				b = (b * tb + 32768u) >> 16;
+			}
+			return (p & 0xFF000000u) | (r << 16) | (g << 8) | b;
+		}
+	};
 	/// True when the canvas pixel layout is 0x00RRGGBB, the layout of HD frames (plain copies possible).
 	bool _argbLayout;
 	/// The light field of the tile being drawn (HD modes).
@@ -470,7 +497,13 @@ private:
 		/// _tonedGeneration it is good for (0: to drop - a changed frame or an old pattern).
 		unsigned generation = 0;
 		size_t lru = 0;
+		/// The shade made into the blend (a TonedKey shade, GROUND_RAW: none).
+		int tone = 0;
 	};
+	/// The tone of a ground blend drawn as it is (gradient light, a recolour, shade 0 in white light).
+	static const int GROUND_RAW = 0x7FFF << 8;
+	/// The tone the next floor blit draws its blend at: shaded blends are made shaded, not kept beside a shaded copy.
+	int groundToneFor(int shade, int newBaseColor) const;
 	std::unordered_map<Uint64, GroundEntry> _ground;
 	/// Blends that could not go into the cache (a key clash): dropped at the end of the flush.
 	std::deque<HdFrame> _groundTransient;
@@ -479,8 +512,9 @@ private:
 	/// _groundClock when the frame being recorded began: blends stamped after it are in view.
 	size_t _groundFrameFrom = 0;
 	/// The frame to draw for a pack frame on the current ground cell: one of its variants, a blend of
-	/// two, or the frame itself (no variants, not ground).
-	const HdFrame *groundFrameFor(SurfaceRaw<const Uint8> src, const HdFrame &base);
+	/// two, or the frame itself (no variants, not ground). A blend is made at `tone` (`toned` is set):
+	/// the rest are the caller's to shade.
+	const HdFrame *groundFrameFor(SurfaceRaw<const Uint8> src, const HdFrame &base, int tone, bool &toned);
 	/// A ground blend the recording reserved: the workers fill it before the commands run (makeJobs).
 	struct GroundJob
 	{
@@ -490,6 +524,8 @@ private:
 		int count;
 		int x, y, z;
 		Uint32 seed;
+		/// The shade made into the blend (GROUND_RAW: none).
+		int tone;
 		/// In the cache under `key` (not a one-off blend of a key clash).
 		bool cached;
 		Uint64 key;
