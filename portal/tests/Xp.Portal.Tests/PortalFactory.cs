@@ -23,7 +23,9 @@ public class PortalFactory : WebApplicationFactory<Program>, IAsyncLifetime
 
     readonly string _db = "xp_test_" + Guid.NewGuid().ToString("N")[..12];
     public string Storage { get; } = Path.Combine(Path.GetTempPath(), "xp-portal-test-" + Guid.NewGuid().ToString("N")[..8]);
-    public FakeTimeProvider Clock { get; } = new(new DateTimeOffset(2026, 9, 23, 12, 0, 0, TimeSpan.Zero));
+    // starts at the real now: the test client's cookie jar drops cookies by the real clock, so the login
+    // cookie (14 days) issued by a clock fixed in the past was thrown away once that date was behind us
+    public FakeTimeProvider Clock { get; } = new(DateTimeOffset.FromUnixTimeSeconds(DateTimeOffset.UtcNow.ToUnixTimeSeconds()));
     public FakeTelegram Telegram { get; } = new();
     public FakeWeb Upstream { get; } = new();
     public Dictionary<string, string?> Settings { get; } = new();

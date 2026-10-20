@@ -113,8 +113,10 @@ public sealed class LauncherDownloadTests(ReleaseRepoFactory f) : IClassFixture<
     public async Task Every_update_is_listed_newest_first_with_its_own_text()
     {
         var html = await f.CreateClient().GetStringAsync("/releases");
-        int newest = html.IndexOf("2026.10.15.2", StringComparison.Ordinal), older = html.IndexOf("2026.10.14", StringComparison.Ordinal);
+        // by the entries themselves: the day chips above them link to every release too
+        int newest = html.IndexOf("id=\"r-2026.10.15-2\"", StringComparison.Ordinal), older = html.IndexOf("id=\"r-2026.10.14\"", StringComparison.Ordinal);
         Assert.True(newest >= 0 && older > newest, "the newest update comes first");
+        Assert.Contains("2026.10.15.2", html);   // shown by its version, not its id
         Assert.Contains("walls-ru-2", html);
         Assert.Contains("floors-ru-1", html);
         Assert.Contains("id=\"r-2026.10.13\"", html);   // an update without a text is still in the list
