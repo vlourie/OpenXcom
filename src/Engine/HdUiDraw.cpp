@@ -1114,7 +1114,17 @@ void HdUi::drawTtfLine(const std::vector<TextRun> &runs, int originX, int origin
 	// light line over a bright photograph cannot be read at all. Over a panel or a plain background the
 	// classic drop shadow is what the text has always had, and it stays
 	bool busy = false;
-	const bool onPicture = overPicture(originX, originY, std::max(textW, 1), std::max(textH, 1), &busy);
+	const void *backdrop = nullptr;
+	const bool onPicture = overPicture(originX, originY, std::max(textW, 1), std::max(textH, 1), &busy, &backdrop);
+	if (onPicture && backdrop)
+	{
+		// a line on a window's screen picture: its box is where the picture is frosted in the next frame (HdScreens)
+		const FontMetrics &m0 = metrics(runs.front().font);
+		const bool inBox = singleLine && textH > 0 && textH <= m0.lineH + 3;
+		const int bx0 = (int)std::floor(pen / k), bx1 = (int)std::ceil((pen + total) / k);
+		const int by = originY + (inBox ? 0 : runs.front().y), bh = inBox ? textH : m0.lineH;
+		_backdropText[backdrop].push_back(SDL_Rect{ (Sint16)bx0, (Sint16)by, (Uint16)std::max(bx1 - bx0, 1), (Uint16)std::max(bh, 1) });
+	}
 	// two base pixels' worth of edge: at k = 4 a fixed 2 would be a quarter of a base pixel and simply
 	// would not be seen, so the outline grows with the scale like everything else here
 	const int outlineW = std::max(2, k);

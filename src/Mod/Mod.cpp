@@ -39,6 +39,7 @@
 #include "../Engine/HdCraftLights.h"
 #include "../Engine/HdFx.h"
 #include "../Engine/HdOutline.h"
+#include "../Engine/HdScreens.h"
 #include "../Engine/HdUi.h"
 #include "../Engine/SDL2Helpers.h"
 #include "../Engine/Music.h"
@@ -3014,6 +3015,8 @@ void Mod::loadHdUiArt()
 	HdFx::clear();
 	HdItems::clear();
 	HdOutline::clear();
+	// the screens' theme pictures (hd/UI/screens/screens.txt), the windows' metal frames with them
+	HdScreens::load();
 	// both trees at once: the adult one only holds the pictures that differ
 	const std::vector<std::string> files = HdSprites::artFolder("UI");
 	if (files.empty())

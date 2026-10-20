@@ -110,3 +110,8 @@ doll_photo_pilot.py
 cockpit_pilot.py
 tools/hdart/doll_paint_pilot.py
 tools/hdart/doll_ctl_pilot.py
+tools/hdart/doll_face_pilot.py
+tools/hdart/doll_face_ctl.py
+obj3d_gen.py
+gen_screens.py
+obj3d_paint.py

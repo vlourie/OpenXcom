@@ -1,0 +1,247 @@
+# -*- coding: utf-8 -*-
+r"""Фоны экранов интерфейса по темам: Qwen-Image-2.1 рисует с нуля, как арт лаунчера (gen_promo.py).
+
+Одна тема - одна сцена на группу экранов (исследования, производство, бойцы, рынок...); какой
+экран к какой теме - SCREENS ниже, имена экранов - разделы interfaces рулсетов. Картинка стоит под
+плотным текстом окна, поэтому промпт просит крупные спокойные формы, глубокую тень и никакой мелкой
+пестроты, а свет и металл - как у нарисованной панели боя (латунь, клёпаные листы, тёплый свет ламп).
+
+Два шага, потому что арт утверждает Vitali (art-approval-first):
+
+1. draw - по каждой теме несколько вариантов в art/ui_screens/<тема>/ и лист выбора <тема>_sheet.jpg:
+       tools\hdart\.venv-qwen21\Scripts\python.exe tools\hdart\gen_screens.py draw --theme research,crew --seeds 3
+2. install - выбранные варианты в обе копии мода hd (hd/UI/screens/<тема>.png + screens.txt):
+       tools\hdart\.venv\Scripts\python.exe tools\hdart\gen_screens.py install --pick research=1,crew=2
+   приглушение, стекло под текстом и рамку из металла панели боя делает движок (HdScreens), не файл.
+
+Только через очередь видеокарты (tools/gpuq.py). Запускать с PYTHONIOENCODING=utf-8 (R-001).
+"""
+import argparse
+import os
+import sys
+import time
+
+ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+OUT = os.path.join(ROOT, "art", "ui_screens")
+sys.path.insert(0, os.path.dirname(__file__))
+
+# свет и материал - как у панели боя: латунь, клёпаное железо, тёплые лампы в темноте
+STYLE = ("Painted illustration in the style of a 1990s PC strategy game box cover, gritty retro science "
+         "fiction, confident brushwork. The interior of a battered space-pirate airship and hideout built from "
+         "heavy riveted brass and dark iron plates, warm amber lamp light and deep shadows, a touch of acid lime "
+         "green from alien tech. ")
+# под картинкой - списки и цифры во всё окно: она должна быть настроением, а не сюжетом
+CALM = ("Composition for a background behind dense text: big simple shapes, low contrast, most of the picture "
+        "is soft deep shadow, no small busy detail, no bright spots in the middle, the subject is large and "
+        "placed toward one side, slightly out of focus like a cinematic backdrop. ")
+NEGATIVE = ("text, letters, words, numbers, caption, title, logo, watermark, signature, frame, border, "
+            "screens with writing, blurry mess, low resolution, jpeg artifacts, deformed hands, extra fingers, "
+            "extra limbs, duplicated faces, clones, nudity, cleavage, bare midriff, lingerie, pin-up, glamour "
+            "pose, gore, photograph, plastic 3d render, high contrast, busy pattern, bright white areas")
+
+THEMES = {
+    "research": "A dim laboratory in the hold of a pirate ship: a half-dismantled alien device glowing faint lime "
+                "green on a brass workbench, glass jars and tubes, a magnifying lamp on an arm. A pirate woman "
+                "scientist in a patched lab coat and goggles studies it from the right side, her face lit from below.",
+    # первые три варианта поставили работника в центр - с четвёртого станок и человек прижаты к правому краю
+    "manufacture": "A cramped pirate workshop seen from the side: the left two thirds of the picture are dark empty "
+                   "iron walls with hanging chains and tool racks fading into shadow; at the far right edge a heavy "
+                   "lathe and an anvil, a pirate mechanic woman in a leather apron and welding mask works there in "
+                   "profile, a small soft shower of orange sparks, smoke drifting in the lamp light.",
+    "crew": "The crew quarters of a pirate airship: bunks of riveted iron, hammocks, lockers with stickers, a long "
+            "table with mugs and cards. Several mutant pirate women in practical patched clothing rest and talk in "
+            "the background shadows on the left and right, faces half in shadow, relaxed and tough.",
+    "market": "A smugglers' black market in a rock cavern: stalls of crates and barrels, hanging lanterns, alien "
+              "gadgets and improvised guns on racks, a hooded trader with a scarred face behind a counter on the "
+              "right side, coins and a ledger on the counter.",
+    "hangar": "A huge dark hangar carved into rock: a battered patched-together pirate gunship stands on the pad, "
+              "fuel hoses and gantries, work lights cone down through haze, a pirate woman pilot in a flight jacket "
+              "with goggles leans on a landing strut at the right.",
+    "bridge": "The bridge of a pirate airship at night: a brass steering wheel and levers, a round radar screen "
+              "glowing faint lime green, wide windows showing a dark sky with a distant alien saucer and its "
+              "running lights, the pilot's chair in silhouette.",
+    "training": "A pirate training hall in the ship's hold: a punching bag of patched leather hanging on a chain, "
+                "a sparring ring of ropes and iron posts, rusty weights and a target dummy riddled with holes, a tough "
+                "pirate woman in a sleeveless shirt and cargo trousers wraps her fists at the right side.",
+    "memorial": "A quiet memorial niche in the hideout: a riveted brass plate wall with rows of engraved names too "
+                "small to read, dog tags and a battered pirate hat hanging on hooks, candles and one dim amber lamp, "
+                "a bottle and an empty glass on a ledge, deep shadow all around.",
+    "armory": "A pirate armory: racks of improvised rifles and blades on dark iron walls, ammunition crates, a "
+              "suit of patched combat armour on a stand at the right, a workbench with a disassembled gun, an alien "
+              "weapon glowing faint lime green in a locked cage.",
+    "stores": "A cavernous cargo hold of a pirate hideout: stacks of crates, barrels and sacks strapped with nets "
+              "receding into darkness, a chain hoist and a hook, a few crates marked with alien glyphs glowing faint "
+              "lime, lamp light falling on the stacks at the right side.",
+    "pursuit": "Night sky seen through the riveted brass frame of a pirate gunship cockpit: a glowing alien saucer "
+               "flying away into the clouds on the right, faint lime engine trails, the cockpit gunsight and "
+               "gauges dark in the foreground, moonlight on the clouds below.",
+    "defense": "The blast door of a pirate hideout under attack: a massive riveted iron door half open, red "
+               "alarm lamps and smoke, sandbags and a mounted heavy gun at the right side, sparks and the glow of "
+               "something alien beyond the door, deep shadow on the left.",
+    "debriefing": "After the battle at dawn: a battered pirate dropship on a scorched field, smoke rising, crates "
+                  "of salvaged alien loot glowing faint lime being carried aboard, tired pirate women in patched "
+                  "combat gear in silhouette on the right side against the warm low sun.",
+    "facilities": "Construction inside a rock hideout: scaffolding of iron beams, a half-built brass corridor "
+                  "module hanging from a crane hook, welding light on the right side, cables and lamps strung "
+                  "across the cavern, plans pinned to a crate.",
+    "menus": "The captain's cabin of a pirate airship: a heavy desk with a chart, a brass sextant and a bottle of "
+             "rum, a round porthole showing a dark sky, a captain's coat and hat on a hook at the right, an oil "
+             "lamp giving warm light, deep shadow.",
+}
+
+# экраны тем (разделы interfaces); пилот - первые шесть тем, остальные темы - после выбора стиля
+SCREENS = {
+    "research": "allocateResearch geoResearch geoResearchComplete geoResearchRequired globalResearchDiary "
+                "globalResearchMenu researchMenu selectNewResearch techTreeSelect techTreeViewer tests "
+                "manageContainment globalContainmentMenu statsForNerds",
+    "manufacture": "allocateManufacture geoManufacture geoManufactureComplete globalManufactureMenu "
+                   "manufactureInfo manufactureMenu selectNewManufacture",
+    "crew": "soldierList craftSoldiers craftPilots craftPilotsSelect soldierDiary soldierDiaryPerformance "
+            "soldierDiaryMission soldierDiaryLight soldierRank promotions commendations commendationsLate "
+            "sackSoldier soldierAvatar soldierVoice soldierBonus",
+    "market": "buyMenu sellMenu costsInfo fundingWindow monthlyReport",
+    "hangar": "craftInfo craftSelect craftWeapons craftArmor geoNewCraft",
+    # craftError - сообщения геоскейпа о судах (НЛО начал охоту, нет топлива, нет экипажа)
+    "bridge": "intercept geoCraft craftPatrol confirmDestination confirmCydonia lowFuel ufoTracker targetInfo "
+              "craftPilotError craftError",
+    "training": "martialTraining allocateMartial psiTraining allocatePsi trainingFinished soldierTransformation "
+                "transformationList soldierTransform",
+    "memorial": "soldierMemorial endGameStatistics",
+    "armory": "craftEquipment craftEquipmentLoad craftEquipmentSave soldierArmor cannotReequip",
+    "stores": "storesInfo itemLocations itemsArriving transferBaseSelect transferConfirm transferInfo transferMenu "
+              "geoNewItem dependencyTree",
+    "pursuit": "UFOInfo UFOLost multipleTargets dogfightInfo dogfightExperience confirmLanding alienBase",
+    "defense": "baseDefense baseDefense_geo baseDestroyed",
+    "debriefing": "debriefing",
+    "facilities": "selectFacility placeFacility dismantleFacility geoNewFacility baseNaming",
+    "menus": "optionsMenu modsMenu newBattleMenu newGameMenu noteMenu oxceLinks pauseMenu saveMenus "
+             "selectMusicTrack",
+}
+
+
+def load_pipe(offload):
+    import gen_hd                                   # ставит HF_HOME на E:\models
+    import torch
+    import diffusers
+    pipe = diffusers.QwenImage21Pipeline.from_pretrained(gen_hd.QWEN21_REPO, torch_dtype=torch.bfloat16)
+    if offload == "none":
+        pipe.to("cuda")
+    else:
+        pipe.enable_model_cpu_offload()
+    return pipe, torch
+
+
+def sheet(n):
+    """Лист выбора: варианты с номерами, каждый уменьшен до 480 по ширине."""
+    from PIL import Image, ImageDraw
+    d = os.path.join(OUT, n)
+    files = sorted((f for f in os.listdir(d) if f.endswith(".png")),
+                   key=lambda f: int(f.rsplit("_", 1)[1].split(".")[0]))
+    if not files:
+        return
+    tiles = []
+    for f in files:
+        im = Image.open(os.path.join(d, f)).convert("RGB")
+        im = im.resize((480, round(480 * im.height / im.width)), Image.LANCZOS)
+        dr = ImageDraw.Draw(im)
+        dr.rectangle((0, 0, 34, 22), fill=(0, 0, 0))
+        dr.text((8, 5), f.rsplit("_", 1)[1].split(".")[0], fill=(255, 200, 112))
+        tiles.append(im)
+    cols = 3
+    rows = (len(tiles) + cols - 1) // cols
+    th = tiles[0].height
+    board = Image.new("RGB", (cols * 484 + 4, rows * (th + 4) + 4), (16, 10, 6))
+    for k, t in enumerate(tiles):
+        board.paste(t, (4 + (k % cols) * 484, 4 + (k // cols) * (th + 4)))
+    board.save(os.path.join(OUT, "%s_sheet.jpg" % n), quality=88)
+
+
+def draw(args):
+    names = [t for t in args.theme.split(",") if t] or list(THEMES)
+    for n in names:
+        if n not in THEMES:
+            raise SystemExit("нет такой темы: %s (есть %s)" % (n, ", ".join(THEMES)))
+    pipe, torch = load_pipe(args.offload)
+    total = len(names) * args.seeds
+    done, t0 = 0, time.time()
+    for n in names:
+        prompt = STYLE + CALM + THEMES[n]
+        os.makedirs(os.path.join(OUT, n), exist_ok=True)
+        for i in range(1, args.seeds + 1):
+            path = os.path.join(OUT, n, "%s_%d.png" % (n, i))
+            if os.path.exists(path) and not args.force:
+                print("%s вариант %d уже есть - пропускаю" % (n, i), flush=True)
+                done += 1
+                continue
+            seed = args.seed + i * 7919
+            t1 = time.time()
+            # 16:10 - как экран 320x200, которому картинка служит фоном
+            img = pipe(prompt=prompt, negative_prompt=NEGATIVE, true_cfg_scale=args.cfg,
+                       width=1792, height=1120, num_inference_steps=args.steps,
+                       generator=torch.Generator("cuda").manual_seed(seed)).images[0]
+            img.convert("RGB").save(path)
+            done += 1
+            el = time.time() - t0
+            print("%s вариант %d/%d (зерно %d) за %.0f с, всего %d/%d, осталось ~%.0f мин"
+                  % (n, i, args.seeds, seed, time.time() - t1, done, total,
+                     el / done * (total - done) / 60), flush=True)
+        sheet(n)
+
+
+def install(args):
+    """Выбранные варианты - в hd/UI/screens/<тема>.png обеих копий мода hd, таблица тем - screens.txt рядом
+    (её читает движок, HdScreens::load): строка «картинка = экраны». Модель не грузит."""
+    import shutil
+    from PIL import Image
+    picks = dict(p.split("=") for p in args.pick.split(",") if p)
+    for n in picks:
+        if n not in THEMES:
+            raise SystemExit("нет такой темы: %s" % n)
+    dests = [os.path.join(ROOT, d, "hd", "UI", "screens") for d in args.mods.split(";") if d]
+    lines = ["# Фоны экранов по темам (HdScreens): картинка = экраны (id из interfaces рулсетов).",
+             "# Пишет tools/hdart/gen_screens.py install - руками не править."]
+    for n, v in picks.items():
+        src = os.path.join(OUT, n, "%s_%s.png" % (n, v))
+        if not os.path.exists(src):
+            raise SystemExit("нет варианта %s" % src)
+        lines.append("%s.png = %s" % (n, " ".join(SCREENS[n].split())))
+    for d in dests:
+        os.makedirs(d, exist_ok=True)
+        for n, v in picks.items():
+            src = os.path.join(OUT, n, "%s_%s.png" % (n, v))
+            dst = os.path.join(d, "%s.png" % n)
+            # RGBA, как остальные картинки HD-слоя; не больше экрана при k = 4 (1280x800, 16:10): движок вписывает
+            # в окно сам, а лишние пиксели - только время чтения PNG при открытии экрана (1792x1120 - ~60 мс)
+            im = Image.open(src).convert("RGBA")
+            if im.width > 1280:
+                im = im.resize((1280, round(im.height * 1280 / im.width)), Image.LANCZOS)
+            im.save(dst, optimize=True)
+        with open(os.path.join(d, "screens.txt"), "w", encoding="utf-8-sig", newline="\n") as f:
+            f.write("\n".join(lines) + "\n")
+        print("%s: %d картинок и screens.txt" % (d, len(picks)))
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    sub = ap.add_subparsers(dest="cmd", required=True)
+    i = sub.add_parser("install", help="поставить выбранные варианты в мод (без видеокарты)")
+    i.add_argument("--pick", required=True, help="тема=номер через запятую: research=1,crew=2")
+    i.add_argument("--mods", default="user/mods/hd;Пиратки/Dioxine_XPiratez/user/mods/hd",
+                   help="копии мода hd через ;, от корня репозитория")
+    d = sub.add_parser("draw")
+    d.add_argument("--theme", default="", help="темы через запятую; пусто - все")
+    d.add_argument("--seeds", type=int, default=3, help="вариантов на тему")
+    d.add_argument("--seed", type=int, default=2601)
+    d.add_argument("--steps", type=int, default=40)
+    d.add_argument("--cfg", type=float, default=4.0)
+    d.add_argument("--offload", default="model", choices=["model", "none"])
+    d.add_argument("--force", action="store_true", help="перерисовать уже готовые варианты")
+    args = ap.parse_args()
+    if args.cmd == "draw":
+        draw(args)
+    elif args.cmd == "install":
+        install(args)
+
+
+if __name__ == "__main__":
+    main()
