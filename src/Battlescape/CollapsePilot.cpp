@@ -33,12 +33,17 @@
 #include "BattlescapeState.h"
 #include "CollapseCore.h"
 #include "CollapsePilotData.h"
+#include "Camera.h"
+#include "Map.h"
 #include "TileEngine.h"
 #include "../Engine/Game.h"
+#include "../Engine/HdFx.h"
 #include "../Engine/Logger.h"
 #include "../Engine/Options.h"
 #include "../Mod/MapData.h"
 #include "../Mod/MapDataSet.h"
+#include "../Mod/Mod.h"
+#include "../Mod/Unit.h"
 #include "../Mod/RuleDamageType.h"
 #include "../Mod/RuleItem.h"
 #include "../Savegame/BattleItem.h"
@@ -792,6 +797,83 @@ void debugStand(BattlescapeGame *battle, SavedBattleGame *save)
 	}
 }
 
+/// A part that fell in settle, as it was last drawn (HD render, HdFx::fall).
+struct Fallen
+{
+	SurfaceRaw<const Uint8> sprite;
+	Position cell;
+	TilePart part;
+	int yOffset;
+	const MapData *what;
+	bool seen;              ///< the player has seen it
+};
+
+/// The rumble of a collapse: X-Piratez' wall_destroy.wav (its BATTLE.CAT 315), taken from the stone gargoyle that
+/// dies with it - the unit holds the index with the mod's offset already added. Without that unit (other masters)
+/// collapses stay silent.
+int rumble(const Mod *mod)
+{
+	const Unit *gargoyle = mod->getUnit("STR_STYGIAN_GARGOYLE");
+	return gargoyle && !gargoyle->getDeathSounds().empty() ? gargoyle->getDeathSounds().front() : Mod::NO_SOUND;
+}
+/// A big collapse raises dust on this many landing cells at most, the first ones.
+const size_t MAX_DUST = 24;
+
+/// Shows what fell in settle, after the geometry, gravity, light and sight: the building rumbles once, and each part
+/// the player has seen goes down to the floor below it (its own floor, for a wall or an object that still has one)
+/// and raises dust there (HdFx - pictures only: no smoke, no random numbers, nothing of the battle changes).
+void showFall(BattlescapeGame *battle, const std::vector<Fallen> &fallen, Position center)
+{
+	battle->playSound(rumble(battle->getMod()), center);
+	SavedBattleGame *save = battle->getSave();
+	struct Landing
+	{
+		Position cell;
+		int parts;
+		bool floor;
+		int levels;
+		Uint32 ms;
+		const MapData *what;
+	};
+	std::vector<Landing> landings;
+	for (const Fallen &f : fallen)
+	{
+		if (!f.seen || !f.sprite)
+			continue;
+		int z = f.part == O_FLOOR ? f.cell.z - 1 : f.cell.z;
+		for (; z > 0; --z)
+		{
+			Tile *t = save->getTile(Position(f.cell.x, f.cell.y, z));
+			if (t && t->getMapData(O_FLOOR))
+				break;
+		}
+		z = std::max(0, z);
+		const int levels = f.cell.z - z;
+		const Uint32 ms = HdFx::fall(f.sprite, f.cell, f.part, f.yOffset, levels);
+		const Position at(f.cell.x, f.cell.y, z);
+		auto l = std::find_if(landings.begin(), landings.end(), [&at](const Landing &x) { return x.cell == at; });
+		if (l == landings.end())
+		{
+			landings.push_back(Landing{ at, 1, f.part == O_FLOOR, levels, ms, f.what });
+			continue;
+		}
+		++l->parts;
+		l->floor = l->floor || f.part == O_FLOOR;
+		l->levels = std::max(l->levels, levels);
+		l->ms = std::max(l->ms, ms);
+	}
+	// headless checks: the pieces at the start, halfway and nearly down (first: the test dumps go in the order asked)
+	if (!landings.empty())
+		for (Uint32 at : { 0u, landings.front().ms / 2, landings.front().ms * 9 / 10 })
+			HdFx::noteForTest("collapse_fall", at);
+	// A: a part crumbled where it stood; B: a floor or several parts came down; C: one part fell from above
+	for (size_t i = 0; i < landings.size() && i < MAX_DUST; ++i)
+	{
+		const Landing &l = landings[i];
+		HdFx::dust(l.levels == 0 ? 'A' : (l.floor || l.parts > 1) ? 'B' : 'C', l.cell, l.what, l.ms);
+	}
+}
+
 }
 
 namespace CollapsePilot
@@ -907,6 +989,7 @@ bool settle(BattlescapeGame *battle, const char *why)
 		const auto ta0 = Clock::now();
 		int fell[4] = { 0, 0, 0, 0 }, outside = 0, objectives = 0, lifts = 0;
 		std::vector<Tile*> tiles;
+		std::vector<Fallen> fallen;
 		for (int i = 0; i < b.nParts; ++i)
 		{
 			if (held[i] || removed[i]) continue;
@@ -928,6 +1011,12 @@ bool settle(BattlescapeGame *battle, const char *why)
 			{
 				save->addDestroyedObjective();
 				++objectives;
+			}
+			if (Options::oxceHdFx)
+			{
+				const TilePart part = PARTS[p.kind];
+				const bool seen = t->isDiscovered(O_FLOOR) || (part != O_OBJECT && t->isDiscovered(part));
+				fallen.push_back(Fallen{ t->getSprite(part), t->getPosition(), part, t->getYOffset(part), md, seen });
 			}
 			t->setMapData(nullptr, -1, -1, PARTS[p.kind]);
 			if (md->getExplosive())
@@ -968,6 +1057,16 @@ bool settle(BattlescapeGame *battle, const char *why)
 		const int radius = std::max(hi.x - lo.x, hi.y - lo.y) / 2 + 2;
 		te->calculateLighting(LL_AMBIENT, center, radius + 1, true);
 		te->calculateFOV(center, radius + 1, true, true);
+#ifdef OXCE_AI_DEV
+		// debug stand: the camera on what fell, for the HD dumps of the fall (OXCE_HD_DUMP_FX)
+		if (getenv("OXCE_COLLAPSE_CAMERA"))
+		{
+			// the top level in view, the middle of the height in the middle of the screen (a level is 1.5 cells x and y)
+			const int d = 3 * (hi.z - lo.z) / 4;
+			battle->getMap()->getCamera()->centerOnPosition(Position(center.x + d, center.y + d, hi.z), true);
+		}
+#endif
+		showFall(battle, fallen, center);
 		Log(LOG_INFO) << "[COLLAPSE] " << why << " " << b.label << " at " << in.off.x << "," << in.off.y << "," << in.off.z
 			<< ": removed " << nRemoved << ", fell " << nFell << " (f " << fell[0] << " w " << fell[1] << " n " << fell[2] << " o " << fell[3]
 			<< "), outside " << outside << ", lifts " << lifts << ", objectives " << objectives << ", tiles " << tiles.size()
@@ -1015,6 +1114,19 @@ void afterFall(BattlescapeGame *battle)
 void idle(SavedBattleGame *save)
 {
 #ifdef OXCE_AI_DEV
+	// debug stand OXCE_COLLAPSE_SHOW: the parts of OXCE_COLLAPSE_REMOVE taken away in the player's turn, with the map
+	// on screen (3 s after the first idle moment: the battle has put its camera on the soldier by then), and settled
+	// at once - for the HD dumps of the fall (OXCE_HD_DUMP_FX)
+	static bool shown = false;
+	static Clock::time_point firstIdle;
+	if (!shown && getenv("OXCE_COLLAPSE_SHOW") && st.owner == save && save->getSide() == FACTION_PLAYER && save->getBattleGame()
+		&& (firstIdle == Clock::time_point() ? (firstIdle = Clock::now(), false) : msSince(firstIdle) >= 3000))
+	{
+		shown = true;
+		for (const Instance &in : st.inst)
+			removeParts(save, in, debugParts("OXCE_COLLAPSE_REMOVE", CollapsePilotData::blocks[in.bi].label));
+		settle(save->getBattleGame(), "show");
+	}
 	if (!st.fallPending || st.owner != save)
 		return;
 	st.fallPending = false;

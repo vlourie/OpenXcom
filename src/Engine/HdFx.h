@@ -31,6 +31,7 @@ struct DotStyle;
 class RuleItem;
 class BattleUnit;
 class Tile;
+class MapData;
 
 /**
  * HD render: the combat effects of the HD mod (tools/hdart/gen_combat_fx.py) - hits by calibre,
@@ -62,15 +63,16 @@ namespace HdFx
 	/// Frame `step` of `steps` of a clip at scale k (nullptr: the mod has no such clip).
 	const HdFrame *frame(const std::string &clip, int step, int steps, int k);
 
-	/// A muzzle flash on its own clock.
+	/// A muzzle flash (or the dust of a collapse) on its own clock.
 	struct Live
 	{
 		std::string clip;
 		Position voxel;
-		Uint32 start;
+		Uint32 start;           ///< may be ahead of now: not drawn yet
 		int item;               ///< the weapon fired (BattleItem id), -1: none
 		bool tip;               ///< the weapon was drawn this frame: the flash goes to its muzzle
 		int tipX, tipY;         ///< that muzzle on the map surface
+		Uint32 ms = 0;          ///< how long it runs (0: a muzzle flash)
 	};
 	/// Starts a muzzle flash at a voxel; `item` - the weapon fired, its drawn muzzle is used when seen.
 	void spawn(const std::string &clip, Position voxel, int item = -1);
@@ -81,12 +83,31 @@ namespace HdFx
 	/// The muzzle of weapon `item` (its hand frame `frame` as drawn - already k times the classic one -
 	/// facing `direction`, its corner at x, y on the map surface), for the flashes it fired.
 	void noteTip(int item, const Surface *frame, int direction, int x, int y);
-	/// Is any flash still running at `now` (the finished ones are dropped)?
+	/// A part of a building that fell in a collapse (CollapsePilot::settle), on its own clock: its picture as last
+	/// drawn goes down from its cell to the floor it lands on.
+	struct Piece
+	{
+		SurfaceRaw<const Uint8> sprite;
+		Position cell;          ///< where it stood
+		int part;               ///< its TilePart
+		int yOffset;            ///< its terrain offset (Tile::getYOffset), classic pixels
+		int levels;             ///< levels down to the floor it lands on (0: it crumbles where it stood)
+		Uint32 start;
+	};
+	/// Starts a falling piece; returns in how many ms it lands.
+	Uint32 fall(SurfaceRaw<const Uint8> sprite, Position cell, int part, int yOffset, int levels);
+	/// The pieces still falling at `now`, each with how far it has come down (classic pixels); the landed ones are dropped.
+	void falling(Uint32 now, std::vector<std::pair<const Piece*, int>> &out);
+	/// The dust of a collapse on the floor of `cell`, `delay` ms from now: 'A' a part crumbled where it stood,
+	/// 'B' a floor or several parts came down there, 'C' one piece fell from above; `what` (what fell) gives the material.
+	void dust(char kind, Position cell, const MapData *what, Uint32 delay);
+	/// Is any flash, piece or dust still running at `now` (the finished ones are dropped)?
 	bool active(Uint32 now);
 	/// The flashes still running at `now`, with the frame of each (the finished ones are dropped).
 	void running(Uint32 now, int k, std::vector<std::pair<const Live*, const HdFrame*>> &out);
-	/// Headless checks: with OXCE_HD_DUMP_FX=<prefix> the first effects started ask for a dump of the frame showing them.
-	void noteForTest(const std::string &clip);
+	/// Headless checks: with OXCE_HD_DUMP_FX=<prefix> the first effects started ask for a dump of the frame showing them
+	/// (`after` ms from now).
+	void noteForTest(const std::string &clip, Uint32 after = 50);
 	/// The dump file due at `now` for a noted effect, or empty.
 	std::string takeTestDump(Uint32 now);
 	/// Drops loaded clips not drawn for a while. Call before a frame is recorded, never during one.
