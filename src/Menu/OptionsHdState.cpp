@@ -116,7 +116,8 @@ OptionsHdState::OptionsHdState(OptionsOrigin origin) : OptionsBaseState(origin)
 					continue;
 				}
 				if (optionInfo.type() == OPTION_INT && ((optionInfo.asInt() == &Options::oxceHdFire && !fireShipped) ||
-					(optionInfo.asInt() == &Options::oxceHdReticle && !reticleShipped)))
+					((optionInfo.asInt() == &Options::oxceHdReticle || optionInfo.asInt() == &Options::oxceHdReticleArtillery
+					|| optionInfo.asInt() == &Options::oxceHdReticleExplosive) && !reticleShipped)))
 				{
 					continue;
 				}
@@ -234,9 +235,18 @@ std::string OptionsHdState::valueText(const OptionInfo &info) const
 	{
 		return HdUi::instance().fontSetName(Options::oxceHdUiFont);
 	}
-	if (info.asInt() == &Options::oxceHdReticle)
+	if (info.asInt() == &Options::oxceHdReticle || info.asInt() == &Options::oxceHdReticleArtillery || info.asInt() == &Options::oxceHdReticleExplosive)
 	{
-		const int r = Options::oxceHdReticle;
+		// the reticles of a kind of shot: 0 is the main one (the throw cursor for explosives), v the main one's v - 1
+		int r = *info.asInt();
+		if (info.asInt() != &Options::oxceHdReticle)
+		{
+			if (r <= 0)
+			{
+				return tr(info.asInt() == &Options::oxceHdReticleExplosive ? "STR_HD_RETICLE_THROW" : "STR_HD_RETICLE_SAME");
+			}
+			--r;
+		}
 		if (r >= 2 && r - 2 < (int)Mod::HD_RETICLES.size())
 		{
 			return tr("STR_HD_RETICLE_" + Mod::HD_RETICLES[r - 2]);
@@ -434,6 +444,11 @@ void OptionsHdState::changeSetting(size_t sel, Uint8 button)
 		{
 			min = 0;
 			max = 1 + (int)Mod::HD_RETICLES.size();
+		}
+		else if (i == &Options::oxceHdReticleArtillery || i == &Options::oxceHdReticleExplosive)
+		{
+			min = 0;                                  // 0 = the main reticle (the throw cursor), then as oxceHdReticle + 1
+			max = 2 + (int)Mod::HD_RETICLES.size();
 		}
 		else if (i == &Options::oxceHdFire)
 		{

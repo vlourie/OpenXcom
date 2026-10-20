@@ -186,6 +186,14 @@ OPT bool oxceHdTerrainAddress;
 OPT int oxceHdReticle;
 // Battlescape: the yellow reticle (CURSOR.PCK 7..10) takes the colour group the mod gives the shot's damage type in the Ufopaedia (articleItem ammoColorDT*); off = stock yellow
 OPT bool oxceHdReticleDamageColor;
+// HD render: the reticle of a shot of ammo that explodes (artillery) and of a thrown explosive: 0 = the main one
+// (the throw cursor for the explosive), v > 0 = what oxceHdReticle value v - 1 picks (Map::updateAimHints)
+OPT int oxceHdReticleArtillery;
+OPT int oxceHdReticleExplosive;
+// HD render, battlescape: the dashed arc a throw or an arcing shot would fly, red to where it stops when it cannot reach
+OPT bool oxceHdAimArc;
+// HD render, battlescape: "+N" under the reticle - the power the shooter's stats add to the aimed attack
+OPT bool oxceHdAimSkillBonus;
 // HD render, battlescape: the area the aimed explosive shot or throw would blast, filled on the floor in its damage type's colour, denser where the power is stronger
 OPT bool oxceHdBlastArea;
 // HD base screen: facility pictures play their phases (hd/BASEBITS.PCK/<i>.vN.png); off = the first phase only
