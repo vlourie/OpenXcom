@@ -58,6 +58,7 @@ ProductionCompleteState::ProductionCompleteState(Base *base, const std::string &
 	_btnSummary = new TextButton(118, 18, 162, 174);
 	_btnKeepWorking = new TextButton(236, 18, 40, 152);
 	_txtMessage = new Text(246, 110, 37, 35);
+	_txtNext = new Text(236, 9, 40, 142);
 	_txtItem = new Text(160, 9, 47, 35);
 	_txtQuantity = new Text(70, 9, 209, 35);
 	_lstSummary = new TextList(224, 96, 39, 45);
@@ -71,6 +72,7 @@ ProductionCompleteState::ProductionCompleteState(Base *base, const std::string &
 	add(_btnSummary, "button", "geoManufactureComplete");
 	add(_btnKeepWorking, "button", "geoManufactureComplete");
 	add(_txtMessage, "text1", "geoManufactureComplete");
+	add(_txtNext, "text1", "geoManufactureComplete");
 	add(_txtItem, "text1", "geoManufactureComplete");
 	add(_txtQuantity, "text1", "geoManufactureComplete");
 	add(_lstSummary, "list", "geoManufactureComplete");
@@ -93,6 +95,13 @@ ProductionCompleteState::ProductionCompleteState(Base *base, const std::string &
 		&& base->getProductions().size() > 1
 		&& effectiveFreeEngineers > 0;
 	_btnKeepWorking->setVisible(canKeepWorking);
+	// named in init(): by the time the window shows, the finished work has left the list
+	_txtNext->setAlign(ALIGN_CENTER);
+	_txtNext->setVisible(false);
+	if (canKeepWorking)
+	{
+		_txtMessage->setHeight(105);
+	}
 
 	if (_endType != PROGRESS_CONSTRUCTION)
 	{
@@ -172,6 +181,22 @@ ProductionCompleteState::ProductionCompleteState(Base *base, const std::string &
 ProductionCompleteState::~ProductionCompleteState()
 {
 
+}
+
+/**
+ * Names the work Keep Working gives the free engineers to: the top of the base's list, as
+ * btnKeepWorkingClick() takes it.
+ */
+void ProductionCompleteState::init()
+{
+	State::init();
+	const auto& productions = _base->getProductions();
+	const bool show = _btnKeepWorking->getVisible() && !productions.empty();
+	if (show)
+	{
+		_txtNext->setText(tr("STR_KEEP_WORKING_NEXT").arg(tr(productions[0]->getRules()->getName())));
+	}
+	_txtNext->setVisible(show);
 }
 
 /**

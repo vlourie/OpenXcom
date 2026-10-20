@@ -48,7 +48,7 @@ private:
 
 	TextButton *_btnOk, *_btnGotoBase, *_btnSummary, *_btnKeepWorking;
 	Window *_window;
-	Text *_txtMessage, *_txtItem, *_txtQuantity;
+	Text *_txtMessage, *_txtItem, *_txtQuantity, *_txtNext;
 	TextList *_lstSummary;
 	productionProgress_e _endType;
 public:
@@ -56,6 +56,8 @@ public:
 	ProductionCompleteState(Base *base, const std::string &item, GeoscapeState *state, productionProgress_e endType = PROGRESS_COMPLETE, Production *production = nullptr);
 	/// Cleans up the Production Complete state.
 	~ProductionCompleteState();
+	/// Names the work Keep Working gives the free engineers to.
+	void init() override;
 	/// Handler for clicking the OK button.
 	void btnOkClick(Action *action);
 	/// Handler for clicking the Go To Base button.
