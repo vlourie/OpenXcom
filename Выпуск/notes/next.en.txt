@@ -1,3 +1,4 @@
 ﻿- The "<" and ">" arrows with the hideout name are now also on the soldiers screen, and on the lab, workshop, market, gym and psi school screens when they are opened from a Geoscape message ("production finished", "new research available", "training finished" and the like).
 - On the screens with hideout switching arrows the bottom row of the list is no longer cut in half: the list holds whole rows only.
 - In the workshop the "ITEM" header now stands on the same line as the other column headers.
+- Hills in HD, second batch: the grassy hills on the islands are green again, as in the original (they were yellow-brown, with wedges and seams on the slopes), the lunar slopes no longer show a grid of tiles, and the tops of the cubes in the meat cave are no longer laid out as separate "cushions" - the pattern follows the original. Graphics only: heights, movement and cover are unchanged.
