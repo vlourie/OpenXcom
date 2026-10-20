@@ -38,6 +38,7 @@
 #include "TileEngine.h"
 #include "../Engine/Game.h"
 #include "../Engine/HdFx.h"
+#include "../Engine/Language.h"
 #include "../Engine/Logger.h"
 #include "../Engine/Options.h"
 #include "../Mod/MapData.h"
@@ -1053,6 +1054,41 @@ void showFall(BattlescapeGame *battle, const std::vector<Fallen> &fallen, Positi
 	}
 }
 
+/// The player saw parts fall, all of them off the screen: one line in the warning bar says to which side (the camera
+/// stays: moving it is the battle's). What fell unseen tells nothing - the fog keeps it.
+void notice(BattlescapeGame *battle, const std::vector<Position> &seen)
+{
+	BattlescapeState *state = battle->getSave()->getBattleState();
+	if (seen.empty() || !state)
+		return;
+	Camera *camera = battle->getMap()->getCamera();
+	Position sum;
+	for (const Position &p : seen)
+	{
+		if (camera->isOnScreen(p, false, 0, false))
+			return;
+		sum += p;
+	}
+	const int n = (int)seen.size();
+	Position at, mid;
+	camera->convertMapToScreen(Position(sum.x / n, sum.y / n, sum.z / n), &at);
+	camera->convertMapToScreen(camera->getCenterPosition(), &mid);
+	// eight sides of the screen: a side alone while the other is under half of it
+	const int dx = at.x - mid.x, dy = at.y - mid.y;
+	const int h = 2 * std::abs(dx) > std::abs(dy) ? (dx > 0 ? 2 : 1) : 0, v = 2 * std::abs(dy) > std::abs(dx) ? (dy > 0 ? 2 : 1) : 0;
+	static const char *const SIDE[3][3] = {
+		{ "", "STR_HD_COLLAPSE_SIDE_UP", "STR_HD_COLLAPSE_SIDE_DOWN" },
+		{ "STR_HD_COLLAPSE_SIDE_LEFT", "STR_HD_COLLAPSE_SIDE_UP_LEFT", "STR_HD_COLLAPSE_SIDE_DOWN_LEFT" },
+		{ "STR_HD_COLLAPSE_SIDE_RIGHT", "STR_HD_COLLAPSE_SIDE_UP_RIGHT", "STR_HD_COLLAPSE_SIDE_DOWN_RIGHT" },
+	};
+	if (!h && !v)
+		return;
+	Language *lang = state->getGame()->getLanguage();
+	state->warningRaw(lang->getString("STR_HD_COLLAPSE_NOTICE").arg(lang->getString(SIDE[h][v])));
+	HdFx::noteForTest("collapse_notice", 300);
+	Log(LOG_INFO) << "[COLLAPSE] notice: " << SIDE[h][v] << " (" << n << " seen part(s) off the screen)";
+}
+
 }
 
 namespace CollapsePilot
@@ -1138,6 +1174,7 @@ bool settle(BattlescapeGame *battle, const char *why)
 	}
 	TileEngine *te = save->getTileEngine();
 	bool any = false;
+	std::vector<Position> seenCells;
 	for (const Instance &in : st.inst)
 	{
 		const CollapseBlock &b = CollapsePilotData::blocks[in.bi];
@@ -1192,12 +1229,12 @@ bool settle(BattlescapeGame *battle, const char *why)
 				save->addDestroyedObjective();
 				++objectives;
 			}
+			const TilePart part = PARTS[p.kind];
+			const bool seen = t->isDiscovered(O_FLOOR) || (part != O_OBJECT && t->isDiscovered(part));
+			if (seen)
+				seenCells.push_back(t->getPosition());
 			if (Options::oxceHdFx)
-			{
-				const TilePart part = PARTS[p.kind];
-				const bool seen = t->isDiscovered(O_FLOOR) || (part != O_OBJECT && t->isDiscovered(part));
 				fallen.push_back(Fallen{ t->getSprite(part), t->getPosition(), part, t->getYOffset(part), md, seen });
-			}
 			drops.push_back(Drop{ t->getPosition(), PARTS[p.kind] == O_FLOOR, rubbleKind(md) });
 			t->setMapData(nullptr, -1, -1, PARTS[p.kind]);
 			if (md->getExplosive())
@@ -1260,6 +1297,13 @@ bool settle(BattlescapeGame *battle, const char *why)
 			const int d = 3 * (hi.z - lo.z) / 4;
 			battle->getMap()->getCamera()->centerOnPosition(Position(center.x + d, center.y + d, hi.z), true);
 		}
+		// debug stand: the camera away from what fell by "dx,dy" cells, for the off-screen notice
+		if (const char *away = getenv("OXCE_COLLAPSE_CAMERA_AWAY"))
+		{
+			char *end = nullptr;
+			const int dx = (int)strtol(away, &end, 10), dy = *end == ',' ? (int)strtol(end + 1, nullptr, 10) : 0;
+			battle->getMap()->getCamera()->centerOnPosition(Position(center.x + dx, center.y + dy, center.z), true);
+		}
 #endif
 		showFall(battle, fallen, center);
 		Log(LOG_INFO) << "[COLLAPSE] " << why << " " << b.label << " at " << in.off.x << "," << in.off.y << "," << in.off.z
@@ -1270,6 +1314,7 @@ bool settle(BattlescapeGame *battle, const char *why)
 			<< ", falling units " << save->getFallingUnits()->size()
 			<< "; scan " << scanMs << " ms, eval " << evalMs << " ms, apply " << applyMs << " ms, light+fov " << msSince(tl0) << " ms";
 	}
+	notice(battle, seenCells);
 	if (st.runs == atRun)
 		debugReport(save, "right after");
 	return any;
