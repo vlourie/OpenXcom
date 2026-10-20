@@ -27,8 +27,10 @@ import gpuq  # noqa: E402  (только чистые функции, без HOM
 
 sys.stdout.reconfigure(encoding="utf-8")  # кириллица при перенаправлении (R-001)
 TMP = tempfile.mkdtemp(prefix="gpuq_test_")
+SHARED = os.path.join(TMP, "shared.txt")    # подставной счётчик shared: строки «PID байты»
 ENV = dict(os.environ, GPUQ_HOME=os.path.join(TMP, "q"), GPUQ_FAKE_GPU="1",
-           PYTHONIOENCODING="utf-8", GPUQ_PREEMPT_GRACE="4")
+           PYTHONIOENCODING="utf-8", GPUQ_PREEMPT_GRACE="4",
+           GPUQ_FAKE_SHARED=SHARED, GPUQ_SHARED_EVERY="1", GPUQ_SHARED_HOLD="3")
 MARKS = os.path.join(TMP, "marks.txt")
 
 
@@ -282,6 +284,39 @@ def test_exit_codes():
     print("  потомок вышедшего задания снят: один процесс на задание")
 
 
+def test_shared_guard():
+    """Сторож R-213: задание, чей ПОТОМОК держит shared больше 0,5 ГБ дольше срока, снимается с пометкой
+    в логе; контроль - задание с 0,3 ГБ shared доходит до конца."""
+    def bloat(name, gb, secs, *extra):
+        child = (f"import os,time\n"
+                 f"open({SHARED!r},'a').write('%d {int(gb * 2 ** 30)}' % os.getpid() + chr(10))\n"
+                 f"time.sleep({secs})\n")
+        return ["--", sys.executable, "-c",
+                f"import subprocess,sys\nsys.exit(subprocess.call([sys.executable,'-c',{child!r}]))\n", *extra]
+    q("add", "--name", "lean", *bloat("lean", 0.3, 8))
+    q("add", "--name", "video", *bloat("video", 2.0, 8, "F:\\AIStudio\\Escape\\gen_loc.py"))
+    q("add", "--name", "fat", *bloat("fat", 2.0, 60))
+    t = time.time()
+    st = wait_idle(60)
+    took = time.time() - t
+    lean = [j for j in st["jobs"].values() if j["name"] == "lean"][0]
+    fat = [j for j in st["jobs"].values() if j["name"] == "fat"][0]
+    video = [j for j in st["jobs"].values() if j["name"] == "video"][0]
+    assert lean["state"] == "done", lean
+    assert video["state"] == "done" and not video.get("stop_reason"), video
+    with io.open(os.path.join(ENV["GPUQ_HOME"], "daemon.log"), encoding="utf-8-sig") as f:
+        assert f"#{video['id']} video: shared 2.0 ГБ больше 0.5 - видео, только в лог" in f.read(), \
+            "видео не записано в daemon.log"
+    took -= 8
+    assert fat["state"] == "stopped" and fat.get("stop_reason") == "shared 2.0 ГБ (R-213)", fat
+    assert took < 8 + 3 + 6 * gpuq.TICK + 10, f"снятие заняло {took:.0f} с"
+    with io.open(os.path.join(ENV["GPUQ_HOME"], "logs", f"{fat['id']}.log"), encoding="utf-8") as f:
+        assert "снято очередью: shared 2.0 ГБ (R-213)" in f.read(), "нет пометки в логе задания"
+    assert "снято: shared 2.0 ГБ (R-213)" in q("list"), "list не показывает причину"
+    print(f"  shared 2 ГБ у потомка - снято за {took - 8:.0f} с после контролей; 0,3 ГБ - доработало; "
+          f"видео F:\\AIStudio с 2 ГБ - доработало, запись в daemon.log")
+
+
 def test_no_model_keys():
     """Сборка без модели (tree_family --assemble) не считается запуском мимо очереди, рендер - считается."""
     py = "E:/x/python.exe"
@@ -303,6 +338,7 @@ def main():
         test_prio_order()
         test_preempt()
         test_exit_codes()
+        test_shared_guard()
         print("OK")
     finally:
         subprocess.run([sys.executable, os.path.join(HERE, "gpuq.py"), "shutdown"],

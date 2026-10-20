@@ -648,22 +648,52 @@ def download(models_dir, with_lora=True):
 
 
 class Swapper:
-    """A module whose weights wait in pinned RAM and are copied to the GPU only while it works: weights
-    never change, so 'offloading' is just pointing the parameters back at the pinned copies."""
+    """A module whose weights wait in ordinary RAM and visit the GPU only while it works: weights never
+    change, so 'offloading' is just pointing the parameters back at the RAM copies.
+    No pin_memory and never the whole module at once (R-213): Windows counts pinned RAM as the card's shared
+    memory, and the whole 8 GB text encoder next to the resident 20 GB transformer filled the card - 17 GB
+    went to shared. So the small parts (embeddings, norms, head) go to the GPU for the pass, and the big
+    blocks (decoder layers, vision blocks) one at a time, each sent back to RAM right after its forward."""
 
     def __init__(self, module, torch):
         self.module, self.torch = module, torch
-        self.cpu = {}
-        for n, prm in module.named_parameters():
-            prm.data = prm.data.pin_memory()
-            self.cpu[n] = prm.data
+        self.cpu = {n: prm.data for n, prm in module.named_parameters()}
+        lists = []
+        for n, m in module.named_modules():
+            if isinstance(m, torch.nn.ModuleList) and len(m) >= 8 \
+                    and not any(n.startswith(o + ".") for o, _l in lists):
+                lists.append((n, m))
+        self.blocks = 0
+        streamed = set()
+        for n, lst in lists:
+            for i, b in enumerate(lst):
+                pre = "%s.%d." % (n, i) if n else "%d." % i
+                own = {k: self.cpu[pre + k] for k, _p in b.named_parameters()}
+                streamed.update(pre + k for k in own)
+                b.register_forward_pre_hook(lambda mod, _a, own=own: self._load(mod, own))
+                b.register_forward_hook(lambda mod, _a, _o, own=own: self._drop(mod, own))
+                self.blocks += 1
+        self.rest = [n for n in self.cpu if n not in streamed]
         for buf in module.buffers():
-            buf.data = buf.data.to("cuda")
+            buf.data = self.put(buf.data)
+
+    def put(self, t):
+        """RAM -> GPU (the test swaps it for a copy in RAM)."""
+        return t.to("cuda")
+
+    def _load(self, mod, own):
+        for k, prm in mod.named_parameters():
+            prm.data = self.put(own[k])
+
+    @staticmethod
+    def _drop(mod, own):
+        for k, prm in mod.named_parameters():
+            prm.data = own[k]
 
     def to_gpu(self):
-        for n, prm in self.module.named_parameters():
-            prm.data = self.cpu[n].to("cuda", non_blocking=True)
-        self.torch.cuda.synchronize()
+        prm = dict(self.module.named_parameters())
+        for n in self.rest:
+            prm[n].data = self.put(self.cpu[n])
 
     def to_cpu(self):
         for n, prm in self.module.named_parameters():
@@ -673,8 +703,9 @@ class Swapper:
 
 class Painter:
     """Qwen-Image-Edit-2511 on the GPU: transformer stored fp8 / computed bf16 and resident, the text
-    encoder (fp8 too) swapped in from pinned RAM for the prompt of every picture (--offload swap), or
-    everything resident (none), or diffusers' model offloading of every part (all, the slow way)."""
+    encoder (fp8 too) streamed block by block from ordinary RAM for the prompt of every picture (--offload
+    swap: no pinned RAM, no shared memory of the card, R-213), or everything resident (none), or diffusers'
+    model offloading of every part (all, the slow way)."""
 
     def __init__(self, models_dir, fast, steps, quant="fp8", gguf="", photoreal=True, offload="swap"):
         models_env(models_dir)
@@ -733,6 +764,7 @@ class Painter:
                 te.to("cuda")
             else:
                 self.swap = Swapper(te, torch)
+                print("text encoder in RAM, %d blocks go to the GPU one at a time (R-213)" % self.swap.blocks)
         pipe.set_progress_bar_config(disable=True)
         self.pipe = pipe
         print("model ready in %.0f s; LoRA: %s" % (time.time() - t0, ", ".join(self.adapters) or "none"))
@@ -772,6 +804,7 @@ class Painter:
         # the prompt (with the pictures) through the text encoder while it is on the GPU, then the rest
         dev = torch.device("cuda")
         cond = [self.condition_image(im) for im in images]
+        t0 = time.time()
         if self.swap:
             self.swap.to_gpu()
         try:
@@ -785,6 +818,7 @@ class Painter:
         finally:
             if self.swap:
                 self.swap.to_cpu()
+        self.encode_s = time.time() - t0
         out = self.pipe(image=list(images), prompt=None, prompt_embeds=pe, prompt_embeds_mask=pm,
                         negative_prompt_embeds=npe, negative_prompt_embeds_mask=npm,
                         true_cfg_scale=cfg, num_inference_steps=steps, height=H, width=W, generator=g).images[0]
@@ -837,7 +871,7 @@ def main():
     ap.add_argument("--undress", action="store_true", help="the person is rendered nude: the clothing of the drawing is dropped instead of kept (drawn adult figures only)")
     ap.add_argument("--no-lora", action="store_true", help="do not load the Anime-to-Photoreal LoRA (presets use it at 0)")
     ap.add_argument("--quant", default="fp8", choices=["fp8", "none", "gguf"], help="how the 20B transformer fits: fp8 storage (default), none (40 GB VRAM), gguf")
-    ap.add_argument("--offload", default="swap", choices=["swap", "none", "all"], help="swap (default): transformer resident, text encoder swapped in per picture; none: all resident (tight in 32 GB); all: diffusers offloading of every part (slow)")
+    ap.add_argument("--offload", default="swap", choices=["swap", "none", "all"], help="swap (default): transformer resident, text encoder streamed from RAM block by block per picture (no pinned RAM, R-213); none: all resident (tight in 32 GB); all: diffusers offloading of every part (slow)")
     ap.add_argument("--gguf", default="", help="a Q8_0 .gguf of the 2511 transformer for --quant gguf")
     ap.add_argument("--models", default=os.environ.get("HD_MODELS", "E:\\models"), help="HF cache root (setup_gen.ps1 uses E:\\models)")
     ap.add_argument("--download-only", action="store_true", help="fetch the models and exit")
