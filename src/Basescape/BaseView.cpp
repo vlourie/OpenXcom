@@ -604,9 +604,10 @@ void BaseView::drawHd()
 		for (int num = 0; num < tiles; ++num)
 		{
 			const int index = hdTileIndex(fac, num);
-			if (Surface *classic = _texture->getFrame(index))
+			// a facility picture fills its grid cell: a mod's frame may be 32x40 with the bottom rows empty
+			if (_texture->getFrame(index))
 			{
-				want.push_back({ index, classic->getWidth(), classic->getHeight() });
+				want.push_back({ index, GRID_SIZE, GRID_SIZE });
 			}
 		}
 	}
@@ -633,11 +634,10 @@ void BaseView::drawHd()
 					HdUiArt::drawFrame(world, *ground, (getX() + x * GRID_SIZE) * k, (getY() + y * GRID_SIZE) * k);
 				}
 				const int index = hdTileIndex(fac, num);
-				Surface *classic = _texture->getFrame(index);
-				if (classic)
+				if (_texture->getFrame(index))
 				{
 					next = std::min(next, HdBase::draw(world, index, (getX() + x * GRID_SIZE) * k, (getY() + y * GRID_SIZE) * k,
-						k, classic->getWidth(), classic->getHeight(), Options::oxceHdBaseAnim, now, seed));
+						k, GRID_SIZE, GRID_SIZE, Options::oxceHdBaseAnim, now, seed));
 				}
 				++num;
 			}
