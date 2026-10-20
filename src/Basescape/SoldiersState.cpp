@@ -54,7 +54,7 @@ namespace OpenXcom
  * @param game Pointer to the core game.
  * @param base Pointer to the base to get info from.
  */
-SoldiersState::SoldiersState(Base *base) : SortSoldiersMixin(base), _origSoldierOrder(*_base->getSoldiers()), _dynGetter(NULL)
+SoldiersState::SoldiersState(Base *base) : BaseSwitchMixin(base), _origSoldierOrder(*_base->getSoldiers()), _dynGetter(NULL)
 {
 	bool isPsiBtnVisible = Options::anytimePsiTraining && _base->getAvailablePsiLabs() > 0;
 	bool isTrnBtnVisible = _base->getAvailableTraining() > 0;
@@ -110,6 +110,8 @@ SoldiersState::SoldiersState(Base *base) : SortSoldiersMixin(base), _origSoldier
 		add(_btnPsiTraining, "button", "soldierList");
 		add(_btnTraining, "button", "soldierList");
 	}
+	addBaseSwitch(_base, "soldierList", "text2", "button", 24, nullptr,
+		[](Base *other){ return withBaseSwitch(new SoldiersState(other)); });
 
 	centerAllSurfaces();
 

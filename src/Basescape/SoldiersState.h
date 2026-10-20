@@ -22,6 +22,7 @@
 #include "SoldierSortUtil.h"
 #include "HighlightLowManaSoldiersMixin.h"
 #include "SortSoldiersMixin.h"
+#include "BaseSwitch.h"
 
 namespace OpenXcom
 {
@@ -38,7 +39,7 @@ struct SortFunctor;
  * Soldiers screen that lets the player
  * manage all the soldiers in a base.
  */
-class SoldiersState : public SortSoldiersMixin<HighlightLowManaSoldiersMixin<State>>
+class SoldiersState : public BaseSwitchMixin<SortSoldiersMixin<HighlightLowManaSoldiersMixin<State>>>
 {
 private:
 	TextButton *_btnOk, *_btnPsiTraining, *_btnTraining, *_btnMemorial;
