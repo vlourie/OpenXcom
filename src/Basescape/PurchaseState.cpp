@@ -17,6 +17,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "PurchaseState.h"
+#include "TradeConfirmState.h"
 #include "ItemLocationsState.h"
 #include <sstream>
 #include <climits>
@@ -395,6 +396,18 @@ PurchaseState::~PurchaseState()
 void PurchaseState::init()
 {
 	State::init();
+
+	if (!_keepCat.empty())
+	{
+		auto cat = std::find(_cats.begin(), _cats.end(), _keepCat);
+		if (cat != _cats.end())
+		{
+			_cbxCategory->setSelected(cat - _cats.begin());
+			updateList();
+			_lstItems->scrollTo(_keepScroll);
+		}
+		_keepCat.clear();
+	}
 
 	touchComponentsRefresh();
 }
@@ -782,6 +795,20 @@ void PurchaseState::btnOkClick(Action *)
 		}
 	}
 
+	if (TradeConfirmState::wanted(_items))
+	{
+		_game->pushState(new TradeConfirmState(_items, _total, "STR_TRADE_CONFIRM_BUY", "buyMenu", [this]() { purchase(); }));
+		return;
+	}
+	purchase();
+}
+
+/**
+ * Buys the chosen items. A screen opened from the basescape opens anew on the same base,
+ * category and scroll (option oxceTradeStay), so the base arrows work again; the rest closes.
+ */
+void PurchaseState::purchase()
+{
 	_game->getSavedGame()->setFunds(_game->getSavedGame()->getFunds() - _total);
 	for (const auto& transferRow : _items)
 	{
@@ -870,7 +897,15 @@ void PurchaseState::btnOkClick(Action *)
 			}
 		}
 	}
+	if (_parent || !baseSwitchAllowed() || !Options::oxceTradeStay)
+	{
+		_game->popState();
+		return;
+	}
+	auto *next = withBaseSwitch(new PurchaseState(_base));
+	next->keepView(_cats[_cbxCategory->getSelected()], _lstItems->getScroll());
 	_game->popState();
+	_game->pushState(next);
 }
 
 /**

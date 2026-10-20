@@ -67,7 +67,11 @@ private:
 	std::map<int, int> _iPrisonQty;
 	Uint8 _ammoColor;
 	Timer *_timerInc, *_timerDec;
+	std::string _keepCat;
+	size_t _keepScroll = 0;
 
+	/// Buys the chosen items, then closes the screen or opens it anew.
+	void purchase();
 	/// Gets the category of the current selection.
 	std::string getCategory(int sel) const;
 	/// Determines if the current selection belongs to a given category.
@@ -87,6 +91,8 @@ public:
 	~PurchaseState();
 	/// Resets state.
 	void init() override;
+	/// Shows the given category and scroll when the screen opens.
+	void keepView(const std::string &category, size_t scroll) { _keepCat = category; _keepScroll = scroll; }
 	/// Runs the timers.
 	void think() override;
 	/// Updates the item list.

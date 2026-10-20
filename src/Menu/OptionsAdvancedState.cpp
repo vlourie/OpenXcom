@@ -472,6 +472,11 @@ void OptionsAdvancedState::changeSetting(size_t sel, Uint8 button)
 			min = 0;
 			max = 15;
 		}
+		else if (i == &Options::oxceTradeConfirm)
+		{
+			min = 0;
+			max = 20;
+		}
 		else if (i == &Options::oxceNightVisionColor)
 		{
 			// UFO: 1-15, TFTD: 2-16 except 8 and 10

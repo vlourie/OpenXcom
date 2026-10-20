@@ -17,6 +17,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "SellState.h"
+#include "TradeConfirmState.h"
 #include "ItemLocationsState.h"
 #include "ManufactureDependenciesTreeState.h"
 #include <algorithm>
@@ -392,6 +393,17 @@ void SellState::init()
 		_game->popState();
 		_game->pushState(new SellState(_base, _debriefingState, _origin));
 	}
+	else if (!_keepCat.empty())
+	{
+		auto cat = std::find(_cats.begin(), _cats.end(), _keepCat);
+		if (cat != _cats.end())
+		{
+			_cbxCategory->setSelected(cat - _cats.begin());
+			updateList();
+			_lstItems->scrollTo(_keepScroll);
+		}
+		_keepCat.clear();
+	}
 
 	touchComponentsRefresh();
 }
@@ -692,6 +704,20 @@ void SellState::updateList()
  */
 void SellState::btnOkClick(Action *)
 {
+	if (TradeConfirmState::wanted(_items))
+	{
+		_game->pushState(new TradeConfirmState(_items, _total, "STR_TRADE_CONFIRM_SELL", "sellMenu", [this]() { sell(); }));
+		return;
+	}
+	sell();
+}
+
+/**
+ * Sells the chosen items. A screen opened from the basescape opens anew on the same base,
+ * category and scroll (option oxceTradeStay), so the base arrows work again; the rest closes.
+ */
+void SellState::sell()
+{
 	_game->getSavedGame()->setFunds(_game->getSavedGame()->getFunds() + _total);
 
 	auto cleanUpContainer = [&](ItemContainer* container, const RuleItem* rule, int toRemove) -> int
@@ -896,7 +922,15 @@ void SellState::btnOkClick(Action *)
 	{
 		_debriefingState->hideSellTransferButtons();
 	}
+	if (_debriefingState || !baseSwitchAllowed() || !Options::oxceTradeStay)
+	{
+		_game->popState();
+		return;
+	}
+	auto *next = withBaseSwitch(new SellState(_base, 0, _origin));
+	next->keepView(_cats[_cbxCategory->getSelected()], _lstItems->getScroll());
 	_game->popState();
+	_game->pushState(next);
 }
 
 /**

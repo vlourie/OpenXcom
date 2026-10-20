@@ -69,6 +69,11 @@ private:
 	bool _sellAllButOne;
 	bool _delayedInitDone;
 	TransferSortDirection _previousSort, _currentSort;
+	std::string _keepCat;
+	size_t _keepScroll = 0;
+
+	/// Sells the chosen items, then closes the screen or opens it anew.
+	void sell();
 
 	/// Gets the category of the current selection.
 	std::string getCategory(int sel) const;
@@ -86,6 +91,8 @@ public:
 	~SellState();
 	/// Resets state.
 	void init() override;
+	/// Shows the given category and scroll when the screen opens.
+	void keepView(const std::string &category, size_t scroll) { _keepCat = category; _keepScroll = scroll; }
 	/// Runs the timers.
 	void think() override;
 	/// Updates the item list.

@@ -144,6 +144,8 @@ public:
 		_switchAllowed = true;
 		updateBaseSwitch();
 	}
+	/// Whether the opener let the screen switch bases (not a forced screen).
+	bool baseSwitchAllowed() const { return _switchAllowed; }
 	/// Handler for the previous base button and key.
 	void btnPrevBaseClick(Action *) { switchBase(-1); }
 	/// Handler for the next base button and key.

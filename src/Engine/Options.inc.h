@@ -151,6 +151,9 @@ OPT int oxceBaseSoldierGroupBy;
 // Soldier lists: the soldier's rank badge (its type's own set, BASEBITS) before the name
 OPT bool oxceBaseSoldierTypeIcon;
 OPT bool oxceTransferExchange;
+// Purchase and sell: ask with the list and the total from this many chosen lines (0 - never); stay on the screen after OK
+OPT int oxceTradeConfirm;
+OPT bool oxceTradeStay;
 // OXCE: play cutscenes at the original 320x200 (as the classic game does); off = scaled like the geoscape
 OPT bool oxceMaximizeCutsceneScreens;
 
