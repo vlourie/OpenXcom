@@ -410,7 +410,8 @@ def build(s, frames, tex_frames, out, sig, gain, seed, maxn=400, detail="field",
         y = rgb @ LUMA
         det = gain * sd * field
         pp = gs.pack_dir(s) / ("%d.png" % f)
-        if detail == "pack" and pp.exists():
+        hi3 = None
+        if detail in ("pack", "packrgb") and pp.exists():
             # мелочь пака (трещины, камни) внутри кадра; у стыка с соседом на любой карте (jd) - поле (п. 3а)
             pk = gs.load_pack(s, f)
             if pk.shape[:2] == rgb.shape[:2]:
@@ -419,8 +420,18 @@ def build(s, frames, tex_frames, out, sig, gain, seed, maxn=400, detail="field",
                 hi = yp - wb.gauss(yp * pa, HPD) / np.maximum(wb.gauss(pa, HPD), 1e-4)
                 wd = np.clip((up(jd[..., None])[..., 0] - 0.5) / RIMB, 0, 1)
                 wd = wd * wd * (3 - 2 * wd) * (wb.gauss(pa, 2.0) > 0.98)
-                det = wd * pgain * hi + (1 - wd) * det
+                if detail == "packrgb":
+                    # мох на камне MOUNTROCK - мелочь цвета, а не яркости: по одной яркости склон выходил мылом
+                    # (цвет классики после гаусса - ровная олива), поэтому мелочь пака по трём каналам
+                    g = np.maximum(wb.gauss(pa, HPD), 1e-4)
+                    lo = np.dstack([wb.gauss(pk[..., i] * pa, HPD) / g for i in range(3)])
+                    hi3 = wd[..., None] * pgain * (pk[..., :3] - lo)
+                    det = (1 - wd) * det
+                else:
+                    det = wd * pgain * hi + (1 - wd) * det
         rgb = rgb * (1.0 + det / np.maximum(y, 16.0))[..., None]
+        if hi3 is not None:
+            rgb = rgb + hi3
         # альфа: xBRZ x4 маски, перехлёст OVERLAP; nearest x4 не даёт дыр в стыке (R-291)
         rgba = np.dstack([pal[c], w * 255]).astype(np.float32)[None]
         near = wb.blk(w)
@@ -448,12 +459,16 @@ def main():
     ap.add_argument("--ctx", type=int, default=400,
                     help="разных окружений кадра из блоков карт (0 - кадр сам по себе); первые 12 не представительны: "
                          "бок склона MOUNT 27 в них закрыт соседом, а на карте Сибири открыт")
-    ap.add_argument("--detail", choices=("field", "pack"), default="field",
-                    help="мелочь внутри кадра: field - только поле (гладкие грани), pack - трещины пака (скалы)")
+    ap.add_argument("--detail", choices=("field", "pack", "packrgb"), default="field",
+                    help="мелочь внутри кадра: field - только поле (гладкие грани), pack - трещины пака (скалы), "
+                         "packrgb - мелочь пака по цвету (мох на камне)")
     ap.add_argument("--pgain", type=float, default=1.0, help="--detail pack: сила мелочи пака")
+    ap.add_argument("--hpd", type=float, default=None, help="--detail pack: гаусс мелочи пака, пикс x4 (по умолчанию %g)" % 6.0)
     ap.add_argument("--median", action="store_true", help="медиана 3x3 перед гауссом")
     a = ap.parse_args()
-    global ALPHA, MEDIAN
+    global ALPHA, MEDIAN, HPD
+    if a.hpd:
+        HPD = a.hpd
     MEDIAN = a.median
     ALPHA = a.alpha
     if a.pack_root:
