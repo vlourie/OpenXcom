@@ -109,3 +109,4 @@ doll_b2_render.py
 doll_photo_pilot.py
 cockpit_pilot.py
 tools/hdart/doll_paint_pilot.py
+tools/hdart/doll_ctl_pilot.py
