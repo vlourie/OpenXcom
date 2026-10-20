@@ -343,13 +343,13 @@ def context_base(W, s, f, ctx, pal, sig):
     return v, e, jd
 
 
-def build(s, frames, tex_frames, out, sig, gain, seed, maxn=400, detail="field", pgain=1.0, dry=False):
+def build(s, frames, tex_frames, out, sig, gain, seed, maxn=400, detail="field", pgain=1.0, dry=False, tex_set=None):
     pal = wb.palette().astype(np.float32)
     cl = wb.read_set(s)
     pl = plevels(s)
-    amp, sd = tex_spectrum(s, tex_frames)
+    amp, sd = tex_spectrum(tex_set or s, tex_frames)
     if amp is None:
-        raise SystemExit("нет внутренних окон пака у %s %s - фактуру брать неоткуда" % (s, tex_frames))
+        raise SystemExit("нет внутренних окон пака у %s %s - фактуру брать неоткуда" % (tex_set or s, tex_frames))
     T = torus(amp, seed)
     print("%s: фактура - разброс %.1f (x gain %.2f), окна из %d кадров" % (s, sd, gain, len(tex_frames)))
     frames = [f for f in frames if f < len(cl) and (cl[f] != 0).sum() >= 4]
@@ -450,6 +450,7 @@ def main():
     ap.add_argument("--set", required=True)
     ap.add_argument("--frames", required=True, help="кадры: 24-32,10")
     ap.add_argument("--tex", default="", help="кадры пака для спектра фактуры (по умолчанию --frames)")
+    ap.add_argument("--tex-set", default=None, help="набор для --tex (у ромбов пола нет внутренних окон - фактура с блоков соседнего набора)")
     ap.add_argument("--out", required=True, help="папка TERRAIN партии")
     ap.add_argument("--sig", type=float, default=1.0, help="гаусс классики, пикс базы")
     ap.add_argument("--gain", type=float, default=0.8)
@@ -474,7 +475,8 @@ def main():
     if a.pack_root:
         gs.PACK_ROOT = a.pack_root
     fr = frames_arg(a.frames)
-    build(a.set, fr, frames_arg(a.tex) if a.tex else fr, a.out, a.sig, a.gain, a.seed, a.ctx, a.detail, a.pgain)
+    build(a.set, fr, frames_arg(a.tex) if a.tex else fr, a.out, a.sig, a.gain, a.seed, a.ctx, a.detail, a.pgain,
+          tex_set=a.tex_set)
     print("записано %d кадров в %s" % (len(fr), Path(a.out) / (a.set + ".PCK")))
 
 
