@@ -1590,7 +1590,7 @@ void Pathfinding::refreshPath()
 	if (_unit->getArmor()->getTurnBeforeFirstStep())
 	{
 		int dir = getStartDirection();
-		if (dir != -1 && dir != _unit->getDirection())
+		if (dir != -1 && dir != _unit->getDirection() && !reverseStart(_unit, dir))
 		{
 			int turnCost = std::abs(_unit->getDirection() - dir);
 			if (turnCost > 4)
@@ -1957,6 +1957,22 @@ int Pathfinding::reachedTU(Position pos)
 bool Pathfinding::getStrafeMove() const
 {
 	return _strafeMove;
+}
+
+/**
+ * Does the unit back up for a walk whose first step goes this way: straight behind it, its armor allows it, and the
+ * player moves it (not the AI: an alien, a panicking unit or the bench's bot - their walks and their TU sums stay as they were).
+ * @param unit The walking unit.
+ * @param dir The first step's direction.
+ * @return True, if the unit walks the path backwards with the hull facing the way it faced.
+ */
+bool Pathfinding::reverseStart(const BattleUnit *unit, int dir) const
+{
+	return dir >= 0 && dir < DIR_UP && dir == (unit->getDirection() + 4) % 8
+		&& unit->getArmor()->allowsReverse()
+		&& unit->getFaction() == FACTION_PLAYER
+		&& _save->getBattleGame() && _save->getBattleGame()->getPanicHandled()
+		&& !AiProbe::botTurn(_save);
 }
 
 /**

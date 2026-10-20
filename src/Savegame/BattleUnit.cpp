@@ -1192,7 +1192,8 @@ void BattleUnit::startWalking(int direction, Position destination, SavedBattleGa
 	}
 	else
 	{
-		_direction = direction;
+		// backing up: the hull keeps facing away from the step
+		_direction = _reverseMove ? (direction + 4) % 8 : direction;
 		_status = STATUS_WALKING;
 	}
 	if (_haveNoFloorBelow || direction >= Pathfinding::DIR_UP)
@@ -1232,15 +1233,16 @@ void BattleUnit::keepWalking(SavedBattleGame *savedBattleGame, bool fullWalkCycl
 	else
 	{
 		// diagonal walking takes double the steps
-		middle = 4 + 4 * (_direction % 2);
-		end = 8 + 8 * (_direction % 2);
+		const int moveDir = getMoveDirection();
+		middle = 4 + 4 * (moveDir % 2);
+		end = 8 + 8 * (moveDir % 2);
 		if (isBigUnit())
 		{
-			if (_direction < 1 || _direction > 5)
+			if (moveDir < 1 || moveDir > 5)
 				middle = end;
-			else if (_direction == 5)
+			else if (moveDir == 5)
 				middle = 12;
-			else if (_direction == 1)
+			else if (moveDir == 1)
 				middle = 5;
 			else
 				middle = 1;

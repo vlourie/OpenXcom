@@ -1901,7 +1901,7 @@ void Map::drawUnit(UnitSprite &unitSprite, Tile *unitTile, Tile *currTile, Posit
 		GraphSubset leftMask = mask.offset(-tileFoorWidth/2, 0);
 		GraphSubset rightMask = mask.offset(+tileFoorWidth/2, 0);
 		// (the masks are the screen's: the direction as the view shows it)
-		int direction = turnedDir(bu->getDirection());
+		int direction = turnedDir(bu->getMoveDirection());
 		Position partCurr = currTile->getPosition();
 		Position partDest = bu->getDestination() + unitOffset;
 		Position partLast = bu->getLastPosition() + unitOffset;
@@ -4346,7 +4346,7 @@ UnitWalkingOffset Map::calculateWalkingOffset(const BattleUnit *unit) const
 	int offsetX[8] = { 1, 1, 1, 0, -1, -1, -1, 0 };
 	int offsetY[8] = { 1, 0, -1, -1, -1, 0, 1, 1 };
 	int phase = unit->getWalkingPhase() + unit->getDiagonalWalkingPhase();
-	int dir = unit->getDirection();
+	int dir = unit->getMoveDirection(); // the step's, not the hull's (a unit backing up)
 	int midphase = 4 + 4 * (dir % 2);
 	int endphase = 8 + 8 * (dir % 2);
 	int size = unit->getArmor()->getSize();

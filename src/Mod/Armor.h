@@ -136,6 +136,7 @@ private:
 
 	bool _turnBeforeFirstStep;
 	int _turnCost;
+	bool _allowsReverse = false;
 
 	ArmorMoveCost _moveCostBase = { 100, 100 };
 	ArmorMoveCost _moveCostBaseFly = { 100, 100 };
@@ -284,6 +285,8 @@ public:
 	bool getTurnBeforeFirstStep() const { return _turnBeforeFirstStep; }
 	/// Gets the turn cost.
 	int getTurnCost() const { return _turnCost; }
+	/// Can the player's unit back up to a tile straight behind it (no turn, the hull keeps facing)?
+	bool allowsReverse() const { return _allowsReverse; }
 
 	/// Multiplier of all move costs.
 	ArmorMoveCost getMoveCostBase() const { return _moveCostBase; }

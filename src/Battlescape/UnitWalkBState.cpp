@@ -70,7 +70,9 @@ void UnitWalkBState::init()
 	_target = _action.target;
 	if (Options::traceAI) { Log(LOG_INFO) << "Walking from: " << _unit->getPosition() << "," << " to " << _target;}
 	int dir = _pf->getStartDirection();
-	if (!_action.strafe && dir != -1 && dir != _unit->getDirection())
+	// the path starts straight behind a unit that can back up: it walks it backwards, no turn and no TU for one
+	_unit->setReverseMove(!_action.strafe && _pf->reverseStart(_unit, dir));
+	if (!_action.strafe && dir != -1 && dir != _unit->getDirection() && !_unit->getReverseMove())
 	{
 		_beforeFirstStep = true;
 	}
@@ -82,6 +84,7 @@ void UnitWalkBState::init()
  */
 void UnitWalkBState::deinit()
 {
+	_unit->setReverseMove(false);
 	_terrain->removeMovingUnit(_unit);
 }
 
@@ -343,9 +346,11 @@ void UnitWalkBState::think()
 
 			// we are looking in the wrong way, turn first (unless strafing)
 			// we are not using the turn state, because turning during walking costs no tu
-			if (dir != _unit->getDirection() && dir < Pathfinding::DIR_UP && !_pf->getStrafeMove())
+			// (backing up, the hull turns its rear to the step: a bend of the path, the straight path never turns)
+			const int face = dir < Pathfinding::DIR_UP && _unit->getReverseMove() ? (dir + 4) % 8 : dir;
+			if (face != _unit->getDirection() && dir < Pathfinding::DIR_UP && !_pf->getStrafeMove())
 			{
-				_unit->lookAt(dir);
+				_unit->lookAt(face);
 				return;
 			}
 

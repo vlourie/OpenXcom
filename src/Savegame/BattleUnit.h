@@ -123,6 +123,7 @@ private:
 	int _customMarker;
 	int _kills;
 	int _faceDirection; // used only during strafing moves
+	bool _reverseMove = false; // backing up: the hull (_direction) faces away from the step
 	std::vector<int> _meleeAttackedBy;
 	bool _hitByFire, _hitByAnything, _alreadyExploded;
 	int _fireMaxHit;
@@ -273,6 +274,12 @@ public:
 	int getDirection() const;
 	/// Gets the unit's face direction (only used by strafing moves)
 	int getFaceDirection() const;
+	/// Backs the unit up for the walk: the steps go opposite to the hull, which keeps facing.
+	void setReverseMove(bool reverse) { _reverseMove = reverse; }
+	/// Is the unit backing up?
+	bool getReverseMove() const { return _reverseMove; }
+	/// Gets the direction of the step the unit walks (the hull's, or opposite to it when backing up).
+	int getMoveDirection() const { return _reverseMove ? (_direction + 4) % 8 : _direction; }
 	/// Gets the unit's turret direction.
 	int getTurretDirection() const;
 	/// Gets the unit's turret To direction.
