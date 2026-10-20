@@ -23,6 +23,7 @@
 #include <sstream>
 #include <climits>
 #include <cassert>
+#include <unordered_set>
 #include "../version.h"
 #include "../Engine/CrossPlatform.h"
 #include "../Engine/FileMap.h"
@@ -3045,7 +3046,17 @@ void Mod::loadHdUiArt()
 			}
 		}
 	}
-	int loaded = 0;
+	// the paper dolls' layers (afterLoad made the armors' layer names whole): only noted, their images are
+	// loaded when a doll wearing them is shown - X-Piratez has thousands of 320x200 layers
+	std::unordered_set<std::string> layerNames;
+	for (const auto &armor : _armors)
+	{
+		for (const auto &version : armor.second->getLayersDefinition())
+		{
+			layerNames.insert(version.second.begin(), version.second.end());
+		}
+	}
+	int loaded = 0, layers = 0;
 	// one pack serves both games: on vanilla nearly every picture of it is unmatched, so one summary line, the names at debug
 	int unmatched = 0;
 	std::string unmatchedNames;
@@ -3074,8 +3085,9 @@ void Mod::loadHdUiArt()
 			Log(LOG_INFO) << "HD interface: " << HdSprites::artPath("UI/" + file) << " is of an image the engine redraws itself - not used";
 			continue;
 		}
-		Surface *base = getSurface(it->second, false);
-		if (!base)
+		const bool layer = layerNames.count(it->second) > 0;
+		Surface *base = layer ? nullptr : getSurface(it->second, false);
+		if (!layer && !base)
 		{
 			continue;
 		}
@@ -3114,10 +3126,19 @@ void Mod::loadHdUiArt()
 				palette.clear();
 			}
 		}
-		if (HdUiArt::addLazy(it->second, base, picture, width, height, std::move(palette)))
+		if (layer)
+		{
+			HdUiArt::addPending(it->second, picture, width, height, std::move(palette));
+			++layers;
+		}
+		else if (HdUiArt::addLazy(it->second, base, picture, width, height, std::move(palette)))
 		{
 			++loaded;
 		}
+	}
+	if (layers)
+	{
+		Log(LOG_INFO) << "HD interface: " << layers << " paper doll layer picture(s), read when a doll is shown";
 	}
 	if (unmatched)
 	{

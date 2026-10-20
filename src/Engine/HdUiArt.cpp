@@ -28,11 +28,13 @@
 #include <algorithm>
 #include <cmath>
 #include <list>
+#include "FileMap.h"
 #include "HdUi.h"
 #include "HdWorkers.h"
 #include "Logger.h"
 #include "Options.h"
 #include "Screen.h"
+#include "SDL2Helpers.h"
 #include "Surface.h"
 
 namespace OpenXcom
@@ -121,18 +123,22 @@ bool add(const std::string &name, const Surface *base, HdFrame &&frame, std::vec
 	return true;
 }
 
-bool addLazy(const std::string &name, const Surface *base, const std::string &path, int width, int height, std::vector<SDL_Color> palette)
+namespace
+{
+
+/// A picture kept in a file, not registered anywhere yet (nullptr if the sizes do not fit).
+std::unique_ptr<Art> lazyArt(const std::string &name, const Surface *base, const std::string &path, int width, int height, std::vector<SDL_Color> palette)
 {
 	if (!base || base->getWidth() <= 0 || base->getHeight() <= 0 || width <= 0 || height <= 0)
 	{
-		return false;
+		return nullptr;
 	}
 	const int bw = base->getWidth(), bh = base->getHeight();
 	if (width % bw != 0 || height % bh != 0 || width / bw != height / bh)
 	{
 		Log(LOG_WARNING) << "HD interface: " << path << " is " << width << "x" << height
 			<< ", not a whole multiple of the image's " << bw << "x" << bh << " - ignored";
-		return false;
+		return nullptr;
 	}
 	std::unique_ptr<Art> art(new Art());
 	art->name = name;
@@ -150,12 +156,154 @@ bool addLazy(const std::string &name, const Surface *base, const std::string &pa
 	art->hash = hashPixels(pixels, pitch, bw, bh);
 	art->baseSurface = base;
 	art->palette = std::move(palette);
+	return art;
+}
+
+/// The pictures of the paper dolls' layers, by image name, until a doll wearing one is shown.
+struct Pending
+{
+	std::string path;
+	int width = 0, height = 0;
+	std::vector<SDL_Color> palette;
+};
+std::unordered_map<std::string, Pending> pending;
+/// How many of `arts` are paper dolls' layers and composites (see cropCount).
+size_t dollArts = 0;
+
+}
+
+bool addLazy(const std::string &name, const Surface *base, const std::string &path, int width, int height, std::vector<SDL_Color> palette)
+{
+	std::unique_ptr<Art> art = lazyArt(name, base, path, width, height, std::move(palette));
+	if (!art)
+	{
+		return false;
+	}
 	const Art *p = art.get();
-	byContent[Key{ p->hash, bw, bh }] = p;
+	byContent[Key{ p->hash, p->baseWidth, p->baseHeight }] = p;
 	bySurface[base] = p;
-	sizes.insert(sizeKey(bw, bh));
+	sizes.insert(sizeKey(p->baseWidth, p->baseHeight));
 	arts.push_back(std::move(art));
 	return true;
+}
+
+void addPending(const std::string &name, const std::string &path, int width, int height, std::vector<SDL_Color> palette)
+{
+	Pending &p = pending[name];
+	p.path = path;
+	p.width = width;
+	p.height = height;
+	p.palette = std::move(palette);
+}
+
+void composeLayers(const Surface *composite, const std::vector<std::pair<const Surface*, std::string>> &layers)
+{
+	if (!composite || layers.empty() || (pending.empty() && dollArts == 0) || !Options::oxceHdPictures)
+	{
+		return; // no doll pictures in the mods (vanilla, a pack without them)
+	}
+	const int bw = composite->getWidth(), bh = composite->getHeight();
+	const Uint8 *pixels = (const Uint8*)composite->getBuffer();
+	const int pitch = composite->getPitch();
+	if (bw <= 0 || bh <= 0 || !pixels)
+	{
+		return;
+	}
+	const Uint64 hash = hashPixels(pixels, pitch, bw, bh);
+	if (find(hash, bw, bh))
+	{
+		return; // this doll was shown before (or is a picture of its own)
+	}
+	// the layers' pictures: a mod image's own (the ufopaedia's background), or a layer's, made from its note
+	std::vector<const Art*> parts;
+	int scale = 0;
+	const std::vector<SDL_Color> *palette = nullptr;
+	for (const auto &layer : layers)
+	{
+		const Surface *surface = layer.first;
+		if (!surface || surface->getWidth() > bw || surface->getHeight() > bh)
+		{
+			return;
+		}
+		const Art *art = find(surface);
+		if (!art)
+		{
+			auto it = pending.find(layer.second);
+			if (it == pending.end())
+			{
+				return; // a layer without a picture: the doll is drawn as it is today
+			}
+			std::unique_ptr<Art> made = lazyArt(layer.second, surface, it->second.path, it->second.width, it->second.height, std::move(it->second.palette));
+			pending.erase(it);
+			if (!made)
+			{
+				return;
+			}
+			made->doll = true;
+			art = made.get();
+			// by its image only: a layer is never drawn on its own, and its mostly empty canvas must not
+			// be taken for another image's picture
+			bySurface[surface] = art;
+			arts.push_back(std::move(made));
+			++dollArts;
+		}
+		if (art->bad)
+		{
+			return;
+		}
+		scale = std::max(scale, art->scale);
+		if (!palette && !art->palette.empty())
+		{
+			palette = &art->palette;
+		}
+		parts.push_back(art);
+	}
+	std::unique_ptr<Art> art(new Art());
+	art->name = "doll " + layers.back().second;
+	art->scale = scale;
+	art->baseWidth = bw;
+	art->baseHeight = bh;
+	art->base.resize((size_t)bw * bh);
+	for (int y = 0; y < bh; ++y)
+	{
+		memcpy(&art->base[(size_t)y * bw], pixels + (size_t)y * pitch, bw);
+	}
+	art->hash = hash;
+	// the drawing caches key a picture by its image: the composite's surface belongs to a state and goes
+	// with it, the first layer's image stays as long as the mods
+	art->baseSurface = layers.front().first;
+	if (palette)
+	{
+		art->palette = *palette;
+	}
+	art->layers = std::move(parts);
+	art->doll = true;
+	int ox0 = bw, oy0 = bh, ox1 = -1, oy1 = -1;
+	for (int y = 0; y < bh; ++y)
+	{
+		const Uint8 *row = &art->base[(size_t)y * bw];
+		for (int x = 0; x < bw; ++x)
+		{
+			if (row[x])
+			{
+				ox0 = std::min(ox0, x); ox1 = std::max(ox1, x);
+				oy0 = std::min(oy0, y); oy1 = std::max(oy1, y);
+			}
+		}
+	}
+	if (ox1 >= 0)
+	{
+		art->opaque.x = (Sint16)ox0;
+		art->opaque.y = (Sint16)oy0;
+		art->opaque.w = (Uint16)(ox1 - ox0 + 1);
+		art->opaque.h = (Uint16)(oy1 - oy0 + 1);
+	}
+	art->checked = true;   // made of checked pictures: nothing to compare it with
+	const Art *p = art.get();
+	byContent[Key{ hash, bw, bh }] = p;
+	sizes.insert(sizeKey(bw, bh));
+	arts.push_back(std::move(art));
+	++dollArts;
 }
 
 namespace
@@ -235,12 +383,110 @@ bool pictureMatch(const Art *art, double &distance, double &shape)
 	return true;
 }
 
+/// Layers' pictures unpacked ahead by composeFrame, taken by frame() in place of reading the file.
+std::unordered_map<const Art*, HdFrame> predecoded;
+
+/// A paper doll's picture: its layers' pictures at its scale, re-tinted to its reference palette, laid one
+/// over another in order (straight alpha, as the classic layers are blitted). False when a layer cannot be read.
+bool composeFrame(const Art *art)
+{
+	// the layers' files unpacked side by side: one after another on the main thread a doll of 9 layers took
+	// 400-700 ms (lodepng, 1280x800 each). Read here, unpacked on the workers, taken by frame() as if loaded
+	std::vector<const Art*> toRead;
+	std::vector<std::pair<void*, size_t>> files;
+	for (const Art *layer : art->layers)
+	{
+		if (layer->bad || !layer->frame.pixels.empty() || layer->path.empty() || predecoded.count(layer)
+			|| std::find(toRead.begin(), toRead.end(), layer) != toRead.end() || !FileMap::fileExists(layer->path))
+		{
+			continue;
+		}
+		size_t size = 0;
+		void *data = nullptr;
+		if (SDL_RWops *rw = FileMap::getRWops(layer->path))
+		{
+			data = SDL_LoadFile_RW(rw, &size, SDL_TRUE);
+		}
+		if (data)
+		{
+			toRead.push_back(layer);
+			files.emplace_back(data, size);
+		}
+	}
+	if (toRead.size() > 1)
+	{
+		std::vector<HdFrame> frames(toRead.size());
+		std::vector<char> ok(toRead.size(), 0);
+		HdWorkers::instance().run((int)toRead.size(), [&](int i)
+		{
+			ok[i] = HdSprites::decodePng((const unsigned char*)files[i].first, files[i].second, frames[i]) ? 1 : 0;
+		});
+		for (size_t i = 0; i < toRead.size(); ++i)
+		{
+			if (ok[i])
+			{
+				predecoded[toRead[i]] = std::move(frames[i]); // a failed one is read again by frame(), which says why
+			}
+		}
+	}
+	for (const auto &file : files)
+	{
+		SDL_free(file.first);
+	}
+	const int s = art->scale, W = art->baseWidth * s, H = art->baseHeight * s;
+	HdFrame out;
+	out.width = W;
+	out.height = H;
+	out.pixels.assign((size_t)W * H, 0u);
+	out.generated = false;
+	HdWorkers &pool = HdWorkers::instance();
+	const int jobs = std::max(1, std::min(H / 64, pool.threads() * 2));
+	for (const Art *layer : art->layers)
+	{
+		HdFrame f;
+		// the layer in the doll's reference palette (a layer without one, or a doll without one: as it is)
+		const SDL_Color *colors = art->palette.empty() ? layer->palette.data() : art->palette.data();
+		if (!prepare(layer, s, colors, f))
+		{
+			return false;
+		}
+		const int lw = std::min(f.width, W), lh = std::min(f.height, H);
+		pool.run(jobs, [&](int job)
+		{
+			for (int y = (int)((long long)lh * job / jobs), last = (int)((long long)lh * (job + 1) / jobs); y < last; ++y)
+			{
+				const Uint32 *src = &f.pixels[(size_t)y * f.width];
+				Uint32 *dst = &out.pixels[(size_t)y * W];
+				for (int x = 0; x < lw; ++x)
+				{
+					const Uint32 sp = src[x], sa = sp >> 24;
+					if (!sa) continue;
+					const Uint32 dp = dst[x], da = dp >> 24;
+					if (sa == 255 || !da)
+					{
+						dst[x] = sp;
+						continue;
+					}
+					// over, both straight alpha: the colour weighted by what each one shows
+					const Uint32 dw = da * (255 - sa) / 255, oa = sa + dw;
+					const Uint32 r = (((sp >> 16) & 0xFF) * sa + ((dp >> 16) & 0xFF) * dw) / oa;
+					const Uint32 g = (((sp >> 8) & 0xFF) * sa + ((dp >> 8) & 0xFF) * dw) / oa;
+					const Uint32 b = ((sp & 0xFF) * sa + (dp & 0xFF) * dw) / oa;
+					dst[x] = (oa << 24) | (r << 16) | (g << 8) | b;
+				}
+			}
+		});
+	}
+	art->frame = std::move(out);
+	return true;
+}
+
 }
 
 const HdFrame &frame(const Art *art)
 {
 	art->lru = ++clock;
-	if (art->bad || !art->frame.pixels.empty() || art->path.empty())
+	if (art->bad || !art->frame.pixels.empty() || (art->path.empty() && art->layers.empty()))
 	{
 		return art->frame;
 	}
@@ -251,7 +497,7 @@ const HdFrame &frame(const Art *art)
 		const Art *oldest = nullptr;
 		for (const auto &a : arts)
 		{
-			if (a.get() != art && !a->path.empty() && !a->frame.pixels.empty() && (!oldest || a->lru < oldest->lru))
+			if (a.get() != art && (!a->path.empty() || !a->layers.empty()) && !a->frame.pixels.empty() && (!oldest || a->lru < oldest->lru))
 			{
 				oldest = a.get();
 			}
@@ -261,7 +507,36 @@ const HdFrame &frame(const Art *art)
 		oldest->frame = HdFrame();
 	}
 	const Uint32 loadStart = SDL_GetTicks();
-	if (HdSprites::loadPng(art->path, art->frame))
+	if (!art->layers.empty())
+	{
+		if (composeFrame(art))
+		{
+			art->frame.buildSpans();
+			loadedBytes += art->frame.pixels.size() * 4;
+			// measurement: every layer's picture is read (when not held already) and blended on the main thread
+			const Uint32 loadMs = SDL_GetTicks() - loadStart;
+			if (loadMs >= 20)
+			{
+				Log(LOG_INFO) << "HD picture: " << art->name << " composed of " << art->layers.size() << " layers in "
+					<< loadMs << " ms, " << (loadedBytes >> 20) << " MB held";
+			}
+		}
+		else
+		{
+			Log(LOG_WARNING) << "HD interface: cannot compose " << art->name;
+			art->bad = true;
+			byContent.erase(Key{ art->hash, art->baseWidth, art->baseHeight });
+		}
+		return art->frame;
+	}
+	auto decoded = predecoded.find(art);
+	const bool ready = decoded != predecoded.end();
+	if (ready)
+	{
+		art->frame = std::move(decoded->second);
+		predecoded.erase(decoded);
+	}
+	if (ready || HdSprites::loadPng(art->path, art->frame))
 	{
 		art->frame.buildSpans();
 		loadedBytes += art->frame.pixels.size() * 4;
@@ -334,7 +609,7 @@ const Art *findCrop(const Uint8 *pixels, int pitch, int w, int h, int &offX, int
 	{
 		const Art &art = *arts[index];
 		const int bw = art.baseWidth, bh = art.baseHeight;
-		if (art.bad || bw < w || bh < h || (bw == w && bh == h))
+		if (art.bad || art.doll || bw < w || bh < h || (bw == w && bh == h))
 		{
 			return false;
 		}
@@ -396,6 +671,9 @@ void clear()
 	bySurface.clear();
 	sizes.clear();
 	arts.clear();
+	pending.clear();
+	predecoded.clear();
+	dollArts = 0;
 	loadedBytes = 0;
 	++cleared;
 	clearPrepared();
@@ -404,6 +682,29 @@ void clear()
 size_t count()
 {
 	return arts.size();
+}
+
+size_t cropCount()
+{
+	return arts.size() - dollArts;
+}
+
+SDL_Rect pictureArea(const Art *art, int x, int y, int w, int h)
+{
+	SDL_Rect r;
+	if (art && !art->layers.empty())
+	{
+		// (with the ufopaedia's background among its layers that is the whole page again)
+		x += art->opaque.x;
+		y += art->opaque.y;
+		w = art->opaque.w;
+		h = art->opaque.h;
+	}
+	r.x = (Sint16)x;
+	r.y = (Sint16)y;
+	r.w = (Uint16)std::max(0, w);
+	r.h = (Uint16)std::max(0, h);
+	return r;
 }
 
 unsigned generation()
@@ -688,7 +989,8 @@ bool drawIfPicture(const Surface *surface, SDL_Surface *dest)
 	if (SDL_MUSTLOCK(world)) SDL_LockSurface(world);
 	blendInto(world, *f, surface->getX() * k, surface->getY() * k, nullptr);
 	if (SDL_MUSTLOCK(world)) SDL_UnlockSurface(world);
-	HdUi::instance().notePicture(surface->getX(), surface->getY(), w, h);
+	const SDL_Rect area = pictureArea(art, surface->getX(), surface->getY(), w, h);
+	HdUi::instance().notePicture(area.x, area.y, area.w, area.h);
 	return true;
 }
 

@@ -17,6 +17,7 @@ keep_batch.py
 paint3.py
 map_paint.py
 photo_ui.py
+hud_panel_pilot.py
 prompt_writer.py
 upscale_ui.py
 upscale_units.py
@@ -103,3 +104,6 @@ wall_exact.py
 gen_steps_test.py
 gen_voices_test.py
 gen_voicepack.py
+voice_emotion_pilot.py
+doll_b2_render.py
+doll_photo_pilot.py
