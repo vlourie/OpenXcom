@@ -18,11 +18,17 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <map>
+#include <vector>
+
 namespace OpenXcom
 {
 
 class BattlescapeGame;
+class Position;
+class RuleDamageType;
 class SavedBattleGame;
+class Tile;
 
 /**
  * Building collapse pilot (option oxceCollapse, off by default; docs/research/building-collapse-*.md):
@@ -54,6 +60,11 @@ void afterFall(BattlescapeGame *battle);
 /// The state stack is empty (BattlescapeGame::think): after a reported fall the debug stand reports again and,
 /// with OXCE_COLLAPSE_FALL_SAVE, saves the game - the first moment a player could save, before the next side moves.
 void idle(SavedBattleGame *save);
+
+/// The aim hint (HD blast area): the cells of the parts the player has seen that the model may let fall if an
+/// explosion of this type, reaching each tile with its strongest power, destroyed all it can at the top of its
+/// damage. Reads the map, rolls nothing; empty with the option off.
+void mayFall(SavedBattleGame *save, const std::map<Tile*, int> &strongest, const RuleDamageType *type, std::vector<Position> &cells);
 
 }
 

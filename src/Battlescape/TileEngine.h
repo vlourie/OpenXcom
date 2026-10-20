@@ -201,7 +201,8 @@ public:
 	/// Handles explosions.
 	void explode(BattleActionAttack attack, Position center, int power, const RuleDamageType *type, int maxRadius, bool rangeAtack = true);
 	/// The tiles an explosion would reach and the power it would reach them with, without touching anything.
-	void explosionArea(Position center, int power, const RuleDamageType *type, int maxRadius, std::map<Tile*, int> &area);
+	void explosionArea(Position center, int power, const RuleDamageType *type, int maxRadius, std::map<Tile*, int> &area,
+		std::map<Tile*, int> *strongest = nullptr);
 	/// Checks if a destroyed tile starts an explosion.
 	Tile *checkForTerrainExplosions();
 	/// Unit opens door?

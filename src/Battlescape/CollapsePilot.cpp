@@ -20,6 +20,7 @@
 #include <algorithm>
 #include <cctype>
 #include <chrono>
+#include <cmath>
 #include <cstdlib>
 #include <cstring>
 #include <map>
@@ -1054,6 +1055,103 @@ void showFall(BattlescapeGame *battle, const std::vector<Fallen> &fallen, Positi
 	}
 }
 
+/// The tile damage an explosion reaching a tile with this power does at most: RuleDamageType::getTileFinalDamage
+/// with its roll at the top (RandomTile rolls 0..damage). Keep the two in step; the roll itself must not be made
+/// here - the hint runs while aiming, and a roll would move the battle's random numbers.
+int tileDamageMax(const RuleDamageType *type, int power)
+{
+	if (power <= 0)
+		return 0;
+	const int d = (int)std::round(power * type->ToTile);
+	return type->TileDamageLimit >= 0 && d > type->TileDamageLimit ? type->TileDamageLimit : d;
+}
+
+/// What an explosion may bring down in each building: per instance (index in st.inst), the parts its tile damage
+/// at the top could destroy (TileEngine::detonate: the part's armor against the strongest damage of the tiles that
+/// touch it) and the parts the model then no longer holds that it holds now. strongest: the strongest power the
+/// explosion reaches each tile with (TileEngine::explosionArea). Reads the map, changes nothing.
+void mayFallParts(SavedBattleGame *save, const std::map<Tile*, int> &strongest, const RuleDamageType *type,
+	std::vector<std::vector<uint8_t> > &hit, std::vector<std::vector<int> > &falls)
+{
+	hit.assign(st.inst.size(), std::vector<uint8_t>());
+	falls.assign(st.inst.size(), std::vector<int>());
+	if (!type || type->ToTile <= 0.0f || st.owner != save || st.mx != save->getMapSizeX() || st.my != save->getMapSizeY()
+		|| st.mz != save->getMapSizeZ())
+		return;
+	std::unordered_map<int, int> damage;  // tile index -> tile damage at the top
+	for (const auto &p : strongest)
+	{
+		const int d = tileDamageMax(type, p.second);
+		if (d > 0)
+			damage[save->getTileIndex(p.first->getPosition())] = d;
+	}
+	if (damage.empty())
+		return;
+	auto at = [&](Position p)
+	{
+		if (!save->getTile(p))
+			return 0;
+		auto it = damage.find(save->getTileIndex(p));
+		return it == damage.end() ? 0 : it->second;
+	};
+	for (size_t ii = 0; ii < st.inst.size(); ++ii)
+	{
+		const Instance &in = st.inst[ii];
+		const CollapseBlock &b = CollapsePilotData::blocks[in.bi];
+		std::vector<uint8_t> removed(b.nParts, 0), blasted(b.nParts, 0);
+		bool any = false;
+		for (int i = 0; i < b.nParts; ++i)
+		{
+			const CollapsePart &p = b.parts[i];
+			if (!(p.flags & CPF_INBOX))
+				continue;
+			if (!inPlace(save, in.bi, p, in.off))
+			{
+				removed[i] = 1;
+				continue;
+			}
+			const Position pos = in.off + Position(p.x, p.y, p.z);
+			const MapData *md = save->getTile(pos)->getMapData(PARTS[p.kind]);
+			if (md->getArmor() == 255)
+				continue;
+			// detonate() of a tile reaches its own parts, the floor above it (ceiling), the west wall of the tile east
+			// of it and the north wall of the tile south of it, and the big walls of the tiles north and west of it
+			int d = at(pos);
+			if (p.kind == 0)
+				d = std::max(d, at(pos - Position(0, 0, 1)));
+			else if (p.kind == 1)
+				d = std::max(d, at(pos - Position(1, 0, 0)));
+			else if (p.kind == 2)
+				d = std::max(d, at(pos - Position(0, 1, 0)));
+			else
+			{
+				const int bw = md->getBigWall();
+				if (bw == 1 || bw == 7 || bw == 8)
+					d = std::max(d, at(pos + Position(0, 1, 0)));
+				if (bw == 1 || bw == 6 || bw == 8)
+					d = std::max(d, at(pos + Position(1, 0, 0)));
+			}
+			if (d > 0 && md->getArmor() <= d)
+			{
+				blasted[i] = 1;
+				any = true;
+			}
+		}
+		if (!any)
+			continue;
+		std::vector<uint8_t> heldNow, heldAfter, after(removed);
+		collapseEvaluate(b, removed, heldNow);
+		for (int i = 0; i < b.nParts; ++i)
+			if (blasted[i])
+				after[i] = 1;
+		collapseEvaluate(b, after, heldAfter);
+		for (int i = 0; i < b.nParts; ++i)
+			if ((b.parts[i].flags & CPF_INBOX) && !after[i] && heldNow[i] && !heldAfter[i])
+				falls[ii].push_back(i);
+		hit[ii] = blasted;
+	}
+}
+
 /// The player saw parts fall, all of them off the screen: one line in the warning bar says to which side (the camera
 /// stays: moving it is the battle's). What fell unseen tells nothing - the fog keeps it.
 void notice(BattlescapeGame *battle, const std::vector<Position> &seen)
@@ -1353,6 +1451,33 @@ void afterFall(BattlescapeGame *battle)
 #endif
 }
 
+void mayFall(SavedBattleGame *save, const std::map<Tile*, int> &strongest, const RuleDamageType *type, std::vector<Position> &cells)
+{
+	cells.clear();
+	if (!Options::oxceCollapse || st.inst.empty())
+		return;
+	std::vector<std::vector<uint8_t> > hit;
+	std::vector<std::vector<int> > falls;
+	mayFallParts(save, strongest, type, hit, falls);
+	for (size_t ii = 0; ii < st.inst.size(); ++ii)
+		for (int i : falls[ii])
+		{
+			const CollapsePart &p = CollapsePilotData::blocks[st.inst[ii].bi].parts[i];
+			const Position pos = st.inst[ii].off + Position(p.x, p.y, p.z);
+			const Tile *t = save->getTile(pos);
+			// only what the player has seen: the hint must not draw the building through the fog
+			if (t && (t->isDiscovered(O_FLOOR) || (PARTS[p.kind] != O_OBJECT && t->isDiscovered(PARTS[p.kind]))))
+				cells.push_back(pos);
+#ifdef OXCE_AI_DEV
+			if (getenv("OXCE_HD_BLAST_AT") && t)
+			{
+				Log(LOG_INFO) << "[COLLAPSE] debug: may fall " << pos << " kind " << p.kind << " discovered " << t->isDiscovered(O_FLOOR)
+					<< t->isDiscovered(O_WESTWALL) << t->isDiscovered(O_NORTHWALL) << t->isDiscovered(O_OBJECT);
+			}
+#endif
+		}
+}
+
 void idle(SavedBattleGame *save)
 {
 #ifdef OXCE_AI_DEV
@@ -1367,6 +1492,40 @@ void idle(SavedBattleGame *save)
 		shown = true;
 		for (const Instance &in : st.inst)
 			removeParts(save, in, debugParts("OXCE_COLLAPSE_REMOVE", CollapsePilotData::blocks[in.bi].label));
+		// OXCE_COLLAPSE_HINT_BLAST "x,y,z" (map cells): the aim hint of an HE explosion there (OXCE_COLLAPSE_BLAST_POWER,
+		// the radius of a terrain explosion), then the explosion itself - the hint against what the model brings down
+		if (const char *hb = getenv("OXCE_COLLAPSE_HINT_BLAST"))
+		{
+			Position c;
+			std::stringstream ps(hb);
+			char a, b;
+			ps >> c.x >> a >> c.y >> b >> c.z;
+			const char *powS = getenv("OXCE_COLLAPSE_BLAST_POWER");
+			const int power = powS && *powS ? atoi(powS) : 60;
+			const RuleDamageType *type = save->getBattleGame()->getMod()->getDamageType(DT_HE);
+			const Position center = c.toVoxel() + Position(8, 8, 2);
+			std::map<Tile*, int> area, strongest;
+			save->getTileEngine()->explosionArea(center, power, type, power / 10, area, &strongest);
+			std::vector<std::vector<uint8_t> > hit;
+			std::vector<std::vector<int> > falls;
+			const auto th = Clock::now();
+			mayFallParts(save, strongest, type, hit, falls);
+			const double hintMs = msSince(th);
+			for (size_t ii = 0; ii < st.inst.size(); ++ii)
+			{
+				if (hit[ii].empty()) continue;
+				const Instance &in = st.inst[ii];
+				std::ostringstream hs, fs;
+				for (size_t i = 0; i < hit[ii].size(); ++i)
+					if (hit[ii][i]) hs << i << ",";
+				for (int i : falls[ii])
+					fs << i << ",";
+				Log(LOG_INFO) << "[COLLAPSE] debug: hint " << CollapsePilotData::blocks[in.bi].label << " at " << in.off.x << "," << in.off.y
+					<< "," << in.off.z << " hit=" << hs.str() << " fell=" << fs.str();
+			}
+			Log(LOG_INFO) << "[COLLAPSE] debug: hint blast " << power << " at " << c << ", " << area.size() << " tile(s), " << hintMs << " ms";
+			save->getTileEngine()->explode(BattleActionAttack{ }, center, power, type, power / 10);
+		}
 		settle(save->getBattleGame(), "show");
 	}
 	if (!st.fallPending || st.owner != save)
