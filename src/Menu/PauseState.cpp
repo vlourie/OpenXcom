@@ -133,8 +133,10 @@ PauseState::PauseState(OptionsOrigin origin) : _origin(origin)
 	}
 	else if (origin == OPT_BATTLESCAPE && Options::oxceNoBattleSaves)
 	{
+		// as ironman: the only save in a battle is on the way out (AbandonGameState)
 		_btnLoad->setVisible(false);
 		_btnSave->setVisible(false);
+		_btnAbandon->setText(tr("STR_SAVE_AND_ABANDON_GAME"));
 	}
 
 	// ENOUGH! No save corruption when trying to save/exit mid-action (e.g. during alien turn)
@@ -148,9 +150,9 @@ PauseState::PauseState(OptionsOrigin origin) : _origin(origin)
 		{
 			_btnSave->setVisible(false); // non-ironman + ironman
 
-			if (_game->getSavedGame()->isIronman())
+			if (_game->getSavedGame()->isIronman() || Options::oxceNoBattleSaves)
 			{
-				_btnAbandon->setVisible(false); // ironman only
+				_btnAbandon->setVisible(false); // ironman and no battle saves: abandon saves too
 			}
 		}
 	}
