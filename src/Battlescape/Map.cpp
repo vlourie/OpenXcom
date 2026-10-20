@@ -1848,6 +1848,20 @@ void Map::drawTerrain(HdCanvas *surface)
 		movingUnitPosition = movingUnit->getPosition();
 	}
 
+	// HD render: the parts of a collapsed building falling (HdFx::fall), each drawn in its cell's turn, as the
+	// cells go here (by tile index)
+	std::vector<std::pair<int, std::pair<const HdFx::Piece*, int>>> pieces;
+	size_t nextPiece = 0;
+	if (Options::oxceHdFx && surface->getHdMode() != HD_MODE_NEAREST)
+	{
+		std::vector<std::pair<const HdFx::Piece*, int>> falling;
+		HdFx::falling(SDL_GetTicks(), falling);
+		for (const auto &f : falling)
+			if (_save->getTile(f.first->cell))
+				pieces.push_back(std::make_pair(_save->getTileIndex(f.first->cell), f));
+		std::stable_sort(pieces.begin(), pieces.end(), [](const auto &a, const auto &b) { return a.first < b.first; });
+	}
+
 	surface->lock();
 	const Position cameraPos = _camera->getMapOffset();
 	for (int itZ = beginZ; itZ <= endZ; itZ++)
@@ -2024,6 +2038,24 @@ void Map::drawTerrain(HdCanvas *surface)
 									surface->blit(tmpSurface, screenPosition.x, screenPosition.y - tile->getYOffset(O_OBJECT) * _k, obstacleShade, false, _nvColor);
 								else
 									surface->blit(tmpSurface, screenPosition.x, screenPosition.y - tile->getYOffset(O_OBJECT) * _k, tileShade, false, _nvColor);
+							}
+						}
+						// HD render: the collapsed parts that stood in this cell, on their way down
+						if (nextPiece < pieces.size())
+						{
+							const int index = _save->getTileIndex(mapPosition);
+							while (nextPiece < pieces.size() && pieces[nextPiece].first < index)
+								++nextPiece;
+							for (; nextPiece < pieces.size() && pieces[nextPiece].first == index; ++nextPiece)
+							{
+								const HdFx::Piece &piece = *pieces[nextPiece].second.first;
+								const int down = pieces[nextPiece].second.second;
+								const bool ground = piece.part == O_FLOOR && _hdGroundVariants;
+								if (ground)
+									surface->setGroundCell(true, mapPosition.x, mapPosition.y, mapPosition.z);
+								surface->blit(piece.sprite, screenPosition.x, screenPosition.y + (down - piece.yOffset) * _k, tileShade, false, _nvColor);
+								if (ground)
+									surface->setGroundCell(false, 0, 0, 0);
 							}
 						}
 						// draw an item on top of the floor (if any)

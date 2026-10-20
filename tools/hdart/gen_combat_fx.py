@@ -989,6 +989,52 @@ def boom(fam, col=None):
         spray(c, 24, "goo", (80, 150, 40), 45, up=0.7, size=(0.6, 1.2), life=(0.4, 0.8), g=90)
     return c
 
+# пыль обвала здания (CollapsePilot): клип на клетку, куда упала часть, точка - пол клетки.
+# A - часть осыпалась на месте, B - рухнул пол или легло несколько частей, C - кусок упал сверху.
+# Имя клипа - зерно случайности: варианты выбраны Vitali 20.10 по этим именам, не переименовывать.
+# Длительности - в движке (src/Engine/HdFx.cpp, DUST_MS).
+DUST = {   # пыль, обломки, вид обломков
+    "stone": ([(168, 162, 150), (140, 135, 126), (190, 184, 172)], (128, 124, 116), "chunk"),
+    "wood":  ([(160, 136, 104), (132, 112, 86), (178, 160, 130)], (120, 84, 50), "splinter"),
+    "metal": ([(120, 120, 124), (96, 96, 102), (140, 138, 136)], (150, 152, 160), "flake"),
+}
+L_DUST = {"A": 12, "B": 14, "C": 14}
+DUR_DUST = {"A": 1.1, "B": 1.6, "C": 1.5}
+
+def ground_cloud(c, dust, n, r, spread, rise, life, delay):
+    """Клубы у пола по ромбу клетки: разъезжаются в стороны, встают невысоко, тают."""
+    rng = c.rng
+    for i in range(n):
+        a = rng.uniform(0, 2 * math.pi)
+        d = rng.uniform(0.2, 1.0)
+        col = dust[rng.integers(len(dust))]
+        c.add(x=math.cos(a) * 14 * d, y=math.sin(a) * 14 * d, z=rng.uniform(0, 4),
+              vx=math.cos(a) * spread * rng.uniform(0.6, 1.2), vy=math.sin(a) * spread * rng.uniform(0.6, 1.2),
+              vz=rise * rng.uniform(0.4, 1.0), kind="puff", rgb=col, size=r * rng.uniform(0.7, 1.25),
+              life=rng.uniform(*life), g=0, drag=2.2, seed=rng.uniform(0, 50), age=-rng.uniform(0, delay))
+
+def rain(c, deb, kind, n, h=(14, 30), size=(0.6, 1.3)):
+    """Куски сверху: падают из-под потолка на пол клетки, подскакивают и ложатся."""
+    rng = c.rng
+    for _ in range(n):
+        c.add(x=rng.uniform(-9, 9), y=rng.uniform(-9, 9), z=rng.uniform(*h), vx=rng.normal(0, 4), vy=rng.normal(0, 4),
+              vz=-rng.uniform(5, 20), kind=kind, rgb=mix(deb, (0, 0, 0), rng.uniform(0, 0.3)), size=rng.uniform(*size),
+              life=rng.uniform(0.9, 1.3), g=110, bounce=0.25, drag=0.3, seed=rng.uniform(0, 10), age=-rng.uniform(0, 0.25))
+
+def collapse_dust(v, mat):
+    dust, deb, kind = DUST[mat]
+    c = Clip(f"collapse_dust_{v}_{mat}", L_DUST[v], DUR_DUST[v], 96, h0=0)
+    if v == "A":     # лёгкая: полупрозрачная, низкая, короткая
+        ground_cloud(c, dust, 14, 8.0, 18, 10, (0.7, 1.05), 0.12)
+    elif v == "B":   # плотная: клубится шире и выше, держится дольше
+        ground_cloud(c, dust, 28, 11.0, 26, 18, (1.0, 1.55), 0.25)
+        spray(c, 8, kind, deb, 28, up=0.6, size=(0.5, 1.0), life=(0.5, 0.8), g=110, bounce=0.3, spread=0.8)
+    else:            # с обломками: куски сыплются сверху, пыль встаёт от удара
+        rain(c, deb, kind, 14)
+        spray(c, 6, "flake", mix(deb, (0, 0, 0), 0.2), 20, up=0.7, size=(0.3, 0.6), life=(0.4, 0.7), g=110, delay=0.2)
+        ground_cloud(c, dust, 22, 10.0, 22, 14, (0.9, 1.4), 0.3)
+    return c
+
 # ------------------------------------------------------------------ состав
 
 def build_all():
@@ -1029,6 +1075,9 @@ def build_all():
     for fam in ("plasma", "electric", "psi", "energy"):
         for col in ECOLORS:
             clips.append(lambda fam=fam, col=col: boom(fam, col))
+    for v in "ABC":
+        for mat in DUST:
+            clips.append(lambda v=v, mat=mat: collapse_dust(v, mat))
     return clips
 
 

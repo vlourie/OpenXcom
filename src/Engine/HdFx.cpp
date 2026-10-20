@@ -52,6 +52,13 @@ const size_t BUDGET = 96u << 20;
 const Uint32 IDLE = 3000;
 /// The muzzle flash: frames over this many ms (gen_combat_fx.py DUR_FLASH).
 const Uint32 FLASH_MS = 120;
+/// The dust of a collapse, kinds A, B, C: frames over this many ms (gen_combat_fx.py DUR_DUST).
+const Uint32 DUST_MS[3] = { 1100, 1600, 1500 };
+/// A collapsed part falls one level (24 classic pixels) in this many ms, as from rest under gravity
+/// (n levels: sqrt(n) times as long); one crumbling where it stood sinks CRUMBLE_PX in CRUMBLE_MS.
+const double LEVEL_MS = 250.0;
+const Uint32 CRUMBLE_MS = 220;
+const int CRUMBLE_PX = 8;
 
 /// hd/FX/weapons.txt: item type -> kind, one table per moment.
 bool tableRead = false;
@@ -74,6 +81,25 @@ size_t loadedBytes = 0;
 std::unordered_map<const void*, std::string> colours;
 Uint32 coloursPalette = 0;
 std::vector<Live> live;
+std::vector<Piece> pieces;
+
+/// How long a piece falling `levels` levels takes (ms).
+Uint32 fallMs(int levels)
+{
+	return levels > 0 ? (Uint32)std::lround(LEVEL_MS * std::sqrt((double)levels)) : CRUMBLE_MS;
+}
+
+/// Has a flash or dust ended at `now` (one not started yet has not)?
+bool over(const Live &l, Uint32 now)
+{
+	return (Sint32)(now - l.start) >= (Sint32)(l.ms ? l.ms : FLASH_MS);
+}
+
+void dropLanded(Uint32 now)
+{
+	live.erase(std::remove_if(live.begin(), live.end(), [now](const Live &l) { return over(l, now); }), live.end());
+	pieces.erase(std::remove_if(pieces.begin(), pieces.end(), [now](const Piece &p) { return now - p.start >= fallMs(p.levels); }), pieces.end());
+}
 
 void readTable()
 {
@@ -177,6 +203,8 @@ bool has(const std::string &name, const char *word)
 	return name.find(word) != std::string::npos;
 }
 
+const char *materialOf(const MapData *data);
+
 /// What the ground of a tile is made of: the footstep sound of its part, refined by the set name
 /// where the sound is shared by unlike grounds (2: asphalt, grass, rock and snow alike).
 const char *material(const Tile *tile, int voxelZ)
@@ -193,6 +221,12 @@ const char *material(const Tile *tile, int voxelZ)
 	{
 		data = tile->getMapData(order[i]);
 	}
+	return materialOf(data);
+}
+
+/// What a terrain part is made of (see material).
+const char *materialOf(const MapData *data)
+{
 	if (!data)
 	{
 		return "dirt";
@@ -568,7 +602,7 @@ std::vector<std::pair<std::string, Uint32>> testDumps;
 int testDumped = 0;
 }
 
-void noteForTest(const std::string &clip)
+void noteForTest(const std::string &clip, Uint32 after)
 {
 	static const char *prefix = getenv("OXCE_HD_DUMP_FX");
 	if (!prefix || !*prefix || clip.empty() || testDumped + testDumps.size() >= 4)
@@ -581,7 +615,7 @@ void noteForTest(const std::string &clip)
 	{
 		return;
 	}
-	testDumps.emplace_back(clip, SDL_GetTicks() + 50);     // a few frames in: the clip is on screen, not yet over
+	testDumps.emplace_back(clip, SDL_GetTicks() + after);  // a few frames in: the clip is on screen, not yet over
 }
 
 std::string takeTestDump(Uint32 now)
@@ -601,18 +635,53 @@ std::string takeTestDump(Uint32 now)
 	return prefix + "_" + std::to_string(++testDumped) + "_" + name + ".png";
 }
 
+Uint32 fall(SurfaceRaw<const Uint8> sprite, Position cell, int part, int yOffset, int levels)
+{
+	pieces.push_back(Piece{ sprite, cell, part, yOffset, levels, SDL_GetTicks() });
+	return fallMs(levels);
+}
+
+void falling(Uint32 now, std::vector<std::pair<const Piece*, int>> &out)
+{
+	dropLanded(now);
+	for (const Piece &p : pieces)
+	{
+		const double u = (double)(now - p.start) / fallMs(p.levels);
+		// from rest under gravity: the way down grows with the square of the time
+		const int down = p.levels > 0 ? (int)(24 * p.levels * u * u) : (int)(CRUMBLE_PX * u);
+		out.push_back(std::make_pair(&p, down));
+	}
+}
+
+void dust(char kind, Position cell, const MapData *what, Uint32 delay)
+{
+	const int i = kind == 'B' ? 1 : kind == 'C' ? 2 : 0;
+	// the clips have the colours of stone, wood and metal (gen_combat_fx.py DUST); other grounds take stone's
+	const std::string mat = materialOf(what);
+	const std::string clip = std::string("collapse_dust_") + "ABC"[i] + "_" + (mat == "wood" || mat == "metal" ? mat : "stone");
+	Live l{ clip, Position(cell.x * 16 + 8, cell.y * 16 + 8, cell.z * 24), SDL_GetTicks() + delay, -1, false, 0, 0 };
+	l.ms = DUST_MS[i];
+	live.push_back(l);
+	noteForTest(clip, delay + l.ms / 3);
+}
+
 bool active(Uint32 now)
 {
-	live.erase(std::remove_if(live.begin(), live.end(), [now](const Live &l) { return now - l.start >= FLASH_MS; }), live.end());
-	return !live.empty();
+	dropLanded(now);
+	return !live.empty() || !pieces.empty();
 }
 
 void running(Uint32 now, int k, std::vector<std::pair<const Live*, const HdFrame*>> &out)
 {
-	live.erase(std::remove_if(live.begin(), live.end(), [now](const Live &l) { return now - l.start >= FLASH_MS; }), live.end());
+	dropLanded(now);
 	for (const Live &l : live)
 	{
-		const HdFrame *hd = frame(l.clip, (int)(now - l.start), (int)FLASH_MS, k);
+		if ((Sint32)(now - l.start) < 0)
+		{
+			continue;
+		}
+		const Uint32 ms = l.ms ? l.ms : FLASH_MS;
+		const HdFrame *hd = frame(l.clip, (int)(now - l.start), (int)ms, k);
 		if (hd)
 		{
 			out.push_back(std::make_pair(&l, hd));
@@ -642,6 +711,7 @@ void clear()
 	colours.clear();
 	coloursPalette = 0;
 	live.clear();
+	pieces.clear();
 	loadedBytes = 0;
 	tableRead = false;
 	flashOf.clear();
