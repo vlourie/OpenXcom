@@ -2336,8 +2336,10 @@ void InventoryState::think()
 	}
 	if (_tu && Options::showMoreStatsInInventoryView)
 	{
-		// in battle the last stat row sits where the ammo counter of a weapon appears
-		_txtStatLine4->setVisible(_txtAmmo->getText().empty());
+		// in battle the last stat row sits where the first line of the ammo counter appears; a counter
+		// that starts with an empty line (Piratez: "{NEWLINE}{NEWLINE}Патр.>9") leaves the row free
+		const std::string &ammo = _txtAmmo->getText();
+		_txtStatLine4->setVisible(ammo.empty() || ammo[0] == '\n');
 	}
 
 	if (_mouseHoverItem)

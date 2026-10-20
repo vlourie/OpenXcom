@@ -485,11 +485,13 @@ void Game::run()
 							int cx, cy;
 							const bool ctrl = *c == 'c';
 							const bool middle = *c == 'm';
-							if (sscanf(c + (ctrl || middle ? 1 : 0), "%d,%d", &cx, &cy) == 2)
+							// "h" (h96,121) only moves the mouse there: a hover after the clicks (an item's info)
+							const bool hover = *c == 'h';
+							if (sscanf(c + (ctrl || middle || hover ? 1 : 0), "%d,%d", &cx, &cy) == 2)
 							{
 								autoClicks.emplace_back(cx, cy);
 								autoClicksCtrl.push_back(ctrl);
-								autoClicksButton.push_back(middle ? SDL_BUTTON_MIDDLE : SDL_BUTTON_LEFT);
+								autoClicksButton.push_back(hover ? 0 : middle ? SDL_BUTTON_MIDDLE : SDL_BUTTON_LEFT);
 							}
 							c = strchr(c, ';');
 							if (c) ++c;
@@ -510,14 +512,17 @@ void Game::run()
 						ev.type = SDL_MOUSEMOTION;
 						toDisplay(cx, cy, ev.motion.x, ev.motion.y);
 						SDL_PushEvent(&ev);
-						ev.type = SDL_MOUSEBUTTONDOWN;
-						ev.button.button = button;
-						ev.button.state = SDL_PRESSED;
-						toDisplay(cx, cy, ev.button.x, ev.button.y);
-						SDL_PushEvent(&ev);
-						ev.type = SDL_MOUSEBUTTONUP;
-						ev.button.state = SDL_RELEASED;
-						SDL_PushEvent(&ev);
+						if (button != 0)
+						{
+							ev.type = SDL_MOUSEBUTTONDOWN;
+							ev.button.button = button;
+							ev.button.state = SDL_PRESSED;
+							toDisplay(cx, cy, ev.button.x, ev.button.y);
+							SDL_PushEvent(&ev);
+							ev.type = SDL_MOUSEBUTTONUP;
+							ev.button.state = SDL_RELEASED;
+							SDL_PushEvent(&ev);
+						}
 					}
 					// OXCE_HD_SET=<ms>:<what>=<n>[;...]: <ms> before the dump switches the HD interface (oxceHdUi=n,
 					// as the options do on leaving) or the world layer's k (k=n) - with a screen left open
