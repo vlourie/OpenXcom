@@ -22,6 +22,7 @@
 #include "../Engine/Action.h"
 #include "../Engine/Game.h"
 #include "../Engine/LocalizedText.h"
+#include "../Engine/HdUiArt.h"
 #include "../Engine/Options.h"
 #include "../Engine/Screen.h"
 #include "../Engine/Surface.h"
@@ -156,11 +157,14 @@ AlienInventoryState::AlienInventoryState(BattleUnit *unit)
 	{
 		if (s->getArmor()->hasLayersDefinition())
 		{
+			std::vector<std::pair<const Surface*, std::string>> hdLayers;
 			for (const auto& layer : s->getArmorLayers())
 			{
 				auto* surf = _game->getMod()->getSurface(layer, true);
 				surf->blitNShade(_soldier->getSurface(), 0, 0);
+				hdLayers.emplace_back(surf, layer);
 			}
+			HdUiArt::composeLayers(_soldier, hdLayers);
 		}
 		else
 		{

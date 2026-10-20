@@ -63,6 +63,7 @@
 #include "../Ufopaedia/Ufopaedia.h"
 #include "AiProbe.h"
 #include "../Engine/HdItems.h"
+#include "../Engine/HdUiArt.h"
 
 namespace OpenXcom
 {
@@ -533,10 +534,14 @@ void InventoryState::init()
 
 		if (s->getArmor()->hasLayersDefinition())
 		{
+			std::vector<std::pair<const Surface*, std::string>> hdLayers;
 			for (const auto& layer : s->getArmorLayers())
 			{
-				_game->getMod()->getSurface(layer, true)->blitNShade(_soldier, 0, 0);
+				Surface *surf = _game->getMod()->getSurface(layer, true);
+				surf->blitNShade(_soldier, 0, 0);
+				hdLayers.emplace_back(surf, layer);
 			}
+			HdUiArt::composeLayers(_soldier, hdLayers);
 		}
 		else
 		{

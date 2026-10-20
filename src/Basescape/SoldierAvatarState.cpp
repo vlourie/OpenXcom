@@ -20,6 +20,7 @@
 #include <sstream>
 #include <string>
 #include "../Engine/Game.h"
+#include "../Engine/HdUiArt.h"
 #include "../Mod/Mod.h"
 #include "../Engine/LocalizedText.h"
 #include "../Engine/Options.h"
@@ -134,11 +135,14 @@ void SoldierAvatarState::initPreview(Soldier *s)
 
 	if (s->getArmor()->hasLayersDefinition())
 	{
+		std::vector<std::pair<const Surface*, std::string>> hdLayers;
 		for (const auto& layer : s->getArmorLayers())
 		{
 			auto* surf = _game->getMod()->getSurface(layer, true);
 			surf->blitNShade(_soldierSurface, 0, 0);
+			hdLayers.emplace_back(surf, layer);
 		}
+		HdUiArt::composeLayers(_soldierSurface, hdLayers);
 	}
 	else
 	{

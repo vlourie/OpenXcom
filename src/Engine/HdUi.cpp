@@ -635,10 +635,11 @@ void HdUi::drawSurface(const Surface *surface, int x, int y, bool smooth)
 			// item of a Ufopaedia page) was scanned again every frame. So a content once searched in vain
 			// is not searched again, whatever surface it comes in; and a sprite-sized surface (items are
 			// at most 32x48 = 1536 px) is not searched at all: every crop found so far is a strip of 220x18
-			if (_cropMissesArts != HdUiArt::count())
+			// (the paper dolls' pictures, registered as dolls are shown, are never searched: they do not count)
+			if (_cropMissesArts != HdUiArt::cropCount())
 			{
 				_cropMisses.clear();                       // another pack: what was not in the old one may be here
-				_cropMissesArts = HdUiArt::count();
+				_cropMissesArts = HdUiArt::cropCount();
 			}
 			const Uint64 cropKey = pixelHash ^ ((Uint64)w << 48) ^ ((Uint64)h << 32);
 			if (!art && w >= 24 && h >= 16 && w * h >= 2048 && misses < 3 && _cropMisses.count(cropKey) == 0)
@@ -680,7 +681,8 @@ void HdUi::drawSurface(const Surface *surface, int x, int y, bool smooth)
 			{
 				// what the text above it will land on: an HD picture, so the outline is drawn instead of
 				// the shadow. Noted only here, where the picture really went onto the world layer
-				notePicture(x, y, w, h);
+				const SDL_Rect area = HdUiArt::pictureArea(art, x, y, w, h);
+				notePicture(area.x, area.y, area.w, area.h);
 				// the picture placed so that the surface's part of it lands here, clipped to the surface
 				const SDL_Rect outer = worldClip(dest, k);
 				SDL_Rect clip;

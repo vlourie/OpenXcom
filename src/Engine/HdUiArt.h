@@ -19,6 +19,7 @@
  */
 #include <SDL.h>
 #include <string>
+#include <utility>
 #include <vector>
 #include "HdSprites.h"
 
@@ -61,7 +62,14 @@ namespace HdUiArt
 		mutable bool bad = false;         ///< it turned out to be a picture of something else (not used)
 		std::vector<Uint8> base;          ///< the classic image's pixels (baseWidth * baseHeight)
 		std::vector<SDL_Color> palette;   ///< the reference palette (empty: no re-tinting)
+		std::vector<const Art*> layers;   ///< a composed picture: made from these when first drawn (see composeLayers)
+		bool doll = false;                ///< a paper doll's layer or composite: never searched as a crop
+		SDL_Rect opaque = {0, 0, 0, 0};   ///< a composite: where its classic pixels are not transparent
 	};
+	/// Where the texts drawn over `art` (its surface of w x h at x, y) land on the picture: the whole
+	/// surface, or only a doll's figure - its canvas is the whole screen, and the texts around it are
+	/// not over a picture (they keep their shadow).
+	SDL_Rect pictureArea(const Art *art, int x, int y, int w, int h);
 	/// FNV hash of palette pixels (the content key of an image).
 	Uint64 hashPixels(const Uint8 *pixels, int pitch, int w, int h);
 	/// Registers a picture for a classic image (takes the image's pixels now). False if the sizes do not fit.
@@ -69,6 +77,14 @@ namespace HdUiArt
 	/// Registers a picture kept in a file (hd/UI/...) of `width` x `height`, loaded when first drawn; the
 	/// loaded pictures are kept within a memory budget (the least recently drawn are dropped).
 	bool addLazy(const std::string &name, const Surface *base, const std::string &path, int width, int height, std::vector<SDL_Color> palette);
+	/// Notes the picture of a paper doll's layer (an armor's layersDefinition image) without touching the
+	/// image: the mods have thousands of them, and the image is only loaded when a doll wearing it is shown.
+	void addPending(const std::string &name, const std::string &path, int width, int height, std::vector<SDL_Color> palette);
+	/// The picture of a paper doll: `composite` holds the classic layers blitted in turn at (0, 0), each given
+	/// as its image and name. The composite's content is registered as a picture made from the layers'
+	/// own pictures (in that order) when first drawn - the classic composite itself matches no picture.
+	/// Nothing is registered when a layer has no picture (the doll then stays as it is drawn today).
+	void composeLayers(const Surface *composite, const std::vector<std::pair<const Surface*, std::string>> &layers);
 	/// The picture's pixels, loading them if needed (empty when the file cannot be read).
 	const HdFrame &frame(const Art *art);
 	/// The picture of the classic image with these pixels (by content), or nullptr.
@@ -81,6 +97,8 @@ namespace HdUiArt
 	/// Forgets everything (mod reload).
 	void clear();
 	size_t count();
+	/// The pictures findCrop searches (all but the paper dolls' ones, which come and go as dolls are shown).
+	size_t cropCount();
 	/// Grows with every clear(): whoever keeps an Art pointer drops it when this changes.
 	unsigned generation();
 	/// Bytes of the pictures loaded now (the budget is 768 MB).
