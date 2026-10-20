@@ -1,0 +1,1 @@
+- Weapons in soldiers' hands and items on the floor in HD: all 3096 in-hand frames and 1389 floor frames (bodies included) are upscaled the same way as the soldiers themselves - smooth edges instead of steps, shape and grip exactly as in the original. Tiny things like a grenade in hand barely change: in the original they are a few pixels. Graphics only.
