@@ -43,8 +43,13 @@ PILOT = ["unit_up", "kneel", "end_turn", "reserve_snap"]
 KEEP = ("Redraw the single push-button in the middle of this picture as finished, high-detail game interface art. "
         "It stays one button of exactly the same shape and proportions, filling the picture the same way, with "
         "exactly the same symbol on it in the same place and at the same size - do not change, simplify, replace or "
-        "add symbols, no text, no letters. A coloured button keeps its colour. Only change the materials, the "
-        "lighting and the quality of the rendering: ")
+        "add symbols, no text, no letters. A coloured button keeps its colour. The button is seen straight on from "
+        "the front, flat, with no perspective and no tilt, its edges parallel to the picture's edges; its face fills "
+        "the whole picture edge to edge, cut off exactly at the button's own outer edge, with no console, wall, "
+        "mount or background round it. Only change the materials, the lighting and the quality of the rendering: ")
+# (the view was added for the styles after brass_ship: the lilac pilot keys came out tilted in perspective, the iron and
+# bronze ones small in a wide wall, and neither can be cut to a key by a box; asked for "a thin margin of the console",
+# the model still drew a wide one - the styles after brass_ship no longer name a wall to mount the button on)
 MATCH = (" The second picture is another button of the same panel, already finished: make this one in exactly the "
          "same materials, colours, lighting, bevel, wear and scale of detail, as if both were made together.")
 
@@ -57,13 +62,32 @@ STYLES = {
                    "in the corners, the symbol deeply engraved into the brass and filled with black enamel, mounted "
                    "on dark oiled mahogany; warm lantern light from the upper left, crisp specular highlights on the "
                    "edges, soft shadow under the button, rich detail."),
+    "space_lilac": ("a starship bridge console: a thick push-button machined from satin lilac-violet anodized alloy, "
+                    "bevelled edges and small hex screws in the corners, the symbol deeply engraved into the alloy and "
+                    "filled with black enamel; cool violet and white light from the upper left, crisp specular "
+                    "highlights on the edges, rich detail."),
+    "silver": ("a nobleman's console: a heavy polished sterling silver push-button with bevelled edges, a fine "
+               "engraved border and small silver screws in the corners, the symbol deeply engraved into the silver "
+               "and filled with black niello; cool white light from the upper left, crisp mirror highlights on the "
+               "edges, rich detail."),
+    "iron_bone": ("a grim pirate captain's console: a heavy push-button of blackened hammered wrought iron with "
+                  "bevelled edges and round rivets in the corners, the symbol carved into the iron and inlaid with old "
+                  "yellowed bone, pale and clearly readable; warm firelight from the upper left, dull highlights on "
+                  "the iron, rich detail."),
+    "deep_bronze": ("a deep-sea diving vessel's console: a heavy cast bronze push-button with bevelled edges and "
+                    "round rivets in the corners, its raised parts polished and its hollows crusted with teal "
+                    "verdigris patina, the symbol deeply engraved and filled with black enamel; cool sea-green light "
+                    "from the upper left, crisp highlights on the bronze, rich detail."),
 }
+# the metal the coloured keys' enamel sits in, per style
+FRAME_METAL = {"brass_ship": "brass", "space_lilac": "lilac alloy", "silver": "silver", "iron_bone": "iron",
+               "deep_bronze": "bronze", "salvage_tech": "brass"}
 
 # the reserve keys say their state by colour (green: no reserve, red: the rest); the model turns a red key into brass
 # unless told, so a coloured key gets its colour spelt out
 TINT = {"reserve_none": "green", "reserve_snap": "red", "reserve_aimed": "red", "reserve_auto": "red",
         "reserve_kneel": "red", "zero_tus": "red"}
-TINT_HINT = (" The face of this button is glossy deep %s enamel inside the brass frame, the symbol on it black and "
+TINT_HINT = (" The face of this button is glossy deep %s enamel inside the %s frame, the symbol on it black and "
              "clearly readable; the %s colour must stay strong and obvious.")
 # (the first set said "pale": four of the six keys came out with black signs anyway, the redrawn one pale - the
 # panel looked patched; black is what most of them have)
@@ -79,6 +103,29 @@ PANEL = {
                    "the top edge, a few small brass screws in the trim, warm lantern light from the upper left fading "
                    "to the right, rich high detail. Only the surface: no buttons, no screens, no instruments, no "
                    "objects, no text, nothing standing out of it, the whole picture evenly filled edge to edge."),
+    "space_lilac": ("Repaint this picture as the flat front of a starship's bridge console, seen straight on: dark "
+                    "graphite hull plating in long horizontal panels with fine seam lines and tiny flush hex screws, a "
+                    "slim satin lilac-violet anodized trim strip along the top edge, cool violet light from the upper "
+                    "left fading to the right, rich high detail. Only the surface: no buttons, no screens, no lights, "
+                    "no instruments, no objects, no text, nothing standing out of it, the whole picture evenly "
+                    "filled edge to edge."),
+    "silver": ("Repaint this picture as the flat front of a nobleman's console, seen straight on: black lacquered "
+               "ebony boards running horizontally with a deep mirror gloss and faint grain, a slim polished silver "
+               "trim strip with a fine engraved border along the top edge, a few small silver screws in the trim, "
+               "cool white light from the upper left fading to the right, rich high detail. Only the surface: no "
+               "buttons, no screens, no instruments, no objects, no text, nothing standing out of it, the whole "
+               "picture evenly filled edge to edge."),
+    "iron_bone": ("Repaint this picture as the flat front of a grim pirate captain's console, seen straight on: "
+                  "charred dark oak boards running horizontally, deep cracked grain, a band of blackened hammered "
+                  "wrought iron with round rivets along the top edge, warm firelight from the upper left fading to "
+                  "the right, rich high detail. Only the surface: no buttons, no skulls, no instruments, no objects, "
+                  "no text, nothing standing out of it, the whole picture evenly filled edge to edge."),
+    "deep_bronze": ("Repaint this picture as the flat front of a deep-sea diving vessel's console, seen straight on: "
+                    "dark copper plates green with age, joined by rows of round rivets, patches of teal verdigris, a "
+                    "slim polished bronze trim strip along the top edge, cool sea-green light from the upper left "
+                    "fading to the right, rich high detail. Only the surface: no buttons, no portholes, no gauges, no "
+                    "instruments, no objects, no text, nothing standing out of it, the whole picture evenly filled "
+                    "edge to edge."),
 }
 PANEL_BASE = (320, 56)   # the panel's classic size
 
@@ -89,14 +136,33 @@ WELL = {
         "leather": "dark worn leather, nearly black, with fine creases",
         "velvet": "deep black-red velvet with a soft sheen",
     },
+    "space_lilac": {"carbon": "black carbon fibre weave with a faint violet sheen"},
+    "silver": {"velvet": "deep midnight-blue velvet, nearly black, with a soft sheen"},
+    "iron_bone": {"leather": "dark oxblood leather, nearly black, scarred and creased"},
+    "deep_bronze": {"leather": "dark sea-green leather, nearly black, with fine creases"},
 }
-WELL_PROMPT = ("Repaint this picture as a flat brass picture frame seen exactly straight on, like a scan, with no "
-               "perspective and no depth: a thick polished brass frame with bevelled edges and a small brass screw in "
-               "each corner fills the picture right to its edges, nothing outside it, and the flat area inside the "
-               "frame is a flat pad of %s, facing the viewer, only a narrow soft shadow along its upper and left "
-               "edges; warm light from the upper left, crisp highlights on the brass, rich high detail. Not a box, "
-               "not a cabinet, no inner walls, no back wall, no floor in perspective, no room. The frame and the pad "
-               "keep exactly the shapes and widths they have in the picture. Empty: no objects, no items, no text.")
+# per style: (the frame's metal in one word or two, the frame, the light)
+WELL_FRAME = {
+    "brass_ship": ("brass", "a thick polished brass frame with bevelled edges and a small brass screw in each corner",
+                   "warm light from the upper left, crisp highlights on the brass"),
+    "space_lilac": ("anodized alloy", "a thick satin lilac-violet anodized alloy frame with bevelled edges and a "
+                    "small hex screw in each corner", "cool violet light from the upper left, crisp highlights on "
+                    "the alloy"),
+    "silver": ("silver", "a thick polished sterling silver frame with bevelled edges, a fine engraved border and a "
+               "small silver screw in each corner", "cool white light from the upper left, crisp mirror highlights on "
+               "the silver"),
+    "iron_bone": ("iron", "a thick frame of blackened hammered wrought iron with bevelled edges and a round rivet in "
+                  "each corner", "warm firelight from the upper left, dull highlights on the iron"),
+    "deep_bronze": ("bronze", "a thick cast bronze frame with bevelled edges and a round rivet in each corner, "
+                    "polished on top and crusted with teal verdigris in the hollows", "cool sea-green light from the "
+                    "upper left, crisp highlights on the bronze"),
+}
+WELL_PROMPT = ("Repaint this picture as a flat %s picture frame seen exactly straight on, like a scan, with no "
+               "perspective and no depth: %s fills the picture right to its edges, nothing outside it, and the flat "
+               "area inside the frame is a flat pad of %s, facing the viewer, only a narrow soft shadow along its "
+               "upper and left edges; %s, rich high detail. Not a box, not a cabinet, no inner walls, no back wall, "
+               "no floor in perspective, no room. The frame and the pad keep exactly the shapes and widths they have "
+               "in the picture. Empty: no objects, no items, no text.")
 # (the first prompt said "recessed compartment ... sunken floor": all six came out as deep cabinets in perspective,
 # a back wall and a floor running away - an item drawn flat can't lie in that)
 WELL_BASE = (40, 56)   # the well with its frame, in classic pixels (a hand's 32 x 48 and the frame round it)
@@ -176,7 +242,9 @@ def paint_well(a):
                     painter = photo_ui.Painter(a.models, False, a.steps, photoreal=False)
                 W, H = photo_ui.target_size(pw, ph, 0.6)
                 t0 = time.time()
-                rgb = painter.edit([inp.resize((W, H), Image.LANCZOS)], WELL_PROMPT % words, NEGATIVE, seed, a.steps,
+                rgb = painter.edit([inp.resize((W, H), Image.LANCZOS)],
+                                   WELL_PROMPT % (WELL_FRAME[style][0], WELL_FRAME[style][1], words, WELL_FRAME[style][2]),
+                                   NEGATIVE, seed, a.steps,
                                    a.cfg, W, H)
                 Image.fromarray(rgb).resize((pw, ph), Image.LANCZOS).save(path)
                 print("%s / well %s %d: %.0f s -> %s" % (style, lining, seed, time.time() - t0, path), flush=True)
@@ -231,7 +299,7 @@ def main():
                 images = [inp.resize((W, H), Image.LANCZOS)]
                 prompt = KEEP + STYLES[style]
                 if name in TINT:
-                    prompt += TINT_HINT % (TINT[name], TINT[name])
+                    prompt += TINT_HINT % (TINT[name], FRAME_METAL.get(style, "brass"), TINT[name])
                 if ref is not None and a.match:
                     # R-378: the finished button as the second picture makes the model copy its sign
                     images.append(ref)
