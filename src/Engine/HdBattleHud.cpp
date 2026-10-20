@@ -1177,14 +1177,19 @@ struct PaintedFace { bool tried = false; HdFrame frame; };
 std::vector<PaintedFace> faces;
 unsigned facesGeneration = 0;
 
-/// The painted face of a key (loaded when first asked), or nullptr: another theme, no picture in the mod.
-const HdFrame *paintedFace(HdBattleHud::Icon icon)
+/// The painted surface of the pirate panel under the keys, hd/UI/battle_keys/panel.png: asked for as the slot
+/// after the last icon.
+const int PANEL_FACE = HdBattleHud::ICON_COUNT;
+
+/// The painted face of a key (loaded when first asked), or of the panel (PANEL_FACE), or nullptr: another theme, no
+/// picture in the mod.
+const HdFrame *paintedFace(int icon)
 {
-	if (!keyLook().gravure || icon <= HdBattleHud::ICON_NONE || icon >= HdBattleHud::ICON_COUNT || !PAINTED[icon]) return nullptr;
+	if (!keyLook().gravure || icon <= HdBattleHud::ICON_NONE || icon > PANEL_FACE || (icon < PANEL_FACE && !PAINTED[icon])) return nullptr;
 	if (faces.empty() || facesGeneration != HdUiArt::generation())
 	{
 		// the mods were loaded again: the pictures, and the keys made of them, may be others now
-		faces.assign(HdBattleHud::ICON_COUNT, PaintedFace());
+		faces.assign(PANEL_FACE + 1, PaintedFace());
 		facesGeneration = HdUiArt::generation();
 		metalCache.clear();
 	}
@@ -1192,7 +1197,8 @@ const HdFrame *paintedFace(HdBattleHud::Icon icon)
 	if (!f.tried)
 	{
 		f.tried = true;
-		if (!HdSprites::loadPng(HdSprites::artPath(std::string("UI/battle_keys/") + PAINTED[icon] + ".png"), f.frame)) f.frame = HdFrame();
+		const char *name = icon == PANEL_FACE ? "panel" : PAINTED[icon];
+		if (!HdSprites::loadPng(HdSprites::artPath(std::string("UI/battle_keys/") + name + ".png"), f.frame)) f.frame = HdFrame();
 	}
 	return f.frame.pixels.empty() ? nullptr : &f.frame;
 }
@@ -1425,6 +1431,32 @@ const std::vector<Uint32> &panelMetal(int W, int H, int k)
 {
 	const Uint64 key = (1ull << 62) | ((Uint64)(W & 0xFFFF) << 16) | (Uint64)(H & 0xFFFF);
 	if (std::vector<Uint32> *hit = metalCached(key, k)) return *hit;
+	if (const HdFrame *face = paintedFace(PANEL_FACE))
+	{
+		// the pirate panel painted: its middle cut to the panel's proportions (the boards are not stretched), shrunk
+		// to it, the top corners rounded as the metal's are
+		HdFrame mid;
+		const int fw = std::min(face->width, (int)std::lround((double)face->height * W / H));
+		const int fh = std::min(face->height, (int)std::lround((double)face->width * H / W));
+		mid.width = fw;
+		mid.height = fh;
+		mid.pixels.resize((size_t)fw * fh);
+		const int sx = (face->width - fw) / 2, sy = (face->height - fh) / 2;
+		for (int y = 0; y < fh; ++y)
+			std::copy_n(&face->pixels[(size_t)(sy + y) * face->width + sx], fw, &mid.pixels[(size_t)y * fw]);
+		std::vector<Uint32> img = resampled(mid, W, H);
+		for (int y = 0; y < H; ++y)
+		{
+			for (int x = 0; x < W; ++x)
+			{
+				const float sd = insideBox(x + 0.5f, y + 0.5f, 0.0f, 0.0f, (float)W, (float)H + 4.0f * k, 3.0f * k);
+				const float cover = std::min(std::max(sd + 0.5f, 0.0f), 1.0f);
+				Uint32 &p = img[(size_t)y * W + x];
+				p = ((Uint32)(cover * (float)(p >> 24) + 0.5f) << 24) | (p & 0x00FFFFFFu);
+			}
+		}
+		return metalCache[key] = std::move(img);
+	}
 	std::vector<float> height((size_t)W * H), dark((size_t)W * H), cover((size_t)W * H), brass((size_t)W * H);
 	const float lip = 1.6f * k;
 	for (int y = 0; y < H; ++y)
