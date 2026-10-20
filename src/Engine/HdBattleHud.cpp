@@ -1177,19 +1177,19 @@ struct PaintedFace { bool tried = false; HdFrame frame; };
 std::vector<PaintedFace> faces;
 unsigned facesGeneration = 0;
 
-/// The painted surface of the pirate panel under the keys, hd/UI/battle_keys/panel.png: asked for as the slot
-/// after the last icon.
-const int PANEL_FACE = HdBattleHud::ICON_COUNT;
+/// The painted surface of the pirate panel under the keys, hd/UI/battle_keys/panel.png, and the well a hand's item
+/// lies in, well.png (its brass frame and floor): asked for as the slots after the last icon.
+const int PANEL_FACE = HdBattleHud::ICON_COUNT, WELL_FACE = PANEL_FACE + 1;
 
-/// The painted face of a key (loaded when first asked), or of the panel (PANEL_FACE), or nullptr: another theme, no
-/// picture in the mod.
+/// The painted face of a key (loaded when first asked), or of the panel or a well (PANEL_FACE, WELL_FACE), or
+/// nullptr: another theme, no picture in the mod.
 const HdFrame *paintedFace(int icon)
 {
-	if (!keyLook().gravure || icon <= HdBattleHud::ICON_NONE || icon > PANEL_FACE || (icon < PANEL_FACE && !PAINTED[icon])) return nullptr;
+	if (!keyLook().gravure || icon <= HdBattleHud::ICON_NONE || icon > WELL_FACE || (icon < PANEL_FACE && !PAINTED[icon])) return nullptr;
 	if (faces.empty() || facesGeneration != HdUiArt::generation())
 	{
 		// the mods were loaded again: the pictures, and the keys made of them, may be others now
-		faces.assign(PANEL_FACE + 1, PaintedFace());
+		faces.assign(WELL_FACE + 1, PaintedFace());
 		facesGeneration = HdUiArt::generation();
 		metalCache.clear();
 	}
@@ -1197,7 +1197,7 @@ const HdFrame *paintedFace(int icon)
 	if (!f.tried)
 	{
 		f.tried = true;
-		const char *name = icon == PANEL_FACE ? "panel" : PAINTED[icon];
+		const char *name = icon == PANEL_FACE ? "panel" : icon == WELL_FACE ? "well" : PAINTED[icon];
 		if (!HdSprites::loadPng(HdSprites::artPath(std::string("UI/battle_keys/") + name + ".png"), f.frame)) f.frame = HdFrame();
 	}
 	return f.frame.pixels.empty() ? nullptr : &f.frame;
@@ -1487,6 +1487,28 @@ const std::vector<Uint32> &panelMetal(int W, int H, int k)
 	return metalCache[key] = shadeMetal(height, dark, cover, W, H, (float)k * 0.5f, 0.0f, theme().steel, &brass);
 }
 
+/// A hand's well painted (the pirate panel), its brass frame and floor in one W x H picture with rounded corners, or
+/// nullptr: no picture, the frame and floor are cast instead.
+const std::vector<Uint32> *paintedWell(int W, int H, int k)
+{
+	const HdFrame *face = paintedFace(WELL_FACE);
+	if (!face) return nullptr;
+	const Uint64 key = (3ull << 60) | ((Uint64)(W & 0xFFFF) << 16) | (Uint64)(H & 0xFFFF);
+	if (std::vector<Uint32> *hit = metalCached(key, k)) return hit;
+	std::vector<Uint32> img = resampled(*face, W, H);
+	for (int y = 0; y < H; ++y)
+	{
+		for (int x = 0; x < W; ++x)
+		{
+			const float sd = insideBox(x + 0.5f, y + 0.5f, 0.0f, 0.0f, (float)W, (float)H, 2.5f * k);
+			const float cover = std::min(std::max(sd + 0.5f, 0.0f), 1.0f);
+			Uint32 &p = img[(size_t)y * W + x];
+			p = ((Uint32)(cover * (float)(p >> 24) + 0.5f) << 24) | (p & 0x00FFFFFFu);
+		}
+	}
+	return &(metalCache[key] = std::move(img));
+}
+
 /// A key's motion, kept between frames: how far down it is (a spring: below 0 on the bounce back up), how much the
 /// mouse is over it and for how long, the flash of a press and the glint that runs across it as the mouse comes in.
 struct KeyAnim
@@ -1756,16 +1778,23 @@ void HdHudPanel::hdMirror()
 				// running a base pixel into the well, which lies sunk and shadowed under it
 				const int ix = (int)std::lround(wx0 - m), iy = (int)std::lround(wy0 - m);
 				const int iw = (int)std::lround(wx1 + m) - ix, ih = (int)std::lround(wy1 + m) - iy;
-				ui.drawImage(wellFloor(iw, ih, k, t.wellBase).data(), iw, ih, ix, iy);
+				const int in = (int)std::lround(1.0f * k);
+				const float f = 2.8f * k + in;
+				const int fw = (int)std::ceil(f);
+				const int ow = iw - 2 * in + 2 * fw, oh = ih - 2 * in + 2 * fw;
+				// the pirate panel's painted well (frame and floor in one) takes the place of both, under the item
+				const std::vector<Uint32> *painted = paintedWell(ow, oh, k);
+				if (painted) ui.drawImage(painted->data(), ow, oh, ix + in - fw, iy + in - fw);
+				else ui.drawImage(wellFloor(iw, ih, k, t.wellBase).data(), iw, ih, ix, iy);
 				// the item lies on that floor: its shadow falls down and to the right
 				const int pad = (int)std::lround(1.5f * k), off = (int)std::lround(1.2f * k);
 				ui.drawImage(itemShadow(s, k, pad).data(), s->getWidth() * k + 2 * pad, s->getHeight() * k + 2 * pad,
 					s->getX() * k - pad + off, s->getY() * k - pad + (int)std::lround(1.6f * k));
-				const int in = (int)std::lround(1.0f * k);
-				const float f = 2.8f * k + in;
-				const int fw = (int)std::ceil(f);
-				const std::vector<Uint32> &frame = metalFrame(iw - 2 * in, ih - 2 * in, k, f);
-				ui.drawImage(frame.data(), iw - 2 * in + 2 * fw, ih - 2 * in + 2 * fw, ix + in - fw, iy + in - fw);
+				if (!painted)
+				{
+					const std::vector<Uint32> &frame = metalFrame(iw - 2 * in, ih - 2 * in, k, f);
+					ui.drawImage(frame.data(), ow, oh, ix + in - fw, iy + in - fw);
+				}
 			}
 			else
 			{
