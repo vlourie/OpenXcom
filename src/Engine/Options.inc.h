@@ -180,6 +180,10 @@ OPT int oxceHdMode;
 OPT bool oxceHdLight;
 // HD render: the ground pattern - a floor with pack variants (<i>.v1.png ...) is laid over the map as patches
 OPT bool oxceHdGroundVariants;
+// HD lab (Engine/HdLab.h): the battle map turned by this many quarters (0..3), only while the lab is open
+OPT int oxceHdMapRotation;
+// HD lab: the key a correct lab password leaves (empty: the lab is closed)
+OPT std::string oxceHdLabKey;
 // HD render: SCC wall addressing - an addressed wall frame (hd/TERRAIN/<set>/address.txt) shows the picture the map's field puts in its cell (<i>.west<N>.png, <i>.north<N>.png); prototype, off, no row on the tab
 OPT bool oxceHdTerrainAddress;
 // HD render: the battle reticle (CURSOR.PCK 6..10): 0 the pack's own, 1 the stock picture, 2.. a style from hd/CURSOR.PCK/reticle_<style>/ (Mod::HD_RETICLES)

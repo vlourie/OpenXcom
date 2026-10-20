@@ -358,18 +358,20 @@ void Camera::scrollXY(int x, int y, bool redraw)
 	{
 		int xx = 0;
 		int yy = 0;
-		convertScreenToMap(halfWorld(_viewWidth), halfWorld(_visibleMapHeight), &xx, &yy);
-		_center.x = xx;
-		_center.y = yy;
+		// (the bounds are those of the view: the screen directions below are the view's)
+		convertScreenToView(halfWorld(_viewWidth), halfWorld(_visibleMapHeight), &xx, &yy);
+		const Position center = viewToWorld(Position(xx, yy, _center.z));
+		_center.x = center.x;
+		_center.y = center.y;
 
 		// Handling map bounds...
 		// Ok, this is a prototype, it should be optimized.
 		// Actually this should be calculated instead of slow-approximation.
 		// (steps of k world pixels = 1 base pixel, keeping the offset a multiple of k)
-		if (_center.x < 0)             { _mapOffset.x -= _k; _mapOffset.y -= _k; continue; }
-		if (_center.x > _mapsize_x -1) { _mapOffset.x += _k; _mapOffset.y += _k; continue; }
-		if (_center.y < 0)             { _mapOffset.x += _k; _mapOffset.y -= _k; continue; }
-		if (_center.y > _mapsize_y -1) { _mapOffset.x -= _k; _mapOffset.y += _k; continue; }
+		if (xx < 0)                    { _mapOffset.x -= _k; _mapOffset.y -= _k; continue; }
+		if (xx > getViewSizeX() -1)    { _mapOffset.x += _k; _mapOffset.y += _k; continue; }
+		if (yy < 0)                    { _mapOffset.x += _k; _mapOffset.y -= _k; continue; }
+		if (yy > getViewSizeY() -1)    { _mapOffset.x -= _k; _mapOffset.y += _k; continue; }
 		break;
 	}
 	while (true);
@@ -637,6 +639,25 @@ Position Camera::getCenterPosition()
  */
 void Camera::convertScreenToMap(int screenX, int screenY, int *mapX, int *mapY) const
 {
+	convertScreenToView(screenX, screenY, mapX, mapY);
+	if (_rot)
+	{
+		const Position mapPos = viewToWorld(Position(*mapX, *mapY, 0));
+		*mapX = mapPos.x;
+		*mapY = mapPos.y;
+	}
+}
+
+/**
+ * Converts screen coordinates to the tile coordinates of the view: the map's own when the view is
+ * not turned (HD lab), else the turned ones (see worldToView). Clamped to one tile around the view.
+ * @param screenX Screen x position.
+ * @param screenY Screen y position.
+ * @param viewX View x position.
+ * @param viewY View y position.
+ */
+void Camera::convertScreenToView(int screenX, int screenY, int *mapX, int *mapY) const
+{
 	// HD render: the original integer arithmetic is not scale invariant (the "/ 4" truncates),
 	// so the conversion is done in base pixels: world coordinates are always k times base ones.
 	const int spriteWidth = _spriteWidth / _k;
@@ -658,8 +679,8 @@ void Camera::convertScreenToMap(int screenX, int screenY, int *mapX, int *mapY) 
 	*mapX /= (spriteWidth / 4);
 	*mapY /= spriteWidth;
 
-	*mapX = Clamp(*mapX, -1, _mapsize_x);
-	*mapY = Clamp(*mapY, -1, _mapsize_y);
+	*mapX = Clamp(*mapX, -1, getViewSizeX());
+	*mapY = Clamp(*mapY, -1, getViewSizeY());
 }
 
 /**
@@ -669,9 +690,104 @@ void Camera::convertScreenToMap(int screenX, int screenY, int *mapX, int *mapY) 
  */
 void Camera::convertMapToScreen(Position mapPos, Position *screenPos) const
 {
+	viewToScreen(_rot ? worldToView(mapPos) : mapPos, screenPos);
+}
+
+/**
+ * Converts view tile coordinates X,Y,Z to screen positions X, Y.
+ * @param viewPos X,Y,Z coordinates in the view.
+ * @param screenPos Screen position.
+ */
+void Camera::viewToScreen(Position mapPos, Position *screenPos) const
+{
 	screenPos->z = 0; // not used
 	screenPos->x = mapPos.x * (_spriteWidth / 2) - mapPos.y * (_spriteWidth / 2);
 	screenPos->y = mapPos.x * (_spriteWidth / 4) + mapPos.y * (_spriteWidth / 4) - mapPos.z * ((_spriteHeight + _spriteWidth / 4) / 2);
+}
+
+/**
+ * HD lab: the view tile of a world tile. The view turned by a quarter puts the world's north
+ * (-y) where the unturned view has its east (+x): (x, y) -> (H - 1 - y, x); two and three
+ * quarters are that twice and three times. Works for tiles off the map too (it is affine).
+ * @param mapPos Tile on the map.
+ * @return Tile in the view.
+ */
+Position Camera::worldToView(Position mapPos) const
+{
+	switch (_rot)
+	{
+	case 1: return Position(_mapsize_y - 1 - mapPos.y, mapPos.x, mapPos.z);
+	case 2: return Position(_mapsize_x - 1 - mapPos.x, _mapsize_y - 1 - mapPos.y, mapPos.z);
+	case 3: return Position(mapPos.y, _mapsize_x - 1 - mapPos.x, mapPos.z);
+	default: return mapPos;
+	}
+}
+
+/**
+ * HD lab: the world tile of a view tile (the inverse of worldToView).
+ * @param viewPos Tile in the view.
+ * @return Tile on the map.
+ */
+Position Camera::viewToWorld(Position viewPos) const
+{
+	switch (_rot)
+	{
+	case 1: return Position(viewPos.y, _mapsize_y - 1 - viewPos.x, viewPos.z);
+	case 2: return Position(_mapsize_x - 1 - viewPos.x, _mapsize_y - 1 - viewPos.y, viewPos.z);
+	case 3: return Position(_mapsize_x - 1 - viewPos.y, viewPos.x, viewPos.z);
+	default: return viewPos;
+	}
+}
+
+/**
+ * HD lab: a step on the map (a direction, a neighbour's offset) as a step in the view.
+ * @param step Step on the map.
+ * @return Step in the view.
+ */
+Position Camera::worldStepToView(Position step) const
+{
+	switch (_rot)
+	{
+	case 1: return Position(-step.y, step.x, step.z);
+	case 2: return Position(-step.x, -step.y, step.z);
+	case 3: return Position(step.y, -step.x, step.z);
+	default: return step;
+	}
+}
+
+/**
+ * HD lab: a step in the view as a step on the map (the inverse of worldStepToView).
+ * @param step Step in the view.
+ * @return Step on the map.
+ */
+Position Camera::viewStepToWorld(Position step) const
+{
+	switch (_rot)
+	{
+	case 1: return Position(step.y, -step.x, step.z);
+	case 2: return Position(-step.x, -step.y, step.z);
+	case 3: return Position(-step.y, step.x, step.z);
+	default: return step;
+	}
+}
+
+/**
+ * HD lab: turns the view by quarters. The tile at the centre of the view stays at the centre;
+ * the picture jumps there at once (a glide from the old offset would cross the whole map).
+ * @param rot Quarter turns, 0..3.
+ */
+void Camera::setRotation(int rot)
+{
+	rot = ((rot % 4) + 4) % 4;
+	if (rot == _rot)
+	{
+		return;
+	}
+	const Position center = getCenterPosition();
+	_rot = rot;
+	centerOnPosition(center, false);
+	_glideNext = false;
+	_shownValid = false;
 }
 
 /**
@@ -681,8 +797,16 @@ void Camera::convertMapToScreen(Position mapPos, Position *screenPos) const
  */
 void Camera::convertVoxelToScreen(Position voxelPos, Position *screenPos) const
 {
+	// HD lab: in a turned view the voxel is turned as its tile is (a voxel is 16 x 16 of a tile)
+	switch (_rot)
+	{
+	case 1: voxelPos = Position(_mapsize_y * 16 - 1 - voxelPos.y, voxelPos.x, voxelPos.z); break;
+	case 2: voxelPos = Position(_mapsize_x * 16 - 1 - voxelPos.x, _mapsize_y * 16 - 1 - voxelPos.y, voxelPos.z); break;
+	case 3: voxelPos = Position(voxelPos.y, _mapsize_x * 16 - 1 - voxelPos.x, voxelPos.z); break;
+	default: break;
+	}
 	Position mapPosition = voxelPos.toTile();
-	convertMapToScreen(mapPosition, screenPos);
+	viewToScreen(mapPosition, screenPos);
 	double dx = voxelPos.x - (mapPosition.x * 16);
 	double dy = voxelPos.y - (mapPosition.y * 16);
 	double dz = voxelPos.z - (mapPosition.z * 24);

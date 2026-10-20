@@ -98,6 +98,7 @@
 #include "../Mod/RuleSoldier.h"
 #include "../Mod/RuleVideo.h"
 #include "../Engine/HdItems.h"
+#include "../Engine/HdLab.h"
 #include "../Engine/HdPaletteShift.h"
 #include "../Engine/HdSprites.h"
 #include "../Mod/MapDataSet.h"
@@ -3362,6 +3363,14 @@ inline void BattlescapeState::handle(Action *action)
 				{
 					hdModeToggle();
 				}
+				// HD lab (Engine/HdLab.h): [ and ] turn the battle map by a quarter, once the lab is open
+				if ((key == SDLK_LEFTBRACKET || key == SDLK_RIGHTBRACKET) && HdLab::unlocked())
+				{
+					Options::oxceHdMapRotation = ((Options::oxceHdMapRotation + (key == SDLK_RIGHTBRACKET ? 1 : 3)) % 4 + 4) % 4;
+					_map->getCamera()->setRotation(HdLab::mapRotation());
+					_map->refreshSelectorPosition();
+					_map->invalidate();
+				}
 			}
 		}
 	}
@@ -3558,6 +3567,7 @@ void BattlescapeState::hdTestDump()
 	f.emplace_back("worldScale", num(screen->getWorldScale()));
 	f.emplace_back("canvas", HdTest::jsonString(_map->getCanvasName()));
 	f.emplace_back("hdMode", num(_map->getHdMode()));
+	f.emplace_back("mapRotation", num(camera->getRotation()));
 	f.emplace_back("hdUi", num(HdUi::active() ? Options::oxceHdUi : 0));
 	f.emplace_back("hdThreads", num(HdWorkers::instance().threads()));
 	f.emplace_back("drawMs", num((long long)(_map->getLastDrawMs() * 100)) + "e-2");

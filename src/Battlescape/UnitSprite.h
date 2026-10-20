@@ -62,6 +62,11 @@ private:
 	int _x, _y, _shade, _burn;
 	/// HD render scale k: body part / item offsets are in original pixels and multiplied by k at blit time.
 	int _scale;
+	/// HD lab: the turned view shows every direction this many eighths further round (0 unturned).
+	int _dirShift = 0;
+	/// The unit's direction and its turret's, as the view shows them.
+	int shownDir() const;
+	int shownTurretDir() const;
 	GraphSubset _mask;
 
 	/// Drawing routine for XCom soldiers in overalls, sectoids (routine 0),
@@ -117,6 +122,8 @@ public:
 	~UnitSprite();
 	/// Sets the HD render scale k (offsets in original pixels are multiplied by it).
 	void setScale(int scale) { _scale = scale < 1 ? 1 : scale; }
+	/// HD lab: turns the directions the unit is drawn in by `shift` eighths (the turned view).
+	void setDirectionShift(int shift) { _dirShift = ((shift % 8) + 8) % 8; }
 	/// Draws the unit.
 	void draw(const BattleUnit* unit, int part, int x, int y, int shade, GraphSubset mask, bool drawFacingIndicator);
 };
