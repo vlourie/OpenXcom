@@ -18,6 +18,7 @@
  */
 #include "Map.h"
 #include "Camera.h"
+#include "CollapsePilot.h"
 #include "UnitSprite.h"
 #include "ItemSprite.h"
 #include "Pathfinding.h"
@@ -181,6 +182,39 @@ const HdFrame &blastDiamond(Uint32 rgb, int alpha, int k)
 			if (std::fabs(x + 0.5 - hw) / hw + std::fabs(y + 0.5 - hh) / hh < 1.0)
 			{
 				f.pixels[(size_t)y * f.width + x] = px;
+			}
+		}
+	}
+	f.generated = true;
+	f.buildSpans();
+	return f;
+}
+
+/**
+ * The collapse hint over the explosion area: the floor diamond of a tile in hazard stripes, yellow and black
+ * along the diamond's edge direction. One cached frame per scale.
+ */
+const HdFrame &fallDiamond(int k)
+{
+	static std::map<int, HdFrame> cache;
+	auto it = cache.find(k);
+	if (it != cache.end())
+	{
+		return it->second;
+	}
+	HdFrame &f = cache[k];
+	f.width = 32 * k;
+	f.height = 16 * k;
+	f.pixels.assign((size_t)f.width * f.height, 0);
+	const double hw = 16.0 * k, hh = 8.0 * k;
+	for (int y = 0; y < f.height; ++y)
+	{
+		for (int x = 0; x < f.width; ++x)
+		{
+			if (std::fabs(x + 0.5 - hw) / hw + std::fabs(y + 0.5 - hh) / hh < 1.0)
+			{
+				const bool yellow = ((x + 2 * y) / (6 * k)) % 2 == 0;
+				f.pixels[(size_t)y * f.width + x] = yellow ? 0xB4FFC81Eu : 0x8C141414u;
 			}
 		}
 	}
@@ -1627,9 +1661,39 @@ void Map::updateBlastArea(HdCanvas *surface)
 			center = target;
 		}
 	}
+#ifdef OXCE_AI_DEV
+	// debug stand OXCE_HD_BLAST_AT "x,y,z" (map cells): the area of an HE terrain explosion there (OXCE_COLLAPSE_BLAST_POWER)
+	// with nothing aimed, the camera held on it - for the dumps of the area and the collapse hint
+	static const char *blastAt = getenv("OXCE_HD_BLAST_AT");
+	if (blastAt && Options::oxceHdBlastArea && surface->getHdMode() != HD_MODE_NEAREST)
+	{
+		int x = 0, y = 0, z = 0;
+		char *end = nullptr;
+		x = (int)strtol(blastAt, &end, 10);
+		if (*end == ',') y = (int)strtol(end + 1, &end, 10);
+		if (*end == ',') z = (int)strtol(end + 1, &end, 10);
+		const char *powS = getenv("OXCE_COLLAPSE_BLAST_POWER");
+		power = powS && *powS ? atoi(powS) : 60;
+		radius = power / 10;
+		type = _game->getMod()->getDamageType(DT_HE);
+		center = Position(x, y, z);
+		if (_camera->getCenterPosition() != center)
+		{
+			_camera->centerOnPosition(center, true);
+		}
+		// OXCE_HD_BLAST_REVEAL: the whole map discovered, as the debug mode does - a building seen from inside
+		static bool revealed = false;
+		if (!revealed && getenv("OXCE_HD_BLAST_REVEAL"))
+		{
+			revealed = true;
+			_save->revealMap();
+		}
+	}
+#endif
 	if (power <= 0 || !type)
 	{
 		_blastMax = 0;
+		_blastFallCount = 0;
 		_blastCenter = Position(-1, -1, -1);
 		return;
 	}
@@ -1644,8 +1708,24 @@ void Map::updateBlastArea(HdCanvas *surface)
 	_blastKeyType = type;
 
 	const auto t0 = std::chrono::steady_clock::now();
-	std::map<Tile*, int> area;
-	_save->getTileEngine()->explosionArea(center.toVoxel() + Position(8, 8, 2), power, type, radius, area);
+	std::map<Tile*, int> area, strongest;
+	_save->getTileEngine()->explosionArea(center.toVoxel() + Position(8, 8, 2), power, type, radius, area, &strongest);
+	// the collapse hint: what the building collapse model may let fall after this explosion, marked on its tile -
+	// on the view level for a part above it, as that level is the top one drawn
+	std::vector<Position> falls;
+	CollapsePilot::mayFall(_save, strongest, type, falls);
+	_blastFall.assign(_save->getMapSizeXYZ(), 0);
+	_blastFallCount = 0;
+	for (Position p : falls)
+	{
+		p.z = std::min(p.z, center.z);
+		uint8_t &mark = _blastFall[_save->getTileIndex(p)];
+		if (!mark)
+		{
+			mark = 1;
+			++_blastFallCount;
+		}
+	}
 	_blastPower.assign(_save->getMapSizeXYZ(), 0);
 	_blastMax = 0;
 	for (const auto &p : area)
@@ -1670,6 +1750,7 @@ void Map::updateBlastArea(HdCanvas *surface)
 		_blastRgb = blastFallbackRgb(type);
 	}
 	Log(LOG_DEBUG) << "HD blast area: " << area.size() << " tiles at " << center << ", power " << power << ", radius " << radius
+		<< ", may fall " << falls.size() << " part(s) on " << _blastFallCount << " tile(s)"
 		<< ", type " << type->ResistType << ", colour " << color << ", "
 		<< std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count() << " ms";
 }
@@ -1938,6 +2019,11 @@ void Map::drawTerrain(HdCanvas *surface)
 							surface->blitFrame(blastDiamond(_blastRgb, alpha, _k), screenPosition.x,
 								screenPosition.y + 24 * _k - tile->getYOffset(O_FLOOR) * _k);
 						}
+					}
+					// HD render: the collapse hint - the tiles whose building parts may fall after the explosion, in hazard stripes
+					if (_blastMax > 0 && _blastFallCount > 0 && _blastFall[_save->getTileIndex(mapPosition)])
+					{
+						surface->blitFrame(fallDiamond(_k), screenPosition.x, screenPosition.y + 24 * _k - tile->getYOffset(O_FLOOR) * _k);
 					}
 
 					auto* unit = tile->getUnit();

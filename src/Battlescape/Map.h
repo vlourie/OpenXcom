@@ -195,6 +195,10 @@ private:
 	Position _blastCenter = Position(-1, -1, -1);
 	int _blastKeyPower = 0, _blastKeyRadius = 0;
 	const void *_blastKeyType = nullptr;
+	/// The aim hint of the building collapse (option oxceCollapse): the tiles marked "may fall" (by tile index),
+	/// a part above the view level marked on the view level, and how many there are.
+	std::vector<uint8_t> _blastFall;
+	int _blastFallCount = 0;
 	/// Works out the area for the current action and cursor (clears it when nothing explosive is aimed).
 	void updateBlastArea(HdCanvas *surface);
 

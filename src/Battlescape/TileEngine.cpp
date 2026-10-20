@@ -3636,14 +3636,21 @@ void TileEngine::explode(BattleActionAttack attack, Position center, int power, 
  * @param maxRadius The maximum radius of the explosion.
  * @param area Gets every tile the explosion reaches and the power it reaches it with - that of the first
  *  ray to arrive, the one explode() rolls the damage of units and items there from.
+ * @param strongest If given, gets the strongest power of all the rays reaching each tile - the one explode()
+ *  detonates the terrain there with.
  */
-void TileEngine::explosionArea(Position center, int power, const RuleDamageType *type, int maxRadius, std::map<Tile*, int> &area)
+void TileEngine::explosionArea(Position center, int power, const RuleDamageType *type, int maxRadius, std::map<Tile*, int> &area,
+	std::map<Tile*, int> *strongest)
 {
 	const Position centetTile = center.toTile();
 	int hitSide = 0;
 	int diagonalWall = 0;
 	int power_;
 	area.clear();
+	if (strongest)
+	{
+		strongest->clear();
+	}
 
 	if (type->FireBlastCalc)
 	{
@@ -3697,6 +3704,11 @@ void TileEngine::explosionArea(Position center, int power, const RuleDamageType 
 			while (power_ > 0 && l <= maxRadius)
 			{
 				area.insert(std::make_pair(dest, power_)); // the first ray to arrive sets the power
+				if (strongest)
+				{
+					int &s = (*strongest)[dest];
+					s = std::max(s, power_);
+				}
 
 				l += 1.0;
 
