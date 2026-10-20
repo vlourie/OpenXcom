@@ -80,8 +80,14 @@ public:
 	void hour() { _hourPending = _slow; note(_hourTick, _hourMs); }
 	/// Is the game clock slow enough for the pulses (5 seconds or 1 minute a step)?
 	void setSlow(bool slow) { _slow = slow; }
+	/// The game clock ran this frame: the waves and beams move on at the next draw. A frame without it
+	/// (a window over the globe, a dogfight) keeps them standing where they were, as the time does.
+	void ran() { _ran = true; }
 	/// Draws the coverage the `mode` way; `minute` is the game time in minutes. Clipped by HdUi's clip.
-	void draw(const View &view, const std::vector<Source> &sources, long long minute, Mode mode);
+	/// WAVES: `waveHours` 0 - every base at once each game hour (the bases tell the time); 1, 3 or 6 - the
+	/// bases in turn, each once in that many hours, spread over ten-minute steps so that few run together.
+	/// `beam` - a craft out turns a beam round its circle instead of sending waves.
+	void draw(const View &view, const std::vector<Source> &sources, long long minute, Mode mode, int waveHours = 0, bool beam = false);
 	/// The main base's mark instead of its square (WAVES): a four-pointed star of `color` (0xRRGGBB) round
 	/// a dark middle, centred on world pixel (cx, cy), no wider than the 7 base pixels of a globe marker.
 	void drawMainBase(float cx, float cy, int k, Uint32 color);
@@ -110,8 +116,19 @@ private:
 	bool _slow = true;
 	bool _cyclePending = false;
 	bool _hourPending = false;
-	/// When the last cycle and hour came, and the real ms between the last two (0 = not known).
+	/// When the last cycle and hour came, and the ms of the animation clock between the last two (0 = not known).
 	Uint32 _cycleTick = 0, _cycleMs = 0, _hourTick = 0, _hourMs = 0;
+	/// The animation clock, ms: real time, but only while the game clock runs (ran()).
+	Uint32 _clock = 1, _lastReal = 0;
+	bool _ran = false;
+	/// WAVES in turn: the last ten-minute step of the game clock seen, when it came on the animation clock,
+	/// and the ms of that clock one step takes (0 = not known).
+	long long _step = -1;
+	Uint32 _stepAt = 0, _stepMs = 0;
+	/// Moves the animation clock on by the real time since the last draw, if the game clock ran meanwhile.
+	Uint32 advance();
+	/// WAVES in turn: the bases whose turn falls on ten-minute step `step` send their wave now.
+	void scheduleTurn(const std::vector<Source> &sources, Uint32 now, long long minute, long long step, int waveHours);
 	/// The main base's mark as last drawn, and what it was drawn for.
 	std::vector<Uint32> _mainMark;
 	int _mainK = 0;
@@ -131,8 +148,8 @@ private:
 	void schedule(const std::vector<Source> &sources, Uint32 now, long long minute);
 	/// WAVES: sets off at once every base (or every craft), a wave that ends before the next one is due.
 	void scheduleAll(const std::vector<Source> &sources, Uint32 now, long long minute, bool bases, Uint32 gapMs);
-	/// Keeps when a signal came and the time from the one before it.
-	static void note(Uint32 &tick, Uint32 &ms);
+	/// Keeps when a signal came and the time from the one before it, on the animation clock.
+	void note(Uint32 &tick, Uint32 &ms);
 	/// Works out _dist and the runs again if the globe or the bases changed.
 	void updateCache(const View &view, const std::vector<Source> &sources, bool fill);
 };

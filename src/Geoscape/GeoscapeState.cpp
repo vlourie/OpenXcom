@@ -774,6 +774,7 @@ void GeoscapeState::think()
 	{
 		// Handle timers
 		_gameTimer->think(this, 0);
+		_globe->hdRadarRan(); // a picture only: the HD radar's waves move while the time runs
 	}
 	else
 	{
@@ -784,6 +785,7 @@ void GeoscapeState::think()
 			{
 				_pause = false;
 				_gameTimer->think(this, 0);
+				_globe->hdRadarRan();
 			}
 			_dogfightTimer->think(this, 0);
 		}

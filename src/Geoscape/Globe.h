@@ -290,6 +290,8 @@ public:
 	void hdRadarCycle() { _hdRadar.cycle(); }
 	/// HD radar: a game hour has run (the bases' waves of oxceHdRadar 3); a picture only.
 	void hdRadarHour() { _hdRadar.hour(); }
+	/// HD radar: the game clock ran this frame (its waves and beams stand while it does not); a picture only.
+	void hdRadarRan() { _hdRadar.ran(); }
 	/// HD radar: is the game clock slow enough for the pulses?
 	void setHdRadarSlow(bool slow) { _hdRadar.setSlow(slow); }
 	/// Update the resolution settings, we just resized the window.
