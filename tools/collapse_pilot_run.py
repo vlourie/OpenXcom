@@ -360,8 +360,8 @@ def run_scen(a, r, blocks, label):
         "OXCE_COLLAPSE_REMOVE": "%s:%s" % (label, ",".join(map(str, nums))),
         "OXCE_COLLAPSE_AT": str(a.at),
     }
-    name = "%s_%s_z%d_c%s%s%s" % (label, r["scenario"], z, r["unit_cells"], "_hu" if a.hole_unit and hole else "",
-                                  "_off" if a.off else "")
+    name = "%s_%s_z%d_c%s%s%s%s" % (label, r["scenario"], z, r["unit_cells"], r.get("dup", ""),
+                                    "_hu" if a.hole_unit and hole else "", "_off" if a.off else "")
     exp = model_fell(label, rm_keys)
     res, dest, saved = probe(name, a.save, env, not a.off, a.turns)
     lines = collapse_lines(dest / "openxcom.log")
@@ -438,6 +438,13 @@ def cmd_scen(a):
     rows = partial_rows(a.block, only) if a.partial else scen_rows(a.block, a.cells, only)
     if not rows:
         raise SystemExit("сценариев нет")
+    # два сценария на том же этаже и участке (разные детали) - одно имя, общая рабочая папка параллельных прогонов
+    seen = {}
+    for r in rows:
+        k = (r["scenario"], r["z"], r["unit_cells"])
+        seen[k] = seen.get(k, 0) + 1
+        if seen[k] > 1:
+            r["dup"] = "_%d" % seen[k]
     with ThreadPoolExecutor(max_workers=a.jobs) as ex:
         res = list(ex.map(lambda r: run_scen(a, r, blocks, a.block), rows))
     for s in res:
@@ -447,6 +454,11 @@ def cmd_scen(a):
             s["name"], s["expect"], s["model_fell"], fell, "" if s["finished"] else "НЕ ДОИГРАН", s["seconds"],
             "" if s["offset"] else "  ЗДАНИЕ НЕ НАЙДЕНО"))
         mc = s.get("model_check", [])
+        # R-301: бой снёс части блока ещё до стенда - первый обход со снятым видит больше заданного, итог не о сценарии
+        first = next((c["removed"] for c in mc if c["removed"]), 0)
+        if first > s["removed_parts"]:
+            print("       БОЙ ДО СТЕНДА: на первом обходе снято %d, задано %d - прогон не о сценарии (R-301)" % (
+                first, s["removed_parts"]))
         print("       сверка с эталоном: %d обходов, совпало %d; %s" % (
             len(mc), sum(c["same"] for c in mc),
             " ".join("%d->%d/%d" % (c["removed"], c["engine_fell"], c["ref_fell"]) for c in mc if c["removed"])))
