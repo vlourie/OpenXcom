@@ -2062,7 +2062,9 @@ void Globe::drawHdRadar()
 	const long long minute = (((long long)t->getYear() * 12 + t->getMonth()) * 32 + t->getDay()) * 1440 + t->getHour() * 60 + t->getMinute();
 	HdUi &ui = HdUi::instance();
 	ui.setClip(getX(), getY(), getWidth(), getHeight());
-	_hdRadar.draw(view, sources, minute, (HdRadar::Mode)Options::oxceHdRadar);
+	static const int WAVE_HOURS[] = { 0, 1, 3, 6 };   // oxceHdRadarWaves: all at once, in turn each 1, 3, 6 hours
+	const int waveHours = WAVE_HOURS[std::max(0, std::min(3, Options::oxceHdRadarWaves))];
+	_hdRadar.draw(view, sources, minute, (HdRadar::Mode)Options::oxceHdRadar, waveHours, Options::oxceHdRadarBeam);
 	ui.clearClip();
 }
 

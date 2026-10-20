@@ -286,6 +286,10 @@ std::string OptionsHdState::valueText(const OptionInfo &info) const
 	{
 		return tr("STR_HD_RADAR_" + std::to_string(Options::oxceHdRadar));
 	}
+	if (info.asInt() == &Options::oxceHdRadarWaves)
+	{
+		return tr("STR_HD_RADAR_WAVES_" + std::to_string(Options::oxceHdRadarWaves));
+	}
 	if (info.asInt() == &Options::oxceHdMapRotation)
 	{
 		return tr("STR_HD_MAP_ROTATION_" + std::to_string(((Options::oxceHdMapRotation % 4) + 4) % 4));
@@ -499,6 +503,11 @@ void OptionsHdState::changeSetting(size_t sel, Uint8 button)
 		else if (i == &Options::oxceHdRadar)
 		{
 			min = 0;                                  // 0 circles, 1 joint wash, 2 wash with the sweep, 3 waves
+			max = 3;
+		}
+		else if (i == &Options::oxceHdRadarWaves)
+		{
+			min = 0;                                  // 0 all at once each hour, in turn each 1, 3, 6 hours
 			max = 3;
 		}
 		else if (i == &Options::oxceHdMapRotation)

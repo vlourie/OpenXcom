@@ -56,6 +56,8 @@ const Uint32 WAVE_BARE = 0x809CF5D6u; // 50 %: a wave with no wash under it (WAV
 /// WAVES: a wave ends by this part of the time to the next one, and lasts no less than WAVE_MIN_MS.
 const double WAVE_FIT = 0.8;
 const int WAVE_MIN_MS = 1000;
+/// The most the animation clock moves on between two draws, ms.
+const Uint32 MAX_FRAME_MS = 100;
 
 struct Vec
 {
@@ -309,9 +311,63 @@ void HdRadar::schedule(const std::vector<Source> &sources, Uint32 now, long long
 
 void HdRadar::note(Uint32 &tick, Uint32 &ms)
 {
-	const Uint32 now = SDL_GetTicks();
-	ms = tick ? now - tick : 0;
-	tick = now;
+	// the animation clock as of the last draw: the signals come from the game clock, which runs with it
+	ms = tick ? _clock - tick : 0;
+	tick = _clock;
+}
+
+Uint32 HdRadar::advance()
+{
+	const Uint32 real = SDL_GetTicks();
+	if (_ran && _lastReal)
+	{
+		// a long gap (the globe was not drawn, under a base screen) is not played as a jump
+		_clock += std::min<Uint32>(real - _lastReal, MAX_FRAME_MS);
+	}
+	_ran = false;
+	_lastReal = real;
+	return _clock;
+}
+
+/**
+ * WAVES in turn: in a cycle of `waveHours` hours (6 ten-minute steps an hour) the bases with a radar take
+ * their turns evenly, in the order of the list, so that a step sets off one base or a few, never all.
+ * A wave lasts PULSE_MS, or less when the clock is fast, so that about three run at once at most.
+ */
+void HdRadar::scheduleTurn(const std::vector<Source> &sources, Uint32 now, long long minute, long long step, int waveHours)
+{
+	const long long period = 6LL * waveHours;
+	int n = 0;
+	for (const Source &s : sources)
+	{
+		if (!s.waves.empty()) ++n;
+	}
+	if (n == 0) return;
+	// the steps between two bases' turns, and how many bases share a step
+	const double spacing = std::max(1.0, (double)period / n);
+	const double together = std::ceil(n / (double)period);
+	int wave = PULSE_MS;
+	if (_stepMs > 0)
+	{
+		const double fit = WAVE_FIT * _stepMs * spacing * std::max(1.0, 3.0 / together);
+		wave = std::max(WAVE_MIN_MS, std::min(PULSE_MS, (int)fit));
+	}
+	const long long turn = ((step % period) + period) % period;
+	int i = 0;
+	for (const Source &s : sources)
+	{
+		if (s.waves.empty()) continue;
+		if ((long long)i * period / n == turn)
+		{
+			Pulse &p = _pulses[s.id];
+			p.any = true;
+			p.start = now;
+			p.length = (Uint32)wave;
+			p.minute = minute;
+			p.wave = (Uint32)wave;
+		}
+		++i;
+	}
 }
 
 /**
@@ -485,21 +541,47 @@ void HdRadar::updateCache(const View &view, const std::vector<Source> &sources, 
 	pool.run(jobs, [&](int job) { rows(_rowA + (int)((long long)n * job / jobs), _rowA + (int)((long long)n * (job + 1) / jobs)); });
 }
 
-void HdRadar::draw(const View &view, const std::vector<Source> &sources, long long minute, Mode mode)
+void HdRadar::draw(const View &view, const std::vector<Source> &sources, long long minute, Mode mode, int waveHours, bool beam)
 {
 	if (view.radius <= 1 || view.w <= 0 || view.h <= 0) return;
 	const bool sweep = mode == SWEEP, bare = mode == WAVES;
-	const Uint32 now = SDL_GetTicks();
+	const bool inTurn = bare && waveHours > 0;
+	// a craft's beam: with SWEEP always, with WAVES when asked instead of its waves
+	const bool craftBeam = sweep || (bare && beam);
+	const Uint32 now = advance();
 	if (_cyclePending)
 	{
 		_cyclePending = false;
 		if (sweep) schedule(sources, now, minute);
-		else if (bare) scheduleAll(sources, now, minute, false, _cycleMs);
+		else if (bare && !beam) scheduleAll(sources, now, minute, false, _cycleMs);
 	}
 	if (_hourPending)
 	{
 		_hourPending = false;
-		if (bare) scheduleAll(sources, now, minute, true, _hourMs);
+		if (bare && !inTurn) scheduleAll(sources, now, minute, true, _hourMs);
+	}
+	if (inTurn)
+	{
+		const long long step = minute / 10;
+		if (_step >= 0 && step > _step && step - _step <= 6LL * waveHours)
+		{
+			_stepMs = (now - _stepAt) / (Uint32)(step - _step);
+			// at the slow clock speeds only, as the other pulses
+			for (long long s = _step + 1; _slow && s <= step; ++s)
+			{
+				scheduleTurn(sources, now, minute, s, waveHours);
+			}
+		}
+		if (step != _step)
+		{
+			// a load or a jump of the date starts the turns from here, without a burst
+			_step = step;
+			_stepAt = now;
+		}
+	}
+	else
+	{
+		_step = -1;
 	}
 	updateCache(view, sources, !bare);
 
@@ -540,7 +622,7 @@ void HdRadar::draw(const View &view, const std::vector<Source> &sources, long lo
 			sw.angle = TAU * ((now + beat) % SWEEP_MS) / SWEEP_MS;
 			sweeps.push_back(sw);
 			grow(sw.cap);
-			if (!bare) continue;
+			if (!bare || beam) continue;
 		}
 		else if (mode == WASH) continue;
 		const auto pulse = _pulses.find(s.id);
@@ -599,6 +681,25 @@ void HdRadar::draw(const View &view, const std::vector<Source> &sources, long lo
 	// with no wash under it a wave would be lost at the wash's own strength
 	const Uint32 waveColor = bare ? WAVE_BARE : WAVE;
 	const Uint32 waveA = waveColor >> 24;
+	// a craft's beam and the fading trail behind it over one pixel, `cov` - how much of it shows there
+	auto drawBeam = [&](Uint32 &pix, const Sweep &sw, float cov, int px, int py)
+	{
+		const double dx = px + 0.5 - sw.sx, dy = py + 0.5 - sw.sy;
+		double delta = std::fmod(sw.angle - std::atan2(dy, dx), TAU);
+		if (delta < 0) delta += TAU;
+		if (delta < TRAIL)
+		{
+			const double t = 1 - delta / TRAIL;
+			HdUi::blend(pix, TRAIL_COLOR, (float)(t * t) * cov);
+		}
+		const double sd = delta > PI ? delta - TAU : delta;
+		if (std::fabs(sd) < PI / 2)
+		{
+			const double off = std::sqrt(dx * dx + dy * dy) * std::fabs(std::sin(sd));
+			const float b = clamp01(beamW * 0.5 + 0.5 - off);
+			if (b > 0) HdUi::blend(pix, BEAM, b * cov);
+		}
+	};
 	HdUi::instance().shadeRows(ux0, uy0, ux1 - ux0, uy1 - uy0, [&](int py, int x0, int x1, Uint32 *row)
 	{
 		const double Y = (py + 0.5 - view.cy) / radius;
@@ -688,8 +789,10 @@ void HdRadar::draw(const View &view, const std::vector<Source> &sources, long lo
 						const Cap &cap = sweeps[rowSweep[i]].cap;
 						if (px < cap.x0 || px >= cap.x1) continue;
 						const double d = capDist(cap, X, Y, Z, Zc, radius);
-						if (d < -lineW - 1 || d > glowLen + 1) continue;
-						blendOwn(row[px], washColor(d, lim, lineW, glowLen, false));
+						if (d < -lineW - 1) continue;
+						if (d <= glowLen + 1) blendOwn(row[px], washColor(d, lim, lineW, glowLen, false));
+						const Sweep &sw = sweeps[rowSweep[i]];
+						if (craftBeam && sw.front && d > -0.5) drawBeam(row[px], sw, clamp01(d + 0.5) * lim, px, py);
 					}
 					continue;
 				}
@@ -705,29 +808,14 @@ void HdRadar::draw(const View &view, const std::vector<Source> &sources, long lo
 				const float lim = limb(r2, radius);
 				Uint32 &pix = row[px];
 				blendOwn(pix, washColor(d, lim, lineW, glowLen));
-				if (!sweep) continue;
+				if (!craftBeam) continue;
 				const float open = 1 - clamp01(dB + 0.5);
 				if (open <= 0.01f) continue;
 				for (int i = 0; i < nSweep; ++i)
 				{
 					const Sweep &sw = sweeps[rowSweep[i]];
 					if (!sw.front || dc[i] <= -0.5) continue;
-					const float cov = clamp01(dc[i] + 0.5) * open * lim;
-					const double dx = px + 0.5 - sw.sx, dy = py + 0.5 - sw.sy;
-					double delta = std::fmod(sw.angle - std::atan2(dy, dx), TAU);
-					if (delta < 0) delta += TAU;
-					if (delta < TRAIL)
-					{
-						const double t = 1 - delta / TRAIL;
-						HdUi::blend(pix, TRAIL_COLOR, (float)(t * t) * cov);
-					}
-					const double sd = delta > PI ? delta - TAU : delta;
-					if (std::fabs(sd) < PI / 2)
-					{
-						const double off = std::sqrt(dx * dx + dy * dy) * std::fabs(std::sin(sd));
-						const float beam = clamp01(beamW * 0.5 + 0.5 - off);
-						if (beam > 0) HdUi::blend(pix, BEAM, beam * cov);
-					}
+					drawBeam(pix, sw, clamp01(dc[i] + 0.5) * open * lim, px, py);
 				}
 			}
 		}

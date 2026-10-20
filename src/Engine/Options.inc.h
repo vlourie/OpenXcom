@@ -208,6 +208,10 @@ OPT bool oxceHdCraftLights;
 OPT bool oxceHdCraftOutlines;
 // HD globe: how the radar coverage of the bases and the craft is drawn (Engine/HdRadar.h). 0 = the classic circles (default), 1 = a light wash with one joint edge, 2 = the same plus a base pulsing with each detection cycle at the slow clock speeds and a craft's beam turning (a trial)
 OPT int oxceHdRadar;
+// HD globe, radar 3 (waves): when the bases send their waves. 0 = all at once each game hour, 1 = in turn each hour (default), 2 = in turn each 3 hours, 3 = in turn each 6 hours
+OPT int oxceHdRadarWaves;
+// HD globe, radar 3 (waves): a craft out turns a beam round its circle (default) instead of sending a wave each detection cycle
+OPT bool oxceHdRadarBeam;
 // HD interface, modern skin: the colours of the battle's button panel (Engine/HdBattleHud.cpp). 0 = dark slate (default), 1 = gold, as the original panel
 OPT int oxceHdBattleHudColor;
 // Battlescape: a unit hanging in the air or in the water with no floor below sways in place (Map::hoverBob); off = the classic still frame
