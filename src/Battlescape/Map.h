@@ -91,6 +91,21 @@ private:
 	int _spriteWidth, _spriteHeight;
 	/// HD render scale k = _spriteWidth / 32: the map surface and all screen offsets are k times the base resolution.
 	int _k;
+	/// HD render: the battle view zoom (Ctrl + mouse wheel), an index into the zoom table. The canvas is the
+	/// map's size divided by the zoom and reaches the screen scaled: the view takes in more or less of the
+	/// map, the tiles and everything the game counts stay as they are. Picture only, 32-bit display only.
+	int _zoomStep;
+	/// The view the canvas, the camera and every place on the map are counted in, world pixels (the map's
+	/// size at the zoom 100 %).
+	int _viewWidth, _viewHeight;
+	/// The part of the screen above the icons, base pixels: the view's part (_visibleMapHeight) follows it.
+	int _visibleBase;
+	/// While the view is zoomed, the hidden movement message goes to a canvas of the map's own size (it is
+	/// laid out on the screen), so it reaches the screen unscaled.
+	HdCanvas *_messageCanvas = nullptr;
+	bool _messageApart = false;
+	/// Works out the view size for the map's size and the zoom.
+	void updateViewSize();
 	/// Base-resolution scratch surface used to draw the hidden movement message before scaling it.
 	Surface *_messageScratch;
 	/// true while the canvas holds the hidden movement message and not the terrain
@@ -204,7 +219,7 @@ private:
 
 	void drawUnit(UnitSprite &unitSprite, Tile *unitTile, Tile *currTile, Position tileScreenPosition, bool topLayer, BattleUnit* movingUnit = nullptr);
 	void drawTerrain(HdCanvas *canvas);
-	void blitMessage();
+	void blitMessage(HdCanvas *target);
 	void createCanvas();
 	SDL_Color vaporTint(const Particle &p) const;
 	/// HD light: the drawing shade of a tile, cached for the frame (reShade is not cheap in night vision).
@@ -352,6 +367,16 @@ public:
 	static int hdEnviClock(int animFrame, Position pos, int pace);
 	/// Gets the HD render scale k of this map.
 	int getScale() const { return _k; }
+	/// Changes the battle view zoom by `steps` (Ctrl + mouse wheel), keeping the place under the mouse where it
+	/// is; false where the zoom is not available (the 8-bit display).
+	bool zoomView(int steps);
+	/// The battle view zoom, percent (100 = the map's own size).
+	int getViewZoomPercent() const;
+	/// The view's width and height, world pixels (the map's size divided by the zoom).
+	int getViewWidth() const { return _viewWidth; }
+	int getViewHeight() const { return _viewHeight; }
+	/// The view's part above the icons, world pixels.
+	int getViewVisibleHeight() const { return _visibleMapHeight; }
 	/// Gets the name of the canvas type the map draws on (HD render test dumps).
 	const char *getCanvasName() const;
 	/// Selects how the canvas draws palette sprites (HdMode) and redraws the map.

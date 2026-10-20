@@ -41,6 +41,9 @@ private:
 	int halfWorld(int worldSize) const { return (worldSize / _k / 2) * _k; }
 	int _mapsize_x, _mapsize_y, _mapsize_z;
 	int _screenWidth, _screenHeight;
+	/// HD render: the size of the view, world pixels - the map's size divided by the battle view zoom
+	/// (Map::getViewWidth); every place on the map is counted in it, the screen size stays for the mouse.
+	int _viewWidth, _viewHeight;
 	Position _mapOffset, _center;
 	int _scrollMouseX, _scrollMouseY, _scrollKeyX, _scrollKeyY;
 	bool _scrollTrigger;
@@ -79,6 +82,8 @@ public:
 	void scrollMouse();
 	/// Scrolls the view for keyboard-scrolling.
 	void scrollKey();
+	/// A scroll step of base screen pixels in world pixels of the view (the battle view zoom).
+	int viewStep(int base) const;
 	/// Scrolls the view a certain amount.
 	void scrollXY(int x, int y, bool redraw);
 	/// Jumps the view (when projectile in motion).

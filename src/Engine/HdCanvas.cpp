@@ -1531,6 +1531,23 @@ void Canvas32::copyTo(SDL_Surface *dest, int x, int y)
 	});
 }
 
+/**
+ * Gives the canvas another size. The tables, the span tables and the caches of toned and smoothed
+ * frames stay: only the pixels go, and the next frame draws them anew.
+ */
+void Canvas32::resize(int width, int height)
+{
+	if (width == _width && height == _height)
+	{
+		return;
+	}
+	flush();
+	std::tie(_buffer, _surface) = Surface::NewPair32Bit(width, height);
+	SDL_SetColorKey(_surface.get(), 0, 0);
+	_width = width;
+	_height = height;
+}
+
 namespace
 {
 
@@ -1545,20 +1562,22 @@ inline Uint32 mix2(Uint32 a, Uint32 b, Uint32 w)
 }
 
 /**
- * Copies the frame into a same-format 32-bit surface at (x, y), enlarged `zoom` times, rows in
- * parallel. At `pull` 0 the middle of the frame stays in the middle, at 1 the point (fx, fy) of
+ * Copies the frame into a w x h area of a same-format 32-bit surface at (x, y), rows in parallel:
+ * scaled to the area (the battle view zoom: smaller or larger than the canvas) and enlarged `zoom`
+ * times more. At `pull` 0 the middle of the frame stays in the middle, at 1 the point (fx, fy) of
  * the frame comes there, as far as the frame's edges allow. `bars` of the height at the top and
- * at the bottom are black.
+ * at the bottom are black. Bilinear; the view zoom never shrinks more than twice, so every source
+ * pixel still counts.
  */
-void Canvas32::copyZoomed(SDL_Surface *dest, int x, int y, double fx, double fy, double zoom, double pull, double bars)
+void Canvas32::copyZoomed(SDL_Surface *dest, int x, int y, int w, int h, double fx, double fy, double zoom, double pull, double bars)
 {
 	flush();
-	if (!dest || dest->format->BytesPerPixel != 4 || _width < 2 || _height < 2)
+	if (!dest || dest->format->BytesPerPixel != 4 || _width < 2 || _height < 2 || w < 1 || h < 1)
 	{
 		return;
 	}
 	const int x0 = std::max(x, 0), y0 = std::max(y, 0);
-	const int x1 = std::min(x + _width, dest->w), y1 = std::min(y + _height, dest->h);
+	const int x1 = std::min(x + w, dest->w), y1 = std::min(y + h, dest->h);
 	if (x0 >= x1 || y0 >= y1)
 	{
 		return;
@@ -1567,17 +1586,19 @@ void Canvas32::copyZoomed(SDL_Surface *dest, int x, int y, double fx, double fy,
 	const double halfW = _width / 2.0, halfH = _height / 2.0;
 	const double cx = std::min(std::max(halfW + (fx - halfW) * pull, halfW / zoom), _width - halfW / zoom);
 	const double cy = std::min(std::max(halfH + (fy - halfH) * pull, halfH / zoom), _height - halfH / zoom);
+	// target pixels per source pixel
+	const double sx = zoom * w / _width, sy = zoom * h / _height;
 	// the source column of each target column, and the weight of the next one (of 256)
 	std::vector<int> cols(x1 - x0);
 	std::vector<Uint32> colWeights(x1 - x0);
 	for (int dx = x0; dx < x1; ++dx)
 	{
-		const double s = std::min(std::max(cx + (dx - x + 0.5 - halfW) / zoom - 0.5, 0.0), _width - 1.0);
+		const double s = std::min(std::max(cx + (dx - x + 0.5 - w / 2.0) / sx - 0.5, 0.0), _width - 1.0);
 		const int i = std::min((int)s, _width - 2);
 		cols[dx - x0] = i;
 		colWeights[dx - x0] = (Uint32)((s - i) * 256.0 + 0.5);
 	}
-	const int bar = (int)(_height * bars + 0.5);
+	const int bar = (int)(h * bars + 0.5);
 	const Uint32 black = SDL_MapRGB(dest->format, 0, 0, 0);
 	HdWorkers &pool = HdWorkers::instance();
 	const int rows = y1 - y0;
@@ -1590,20 +1611,20 @@ void Canvas32::copyZoomed(SDL_Surface *dest, int x, int y, double fx, double fy,
 		{
 			Uint32 *out = (Uint32*)((Uint8*)dest->pixels + (size_t)dy * dest->pitch) + x0;
 			const int ly = dy - y;
-			if (ly < bar || ly >= _height - bar)
+			if (ly < bar || ly >= h - bar)
 			{
 				std::fill(out, out + (x1 - x0), black);
 				continue;
 			}
-			const double s = std::min(std::max(cy + (ly + 0.5 - halfH) / zoom - 0.5, 0.0), _height - 1.0);
+			const double s = std::min(std::max(cy + (ly + 0.5 - h / 2.0) / sy - 0.5, 0.0), _height - 1.0);
 			const int j = std::min((int)s, _height - 2);
 			const Uint32 wy = (Uint32)((s - j) * 256.0 + 0.5);
 			const Uint32 *r0 = rowPtr(j), *r1 = rowPtr(j + 1);
 			for (int i = 0; i < x1 - x0; ++i)
 			{
 				const int c = cols[i];
-				const Uint32 w = colWeights[i];
-				out[i] = mix2(mix2(r0[c], r0[c + 1], w), mix2(r1[c], r1[c + 1], w), wy);
+				const Uint32 wx = colWeights[i];
+				out[i] = mix2(mix2(r0[c], r0[c + 1], wx), mix2(r1[c], r1[c + 1], wx), wy);
 			}
 		}
 	});

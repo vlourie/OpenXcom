@@ -45,6 +45,7 @@ Camera::Camera(int spriteWidth, int spriteHeight, int mapsize_x, int mapsize_y, 
 	_k(spriteWidth / 32 > 0 ? spriteWidth / 32 : 1),
 	_mapsize_x(mapsize_x), _mapsize_y(mapsize_y), _mapsize_z(mapsize_z),
 	_screenWidth(map->getWidth()), _screenHeight(map->getHeight()),
+	_viewWidth(map->getWidth()), _viewHeight(map->getHeight()),
 	_mapOffset(-250 * (spriteWidth / 32 > 0 ? spriteWidth / 32 : 1), 250 * (spriteWidth / 32 > 0 ? spriteWidth / 32 : 1), 0),
 	_scrollMouseX(0), _scrollMouseY(0), _scrollKeyX(0), _scrollKeyY(0), _scrollTrigger(false),
 	_visibleMapHeight(visibleMapHeight), _showAllLayers(false), _showSingleLayer(false),
@@ -317,7 +318,7 @@ void Camera::keyboardRelease(Action *action, State *)
 void Camera::scrollMouse()
 {
 	// scroll speeds are kept in base pixels, the camera moves in world pixels
-	scrollXY(_scrollMouseX * _k, _scrollMouseY * _k, true);
+	scrollXY(viewStep(_scrollMouseX), viewStep(_scrollMouseY), true);
 }
 
 /**
@@ -325,7 +326,21 @@ void Camera::scrollMouse()
  */
 void Camera::scrollKey()
 {
-	scrollXY(_scrollKeyX * _k, _scrollKeyY * _k, true);
+	scrollXY(viewStep(_scrollKeyX), viewStep(_scrollKeyY), true);
+}
+
+/**
+ * A scroll step of base screen pixels in world pixels of the view: the map goes as fast on the
+ * screen at any battle view zoom (k times the step without the zoom).
+ */
+int Camera::viewStep(int base) const
+{
+	if (_viewWidth == _screenWidth || base == 0)
+	{
+		return base * _k;
+	}
+	const int step = (int)std::lround(base * (double)_viewWidth / _screenWidth);
+	return (step != 0 ? step : (base > 0 ? 1 : -1)) * _k;
 }
 
 /**
@@ -343,7 +358,7 @@ void Camera::scrollXY(int x, int y, bool redraw)
 	{
 		int xx = 0;
 		int yy = 0;
-		convertScreenToMap(halfWorld(_screenWidth), halfWorld(_visibleMapHeight), &xx, &yy);
+		convertScreenToMap(halfWorld(_viewWidth), halfWorld(_visibleMapHeight), &xx, &yy);
 		_center.x = xx;
 		_center.y = yy;
 
@@ -375,7 +390,7 @@ void Camera::jumpXY(int x, int y)
 	_mapOffset.y += y;
 	int xx = 0;
 	int yy = 0;
-	convertScreenToMap(halfWorld(_screenWidth), halfWorld(_visibleMapHeight), &xx, &yy);
+	convertScreenToMap(halfWorld(_viewWidth), halfWorld(_visibleMapHeight), &xx, &yy);
 	_center.x = xx;
 	_center.y = yy;
 }
@@ -431,7 +446,7 @@ void Camera::centerOnPosition(Position mapPos, bool redraw)
 	_center.y = Clamp<int>(_center.y, -1, _mapsize_y);
 	convertMapToScreen(_center, &screenPos);
 
-	_mapOffset.x = -(screenPos.x - halfWorld(_screenWidth));
+	_mapOffset.x = -(screenPos.x - halfWorld(_viewWidth));
 	_mapOffset.y = -(screenPos.y - halfWorld(_visibleMapHeight));
 
 	_mapOffset.z = _center.z;
@@ -451,7 +466,7 @@ bool Camera::inView(Position mapPos) const
 	convertMapToScreen(mapPos, &screenPos);
 	const int x = screenPos.x + _mapOffset.x + _spriteWidth / 2;
 	const int y = screenPos.y + _mapOffset.y + _spriteHeight - _spriteWidth / 4;
-	return x >= _spriteWidth / 2 && x <= _screenWidth - _spriteWidth / 2
+	return x >= _spriteWidth / 2 && x <= _viewWidth - _spriteWidth / 2
 		&& y >= _spriteHeight && y <= _visibleMapHeight - _spriteWidth / 4;
 }
 
@@ -517,7 +532,7 @@ void Camera::beginShown()
 			_shownX += logical.x - _lastLogical.x;
 			_shownY += logical.y - _lastLogical.y;
 		}
-		else if (std::abs(logical.x - _shownX) > GLIDE_FAR * _screenWidth || std::abs(logical.y - _shownY) > GLIDE_FAR * _visibleMapHeight)
+		else if (std::abs(logical.x - _shownX) > GLIDE_FAR * _viewWidth || std::abs(logical.y - _shownY) > GLIDE_FAR * _visibleMapHeight)
 		{
 			_shownX = logical.x;
 			_shownY = logical.y;
@@ -782,21 +797,24 @@ __________
 			sizex += _spriteWidth;
 			sizey += _spriteWidth/2;
 		}
+		// the icons in view pixels (the battle view zoom shrinks or widens the view, not the icons)
+		const int iconWidth = _map->getIconWidth() * _k * _viewWidth / _screenWidth;
+		const int iconHeight = _map->getIconHeight() * _k * _viewHeight / _screenHeight;
 		if ( screenPos.x < 0 - sizex
-			|| screenPos.x >= _screenWidth + sizex
+			|| screenPos.x >= _viewWidth + sizex
 			|| screenPos.y < 0 - sizey
-			|| screenPos.y >= _screenHeight + sizey ) return false; //totally outside
-		int side = ( _screenWidth - _map->getIconWidth() * _k ) / 2;
-		if ( (screenPos.y < (_screenHeight - _map->getIconHeight() * _k) + sizey) ) return true; //above icons
-		if ( (side > 1) && ( (screenPos.x < side + sizex) || (screenPos.x >= (_screenWidth - side - sizex)) ) ) return true; //at sides (if there are any)
+			|| screenPos.y >= _viewHeight + sizey ) return false; //totally outside
+		int side = ( _viewWidth - iconWidth ) / 2;
+		if ( (screenPos.y < (_viewHeight - iconHeight) + sizey) ) return true; //above icons
+		if ( (side > 1) && ( (screenPos.x < side + sizex) || (screenPos.x >= (_viewWidth - side - sizex)) ) ) return true; //at sides (if there are any)
 		return false;
 	}
 	else
 	{
 		return screenPos.x >= 0
-			&& screenPos.x <= _screenWidth - 10 * _k
+			&& screenPos.x <= _viewWidth - 10 * _k
 			&& screenPos.y >= 0
-			&& screenPos.y <= _screenHeight - 10 * _k;
+			&& screenPos.y <= _viewHeight - 10 * _k;
 	}
 }
 
@@ -807,7 +825,9 @@ void Camera::resize()
 {
 	_screenWidth = _map->getWidth();
 	_screenHeight = _map->getHeight();
-	_visibleMapHeight = _map->getHeight() - _map->getIconHeight() * _k;
+	_viewWidth = _map->getViewWidth();
+	_viewHeight = _map->getViewHeight();
+	_visibleMapHeight = _map->getViewVisibleHeight();
 }
 
 void Camera::stopKeyScrolling()
