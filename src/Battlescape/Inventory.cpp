@@ -1321,6 +1321,61 @@ void Inventory::mouseClick(Action *action, State *state)
 }
 
 /**
+ * Whether a slot lies at the given point (a click there drops the grabbed item into it, not on the unit).
+ * @param x, y Point relative to the inventory.
+ */
+bool Inventory::isSlotAt(int x, int y) const
+{
+	return getSlotInPosition(&x, &y) != nullptr;
+}
+
+/**
+ * The hand an item dropped on the unit's body goes to before the use: the one it is in already,
+ * else the right or the left hand when it is free and takes the item.
+ * @param item The grabbed item.
+ * @return The hand, or nullptr when both are taken.
+ */
+const RuleInventory *Inventory::useHand(const BattleItem *item) const
+{
+	if (item->getSlot()->getType() == INV_HAND)
+	{
+		return item->getSlot();
+	}
+	const std::pair<const RuleInventory*, BattleItem*> hands[] = {
+		{ _inventorySlotRightHand, _selUnit->getRightHandWeapon() },
+		{ _inventorySlotLeftHand, _selUnit->getLeftHandWeapon() } };
+	for (const auto &hand : hands)
+	{
+		if (hand.first && !hand.second && item->getRules()->canBePlacedIntoInventorySection(hand.first) && hand.first->fitItemInSlot(item->getRules(), 0, 0))
+		{
+			return hand.first;
+		}
+	}
+	return nullptr;
+}
+
+/**
+ * Puts the grabbed item into a hand, paying the TU of the move as a drop there would, and lets go of it.
+ * @param hand The hand from useHand(); the caller has checked the TU.
+ */
+void Inventory::putInHand(const RuleInventory *hand)
+{
+	BattleItem *item = _selItem;
+	const bool fromGround = item->getSlot()->getType() == INV_GROUND;
+	if (item->getSlot() != hand)
+	{
+		_selUnit->spendTimeUnits(item->getMoveToCost(hand));
+		moveItem(item, hand, 0, 0);
+	}
+	setSelectedItem(0);
+	if (fromGround)
+	{
+		arrangeGround();
+	}
+	_game->getMod()->getSoundByDepth(_depth, Mod::ITEM_DROP)->play();
+}
+
+/**
  * Quickly drops the selected item on the ground.
  * @return The success of the item being dropped.
  */
