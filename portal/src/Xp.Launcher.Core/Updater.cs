@@ -363,6 +363,14 @@ public sealed class Updater(GamePaths paths, RepoClient repo, ILauncherLog log)
 
     public bool CanRollback => File.Exists(Path.Combine(Paths.LastBackup, "undo.json"));
 
+    /// <summary>The version installed before the last update (the state kept in backup/last); null - none kept. Only reads.</summary>
+    public string? PreviousVersion()
+    {
+        var file = Path.Combine(Paths.LastBackup, "state.json");
+        try { return File.Exists(file) ? JsonSerializer.Deserialize(File.ReadAllBytes(file), CoreJson.Default.LauncherState)?.InstalledVersion : null; }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or JsonException) { return null; }
+    }
+
     /// <summary>
     /// "Undo the last update": puts back every replaced and removed file and the previous state. It is a
     /// transaction of its own, like an install: what it replaces is moved aside into a reserve first and

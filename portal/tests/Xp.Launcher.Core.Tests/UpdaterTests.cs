@@ -326,6 +326,21 @@ public sealed class UpdaterTests : IDisposable
     }
 
     [Fact]
+    public async Task The_version_before_the_last_update_is_read_from_the_kept_state()
+    {
+        Assert.Null(f.Updater.PreviousVersion());   // nothing installed yet
+        f.StageV1(); f.BuildAndPublish("v1");
+        await f.UpdateAsync();
+        Assert.Null(f.Updater.PreviousVersion());   // a fresh install: there was no version before it
+        f.StageV2(); f.BuildAndPublish("v2");
+        await f.UpdateAsync();
+        Assert.Equal("v2", f.Updater.LoadState().InstalledVersion);
+        Assert.Equal("v1", f.Updater.PreviousVersion());
+        f.Updater.RollbackLast();
+        Assert.Null(f.Updater.PreviousVersion());   // the undo set is gone with the rollback
+    }
+
+    [Fact]
     public async Task Rollback_broken_off_in_the_middle_is_undone_and_can_be_run_again()
     {
         f.StageV1(); f.BuildAndPublish("v1");

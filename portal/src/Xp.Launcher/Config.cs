@@ -21,6 +21,8 @@ public sealed class Settings
     public Dictionary<string, long> LauncherSequence { get; set; } = new();
     public double? WindowWidth { get; set; }
     public double? WindowHeight { get; set; }
+    /// <summary>The window goes to the tray while the game started by "Play" runs and comes back when it exits.</summary>
+    public bool TrayWhilePlaying { get; set; } = true;
 
     // voice: the devices by id with the name as the fallback (Xp.Voice.VoiceOptions), null - the Windows default
     public string? VoiceInputId { get; set; }

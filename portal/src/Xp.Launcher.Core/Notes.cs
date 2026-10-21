@@ -1,6 +1,59 @@
 using System.Text.RegularExpressions;
+using Xp.Manifest;
 
 namespace Xp.Launcher.Core;
+
+/// <summary>
+/// "What's new" on the home page: every release one update brings (or brought), not only the last one -
+/// a player six releases behind gets the six, newest first.
+/// </summary>
+public static partial class NoteRange
+{
+    [GeneratedRegex(@"^(\d+)\.(\d+)\.(\d+)(?:-(\d+))?$")]
+    private static partial Regex VersionRx();
+
+    /// <summary>
+    /// The history (newest first) from <paramref name="latest"/> down to, not including, <paramref name="before"/> -
+    /// the version the player had before the update. No <paramref name="before"/> (a fresh install, nothing kept) -
+    /// the latest alone; <paramref name="latest"/> not in the history - nothing, the caller shows the manifest's own text.
+    /// </summary>
+    public static List<ReleaseNote> Since(IReadOnlyList<ReleaseNote> newestFirst, string latest, string? before)
+    {
+        var range = new List<ReleaseNote>();
+        int start = -1;
+        for (int i = 0; i < newestFirst.Count && start < 0; i++)
+            if (newestFirst[i].Version == latest) start = i;
+        if (start < 0) return range;
+        for (int i = start; i < newestFirst.Count; i++)
+        {
+            var r = newestFirst[i];
+            // the version the player had may be revoked and missing from the history: then the first one older stops too
+            if (i > start && (before is null || r.Version == before || Compare(r.Version, before) is <= 0)) break;
+            range.Add(r);
+        }
+        return range;
+    }
+
+    /// <summary>"2026.10.20-17" against "2026.10.21": number by number, no suffix - the first of the day; null - not of that form.</summary>
+    public static int? Compare(string a, string b)
+    {
+        if (Key(a) is not { } x || Key(b) is not { } y) return null;
+        for (int i = 0; i < 4; i++)
+            if (x[i] != y[i]) return x[i].CompareTo(y[i]);
+        return 0;
+    }
+
+    static long[]? Key(string v)
+    {
+        var m = VersionRx().Match(v.Trim());
+        if (!m.Success) return null;
+        var k = new long[4];
+        for (int i = 0; i < 3; i++)
+            if (!long.TryParse(m.Groups[i + 1].Value, out k[i])) return null;
+        k[3] = m.Groups[4].Success && long.TryParse(m.Groups[4].Value, out var n) ? n : 1;
+        return k;
+    }
+}
 
 public enum NoteKind { Heading, Bullet, Paragraph }
 

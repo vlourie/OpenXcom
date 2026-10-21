@@ -301,4 +301,92 @@ public sealed class BuildsWindowTests : IDisposable
         Shot(w, "12-home-unlocked");
         w.Close();
     }
+
+    [AvaloniaFact]
+    public void Whats_new_lists_every_release_since_the_players_version()
+    {
+        var w = Open();
+        static Xp.Manifest.ReleaseNote Note(string v, string text) => new() { Version = v, Changelog = { ["ru"] = text, ["en"] = text } };
+        var notes = new Xp.Manifest.ChannelNotes
+        {
+            Releases = [Note("2026.10.21-2", "- Радары: волны по очереди"), Note("2026.10.21", "- План базы: постройки в своей клетке"),
+                        Note("2026.10.20-17", "- Экраны базы: картинки по темам"), Note("2026.10.20-16", "- Старое")],
+        };
+        var m = new Xp.Manifest.ReleaseManifest { Release = { Version = "2026.10.21-2", Changelog = { ["ru"] = "- Радары: волны по очереди" } } };
+        var show = typeof(MainWindow).GetMethod("ShowRelease", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        var title = F<TextBlock>(w, "_whatsNewTitle");
+        var list = F<StackPanel>(w, "_changelog");
+
+        // an update waits: the player has 2026.10.20-16, three releases come with it
+        show.Invoke(w, [m, notes, "2026.10.20-16"]);
+        Settle();
+        Assert.Equal(L.T("home.whatsNewSince", "2026.10.20-16"), title.Text);
+        Assert.Equal(3, list.Children.Count);
+        Shot(w, "14-whats-new-since");
+
+        // no history (an old repository, no network): the latest manifest's own text, as before
+        show.Invoke(w, [m, null, "2026.10.20-16"]);
+        Settle();
+        Assert.Equal(L.T("home.whatsNew", "2026.10.21-2"), title.Text);
+        Assert.Single(list.Children);
+        w.Close();
+    }
+
+    Process Sleeper(string args) => Process.Start(new ProcessStartInfo(Path.Combine(Game, "openxcom_hd.exe"), args)
+        { UseShellExecute = false, CreateNoWindow = true, RedirectStandardOutput = true })!;
+
+    /// <summary>As if "Play" had started this process: the window follows it.</summary>
+    static void Follow(MainWindow w, Process game)
+    {
+        typeof(MainWindow).GetField("_game", BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(w, game);
+        typeof(MainWindow).GetMethod("FollowGame", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(w, null);
+        Settle();
+    }
+
+    [AvaloniaFact]
+    public void While_the_game_runs_the_window_waits_in_the_tray()
+    {
+        var w = Open();
+        Assert.True(F<Settings>(w, "_settings").TrayWhilePlaying);   // on by default
+
+        // a clean exit (code 0): the window is in the tray while the game runs, then back without an error line
+        var clean = Sleeper("-n 3 127.0.0.1");
+        Follow(w, clean);
+        Assert.False(w.IsVisible);
+        var tray = F<TrayIcon>(w, "_tray");
+        Assert.True(tray.IsVisible);
+        Assert.Equal(L.T("tray.playing"), tray.ToolTipText);
+        Assert.False(F<NativeMenuItem>(w, "_trayLeave").IsVisible);   // not in a room: nothing to leave
+        Pump(() => w.IsVisible, "the window back after the game");
+        Assert.Null(F<object?>(w, "_game"));
+        Assert.False(tray.IsVisible);
+        Assert.Null(F<string?>(w, "_gameFailed"));
+
+        // a crash (here the process killed, code -1): back with the code on the home page
+        _sleeper = Sleeper("-n 600 127.0.0.1");
+        Follow(w, _sleeper);
+        Assert.False(w.IsVisible);
+        _sleeper.Kill();
+        Pump(() => w.IsVisible, "the window back after the crash");
+        Assert.False(tray.IsVisible);
+        Assert.Equal(L.T("main.gameFailed", "0xFFFFFFFF"), F<string?>(w, "_gameFailed"));
+        Shot(w, "13-home-after-crash");
+
+        // the option off: the window stays where it is, no tray icon
+        F<Settings>(w, "_settings").TrayWhilePlaying = false;
+        _sleeper = Sleeper("-n 600 127.0.0.1");
+        Follow(w, _sleeper);
+        Assert.True(w.IsVisible);
+        Assert.False(tray.IsVisible);
+        _sleeper.Kill();
+        Pump(() => F<object?>(w, "_game") is null, "the game's exit");
+        Assert.True(w.IsVisible);
+
+        // "Play" for real: the "game" (ping) is given -user and -cfg it does not know and ends at once with code 1
+        F<Settings>(w, "_settings").TrayWhilePlaying = true;
+        Click(F<Button>(w, "_main"));
+        Pump(() => F<object?>(w, "_game") is null && w.IsVisible && F<string?>(w, "_gameFailed") == L.T("main.gameFailed", "1"), "the exit of the game Play started");
+        Assert.False(tray.IsVisible);
+        w.Close();
+    }
 }

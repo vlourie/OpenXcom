@@ -48,7 +48,7 @@ public sealed class MainWindow : Window
     readonly TextBlock _current = new() { FontSize = 11, Foreground = Skin.B(Skin.Dim), TextTrimming = TextTrimming.CharacterEllipsis };
     readonly Border _whatsNew;
     readonly TextBlock _whatsNewTitle = new() { FontFamily = Skin.Medium, FontSize = 18, TextWrapping = TextWrapping.Wrap };
-    readonly TextBlock _changelog = new() { TextWrapping = TextWrapping.Wrap, FontSize = 13, LineHeight = 19, Foreground = Skin.B(Skin.Text2) };
+    readonly StackPanel _changelog = new() { Spacing = 14 };   // a release per entry, newest first (ShowRelease)
 
     // settings
     readonly TextBox _gameDir = new() { IsReadOnly = true, FontSize = 13 };
@@ -75,7 +75,9 @@ public sealed class MainWindow : Window
     readonly AccountPanel _account;
     readonly VoicePage _voicePage;
     TrayIcon? _tray;
-    bool _quitting;     // a real exit: the window does not go to the tray even in a room
+    NativeMenuItem? _trayLeave;  // "leave the room": in the tray menu only while in a room
+    bool _hiddenForGame;    // the window went to the tray for the time of the game "Play" started (Settings.TrayWhilePlaying)
+    bool _quitting;    // a real exit: the window does not go to the tray even in a room
     bool _gone;         // the site is told the launcher is off the online list (once, at most a second)
 
     GamePaths? _paths;
@@ -97,6 +99,7 @@ public sealed class MainWindow : Window
     string? _offline;           // the last check could not reach the server
     string? _error;             // the last update failed
     string? _note;              // a neutral one-off result ("rolled back to 1.2")
+    string? _gameFailed;        // the game "Play" started ended with an error code: until the next start
     string _progressLine = "";
     double _percent;
     Phase _phase;
@@ -354,44 +357,85 @@ public sealed class MainWindow : Window
         Hide();
     }
 
-    /// <summary>The tray icon lives while the player is in a room: it is the way back to a hidden window.</summary>
     void RoomChanged()
     {
-        if (_voicePage.InRoom)
-        {
-            if (_tray is null)
-            {
-                var open = new NativeMenuItem(L.T("voice.trayOpen"));
-                open.Click += (_, _) => ShowWindow();
-                var leave = new NativeMenuItem(L.T("voice.trayLeave"));
-                leave.Click += async (_, _) => await _voicePage.LeaveAsync();
-                var quit = new NativeMenuItem(L.T("voice.trayQuit"));
-                quit.Click += (_, _) => Quit();
-                var menu = new NativeMenu();
-                menu.Items.Add(open);
-                menu.Items.Add(leave);
-                menu.Items.Add(new NativeMenuItemSeparator());
-                menu.Items.Add(quit);
-                _tray = new TrayIcon
-                {
-                    Icon = new WindowIcon(Avalonia.Platform.AssetLoader.Open(new Uri("avares://XPiratezLauncher/Assets/app.ico"))),
-                    Menu = menu,
-                };
-                _tray.Clicked += (_, _) => ShowWindow();
-                if (Application.Current is { } app) TrayIcon.SetIcons(app, [_tray]);
-            }
-            _tray.ToolTipText = L.T("voice.trayTip", _voicePage.RoomTitle ?? "");
-            _tray.IsVisible = true;
-            return;
-        }
-        if (_tray is not null) _tray.IsVisible = false;
+        UpdateTray();
+        if (_voicePage.InRoom) return;
         // out of the room while hidden (left from the tray, sent away, refused): the window comes back,
-        // with the reason on the voice page - a hidden launcher without a tray icon could not be reached
-        if (!IsVisible && !_quitting)
+        // with the reason on the voice page - a hidden launcher without a tray icon could not be reached.
+        // Hidden for the game it waits for the game's exit: the tray icon stays
+        if (!IsVisible && !_quitting && !_hiddenForGame)
         {
             ShowWindow();
             Navigate("voice");
         }
+    }
+
+    /// <summary>
+    /// The tray icon lives while the player is in a room or the game hid the window: it is the way back to a hidden window.
+    /// </summary>
+    void UpdateTray()
+    {
+        bool room = _voicePage.InRoom;
+        if (!room && !_hiddenForGame)
+        {
+            if (_tray is not null) _tray.IsVisible = false;
+            return;
+        }
+        if (_tray is null)
+        {
+            var open = new NativeMenuItem(L.T("voice.trayOpen"));
+            open.Click += (_, _) => ShowWindow();
+            _trayLeave = new NativeMenuItem(L.T("voice.trayLeave"));
+            _trayLeave.Click += async (_, _) => await _voicePage.LeaveAsync();
+            var quit = new NativeMenuItem(L.T("voice.trayQuit"));
+            quit.Click += (_, _) => Quit();
+            var menu = new NativeMenu();
+            menu.Items.Add(open);
+            menu.Items.Add(_trayLeave);
+            menu.Items.Add(new NativeMenuItemSeparator());
+            menu.Items.Add(quit);
+            _tray = new TrayIcon
+            {
+                Icon = new WindowIcon(Avalonia.Platform.AssetLoader.Open(new Uri("avares://XPiratezLauncher/Assets/app.ico"))),
+                Menu = menu,
+            };
+            _tray.Clicked += (_, _) => ShowWindow();
+            if (Application.Current is { } app) TrayIcon.SetIcons(app, [_tray]);
+        }
+        _trayLeave!.IsVisible = room;
+        _tray.ToolTipText = room ? L.T("voice.trayTip", _voicePage.RoomTitle ?? "") : L.T("tray.playing");
+        _tray.IsVisible = true;
+    }
+
+    /// <summary>
+    /// The game "Play" started: its exit is followed, and for the time of the game the window goes to the tray
+    /// if the player keeps that on. Called right after the start, with <see cref="_game"/> set.
+    /// </summary>
+    void FollowGame()
+    {
+        var game = _game!;
+        game.EnableRaisingEvents = true;
+        game.Exited += (_, _) => Dispatcher.UIThread.Post(() =>
+        {
+            var code = game.ExitCode;
+            _fileLog?.Info($"game exited with code {code}");
+            game.Dispose();   // the open handle keeps the exited game in the process list
+            if (_game == game) _game = null;
+            // not the player's own exit: a crash (an exception code, 0xC0000005) or an engine error (1)
+            if (code != 0) _gameFailed = L.T("main.gameFailed", code is < 0 or > 0xFFFF ? $"0x{code:X8}" : code.ToString());
+            if (_hiddenForGame)
+            {
+                _hiddenForGame = false;
+                UpdateTray();
+                if (!IsVisible && !_quitting) ShowWindow();
+            }
+            Refresh();
+        });
+        if (!_settings.TrayWhilePlaying) return;
+        _hiddenForGame = true;
+        UpdateTray();
+        ToTray();
     }
 
     Control HomePage()
@@ -597,6 +641,13 @@ public sealed class MainWindow : Window
         };
         game.Children.Add(_language);
         game.Children.Add(_languageNote);
+        var tray = new CheckBox { Content = L.T("settings.trayWhilePlaying"), IsChecked = _settings.TrayWhilePlaying, FontSize = 13 };
+        tray.IsCheckedChanged += (_, _) =>
+        {
+            _settings.TrayWhilePlaying = tray.IsChecked == true;
+            try { _settings.Save(); } catch (IOException) { }
+        };
+        game.Children.Add(tray);
         game.Children.Add(Skin.H2(L.T("settings.builds")));
         game.Children.Add(_buildList);
         var buildsRow = new WrapPanel { Orientation = Orientation.Horizontal };
@@ -1026,7 +1077,8 @@ public sealed class MainWindow : Window
         var ct = _cts!.Token;
         var state = u.LoadState();
         _latest = await u.CheckAsync(state, ct);
-        ShowRelease(_latest.Manifest);
+        var channel = _latest.Manifest.Release.Channel is { Length: > 0 } ch ? ch : state.Channel;
+        ShowRelease(_latest.Manifest, await NotesAsync(channel, ct), state.InstalledVersion);
         await CheckLauncherAsync(state.Channel, ct);
 
         _needLauncher = Version.TryParse(_latest.Manifest.Release.MinLauncher, out var need) && need > BuiltIn.Version ? need : null;
@@ -1130,14 +1182,8 @@ public sealed class MainWindow : Window
             var args = _builds!.LaunchArgs(build);
             _game = GameProcess.Start(_updater.Paths, exe, args);
             _fileLog?.Info($"game started: {exe} {string.Join(' ', args)} (build '{build.Id}')");
-            _game.EnableRaisingEvents = true;
-            _game.Exited += (_, _) => Dispatcher.UIThread.Post(() =>
-            {
-                _fileLog?.Info($"game exited with code {_game?.ExitCode}");
-                _game?.Dispose();   // the open handle keeps the exited game in the process list
-                _game = null;
-                Refresh();
-            });
+            _gameFailed = null;
+            FollowGame();
         }
         catch (UpdateBlockedException) { SetStatus(L.T("builds.running")); }   // started from elsewhere a moment ago: one game at a time
         catch (Exception e) when (e is IOException or System.ComponentModel.Win32Exception or InvalidOperationException)
@@ -1151,12 +1197,41 @@ public sealed class MainWindow : Window
 
     // ----------------------------------------------------------------- display
 
-    void ShowRelease(ReleaseManifest m)
+    /// <summary>
+    /// "What's new": every release from the version the player had before the update up to the latest - the one
+    /// installed now when an update waits, the one kept in backup/last when it is already in. Without the history
+    /// (an old repository, no network for it) - the latest manifest's own text, as before.
+    /// </summary>
+    void ShowRelease(ReleaseManifest m, ChannelNotes? notes, string? installed)
     {
-        var text = m.Release.Changelog.TryGetValue(L.Language, out var t) ? t : m.Release.Changelog.Values.FirstOrDefault() ?? "";
-        _changelog.Text = text.Trim();
-        _whatsNewTitle.Text = L.T("home.whatsNew", m.Release.Version);
-        _whatsNew.IsVisible = _changelog.Text.Length > 0;
+        var latest = m.Release.Version;
+        var before = installed != latest ? installed : _updater?.PreviousVersion();
+        var range = notes is null ? [] : NoteRange.Since(notes.Releases, latest, before);
+        if (range.Count == 0) range = [new ReleaseNote { Version = latest, Changelog = m.Release.Changelog }];
+        _changelog.Children.Clear();
+        foreach (var r in range)
+        {
+            var text = NoteText.Pick(r.Changelog, L.Language).Trim();
+            if (text.Length == 0) continue;
+            var entry = new StackPanel { Spacing = 4 };
+            if (range.Count > 1) entry.Children.Add(new TextBlock { Text = r.Version, FontFamily = Skin.Medium, FontSize = 15, Foreground = Skin.B(Skin.Text) });
+            entry.Children.Add(new TextBlock { Text = text, TextWrapping = TextWrapping.Wrap, FontSize = 13, LineHeight = 19, Foreground = Skin.B(Skin.Text2) });
+            _changelog.Children.Add(entry);
+        }
+        _whatsNewTitle.Text = range.Count > 1 ? L.T("home.whatsNewSince", before ?? "") : L.T("home.whatsNew", latest);
+        _whatsNew.IsVisible = _changelog.Children.Count > 0;
+    }
+
+    /// <summary>The channel's history for "What's new"; null when there is none or it cannot be had now - never a failed check.</summary>
+    async Task<ChannelNotes?> NotesAsync(string channel, CancellationToken ct)
+    {
+        if (_repo is not { } repo) return null;
+        try { return await repo.GetNotesAsync(channel, ct); }
+        catch (Exception e) when (!ct.IsCancellationRequested && e is HttpRequestException or IOException or TrustException or TaskCanceledException or ArgumentException)
+        {
+            _fileLog?.Info("history for what's new: " + e.Message);
+            return null;
+        }
     }
 
     void ShowProgress(Core.Progress p)
@@ -1271,12 +1346,14 @@ public sealed class MainWindow : Window
         else if (_pendingLine is not null)
         {
             caption = L.T("main.update");
+            if (_gameFailed is not null) Sub(_gameFailed, Skin.WarnText);
             Sub(_pendingLine);
             SubLink(L.T("main.playAnyway"), Play);
         }
         else
         {
             caption = L.T("play");
+            if (_gameFailed is not null) Sub(_gameFailed, Skin.WarnText);
             if (_work == Work.Check) Sub(_progressLine.Length > 0 ? L.T("status.checking") + " " + _progressLine : L.T("status.checking"));
             else if (_offline is not null) { Sub(L.T("main.offline")); SubLink(L.T("main.retry"), async () => await RunAsync(Work.Check, () => CheckAsync(full: false, apply: false))); }
             else if (_note is not null) Sub(_note);
