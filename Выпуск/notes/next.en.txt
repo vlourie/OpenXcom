@@ -1,0 +1,1 @@
+- Collapse (option): rubble heaps and blocks are now in HD - heaps of broken concrete with rebar, of earth with splinters and bricks, of snow and of sand with stones, a cracked concrete slab and chunks of stone masonry instead of chunky classic pixels.
