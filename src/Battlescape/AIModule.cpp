@@ -677,10 +677,13 @@ void AIModule::dont_think(BattleAction *action)
 			// previous decision's action. Upstream never gets here (the target selectNearestTargetLeeroy found stays a candidate):
 			// drop that action and take upstream's no-target branch, as if no leeroy target was seen.
 			static const bool fix = AiProbe::param("OXCE_AI_LEEROY_STALE_FIX", 1) != 0;
-			Log(LOG_INFO) << "[AITRACE] {\"ai2a\":\"leeroy_none\",\"rec\":" << AiProbe::nextRec() << ",\"turn\":" << _save->getTurn()
-				<< ",\"unit\":" << _unit->getId() << ",\"side\":" << (int)_unit->getFaction() << ",\"rejected\":" << rejected
-				<< ",\"stale\":" << (int)_attackAction.type << ",\"stale_to\":[" << _attackAction.target.x << "," << _attackAction.target.y
-				<< "," << _attackAction.target.z << "],\"fix\":" << (fix ? 1 : 0) << "}";
+			if (AiProbe::active()) // the bench's line; the player's AI3 (BetterAI) does not write it
+			{
+				Log(LOG_INFO) << "[AITRACE] {\"ai2a\":\"leeroy_none\",\"rec\":" << AiProbe::nextRec() << ",\"turn\":" << _save->getTurn()
+					<< ",\"unit\":" << _unit->getId() << ",\"side\":" << (int)_unit->getFaction() << ",\"rejected\":" << rejected
+					<< ",\"stale\":" << (int)_attackAction.type << ",\"stale_to\":[" << _attackAction.target.x << "," << _attackAction.target.y
+					<< "," << _attackAction.target.z << "],\"fix\":" << (fix ? 1 : 0) << "}";
+			}
 			if (fix)
 			{
 				_attackAction.type = BA_RETHINK;
@@ -3951,10 +3954,13 @@ bool AIModule::findFirePoint()
 			&& !_unit->getUtilityWeapon(BT_GRENADE) && !_unit->getUtilityWeapon(BT_PROXIMITYGRENADE);
 		const bool adj = pure && knownMeleeRange(_unit->getPosition(), _aggroTarget, fkKind, fkPos, fkDir);
 		meleeApproach = pure && !adj;
-		Log(LOG_INFO) << "[AITRACE] {\"ai2h5\":\"mfa\",\"rec\":" << AiProbe::nextRec() << ",\"turn\":" << _save->getTurn()
-			<< ",\"unit\":" << _unit->getId() << ",\"target\":" << _aggroTarget->getId() << ",\"kind\":" << fkKind
-			<< ",\"pure\":" << (pure ? 1 : 0) << ",\"adj\":" << (adj ? 1 : 0)
-			<< ",\"d\":" << Position::distance2d(_unit->getPosition(), fkKind == 1 ? fkPos : _aggroTarget->getPosition()) << "}";
+		if (AiProbe::active()) // the bench's line; the player's AI3 (BetterAI) does not write it
+		{
+			Log(LOG_INFO) << "[AITRACE] {\"ai2h5\":\"mfa\",\"rec\":" << AiProbe::nextRec() << ",\"turn\":" << _save->getTurn()
+				<< ",\"unit\":" << _unit->getId() << ",\"target\":" << _aggroTarget->getId() << ",\"kind\":" << fkKind
+				<< ",\"pure\":" << (pure ? 1 : 0) << ",\"adj\":" << (adj ? 1 : 0)
+				<< ",\"d\":" << Position::distance2d(_unit->getPosition(), fkKind == 1 ? fkPos : _aggroTarget->getPosition()) << "}";
+		}
 	}
 	AiKnownPlace fkKnown(_save, _aggroTarget, fkKind, fkPos, fkDir);
 	BattleUnit *fkUnit = fkKnown.on() ? _aggroTarget : nullptr;
@@ -3993,11 +3999,14 @@ bool AIModule::findFirePoint()
 		if (modes > 0)
 		{
 			const bool reject = zeroEffectMode() >= 3 && zero == modes;
-			Log(LOG_INFO) << "[AITRACE] {\"ai2a\":\"firepoint\",\"rec\":" << AiProbe::nextRec() << ",\"turn\":" << _save->getTurn()
-				<< ",\"unit\":" << _unit->getId() << ",\"side\":" << (int)_unit->getFaction() << ",\"target\":" << _aggroTarget->getId()
-				<< ",\"modes\":" << modes << ",\"zero\":" << zero << ",\"unk\":" << unk << ",\"tu\":" << _unit->getTimeUnits()
-				<< ",\"v\":" << (zero == modes ? (int)AIZ_ZERO : (int)AIZ_POTENTIAL) << ",\"rej\":" << (reject ? 1 : 0) << terms
-				<< (zeroHonestMode() >= 1 ? ",\"hzero\":" + std::to_string(hzero) : std::string()) << "}";
+			if (AiProbe::active()) // the bench's line; the player's AI3 (BetterAI) does not write it
+			{
+				Log(LOG_INFO) << "[AITRACE] {\"ai2a\":\"firepoint\",\"rec\":" << AiProbe::nextRec() << ",\"turn\":" << _save->getTurn()
+					<< ",\"unit\":" << _unit->getId() << ",\"side\":" << (int)_unit->getFaction() << ",\"target\":" << _aggroTarget->getId()
+					<< ",\"modes\":" << modes << ",\"zero\":" << zero << ",\"unk\":" << unk << ",\"tu\":" << _unit->getTimeUnits()
+					<< ",\"v\":" << (zero == modes ? (int)AIZ_ZERO : (int)AIZ_POTENTIAL) << ",\"rej\":" << (reject ? 1 : 0) << terms
+					<< (zeroHonestMode() >= 1 ? ",\"hzero\":" + std::to_string(hzero) : std::string()) << "}";
+			}
 			if (reject)
 			{
 				// AI2-A2: the same outcome as a search that found no point (below), without the search and its shuffle
@@ -6096,7 +6105,8 @@ bool AIModule::sniperAoeEfficacyReject(const BattleAction &chosen, BattleUnit *t
 void AIModule::aoeEfficacyTrace(const char *site, BattleActionType type, BattleItem *weapon, BattleItem *damageItem, BattleUnit *target,
 	Position tpos, int radius, bool grenade, int eff, bool reject)
 {
-	if (sniperAoeMode() < 1 || !weapon)
+	// the bench's line only: the player's AI3 (BetterAI) plays the mode without writing it to the log
+	if (sniperAoeMode() < 1 || !weapon || !AiProbe::active())
 	{
 		return;
 	}
@@ -6732,9 +6742,12 @@ bool AIModule::zeroEffectReject(const char *site, BattleActionType type, BattleI
 	std::string terms;
 	const int v = zeroEffectVerdict(_save, _unit, type, weapon, target, &terms);
 	const bool reject = mode >= 2 && v == AIZ_ZERO;
-	Log(LOG_INFO) << "[AITRACE] {\"ai2a\":\"" << site << "\",\"rec\":" << AiProbe::nextRec() << ",\"turn\":" << _save->getTurn()
-		<< ",\"unit\":" << _unit->getId() << ",\"side\":" << (int)_unit->getFaction() << ",\"target\":" << (target ? target->getId() : -1)
-		<< ",\"t\":" << (int)type << ",\"tu\":" << _unit->getTimeUnits() << ",\"v\":" << v << ",\"rej\":" << (reject ? 1 : 0) << terms << "}";
+	if (AiProbe::active()) // the bench's line; the player's AI3 (BetterAI) does not write it
+	{
+		Log(LOG_INFO) << "[AITRACE] {\"ai2a\":\"" << site << "\",\"rec\":" << AiProbe::nextRec() << ",\"turn\":" << _save->getTurn()
+			<< ",\"unit\":" << _unit->getId() << ",\"side\":" << (int)_unit->getFaction() << ",\"target\":" << (target ? target->getId() : -1)
+			<< ",\"t\":" << (int)type << ",\"tu\":" << _unit->getTimeUnits() << ",\"v\":" << v << ",\"rej\":" << (reject ? 1 : 0) << terms << "}";
+	}
 	return reject;
 }
 
