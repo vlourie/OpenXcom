@@ -34,6 +34,8 @@ struct BattleAction;
 class BattlescapeState;
 class Node;
 class Tile;
+class Pathfinding;
+namespace AiProbe { struct CellStat; }
 
 enum AIMode { AI_PATROL, AI_AMBUSH, AI_COMBAT, AI_ESCAPE };
 enum AIAttackWeight : int
@@ -318,6 +320,19 @@ public:
 	void tacticalMode();
 	/// Selects a suitable position from which to attack.
 	bool findFirePoint();
+	/// CELL_PROF (bench, passive, AiProbe::cellProf): what the real search's loop knew - the shadow scores a cell the same way.
+	struct CellCtx
+	{
+		BattleUnit *fkUnit = nullptr; bool meleeApproach = false; int skipDir = -1; bool skipTargetCell = false;
+		const BattleUnit *ko2 = nullptr; Position origin;
+	};
+	/// findFirePoint's score of one cell on the audit's pathfinder (INT_MIN - the loop would skip it), the same terms as the loop.
+	int firePointScoreAt(Pathfinding *pf, const Position &pos, const CellCtx &c) const;
+	/// setupAmbush's score of one node the same way (INT_MIN - seen, or no path for the unit or the enemy).
+	int ambushScoreAt(Pathfinding *pf, const Position &pos, const CellCtx &c) const;
+	/// The shadow search after the real one: every cell of the window, the window's other levels and the reach outside it.
+	/// real - the cells the real loop scored (tile index, score); ambush - setupAmbush's nodes instead of findFirePoint's cells.
+	void cellShadow(AiProbe::CellStat &s, const std::vector<std::pair<int, int>> &real, bool ambush, const CellCtx &c);
 	/// Decides if we should throw a grenade/launch a missile to this position.
 	int explosiveEfficacy(Position targetPos, BattleUnit *attackingUnit, int radius, int diff, bool grenade = false) const;
 	bool getNodeOfBestEfficacy(BattleAction *action, int radius);

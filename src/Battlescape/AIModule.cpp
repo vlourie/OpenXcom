@@ -2197,6 +2197,11 @@ void AIModule::setupAmbush()
 		// seven streams = against the memo off, mode 2 (verify) with 0 disagreements, fair22 IDENTICAL.
 		const int memo = AiProbe::ambushMemo();
 		std::vector<char> enemyReach;
+		// CELL_PROF (bench, passive): as in findFirePoint; the index counts the nodes that pass the cheap checks
+		const bool cellProf = AiProbe::cellProf();
+		std::vector<std::pair<int, int>> cellReal;
+		int cellIdx = -1, cellBreak = -1;
+		const auto cellT0 = cellProf ? std::chrono::steady_clock::now() : std::chrono::steady_clock::time_point();
 
 		// we'll use node positions for this, as it gives map makers a good degree of control over how the units will use the environment.
 		for (const auto* node : *_save->getNodes())
@@ -2212,6 +2217,7 @@ void AIModule::setupAmbush()
 				std::find(_reachableWithAttack.begin(), _reachableWithAttack.end(), _save->getTileIndex(pos))  == _reachableWithAttack.end())
 				continue; // just ignore unreachable tiles
 			AiProbe::ambushNode(1);
+			++cellIdx;
 
 			if (_traceAI)
 			{
@@ -2283,6 +2289,10 @@ void AIModule::setupAmbush()
 							score += COVER_BONUS;
 						}
 						AiProbe::traceTile(_unit, "ambush", pos, score);
+						if (cellProf)
+						{
+							cellReal.emplace_back(_save->getTileIndex(pos), score);
+						}
 						const bool taken = score > bestScore;
 						AiProbe::ambushScored(score, cover, taken);
 						if (taken)
@@ -2294,12 +2304,28 @@ void AIModule::setupAmbush()
 							if (bestScore > FAST_PASS_THRESHOLD)
 							{
 								fastPass = true;
+								cellBreak = cellIdx;
 								break;
 							}
 						}
 					}
 				}
 			}
+		}
+		if (cellProf)
+		{
+			AiProbe::CellStat s;
+			s.ns = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - cellT0).count();
+			s.threshold = FAST_PASS_THRESHOLD;
+			s.scanned = (int)cellReal.size();
+			for (const auto &c : cellReal) s.passed += c.second > FAST_PASS_THRESHOLD ? 1 : 0;
+			s.breakAt = cellBreak;
+			s.chosen = bestScore > 0 ? bestScore : INT_MIN;
+			CellCtx c;
+			c.ko2 = ko2;
+			c.origin = origin;
+			cellShadow(s, cellReal, true, c);
+			AiProbe::cellSearch(_save, _unit, "amb", s);
 		}
 		AiProbe::hypoEnd(_unit, "ambush", bestScore > 0, _ambushAction.target, bestScore);
 
@@ -2564,6 +2590,10 @@ void AIModule::setupEscape()
 
 	std::vector<Position> randomTileSearch = _save->getTileSearch();
 	RNG::shuffle(randomTileSearch);
+	// CELL_PROF (bench, passive): the loop's time, the tiles it scored, where it quit; no shadow - its later tries are random
+	const bool cellProf = AiProbe::cellProf();
+	int cellScored = 0, cellPassed = 0;
+	const auto cellT0 = cellProf ? std::chrono::steady_clock::now() : std::chrono::steady_clock::time_point();
 
 	while (tries < 150 && !coverFound)
 	{
@@ -2712,6 +2742,8 @@ void AIModule::setupEscape()
 		if (tile)
 		{
 			AiProbe::traceTile(_unit, "escape", _escapeAction.target, score);
+			++cellScored;
+			cellPassed += score > FAST_PASS_THRESHOLD ? 1 : 0;
 		}
 		if (tile && score > bestTileScore)
 		{
@@ -2737,6 +2769,18 @@ void AIModule::setupEscape()
 			_save->getPathfinding()->abortPath();
 			if (bestTileScore > FAST_PASS_THRESHOLD) coverFound = true; // good enough, gogogo
 		}
+	}
+	if (cellProf)
+	{
+		AiProbe::CellStat s;
+		s.ns = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - cellT0).count();
+		s.threshold = FAST_PASS_THRESHOLD;
+		s.window = tries + 1; // the tries made: -1 is the stay/last-cover try, 0-120 the window, 121-149 the random run
+		s.scanned = cellScored;
+		s.passed = cellPassed;
+		s.breakAt = coverFound ? tries : -1;
+		s.chosen = bestTileScore > -100000 ? bestTileScore : INT_MIN;
+		AiProbe::cellSearch(_save, _unit, "esc", s);
 	}
 	AiProbe::hypoEnd(_unit, "escape", bestTileScore > -100000, bestTile, bestTileScore);
 	if (bestTileScore > -100000 && AiProbe::escapeAlt(_unit))
@@ -4045,8 +4089,14 @@ bool AIModule::findFirePoint()
 	Position targetCell;
 	_attackAction.type = BA_RETHINK;
 	AiProbe::hypoBegin(_unit, "firepoint", _spottingEnemies);
+	// CELL_PROF (bench, passive): the loop's time, the cells it scored and where it quit; the shadow search after it
+	const bool cellProf = AiProbe::cellProf();
+	std::vector<std::pair<int, int>> cellReal;
+	int cellIdx = -1, cellBreak = -1;
+	const auto cellT0 = cellProf ? std::chrono::steady_clock::now() : std::chrono::steady_clock::time_point();
 	for (const auto& randomPosition : randomTileSearch)
 	{
+		++cellIdx;
 		Position pos = _unit->getPosition() + randomPosition;
 		Tile *tile = _save->getTile(pos);
 		if (tile == 0  ||
@@ -4126,6 +4176,10 @@ bool AIModule::findFirePoint()
 				}
 
 				AiProbe::traceTile(_unit, "firepoint", pos, score);
+				if (cellProf)
+				{
+					cellReal.emplace_back(_save->getTileIndex(pos), score);
+				}
 				if (score > bestScore)
 				{
 					bestScore = score;
@@ -4134,11 +4188,30 @@ bool AIModule::findFirePoint()
 					_attackAction.finalFacing = _save->getTileEngine()->getDirectionTo(pos, _aggroTarget->getPosition());
 					if (score > FAST_PASS_THRESHOLD)
 					{
+						cellBreak = cellIdx;
 						break;
 					}
 				}
 			}
 		}
+	}
+	if (cellProf)
+	{
+		AiProbe::CellStat s;
+		s.ns = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now() - cellT0).count();
+		s.threshold = FAST_PASS_THRESHOLD;
+		s.scanned = (int)cellReal.size();
+		for (const auto &c : cellReal) s.passed += c.second > FAST_PASS_THRESHOLD ? 1 : 0;
+		s.breakAt = cellBreak;
+		s.chosen = bestScore > 0 ? bestScore : INT_MIN;
+		CellCtx c;
+		c.fkUnit = fkUnit;
+		c.meleeApproach = meleeApproach;
+		c.skipDir = suppress ? _fpBlockedDir : -1;
+		c.skipTargetCell = skipTargetCell;
+		c.ko2 = ko2;
+		cellShadow(s, cellReal, false, c);
+		AiProbe::cellSearch(_save, _unit, "fp", s);
 	}
 	AiProbe::hypoEnd(_unit, "firepoint", bestScore > 70, _attackAction.target, bestScore);
 	if (droppedByEnergy || overByTu)
@@ -4173,6 +4246,222 @@ bool AIModule::findFirePoint()
 	}
 
 	return false;
+}
+
+/**
+ * CELL_PROF (bench, passive): findFirePoint's loop for one cell on the audit's own pathfinder - the same checks in the same
+ * order, the same score. No RNG, no state of the unit or of the game's pathfinder is touched.
+ * @return The score, or INT_MIN where the loop would skip the cell.
+ */
+int AIModule::firePointScoreAt(Pathfinding *pf, const Position &pos, const CellCtx &c) const
+{
+	Tile *tile = _save->getTile(pos);
+	if (tile == 0)
+		return INT_MIN;
+	if (c.skipTargetCell)
+	{
+		const int size = _unit->getArmor()->getSize();
+		for (int x = 0; x < size; ++x)
+		{
+			for (int y = 0; y < size; ++y)
+			{
+				const Tile *part = _save->getTile(pos + Position(x, y, 0));
+				if (part && part->getUnit() == _aggroTarget)
+					return INT_MIN;
+			}
+		}
+	}
+	Position origin = pos.toVoxel() + Position(8,8, _unit->getHeight() + _unit->getFloatHeight() - tile->getTerrainLevel() - 4);
+	Position target;
+	if (!_save->getTileEngine()->canTargetUnit(&origin, _aggroTarget->getTile(), &target, _unit, false, c.fkUnit))
+		return INT_MIN;
+	if (c.ko2)
+	{
+		pf->setKnownOccupant(_unit, c.ko2);
+	}
+	pf->calculate(_unit, pos, BAM_NORMAL);
+	if (c.ko2)
+	{
+		pf->setKnownOccupant(0, 0);
+		pf->takeKnownOccupantHits();
+	}
+	if (pf->getStartDirection() == -1)
+		return INT_MIN;
+	if (AiProbe::firepointPathOver(_save, _unit, _reachableTuMax, _reachableEnergyMax, pf) & 1)
+		return INT_MIN;
+	if (c.skipDir != -1 && pf->getStartDirection() == c.skipDir)
+		return INT_MIN;
+	int score = 100 - getSpottingUnits(pos) * 10;
+	score += _unit->getTimeUnits() - pf->getTotalTUCost();
+	if (!_aggroTarget->checkViewSector(pos))
+	{
+		score += 10;
+	}
+	const bool waitIfOutsideWeaponRange = _unit->getGeoscapeSoldier() ? false : _unit->getUnitRules()->waitIfOutsideWeaponRange();
+	if (!waitIfOutsideWeaponRange && _save->getMod()->getAIExtendedFireModeChoice())
+	{
+		int distanceToTargetSq = _unit->distance3dToUnitSq(_aggroTarget);
+		int distanceToTarget = (int)std::ceil(sqrt(float(distanceToTargetSq)));
+		if ((_attackAction.weapon && _attackAction.weapon->getRules()->isOutOfRange(distanceToTargetSq)) || c.meleeApproach)
+		{
+			int proposedDistance = std::max(Position::distance2d(pos, _aggroTarget->getPosition()), 1);
+			score = score * distanceToTarget / proposedDistance;
+		}
+	}
+	return score;
+}
+
+/**
+ * CELL_PROF (bench, passive): setupAmbush's loop for one node on the audit's own pathfinder.
+ * @return The score, or INT_MIN where the loop would skip the node (seen from the enemy, no path for the unit or for the enemy).
+ */
+int AIModule::ambushScoreAt(Pathfinding *pf, const Position &pos, const CellCtx &c) const
+{
+	Tile *tile = _save->getTile(pos);
+	if (tile == 0)
+		return INT_MIN;
+	Position origin = c.origin;
+	Position target;
+	if (_save->getTileEngine()->canTargetUnit(&origin, tile, &target, _aggroTarget, false, _unit) || getSpottingUnits(pos))
+		return INT_MIN;
+	if (c.ko2)
+	{
+		pf->setKnownOccupant(_unit, c.ko2);
+	}
+	pf->calculate(_unit, pos, BAM_NORMAL);
+	if (c.ko2)
+	{
+		pf->setKnownOccupant(0, 0);
+		pf->takeKnownOccupantHits();
+	}
+	if (pf->getStartDirection() == -1)
+		return INT_MIN;
+	int score = 100 - pf->getTotalTUCost();
+	pf->calculate(_aggroTarget, pos, BAM_NORMAL);
+	if (pf->getStartDirection() == -1)
+		return INT_MIN;
+	if (_save->getTileEngine()->faceWindow(pos) != -1)
+	{
+		score += 25;
+	}
+	return score;
+}
+
+/**
+ * CELL_PROF (bench, passive): after the real search, every candidate it could have scored - the window it walks (its cells or
+ * its nodes), the same window on the map's other levels, and the reach outside the window - scored on the audit's pathfinder.
+ * What it says: how far the cell the search took is from the best one, how often the first cell over the threshold wins
+ * where a better one exists, and what the other levels and the far reach would give. mismatch - the real loop's score of a
+ * cell differs from the shadow's (must stay 0: else the shadow does not score as the loop does).
+ */
+void AIModule::cellShadow(AiProbe::CellStat &s, const std::vector<std::pair<int, int>> &real, bool ambush, const CellCtx &c)
+{
+	Pathfinding *pf = AiProbe::cellPathfinding(_save);
+	if (!pf)
+		return;
+	typedef std::chrono::steady_clock Clock;
+	const int mapSize = _save->getMapSizeXYZ();
+	std::vector<char> reach(mapSize, 0);
+	for (int i : _reachableWithAttack)
+	{
+		if (i >= 0 && i < mapSize)
+			reach[i] = 1;
+	}
+	const Position me = _unit->getPosition();
+	std::vector<Position> win, levels, far;
+	if (ambush)
+	{
+		// the real loop's own filter (any node, not dangerous, reachable), split by its distance and level checks
+		for (const auto *node : *_save->getNodes())
+		{
+			if (node->isDummy())
+				continue;
+			const Position p = node->getPosition();
+			const Tile *t = _save->getTile(p);
+			if (t == 0 || t->getDangerous() || !reach[_save->getTileIndex(p)])
+				continue;
+			if (Position::distance2d(p, me) > 10)
+				far.push_back(p);
+			else if (p.z == me.z)
+				win.push_back(p);
+			else
+				levels.push_back(p);
+		}
+	}
+	else
+	{
+		std::vector<char> inWindow(mapSize, 0);
+		for (const auto &o : _save->getTileSearch())
+		{
+			for (int z = 0; z < _save->getMapSizeZ(); ++z)
+			{
+				const Position p(me.x + o.x, me.y + o.y, z);
+				if (_save->getTile(p) == 0)
+					continue;
+				const int idx = _save->getTileIndex(p);
+				inWindow[idx] = 1;
+				if (!reach[idx])
+					continue;
+				if (z == me.z + o.z)
+					win.push_back(p);
+				else
+					levels.push_back(p);
+			}
+		}
+		for (int i = 0; i < mapSize; ++i)
+		{
+			if (reach[i] && !inWindow[i])
+				far.push_back(_save->getTileCoords(i));
+		}
+	}
+	auto scoreAt = [&](const Position &p) { return ambush ? ambushScoreAt(pf, p, c) : firePointScoreAt(pf, p, c); };
+	const int bar = s.chosen == INT_MIN ? 0 : s.chosen; // the real search starts its best at 0
+	std::vector<int> shadow(mapSize, INT_MAX); // INT_MAX - not in the window
+
+	Clock::time_point t0 = Clock::now();
+	s.window = (int)win.size();
+	s.rank = 0; // the window's cells scored over the one taken (-1 stays only when there is no shadow)
+	for (const auto &p : win)
+	{
+		const int sc = scoreAt(p);
+		shadow[_save->getTileIndex(p)] = sc;
+		if (sc == INT_MIN)
+			continue;
+		++s.full;
+		s.best = std::max(s.best, sc);
+		s.fullAbove += sc > s.threshold ? 1 : 0;
+		s.rank += sc > bar ? 1 : 0;
+	}
+	s.nsFull = std::chrono::duration_cast<std::chrono::nanoseconds>(Clock::now() - t0).count();
+	for (const auto &r : real)
+	{
+		const int sh = r.first >= 0 && r.first < mapSize ? shadow[r.first] : INT_MAX;
+		s.mismatch += sh != r.second ? 1 : 0;
+	}
+
+	t0 = Clock::now();
+	s.zCand = (int)levels.size();
+	for (const auto &p : levels)
+	{
+		const int sc = scoreAt(p);
+		if (sc == INT_MIN)
+			continue;
+		++s.zScored;
+		s.zBest = std::max(s.zBest, sc);
+	}
+	s.nsZ = std::chrono::duration_cast<std::chrono::nanoseconds>(Clock::now() - t0).count();
+
+	t0 = Clock::now();
+	s.farCand = (int)far.size();
+	for (const auto &p : far)
+	{
+		const int sc = scoreAt(p);
+		if (sc == INT_MIN)
+			continue;
+		++s.farScored;
+		s.farBest = std::max(s.farBest, sc);
+	}
+	s.nsFar = std::chrono::duration_cast<std::chrono::nanoseconds>(Clock::now() - t0).count();
 }
 
 /**

@@ -159,6 +159,9 @@ void ambushScored(int, bool, bool) {}
 void ambushEnd(bool, int, const Position &, int, bool) {}
 int ambushMemo() { return 0; }
 void ambushMemoNode(const Position &, bool, bool, int, int, int) {}
+bool cellProf() { return false; }
+Pathfinding *cellPathfinding(SavedBattleGame *) { return nullptr; }
+void cellSearch(SavedBattleGame *, const BattleUnit *, const char *, const CellStat &) {}
 bool escapeProf() { return false; }
 void escapeBegin(const BattleUnit *) {}
 void escapeTarget() {}
@@ -261,7 +264,7 @@ void walkPlanned(SavedBattleGame *, BattleUnit *, bool, bool) {}
 void walkStop(const BattleUnit *, const char *, const Position &, int, int, int, int, int, SavedBattleGame *) {}
 bool patrolOutOfEnergy(SavedBattleGame *, BattleUnit *, const BattleAction &, bool) { return false; }
 bool patrolStunReserve(SavedBattleGame *, BattleUnit *, const BattleAction &, bool) { return false; }
-int firepointPathOver(SavedBattleGame *, const BattleUnit *, int, int) { return 0; }
+int firepointPathOver(SavedBattleGame *, const BattleUnit *, int, int, Pathfinding *) { return 0; }
 void firepointDropped(const BattleUnit *, int, int) {}
 void firepointBlocked(BattleUnit *, const BattleAction &, int) {}
 unsigned long long knownRevision(SavedBattleGame *save, const BattleUnit *unit)
@@ -2381,6 +2384,51 @@ void ambushMemoNode(const Position &pos, bool skipped, bool ok, int own, int sco
 	Log(LOG_INFO) << "[AIAMBN] u=" << amb.unit << " e=" << amb.enemy << " pos=" << pos.x << "," << pos.y << "," << pos.z
 		<< " d=" << Position::distance2d(pos, amb.unitPos) << " de=" << Position::distance2d(pos, amb.enemyPos) << " dze=" << pos.z - amb.enemyPos.z
 		<< " own=" << own << " ok=0 cost=0 len=0 exp=0 us=0 s0=" << score << " best=" << best << " cover=-1 s=" << score << " take=0 memo=1";
+}
+
+bool cellProf()
+{
+	static const bool on = active() && envOn("OXCE_AI_CELLPROF");
+	return on;
+}
+
+Pathfinding *cellPathfinding(SavedBattleGame *save)
+{
+	if (!cellProf())
+	{
+		return nullptr;
+	}
+	// one per battle: its nodes are the map's tiles (a new battle may get the old one's address - the size is checked too)
+	static std::unique_ptr<Pathfinding> pf;
+	static const SavedBattleGame *of = nullptr;
+	static int ofX = 0, ofY = 0, ofZ = 0;
+	if (!pf || of != save || ofX != save->getMapSizeX() || ofY != save->getMapSizeY() || ofZ != save->getMapSizeZ())
+	{
+		pf.reset(new Pathfinding(save));
+		of = save;
+		ofX = save->getMapSizeX();
+		ofY = save->getMapSizeY();
+		ofZ = save->getMapSizeZ();
+	}
+	return pf.get();
+}
+
+void cellSearch(SavedBattleGame *save, const BattleUnit *unit, const char *ctx, const CellStat &s)
+{
+	if (!cellProf())
+	{
+		return;
+	}
+	auto sc = [](int v) { return v == INT_MIN ? std::string("null") : std::to_string(v); };
+	Log(LOG_INFO) << "[AICELL] {\"ctx\":\"" << ctx << "\",\"turn\":" << save->getTurn() << ",\"unit\":" << unit->getId()
+		<< ",\"side\":" << (int)unit->getFaction() << ",\"type\":\"" << unit->getType() << "\",\"tu\":" << unit->getTimeUnits()
+		<< ",\"z\":" << unit->getPosition().z << ",\"mapZ\":" << save->getMapSizeZ() << ",\"thr\":" << s.threshold
+		<< ",\"ns\":" << s.ns << ",\"window\":" << s.window << ",\"scanned\":" << s.scanned << ",\"passed\":" << s.passed
+		<< ",\"breakAt\":" << s.breakAt << ",\"chosen\":" << sc(s.chosen)
+		<< ",\"nsFull\":" << s.nsFull << ",\"full\":" << s.full << ",\"fullAbove\":" << s.fullAbove << ",\"best\":" << sc(s.best)
+		<< ",\"rank\":" << s.rank << ",\"mismatch\":" << s.mismatch
+		<< ",\"nsZ\":" << s.nsZ << ",\"zCand\":" << s.zCand << ",\"zScored\":" << s.zScored << ",\"zBest\":" << sc(s.zBest)
+		<< ",\"nsFar\":" << s.nsFar << ",\"farCand\":" << s.farCand << ",\"farScored\":" << s.farScored << ",\"farBest\":" << sc(s.farBest) << "}";
 }
 
 void ambushBegin(SavedBattleGame *save, const BattleUnit *unit, const BattleUnit *enemy)
@@ -4654,7 +4702,7 @@ bool patrolStunReserve(SavedBattleGame *save, BattleUnit *unit, const BattleActi
 	return block && (!v2 || keep == 0);
 }
 
-int firepointPathOver(SavedBattleGame *save, const BattleUnit *unit, int tuMax, int energyMax)
+int firepointPathOver(SavedBattleGame *save, const BattleUnit *unit, int tuMax, int energyMax, Pathfinding *pf)
 {
 	static const bool on = active() && envOn("OXCE_AI_FIREPOINT_ENERGY_PATH");
 	if (!on)
@@ -4662,8 +4710,11 @@ int firepointPathOver(SavedBattleGame *save, const BattleUnit *unit, int tuMax, 
 		return 0;
 	}
 	// the path is the one calculate(unit, pos, BAM_NORMAL) found - often bresenhamPath, which does not look at energy at all;
-	// its steps are costed the way findReachable costs them (penalty in the TU, none in the energy)
-	Pathfinding *pf = save->getPathfinding();
+	// its steps are costed the way findReachable costs them (penalty in the TU, none in the energy); pf - CELL_PROF's own
+	if (!pf)
+	{
+		pf = save->getPathfinding();
+	}
 	const std::vector<int> &path = pf->getPath();
 	int tu = 0, energy = 0;
 	Position p = unit->getPosition();
