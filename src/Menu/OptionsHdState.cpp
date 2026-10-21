@@ -45,14 +45,17 @@ namespace OpenXcom
 static const char *const HD_CATEGORIES[] = { "STR_HD_ART", "STR_HD_GENTLE", "STR_HD_BATTLE", "STR_HD_PHYSICS", "STR_HD_AI", "STR_HD_CHALLENGE", "STR_HD_INTERFACE", "STR_HD_SPEED", "STR_HD_LAB" };
 /// The category of the HD lab (Engine/HdLab.h): its rows show only once the password was given.
 static const std::string LAB_CATEGORY = "STR_HD_LAB";
-/// Row markers in _rows: ROW_LAB asks for the lab's password, ROW_LAB_LOCK closes the lab again.
-static const int ROW_NONE = -1, ROW_ART = -2, ROW_LAB = -3, ROW_LAB_LOCK = -4;
+/// The category of BetterAI (Battlescape/AiProbe.h): its rows are on the BetterAI screen, not in the main list.
+static const std::string AI_CATEGORY = "STR_HD_AI";
+/// Row markers in _rows: ROW_LAB asks for the lab's password, ROW_LAB_LOCK closes the lab again, ROW_BETTERAI opens the
+/// BetterAI screen, ROW_BACK goes back from it.
+static const int ROW_NONE = -1, ROW_ART = -2, ROW_LAB = -3, ROW_LAB_LOCK = -4, ROW_BETTERAI = -5, ROW_BACK = -6;
 
 /**
  * Initializes all the elements in the HD Options window.
  * @param origin Game section that originated this state.
  */
-OptionsHdState::OptionsHdState(OptionsOrigin origin) : OptionsBaseState(origin)
+OptionsHdState::OptionsHdState(OptionsOrigin origin) : OptionsBaseState(origin), _betterAiView(false), _aiGroup(-1)
 {
 	setCategory(_btnHd);
 
@@ -128,6 +131,10 @@ OptionsHdState::OptionsHdState(OptionsOrigin origin) : OptionsBaseState(origin)
 				group.settings.push_back(optionInfo);
 			}
 		}
+		if (group.title == AI_CATEGORY && !group.settings.empty())
+		{
+			_aiGroup = (int)_groups.size();
+		}
 		_groups.push_back(group);
 	}
 }
@@ -172,12 +179,38 @@ void OptionsHdState::updateList()
 	}
 
 	auto& fixeduserOptions = _game->getMod()->getFixedUserOptions();
+	if (_betterAiView && _aiGroup >= 0)
+	{
+		// the BetterAI screen: its switch first, the rows under it grey while it is off, the way back last
+		addRow(ROW_NONE, 0, tr("STR_BETTER_AI"), "");
+		_lstOptions->setCellColor(_lstOptions->getLastRowIndex(), 0, _colorGroup);
+		const Group &group = _groups[_aiGroup];
+		for (size_t i = 0; i < group.settings.size(); ++i)
+		{
+			const OptionInfo &info = group.settings[i];
+			addRow(_aiGroup, (int)i, tr(info.description()), valueText(info));
+			_lstOptions->setCellColor(_lstOptions->getLastRowIndex(), 1, valueColor(info));
+			if (aiLocks(info) || fixeduserOptions.find(info.id()) != fixeduserOptions.end())
+			{
+				_lstOptions->setRowColor(_lstOptions->getLastRowIndex(), _greyedOutColor);
+			}
+		}
+		addRow(ROW_NONE, 0, "", "");
+		addRow(ROW_BACK, 0, tr("STR_BETTER_AI_BACK"), "");
+		return;
+	}
+	if (_aiGroup >= 0)
+	{
+		// BetterAI opens its own screen from the first row; the value is its switch's
+		addRow(ROW_BETTERAI, 0, std::string(tr("STR_BETTER_AI")) + " >", Options::oxceBetterAi ? tr("STR_YES") : tr("STR_NO"));
+		_lstOptions->setCellColor(_lstOptions->getLastRowIndex(), 1, Options::oxceBetterAi ? _lstOptions->getColor() : _greyedOutColor);
+	}
 	for (size_t g = 0; g < _groups.size(); ++g)
 	{
 		const Group &group = _groups[g];
 		const bool withArt = g == 0;
 		const bool lab = group.title == LAB_CATEGORY;
-		if (group.settings.empty() && !withArt)
+		if ((group.settings.empty() && !withArt) || (int)g == _aiGroup)
 		{
 			continue;
 		}
@@ -222,11 +255,20 @@ void OptionsHdState::updateList()
  */
 Uint8 OptionsHdState::valueColor(const OptionInfo &info) const
 {
-	if (HdGentle::locks(info) || battleLocks(info))
+	if (HdGentle::locks(info) || battleLocks(info) || aiLocks(info))
 	{
 		return _greyedOutColor;
 	}
 	return info.type() == OPTION_BOOL && !*info.asBool() ? _greyedOutColor : _lstOptions->getColor();
+}
+
+/**
+ * The rows under the BetterAI switch do nothing while it is off: grey, and a click does not change them.
+ */
+bool OptionsHdState::aiLocks(const OptionInfo &info) const
+{
+	return !Options::oxceBetterAi && info.category() == AI_CATEGORY
+		&& !(info.type() == OPTION_BOOL && info.asBool() == &Options::oxceBetterAi);
 }
 
 /**
@@ -425,6 +467,13 @@ void OptionsHdState::changeSetting(size_t sel, Uint8 button)
 		updateList();
 		return;
 	}
+	if (row.group == ROW_BETTERAI || row.group == ROW_BACK)
+	{
+		_betterAiView = row.group == ROW_BETTERAI;
+		_lstOptions->scrollTo(0);                     // the other list starts at its top
+		updateList();
+		return;
+	}
 	if (row.group < 0)
 	{
 		return;
@@ -433,7 +482,7 @@ void OptionsHdState::changeSetting(size_t sel, Uint8 button)
 
 	// greyed out options are fixed, cannot be changed by the user
 	auto& fixeduserOptions = _game->getMod()->getFixedUserOptions();
-	if (fixeduserOptions.find(setting->id()) != fixeduserOptions.end() || HdGentle::locks(*setting) || battleLocks(*setting))
+	if (fixeduserOptions.find(setting->id()) != fixeduserOptions.end() || HdGentle::locks(*setting) || battleLocks(*setting) || aiLocks(*setting))
 	{
 		return;
 	}
@@ -442,9 +491,9 @@ void OptionsHdState::changeSetting(size_t sel, Uint8 button)
 	{
 		bool *b = setting->asBool();
 		*b = !*b;
-		if (b == &Options::oxceGentle)
+		if (b == &Options::oxceGentle || b == &Options::oxceBetterAi)
 		{
-			updateList();                             // the rows the mode holds change with it
+			updateList();                             // the rows the mode or the switch holds change with it
 			return;
 		}
 		_lstOptions->setCellColor(sel, 1, valueColor(*setting));
@@ -578,6 +627,10 @@ std::string OptionsHdState::rowDescription(size_t sel) const
 		{
 			desc = tr("STR_HD_LAB_RELOCK_DESC");
 		}
+		else if (row.group == ROW_BETTERAI)
+		{
+			desc = tr("STR_BETTER_AI_DESC");
+		}
 		else if (row.group == ROW_ART)
 		{
 			desc = tr("STR_HD_ART_VERSION_DESC");
@@ -613,7 +666,7 @@ void OptionsHdState::showDetail(size_t sel)
 	{
 		return;
 	}
-	if (row.group == ROW_LAB || row.group == ROW_LAB_LOCK)
+	if (row.group == ROW_LAB || row.group == ROW_LAB_LOCK || row.group == ROW_BETTERAI || row.group == ROW_BACK)
 	{
 		changeSetting(sel, SDL_BUTTON_LEFT);
 		return;
@@ -631,7 +684,7 @@ void OptionsHdState::showDetail(size_t sel)
 				return std::make_pair(artText(), (Uint8)0);
 			}
 			const OptionInfo &info = _groups[row.group].settings[row.index];
-			return std::make_pair(valueText(info), HdGentle::locks(info) || battleLocks(info) || (info.type() == OPTION_BOOL && !*info.asBool()) ? _greyedOutColor : (Uint8)0);
+			return std::make_pair(valueText(info), HdGentle::locks(info) || battleLocks(info) || aiLocks(info) || (info.type() == OPTION_BOOL && !*info.asBool()) ? _greyedOutColor : (Uint8)0);
 		}));
 }
 

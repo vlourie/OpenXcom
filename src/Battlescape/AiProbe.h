@@ -247,6 +247,11 @@ bool escapeSignFix();
 /// U3 fix (OXCE_AI_STALE_ESCAPE_FIX, bench only): the AI_ESCAPE branch of think runs setupEscape when the escape plan's
 /// contract (AIModule::escapePlanBroken) does not hold; a plan that holds is reused as it is, with no new RNG.
 bool staleEscapeFix();
+/// BetterAI fixes of the stock AI's errors O7-O14 (docs/research/ai-mechanics/BETTERAI-PLAN.md). The player's build: the
+/// BetterAI switch and its fixes row (Options::oxceBetterAi, oxceBetterAiFixes); the bench (OXCE_AI_DEV): the play mode by
+/// the same options, the harness by OXCE_AI_OXCE_FIXES. The fixes O1-O6 are the clean2 switches above, on by the same rule
+/// in the player's build.
+bool oxceFixes();
 /// The seed of a generated battle (OXCE_AI_SEED), or -1.
 long long battleSeed();
 /// Drives the probe from the battlescape's think: ends the player's turn, quits after the AI's.

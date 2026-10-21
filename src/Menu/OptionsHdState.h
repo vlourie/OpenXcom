@@ -53,6 +53,13 @@ private:
 	bool _adultShipped;
 	/// Is there HD art for this game in the active mods (Mod::hasHdArt)? Without it the settings change nothing.
 	bool _hdActive;
+	/// The BetterAI screen (the first row opens it): the list shows only the AI group, its switch first.
+	bool _betterAiView;
+	/// The AI group's index in _groups (-1: none); the main list leaves it out.
+	int _aiGroup;
+
+	/// Is this setting grey under the BetterAI switch (an AI row while the switch is off)?
+	bool aiLocks(const OptionInfo &info) const;
 
 	void addRow(int group, int index, const std::string &name, const std::string &value);
 	std::string valueText(const OptionInfo &info) const;
