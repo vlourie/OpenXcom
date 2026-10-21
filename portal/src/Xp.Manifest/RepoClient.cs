@@ -75,15 +75,7 @@ public sealed class RepoClient(HttpClient http, Uri baseUri, TrustedKeys keys)
     /// </summary>
     public async Task<LatestRelease> GetLatestAsync(string channel, long minSequence, CancellationToken ct)
     {
-        if (!ManifestValidator.IsValidId(channel)) throw new ArgumentException("bad channel name");
-        var key = BlobKeys.Channel(channel);
-        var pBytes = await GetSmallAsync(key, MaxPointerBytes, ct);
-        var pSig = await GetSmallAsync(BlobKeys.Sig(key), MaxSigBytes, ct);
-        if (!keys.Verify(pBytes, pSig)) throw new TrustException($"channel '{channel}': signature check failed");
-        var pointer = ManifestValidator.ParsePointer(pBytes);
-        if (pointer.Channel != channel) throw new TrustException("channel pointer names another channel");
-        if (pointer.Sequence < minSequence)
-            throw new TrustException($"channel '{channel}': server offers sequence {pointer.Sequence}, already seen {minSequence} (replayed old release)");
+        var pointer = await GetPointerAsync(channel, minSequence, ct);
         if (pointer.ManifestSize > MaxManifestBytes) throw new TrustException("manifest too large");
 
         var mKey = BlobKeys.Manifest(pointer.ReleaseId);
@@ -99,6 +91,24 @@ public sealed class RepoClient(HttpClient http, Uri baseUri, TrustedKeys keys)
         if (manifest.Release.Id != pointer.ReleaseId || manifest.Release.Channel != channel)
             throw new TrustException("manifest does not belong to this channel pointer");
         return new LatestRelease(pointer, manifest);
+    }
+
+    /// <summary>
+    /// Only the signed pointer of a channel, a few hundred bytes: enough to see that a release came out
+    /// without the manifest, which runs to megabytes.
+    /// </summary>
+    public async Task<ChannelPointer> GetPointerAsync(string channel, long minSequence, CancellationToken ct)
+    {
+        if (!ManifestValidator.IsValidId(channel)) throw new ArgumentException("bad channel name");
+        var key = BlobKeys.Channel(channel);
+        var pBytes = await GetSmallAsync(key, MaxPointerBytes, ct);
+        var pSig = await GetSmallAsync(BlobKeys.Sig(key), MaxSigBytes, ct);
+        if (!keys.Verify(pBytes, pSig)) throw new TrustException($"channel '{channel}': signature check failed");
+        var pointer = ManifestValidator.ParsePointer(pBytes);
+        if (pointer.Channel != channel) throw new TrustException("channel pointer names another channel");
+        if (pointer.Sequence < minSequence)
+            throw new TrustException($"channel '{channel}': server offers sequence {pointer.Sequence}, already seen {minSequence} (replayed old release)");
+        return pointer;
     }
 
     /// <summary>

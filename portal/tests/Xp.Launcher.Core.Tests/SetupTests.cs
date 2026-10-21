@@ -307,6 +307,50 @@ public sealed class SetupTests : IDisposable
 
     static string AdultId(ReleaseManifest m) => m.Components.Single(c => c.Adult).Id;
 
+    [Fact]
+    public async Task Update_asks_only_about_mods_the_player_has_never_seen()
+    {
+        StageRelease();
+        var m1 = await LatestAsync();
+        var pz1 = (await f.Updater.ProfilesAsync(m1, default))!.For("piratez");
+        Assert.NotNull(await Setup.CommitAsync(f.Updater, m1, Setup.Defaults(m1, pz1, "ru"), Answer(true, [])));
+        await f.UpdateAsync();
+        Assert.Empty(Setup.Unseen(m1, f.Updater.LoadState(), pz1, "ru"));   // the wizard showed the whole list
+
+        // the next release brings three addons; the profile gives the voices to their languages
+        Fixture.Write(f.Stage, ProfileSet.FileName, Profiles.Replace("{ \"id\": \"*\" }",
+            "{ \"id\": \"*\" }, { \"id\": \"hd_voices_ru\", \"lang\": \"ru\" }, { \"id\": \"hd_voices_en\", \"lang\": \"en\" }"));
+        Fixture.Write(f.Stage, "user/mods/piratez_tank_reverse/metadata.yml", "id: piratez_tank_reverse\nname: Tank reverse\nmaster: piratez\n");
+        Fixture.Write(f.Stage, "user/mods/piratez_tank_reverse/Ruleset/t.rul", "tank");
+        Fixture.Write(f.Stage, "user/mods/hd_voices_ru/metadata.yml", "id: hd_voices_ru\nname: Voices RU\nmaster: piratez\n");
+        Fixture.Write(f.Stage, "user/mods/hd_voices_ru/Sound/a.ogg", "ru");
+        Fixture.Write(f.Stage, "user/mods/hd_voices_en/metadata.yml", "id: hd_voices_en\nname: Voices EN\nmaster: piratez\n");
+        Fixture.Write(f.Stage, "user/mods/hd_voices_en/Sound/a.ogg", "en");
+        f.BuildAndPublish("r2");
+        var m2 = await LatestAsync();
+        var pz2 = (await f.Updater.ProfilesAsync(m2, default))!.For("piratez");
+        var state = f.Updater.LoadState();
+
+        // new and unticked: the tank and the voices of the game's language; Czech names were in the list the player saw
+        static List<string> Mods(IEnumerable<ComponentInfo> cs) => cs.Select(c => c.Mod).Order(StringComparer.Ordinal).ToList();
+        Assert.Equal(["hd_voices_ru", "piratez_tank_reverse"], Mods(Setup.Unseen(m2, state, pz2, "ru")));
+        Assert.Equal(["hd_voices_en", "piratez_tank_reverse"], Mods(Setup.Unseen(m2, state, pz2, "en-US")));
+        Assert.Equal(Setup.Normalize(m2, state.Components!), Setup.Normalize(m2, f.Updater.LoadState().Components!));   // nothing ticked for the player
+
+        // asked once: whatever the answer, not again
+        Setup.MarkSeen(f.Updater, Setup.Unseen(m2, state, pz2, "ru").Select(c => c.Id));
+        Assert.Empty(Setup.Unseen(m2, f.Updater.LoadState(), pz2, "ru"));
+        Assert.Equal(["hd_voices_en"], Mods(Setup.Unseen(m2, f.Updater.LoadState(), pz2, "en")));
+    }
+
+    [Fact]
+    public async Task A_folder_with_nothing_of_ours_is_not_asked_about_new_mods()
+    {
+        StageRelease();
+        var m = await LatestAsync();
+        Assert.Empty(Setup.Unseen(m, f.Updater.LoadState(), null, "ru"));   // the wizard's first install asks there
+    }
+
     static Func<IReadOnlyList<ComponentInfo>, Task<bool>> Answer(bool yes, List<IReadOnlyList<ComponentInfo>> asked) =>
         r => { asked.Add(r); return Task.FromResult(yes); };
 

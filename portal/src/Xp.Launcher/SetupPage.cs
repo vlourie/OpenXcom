@@ -1,5 +1,6 @@
 using Avalonia;
 using Avalonia.Controls;
+using Avalonia.Controls.Documents;
 using Avalonia.Layout;
 using Avalonia.Media;
 using Avalonia.Platform.Storage;
@@ -47,6 +48,7 @@ public sealed class SetupPage : UserControl
     ReleaseManifest? _manifest;
     ModProfile? _profile;
     HashSet<string> _picked = [];
+    IReadOnlySet<string> _fresh = new HashSet<string>();   // the new mods "Update" asked about: marked in the list
     CancellationTokenSource? _cts;
     string _doneText = "";
 
@@ -121,9 +123,10 @@ public sealed class SetupPage : UserControl
     }
 
     /// <summary>A fresh install starts at the folder; an installed game (Settings) at the list of components.</summary>
-    public void Start(string? installedGame)
+    public void Start(string? installedGame, IReadOnlySet<string>? fresh = null)
     {
         _cts?.Cancel();
+        _fresh = fresh ?? new HashSet<string>();
         _manifest = null;
         _profile = null;
         _ufoFrom = null;
@@ -446,7 +449,10 @@ public sealed class SetupPage : UserControl
         // the manifest names the engine by its id: the player reads "OXCE-HD engine", not "engine"
         var title = c.Kind == ComponentKind.Engine ? L.T("setup.engineName") : Setup.Title(c);
         var name = title + (c.Version.Length > 0 ? "  " + c.Version : "");
-        text.Children.Add(new TextBlock { Text = name, FontSize = 14, FontFamily = Skin.Medium, Foreground = Skin.B(r.Blocked ? Skin.Dim : Skin.Text) });
+        var head = new TextBlock { FontSize = 14, FontFamily = Skin.Medium, Foreground = Skin.B(r.Blocked ? Skin.Dim : Skin.Text) };
+        head.Inlines!.Add(new Run(name));
+        if (_fresh.Contains(c.Id)) head.Inlines.Add(new Run("   " + L.T("setup.new")) { FontSize = 12, Foreground = Skin.B(Skin.Accent) });
+        text.Children.Add(head);
         var kind = L.T("setup.kind." + c.Kind);
         var why = r.Locked ? L.T("setup.always")
                 : r.Needs is { } n ? L.T("setup.needs", n)

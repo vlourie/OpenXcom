@@ -95,6 +95,11 @@ public sealed class LauncherState
     public string InstalledLaunch { get; set; } = "";
     /// <summary>Component ids the player ticked in the wizard; null - the whole release (installs from before the wizard).</summary>
     public List<string>? Components { get; set; }
+    /// <summary>
+    /// Component ids the player has seen: every one of the release at the wizard's install, the offered ones when
+    /// "Update" asked about new mods (<see cref="Setup.Unseen"/>); null - none recorded yet.
+    /// </summary>
+    public List<string>? SeenComponents { get; set; }
     /// <summary>Files the player chose to keep modified, until the next release.</summary>
     public Dictionary<string, KeptFile> Kept { get; set; } = new(StringComparer.OrdinalIgnoreCase);
     public Dictionary<string, CacheEntry> Cache { get; set; } = new(StringComparer.OrdinalIgnoreCase);

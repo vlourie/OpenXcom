@@ -79,6 +79,12 @@ public sealed class MainWindow : Window
     bool _hiddenForGame;    // the window went to the tray for the time of the game "Play" started (Settings.TrayWhilePlaying)
     bool _quitting;    // a real exit: the window does not go to the tray even in a room
     bool _gone;         // the site is told the launcher is off the online list (once, at most a second)
+    UpdateWatch? _watch;
+    string[]? _watchChannels;   // the game's and the launcher's channel, from the last check that went through
+    readonly DispatcherTimer _watchTimer = new() { Interval = UpdateWatch.Every };
+    bool _watchBusy;
+    bool _staleCheck;   // a release came out while the home page could not check (the game, another action): it checks later
+    Notifier? _notifier;
 
     GamePaths? _paths;
     BuildStore? _builds;
@@ -121,7 +127,11 @@ public sealed class MainWindow : Window
         // «Играть» обновляет и запускает; эта кнопка только обновляет - игру запускать не обязательно
         _updateOnly = Skin.Btn(L.T("main.updateOnly"), "ghost", 64);
         // Work.Update, not Check: the main button shows the percent and the bar, the same as «Обновить и играть»
-        _updateOnly.Click += async (_, _) => await RunAsync(Work.Update, () => CheckAsync(full: false, apply: true));
+        _updateOnly.Click += async (_, _) =>
+        {
+            if (await OfferNewModsAsync()) return;
+            await RunAsync(Work.Update, () => CheckAsync(full: false, apply: true));
+        };
         _repair = Skin.Btn(L.T("repair"));
         _repair.HorizontalContentAlignment = HorizontalAlignment.Left;
         _repair.Click += async (_, _) => await RunAsync(Work.Repair, () => CheckAsync(full: true, apply: true));
@@ -211,7 +221,13 @@ public sealed class MainWindow : Window
 #endif
         };
         // back from a game started without us, or after it closed: the locks follow it
-        Activated += (_, _) => { if (_paths is not null) Refresh(); };
+        Activated += (_, _) =>
+        {
+            // the player is at the window: the home page says it, the reminder in the tray goes
+            _notifier?.Hide();
+            if (_paths is not null) Refresh();
+        };
+        _watchTimer.Tick += async (_, _) => await WatchAsync();
         Closing += async (_, e) =>
         {
             if (_voicePage.InRoom)
@@ -234,6 +250,8 @@ public sealed class MainWindow : Window
                 return;
             }
             _cts?.Cancel();
+            _watchTimer.Stop();
+            _notifier?.Dispose();
             if (WindowState == WindowState.Normal)
             {
                 _settings.WindowWidth = Width;
@@ -431,6 +449,7 @@ public sealed class MainWindow : Window
                 if (!IsVisible && !_quitting) ShowWindow();
             }
             Refresh();
+            _ = RecheckAsync();
         });
         if (!_settings.TrayWhilePlaying) return;
         _hiddenForGame = true;
@@ -648,6 +667,13 @@ public sealed class MainWindow : Window
             try { _settings.Save(); } catch (IOException) { }
         };
         game.Children.Add(tray);
+        var notify = new CheckBox { Content = L.T("settings.notifyUpdates"), IsChecked = _settings.NotifyUpdates, FontSize = 13 };
+        notify.IsCheckedChanged += (_, _) =>
+        {
+            _settings.NotifyUpdates = notify.IsChecked == true;
+            try { _settings.Save(); } catch (IOException) { }
+        };
+        game.Children.Add(notify);
         game.Children.Add(Skin.H2(L.T("settings.builds")));
         game.Children.Add(_buildList);
         var buildsRow = new WrapPanel { Orientation = Orientation.Horizontal };
@@ -732,6 +758,7 @@ public sealed class MainWindow : Window
     {
         var repoUrl = _settings.RepoUrl ?? BuiltIn.Defaults.RepoUrl;
         _repo = new RepoClient(_http, new Uri(repoUrl), BuiltIn.Keys);
+        _watch = new UpdateWatch(_repo);
         if (_settings.GameDir is { } dir && GamePaths.LooksLikeGameDir(dir)) OpenGameDir(dir);
         Refresh();
         // first start: no game yet - the wizard installs it
@@ -739,6 +766,55 @@ public sealed class MainWindow : Window
         await _account.CheckAsync();
 
         if (_updater is not null) await RunAsync(Work.Check, () => CheckAsync(full: false, apply: false));
+        // the first look only remembers the channels; then every quarter of an hour
+        _ = WatchAsync();
+        _watchTimer.Start();
+    }
+
+    /// <summary>
+    /// A release out since the launcher last looked: the home page checks again (not under the game - the check
+    /// writes the state) and, unless the player is at the window, a Windows notification says so.
+    /// </summary>
+    async Task WatchAsync()
+    {
+        // no server at the start: the quarter-hour tries the check again instead
+        if (_offline is not null) _staleCheck = true;
+        if (_watch is null || _watchChannels is not { } channels || _watchBusy) { await RecheckAsync(); return; }
+        _watchBusy = true;
+        try
+        {
+            List<ChannelPointer> news;
+            using (var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30)))
+            {
+                try { news = await _watch.NewsAsync(channels, cts.Token); }
+                catch (Exception e) when (e is HttpRequestException or TaskCanceledException or IOException or TrustException or ManifestException)
+                {
+                    _fileLog?.Error("update watch: " + e.Message);
+                    news = [];
+                }
+            }
+            if (news.Count > 0)
+            {
+                _fileLog?.Info("update watch: out " + string.Join(", ", news.Select(p => $"{p.Channel} {p.ReleaseId}")));
+                _staleCheck = true;
+                if (_settings.NotifyUpdates && !(IsVisible && IsActive))
+                {
+                    var game = news.FirstOrDefault(p => p.Channel == channels[0]);
+                    _notifier ??= new Notifier(this, () => { ShowWindow(); Navigate("home"); });
+                    _notifier.Show(L.T("watch.title"), game is not null ? L.T("watch.game", game.ReleaseId) : L.T("watch.launcher"));
+                }
+            }
+            await RecheckAsync();
+        }
+        finally { _watchBusy = false; }
+    }
+
+    /// <summary>The home page checks again after a release came out, once nothing is in the way.</summary>
+    async Task RecheckAsync()
+    {
+        if (!_staleCheck || _work != Work.None || _updater is null || GameIsRunning()) return;
+        _staleCheck = false;
+        await RunAsync(Work.Check, () => CheckAsync(full: false, apply: false));
     }
 
     void OpenGameDir(string dir)
@@ -970,11 +1046,47 @@ public sealed class MainWindow : Window
 
     // ---------------------------------------------------------------- actions
 
-    void OpenSetup(string? installedGame)
+    void OpenSetup(string? installedGame, IReadOnlySet<string>? fresh = null)
     {
         if (_work != Work.None || (installedGame is not null && GameIsRunning())) return;
-        _setupPage.Start(installedGame);
+        _setupPage.Start(installedGame, fresh);
         Navigate("setup");
+    }
+
+    /// <summary>
+    /// Before "Update": mods of the release the player has not ticked and has never seen (Setup.Unseen). Asked once -
+    /// the answer either way marks them seen; yes opens the components page with them marked instead of the update,
+    /// whose install brings the release too. True - the page was opened, the update does not run.
+    /// Nothing is ever ticked for the player: an addon (a tank going backwards) is the player's choice.
+    /// </summary>
+    async Task<bool> OfferNewModsAsync()
+    {
+        if (_work != Work.None || _updater is not { } u || _latest is null || _paths is null || GameIsRunning()) return false;
+        List<ComponentInfo> fresh;
+        try
+        {
+            var m = _latest.Manifest;
+            var state = u.LoadState();
+            var master = Setup.Master(m, (IEnumerable<string>?)state.Components ?? Setup.Installed(m, state));
+            var profile = master is null ? null : (await u.ProfilesAsync(m, CancellationToken.None))?.For(master);
+            var cfg = CurrentBuild() is { } b ? _builds!.OptionsFile(b) : null;
+            var lang = (cfg is not null && File.Exists(cfg) ? OptionsCfg.Parse(File.ReadAllText(cfg)).Get("language") : null) ?? Setup.GameLanguage(L.Language);
+            fresh = Setup.Unseen(m, state, profile, lang);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or HttpRequestException or TrustException or System.Text.Json.JsonException)
+        {
+            _fileLog?.Error("new mods not checked: " + e.Message);   // the update goes on as always
+            return false;
+        }
+        if (fresh.Count == 0) return false;
+        var names = string.Join(", ", fresh.Select(Setup.Title));
+        bool open = await ConfirmAsync(L.T("newMods.ask", names));
+        try { Setup.MarkSeen(u, fresh.Select(c => c.Id)); }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { _fileLog?.Error("new mods not marked seen: " + e.Message); }
+        _fileLog?.Info($"new mods offered: {string.Join(", ", fresh.Select(c => c.Id))} - {(open ? "to the components page" : "not now")}");
+        if (!open) return false;
+        OpenSetup(_paths.GameDir, fresh.Select(c => c.Id).ToHashSet(StringComparer.Ordinal));
+        return true;
     }
 
     /// <summary>The player changed the mods in the game and wants ours back: the profile's list and recommended options.</summary>
@@ -1015,6 +1127,7 @@ public sealed class MainWindow : Window
         if (_needLauncher is not null) { await RunAsync(Work.SelfUpdate, SelfUpdateAsync); return; }
         if (_error is not null || _pendingLine is not null)
         {
+            if (await OfferNewModsAsync()) return;
             await RunAsync(Work.Update, () => CheckAsync(full: false, apply: true));
             if (_error is null && _pendingLine is null && _needLauncher is null) Play();
             return;
@@ -1077,6 +1190,9 @@ public sealed class MainWindow : Window
         var ct = _cts!.Token;
         var state = u.LoadState();
         _latest = await u.CheckAsync(state, ct);
+        _watch?.Know(_latest.Pointer);
+        _watchChannels = [state.Channel, SelfUpdate.ChannelFor(state.Channel)];
+        _staleCheck = false;
         var channel = _latest.Manifest.Release.Channel is { Length: > 0 } ch ? ch : state.Channel;
         ShowRelease(_latest.Manifest, await NotesAsync(channel, ct), state.InstalledVersion);
         await CheckLauncherAsync(state.Channel, ct);

@@ -19,6 +19,7 @@ public sealed class Fixture : IDisposable
     public RepoHandler Server { get; }
     public TestLog Log { get; } = new();
     public Updater Updater { get; }
+    public RepoClient Client { get; }
 
     public Fixture()
     {
@@ -26,7 +27,7 @@ public sealed class Fixture : IDisposable
         (Key, PublicKey) = Signing.CreateKeyPair();
         Repo = new ReleaseRepo(RepoDir);
         Server = new RepoHandler(RepoDir);
-        var client = new RepoClient(new HttpClient(Server), new Uri("http://repo.test/"), new TrustedKeys([Convert.ToBase64String(PublicKey)]))
+        var client = Client = new RepoClient(new HttpClient(Server), new Uri("http://repo.test/"), new TrustedKeys([Convert.ToBase64String(PublicKey)]))
         {
             IdleTimeout = TimeSpan.FromSeconds(2),   // the fake server answers from memory: only a stall is ever this slow
         };

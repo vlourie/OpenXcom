@@ -118,8 +118,39 @@ public static class Setup
         BlockUnderGame(u);   // the game may have been started while the question was open
         var before = state.Components is { } mine ? new HashSet<string>(mine, StringComparer.Ordinal) : Installed(m, state);
         state.Components = [.. keep.Order(StringComparer.Ordinal)];
+        // the wizard showed the whole list: nothing of this release is new to the player any more
+        state.SeenComponents = [.. (state.SeenComponents ?? []).Union(m.Components.Select(c => c.Id), StringComparer.Ordinal).Order(StringComparer.Ordinal)];
         state.Save(u.Paths);
         return (state, before);
+    }
+
+    /// <summary>
+    /// Mods of the release worth asking about before "Update": addons and shared mods the player has not ticked
+    /// and has not seen, that can go with what is ticked - not 18+ (that waits for the age question), not one the
+    /// profile keeps off or gives to the other language. Nothing for a folder with nothing of ours: the wizard asks there.
+    /// </summary>
+    public static List<ComponentInfo> Unseen(ReleaseManifest m, LauncherState state, ModProfile? profile, string language)
+    {
+        var picked = state.Components is { } mine ? Normalize(m, mine) : Normalize(m, Installed(m, state));
+        if (picked.Count == 0 || state.InstalledReleaseId is null) return [];
+        var seen = new HashSet<string>(state.SeenComponents ?? [], StringComparer.Ordinal);
+        var lang = ProfileWriter.LangOf(language);
+        return m.Components.Where(c =>
+        {
+            if (c.Kind is not (ComponentKind.Addon or ComponentKind.Shared) || c.Adult) return false;
+            if (picked.Contains(c.Id) || seen.Contains(c.Id)) return false;
+            if (profile?.Mods.FirstOrDefault(pm => Same(pm.Id, c.Mod)) is { } pm && !pm.OnFor(lang)) return false;
+            return Normalize(m, picked.Append(c.Id)).Contains(c.Id);   // its master is ticked, its engine is this one
+        }).ToList();
+    }
+
+    /// <summary>Records the offered mods as seen, so "Update" asks about each once. Nothing is written under a running game.</summary>
+    public static void MarkSeen(Updater u, IEnumerable<string> ids)
+    {
+        if (u.IsGameRunning(u.Paths.GameDir)) return;
+        var state = u.LoadState();
+        state.SeenComponents = [.. (state.SeenComponents ?? []).Union(ids, StringComparer.Ordinal).Order(StringComparer.Ordinal)];
+        state.Save(u.Paths);
     }
 
     static void BlockUnderGame(Updater u)
