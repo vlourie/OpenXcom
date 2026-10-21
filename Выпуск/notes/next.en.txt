@@ -1,0 +1,1 @@
+﻿- Piratopedia: the bandit zeppelin, the gunship, the USO cruiser and the Black Talon now show a full-screen photo of the vessel, as the pirate craft do; the numbers sit top left, the description at the bottom.
