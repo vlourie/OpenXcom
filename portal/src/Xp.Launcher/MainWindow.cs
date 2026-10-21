@@ -77,6 +77,7 @@ public sealed class MainWindow : Window
     TrayIcon? _tray;
     NativeMenuItem? _trayLeave;  // "leave the room": in the tray menu only while in a room
     bool _hiddenForGame;    // the window went to the tray for the time of the game "Play" started (Settings.TrayWhilePlaying)
+    bool _closedToTray;     // the cross hid the window (Settings.CloseToTray): the launcher runs on in the tray
     bool _quitting;    // a real exit: the window does not go to the tray even in a room
     bool _gone;         // the site is told the launcher is off the online list (once, at most a second)
     UpdateWatch? _watch;
@@ -241,6 +242,13 @@ public sealed class MainWindow : Window
                 Close();
                 return;
             }
+            // the cross: the launcher stays in the tray and goes on watching for releases
+            if (!_quitting && !e.IsProgrammatic && e.CloseReason == WindowCloseReason.WindowClosing && _settings.CloseToTray)
+            {
+                e.Cancel = true;
+                CloseToTray();
+                return;
+            }
             if (!_gone && _voicePage.Linked)
             {
                 e.Cancel = true;
@@ -364,6 +372,11 @@ public sealed class MainWindow : Window
 
     void ShowWindow()
     {
+        if (_closedToTray)
+        {
+            _closedToTray = false;
+            UpdateTray();
+        }
         Show();
         if (WindowState == WindowState.Minimized) WindowState = WindowState.Maximized;
         Activate();
@@ -375,6 +388,19 @@ public sealed class MainWindow : Window
         Hide();
     }
 
+    /// <summary>The cross of the window with Settings.CloseToTray: hidden to the tray, once with a hint where it went.</summary>
+    void CloseToTray()
+    {
+        _closedToTray = true;
+        UpdateTray();
+        ToTray();
+        if (_settings.CloseToTrayTold) return;
+        _settings.CloseToTrayTold = true;
+        try { _settings.Save(); } catch (IOException) { }
+        _notifier ??= new Notifier(this, () => { ShowWindow(); Navigate("home"); });
+        _notifier.Show(L.T("watch.title"), L.T("tray.closedHint"), stay: false);
+    }
+
     void RoomChanged()
     {
         UpdateTray();
@@ -382,7 +408,7 @@ public sealed class MainWindow : Window
         // out of the room while hidden (left from the tray, sent away, refused): the window comes back,
         // with the reason on the voice page - a hidden launcher without a tray icon could not be reached.
         // Hidden for the game it waits for the game's exit: the tray icon stays
-        if (!IsVisible && !_quitting && !_hiddenForGame)
+        if (!IsVisible && !_quitting && !_hiddenForGame && !_closedToTray)
         {
             ShowWindow();
             Navigate("voice");
@@ -390,12 +416,12 @@ public sealed class MainWindow : Window
     }
 
     /// <summary>
-    /// The tray icon lives while the player is in a room or the game hid the window: it is the way back to a hidden window.
+    /// The tray icon lives while the player is in a room, the game hid the window or the cross did: it is the way back to a hidden window.
     /// </summary>
     void UpdateTray()
     {
         bool room = _voicePage.InRoom;
-        if (!room && !_hiddenForGame)
+        if (!room && !_hiddenForGame && !_closedToTray)
         {
             if (_tray is not null) _tray.IsVisible = false;
             return;
@@ -422,7 +448,7 @@ public sealed class MainWindow : Window
             if (Application.Current is { } app) TrayIcon.SetIcons(app, [_tray]);
         }
         _trayLeave!.IsVisible = room;
-        _tray.ToolTipText = room ? L.T("voice.trayTip", _voicePage.RoomTitle ?? "") : L.T("tray.playing");
+        _tray.ToolTipText = room ? L.T("voice.trayTip", _voicePage.RoomTitle ?? "") : _hiddenForGame ? L.T("tray.playing") : L.T("tray.idle");
         _tray.IsVisible = true;
     }
 
@@ -674,6 +700,13 @@ public sealed class MainWindow : Window
             try { _settings.Save(); } catch (IOException) { }
         };
         game.Children.Add(notify);
+        var closeToTray = new CheckBox { Content = L.T("settings.closeToTray"), IsChecked = _settings.CloseToTray, FontSize = 13 };
+        closeToTray.IsCheckedChanged += (_, _) =>
+        {
+            _settings.CloseToTray = closeToTray.IsChecked == true;
+            try { _settings.Save(); } catch (IOException) { }
+        };
+        game.Children.Add(closeToTray);
         game.Children.Add(Skin.H2(L.T("settings.builds")));
         game.Children.Add(_buildList);
         var buildsRow = new WrapPanel { Orientation = Orientation.Horizontal };

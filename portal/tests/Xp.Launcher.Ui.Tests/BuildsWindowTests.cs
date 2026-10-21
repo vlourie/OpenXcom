@@ -389,4 +389,33 @@ public sealed class BuildsWindowTests : IDisposable
         Assert.False(tray.IsVisible);
         w.Close();
     }
+
+    [AvaloniaFact]
+    public void The_cross_hides_the_launcher_to_the_tray_and_the_tray_brings_it_back()
+    {
+        var w = Open();
+        var settings = F<Settings>(w, "_settings");
+        Assert.True(settings.CloseToTray);   // on by default
+        Assert.False(settings.CloseToTrayTold);
+
+        // what the cross does (a headless window has no real cross: Closing with WindowClosing comes only from the system)
+        typeof(MainWindow).GetMethod("CloseToTray", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(w, null);
+        Assert.False(w.IsVisible);
+        var tray = F<TrayIcon>(w, "_tray");
+        Assert.True(tray.IsVisible);
+        Assert.Equal(L.T("tray.idle"), tray.ToolTipText);
+        Assert.False(F<NativeMenuItem>(w, "_trayLeave").IsVisible);
+        Assert.True(Settings.Load().CloseToTrayTold);   // the hint once, remembered on disk
+
+        // what "Open" in the tray menu and a click on the icon do
+        typeof(MainWindow).GetMethod("ShowWindow", BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(w, null);
+        Assert.True(w.IsVisible);
+        Assert.False(tray.IsVisible);
+        Assert.False(F<bool>(w, "_closedToTray"));
+
+        // a programmatic close (the self-update, the tray's "Close the launcher") closes for real
+        w.Close();
+        Assert.False(w.IsVisible);
+        Assert.False(tray.IsVisible);
+    }
 }

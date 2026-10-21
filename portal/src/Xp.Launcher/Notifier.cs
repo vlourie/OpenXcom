@@ -17,7 +17,7 @@ sealed unsafe partial class Notifier(Window window, Action clicked) : IDisposabl
     const uint NIM_ADD = 0, NIM_MODIFY = 1, NIM_DELETE = 2;
     const uint NIF_MESSAGE = 0x1, NIF_ICON = 0x2, NIF_TIP = 0x4, NIF_INFO = 0x10;
     const uint NIIF_USER = 0x4, NIIF_LARGE_ICON = 0x20;
-    const int NIN_BALLOONUSERCLICK = 0x405, WM_LBUTTONUP = 0x202;
+    const int NIN_BALLOONHIDE = 0x403, NIN_BALLOONTIMEOUT = 0x404, NIN_BALLOONUSERCLICK = 0x405, WM_LBUTTONUP = 0x202;
 
     [StructLayout(LayoutKind.Sequential)]
     struct NotifyIconData
@@ -48,14 +48,18 @@ sealed unsafe partial class Notifier(Window window, Action clicked) : IDisposabl
     private static partial bool DestroyIcon(nint icon);
 
     nint _wnd, _large, _small;
-    bool _shown;
+    bool _shown, _stay;
     Win32Properties.CustomWndProcHookCallback? _hook;
 
     public bool Shown => _shown;
 
-    /// <summary>Shows the balloon (the icon first, if it is not there yet). Quietly nothing off Windows.</summary>
-    public void Show(string title, string text)
+    /// <summary>
+    /// Shows the balloon (the icon first, if it is not there yet). With <paramref name="stay"/> off the icon goes
+    /// with the balloon - a hint, not news. Quietly nothing off Windows.
+    /// </summary>
+    public void Show(string title, string text, bool stay = true)
     {
+        _stay = stay || (_shown && _stay);   // news already waiting keeps its icon
         if (!OperatingSystem.IsWindows()) return;
         if (_wnd == 0) _wnd = window.TryGetPlatformHandle()?.Handle ?? 0;
         if (_wnd == 0) return;
@@ -108,10 +112,15 @@ sealed unsafe partial class Notifier(Window window, Action clicked) : IDisposabl
     {
         if (message != Callback || (uint)wParam != Id) return 0;
         handled = true;
-        if ((int)(lParam & 0xFFFF) is NIN_BALLOONUSERCLICK or WM_LBUTTONUP)
+        switch ((int)(lParam & 0xFFFF))
         {
-            Hide();
-            clicked();
+            case NIN_BALLOONUSERCLICK or WM_LBUTTONUP:
+                Hide();
+                clicked();
+                break;
+            case NIN_BALLOONTIMEOUT or NIN_BALLOONHIDE when !_stay:
+                Hide();
+                break;
         }
         return 0;
     }
