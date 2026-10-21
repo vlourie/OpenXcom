@@ -48,7 +48,9 @@ TAGS = ("[AISTATE]", "[AIDECIDE]", "[AIPROBE]", "[AIRESULT]", "[AICASUALTY]", "[
         # реакция и взрыв (AiProbe::event): реакция на выстрел - инвариант 3 PANIC_TURN_FIX
         "[AIEVENT]",
         # POSTWALK_FIX (OXCE_AI_POSTWALK_FIX, build-ai75): что решение ходьбы просило у post-walk ветки и что исполнено
-        "[AIPOSTWALK]")
+        "[AIPOSTWALK]",
+        # CELL_PROF (OXCE_AI_CELLPROF, build-ai-cp2): замер поисков клеток - архив <метка>.cell.gz серии ai_arena.py
+        "[AICELL]")
 
 
 class Probe:
