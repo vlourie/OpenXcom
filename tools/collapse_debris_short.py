@@ -38,7 +38,9 @@ ROWS = [
 CW, CH, COLS = 214, 176, 8
 
 
-def main():
+def main(rows_in=None, png="art/collapse_debris/short.png", tsv="census/collapse/debris/short.tsv"):
+    """rows_in - свои ряды (префикс, заголовок, записи) вместо ROWS: так строит лист семейств этапа B
+    tools/collapse_debris_families.py."""
     mod_dir, files, loft_path, loft_occ = cc.open_data(V.game_args())
     pal = XS.load_palette("bin/UFO/GEODATA/PALETTES.DAT")
     font = ImageFont.truetype("C:/Windows/Fonts/arial.ttf", 12)
@@ -60,7 +62,7 @@ def main():
         return mcd[s][i], raw[s][i * cc.REC:(i + 1) * cc.REC]
 
     rows = []
-    for pre, title, recs in ROWS:
+    for pre, title, recs in rows_in or ROWS:
         seen, items = set(), []
         for r in recs:
             if r not in seen:
@@ -105,9 +107,9 @@ def main():
             out.append((cid, r, m["nl"], m["tu_walk"], m["armor"], int(burns), int(bool(hp and os.path.exists(hp)))))
         y += CH * ((len(items) + COLS - 1) // COLS)
     os.makedirs("art/collapse_debris", exist_ok=True)
-    img.save("art/collapse_debris/short.png")
-    cc.write_tsv("census/collapse/debris/short.tsv", ["card", "record", "loft", "tu", "armor", "burns", "hd"], out)
-    print("art/collapse_debris/short.png", img.size, "карточек", len(out))
+    img.save(png)
+    cc.write_tsv(tsv, ["card", "record", "loft", "tu", "armor", "burns", "hd"], out)
+    print(png, img.size, "карточек", len(out))
 
 
 if __name__ == "__main__":
