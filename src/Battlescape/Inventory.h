@@ -132,6 +132,12 @@ public:
 	void mouseClick(Action *action, State *state) override;
 	/// Quickly drops the selected item on the ground.
 	bool quickDrop();
+	/// Whether a slot lies at the given point of the inventory (relative to it).
+	bool isSlotAt(int x, int y) const;
+	/// The hand the grabbed item takes for a use: the one it is in, else a free hand it fits; nullptr if none.
+	const RuleInventory *useHand(const BattleItem *item) const;
+	/// Puts the grabbed item into the hand for the TU of the move and lets go of it.
+	void putInHand(const RuleInventory *hand);
 	/// Unloads the selected weapon.
 	bool unload(bool quickUnload = false);
 	/// Checks whether the given item is visible with the current search string.

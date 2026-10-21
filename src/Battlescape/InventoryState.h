@@ -18,6 +18,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <map>
+#include <memory>
 #include "../Engine/State.h"
 #include "../Interface/TextButton.h"
 #include "../Savegame/EquipmentLayoutItem.h"
@@ -37,6 +38,7 @@ class BattlescapeState;
 class BattleUnit;
 class BattlescapeButton;
 class Base;
+struct BattleAction;
 
 /**
  * Screen which displays soldier's inventory.
@@ -69,6 +71,11 @@ private:
 	bool _reloadUnit;
 	int _globalLayoutIndex;
 	int _prev_key = 0, _key_repeats = 0;
+	/// The use of an item dropped on the unit's body (a medikit's window keeps a pointer to it); used - the battle checks casualties on leaving
+	std::unique_ptr<BattleAction> _useAction;
+	bool _itemUsed = false;
+	/// Uses the grabbed item on the unit (it was dropped on the unit's body).
+	bool useOnSelf();
 	/// Helper method for Create Template button
 	void _createInventoryTemplate(std::vector<EquipmentLayoutItem*> &inventoryTemplate);
 	/// Helper method for Apply Template button

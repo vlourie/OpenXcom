@@ -504,6 +504,7 @@ void createAdvancedOptionsOXCE()
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceTransferExchange", &oxceTransferExchange, true, "STR_TRANSFER_EXCHANGE", "STR_BASESCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceTradeConfirm", &oxceTradeConfirm, 5, "STR_TRADE_CONFIRM", "STR_BASESCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceTradeStay", &oxceTradeStay, true, "STR_TRADE_STAY", "STR_BASESCAPE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceInventoryUseOnBody", &oxceInventoryUseOnBody, true, "STR_INVENTORY_USE_ON_BODY", "STR_BATTLESCAPE"));
 
 	// OXCE options battlescape
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceWoundedDefendBaseIf", &oxceWoundedDefendBaseIf, 100, "STR_WOUNDED_DEFEND_BASE_IF", "STR_BATTLESCAPE"));

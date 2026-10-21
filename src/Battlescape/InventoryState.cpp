@@ -21,6 +21,7 @@
 #include "InventorySaveState.h"
 #include "InventoryPersonalState.h"
 #include <algorithm>
+#include <cmath>
 #include "Inventory.h"
 #include "../Basescape/SoldierArmorState.h"
 #include "../Basescape/SoldierAvatarState.h"
@@ -59,6 +60,8 @@
 #include "BattlescapeGenerator.h"
 #include "ExtendedInventoryLinksState.h"
 #include "TileEngine.h"
+#include "BattlescapeGame.h"
+#include "MedikitState.h"
 #include "../Mod/RuleInterface.h"
 #include "../Ufopaedia/Ufopaedia.h"
 #include "AiProbe.h"
@@ -383,6 +386,12 @@ InventoryState::~InventoryState()
 			_game->getScreen()->resetDisplay(false);
 		}
 
+		if (_itemUsed)
+		{
+			// as the battle does after a use from the action menu (BattlescapeGame::handleNonTargetAction)
+			_battleGame->getTileEngine()->updateGameStateAfterScript(BattleActionAttack::GetBeforeShoot(*_useAction), TileEngine::invalid);
+		}
+
 		//fix case when scripts could kill unit before inventory is closed
 		if (BattleUnit* unit =_battleGame->getSelectedUnit())
 		{
@@ -602,6 +611,18 @@ void InventoryState::init()
 
 		// refresh ui
 		_inv->arrangeGround();
+	}
+
+	// back from the medikit window of an item dropped on the body
+	if (_itemUsed)
+	{
+		_inv->setMouseOverItem(nullptr);
+		_inv->arrangeGround();
+		if (!_useAction->result.empty())
+		{
+			_inv->showWarning(tr(_useAction->result));
+			_useAction->result.clear();
+		}
 	}
 
 	updateStats();
@@ -840,6 +861,13 @@ void InventoryState::btnArmorClick(Action *action)
 	// don't accept clicks when moving items
 	if (_inv->getSelectedItem() != 0)
 	{
+		// a medikit, food or pills dropped on the body: used on the unit
+		if (useOnSelf())
+		{
+			invMouseOut(action);
+			updateStats();
+			return;
+		}
 		// but we can reuse this for quickly dropping an item (as a Ctrl+L-click alternative)
 		if (Options::oxceInventoryDropItemOverPaperdoll)
 		{
@@ -1842,9 +1870,131 @@ void InventoryState::invLeftClick(Action *act)
 	if (_game->isCtrlPressed() && _game->isAltPressed())
 		onMoveGroundInventoryToBaseClick(true);
 	else
+	{
+		// the paperdoll under the slots has no button of its own: its pixels where no slot lies are the body
+		if (_game->getMod()->getInventoryOverlapsPaperdoll() && _inv->getSelectedItem())
+		{
+			const int x = (int)floor(act->getAbsoluteXMouse()), y = (int)floor(act->getAbsoluteYMouse());
+			if (!_inv->isSlotAt(x - _inv->getX(), y - _inv->getY()) && _soldier->getPixel(x - _soldier->getX(), y - _soldier->getY()) != 0)
+			{
+				useOnSelf();
+			}
+		}
 		updateStats();
+	}
 
 	_prev_key = 0, _key_repeats = 0;
+}
+
+/**
+ * An item dropped on the unit's body is taken into a hand and used on the unit, as the action
+ * menu's use with the unit as the target: a medikit opens its window, a single-use kind (food,
+ * pills) is used at once. The TU of the move into the hand and of the use must be there together;
+ * a hand must be free. Only in the battle, only medikit kinds (option oxceInventoryUseOnBody).
+ * @return Whether the item asked for a use (done, or refused with a warning).
+ */
+bool InventoryState::useOnSelf()
+{
+	BattleItem *item = _inv->getSelectedItem();
+	BattleUnit *unit = _inv->getSelectedUnit();
+	if (!_tu || !Options::oxceInventoryUseOnBody || !item || !unit || item->getRules()->getBattleType() != BT_MEDIKIT || _game->isCtrlPressed() || _game->isShiftPressed())
+	{
+		return false;
+	}
+
+	const RuleItem *rule = item->getRules();
+	auto warn = [this](const std::string &id) { _inv->showWarning(tr(id)); return true; };
+	std::string message;
+	if (unit->getOriginalFaction() == FACTION_PLAYER && !_game->getSavedGame()->isResearched(rule->getRequirements()))
+	{
+		return warn("STR_UNABLE_TO_USE_ALIEN_ARTIFACT_UNTIL_RESEARCHED");
+	}
+	if (!_battleGame->canUseWeapon(item, unit, false, BA_USE, &message))
+	{
+		return warn(message);
+	}
+	if (!rule->getAllowTargetSelf())
+	{
+		return warn("STR_INV_USE_NOT_ON_SELF");
+	}
+	const BattleMediKitType type = rule->getMediKitType();
+	if ((type == BMT_HEAL && item->getHealQuantity() <= 0) ||
+		(type == BMT_STIMULANT && item->getStimulantQuantity() <= 0) ||
+		(type == BMT_PAINKILLER && item->getPainKillerQuantity() <= 0))
+	{
+		return warn("STR_NO_USES_LEFT");
+	}
+	const RuleInventory *hand = _inv->useHand(item);
+	if (!hand)
+	{
+		return warn("STR_INV_USE_FREE_A_HAND");
+	}
+
+	if (!_useAction)
+	{
+		_useAction = std::make_unique<BattleAction>();
+	}
+	BattleAction &use = *_useAction;
+	use = BattleAction();
+	use.type = BA_USE;
+	use.actor = unit;
+	use.weapon = item;
+	use.updateTU();
+	const int moveCost = item->getSlot() == hand ? 0 : item->getMoveToCost(hand);
+	use.Time += moveCost;
+	const bool enough = use.haveTU(&message);
+	use.Time -= moveCost;
+	if (!enough)
+	{
+		return warn(message == "STR_NOT_ENOUGH_TIME_UNITS" ? "STR_INV_USE_NOT_SO_FAST" : message);
+	}
+
+	_inv->putInHand(hand);
+	_itemUsed = true;
+	TileEngine *tileEngine = _battleGame->getTileEngine();
+	if (!type)
+	{
+		_game->pushState(new MedikitState(unit, &use, tileEngine));
+		return true;
+	}
+	// the single-use kinds as ActionMenuState::handleAction applies them
+	if (use.spendTU(&use.result))
+	{
+		switch (type)
+		{
+		case BMT_HEAL:
+			{
+				UnitBodyPart part = BODYPART_TORSO;
+				for (int i = 0; i < BODYPART_MAX; ++i)
+				{
+					if (unit->getFatalWound((UnitBodyPart)i))
+					{
+						part = (UnitBodyPart)i;
+						break;
+					}
+				}
+				tileEngine->medikitUse(&use, unit, BMA_HEAL, part);
+			}
+			break;
+		case BMT_STIMULANT:
+			tileEngine->medikitUse(&use, unit, BMA_STIMULANT, BODYPART_TORSO);
+			break;
+		case BMT_PAINKILLER:
+			tileEngine->medikitUse(&use, unit, BMA_PAINKILLER, BODYPART_TORSO);
+			break;
+		case BMT_NORMAL:
+			break;
+		}
+		tileEngine->medikitRemoveIfEmpty(&use);
+	}
+	_inv->setMouseOverItem(nullptr);
+	_inv->arrangeGround();
+	if (!use.result.empty())
+	{
+		warn(use.result);
+		use.result.clear();
+	}
+	return true;
 }
 
 void InventoryState::invRightClick(Action* action)

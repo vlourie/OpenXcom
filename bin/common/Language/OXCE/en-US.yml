@@ -424,6 +424,11 @@ en-US:
   STR_TRADE_CONFIRM_BUY: "CONFIRM PURCHASE"
   STR_TRADE_CONFIRM_SELL: "CONFIRM SALE"
   STR_TRADE_CONFIRM_TOTAL: "Total: {0}"
+  STR_INVENTORY_USE_ON_BODY: "Battle inventory: use by dropping on the soldier"
+  STR_INVENTORY_USE_ON_BODY_DESC: "A medikit, food or pills dropped on the soldier's figure in the inventory is taken into a free hand and used on them: a medikit opens its healing window, food and pills are used at once, a reusable item stays in the hand. TU as for taking it in hand and using it from the action menu. Hands full or not enough TU - the game says so."
+  STR_INV_USE_NOT_ON_SELF: "This cannot be used on oneself"
+  STR_INV_USE_FREE_A_HAND: "Free a hand to use it"
+  STR_INV_USE_NOT_SO_FAST: "Not so fast: not enough TU to take it in hand and use it"
 #==== Battlescape ===============
   STR_WOUNDED_DEFEND_BASE_IF: "Wounded defend (if HP above x%)"
   STR_WOUNDED_DEFEND_BASE_IF_DESC: "Wounded soldiers defend the base too, if their health is above the given percentage threshold."

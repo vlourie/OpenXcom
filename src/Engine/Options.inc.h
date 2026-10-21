@@ -154,6 +154,8 @@ OPT bool oxceTransferExchange;
 // Purchase and sell: ask with the list and the total from this many chosen lines (0 - never); stay on the screen after OK
 OPT int oxceTradeConfirm;
 OPT bool oxceTradeStay;
+// Battle inventory: a medikit, food or pills dropped on the soldier's body is taken in hand and used on them
+OPT bool oxceInventoryUseOnBody;
 // OXCE: play cutscenes at the original 320x200 (as the classic game does); off = scaled like the geoscape
 OPT bool oxceMaximizeCutsceneScreens;
 
