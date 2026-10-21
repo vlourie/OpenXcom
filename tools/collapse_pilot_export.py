@@ -41,7 +41,8 @@ SCENS = ["census/collapse/stage0m/pilot_scen.tsv", "census/collapse/pilot3/pilot
          "census/collapse/partial10/partial_scen.tsv", "census/collapse/pilot11/pilot_scen.tsv",
          "census/collapse/partial11/partial_scen.tsv", "census/collapse/pilot12/pilot_scen.tsv",
          "census/collapse/partial12/partial_scen.tsv", "census/collapse/pilot13/pilot_scen.tsv",
-         "census/collapse/partial13/partial_scen.tsv"]
+         "census/collapse/partial13/partial_scen.tsv",
+         "census/collapse/pilot14/pilot_scen.tsv", "census/collapse/partial14/partial_scen.tsv"]
 BOX = {"амбар": (2, 11, 2, 11), "бункер": (1, 7, 1, 7)}     # здание пилота: клетки x0..x1, y0..y1
 LABEL_EN = {"амбар": "barn", "бункер": "bunker"}            # метка здания в логе игры
 # здания, у которых остались провальные сценарии (census/collapse/pilot3/fail_cases.md): в заголовке с флагом
@@ -70,7 +71,11 @@ EXPERIMENTAL = {
                 # двенадцатая партия (второй лист видов): census/collapse/pilot12/split.tsv
                 "lamvillagemiddlebig01",
                 # тринадцатая партия (третий лист видов): census/collapse/pilot13/split.tsv
-                "chemtown95"}
+                "chemtown95",
+                # четырнадцатая партия (блоки, которые держит M0j5; PFALL зданий): census/collapse/pilot14/split.tsv
+                "chemtown10", "chemtown93", "chemtown96", "chemtownchemtown03", "chemtownchemtown06",
+                "chemtownghoulchemtown03", "chemtownghoulchemtown06", "portufo27",
+                "urbanurban09", "urbanwarurban09", "urbanwaste51", "urbanwaste60"}
 # urban14, urban17, madurban19, 22-26, culta18, cultafarm21, urbanjunk11, comrcurban50: частичное падение
 # не доказано (census/collapse/partial/model_result.tsv, R-353), но по решению Vitali 15.10 в сборке игрока -
 # приёмку ведут игроки
@@ -93,6 +98,7 @@ SOURCES = ["tools/collapse_v7c.py", "tools/collapse_v7b.py", "tools/collapse_v7.
            "tools/collapse_pilot5_scen.py", "tools/collapse_pilot6_scen.py", "tools/collapse_pilot7_scen.py",
            "tools/collapse_pilot8_scen.py", "tools/collapse_pilot9_scen.py", "tools/collapse_pilot10_scen.py",
            "tools/collapse_pilot11_scen.py", "tools/collapse_pilot12_scen.py", "tools/collapse_pilot13_scen.py",
+           "tools/collapse_pilot14_scen.py",
            "tools/collapse_v7d.py", "tools/collapse_v8.py",
            "tools/collapse_pilot_export.py"]
 
@@ -875,6 +881,12 @@ def main():
     LABEL_EN.update(P13.LABEL_EN)
     TREES_IN.update(P13.TREES_IN)
     NAME_AS.update(P13.NAME_AS)
+    import collapse_pilot14_scen as P14           # четырнадцатая - блоки, которые держит M0j5
+    blds += P14.load()[2]
+    BOX.update(P14.BOX)
+    LABEL_EN.update(P14.LABEL_EN)
+    TREES_IN.update(P14.TREES_IN)
+    NAME_AS.update(P14.NAME_AS)
     if len({b[2] for b in blds}) != len(blds) or len(set(LABEL_EN.values())) != len(LABEL_EN):
         raise SystemExit("метки зданий пилота не уникальны")
     # после загрузки сейва движок ищет модель по имени (последняя с этим именем) - одноимённые блоки другой модели
