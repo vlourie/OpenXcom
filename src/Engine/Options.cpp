@@ -563,6 +563,7 @@ void createAdvancedOptionsOXCE()
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdRadar", &oxceHdRadar, 0, "STR_HD_RADAR", "STR_HD_INTERFACE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdRadarWaves", &oxceHdRadarWaves, 1, "STR_HD_RADAR_WAVES", "STR_HD_INTERFACE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdRadarBeam", &oxceHdRadarBeam, true, "STR_HD_RADAR_BEAM", "STR_HD_INTERFACE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdTrainingBlocks", &oxceHdTrainingBlocks, false, "STR_HD_TRAINING_BLOCKS", "STR_HD_INTERFACE"));
 	// HD render workers (Engine/HdWorkers.h) and how far the battle timer may run ahead of slow frames
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdThreads", &oxceHdThreads, 0, "STR_HD_THREADS", "STR_HD_SPEED"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdFrameSkip", &oxceHdFrameSkip, 4, "STR_HD_FRAME_SKIP", "STR_HD_SPEED"));

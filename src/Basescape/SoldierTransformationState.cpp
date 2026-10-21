@@ -18,6 +18,7 @@
  */
 #include "SoldierTransformationState.h"
 #include "ItemCountTooltipMixin.h"
+#include "TrainingBlocksState.h"
 #include <sstream>
 #include <algorithm>
 #include "../Engine/Action.h"
@@ -73,6 +74,7 @@ SoldierTransformationState::SoldierTransformationState(RuleSoldierTransformation
 	_lstRequiredItems = new TextList(270, 32, 30, 88);
 
 	_lstStatChanges = new TextList(288, 40, 16, 130);
+	_txtBlocks = new Text(288, 9, 16, 120);
 
 	// Set palette
 	setInterface("soldierTransformation");
@@ -96,6 +98,7 @@ SoldierTransformationState::SoldierTransformationState(RuleSoldierTransformation
 	add(_lstRequiredItems, "list1", "soldierTransformation");
 
 	add(_lstStatChanges, "list2", "soldierTransformation");
+	add(_txtBlocks, "text", "soldierTransformation");
 
 	centerAllSurfaces();
 
@@ -157,6 +160,8 @@ SoldierTransformationState::SoldierTransformationState(RuleSoldierTransformation
 	_lstStatChanges->setAlign(ALIGN_RIGHT);
 	_lstStatChanges->setAlign(ALIGN_LEFT, 0);
 
+	_txtBlocks->onMouseClick((ActionHandler)&SoldierTransformationState::txtBlocksClick);
+
 	initTransformationData();
 }
 
@@ -181,6 +186,75 @@ std::string SoldierTransformationState::formatStat(int stat, bool plus, bool hid
 	if (plus && stat > 0) ss << '+';
 	ss << stat << Unicode::TOK_COLOR_FLIP;
 	return ss.str();
+}
+
+/**
+ * Fills the line of training paths the transformation closes: the ones the soldier
+ * (of the type it leaves) could still take that forbid this one done before.
+ * Not yet researched ones are "?" when the tech tree viewer is off.
+ */
+void SoldierTransformationState::initBlocks()
+{
+	_blocks.clear();
+	_txtBlocks->setVisible(false);
+	if (!Options::oxceHdTrainingBlocks || !Mod::isEmptyRuleName(_transformationRule->getProducedItem()))
+		return;
+
+	const Mod *mod = _game->getMod();
+	const SavedGame *save = _game->getSavedGame();
+	const auto &history = _sourceSoldier->getPreviousTransformations();
+	const std::string &name = _transformationRule->getName();
+	const std::string &type = _transformationRule->getProducedSoldierType().empty() ? _sourceSoldier->getRules()->getType() : _transformationRule->getProducedSoldierType();
+	int unknown = 0;
+	for (const auto &id : mod->getSoldierTransformationList())
+	{
+		const RuleSoldierTransformation *rule = mod->getSoldierTransformation(id);
+		if (!rule || rule == _transformationRule)
+			continue;
+		const auto &forbidden = rule->getForbiddenPreviousTransformations();
+		if (std::find(forbidden.begin(), forbidden.end(), name) == forbidden.end())
+			continue;
+		const auto &types = rule->getAllowedSoldierTypes();
+		if (std::find(types.begin(), types.end(), type) == types.end())
+			continue;
+		// already closed by what the soldier went through
+		if (std::any_of(forbidden.begin(), forbidden.end(), [&](const std::string &f) { return history.find(f) != history.end(); }))
+			continue;
+		if (Options::oxceDisableTechTreeViewer && !save->isResearched(rule->getRequiredResearch()))
+			unknown++;
+		else
+			_blocks.push_back(tr(rule->getName()));
+	}
+	if (unknown > 0)
+		_blocks.push_back(unknown > 1 ? tr("STR_TRAINING_BLOCKS_UNKNOWN").arg(unknown).c_str() : "?");
+	if (_blocks.empty())
+		return;
+
+	// as many names as fit the line, the rest counted
+	size_t shown = _blocks.size();
+	for (;;)
+	{
+		std::string list;
+		for (size_t i = 0; i < shown; ++i)
+			list += (i ? ", " : "") + _blocks[i];
+		if (shown < _blocks.size())
+			list += tr("STR_TRAINING_BLOCKS_MORE").arg((int)(_blocks.size() - shown)).c_str();
+		_txtBlocks->setText(tr("STR_TRAINING_BLOCKS").arg(list));
+		if (shown <= 1 || _txtBlocks->getTextWidth(0) <= _txtBlocks->getWidth())
+			break;
+		--shown;
+	}
+	_txtBlocks->setVisible(true);
+}
+
+/**
+ * Lists all the paths the transformation closes.
+ * @param action Pointer to an action.
+ */
+void SoldierTransformationState::txtBlocksClick(Action *)
+{
+	if (!_blocks.empty())
+		_game->pushState(new TrainingBlocksState(tr(_transformationRule->getName()), _blocks));
 }
 
 /**
@@ -235,6 +309,8 @@ void SoldierTransformationState::initTransformationData()
 	}
 
 	_btnStart->setVisible(transformationPossible);
+
+	initBlocks();
 
 	if (!Mod::isEmptyRuleName(_transformationRule->getProducedItem()))
 	{
