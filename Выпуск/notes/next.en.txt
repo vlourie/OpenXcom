@@ -1,1 +1,3 @@
 - Collapse (option): rubble heaps and blocks are now in HD - heaps of broken concrete with rebar, of earth with splinters and bricks, of snow and of sand with stones, a cracked concrete slab and chunks of stone masonry instead of chunky classic pixels.
+- Town in HD: the red cash machines are no longer a blurry blot - they are sharp wrecked machines with smashed screens, dents and scorch marks, as in the original. The ruined pavement looks like broken asphalt again instead of a mess.
+- Piratepedia, the Street Fighter award: the HD picture shows two arms again, with the pose and gaze of the original drawing.
