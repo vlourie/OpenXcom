@@ -1,2 +1,4 @@
 ﻿- Base defence in HD: the camera and walking soldiers no longer lag. Tiles under lamp light are drawn prepared in advance instead of being recalculated on every screen move; on a 4-core machine the map frame is almost twice as fast. The picture is the same.
 - Piratopedia: the Black Talon has its previous article with the interception silhouette again - the new photo did not match the vessel. The photos of the bandit zeppelin, the gunship and the USO cruiser stay.
+- HD windows: dark walls (junkyard barn, urban ruins, bases, Martian buildings - about 50 windows) no longer have scattered holes under the window showing the ground behind the wall. Only the glass itself stays see-through.
+- Sand and dirt in the junkyard city: no more dark grid along the edge of every tile.
