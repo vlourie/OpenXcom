@@ -6,7 +6,7 @@ r"""Пилот обрушения в движке (этап 1): невидимы
 CollapsePilot.cpp ставит бойцов на клетки участка (OXCE_COLLAPSE_UNIT, _STUN - без сознания, _DROP - предмет
 с земли) на первом обходе settle и снимает части сценария (OXCE_COLLAPSE_REMOVE, номера частей блока) на
 обходе OXCE_COLLAPSE_AT. Обходы - конец хода игрока (и цепочки взрывов местности). Итог сверяется с моделью
-M0j4 (collapse_v7c.evaluate7c после collapse_v7d.install() - то же, что вывезено в CollapsePilotData.h): число упавших частей здания,
+M0j5 (collapse_v7c.evaluate7c после collapse_v8.install() - то же, что вывезено в CollapsePilotData.h): число упавших частей здания,
 а бойцы, тело и предмет - по сохранению после хода ИИ.
 
     py -3.13 tools\collapse_pilot_run.py find  <сейв>...         в каком сейве стоит здание пилота (лог found)
@@ -249,8 +249,8 @@ def _load_model(label_en):
         one = [b for b in M.BUILDINGS if b[3] == label_en]
         if one:
             import collapse_pilot_export as EX
-            import collapse_v7d as D
-            D.install()
+            import collapse_v8 as E
+            E.install()                           # M0j5 (M0j4 и связи), как заголовок игры
             keep = M.PILOT
             M.PILOT = [(tn, bn, ru) for tn, bn, ru, en in one]
             try:
@@ -266,8 +266,8 @@ def _load_model(label_en):
         import collapse_pilot_scen as PS
         import collapse_pilot_export as EX
         import collapse_pilot3_scen as P3
-        import collapse_v7d as D
-        D.install()                               # evaluate7c считает M0j4, как заголовок игры
+        import collapse_v8 as E
+        E.install()                               # evaluate7c считает M0j5 (M0j4 и связи), как заголовок игры
         C, CT, blds = PS.load()
         first = PS.PILOT
         PS.PILOT = P3.PILOT
