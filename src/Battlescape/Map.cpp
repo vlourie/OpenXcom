@@ -2392,11 +2392,16 @@ void Map::drawSkillBonus(HdCanvas *surface, int x, int y)
 	const SDL_Color *pal = getPalette();
 	const int color = damageTypeColor(_game->getMod(), type);
 	const int group = color ? color / 16 : nearestColorGroup(pal, blastFallbackRgb(type)) - 1;
+	// left of the reticle's centre, its right edge 3 pixels short of it: the mouse arrow runs down and right
+	// from its tip and covered a plate centred under the tip
+	_txtSkillBonus->setText(text);
+	const int textWidth = _txtSkillBonus->getTextWidth();
 	if (_hdLabelsOn)
 	{
 		HdLabel label;
 		label.text = Unicode::convUtf8ToUtf32(text);
-		label.x = x + 16 * _k;
+		// the tag's centre; its plate is the text and 1.5 pixels on each side
+		label.x = x + 13 * _k - (textWidth + 3) * _k / 2;
 		label.y = y + 30 * _k;
 		label.tag = true;
 		if (group > 0)
@@ -2415,9 +2420,8 @@ void Map::drawSkillBonus(HdCanvas *surface, int x, int y)
 		return;
 	}
 	_txtSkillBonus->setColor(group > 0 ? (Uint8)(group * 16) : Palette::blockOffset(Pathfinding::yellow - 1) - 1);
-	_txtSkillBonus->setText(text);
 	_txtSkillBonus->draw();
-	surface->blitClassic(_txtSkillBonus, x + 16 * _k - _txtSkillBonus->getTextWidth() * _k / 2, y + 30 * _k, _k);
+	surface->blitClassic(_txtSkillBonus, x + 13 * _k - textWidth * _k, y + 30 * _k, _k);
 }
 
 void Map::drawTerrain(HdCanvas *surface)

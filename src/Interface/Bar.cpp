@@ -241,7 +241,9 @@ void Bar::hdMirror()
 		fill(_value2, _color2);
 		fill(_value, _color);
 	}
-	ui.strokeRoundRect(x0, y0, x1, y1, r, std::max(1.0f, k * 0.5f), groove ? 0xA0000000u : border);
+	// the frame in the bar's own colour in the groove too, as the classic bar's: on the dark hulls a black
+	// one left the spent part of the bar no edge at all against the plate
+	ui.strokeRoundRect(x0, y0, x1, y1, r, std::max(1.0f, k * 0.5f), border);
 }
 
 void Bar::draw()

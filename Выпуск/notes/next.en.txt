@@ -1,0 +1,2 @@
+﻿- Battle panel "Cruiser hull" and the other grooved themes: the TU, energy, health and morale bars show their frame along the whole length again, as in the original, so the spent part no longer blends into the dark panel.
+- Aiming: the "+N" damage bonus under the reticle moved left of its centre, so the mouse arrow no longer covers it.
