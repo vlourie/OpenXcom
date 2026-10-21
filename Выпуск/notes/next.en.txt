@@ -1,0 +1,1 @@
+﻿- Launcher 0.3.13: update 2026.10.21-6 did not update the launcher itself. The new-version notifications and the cross hiding the launcher to the tray described there arrive only now, with this version.
