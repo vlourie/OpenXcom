@@ -57,7 +57,7 @@ ENC_W = "utf-8-sig"
 OUT_TSV = ROOT / "census" / "anim_flicker"
 OUT_ART = ROOT / "art" / "_review" / "anim_flicker"
 SOFT_FRAC = 0.03            # мягкий класс: классика меняется не больше чем на 3 процентах видимого
-OUT_DIFF = 3.0              # ... а HD вне изменений расходится от 3 из 255
+OUT_DIFF = 1.0              # ... а HD вне изменений расходится от 1 из 255 (21.10: с 3 пропускало вентиляцию XB1BR 1,1-1,6 и ещё 225 пар, на экране заметных)
 LIVE_FRAC = 0.25            # больше - живая анимация (вращение, огонь), правка не применяется
 # Живые петли под порогом LIVE_FRAC (доля 0.14-0.25), проверены в игре пилотом 15.10: правка их гасит.
 # Списком, а не порогом: порог 0.13 снял бы ещё 520 кадров в 120 наборах, правило 'петля с кадром выше
@@ -615,8 +615,11 @@ def main():
     ap.add_argument("--install", action="store_true", help="с --fix: через манифест в обе копии мода hd")
     ap.add_argument("--only", help="с --fix: только кадры install.tsv плана, байты сверяются с его sha до установки")
     ap.add_argument("--out", default=str(OUT_ART), help="папка листов и кандидатов")
+    # XB1BR 115 (тикет XP-000168): HD вне маски 2.2 - на экране монитор заметно дёргается, а порог 3 его пропускал
+    ap.add_argument("--out-diff", type=float, default=OUT_DIFF, help="порог 'мигает': HD вне маски от стольких из 255")
     sys.stdout.reconfigure(encoding="utf-8")          # до parse_args: --help и ошибки ключей - кириллица
     a = ap.parse_args()
+    globals()["OUT_DIFF"] = a.out_diff
     if (a.install or a.only) and not a.fix:
         raise SystemExit("--install и --only только вместе с --fix")
     plan = read_plan(a.only) if a.only else None
