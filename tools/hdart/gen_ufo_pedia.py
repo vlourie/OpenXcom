@@ -22,6 +22,7 @@ import gc
 import json
 import os
 import re
+import shutil
 import sys
 import time
 
@@ -394,8 +395,10 @@ ACCEPTED = {
     "STR_VESSEL_BANDIT_ZEPP": "QB97_v2.png",
     "STR_VESSEL_USO_CRUISER": "QB95_v3.png",
     "STR_VESSEL_GUNSHIP": "QD95_v2.png",
-    "STR_VESSEL_BLACK_BOMBER": "QD95_v2.png",
+    # STR_VESSEL_BLACK_BOMBER (спутник QD95_v2) снят 21.10: тикет XP-000212 - «мусор», рулсет говорит о штурмовике;
+    # статья снова классическая, решение «как считаешь нужным» Vitali 21.10
 }
+REMOVED = ["STR_VESSEL_BLACK_BOMBER"]
 RULESET = "hd_pedia_ufo.rul"
 PAL_SRC = os.path.join(MODDIR, "Piratez", "Resources", "Pedia", "AIRVAN.png")   # PAL_UFOPAEDIA статей кораблей
 
@@ -448,6 +451,26 @@ def install(args):
             with open(p, "wb") as fh:
                 fh.write(data)
     man = bp.load()
+    # снятые: классика из обеих копий, HD - из манифеста, файл копии в резерв (статья снова классическая)
+    backup = os.path.join("art", "_backup", "pedia_ufo_removed_" + time.strftime("%Y%m%d_%H%M%S"))
+    for sid in REMOVED:
+        name = "PediaUfo_" + sid.replace("STR_", "")
+        for root in roots:
+            p = os.path.join(root, "Resources", "PediaUfo", name + ".png")
+            if os.path.exists(p):
+                os.remove(p)
+                print("снят", p)
+        rel = "UI/%s.png" % name
+        if man["files"].pop(rel, None):
+            print("снят из манифеста", rel)
+        for target in ("game", "repo"):
+            p = os.path.join(bp.TARGETS[target], rel)
+            if os.path.exists(p):
+                b = os.path.join(backup, target, rel)
+                os.makedirs(os.path.dirname(b), exist_ok=True)
+                shutil.move(p, b)
+                bp.log("removed->backup:" + target, rel, "", b)
+                print("в резерв", b)
     rels = []
     for rel, data, sid, f in arts:
         entry = man["files"].get(rel)
