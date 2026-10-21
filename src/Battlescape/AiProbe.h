@@ -125,6 +125,18 @@ int ambushMemo();
 /// A node the memo answered: skipped - its search was not run (mode 1); ok - what the search still run gave (mode 2);
 /// own, score, best as ambushEnemy. [AIAMBN] with memo=1 for a skipped node; counts in [AIAMB] and the memo total line.
 void ambushMemoNode(const Position &pos, bool skipped, bool ok, int own, int score, int best);
+/// BEST_CELL (bench, OXCE_AI_BEST_CELL=<bits>, docs/research/ai-mechanics/BEST-CELL-2026-10-22.md): the fire point, ambush
+/// and escape searches take the best cell, not the first over their "good enough" threshold. 0 (the default, and always in the
+/// release build) - the searches as in OXCE.
+enum BestCellBits
+{
+	BC_FP_BEST = 1,    ///< findFirePoint: no early quit over 125, the best cell of the window
+	BC_LEVELS = 2,     ///< findFirePoint and setupAmbush: the levels z-1 and z+1 too
+	BC_REACHCOST = 4,  ///< the walk cost from findReachable's table; A* only for a cell that may become the best
+	BC_AMB_BEST = 8,   ///< setupAmbush: every node of the window, equal scores by chance
+	BC_ESC_BEST = 16,  ///< setupEscape: the whole window with no early quit over 100; the random run only if none passed
+};
+int bestCell();
 /// The best-cell audit (OXCE_AI_CELLPROF, docs/research/ai-mechanics/FIRST-GOOD-ENOUGH-2026-10-22.md): how long the fire
 /// point, ambush and escape searches take, where they quit on their "good enough" threshold, and - by a shadow search on a
 /// pathfinder of its own, with no random numbers - how good the chosen cell is against every cell of the same window, of
