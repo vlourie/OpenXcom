@@ -1,0 +1,1 @@
+﻿- Pirate base: the wall vent no longer jerks as a whole - only its bubbles move, as in the original. The console with a screen there no longer flickers as a whole either.
