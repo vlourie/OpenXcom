@@ -48,6 +48,8 @@ SCEN11 = ROOT / "census/collapse/pilot11/pilot_scen.tsv"  # одиннадцат
 SCEN12 = ROOT / "census/collapse/pilot12/pilot_scen.tsv"  # двенадцатая - второй лист видов
 SCEN13 = ROOT / "census/collapse/pilot13/pilot_scen.tsv"  # тринадцатая - третий лист видов
 SCEN14 = ROOT / "census/collapse/pilot14/pilot_scen.tsv"  # четырнадцатая - блоки, которые держит M0j5
+SCEN15 = ROOT / "census/collapse/pilot15/pilot_scen.tsv"  # пятнадцатая - деревья без порога 20+ частей
+SCEN16 = ROOT / "census/collapse/pilot16/pilot_scen.tsv"  # шестнадцатая - без деревьев, без порога
 OUT = ROOT / "census/collapse/pilot1/runs"
 KIND = {"f": 0, "w": 1, "n": 2, "o": 3}
 LABEL_RU = {"barn": "амбар", "bunker": "бункер",
@@ -74,6 +76,10 @@ import collapse_pilot13_scen as P13  # noqa: E402
 LABEL_RU.update({en: ru for tn, bn, ru, en in P13.BUILDINGS})
 import collapse_pilot14_scen as P14  # noqa: E402
 LABEL_RU.update({en: ru for tn, bn, ru, en in P14.BUILDINGS})
+import collapse_pilot15_scen as P15  # noqa: E402
+LABEL_RU.update({en: ru for tn, bn, ru, en in P15.BUILDINGS})
+import collapse_pilot16_scen as P16  # noqa: E402
+LABEL_RU.update({en: ru for tn, bn, ru, en in P16.BUILDINGS})
 CPF_INBOX = 128
 _collapse_on = threading.local()
 
@@ -156,6 +162,12 @@ def partial_rows(label_en, only=None):
     if any(b[3] == label_en for b in P14.BUILDINGS):  # четырнадцатая - PFALL зданий (partial14)
         import collapse_partial14_scen as PF14
         PF14.use()
+    if any(b[3] == label_en for b in P15.BUILDINGS):  # пятнадцатая - сценарии деревьев (partial15)
+        import collapse_partial15_scen as PF15
+        PF15.use()
+    if any(b[3] == label_en for b in P16.BUILDINGS):  # шестнадцатая - PFALL зданий (partial16)
+        import collapse_partial16_scen as PF16
+        PF16.use()
     PF.check_lock()
     out = []
     for i, r in enumerate(PF.rows()):
@@ -219,6 +231,8 @@ def scen_rows(label_en, cells=None, only=None):
     lines += SCEN12.read_text(encoding=ENC).splitlines()[1:]
     lines += SCEN13.read_text(encoding=ENC).splitlines()[1:]
     lines += SCEN14.read_text(encoding=ENC).splitlines()[1:]
+    lines += SCEN15.read_text(encoding=ENC).splitlines()[1:]
+    lines += SCEN16.read_text(encoding=ENC).splitlines()[1:]
     out = []
     for ln in lines[1:]:
         r = dict(zip(head, ln.split("\t")))
@@ -252,7 +266,7 @@ def model_fell(label_en, removed_keys):
 def _load_model(label_en):
     # здание четвёртой-шестой партии грузится одно: загрузка всех целых блоков карт идёт минутами (cc.all_blocks
     # на каждое здание), а прогону нужен один
-    for M in (P4, P5, P6, P7, P8, P9, P10, P11, P12, P13, P14):
+    for M in (P4, P5, P6, P7, P8, P9, P10, P11, P12, P13, P14, P15, P16):
         one = [b for b in M.BUILDINGS if b[3] == label_en]
         if one:
             import collapse_pilot_export as EX
