@@ -1,1 +1,3 @@
 ﻿- Pirate base: the wall vent no longer jerks as a whole - only its bubbles move, as in the original. The console with a screen there no longer flickers as a whole either.
+- Animated map objects no longer twitch as a whole: lamps, lanterns, monitors, consoles, candelabras, crystals, signs and more, 225 frames in about a hundred sets, now change only where the original does (the flame, the screen, the indicator).
+- Pirate base: the rim and walls of the green liquid tank no longer shake - only the liquid moves.
