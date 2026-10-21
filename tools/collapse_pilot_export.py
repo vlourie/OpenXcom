@@ -23,7 +23,7 @@ import os
 import random
 import sys
 import time
-from collections import deque
+from collections import Counter, deque
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 if HERE not in sys.path:
@@ -37,7 +37,10 @@ SCENS = ["census/collapse/stage0m/pilot_scen.tsv", "census/collapse/pilot3/pilot
          "census/collapse/pilot4/pilot_scen.tsv", "census/collapse/pilot5/pilot_scen.tsv",
          "census/collapse/pilot6/pilot_scen.tsv", "census/collapse/pilot7/pilot_scen.tsv",
          "census/collapse/pilot8/pilot_scen.tsv", "census/collapse/pilot9/pilot_scen.tsv",
-         "census/collapse/partial9/partial_scen.tsv"]
+         "census/collapse/partial9/partial_scen.tsv", "census/collapse/pilot10/pilot_scen.tsv",
+         "census/collapse/partial10/partial_scen.tsv", "census/collapse/pilot11/pilot_scen.tsv",
+         "census/collapse/partial11/partial_scen.tsv", "census/collapse/pilot12/pilot_scen.tsv",
+         "census/collapse/partial12/partial_scen.tsv"]
 BOX = {"амбар": (2, 11, 2, 11), "бункер": (1, 7, 1, 7)}     # здание пилота: клетки x0..x1, y0..y1
 LABEL_EN = {"амбар": "barn", "бункер": "bunker"}            # метка здания в логе игры
 # здания, у которых остались провальные сценарии (census/collapse/pilot3/fail_cases.md): в заголовке с флагом
@@ -56,7 +59,13 @@ EXPERIMENTAL = {"banditbarn1", "banditbarn2",
                 "urban19", "urbandio02",
                 # восьмая партия (деревья вне модели): census/collapse/pilot8/split.tsv (tools/collapse_pilot8_split.py)
                 "chemtown04", "chemtown20r", "comrcurban06", "comrcurban23", "comrcurban58", "comrcurbanmey02",
-                "induslum10", "urbanmy"}
+                "induslum10", "urbanmy",
+                # десятая партия (охват после ветки D): census/collapse/pilot10/split.tsv (tools/collapse_pilot10_split.py)
+                "comrcurbanhuge01", "urbanwaste15", "urbanwasteroadns10",
+                # одиннадцатая партия (разобранные виды предметов): census/collapse/pilot11/split.tsv
+                "chemtownghoulchemtown04", "urbanjunk41",
+                # двенадцатая партия (второй лист видов): census/collapse/pilot12/split.tsv
+                "lamvillagemiddlebig01"}
 # urban14, urban17, madurban19, 22-26, culta18, cultafarm21, urbanjunk11, comrcurban50: частичное падение
 # не доказано (census/collapse/partial/model_result.tsv, R-353), но по решению Vitali 15.10 в сборке игрока -
 # приёмку ведут игроки
@@ -67,14 +76,18 @@ TREES_OUT = set()
 # ветка D в переносе (лес и столбы, слово Vitali 20.10): колонны и кроны collapse_v5.tree_structure5 по целому
 # блоку выгружаются готовыми, в бою - только держание collapse_v4.tree_hold4 (tie all)
 TREES_IN = set()
-KIND = {"f": 0, "w": 1, "n": 2, "o": 3}                   # O_FLOOR, O_WESTWALL, O_NORTHWALL, O_OBJECT
+# имя модели в заголовке, если не имя блока (collapse_pilot10_scen.NAME_AS): одноимённые блоки другой модели на
+# других террейнах - CollapsePilot ищет модель сейва по имени
+NAME_AS = {}
+KIND ={"f": 0, "w": 1, "n": 2, "o": 3}                   # O_FLOOR, O_WESTWALL, O_NORTHWALL, O_OBJECT
 N_RANDOM = 1500
 SEED = 20261008
 SOURCES = ["tools/collapse_v7c.py", "tools/collapse_v7b.py", "tools/collapse_v7.py", "tools/collapse_v6.py",
            "tools/collapse_v5.py", "tools/collapse_v4.py", "tools/collapse_v3.py", "tools/collapse_v2.py", "tools/collapse_attach_v2.py",
            "tools/collapse_pilot_scen.py", "tools/collapse_pilot3_scen.py", "tools/collapse_pilot4_scen.py",
            "tools/collapse_pilot5_scen.py", "tools/collapse_pilot6_scen.py", "tools/collapse_pilot7_scen.py",
-           "tools/collapse_pilot8_scen.py", "tools/collapse_pilot9_scen.py", "tools/collapse_v7d.py",
+           "tools/collapse_pilot8_scen.py", "tools/collapse_pilot9_scen.py", "tools/collapse_pilot10_scen.py",
+           "tools/collapse_pilot11_scen.py", "tools/collapse_pilot12_scen.py", "tools/collapse_v7d.py",
            "tools/collapse_pilot_export.py"]
 
 
@@ -181,7 +194,7 @@ def static(C, blk, label):
                 if cs:
                     need = min(k[3], max(len(cols[c]) - 1 for c in cs))
                     tcrowns.append((idx[k], need, [cxy.index(c) for c in cs]))
-    return dict(label=label, terrain=blk.terrain, name=blk.name, sx=blk.sx, sy=blk.sy, sz=blk.sz,
+    return dict(label=label, terrain=blk.terrain, name=NAME_AS.get(label, blk.name), sx=blk.sx, sy=blk.sy, sz=blk.sz,
                 box=BOX[label], parts=parts, idx=idx, keep=keep, tcols=tcols, tcrowns=tcrowns)
 
 
@@ -751,8 +764,31 @@ def main():
     BOX.update(P9.BOX)
     LABEL_EN.update(P9.LABEL_EN)
     TREES_IN.update(P9.TREES_IN)
+    import collapse_pilot10_scen as P10           # десятая партия - охват после ветки D, свои имена моделей
+    blds += P10.load()[2]
+    BOX.update(P10.BOX)
+    LABEL_EN.update(P10.LABEL_EN)
+    TREES_IN.update(P10.TREES_IN)
+    NAME_AS.update(P10.NAME_AS)
+    import collapse_pilot11_scen as P11           # одиннадцатая - кандидаты десятой с разобранными видами предметов
+    blds += P11.load()[2]
+    BOX.update(P11.BOX)
+    LABEL_EN.update(P11.LABEL_EN)
+    TREES_IN.update(P11.TREES_IN)
+    NAME_AS.update(P11.NAME_AS)
+    import collapse_pilot12_scen as P12           # двенадцатая - второй лист разобранных видов
+    blds += P12.load()[2]
+    BOX.update(P12.BOX)
+    LABEL_EN.update(P12.LABEL_EN)
+    TREES_IN.update(P12.TREES_IN)
+    NAME_AS.update(P12.NAME_AS)
     if len({b[2] for b in blds}) != len(blds) or len(set(LABEL_EN.values())) != len(LABEL_EN):
         raise SystemExit("метки зданий пилота не уникальны")
+    # после загрузки сейва движок ищет модель по имени (последняя с этим именем) - одноимённые блоки другой модели
+    # обязаны получить своё имя в NAME_AS
+    names = Counter(NAME_AS.get(b[2], b[3].name).upper() for b in blds)
+    if any(n > 1 for n in names.values()):
+        raise SystemExit("имена моделей в заголовке не уникальны: %s" % sorted(k for k, n in names.items() if n > 1))
     if EXPERIMENTAL - set(LABEL_EN.values()):
         raise SystemExit("в EXPERIMENTAL метки не из пилота: %s" % sorted(EXPERIMENTAL - set(LABEL_EN.values())))
     only = os.environ.get("COLLAPSE_EXPORT_ONLY")      # проверка части зданий по меткам игры - без выгрузки

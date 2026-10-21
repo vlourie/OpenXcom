@@ -20,6 +20,7 @@ r"""Перепись всех PCK игры: где кадры повторяют
 оригинальные данные. Кто не нашёлся - попадает в census\missing.tsv, а не молча теряется.
 """
 import argparse
+import copy
 import hashlib
 import os
 import sys
@@ -54,13 +55,23 @@ class Tolerant(yaml.SafeLoader):
         return super().compose_node(parent, index)
 
 
+_YAML = {}                                       # (путь, mtime, размер) -> разобранный документ
+
+
 def load_yaml(path):
-    with open(path, "rb") as f:
-        try:
-            return yaml.load(f, Loader=yaml.CSafeLoader)
-        except yaml.YAMLError:
-            f.seek(0)
-            return yaml.load(f, Loader=Tolerant)
+    """С памятью на процесс: collapse_census.all_blocks на каждый блок заново читает все рулсеты мода (у Пираток
+    ~16 с на вызов - выгрузка пилота обрушения грузила 294 блока больше часа). Отдаёт копию: вызывающий может менять
+    документ."""
+    st = os.stat(path)
+    key = (os.path.abspath(path), st.st_mtime_ns, st.st_size)
+    if key not in _YAML:
+        with open(path, "rb") as f:
+            try:
+                _YAML[key] = yaml.load(f, Loader=yaml.CSafeLoader)
+            except yaml.YAMLError:
+                f.seek(0)
+                _YAML[key] = yaml.load(f, Loader=Tolerant)
+    return copy.deepcopy(_YAML[key])
 
 
 # ------------------------------------------------------------------ поиск файлов

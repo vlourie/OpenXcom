@@ -6,7 +6,7 @@
 (OXCE_AI_PROBE_SAVE). В сейве карта целиком: список наборов MCD и номера частей каждой клетки
 (SavedBattleGame::load, Tile::loadBinary). src/ не трогается, игра невидима (ai_probe.Hidden, R-124).
 
-  py -3.13 tools/collapse_battles.py gen --missions STR_LOC_BANDIT_TOWN --seeds 1-6 [--jobs 2]
+  py -3.13 tools/collapse_battles.py gen --missions STR_LOC_BANDIT_TOWN --seeds 1-6 [--jobs 2] [--terrain FOREST]
   py -3.13 tools/collapse_battles.py list
 Сейвы - census/collapse/battles/<миссия>_<зерно>.sav, сводка - census/collapse/battles/index.tsv.
 """
@@ -101,9 +101,9 @@ def read_battle(path):
 
 # ------------------------------------------------------------------ генерация
 
-def gen_one(mission, seed, timeout):
+def gen_one(mission, seed, timeout, terrain=""):
     import ai_probe
-    name = "collapse_%s_%d" % (re.sub(r"[^A-Za-z0-9]+", "_", mission), seed)
+    name = "collapse_%s_%s%d" % (re.sub(r"[^A-Za-z0-9]+", "_", mission), (terrain + "_") if terrain else "", seed)
     r = ai_probe.run(None, turns=1, save_as=name + ".sav", name=name, timeout=timeout, bot=False,
                      seed=seed, mission=mission)
     battle = r.tagged("[AIPROBE] battle")
@@ -126,8 +126,11 @@ def cmd_gen(a):
     if not idx.exists():
         idx.write_text("\t".join(cols) + "\n", encoding=ENC)
 
+    if a.terrain:
+        os.environ["OXCE_AI_TERRAIN"] = a.terrain      # NewBattleState: террейн миссии закреплён, иначе случайный
+
     def work(job):
-        row = gen_one(job[0], job[1], a.timeout)
+        row = gen_one(job[0], job[1], a.timeout, a.terrain)
         with lock:
             with open(idx, "a", encoding="utf-8", newline="") as f:
                 f.write("\t".join(str(row[c]) for c in cols) + "\n")
@@ -413,6 +416,7 @@ def main():
     g.add_argument("--seeds", default="1-4")
     g.add_argument("--jobs", type=int, default=2)
     g.add_argument("--timeout", type=int, default=600)
+    g.add_argument("--terrain", default="", help="закрепить террейн миссии (OXCE_AI_TERRAIN), имя сейва с ним")
     sub.add_parser("list")
     m = sub.add_parser("maps")
     m.add_argument("--install", default=os.path.join("Пиратки", "Dioxine_XPiratez"))
