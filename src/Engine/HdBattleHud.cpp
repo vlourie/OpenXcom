@@ -973,7 +973,9 @@ const KeyLook &keyLook()
 	static const KeyLook DARK = { true, 0xFF121A26u, 0xFF05080Cu, 0xFFDCE6F2u, 0xFFE6A23Cu, 0xFFE6A23Cu, false, 0, 0, false, nullptr };
 	static const KeyLook BRASS_KEYS = { false, 0, 0, 0, 0xFFFFE9A6u, 0xFFF8E57Bu, false, 0, 0, false, nullptr };
 	static const KeyLook CONSUL_KEYS = { true, 0xFF1D1934u, 0xFF0A0816u, 0xFFF2F0FFu, 0xFFB8AEFFu, 0xFFE6E4FAu, false, 0, 0, false, nullptr };
-	static const KeyLook CRUISER_KEYS = { true, 0xFF141024u, 0xFF06050Du, 0xFFE8E2F6u, 0xFFA494F0u, 0xFFCFC6E0u, false, 0, 0, false, nullptr };
+	// the Cruiser's signs cut dark into its steel, as before the glass keys (players asked it back); its reserve keys
+	// keep their lit glass
+	static const KeyLook CRUISER_KEYS = { false, 0, 0, 0, 0xFFA494F0u, 0xFFCFC6E0u, false, 0, 0, false, nullptr };
 	// a sign lit in a coal's orange, not the ember of the glow round the key: brass is light orange itself, and a sign
 	// lit in that colour sinks into it; each metal after it lights its signs in a colour that stands out of it
 	static const KeyLook PIRATE_KEYS = { false, 0, 0, 0, 0xFFFFC870u, 0xFFF6D890u, true, EMBER, 0xFFFF6A12u, false, "UI/battle_keys/" };
