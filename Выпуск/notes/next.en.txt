@@ -1,0 +1,1 @@
+﻿- HD floors: 60 more floor types no longer show a dark grid along the edge of every tile - roads and sea towns, the Styx, alien and USO bases, the sietch, the downed helicopter, mountains, the red desert, the snow farm, the white castle. Grates and tiles with a deliberate grout line along the seam are left as they are.
