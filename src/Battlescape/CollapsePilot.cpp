@@ -42,6 +42,9 @@
 #include "../Engine/Language.h"
 #include "../Engine/Logger.h"
 #include "../Engine/Options.h"
+#include "../Engine/FileMap.h"
+#include "../Engine/SurfaceSet.h"
+#include "../Engine/Surface.h"
 #include "../Mod/MapData.h"
 #include "../Mod/MapDataSet.h"
 #include "../Mod/Mod.h"
@@ -87,7 +90,6 @@ struct State
 	bool fallReported = false;
 	bool fallPending = false;  // debug stand: report and save again once the state stack drains (idle)
 	bool rubbleReady = false;
-	std::vector<std::vector<std::pair<int, int> > > rubble;  // [row of RUBBLE * 3 + kind]: (save set index, record)
 	std::map<std::pair<int, int>, int> rubbleKind;  // (save set index, record) of the rubble -> its kind
 	std::set<std::pair<int, int> > rubbleOrDead;  // the rubble and what it turns into
 };
@@ -178,86 +180,157 @@ std::string modelSig(int bi)
 	return s.str();
 }
 
-/// The rubble of a collapse (docs/research/building-collapse-rubble-2026-10-20.md): low walkable debris of the
-/// terrain's own sets. The building's terrain is told by the first of the keys among its sets (a battle map may hold
-/// several terrains). What fell gives the kind, by the material of its dust (HdFx::partMaterial): stone (and the
-/// rest), wood (and furniture: its footstep is soft) or metal; a kind the terrain has no record of takes stone, then
-/// wood, then metal.
-enum RubbleKind { RK_STONE, RK_WOOD, RK_METAL, RK_KINDS };
+/// The rubble of a collapse (docs/research/building-collapse-rubble-2026-10-20.md, v2:
+/// docs/research/collapse-debris-mechanics-2026-10-21.md): low walkable debris. The first rows are the terrains whose
+/// own sets have it (any of the building's sets is the key); the rest are lands told by the building's first set, the
+/// last one takes every other building. What fell gives the kind, by the material of its dust (HdFx::partMaterial):
+/// stone (and the rest), wood (and furniture: its footstep is soft), metal, or a plant (a part that burns and is of
+/// grass, earth, snow, sand or water, not a floor: the crown of a tree). A kind a row has no record of takes stone,
+/// then wood, then metal. A record of a set the battle has not loaded borrows the set: it joins the battle's sets
+/// (saved by name, as the map's own), so a forest gets the broken trees of the mountain sets.
+enum RubbleKind { RK_STONE, RK_WOOD, RK_METAL, RK_PLANT, RK_KINDS };
 struct RubbleRow
 {
-	const char *key;
+	const char *keys;   // set names; empty - every building
+	bool firstSet;      // the key is the building's first set (else any of its sets)
 	const char *kind[RK_KINDS];
 };
+#define RUBBLE_TREES "MOUNTGRASS:74 MOUNTGRASS:75 MOUNTGRASS:76"
+#define RUBBLE_WOOD "URBAN:87 URBAN:88"
+#define RUBBLE_METAL "MILBARR:48 MILBARR:49"
 const RubbleRow RUBBLE[] = {
-	{ "URBANWAR", { "URBANWAR:50 URBANWAR:57", "MADDECOR:80 MADDECOR:83 MADDECOR:84", "" } },
-	{ "URBAN", { "URBAN:50 URBAN:57", "URBAN:87 URBAN:88 MADDECOR:80 MADDECOR:83 MADDECOR:84", "" } },
-	{ "COMMERCE", { "COMMERCE:50 COMMERCE:57", "COMDECOR:68 COMDECOR:69", "" } },
-	{ "MILBARR", { "MILTECHDIO:26", "", "MILBARR:48 MILBARR:49" } },
-	{ "VILBAN", { "", "VILBAN:87 VILBAN:88", "" } },
-	{ "IDT_FARM", { "", "URBAN_GOODS:24 URBAN_GOODS:25", "" } },
-	{ "URBAN40K", { "URBAN40K:57", "", "" } },
-	{ "BARN_JUNK", { "", "FRNITURE:7 CULTIVAT:11", "" } },
-	{ "BARN", { "", "CULTIVAT:11", "" } },
+	{ "URBANWAR", false, { "URBANWAR:50 URBANWAR:57", "MADDECOR:80 MADDECOR:83 MADDECOR:84", "", RUBBLE_TREES } },
+	{ "URBAN", false, { "URBAN:50 URBAN:57", "URBAN:87 URBAN:88 MADDECOR:80 MADDECOR:83 MADDECOR:84", "", RUBBLE_TREES } },
+	{ "COMMERCE", false, { "COMMERCE:50 COMMERCE:57", "COMDECOR:68 COMDECOR:69", "", RUBBLE_TREES } },
+	{ "MILBARR", false, { "MILTECHDIO:26", "", "MILBARR:48 MILBARR:49", RUBBLE_TREES } },
+	{ "VILBAN", false, { "", "VILBAN:87 VILBAN:88", "", RUBBLE_TREES } },
+	{ "IDT_FARM", false, { "", "URBAN_GOODS:24 URBAN_GOODS:25", "", RUBBLE_TREES } },
+	{ "URBAN40K", false, { "URBAN40K:57", "", "", RUBBLE_TREES } },
+	{ "BARN_JUNK", false, { "", "FRNITURE:7 CULTIVAT:11", "", RUBBLE_TREES } },
+	{ "BARN", false, { "", "CULTIVAT:11", "", RUBBLE_TREES } },
+	// lands (census/collapse/debris/biomes.tsv, the cards of art/collapse_debris/short.png)
+	{ "BARN_PP CULTAREA CULTIVAT FOREST FORESTBITS3 FORESTBITSRED FORESTRED FOREST_NORD MOUNTGRASS", true,
+		{ "MOUNTGRASS:8", RUBBLE_WOOD, RUBBLE_METAL, RUBBLE_TREES } },  // forest
+	{ "BLACKFOREST BLACKJUNGLE MOUNTMUD", true,
+		{ "MOUNTMUD:8", RUBBLE_WOOD, RUBBLE_METAL, "MOUNTMUD:74 MOUNTMUD:75 MOUNTMUD:76" } },  // dark forest
+	{ "FORESTJUNGLESTYX JUNGLE JUNGLEBITS JUNGLESTYX MOUNTTROP NEOJUNGLE", true,
+		{ "MUJUNGLE:36 MUJUNGLE:37", RUBBLE_WOOD, RUBBLE_METAL, "MOUNTTROP:74 MOUNTTROP:75 MOUNTTROP:76" } },  // jungle
+	{ "FORESTBITS_SNOW FOREST_SNOW MOUNTSNOW2", true,
+		{ "MOUNTSNOW2:8", RUBBLE_WOOD, RUBBLE_METAL, "MOUNTSNOW2:74 MOUNTSNOW2:75 MOUNTSNOW2:76 FOREST_SNOW:18 FOREST_SNOW:19" } },  // snow
+	{ "FORESTBITSWASTE FORESTSWAMP_WASTE FOREST_WASTE FRNITURE_WASTE MADDECOR_WASTE MOUNTWASTE2 ROADS_WASTE", true,
+		{ "MOUNTROCK:8 SIETCH:36 SIETCH:37", RUBBLE_WOOD, RUBBLE_METAL, "MOUNTWASTE2:74 MOUNTWASTE2:75 MOUNTWASTE2:76" } },  // wasteland
+	{ "MOUNTROCK", true,
+		{ "MOUNTROCK:8", RUBBLE_WOOD, RUBBLE_METAL, "MOUNTROCK:74 MOUNTROCK:75 MOUNTROCK:76" } },  // rocks
+	{ "DESERT DESERTBITS MOUNTSAND MUMMY_RUINS MUMMY_VILLAGE XOPSDESERT XOPSDESERTRED", true,
+		{ "SIETCH:36 SIETCH:37", RUBBLE_WOOD, RUBBLE_METAL, "MOUNT:74 MOUNT:75 MOUNT:76" } },  // desert
+	{ "BRICKBAR FRN_OLD INDUSLUM RUSTSHACKS", true,
+		{ "INDUSLUM:56 INDUSLUM:57 INDUSLUM:58 INDUSLUM:59", RUBBLE_WOOD, RUBBLE_METAL, RUBBLE_TREES } },  // slums
+	{ "CATACDECOR CAVEBLACK U_PLANET_VOID", true,
+		{ "SIETCH_DARK:36 MUSTYX:10", RUBBLE_WOOD, RUBBLE_METAL, "MOUNTMUD:74 MOUNTMUD:75 MOUNTMUD:76" } },  // underground
+	{ "", true, { "URBAN:50 URBAN:57 COMMERCE:50", RUBBLE_WOOD, RUBBLE_METAL, RUBBLE_TREES } },  // town: every other
 };
 const int RUBBLE_ROWS = sizeof(RUBBLE) / sizeof(RUBBLE[0]);
+/// The chance in 100 that a heap of mass 1 (one wall or object, from less than two levels) leaves rubble, by kind:
+/// a piece shatters; a crown does not.
+const int RUBBLE_CHANCE[RK_KINDS] = { 50, 35, 50, 100 };
 
 /// The kind of rubble a fallen part gives.
-int rubbleKind(const MapData *md)
+int rubbleKind(const MapData *md, bool floor)
 {
 	const std::string m = HdFx::partMaterial(md);
+	if (!floor && md->getFlammable() < 255 && md->getFuel() > 0
+		&& (m == "grass" || m == "dirt" || m == "snow" || m == "sand" || m == "water"))
+		return RK_PLANT;
 	return m == "wood" || m == "soft" ? RK_WOOD : m == "metal" ? RK_METAL : RK_STONE;
 }
 
-/// The rubble records of this battle, found once by the set names (a set the battle lacks gives none).
+/// The records of a row's kind: (set name, record).
+const std::vector<std::pair<std::string, int> > &rubbleRecords(int row, int kind)
+{
+	static std::vector<std::vector<std::pair<std::string, int> > > parsed;
+	if (parsed.empty())
+	{
+		parsed.resize(RUBBLE_ROWS * RK_KINDS);
+		for (int r = 0; r < RUBBLE_ROWS; ++r)
+			for (int k = 0; k < RK_KINDS; ++k)
+			{
+				std::istringstream in(RUBBLE[r].kind[k]);
+				std::string rec;
+				while (in >> rec)
+				{
+					const size_t colon = rec.find(':');
+					parsed[r * RK_KINDS + k].push_back(std::make_pair(rec.substr(0, colon), std::atoi(rec.c_str() + colon + 1)));
+				}
+			}
+	}
+	return parsed[row * RK_KINDS + kind];
+}
+
+/// The index of a set among the battle's sets, or -1.
+int setIndexOf(SavedBattleGame *save, const std::string &name)
+{
+	const std::vector<MapDataSet*> &sets = *save->getMapDataSets();
+	for (size_t i = 0; i < sets.size(); ++i)
+		if (upper(sets[i]->getName()) == name) return (int)i;
+	return -1;
+}
+
+/// The rubble records of this battle, found by the set names (a set the battle lacks gives none, until borrowed).
 void rubbleOf(SavedBattleGame *save)
 {
 	if (st.rubbleReady)
 		return;
 	st.rubbleReady = true;
-	st.rubble.assign(RUBBLE_ROWS * RK_KINDS, std::vector<std::pair<int, int> >());
 	const std::vector<MapDataSet*> &sets = *save->getMapDataSets();
-	auto setIndex = [&sets](const std::string &name) {
-		for (size_t i = 0; i < sets.size(); ++i)
-			if (upper(sets[i]->getName()) == name) return (int)i;
-		return -1;
-	};
 	for (int r = 0; r < RUBBLE_ROWS; ++r)
-	{
-		std::ostringstream found;
-		size_t any = 0;
 		for (int k = 0; k < RK_KINDS; ++k)
-		{
-			std::istringstream in(RUBBLE[r].kind[k]);
-			std::string rec;
-			while (in >> rec)
+			for (const auto &rec : rubbleRecords(r, k))
 			{
-				const size_t colon = rec.find(':');
-				const int s = setIndex(rec.substr(0, colon)), id = std::atoi(rec.c_str() + colon + 1);
+				const int s = setIndexOf(save, rec.first), id = rec.second;
 				if (s < 0 || id < 0 || id >= (int)sets[s]->getSize()) continue;
-				st.rubble[r * RK_KINDS + k].push_back(std::make_pair(s, id));
 				st.rubbleKind[std::make_pair(s, id)] = k;
 				// what the rubble turns into when it is shot or burnt is the collapse's too (foreignParts)
 				for (int dead = id; dead > 0 && dead < (int)sets[s]->getSize() && st.rubbleOrDead.insert(std::make_pair(s, dead)).second; )
 					dead = sets[s]->getObject(dead)->getDieMCD();
 			}
-			found << " " << st.rubble[r * RK_KINDS + k].size();
-			any += st.rubble[r * RK_KINDS + k].size();
-		}
-		if (any)
-		{
-			Log(LOG_INFO) << "[COLLAPSE] rubble of " << RUBBLE[r].key << " (stone wood metal):" << found.str();
-		}
-	}
 }
 
-/// The row of RUBBLE for the building of block bi, or -1.
+/// Borrows a set for the rubble: loads it the way the battle generator loads the map's (BattlescapeGenerator) and
+/// adds it to the battle's sets; the save keeps it by name. -1 if the game has no such set or the battle no room.
+int borrowSet(Mod *mod, SavedBattleGame *save, const std::string &name)
+{
+	std::vector<MapDataSet*> &sets = *save->getMapDataSets();
+	if (sets.size() >= 255 || !FileMap::fileExists("TERRAIN/" + name + ".MCD") || !FileMap::fileExists("TERRAIN/" + name + ".PCK"))
+		return -1;
+	MapDataSet *mds = mod->getMapDataSet(name);
+	mds->loadData(mod->getMCDPatch(name), true, mod->getHdScale());
+	// the palette the battle's sets were given (Map::setPalette)
+	SurfaceSet *own = sets.empty() ? nullptr : sets[0]->getSurfaceset();
+	if (own && own->getTotalFrames() && mds->getSurfaceset())
+		mds->getSurfaceset()->setPalette(own->getFrame(0)->getPalette());
+	sets.push_back(mds);
+	st.rubbleReady = false;
+	Log(LOG_INFO) << "[COLLAPSE] rubble: set " << name << " borrowed, battle set " << sets.size() - 1;
+	return (int)sets.size() - 1;
+}
+
+/// The row of RUBBLE for the building of block bi.
 int rubbleRow(int bi)
 {
 	const CollapseBlock &b = CollapsePilotData::blocks[bi];
 	for (int r = 0; r < RUBBLE_ROWS; ++r)
-		for (int s = 0; s < b.nSets; ++s)
-			if (upper(b.sets[s]) == RUBBLE[r].key) return r;
+	{
+		std::istringstream in(RUBBLE[r].keys);
+		std::string key;
+		bool any = false;
+		while (in >> key)
+		{
+			any = true;
+			for (int s = 0; s < (RUBBLE[r].firstSet ? std::min(1, b.nSets) : b.nSets); ++s)
+				if (upper(b.sets[s]) == key) return r;
+		}
+		if (!any) return r;
+	}
 	return -1;
 }
 
@@ -281,25 +354,46 @@ struct Drop
 /// What became of the rubble of one settle.
 struct RubbleCount
 {
-	int laid = 0, merged = 0, unit = 0, object = 0, floor = 0, none = 0, again = 0;
+	int laid = 0, merged = 0, unit = 0, object = 0, floor = 0, none = 0, again = 0, light = 0, replaced = 0;
 };
+
+/// The roll of a heap of mass 1, 0..99: by the cell and the building, not the random numbers of the game, so the
+/// same collapse leaves the same rubble after a load.
+int rubbleRoll(Position at, int bi)
+{
+	uint32_t h = (uint32_t)at.x * 73856093u ^ (uint32_t)at.y * 19349663u ^ (uint32_t)at.z * 83492791u ^ (uint32_t)bi * 2654435761u;
+	h ^= h >> 13;
+	h *= 0x5bd1e995u;
+	h ^= h >> 15;
+	return (int)(h % 100);
+}
+
+/// A low object the rubble may take the place of: walkable, not over half the height (a stump, a tuft, a crate),
+/// not a door, a lift, a mark of the map (objective, start, exit), an explosive or what is not to be destroyed.
+bool underRubble(const MapData *md)
+{
+	int layers = 0;
+	for (int i = 0; i < 12; ++i)
+		layers += md->getLoftID(i) != 0;
+	return layers <= 6 && md->getTUCost(MT_WALK) < 255 && !md->isDoor() && !md->isUFODoor() && !md->isGravLift()
+		&& md->getSpecialType() == TILE && !md->getExplosive() && md->getArmor() < 255;
+}
 
 /// Lays the rubble of what fell: one record on the floor each part comes down to (the way TileEngine::applyGravity
 /// takes items down), of the kind most of what came there was (stone on a tie), the record of its kind by the cell
-/// (no random numbers). None where a unit stands or will land, where an object still stands, on a lift or on no floor
-/// of its own. The tiles it lies on join `tiles` (gravity, light and sight).
-void lay(SavedBattleGame *save, int bi, const std::vector<Drop> &drops, std::vector<Tile*> &tiles, RubbleCount &n)
+/// (no random numbers). The mass of a heap: a floor 2, a wall or an object 1, a fall of two levels or more 1 more;
+/// a heap of mass 1 leaves rubble by its roll (RUBBLE_CHANCE), a crown always. None where a unit stands or will land,
+/// on a lift or on no floor of its own; a low object there (underRubble) gives way to it, a higher one keeps the cell.
+/// The tiles it lies on join `tiles` (gravity, light and sight).
+void lay(Mod *mod, SavedBattleGame *save, int bi, const std::vector<Drop> &drops, std::vector<Tile*> &tiles, RubbleCount &n)
 {
 	rubbleOf(save);
-	static const std::vector<std::pair<int, int> > nothing;
 	const int row = rubbleRow(bi);
-	const std::vector<std::pair<int, int> > *list[RK_KINDS] = { &nothing, &nothing, &nothing };
-	for (int k = 0; row >= 0 && k < RK_KINDS; ++k)
-		list[k] = &st.rubble[row * RK_KINDS + k];
 	struct Heap
 	{
 		Tile *tile;
 		int top;
+		int mass;
 		int kinds[RK_KINDS];
 	};
 	std::vector<Heap> heaps;
@@ -312,15 +406,16 @@ void lay(SavedBattleGame *save, int bi, const std::vector<Drop> &drops, std::vec
 		auto h = std::find_if(heaps.begin(), heaps.end(), [t](const Heap &x) { return x.tile == t; });
 		if (h == heaps.end())
 		{
-			heaps.push_back(Heap{ t, d.cell.z, { 0, 0, 0 } });
+			heaps.push_back(Heap{ t, d.cell.z, 0, { 0, 0, 0, 0 } });
 			h = heaps.end() - 1;
 		}
 		else
 			++n.merged;
 		h->top = std::max<int>(h->top, d.cell.z);
+		h->mass += d.floor ? 2 : 1;
 		++h->kinds[d.kind];
 	}
-	const std::vector<MapDataSet*> &sets = *save->getMapDataSets();
+	static const std::vector<std::pair<std::string, int> > nothing;
 	for (const Heap &h : heaps)
 	{
 		const Position at = h.tile->getPosition();
@@ -331,24 +426,43 @@ void lay(SavedBattleGame *save, int bi, const std::vector<Drop> &drops, std::vec
 			unit = c && c->getUnit();
 		}
 		const MapData *floor = h.tile->getMapData(O_FLOOR);
+		const MapData *object = h.tile->getMapData(O_OBJECT);
 		int kind = RK_STONE;
 		for (int k = 1; k < RK_KINDS; ++k)
 			if (h.kinds[k] > h.kinds[kind]) kind = k;
-		for (int k = 0; list[kind]->empty() && k < RK_KINDS; ++k)
+		const std::vector<std::pair<std::string, int> > *list = row < 0 ? &nothing : &rubbleRecords(row, kind);
+		for (int k = 0; row >= 0 && list->empty() && k < RK_KINDS; ++k)
+		{
 			kind = k;
+			list = &rubbleRecords(row, kind);
+		}
+		const int mass = h.mass + (h.top - at.z >= 2 ? 1 : 0);
 		if (unit) ++n.unit;
-		else if (h.tile->getMapData(O_OBJECT)) ++n.object;
+		else if (object && !underRubble(object)) ++n.object;
 		else if ((at.z > 0 && !floor) || (floor && floor->isGravLift())) ++n.floor;
-		else if (list[kind]->empty()) ++n.none;
+		else if (list->empty()) ++n.none;
+		else if (mass < 2 && rubbleRoll(at, bi) >= RUBBLE_CHANCE[kind]) ++n.light;
 		else
 		{
-			const auto &rec = (*list[kind])[(at.x * 7 + at.y * 13 + at.z * 5) % list[kind]->size()];
-			h.tile->setMapData(sets[rec.first]->getObject(rec.second), rec.second, rec.first, O_OBJECT);
+			const auto &rec = (*list)[(at.x * 7 + at.y * 13 + at.z * 5) % list->size()];
+			int s = setIndexOf(save, rec.first);
+			if (s < 0)
+				s = borrowSet(mod, save, rec.first);
+			const std::vector<MapDataSet*> &sets = *save->getMapDataSets();
+			if (s < 0 || rec.second >= (int)sets[s]->getSize())
+			{
+				++n.none;
+				continue;
+			}
+			if (object)
+				++n.replaced;
+			h.tile->setMapData(sets[s]->getObject(rec.second), rec.second, s, O_OBJECT);
 			++n.laid;
 			if (std::find(tiles.begin(), tiles.end(), h.tile) == tiles.end())
 				tiles.push_back(h.tile);
 		}
 	}
+	rubbleOf(save);
 }
 
 /**
@@ -1333,7 +1447,7 @@ bool settle(BattlescapeGame *battle, const char *why)
 				seenCells.push_back(t->getPosition());
 			if (Options::oxceHdFx)
 				fallen.push_back(Fallen{ t->getSprite(part), t->getPosition(), part, t->getYOffset(part), md, seen });
-			drops.push_back(Drop{ t->getPosition(), PARTS[p.kind] == O_FLOOR, rubbleKind(md) });
+			drops.push_back(Drop{ t->getPosition(), PARTS[p.kind] == O_FLOOR, rubbleKind(md, PARTS[p.kind] == O_FLOOR) });
 			t->setMapData(nullptr, -1, -1, PARTS[p.kind]);
 			if (md->getExplosive())
 				t->setExplosive(md->getExplosive(), md->getExplosiveType());
@@ -1364,7 +1478,7 @@ bool settle(BattlescapeGame *battle, const char *why)
 			t->setMapData(nullptr, -1, -1, O_OBJECT);
 			++rubble.again;
 		}
-		lay(save, in.bi, drops, tiles, rubble);
+		lay(battle->getMod(), save, in.bi, drops, tiles, rubble);
 		// gravity after all the geometry, on the tiles and the tiles above (TileEngine::explode)
 		for (Tile *t : tiles)
 		{
@@ -1408,7 +1522,8 @@ bool settle(BattlescapeGame *battle, const char *why)
 			<< ": removed " << nRemoved << ", fell " << nFell << " (f " << fell[0] << " w " << fell[1] << " n " << fell[2] << " o " << fell[3]
 			<< "), outside " << outside << ", lifts " << lifts << ", objectives " << objectives << ", tiles " << tiles.size()
 			<< ", rubble " << rubble.laid << " (merged " << rubble.merged << ", again " << rubble.again << "; skipped: unit " << rubble.unit
-			<< ", object " << rubble.object << ", no floor " << rubble.floor << ", none " << rubble.none << ")"
+			<< ", object " << rubble.object << ", no floor " << rubble.floor << ", none " << rubble.none
+			<< ", by chance " << rubble.light << "; in place of a low object " << rubble.replaced << ")"
 			<< ", falling units " << save->getFallingUnits()->size()
 			<< "; scan " << scanMs << " ms, eval " << evalMs << " ms, apply " << applyMs << " ms, light+fov " << msSince(tl0) << " ms";
 	}
