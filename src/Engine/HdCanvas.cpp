@@ -1259,6 +1259,20 @@ bool Canvas32::saveDump(const std::string &filename)
  * so the strips are independent and the order within a strip is the order of
  * the calls.
  */
+namespace
+{
+	/// The cap of the shaded copies, lit ones included. OXCE_HD_TONED_CAP=<MB> overrides it (tests of the cache size)
+	size_t tonedCapBytes()
+	{
+		static const size_t cap = []
+		{
+			const char *env = getenv("OXCE_HD_TONED_CAP");
+			return (env && atoi(env) > 0) ? (size_t)atoi(env) << 20 : (size_t)256u << 20;
+		}();
+		return cap;
+	}
+}
+
 void Canvas32::flush()
 {
 	makeJobs();
@@ -1333,14 +1347,12 @@ void Canvas32::flush()
 	trimGround();
 	// the shaded copies used longest ago go when they exceed their cap (here, not while recording: commands point at them)
 	// - but not the ones this frame drew while they fit the hard cap, or a big view remakes them every frame
-	// OXCE_HD_TONED_CAP=<MB> overrides the cap (tests of the cache size)
-	static const size_t tonedCap = []
-	{
-		const char *env = getenv("OXCE_HD_TONED_CAP");
-		return (env && atoi(env) > 0) ? (size_t)atoi(env) << 20 : (size_t)256u << 20;
-	}();
+	const size_t tonedCap = tonedCapBytes();
 	static const size_t tonedHardCap = 3 * tonedCap;
-	while (_tonedBytes > tonedCap && !_tonedLru.empty())
+	// lit copies that did not fit (see litFor): the old ones go down to three quarters of the cap, so the next frames make them
+	const size_t tonedTarget = _litRefused ? tonedCap - tonedCap / 4 : tonedCap;
+	_litRefused = false;
+	while (_tonedBytes > tonedTarget && !_tonedLru.empty())
 	{
 		auto victim = _toned.find(_tonedLru.back());
 		if (victim != _toned.end())
@@ -1491,9 +1503,14 @@ void Canvas32::perfReport()
 		return;
 	}
 	_perfLast = now;
+	size_t lit = 0;
+	for (const auto &pair : _toned)
+	{
+		lit += pair.first.shade == TONED_LIT;
+	}
 	Log(LOG_INFO) << "HD perf: " << _width << "x" << _height << " k=" << _scale << " mode=" << _hdMode
 		<< " | smooth " << _smooth.size() << "+" << _smoothScripted.size() << " fr " << (smoothBytes() >> 20) << " MB"
-		<< " | toned " << _toned.size() << " fr " << (_tonedBytes >> 20) << " MB"
+		<< " | toned " << _toned.size() << " fr (lit " << lit << ") " << (_tonedBytes >> 20) << " MB"
 		<< " | ground " << _ground.size() << " fr " << (_groundBytes >> 20) << " MB"
 		<< " | packs " << HdSprites::loaded() << " fr " << (HdSprites::loadedBytes() >> 20) << " MB"
 		<< " | pictures " << (HdUiArt::bytes() >> 20) << " MB"
@@ -2386,7 +2403,9 @@ const HdFrame *Canvas32::tonedFor(const HdFrame &hd, int shade, Uint16 tintKey)
 		noticeChanges();
 	}
 	const bool stale = _tonedStale && (_changedAll || _changedFrames.count(&hd) != 0);
-	const TonedKey key { &hd, shade | ((int)tintKey << 8) };
+	TonedKey key {};
+	key.frame = &hd;
+	key.shade = shade | ((int)tintKey << 8);
 	if (!stale)
 	{
 		auto it = _toned.find(key);
@@ -2417,7 +2436,7 @@ const HdFrame *Canvas32::tonedFor(const HdFrame &hd, int shade, Uint16 tintKey)
 	{
 		_jobsGeneration = HdSprites::generation();
 	}
-	_tonedJobs.push_back(TonedJob { &hd, &out, shade, tintKey, entry != nullptr, key });
+	_tonedJobs.push_back(TonedJob { &hd, &out, shade, tintKey, entry != nullptr, key, nullptr });
 	if (entry)
 	{
 		_tonedLru.push_front(key);
@@ -2439,6 +2458,24 @@ void Canvas32::makeToned(const TonedJob &job) const
 	out.rows = hd.rows;
 	out.solid = hd.solid;
 	out.pixels.resize(hd.pixels.size());
+	if (job.shade == TONED_LIT)
+	{
+		bool tintFlat = true;
+		for (int i = 0; i < HdLight::NODES; ++i)
+		{
+			for (int c = 0; c < 3; ++c)
+			{
+				tintFlat = tintFlat && job.key.lightTint[i][c] == job.key.lightTint[0][c];
+			}
+		}
+		const LitOf lit(*this, job.key.lightShade, job.key.lightTint, tintFlat);
+		for (size_t i = 0; i < hd.pixels.size(); ++i)
+		{
+			const Uint32 p = hd.pixels[i];
+			out.pixels[i] = (p >> 24) ? lit(p, job.weights + i * 5) : 0;
+		}
+		return;
+	}
 	const ToneOf tone(*this, job.shade, job.tintKey);
 	for (size_t i = 0; i < hd.pixels.size(); ++i)
 	{
@@ -2450,6 +2487,107 @@ Canvas32::ToneOf::ToneOf(const Canvas32 &canvas, int shade, Uint16 tint) :
 	toneR(canvas._toneFactor[0][shade]), toneG(canvas._toneFactor[1][shade]), toneB(canvas._toneFactor[2][shade]), tintKey(tint),
 	tr(((tint >> 10) & 31) * 65536u / 31), tg(((tint >> 5) & 31) * 65536u / 31), tb((tint & 31) * 65536u / 31)
 {
+}
+
+Canvas32::LitOf::LitOf(const Canvas32 &canvas, const Uint16 *lightShade, const Uint8 (*lightTint)[3], bool flat) :
+	toneFactor(canvas._toneFactor), shade(lightShade), tint(lightTint), tintFlat(flat),
+	flatTint{ lightTint[4][0] + 1u, lightTint[4][1] + 1u, lightTint[4][2] + 1u }
+{
+	whiteTint = tintFlat && flatTint[0] == 256 && flatTint[1] == 256 && flatTint[2] == 256;
+}
+
+inline Uint32 Canvas32::LitOf::operator()(Uint32 p, const Uint8 *wq) const
+{
+	// the quadrant's four nodes: top-left, top-right, bottom-right, bottom-left of the 3x3 grid
+	const int q = wq[0];
+	const int n0 = (q >> 1) * 3 + (q & 1), n1 = n0 + 1, n2 = n0 + 4, n3 = n0 + 3;
+	const Uint8 *w = wq + 1;
+	// interpolated shade (8.8) and light color (0..255)
+	const Uint32 shade8 = (w[0] * shade[n0] + w[1] * shade[n1] + w[2] * shade[n2] + w[3] * shade[n3]) >> 8;
+	const int s0 = std::min(16, (int)(shade8 >> 8));
+	const int s1 = std::min(16, s0 + 1);
+	const Uint32 frac = shade8 & 0xFF;
+	Uint32 r = (p >> 16) & 0xFF, g = (p >> 8) & 0xFF, b = p & 0xFF;
+	const Uint32 m = r > g ? (r > b ? r : b) : (g > b ? g : b);
+	Uint32 f[3];
+	for (int c = 0; c < 3; ++c)
+	{
+		const Sint32 fa = (Sint32)toneFactor[c][s0][m], fb = (Sint32)toneFactor[c][s1][m];
+		f[c] = (Uint32)(fa + (((fb - fa) * (Sint32)frac) >> 8)); // fb <= fa: signed lerp
+		if (whiteTint)
+		{
+			continue;
+		}
+		if (tintFlat)
+		{
+			f[c] = (f[c] * flatTint[c]) >> 8;
+		}
+		else
+		{
+			const Uint32 t = (w[0] * tint[n0][c] + w[1] * tint[n1][c] + w[2] * tint[n2][c] + w[3] * tint[n3][c]) >> 8;
+			f[c] = (f[c] * (t + 1)) >> 8; // t + 1: 255 -> x1
+		}
+	}
+	r = (r * f[0] + 32768u) >> 16;
+	g = (g * f[1] + 32768u) >> 16;
+	b = (b * f[2] + 32768u) >> 16;
+	return (p & 0xFF000000u) | (r << 16) | (g << 8) | b;
+}
+
+/**
+ * The frame lit by the light field of a command, as doBlitHdLit draws it
+ * pixel by pixel: a copy in the cache of the shaded ones, keyed by the field,
+ * so that a view redrawn under the same light (the camera moves, a unit walks
+ * elsewhere) draws plain alpha copies. A copy that does not fit the cap is not
+ * made - the blit stays per pixel - and the trim at the end of the flush makes
+ * room for the next frames: a view bigger than the cap does not remake copies
+ * every frame (R-370). None while the cache is stale for the frame.
+ */
+const HdFrame *Canvas32::litFor(const HdFrame &hd, const Cmd &cmd, const LightWeights &weights)
+{
+	if (HdSprites::generation() != _changedGeneration)
+	{
+		noticeChanges();
+	}
+	if (_tonedStale && (_changedAll || _changedFrames.count(&hd) != 0))
+	{
+		return nullptr;
+	}
+	TonedKey key {};
+	key.frame = &hd;
+	key.shade = TONED_LIT;
+	memcpy(key.lightShade, cmd.lightShade, sizeof(key.lightShade));
+	memcpy(key.lightTint, cmd.lightTint, sizeof(key.lightTint));
+	auto it = _toned.find(key);
+	if (it != _toned.end())
+	{
+		_tonedLru.splice(_tonedLru.begin(), _tonedLru, it->second.lru);
+		it->second.used = _tonedFrame;
+		return &it->second.frame;
+	}
+	const size_t bytes = (size_t)hd.width * hd.height * sizeof(Uint32);
+	if (_tonedBytes + bytes > tonedCapBytes())
+	{
+		_litRefused = true;
+		return nullptr;
+	}
+	HdDrawStats::frame.tonedNew += HdDrawStats::on;
+	// the source may be a ground blend this recording reserved: the pixels come before the commands run (makeJobs)
+	TonedEntry &entry = _toned[key];
+	HdFrame &out = entry.frame;
+	out.width = hd.width;
+	out.height = hd.height;
+	out.generated = true;
+	if (_groundJobs.empty() && _tonedJobs.empty())
+	{
+		_jobsGeneration = HdSprites::generation();
+	}
+	_tonedJobs.push_back(TonedJob { &hd, &out, TONED_LIT, 0x7FFF, true, key, weights.w.data() });
+	_tonedLru.push_front(key);
+	entry.lru = _tonedLru.begin();
+	entry.used = _tonedFrame;
+	_tonedBytes += bytes;
+	return &out;
 }
 
 /**
@@ -2611,8 +2749,8 @@ namespace
 
 /**
  * Records an HD blit under the current light field: a flat field is a shaded
- * (and tinted) copy of the frame, a field with a gradient is interpolated per
- * pixel when the command runs.
+ * (and tinted) copy of the frame, a field with a gradient is a lit copy (see
+ * litFor) or, when that does not fit, interpolated per pixel when the command runs.
  */
 void Canvas32::recordHdLit(Cmd &cmd, const HdFrame &hd, int shade)
 {
@@ -2625,7 +2763,6 @@ void Canvas32::recordHdLit(Cmd &cmd, const HdFrame &hd, int shade)
 		record(cmd);
 		return;
 	}
-	cmd.type = Cmd::BLIT_HD_LIT;
 	cmd.hd = &hd;
 	cmd.shade = 0;
 	cmd.tintFlat = true;
@@ -2641,7 +2778,16 @@ void Canvas32::recordHdLit(Cmd &cmd, const HdFrame &hd, int shade)
 			}
 		}
 	}
-	lightWeightsFor(hd.width, hd.height); // built on the recording thread
+	const LightWeights &weights = lightWeightsFor(hd.width, hd.height); // built on the recording thread
+	if (const HdFrame *lit = litFor(hd, cmd, weights))
+	{
+		// the frame under this light made once: a plain alpha copy
+		cmd.type = Cmd::BLIT_HD;
+		cmd.hd = lit;
+		record(cmd);
+		return;
+	}
+	cmd.type = Cmd::BLIT_HD_LIT;
 	record(cmd);
 }
 
@@ -2753,9 +2899,7 @@ void Canvas32::doBlitHdLit(const Cmd &cmd, GraphSubset destClip)
 	}
 	const Uint8 *weights = wit->second.w.data();
 	const int rs = _rshift, gs = _gshift, bs = _bshift;
-	const bool tintFlat = cmd.tintFlat;
-	const Uint32 flatTint[3] = { cmd.lightTint[4][0] + 1u, cmd.lightTint[4][1] + 1u, cmd.lightTint[4][2] + 1u };
-	const bool whiteTint = tintFlat && flatTint[0] == 256 && flatTint[1] == 256 && flatTint[2] == 256;
+	const LitOf lit(*this, cmd.lightShade, cmd.lightTint, cmd.tintFlat);
 	for (int dy = y0; dy < y1; ++dy)
 	{
 		const int sy = dy - y;
@@ -2777,40 +2921,8 @@ void Canvas32::doBlitHdLit(const Cmd &cmd, GraphSubset destClip)
 			{
 				continue;
 			}
-			const Uint8 *wq = wRow + sx * 5;
-			// the quadrant's four nodes: top-left, top-right, bottom-right, bottom-left of the 3x3 grid
-			const int q = wq[0];
-			const int n0 = (q >> 1) * 3 + (q & 1), n1 = n0 + 1, n2 = n0 + 4, n3 = n0 + 3;
-			const Uint8 *w = wq + 1;
-			// interpolated shade (8.8) and light color (0..255)
-			const Uint32 shade8 = (w[0] * cmd.lightShade[n0] + w[1] * cmd.lightShade[n1] + w[2] * cmd.lightShade[n2] + w[3] * cmd.lightShade[n3]) >> 8;
-			const int s0 = std::min(16, (int)(shade8 >> 8));
-			const int s1 = std::min(16, s0 + 1);
-			const Uint32 frac = shade8 & 0xFF;
-			Uint32 r = (p >> 16) & 0xFF, g = (p >> 8) & 0xFF, b = p & 0xFF;
-			const Uint32 m = r > g ? (r > b ? r : b) : (g > b ? g : b);
-			Uint32 f[3];
-			for (int c = 0; c < 3; ++c)
-			{
-				const Sint32 fa = (Sint32)_toneFactor[c][s0][m], fb = (Sint32)_toneFactor[c][s1][m];
-				f[c] = (Uint32)(fa + (((fb - fa) * (Sint32)frac) >> 8)); // fb <= fa: signed lerp
-				if (whiteTint)
-				{
-					continue;
-				}
-				if (tintFlat)
-				{
-					f[c] = (f[c] * flatTint[c]) >> 8;
-				}
-				else
-				{
-					const Uint32 t = (w[0] * cmd.lightTint[n0][c] + w[1] * cmd.lightTint[n1][c] + w[2] * cmd.lightTint[n2][c] + w[3] * cmd.lightTint[n3][c]) >> 8;
-					f[c] = (f[c] * (t + 1)) >> 8; // t + 1: 255 -> x1
-				}
-			}
-			r = (r * f[0] + 32768u) >> 16;
-			g = (g * f[1] + 32768u) >> 16;
-			b = (b * f[2] + 32768u) >> 16;
+			const Uint32 l = lit(p, wRow + sx * 5);
+			Uint32 r = (l >> 16) & 0xFF, g = (l >> 8) & 0xFF, b = l & 0xFF;
 			if (a != 255)
 			{
 				const Uint32 d = dstRow[sx];

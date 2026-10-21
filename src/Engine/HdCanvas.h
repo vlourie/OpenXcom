@@ -18,6 +18,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <chrono>
+#include <cstring>
 #include <deque>
 #include <list>
 #include <string>
@@ -357,15 +358,41 @@ private:
 	void trimSmooth();
 	void clearSmooth();
 	/// HD frames with a shade already applied, so that a shaded HD blit is a plain alpha copy (LRU, capped by size).
+	/// The shade of a copy lit by a light field with a gradient (see litFor): the field is in the key.
+	static const int TONED_LIT = -1;
 	struct TonedKey
 	{
 		const HdFrame *frame;
 		int shade;
-		bool operator==(const TonedKey &o) const { return frame == o.frame && shade == o.shade; }
+		/// TONED_LIT: the node shades and tints of the light field (as in Cmd), zero otherwise.
+		Uint16 lightShade[HdLight::NODES];
+		Uint8 lightTint[HdLight::NODES][3];
+		bool operator==(const TonedKey &o) const
+		{
+			return frame == o.frame && shade == o.shade && (shade != TONED_LIT ||
+				(!memcmp(lightShade, o.lightShade, sizeof(lightShade)) && !memcmp(lightTint, o.lightTint, sizeof(lightTint))));
+		}
 	};
 	struct TonedKeyHash
 	{
-		size_t operator()(const TonedKey &k) const { return std::hash<const void*>()(k.frame) ^ (size_t)k.shade * 0x9E3779B9u; }
+		size_t operator()(const TonedKey &k) const
+		{
+			size_t h = std::hash<const void*>()(k.frame) ^ (size_t)k.shade * 0x9E3779B9u;
+			if (k.shade == TONED_LIT)
+			{
+				const Uint8 *b = (const Uint8*)k.lightShade;
+				for (size_t i = 0; i < sizeof(k.lightShade); ++i)
+				{
+					h = (h ^ b[i]) * 1099511628211ull;
+				}
+				b = &k.lightTint[0][0];
+				for (size_t i = 0; i < sizeof(k.lightTint); ++i)
+				{
+					h = (h ^ b[i]) * 1099511628211ull;
+				}
+			}
+			return h;
+		}
 	};
 	struct TonedEntry
 	{
@@ -404,6 +431,8 @@ private:
 		/// In the cache under `key` (not a one-off copy of a stale cache).
 		bool cached;
 		TonedKey key;
+		/// TONED_LIT: the corner weights of the frame's size (see lightWeightsFor).
+		const Uint8 *weights;
 	};
 	std::vector<TonedJob> _tonedJobs;
 	/// Fills a reserved shaded copy (on a worker).
@@ -434,6 +463,19 @@ private:
 			}
 			return (p & 0xFF000000u) | (r << 16) | (g << 8) | b;
 		}
+	};
+	/// One pixel under a light field with a gradient: the shade and the light color interpolated from the four
+	/// nodes of the pixel's quadrant (its 5 weight bytes, see LightWeights), alpha kept - the same for the blit
+	/// and for the lit copy it is drawn from.
+	struct LitOf
+	{
+		const Uint32 (*toneFactor)[17][256];
+		const Uint16 *shade;
+		const Uint8 (*tint)[3];
+		bool tintFlat, whiteTint;
+		Uint32 flatTint[3];
+		LitOf(const Canvas32 &canvas, const Uint16 *lightShade, const Uint8 (*lightTint)[3], bool tintFlat);
+		inline Uint32 operator()(Uint32 p, const Uint8 *wq) const;
 	};
 	/// True when the canvas pixel layout is 0x00RRGGBB, the layout of HD frames (plain copies possible).
 	bool _argbLayout;
@@ -466,6 +508,10 @@ private:
 	bool smoothBase(const Uint8 *idx, int bw, int bh, int pitch, HdFrame &out);
 	/// The frame with the shade (and a light color) applied to its colors (cached), or the frame itself at shade 0 and white light.
 	const HdFrame *tonedFor(const HdFrame &hd, int shade, Uint16 tintKey = 0x7FFF);
+	/// The frame lit by the light field of the command (cached with the shaded copies), or nullptr: drawn lit per pixel.
+	const HdFrame *litFor(const HdFrame &hd, const Cmd &cmd, const LightWeights &weights);
+	/// A lit copy did not fit the cap this frame: the trim at the end of the flush makes room (see flush).
+	bool _litRefused = false;
 	/// The corner weights of every pixel of a frame of this size (built once per size).
 	const LightWeights &lightWeightsFor(int width, int height);
 	/// Records an HD blit lit by the current light field (or a flat/tinted one when the field is flat).
