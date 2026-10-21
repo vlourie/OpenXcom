@@ -15,6 +15,7 @@
         { "id": "OAK-RU", "off": true },
         { "id": "XPZ_EX_RU-patch", "lang": "ru" },
         { "id": "piratezRusNames", "lang": "ru" },
+        { "id": "piratezRussianNames", "lang": "ru" },
         { "id": "piratezCitiesLore" },
         { "id": "*" },
         { "id": "intro_voice" },
