@@ -339,6 +339,11 @@ namespace OpenXcom
 		/// Loads the article from YAML.
 		void load(const YAML::YamlNodeReader& reader, int listOrder) override;
 
+		/// OXCE-HD: a full-screen picture of the vessel instead of BACK11.SCR and the interception
+		/// preview, with the stats and the text in their own rectangles (as a craft article); empty - as before.
+		std::string image_id;
+		ArticleDefinitionRect rect_stats;
+		ArticleDefinitionRect rect_text;
 	};
 
 	/**

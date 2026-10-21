@@ -37,12 +37,25 @@ namespace OpenXcom
 	ArticleStateUfo::ArticleStateUfo(ArticleDefinitionUfo *defs, std::shared_ptr<ArticleCommonState> state) : ArticleState(defs->id, std::move(state))
 	{
 		RuleUfo *ufo = _game->getMod()->getUfo(defs->id, true);
+		// OXCE-HD: the vessel's picture over the whole screen, as a craft article (ticket XP-000172)
+		const bool picture = !defs->image_id.empty();
 
 		// add screen elements
 		_txtTitle = new Text(155, 32, 5, 24);
 
 		// Set palette
-		setStandardPalette("PAL_GEOSCAPE");
+		if (!picture)
+		{
+			setStandardPalette("PAL_GEOSCAPE");
+		}
+		else if (defs->customPalette)
+		{
+			setCustomPalette(_game->getMod()->getSurface(defs->image_id)->getPalette(), Mod::UFOPAEDIA_CURSOR);
+		}
+		else
+		{
+			setStandardPalette("PAL_UFOPAEDIA");
+		}
 
 		ArticleState::initLayout();
 
@@ -50,20 +63,25 @@ namespace OpenXcom
 		add(_txtTitle);
 
 		// Set up objects
-		_game->getMod()->getSurface("BACK11.SCR")->blitNShade(_bg, 0, 0);
-		_btnOk->setColor(Palette::blockOffset(8)+5);
-		_btnPrev->setColor(Palette::blockOffset(8)+5);
-		_btnNext->setColor(Palette::blockOffset(8)+5);
-		_btnInfo->setColor(Palette::blockOffset(8)+5);
+		// the colours of a craft article on a picture, of the UFO article on BACK11.SCR
+		const Uint8 color = picture ? Palette::blockOffset(14)+15 : Palette::blockOffset(8)+5;
+		const Uint8 color2 = picture ? Palette::blockOffset(15)+4 : Palette::blockOffset(8)+10;
+		const Uint8 colorBtn = picture ? Palette::blockOffset(15)-1 : Palette::blockOffset(8)+5;
+		_game->getMod()->getSurface(picture ? defs->image_id : "BACK11.SCR")->blitNShade(_bg, 0, 0);
+		_btnOk->setColor(colorBtn);
+		_btnPrev->setColor(colorBtn);
+		_btnNext->setColor(colorBtn);
+		_btnInfo->setColor(colorBtn);
 		_btnInfo->setVisible(_game->getMod()->getShowPediaInfoButton());
 
-		_txtTitle->setColor(Palette::blockOffset(8)+5);
+		_txtTitle->setColor(color);
 		_txtTitle->setBig();
 		_txtTitle->setWordWrap(true);
 		_txtTitle->setText(tr(defs->getTitleForPage(_state->current_page)));
 
 		_image = new Surface(160, 52, 160, 6);
 		add(_image);
+		_image->setVisible(!picture);
 
 		RuleInterface *dogfightInterface = _game->getMod()->getInterface("dogfight");
 
@@ -90,24 +108,40 @@ namespace OpenXcom
 		crop.setY(0);
 		crop.blit(_image);
 
-		_txtInfo = new Text(300, 50, 10, 140);
+		if (picture)
+		{
+			_txtInfo = new Text(defs->rect_text.width, defs->rect_text.height, defs->rect_text.x, defs->rect_text.y);
+			_lstInfo = new TextList(defs->rect_stats.width, defs->rect_stats.height, defs->rect_stats.x, defs->rect_stats.y);
+		}
+		else
+		{
+			_txtInfo = new Text(300, 50, 10, 140);
+			_lstInfo = new TextList(310, 64, 10, 68);
+		}
 		add(_txtInfo);
 
-		_txtInfo->setColor(Palette::blockOffset(8)+5);
-		_txtInfo->setSecondaryColor(Palette::blockOffset(8) + 10);
+		_txtInfo->setColor(color);
+		_txtInfo->setSecondaryColor(color2);
 		_txtInfo->setWordWrap(true);
 		_txtInfo->setScrollable(true);
 		_txtInfo->setText(tr(defs->getTextForPage(_state->current_page)));
 
-		_lstInfo = new TextList(310, 64, 10, 68);
 		add(_lstInfo);
 
 		centerAllSurfaces();
 
-		_lstInfo->setColor(Palette::blockOffset(8)+5);
-		_lstInfo->setColumns(2, 200, 110);
-//		_lstInfo->setCondensed(true);
-		_lstInfo->setBig();
+		_lstInfo->setColor(color);
+		if (picture)
+		{
+			// small font, as the stats of a craft article: the big one would cover the vessel
+			_lstInfo->setColumns(2, defs->rect_stats.width * 2 / 3, defs->rect_stats.width - defs->rect_stats.width * 2 / 3);
+		}
+		else
+		{
+			_lstInfo->setColumns(2, 200, 110);
+//			_lstInfo->setCondensed(true);
+			_lstInfo->setBig();
+		}
 		_lstInfo->setDot(true);
 
 		_lstInfo->addRow(2, tr("STR_DAMAGE_CAPACITY").c_str(), Unicode::formatNumber(ufo->getStats().damageMax).c_str());

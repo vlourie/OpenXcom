@@ -420,18 +420,19 @@ def guard_shared(watch, jid, job, pids):
     at, total = got
     gb = total / 2 ** 30
     job["shared_gb"] = round(gb, 1)
-    if gb <= SHARED_LIMIT_GB:
+    limit = job.get("shared_limit", SHARED_LIMIT_GB)    # add --shared-gb: порог одного задания по слову Vitali
+    if gb <= limit:
         if job.pop("shared_since", None):
             dlog(f"#{jid} {job['name']}: shared {gb:.1f} ГБ - снова в норме")
         return
     if shared_log_only(job):
         if not job.get("shared_since"):
             job["shared_since"] = at
-            dlog(f"#{jid} {job['name']}: shared {gb:.1f} ГБ больше {SHARED_LIMIT_GB} - видео, только в лог (R-213)")
+            dlog(f"#{jid} {job['name']}: shared {gb:.1f} ГБ больше {limit} - видео, только в лог (R-213)")
         return
     if not job.get("shared_since"):
         job["shared_since"] = at
-        dlog(f"#{jid} {job['name']}: shared {gb:.1f} ГБ больше {SHARED_LIMIT_GB} - снимется, если продержится "
+        dlog(f"#{jid} {job['name']}: shared {gb:.1f} ГБ больше {limit} - снимется, если продержится "
              f"{SHARED_HOLD:.0f} с (R-213)")
     elif at - job["shared_since"] >= SHARED_HOLD and not job.get("kill"):
         msg = f"shared {gb:.1f} ГБ (R-213)"
@@ -831,6 +832,8 @@ def cmd_add(a):
             "cwd": os.path.abspath(a.cwd), "env": env, "retries": a.retries,
             "state": "queued", "added": now(), "prio": 0 if a.urgent else a.prio,
             "preemptible": a.preemptible}
+        if a.shared_gb is not None:
+            st["jobs"][jid]["shared_limit"] = a.shared_gb
         tidy(st)
         place(st["order"], jid, pos=1 if a.urgent else a.pos,
               before=find(st, a.before) if a.before else None,
@@ -949,6 +952,8 @@ def main():
                    help="0 приёмка/регрессия, 1 пилот/пробы (умолчание), 2 опыты, 9 педия")
     p.add_argument("--preemptible", action="store_true",
                    help="уступает карту заданию с меньшим P (на границе картинки, GPUQ_YIELD_FILE)")
+    p.add_argument("--shared-gb", type=float, help="порог сторожа shared для этого задания, ГБ "
+                   f"(по умолчанию {SHARED_LIMIT_GB}; выше - только по слову Vitali, R-213)")
     p.add_argument("cmd", nargs=argparse.REMAINDER)
     p.set_defaults(fn=cmd_add)
     p = sub.add_parser("prio", help="сменить приоритет задания")
