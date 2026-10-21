@@ -159,6 +159,7 @@ void ambushScored(int, bool, bool) {}
 void ambushEnd(bool, int, const Position &, int, bool) {}
 int ambushMemo() { return 0; }
 void ambushMemoNode(const Position &, bool, bool, int, int, int) {}
+int bestCell() { return 0; }
 bool cellProf() { return false; }
 Pathfinding *cellPathfinding(SavedBattleGame *) { return nullptr; }
 void cellSearch(SavedBattleGame *, const BattleUnit *, const char *, const CellStat &) {}
@@ -2384,6 +2385,12 @@ void ambushMemoNode(const Position &pos, bool skipped, bool ok, int own, int sco
 	Log(LOG_INFO) << "[AIAMBN] u=" << amb.unit << " e=" << amb.enemy << " pos=" << pos.x << "," << pos.y << "," << pos.z
 		<< " d=" << Position::distance2d(pos, amb.unitPos) << " de=" << Position::distance2d(pos, amb.enemyPos) << " dze=" << pos.z - amb.enemyPos.z
 		<< " own=" << own << " ok=0 cost=0 len=0 exp=0 us=0 s0=" << score << " best=" << best << " cover=-1 s=" << score << " take=0 memo=1";
+}
+
+int bestCell()
+{
+	static const int bits = active() ? (int)param("OXCE_AI_BEST_CELL", 0) & 31 : 0;
+	return bits;
 }
 
 bool cellProf()

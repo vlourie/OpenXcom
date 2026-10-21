@@ -1451,6 +1451,15 @@ void AIModule::reachableWithAttack(const BattleActionCost &cost)
 	// the same budget as findReachable's own
 	_reachableTuMax = _unit->getTimeUnits() - cost.Time;
 	_reachableEnergyMax = _unit->getEnergy() - cost.Energy;
+	if (AiProbe::bestCell() & AiProbe::BC_REACHCOST)
+	{
+		// BEST_CELL REACHCOST (bench): the cost to each tile now, before any other search resets the nodes reachedTU reads
+		_reachCost.assign(_save->getMapSizeXYZ(), -1);
+		for (int index : _reachableWithAttack)
+		{
+			_reachCost[index] = _save->getPathfinding()->reachedTU(_save->getTileCoords(index));
+		}
+	}
 }
 
 /**
@@ -2202,6 +2211,12 @@ void AIModule::setupAmbush()
 		std::vector<std::pair<int, int>> cellReal;
 		int cellIdx = -1, cellBreak = -1;
 		const auto cellT0 = cellProf ? std::chrono::steady_clock::now() : std::chrono::steady_clock::time_point();
+		// BEST_CELL (bench): LEVELS - the nodes one level below and above too; AMB_BEST - every node of the window, an equal
+		// score taken by chance (reservoir over the ties); REACHCOST - a node that cannot beat the best skips both searches
+		const int bestCellBits = AiProbe::bestCell();
+		const bool ambLevels = (bestCellBits & AiProbe::BC_LEVELS) != 0;
+		const bool ambBest = (bestCellBits & AiProbe::BC_AMB_BEST) != 0;
+		int ambTies = 0;
 
 		// we'll use node positions for this, as it gives map makers a good degree of control over how the units will use the environment.
 		for (const auto* node : *_save->getNodes())
@@ -2213,7 +2228,8 @@ void AIModule::setupAmbush()
 			AiProbe::ambushNode(0);
 			Position pos = node->getPosition();
 			Tile *tile = _save->getTile(pos);
-			if (tile == 0 || Position::distance2d(pos, _unit->getPosition()) > 10 || pos.z != _unit->getPosition().z || tile->getDangerous() ||
+			if (tile == 0 || Position::distance2d(pos, _unit->getPosition()) > 10
+				|| (ambLevels ? std::abs(pos.z - _unit->getPosition().z) > 1 : pos.z != _unit->getPosition().z) || tile->getDangerous() ||
 				std::find(_reachableWithAttack.begin(), _reachableWithAttack.end(), _save->getTileIndex(pos))  == _reachableWithAttack.end())
 				continue; // just ignore unreachable tiles
 			AiProbe::ambushNode(1);
@@ -2239,9 +2255,18 @@ void AIModule::setupAmbush()
 			if (!_save->getTileEngine()->canTargetUnit(&origin, tile, &target, _aggroTarget, false, _unit) && !getSpottingUnits(pos))
 			{
 				AiProbe::ambushNode(2);
+				const int reach = reachCostAt(pos);
+				if (reach >= 0)
+				{
+					// BEST_CELL REACHCOST: the most this node can score; one that cannot beat the best (or tie it, when ties
+					// are drawn) needs neither its own nor the enemy's path search
+					const int most = BASE_SYSTEMATIC_SUCCESS - reach + (_save->getTileEngine()->faceWindow(pos) != -1 ? COVER_BONUS : 0);
+					if (most < bestScore || (most == bestScore && !(ambBest && bestScore > 0)))
+						continue;
+				}
 				AiProbe::ambushMark();
 				calculateKnownOccupantV2(pos, ko2, _ko2AmbHits);
-				int ambushTUs = _save->getPathfinding()->getTotalTUCost();
+				int ambushTUs = reach >= 0 ? reach : _save->getPathfinding()->getTotalTUCost();
 				// make sure we can move here
 				const bool ownPath = _save->getPathfinding()->getStartDirection() != -1;
 				AiProbe::ambushOwn(ownPath, ambushTUs, _save->getPathfinding()->getExpanded());
@@ -2293,7 +2318,16 @@ void AIModule::setupAmbush()
 						{
 							cellReal.emplace_back(_save->getTileIndex(pos), score);
 						}
-						const bool taken = score > bestScore;
+						bool taken = score > bestScore;
+						if (ambBest)
+						{
+							// BEST_CELL AMB_BEST: the k-th node of an equal best score is taken with chance 1/k - each equally likely,
+							// not the first in the map file's order
+							if (taken)
+								ambTies = 1;
+							else if (score == bestScore && bestScore > 0)
+								taken = RNG::generate(1, ++ambTies) == 1;
+						}
 						AiProbe::ambushScored(score, cover, taken);
 						if (taken)
 						{
@@ -2301,7 +2335,7 @@ void AIModule::setupAmbush()
 							bestScore = score;
 							_ambushTUs = (pos == _unit->getPosition()) ? 1 : ambushTUs;
 							_ambushAction.target = pos;
-							if (bestScore > FAST_PASS_THRESHOLD)
+							if (bestScore > FAST_PASS_THRESHOLD && !ambBest)
 							{
 								fastPass = true;
 								cellBreak = cellIdx;
@@ -2594,9 +2628,17 @@ void AIModule::setupEscape()
 	const bool cellProf = AiProbe::cellProf();
 	int cellScored = 0, cellPassed = 0;
 	const auto cellT0 = cellProf ? std::chrono::steady_clock::now() : std::chrono::steady_clock::time_point();
+	// BEST_CELL ESC_BEST (bench): the stay try and the whole window are scored with no quit over the threshold; the random
+	// run (tries 121 and on) only while nothing passed it, and it quits on the first that does, as before
+	const bool escBest = (AiProbe::bestCell() & AiProbe::BC_ESC_BEST) != 0;
 
 	while (tries < 150 && !coverFound)
 	{
+		if (escBest && tries >= 121 && bestTileScore > FAST_PASS_THRESHOLD)
+		{
+			coverFound = true;
+			break;
+		}
 		_escapeAction.target = _unit->getPosition(); // start looking in a direction away from the enemy
 		// the careful bot runs by the player's rule (small units may), the AI by its own (armor must allow)
 		_escapeAction.run = _unit->getArmor()->allowsRunning(AiProbe::careful(_unit) && _unit->isSmallUnit()) && (tries & 1); // every odd try, i.e. roughly 50%
@@ -2767,7 +2809,7 @@ void AIModule::setupEscape()
 				}
 			}
 			_save->getPathfinding()->abortPath();
-			if (bestTileScore > FAST_PASS_THRESHOLD) coverFound = true; // good enough, gogogo
+			if (bestTileScore > FAST_PASS_THRESHOLD && !(escBest && tries < 121)) coverFound = true; // good enough, gogogo
 		}
 	}
 	if (cellProf)
@@ -4069,6 +4111,21 @@ bool AIModule::findFirePoint()
 		_ko2FpOld = ko2Old;
 	}
 	std::vector<Position> randomTileSearch = _save->getTileSearch(); // copy!
+	// BEST_CELL (bench): LEVELS - the window on the levels below and above too; FP_BEST - no quit on the threshold;
+	// REACHCOST - the score from findReachable's cost, the A* only for a cell that would become the best
+	const int bestCellBits = AiProbe::bestCell();
+	if (bestCellBits & AiProbe::BC_LEVELS)
+	{
+		const size_t flat = randomTileSearch.size();
+		for (int dz : { -1, 1 })
+		{
+			for (size_t i = 0; i < flat; ++i)
+			{
+				randomTileSearch.push_back(randomTileSearch[i] + Position(0, 0, dz));
+			}
+		}
+	}
+	const bool fpBest = (bestCellBits & AiProbe::BC_FP_BEST) != 0;
 	RNG::shuffle(randomTileSearch);
 	Position target;
 	const int BASE_SYSTEMATIC_SUCCESS = 100;
@@ -4129,6 +4186,16 @@ bool AIModule::findFirePoint()
 
 		if (_save->getTileEngine()->canTargetUnit(&origin, _aggroTarget->getTile(), &target, _unit, false, fkUnit))
 		{
+			// BEST_CELL REACHCOST (bench): scored by findReachable's cost first; a cell that cannot beat the best so far
+			// needs no path search (it would not be taken whatever the path)
+			const int reach = reachCostAt(pos);
+			int pre = INT_MIN;
+			if (reach >= 0)
+			{
+				pre = firePointTerms(pos, reach, meleeApproach);
+				if (pre <= bestScore)
+					continue;
+			}
 			calculateKnownOccupantV2(pos, ko2, _ko2FpHits);
 			// can move here
 			if (_save->getPathfinding()->getStartDirection() != -1)
@@ -4153,6 +4220,12 @@ bool AIModule::findFirePoint()
 					_fpSuppressedNow = true;
 					continue;
 				}
+				if (pre != INT_MIN)
+				{
+					score = pre; // BEST_CELL REACHCOST: the same terms by findReachable's cost
+				}
+				else
+				{
 				score = BASE_SYSTEMATIC_SUCCESS - getSpottingUnits(pos) * 10;
 				score += _unit->getTimeUnits() - _save->getPathfinding()->getTotalTUCost();
 				if (!_aggroTarget->checkViewSector(pos))
@@ -4174,6 +4247,7 @@ bool AIModule::findFirePoint()
 						score = score * distanceToTarget / proposedDistance;
 					}
 				}
+				}
 
 				AiProbe::traceTile(_unit, "firepoint", pos, score);
 				if (cellProf)
@@ -4186,7 +4260,7 @@ bool AIModule::findFirePoint()
 					bestDir = _save->getPathfinding()->getStartDirection();
 					_attackAction.target = pos;
 					_attackAction.finalFacing = _save->getTileEngine()->getDirectionTo(pos, _aggroTarget->getPosition());
-					if (score > FAST_PASS_THRESHOLD)
+					if (score > FAST_PASS_THRESHOLD && !fpBest)
 					{
 						cellBreak = cellIdx;
 						break;
@@ -4249,6 +4323,46 @@ bool AIModule::findFirePoint()
 }
 
 /**
+ * findFirePoint's score of a cell from the walk cost to it: the loop's terms, without its bench's diagnostics.
+ * @param pos The cell.
+ * @param tuCost What the walk there costs.
+ * @param meleeApproach A melee-only unit approaches as a weapon out of range does (AI2-H5).
+ */
+int AIModule::firePointTerms(const Position &pos, int tuCost, bool meleeApproach) const
+{
+	int score = 100 - getSpottingUnits(pos) * 10;
+	score += _unit->getTimeUnits() - tuCost;
+	if (!_aggroTarget->checkViewSector(pos))
+	{
+		score += 10;
+	}
+	const bool waitIfOutsideWeaponRange = _unit->getGeoscapeSoldier() ? false : _unit->getUnitRules()->waitIfOutsideWeaponRange();
+	if (!waitIfOutsideWeaponRange && _save->getMod()->getAIExtendedFireModeChoice())
+	{
+		int distanceToTargetSq = _unit->distance3dToUnitSq(_aggroTarget);
+		int distanceToTarget = (int)std::ceil(sqrt(float(distanceToTargetSq)));
+		if ((_attackAction.weapon && _attackAction.weapon->getRules()->isOutOfRange(distanceToTargetSq)) || meleeApproach)
+		{
+			int proposedDistance = std::max(Position::distance2d(pos, _aggroTarget->getPosition()), 1);
+			score = score * distanceToTarget / proposedDistance;
+		}
+	}
+	return score;
+}
+
+/**
+ * BEST_CELL REACHCOST (bench): the walk cost to a tile as findReachable found it.
+ * @return The cost, or -1 if the table is off, not taken yet, or the tile is not reached.
+ */
+int AIModule::reachCostAt(const Position &pos) const
+{
+	if (!(AiProbe::bestCell() & AiProbe::BC_REACHCOST) || _reachCost.empty())
+		return -1;
+	const int index = _save->getTileIndex(pos);
+	return index >= 0 && index < (int)_reachCost.size() ? _reachCost[index] : -1;
+}
+
+/**
  * CELL_PROF (bench, passive): findFirePoint's loop for one cell on the audit's own pathfinder - the same checks in the same
  * order, the same score. No RNG, no state of the unit or of the game's pathfinder is touched.
  * @return The score, or INT_MIN where the loop would skip the cell.
@@ -4291,24 +4405,8 @@ int AIModule::firePointScoreAt(Pathfinding *pf, const Position &pos, const CellC
 		return INT_MIN;
 	if (c.skipDir != -1 && pf->getStartDirection() == c.skipDir)
 		return INT_MIN;
-	int score = 100 - getSpottingUnits(pos) * 10;
-	score += _unit->getTimeUnits() - pf->getTotalTUCost();
-	if (!_aggroTarget->checkViewSector(pos))
-	{
-		score += 10;
-	}
-	const bool waitIfOutsideWeaponRange = _unit->getGeoscapeSoldier() ? false : _unit->getUnitRules()->waitIfOutsideWeaponRange();
-	if (!waitIfOutsideWeaponRange && _save->getMod()->getAIExtendedFireModeChoice())
-	{
-		int distanceToTargetSq = _unit->distance3dToUnitSq(_aggroTarget);
-		int distanceToTarget = (int)std::ceil(sqrt(float(distanceToTargetSq)));
-		if ((_attackAction.weapon && _attackAction.weapon->getRules()->isOutOfRange(distanceToTargetSq)) || c.meleeApproach)
-		{
-			int proposedDistance = std::max(Position::distance2d(pos, _aggroTarget->getPosition()), 1);
-			score = score * distanceToTarget / proposedDistance;
-		}
-	}
-	return score;
+	const int reach = reachCostAt(pos); // BEST_CELL REACHCOST scores by the table, as the loop does
+	return firePointTerms(pos, reach >= 0 ? reach : pf->getTotalTUCost(), c.meleeApproach);
 }
 
 /**
@@ -4336,7 +4434,8 @@ int AIModule::ambushScoreAt(Pathfinding *pf, const Position &pos, const CellCtx 
 	}
 	if (pf->getStartDirection() == -1)
 		return INT_MIN;
-	int score = 100 - pf->getTotalTUCost();
+	const int reach = reachCostAt(pos); // BEST_CELL REACHCOST scores by the table, as the loop does
+	int score = 100 - (reach >= 0 ? reach : pf->getTotalTUCost());
 	pf->calculate(_aggroTarget, pos, BAM_NORMAL);
 	if (pf->getStartDirection() == -1)
 		return INT_MIN;
@@ -4416,7 +4515,7 @@ void AIModule::cellShadow(AiProbe::CellStat &s, const std::vector<std::pair<int,
 	}
 	auto scoreAt = [&](const Position &p) { return ambush ? ambushScoreAt(pf, p, c) : firePointScoreAt(pf, p, c); };
 	const int bar = s.chosen == INT_MIN ? 0 : s.chosen; // the real search starts its best at 0
-	std::vector<int> shadow(mapSize, INT_MAX); // INT_MAX - not in the window
+	std::vector<int> shadow(mapSize, INT_MAX); // INT_MAX - the shadow did not score it (the window and its other levels only)
 
 	Clock::time_point t0 = Clock::now();
 	s.window = (int)win.size();
@@ -4433,17 +4532,13 @@ void AIModule::cellShadow(AiProbe::CellStat &s, const std::vector<std::pair<int,
 		s.rank += sc > bar ? 1 : 0;
 	}
 	s.nsFull = std::chrono::duration_cast<std::chrono::nanoseconds>(Clock::now() - t0).count();
-	for (const auto &r : real)
-	{
-		const int sh = r.first >= 0 && r.first < mapSize ? shadow[r.first] : INT_MAX;
-		s.mismatch += sh != r.second ? 1 : 0;
-	}
 
 	t0 = Clock::now();
 	s.zCand = (int)levels.size();
 	for (const auto &p : levels)
 	{
 		const int sc = scoreAt(p);
+		shadow[_save->getTileIndex(p)] = sc; // BEST_CELL LEVELS: the real loop scores these too
 		if (sc == INT_MIN)
 			continue;
 		++s.zScored;
@@ -4462,6 +4557,11 @@ void AIModule::cellShadow(AiProbe::CellStat &s, const std::vector<std::pair<int,
 		s.farBest = std::max(s.farBest, sc);
 	}
 	s.nsFar = std::chrono::duration_cast<std::chrono::nanoseconds>(Clock::now() - t0).count();
+	for (const auto &r : real)
+	{
+		const int sh = r.first >= 0 && r.first < mapSize ? shadow[r.first] : INT_MAX;
+		s.mismatch += sh != r.second ? 1 : 0;
+	}
 }
 
 /**
