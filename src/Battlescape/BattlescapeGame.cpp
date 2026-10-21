@@ -1755,7 +1755,7 @@ BattleActionType BattlescapeGame::reserveAffordable(BattleUnit *bu, BattleAction
 		}
 		old.Time += share;
 		const bool oldOk = old.Time <= 0 || old.haveTU();
-		if (!oldOk)
+		if (!oldOk && AiProbe::active()) // the bench's line; the player's AI3 (BetterAI) does not write it
 		{
 			Log(LOG_INFO) << "[AITRACE] {\"ai2d\":\"reserve\",\"rec\":" << AiProbe::nextRec() << ",\"turn\":" << _save->getTurn()
 				<< ",\"unit\":" << bu->getId() << ",\"rt\":" << (int)reserve << ",\"share\":" << share
