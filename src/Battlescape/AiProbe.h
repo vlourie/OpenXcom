@@ -1,4 +1,5 @@
 #pragma once
+#include <climits>
 #include <functional>
 #include <list>
 #include <string>
@@ -32,6 +33,7 @@ class SavedBattleGame;
 class BattleUnit;
 class Position;
 class TileEngine;
+class Pathfinding;
 struct BattleAction;
 struct BattleActionCost;
 struct BattleActionAttack;
@@ -123,6 +125,29 @@ int ambushMemo();
 /// A node the memo answered: skipped - its search was not run (mode 1); ok - what the search still run gave (mode 2);
 /// own, score, best as ambushEnemy. [AIAMBN] with memo=1 for a skipped node; counts in [AIAMB] and the memo total line.
 void ambushMemoNode(const Position &pos, bool skipped, bool ok, int own, int score, int best);
+/// The best-cell audit (OXCE_AI_CELLPROF, docs/research/ai-mechanics/FIRST-GOOD-ENOUGH-2026-10-22.md): how long the fire
+/// point, ambush and escape searches take, where they quit on their "good enough" threshold, and - by a shadow search on a
+/// pathfinder of its own, with no random numbers - how good the chosen cell is against every cell of the same window, of
+/// the other levels in the window, and of the reach outside it. Reads only: [AICELL] per search. Off (the default) and in
+/// the release build: nothing is counted and no shadow search runs.
+bool cellProf();
+/// One search: the real loop's numbers, then the shadow's (INT_MIN - no cell scored in that group).
+struct CellStat
+{
+	long long ns = 0;                   // the real search's loop
+	int window = 0, scanned = 0, passed = 0, breakAt = -1, chosen = INT_MIN, threshold = 0;
+	long long nsFull = 0;               // shadow: every candidate of the real window
+	int full = 0, fullAbove = 0, best = INT_MIN, rank = -1, mismatch = 0;
+	long long nsZ = 0;                  // shadow: the window's cells on the other levels
+	int zCand = 0, zScored = 0, zBest = INT_MIN;
+	long long nsFar = 0;                // shadow: the reach outside the window, any level
+	int farCand = 0, farScored = 0, farBest = INT_MIN;
+};
+/// A pathfinder of the audit's own for the shadow search: the game's one keeps the state the real search left in it.
+/// Null when the audit is off.
+Pathfinding *cellPathfinding(SavedBattleGame *save);
+/// The search is done: one [AICELL] line.
+void cellSearch(SavedBattleGame *save, const BattleUnit *unit, const char *ctx, const CellStat &s);
 /// The escape audit (OXCE_AI_ESCAPEPROF, docs/research/ai-path-audit-2026-10-01.md, п. 11): how many candidate tiles
 /// AIModule::setupEscape looks at, how many of them it drops as unreachable after getSpottingUnits has already traced the
 /// enemies' lines of fire to them, how many canTargetUnit traces and how much time that took. Reads only: [AIESC] per side
@@ -338,7 +363,7 @@ bool patrolStunReserve(SavedBattleGame *save, BattleUnit *unit, const BattleActi
 /// findFirePoint just asked for, and handleAI asks for the same before the walk - against what findReachable left for the
 /// walk when it let the tile into _reachableWithAttack. Bit 1: the path needs more energy (the walk would stop on energy,
 /// UnitWalkBState, and findFirePoint drops the tile); bit 2: more TU (counted only). 0 without the flag.
-int firepointPathOver(SavedBattleGame *save, const BattleUnit *unit, int tuMax, int energyMax);
+int firepointPathOver(SavedBattleGame *save, const BattleUnit *unit, int tuMax, int energyMax, Pathfinding *pf = nullptr);
 /// FIREPOINT_ENERGY_PATH_V1: the tiles one findFirePoint dropped by energy and found over by TU, one step of the trail
 /// "firepoint.energy n<dropped> t<over by TU> mt<movement> en<energy>" and a tally when it dropped any.
 void firepointDropped(const BattleUnit *unit, int droppedByEnergy, int overByTu);
