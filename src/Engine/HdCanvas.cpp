@@ -1261,13 +1261,15 @@ bool Canvas32::saveDump(const std::string &filename)
  */
 namespace
 {
-	/// The cap of the shaded copies, lit ones included. OXCE_HD_TONED_CAP=<MB> overrides it (tests of the cache size)
+	/// The cap of the shaded copies, lit ones included: the lit copies of a base view under lamps take
+	/// about 240 MB at 1920x1080, so 2560x1440 needs about twice that.
+	/// OXCE_HD_TONED_CAP=<MB> overrides it (tests of the cache size)
 	size_t tonedCapBytes()
 	{
 		static const size_t cap = []
 		{
 			const char *env = getenv("OXCE_HD_TONED_CAP");
-			return (env && atoi(env) > 0) ? (size_t)atoi(env) << 20 : (size_t)256u << 20;
+			return (env && atoi(env) > 0) ? (size_t)atoi(env) << 20 : (size_t)512u << 20;
 		}();
 		return cap;
 	}
