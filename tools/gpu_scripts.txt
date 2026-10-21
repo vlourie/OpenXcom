@@ -116,3 +116,6 @@ obj3d_gen.py
 gen_screens.py
 obj3d_paint.py
 gen_ufo_pedia.py
+game_voice_probe.py
+gen_base_paint.py
+wreck_object.py
