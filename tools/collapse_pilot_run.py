@@ -46,6 +46,7 @@ SCEN9 = ROOT / "census/collapse/pilot9/pilot_scen.tsv"   # девятая пар
 SCEN10 = ROOT / "census/collapse/pilot10/pilot_scen.tsv"  # десятая партия - охват после ветки D
 SCEN11 = ROOT / "census/collapse/pilot11/pilot_scen.tsv"  # одиннадцатая - разобранные виды предметов
 SCEN12 = ROOT / "census/collapse/pilot12/pilot_scen.tsv"  # двенадцатая - второй лист видов
+SCEN13 = ROOT / "census/collapse/pilot13/pilot_scen.tsv"  # тринадцатая - третий лист видов
 OUT = ROOT / "census/collapse/pilot1/runs"
 KIND = {"f": 0, "w": 1, "n": 2, "o": 3}
 LABEL_RU = {"barn": "амбар", "bunker": "бункер",
@@ -68,6 +69,8 @@ import collapse_pilot11_scen as P11  # noqa: E402
 LABEL_RU.update({en: ru for tn, bn, ru, en in P11.BUILDINGS})
 import collapse_pilot12_scen as P12  # noqa: E402
 LABEL_RU.update({en: ru for tn, bn, ru, en in P12.BUILDINGS})
+import collapse_pilot13_scen as P13  # noqa: E402
+LABEL_RU.update({en: ru for tn, bn, ru, en in P13.BUILDINGS})
 CPF_INBOX = 128
 _collapse_on = threading.local()
 
@@ -144,6 +147,9 @@ def partial_rows(label_en, only=None):
     if any(b[3] == label_en for b in P12.BUILDINGS):  # двенадцатая - так же (partial12)
         import collapse_partial12_scen as PF12
         PF12.use()
+    if any(b[3] == label_en for b in P13.BUILDINGS):  # тринадцатая - так же (partial13)
+        import collapse_partial13_scen as PF13
+        PF13.use()
     PF.check_lock()
     out = []
     for i, r in enumerate(PF.rows()):
@@ -205,6 +211,7 @@ def scen_rows(label_en, cells=None, only=None):
     lines += SCEN10.read_text(encoding=ENC).splitlines()[1:]
     lines += SCEN11.read_text(encoding=ENC).splitlines()[1:]
     lines += SCEN12.read_text(encoding=ENC).splitlines()[1:]
+    lines += SCEN13.read_text(encoding=ENC).splitlines()[1:]
     out = []
     for ln in lines[1:]:
         r = dict(zip(head, ln.split("\t")))
@@ -238,7 +245,7 @@ def model_fell(label_en, removed_keys):
 def _load_model(label_en):
     # здание четвёртой-шестой партии грузится одно: загрузка всех целых блоков карт идёт минутами (cc.all_blocks
     # на каждое здание), а прогону нужен один
-    for M in (P4, P5, P6, P7, P8, P9, P10, P11, P12):
+    for M in (P4, P5, P6, P7, P8, P9, P10, P11, P12, P13):
         one = [b for b in M.BUILDINGS if b[3] == label_en]
         if one:
             import collapse_pilot_export as EX

@@ -1,1 +1,2 @@
 ﻿- Battle panel "Cruiser Plating": the button signs are dark again, cut into light steel, instead of white in black windows. The red reserve buttons are unchanged; "Consul Plating" stays as it was.
+- Collapse now works on 5 more map blocks: lamia and mummy villages, the necropolis, the Void planet and the jungle temple - whatever stood on destroyed supports comes down. Counts in battles started after the update.
