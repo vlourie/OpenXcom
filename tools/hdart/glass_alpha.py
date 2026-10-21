@@ -60,7 +60,9 @@ COOL = 30          # холодный цвет классики (стекло л
 OBJ_COOL = 12      # объект из списка: стекло HD - синий выше красного хотя бы на столько...
 OBJ_DARK = 45      # ...и не темнее (шины и тени кабины остаются)
 OBJ_PART = 40      # ...и куском не меньше стольких пикселей HD
-VERSION = "glass_alpha.py 20.10 v1"
+GLASS_PART = 40    # стекло окна - связными кусками не меньше стольких пикселей HD, мельче - кладка (21.10)
+GLASS_DOTS = {"FREIGHTER_AGRARIAN:13"}  # стекло шахматкой в самом HD-кадре: точки и есть стекло, без отбора кусков
+VERSION = "glass_alpha.py 21.10 v2"
 
 
 def tsv(name):
@@ -175,7 +177,7 @@ def erode(m, n):
     return m
 
 
-def apply(hd, ss, fr, g, mat, dither=False):
+def apply(hd, ss, fr, g, mat, dither=False, least=GLASS_PART):
     """-> (новый RGBA-массив, число пикселей стекла). hd - RGBA uint8 HxWx4 кадра пака."""
     k = hd.shape[1] // fr.shape[1]
     if k < 1 or hd.shape[0] != fr.shape[0] * k:
@@ -197,6 +199,10 @@ def apply(hd, ss, fr, g, mat, dither=False):
     dg = np.min(((px[:, None, :] - gcol[None]) ** 2).sum(-1), axis=1)
     dm = np.min(((px[:, None, :] - mcol[None]) ** 2).sum(-1), axis=1) if len(mcol) else np.full(len(px), 1e12)
     isg = dg <= dm
+    # тёмный кадр: точки кладки ближе к стеклу, чем к раме, - россыпь дыр сквозь стену (XP-000211, BARN_JUNK 13)
+    full = np.zeros(sel.shape, dtype=bool)
+    full[sel] = isg
+    isg = big_parts(full, least)[sel]
     lum = px @ np.array([0.299, 0.587, 0.114], np.float32)
     med = np.median(lum[isg]) if isg.any() else 0
     mul = np.where(isg, np.where(lum > med + BRIGHT, ALPHA_HL, ALPHA), 1.0)
@@ -260,7 +266,8 @@ def apply_object(hd, rows=None):
 def apply_item(hd, it):
     if it.get("object"):
         return apply_object(hd, it.get("rows"))
-    return apply(hd, it["ss"], it["fr"], it["g"], it["mat"], it["dither"])
+    return apply(hd, it["ss"], it["fr"], it["g"], it["mat"], it["dither"],
+                 1 if it["key"] in GLASS_DOTS else GLASS_PART)
 
 
 def hd_files(s, f):
@@ -414,6 +421,11 @@ def cmd_install(items, yes, approval):
                 prev = bp.blob_path(entry["replaced"], rel)
                 hd = np.array(Image.open(prev).convert("RGBA"))
             new, n = apply_item(hd, it)
+            if new is not None and n == 0 and entry and entry.get("generator") == "glass_alpha" \
+                    and entry.get("replaced") and entry.get("sha256") != entry["replaced"]:
+                # стекла больше нет (были одни пятна) - вернуть кадр, каким он был до прошлой установки
+                staged.append((rel, open(prev, "rb").read(), 0, entry))
+                continue
             if new is None or n == 0:
                 continue
             buf = io.BytesIO()
