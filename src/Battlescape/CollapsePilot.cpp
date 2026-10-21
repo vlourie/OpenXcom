@@ -188,46 +188,67 @@ std::string modelSig(int bi)
 /// grass, earth, snow, sand or water, not a floor: the crown of a tree). A kind a row has no record of takes stone,
 /// then wood, then metal. A record of a set the battle has not loaded borrows the set: it joins the battle's sets
 /// (saved by name, as the map's own), so a forest gets the broken trees of the mountain sets.
+/// Stone has two more tiers, of the set of the collapse's own (COLLAPSE_DEBRIS, tools/collapse_debris_set.py): a heap
+/// a unit stands on, and a block that bars the way; a game without the set gets the crumble.
 enum RubbleKind { RK_STONE, RK_WOOD, RK_METAL, RK_PLANT, RK_KINDS };
+enum RubbleTier { RT_HEAP = RK_KINDS, RT_BLOCK, RT_LISTS };
 struct RubbleRow
 {
 	const char *keys;   // set names; empty - every building
 	bool firstSet;      // the key is the building's first set (else any of its sets)
 	const char *kind[RK_KINDS];
+	const char *heap;   // the stone tiers, none if left out
+	const char *block;
 };
 #define RUBBLE_TREES "MOUNTGRASS:74 MOUNTGRASS:75 MOUNTGRASS:76"
 #define RUBBLE_WOOD "URBAN:87 URBAN:88"
 #define RUBBLE_METAL "MILBARR:48 MILBARR:49"
+#define HEAP_CONCRETE "COLLAPSE_DEBRIS:5 COLLAPSE_DEBRIS:6"
+#define HEAP_EARTH "COLLAPSE_DEBRIS:7 COLLAPSE_DEBRIS:8"
+#define HEAP_SNOW "COLLAPSE_DEBRIS:9"
+#define HEAP_SAND "COLLAPSE_DEBRIS:10"
+#define BLOCK_CONCRETE "COLLAPSE_DEBRIS:11 COLLAPSE_DEBRIS:12"
+#define BLOCK_STONE "COLLAPSE_DEBRIS:13 COLLAPSE_DEBRIS:14"
+#define BLOCK_SNOW "COLLAPSE_DEBRIS:15 COLLAPSE_DEBRIS:16"  // the same blocks; shot, they leave a heap of their land
+#define BLOCK_SAND "COLLAPSE_DEBRIS:17 COLLAPSE_DEBRIS:18"
 const RubbleRow RUBBLE[] = {
-	{ "URBANWAR", false, { "URBANWAR:50 URBANWAR:57", "MADDECOR:80 MADDECOR:83 MADDECOR:84", "", RUBBLE_TREES } },
-	{ "URBAN", false, { "URBAN:50 URBAN:57", "URBAN:87 URBAN:88 MADDECOR:80 MADDECOR:83 MADDECOR:84", "", RUBBLE_TREES } },
-	{ "COMMERCE", false, { "COMMERCE:50 COMMERCE:57", "COMDECOR:68 COMDECOR:69", "", RUBBLE_TREES } },
-	{ "MILBARR", false, { "MILTECHDIO:26", "", "MILBARR:48 MILBARR:49", RUBBLE_TREES } },
-	{ "VILBAN", false, { "", "VILBAN:87 VILBAN:88", "", RUBBLE_TREES } },
-	{ "IDT_FARM", false, { "", "URBAN_GOODS:24 URBAN_GOODS:25", "", RUBBLE_TREES } },
-	{ "URBAN40K", false, { "URBAN40K:57", "", "", RUBBLE_TREES } },
-	{ "BARN_JUNK", false, { "", "FRNITURE:7 CULTIVAT:11", "", RUBBLE_TREES } },
-	{ "BARN", false, { "", "CULTIVAT:11", "", RUBBLE_TREES } },
+	{ "URBANWAR", false, { "URBANWAR:50 URBANWAR:57", "MADDECOR:80 MADDECOR:83 MADDECOR:84", "", RUBBLE_TREES },
+		HEAP_CONCRETE, BLOCK_CONCRETE },
+	{ "URBAN", false, { "URBAN:50 URBAN:57", "URBAN:87 URBAN:88 MADDECOR:80 MADDECOR:83 MADDECOR:84", "", RUBBLE_TREES },
+		HEAP_CONCRETE, BLOCK_CONCRETE },
+	{ "COMMERCE", false, { "COMMERCE:50 COMMERCE:57", "COMDECOR:68 COMDECOR:69", "", RUBBLE_TREES },
+		HEAP_CONCRETE, BLOCK_CONCRETE },
+	{ "MILBARR", false, { "MILTECHDIO:26", "", "MILBARR:48 MILBARR:49", RUBBLE_TREES }, HEAP_CONCRETE, BLOCK_CONCRETE },
+	{ "VILBAN", false, { "", "VILBAN:87 VILBAN:88", "", RUBBLE_TREES }, nullptr, nullptr },
+	{ "IDT_FARM", false, { "", "URBAN_GOODS:24 URBAN_GOODS:25", "", RUBBLE_TREES }, nullptr, nullptr },
+	{ "URBAN40K", false, { "URBAN40K:57", "", "", RUBBLE_TREES }, HEAP_CONCRETE, BLOCK_CONCRETE },
+	{ "BARN_JUNK", false, { "", "FRNITURE:7 CULTIVAT:11", "", RUBBLE_TREES }, nullptr, nullptr },
+	{ "BARN", false, { "", "CULTIVAT:11", "", RUBBLE_TREES }, nullptr, nullptr },
 	// lands (census/collapse/debris/biomes.tsv, the cards of art/collapse_debris/short.png)
 	{ "BARN_PP CULTAREA CULTIVAT FOREST FORESTBITS3 FORESTBITSRED FORESTRED FOREST_NORD MOUNTGRASS", true,
-		{ "MOUNTGRASS:8", RUBBLE_WOOD, RUBBLE_METAL, RUBBLE_TREES } },  // forest
+		{ "MOUNTGRASS:8", RUBBLE_WOOD, RUBBLE_METAL, RUBBLE_TREES }, HEAP_EARTH, BLOCK_STONE },  // forest
 	{ "BLACKFOREST BLACKJUNGLE MOUNTMUD", true,
-		{ "MOUNTMUD:8", RUBBLE_WOOD, RUBBLE_METAL, "MOUNTMUD:74 MOUNTMUD:75 MOUNTMUD:76" } },  // dark forest
+		{ "MOUNTMUD:8", RUBBLE_WOOD, RUBBLE_METAL, "MOUNTMUD:74 MOUNTMUD:75 MOUNTMUD:76" }, HEAP_EARTH, BLOCK_STONE },  // dark forest
 	{ "FORESTJUNGLESTYX JUNGLE JUNGLEBITS JUNGLESTYX MOUNTTROP NEOJUNGLE", true,
-		{ "MUJUNGLE:36 MUJUNGLE:37", RUBBLE_WOOD, RUBBLE_METAL, "MOUNTTROP:74 MOUNTTROP:75 MOUNTTROP:76" } },  // jungle
+		{ "MUJUNGLE:36 MUJUNGLE:37", RUBBLE_WOOD, RUBBLE_METAL, "MOUNTTROP:74 MOUNTTROP:75 MOUNTTROP:76" }, HEAP_EARTH, BLOCK_STONE },  // jungle
 	{ "FORESTBITS_SNOW FOREST_SNOW MOUNTSNOW2", true,
-		{ "MOUNTSNOW2:8", RUBBLE_WOOD, RUBBLE_METAL, "MOUNTSNOW2:74 MOUNTSNOW2:75 MOUNTSNOW2:76 FOREST_SNOW:18 FOREST_SNOW:19" } },  // snow
+		{ "MOUNTSNOW2:8", RUBBLE_WOOD, RUBBLE_METAL, "MOUNTSNOW2:74 MOUNTSNOW2:75 MOUNTSNOW2:76 FOREST_SNOW:18 FOREST_SNOW:19" },
+		HEAP_SNOW, BLOCK_SNOW },  // snow
 	{ "FORESTBITSWASTE FORESTSWAMP_WASTE FOREST_WASTE FRNITURE_WASTE MADDECOR_WASTE MOUNTWASTE2 ROADS_WASTE", true,
-		{ "MOUNTROCK:8 SIETCH:36 SIETCH:37", RUBBLE_WOOD, RUBBLE_METAL, "MOUNTWASTE2:74 MOUNTWASTE2:75 MOUNTWASTE2:76" } },  // wasteland
+		{ "MOUNTROCK:8 SIETCH:36 SIETCH:37", RUBBLE_WOOD, RUBBLE_METAL, "MOUNTWASTE2:74 MOUNTWASTE2:75 MOUNTWASTE2:76" },
+		HEAP_EARTH, BLOCK_STONE },  // wasteland
 	{ "MOUNTROCK", true,
-		{ "MOUNTROCK:8", RUBBLE_WOOD, RUBBLE_METAL, "MOUNTROCK:74 MOUNTROCK:75 MOUNTROCK:76" } },  // rocks
+		{ "MOUNTROCK:8", RUBBLE_WOOD, RUBBLE_METAL, "MOUNTROCK:74 MOUNTROCK:75 MOUNTROCK:76" }, HEAP_EARTH, BLOCK_STONE },  // rocks
 	{ "DESERT DESERTBITS MOUNTSAND MUMMY_RUINS MUMMY_VILLAGE XOPSDESERT XOPSDESERTRED", true,
-		{ "SIETCH:36 SIETCH:37", RUBBLE_WOOD, RUBBLE_METAL, "MOUNT:74 MOUNT:75 MOUNT:76" } },  // desert
+		{ "SIETCH:36 SIETCH:37", RUBBLE_WOOD, RUBBLE_METAL, "MOUNT:74 MOUNT:75 MOUNT:76" }, HEAP_SAND, BLOCK_SAND },  // desert
 	{ "BRICKBAR FRN_OLD INDUSLUM RUSTSHACKS", true,
-		{ "INDUSLUM:56 INDUSLUM:57 INDUSLUM:58 INDUSLUM:59", RUBBLE_WOOD, RUBBLE_METAL, RUBBLE_TREES } },  // slums
+		{ "INDUSLUM:56 INDUSLUM:57 INDUSLUM:58 INDUSLUM:59", RUBBLE_WOOD, RUBBLE_METAL, RUBBLE_TREES },
+		HEAP_CONCRETE, BLOCK_CONCRETE },  // slums
 	{ "CATACDECOR CAVEBLACK U_PLANET_VOID", true,
-		{ "SIETCH_DARK:36 MUSTYX:10", RUBBLE_WOOD, RUBBLE_METAL, "MOUNTMUD:74 MOUNTMUD:75 MOUNTMUD:76" } },  // underground
-	{ "", true, { "URBAN:50 URBAN:57 COMMERCE:50", RUBBLE_WOOD, RUBBLE_METAL, RUBBLE_TREES } },  // town: every other
+		{ "SIETCH_DARK:36 MUSTYX:10", RUBBLE_WOOD, RUBBLE_METAL, "MOUNTMUD:74 MOUNTMUD:75 MOUNTMUD:76" },
+		HEAP_EARTH, BLOCK_STONE },  // underground
+	{ "", true, { "URBAN:50 URBAN:57 COMMERCE:50", RUBBLE_WOOD, RUBBLE_METAL, RUBBLE_TREES },
+		HEAP_CONCRETE, BLOCK_CONCRETE },  // town: every other
 };
 const int RUBBLE_ROWS = sizeof(RUBBLE) / sizeof(RUBBLE[0]);
 /// The chance in 100 that a heap of mass 1 (one wall or object, from less than two levels) leaves rubble, by kind:
@@ -236,6 +257,10 @@ const int RUBBLE_CHANCE[RK_KINDS] = { 50, 35, 50, 100 };
 /// A heap of a plant of this mass or more is a tree that came down whole: a fallen trunk instead of the broken one,
 /// where the cell may take it (mayBlock).
 const int RUBBLE_LOG_MASS = 3;
+/// A heap of stone of this mass or more is a heap of the collapse's set (walkable, a unit stands on top of it), of
+/// RUBBLE_BLOCK_MASS a block (bars the way, where the cell may take it: mayBlock).
+const int RUBBLE_HEAP_MASS = 3;
+const int RUBBLE_BLOCK_MASS = 5;
 
 /// The fallen trunks of a set for its broken trees: records that turn into one of `windfall` when destroyed, low (6
 /// layers at most), not walkable and burning - the whole log of the mountain sets (72 -> 75, 73 -> 76).
@@ -275,26 +300,27 @@ int rubbleKind(const MapData *md, bool floor)
 	return m == "wood" || m == "soft" ? RK_WOOD : m == "metal" ? RK_METAL : RK_STONE;
 }
 
-/// The records of a row's kind: (set name, record).
+/// The records of a row's kind or stone tier (RubbleTier): (set name, record).
 const std::vector<std::pair<std::string, int> > &rubbleRecords(int row, int kind)
 {
 	static std::vector<std::vector<std::pair<std::string, int> > > parsed;
 	if (parsed.empty())
 	{
-		parsed.resize(RUBBLE_ROWS * RK_KINDS);
+		parsed.resize(RUBBLE_ROWS * RT_LISTS);
 		for (int r = 0; r < RUBBLE_ROWS; ++r)
-			for (int k = 0; k < RK_KINDS; ++k)
+			for (int k = 0; k < RT_LISTS; ++k)
 			{
-				std::istringstream in(RUBBLE[r].kind[k]);
+				const char *text = k < RK_KINDS ? RUBBLE[r].kind[k] : k == RT_HEAP ? RUBBLE[r].heap : RUBBLE[r].block;
+				std::istringstream in(text ? text : "");
 				std::string rec;
 				while (in >> rec)
 				{
 					const size_t colon = rec.find(':');
-					parsed[r * RK_KINDS + k].push_back(std::make_pair(rec.substr(0, colon), std::atoi(rec.c_str() + colon + 1)));
+					parsed[r * RT_LISTS + k].push_back(std::make_pair(rec.substr(0, colon), std::atoi(rec.c_str() + colon + 1)));
 				}
 			}
 	}
-	return parsed[row * RK_KINDS + kind];
+	return parsed[row * RT_LISTS + kind];
 }
 
 /// The index of a set among the battle's sets, or -1.
@@ -314,7 +340,7 @@ void rubbleOf(SavedBattleGame *save)
 	st.rubbleReady = true;
 	const std::vector<MapDataSet*> &sets = *save->getMapDataSets();
 	for (int r = 0; r < RUBBLE_ROWS; ++r)
-		for (int k = 0; k < RK_KINDS; ++k)
+		for (int k = 0; k < RT_LISTS; ++k)
 			for (const auto &rec : rubbleRecords(r, k))
 			{
 				const int s = setIndexOf(save, rec.first);
@@ -327,7 +353,7 @@ void rubbleOf(SavedBattleGame *save)
 				}
 				for (int id : ids)
 				{
-					st.rubbleKind[std::make_pair(s, id)] = k;
+					st.rubbleKind[std::make_pair(s, id)] = k < RK_KINDS ? k : RK_STONE;
 					// what the rubble turns into when it is shot or burnt is the collapse's too (foreignParts)
 					for (int dead = id; dead > 0 && dead < (int)sets[s]->getSize() && st.rubbleOrDead.insert(std::make_pair(s, dead)).second; )
 						dead = sets[s]->getObject(dead)->getDieMCD();
@@ -394,7 +420,8 @@ struct Drop
 /// What became of the rubble of one settle.
 struct RubbleCount
 {
-	int laid = 0, merged = 0, unit = 0, object = 0, floor = 0, none = 0, again = 0, light = 0, replaced = 0, log = 0;
+	int laid = 0, merged = 0, unit = 0, object = 0, floor = 0, none = 0, again = 0, light = 0, replaced = 0, log = 0,
+		heap = 0, block = 0;
 };
 
 /// The roll of a heap of mass 1, 0..99: by the cell and the building, not the random numbers of the game, so the
@@ -455,7 +482,8 @@ bool mayBlock(SavedBattleGame *save, Tile *t)
 /// takes items down), of the kind most of what came there was (stone on a tie), the record of its kind by the cell
 /// (no random numbers). The mass of a heap: a floor 2, a wall or an object 1, a fall of two levels or more 1 more;
 /// a heap of mass 1 leaves rubble by its roll (RUBBLE_CHANCE), a crown always; a plant of RUBBLE_LOG_MASS is a fallen
-/// trunk (logsOf) where the cell may take it (mayBlock). None where a unit stands or will land,
+/// trunk (logsOf) where the cell may take it (mayBlock); stone of RUBBLE_HEAP_MASS a heap, of RUBBLE_BLOCK_MASS a
+/// block where the cell may take it (the tiers of the row; the crumble if the game has not the set). None where a unit stands or will land,
 /// on a lift or on no floor of its own; a low object there (underRubble) gives way to it, a higher one keeps the cell.
 /// The tiles it lies on join `tiles` (gravity, light and sight).
 void lay(Mod *mod, SavedBattleGame *save, int bi, const std::vector<Drop> &drops, std::vector<Tile*> &tiles, RubbleCount &n)
@@ -517,20 +545,34 @@ void lay(Mod *mod, SavedBattleGame *save, int bi, const std::vector<Drop> &drops
 		else if (mass < 2 && rubbleRoll(at, bi) >= RUBBLE_CHANCE[kind]) ++n.light;
 		else
 		{
-			const auto &rec = (*list)[(at.x * 7 + at.y * 13 + at.z * 5) % list->size()];
-			int s = setIndexOf(save, rec.first);
-			if (s < 0)
-				s = borrowSet(mod, save, rec.first);
+			// the record of a list by the cell, its set borrowed if need be; -1 if the game has none
+			const std::pair<std::string, int> *rec = nullptr;
+			auto pick = [&](const std::vector<std::pair<std::string, int> > &l)
+			{
+				if (l.empty()) return -1;
+				rec = &l[(at.x * 7 + at.y * 13 + at.z * 5) % l.size()];
+				int s = setIndexOf(save, rec->first);
+				if (s < 0)
+					s = borrowSet(mod, save, rec->first);
+				return s < 0 || rec->second >= (int)(*save->getMapDataSets())[s]->getSize() ? -1 : s;
+			};
+			int s = -1;
+			if (kind == RK_STONE && mass >= RUBBLE_BLOCK_MASS && mayBlock(save, h.tile) && (s = pick(rubbleRecords(row, RT_BLOCK))) >= 0)
+				++n.block;
+			else if (kind == RK_STONE && mass >= RUBBLE_HEAP_MASS && (s = pick(rubbleRecords(row, RT_HEAP))) >= 0)
+				++n.heap;
+			else
+				s = pick(*list);
 			const std::vector<MapDataSet*> &sets = *save->getMapDataSets();
-			if (s < 0 || rec.second >= (int)sets[s]->getSize())
+			if (s < 0)
 			{
 				++n.none;
 				continue;
 			}
-			int id = rec.second;
+			int id = rec->second;
 			if (kind == RK_PLANT && mass >= RUBBLE_LOG_MASS && mayBlock(save, h.tile))
 			{
-				const std::vector<int> logs = logsOf(sets[s], recordsIn(*list, rec.first));
+				const std::vector<int> logs = logsOf(sets[s], recordsIn(*list, rec->first));
 				if (!logs.empty())
 				{
 					id = logs[(at.x * 5 + at.y * 3 + at.z) % logs.size()];
@@ -1606,7 +1648,8 @@ bool settle(BattlescapeGame *battle, const char *why)
 			<< "), outside " << outside << ", lifts " << lifts << ", objectives " << objectives << ", tiles " << tiles.size()
 			<< ", rubble " << rubble.laid << " (merged " << rubble.merged << ", again " << rubble.again << "; skipped: unit " << rubble.unit
 			<< ", object " << rubble.object << ", no floor " << rubble.floor << ", none " << rubble.none
-			<< ", by chance " << rubble.light << "; in place of a low object " << rubble.replaced << ", fallen trunks " << rubble.log << ")"
+			<< ", by chance " << rubble.light << "; in place of a low object " << rubble.replaced << ", fallen trunks " << rubble.log
+			<< ", heaps " << rubble.heap << ", blocks " << rubble.block << ")"
 			<< ", falling units " << save->getFallingUnits()->size()
 			<< "; scan " << scanMs << " ms, eval " << evalMs << " ms, apply " << applyMs << " ms, light+fov " << msSince(tl0) << " ms";
 	}
