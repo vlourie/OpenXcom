@@ -202,6 +202,8 @@ private:
 	/// loads it); what the last setupPatrol of this decision found when it kept the stored node (empty class: it did not).
 	/// Written, never read by play.
 	int _toNodeTurn = -1;
+	/// O14 (BetterAI): the turn whose first decision cleared _wasHitBy (-1: none since the module was made or loaded).
+	int _wasHitByTurn = -1;
 	std::string _prClass, _prRoute, _prTrail;
 	Position _prNode;
 	/// PATROL_NO_PATH_CAUSE (bench, passive): why the kept free node has no path (empty: not probed or not that case)

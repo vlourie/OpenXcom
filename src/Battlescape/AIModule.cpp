@@ -1001,7 +1001,17 @@ void AIModule::think(BattleAction *action)
 			_escapePlan.valid = false; // U3-B: no reserve, no plan (as below, on a walk to another tile)
 		return;
 	}
-	_wasHitBy.clear();
+	if (!AiProbe::oxceFixes())
+	{
+		_wasHitBy.clear();
+	}
+	else if (_wasHitByTurn != _save->getTurn())
+	{
+		// O14 (BetterAI): who hit the unit is kept to the end of the enemy's turn (TileEngine's reaction, its comment): cleared
+		// at the first decision of the unit's turn, not at each - a hit by reaction fire later in this turn is not forgotten
+		_wasHitBy.clear();
+		_wasHitByTurn = _save->getTurn();
+	}
 	_foundBaseModuleToDestroy = false;
 
 	if (_unit->getCharging() && _unit->getCharging()->isOut())
@@ -1988,6 +1998,10 @@ void AIModule::setupPatrol()
 		}
 	}
 	const int staleAge = _toNodeTurn < 0 ? -1 : _save->getTurn() - _toNodeTurn;
+	// O8 (BetterAI): a node with no path is held as allocated for the rest of the tries - else the guard's choice (the
+	// highest flags, no chance in it) picks it again and all five tries go to the same node; freed after the loop
+	std::vector<Node*> noPathNodes;
+	const bool oxceFixes = AiProbe::oxceFixes();
 
 	while (_toNode == 0 && triesLeft)
 	{
@@ -2020,16 +2034,22 @@ void AIModule::setupPatrol()
 				_attackAction.weapon->getAmmoForAction(BA_SNAPSHOT)->getRules()->getDamageType()->ToTile > 0.01f)
 		{
 			// can i shoot an object?
-			if (_fromNode->isTarget() &&
+			if ((!oxceFixes || _fromNode) && _fromNode->isTarget() &&
 				_save->canUseWeapon(_attackAction.weapon, _unit, false, BA_SNAPSHOT) &&
 				_save->getModuleMap()[_fromNode->getPosition().x / 10][_fromNode->getPosition().y / 10].second > 0)
 			{
 				// scan this room for objects to destroy
 				int x = (_unit->getPosition().x/10)*10;
 				int y = (_unit->getPosition().y/10)*10;
-				for (int i = x; i < x+9; i++)
-				for (int j = y; j < y+9; j++)
+				// O12 (BetterAI): the whole 10x10 module, not its first 9x9, and no tile off the map
+				const int span = oxceFixes ? 10 : 9;
+				for (int i = x; i < x+span; i++)
+				for (int j = y; j < y+span; j++)
 				{
+					if (oxceFixes && !_save->getTile(Position(i, j, 1)))
+					{
+						continue;
+					}
 					MapData *md = _save->getTile(Position(i, j, 1))->getMapData(O_OBJECT);
 					if (md && md->isBaseModule())
 					{
@@ -2088,10 +2108,19 @@ void AIModule::setupPatrol()
 			_save->getPathfinding()->calculate(_unit, _toNode->getPosition(), BAM_NORMAL);
 			if (_save->getPathfinding()->getStartDirection() == -1)
 			{
+				if (oxceFixes && !_toNode->isAllocated())
+				{
+					_toNode->allocateNode();
+					noPathNodes.push_back(_toNode);
+				}
 				_toNode = 0;
 			}
 			_save->getPathfinding()->abortPath();
 		}
+	}
+	for (auto* node : noPathNodes)
+	{
+		node->freeNode();
 	}
 
 	const bool staleCleared = staleOld.x != -1;
@@ -2717,6 +2746,12 @@ void AIModule::setupEscape()
 	_escapeAction.run = run;
 	if (bestTileScore > -100000)
 	{
+		if (AiProbe::oxceFixes())
+		{
+			// O13 (BetterAI): the cover is remembered - the search's first try (tries == -1) weighs going on to it, and nothing
+			// ever wrote it
+			_unit->lastCover = bestTile;
+		}
 		const int closeNow = AiProbe::closeEnemies(_save, _unit, _unit->getPosition());
 		if (closeNow > 0)
 		{
@@ -4395,6 +4430,9 @@ void AIModule::meleeAction()
 	}
 	int chargeReserve = std::min(_unit->getTimeUnits() - attackCost.Time, 2 * (_unit->getEnergy() - attackCost.Energy));
 	int distance = (chargeReserve / 4) + 1;
+	// O9 (BetterAI): distance2d leaves out the floor - a unit a floor above or below counted as adjacent and was charged
+	// with no path; an adjacent one is taken only when the blow reaches it, and the first one found stays
+	const bool oxceFixes = AiProbe::oxceFixes();
 	_aggroTarget = 0;
 	for (auto* bu : *_save->getUnits())
 	{
@@ -4409,11 +4447,11 @@ void AIModule::meleeAction()
 		if (newDistance > 20)
 			continue;
 		//pick closest living unit that we can move to
-		if ((newDistance < distance || newDistance == 1) && !bu->isOut())
+		if ((newDistance < distance || (newDistance == 1 && (!oxceFixes || !_aggroTarget))) && !bu->isOut())
 		{
 			if (zeroEffectReject("melee_charge", BA_HIT, attackCost.weapon, bu))
 				continue;
-			if (newDistance == 1 || selectPointNearTarget(bu, chargeReserve))
+			if ((newDistance == 1 && (!oxceFixes || knownAdjacent(bu))) || selectPointNearTarget(bu, chargeReserve))
 			{
 				_aggroTarget = bu;
 				_attackAction.type = BA_WALK;
@@ -4477,6 +4515,7 @@ int AIModule::meleeActionLeeroy(bool canRun)
 		}
 	}
 	int distance = 1000;
+	const bool oxceFixes = AiProbe::oxceFixes(); // O9, as in meleeAction
 	_aggroTarget = 0;
 	for (auto* bu : *_save->getUnits())
 	{
@@ -4489,14 +4528,14 @@ int AIModule::meleeActionLeeroy(bool canRun)
 			continue;
 		int newDistance = Position::distance2d(_unit->getPosition(), kind == 1 ? kp : bu->getPosition());
 		//pick closest living unit
-		if ((newDistance < distance || newDistance == 1) && !bu->isOut())
+		if ((newDistance < distance || (newDistance == 1 && (!oxceFixes || !_aggroTarget))) && !bu->isOut())
 		{
 			if (zeroEffectReject("leeroy_charge", BA_HIT, _unit->getUtilityWeapon(BT_MELEE), bu))
 			{
 				++rejected;
 				continue;
 			}
-			if (newDistance == 1 || selectPointNearTargetLeeroy(bu, canRun))
+			if ((newDistance == 1 && (!oxceFixes || knownAdjacent(bu))) || selectPointNearTargetLeeroy(bu, canRun))
 			{
 				_aggroTarget = bu;
 				_attackAction.type = BA_WALK;
@@ -4629,9 +4668,9 @@ void AIModule::wayPointAction()
 			}
 			PathDirection = _save->getPathfinding()->dequeuePath();
 		}
-		if (bot && _attackAction.waypoints.empty())
+		if ((bot || AiProbe::oxceFixes()) && _attackAction.waypoints.empty())
 		{
-			// AI3-F: no waypoint was laid (front() of an empty list); the launch is not made
+			// AI3-F: no waypoint was laid (front() of an empty list); the launch is not made - O10 (BetterAI): for every AI
 			AiProbe::note(_unit, "botwp.no_waypoints");
 			_attackAction.type = BA_RETHINK;
 			return;
@@ -5937,7 +5976,8 @@ bool AIModule::getNodeOfBestEfficacy(BattleAction *action, int radius)
 				}
 				AiKnownPlace known(_save, bu, kind, kp, kdir);
 				dist = Position::distance2d(node->getPosition(), bu->getPosition());
-				if (!bu->isOut() && dist < radius)
+				// O11 (BetterAI): a unit on the blast's edge is in it, as explosiveEfficacy counts (<=)
+				if (!bu->isOut() && (dist < radius || (dist == radius && AiProbe::oxceFixes())))
 				{
 					Position targetOriginVoxel = _save->getTileEngine()->getSightOriginVoxel(bu);
 					if (_save->getTileEngine()->canTargetTile(&targetOriginVoxel, _save->getTile(node->getPosition()), O_FLOOR, &targetVoxel, bu, false))

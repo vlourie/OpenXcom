@@ -522,8 +522,11 @@ void createAdvancedOptionsOXCE()
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceGentleAsk", &oxceGentleAsk, true, "", "STR_GENERAL"));
 	// Building collapse (Battlescape/CollapsePilot.h): its own group on the HD tab, off by default
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceCollapse", &oxceCollapse, false, "STR_HD_COLLAPSE", "STR_HD_PHYSICS"));
-	// AI3 tactical AI (Battlescape/AiProbe.h): its own group on the HD tab, on by default; applies after a restart
-	_info.push_back(OptionInfo(OPTION_OXCE, "oxceAi3", &oxceAi3, true, "STR_HD_AI3", "STR_HD_AI"));
+	// BetterAI (Battlescape/AiProbe.h): the screen the first row of the HD tab opens; the master switch is off by default,
+	// the rows under it are grey while it is off; applies after a restart
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceBetterAi", &oxceBetterAi, false, "STR_BETTER_AI_ON", "STR_HD_AI"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceBetterAiFixes", &oxceBetterAiFixes, true, "STR_BETTER_AI_FIXES", "STR_HD_AI"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceBetterAiAi3", &oxceBetterAiAi3, false, "STR_BETTER_AI_AI3", "STR_HD_AI"));
 	// No saves inside a battle, ironman-like but apart from it: its own group on the HD tab, off by default
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceNoBattleSaves", &oxceNoBattleSaves, false, "STR_HD_NO_BATTLE_SAVES", "STR_HD_CHALLENGE"));
 	// HD render (see Engine/HdCanvas.h): sprite scale of the battlescape and how sprites are drawn on the true-color canvas

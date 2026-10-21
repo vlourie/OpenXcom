@@ -76,7 +76,59 @@ DmgNote dmgNote;
 
 #ifndef OXCE_AI_DEV
 
-// a release build: the bench is not compiled in, every entry point does nothing
+// a release build: the bench is not compiled in, every entry point does nothing - but BetterAI's (Options::oxceBetterAi,
+// the BetterAI screen of the HD tab, docs/research/ai-mechanics/BETTERAI-PLAN.md): those read the options, and with
+// BetterAI off each of them answers what its stub did, before any random number is drawn
+namespace
+{
+
+/// What the player turned on, taken once: the AI reads its switches into static constants at their first use, so a change
+/// takes effect after a restart (the rows of the screen say so).
+struct BetterAi { bool fixes, ai3; };
+const BetterAi &betterAi()
+{
+	static const BetterAi on = { Options::oxceBetterAi && Options::oxceBetterAiFixes, Options::oxceBetterAi && Options::oxceBetterAiAi3 };
+	return on;
+}
+
+/// The switches the player's AI3 plays with: the bench profile (AI3_PROFILE of the OXCE_AI_DEV part) without the honest
+/// knowledge (FAIR_KNOWLEDGE, put off on 22.10), the player bot's switches, the speed-only ones (their decisions are the
+/// same) and the stale patrol node (STALE_PATROL_NODE, STALE_EXACT), which is the fix O5 and goes with the fixes.
+struct ProfileFlag { const char *name; double value; };
+const ProfileFlag AI3_PLAYER[] = {
+	{ "OXCE_AI_ZERO_EFFECT", 3 }, { "OXCE_AI_ZERO_HONEST", 2 }, { "OXCE_AI_SNIPER_AOE_EFFICACY", 2 },
+	{ "OXCE_AI_EFFICACY_NO_DIFF", 1 }, { "OXCE_AI_RESERVE_AFFORDABLE", 2 }, { "OXCE_AI_HYPO_LOS", 1 },
+	{ "OXCE_AI_MELEE_FIREPOINT_APPROACH", 1 }, { "OXCE_AI_LEEROY_STALE_FIX", 1 }, { "OXCE_AI_LEEROY_TU_FIX", 1 },
+};
+
+/// COUNTER_FIX (O3): the unit whose decision last raised the AI action counter (its id, turn and side).
+int counterUnit = -1, counterTurn = -1, counterSide = -1;
+
+/// BLOCKED_STEP (AI3): the first steps of a unit's path its walk found blocked, kept for that turn, tile and revision of
+/// what its side knows; a new path is searched with them banned. The bench's memory without its counts and record.
+struct BlockedSteps { int turn = -1; Position from; unsigned long long kr = 0; std::vector<int> dirs; };
+std::map<int, BlockedSteps> blockedSteps;
+
+int unitTurnOf(const SavedBattleGame *save)
+{
+	return save->getTurn() * 8 + (int)save->getSide();
+}
+
+/// FNV-1a over the bytes of 64-bit values, as the bench's StateHash.
+struct RevisionHash
+{
+	uint64_t h = 1469598103934665603ULL;
+	void add(long long v)
+	{
+		for (int i = 0; i < 8; ++i)
+		{
+			h = (h ^ (uint64_t)((v >> (i * 8)) & 0xff)) * 1099511628211ULL;
+		}
+	}
+};
+
+}
+
 bool blastProbe() { return false; }
 void blastBegin(SavedBattleGame *, const BattleActionAttack &, const Position &, int, int, const RuleDamageType *, int) {}
 void blastTile(int, double, int) {}
@@ -130,10 +182,14 @@ bool panicTurnFix() { return false; }
 void panicState(SavedBattleGame *, bool) {}
 void shotDivider(SavedBattleGame *, const BattleUnit *, double) {}
 bool postWalkFix() { return false; }
-bool upstreamSpot() { return false; }
-bool upstreamVis() { return false; }
+bool upstreamSpot() { return betterAi().fixes; } // O6: upstream 6ee48e7d1
+bool upstreamVis() { return betterAi().fixes; } // O6: upstream 613ec4a28
 bool upstreamSees(const BattleUnit *viewer, const BattleUnit *target, int)
 {
+	if (upstreamVis())
+	{
+		return viewer->hasVisibleUnit(target);
+	}
 	const auto *vis = const_cast<BattleUnit *>(viewer)->getVisibleUnits();
 	return std::find(vis->begin(), vis->end(), target) != vis->end();
 }
@@ -141,12 +197,30 @@ bool postWalkAi(const SavedBattleGame *, const BattleUnit *, bool) { return fals
 void postWalkBegin(SavedBattleGame *, BattleUnit *, const BattleAction &, bool) {}
 void postWalkEnd(SavedBattleGame *, const BattleUnit *, bool) {}
 void postWalkMelee(const BattleUnit *) {}
-bool counterFix() { return false; }
-bool counterCheck(SavedBattleGame *, const BattleUnit *, int) { return false; }
-void counterOwn(SavedBattleGame *, const BattleUnit *, int) {}
-bool astarCostFix() { return false; }
-bool escapeSignFix() { return false; }
-bool staleEscapeFix() { return false; }
+bool counterFix() { return betterAi().fixes; } // O3
+bool counterCheck(SavedBattleGame *save, const BattleUnit *unit, int counter)
+{
+	if (!counterFix() || counter == 0)
+	{
+		return false;
+	}
+	// the counter is another unit's (or another turn's): reset
+	return unit->getId() != counterUnit || save->getTurn() != counterTurn || (int)save->getSide() != counterSide;
+}
+void counterOwn(SavedBattleGame *save, const BattleUnit *unit, int)
+{
+	if (!counterFix())
+	{
+		return;
+	}
+	counterUnit = unit->getId();
+	counterTurn = save->getTurn();
+	counterSide = (int)save->getSide();
+}
+bool astarCostFix() { return betterAi().fixes; } // O2
+bool escapeSignFix() { return betterAi().fixes; } // O1
+bool staleEscapeFix() { return betterAi().fixes; } // O4
+bool oxceFixes() { return betterAi().fixes; } // O7-O14
 long long battleSeed() { return -1; }
 void think(BattlescapeState *, SavedBattleGame *) {}
 void battleOver(BattlescapeState *, SavedBattleGame *, bool) {}
@@ -164,7 +238,18 @@ bool revive(SavedBattleGame *, BattleUnit *, BattleAction *, const std::vector<i
 int turretsSeeing(SavedBattleGame *, BattleUnit *, const Position &) { return 0; }
 bool flee(SavedBattleGame *, BattleUnit *, BattleAction *, const std::vector<int> &) { return false; }
 int maxActions(const BattleUnit *) { return 2; }
-double param(const char *, double def) { return def; }
+double param(const char *name, double def)
+{
+	if (betterAi().ai3)
+	{
+		for (const auto &f : AI3_PLAYER)
+		{
+			if (strcmp(f.name, name) == 0)
+				return f.value;
+		}
+	}
+	return def;
+}
 int nextRec() { return 0; }
 void tally(const BattleUnit *, const char *) {}
 void note(const BattleUnit *, const char *) {}
@@ -179,7 +264,39 @@ bool patrolStunReserve(SavedBattleGame *, BattleUnit *, const BattleAction &, bo
 int firepointPathOver(SavedBattleGame *, const BattleUnit *, int, int) { return 0; }
 void firepointDropped(const BattleUnit *, int, int) {}
 void firepointBlocked(BattleUnit *, const BattleAction &, int) {}
-unsigned long long knownRevision(SavedBattleGame *, const BattleUnit *) { return 0; }
+unsigned long long knownRevision(SavedBattleGame *save, const BattleUnit *unit)
+{
+	if (!betterAi().ai3)
+	{
+		return 0;
+	}
+	// the bench's revision: the units the side sees now (where they stand, whether out) and every tile's parts, doors,
+	// fire and smoke - what the blocked step memory holds for
+	RevisionHash h;
+	for (const auto *bu : *save->getUnits())
+	{
+		if (bu->getFaction() != unit->getFaction() && bu->getTurnsSinceSpottedByFaction(unit->getFaction()) != 0)
+		{
+			continue;
+		}
+		h.add(bu->getId());
+		h.add(bu->getPosition().x); h.add(bu->getPosition().y); h.add(bu->getPosition().z);
+		h.add((int)bu->getStatus()); h.add(bu->isOut() ? 1 : 0);
+	}
+	for (int i = 0; i < save->getMapSizeXYZ(); ++i)
+	{
+		Tile *tile = save->getTile(i);
+		for (int part = O_FLOOR; part < O_MAX; ++part)
+		{
+			int id = -1, set = -1;
+			tile->getMapData(&id, &set, (TilePart)part);
+			h.add(id * 256 + set);
+			h.add(tile->isUfoDoorOpen((TilePart)part) ? 1 : 0);
+		}
+		h.add(tile->getFire()); h.add(tile->getSmoke());
+	}
+	return h.h;
+}
 bool firepointBlockedSalt() { return false; }
 bool firepointTargetCell() { return false; }
 void firepointTargetCellRejected(const BattleUnit *, const Position &, bool, const Position &) {}
@@ -193,15 +310,80 @@ bool patrolReuseProbe() { return false; }
 void patrolReuseDecided(const BattleUnit *, const char *, const char *, bool, const std::string &) {}
 bool patrolNoPathProbe() { return false; }
 void patrolNoPathDecided(const BattleUnit *, const char *, bool) {}
-bool stalePatrolNode() { return false; }
+bool stalePatrolNode() { return betterAi().fixes; } // O5
 void stalePatrolChecked(const BattleUnit *, bool, const Position &, int, const Position &) {}
 bool staleShadow() { return false; }
 void staleShadowAsk(SavedBattleGame *, BattleUnit *, const Position &, bool, int, int, long long) {}
-int staleExact() { return 0; }
+int staleExact() { return betterAi().fixes ? 1 : 0; } // O5: witnessReach where it proves the answer, else the full search
 void staleExactAsked(const BattleUnit *, const Position &, int, int, int) {}
-void blockedStepStop(SavedBattleGame *, BattleUnit *, int) {}
-void blockedStepDecide(SavedBattleGame *, BattleUnit *) {}
-void blockedStepPlan(SavedBattleGame *, BattleUnit *, const BattleAction &) {}
+void blockedStepStop(SavedBattleGame *save, BattleUnit *unit, int dir)
+{
+	if (!betterAi().ai3 || !unit->getAIModule())
+	{
+		return;
+	}
+	const int turn = unitTurnOf(save);
+	const unsigned long long kr = knownRevision(save, unit);
+	BlockedSteps &m = blockedSteps[unit->getId()];
+	if (m.turn == turn && m.from == unit->getPosition() && m.kr == kr)
+	{
+		if (std::find(m.dirs.begin(), m.dirs.end(), dir) == m.dirs.end()) m.dirs.push_back(dir);
+	}
+	else
+	{
+		m.turn = turn;
+		m.from = unit->getPosition();
+		m.kr = kr;
+		m.dirs.assign(1, dir);
+	}
+}
+void blockedStepDecide(SavedBattleGame *save, BattleUnit *unit)
+{
+	if (!betterAi().ai3)
+	{
+		return;
+	}
+	const auto it = blockedSteps.find(unit->getId());
+	if (it == blockedSteps.end())
+	{
+		return;
+	}
+	// another turn, or the unit moved, or what its side knows changed: the memory is dropped
+	const BlockedSteps &m = it->second;
+	if (m.turn != unitTurnOf(save) || m.from != unit->getPosition() || knownRevision(save, unit) != m.kr)
+	{
+		blockedSteps.erase(it);
+	}
+}
+void blockedStepPlan(SavedBattleGame *save, BattleUnit *unit, const BattleAction &action)
+{
+	if (!betterAi().ai3)
+	{
+		return;
+	}
+	const auto it = blockedSteps.find(unit->getId());
+	if (it == blockedSteps.end())
+	{
+		return;
+	}
+	// blockedStepDecide checked this decision's turn, tile and revision; nothing moved since
+	Pathfinding *pf = save->getPathfinding();
+	const int first = pf->getStartDirection();
+	const std::vector<int> &dirs = it->second.dirs;
+	if (first == -1 || std::find(dirs.begin(), dirs.end(), first) == dirs.end())
+	{
+		return;
+	}
+	pf->setBannedFirst(dirs);
+	pf->calculate(action.actor, action.target, BAM_NORMAL);
+	pf->setBannedFirst({});
+	if (pf->getStartDirection() == -1)
+	{
+		// the walk the old code took here was stopped at once and counted an abort; the unit decides the same again with
+		// nothing changed, and only the abort cap (AIModule::think, 200) ends that - without it the turn never ends
+		unit->increaseAIWalkAbortCounter();
+	}
+}
 void sideEnds(SavedBattleGame *) {}
 void turnStage(SavedBattleGame *, const char *) {}
 void logCasualty(SavedBattleGame *, const BattleUnit *, const BattleUnit *, const std::string &, bool, int, bool) {}
@@ -233,14 +415,14 @@ void fairGeo(int, const BattleUnit *) {}
 int fairState(SavedBattleGame *, const BattleUnit *, BattleUnit *, Position &, int &) { return 0; }
 void fairSel(const BattleUnit *, const BattleUnit *, const char *, int, int, int, const char *, const Position &) {}
 void fairPick(const BattleUnit *, const BattleUnit *, const char *, int, const char *, int) {}
-bool meleeFirepointApproach() { return false; }
+bool meleeFirepointApproach() { return betterAi().ai3; }
 
 #else
 
 namespace
 {
 
-/// AI3 in the game (Options::oxceAi3, or OXCE_AI3_PLAY): the bench switches the shipped AI plays with - the accepted
+/// AI3 in the game (BetterAI with its AI3 row, Options::oxceBetterAiAi3, or OXCE_AI3_PLAY): the bench switches the shipped AI plays with - the accepted
 /// AI2 base h9c plus AI3 A (LEEROY_TU_FIX) and F (BOT_SPECIAL, BOT_WP_MELEE). Built in, not read from the environment.
 struct ProfileFlag { const char *name; const char *value; };
 const ProfileFlag AI3_PROFILE[] = {
@@ -508,7 +690,7 @@ bool harness()
 
 bool play()
 {
-	static const bool on = !harness() && (Options::oxceAi3 || rawOn("OXCE_AI3_PLAY"));
+	static const bool on = !harness() && ((Options::oxceBetterAi && Options::oxceBetterAiAi3) || rawOn("OXCE_AI3_PLAY"));
 	return on;
 }
 
@@ -1861,6 +2043,14 @@ bool escapeSignFix()
 bool staleEscapeFix()
 {
 	static const bool on = active(); // clean1: U3-A and U3-B always in the bench
+	return on;
+}
+
+bool oxceFixes()
+{
+	// the play mode has every clean fix on (active()), these with them; the harness only by its switch, so the runs measured
+	// before them keep their decisions
+	static const bool on = play() || (harness() && envOn("OXCE_AI_OXCE_FIXES"));
 	return on;
 }
 

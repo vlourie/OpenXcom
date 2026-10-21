@@ -2414,7 +2414,22 @@ Node *SavedBattleGame::getPatrolNode(bool scout, BattleUnit *unit, Node *fromNod
 			&& (!scout || n != fromNode)																// scouts push forward
 			&& n->getPosition().x > 0 && n->getPosition().y > 0)
 		{
-			if (!preferred
+			if (AiProbe::oxceFixes())
+			{
+				// O7 (BetterAI): the rank test above came to nothing - its case is inside the last one; a node of the unit's
+				// own rank goes first, the higher flags among equals
+				auto ownRank = [unit](const Node *node)
+				{
+					return unit->getRankInt() >= 0 && node->getRank() == Node::nodeRank[unit->getRankInt()][0];
+				};
+				if (!preferred
+					|| (ownRank(n) && !ownRank(preferred))
+					|| (ownRank(n) == ownRank(preferred) && preferred->getFlags() < n->getFlags()))
+				{
+					preferred = n;
+				}
+			}
+			else if (!preferred
 				|| (unit->getRankInt() >=0 &&
 					preferred->getRank() == Node::nodeRank[unit->getRankInt()][0] &&
 					preferred->getFlags() < n->getFlags())
