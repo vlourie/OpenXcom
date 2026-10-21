@@ -1,3 +1,5 @@
 ﻿- Pirate base: the wall vent no longer jerks as a whole - only its bubbles move, as in the original. The console with a screen there no longer flickers as a whole either.
 - Animated map objects no longer twitch as a whole: lamps, lanterns, monitors, consoles, candelabras, crystals, signs and more, 225 frames in about a hundred sets, now change only where the original does (the flame, the screen, the indicator).
 - Pirate base: the rim and walls of the green liquid tank no longer shake - only the liquid moves.
+- Wasteland: mounds, pits and dark patches on the sand no longer sit as flat squares with a rim along the tile edge - they fade into the sand with a ragged edge, as in the original.
+- Grassy mountains and plains: dark earth patches on gravel are no longer square - an uneven patch that blends into the gravel.
