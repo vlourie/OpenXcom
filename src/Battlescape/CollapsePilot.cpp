@@ -233,6 +233,37 @@ const int RUBBLE_ROWS = sizeof(RUBBLE) / sizeof(RUBBLE[0]);
 /// The chance in 100 that a heap of mass 1 (one wall or object, from less than two levels) leaves rubble, by kind:
 /// a piece shatters; a crown does not.
 const int RUBBLE_CHANCE[RK_KINDS] = { 50, 35, 50, 100 };
+/// A heap of a plant of this mass or more is a tree that came down whole: a fallen trunk instead of the broken one,
+/// where the cell may take it (mayBlock).
+const int RUBBLE_LOG_MASS = 3;
+
+/// The fallen trunks of a set for its broken trees: records that turn into one of `windfall` when destroyed, low (6
+/// layers at most), not walkable and burning - the whole log of the mountain sets (72 -> 75, 73 -> 76).
+std::vector<int> logsOf(MapDataSet *set, const std::vector<int> &windfall)
+{
+	std::vector<int> logs;
+	for (int i = 1; i < (int)set->getSize(); ++i)
+	{
+		const MapData *md = set->getObject(i);
+		if (md->getObjectType() != O_OBJECT || std::find(windfall.begin(), windfall.end(), md->getDieMCD()) == windfall.end())
+			continue;
+		int layers = 0;
+		for (int l = 0; l < 12; ++l)
+			layers += md->getLoftID(l) != 0;
+		if (layers <= 6 && md->getTUCost(MT_WALK) == 255 && md->getFlammable() < 255 && md->getFuel() > 0 && md->getArmor() < 255)
+			logs.push_back(i);
+	}
+	return logs;
+}
+
+/// The records of a row's list that are in one set.
+std::vector<int> recordsIn(const std::vector<std::pair<std::string, int> > &list, const std::string &name)
+{
+	std::vector<int> ids;
+	for (const auto &rec : list)
+		if (rec.first == name) ids.push_back(rec.second);
+	return ids;
+}
 
 /// The kind of rubble a fallen part gives.
 int rubbleKind(const MapData *md, bool floor)
@@ -286,12 +317,21 @@ void rubbleOf(SavedBattleGame *save)
 		for (int k = 0; k < RK_KINDS; ++k)
 			for (const auto &rec : rubbleRecords(r, k))
 			{
-				const int s = setIndexOf(save, rec.first), id = rec.second;
-				if (s < 0 || id < 0 || id >= (int)sets[s]->getSize()) continue;
-				st.rubbleKind[std::make_pair(s, id)] = k;
-				// what the rubble turns into when it is shot or burnt is the collapse's too (foreignParts)
-				for (int dead = id; dead > 0 && dead < (int)sets[s]->getSize() && st.rubbleOrDead.insert(std::make_pair(s, dead)).second; )
-					dead = sets[s]->getObject(dead)->getDieMCD();
+				const int s = setIndexOf(save, rec.first);
+				if (s < 0 || rec.second < 0 || rec.second >= (int)sets[s]->getSize()) continue;
+				std::vector<int> ids(1, rec.second);
+				if (k == RK_PLANT)  // and the fallen trunks of its set (lay)
+				{
+					const std::vector<int> logs = logsOf(sets[s], recordsIn(rubbleRecords(r, k), rec.first));
+					ids.insert(ids.end(), logs.begin(), logs.end());
+				}
+				for (int id : ids)
+				{
+					st.rubbleKind[std::make_pair(s, id)] = k;
+					// what the rubble turns into when it is shot or burnt is the collapse's too (foreignParts)
+					for (int dead = id; dead > 0 && dead < (int)sets[s]->getSize() && st.rubbleOrDead.insert(std::make_pair(s, dead)).second; )
+						dead = sets[s]->getObject(dead)->getDieMCD();
+				}
 			}
 }
 
@@ -354,7 +394,7 @@ struct Drop
 /// What became of the rubble of one settle.
 struct RubbleCount
 {
-	int laid = 0, merged = 0, unit = 0, object = 0, floor = 0, none = 0, again = 0, light = 0, replaced = 0;
+	int laid = 0, merged = 0, unit = 0, object = 0, floor = 0, none = 0, again = 0, light = 0, replaced = 0, log = 0;
 };
 
 /// The roll of a heap of mass 1, 0..99: by the cell and the building, not the random numbers of the game, so the
@@ -379,10 +419,43 @@ bool underRubble(const MapData *md)
 		&& md->getSpecialType() == TILE && !md->getExplosive() && md->getArmor() < 255;
 }
 
+/// May a cell take a fallen trunk, which bars the way? Not where items lie (a weapon, a body: out of reach under
+/// it), by a door, on a mark of the map, nor where it parts the way: the walkable cells of the 8 around must be one
+/// run along the ring (each two next on the ring are side by side), so whatever went by the cell still goes round it.
+bool mayBlock(SavedBattleGame *save, Tile *t)
+{
+	if (!t->getInventory()->empty())
+		return false;
+	const Position at = t->getPosition();
+	for (int p = O_FLOOR; p <= O_OBJECT; ++p)
+	{
+		const MapData *md = t->getMapData((TilePart)p);
+		if (md && md->getSpecialType() != TILE) return false;
+	}
+	const Tile *east = save->getTile(at + Position(1, 0, 0)), *south = save->getTile(at + Position(0, 1, 0));
+	const MapData *edges[4] = { t->getMapData(O_WESTWALL), t->getMapData(O_NORTHWALL),
+		east ? east->getMapData(O_WESTWALL) : nullptr, south ? south->getMapData(O_NORTHWALL) : nullptr };
+	for (const MapData *md : edges)
+		if (md && (md->isDoor() || md->isUFODoor())) return false;
+	static const int ring[8][2] = { { -1, -1 }, { 0, -1 }, { 1, -1 }, { 1, 0 }, { 1, 1 }, { 0, 1 }, { -1, 1 }, { -1, 0 } };
+	bool walk[8];
+	for (int i = 0; i < 8; ++i)
+	{
+		Tile *c = save->getTile(at + Position(ring[i][0], ring[i][1], 0));
+		const MapData *object = c ? c->getMapData(O_OBJECT) : nullptr;
+		walk[i] = c && (at.z == 0 || !c->hasNoFloor(save)) && (!object || object->getTUCost(MT_WALK) < 255);
+	}
+	int runs = 0;
+	for (int i = 0; i < 8; ++i)
+		runs += walk[i] && !walk[(i + 7) % 8];
+	return runs <= 1;
+}
+
 /// Lays the rubble of what fell: one record on the floor each part comes down to (the way TileEngine::applyGravity
 /// takes items down), of the kind most of what came there was (stone on a tie), the record of its kind by the cell
 /// (no random numbers). The mass of a heap: a floor 2, a wall or an object 1, a fall of two levels or more 1 more;
-/// a heap of mass 1 leaves rubble by its roll (RUBBLE_CHANCE), a crown always. None where a unit stands or will land,
+/// a heap of mass 1 leaves rubble by its roll (RUBBLE_CHANCE), a crown always; a plant of RUBBLE_LOG_MASS is a fallen
+/// trunk (logsOf) where the cell may take it (mayBlock). None where a unit stands or will land,
 /// on a lift or on no floor of its own; a low object there (underRubble) gives way to it, a higher one keeps the cell.
 /// The tiles it lies on join `tiles` (gravity, light and sight).
 void lay(Mod *mod, SavedBattleGame *save, int bi, const std::vector<Drop> &drops, std::vector<Tile*> &tiles, RubbleCount &n)
@@ -454,9 +527,19 @@ void lay(Mod *mod, SavedBattleGame *save, int bi, const std::vector<Drop> &drops
 				++n.none;
 				continue;
 			}
+			int id = rec.second;
+			if (kind == RK_PLANT && mass >= RUBBLE_LOG_MASS && mayBlock(save, h.tile))
+			{
+				const std::vector<int> logs = logsOf(sets[s], recordsIn(*list, rec.first));
+				if (!logs.empty())
+				{
+					id = logs[(at.x * 5 + at.y * 3 + at.z) % logs.size()];
+					++n.log;
+				}
+			}
 			if (object)
 				++n.replaced;
-			h.tile->setMapData(sets[s]->getObject(rec.second), rec.second, s, O_OBJECT);
+			h.tile->setMapData(sets[s]->getObject(id), id, s, O_OBJECT);
 			++n.laid;
 			if (std::find(tiles.begin(), tiles.end(), h.tile) == tiles.end())
 				tiles.push_back(h.tile);
@@ -1523,7 +1606,7 @@ bool settle(BattlescapeGame *battle, const char *why)
 			<< "), outside " << outside << ", lifts " << lifts << ", objectives " << objectives << ", tiles " << tiles.size()
 			<< ", rubble " << rubble.laid << " (merged " << rubble.merged << ", again " << rubble.again << "; skipped: unit " << rubble.unit
 			<< ", object " << rubble.object << ", no floor " << rubble.floor << ", none " << rubble.none
-			<< ", by chance " << rubble.light << "; in place of a low object " << rubble.replaced << ")"
+			<< ", by chance " << rubble.light << "; in place of a low object " << rubble.replaced << ", fallen trunks " << rubble.log << ")"
 			<< ", falling units " << save->getFallingUnits()->size()
 			<< "; scan " << scanMs << " ms, eval " << evalMs << " ms, apply " << applyMs << " ms, light+fov " << msSince(tl0) << " ms";
 	}
