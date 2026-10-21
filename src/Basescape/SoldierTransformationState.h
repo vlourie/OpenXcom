@@ -49,9 +49,15 @@ private:
 	Text *_txtCost, *_txtTransferTime, *_txtRecoveryTime, *_txtRequiredItems, *_txtItemNameColumn, *_txtUnitRequiredColumn, *_txtUnitAvailableColumn;
 	TextList *_lstRequiredItems, *_lstStatChanges;
 	TextButton *_btnCancel, *_btnLeftArrow, *_btnRightArrow, *_btnStart;
+	Text *_txtBlocks;
+	std::vector<std::string> _blocks;
 
 	/// Creates a string for the soldier stats table
 	std::string formatStat(int stat, bool plus, bool hide);
+	/// Fills the line of training paths the transformation closes (option oxceHdTrainingBlocks)
+	void initBlocks();
+	/// Handler for clicking the line of closed paths: lists them all
+	void txtBlocksClick(Action *action);
 
 public:
 	/// Creates the soldier transformation state

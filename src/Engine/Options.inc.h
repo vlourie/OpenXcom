@@ -217,6 +217,8 @@ OPT int oxceHdRadar;
 OPT int oxceHdRadarWaves;
 // HD globe, radar 3 (waves): a craft out turns a beam round its circle (default) instead of sending a wave each detection cycle
 OPT bool oxceHdRadarBeam;
+// HD interface: the soldier transformation screen names the training paths it closes, the full list on a click (off by default)
+OPT bool oxceHdTrainingBlocks;
 // HD interface, modern skin: the colours of the battle's button panel (Engine/HdBattleHud.cpp). 0 = dark slate (default), 1 = gold, as the original panel
 OPT int oxceHdBattleHudColor;
 // Battlescape: a unit hanging in the air or in the water with no floor below sways in place (Map::hoverBob); off = the classic still frame
