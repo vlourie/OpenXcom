@@ -34,6 +34,8 @@ enum CollapsePartFlag
 	CPF_POSTED = 32,   ///< floor: canopy with posts in the intact block
 	CPF_LIGHT = 64,    ///< floor: light deck (not in any 3x3 square of the intact block)
 	CPF_INBOX = 128,   ///< part of the pilot building (only these may collapse in battle)
+	CPF_HELD0 = 256,   ///< the core M0j4 holds it in the intact block (links layer M0j5)
+	CPF_TREE = 512,    ///< tree part (branch D): outside the links layer
 };
 
 /// One map part of a collapse template block. Everything here depends only on the intact block.
@@ -73,8 +75,8 @@ struct CollapseBlock
 };
 
 /**
- * Which parts of the block hold after the given parts are removed (model M0j4 with marks v2,
- * the branches alive on the pilot buildings). removed and held are indexed by part.
+ * Which parts of the block hold after the given parts are removed (model M0j5 = M0j4 with marks v2 and
+ * the links layer, the branches alive on the pilot buildings). removed and held are indexed by part.
  */
 void collapseEvaluate(const CollapseBlock &blk, const std::vector<uint8_t> &removed, std::vector<uint8_t> &held);
 

@@ -18,9 +18,10 @@
  */
 #include "CollapseCore.h"
 #include <algorithm>
+#include <cstdlib>
 
-// Port of tools/collapse_pilot_export.py ref_eval (= model M0j4: collapse_v7c.evaluate7c after collapse_v7d.install(),
-// i.e. M0j3 plus wall consoles, on the pilot buildings).
+// Port of tools/collapse_pilot_export.py ref_eval (= model M0j5: collapse_v7c.evaluate7c after collapse_v8.install(),
+// i.e. M0j3 plus wall consoles plus the links layer, on the pilot buildings).
 // Every set of the model is a byte array: cells of one level or parts of the block.
 
 namespace OpenXcom
@@ -32,6 +33,9 @@ namespace
 const int C_CONSOLE = 2;  // console from a support (collapse_v2 C)
 const int LINTEL = 4;     // lintel over an opening (collapse_v2 LINTEL)
 const int WALL_CONSOLE = 2; // wall console from one side (collapse_v7d WC, model M0j4)
+const int LINK_SLACK = 2;  // links layer: path of a U0 part may be this longer than in the intact block (collapse_v8 SU)
+const int LINK_SHIFT = 3;  // links layer: path to a part the core held in the intact block (collapse_v8 SC)
+const int SUPPORT_D = 2;   // links layer: a standing bearing part a level below within this many cells (collapse_v8 SD)
 const int NONE = -1;
 
 /// Cell set of one level; anything outside the block is never in a set.
@@ -560,6 +564,180 @@ void collapseEvaluate(const CollapseBlock &blk, const std::vector<uint8_t> &remo
 				{
 					held[i] = 1;
 					i = NONE;
+					changed = true;
+					break;
+				}
+			}
+		}
+	}
+	// links M0j5 (collapse_v8): stability passes along the load path - 'i carries j' (collapse_v8.carries): a floor
+	// carries the next floors, the walls on its edges and the object of its cell; a bearing wall carries the floors
+	// above it on both sides, the walls with a common end, the same wall a level up and the objects on both sides;
+	// a bearing object carries the floor and the object above it, the next objects and the walls of its cell; other
+	// walls and objects (furniture, decor, fences) carry nothing. A part the core does not hold in the intact block
+	// (U0) holds by a path from a held part no longer than in the intact block plus LINK_SLACK; a part the core held
+	// in the intact block and drops now holds by a path of LINK_SHIFT while a standing bearing part a level below
+	// touches a cell no further than SUPPORT_D from its cells (the load goes to the rest); then the marks again
+	auto touch = [&](int i, int c, int &tx, int &ty) {
+		tx = P[i].x - (c && P[i].kind == 1 ? 1 : 0);
+		ty = P[i].y - (c && P[i].kind == 2 ? 1 : 0);
+		return c == 0 || P[i].kind == 1 || P[i].kind == 2;
+	};
+	auto tree = [&](int i) { return (P[i].flags & CPF_TREE) != 0; };
+	auto held0 = [&](int i) { return (P[i].flags & CPF_HELD0) != 0; };
+	auto partAt = [&](int k, int x, int y, int z) { return (z < 0 || z >= sz) ? NONE : lv[z].at(k, x, y); };
+	std::vector<int> nb;
+	auto links = [&](int i) {
+		nb.clear();
+		const int x = P[i].x, y = P[i].y, z = P[i].z;
+		auto add = [&](int k, int ax, int ay, int az) { const int j = partAt(k, ax, ay, az); if (j != NONE && j != i && !tree(j)) nb.push_back(j); };
+		if (P[i].kind == 0)
+		{
+			add(0, x + 1, y, z); add(0, x - 1, y, z); add(0, x, y + 1, z); add(0, x, y - 1, z);
+			add(1, x, y, z); add(1, x + 1, y, z); add(2, x, y, z); add(2, x, y + 1, z); add(3, x, y, z);
+		}
+		else if (!bearing(i))
+		{
+		}
+		else if (P[i].kind == 3)
+		{
+			add(0, x, y, z + 1); add(3, x, y, z + 1);
+			add(3, x + 1, y, z); add(3, x - 1, y, z); add(3, x, y + 1, z); add(3, x, y - 1, z);
+			add(1, x, y, z); add(1, x + 1, y, z); add(2, x, y, z); add(2, x, y + 1, z);
+		}
+		else
+		{
+			const bool w = P[i].kind == 1;
+			const int ox = w ? x - 1 : x, oy = w ? y : y - 1; // the cell on the other side of the wall
+			add(0, x, y, z + 1); add(0, ox, oy, z + 1); add(3, x, y, z); add(3, ox, oy, z);
+			for (int c = 0; c < 2; ++c)
+			{
+				const int cx = w ? x : x + c, cy = w ? y + c : y; // ends of the wall
+				add(1, cx, cy - 1, z); add(1, cx, cy, z); add(2, cx - 1, cy, z); add(2, cx, cy, z);
+			}
+			add(P[i].kind, x, y, z + 1);
+		}
+	};
+	std::vector<int> budget(n, 0), dist(n, 0), queue;
+	auto reach = [&](const std::vector<uint8_t> &gone) {
+		std::fill(dist.begin(), dist.end(), 0);
+		for (size_t h = 0; h < queue.size(); ++h)
+		{
+			const int k = queue[h];
+			links(k);
+			for (int m : nb)
+			{
+				if (budget[m] >= dist[k] + 1 && !gone[m] && !dist[m])
+				{
+					dist[m] = dist[k] + 1;
+					queue.push_back(m);
+				}
+			}
+		}
+	};
+	// d0 of the intact block: from the parts the core holds through U0 (dist of a source stays 0)
+	const std::vector<uint8_t> none(n, 0);
+	bool anyU0 = false;
+	for (int i = 0; i < n; ++i)
+	{
+		if (P[i].z > 0 && !held0(i) && !tree(i))
+		{
+			budget[i] = 1 << 30;
+			anyU0 = true;
+		}
+	}
+	std::vector<int> d0(n, 0);
+	if (anyU0)
+	{
+		queue.clear();
+		for (int i = 0; i < n; ++i)
+			if (held0(i) && !tree(i) && !budget[i])
+				queue.push_back(i);
+		reach(none);
+		d0 = dist;
+	}
+	bool anyBudget = false;
+	for (int i = 0; i < n; ++i)
+	{
+		budget[i] = d0[i] ? d0[i] + LINK_SLACK : 0;
+		anyBudget = anyBudget || budget[i];
+	}
+	for (int i = 0; i < n; ++i)
+	{
+		if (P[i].z == 0 || !held0(i) || tree(i) || held[i])
+			continue;
+		bool standing = false;
+		for (int y = P[i].y - SUPPORT_D - 1; y <= P[i].y + SUPPORT_D + 1 && !standing; ++y)
+			for (int x = P[i].x - SUPPORT_D - 1; x <= P[i].x + SUPPORT_D + 1 && !standing; ++x)
+				for (int k = 0; k < 4 && !standing; ++k)
+				{
+					const int j = partAt(k, x, y, P[i].z - 1);
+					if (j == NONE || removed[j] || !bearing(j) || !held0(j) || tree(j)) continue;
+					for (int a = 0; a < 2 && !standing; ++a)
+						for (int c = 0; c < 2 && !standing; ++c)
+						{
+							int ax, ay, cx, cy;
+							if (touch(i, a, ax, ay) && touch(j, c, cx, cy))
+								standing = std::max(std::abs(ax - cx), std::abs(ay - cy)) <= SUPPORT_D;
+						}
+				}
+		if (standing)
+		{
+			budget[i] = LINK_SHIFT;
+			anyBudget = true;
+		}
+	}
+	if (!anyBudget)
+		return;
+	// sources: held parts; a source may get its own distance too (as in collapse_v8.bfs) - it is held anyway
+	queue.clear();
+	std::fill(dist.begin(), dist.end(), 0);
+	std::vector<int> seeds;
+	for (int i = 0; i < n; ++i)
+		if (held[i] && !removed[i] && !tree(i))
+			seeds.push_back(i);
+	for (int a : seeds)
+	{
+		links(a);
+		for (int m : nb)
+		{
+			if (budget[m] >= 1 && !removed[m] && !dist[m])
+			{
+				dist[m] = 1;
+				queue.push_back(m);
+			}
+		}
+	}
+	if (queue.empty())
+		return;
+	for (size_t h = 0; h < queue.size(); ++h)
+	{
+		const int k = queue[h];
+		links(k);
+		for (int m : nb)
+		{
+			if (budget[m] >= dist[k] + 1 && !removed[m] && !dist[m])
+			{
+				dist[m] = dist[k] + 1;
+				queue.push_back(m);
+			}
+		}
+	}
+	for (int i : queue)
+		held[i] = 1;
+	changed = true;
+	while (changed)
+	{
+		changed = false;
+		for (int i = 0; i < n; ++i)
+		{
+			if (P[i].mark != 1 || tree(i) || held[i] || removed[i]) continue;
+			for (int t = 0; t < P[i].tCount; ++t)
+			{
+				const int tg = blk.targets[P[i].tOff + t];
+				if (!removed[tg] && held[tg])
+				{
+					held[i] = 1;
 					changed = true;
 					break;
 				}

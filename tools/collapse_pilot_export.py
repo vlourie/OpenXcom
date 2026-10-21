@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 r"""Пилот обрушения в движке (этап 1): выгрузка модели M0j4 (M0j3 плюс консоль стены, tools/collapse_v7d.py)
-с разметкой v2 для зданий пилота
+с разметкой v2 и слоем связей M0j5 (tools/collapse_v8.py, с 21.10) для зданий пилота
 (дом амбара и бункер - collapse_pilot_scen.PILOT, третья партия - collapse_pilot3_scen.PILOT) в C++ и
 проверка переноса.
 
@@ -46,25 +46,27 @@ BOX = {"амбар": (2, 11, 2, 11), "бункер": (1, 7, 1, 7)}     # зда�
 LABEL_EN = {"амбар": "barn", "бункер": "bunker"}            # метка здания в логе игры
 # здания, у которых остались провальные сценарии (census/collapse/pilot3/fail_cases.md): в заголовке с флагом
 # experimental, движок берёт их только в сборке стенда (OXCE_AI_DEV), игрокам не выходят
-EXPERIMENTAL = {"banditbarn1", "banditbarn2",
+EXPERIMENTAL = {
+                # 21.10 модель M0j5 (collapse_v8): сценарии всех партий перепрогнаны, M0j4 - census/collapse/m0j4_results;
+                # к игрокам ушли 30 зданий (banditbarn1-2, urbandio04, westown16, culta17, cultafarm06, cultasol01,
+                # culthouse05, cultafarm03, cultafarm05, cultnew17, chemtown91, urbandio03, induslum27, culta19, cultnew16,
+                # comrcurban11, comrcurban53, expterror24, madurban33, madurban37, urban05, urban18, urban19,
+                # comrcurban23, comrcurban58, induslum10, urbanwaste15, urbanwasteroadns10, urbanjunk41)
                 # четвёртая партия: провальные сценарии в census/collapse/pilot4/pilot_result.tsv
-                "urbandio04", "westown16", "chemtown94", "madurban27", "madurban28", "culta17", "culta30",
-                "cultafarm06", "cultasol01", "culthouse05",
+                "chemtown94", "culta30", "madurban27", "madurban28",
                 # пятая партия: census/collapse/pilot5/pilot_result.tsv; chemtown13 - сценариев нет, не проверен
-                "cultafarm03", "cultafarm05", "cultnew17", "chemtown91", "chemtown92", "chemtown13",
+                "chemtown92", "chemtown13",
                 # шестая партия: census/collapse/pilot6/pilot_result.tsv
-                "comrcurban22", "urbandio03", "induslum27", "culta19", "cultnew16",
+                "comrcurban22",
                 # седьмая партия: разбор census/collapse/pilot7/split.tsv (tools/collapse_pilot7_split.py) - провал
                 # рода МОДЕЛЬ или лишнее падение в частичных сценариях
-                "comrcurban11", "comrcurban53", "expterror24", "madurban33", "madurban37", "urban05", "urban18",
-                "urban19", "urbandio02",
+                "urbandio02",
                 # восьмая партия (деревья вне модели): census/collapse/pilot8/split.tsv (tools/collapse_pilot8_split.py)
-                "chemtown04", "chemtown20r", "comrcurban06", "comrcurban23", "comrcurban58", "comrcurbanmey02",
-                "induslum10", "urbanmy",
+                "chemtown04", "chemtown20r", "comrcurban06", "comrcurbanmey02", "urbanmy",
                 # десятая партия (охват после ветки D): census/collapse/pilot10/split.tsv (tools/collapse_pilot10_split.py)
-                "comrcurbanhuge01", "urbanwaste15", "urbanwasteroadns10",
+                "comrcurbanhuge01",
                 # одиннадцатая партия (разобранные виды предметов): census/collapse/pilot11/split.tsv
-                "chemtownghoulchemtown04", "urbanjunk41",
+                "chemtownghoulchemtown04",
                 # двенадцатая партия (второй лист видов): census/collapse/pilot12/split.tsv
                 "lamvillagemiddlebig01",
                 # тринадцатая партия (третий лист видов): census/collapse/pilot13/split.tsv
@@ -91,7 +93,7 @@ SOURCES = ["tools/collapse_v7c.py", "tools/collapse_v7b.py", "tools/collapse_v7.
            "tools/collapse_pilot5_scen.py", "tools/collapse_pilot6_scen.py", "tools/collapse_pilot7_scen.py",
            "tools/collapse_pilot8_scen.py", "tools/collapse_pilot9_scen.py", "tools/collapse_pilot10_scen.py",
            "tools/collapse_pilot11_scen.py", "tools/collapse_pilot12_scen.py", "tools/collapse_pilot13_scen.py",
-           "tools/collapse_v7d.py",
+           "tools/collapse_v7d.py", "tools/collapse_v8.py",
            "tools/collapse_pilot_export.py"]
 
 
@@ -198,6 +200,17 @@ def static(C, blk, label):
                 if cs:
                     need = min(k[3], max(len(cols[c]) - 1 for c in cs))
                     tcrowns.append((idx[k], need, [cxy.index(c) for c in cs]))
+    # слой M0j5 (collapse_v8): что держит ядро M0j4 на целом блоке и что из частей - дерево (вне слоя)
+    import collapse_v8 as E
+    if E.BASE is None:
+        raise SystemExit("выгрузка: модель M0j5 не установлена (collapse_v8.install)")
+    lay = E.layer(blk)
+    lost = E.hanging(blk)
+    if lost:
+        raise SystemExit("выгрузка %s остановлена: висит и по связям %d частей: %s" % (label, len(lost), lost[:6]))
+    for e in parts:
+        e["held0"] = e["key"] in lay["held0"]
+        e["tree"] = e["key"] in lay["tree"]
     return dict(label=label, terrain=blk.terrain, name=NAME_AS.get(label, blk.name), sx=blk.sx, sy=blk.sy, sz=blk.sz,
                 box=BOX[label], parts=parts, idx=idx, keep=keep, tcols=tcols, tcrowns=tcrowns)
 
@@ -363,6 +376,27 @@ def ref_eval(d, removed):
                 held.add(i)
                 del pending[i]
                 changed = True
+    # слой M0j5 (collapse_v8): связи по геометрии частей; часть, которую ядро не держит на целом (U0), держится
+    # путём от держащейся не длиннее d0 + SU; часть, которую ядро держало на целом, а теперь роняет, - путём не
+    # длиннее SC, если уровнем ниже стоит несущая опора не дальше SD клеток; затем разметка по своим целям
+    import collapse_v8 as E
+    adj, d0, sup = ref_links(d)
+    budget = {i: v + E.SU for i, v in d0.items()}
+    for i, sp in sup.items():
+        if i not in held and any(j not in removed for j in sp):
+            budget[i] = E.SC
+    if budget:
+        got = ref_reach(adj, budget, [i for i in held if not P[i]["tree"]], removed)
+        if got:
+            held |= set(got)
+            changed = True
+            while changed:
+                changed = False
+                for i, e in enumerate(P):
+                    if e["mark"] == 1 and not e["tree"] and i not in held and i not in removed and \
+                            any(t in held and t not in removed for t in e["targets"]):
+                        held.add(i)
+                        changed = True
     return held
 
 
@@ -561,6 +595,54 @@ def ref_consoles(P, live, below, carry, strong, lint, wc=2):
 
 # ------------------------------------------------------------------ наборы снятого
 
+def ref_links(d):
+    """Слой M0j5 по целому блоку (кэш в d): связи частей вне деревьев, d0 частей U0, опоры (несущие уровнем ниже
+    не дальше SD) частей, которые ядро держит на целом."""
+    if "_links" not in d:
+        import collapse_v8 as E
+        P = d["parts"]
+        slot = {v: k for k, v in KIND.items()}
+        at = {(slot[e["kind"]], e["x"], e["y"], e["z"]): i for i, e in enumerate(P)}
+        adj = []
+        for i, e in enumerate(P):
+            js = [at.get(q) for q in E.carries((slot[e["kind"]], e["x"], e["y"], e["z"]), e["bearing"])] \
+                if not e["tree"] else []
+            adj.append([j for j in js if j is not None and not P[j]["tree"]])
+        u0 = {i: 1 << 30 for i, e in enumerate(P) if e["z"] > 0 and not e["held0"] and not e["tree"]}
+        d0 = ref_reach(adj, u0, [i for i, e in enumerate(P) if e["held0"] and not e["tree"]], frozenset())
+        bear = {}
+        for j, f in enumerate(P):
+            if f["bearing"] and f["held0"] and not f["tree"]:
+                bear.setdefault(f["z"], []).append(j)
+        sup = {}
+        for i, e in enumerate(P):
+            if e["z"] > 0 and e["held0"] and not e["tree"]:
+                ti = E.touch((slot[e["kind"]], e["x"], e["y"], e["z"]))
+                sup[i] = [j for j in bear.get(e["z"] - 1, ()) if any(
+                    max(abs(a - c), abs(b - g)) <= E.SD for a, b in ti
+                    for c, g in E.touch((slot[P[j]["kind"]], P[j]["x"], P[j]["y"], P[j]["z"])))]
+        d["_links"] = (adj, d0, sup)
+    return d["_links"]
+
+
+def ref_reach(adj, budget, sources, removed):
+    """Расстояния по связям от источников: часть с бюджетом берётся, если путь до неё не длиннее бюджета."""
+    dist = {}
+    q = deque()
+    for a in sources:
+        for k in adj[a]:
+            if budget.get(k, 0) >= 1 and k not in removed and k not in dist:
+                dist[k] = 1
+                q.append(k)
+    while q:
+        k = q.popleft()
+        for m in adj[k]:
+            if budget.get(m, 0) >= dist[k] + 1 and m not in removed and m not in dist:
+                dist[m] = dist[k] + 1
+                q.append(m)
+    return dist
+
+
 def removal_sets(d, rows, rng):
     """Сценарии pilot_scen.tsv этого здания и случайные наборы: одиночные, кучки у клетки, полосы, всё
     здание этажа. Возвращает [(метка, frozenset номеров)]."""
@@ -658,8 +740,8 @@ def run_check(C, blds, write=None):
 
 def cpp_header(datas):
     L = ["// Сгенерировано tools/collapse_pilot_export.py - руками не править.",
-         "// Пилот обрушения: модель M0j4 (M0j3 плюс консоль стены) с разметкой v2 (stage0l/stage0m, pilot3), "
-         "здания пилота.",
+         "// Пилот обрушения: модель M0j5 (M0j4 = M0j3 плюс консоль стены, и слой связей) с разметкой v2 "
+         "(stage0l/stage0m, pilot3), здания пилота.",
          "// Источники модели (sha256):"]
     L += ["//   %s %s" % (p, sha(p)) for p in SOURCES]
     L += ["#pragma once", "#include \"CollapseCore.h\"", "", "namespace OpenXcom", "{", "namespace CollapsePilotData",
@@ -679,7 +761,8 @@ def cpp_header(datas):
             nedge = len(e["edge"])
             fl = (1 if e["bearing"] else 0) | (2 if e["furn"] else 0) | (4 if e["attach"] else 0) | \
                  (8 if e["carry0"] else 0) | (16 if e["can"] else 0) | (32 if e["posted0"] else 0) | \
-                 (64 if e["light"] else 0) | (128 if e["inbox"] else 0)
+                 (64 if e["light"] else 0) | (128 if e["inbox"] else 0) | (256 if e["held0"] else 0) | \
+                 (512 if e["tree"] else 0)
             L.append("\t{ %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d },"
                      % (e["kind"], e["x"], e["y"], e["z"], sets.index(e["set"]), e["mcd"], fl, e["contact"],
                         e["liml"], nedge, ex[0], ex[1], ey[0], ey[1], e["mark"], off, len(e["targets"])))
@@ -730,9 +813,9 @@ def main():
     sys.stdout.reconfigure(encoding="utf-8")
     import collapse_pilot_scen as PS
     import collapse_pilot3_scen as P3
-    import collapse_v7d as D
+    import collapse_v8 as E
     cmd = sys.argv[1] if len(sys.argv) > 1 else "check"
-    D.install()                                   # evaluate7c в этом процессе считает M0j4 (PS.load ORIG7 не трогает)
+    E.install()                                   # evaluate7c в этом процессе считает M0j5 = M0j4 + связи (PS.load ORIG7 не трогает)
     # порядок в заголовке: сначала здания 0m (их векторы и номера блоков прежние), затем третья партия
     C, CT, blds = PS.load()
     first = PS.PILOT
