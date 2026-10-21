@@ -1,0 +1,1 @@
+﻿- Battle panel "Cruiser Plating": the button signs are dark again, cut into light steel, instead of white in black windows. The red reserve buttons are unchanged; "Consul Plating" stays as it was.
