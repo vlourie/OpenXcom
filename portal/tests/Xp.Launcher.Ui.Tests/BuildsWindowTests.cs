@@ -418,4 +418,74 @@ public sealed class BuildsWindowTests : IDisposable
         Assert.False(w.IsVisible);
         Assert.False(tray.IsVisible);
     }
+
+    [AvaloniaFact]
+    public void A_release_out_while_the_launcher_runs_is_found_by_the_timer_look()
+    {
+        var w = Open();
+        var timer = F<DispatcherTimer>(w, "_watchTimer");
+        Assert.True(timer.IsEnabled);
+        Assert.Equal(TimeSpan.FromMinutes(5), timer.Interval);
+
+        // a repository of the test in place of the dead address, signed with a key of the test
+        var repoDir = Path.Combine(_root, "repo");
+        var stage = Path.Combine(_root, "stage");
+        var (key, pub) = Xp.Manifest.Signing.CreateKeyPair();
+        var repo = new Xp.ReleaseBuilder.ReleaseRepo(repoDir);
+        void Release(string id)
+        {
+            Directory.CreateDirectory(stage);
+            File.WriteAllText(Path.Combine(stage, "readme-xp.txt"), id);
+            File.Copy(Path.Combine(Game, "openxcom_hd.exe"), Path.Combine(stage, "openxcom_hd.exe"), overwrite: true);
+            repo.Build(new Xp.ReleaseBuilder.BuildOptions { StageDir = stage, Id = id, Version = id, Channel = "stable", Launch = "openxcom_hd.exe" }, key);
+            repo.Publish("stable", id, key);
+        }
+        Release("2026.10.21-7");
+        var client = new Xp.Manifest.RepoClient(new HttpClient(new DirRepo(repoDir)), new Uri("http://repo.test/"), new Xp.Manifest.TrustedKeys([Convert.ToBase64String(pub)]));
+        Set(w, "_repo", client);
+        Set(w, "_watch", new Xp.Launcher.Core.UpdateWatch(client));
+        Call(w, "OpenGameDir", Game);
+        string? Latest() => F<Xp.Manifest.LatestRelease?>(w, "_latest")?.Manifest.Release.Id;
+        bool Idle() => F<object>(w, "_work").ToString() == "None";
+
+        // the start-up check found no server: the tick checks again, now it goes through
+        Watch(w);
+        Pump(() => Latest() == "2026.10.21-7" && Idle(), "the check");
+        Watch(w);
+        Assert.Equal("2026.10.21-7", Latest());
+
+        // a release goes out while the launcher runs
+        Release("2026.10.21-8");
+        Watch(w);
+        Pump(() => Latest() == "2026.10.21-8" && Idle(), "the home page to see the new release");
+        var log = File.ReadAllText(Path.Combine(Game, "launcher", "logs", "launcher.log"));
+        Assert.Contains("update watch: out stable 2026.10.21-8", log);
+        Assert.Contains("update watch: looked, stable ", log);   // every look leaves its line, news or not
+        w.Close();
+    }
+
+    static void Set(object o, string name, object? value) =>
+        o.GetType().GetField(name, BindingFlags.Instance | BindingFlags.NonPublic)!.SetValue(o, value);
+
+    static object? Call(object o, string name, params object?[] args) =>
+        o.GetType().GetMethod(name, BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(o, args);
+
+    /// <summary>One tick of the watch timer, to its end.</summary>
+    static void Watch(MainWindow w)
+    {
+        var t = (Task)Call(w, "WatchAsync", true)!;
+        Pump(() => t.IsCompleted, "the look at the channels");
+        t.GetAwaiter().GetResult();
+    }
+
+    sealed class DirRepo(string root) : HttpMessageHandler
+    {
+        protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
+        {
+            var path = Path.Combine(root, Uri.UnescapeDataString(request.RequestUri!.AbsolutePath.TrimStart('/')));
+            return Task.FromResult(File.Exists(path)
+                ? new HttpResponseMessage(System.Net.HttpStatusCode.OK) { Content = new ByteArrayContent(File.ReadAllBytes(path)) }
+                : new HttpResponseMessage(System.Net.HttpStatusCode.NotFound));
+        }
+    }
 }

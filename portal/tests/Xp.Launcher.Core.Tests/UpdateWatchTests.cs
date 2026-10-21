@@ -2,7 +2,7 @@ using Xp.Manifest;
 
 namespace Xp.Launcher.Core.Tests;
 
-/// <summary>The quarter-hour look at the channels of a running launcher: news without the manifest.</summary>
+/// <summary>The timer look at the channels of a running launcher: news without the manifest.</summary>
 public sealed class UpdateWatchTests : IDisposable
 {
     readonly Fixture f = new();

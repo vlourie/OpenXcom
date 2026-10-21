@@ -16,5 +16,6 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\src\Xp.Launcher\Xp.Launcher.csproj" />
+    <ProjectReference Include="..\..\src\Xp.ReleaseBuilder\Xp.ReleaseBuilder.csproj" />
   </ItemGroup>
 </Project>

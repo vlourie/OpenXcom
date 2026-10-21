@@ -4,14 +4,18 @@ namespace Xp.Launcher.Core;
 
 /// <summary>
 /// A running launcher (open, minimized or in the tray) looks at its channels between the checks the player
-/// starts: only the small signed pointers, every quarter of an hour, so a release reaches the player within
+/// starts: only the small signed pointers, every five minutes, so a release reaches the player within
 /// minutes without the multi-megabyte manifest. Nothing is written - the game may be running.
 /// </summary>
 public sealed class UpdateWatch(RepoClient repo)
 {
-    public static readonly TimeSpan Every = TimeSpan.FromMinutes(15);
+    /// <summary>A pointer and its signature are under a kilobyte: two hundred launchers make one request a second.</summary>
+    public static readonly TimeSpan Every = TimeSpan.FromMinutes(5);
 
     readonly Dictionary<string, long> _known = new();
+
+    /// <summary>The highest sequence seen on each channel, for the launcher log.</summary>
+    public string Summary => string.Join(", ", _known.Select(k => $"{k.Key} {k.Value}"));
 
     /// <summary>A pointer the launcher already shows (the check fetched it): no news about it later.</summary>
     public void Know(ChannelPointer p)

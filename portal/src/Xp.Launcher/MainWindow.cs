@@ -84,6 +84,7 @@ public sealed class MainWindow : Window
     string[]? _watchChannels;   // the game's and the launcher's channel, from the last check that went through
     readonly DispatcherTimer _watchTimer = new() { Interval = UpdateWatch.Every };
     bool _watchBusy;
+    DateTime _lastLook;   // UTC of the last look at the channels: coming to the window looks again if it is a minute old
     bool _staleCheck;   // a release came out while the home page could not check (the game, another action): it checks later
     Notifier? _notifier;
 
@@ -227,6 +228,8 @@ public sealed class MainWindow : Window
             // the player is at the window: the home page says it, the reminder in the tray goes
             _notifier?.Hide();
             if (_paths is not null) Refresh();
+            // back from the tray or another window: a release out since the last look shows at once, not at the next tick
+            if (DateTime.UtcNow - _lastLook > TimeSpan.FromMinutes(1)) _ = WatchAsync(tick: false);
         };
         _watchTimer.Tick += async (_, _) => await WatchAsync();
         Closing += async (_, e) =>
@@ -799,7 +802,7 @@ public sealed class MainWindow : Window
         await _account.CheckAsync();
 
         if (_updater is not null) await RunAsync(Work.Check, () => CheckAsync(full: false, apply: false));
-        // the first look only remembers the channels; then every quarter of an hour
+        // the first look only remembers the channels; then every five minutes (UpdateWatch.Every)
         _ = WatchAsync();
         _watchTimer.Start();
     }
@@ -808,18 +811,25 @@ public sealed class MainWindow : Window
     /// A release out since the launcher last looked: the home page checks again (not under the game - the check
     /// writes the state) and, unless the player is at the window, a Windows notification says so.
     /// </summary>
-    async Task WatchAsync()
+    async Task WatchAsync(bool tick = true)
     {
-        // no server at the start: the quarter-hour tries the check again instead
-        if (_offline is not null) _staleCheck = true;
+        // no server at the start: the timer tries the check again instead (not a coming back to the window -
+        // the check would lock the buttons each time the player looks in)
+        if (_offline is not null && tick) _staleCheck = true;
         if (_watch is null || _watchChannels is not { } channels || _watchBusy) { await RecheckAsync(); return; }
         _watchBusy = true;
         try
         {
             List<ChannelPointer> news;
+            _lastLook = DateTime.UtcNow;
             using (var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30)))
             {
-                try { news = await _watch.NewsAsync(channels, cts.Token); }
+                try
+                {
+                    news = await _watch.NewsAsync(channels, cts.Token);
+                    // every look leaves a line: a player's log shows whether the launcher looked at all
+                    _fileLog?.Info("update watch: looked, " + _watch.Summary);
+                }
                 catch (Exception e) when (e is HttpRequestException or TaskCanceledException or IOException or TrustException or ManifestException)
                 {
                     _fileLog?.Error("update watch: " + e.Message);
