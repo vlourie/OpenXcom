@@ -194,6 +194,24 @@ void makeStamps(int cell)
 
 typedef std::pair<int, int> Cell;
 
+/// The walking grid, SUB squares to a cell.
+const int G = SIZE * SUB;
+
+bool hasFloor(const Plan &plan, int x, int y)
+{
+	for (int sx = 0; sx < SUB; ++sx)
+	{
+		for (int sy = 0; sy < SUB; ++sy)
+		{
+			if (plan.walk[x * SUB + sx][y * SUB + sy])
+			{
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
 std::vector<Cell> cellsWith(const Plan &plan, int bits)
 {
 	std::vector<Cell> out;
@@ -201,7 +219,7 @@ std::vector<Cell> cellsWith(const Plan &plan, int bits)
 	{
 		for (int y = 0; y < SIZE; ++y)
 		{
-			if (plan.facility[x][y] && (plan.place[x][y] & bits))
+			if (plan.facility[x][y] && (plan.place[x][y] & bits) && hasFloor(plan, x, y))
 			{
 				out.push_back(Cell(x, y));
 			}
@@ -210,52 +228,122 @@ std::vector<Cell> cellsWith(const Plan &plan, int bits)
 	return out;
 }
 
-/// The cells from a to b over the floor (adjacent facilities are joined, as the classic base draws them).
+int facilityAt(const Plan &plan, int gx, int gy)
+{
+	return gx < 0 || gy < 0 || gx >= G || gy >= G ? 0 : plan.facility[gx / SUB][gy / SUB];
+}
+
+/// The two middle squares of a side where it meets another facility: the doorway the connecting tube
+/// comes to, walkable though the picture has its wall there.
+bool doorway(const Plan &plan, int gx, int gy)
+{
+	const int lx = gx % SUB, ly = gy % SUB, mid0 = SUB / 2 - 1, mid1 = SUB / 2;
+	const int here = facilityAt(plan, gx, gy);
+	if ((ly == mid0 || ly == mid1) && (lx == 0 || lx == SUB - 1))
+	{
+		const int other = facilityAt(plan, gx + (lx == 0 ? -1 : 1), gy);
+		return other && other != here;
+	}
+	if ((lx == mid0 || lx == mid1) && (ly == 0 || ly == SUB - 1))
+	{
+		const int other = facilityAt(plan, gx, gy + (ly == 0 ? -1 : 1));
+		return other && other != here;
+	}
+	return false;
+}
+
+bool walkable(const Plan &plan, int gx, int gy)
+{
+	return facilityAt(plan, gx, gy) && (plan.walk[gx][gy] || doorway(plan, gx, gy));
+}
+
+/// May the crew step from square a to its neighbour b: over the floor, from one facility to another only
+/// straight through a doorway, no corners cut past furniture.
+bool canStep(const Plan &plan, int ax, int ay, int bx, int by)
+{
+	if (!walkable(plan, bx, by))
+	{
+		return false;
+	}
+	if (facilityAt(plan, ax, ay) != facilityAt(plan, bx, by))
+	{
+		return (ax == bx || ay == by) && doorway(plan, ax, ay) && doorway(plan, bx, by);
+	}
+	return ax == bx || ay == by || (walkable(plan, ax, by) && walkable(plan, bx, ay));
+}
+
+/// The squares from a to b over the floor, a and b included; empty when b cannot be reached.
 std::vector<Cell> route(const Plan &plan, Cell a, Cell b)
 {
-	Cell prev[SIZE][SIZE];
-	bool seen[SIZE][SIZE] = {};
+	static short prev[G * G];
+	static bool seen[G * G];
+	std::fill(seen, seen + G * G, false);
 	std::deque<Cell> queue;
 	queue.push_back(a);
-	seen[a.first][a.second] = true;
-	while (!queue.empty())
+	seen[a.first * G + a.second] = true;
+	while (!queue.empty() && !seen[b.first * G + b.second])
 	{
 		const Cell c = queue.front();
 		queue.pop_front();
-		if (c == b)
+		for (int dx = -1; dx <= 1; ++dx)
 		{
-			break;
-		}
-		const int dx[] = { 1, -1, 0, 0 }, dy[] = { 0, 0, 1, -1 };
-		for (int i = 0; i < 4; ++i)
-		{
-			const int x = c.first + dx[i], y = c.second + dy[i];
-			if (x < 0 || y < 0 || x >= SIZE || y >= SIZE || seen[x][y] || !plan.facility[x][y])
+			for (int dy = -1; dy <= 1; ++dy)
 			{
-				continue;
+				const int x = c.first + dx, y = c.second + dy;
+				if ((dx || dy) && x >= 0 && y >= 0 && x < G && y < G && !seen[x * G + y] && canStep(plan, c.first, c.second, x, y))
+				{
+					seen[x * G + y] = true;
+					prev[x * G + y] = (short)(c.first * G + c.second);
+					queue.push_back(Cell(x, y));
+				}
 			}
-			seen[x][y] = true;
-			prev[x][y] = c;
-			queue.push_back(Cell(x, y));
 		}
 	}
-	if (!seen[b.first][b.second])
+	std::vector<Cell> out;
+	if (!seen[b.first * G + b.second])
 	{
-		return std::vector<Cell>(1, a);
+		return out;
 	}
-	std::vector<Cell> out(1, b);
+	out.push_back(b);
 	while (out.back() != a)
 	{
-		out.push_back(prev[out.back().first][out.back().second]);
+		const int i = prev[out.back().first * G + out.back().second];
+		out.push_back(Cell(i / G, i % G));
 	}
 	std::reverse(out.begin(), out.end());
 	return out;
 }
 
-/// A place to stand in a cell, off its middle.
-Point spot(Cell c)
+/// The square of the walking grid under a point.
+Cell squareOf(Point p)
 {
-	return { c.first + 0.5f + (crew.roll() - 0.5f) * 0.48f, c.second + 0.5f + (crew.roll() - 0.5f) * 0.48f };
+	return Cell(std::min(G - 1, std::max(0, (int)(p.x * SUB))), std::min(G - 1, std::max(0, (int)(p.y * SUB))));
+}
+
+/// A place to stand in a cell: one of its floor squares.
+Cell spotSquare(const Plan &plan, Cell c)
+{
+	std::vector<Cell> free;
+	for (int sx = 0; sx < SUB; ++sx)
+	{
+		for (int sy = 0; sy < SUB; ++sy)
+		{
+			if (plan.walk[c.first * SUB + sx][c.second * SUB + sy])
+			{
+				free.push_back(Cell(c.first * SUB + sx, c.second * SUB + sy));
+			}
+		}
+	}
+	if (free.empty())
+	{
+		return Cell(c.first * SUB + SUB / 2, c.second * SUB + SUB / 2);
+	}
+	return free[std::min(free.size() - 1, (size_t)(crew.roll() * free.size()))];
+}
+
+Point centre(Cell square)
+{
+	return { (square.first + 0.5f) / SUB, (square.second + 0.5f) / SUB };
 }
 
 Cell pick(const std::vector<Cell> &cells, Cell otherwise)
@@ -307,7 +395,7 @@ void makeCrew(const Plan &plan, Uint32 key, float night)
 		const Cell start = sleeping ? home : pick(cellsWith(plan, job), home);
 		a.cellX = start.first;
 		a.cellY = start.second;
-		a.pos = spot(start);
+		a.pos = centre(spotSquare(plan, start));
 		a.wait = crew.roll() * 3;
 		a.dir = (int)(crew.roll() * DIRS) % DIRS;
 		a.asleep = sleeping;
@@ -348,7 +436,7 @@ void makeCrew(const Plan &plan, Uint32 key, float night)
 /// Where an agent goes next: to work, home at night, about the base when there is no work.
 void choose(Agent &a, const Plan &plan, float night)
 {
-	const Cell home(a.homeX, a.homeY), here(a.cellX, a.cellY);
+	const Cell home(a.homeX, a.homeY);
 	Cell target = home;
 	const bool idle = (a.role == SCI && !plan.researching) || (a.role == ENG && !plan.producing);
 	if (night > 0.5f && !a.nightShift)
@@ -369,18 +457,27 @@ void choose(Agent &a, const Plan &plan, float night)
 	}
 	a.path.clear();
 	a.next = 0;
-	if (target != here)
+	// over the floor squares to a free square of the target; turning points only
+	const std::vector<Cell> squares = route(plan, squareOf(a.pos), spotSquare(plan, target));
+	if (squares.empty())
 	{
-		const std::vector<Cell> cells = route(plan, here, target);
-		for (size_t i = 1; i < cells.size(); ++i)
-		{
-			const Cell &c0 = cells[i - 1], &c1 = cells[i];
-			a.path.push_back({ (c0.first + c1.first + 1) / 2.0f, (c0.second + c1.second + 1) / 2.0f });
-			a.path.push_back({ c1.first + 0.5f, c1.second + 0.5f });
-		}
-		target = cells.back();
+		// cut off by furniture: stay and think again later
+		a.wait = 2.0f + crew.roll() * 3.0f;
+		return;
 	}
-	a.path.push_back(spot(target));
+	for (size_t i = 1; i < squares.size(); ++i)
+	{
+		const bool last = i + 1 == squares.size();
+		if (!last)
+		{
+			const Cell &p = squares[i - 1], &c = squares[i], &n = squares[i + 1];
+			if (c.first - p.first == n.first - c.first && c.second - p.second == n.second - c.second)
+			{
+				continue;
+			}
+		}
+		a.path.push_back(centre(squares[i]));
+	}
 	a.cellX = target.first;
 	a.cellY = target.second;
 	a.asleep = false;

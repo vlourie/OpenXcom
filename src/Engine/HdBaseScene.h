@@ -37,8 +37,13 @@ namespace OpenXcom
  *                                    x y (pack pixels from the tile's corner), radius, kind (steady,
  *                                    blink, pulse, screen, flicker), colour 0..1, period s and phase 0..1
  *     emit steam 20 26 70 70 0.95 0.95 1.00
- *                                    particles: kind (steam, bubbles, sparks, embers, orbit), the box
- *                                    they start in (x y w h, pack pixels from the tile's corner), colour
+ *                                    particles: kind (steam, bubbles, sparks, embers, orbit, sweep - a
+ *                                    radar or turret beam turning about the box's middle, ripple - rings
+ *                                    on water, dust - motes drifting in the light, flies - dark specks
+ *                                    buzzing about), the box they start in (x y w h, pack pixels from the
+ *                                    tile's corner), colour
+ *     walk 8 0011110001111110...     where the crew may stand: n x n squares of the tile, row by row,
+ *                                    1 - bare floor (tools/hdart/base_scene_pack.py walk_mask)
  *
  * Only the picture changes: the light is drawn over the world layer from the display clock, the
  * game's state is only read (the time of day, whether the base researches and builds).
@@ -56,7 +61,7 @@ namespace HdBaseScene
 		float period = 0, phase = 0;      ///< seconds and 0..1, blink and pulse
 	};
 
-	enum EmitKind { STEAM, BUBBLES, SPARKS, EMBERS, ORBIT };
+	enum EmitKind { STEAM, BUBBLES, SPARKS, EMBERS, ORBIT, SWEEP, RIPPLE, DUST, FLIES };
 
 	struct Emit
 	{
@@ -71,6 +76,8 @@ namespace HdBaseScene
 		Gate gate = GATE_NONE;
 		std::vector<Light> lights;
 		std::vector<Emit> emits;
+		int walkSize = 0;                 ///< n of the walk grid; 0 - none given, the whole tile is floor
+		std::vector<unsigned char> walk;  ///< n x n, row by row: 1 - the crew may stand there
 	};
 
 	/// Reads a `.scene.txt`; false when it holds nothing usable.
