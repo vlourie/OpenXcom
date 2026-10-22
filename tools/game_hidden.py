@@ -88,7 +88,35 @@ args = [str(EXE), "-data", str(GAME), "-user", str(u), "-cfg", str(u)] + (["-loa
         "-fullscreen", "false", "-borderless", "false", "-displayWidth", "1920", "-displayHeight", "1080",
         "-soundVolume", "100" if o.audio_disk else "0", "-musicVolume", "0", "-FPSInactive", "60"]
 p = ai_probe.Hidden(args, str(EXE.parent), env)
-print("pid", p.pid, "(скрытый рабочий стол)")
+print("pid", p.pid, "(скрытый рабочий стол)", flush=True)
+
+
+def unthrottle(pid):
+    """R-199: Windows 11 не держит timeBeginPeriod(1) процессу без видимого окна - SDL_Delay(1) спит тик 15,6 мс,
+    кадр 16/31 мс (~42 к/с) то в одном прогоне, то в другом. У игрока окно видно: снимаем троттлинг, как у него -
+    ProcessPowerThrottling (4), EXECUTION_SPEED | IGNORE_TIMER_RESOLUTION, StateMask 0."""
+    import ctypes
+    from ctypes import wintypes
+
+    class PPT(ctypes.Structure):
+        _fields_ = [("Version", wintypes.ULONG), ("ControlMask", wintypes.ULONG), ("StateMask", wintypes.ULONG)]
+
+    k32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    k32.OpenProcess.restype = wintypes.HANDLE
+    k32.OpenProcess.argtypes = [wintypes.DWORD, wintypes.BOOL, wintypes.DWORD]
+    k32.SetProcessInformation.argtypes = [wintypes.HANDLE, ctypes.c_int, ctypes.c_void_p, wintypes.DWORD]
+    h = k32.OpenProcess(0x0200 | 0x1000, False, pid)        # SET_INFORMATION | QUERY_LIMITED_INFORMATION
+    if not h:
+        return f"OpenProcess ошибка {ctypes.get_last_error()}"
+    try:
+        st = PPT(1, 0x1 | 0x4, 0)
+        return "снят" if k32.SetProcessInformation(h, 4, ctypes.byref(st), ctypes.sizeof(st)) else \
+            f"SetProcessInformation ошибка {ctypes.get_last_error()}"
+    finally:
+        k32.CloseHandle(h)
+
+
+print("троттлинг таймера:", unthrottle(p.pid), flush=True)
 t0 = time.time()
 while p.poll() is None:
     ai_probe.hide_windows(p.pid)
