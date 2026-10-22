@@ -203,6 +203,10 @@ OPT int oxceHdReticleExplosive;
 OPT bool oxceHdAimArc;
 // HD render, battlescape: "+N" under the reticle - the power the shooter's stats add to the aimed attack
 OPT bool oxceHdAimSkillBonus;
+// HD render, battlescape: the hit chance and the skill bonus at the reticle, in percent of the usual: size and stroke weight; 100 = as it was
+OPT int oxceHdAimNumSize, oxceHdAimNumWeight;
+// HD render, battlescape: Ctrl + mouse wheel zooms the battle view; off = Ctrl + wheel changes the level like the wheel alone
+OPT bool oxceHdCtrlZoom;
 // HD render, battlescape: the area the aimed explosive shot or throw would blast, filled on the floor in its damage type's colour, denser where the power is stronger
 OPT bool oxceHdBlastArea;
 // HD base screen: facility pictures play their phases (hd/BASEBITS.PCK/<i>.vN.png); off = the first phase only

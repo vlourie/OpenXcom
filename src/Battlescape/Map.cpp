@@ -1504,13 +1504,28 @@ void Map::blit(SDL_Surface *surface)
 				const int wx = getX() * k + label.x * getWidth() / _viewWidth, wy = getY() * k + label.y * getHeight() / _viewHeight;
 				if (label.tag)
 				{
-					ui.drawMapTag(label.text, wx, wy, label.face, label.back, label.edge);
+					if (label.scale != 1.0f || label.weight != 1.0f)
+					{
+						// the plate keeps its centre: the classic one is 5 rows of digit and 2 of border
+						ui.drawMapTag(label.text, wx, wy + (int)std::lround((1.0f - label.scale) * 3.5f * k), label.face, label.back, label.edge, label.scale, label.weight);
+					}
+					else
+					{
+						ui.drawMapTag(label.text, wx, wy, label.face, label.back, label.edge);
+					}
 				}
 				else if (label.cap > 0.0f)
 				{
 					// a line box as tall as the capitals: their tops stand at wy
 					const int cx = label.centre ? wx - (int)std::lround(ui.ttfWidth(label.text, true, label.cap) * k / 2) : wx;
 					ui.drawMapText(label.text, label.cap, label.cap, cx, wy, label.face, label.edge, label.weight);
+				}
+				else if (label.scale != 1.0f || label.weight != 1.0f)
+				{
+					// the small font's text by the player's percent, kept round the middle of the usual box
+					const int cx = wx + (int)std::lround((1.0f - label.scale) * ui.ttfWidth(label.text, true, m.cap) * k / 2);
+					const int cy = wy + (int)std::lround((1.0f - label.scale) * m.cap * k / 2);
+					ui.drawMapText(label.text, m.cap * label.scale, (float)m.lineH * label.scale, cx, cy, label.face, label.edge, label.weight);
 				}
 				else
 				{
@@ -1546,6 +1561,8 @@ void Map::drawAccuracy(HdCanvas *canvas, int x, int y)
 	label.y = y;
 	label.face = HdUi::rgba(pal[(Uint8)(c + 3)]);
 	label.edge = HdUi::rgba(pal[(Uint8)(c + 15)]);
+	label.scale = std::max(50, std::min(100, Options::oxceHdAimNumSize)) / 100.0f;
+	label.weight = std::max(50, std::min(100, Options::oxceHdAimNumWeight)) / 100.0f;
 	_hdLabels.push_back(label);
 }
 
@@ -2424,6 +2441,8 @@ void Map::drawSkillBonus(HdCanvas *surface, int x, int y)
 		label.x = x + 13 * _k - (textWidth + 3) * _k / 2;
 		label.y = y + 30 * _k;
 		label.tag = true;
+		label.scale = std::max(50, std::min(100, Options::oxceHdAimNumSize)) / 100.0f;
+		label.weight = std::max(50, std::min(100, Options::oxceHdAimNumWeight)) / 100.0f;
 		if (group > 0)
 		{
 			label.face = HdUi::rgba(pal[(Uint8)(group * 16 + 1)]);
@@ -4017,7 +4036,7 @@ void Map::mousePress(Action *action, State *state)
 	InteractiveSurface::mousePress(action, state);
 	// HD render: Ctrl + mouse wheel zooms the view in and out; the wheel alone goes on changing the level
 	const Uint8 button = action->getDetails()->button.button;
-	if ((button == SDL_BUTTON_WHEELUP || button == SDL_BUTTON_WHEELDOWN) && _game->isCtrlPressed() && zoomView(button == SDL_BUTTON_WHEELUP ? 1 : -1))
+	if ((button == SDL_BUTTON_WHEELUP || button == SDL_BUTTON_WHEELDOWN) && Options::oxceHdCtrlZoom && _game->isCtrlPressed() && zoomView(button == SDL_BUTTON_WHEELUP ? 1 : -1))
 	{
 		return;
 	}

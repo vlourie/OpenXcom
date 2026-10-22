@@ -1,0 +1,2 @@
+- Battle (HD): new HD option "Ctrl + wheel zooms the map" (on by default, as before) - turn it off and Ctrl + the wheel no longer changes the map zoom but changes the level, like the wheel alone (ticket XP-000260).
+- Battle (HD): two new HD options, "Reticle number size" and "Reticle number stroke weight" - the hit chance and the skill bonus (+N) at the reticle can be made smaller and thinner (100% down to 50% in steps of 5%; default 100%, as before) (ticket XP-000261).

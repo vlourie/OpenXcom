@@ -541,6 +541,9 @@ void createAdvancedOptionsOXCE()
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdReticleExplosive", &oxceHdReticleExplosive, 0, "STR_HD_RETICLE_EXPLOSIVE", "STR_HD_BATTLE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdAimArc", &oxceHdAimArc, true, "STR_HD_AIM_ARC", "STR_HD_BATTLE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdAimSkillBonus", &oxceHdAimSkillBonus, true, "STR_HD_AIM_SKILL_BONUS", "STR_HD_BATTLE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdAimNumSize", &oxceHdAimNumSize, 100, "STR_HD_AIM_NUM_SIZE", "STR_HD_BATTLE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdAimNumWeight", &oxceHdAimNumWeight, 100, "STR_HD_AIM_NUM_WEIGHT", "STR_HD_BATTLE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdCtrlZoom", &oxceHdCtrlZoom, true, "STR_HD_CTRL_ZOOM", "STR_HD_BATTLE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdBlastArea", &oxceHdBlastArea, true, "STR_HD_BLAST_AREA", "STR_HD_BATTLE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdHoverBob", &oxceHdHoverBob, true, "STR_HD_HOVER_BOB", "STR_HD_BATTLE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdFx", &oxceHdFx, true, "STR_HD_FX", "STR_HD_BATTLE"));
