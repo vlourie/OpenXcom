@@ -23,6 +23,7 @@ r"""Пак «Живой базы» (docs/research/base-living-2026-10-22.md, р�
     py -3.13 tools/hdart/base_scene_pack.py --only STR_ACCESS_LIFT,STR_HANGAR
 """
 import argparse
+import math
 import os
 import sys
 
@@ -36,6 +37,7 @@ from PIL import Image                               # noqa: E402
 import base_lights                                  # noqa: E402
 from facility_sheet import load_rules, sprites_map  # noqa: E402
 from gen_base_anim import Facility                  # noqa: E402
+from gen_base_paint import PILOT                    # noqa: E402
 
 ART = os.path.join(ROOT, "art", "base_living", "pilot", "painted")
 TILE = 128
@@ -107,7 +109,7 @@ MORE = {
     "STR_HANGAR": [_e("dust", ROOM, DUSTC)],
     "STR_LIVING_QUARTERS": [_e("dust", ROOM, DUSTC)],
     "STR_CORRIDOR": [_e("dust", MID, DUSTC)],
-    "STR_LABORATORY": [_e("bubbles", (.28, .30, .42, .70), CYAN), _e("bubbles", (.60, .30, .74, .70), CYAN)],
+    "STR_LABORATORY": [_e("dust", ROOM, DUSTC)],
     "STR_GENERAL_STORES": [_e("dust", ROOM, DUSTC)],
     "STR_SMALL_RADAR_SYSTEM": [_e("sweep", WIDE, GREEN)],
     "STR_LASER_DEFENSES": [_e("sweep", (.25, .25, .75, .75), RED)],
@@ -116,7 +118,7 @@ MORE = {
     "STR_GYM_ROOM": [_e("dust", ROOM, DUSTC)],
     "STR_ONSEN": [_e("ripple", (.62, .40, .85, .85), WATER)],
     "STR_LARGE_RADAR_SYSTEM": [_e("sweep", WIDE, GREEN)],
-    "STR_GRAV_SHIELD": [_e("ripple", WIDE, VIOLET)],
+    "STR_GRAV_SHIELD": [_e("orbit", WIDE, VIOLET)],
     "STR_BEAST_DEN": [_e("flies", (.25, .20, .60, .55), (.08, .07, .05))],
     "STR_LIVING_QUARTERS_LARGE": [_e("dust", ROOM, DUSTC)],
     "STR_LIVING_QUARTERS_ADVANCED_LARGE": [_e("ripple", (.42, .20, .58, .80), WATER), _e("dust", ROOM, DUSTC)],
@@ -133,14 +135,14 @@ MORE = {
     "STR_LOVE_CLINIC": [_e("dust", ROOM, (1.0, .75, .85))],
     "STR_TRAP_ROOM": [_e("embers", WIDE, (1.0, .35, .20))],
     "STR_HYDROPONICS_WEED": [_e("dust", ROOM, POLLEN), _e("flies", WIDE, (.10, .10, .06))],
-    "STR_BODY_FARM_E": [_e("bubbles", (.15, .10, .75, .65), GREEN)],
+    "STR_BODY_FARM_E": [_e("embers", (.15, .10, .75, .65), GREEN)],
     "STR_MINT": [_e("sparks", (.35, .40, .65, .60), (1.0, .85, .35))],
-    "STR_PERSONAL_LABS": [_e("bubbles", (.15, .15, .35, .50), CYAN), _e("bubbles", (.60, .15, .80, .50), CYAN)],
+    "STR_PERSONAL_LABS": [_e("dust", ROOM, DUSTC)],
     "STR_STUDY_ROOM": [_e("dust", ROOM, DUSTC)],
     "STR_ASTROSENSORIUM": [_e("orbit", WIDE, VIOLET)],
     "STR_BLACK_TOWER": [_e("orbit", MID, RED)],
     "STR_MISSILE_DEFENSES": [_e("steam", (.30, .30, .60, .70), (.95, .95, .95))],
-    "STR_MIND_SHIELD": [_e("ripple", WIDE, VIOLET)],
+    "STR_MIND_SHIELD": [_e("orbit", WIDE, VIOLET)],
     "STR_LIVING_QUARTERS_SMALL": [_e("dust", ROOM, DUSTC)],
     "STR_LIVING_QUARTERS_LARGE_DAMAGED": [_e("steam", MID, SMOKE), _e("dust", ROOM, DUSTC)],
     "STR_LIVING_QUARTERS_ADVANCED_LARGE_DAMAGED": [_e("ripple", (.45, .20, .60, .60), WATER), _e("steam", MID, SMOKE)],
@@ -161,7 +163,7 @@ MORE = {
     "STR_REFINERY": [_e("steam", (.45, .15, .75, .45), (.95, .92, .88))],
     "STR_LIBRARY": [_e("dust", ROOM, DUSTC)],
     "STR_DATA_CENTER": [_e("orbit", (.35, .30, .60, .55), CYAN)],
-    "STR_NONPROFIT_LAB": [_e("ripple", MID, GREEN)],
+    "STR_NONPROFIT_LAB": [_e("dust", ROOM, DUSTC)],
     "STR_RUBBLE": [_e("steam", MID, SMOKE), _e("dust", ROOM, DUSTC)],
     "STR_PLASMA_DEFENSES": [_e("sweep", MID, VIOLET)],
     "STR_PSIONIC_LABORATORY": [_e("orbit", (.55, .25, .85, .80), VIOLET)],
@@ -177,7 +179,7 @@ MORE = {
     "STR_VULCAN_DEFENSES": [_e("sweep", (.25, .30, .75, .70), ORANGE)],
     "STR_ARMORY_DAMAGED_1": [_e("steam", MID, SMOKE)],
     "STR_MASH": [_e("flies", (.10, .10, .60, .60), (.08, .07, .06))],
-    "STR_CLONING_CENTRE": [_e("bubbles", (.30, .30, .80, .80), (1.0, .60, .70))],
+    "STR_CLONING_CENTRE": [_e("embers", (.30, .30, .80, .80), (1.0, .60, .70))],
     "STR_GAS_CHAMBER": [_e("steam", WIDE, (.60, 1.0, .40))],
     "STR_HYDROPONICS_BOOM_HARVEST": [_e("dust", ROOM, (.95, .70, 1.0))],
     "STR_CASINO": [_e("sweep", MID, (1.0, .85, .40))],
@@ -200,22 +202,59 @@ MORE = {
     "STR_SAM_DEFENSES": [_e("sweep", MID, RED)],
     "STR_ARMORY_DAMAGED_2": [_e("steam", MID, SMOKE)],
     "STR_MESS_HALL_ADV": [_e("steam", (.55, .25, .80, .55), (.95, .92, .88)), _e("ripple", (.30, .25, .75, .70), WATER)],
-    "STR_DISRUPTOR_SHROUD": [_e("ripple", WIDE, VIOLET)],
+    "STR_DISRUPTOR_SHROUD": [_e("orbit", WIDE, VIOLET)],
     "STR_HYDROPONICS": [_e("dust", ROOM, POLLEN)],
-    "STR_BODY_FARM": [_e("bubbles", (.15, .10, .75, .65), GREEN)],
+    "STR_BODY_FARM": [_e("embers", (.15, .10, .75, .65), GREEN)],
     "STR_FUSION_REACTOR": [_e("orbit", (.38, .40, .58, .60), ORANGE)],
     "STR_SURGERY_ROOM": [_e("dust", ROOM, DUSTC)],
     "STR_WITCH_CAVE": [_e("embers", MID, GREEN), _e("steam", MID, (.55, .85, .45))],
     "STR_RED_TOWER": [_e("ripple", MID, RED), _e("sweep", WIDE, RED)],
 }
+# Как в одобренном ролике (base_scene_preview.py, Vitali 22.10 «делай как в ролике»): в ролике не было ни пыли, ни
+# мошкары, ни лучей и колец - тарелки и турели крутятся сами (SPIN), вода рябит и бликует (WATER). Из MORE идут
+# только виды ролика: пар (и тёмный дым разрушенного), пузыри, искры, угли, вихрь.
+VIDEO_KINDS = ("steam", "bubbles", "sparks", "embers", "orbit")
+EMITS["STR_ONSEN"] = [("steam", .12, .20, .67, .85, .95, .95, 1.0)]
+EMITS["STR_SUMMONING_CIRCLE"] = [("orbit", .16, .16, .84, .84, 1.0, .35, .50)]
 for _t, _l in MORE.items():
-    EMITS.setdefault(_t, []).extend(_l)
+    EMITS.setdefault(_t, []).extend(e for e in _l if e[0] in VIDEO_KINDS)
+
+# Вода: оттенок на картинке и цвет бликов (HdBaseScene::bake ищет её по оттенку внутри стен; лист motion_sheet.png)
+WATER = {t: ("blue", (.75, 1.0, 1.0)) for t in (
+    "STR_ONSEN", "STR_LUXURY_SPA", "STR_HOTEL", "STR_LIVING_QUARTERS_ADVANCED_LARGE",
+    "STR_LIVING_QUARTERS_ADVANCED_LARGE_DAMAGED", "STR_ALENIUM_CHAMBER")}
+WATER.update({t: ("green", (.8, 1.0, .4)) for t in ("STR_HELLERIUM_PLANT", "STR_WELL", "STR_SLUDGE_VATS")})
+# Вращение: центр u v и радиус в долях ширины постройки; ("spin", оборотов в с) или ("swing", градусов, период с).
+# Только где тарелка или турель целиком в круге (motion_sheet.png): иначе круг режет ствол.
+SPIN = {
+    "STR_SMALL_RADAR_SYSTEM": (.5, .5, .26, "spin", .18),
+    "STR_LARGE_RADAR_SYSTEM": (.5, .5, .34, "spin", .12),
+    "STR_LASER_DEFENSES": (.5, .5, .24, "swing", 40, 7.0),
+    "STR_GAUSS_DEFENSES": (.5, .5, .24, "swing", 35, 8.0),
+    "STR_PLASMA_DEFENSES": (.5, .5, .2, "swing", 45, 6.0),
+    "STR_SAM_DEFENSES": (.5, .5, .2, "swing", 30, 9.0),
+}
+# Огни ролика, которых детектор на рисунке не видит (base_scene_preview.py LIGHTS по SPECIAL): u v в долях постройки,
+# вид, цвет, радиус в клетках, период, число огней в кольце (chase). Кольцо ангара - вокруг посадочного круга.
+VIDEO_LIGHTS = {
+    "STR_HANGAR": [(.5 + .2 * math.cos(a * math.pi / 6), .49 + .2 * math.sin(a * math.pi / 6), "chase", (.4, 1, .5), .28,
+                    2.4, a / 12.0, 12) for a in range(12)]
+                  + [(.15, .15, "steady", (1, .8, .55), .9, 0, 0, 0), (.15, .85, "steady", (1, .8, .55), .9, 0, 0, 0)],
+    "STR_HELLERIUM_PLANT": [(.45, .5, "pulse", (.6, 1, .25), 1.0, 2.7, 0, 0)],
+    "STR_SUMMONING_CIRCLE": [(.5, .5, "pulse", (1, .15, .35), 1.1, 3.2, 0, 0)]
+                            + [(.5 + .33 * math.cos(a * math.pi / 4), .5 + .33 * math.sin(a * math.pi / 4), "flicker",
+                                (1, .55, .2), .25, 0, 0, 0) for a in range(8)],
+    "STR_ONSEN": [(.75, .6, "pulse", (.3, .8, 1), .6, 6.0, 0, 0)],
+    "STR_WORKSHOP": [(.5, .52, "weld", (.7, .85, 1), .7, 0, 0, 0)],
+    "STR_CORRIDOR": [(.5, .5, "night", (1, .7, .4), .7, 0, 0, 0)],
+    "STR_LIVING_QUARTERS": [(.8, .22, "tv", (.5, .65, 1), .45, 0, 0, 0), (.5, .55, "night", (1, .6, .35), .5, 0, 0, 0)],
+    "STR_MED_BAY": [(.5, .38, "pulse", (1, .35, .35), .55, 1.1, 0, 0)],
+    "STR_BURROW": [(.5, .5, "flicker", (1, .55, .2), .7, 0, 0, 0)],
+    "STR_SMALL_RADAR_SYSTEM": [(.5, .5, "pulse", (.4, 1, .55), .6, 4.0, 0, 0)],
+}
 # Огни, которых детектор не видит: сердце реактора, руна круга (u v, радиус в долях, вид, цвет, период)
 LIGHTS = {
     "STR_FUSION_REACTOR": [(.48, .50, .45, "pulse", 1.0, .55, .15, 2.6)],
-    "STR_SUMMONING_CIRCLE": [(.52, .46, .48, "pulse", 1.0, .35, .15, 3.2), (.52, .46, .31, "flicker", 1.0, .62, .30, 0)],
-    "STR_ACCESS_LIFT": [(.50, .50, .20, "blink", 1.0, .55, .20, 1.6)],
-    "STR_MED_BAY": [(.50, .40, .25, "pulse", 1.0, .30, .30, 1.2)],
     "STR_LOVE_CLINIC": [(.50, .35, .30, "pulse", 1.0, .45, .65, 1.4)],
     "STR_EYE_OF_HORUS": [(.50, .50, .30, "pulse", 1.0, .55, .20, 2.2)],
     "STR_NONPROFIT_LAB": [(.50, .50, .25, "pulse", .45, 1.0, .45, 1.8)],
@@ -281,9 +320,46 @@ def walk_mask(img, cols, rows):
     return out
 
 
-def extra_lines(t, cols, rows):
+LIQUID_MIN = 0.006   # доля картинки постройки: меньше - не жидкость, а блик или лампа
+
+
+def liquid_box(img, box, col):
+    """Пузыри и круги - только на жидкости (Vitali 22.10: в игре кольца летали по столам и полу, в ролике -
+    только в жидкости). Ищет в коробке, расширенной вдвое, насыщенные яркие пиксели оттенка цвета частиц,
+    берёт самое большое пятно; его рамка, ужатая на 15%, - новая коробка. Нет пятна - None, частицы не ставятся."""
+    from scipy import ndimage
+    h, w = img.shape[:2]
+    u0, v0, u1, v1 = box
+    du, dv = (u1 - u0) / 2, (v1 - v0) / 2
+    x0, x1 = int(max(0, u0 - du) * w), int(min(1, u1 + du) * w)
+    y0, y1 = int(max(0, v0 - dv) * h), int(min(1, v1 + dv) * h)
+    rgb = img[y0:y1, x0:x1, :3].astype(np.float32) / 255
+    mx, mn = rgb.max(-1), rgb.min(-1)
+    sat = (mx - mn) / np.maximum(mx, 1e-3)
+    c = np.array(col, np.float32)
+    # оттенок: направление цвета без серого, косинус с цветом частиц
+    a = rgb - rgb.mean(-1, keepdims=True)
+    cc = c - c.mean()
+    cos = (a @ cc) / (np.linalg.norm(a, axis=-1) * np.linalg.norm(cc) + 1e-6)
+    m = (sat > 0.40) & (mx > 0.40) & (cos > 0.80) & (img[y0:y1, x0:x1, 3] > 128)
+    m = ndimage.binary_opening(m, iterations=2)
+    lab, n = ndimage.label(m)
+    if not n:
+        return None
+    sizes = ndimage.sum(m, lab, range(1, n + 1))
+    best = int(sizes.argmax()) + 1
+    if sizes[best - 1] < LIQUID_MIN * h * w:
+        return None
+    ys, xs = np.nonzero(lab == best)
+    bx0, bx1, by0, by1 = xs.min(), xs.max(), ys.min(), ys.max()
+    sx, sy = (bx1 - bx0) * 0.15, (by1 - by0) * 0.15
+    return ((x0 + bx0 + sx) / w, (y0 + by0 + sy) / h, (x0 + bx1 - sx) / w, (y0 + by1 - sy) / h)
+
+
+def extra_lines(t, cols, rows, img=None):
     """Ручные строки сцены (emit и light) по клеткам {(cx, cy): [строки]}: строка идёт в клетку, где лежит
-    центр коробки или огня; координаты от угла этой клетки, за край клетки выходить могут."""
+    центр коробки или огня; координаты от угла этой клетки, за край клетки выходить могут. С картинкой img
+    пузыри и круги садятся на жидкость (liquid_box) или пропадают."""
     W, H = cols * TILE, rows * TILE
     out = {}
 
@@ -292,6 +368,12 @@ def extra_lines(t, cols, rows):
         return (cx, cy), x - cx * TILE, y - cy * TILE
 
     for kind, u0, v0, u1, v1, r, g, b in EMITS.get(t, []):
+        if kind in ("bubbles", "ripple") and img is not None:
+            box = liquid_box(img, (u0, v0, u1, v1), (r, g, b))
+            if box is None:
+                print("   %s: %s - жидкости нет, не ставлю" % (t, kind))
+                continue
+            u0, v0, u1, v1 = box
         key, x, y = tile((u0 + u1) / 2 * W, (v0 + v1) / 2 * H)
         w, h = (u1 - u0) * W, (v1 - v0) * H
         out.setdefault(key, []).append("emit %s %.1f %.1f %.1f %.1f %.2f %.2f %.2f" %
@@ -300,6 +382,21 @@ def extra_lines(t, cols, rows):
         key, x, y = tile(u * W, v * H)
         out.setdefault(key, []).append("light %.1f %.1f %.1f %s %.2f %.2f %.2f %.2f %.2f" %
                                        (x, y, rad * min(W, H), kind, r, g, b, period, 0.0))
+    for u, v, kind, (r, g, b), cells, period, phase, count in VIDEO_LIGHTS.get(t, []):
+        key, x, y = tile(u * W, v * H)
+        out.setdefault(key, []).append("light %.1f %.1f %.1f %s %.2f %.2f %.2f %.2f %.3f%s" %
+                                       (x, y, cells * TILE, kind, r, g, b, period, phase,
+                                        " %d" % count if count else ""))
+    if t in WATER:
+        hue, (r, g, b) = WATER[t]
+        out.setdefault((0, 0), []).append("water %s %.2f %.2f %.2f" % (hue, r, g, b))
+    if t in SPIN:
+        u, v, rad, how = SPIN[t][:4]
+        key, x, y = tile(u * W, v * H)
+        if how == "spin":
+            out.setdefault(key, []).append("spin %.1f %.1f %.1f %.3f" % (x, y, rad * W, SPIN[t][4]))
+        else:
+            out.setdefault(key, []).append("swing %.1f %.1f %.1f %.1f %.2f" % (x, y, rad * W, SPIN[t][4], SPIN[t][5]))
     return out
 
 
@@ -334,7 +431,7 @@ def build(t, rule, sprites, out, cover=0.0, most=0, art=ART):
     dest = os.path.join(out, "hd", "BASEBITS.PCK")
     os.makedirs(dest, exist_ok=True)
     written = []
-    extra = extra_lines(t, fac.cols, fac.rows)
+    extra = extra_lines(t, fac.cols, fac.rows, big)
     num = 0
     for cy in range(fac.rows):
         for cx in range(fac.cols):
@@ -342,7 +439,8 @@ def build(t, rule, sprites, out, cover=0.0, most=0, art=ART):
             tile = im[cy * TILE:(cy + 1) * TILE, cx * TILE:(cx + 1) * TILE]
             Image.fromarray(tile, "RGBA").save(os.path.join(dest, "%d.png" % n), optimize=True)
             here = per_tile.get((cx, cy), [])
-            if most:
+            # 16 построек ролика - все огни рисунка, как в нём (lights_of); бюджет - остальным
+            if most and t not in PILOT:
                 here = budget(here, cover, most)
             lines = (["# base_scene_pack.py %s %d,%d" % (t, cx, cy), "size %d %d" % (TILE, TILE), "gate " + gate]
                      + here + extra.get((cx, cy), []) + ["walk %d %s" % (WALK, walk[(cx, cy)])])
