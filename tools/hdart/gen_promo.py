@@ -131,6 +131,14 @@ def HERO_OUT(n):
     return ("portal/src/Xp.Launcher/Assets/hero_%d.jpg" % n, 1280, 800, 400, "tint")
 
 
+MOD_CARD = ("Composition: a wide 16:9 shot; the figures and their faces sit in the middle horizontal band of the "
+            "picture, nothing important at the top or bottom edge. No text, no letters, no speech bubbles. ")
+
+
+def MOD_OUT(slug):
+    return ("portal/src/Xp.Portal/wwwroot/img/mods/%s@2x.jpg" % slug, 1280, 720, 600, "card")
+
+
 CAST_SLOTS = {
     "cast_hero_1": ([1, 2, 4], HERO_RIGHT + "The three women stand on the open cargo ramp of a battered pirate "
                     "airship at night, looking out over a ruined futuristic city ruled by aliens: Sever, the woman "
@@ -193,6 +201,38 @@ CAST_SLOTS = {
                        "heavy crate of loot on her shoulder; Tikhaya, the woman from Picture 3, keeps watch with a "
                        "rifle; lanterns and smoke, a huge alien mothership looms on the horizon under a violet sky.",
                        ("portal/src/Xp.Portal/wwwroot/img/hero.jpg", 1280, 800, 300, "color")),
+    # карточки модов сайта (23.10: у новых модов картинок не было) - img/mods/<slug>@2x.jpg 1280x720 и половина
+    # рядом; список модов режет карточку полосой по центру, поэтому лица - в средней полосе (MOD_CARD)
+    "cast_mod_voices": ([5, 2], MOD_CARD + "Battle on a ruined street at night, lime tracer fire and smoke: Rys, "
+                        "the woman from Picture 1, crouches behind cover and speaks into the microphone of her radio "
+                        "headset, one finger pressed to the earpiece; Iskra, the woman from Picture 2, beside her "
+                        "shouts an order over her shoulder with a raised hand, mouth open mid-word.",
+                        MOD_OUT("hd-voices")),
+    "cast_mod_footsteps": ([1, 4], MOD_CARD + "Low camera close to the floor in a long riveted metal corridor of a "
+                           "pirate airship, puddles on the deck grating reflect lime lamps: Sever, the woman from "
+                           "Picture 1, in heavy combat boots, and Bazalt, the woman from Picture 2, in armoured "
+                           "boots, stride towards the viewer, water splashing under their steps, their faces lit "
+                           "from above.", MOD_OUT("footsteps")),
+    "cast_mod_names": ([1, 3], MOD_CARD + "The captain's cabin by lamplight: Sever, the woman from Picture 1, the "
+                       "captain, sits at a desk writing in a huge leather-bound crew ledger with a quill, its pages "
+                       "full of illegible handwritten lines; Shpilka, the woman from Picture 2, leans over her "
+                       "shoulder pointing at a line with a grin. Pinned crew photographs on the wall behind them.",
+                       MOD_OUT("russian-names")),
+    "cast_mod_hd18": ([4, 1], MOD_CARD + "A private lounge of the pirate base after a raid, red velvet, candles "
+                      "and a gramophone: Bazalt, the woman from Picture 1, in an elegant dark red evening dress, and "
+                      "Sever, the woman from Picture 2, in a black silk dress with a long slit, raise glasses of wine "
+                      "to the viewer with a confident, teasing look. Glamorous and grown-up, fully dressed.",
+                      MOD_OUT("hd-18")),
+    "cast_mod_tank": ([3, 2], MOD_CARD + "A dusty desert road at sunset: a battered purple pirate battle tank backs "
+                     "up away from an ambush, its gun still pointed forward at the enemy, dust thrown up by the "
+                     "tracks at its rear; Shpilka, the woman from Picture 1, the driver, leans out of the hatch "
+                     "looking back over her shoulder; Iskra, the woman from Picture 2, rides on the hull, one hand "
+                     "on the turret, firing a pistol forward.", MOD_OUT("tank-reverse")),
+    "cast_mod_intro": ([6, 1], MOD_CARD + "A night escape from a prison compound: searchlight beams sweep through "
+                      "rain, a burning watchtower and a cut wire fence behind them; Tikhaya, the woman from Picture "
+                      "1, and Sever, the woman from Picture 2, run towards the viewer in torn prison overalls, "
+                      "Sever looking back at the guards, Tikhaya leading with a stolen rifle.",
+                      MOD_OUT("intro-voice")),
 }
 for _n, (_ids, _scene, _out) in CAST_SLOTS.items():
     SLOTS[_n] = (STYLE + _scene, 1280, 800, _out)
@@ -343,6 +383,11 @@ def finish(args):
             q, size = jpeg_under(im, dst, kb)
             print("%s <- вариант %s: %s, %dx%d, качество %d, %d КБ (бюджет %d)"
                   % (n, i, rel, w, h, q, size // 1024, kb))
+        if mode == "card":
+            # карточка мода: рядом с @2x - обычная вдвое меньше, сайт выбирает по srcset
+            half = dst.replace("@2x", "")
+            q, size = jpeg_under(im.resize((w // 2, h // 2), Image.LANCZOS), half, kb // 3)
+            print("    и %s, %dx%d, %d КБ" % (os.path.basename(half), w // 2, h // 2, size // 1024))
 
 
 def main():

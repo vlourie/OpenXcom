@@ -6,6 +6,7 @@ the game does not have.
                                the game draws them (tools/hdart/map_mockup.py --k 4, panels 0 and 2)
   tank-turret.jpg (+@2x)       card: the pirate tank with its turret turned three ways (piratez_tank_turret)
   tank-turret-turn.png         one hull, the turret in all 8 directions
+  tank-reverse.jpg (+@2x)      card: the same tank backing up, nose to the front, two fading shots behind
   apple-processing.jpg (+@2x)  card: apple, tube of puree, jar of jam (Piratez + Apple_Processing sprites)
   apple-processing-recipe.png  3 apples -> tube, 5 apples -> jar
   kisya-brysya.jpg             card: the sisters from their UFOpaedia picture in HD (hd/UI/Pumas.png)
@@ -112,6 +113,30 @@ def tank_pictures():
     save(grid.convert("RGB"), "tank-turret-turn.png")
 
 
+def tank_reverse_picture():
+    """Card of the reverse gear: the tank backs up the way it came, its nose still to the front."""
+    z = 5
+    im = tank(2, 2, z)                       # hull and gun to the south-east, at the viewer's right
+    canvas = Image.new("RGBA", (1280, 720), GROUND + (255,))
+    # one tile back to the north-west is (-16, -8) on screen; four tiles between the shots. Where the tank
+    # was fades out; the solid one, drawn last, is where it is now
+    step = (-16 * 4 * z // 2, -8 * 4 * z // 2)
+    x0, y0 = 900 - im.width // 2, 450 - im.height // 2
+    for k, fade in ((0, 60), (1, 120), (2, 255)):
+        ghost = im.copy()
+        a = np.array(ghost)
+        a[..., 3] = (a[..., 3].astype(np.uint16) * fade // 255).astype(np.uint8)
+        canvas.alpha_composite(Image.fromarray(a, "RGBA"), (x0 + k * step[0], y0 + k * step[1]))
+    # the arrow points backwards, along the way the tank goes
+    d = ImageDraw.Draw(canvas)
+    color = (200, 220, 120, 255)
+    tx, ty = x0 + im.width // 2 + 60, y0 + im.height + 50
+    hx, hy = tx + 2 * step[0], ty + 2 * step[1]
+    d.line((tx, ty, hx + 30, hy + 15), fill=color, width=14)
+    d.polygon([(hx, hy), (hx + 62, hy - 4), (hx + 34, hy + 52)], fill=color)
+    card(canvas, "tank-reverse.jpg")
+
+
 # ---------------------------------------------------------------- apples
 
 def inventory(w, h, cell):
@@ -195,6 +220,7 @@ def main():
     if o.forest:
         stacked(o.forest, (40, 400, 1376, 1080), "hd-forest.jpg")
     tank_pictures()
+    tank_reverse_picture()
     apple_pictures()
     sister_pictures()
 
