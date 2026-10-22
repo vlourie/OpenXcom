@@ -348,7 +348,8 @@ std::string OptionsHdState::valueText(const OptionInfo &info) const
 	{
 		return tr("STR_HD_BATTLE_HUD_COLOR_" + std::to_string(Options::oxceHdBattleHudColor));
 	}
-	if (info.asInt() == &Options::oxceHdPathNumSize || info.asInt() == &Options::oxceHdPathNumWeight)
+	if (info.asInt() == &Options::oxceHdPathNumSize || info.asInt() == &Options::oxceHdPathNumWeight
+		|| info.asInt() == &Options::oxceHdAimNumSize || info.asInt() == &Options::oxceHdAimNumWeight)
 	{
 		return std::to_string(std::max(50, std::min(100, *info.asInt()))) + "%";
 	}
@@ -591,7 +592,8 @@ void OptionsHdState::changeSetting(size_t sel, Uint8 button)
 			min = 0;                                  // what Alt shows, always: 0 nothing, 1 facing,
 			max = 3;                                  // 2 damage and psi in the aim, 3 both
 		}
-		else if (i == &Options::oxceHdPathNumSize || i == &Options::oxceHdPathNumWeight)
+		else if (i == &Options::oxceHdPathNumSize || i == &Options::oxceHdPathNumWeight
+			|| i == &Options::oxceHdAimNumSize || i == &Options::oxceHdAimNumWeight)
 		{
 			*i += increment * 4;                      // percent of the usual, in steps of 5
 			min = 50;

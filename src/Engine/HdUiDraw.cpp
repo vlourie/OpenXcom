@@ -843,6 +843,27 @@ void HdUi::drawTtfString(const UString &s, bool big, float capHeight, int x, int
 	}
 }
 
+/// Thinner strokes: the glyph's edge pixels are made lighter (a coverage gamma above the usual 0.85), so the
+/// stroke loses about (1 - weight) of its width, a stroke being some 0.2 of the cap height; the full pixels stay.
+/// Null = the usual coverage (weight 1). The table is per thread and kept for the last weight asked.
+static const float *strokeWeightLut(float weight, float capHeight, int k)
+{
+	if (weight >= 0.999f) return nullptr;
+	thread_local float weightLut[256];
+	thread_local float weightLutFor = -1.0f;
+	const float w = std::max(0.5f, weight);
+	const float stroke = 0.2f * capHeight * k;
+	const float mean = std::max(0.06f, 1.0f / 1.85f - (1.0f - w) * stroke * 0.5f);
+	const float key = mean * 1000.0f;
+	if (weightLutFor != key)
+	{
+		const double gamma = 1.0 / mean - 1.0;
+		for (int i = 0; i < 256; ++i) weightLut[i] = (float)std::pow(i / 255.0, gamma);
+		weightLutFor = key;
+	}
+	return weightLut;
+}
+
 void HdUi::drawMapText(const UString &s, float capHeight, float lineH, int wx, int wy, Uint32 face, Uint32 outline, float weight)
 {
 	FrameTiming timing(_frameMs);
@@ -856,25 +877,7 @@ void HdUi::drawMapText(const UString &s, float capHeight, float lineH, int wx, i
 	const float base = baselineWithTails(lineH, capHeight, f.descent(px) / k, lineH);
 	// the same edge as a line lying on an HD picture (drawTtfLine): it grows with the scale
 	const int outlineW = std::max(2, k);
-	// thinner strokes: the glyph's edge pixels are made lighter (a coverage gamma above the usual 0.85), so the
-	// stroke loses about (1 - weight) of its width, a stroke being some 0.2 of the cap height; the full pixels stay
-	thread_local float weightLut[256];
-	thread_local float weightLutFor = -1.0f;
-	const float *faceLut = nullptr;
-	if (weight < 0.999f)
-	{
-		const float w = std::max(0.5f, weight);
-		const float stroke = 0.2f * capHeight * k;
-		const float mean = std::max(0.06f, 1.0f / 1.85f - (1.0f - w) * stroke * 0.5f);
-		const float key = mean * 1000.0f;
-		if (weightLutFor != key)
-		{
-			const double gamma = 1.0 / mean - 1.0;
-			for (int i = 0; i < 256; ++i) weightLut[i] = (float)std::pow(i / 255.0, gamma);
-			weightLutFor = key;
-		}
-		faceLut = weightLut;
-	}
+	const float *faceLut = strokeWeightLut(weight, capHeight, k);
 	for (int pass = 0; pass < 2; ++pass)
 	{
 		float pen = (float)wx;
@@ -902,18 +905,18 @@ void HdUi::drawMapText(const UString &s, float capHeight, float lineH, int wx, i
 	}
 }
 
-void HdUi::drawMapTag(const UString &s, int wx, int wy, Uint32 face, Uint32 plate, Uint32 edge)
+void HdUi::drawMapTag(const UString &s, int wx, int wy, Uint32 face, Uint32 plate, Uint32 edge, float scale, float weight)
 {
 	SDL_Surface *dest;
 	int k;
 	const SDL_Color *pal;
 	if (!target(dest, k, pal) || !hasFonts() || s.empty()) return;
 	HdFont &f = font(true);
-	// the classic digit: 5 rows inside a border of one pixel all round
-	const float cap = 5.0f;
+	// the classic digit: 5 rows inside a border of one pixel all round (scale: the player's percent of it)
+	const float cap = 5.0f * scale;
 	const float px = f.sizeForCapHeight(cap * k);
 	const float w = f.measure(s, px);
-	const float padX = 1.5f * k, padY = 1.0f * k;
+	const float padX = 1.5f * k * scale, padY = 1.0f * k * scale;
 	const float x0 = wx - w * 0.5f - padX, x1 = wx + w * 0.5f + padX;
 	const float y0 = (float)wy, y1 = wy + cap * k + 2.0f * padY;
 	const float radius = std::min((y1 - y0) * 0.5f, 2.0f * k);
@@ -922,6 +925,7 @@ void HdUi::drawMapTag(const UString &s, int wx, int wy, Uint32 face, Uint32 plat
 	FrameTiming timing(_frameMs);
 	const SDL_Rect clip = worldClip(dest, k);
 	const int baseline = (int)std::lround(y0 + padY + cap * k);
+	const float *faceLut = strokeWeightLut(weight, cap, k);
 	float pen = wx - w * 0.5f;
 	UCode prev = 0;
 	for (UCode c : s)
@@ -930,7 +934,7 @@ void HdUi::drawMapTag(const UString &s, int wx, int wy, Uint32 face, Uint32 plat
 		const HdFont::Glyph &g = f.glyph(c, px);
 		if (g.w > 0)
 		{
-			blendGlyph(dest, clip, g, (int)std::lround(pen) + g.xoff, baseline + g.yoff, face);
+			blendGlyph(dest, clip, g, (int)std::lround(pen) + g.xoff, baseline + g.yoff, face, faceLut);
 		}
 		pen += g.advance;
 		prev = c;

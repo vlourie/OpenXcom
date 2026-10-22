@@ -163,7 +163,8 @@ public:
 	void drawMapText(const UString &s, float capHeight, float lineH, int wx, int wy, Uint32 face, Uint32 outline, float weight = 1.0f);
 	/// A number tag on the battle map: `s` centred on world x `wx` on a rounded plate whose top is world y `wy`
 	/// (the classic tag is a bordered 3x5 digit: face, plate and edge are its three shades).
-	void drawMapTag(const UString &s, int wx, int wy, Uint32 face, Uint32 plate, Uint32 edge);
+	/// `scale` and `weight` are the player's percents of the usual size and stroke weight (1 = as it was).
+	void drawMapTag(const UString &s, int wx, int wy, Uint32 face, Uint32 plate, Uint32 edge, float scale = 1.0f, float weight = 1.0f);
 	/// A counter on the battle panel (the rounds left in a hand's item): `s` from base (x, y) = the top of its
 	/// capitals, `capHeight` base pixels tall, outlined, on a dark rounded tab with a metal edge. It has a face of
 	/// its own, heavy and narrow (hd/UI/fonts/Pulse-Big.ttf), whatever font the text is set in; the big one without it.
