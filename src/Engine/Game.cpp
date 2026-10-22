@@ -45,6 +45,7 @@
 #include <typeinfo>
 #include "../Interface/Cursor.h"
 #include "../Interface/FpsCounter.h"
+#include "HdUpdateNotice.h"
 #include "../Mod/Mod.h"
 #include "../Savegame/SavedGame.h"
 #include "../Savegame/SavedBattleGame.h"
@@ -117,6 +118,7 @@ Game::Game(const std::string &title) : _screen(0), _cursor(0), _lang(0), _save(0
 
 	// Create fps counter
 	_fpsCounter = new FpsCounter(15, 5, 0, 0);
+	_updateNotice = new HdUpdateNotice(this);
 
 	// Create blank language
 	_lang = new Language();
@@ -145,6 +147,7 @@ Game::~Game()
 	delete _mod;
 	delete _screen;
 	delete _fpsCounter;
+	delete _updateNotice;
 
 	Mix_CloseAudio();
 
@@ -405,6 +408,7 @@ void Game::run()
 			hdLogThink1 = std::chrono::steady_clock::now();
 			hdThinkMs = SDL_GetTicks() - hdThinkStart;
 			_fpsCounter->think();
+			_updateNotice->think();
 			if (Options::FPS > 0 && !(Options::useOpenGL && Options::vSyncForOpenGL))
 			{
 				// Update our FPS delay time based on the time of the last draw.
@@ -665,6 +669,7 @@ void Game::run()
 					hdDumped = true;
 				}
 				_fpsCounter->blit(_screen->getSurface());
+				_updateNotice->blit(_screen->getSurface());
 				_cursor->blit(_screen->getSurface());
 				const Uint32 hdFlipStart = SDL_GetTicks();
 				hdLogDraw1 = std::chrono::steady_clock::now();

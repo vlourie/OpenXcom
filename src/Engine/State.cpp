@@ -37,6 +37,7 @@
 #include "../Interface/ComboBox.h"
 #include "../Interface/Cursor.h"
 #include "../Interface/FpsCounter.h"
+#include "HdUpdateNotice.h"
 #include "../Savegame/SavedBattleGame.h"
 #include "../Mod/RuleInterface.h"
 
@@ -310,6 +311,8 @@ void State::init()
 	_game->getFpsCounter()->setPalette(_palette);
 	_game->getFpsCounter()->setColor(_cursorColor);
 	_game->getFpsCounter()->draw();
+	_game->getUpdateNotice()->setPalette(_palette);
+	_game->getUpdateNotice()->setColor(_cursorColor);
 
 	// Highest priority: custom sound set explicitly in the code
 	// Medium priority: sound defined by the interface ruleset
@@ -613,6 +616,7 @@ void State::setModPalette()
 		_game->getCursor()->draw();
 		_game->getFpsCounter()->setPalette(_palette);
 		_game->getFpsCounter()->draw();
+		_game->getUpdateNotice()->setPalette(_palette);
 	}
 }
 

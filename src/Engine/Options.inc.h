@@ -233,6 +233,8 @@ OPT bool oxceHdPathDigits;
 // HD interface: the path numbers in battle (oxceHdPathDigits on), in percent of the usual: size and stroke weight; 100 = as it was
 OPT int oxceHdPathNumSize, oxceHdPathNumWeight;
 OPT bool oxceHdPanelHide;
+// HD interface: the plate "a new update is available" in the top left corner while the launcher has written launcher/update.txt (Engine/HdUpdateNotice.h)
+OPT bool oxceHdUpdateNotice;
 // HD interface, modern skin: the colours of the battle's button panel (Engine/HdBattleHud.cpp). 0 = dark slate (default), 1 = gold, as the original panel
 OPT int oxceHdBattleHudColor;
 // Battlescape: a unit hanging in the air or in the water with no floor below sways in place (Map::hoverBob); off = the classic still frame
