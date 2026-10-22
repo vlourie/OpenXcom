@@ -1451,7 +1451,7 @@ void AIModule::reachableWithAttack(const BattleActionCost &cost)
 	// the same budget as findReachable's own
 	_reachableTuMax = _unit->getTimeUnits() - cost.Time;
 	_reachableEnergyMax = _unit->getEnergy() - cost.Energy;
-	if (AiProbe::bestCell() & AiProbe::BC_REACHCOST)
+	if (bestCellBits() & AiProbe::BC_REACHCOST)
 	{
 		// BEST_CELL REACHCOST (bench): the cost to each tile now, before any other search resets the nodes reachedTU reads
 		_reachCost.assign(_save->getMapSizeXYZ(), -1);
@@ -2213,9 +2213,9 @@ void AIModule::setupAmbush()
 		const auto cellT0 = cellProf ? std::chrono::steady_clock::now() : std::chrono::steady_clock::time_point();
 		// BEST_CELL (bench): LEVELS - the nodes one level below and above too; AMB_BEST - every node of the window, an equal
 		// score taken by chance (reservoir over the ties); REACHCOST - a node that cannot beat the best skips both searches
-		const int bestCellBits = AiProbe::bestCell();
-		const bool ambLevels = (bestCellBits & AiProbe::BC_LEVELS) != 0;
-		const bool ambBest = (bestCellBits & AiProbe::BC_AMB_BEST) != 0;
+		const int cellBits = bestCellBits();
+		const bool ambLevels = (cellBits & AiProbe::BC_LEVELS) != 0;
+		const bool ambBest = (cellBits & AiProbe::BC_AMB_BEST) != 0;
 		int ambTies = 0;
 
 		// we'll use node positions for this, as it gives map makers a good degree of control over how the units will use the environment.
@@ -2630,7 +2630,7 @@ void AIModule::setupEscape()
 	const auto cellT0 = cellProf ? std::chrono::steady_clock::now() : std::chrono::steady_clock::time_point();
 	// BEST_CELL ESC_BEST (bench): the stay try and the whole window are scored with no quit over the threshold; the random
 	// run (tries 121 and on) only while nothing passed it, and it quits on the first that does, as before
-	const bool escBest = (AiProbe::bestCell() & AiProbe::BC_ESC_BEST) != 0;
+	const bool escBest = (bestCellBits() & AiProbe::BC_ESC_BEST) != 0;
 
 	while (tries < 150 && !coverFound)
 	{
@@ -4113,8 +4113,8 @@ bool AIModule::findFirePoint()
 	std::vector<Position> randomTileSearch = _save->getTileSearch(); // copy!
 	// BEST_CELL (bench): LEVELS - the window on the levels below and above too; FP_BEST - no quit on the threshold;
 	// REACHCOST - the score from findReachable's cost, the A* only for a cell that would become the best
-	const int bestCellBits = AiProbe::bestCell();
-	if (bestCellBits & AiProbe::BC_LEVELS)
+	const int cellBits = bestCellBits();
+	if (cellBits & AiProbe::BC_LEVELS)
 	{
 		const size_t flat = randomTileSearch.size();
 		for (int dz : { -1, 1 })
@@ -4125,7 +4125,7 @@ bool AIModule::findFirePoint()
 			}
 		}
 	}
-	const bool fpBest = (bestCellBits & AiProbe::BC_FP_BEST) != 0;
+	const bool fpBest = (cellBits & AiProbe::BC_FP_BEST) != 0;
 	RNG::shuffle(randomTileSearch);
 	Position target;
 	const int BASE_SYSTEMATIC_SUCCESS = 100;
@@ -4356,10 +4356,22 @@ int AIModule::firePointTerms(const Position &pos, int tuCost, bool meleeApproach
  */
 int AIModule::reachCostAt(const Position &pos) const
 {
-	if (!(AiProbe::bestCell() & AiProbe::BC_REACHCOST) || _reachCost.empty())
+	if (!(bestCellBits() & AiProbe::BC_REACHCOST) || _reachCost.empty())
 		return -1;
 	const int index = _save->getTileIndex(pos);
 	return index >= 0 && index < (int)_reachCost.size() ? _reachCost[index] : -1;
+}
+
+/**
+ * BEST_CELL (bench): the bits for this unit - with BC_HOSTILE only the hostile side's searches change.
+ * @return AiProbe::bestCell, or 0 for a non-hostile unit under BC_HOSTILE.
+ */
+int AIModule::bestCellBits() const
+{
+	const int bits = AiProbe::bestCell();
+	if ((bits & AiProbe::BC_HOSTILE) && _unit->getFaction() != FACTION_HOSTILE)
+		return 0;
+	return bits;
 }
 
 /**

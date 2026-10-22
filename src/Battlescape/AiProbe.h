@@ -135,6 +135,7 @@ enum BestCellBits
 	BC_REACHCOST = 4,  ///< the walk cost from findReachable's table; A* only for a cell that may become the best
 	BC_AMB_BEST = 8,   ///< setupAmbush: every node of the window, equal scores by chance
 	BC_ESC_BEST = 16,  ///< setupEscape: the whole window with no early quit over 100; the random run only if none passed
+	BC_HOSTILE = 32,   ///< the bits above for the hostile side only; the player's and the neutral units search as in OXCE
 };
 int bestCell();
 /// The best-cell audit (OXCE_AI_CELLPROF, docs/research/ai-mechanics/FIRST-GOOD-ENOUGH-2026-10-22.md): how long the fire

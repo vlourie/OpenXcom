@@ -2389,7 +2389,7 @@ void ambushMemoNode(const Position &pos, bool skipped, bool ok, int own, int sco
 
 int bestCell()
 {
-	static const int bits = active() ? (int)param("OXCE_AI_BEST_CELL", 0) & 31 : 0;
+	static const int bits = active() ? (int)param("OXCE_AI_BEST_CELL", 0) & 63 : 0;
 	return bits;
 }
 

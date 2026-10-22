@@ -333,6 +333,8 @@ public:
 	int firePointTerms(const Position &pos, int tuCost, bool meleeApproach) const;
 	/// The walk cost to pos from _reachCost (BEST_CELL REACHCOST), -1 if it is off or the tile is not reached.
 	int reachCostAt(const Position &pos) const;
+	/// AiProbe::bestCell for this unit: 0 for a non-hostile unit when BC_HOSTILE is set.
+	int bestCellBits() const;
 	/// findFirePoint's score of one cell on the audit's pathfinder (INT_MIN - the loop would skip it), the same terms as the loop.
 	int firePointScoreAt(Pathfinding *pf, const Position &pos, const CellCtx &c) const;
 	/// setupAmbush's score of one node the same way (INT_MIN - seen, or no path for the unit or the enemy).
