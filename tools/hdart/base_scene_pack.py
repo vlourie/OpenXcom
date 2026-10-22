@@ -218,12 +218,19 @@ EMITS["STR_ONSEN"] = [("steam", .12, .20, .67, .85, .95, .95, 1.0)]
 EMITS["STR_SUMMONING_CIRCLE"] = [("orbit", .16, .16, .84, .84, 1.0, .35, .50)]
 for _t, _l in MORE.items():
     EMITS.setdefault(_t, []).extend(e for e in _l if e[0] in VIDEO_KINDS)
+# Тикет XP-000235 (22.10): молнии между трансформаторами электростанции и между угловыми разрядниками
+# хеллериевой - от точки u0 v0 до u1 v1. Воде онсэна и спа кругов ряби не даём: Vitali 22.10 - «не рябь, а еле
+# видные волны», они уже есть (WATER ниже, смещение в HdBaseScene::drawMotion)
+ARC = (.65, .82, 1.0)
+EMITS["STR_POWER_PLANT"].append(_e("arc", (.185, .165, .72, .165), ARC))
+EMITS["STR_HELLERIUM_PLANT"].append(_e("arc", (.098, .093, .86, .093), (.75, 1.0, .55)))
 
 # Вода: оттенок на картинке и цвет бликов (HdBaseScene::bake ищет её по оттенку внутри стен; лист motion_sheet.png)
 WATER = {t: ("blue", (.75, 1.0, 1.0)) for t in (
     "STR_ONSEN", "STR_LUXURY_SPA", "STR_HOTEL", "STR_LIVING_QUARTERS_ADVANCED_LARGE",
     "STR_LIVING_QUARTERS_ADVANCED_LARGE_DAMAGED", "STR_ALENIUM_CHAMBER")}
-WATER.update({t: ("green", (.8, 1.0, .4)) for t in ("STR_HELLERIUM_PLANT", "STR_WELL", "STR_SLUDGE_VATS")})
+# хеллерий - без волн, хватает пузырей (тикет XP-000235)
+WATER.update({t: ("green", (.8, 1.0, .4)) for t in ("STR_WELL", "STR_SLUDGE_VATS")})
 # Вращение: центр u v и радиус в долях ширины постройки; ("spin", оборотов в с) или ("swing", градусов, период с).
 # Только где тарелка или турель целиком в круге (motion_sheet.png): иначе круг режет ствол.
 # Поворачивается круг картинки целиком (HdBaseScene::drawMotion), поэтому только там, где в круге одна тарелка
@@ -231,10 +238,20 @@ WATER.update({t: ("green", (.8, 1.0, .4)) for t in ("STR_HELLERIUM_PLANT", "STR_
 # и лапы у них доходят до внутренних углов креста - малый круг оставляет концы стволов на месте, большой крутит
 # стены. Им нужен отдельный слой турели. Малый локатор - только тарелка с мачтой, без кабелей и ящиков вокруг
 SPIN = {
-    "STR_SMALL_RADAR_SYSTEM": (.5, .5, .18, "spin", .18),
+    # тикет XP-000236: только тарелка качается на креплении к мачте (слой base_spin_layer.py: ось 70 51, деталь
+    # до 12.8 px), мачта и пол стоят
+    "STR_SMALL_RADAR_SYSTEM": (70 / 128, 51 / 128, 14 / 128, "swing", 32, 6.0),
     "STR_LARGE_RADAR_SYSTEM": (.5, .5, .34, "spin", .12),
     "STR_SAM_DEFENSES": (.5, .5, .2, "swing", 30, 9.0),
+    # 22.10 (Vitali: «остальные 2 принимаю»): ствол лазерной и рельсовой качается отдельным слоем
+    # (base_turret_split.py: ось - центр шара, размах и середина - до стен креста с запасом 2°, angles.json);
+    # 7-е число - середина качания, градусы по часовой
+    "STR_LASER_DEFENSES": (64.5 / 128, 65.5 / 128, 43.4 / 128, "swing", 19.5, 8.0, -3.5),
+    "STR_GAUSS_DEFENSES": (64.0 / 128, 66.25 / 128, 45.7 / 128, "swing", 9.75, 8.0, -9.75),
 }
+# Плазменная не качается: шар - дуло, заряд стягивается в его центр и бьёт синий пучок вверх до края клетки
+# (Vitali 22.10 «пучок синего света», проба plasma_beam_preview.py - «супер»); emit beam - шар в (u1, v1)
+EMITS.setdefault("STR_PLASMA_DEFENSES", []).append(("beam", .5, 0.0, .5, 250 / 512, .35, .65, 1.0))
 # Огни ролика, которых детектор на рисунке не видит (base_scene_preview.py LIGHTS по SPECIAL): u v в долях постройки,
 # вид, цвет, радиус в клетках, период, число огней в кольце (chase). Кольцо ангара - вокруг посадочного круга.
 VIDEO_LIGHTS = {
@@ -397,7 +414,10 @@ def extra_lines(t, cols, rows, img=None):
         if how == "spin":
             out.setdefault(key, []).append("spin %.1f %.1f %.1f %.3f" % (x, y, rad * W, SPIN[t][4]))
         else:
-            out.setdefault(key, []).append("swing %.1f %.1f %.1f %.1f %.2f" % (x, y, rad * W, SPIN[t][4], SPIN[t][5]))
+            line = "swing %.1f %.1f %.1f %.1f %.2f" % (x, y, rad * W, SPIN[t][4], SPIN[t][5])
+            if len(SPIN[t]) > 6:
+                line += " %.2f" % SPIN[t][6]
+            out.setdefault(key, []).append(line)
     return out
 
 
@@ -414,6 +434,14 @@ def build(t, rule, sprites, out, cover=0.0, most=0, art=ART):
         return []
     big = np.asarray(Image.open(master).convert("RGBA"))
     found = base_lights.lights(big, fac.cols, fac.rows)
+    piece = os.path.join(art, t + ".spin.png")
+    if t in SPIN and os.path.exists(piece):
+        # огонь на качающейся детали (полосы ствола) стоял бы на месте, а деталь уходит - снять; у оси - оставить
+        pa = np.asarray(Image.open(piece).convert("RGBA"))[..., 3]
+        H, W = pa.shape
+        px, py = SPIN[t][0] * W, SPIN[t][1] * H
+        found = [f for f in found if not (pa[min(H - 1, int(f[1] * H)), min(W - 1, int(f[0] * W))] > 128
+                                          and math.hypot(f[0] * W - px, f[1] * H - py) > 6)]
     walk = walk_mask(big, fac.cols, fac.rows)
     gate = gate_of(rule)
     per_tile = {}
@@ -439,6 +467,13 @@ def build(t, rule, sprites, out, cover=0.0, most=0, art=ART):
             n = fac.indices[num]
             tile = im[cy * TILE:(cy + 1) * TILE, cx * TILE:(cx + 1) * TILE]
             Image.fromarray(tile, "RGBA").save(os.path.join(dest, "%d.png" % n), optimize=True)
+            # слой поворота (base_spin_layer.py): деталь и картинка без неё - HdBase::layer
+            for part in ("under", "spin"):
+                lp = os.path.join(art, "%s.%s.png" % (t, part))
+                if os.path.exists(lp):
+                    la = np.asarray(Image.open(lp).convert("RGBA"))[cy * TILE:(cy + 1) * TILE, cx * TILE:(cx + 1) * TILE]
+                    Image.fromarray(la, "RGBA").save(os.path.join(dest, "%d.%s.png" % (n, part)), optimize=True)
+                    written.append("BASEBITS.PCK/%d.%s.png" % (n, part))
             here = per_tile.get((cx, cy), [])
             # 16 построек ролика - все огни рисунка, как в нём (lights_of); бюджет - остальным
             if most and t not in PILOT:

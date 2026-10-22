@@ -4197,6 +4197,26 @@ void Map::setSelectorPosition(int mx, int my)
 	}
 	_camera->convertScreenToMap(mx, my + _spriteHeight/4, &_selectorX, &_selectorY);
 
+	// the aim sticks (ticket XP-000226): a tiny move of the mouse just over a tile's edge keeps the old tile,
+	// it changes only once the mouse is STICK base pixels inside the new one
+	if (oldX != _selectorX || oldY != _selectorY)
+	{
+		const int STICK = 2;
+		const int d = STICK * _k;
+		const int around[4][2] = { { d, 0 }, { -d, 0 }, { 0, d }, { 0, -d } };
+		for (const auto &a : around)
+		{
+			int x, y;
+			_camera->convertScreenToMap(mx + a[0], my + a[1] + _spriteHeight/4, &x, &y);
+			if (x == oldX && y == oldY)
+			{
+				_selectorX = oldX;
+				_selectorY = oldY;
+				break;
+			}
+		}
+	}
+
 	if (oldX != _selectorX || oldY != _selectorY)
 	{
 		_redraw = true;

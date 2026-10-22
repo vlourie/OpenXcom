@@ -36,6 +36,7 @@
 #include "../Interface/Text.h"
 #include "../Interface/TextButton.h"
 #include "../Engine/Action.h"
+#include "../Engine/HdScreens.h"
 #include "../Savegame/BattleUnit.h"
 #include "../Savegame/Node.h"
 #include "../Savegame/SavedBattleGame.h"
@@ -66,6 +67,9 @@ NextTurnState::NextTurnState(SavedBattleGame *battleGame, BattlescapeState *stat
 		// skip everything, go straight to init()
 		return;
 	}
+
+	// the HD picture of the turn and hidden movement screens: another one each turn (ticket XP-000234)
+	HdScreens::nextVariant("hiddenMovement");
 
 	// set random hidden movement/next turn background for this turn
 	if (_battleGame->getSide() == FACTION_PLAYER)

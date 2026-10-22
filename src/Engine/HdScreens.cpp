@@ -20,6 +20,7 @@
 #include <algorithm>
 #include <cmath>
 #include <list>
+#include <random>
 #include <sstream>
 #include <unordered_map>
 #include <vector>
@@ -45,7 +46,10 @@ const char *const FOLDER = "UI/screens";
 
 /// The themes: the picture's path (artPath) by interface id.
 std::vector<std::string> pictures;
-std::unordered_map<std::string, int> themeOf;
+std::unordered_map<std::string, int> themeOf;   ///< the line of screens.txt (index of `lines`) by interface id
+/// The pictures of each line: one, or several the screens change between (nextVariant), and the one shown now.
+std::vector<std::vector<int>> lines;
+std::vector<size_t> shown;
 /// The pictures that could not be read (not tried again).
 std::vector<bool> failed;
 
@@ -311,6 +315,8 @@ void load()
 {
 	pictures.clear();
 	themeOf.clear();
+	lines.clear();
+	shown.clear();
 	failed.clear();
 	clearCaches();
 	const std::string list = HdSprites::artPath(std::string(FOLDER) + "/screens.txt");
@@ -341,19 +347,27 @@ void load()
 		if (eq == std::string::npos) continue;
 		std::istringstream left(line.substr(0, eq)), right(line.substr(eq + 1));
 		std::string file, name;
-		if (!(left >> file)) continue;
-		// the BOM a UTF-8 editor puts in front of the first line
-		if (file.size() >= 3 && (unsigned char)file[0] == 0xEF && (unsigned char)file[1] == 0xBB && (unsigned char)file[2] == 0xBF) file.erase(0, 3);
-		const std::string path = HdSprites::artPath(std::string(FOLDER) + "/" + file);
-		int width, height;
-		if (!HdSprites::pngSize(path, width, height))
+		// several pictures on the left (hidden.png hidden_jungle.png ... = ...): the screens change between them
+		std::vector<int> group;
+		while (left >> file)
 		{
-			Log(LOG_WARNING) << "HD screens: " << path << " is not a PNG";
-			continue;
+			// the BOM a UTF-8 editor puts in front of the first line
+			if (file.size() >= 3 && (unsigned char)file[0] == 0xEF && (unsigned char)file[1] == 0xBB && (unsigned char)file[2] == 0xBF) file.erase(0, 3);
+			const std::string path = HdSprites::artPath(std::string(FOLDER) + "/" + file);
+			int width, height;
+			if (!HdSprites::pngSize(path, width, height))
+			{
+				Log(LOG_WARNING) << "HD screens: " << path << " is not a PNG";
+				continue;
+			}
+			group.push_back((int)pictures.size());
+			pictures.push_back(path);
+			failed.push_back(false);
 		}
-		const int theme = (int)pictures.size();
-		pictures.push_back(path);
-		failed.push_back(false);
+		if (group.empty()) continue;
+		const int theme = (int)lines.size();
+		lines.push_back(group);
+		shown.push_back(0);
 		while (right >> name)
 		{
 			themeOf[name] = theme;
@@ -371,6 +385,20 @@ bool has(const std::string &interfaceName)
 	return Options::oxceHdPictures && !interfaceName.empty() && themeOf.find(interfaceName) != themeOf.end();
 }
 
+void nextVariant(const std::string &interfaceName)
+{
+	auto it = themeOf.find(interfaceName);
+	if (it == themeOf.end() || lines[it->second].size() < 2)
+	{
+		return;
+	}
+	// not the game's RNG: which picture shows must not touch the battle's random numbers
+	static std::minstd_rand pick(SDL_GetTicks() + 1);
+	const size_t n = lines[it->second].size();
+	size_t &now = shown[it->second];
+	now = (now + 1 + pick() % (n - 1)) % n;     // any other picture of the line, never the same twice in a row
+}
+
 bool metalFrames()
 {
 	return Options::oxceHdPictures && !pictures.empty() && HdUi::skin();
@@ -383,7 +411,8 @@ bool drawBackdrop(const void *owner, const std::string &interfaceName, int x, in
 	{
 		return false;
 	}
-	Prepared *p = const_cast<Prepared*>(prepare(themeOf[interfaceName], w * k, h * k, k));
+	const int line = themeOf[interfaceName];
+	Prepared *p = const_cast<Prepared*>(prepare(lines[line][shown[line] % lines[line].size()], w * k, h * k, k));
 	if (!p)
 	{
 		return false;

@@ -45,6 +45,10 @@ private:
 
 	std::map<std::string, int> _randomProductionInfo;
 	std::vector<std::string> _index;
+	std::map<std::string, int> _soldOneByOne; ///< sold with the arrows in this window: what the right arrow may take back
+
+	/// Sells one of the selected row's items (change -1) or takes back one sold here (change +1).
+	void changeOne(int change);
 
 	TextButton *_btnOk, *_btnGotoBase, *_btnSummary, *_btnKeepWorking;
 	Window *_window;
@@ -66,6 +70,10 @@ public:
 	void btnSummaryClick(Action *action);
 	/// Handler for clicking the Summary list.
 	void lstSummaryClick(Action *action);
+	/// Handler for the left arrow of the Summary list: one less kept - sells one.
+	void lstSummaryLeftArrowClick(Action *action);
+	/// Handler for the right arrow of the Summary list: one more kept - takes back one sold here.
+	void lstSummaryRightArrowClick(Action *action);
 	/// Handler for clicking the Keep Working button.
 	void btnKeepWorkingClick(Action *action);
 };
