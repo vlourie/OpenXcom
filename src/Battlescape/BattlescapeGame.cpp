@@ -20,6 +20,7 @@
 #include "BattlescapeGame.h"
 #include "BattlescapeState.h"
 #include "AiProbe.h"
+#include "AiCoverMap.h"
 #include "CollapsePilot.h"
 #include "Map.h"
 #include "Camera.h"
@@ -384,6 +385,9 @@ void BattlescapeGame::handleAI(BattleUnit *unit)
 	std::ostringstream ss;
 
 	AiProbe::passStartNote(_save, unit); // P0-D: the first unit of a side's turn - where its traversal began
+#ifdef OXCE_AI_DEV
+	AiCoverMap::update(_save); // the enemy's cover map (OXCE_AI_COVERMAP): built on the first decision, refreshed after
+#endif
 	if (unit->getTimeUnits() <= 5)
 	{
 		unit->dontReselect();

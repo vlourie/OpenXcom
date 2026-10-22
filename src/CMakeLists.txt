@@ -79,6 +79,7 @@ set ( battlescape_src
   Battlescape/ActionMenuState.cpp
   Battlescape/AIModule.cpp
   Battlescape/AiCandidates.cpp
+  Battlescape/AiCoverMap.cpp
   Battlescape/AiProbe.cpp
   Battlescape/AlienInventory.cpp
   Battlescape/AlienInventoryState.cpp
