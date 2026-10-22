@@ -19,6 +19,7 @@
  */
 #include <string>
 #include <vector>
+#include "HdBaseScene.h"
 #include "HdSprites.h"
 
 namespace OpenXcom
@@ -70,6 +71,11 @@ namespace HdBase
 	void preload(const std::vector<Want> &want, int scale, bool allPhases);
 	/// Has the pack animated tiles (a loop or a burst)?
 	bool animated();
+	/// The light of a tile (`<frame index>.scene.txt`, see HdBaseScene), or nullptr. Such a tile
+	/// shows its still picture only: the light over it is its animation.
+	const HdBaseScene::TileScene *scene(int index);
+	/// Has the pack lit tiles?
+	bool scenes();
 	/// Forgets everything (mod reload). `masterOffset` is where the game puts the master mod's
 	/// frames (ModData::offset of the master): the files are named in the master's own numbering.
 	void clear(int masterOffset);

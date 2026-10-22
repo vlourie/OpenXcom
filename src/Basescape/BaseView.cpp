@@ -38,6 +38,7 @@
 #include "../Engine/HdUi.h"
 #include "../Engine/HdUiArt.h"
 #include "../Engine/Screen.h"
+#include "../Savegame/GameTime.h"
 
 namespace
 {
@@ -47,6 +48,14 @@ bool hdBaseActive()
 {
 	OpenXcom::Screen *screen = OpenXcom::Screen::current();
 	return OpenXcom::Options::oxceHdPictures && screen && screen->isLayered() && screen->getWorldScale() >= 2;
+}
+
+/// The living base (HdBaseScene): the pack lights its pictures, so the whole view - the rock of every
+/// cell too - lies in the world layer under that light. Comes with the HD pictures (read once per run).
+bool hdScenes()
+{
+	static const bool pictures = OpenXcom::Options::oxceHdBaseAnim;
+	return pictures && hdBaseActive() && OpenXcom::HdBase::scenes();
 }
 
 /// A classic BASEBITS frame k times bigger (xBRZ, or nearest with the nearest HD interface), made once.
@@ -615,6 +624,24 @@ void BaseView::drawHd()
 	// the pictures run on the display clock, never the game's: a still picture, a loop, a burst now and then
 	const Uint32 now = SDL_GetTicks();
 	Uint32 next = 0xFFFFFFFFu;
+	// the living base: the rock of the cells without an HD picture is lit with the rest (see draw)
+	const bool lit = hdScenes();
+	if (lit)
+	{
+		if (const HdFrame *ground = classicHd(_texture, rock, k, getPalette()))
+		{
+			for (int x = 0; x < BASE_SIZE; ++x)
+			{
+				for (int y = 0; y < BASE_SIZE; ++y)
+				{
+					if (!isHdFacility(_facilities[x][y]))
+					{
+						HdUiArt::drawFrame(world, *ground, (getX() + x * GRID_SIZE) * k, (getY() + y * GRID_SIZE) * k);
+					}
+				}
+			}
+		}
+	}
 	for (const auto* fac : *_base->getFacilities())
 	{
 		if (!isHdFacility(fac))
@@ -664,6 +691,68 @@ void BaseView::drawHd()
 		}
 	}
 	_hdNextChange = next;
+	if (lit)
+	{
+		drawHdScene(world, k, now);
+	}
+}
+
+/**
+ * The living base's light over everything drawHd has put into the world layer: the night of the
+ * base's longitude and the lamps of the lit pictures (HdBaseScene). It only reads the game: the
+ * clock, and whether the base researches and builds - a lab's screens dim when nobody works there.
+ */
+void BaseView::drawHdScene(SDL_Surface *world, int k, Uint32 now)
+{
+	const float night = _hdTime
+		? HdBaseScene::nightAt(_base->getLongitude(), _hdTime->getHour(), _hdTime->getMinute(), _hdTime->getSecond())
+		: 0.0f;
+	const float labs = _base->getUsedLaboratories() > 0 ? 1.0f : 0.25f;
+	const float works = _base->getUsedWorkshops() > 0 ? 1.0f : 0.25f;
+	std::vector<HdBaseScene::Placed> lights;
+	for (const auto* fac : *_base->getFacilities())
+	{
+		if (!isHdFacility(fac))
+		{
+			continue;
+		}
+		int num = 0;
+		for (int y = fac->getY(); y < fac->getY() + fac->getRules()->getSizeY(); ++y)
+		{
+			for (int x = fac->getX(); x < fac->getX() + fac->getRules()->getSizeX(); ++x)
+			{
+				const HdBaseScene::TileScene *scene = HdBase::scene(hdTileIndex(fac, num));
+				++num;
+				if (!scene)
+				{
+					continue;
+				}
+				const float s = (float)(GRID_SIZE * k) / scene->width;
+				const float ox = (float)((getX() + x * GRID_SIZE) * k), oy = (float)((getY() + y * GRID_SIZE) * k);
+				float level = scene->gate == HdBaseScene::GATE_LAB ? labs : scene->gate == HdBaseScene::GATE_WORK ? works : 1.0f;
+				if (fac->getDisabled())
+				{
+					level = 0.1f;
+				}
+				Uint32 seed = (Uint32)(x * 7 + y * 31 + 1) * 2654435761u;
+				for (const HdBaseScene::Light &light : scene->lights)
+				{
+					HdBaseScene::Placed p;
+					p.light = light;
+					p.light.x = ox + light.x * s;
+					p.light.y = oy + light.y * s;
+					p.light.radius = light.radius * s;
+					p.scale = s;
+					p.level = level;
+					p.home = scene->gate == HdBaseScene::GATE_HOME;
+					p.seed = (seed = seed * 1103515245u + 12345u) >> 8;
+					lights.push_back(p);
+				}
+			}
+		}
+	}
+	const SDL_Rect area = { (Sint16)(getX() * k), (Sint16)(getY() * k), (Uint16)(getWidth() * k), (Uint16)(getHeight() * k) };
+	HdBaseScene::draw(world, area, lights, night, now);
 }
 
 /**
@@ -771,12 +860,14 @@ void BaseView::draw()
 	_hdNumbers.clear();
 	_hdNumbersKept = hdNumbers();
 
-	// Draw grid squares (under an HD facility the rock goes to the world layer with it, see drawHd)
+	// Draw grid squares (under an HD facility the rock goes to the world layer with it, and all of it
+	// with the living base's light, see drawHd)
+	const bool lit = hdTiles && hdScenes();
 	for (int x = 0; x < BASE_SIZE; ++x)
 	{
 		for (int y = 0; y < BASE_SIZE; ++y)
 		{
-			if (hdTiles && isHdFacility(_facilities[x][y]))
+			if (lit || (hdTiles && isHdFacility(_facilities[x][y])))
 			{
 				continue;
 			}

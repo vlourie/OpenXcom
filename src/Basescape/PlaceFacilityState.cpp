@@ -92,6 +92,7 @@ PlaceFacilityState::PlaceFacilityState(Base *base, const RuleBaseFacility *rule,
 	}
 	_view->setTexture(_game->getMod()->getSurfaceSet("BASEBITS.PCK"));
 	_view->setBase(_base);
+	_view->setHdTime(_game->getSavedGame()->getTime());
 	_view->setSelectable(rule->getSizeX(), rule->getSizeY());
 	_view->onMouseClick((ActionHandler)&PlaceFacilityState::viewClick);
 
