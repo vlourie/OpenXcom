@@ -159,6 +159,10 @@ struct CellStat
 	// and what the centre line from the unit's own cell to the target meets first (VoxelType: -1 nothing, 0 floor, 1/2 wall,
 	// 3 object, 4 another unit, 5 off the map; 6 - the target itself), the armor of that part and its distance in tiles
 	int dist = -1, dz = 0, seen = -1, blk = -2, blkArmor = -1, blkDist = -1;
+	// ...and whether the snap shot of the weapon in hand could break it: the power at blkDist, the tile damage method,
+	// ToTile x100, the explosion radius, the top tile damage of one hit (TileEngine::hit / detonate with the roll at the
+	// top, no roll made; damage does not add up - Tile::damage) and whether the unit carries a grenade
+	int power = -1, method = 0, toTile = -1, rad = 0, maxTile = -1, gren = 0;
 };
 /// A pathfinder of the audit's own for the shadow search: the game's one keeps the state the real search left in it.
 /// Null when the audit is off.
