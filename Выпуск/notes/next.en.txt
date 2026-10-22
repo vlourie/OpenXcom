@@ -1,0 +1,2 @@
+- Interface (HD): the HD options are laid out in six tabs - Graphics, Battle, Interface, Globe and base, AI and rules, Speed; inside each tab the options are grouped by topic (battle graphics, aim and battle panel, globe, base and crafts). The open tab is remembered until the game is closed.
+- Interface (HD): when the launcher sees a new release, a small "Update available" plate with the release number shows in the top left corner of the game; it goes once the update is installed. It can be turned off in the HD options, Interface tab (on by default).

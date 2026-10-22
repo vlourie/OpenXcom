@@ -187,6 +187,7 @@ set ( engine_src
   Engine/HdWorkers.cpp
   Engine/HdTurn.cpp
   Engine/HdTurnGroups.cpp
+  Engine/HdUpdateNotice.cpp
   Engine/InteractiveSurface.cpp
   Engine/Language.cpp
   Engine/LanguagePlurality.cpp

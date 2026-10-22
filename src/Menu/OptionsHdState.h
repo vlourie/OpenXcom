@@ -25,12 +25,13 @@ namespace OpenXcom
 {
 
 class TextList;
+class TextButton;
 
 /**
- * The HD tab of the options: every setting of the HD layer in one place, grouped
- * (art version, battlescape, interface, speed). The settings are the options whose
- * category starts with STR_HD_ (Options.cpp); the art version is one row over two
- * options, oxceHdMode and oxceAdultArt. See docs/HD_MENU.md.
+ * The HD tab of the options: every setting of the HD layer in one place, in six tabs
+ * (graphics, battle, interface, geoscape and base, AI and rules, speed), grouped inside
+ * each. The settings are the options whose category starts with STR_HD_ (Options.cpp);
+ * the art version is one row over two options, oxceHdMode and oxceAdultArt. See docs/HD_MENU.md.
  */
 class OptionsHdState : public OptionsBaseState
 {
@@ -39,6 +40,8 @@ private:
 	{
 		std::string title;
 		std::vector<OptionInfo> settings;
+		/// The tab the group is on.
+		int tab;
 	};
 	/// What a row of the list is: a header or a blank (-1), the art version (-2) or a setting.
 	struct Row
@@ -46,6 +49,9 @@ private:
 		int group, index;
 	};
 	TextList *_lstOptions;
+	/// The tabs over the list and the one pressed (TextButton::setGroup moves it).
+	std::vector<TextButton*> _btnTabs;
+	TextButton *_tab;
 	std::vector<Group> _groups;
 	std::vector<Row> _rows;
 	Uint8 _colorGroup, _greyedOutColor;
@@ -58,6 +64,8 @@ private:
 	/// The AI group's index in _groups (-1: none); the main list leaves it out.
 	int _aiGroup;
 
+	/// The index of the tab pressed last.
+	int currentTab() const;
 	/// Is this setting grey under the BetterAI switch (an AI row while the switch is off)?
 	bool aiLocks(const OptionInfo &info) const;
 
@@ -82,6 +90,8 @@ public:
 	void init() override;
 	/// Fills the settings list.
 	void updateList();
+	/// Handler for pressing a tab.
+	void btnTabPress(Action *action);
 	/// Handler for clicking a setting on the list.
 	void lstOptionsClick(Action *action);
 	/// Handler for moving the mouse over a setting.

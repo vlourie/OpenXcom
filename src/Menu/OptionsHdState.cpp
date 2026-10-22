@@ -41,8 +41,19 @@
 namespace OpenXcom
 {
 
-/// The categories of Options.cpp shown here, in this order; the first one also holds the art version row.
-static const char *const HD_CATEGORIES[] = { "STR_HD_ART", "STR_HD_GENTLE", "STR_HD_BATTLE", "STR_HD_PHYSICS", "STR_HD_AI", "STR_HD_CHALLENGE", "STR_HD_INTERFACE", "STR_HD_SPEED", "STR_HD_LAB" };
+/// The tabs over the list, three in a row: graphics, battle, interface, geoscape and base, AI and rules, speed.
+static const char *const HD_TABS[] = { "STR_HD_TAB_GRAPHICS", "STR_HD_TAB_BATTLE", "STR_HD_TAB_INTERFACE", "STR_HD_TAB_WORLD", "STR_HD_TAB_AI", "STR_HD_TAB_SPEED" };
+static const int HD_TAB_COUNT = sizeof(HD_TABS) / sizeof(HD_TABS[0]);
+/// The categories of Options.cpp shown here, in this order, and the tab of each; the first one also holds the art version row.
+static const struct { const char *category; int tab; } HD_CATEGORIES[] = {
+	{ "STR_HD_ART", 0 }, { "STR_HD_GENTLE", 0 }, { "STR_HD_GRAPHICS", 0 },
+	{ "STR_HD_BATTLE", 1 }, { "STR_HD_BATTLE_UI", 1 }, { "STR_HD_PHYSICS", 1 },
+	{ "STR_HD_INTERFACE", 2 },
+	{ "STR_HD_GEOSCAPE", 3 }, { "STR_HD_BASE", 3 },
+	{ "STR_HD_AI", 4 }, { "STR_HD_CHALLENGE", 4 },
+	{ "STR_HD_SPEED", 5 }, { "STR_HD_LAB", 5 } };
+/// The tab open last: the window opens on it again, until the game is closed.
+static int hdTab = 0;
 /// The category of the HD lab (Engine/HdLab.h): its rows show only once the password was given.
 static const std::string LAB_CATEGORY = "STR_HD_LAB";
 /// The category of BetterAI (Battlescape/AiProbe.h): its rows are on the BetterAI screen, not in the main list.
@@ -59,8 +70,17 @@ OptionsHdState::OptionsHdState(OptionsOrigin origin) : OptionsBaseState(origin),
 {
 	setCategory(_btnHd);
 
-	_lstOptions = new TextList(200, 136, 94, 8);
+	for (int t = 0; t < HD_TAB_COUNT; ++t)
+	{
+		_btnTabs.push_back(new TextButton(64, 12, 94 + (t % 3) * 68, 8 + (t / 3) * 13));
+	}
+	_tab = _btnTabs[std::max(0, std::min(HD_TAB_COUNT - 1, hdTab))];
+	_lstOptions = new TextList(200, 112, 94, 34);
 
+	for (TextButton *btn : _btnTabs)
+	{
+		add(btn, "button", "advancedMenu");
+	}
 	if (origin != OPT_BATTLESCAPE)
 	{
 		_greyedOutColor = _game->getMod()->getInterface("advancedMenu")->getElement("disabledUserOption")->color;
@@ -73,6 +93,14 @@ OptionsHdState::OptionsHdState(OptionsOrigin origin) : OptionsBaseState(origin),
 	}
 
 	centerAllSurfaces();
+
+	for (int t = 0; t < HD_TAB_COUNT; ++t)
+	{
+		_btnTabs[t]->setSmall();
+		_btnTabs[t]->setText(tr(HD_TABS[t]));
+		_btnTabs[t]->setGroup(&_tab);
+		_btnTabs[t]->onMousePress((ActionHandler)&OptionsHdState::btnTabPress, SDL_BUTTON_LEFT);
+	}
 
 	// the value column is as wide as the widest value it can show
 	Text text = Text(100, 9, 0, 0);
@@ -108,10 +136,12 @@ OptionsHdState::OptionsHdState(OptionsOrigin origin) : OptionsBaseState(origin),
 		reticleShipped = reticleShipped || FileMap::fileExists(HdSprites::artPath("CURSOR.PCK/reticle_" + style + "/6.png"));
 	}
 
-	for (const char *category : HD_CATEGORIES)
+	for (const auto &c : HD_CATEGORIES)
 	{
+		const char *category = c.category;
 		Group group;
 		group.title = category;
+		group.tab = c.tab;
 		for (const auto& optionInfo : Options::getOptionInfo())
 		{
 			if (optionInfo.type() != OPTION_KEY && !optionInfo.description().empty() && optionInfo.category() == category)
@@ -199,9 +229,10 @@ void OptionsHdState::updateList()
 		addRow(ROW_BACK, 0, tr("STR_BETTER_AI_BACK"), "");
 		return;
 	}
-	if (_aiGroup >= 0)
+	const int tab = currentTab();
+	if (_aiGroup >= 0 && _groups[_aiGroup].tab == tab)
 	{
-		// BetterAI opens its own screen from the first row; the value is its switch's
+		// BetterAI opens its own screen from the first row of its tab; the value is its switch's
 		addRow(ROW_BETTERAI, 0, std::string(tr("STR_BETTER_AI")) + " >", Options::oxceBetterAi ? tr("STR_YES") : tr("STR_NO"));
 		_lstOptions->setCellColor(_lstOptions->getLastRowIndex(), 1, Options::oxceBetterAi ? _lstOptions->getColor() : _greyedOutColor);
 	}
@@ -210,7 +241,7 @@ void OptionsHdState::updateList()
 		const Group &group = _groups[g];
 		const bool withArt = g == 0;
 		const bool lab = group.title == LAB_CATEGORY;
-		if ((group.settings.empty() && !withArt) || (int)g == _aiGroup)
+		if ((group.settings.empty() && !withArt) || (int)g == _aiGroup || group.tab != tab)
 		{
 			continue;
 		}
@@ -248,6 +279,32 @@ void OptionsHdState::updateList()
 		}
 	}
 	_lstOptions->scrollTo(scroll); // the row just changed stays where the player looks at it
+}
+
+/**
+ * The index of the tab pressed last.
+ */
+int OptionsHdState::currentTab() const
+{
+	for (int t = 0; t < (int)_btnTabs.size(); ++t)
+	{
+		if (_btnTabs[t] == _tab)
+		{
+			return t;
+		}
+	}
+	return 0;
+}
+
+/**
+ * Shows the groups of the tab just pressed (the group pointer is already moved by the button).
+ */
+void OptionsHdState::btnTabPress(Action *)
+{
+	hdTab = currentTab();
+	_betterAiView = false;
+	_lstOptions->scrollTo(0);                             // the other list starts at its top
+	updateList();
 }
 
 /**
