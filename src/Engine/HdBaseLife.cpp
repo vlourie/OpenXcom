@@ -1,0 +1,535 @@
+/*
+ * Copyright 2010-2026 OpenXcom Developers.
+ *
+ * This file is part of OpenXcom.
+ *
+ * OpenXcom is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * OpenXcom is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
+ */
+#include "HdBaseLife.h"
+#include <algorithm>
+#include <chrono>
+#include <cmath>
+#include <cstdlib>
+#include <deque>
+#include <utility>
+#include "Logger.h"
+
+namespace OpenXcom
+{
+
+namespace HdBaseLife
+{
+
+namespace
+{
+
+const float PI = 3.14159265f;
+/// Walking speed, grid cells a second (46 pack pixels of 128, as the preview).
+const float SPEED = 46.0f / 128.0f;
+/// A walking phase every 5.5 pack pixels, PHASES of them to a stride.
+const float STRIDE = 5.5f / 128.0f;
+const int DIRS = 16, PHASES = 6;
+/// Supersampling of the figures, per side.
+const int AA = 4;
+
+enum Role { SCI, ENG, GAL, GAL2, GUARD, NURSE, ROLES };
+
+/// Body and hair of a role, as base_scene_preview.py crew_stamps.
+const float LOOKS[ROLES][2][3] = {
+	{ { 0.93f, 0.95f, 0.97f }, { 0.35f, 0.22f, 0.15f } },   // scientist in white
+	{ { 1.00f, 0.55f, 0.12f }, { 0.15f, 0.12f, 0.10f } },   // engineer in orange
+	{ { 0.75f, 0.15f, 0.30f }, { 0.90f, 0.75f, 0.30f } },   // crew
+	{ { 0.20f, 0.55f, 0.60f }, { 0.15f, 0.10f, 0.08f } },   // crew
+	{ { 0.18f, 0.20f, 0.26f }, { 0.55f, 0.30f, 0.15f } },   // guard
+	{ { 0.55f, 0.90f, 0.75f }, { 0.95f, 0.85f, 0.60f } },   // nurse
+};
+const float SKIN[3] = { 226 / 255.0f, 180 / 255.0f, 150 / 255.0f };
+
+struct Point
+{
+	float x, y;                       ///< grid cells
+};
+
+struct Agent
+{
+	Role role = SCI;
+	int job = 0;                      ///< Place bits of where it works
+	bool nightShift = false;
+	int homeX = 0, homeY = 0, cellX = 0, cellY = 0;
+	Point pos = { 0, 0 };
+	std::vector<Point> path;
+	size_t next = 0;
+	float wait = 0;
+	int dir = 0;
+	float step = 0;
+	bool asleep = false;
+
+	bool walking() const { return next < path.size(); }
+};
+
+struct Crew
+{
+	Uint32 key = 0;
+	bool made = false;
+	std::vector<Agent> agents;
+	Uint32 last = 0;
+	Uint32 dice = 1;
+
+	/// The crew's own dice, 0..1.
+	float roll()
+	{
+		dice = dice * 1664525u + 1013904223u;
+		return (dice >> 8) * (1.0f / 16777216.0f);
+	}
+};
+
+Crew crew;
+
+/// The figures for one cell size: premultiplied RGBA, [role][dir][phase][size x size].
+struct Stamps
+{
+	int cell = 0, size = 0;
+	std::vector<float> rgba;
+
+	const float *at(int role, int dir, int phase) const
+	{
+		return &rgba[(size_t)((role * DIRS + dir) * PHASES + phase) * size * size * 4];
+	}
+};
+
+Stamps stamps;
+
+struct Oval
+{
+	float x, y, rx, ry;
+	float col[3];
+	float a;
+};
+
+/// Draws the figures seen from above (facing +x before turning): shadow, arms swinging with the step,
+/// body, the head's hair and the face forward - the shapes of the preview, rasterised for this size.
+void makeStamps(int cell)
+{
+	if (stamps.cell == cell)
+	{
+		return;
+	}
+	stamps.cell = cell;
+	// the preview's shapes 1.45 times its size (21 pixels and 1.35 to a unit at 128 to a cell): in the game the
+	// base is 768 pixels on a full HD screen, and figures as small as the film's were specks there
+	const int S = std::max(7, (int)std::lround(31.0f * cell / 128.0f));
+	const float ppu = 1.95f * cell / 128.0f;
+	stamps.size = S;
+	stamps.rgba.assign((size_t)ROLES * DIRS * PHASES * S * S * 4, 0.0f);
+	for (int role = 0; role < ROLES; ++role)
+	{
+		for (int ph = 0; ph < PHASES; ++ph)
+		{
+			const float swing = std::sin(ph / (float)PHASES * 2 * PI) * 1.6f;
+			const Oval ovals[] = {
+				{ 1.2f, 1.4f, 3.6f, 4.2f, { 0, 0, 0 }, 80 / 255.0f },
+				{ swing, -3.3f, 1.2f, 1.1f, { SKIN[0], SKIN[1], SKIN[2] }, 1 },
+				{ -swing, 3.3f, 1.2f, 1.1f, { SKIN[0], SKIN[1], SKIN[2] }, 1 },
+				{ 0, 0, 2.2f, 3.5f, { LOOKS[role][0][0], LOOKS[role][0][1], LOOKS[role][0][2] }, 1 },
+				{ 0.7f, 0, 1.6f, 1.6f, { LOOKS[role][1][0], LOOKS[role][1][1], LOOKS[role][1][2] }, 1 },
+				{ 1.5f, 0, 0.7f, 0.9f, { SKIN[0], SKIN[1], SKIN[2] }, 1 },
+			};
+			for (int dir = 0; dir < DIRS; ++dir)
+			{
+				const float ang = dir * 2 * PI / DIRS, ca = std::cos(ang), sa = std::sin(ang);
+				float *out = const_cast<float*>(stamps.at(role, dir, ph));
+				for (int py = 0; py < S; ++py)
+				{
+					for (int px = 0; px < S; ++px)
+					{
+						float sum[4] = { 0, 0, 0, 0 };
+						for (int sy = 0; sy < AA; ++sy)
+						{
+							for (int sx = 0; sx < AA; ++sx)
+							{
+								const float ux = (px + (sx + 0.5f) / AA - S / 2.0f) / ppu;
+								const float uy = (py + (sy + 0.5f) / AA - S / 2.0f) / ppu;
+								// into the figure's own frame: it faces the direction `ang` on the screen
+								const float fx = ux * ca + uy * sa, fy = -ux * sa + uy * ca;
+								float c[4] = { 0, 0, 0, 0 };
+								for (const Oval &o : ovals)
+								{
+									const float ex = (fx - o.x) / o.rx, ey = (fy - o.y) / o.ry;
+									if (ex * ex + ey * ey <= 1)
+									{
+										for (int i = 0; i < 3; ++i)
+										{
+											c[i] = o.col[i] * o.a + c[i] * (1 - o.a);
+										}
+										c[3] = o.a + c[3] * (1 - o.a);
+									}
+								}
+								for (int i = 0; i < 4; ++i)
+								{
+									sum[i] += c[i];
+								}
+							}
+						}
+						for (int i = 0; i < 4; ++i)
+						{
+							out[(py * S + px) * 4 + i] = sum[i] / (AA * AA);
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+typedef std::pair<int, int> Cell;
+
+std::vector<Cell> cellsWith(const Plan &plan, int bits)
+{
+	std::vector<Cell> out;
+	for (int x = 0; x < SIZE; ++x)
+	{
+		for (int y = 0; y < SIZE; ++y)
+		{
+			if (plan.facility[x][y] && (plan.place[x][y] & bits))
+			{
+				out.push_back(Cell(x, y));
+			}
+		}
+	}
+	return out;
+}
+
+/// The cells from a to b over the floor (adjacent facilities are joined, as the classic base draws them).
+std::vector<Cell> route(const Plan &plan, Cell a, Cell b)
+{
+	Cell prev[SIZE][SIZE];
+	bool seen[SIZE][SIZE] = {};
+	std::deque<Cell> queue;
+	queue.push_back(a);
+	seen[a.first][a.second] = true;
+	while (!queue.empty())
+	{
+		const Cell c = queue.front();
+		queue.pop_front();
+		if (c == b)
+		{
+			break;
+		}
+		const int dx[] = { 1, -1, 0, 0 }, dy[] = { 0, 0, 1, -1 };
+		for (int i = 0; i < 4; ++i)
+		{
+			const int x = c.first + dx[i], y = c.second + dy[i];
+			if (x < 0 || y < 0 || x >= SIZE || y >= SIZE || seen[x][y] || !plan.facility[x][y])
+			{
+				continue;
+			}
+			seen[x][y] = true;
+			prev[x][y] = c;
+			queue.push_back(Cell(x, y));
+		}
+	}
+	if (!seen[b.first][b.second])
+	{
+		return std::vector<Cell>(1, a);
+	}
+	std::vector<Cell> out(1, b);
+	while (out.back() != a)
+	{
+		out.push_back(prev[out.back().first][out.back().second]);
+	}
+	std::reverse(out.begin(), out.end());
+	return out;
+}
+
+/// A place to stand in a cell, off its middle.
+Point spot(Cell c)
+{
+	return { c.first + 0.5f + (crew.roll() - 0.5f) * 0.48f, c.second + 0.5f + (crew.roll() - 0.5f) * 0.48f };
+}
+
+Cell pick(const std::vector<Cell> &cells, Cell otherwise)
+{
+	return cells.empty() ? otherwise : cells[std::min(cells.size() - 1, (size_t)(crew.roll() * cells.size()))];
+}
+
+Uint32 keyOf(const Plan &plan, int sci, int eng, int sol)
+{
+	Uint32 h = plan.seed * 2654435761u + 1;
+	for (int x = 0; x < SIZE; ++x)
+	{
+		for (int y = 0; y < SIZE; ++y)
+		{
+			h = (h ^ (Uint32)plan.facility[x][y]) * 16777619u;
+			h = (h ^ (Uint32)plan.place[x][y]) * 16777619u;
+		}
+	}
+	return ((h ^ (Uint32)sci) * 16777619u ^ (Uint32)eng) * 16777619u ^ (Uint32)sol;
+}
+
+/// The crew of this base: how many of each walk about, from the base's own numbers.
+void makeCrew(const Plan &plan, Uint32 key, float night)
+{
+	crew = Crew();
+	crew.key = key;
+	crew.made = true;
+	crew.dice = key | 1;
+	const std::vector<Cell> floor = cellsWith(plan, ~0);
+	if (floor.empty())
+	{
+		return;
+	}
+	std::vector<Cell> homes = cellsWith(plan, HOME);
+	if (homes.empty())
+	{
+		homes = floor;
+	}
+	auto add = [&](Role role, int job, bool nightShift)
+	{
+		Agent a;
+		a.role = role;
+		a.job = job;
+		a.nightShift = nightShift;
+		const Cell home = homes[crew.agents.size() % homes.size()];
+		a.homeX = home.first;
+		a.homeY = home.second;
+		const bool sleeping = night > 0.6f && !nightShift;
+		const Cell start = sleeping ? home : pick(cellsWith(plan, job), home);
+		a.cellX = start.first;
+		a.cellY = start.second;
+		a.pos = spot(start);
+		a.wait = crew.roll() * 3;
+		a.dir = (int)(crew.roll() * DIRS) % DIRS;
+		a.asleep = sleeping;
+		crew.agents.push_back(a);
+	};
+	const bool labs = !cellsWith(plan, LAB).empty(), works = !cellsWith(plan, WORK).empty();
+	const int sci = labs && plan.scientists > 0 ? std::min(6, std::max(1, (plan.scientists + 9) / 10)) : 0;
+	const int eng = works && plan.engineers > 0 ? std::min(5, std::max(1, (plan.engineers + 9) / 10)) : 0;
+	const int sol = plan.soldiers > 0 ? std::min(6, std::max(1, (plan.soldiers + 4) / 5)) : 0;
+	for (int i = 0; i < sci; ++i)
+	{
+		add(SCI, LAB, false);
+	}
+	for (int i = 0; i < eng; ++i)
+	{
+		add(ENG, WORK, i == 0);
+	}
+	for (int i = 0; i < sol; ++i)
+	{
+		add(i % 2 ? GAL2 : GAL, GYM | STORE | HANGAR | OTHER, false);
+	}
+	if (!cellsWith(plan, PRISON).empty())
+	{
+		add(GUARD, ~0, true);
+	}
+	if (!cellsWith(plan, MED).empty())
+	{
+		add(NURSE, MED, false);
+	}
+	// two builders on every site, day and night
+	const std::vector<Cell> sites = cellsWith(plan, BUILD);
+	for (size_t i = 0; i < std::min<size_t>(6, sites.size() * 2); ++i)
+	{
+		add(ENG, BUILD, true);
+	}
+}
+
+/// Where an agent goes next: to work, home at night, about the base when there is no work.
+void choose(Agent &a, const Plan &plan, float night)
+{
+	const Cell home(a.homeX, a.homeY), here(a.cellX, a.cellY);
+	Cell target = home;
+	const bool idle = (a.role == SCI && !plan.researching) || (a.role == ENG && !plan.producing);
+	if (night > 0.5f && !a.nightShift)
+	{
+		target = home;
+	}
+	else if (a.role == GUARD)
+	{
+		target = pick(cellsWith(plan, ~0), home);
+	}
+	else if (idle)
+	{
+		target = crew.roll() < 0.5f ? home : pick(cellsWith(plan, GYM | STORE | OTHER), home);
+	}
+	else
+	{
+		target = pick(cellsWith(plan, a.job), home);
+	}
+	a.path.clear();
+	a.next = 0;
+	if (target != here)
+	{
+		const std::vector<Cell> cells = route(plan, here, target);
+		for (size_t i = 1; i < cells.size(); ++i)
+		{
+			const Cell &c0 = cells[i - 1], &c1 = cells[i];
+			a.path.push_back({ (c0.first + c1.first + 1) / 2.0f, (c0.second + c1.second + 1) / 2.0f });
+			a.path.push_back({ c1.first + 0.5f, c1.second + 0.5f });
+		}
+		target = cells.back();
+	}
+	a.path.push_back(spot(target));
+	a.cellX = target.first;
+	a.cellY = target.second;
+	a.asleep = false;
+}
+
+void move(Agent &a, const Plan &plan, float night, float dt)
+{
+	if (a.walking())
+	{
+		const Point &to = a.path[a.next];
+		const float dx = to.x - a.pos.x, dy = to.y - a.pos.y;
+		const float d = std::sqrt(dx * dx + dy * dy), v = SPEED * dt;
+		if (d <= v)
+		{
+			a.pos = to;
+			++a.next;
+		}
+		else
+		{
+			a.pos.x += dx / d * v;
+			a.pos.y += dy / d * v;
+			a.dir = ((int)std::lround(std::atan2(dy, dx) / (2 * PI / DIRS)) % DIRS + DIRS) % DIRS;
+			a.step += v / STRIDE;
+		}
+		if (!a.walking())
+		{
+			a.wait = 2.5f + crew.roll() * 3.5f;
+		}
+		return;
+	}
+	a.wait -= dt;
+	if (a.wait <= 0)
+	{
+		choose(a, plan, night);
+	}
+	if (night > 0.6f && !a.nightShift && a.cellX == a.homeX && a.cellY == a.homeY && !a.walking())
+	{
+		a.asleep = true;
+	}
+}
+
+}
+
+void draw(SDL_Surface *world, const Plan &plan, int ox, int oy, int cell, float night, Uint32 ms,
+	std::vector<HdBaseScene::Placed> &lights)
+{
+	if (!world || world->format->BytesPerPixel != 4 || cell < 8)
+	{
+		return;
+	}
+	// OXCE_HD_BASE_PERF: the cost of the crew and who walks, every 60 frames into the log
+	static const bool perf = std::getenv("OXCE_HD_BASE_PERF") != nullptr;
+	const auto perfStart = std::chrono::steady_clock::now();
+	const int sci = plan.scientists, eng = plan.engineers, sol = plan.soldiers;
+	// a new base, a facility built or torn down, more hands: a new crew (counts in tens, so a hire
+	// or two does not shuffle everybody)
+	const Uint32 key = keyOf(plan, (sci + 9) / 10, (eng + 9) / 10, (sol + 4) / 5);
+	float dt = 0;
+	if (!crew.made || crew.key != key)
+	{
+		makeCrew(plan, key, night);
+	}
+	else if (ms >= crew.last && ms - crew.last < 1000)
+	{
+		// a long pause (another screen) is not caught up: the crew stands still meanwhile
+		dt = std::min(0.1f, (ms - crew.last) / 1000.0f);
+	}
+	crew.last = ms;
+	for (Agent &a : crew.agents)
+	{
+		move(a, plan, night, dt);
+	}
+	makeStamps(cell);
+	const int S = stamps.size;
+	const float s = cell / 128.0f;
+	const SDL_Rect clip = world->clip_rect;
+	for (const Agent &a : crew.agents)
+	{
+		if (a.asleep)
+		{
+			continue;
+		}
+		const float cx = ox + a.pos.x * cell, cy = oy + a.pos.y * cell;
+		const int phase = a.walking() ? (int)a.step % PHASES : 0;
+		const float *src = stamps.at(a.role, a.dir, phase);
+		const int x0 = (int)std::lround(cx - S / 2.0f), y0 = (int)std::lround(cy - S / 2.0f);
+		for (int y = std::max(0, clip.y - y0); y < S && y0 + y < clip.y + clip.h; ++y)
+		{
+			Uint32 *row = (Uint32*)((Uint8*)world->pixels + (size_t)(y0 + y) * world->pitch);
+			for (int x = std::max(0, clip.x - x0); x < S && x0 + x < clip.x + clip.w; ++x)
+			{
+				const float *p = src + (y * S + x) * 4;
+				if (p[3] <= 0.002f)
+				{
+					continue;
+				}
+				const Uint32 px = row[x0 + x];
+				Uint32 out = px & 0xFF000000u;
+				for (int c = 0; c < 3; ++c)
+				{
+					const int shift = 16 - 8 * c;
+					const float v = p[c] + ((px >> shift) & 0xFF) / 255.0f * (1 - p[3]);
+					out |= (Uint32)std::lround(std::min(1.0f, v) * 255.0f) << shift;
+				}
+				row[x0 + x] = out;
+			}
+		}
+		// a lantern a little ahead of whoever walks at night
+		if (night > 0.4f && a.walking())
+		{
+			const float ang = a.dir * 2 * PI / DIRS;
+			HdBaseScene::Placed L;
+			L.light.x = cx + std::cos(ang) * 10 * s;
+			L.light.y = cy + std::sin(ang) * 10 * s;
+			L.light.radius = 30 * s;
+			L.light.kind = HdBaseScene::STEADY;
+			L.light.r = 1.0f;
+			L.light.g = 0.85f;
+			L.light.b = 0.6f;
+			L.scale = s;
+			L.level = 0.8f * night;
+			lights.push_back(L);
+		}
+	}
+	if (perf)
+	{
+		static double total = 0;
+		static int frames = 0;
+		total += std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - perfStart).count();
+		if (++frames == 60)
+		{
+			int walking = 0, asleep = 0, roles[ROLES] = {};
+			for (const Agent &a : crew.agents)
+			{
+				walking += a.walking() ? 1 : 0;
+				asleep += a.asleep ? 1 : 0;
+				++roles[a.role];
+			}
+			Log(LOG_INFO) << "HD base crew: " << total / frames << " ms per frame, " << crew.agents.size() << " figures ("
+				<< roles[SCI] << " sci, " << roles[ENG] << " eng, " << roles[GAL] + roles[GAL2] << " crew, " << roles[GUARD]
+				<< " guard, " << roles[NURSE] << " nurse), " << walking << " walking, " << asleep << " asleep; base "
+				<< sci << " sci, " << eng << " eng, " << sol << " soldiers, research " << plan.researching
+				<< ", production " << plan.producing;
+			total = 0;
+			frames = 0;
+		}
+	}
+}
+
+}
+
+}
