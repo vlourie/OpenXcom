@@ -620,14 +620,15 @@ public sealed class MainWindow : Window
         if (move.X < -text) move.X = lane;
     }
 
-    /// <summary>The card of the home page: one of the heroines' pictures (Assets/hero_&lt;n&gt;.jpg), another at each start; hero.jpg without them.</summary>
+    /// <summary>The card of the home page: one of the heroines' pictures (Assets/hero_&lt;n&gt;.jpg), another at each start.</summary>
     static Avalonia.Media.Imaging.Bitmap? HeroArt()
     {
         try
         {
             var all = Enumerable.Range(1, 16).Select(n => new Uri($"avares://XPiratezLauncher/Assets/hero_{n}.jpg"))
                 .Where(u => Avalonia.Platform.AssetLoader.Exists(u)).ToList();
-            var pick = all.Count > 0 ? all[Random.Shared.Next(all.Count)] : new Uri("avares://XPiratezLauncher/Assets/hero.jpg");
+            if (all.Count == 0) return null;
+            var pick = all[Random.Shared.Next(all.Count)];
             using var s = Avalonia.Platform.AssetLoader.Open(pick);
             return new Avalonia.Media.Imaging.Bitmap(s);
         }

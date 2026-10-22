@@ -9,7 +9,7 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <!-- OXCE HD over the geoscape globe: tools/launcher_icon.py ico oxce_globe (16..256) -->
     <ApplicationIcon>Assets\app.ico</ApplicationIcon>
-    <Version>0.3.14</Version>
+    <Version>0.3.15</Version>
     <!-- dev keys are trusted only in Debug or when explicitly allowed for a local test build -->
     <AllowDevKeys Condition="'$(AllowDevKeys)' == ''">false</AllowDevKeys>
     <DefineConstants Condition="'$(Configuration)' == 'Debug' Or '$(AllowDevKeys)' == 'true'">$(DefineConstants);ALLOW_DEV_KEYS</DefineConstants>
@@ -37,8 +37,7 @@
     <EmbeddedResource Include="defaults.json" LogicalName="defaults.json" />
     <!-- Roboto, the HD interface font, cut to Latin and Cyrillic (~30 KB each) -->
     <AvaloniaResource Include="Assets\Fonts\*.ttf" />
-    <!-- the home card art: tools/hdart/gen_promo.py, indigo duotone, <= 400 KB; hero_<n>.jpg - the heroines, one at random each start -->
-    <AvaloniaResource Include="Assets\hero.jpg" />
+    <!-- the home card art: tools/hdart/gen_promo.py (cast_hero_<n>), half toned to the launcher, <= 400 KB; one at random each start -->
     <AvaloniaResource Include="Assets\hero_*.jpg" />
     <AvaloniaResource Include="Assets\setup_*.jpg" />
     <AvaloniaResource Include="Assets\app.ico" />
