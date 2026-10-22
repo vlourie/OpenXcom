@@ -23,6 +23,7 @@ r"""Тикеты игроков с сайта - забрать, взять в р
     py -3 tools/tickets.py note 123 "текст" | --file F   заметка для команды (игрок её не видит)
     py -3 tools/tickets.py reply 123 "текст" | --file F  ответ игроку
     py -3 tools/tickets.py ask 123 dump|save|details     просьба по шаблону на языке тикета + «Нужна информация»
+                                                         (--keep - статус не трогать: разбор уже есть)
     py -3 tools/tickets.py status 123 Triaged [--note T] сменить статус (New Triaged InProgress NeedsInfo
                                                          Resolved Closed Rejected; Duplicate --of 45)
     py -3 tools/tickets.py fixed 123 --commit SHA [--what "что исправлено"]
@@ -61,12 +62,25 @@ STATUSES = ["New", "Triaged", "InProgress", "NeedsInfo", "Resolved", "Closed", "
 # Ответы игроку по шаблону. Язык - основная часть тега тикета (ru, en-US -> en); чего нет - по-английски.
 TEMPLATES = {
     "dump": {
-        "ru": "Спасибо за отчёт! Чтобы найти причину, нужен снимок этого места: в бою или на геоскейпе нажмите "
-              "Ctrl+F8 там, где видно ошибку, и отправьте отчёт кнопкой F8 - снимок приложится сам. "
-              "Если удобнее - приложите к этому тикету сейв, в котором это видно.",
-        "en": "Thanks for the report! To find the cause we need a snapshot of that spot: in battle or on the geoscape "
-              "press Ctrl+F8 where the problem is visible, then send a report with F8 - the snapshot is attached "
-              "automatically. Or attach a save where it can be seen to this ticket.",
+        "ru": "Спасибо, что написали! Такие отчёты делают игру красивее для всех.\n\n"
+              "Чтобы исправить именно то, что видите вы, пришлите, пожалуйста, снимок прямо из игры:\n"
+              "  1. Откройте бой или геоскейп так, чтобы ошибка была на экране.\n"
+              "  2. Нажмите Ctrl+F8 - игра тихо сохранит снимок кадра.\n"
+              "  3. Нажмите F8 и отправьте отчёт - снимок приложится к нему сам.\n\n"
+              "Если поставите ещё галочку «приложить сейв» - по сейву боя мы откроем ту же карту "
+              "и проверим исправление прямо на ней.\n\n"
+              "Обычный скриншот и сейв с геоскейпа, к сожалению, не говорят, какой это кусок карты, "
+              "так что без снимка приходится искать наугад.\n\n"
+              "Спасибо, что играете и помогаете! Попутного ветра, капитан!",
+        "en": "Thanks for writing in! Reports like this make the game look better for everyone.\n\n"
+              "To fix exactly what you see, please send us a snapshot straight from the game:\n"
+              "  1. Open the battle or the geoscape so the problem is on screen.\n"
+              "  2. Press Ctrl+F8 - the game quietly saves a snapshot of the frame.\n"
+              "  3. Press F8 and send a report - the snapshot is attached automatically.\n\n"
+              "If you also tick \"attach save\", we can open the same battle map and check the fix right there.\n\n"
+              "A plain screenshot or a geoscape save sadly doesn't tell us which piece of the map it is, "
+              "so without the snapshot we have to guess.\n\n"
+              "Thanks for playing and helping out! Fair winds, captain!",
     },
     "save": {
         "ru": "Спасибо за отчёт! Приложите, пожалуйста, к этому тикету сейв, в котором это происходит "
@@ -364,6 +378,10 @@ def cmd_ask(a):
     body = TEMPLATES[a.what][lang_of(view)]
     api(cfg, "POST", f"/tickets/{n}/messages", {"body": body, "internal": False})
     log("ask", n, a.what)
+    if a.keep:   # разбор уже есть (кадр найден по скриншоту) - просьба только для проверки исправления
+        save_ticket(cfg, view)
+        print(f"{view['displayNumber']}: попросили ({a.what}), статус оставлен {view['status']}")
+        return
     view = change_status(cfg, n, "NeedsInfo", a.note)
     save_ticket(cfg, view)
     print(f"{view['displayNumber']}: попросили ({a.what}), статус {view['status']}")
@@ -493,7 +511,7 @@ def main():
     s = sub.add_parser("show"); s.add_argument("number"); s.set_defaults(fn=cmd_show)
     for name, fn in (("note", cmd_note), ("reply", cmd_reply)):
         s = sub.add_parser(name); s.add_argument("number"); s.add_argument("text", nargs="?"); s.add_argument("--file"); s.set_defaults(fn=fn)
-    s = sub.add_parser("ask"); s.add_argument("number"); s.add_argument("what", choices=["dump", "save", "details"]); s.add_argument("--note"); s.set_defaults(fn=cmd_ask)
+    s = sub.add_parser("ask"); s.add_argument("number"); s.add_argument("what", choices=["dump", "save", "details"]); s.add_argument("--note"); s.add_argument("--keep", action="store_true"); s.set_defaults(fn=cmd_ask)
     s = sub.add_parser("status"); s.add_argument("number"); s.add_argument("status"); s.add_argument("--note"); s.add_argument("--of"); s.set_defaults(fn=cmd_status)
     s = sub.add_parser("close"); s.add_argument("--release", required=True); s.add_argument("numbers", nargs="+"); s.add_argument("--note"); s.set_defaults(fn=cmd_close)
     s = sub.add_parser("fixed"); s.add_argument("number"); s.add_argument("--commit", required=True); s.add_argument("--what"); s.set_defaults(fn=cmd_fixed)
