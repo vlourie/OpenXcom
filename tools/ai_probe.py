@@ -50,7 +50,9 @@ TAGS = ("[AISTATE]", "[AIDECIDE]", "[AIPROBE]", "[AIRESULT]", "[AICASUALTY]", "[
         # POSTWALK_FIX (OXCE_AI_POSTWALK_FIX, build-ai75): что решение ходьбы просило у post-walk ветки и что исполнено
         "[AIPOSTWALK]",
         # CELL_PROF (OXCE_AI_CELLPROF, build-ai-cp2): замер поисков клеток - архив <метка>.cell.gz серии ai_arena.py
-        "[AICELL]")
+        "[AICELL]",
+        # карта укрытий врага (OXCE_AI_COVERMAP, build-ai-cov): постройка, освежение и проверки - в тот же архив .cell.gz
+        "[AICOVER]")
 
 
 class Probe:
