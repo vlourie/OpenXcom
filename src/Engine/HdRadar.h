@@ -88,6 +88,14 @@ public:
 	/// bases in turn, each once in that many hours, spread over ten-minute steps so that few run together.
 	/// `beam` - a craft out turns a beam round its circle instead of sending waves.
 	void draw(const View &view, const std::vector<Source> &sources, long long minute, Mode mode, int waveHours = 0, bool beam = false);
+	/// The enemy's radars (discovered alien bases, hunter-killers): a red line round each circle with a glow
+	/// inside, each on its own. Worked out per pixel only near the rims, so the cost goes with their length.
+	struct Ring
+	{
+		double lon, lat;             ///< radians
+		double range;                ///< radians of arc
+	};
+	void drawRings(const View &view, const std::vector<Ring> &rings);
 	/// The main base's mark instead of its square (WAVES): a four-pointed star of `color` (0xRRGGBB) round
 	/// a dark middle, centred on world pixel (cx, cy), no wider than the 7 base pixels of a globe marker.
 	void drawMainBase(float cx, float cy, int k, Uint32 color);
