@@ -118,6 +118,85 @@ SLOTS = {
         ("art/promo/emblem.png", 512, 512, 0, "png")),
 }
 
+# С героинями (Vitali 22.10: «замени все фотки на фотки с нашими 6 героинями, разнообразь»): шесть беглянок
+# M1-M6 с опорами лиц, как gen_screens.py --cast - лор, опоры и тело оттуда же (CAST_HEAD). Карточка лаунчера
+# теперь не одна: hero_<n>.jpg, лаунчер берёт случайную при каждом запуске. Кадр 1280x800 - три опоры и больше
+# не помещаются в карту (R-213). Север - капитан, Искра - драчунья, Шпилька - механик и замки, Базальт - сила,
+# Рысь - пилот, Тихая - точность.
+HERO_RIGHT = ("Composition: the figures stand in the right half, the lower left of the picture is dark calm "
+              "shadow with no detail. ")
+
+
+def HERO_OUT(n):
+    return ("portal/src/Xp.Launcher/Assets/hero_%d.jpg" % n, 1280, 800, 400, "tint")
+
+
+CAST_SLOTS = {
+    "cast_hero_1": ([1, 2, 4], HERO_RIGHT + "The three women stand on the open cargo ramp of a battered pirate "
+                    "airship at night, looking out over a ruined futuristic city ruled by aliens: Sever, the woman "
+                    "from Picture 1, the captain, in a long dark coat with a cutlass at her hip; Iskra, the woman "
+                    "from Picture 2, shoulders a heavy improvised rifle with a fierce grin; Bazalt, the woman from "
+                    "Picture 3, the tallest and strongest, holds a glowing lime-green energy blade. Alien saucers "
+                    "with lime running lights hang in the violet sky.", HERO_OUT(1)),
+    "cast_hero_2": ([3, 5, 6], HERO_RIGHT + "A huge dark hangar carved into rock before a night raid: a battered "
+                    "patched-together pirate gunship on the pad, work lights cone down through haze. Shpilka, the "
+                    "woman from Picture 1, the mechanic, tightens a bolt on a landing strut, a wrench in her hand; "
+                    "Rys, the woman from Picture 2, the pilot, in a leather flight jacket with goggles around her "
+                    "neck, climbs the ladder to the cockpit; Tikhaya, the woman from Picture 3, checks a long rifle, "
+                    "her black braid over one shoulder.", HERO_OUT(2)),
+    "cast_hero_3": ([5], HERO_RIGHT + "Night sky seen through the riveted brass frame of a pirate gunship "
+                    "cockpit in a steep dive: a glowing alien saucer flees into the storm clouds, lime tracer fire "
+                    "between them. Rys, the woman from Picture 1, the pilot, grips the controls at the right in "
+                    "three-quarter view, a headset over her copper curls, her face lit by the dim gauges, a "
+                    "fearless smile.", HERO_OUT(3)),
+    "cast_hero_4": ([6, 2], HERO_RIGHT + "A rooftop of a ruined skyscraper at dawn over a burning city: Tikhaya, "
+                    "the woman from Picture 1, lies prone behind a long sniper rifle at the right, calm and precise, "
+                    "her black braid on her shoulder; Iskra, the woman from Picture 2, kneels beside her with "
+                    "binoculars, pointing at a distant alien saucer landing among the towers.", HERO_OUT(4)),
+    "cast_hero_5": ([4, 2, 3], HERO_RIGHT + "Boarding action inside a crashed alien saucer: smooth ribbed walls, "
+                    "lime light panels, smoke. Bazalt, the woman from Picture 1, the tallest and strongest, forces a "
+                    "sliding alien door open with her bare hands; Iskra, the woman from Picture 2, covers her with "
+                    "a pistol and a knife; Shpilka, the woman from Picture 3, crouches at the door panel picking "
+                    "its lock with a glowing tool.", HERO_OUT(5)),
+    "cast_hero_6": ([1, 3], HERO_RIGHT + "The bridge of a pirate airship in a thunderstorm at night: rain lashes "
+                    "the big riveted windows, lightning lights up an alien mothership in the clouds. Sever, the "
+                    "woman from Picture 1, the captain, holds the brass steering wheel at the right, her silver bob "
+                    "wet, her long dark coat; Shpilka, the woman from Picture 2, pulls a big lever beside her.",
+                    HERO_OUT(6)),
+    # фоны мастера установки: карточка шага слева, сюжет справа (SETUP_LEFT)
+    "cast_setup_where": ([1], SETUP_LEFT + "In the right half: the cramped navigation cabin of a pirate airship at "
+                         "night. Sever, the woman from Picture 1, the captain, in a long dark coat, leans over a chart "
+                         "table covered with old paper maps, a brass compass and a flickering lime-green holographic "
+                         "globe of Earth, her silver bob lit by it. Through a round porthole behind her, alien saucers "
+                         "drift over a ruined city.", SETUP_OUT("where")),
+    "cast_setup_ufo": ([4, 2], SETUP_LEFT + "In the right half: a long-abandoned underground 20th-century defense "
+                       "base. Bazalt, the woman from Picture 1, the tallest and strongest, pries open a dusty military "
+                       "crate with a crowbar; Iskra, the woman from Picture 2, holds a flashlight over it. Behind them "
+                       "in the hangar gloom stands a rusty old interceptor jet, flashlight beams cut through the dust.",
+                       SETUP_OUT("ufo")),
+    "cast_setup_parts": ([6], SETUP_LEFT + "In the right half: the cargo hold of a pirate airship stacked with loot - "
+                         "crates, barrels, racks of improvised rifles and alien gadgets glowing lime green. Tikhaya, "
+                         "the woman from Picture 1, precise and calm, checks items off a long list on a clipboard, a "
+                         "pencil behind her ear, her black braid over one shoulder.", SETUP_OUT("parts")),
+    "cast_setup_install": ([3], SETUP_LEFT + "In the right half: the engine room of a pirate airship being made "
+                           "ready for flight. Shpilka, the woman from Picture 1, the mechanic, in overalls with rolled "
+                           "sleeves and welding goggles pushed up, her chestnut hair held by a metal bobby pin, works "
+                           "on a huge patched-together engine, sparks flying, pipes and cables everywhere.",
+                           SETUP_OUT("install")),
+    "cast_setup_done": ([5, 1, 2], SETUP_LEFT + "In the right half: a battered pirate airship lifts off from a "
+                        "canyon hideout at dawn, engines glowing lime green. On the open deck rail Rys, the woman from "
+                        "Picture 1, waves, Sever, the woman from Picture 2, the captain, looks ahead, Iskra, the woman "
+                        "from Picture 3, raises a fist. Hopeful, adventurous mood.", SETUP_OUT("done")),
+    "cast_site_hero": ([1, 4, 6], "Wide panoramic view of a pirate hideout carved into a desert canyon at dusk in "
+                       "the year 2601. A patched-together gunship airship is docked on a rock ledge; Sever, the woman "
+                       "from Picture 1, the captain, directs the loading; Bazalt, the woman from Picture 2, carries a "
+                       "heavy crate of loot on her shoulder; Tikhaya, the woman from Picture 3, keeps watch with a "
+                       "rifle; lanterns and smoke, a huge alien mothership looms on the horizon under a violet sky.",
+                       ("portal/src/Xp.Portal/wwwroot/img/hero.jpg", 1280, 800, 300, "color")),
+}
+for _n, (_ids, _scene, _out) in CAST_SLOTS.items():
+    SLOTS[_n] = (STYLE + _scene, 1280, 800, _out)
+
 # дуотон карточки игры: тени, середина, свет (LAUNCHER_UI.md, «арт карточки»); свет чуть поднят,
 # иначе на 1280x800 рисунок тонет в двух почти одинаковых синих
 DUOTONE = [(0.0, (0x18, 0x08, 0x10)), (0.45, (0x18, 0x18, 0x68)), (0.8, (0x18, 0x58, 0x88)),
@@ -149,6 +228,15 @@ def draw(args):
     done, t0 = 0, time.time()
     for n in names:
         prompt, w, h, _ = SLOTS[n]
+        extra, neg = {}, NEGATIVE
+        if n in CAST_SLOTS:
+            # опоры - только лица героинь; тело и одежду задаёт текст (gen_screens.CAST_HEAD)
+            import gen_screens
+            ids, scene, _ = CAST_SLOTS[n]
+            refs = [Image.open(os.path.join(gen_screens.CAST_DIR, "M%d_face.png" % m)).convert("RGB") for m in ids]
+            extra = dict(image=refs, output_resolution=gen_screens.CAST_RES)
+            neg = NEGATIVE + gen_screens.CAST_NEG
+            prompt = STYLE + gen_screens.CAST_HEAD + scene
         os.makedirs(os.path.join(OUT, n), exist_ok=True)
         for i in range(1, args.seeds + 1):
             path = os.path.join(OUT, n, "%s_%d.png" % (n, i))
@@ -158,9 +246,9 @@ def draw(args):
                 continue
             seed = args.seed + i * 7919
             t1 = time.time()
-            img = pipe(prompt=prompt, negative_prompt=NEGATIVE, true_cfg_scale=args.cfg,
+            img = pipe(prompt=prompt, negative_prompt=neg, true_cfg_scale=args.cfg,
                        width=w, height=h, num_inference_steps=args.steps,
-                       generator=torch.Generator("cuda").manual_seed(seed)).images[0]
+                       generator=torch.Generator("cuda").manual_seed(seed), **extra).images[0]
             img.convert("RGB").save(path)
             done += 1
             el = time.time() - t0
@@ -245,6 +333,9 @@ def finish(args):
         im = cover(Image.open(src).convert("RGB"), w, h)
         if mode == "duotone":
             im = duotone(im)
+        elif mode == "tint":
+            # героини в чистом дуотоне теряют лица и цвет кожи: дуотон наполовину, рисунок виден
+            im = Image.blend(im, duotone(im), 0.5)
         if mode == "png":
             im.save(dst, optimize=True)
             print("%s <- вариант %s: %s, %dx%d, %d КБ" % (n, i, rel, w, h, os.path.getsize(dst) // 1024))
