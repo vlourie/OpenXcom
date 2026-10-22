@@ -47,6 +47,7 @@ public sealed class Updater(GamePaths paths, RepoClient repo, ILauncherLog log)
     public Func<string, long> FreeSpace { get; set; } = dir => new DriveInfo(Path.GetPathRoot(dir)!).AvailableFreeSpace;
 
     public LauncherState LoadState() => LauncherState.Load(Paths, log);
+    public void SaveState(LauncherState state) => state.Save(Paths);
 
     // ------------------------------------------------------------------ check
 
@@ -83,8 +84,9 @@ public sealed class Updater(GamePaths paths, RepoClient repo, ILauncherLog log)
     {
         // only the ticked components: files of an unticked one we installed fall out as deletes
         manifest = Setup.Chosen(manifest, state.Components);
+        var clock = System.Diagnostics.Stopwatch.StartNew();
         var total = manifest.Files.Sum(f => f.Size);
-        long done = 0;
+        long done = 0, hashed = 0;
         var results = new ConcurrentBag<FileCheck>();
         var newCache = new ConcurrentDictionary<string, CacheEntry>(StringComparer.OrdinalIgnoreCase);
 
@@ -102,7 +104,10 @@ public sealed class Updater(GamePaths paths, RepoClient repo, ILauncherLog log)
                 else if (fi.Length != f.Size && !state.Installed.ContainsKey(f.Path))
                     sha = "";   // different size and nothing to compare against: no need to hash
                 else
+                {
                     sha = Hashing.FileSha256(path);
+                    Interlocked.Increment(ref hashed);
+                }
                 if (sha.Length > 0) newCache[f.Path] = new CacheEntry { Size = fi.Length, MtimeUtcTicks = fi.LastWriteTimeUtc.Ticks, Sha256 = sha };
                 check = new FileCheck(f, Classify(state, manifest, f, sha, full), sha.Length > 0 ? sha : null);
             }
@@ -124,14 +129,26 @@ public sealed class Updater(GamePaths paths, RepoClient repo, ILauncherLog log)
             // and we have no record): the player's own files in managed folders stay
             if (state.Installed.TryGetValue(candidate, out var mine))
             {
-                if (Hashing.FileSha256(path) != mine) { log.Info($"kept (changed by player): {candidate}"); continue; }
+                // through the same cache as the files above: otherwise every start hashes all of them again
+                var fi = new FileInfo(path);
+                string sha;
+                if (!full && state.Cache.TryGetValue(candidate, out var c) && c.Size == fi.Length && c.MtimeUtcTicks == fi.LastWriteTimeUtc.Ticks)
+                    sha = c.Sha256;
+                else
+                {
+                    sha = Hashing.FileSha256(path);
+                    hashed++;
+                    state.Cache[candidate] = new CacheEntry { Size = fi.Length, MtimeUtcTicks = fi.LastWriteTimeUtc.Ticks, Sha256 = sha };
+                }
+                if (sha != mine) { log.Info($"kept (changed by player): {candidate}"); continue; }
             }
             else if (!manifest.Deletes.Contains(candidate, StringComparer.OrdinalIgnoreCase)) continue;
             deletes.Add(candidate);
         }
 
         var plan = new UpdatePlan { Manifest = manifest, Checks = results.OrderBy(c => c.File.Path, StringComparer.Ordinal).ToList(), Deletes = deletes };
-        log.Info($"scan ({(full ? "full" : "quick")}): {plan.ToWrite.Count()} to write, {plan.PlayerModified.Count()} changed by player, {deletes.Count} to remove");
+        log.Info($"scan ({(full ? "full" : "quick")}): {plan.ToWrite.Count()} to write, {plan.PlayerModified.Count()} changed by player, {deletes.Count} to remove; "
+            + $"{manifest.Files.Count} files, {hashed} hashed, {clock.Elapsed.TotalSeconds:F1} s");
         return plan;
     }
 

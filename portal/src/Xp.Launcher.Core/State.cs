@@ -103,6 +103,17 @@ public sealed class LauncherState
     /// <summary>Files the player chose to keep modified, until the next release.</summary>
     public Dictionary<string, KeptFile> Kept { get; set; } = new(StringComparer.OrdinalIgnoreCase);
     public Dictionary<string, CacheEntry> Cache { get; set; } = new(StringComparer.OrdinalIgnoreCase);
+    /// <summary>When a quick scan last found nothing to do, and on which release: the start skips the next for a day.</summary>
+    public DateTime? LastScanUtc { get; set; }
+    public string? LastScanReleaseId { get; set; }
+
+    /// <summary>
+    /// The launcher's start needs no scan when one found every file in place on this same release less than a day
+    /// ago (ticket XP-000265). "Repair" and the checks after a new release, a channel or the components always scan.
+    /// </summary>
+    public bool ScanIsFresh(string latestReleaseId, DateTime utcNow) =>
+        LastScanUtc is { } t && t <= utcNow && utcNow - t < TimeSpan.FromDays(1)
+        && LastScanReleaseId == latestReleaseId && InstalledReleaseId == latestReleaseId;
 
     public static LauncherState Load(GamePaths p, ILauncherLog? log = null)
     {

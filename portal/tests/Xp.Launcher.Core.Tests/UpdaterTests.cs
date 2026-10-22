@@ -293,6 +293,57 @@ public sealed class UpdaterTests : IDisposable
     }
 
     [Fact]
+    public async Task Hashes_learned_by_a_quick_scan_are_kept_for_the_next_start()
+    {
+        f.StageV1(); f.BuildAndPublish("v1");
+        await f.UpdateAsync();
+        // the same bytes with a new time (a copy, an antivirus): the cache no longer matches, one hash is due
+        var p = Path.Combine(f.Game, "user/mods/hd/hd/UI/big.png");
+        File.SetLastWriteTimeUtc(p, File.GetLastWriteTimeUtc(p).AddMinutes(5));
+
+        var state = f.Updater.LoadState();
+        var latest = await f.Updater.CheckAsync(state, default);
+        Assert.True(f.Updater.Scan(state, latest.Manifest, full: false, null, default).NothingToDo);
+        Assert.Contains(f.Log.Lines, l => l.StartsWith("scan (quick)") && l.Contains(" 1 hashed"));
+        f.Updater.SaveState(state);
+
+        f.Log.Lines.Clear();
+        state = f.Updater.LoadState();
+        Assert.True(f.Updater.Scan(state, latest.Manifest, full: false, null, default).NothingToDo);
+        Assert.Contains(f.Log.Lines, l => l.StartsWith("scan (quick)") && l.Contains(" 0 hashed"));
+    }
+
+    [Fact]
+    public async Task Files_to_remove_are_checked_through_the_cache()
+    {
+        f.StageV1(); f.BuildAndPublish("v1");
+        await f.UpdateAsync();
+        f.StageV2(); f.BuildAndPublish("v2");
+
+        f.Log.Lines.Clear();
+        var state = f.Updater.LoadState();
+        var latest = await f.Updater.CheckAsync(state, default);
+        var plan = f.Updater.Scan(state, latest.Manifest, full: false, null, default);
+        Assert.Equal(["user/mods/hd/hd/UI/old.png"], plan.Deletes);
+        // old.png is ours and untouched: the installed hash is in the cache, nothing is read again
+        Assert.Contains(f.Log.Lines, l => l.StartsWith("scan (quick)") && l.Contains(" 0 hashed"));
+    }
+
+    [Fact]
+    public void Start_skips_the_scan_for_a_day_after_a_clean_one_on_the_same_release()
+    {
+        var now = new DateTime(2026, 10, 23, 12, 0, 0, DateTimeKind.Utc);
+        var s = new LauncherState { InstalledReleaseId = "v1", LastScanReleaseId = "v1", LastScanUtc = now.AddHours(-23) };
+        Assert.True(s.ScanIsFresh("v1", now));
+        Assert.False(s.ScanIsFresh("v2", now));                                   // a new release is out
+        Assert.False(s.ScanIsFresh("v1", now.AddHours(2)));                       // a day has passed
+        Assert.False(s.ScanIsFresh("v1", now.AddHours(-24)));                     // the clock went back
+        Assert.False(new LauncherState { InstalledReleaseId = "v1" }.ScanIsFresh("v1", now));
+        s.InstalledReleaseId = "v0";                                               // installed is not the scanned one
+        Assert.False(s.ScanIsFresh("v1", now));
+    }
+
+    [Fact]
     public async Task Update_removes_dropped_files_but_not_the_players_own()
     {
         f.StageV1(); f.BuildAndPublish("v1");

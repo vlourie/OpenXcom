@@ -20,6 +20,7 @@
  "status.downloading": "Downloading: {0} of {1}, {2}/s",
  "status.installing": "Installing: {0} of {1}",
  "status.upToDate": "Latest version installed, all files in place.",
+ "status.scanFresh": "Latest version. Files checked {0:g}, again in a day; to check now, \"Check and repair files\" in the settings.",
  "status.updateAvailable": "Update {0} available: {1} files, {2}.",
  "status.repairNeeded": "{0} files need repair ({1}).",
  "status.done": "Done: version {0} installed.",

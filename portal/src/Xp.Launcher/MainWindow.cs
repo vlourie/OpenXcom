@@ -813,7 +813,7 @@ public sealed class MainWindow : Window
         if (_paths is null) OpenSetup(null);
         await _account.CheckAsync();
 
-        if (_updater is not null) await RunAsync(Work.Check, () => CheckAsync(full: false, apply: false));
+        if (_updater is not null) await RunAsync(Work.Check, () => CheckAsync(full: false, apply: false, startup: true));
         // the first look only remembers the channels; then every five minutes (UpdateWatch.Every)
         _ = WatchAsync();
         _watchTimer.Start();
@@ -1271,7 +1271,7 @@ public sealed class MainWindow : Window
         _fileLog?.Error(message);
     }
 
-    async Task CheckAsync(bool full, bool apply)
+    async Task CheckAsync(bool full, bool apply, bool startup = false)
     {
         var u = _updater!;
         var ct = _cts!.Token;
@@ -1292,8 +1292,25 @@ public sealed class MainWindow : Window
         _needLauncher = Version.TryParse(_latest.Manifest.Release.MinLauncher, out var need) && need > BuiltIn.Version ? need : null;
         if (_needLauncher is not null) return;
 
+        if (startup && state.ScanIsFresh(_latest.Manifest.Release.Id, DateTime.UtcNow))
+        {
+            _fileLog?.Info($"scan skipped: every file in place on {state.LastScanUtc:u}, the same release");
+            _pendingLine = null;
+            SetStatus(L.T("status.scanFresh", state.LastScanUtc!.Value.ToLocalTime()));
+            return;
+        }
+
         var progress = new Progress<Core.Progress>(ShowProgress);
         var plan = await Task.Run(() => u.Scan(state, _latest.Manifest, full, progress, ct), ct);
+        if (!full)
+        {
+            // the hashes learned by the scan and its time stay for the next start; nothing is written
+            // under the game (R-179), the next scan then learns them again
+            var clean = !plan.PlayerModified.Any() && !plan.ToWrite.Any() && plan.Deletes.Count == 0;
+            state.LastScanUtc = clean ? DateTime.UtcNow : null;
+            state.LastScanReleaseId = clean ? _latest.Manifest.Release.Id : null;
+            if (!GameIsRunning()) u.SaveState(state);
+        }
         if (plan.PlayerModified.Any())
         {
             if (!apply)
