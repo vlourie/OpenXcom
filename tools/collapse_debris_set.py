@@ -55,7 +55,7 @@ FRAMES = [
      "a waist-high pile of broken grey stones half covered with snow"),
     ("heap_sand", "heap", "SIETCH:36", "INDUSLUM:57",
      "a waist-high heap of broken sandstone blocks and sand"),
-    ("slab_a", "slab", "URBAN:50", "MOUNTROCK:69",
+    ("slab_a", "slab", "URBAN:57", "MOUNTROCK:69",   # URBAN:50 давал модели шестигранные пятна (#819, #832, #833)
      "a large broken slab of grey reinforced concrete lying tilted on the ground, rebar sticking out of the broken edge"),
     ("slab_b", "slab", "URBAN:57", "MOUNTROCK:69",
      "a big tilted chunk of grey concrete floor slab, cracked, with bent rebar"),

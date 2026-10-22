@@ -1,0 +1,1 @@
+- Collapse (option): heaps and blocks now spill. Crumbled debris lands on the free cells beside them - next to a heap about every other cell, next to a block nearly always - so ruins spread out in a skirt of debris instead of a neat grid. The spill does not pass through a standing wall and does not land on units, furniture, map marks or lifts.

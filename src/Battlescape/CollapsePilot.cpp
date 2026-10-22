@@ -261,6 +261,9 @@ const int RUBBLE_LOG_MASS = 3;
 /// RUBBLE_BLOCK_MASS a block (bars the way, where the cell may take it: mayBlock).
 const int RUBBLE_HEAP_MASS = 3;
 const int RUBBLE_BLOCK_MASS = 5;
+/// The chance in 100 that a heap, a block sheds crumble onto each free cell beside it (the spill of lay).
+const int RUBBLE_SPILL_HEAP = 40;
+const int RUBBLE_SPILL_BLOCK = 75;
 
 /// The fallen trunks of a set for its broken trees: records that turn into one of `windfall` when destroyed, low (6
 /// layers at most), not walkable and burning - the whole log of the mountain sets (72 -> 75, 73 -> 76).
@@ -421,7 +424,7 @@ struct Drop
 struct RubbleCount
 {
 	int laid = 0, merged = 0, unit = 0, object = 0, floor = 0, none = 0, again = 0, light = 0, replaced = 0, log = 0,
-		heap = 0, block = 0;
+		heap = 0, block = 0, spill = 0;
 };
 
 /// The roll of a heap of mass 1, 0..99: by the cell and the building, not the random numbers of the game, so the
@@ -485,6 +488,8 @@ bool mayBlock(SavedBattleGame *save, Tile *t)
 /// trunk (logsOf) where the cell may take it (mayBlock); stone of RUBBLE_HEAP_MASS a heap, of RUBBLE_BLOCK_MASS a
 /// block where the cell may take it (the tiers of the row; the crumble if the game has not the set). None where a unit stands or will land,
 /// on a lift or on no floor of its own; a low object there (underRubble) gives way to it, a higher one keeps the cell.
+/// A heap or a block spills the crumble onto each free cell beside it (RUBBLE_SPILL_*, by the cell's roll), not
+/// through a wall, onto a unit, an object, a mark of the map or a lift.
 /// The tiles it lies on join `tiles` (gravity, light and sight).
 void lay(Mod *mod, SavedBattleGame *save, int bi, const std::vector<Drop> &drops, std::vector<Tile*> &tiles, RubbleCount &n)
 {
@@ -517,6 +522,7 @@ void lay(Mod *mod, SavedBattleGame *save, int bi, const std::vector<Drop> &drops
 		++h->kinds[d.kind];
 	}
 	static const std::vector<std::pair<std::string, int> > nothing;
+	std::vector<std::pair<Tile*, int> > spills;  // a heap or a block laid, the chance of its spill
 	for (const Heap &h : heaps)
 	{
 		const Position at = h.tile->getPosition();
@@ -558,9 +564,15 @@ void lay(Mod *mod, SavedBattleGame *save, int bi, const std::vector<Drop> &drops
 			};
 			int s = -1;
 			if (kind == RK_STONE && mass >= RUBBLE_BLOCK_MASS && mayBlock(save, h.tile) && (s = pick(rubbleRecords(row, RT_BLOCK))) >= 0)
+			{
 				++n.block;
+				spills.push_back(std::make_pair(h.tile, RUBBLE_SPILL_BLOCK));
+			}
 			else if (kind == RK_STONE && mass >= RUBBLE_HEAP_MASS && (s = pick(rubbleRecords(row, RT_HEAP))) >= 0)
+			{
 				++n.heap;
+				spills.push_back(std::make_pair(h.tile, RUBBLE_SPILL_HEAP));
+			}
 			else
 				s = pick(*list);
 			const std::vector<MapDataSet*> &sets = *save->getMapDataSets();
@@ -587,6 +599,36 @@ void lay(Mod *mod, SavedBattleGame *save, int bi, const std::vector<Drop> &drops
 				tiles.push_back(h.tile);
 		}
 	}
+	// the spill: a heap or a block sheds the crumble of its row onto the free cells beside it
+	const std::vector<std::pair<std::string, int> > &crumble = row < 0 ? nothing : rubbleRecords(row, RK_STONE);
+	static const int sides[4][2] = { { 1, 0 }, { -1, 0 }, { 0, 1 }, { 0, -1 } };
+	for (const auto &sp : spills)
+		for (const auto &d : sides)
+		{
+			const Position from = sp.first->getPosition(), at = from + Position(d[0], d[1], 0);
+			Tile *t = save->getTile(at);
+			if (!t || crumble.empty() || rubbleRoll(at, bi + 7919) >= sp.second
+				|| std::find_if(heaps.begin(), heaps.end(), [t](const Heap &x) { return x.tile == t; }) != heaps.end())
+				continue;
+			// what parts the two cells: the west wall of the east one, the north wall of the south one
+			const Tile *edge = d[0] + d[1] > 0 ? t : sp.first;
+			if (edge->getMapData(d[0] ? O_WESTWALL : O_NORTHWALL))
+				continue;
+			const MapData *floor = t->getMapData(O_FLOOR);
+			if (t->getMapData(O_OBJECT) || t->getUnit() || (at.z > 0 && t->hasNoFloor(save))
+				|| (floor && (floor->isGravLift() || floor->getSpecialType() != TILE)))
+				continue;
+			const auto &rec = crumble[(at.x * 7 + at.y * 13 + at.z * 5) % crumble.size()];
+			int s = setIndexOf(save, rec.first);
+			if (s < 0)
+				s = borrowSet(mod, save, rec.first);
+			if (s < 0 || rec.second >= (int)(*save->getMapDataSets())[s]->getSize())
+				continue;
+			t->setMapData((*save->getMapDataSets())[s]->getObject(rec.second), rec.second, s, O_OBJECT);
+			++n.spill;
+			if (std::find(tiles.begin(), tiles.end(), t) == tiles.end())
+				tiles.push_back(t);
+		}
 	rubbleOf(save);
 }
 
@@ -1649,7 +1691,7 @@ bool settle(BattlescapeGame *battle, const char *why)
 			<< ", rubble " << rubble.laid << " (merged " << rubble.merged << ", again " << rubble.again << "; skipped: unit " << rubble.unit
 			<< ", object " << rubble.object << ", no floor " << rubble.floor << ", none " << rubble.none
 			<< ", by chance " << rubble.light << "; in place of a low object " << rubble.replaced << ", fallen trunks " << rubble.log
-			<< ", heaps " << rubble.heap << ", blocks " << rubble.block << ")"
+			<< ", heaps " << rubble.heap << ", blocks " << rubble.block << ", spill " << rubble.spill << ")"
 			<< ", falling units " << save->getFallingUnits()->size()
 			<< "; scan " << scanMs << " ms, eval " << evalMs << " ms, apply " << applyMs << " ms, light+fov " << msSince(tl0) << " ms";
 	}
