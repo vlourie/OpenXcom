@@ -50,6 +50,30 @@ public sealed class ReleaseRepoFactory : PortalFactory
             ],
             Roadmap = { ["ru"] = "## Plan-ru\n\n- inventory-next", ["en"] = "## Plan-en\n\n- inventory-next" },
         };
+        // the latest game release: the mod writes its version as "v.o9", and the entrance screen must say "o9"
+        var game = new ReleaseManifest
+        {
+            Release = new ReleaseInfo
+            {
+                Id = "2026.10.15-2", Version = "2026.10.15.2", Channel = "stable", Launch = "openxcom_hd.exe",
+                Published = new DateTimeOffset(2026, 10, 15, 12, 0, 0, TimeSpan.Zero), Changelog = { ["ru"] = "- walls-ru-2" },
+            },
+            Roots = ["openxcom_hd.exe"],
+            Components =
+            [
+                new ComponentInfo { Id = "engine", Kind = ComponentKind.Engine, Name = "engine" },
+                new ComponentInfo { Id = "mod.piratez", Kind = ComponentKind.Master, Mod = "piratez", Name = "X-Piratez", Version = "v.o9", Master = "xcom1" },
+            ],
+            Files = [new ManifestFile { Path = "openxcom_hd.exe", Size = 1, Sha256 = Hashing.Sha256Hex([1]), Component = "engine" }],
+        };
+        var gBytes = JsonSerializer.SerializeToUtf8Bytes(game, ManifestJson.Default.ReleaseManifest);
+        var gPointer = new ChannelPointer { Channel = "stable", Sequence = 4, ReleaseId = "2026.10.15-2", ManifestSha256 = Hashing.Sha256Hex(gBytes), ManifestSize = gBytes.Length };
+        var gpBytes = JsonSerializer.SerializeToUtf8Bytes(gPointer, ManifestJson.Default.ChannelPointer);
+        Blobs[BlobKeys.Manifest("2026.10.15-2")] = gBytes;
+        Blobs[BlobKeys.Sig(BlobKeys.Manifest("2026.10.15-2"))] = Signing.SerializeSignature(Signing.Sign(key, gBytes));
+        Blobs[BlobKeys.Channel("stable")] = gpBytes;
+        Blobs[BlobKeys.Sig(BlobKeys.Channel("stable"))] = Signing.SerializeSignature(Signing.Sign(key, gpBytes));
+
         var nBytes = JsonSerializer.SerializeToUtf8Bytes(notes, ManifestJson.Default.ChannelNotes);
         Blobs[BlobKeys.Notes("stable")] = nBytes;
         Blobs[BlobKeys.Sig(BlobKeys.Notes("stable"))] = Signing.SerializeSignature(Signing.Sign(key, nBytes));
@@ -120,6 +144,16 @@ public sealed class LauncherDownloadTests(ReleaseRepoFactory f) : IClassFixture<
         Assert.Contains("walls-ru-2", html);
         Assert.Contains("floors-ru-1", html);
         Assert.Contains("id=\"r-2026.10.13\"", html);   // an update without a text is still in the list
+    }
+
+    [Fact]
+    public async Task The_entrance_screen_names_the_game_with_the_piratez_version_of_the_release()
+    {
+        var html = await f.CreateClient().GetStringAsync("/");
+        Assert.Contains("<div class=\"v\">o9</div>", html);               // "v.o9" of the manifest, as players say it
+        Assert.Contains("OpenXcom Extended 8.7.1 + HD", System.Net.WebUtility.HtmlDecode(html));   // the engine: from the settings
+        Assert.Contains("2026.10.15.2", html);                              // the latest release
+        Assert.DoesNotContain("<div class=\"v\">o2</div>", html);          // not the fallback of the settings
     }
 
     [Fact]

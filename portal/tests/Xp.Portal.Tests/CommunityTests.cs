@@ -85,6 +85,28 @@ public sealed partial class CommunityTests(PortalFactory f) : IClassFixture<Port
     }
 
     [Fact]
+    public async Task Every_mod_of_the_catalogue_has_a_page_in_both_languages_and_piratez_names_its_engine()
+    {
+        await SeedAsync();
+        var c = Browser();
+        var catalogue = CommunitySeed.Read(Path.GetFullPath(SeedFile));
+        foreach (var lang in new[] { "ru", "en" })
+        {
+            foreach (var mod in catalogue.Mods!)
+            {
+                var html = await c.GetStringAsync($"/mods/{mod.Slug}?culture={lang}&ui-culture={lang}");
+                Assert.Contains(mod.Texts![lang].Name, System.Net.WebUtility.HtmlDecode(html));
+            }
+            // no release repository here: the version is the setting's, but the engine is always named
+            var piratez = await c.GetStringAsync($"/mods/piratez?culture={lang}&ui-culture={lang}");
+            Assert.Contains("OpenXcom Extended 8.7.1 + HD", System.Net.WebUtility.HtmlDecode(piratez));
+        }
+        // the mods we ship besides Piratez itself are described, not just present in the release
+        var slugs = catalogue.Mods!.Select(m => m.Slug).ToHashSet();
+        Assert.All(new[] { "hd-18", "hd-voices", "tank-reverse", "footsteps", "intro-voice", "russian-names" }, s => Assert.Contains(s, slugs));
+    }
+
+    [Fact]
     public async Task Sections_of_the_site_render_for_a_guest()
     {
         await SeedAsync();

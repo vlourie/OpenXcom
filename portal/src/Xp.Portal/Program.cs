@@ -17,6 +17,7 @@ using Xp.Portal.Files;
 using Xp.Portal.Notifications;
 using Xp.Portal.Review;
 using Xp.Portal.Site;
+using Xp.Portal.Stats;
 using Xp.Portal.Tickets;
 using Xp.Portal.Voice;
 
@@ -152,6 +153,7 @@ public static class PortalApp
         s.AddSingleton<Art>();
         s.AddSingleton<Markup>();
         s.AddScoped<Roadmap>();
+        s.AddSingleton<LauncherStatsService>();
         s.AddScoped<PackSeed>();
         s.AddScoped<CommunityService>();
         s.AddScoped<CommunitySeed>();
@@ -210,6 +212,8 @@ public static class PortalApp
             o.AddPolicy("voice-write", c => WritesByIp(c, cfg.GetValue("RateLimits:VoicePer10Min", 120), TimeSpan.FromMinutes(10)));
             // a pass per connection and per reconnect; a launcher that loops is stopped here, not at the media server
             o.AddPolicy("voice-pass", c => WritesByIp(c, cfg.GetValue("RateLimits:VoicePassPerMin", 20), TimeSpan.FromMinutes(1)));
+            // a launcher pings at start, at game start and exit, and every five minutes while the game runs
+            o.AddPolicy("stats-ping", c => WritesByIp(c, cfg.GetValue("RateLimits:StatsPingPer10Min", 30), TimeSpan.FromMinutes(10)));
             // the team's automation pulls a queue with its files in one go: reads and writes counted together
             o.AddPolicy("bot", c => ByIp(c, cfg.GetValue("RateLimits:BotPerMin", 300), TimeSpan.FromMinutes(1)));
         });
@@ -258,6 +262,7 @@ public static class PortalApp
         BotApi.Map(app);
         DeviceApi.Map(app);
         ReviewApi.Map(app);
+        StatsApi.Map(app);
         VoiceApi.Map(app);
         app.MapGet("/files/{id:guid}", ServeFileAsync).ExcludeFromDescription();
         // HEAD too: download managers ask the name and size first, and 405 made them give up

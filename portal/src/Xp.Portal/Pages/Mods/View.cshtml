@@ -9,7 +9,17 @@
 <p class="lead">@Model.Summary</p>
 
 <div class="stats">
-    @if (!string.IsNullOrEmpty(Model.Mod.Version))
+    @if (Model.Game is { } game)
+    {
+        // the version the release really carries, not the one typed into the catalogue
+        <div><div class="k">@T["mods.version"]</div><div class="v">@game.Piratez</div></div>
+        <div><div class="k">@T["game.engine"]</div><div class="v">@game.Engine</div></div>
+        @if (game.Build is { } build)
+        {
+            <div><div class="k">@T["game.build"]</div><div class="v">@build</div></div>
+        }
+    }
+    else if (!string.IsNullOrEmpty(Model.Mod.Version))
     {
         <div><div class="k">@T["mods.version"]</div><div class="v">@Model.Mod.Version</div></div>
     }

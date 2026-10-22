@@ -267,27 +267,27 @@ public sealed partial class ReviewTests(PortalFactory f) : IClassFixture<PortalF
     }
 
     [Fact]
-    public async Task The_roadmap_page_shows_the_sets_and_the_queue()
+    public async Task The_site_no_longer_shows_the_art_review_but_still_takes_it()
     {
         var me = await ReviewerAsync("Читатель");
         await PacksAsync(("CORP", 52, 52), ("ICEKING_RUINS", 96, 96));
-        await SendAsync(me.Token, Envelope("CORP", 52, (37, "bad", ["invented"]), (39, "ok", [])));
+        var sent = await SendAsync(me.Token, Envelope("CORP", 52, (37, "bad", ["invented"]), (39, "ok", [])));
+        // an old launcher still sends its marks, and must be answered as before
+        Assert.Equal(HttpStatusCode.Created, sent.StatusCode);
 
+        // no page of the site names the sets, the queue or the person's own marks
         var page = await Launcher().GetStringAsync("/roadmap");
-        Assert.Contains("/roadmap/queue", page);
-        Assert.Contains("/download/launcher", page);
+        Assert.DoesNotContain("/roadmap/queue", page);
+        Assert.DoesNotContain(S("CORP"), page);
+        Assert.Equal(HttpStatusCode.NotFound, (await Launcher().GetAsync("/roadmap/queue")).StatusCode);
+        var mine = await me.Browser.GetStringAsync("/me");
+        Assert.DoesNotContain("Проверка графики", mine);
+        Assert.DoesNotContain("Art review", mine);
 
-        // the picture somebody called bad is in the queue, named by the set it lives in
-        var queue = await Launcher().GetStringAsync("/roadmap/queue");
-        Assert.Contains(S("CORP"), queue);
-
-        // a set nobody has opened is what the launcher is told to look at next
+        // while the rows are still kept and still counted, for the launchers that ask what to check next
         var next = await Launcher().GetFromJsonAsync<List<QueueSet>>("/api/v1/review/queue?take=200");
         Assert.Contains(next!, q => q.Set == S("ICEKING_RUINS") && q.Reviews == 0);
-
-        // and the person sees their own work on their own page
-        var mine = await me.Browser.GetStringAsync("/me");
-        Assert.Contains("Проверка графики", mine);
+        Assert.Equal(1, await f.DbAsync(db => db.PackReviews.CountAsync(r => r.SetName == S("CORP"))));
     }
 
     [Fact]

@@ -363,6 +363,12 @@ tbody tr:hover { background: var(--ui-9); }
 /* a label that wraps to two lines must not push its number below the neighbours' */
 .stats dd, .stats .v { margin: 2px 0 0; color: var(--ink); font-family: ui-monospace, Consolas, monospace; font-size: 17px; }
 .stats .v { margin-top: auto; padding-top: 2px; }
+.stats .v .when { color: var(--ink-faint); font-size: 12px; }
+/* the entrance screen: the game we play, then the launcher's anonymous count under it */
+.stats.game { margin-bottom: 0; }
+.launcher-stats { margin-top: 14px; }
+.launcher-stats p { margin: 0 0 4px; font-family: ui-monospace, Consolas, monospace; }
+.launcher-stats p.hint { margin: 0; font-family: inherit; }
 
 /* ---------- the art roadmap -------------------------------------------------------------------- */
 

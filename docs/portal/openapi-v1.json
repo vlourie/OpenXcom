@@ -614,6 +614,83 @@
         }
       }
     },
+    "/api/v1/stats/ping": {
+      "post": {
+        "tags": [
+          "stats"
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "type": "null"
+                  },
+                  {
+                    "$ref": "#/components/schemas/StatsPing"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "No Content"
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Payload Too Large",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests",
+            "content": {
+              "application/problem\u002Bjson": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProblemDetails"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/stats": {
+      "get": {
+        "tags": [
+          "stats"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StatsTotals"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/friends": {
       "get": {
         "tags": [
@@ -4155,6 +4232,70 @@
           }
         }
       },
+      "StatsPing": {
+        "required": [
+          "install",
+          "playing"
+        ],
+        "type": "object",
+        "properties": {
+          "install": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "playing": {
+            "type": "boolean"
+          },
+          "launcher": {
+            "type": [
+              "null",
+              "string"
+            ]
+          },
+          "game": {
+            "type": [
+              "null",
+              "string"
+            ]
+          }
+        }
+      },
+      "StatsTotals": {
+        "required": [
+          "installs",
+          "hours",
+          "playingNow"
+        ],
+        "type": "object",
+        "properties": {
+          "installs": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          },
+          "hours": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int64"
+          },
+          "playingNow": {
+            "pattern": "^-?(?:0|[1-9]\\d*)$",
+            "type": [
+              "integer",
+              "string"
+            ],
+            "format": "int32"
+          }
+        }
+      },
       "TicketAttachmentView": {
         "required": [
           "id",
@@ -4293,6 +4434,9 @@
     },
     {
       "name": "review"
+    },
+    {
+      "name": "stats"
     },
     {
       "name": "voice"

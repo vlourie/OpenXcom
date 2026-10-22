@@ -631,6 +631,41 @@ namespace Xp.Portal.Data.Migrations
                     b.ToTable("Mods");
                 });
 
+            modelBuilder.Entity("Xp.Portal.Data.LauncherInstall", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<DateTimeOffset>("FirstSeen")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("GameRelease")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("character varying(64)");
+
+                    b.Property<DateTimeOffset?>("LastPlayingAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset>("LastSeen")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("LauncherVersion")
+                        .IsRequired()
+                        .HasMaxLength(32)
+                        .HasColumnType("character varying(32)");
+
+                    b.Property<long>("PlaySeconds")
+                        .HasColumnType("bigint");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LastPlayingAt");
+
+                    b.ToTable("LauncherInstalls");
+                });
+
             modelBuilder.Entity("Xp.Portal.Data.ModText", b =>
                 {
                     b.Property<Guid>("ModId")

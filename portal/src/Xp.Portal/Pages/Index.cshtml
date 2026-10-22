@@ -16,14 +16,6 @@
     <div class="say">
         <h1>@T["home.headline"]</h1>
         <p class="lead">@T["home.lead"]</p>
-        @if (Model.Release is { } r)
-        {
-            <p class="version">@T["home.version"]: @r.Version <span class="when">@r.Published.ToString("yyyy-MM-dd")</span></p>
-        }
-        else
-        {
-            <p class="hint">@T["home.version.unknown"]</p>
-        }
         @if (Model.Launcher is { } dl)
         {
             <a class="button big" href="/download/launcher" download>@T["home.download"]</a>
@@ -38,6 +30,27 @@
             <p class="hint">@T["home.download.none"]</p>
         }
     </div>
+</section>
+
+<div class="stats game">
+    <div><div class="k">@T["game.piratez"]</div><div class="v">@Model.Game.Piratez</div></div>
+    <div><div class="k">@T["game.engine"]</div><div class="v">@Model.Game.Engine</div></div>
+    <div>
+        <div class="k">@T["game.build"]</div>
+        @if (Model.Game.Build is { } build)
+        {
+            <div class="v">@build <span class="when">@Model.Game.Published?.ToString("yyyy-MM-dd")</span></div>
+        }
+        else
+        {
+            <div class="v">—</div>
+        }
+    </div>
+</div>
+
+<section class="panel quiet launcher-stats">
+    <p>@T.Format("home.stats", Model.Stats.Installs, Model.Stats.Hours, Model.Stats.PlayingNow)</p>
+    <p class="hint">@T["home.stats.note"]</p>
 </section>
 
 <div class="cards">

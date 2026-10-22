@@ -12,6 +12,9 @@ namespace Xp.Portal.Site;
 
 public sealed record ReleaseView(string Id, string Version, DateTimeOffset Published, string Changelog);
 
+/// <summary>The game as it is played: Piratez, the engine under it and the build (release) of the launcher's channel.</summary>
+public sealed record GameView(string Piratez, string Engine, string? Build, DateTimeOffset? Published);
+
 /// <summary>The history of the channel, newest first, and the roadmap in the reader's language (Markdown).</summary>
 public sealed record NotesView(List<ReleaseView> Releases, string Roadmap, DateTimeOffset Updated);
 
@@ -39,6 +42,22 @@ public sealed class ReleaseFeed(IOptions<PortalOptions> options, IHttpClientFact
         var r = latest.Manifest.Release;
         var log_ = r.Changelog.TryGetValue(lang, out var c) ? c : r.Changelog.Values.FirstOrDefault() ?? "";
         return new ReleaseView(r.Id, r.Version, r.Published, log_);
+    }
+
+    /// <summary>
+    /// What game this site is about. The Piratez version comes from the release itself (its mod.piratez
+    /// component), the engine from the settings; with no release the settings give the Piratez too.
+    /// </summary>
+    public async Task<GameView> GameAsync(CancellationToken ct)
+    {
+        var o = options.Value;
+        var latest = await LatestAsync(o.ReleaseChannel, ct);
+        var fromRelease = latest?.Manifest.Components.FirstOrDefault(c => c.Id == "mod.piratez")?.Version;
+        // the mod writes "v.o2"; the players say "o2"
+        var piratez = (fromRelease ?? "").Trim().TrimStart('v', 'V').TrimStart('.');
+        if (piratez.Length == 0) piratez = o.PiratezVersion;
+        var r = latest?.Manifest.Release;
+        return new GameView(piratez, o.EngineName, r?.Version, r?.Published);
     }
 
     /// <summary>

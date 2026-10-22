@@ -19,6 +19,7 @@ public sealed class PortalDb(DbContextOptions<PortalDb> options)
     public DbSet<DeviceToken> DeviceTokens => Set<DeviceToken>();
     public DbSet<DeviceLinkCode> DeviceLinkCodes => Set<DeviceLinkCode>();
     public DbSet<BotKey> BotKeys => Set<BotKey>();
+    public DbSet<LauncherInstall> LauncherInstalls => Set<LauncherInstall>();
     public DbSet<GameMod> Mods => Set<GameMod>();
     public DbSet<ModText> ModTexts => Set<ModText>();
     public DbSet<WikiPage> WikiPages => Set<WikiPage>();
@@ -168,6 +169,15 @@ public sealed class PortalDb(DbContextOptions<PortalDb> options)
             e.Property(k => k.Networks).HasMaxLength(BotLimits.ListMax);
             e.Property(k => k.LastIp).HasMaxLength(64);
             e.HasOne(k => k.User).WithMany().HasForeignKey(k => k.UserId).OnDelete(DeleteBehavior.Cascade);
+        });
+        b.Entity<LauncherInstall>(e =>
+        {
+            e.HasKey(i => i.Id);
+            // "playing now" is a count over this column, taken on every cache miss
+            e.HasIndex(i => i.LastPlayingAt);
+            e.Property(i => i.Id).HasMaxLength(StatsLimits.InstallLength);
+            e.Property(i => i.LauncherVersion).HasMaxLength(StatsLimits.LauncherMax);
+            e.Property(i => i.GameRelease).HasMaxLength(StatsLimits.GameMax);
         });
         b.Entity<DeviceLinkCode>(e =>
         {

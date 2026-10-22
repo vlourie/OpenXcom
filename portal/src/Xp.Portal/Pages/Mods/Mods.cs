@@ -13,9 +13,11 @@ public sealed class ModsModel(CommunityService community) : PageModel
     public async Task OnGetAsync(CancellationToken ct) => Mods = await community.ModsAsync(Text.Lang, ct);
 }
 
-public sealed class ModPageModel(CommunityService community, PortalDb db) : PageModel
+public sealed class ModPageModel(CommunityService community, PortalDb db, ReleaseFeed feed) : PageModel
 {
     public GameMod Mod { get; private set; } = null!;
+    /// <summary>The game as it is played now (Piratez, engine, build): shown on the page of Piratez itself.</summary>
+    public GameView? Game { get; private set; }
     public string Name { get; private set; } = "";
     public string Summary { get; private set; } = "";
     public string Body { get; private set; } = "";
@@ -34,6 +36,7 @@ public sealed class ModPageModel(CommunityService community, PortalDb db) : Page
         Name = text?.Name ?? mod.Slug;
         Summary = text?.Summary ?? "";
         Body = text?.Body ?? "";
+        if (mod.Slug == "piratez") Game = await feed.GameAsync(ct);
         Groups = await community.WikiGroupsAsync(mod.Id, Text.Lang, ct);
         ForumSlug = await db.ForumSections.Where(s => s.ModId == mod.Id && s.Published)
             .OrderBy(s => s.Order).Select(s => s.Slug).FirstOrDefaultAsync(ct);

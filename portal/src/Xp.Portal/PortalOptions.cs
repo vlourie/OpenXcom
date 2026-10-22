@@ -20,6 +20,14 @@ public sealed class PortalOptions
     /// whether or not the art has been made yet.
     /// </summary>
     public string HeroImage { get; set; } = "";
+    /// <summary>
+    /// X-Piratez version shown as "the game we play". The site takes it from the latest release of the
+    /// channel (the version of its mod.piratez component) and uses this one only when the release has
+    /// no such component, so after an update of Piratez nothing needs changing here.
+    /// </summary>
+    public string PiratezVersion { get; set; } = "o2";
+    /// <summary>The engine as shown on the site. It is not in the manifest, so it is changed here when the engine is.</summary>
+    public string EngineName { get; set; } = "OpenXcom Extended 8.7.1 + HD";
     /// <summary>Release repository (the tree xp-release builds): a URL or a local folder.</summary>
     public string ReleaseRepo { get; set; } = "";
     public string ReleaseChannel { get; set; } = "stable";
