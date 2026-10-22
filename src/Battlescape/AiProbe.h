@@ -155,6 +155,10 @@ struct CellStat
 	int zCand = 0, zScored = 0, zBest = INT_MIN;
 	long long nsFar = 0;                // shadow: the reach outside the window, any level
 	int farCand = 0, farScored = 0, farBest = INT_MIN;
+	// findFirePoint only: why there is no line - the target's distance (tiles, 3d) and level offset, whether this unit sees it,
+	// and what the centre line from the unit's own cell to the target meets first (VoxelType: -1 nothing, 0 floor, 1/2 wall,
+	// 3 object, 4 another unit, 5 off the map; 6 - the target itself), the armor of that part and its distance in tiles
+	int dist = -1, dz = 0, seen = -1, blk = -2, blkArmor = -1, blkDist = -1;
 };
 /// A pathfinder of the audit's own for the shadow search: the game's one keeps the state the real search left in it.
 /// Null when the audit is off.
