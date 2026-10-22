@@ -76,6 +76,14 @@ private:
 	int _hdItemsScale = 0;
 	/// the primers, "2" and numbers of the items when HD pictures lie under them
 	Surface *_itemsTop;
+	/// ammunition hint (oxceHdAmmoHint, XP-000257): where drawItems() put each item, the frames layer, and the weapon they were drawn for
+	struct HintCell { const RuleItem *rules; SDL_Rect rect; };
+	std::vector<HintCell> _hintCells;
+	Surface *_hint;
+	const RuleItem *_hintWeapon = nullptr;
+	bool _hintDirty = true;
+	/// Frames the items that fit the weapon (nullptr: none) in the hint layer.
+	void drawHint(const RuleItem *weapon);
 
 	/// Is the HD interface going to draw the slot names with its own fonts on that surface?
 	bool hdLabels(const SDL_Surface *surface) const;

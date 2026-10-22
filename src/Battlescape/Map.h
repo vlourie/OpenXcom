@@ -176,6 +176,7 @@ private:
 		Uint32 face = 0, back = 0, edge = 0;
 		float cap = 0.0f;       ///< text only: the capitals' height (0 = the small font's), (x, y) = its top
 		bool centre = false;    ///< text only: x is the text's centre
+		float weight = 1.0f;    ///< text with a cap: the strokes' weight against the usual (1 = as the font draws them)
 	};
 	std::vector<HdLabel> _hdLabels;
 	bool _hdLabelsOn = false;

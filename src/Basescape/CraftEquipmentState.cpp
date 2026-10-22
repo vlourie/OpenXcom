@@ -55,6 +55,7 @@
 #include "../Savegame/SavedBattleGame.h"
 #include "../Mod/RuleInterface.h"
 #include "../Ufopaedia/Ufopaedia.h"
+#include "../Engine/HdAmmoHint.h"
 
 namespace OpenXcom
 {
@@ -219,6 +220,8 @@ CraftEquipmentState::CraftEquipmentState(Base *base, size_t craft) :
 	_lstEquipment->onRightArrowRelease((ActionHandler)&CraftEquipmentState::lstEquipmentRightArrowRelease);
 	_lstEquipment->onRightArrowClick((ActionHandler)&CraftEquipmentState::lstEquipmentRightArrowClick);
 	_lstEquipment->onMousePress((ActionHandler)&CraftEquipmentState::lstEquipmentMousePress);
+	_lstEquipment->onMouseOver((ActionHandler)&CraftEquipmentState::lstEquipmentMouseOver);
+	_lstEquipment->onMouseOut((ActionHandler)&CraftEquipmentState::lstEquipmentMouseOut);
 	ItemCountTooltipMixin::BindToSurface(_lstEquipment);
 
 	_btnQuickSearch->setText(""); // redraw
@@ -349,6 +352,8 @@ void CraftEquipmentState::initList()
 	_totalItemStorageSize = 0.0;
 	_items.clear();
 	_lstEquipment->clearList();
+	_rowColors.clear();
+	_hintWeapon = nullptr;
 
 	int row = 0;
 	for (auto& itemType : _game->getMod()->getItemsList())
@@ -512,6 +517,7 @@ void CraftEquipmentState::initList()
 					color = _lstEquipment->getSecondaryColor();
 			}
 			_lstEquipment->setRowColor(row, color);
+			_rowColors.push_back(color);
 
 			++row;
 		}
@@ -534,6 +540,48 @@ void CraftEquipmentState::think()
 
 	_timerLeft->think(this, 0);
 	_timerRight->think(this, 0);
+}
+
+/**
+ * Lights the rows of the ammunition that fits the weapon (oxceHdAmmoHint): the weapon's own list of
+ * ammunition decides, for every ammo slot it has. Everything else keeps the colour it had.
+ * @param weapon The weapon under the cursor, or nullptr for the usual colours.
+ */
+void CraftEquipmentState::showAmmoHint(const RuleItem *weapon)
+{
+	if (weapon == _hintWeapon || _rowColors.size() != _items.size())
+	{
+		return;
+	}
+	_hintWeapon = weapon;
+	for (size_t i = 0; i < _items.size(); ++i)
+	{
+		const bool lit = weapon && HdAmmoHint::fits(weapon, _game->getMod()->getItem(_items[i], false));
+		_lstEquipment->setRowColor(i, lit ? HdAmmoHint::COLOR : _rowColors[i]);
+	}
+}
+
+/**
+ * The cursor is on a row of the list: if it is a weapon, its ammunition is lit.
+ * @param action Pointer to an action.
+ */
+void CraftEquipmentState::lstEquipmentMouseOver(Action *)
+{
+	if (!HdAmmoHint::enabled())
+	{
+		return;
+	}
+	const int row = _lstEquipment->getSelectedRow();
+	showAmmoHint(row >= 0 && (size_t)row < _items.size() ? _game->getMod()->getItem(_items[row], false) : nullptr);
+}
+
+/**
+ * The cursor left the list: the usual colours.
+ * @param action Pointer to an action.
+ */
+void CraftEquipmentState::lstEquipmentMouseOut(Action *)
+{
+	showAmmoHint(nullptr);
 }
 
 
@@ -716,6 +764,10 @@ void CraftEquipmentState::updateQuantity()
 		color = _lstEquipment->getSecondaryColor();
 	}
 	_lstEquipment->setRowColor(_sel, color);
+	if (_sel < _rowColors.size())
+	{
+		_rowColors[_sel] = color;
+	}
 	_lstEquipment->setCellText(_sel, 1, ss.str());
 	_lstEquipment->setCellText(_sel, 2, ss2.str());
 

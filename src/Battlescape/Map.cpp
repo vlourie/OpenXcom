@@ -1510,7 +1510,7 @@ void Map::blit(SDL_Surface *surface)
 				{
 					// a line box as tall as the capitals: their tops stand at wy
 					const int cx = label.centre ? wx - (int)std::lround(ui.ttfWidth(label.text, true, label.cap) * k / 2) : wx;
-					ui.drawMapText(label.text, label.cap, label.cap, cx, wy, label.face, label.edge);
+					ui.drawMapText(label.text, label.cap, label.cap, cx, wy, label.face, label.edge, label.weight);
 				}
 				else
 				{
@@ -3694,6 +3694,8 @@ void Map::drawTerrain(HdCanvas *surface)
 								const int faceIdx = _numWaypid->getColor() + 1;
 								const int ramp = mcolor ? (mcolor - 1) << 4 : faceIdx & 0xF0, shade = faceIdx & 0x0F;
 								const bool both = _previewSettingTu && _previewSettingEnergy;
+								const int sizePct = std::max(50, std::min(100, Options::oxceHdPathNumSize));
+								const int weightPct = std::max(50, std::min(100, Options::oxceHdPathNumWeight));
 								auto put = [&](int value, int classicY, int lastLift)
 								{
 									if (value < 0) return;
@@ -3702,6 +3704,14 @@ void Map::drawTerrain(HdCanvas *surface)
 									label.x = screenPosition.x + 16 * _k - _k / 2;
 									label.y = screenPosition.y + classicY - adjustment + (last ? -lastLift : 1 * _k);
 									label.cap = last ? 7.0f : 5.0f;
+									if (sizePct != 100)
+									{
+										// smaller by the player's percent, the baseline stays where it was
+										const float smaller = label.cap * sizePct / 100.0f;
+										label.y += (int)std::lround((label.cap - smaller) * _k);
+										label.cap = smaller;
+									}
+									label.weight = weightPct / 100.0f;
 									label.centre = true;
 									label.face = HdUi::rgba(pal[(Uint8)(ramp + shade)]);
 									label.edge = HdUi::rgba(pal[(Uint8)(ramp + std::min(shade + 11, 15))]);

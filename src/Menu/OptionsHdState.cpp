@@ -348,6 +348,10 @@ std::string OptionsHdState::valueText(const OptionInfo &info) const
 	{
 		return tr("STR_HD_BATTLE_HUD_COLOR_" + std::to_string(Options::oxceHdBattleHudColor));
 	}
+	if (info.asInt() == &Options::oxceHdPathNumSize || info.asInt() == &Options::oxceHdPathNumWeight)
+	{
+		return std::to_string(std::max(50, std::min(100, *info.asInt()))) + "%";
+	}
 	// the same names as the geoscape scale in the video options: "3x" = a globe pixel is 3 display pixels
 	if (info.asInt() == &Options::oxceHdGlobeScale)
 	{
@@ -586,6 +590,12 @@ void OptionsHdState::changeSetting(size_t sel, Uint8 button)
 		{
 			min = 0;                                  // what Alt shows, always: 0 nothing, 1 facing,
 			max = 3;                                  // 2 damage and psi in the aim, 3 both
+		}
+		else if (i == &Options::oxceHdPathNumSize || i == &Options::oxceHdPathNumWeight)
+		{
+			*i += increment * 4;                      // percent of the usual, in steps of 5
+			min = 50;
+			max = 100;
 		}
 		else if (i == &Options::oxceHdGlobeScale)
 		{

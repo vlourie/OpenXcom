@@ -212,6 +212,8 @@ OPT bool oxceHdCraftLights;
 // HD render: a craft sent out leaves its hangar in a clip, and lands in it the same way (hd/LAUNCH/<craft>.mpg): 0 off, 1 crafts with soldiers aboard, 2 every craft
 OPT int oxceHdCraftLaunch;
 OPT int oxceHdAltInfo;
+// HD interface: hovering a weapon lights the ammunition that fits it (battle inventory, craft equipment, stores); off = as it was
+OPT bool oxceHdAmmoHint;
 OPT bool oxceHdTransferCost, oxceHdTransferConfirm;
 // HD globe and dogfight: own craft and UFOs once read by a hyper-wave decoder as small outlines from above (Engine/HdOutline.h); off = the classic markers and blob
 OPT bool oxceHdCraftOutlines;
@@ -224,6 +226,8 @@ OPT bool oxceHdRadarBeam;
 // HD interface: the soldier transformation screen names the training paths it closes, the full list on a click (off by default)
 OPT bool oxceHdTrainingBlocks;
 OPT bool oxceHdPathDigits;
+// HD interface: the path numbers in battle (oxceHdPathDigits on), in percent of the usual: size and stroke weight; 100 = as it was
+OPT int oxceHdPathNumSize, oxceHdPathNumWeight;
 OPT bool oxceHdPanelHide;
 // HD interface, modern skin: the colours of the battle's button panel (Engine/HdBattleHud.cpp). 0 = dark slate (default), 1 = gold, as the original panel
 OPT int oxceHdBattleHudColor;

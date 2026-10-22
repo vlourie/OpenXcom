@@ -43,6 +43,7 @@
 #include "../Mod/RuleItem.h"
 #include "../Mod/RuleResearch.h"
 #include "../Ufopaedia/Ufopaedia.h"
+#include "../Engine/HdAmmoHint.h"
 #include <algorithm>
 #include <locale>
 
@@ -154,6 +155,8 @@ StoresState::StoresState(Base *base) : _base(base)
 	_lstStores->setMargin(2);
 	_lstStores->onMouseClick((ActionHandler)&StoresState::lstStoresClick, SDL_BUTTON_LEFT);
 	_lstStores->onMouseClick((ActionHandler)&StoresState::lstStoresClick, SDL_BUTTON_MIDDLE);
+	_lstStores->onMouseOver((ActionHandler)&StoresState::lstStoresMouseOver);
+	_lstStores->onMouseOut((ActionHandler)&StoresState::lstStoresMouseOut);
 
 	_sortName->setX(_sortName->getX() + _txtItem->getTextWidth() + 4);
 	_sortName->onMouseClick((ActionHandler)&StoresState::sortNameClick);
@@ -440,6 +443,7 @@ void StoresState::sortList()
 void StoresState::updateList()
 {
 	_lstStores->clearList();
+	_hintWeapon = nullptr;
 
 	for (const auto& item : _itemList)
 	{
@@ -506,6 +510,48 @@ void StoresState::lstStoresClick(Action* action)
 
 		_game->pushState(new ItemLocationsState(rule));
 	}
+}
+
+/**
+ * Lights the rows of the ammunition that fits the weapon (oxceHdAmmoHint): the weapon's own list of
+ * ammunition decides, for every ammo slot it has. Other rows keep the list colour.
+ * @param weapon The weapon under the cursor, or nullptr for the usual colour.
+ */
+void StoresState::showAmmoHint(const RuleItem *weapon)
+{
+	if (weapon == _hintWeapon)
+	{
+		return;
+	}
+	_hintWeapon = weapon;
+	for (size_t i = 0; i < _itemList.size(); ++i)
+	{
+		const bool lit = weapon && HdAmmoHint::fits(weapon, _itemList[i].rule);
+		_lstStores->setRowColor(i, lit ? HdAmmoHint::COLOR : _lstStores->getColor());
+	}
+}
+
+/**
+ * The cursor is on a row of the list: if it is a weapon, its ammunition is lit.
+ * @param action Pointer to an action.
+ */
+void StoresState::lstStoresMouseOver(Action *)
+{
+	if (!HdAmmoHint::enabled())
+	{
+		return;
+	}
+	const int row = _lstStores->getSelectedRow();
+	showAmmoHint(row >= 0 && (size_t)row < _itemList.size() ? _itemList[row].rule : nullptr);
+}
+
+/**
+ * The cursor left the list: the usual colour.
+ * @param action Pointer to an action.
+ */
+void StoresState::lstStoresMouseOut(Action *)
+{
+	showAmmoHint(nullptr);
 }
 
 }

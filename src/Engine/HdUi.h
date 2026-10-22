@@ -160,7 +160,7 @@ public:
 	/// A label lying on the battle map, in the heavy TrueType face: the lines of `s` from the world point
 	/// (wx, wy) = the top left of the classic text, capitals `capHeight` and lines `lineH` base pixels apart.
 	/// Every letter gets an outline of its own: what is under it is the map's picture, not a panel.
-	void drawMapText(const UString &s, float capHeight, float lineH, int wx, int wy, Uint32 face, Uint32 outline);
+	void drawMapText(const UString &s, float capHeight, float lineH, int wx, int wy, Uint32 face, Uint32 outline, float weight = 1.0f);
 	/// A number tag on the battle map: `s` centred on world x `wx` on a rounded plate whose top is world y `wy`
 	/// (the classic tag is a bordered 3x5 digit: face, plate and edge are its three shades).
 	void drawMapTag(const UString &s, int wx, int wy, Uint32 face, Uint32 plate, Uint32 edge);
@@ -334,7 +334,7 @@ private:
 	/// Blends a colour with a coverage over a span of a row (world pixels), clipped.
 	void blendSpan(SDL_Surface *dest, const SDL_Rect &clip, int y, float xa, float xb, Uint32 color, float cov);
 	/// Blends a glyph's coverage bitmap at world position, clipped.
-	void blendGlyph(SDL_Surface *dest, const SDL_Rect &clip, const HdFont::Glyph &g, int x, int y, Uint32 color);
+	void blendGlyph(SDL_Surface *dest, const SDL_Rect &clip, const HdFont::Glyph &g, int x, int y, Uint32 color, const float *lut = nullptr);
 	/// The clip rectangle in world pixels (or the whole world).
 	SDL_Rect worldClip(SDL_Surface *dest, int k) const;
 };
