@@ -105,4 +105,20 @@ private:
 	std::vector<Item> _parts;
 };
 
+/**
+ * The arrow on a small tab at the top of the battle's panel (oxceHdPanelHide): a click slides the panel down off
+ * the screen, and the tab, gone down with it to the screen's edge, then points up to bring it back. Drawn in the
+ * world layer only (the classic surface stays empty) and only while the panel is the modern one.
+ */
+class HdPanelToggle : public InteractiveSurface
+{
+public:
+	HdPanelToggle(int width, int height, int x = 0, int y = 0) : InteractiveSurface(width, height, x, y) {}
+	/// The panel is down: the arrow points up.
+	void setDown(bool down) { _down = down; }
+	void hdMirror() override;
+private:
+	bool _down = false;
+};
+
 }

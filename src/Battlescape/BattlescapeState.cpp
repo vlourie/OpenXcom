@@ -191,6 +191,8 @@ BattlescapeState::BattlescapeState() :
 
 	// Create buttonbar - this should be on the centerbottom of the screen
 	_icons = new HdHudPanel(iconsWidth, iconsHeight, x, y);
+	// its arrow: at the top right, short of the visible units' buttons (visibleUnits at x 300 hang above the panel)
+	_btnPanelHide = new HdPanelToggle(14, 7, x + iconsWidth - 38, y - 7);
 
 	// Create the battlemap view
 	// the actual map height is the total height minus the height of the buttonbar
@@ -445,6 +447,8 @@ BattlescapeState::BattlescapeState() :
 		add(_numVisibleUnit[i]);
 	}
 	add(_warning, "warning", "battlescape", _icons);
+	add(_btnPanelHide);
+	_btnPanelHide->setVisible(false); // think() shows it when the panel is the modern one
 	add(_txtDebug);
 	add(_txtTooltip, "textTooltip", "battlescape", _icons);
 
@@ -547,6 +551,10 @@ BattlescapeState::BattlescapeState() :
 
 	_icons->onMouseIn((ActionHandler)&BattlescapeState::mouseInIcons);
 	_icons->onMouseOut((ActionHandler)&BattlescapeState::mouseOutIcons);
+	_btnPanelHide->onMouseClick((ActionHandler)&BattlescapeState::btnPanelHideClick);
+	// a click on the arrow is not one on the map under it
+	_btnPanelHide->onMouseIn((ActionHandler)&BattlescapeState::mouseInPanelArrow);
+	_btnPanelHide->onMouseOut((ActionHandler)&BattlescapeState::mouseOutPanelArrow);
 
 	_btnUnitUp->onMouseClick((ActionHandler)&BattlescapeState::btnUnitUpClick);
 	_btnUnitUp->onKeyboardPress((ActionHandler)&BattlescapeState::btnUnitUpClick, Options::keyBattleUnitUp);
@@ -986,6 +994,27 @@ void BattlescapeState::think()
 {
 	static bool popped = false;
 
+	// HD interface: the panel's arrow is there while the panel is the modern one; the panel slides to where it goes
+	const bool panelArrow = Options::oxceHdPanelHide && HdBattleHud::on();
+	if (_btnPanelHide->getVisible() != panelArrow)
+	{
+		_btnPanelHide->setVisible(panelArrow);
+		if (!panelArrow)
+		{
+			_mouseOverPanelArrow = false;
+			_panelTarget = 0;
+			movePanel(0);
+		}
+	}
+	if (_panelShift != _panelTarget)
+	{
+		const Uint32 now = SDL_GetTicks();
+		// the whole way in about a sixth of a second, whatever the frame rate
+		const int step = std::max(1, (int)((now - _panelMovedAt) * _icons->getHeight() / 160));
+		_panelMovedAt = now;
+		movePanel(_panelTarget > _panelShift ? std::min(_panelTarget, _panelShift + step) : std::max(_panelTarget, _panelShift - step));
+	}
+
 	if (_gameTimer->isRunning())
 	{
 		if (_popups.empty())
@@ -1132,7 +1161,7 @@ void BattlescapeState::mapOver(Action *action)
 void BattlescapeState::mapPress(Action *action)
 {
 	// don't handle mouseclicks over the buttons (it overlaps with map surface)
-	if (_mouseOverIcons) return;
+	if (getMouseOverIcons()) return;
 
 	if (action->getDetails()->button.button == Options::battleDragScrollButton)
 	{
@@ -1211,7 +1240,7 @@ void BattlescapeState::mapClick(Action *action)
 	}
 
 	// don't handle mouseclicks over the buttons (it overlaps with map surface)
-	if (_mouseOverIcons) return;
+	if (getMouseOverIcons()) return;
 
 
 	// gentle mode: no click into a tile of a picture still on its way (a fraction of a second)
@@ -2024,7 +2053,7 @@ void BattlescapeState::btnSkillsClick(Action *action)
 {
 	if (playableUnitSelected() && !_battleGame->isBusy())
 	{
-		popup(new SkillMenuState(_battleGame->getCurrentAction(), _icons->getX(), _icons->getY() + 16));
+		popup(new SkillMenuState(_battleGame->getCurrentAction(), _icons->getX(), _icons->getY() - _panelShift + 16));
 	}
 	action->getDetails()->type = SDL_NOEVENT; // consume the event
 }
@@ -2699,7 +2728,7 @@ void BattlescapeState::handleItemClick(BattleItem *item, bool middleClick)
 		else
 		{
 			_battleGame->getCurrentAction()->weapon = item;
-			popup(new ActionMenuState(_battleGame->getCurrentAction(), _icons->getX(), _icons->getY() + 16));
+			popup(new ActionMenuState(_battleGame->getCurrentAction(), _icons->getX(), _icons->getY() - _panelShift + 16));
 			if (item->getRules()->getBattleType() == BT_FIREARM)
 			{
 				_battleGame->playUnitResponseSound(_battleGame->getCurrentAction()->actor, 2); // "select weapon" sound
@@ -4043,7 +4072,60 @@ void BattlescapeState::mouseOutIcons(Action *)
  */
 bool BattlescapeState::getMouseOverIcons() const
 {
-	return _mouseOverIcons;
+	return _mouseOverIcons || _mouseOverPanelArrow;
+}
+
+/**
+ * HD interface: the panel's arrow slides the panel down off the screen, or back up.
+ * @param action Pointer to an action.
+ */
+void BattlescapeState::mouseInPanelArrow(Action *)
+{
+	_mouseOverPanelArrow = true;
+}
+
+void BattlescapeState::mouseOutPanelArrow(Action *)
+{
+	_mouseOverPanelArrow = false;
+}
+
+void BattlescapeState::btnPanelHideClick(Action *)
+{
+	_panelTarget = _panelTarget ? 0 : _icons->getHeight();
+	_panelMovedAt = SDL_GetTicks();
+}
+
+/**
+ * HD interface: moves the panel and what stands on it to `shift` base pixels below its place.
+ * @param shift How far down, base pixels.
+ */
+void BattlescapeState::movePanel(int shift)
+{
+	if (_panelSurfaces.empty())
+	{
+		// what stands on the panel: what resize() moves with it, less what hangs above it (the visible units' buttons)
+		// and the warning, which must stay readable; the arrow goes down with it to the screen's edge
+		for (Surface *s : _surfaces)
+		{
+			if (s == _map || s == _btnCtrl || s == _btnAlt || s == _btnShift || s == _btnRMB || s == _btnMMB ||
+				s == _btnPsi || s == _btnLaunch || s == _btnSpecial || s == _btnSkills || s == _txtDebug || s == _warning)
+			{
+				continue;
+			}
+			if (s != _btnPanelHide && s->getY() + s->getHeight() <= _icons->getY())
+			{
+				continue;
+			}
+			_panelSurfaces.push_back(s);
+		}
+	}
+	const int dy = shift - _panelShift;
+	for (Surface *s : _panelSurfaces)
+	{
+		s->setY(s->getY() + dy);
+	}
+	_panelShift = shift;
+	_btnPanelHide->setDown(shift > 0);
 }
 
 /**

@@ -1506,6 +1506,12 @@ void Map::blit(SDL_Surface *surface)
 				{
 					ui.drawMapTag(label.text, wx, wy, label.face, label.back, label.edge);
 				}
+				else if (label.cap > 0.0f)
+				{
+					// a line box as tall as the capitals: their tops stand at wy
+					const int cx = label.centre ? wx - (int)std::lround(ui.ttfWidth(label.text, true, label.cap) * k / 2) : wx;
+					ui.drawMapText(label.text, label.cap, label.cap, cx, wy, label.face, label.edge);
+				}
 				else
 				{
 					ui.drawMapText(label.text, m.cap, (float)m.lineH, wx, wy, label.face, label.edge);
@@ -3677,7 +3683,39 @@ void Map::drawTerrain(HdCanvas *surface)
 									adjustment += 7 * _k;
 								}
 							}
-							if (_previewSettingTu)
+							if (_hdLabelsOn && Options::oxceHdPathDigits)
+							{
+								// HD interface: the numbers in the TrueType face, centred where the classic digits stand;
+								// the destination (preview 10, the path's last step) larger than the steps on the way.
+								// Colours: the bordered digit's face and outer edge, in the ramp blitClassic recolours to
+								const bool last = tile->getPreview() == 10;
+								const SDL_Color *pal = getPalette();
+								const int faceIdx = _numWaypid->getColor() + 1;
+								const int ramp = mcolor ? (mcolor - 1) << 4 : faceIdx & 0xF0, shade = faceIdx & 0x0F;
+								const bool both = _previewSettingTu && _previewSettingEnergy;
+								auto put = [&](int value, int classicY, int lastLift)
+								{
+									if (value < 0) return;
+									HdLabel label;
+									label.text = Unicode::convUtf8ToUtf32(std::to_string(value));
+									label.x = screenPosition.x + 16 * _k - _k / 2;
+									label.y = screenPosition.y + classicY - adjustment + (last ? -lastLift : 1 * _k);
+									label.cap = last ? 7.0f : 5.0f;
+									label.centre = true;
+									label.face = HdUi::rgba(pal[(Uint8)(ramp + shade)]);
+									label.edge = HdUi::rgba(pal[(Uint8)(ramp + std::min(shade + 11, 15))]);
+									_hdLabels.push_back(label);
+								};
+								if (_previewSettingTu)
+								{
+									put(tile->getTUMarker(), (both ? 22 : 29) * _k, (both ? 2 : 1) * _k);
+								}
+								if (_previewSettingEnergy)
+								{
+									put(tile->getEnergyMarker(), 29 * _k, 1 * _k);
+								}
+							}
+							else if (_previewSettingTu)
 							{
 								_numWaypid->setValue(tile->getTUMarker());
 								_numWaypid->draw();
