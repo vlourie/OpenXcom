@@ -40,6 +40,7 @@
 #include "../Engine/Sound.h"
 #include "../Mod/RuleInventory.h"
 #include "../Battlescape/AIModule.h"
+#include "../Battlescape/AiCoverMap.h"
 #include "../Battlescape/AiProbe.h"
 #include "../Engine/RNG.h"
 #include "../Engine/Options.h"
@@ -93,6 +94,9 @@ SavedBattleGame::SavedBattleGame(Mod *rule, Language *lang, bool isPreview) :
  */
 SavedBattleGame::~SavedBattleGame()
 {
+#ifdef OXCE_AI_DEV
+	AiCoverMap::reset(this);
+#endif
 	for (auto* mds : _mapDataSets)
 	{
 		mds->unloadData();

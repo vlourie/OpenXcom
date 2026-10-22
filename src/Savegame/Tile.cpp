@@ -32,6 +32,7 @@
 #include "../Battlescape/BattlescapeGame.h"
 #include "../fmath.h"
 #include "SavedBattleGame.h"
+#include "../Battlescape/AiCoverMap.h"
 
 namespace OpenXcom
 {
@@ -219,6 +220,9 @@ void Tile::saveBinary(Uint8** buffer) const
  */
 void Tile::setMapData(MapData *dat, int mapDataID, int mapDataSetID, TilePart part)
 {
+#ifdef OXCE_AI_DEV
+	AiCoverMap::touch(_pos);
+#endif
 	_objects[part] = dat;
 	_mapData->ID[part] = mapDataID;
 	_mapData->SetID[part] = mapDataSetID;
@@ -394,6 +398,9 @@ int Tile::openDoor(TilePart part, BattleUnit *unit, BattleActionType reserve, bo
 		if (unit && cost.Time && !cost.haveTU())
 			return 4;
 		_objectsCache[part].currentFrame = 1; // start opening door
+#ifdef OXCE_AI_DEV
+		AiCoverMap::touch(_pos);
+#endif
 		updateSprite((TilePart)part);
 		return 1;
 	}
@@ -413,6 +420,9 @@ int Tile::closeUfoDoor()
 		if (isUfoDoorOpen((TilePart)part))
 		{
 			_objectsCache[part].currentFrame = 0;
+#ifdef OXCE_AI_DEV
+			AiCoverMap::touch(_pos);
+#endif
 			retval = 1;
 			updateSprite((TilePart)part);
 		}

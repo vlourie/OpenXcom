@@ -21,6 +21,7 @@
 #include "TileEngine.h"
 #include "AIModule.h"
 #include "AiProbe.h"
+#include "AiCoverMap.h"
 #include "Map.h"
 #include "Camera.h"
 #include "Projectile.h"
@@ -4575,6 +4576,67 @@ int TileEngine::calculateLineTile(Position origin, Position target, std::vector<
 		return 256;
 	}
 	return 0;
+}
+
+/**
+ * AiCoverMap: TileEngine::voxelCheck's terrain test with all units excluded - the same tile parts, the same grav lift
+ * floor and open UFO door rules - but without the tile cache of the engine, so several threads can run it at once.
+ */
+VoxelType terrainVoxel(const SavedBattleGame *save, const std::vector<Uint16> *voxelData, Position voxel)
+{
+	if (voxel.x < 0 || voxel.y < 0 || voxel.z < 0)
+	{
+		return V_OUTOFBOUNDS;
+	}
+	const Tile *tile = save->getTile(voxel.toTile());
+	if (!tile)
+	{
+		return V_OUTOFBOUNDS;
+	}
+	if (tile->isVoid())
+	{
+		return V_EMPTY;
+	}
+	if (tile->hasGravLiftFloor() && (voxel.z % 24 == 0 || voxel.z % 24 == 1))
+	{
+		const Tile *tileBelow = save->getBelowTile(tile);
+		if (!(tileBelow && tileBelow->hasGravLiftFloor()))
+		{
+			return V_FLOOR;
+		}
+	}
+	for (int i = V_FLOOR; i <= V_OBJECT; ++i)
+	{
+		TilePart tp = (TilePart)i;
+		const MapData *mp = tile->getMapData(tp);
+		if (((tp == O_WESTWALL) || (tp == O_NORTHWALL)) && tile->isUfoDoorOpen(tp))
+			continue;
+		if (mp != 0)
+		{
+			int x = 15 - voxel.x%16;
+			int y = voxel.y%16;
+			int idx = (mp->getLoftID((voxel.z%24)/2)*16) + y;
+			if (voxelData->at(idx) & (1 << x))
+			{
+				return (VoxelType)i;
+			}
+		}
+	}
+	return V_EMPTY;
+}
+
+/**
+ * AiCoverMap: TileEngine::calculateLineVoxel's walk over terrainVoxel - what a line meets first on the terrain.
+ */
+VoxelType terrainLineVoxel(const SavedBattleGame *save, const std::vector<Uint16> *voxelData, Position origin, Position target)
+{
+	VoxelType result = V_EMPTY;
+	auto test = [&](Position point)
+	{
+		result = terrainVoxel(save, voxelData, point);
+		return result != V_EMPTY;
+	};
+	return calculateLineHelper(origin, target, test, test) ? result : V_EMPTY;
 }
 
 /**
