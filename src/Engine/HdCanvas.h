@@ -174,6 +174,9 @@ public:
 
 	/// Clears the canvas to a palette color.
 	virtual void fill(Uint8 color) = 0;
+	/// Clears the canvas to a vertical gradient around a palette color (Options::oxceHdBackdrop): darker at the top,
+	/// the color itself in the middle, a pale haze at the bottom. A palette canvas has only the flat color.
+	virtual void fillBackdrop(Uint8 color) { fill(color); }
 	/// Draws a palette sprite (Surface::blitRaw semantics).
 	virtual void blit(SurfaceRaw<const Uint8> src, int x, int y, int shade, bool half = false, int newBaseColor = 0) = 0;
 	/// Draws a palette sprite clipped to a rectangle (Surface::blitNShade(range) semantics).
@@ -288,7 +291,7 @@ private:
 	/// One recorded drawing call.
 	struct Cmd
 	{
-		enum Type : Uint8 { FILL, BLIT, BLIT_HD, BLIT_HD_LIT, BLIT_SCALED, VAPOR, FLASH };
+		enum Type : Uint8 { FILL, BLIT, BLIT_HD, BLIT_HD_LIT, BLIT_SCALED, VAPOR, FLASH, FILL_BACKDROP };
 		Type type;
 		Uint8 color;
 		Uint8 newBaseColor;
@@ -305,6 +308,8 @@ private:
 		GraphSubset srcDomain;
 		GraphSubset clip;
 		SDL_Color tint;
+		/// FILL_BACKDROP: the colors of the top, the middle and the bottom row (r, g, b).
+		Uint8 backdrop[3][3];
 		int size;
 		/// VAPOR: the palette transparency table of the classic canvas (exact colors in HD_MODE_NEAREST).
 		const Uint8 *transparencyLUT;
@@ -590,6 +595,7 @@ private:
 	/// Runs one command on the rows [y0, y1).
 	void execute(const Cmd &cmd, int y0, int y1);
 	void doFill(Uint8 color, int y0, int y1);
+	void doFillBackdrop(const Cmd &cmd, int y0, int y1);
 	void doBlit(SurfaceRaw<const Uint8> src, const SpanTable &spans, GraphSubset srcDomain, int x, int y, const Uint32 *table, GraphSubset destClip);
 	void doBlitHd(const HdFrame &hd, int x, int y, int shade, GraphSubset srcDomain, int newBaseColor, GraphSubset destClip);
 	void doBlitScaled(const Uint8 *src, int srcW, int srcH, int x, int y, int scale, int shade, int newBaseColor, GraphSubset destClip);
@@ -608,6 +614,7 @@ public:
 	int getWidth() const override { return _width; }
 	int getHeight() const override { return _height; }
 	void fill(Uint8 color) override;
+	void fillBackdrop(Uint8 color) override;
 	void blit(SurfaceRaw<const Uint8> src, int x, int y, int shade, bool half = false, int newBaseColor = 0) override;
 	void blit(SurfaceRaw<const Uint8> src, int x, int y, int shade, GraphSubset range) override;
 	void blitScripted(ScriptWorkerBlit &work, const Surface *src, int x, int y, int shade, GraphSubset range, ScriptWorkerBlit *unlit = nullptr) override;

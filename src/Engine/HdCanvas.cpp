@@ -457,6 +457,29 @@ void Canvas32::fill(Uint8 color)
 	record(cmd);
 }
 
+/**
+ * Options::oxceHdBackdrop: a vertical gradient around the palette color in place of the flat fill. The top is the
+ * color darkened, the middle a tenth of the way to a pale haze, the bottom three tenths of the way (a black
+ * background goes from black to a dim blue-grey). Recorded like the flat fill and painted by the strips.
+ */
+void Canvas32::fillBackdrop(Uint8 color)
+{
+	Cmd cmd {};
+	cmd.type = Cmd::FILL_BACKDROP;
+	cmd.color = color;
+	cmd.y0 = 0;
+	cmd.y1 = _height;
+	static const int HAZE[3] = { 150, 165, 185 };
+	const int base[3] = { _colors[color].r, _colors[color].g, _colors[color].b };
+	for (int c = 0; c < 3; ++c)
+	{
+		cmd.backdrop[0][c] = (Uint8)(base[c] * 78 / 100);
+		cmd.backdrop[1][c] = (Uint8)((base[c] * 90 + HAZE[c] * 10) / 100);
+		cmd.backdrop[2][c] = (Uint8)((base[c] * 70 + HAZE[c] * 30) / 100);
+	}
+	record(cmd);
+}
+
 namespace
 {
 	Uint32 fmix32(Uint32 v)
@@ -1661,6 +1684,9 @@ void Canvas32::execute(const Cmd &cmd, int y0, int y1)
 	case Cmd::FILL:
 		doFill(cmd.color, y0, y1);
 		break;
+	case Cmd::FILL_BACKDROP:
+		doFillBackdrop(cmd, y0, y1);
+		break;
 	case Cmd::BLIT:
 	{
 		Uint32 scratch[256];
@@ -1690,6 +1716,28 @@ void Canvas32::doFill(Uint8 color, int y0, int y1)
 	const Uint32 value = _lut[color];
 	for (int y = y0; y < y1; ++y)
 	{
+		Uint32 *row = rowPtr(y);
+		for (int x = 0; x < _width; ++x)
+		{
+			row[x] = value;
+		}
+	}
+}
+
+void Canvas32::doFillBackdrop(const Cmd &cmd, int y0, int y1)
+{
+	for (int y = y0; y < y1; ++y)
+	{
+		// the row's place 0..2: 0 top, 1 middle, 2 bottom; between two stops the colors mix linearly (8-bit weight)
+		const int pos = (int)(((2LL * y + 1) * 512) / (2LL * _height));
+		const int seg = pos >= 256 ? 1 : 0;
+		const int w = pos >= 256 ? std::min(pos - 256, 256) : pos;
+		int rgb[3];
+		for (int c = 0; c < 3; ++c)
+		{
+			rgb[c] = (cmd.backdrop[seg][c] * (256 - w) + cmd.backdrop[seg + 1][c] * w + 128) >> 8;
+		}
+		const Uint32 value = pack(rgb[0], rgb[1], rgb[2]) | _surface->format->Amask;
 		Uint32 *row = rowPtr(y);
 		for (int x = 0; x < _width; ++x)
 		{

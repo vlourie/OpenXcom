@@ -256,6 +256,9 @@ OPT bool oxceHdQuickFlight, oxceHdLooseHits;
 // Battlescape: an unseen enemy's turn shows the map as the player last saw it (the camera stays put) instead of the
 // hidden movement screen; nothing the player cannot see is drawn (Map::draw). Picture only
 OPT bool oxceHdHiddenMap;
+// Battlescape: the backdrop beyond the map's edge is a vertical gradient from the environment's background colour
+// instead of one flat colour (Map::draw). Off by default; picture only
+OPT bool oxceHdBackdrop;
 // Ufopaedia: the weapon article's attack table has a range column (the range of the attack, at most the weapon's)
 OPT bool oxceHdPediaRange;
 // Battlescape: no saving or loading inside a battle (pause menu buttons, quick/insta save, quick load, turn autosave,

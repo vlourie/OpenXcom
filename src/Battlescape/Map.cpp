@@ -1079,7 +1079,15 @@ void Map::draw()
 	const auto drawStart = std::chrono::steady_clock::now();
 	_hdLabels.clear();
 	_hdLabelsOn = hdLabelsWanted();
-	_canvas->fill(Palette::blockOffset(0) + _bgColor);
+	if (Options::oxceHdBackdrop)
+	{
+		// the backdrop beyond the map's edge as a gradient around the environment's colour (a palette canvas: flat as ever)
+		_canvas->fillBackdrop(Palette::blockOffset(0) + _bgColor);
+	}
+	else
+	{
+		_canvas->fill(Palette::blockOffset(0) + _bgColor);
+	}
 	// HD light: smooth colored light only on the true-color canvas in the HD modes
 	_hdLightOn = Options::oxceHdLight && _canvas->getHdMode() != HD_MODE_NEAREST;
 	if (_hdLightOn)
