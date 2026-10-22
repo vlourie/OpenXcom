@@ -57,13 +57,27 @@ namespace OpenXcom
  *                                    (x y w h, pack pixels from the tile's corner), colour
  *     walk 8 0011110001111110...     where the crew may stand: n x n squares of the tile, row by row,
  *                                    1 - bare floor (tools/hdart/base_scene_pack.py walk_mask)
+ *     cycle 45 16                    the facility moves in fits (tickets 237-245): one about every 45 s, 16 s
+ *                                    long, no more than three facilities of the base at once; its swings and
+ *                                    turret beams, glows, lid and sink move only in a fit, its burst lights burn
+ *                                    only then
+ *     glow 13 13 88 88 18 14 0.60 0.55 1 4
+ *                                    in a fit the pixels of a hue go darker or brighter: box x y w h, hue and its
+ *                                    tolerance (degrees), saturation from, brightness at the peak (< 1 darker),
+ *                                    pulses a fit, groups round the box's middle going dark one after another
+ *     lid 63 63.5 14.5 8 3           an eye closes and opens: middle, half axes, blinks a fit; the lid is the
+ *                                    colour of the picture just above the eye
+ *     sink 46 44 35 36 55 54 18 18 2 a platform sinks and darkens while its hatch rises and reddens: the
+ *                                    platform's box, the hatch's box, pulses a fit
+ *     light 67.7 67.4 9 burst 0.55 1 0.45 2 0
+ *                                    a burst light burns only in a fit: its period is the pulses a fit
  *
  * Only the picture changes: the light is drawn over the world layer from the display clock, the
  * game's state is only read (the time of day, whether the base researches and builds).
  */
 namespace HdBaseScene
 {
-	enum Kind { STEADY, BLINK, PULSE, SCREEN, FLICKER, TV, CHASE, WELD, DUTY };
+	enum Kind { STEADY, BLINK, PULSE, SCREEN, FLICKER, TV, CHASE, WELD, DUTY, BURST };
 	enum Gate { GATE_NONE, GATE_LAB, GATE_WORK, GATE_HOME };
 
 	struct Light
@@ -93,6 +107,31 @@ namespace HdBaseScene
 		float r = 1, g = 1, b = 1;
 	};
 
+	/// The pixels of a hue going darker or brighter in a fit (a shield's lamps, a decoder's cables).
+	struct Glow
+	{
+		float x = 0, y = 0, w = 0, h = 0; ///< pack pixels from the tile's corner
+		float hue = 0, tolerance = 0;     ///< degrees
+		float saturation = 0;             ///< from
+		float peak = 1;                   ///< the brightness at the peak
+		int pulses = 1, groups = 1;
+	};
+
+	/// An eye closing and opening in a fit.
+	struct Lid
+	{
+		float x = 0, y = 0, rx = 0, ry = 0;
+		int blinks = 1;
+	};
+
+	/// A lift's platform sinking in a fit while its hatch rises.
+	struct Sink
+	{
+		float x = 0, y = 0, w = 0, h = 0;      ///< the platform
+		float ix = 0, iy = 0, iw = 0, ih = 0;  ///< the hatch in it
+		int pulses = 1;
+	};
+
 	struct TileScene
 	{
 		int width = 128, height = 128;    ///< the tile's picture in the pack
@@ -104,6 +143,10 @@ namespace HdBaseScene
 		int water = 0;                    ///< 0 none, 1 blue, 2 green: which of the picture is water
 		float glint[3] = { 1, 1, 1 };     ///< the colour of its glints
 		std::vector<Spin> spins;
+		float cycle = 0, fit = 0;         ///< seconds from one fit to the next and of a fit; 0 - it moves all the time
+		std::vector<Glow> glows;
+		std::vector<Lid> lids;
+		std::vector<Sink> sinks;
 	};
 
 	/// Reads a `.scene.txt`; false when it holds nothing usable.
@@ -138,6 +181,37 @@ namespace HdBaseScene
 		float phase = 0;                  ///< staggers the facilities
 		HdFrame piece;                    ///< the piece alone (HdBase::layer), empty - a round piece of the picture turns
 		int px = 0, py = 0;               ///< where the piece's frame lies in the world layer
+		int fit = -1;                     ///< its facility's fit (View::fits), -1 - it turns all the time
+	};
+
+	/// When a facility's fits come: its own period, no more than three facilities at once (View::fits).
+	struct Fit
+	{
+		float period = 45, length = 10;   ///< seconds
+		Uint32 seed = 0;                  ///< staggers the periods of the facilities
+		Uint32 next = 0, start = 0;       ///< ms of the display clock: when it is due, when it began
+		bool on = false;
+	};
+
+	/// A glow, a lid and a sink where they are on the world layer (world pixels).
+	struct PlacedGlow
+	{
+		Glow glow;
+		int fit = -1;
+		std::vector<Uint32> pixels;       ///< which of the view (y * w + x), picked from the albedo by bake
+		std::vector<unsigned char> group;
+	};
+	struct PlacedLid
+	{
+		Lid lid;
+		int fit = -1;
+		float colour[3] = { 150, 140, 128 };  ///< 0..255: the picture above the eye, from bake
+		float scale = 1;                  ///< world pixels per pack pixel
+	};
+	struct PlacedSink
+	{
+		Sink sink;
+		int fit = -1;
 	};
 
 	/// The whole base view as the preview saw it (base_scene_preview.py Scene), made once for a layout of
@@ -154,7 +228,24 @@ namespace HdBaseScene
 		struct Area { SDL_Rect box; float glint[3]; };
 		std::vector<Area> waters;
 		std::vector<PlacedSpin> spins;
+		std::vector<Fit> fits;
+		std::vector<int> facilityFit;     ///< the fit of the caller's n-th facility, -1 none
+		std::vector<PlacedGlow> glows;
+		std::vector<PlacedLid> lids;
+		std::vector<PlacedSink> sinks;
+		Uint32 fitsAt = 0;                ///< the display clock of the last tick, 0 - not yet
 	};
+
+	/// Starts and ends the fits as at `ms` (once a frame, before drawMotion): a due one starts while fewer than
+	/// three run, the others wait a few seconds. A long gap (the base screen left and back) deals them anew.
+	void tick(View &view, Uint32 ms);
+
+	/// Seconds into the fit, -1 between fits (or no such fit). OXCE_HD_BASE_FIT=<s> holds every fit at <s>
+	/// for a test dump.
+	float fitTime(const View &view, int fit, Uint32 ms);
+
+	/// 0..1: `pulses` smooth humps over a fit of `length` seconds, `t` seconds into it; 0 outside.
+	float fitWave(float t, float length, int pulses);
 
 	/// Makes `view` from its `albedo`, which holds the pictures of the facilities with
 	/// their alpha - everything else transparent: lays them over `rock` (a whole-base picture, nullptr - plain

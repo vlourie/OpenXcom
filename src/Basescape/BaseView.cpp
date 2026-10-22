@@ -796,10 +796,18 @@ void BaseView::drawHdScene(SDL_Surface *world, int k, Uint32 now)
 	plan.seed = (Uint32)std::lround(_base->getLongitude() * 1000) * 31u + (Uint32)std::lround(_base->getLatitude() * 1000);
 	const float cellPx = (float)(GRID_SIZE * k);
 	const float site = cellPx / 128.0f;           // world pixels per pack pixel, for the building sites
+	// the fits of the facilities (tickets 237-245): which run now, their turrets, glows and bursts below
+	const HdBaseScene::View *view = hdLayout(k);
+	if (view)
+	{
+		HdBaseScene::tick(hdLayoutMade.view, now);
+	}
 	int number = 0;
 	for (const auto* fac : *_base->getFacilities())
 	{
 		++number;
+		const int fit = view && number - 1 < (int)view->facilityFit.size() ? view->facilityFit[number - 1] : -1;
+		const float fitAt = fit >= 0 ? HdBaseScene::fitTime(*view, fit, now) : 0.0f;
 		const bool building = isHdBuilding(fac);
 		if (!isHdFacility(fac) && !building)
 		{
@@ -922,12 +930,26 @@ void BaseView::drawHdScene(SDL_Surface *world, int k, Uint32 now)
 					p.light.radius = light.radius * s;
 					p.scale = s;
 					p.level = level;
+					if (light.kind == HdBaseScene::BURST)
+					{
+						// burns only in the facility's fit, its period the pulses of a fit
+						if (fit < 0 || fitAt < 0)
+						{
+							continue;
+						}
+						p.level *= HdBaseScene::fitWave(fitAt, view->fits[fit].length, std::max(1, (int)light.period));
+					}
 					p.home = scene->gate == HdBaseScene::GATE_HOME;
 					p.seed = (seed = seed * 1103515245u + 12345u) >> 8;
 					lights.push_back(p);
 				}
 				for (const HdBaseScene::Emit &emit : scene->emits)
 				{
+					if (fit >= 0 && fitAt < 0 &&
+						(emit.kind == HdBaseScene::SWEEP || emit.kind == HdBaseScene::ORBIT || emit.kind == HdBaseScene::BEAM))
+					{
+						continue;           // the turret's beam sweeps only in its fit
+					}
 					HdBaseScene::PlacedEmit e;
 					e.emit = emit;
 					e.emit.x = ox + emit.x * s;
@@ -944,7 +966,6 @@ void BaseView::drawHdScene(SDL_Surface *world, int k, Uint32 now)
 	}
 	const SDL_Rect area = { (Sint16)(getX() * k), (Sint16)(getY() * k), (Uint16)(getWidth() * k), (Uint16)(getHeight() * k) };
 	// the water ripples and the dishes turn under the crew; the lamps fall on the relief of the pictures
-	const HdBaseScene::View *view = hdLayout(k);
 	if (view)
 	{
 		HdBaseScene::drawMotion(world, *view, now);
@@ -1015,9 +1036,12 @@ const HdBaseScene::View *BaseView::hdLayout(int k)
 		}
 	}
 	std::vector<HdBaseScene::PlacedWater> waters;
+	int number = 0;
 	for (const auto *fac : *_base->getFacilities())
 	{
 		const RuleBaseFacility *rules = fac->getRules();
+		view.facilityFit.push_back(-1);
+		++number;
 		if (isHdBuilding(fac))
 		{
 			continue;               // the site: bare rock under the blueprint (drawBuilding)
@@ -1025,6 +1049,7 @@ const HdBaseScene::View *BaseView::hdLayout(int k)
 		const bool hd = isHdFacility(fac);
 		bool water = false;
 		int num = 0;
+		int fit = -1;
 		for (int y = fac->getY(); y < fac->getY() + rules->getSizeY(); ++y)
 		{
 			for (int x = fac->getX(); x < fac->getX() + rules->getSizeX(); ++x)
@@ -1051,6 +1076,65 @@ const HdBaseScene::View *BaseView::hdLayout(int k)
 					continue;
 				}
 				const float s = (float)cell / scene->width;
+				// the facility moves in fits (tickets 237-245): one fit for all its tiles
+				if (scene->cycle > 0 && fit < 0)
+				{
+					HdBaseScene::Fit F;
+					F.period = scene->cycle;
+					F.length = scene->fit;
+					F.seed = (Uint32)number * 2654435761u ^ (Uint32)(fac->getX() * 31 + fac->getY());
+					fit = (int)view.fits.size();
+					view.fits.push_back(F);
+					view.facilityFit.back() = fit;
+				}
+				const float tx = (float)(view.x + x * cell), ty = (float)(view.y + y * cell);
+				for (const HdBaseScene::Glow &glow : scene->glows)
+				{
+					HdBaseScene::PlacedGlow p;
+					p.glow = glow;
+					p.glow.x = tx + glow.x * s;
+					p.glow.y = ty + glow.y * s;
+					p.glow.w = glow.w * s;
+					p.glow.h = glow.h * s;
+					p.fit = fit;
+					if (fit >= 0)
+					{
+						view.glows.push_back(p);
+					}
+				}
+				for (const HdBaseScene::Lid &lid : scene->lids)
+				{
+					HdBaseScene::PlacedLid p;
+					p.lid = lid;
+					p.lid.x = tx + lid.x * s;
+					p.lid.y = ty + lid.y * s;
+					p.lid.rx = lid.rx * s;
+					p.lid.ry = lid.ry * s;
+					p.fit = fit;
+					p.scale = s;
+					if (fit >= 0)
+					{
+						view.lids.push_back(p);
+					}
+				}
+				for (const HdBaseScene::Sink &sink : scene->sinks)
+				{
+					HdBaseScene::PlacedSink p;
+					p.sink = sink;
+					p.sink.x = tx + sink.x * s;
+					p.sink.y = ty + sink.y * s;
+					p.sink.w = sink.w * s;
+					p.sink.h = sink.h * s;
+					p.sink.ix = tx + sink.ix * s;
+					p.sink.iy = ty + sink.iy * s;
+					p.sink.iw = sink.iw * s;
+					p.sink.ih = sink.ih * s;
+					p.fit = fit;
+					if (fit >= 0)
+					{
+						view.sinks.push_back(p);
+					}
+				}
 				if (scene->water && !water)
 				{
 					water = true;
@@ -1069,6 +1153,7 @@ const HdBaseScene::View *BaseView::hdLayout(int k)
 					p.spin.y = view.y + y * cell + spin.y * s;
 					p.spin.radius = spin.radius * s;
 					p.phase = (float)((x * 7 + y * 13) % 17) / 17.0f;
+					p.fit = fit;
 					if (const HdFrame *piece = under ? HdBase::layer(index, true, k, GRID_SIZE, GRID_SIZE) : nullptr)
 					{
 						p.piece = *piece;
