@@ -4285,6 +4285,36 @@ bool AIModule::findFirePoint()
 		c.skipTargetCell = skipTargetCell;
 		c.ko2 = ko2;
 		cellShadow(s, cellReal, false, c);
+		// why no line: the centre line from the unit's own cell (the loop's origin) to the target's middle - no random numbers
+		Tile *fromTile = _save->getTile(_unit->getPosition());
+		Tile *targetTile = _aggroTarget->getTile();
+		if (fromTile && targetTile)
+		{
+			s.dist = (int)std::ceil(std::sqrt((float)_unit->distance3dToUnitSq(_aggroTarget)));
+			s.dz = targetTile->getPosition().z - _unit->getPosition().z;
+			s.seen = _unit->hasVisibleUnit(_aggroTarget) ? 1 : 0;
+			const Position from = _unit->getPosition().toVoxel() +
+				Position(8, 8, _unit->getHeight() + _unit->getFloatHeight() - fromTile->getTerrainLevel() - 4);
+			const Position to = targetTile->getPosition().toVoxel() +
+				Position(8, 8, _aggroTarget->getFloatHeight() - targetTile->getTerrainLevel() + _aggroTarget->getHeight() / 2);
+			std::vector<Position> hit;
+			const VoxelType v = _save->getTileEngine()->calculateLineVoxel(from, to, false, &hit, _unit);
+			s.blk = (int)v;
+			if (v != V_EMPTY && !hit.empty())
+			{
+				const Position at = hit.back().toTile();
+				Tile *hitTile = _save->getTile(at);
+				s.blkDist = Position::distance2d(_unit->getPosition(), at);
+				if (v == V_UNIT && hitTile && hitTile->getUnit() == _aggroTarget)
+				{
+					s.blk = 6;
+				}
+				else if (hitTile && v >= V_FLOOR && v <= V_OBJECT && hitTile->getMapData((TilePart)v))
+				{
+					s.blkArmor = hitTile->getMapData((TilePart)v)->getArmor();
+				}
+			}
+		}
 		AiProbe::cellSearch(_save, _unit, "fp", s);
 	}
 	AiProbe::hypoEnd(_unit, "firepoint", bestScore > 70, _attackAction.target, bestScore);
@@ -4480,6 +4510,8 @@ void AIModule::cellShadow(AiProbe::CellStat &s, const std::vector<std::pair<int,
 	}
 	const Position me = _unit->getPosition();
 	std::vector<Position> win, levels, far;
+	// OXCE_AI_CELLPROF=2: no far class - the A* to every reachable tile of the map is nearly all of the audit's cost (R-449)
+	static const bool noFar = AiProbe::param("OXCE_AI_CELLPROF", 1) == 2;
 	if (ambush)
 	{
 		// the real loop's own filter (any node, not dangerous, reachable), split by its distance and level checks
@@ -4492,7 +4524,10 @@ void AIModule::cellShadow(AiProbe::CellStat &s, const std::vector<std::pair<int,
 			if (t == 0 || t->getDangerous() || !reach[_save->getTileIndex(p)])
 				continue;
 			if (Position::distance2d(p, me) > 10)
-				far.push_back(p);
+			{
+				if (!noFar)
+					far.push_back(p);
+			}
 			else if (p.z == me.z)
 				win.push_back(p);
 			else
@@ -4519,7 +4554,7 @@ void AIModule::cellShadow(AiProbe::CellStat &s, const std::vector<std::pair<int,
 					levels.push_back(p);
 			}
 		}
-		for (int i = 0; i < mapSize; ++i)
+		for (int i = 0; i < mapSize && !noFar; ++i)
 		{
 			if (reach[i] && !inWindow[i])
 				far.push_back(_save->getTileCoords(i));
