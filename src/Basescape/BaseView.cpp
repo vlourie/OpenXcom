@@ -30,9 +30,11 @@
 #include "../Engine/Timer.h"
 #include "../Engine/Options.h"
 #include <climits>
+#include <cstdlib>
 #include <map>
 #include "../Mod/Texture.h"
 #include "../Engine/HdBase.h"
+#include "../Engine/HdBaseLife.h"
 #include "../Engine/HdCraftLights.h"
 #include "../Engine/HdSmooth.h"
 #include "../Engine/HdUi.h"
@@ -584,6 +586,29 @@ bool BaseView::isHdFacility(const BaseFacility *facility) const
 }
 
 /**
+ * A facility being built in the living base (HdBaseScene::drawBuilding): with the lit pictures, one
+ * whose tiles all have a picture leaves the classic layer like a built one; its number of days stays.
+ * @param facility The facility.
+ * @return True when it is drawn in the world layer as a blueprint growing into its picture.
+ */
+bool BaseView::isHdBuilding(const BaseFacility *facility) const
+{
+	if (!facility || facility->getBuildTime() == 0 || !hdScenes())
+	{
+		return false;
+	}
+	const int tiles = facility->getRules()->getSizeX() * facility->getRules()->getSizeY();
+	for (int num = 0; num < tiles; ++num)
+	{
+		if (HdBase::phases(hdTileIndex(facility, num)) == 0)
+		{
+			return false;
+		}
+	}
+	return true;
+}
+
+/**
  * Draws the HD pictures of the facilities into the true-color world layer, where
  * the holes left in the classic layer (see draw) show them.
  */
@@ -605,7 +630,7 @@ void BaseView::drawHd()
 	std::vector<HdBase::Want> want;
 	for (const auto* fac : *_base->getFacilities())
 	{
-		if (!isHdFacility(fac))
+		if (!isHdFacility(fac) && !isHdBuilding(fac))
 		{
 			continue;
 		}
@@ -644,7 +669,8 @@ void BaseView::drawHd()
 	}
 	for (const auto* fac : *_base->getFacilities())
 	{
-		if (!isHdFacility(fac))
+		const bool building = isHdBuilding(fac);
+		if (!isHdFacility(fac) && !building)
 		{
 			continue;
 		}
@@ -668,6 +694,21 @@ void BaseView::drawHd()
 				}
 				++num;
 			}
+		}
+		if (building)
+		{
+			// the share of the build time gone by (only read); a little of it shows from the first day
+			const int total = fac->getRules()->getBuildTime();
+			float progress = total > 0 ? 1.0f - (float)fac->getBuildTime() / total : 0.5f;
+			// OXCE_HD_BASE_BUILD=0..1: every site that far on (a test of the look, as OXCE_HD_BASE_NIGHT)
+			if (const char *env = std::getenv("OXCE_HD_BASE_BUILD"))
+			{
+				progress = (float)std::atof(env);
+			}
+			const SDL_Rect rect = { (Sint16)((getX() + fac->getX() * GRID_SIZE) * k), (Sint16)((getY() + fac->getY() * GRID_SIZE) * k),
+				(Uint16)(fac->getRules()->getSizeX() * GRID_SIZE * k), (Uint16)(fac->getRules()->getSizeY() * GRID_SIZE * k) };
+			HdBaseScene::drawBuilding(world, rect, std::min(0.97f, std::max(0.04f, progress)), GRID_SIZE * k / 128.0f,
+				seed * 2654435761u, now);
 		}
 	}
 	// the craft over its HD hangar (a classic hangar keeps its craft on the classic layer)
@@ -710,10 +751,93 @@ void BaseView::drawHdScene(SDL_Surface *world, int k, Uint32 now)
 	const float labs = _base->getUsedLaboratories() > 0 ? 1.0f : 0.25f;
 	const float works = _base->getUsedWorkshops() > 0 ? 1.0f : 0.25f;
 	std::vector<HdBaseScene::Placed> lights;
+	std::vector<HdBaseScene::PlacedEmit> emits;
+	// the crew's view of the base (HdBaseLife): where to walk, work and sleep, and how many hands
+	HdBaseLife::Plan plan;
+	plan.scientists = _base->getTotalScientists();
+	plan.engineers = _base->getTotalEngineers();
+	plan.soldiers = (int)_base->getSoldiers()->size();
+	plan.researching = _base->getUsedLaboratories() > 0;
+	plan.producing = _base->getUsedWorkshops() > 0;
+	plan.seed = (Uint32)std::lround(_base->getLongitude() * 1000) * 31u + (Uint32)std::lround(_base->getLatitude() * 1000);
+	const float cellPx = (float)(GRID_SIZE * k);
+	const float site = cellPx / 128.0f;           // world pixels per pack pixel, for the building sites
+	int number = 0;
 	for (const auto* fac : *_base->getFacilities())
 	{
-		if (!isHdFacility(fac))
+		++number;
+		const bool building = isHdBuilding(fac);
+		if (!isHdFacility(fac) && !building)
 		{
+			continue;
+		}
+		const RuleBaseFacility *rules = fac->getRules();
+		int bits = 0;
+		if (building)
+		{
+			bits = HdBaseLife::BUILD;
+		}
+		else if (!fac->getDisabled())
+		{
+			bits |= rules->getLaboratories() > 0 ? HdBaseLife::LAB : 0;
+			bits |= rules->getWorkshops() > 0 ? HdBaseLife::WORK : 0;
+			bits |= rules->getPersonnel() > 0 ? HdBaseLife::HOME : 0;
+			bits |= rules->getAliens() > 0 ? HdBaseLife::PRISON : 0;
+			bits |= rules->getSickBayAbsoluteBonus() > 0 || rules->getSickBayRelativeBonus() > 0 ? HdBaseLife::MED : 0;
+			bits |= rules->getTrainingFacilities() > 0 ? HdBaseLife::GYM : 0;
+			bits |= rules->getCrafts() > 0 ? HdBaseLife::HANGAR : 0;
+			bits |= rules->getStorage() > 0 ? HdBaseLife::STORE : 0;
+		}
+		for (int y = fac->getY(); y < fac->getY() + rules->getSizeY(); ++y)
+		{
+			for (int x = fac->getX(); x < fac->getX() + rules->getSizeX(); ++x)
+			{
+				if (x >= 0 && y >= 0 && x < HdBaseLife::SIZE && y < HdBaseLife::SIZE)
+				{
+					plan.facility[x][y] = number;
+					plan.place[x][y] = bits ? bits : (int)HdBaseLife::OTHER;
+				}
+			}
+		}
+		if (building)
+		{
+			// the site: a work lamp over it, sparks of welding and dust
+			const float fx = (float)((getX() + fac->getX() * GRID_SIZE) * k), fy = (float)((getY() + fac->getY() * GRID_SIZE) * k);
+			const float fw = rules->getSizeX() * cellPx, fh = rules->getSizeY() * cellPx;
+			HdBaseScene::Placed lamp;
+			lamp.light.x = fx + fw / 2;
+			lamp.light.y = fy + fh / 2;
+			lamp.light.radius = 0.6f * std::max(fw, fh);
+			lamp.light.kind = HdBaseScene::STEADY;
+			lamp.light.r = 1.0f;
+			lamp.light.g = 0.9f;
+			lamp.light.b = 0.7f;
+			lamp.scale = site;
+			lamp.level = 0.7f;
+			lights.push_back(lamp);
+			HdBaseScene::PlacedEmit sparks;
+			sparks.emit.kind = HdBaseScene::SPARKS;
+			sparks.emit.x = fx + fw * 0.2f;
+			sparks.emit.y = fy + fh * 0.2f;
+			sparks.emit.w = fw * 0.6f;
+			sparks.emit.h = fh * 0.6f;
+			sparks.emit.r = 1.0f;
+			sparks.emit.g = 0.75f;
+			sparks.emit.b = 0.35f;
+			sparks.scale = site;
+			sparks.seed = (Uint32)number * 7919u;
+			emits.push_back(sparks);
+			HdBaseScene::PlacedEmit dust = sparks;
+			dust.emit.kind = HdBaseScene::STEAM;
+			dust.emit.x = fx + fw * 0.1f;
+			dust.emit.y = fy + fh * 0.15f;
+			dust.emit.w = fw * 0.8f;
+			dust.emit.h = fh * 0.8f;
+			dust.emit.r = 0.62f;
+			dust.emit.g = 0.54f;
+			dust.emit.b = 0.44f;
+			dust.seed = (Uint32)number * 104729u;
+			emits.push_back(dust);
 			continue;
 		}
 		int num = 0;
@@ -748,11 +872,27 @@ void BaseView::drawHdScene(SDL_Surface *world, int k, Uint32 now)
 					p.seed = (seed = seed * 1103515245u + 12345u) >> 8;
 					lights.push_back(p);
 				}
+				for (const HdBaseScene::Emit &emit : scene->emits)
+				{
+					HdBaseScene::PlacedEmit e;
+					e.emit = emit;
+					e.emit.x = ox + emit.x * s;
+					e.emit.y = oy + emit.y * s;
+					e.emit.w = emit.w * s;
+					e.emit.h = emit.h * s;
+					e.scale = s;
+					e.level = level;
+					e.seed = (seed = seed * 1103515245u + 12345u) >> 8;
+					emits.push_back(e);
+				}
 			}
 		}
 	}
 	const SDL_Rect area = { (Sint16)(getX() * k), (Sint16)(getY() * k), (Uint16)(getWidth() * k), (Uint16)(getHeight() * k) };
+	// the crew before the light: it darkens with the rooms at night, and its lanterns light them
+	HdBaseLife::draw(world, plan, getX() * k, getY() * k, GRID_SIZE * k, night, now, lights);
 	HdBaseScene::draw(world, area, lights, night, now);
+	HdBaseScene::drawParticles(world, area, emits, night, now);
 }
 
 /**
@@ -883,7 +1023,7 @@ void BaseView::draw()
 	for (const auto* fac : *_base->getFacilities())
 	{
 		// Draw facility shape (an HD facility is drawn in the world layer instead, see blit)
-		if (hdTiles && isHdFacility(fac))
+		if (hdTiles && (isHdFacility(fac) || isHdBuilding(fac)))
 		{
 			continue;
 		}
@@ -953,12 +1093,13 @@ void BaseView::draw()
 	{
 		// Draw facility graphic (an HD facility is drawn in the world layer instead, see blit)
 		const bool hdFacility = hdTiles && isHdFacility(fac);
+		const bool hdBuilding = hdTiles && isHdBuilding(fac);
 		int num = 0;
 		for (int y = fac->getY(); y < fac->getY() + fac->getRules()->getSizeY(); ++y)
 		{
 			for (int x = fac->getX(); x < fac->getX() + fac->getRules()->getSizeX(); ++x)
 			{
-				if (fac->getRules()->getSpriteEnabled() && !hdFacility)
+				if (fac->getRules()->getSpriteEnabled() && !hdFacility && !hdBuilding)
 				{
 					Surface *frame = _texture->getFrame(fac->getRules()->getSpriteFacility() + num);
 					int fx = (x * GRID_SIZE);

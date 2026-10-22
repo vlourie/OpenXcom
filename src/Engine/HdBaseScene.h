@@ -36,6 +36,9 @@ namespace OpenXcom
  *     light 61.5 40.2 38.0 screen 0.45 0.85 1.00 1.70 0.31
  *                                    x y (pack pixels from the tile's corner), radius, kind (steady,
  *                                    blink, pulse, screen, flicker), colour 0..1, period s and phase 0..1
+ *     emit steam 20 26 70 70 0.95 0.95 1.00
+ *                                    particles: kind (steam, bubbles, sparks, embers, orbit), the box
+ *                                    they start in (x y w h, pack pixels from the tile's corner), colour
  *
  * Only the picture changes: the light is drawn over the world layer from the display clock, the
  * game's state is only read (the time of day, whether the base researches and builds).
@@ -53,11 +56,21 @@ namespace HdBaseScene
 		float period = 0, phase = 0;      ///< seconds and 0..1, blink and pulse
 	};
 
+	enum EmitKind { STEAM, BUBBLES, SPARKS, EMBERS, ORBIT };
+
+	struct Emit
+	{
+		EmitKind kind = STEAM;
+		float x = 0, y = 0, w = 0, h = 0; ///< the box the particles start in, pack pixels from the tile's corner
+		float r = 1, g = 1, b = 1;
+	};
+
 	struct TileScene
 	{
 		int width = 128, height = 128;    ///< the tile's picture in the pack
 		Gate gate = GATE_NONE;
 		std::vector<Light> lights;
+		std::vector<Emit> emits;
 	};
 
 	/// Reads a `.scene.txt`; false when it holds nothing usable.
@@ -80,6 +93,24 @@ namespace HdBaseScene
 	/// Lights `area` of the world layer as it is at `ms` of the display clock (SDL_GetTicks): the pictures
 	/// under the ambient light of `night` and the lamps, their halo over them. Runs in bands on HdWorkers.
 	void draw(SDL_Surface *world, const SDL_Rect &area, const std::vector<Placed> &lights, float night, Uint32 ms);
+
+	/// Particles where they are on the world layer.
+	struct PlacedEmit
+	{
+		Emit emit;                        ///< the box in world pixels
+		float scale = 1;                  ///< world pixels per pack pixel
+		float level = 1;                  ///< from the gate: sparks fly only where the facility works
+		Uint32 seed = 0;
+	};
+
+	/// Steam, bubbles, sparks and embers over the lit `area` at `ms` of the display clock: every particle
+	/// is a function of the time and its number, nothing is kept from frame to frame.
+	void drawParticles(SDL_Surface *world, const SDL_Rect &area, const std::vector<PlacedEmit> &emits, float night, Uint32 ms);
+
+	/// A facility being built, over its picture already in `rect` of the world layer: a glowing blueprint
+	/// with scaffolding, and the picture coming through it by `progress` (0..1, the share of the build time
+	/// gone by) with a hot welding edge where it grows. Before the light, like the picture itself.
+	void drawBuilding(SDL_Surface *world, const SDL_Rect &rect, float progress, float scale, Uint32 seed, Uint32 ms);
 }
 
 }
