@@ -84,6 +84,64 @@ NEGATIVE = ("perspective, isometric, tilted camera, side view, 3d render of a bu
 NEGATIVE_PIXEL = NEGATIVE.replace("jagged stair-stepped edges, ", "")
 NEGATIVE_BIG = ", inner walls, partition walls, room divided into several rooms, dividing walls along the grid"
 
+# Проёмы (--doors): переход между постройками движок ставит посередине каждой клеточной стороны периметра
+# (BaseView::draw, кадры 7 и 8 BASEBITS) - у 1x1 по одному на сторону, у 2x2 по два, у 3x3 по три. Без проёмов
+# в картинке капсула перехода упирается в глухую стену, а створка Пираток ложится поверх мебели (Vitali 22.10).
+DOORS = ("Doorways: the rooms of the base are joined by short tunnels, so the outer wall of this room has a doorway "
+         "in the middle of every one-cell stretch of wall: {top_n} in the top wall and {top_n} in the bottom wall "
+         "({top_at}), {side_n} in the left wall and {side_n} in the right wall ({side_at}), each marked in <image1> "
+         "as a dark notch cut through the wall. The room is drawn with depth: the right and bottom walls are thick "
+         "and show their beveled top face, the top and left walls are thin - every doorway cuts through the whole "
+         "thickness of its wall. Draw each doorway exactly where it is marked, as a narrow opening closed by a sturdy "
+         "steel sliding door, and keep the floor just inside each doorway clear of furniture. ")
+WORDS = {1: "one", 2: "two", 3: "three"}
+AT = {1: "centred on the wall", 2: "at one quarter and three quarters of its length",
+      3: "at one sixth, one half and five sixths of its length"}
+# длина проёма в долях клетки (0.30 Vitali назвал «очень большие метки», 0.16 модель пропустила - одна дверь
+# посередине стороны 2x2 вместо двух)
+DOOR_LEN = 0.20
+DOOR_COLOR = (34, 32, 38)
+RIM = np.array([252, 252, 164]) / 255.0             # светлый кант стены классики Пираток (BASEBITS)
+
+
+def door_text(cols, rows):
+    return DOORS.format(top_n=WORDS.get(cols, str(cols)), top_at=AT.get(cols, ""),
+                        side_n=WORDS.get(rows, str(rows)), side_at=AT.get(rows, ""))
+
+
+def door_marks(img, fac):
+    """Тёмные проёмы во входе модели: посередине каждой клеточной стороны периметра, сквозь всю стену.
+
+    Стена классики по средней линии клетки (замер 22.10): сверху и слева - 1 пиксель края и кант, снизу и справа
+    - край, 3 пикселя торца (объём) и кант. Проём режется от края силуэта до канта включительно, кант ищется по
+    цвету в первых 6 пикселях; у восьмиугольников и крестов край ищется по силуэту, а не по краю клетки."""
+    rgb = np.asarray(img, np.uint8).copy()
+    a, col = fac.calpha, fac.crgb
+    half = int(32 * DOOR_LEN / 2 * K)
+    for cy in range(fac.rows):
+        for cx in range(fac.cols):
+            for nx, ny in ((0, -1), (0, 1), (-1, 0), (1, 0)):
+                if 0 <= cx + nx < fac.cols and 0 <= cy + ny < fac.rows:
+                    continue
+                mx, my = cx * 32 + 16, cy * 32 + 16
+                pts = [(mx + nx * (15 - d), my + ny * (15 - d)) for d in range(16)]   # от края клетки к центру
+                first = next((i for i, (x, y) in enumerate(pts) if a[y, x]), None)
+                if first is None:
+                    continue
+                depth = 4 if nx > 0 or ny > 0 else 1
+                for i in range(first, min(first + 6, len(pts))):
+                    x, y = pts[i]
+                    if np.abs(col[y, x] - RIM).max() < 0.08:
+                        depth = i - first + 1
+                        break
+                for i in range(first, first + depth):
+                    x, y = pts[i]
+                    if ny:
+                        rgb[y * K:(y + 1) * K, x * K - half:x * K + half] = DOOR_COLOR
+                    else:
+                        rgb[y * K - half:y * K + half, x * K:(x + 1) * K] = DOOR_COLOR
+    return Image.fromarray(rgb, "RGB")
+
 # Что за комната - tools/hdart/base_rooms.tsv: purpose - пересказ статьи педии мода (art/base_living/census.tsv),
 # what - что видно на классике (art/base_living/in/). Без назначения модель видит в лифте «комнату с шахтой и
 # пультами», а в ангаре - четыре комнаты, где корабль не сядет (R-445).
@@ -178,12 +236,12 @@ class Painter:
         return out
 
 
-def sheet(style, items):
+def sheet(style, items, indir="in"):
     """Лист: классика x4 | стиль, по постройке в строке (ширина по самой широкой)."""
     cell = 256
     rows = []
     for t, fac in items:
-        a = Image.open(os.path.join(OUT, "in", t + ".png")).convert("RGB")
+        a = Image.open(os.path.join(OUT, indir, t + ".png")).convert("RGB")
         p = os.path.join(OUT, style, t + "@512.png")
         h = fac.rows * cell
         left = a.resize((fac.cols * cell, h), Image.NEAREST)
@@ -215,7 +273,15 @@ def main():
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--redraw", action="store_true", help="рисовать заново и то, что уже есть в raw/")
     ap.add_argument("--rock-only", action="store_true", dest="rock_only", help="только скалы (заново)")
+    ap.add_argument("--doors", action="store_true",
+                    help="проёмы посередине клеточных сторон (DOORS); выход <стиль>_doors/ и in_doors/")
+    ap.add_argument("--list", default="", help="файл с типами по строке (вместо --only)")
     ns = ap.parse_args()
+    if ns.list:
+        with open(ns.list, encoding="utf-8-sig") as f:
+            ns.only = ",".join(s.strip() for s in f.read().replace("\n", ",").split(",") if s.strip())
+    tag = "_doors" if ns.doors else ""
+    indir = "in" + tag
     styles = [s for s in ns.styles.split(",") if s]
     types = [t for t in (ns.only.split(",") if ns.only else PILOT) if t]
     lost = [t for t in types if t not in WHAT]
@@ -223,15 +289,27 @@ def main():
         sys.exit("нет описания в %s (R-445): %s" % (ROOMS, ", ".join(lost)))
     rules, _ = load_rules()
     sprites = sprites_map()
-    os.makedirs(os.path.join(OUT, "in"), exist_ok=True)
+    os.makedirs(os.path.join(OUT, indir), exist_ok=True)
+
+    def model_input(t, fac):
+        img, a = facility_input(fac)
+        if ns.doors and not rules[t].get("connectorsDisabled"):
+            img = door_marks(img, fac)
+        return img, a
+
+    def doors_text(t, fac):
+        if not ns.doors or rules[t].get("connectorsDisabled"):
+            return ""
+        return door_text(fac.cols, fac.rows)
+
     items = []
     for t in types:
         fac = Facility(rules[t], sprites)
         if fac.missing:
             print("!! %s: нет кадров %s" % (t, fac.missing))
             continue
-        img, _a = facility_input(fac)
-        img.save(os.path.join(OUT, "in", t + ".png"))
+        img, _a = model_input(t, fac)
+        img.save(os.path.join(OUT, indir, t + ".png"))
         items.append((t, fac))
         print("%-26s %dx%d клеток, кадры %s" % (t, fac.cols, fac.rows, fac.indices))
     rock = rock_input(sprites)
@@ -241,7 +319,7 @@ def main():
            "what": WHAT, "purpose": PURPOSE, "dry_run": ns.dry_run, "times": {}}
     t0 = time.time()
     for style in styles:
-        d = os.path.join(OUT, style)
+        d = os.path.join(OUT, style + tag)
         os.makedirs(os.path.join(d, "raw"), exist_ok=True)
         neg = NEGATIVE_PIXEL if style == "pixel" else NEGATIVE
         # с --only скала не трогается (её перерисовывает --rock-only)
@@ -254,8 +332,9 @@ def main():
                 if fac is None:
                     raw = painter.paint(rock, ROCK_WHAT.format(style=ROCK_STYLE[style]), neg, ns.seed + 999)
                 else:
-                    img, _a = facility_input(fac)
-                    prompt = COMMON.format(what=WHAT[t], purpose=PURPOSE[t], style=STYLES[style])
+                    img, _a = model_input(t, fac)
+                    prompt = COMMON.format(what=WHAT[t], purpose=PURPOSE[t],
+                                           style=doors_text(t, fac) + STYLES[style])
                     # большая постройка - один зал: модель делит 2x2 на четыре комнаты по сетке клеток
                     big = fac.cols * fac.rows > 1
                     raw = painter.paint(img, prompt, neg + (NEGATIVE_BIG if big else ""), ns.seed + n)
@@ -272,8 +351,8 @@ def main():
             _img, a4 = facility_input(fac)
             finish(raw, a4, fac.cols, fac.rows, 32 * K).save(os.path.join(d, t + ".png"))
             finish(raw, a4, fac.cols, fac.rows, MASTER).save(os.path.join(d, t + "@512.png"))
-        sheet(style, items)
-    with open(os.path.join(OUT, "run.json"), "w", encoding="utf-8-sig") as f:
+        sheet(style + tag, items, indir)
+    with open(os.path.join(OUT, "run%s.json" % tag), "w", encoding="utf-8-sig") as f:
         json.dump(run, f, ensure_ascii=False, indent=1)
     print("готово: %s (%.0f мин)" % (OUT, (time.time() - t0) / 60))
     return 0
