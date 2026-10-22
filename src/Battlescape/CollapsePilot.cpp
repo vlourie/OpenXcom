@@ -264,6 +264,15 @@ const int RUBBLE_BLOCK_MASS = 5;
 /// The chance in 100 that a heap, a block sheds crumble onto each free cell beside it (the spill of lay).
 const int RUBBLE_SPILL_HEAP = 40;
 const int RUBBLE_SPILL_BLOCK = 75;
+/// A heap of stone of RUBBLE_BLOCK_MASS on a floor above the ground of less armor than this breaks it and comes a
+/// level down (the pressed floor of lay).
+const int RUBBLE_PRESS_ARMOR = 60;
+/// The blow of what falls on a unit: this much for a unit of mass and for a level it fell, at most RUBBLE_HIT_MAX
+/// (melee, to the head, the front armor); of RUBBLE_HEAP_MASS it pins the unit down, out of energy.
+const int RUBBLE_HIT_MASS = 10;
+const int RUBBLE_HIT_MAX = 70;
+/// The dust of a fall of RUBBLE_HEAP_MASS: the smoke of the game on the cell it came down to, this many turns.
+const int RUBBLE_DUST = 3;
 
 /// The fallen trunks of a set for its broken trees: records that turn into one of `windfall` when destroyed, low (6
 /// layers at most), not walkable and burning - the whole log of the mountain sets (72 -> 75, 73 -> 76).
@@ -424,7 +433,7 @@ struct Drop
 struct RubbleCount
 {
 	int laid = 0, merged = 0, unit = 0, object = 0, floor = 0, none = 0, again = 0, light = 0, replaced = 0, log = 0,
-		heap = 0, block = 0, spill = 0;
+		heap = 0, block = 0, spill = 0, pressed = 0, hit = 0, knocked = 0, dust = 0;
 };
 
 /// The roll of a heap of mass 1, 0..99: by the cell and the building, not the random numbers of the game, so the
@@ -473,7 +482,9 @@ bool mayBlock(SavedBattleGame *save, Tile *t)
 	{
 		Tile *c = save->getTile(at + Position(ring[i][0], ring[i][1], 0));
 		const MapData *object = c ? c->getMapData(O_OBJECT) : nullptr;
-		walk[i] = c && (at.z == 0 || !c->hasNoFloor(save)) && (!object || object->getTUCost(MT_WALK) < 255);
+		// a block (T_Level -12) is not stepped onto from the ground (Pathfinding: no step up of over 8)
+		walk[i] = c && (at.z == 0 || !c->hasNoFloor(save))
+			&& (!object || (object->getTUCost(MT_WALK) < 255 && object->getTerrainLevel() > -12));
 	}
 	int runs = 0;
 	for (int i = 0; i < 8; ++i)
@@ -490,6 +501,9 @@ bool mayBlock(SavedBattleGame *save, Tile *t)
 /// on a lift or on no floor of its own; a low object there (underRubble) gives way to it, a higher one keeps the cell.
 /// A heap or a block spills the crumble onto each free cell beside it (RUBBLE_SPILL_*, by the cell's roll), not
 /// through a wall, onto a unit, an object, a mark of the map or a lift.
+/// A block's load breaks a weak floor above the ground (RUBBLE_PRESS_ARMOR) and comes a level down; a unit where it
+/// comes down takes its blow (RUBBLE_HIT_*), a fall of a heap's mass raises dust (RUBBLE_DUST); a tree that came
+/// down whole knocks the crown of a tree beside it.
 /// The tiles it lies on join `tiles` (gravity, light and sight).
 void lay(Mod *mod, SavedBattleGame *save, int bi, const std::vector<Drop> &drops, std::vector<Tile*> &tiles, RubbleCount &n)
 {
@@ -521,17 +535,46 @@ void lay(Mod *mod, SavedBattleGame *save, int bi, const std::vector<Drop> &drops
 		h->mass += d.floor ? 2 : 1;
 		++h->kinds[d.kind];
 	}
+	// the pressed floor: a block of stone on a weak floor above the ground breaks it and comes a level down with it
+	for (Heap &h : heaps)
+	{
+		const Position at = h.tile->getPosition();
+		const MapData *floor = h.tile->getMapData(O_FLOOR);
+		bool stone = true;
+		for (int k = 1; k < RK_KINDS; ++k)
+			stone = stone && h.kinds[k] <= h.kinds[RK_STONE];
+		if (at.z == 0 || !floor || !stone || h.mass + (h.top - at.z >= 2 ? 1 : 0) < RUBBLE_BLOCK_MASS
+			|| floor->getArmor() >= RUBBLE_PRESS_ARMOR || floor->isGravLift() || floor->getSpecialType() != TILE
+			|| h.tile->getUnit() || h.tile->getMapData(O_OBJECT))
+			continue;
+		if (h.tile->destroy(O_FLOOR, save->getObjectiveType()))
+			save->addDestroyedObjective();
+		++n.pressed;
+		if (std::find(tiles.begin(), tiles.end(), h.tile) == tiles.end())
+			tiles.push_back(h.tile);
+		Tile *t = h.tile;
+		while (t && t->getPosition().z > 0 && t->hasNoFloor(save))
+			t = save->getBelowTile(t);
+		if (!t || t == h.tile)
+			continue;  // the floor broke into a floor of its own (its die record): the block lies on it
+		h.tile = t;
+		h.mass += 2;
+	}
+	static const int sides[4][2] = { { 1, 0 }, { -1, 0 }, { 0, 1 }, { 0, -1 } };
 	static const std::vector<std::pair<std::string, int> > nothing;
 	std::vector<std::pair<Tile*, int> > spills;  // a heap or a block laid, the chance of its spill
 	for (const Heap &h : heaps)
 	{
 		const Position at = h.tile->getPosition();
-		bool unit = false;
-		for (int z = at.z; z <= h.top && !unit; ++z)
+		std::vector<BattleUnit*> under;
+		for (int z = at.z; z <= h.top; ++z)
 		{
 			const Tile *c = save->getTile(Position(at.x, at.y, z));
-			unit = c && c->getUnit();
+			BattleUnit *u = c ? c->getUnit() : nullptr;
+			if (u && std::find(under.begin(), under.end(), u) == under.end())
+				under.push_back(u);
 		}
+		const bool unit = !under.empty();
 		const MapData *floor = h.tile->getMapData(O_FLOOR);
 		const MapData *object = h.tile->getMapData(O_OBJECT);
 		int kind = RK_STONE;
@@ -544,7 +587,25 @@ void lay(Mod *mod, SavedBattleGame *save, int bi, const std::vector<Drop> &drops
 			list = &rubbleRecords(row, kind);
 		}
 		const int mass = h.mass + (h.top - at.z >= 2 ? 1 : 0);
-		if (unit) ++n.unit;
+		if (mass >= RUBBLE_HEAP_MASS && !h.tile->getFire() && h.tile->getSmoke() < RUBBLE_DUST)
+		{
+			h.tile->setSmoke(RUBBLE_DUST);
+			++n.dust;
+		}
+		if (unit)
+		{
+			// no rubble on a unit: it takes the blow of what fell, of a heap's mass pinned down under it
+			++n.unit;
+			const int blow = std::min(RUBBLE_HIT_MAX, RUBBLE_HIT_MASS * (mass + h.top - at.z));
+			for (BattleUnit *u : under)
+			{
+				if (u->isOut()) continue;
+				u->damage(Position(0, 0, 0), blow, mod->getDamageType(DT_MELEE), save, { }, SIDE_FRONT, BODYPART_HEAD);
+				if (mass >= RUBBLE_HEAP_MASS)
+					u->spendEnergy(u->getEnergy());
+				++n.hit;
+			}
+		}
 		else if (object && !underRubble(object)) ++n.object;
 		else if ((at.z > 0 && !floor) || (floor && floor->isGravLift())) ++n.floor;
 		else if (list->empty()) ++n.none;
@@ -589,6 +650,24 @@ void lay(Mod *mod, SavedBattleGame *save, int bi, const std::vector<Drop> &drops
 				{
 					id = logs[(at.x * 5 + at.y * 3 + at.z) % logs.size()];
 					++n.log;
+					// the tree came down whole, to a side by the cell: its crown knocks the crown of a tree there
+					// (not through a wall), which breaks as a part does (Tile::destroy)
+					const int (&d)[2] = sides[rubbleRoll(at, bi + 104729) % 4];
+					for (int z = at.z + 1; z <= h.top; ++z)
+					{
+						Tile *c = save->getTile(Position(at.x + d[0], at.y + d[1], z));
+						const MapData *crown = c ? c->getMapData(O_OBJECT) : nullptr;
+						if (!crown || rubbleKind(crown, false) != RK_PLANT || isRubble(save, c, O_OBJECT, true)
+							|| crown->getSpecialType() != TILE || crown->getArmor() >= 255 || c->getUnit())
+							continue;
+						const Tile *edge = d[0] + d[1] > 0 ? c : save->getTile(Position(at.x, at.y, z));
+						if (!edge || edge->getMapData(d[0] ? O_WESTWALL : O_NORTHWALL))
+							continue;
+						c->destroy(O_OBJECT, save->getObjectiveType());
+						++n.knocked;
+						if (std::find(tiles.begin(), tiles.end(), c) == tiles.end())
+							tiles.push_back(c);
+					}
 				}
 			}
 			if (object)
@@ -601,7 +680,6 @@ void lay(Mod *mod, SavedBattleGame *save, int bi, const std::vector<Drop> &drops
 	}
 	// the spill: a heap or a block sheds the crumble of its row onto the free cells beside it
 	const std::vector<std::pair<std::string, int> > &crumble = row < 0 ? nothing : rubbleRecords(row, RK_STONE);
-	static const int sides[4][2] = { { 1, 0 }, { -1, 0 }, { 0, 1 }, { 0, -1 } };
 	for (const auto &sp : spills)
 		for (const auto &d : sides)
 		{
@@ -1553,6 +1631,7 @@ bool settle(BattlescapeGame *battle, const char *why)
 	}
 	TileEngine *te = save->getTileEngine();
 	bool any = false;
+	int hits = 0;
 	std::vector<Position> seenCells;
 	for (const Instance &in : st.inst)
 	{
@@ -1646,6 +1725,7 @@ bool settle(BattlescapeGame *battle, const char *why)
 			++rubble.again;
 		}
 		lay(battle->getMod(), save, in.bi, drops, tiles, rubble);
+		hits += rubble.hit;
 		// gravity after all the geometry, on the tiles and the tiles above (TileEngine::explode)
 		for (Tile *t : tiles)
 		{
@@ -1691,11 +1771,17 @@ bool settle(BattlescapeGame *battle, const char *why)
 			<< ", rubble " << rubble.laid << " (merged " << rubble.merged << ", again " << rubble.again << "; skipped: unit " << rubble.unit
 			<< ", object " << rubble.object << ", no floor " << rubble.floor << ", none " << rubble.none
 			<< ", by chance " << rubble.light << "; in place of a low object " << rubble.replaced << ", fallen trunks " << rubble.log
-			<< ", heaps " << rubble.heap << ", blocks " << rubble.block << ", spill " << rubble.spill << ")"
+			<< ", heaps " << rubble.heap << ", blocks " << rubble.block << ", spill " << rubble.spill
+			<< ", pressed floors " << rubble.pressed << ", units hit " << rubble.hit << ", knocked crowns " << rubble.knocked
+			<< ", dust " << rubble.dust << ")"
 			<< ", falling units " << save->getFallingUnits()->size()
 			<< "; scan " << scanMs << " ms, eval " << evalMs << " ms, apply " << applyMs << " ms, light+fov " << msSince(tl0) << " ms";
 	}
 	notice(battle, seenCells);
+	// the units under what fell: the end of the turn checks the casualties itself (BattlescapeGame::endTurn), right
+	// after this settle; twice would count a death twice
+	if (hits && std::strcmp(why, "end turn") != 0)
+		battle->checkForCasualties(battle->getMod()->getDamageType(DT_MELEE), BattleActionAttack{ }, false, true);
 	if (st.runs == atRun)
 		debugReport(save, "right after");
 	return any;
