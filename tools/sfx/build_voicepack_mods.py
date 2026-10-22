@@ -232,8 +232,8 @@ def main():
         raise ValueError('audit has missing lines')
     selected = {(r['voice'], r['lang'], r['line']): r['file'] for r in audit['selected']}
     rejected = {(r['voice'], r['line'], r['lang']) for r in audit['rejected']}
-    expected = {(v['id'], lang, ln['n']): ln[lang] for v in voice_script.parse()
-                for ln in v['lines'] for lang in ('ru','en')}
+    expected = {(v['id'], lang, ln['n']): ln[lang] for v in voice_script.parse(
+                more=voice_script.MORE100, only=voice_script.pinned()) for ln in v['lines'] for lang in ('ru','en')}
     decided = set(selected) | {(vid,lang,n) for vid,n,lang in rejected}
     if decided != set(expected):
         raise ValueError('audit does not match current script; run audit_voicepack.py again')

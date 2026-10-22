@@ -10,8 +10,10 @@
 
     py -3 tools/sfx/voice_script.py                       сводка по разделам
     py -3 tools/sfx/voice_script.py --import <файл.md>    положить новую версию сценария в docs (со спецификацией)
+    py -3 tools/sfx/voice_script.py --pin-ready           закрепить голоса с готовой «сотней» для сборки модов
 """
 import argparse
+import json
 import re
 import sys
 from pathlib import Path
@@ -21,19 +23,25 @@ SCRIPT = ROOT / "docs/research/voice-recording-script.md"
 # 16.10 Vitali: «1-2 фразы это мало». Дополнение к сценарию: «### V001+ — имя» - ещё реплики голоса
 # (extra), «### V401 — имя [Ж]» с «**Реплики как:** V001» - запасной голос того же типа бойца
 EXTRA = ROOT / "docs/research/voice-script-extra.md"
+# 21.10 Vitali: «минимум сотня каждому» на выбор и движение - номера трёхзначные, четвёртый столбец - подача
+MORE100 = ROOT / "docs/research/voice-script-100.md"
+VOICEPACK = ROOT / "art/sfx/voicepack"
+READY = VOICEPACK / "more100_ready.txt"
 
 HEAD = re.compile(r"^### (V\d{3}) — (.+?) \[([МЖН])\]\s*$")
 MORE = re.compile(r"^### (V\d{3})\+ — (.+?)\s*$")
-ROW = re.compile(r"^\| (\d{2}) \| (.+?) \| (.+?) \|\s*$")
+ROW = re.compile(r"^\| (\d{2,3}) \| (.+?) \| (.+?) \|(?: (\[.*?\]) \|)?\s*$")
 FIELD = re.compile(r"^\*\*(Для кого|По игре|Как играть голосом|Реплики как):\*\*\s*(.*)$")
 SUB = re.compile(r"^\*\*([^*:]+)\*\*\s*$")
 KEYS = {"Для кого": "for", "По игре": "game", "Как играть голосом": "direction", "Реплики как": "same_as"}
 
 
-def parse(path=SCRIPT, extra=EXTRA):
+def parse(path=SCRIPT, extra=EXTRA, more=None, only=None):
+    # more=MORE100 - со «сотней»; по умолчанию без неё: сборка модов сверяет сценарий с записанным целиком.
+    # only - голоса, которым брать «сотню» (сборка модов: pinned(), записанные целиком), None - всем
     voices = _read(path, {})
+    by_id = {v["id"]: v for v in voices}
     if extra and Path(extra).exists():
-        by_id = {v["id"]: v for v in voices}
         alts = _read(extra, by_id)
         for v in alts:
             src = by_id[v["same_as"]]
@@ -41,10 +49,31 @@ def parse(path=SCRIPT, extra=EXTRA):
         for v in alts:
             v["lines"] = [dict(ln) for ln in by_id[v["same_as"]]["lines"]]
         voices += alts
+    if more and Path(more).exists() and (only is None or only):
+        _read(more, by_id, only)
     return voices
 
 
-def _read(path, by_id):
+def pinned():
+    """Голоса, у которых «сотня» идёт в моды: список, закреплённый --pin-ready (нет файла - ни у кого)."""
+    return set(READY.read_text(encoding="utf-8-sig").split()) if READY.exists() else set()
+
+
+def pin_ready():
+    """Закрепить голоса с «сотней», записанной и распознанной целиком: аудит, события и сборка берут один список,
+    а запись остальных идёт дальше."""
+    out = []
+    for v in parse(more=MORE100):
+        p = VOICEPACK / v["id"] / "voice.json"
+        if p.exists():
+            st = json.loads(p.read_text(encoding="utf-8-sig"))
+            if st.get("asr_done") and len(st.get("script") or []) == len(v["lines"]):
+                out.append(v["id"])
+    READY.write_text("\n".join(out) + "\n", encoding="utf-8-sig")
+    return out
+
+
+def _read(path, by_id, only=None):
     voices = []
     section = ""
     cur = None
@@ -57,7 +86,7 @@ def _read(path, by_id):
             continue
         m = MORE.match(line) if extra else None
         if m:
-            cur = by_id[m.group(1)]
+            cur = by_id[m.group(1)] if only is None or m.group(1) in only else None
             sub = ""
             continue
         m = HEAD.match(line)
@@ -80,6 +109,8 @@ def _read(path, by_id):
         m = ROW.match(line)
         if m:
             ln = {"n": m.group(1), "ru": m.group(2).strip(), "en": m.group(3).strip(), "part": sub}
+            if m.group(4):
+                ln["tag"] = m.group(4)
             if extra:
                 ln["extra"] = True
             cur["lines"].append(ln)
@@ -89,8 +120,15 @@ def _read(path, by_id):
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--import", dest="src", default="", help="новая версия сценария - скопировать в docs")
+    ap.add_argument("--pin-ready", action="store_true",
+                    help="закрепить голоса с готовой «сотней» для сборки модов (art/sfx/voicepack/more100_ready.txt)")
     a = ap.parse_args()
     sys.stdout.reconfigure(encoding="utf-8")
+    if a.pin_ready:
+        ids = pin_ready()
+        print(f"«сотня» в моды: {len(ids)} голосов -> {READY}")
+        print(" ".join(ids))
+        return
     if a.src:
         b = Path(a.src).read_bytes()
         SCRIPT.write_bytes(b if b.startswith(b"\xef\xbb\xbf") else b"\xef\xbb\xbf" + b)

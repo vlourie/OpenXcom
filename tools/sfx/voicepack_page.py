@@ -53,7 +53,7 @@ def audio(f):
 
 def main():
     sys.stdout.reconfigure(encoding="utf-8")
-    voices = voice_script.parse()
+    voices = voice_script.parse(more=voice_script.MORE100, only=voice_script.pinned())
     audit_path = OUT / 'audit.json'
     audit = json.loads(audit_path.read_text(encoding='utf-8-sig')) if audit_path.exists() else None
     approved = {(r['voice'], r['lang'], r['line']): r['file'] for r in audit['selected']} if audit else None
