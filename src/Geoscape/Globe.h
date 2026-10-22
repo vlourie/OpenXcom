@@ -116,6 +116,7 @@ private:
 	bool _hdMarksKept = false;          ///< were the outlined targets kept out of _markers when it was last drawn
 	HdRadar _hdRadar;                   ///< the radar coverage as a wash, with pulses (oxceHdRadar)
 	bool _hdRadarKept = false;          ///< were the bases' and craft's radar circles kept out of _radars when it was last drawn
+	bool _hdEnemyKept = false;          ///< were the enemy's radar circles kept out of _radars when it was last drawn
 	bool _hdMainKept = false;           ///< was the main base's square kept out of _markers when it was last drawn
 	bool _hdMainShow = false;           ///< is the main base on the visible side, at _hdMainX/_hdMainY
 	Sint16 _hdMainX = 0, _hdMainY = 0;  ///< the main base on the globe, base pixels
@@ -170,6 +171,12 @@ private:
 	bool hdRadar() const;
 	/// Draws the radar coverage, its pulses and the craft's beams over the upscaled globe.
 	void drawHdRadar();
+	/// Is the HD layer drawing the enemy's radars (red circles) instead of the classic ones? Any oxceHdRadar.
+	bool hdEnemyRadar() const;
+	/// Where the globe stands in the HD layer, `k` world pixels per base pixel.
+	HdRadar::View hdRadarView(int k) const;
+	/// Draws the enemy's radars over the upscaled globe.
+	void drawHdEnemyRadar();
 	/// Is the HD layer drawing the main base with a mark of its own (oxceHdRadar 3)?
 	bool hdMainBase() const;
 	/// The world pixels one pixel of the globe takes in the HD layer when it has a scale of its own; 0 = as the geoscape.

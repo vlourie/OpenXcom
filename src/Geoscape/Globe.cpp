@@ -1187,6 +1187,7 @@ void Globe::drawRadars()
 
 	// the HD layer draws the bases' and the craft's coverage after the blit (hdRadar)
 	_hdRadarKept = hdRadar();
+	_hdEnemyKept = hdEnemyRadar();
 
 	if (!Options::globeRadarLines)
 		return;
@@ -1261,7 +1262,8 @@ void Globe::drawRadars()
 		}
 	}
 
-	if (_game->getMod()->getDrawEnemyRadarCircles() > 0)
+	// with the HD interface the HD layer draws the enemy's circles, in red (drawHdEnemyRadar)
+	if (_game->getMod()->getDrawEnemyRadarCircles() > 0 && !_hdEnemyKept)
 	{
 		// Draw radars around UFO hunter-killers
 		for (auto* ufo : *_game->getSavedGame()->getUfos())
@@ -1985,7 +1987,7 @@ void Globe::drawHdMarks()
 /**
  * Is the HD layer drawing the radar coverage of the bases and the craft (oxceHdRadar 1 to 3)? Then
  * their circles are kept out of _radars; the craft range, the new base's ranges and the enemy's
- * radars stay circles.
+ * radars stay circles (the enemy's drawn by the HD layer too, hdEnemyRadar).
  */
 bool Globe::hdRadar() const
 {
@@ -2047,6 +2049,31 @@ void Globe::drawHdRadar()
 			}
 		}
 	}
+	const HdRadar::View view = hdRadarView(k);
+	const GameTime *t = _game->getSavedGame()->getTime();
+	const long long minute = (((long long)t->getYear() * 12 + t->getMonth()) * 32 + t->getDay()) * 1440 + t->getHour() * 60 + t->getMinute();
+	HdUi &ui = HdUi::instance();
+	ui.setClip(getX(), getY(), getWidth(), getHeight());
+	static const int WAVE_HOURS[] = { 0, 1, 3, 6 };   // oxceHdRadarWaves: all at once, in turn each 1, 3, 6 hours
+	const int waveHours = WAVE_HOURS[std::max(0, std::min(3, Options::oxceHdRadarWaves))];
+	_hdRadar.draw(view, sources, minute, (HdRadar::Mode)Options::oxceHdRadar, waveHours, Options::oxceHdRadarBeam);
+	ui.clearClip();
+}
+
+/**
+ * Is the HD layer drawing the enemy's radars as red circles of its own? Whenever the HD interface is
+ * on, whatever oxceHdRadar: in _radars they were the classic shaded line, smoothed with the whole layer.
+ */
+bool Globe::hdEnemyRadar() const
+{
+	return Options::globeRadarLines && HdUi::active();
+}
+
+/**
+ * Where the globe stands in the HD layer: its middle, its radius and its widget, in world pixels.
+ */
+HdRadar::View Globe::hdRadarView(int k) const
+{
 	HdRadar::View view;
 	view.cenLon = _cenLon;
 	view.cenLat = _cenLat;
@@ -2058,13 +2085,45 @@ void Globe::drawHdRadar()
 	view.w = getWidth() * k;
 	view.h = getHeight() * k;
 	view.k = k;
-	const GameTime *t = _game->getSavedGame()->getTime();
-	const long long minute = (((long long)t->getYear() * 12 + t->getMonth()) * 32 + t->getDay()) * 1440 + t->getHour() * 60 + t->getMinute();
+	return view;
+}
+
+/**
+ * The enemy's radars, as drawRadars would have had them: the discovered alien bases and the
+ * hunter-killers it shows. Read from the game only.
+ */
+void Globe::drawHdEnemyRadar()
+{
+	const int k = HdUi::scale();
+	if (k <= 0 || _game->getMod()->getDrawEnemyRadarCircles() <= 0)
+	{
+		return;
+	}
+	std::vector<HdRadar::Ring> rings;
+	for (auto* ufo : *_game->getSavedGame()->getUfos())
+	{
+		if (ufo->isHunterKiller() && ufo->getDetected() && ufo->getStatus() != Ufo::IGNORE_ME
+			&& (_game->getMod()->getDrawEnemyRadarCircles() != 1 || ufo->getHyperDetected()))
+		{
+			const double range = Nautical(ufo->getCraftStats().radarRange);
+			if (range > 0) rings.push_back(HdRadar::Ring{ ufo->getLongitude(), ufo->getLatitude(), range });
+		}
+	}
+	for (auto* ab : *_game->getSavedGame()->getAlienBases())
+	{
+		if (ab->getDeployment()->getBaseDetectionRange() > 0 && ab->isDiscovered())
+		{
+			const double range = Nautical(ab->getDeployment()->getBaseDetectionRange());
+			if (range > 0) rings.push_back(HdRadar::Ring{ ab->getLongitude(), ab->getLatitude(), range });
+		}
+	}
+	if (rings.empty())
+	{
+		return;
+	}
 	HdUi &ui = HdUi::instance();
 	ui.setClip(getX(), getY(), getWidth(), getHeight());
-	static const int WAVE_HOURS[] = { 0, 1, 3, 6 };   // oxceHdRadarWaves: all at once, in turn each 1, 3, 6 hours
-	const int waveHours = WAVE_HOURS[std::max(0, std::min(3, Options::oxceHdRadarWaves))];
-	_hdRadar.draw(view, sources, minute, (HdRadar::Mode)Options::oxceHdRadar, waveHours, Options::oxceHdRadarBeam);
+	_hdRadar.drawRings(hdRadarView(k), rings);
 	ui.clearClip();
 }
 
@@ -2188,6 +2247,14 @@ void Globe::blit(SDL_Surface *surface)
 	else if (_hdRadarKept != hdRadar())
 	{
 		// the option was switched: the circles come back, or go
+		invalidate();
+	}
+	if (_hdEnemyKept && hdEnemyRadar() && HdUi::isScreen(surface))
+	{
+		drawHdEnemyRadar();
+	}
+	else if (_hdEnemyKept != hdEnemyRadar())
+	{
 		invalidate();
 	}
 	_countries->blit(surface);
