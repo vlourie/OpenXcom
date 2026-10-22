@@ -110,6 +110,13 @@ public:
 	void sortSpaceUsedClick(Action *action);
 	/// Handler for clicking the Stores list.
 	void lstStoresClick(Action* action);
+	/// Handlers for the cursor on the list rows: the ammunition hint (oxceHdAmmoHint).
+	void lstStoresMouseOver(Action* action);
+	void lstStoresMouseOut(Action* action);
+private:
+	/// Lights the rows of the ammunition that fits the weapon (nullptr: the usual colour).
+	void showAmmoHint(const RuleItem *weapon);
+	const RuleItem *_hintWeapon = nullptr;
 };
 
 }

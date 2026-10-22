@@ -566,6 +566,7 @@ void createAdvancedOptionsOXCE()
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdCraftLights", &oxceHdCraftLights, true, "STR_HD_CRAFT_LIGHTS", "STR_HD_INTERFACE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdCraftLaunch", &oxceHdCraftLaunch, 1, "STR_HD_CRAFT_LAUNCH", "STR_HD_INTERFACE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdAltInfo", &oxceHdAltInfo, 0, "STR_HD_ALT_INFO", "STR_HD_INTERFACE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdAmmoHint", &oxceHdAmmoHint, false, "STR_HD_AMMO_HINT", "STR_HD_INTERFACE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdTransferCost", &oxceHdTransferCost, true, "STR_HD_TRANSFER_COST", "STR_HD_INTERFACE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdTransferConfirm", &oxceHdTransferConfirm, true, "STR_HD_TRANSFER_CONFIRM", "STR_HD_INTERFACE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdCraftOutlines", &oxceHdCraftOutlines, true, "STR_HD_CRAFT_OUTLINES", "STR_HD_INTERFACE"));
@@ -574,6 +575,8 @@ void createAdvancedOptionsOXCE()
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdRadarBeam", &oxceHdRadarBeam, true, "STR_HD_RADAR_BEAM", "STR_HD_INTERFACE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdTrainingBlocks", &oxceHdTrainingBlocks, false, "STR_HD_TRAINING_BLOCKS", "STR_HD_INTERFACE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdPathDigits", &oxceHdPathDigits, true, "STR_HD_PATH_DIGITS", "STR_HD_INTERFACE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdPathNumSize", &oxceHdPathNumSize, 100, "STR_HD_PATH_NUM_SIZE", "STR_HD_INTERFACE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdPathNumWeight", &oxceHdPathNumWeight, 100, "STR_HD_PATH_NUM_WEIGHT", "STR_HD_INTERFACE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdPanelHide", &oxceHdPanelHide, true, "STR_HD_PANEL_HIDE", "STR_HD_INTERFACE"));
 	// HD render workers (Engine/HdWorkers.h) and how far the battle timer may run ahead of slow frames
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdThreads", &oxceHdThreads, 0, "STR_HD_THREADS", "STR_HD_SPEED"));

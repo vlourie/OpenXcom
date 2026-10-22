@@ -48,6 +48,7 @@
 #include "../Engine/Screen.h"
 #include "../Engine/CrossPlatform.h"
 #include "../Engine/HdUi.h"
+#include "../Engine/HdAmmoHint.h"
 #include "TileEngine.h"
 
 namespace OpenXcom
@@ -71,6 +72,7 @@ Inventory::Inventory(Game *game, int width, int height, int x, int y, bool base)
 	_grid = new Surface(width, height, 0, 0);
 	_items = new Surface(width, height, 0, 0);
 	_itemsTop = new Surface(width, height, 0, 0);
+	_hint = new Surface(width, height, 0, 0);
 	_gridLabels = new Surface(width, height, 0, 0);
 	_selection = new Surface(RuleInventory::HAND_W * RuleInventory::SLOT_W, RuleInventory::HAND_H * RuleInventory::SLOT_H, x, y);
 	_warning = new WarningMessage(224, 24, 48, 176);
@@ -129,6 +131,7 @@ Inventory::~Inventory()
 	delete _grid;
 	delete _items;
 	delete _itemsTop;
+	delete _hint;
 	delete _gridLabels;
 	delete _hdLabel;
 	delete _selection;
@@ -149,6 +152,7 @@ void Inventory::setPalette(const SDL_Color *colors, int firstcolor, int ncolors)
 	_grid->setPalette(colors, firstcolor, ncolors);
 	_items->setPalette(colors, firstcolor, ncolors);
 	_itemsTop->setPalette(colors, firstcolor, ncolors);
+	_hint->setPalette(colors, firstcolor, ncolors);
 	_gridLabels->setPalette(colors, firstcolor, ncolors);
 	_hdLabel->setPalette(colors, firstcolor, ncolors);
 	_selection->setPalette(colors, firstcolor, ncolors);
@@ -369,9 +373,14 @@ void Inventory::drawItems()
 		return true;
 	};
 
+	// the ammunition hint frames are laid again when the items are
+	const bool hintOn = HdAmmoHint::enabled();
+	_hintCells.clear();
+	_hintDirty = true;
+
 	ScriptWorkerBlit work;
 	_items->clear();
-	Uint8 color = _game->getMod()->getInterface("inventory")->getElement("numStack")->color;
+	Uint8 color =_game->getMod()->getInterface("inventory")->getElement("numStack")->color;
 	Uint8 color2 = _game->getMod()->getInterface("inventory")->getElement("numStack")->color2;
 	if (_selUnit != 0)
 	{
@@ -400,6 +409,13 @@ void Inventory::drawItems()
 				continue;
 			}
 			const bool hand = invItem->getSlot()->getType() == INV_HAND;
+			if (hintOn)
+			{
+				const RuleItem *r = invItem->getRules();
+				_hintCells.push_back({ r, hand ?
+					SDL_Rect{ (Sint16)invItem->getSlot()->getX(), (Sint16)invItem->getSlot()->getY(), (Uint16)(RuleInventory::HAND_W * RuleInventory::SLOT_W), (Uint16)(RuleInventory::HAND_H * RuleInventory::SLOT_H) } :
+					SDL_Rect{ (Sint16)x, (Sint16)y, (Uint16)(r->getInventoryWidth() * RuleInventory::SLOT_W), (Uint16)(r->getInventoryHeight() * RuleInventory::SLOT_H) } });
+			}
 			if (!hdPicture(invItem, frame, texture, hand ? HdItems::HAND : HdItems::GRID,
 				hand ? invItem->getSlot()->getX() : x, hand ? invItem->getSlot()->getY() : y))
 			{
@@ -461,6 +477,11 @@ void Inventory::drawItems()
 			int x, y;
 			x = (groundItem->getSlot()->getX() + (groundItem->getSlotX() - _groundOffset) * RuleInventory::SLOT_W);
 			y = (groundItem->getSlot()->getY() + groundItem->getSlotY() * RuleInventory::SLOT_H);
+			if (hintOn)
+			{
+				const RuleItem *r = groundItem->getRules();
+				_hintCells.push_back({ r, SDL_Rect{ (Sint16)x, (Sint16)y, (Uint16)(r->getInventoryWidth() * RuleInventory::SLOT_W), (Uint16)(r->getInventoryHeight() * RuleInventory::SLOT_H) } });
+			}
 			if (!hdPicture(groundItem, frame, texture, HdItems::GRID, x, y))
 			{
 				BattleItem::ScriptFill(&work, groundItem, save, BODYPART_ITEM_INVENTORY, _animFrame, 0);
@@ -530,6 +551,30 @@ void Inventory::drawItems()
 		}
 
 		stackLayer.blitNShade(over, 0, 0);
+	}
+}
+
+/**
+ * Frames the items that fit the weapon under the cursor (oxceHdAmmoHint): the answer is the weapon's own
+ * list of ammunition, for every ammo slot it has.
+ * @param weapon The weapon, or nullptr for no frames.
+ */
+void Inventory::drawHint(const RuleItem *weapon)
+{
+	_hint->clear();
+	_hintWeapon = weapon;
+	_hintDirty = false;
+	if (!weapon)
+	{
+		return;
+	}
+	for (const HintCell &cell : _hintCells)
+	{
+		if (HdAmmoHint::fits(weapon, cell.rules) && cell.rect.w > 2 && cell.rect.h > 2)
+		{
+			_hint->drawRect(cell.rect.x, cell.rect.y, cell.rect.w, cell.rect.h, _twoHandedGreen);
+			_hint->drawRect(cell.rect.x + 1, cell.rect.y + 1, cell.rect.w - 2, cell.rect.h - 2, 0);
+		}
 	}
 }
 
@@ -720,6 +765,22 @@ void Inventory::blit(SDL_Surface *surface)
 		drawItems();
 		drawSelectedItem();
 	}
+	// the ammunition hint: the weapon under the cursor (not while an item is carried), its fitting ammunition framed
+	const bool hint = HdAmmoHint::enabled();
+	if (hint)
+	{
+		const RuleItem *weapon = (!_selItem && _mouseOverItem) ? _mouseOverItem->getRules() : nullptr;
+		if (_hintDirty || weapon != _hintWeapon)
+		{
+			drawHint(weapon);
+		}
+	}
+	else if (_hintWeapon || !_hintCells.empty())
+	{
+		_hint->clear();
+		_hintWeapon = nullptr;
+		_hintCells.clear();
+	}
 	clear();
 	_grid->blitNShade(this, 0, 0);
 	_items->blitNShade(this, 0, 0);
@@ -748,6 +809,10 @@ void Inventory::blit(SDL_Surface *surface)
 			}
 			layer(_itemsTop);
 		}
+		if (hint)
+		{
+			layer(_hint);
+		}
 		if (fonts)
 		{
 			SDL_Rect target {};
@@ -767,6 +832,10 @@ void Inventory::blit(SDL_Surface *surface)
 		}
 		layer(_warning);
 		return;
+	}
+	if (hint)
+	{
+		_hint->blitNShade(this, 0, 0);
 	}
 	_gridLabels->blitNShade(this, 0, 0);
 	_selection->blitNShade(this, _selection->getX(), _selection->getY());

@@ -524,11 +524,11 @@ void HdUi::blend(Uint32 &d, Uint32 color, float cov)
 	blendPixel(d, color, cov);
 }
 
-void HdUi::blendGlyph(SDL_Surface *dest, const SDL_Rect &clip, const HdFont::Glyph &g, int x, int y, Uint32 color)
+void HdUi::blendGlyph(SDL_Surface *dest, const SDL_Rect &clip, const HdFont::Glyph &g, int x, int y, Uint32 color, const float *customLut)
 {
 	const int x0 = std::max(x, (int)clip.x), y0 = std::max(y, (int)clip.y);
 	const int x1 = std::min(x + g.w, clip.x + clip.w), y1 = std::min(y + g.h, clip.y + clip.h);
-	const CoverageLut &lut = coverageLut();
+	struct LutRef { const float *v; } lut = { customLut ? customLut : coverageLut().v };
 	for (int py = y0; py < y1; ++py)
 	{
 		Uint32 *row = (Uint32*)((Uint8*)dest->pixels + (size_t)py * dest->pitch);
@@ -843,7 +843,7 @@ void HdUi::drawTtfString(const UString &s, bool big, float capHeight, int x, int
 	}
 }
 
-void HdUi::drawMapText(const UString &s, float capHeight, float lineH, int wx, int wy, Uint32 face, Uint32 outline)
+void HdUi::drawMapText(const UString &s, float capHeight, float lineH, int wx, int wy, Uint32 face, Uint32 outline, float weight)
 {
 	FrameTiming timing(_frameMs);
 	SDL_Surface *dest;
@@ -856,6 +856,25 @@ void HdUi::drawMapText(const UString &s, float capHeight, float lineH, int wx, i
 	const float base = baselineWithTails(lineH, capHeight, f.descent(px) / k, lineH);
 	// the same edge as a line lying on an HD picture (drawTtfLine): it grows with the scale
 	const int outlineW = std::max(2, k);
+	// thinner strokes: the glyph's edge pixels are made lighter (a coverage gamma above the usual 0.85), so the
+	// stroke loses about (1 - weight) of its width, a stroke being some 0.2 of the cap height; the full pixels stay
+	thread_local float weightLut[256];
+	thread_local float weightLutFor = -1.0f;
+	const float *faceLut = nullptr;
+	if (weight < 0.999f)
+	{
+		const float w = std::max(0.5f, weight);
+		const float stroke = 0.2f * capHeight * k;
+		const float mean = std::max(0.06f, 1.0f / 1.85f - (1.0f - w) * stroke * 0.5f);
+		const float key = mean * 1000.0f;
+		if (weightLutFor != key)
+		{
+			const double gamma = 1.0 / mean - 1.0;
+			for (int i = 0; i < 256; ++i) weightLut[i] = (float)std::pow(i / 255.0, gamma);
+			weightLutFor = key;
+		}
+		faceLut = weightLut;
+	}
 	for (int pass = 0; pass < 2; ++pass)
 	{
 		float pen = (float)wx;
@@ -875,7 +894,7 @@ void HdUi::drawMapText(const UString &s, float capHeight, float lineH, int wx, i
 			if (g.w > 0)
 			{
 				const int baseline = wy + (int)std::lround((line * lineH + base) * k);
-				blendGlyph(dest, clip, g, (int)std::lround(pen) + g.xoff, baseline + g.yoff, pass == 0 ? outline : face);
+				blendGlyph(dest, clip, g, (int)std::lround(pen) + g.xoff, baseline + g.yoff, pass == 0 ? outline : face, pass == 0 ? nullptr : faceLut);
 			}
 			pen += g.advance;
 			prev = c;
