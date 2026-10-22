@@ -322,7 +322,7 @@ void BasescapeState::btnSoldiersClick(Action *)
  */
 void BasescapeState::btnCraftsClick(Action *)
 {
-	_game->pushState(new CraftsState(_base));
+	_game->pushState(withBaseSwitch(new CraftsState(_base)));
 }
 
 /**
@@ -516,7 +516,7 @@ void BasescapeState::viewRightClick(Action *)
 	{
 		if (f->getCraftForDrawing() == 0)
 		{
-			_game->pushState(new CraftsState(_base));
+			_game->pushState(withBaseSwitch(new CraftsState(_base)));
 		}
 		else
 			for (size_t craft = 0; craft < _base->getCrafts()->size(); ++craft)

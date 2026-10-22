@@ -73,6 +73,13 @@ CraftsState::CraftsState(Base *base) : _base(base)
 	add(_txtHwp, "text", "craftSelect");
 	add(_lstCrafts, "list", "craftSelect");
 
+	// the previous/next base arrows, as on the research and workshop screens (ticket XP-000224): bases with craft;
+	// the switch's base line takes the place of the screen's own
+	_txtBase->setVisible(false);
+	addBaseSwitch(_base, "craftSelect", "text", "button", 24,
+		[](const Base *other) { return !other->getCrafts()->empty(); },
+		[](Base *other) { return withBaseSwitch(new CraftsState(other)); });
+
 	centerAllSurfaces();
 
 	// Set up objects

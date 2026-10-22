@@ -20,6 +20,7 @@
 #include <algorithm>
 #include "ProductionCompleteState.h"
 #include "../Engine/Game.h"
+#include "../Engine/Action.h"
 #include "../Mod/Mod.h"
 #include "../Mod/RuleManufacture.h"
 #include "../Engine/LocalizedText.h"
@@ -60,7 +61,7 @@ ProductionCompleteState::ProductionCompleteState(Base *base, const std::string &
 	_txtMessage = new Text(246, 110, 37, 35);
 	_txtNext = new Text(236, 9, 40, 142);
 	_txtItem = new Text(160, 9, 47, 35);
-	_txtQuantity = new Text(70, 9, 209, 35);
+	_txtQuantity = new Text(70, 9, 197, 35);
 	_lstSummary = new TextList(224, 96, 39, 45);
 
 	// Set palette
@@ -122,12 +123,16 @@ ProductionCompleteState::ProductionCompleteState(Base *base, const std::string &
 	_txtQuantity->setText(tr("STR_QUANTITY_UC"));
 	_txtQuantity->setVisible(false);
 
-	_lstSummary->setColumns(2, 162, 46);
+	// the count column is narrower: one by one arrows after it (ticket XP-000225), right click still sells the row
+	_lstSummary->setColumns(2, 150, 36);
 	_lstSummary->setBackground(_window);
 	_lstSummary->setSelectable(true);
 	_lstSummary->setMargin(8);
+	_lstSummary->setArrowColumn(194, ARROW_HORIZONTAL);
 	_lstSummary->setVisible(false);
 	_lstSummary->onMouseClick((ActionHandler)&ProductionCompleteState::lstSummaryClick, SDL_BUTTON_RIGHT);
+	_lstSummary->onLeftArrowClick((ActionHandler)&ProductionCompleteState::lstSummaryLeftArrowClick);
+	_lstSummary->onRightArrowClick((ActionHandler)&ProductionCompleteState::lstSummaryRightArrowClick);
 
 	if (production && !production->getRules()->getRandomProducedItems().empty())
 	{
@@ -273,8 +278,14 @@ void ProductionCompleteState::btnKeepWorkingClick(Action *)
  * Sells the selected item(s)... unless they were sold, transferred or otherwise disposed of earlier already.
  * @param action Pointer to an action.
  */
-void ProductionCompleteState::lstSummaryClick(Action *)
+void ProductionCompleteState::lstSummaryClick(Action *action)
 {
+	// a click on the one by one arrows is theirs
+	if (action->getAbsoluteXMouse() >= _lstSummary->getArrowsLeftEdge() &&
+		action->getAbsoluteXMouse() <= _lstSummary->getArrowsRightEdge())
+	{
+		return;
+	}
 	// 1. remember stuff
 	auto scrollPos = _lstSummary->getScroll();
 	unsigned int sel = _lstSummary->getSelectedRow();
@@ -315,6 +326,70 @@ void ProductionCompleteState::lstSummaryClick(Action *)
 		_lstSummary->addRow(2, tr(name).c_str(), ss.str().c_str());
 	}
 	_lstSummary->scrollTo(scrollPos);
+}
+
+/**
+ * Sells one of the selected row's items.
+ * @param action Pointer to an action.
+ */
+void ProductionCompleteState::lstSummaryLeftArrowClick(Action *)
+{
+	changeOne(-1);
+}
+
+/**
+ * Takes back one of the selected row's items sold here.
+ * @param action Pointer to an action.
+ */
+void ProductionCompleteState::lstSummaryRightArrowClick(Action *)
+{
+	changeOne(+1);
+}
+
+/**
+ * Sells one of the selected row's items at the price the right click sells them for (change -1),
+ * or takes back one sold with the arrows in this window at the same price (change +1).
+ * @param change -1 or +1, the change of the kept count.
+ */
+void ProductionCompleteState::changeOne(int change)
+{
+	const size_t sel = _lstSummary->getSelectedRow();
+	if (sel >= _index.size())
+	{
+		return;
+	}
+	const std::string &name = _index[sel];
+	auto *itemRule = _game->getMod()->getItem(name, false);
+	if (!itemRule)
+	{
+		return;
+	}
+	SavedGame *save = _game->getSavedGame();
+	const int64_t price = itemRule->getSellCostAdjusted(_base, save);
+	if (change < 0)
+	{
+		// nothing left of this row, or sold, transferred or otherwise gone from the stores in the meantime
+		if (_randomProductionInfo[name] <= 0 || _base->getStorageItems()->getItem(itemRule) <= 0)
+		{
+			return;
+		}
+		save->setFunds(save->getFunds() + price);
+		_base->getStorageItems()->removeItem(itemRule, 1);
+		_randomProductionInfo[name] -= 1;
+		_soldOneByOne[name] += 1;
+	}
+	else
+	{
+		if (_soldOneByOne[name] <= 0 || save->getFunds() < price)
+		{
+			return;
+		}
+		save->setFunds(save->getFunds() - price);
+		_base->getStorageItems()->addItem(itemRule, 1);
+		_randomProductionInfo[name] += 1;
+		_soldOneByOne[name] -= 1;
+	}
+	_lstSummary->setCellText(sel, 1, std::to_string(_randomProductionInfo[name]));
 }
 
 }

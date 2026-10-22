@@ -222,6 +222,71 @@ CAST.update({
                    "hatch in a leather flight jacket, gripping a brass handrail, her face lit by the fires, eyes "
                    "narrowed at the saucer."),
 })
+# Экран хода врага - ещё дюжина сцен (тикет XP-000234, Vitali 22.10: «много разных картинок по теме»): кто-то из
+# героинь затаился, враг только намёком - силуэт, тень, глаза, следы, не человек. Ставятся в одну строку с hidden
+# (install), движок берёт другую картинку каждый ход (HdScreens::nextVariant).
+HIDDEN = {
+    "hidden_jungle": ([5], "A night jungle of giant leaves and hanging vines in drifting mist, fireflies. Rys, the "
+                           "woman from Picture 1, crouches behind a fallen mossy trunk at the left edge in patched "
+                           "combat gear, holding her breath, a pistol close to her chest. Far away on the right "
+                           "between the trees a big reptilian shape is half hidden in the dark, only two faint lime "
+                           "eyes glowing."),
+    "hidden_sewer": ([3], "A flooded sewer tunnel of old brick arches, black water to the knees, a single dim lamp "
+                          "far down the tunnel. Shpilka, the woman from Picture 1, presses her back to the wet wall at "
+                          "the left, a pistol raised beside her face. On the curved wall far away on the right falls "
+                          "the long shadow of a clawed creature, slow ripples spreading on the water toward her."),
+    "hidden_desert": ([4], "Desert ruins at night under a sky full of stars, cold blue moonlight on sand dunes and "
+                           "broken stone columns. Bazalt, the woman from Picture 1, the tallest and strongest, lies "
+                           "behind a low broken wall at the left with a heavy machine gun, watching. On a far dune "
+                           "crest on the right walk the thin silhouettes of three tall aliens, faint lime glow of "
+                           "their eyes."),
+    "hidden_snow": ([1], "A snowy pine forest at night in a blizzard. Sever, the woman from Picture 1, the captain, "
+                         "crouches behind a thick pine at the left in a long dark coat dusted with snow, binoculars "
+                         "lowered, her silver bob under a hood. Huge deep footprints of something large lead away into "
+                         "the dark on the right, a faint lime glow between the far trees."),
+    "hidden_ufo": ([6], "The curved corridor inside a crashed alien saucer: smooth ribbed walls, dim lime light "
+                        "panels, steam from a broken pipe. Tikhaya, the woman from Picture 1, kneels at the left edge "
+                        "aiming a long rifle down the corridor, her black braid over one shoulder. At the far end a "
+                        "sliding door stands half open, the tall thin shadow of an alien behind frosted glass."),
+    "hidden_rooftop": ([2], "Rain-soaked city rooftops at night: water tanks, chimneys, wet tar paper shining in the "
+                            "dark. Iskra, the woman from Picture 1, crouches behind a brick chimney at the left with "
+                            "a knife and a pistol, rain on her face, a tense fierce grin. Above a far roof on the "
+                            "right hangs a small alien drone, its narrow searchlight sweeping through the rain."),
+    "hidden_warehouse": ([3], "A dark warehouse of stacked wooden crates and steel shelves, one lamp swinging on a "
+                              "chain, its light swaying across the floor. Shpilka, the woman from Picture 1, hides "
+                              "between the crates at the left in a leather jacket, a wrench in one hand and a pistol "
+                              "in the other. Behind the dirty high windows on the right passes the hulking silhouette "
+                              "of a mechanical sentry with one red eye."),
+    "hidden_swamp": ([6], "A misty swamp at night: dead twisted trees, reeds, black still water under a pale moon. "
+                          "Tikhaya, the woman from Picture 1, stands waist deep in the reeds at the left, rifle "
+                          "raised, motionless. From the right a trail of faint lime bubbles moves slowly toward her "
+                          "across the water, something big beneath the surface."),
+    "hidden_cathedral": ([1], "A ruined gothic church at night, moonlight falling through tall broken windows in "
+                              "long pale shafts across the stone floor and toppled pews. Sever, the woman from "
+                              "Picture 1, the captain, stands behind a stone pillar at the left in a long dark coat, "
+                              "a cutlass in her hand. Across the floor from the right stretches the long shadow of a "
+                              "winged alien perched somewhere high."),
+    "hidden_mine": ([4], "An old mine shaft: timber supports, a rail track with a rusty cart, a dropped lantern on "
+                         "its side throwing warm light on the ground. Bazalt, the woman from Picture 1, the tallest "
+                         "and strongest, stands at the left with a pump shotgun, looking into a side tunnel on the "
+                         "right, where dozens of tiny lime eyes glitter in the blackness."),
+    "hidden_docks": ([2], "A harbour at night in thick fog: cranes, stacked cargo containers, wet planks, black "
+                          "water. Iskra, the woman from Picture 1, crouches behind an iron bollard at the left, a "
+                          "pistol ready. On the right a long tentacle with a faint lime glow slides out of the black "
+                          "water onto the pier."),
+    "hidden_radar": ([5], "The dark cockpit of a pirate dropship landed at night: brass frames, levers, rain on "
+                          "the windscreen. Rys, the woman from Picture 1, the pilot, leans close to a round green "
+                          "motion scanner at the left, faint blips on it, her face and copper curls lit lime from "
+                          "below. Outside the windscreen on the right only darkness and rain, and the vague shape "
+                          "of something tall standing very still."),
+}
+CAST.update(HIDDEN)
+# у них свои места боя, не корабль: с общим STYLE модель ставила слева в каждую сцену одну и ту же латунную стенку
+# с фонарём и зелёным экраном - в пустыню, снег и болото тоже (варианты c1-c2, 22.10)
+STYLE_OUT = ("Painted illustration in the style of a 1990s PC strategy game box cover, gritty retro science "
+             "fiction, confident brushwork. A night scene on a battlefield, no ship interior, no brass walls, no "
+             "lamps or screens unless the scene names them; cold moonlight and deep shadows, a touch of acid lime "
+             "green from alien eyes and tech. ")
 CAST_DIR = os.path.join(ROOT, "art", "cast")
 # опоры - только лица; тело и одежду задаёт текст (героини - солдатки 18-21, спортивные, не культуристки)
 CAST_HEAD = ("The pictures are face references of the characters, not the scene: keep each named woman's face, "
@@ -286,7 +351,7 @@ def draw(args):
             refs = [Image.open(os.path.join(CAST_DIR, "M%d_face.png" % m)).convert("RGB") for m in ids]
             extra = dict(image=refs, output_resolution=CAST_RES)
             neg = NEGATIVE + CAST_NEG
-            prompt = STYLE + (COVER if n in BOLD else CALM) + CAST_HEAD + scene
+            prompt = (STYLE_OUT if n in HIDDEN else STYLE) + (COVER if n in BOLD else CALM) + CAST_HEAD + scene
         else:
             prompt = STYLE + (COVER if n in BOLD else CALM) + THEMES[n]
         os.makedirs(os.path.join(OUT, n), exist_ok=True)
@@ -320,7 +385,7 @@ def install(args):
     from PIL import Image
     picks = dict(p.split("=") for p in args.pick.split(",") if p)
     for n in picks:
-        if n not in THEMES:
+        if n not in THEMES and n not in HIDDEN:
             raise SystemExit("нет такой темы: %s" % n)
     dests = [os.path.join(ROOT, d, "hd", "UI", "screens") for d in args.mods.split(";") if d]
     for n, v in picks.items():
@@ -331,7 +396,10 @@ def install(args):
     themes = [n for n in THEMES if n in picks or os.path.exists(os.path.join(dests[0], "%s.png" % n))]
     lines = ["# Фоны экранов по темам (HdScreens): картинка = экраны (id из interfaces рулсетов).",
              "# Пишет tools/hdart/gen_screens.py install - руками не править."]
-    lines += ["%s.png = %s" % (n, " ".join(SCREENS[n].split())) for n in themes]
+    # сцены хода врага - картинки той же строки, что hidden: экран берёт одну из них на ход
+    more = [n for n in HIDDEN if n in picks or os.path.exists(os.path.join(dests[0], "%s.png" % n))]
+    lines += ["%s = %s" % (" ".join("%s.png" % f for f in [n] + (more if n == "hidden" else [])),
+                           " ".join(SCREENS[n].split())) for n in themes]
     for d in dests:
         os.makedirs(d, exist_ok=True)
         for n, v in picks.items():

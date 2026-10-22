@@ -43,6 +43,9 @@ namespace HdScreens
 	void load();
 	/// Is there a theme picture for this interface (and the pictures option on)?
 	bool has(const std::string &interfaceName);
+	/// A line may list several pictures (hidden.png hidden_jungle.png ... = nextTurn hiddenMovement): shows another
+	/// of them from now on in all the line's screens (a new turn); one picture - nothing changes.
+	void nextVariant(const std::string &interfaceName);
 	/// Draws the theme picture of `interfaceName` filling the base rectangle (x, y, w, h), clipped to the HD
 	/// interface's clip; `owner` (the window) names whose text frosts it. False when there is none.
 	bool drawBackdrop(const void *owner, const std::string &interfaceName, int x, int y, int w, int h);

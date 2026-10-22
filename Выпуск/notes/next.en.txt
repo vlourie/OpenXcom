@@ -1,0 +1,6 @@
+- Living base (HD): the small radar's dish sweeps from side to side, lightning arcs between the power plant's transformers and between the hellerium plant's dischargers. The onsen and spa water ripples with barely visible waves, without rings.
+- Maps (HD): the jungle frames players reported are redrawn (tickets XP-000230–233).
+- Hangar: the base's craft screen has the previous / next base arrows, as in the lab and the workshop — they flip through the bases that have craft (ticket XP-000224).
+- Production complete report: the arrows by a row sell the finished items one by one and take sold ones back, not only all at once (ticket XP-000225).
+- Battle: the aim sticks to its tile — a slight move of the mouse right at the edge no longer jumps to the next tile (ticket XP-000226).
+- Enemy turn (HD): the hidden movement screen has twelve new pictures — the heroines lying in wait in the jungle, the sewers, the desert, the snow, by a UFO, on a rooftop, in a warehouse, a swamp, a cathedral, a mine, the docks and by a radar, a different one each turn (ticket XP-000234).

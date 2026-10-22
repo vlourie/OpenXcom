@@ -18,6 +18,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "../Engine/State.h"
+#include "BaseSwitch.h"
 
 namespace OpenXcom
 {
@@ -33,7 +34,7 @@ class CraftWeaponIcons;
  * Equip Craft screen that lets the player
  * manage all the crafts in a base.
  */
-class CraftsState : public State
+class CraftsState : public BaseSwitchMixin<State>
 {
 private:
 	TextButton *_btnOk;
