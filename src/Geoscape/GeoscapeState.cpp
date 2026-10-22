@@ -135,6 +135,7 @@
 #include "../Mod/Texture.h"
 #include "../fmath.h"
 #include "../fallthrough.h"
+#include "CraftLaunchState.h"
 
 namespace OpenXcom
 {
@@ -727,6 +728,35 @@ void GeoscapeState::init()
 		popup(new ListSaveState(OPT_GEOSCAPE));
 	}
 
+	// HD test automation: OXCE_HD_LAUNCH_TEST=<craft type>[.land] plays the launch (landing) scene of the
+	// first such craft of the save once over the geoscape (headless checks together with OXCE_HD_DUMP)
+	static const char *launchTest = getenv("OXCE_HD_LAUNCH_TEST");
+	if (launchTest && *launchTest)
+	{
+		std::string type = launchTest;
+		launchTest = nullptr;
+		const bool landing = type.size() > 5 && type.compare(type.size() - 5, 5, ".land") == 0;
+		if (landing)
+		{
+			type.resize(type.size() - 5);
+		}
+		const Craft *found = nullptr;
+		for (const auto *xbase : *_game->getSavedGame()->getBases())
+		{
+			for (const auto *xcraft : *xbase->getCrafts())
+			{
+				if (!found && xcraft->getRules()->getType() == type)
+				{
+					found = xcraft;
+				}
+			}
+		}
+		if (State *scene = found ? CraftLaunchState::create(found, landing) : CraftLaunchState::create(type, 1, landing))
+		{
+			popup(scene);
+		}
+	}
+
 	// Set music if it's not already playing
 	if (_dogfights.empty() && !_dogfightStartTimer->isRunning())
 	{
@@ -1244,6 +1274,11 @@ void GeoscapeState::time5Seconds()
 				if (returnedToBase)
 				{
 					_game->getSavedGame()->stopHuntingXcomCraft(xcraft); // hiding in the base is good enough, obviously
+					// HD render: the scene of the craft coming back into its hangar (a picture only)
+					if (State *scene = CraftLaunchState::create(xcraft, true))
+					{
+						popup(scene);
+					}
 				}
 			}
 

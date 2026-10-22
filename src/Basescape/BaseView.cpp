@@ -1327,7 +1327,7 @@ void BaseView::draw()
 		{
 			if (craftIt != _base->getCrafts()->end())
 			{
-				if ((*craftIt)->getStatus() != "STR_OUT")
+				if ((*craftIt)->getStatus() != "STR_OUT" || *craftIt == _hdDeparting)
 				{
 					const int index = (*craftIt)->getSkinSprite() + 33;
 					Surface *frame = _texture->getFrame(index);

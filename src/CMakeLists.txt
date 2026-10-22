@@ -172,6 +172,7 @@ set ( engine_src
   Engine/HdRadar.cpp
   Engine/HdBattleHud.cpp
   Engine/HdKillCam.cpp
+  Engine/HdVideo.cpp
   Engine/HdBlit.cpp
   Engine/HdCanvas.cpp
   Engine/HdSmooth.cpp
@@ -229,6 +230,7 @@ set ( geoscape_src
   Geoscape/BuildNewBaseState.cpp
   Geoscape/ConfirmCydoniaState.cpp
   Geoscape/ConfirmDestinationState.cpp
+  Geoscape/CraftLaunchState.cpp
   Geoscape/ConfirmLandingState.cpp
   Geoscape/ConfirmNewBaseState.cpp
   Geoscape/CraftErrorState.cpp

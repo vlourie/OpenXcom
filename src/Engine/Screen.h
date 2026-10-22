@@ -64,8 +64,6 @@ private:
 	Surface::UniqueSurfacePtr _world;
 	/// (Re)allocates the world layer to match the base resolution and scale.
 	void allocateWorld();
-	/// Draws the classic 8-bit layer (index 0 = transparent) over a true-color surface of world size.
-	void composeInto(SDL_Surface *dst) const;
 	/// The classic layer over the world layer with xBRZ (see composeInto).
 	void composeSmooth(SDL_Surface *dst, const Uint32 *lut, int srcW, int srcH, int k) const;
 	/// Sets the _flags and _bpp variables based on game options; needed in more than one place now
@@ -133,6 +131,9 @@ public:
 	SDL_Surface *getWorldSurface();
 	/// Gets the world layer scale factor k.
 	int getWorldScale() const { return _worldScale; }
+	/// Draws the classic 8-bit layer (index 0 = transparent) over a true-color surface of world size
+	/// (what flip does; the HD craft launch scene takes the composed picture to enlarge it).
+	void composeInto(SDL_Surface *dst) const;
 	/// The screen (for drawing code without a Game at hand); null before it exists.
 	static Screen *current() { return _current; }
 	/// Sets the world layer scale factor k (reallocates the world layer).

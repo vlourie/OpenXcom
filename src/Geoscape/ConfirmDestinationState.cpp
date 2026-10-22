@@ -45,6 +45,7 @@
 #include "../Savegame/Soldier.h"
 #include "../Engine/Options.h"
 #include "../Engine/Sound.h"
+#include "CraftLaunchState.h"
 #include "../Ufopaedia/Ufopaedia.h"
 
 namespace OpenXcom
@@ -362,6 +363,8 @@ void ConfirmDestinationState::btnOkClick(Action *)
 		_game->getSavedGame()->getWaypoints()->push_back(w);
 	}
 
+	// HD render: the scene of the leader leaving its hangar (a picture only, shown once the order is done)
+	State *launch = nullptr;
 	// first selected _craft (first shift-clicked craft) is wing leader; the other crafts follow the wing leader
 	if (_crafts.front() == _target)
 	{
@@ -377,6 +380,7 @@ void ConfirmDestinationState::btnOkClick(Action *)
 			{
 				_game->getMod()->getSound("GEO.CAT", _crafts.front()->getRules()->getTakeoffSound())->play();
 			}
+			launch = CraftLaunchState::create(_crafts.front(), false);
 		}
 	}
 
@@ -405,6 +409,10 @@ void ConfirmDestinationState::btnOkClick(Action *)
 
 	_game->popState();
 	_game->popState();
+	if (launch)
+	{
+		_game->pushState(launch);
+	}
 }
 
 /**

@@ -24,6 +24,7 @@ namespace OpenXcom
 {
 
 class Base;
+class Craft;
 class SurfaceSet;
 class BaseFacility;
 class RuleBaseFacility;
@@ -69,6 +70,8 @@ private:
 	std::vector<HdCraft> _hdCrafts;
 	/// The game's clock, read for the night over the lit HD pictures (HdBaseScene); nullptr: day.
 	const GameTime *_hdTime = nullptr;
+	/// The craft the HD launch scene shows in its hangar although it is out already (CraftLaunchState).
+	const Craft *_hdDeparting = nullptr;
 	/// The numbers over the facilities (build time, ammo), laid out and kept out of the classic layer,
 	/// when the HD interface draws them with its own fonts; `_hdNumbersKept`: were they when last drawn.
 	std::vector<Text*> _hdNumbers;
@@ -96,6 +99,8 @@ public:
 	void setBase(Base *base);
 	/// Sets the game's clock the night over the lit HD pictures goes by (only read).
 	void setHdTime(const GameTime *time) { _hdTime = time; }
+	/// The HD launch scene: this craft is drawn in its hangar although it is out already.
+	void setHdDeparting(const Craft *craft) { _hdDeparting = craft; _redraw = true; }
 	/// Sets the texture for this base view.
 	void setTexture(SurfaceSet *texture);
 	/// Gets the currently selected facility.
