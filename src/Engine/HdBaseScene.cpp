@@ -53,8 +53,8 @@ const int LUT_SIZE = LUT_MAX * LUT_STEPS + 1;
 
 bool kindOf(const std::string &word, Kind &kind)
 {
-	static const char *names[] = { "steady", "blink", "pulse", "screen", "flicker", "tv", "chase", "weld", "night" };
-	for (int i = 0; i < 9; ++i)
+	static const char *names[] = { "steady", "blink", "pulse", "screen", "flicker", "tv", "chase", "weld", "night", "burst" };
+	for (int i = 0; i < 10; ++i)
 	{
 		if (word == names[i])
 		{
@@ -141,6 +141,11 @@ float strength(const Placed &p, float t, float night)
 	case DUTY:
 		v = night * 0.9f;
 		gain = 1.0f;
+		break;
+	case BURST:
+		// only in its facility's fit: the level carries the fit's wave (BaseView::drawHdScene)
+		v = 1.6f;
+		gain = 0.5f + 0.5f * night;
 		break;
 	default:
 		break;
@@ -325,6 +330,44 @@ bool parse(std::istream &in, TileScene &out)
 				}
 			}
 		}
+		else if (key == "cycle")
+		{
+			float period = 0, length = 0;
+			words >> period >> length;
+			if (words && period > 0 && length > 0)
+			{
+				out.cycle = period;
+				out.fit = std::min(length, period);
+			}
+		}
+		else if (key == "glow")
+		{
+			Glow G;
+			words >> G.x >> G.y >> G.w >> G.h >> G.hue >> G.tolerance >> G.saturation >> G.peak >> G.pulses >> G.groups;
+			if (words && G.w > 0 && G.h > 0 && G.pulses > 0)
+			{
+				G.groups = std::min(16, std::max(1, G.groups));
+				out.glows.push_back(G);
+			}
+		}
+		else if (key == "lid")
+		{
+			Lid L;
+			words >> L.x >> L.y >> L.rx >> L.ry >> L.blinks;
+			if (words && L.rx > 0 && L.ry > 0 && L.blinks > 0)
+			{
+				out.lids.push_back(L);
+			}
+		}
+		else if (key == "sink")
+		{
+			Sink S;
+			words >> S.x >> S.y >> S.w >> S.h >> S.ix >> S.iy >> S.iw >> S.ih >> S.pulses;
+			if (words && S.w > 0 && S.h > 0 && S.iw > 0 && S.ih > 0 && S.pulses > 0)
+			{
+				out.sinks.push_back(S);
+			}
+		}
 		else if (key == "walk")
 		{
 			int n = 0;
@@ -357,6 +400,70 @@ float nightAt(double longitude, int hour, int minute, int second)
 	const float sun = (float)std::sin((hours - 6.0) / 24.0 * 2 * pi);
 	// dusk from the sun just over the horizon to well under it
 	return smooth((0.1f - sun) / 0.3f);
+}
+
+void tick(View &view, Uint32 ms)
+{
+	// a fresh layout, or the base screen left a while ago: deal the first fits over a period from now
+	const bool deal = view.fitsAt == 0 || ms - view.fitsAt > 2000;
+	view.fitsAt = ms;
+	int running = 0;
+	for (Fit &F : view.fits)
+	{
+		if (deal)
+		{
+			F.on = false;
+			F.next = ms + 3000 + (Uint32)(hash1(F.seed, 1) * F.period * 1000);
+		}
+		if (F.on && ms - F.start >= (Uint32)(F.length * 1000))
+		{
+			// the next one about a period later, a little more or less, so the facilities do not keep step
+			F.on = false;
+			F.next = F.start + (Uint32)(F.period * 1000 * (0.85f + 0.3f * hash1(F.seed, F.start, 2)));
+		}
+		running += F.on ? 1 : 0;
+	}
+	for (Fit &F : view.fits)
+	{
+		if (!F.on && (Sint32)(ms - F.next) >= 0)
+		{
+			if (running < 3)
+			{
+				F.on = true;
+				F.start = ms;
+				++running;
+			}
+			else
+			{
+				F.next = ms + 2000 + (Uint32)(hash1(F.seed, ms, 3) * 3000);
+			}
+		}
+	}
+}
+
+float fitTime(const View &view, int fit, Uint32 ms)
+{
+	if (fit < 0 || fit >= (int)view.fits.size())
+	{
+		return -1;
+	}
+	static const char *held = std::getenv("OXCE_HD_BASE_FIT");
+	if (held && *held)
+	{
+		return std::min(view.fits[fit].length, std::max(0.0f, (float)std::atof(held)));
+	}
+	const Fit &F = view.fits[fit];
+	return F.on ? (ms - F.start) / 1000.0f : -1;
+}
+
+float fitWave(float t, float length, int pulses)
+{
+	if (t < 0 || t > length || length <= 0)
+	{
+		return 0;
+	}
+	const float s = std::sin(PI * std::max(1, pulses) * t / length);
+	return s * s;
 }
 
 void draw(SDL_Surface *world, const SDL_Rect &area, const std::vector<Placed> &lights, float night, Uint32 ms,
@@ -1013,6 +1120,70 @@ void bake(View &view, const HdFrame *rock, const std::vector<SDL_Rect> &empty, c
 			view.waters.push_back(A);
 		}
 	}
+	// the glows' pixels: of their hue in their box, each pixel once (the shield's boxes may touch), and the
+	// groups by the angle round the box's middle
+	std::vector<unsigned char> taken(view.albedo.size(), 0);
+	for (PlacedGlow &G : view.glows)
+	{
+		const Glow &L = G.glow;
+		const int x0 = std::max(0, (int)(L.x - view.x)), y0 = std::max(0, (int)(L.y - view.y));
+		const int x1 = std::min(w, (int)std::ceil(L.x + L.w - view.x)), y1 = std::min(h, (int)std::ceil(L.y + L.h - view.y));
+		const float mx = L.x + L.w / 2 - view.x, my = L.y + L.h / 2 - view.y;
+		for (int y = y0; y < y1; ++y)
+		{
+			for (int x = x0; x < x1; ++x)
+			{
+				const size_t i = (size_t)y * w + x;
+				const Uint32 px = view.albedo[i];
+				if (taken[i])
+				{
+					continue;
+				}
+				const float r = ((px >> 16) & 0xFF) / 255.0f, g = ((px >> 8) & 0xFF) / 255.0f, bl = (px & 0xFF) / 255.0f;
+				const float hi = std::max(r, std::max(g, bl)), lo = std::min(r, std::min(g, bl)), d = hi - lo;
+				if (hi < 0.3f || d <= 0.0001f || d / hi < L.saturation)
+				{
+					continue;
+				}
+				float hue = hi == r ? std::fmod((g - bl) / d + 6, 6.0f) : hi == g ? (bl - r) / d + 2 : (r - g) / d + 4;
+				hue *= 60;
+				const float off = std::fabs(hue - L.hue);
+				if (std::min(off, 360 - off) > L.tolerance)
+				{
+					continue;
+				}
+				taken[i] = 1;
+				G.pixels.push_back((Uint32)i);
+				const float ang = std::atan2(y + 0.5f - my, x + 0.5f - mx) + PI;
+				G.group.push_back((unsigned char)std::min(L.groups - 1, (int)(ang / (2 * PI) * L.groups)));
+			}
+		}
+	}
+	// a lid is the colour of the picture just above its eye (6 to 10 pack pixels over it, 4 to each side)
+	for (PlacedLid &P : view.lids)
+	{
+		float sum[3] = { 0, 0, 0 };
+		int found = 0;
+		for (float dy = 6; dy <= 10; dy += 1)
+		{
+			for (float dx = -4; dx <= 4; dx += 1)
+			{
+				const int x = (int)(P.lid.x + dx * P.scale - view.x), y = (int)(P.lid.y - P.lid.ry - dy * P.scale - view.y);
+				if (x >= 0 && y >= 0 && x < w && y < h)
+				{
+					const Uint32 px = view.albedo[(size_t)y * w + x];
+					sum[0] += (px >> 16) & 0xFF;
+					sum[1] += (px >> 8) & 0xFF;
+					sum[2] += px & 0xFF;
+					++found;
+				}
+			}
+		}
+		for (int c = 0; c < 3 && found > 0; ++c)
+		{
+			P.colour[c] = sum[c] / found;
+		}
+	}
 }
 
 void drawMotion(SDL_Surface *world, const View &view, Uint32 ms)
@@ -1058,7 +1229,22 @@ void drawMotion(SDL_Surface *world, const View &view, Uint32 ms)
 	for (const PlacedSpin &P : view.spins)
 	{
 		const Spin &S = P.spin;
-		const float deg = S.rps != 0 ? t * S.rps * 360 + P.phase * 360 : S.middle + S.swing * std::sin(t / S.period * 2 * PI + P.phase * 2 * PI);
+		float deg = S.rps != 0 ? t * S.rps * 360 + P.phase * 360 : S.middle + S.swing * std::sin(t / S.period * 2 * PI + P.phase * 2 * PI);
+		if (P.fit >= 0)
+		{
+			// a turret of fits looks straight between them and swings from the middle in one (tickets 244, 245),
+			// easing back over the last half second if the fit is not whole swings
+			const float ft = fitTime(view, P.fit, ms);
+			const float left = view.fits[P.fit].length - ft;
+			if (S.rps != 0)
+			{
+				deg = P.phase * 360 + std::max(0.0f, ft) * S.rps * 360;
+			}
+			else
+			{
+				deg = ft < 0 ? S.middle : S.middle + S.swing * std::sin(ft / S.period * 2 * PI) * std::min(1.0f, left / 0.5f);
+			}
+		}
 		const float ang = deg * PI / 180, ca = std::cos(ang), sa = std::sin(ang);
 		const int r = (int)std::ceil(S.radius);
 		const int cx = (int)std::lround(S.x), cy = (int)std::lround(S.y);
@@ -1102,6 +1288,134 @@ void drawMotion(SDL_Surface *world, const View &view, Uint32 ms)
 				float col[3];
 				sample(view.albedo, view.w, view.h, S.x + ca * dx + sa * dy - 0.5f - view.x, S.y - sa * dx + ca * dy - 0.5f - view.y, col);
 				line[x] = mix(line[x], col, m);
+			}
+		}
+	}
+	// the fits (tickets 237-241): only their few thousand pixels, and only while a fit runs
+	auto put = [&](int vx, int vy, const float col[3])
+	{
+		const int x = view.x + vx, y = view.y + vy;
+		if (inWorld(x, y))
+		{
+			Uint32 *px = (Uint32*)((Uint8*)world->pixels + (size_t)y * world->pitch) + x;
+			*px = mix(*px, col, 1);
+		}
+	};
+	auto rgb = [](Uint32 px, float out[3])
+	{
+		out[0] = (float)((px >> 16) & 0xFF);
+		out[1] = (float)((px >> 8) & 0xFF);
+		out[2] = (float)(px & 0xFF);
+	};
+	for (const PlacedGlow &G : view.glows)
+	{
+		const float ft = fitTime(view, G.fit, ms);
+		if (ft < 0)
+		{
+			continue;
+		}
+		// the groups go one after another over the first 40% of the fit, each pulsing over the rest
+		const float length = view.fits[G.fit].length;
+		const float spread = G.glow.groups > 1 ? 0.4f * length : 0.0f;
+		float factor[16];
+		for (int g = 0; g < G.glow.groups; ++g)
+		{
+			const float a = fitWave(ft - spread * g / G.glow.groups, length - spread, G.glow.pulses);
+			factor[g] = 1 + (G.glow.peak - 1) * a;
+		}
+		for (size_t i = 0; i < G.pixels.size(); ++i)
+		{
+			const float f = factor[G.group[i]];
+			if (std::fabs(f - 1) < 0.004f)
+			{
+				continue;
+			}
+			float col[3];
+			rgb(view.albedo[G.pixels[i]], col);
+			// going dark the green and blue fall faster: yellow goes to dark orange, violet to dark violet
+			const float fg = f < 1 ? std::pow(f, 1.4f) : f;
+			col[0] = std::min(255.0f, col[0] * f);
+			col[1] = std::min(255.0f, col[1] * fg);
+			col[2] = std::min(255.0f, col[2] * fg);
+			put((int)(G.pixels[i] % view.w), (int)(G.pixels[i] / view.w), col);
+		}
+	}
+	for (const PlacedLid &P : view.lids)
+	{
+		const float ft = fitTime(view, P.fit, ms);
+		const float c = fitWave(ft, ft < 0 ? 0 : view.fits[P.fit].length, P.lid.blinks);
+		if (c < 0.01f)
+		{
+			continue;
+		}
+		// the upper lid comes down the eye's own curve: at full shut it covers it to the lower edge
+		const Lid &L = P.lid;
+		for (int y = (int)std::floor(L.y - L.ry); y <= (int)std::ceil(L.y + L.ry); ++y)
+		{
+			for (int x = (int)std::floor(L.x - L.rx); x <= (int)std::ceil(L.x + L.rx); ++x)
+			{
+				const float u = (x + 0.5f - L.x) / L.rx;
+				if (std::fabs(u) >= 1)
+				{
+					continue;
+				}
+				const float half = L.ry * std::sqrt(1 - u * u);
+				const float top = L.y - half, edge = top + c * 2 * half, yc = y + 0.5f;
+				if (yc < top || yc > edge)
+				{
+					continue;
+				}
+				// darker towards its edge, and a dark line of lashes one pack pixel wide there
+				const float q = (yc - top) / std::max(0.001f, edge - top);
+				const float k = (1 - 0.25f * q) * (edge - yc < P.scale ? 0.45f : 1.0f);
+				const float col[3] = { P.colour[0] * k, P.colour[1] * k, P.colour[2] * k };
+				put(x - view.x, y - view.y, col);
+			}
+		}
+	}
+	for (const PlacedSink &P : view.sinks)
+	{
+		const float ft = fitTime(view, P.fit, ms);
+		const float a = fitWave(ft, ft < 0 ? 0 : view.fits[P.fit].length, P.sink.pulses);
+		if (a < 0.01f)
+		{
+			continue;
+		}
+		// the platform shrinks to its middle (it goes down) and darkens, a dark gap opening round it;
+		// the hatch grows and reddens (it comes up)
+		const Sink &S = P.sink;
+		const float cx = S.x + S.w / 2, cy = S.y + S.h / 2, icx = S.ix + S.iw / 2, icy = S.iy + S.ih / 2;
+		const float out = 1 / (1 - 0.07f * a), in = 1 - 0.10f * a, dark = 1 - 0.35f * a;
+		for (int y = (int)S.y; y < (int)(S.y + S.h); ++y)
+		{
+			for (int x = (int)S.x; x < (int)(S.x + S.w); ++x)
+			{
+				const float xc = x + 0.5f, yc = y + 0.5f;
+				float col[3];
+				if (xc >= S.ix && xc < S.ix + S.iw && yc >= S.iy && yc < S.iy + S.ih)
+				{
+					sample(view.albedo, view.w, view.h, icx + (xc - icx) * in - 0.5f - view.x, icy + (yc - icy) * in - 0.5f - view.y, col);
+					col[0] = std::min(255.0f, col[0] * (1 + 0.6f * a));
+					col[1] *= 1 - 0.25f * a;
+					col[2] *= 1 - 0.25f * a;
+				}
+				else
+				{
+					const float sx = cx + (xc - cx) * out, sy = cy + (yc - cy) * out;
+					if (sx < S.x || sx >= S.x + S.w || sy < S.y || sy >= S.y + S.h)
+					{
+						col[0] = 12;
+						col[1] = col[2] = 10;
+					}
+					else
+					{
+						sample(view.albedo, view.w, view.h, sx - 0.5f - view.x, sy - 0.5f - view.y, col);
+						col[0] *= dark;
+						col[1] *= dark;
+						col[2] *= dark;
+					}
+				}
+				put(x - view.x, y - view.y, col);
 			}
 		}
 	}

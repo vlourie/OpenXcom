@@ -118,7 +118,6 @@ MORE = {
     "STR_GYM_ROOM": [_e("dust", ROOM, DUSTC)],
     "STR_ONSEN": [_e("ripple", (.62, .40, .85, .85), WATER)],
     "STR_LARGE_RADAR_SYSTEM": [_e("sweep", WIDE, GREEN)],
-    "STR_GRAV_SHIELD": [_e("orbit", WIDE, VIOLET)],
     "STR_BEAST_DEN": [_e("flies", (.25, .20, .60, .55), (.08, .07, .05))],
     "STR_LIVING_QUARTERS_LARGE": [_e("dust", ROOM, DUSTC)],
     "STR_LIVING_QUARTERS_ADVANCED_LARGE": [_e("ripple", (.42, .20, .58, .80), WATER), _e("dust", ROOM, DUSTC)],
@@ -150,7 +149,6 @@ MORE = {
     "STR_GENERAL_STORES_DAMAGED": [_e("steam", MID, SMOKE), _e("dust", ROOM, DUSTC)],
     "STR_GENERAL_STORES_ARMORED": [_e("dust", ROOM, DUSTC)],
     "STR_CRYO_PRISON": [_e("steam", WIDE, (.80, .95, 1.0))],
-    "STR_EYE_OF_HORUS": [_e("orbit", MID, ORANGE)],
     "STR_HANGAR_DAMAGED": [_e("steam", MID, SMOKE), _e("dust", ROOM, DUSTC)],
     "STR_FLAK_DEFENSES": [_e("sweep", MID, ORANGE)],
     "STR_ARMORY": [_e("dust", ROOM, DUSTC)],
@@ -188,8 +186,6 @@ MORE = {
     "STR_GREAT_LIBRARY": [_e("dust", ROOM, DUSTC)],
     "STR_COMPUTER_CORE": [_e("orbit", (.15, .25, .55, .75), CYAN)],
     "STR_GDX_LAB": [_e("sparks", (.10, .40, .35, .85), (1.0, .80, .30))],
-    "STR_FUSION_BALL_DEFENSES": [_e("orbit", WIDE, ORANGE)],
-    "STR_HYPER_WAVE_DECODER": [_e("orbit", (.25, .25, .75, .75), VIOLET)],
     "STR_LIVING_QUARTERS_DAMAGED": [_e("steam", MID, SMOKE)],
     "STR_LIVING_QUARTERS_ADVANCED_DAMAGED": [_e("steam", MID, SMOKE)],
     "STR_BUNKER_FACILITY_DAMAGED1": [_e("steam", MID, SMOKE)],
@@ -250,8 +246,37 @@ SPIN = {
     "STR_GAUSS_DEFENSES": (64.0 / 128, 66.25 / 128, 45.7 / 128, "swing", 9.75, 8.0, -9.75),
 }
 # Плазменная не качается: шар - дуло, заряд стягивается в его центр и бьёт синий пучок вверх до края клетки
-# (Vitali 22.10 «пучок синего света», проба plasma_beam_preview.py - «супер»); emit beam - шар в (u1, v1)
+# (Vitali 22.10 «пучок синего света», проба plasma_beam_preview.py - «супер»; тикет 238 закрыт этим); emit beam - шар в (u1, v1)
 EMITS.setdefault("STR_PLASMA_DEFENSES", []).append(("beam", .5, 0.0, .5, 250 / 512, .35, .65, 1.0))
+# Живая база по тикетам 237-245 (22.10). Движения постройки идут не всё время, а приступами (HdBaseScene::tick):
+# CYCLE - период, с, и сколько длится приступ, с; одновременно движутся не больше трёх построек базы, период у
+# каждой своей постройки свой, 30-60 с (тикет 244). Пиксели - пака 128 одноклеточной постройки.
+CYCLE = {
+    "STR_GRAV_SHIELD": (45, 10),             # 237: точки на перекрестиях фиолет -> тёмный -> фиолет, дважды
+    "STR_FUSION_BALL_DEFENSES": (45, 8),     # 237: шары гаснут до тёмно-оранжевого по четыре, волной по лучам
+    "STR_LASER_DEFENSES": (45, 16),          # 244: два качания ствола (период 8 с) раз в 45 с
+    "STR_GAUSS_DEFENSES": (45, 16),
+    "STR_EYE_OF_HORUS": (30, 5),             # 239: веко три раза за 5 с
+    "STR_HYPER_WAVE_DECODER": (60, 10),      # 240: кабели разгораются дважды по 5 с, блик на шаре
+    "STR_ACCESS_LIFT": (50, 4),              # 241: квадрат проседает дважды по 2 с
+    "STR_SAM_DEFENSES": (58, 18),            # 245: два качания (период 9 с) и 40 с покоя
+}
+# Пульсация цвета: рамка x y w h, оттенок и допуск в градусах, насыщенность от, множитель яркости в пике (<1 гаснет,
+# >1 разгорается), пульсов за приступ, групп по углу вокруг центра рамки (волна по кругу)
+GLOW = {
+    # точки на перекрестиях - каждая своей рамкой (glow_blobs): в общей рамке гасла и лавандовая кайма постройки
+    "STR_GRAV_SHIELD": [(12, 12, 104, 104, 285, 35, .08, .25, 2, 1, "blobs", 22.7, 21.5, 24.0)],
+    "STR_FUSION_BALL_DEFENSES": [(13, 13, 88, 88, 18, 14, .60, .55, 1, 4)],
+    "STR_HYPER_WAVE_DECODER": [(8, 8, 112, 112, 85, 40, .30, 1.9, 2, 1)],
+}
+# Веко: центр, полуоси, морганий за приступ (белок и зрачок внутри оранжевой каймы, сетка 22.10); цвет века -
+# металл купола над глазом (движок берёт его с картинки над эллипсом)
+LID = {"STR_EYE_OF_HORUS": [(63.0, 63.5, 14.5, 8.0, 3)]}
+# Лифт: красная площадка (x y w h) проседает и темнеет, внутренний квадрат поднимается и краснеет; пульсов за приступ
+# (рамки по сетке 22.10: площадка 46-81 x 44-80, люк 55-73 x 54-72)
+SINK = {"STR_ACCESS_LIFT": [(46, 44, 35, 36, 55, 54, 18, 18, 2)]}
+# Блик, который горит только в приступ: x y, радиус, цвет, пульсов - зелёный на шаре декодера со стороны кабелей
+BURST = {"STR_HYPER_WAVE_DECODER": [(67.7, 67.4, 9.0, (.55, 1.0, .45), 2)]}
 # Огни ролика, которых детектор на рисунке не видит (base_scene_preview.py LIGHTS по SPECIAL): u v в долях постройки,
 # вид, цвет, радиус в клетках, период, число огней в кольце (chase). Кольцо ангара - вокруг посадочного круга.
 VIDEO_LIGHTS = {
@@ -374,6 +399,39 @@ def liquid_box(img, box, col):
     return ((x0 + bx0 + sx) / w, (y0 + by0 + sy) / h, (x0 + bx1 - sx) / w, (y0 + by1 - sy) / h)
 
 
+def glow_blobs(img, cols, g):
+    """Рамки пятен оттенка glow в его рамке (пиксели пака 128): круглые пятна до 16 px - точки на перекрестиях щита;
+    длинная кайма постройки того же цвета в них не попадает."""
+    from scipy import ndimage
+    x, y, w, h, hue, tol, sat = g[:7]
+    k = img.shape[1] / (cols * TILE)
+    x0, y0, x1, y1 = int(x * k), int(y * k), int((x + w) * k), int((y + h) * k)
+    rgb = img[y0:y1, x0:x1, :3].astype(np.float32) / 255
+    mx, mn = rgb.max(-1), rgb.min(-1)
+    s = (mx - mn) / np.maximum(mx, 1e-3)
+    d = np.maximum(mx - mn, 1e-6)
+    r, gg, b = rgb[..., 0], rgb[..., 1], rgb[..., 2]
+    hh = np.where(mx == r, (gg - b) / d % 6, np.where(mx == gg, (b - r) / d + 2, (r - gg) / d + 4)) * 60
+    dh = np.minimum(abs(hh - hue), 360 - abs(hh - hue))
+    mask = (s >= sat) & (dh <= tol) & (mx > .45) & (img[y0:y1, x0:x1, 3] > 128)
+    # точки - сетка перекрестий (центр первой и шаг из g[11:14], сетка 22.10 по рисунку): рамка 14 px вокруг узла,
+    # если в ней есть пятно цвета (по углам октагона узлов нет); пятна по порогу то рвались, то сливались с каймой
+    gx, gy, step = g[11:14]
+    out = []
+    for j in range(8):
+        for i in range(8):
+            cx, cy = gx + i * step, gy + j * step
+            if not (x <= cx < x + w and y <= cy < y + h):
+                continue
+            # пятно - в середине узла (6 x 6), кайма октагона туда не доходит
+            sx0, sy0 = int((cx - 3 - x) * k), int((cy - 3 - y) * k)
+            cell = mask[max(0, sy0):max(0, sy0 + int(6 * k)), max(0, sx0):max(0, sx0 + int(6 * k))]
+            if cell.mean() >= .40:             # у точек 0.45-0.71, у пультов и каймы в углах 0.25-0.32 (22.10)
+                out.append((cx - 7, cy - 7, 14, 14))
+    print("   glow_blobs: %d точек" % len(out))
+    return out
+
+
 def extra_lines(t, cols, rows, img=None):
     """Ручные строки сцены (emit и light) по клеткам {(cx, cy): [строки]}: строка идёт в клетку, где лежит
     центр коробки или огня; координаты от угла этой клетки, за край клетки выходить могут. С картинкой img
@@ -418,6 +476,21 @@ def extra_lines(t, cols, rows, img=None):
             if len(SPIN[t]) > 6:
                 line += " %.2f" % SPIN[t][6]
             out.setdefault(key, []).append(line)
+    # приступы и их движения (тикеты 237-245) - одноклеточные постройки, клетка 0 0
+    if t in CYCLE:
+        out.setdefault((0, 0), []).append("cycle %.1f %.1f" % CYCLE[t])
+    for g in GLOW.get(t, []):
+        x, y, w, h, hue, tol, sat, peak, pulses, groups = g[:10]
+        boxes = glow_blobs(img, cols, g) if len(g) > 10 and g[10] == "blobs" and img is not None else [(x, y, w, h)]
+        for bx, by, bw, bh in boxes:
+            out.setdefault((0, 0), []).append("glow %.1f %.1f %.1f %.1f %.1f %.1f %.2f %.2f %d %d"
+                                              % (bx, by, bw, bh, hue, tol, sat, peak, pulses, groups))
+    for x, y, rx, ry, blinks in LID.get(t, []):
+        out.setdefault((0, 0), []).append("lid %.1f %.1f %.1f %.1f %d" % (x, y, rx, ry, blinks))
+    for sink in SINK.get(t, []):
+        out.setdefault((0, 0), []).append("sink %.1f %.1f %.1f %.1f %.1f %.1f %.1f %.1f %d" % sink)
+    for x, y, rad, (r, g, b), pulses in BURST.get(t, []):
+        out.setdefault((0, 0), []).append("light %.1f %.1f %.1f burst %.2f %.2f %.2f %.2f %.2f" % (x, y, rad, r, g, b, pulses, 0.0))
     return out
 
 
