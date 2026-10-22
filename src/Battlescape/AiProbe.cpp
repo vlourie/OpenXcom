@@ -2437,7 +2437,9 @@ void cellSearch(SavedBattleGame *save, const BattleUnit *unit, const char *ctx, 
 		<< ",\"nsZ\":" << s.nsZ << ",\"zCand\":" << s.zCand << ",\"zScored\":" << s.zScored << ",\"zBest\":" << sc(s.zBest)
 		<< ",\"nsFar\":" << s.nsFar << ",\"farCand\":" << s.farCand << ",\"farScored\":" << s.farScored << ",\"farBest\":" << sc(s.farBest)
 		<< ",\"dist\":" << s.dist << ",\"dz\":" << s.dz << ",\"seen\":" << s.seen << ",\"blk\":" << s.blk
-		<< ",\"blkArmor\":" << s.blkArmor << ",\"blkDist\":" << s.blkDist << "}";
+		<< ",\"blkArmor\":" << s.blkArmor << ",\"blkDist\":" << s.blkDist
+		<< ",\"power\":" << s.power << ",\"method\":" << s.method << ",\"toTile\":" << s.toTile << ",\"rad\":" << s.rad
+		<< ",\"maxTile\":" << s.maxTile << ",\"gren\":" << s.gren << "}";
 }
 
 void ambushBegin(SavedBattleGame *save, const BattleUnit *unit, const BattleUnit *enemy)

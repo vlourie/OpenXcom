@@ -4314,6 +4314,39 @@ bool AIModule::findFirePoint()
 					s.blkArmor = hitTile->getMapData((TilePart)v)->getArmor();
 				}
 			}
+			// what the weapon in hand does to that part: power as ExplosionBState::init at the obstacle's range, the tile
+			// damage of one hit at the top of its rolls (TileDamageMethod 1: 3/2 power; detonate: the power itself)
+			if (_attackAction.weapon)
+			{
+				const BattleActionAttack attack = BattleActionAttack::GetBeforeShoot(BattleActionCost(BA_SNAPSHOT, _unit, _attackAction.weapon));
+				if (attack.damage_item && attack.damage_item->getRules()->getDamageType())
+				{
+					const RuleItem *weapon = _attackAction.weapon->getRules();
+					const RuleItem *item = attack.damage_item->getRules();
+					const RuleDamageType *dt = item->getDamageType();
+					const int range = std::max(s.blkDist, 0) * 16;
+					int power = weapon->getIgnoreAmmoPower()
+						? weapon->getPowerBonus(attack) - weapon->getPowerRangeReduction(range)
+						: item->getPowerBonus(attack) - item->getPowerRangeReduction(range);
+					power = std::max(power, 0);
+					s.power = power;
+					s.method = dt->TileDamageMethod;
+					s.toTile = (int)std::round(dt->ToTile * 100);
+					s.rad = item->getExplosionRadius(attack);
+					const int raw = s.rad != 0 ? power : dt->TileDamageMethod == 1 ? 3 * power / 2 : power;
+					const int d = (int)std::round(raw * dt->ToTile);
+					s.maxTile = dt->TileDamageLimit >= 0 && d > dt->TileDamageLimit ? dt->TileDamageLimit : d;
+				}
+			}
+			for (const BattleItem *it : *_unit->getInventory())
+			{
+				const BattleType bt = it->getRules()->getBattleType();
+				if (bt == BT_GRENADE || bt == BT_PROXIMITYGRENADE)
+				{
+					s.gren = 1;
+					break;
+				}
+			}
 		}
 		AiProbe::cellSearch(_save, _unit, "fp", s);
 	}
