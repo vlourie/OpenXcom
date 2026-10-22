@@ -126,3 +126,5 @@ craft_launch_frames.py
 craft_launch_swap.py
 craft_launch_video.py
 gen_video.py
+gen_pilot_voices.py
+t254_silo_edit.py
