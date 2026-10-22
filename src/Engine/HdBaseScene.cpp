@@ -300,18 +300,23 @@ bool parse(std::istream &in, TileScene &out)
 			{
 				words >> S.swing >> S.period;
 			}
-			if (words && S.radius > 0 && (S.rps != 0 || (S.swing != 0 && S.period > 0)))
+			bool ok = (bool)words;
+			if (ok && key == "swing" && !(words >> S.middle))
+			{
+				S.middle = 0;
+			}
+			if (ok && S.radius > 0 && (S.rps != 0 || (S.swing != 0 && S.period > 0)))
 			{
 				out.spins.push_back(S);
 			}
 		}
 		else if (key == "emit")
 		{
-			static const char *names[] = { "steam", "bubbles", "sparks", "embers", "orbit", "sweep", "ripple", "dust", "flies" };
+			static const char *names[] = { "steam", "bubbles", "sparks", "embers", "orbit", "sweep", "ripple", "dust", "flies", "arc", "beam" };
 			Emit E;
 			std::string kind;
 			words >> kind >> E.x >> E.y >> E.w >> E.h >> E.r >> E.g >> E.b;
-			for (int i = 0; i < 9; ++i)
+			for (int i = 0; i < 11; ++i)
 			{
 				if (words && kind == names[i] && E.w >= 0 && E.h >= 0)
 				{
@@ -737,6 +742,30 @@ void sample(const std::vector<Uint32> &albedo, int w, int h, float x, float y, f
 	}
 }
 
+/// `frame` at (x, y) between its pixels, transparent outside: r, g, b premultiplied 0..255 and alpha 0..1.
+void samplePiece(const HdFrame &frame, float x, float y, float out[4])
+{
+	out[0] = out[1] = out[2] = out[3] = 0;
+	const int x0 = (int)std::floor(x), y0 = (int)std::floor(y);
+	const float fx = x - x0, fy = y - y0;
+	const float k[4] = { (1 - fx) * (1 - fy), fx * (1 - fy), (1 - fx) * fy, fx * fy };
+	for (int i = 0; i < 4; ++i)
+	{
+		const int px = x0 + (i & 1), py = y0 + (i >> 1);
+		if (px < 0 || py < 0 || px >= frame.width || py >= frame.height)
+		{
+			continue;
+		}
+		const Uint32 q = frame.pixels[(size_t)py * frame.width + px];
+		const float a = (q >> 24) / 255.0f * k[i];
+		for (int c = 0; c < 3; ++c)
+		{
+			out[c] += ((q >> (16 - 8 * c)) & 0xFF) * a;
+		}
+		out[3] += a;
+	}
+}
+
 /// `px` moved towards `col` (0..255) by `m`, alpha kept.
 Uint32 mix(Uint32 px, const float col[3], float m)
 {
@@ -1029,7 +1058,7 @@ void drawMotion(SDL_Surface *world, const View &view, Uint32 ms)
 	for (const PlacedSpin &P : view.spins)
 	{
 		const Spin &S = P.spin;
-		const float deg = S.rps != 0 ? t * S.rps * 360 + P.phase * 360 : S.swing * std::sin(t / S.period * 2 * PI + P.phase * 2 * PI);
+		const float deg = S.rps != 0 ? t * S.rps * 360 + P.phase * 360 : S.middle + S.swing * std::sin(t / S.period * 2 * PI + P.phase * 2 * PI);
 		const float ang = deg * PI / 180, ca = std::cos(ang), sa = std::sin(ang);
 		const int r = (int)std::ceil(S.radius);
 		const int cx = (int)std::lround(S.x), cy = (int)std::lround(S.y);
@@ -1047,6 +1076,23 @@ void drawMotion(SDL_Surface *world, const View &view, Uint32 ms)
 					continue;
 				}
 				const float dx = x + 0.5f - S.x, dy = y + 0.5f - S.y;
+				if (!P.piece.empty())
+				{
+					// the piece alone over the picture without it (the albedo holds that one)
+					if (dx * dx + dy * dy > S.radius * S.radius)
+					{
+						continue;
+					}
+					float col[3], pc[4];
+					const Uint32 under = view.albedo[(size_t)(y - view.y) * view.w + (x - view.x)];
+					samplePiece(P.piece, S.x + ca * dx + sa * dy - 0.5f - P.px, S.y - sa * dx + ca * dy - 0.5f - P.py, pc);
+					for (int c = 0; c < 3; ++c)
+					{
+						col[c] = ((under >> (16 - 8 * c)) & 0xFF) * (1 - pc[3]) + pc[c];
+					}
+					line[x] = mix(line[x], col, 1);
+					continue;
+				}
 				// a soft edge 3 pack pixels wide, so the turning piece does not show a seam
 				const float m = std::min(1.0f, std::max(0.0f, (S.radius - std::sqrt(dx * dx + dy * dy)) / (3 * s)));
 				if (m <= 0)
@@ -1268,6 +1314,99 @@ void drawParticles(SDL_Surface *world, const SDL_Rect &area, const std::vector<P
 				const float x = hx + (std::sin(age * w1 + i) * 9 + std::sin(age * 1.3f + i * 2.1f) * 6) * s;
 				const float y = hy + (std::cos(age * w2 + i * 0.7f) * 7 + std::sin(age * 0.9f + i) * 5) * s;
 				put(x, y, 1.1f * s, 0, col, std::min(1.0f, std::sin(age / 6.0f * PI) * 3) * 0.85f, false);
+			}
+			break;
+		}
+		case ARC:
+		{
+			// a lightning between two poles (transformers) every few seconds: a few flickers of a jagged
+			// path, its shape new every 90 ms, a bright core in a coloured glow and a flash about it
+			const float period = 3.0f + 2.5f * hash1(5, 6, p.seed);
+			const float u = t + hash1(7, 8, p.seed) * period;
+			const Uint32 strike = (Uint32)(u / period);
+			const float at = std::fmod(u, period), lasts = 0.5f;
+			if (at >= lasts || hash1(strike, (Uint32)(at / 0.06f), p.seed + 9) < 0.25f)
+			{
+				break;
+			}
+			const float fade = std::sqrt(1 - at / lasts) * std::max(0.4f, p.level);
+			const Uint32 shape = strike * 16 + (Uint32)(at / 0.09f);
+			const float len = std::sqrt(E.w * E.w + E.h * E.h);
+			if (len < 1)
+			{
+				break;
+			}
+			const float nx = -E.h / len, ny = E.w / len;
+			const float white[3] = { 0.6f + 0.4f * col[0], 0.6f + 0.4f * col[1], 0.6f + 0.4f * col[2] };
+			const int knots = 14;
+			for (int bolt = 0; bolt < 2; ++bolt)
+			{
+				// the knots of the path, off the straight line by up to a ninth of its length, none at the poles
+				float off[knots + 1];
+				for (int j = 0; j <= knots; ++j)
+				{
+					const float env = std::sin(PI * j / knots);
+					off[j] = (hash1(j, shape, p.seed + 11 + bolt * 5) - 0.5f) * 2 * len * (bolt ? 0.16f : 0.11f) * env;
+				}
+				const int steps = std::max(knots * 2, (int)(len / (1.5f * s)));
+				for (int i = 0; i <= steps; ++i)
+				{
+					const float v = (float)i / steps * knots;
+					const int j = std::min(knots - 1, (int)v);
+					const float d = off[j] + (off[j + 1] - off[j]) * (v - j);
+					const float x = E.x + E.w * i / steps + nx * d, y = E.y + E.h * i / steps + ny * d;
+					const float a = fade * (bolt ? 0.5f : 1.0f);
+					put(x, y, (bolt ? 2.2f : 3.2f) * s, 0, col, 0.35f * a, true);
+					put(x, y, (bolt ? 0.7f : 1.0f) * s, 0, white, 1.2f * a, true);
+				}
+			}
+			// the flash: the poles glow and the air about the arc lights up
+			put(E.x, E.y, 7 * s, 0, col, 0.5f * fade, true);
+			put(E.x + E.w, E.y + E.h, 7 * s, 0, col, 0.5f * fade, true);
+			put(E.x + E.w / 2, E.y + E.h / 2, len * 0.35f, 0, col, 0.10f * fade, true);
+			break;
+		}
+		case BEAM:
+		{
+			// a plasma gun (Vitali 22.10, art/base_living/turret/plasma_beam_preview.py): violet sparks gather into
+			// the orb at the box's corner (x + w, y + h) and it flares, a beam of the colour goes from it to the
+			// opposite corner (x, y), then the orb cools till the next shot
+			const float period = 5.0f, charge = 1.6f, fire = 0.45f;
+			const float u = std::fmod(t + hash1(3, 4, p.seed) * period, period);
+			const float cx = E.x + E.w, cy = E.y + E.h, orb = 8 * s;
+			static const float violet[3] = { 0.65f, 0.35f, 1.0f }, white[3] = { 0.85f, 0.95f, 1.0f };
+			if (u < charge)
+			{
+				const float k = u / charge;
+				for (int i = 0; i < 28; ++i)
+				{
+					const float ph = std::fmod(i * 0.618f + u * 0.9f, 1.0f);
+					const float ang = i * 2.399f + ph * 2.5f, r = orb * 1.9f * (1 - ph);
+					put(cx + r * std::cos(ang), cy + r * std::sin(ang), 0.9f * s, 0, violet, 1.2f * k * (0.3f + ph), true);
+				}
+				put(cx, cy, orb * (0.9f - 0.6f * k) / 0.6f, 0, violet, 0.3f + 1.1f * k * k, true);
+				put(cx, cy, (1.7f + 1.7f * k) * s, 0, white, 1.25f * k * k, true);
+			}
+			else if (u < charge + fire)
+			{
+				const float k = (u - charge) / fire;
+				const float fade = std::pow(1 - k, 0.6f) * (0.85f + 0.15f * hash1((Uint32)(t * 20), 5, p.seed));
+				const float len = std::sqrt(E.w * E.w + E.h * E.h), step = 1.5f * s;
+				const int n = std::max(2, (int)(len / step));
+				// blobs every `step` along the line sum up to the preview's beam: a glow 3.25 and a core 1 pack px wide
+				for (int i = 0; i <= n; ++i)
+				{
+					const float v = (float)i / n, along = 1 - 0.4f * v;
+					put(cx - E.w * v, cy - E.h * v, 5.4f * s, 0, col, 0.17f * fade * along, true);
+					put(cx - E.w * v, cy - E.h * v, 1.7f * s, 0, white, 0.7f * fade * along, true);
+				}
+				put(cx, cy, 20 * s, 0, col, 0.8f * fade, true);
+				put(cx, cy, 5 * s, 0, white, 1.5f * fade, true);
+			}
+			else
+			{
+				const float k = (u - charge - fire) / (period - charge - fire);
+				put(cx, cy, orb * 0.8f / 0.6f, 0, violet, 0.15f * (1 - k), true);
 			}
 			break;
 		}

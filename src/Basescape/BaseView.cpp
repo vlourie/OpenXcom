@@ -1039,7 +1039,9 @@ const HdBaseScene::View *BaseView::hdLayout(int k)
 					put(solid, x * cell, y * cell);
 					continue;
 				}
-				if (const HdFrame *picture = HdBase::frame(index, 0, k, GRID_SIZE, GRID_SIZE))
+				// a piece turning on its own: the picture without it is what lies under it
+				const HdFrame *under = HdBase::layer(index, false, k, GRID_SIZE, GRID_SIZE);
+				if (const HdFrame *picture = under ? under : HdBase::frame(index, 0, k, GRID_SIZE, GRID_SIZE))
 				{
 					put(*picture, x * cell, y * cell);
 				}
@@ -1067,6 +1069,12 @@ const HdBaseScene::View *BaseView::hdLayout(int k)
 					p.spin.y = view.y + y * cell + spin.y * s;
 					p.spin.radius = spin.radius * s;
 					p.phase = (float)((x * 7 + y * 13) % 17) / 17.0f;
+					if (const HdFrame *piece = under ? HdBase::layer(index, true, k, GRID_SIZE, GRID_SIZE) : nullptr)
+					{
+						p.piece = *piece;
+						p.px = view.x + x * cell;
+						p.py = view.y + y * cell;
+					}
 					view.spins.push_back(p);
 				}
 			}

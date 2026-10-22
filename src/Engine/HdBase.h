@@ -74,6 +74,11 @@ namespace HdBase
 	/// The light of a tile (`<frame index>.scene.txt`, see HdBaseScene), or nullptr. Such a tile
 	/// shows its still picture only: the light over it is its animation.
 	const HdBaseScene::TileScene *scene(int index);
+	/// A tile whose piece turns on its own (a radar dish on its mast): `<frame index>.under.png` - the
+	/// picture without the piece - or, with `piece`, `.spin.png` - the piece alone, both the size of the
+	/// picture; nullptr when the tile has not both. The spins of its scene then turn the piece over the
+	/// picture under it, not a round piece of the picture.
+	const HdFrame *layer(int index, bool piece, int scale, int baseWidth, int baseHeight);
 	/// Has the pack lit tiles?
 	bool scenes();
 	/// Forgets everything (mod reload). `masterOffset` is where the game puts the master mod's
