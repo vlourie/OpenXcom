@@ -54,6 +54,7 @@ const Uint32 TRAIL_COLOR = 0x1A9CF5D6u; // 10 %: the swept area behind a craft's
 const Uint32 BEAM = 0x80C8FFE8u;   // 50 %: the beam
 const Uint32 WAVE_BARE = 0x809CF5D6u; // 50 %: a wave with no wash under it (WAVES), the only sign of the coverage
 const Uint32 ENEMY = 0xB3FF4636u;  // 70 %: the line round an enemy radar
+const Uint32 ENEMY_SHIP = 0xB3FF7A6Eu; // 70 %: the same round a hunter-killer, a lighter red
 const float ENEMY_GLOW = 0.3f;     // the glow just inside it, a part of ENEMY
 /// WAVES: a wave ends by this part of the time to the next one, and lasts no less than WAVE_MIN_MS.
 const double WAVE_FIT = 0.8;
@@ -895,12 +896,14 @@ void HdRadar::drawRings(const View &view, const std::vector<Ring> &rings)
 	// where a pixel can be lit: from just outside the rim to the end of the glow
 	const double lo = -1.0, hi = std::max(lineW, glowLen) + 1.0;
 	std::vector<Cap> caps;
+	std::vector<Uint32> colors;
 	int ux0 = INT_MAX, uy0 = INT_MAX, ux1 = INT_MIN, uy1 = INT_MIN;
 	for (const Ring &r : rings)
 	{
 		const Cap cap = makeCap(view, r.lon, r.lat, r.range, margin);
 		if (!cap.visible) continue;
 		caps.push_back(cap);
+		colors.push_back(r.ship ? ENEMY_SHIP : ENEMY);
 		ux0 = std::min(ux0, cap.x0); uy0 = std::min(uy0, cap.y0);
 		ux1 = std::max(ux1, cap.x1); uy1 = std::max(uy1, cap.y1);
 	}
@@ -999,7 +1002,7 @@ void HdRadar::drawRings(const View &view, const std::vector<Ring> &rings)
 					const float line = clamp01(lineW * 0.5 + 0.5 - std::fabs(d - lineW * 0.5));
 					const float glow = d > 0 && d < glowLen ? (float)((1 - d / glowLen) * (1 - d / glowLen)) * ENEMY_GLOW : 0.0f;
 					const float cov = std::max(line, glow) * limb(r2, radius);
-					if (cov > 0.004f) HdUi::blend(row[px], ENEMY, cov);
+					if (cov > 0.004f) HdUi::blend(row[px], colors[c], cov);
 				}
 			}
 		}

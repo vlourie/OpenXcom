@@ -94,6 +94,7 @@ public:
 	{
 		double lon, lat;             ///< radians
 		double range;                ///< radians of arc
+		bool ship = false;           ///< a hunter-killer: a lighter red than a base's
 	};
 	void drawRings(const View &view, const std::vector<Ring> &rings);
 	/// The main base's mark instead of its square (WAVES): a four-pointed star of `color` (0xRRGGBB) round
