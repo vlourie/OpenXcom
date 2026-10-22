@@ -59,7 +59,8 @@ def classify(v, ln):
 
 
 def build():
-    return [(v, [(ln, *classify(v, ln)) for ln in v["lines"]]) for v in voice_script.parse()]
+    return [(v, [(ln, *classify(v, ln)) for ln in v["lines"]]) for v in voice_script.parse(
+        more=voice_script.MORE100, only=voice_script.pinned())]
 
 
 def main():

@@ -20,7 +20,9 @@ import argparse
 import json
 import logging
 import math
+import os
 import re
+import shutil
 import sys
 import time
 from pathlib import Path
@@ -51,10 +53,14 @@ DESIGN_GOOD, DESIGN_MAX = 3, 10
 LINE_GOOD, LINE_MAX = 2, 4
 FIX_MORE = 6                                     # --fix: ещё дублей реплике вне полосы
 LINE_MAX_S = 3.0                                 # сценарий: реплика 1-3 с
+CLOSE_LIVE = 0.85                                # живой дубль берётся, только если распознан близко к тексту
 REF_CHARS = 70                                   # опорная фраза ~5-9 с
 SEED_DESIGN, SEED_LINE = 9100, 9300
 DESIGN_SEED_OFF = 0                                # --design-seed: другие кандидаты опорного при --redo
 COMPILE = True
+# движок реплик: Vitali 21.10 по пилоту 19.10 - вариант E (VoxCPM2, опорный голос + подача словами); fish - прежний путь
+LINE_ENGINE = "voxcpm2"
+LINE_GOOD_VOX = 3                                # VoxCPM2 годных дублей до остановки: из них берётся самый живой
 PART_TAG = {"Повторные нажатия": "[annoyed]", "Под огнём": "[angry]"}
 # 16.10 Vitali на слух: женские голоса - мужики, хотя высота в полосе. Тембр мужской: третья форманта
 # (длина тракта) у них 2408 Гц, у мужских 2304, у принятых женских 2611 (R-367). Этим - звонкое описание
@@ -71,14 +77,57 @@ TIMBRE_DESIGN_MAX, TIMBRE_LINE_MAX = 20, 6
 ALT_DESIGN_MAX = 40
 ALT_DROP = re.compile(r"\b(?:с\s+)?(?:лёгкой\s+)?(?:хрипотц|хрипл|прокурен|сипл|басовит)\w*,?\s*")
 DIRECTION = {"V086":"Сильная уверенная женщина-воин, звучный женский голос; насмешливая, спокойная."}
+# Vitali 22.10: «собирай ОРИГИНАЛЬНЫЕ» - голосам, у типа бойца которых в игре есть своя английская речь, опорный
+# склеен из неё (tools/sfx/game_voice_probe.py, кандидаты прослушаны: «мне всё нравится»; в парах - разные).
+# Полоса высоты и ворота тембра им не применяются: высоту задаёт оригинал. Прежние записи - в V###/pre_game/
+ORIG = {"V001": "gal", "V002": "gal", "V003": "gal", "V004": "gal", "V005": "gal", "V006": "ss_blade",
+        "V007": "ss_fly", "V008": "pea_sb", "V009": "pea_piss", "V010": "hybm_rev", "V011": "hybf_tira",
+        "V012": "lok_lina", "V013": "gnome", "V014": "neko", "V015": "neko", "V016": "neko", "V017": "neko",
+        "V018": "caleb", "V025": "kb", "V026": "xenf"}
+ORIG_REFS = OUT / "game_probe"
 
 
 def gated(v):
     """Ворота по F3 и yin: голоса на починке тембра и все новые женские запасные (V4xx-V7xx)."""
-    return v["id"] in TIMBRE or (v["reg"] == "Ж" and "same_as" in v)
+    return v["id"] not in ORIG and (v["id"] in TIMBRE or (v["reg"] == "Ж" and "same_as" in v))
+
+
+def yield_now(st=None):
+    """Очередь видеокарты просит уступить (gpuq --preemptible): сохранить голос и выйти с кодом 75, продолжение - с места."""
+    f = os.environ.get("GPUQ_YIELD_FILE")
+    if f and Path(f).exists():
+        if st is not None:
+            save_state(st)
+        log.info("уступаю видеокарту (gpuq): состояние сохранено, продолжу с того же места")
+        sys.exit(75)
+
+
+def apply_orig(v, st):
+    """Опорный из оригинала игры; реплики голоса - заново (прежние файлы и voice.json - в pre_game/)."""
+    cand = ORIG[v["id"]]
+    if st.get("ref_src") == "game:" + cand:
+        return st
+    d = vdir(v)
+    bak = d / "pre_game"
+    if not bak.exists() and (d / "voice.json").exists():
+        bak.mkdir(parents=True)
+        shutil.copy2(d / "voice.json", bak / "voice.json")
+        for lang in ("ru", "en"):
+            if (d / lang).exists():
+                shutil.copytree(d / lang, bak / lang)
+    refs = json.loads((ORIG_REFS / "refs.json").read_text(encoding="utf-8-sig"))
+    dst = d / f"ref.game_{cand}.wav"
+    shutil.copy2(ORIG_REFS / refs[cand]["file"], dst)
+    st.update(ref=rel(dst), ref_text=refs[cand]["text"], ref_src="game:" + cand, ref_band=True,
+              script=script(v), lines=[], lines_done=False, asr_done=False)
+    save_state(st)
+    log.info("%s: опорный из игры «%s» (%s с), реплики заново", v["id"], cand, refs[cand]["dur"])
+    return st
 
 
 def band_ok(v, f0):
+    if v["id"] in ORIG:
+        return True
     lo, hi = BAND.get(v["reg"], (0, 10000))
     return lo <= f0 <= hi
 
@@ -120,7 +169,25 @@ def judge(v, wav, sr, f3_min=F3_MIN_LINE):
                                           frame_length=2048)))
         res.update(f3=formant3(wav, sr), yin=round(yin, 1))
         res["band"] = res["band"] and res["f3"] >= f3_min and yin >= YIN_MIN
+    res.update(expr(wav, sr))
     return res
+
+
+def expr(wav, sr):
+    """Живость дубля (voice-direction.md): разброс высоты в полутонах + динамика громкости / 10 (дБ, 95-й минус
+    20-й процентиль кадров 25 мс). Пилот 19.10: самый живой из 4 годных дублей на ~1 выше, чем самый разборчивый."""
+    import librosa
+    import numpy as np
+    y = np.asarray(wav, dtype=np.float32)
+    f0, voiced, _ = librosa.pyin(y, fmin=60, fmax=500, sr=sr, frame_length=2048)
+    f0 = f0[voiced & ~np.isnan(f0)]
+    st = float(np.std(12 * np.log2(f0 / np.median(f0)))) if len(f0) > 4 else 0.0
+    hop = int(sr * 0.025)
+    fr = librosa.util.frame(np.pad(y, (0, hop)), frame_length=hop, hop_length=hop)
+    db = 20 * np.log10(np.sqrt((fr ** 2).mean(0)) + 1e-9)
+    db = db[db > db.max() - 40]
+    dyn = float(np.percentile(db, 95) - np.percentile(db, 20)) if len(db) else 0.0
+    return {"st": round(st, 2), "dyn": round(dyn, 1), "expr": round(st + dyn / 10, 2)}
 
 
 def safe_ok(v, f0):
@@ -173,6 +240,8 @@ def ref_text(v):
 
 
 def tag(ln):
+    if ln.get("tag"):                            # подача реплики из voice-script-100.md (voice-direction.md)
+        return ln["tag"]
     if ln["part"] in PART_TAG:
         return PART_TAG[ln["part"]]
     return "[excited]" if "!" in ln["ru"] else ""
@@ -266,8 +335,29 @@ def design_pass(cfg, todo, states):
     Q.free_asr()
 
 
+def line_engine(cfg):
+    if LINE_ENGINE == "fish":
+        return G.engine(cfg, "fish", compile=COMPILE)
+    local = G.VF + "/models/openbmb/VoxCPM2"
+    return G.engine(cfg, "voxcpm2", local_dir=local if Path(local).is_dir() else "")
+
+
+def line_profile(v, st):
+    return VoiceProfile(v["id"], LINE_ENGINE, {"neutral": [{"wav": str(OUT / st["ref"]), "text": st["ref_text"]}]})
+
+
+def line_params(ln, k):
+    """Fish - подача тегом в тексте; VoxCPM2 (вариант E пилота 19.10) - управляемое клонирование: опорный голос и
+    подача словами в скобках. Без подачи VoxCPM2 клонирует опорный с его текстом (режим hifi)."""
+    if LINE_ENGINE == "fish":
+        return GenParams(instruction=tag(ln), seed=SEED_LINE + k)
+    return GenParams(instruction=tag(ln).strip("[]"), seed=SEED_LINE + k, cfg_value=2.0, inference_timesteps=10,
+                     style="neutral", extra={"force_controllable": True})
+
+
 def lines_pass(cfg, todo, states):
-    eng = G.engine(cfg, "fish", compile=COMPILE)
+    eng = line_engine(cfg)
+    line_good = LINE_GOOD_VOX if LINE_ENGINE != "fish" else LINE_GOOD
     t0 = last = time.time()
     # дополнение сценария: готовые реплики голоса остаются, пишутся только новые (main, extend)
     keep = {v["id"]: {(it["lang"], it["n"]) for it in states[v["id"]]["lines"]} for v in todo}
@@ -276,24 +366,24 @@ def lines_pass(cfg, todo, states):
     done = takes = outside = 0
     for v in todo:
         st = states[v["id"]]
-        prof = VoiceProfile(v["id"], "fish", {"neutral": [{"wav": str(OUT / st["ref"]), "text": st["ref_text"]}]})
+        prof = line_profile(v, st)
         have = keep[v["id"]]
         for lang in ("ru", "en"):
             d = vdir(v) / lang
             d.mkdir(parents=True, exist_ok=True)
             for f in d.glob("*.wav"):
-                if (lang, f.name[:2]) not in have:
+                if (lang, f.name.split(".")[0]) not in have:     # номера 01..99 и 100+ (voice-script-100.md)
                     f.unlink()
             for ln in v["lines"]:
                 if (lang, ln["n"]) in have:
                     continue
                 good = 0
                 for k in range(TIMBRE_LINE_MAX if gated(v) else LINE_MAX):
-                    if good >= LINE_GOOD:
+                    if good >= line_good:
                         break
                     item = {"lang": lang, "n": ln["n"], "part": ln["part"], "take": k + 1, "text": ln[lang]}
                     try:
-                        wav, sr, _ = eng.generate(ln[lang], prof, GenParams(instruction=tag(ln), seed=SEED_LINE + k))
+                        wav, sr, _ = eng.generate(ln[lang], prof, line_params(ln, k))
                         wav = G.post(wav, sr)
                         path = d / f"{ln['n']}.t{k + 1}.wav"
                         sf.write(str(path), wav, sr, subtype="PCM_16")
@@ -306,6 +396,7 @@ def lines_pass(cfg, todo, states):
                     st["lines"].append(item)
                     takes += 1
                 done += 1
+                yield_now(st)
                 if time.time() - last > 300:
                     log.info("реплики: %d/%d, дублей %d (вне полосы %d) за %.0f мин", done, total, takes, outside,
                              (time.time() - t0) / 60)
@@ -316,6 +407,12 @@ def lines_pass(cfg, todo, states):
     G.free(eng)
 
 
+def hear(it):
+    if "close" not in it:
+        it["heard"] = G.heard(OUT / it["file"], it["lang"])
+        it["close"] = round(G.closeness(it["text"], it["heard"]), 3)
+
+
 def asr_pass(todo, states):
     for v in todo:
         st = states[v["id"]]
@@ -323,16 +420,26 @@ def asr_pass(todo, states):
         for it in st["lines"]:
             if "file" not in it:
                 continue
-            if "close" not in it:
-                it["heard"] = G.heard(OUT / it["file"], it["lang"])
-                it["close"] = round(G.closeness(it["text"], it["heard"]), 3)
             it.pop("chosen", None)
             groups.setdefault((it["lang"], it["n"]), []).append(it)
         for tk in groups.values():
+            if all("expr" in t for t in tk):
+                # живой дубль: из годных по высоте и длине - самый живой, который распознаётся близко к тексту;
+                # распознаются по очереди от живого, пока не найдётся (не все дубли - ~0,9 с на каждый)
+                for t in sorted((t for t in tk if t["band"] and t["dur"] <= LINE_MAX_S), key=lambda t: -t["expr"]):
+                    hear(t)
+                    if t["close"] >= CLOSE_LIVE:
+                        t["chosen"] = True
+                        break
+                if any(t.get("chosen") for t in tk):
+                    continue
+            for t in tk:
+                hear(t)
             best = max(tk, key=lambda t: (t["band"], t["dur"] <= LINE_MAX_S, t["close"], -t["dur"]))
             best["chosen"] = True
         st["asr_done"] = True
         save_state(st)
+        yield_now()
     Q.free_asr()
 
 
@@ -353,10 +460,10 @@ def ref_up(v, st, steps):
 
 def fix_pass(cfg, todo, states):
     """Дубли сверх LINE_MAX только репликам, чей лучший дубль вне полосы высоты (до FIX_MORE штук)."""
-    eng = G.engine(cfg, "fish", compile=COMPILE)
+    eng = line_engine(cfg)
     for v in todo:
         st = states[v["id"]]
-        prof = VoiceProfile(v["id"], "fish", {"neutral": [{"wav": str(OUT / st["ref"]), "text": st["ref_text"]}]})
+        prof = line_profile(v, st)
         fixed = left = 0
         for lang in ("ru", "en"):
             for ln in v["lines"]:
@@ -367,7 +474,7 @@ def fix_pass(cfg, todo, states):
                 ok = False
                 for k in range(k0, k0 + FIX_MORE):
                     item = {"lang": lang, "n": ln["n"], "part": ln["part"], "take": k + 1, "text": ln[lang]}
-                    wav, sr, _ = eng.generate(ln[lang], prof, GenParams(instruction=tag(ln), seed=SEED_LINE + k))
+                    wav, sr, _ = eng.generate(ln[lang], prof, line_params(ln, k))
                     wav = G.post(wav, sr)
                     path = vdir(v) / lang / f"{ln['n']}.t{k + 1}.wav"
                     sf.write(str(path), wav, sr, subtype="PCM_16")
@@ -408,14 +515,19 @@ def main():
                     help="с --fix: сдвинуть опорный на N полутонов и сделать реплики голоса заново")
     ap.add_argument("--design-seed", type=int, default=0,
                     help="сдвиг семени кандидатов опорного (с --redo, чтобы не получить тех же)")
+    ap.add_argument("--engine", choices=("voxcpm2", "fish"), default="voxcpm2",
+                    help="движок реплик: voxcpm2 - вариант E пилота 19.10 (по умолчанию с 21.10), fish - прежний")
+    ap.add_argument("--no-more", action="store_true",
+                    help="без «сотни» (docs/research/voice-script-100.md): только прежний сценарий")
     a = ap.parse_args()
-    global COMPILE, DESIGN_SEED_OFF
+    global COMPILE, DESIGN_SEED_OFF, LINE_ENGINE
     COMPILE = not a.no_compile
+    LINE_ENGINE = a.engine
     DESIGN_SEED_OFF = a.design_seed
     for stream in (sys.stdout, sys.stderr):
         stream.reconfigure(encoding="utf-8")
     logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
-    voices = pick(voice_script.parse(), a.ids)
+    voices = pick(voice_script.parse(more=None if a.no_more else voice_script.MORE100), a.ids)
     redo = {x.strip() for x in a.redo.split(",") if x.strip()}
     states = {}
     for v in voices:
@@ -432,6 +544,8 @@ def main():
                 old.update(script=new, lines_done=False, asr_done=False)
             else:
                 states[v["id"]] = fresh(v)
+        if v["id"] in ORIG:
+            states[v["id"]] = apply_orig(v, states[v["id"]])
     cfg = G.C.load(G.VF)
     t0 = time.time()
     if a.fix:

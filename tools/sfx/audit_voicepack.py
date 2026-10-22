@@ -64,7 +64,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument('--min-close', type=float, default=.75)
     args = ap.parse_args()
-    voices = voice_script.parse()
+    voices = voice_script.parse(more=voice_script.MORE100, only=voice_script.pinned())
     states = {v['id']: json.loads((SRC/v['id']/'voice.json').read_text(encoding='utf-8-sig')) for v in voices}
     paths = {it['file'] for s in states.values() for it in s['lines'] if 'file' in it}
     paths.update(s['ref'] for s in states.values())
