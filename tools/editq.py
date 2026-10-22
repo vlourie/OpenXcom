@@ -429,6 +429,7 @@ READ_CMDS = {"git", "grep", "rg", "cat", "head", "tail", "sed", "less", "ls", "e
              "command", "which", "where", "get-command", "get-item", "test-path"}
 # ninja -C <папка> / cmake --build <папка> / -B <папка>: сборка той папки; вне репозитория - не сборка дерева (R-158)
 BUILD_DIR_RX = re.compile(r"(?:^|\s)(?:-C|--build|-B)\s+(\S+)")
+NINJA_TOOL_RX = re.compile(r"(?i)(^|[\s;&|(/\\\"'])ninja(\.exe)?[\"']?(\s+-C\s+\S+)?\s+-t\s+\w")
 
 
 def strip_quotes(cmd):
@@ -469,6 +470,8 @@ def builds(cmd):
         first = os.path.basename(words[0].replace("\\", "/")).lower()
         if first in READ_CMDS:
             continue
+        if NINJA_TOOL_RX.search(part) and not re.search(r"(?i)cmake|build\.ps1|\.cmd\b", part):
+            continue                # ninja -t compdb/commands/targets - спрашивает, не собирает (R-158)
         if BUILD_RX.search(part):
             dirs = BUILD_DIR_RX.findall(part)
             if dirs and all(outside_repo(d) for d in dirs):

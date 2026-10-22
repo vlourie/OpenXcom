@@ -119,6 +119,13 @@ def main():
           "ninja -C в дереве (полный путь) - сборка")
     check(denied(hook("pre", "B", "Bash", command="cp a b && ninja -C E:/tmp/x && ninja")),
           "ninja без папки после черновика - сборка")
+    # R-158, 22.10: ninja -t compdb в дереве взял билет и отложил выпуск
+    check(hook("pre", "B", "Bash", command="cd build-release && ninja -t compdb > /e/tmp/c.json") is None,
+          "ninja -t compdb - не сборка")
+    check(hook("pre", "B", "Bash", command="ninja -C build-release -t targets all") is None,
+          "ninja -C <папка> -t targets - не сборка")
+    check(denied(hook("pre", "B", "Bash", command="ninja -t compdb > c.json && ninja")),
+          "ninja после ninja -t - сборка")
     check(denied(hook("pre", "C", "Bash", command="git add -A && git commit -m x")), "git add -A отклонён")
     check(denied(hook("pre", "C", "Bash", command="git commit -am 'x'")), "git commit -am отклонён")
     check(hook("pre", "C", "Bash", command="git add -A -- tools/x.py") is None,
