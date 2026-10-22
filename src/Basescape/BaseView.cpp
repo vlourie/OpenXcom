@@ -1049,6 +1049,9 @@ void BaseView::draw()
 		}
 	}
 
+	// a connector into an HD facility: the classic door leaf (Piratez Door1/Door2, x and y 19..21 of the frame)
+	// would lie over the picture's furniture, so only the tube on the seam is drawn (frame columns/rows < 18)
+	auto hdJoin = [&](const BaseFacility *to) { return hdTiles && (isHdFacility(to) || isHdBuilding(to)); };
 	for (const auto* fac : *_base->getFacilities())
 	{
 		// Draw connectors
@@ -1065,7 +1068,15 @@ void BaseView::draw()
 						Surface *frame = _texture->getFrame(7);
 						int fx = (x * GRID_SIZE - GRID_SIZE / 2);
 						int fy = (y * GRID_SIZE);
-						frame->blitNShade(this, fx, fy);
+						if (hdJoin(_facilities[x][y]))
+						{
+							// the tube on the seam only: the HD picture has its own doorway where the door leaf stood
+							frame->blitNShade(this, fx, fy, 0, GraphSubset(GRID_SIZE / 2 + 2, GRID_SIZE).offset(fx, fy));
+						}
+						else
+						{
+							frame->blitNShade(this, fx, fy);
+						}
 					}
 				}
 			}
@@ -1081,7 +1092,14 @@ void BaseView::draw()
 						Surface *frame = _texture->getFrame(8);
 						int fx = (subX * GRID_SIZE);
 						int fy = (y * GRID_SIZE - GRID_SIZE / 2);
-						frame->blitNShade(this, fx, fy);
+						if (hdJoin(_facilities[subX][y]))
+						{
+							frame->blitNShade(this, fx, fy, 0, GraphSubset(GRID_SIZE, GRID_SIZE / 2 + 2).offset(fx, fy));
+						}
+						else
+						{
+							frame->blitNShade(this, fx, fy);
+						}
 					}
 				}
 			}
