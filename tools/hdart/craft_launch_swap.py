@@ -45,6 +45,17 @@ PROMPT = (
     "untouched, the same realistic painted style. No tracks, no wheels, no people.")
 
 
+# --erase: убрать лишнее по маске, образец - тот же кадр. 22.10 Vitali про кадр Huey 4100: «стрелка убери»
+ERASE = {
+    "STR_HUEY_4100": dict(box=(640, 420, 830, 620), prompt=(
+        "Edit <image1>. Inside the marked area remove the person sitting in the open side door of the helicopter: the "
+        "cabin behind the open door is empty and dark, with bare seats and the side door machine gun on its mount "
+        "pointing down, nobody inside, no gunner, no hands, no helmet. Keep the helicopter hull, its dark olive "
+        "colour, the door frame, the skids, the rotor, the launch pad, the shaft and the light of <image1> exactly "
+        "as they are, the same realistic painted style.")),
+}
+
+
 def mask_tokens(size, box):
     w, h = size
     tok = np.zeros((h // TOKEN, w // TOKEN), np.float32)
@@ -53,7 +64,32 @@ def mask_tokens(size, box):
     return tok
 
 
-def sheet(paths):
+def erase(name, models_dir, sheet_only):
+    job = ERASE[name]
+    src = os.path.join(F, name + ".png")
+    ctx = Image.open(src).convert("RGB")
+    x0, y0, x1, y1 = job["box"]
+    ref = ctx.crop((x0 - 200, y0 - 150, x1 + 200, y1 + 100))
+    tok = mask_tokens(ctx.size, job["box"])
+    outs = [("было", src)]
+    names = [(seed, st, os.path.join(F, "%s_erase_s%02d_r%d.png" % (name, round(st * 100), seed)))
+             for seed in SEEDS for st in STARTS]
+    if not sheet_only:
+        import gen_hd
+        import unit_parts as uparts
+        uparts.STEPS = 8
+        paint = uparts.Inpainter(models_dir or gen_hd.DEFAULT_MODELS_DIR, [(ctx, ref, job["prompt"])])
+        for seed, st, p in names:
+            raw, _log = paint.run(0, ctx, tok, seed, st)
+            raw.save(p)
+            print("  сид %d старт %.2f" % (seed, st), flush=True)
+    for seed, st, p in names:
+        outs.append(("сид %d, старт %.2f" % (seed, st), p))
+    sheet(outs, crop=(x0 - 250, y0 - 180, x1 + 250, y1 + 120), out_name="frames_sheet_erase_%s.png" % name)
+    return 0
+
+
+def sheet(paths, crop=None, out_name="frames_sheet_swap.png"):
     font = ImageFont.truetype("C:/Windows/Fonts/arial.ttf", 18)
     W, H = 640, 400
     cols = 3
@@ -63,9 +99,12 @@ def sheet(paths):
     for i, (label, p) in enumerate(paths):
         x, y = (i % cols) * (W + 8), (i // cols) * (H + 30)
         if os.path.exists(p):
-            im.paste(Image.open(p).convert("RGB").resize((W, H), Image.LANCZOS), (x, y + 26))
+            pic = Image.open(p).convert("RGB")
+            if crop:
+                pic = pic.crop(crop)
+            im.paste(pic.resize((W, H), Image.LANCZOS), (x, y + 26))
         d.text((x + 4, y + 4), label, fill=(230, 210, 150), font=font)
-    out = os.path.join(ROOT, "art", "craft_launch", "frames_sheet_swap.png")
+    out = os.path.join(ROOT, "art", "craft_launch", out_name)
     im.save(out)
     print("лист:", out)
 
@@ -74,8 +113,11 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--models", default="")
     ap.add_argument("--sheet-only", action="store_true", dest="sheet_only")
+    ap.add_argument("--erase", default="", help="кадр из ERASE: frames/<имя>.png -> frames/<имя>_erase_s<старт>_r<сид>.png")
     a = ap.parse_args()
     os.chdir(ROOT)
+    if a.erase:
+        return erase(a.erase, a.models, a.sheet_only)
     ctx = Image.open(os.path.join(F, SCENE + ".png")).convert("RGB")
     ref = Image.open(os.path.join(F, TANK + ".png")).convert("RGB").crop(TANK_BOX)
     ref = ref.resize((ref.width * 2, ref.height * 2), Image.LANCZOS)

@@ -26,6 +26,9 @@ OUT = ROOT / "art" / "craft_launch" / "video"
 NEG = ("people, person, crew, soldier, driver visible, open hatch, tracks, caterpillar tracks, wheels, tank rolling on "
        "the ground, second vehicle, explosion, gunfire, shooting, cut, scene change, text, subtitles, logo, watermark, "
        "morphing hull, melting metal, warped garage, camera shake")
+AIR_NEG = ("people walking, ground crew, soldier, second aircraft, explosion, crash, fire on the hull, gunfire, "
+           "shooting, cut, scene change, text, subtitles, logo, watermark, morphing hull, melting metal, extra wings, "
+           "warped shaft, camera shake")
 
 CLIPS = {
     # выбор Vitali 22.10: «сид42 старт 1,0» (craft_launch_swap.py)
@@ -52,6 +55,58 @@ CLIPS = {
         "Only then the turntable stops, the blue glow under the tank flares brighter, dust and steam swirl on the "
         "floor, and the hover tank moves forward, gun first, nose first, glides off the turntable into the tunnel and "
         "up the smooth sloped ramp, getting smaller until it disappears. Heavy engine hum, deep rumble.")),
+    # выбор Vitali 22.10: «дракар 2 верт 1» - кадры 5200 и 4100 (craft_launch_frames.py)
+    "LAUNCH_DRAKKAR": dict(start=FRAMES / "STR_DRAKKAR_chosen.png", negative=AIR_NEG + ", runway, rolling forward on "
+                           "wheels, flying out horizontally, flying at the camera", prompt=(
+        "Cinematic shot at the bottom of a tall vertical launch shaft inside a gritty underground pirate base at night, "
+        "the camera stays low and still. A dark jet aircraft with swept wings and two big engines stands on a round "
+        "brass launch pad; high above, the armoured roof doors are open to a cloudy night sky with the moon. Amber "
+        "warning beacons flash on the shaft walls. The engines ignite with a bright orange glow and shimmering hot "
+        "air, steam and dust blast across the floor, the landing gear lifts off the pad and the aircraft rises "
+        "straight up, slowly at first and then faster, keeping level, up through the shaft and out through the "
+        "open roof into the night sky until it is a small dark shape against the clouds. Roaring jet engines.")),
+    # 22.10 Vitali про LAUNCH_DRAKKAR: «не он опять к нам носом, должен немного взлетать, поворачиваться и улетать
+    # в двери» - как у МБТ: подъём, разворот отдельным тактом, уход носом вперёд в проём, 7 с, камера стоит
+    "LAUNCH_DRAKKAR2": dict(start=FRAMES / "STR_DRAKKAR_chosen.png", length=169, negative=AIR_NEG + (
+        ", flying at the camera, flying towards the viewer, nose towards the camera while flying, rising straight up "
+        "into the sky, camera tilting up, camera moving, flying backwards, tail first, flying out before turning"),
+        prompt=(
+        "Cinematic shot inside a huge dark launch hangar of a gritty underground pirate base at night, the camera is "
+        "locked off on a tripod and does not move or tilt. A dark jet aircraft with swept wings and two big engines "
+        "stands on a round brass launch pad, its nose towards the camera; behind it the giant armoured hangar doors "
+        "are wide open to a cloudy night sky with the moon. Amber warning beacons flash on the walls. "
+        "The engines ignite with an orange glow and the aircraft lifts off the pad only a few metres and hovers. "
+        "Then, while hovering, it slowly turns around on the spot, a full half turn, until its nose points away from "
+        "the camera at the open doors and we see its tail and the glowing engine nozzles. "
+        "Only then the engines flare bright, steam and dust blast across the floor towards the camera, and the "
+        "aircraft flies forward, nose first, away from the camera, out through the open hangar doors into the night "
+        "sky, getting smaller until it is a small glowing shape among the clouds. Roaring jet engines.")),
+    # 22.10: кадр без стрелка (Vitali: «сид 42 старт 0.90», craft_launch_swap.py --erase) и та же схема, что у
+    # LAUNCH_DRAKKAR2: подъём на несколько метров, разворот носом к дверям, уход в проём
+    "LAUNCH_HUEY2": dict(start=FRAMES / "STR_HUEY_chosen.png", length=169, negative=AIR_NEG + (
+        ", rotor not turning, rotor blades bending, broken rotor, tail rotor missing, people in the cabin, gunner, "
+        "flying at the camera, flying towards the viewer, rising straight up the shaft, camera tilting up, camera "
+        "moving, flying backwards, tail first, flying out before turning"), prompt=(
+        "Cinematic shot inside a huge dark launch hangar of a gritty underground pirate base at night, the camera is "
+        "locked off on a tripod and does not move or tilt. A dark olive military helicopter with an empty cabin "
+        "stands on its skids on a round brass launch pad, its nose to the left; behind it the giant hangar doors are "
+        "wide open to a cloudy night sky with the moon. Amber warning beacons flash on the walls. "
+        "The main rotor starts to turn and spins up into a blur, the tail rotor spins, the downwash blows steam and "
+        "dust off the pad in rings. The helicopter lifts off its skids only a few metres and hovers. "
+        "Then, while hovering, it slowly turns on the spot until its nose points away from the camera at the open "
+        "doors and we see its tail boom and tail rotor. "
+        "Only then it tilts its nose slightly down and flies forward, nose first, away from the camera, out through "
+        "the open hangar doors into the night sky, getting smaller until it is a small dark shape among the clouds. "
+        "Loud thumping rotor blades, turbine whine.")),
+    "LAUNCH_HUEY": dict(start=FRAMES / "STR_HUEY_chosen.png", negative=AIR_NEG + ", rotor not turning, rotor blades "
+                        "bending, broken rotor, tail rotor missing, flying out sideways", prompt=(
+        "Cinematic shot at the bottom of a tall vertical launch shaft inside a gritty underground pirate base at night, "
+        "the camera stays low and still. A dark olive military helicopter stands on its skids on a round brass launch "
+        "pad; high above, the shaft opens to a cloudy night sky with the moon. Amber warning beacons flash on the "
+        "steel walls. The main rotor starts to turn and quickly spins up into a blur, the tail rotor spins, the "
+        "downwash blows steam and dust off the pad in rings. The helicopter lifts off its skids, hovers a moment, "
+        "then climbs straight up the shaft, nose slightly down, and rises out of the top into the night sky until "
+        "it is a small dark shape against the clouds. Loud thumping rotor blades, turbine whine.")),
 }
 
 
