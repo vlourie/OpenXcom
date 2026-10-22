@@ -250,16 +250,31 @@ bool parse(std::istream &in, TileScene &out)
 		}
 		else if (key == "emit")
 		{
-			static const char *names[] = { "steam", "bubbles", "sparks", "embers", "orbit" };
+			static const char *names[] = { "steam", "bubbles", "sparks", "embers", "orbit", "sweep", "ripple", "dust", "flies" };
 			Emit E;
 			std::string kind;
 			words >> kind >> E.x >> E.y >> E.w >> E.h >> E.r >> E.g >> E.b;
-			for (int i = 0; i < 5; ++i)
+			for (int i = 0; i < 9; ++i)
 			{
 				if (words && kind == names[i] && E.w >= 0 && E.h >= 0)
 				{
 					E.kind = (EmitKind)i;
 					out.emits.push_back(E);
+				}
+			}
+		}
+		else if (key == "walk")
+		{
+			int n = 0;
+			std::string bits;
+			words >> n >> bits;
+			if (n > 0 && n <= 32 && (int)bits.size() == n * n)
+			{
+				out.walkSize = n;
+				out.walk.resize(n * n);
+				for (int i = 0; i < n * n; ++i)
+				{
+					out.walk[i] = bits[i] == '1' ? 1 : 0;
 				}
 			}
 		}
@@ -656,6 +671,72 @@ void drawParticles(SDL_Surface *world, const SDL_Rect &area, const std::vector<P
 				const float rad = (0.25f + 0.45f * hash1(i, k, p.seed + 3)) * E.w / 2 * (1 - age / 5.0f * 0.5f);
 				put(cx + std::cos(ang) * rad, cy + std::sin(ang) * rad, 2 * s, 0, col,
 					std::sin(age / 5.0f * PI) * 1.2f, true);
+			}
+			break;
+		}
+		case SWEEP:
+		{
+			// a beam from the box's middle to its edge turning once in 6..9 s, a fading trail behind it;
+			// a turret's (gate none) and a radar's alike, dimmer where the facility idles
+			const float cx = E.x + E.w / 2, cy = E.y + E.h / 2, R = std::min(E.w, E.h) / 2;
+			const float turn = 2 * PI / (6.0f + 3.0f * hash1(1, 2, p.seed));
+			const float head = t * turn + hash1(3, 4, p.seed) * 2 * PI;
+			const int steps = std::max(4, (int)(R / (5 * s)));
+			for (int j = 0; j < 6; ++j)
+			{
+				const float ang = head - j * 0.07f, ca = std::cos(ang), sa = std::sin(ang);
+				for (int i = 1; i <= steps; ++i)
+				{
+					const float d = R * i / steps;
+					put(cx + ca * d, cy + sa * d, (2.2f + 1.6f * i / steps) * s, 0, col,
+						0.32f * (1 - j / 6.0f) * (1 - 0.5f * i / steps) * std::max(0.3f, p.level), true);
+				}
+			}
+			break;
+		}
+		case RIPPLE:
+		{
+			// slow rings spreading on water, a few at a time
+			const int n = count(5);
+			for (int i = 0; i < n; ++i)
+			{
+				float age;
+				Uint32 k;
+				life(i, n, 3.2f, age, k);
+				const float x = E.x + hash1(i, k, p.seed) * E.w, y = E.y + hash1(i, k, p.seed + 1) * E.h;
+				put(x, y, 1.4f * s, (2 + age / 3.2f * 16) * s, col, (1 - age / 3.2f) * 0.35f, true);
+			}
+			break;
+		}
+		case DUST:
+		{
+			// motes drifting slowly through the light of the room
+			const int n = count(14);
+			for (int i = 0; i < n; ++i)
+			{
+				float age;
+				Uint32 k;
+				life(i, n, 7.0f, age, k);
+				const float x = E.x + hash1(i, k, p.seed) * E.w + (age * 2.5f + std::sin(age * 0.9f + i) * 4) * s;
+				const float y = E.y + hash1(i, k, p.seed + 1) * E.h + std::sin(age * 0.6f + i * 1.7f) * 3 * s;
+				put(x, y, 1.3f * s, 0, col, std::sin(age / 7.0f * PI) * 0.45f * (1 - 0.5f * night), true);
+			}
+			break;
+		}
+		case FLIES:
+		{
+			// dark specks (or bees, by the colour) buzzing about a few spots of the box
+			const int n = count(12);
+			for (int i = 0; i < n; ++i)
+			{
+				float age;
+				Uint32 k;
+				life(i, n, 6.0f, age, k);
+				const float hx = E.x + hash1(i % 3, k, p.seed) * E.w, hy = E.y + hash1(i % 3, k, p.seed + 1) * E.h;
+				const float w1 = 5 + 3 * hash1(i, 9, p.seed), w2 = 7 + 4 * hash1(i, 10, p.seed);
+				const float x = hx + (std::sin(age * w1 + i) * 9 + std::sin(age * 1.3f + i * 2.1f) * 6) * s;
+				const float y = hy + (std::cos(age * w2 + i * 0.7f) * 7 + std::sin(age * 0.9f + i) * 5) * s;
+				put(x, y, 1.1f * s, 0, col, std::min(1.0f, std::sin(age / 6.0f * PI) * 3) * 0.85f, false);
 			}
 			break;
 		}

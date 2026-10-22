@@ -29,7 +29,8 @@ namespace OpenXcom
  * from above walk between the facilities - scientists to the labs while the base researches, engineers
  * to the workshops while it builds, the crew about the gym, stores and hangars, a guard by the prison
  * and a nurse in the sick bay. At night all but the night shift go home to sleep, and those still on
- * their feet carry a lantern (a light of HdBaseScene).
+ * their feet carry a lantern (a light of HdBaseScene). They walk only over the bare floor of the
+ * pictures, never through furniture or machines.
  *
  * How many walk and where they go is read from the base; where each of them is comes from the crew's
  * own dice and the display clock. Nothing of the game is changed and the game's random numbers are
@@ -38,6 +39,8 @@ namespace OpenXcom
 namespace HdBaseLife
 {
 	const int SIZE = 6;
+	/// Squares of the crew's walking grid to a cell, per side.
+	const int SUB = 8;
 
 	/// What a facility is to the crew (bits).
 	enum Place { LAB = 1, WORK = 2, HOME = 4, PRISON = 8, MED = 16, GYM = 32, HANGAR = 64, STORE = 128, OTHER = 256,
@@ -48,6 +51,9 @@ namespace HdBaseLife
 	{
 		int facility[SIZE][SIZE] = {};    ///< [x][y]: the facility's number + 1; 0 - no floor to walk on
 		int place[SIZE][SIZE] = {};       ///< [x][y]: Place bits of that facility
+		/// [x][y] of the walking grid: 1 - bare floor of the picture (the walk of its .scene.txt); the crew
+		/// stands and walks only there, and goes from room to room through the middle of a shared side
+		unsigned char walk[SIZE * SUB][SIZE * SUB] = {};
 		int scientists = 0, engineers = 0, soldiers = 0;
 		bool researching = false, producing = false;
 		Uint32 seed = 0;                  ///< tells one base from another

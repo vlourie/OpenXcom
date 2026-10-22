@@ -796,6 +796,14 @@ void BaseView::drawHdScene(SDL_Surface *world, int k, Uint32 now)
 				{
 					plan.facility[x][y] = number;
 					plan.place[x][y] = bits ? bits : (int)HdBaseLife::OTHER;
+					// all floor unless the tile's scene tells where the furniture stands (below)
+					for (int sx = 0; sx < HdBaseLife::SUB; ++sx)
+					{
+						for (int sy = 0; sy < HdBaseLife::SUB; ++sy)
+						{
+							plan.walk[x * HdBaseLife::SUB + sx][y * HdBaseLife::SUB + sy] = 1;
+						}
+					}
 				}
 			}
 		}
@@ -850,6 +858,18 @@ void BaseView::drawHdScene(SDL_Surface *world, int k, Uint32 now)
 				if (!scene)
 				{
 					continue;
+				}
+				if (scene->walkSize > 0 && x >= 0 && y >= 0 && x < HdBaseLife::SIZE && y < HdBaseLife::SIZE)
+				{
+					const int n = scene->walkSize;
+					for (int sx = 0; sx < HdBaseLife::SUB; ++sx)
+					{
+						for (int sy = 0; sy < HdBaseLife::SUB; ++sy)
+						{
+							plan.walk[x * HdBaseLife::SUB + sx][y * HdBaseLife::SUB + sy] =
+								scene->walk[(sy * n / HdBaseLife::SUB) * n + sx * n / HdBaseLife::SUB];
+						}
+					}
 				}
 				const float s = (float)(GRID_SIZE * k) / scene->width;
 				const float ox = (float)((getX() + x * GRID_SIZE) * k), oy = (float)((getY() + y * GRID_SIZE) * k);
