@@ -55,7 +55,21 @@ def gate_of(rule):
     return "none"
 
 
-def build(t, rule, sprites, out):
+def budget(lights, cover, most):
+    """Бюджет огней клетки: светлую мебель детектор берёт за лампы и ночью заливает комнату как днём (лист
+    ночи 98, 22.10). Огни идут от крупных к мелким; берём, пока сумма r^2 не выйдет за cover клетки и их не
+    больше most. Одобренные 16 почти все укладываются в 0.6 и 6 (кроме хеллерия - он светится задуманно)."""
+    keep, s = [], 0.0
+    for L in lights:
+        r = float(L.split()[3]) / TILE
+        if len(keep) >= most or (keep and s + r * r > cover):
+            continue
+        keep.append(L)
+        s += r * r
+    return keep
+
+
+def build(t, rule, sprites, out, cover=0.0, most=0):
     fac = Facility(rule, sprites)
     pic = os.path.join(ART, t + ".png")
     master = os.path.join(ART, t + "@512.png")
@@ -90,8 +104,11 @@ def build(t, rule, sprites, out):
             n = fac.indices[num]
             tile = im[cy * TILE:(cy + 1) * TILE, cx * TILE:(cx + 1) * TILE]
             Image.fromarray(tile, "RGBA").save(os.path.join(dest, "%d.png" % n), optimize=True)
+            here = per_tile.get((cx, cy), [])
+            if most:
+                here = budget(here, cover, most)
             lines = (["# base_scene_pack.py %s %d,%d" % (t, cx, cy), "size %d %d" % (TILE, TILE), "gate " + gate]
-                     + per_tile.get((cx, cy), []))
+                     + here)
             with open(os.path.join(dest, "%d.scene.txt" % n), "w", encoding="ascii", newline="\n") as f:
                 f.write("\n".join(lines) + "\n")
             written += ["BASEBITS.PCK/%d.png" % n, "BASEBITS.PCK/%d.scene.txt" % n]
@@ -105,12 +122,14 @@ def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--only", required=True, help="типы через запятую (только выбранные Vitali)")
     ap.add_argument("--out", default=os.path.join(ROOT, "art", "base_living", "pack"))
+    ap.add_argument("--cover", type=float, default=0.6, help="бюджет клетки: сумма r^2 в долях клетки")
+    ap.add_argument("--most", type=int, default=0, help="не больше огней на клетку (0 - без бюджета, как у 16)")
     ns = ap.parse_args()
     rules, _ = load_rules()
     sprites = sprites_map()
     files = []
     for t in [s for s in ns.only.split(",") if s]:
-        files += build(t, rules[t], sprites, ns.out)
+        files += build(t, rules[t], sprites, ns.out, ns.cover, ns.most)
     with open(os.path.join(ns.out, "files.txt"), "w", encoding=ENC) as f:
         f.write("\n".join(files) + "\n")
     print("файлов %d -> %s" % (len(files), ns.out))
