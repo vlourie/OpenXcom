@@ -87,7 +87,35 @@ THEMES = {
     "menus": "The captain's cabin of a pirate airship: a heavy desk with a chart, a brass sextant and a bottle of "
              "rum, a round porthole showing a dark sky, a captain's coat and hat on a hook at the right, an oil "
              "lamp giving warm light, deep shadow.",
+    # второй заход 22.10: экраны, мимо которых шли темы (главное меню, окна геоскейпа и педии, окна боя)
+    "mainmenu": "The deck of a battered pirate airship at dusk high above burning clouds: on the left a tough "
+                "mutant pirate woman captain in a long coat with a cutlass, on the right two pirate women in "
+                "patched combat gear with improvised rifles, a glowing alien saucer far away in the stormy sky "
+                "between them, brass railings, ropes and a fluttering black flag.",
+    "geoscape": "A pirate navigator's chart room: a big brass-ringed globe of the Earth glowing faintly with lime "
+                "markers stands on a round chart table, old maps pinned to riveted iron walls, dividers and an "
+                "oil lamp, a navigator woman in a long coat leans over the globe at the right side in shadow.",
+    "pedia": "The archive of a pirate hideout: tall iron shelves of battered books, folders and data cassettes "
+             "receding into darkness, specimen jars with alien parts glowing faint lime, a reading lamp over a "
+             "desk with a thick open illustrated codex at the right side.",
+    "battle": "A field command post inside a ruined building at night during a raid: a field radio with glowing "
+              "dials, a tactical map spread on an ammunition crate held down by a pistol and a canteen, rifles "
+              "leaning on a broken wall, distant fire glow through a shattered window on the right.",
+    "briefing": "The cargo hold of a pirate dropship in flight before landing: rows of fold-down seats along "
+                "riveted iron walls, harnesses and racked weapons, a red jump lamp glowing over the closed ramp at "
+                "the right, pirate women in patched combat gear sitting in shadow checking their guns.",
+    "hidden": "A dark ruined street at night in drifting fog: the silhouette of an alien creeping between broken "
+              "walls far away on the right, a faint lime glow of its eyes, moonlight on wet rubble, everything "
+              "still and tense, almost the whole picture in deep shadow.",
+    "alert": "A human town burning at night seen from a hill: columns of smoke lit orange from below, an alien "
+             "saucer hovering low over the roofs on the right with faint lime beams, tiny fleeing silhouettes, "
+             "the searchlight of a distant pirate airship crossing the sky.",
 }
+
+# главное меню - обложка игры: под ним только кнопки, сюжет может быть ярче и крупнее, середина - небо под кнопки
+BOLD = {"mainmenu"}
+COVER = ("Box cover composition: the characters stand on the left and right thirds, the centre of the picture is "
+         "open darker sky where the menu buttons will sit, dramatic warm rim light, no small busy detail. ")
 
 # экраны тем (разделы interfaces); пилот - первые шесть тем, остальные темы - после выбора стиля
 SCREENS = {
@@ -116,6 +144,18 @@ SCREENS = {
     "facilities": "selectFacility placeFacility dismantleFacility geoNewFacility baseNaming",
     "menus": "optionsMenu modsMenu newBattleMenu newGameMenu noteMenu oxceLinks pauseMenu saveMenus "
              "selectMusicTrack",
+    "mainmenu": "mainMenu",
+    # окна над глобусом: бросить игру, новая база, курс
+    "geoscape": "geoscape",
+    # меню педии (списки разделов и статей); сами статьи - своя графика, не тема
+    "pedia": "ufopaedia",
+    # окна боя на TAC00.SCR (выход с карты, итоги опыта, комплекты снаряжения, дневник хода): имя даёт движок
+    "battle": "battlescape",
+    "briefing": "briefing",
+    # «скрытое движение»: заставка хода и сообщение на карте
+    "hidden": "nextTurn hiddenMovement",
+    # тревога о миссии (погром, абордаж)
+    "alert": "terrorSite",
 }
 
 
@@ -165,7 +205,7 @@ def draw(args):
     total = len(names) * args.seeds
     done, t0 = 0, time.time()
     for n in names:
-        prompt = STYLE + CALM + THEMES[n]
+        prompt = STYLE + (COVER if n in BOLD else CALM) + THEMES[n]
         os.makedirs(os.path.join(OUT, n), exist_ok=True)
         for i in range(1, args.seeds + 1):
             path = os.path.join(OUT, n, "%s_%d.png" % (n, i))
@@ -198,13 +238,15 @@ def install(args):
         if n not in THEMES:
             raise SystemExit("нет такой темы: %s" % n)
     dests = [os.path.join(ROOT, d, "hd", "UI", "screens") for d in args.mods.split(";") if d]
-    lines = ["# Фоны экранов по темам (HdScreens): картинка = экраны (id из interfaces рулсетов).",
-             "# Пишет tools/hdart/gen_screens.py install - руками не править."]
     for n, v in picks.items():
         src = os.path.join(OUT, n, "%s_%s.png" % (n, v))
         if not os.path.exists(src):
             raise SystemExit("нет варианта %s" % src)
-        lines.append("%s.png = %s" % (n, " ".join(SCREENS[n].split())))
+    # темы, уже стоящие в моде (картинка есть), остаются в таблице: --pick ставит или меняет только названные
+    themes = [n for n in THEMES if n in picks or os.path.exists(os.path.join(dests[0], "%s.png" % n))]
+    lines = ["# Фоны экранов по темам (HdScreens): картинка = экраны (id из interfaces рулсетов).",
+             "# Пишет tools/hdart/gen_screens.py install - руками не править."]
+    lines += ["%s.png = %s" % (n, " ".join(SCREENS[n].split())) for n in themes]
     for d in dests:
         os.makedirs(d, exist_ok=True)
         for n, v in picks.items():

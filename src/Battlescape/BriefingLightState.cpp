@@ -61,6 +61,7 @@ BriefingLightState::BriefingLightState(AlienDeployment *deployment)
 	BriefingData data = deployment->getBriefingData();
 	setStandardPalette("PAL_GEOSCAPE", data.palette);
 	_window->setBackground(_game->getMod()->getSurface(data.background));
+	_window->setInterfaceName("briefing");
 
 	add(_window, "window", "briefing");
 	add(_btnOk, "button", "briefing");
