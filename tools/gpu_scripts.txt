@@ -121,3 +121,7 @@ gen_base_paint.py
 wreck_object.py
 base_hangar_edit.py
 base_pool_repair.py
+craft_launch_frames.py
+craft_launch_swap.py
+craft_launch_video.py
+gen_video.py
