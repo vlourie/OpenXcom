@@ -2106,7 +2106,7 @@ void Globe::drawHdEnemyRadar()
 			&& (_game->getMod()->getDrawEnemyRadarCircles() != 1 || ufo->getHyperDetected()))
 		{
 			const double range = Nautical(ufo->getCraftStats().radarRange);
-			if (range > 0) rings.push_back(HdRadar::Ring{ ufo->getLongitude(), ufo->getLatitude(), range });
+			if (range > 0) rings.push_back(HdRadar::Ring{ ufo->getLongitude(), ufo->getLatitude(), range, true });
 		}
 	}
 	for (auto* ab : *_game->getSavedGame()->getAlienBases())

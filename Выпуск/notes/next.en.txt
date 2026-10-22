@@ -1,0 +1,1 @@
+- Globe (HD): the radar circles of enemy hunter-killer ships are now a lighter red than those of enemy bases, so the two are easy to tell apart (ticket XP-000155).
