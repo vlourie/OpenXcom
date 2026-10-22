@@ -150,6 +150,10 @@ private:
 	std::vector<std::vector<Particle>> _vaporParticlesInit;
 	std::vector<std::vector<Particle>> _vaporParticles;
 	bool _explosionInFOV, _launch;
+	/// Options::oxceHdHiddenMap: the camera offset of the last frame the map was shown with; an unseen enemy's
+	/// turn draws the map from there, whatever the camera does meanwhile
+	Position _hiddenViewOffset;
+	bool _hiddenViewValid = false;
 	BattlescapeMessage *_message;
 	Camera *_camera;
 	int _visibleMapHeight;

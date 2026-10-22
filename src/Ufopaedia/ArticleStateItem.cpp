@@ -36,6 +36,7 @@
 #include "../fmath.h"
 #include "StatsForNerdsState.h"
 #include "../Engine/HdItems.h"
+#include "../Engine/Options.h"
 
 namespace OpenXcom
 {
@@ -209,6 +210,8 @@ namespace OpenXcom
 		_txtWeight->setText(weight != 0 ? weightLabel : "");
 
 		// SHOT STATS TABLE (for firearms and melee only)
+		// option oxceHdPediaRange: a firearm's table gets a range column in the same width, with short headers
+		const bool rangeColumn = Options::oxceHdPediaRange && item->getBattleType() == BT_FIREARM;
 		if (item->getBattleType() == BT_FIREARM || item->getBattleType() == BT_MELEE)
 		{
 			_txtShotType = new Text(100, 17, 8, 66);
@@ -217,23 +220,39 @@ namespace OpenXcom
 			_txtShotType->setWordWrap(true);
 			_txtShotType->setText(tr("STR_SHOT_TYPE"));
 
-			_txtAccuracy = new Text(50, 17, 104, 66);
+			_txtAccuracy = rangeColumn ? new Text(38, 17, 104, 66) : new Text(50, 17, 104, 66);
 			add(_txtAccuracy);
 			_txtAccuracy->setColor(_textColor);
 			_txtAccuracy->setWordWrap(true);
-			_txtAccuracy->setText(tr("STR_ACCURACY_UC"));
+			_txtAccuracy->setText(tr(rangeColumn ? "STR_HD_PEDIA_ACCURACY" : "STR_ACCURACY_UC"));
 
-			_txtTuCost = new Text(60, 17, 158, 66);
+			_txtTuCost = rangeColumn ? new Text(38, 17, 142, 66) : new Text(60, 17, 158, 66);
 			add(_txtTuCost);
 			_txtTuCost->setColor(_textColor);
 			_txtTuCost->setWordWrap(true);
-			_txtTuCost->setText(tr("STR_TIME_UNIT_COST"));
+			_txtTuCost->setText(tr(rangeColumn ? "STR_HD_PEDIA_TU" : "STR_TIME_UNIT_COST"));
+
+			if (rangeColumn)
+			{
+				Text *txtRange = new Text(36, 17, 180, 66);
+				add(txtRange);
+				txtRange->setColor(_textColor);
+				txtRange->setWordWrap(true);
+				txtRange->setText(tr("STR_HD_PEDIA_RANGE_COLUMN"));
+			}
 
 			_lstInfo = new TextList(204, 55, 8, 82);
 			add(_lstInfo);
 
 			_lstInfo->setColor(_listColor2); // color for % data!
-			_lstInfo->setColumns(3, 100, 52, 52);
+			if (rangeColumn)
+			{
+				_lstInfo->setColumns(4, 100, 38, 38, 28);
+			}
+			else
+			{
+				_lstInfo->setColumns(3, 100, 52, 52);
+			}
 			_lstInfo->setBig();
 		}
 
@@ -248,10 +267,23 @@ namespace OpenXcom
 				}
 				int range = std::min(config->range, weapon->getMaxRange());
 				std::string label = config->shortName.empty() ? tr(name).arg(config->shots).arg(range) : tr(config->shortName).arg(config->shots).arg(range);
-				_lstInfo->addRow(3,
-					label.c_str(),
-					Unicode::formatPercentage(config->accuracy).c_str(),
-					tu.c_str());
+				if (rangeColumn)
+				{
+					// melee has no range to speak of: its cell stays empty
+					const std::string rangeText = name == "STR_SHOT_TYPE_MELEE" ? "" : std::to_string(range);
+					_lstInfo->addRow(4,
+						label.c_str(),
+						Unicode::formatPercentage(config->accuracy).c_str(),
+						tu.c_str(),
+						rangeText.c_str());
+				}
+				else
+				{
+					_lstInfo->addRow(3,
+						label.c_str(),
+						Unicode::formatPercentage(config->accuracy).c_str(),
+						tu.c_str());
+				}
 				_lstInfo->setCellColor(row, 0, _listColor1);
 				row++;
 			}
