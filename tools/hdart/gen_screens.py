@@ -158,6 +158,79 @@ SCREENS = {
     "alert": "terrorSite",
 }
 
+# Героини - шесть беглянок M1-M6 (лор и внешность: F:\AIStudio\EscapeScene\CHARACTERS_AND_SCENE.md, лица -
+# art/cast/M<N>_face.png из cast_faces.py). Без них модель рисовала на всех картинках одно и то же лицо.
+# Роль по характеру: Север - лидер (капитан, курс, брифинг), Искра - дерзкая драчунья, Шпилька - вскрывает
+# замки (механик), Базальт - самая сильная, Рысь - быстрая, замечает опасность (пилот), Тихая - точная (учёная).
+# Тема -> героини по порядку опор (Picture 1, 2, 3) и сцена, где они названы по именам.
+CAST = {
+    "research": ([6], "A dim laboratory in the hold of a pirate ship: a half-dismantled alien device glowing faint "
+                      "lime green on a brass workbench, glass jars and tubes, a magnifying lamp on an arm. Tikhaya, "
+                      "the woman from Picture 1, works at the right side in a patched lab coat over dark work "
+                      "clothes, goggles pushed up on her forehead, her black braid over one shoulder, her face lit "
+                      "from below by the device, calm and focused."),
+    "manufacture": ([3], "A cramped pirate workshop seen from the side: the left two thirds of the picture are dark "
+                         "empty iron walls with hanging chains and tool racks fading into shadow; at the far right "
+                         "edge a heavy lathe and an anvil. Shpilka, the woman from Picture 1, a mechanic in a leather "
+                         "apron over a work shirt with rolled sleeves, a welding mask pushed up on her head, her "
+                         "chestnut hair held by a plain metal bobby pin, works there in three-quarter view, a small "
+                         "soft shower of orange sparks, smoke drifting in the lamp light."),
+    "crew": ([2, 4, 5], "The crew quarters of a pirate airship: bunks of riveted iron, hammocks, lockers with "
+                        "stickers, a long table with mugs and cards. Three pirate women rest there in practical "
+                        "patched clothing: on the left Iskra, the woman from Picture 1, sits on the table edge "
+                        "laughing; in the back Bazalt, the woman from Picture 2, the tallest and strongest, leans on "
+                        "a bunk with crossed arms; on the right Rys, the woman from Picture 3, sits in a hammock "
+                        "cleaning a pistol. Faces half in shadow, relaxed and tough."),
+    "hangar": ([5], "A huge dark hangar carved into rock: a battered patched-together pirate gunship stands on the "
+                    "pad, fuel hoses and gantries, work lights cone down through haze. Rys, the woman from Picture 1, "
+                    "the pilot, in a worn leather flight jacket with goggles around her neck, leans on a landing "
+                    "strut at the right side."),
+    "training": ([2], "A pirate training hall in the ship's hold: a punching bag of patched leather hanging on a "
+                      "chain, a sparring ring of ropes and iron posts, rusty weights and a target dummy riddled with "
+                      "holes. Iskra, the woman from Picture 1, in a sleeveless shirt and cargo trousers, wraps her "
+                      "fists with tape at the right side, a fierce grin."),
+    "pursuit": ([5], "Night sky seen through the riveted brass frame of a pirate gunship cockpit: a glowing alien "
+                     "saucer flying away into the clouds on the right, faint lime engine trails, moonlight on the "
+                     "clouds below. Rys, the woman from Picture 1, the pilot, sits at the controls in the left "
+                     "foreground in three-quarter view, a headset over her copper curls, her face lit by the dim "
+                     "gauges, eyes fixed on the target."),
+    "mainmenu": ([1, 2, 4], "The deck of a battered pirate airship at dusk high above burning clouds: on the left "
+                            "Sever, the woman from Picture 1, the captain, in a long dark coat with a cutlass; on the "
+                            "right Iskra, the woman from Picture 2, and Bazalt, the woman from Picture 3, in patched "
+                            "combat gear with improvised rifles; a glowing alien saucer far away in the stormy sky "
+                            "between them, brass railings, ropes and a fluttering black flag."),
+    "geoscape": ([1], "A pirate navigator's chart room: a big brass-ringed globe of the Earth glowing faintly with "
+                      "lime markers stands on a round chart table, old maps pinned to riveted iron walls, an oil "
+                      "lamp. Sever, the woman from Picture 1, in a long dark coat, leans over the globe at the right "
+                      "side plotting a course with brass dividers, her silver bob lit by the lamp."),
+    "briefing": ([1, 3, 6], "The cargo hold of a pirate dropship in flight before landing: rows of fold-down seats "
+                            "along riveted iron walls, harnesses and racked weapons, a red jump lamp glowing over the "
+                            "closed ramp at the right. Sever, the woman from Picture 1, stands by the ramp giving "
+                            "orders; Shpilka, the woman from Picture 2, and Tikhaya, the woman from Picture 3, sit on "
+                            "the seats in patched combat gear checking their guns."),
+}
+CAST.update({
+    # без опор модель сама поставила сюда мужчин и безликие шлемы - экипаж Пираток женский
+    "hidden": ([6], "A dark ruined street at night in drifting fog seen from a broken doorway: the silhouette of an "
+                    "alien creeping between broken walls far away on the right, a faint lime glow of its eyes, "
+                    "moonlight on wet rubble. Tikhaya, the woman from Picture 1, keeps watch at the left edge in "
+                    "the shadow of the doorway, in patched combat gear with a rifle, her face half lit by the "
+                    "moon, still and tense; almost the whole picture is deep shadow."),
+    "alert": ([5], "A human town burning at night seen from the open hatch of a pirate airship: columns of smoke lit "
+                   "orange from below, an alien saucer hovering low over the roofs on the right with faint lime "
+                   "beams, tiny fleeing silhouettes. Rys, the woman from Picture 1, stands at the left by the "
+                   "hatch in a leather flight jacket, gripping a brass handrail, her face lit by the fires, eyes "
+                   "narrowed at the saucer."),
+})
+CAST_DIR = os.path.join(ROOT, "art", "cast")
+# опоры - только лица; тело и одежду задаёт текст (героини - солдатки 18-21, спортивные, не культуристки)
+CAST_HEAD = ("The pictures are face references of the characters, not the scene: keep each named woman's face, "
+             "skin tone, eye colour and hairstyle exactly as in her picture, and give every woman a different face. "
+             "All of them are adult women of 19 to 21 with athletic, toned, feminine builds, not bodybuilders, "
+             "fully clothed in practical gear. The scene: ")
+CAST_NEG = ", identical faces, same face on every woman, bodybuilder, huge muscles, masculine arms, man, beard"
+CAST_RES = 640                                      # сторона опоры-лица: три опоры и кадр 1280x800 без shared
+
 
 def load_pipe(offload):
     import gen_hd                                   # ставит HF_HOME на E:\models
@@ -175,8 +248,9 @@ def sheet(n):
     """Лист выбора: варианты с номерами, каждый уменьшен до 480 по ширине."""
     from PIL import Image, ImageDraw
     d = os.path.join(OUT, n)
+    # варианты 1, 2, 3... и с героинями c1, c2... (после обычных)
     files = sorted((f for f in os.listdir(d) if f.endswith(".png")),
-                   key=lambda f: int(f.rsplit("_", 1)[1].split(".")[0]))
+                   key=lambda f: (f.rsplit("_", 1)[1][0] == "c", int(f.rsplit("_", 1)[1].split(".")[0].lstrip("c"))))
     if not files:
         return
     tiles = []
@@ -197,28 +271,39 @@ def sheet(n):
 
 
 def draw(args):
-    names = [t for t in args.theme.split(",") if t] or list(THEMES)
+    names = [t for t in args.theme.split(",") if t] or list(CAST if args.cast else THEMES)
     for n in names:
-        if n not in THEMES:
-            raise SystemExit("нет такой темы: %s (есть %s)" % (n, ", ".join(THEMES)))
+        if n not in (CAST if args.cast else THEMES):
+            raise SystemExit("нет такой темы%s: %s" % (" с героинями" if args.cast else "", n))
     pipe, torch = load_pipe(args.offload)
     total = len(names) * args.seeds
     done, t0 = 0, time.time()
     for n in names:
-        prompt = STYLE + (COVER if n in BOLD else CALM) + THEMES[n]
+        refs, extra, neg = None, {}, NEGATIVE
+        if args.cast:
+            from PIL import Image
+            ids, scene = CAST[n]
+            refs = [Image.open(os.path.join(CAST_DIR, "M%d_face.png" % m)).convert("RGB") for m in ids]
+            extra = dict(image=refs, output_resolution=CAST_RES)
+            neg = NEGATIVE + CAST_NEG
+            prompt = STYLE + (COVER if n in BOLD else CALM) + CAST_HEAD + scene
+        else:
+            prompt = STYLE + (COVER if n in BOLD else CALM) + THEMES[n]
         os.makedirs(os.path.join(OUT, n), exist_ok=True)
         for i in range(1, args.seeds + 1):
-            path = os.path.join(OUT, n, "%s_%d.png" % (n, i))
+            path = os.path.join(OUT, n, ("%s_c%d.png" if args.cast else "%s_%d.png") % (n, i))
             if os.path.exists(path) and not args.force:
                 print("%s вариант %d уже есть - пропускаю" % (n, i), flush=True)
                 done += 1
                 continue
             seed = args.seed + i * 7919
             t1 = time.time()
-            # 16:10 - как экран 320x200, которому картинка служит фоном
-            img = pipe(prompt=prompt, negative_prompt=NEGATIVE, true_cfg_scale=args.cfg,
-                       width=1792, height=1120, num_inference_steps=args.steps,
-                       generator=torch.Generator("cuda").manual_seed(seed)).images[0]
+            # 16:10 - как экран 320x200, которому картинка служит фоном; с опорами - сразу 1280x800 (больше
+            # install всё равно не ставит), иначе три опоры и кадр 1792 не помещаются в карту (R-213)
+            w, h = (1280, 800) if args.cast else (1792, 1120)
+            img = pipe(prompt=prompt, negative_prompt=neg, true_cfg_scale=args.cfg,
+                       width=w, height=h, num_inference_steps=args.steps,
+                       generator=torch.Generator("cuda").manual_seed(seed), **extra).images[0]
             img.convert("RGB").save(path)
             done += 1
             el = time.time() - t0
@@ -278,6 +363,8 @@ def main():
     d.add_argument("--cfg", type=float, default=4.0)
     d.add_argument("--offload", default="model", choices=["model", "none"])
     d.add_argument("--force", action="store_true", help="перерисовать уже готовые варианты")
+    d.add_argument("--cast", action="store_true",
+                   help="темы с героинями M1-M6 (CAST): лица опорами, варианты <тема>_c<N>.png")
     args = ap.parse_args()
     if args.cmd == "draw":
         draw(args)
