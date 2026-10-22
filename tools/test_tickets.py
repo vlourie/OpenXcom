@@ -171,7 +171,7 @@ def main():
         code, out = run(env, "ask", "2", "dump")
         msgs = [m for m in site.tickets[2]["messages"] if not m["internal"]]
         check(code == 0 and site.tickets[2]["status"] == "NeedsInfo", "ask - «Нужна информация»")
-        check(len(msgs) == 1 and msgs[0]["body"].startswith("Thanks for the report") and "Ctrl+F8" in msgs[0]["body"], "ask - шаблон на языке тикета (en-US -> en)")
+        check(len(msgs) == 1 and msgs[0]["body"].startswith("Thanks for writing in") and "Ctrl+F8" in msgs[0]["body"], "ask - шаблон на языке тикета (en-US -> en)")
 
         repo = str(tmp / "repo")
         os.makedirs(repo)
