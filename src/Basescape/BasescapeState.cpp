@@ -221,6 +221,7 @@ void BasescapeState::init()
 
 	setBase(_base);
 	_view->setBase(_base);
+	_view->setHdTime(_game->getSavedGame()->getTime());
 	_mini->draw();
 	_edtBase->setText(_base->getName());
 

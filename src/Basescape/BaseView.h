@@ -27,6 +27,7 @@ class Base;
 class SurfaceSet;
 class BaseFacility;
 class RuleBaseFacility;
+class GameTime;
 class Font;
 class Language;
 class Text;
@@ -65,6 +66,8 @@ private:
 	/// `fuel`: percent for the fuel garland at (fuelX, fuelY), -1 for a craft without fuel.
 	struct HdCraft { int index, x, y, status; Uint32 seed; bool inWorld; int fuel, fuelX, fuelY; };
 	std::vector<HdCraft> _hdCrafts;
+	/// The game's clock, read for the night over the lit HD pictures (HdBaseScene); nullptr: day.
+	const GameTime *_hdTime = nullptr;
 	/// The numbers over the facilities (build time, ammo), laid out and kept out of the classic layer,
 	/// when the HD interface draws them with its own fonts; `_hdNumbersKept`: were they when last drawn.
 	std::vector<Text*> _hdNumbers;
@@ -88,6 +91,8 @@ public:
 	void initText(Font *big, Font *small, Language *lang) override;
 	/// Sets the base to display.
 	void setBase(Base *base);
+	/// Sets the game's clock the night over the lit HD pictures goes by (only read).
+	void setHdTime(const GameTime *time) { _hdTime = time; }
 	/// Sets the texture for this base view.
 	void setTexture(SurfaceSet *texture);
 	/// Gets the currently selected facility.
@@ -114,6 +119,8 @@ public:
 	void draw() override;
 	/// Draws the HD pictures of the facilities into the world layer (see drawHd).
 	void drawHd();
+	/// Lights the world layer of the living base (HdBaseScene): the night and the lamps of the pictures.
+	void drawHdScene(SDL_Surface *world, int k, Uint32 now);
 	/// Draws the lights of the crafts over everything the view has put into the world layer.
 	void drawHdLights();
 	/// Blits the base view onto another surface.

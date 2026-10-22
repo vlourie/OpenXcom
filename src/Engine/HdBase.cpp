@@ -24,6 +24,7 @@
 #include <sstream>
 #include <vector>
 #include "FileMap.h"
+#include "HdBaseScene.h"
 #include "HdSprites.h"
 #include "HdUiArt.h"
 #include "HdWorkers.h"
@@ -41,6 +42,7 @@ namespace
 
 const char *FOLDER = "BASEBITS.PCK";
 const char *ANIM = ".anim.txt";
+const char *SCENE = ".scene.txt";
 const int MAX_PHASES = 64;
 /// One phase of a loop or a burst (BaseView::blink steps every other tick of its 100 ms timer).
 const Uint32 STEP = 200;
@@ -59,6 +61,8 @@ struct Tile
 	int width = 0, height = 0;                       ///< size of the picture in the pack
 	SDL_Rect loopAt = {}, burstAt = {};              ///< where the pieces lie, in the pack's pixels
 	Uint32 cycle = 0;                                ///< ms from one burst to the next (0: no bursts)
+	bool hasScene = false;                           ///< has .scene.txt: lit by HdBaseScene, its loop and burst are left out
+	HdBaseScene::TileScene scene;
 	std::map<int, HdFrame> loaded;                   ///< key -> picture at the current scale
 	std::map<int, size_t> lru;
 };
@@ -78,6 +82,7 @@ size_t budget = 64u * 1024u * 1024u;
 size_t bytes = 0;
 size_t clock_ = 0;
 bool anyAnimated = false;
+bool anyScene = false;
 
 /// "<index>" followed by `rest`: the index, or -1.
 int indexOf(const std::string &file, size_t end)
@@ -155,6 +160,13 @@ void scan()
 			describe(tiles[index], path);
 			continue;
 		}
+		if (rest == SCENE)
+		{
+			std::unique_ptr<std::istream> in = FileMap::getIStream(path);
+			Tile &tile = tiles[index];
+			tile.hasScene = in && HdBaseScene::parse(*in, tile.scene);
+			continue;
+		}
 		// ".v<n>.png" or ".b<n>.png"
 		if (rest.size() < 7 || rest[0] != '.' || (rest[1] != 'v' && rest[1] != 'b') || rest.compare(rest.size() - 4, 4, ".png") != 0)
 		{
@@ -194,6 +206,13 @@ void scan()
 		{
 			collect(bursts[it->first], tile.burst);
 		}
+		// the living base: its light is drawn over the picture, the older animation is not shown
+		if (tile.hasScene)
+		{
+			tile.loop.clear();
+			tile.burst.clear();
+			anyScene = true;
+		}
 		// pieces need the size of the whole picture to be placed
 		if (tile.described && (tile.width < 1 || tile.height < 1))
 		{
@@ -224,6 +243,7 @@ void scan()
 	if (!tiles.empty())
 	{
 		Log(LOG_INFO) << "HD base: " << tiles.size() << " tiles with pictures" << (anyAnimated ? " (animated)" : "")
+			<< (anyScene ? " (lit scenes)" : "")
 			<< ", master frames from " << masterOffset;
 	}
 }
@@ -574,6 +594,19 @@ bool animated()
 	return anyAnimated;
 }
 
+const HdBaseScene::TileScene *scene(int index)
+{
+	scan();
+	auto it = findTile(index);
+	return it == tiles.end() || !it->second.hasScene ? nullptr : &it->second.scene;
+}
+
+bool scenes()
+{
+	scan();
+	return anyScene;
+}
+
 void clear(int offset)
 {
 	masterOffset = offset;
@@ -582,6 +615,7 @@ void clear(int offset)
 	scanScale = 0;
 	bytes = 0;
 	anyAnimated = false;
+	anyScene = false;
 }
 
 }
