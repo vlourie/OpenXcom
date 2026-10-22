@@ -2229,6 +2229,17 @@ int BattleUnit::getFallingPhase() const
 }
 
 /**
+ * HD render (ticket XP-000252): the unit is already dead or out cold (instaFalling), only its fall is
+ * shown frame by frame. Nothing but the picture reads this.
+ * @param phase The frame of the fall; -1 - the show ends on the last one.
+ */
+void BattleUnit::setShownFall(int phase)
+{
+	_fallShown = phase >= 0;
+	_fallPhase = _fallShown ? std::min(phase, _armor->getDeathFrames() - 1) : _armor->getDeathFrames() - 1;
+}
+
+/**
  * Returns whether the soldier is out of combat, dead or unconscious.
  * A soldier that is out, cannot perform any actions, cannot be selected, but it's still a unit.
  * @return flag if out or not.

@@ -518,6 +518,8 @@ en-US:
   STR_HD_AIM_NUM_SIZE_DESC: "How large the hit chance and the skill bonus (+N) at the reticle are, in percent of the usual (100% = as before; the numbers keep their place). Left click makes them larger, right click smaller. Works when the HD interface fonts are on."
   STR_HD_AIM_NUM_WEIGHT: "Reticle number stroke weight"
   STR_HD_AIM_NUM_WEIGHT_DESC: "How thick the strokes of the hit chance and the skill bonus (+N) at the reticle are, in percent of the usual (100% = as before). Lower = thinner digits. Works when the HD interface fonts are on."
+  STR_HD_BLAST_FALL: "Bodies fall from blasts"
+  STR_HD_BLAST_FALL_DESC: "On = a unit killed or knocked out by area damage (an explosion, an explosive round) falls to the floor the same way as from a bullet. Off = as in the original: the body is lying at once. Only the picture changes - damage, death and the battle are the same."
   STR_HD_CTRL_ZOOM: "Ctrl + wheel zooms the map"
   STR_HD_CTRL_ZOOM_DESC: "On = Ctrl + the mouse wheel zooms the battle map in and out (50-200%). Off = the zoom is not touched: Ctrl + the wheel changes the level like the wheel alone. Only the view changes."
   STR_HD_PANEL_HIDE: "Battle panel hide arrow"

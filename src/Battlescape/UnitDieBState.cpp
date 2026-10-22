@@ -41,6 +41,7 @@
 #include "../Mod/Unit.h"
 #include "Camera.h"
 #include "AiProbe.h"
+#include "../Engine/Logger.h"
 
 namespace OpenXcom
 {
@@ -54,7 +55,7 @@ namespace OpenXcom
  */
 UnitDieBState::UnitDieBState(BattlescapeGame *parent, BattleUnit *unit, const RuleDamageType* damageType, bool noSound) : BattleState(parent),
 	_unit(unit), _damageType(damageType), _noSound(noSound), _extraFrame(0), _overKill(unit->getOverKillDamage()),
-	_killCam(false), _pace(BattlescapeState::DEFAULT_ANIM_SPEED)
+	_killCam(false), _pace(BattlescapeState::DEFAULT_ANIM_SPEED), _shownFall(-1)
 {
 	// HD render: the last enemy falling to a shot or a blow - the camera zooms in, the fall slows down
 	if (finalBlow())
@@ -89,12 +90,19 @@ UnitDieBState::UnitDieBState(BattlescapeGame *parent, BattleUnit *unit, const Ru
 		********************************************************/
 		_unit->setDirection(3);
 
-
+		const bool standing = _unit->getStatus() != STATUS_UNCONSCIOUS;
 		_unit->instaFalling();
 		if (_parent->getSave()->isBeforeGame())
 		{
 			convertUnitToCorpse();
 			_extraFrame = 3; // shortcut to popState()
+		}
+		else if (Options::oxceHdBlastFall && standing && (_unit->getVisible() || _parent->getSave()->getDebugMode()) && _unit->getTile() && !_unit->getRespawn() && !AiProbe::fast())
+		{
+			// HD (ticket XP-000252): the unit is already out as before, only its fall is shown frame by frame;
+			// till its turn comes it is drawn standing, not gone
+			_shownFall = 0;
+			_unit->setShownFall(0);
 		}
 	}
 	else
@@ -235,6 +243,22 @@ void UnitDieBState::think()
 	if (_killCam)
 	{
 		pace(_pace); // the slowing comes on smoothly, and a key or a click drops it
+	}
+	if (_shownFall >= 0)
+	{
+		// HD (oxceHdBlastFall, XP-000252): the fall of a unit blasted out is shown at the pace of any fall, then all goes on as before
+		if (_shownFall == 0)
+		{
+			pace(BattlescapeState::DEFAULT_ANIM_SPEED);
+		}
+		if (++_shownFall < _unit->getArmor()->getDeathFrames())
+		{
+			_unit->setShownFall(_shownFall);
+			return;
+		}
+		Log(LOG_INFO) << "HD blast fall: unit " << _unit->getId() << " shown in " << _shownFall << " frame(s)";
+		_unit->setShownFall(-1);
+		_shownFall = -1;
 	}
 	if (_unit->getDirection() != 3 && _damageType->isDirect())
 	{

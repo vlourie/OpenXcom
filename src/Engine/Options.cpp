@@ -544,6 +544,7 @@ void createAdvancedOptionsOXCE()
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdAimNumSize", &oxceHdAimNumSize, 100, "STR_HD_AIM_NUM_SIZE", "STR_HD_BATTLE_UI"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdAimNumWeight", &oxceHdAimNumWeight, 100, "STR_HD_AIM_NUM_WEIGHT", "STR_HD_BATTLE_UI"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdCtrlZoom", &oxceHdCtrlZoom, true, "STR_HD_CTRL_ZOOM", "STR_HD_BATTLE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdBlastFall", &oxceHdBlastFall, false, "STR_HD_BLAST_FALL", "STR_HD_BATTLE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdBlastArea", &oxceHdBlastArea, true, "STR_HD_BLAST_AREA", "STR_HD_BATTLE_UI"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdHoverBob", &oxceHdHoverBob, true, "STR_HD_HOVER_BOB", "STR_HD_GRAPHICS"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdFx", &oxceHdFx, true, "STR_HD_FX", "STR_HD_GRAPHICS"));
