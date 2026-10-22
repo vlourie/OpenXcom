@@ -70,8 +70,14 @@ TransferItemsState::TransferItemsState(Base *baseFrom, Base *baseTo, DebriefingS
 	// Create objects
 	_window = new Window(this, 320, 200, 0, 0);
 	_btnQuickSearch = new TextEdit(this, 48, 9, 10, 13);
-	_btnOk = new TextButton(148, 16, 8, 176);
-	_btnCancel = new TextButton(148, 16, 164, 176);
+	// HD option: shorter buttons with the cost of the transfer between them
+	const bool showCost = Options::oxceHdTransferCost;
+	_btnOk = new TextButton(showCost ? 110 : 148, 16, 8, 176);
+	_btnCancel = new TextButton(showCost ? 110 : 148, 16, showCost ? 202 : 164, 176);
+	if (showCost)
+	{
+		_txtCost = new Text(84, 9, 118, 180);
+	}
 	_txtTitle = new Text(310, 17, 5, 8);
 	_txtQuantity = new Text(50, _exchange ? 17 : 9, 150, 24); // exchange: the source base name, two lines
 	_txtAmountTransfer = new Text(60, 17, 200, 24);
@@ -90,6 +96,10 @@ TransferItemsState::TransferItemsState(Base *baseFrom, Base *baseTo, DebriefingS
 	add(_btnQuickSearch, "button", "transferMenu");
 	add(_btnOk, "button", "transferMenu");
 	add(_btnCancel, "button", "transferMenu");
+	if (_txtCost)
+	{
+		add(_txtCost, "text", "transferMenu");
+	}
 	add(_txtTitle, "text", "transferMenu");
 	add(_txtQuantity, "text", "transferMenu");
 	add(_txtAmountTransfer, "text", "transferMenu");
@@ -113,6 +123,12 @@ TransferItemsState::TransferItemsState(Base *baseFrom, Base *baseTo, DebriefingS
 	_btnCancel->setText(tr("STR_CANCEL"));
 	_btnCancel->onMouseClick((ActionHandler)&TransferItemsState::btnCancelClick);
 	_btnCancel->onKeyboardPress((ActionHandler)&TransferItemsState::btnCancelClick, Options::keyCancel);
+
+	if (_txtCost)
+	{
+		_txtCost->setAlign(ALIGN_CENTER);
+		updateCost();
+	}
 
 	_txtTitle->setBig();
 	_txtTitle->setAlign(ALIGN_CENTER);
@@ -632,6 +648,14 @@ void TransferItemsState::btnOkClick(Action *)
 		}
 	}
 
+	if (!Options::oxceHdTransferConfirm)
+	{
+		// HD option: no confirmation, as its OK does (this screen and the base list close)
+		completeTransfer();
+		_game->popState();
+		_game->popState();
+		return;
+	}
 	_game->pushState(new TransferConfirmState(_baseTo, this));
 }
 
@@ -1341,6 +1365,7 @@ void TransferItemsState::exchangeByValue(int change)
  */
 void TransferItemsState::updateItemStrings()
 {
+	updateCost();
 	if (_exchange)
 	{
 		std::string from, amount, to;
@@ -1373,6 +1398,17 @@ void TransferItemsState::updateItemStrings()
 				_lstItems->setRowColor(_sel, _ammoColor);
 			}
 		}
+	}
+}
+
+/**
+ * Shows the cost of the transfer between the buttons (HD option oxceHdTransferCost).
+ */
+void TransferItemsState::updateCost()
+{
+	if (_txtCost)
+	{
+		_txtCost->setText(Unicode::formatFunding(getTotal()));
 	}
 }
 

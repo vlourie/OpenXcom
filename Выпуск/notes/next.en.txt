@@ -1,1 +1,4 @@
-- Globe (HD): the radar circles of enemy hunter-killer ships are now a lighter red than those of enemy bases, so the two are easy to tell apart (ticket XP-000155).
+﻿- Globe (HD): the radar circles of enemy hunter-killer ships are now a lighter red than those of enemy bases, so the two are easy to tell apart (ticket XP-000155).
+- Battle: new HD option 'Alt info always' - soldier facing arrows, damage and psi hints, or both are shown without holding Alt (ticket XP-000255).
+- Base transfers: the transfer cost is shown between the OK and Cancel buttons and updates as you add cargo; the confirmation window has a 'Don't ask' button. Both can be switched in the HD options (ticket XP-000157).
+- Maps (HD): the burning waste barrel no longer changes shape from frame to frame - only the fire moves (ticket XP-000247).
