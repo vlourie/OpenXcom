@@ -1156,7 +1156,20 @@ void Map::draw()
 	{
 		_camera->beginShown();
 		drawTerrain(_canvas);
+		_hiddenViewOffset = _camera->getMapOffset();
+		_hiddenViewValid = true;
 		_camera->endShown();
+		_messageOnCanvas = false;
+		_messageApart = false;
+	}
+	else if (Options::oxceHdHiddenMap && _hiddenViewValid)
+	{
+		// an unseen enemy's turn: the map from where the player last saw it; the camera's own moves (a walking
+		// unit's level, a followed shot, centring on the next unit) are not shown and the camera keeps them
+		const Position real = _camera->getMapOffset();
+		_camera->setMapOffset(_hiddenViewOffset);
+		drawTerrain(_canvas);
+		_camera->setMapOffset(real);
 		_messageOnCanvas = false;
 		_messageApart = false;
 	}

@@ -237,6 +237,11 @@ OPT bool oxceHdKillCam;
 // Battlescape: a long shot flies no longer than HdGentle::QUICK_FLIGHT_TICKS, and a bullet hit plays on by itself
 // instead of holding up the next shot of the burst (docs/research/burst-fire-pacing.md); picture and pace only
 OPT bool oxceHdQuickFlight, oxceHdLooseHits;
+// Battlescape: an unseen enemy's turn shows the map as the player last saw it (the camera stays put) instead of the
+// hidden movement screen; nothing the player cannot see is drawn (Map::draw). Picture only
+OPT bool oxceHdHiddenMap;
+// Ufopaedia: the weapon article's attack table has a range column (the range of the attack, at most the weapon's)
+OPT bool oxceHdPediaRange;
 // Battlescape: no saving or loading inside a battle (pause menu buttons, quick/insta save, quick load, turn autosave,
 // the F8 report snapshot), apart from ironman; the geoscape saves as usual. Off by default; fixed while in a battle
 OPT bool oxceNoBattleSaves;
