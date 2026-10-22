@@ -42,13 +42,19 @@ namespace OpenXcom
  *                                    number of lamps in its ring (its phase is its place in it)
  *     water blue 0.75 1.00 1.00      the tile's water (blue or green by the picture) ripples and glints
  *     spin 64 64 33 0.18             a round piece of the picture turns: x y radius, turns per second
- *     swing 64 64 26 40 7.0          ... or swings to and fro: x y radius, degrees each way, period s
+ *     swing 64 64 26 40 7.0 -5       ... or swings to and fro: x y radius, degrees each way, period s and
+ *                                    the middle of the swing, degrees clockwise (0 if left out);
+ *                                    with `<frame index>.under.png` and `.spin.png` (HdBase::layer) only the
+ *                                    piece turns about (x, y), over the picture without it
  *     emit steam 20 26 70 70 0.95 0.95 1.00
  *                                    particles: kind (steam, bubbles, sparks, embers, orbit, sweep - a
  *                                    radar or turret beam turning about the box's middle, ripple - rings
  *                                    on water, dust - motes drifting in the light, flies - dark specks
- *                                    buzzing about), the box they start in (x y w h, pack pixels from the
- *                                    tile's corner), colour
+ *                                    buzzing about, arc - a lightning now and then from the box's corner
+ *                                    (x, y) to the opposite one (x + w, y + h), beam - a plasma gun: sparks
+ *                                    gather into its orb at (x + w, y + h), then a beam goes to (x, y)),
+ *                                    the box they start in
+ *                                    (x y w h, pack pixels from the tile's corner), colour
  *     walk 8 0011110001111110...     where the crew may stand: n x n squares of the tile, row by row,
  *                                    1 - bare floor (tools/hdart/base_scene_pack.py walk_mask)
  *
@@ -75,9 +81,10 @@ namespace HdBaseScene
 		float x = 0, y = 0, radius = 0;  ///< pack pixels from the tile's corner
 		float rps = 0;                    ///< turns per second; 0 - it swings
 		float swing = 0, period = 1;      ///< degrees each way and seconds
+		float middle = 0;                 ///< the middle of the swing, degrees clockwise
 	};
 
-	enum EmitKind { STEAM, BUBBLES, SPARKS, EMBERS, ORBIT, SWEEP, RIPPLE, DUST, FLIES };
+	enum EmitKind { STEAM, BUBBLES, SPARKS, EMBERS, ORBIT, SWEEP, RIPPLE, DUST, FLIES, ARC, BEAM };
 
 	struct Emit
 	{
@@ -129,6 +136,8 @@ namespace HdBaseScene
 	{
 		Spin spin;                        ///< x, y, radius in world pixels
 		float phase = 0;                  ///< staggers the facilities
+		HdFrame piece;                    ///< the piece alone (HdBase::layer), empty - a round piece of the picture turns
+		int px = 0, py = 0;               ///< where the piece's frame lies in the world layer
 	};
 
 	/// The whole base view as the preview saw it (base_scene_preview.py Scene), made once for a layout of
