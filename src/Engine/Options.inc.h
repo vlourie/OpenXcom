@@ -211,6 +211,8 @@ OPT bool oxceHdBaseAnim;
 OPT bool oxceHdCraftLights;
 // HD render: a craft sent out leaves its hangar in a clip, and lands in it the same way (hd/LAUNCH/<craft>.mpg): 0 off, 1 crafts with soldiers aboard, 2 every craft
 OPT int oxceHdCraftLaunch;
+OPT int oxceHdAltInfo;
+OPT bool oxceHdTransferCost, oxceHdTransferConfirm;
 // HD globe and dogfight: own craft and UFOs once read by a hyper-wave decoder as small outlines from above (Engine/HdOutline.h); off = the classic markers and blob
 OPT bool oxceHdCraftOutlines;
 // HD globe: how the radar coverage of the bases and the craft is drawn (Engine/HdRadar.h). 0 = the classic circles (default), 1 = a light wash with one joint edge, 2 = the same plus a base pulsing with each detection cycle at the slow clock speeds and a craft's beam turning (a trial)

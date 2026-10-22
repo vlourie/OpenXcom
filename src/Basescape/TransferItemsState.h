@@ -50,6 +50,7 @@ private:
 	TextEdit *_btnQuickSearch;
 	Window *_window;
 	Text *_txtTitle, *_txtQuantity, *_txtAmountTransfer, *_txtAmountDestination;
+	Text *_txtCost = nullptr;
 	ComboBox *_cbxCategory;
 	TextList *_lstItems;
 	std::vector<TransferRow> _items;
@@ -130,6 +131,8 @@ public:
 	void sendRow(const TransferRow &row, int n, Base *from, Base *to, int time);
 	/// Updates the quantity-strings of the selected item.
 	void updateItemStrings();
+	/// Shows the cost between the buttons (HD option).
+	void updateCost();
 	/// Gets the total of the transfer.
 	int getTotal() const;
 	/// Handler for changing the category filter.

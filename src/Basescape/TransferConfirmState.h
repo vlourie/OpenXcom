@@ -23,6 +23,7 @@ namespace OpenXcom
 {
 
 class TextButton;
+class ToggleTextButton;
 class Window;
 class Text;
 class TransferItemsState;
@@ -37,6 +38,8 @@ private:
 	TextButton *_btnCancel, *_btnOk;
 	Window *_window;
 	Text *_txtTitle, *_txtCost, *_txtTotal;
+	/// HD: "don't ask again" (oxceHdTransferConfirm off), applied on OK.
+	ToggleTextButton *_btnDontAsk;
 	Base *_base;
 	TransferItemsState *_state;
 public:

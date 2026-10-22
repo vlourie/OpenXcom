@@ -340,6 +340,10 @@ std::string OptionsHdState::valueText(const OptionInfo &info) const
 	{
 		return tr("STR_HD_CRAFT_LAUNCH_" + std::to_string(Options::oxceHdCraftLaunch));
 	}
+	if (info.asInt() == &Options::oxceHdAltInfo)
+	{
+		return tr("STR_HD_ALT_INFO_" + std::to_string(Options::oxceHdAltInfo));
+	}
 	if (info.asInt() == &Options::oxceHdBattleHudColor)
 	{
 		return tr("STR_HD_BATTLE_HUD_COLOR_" + std::to_string(Options::oxceHdBattleHudColor));
@@ -577,6 +581,11 @@ void OptionsHdState::changeSetting(size_t sel, Uint8 button)
 		{
 			min = 0;                                  // 0 off, 1 crafts with soldiers aboard, 2 every craft
 			max = 2;
+		}
+		else if (i == &Options::oxceHdAltInfo)
+		{
+			min = 0;                                  // what Alt shows, always: 0 nothing, 1 facing,
+			max = 3;                                  // 2 damage and psi in the aim, 3 both
 		}
 		else if (i == &Options::oxceHdGlobeScale)
 		{

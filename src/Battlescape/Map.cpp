@@ -2080,7 +2080,8 @@ void Map::drawUnit(UnitSprite &unitSprite, Tile *unitTile, Tile *currTile, Posit
 		shade = std::min(+NIGHT_VISION_SHADE, shade);
 	}
 	HdDrawTimer timer(HdDrawStats::frame.unitsUs);
-	unitSprite.draw(bu, part, tileScreenPosition.x + offsets.ScreenOffset.x, tileScreenPosition.y + offsets.ScreenOffset.y, shade, mask, _isAltPressed && !_isCtrlPressed);
+	// the facing indicator: with Alt held, or always (HD option, only what Alt shows)
+	unitSprite.draw(bu, part, tileScreenPosition.x + offsets.ScreenOffset.x, tileScreenPosition.y + offsets.ScreenOffset.y, shade, mask, (_isAltPressed || (Options::oxceHdAltInfo & 1)) && !_isCtrlPressed);
 }
 
 /**
@@ -3446,8 +3447,8 @@ void Map::drawTerrain(HdCanvas *surface)
 								}
 
 								//TODO: merge this code with `InventoryState::calculateCurrentDamageTooltip` as 90% is same or should be same
-								// display additional damage and psi-effectiveness info
-								if (_isAltPressed)
+								// display additional damage and psi-effectiveness info (Alt held, or always: HD option)
+								if (_isAltPressed || (Options::oxceHdAltInfo & 2))
 								{
 									// step 1: determine rule
 									const RuleItem *rule;

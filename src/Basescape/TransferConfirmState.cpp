@@ -24,6 +24,7 @@
 #include "../Engine/Options.h"
 #include "../Engine/Unicode.h"
 #include "../Interface/TextButton.h"
+#include "../Interface/ToggleTextButton.h"
 #include "../Interface/Window.h"
 #include "../Interface/Text.h"
 #include "../Savegame/Base.h"
@@ -49,6 +50,7 @@ TransferConfirmState::TransferConfirmState(Base *base, TransferItemsState *state
 	_txtTitle = new Text(310, 17, 5, 75);
 	_txtCost = new Text(60, 17, 110, 95);
 	_txtTotal = new Text(100, 17, 170, 95);
+	_btnDontAsk = new ToggleTextButton(88, 14, 16, 94);
 
 	// Set palette
 	setInterface("transferConfirm");
@@ -59,6 +61,7 @@ TransferConfirmState::TransferConfirmState(Base *base, TransferItemsState *state
 	add(_txtTitle, "text", "transferConfirm");
 	add(_txtCost, "text", "transferConfirm");
 	add(_txtTotal, "text", "transferConfirm");
+	add(_btnDontAsk, "button", "transferConfirm");
 
 	centerAllSurfaces();
 
@@ -85,6 +88,8 @@ TransferConfirmState::TransferConfirmState(Base *base, TransferItemsState *state
 
 	_txtTotal->setBig();
 	_txtTotal->setText(ss.str());
+
+	_btnDontAsk->setText(tr("STR_HD_TRANSFER_DONT_ASK"));
 }
 
 /**
@@ -109,6 +114,12 @@ void TransferConfirmState::btnCancelClick(Action *)
  */
 void TransferConfirmState::btnOkClick(Action *)
 {
+	if (_btnDontAsk->getPressed())
+	{
+		// from now on the transfer goes without this window (HD options: back on there)
+		Options::oxceHdTransferConfirm = false;
+		Options::save();
+	}
 	_state->completeTransfer();
 	_game->popState();
 	_game->popState();
