@@ -36,6 +36,7 @@
 #include "CollapsePilotData.h"
 #include "Camera.h"
 #include "Map.h"
+#include "Pathfinding.h"
 #include "TileEngine.h"
 #include "../Engine/Game.h"
 #include "../Engine/HdFx.h"
@@ -1588,6 +1589,44 @@ void begin(SavedBattleGame *save)
 	}
 }
 
+#ifdef OXCE_AI_DEV
+/// Debug stand: the cost of a step onto each block laid (T_Level -12) from each side, as the game moves a walking
+/// unit of size 1 (Pathfinding::getTUCost) - from a heap or crumble it may climb, from the ground not.
+void logClimb(SavedBattleGame *save, const std::vector<Tile*> &tiles)
+{
+	const BattleUnit *walker = nullptr;
+	for (const BattleUnit *u : *save->getUnits())
+		if (!u->isOut() && u->getArmor()->getSize() == 1 && u->getMovementType() == MT_WALK)
+		{
+			walker = u;
+			break;
+		}
+	if (!walker)
+		return;
+	static const int sides[4][2] = { { 1, 0 }, { -1, 0 }, { 0, 1 }, { 0, -1 } };
+	for (const Tile *t : tiles)
+	{
+		const MapData *md = t->getMapData(O_OBJECT);
+		if (!md || md->getTerrainLevel() > -12 || !isRubble(save, t, O_OBJECT, false))
+			continue;
+		const Position at = t->getPosition();
+		for (const auto &d : sides)
+		{
+			const Position from = at - Position(d[0], d[1], 0);
+			const Tile *f = save->getTile(from);
+			if (!f || f->getUnit() || (from.z > 0 && f->hasNoFloor(save)))
+				continue;
+			const MapData *fo = f->getMapData(O_OBJECT);
+			const char *what = !fo ? "ground" : isRubble(save, f, O_OBJECT, false) ? "rubble" : "object";
+			const PathfindingStep step = save->getPathfinding()->getTUCost(from,
+				Pathfinding::vectorToDirection(Position(d[0], d[1], 0)), walker, nullptr, BAM_NORMAL);
+			Log(LOG_INFO) << "[COLLAPSE] debug: climb onto block at " << at.x << "," << at.y << "," << at.z << " from level "
+				<< f->getTerrainLevel() << " (" << what << "): cost " << step.cost.time;
+		}
+	}
+}
+#endif
+
 bool settle(BattlescapeGame *battle, const char *why)
 {
 	const bool model = Options::oxceCollapse;
@@ -1734,6 +1773,10 @@ bool settle(BattlescapeGame *battle, const char *why)
 			if (above)
 				te->applyGravity(above);
 		}
+#ifdef OXCE_AI_DEV
+		if (standEnv())
+			logClimb(save, tiles);
+#endif
 		const double applyMs = msSince(ta0);
 		// light and sight once, over the box of what fell
 		const auto tl0 = Clock::now();
