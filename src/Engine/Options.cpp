@@ -564,6 +564,7 @@ void createAdvancedOptionsOXCE()
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdPediaRange", &oxceHdPediaRange, true, "STR_HD_PEDIA_RANGE", "STR_HD_INTERFACE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdBaseAnim", &oxceHdBaseAnim, true, "STR_HD_BASE_ANIM", "STR_HD_INTERFACE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdCraftLights", &oxceHdCraftLights, true, "STR_HD_CRAFT_LIGHTS", "STR_HD_INTERFACE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdCraftLaunch", &oxceHdCraftLaunch, 1, "STR_HD_CRAFT_LAUNCH", "STR_HD_INTERFACE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdCraftOutlines", &oxceHdCraftOutlines, true, "STR_HD_CRAFT_OUTLINES", "STR_HD_INTERFACE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdRadar", &oxceHdRadar, 0, "STR_HD_RADAR", "STR_HD_INTERFACE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdRadarWaves", &oxceHdRadarWaves, 1, "STR_HD_RADAR_WAVES", "STR_HD_INTERFACE"));

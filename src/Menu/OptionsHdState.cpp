@@ -336,6 +336,10 @@ std::string OptionsHdState::valueText(const OptionInfo &info) const
 	{
 		return tr("STR_HD_MAP_ROTATION_" + std::to_string(((Options::oxceHdMapRotation % 4) + 4) % 4));
 	}
+	if (info.asInt() == &Options::oxceHdCraftLaunch)
+	{
+		return tr("STR_HD_CRAFT_LAUNCH_" + std::to_string(Options::oxceHdCraftLaunch));
+	}
 	if (info.asInt() == &Options::oxceHdBattleHudColor)
 	{
 		return tr("STR_HD_BATTLE_HUD_COLOR_" + std::to_string(Options::oxceHdBattleHudColor));
@@ -568,6 +572,11 @@ void OptionsHdState::changeSetting(size_t sel, Uint8 button)
 		{
 			min = 0;                                  // 0 dark slate, 1 gold as the original, 2 Consul's hull, 3 Cruiser's, 4 ship's brass,
 			max = 8;                                  // 5 starship, 6 niello silver, 7 black iron and bone, 8 bronze of the deep
+		}
+		else if (i == &Options::oxceHdCraftLaunch)
+		{
+			min = 0;                                  // 0 off, 1 crafts with soldiers aboard, 2 every craft
+			max = 2;
 		}
 		else if (i == &Options::oxceHdGlobeScale)
 		{
