@@ -113,6 +113,7 @@ BriefingState::BriefingState(Craft *craft, Base *base, bool infoOnly, BriefingDa
 		BriefingData data = customBriefing ? *customBriefing : deployment->getBriefingData();
 		setStandardPalette("PAL_GEOSCAPE", data.palette);
 		_window->setBackground(_game->getMod()->getSurface(data.background));
+		_window->setInterfaceName("briefing");
 		_txtCraft->setY(56 + data.textOffset);
 		_txtBriefing->setY(72 + data.textOffset);
 		_txtTarget->setVisible(data.showTarget);

@@ -157,6 +157,7 @@ NextTurnState::NextTurnState(SavedBattleGame *battleGame, BattlescapeState *stat
 	_window->setColor(Palette::blockOffset(0)-1);
 	_window->setHighContrast(true);
 	_window->setBackground(_game->getMod()->getSurface(_battleGame->getHiddenMovementBackground()));
+	_window->setInterfaceName("nextTurn");
 
 
 	_txtMessageReinforcements->setBig();

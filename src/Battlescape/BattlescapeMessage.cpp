@@ -21,6 +21,7 @@
 #include "../Interface/Text.h"
 #include "../Interface/ProgressBar.h"
 #include "../Engine/Options.h"
+#include "../Engine/HdScreens.h"
 #include "../Engine/HdUi.h"
 #include "../Engine/Palette.h"
 #include "../Engine/Options.h"
@@ -203,6 +204,21 @@ void BattlescapeMessage::hdDrawAt(int ox, int oy)
 {
 	if (!Options::QOL::hideEnemyTurnBackground)
 	{
+		// the screen's theme picture (HdScreens) over the classic background baked into the canvas;
+		// it covers the canvas' progress bar too, so that one is drawn again on top of it
+		if (HdScreens::has("hiddenMovement"))
+		{
+			HdUi &ui = HdUi::instance();
+			const int x = ox + getX(), y = oy + getY();
+			ui.setClip(x, y, getWidth(), getHeight());
+			HdScreens::drawBackdrop(this, "hiddenMovement", x, y, getWidth(), getHeight());
+			ui.clearClip();
+			ui.noteBackdrop(this, x, y, getWidth(), getHeight());
+			if (_progressBar->getVisible())
+			{
+				ui.drawSurface(_progressBar, ox + _progressBar->getX(), oy + _progressBar->getY(), HdUi::mode() >= 2);
+			}
+		}
 		_text->draw();
 		_text->hdDrawAt(ox + _text->getX(), oy + _text->getY());
 	}

@@ -70,6 +70,7 @@ MissionDetectedState::MissionDetectedState(MissionSite *mission, GeoscapeState *
 
 	// Set up objects
 	_window->setBackground(_game->getMod()->getSurface(mission->getDeployment()->getAlertBackground()));
+	_window->setInterfaceName("terrorSite");
 
 	_btnIntercept->setText(tr("STR_INTERCEPT"));
 	_btnIntercept->onMouseClick((ActionHandler)&MissionDetectedState::btnInterceptClick);
