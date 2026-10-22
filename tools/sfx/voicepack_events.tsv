@@ -5520,6 +5520,98 @@ V046	21	annoyed	раздел	Кнопка вызова — не игрушка.	
 V046	22	annoyed	раздел	Я уже подходила. Дважды.	I've been over twice already.
 V046	23	annoyed	раздел	Ещё раз — и сниму с рейса.	Once more and you're off the flight.
 V046	24	annoyed	раздел	Ваш запрос очень важен. Ждите.	Your request matters. Please hold.
+V046	025	select	раздел	Да?	Yes?
+V046	026	select	раздел	Чем помочь?	How can I help?
+V046	027	select	раздел	Секундочку.	Just a sec.
+V046	028	select	раздел	Я здесь.	I'm here.
+V046	029	select	раздел	Пожалуйста.	Please.
+V046	030	select	раздел	К вашим услугам.	At your service.
+V046	031	select	раздел	Что-нибудь желаете?	Anything you'd like?
+V046	032	select	раздел	Бортпроводница слушает.	The flight attendant listens.
+V046	033	select	раздел	Внимание, пассажиры!	Attention, passengers!
+V046	034	select	раздел	Улыбаемся и работаем.	Smile and work.
+V046	035	select	раздел	Добро пожаловать на борт.	Welcome aboard.
+V046	036	select	раздел	Чай, кофе, смерть?	Tea, coffee, or death?
+V046	037	select	раздел	Какой у вас вопрос?	What's your question?
+V046	038	select	раздел	Всё под контролем. Почти.	All under control. Almost.
+V046	039	select	раздел	Спинку кресла поднимите.	Raise your seat back.
+V046	040	select	раздел	Билет у вас с собой?	Got your ticket?
+V046	041	select	раздел	Нужен плед? Или щит?	Need a blanket? Or a shield?
+V046	042	select	раздел	Только не толкайтесь.	No pushing, please.
+V046	043	select	раздел	Сок, вода или аптечка?	Juice, water, or a medkit?
+V046	044	select	раздел	Рейс особый. Без возврата.	A special flight. No refunds.
+V046	045	select	раздел	Чем могу быть полезна?	How may I be useful?
+V046	046	select	раздел	Позвольте ваш посадочный.	Your boarding pass, please.
+V046	047	select	раздел	Говорите. Я очень рада.	Speak. I'm very glad.
+V046	048	select	раздел	Мы вас очень ценим.	We value you very much.
+V046	049	select	раздел	Расслабьтесь. Это болтанка.	Relax. It's just turbulence.
+V046	050	select	раздел	Улыбка входит в стоимость.	The smile is included.
+V046	051	select	раздел	Это ваша граната, сэр?	Is this your grenade, sir?
+V046	052	select	раздел	Мой рабочий день не кончается.	My shift never ends.
+V046	053	select	раздел	Если что, выход рядом.	Exit's nearby, just in case.
+V046	054	select	раздел	Добрый вечер, капитан.	Good evening, captain.
+V046	055	select	раздел	Ужин подан. Кому свинца?	Dinner's served. Who wants lead?
+V046	056	select	раздел	Не волнуйтесь. Я сама волнуюсь.	Don't worry. I'm worried myself.
+V046	057	select	раздел	Я вас слышу. Вежливо.	I hear you. Politely.
+V046	058	select	раздел	Улыбаюсь. Это инструкция.	Smiling. It's the manual.
+V046	059	select	раздел	Покиньте зону комфорта, пожалуйста.	Please leave your comfort zone.
+V046	060	select	раздел	Говорите. Запись ведётся.	Speak. Recording.
+V046	061	select	раздел	Капитан, обслужить вас?	Captain, shall I serve you?
+V046	062	select	раздел	Каблуки сняла. Слушаю.	Heels off. Listening.
+V046	063	select	раздел	Здравствуйте. Вы летите?	Hello. Are you flying?
+V046	064	select	раздел	Надеюсь, вам понравится полёт.	Hope you enjoy the flight.
+V046	065	select	раздел	Ой, а вы без билета?	Oh, no ticket?
+V046	066	select	раздел	Запасной выход — над вами.	Emergency exit is above you.
+V046	067	select	раздел	Ваше кресло ждёт.	Your seat awaits.
+V046	068	select	раздел	Салон закрыт. Но слушаю.	Cabin's closed. But I'm listening.
+V046	069	select	раздел	Приветствуем вас на борту.	We welcome you aboard.
+V046	070	select	раздел	Кислородные маски — по желанию.	Oxygen masks optional.
+V046	071	select	раздел	Простите, вы мешаете проходу.	Sorry, you're blocking the aisle.
+V046	072	select	раздел	Как вам наш сервис?	How do you like our service?
+V046	073	move	раздел	Иду.	Going.
+V046	074	move	раздел	Хорошо.	Very well.
+V046	075	move	раздел	Конечно.	Certainly.
+V046	076	move	раздел	Уже иду.	Already going.
+V046	077	move	раздел	Минуточку.	Just a moment.
+V046	078	move	раздел	Разумеется.	Of course.
+V046	079	move	раздел	Выхожу в проход.	Entering the aisle.
+V046	080	move	раздел	Пройду, извините.	Excuse me, passing through.
+V046	081	move	раздел	Иду по проходу. Тележка со мной.	Walking the aisle. Cart in tow.
+V046	082	move	раздел	Проводим, обслужим, поможем.	We'll escort, serve, help.
+V046	083	move	раздел	Следую по маршруту рейса.	Following the flight route.
+V046	084	move	раздел	Прошу расступиться.	Please step aside.
+V046	085	move	раздел	Шагаю. Каблуки целы.	Walking. Heels intact.
+V046	086	move	раздел	Посмотрю, что у вас там.	I'll see what's there.
+V046	087	move	раздел	Только не отставайте.	Just don't fall behind.
+V046	088	move	раздел	Бегу, бегу. С улыбкой.	Running, running. Smiling.
+V046	089	move	раздел	Следуйте за мной, пожалуйста.	Follow me, please.
+V046	090	move	раздел	Рейс продолжается.	The flight continues.
+V046	091	move	раздел	Я мигом. Не скучайте.	Quick as a flash. Don't miss me.
+V046	092	move	раздел	Туда, где опасно? Прекрасно.	Where it's dangerous? Lovely.
+V046	093	move	раздел	Лёгкий променад. Почти.	A light stroll. Almost.
+V046	094	move	раздел	Каблуки высокие, но дойду.	Heels are high, but I'll make it.
+V046	095	move	раздел	Покажу аварийный выход.	I'll show the emergency exit.
+V046	096	move	раздел	Поправлю причёску — и иду.	Fix my hair and go.
+V046	097	move	раздел	Ремни не забудьте. Иду.	Don't forget your belts. Going.
+V046	098	move	раздел	Перемещаюсь по расписанию.	Relocating on schedule.
+V046	099	move	раздел	Шаг за шагом, как в инструкции.	Step by step, per the manual.
+V046	100	move	раздел	Двигаюсь. Улыбка включена.	Moving. Smile on.
+V046	101	move	раздел	Прошу прощения за неудобства.	Apologies for the inconvenience.
+V046	102	move	раздел	Вхожу в зону болтанки.	Entering the turbulence zone.
+V046	103	move	раздел	Обслужу этих гостей.	I'll serve these guests.
+V046	104	move	раздел	Воду не пейте, если что.	Don't drink the water, just in case.
+V046	105	move	раздел	Командуйте, капитан. Я пошла.	Command, captain. Off I go.
+V046	106	move	раздел	Подносы оставлю. Иду.	I'll leave the trays. Going.
+V046	107	move	раздел	Вернусь с напитками.	I'll be back with drinks.
+V046	108	move	раздел	Улыбаюсь и иду.	Smiling and going.
+V046	109	move	раздел	Переместимся, господа.	Shall we relocate, gentlemen.
+V046	110	move	раздел	Не отвлекайте экипаж, пожалуйста.	Please don't distract the crew.
+V046	111	move	раздел	Это не по инструкции. Ладно.	That's off-manual. Fine.
+V046	112	move	раздел	Тележка едет! Расступитесь!	Trolley coming! Make way!
+V046	113	move	раздел	Лечу. Ну, почти.	Flying. Nearly.
+V046	114	move	раздел	Взлетаю. Шутка. Иду.	Taking off. Joke. Going.
+V046	115	move	раздел	В ад на каблуках, значит.	To hell in heels, then.
+V046	116	move	раздел	Прибытие по расписанию. Почти.	Arrival on schedule. Mostly.
 V047	01	select	место	Да? Это срочно или дорого?	Yes? Is it urgent or expensive?
 V047	02	move	место	Разберусь. Только товар не трогать.	I'll handle it. Leave the goods alone.
 V047	03	weapon	место	Убрать. Он нам ничего не купит.	Remove him. He won't buy anything.
@@ -5544,6 +5636,98 @@ V047	21	annoyed	раздел	Каждое касание — в счёт.	Every 
 V047	22	annoyed	раздел	Вы тратите мои деньги.	You're spending my money.
 V047	23	annoyed	раздел	Повторный запрос — двойной тариф.	Repeat requests cost double.
 V047	24	annoyed	раздел	Сделка уже заключена.	The deal's already closed.
+V047	025	select	раздел	Да?	Yes?
+V047	026	select	раздел	Слушаю вас.	I'm listening.
+V047	027	select	раздел	Прошу.	Go on.
+V047	028	select	раздел	Именно?	Specifically?
+V047	029	select	раздел	Коротко.	Briefly.
+V047	030	select	раздел	Ваш ход.	Your move.
+V047	031	select	раздел	Деньги?	Money?
+V047	032	select	раздел	Я весь внимание.	All attention.
+V047	033	select	раздел	Предложение?	An offer?
+V047	034	select	раздел	Мы вас слушаем. Платно.	We're listening. For a fee.
+V047	035	select	раздел	Это входит в бюджет?	Is this in the budget?
+V047	036	select	раздел	Что вы хотите продать?	What are you selling?
+V047	037	select	раздел	Акционеры ждут. Быстрее.	Shareholders are waiting. Quicker.
+V047	038	select	раздел	Любезно, но быстро.	Kindly, but quickly.
+V047	039	select	раздел	Какой у вас процент?	What's your percentage?
+V047	040	select	раздел	Чем обязан? Но не долгом.	To what do I owe? Not a debt.
+V047	041	select	раздел	Встреча назначена? Нет? Ладно.	Appointment? No? Fine.
+V047	042	select	раздел	Изложите выгоду.	State the benefit.
+V047	043	select	раздел	Вы по контракту?	On contract?
+V047	044	select	раздел	Кредит исчерпан. Слушаю.	Credit's exhausted. Listening.
+V047	045	select	раздел	Консультация — за счёт заказчика.	Consultation at the client's expense.
+V047	046	select	раздел	Сегодня щедрый день. Говорите.	Generous day. Speak.
+V047	047	select	раздел	Какова ставка?	What's the rate?
+V047	048	select	раздел	Только факты. Эмоции дороже.	Only facts. Emotions cost more.
+V047	049	select	раздел	Есть выгодное предложение?	A profitable offer?
+V047	050	select	раздел	Прошу не торопиться. Я тороплюсь.	Don't rush. I'm in a hurry.
+V047	051	select	раздел	Обсудим? Условия мои.	Discuss? My terms.
+V047	052	select	раздел	Вы мне должны. Но слушаю.	You owe me. But I'm listening.
+V047	053	select	раздел	Обед потом. Говорите.	Lunch is later. Speak.
+V047	054	select	раздел	Сигару мне. Я слушаю.	A cigar for me. I'm listening.
+V047	055	select	раздел	Любопытно. Продолжайте.	Interesting. Continue.
+V047	056	select	раздел	У меня окно в минуту.	I have a one-minute window.
+V047	057	select	раздел	Приятная неожиданность. Платная.	Pleasant surprise. Paid.
+V047	058	select	раздел	Без фамильярности, пожалуйста.	No familiarity, please.
+V047	059	select	раздел	Дорогой клиент, слушаю.	Dear client, listening.
+V047	060	select	раздел	Вы — расходная статья. Говорите.	You're an expense item. Speak.
+V047	061	select	раздел	Какую выручку обещаете?	What revenue do you promise?
+V047	062	select	раздел	Простите, я занят прибылью.	Sorry, I'm busy with profit.
+V047	063	select	раздел	Опять вы. Скидка будет?	You again. Any discount?
+V047	064	select	раздел	Ну-с. Что у нас сегодня?	Well. What have we today?
+V047	065	select	раздел	Вы сегодня особенно убыточны.	You're especially loss-making today.
+V047	066	select	раздел	Это приказ? Или просьба?	An order or a request?
+V047	067	select	раздел	Любезность — моя валюта.	Courtesy is my currency.
+V047	068	select	раздел	Отчёт у вас? Нет? Жаль.	Got the report? No? Pity.
+V047	069	select	раздел	Слышу. Но слышно будет дорого.	I hear. But hearing will cost.
+V047	070	select	раздел	Вы отнимаете мой капитал.	You're taking my capital.
+V047	071	select	раздел	Давайте без лирики.	Let's skip the poetry.
+V047	072	select	раздел	Говорите, пока мне не скучно.	Speak while I'm not bored.
+V047	073	move	раздел	Иду.	Going.
+V047	074	move	раздел	Хорошо.	Very well.
+V047	075	move	раздел	Принято.	Accepted.
+V047	076	move	раздел	Разумеется.	Naturally.
+V047	077	move	раздел	Договорились.	Agreed.
+V047	078	move	раздел	Исполню.	I'll see to it.
+V047	079	move	раздел	Немедленно.	At once.
+V047	080	move	раздел	Вперёд, коллеги.	Onward, colleagues.
+V047	081	move	раздел	Иду. Это в смету.	Going. Put it in the estimate.
+V047	082	move	раздел	Перемещение утверждено.	Relocation approved.
+V047	083	move	раздел	Командировка началась.	The business trip has begun.
+V047	084	move	раздел	Командировочные — мои.	The per diem is mine.
+V047	085	move	раздел	Иду лично. Это недёшево.	Going personally. Not cheap.
+V047	086	move	раздел	Хорошо. Потрачу только время.	Fine. I'll spend only time.
+V047	087	move	раздел	Иду. Счёт за обувь — вам.	Going. The shoe bill's yours.
+V047	088	move	раздел	Отправляюсь. Бизнес-классом.	Departing. Business class.
+V047	089	move	раздел	Дорожные расходы учтены.	Travel costs noted.
+V047	090	move	раздел	Следую в точку. Прибыль будет.	Heading there. Profit will follow.
+V047	091	move	раздел	Моя прогулка, ваш счёт.	My stroll, your bill.
+V047	092	move	раздел	Маршрут короткий. Цена длинная.	Short route. Long price.
+V047	093	move	раздел	Вперёд, к новым рынкам.	Onward, to new markets.
+V047	094	move	раздел	Покрою расходы по пути.	I'll cover costs en route.
+V047	095	move	раздел	Иду на сделку.	Going to a deal.
+V047	096	move	раздел	Это стратегический шаг.	A strategic step.
+V047	097	move	раздел	Шаг вперёд — рост капитала.	A step forward, capital grows.
+V047	098	move	раздел	Оставьте мне место. Иду.	Keep my seat. Going.
+V047	099	move	раздел	Договор подписан ногами.	Contract signed with feet.
+V047	100	move	раздел	Оплату за проход пришлите.	Send payment for the passage.
+V047	101	move	раздел	Идёмте, коллеги. Деньги ждут.	Let's go, colleagues. Money waits.
+V047	102	move	раздел	Проверю инвестиции.	I'll check the investments.
+V047	103	move	раздел	Процент за каждый шаг.	A percent for every step.
+V047	104	move	раздел	Согласен. Шаг оформлен.	Agreed. Step recorded.
+V047	105	move	раздел	Не мешайте рынку. Я иду.	Don't disturb the market. Going.
+V047	106	move	раздел	Эффективно и без лишнего.	Efficiently, no frills.
+V047	107	move	раздел	Бонус — по факту. Иду.	Bonus upon delivery. Going.
+V047	108	move	раздел	Ногами — в светлое будущее.	On foot to a bright future.
+V047	109	move	раздел	Моя подпись — мои ноги.	My signature, my feet.
+V047	110	move	раздел	Цена только растёт. Вперёд.	The price only rises. Onward.
+V047	111	move	раздел	Это не бегство, а ротация.	Not a retreat, a rotation.
+V047	112	move	раздел	Курс акций растёт. Иду.	Share price is rising. Going.
+V047	113	move	раздел	Иду туда, где платят.	Going where they pay.
+V047	114	move	раздел	Мои ноги — ваш актив.	My feet are your asset.
+V047	115	move	раздел	Командуйте. Но подешевле.	Command. But cheaper.
+V047	116	move	раздел	Сделка есть сделка. Иду.	A deal is a deal. Going.
 V048	01	select	место	Marsec. На связи.	Marsec. Checking in.
 V048	02	move	место	Принял. Прикройте подход.	Copy. Cover the approach.
 V048	03	weapon	место	Стоять. Это частная территория.	Freeze. Private property.
@@ -5568,6 +5752,98 @@ V048	21	annoyed	раздел	Запрос принят. Снова принят.
 V048	22	annoyed	раздел	Повтор не по регламенту.	Repeating isn't in the manual.
 V048	23	annoyed	раздел	Жалобу подам через отдел кадров.	I'll file a complaint with HR.
 V048	24	annoyed	раздел	Понял. Подтверждаю. Хватит.	Copy. Confirmed. Enough.
+V048	025	select	раздел	Принято.	Copy.
+V048	026	select	раздел	На месте.	In position.
+V048	027	select	раздел	Слушаю.	Listening.
+V048	028	select	раздел	Приём.	Over.
+V048	029	select	раздел	Слышу вас.	Reading you.
+V048	030	select	раздел	Готов.	Ready.
+V048	031	select	раздел	Статус?	Status?
+V048	032	select	раздел	Что по задаче?	What's the task?
+V048	033	select	раздел	Жду приказа.	Awaiting orders.
+V048	034	select	раздел	Оператор на связи.	Operative on line.
+V048	035	select	раздел	Канал чист. Говорите.	Channel's clear. Speak.
+V048	036	select	раздел	Доклад принимаю.	Receiving your report.
+V048	037	select	раздел	Проверка связи. Слышно?	Comms check. Can you hear?
+V048	038	select	раздел	Устав велит слушать. Слушаю.	Manual says listen. Listening.
+V048	039	select	раздел	Корпорация слушает.	The corporation listens.
+V048	040	select	раздел	Страховка не покроет. Слушаю.	Insurance won't cover it. Listening.
+V048	041	select	раздел	Каска на месте. Что нужно?	Helmet on. What do you need?
+V048	042	select	раздел	Кофе в уставе нет. Слушаю.	No coffee in the manual. Listening.
+V048	043	select	раздел	Охрана на связи. Повторите.	Security online. Say again.
+V048	044	select	раздел	Уточните приказ.	Clarify the order.
+V048	045	select	раздел	Доложите обстановку.	Report the situation.
+V048	046	select	раздел	Рация работает. Вы — нет.	Radio works. You don't.
+V048	047	select	раздел	Вызов принят. Без оваций.	Call received. No applause.
+V048	048	select	раздел	Вот и вызов. Доброе утро.	Here's a call. Good morning.
+V048	049	select	раздел	Распишитесь, что вызывали.	Sign that you called.
+V048	050	select	раздел	Что за срочность?	What's the urgency?
+V048	051	select	раздел	Запрос зарегистрирован.	Request logged.
+V048	052	select	раздел	Номер заявки назовите.	State the ticket number.
+V048	053	select	раздел	Я в строю. Что ещё?	I'm in line. What else?
+V048	054	select	раздел	Эфир занят. Но слушаю.	The air is busy. But listening.
+V048	055	select	раздел	Бронежилет надет. Слушаю.	Vest on. Listening.
+V048	056	select	раздел	Опять вызов вне графика.	Another off-schedule call.
+V048	057	select	раздел	Дежурный на связи.	Duty officer online.
+V048	058	select	раздел	Коротко и по делу.	Short and to the point.
+V048	059	select	раздел	Приоритет вызова — средний.	Call priority: medium.
+V048	060	select	раздел	Ответ положительный. Дальше?	Affirmative. Next?
+V048	061	select	раздел	Сигнал слабый. Повторите.	Signal weak. Repeat.
+V048	062	select	раздел	Это закрытый канал.	This is a closed channel.
+V048	063	select	раздел	Вызываете? Тариф уточню.	Calling? I'll check the rate.
+V048	064	select	раздел	Подтвердите личность.	Confirm identity.
+V048	065	select	раздел	Жду. Время засчитано.	Waiting. Time is counted.
+V048	066	select	раздел	Всё под записью. Говорите.	Everything's recorded. Speak.
+V048	067	select	раздел	Страховой случай? Говорите.	An insurance case? Speak.
+V048	068	select	раздел	Рапорт или просьба?	Report or request?
+V048	069	select	раздел	Внимательно. Корпоративно.	Attentively. Corporately.
+V048	070	select	раздел	Поддержка Marsec слушает.	Marsec support is listening.
+V048	071	select	раздел	Приказ слышу. Мнение — нет.	I hear the order. Not opinions.
+V048	072	select	раздел	Ваш звонок очень важен.	Your call matters.
+V048	073	move	раздел	Иду.	Going.
+V048	074	move	раздел	Есть.	Aye.
+V048	075	move	раздел	Понял.	Understood.
+V048	076	move	раздел	Двигаюсь.	Moving.
+V048	077	move	раздел	Маршрут принят.	Route accepted.
+V048	078	move	раздел	Вперёд.	Forward.
+V048	079	move	раздел	Отчёт будет.	Report to follow.
+V048	080	move	раздел	Занимаю позицию.	Taking position.
+V048	081	move	раздел	Подтверждаю.	Confirmed.
+V048	082	move	раздел	Исполняю.	Executing.
+V048	083	move	раздел	Принял.	Roger.
+V048	084	move	раздел	Выхожу на точку.	Moving to the point.
+V048	085	move	раздел	Двигаюсь. Прикрытие не нужно.	Moving. No cover needed.
+V048	086	move	раздел	Следую по маршруту.	Following the route.
+V048	087	move	раздел	Иду. Каска застёгнута.	Going. Helmet fastened.
+V048	088	move	раздел	Приказ получен. Перемещаюсь.	Order received. Relocating.
+V048	089	move	раздел	Следующая точка. Иду.	Next point. Going.
+V048	090	move	раздел	Двигаюсь быстро.	Moving fast.
+V048	091	move	раздел	Прохожу по регламенту.	Passing per regulations.
+V048	092	move	раздел	Маршрут проверен. Иду.	Route checked. Going.
+V048	093	move	раздел	Движение — по уставу.	Movement per the manual.
+V048	094	move	раздел	Без паники. Иду.	No panic. Going.
+V048	095	move	раздел	Выдвинулся. Жду отчёта.	Moved out. Awaiting report.
+V048	096	move	раздел	Ходьба — тоже работа.	Walking is work too.
+V048	097	move	раздел	Шаги засчитываются.	Steps are counted.
+V048	098	move	раздел	Жетон при мне. Иду.	Badge on me. Going.
+V048	099	move	раздел	Корпорация гордится. Иду.	The corporation is proud. Going.
+V048	100	move	раздел	Шаг вперёд — по контракту.	A step forward, per contract.
+V048	101	move	раздел	Отчёт сдам вечером. Иду.	Report tonight. Going.
+V048	102	move	раздел	Зарплата идёт. Иду тоже.	Salary's ticking. So am I.
+V048	103	move	раздел	Бегом. Но тихо.	At a run. But quiet.
+V048	104	move	раздел	Это в моей должностной. Иду.	It's in my job description. Going.
+V048	105	move	раздел	Перемещение согласовано.	Movement approved.
+V048	106	move	раздел	Без эмоций. Иду.	No emotion. Going.
+V048	107	move	раздел	Вызываю такси. Шутка. Иду.	Calling a cab. Joke. Going.
+V048	108	move	раздел	Пешком так пешком.	On foot, then.
+V048	109	move	раздел	Берцы стоптаны. Иду.	Boots are worn. Going.
+V048	110	move	раздел	Это не бегство. Это манёвр.	Not a retreat. A maneuver.
+V048	111	move	раздел	Иду. Компания со мной.	Going. The company's with me.
+V048	112	move	раздел	Правая нога, левая. Двигаюсь.	Right foot, left foot. Moving.
+V048	113	move	раздел	Беру курс. Закон не нарушаю.	Taking course. Breaking no law.
+V048	114	move	раздел	Позицию сменил. Рапорт позже.	Position changed. Report later.
+V048	115	move	раздел	Строго по плану.	Strictly to plan.
+V048	116	move	раздел	Бегу, куда прикажут.	Running where ordered.
 V049	01	select	место	Полиция. Что натворили?	Police. What did you do?
 V049	02	move	место	Иду. Ничего не трогать.	Coming. Don't touch anything.
 V049	03	weapon	место	Лежать! Да не в лут!	Down! Not in the loot!
@@ -5592,6 +5868,98 @@ V049	21	annoyed	раздел	Гражданин, проходите.	Citizen, mo
 V049	22	annoyed	раздел	Ещё раз — и в обезьянник.	Once more and you're in the tank.
 V049	23	annoyed	раздел	Я при исполнении. Не мешай.	I'm on duty. Back off.
 V049	24	annoyed	раздел	Принято. Подшито. Отстань.	Noted. Filed. Go away.
+V049	025	select	раздел	Слушаю.	Listening.
+V049	026	select	раздел	Что?	What?
+V049	027	select	раздел	Мегапол.	Megapol.
+V049	028	select	раздел	Да?	Yes?
+V049	029	select	раздел	Ну?	Well?
+V049	030	select	раздел	Тут я.	Here.
+V049	031	select	раздел	Заявляйте.	Report it.
+V049	032	select	раздел	Протокол?	Paperwork?
+V049	033	select	раздел	Свидетель?	Witness?
+V049	034	select	раздел	Адрес?	Address?
+V049	035	select	раздел	Полиция слушает.	The police are listening.
+V049	036	select	раздел	Что опять?	What now?
+V049	037	select	раздел	Кто там у нас?	Who've we got?
+V049	038	select	раздел	Опять нарушения? Слушаю.	Violations again? Listening.
+V049	039	select	раздел	Фамилия, имя, причина.	Name, surname, reason.
+V049	040	select	раздел	Подпись не забудь.	Don't forget to sign.
+V049	041	select	раздел	У меня обед. Говори.	It's my lunch. Talk.
+V049	042	select	раздел	Что украли? Или кого убили?	What's stolen? Or who's dead?
+V049	043	select	раздел	Показания будут?	Any statements?
+V049	044	select	раздел	Жалоба? В окошко.	Complaint? At the window.
+V049	045	select	раздел	Приём закончен. Но слушаю.	Reception's over. But listening.
+V049	046	select	раздел	Закон слушает. Устало.	The law listens. Wearily.
+V049	047	select	раздел	Давай сводку.	Give me the summary.
+V049	048	select	раздел	Не шуми. Голова болит.	Don't shout. Head hurts.
+V049	049	select	раздел	Пончик доем. Слушаю.	Finishing my donut. Listening.
+V049	050	select	раздел	Рапорт потом. Говори.	Report later. Talk.
+V049	051	select	раздел	Что за шум опять?	What's the noise again?
+V049	052	select	раздел	Срочно или как всегда?	Urgent or as usual?
+V049	053	select	раздел	Трое суток без сна. Говори.	Three days without sleep. Talk.
+V049	054	select	раздел	Сержант слушает.	The sergeant listens.
+V049	055	select	раздел	Без паники. Паникуем потом.	No panic. We panic later.
+V049	056	select	раздел	Что там, гражданин?	What is it, citizen?
+V049	057	select	раздел	Слушаю. Ордер есть?	Listening. Got a warrant?
+V049	058	select	раздел	Я полиция. А ты кто?	I'm the police. Who are you?
+V049	059	select	раздел	Номер жетона не спрашивать.	Don't ask my badge number.
+V049	060	select	раздел	Скоро пенсия. Говори.	Retirement is near. Talk.
+V049	061	select	раздел	Облава или просто шум?	A raid or just noise?
+V049	062	select	раздел	Мегапол слушает. Недолго.	Megapol listens. Not long.
+V049	063	select	раздел	Ещё один гражданин. Слушаю.	Another citizen. Listening.
+V049	064	select	раздел	Громче не надо. Слышу.	No louder. I hear.
+V049	065	select	раздел	Наручники на месте. Говори.	Cuffs are ready. Talk.
+V049	066	select	раздел	Идёт расследование. Чего тебе?	Investigation ongoing. What d'you want?
+V049	067	select	раздел	Закон — это я. Устало.	I am the law. Wearily.
+V049	068	select	раздел	Протокол завтра. Говори.	Paperwork tomorrow. Talk.
+V049	069	select	раздел	Мигалка выключена. Говори.	Lights are off. Talk.
+V049	070	select	раздел	Только не говори «ограбление».	Just don't say "robbery".
+V049	071	select	раздел	Что, снова вы?	What, you again?
+V049	072	select	раздел	Доложи, но кратко.	Report, but briefly.
+V049	073	move	раздел	Иду.	Going.
+V049	074	move	раздел	Выхожу.	Heading out.
+V049	075	move	раздел	Понял.	Got it.
+V049	076	move	раздел	Принято.	Noted.
+V049	077	move	раздел	Следую.	Following.
+V049	078	move	раздел	Ладно.	Fine.
+V049	079	move	раздел	Так точно.	Yes, sir.
+V049	080	move	раздел	Буду.	Will be there.
+V049	081	move	раздел	Прибуду.	I'll arrive.
+V049	082	move	раздел	Иду на вызов.	Going to the call.
+V049	083	move	раздел	Патруль пошёл.	Patrol's moving.
+V049	084	move	раздел	Проверю квартал.	I'll check the block.
+V049	085	move	раздел	Ставлю оцепление.	Setting a cordon.
+V049	086	move	раздел	Иду. Ноги болят.	Going. My feet hurt.
+V049	087	move	раздел	Это тоже моя работа.	This is my job too.
+V049	088	move	раздел	Иду. Жетон сверкает.	Going. Badge sparkling.
+V049	089	move	раздел	Следую за подозреваемым.	Following the suspect.
+V049	090	move	раздел	Закон идёт. Расступитесь.	The law is coming. Step aside.
+V049	091	move	раздел	Иду. Дубинка на месте.	Going. Baton's in place.
+V049	092	move	раздел	Пройдусь. Осмотрюсь.	I'll walk. Take a look.
+V049	093	move	раздел	Не бегать! Это я. Иду.	No running! It's me. Going.
+V049	094	move	раздел	Иду. Кофе в термосе.	Going. Coffee's in the flask.
+V049	095	move	раздел	Подозрительный маршрут. Иду.	Suspicious route. Going.
+V049	096	move	раздел	Свидетелей не терять. Иду.	Don't lose witnesses. Going.
+V049	097	move	раздел	Бегом? Я не бегаю.	Run? I don't run.
+V049	098	move	раздел	Выдвигаюсь по адресу.	Heading to the address.
+V049	099	move	раздел	Дело пахнет скандалом. Иду.	The case smells of scandal. Going.
+V049	100	move	раздел	Иду, иду. Не кричи.	Going, going. Don't shout.
+V049	101	move	раздел	Пройдусь для здоровья.	I'll walk for my health.
+V049	102	move	раздел	Приступаю к патрулю.	Starting the patrol.
+V049	103	move	раздел	Часы до пенсии тикают.	Hours to retirement tick.
+V049	104	move	раздел	Заявка принята. Иду.	Request accepted. Going.
+V049	105	move	раздел	Оценю обстановку на месте.	I'll assess it on site.
+V049	106	move	раздел	Близко ведь. Ладно.	Close, really. Fine.
+V049	107	move	раздел	Участок без меня потерпит.	The station will cope without me.
+V049	108	move	раздел	Не теряйся. Иду.	Don't wander off. Going.
+V049	109	move	раздел	Топаю на пост.	Heading to my post.
+V049	110	move	раздел	Рапорт на ногах. Иду.	Report on foot. Going.
+V049	111	move	раздел	В путь. Служба зовёт.	On the way. Duty calls.
+V049	112	move	раздел	Иду по вашему делу.	Going on your case.
+V049	113	move	раздел	Проверка документов по пути.	Document check on the way.
+V049	114	move	раздел	Хорошо. Но премию дайте.	Fine. But give me a bonus.
+V049	115	move	раздел	Иду. Преступность не спит.	Going. Crime never sleeps.
+V049	116	move	раздел	Сейчас буду. Без обещаний.	Coming. No promises.
 V050	01	select	место	Говорите. Канал закрытый.	Speak. Secure channel.
 V050	02	move	место	Проверю сам. На месте оставайтесь.	I'll check. Stay where you are.
 V050	03	weapon	место	Вы здесь быть не должны.	You're not supposed to be here.
@@ -5616,6 +5984,98 @@ V050	21	annoyed	раздел	Я записываю каждое нажатие.	
 V050	22	annoyed	раздел	Это уже нарушение режима.	That's a security breach now.
 V050	23	annoyed	раздел	Хватит. Канал перегружаете.	Enough. You're flooding the channel.
 V050	24	annoyed	раздел	Ещё раз — и в отдел кадров.	Once more and it's HR for you.
+V050	025	select	раздел	Слушаю.	Listening.
+V050	026	select	раздел	Да.	Yes.
+V050	027	select	раздел	Говорите.	Speak.
+V050	028	select	раздел	Тихо.	Quiet.
+V050	029	select	раздел	Здесь.	Here.
+V050	030	select	раздел	Приём.	Receiving.
+V050	031	select	раздел	Докладывайте.	Report.
+V050	032	select	раздел	Ну?	Well?
+V050	033	select	раздел	Слышу.	I hear.
+V050	034	select	раздел	Допуск?	Clearance?
+V050	035	select	раздел	Пароль?	Password?
+V050	036	select	раздел	Доступ открыт.	Access open.
+V050	037	select	раздел	Кто спрашивает?	Who's asking?
+V050	038	select	раздел	Что нужно?	What do you need?
+V050	039	select	раздел	Тише. Стены слышат.	Quieter. Walls hear.
+V050	040	select	раздел	Без лишних ушей.	No extra ears.
+V050	041	select	раздел	Говорите тише.	Speak softer.
+V050	042	select	раздел	Объект закрыт. Что у вас?	Facility's closed. What've you got?
+V050	043	select	раздел	Имён не называйте.	Don't name names.
+V050	044	select	раздел	Сектор чист. Говорите.	Sector's clear. Speak.
+V050	045	select	раздел	Вы вне зоны. Слушаю.	You're out of zone. Listening.
+V050	046	select	раздел	Камеры пишут. Говорите.	Cameras recording. Speak.
+V050	047	select	раздел	Допуск проверен. Дальше?	Clearance checked. Next?
+V050	048	select	раздел	Наблюдение продолжается.	Surveillance continues.
+V050	049	select	раздел	Кто вас впустил?	Who let you in?
+V050	050	select	раздел	Без свидетелей. Говорите.	No witnesses. Speak.
+V050	051	select	раздел	Время ограничено.	Time is limited.
+V050	052	select	раздел	Я вас не знаю. Говорите.	I don't know you. Speak.
+V050	053	select	раздел	Уровень допуска?	Clearance level?
+V050	054	select	раздел	Только факты.	Facts only.
+V050	055	select	раздел	Вопросы — мне.	Questions are mine.
+V050	056	select	раздел	Меня здесь нет. Говорите.	I'm not here. Speak.
+V050	057	select	раздел	Двери закрыты. Что?	Doors are shut. What?
+V050	058	select	раздел	Никому ни слова.	Not a word to anyone.
+V050	059	select	раздел	Разговор не записан. Пока.	The talk's not recorded. Yet.
+V050	060	select	раздел	Рапорт — письменно.	Report in writing.
+V050	061	select	раздел	Наблюдаю. Слушаю.	Watching. Listening.
+V050	062	select	раздел	Что видели?	What did you see?
+V050	063	select	раздел	Это секретно.	This is classified.
+V050	064	select	раздел	Здесь не место.	Not the place.
+V050	065	select	раздел	Опять вы. Пароль?	You again. Password?
+V050	066	select	раздел	Короче.	Shorter.
+V050	067	select	раздел	Не шумите.	Don't make noise.
+V050	068	select	раздел	Протокол молчания.	Silence protocol.
+V050	069	select	раздел	Тишина — тоже протокол.	Silence is protocol too.
+V050	070	select	раздел	Слушаю. Но не верю.	Listening. But I don't believe.
+V050	071	select	раздел	Стойте на месте. Говорите.	Stay put. Speak.
+V050	072	select	раздел	Не оглядывайтесь. Говорите.	Don't look around. Speak.
+V050	073	move	раздел	Иду.	Going.
+V050	074	move	раздел	Понял.	Understood.
+V050	075	move	раздел	Принято.	Accepted.
+V050	076	move	раздел	Тихим шагом.	With a quiet step.
+V050	077	move	раздел	Двигаюсь.	Moving.
+V050	078	move	раздел	Выдвигаюсь.	Moving out.
+V050	079	move	раздел	Есть.	Aye.
+V050	080	move	раздел	Маршрут закрыт.	Route sealed.
+V050	081	move	раздел	По тени.	By shadow.
+V050	082	move	раздел	Скрытно.	Covertly.
+V050	083	move	раздел	Исполняю.	Executing.
+V050	084	move	раздел	Следую.	Following.
+V050	085	move	раздел	Без шума.	No noise.
+V050	086	move	раздел	Пойду тихо. Вы — тоже.	I'll go quietly. You too.
+V050	087	move	раздел	Пройду по тени.	I'll pass through the shadow.
+V050	088	move	раздел	Двери откроются сами.	The doors will open on their own.
+V050	089	move	раздел	Маршрут стёрт. Иду.	Route erased. Going.
+V050	090	move	раздел	Лампы не включать. Иду.	Lights stay off. Going.
+V050	091	move	раздел	Периметр закрыт. Выхожу.	Perimeter sealed. Heading out.
+V050	092	move	раздел	Проверю вход.	I'll check the entrance.
+V050	093	move	раздел	Записей не оставляйте.	Leave no records.
+V050	094	move	раздел	Меня не заметят.	They won't notice me.
+V050	095	move	раздел	Только вперёд.	Only forward.
+V050	096	move	раздел	Минута — и я там.	A minute and I'm there.
+V050	097	move	раздел	Следую без связи.	Following without comms.
+V050	098	move	раздел	Ухожу в сектор.	Entering the sector.
+V050	099	move	раздел	Шаг тихий, рука на оружии.	Soft step, hand on weapon.
+V050	100	move	раздел	Дверь за мной — на засов.	Bolt the door behind me.
+V050	101	move	раздел	Иду. Без свидетелей.	Going. No witnesses.
+V050	102	move	раздел	Обход тихий. Иду.	Quiet round. Going.
+V050	103	move	раздел	Вернусь без шума.	I'll return unheard.
+V050	104	move	раздел	Радио отключено. Иду.	Radio off. Going.
+V050	105	move	раздел	Маршрут засекречен.	Route classified.
+V050	106	move	раздел	Не следить. Двигаюсь.	Don't track. Moving.
+V050	107	move	раздел	Движение подтверждаю.	Confirming movement.
+V050	108	move	раздел	Иду на сигнал.	Going to the signal.
+V050	109	move	раздел	Лучше без свидетелей. Иду.	Better without witnesses. Going.
+V050	110	move	раздел	Не оборачивайтесь. Иду.	Don't turn around. Going.
+V050	111	move	раздел	Путь свободен. Иду.	The path is clear. Going.
+V050	112	move	раздел	Свет не нужен. Иду.	No light needed. Going.
+V050	113	move	раздел	Дверь закрылась. Я ушёл.	The door shut. I'm gone.
+V050	114	move	раздел	Следов не оставлю. Иду.	I'll leave no traces. Going.
+V050	115	move	раздел	Шаг без звука. Иду.	A step without sound. Going.
+V050	116	move	раздел	Дальше — сам.	From here, alone.
 V051	01	select	место	Тише. Я слышу.	Quiet. I can hear you.
 V051	02	move	место	Уже иду. Ты не смотри.	Moving already. Don't look.
 V051	03	weapon	место	Поздно оборачиваться.	Too late to turn around.
@@ -5640,6 +6100,98 @@ V051	21	annoyed	раздел	Шумишь, капитан.	You're noisy, captain
 V051	22	annoyed	раздел	Каждый щелчок — как гонг.	Every click is a gong.
 V051	23	annoyed	раздел	Терпение — тоже оружие.	Patience is a weapon too.
 V051	24	annoyed	раздел	Ещё раз — и я исчезну.	Once more and I vanish.
+V051	025	select	раздел	Слышу.	I hear.
+V051	026	select	раздел	Да.	Yes.
+V051	027	select	раздел	Здесь.	Here.
+V051	028	select	раздел	Говори.	Speak.
+V051	029	select	раздел	Рядом.	Near.
+V051	030	select	раздел	Слушаю.	Listening.
+V051	031	select	раздел	Тень.	Shadow.
+V051	032	select	раздел	Ну.	Well.
+V051	033	select	раздел	Клинок.	Blade.
+V051	034	select	раздел	Что нужно?	What is needed?
+V051	035	select	раздел	Видел тебя.	Saw you.
+V051	036	select	раздел	Заметил?	Noticed?
+V051	037	select	раздел	Молчи. Слушаю.	Hush. I'm listening.
+V051	038	select	раздел	Говори тихо.	Speak softly.
+V051	039	select	раздел	Дыши тише.	Breathe quieter.
+V051	040	select	раздел	Тише воды.	Quiet as water.
+V051	041	select	раздел	Я медитировал. Что?	I was meditating. What?
+V051	042	select	раздел	Я здесь. Незаметно.	I'm here. Unnoticed.
+V051	043	select	раздел	Цель?	Target?
+V051	044	select	раздел	Приказ?	Orders?
+V051	045	select	раздел	Кто звал?	Who called?
+V051	046	select	раздел	Я слышу тьму. Говори.	I hear the dark. Speak.
+V051	047	select	раздел	Не двигайся. Слушаю.	Don't move. Listening.
+V051	048	select	раздел	Ты видишь меня? Зря.	You see me? Mistake.
+V051	049	select	раздел	Листья шелестят. Говори.	Leaves rustle. Speak.
+V051	050	select	раздел	Меч спит. Говори.	The sword sleeps. Speak.
+V051	051	select	раздел	Не слышу твоих шагов.	I don't hear your steps.
+V051	052	select	раздел	Ветер сказал, ты звал.	The wind said you called.
+V051	053	select	раздел	Я слушаю тишину.	I listen to silence.
+V051	054	select	раздел	Ты опять шумишь.	You're noisy again.
+V051	055	select	раздел	Не спугни ночь.	Don't scare the night.
+V051	056	select	раздел	Что за дело?	What's the matter?
+V051	057	select	раздел	Хм. Любопытно.	Hm. Curious.
+V051	058	select	раздел	Я не уходил. Ты не заметил.	I never left. You didn't notice.
+V051	059	select	раздел	Слушаю. Сталь тоже.	Listening. So is the steel.
+V051	060	select	раздел	Говори, пока темно.	Speak while it's dark.
+V051	061	select	раздел	Лунная ночь. Слушаю.	Moonlit night. Listening.
+V051	062	select	раздел	Звал? Не надо было.	Called? You shouldn't have.
+V051	063	select	раздел	Разговор — за стеной.	Talk is beyond the wall.
+V051	064	select	раздел	Что в этот раз?	What this time?
+V051	065	select	раздел	Вижу в темноте. Ты — нет.	I see in the dark. You don't.
+V051	066	select	раздел	Не топай. Говори.	Don't stomp. Speak.
+V051	067	select	раздел	Ты слишком громок.	You're too loud.
+V051	068	select	раздел	Сэнсэй бы не одобрил.	The master wouldn't approve.
+V051	069	select	раздел	Звук лишний. Слова — тоже.	Sound is extra. Words too.
+V051	070	select	раздел	Слушаю. Недолго.	Listening. Briefly.
+V051	071	select	раздел	Тихо. Тут бамбук.	Quiet. There's bamboo.
+V051	072	select	раздел	Ночь длинная. Говори.	The night is long. Speak.
+V051	073	move	раздел	Иду.	Going.
+V051	074	move	раздел	Есть.	Yes.
+V051	075	move	раздел	Понял.	Understood.
+V051	076	move	раздел	Тень идёт.	The shadow moves.
+V051	077	move	раздел	Быстро.	Quick.
+V051	078	move	раздел	Бесшумно.	Silently.
+V051	079	move	раздел	Двигаюсь.	Moving.
+V051	080	move	раздел	Сделаю.	I'll do it.
+V051	081	move	раздел	Пройду.	I'll pass.
+V051	082	move	раздел	Тихо иду.	Walking quietly.
+V051	083	move	раздел	Шаг. Ещё шаг.	Step. Another step.
+V051	084	move	раздел	Через тень.	Through shadow.
+V051	085	move	раздел	Стены не помеха.	Walls aren't a barrier.
+V051	086	move	раздел	Перепрыгну. Не смотри.	I'll leap over. Don't watch.
+V051	087	move	раздел	Путь ясен. Иду.	The way is clear. Going.
+V051	088	move	раздел	Крыши ждут.	The rooftops wait.
+V051	089	move	раздел	Ветер несёт меня.	The wind carries me.
+V051	090	move	раздел	Лист не шелохнётся.	A leaf won't stir.
+V051	091	move	раздел	Туда? Легко.	There? Easy.
+V051	092	move	раздел	Пол не скрипнет.	The floor won't creak.
+V051	093	move	раздел	Иду. Без шороха.	Going. Not a rustle.
+V051	094	move	раздел	Меня не увидят.	They won't see me.
+V051	095	move	раздел	Как дым. Иду.	Like smoke. Going.
+V051	096	move	раздел	Тихо, как снег.	Quiet as snow.
+V051	097	move	раздел	Исчезну — и вернусь.	I'll vanish and return.
+V051	098	move	раздел	Двигаюсь в тени.	Moving in shadow.
+V051	099	move	раздел	Шагаю, как кошка.	Walking like a cat.
+V051	100	move	раздел	Не шуми. Я пошёл.	Don't make noise. I'm off.
+V051	101	move	раздел	Меня нет. Иду.	I'm not here. Going.
+V051	102	move	раздел	По карнизу. Быстрее.	Along the ledge. Faster.
+V051	103	move	раздел	Я уже там.	I'm already there.
+V051	104	move	раздел	Один вдох — и на месте.	One breath, and I'm there.
+V051	105	move	раздел	Заметишь — значит, я ошибся.	Notice me, and I erred.
+V051	106	move	раздел	Пойду по следам. Чужим.	I'll follow tracks. Not mine.
+V051	107	move	раздел	Шаг лёгкий. Сердце ровное.	Light step. Steady heart.
+V051	108	move	раздел	Дорожка тайная. Иду.	The secret path. Going.
+V051	109	move	раздел	Тишина — мой союзник.	Silence is my ally.
+V051	110	move	раздел	Иду. Без единого звука.	Going. Not one sound.
+V051	111	move	раздел	Ты не видел, как я ушёл.	You didn't see me leave.
+V051	112	move	раздел	Ступаю по бамбуку.	Stepping on bamboo.
+V051	113	move	раздел	Ночь укроет. Иду.	Night will cover me. Going.
+V051	114	move	раздел	Был здесь... нет. Иду.	Was here... no. Going.
+V051	115	move	раздел	Дойду до цели. Тихо.	I'll reach the target. Quietly.
+V051	116	move	раздел	Моя тропа — тень.	My path is shadow.
 V052	01	select	место	Здесь я. Не там смотришь.	I'm here. Looking the wrong way.
 V052	02	move	место	Сейчас подойду. Он не заметит.	I'll get closer. He won't notice.
 V052	03	weapon	место	Ты меня не видел.	You never saw me.
@@ -5664,6 +6216,98 @@ V052	21	annoyed	раздел	Щекотно, вообще-то.	That tickles, yo
 V052	22	annoyed	раздел	Я поняла. С первого раза.	I got it. The first time.
 V052	23	annoyed	раздел	Ещё раз — и спрячусь от тебя.	Again and I'll hide from you.
 V052	24	annoyed	раздел	Капитан, ты меня так выдашь.	Captain, you'll give me away.
+V052	025	select	раздел	Да?	Yes?
+V052	026	select	раздел	Слушаю.	Listening.
+V052	027	select	раздел	Здесь.	Here.
+V052	028	select	раздел	Ну?	Well?
+V052	029	select	раздел	Привет.	Hi.
+V052	030	select	раздел	Тсс.	Shh.
+V052	031	select	раздел	Говори.	Speak.
+V052	032	select	раздел	Сюрприз.	Surprise.
+V052	033	select	раздел	Кто тут? Ах, ты.	Who's there? Ah, you.
+V052	034	select	раздел	Звал? Я рядом.	Called? I'm near.
+V052	035	select	раздел	Нашёл? Поздравляю.	Found me? Congrats.
+V052	036	select	раздел	Меня не заметил? Я здесь.	Missed me? I'm here.
+V052	037	select	раздел	Ты шумный. Мило.	You're noisy. Cute.
+V052	038	select	раздел	Бинты готовы. Ножи тоже.	Bandages ready. Knives too.
+V052	039	select	раздел	Что, капитан? Соскучился?	What, captain? Missed me?
+V052	040	select	раздел	Ой, поймал. Ну, говори.	Oh, you caught me. Well, speak.
+V052	041	select	раздел	Я не пряталась. Почти.	I wasn't hiding. Almost.
+V052	042	select	раздел	Слушаю, милый. Не кричи.	Listening, dear. Don't yell.
+V052	043	select	раздел	Ветер шепнул, что ты звал.	The wind whispered you called.
+V052	044	select	раздел	Говори. Нож пока в ножнах.	Speak. The knife's still sheathed.
+V052	045	select	раздел	Я за спиной. Не оборачивайся.	I'm behind you. Don't turn.
+V052	046	select	раздел	Что-то случилось? Интересно.	Something happened? Interesting.
+V052	047	select	раздел	Скучно? Давай развлечёмся.	Bored? Let's have fun.
+V052	048	select	раздел	Тихо-тихо. Я слушаю.	Quiet, quiet. I'm listening.
+V052	049	select	раздел	Капитан зовёт? Бегу... стою.	Captain calls? Running... standing.
+V052	050	select	раздел	Улыбка при мне. Нож тоже.	Smile's with me. Knife too.
+V052	051	select	раздел	Ну что, мой хороший?	Well, my dear?
+V052	052	select	раздел	Тихо. Не спугни меня.	Hush. Don't scare me off.
+V052	053	select	раздел	Кто звал тень?	Who called the shadow?
+V052	054	select	раздел	Слушаю тебя, как мышка.	Listening like a mouse.
+V052	055	select	раздел	Лисья служба на связи.	Fox service is online.
+V052	056	select	раздел	Дай угадаю. Срочно?	Let me guess. Urgent?
+V052	057	select	раздел	Всё время ты зовёшь.	You're always calling.
+V052	058	select	раздел	Мне нравится твой голос.	I like your voice.
+V052	059	select	раздел	Не люблю шум. Но тебя слушаю.	Don't like noise. But I listen to you.
+V052	060	select	раздел	Ах, это ты. Привет.	Ah, it's you. Hi.
+V052	061	select	раздел	Ты быстро меня нашёл.	You found me quickly.
+V052	062	select	раздел	Подожди. Я допью чай.	Wait. I'm finishing my tea.
+V052	063	select	раздел	Тсс. Тут стража. Шучу.	Shh. Guards here. Joking.
+V052	064	select	раздел	Да, да. Слушаю. Тихо.	Yes, yes. Listening. Quietly.
+V052	065	select	раздел	Ой. Я задумалась. Что?	Oh. I was lost in thought. What?
+V052	066	select	раздел	Сегодня без крови? Жаль.	No blood today? Pity.
+V052	067	select	раздел	Что за дело? Расскажи.	What's the matter? Tell me.
+V052	068	select	раздел	Вот я. Мило, правда?	Here I am. Cute, right?
+V052	069	select	раздел	Нож острый. Язык — тоже.	Knife is sharp. So is my tongue.
+V052	070	select	раздел	Не пугай меня. Я пугаю.	Don't scare me. I'm the scary one.
+V052	071	select	раздел	Хм. Любопытно. Говори.	Hm. Curious. Speak.
+V052	072	select	раздел	Тут я. Прямо за тобой.	Here I am. Right behind you.
+V052	073	move	раздел	Иду.	Going.
+V052	074	move	раздел	Хорошо.	Okay.
+V052	075	move	раздел	Поняла.	Got it.
+V052	076	move	раздел	Лечу.	Flying.
+V052	077	move	раздел	Раз-два.	One-two.
+V052	078	move	раздел	Тихонько.	Softly.
+V052	079	move	раздел	Мигом.	In a flash.
+V052	080	move	раздел	Сделаю.	I'll do it.
+V052	081	move	раздел	Пошла.	Off I go.
+V052	082	move	раздел	Бегу.	Running.
+V052	083	move	раздел	Без шума.	No noise.
+V052	084	move	раздел	Я мигом, ты не моргай.	I'll be quick, don't blink.
+V052	085	move	раздел	Лёгкий шаг, лёгкий нрав.	Light step, light heart.
+V052	086	move	раздел	Пройду, как ветер.	I'll pass like the wind.
+V052	087	move	раздел	Топать не буду. Обещаю.	I won't stomp. Promise.
+V052	088	move	раздел	Иду кошкой. Мур.	Going like a cat. Purr.
+V052	089	move	раздел	Пятками не стучу.	Not clicking my heels.
+V052	090	move	раздел	Крадусь, мой хороший.	Sneaking, my dear.
+V052	091	move	раздел	Лови, если сумеешь.	Catch me if you can.
+V052	092	move	раздел	Прогулка по крышам. Обожаю.	A rooftop stroll. Love it.
+V052	093	move	раздел	Уже там. Не смотри.	Already there. Don't look.
+V052	094	move	раздел	Иду. Смотри не споткнись.	Going. Don't trip.
+V052	095	move	раздел	Шаг-шажок. Туда.	Step by step. There.
+V052	096	move	раздел	Подкрадусь с поцелуем. Шутка.	Sneak up with a kiss. Joke.
+V052	097	move	раздел	Хорошо. Только красиво.	Fine. But make it pretty.
+V052	098	move	раздел	Меня уже нет.	I'm already gone.
+V052	099	move	раздел	Платье не помять. Иду.	Mind the dress. Going.
+V052	100	move	раздел	Пойду, ножи размяну.	I'll go warm up my knives.
+V052	101	move	раздел	Тихо-тихо, как мышка.	Quiet, quiet, like a mouse.
+V052	102	move	раздел	Меня ветер несёт.	The wind carries me.
+V052	103	move	раздел	Ловкость рук. И ног.	Sleight of hand. And feet.
+V052	104	move	раздел	Побежала. Не скучай.	Off I ran. Don't miss me.
+V052	105	move	раздел	Как скажешь, капитан. Иду.	As you say, captain. Going.
+V052	106	move	раздел	Крыша, угол, тень. Всё.	Roof, corner, shadow. Done.
+V052	107	move	раздел	Иду. Хвост мой не ловить.	Going. Don't catch my tail.
+V052	108	move	раздел	Тише-тише. Я пошла.	Hush-hush. I'm off.
+V052	109	move	раздел	Скоро буду. Следов нет.	Back soon. No traces.
+V052	110	move	раздел	Перемещаюсь изящно.	Moving gracefully.
+V052	111	move	раздел	Прыг. И там.	Hop. And there.
+V052	112	move	раздел	Любой путь — мой.	Every path is mine.
+V052	113	move	раздел	Туда? Ох, пыльно. Ладно.	There? Oh, dusty. Fine.
+V052	114	move	раздел	Иду на цыпочках. Опять.	Going on tiptoe. Again.
+V052	115	move	раздел	Ночь моя. Иду.	The night is mine. Going.
+V052	116	move	раздел	Шаг у меня как шёлк.	My step is like silk.
 V053	01	select	место	Чё надо? Я занят.	What? I'm busy.
 V053	02	move	место	Иду. Только своё заберу.	Coming. Just collecting what's mine.
 V053	03	weapon	место	Ствол положил, умник!	Put the gun down, smart guy!
@@ -5688,6 +6332,98 @@ V053	21	annoyed	раздел	Чё пристал, а?	Why you bugging me?
 V053	22	annoyed	раздел	Да понял я, понял!	I got it, I got it!
 V053	23	annoyed	раздел	Ещё раз — и штраф. Мне.	Once more, there's a fine. Paid to me.
 V053	24	annoyed	раздел	Слышь, не трожь, а то укушу.	Hey, hands off or I bite.
+V053	025	select	раздел	Чего?	What?
+V053	026	select	раздел	Ну?	Well?
+V053	027	select	раздел	Слышу.	I hear.
+V053	028	select	раздел	Тут я.	Here.
+V053	029	select	раздел	Говори.	Talk.
+V053	030	select	раздел	Слышь, братан.	Hey, bro.
+V053	031	select	раздел	Что надо?	What d'you need?
+V053	032	select	раздел	Давай быстрей.	Make it quick.
+V053	033	select	раздел	Опять ты?	You again?
+V053	034	select	раздел	Ага.	Yeah.
+V053	035	select	раздел	Короче, что?	So, what?
+V053	036	select	раздел	Не шуми.	Keep it down.
+V053	037	select	раздел	Только тихо.	Quietly, though.
+V053	038	select	раздел	Ну, кто там?	Who's there?
+V053	039	select	раздел	Чё стряслось?	What happened?
+V053	040	select	раздел	Ага, это я.	Yeah, that's me.
+V053	041	select	раздел	Погоди, дожую.	Wait, I'm chewing.
+V053	042	select	раздел	Чего хотел?	What'd you want?
+V053	043	select	раздел	Я весь внимание.	I'm all ears.
+V053	044	select	раздел	Так, слушаю.	Right, listening.
+V053	045	select	раздел	Деньги вперёд, как всегда.	Money first, as always.
+V053	046	select	раздел	Я тут самый опасный.	I'm the dangerous one here.
+V053	047	select	раздел	Мне нужна доля.	I want a cut.
+V053	048	select	раздел	Кошелёк при тебе?	Got your wallet on you?
+V053	049	select	раздел	Не толкай, я нервный.	Don't shove, I'm edgy.
+V053	050	select	раздел	Район мой, правила тоже.	My turf, my rules.
+V053	051	select	раздел	Подкинешь монетку?	Spare a coin?
+V053	052	select	раздел	Нож при мне. Шучу. Почти.	Knife on me. Kidding. Mostly.
+V053	053	select	раздел	Меня тут побаиваются.	They're a bit scared of me here.
+V053	054	select	раздел	Я в районе авторитет.	I'm a big shot around here.
+V053	055	select	раздел	Дело есть, или так?	Got a job, or what?
+V053	056	select	раздел	Не при людях, понял?	Not in front of people, got it?
+V053	057	select	раздел	Кореша уже в пути.	My boys are on their way.
+V053	058	select	раздел	Кто обидел? Покажи.	Who wronged you? Show me.
+V053	059	select	раздел	Только без полиции.	No cops, though.
+V053	060	select	раздел	Мелочь тоже беру.	I take small change too.
+V053	061	select	раздел	Я с утра не ел. Злой.	Haven't eaten. I'm mean.
+V053	062	select	раздел	Куртка новая. Не пачкай.	New jacket. Don't smudge it.
+V053	063	select	раздел	Курить есть? Нет? Говори.	Got a smoke? No? Talk.
+V053	064	select	раздел	Я не вор. Я собиратель.	I'm no thief. I'm a gatherer.
+V053	065	select	раздел	Бандит на работе. Не мешай.	Bandit at work. Don't interrupt.
+V053	066	select	раздел	Мама сказала: будь собой. Вот.	Mom said be yourself. So here.
+V053	067	select	раздел	Тише. Я репетирую страшный голос.	Hush. Practicing my scary voice.
+V053	068	select	раздел	У меня справка, что я опасный.	I've a note saying I'm dangerous.
+V053	069	select	раздел	Я бы напал, но лень.	I'd attack, but I'm lazy.
+V053	070	select	раздел	Кто-то сказал «ограбление»?	Somebody say "robbery"?
+V053	071	select	раздел	Дай пятьдесят. Без причины.	Give me fifty. No reason.
+V053	072	select	раздел	Я не жадный. Я запасливый.	I'm not greedy. I'm prudent.
+V053	073	move	раздел	Иду.	Going.
+V053	074	move	раздел	Пошёл.	Off I go.
+V053	075	move	раздел	Ладно, ладно.	Okay, okay.
+V053	076	move	раздел	Понял.	Got it.
+V053	077	move	раздел	Двигаю.	Moving.
+V053	078	move	раздел	Щас.	Sec.
+V053	079	move	раздел	Тихо иду.	Going quiet.
+V053	080	move	раздел	Уже иду.	Already going.
+V053	081	move	раздел	Не вопрос.	No question.
+V053	082	move	раздел	Бегу!	Running!
+V053	083	move	раздел	Прогуляюсь.	I'll stroll.
+V053	084	move	раздел	Дай пройти.	Let me through.
+V053	085	move	раздел	Туда, значит.	There, then.
+V053	086	move	раздел	Крадусь.	Sneaking.
+V053	087	move	раздел	Валим.	Let's bail.
+V053	088	move	раздел	Топаю.	Stomping.
+V053	089	move	раздел	Эй, не смотри.	Hey, don't look.
+V053	090	move	раздел	Кто-то там без охраны?	Someone unguarded there?
+V053	091	move	раздел	Если что, я не здесь.	If asked, I wasn't here.
+V053	092	move	раздел	Иду. Свидетелей не нужно.	Going. No witnesses needed.
+V053	093	move	раздел	Через забор быстрее.	Over the fence is faster.
+V053	094	move	раздел	Фонарь выбью. Так надёжнее.	I'll smash the lamp. Safer.
+V053	095	move	раздел	Туда? Там охраны мало.	There? Few guards there.
+V053	096	move	раздел	Я мигом. Не скучай.	Be right back. Don't miss me.
+V053	097	move	раздел	Угол срежу, по-свойски.	Cutting the corner, my way.
+V053	098	move	раздел	Иду. Руки держу в карманах.	Going. Hands in my pockets.
+V053	099	move	раздел	Не светись, я иду.	Stay low, I'm moving.
+V053	100	move	раздел	Пойду, осмотрюсь по-тихому.	I'll look around quietly.
+V053	101	move	раздел	Мне по пути, кстати.	It's on my way anyway.
+V053	102	move	раздел	Иду. Прикрывай, если что.	Going. Cover me if needed.
+V053	103	move	раздел	Сначала за угол, потом дальше.	Round the corner, then on.
+V053	104	move	раздел	Быстро, пока не заметили.	Quick, before they notice.
+V053	105	move	раздел	Шагаю, не мешай.	Walking, don't interrupt.
+V053	106	move	раздел	Двигаюсь, как тень.	Moving like a shadow.
+V053	107	move	раздел	Только без лишнего шума.	No unnecessary noise.
+V053	108	move	раздел	Я не убегаю. Я перемещаюсь.	I'm not fleeing. Relocating.
+V053	109	move	раздел	Иду в гости. Без приглашения.	Visiting. Uninvited.
+V053	110	move	раздел	Если спросят — я гулял.	If asked, I was out walking.
+V053	111	move	раздел	Ногами работаю. Бесплатно, заметь.	Working with legs. Free, note.
+V053	112	move	раздел	Бегу! Не от кого-то. Просто бегу.	Running! Not from anyone. Just running.
+V053	113	move	раздел	Иду на дело. Вернусь с долей.	Off to a job. Back with a cut.
+V053	114	move	раздел	Это не побег. Это манёвр.	Not an escape. A manoeuvre.
+V053	115	move	раздел	Шагай, шагай. Это я себе.	Walk, walk. That's to myself.
+V053	116	move	раздел	Мне тоже туда. Случайно.	I'm going there too. By chance.
 V054	01	select	место	Ну? Кто тут самый смелый?	Well? Who's the brave one?
 V054	02	move	место	Подойду. Чтоб без недопонимания.	I'll come over. Avoid misunderstandings.
 V054	03	weapon	место	Ты на чьей земле стоишь?	Whose ground are you standing on?
@@ -5712,6 +6448,98 @@ V054	21	annoyed	раздел	Я тебя с первого раза понял.	
 V054	22	annoyed	раздел	Не суетись. Боссы не бегают.	Don't fuss. Bosses don't run.
 V054	23	annoyed	раздел	Ещё раз ткнёшь — запишу в долг.	Poke again, it goes on your tab.
 V054	24	annoyed	раздел	Аккуратнее. Пиджак дорогой.	Careful. Pricey jacket.
+V054	025	select	раздел	Да.	Yes.
+V054	026	select	раздел	Слушаю.	Listening.
+V054	027	select	раздел	Говори.	Speak.
+V054	028	select	раздел	Ну?	Well?
+V054	029	select	раздел	Я здесь.	I'm here.
+V054	030	select	раздел	Присаживайся.	Have a seat.
+V054	031	select	раздел	Продолжай.	Go on.
+V054	032	select	раздел	Внимательно.	Attentively.
+V054	033	select	раздел	Не спеши. Говори.	Take your time. Talk.
+V054	034	select	раздел	Интересно.	Interesting.
+V054	035	select	раздел	Что там?	What's there?
+V054	036	select	раздел	Давай.	Go ahead.
+V054	037	select	раздел	Хм. Ну?	Hm. Well?
+V054	038	select	раздел	Да, друг.	Yes, friend.
+V054	039	select	раздел	Не стесняйся.	Don't be shy.
+V054	040	select	раздел	Слышу тебя.	I hear you.
+V054	041	select	раздел	Только быстро.	Make it quick.
+V054	042	select	раздел	Да, дружок?	Yes, pal?
+V054	043	select	раздел	Тише. Я думаю.	Hush. I'm thinking.
+V054	044	select	раздел	Докладывай.	Report.
+V054	045	select	раздел	Давно меня никто не звал.	Nobody's called me in a while.
+V054	046	select	раздел	Я всё решаю, ты знаешь.	I decide everything, you know.
+V054	047	select	раздел	Без меня тут ничего не движется.	Nothing moves here without me.
+V054	048	select	раздел	У меня для тебя предложение.	I have an offer for you.
+V054	049	select	раздел	Расскажи. Я люблю слушать.	Tell me. I like listening.
+V054	050	select	раздел	Мои ребята ждут сигнала.	My boys are waiting.
+V054	051	select	раздел	Я человек семейный. Ты понял.	I'm a family man. You get it.
+V054	052	select	раздел	Ты вовремя. Я как раз скучал.	Perfect timing. I was bored.
+V054	053	select	раздел	Кабинет открыт. Для тебя.	Office is open. For you.
+V054	054	select	раздел	Давай без лишней крови. Пока.	No needless blood. Yet.
+V054	055	select	раздел	Налей-ка мне. Потом говори.	Pour me one. Then talk.
+V054	056	select	раздел	Сигару подержи. Теперь говори.	Hold the cigar. Now talk.
+V054	057	select	раздел	Моя территория, моя тишина.	My turf, my quiet.
+V054	058	select	раздел	Дела идут. Не мешай.	Business is rolling. Don't interrupt.
+V054	059	select	раздел	Проблемы я решаю лично.	I solve problems personally.
+V054	060	select	раздел	Здесь платят за вход.	There's an entrance fee.
+V054	061	select	раздел	Кто сказал, что можно?	Who said you could?
+V054	062	select	раздел	Мне докладывали о тебе.	I've heard about you.
+V054	063	select	раздел	Дверь закрой. Сквозняк.	Shut the door. Draft.
+V054	064	select	раздел	Я не толстый. Я солидный.	I'm not fat. I'm substantial.
+V054	065	select	раздел	Мой костюм дороже твоего дома.	My suit costs more than your house.
+V054	066	select	раздел	Тут меня любят. Вынужденно.	They love me here. Compulsorily.
+V054	067	select	раздел	Зубочистку не видел? Золотая.	Seen my toothpick? Golden.
+V054	068	select	раздел	Я бы встал, но зачем.	I'd stand, but why.
+V054	069	select	раздел	Налоги я не отдаю. Я собираю.	I don't pay taxes. I collect them.
+V054	070	select	раздел	Босс на связи. Остальные — потом.	Boss on the line. Others later.
+V054	071	select	раздел	Моя мама гордилась бы. Наверное.	Mom would be proud. Probably.
+V054	072	select	раздел	Охрана! Ах да, это я.	Guards! Oh right, that's me.
+V054	073	move	раздел	Иду.	Going.
+V054	074	move	раздел	Прогуляюсь.	I'll stroll.
+V054	075	move	раздел	Хорошо.	Fine.
+V054	076	move	раздел	Не спеша.	No hurry.
+V054	077	move	раздел	Двигаю.	Moving.
+V054	078	move	раздел	Пусть будет так.	So be it.
+V054	079	move	раздел	Принято.	Noted.
+V054	080	move	раздел	Сам пойду.	I'll go myself.
+V054	081	move	раздел	За мной.	Follow me.
+V054	082	move	раздел	С пути.	Out of the way.
+V054	083	move	раздел	Пошёл.	Off.
+V054	084	move	раздел	Туда, значит.	There, then.
+V054	085	move	раздел	Хм. Идём.	Hm. Let's go.
+V054	086	move	раздел	Посмотрим.	We'll see.
+V054	087	move	раздел	Двинулись.	Let's move.
+V054	088	move	раздел	Без суеты.	No fuss.
+V054	089	move	раздел	Иду, иду.	Coming, coming.
+V054	090	move	раздел	Пройдусь. Проверю порядок.	I'll walk. Check the order.
+V054	091	move	раздел	Иду. Пусть кланяются.	Going. Let them bow.
+V054	092	move	раздел	Всё моё, значит, и тут.	All mine, so here too.
+V054	093	move	раздел	Подойду. Люблю смотреть вблизи.	I'll come. I like a close look.
+V054	094	move	раздел	Я лично. Так надёжнее.	Personally. It's safer.
+V054	095	move	раздел	Пойду, поздороваюсь со всеми.	I'll go say hi to everyone.
+V054	096	move	раздел	Иду. Ковёр не помять.	Going. Don't wrinkle the carpet.
+V054	097	move	раздел	Улыбайтесь. Я иду.	Smile. I'm coming.
+V054	098	move	раздел	Прогуляемся по моим владениям.	Stroll through my domain.
+V054	099	move	раздел	Не бегаю. Я прибываю.	I don't run. I arrive.
+V054	100	move	раздел	Шаг за шагом. Дело верное.	Step by step. Sure thing.
+V054	101	move	раздел	Вперёд. Бумаги потом подпишем.	Forward. We'll sign papers later.
+V054	102	move	раздел	Иду. Приберите за мной.	Going. Clean up after me.
+V054	103	move	раздел	Ладно. Но без спешки.	Fine. But no rush.
+V054	104	move	раздел	Туда не хожу. Сегодня схожу.	I don't go there. Today I will.
+V054	105	move	раздел	Подойду. Оставьте мне место.	I'm coming. Save me a seat.
+V054	106	move	раздел	Идём, пока настроение хорошее.	Let's go while I'm in a good mood.
+V054	107	move	раздел	Иду. Свита, не отставать.	Going. Entourage, keep up.
+V054	108	move	раздел	Я не бегаю. Бегают должники.	I don't run. Debtors run.
+V054	109	move	раздел	Ковровую дорожку мне. Хоть воображаемую.	Red carpet for me. Imaginary will do.
+V054	110	move	раздел	Хожу медленно. Зато с охраной.	I walk slow. But guarded.
+V054	111	move	раздел	Каждый мой шаг — это деньги.	Every step of mine is money.
+V054	112	move	раздел	Иду. Кто помешает — заплатит.	Going. Whoever interrupts pays.
+V054	113	move	раздел	Хорошо. Только без оваций.	Fine. No applause, please.
+V054	114	move	раздел	Раньше меня носили. Теперь иду.	I used to be carried. Now I walk.
+V054	115	move	раздел	Вход свободный. Выход платный.	Entry's free. Exit is paid.
+V054	116	move	раздел	Это не маршрут. Это моя улица.	It's not a route. It's my street.
 V055	01	select	место	Чё, уже разборка?	What, fight started already?
 V055	02	move	место	Газуй! Там ещё целое!	Floor it! Stuff's still intact!
 V055	03	weapon	место	Уйди с дороги, трофей!	Off the road, trophy!
@@ -5736,6 +6564,98 @@ V055	21	annoyed	раздел	Ну чего тыкаешь, я ж еду!	Quit po
 V055	22	annoyed	раздел	Хватит сигналить!	Stop honking!
 V055	23	annoyed	раздел	Сам рули, раз умный!	Drive yourself, smart guy!
 V055	24	annoyed	раздел	Ещё раз — и перееду!	Once more and I run you over!
+V055	025	select	раздел	Ну?	Well?
+V055	026	select	раздел	Чего?	What?
+V055	027	select	раздел	Здесь!	Here!
+V055	028	select	раздел	Газ!	Gas!
+V055	029	select	раздел	Слышу!	I hear!
+V055	030	select	раздел	Да, да!	Yeah, yeah!
+V055	031	select	раздел	Ага!	Yep!
+V055	032	select	раздел	Давай!	Go on!
+V055	033	select	раздел	Что, едем?	We riding?
+V055	034	select	раздел	Тормозить? Нет!	Brake? No!
+V055	035	select	раздел	Скорей!	Quick!
+V055	036	select	раздел	Ой, кто это?	Oh, who's that?
+V055	037	select	раздел	На связи!	On the line!
+V055	038	select	раздел	Слушаю!	Listening!
+V055	039	select	раздел	Ну, где пожар?	Where's the fire?
+V055	040	select	раздел	Что у нас?	What've we got?
+V055	041	select	раздел	Готова!	Ready!
+V055	042	select	раздел	Тут я, тут.	Right here.
+V055	043	select	раздел	Эй, эй!	Hey, hey!
+V055	044	select	раздел	Мотор!	Engine!
+V055	045	select	раздел	Бензин на нуле, а я нет.	Tank's empty, I'm not.
+V055	046	select	раздел	Тут бы чего-нибудь взорвать!	Let's blow something up!
+V055	047	select	раздел	Люблю, когда шумно.	Love it when it's loud.
+V055	048	select	раздел	Давай уж, пока не остыла.	Go on, before I cool.
+V055	049	select	раздел	Ветер в волосах! Ну, почти.	Wind in my hair! Almost.
+V055	050	select	раздел	Что, вернулись за добычей?	Back for loot already?
+V055	051	select	раздел	Скорость — моя религия.	Speed's my religion.
+V055	052	select	раздел	Мне платят за скорость.	I'm paid for speed.
+V055	053	select	раздел	Хватит стоять, поехали!	Enough standing, let's ride!
+V055	054	select	раздел	Шумно, весело, как люблю.	Loud, fun, just how I like.
+V055	055	select	раздел	Выхлоп чуешь? Это любовь.	Smell the exhaust? It's love.
+V055	056	select	раздел	Дай мне кого-нибудь догнать.	Let me chase someone.
+V055	057	select	раздел	Руль крутить — это жизнь.	Steering wheel is life.
+V055	058	select	раздел	Не мешай, я разгоняюсь.	Don't bother, I'm revving.
+V055	059	select	раздел	Эй, у кого запасное колесо?	Anyone got a spare wheel?
+V055	060	select	раздел	Кто-то сказал «скоростное»?	Somebody say "fast"?
+V055	061	select	раздел	Всё горит, всё гремит. Класс!	Everything burns and booms. Great!
+V055	062	select	раздел	Слышишь мотор? Я пою.	Hear the engine? I'm singing.
+V055	063	select	раздел	Говори, только без кислых лиц.	Talk, but no sour faces.
+V055	064	select	раздел	Права? Они мне не нужны.	Licence? Don't need one.
+V055	065	select	раздел	Парковка? Не, не слышала.	Parking? Never heard of it.
+V055	066	select	раздел	Пристегнись. Хотя нет, не надо.	Buckle up. Actually, don't.
+V055	067	select	раздел	Мои тормоза — чужие крики.	My brakes are other people's screams.
+V055	068	select	раздел	Ой, а асфальт кончился.	Oh, the asphalt ended.
+V055	069	select	раздел	Лучший водитель района. Спроси стену.	Best driver around. Ask the wall.
+V055	070	select	раздел	Бензин дорог, смех бесплатный.	Fuel's pricey, laughs are free.
+V055	071	select	раздел	Кто там сзади? А, это пыль.	Who's behind? Oh, it's dust.
+V055	072	select	раздел	Не бойся, я почти умею.	Don't worry, I almost know how.
+V055	073	move	раздел	Еду!	Going!
+V055	074	move	раздел	Гоню!	Racing!
+V055	075	move	раздел	Жму!	Pressing!
+V055	076	move	раздел	Есть!	Yes!
+V055	077	move	раздел	Давай-давай!	Come on!
+V055	078	move	раздел	Понеслась!	Here we go!
+V055	079	move	раздел	Вперёд!	Forward!
+V055	080	move	раздел	Мчусь!	Speeding!
+V055	081	move	раздел	Ага, туда!	Yeah, there!
+V055	082	move	раздел	Лечу!	Flying!
+V055	083	move	раздел	Ай, ладно!	Ugh, fine!
+V055	084	move	раздел	Едем!	Riding!
+V055	085	move	раздел	Двигаюсь!	Moving!
+V055	086	move	раздел	Рванула!	Bolted!
+V055	087	move	раздел	Не вопрос!	No problem!
+V055	088	move	раздел	Прокачусь!	I'll take a ride!
+V055	089	move	раздел	Эй, посторонись!	Hey, move aside!
+V055	090	move	раздел	Иду, но лучше бы поехали.	Walking, but I'd rather ride.
+V055	091	move	раздел	Ноги — это тоже транспорт.	Legs are transport too.
+V055	092	move	раздел	Ух, как ветер свистит!	Wow, hear the wind whistle!
+V055	093	move	раздел	Не держи, я уже разогналась.	Don't hold me, I'm already revving.
+V055	094	move	раздел	Короткий путь знаю. Быстрый.	I know a shortcut. Fast.
+V055	095	move	раздел	Кто со мной? Живём быстро!	Who's with me? Live fast!
+V055	096	move	раздел	Давай, где там поворот?	Come on, where's the turn?
+V055	097	move	раздел	Пыль глотать будете вы.	You'll eat my dust.
+V055	098	move	раздел	Иду. Колёса сами несут.	Going. Wheels carry me.
+V055	099	move	раздел	Не отставайте, слабаки.	Don't fall behind, weaklings.
+V055	100	move	раздел	Скорость чую! Вперёд!	Smell the speed! Onward!
+V055	101	move	раздел	Вот это я понимаю — рывок.	Now that's a dash.
+V055	102	move	раздел	Ладно, но быстро.	Fine, but fast.
+V055	103	move	раздел	Куда? Туда? Уже там.	Where? There? Already there.
+V055	104	move	раздел	Душа поёт, ноги тоже.	Soul sings, legs too.
+V055	105	move	раздел	Иду. Громко, как люблю.	Going. Loudly, as I like.
+V055	106	move	раздел	Шины горят. Красота!	Tires burn. Beautiful!
+V055	107	move	раздел	Держитесь, объезжаю!	Hold on, going around!
+V055	108	move	раздел	Бегу. Я ж не за рулём.	Running. I'm not driving.
+V055	109	move	раздел	Если врежусь — это был манёвр.	If I crash, it was a manoeuvre.
+V055	110	move	раздел	Свет красный? Для кого?	Red light? For whom?
+V055	111	move	раздел	Прощай, парковка. Я ушла.	Goodbye, parking. I'm off.
+V055	112	move	раздел	Стена? Какая стена?	Wall? What wall?
+V055	113	move	раздел	Ограничение скорости? Не слышала.	Speed limit? Never heard.
+V055	114	move	раздел	Я не бегу. Я иду очень быстро.	I'm not running. I walk very fast.
+V055	115	move	раздел	Подвиньтесь, а то задену.	Move over or I'll clip you.
+V055	116	move	раздел	Глушитель? Это что такое?	Muffler? What's that?
 V056	01	select	место	Я здесь. По запаху не чуешь?	I'm here. Can't smell me?
 V056	02	move	место	Полезли. Уже грязные всё равно.	In we go. Already filthy anyway.
 V056	03	weapon	место	Отмоешься. Если повезёт.	It'll wash off. If you're lucky.
@@ -5760,6 +6680,98 @@ V056	21	annoyed	раздел	Руки потом не отмоешь.	Your hands
 V056	22	annoyed	раздел	Хватит трогать. Брызгаешь.	Stop touching. You're splashing.
 V056	23	annoyed	раздел	Ну поняла я. Поняла.	I got it. I got it.
 V056	24	annoyed	раздел	Ещё раз — обниму.	Once more and I'll hug you.
+V056	025	select	раздел	Хлюп.	Squelch.
+V056	026	select	раздел	Да?	Yeah?
+V056	027	select	раздел	Здесь.	Here.
+V056	028	select	раздел	Ну?	Well?
+V056	029	select	раздел	Слышу.	I hear.
+V056	030	select	раздел	Мм-хм.	Mm-hm.
+V056	031	select	раздел	Говори.	Talk.
+V056	032	select	раздел	Чего тебе?	What d'you want?
+V056	033	select	раздел	Не спеши.	Don't rush.
+V056	034	select	раздел	Ага...	Yeah...
+V056	035	select	раздел	Мокро тут.	It's wet here.
+V056	036	select	раздел	Фу. Слушаю.	Ew. Listening.
+V056	037	select	раздел	Здесь, здесь.	Here, here.
+V056	038	select	раздел	Угу.	Uh-huh.
+V056	039	select	раздел	Секундочку.	One sec.
+V056	040	select	раздел	Ну, давай.	Go on.
+V056	041	select	раздел	Липко тут.	Sticky here.
+V056	042	select	раздел	Да, милый?	Yes, darling?
+V056	043	select	раздел	Хм?	Hm?
+V056	044	select	раздел	Булькаю.	Bubbling.
+V056	045	select	раздел	Вытри ноги. Хотя зачем.	Wipe your feet. Why bother.
+V056	046	select	раздел	Чувствуешь аромат? Это я.	Smell that aroma? That's me.
+V056	047	select	раздел	В грязи уютно. Попробуй.	Mud's cozy. Try it.
+V056	048	select	раздел	Ты чистый? Какая жалость.	You're clean? What a pity.
+V056	049	select	раздел	Тут всё скользкое. Привыкай.	Everything's slippery. Get used to it.
+V056	050	select	раздел	Налипло уже. Говори.	Already stuck. Talk.
+V056	051	select	раздел	Из болота — к тебе.	From the swamp to you.
+V056	052	select	раздел	Я как раз отмокала.	I was just soaking.
+V056	053	select	раздел	Что, снова в бой? Ладно.	What, battle again? Fine.
+V056	054	select	раздел	Жижа тёплая. Мне хорошо.	Slime's warm. I feel good.
+V056	055	select	раздел	Не наступи в лужу. Моя.	Don't step in the puddle. Mine.
+V056	056	select	раздел	Любишь грязь? Я тоже.	Love mud? Me too.
+V056	057	select	раздел	Шлёпай ближе, не бойся.	Squelch closer, don't fear.
+V056	058	select	раздел	Только не брызгай. Ладно?	Just don't splash. Okay?
+V056	059	select	раздел	Мне нравится, как оно чавкает.	I like the squelch.
+V056	060	select	раздел	Моя грязь — моя крепость.	My mud, my fortress.
+V056	061	select	раздел	Ты тоже весь в тине? Нет?	Not covered in slime? No?
+V056	062	select	раздел	Воняет? Привыкнешь.	Smells? You'll adapt.
+V056	063	select	раздел	Тише. Я слушаю болото.	Quiet. I'm listening to the swamp.
+V056	064	select	раздел	Я чистая. Просто цвет такой.	I'm clean. It's just the colour.
+V056	065	select	раздел	Купалась утром. В канаве.	Bathed this morning. In a ditch.
+V056	066	select	раздел	Мне сказали помыться. Я обиделась.	Told to wash. I took offence.
+V056	067	select	раздел	Мой парфюм — болото. Эксклюзив.	My perfume's swamp. Exclusive.
+V056	068	select	раздел	Один раз помылась. Не понравилось.	Washed once. Didn't like it.
+V056	069	select	раздел	Я не грязная. Я с историей.	I'm not dirty. I've got history.
+V056	070	select	раздел	Кто-то сказал «ванна»? Где?	Someone said "bath"? Where?
+V056	071	select	раздел	Лягушки меня знают. И уважают.	Frogs know me. And respect me.
+V056	072	select	раздел	Тину не трогай. Она моя.	Don't touch the slime. It's mine.
+V056	073	move	раздел	Иду.	Going.
+V056	074	move	раздел	Тащусь.	Trudging.
+V056	075	move	раздел	Хлюп-хлюп.	Squelch, squelch.
+V056	076	move	раздел	Ладно.	Fine.
+V056	077	move	раздел	Идём.	Let's go.
+V056	078	move	раздел	Шлёп.	Splat.
+V056	079	move	раздел	Угу, иду.	Uh-huh, going.
+V056	080	move	раздел	Двигаюсь.	Moving.
+V056	081	move	раздел	Сейчас.	Now.
+V056	082	move	раздел	Брр, иду.	Brr, going.
+V056	083	move	раздел	Липну, но иду.	Sticking, but going.
+V056	084	move	раздел	Вязну. Иду.	Sinking. Going.
+V056	085	move	раздел	Топаю.	Stomping.
+V056	086	move	раздел	Тянусь.	Dragging on.
+V056	087	move	раздел	Ага, туда.	Yeah, there.
+V056	088	move	раздел	Тихо, тихо.	Easy, easy.
+V056	089	move	раздел	Скольжу.	Sliding.
+V056	090	move	раздел	Иду, оставляя след. Красиво.	Going, leaving a trail. Pretty.
+V056	091	move	раздел	Лужа? Мой любимый путь.	Puddle? My favourite route.
+V056	092	move	раздел	По грязи — как по маслу.	Through mud like butter.
+V056	093	move	раздел	Не отставай, а то засосёт.	Keep up or it sucks you in.
+V056	094	move	раздел	Иду. Сапоги уже не спасти.	Going. Boots are doomed.
+V056	095	move	раздел	Туда мокро? Отлично, пойду.	Wet there? Great, I'll go.
+V056	096	move	раздел	Пробираюсь сквозь тину.	Wading through the slime.
+V056	097	move	раздел	Иду, оставляю лужицы.	Going, leaving puddles.
+V056	098	move	раздел	Ноги чавкают, я тоже.	Feet squelch, me too.
+V056	099	move	раздел	Хорошо, только не торопи.	Fine, just don't rush me.
+V056	100	move	раздел	Скоро доберусь. Ну, к вечеру.	I'll get there. By evening.
+V056	101	move	раздел	Там сухо? Принесу своё болото.	Dry there? I'll bring my own swamp.
+V056	102	move	раздел	Иду, но грязь за мной.	Going, but the mud follows.
+V056	103	move	раздел	Иду по канаве. Люблю.	Walking the ditch. Love it.
+V056	104	move	раздел	Брызг не бойся. Я осторожно.	Don't fear splashes. I'm careful.
+V056	105	move	раздел	Иду. Чистюли пусть ждут.	Going. Let the clean freaks wait.
+V056	106	move	раздел	Топаю, пока не засосало.	Stomping before it sucks me in.
+V056	107	move	раздел	Тянусь к цели. Медленно.	Reaching the goal. Slowly.
+V056	108	move	раздел	Дойду. Только сначала отмокну.	I'll get there. After a soak.
+V056	109	move	раздел	Иду. Хлюпаю в ритме.	Going. Squelching in rhythm.
+V056	110	move	раздел	Не бойся, это не я. Это лужа.	Not me, that's the puddle.
+V056	111	move	раздел	Брызнуло? Это для красоты.	Splashed? That's for beauty.
+V056	112	move	раздел	Я не медленная. Я основательная.	I'm not slow. I'm thorough.
+V056	113	move	раздел	Говорят, грязь вредна. Не слушала.	They say mud's harmful. Didn't listen.
+V056	114	move	раздел	Если упаду — это танец.	If I fall, it's dancing.
+V056	115	move	раздел	Иду. Меня уже не отмыть.	Going. I can't be washed anymore.
+V056	116	move	раздел	Иду по следам. Своим.	Following the tracks. My own.
 V057	01	select	место	Кому тут холодно?	Who's cold here?
 V057	02	move	место	Иду. Горючее не расплескайте.	Coming. Don't spill the fuel.
 V057	03	weapon	место	Погреемся, милый?	Warm up, sweetheart?
@@ -5784,6 +6796,98 @@ V057	21	annoyed	раздел	Ой, горячо же!	Ouch, that's hot!
 V057	22	annoyed	раздел	Не дёргай, пролью.	Don't jerk me, I'll spill.
 V057	23	annoyed	раздел	Поняла, милый. Всё сожгу.	Got it, dear. I'll burn it all.
 V057	24	annoyed	раздел	Ещё раз — и обожжёшься.	Once more and you'll get burned.
+V057	025	select	раздел	Да?	Yes?
+V057	026	select	раздел	Слушаю, милый.	Listening, dear.
+V057	027	select	раздел	Тут я.	Here.
+V057	028	select	раздел	Ну что?	What is it?
+V057	029	select	раздел	Слушаю.	Listening.
+V057	030	select	раздел	Да, дорогой?	Yes, darling?
+V057	031	select	раздел	Ага!	Yep!
+V057	032	select	раздел	Чаю?	Tea?
+V057	033	select	раздел	Что, зажигать?	Light it up?
+V057	034	select	раздел	Я рядом.	I'm nearby.
+V057	035	select	раздел	Тёпленько.	Toasty.
+V057	036	select	раздел	Здесь. Горячая.	Here. Hot.
+V057	037	select	раздел	Что-то случилось?	Something wrong?
+V057	038	select	раздел	Мм?	Mm?
+V057	039	select	раздел	Спички нужны?	Need matches?
+V057	040	select	раздел	Ну-ну.	Well, well.
+V057	041	select	раздел	Скучали?	Missed me?
+V057	042	select	раздел	Да, зайка?	Yes, bunny?
+V057	043	select	раздел	Горю желанием.	Burning to help.
+V057	044	select	раздел	На месте.	In place.
+V057	045	select	раздел	Подогреть тебя, милый?	Warm you up, dear?
+V057	046	select	раздел	Дымок вьётся, значит, я рядом.	Smoke curls, so I'm near.
+V057	047	select	раздел	Не волнуйся, я аккуратно.	Don't worry, I'm careful.
+V057	048	select	раздел	Люблю огонь. Он не спорит.	I love fire. It doesn't argue.
+V057	049	select	раздел	Давай что-нибудь подожжём?	Shall we burn something?
+V057	050	select	раздел	Баллон полный, настроение тоже.	Tank full, mood too.
+V057	051	select	раздел	У меня тут всё под контролем.	Everything's under control here.
+V057	052	select	раздел	Холодно? Я исправлю.	Cold? I'll fix that.
+V057	053	select	раздел	Рада слышать. Что поджечь?	Glad to hear. What do I burn?
+V057	054	select	раздел	Пирожки не пеку, зато жарю.	Don't bake pies, but I roast.
+V057	055	select	раздел	Мне нравится, как оно трещит.	I like how it crackles.
+V057	056	select	раздел	Я сегодня очень тёплая.	I'm very warm today.
+V057	057	select	раздел	Не бойся, я не кусаюсь. Горю.	Don't fear, I don't bite. I burn.
+V057	058	select	раздел	Зажигалка при мне. Всегда.	Lighter on me. Always.
+V057	059	select	раздел	У меня для тебя огонёк.	I've got a little flame for you.
+V057	060	select	раздел	Давай, пока не остыло.	Go on, before it cools.
+V057	061	select	раздел	Камин, плед и пожар.	Fireplace, blanket, blaze.
+V057	062	select	раздел	Смотри, как красиво горит!	Look how pretty it burns!
+V057	063	select	раздел	Ты у меня умница. Говори.	You're a good one. Talk.
+V057	064	select	раздел	Я не поджигательница. Я декоратор.	I'm no arsonist. I'm a decorator.
+V057	065	select	раздел	Пожарные меня знают. По имени.	Firefighters know me. By name.
+V057	066	select	раздел	Дым — это мой парфюм.	Smoke is my perfume.
+V057	067	select	раздел	Мама просила не играть с огнём.	Mom asked me not to play with fire.
+V057	068	select	раздел	Не дыши рядом. Мало ли.	Don't breathe near me. Just in case.
+V057	069	select	раздел	Кто просил поджечь? Я уже.	Who asked to burn? Already did.
+V057	070	select	раздел	Я не злая. Я тёплая.	I'm not mean. I'm warm.
+V057	071	select	раздел	Ой, а это горело? Уже нет.	Oh, was that burning? Not anymore.
+V057	072	select	раздел	Огонь — лучший собеседник.	Fire's the best conversationalist.
+V057	073	move	раздел	Иду.	Going.
+V057	074	move	раздел	Иду, милый.	Going, dear.
+V057	075	move	раздел	Хорошо.	Okay.
+V057	076	move	раздел	Пойду.	I'll go.
+V057	077	move	раздел	Бегу.	Running.
+V057	078	move	раздел	Сейчас.	Coming.
+V057	079	move	раздел	Ага, иду.	Yep, going.
+V057	080	move	раздел	Уже иду.	Already going.
+V057	081	move	раздел	Тихонько.	Quietly.
+V057	082	move	раздел	С огоньком!	With a spark!
+V057	083	move	раздел	Ну, вперёд.	Well, forward.
+V057	084	move	раздел	Двигаюсь.	Moving.
+V057	085	move	раздел	Туда, да?	There, right?
+V057	086	move	раздел	Греюсь на ходу.	Warming on the go.
+V057	087	move	раздел	Горячо! Иду!	Hot! Going!
+V057	088	move	раздел	Следом иду.	Following.
+V057	089	move	раздел	Шагаю.	Walking.
+V057	090	move	раздел	Иду. Шланг не перегните.	Going. Don't kink the hose.
+V057	091	move	раздел	Иду, как на пикник.	Going like it's a picnic.
+V057	092	move	раздел	Там сухая трава? Иду!	Dry grass there? Going!
+V057	093	move	раздел	Пойду, посмотрю, что горит.	I'll see what's burning.
+V057	094	move	раздел	Иду. Всё на пути согреется.	Going. All on my path warms up.
+V057	095	move	раздел	Дымок за мной, не теряйтесь.	Smoke follows, don't get lost.
+V057	096	move	раздел	Хорошо, только без суеты.	Fine, no fuss.
+V057	097	move	раздел	Согрею кого-нибудь по пути.	I'll warm someone on the way.
+V057	098	move	раздел	Иду. Баллон не трясите.	Going. Don't shake the tank.
+V057	099	move	раздел	Лёгкой походкой — и в огонь.	With light step into fire.
+V057	100	move	раздел	Туда, где потеплее.	Where it's warmer.
+V057	101	move	раздел	Иду. Это не дым, это я.	Going. That's not smoke, it's me.
+V057	102	move	раздел	Не отставай, а то замёрзнешь.	Keep up or you'll freeze.
+V057	103	move	раздел	Иду. С собой — тепло.	Going. Bringing warmth.
+V057	104	move	раздел	Ножками, ножками, вперёд.	Little feet, forward.
+V057	105	move	раздел	Прогуляюсь, пока не потухло.	I'll stroll while it burns.
+V057	106	move	раздел	Иду. Спички, на всякий случай, взяла.	Going. Took matches, just in case.
+V057	107	move	раздел	Хорошо, только костёр подождёт.	Fine, the bonfire can wait.
+V057	108	move	раздел	Иду. Ничего не подожгла. Пока.	Going. Haven't burned anything. Yet.
+V057	109	move	раздел	Если что-то загорится, это не я.	If something ignites, not me.
+V057	110	move	раздел	Мои следы горячие. Не наступай.	My tracks are hot. Don't step.
+V057	111	move	раздел	Иду. Дым — это моя тень.	Going. Smoke's my shadow.
+V057	112	move	раздел	Лёгкой походкой, тяжёлым баллоном.	Light step, heavy tank.
+V057	113	move	раздел	Туда ещё не горело? Исправлю.	Hasn't burned there yet? I'll fix.
+V057	114	move	раздел	Это не бегство. Это пламенный рывок.	Not an escape. A fiery dash.
+V057	115	move	раздел	Не смотри так, я загорюсь.	Don't look like that, I'll ignite.
+V057	116	move	раздел	Идём. Я захватила зефир.	Let's go. I brought marshmallows.
 V058	01	select	место	Ты покупать или спрашивать?	Buying or asking questions?
 V058	02	move	место	Подойду. Товар припрячь.	Coming over. Hide the goods.
 V058	03	weapon	место	Руки от груза, таможня!	Hands off the cargo, customs!
@@ -5808,6 +6912,98 @@ V058	21	annoyed	раздел	Каждый щелчок — по прайсу.	Ev
 V058	22	annoyed	раздел	Я уже ответил. Дважды.	I answered. Twice.
 V058	23	annoyed	раздел	Ещё раз — счёт выставлю.	Once more and I bill you.
 V058	24	annoyed	раздел	Не мельтеши, клиентов пугаешь.	Stop fussing. You're scaring clients.
+V058	025	select	раздел	Да?	Yes?
+V058	026	select	раздел	Слушаю.	Listening.
+V058	027	select	раздел	Что нужно?	What do you need?
+V058	028	select	раздел	Тише.	Quiet.
+V058	029	select	раздел	Чем помочь?	How can I help?
+V058	030	select	раздел	Говори.	Talk.
+V058	031	select	раздел	Я весь твой.	I'm all yours.
+V058	032	select	раздел	Друг мой.	My friend.
+V058	033	select	раздел	Здесь.	Here.
+V058	034	select	раздел	Ну?	Well?
+V058	035	select	раздел	Что-то нужно?	Need anything?
+V058	036	select	раздел	Какой товар?	Which goods?
+V058	037	select	раздел	Цена?	Price?
+V058	038	select	раздел	Слышу.	I hear.
+V058	039	select	раздел	Да, клиент?	Yes, client?
+V058	040	select	раздел	Минуту.	One minute.
+V058	041	select	раздел	Не здесь.	Not here.
+V058	042	select	раздел	Без свидетелей.	No witnesses.
+V058	043	select	раздел	Рад видеть.	Good to see you.
+V058	044	select	раздел	Давай коротко.	Keep it short.
+V058	045	select	раздел	Всё достану. Кроме совести.	I can get anything. Except conscience.
+V058	046	select	раздел	У меня есть всё, что нужно.	I've got everything you need.
+V058	047	select	раздел	Деньги вперёд — тогда говорим.	Money first, then we talk.
+V058	048	select	раздел	Не продаю — помогаю. За деньги.	I don't sell, I help. For money.
+V058	049	select	раздел	Товар свежий. Происхождение — тайна.	Goods fresh. Origin — secret.
+V058	050	select	раздел	Таможня спит, я нет.	Customs sleeps, I don't.
+V058	051	select	раздел	Накладная потеряна. Как удобно.	Invoice lost. How convenient.
+V058	052	select	раздел	Есть кое-что для тебя.	I've got something for you.
+V058	053	select	раздел	Только своим. И подороже.	Only for friends. At a markup.
+V058	054	select	раздел	Знаю нужных людей. Всех.	I know the right people. All.
+V058	055	select	раздел	Без чеков, без вопросов.	No receipts, no questions.
+V058	056	select	раздел	Лишние глаза — лишние расходы.	Extra eyes, extra costs.
+V058	057	select	раздел	Рынок меняется. Я — нет.	Market changes. I don't.
+V058	058	select	раздел	Предложение действует до утра.	Offer stands until morning.
+V058	059	select	раздел	Могу достать любой ящик.	I can get any crate.
+V058	060	select	раздел	Скажи, что нужно. Найду.	Say what you need. I'll find it.
+V058	061	select	раздел	Свой человек — скидка. Шучу.	Insider discount. Joking.
+V058	062	select	раздел	Дело тонкое. Говори тише.	Delicate matter. Speak softly.
+V058	063	select	раздел	В моём деле главное — тишина.	In my line, silence matters.
+V058	064	select	раздел	Законы? Я их не нарушаю. Обхожу.	Laws? I don't break them. I detour.
+V058	065	select	раздел	У меня нет склада. Склад — везде.	I have no warehouse. It's everywhere.
+V058	066	select	раздел	Вчера продал совесть. Недорого.	Sold my conscience yesterday. Cheap.
+V058	067	select	раздел	Лишнего не говорю. Только ценное.	I don't say extras. Only valuables.
+V058	068	select	раздел	Скидка — это когда я сплю.	Discount is when I'm asleep.
+V058	069	select	раздел	Купи что-нибудь. Я стесняюсь.	Buy something. I'm shy.
+V058	070	select	раздел	Контрабанда? Нет, это сувениры.	Contraband? No, souvenirs.
+V058	071	select	раздел	Мой девиз: не пойман — не вор.	Motto: not caught, not a thief.
+V058	072	select	раздел	Я честный. Просто по-своему.	I'm honest. In my own way.
+V058	073	move	раздел	Иду.	Going.
+V058	074	move	раздел	Двигаюсь.	Moving.
+V058	075	move	раздел	Иду тихо.	Going quiet.
+V058	076	move	раздел	Понял.	Understood.
+V058	077	move	раздел	Принято.	Accepted.
+V058	078	move	раздел	Хорошо.	Fine.
+V058	079	move	раздел	Без шума.	No noise.
+V058	080	move	раздел	Проскочу.	I'll slip through.
+V058	081	move	раздел	Обойду.	I'll bypass.
+V058	082	move	раздел	Пройду.	I'll pass.
+V058	083	move	раздел	По тени.	Through shadow.
+V058	084	move	раздел	Скоро буду.	Be there soon.
+V058	085	move	раздел	Уже иду.	Already going.
+V058	086	move	раздел	В обход.	Around.
+V058	087	move	раздел	Не видели.	You didn't see.
+V058	088	move	раздел	Груз при мне.	Cargo's with me.
+V058	089	move	раздел	Тихо, тихо.	Easy, easy.
+V058	090	move	раздел	Иду. Таможню обойду.	Going. I'll avoid customs.
+V058	091	move	раздел	Туда есть чёрный ход.	There's a back entrance.
+V058	092	move	раздел	Двигаюсь. Не привлекайте внимания.	Moving. Don't draw attention.
+V058	093	move	раздел	Иду. Только не бегите с товаром.	Going. Don't run with the goods.
+V058	094	move	раздел	Пройду там, где не ходят.	I'll go where nobody goes.
+V058	095	move	раздел	Пройдём. Охрана подкуплена.	We'll pass. Guards are bought.
+V058	096	move	раздел	Иду. Шагай следом, не шуми.	Going. Follow quietly.
+V058	097	move	раздел	Маршрут запасной, зато надёжный.	Backup route, but reliable.
+V058	098	move	раздел	Секундочку. Путь уточню.	One sec. Checking the route.
+V058	099	move	раздел	Пойду, договорюсь с постом.	I'll go deal with the post.
+V058	100	move	раздел	Ладно. Но ты в долгу.	Fine. But you owe me.
+V058	101	move	раздел	Иду. По пути продам что-нибудь.	Going. I'll sell something on the way.
+V058	102	move	раздел	Двигаюсь. Ничего подозрительного.	Moving. Nothing suspicious.
+V058	103	move	раздел	Знаю короткий путь. Платный.	I know a shortcut. It's paid.
+V058	104	move	раздел	Сейчас будем. Если не остановят.	We'll be there. If not stopped.
+V058	105	move	раздел	Иду. Свет не включай.	Going. Don't turn on lights.
+V058	106	move	раздел	Шаг — и я на месте.	One step and I'm there.
+V058	107	move	раздел	Как скажешь. Только не бегом.	As you say. Not running.
+V058	108	move	раздел	Я не бегу. Я доставляю.	I'm not running. I'm delivering.
+V058	109	move	раздел	Если остановят, я турист.	If stopped, I'm a tourist.
+V058	110	move	раздел	Маршрут — тайна. Даже от меня.	Route is secret. Even from me.
+V058	111	move	раздел	Иду. Без накладной, но с душой.	Going. No invoice, but with soul.
+V058	112	move	раздел	Иду. Таможня, не смотри.	Going. Customs, don't look.
+V058	113	move	раздел	Шагаю налегке. Вру.	Walking light. Lying.
+V058	114	move	раздел	В моих карманах только воздух.	Only air in my pockets.
+V058	115	move	раздел	Идём. Бесплатно — только слухи.	Going. Only rumours are free.
+V058	116	move	раздел	Не торопите. Контрабанда не любит спешки.	Don't rush. Smuggling hates haste.
 V059	01	select	место	Слушаю. Наши где?	Listening. Where are our people?
 V059	02	move	место	Пошли. Хватит за них работать.	Let's go. Done working for them.
 V059	03	weapon	место	А ну верни, что награбил!	Give back what you stole!
@@ -5832,6 +7028,98 @@ V059	21	annoyed	раздел	Я доброволец, не раб.	Volunteer, no
 V059	22	annoyed	раздел	Понял я. Не дёргай.	I got it. Stop pulling.
 V059	23	annoyed	раздел	Ещё раз — и уйду в профсоюз.	Once more and I join the union.
 V059	24	annoyed	раздел	Мы свергали и за меньшее.	We've toppled bosses for less.
+V059	025	select	раздел	Слушаю.	Listening.
+V059	026	select	раздел	На месте.	In place.
+V059	027	select	раздел	Да?	Yes?
+V059	028	select	раздел	Что там?	What's up?
+V059	029	select	раздел	Говори.	Speak.
+V059	030	select	раздел	Я здесь.	I'm here.
+V059	031	select	раздел	Ну?	Well?
+V059	032	select	раздел	Слушаю, командир.	Listening, commander.
+V059	033	select	раздел	Опять мы?	Us again?
+V059	034	select	раздел	Готов.	Ready.
+V059	035	select	раздел	Что у нас?	What've we got?
+V059	036	select	раздел	Вижу.	I see.
+V059	037	select	раздел	Есть.	Here.
+V059	038	select	раздел	Свободен.	I'm free.
+V059	039	select	раздел	Приказ?	Orders?
+V059	040	select	раздел	Какой план?	What's the plan?
+V059	041	select	раздел	Присутствую.	Present.
+V059	042	select	раздел	Что, пора?	Time already?
+V059	043	select	раздел	Тут я.	Right here.
+V059	044	select	раздел	Жду.	Waiting.
+V059	045	select	раздел	Опять без обеда. Привык.	No lunch again. Used to it.
+V059	046	select	раздел	Мы за свободу, или как?	We're for freedom, or what?
+V059	047	select	раздел	Скажи, что патронов хватит.	Say there's enough ammo.
+V059	048	select	раздел	Ты командуй, я исполню.	You command, I'll do.
+V059	049	select	раздел	Работаем, как договаривались.	We work as agreed.
+V059	050	select	раздел	Ботинки дырявые. Зато идейный.	Boots leaky. But ideological.
+V059	051	select	раздел	Без героизма, пожалуйста.	No heroics, please.
+V059	052	select	раздел	Давай по делу. Скорей.	To the point. Quickly.
+V059	053	select	раздел	Меня не жалко. Говори.	Don't spare me. Speak.
+V059	054	select	раздел	Лишь бы не окружили.	Just don't get surrounded.
+V059	055	select	раздел	Доброволец на связи.	Volunteer on the line.
+V059	056	select	раздел	Что-то мы часто на передовой.	We're often at the front.
+V059	057	select	раздел	Знамя пока в рюкзаке.	Flag's still in the pack.
+V059	058	select	раздел	Ждал приказа. Дождался.	Was waiting for orders. Got them.
+V059	059	select	раздел	Скажешь «вперёд» — пойду.	Say "forward", I go.
+V059	060	select	раздел	Лозунги потом. Сейчас дело.	Slogans later. Work now.
+V059	061	select	раздел	Здесь. Не герой. Но здесь.	Here. Not a hero. But here.
+V059	062	select	раздел	Я с тобой. Куда деваться.	I'm with you. Nowhere to go.
+V059	063	select	раздел	Хоть бы пирожок кто принёс.	If only someone brought a pie.
+V059	064	select	раздел	Свергать — моя работа. Бесплатная.	Toppling's my job. Unpaid.
+V059	065	select	раздел	Боец невидимого фронта. Иногда видимого.	Invisible front fighter. Sometimes visible.
+V059	066	select	раздел	Революция, а лавки закрыты.	Revolution, and shops are shut.
+V059	067	select	раздел	Когда победим, я высплюсь.	When we win, I'll sleep.
+V059	068	select	раздел	Форму мне сшили из лозунгов.	My uniform's sewn from slogans.
+V059	069	select	раздел	Повстанец — не профессия. Диагноз.	Rebel isn't a job. It's a diagnosis.
+V059	070	select	раздел	Я бы сдался, но некому.	I'd surrender, but to whom.
+V059	071	select	раздел	Народ — это я. Приятно познакомиться.	The people are me. Pleased to meet you.
+V059	072	select	раздел	Не стреляйте, я свой. Почти.	Don't shoot, I'm one of you. Mostly.
+V059	073	move	раздел	Иду.	Going.
+V059	074	move	раздел	Понял.	Got it.
+V059	075	move	раздел	Есть, иду.	Aye, going.
+V059	076	move	раздел	Двигаю.	Moving.
+V059	077	move	раздел	Ладно.	Fine.
+V059	078	move	раздел	Выдвигаюсь.	Moving out.
+V059	079	move	раздел	Принял.	Roger.
+V059	080	move	раздел	Сделаю.	Will do.
+V059	081	move	раздел	Перебежкой.	In a dash.
+V059	082	move	раздел	Тихо иду.	Going quiet.
+V059	083	move	раздел	Прикрой.	Cover me.
+V059	084	move	раздел	Бегу.	Running.
+V059	085	move	раздел	Выполняю.	Executing.
+V059	086	move	раздел	Так точно.	Yes sir.
+V059	087	move	раздел	Не отставайте.	Keep up.
+V059	088	move	раздел	Идём.	Let's go.
+V059	089	move	раздел	Держусь рядом.	Staying close.
+V059	090	move	раздел	Иду. Скромно и тихо.	Going. Modest and quiet.
+V059	091	move	раздел	Туда так туда, народ ждёт.	There, then; people wait.
+V059	092	move	раздел	Иду. Враг не дремлет, я тоже.	Going. Enemy doesn't sleep, nor me.
+V059	093	move	раздел	Сначала вперёд, потом разберёмся.	Forward first, sort out later.
+V059	094	move	раздел	Подползу, а там посмотрим.	I'll crawl up, then see.
+V059	095	move	раздел	Короткими шагами, как учили.	Short steps, as taught.
+V059	096	move	раздел	Иду, раз партизан.	Going, since I'm a partisan.
+V059	097	move	раздел	Идём. Лозунг придумаю на ходу.	Going. I'll invent a slogan en route.
+V059	098	move	раздел	Держись за мной. Я знаю тропу.	Stay behind me. I know the trail.
+V059	099	move	раздел	Выдвигаюсь. Кто ещё со мной?	Moving out. Who else?
+V059	100	move	раздел	Двигаемся по-тихому, по-нашему.	Moving quietly, our way.
+V059	101	move	раздел	Смотрю в оба. Иду.	Eyes peeled. Going.
+V059	102	move	раздел	За правое дело. Или за обед.	For a just cause. Or lunch.
+V059	103	move	раздел	Иду. Обувь, правда, дырявая.	Going. Though my shoes leak.
+V059	104	move	раздел	Ну, за свободу. Опять.	Well, for freedom. Again.
+V059	105	move	раздел	Иду. Остальным — тоже пора.	Going. Time for the rest too.
+V059	106	move	раздел	Шагаю. Потом отдохнём.	Marching. We'll rest later.
+V059	107	move	раздел	Занимаю позицию. Без паники.	Taking position. No panic.
+V059	108	move	раздел	Иду на фронт. С пустым желудком.	Off to the front. On empty stomach.
+V059	109	move	раздел	Если что, я просто гулял.	If asked, I was just walking.
+V059	110	move	раздел	Не бегство, а гибкая тактика.	Not fleeing, flexible tactics.
+V059	111	move	раздел	Иду. Революция сама не сделается.	Going. Revolution won't make itself.
+V059	112	move	раздел	Вперёд, пока не раздумал.	Forward before I rethink.
+V059	113	move	раздел	Иду по приказу. Зарплата — потом.	Going on orders. Pay — later.
+V059	114	move	раздел	Ноги есть — значит, воюем.	Got legs, so we fight.
+V059	115	move	раздел	Бегу за свободой. Она убегает.	Chasing freedom. It runs.
+V059	116	move	раздел	Иду. Я тут ни при чём.	Going. Nothing to do with me.
 V060	01	select	место	Да здесь я. Вижу всё.	I'm here. I can see it all.
 V060	02	move	место	Пошли. Сами они не сдадутся.	Let's go. They won't surrender themselves.
 V060	03	weapon	место	Слезай с шеи, начальство!	Get off our backs, boss!
@@ -5856,6 +7144,98 @@ V060	21	annoyed	раздел	Поняла. Не начальствуй.	Got it. 
 V060	22	annoyed	раздел	Ещё раз — и бунт.	Once more and I riot.
 V060	23	annoyed	раздел	Тыкать будешь своим лакеям.	Go poke your own lackeys.
 V060	24	annoyed	раздел	Я ж не глухая. Я злая.	I'm not deaf. Just angry.
+V060	025	select	раздел	Ну?	Well?
+V060	026	select	раздел	Слушаю.	Listening.
+V060	027	select	раздел	Да?	Yes?
+V060	028	select	раздел	Тут.	Here.
+V060	029	select	раздел	Говори.	Talk.
+V060	030	select	раздел	Что надо?	What's needed?
+V060	031	select	раздел	Я готова.	I'm ready.
+V060	032	select	раздел	Давай.	Go ahead.
+V060	033	select	раздел	Есть дело?	Got a job?
+V060	034	select	раздел	Кого бьём?	Who're we hitting?
+V060	035	select	раздел	Слышу, слышу.	I hear, I hear.
+V060	036	select	раздел	Здесь я.	I'm here.
+V060	037	select	раздел	Что у нас?	What've we got?
+V060	038	select	раздел	Ага.	Yep.
+V060	039	select	раздел	Быстрее.	Faster.
+V060	040	select	раздел	Рядом.	Close by.
+V060	041	select	раздел	Да, да.	Yeah, yeah.
+V060	042	select	раздел	На месте.	In place.
+V060	043	select	раздел	Что, пора?	Time already?
+V060	044	select	раздел	Привет.	Hi.
+V060	045	select	раздел	Я устала молчать. Говори.	Tired of silence. Talk.
+V060	046	select	раздел	Давай, пока я весёлая.	Go on while I'm cheerful.
+V060	047	select	раздел	Дело — да. Приказы — нет.	Jobs, yes. Orders, no.
+V060	048	select	раздел	Нас всё меньше, а злости больше.	Fewer of us, more anger.
+V060	049	select	раздел	Мне нужна цель. Любая.	I need a target. Any.
+V060	050	select	раздел	Мои руки чешутся. Дай стрелять.	My hands itch. Let me shoot.
+V060	051	select	раздел	Что, мы наступаем? Наконец.	We're attacking? Finally.
+V060	052	select	раздел	Баррикады строить умею.	I can build barricades.
+V060	053	select	раздел	Знамя я понесу. Давай.	I'll carry the banner. Go.
+V060	054	select	раздел	Говори быстро. Скучать не люблю.	Talk fast. I hate boredom.
+V060	055	select	раздел	Недовольна. Но с тобой.	Unhappy. But with you.
+V060	056	select	раздел	Сегодня я добрая. Пользуйся.	Nice today. Use it.
+V060	057	select	раздел	Мы им покажем. Только скажи.	We'll show them. Just say.
+V060	058	select	раздел	Всё под контролем. Почти.	All under control. Mostly.
+V060	059	select	раздел	Я не злая, я принципиальная.	I'm not angry, I'm principled.
+V060	060	select	раздел	Эй, командир, чего хмуро?	Hey, commander, why the frown?
+V060	061	select	раздел	Бумаги не нужны. Нужен огонь.	No papers. We need fire.
+V060	062	select	раздел	Слушаю. Только без речей.	Listening. No speeches.
+V060	063	select	раздел	Идей много. Патронов мало.	Many ideas. Few bullets.
+V060	064	select	раздел	Я бунтарка по профессии.	Rebel by trade.
+V060	065	select	раздел	Мне говорили: смирись. Я рассмеялась.	They said submit. I laughed.
+V060	066	select	раздел	Если что, виноват начальник.	If anything, the boss is to blame.
+V060	067	select	раздел	Кто там грозил расправой? Я тоже.	Who threatened reprisal? Me too.
+V060	068	select	раздел	Моя мама — тоже мятежница.	My mom's a rebel too.
+V060	069	select	раздел	Революция не ждёт. А я жду.	Revolution doesn't wait. I do.
+V060	070	select	раздел	Давай восстанем. Хотя бы ненадолго.	Let's rise up. Even briefly.
+V060	071	select	раздел	Я не опасная. Я неудобная.	I'm not dangerous. I'm inconvenient.
+V060	072	select	раздел	Дай хоть чем-нибудь тряхнуть.	Let me shake something up.
+V060	073	move	раздел	Иду!	Going!
+V060	074	move	раздел	Бегу!	Running!
+V060	075	move	раздел	Есть!	Aye!
+V060	076	move	раздел	Поняла.	Got it.
+V060	077	move	раздел	Двигаюсь.	Moving.
+V060	078	move	раздел	Шевелись!	Move it!
+V060	079	move	раздел	Ага, иду.	Yep, going.
+V060	080	move	раздел	Вперёд!	Forward!
+V060	081	move	раздел	Быстро!	Fast!
+V060	082	move	раздел	Тихо иду.	Going quiet.
+V060	083	move	раздел	Уже там.	Already there.
+V060	084	move	раздел	Хорошо.	Fine.
+V060	085	move	раздел	Сама дойду.	I'll get there myself.
+V060	086	move	раздел	За мной!	Follow me!
+V060	087	move	раздел	Не отставай.	Keep up.
+V060	088	move	раздел	Ладно, ладно.	Okay, okay.
+V060	089	move	раздел	Рванула.	Off I went.
+V060	090	move	раздел	Иду. Они пока не поняли.	Going. They haven't realized.
+V060	091	move	раздел	Там пусто? Тем лучше.	Empty there? Even better.
+V060	092	move	раздел	Народ, быстрее, мы опаздываем!	People, faster, we're late!
+V060	093	move	раздел	Иду. Не оглядывайся.	Going. Don't look back.
+V060	094	move	раздел	Это моя улица. Иду по ней.	My street. I walk it.
+V060	095	move	раздел	Перебежками, пока не видят.	In dashes while unseen.
+V060	096	move	раздел	Иду. Лозунг придумаю на бегу.	Going. I'll think of a slogan running.
+V060	097	move	раздел	Прикрывайте, я пошла.	Cover me, I'm off.
+V060	098	move	раздел	Двигаю. Кто за свободу, за мной.	Moving. Pro-freedom, follow.
+V060	099	move	раздел	Пока они спят, мы идём.	While they sleep, we walk.
+V060	100	move	раздел	Иду, но с боем.	Going, but fighting.
+V060	101	move	раздел	Туда? А что, мне нравится.	There? Actually, I like it.
+V060	102	move	раздел	Быстрей, быстрей! Время не ждёт!	Faster! Time doesn't wait!
+V060	103	move	раздел	Мы идём, а они бегут.	We walk, they run.
+V060	104	move	раздел	По крышам, так по крышам.	Over rooftops, then.
+V060	105	move	раздел	Бегу, пока злость не остыла.	Running before anger cools.
+V060	106	move	раздел	Иду, но только вперёд.	Going, but only forward.
+V060	107	move	раздел	Шагаю. Они ещё пожалеют.	Marching. They'll regret it.
+V060	108	move	раздел	Тороплюсь на баррикады. Не убегаю.	Rushing to barricades. Not fleeing.
+V060	109	move	раздел	Иду. Если упаду — это акция.	Going. If I fall, it's a protest.
+V060	110	move	раздел	Для бунта нужна разминка. Иду.	Rebellion needs warm-up. Going.
+V060	111	move	раздел	Иду гордо. Для народа.	Walking proudly. For the people.
+V060	112	move	раздел	Ухожу в подполье. На пять метров.	Going underground. For five metres.
+V060	113	move	раздел	Не поминайте лихом. Я вернусь.	Think kindly. I'll be back.
+V060	114	move	раздел	Иду. Начальство не догонит.	Going. Boss won't catch me.
+V060	115	move	раздел	Моя походка — уже бунт.	My walk is already a riot.
+V060	116	move	раздел	Топаю и ворчу. Это тактика.	Stomping and grumbling. Tactics.
 V061	01	select	место	Есть. Что опять?	Yes. What now?
 V061	02	move	место	Выдвигаюсь. Прикройте нормально.	Moving. Give me proper cover.
 V061	03	weapon	место	Стоять! Кому сказал!	Freeze! I'm talking to you!
@@ -5880,6 +7260,98 @@ V061	21	annoyed	раздел	Повторно. Так точно.	Again. Yes sir
 V061	22	annoyed	раздел	Я же сказал — есть!	I said yes sir!
 V061	23	annoyed	раздел	Это в рапорт не пойдёт.	That's not going in the report.
 V061	24	annoyed	раздел	Командир, вы с кнопкой играете?	Commander, playing with the button?
+V061	025	select	раздел	Так точно.	Yes sir.
+V061	026	select	раздел	На месте.	In place.
+V061	027	select	раздел	Слушаю.	Listening.
+V061	028	select	раздел	Есть.	Aye.
+V061	029	select	раздел	Рядовой.	Private.
+V061	030	select	раздел	На связи.	On the line.
+V061	031	select	раздел	Что, командир?	What, commander?
+V061	032	select	раздел	Готов.	Ready.
+V061	033	select	раздел	Приём.	Over.
+V061	034	select	раздел	Слышу вас.	I hear you.
+V061	035	select	раздел	Жду команды.	Awaiting command.
+V061	036	select	раздел	Разрешите?	Permission?
+V061	037	select	раздел	Доложить?	Report?
+V061	038	select	раздел	Вызывали?	You called?
+V061	039	select	раздел	Что случилось?	What happened?
+V061	040	select	раздел	Да, сэр.	Yes, sir.
+V061	041	select	раздел	Задача?	Objective?
+V061	042	select	раздел	Весь внимание.	All attention.
+V061	043	select	раздел	Рапортую: здесь.	Reporting: here.
+V061	044	select	раздел	Тут я.	Here.
+V061	045	select	раздел	Приказ получен. Читаю.	Order received. Reading.
+V061	046	select	раздел	Устав знаю, подпись поставил.	Know the regs, signed.
+V061	047	select	раздел	Я на службе. Говорите.	I'm on duty. Speak.
+V061	048	select	раздел	Что нужно сделать? Только чётко.	What's needed? Clearly please.
+V061	049	select	раздел	Смена скоро кончится. Говорите.	Shift ends soon. Speak.
+V061	050	select	раздел	Форма чистая, патроны есть.	Uniform clean, ammo ready.
+V061	051	select	раздел	Доложите обстановку, командир.	Brief me, commander.
+V061	052	select	раздел	Я при исполнении. Слушаю.	On duty. Listening.
+V061	053	select	раздел	Мне платят, чтобы слушать.	I'm paid to listen.
+V061	054	select	раздел	Давайте без паники. По плану.	Without panic. By the plan.
+V061	055	select	раздел	Готов, хоть и после смены.	Ready, though off-shift.
+V061	056	select	раздел	Жду. Согласно инструкции.	Waiting. Per instructions.
+V061	057	select	раздел	Всё по уставу, командир.	All by the book, commander.
+V061	058	select	раздел	На посту. Хоть и холодно.	On post. Though it's cold.
+V061	059	select	раздел	Отметьте, я присутствую.	Note that I'm present.
+V061	060	select	раздел	Слышу. Могу повторить.	I hear. I can repeat.
+V061	061	select	раздел	Не спал, но слушаю.	Didn't sleep, but listening.
+V061	062	select	раздел	Слушаю и повинуюсь. Вроде.	Listening and obeying. Kind of.
+V061	063	select	раздел	Каска на месте. Вопросов нет.	Helmet's on. No questions.
+V061	064	select	раздел	Я не ленюсь. Я экономлю силы.	I'm not lazy. Saving energy.
+V061	065	select	раздел	Государство обо мне заботится. Иногда.	State cares for me. Sometimes.
+V061	066	select	раздел	В уставе про это ни слова.	Regs say nothing on this.
+V061	067	select	раздел	Обед через час. Но слушаю.	Lunch in an hour. But listening.
+V061	068	select	раздел	Строй не мой конёк. Я тут.	Formation's not my forte. Still here.
+V061	069	select	раздел	Мундир тесный. Служба — тоже.	Uniform's tight. Service too.
+V061	070	select	раздел	Кого арестовать? Я готов.	Who to arrest? I'm ready.
+V061	071	select	раздел	Здесь. Под присягой, между прочим.	Here. Under oath, mind you.
+V061	072	select	раздел	Выговор мне? Уже был.	Reprimand for me? Had one.
+V061	073	move	раздел	Выдвигаюсь.	Moving out.
+V061	074	move	раздел	Принято.	Acknowledged.
+V061	075	move	раздел	Понял.	Understood.
+V061	076	move	раздел	Исполняю.	Executing.
+V061	077	move	раздел	Иду.	Going.
+V061	078	move	раздел	Двигаюсь.	Moving.
+V061	079	move	раздел	Принял.	Copy.
+V061	080	move	раздел	Вперёд.	Forward.
+V061	081	move	раздел	Выхожу.	Heading out.
+V061	082	move	раздел	Маршрут принят.	Route accepted.
+V061	083	move	раздел	Занимаю.	Taking.
+V061	084	move	раздел	Прикрываю.	Covering.
+V061	085	move	раздел	Тихо иду.	Going quiet.
+V061	086	move	раздел	Слушаюсь.	Obeying.
+V061	087	move	раздел	Следую.	Following.
+V061	088	move	раздел	Шагом марш.	Quick march.
+V061	089	move	раздел	Согласен.	Agreed.
+V061	090	move	раздел	Выдвигаюсь по уставу.	Moving per regs.
+V061	091	move	раздел	Иду. Рапорт напишу потом.	Going. I'll write the report later.
+V061	092	move	раздел	Маршрут не утверждён. Иду.	Route not approved. Going.
+V061	093	move	раздел	Прикройте фланг. Выдвигаюсь.	Cover the flank. Moving.
+V061	094	move	раздел	Короткими бросками, как учили.	Short bursts, as trained.
+V061	095	move	раздел	Иду. Только бы без стрельбы.	Going. Hoping for no gunfire.
+V061	096	move	раздел	Выхожу на позицию.	Moving to position.
+V061	097	move	раздел	Сейчас буду. Без суеты.	Be there. No fuss.
+V061	098	move	раздел	Иду. Ботинки жмут, но иду.	Going. Boots pinch, but going.
+V061	099	move	раздел	Пойду, проверю периметр.	I'll check the perimeter.
+V061	100	move	раздел	Держу курс, командир.	Holding course, commander.
+V061	101	move	раздел	Согласно приказу. Хоть и не хочу.	Per orders, though reluctant.
+V061	102	move	раздел	Иду. Сообщите, если передумаете.	Going. Tell me if you change your mind.
+V061	103	move	раздел	Двигаюсь к цели. Без лишних слов.	Moving to target. No extra words.
+V061	104	move	раздел	Следую приказу. Куда деваться.	Following orders. Nowhere else.
+V061	105	move	раздел	Вышел. Дошёл. Доложу.	Out. Arrived. Will report.
+V061	106	move	раздел	Тихо, спокойно, по расписанию.	Quiet, calm, on schedule.
+V061	107	move	раздел	Хорошо. Кофе потом.	Fine. Coffee later.
+V061	108	move	раздел	Иду. Зарплата сама не придёт.	Going. Pay won't come itself.
+V061	109	move	раздел	Строевым шагом. Правда, не всегда.	In parade step. Not always.
+V061	110	move	раздел	Шагаю во славу устава.	Marching for glory of regs.
+V061	111	move	раздел	Не слышно? Я спецназ.	Can't hear me? I'm special forces.
+V061	112	move	раздел	Иду. Паёк в рюкзаке. Вроде.	Going. Ration's in the pack. Probably.
+V061	113	move	раздел	Если потеряюсь — ищите по шуму.	If I'm lost, track the noise.
+V061	114	move	раздел	Хоть на край света. За оклад.	To the world's end. For a salary.
+V061	115	move	раздел	Двигаюсь. Устав разрешает. Вроде.	Moving. Regs allow it. Seems so.
+V061	116	move	раздел	Иду. В отчёте напишу: шёл.	Going. Report will say: went.
 V062	01	select	место	Ну что там ещё?	What is it now?
 V062	02	move	место	Сейчас подойду. Ничего не взрывать.	Coming over. Don't blow anything up.
 V062	03	weapon	место	Огонь! Да не по своим!	Fire! Not at our own!
@@ -5904,6 +7376,98 @@ V062	21	annoyed	раздел	Повторно не рассматриваем.	N
 V062	22	annoyed	раздел	Обращение уже зарегистрировано.	Your request's already filed.
 V062	23	annoyed	раздел	Ещё раз — и выговор.	Once more and it's a reprimand.
 V062	24	annoyed	раздел	Вы меня отвлекаете от войны.	You're distracting me from the war.
+V062	025	select	раздел	Слушаю.	Listening.
+V062	026	select	раздел	Докладывайте.	Report.
+V062	027	select	раздел	Да?	Yes?
+V062	028	select	раздел	Коротко.	Briefly.
+V062	029	select	раздел	По существу.	To the point.
+V062	030	select	раздел	Принято.	Noted.
+V062	031	select	раздел	Что там?	What is it?
+V062	032	select	раздел	Продолжайте.	Continue.
+V062	033	select	раздел	Зарегистрировано.	Registered.
+V062	034	select	раздел	Минуту.	A minute.
+V062	035	select	раздел	Ну-с?	Well?
+V062	036	select	раздел	Внимательно.	Attentively.
+V062	037	select	раздел	Вопрос?	Question?
+V062	038	select	раздел	Ознакомлен.	Familiarized.
+V062	039	select	раздел	Хм.	Hm.
+V062	040	select	раздел	Говорите.	Speak.
+V062	041	select	раздел	Суть?	The gist?
+V062	042	select	раздел	Я здесь.	I'm here.
+V062	043	select	раздел	Это срочно?	Is it urgent?
+V062	044	select	раздел	Что нового?	What's new?
+V062	045	select	раздел	Если без бумаги — сразу нет.	Without paper — no.
+V062	046	select	раздел	У вас пять минут. Говорите.	You've five minutes. Speak.
+V062	047	select	раздел	Опять совещание сорвали.	Another meeting disrupted.
+V062	048	select	раздел	Резолюцию наложу после доклада.	I'll mark it after the report.
+V062	049	select	раздел	Я слушаю. Без эмоций.	I'm listening. No emotions.
+V062	050	select	раздел	Повторите. Только вежливо.	Repeat. But politely.
+V062	051	select	раздел	Вы по какому вопросу?	On what matter?
+V062	052	select	раздел	Запишите: обращение принято.	Note: appeal received.
+V062	053	select	раздел	Время приёма граждан. Говорите.	Citizens' hour. Speak.
+V062	054	select	раздел	Без суеты. Я старше званием.	No fuss. I outrank you.
+V062	055	select	раздел	Бумаги принесли? Нет? Плохо.	Papers brought? No? Bad.
+V062	056	select	раздел	Согласовано? Нет? Тогда нельзя.	Approved? No? Then no.
+V062	057	select	раздел	Говорите. Протокол ведётся.	Speak. Minutes being taken.
+V062	058	select	раздел	Ваш вопрос будет рассмотрен.	Your query will be reviewed.
+V062	059	select	раздел	Давайте обойдёмся без лишнего.	Let's skip the extras.
+V062	060	select	раздел	Слушаю. Суть, без воды.	Listening. Substance, no filler.
+V062	061	select	раздел	Вы вовремя. Почти.	You're timely. Almost.
+V062	062	select	раздел	Я старый, но слышу.	Old, but I hear.
+V062	063	select	раздел	Закон — это я. Шучу.	I am the law. Joking.
+V062	064	select	раздел	Эта должность без отпуска. Жаль.	This post has no leave. Pity.
+V062	065	select	раздел	Я не жестокий. Я по регламенту.	I'm not cruel. By regulation.
+V062	066	select	раздел	Печать при мне. Бойтесь.	Stamp on me. Be afraid.
+V062	067	select	раздел	Кабинет мой на другом этаже.	My office is on another floor.
+V062	068	select	раздел	Кофе остыл. Вера тоже.	Coffee cooled. Faith too.
+V062	069	select	раздел	Я лично одобряю. Для протокола.	I personally approve. For the record.
+V062	070	select	раздел	Папка толстая. Нервы тонкие.	Folder's thick. Nerves thin.
+V062	071	select	раздел	Повышения жду. Давно.	Waiting for promotion. Long.
+V062	072	select	раздел	Не волнуйтесь. Я уже волнуюсь.	Don't worry. I'm already worrying.
+V062	073	move	раздел	Иду.	Going.
+V062	074	move	раздел	Выдвигаюсь.	Moving out.
+V062	075	move	раздел	Утверждаю.	Approved.
+V062	076	move	раздел	Понял.	Understood.
+V062	077	move	раздел	Следую.	Proceeding.
+V062	078	move	раздел	Хорошо.	Fine.
+V062	079	move	раздел	Одобряю.	I approve.
+V062	080	move	раздел	Двигаюсь.	Moving.
+V062	081	move	раздел	Приступаю.	Commencing.
+V062	082	move	раздел	Лично.	Personally.
+V062	083	move	раздел	Иду сам.	I'll go myself.
+V062	084	move	раздел	Исполнить.	Carry out.
+V062	085	move	раздел	Согласен.	Agreed.
+V062	086	move	раздел	Продолжаю.	Continuing.
+V062	087	move	раздел	Сопровождение!	Escort!
+V062	088	move	раздел	Шагаю.	Walking.
+V062	089	move	раздел	Без спешки.	No haste.
+V062	090	move	раздел	Иду. Прошу не отставать.	Going. Please keep up.
+V062	091	move	раздел	Маршрут проверен. Иду.	Route checked. Going.
+V062	092	move	раздел	Пройдусь. Для протокола.	I'll walk. For the record.
+V062	093	move	раздел	Иду, как положено, — медленно.	Going as proper — slowly.
+V062	094	move	раздел	Подпишу по прибытии.	Will sign on arrival.
+V062	095	move	раздел	Выдвигаюсь. Не торопите, пожалуйста.	Moving. Don't rush me, please.
+V062	096	move	раздел	Согласовано. Выдвигаюсь.	Approved. Moving out.
+V062	097	move	раздел	Хорошо. Но с оформлением.	Fine. But with paperwork.
+V062	098	move	раздел	Пойду лично, как обычно.	I'll go in person, as usual.
+V062	099	move	раздел	Охрана, следуйте за мной.	Guards, follow me.
+V062	100	move	раздел	Идём. Всё под контролем.	Moving. All under control.
+V062	101	move	раздел	Туда? Ладно. Уточню на месте.	There? Fine. Check on site.
+V062	102	move	раздел	Иду. Отчёт будет позже.	Going. Report comes later.
+V062	103	move	раздел	Идём. Без самодеятельности.	Moving. No improvisation.
+V062	104	move	раздел	Всё в порядке. Иду.	All in order. Going.
+V062	105	move	раздел	Хорошо. Только без лишних глаз.	Fine. Without extra eyes.
+V062	106	move	раздел	Иду. Печать у меня с собой.	Going. Stamp is with me.
+V062	107	move	раздел	Служебная необходимость. Выдвигаюсь.	Official necessity. Moving.
+V062	108	move	раздел	Я не бегу. Начальство не бегает.	I don't run. Bosses don't.
+V062	109	move	раздел	Иду. Приказ мой, исполнитель тоже.	Going. Order's mine, executor too.
+V062	110	move	раздел	Мне положен лифт. Лифта нет.	I'm entitled to a lift. None.
+V062	111	move	раздел	Командировка. Без суточных.	Business trip. No per diem.
+V062	112	move	раздел	Пройдусь. Для здоровья и отчёта.	A walk. For health and report.
+V062	113	move	раздел	Иду. Жалоб прошу не подавать.	Going. Please file no complaints.
+V062	114	move	раздел	Через бюрократию — и пешком.	Through bureaucracy, on foot.
+V062	115	move	раздел	Я иду. В отчёте — бегу.	I walk. In report — run.
+V062	116	move	раздел	Иду. Резолюция — «вперёд».	Going. The resolution: "forward."
 V063	01	select	место	Да, дорогой. Я слушаю.	Yes, darling. I'm listening.
 V063	02	move	место	Сейчас подойду. Не нервничай.	Coming over. Don't be nervous.
 V063	03	weapon	место	Смотри на меня. Вот так.	Look at me. That's it.
@@ -5928,6 +7492,98 @@ V063	21	annoyed	раздел	Не торопись, милый.	Don't rush, darl
 V063	22	annoyed	раздел	Настойчивость не всегда мила.	Persistence isn't always charming.
 V063	23	annoyed	раздел	Я слышала. Я всё слышу.	I heard. I hear everything.
 V063	24	annoyed	раздел	Ещё раз — и я обижусь.	Once more and I'll be offended.
+V063	025	select	раздел	Да?	Yes?
+V063	026	select	раздел	Мм?	Mm?
+V063	027	select	раздел	Милый.	Darling.
+V063	028	select	раздел	Слушаю.	Listening.
+V063	029	select	раздел	Я здесь.	I'm here.
+V063	030	select	раздел	Говори.	Speak.
+V063	031	select	раздел	Ну здравствуй.	Well, hello.
+V063	032	select	раздел	Продолжай.	Go on.
+V063	033	select	раздел	Смелее.	Be bold.
+V063	034	select	раздел	Мой хороший?	Yes, my dear?
+V063	035	select	раздел	Я тебя слышу.	I hear you.
+V063	036	select	раздел	Внимательно.	All ears.
+V063	037	select	раздел	Что-то нужно?	Need something?
+V063	038	select	раздел	Да, мой милый.	Yes, my sweet.
+V063	039	select	раздел	Не бойся.	Don't be afraid.
+V063	040	select	раздел	Я не кусаюсь.	I don't bite.
+V063	041	select	раздел	Давай же.	Go ahead.
+V063	042	select	раздел	Как неожиданно.	How unexpected.
+V063	043	select	раздел	Рада тебя видеть.	Glad to see you.
+V063	044	select	раздел	Ты умеешь удивлять.	You do know how to surprise.
+V063	045	select	раздел	Приятный голос. Продолжай.	Nice voice. Go on.
+V063	046	select	раздел	Не стесняйся. Я не осуждаю.	Don't be shy. I don't judge.
+V063	047	select	раздел	Какой решительный.	How decisive.
+V063	048	select	раздел	Ты мне почти нравишься.	You almost please me.
+V063	049	select	раздел	Не заиграйся, милый.	Don't overplay it, darling.
+V063	050	select	раздел	Я запомнила твой голос.	I've memorized your voice.
+V063	051	select	раздел	Здесь тихо. Говори.	Quiet here. Speak.
+V063	052	select	раздел	Что ж. Я готова.	Well. I'm ready.
+V063	053	select	раздел	Опять ты. Как кстати.	You again. How convenient.
+V063	054	select	раздел	Нашёл меня. Умница.	Found me. Clever boy.
+V063	055	select	раздел	Ты рискуешь. Мне нравится.	You're taking a risk. I like it.
+V063	056	select	раздел	Улыбнись. Это приказ.	Smile. That's an order.
+V063	057	select	раздел	Только вежливо, пожалуйста.	Politely, please.
+V063	058	select	раздел	Слушаю. И улыбаюсь.	Listening. And smiling.
+V063	059	select	раздел	Какой настойчивый мальчик.	What a persistent boy.
+V063	060	select	раздел	Ты сегодня очарователен.	You're charming today.
+V063	061	select	раздел	Дай угадаю: срочно.	Let me guess: urgent.
+V063	062	select	раздел	Мне нравится твой тон.	I like your tone.
+V063	063	select	раздел	Правительство велело улыбаться.	The government told me to smile.
+V063	064	select	раздел	Я на службе. Но не сейчас.	On duty. But not right now.
+V063	065	select	раздел	Налоги платишь? Проверю.	Paying your taxes? I'll check.
+V063	066	select	раздел	Это допрос? Обожаю допросы.	An interrogation? I love those.
+V063	067	select	раздел	Подпиши здесь. Кровью. Шучу.	Sign here. In blood. Joking.
+V063	068	select	раздел	Только не пачкай платье.	Don't stain the dress.
+V063	069	select	раздел	Комплименты — по отдельной смете.	Compliments cost extra.
+V063	070	select	раздел	Мой шеф не должен знать.	My boss mustn't know.
+V063	071	select	раздел	Я не беру взяток. Почти.	I don't take bribes. Mostly.
+V063	072	select	раздел	Печать на лоб поставить?	Shall I stamp your forehead?
+V063	073	move	раздел	Иду.	Going.
+V063	074	move	раздел	Хорошо.	Fine.
+V063	075	move	раздел	Сейчас.	Right now.
+V063	076	move	раздел	Уже иду.	Already going.
+V063	077	move	раздел	Поняла.	Understood.
+V063	078	move	раздел	Конечно.	Of course.
+V063	079	move	раздел	Разумеется.	Naturally.
+V063	080	move	раздел	Принято.	Accepted.
+V063	081	move	раздел	Как пожелаешь.	As you wish.
+V063	082	move	раздел	Скоро буду.	Be there soon.
+V063	083	move	раздел	Не спеша.	Unhurried.
+V063	084	move	раздел	Тихо иду.	Going quietly.
+V063	085	move	раздел	Исполню.	Will do.
+V063	086	move	раздел	Пусть так.	So be it.
+V063	087	move	раздел	Мм, иду.	Mm, going.
+V063	088	move	раздел	Одну минуту.	One minute.
+V063	089	move	раздел	Милый, иду.	Darling, going.
+V063	090	move	раздел	Ступаю.	Stepping.
+V063	091	move	раздел	Не оглядывайся. Я рядом.	Don't look back. I'm near.
+V063	092	move	раздел	Скользну незаметно.	I'll slip by unseen.
+V063	093	move	раздел	Там меня уже ждут?	Are they waiting for me there?
+V063	094	move	раздел	Иду. Ты ведь этого хотел.	Going. You wanted this.
+V063	095	move	раздел	Выдвигаюсь. Без суеты.	Moving out. No fuss.
+V063	096	move	раздел	Я быстро. Почти.	Quick. Almost.
+V063	097	move	раздел	Иду. Присмотри за спиной.	Going. Watch my back.
+V063	098	move	раздел	Хорошо. Только недолго.	Fine. Not for long.
+V063	099	move	раздел	Двинусь первой. Ты следом.	I'll go first. Follow.
+V063	100	move	раздел	Путь знакомый. Мне там рады.	Familiar way. They welcome me.
+V063	101	move	раздел	Дойду. Улыбаясь.	I'll arrive. Smiling.
+V063	102	move	раздел	Каблуки стучат. Пусть боятся.	Heels clicking. Let them fear.
+V063	103	move	раздел	Только не отставай, милый.	Just keep up, darling.
+V063	104	move	раздел	Подойду с другой стороны.	I'll approach from the other side.
+V063	105	move	раздел	Хорошо. Но с тебя ужин.	Fine. But you owe me dinner.
+V063	106	move	раздел	Иду. Это не побег. Пока.	Going. Not an escape. Yet.
+V063	107	move	раздел	Увижу слежку — улыбнусь.	If I see a tail, I'll smile.
+V063	108	move	раздел	Служба зовёт. Иду.	Duty calls. Going.
+V063	109	move	раздел	Где моя охрана? Ах да.	Where's my guard? Oh, right.
+V063	110	move	раздел	Командировка. Как мило.	Business trip. How sweet.
+V063	111	move	раздел	Шпионов не обижать.	Don't hurt the spies.
+V063	112	move	раздел	Отчёт потом. Сейчас иду.	Report later. Going now.
+V063	113	move	раздел	Потом пришлю счёт.	I'll send a bill later.
+V063	114	move	раздел	Иду. Сверим часы потом.	Going. We'll sync watches later.
+V063	115	move	раздел	Если что — я тут не была.	If asked, I was never here.
+V063	116	move	раздел	Иду. Без шума и пыли.	Going. No fuss, no dust.
 V064	01	select	место	На месте. Готов.	In position. Ready.
 V064	02	move	место	Двигаем. Дистанцию держи.	Move. Keep your distance.
 V064	03	weapon	место	С дороги. Проход нужен.	Clear the way. Need a passage.
@@ -5952,6 +7608,98 @@ V064	21	annoyed	раздел	Принято. Уже.	Copied. Already.
 V064	22	annoyed	раздел	Не дублируй приказы.	Don't repeat orders.
 V064	23	annoyed	раздел	Связь не засоряй.	Keep the channel clear.
 V064	24	annoyed	раздел	Я солдат, не кнопка.	I'm a soldier, not a button.
+V064	025	select	раздел	Да.	Yes.
+V064	026	select	раздел	Говори.	Talk.
+V064	027	select	раздел	Здесь.	Here.
+V064	028	select	раздел	Что?	What?
+V064	029	select	раздел	Приём.	Receiving.
+V064	030	select	раздел	На связи.	On comms.
+V064	031	select	раздел	Слышу.	Hear you.
+V064	032	select	раздел	Ну?	Well?
+V064	033	select	раздел	Командуй.	Command.
+V064	034	select	раздел	Внимание.	Attention.
+V064	035	select	раздел	Я тут.	I'm here.
+V064	036	select	раздел	Вижу тебя.	I see you.
+V064	037	select	раздел	Построен.	Formed up.
+V064	038	select	раздел	Дальше?	What next?
+V064	039	select	раздел	Строй цел.	Line's intact.
+V064	040	select	раздел	Ствол при мне.	Weapon's with me.
+V064	041	select	раздел	Цель?	Target?
+V064	042	select	раздел	Давай.	Go.
+V064	043	select	раздел	Так?	So?
+V064	044	select	раздел	Позицию держу. Говори.	Holding position. Talk.
+V064	045	select	раздел	Фланги проверил. Говори.	Checked the flanks. Talk.
+V064	046	select	раздел	Слушаю вполуха. Смотрю вокруг.	Half listening. Watching around.
+V064	047	select	раздел	Без лишних слов. Что нужно?	No extra words. What's needed?
+V064	048	select	раздел	Разведка чистая. Продолжай.	Recon's clean. Continue.
+V064	049	select	раздел	Боец на месте. Давай.	Trooper in place. Go.
+V064	050	select	раздел	Патроны посчитаны. Что дальше?	Rounds counted. What next?
+V064	051	select	раздел	Приказ чёткий — выполню.	Give a clear order, I'll do it.
+V064	052	select	раздел	Не в первый раз. Говори.	Not my first time. Talk.
+V064	053	select	раздел	Каска затянута. Говори.	Helmet's strapped. Talk.
+V064	054	select	раздел	Нервы в порядке. Что?	Nerves fine. What?
+V064	055	select	раздел	Задачу давай. Без поэзии.	Give the task. No poetry.
+V064	056	select	раздел	Я слышал. Продолжай.	I heard. Go on.
+V064	057	select	раздел	Ждал сигнала. Вот он.	Waited for the signal. Here it is.
+V064	058	select	раздел	Оружие чистое. Что дальше?	Weapon clean. What now?
+V064	059	select	раздел	Ботинки сухие. Уже хорошо.	Boots are dry. Already good.
+V064	060	select	раздел	Коротко и по делу.	Short and to the point.
+V064	061	select	раздел	Нас было много. Теперь я.	We were many. Now it's me.
+V064	062	select	раздел	Это не Греция. Но сойдёт.	Not Greece. But it'll do.
+V064	063	select	раздел	Без пафоса. Просто тут.	No pathos. Just here.
+V064	064	select	раздел	Копьё? Нет, ствол. Удобнее.	A spear? No, a gun. Handier.
+V064	065	select	раздел	Я не философ. Я пехота.	I'm no philosopher. I'm infantry.
+V064	066	select	раздел	Лавры не надо. Паёк давай.	Skip the laurels. Give rations.
+V064	067	select	раздел	Красный плащ в стирке.	My red cloak's at the laundry.
+V064	068	select	раздел	Красиво умирать не обязан.	Not obliged to die beautifully.
+V064	069	select	раздел	Меня учили молчать. Молчу.	Trained to be silent. Silent.
+V064	070	select	раздел	Подвиги по расписанию. Какие сегодня?	Feats by schedule. Which today?
+V064	071	select	раздел	Спартанец не спит. Он ждёт.	A Spartan doesn't sleep. He waits.
+V064	072	select	раздел	Героем быть некогда. Приказывай.	No time to be a hero. Order.
+V064	073	move	раздел	Иду.	Moving.
+V064	074	move	раздел	Принял.	Copy.
+V064	075	move	раздел	Понял.	Got it.
+V064	076	move	раздел	Выдвигаюсь.	Moving out.
+V064	077	move	раздел	Двигаю.	On the move.
+V064	078	move	раздел	Исполняю.	Executing.
+V064	079	move	раздел	Принято.	Accepted.
+V064	080	move	раздел	Вперёд.	Forward.
+V064	081	move	раздел	Марш.	March.
+V064	082	move	раздел	Выполняю.	Doing it.
+V064	083	move	раздел	Дистанция.	Spacing.
+V064	084	move	раздел	Маршрут понятен.	Route understood.
+V064	085	move	раздел	Занимаю.	Taking position.
+V064	086	move	раздел	Бегом.	On the run.
+V064	087	move	раздел	Перебежка.	Dash.
+V064	088	move	раздел	Так точно.	Affirmative.
+V064	089	move	раздел	Без вопросов.	No questions.
+V064	090	move	раздел	Выхожу.	Heading out.
+V064	091	move	раздел	Фланг не оставлю. Иду.	Won't leave the flank. Going.
+V064	092	move	раздел	Сектор держите. Иду.	Hold the sector. Going.
+V064	093	move	раздел	Двигаюсь. Ствол вверх.	Moving. Muzzle up.
+V064	094	move	раздел	Иду по краю. Тише.	Going along the edge. Quiet.
+V064	095	move	раздел	Пошёл. Темп держу.	Moving. Keeping the pace.
+V064	096	move	раздел	Углы проверяю. Иду.	Checking corners. Going.
+V064	097	move	раздел	Выхожу на рубеж.	Heading to the line.
+V064	098	move	раздел	Принял. Группа, за мной.	Copy. Group, follow.
+V064	099	move	раздел	Прохожу. Не стрелять по мне.	Passing. Don't shoot me.
+V064	100	move	раздел	Двигаюсь рывками. Следите.	Moving in bursts. Watch.
+V064	101	move	раздел	Туда? Принято. Иду.	There? Copy. Going.
+V064	102	move	раздел	Короткий маршрут. Годится.	Short route. Works.
+V064	103	move	раздел	Шаг ровный. Дыхание ровное.	Even steps. Even breath.
+V064	104	move	раздел	Иду первым. Остальные потом.	I go first. Others after.
+V064	105	move	раздел	Маршрут запомнил. Иду.	Memorized the route. Going.
+V064	106	move	раздел	Выдвинулся. Связь держи.	Moved out. Keep comms.
+V064	107	move	раздел	Бегу красиво. Как учили.	Running nicely. As trained.
+V064	108	move	раздел	Иду. Щит остался дома.	Going. Left my shield at home.
+V064	109	move	раздел	Не героически. Но быстро.	Not heroic. But fast.
+V064	110	move	раздел	Марш-бросок? Обожаю. Нет.	Forced march? Love it. Not.
+V064	111	move	раздел	Подвиг по расписанию. Иду.	Feat on schedule. Going.
+V064	112	move	раздел	Пехота ходит. Это работа.	Infantry walks. That's the job.
+V064	113	move	раздел	Меня ждёт паёк. Иду.	A ration awaits. Going.
+V064	114	move	раздел	Умирать не планировал. Иду.	Didn't plan to die. Going.
+V064	115	move	раздел	Раз-два. Раз-два. Всё.	Left-right. Left-right. Done.
+V064	116	move	раздел	Туда? Там хоть стреляют?	There? Any shooting there?
 V065	01	select	место	На месте. Форма в порядке.	In position. Uniform in order.
 V065	02	move	место	Выдвигаюсь. Строй не ломать.	Moving. Keep formation.
 V065	03	weapon	место	Кто разрешил сопротивляться?!	Who authorized resistance?!
@@ -5976,6 +7724,98 @@ V065	21	annoyed	раздел	Не мните мне погоны!	Don't crease m
 V065	22	annoyed	раздел	Повторять не по уставу.	Repeating is against regulations.
 V065	23	annoyed	раздел	Я понял. Безупречно понял.	Understood. Flawlessly.
 V065	24	annoyed	раздел	Это нарушает субординацию!	This violates the chain of command!
+V065	025	select	раздел	Так точно!	Yes, sir!
+V065	026	select	раздел	Что прикажете?	What are your orders?
+V065	027	select	раздел	Докладываю: здесь.	Reporting: present.
+V065	028	select	раздел	Присутствую!	Present!
+V065	029	select	раздел	Смирно!	Attention!
+V065	030	select	раздел	Вольно... нет, слушаю.	At ease... no, listening.
+V065	031	select	раздел	Я!	Me!
+V065	032	select	раздел	Здесь.	Here.
+V065	033	select	раздел	К вашим услугам.	At your service.
+V065	034	select	раздел	Как положено.	As required.
+V065	035	select	раздел	Строен и бдителен.	Upright and vigilant.
+V065	036	select	раздел	Жду указаний.	Awaiting instructions.
+V065	037	select	раздел	Готов служить!	Ready to serve!
+V065	038	select	раздел	Внимательно!	Attentively!
+V065	039	select	раздел	Да, командир?	Yes, commander?
+V065	040	select	раздел	Какая честь.	What an honor.
+V065	041	select	раздел	Отлично. Что именно?	Excellent. What exactly?
+V065	042	select	раздел	Слушаю вас.	Listening to you.
+V065	043	select	раздел	Так, так.	So, so.
+V065	044	select	раздел	Чистота и порядок. Слушаю.	Cleanliness and order. Listening.
+V065	045	select	раздел	Я образец. Прошу приказ.	I'm a model. Request orders.
+V065	046	select	раздел	Пуговицы застёгнуты. Говорите.	Buttons fastened. Speak.
+V065	047	select	раздел	Складка на брюках безупречна.	Trouser crease flawless.
+V065	048	select	раздел	Пыли на мне нет. Приказ?	No dust on me. Orders?
+V065	049	select	раздел	Устав знаю наизусть. Говорите.	I know regulations by heart. Speak.
+V065	050	select	раздел	Порядок — основа победы.	Order is the basis of victory.
+V065	051	select	раздел	Побеждаем красиво и строго.	We win elegantly and strictly.
+V065	052	select	раздел	Я готов. Ремень идеален.	Ready. Belt perfect.
+V065	053	select	раздел	Докладывайте. Нет, я докладываю.	Report. No, I'm reporting.
+V065	054	select	раздел	Сапоги блестят. Враг дрожит.	Boots shine. Enemy trembles.
+V065	055	select	раздел	Равняйсь! То есть... слушаю.	Dress! I mean... listening.
+V065	056	select	раздел	Отряд безупречен. Включая меня.	The squad is flawless. Me included.
+V065	057	select	раздел	Строгость и ещё раз строгость.	Strictness and more strictness.
+V065	058	select	раздел	Я здесь. Выправка при мне.	Here. Bearing intact.
+V065	059	select	раздел	Дисциплина — это красиво.	Discipline is beautiful.
+V065	060	select	раздел	Говорите чётко и по форме.	Speak clearly and by the form.
+V065	061	select	раздел	Грудь вперёд. Слушаю вас.	Chest out. Listening to you.
+V065	062	select	раздел	Ошибки исключены. Говорите.	Mistakes excluded. Speak.
+V065	063	select	раздел	Я не боюсь. Я воспитан.	I'm not scared. I'm well-bred.
+V065	064	select	раздел	Кто растрепал мне причёску?	Who ruffled my hair?
+V065	065	select	раздел	Паниковать уставом не положено.	Regulations forbid panicking.
+V065	066	select	раздел	Маршал бы мной гордился.	The marshal would be proud.
+V065	067	select	раздел	Мама говорила: будь аккуратен.	Mom said: be tidy.
+V065	068	select	раздел	Медаль? Ещё не выдали.	Medal? Not issued yet.
+V065	069	select	раздел	Репетировал речь. Забыл.	Rehearsed a speech. Forgot.
+V065	070	select	раздел	Я величествен. Спросите любого.	I'm majestic. Ask anyone.
+V065	071	select	раздел	Тихо. Я репетирую строгость.	Quiet. I'm rehearsing sternness.
+V065	072	select	раздел	Отчёт напишу в трёх экземплярах.	I'll write the report in triplicate.
+V065	073	move	раздел	Выполняю!	Executing!
+V065	074	move	раздел	Слушаюсь!	Obeying!
+V065	075	move	раздел	Шаг!	Step!
+V065	076	move	раздел	Раз, два!	One, two!
+V065	077	move	раздел	Маршируем!	We march!
+V065	078	move	раздел	Следую!	Following!
+V065	079	move	раздел	Рысью!	At a trot!
+V065	080	move	раздел	Строевым!	In step!
+V065	081	move	раздел	Исполняю!	Complying!
+V065	082	move	раздел	Иду.	Going.
+V065	083	move	раздел	Ровно!	Evenly!
+V065	084	move	раздел	Принято.	Accepted.
+V065	085	move	раздел	В колонну!	Into a column!
+V065	086	move	раздел	Шире шаг!	Wider step!
+V065	087	move	раздел	Вперёд!	Forward!
+V065	088	move	раздел	Бегом, но красиво!	Running, but elegantly!
+V065	089	move	раздел	Выправка!	Bearing!
+V065	090	move	раздел	Правой!	Right!
+V065	091	move	раздел	Иду. Темп — как на параде.	Going. Parade pace.
+V065	092	move	раздел	Шагаю. Носок тянуть.	Marching. Point the toe.
+V065	093	move	раздел	Двигаюсь строго по линии.	Moving strictly by the line.
+V065	094	move	раздел	Иду. Грудь колесом.	Going. Chest puffed.
+V065	095	move	раздел	Маршрут утверждён. Выполняю.	Route approved. Executing.
+V065	096	move	раздел	Следую. Остальные, не отставать.	Following. Others, keep up.
+V065	097	move	раздел	Подбородок выше. Иду.	Chin up. Going.
+V065	098	move	раздел	Иду. Колено выше, друзья.	Going. Knees higher, friends.
+V065	099	move	раздел	Обхожу строго по уставу.	Going around by regulation.
+V065	100	move	раздел	Двигаюсь. Ровно и бодро.	Moving. Even and brisk.
+V065	101	move	раздел	Выдвинулся. Следите за строем.	Moved out. Watch the line.
+V065	102	move	раздел	Иду. Равнение на меня.	Going. Eyes on me.
+V065	103	move	раздел	Иду шагом. Не бегом.	Walking. Not running.
+V065	104	move	раздел	Ряды сомкнуты. Выдвигаемся.	Ranks closed. Moving out.
+V065	105	move	раздел	Туда? Безупречный выбор.	There? Impeccable choice.
+V065	106	move	раздел	Иду. Мундир не помять.	Going. Mind the uniform.
+V065	107	move	раздел	Это не бегство. Это манёвр!	Not flight. A maneuver!
+V065	108	move	раздел	Шаг чеканю. Пол трескается.	Stamping steps. Floor cracks.
+V065	109	move	раздел	Иду. Если что — я не бежал.	Going. If asked, I didn't run.
+V065	110	move	раздел	Грязь, да? Мой враг.	Mud, yes? My enemy.
+V065	111	move	раздел	Иду. Победа по расписанию.	Going. Victory on schedule.
+V065	112	move	раздел	Шагаю величественно. Кто-нибудь смотрит?	Marching majestically. Anyone watching?
+V065	113	move	раздел	Куда? Ах да, вперёд.	Where? Oh yes, forward.
+V065	114	move	раздел	Нога заплелась. Так задумано.	Leg tangled. As planned.
+V065	115	move	раздел	Отряд, за мной! Где отряд?	Squad, follow! Where's the squad?
+V065	116	move	раздел	Здесь поворот. Я так хотел.	A turn here. I meant that.
 V066	01	select	место	Всё. Началось?	Is this it? Has it started?
 V066	02	move	место	Иду! Без меня не заканчивайте!	Coming! Don't end it without me!
 V066	03	weapon	место	Ну давай, последний герой!	Come on, last hero!
@@ -6000,6 +7840,98 @@ V066	21	annoyed	раздел	Не торопи конец. Сам придёт.	
 V066	22	annoyed	раздел	Это знамение? Нет? Жаль.	Is that a sign? No? Pity.
 V066	23	annoyed	раздел	Хватит! Я молюсь!	Stop! I'm praying!
 V066	24	annoyed	раздел	Ещё раз — и спишу в расходы.	Once more and I'll expense it.
+V066	025	select	раздел	А?	Huh?
+V066	026	select	раздел	Да, да!	Yes, yes!
+V066	027	select	раздел	Я!	Me!
+V066	028	select	раздел	Говори!	Speak!
+V066	029	select	раздел	Благословен.	Blessed.
+V066	030	select	раздел	Слышу, слышу!	Hearing, hearing!
+V066	031	select	раздел	Аминь.	Amen.
+V066	032	select	раздел	Ну?	Well?
+V066	033	select	раздел	Знак?	A sign?
+V066	034	select	раздел	Пепел?	Ashes?
+V066	035	select	раздел	Свой.	One of us.
+V066	036	select	раздел	Я тут.	I'm here.
+V066	037	select	раздел	Вестник слушает.	The herald listens.
+V066	038	select	раздел	Да, брат?	Yes, brother?
+V066	039	select	раздел	Время, время...	Time, time...
+V066	040	select	раздел	Огонь?	Fire?
+V066	041	select	раздел	Здесь я.	Here I am.
+V066	042	select	раздел	Шепчи.	Whisper.
+V066	043	select	раздел	Что? Кто?	What? Who?
+V066	044	select	раздел	Конец ещё не пришёл. Говори.	The end hasn't come. Talk.
+V066	045	select	раздел	Скоро всё сгорит. Говори.	It'll all burn soon. Talk.
+V066	046	select	раздел	Мне было видение. Продолжай.	I had a vision. Go on.
+V066	047	select	раздел	Слышу трубы! Или это ты?	Hear trumpets! Or is it you?
+V066	048	select	раздел	Пепел сыплется. Хорошо.	Ashes falling. Good.
+V066	049	select	раздел	Закат красный. К добру.	The sunset is red. A good omen.
+V066	050	select	раздел	Я пересчитал знамения. Мало.	Counted the omens. Too few.
+V066	051	select	раздел	Говори. Мне записывать?	Speak. Should I note it?
+V066	052	select	раздел	Я чую серу. Приятно.	I smell sulfur. Nice.
+V066	053	select	раздел	Всё предсказано. Даже ты.	All foretold. Even you.
+V066	054	select	раздел	Колокол звонит. По ком?	The bell tolls. For whom?
+V066	055	select	раздел	Тёмный час. Мой любимый.	Dark hour. My favorite.
+V066	056	select	раздел	Я готовился годами. Давай.	Prepared for years. Go on.
+V066	057	select	раздел	Конец света, брат. Радуйся.	End of the world, brother. Rejoice.
+V066	058	select	раздел	Мне шептали. Слушаю тебя.	I was whispered to. Listening.
+V066	059	select	раздел	Печать открыта. Что дальше?	Seal is open. What next?
+V066	060	select	раздел	Пальцы дрожат. От счастья.	Fingers shake. From joy.
+V066	061	select	раздел	Конец пахнет дымом. Люблю.	The end smells of smoke. Love it.
+V066	062	select	раздел	Ночь длинная. Говори быстро.	The night is long. Talk fast.
+V066	063	select	раздел	Конец света. Смета утверждена.	End of the world. Budget approved.
+V066	064	select	раздел	Апокалипсис по расписанию. Вроде.	Apocalypse on schedule. Probably.
+V066	065	select	раздел	Пророк на связи. Тариф дорогой.	Prophet on the line. Costly rate.
+V066	066	select	раздел	Где мой чек за пепел?	Where's my receipt for ashes?
+V066	067	select	раздел	Конец близок. Скидка тоже.	The end is near. Discounts too.
+V066	068	select	раздел	Спасение без квитанции? Нет.	Salvation without a receipt? No.
+V066	069	select	раздел	Всадников четверо. Пятый — я.	Four riders. I'm the fifth.
+V066	070	select	раздел	Взнос принят. Конец отложен.	Dues accepted. End postponed.
+V066	071	select	раздел	Я не безумен. Я в штате.	I'm not mad. I'm on staff.
+V066	072	select	раздел	Мы выставим счёт вселенной.	We'll bill the universe.
+V066	073	move	раздел	Иду!	Going!
+V066	074	move	раздел	Бегу!	Running!
+V066	075	move	раздел	Хорошо, брат.	Fine, brother.
+V066	076	move	раздел	Да будет так.	So be it.
+V066	077	move	раздел	Вперёд!	Onward!
+V066	078	move	раздел	К огню!	To the fire!
+V066	079	move	раздел	Туда!	There!
+V066	080	move	раздел	Спешу!	Hurrying!
+V066	081	move	раздел	Ага, иду.	Yeah, going.
+V066	082	move	раздел	Следую.	Following.
+V066	083	move	раздел	Ступаю.	Stepping.
+V066	084	move	раздел	Ради конца!	For the end!
+V066	085	move	раздел	Лечу!	Flying!
+V066	086	move	раздел	Уже там!	Already there!
+V066	087	move	раздел	Сейчас, сейчас.	Now, now.
+V066	088	move	раздел	Ползу!	Crawling!
+V066	089	move	раздел	Шаг за шагом.	Step by step.
+V066	090	move	раздел	Ну, я пошёл.	Well, off I go.
+V066	091	move	раздел	Иду, пока горит зарево.	Going while the glow burns.
+V066	092	move	раздел	Шагаю прямо в огонь.	Walking straight into the fire.
+V066	093	move	раздел	Тропа ведёт к пеплу. Иду.	The trail leads to ash. Going.
+V066	094	move	раздел	Бегу. Знамения не ждут.	Running. Omens won't wait.
+V066	095	move	раздел	Иду туда, где дымно.	Going where it's smoky.
+V066	096	move	раздел	Иду на зов. Слышишь?	Going to the call. Hear it?
+V066	097	move	раздел	Последний шаг. Нет, предпоследний.	Last step. No, second to last.
+V066	098	move	раздел	Не отставай. Конец догонит.	Keep up. The end will catch you.
+V066	099	move	раздел	Я первый на месте. Как всегда.	First at the place. As always.
+V066	100	move	раздел	Иду. Сердце знает путь.	Going. Heart knows the way.
+V066	101	move	раздел	Бегу к пеплу, родной.	Running to the ashes, dear.
+V066	102	move	раздел	Иду. Только без суеты. Хотя...	Going. No rush. Although...
+V066	103	move	раздел	Брат, веди! Я за тобой.	Brother, lead! I follow.
+V066	104	move	раздел	Иду. Пепел на плечах — к счастью.	Going. Ash on shoulders — luck.
+V066	105	move	раздел	Двигаюсь. Конец вот-вот.	Moving. The end any moment.
+V066	106	move	раздел	Сапоги стёрты. Запишу в убытки.	Boots worn out. Booking a loss.
+V066	107	move	раздел	Иду. Чек на ботинки сохраню.	Going. Keeping the boot receipt.
+V066	108	move	раздел	Опоздаю на конец. Не хочу!	I'll be late for the end!
+V066	109	move	раздел	Пророк не бежит. Он спешит.	A prophet doesn't run. He hurries.
+V066	110	move	раздел	Иду. Гори оно всё. Потом.	Going. Burn it all. Later.
+V066	111	move	раздел	Иду. Приличный конец — в шесть.	Going. Decent end's at six.
+V066	112	move	раздел	Пока иду, ещё не конец.	While I walk, it's not the end.
+V066	113	move	раздел	Дойду — расскажу вселенной.	I'll arrive and tell the universe.
+V066	114	move	раздел	Иду. Свечи купил заранее.	Going. Bought candles ahead.
+V066	115	move	раздел	Иду. Всё ближе к концу.	Going. Ever closer to the end.
+V066	116	move	раздел	Бегу. Костёр без меня не зажигать!	Running. Don't light the fire without me!
 V067	01	select	место	Чего орёшь? Ужин готовлю.	Why shout? I'm making dinner.
 V067	02	move	место	Подойду. Нож пока подержи.	Coming. Hold the knife.
 V067	03	weapon	место	Не бегай. Жёсткий будешь.	Don't run. You'll get tough.
@@ -6024,6 +7956,98 @@ V067	21	annoyed	раздел	Не мешай повару, милый.	Don't bot
 V067	22	annoyed	раздел	Ещё раз ткнёшь — пойдёшь в рагу.	Poke me again and you're stew.
 V067	23	annoyed	раздел	Я поняла. Не стой над душой.	I got it. Stop hovering.
 V067	24	annoyed	раздел	Терпение. Мясо спешки не любит.	Patience. Meat hates rushing.
+V067	025	select	раздел	Да, милый?	Yes, dear?
+V067	026	select	раздел	Слушаю.	Listening.
+V067	027	select	раздел	Что, зайка?	What, bunny?
+V067	028	select	раздел	Ау?	Hello?
+V067	029	select	раздел	Здесь я.	I'm here.
+V067	030	select	раздел	Мм, что?	Mm, what?
+V067	031	select	раздел	Минутку.	One minute.
+V067	032	select	раздел	Ну что, голубчик?	Well, pet?
+V067	033	select	раздел	Проголодался?	Hungry?
+V067	034	select	раздел	Чего тебе?	What do you need?
+V067	035	select	раздел	Да, шеф.	Yes, chef.
+V067	036	select	раздел	Ой, ты ко мне?	Oh, you want me?
+V067	037	select	раздел	Привет, мой хороший.	Hi, my dear.
+V067	038	select	раздел	Звал меня?	Did you call?
+V067	039	select	раздел	Я на кухне.	I'm in the kitchen.
+V067	040	select	раздел	Рядом, рядом.	Close by.
+V067	041	select	раздел	Садись, поешь.	Sit, eat.
+V067	042	select	раздел	Ну, говори.	Go on.
+V067	043	select	раздел	Тут я, тут.	Right here.
+V067	044	select	раздел	Не торопи. Суп закипает.	Don't rush. Soup's boiling.
+V067	045	select	раздел	Слушаю. Тесто подходит.	Listening. Dough is rising.
+V067	046	select	раздел	Давай быстро. Мясо стынет.	Quick. The meat's cooling.
+V067	047	select	раздел	Нож острый. Говори спокойно.	Knife's sharp. Speak calmly.
+V067	048	select	раздел	Свежий воздух. Будит аппетит.	Fresh air. Wakes the appetite.
+V067	049	select	раздел	Говори. Только не над кастрюлей.	Talk. Just not over the pot.
+V067	050	select	раздел	Я рада гостям. Особенно сытным.	Glad of guests. Especially plump.
+V067	051	select	раздел	Кто тут худой? Откормим.	Who's thin here? We'll fatten.
+V067	052	select	раздел	Пока слушаю, булькает рагу.	While I listen, the stew bubbles.
+V067	053	select	раздел	Что-то ты румяный. Прелесть.	You're rosy. Lovely.
+V067	054	select	раздел	Фартук чистый. Ну, почти.	Apron's clean. Nearly.
+V067	055	select	раздел	Говори. Я сегодня добрая.	Talk. I'm kind today.
+V067	056	select	раздел	Ложку мне! То есть слушаю.	Spoon! I mean, listening.
+V067	057	select	раздел	Ужин на семерых. Заходи.	Dinner for seven. Come in.
+V067	058	select	раздел	Голос у тебя сочный.	Your voice is juicy.
+V067	059	select	раздел	Тише. Тут тесто спит.	Hush. The dough's asleep.
+V067	060	select	раздел	Что случилось? Говори, милый.	What happened? Speak, dear.
+V067	061	select	раздел	Ты подозрительно упитанный.	You're suspiciously plump.
+V067	062	select	раздел	Не подходи с пустой тарелкой.	Don't come with an empty plate.
+V067	063	select	раздел	Повар всегда прав. Особенно с ножом.	The cook's always right. Knife in hand.
+V067	064	select	раздел	Шучу. Ты не ингредиент. Пока.	Joking. You're no ingredient. Yet.
+V067	065	select	раздел	Мой рецепт — тайна. Как и состав.	My recipe's a secret. So's the filling.
+V067	066	select	раздел	Мясо дорого. Берегите себя.	Meat is pricey. Take care of yourselves.
+V067	067	select	раздел	Это ты на ужин пришёл?	Did you come for dinner?
+V067	068	select	раздел	Не дёргайся. Я пошутила. Наверное.	Don't twitch. I joked. Probably.
+V067	069	select	раздел	Худых не беру. Хлопотно.	I don't take thin ones. Hassle.
+V067	070	select	раздел	Кастрюля на тебя глядит.	The pot is eyeing you.
+V067	071	select	раздел	Хочешь пробу? Нет? Жаль.	Want a taste? No? Pity.
+V067	072	select	раздел	Соль, перец, лавровый лист...	Salt, pepper, bay leaf...
+V067	073	move	раздел	Иду.	Coming.
+V067	074	move	раздел	Сейчас.	Just a moment.
+V067	075	move	раздел	Бегу, бегу.	Coming, coming.
+V067	076	move	раздел	Хорошо, милый.	Fine, dear.
+V067	077	move	раздел	Ладно.	Alright.
+V067	078	move	раздел	Сейчас сделаю.	I'll do it.
+V067	079	move	раздел	Пойду-пойду.	Off I go.
+V067	080	move	раздел	Поняла.	Got it.
+V067	081	move	раздел	Как скажешь, солнце.	As you say, sunshine.
+V067	082	move	раздел	Не волнуйся.	Don't worry.
+V067	083	move	раздел	Уже иду.	Already going.
+V067	084	move	раздел	Принесу.	I'll bring it.
+V067	085	move	раздел	Ну хорошо.	Well, alright.
+V067	086	move	раздел	Шагаю.	Walking.
+V067	087	move	раздел	Мигом.	In a flash.
+V067	088	move	раздел	Ага.	Mm-hm.
+V067	089	move	раздел	Конечно, мой хороший.	Of course, dear.
+V067	090	move	раздел	Одной ногой там.	One foot there already.
+V067	091	move	раздел	Иду. Ложку с собой возьму.	Going. Taking a spoon.
+V067	092	move	раздел	Только суп выключу. Иду.	Just turn off the soup. Going.
+V067	093	move	раздел	Иду. Нужен свежий укроп.	Going. Need fresh dill.
+V067	094	move	раздел	Сейчас. Выключу печь и бегу.	Now. Turn off the oven and run.
+V067	095	move	раздел	Ладно. Проветрюсь, а то душно.	Fine. Air out, it's stuffy.
+V067	096	move	раздел	Шагаю. Фартук развевается.	Walking. Apron flying.
+V067	097	move	раздел	Иду. Присмотри за кашей.	Going. Watch the porridge.
+V067	098	move	раздел	Дойду и вернусь. К ужину.	Go and be back. By dinner.
+V067	099	move	раздел	Иду. Там свежее. Говорят.	Going. It's fresher there. Allegedly.
+V067	100	move	раздел	Иду без суеты. Мясо потерпит.	Going calmly. The meat can wait.
+V067	101	move	раздел	Не отставай. Всех накормлю.	Keep up. I'll feed everyone.
+V067	102	move	раздел	Прогуляюсь. Нагуляю аппетит.	Taking a stroll. Working up appetite.
+V067	103	move	раздел	Иду. Тебе что-нибудь принести?	Going. Bring you something?
+V067	104	move	раздел	Туда? Красивое место. Для пикника.	There? Nice place. For a picnic.
+V067	105	move	раздел	Иду. Котлы сами не варят.	Going. Pots don't cook themselves.
+V067	106	move	раздел	Только никого не ешь без меня.	Don't eat anyone without me.
+V067	107	move	раздел	Встречу вкусное — поймаю.	If I meet something tasty, I catch it.
+V067	108	move	раздел	Иду. За свежей вырезкой.	Going. For fresh tenderloin.
+V067	109	move	раздел	Ужин сам не прыгнет в котёл.	Dinner won't jump in the pot.
+V067	110	move	раздел	Иду. Кто-то нервничает? Зря.	Going. Someone nervous? No need.
+V067	111	move	раздел	Не бойся, я пока сытая.	Don't fear, I'm still full.
+V067	112	move	раздел	Иду. Заверну в кладовую.	Going. Dropping by the pantry.
+V067	113	move	раздел	Тише, соседи. Я готовлю.	Quiet, neighbors. I'm cooking.
+V067	114	move	раздел	Мне рецепт приснился. Иду.	Dreamt of a recipe. Going.
+V067	115	move	раздел	Иду. Нож заточила. На всякий.	Going. Sharpened the knife. Just in case.
+V067	116	move	раздел	Иду. Грядка сама не польётся.	Going. The garden won't water itself.
 V068	01	select	место	Чего? Я почти уснул. Навечно.	What? Nearly asleep. Forever.
 V068	02	move	место	Иду. Кости не подгоняй.	Coming. Don't rush the bones.
 V068	03	weapon	место	Сейчас и ты привыкнешь.	You'll get used to it too.
@@ -6048,6 +8072,98 @@ V068	21	annoyed	раздел	Дай истлеть спокойно.	Let me rot 
 V068	22	annoyed	раздел	Хватит. Челюсть отвалится.	Enough. My jaw'll fall off.
 V068	23	annoyed	раздел	Тыкай-тыкай. Мне не больно.	Poke away. Can't feel a thing.
 V068	24	annoyed	раздел	Понял я. Мозги ещё при мне. Вроде.	Got it. Still have brains. I think.
+V068	025	select	раздел	Хх... да?	Hhh... yes?
+V068	026	select	раздел	А?	Huh?
+V068	027	select	раздел	Кто звал?	Who called?
+V068	028	select	раздел	Ммм.	Mmm.
+V068	029	select	раздел	Тут.	Here.
+V068	030	select	раздел	Что?	What?
+V068	031	select	раздел	Кэп.	Cap.
+V068	032	select	раздел	Да...	Yes...
+V068	033	select	раздел	Слышу.	Hear.
+V068	034	select	раздел	Зачем?	Why?
+V068	035	select	раздел	Опять?	Again?
+V068	036	select	раздел	Говори.	Speak.
+V068	037	select	раздел	Угу.	Uh-huh.
+V068	038	select	раздел	Жив? Нет. Говори.	Alive? No. Speak.
+V068	039	select	раздел	Ну...	Well...
+V068	040	select	раздел	Что опять?	What now?
+V068	041	select	раздел	Рядом.	Nearby.
+V068	042	select	раздел	Вахта.	On watch.
+V068	043	select	раздел	Только не будь громким. Ухо.	Don't be loud. The ear.
+V068	044	select	раздел	Я ещё тут. Вроде.	Still here. I think.
+V068	045	select	раздел	Кашлянул бы, да нечем.	I'd cough, but with what?
+V068	046	select	раздел	Тише. Всё и так хрустит.	Quiet. Everything's creaking.
+V068	047	select	раздел	Сырость. Ржавчина. Говори.	Damp. Rust. Speak.
+V068	048	select	раздел	Что за шум? А. Это я.	What's that noise? Oh. Me.
+V068	049	select	раздел	Ну, чего у нас?	Well, what've we got?
+V068	050	select	раздел	Мёртвым не командуют. Хотя...	Dead men aren't commanded. Though...
+V068	051	select	раздел	Гнилой, но в строю.	Rotten but in line.
+V068	052	select	раздел	Ворочаюсь в могиле. Что?	Tossing in the grave. What?
+V068	053	select	раздел	Челюсть на месте. Говори.	Jaw's in place. Speak.
+V068	054	select	раздел	Давно меня не звали.	Nobody called me in ages.
+V068	055	select	раздел	Глаз один. Но слушаю.	One eye. But listening.
+V068	056	select	раздел	Дай подумать. Мозги отсырели.	Let me think. Brain's soggy.
+V068	057	select	раздел	Тут холодно. Или я.	It's cold here. Or I am.
+V068	058	select	раздел	Ром приснился. Это ты?	I dreamt of rum. That you?
+V068	059	select	раздел	Червь шепнул: ты зовёшь.	A worm whispered you're calling.
+V068	060	select	раздел	Говори. Пока не рассыпался.	Speak. Before I crumble.
+V068	061	select	раздел	Да. Только без хлопков по плечу.	Yes. No slapping my shoulder.
+V068	062	select	раздел	Живой? Фу. Я вот мёртвый.	Alive? Ugh. I'm dead.
+V068	063	select	раздел	Хоронить меня поздно.	Too late to bury me.
+V068	064	select	раздел	До пенсии мне вечность.	Eternity until my pension.
+V068	065	select	раздел	Я бы вздохнул. Нечем.	I'd sigh. Nothing to sigh with.
+V068	066	select	раздел	Кость хрустнула. Это не я.	A bone cracked. Not me.
+V068	067	select	раздел	Ром выпью — вытечет.	I'll drink rum — it'll leak.
+V068	068	select	раздел	Мне пенсия не положена.	No pension for me.
+V068	069	select	раздел	Шепнул бы, да связки сгнили.	I'd whisper, but my cords rotted.
+V068	070	select	раздел	Кто-нибудь, подержите челюсть.	Someone hold my jaw.
+V068	071	select	раздел	Могилу прикрой. Сквозит.	Cover the grave. Draft.
+V068	072	select	раздел	Выкопался ради тебя. Цени.	Dug myself out for you. Appreciate.
+V068	073	move	раздел	Иду.	Going.
+V068	074	move	раздел	Ладно.	Fine.
+V068	075	move	раздел	Шарк. Шарк.	Shuffle, shuffle.
+V068	076	move	раздел	Идём.	Let's go.
+V068	077	move	раздел	Сейчас.	Soon.
+V068	078	move	раздел	Понял.	Got it.
+V068	079	move	раздел	Есть.	Aye.
+V068	080	move	раздел	Ох... иду.	Oof... going.
+V068	081	move	раздел	Плетусь.	Trudging.
+V068	082	move	раздел	Тащусь.	Dragging along.
+V068	083	move	раздел	Принял.	Copy.
+V068	084	move	раздел	Хорошо...	Fine...
+V068	085	move	раздел	Ползком.	Crawling.
+V068	086	move	раздел	Вперёд. Медленно.	Forward. Slowly.
+V068	087	move	раздел	Ага.	Yeah.
+V068	088	move	раздел	Движусь.	Moving.
+V068	089	move	раздел	Постараюсь.	I'll try.
+V068	090	move	раздел	Допустим.	Say so.
+V068	091	move	раздел	Иду. Палец потерял. Найду.	Going. Lost a finger. I'll find it.
+V068	092	move	раздел	Шаркаю. Не ждите, я там.	Shuffling. Don't wait, I'm there.
+V068	093	move	раздел	Иду. Земля тянет вниз.	Going. The earth pulls down.
+V068	094	move	раздел	Курс на могилу. То есть туда.	Course to the grave. I mean there.
+V068	095	move	раздел	Иду. По пути отвалится. Подбери.	Going. Something'll fall off. Pick it up.
+V068	096	move	раздел	Ветер в рёбрах свистит. Иду.	Wind whistles in my ribs. Going.
+V068	097	move	раздел	Иду. Сапог хлюпает.	Going. Boot squelches.
+V068	098	move	раздел	Суставы скрипят. Иду.	Joints creaking. Going.
+V068	099	move	раздел	Мёртвым торопиться вредно.	Hurrying's bad for the dead.
+V068	100	move	раздел	Иду. Упаду — не поднимай.	Going. If I fall, leave me.
+V068	101	move	раздел	Хорошо. Только без бега.	Fine. No running.
+V068	102	move	раздел	Тащусь за вами. Как тень.	Dragging behind. Like a shadow.
+V068	103	move	раздел	Иду. Земля мокрая. Привычно.	Going. Wet ground. Feels homey.
+V068	104	move	раздел	Иду. Не забудьте меня забрать.	Going. Don't forget to retrieve me.
+V068	105	move	раздел	Двигаюсь. Болото? Нормально.	Moving. A swamp? Fine.
+V068	106	move	раздел	Иду. Заодно разомну кости.	Going. Stretch my bones.
+V068	107	move	раздел	Бегать не могу. Умер.	Can't run. I'm dead.
+V068	108	move	раздел	Лучшая прогулка — на тот свет.	Best walk is to the beyond.
+V068	109	move	раздел	Иду. Ударишь — рассыплюсь.	Going. Hit me and I crumble.
+V068	110	move	раздел	Раньше был шустрее. До смерти.	I was quicker. Before dying.
+V068	111	move	раздел	Шагаю. Червей не потеряйте.	Walking. Don't lose the worms.
+V068	112	move	раздел	Туда? Там хоть налили?	There? Did they pour any?
+V068	113	move	раздел	Я быстро. Года за два.	Quick. Two years or so.
+V068	114	move	раздел	Мёртв, но всё ещё в строю.	Dead but still in service.
+V068	115	move	раздел	Могила подождёт. Иду.	The grave can wait. Going.
+V068	116	move	раздел	Иду. Не за деньгами. За романтикой.	Going. Not for money. For romance.
 V069	01	select	место	Слушаю. Не только я.	Listening. Not just me.
 V069	02	move	место	Иду. Он тоже идёт.	Coming. He's coming too.
 V069	03	weapon	место	Не я приказал.	Wasn't my order.
@@ -6072,6 +8188,98 @@ V069	21	annoyed	раздел	Не дёргай. Мы спорим.	Don't pull. W
 V069	22	annoyed	раздел	Хватит. Он злится.	Enough. He's getting angry.
 V069	23	annoyed	раздел	Слышали. Оба раза. Все.	Heard you. Both times. All of us.
 V069	24	annoyed	раздел	Тише. Он почти уснул.	Quiet. He's nearly asleep.
+V069	025	select	раздел	Да?	Yes?
+V069	026	select	раздел	Что?	What?
+V069	027	select	раздел	Здесь.	Here.
+V069	028	select	раздел	Я слышу.	I hear.
+V069	029	select	раздел	Тихо.	Quiet.
+V069	030	select	раздел	Мы здесь.	We're here.
+V069	031	select	раздел	Да. Нет. Да.	Yes. No. Yes.
+V069	032	select	раздел	Приказ?	Orders?
+V069	033	select	раздел	Говори.	Speak.
+V069	034	select	раздел	Он слушает.	He's listening.
+V069	035	select	раздел	Рядовой.	Private.
+V069	036	select	раздел	Кто там?	Who's there?
+V069	037	select	раздел	Ну?	Well?
+V069	038	select	раздел	Повтори.	Repeat.
+V069	039	select	раздел	Тут я.	I'm here.
+V069	040	select	раздел	Голос? Чей?	A voice? Whose?
+V069	041	select	раздел	Подожди.	Wait.
+V069	042	select	раздел	Тише, оба.	Quiet, both.
+V069	043	select	раздел	Я слушаю. Он не хочет.	I listen. He doesn't want to.
+V069	044	select	раздел	Говори. В голове шумно.	Talk. It's noisy in my head.
+V069	045	select	раздел	Слышу двоих. Тебя и его.	Hear two. You and him.
+V069	046	select	раздел	Прости. Я сейчас не один.	Sorry. I'm not alone right now.
+V069	047	select	раздел	Прикажи. Он затихнет. Может.	Order. He'll quiet. Maybe.
+V069	048	select	раздел	Погоди. Он что-то шепчет.	Wait. He's whispering something.
+V069	049	select	раздел	Я в порядке. Мы в порядке.	I'm fine. We're fine.
+V069	050	select	раздел	Рядовой на связи. Частично.	Private on comms. Partly.
+V069	051	select	раздел	Не кричи. Он слышит громче.	Don't shout. He hears louder.
+V069	052	select	раздел	Голова трещит. Давай приказ.	Head's cracking. Give the order.
+V069	053	select	раздел	Я тут. А он — везде.	I'm here. He's everywhere.
+V069	054	select	раздел	Он говорит: слушай. Слушаю.	He says listen. Listening.
+V069	055	select	раздел	Хм. Нас зовут. Обоих.	Hm. We're called. Both.
+V069	056	select	раздел	Всё как в учебке. Почти.	Like boot camp. Almost.
+V069	057	select	раздел	Нет, не ему. Тебе. Говори.	No, not him. You. Talk.
+V069	058	select	раздел	Тихо в голове. Редко. Говори.	Quiet in my head. Rare. Talk.
+V069	059	select	раздел	Я ещё солдат. Пока.	Still a soldier. For now.
+V069	060	select	раздел	Погоны на месте. Рассудок — нет.	Epaulettes in place. Sanity, no.
+V069	061	select	раздел	Командир? Или это он?	Commander? Or is it him?
+V069	062	select	раздел	Нас двое. Паёк один.	There are two of us. One ration.
+V069	063	select	раздел	Он просит добавки. Дай.	He asks for seconds. Give.
+V069	064	select	раздел	Койка на двоих. Тесновато.	Shared bunk. A bit cramped.
+V069	065	select	раздел	Врач сказал: голоса — норма.	Doctor said voices are normal.
+V069	066	select	раздел	Он хочет выпить. Я не против.	He wants a drink. I'm fine with it.
+V069	067	select	раздел	Он смеётся. Я нет.	He laughs. I don't.
+V069	068	select	раздел	Квартплата вдвое. Спасибо.	Rent doubled. Thanks.
+V069	069	select	раздел	Иди к чёрту. Не тебе. Ему.	Go to hell. Not you. Him.
+V069	070	select	раздел	Я устал. Он нет. Вот беда.	I'm tired. He's not. Trouble.
+V069	071	select	раздел	Двойное жалованье не дали.	Didn't give double pay.
+V069	072	select	раздел	Он шепчет, я киваю. Привычка.	He whispers, I nod. Habit.
+V069	073	move	раздел	Иду.	Going.
+V069	074	move	раздел	Есть.	Yes.
+V069	075	move	раздел	Идём.	We go.
+V069	076	move	раздел	Хорошо.	Fine.
+V069	077	move	раздел	Понял.	Got it.
+V069	078	move	раздел	Мы идём.	We're going.
+V069	079	move	раздел	Идём. Оба.	We go. Both.
+V069	080	move	раздел	Принял.	Copy.
+V069	081	move	раздел	Туда.	There.
+V069	082	move	раздел	Подожди. Иду.	Wait. Going.
+V069	083	move	раздел	Иду-иду.	Going, going.
+V069	084	move	раздел	Ладно, ладно.	Fine, fine.
+V069	085	move	раздел	Исполняю.	Executing.
+V069	086	move	раздел	Выхожу.	Heading out.
+V069	087	move	раздел	Идём вместе.	Going together.
+V069	088	move	раздел	Тише. Иду.	Quiet. Going.
+V069	089	move	раздел	Двигаюсь.	Moving.
+V069	090	move	раздел	Да. Нет. Иду.	Yes. No. Going.
+V069	091	move	раздел	Иду. Он тянет влево.	Going. He pulls left.
+V069	092	move	раздел	Иду. Мысли отстают.	Going. Thoughts lag.
+V069	093	move	раздел	Двигаюсь. Он подсказывает путь.	Moving. He suggests the path.
+V069	094	move	раздел	Иду. Он говорит — налево.	Going. He says left.
+V069	095	move	раздел	Хорошо. Только он первым.	Fine. But he goes first.
+V069	096	move	раздел	Иду. Выбор не мой.	Going. Not my choice.
+V069	097	move	раздел	Принял. Он тоже принял.	Copy. He copied too.
+V069	098	move	раздел	Выдвигаюсь. Голова, потерпи.	Moving out. Head, hold on.
+V069	099	move	раздел	Иду. Он хочет бежать. Не дам.	Going. He wants to run. No.
+V069	100	move	раздел	Я иду. Он только смотрит.	I walk. He just watches.
+V069	101	move	раздел	Следую приказу. Любому.	Following orders. Any.
+V069	102	move	раздел	Иду. Не знаю чей приказ.	Going. Don't know whose order.
+V069	103	move	раздел	Идём. Хоть куда-то идём.	Going. At least somewhere.
+V069	104	move	раздел	Выходим. Он доволен. Это плохо.	Heading out. He's pleased. Bad.
+V069	105	move	раздел	Иду. Не мешай, я сам.	Going. Don't interfere, I'll manage.
+V069	106	move	раздел	Занимаю точку. Он выбирает.	Taking the point. He chooses.
+V069	107	move	раздел	Иду. Хоть бы он молчал.	Going. If only he'd shut up.
+V069	108	move	раздел	Иду. Он петь вздумал.	Going. He's started singing.
+V069	109	move	раздел	Два сапога — пара. Идём.	Two boots, a pair. Going.
+V069	110	move	раздел	Шагаю. Он шагает. Забавно.	Walking. He walks. Funny.
+V069	111	move	раздел	Иду. Он обещал не мешать.	Going. He promised not to interfere.
+V069	112	move	раздел	Идти вдвоём веселее.	Two walk happier.
+V069	113	move	раздел	Он требует привал. Отказ.	He demands a break. Denied.
+V069	114	move	раздел	Иду. Платит он, не я.	Going. He pays, not me.
+V069	115	move	раздел	Куда? Не знаю. Он знает.	Where? I don't know. He does.
+V069	116	move	раздел	Маршрут сверяю. С ним.	Checking route. With him.
 V070	01	select	место	Ну? Опять на арену?	Well? Arena again?
 V070	02	move	место	Иду. Цепь убери.	Coming. Move the chain.
 V070	03	weapon	место	Подходи. Мне уже всё равно.	Come closer. I'm past caring.
@@ -6096,6 +8304,98 @@ V070	21	annoyed	раздел	Я тебе не служанка. Уже.	I'm not 
 V070	22	annoyed	раздел	Хватит щёлкать. Как кнутом.	Stop clicking. Like a whip.
 V070	23	annoyed	раздел	Поняла с первого раза. Привычка.	Got it the first time. Habit.
 V070	24	annoyed	раздел	Ещё раз — и сбегу.	Once more and I run off.
+V070	025	select	раздел	Что?	What?
+V070	026	select	раздел	Да?	Yes?
+V070	027	select	раздел	Тут.	Here.
+V070	028	select	раздел	Говори.	Talk.
+V070	029	select	раздел	Слышу.	Hearing.
+V070	030	select	раздел	Чего?	What for?
+V070	031	select	раздел	Ага.	Yeah.
+V070	032	select	раздел	Ну, давай.	Go on.
+V070	033	select	раздел	Кто там?	Who's there?
+V070	034	select	раздел	Я.	Me.
+V070	035	select	раздел	Вызывали?	Summoned?
+V070	036	select	раздел	Опять.	Again.
+V070	037	select	раздел	Чего хотим?	What do we want?
+V070	038	select	раздел	Смотрю.	Looking.
+V070	039	select	раздел	Стою.	Standing.
+V070	040	select	раздел	Жива.	Alive.
+V070	041	select	раздел	Дальше?	Next?
+V070	042	select	раздел	Хм?	Hm?
+V070	043	select	раздел	Без цепи лучше слышно.	Better hearing without a chain.
+V070	044	select	раздел	Я слушаю. Пока не ударили.	Listening. Until they hit.
+V070	045	select	раздел	Песок на зубах. Говори.	Sand in my teeth. Speak.
+V070	046	select	раздел	Устала. Но слушаю.	Tired. But listening.
+V070	047	select	раздел	Говори быстро. Мне ещё драться.	Be quick. I've a fight.
+V070	048	select	раздел	Три боя за сутки. Что тебе?	Three fights a day. What now?
+V070	049	select	раздел	Шрамы ноют. Ну, что?	Scars ache. Well, what?
+V070	050	select	раздел	Кого убить? Или мыть пол?	Who to kill? Or mop the floor?
+V070	051	select	раздел	Я тут. Охраны нет. Хорошо.	Here. No guards. Good.
+V070	052	select	раздел	Опять приказы. Привычно.	More orders. Familiar.
+V070	053	select	раздел	Всё помню. Говори.	Remember it all. Speak.
+V070	054	select	раздел	Брось кнут и говори.	Drop the whip and talk.
+V070	055	select	раздел	Я не скучаю по арене.	I don't miss the arena.
+V070	056	select	раздел	Говори. Я не ржавая.	Talk. I'm not rusty.
+V070	057	select	раздел	Ладони в мозолях. Зато мои.	Calloused palms. But mine.
+V070	058	select	раздел	Слышала. Не глухая.	Heard. Not deaf.
+V070	059	select	раздел	Опять кто-то решил за меня.	Someone decided for me again.
+V070	060	select	раздел	Свобода — это когда спрашивают.	Freedom is being asked.
+V070	061	select	раздел	Спасибо, что спросил. Хоть так.	Thanks for asking. At least.
+V070	062	select	раздел	Публике скажи — я устала.	Tell the crowd I'm tired.
+V070	063	select	раздел	Зрители тут есть? Платят?	Any spectators? Do they pay?
+V070	064	select	раздел	Автограф — после боя.	Autograph after the fight.
+V070	065	select	раздел	Контракт? Я не читаю. Я рублю.	Contract? I don't read. I chop.
+V070	066	select	раздел	Мне бы отпуск. Хоть на неделю.	I need a vacation. A week at least.
+V070	067	select	раздел	Хоть бы плед выдали.	Could've given a blanket.
+V070	068	select	раздел	Ужин будет? Или я ужин?	Is there dinner? Or am I?
+V070	069	select	раздел	Гладиаторша на связи. Без восторга.	Gladiatrix on comms. No enthusiasm.
+V070	070	select	раздел	Да, хозяин... шучу. Привычка.	Yes, master... joking. Habit.
+V070	071	select	раздел	Говори. Только без свистка.	Talk. Just no whistle.
+V070	072	select	раздел	Могла бы сегодня выспаться.	I could have slept today.
+V070	073	move	раздел	Иду.	Going.
+V070	074	move	раздел	Вперёд.	Forward.
+V070	075	move	раздел	Шагаю.	Walking.
+V070	076	move	раздел	Поняла.	Got it.
+V070	077	move	раздел	Хорошо.	Alright.
+V070	078	move	раздел	Давай уже.	Let's get on.
+V070	079	move	раздел	Не гони.	Don't push.
+V070	080	move	раздел	Сама знаю.	I know already.
+V070	081	move	раздел	Уже иду.	Already going.
+V070	082	move	раздел	Двигаюсь.	Moving.
+V070	083	move	раздел	Сейчас.	Now.
+V070	084	move	раздел	Тащусь.	Dragging along.
+V070	085	move	раздел	Допустим.	Suppose so.
+V070	086	move	раздел	Пройдусь.	I'll stroll.
+V070	087	move	раздел	Мм, иду.	Mm, going.
+V070	088	move	раздел	Знаю путь.	I know the way.
+V070	089	move	раздел	Опять бегать?	Running again?
+V070	090	move	раздел	Ну, я пошла.	Well, off I go.
+V070	091	move	раздел	Иду. Только не толкай в спину.	Going. Don't push my back.
+V070	092	move	раздел	Иду. Спина помнит всё.	Going. My back remembers.
+V070	093	move	раздел	Иду. Только без кнута.	Going. No whip.
+V070	094	move	раздел	Иду. Кормят хоть вечером?	Going. Is there dinner?
+V070	095	move	раздел	Шагаю. Цепь больше не звенит.	Walking. No more chain clink.
+V070	096	move	раздел	Хорошо. Но тропу выберу сама.	OK. But I pick the trail.
+V070	097	move	раздел	Пойду. Хоть воздухом подышу.	I'll go. At least breathe air.
+V070	098	move	раздел	Иду. Ты платишь за обувь.	Going. You pay for the shoes.
+V070	099	move	раздел	Иду. Босиком привычнее.	Going. Barefoot's familiar.
+V070	100	move	раздел	Иду. Скажи только, где конец.	Going. Just tell where it ends.
+V070	101	move	раздел	Двигаюсь. Следи, чтоб не в спину.	Moving. Mind my back.
+V070	102	move	раздел	Туда? Ладно, там тоже песок.	There? Sure, sand there too.
+V070	103	move	раздел	Иду. Бои закончились? Нет.	Going. Fights over? No.
+V070	104	move	раздел	Шагаю. Не жди аплодисментов.	Walking. Expect no applause.
+V070	105	move	раздел	Иду. Сегодня без поклонов.	Going. No bows today.
+V070	106	move	раздел	Иду. Приказ ясен. Как всегда.	Going. Order's clear. As always.
+V070	107	move	раздел	Бегу. Как от хозяина. Привычно.	Running. As from the master. Habit.
+V070	108	move	раздел	Иду. Зрителей нет? Жаль.	Going. No spectators? Pity.
+V070	109	move	раздел	Иду. Упаду — аплодируйте.	Going. If I fall, applaud.
+V070	110	move	раздел	Иду. Спинку не гладить.	Going. No back pats.
+V070	111	move	раздел	Иду. Хоть бы пирожок дали.	Going. A pie would be nice.
+V070	112	move	раздел	Иду на выход. Мой любимый.	Heading to the exit. My favorite.
+V070	113	move	раздел	Иду. Не побег. Просто прогулка.	Going. Not an escape. A stroll.
+V070	114	move	раздел	Иду. Документы не просят?	Going. Nobody wants my papers?
+V070	115	move	раздел	Иду. Ошейник не давит. Хорошо.	Going. Collar doesn't pinch. Good.
+V070	116	move	раздел	Иду. Вечером — ванна. Мечтаю.	Going. Bath tonight. Dreaming.
 V071	01	select	место	Что? Занят. Вас изучаю.	What? Busy. Studying you.
 V071	02	move	место	Сейчас подойду. Не трогайте образцы.	Coming over. Don't touch the specimens.
 V071	03	weapon	место	Не бойся. Это не надолго.	Don't worry. This won't take long.
