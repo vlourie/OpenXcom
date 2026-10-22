@@ -21,6 +21,7 @@
 #include <sstream>
 #include "GeoscapeState.h"
 #include "../Engine/Game.h"
+#include "../Engine/HdPilotVoice.h"
 #include "../Engine/Screen.h"
 #include "../Engine/LocalizedText.h"
 #include "../Engine/SurfaceSet.h"
@@ -1404,6 +1405,7 @@ void DogfightState::update()
 							else
 								setStatus("STR_INTERCEPTOR_DAMAGED");
 							_game->getMod()->getSound("GEO.CAT", Mod::INTERCEPTOR_HIT)->play(); //10
+							HdPilotVoice::report(_craft, HdPilotVoice::DAMAGED);
 							if (_mode == _btnCautious && _craft->getDamagePercentage() >= 50 && !_ufoIsAttacking)
 							{
 								_targetDist = STANDOFF_DIST;
@@ -1903,6 +1905,10 @@ void DogfightState::fireWeapon(int i)
 
 		_game->getMod()->getSound("GEO.CAT", w1->getRules()->getSound())->play();
 		_firedAtLeastOnce = true;
+		if (w1->getAmmo() == 0)
+		{
+			HdPilotVoice::report(_craft, HdPilotVoice::NOAMMO);
+		}
 	}
 }
 
