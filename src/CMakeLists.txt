@@ -170,6 +170,7 @@ set ( engine_src
   Engine/HdItems.cpp
   Engine/HdOutline.cpp
   Engine/HdRadar.cpp
+  Engine/HdPilotVoice.cpp
   Engine/HdBattleHud.cpp
   Engine/HdKillCam.cpp
   Engine/HdVideo.cpp

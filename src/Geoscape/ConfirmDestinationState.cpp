@@ -46,6 +46,7 @@
 #include "../Engine/Options.h"
 #include "../Engine/Sound.h"
 #include "CraftLaunchState.h"
+#include "../Engine/HdPilotVoice.h"
 #include "../Ufopaedia/Ufopaedia.h"
 
 namespace OpenXcom
@@ -407,6 +408,21 @@ void ConfirmDestinationState::btnOkClick(Action *)
 		craft->setStatus("STR_OUT");
 	}
 
+	// HD: the leader answers the order over the radio
+	{
+		HdPilotVoice::Event ev = HdPilotVoice::ORDER;
+		Base *b = dynamic_cast<Base*>(_target);
+		if (_crafts.size() > 1)
+			ev = HdPilotVoice::WING;
+		else if (dynamic_cast<Ufo*>(_target))
+			ev = HdPilotVoice::ATTACK;
+		else if (dynamic_cast<Craft*>(_target) && _target != _crafts.front())
+			ev = HdPilotVoice::ESCORT;
+		else if (b)
+			ev = b == _crafts.front()->getBase() ? HdPilotVoice::RETURN : HdPilotVoice::REBASE;
+		HdPilotVoice::order(_crafts.front(), ev);
+	}
+
 	_game->popState();
 	_game->popState();
 	if (launch)
@@ -479,6 +495,7 @@ void ConfirmDestinationState::btnTransferClick(Action *)
 		{
 			_crafts.front()->setLowFuel(true);
 		}
+		HdPilotVoice::order(_crafts.front(), HdPilotVoice::REBASE);
 
 		// pop the selecting the destination state
 		_game->popState();

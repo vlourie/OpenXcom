@@ -223,6 +223,8 @@ OPT bool oxceHdAmmoHint;
 OPT bool oxceHdTransferCost, oxceHdTransferConfirm;
 // HD globe and dogfight: own craft and UFOs once read by a hyper-wave decoder as small outlines from above (Engine/HdOutline.h); off = the classic markers and blob
 OPT bool oxceHdCraftOutlines;
+// HD globe: the crew of a player craft answers over the radio when it is picked, sent, recalled, hit or out of ammo (Engine/HdPilotVoice.h); sound only
+OPT bool oxceHdPilotVoice;
 // HD globe: how the radar coverage of the bases and the craft is drawn (Engine/HdRadar.h). 0 = the classic circles (default), 1 = a light wash with one joint edge, 2 = the same plus a base pulsing with each detection cycle at the slow clock speeds and a craft's beam turning (a trial)
 OPT int oxceHdRadar;
 // HD globe, radar 3 (waves): when the bases send their waves. 0 = all at once each game hour, 1 = in turn each hour (default), 2 = in turn each 3 hours, 3 = in turn each 6 hours

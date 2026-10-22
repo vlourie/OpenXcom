@@ -40,6 +40,7 @@
 #include "../Basescape/CraftInfoState.h"
 #include "../Ufopaedia/Ufopaedia.h"
 #include "../Mod/RuleInterface.h"
+#include "../Engine/HdPilotVoice.h"
 
 namespace OpenXcom
 {
@@ -488,6 +489,7 @@ void InterceptState::lstCraftsLeftClick(Action *)
 		{
 			_selCrafts.push_back(c);
 			_lstCrafts->setCellColor(row, 0, _lstCrafts->getSecondaryColor());
+			HdPilotVoice::order(c, HdPilotVoice::SELECT); // HD: joins the wing
 		}
 		// remove craft from the wing to be created when it is already included
 		else if (( std::find(_selCrafts.begin(), _selCrafts.end(), (Craft*) c) != _selCrafts.end()))

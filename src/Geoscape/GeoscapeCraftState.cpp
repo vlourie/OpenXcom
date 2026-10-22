@@ -42,6 +42,7 @@
 #include "Globe.h"
 #include "../Mod/RuleInterface.h"
 #include "../Engine/HdCraftBack.h"
+#include "../Engine/HdPilotVoice.h"
 
 namespace OpenXcom
 {
@@ -336,6 +337,12 @@ GeoscapeCraftState::GeoscapeCraftState(Craft *craft, Globe *globe, Waypoint *way
 		_txtSoldier->setVisible(false);
 	if (_craft->getRules()->getMaxVehiclesAndLargeSoldiersLimit() == 0)
 		_txtHWP->setVisible(false);
+
+	// HD: the crew answers when the player picks the craft (not on the "UFO lost" prompt)
+	if (_waypoint == 0)
+	{
+		HdPilotVoice::order(_craft, HdPilotVoice::SELECT);
+	}
 }
 
 /**
@@ -352,6 +359,7 @@ GeoscapeCraftState::~GeoscapeCraftState()
  */
 void GeoscapeCraftState::btnBaseClick(Action *)
 {
+	HdPilotVoice::order(_craft, HdPilotVoice::RETURN);
 	_game->popState();
 	_craft->returnToBase();
 	delete _waypoint;
@@ -379,6 +387,7 @@ void GeoscapeCraftState::btnTargetClick(Action *)
  */
 void GeoscapeCraftState::btnPatrolClick(Action *)
 {
+	HdPilotVoice::order(_craft, HdPilotVoice::ORDER);
 	_game->popState();
 	_craft->setDestination(0);
 	delete _waypoint;
@@ -404,6 +413,7 @@ void GeoscapeCraftState::btnCancelClick(Action *)
 		_game->getSavedGame()->getWaypoints()->push_back(_waypoint);
 		_craft->setDestination(_waypoint);
 	}
+	HdPilotVoice::order(_craft, _waypoint != 0 ? HdPilotVoice::ORDER : HdPilotVoice::CANCEL);
 	// Cancel
 	_game->popState();
 }
