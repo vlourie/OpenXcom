@@ -102,6 +102,7 @@ private:
 	UnitStatus _status;
 	bool _wantsToSurrender, _isSurrendering;
 	int _walkPhase, _fallPhase;
+	bool _fallShown = false;                     ///< HD: the fall of a unit already out is being shown (setShownFall)
 	std::vector<BattleUnit *> _visibleUnits, _unitsSpottedThisTurn;
 	std::vector<Tile *> _visibleTiles;
 	std::unordered_set<Tile *> _visibleTilesLookup;
@@ -364,6 +365,10 @@ public:
 	void instaFalling();
 	/// Get falling sequence.
 	int getFallingPhase() const;
+	/// HD: shows the fall of a unit already dead or out cold frame by frame (UnitDieBState, oxceHdBlastFall); -1 ends it.
+	void setShownFall(int phase);
+	/// HD: is the fall of a unit already out being shown - it is drawn falling, not as an item.
+	bool isFallShown() const { return _fallShown; }
 
 	/// The unit is out - either dead or unconscious.
 	bool isOut() const;

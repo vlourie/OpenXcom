@@ -238,9 +238,9 @@ void UnitSprite::draw(const BattleUnit* unit, int part, int x, int y, int shade,
 	_shade = shade;
 	_mask = mask;
 
-	if (_unit->isOut())
+	if (_unit->isOut() && !_unit->isFallShown())
 	{
-		// unit is drawn as an item
+		// unit is drawn as an item (HD: unless its fall is still being shown, UnitDieBState)
 		return;
 	}
 
@@ -425,7 +425,7 @@ void UnitSprite::drawRoutine0()
 	const int unitDir = shownDir();
 	const int walkPhase = _unit->getWalkingPhase();
 
-	if (_unit->getStatus() == STATUS_COLLAPSING)
+	if ((_unit->getStatus() == STATUS_COLLAPSING || _unit->isFallShown()))
 	{
 		Part coll{ BODYPART_COLLAPSING };
 		selectUnit(coll, die, _unit->getFallingPhase());
@@ -715,7 +715,7 @@ void UnitSprite::drawRoutine1()
 	constexpr static int offY3[8] = { -4, -4, -1, 0, 5, 0, 1, 0 }; // for the left handed rifles
 	constexpr static int offXAiming = 0;
 
-	if (_unit->getStatus() == STATUS_COLLAPSING)
+	if ((_unit->getStatus() == STATUS_COLLAPSING || _unit->isFallShown()))
 	{
 		Part coll{ BODYPART_COLLAPSING };
 		selectUnit(coll, die, _unit->getFallingPhase());
@@ -999,7 +999,7 @@ void UnitSprite::drawRoutine4()
 
 	const int unitDir = shownDir();
 
-	if (_unit->getStatus() == STATUS_COLLAPSING)
+	if ((_unit->getStatus() == STATUS_COLLAPSING || _unit->isFallShown()))
 	{
 		Part coll{ BODYPART_COLLAPSING };
 		selectUnit(coll, die, _unit->getFallingPhase());
@@ -1144,7 +1144,7 @@ void UnitSprite::drawRoutine6()
 	constexpr static int offY3[8] = { -4, -4, -1, 0, 5, 0, 1, 0 }; // for the left handed rifles
 	constexpr static int offXAiming = 0;
 
-	if (_unit->getStatus() == STATUS_COLLAPSING)
+	if ((_unit->getStatus() == STATUS_COLLAPSING || _unit->isFallShown()))
 	{
 		Part coll{ BODYPART_COLLAPSING };
 		selectUnit(coll, die, _unit->getFallingPhase());
@@ -1319,7 +1319,7 @@ void UnitSprite::drawRoutine7()
 	constexpr static int rarmWalk = 40;
 	constexpr static int yoffWalk[8] = {1, 0, -1, 0, 1, 0, -1, 0}; // bobbing up and down
 
-	if (_unit->getStatus() == STATUS_COLLAPSING)
+	if ((_unit->getStatus() == STATUS_COLLAPSING || _unit->isFallShown()))
 	{
 		Part coll{ BODYPART_COLLAPSING };
 		selectUnit(coll, die, _unit->getFallingPhase());
@@ -1378,7 +1378,7 @@ void UnitSprite::drawRoutine8()
 
 	selectUnit(legs, Body, Pulsate[_animationFrame % 8]);
 
-	if (_unit->getStatus() == STATUS_COLLAPSING)
+	if ((_unit->getStatus() == STATUS_COLLAPSING || _unit->isFallShown()))
 	{
 		Part coll{ BODYPART_COLLAPSING };
 		selectUnit(coll, die, _unit->getFallingPhase());
@@ -1403,7 +1403,7 @@ void UnitSprite::drawRoutine9()
 
 	selectUnit(torso, Body, _animationFrame % 8);
 
-	if (_unit->getStatus() == STATUS_COLLAPSING)
+	if ((_unit->getStatus() == STATUS_COLLAPSING || _unit->isFallShown()))
 	{
 		Part coll{ BODYPART_COLLAPSING };
 		selectUnit(coll, die, _unit->getFallingPhase());
@@ -1476,7 +1476,7 @@ void UnitSprite::drawRoutine16()
 
 	selectUnit(s, 0, _animationFrame % 8);
 
-	if ( (_unit->getStatus() == STATUS_COLLAPSING))
+	if ( ((_unit->getStatus() == STATUS_COLLAPSING || _unit->isFallShown())))
 	{
 		Part coll{ BODYPART_COLLAPSING };
 		selectUnit(coll, die, _unit->getFallingPhase());
@@ -1496,7 +1496,7 @@ void UnitSprite::drawRoutine19()
 	// magic numbers
 	constexpr static int stand = 0, move = 8, die = 16;
 
-	if (_unit->getStatus() == STATUS_COLLAPSING)
+	if ((_unit->getStatus() == STATUS_COLLAPSING || _unit->isFallShown()))
 	{
 		Part coll{ BODYPART_COLLAPSING };
 		selectUnit(coll, die, _unit->getFallingPhase());
