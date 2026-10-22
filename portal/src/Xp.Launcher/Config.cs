@@ -29,6 +29,9 @@ public sealed class Settings
     public bool CloseToTray { get; set; } = true;
     /// <summary>The one-time hint "the launcher is in the tray" after the first cross.</summary>
     public bool CloseToTrayTold { get; set; }
+    /// <summary>The anonymous count on the site (Core.LauncherStats): this launcher's random number and the switch.</summary>
+    public string? StatsId { get; set; }
+    public bool SendStats { get; set; } = true;
 
     // voice: the devices by id with the name as the fallback (Xp.Voice.VoiceOptions), null - the Windows default
     public string? VoiceInputId { get; set; }

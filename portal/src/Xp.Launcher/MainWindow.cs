@@ -69,7 +69,6 @@ public sealed class MainWindow : Window
 
     readonly SetupPage _setupPage;
     readonly ReportsPage _reportsPage;
-    readonly ReviewPage _reviewPage;
     readonly NewsPage _newsPage;
     bool _newsRoadmap;      // which half of the news page the next Navigate("news") opens
     readonly AccountPanel _account;
@@ -87,6 +86,9 @@ public sealed class MainWindow : Window
     DateTime _lastLook;   // UTC of the last look at the channels: coming to the window looks again if it is a minute old
     bool _staleCheck;   // a release came out while the home page could not check (the game, another action): it checks later
     Notifier? _notifier;
+    readonly DispatcherTimer _statsTimer = new() { Interval = LauncherStats.Every };
+    bool _statsPlaying;         // the last word to the site's count was "playing"
+    string? _installedRelease;  // of the last check: the state is not read under a running game (R-179)
 
     GamePaths? _paths;
     BuildStore? _builds;
@@ -120,8 +122,7 @@ public sealed class MainWindow : Window
         Height = _settings.WindowHeight is >= 520 and <= 3000 ? _settings.WindowHeight.Value : 600;
         MinWidth = 800; MinHeight = 520;
         WindowStartupLocation = WindowStartupLocation.CenterScreen;
-        // открываемся во весь экран: паре картинок на вкладке «Графика» нужно место, а окно,
-        // размер которого свой на каждой машине, даёт кадру каждый раз разное
+        // открываемся во весь экран
         WindowState = WindowState.Maximized;
 
         _check = Skin.Btn(L.T("checkUpdates"), "ghost");
@@ -163,7 +164,6 @@ public sealed class MainWindow : Window
 
         _reportsPage = new ReportsPage(_settings, ReportRoots);
         _reportsPage.Changed += CountReports;
-        _reviewPage = new ReviewPage(_settings, () => _paths?.GameDir);
         // the channel of the last check, held in memory: LoadState may move a broken state file aside,
         // and nothing is written from a page that only reads (R-179). Before any check — stable
         _newsPage = new NewsPage(() => _repo, () => _latest?.Manifest.Release.Channel is { Length: > 0 } ch ? ch : "stable");
@@ -181,7 +181,6 @@ public sealed class MainWindow : Window
         _pages["home"] = HomePage();
         _pages["setup"] = _setupPage;
         _pages["reports"] = _reportsPage;
-        _pages["review"] = _reviewPage;
         _pages["news"] = _newsPage;
         _pages["voice"] = _voicePage;
         _pages["support"] = new SupportPage();
@@ -262,6 +261,7 @@ public sealed class MainWindow : Window
             }
             _cts?.Cancel();
             _watchTimer.Stop();
+            _statsTimer.Stop();
             _notifier?.Dispose();
             if (WindowState == WindowState.Normal)
             {
@@ -286,7 +286,6 @@ public sealed class MainWindow : Window
         top.Children.Add(NavButton("home", "nav.home", Skin.IconHome, null));
         _reportsBadge.Child = _reportsCount;
         top.Children.Add(NavButton("reports", "nav.reports", Skin.IconReports, _reportsBadge));
-        top.Children.Add(NavButton("review", "nav.review", Skin.IconCheck, null));
         top.Children.Add(NavButton("news", "nav.news", Skin.IconNews, null));
         top.Children.Add(NavButton("voice", "nav.voice", Skin.IconVoice, null));
         top.Children.Add(NavButton("support", "nav.support", Skin.IconHeart, null));
@@ -345,7 +344,6 @@ public sealed class MainWindow : Window
             b.BorderThickness = new Thickness(on ? 3 : 0, 0, 0, 0);
         }
         if (page == "reports") _reportsPage.Shown();
-        if (page == "review") _reviewPage.Shown();
         if (page == "news") _newsPage.Shown(_newsRoadmap);
         _newsRoadmap = false;
         if (page == "voice") _voicePage.Shown();
@@ -479,7 +477,9 @@ public sealed class MainWindow : Window
             }
             Refresh();
             _ = RecheckAsync();
+            if (!GameIsRunning()) _ = PingStatsAsync(false);
         });
+        _ = PingStatsAsync(true);
         if (!_settings.TrayWhilePlaying) return;
         _hiddenForGame = true;
         UpdateTray();
@@ -620,11 +620,15 @@ public sealed class MainWindow : Window
         if (move.X < -text) move.X = lane;
     }
 
+    /// <summary>The card of the home page: one of the heroines' pictures (Assets/hero_&lt;n&gt;.jpg), another at each start; hero.jpg without them.</summary>
     static Avalonia.Media.Imaging.Bitmap? HeroArt()
     {
         try
         {
-            using var s = Avalonia.Platform.AssetLoader.Open(new Uri("avares://XPiratezLauncher/Assets/hero.jpg"));
+            var all = Enumerable.Range(1, 16).Select(n => new Uri($"avares://XPiratezLauncher/Assets/hero_{n}.jpg"))
+                .Where(u => Avalonia.Platform.AssetLoader.Exists(u)).ToList();
+            var pick = all.Count > 0 ? all[Random.Shared.Next(all.Count)] : new Uri("avares://XPiratezLauncher/Assets/hero.jpg");
+            using var s = Avalonia.Platform.AssetLoader.Open(pick);
             return new Avalonia.Media.Imaging.Bitmap(s);
         }
         catch (Exception) { return null; }   // a build without the picture keeps the gradient
@@ -710,6 +714,13 @@ public sealed class MainWindow : Window
             try { _settings.Save(); } catch (IOException) { }
         };
         game.Children.Add(closeToTray);
+        var stats = new CheckBox { Content = L.T("settings.sendStats"), IsChecked = _settings.SendStats, FontSize = 13 };
+        stats.IsCheckedChanged += (_, _) =>
+        {
+            _settings.SendStats = stats.IsChecked == true;
+            try { _settings.Save(); } catch (IOException) { }
+        };
+        game.Children.Add(stats);
         game.Children.Add(Skin.H2(L.T("settings.builds")));
         game.Children.Add(_buildList);
         var buildsRow = new WrapPanel { Orientation = Orientation.Horizontal };
@@ -805,6 +816,37 @@ public sealed class MainWindow : Window
         // the first look only remembers the channels; then every five minutes (UpdateWatch.Every)
         _ = WatchAsync();
         _watchTimer.Start();
+        // the site's count: the first word now, then every five minutes while a game runs - one started
+        // by hand too (GameIsRunning sees it), and a "stopped" once it is gone
+        _ = PingStatsAsync(GameIsRunning());
+        _statsTimer.Tick += (_, _) =>
+        {
+            bool playing = GameIsRunning();
+            if (playing || _statsPlaying) _ = PingStatsAsync(playing);
+        };
+        _statsTimer.Start();
+    }
+
+    /// <summary>One anonymous word to the site's count (Core.LauncherStats); off in the settings, silent on failure.</summary>
+    async Task PingStatsAsync(bool playing)
+    {
+        if (!_settings.SendStats) return;
+        if (!LauncherStats.IsInstallId(_settings.StatsId))
+        {
+            _settings.StatsId = LauncherStats.NewInstallId();
+            try { _settings.Save(); } catch (IOException) { }
+        }
+        _statsPlaying = playing;
+        try
+        {
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(20));
+            await LauncherStats.PingAsync(_http, new Uri(_settings.PortalUrl ?? BuiltIn.Defaults.PortalUrl), _settings.StatsId!,
+                playing, BuiltIn.VersionText, _installedRelease, cts.Token);
+        }
+        catch (Exception e) when (e is HttpRequestException or TaskCanceledException or UriFormatException)
+        {
+            _fileLog?.Info("stats: " + e.Message);
+        }
     }
 
     /// <summary>
@@ -840,6 +882,9 @@ public sealed class MainWindow : Window
             {
                 _fileLog?.Info("update watch: out " + string.Join(", ", news.Select(p => $"{p.Channel} {p.ReleaseId}")));
                 _staleCheck = true;
+                // a game being played hears of it from the plate in its corner (UpdateNotice)
+                if (_paths is not null && news.FirstOrDefault(p => p.Channel == channels[0]) is { } release)
+                    UpdateNotice.Raise(_paths, release.ReleaseId);
                 if (_settings.NotifyUpdates && !(IsVisible && IsActive))
                 {
                     var game = news.FirstOrDefault(p => p.Channel == channels[0]);
@@ -868,8 +913,6 @@ public sealed class MainWindow : Window
         _updater = new Updater(_paths, _repo!, _fileLog);
         _builds = new BuildStore(_paths);
         _gameDir.Text = _paths.GameDir;
-        // the review page may already be on screen: until now it had no folder to read packs from
-        if (_reviewPage.IsVisible) _reviewPage.Shown();
         _fileLog.Info($"launcher {BuiltIn.VersionText} started, game dir <game>");
         try
         {
@@ -1234,6 +1277,11 @@ public sealed class MainWindow : Window
         var state = u.LoadState();
         _latest = await u.CheckAsync(state, ct);
         _watch?.Know(_latest.Pointer);
+        _installedRelease = state.InstalledReleaseId;
+        // the plate in the game: a release other than the installed one is out, or nothing is
+        if (state.InstalledReleaseId is not null && _latest.Manifest.Release.Id != state.InstalledReleaseId)
+            UpdateNotice.Raise(_paths!, _latest.Manifest.Release.Version);
+        else UpdateNotice.Clear(_paths!);
         _watchChannels = [state.Channel, SelfUpdate.ChannelFor(state.Channel)];
         _staleCheck = false;
         var channel = _latest.Manifest.Release.Channel is { Length: > 0 } ch ? ch : state.Channel;
@@ -1275,6 +1323,8 @@ public sealed class MainWindow : Window
         _cancelable = false;
         Refresh();
         await Task.Run(() => u.Install(state, plan, progress, CancellationToken.None));
+        UpdateNotice.Clear(_paths!);
+        _installedRelease = _latest.Manifest.Release.Id;
         _pendingLine = null;
         SetStatus(L.T("status.done", _latest.Manifest.Release.Version));
     }

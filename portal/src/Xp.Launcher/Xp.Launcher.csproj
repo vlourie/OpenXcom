@@ -37,8 +37,9 @@
     <EmbeddedResource Include="defaults.json" LogicalName="defaults.json" />
     <!-- Roboto, the HD interface font, cut to Latin and Cyrillic (~30 KB each) -->
     <AvaloniaResource Include="Assets\Fonts\*.ttf" />
-    <!-- the home card art: tools/hdart/gen_promo.py, indigo duotone, <= 400 KB -->
+    <!-- the home card art: tools/hdart/gen_promo.py, indigo duotone, <= 400 KB; hero_<n>.jpg - the heroines, one at random each start -->
     <AvaloniaResource Include="Assets\hero.jpg" />
+    <AvaloniaResource Include="Assets\hero_*.jpg" />
     <AvaloniaResource Include="Assets\setup_*.jpg" />
     <AvaloniaResource Include="Assets\app.ico" />
   </ItemGroup>
