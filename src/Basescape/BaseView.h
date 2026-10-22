@@ -33,6 +33,7 @@ class Language;
 class Text;
 class Timer;
 enum BasePlacementErrors : int;
+namespace HdBaseScene { struct View; }
 
 /**
  * Interactive view of a base.
@@ -123,6 +124,9 @@ public:
 	void drawHd();
 	/// Lights the world layer of the living base (HdBaseScene): the night and the lamps of the pictures.
 	void drawHdScene(SDL_Surface *world, int k, Uint32 now);
+	/// The living base as the preview drew it (HdBaseScene::View) for the layout now and `k`, made when the
+	/// layout changes; nullptr without the pack's rock (hd/BASEBITS.PCK/ground.png).
+	const HdBaseScene::View *hdLayout(int k);
 	/// Draws the lights of the crafts over everything the view has put into the world layer.
 	void drawHdLights();
 	/// Blits the base view onto another surface.

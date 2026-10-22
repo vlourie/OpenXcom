@@ -53,8 +53,8 @@ const int LUT_SIZE = LUT_MAX * LUT_STEPS + 1;
 
 bool kindOf(const std::string &word, Kind &kind)
 {
-	static const char *names[] = { "steady", "blink", "pulse", "screen", "flicker" };
-	for (int i = 0; i < 5; ++i)
+	static const char *names[] = { "steady", "blink", "pulse", "screen", "flicker", "tv", "chase", "weld", "night" };
+	for (int i = 0; i < 9; ++i)
 	{
 		if (word == names[i])
 		{
@@ -97,6 +97,8 @@ const unsigned char *toneCurve()
 	return lut;
 }
 
+float hash1(Uint32 a, Uint32 b, Uint32 c);
+
 /// How bright a light is now (with the night's gain), as in base_scene_preview.py.
 float strength(const Placed &p, float t, float night)
 {
@@ -117,6 +119,28 @@ float strength(const Placed &p, float t, float night)
 	case SCREEN:
 		v = 0.8f + 0.2f * std::fabs(wobble(t * 0.5f, 4.0f + (float)(p.seed % 13)));
 		gain = 0.4f + 0.5f * night;
+		break;
+	case TV:
+		v = 0.55f + 0.45f * std::fabs(wobble(t * 1.7f, 9.0f + (float)(p.seed % 13)));
+		break;
+	case CHASE:
+	{
+		// a lamp of a ring that runs round once a period, a tail of 2.5 lamps behind the bright one
+		const int n = std::max(1, L.count);
+		const float ph = std::fmod((t / std::max(0.1f, L.period) - L.phase) * n + 1000.0f * n, (float)n);
+		v = ph < 2.5f ? std::max(0.12f, 1 - ph / 2.5f) : 0.12f;
+		break;
+	}
+	case WELD:
+	{
+		// bursts of flashes a few times a second, dark between them
+		const Uint32 tick = (Uint32)(t * 9);
+		v = hash1(tick, 77, p.seed % 7) > 0.55f ? 1.6f + 0.6f * hash1((Uint32)(t * 30), 3, p.seed % 7) : 0.0f;
+		break;
+	}
+	case DUTY:
+		v = night * 0.9f;
+		gain = 1.0f;
 		break;
 	default:
 		break;
@@ -245,7 +269,40 @@ bool parse(std::istream &in, TileScene &out)
 			words >> L.x >> L.y >> L.radius >> kind >> L.r >> L.g >> L.b >> L.period >> L.phase;
 			if (words && kindOf(kind, L.kind) && L.radius > 0)
 			{
+				int count = 0;
+				if (words >> count)
+				{
+					L.count = count;
+				}
 				out.lights.push_back(L);
+			}
+		}
+		else if (key == "water")
+		{
+			std::string kind;
+			float g[3] = { 1, 1, 1 };
+			words >> kind >> g[0] >> g[1] >> g[2];
+			if (words && (kind == "blue" || kind == "green"))
+			{
+				out.water = kind == "blue" ? 1 : 2;
+				std::copy(g, g + 3, out.glint);
+			}
+		}
+		else if (key == "spin" || key == "swing")
+		{
+			Spin S;
+			words >> S.x >> S.y >> S.radius;
+			if (key == "spin")
+			{
+				words >> S.rps;
+			}
+			else
+			{
+				words >> S.swing >> S.period;
+			}
+			if (words && S.radius > 0 && (S.rps != 0 || (S.swing != 0 && S.period > 0)))
+			{
+				out.spins.push_back(S);
 			}
 		}
 		else if (key == "emit")
@@ -297,7 +354,8 @@ float nightAt(double longitude, int hour, int minute, int second)
 	return smooth((0.1f - sun) / 0.3f);
 }
 
-void draw(SDL_Surface *world, const SDL_Rect &area, const std::vector<Placed> &lights, float night, Uint32 ms)
+void draw(SDL_Surface *world, const SDL_Rect &area, const std::vector<Placed> &lights, float night, Uint32 ms,
+	const View *view)
 {
 	if (!world || world->format->BytesPerPixel != 4)
 	{
@@ -358,6 +416,9 @@ void draw(SDL_Surface *world, const SDL_Rect &area, const std::vector<Placed> &l
 	const unsigned char *curve = toneCurve();
 	const int w = ax1 - ax0;
 	const int bands = (ay1 - ay0 + BAND - 1) / BAND;
+	const bool relief = view && !view->relief.empty();
+	// the water glints by day half as much as at night (base_scene_preview.py render)
+	const float glintGain = 3.5f * (0.5f + 0.5f * night);
 	HdWorkers::instance().run(bands, [&](int band)
 	{
 		// per row: the light falling on the pictures (ambient + lamps) and the halo over them
@@ -373,6 +434,9 @@ void draw(SDL_Surface *world, const SDL_Rect &area, const std::vector<Placed> &l
 			}
 			std::fill(glow.begin(), glow.end(), 0.0f);
 			const float py = y + 0.5f;
+			// the relief of this row (normal and height), where the view covers it
+			const bool inView = relief && y >= view->y && y < view->y + view->h;
+			const float *rrow = inView ? &view->relief[(size_t)(y - view->y) * view->w * 4] : nullptr;
 			for (const Lit &L : lit)
 			{
 				if (y < L.y0 || y >= L.y1)
@@ -387,9 +451,21 @@ void draw(SDL_Surface *world, const SDL_Rect &area, const std::vector<Placed> &l
 					float *a = &acc[(x - ax0) * 3];
 					if (d2 < L.r2)
 					{
-						// falls off to the edge of its reach, and less where it strikes the floor at a slant
+						// falls off to the edge of its reach, and by the angle it strikes the surface at: the floor
+						// at a slant, a wall or a cupboard lit on the lamp's side and dark on the other
 						const float f = 1 - d2 / L.r2;
-						const float m = f * f * L.lz / std::sqrt(d2 + L.lz2);
+						float ndl;
+						if (rrow && x >= view->x && x < view->x + view->w)
+						{
+							const float *q = rrow + (size_t)(x - view->x) * 4;
+							const float lz = L.lz - q[3];
+							ndl = std::max(0.0f, (-dx * q[0] - dy * q[1] + lz * q[2]) / std::sqrt(d2 + lz * lz + 1e-3f));
+						}
+						else
+						{
+							ndl = L.lz / std::sqrt(d2 + L.lz2);
+						}
+						const float m = f * f * ndl;
 						a[0] += L.add[0] * m;
 						a[1] += L.add[1] * m;
 						a[2] += L.add[2] * m;
@@ -401,6 +477,39 @@ void draw(SDL_Surface *world, const SDL_Rect &area, const std::vector<Placed> &l
 						g[0] += L.glow[0] * h;
 						g[1] += L.glow[1] * h;
 						g[2] += L.glow[2] * h;
+					}
+				}
+			}
+			if (inView)
+			{
+				// glints dancing on the water: two crossing waves, only their crests (base_scene_preview.py render)
+				const float s = view->scale;
+				for (const View::Area &W : view->waters)
+				{
+					if (y < W.box.y || y >= W.box.y + W.box.h)
+					{
+						continue;
+					}
+					const float vy = (y - W.box.y) / s;
+					const float *mrow = &view->water[(size_t)(y - view->y) * view->w];
+					const int wx0 = std::max(ax0, (int)W.box.x), wx1 = std::min(ax1, W.box.x + (int)W.box.w);
+					for (int x = wx0; x < wx1; ++x)
+					{
+						const float m = mrow[x - view->x];
+						if (m <= 0.01f)
+						{
+							continue;
+						}
+						const float vx = (x - W.box.x) / s;
+						const float g = std::sin(0.21f * vx + 0.05f * vy + 3 * t) * std::sin(0.07f * vx - 0.19f * vy + 2.3f * t) - 0.72f;
+						if (g > 0)
+						{
+							float *o = &glow[(x - ax0) * 3];
+							const float k = g * glintGain * m;
+							o[0] += W.glint[0] * k;
+							o[1] += W.glint[1] * k;
+							o[2] += W.glint[2] * k;
+						}
 					}
 				}
 			}
@@ -528,6 +637,428 @@ void drawBuilding(SDL_Surface *world, const SDL_Rect &rect, float progress, floa
 			}
 		}
 	});
+}
+
+namespace
+{
+
+/// Blurs `v` (w x h) by three box passes along the rows and the columns: close to a gaussian of `sigma`.
+void blur(std::vector<float> &v, int w, int h, float sigma)
+{
+	const int r = std::max(1, (int)std::lround((std::sqrt(4 * sigma * sigma + 1) - 1) / 2));
+	const float inv = 1.0f / (2 * r + 1);
+	auto line = [r, inv](const float *src, float *dst, int n, int stride)
+	{
+		auto at = [&](int i) { return src[(size_t)std::min(n - 1, std::max(0, i)) * stride]; };
+		float sum = 0;
+		for (int i = -r; i <= r; ++i)
+		{
+			sum += at(i);
+		}
+		for (int i = 0; i < n; ++i)
+		{
+			dst[i] = sum * inv;
+			sum += at(i + r + 1) - at(i - r);
+		}
+	};
+	for (int pass = 0; pass < 3; ++pass)
+	{
+		HdWorkers::instance().run(h, [&](int y)
+		{
+			std::vector<float> out(w);
+			line(&v[(size_t)y * w], out.data(), w, 1);
+			std::copy(out.begin(), out.end(), v.begin() + (size_t)y * w);
+		});
+		HdWorkers::instance().run(w, [&](int x)
+		{
+			std::vector<float> out(h);
+			line(&v[x], out.data(), h, w);
+			for (int y = 0; y < h; ++y)
+			{
+				v[(size_t)y * w + x] = out[y];
+			}
+		});
+	}
+}
+
+/// How far each pixel of `inside` lies from the nearest pixel out of it (0 outside), in pixels (chamfer).
+std::vector<float> distanceInside(const std::vector<unsigned char> &inside, int w, int h)
+{
+	const float BIG = 1e6f, D = 1.4142f;
+	std::vector<float> d((size_t)w * h);
+	for (size_t i = 0; i < d.size(); ++i)
+	{
+		d[i] = inside[i] ? BIG : 0.0f;
+	}
+	auto at = [&](int x, int y) { return x < 0 || y < 0 || x >= w || y >= h ? 0.0f : d[(size_t)y * w + x]; };
+	for (int y = 0; y < h; ++y)
+	{
+		for (int x = 0; x < w; ++x)
+		{
+			float &v = d[(size_t)y * w + x];
+			if (v > 0)
+			{
+				v = std::min({ v, at(x - 1, y) + 1, at(x, y - 1) + 1, at(x - 1, y - 1) + D, at(x + 1, y - 1) + D });
+			}
+		}
+	}
+	for (int y = h - 1; y >= 0; --y)
+	{
+		for (int x = w - 1; x >= 0; --x)
+		{
+			float &v = d[(size_t)y * w + x];
+			if (v > 0)
+			{
+				v = std::min({ v, at(x + 1, y) + 1, at(x, y + 1) + 1, at(x + 1, y + 1) + D, at(x - 1, y + 1) + D });
+			}
+		}
+	}
+	return d;
+}
+
+/// The colour of `albedo` (w x h) at (x, y) between its pixels, clamped to its edge: r, g, b 0..255.
+void sample(const std::vector<Uint32> &albedo, int w, int h, float x, float y, float out[3])
+{
+	x = std::min((float)w - 1.001f, std::max(0.0f, x));
+	y = std::min((float)h - 1.001f, std::max(0.0f, y));
+	const int x0 = (int)x, y0 = (int)y;
+	const float fx = x - x0, fy = y - y0;
+	const Uint32 *p = &albedo[(size_t)y0 * w + x0];
+	const Uint32 q[4] = { p[0], p[1], p[w], p[w + 1] };
+	const float k[4] = { (1 - fx) * (1 - fy), fx * (1 - fy), (1 - fx) * fy, fx * fy };
+	for (int c = 0; c < 3; ++c)
+	{
+		const int shift = 16 - 8 * c;
+		out[c] = 0;
+		for (int i = 0; i < 4; ++i)
+		{
+			out[c] += ((q[i] >> shift) & 0xFF) * k[i];
+		}
+	}
+}
+
+/// `px` moved towards `col` (0..255) by `m`, alpha kept.
+Uint32 mix(Uint32 px, const float col[3], float m)
+{
+	Uint32 out = px & 0xFF000000u;
+	for (int c = 0; c < 3; ++c)
+	{
+		const int shift = 16 - 8 * c;
+		const float v = ((px >> shift) & 0xFF) * (1 - m) + col[c] * m;
+		out |= (Uint32)std::min(255L, std::max(0L, std::lround(v))) << shift;
+	}
+	return out;
+}
+
+}
+
+void bake(View &view, const HdFrame *rock, const std::vector<SDL_Rect> &empty, const std::vector<PlacedWater> &waters)
+{
+	const int w = view.w, h = view.h;
+	const size_t n = (size_t)w * h;
+	const float s = view.scale;
+	if (w <= 0 || h <= 0 || view.albedo.size() != n)
+	{
+		return;
+	}
+	// what stands where: the alpha of the pictures and the passages
+	std::vector<float> foot(n);
+	for (size_t i = 0; i < n; ++i)
+	{
+		foot[i] = (view.albedo[i] >> 24) / 255.0f;
+	}
+	// the rock, a whole-base picture stretched over the view, darkened (base_scene_preview.py rock_image)
+	std::vector<float> ground(n * 3);
+	const bool picture = rock && !rock->empty();
+	for (int y = 0; y < h; ++y)
+	{
+		for (int x = 0; x < w; ++x)
+		{
+			float *g = &ground[((size_t)y * w + x) * 3];
+			if (picture)
+			{
+				const Uint32 px = rock->pixels[(size_t)(y * rock->height / h) * rock->width + x * rock->width / w];
+				for (int c = 0; c < 3; ++c)
+				{
+					g[c] = ((px >> (16 - 8 * c)) & 0xFF) / 255.0f * 0.62f;
+				}
+			}
+			else
+			{
+				g[0] = 0.16f;
+				g[1] = 0.15f;
+				g[2] = 0.15f;
+			}
+		}
+	}
+	// the shadow the facilities cast to the bottom right and the darkening close to their walls
+	std::vector<float> shadow(n, 0.0f), close = foot;
+	const int sx = (int)std::lround(4 * s), sy = (int)std::lround(5 * s);
+	for (int y = sy; y < h; ++y)
+	{
+		for (int x = sx; x < w; ++x)
+		{
+			shadow[(size_t)y * w + x] = foot[(size_t)(y - sy) * w + (x - sx)];
+		}
+	}
+	blur(shadow, w, h, 7 * s);
+	blur(close, w, h, 12 * s);
+	for (size_t i = 0; i < n; ++i)
+	{
+		const float k = (1 - 0.55f * shadow[i]) * (1 - 0.35f * close[i]);
+		for (int c = 0; c < 3; ++c)
+		{
+			ground[i * 3 + c] *= k;
+		}
+	}
+	// the cells where nothing stands: a faint mark of the grid where one may build
+	const int a = (int)std::lround(4 * s), b = (int)std::lround(6 * s);
+	for (const SDL_Rect &r : empty)
+	{
+		for (int y = r.y + a; y < r.y + r.h - a; ++y)
+		{
+			for (int x = r.x + a; x < r.x + r.w - a; ++x)
+			{
+				if (x >= 0 && y >= 0 && x < w && y < h && (x < r.x + b || y < r.y + b))
+				{
+					for (int c = 0; c < 3; ++c)
+					{
+						ground[((size_t)y * w + x) * 3 + c] *= 1.25f;
+					}
+				}
+			}
+		}
+	}
+	view.ground.width = w;
+	view.ground.height = h;
+	view.ground.pixels.assign(n, 0u);
+	std::vector<float> lum(n);
+	for (size_t i = 0; i < n; ++i)
+	{
+		const Uint32 px = view.albedo[i];
+		const float al = foot[i];
+		Uint32 g = 0xFF000000u, o = 0xFF000000u;
+		float rgb[3];
+		for (int c = 0; c < 3; ++c)
+		{
+			const int shift = 16 - 8 * c;
+			const float gc = std::min(1.0f, ground[i * 3 + c]);
+			g |= (Uint32)std::lround(gc * 255) << shift;
+			rgb[c] = ((px >> shift) & 0xFF) / 255.0f * al + gc * (1 - al);
+			o |= (Uint32)std::lround(std::min(1.0f, rgb[c]) * 255) << shift;
+		}
+		view.ground.pixels[i] = g;
+		view.albedo[i] = o;
+		lum[i] = rgb[0] * 0.3f + rgb[1] * 0.55f + rgb[2] * 0.15f;
+	}
+	view.ground.buildSpans();
+	// the relief: light is high, the rim of a facility higher, the rock low; then its slopes
+	std::vector<unsigned char> inside(n);
+	for (size_t i = 0; i < n; ++i)
+	{
+		inside[i] = foot[i] > 0.5f;
+	}
+	const std::vector<float> dist = distanceInside(inside, w, h);
+	std::vector<float> fine = lum, coarse = lum;
+	blur(fine, w, h, 1.4f * s);
+	blur(coarse, w, h, 2.0f * s);
+	std::vector<float> height(n);
+	for (size_t i = 0; i < n; ++i)
+	{
+		const float rim = inside[i] ? std::min(1.0f, std::max(0.0f, 1 - dist[i] / (16 * s))) : 0.0f;
+		const float v = inside[i] ? fine[i] * 0.45f + rim * 0.55f : 0.08f + coarse[i] * 0.25f;
+		height[i] = v * 14 * s;
+	}
+	std::vector<float> slope = height;
+	blur(slope, w, h, 1.0f * s);
+	view.relief.assign(n * 4, 0.0f);
+	for (int y = 0; y < h; ++y)
+	{
+		for (int x = 0; x < w; ++x)
+		{
+			const size_t i = (size_t)y * w + x;
+			const float gx = (slope[(size_t)y * w + std::min(w - 1, x + 1)] - slope[(size_t)y * w + std::max(0, x - 1)]) / 2;
+			const float gy = (slope[(size_t)std::min(h - 1, y + 1) * w + x] - slope[(size_t)std::max(0, y - 1) * w + x]) / 2;
+			const float len = std::sqrt(gx * gx + gy * gy + 1);
+			view.relief[i * 4 + 0] = -gx / len;
+			view.relief[i * 4 + 1] = -gy / len;
+			view.relief[i * 4 + 2] = 1 / len;
+			view.relief[i * 4 + 3] = height[i];
+		}
+	}
+	// the water: the blue (or green) of a picture well inside its walls, in pools of some size
+	view.water.assign(n, 0.0f);
+	view.waters.clear();
+	for (const PlacedWater &W : waters)
+	{
+		const int x0 = std::max(0, W.box.x - view.x), y0 = std::max(0, W.box.y - view.y);
+		const int x1 = std::min(w, W.box.x - view.x + (int)W.box.w), y1 = std::min(h, W.box.y - view.y + (int)W.box.h);
+		const int bw = x1 - x0, bh = y1 - y0;
+		if (bw <= 0 || bh <= 0)
+		{
+			continue;
+		}
+		std::vector<unsigned char> m((size_t)bw * bh);
+		for (int y = 0; y < bh; ++y)
+		{
+			for (int x = 0; x < bw; ++x)
+			{
+				const size_t i = (size_t)(y + y0) * w + x + x0;
+				const Uint32 px = view.albedo[i];
+				const float r = ((px >> 16) & 0xFF) / 255.0f, g = ((px >> 8) & 0xFF) / 255.0f, bl = (px & 0xFF) / 255.0f;
+				const bool hue = W.kind == 1 ? bl > r + 0.12f && bl > g * 0.95f : g > r + 0.1f && g > bl + 0.12f;
+				m[(size_t)y * bw + x] = hue && dist[i] > 14 * s;
+			}
+		}
+		// pools of 200 pack pixels and more; a glint of colour elsewhere is not water
+		const size_t least = (size_t)(200 * s * s);
+		std::vector<int> label(m.size(), 0);
+		std::vector<int> stack;
+		std::vector<float> mask(m.size(), 0.0f);
+		std::vector<std::vector<int>> pools;
+		int next = 0;
+		for (size_t start = 0; start < m.size(); ++start)
+		{
+			if (!m[start] || label[start])
+			{
+				continue;
+			}
+			std::vector<int> pool;
+			label[start] = ++next;
+			stack.push_back((int)start);
+			while (!stack.empty())
+			{
+				const int i = stack.back();
+				stack.pop_back();
+				pool.push_back(i);
+				const int x = i % bw, y = i / bw;
+				const int nb[4][2] = { { x - 1, y }, { x + 1, y }, { x, y - 1 }, { x, y + 1 } };
+				for (const auto &q : nb)
+				{
+					if (q[0] >= 0 && q[1] >= 0 && q[0] < bw && q[1] < bh)
+					{
+						const int j = q[1] * bw + q[0];
+						if (m[j] && !label[j])
+						{
+							label[j] = next;
+							stack.push_back(j);
+						}
+					}
+				}
+			}
+			pools.push_back(std::move(pool));
+		}
+		// ... and a quarter of the biggest at least: a blue rug by the pool is not water (the vats are alike)
+		size_t biggest = 0;
+		for (const std::vector<int> &pool : pools)
+		{
+			biggest = std::max(biggest, pool.size());
+		}
+		for (const std::vector<int> &pool : pools)
+		{
+			if (pool.size() >= least && pool.size() * 4 >= biggest)
+			{
+				for (int i : pool)
+				{
+					mask[i] = 1.0f;
+				}
+			}
+		}
+		blur(mask, bw, bh, 1.5f * s);
+		bool any = false;
+		for (int y = 0; y < bh; ++y)
+		{
+			for (int x = 0; x < bw; ++x)
+			{
+				const float v = mask[(size_t)y * bw + x];
+				float &o = view.water[(size_t)(y + y0) * w + x + x0];
+				o = std::max(o, v);
+				any = any || v > 0.01f;
+			}
+		}
+		if (any)
+		{
+			View::Area A;
+			A.box = W.box;
+			std::copy(W.glint, W.glint + 3, A.glint);
+			view.waters.push_back(A);
+		}
+	}
+}
+
+void drawMotion(SDL_Surface *world, const View &view, Uint32 ms)
+{
+	if (!world || world->format->BytesPerPixel != 4 || view.albedo.empty())
+	{
+		return;
+	}
+	const float t = (float)(ms % 3600000u) / 1000.0f;
+	const float s = view.scale;
+	auto inWorld = [&](int x, int y) { return x >= 0 && y >= 0 && x < world->w && y < world->h; };
+	// the water: the picture under it shifted by two slow waves (base_scene_preview.py render)
+	for (const View::Area &W : view.waters)
+	{
+		const int x0 = std::max((int)W.box.x, view.x), y0 = std::max((int)W.box.y, view.y);
+		const int x1 = std::min(W.box.x + (int)W.box.w, view.x + view.w), y1 = std::min(W.box.y + (int)W.box.h, view.y + view.h);
+		if (x0 >= x1 || y0 >= y1)
+		{
+			continue;
+		}
+		HdWorkers::instance().run(y1 - y0, [&](int row)
+		{
+			const int y = y0 + row;
+			const float vy = (y - W.box.y) / s;
+			Uint32 *line = (Uint32*)((Uint8*)world->pixels + (size_t)y * world->pitch);
+			for (int x = x0; x < x1; ++x)
+			{
+				const float m = view.water[(size_t)(y - view.y) * view.w + (x - view.x)];
+				if (m <= 0.01f || !inWorld(x, y))
+				{
+					continue;
+				}
+				const float vx = (x - W.box.x) / s;
+				const float dx = 1.8f * std::sin(0.09f * vx + 0.13f * vy + 2.3f * t) + 1.1f * std::sin(0.17f * vy - 0.05f * vx + 3.4f * t);
+				const float dy = 1.8f * std::sin(0.11f * vx - 0.08f * vy + 2.0f * t) + 1.1f * std::sin(0.15f * vx + 0.12f * vy - 2.9f * t);
+				float col[3];
+				sample(view.albedo, view.w, view.h, x - view.x + dx * s, y - view.y + dy * s, col);
+				line[x] = mix(line[x], col, m);
+			}
+		});
+	}
+	// the spins: a radar dish turning, a turret looking over its sector
+	for (const PlacedSpin &P : view.spins)
+	{
+		const Spin &S = P.spin;
+		const float deg = S.rps != 0 ? t * S.rps * 360 + P.phase * 360 : S.swing * std::sin(t / S.period * 2 * PI + P.phase * 2 * PI);
+		const float ang = deg * PI / 180, ca = std::cos(ang), sa = std::sin(ang);
+		const int r = (int)std::ceil(S.radius);
+		const int cx = (int)std::lround(S.x), cy = (int)std::lround(S.y);
+		for (int y = cy - r; y < cy + r; ++y)
+		{
+			if (y < view.y || y >= view.y + view.h || y < 0 || y >= world->h)
+			{
+				continue;
+			}
+			Uint32 *line = (Uint32*)((Uint8*)world->pixels + (size_t)y * world->pitch);
+			for (int x = cx - r; x < cx + r; ++x)
+			{
+				if (x < view.x || x >= view.x + view.w || !inWorld(x, y))
+				{
+					continue;
+				}
+				const float dx = x + 0.5f - S.x, dy = y + 0.5f - S.y;
+				// a soft edge 3 pack pixels wide, so the turning piece does not show a seam
+				const float m = std::min(1.0f, std::max(0.0f, (S.radius - std::sqrt(dx * dx + dy * dy)) / (3 * s)));
+				if (m <= 0)
+				{
+					continue;
+				}
+				float col[3];
+				sample(view.albedo, view.w, view.h, S.x + ca * dx + sa * dy - 0.5f - view.x, S.y - sa * dx + ca * dy - 0.5f - view.y, col);
+				line[x] = mix(line[x], col, m);
+			}
+		}
+	}
 }
 
 void drawParticles(SDL_Surface *world, const SDL_Rect &area, const std::vector<PlacedEmit> &emits, float night, Uint32 ms)

@@ -119,3 +119,5 @@ gen_ufo_pedia.py
 game_voice_probe.py
 gen_base_paint.py
 wreck_object.py
+base_hangar_edit.py
+base_pool_repair.py

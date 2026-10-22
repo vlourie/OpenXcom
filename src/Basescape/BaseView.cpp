@@ -32,6 +32,7 @@
 #include <climits>
 #include <cstdlib>
 #include <map>
+#include <string>
 #include "../Mod/Texture.h"
 #include "../Engine/HdBase.h"
 #include "../Engine/HdBaseLife.h"
@@ -39,6 +40,7 @@
 #include "../Engine/HdSmooth.h"
 #include "../Engine/HdUi.h"
 #include "../Engine/HdUiArt.h"
+#include "../Engine/Logger.h"
 #include "../Engine/Screen.h"
 #include "../Savegame/GameTime.h"
 
@@ -108,6 +110,31 @@ const OpenXcom::HdFrame *classicHd(OpenXcom::SurfaceSet *texture, int index, int
 	out.buildSpans();
 	return &out;
 }
+
+/// The rock of the living base as the preview drew it (hd/BASEBITS.PCK/ground.png, the whole base in one
+/// picture), read once; nullptr without it: the cells keep the classic rock.
+const OpenXcom::HdFrame *hdGround()
+{
+	static OpenXcom::HdFrame frame;
+	static bool read = false;
+	if (!read)
+	{
+		read = true;
+		if (!OpenXcom::HdSprites::loadPng(OpenXcom::HdSprites::artPath("BASEBITS.PCK/ground.png"), frame))
+		{
+			frame = OpenXcom::HdFrame();
+		}
+	}
+	return frame.empty() ? nullptr : &frame;
+}
+
+/// The living base made by BaseView::hdLayout: the view and what it was made for.
+struct HdLayout
+{
+	std::string key;
+	OpenXcom::HdBaseScene::View view;
+};
+HdLayout hdLayoutMade;
 
 }
 
@@ -651,7 +678,13 @@ void BaseView::drawHd()
 	Uint32 next = 0xFFFFFFFFu;
 	// the living base: the rock of the cells without an HD picture is lit with the rest (see draw)
 	const bool lit = hdScenes();
-	if (lit)
+	// ... and with the pack's rock it is the preview's: the rock with the facilities' shadows, one picture
+	const HdBaseScene::View *view = lit ? hdLayout(k) : nullptr;
+	if (view)
+	{
+		HdUiArt::drawFrame(world, view->ground, view->x, view->y);
+	}
+	else if (lit)
 	{
 		if (const HdFrame *ground = classicHd(_texture, rock, k, getPalette()))
 		{
@@ -682,7 +715,8 @@ void BaseView::drawHd()
 			for (int x = fac->getX(); x < fac->getX() + fac->getRules()->getSizeX(); ++x)
 			{
 				// the rock the classic layer leaves out under the picture (it shows through its holes)
-				if (const HdFrame *ground = classicHd(_texture, rock, k, getPalette()))
+				const HdFrame *ground = view ? nullptr : classicHd(_texture, rock, k, getPalette());
+				if (ground)
 				{
 					HdUiArt::drawFrame(world, *ground, (getX() + x * GRID_SIZE) * k, (getY() + y * GRID_SIZE) * k);
 				}
@@ -909,10 +943,140 @@ void BaseView::drawHdScene(SDL_Surface *world, int k, Uint32 now)
 		}
 	}
 	const SDL_Rect area = { (Sint16)(getX() * k), (Sint16)(getY() * k), (Uint16)(getWidth() * k), (Uint16)(getHeight() * k) };
+	// the water ripples and the dishes turn under the crew; the lamps fall on the relief of the pictures
+	const HdBaseScene::View *view = hdLayout(k);
+	if (view)
+	{
+		HdBaseScene::drawMotion(world, *view, now);
+	}
 	// the crew before the light: it darkens with the rooms at night, and its lanterns light them
 	HdBaseLife::draw(world, plan, getX() * k, getY() * k, GRID_SIZE * k, night, now, lights);
-	HdBaseScene::draw(world, area, lights, night, now);
+	HdBaseScene::draw(world, area, lights, night, now, view);
 	HdBaseScene::drawParticles(world, area, emits, night, now);
+}
+
+/**
+ * The living base for the layout now: the pictures over the pack's rock (the connectors stay the classic
+ * tube, Vitali 22.10 «переходы такие НЕ ДЕЛАТЬ... лучше просто с оригинала взять»),
+ * baked once (HdBaseScene::bake) and kept till a facility is built, moved or pulled down, or k changes.
+ */
+const HdBaseScene::View *BaseView::hdLayout(int k)
+{
+	const HdFrame *rock = hdGround();
+	if (!rock || !_base || !_texture)
+	{
+		return nullptr;
+	}
+	std::ostringstream key;
+	key << k << ' ' << getX() << ' ' << getY();
+	for (const auto *fac : *_base->getFacilities())
+	{
+		key << ';' << fac->getRules()->getType() << ' ' << fac->getX() << ' ' << fac->getY() << ' '
+			<< (isHdFacility(fac) ? 1 : isHdBuilding(fac) ? 2 : 0) << (fac->isBuiltOrHadPreviousFacility() ? 1 : 0);
+	}
+	HdLayout &made = hdLayoutMade;
+	if (made.key == key.str())
+	{
+		return &made.view;
+	}
+	made = HdLayout();
+	made.key = key.str();
+	HdBaseScene::View &view = made.view;
+	const int cell = GRID_SIZE * k;
+	view.x = getX() * k;
+	view.y = getY() * k;
+	view.w = view.h = BASE_SIZE * cell;
+	view.scale = cell / 128.0f;
+	view.albedo.assign((size_t)view.w * view.h, 0u);
+	auto put = [&view](const HdFrame &frame, int x0, int y0)
+	{
+		for (int y = 0; y < frame.height; ++y)
+		{
+			for (int x = 0; x < frame.width; ++x)
+			{
+				const int vx = x0 + x, vy = y0 + y;
+				const Uint32 px = frame.pixels[(size_t)y * frame.width + x];
+				if (vx >= 0 && vy >= 0 && vx < view.w && vy < view.h && (px >> 24))
+				{
+					view.albedo[(size_t)vy * view.w + vx] = px;
+				}
+			}
+		}
+	};
+	std::vector<SDL_Rect> empty;
+	for (int x = 0; x < BASE_SIZE; ++x)
+	{
+		for (int y = 0; y < BASE_SIZE; ++y)
+		{
+			if (!_facilities[x][y])
+			{
+				empty.push_back({ (Sint16)(x * cell), (Sint16)(y * cell), (Uint16)cell, (Uint16)cell });
+			}
+		}
+	}
+	std::vector<HdBaseScene::PlacedWater> waters;
+	for (const auto *fac : *_base->getFacilities())
+	{
+		const RuleBaseFacility *rules = fac->getRules();
+		if (isHdBuilding(fac))
+		{
+			continue;               // the site: bare rock under the blueprint (drawBuilding)
+		}
+		const bool hd = isHdFacility(fac);
+		bool water = false;
+		int num = 0;
+		for (int y = fac->getY(); y < fac->getY() + rules->getSizeY(); ++y)
+		{
+			for (int x = fac->getX(); x < fac->getX() + rules->getSizeX(); ++x)
+			{
+				const int index = hdTileIndex(fac, num++);
+				if (!hd)
+				{
+					// a classic facility covers its cell on the classic layer: here it only casts its shadow
+					HdFrame solid;
+					solid.width = solid.height = cell;
+					solid.pixels.assign((size_t)cell * cell, 0xFF505050u);
+					put(solid, x * cell, y * cell);
+					continue;
+				}
+				if (const HdFrame *picture = HdBase::frame(index, 0, k, GRID_SIZE, GRID_SIZE))
+				{
+					put(*picture, x * cell, y * cell);
+				}
+				const HdBaseScene::TileScene *scene = HdBase::scene(index);
+				if (!scene)
+				{
+					continue;
+				}
+				const float s = (float)cell / scene->width;
+				if (scene->water && !water)
+				{
+					water = true;
+					HdBaseScene::PlacedWater w;
+					w.box = { (Sint16)(view.x + fac->getX() * cell), (Sint16)(view.y + fac->getY() * cell),
+						(Uint16)(rules->getSizeX() * cell), (Uint16)(rules->getSizeY() * cell) };
+					w.kind = scene->water;
+					std::copy(scene->glint, scene->glint + 3, w.glint);
+					waters.push_back(w);
+				}
+				for (const HdBaseScene::Spin &spin : scene->spins)
+				{
+					HdBaseScene::PlacedSpin p;
+					p.spin = spin;
+					p.spin.x = view.x + x * cell + spin.x * s;
+					p.spin.y = view.y + y * cell + spin.y * s;
+					p.spin.radius = spin.radius * s;
+					p.phase = (float)((x * 7 + y * 13) % 17) / 17.0f;
+					view.spins.push_back(p);
+				}
+			}
+		}
+	}
+	const Uint32 t0 = SDL_GetTicks();
+	HdBaseScene::bake(view, rock, empty, waters);
+	Log(LOG_INFO) << "HdBaseScene: the living base baked " << view.w << "x" << view.h << " in " << SDL_GetTicks() - t0
+		<< " ms, " << view.waters.size() << " waters, " << view.spins.size() << " spins";
+	return &made.view;
 }
 
 /**
