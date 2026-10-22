@@ -23,7 +23,8 @@ WWW = os.path.join(ROOT, "portal", "src", "Xp.Portal", "wwwroot", "img")
 
 # цель -> (папка вариантов, ширина и высота обычной картинки, бюджет крупной в КБ)
 TARGETS = {
-    os.path.join(WWW, "hero.jpg"): ("site_hero", 1280, 800, 700),
+    # с 22.10 героини: исходник 1280x800, рядом его копия x4 (upscale_ui.py, RealESRGAN_x4plus)
+    os.path.join(WWW, "hero.jpg"): ("cast_site_hero_x4", 1280, 800, 700),
     os.path.join(WWW, "mods", "piratez.jpg"): ("mod_piratez", 960, 540, 600),
     os.path.join(WWW, "mods", "hd.jpg"): ("mod_hd", 960, 540, 600),
 }
