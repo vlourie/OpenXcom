@@ -276,11 +276,12 @@ def main():
     ap.add_argument("--doors", action="store_true",
                     help="проёмы посередине клеточных сторон (DOORS); выход <стиль>_doors/ и in_doors/")
     ap.add_argument("--list", default="", help="файл с типами по строке (вместо --only)")
+    ap.add_argument("--tag", default="", help="приставка папок выхода (<стиль><tag>/, in<tag>/): пробы, не трогая одобренное")
     ns = ap.parse_args()
     if ns.list:
         with open(ns.list, encoding="utf-8-sig") as f:
             ns.only = ",".join(s.strip() for s in f.read().replace("\n", ",").split(",") if s.strip())
-    tag = "_doors" if ns.doors else ""
+    tag = "_doors" if ns.doors else ns.tag
     indir = "in" + tag
     styles = [s for s in ns.styles.split(",") if s]
     types = [t for t in (ns.only.split(",") if ns.only else PILOT) if t]
