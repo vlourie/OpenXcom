@@ -27,6 +27,7 @@ namespace OpenXcom
 {
 
 class Surface;
+class HdPanelToggle;
 class Map;
 class ImageButton;
 class BattlescapeButton;
@@ -49,6 +50,15 @@ class BattlescapeState : public State
 private:
 	Surface *_rank, *_rankTiny;
 	InteractiveSurface *_icons;
+	/// HD interface: the arrow that slides the panel down off the screen and back (oxceHdPanelHide); picture and
+	/// placement only. _panelShift = how far down the panel stands now (base pixels), _panelTarget = where it goes.
+	HdPanelToggle *_btnPanelHide;
+	int _panelShift = 0, _panelTarget = 0;
+	bool _mouseOverPanelArrow = false;
+	Uint32 _panelMovedAt = 0;
+	std::vector<Surface*> _panelSurfaces;
+	/// Moves the panel and everything on it to `shift` base pixels below its place.
+	void movePanel(int shift);
 	Map *_map;
 	BattlescapeButton *_btnUnitUp, *_btnUnitDown, *_btnMapUp, *_btnMapDown, *_btnShowMap, *_btnKneel;
 	BattlescapeButton *_btnInventory, *_btnCenter, *_btnNextSoldier, *_btnNextStop, *_btnShowLayers, *_btnHelp;
@@ -268,6 +278,11 @@ public:
 	void mouseInIcons(Action *action);
 	/// Handler for the mouse going out of the icons, enabling the tile selection cube.
 	void mouseOutIcons(Action *action);
+	/// HD interface: the panel's arrow - slides the panel down off the screen, or back.
+	void btnPanelHideClick(Action *action);
+	/// HD interface: the mouse over the panel's arrow counts as over the icons (a click on it is not one on the map).
+	void mouseInPanelArrow(Action *action);
+	void mouseOutPanelArrow(Action *action);
 	/// Checks if the mouse is over the icons.
 	bool getMouseOverIcons() const;
 	/// Is the player allowed to press buttons?

@@ -1964,4 +1964,29 @@ void HdHudPanel::hdMirror()
 	}
 }
 
+void HdPanelToggle::hdMirror()
+{
+	const int k = HdUi::scale();
+	if (k <= 0 || !HdBattleHud::on()) return;
+	HdUi &ui = HdUi::instance();
+	const Theme &t = theme();
+	const bool over = ui.hover(getX(), getY(), getWidth(), getHeight());
+	const float x0 = (float)getX() * k, y0 = (float)getY() * k;
+	const float x1 = (float)(getX() + getWidth()) * k, y1 = (float)(getY() + getHeight()) * k;
+	// a tab in the panel's colours, rounded at the top and running into the panel below it
+	ui.fillRoundRect(x0, y0, x1, y1 + 2.0f * k, 2.0f * k, over ? t.hoverTop : t.panelTop, t.panelTop);
+	ui.strokeRoundRect(x0, y0, x1, y1 + 2.0f * k, 2.0f * k, std::max(1.0f, 0.4f * k), withAlpha(keyLook().rim, 0x90));
+	ui.notePanel(getX(), getY(), getWidth(), getHeight());
+	const float cx = (x0 + x1) * 0.5f, cy = (y0 + y1) * 0.5f + 0.5f * k, hw = 2.6f * k, hh = 1.5f * k;
+	const Uint32 c = over ? t.iconHover : t.icon;
+	if (_down)
+	{
+		ui.fillTriangle(cx - hw, cy + hh, cx + hw, cy + hh, cx, cy - hh, c);
+	}
+	else
+	{
+		ui.fillTriangle(cx - hw, cy - hh, cx + hw, cy - hh, cx, cy + hh, c);
+	}
+}
+
 }
