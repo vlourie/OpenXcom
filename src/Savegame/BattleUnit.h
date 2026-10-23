@@ -275,6 +275,8 @@ public:
 	int getDirection() const;
 	/// Gets the unit's face direction (only used by strafing moves)
 	int getFaceDirection() const;
+	/// Gets the direction the unit turns to (the picture of the turn on the spot reads it; nothing else)
+	int getToDirection() const { return _toDirection; }
 	/// Backs the unit up for the walk: the steps go opposite to the hull, which keeps facing.
 	void setReverseMove(bool reverse) { _reverseMove = reverse; }
 	/// Is the unit backing up?
