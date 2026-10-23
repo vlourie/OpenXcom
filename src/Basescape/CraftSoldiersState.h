@@ -32,6 +32,7 @@ class Text;
 class TextList;
 class ComboBox;
 class Soldier;
+class Craft;
 struct SortFunctor;
 
 /**
@@ -43,6 +44,7 @@ class CraftSoldiersState : public SortSoldiersMixin<HighlightLowManaSoldiersMixi
 private:
 	TextButton *_btnOk;
 	TextButton *_btnPreview;
+	TextButton *_btnFit; // OXCE-HD (oxceHdCraftFit): the plate "seats used / seats in all", not pressable
 	Window *_window;
 	Text *_txtTitle, *_txtName, *_txtRank, *_txtCraft, *_txtAvailable, *_txtUsed;
 	ComboBox *_cbxSortBy;
@@ -53,6 +55,11 @@ private:
 	std::vector<Soldier *> _origSoldierOrder;
 	std::vector<SortFunctor *> _sortFunctors;
 	getStatFn_t _dynGetter;
+	std::vector<char> _fitGrey; // OXCE-HD (oxceHdCraftFit): the rows now drawn grey, by row of the list
+	/// OXCE-HD (oxceHdCraftFit): would the click on this soldier meet a craft limit (space, number of units)? Display only.
+	bool doesNotFit(const Soldier *s, const Craft *c) const;
+	/// OXCE-HD (oxceHdCraftFit): the plate with the seats and the grey rows of those who no longer fit.
+	void fitRefresh();
 	/// initializes the display list based on the craft soldier's list and the position to display
 	void initList(size_t scrl);
 public:
