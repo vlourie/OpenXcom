@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 r"""Пилот обрушения в движке (этап 1): невидимые бои на сборке стенда с опцией oxceCollapse.
 
@@ -50,6 +50,8 @@ SCEN13 = ROOT / "census/collapse/pilot13/pilot_scen.tsv"  # тринадцата
 SCEN14 = ROOT / "census/collapse/pilot14/pilot_scen.tsv"  # четырнадцатая - блоки, которые держит M0j5
 SCEN15 = ROOT / "census/collapse/pilot15/pilot_scen.tsv"  # пятнадцатая - деревья без порога 20+ частей
 SCEN16 = ROOT / "census/collapse/pilot16/pilot_scen.tsv"  # шестнадцатая - без деревьев, без порога
+SCEN17 = ROOT / "census/collapse/pilot17/pilot_scen.tsv"  # семнадцатая - охват 23.10, деревья
+SCEN18 = ROOT / "census/collapse/pilot18/pilot_scen.tsv"  # восемнадцатая - охват 23.10, без деревьев
 OUT = ROOT / "census/collapse/pilot1/runs"
 KIND = {"f": 0, "w": 1, "n": 2, "o": 3}
 LABEL_RU = {"barn": "амбар", "bunker": "бункер",
@@ -80,6 +82,10 @@ import collapse_pilot15_scen as P15  # noqa: E402
 LABEL_RU.update({en: ru for tn, bn, ru, en in P15.BUILDINGS})
 import collapse_pilot16_scen as P16  # noqa: E402
 LABEL_RU.update({en: ru for tn, bn, ru, en in P16.BUILDINGS})
+import collapse_pilot17_scen as P17  # noqa: E402
+LABEL_RU.update({en: ru for tn, bn, ru, en in P17.BUILDINGS})
+import collapse_pilot18_scen as P18  # noqa: E402
+LABEL_RU.update({en: ru for tn, bn, ru, en in P18.BUILDINGS})
 CPF_INBOX = 128
 _collapse_on = threading.local()
 
@@ -90,9 +96,11 @@ def _prepare_user(work, _orig=ai_probe.prepare_user):
     on = getattr(_collapse_on, "value", True)
     p = work / "options.cfg"
     cfg = p.read_bytes().decode("utf-8")
-    cfg, n = re.subn(r"(?m)^(\s*)oxceCollapse: .*$", r"\g<1>oxceCollapse: " + ("true" if on else "false"), cfg)
-    if not n:
-        cfg = re.sub(r"(?m)^options:\s*$", "options:\n  oxceCollapse: " + ("true" if on else "false"), cfg, count=1)
+    opts = {"oxceCollapse": "true" if on else "false", **getattr(_collapse_on, "opts", {})}
+    for key, val in opts.items():
+        cfg, n = re.subn(r"(?m)^(\s*)%s: .*$" % key, r"\g<1>%s: %s" % (key, val), cfg)
+        if not n:
+            cfg = re.sub(r"(?m)^options:\s*$", "options:\n  %s: %s" % (key, val), cfg, count=1)
     p.write_bytes(cfg.encode("utf-8"))  # yaml-cpp, без спецификации (R-001, исключение)
 
 
@@ -168,6 +176,12 @@ def partial_rows(label_en, only=None):
     if any(b[3] == label_en for b in P16.BUILDINGS):  # шестнадцатая - PFALL зданий (partial16)
         import collapse_partial16_scen as PF16
         PF16.use()
+    if any(b[3] == label_en for b in P17.BUILDINGS):  # семнадцатая - сценарии деревьев (partial17)
+        import collapse_partial17_scen as PF17
+        PF17.use()
+    if any(b[3] == label_en for b in P18.BUILDINGS):  # восемнадцатая - PFALL зданий (partial18)
+        import collapse_partial18_scen as PF18
+        PF18.use()
     PF.check_lock()
     out = []
     for i, r in enumerate(PF.rows()):
@@ -233,6 +247,9 @@ def scen_rows(label_en, cells=None, only=None):
     lines += SCEN14.read_text(encoding=ENC).splitlines()[1:]
     lines += SCEN15.read_text(encoding=ENC).splitlines()[1:]
     lines += SCEN16.read_text(encoding=ENC).splitlines()[1:]
+    for scen in (SCEN17, SCEN18):
+        if scen.exists():
+            lines += scen.read_text(encoding=ENC).splitlines()[1:]
     out = []
     for ln in lines[1:]:
         r = dict(zip(head, ln.split("\t")))
@@ -266,7 +283,7 @@ def model_fell(label_en, removed_keys):
 def _load_model(label_en):
     # здание четвёртой-шестой партии грузится одно: загрузка всех целых блоков карт идёт минутами (cc.all_blocks
     # на каждое здание), а прогону нужен один
-    for M in (P4, P5, P6, P7, P8, P9, P10, P11, P12, P13, P14, P15, P16):
+    for M in (P4, P5, P6, P7, P8, P9, P10, P11, P12, P13, P14, P15, P16, P17, P18):
         one = [b for b in M.BUILDINGS if b[3] == label_en]
         if one:
             import collapse_pilot_export as EX
@@ -413,6 +430,10 @@ def run_scen(a, r, blocks, label):
     units, stun, drop = pick[:2], pick[2:3], pick[3:4]
     if a.hole_unit and hole:
         units = units[:1] + [sorted(hole)[0]]  # ещё один - прямо над снятым полом
+    big = []
+    if a.big and z > 0:
+        # юнит 2x2 этажом ниже, углом под снятым полом (или серединой участка): на него ляжет завал (отладка движка, OXCE_COLLAPSE_BIG)
+        big = [sorted(hole)[0]] if hole else cells_pick(cells, 1, set())
     env = {
         "OXCE_COLLAPSE_UNIT": "%s:%s" % (label, ";".join("%d,%d,%d" % (x, y, z) for x, y in units)),
         "OXCE_COLLAPSE_STUN": "%s:%s" % (label, ";".join("%d,%d,%d" % (x, y, z) for x, y in stun)),
@@ -420,8 +441,15 @@ def run_scen(a, r, blocks, label):
         "OXCE_COLLAPSE_REMOVE": "%s:%s" % (label, ",".join(map(str, nums))),
         "OXCE_COLLAPSE_AT": str(a.at),
     }
-    name = "%s_%s_z%d_c%s%s%s%s" % (label, r["scenario"], z, r["unit_cells"], r.get("dup", ""),
-                                    "_hu" if a.hole_unit and hole else "", "_off" if a.off else "")
+    if big:
+        env["OXCE_COLLAPSE_BIG"] = "%s:%s" % (label, ";".join("%d,%d,%d" % (x, y, z - 1) for x, y in big))
+    if a.shake:
+        env["OXCE_AI_FAST"] = "0"  # тряска - картинка: прогон с кадрами, иначе Map::draw не зовётся
+        env["OXCE_COLLAPSE_REVEAL"] = "1"  # туман снят: падение видно, иначе трясти нечем (seen 0)
+    _collapse_on.opts = {"oxceHdCollapseShake": "true"} if a.shake else {}
+    name = "%s_%s_z%d_c%s%s%s%s%s%s" % (label, r["scenario"], z, r["unit_cells"], r.get("dup", ""),
+                                      "_hu" if a.hole_unit and hole else "", "_big" if big else "", "_shake" if a.shake else "",
+                                      "_off" if a.off else "")
     exp = model_fell(label, rm_keys)
     res, dest, saved = probe(name, a.save, env, not a.off, a.turns)
     lines = collapse_lines(dest / "openxcom.log")
@@ -556,6 +584,8 @@ def main():
     s.add_argument("--turns", type=int, default=2)
     s.add_argument("--hole-unit", action="store_true", help="второго бойца - над снятым полом")
     s.add_argument("--partial", action="store_true", help="сценарии частичного обрушения (collapse_partial_scen)")
+    s.add_argument("--big", action="store_true", help="юнит 2x2 этажом ниже, углом под снятым полом")
+    s.add_argument("--shake", action="store_true", help="опция oxceHdCollapseShake и прогон с кадрами (OXCE_AI_FAST=0)")
     s.add_argument("--jobs", type=int, default=3)
     w = sub.add_parser("raw")
     w.add_argument("--save", required=True)
