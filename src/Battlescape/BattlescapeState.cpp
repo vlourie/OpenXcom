@@ -997,23 +997,6 @@ void BattlescapeState::init()
  */
 void BattlescapeState::think()
 {
-	{ // TEMP291 test only, removed before done
-		static const char *t291 = getenv("OXCE_T291");
-		static int t291n = 0;
-		if (t291 && ++t291n > 60)
-		{
-			for (auto *bu : *_save->getUnits())
-			{
-				if (bu->getId() == 545)
-				{
-					const int d = atoi(t291);
-					bu->setDirection(d);
-					bu->lookAt((d + 1) % 8, false);
-					_map->getCamera()->centerOnPosition(bu->getPosition(), false);
-				}
-			}
-		}
-	}
 	static bool popped = false;
 
 	// HD interface: the panel's arrow is there while the panel is the modern one; the panel slides to where it goes
