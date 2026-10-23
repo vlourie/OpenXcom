@@ -12,7 +12,8 @@ namespace Xp.Launcher;
 /// Updates and plans: every update the channel has carried with its "What's new", newest first, and
 /// the roadmap — what is being done and what comes next. Both come from the signed history of the
 /// channel in the release repository (channels/&lt;channel&gt;.notes.json), the same file the site
-/// shows, so the launcher and the site never tell a player different things.
+/// shows, so the launcher and the site never tell a player different things. The history is kept on disk
+/// (NotesCache): the page shows it at once and asks the server only after a new release, once a day or on "Reload".
 /// </summary>
 public sealed class NewsPage : UserControl
 {
@@ -20,19 +21,26 @@ public sealed class NewsPage : UserControl
 
     readonly Func<RepoClient?> _repo;
     readonly Func<string> _channel;
+    readonly Func<NotesCache?> _cache;
+    readonly Func<string?> _latest;
     readonly Button _historyTab, _roadmapTab, _reload;
     readonly StackPanel _body = new() { Spacing = 12 };
     readonly TextBlock _state = Skin.Note("", 13);
     readonly ScrollViewer _scroll;
     ChannelNotes? _notes;
     DateTime _loadedAt;
+    /// <summary>The kept file's time when the page read it: the home page's "What's new" may have fetched a newer one since.</summary>
+    DateTime _keptAt;
     bool _loading;
     bool _roadmap;
 
-    public NewsPage(Func<RepoClient?> repo, Func<string> channel)
+    /// <param name="latest">The release the channel points to, from the update check; null - not known yet.</param>
+    public NewsPage(Func<RepoClient?> repo, Func<string> channel, Func<NotesCache?> cache, Func<string?> latest)
     {
         _repo = repo;
         _channel = channel;
+        _cache = cache;
+        _latest = latest;
         _historyTab = Skin.Btn(L.T("news.history"));
         _historyTab.Click += (_, _) => Show(roadmap: false);
         _roadmapTab = Skin.Btn(L.T("news.roadmap"));
@@ -64,7 +72,7 @@ public sealed class NewsPage : UserControl
         Mark();
     }
 
-    /// <summary>The page came on screen: the history is fetched once and again after a few minutes.</summary>
+    /// <summary>The page came on screen: the kept history at once, the server's when it is due.</summary>
     public async void Shown(bool roadmap)
     {
         Show(roadmap);
@@ -87,15 +95,33 @@ public sealed class NewsPage : UserControl
 
     async Task LoadAsync(bool force)
     {
-        if (_loading || (!force && _notes is not null && DateTime.UtcNow - _loadedAt < Fresh)) return;
+        if (_loading) return;
         if (_repo() is not { } repo) { _state.Text = L.T("news.offline"); return; }
+        var channel = _channel();
+        var cache = _cache();
+        if (cache is not null && !force)
+        {
+            var at = KeptAt(cache, channel);
+            if (at != default && at != _keptAt && await Task.Run(() => cache.Load(repo, channel)) is { } kept)
+            {
+                _notes = kept;
+                _keptAt = at;
+                _state.Text = "";
+                Fill();
+            }
+            if (_notes is not null && !cache.Due(channel, _latest(), DateTime.UtcNow)) return;
+        }
+        else if (!force && _notes is not null && DateTime.UtcNow - _loadedAt < Fresh) return;
         _loading = true;
         _reload.IsEnabled = false;
         if (_notes is null) _state.Text = L.T("news.loading");
         try
         {
-            _notes = await repo.GetNotesAsync(_channel(), CancellationToken.None);
+            _notes = cache is not null
+                ? await cache.FetchAsync(repo, channel, _latest(), CancellationToken.None)
+                : await repo.GetNotesAsync(channel, CancellationToken.None);
             _loadedAt = DateTime.UtcNow;
+            if (cache is not null) _keptAt = KeptAt(cache, channel);
             _state.Text = "";
         }
         catch (FileNotFoundException) { _state.Text = L.T("news.none"); }
@@ -109,6 +135,12 @@ public sealed class NewsPage : UserControl
             _reload.IsEnabled = true;
         }
         Fill();
+    }
+
+    static DateTime KeptAt(NotesCache cache, string channel)
+    {
+        try { return File.Exists(cache.FilePath(channel)) ? File.GetLastWriteTimeUtc(cache.FilePath(channel)) : default; }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or ArgumentException) { return default; }
     }
 
     void Fill()

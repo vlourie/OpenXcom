@@ -166,7 +166,8 @@ public sealed class MainWindow : Window
         _reportsPage.Changed += CountReports;
         // the channel of the last check, held in memory: LoadState may move a broken state file aside,
         // and nothing is written from a page that only reads (R-179). Before any check — stable
-        _newsPage = new NewsPage(() => _repo, () => _latest?.Manifest.Release.Channel is { Length: > 0 } ch ? ch : "stable");
+        _newsPage = new NewsPage(() => _repo, () => _latest?.Manifest.Release.Channel is { Length: > 0 } ch ? ch : "stable",
+            NotesKept, () => _latest?.Pointer.ReleaseId);
         _account = new AccountPanel(_settings);
         _voicePage = new VoicePage(_settings, _account, () => _builds, () => Navigate("settings"));
         _voicePage.RoomChanged += RoomChanged;
@@ -1449,11 +1450,14 @@ public sealed class MainWindow : Window
         _whatsNew.IsVisible = _changelog.Children.Count > 0;
     }
 
+    /// <summary>The history kept on disk (XP-000268); null before the game folder is known.</summary>
+    NotesCache? NotesKept() => _paths is { } p ? new NotesCache(p) { IsGameRunning = GameIsRunning } : null;
+
     /// <summary>The channel's history for "What's new"; null when there is none or it cannot be had now - never a failed check.</summary>
     async Task<ChannelNotes?> NotesAsync(string channel, CancellationToken ct)
     {
         if (_repo is not { } repo) return null;
-        try { return await repo.GetNotesAsync(channel, ct); }
+        try { return NotesKept() is { } kept ? await kept.GetAsync(repo, channel, _latest?.Pointer.ReleaseId, ct) : await repo.GetNotesAsync(channel, ct); }
         catch (Exception e) when (!ct.IsCancellationRequested && e is HttpRequestException or IOException or TrustException or TaskCanceledException or ArgumentException)
         {
             _fileLog?.Info("history for what's new: " + e.Message);

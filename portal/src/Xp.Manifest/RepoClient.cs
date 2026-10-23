@@ -7,6 +7,7 @@ namespace Xp.Manifest;
 // verify it the same way, and it should not have to build the launcher's code to do so.
 
 public sealed record LatestRelease(ChannelPointer Pointer, ReleaseManifest Manifest);
+public sealed record SignedNotes(ChannelNotes Notes, byte[] Bytes, byte[] Signature);
 
 /// <summary>Thrown when something from the server fails verification. Never retried silently.</summary>
 public sealed class TrustException(string message) : Exception(message);
@@ -115,12 +116,21 @@ public sealed class RepoClient(HttpClient http, Uri baseUri, TrustedKeys keys)
     /// History and roadmap of a channel, verified like the pointer. A repository that has none yet
     /// answers with FileNotFoundException: callers show "no history yet" rather than an error.
     /// </summary>
-    public async Task<ChannelNotes> GetNotesAsync(string channel, CancellationToken ct)
+    public async Task<ChannelNotes> GetNotesAsync(string channel, CancellationToken ct) => (await GetSignedNotesAsync(channel, ct)).Notes;
+
+    /// <summary>The history with the very bytes and signature it came in: the launcher keeps them on disk and checks them again on reading.</summary>
+    public async Task<SignedNotes> GetSignedNotesAsync(string channel, CancellationToken ct)
     {
         if (!ManifestValidator.IsValidId(channel)) throw new ArgumentException("bad channel name");
         var key = BlobKeys.Notes(channel);
         var bytes = await GetSmallAsync(key, MaxNotesBytes, ct);
         var sig = await GetSmallAsync(BlobKeys.Sig(key), MaxSigBytes, ct);
+        return new SignedNotes(VerifyNotes(channel, bytes, sig), bytes, sig);
+    }
+
+    /// <summary>A history kept from before, checked as the server's: signature, format, channel.</summary>
+    public ChannelNotes VerifyNotes(string channel, byte[] bytes, byte[] sig)
+    {
         if (!keys.Verify(bytes, sig)) throw new TrustException($"notes of '{channel}': signature check failed");
         ChannelNotes notes;
         try { notes = ManifestValidator.ParseNotes(bytes); }

@@ -51,7 +51,7 @@ public sealed class NewsPageTests
     public void The_history_lists_every_update_newest_first_and_the_roadmap_is_one_click_away()
     {
         L.Use("ru");
-        var page = new NewsPage(() => _repo, () => "stable");
+        var page = new NewsPage(() => _repo, () => "stable", () => null, () => null);
         var w = new Window { Width = 1100, Height = 900, Content = page, Background = Skin.B(Skin.Bg) };
         w.Show();
         page.Shown(roadmap: false);
@@ -74,12 +74,39 @@ public sealed class NewsPageTests
     {
         L.Use("ru");
         _blobs.Clear();
-        var page = new NewsPage(() => _repo, () => "stable");
+        var page = new NewsPage(() => _repo, () => "stable", () => null, () => null);
         var w = new Window { Width = 900, Height = 500, Content = page };
         w.Show();
         page.Shown(roadmap: false);
         Pump(() => Texts(page).Contains(L.T("news.none")), "the 'no history' line");
         w.Close();
+    }
+
+    [AvaloniaFact]
+    public void The_history_is_kept_on_disk_and_shown_again_without_the_server()
+    {
+        L.Use("ru");
+        var game = Path.Combine(Path.GetTempPath(), "xp-ui-tests", "news-kept-" + Guid.NewGuid().ToString("N"));
+        try
+        {
+            var cache = new Core.NotesCache(new Core.GamePaths(game));
+            var first = new NewsPage(() => _repo, () => "stable", () => cache, () => "2026.10.15-8");
+            var w = new Window { Width = 900, Height = 500, Content = first };
+            w.Show();
+            first.Shown(roadmap: false);
+            Pump(() => Texts(first).Any(t => t.StartsWith("2026.10.15.8")), "the history to load");
+            w.Close();
+
+            _blobs.Clear();   // the server has nothing now: what the next page shows comes from disk
+            var second = new NewsPage(() => _repo, () => "stable", () => cache, () => "2026.10.15-8");
+            w = new Window { Width = 900, Height = 500, Content = second };
+            w.Show();
+            second.Shown(roadmap: false);
+            Pump(() => Texts(second).Any(t => t.StartsWith("2026.10.15.8")), "the kept history");
+            Assert.DoesNotContain(L.T("news.none"), Texts(second));
+            w.Close();
+        }
+        finally { try { Directory.Delete(game, recursive: true); } catch (IOException) { } }
     }
 
     /// <summary>Every text on the page, a TextBlock's runs joined.</summary>
