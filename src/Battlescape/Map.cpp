@@ -1170,7 +1170,7 @@ void Map::draw()
 		_messageOnCanvas = false;
 		_messageApart = false;
 	}
-	else if (Options::oxceHdHiddenMap && _hiddenViewValid)
+	else if (Options::oxceHdHiddenMap && Options::oxceHdEnemyTurn != 1 && _hiddenViewValid)
 	{
 		// an unseen enemy's turn: the map from where the player last saw it; the camera's own moves (a walking
 		// unit's level, a followed shot, centring on the next unit) are not shown and the camera keeps them

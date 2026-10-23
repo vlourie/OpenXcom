@@ -381,6 +381,10 @@ std::string OptionsHdState::valueText(const OptionInfo &info) const
 	{
 		return tr("STR_HD_ENEMY_NUMBER_" + std::to_string(Options::oxceHdEnemyNumber));
 	}
+	if (info.asInt() == &Options::oxceHdEnemyTurn)
+	{
+		return tr("STR_HD_ENEMY_TURN_" + std::to_string(Options::oxceHdEnemyTurn));
+	}
 	if (info.asInt() == &Options::oxceHdRadar)
 	{
 		return tr("STR_HD_RADAR_" + std::to_string(Options::oxceHdRadar));
@@ -617,6 +621,11 @@ void OptionsHdState::changeSetting(size_t sel, Uint8 button)
 		else if (i == &Options::oxceHdEnemyNumber)
 		{
 			min = 0;                                  // 0 none, 1 blinking, 2 steady
+			max = 2;
+		}
+		else if (i == &Options::oxceHdEnemyTurn)
+		{
+			min = 0;                                  // 0 as it was, 1 hidden screen with a strip, 2 frame and the panel down
 			max = 2;
 		}
 		else if (i == &Options::oxceHdRadar)

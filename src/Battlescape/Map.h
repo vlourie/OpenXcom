@@ -290,6 +290,8 @@ private:
 	int _hdTestSavedCursorSize = 1;
 	double _lastDrawMs = 0.0;
 public:
+	/// Is the hidden movement screen on the canvas now (and not the terrain)? (Options::oxceHdEnemyTurn's strip)
+	bool isHiddenScreenShown() const { return _messageOnCanvas; }
 	/// Creates a new map at the specified position and size.
 	Map(Game* game, int width, int height, int x, int y, int visibleMapHeight);
 	/// Cleans up the map.
