@@ -19,6 +19,7 @@
  */
 #include <SDL.h>
 #include <vector>
+#include <string>
 #include "InteractiveSurface.h"
 
 namespace OpenXcom
@@ -119,6 +120,26 @@ public:
 	void hdMirror() override;
 private:
 	bool _down = false;
+};
+
+/**
+ * The mark of the enemy's and the neutrals' turn (oxceHdEnemyTurn), as big as the screen and drawn in the world
+ * layer only (its classic surface stays empty, nothing under it takes the mouse): a plate with a line of text at
+ * the top, over the hidden movement screen (mode 1), or a soft frame along the screen's edge, red for the enemy
+ * and yellow for the neutrals, drawn by code (mode 2). Picture only.
+ */
+class HdTurnMark : public Surface
+{
+public:
+	enum Kind { NONE, STRIP, FRAME_ENEMY, FRAME_NEUTRAL };
+	HdTurnMark(int width, int height) : Surface(width, height, 0, 0) {}
+	void setKind(Kind kind) { _kind = kind; }
+	Kind getKind() const { return _kind; }
+	void setText(const std::string &text) { _text = text; }
+	void hdMirror() override;
+private:
+	Kind _kind = NONE;
+	std::string _text;
 };
 
 }

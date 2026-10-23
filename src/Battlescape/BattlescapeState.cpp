@@ -449,6 +449,9 @@ BattlescapeState::BattlescapeState() :
 	add(_warning, "warning", "battlescape", _icons);
 	add(_btnPanelHide);
 	_btnPanelHide->setVisible(false); // think() shows it when the panel is the modern one
+	_hdTurnMark = new HdTurnMark(screenWidth, screenHeight);
+	add(_hdTurnMark);
+	_hdTurnMark->setVisible(false); // think() shows it in the enemy's and the neutrals' turn (oxceHdEnemyTurn)
 	add(_txtDebug);
 	add(_txtTooltip, "textTooltip", "battlescape", _icons);
 
@@ -1004,6 +1007,47 @@ void BattlescapeState::think()
 			_mouseOverPanelArrow = false;
 			_panelTarget = 0;
 			movePanel(0);
+		}
+	}
+	// HD interface, oxceHdEnemyTurn: 1 a strip of text over the hidden movement screen in the enemy's turn, 2 a frame along
+	// the screen's edge (red: the enemy, yellow: the neutrals) and the panel down for the turn; picture and placement only
+	{
+		const int side = _save->getSide();
+		const bool otherTurn = side != FACTION_PLAYER;
+		const int mode = Options::oxceHdEnemyTurn;
+		HdTurnMark::Kind kind = HdTurnMark::NONE;
+		if (otherTurn && HdUi::active())
+		{
+			if (mode == 1 && side == FACTION_HOSTILE && _map->isHiddenScreenShown())
+			{
+				kind = HdTurnMark::STRIP;
+			}
+			else if (mode == 2)
+			{
+				kind = side == FACTION_HOSTILE ? HdTurnMark::FRAME_ENEMY : HdTurnMark::FRAME_NEUTRAL;
+			}
+		}
+		if (kind == HdTurnMark::STRIP)
+		{
+			_hdTurnMark->setText(tr("STR_HD_ENEMY_TURN_STRIP"));
+		}
+		_hdTurnMark->setKind(kind);
+		_hdTurnMark->setVisible(kind != HdTurnMark::NONE);
+		if (otherTurn != _wasOtherTurn)
+		{
+			_wasOtherTurn = otherTurn;
+			if (otherTurn && mode == 2 && HdBattleHud::on() && _panelTarget == 0)
+			{
+				_panelAutoHid = true;
+				_panelTarget = _icons->getHeight();
+				_panelMovedAt = SDL_GetTicks();
+			}
+			else if (!otherTurn && _panelAutoHid)
+			{
+				_panelAutoHid = false;
+				_panelTarget = 0;
+				_panelMovedAt = SDL_GetTicks();
+			}
 		}
 	}
 	if (_panelShift != _panelTarget)
@@ -4092,6 +4136,7 @@ void BattlescapeState::mouseOutPanelArrow(Action *)
 void BattlescapeState::btnPanelHideClick(Action *)
 {
 	_panelTarget = _panelTarget ? 0 : _icons->getHeight();
+	_panelAutoHid = false; // the player has taken the panel into his own hands
 	_panelMovedAt = SDL_GetTicks();
 }
 
@@ -4107,7 +4152,7 @@ void BattlescapeState::movePanel(int shift)
 		// and the warning, which must stay readable; the arrow goes down with it to the screen's edge
 		for (Surface *s : _surfaces)
 		{
-			if (s == _map || s == _btnCtrl || s == _btnAlt || s == _btnShift || s == _btnRMB || s == _btnMMB ||
+			if (s == _map || s == _hdTurnMark || s == _btnCtrl || s == _btnAlt || s == _btnShift || s == _btnRMB || s == _btnMMB ||
 				s == _btnPsi || s == _btnLaunch || s == _btnSpecial || s == _btnSkills || s == _txtDebug || s == _warning)
 			{
 				continue;
@@ -4467,12 +4512,17 @@ void BattlescapeState::resize(int &dX, int &dY)
 	dY = Options::baseYResolution - dY;
 	_map->setWidth(Options::baseXResolution);
 	_map->setHeight(Options::baseYResolution);
+	if (_hdTurnMark)
+	{
+		_hdTurnMark->setWidth(Options::baseXResolution); // the mark stays as big as the screen, at its corner
+		_hdTurnMark->setHeight(Options::baseYResolution);
+	}
 	_map->getCamera()->resize();
 	_map->getCamera()->jumpXY(dX/2 * _map->getScale(), dY/2 * _map->getScale());
 
 	for (auto* surf : _surfaces)
 	{
-		if (surf == _btnCtrl || surf == _btnAlt || surf == _btnShift || surf == _btnRMB || surf == _btnMMB)
+		if (surf == _btnCtrl || surf == _btnAlt || surf == _btnShift || surf == _btnRMB || surf == _btnMMB || surf == _hdTurnMark)
 		{
 			continue;
 		}

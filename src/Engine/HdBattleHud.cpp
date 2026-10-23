@@ -1989,4 +1989,61 @@ void HdPanelToggle::hdMirror()
 	}
 }
 
+void HdTurnMark::hdMirror()
+{
+	const int k = HdUi::scale();
+	if (k <= 0 || _kind == NONE) return;
+	HdUi &ui = HdUi::instance();
+	if (_kind == STRIP)
+	{
+		// a plate with the line at the top, centred: the text's cell is 16 base pixels tall, its capitals in the middle
+		if (!ui.hasFonts() || _text.empty()) return;
+		const UString s = Unicode::convUtf8ToUtf32(_text);
+		const float cap = 6.0f;
+		HdFont &f = ui.font(true);
+		const float w = f.measure(s, f.sizeForCapHeight(cap * k)) / k;
+		const int tx = (int)std::lround((getWidth() - w) * 0.5f), ty = (int)std::lround(getHeight() * 0.5f) - 8; // under the screen's title
+		const float cy = (ty + 8.0f) * k, hh = (cap * 0.5f + 5.0f) * k;
+		const float x0 = (tx - 10.0f) * k, x1 = (tx + w + 10.0f) * k;
+		ui.fillRoundRect(x0, cy - hh, x1, cy + hh, hh, 0xD8300C0Cu, 0xD8140404u);
+		ui.strokeRoundRect(x0, cy - hh, x1, cy + hh, hh, std::max(1.0f, 0.4f * k), 0xFFD84438u);
+		ui.drawTtfString(s, true, cap, tx, ty, 0xFFFFE6DCu, 0xC0000000u);
+		return;
+	}
+	// the frame: a glow falling off toward the centre, a thin line a little inside the edge and thicker corner brackets
+	const int W = getWidth() * k, H = getHeight() * k;
+	const float m = (float)std::min(W, H);
+	const float glow = 0.05f * m, lineAt = 0.006f * m, lineW = std::max(1.5f, 0.0021f * m);
+	const float brLen = 0.10f * m, brW = lineW * 2.2f;
+	const bool red = _kind == FRAME_ENEMY;
+	const Uint32 face = 0xFF000000u | (red ? 0xD82020u : 0xE8B818u);
+	const Uint32 bright = 0xFF000000u | (red ? 0xF04030u : 0xFFD838u);
+	const auto rowFn = [=](int y, int x0, int x1, Uint32 *row)
+	{
+		const int dy = std::min(y, H - 1 - y);
+		for (int x = x0; x < x1; ++x)
+		{
+			const int dx = std::min(x, W - 1 - x);
+			const float d = (float)std::min(dx, dy);
+			if (d < glow)
+			{
+				const float t = 1.0f - d / glow;
+				HdUi::blend(row[x], face, 0.50f * t * t);
+			}
+			const float lw = (float)std::max(dx, dy) < brLen ? brW : lineW;
+			const float cov = std::max(0.0f, std::min(1.0f, std::min(d + 1.0f - lineAt, lineAt + lw - d)));
+			if (cov > 0.0f)
+			{
+				HdUi::blend(row[x], bright, (lw == brW ? 0.95f : 0.72f) * cov);
+			}
+		}
+	};
+	const int band = (int)std::ceil(std::max(glow, lineAt + brW)) + 2;
+	if (band * 2 >= H || band * 2 >= W) return;
+	ui.shadeRows(0, 0, W, band, rowFn);
+	ui.shadeRows(0, H - band, W, band, rowFn);
+	ui.shadeRows(0, band, band, H - 2 * band, rowFn);
+	ui.shadeRows(W - band, band, band, H - 2 * band, rowFn);
+}
+
 }

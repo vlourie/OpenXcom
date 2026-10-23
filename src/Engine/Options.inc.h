@@ -263,6 +263,10 @@ OPT bool oxceHdHiddenMap;
 // Battlescape: the backdrop beyond the map's edge is a vertical gradient from the environment's background colour
 // instead of one flat colour (Map::draw). Off by default; picture only
 OPT bool oxceHdBackdrop;
+// Battlescape, what the player sees in the enemy's and the neutrals' turn: 0 as it was, 1 the hidden movement screen
+// (as with oxceHdHiddenMap off) with a strip of text over it, 2 a soft red (enemy) or yellow (neutral) frame along the
+// screen's edge and the panel slides down, back in the player's turn only if this slid it. Picture only
+OPT int oxceHdEnemyTurn;
 // Ufopaedia: the weapon article's attack table has a range column (the range of the attack, at most the weapon's)
 OPT bool oxceHdPediaRange;
 // Battlescape: no saving or loading inside a battle (pause menu buttons, quick/insta save, quick load, turn autosave,

@@ -28,6 +28,7 @@ namespace OpenXcom
 
 class Surface;
 class HdPanelToggle;
+class HdTurnMark;
 class Map;
 class ImageButton;
 class BattlescapeButton;
@@ -57,6 +58,10 @@ private:
 	bool _mouseOverPanelArrow = false;
 	Uint32 _panelMovedAt = 0;
 	std::vector<Surface*> _panelSurfaces;
+	/// HD interface, oxceHdEnemyTurn: the frame or the strip of the enemy's and the neutrals' turn, and whether the
+	/// panel stands down because this slid it (it comes back in the player's turn only then)
+	HdTurnMark *_hdTurnMark = nullptr;
+	bool _panelAutoHid = false, _wasOtherTurn = false;
 	/// Moves the panel and everything on it to `shift` base pixels below its place.
 	void movePanel(int shift);
 	Map *_map;
