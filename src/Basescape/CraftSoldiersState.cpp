@@ -41,9 +41,21 @@
 #include "../Battlescape/BattlescapeGenerator.h"
 #include "../Battlescape/BriefingState.h"
 #include "../Savegame/SavedBattleGame.h"
+#include "../Engine/Palette.h"
 
 namespace OpenXcom
 {
+
+/**
+ * OXCE-HD (oxceHdCraftFit): the plate of the seats between the sort box and the OK button. A button's look, but no mouse,
+ * no key and no press: it only shows "seats used / seats in all".
+ */
+class CraftFitPlate : public TextButton
+{
+public:
+	CraftFitPlate(int width, int height, int x, int y) : TextButton(width, height, x, y) { }
+	void handle(Action *, State *) override { }
+};
 
 /**
  * Initializes all the elements in the Craft Soldiers screen.
@@ -64,7 +76,10 @@ CraftSoldiersState::CraftSoldiersState(Base *base, size_t craft)
 
 	// Create objects
 	_window = new Window(this, 320, 200, 0, 0);
-	_btnOk = new TextButton(hidePreview ? 148 : 30, 16, hidePreview ? 164 : 274, 176);
+	// OXCE-HD (oxceHdCraftFit): the sort box and (without the preview button) OK shorter, between them the plate of the seats
+	const bool fit = Options::oxceHdCraftFit;
+	_btnOk = new TextButton(hidePreview ? (fit ? 116 : 148) : 30, 16, hidePreview ? (fit ? 196 : 164) : 274, 176);
+	_btnFit = fit ? new CraftFitPlate(hidePreview ? 64 : 44, 16, hidePreview ? 128 : 116, 176) : nullptr;
 	_btnPreview = new TextButton(102, 16, 164, 176);
 	_txtTitle = new Text(300, 17, 16, 7);
 	_txtName = new Text(114, 9, 16, 32);
@@ -72,7 +87,7 @@ CraftSoldiersState::CraftSoldiersState(Base *base, size_t craft)
 	_txtCraft = new Text(84, 9, 220, 32);
 	_txtAvailable = new Text(110, 9, 16, 24);
 	_txtUsed = new Text(110, 9, 122, 24);
-	_cbxSortBy = new ComboBox(this, 148, 16, 8, 176, true);
+	_cbxSortBy = new ComboBox(this, fit ? (hidePreview ? 116 : 104) : 148, 16, 8, 176, true);
 	_lstSoldiers = new TextList(288, 128, 8, 40);
 
 	touchComponentsCreate(_txtTitle, true);
@@ -83,6 +98,10 @@ CraftSoldiersState::CraftSoldiersState(Base *base, size_t craft)
 	add(_window, "window", "craftSoldiers");
 	add(_btnOk, "button", "craftSoldiers");
 	add(_btnPreview, "button", "craftSoldiers");
+	if (_btnFit)
+	{
+		add(_btnFit, "button", "craftSoldiers");
+	}
 	add(_txtTitle, "text", "craftSoldiers");
 	add(_txtName, "text", "craftSoldiers");
 	add(_txtRank, "text", "craftSoldiers");
@@ -277,6 +296,7 @@ void CraftSoldiersState::initList(size_t scrl)
 {
 	int row = 0;
 	_lstSoldiers->clearList();
+	_fitGrey.clear();
 
 	// OXCE-HD: the race picture of the soldier info screen before the name and the rank badge before the rank
 	// (Options::oxceBaseSoldierTypeIcon): 32x20 fits the row as 13x8. The rank stands RANK_SHIFT to the right,
@@ -341,6 +361,75 @@ void CraftSoldiersState::initList(size_t scrl)
 
 	_txtAvailable->setText(tr("STR_SPACE_AVAILABLE").arg(c->getSpaceAvailable()));
 	_txtUsed->setText(tr("STR_SPACE_USED").arg(c->getSpaceUsed()));
+	fitRefresh();
+}
+
+/**
+ * OXCE-HD (oxceHdCraftFit): would the click on this soldier meet a craft limit - the same test (and the same Craft calls)
+ * as the click handler, which for those cases opens the "not enough space" window? Only the display asks it:
+ * the rules of the assignment are as they were.
+ * @param s The soldier of a row.
+ * @param c The craft being filled.
+ * @return True if the soldier can be taken to the craft by the click in principle, but a limit of the craft stops him.
+ */
+bool CraftSoldiersState::doesNotFit(const Soldier *s, const Craft *c) const
+{
+	if (s->getCraft() == c)
+	{
+		return false;
+	}
+	if (s->getCraft() && s->getCraft()->getStatus() == "STR_OUT")
+	{
+		return false;
+	}
+	if (!s->hasFullHealth())
+	{
+		return false;
+	}
+	CraftPlacementErrors err = c->validateAddingSoldier(c->getSpaceAvailable(), s);
+	return err != CPE_None && err != CPE_SoldierGroupNotAllowed && err != CPE_SoldierGroupNotSame && err != CPE_ArmorGroupNotAllowed;
+}
+
+/**
+ * OXCE-HD (oxceHdCraftFit): the plate with "seats used / seats in all" (the same Craft::getSpaceUsed and
+ * Craft::getSpaceAvailable as the two texts above) and the rows of the soldiers who no longer fit in grey.
+ */
+void CraftSoldiersState::fitRefresh()
+{
+	if (!_btnFit)
+	{
+		return;
+	}
+	Craft *c = _base->getCrafts()->at(_craft);
+	const int used = c->getSpaceUsed();
+	_btnFit->setText(std::to_string(used) + "/" + std::to_string(used + c->getSpaceAvailable()));
+
+	const Uint8 grey = Palette::blockOffset(0) + 8;
+	_fitGrey.resize(_base->getSoldiers()->size(), 0);
+	size_t row = 0;
+	for (const auto* soldier : *_base->getSoldiers())
+	{
+		const bool g = doesNotFit(soldier, c);
+		if (g)
+		{
+			_lstSoldiers->setRowColor(row, grey);
+		}
+		else if (_fitGrey[row])
+		{
+			Uint8 color = _lstSoldiers->getColor();
+			if (soldier->getCraft() == c)
+			{
+				color = _lstSoldiers->getSecondaryColor();
+			}
+			else if (soldier->getCraft() != 0)
+			{
+				color = _otherCraftColor;
+			}
+			setListRowColor(*_lstSoldiers, row, color, *soldier);
+		}
+		_fitGrey[row] = g;
+		++row;
+	}
 }
 
 /**
@@ -520,7 +609,7 @@ void CraftSoldiersState::lstSoldiersClick(Action *action)
 			{
 				_game->pushState(new ErrorMessageState(tr("STR_ARMOR_GROUP_NOT_ALLOWED"), _palette, _game->getMod()->getInterface("soldierInfo")->getElement("errorMessage")->color, "BACK01.SCR", _game->getMod()->getInterface("soldierInfo")->getElement("errorPalette")->color));
 			}
-			else if (space > 0)
+			else if (space > 0 && !Options::oxceHdCraftFit) // oxceHdCraftFit: no window, the row is grey instead
 			{
 				_game->pushState(new ErrorMessageState(tr("STR_NOT_ENOUGH_CRAFT_SPACE"), _palette, _game->getMod()->getInterface("soldierInfo")->getElement("errorMessage")->color, "BACK01.SCR", _game->getMod()->getInterface("soldierInfo")->getElement("errorPalette")->color));
 			}
@@ -529,6 +618,7 @@ void CraftSoldiersState::lstSoldiersClick(Action *action)
 
 		_txtAvailable->setText(tr("STR_SPACE_AVAILABLE").arg(c->getSpaceAvailable()));
 		_txtUsed->setText(tr("STR_SPACE_USED").arg(c->getSpaceUsed()));
+		fitRefresh();
 	}
 	else if (_game->isRightClick(action, true))
 	{
@@ -593,6 +683,7 @@ void CraftSoldiersState::btnDeassignAllSoldiersClick(Action *action)
 	Craft *c = _base->getCrafts()->at(_craft);
 	_txtAvailable->setText(tr("STR_SPACE_AVAILABLE").arg(c->getSpaceAvailable()));
 	_txtUsed->setText(tr("STR_SPACE_USED").arg(c->getSpaceUsed()));
+	fitRefresh();
 }
 
 /**
@@ -616,5 +707,6 @@ void CraftSoldiersState::btnDeassignCraftSoldiersClick(Action *action)
 
 	_txtAvailable->setText(tr("STR_SPACE_AVAILABLE").arg(c->getSpaceAvailable()));
 	_txtUsed->setText(tr("STR_SPACE_USED").arg(c->getSpaceUsed()));
+	fitRefresh();
 }
 }
