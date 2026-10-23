@@ -3019,23 +3019,34 @@ void Map::drawTerrain(HdCanvas *surface)
 					}
 
 					// HD render: the explosion area of what is aimed, on the floor of every tile it reaches that the player
-					// has seen (not in the air above a level): the colour of the damage type, the stronger the power the denser
-					if (_blastMax > 0 && tile->isDiscovered(O_FLOOR) && (itZ == 0 || tile->getMapData(O_FLOOR)))
+					// has seen (not in the air above a level): the colour of the damage type, the stronger the power the denser;
+					// and the collapse hint - the tiles whose building parts may fall after the explosion, in hazard stripes.
+					// A hill is an object on a flat floor (terrain level below 0): the object would cover a diamond on the floor,
+					// so on such a tile the diamonds go right after the object, lifted by the terrain level like the path marks
+					const bool blastOnHill = _blastMax > 0 && tile->getTerrainLevel() < 0 && tile->getSprite(O_OBJECT)
+						&& (turned ? turnedObject(tile->getMapData(O_OBJECT)->getBigWall()).back : tile->isBackTileObject(O_OBJECT));
+					auto drawBlastHint = [&](int lift)
 					{
-						const int blastPower = _blastPower[_save->getTileIndex(mapPosition)];
-						if (blastPower > 0)
+						if (_blastMax > 0 && tile->isDiscovered(O_FLOOR) && (itZ == 0 || tile->getMapData(O_FLOOR)))
 						{
-							const float share = std::max(BLAST_ALPHA_FLOOR, std::min(1.0f, (float)blastPower / _blastMax));
-							const int step = std::max(1, (int)std::lround(share * BLAST_ALPHA_STEPS));
-							const int alpha = BLAST_ALPHA_MAX * step / BLAST_ALPHA_STEPS;
-							surface->blitFrame(blastDiamond(_blastRgb, alpha, _k), screenPosition.x,
-								screenPosition.y + 24 * _k - tile->getYOffset(O_FLOOR) * _k);
+							const int blastPower = _blastPower[_save->getTileIndex(mapPosition)];
+							if (blastPower > 0)
+							{
+								const float share = std::max(BLAST_ALPHA_FLOOR, std::min(1.0f, (float)blastPower / _blastMax));
+								const int step = std::max(1, (int)std::lround(share * BLAST_ALPHA_STEPS));
+								const int alpha = BLAST_ALPHA_MAX * step / BLAST_ALPHA_STEPS;
+								surface->blitFrame(blastDiamond(_blastRgb, alpha, _k), screenPosition.x,
+									screenPosition.y + 24 * _k - tile->getYOffset(O_FLOOR) * _k + lift);
+							}
 						}
-					}
-					// HD render: the collapse hint - the tiles whose building parts may fall after the explosion, in hazard stripes
-					if (_blastMax > 0 && _blastFallCount > 0 && _blastFall[_save->getTileIndex(mapPosition)])
+						if (_blastMax > 0 && _blastFallCount > 0 && _blastFall[_save->getTileIndex(mapPosition)])
+						{
+							surface->blitFrame(fallDiamond(_k), screenPosition.x, screenPosition.y + 24 * _k - tile->getYOffset(O_FLOOR) * _k + lift);
+						}
+					};
+					if (!blastOnHill)
 					{
-						surface->blitFrame(fallDiamond(_k), screenPosition.x, screenPosition.y + 24 * _k - tile->getYOffset(O_FLOOR) * _k);
+						drawBlastHint(0);
 					}
 
 					auto* unit = tile->getUnit();
@@ -3146,6 +3157,10 @@ void Map::drawTerrain(HdCanvas *surface)
 								else
 									surface->blit(tmpSurface, screenPosition.x + placed.dx, screenPosition.y + placed.dy - tile->getYOffset(O_OBJECT) * _k, tileShade, false, _nvColor);
 							}
+						}
+						if (blastOnHill)
+						{
+							drawBlastHint(tile->getTerrainLevel() * _k);
 						}
 						if (turned)
 							drawGroupPieces(_save->getTileIndex(mapPosition), true, tileShade, obstacleShade);
