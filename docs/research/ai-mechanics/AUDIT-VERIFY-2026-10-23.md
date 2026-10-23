@@ -9,7 +9,7 @@
 | № | Вердикт | Где видно |
 |---|---|---|
 | D01 | подтверждено | выпуск: `active/harness/play` = false (`:141–143`); DEV: `harness = OXCE_AI_PROBE`, `play = !harness && (BetterAI+AI3 или OXCE_AI3_PLAY)`, `active = harness || play` (`:1972–1988`) |
-| D02 | подтверждено, и это главное | DEV: О1, О2, О4, О6, О3 (COUNTER) включены при `active()` безусловно (`:2045–2075`); О7–О14 — `play() || (harness && OXCE_AI_OXCE_FIXES)`. Выпуск: всё через `oxceBetterAi && oxceBetterAiFixes` |
+| D02 | подтверждено, и это главное | DEV: О1, О2, О4, О6, О3 (COUNTER) включены при `active()` безусловно (`:1972–2075`); О7–О14 — `play() || (harness && OXCE_AI_OXCE_FIXES)`. Выпуск: всё через `oxceBetterAi && oxceBetterAiFixes` |
 | D03 | подтверждено | `AI3_PROFILE` 20 записей (`:429–437`), `AI3_PLAYER` 9 (`:98–102`) |
 | D04 | подтверждено, с оговоркой | в выпуске `fairKnowledge()` = 0 **намеренно** (комментарий у `AI3_PLAYER`: честное знание отложено 22.10). В DEV-режиме `play` оно включено профилем. Комментарий у `AI3_PROFILE` «the bench switches the shipped AI plays with» устарел |
 | D05 | подтверждено | см. D01/D02 |
