@@ -208,6 +208,8 @@ public:
 	void handleAI(BattleUnit *unit);
 	/// Drops an item and affects it with gravity.
 	void dropItem(Position position, BattleItem *item, bool removeItem = false, bool updateLight = true);
+	/// A comrade's thrown item lands on the unit's tile: the unit takes it into a free hand if it can (option oxceCatchThrown).
+	bool catchThrownItem(const BattleUnit *thrower, BattleItem *item);
 	/// Converts a unit into a unit of another type.
 	BattleUnit *convertUnit(BattleUnit *unit);
 	/// Spawns a new unit in the middle of battle.
