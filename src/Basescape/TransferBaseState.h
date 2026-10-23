@@ -51,6 +51,7 @@ private:
 	std::function<std::string()> _header;
 	std::function<std::string(Base*)> _detail;
 	Text *_txtDetail;
+	std::string _title;
 	/// Builds the screen (both ways of creating it).
 	void build();
 	/// Writes the header and the third column of the callback variant anew.
@@ -59,7 +60,7 @@ public:
 	/// Creates the Transfer Base state.
 	TransferBaseState(Base *base, DebriefingState *debriefingState);
 	/// Creates the variant that calls back on a click: the text of the line under the title, the third column of a base, what to do.
-	TransferBaseState(Base *base, const std::function<std::string()> &header, const std::function<std::string(Base*)> &detail, const std::function<void(Base*)> &onPick);
+	TransferBaseState(Base *base, const std::function<std::string()> &header, const std::function<std::string(Base*)> &detail, const std::function<void(Base*)> &onPick, const std::string &title = "STR_DELIVERY_TITLE");
 	/// Cleans up the Transfer Base state.
 	~TransferBaseState();
 	/// Refreshes the callback variant when a screen above it closes.

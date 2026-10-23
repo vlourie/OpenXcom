@@ -534,6 +534,56 @@ void Production::pruneDelivery(const SavedGame *g)
 }
 
 /**
+ * Sends items from the stores of a base to another base by the ordinary transfer (XP-000256, XP-000292): the time and the price
+ * of TransferItemsState (see Transfer::getBaseDistance), the price is paid at the dispatch. Not more than the stores hold.
+ * No money - nothing leaves the stores (noFunds; parts and pieces tell what it would have been).
+ * @param from The base whose stores the items leave.
+ * @param to The base they go to.
+ * @param wanted Item and how many of it.
+ */
+Production::ShipOutcome Production::shipItems(Base *from, Base *to, const std::vector<std::pair<const RuleItem*, int> > &wanted, SavedGame *g, const Mod *m)
+{
+	ShipOutcome out;
+	double size = 0.0;
+	for (const auto &w : wanted)
+	{
+		const int qty = std::min(w.second, from->getStorageItems()->getItem(w.first));
+		if (qty <= 0)
+		{
+			continue;
+		}
+		out.parts.emplace_back(w.first, qty);
+		out.pieces += qty;
+		size += qty * w.first->getSize();
+	}
+	if (out.pieces <= 0)
+	{
+		return out;
+	}
+	const double distance = Transfer::getBaseDistance(from, to);
+	out.price = Transfer::getTransferPrice(m, out.pieces * (int)(1 * distance));
+	if (g->getFunds() < out.price)
+	{
+		out.noFunds = true;
+		return out;
+	}
+	g->setFunds(g->getFunds() - out.price);
+	if (Options::storageLimitsEnforced && to->storesOverfull(size))
+	{
+		out.noSpace = true;
+	}
+	out.hours = Transfer::getTravelHours(distance);
+	for (const auto &part : out.parts)
+	{
+		from->getStorageItems()->removeItem(part.first, part.second);
+		Transfer *t = new Transfer(out.hours);
+		t->setItems(part.first, part.second);
+		to->getTransfers()->push_back(t);
+	}
+	return out;
+}
+
+/**
  * The whole order is ready and in the stores: the planned shares leave them for the other bases by the ordinary transfer
  * (the time and the price of TransferItemsState, see Transfer::getBaseDistance). Not more than the stores hold; a base
  * that is gone from the plan is skipped; no money for a share - it stays in the stores. The result goes to _deliveryReport.
@@ -556,47 +606,32 @@ void Production::deliver(Base *b, SavedGame *g, const Mod *m)
 			continue;
 		}
 		left -= orders;
-		std::vector<std::pair<const RuleItem*, int> > parts;
-		int pieces = 0;
-		double size = 0.0;
+		std::vector<std::pair<const RuleItem*, int> > wanted;
 		for (const auto &i : _rules->getProducedItems())
 		{
-			const int qty = std::min(orders * i.second, b->getStorageItems()->getItem(i.first));
-			if (qty <= 0)
-			{
-				continue;
-			}
-			parts.emplace_back(i.first, qty);
-			pieces += qty;
-			size += qty * i.first->getSize();
+			wanted.emplace_back(i.first, orders * i.second);
 		}
-		if (pieces <= 0)
+		const ShipOutcome o = shipItems(b, to, wanted, g, m);
+		if (o.pieces <= 0)
 		{
 			continue;
 		}
-		const double distance = Transfer::getBaseDistance(b, to);
-		const int price = Transfer::getTransferPrice(m, pieces * (int)(1 * distance));
-		if (g->getFunds() < price)
+		if (o.noFunds)
 		{
-			_deliveryReport.kept.emplace_back(to->getName(), pieces);
-			Log(LOG_INFO) << "Manufacture delivery " << _rules->getName() << " -> " << to->getName() << ": " << pieces << " stay, funds " << g->getFunds() << " < " << price;
+			_deliveryReport.kept.emplace_back(to->getName(), o.pieces);
+			Log(LOG_INFO) << "Manufacture delivery " << _rules->getName() << " -> " << to->getName() << ": " << o.pieces << " stay, funds " << g->getFunds() << " < " << o.price;
 			continue;
 		}
-		g->setFunds(g->getFunds() - price);
-		if (Options::storageLimitsEnforced && to->storesOverfull(size))
+		if (o.noSpace)
 		{
 			_deliveryReport.noSpace.push_back(to->getName());
 		}
-		const int hours = Transfer::getTravelHours(distance);
-		for (const auto &part : parts)
+		for (const auto &part : o.parts)
 		{
-			b->getStorageItems()->removeItem(part.first, part.second);
-			Transfer *t = new Transfer(hours);
-			t->setItems(part.first, part.second);
-			to->getTransfers()->push_back(t);
+			_deliveryReport.sentParts.push_back(part);
 		}
-		_deliveryReport.sent.emplace_back(to->getName(), pieces);
-		Log(LOG_INFO) << "Manufacture delivery " << _rules->getName() << " -> " << to->getName() << ": " << pieces << " pieces, " << hours << " h, price " << price;
+		_deliveryReport.sent.emplace_back(to->getName(), o.pieces);
+		Log(LOG_INFO) << "Manufacture delivery " << _rules->getName() << " -> " << to->getName() << ": " << o.pieces << " pieces, " << o.hours << " h, price " << o.price;
 	}
 }
 
