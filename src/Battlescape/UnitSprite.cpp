@@ -1114,6 +1114,13 @@ void UnitSprite::drawRoutine5()
 	{
 		selectUnit(s, 32 + (_part * 4), (shownDir() * 16) + ((_unit->getWalkingPhase() / 2) % 4));
 	}
+	else if (Options::oxceHdWalkerTurn && _dest->getHdMode() != HD_MODE_NEAREST && _unit->getStatus() == STATUS_TURNING &&
+		_unit->getDirection() != _unit->getToDirection())
+	{
+		// HD (oxceHdWalkerTurn, XP-000291): the hull turning on the spot treads with the walking frames, one phase per
+		// step of the turn; the frames and the turn itself are the same, only the picture changes
+		selectUnit(s, 32 + (_part * 4), (shownDir() * 16) + (shownDir() % 4));
+	}
 	else
 	{
 		selectUnit(s, 0 + (_part * 8), shownDir());
