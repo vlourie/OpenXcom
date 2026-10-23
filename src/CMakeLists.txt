@@ -30,6 +30,7 @@ set ( basescape_src
   Basescape/ItemCountTooltip.cpp
   Basescape/ManageAlienContainmentState.cpp
   Basescape/ManufactureDependenciesTreeState.cpp
+  Basescape/ManufactureDeliveryPlanState.cpp
   Basescape/ManufactureDeliveryState.cpp
   Basescape/ManufactureInfoState.cpp
   Basescape/ManufactureStartState.cpp

@@ -18,13 +18,18 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <functional>
+#include <string>
+#include <utility>
+#include <vector>
 #include "../Engine/State.h"
 
 namespace OpenXcom
 {
 
 class Base;
+class Language;
 class Production;
+class RuleItem;
 class Window;
 class Text;
 class TextButton;
@@ -38,15 +43,19 @@ class InteractiveSurface;
  */
 class ManufactureDeliveryState : public State
 {
+public:
+	/// Items and how many of each.
+	typedef std::vector<std::pair<const RuleItem*, int> > Items;
 private:
 	Production *_production;
 	Base *_to;
 	int _max, _amount;
 	std::function<void(int)> _onOk;
+	std::function<Items(int)> _what; ///< what goes for a number of orders (the line under the title)
 	/// Builds the window (both ways of creating it).
-	ManufactureDeliveryState(Production *production, Base *to, int max, const std::function<void(int)> &onOk, int start);
+	ManufactureDeliveryState(Production *production, Base *to, int max, const std::function<void(int)> &onOk, int start, const std::function<Items(int)> &what);
 	Window *_window;
-	Text *_txtTitle, *_txtAmount;
+	Text *_txtTitle, *_txtAmount, *_txtWhat;
 	TextButton *_btnOk, *_btnCancel;
 	ArrowButton *_btnMore, *_btnLess;
 	Timer *_timerMore, *_timerLess;
@@ -70,7 +79,9 @@ public:
 	/// Creates the state: the order, the base the share goes to and the most that can go there.
 	ManufactureDeliveryState(Production *production, Base *to, int max);
 	/// Creates the state for the loot of a finished order (XP-000292): no plan, the number goes to the callback; it starts at the most.
-	ManufactureDeliveryState(Base *to, int max, const std::function<void(int)> &onOk);
+	ManufactureDeliveryState(Base *to, int max, const std::function<void(int)> &onOk, const std::function<Items(int)> &what = nullptr);
+	/// The text of what goes: the items with their numbers, short (XP-000256); the plan screen uses it too.
+	static std::string describe(const Language *lang, const Items &items);
 	~ManufactureDeliveryState();
 	void think() override;
 };
