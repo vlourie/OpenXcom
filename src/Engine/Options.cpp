@@ -476,11 +476,13 @@ void createAdvancedOptionsOXCE()
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxcePediaSortResistances", &oxcePediaSortResistances, 0, "STR_PEDIA_SORT_RESISTANCES", "HIDDEN"));
 
 	// OXCE options geoscape
+	// Our own options (not OXCE's) sit in the STR_HD_GEOSCAPE / STR_HD_BASE / STR_HD_BATTLE groups: they show on the HD
+	// settings screen, not on the OXCE tab of the advanced one (XP-000296). Names and defaults are the same.
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceInterceptTableSize", &oxceInterceptTableSize, 8, "STR_INTERCEPT_TABLE_SIZE", "STR_GEOSCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceEnableSlackingIndicator", &oxceEnableSlackingIndicator, true, "STR_SHOW_SLACKING_INDICATOR", "STR_GEOSCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceInterceptGuiMaintenanceTime", &oxceInterceptGuiMaintenanceTime, 2, "STR_SHOW_MAINTENANCE_TIME", "STR_GEOSCAPE"));
-	_info.push_back(OptionInfo(OPTION_OXCE, "oxceCraftWeaponIcons", &oxceCraftWeaponIcons, true, "STR_CRAFT_WEAPON_ICONS", "STR_GEOSCAPE")); // OXCE-HD
-	_info.push_back(OptionInfo(OPTION_OXCE, "oxceDogfightHitChance", &oxceDogfightHitChance, true, "STR_DOGFIGHT_HIT_CHANCE", "STR_GEOSCAPE")); // OXCE-HD
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceCraftWeaponIcons", &oxceCraftWeaponIcons, true, "STR_CRAFT_WEAPON_ICONS", "STR_HD_GEOSCAPE")); // OXCE-HD
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceDogfightHitChance", &oxceDogfightHitChance, true, "STR_DOGFIGHT_HIT_CHANCE", "STR_HD_GEOSCAPE")); // OXCE-HD
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceShowETAMode", &oxceShowETAMode, 0, "STR_SHOW_ETA", "STR_GEOSCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceUfoLandingAlert", &oxceUfoLandingAlert, false, "STR_UFO_LANDING_ALERT", "STR_GEOSCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceRememberDisabledCraftWeapons", &oxceRememberDisabledCraftWeapons, false, "STR_REMEMBER_DISABLED_CRAFT_WEAPONS", "STR_GEOSCAPE"));
@@ -499,14 +501,14 @@ void createAdvancedOptionsOXCE()
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceManualPromotions", &oxceManualPromotions, false, "STR_MANUALPROMOTIONS", "STR_BASESCAPE"));
 	// OXCE-HD: the keys are new on purpose - release 2026.09.27-2 saved 0/false under the old ones
 	// (oxceBaseSoldierGroupBy, oxceBaseSoldierTypeIcon), and a saved value beats the default
-	_info.push_back(OptionInfo(OPTION_OXCE, "oxceSoldierListGroupBy", &oxceBaseSoldierGroupBy, 1, "STR_SOLDIER_GROUP_BY", "STR_BASESCAPE"));
-	_info.push_back(OptionInfo(OPTION_OXCE, "oxceSoldierListRaceBadge", &oxceBaseSoldierTypeIcon, true, "STR_SOLDIER_TYPE_ICON", "STR_BASESCAPE"));
-	_info.push_back(OptionInfo(OPTION_OXCE, "oxceTransferExchange", &oxceTransferExchange, true, "STR_TRANSFER_EXCHANGE", "STR_BASESCAPE"));
-	_info.push_back(OptionInfo(OPTION_OXCE, "oxceTradeConfirm", &oxceTradeConfirm, 5, "STR_TRADE_CONFIRM", "STR_BASESCAPE"));
-	_info.push_back(OptionInfo(OPTION_OXCE, "oxceTradeStay", &oxceTradeStay, true, "STR_TRADE_STAY", "STR_BASESCAPE"));
-	_info.push_back(OptionInfo(OPTION_OXCE, "oxceInventoryUseOnBody", &oxceInventoryUseOnBody, true, "STR_INVENTORY_USE_ON_BODY", "STR_BATTLESCAPE"));
-	_info.push_back(OptionInfo(OPTION_OXCE, "oxceCatchThrown", &oxceCatchThrown, false, "STR_CATCH_THROWN", "STR_BATTLESCAPE"));
-	_info.push_back(OptionInfo(OPTION_OXCE, "oxceManufactureDelivery", &oxceManufactureDelivery, false, "STR_MANUFACTURE_DELIVERY", "STR_BASESCAPE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceSoldierListGroupBy", &oxceBaseSoldierGroupBy, 1, "STR_SOLDIER_GROUP_BY", "STR_HD_BASE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceSoldierListRaceBadge", &oxceBaseSoldierTypeIcon, true, "STR_SOLDIER_TYPE_ICON", "STR_HD_BASE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceTransferExchange", &oxceTransferExchange, true, "STR_TRANSFER_EXCHANGE", "STR_HD_BASE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceTradeConfirm", &oxceTradeConfirm, 5, "STR_TRADE_CONFIRM", "STR_HD_BASE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceTradeStay", &oxceTradeStay, true, "STR_TRADE_STAY", "STR_HD_BASE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceInventoryUseOnBody", &oxceInventoryUseOnBody, true, "STR_INVENTORY_USE_ON_BODY", "STR_HD_BATTLE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceCatchThrown", &oxceCatchThrown, false, "STR_CATCH_THROWN", "STR_HD_BATTLE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceManufactureDelivery", &oxceManufactureDelivery, false, "STR_MANUFACTURE_DELIVERY", "STR_HD_BASE"));
 
 	// OXCE options battlescape
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceWoundedDefendBaseIf", &oxceWoundedDefendBaseIf, 100, "STR_WOUNDED_DEFEND_BASE_IF", "STR_BATTLESCAPE"));
