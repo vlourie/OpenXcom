@@ -53,7 +53,7 @@ ProductionCompleteState::ProductionCompleteState(Base *base, const std::string &
 	_screen = false;
 
 	// Create objects
-	_window = new Window(this, 256, 180, 32, 20, POPUP_BOTH);
+	_window = new Window(this, 320, 200, 0, 0, POPUP_BOTH);
 	_btnOk = new TextButton(118, 18, 40, 174);
 	_btnGotoBase = new TextButton(118, 18, 162, 174);
 	_btnSummary = new TextButton(118, 18, 162, 174);

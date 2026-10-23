@@ -43,7 +43,7 @@ NewPossibleResearchState::NewPossibleResearchState(Base * base, const std::vecto
 	_screen = false;
 
 	// Create objects
-	_window = new Window(this, 288, 180, 16, 10);
+	_window = new Window(this, 320, 200, 0, 0);
 	_btnOk = new TextButton(160, 14, 80, 149);
 	_btnResearch = new TextButton(160, 14, 80, 165);
 	_txtTitle = new Text(288, 40, 16, 20);
