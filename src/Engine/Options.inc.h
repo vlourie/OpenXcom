@@ -160,6 +160,9 @@ OPT bool oxceInventoryUseOnBody;
 // it goes into his free hand (right, then left) for the TU of picking it up from the ground; no free hand or not enough TU - it
 // lies there as before. Not for a primed item. Off by default: then nothing changes (BattlescapeGame::catchThrownItem)
 OPT bool oxceCatchThrown;
+// Basescape (XP-000256): a workshop order gets a Delivery button - a share of a finished batch of ordinary items goes to other bases by
+// the ordinary transfer when the whole order is done. Off by default: no button, nothing is saved or sent (Production::deliver)
+OPT bool oxceManufactureDelivery;
 // OXCE: play cutscenes at the original 320x200 (as the classic game does); off = scaled like the geoscape
 OPT bool oxceMaximizeCutsceneScreens;
 

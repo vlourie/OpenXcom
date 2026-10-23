@@ -105,6 +105,12 @@ public:
 	/// Get a pointer to the soldier being transferred.
 	Soldier* getSoldier();
 	const Soldier* getSoldier() const noexcept;
+	/// Shortest distance between two bases (the price and the time of a transfer come from it).
+	static double getBaseDistance(const Base *from, const Base *to);
+	/// Hours on the way between bases that are this far apart.
+	static int getTravelHours(double distance);
+	/// The price of a transfer whose items add up to this sum (the mod's global multiplier and divider, at least 1).
+	static int getTransferPrice(const Mod *mod, int sum);
 
 };
 

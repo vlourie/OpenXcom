@@ -164,6 +164,39 @@ ProductionCompleteState::ProductionCompleteState(Base *base, const std::string &
 		break;
 	case PROGRESS_COMPLETE:
 		s = tr("STR_PRODUCTION_OF_ITEM_AT_BASE_IS_COMPLETE").arg(item).arg(base->getName());
+		if (production && !production->getDeliveryReport().empty())
+		{
+			// XP-000256 (oxceManufactureDelivery): how many went where, then the warnings; the whole text small so it all fits
+			const DeliveryReport &report = production->getDeliveryReport();
+			auto list = [](const std::vector<std::pair<std::string, int> > &bases)
+			{
+				std::string out;
+				for (const auto &b : bases)
+				{
+					out += (out.empty() ? "" : ", ") + b.first + " (" + std::to_string(b.second) + ")";
+				}
+				return out;
+			};
+			s += "\n\n";
+			if (!report.sent.empty())
+			{
+				s += std::string(tr("STR_DELIVERY_SENT").arg(list(report.sent)));
+			}
+			if (!report.noSpace.empty())
+			{
+				std::string names;
+				for (const auto &n : report.noSpace)
+				{
+					names += (names.empty() ? "" : ", ") + n;
+				}
+				s += "\n" + std::string(tr("STR_DELIVERY_NO_SPACE").arg(names));
+			}
+			if (!report.kept.empty())
+			{
+				s += "\n" + std::string(tr("STR_DELIVERY_KEPT").arg(list(report.kept)));
+			}
+			_txtMessage->setSmall();
+		}
 		break;
 	case PROGRESS_NOT_ENOUGH_MONEY:
 		s = tr("STR_NOT_ENOUGH_MONEY_TO_PRODUCE_ITEM_AT_BASE").arg(item).arg(base->getName());

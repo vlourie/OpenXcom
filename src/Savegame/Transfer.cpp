@@ -17,6 +17,8 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "Transfer.h"
+#include <algorithm>
+#include <cmath>
 #include "Base.h"
 #include "Soldier.h"
 #include "Craft.h"
@@ -337,6 +339,49 @@ Soldier *Transfer::getSoldier()
 const Soldier* Transfer::getSoldier() const noexcept
 {
 	return _soldier;
+}
+
+/**
+ * Gets the shortest distance between two bases (the same sum TransferItemsState has always used).
+ * @param from The base the items leave.
+ * @param to The base they go to.
+ * @return Distance.
+ */
+double Transfer::getBaseDistance(const Base *from, const Base *to)
+{
+	double x[3], y[3], z[3], r = 51.2;
+	const Base *base = from;
+	for (int i = 0; i < 2; ++i) {
+		x[i] = r * cos(base->getLatitude()) * cos(base->getLongitude());
+		y[i] = r * cos(base->getLatitude()) * sin(base->getLongitude());
+		z[i] = r * -sin(base->getLatitude());
+		base = to;
+	}
+	x[2] = x[1] - x[0];
+	y[2] = y[1] - y[0];
+	z[2] = z[1] - z[0];
+	return sqrt(x[2] * x[2] + y[2] * y[2] + z[2] * z[2]);
+}
+
+/**
+ * Gets the hours a transfer is on the way.
+ * @param distance Distance between the bases (getBaseDistance).
+ * @return Hours.
+ */
+int Transfer::getTravelHours(double distance)
+{
+	return (int)floor(6 + distance / 10.0);
+}
+
+/**
+ * Gets the price of a transfer.
+ * @param mod The mod with the global transfer cost multiplier and divider.
+ * @param sum The sum of the prices of everything that goes (an item costs (int)(1 * distance)).
+ * @return Price, at least 1.
+ */
+int Transfer::getTransferPrice(const Mod *mod, int sum)
+{
+	return std::max(1, sum * mod->getGlobalTransferCostMultiplier() / mod->getGlobalTransferCostDivider());
 }
 
 }
