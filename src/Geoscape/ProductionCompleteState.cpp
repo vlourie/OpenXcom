@@ -353,7 +353,21 @@ void ProductionCompleteState::lootPicked(Base *to)
 	{
 		return;
 	}
-	_game->pushState(new ManufactureDeliveryState(to, units, [this, to](int n) { lootSend(to, n); }));
+	_game->pushState(new ManufactureDeliveryState(to, units, [this, to](int n) { lootSend(to, n); },
+		[this](int n)
+		{
+			// what would go for n units: the same arithmetic as lootSend
+			ManufactureDeliveryState::Items items;
+			for (const auto &part : _loot)
+			{
+				const int qty = std::min(n * part.step, lootAvailable(part));
+				if (qty > 0)
+				{
+					items.emplace_back(part.item, qty);
+				}
+			}
+			return items;
+		}));
 }
 
 /**

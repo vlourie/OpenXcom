@@ -38,6 +38,7 @@
 #include "../Savegame/ItemContainer.h"
 #include "../Engine/Timer.h"
 #include "../Menu/ErrorMessageState.h"
+#include "ManufactureDeliveryPlanState.h"
 #include "ManufactureDeliveryState.h"
 #include "TransferBaseState.h"
 #include "../Mod/RuleInterface.h"
@@ -83,11 +84,14 @@ void ManufactureInfoState::buildUi()
 	_btnFallback = new ToggleTextButton(72, 16, 168, 61);
 	_btnDelivery = nullptr;
 	_txtDelivery = nullptr;
+	_btnDeliveryPlan = nullptr;
 	if (Options::oxceManufactureDelivery)
 	{
 		// XP-000256: under the Sell button; the line of what is planned stands in the free band on the left. Option off - no widgets at all
 		_btnDelivery = new ToggleTextButton(60, 12, 244, 78);
-		_txtDelivery = new Text(150, 9, 16, 80);
+		_txtDelivery = new Text(126, 9, 16, 80);
+		// the plan of the deliveries of all the orders of the base, to cancel any: between the line and the Delivery button
+		_btnDeliveryPlan = new TextButton(96, 12, 144, 78);
 	}
 	_txtAvailableEngineer = new Text(160, 9, 16, 50);
 	_txtAvailableSpace = new Text(160, 9, 16, 60);
@@ -149,6 +153,7 @@ void ManufactureInfoState::buildUi()
 	{
 		add(_btnDelivery, "button1", "manufactureInfo");
 		add(_txtDelivery, "text", "manufactureInfo");
+		add(_btnDeliveryPlan, "button1", "manufactureInfo");
 	}
 
 	touchComponentsAdd("button3", "manufactureInfo", _window);
@@ -239,6 +244,9 @@ void ManufactureInfoState::buildUi()
 		_btnDelivery->onMouseClick((ActionHandler)&ManufactureInfoState::btnDeliveryClick, 0);
 		_btnDelivery->setVisible(false);
 		_txtDelivery->setVisible(false);
+		_btnDeliveryPlan->setText(tr("STR_DELIVERY_CANCEL"));
+		_btnDeliveryPlan->onMouseClick((ActionHandler)&ManufactureInfoState::btnDeliveryPlanClick);
+		_btnDeliveryPlan->setVisible(false);
 		_production->pruneDelivery(_game->getSavedGame());
 	}
 	initProfitInfo();
@@ -455,6 +463,8 @@ void ManufactureInfoState::updateDelivery()
 	_btnDelivery->setVisible(available);
 	_btnDelivery->setPressed(available && reserved >= _production->getAmountTotal());
 	_txtDelivery->setVisible(reserved > 0);
+	// the plans of all the orders of the base: the button is there while any delivery is still to be made
+	_btnDeliveryPlan->setVisible(ManufactureDeliveryPlanState::hasPlan(_base, _game->getSavedGame()));
 	if (reserved > 0)
 	{
 		_txtDelivery->setText(deliveryText());
@@ -472,6 +482,15 @@ void ManufactureInfoState::btnDeliveryClick(Action *)
 		[this]() { return deliveryText(); },
 		[this](Base *to) { const int n = _production->getDeliveryShare(to); return n > 0 ? std::to_string(n) : std::string("-"); },
 		[this](Base *to) { deliveryPicked(to); }));
+}
+
+/**
+ * Shows the deliveries that are still to be made (of all the orders of the base) to cancel any of them.
+ * @param action A pointer to an Action.
+ */
+void ManufactureInfoState::btnDeliveryPlanClick(Action *)
+{
+	_game->pushState(new ManufactureDeliveryPlanState(_base));
 }
 
 /**

@@ -22,6 +22,7 @@
 #include "../Engine/Action.h"
 #include "../Engine/Game.h"
 #include "../Engine/InteractiveSurface.h"
+#include "../Engine/Language.h"
 #include "../Engine/LocalizedText.h"
 #include "../Engine/Options.h"
 #include "../Engine/Timer.h"
@@ -30,6 +31,8 @@
 #include "../Interface/TextButton.h"
 #include "../Interface/Window.h"
 #include "../Savegame/Base.h"
+#include "../Mod/RuleItem.h"
+#include "../Mod/RuleManufacture.h"
 #include "../Savegame/Production.h"
 
 namespace OpenXcom
@@ -41,7 +44,17 @@ namespace OpenXcom
  * @param to The base the share goes to.
  * @param max The most that can go there: what is not given to the other bases yet plus what is planned for this one.
  */
-ManufactureDeliveryState::ManufactureDeliveryState(Production *production, Base *to, int max) : ManufactureDeliveryState(production, to, max, nullptr, 0)
+ManufactureDeliveryState::ManufactureDeliveryState(Production *production, Base *to, int max) : ManufactureDeliveryState(production, to, max, nullptr, 0,
+	[production](int orders)
+	{
+		// the whole product of an order times the number of orders (a disassembly gives several kinds)
+		Items items;
+		for (const auto &i : production->getRules()->getProducedItems())
+		{
+			items.emplace_back(i.first, orders * i.second);
+		}
+		return items;
+	})
 {
 }
 
@@ -50,26 +63,29 @@ ManufactureDeliveryState::ManufactureDeliveryState(Production *production, Base 
  * @param to The base the loot goes to.
  * @param max The most that can go there.
  * @param onOk Called with the number when OK is clicked (after the window is closed).
+ * @param what What goes for a number of units: the line under the title.
  */
-ManufactureDeliveryState::ManufactureDeliveryState(Base *to, int max, const std::function<void(int)> &onOk) : ManufactureDeliveryState(nullptr, to, max, onOk, max)
+ManufactureDeliveryState::ManufactureDeliveryState(Base *to, int max, const std::function<void(int)> &onOk, const std::function<Items(int)> &what) : ManufactureDeliveryState(nullptr, to, max, onOk, max, what)
 {
 }
 
-ManufactureDeliveryState::ManufactureDeliveryState(Production *production, Base *to, int max, const std::function<void(int)> &onOk, int start) : _production(production), _to(to), _max(max), _amount(0), _onOk(onOk)
+ManufactureDeliveryState::ManufactureDeliveryState(Production *production, Base *to, int max, const std::function<void(int)> &onOk, int start, const std::function<Items(int)> &what) : _production(production), _to(to), _max(max), _amount(0), _onOk(onOk), _what(what)
 {
 	_screen = false;
 	_amount = _production ? std::min(_production->getDeliveryShare(_to), _max) : std::max(0, std::min(start, _max));
 
 	// Create objects
-	_window = new Window(this, 200, 96, 60, 52, POPUP_BOTH);
-	_txtTitle = new Text(184, 24, 68, 60);
-	_txtAmount = new Text(60, 16, 130, 94);
-	_btnLess = new ArrowButton(ARROW_BIG_DOWN, 13, 14, 108, 94);
-	_btnMore = new ArrowButton(ARROW_BIG_UP, 13, 14, 192, 94);
-	_btnOk = new TextButton(84, 16, 68, 122);
-	_btnCancel = new TextButton(84, 16, 168, 122);
+	// taller than it was: the line of what goes (up to three lines) stands under the title
+	_window = new Window(this, 200, 124, 60, 38, POPUP_BOTH);
+	_txtTitle = new Text(184, 24, 68, 46);
+	_txtWhat = new Text(184, 27, 68, 72);
+	_txtAmount = new Text(60, 16, 130, 102);
+	_btnLess = new ArrowButton(ARROW_BIG_DOWN, 13, 14, 108, 102);
+	_btnMore = new ArrowButton(ARROW_BIG_UP, 13, 14, 192, 102);
+	_btnOk = new TextButton(84, 16, 68, 134);
+	_btnCancel = new TextButton(84, 16, 168, 134);
 	// the wheel works on the whole window
-	_surface = new InteractiveSurface(200, 96, 60, 52);
+	_surface = new InteractiveSurface(200, 124, 60, 38);
 	_surface->onMouseClick((ActionHandler)&ManufactureDeliveryState::handleWheel, 0);
 
 	// Set palette
@@ -78,6 +94,7 @@ ManufactureDeliveryState::ManufactureDeliveryState(Production *production, Base 
 	add(_surface);
 	add(_window, "window", "manufactureInfo");
 	add(_txtTitle, "text", "manufactureInfo");
+	add(_txtWhat, "text", "manufactureInfo");
 	add(_txtAmount, "text", "manufactureInfo");
 	add(_btnLess, "button1", "manufactureInfo");
 	add(_btnMore, "button1", "manufactureInfo");
@@ -93,6 +110,9 @@ ManufactureDeliveryState::ManufactureDeliveryState(Production *production, Base 
 	_txtTitle->setAlign(ALIGN_CENTER);
 	_txtTitle->setWordWrap(true);
 	_txtTitle->setText(tr("STR_DELIVERY_AMOUNT").arg(_to->getName()));
+
+	_txtWhat->setAlign(ALIGN_CENTER);
+	_txtWhat->setWordWrap(true);
 
 	_txtAmount->setBig();
 	_txtAmount->setAlign(ALIGN_CENTER);
@@ -135,6 +155,43 @@ ManufactureDeliveryState::~ManufactureDeliveryState()
 void ManufactureDeliveryState::update()
 {
 	_txtAmount->setText(std::to_string(_amount) + "/" + std::to_string(_max));
+	if (_what)
+	{
+		// "item xN, item xM -> base"; nothing at 0 (the base leaves the plan)
+		_txtWhat->setText(_amount > 0 ? tr("STR_DELIVERY_WILL_GO").arg(describe(_game->getLanguage(), _what(_amount))).arg(_to->getName()) : tr("STR_DELIVERY_NONE").arg(_to->getName()));
+	}
+}
+
+/**
+ * Writes what goes: the first three kinds with their numbers, then dots.
+ * @param lang The language of the names.
+ * @param items The items and the number of each (those with none are left out).
+ * @return The text, for example "Medi-kit x4, Stimulant x2".
+ */
+std::string ManufactureDeliveryState::describe(const Language *lang, const Items &items)
+{
+	const size_t shown = 3;
+	std::string out;
+	size_t n = 0;
+	for (const auto &i : items)
+	{
+		if (i.second <= 0)
+		{
+			continue;
+		}
+		if (n == shown)
+		{
+			out += ", ...";
+			break;
+		}
+		if (n > 0)
+		{
+			out += ", ";
+		}
+		out += std::string(lang->getString("STR_DELIVERY_ITEM_QTY").arg(lang->getString(i.first->getType())).arg(i.second));
+		++n;
+	}
+	return out;
 }
 
 /**
