@@ -9,3 +9,4 @@
 - Maps (HD): a patch of mud and a stump in the mountains are coloured as in the original, not bright spots (tickets XP-000242, XP-000243).
 - Maps (HD): there is a rubbish bin under the window again, not a heap of stones (ticket XP-000248); the wooden crate is an old one of planks with dark gaps and thin iron edging (ticket XP-000264).
 - Maps (HD): the rails are straight and do not part on the cell joins (ticket XP-000253).
+- Soldier voices: 51 more voices now have about a hundred lines for selecting a soldier and ordering a move, so they hardly repeat during a battle. 121 of 157 voices have them now; the remaining 36 get theirs in the next releases.
