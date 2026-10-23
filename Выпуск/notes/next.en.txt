@@ -1,0 +1,1 @@
+﻿- Map pictures (HD): the thorny bramble bush (8 sets: mountains, forests, mud, bunker) and the spruce (10 frames in forests, mountains and snow) are redrawn after the original: the bush has branches instead of diagonal stripes, the spruce trunk and crown are one tree with no seam (tickets XP-000278, XP-000279).
