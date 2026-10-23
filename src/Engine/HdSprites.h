@@ -150,7 +150,8 @@ namespace HdSprites
 	/// a voxel apart, and scaled by nearest that is a staircase of hard squares. `classic` is the
 	/// set at base resolution, `scaled` the k-times one the game draws; `styles`, by frame, change
 	/// how some tracers look (may be null). Returns how many it made.
-	int makeDots(const std::string &setName, const SurfaceSet *classic, SurfaceSet *scaled, int scale, const std::vector<const DotStyle*> *styles = nullptr);
+	/// `palette` (may be null) is what the indices are read through when the set's frames have none yet (lazy loading).
+	int makeDots(const std::string &setName, const SurfaceSet *classic, SurfaceSet *scaled, int scale, const std::vector<const DotStyle*> *styles = nullptr, const SDL_Color *palette = nullptr);
 	/// Forgets the HD frame of a palette frame.
 	void remove(const void *key);
 	/// Forgets the HD frames of every frame of a set (call before the set is destroyed).

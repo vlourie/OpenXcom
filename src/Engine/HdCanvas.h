@@ -191,6 +191,10 @@ public:
 	/// Draws one vapor particle: every pixel of the pattern whose threshold is >= size is tinted
 	/// (palette canvas: through the transparency lookup table; true-color canvas: dest * tint.alpha + tint.rgb).
 	virtual void drawVapor(SurfaceRaw<int> pattern, int x, int y, int size, const Uint8 *transparencyLUT, SDL_Color tint) = 0;
+	/// HD modes: one vapor particle as a soft round puff instead of the 2x2 pattern. The centre is in 1/16 of a
+	/// screen pixel, `size` is the particle size 0..3 (the classic pattern covers (4 - size) of its 4 cells),
+	/// k the HD scale. The tint is already interpolated by the caller. The classic canvas is never asked.
+	virtual void drawVaporSoft(int cx16, int cy16, int size, int k, SDL_Color tint) { (void)cx16; (void)cy16; (void)size; (void)k; (void)tint; }
 	/// The blast flash: every drawn pixel jumps to the brightest shade of its color group.
 	virtual void flash() = 0;
 
@@ -292,7 +296,7 @@ private:
 	/// One recorded drawing call.
 	struct Cmd
 	{
-		enum Type : Uint8 { FILL, BLIT, BLIT_HD, BLIT_HD_LIT, BLIT_SCALED, VAPOR, FLASH, FILL_BACKDROP };
+		enum Type : Uint8 { FILL, BLIT, BLIT_HD, BLIT_HD_LIT, BLIT_SCALED, VAPOR, FLASH, FILL_BACKDROP, VAPOR_SOFT };
 		Type type;
 		Uint8 color;
 		Uint8 newBaseColor;
@@ -603,6 +607,7 @@ private:
 	/// Index -> pixel table of a classic blit: a prepared one, or built into `scratch` for a rare shade.
 	const Uint32 *classicTable(int shade, int newBaseColor, Uint32 *scratch) const;
 	void doVapor(const int *pattern, int w, int h, int x, int y, int size, SDL_Color tint, const Uint8 *transparencyLUT, GraphSubset destClip);
+	void doVaporSoft(int cx16, int cy16, int size, int k, SDL_Color tint, GraphSubset destClip);
 	void doFlash(int y0, int y1);
 	/// The palette index 1..255 whose color the pixel is, or -1.
 	int paletteIndexOf(Uint32 pixel) const;
@@ -621,6 +626,7 @@ public:
 	void blitScripted(ScriptWorkerBlit &work, const Surface *src, int x, int y, int shade, GraphSubset range, ScriptWorkerBlit *unlit = nullptr) override;
 	void blitClassic(Surface *src, int x, int y, int scale, int shade = 0, int newBaseColor = 0) override;
 	void drawVapor(SurfaceRaw<int> pattern, int x, int y, int size, const Uint8 *transparencyLUT, SDL_Color tint) override;
+	void drawVaporSoft(int cx16, int cy16, int size, int k, SDL_Color tint) override;
 	void flash() override;
 	bool saveDump(const std::string &filename) override;
 	void setPalette(const SDL_Color *colors, int firstcolor, int ncolors) override;

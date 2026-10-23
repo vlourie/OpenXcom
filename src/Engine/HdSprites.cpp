@@ -1907,9 +1907,13 @@ int loadPack(const std::string &setName, SurfaceSet *surfaceSet, int scale)
  * @param classic Set at base resolution: the colours and the palette are read from it.
  * @param scaled The k-times set the game draws; its frames are the keys of the registry.
  * @param scale k.
+ * @param styles Per-frame tracer styles (may be null).
+ * @param palette The battlescape palette the indices are read through (may be null: the frames' own). A set a mod ships
+ *   as extra sprites and loads lazily has no palette yet when this runs - its frames hold the default one, all zeros -
+ *   and every dot came out black (XP-000122).
  * @return How many frames were made.
  */
-int makeDots(const std::string &setName, const SurfaceSet *classic, SurfaceSet *scaled, int scale, const std::vector<const DotStyle*> *styles)
+int makeDots(const std::string &setName, const SurfaceSet *classic, SurfaceSet *scaled, int scale, const std::vector<const DotStyle*> *styles, const SDL_Color *palette)
 {
 	if (!classic || !scaled || scale < 2)
 	{
@@ -1942,7 +1946,7 @@ int makeDots(const std::string &setName, const SurfaceSet *classic, SurfaceSet *
 			for (int f = st->first; f < st->first + 35; ++f)
 			{
 				const Surface *s = classic->getFrame(f);
-				const SDL_Color *p = s ? s->getPalette() : nullptr;
+				const SDL_Color *p = s ? (palette ? palette : s->getPalette()) : nullptr;
 				if (!p) continue;
 				for (int y = 0; y < bh; ++y)
 				{
@@ -1992,7 +1996,7 @@ int makeDots(const std::string &setName, const SurfaceSet *classic, SurfaceSet *
 			++kept;
 			continue;
 		}
-		const SDL_Color *pal = src->getPalette();
+		const SDL_Color *pal = palette ? palette : src->getPalette();
 		if (!pal)
 		{
 			++noPalette;
