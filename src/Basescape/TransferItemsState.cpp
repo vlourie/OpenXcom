@@ -664,7 +664,7 @@ void TransferItemsState::btnOkClick(Action *)
  */
 void TransferItemsState::completeTransfer()
 {
-	int time = (int)floor(6 + _distance / 10.0);
+	int time = Transfer::getTravelHours(_distance);
 	_game->getSavedGame()->setFunds(_game->getSavedGame()->getFunds() - getTotal());
 	for (const auto& transferRow : _items)
 	{
@@ -1418,7 +1418,7 @@ void TransferItemsState::updateCost()
  */
 int TransferItemsState::getTotal() const
 {
-	int ret = std::max(1, _total * _game->getMod()->getGlobalTransferCostMultiplier() / _game->getMod()->getGlobalTransferCostDivider());
+	int ret = Transfer::getTransferPrice(_game->getMod(), _total);
 
 	if (ret == 1)
 	{
@@ -1444,18 +1444,7 @@ int TransferItemsState::getTotal() const
  */
 double TransferItemsState::getDistance() const
 {
-	double x[3], y[3], z[3], r = 51.2;
-	Base *base = _baseFrom;
-	for (int i = 0; i < 2; ++i) {
-		x[i] = r * cos(base->getLatitude()) * cos(base->getLongitude());
-		y[i] = r * cos(base->getLatitude()) * sin(base->getLongitude());
-		z[i] = r * -sin(base->getLatitude());
-		base = _baseTo;
-	}
-	x[2] = x[1] - x[0];
-	y[2] = y[1] - y[0];
-	z[2] = z[1] - z[0];
-	return sqrt(x[2] * x[2] + y[2] * y[2] + z[2] * z[2]);
+	return Transfer::getBaseDistance(_baseFrom, _baseTo);
 }
 
 /**

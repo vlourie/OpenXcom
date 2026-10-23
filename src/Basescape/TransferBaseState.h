@@ -18,6 +18,8 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "../Engine/State.h"
+#include <functional>
+#include <string>
 #include <vector>
 
 namespace OpenXcom
@@ -44,11 +46,24 @@ private:
 	Text *_txtTitle, *_txtFunds, *_txtName, *_txtArea;
 	TextList *_lstBases;
 	std::vector<Base*> _bases;
+	// the variant with callbacks (a workshop order's delivery, XP-000256): a click calls back instead of opening the transfer screen
+	std::function<void(Base*)> _onPick;
+	std::function<std::string()> _header;
+	std::function<std::string(Base*)> _detail;
+	Text *_txtDetail;
+	/// Builds the screen (both ways of creating it).
+	void build();
+	/// Writes the header and the third column of the callback variant anew.
+	void refreshDetail();
 public:
 	/// Creates the Transfer Base state.
 	TransferBaseState(Base *base, DebriefingState *debriefingState);
+	/// Creates the variant that calls back on a click: the text of the line under the title, the third column of a base, what to do.
+	TransferBaseState(Base *base, const std::function<std::string()> &header, const std::function<std::string(Base*)> &detail, const std::function<void(Base*)> &onPick);
 	/// Cleans up the Transfer Base state.
 	~TransferBaseState();
+	/// Refreshes the callback variant when a screen above it closes.
+	void init() override;
 	/// Handler for clicking the Cancel button.
 	void btnCancelClick(Action *action);
 	/// Handler for clicking the Bases list.

@@ -18,7 +18,10 @@
  */
 #include "Production.h"
 #include <algorithm>
+#include <cmath>
 #include "../Engine/Collections.h"
+#include "../Engine/Logger.h"
+#include "../Engine/Options.h"
 #include "../Mod/RuleManufacture.h"
 #include "../Mod/RuleSoldier.h"
 #include "Base.h"
@@ -332,7 +335,15 @@ productionProgress_e Production::step(Base * b, SavedGame * g, const Mod *m, Lan
 		}
 		while (count < produced);
 	}
-	if (getAmountProduced() >= _amount && !getInfiniteAmount()) return PROGRESS_COMPLETE;
+	if (getAmountProduced() >= _amount && !getInfiniteAmount())
+	{
+		// XP-000256: the whole order is ready - the planned shares leave the stores for the other bases (empty plan: nothing happens)
+		if (!_delivery.empty())
+		{
+			deliver(b, g, m);
+		}
+		return PROGRESS_COMPLETE;
+	}
 	if (done < getAmountProduced())
 	{
 		// We need to ensure that player has enough cash/item to produce a new unit
@@ -393,6 +404,202 @@ void Production::refundItem(Base * b, SavedGame * g, const Mod *m) const
 	//}
 }
 
+/**
+ * Finds the base by its coordinates (a base has no id: the index shifts and the name changes).
+ * @return The base or null if there is no such base any more.
+ */
+static Base *findBaseAt(const SavedGame *g, double lon, double lat)
+{
+	for (auto *base : *g->getBases())
+	{
+		if (std::fabs(base->getLongitude() - lon) < 1e-7 && std::fabs(base->getLatitude() - lat) < 1e-7)
+		{
+			return base;
+		}
+	}
+	return nullptr;
+}
+
+/**
+ * Can the order be delivered to other bases (XP-000256)? Ordinary items only: not crafts, not random sets, not people.
+ * An order whose items reach the stores later (transferTimes of the rules) has nothing in the stores to take at the end.
+ * Selling and an infinite order are the player's choice on the screen, not a property of the rules.
+ */
+bool Production::canDeliver() const
+{
+	if (_rules->getProducedCraft() || !_rules->getRandomProducedItems().empty() || !_rules->getSpawnedPersonType().empty())
+	{
+		return false;
+	}
+	if (_rules->getProducedItems().empty())
+	{
+		return false;
+	}
+	if (!_rules->getTransferTimes().empty() && _rules->getTransferTimes().front() > 0)
+	{
+		return false;
+	}
+	return true;
+}
+
+/**
+ * Orders already given to bases in the plan.
+ */
+int Production::getDeliveryTotal() const
+{
+	int total = 0;
+	for (const auto &share : _delivery)
+	{
+		total += share.amount;
+	}
+	return total;
+}
+
+/**
+ * Orders planned for the base.
+ */
+int Production::getDeliveryShare(const Base *to) const
+{
+	for (const auto &share : _delivery)
+	{
+		if (std::fabs(to->getLongitude() - share.lon) < 1e-7 && std::fabs(to->getLatitude() - share.lat) < 1e-7)
+		{
+			return share.amount;
+		}
+	}
+	return 0;
+}
+
+/**
+ * Plans this many orders for the base; 0 (or less) takes the base out of the plan.
+ */
+void Production::setDeliveryShare(const Base *to, int amount)
+{
+	for (auto it = _delivery.begin(); it != _delivery.end(); ++it)
+	{
+		if (std::fabs(to->getLongitude() - it->lon) < 1e-7 && std::fabs(to->getLatitude() - it->lat) < 1e-7)
+		{
+			if (amount > 0)
+			{
+				it->amount = amount;
+			}
+			else
+			{
+				_delivery.erase(it);
+			}
+			return;
+		}
+	}
+	if (amount > 0)
+	{
+		_delivery.push_back({ to->getLongitude(), to->getLatitude(), amount });
+	}
+}
+
+/**
+ * Cuts the plan down to the amount ordered (the order was made smaller): from the last base of the plan.
+ */
+void Production::trimDelivery()
+{
+	int excess = getDeliveryTotal() - _amount;
+	while (excess > 0 && !_delivery.empty())
+	{
+		DeliveryShare &last = _delivery.back();
+		const int cut = std::min(excess, last.amount);
+		last.amount -= cut;
+		excess -= cut;
+		if (last.amount <= 0)
+		{
+			_delivery.pop_back();
+		}
+	}
+}
+
+/**
+ * Takes out of the plan the bases that are gone (found by the coordinates).
+ */
+void Production::pruneDelivery(const SavedGame *g)
+{
+	for (auto it = _delivery.begin(); it != _delivery.end();)
+	{
+		if (findBaseAt(g, it->lon, it->lat))
+		{
+			++it;
+		}
+		else
+		{
+			it = _delivery.erase(it);
+		}
+	}
+}
+
+/**
+ * The whole order is ready and in the stores: the planned shares leave them for the other bases by the ordinary transfer
+ * (the time and the price of TransferItemsState, see Transfer::getBaseDistance). Not more than the stores hold; a base
+ * that is gone from the plan is skipped; no money for a share - it stays in the stores. The result goes to _deliveryReport.
+ * Only with the option on and only for ordinary items, not sold and not infinite.
+ */
+void Production::deliver(Base *b, SavedGame *g, const Mod *m)
+{
+	_deliveryReport = DeliveryReport();
+	if (!Options::oxceManufactureDelivery || !canDeliver() || getSellItems() || getInfiniteAmount())
+	{
+		return;
+	}
+	int left = _amount;
+	for (const auto &share : _delivery)
+	{
+		Base *to = findBaseAt(g, share.lon, share.lat);
+		const int orders = std::min(share.amount, left);
+		if (!to || to == b || orders <= 0)
+		{
+			continue;
+		}
+		left -= orders;
+		std::vector<std::pair<const RuleItem*, int> > parts;
+		int pieces = 0;
+		double size = 0.0;
+		for (const auto &i : _rules->getProducedItems())
+		{
+			const int qty = std::min(orders * i.second, b->getStorageItems()->getItem(i.first));
+			if (qty <= 0)
+			{
+				continue;
+			}
+			parts.emplace_back(i.first, qty);
+			pieces += qty;
+			size += qty * i.first->getSize();
+		}
+		if (pieces <= 0)
+		{
+			continue;
+		}
+		const double distance = Transfer::getBaseDistance(b, to);
+		const int price = Transfer::getTransferPrice(m, pieces * (int)(1 * distance));
+		if (g->getFunds() < price)
+		{
+			_deliveryReport.kept.emplace_back(to->getName(), pieces);
+			Log(LOG_INFO) << "Manufacture delivery " << _rules->getName() << " -> " << to->getName() << ": " << pieces << " stay, funds " << g->getFunds() << " < " << price;
+			continue;
+		}
+		g->setFunds(g->getFunds() - price);
+		if (Options::storageLimitsEnforced && to->storesOverfull(size))
+		{
+			_deliveryReport.noSpace.push_back(to->getName());
+		}
+		const int hours = Transfer::getTravelHours(distance);
+		for (const auto &part : parts)
+		{
+			b->getStorageItems()->removeItem(part.first, part.second);
+			Transfer *t = new Transfer(hours);
+			t->setItems(part.first, part.second);
+			to->getTransfers()->push_back(t);
+		}
+		_deliveryReport.sent.emplace_back(to->getName(), pieces);
+		Log(LOG_INFO) << "Manufacture delivery " << _rules->getName() << " -> " << to->getName() << ": " << pieces << " pieces, " << hours << " h, price " << price;
+	}
+}
+
 void Production::save(YAML::YamlNodeWriter writer) const
 {
 	writer.setAsMap();
@@ -407,6 +614,19 @@ void Production::save(YAML::YamlNodeWriter writer) const
 		writer.write("isFallback", _isFallback);
 	if (!_rules->getRandomProducedItems().empty())
 		writer.write("randomProductionInfo", _randomProductionInfo);
+	// XP-000256: only a plan that exists (an old build skips the unknown key; no plan - the save is as it was)
+	if (!_delivery.empty())
+	{
+		writer.write("delivery", _delivery,
+			[](YAML::YamlNodeWriter& vectorWriter, const DeliveryShare& s)
+			{
+				auto shareWriter = vectorWriter.write();
+				shareWriter.setAsMap();
+				shareWriter.write("lon", s.lon);
+				shareWriter.write("lat", s.lat);
+				shareWriter.write("amount", s.amount);
+			});
+	}
 }
 
 void Production::load(const YAML::YamlNodeReader& reader)
@@ -420,6 +640,25 @@ void Production::load(const YAML::YamlNodeReader& reader)
 	if (!_rules->getRandomProducedItems().empty())
 	{
 		_randomProductionInfo = reader["randomProductionInfo"].readVal(_randomProductionInfo);
+	}
+	// XP-000256: the delivery plan; a missing, damaged or empty entry is simply not a share (the base is looked up by the
+	// coordinates when the order is done, a base that is gone is dropped then)
+	_delivery.clear();
+	for (const auto& shareReader : reader["delivery"].children())
+	{
+		try
+		{
+			DeliveryShare s = { shareReader["lon"].readVal(1000.0), shareReader["lat"].readVal(1000.0), shareReader["amount"].readVal(0) };
+			if (std::fabs(s.lon) <= 100.0 && std::fabs(s.lat) <= 100.0 && s.amount > 0)
+			{
+				_delivery.push_back(s);
+			}
+		}
+		catch (const YAML::Exception&)
+		{
+			// text instead of a number (R-306): this share is dropped, the rest of the save loads as it was
+			Log(LOG_WARNING) << "Manufacture delivery: damaged share of " << _rules->getName() << " in the save is skipped";
+		}
 	}
 	// backwards compatibility
 	if (getAmountTotal() == INT_MAX)

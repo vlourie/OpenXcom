@@ -38,6 +38,8 @@
 #include "../Savegame/ItemContainer.h"
 #include "../Engine/Timer.h"
 #include "../Menu/ErrorMessageState.h"
+#include "ManufactureDeliveryState.h"
+#include "TransferBaseState.h"
 #include "../Mod/RuleInterface.h"
 #include <climits>
 
@@ -79,6 +81,14 @@ void ManufactureInfoState::buildUi()
 	_btnStop = new TextButton(136, 16, 16, 155);
 	_btnSell = new ToggleTextButton(60, 16, 244, 61);
 	_btnFallback = new ToggleTextButton(72, 16, 168, 61);
+	_btnDelivery = nullptr;
+	_txtDelivery = nullptr;
+	if (Options::oxceManufactureDelivery)
+	{
+		// XP-000256: under the Sell button; the line of what is planned stands in the free band on the left. Option off - no widgets at all
+		_btnDelivery = new ToggleTextButton(60, 12, 244, 78);
+		_txtDelivery = new Text(150, 9, 16, 80);
+	}
 	_txtAvailableEngineer = new Text(160, 9, 16, 50);
 	_txtAvailableSpace = new Text(160, 9, 16, 60);
 	_txtHoursPerUnit = new Text(150, 9, 16, 70);
@@ -135,6 +145,11 @@ void ManufactureInfoState::buildUi()
 	add(_btnStop, "button2", "manufactureInfo");
 	add(_btnSell, "button1", "manufactureInfo");
 	add(_btnFallback, "button1", "manufactureInfo");
+	if (_btnDelivery)
+	{
+		add(_btnDelivery, "button1", "manufactureInfo");
+		add(_txtDelivery, "text", "manufactureInfo");
+	}
 
 	touchComponentsAdd("button3", "manufactureInfo", _window);
 
@@ -218,6 +233,14 @@ void ManufactureInfoState::buildUi()
 	}
 	_btnSell->setPressed(_production->getSellItems());
 	_btnSell->setVisible(_production->getRules()->canAutoSell());
+	if (_btnDelivery)
+	{
+		_btnDelivery->setText(tr("STR_DELIVERY"));
+		_btnDelivery->onMouseClick((ActionHandler)&ManufactureInfoState::btnDeliveryClick, 0);
+		_btnDelivery->setVisible(false);
+		_txtDelivery->setVisible(false);
+		_production->pruneDelivery(_game->getSavedGame());
+	}
 	initProfitInfo();
 	setAssignedEngineer();
 
@@ -322,6 +345,7 @@ void ManufactureInfoState::init()
 	State::init();
 
 	touchComponentsRefresh();
+	updateDelivery();
 }
 
 /**
@@ -397,6 +421,68 @@ void ManufactureInfoState::setAssignedEngineer()
 	else s4 << _production->getAmountTotal();
 	_txtTodo->setText(s4.str());
 	_txtMonthlyProfit->setText(tr("STR_MONTHLY_PROFIT").arg(Unicode::formatFunding(getMonthlyNetFunds()).c_str()));
+	updateDelivery();
+}
+
+/**
+ * The line of the delivery plan: all given out, or how many of the order are.
+ */
+std::string ManufactureInfoState::deliveryText() const
+{
+	const int reserved = _production->getDeliveryTotal();
+	const int total = _production->getAmountTotal();
+	return reserved >= total ? tr("STR_DELIVERY_FULLY_RESERVED") : tr("STR_DELIVERY_RESERVED").arg(reserved).arg(total);
+}
+
+/**
+ * Shows the Delivery button (option oxceManufactureDelivery) only for an order that can be delivered: ordinary items, a number
+ * of them, not sold, and another base to send to; the button is pressed in when all the order is given out. Cuts the plan
+ * down when the order was made smaller.
+ */
+void ManufactureInfoState::updateDelivery()
+{
+	if (!_btnDelivery)
+	{
+		return;
+	}
+	const bool infinite = _production->getInfiniteAmount();
+	if (!infinite)
+	{
+		_production->trimDelivery();
+	}
+	const bool available = _production->canDeliver() && !infinite && !_btnSell->getPressed() && _game->getSavedGame()->getBases()->size() > 1;
+	const int reserved = available ? _production->getDeliveryTotal() : 0;
+	_btnDelivery->setVisible(available);
+	_btnDelivery->setPressed(available && reserved >= _production->getAmountTotal());
+	_txtDelivery->setVisible(reserved > 0);
+	if (reserved > 0)
+	{
+		_txtDelivery->setText(deliveryText());
+	}
+}
+
+/**
+ * Shows the list of the other bases; a click on a base asks how many go there. The screen stays until OK.
+ * @param action A pointer to an Action.
+ */
+void ManufactureInfoState::btnDeliveryClick(Action *)
+{
+	updateDelivery(); // the click turned the button over: back to what the plan says
+	_game->pushState(new TransferBaseState(_base,
+		[this]() { return deliveryText(); },
+		[this](Base *to) { const int n = _production->getDeliveryShare(to); return n > 0 ? std::to_string(n) : std::string("-"); },
+		[this](Base *to) { deliveryPicked(to); }));
+}
+
+/**
+ * A base was picked: how many of the order go there, from nothing to what is not given out yet.
+ * @param to The base.
+ */
+void ManufactureInfoState::deliveryPicked(Base *to)
+{
+	const int mine = _production->getDeliveryShare(to);
+	const int room = std::max(0, _production->getAmountTotal() - _production->getDeliveryTotal() + mine);
+	_game->pushState(new ManufactureDeliveryState(_production, to, room));
 }
 
 /**

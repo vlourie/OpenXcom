@@ -17,6 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <map>
+#include <string>
+#include <utility>
+#include <vector>
 #include "../Engine/Yaml.h"
 
 namespace OpenXcom
@@ -28,6 +32,23 @@ class SavedGame;
 class Language;
 class Mod;
 enum productionProgress_e { PROGRESS_NOT_COMPLETE, PROGRESS_COMPLETE, PROGRESS_NOT_ENOUGH_MONEY, PROGRESS_NOT_ENOUGH_MATERIALS, PROGRESS_NOT_ENOUGH_LIVING_SPACE, PROGRESS_MAX, PROGRESS_CONSTRUCTION };
+
+/// A share of a finished workshop order that goes to another base (option oxceManufactureDelivery, XP-000256).
+/// The base is found by its latitude and longitude (a base has no id, its index shifts and its name changes).
+struct DeliveryShare
+{
+	double lon, lat;
+	int amount; ///< in orders (units to produce), not in pieces
+};
+
+/// What the delivery of a finished order did (to be told in the Production Complete window; not saved).
+struct DeliveryReport
+{
+	std::vector<std::pair<std::string, int> > sent; ///< base name, pieces on the way
+	std::vector<std::string> noSpace; ///< bases whose stores the cargo overfills (sent all the same)
+	std::vector<std::pair<std::string, int> > kept; ///< base name, pieces left in the stores: not enough funds for the transfer
+	bool empty() const { return sent.empty() && kept.empty(); }
+};
 
 class Production
 {
@@ -54,7 +75,25 @@ public:
 	void save(YAML::YamlNodeWriter writer) const;
 	void load(const YAML::YamlNodeReader& reader);
 	const std::map<std::string, int> &getRandomProductionInfo() const { return _randomProductionInfo; }
+	/// Can the rules of this order be delivered to other bases (ordinary items only)?
+	bool canDeliver() const;
+	/// The plan of the delivery: shares by base.
+	const std::vector<DeliveryShare> &getDelivery() const { return _delivery; }
+	/// Orders already given to bases in the plan.
+	int getDeliveryTotal() const;
+	/// Orders planned for this base.
+	int getDeliveryShare(const Base *to) const;
+	/// Plans this many orders for the base (0 takes it out of the plan).
+	void setDeliveryShare(const Base *to, int amount);
+	/// Cuts the plan down to the amount ordered.
+	void trimDelivery();
+	/// Takes out of the plan the bases that are gone.
+	void pruneDelivery(const SavedGame *g);
+	/// What the delivery at the end of the order did.
+	const DeliveryReport &getDeliveryReport() const { return _deliveryReport; }
 private:
+	/// Sends the planned shares from the stores of the base by the ordinary transfer (the whole order is ready).
+	void deliver(Base * b, SavedGame * g, const Mod *m);
 	const RuleManufacture * _rules;
 	int _amount;
 	bool _infinite;
@@ -63,6 +102,8 @@ private:
 	bool _sell;
 	bool _isFallback;
 	std::map<std::string, int> _randomProductionInfo;
+	std::vector<DeliveryShare> _delivery;
+	DeliveryReport _deliveryReport;
 	bool haveEnoughMoneyForOneMoreUnit(SavedGame * g) const;
 	bool haveEnoughLivingSpaceForOneMoreUnit(Base * b);
 	bool haveEnoughMaterialsForOneMoreUnit(Base * b, const Mod *m) const;
