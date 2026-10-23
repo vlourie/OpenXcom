@@ -17,6 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <functional>
 #include "../Engine/State.h"
 
 namespace OpenXcom
@@ -41,6 +42,9 @@ private:
 	Production *_production;
 	Base *_to;
 	int _max, _amount;
+	std::function<void(int)> _onOk;
+	/// Builds the window (both ways of creating it).
+	ManufactureDeliveryState(Production *production, Base *to, int max, const std::function<void(int)> &onOk, int start);
 	Window *_window;
 	Text *_txtTitle, *_txtAmount;
 	TextButton *_btnOk, *_btnCancel;
@@ -65,6 +69,8 @@ private:
 public:
 	/// Creates the state: the order, the base the share goes to and the most that can go there.
 	ManufactureDeliveryState(Production *production, Base *to, int max);
+	/// Creates the state for the loot of a finished order (XP-000292): no plan, the number goes to the callback; it starts at the most.
+	ManufactureDeliveryState(Base *to, int max, const std::function<void(int)> &onOk);
 	~ManufactureDeliveryState();
 	void think() override;
 };

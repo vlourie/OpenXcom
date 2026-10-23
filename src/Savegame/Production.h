@@ -31,6 +31,7 @@ class Base;
 class SavedGame;
 class Language;
 class Mod;
+class RuleItem;
 enum productionProgress_e { PROGRESS_NOT_COMPLETE, PROGRESS_COMPLETE, PROGRESS_NOT_ENOUGH_MONEY, PROGRESS_NOT_ENOUGH_MATERIALS, PROGRESS_NOT_ENOUGH_LIVING_SPACE, PROGRESS_MAX, PROGRESS_CONSTRUCTION };
 
 /// A share of a finished workshop order that goes to another base (option oxceManufactureDelivery, XP-000256).
@@ -47,6 +48,7 @@ struct DeliveryReport
 	std::vector<std::pair<std::string, int> > sent; ///< base name, pieces on the way
 	std::vector<std::string> noSpace; ///< bases whose stores the cargo overfills (sent all the same)
 	std::vector<std::pair<std::string, int> > kept; ///< base name, pieces left in the stores: not enough funds for the transfer
+	std::vector<std::pair<const RuleItem*, int> > sentParts; ///< what went, by item (XP-000292: the rest of the batch is what is left of it)
 	bool empty() const { return sent.empty() && kept.empty(); }
 };
 
@@ -91,6 +93,15 @@ public:
 	void pruneDelivery(const SavedGame *g);
 	/// What the delivery at the end of the order did.
 	const DeliveryReport &getDeliveryReport() const { return _deliveryReport; }
+	/// What one shipment of items between bases did (XP-000292).
+	struct ShipOutcome
+	{
+		int pieces = 0, price = 0, hours = 0;
+		bool noSpace = false, noFunds = false;
+		std::vector<std::pair<const RuleItem*, int> > parts; ///< what was sent (or, with noFunds, what would have been)
+	};
+	/// Sends items from the stores of a base to another base by the ordinary transfer (time and price of a transfer between bases).
+	static ShipOutcome shipItems(Base *from, Base *to, const std::vector<std::pair<const RuleItem*, int> > &wanted, SavedGame *g, const Mod *m);
 private:
 	/// Sends the planned shares from the stores of the base by the ordinary transfer (the whole order is ready).
 	void deliver(Base * b, SavedGame * g, const Mod *m);

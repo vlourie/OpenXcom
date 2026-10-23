@@ -32,6 +32,7 @@ class Text;
 class TextList;
 class Base;
 class GeoscapeState;
+class RuleItem;
 
 /**
  * Window used to notify the player when
@@ -49,6 +50,31 @@ private:
 
 	/// Sells one of the selected row's items (change -1) or takes back one sold here (change +1).
 	void changeOne(int change);
+
+	/// XP-000292 (option oxceManufactureDelivery): what of the finished batch is still in the stores and may be shipped to other bases.
+	struct LootPart
+	{
+		const RuleItem *item;
+		int left; ///< pieces of the batch not shipped yet
+		int step; ///< pieces of it in one unit of the dialog (1 for a single kind of item, else per order)
+	};
+	std::vector<LootPart> _loot;
+	std::vector<std::pair<Base*, int> > _lootSent; ///< bases shipped to from this window, pieces
+	std::vector<Base*> _lootNoSpace; ///< of them, bases with no room
+	std::string _message; ///< the text of the message without the loot lines
+	TextButton *_btnLoot;
+	/// How many pieces of the part can still go (the batch left, not more than the stores hold).
+	int lootAvailable(const LootPart &part) const;
+	/// How many units the dialog can offer.
+	int lootUnits() const;
+	/// How many pieces can still go.
+	int lootPieces() const;
+	/// Sends this many units of the loot to the base.
+	void lootSend(Base *to, int units);
+	/// The base is picked: asks how much.
+	void lootPicked(Base *to);
+	/// Writes the message again with the loot shipped so far.
+	void refreshMessage();
 
 	TextButton *_btnOk, *_btnGotoBase, *_btnSummary, *_btnKeepWorking;
 	Window *_window;
@@ -76,6 +102,8 @@ public:
 	void lstSummaryRightArrowClick(Action *action);
 	/// Handler for clicking the Keep Working button.
 	void btnKeepWorkingClick(Action *action);
+	/// Handler for clicking the Ship the loot button.
+	void btnLootClick(Action *action);
 };
 
 }

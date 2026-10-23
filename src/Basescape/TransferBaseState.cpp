@@ -54,9 +54,10 @@ TransferBaseState::TransferBaseState(Base *base, DebriefingState *debriefingStat
  * @param header The text of the line under the title (what is left to give out).
  * @param detail The text of the third column for a base (what is planned for it).
  * @param onPick What to do when a base is clicked.
+ * @param title The string of the title (the loot of a finished order has its own, XP-000292).
  */
-TransferBaseState::TransferBaseState(Base *base, const std::function<std::string()> &header, const std::function<std::string(Base*)> &detail, const std::function<void(Base*)> &onPick) :
-	_base(base), _debriefingState(nullptr), _onPick(onPick), _header(header), _detail(detail), _txtDetail(nullptr)
+TransferBaseState::TransferBaseState(Base *base, const std::function<std::string()> &header, const std::function<std::string(Base*)> &detail, const std::function<void(Base*)> &onPick, const std::string &title) :
+	_base(base), _debriefingState(nullptr), _onPick(onPick), _header(header), _detail(detail), _txtDetail(nullptr), _title(title)
 {
 	build();
 }
@@ -110,7 +111,7 @@ void TransferBaseState::build()
 
 	_txtTitle->setBig();
 	_txtTitle->setAlign(ALIGN_CENTER);
-	_txtTitle->setText(tr(callback ? "STR_DELIVERY_TITLE" : "STR_SELECT_DESTINATION_BASE"));
+	_txtTitle->setText(tr(callback ? _title : "STR_SELECT_DESTINATION_BASE"));
 
 	_txtFunds->setText(tr("STR_CURRENT_FUNDS").arg(Unicode::formatFunding(_game->getSavedGame()->getFunds())));
 

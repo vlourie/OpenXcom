@@ -41,10 +41,24 @@ namespace OpenXcom
  * @param to The base the share goes to.
  * @param max The most that can go there: what is not given to the other bases yet plus what is planned for this one.
  */
-ManufactureDeliveryState::ManufactureDeliveryState(Production *production, Base *to, int max) : _production(production), _to(to), _max(max), _amount(0)
+ManufactureDeliveryState::ManufactureDeliveryState(Production *production, Base *to, int max) : ManufactureDeliveryState(production, to, max, nullptr, 0)
+{
+}
+
+/**
+ * Initializes the window for the loot of a finished order (XP-000292).
+ * @param to The base the loot goes to.
+ * @param max The most that can go there.
+ * @param onOk Called with the number when OK is clicked (after the window is closed).
+ */
+ManufactureDeliveryState::ManufactureDeliveryState(Base *to, int max, const std::function<void(int)> &onOk) : ManufactureDeliveryState(nullptr, to, max, onOk, max)
+{
+}
+
+ManufactureDeliveryState::ManufactureDeliveryState(Production *production, Base *to, int max, const std::function<void(int)> &onOk, int start) : _production(production), _to(to), _max(max), _amount(0), _onOk(onOk)
 {
 	_screen = false;
-	_amount = std::min(_production->getDeliveryShare(_to), _max);
+	_amount = _production ? std::min(_production->getDeliveryShare(_to), _max) : std::max(0, std::min(start, _max));
 
 	// Create objects
 	_window = new Window(this, 200, 96, 60, 52, POPUP_BOTH);
@@ -209,6 +223,15 @@ void ManufactureDeliveryState::handleWheel(Action *action)
  */
 void ManufactureDeliveryState::btnOkClick(Action *)
 {
+	if (_onOk)
+	{
+		// closed first: the callback may open a window of its own, which must not be the one popState takes
+		const std::function<void(int)> onOk = _onOk;
+		const int amount = _amount;
+		_game->popState();
+		onOk(amount);
+		return;
+	}
 	_production->setDeliveryShare(_to, _amount);
 	_game->popState();
 }
