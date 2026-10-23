@@ -338,8 +338,9 @@ GeoscapeCraftState::GeoscapeCraftState(Craft *craft, Globe *globe, Waypoint *way
 	if (_craft->getRules()->getMaxVehiclesAndLargeSoldiersLimit() == 0)
 		_txtHWP->setVisible(false);
 
-	// HD: the crew answers when the player picks the craft (not on the "UFO lost" prompt)
-	if (_waypoint == 0)
+	// HD: the crew answers when the player picks the craft (not on the "UFO lost" prompt, not when the craft flies home
+	// by itself: low fuel or the mission is done - the buttons are gone, there is nothing to order)
+	if (_waypoint == 0 && !_craft->getLowFuel() && !_craft->getMissionComplete())
 	{
 		HdPilotVoice::order(_craft, HdPilotVoice::SELECT);
 	}

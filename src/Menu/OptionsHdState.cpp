@@ -740,8 +740,8 @@ void OptionsHdState::changeSetting(size_t sel, Uint8 button)
 		}
 		else if (i == &Options::oxceHdEnemyTurn)
 		{
-			min = 0;                                  // 0 as it was, 1 hidden screen with a strip, 2 frame and the panel down
-			max = 2;
+			min = 0;                                  // 0 as it was, 1 hidden screen with a strip, 2 frame and the panel down, 3 frame with a progress bar
+			max = 3;
 		}
 		else if (i == &Options::oxceHdRadar)
 		{

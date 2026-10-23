@@ -590,6 +590,7 @@ void createAdvancedOptionsOXCE()
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdPathNumSize", &oxceHdPathNumSize, 100, "STR_HD_PATH_NUM_SIZE", "STR_HD_BATTLE_UI"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdPathNumWeight", &oxceHdPathNumWeight, 100, "STR_HD_PATH_NUM_WEIGHT", "STR_HD_BATTLE_UI"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdPanelHide", &oxceHdPanelHide, true, "STR_HD_PANEL_HIDE", "STR_HD_BATTLE_UI"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdPathStretch", &oxceHdPathStretch, false, "STR_HD_PATH_STRETCH", "STR_HD_BATTLE_UI"));
 	// HD render workers (Engine/HdWorkers.h) and how far the battle timer may run ahead of slow frames
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdThreads", &oxceHdThreads, 0, "STR_HD_THREADS", "STR_HD_SPEED"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdFrameSkip", &oxceHdFrameSkip, 4, "STR_HD_FRAME_SKIP", "STR_HD_SPEED"));
@@ -665,6 +666,8 @@ void createControlsOXCE()
 	_info.push_back(OptionInfo(OPTION_OXCE, "keyBattleUnitUp", &keyBattleUnitUp, SDLK_UNKNOWN, "STR_UNIT_LEVEL_ABOVE", "STR_BATTLESCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "keyBattleUnitDown", &keyBattleUnitDown, SDLK_UNKNOWN, "STR_UNIT_LEVEL_BELOW", "STR_BATTLESCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "keyBattleShowLayers", &keyBattleShowLayers, SDLK_UNKNOWN, "STR_MULTI_LEVEL_VIEW", "STR_BATTLESCAPE"));
+	// HD interface: the same as the arrow of oxceHdPanelHide (slides the battle panel down and back); no default key
+	_info.push_back(OptionInfo(OPTION_OXCE, "keyBattlePanelHide", &keyBattlePanelHide, SDLK_UNKNOWN, "STR_HD_PANEL_HIDE_KEY", "STR_BATTLESCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "keyBattleUseSpecial", &keyBattleUseSpecial, SDLK_w, "STR_USE_SPECIAL_ITEM", "STR_BATTLESCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "keyBattleActionItem1", &keyBattleActionItem1, SDLK_1, "STR_ACTION_ITEM_1", "STR_BATTLESCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "keyBattleActionItem2", &keyBattleActionItem2, SDLK_2, "STR_ACTION_ITEM_2", "STR_BATTLESCAPE"));

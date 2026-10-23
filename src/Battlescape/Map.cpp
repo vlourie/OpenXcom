@@ -1260,6 +1260,35 @@ SDL_Color Map::vaporTint(const Particle &p) const
 }
 
 /**
+ * The tint of a vapor particle for the HD soft puff: the same tables as vaporTint, but the opacity level is not
+ * a step. The classic level L shows for a remaining life of 10L - 7 .. 10L + 2, so the continuous level is
+ * (life + 2.5) / 10 and the tint is interpolated between the two tables around it; the last ticks fade into
+ * nothing. The particle's life and its tables are the mod's, nothing of the mechanics is touched.
+ */
+SDL_Color Map::vaporTintSoft(const Particle &p) const
+{
+	const auto &tints = _game->getMod()->getTransparencies();
+	SDL_Color none = { 0, 0, 0, 255 };
+	if (p.getColor() >= tints.size())
+	{
+		return none;
+	}
+	const auto &levels = tints[p.getColor()];
+	const int life = p.getOpacityRaw();
+	const int u = std::max(0, std::min((Mod::TransparenciesOpacityLevels - 1) * 100, (life * 10 + 25))); // level * 100
+	const int lo = u / 100, hi = std::min(lo + 1, Mod::TransparenciesOpacityLevels - 1), frac = u % 100;
+	const int fade = std::min(4, life); // 1..4 of 4: the last ticks dissolve
+	auto mix = [&](int a, int b) { return (a * (100 - frac) + b * frac) / 100; };
+	const SDL_Color &l = levels[lo], &h = levels[hi];
+	SDL_Color out;
+	out.r = (Uint8)(mix(l.r, h.r) * fade / 4);
+	out.g = (Uint8)(mix(l.g, h.g) * fade / 4);
+	out.b = (Uint8)(mix(l.b, h.b) * fade / 4);
+	out.unused = (Uint8)(255 - (255 - mix(l.unused, h.unused)) * fade / 4);
+	return out;
+}
+
+/**
  * HD light: the drawing shade of a tile, computed once per frame.
  */
 int Map::hdShadeOf(Tile *tile)
@@ -1888,6 +1917,36 @@ Map::TurnedObject Map::turnedObject(int bigWall) const
 int Map::turnedDir(int dir) const
 {
 	return (dir >= 0 && dir < 8) ? (dir + 2 * _camera->getRotation()) % 8 : dir;
+}
+
+/**
+ * HD interface, oxceHdPathStretch: a path preview's arrow. A step that costs the usual (4 TU straight, 6 diagonal) is
+ * the one arrow, as it was; a dearer one (sand, swamp, tall grass) is two or three arrows one behind another along
+ * the way, so the hard ground shows at a glance. Picture only: the cost is what the pathfinding already counted.
+ */
+void Map::blitPathArrow(HdCanvas *canvas, SurfaceRaw<const Uint8> frame, int x, int y, int newBaseColor, const Tile *tile, const Position &mapPosition)
+{
+	int copies = 1;
+	Position along;
+	if (Options::oxceHdPathStretch && tile->getPreview() >= 0 && tile->getPreview() < 8)
+	{
+		const int twelfths = tile->getPreviewStep();
+		copies = twelfths < 18 ? 1 : (twelfths < 30 ? 2 : 3);
+		if (copies > 1)
+		{
+			Position vec, from, to;
+			Pathfinding::directionToVector(tile->getPreview(), &vec);
+			_camera->convertMapToScreen(mapPosition, &from);
+			_camera->convertMapToScreen(mapPosition + vec, &to);
+			along = to - from; // one tile on, in screen pixels
+		}
+	}
+	for (int i = 0; i < copies; ++i)
+	{
+		// a quarter of a tile apart, the whole row centred on the tile; the head ends on top
+		const int at = 2 * i - (copies - 1);
+		canvas->blit(frame, x + along.x * at / 8, y + along.y * at / 8, 0, false, newBaseColor);
+	}
 }
 
 /**
@@ -3303,10 +3362,18 @@ void Map::drawTerrain(HdCanvas *surface)
 					const int vaporScreenOriginX = screenPosition.x + _spriteWidth / 2;
 					const int vaporScreenOriginY = screenPosition.y + _spriteHeight - _spriteWidth / 2 + tile->getPosition().toVoxel().z * _k;
 					const Uint8* const transparetPtr = _transparencies->data();
+					const bool softVapor = surface->getHdMode() != HD_MODE_NEAREST;
 
 					//draw particle clouds behind solder
 					for (const Particle& p : getVaporParticle(tile, 0))
 					{
+						if (softVapor)
+						{
+							// HD: a soft round puff at the particle's own place, fading smoothly (classic mode keeps the 2x2 pattern)
+							const Position o = p.getOffset16(_k);
+							surface->drawVaporSoft(vaporScreenOriginX * 16 + o.x + _k * 16, vaporScreenOriginY * 16 + o.y + _k * 16, p.getSize(), _k, vaporTintSoft(p));
+							continue;
+						}
 						int vaporX = vaporScreenOriginX + p.getOffsetX() * _k;
 						int vaporY = vaporScreenOriginY + p.getOffsetY() * _k;
 						auto transparetOffsets = transparetPtr
@@ -3407,6 +3474,13 @@ void Map::drawTerrain(HdCanvas *surface)
 					//draw particle clouds on front of solder
 					for (const Particle& p : getVaporParticle(tile, topLayer ? 3 : 1))
 					{
+						if (softVapor)
+						{
+							// HD: a soft round puff at the particle's own place, fading smoothly (classic mode keeps the 2x2 pattern)
+							const Position o = p.getOffset16(_k);
+							surface->drawVaporSoft(vaporScreenOriginX * 16 + o.x + _k * 16, vaporScreenOriginY * 16 + o.y + _k * 16, p.getSize(), _k, vaporTintSoft(p));
+							continue;
+						}
 						int vaporX = vaporScreenOriginX + p.getOffsetX() * _k;
 						int vaporY = vaporScreenOriginY + p.getOffsetY() * _k;
 						auto transparetOffsets = transparetPtr
@@ -3430,7 +3504,7 @@ void Map::drawTerrain(HdCanvas *surface)
 						tmpSurface = _game->getMod()->getHdSurfaceSet("Pathfinding")->getFrame(turnedDir(tile->getPreview()));
 						if (tmpSurface)
 						{
-							surface->blit(tmpSurface, screenPosition.x, screenPosition.y + tile->getTerrainLevel() * _k, 0, false, tileColor);
+							blitPathArrow(surface, tmpSurface, screenPosition.x, screenPosition.y + tile->getTerrainLevel() * _k, tileColor, tile, mapPosition);
 						}
 					}
 
@@ -3782,7 +3856,7 @@ void Map::drawTerrain(HdCanvas *surface)
 							tmpSurface = _game->getMod()->getHdSurfaceSet("Pathfinding")->getFrame(overlay);
 							if (tmpSurface)
 							{
-								surface->blit(tmpSurface, screenPosition.x, screenPosition.y - adjustment, 0, false, tile->getMarkerColor());
+								blitPathArrow(surface, tmpSurface, screenPosition.x, screenPosition.y - adjustment, tile->getMarkerColor(), tile, mapPosition);
 							}
 						}
 

@@ -1642,6 +1642,8 @@ void Pathfinding::refreshPath()
 						int nextDir = *(i + 1);
 						tile->setPreview(nextDir);
 					}
+					// picture only (oxceHdPathStretch): how dear the step into this tile is, in twelfths of the usual one
+					tile->setPreviewStep((dir < DIR_UP && r.cost.time > 0) ? r.cost.time * 12 / ((dir & 1) ? 6 : 4) : 0);
 					if ((x && y) || size == 0)
 					{
 						tile->setTUMarker(std::max(0,tus));
