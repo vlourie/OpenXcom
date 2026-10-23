@@ -1930,8 +1930,7 @@ void Map::blitPathArrow(HdCanvas *canvas, SurfaceRaw<const Uint8> frame, int x, 
 	Position along;
 	if (Options::oxceHdPathStretch && tile->getPreview() >= 0 && tile->getPreview() < 8)
 	{
-		static const char *dbgStretch = getenv("OXCE_DBG_STRETCH"); // TEMP-XP284
-		const int twelfths = dbgStretch ? (tile->getPreviewStep() ? atoi(dbgStretch) : 0) : tile->getPreviewStep();
+		const int twelfths = tile->getPreviewStep();
 		copies = twelfths < 18 ? 1 : (twelfths < 30 ? 2 : 3);
 		if (copies > 1)
 		{
