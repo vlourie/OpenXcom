@@ -33,6 +33,17 @@ NO_MUZZLE_WORDS = {"WHIP", "SPEAR"}
 # трассер: у плазмы тёмный хвост читался ракетой - яркий снаряд и почти прозрачный хвост;
 # гаусс - синий снаряд, хвост свой; лазер - тоньше
 TRACER_OF_HIT = {"plasma": "bright;fade=0.35", "gauss": "head=90,170,255", "laser": "width=0.7", "classic": "classic"}
+# энергетическое оружие, которое по классу попадания (взрыв, электричество, пси) в TRACER_OF_HIT не попало и летело
+# без стиля (тикет XP-000122, 21 предмет): плазма и бластеры - как плазма, лазеры и тепловой луч - тоньше, молния и
+# пси-луч - яркий снаряд без затухания хвоста (хвост молнии - одна точка, затухание 0.35 сделало бы её едва видной)
+TRACER_BY_NAME = {
+    "bright;fade=0.35": ("AUX_ACAR_WEAPON_XPLASMA", "AUX_XEC_WEAPON_TWIN_XPLASMA", "STR_BATTLE_PLASMA", "STR_PLASMA_PISTOL_LT",
+                         "STR_PLASMA_SCORCHER", "STR_PLASMA_CASTER", "STR_PLASMA_SHOTGUN", "STR_DESTRUCTOR_RIFLE",
+                         "STR_DEATH_BLASTER", "STR_BLASTER_MULTI_LAUNCHER", "STR_PIR_BLASTER_LAUNCHER", "STR_VR_BLASTER_LAUNCHER"),
+    "width=0.7": ("STR_HEAT_RAY_PISTOL", "STR_MINING_LASER", "STR_SCATTER_LASER"),
+    "bright": ("STR_LIGHTNING_THROWER", "STR_TESLA_COIL", "AUX_TOME_LIGHTNING", "STR_TOME_LIGHTNING", "STR_GHOST_BEAM",
+               "AUX_GHOST_BEAM_GRAND"),
+}
 
 
 def rows_of(items):
@@ -56,6 +67,12 @@ def rows_of(items):
             if h in TRACER_OF_HIT:
                 for owner in (a.get("type"), t):
                     tracer.setdefault(owner, TRACER_OF_HIT[h])
+    for style, names in TRACER_BY_NAME.items():
+        for t in names:
+            it = items.get(t)
+            if it:
+                for owner in [t] + [a.get("type") for a in wc.ammo_of(it, items)]:
+                    tracer.setdefault(owner, style)
     # гранаты, мины и всё, что бьёт само, без ствола
     for t, it in sorted(items.items()):
         if t in hit or it.get("battleType") not in (4, 5) or not (it.get("power") or it.get("battleType") == 4):
