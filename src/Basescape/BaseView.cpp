@@ -1418,6 +1418,32 @@ void BaseView::draw()
 					Surface *frame = _texture->getFrame(index);
 					int fx = (fac->getX() * GRID_SIZE + (fac->getRules()->getSizeX() - 1) * GRID_SIZE / 2 + 2);
 					int fy = (fac->getY() * GRID_SIZE + (fac->getRules()->getSizeY() - 1) * GRID_SIZE / 2 - 4);
+					// over an HD hangar picture the craft sits on its pad: the classic offset above puts it about
+					// 2 px right and 1 down of it, and each craft frame draws off its own centre - the drawn part
+					// of the frame goes to the middle of the pad, 1 px above the middle of the hangar (BASEBITS 9-12
+					// of the HD pack); a classic hangar keeps the classic place
+					if (hdFacility)
+					{
+						int x0 = frame->getWidth(), y0 = frame->getHeight(), x1 = -1, y1 = -1;
+						for (int py = 0; py < frame->getHeight(); ++py)
+						{
+							for (int px = 0; px < frame->getWidth(); ++px)
+							{
+								if (frame->getPixel(px, py))
+								{
+									x0 = std::min(x0, px);
+									x1 = std::max(x1, px);
+									y0 = std::min(y0, py);
+									y1 = std::max(y1, py);
+								}
+							}
+						}
+						if (x1 >= 0)
+						{
+							fx = fac->getX() * GRID_SIZE + fac->getRules()->getSizeX() * GRID_SIZE / 2 - (x0 + x1 + 1) / 2;
+							fy = fac->getY() * GRID_SIZE + fac->getRules()->getSizeY() * GRID_SIZE / 2 - 1 - (y0 + y1 + 1) / 2;
+						}
+					}
 					// an HD picture of the craft goes to the world layer over an HD hangar (a classic
 					// hangar comes with the mirror of this layer and would cover it); its lights go
 					// over everything (see drawHdLights)

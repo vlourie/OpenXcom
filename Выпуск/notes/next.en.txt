@@ -1,1 +1,2 @@
 ﻿- Battlescape, blast area preview (grenade, launcher): on hills it no longer hides under the hill but lies on its top, so you can see which hills the blast touches. The same for the striped collapse hint. The blast calculation itself is unchanged.
+- Base, HD pictures: craft in a hangar now sit exactly in the middle of the golden landing pad instead of off to the right and down. Classic hangars are unchanged.
