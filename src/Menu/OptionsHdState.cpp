@@ -785,6 +785,16 @@ void OptionsHdState::changeSetting(size_t sel, Uint8 button)
 			min = 0;                                  // 0 = as the geoscape
 			max = 6;
 		}
+		else if (i == &Options::oxceBaseSoldierGroupBy)
+		{
+			min = 0;                                  // 0 no groups, 1 race, 2 rank, 3 craft (as on the advanced screen)
+			max = 3;
+		}
+		else if (i == &Options::oxceTradeConfirm)
+		{
+			min = 0;                                  // confirm from this many lines, 0 never (as on the advanced screen)
+			max = 20;
+		}
 		else if (i == &Options::oxceHdThreads)
 		{
 			min = 0;                                  // 0 = all cores but two
