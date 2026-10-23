@@ -307,6 +307,13 @@ void TextEdit::hdMirror()
 	if (_enter && _drawBackground)
 	{
 		ui.fillRect(getX(), getY(), getWidth(), getHeight(), getColor(), HdUi::paletteOf(this));
+		if (HdUi::skin())
+		{
+			// the black fill is lost on a dark skin panel (the quick search was "invisible"): outline it in the text colour
+			const SDL_Color *pal = HdUi::paletteOf(this);
+			ui.drawInputEdge(getX(), getY(), getWidth(), getHeight(),
+				HdUi::rgba(pal[(Uint8)(_text->getColor() + (_text->isBig() ? 2 : 1) * (_text->isHighContrast() ? 2 : 1))]));
+		}
 	}
 	_text->hdDrawAt(getX() + _text->getX(), getY() + _text->getY(), getX(), getY(), getWidth(), getHeight());
 	if (Options::keyboardMode == KEYBOARD_ON && _isFocused && _blink)
