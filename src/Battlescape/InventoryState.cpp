@@ -1871,11 +1871,15 @@ void InventoryState::invLeftClick(Action *act)
 		onMoveGroundInventoryToBaseClick(true);
 	else
 	{
-		// the paperdoll under the slots has no button of its own: its pixels where no slot lies are the body
-		if (_game->getMod()->getInventoryOverlapsPaperdoll() && _inv->getSelectedItem())
+		// the whole drawn figure is the body (ogres and other big units are bigger than the 40x70 button): its pixels where no slot lies;
+		// the button's own area, when the button is live, is left to btnArmorClick
+		if (_inv->getSelectedItem())
 		{
 			const int x = (int)floor(act->getAbsoluteXMouse()), y = (int)floor(act->getAbsoluteYMouse());
-			if (!_inv->isSlotAt(x - _inv->getX(), y - _inv->getY()) && _soldier->getPixel(x - _soldier->getX(), y - _soldier->getY()) != 0)
+			const bool inButton = !_game->getMod()->getInventoryOverlapsPaperdoll() &&
+				x >= _btnArmor->getX() && x < _btnArmor->getX() + _btnArmor->getWidth() &&
+				y >= _btnArmor->getY() && y < _btnArmor->getY() + _btnArmor->getHeight();
+			if (!inButton && !_inv->isSlotAt(x - _inv->getX(), y - _inv->getY()) && _soldier->getPixel(x - _soldier->getX(), y - _soldier->getY()) != 0)
 			{
 				useOnSelf();
 			}

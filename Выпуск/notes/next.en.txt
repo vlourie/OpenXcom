@@ -1,0 +1,1 @@
+﻿- Battle inventory: a medikit, food or pills dropped on any part of the drawn fighter (head, legs, arms - ogres and other big units included) are now used on him, not only on the small area of the belly; equipment slots still take priority (ticket XP-000205).
