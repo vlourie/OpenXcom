@@ -156,6 +156,10 @@ OPT int oxceTradeConfirm;
 OPT bool oxceTradeStay;
 // Battle inventory: a medikit, food or pills dropped on the soldier's body is taken in hand and used on them
 OPT bool oxceInventoryUseOnBody;
+// Battlescape (XP-000208): in the player's turn a soldier of the player's side catches an item a comrade has thrown onto his tile -
+// it goes into his free hand (right, then left) for the TU of picking it up from the ground; no free hand or not enough TU - it
+// lies there as before. Not for a primed item. Off by default: then nothing changes (BattlescapeGame::catchThrownItem)
+OPT bool oxceCatchThrown;
 // OXCE: play cutscenes at the original 320x200 (as the classic game does); off = scaled like the geoscape
 OPT bool oxceMaximizeCutsceneScreens;
 

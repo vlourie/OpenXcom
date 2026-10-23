@@ -727,6 +727,11 @@ void ProjectileFlyBState::think()
 				else
 				{
 					_parent->dropItem(pos, _action.weapon);
+					if (Options::oxceCatchThrown)
+					{
+						// XP-000208: a comrade standing where it fell takes it into a free hand (off by default)
+						_parent->catchThrownItem(_unit, _action.weapon);
+					}
 					if (_unit->getFaction() != FACTION_PLAYER && ruleItem->isGrenadeOrProxy())
 					{
 						_parent->getTileEngine()->setDangerZone(pos, ruleItem->getExplosionRadius(attack), _action.actor);

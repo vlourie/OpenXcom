@@ -2514,6 +2514,57 @@ void BattlescapeGame::dropItem(Position position, BattleItem *item, bool removeI
 }
 
 /**
+ * XP-000208: an item thrown by a soldier has landed (dropItem) on the tile of another soldier of the player's side;
+ * that one takes it into a hand, the right first and then the left, as if he picked it up from the ground in the
+ * inventory: the same hand test as Inventory::useHand and the same price, BattleItem::getMoveToCost(hand) from the
+ * ground. A primed item, no free hand or not enough TU - the item stays on the ground as it fell. Only in the
+ * player's turn, only for the player's own soldiers (not mind-controlled ones), never the thrower himself.
+ * @param thrower The unit that threw the item.
+ * @param item The item, already on the ground.
+ * @return Whether the item went into a hand.
+ */
+bool BattlescapeGame::catchThrownItem(const BattleUnit *thrower, BattleItem *item)
+{
+	if (!Options::oxceCatchThrown || !thrower || !item || _save->getSide() != FACTION_PLAYER)
+	{
+		return false;
+	}
+	if (thrower->getFaction() != FACTION_PLAYER || thrower->getOriginalFaction() != FACTION_PLAYER)
+	{
+		return false;
+	}
+	Tile *tile = item->getTile();
+	if (!tile || item->getSlot() != getMod()->getInventoryGround() || item->getFuseTimer() > -1 || item->getRules()->isFixed())
+	{
+		return false;
+	}
+	BattleUnit *catcher = tile->getUnit();
+	if (!catcher || catcher == thrower || catcher->getTile() != tile || catcher->getStatus() != STATUS_STANDING || catcher->isOut() ||
+		catcher->getFaction() != FACTION_PLAYER || catcher->getOriginalFaction() != FACTION_PLAYER)
+	{
+		return false;
+	}
+	const RuleInventory *hands[] = { getMod()->getInventoryRightHand(), getMod()->getInventoryLeftHand() };
+	BattleItem *inHand[] = { catcher->getRightHandWeapon(), catcher->getLeftHandWeapon() };
+	for (int i = 0; i < 2; ++i)
+	{
+		const RuleInventory *hand = hands[i];
+		if (hand && !inHand[i] && item->getRules()->canBePlacedIntoInventorySection(hand) && hand->fitItemInSlot(item->getRules(), 0, 0))
+		{
+			if (!catcher->spendTimeUnits(item->getMoveToCost(hand)))
+			{
+				return false;
+			}
+			_save->getTileEngine()->itemMoveInventory(tile, catcher, item, hand, 0, 0);
+			_save->getTileEngine()->calculateLighting(LL_ITEMS, tile->getPosition());
+			_save->getTileEngine()->calculateFOV(tile->getPosition(), item->getVisibilityUpdateRange(), false);
+			return true;
+		}
+	}
+	return false;
+}
+
+/**
  * Converts a unit into a unit of another type.
  * @param unit The unit to convert.
  * @return Pointer to the new unit.
