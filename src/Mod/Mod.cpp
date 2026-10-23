@@ -1063,7 +1063,9 @@ SurfaceSet *Mod::getHdSurfaceSet(const std::string &name, bool error)
 				if (!byFrame[f]) byFrame[f] = &style;      // two weapons on one tracer: the first one's style
 			}
 		}
-		HdSprites::makeDots(name, getSurfaceSet(name, false), scaled, getHdScale(), byFrame.empty() ? nullptr : &byFrame);
+		// the battlescape palette, not the set's own: a lazily loaded extra-sprites set has no palette at this point (XP-000122)
+		const Palette *battlePalette = getPalette("PAL_BATTLESCAPE", false);
+		HdSprites::makeDots(name, getSurfaceSet(name, false), scaled, getHdScale(), byFrame.empty() ? nullptr : &byFrame, battlePalette ? battlePalette->getColors() : nullptr);
 		if (name == "CURSOR.PCK")
 		{
 			applyHdReticle();

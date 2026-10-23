@@ -60,6 +60,11 @@ public:
 	Uint8 getColor() const { return _color; }
 	/// Get the opacity.
 	Uint8 getOpacity() const { return _screenData.z; }
+	/// Get the remaining life (the opacity level is derived from it): HD fades smoothly by it.
+	int getOpacityRaw() const { return _opacity; }
+	/// Screen offset relative to tile in 1/16 of an HD pixel at scale k (the exact place the classic
+	/// integer voxel offset rounds off): x in .x, y in .y. Valid after updateScreenPosition.
+	Position getOffset16(int k) const;
 	/// Gets screen offset X relative to tile.
 	int getOffsetX() const { return _screenData.x; }
 	/// Gets screen offset Y relative to tile.

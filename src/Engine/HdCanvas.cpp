@@ -1255,6 +1255,43 @@ void Canvas32::drawVapor(SurfaceRaw<int> pattern, int x, int y, int size, const 
 	record(cmd);
 }
 
+namespace
+{
+	/// Radius of a soft vapor puff in 1/16 of a screen pixel. The classic particle is a 2x2 pattern of k x k cells and
+	/// lights (4 - size) of them; the puff falls off as (1 - r^2/R^2)^2, whose volume is 1.047 R^2, so the same
+	/// R^2 = (4 - size) k^2 / 1.047 keeps the amount of tint of the classic particle: only its shape is softer.
+	int vaporSoftRadius16(int size, int k)
+	{
+		const int cells = std::max(1, 4 - std::max(0, std::min(3, size)));
+		return std::max(8, (int)(16.0 * k * std::sqrt(cells / 1.047) + 0.5));
+	}
+}
+
+/**
+ * HD modes: a vapor particle as a round puff at a sub-pixel place (the HD ground of Options::oxceHdMode != 0). One command, no
+ * pattern copy: the puff is computed per pixel from its centre, so there is no stamp table to cache.
+ */
+void Canvas32::drawVaporSoft(int cx16, int cy16, int size, int k, SDL_Color tint)
+{
+	if (_cellPart) traceForeign(nullptr, "vaporSoft");
+	if (tint.unused == 255 && !tint.r && !tint.g && !tint.b)
+	{
+		return; // the identity tint changes nothing
+	}
+	const int r16 = vaporSoftRadius16(size, k);
+	Cmd cmd {};
+	cmd.type = Cmd::VAPOR_SOFT;
+	cmd.x = cx16;
+	cmd.y = cy16;
+	cmd.size = size;
+	cmd.scale = k;
+	cmd.tint = tint;
+	cmd.clip = fullArea();
+	cmd.y0 = ((cy16 - r16) >> 4) - 1;
+	cmd.y1 = ((cy16 + r16) >> 4) + 2;
+	record(cmd);
+}
+
 void Canvas32::flash()
 {
 	if (_cellPart) traceForeign(nullptr, "flash");
@@ -1705,6 +1742,9 @@ void Canvas32::execute(const Cmd &cmd, int y0, int y1)
 	case Cmd::VAPOR:
 		doVapor(_arenaInt.data() + cmd.arena, cmd.srcW, cmd.srcH, cmd.x, cmd.y, cmd.size, cmd.tint, cmd.transparencyLUT, clip);
 		break;
+	case Cmd::VAPOR_SOFT:
+		doVaporSoft(cmd.x, cmd.y, cmd.size, cmd.scale, cmd.tint, clip);
+		break;
 	case Cmd::FLASH:
 		doFlash(y0, y1);
 		break;
@@ -1910,6 +1950,52 @@ void Canvas32::doVapor(const int *pattern, int w, int h, int x, int y, int size,
 				b = std::min(255, (b * tint.unused / 255) + tint.b);
 				dstRow[dx] = pack(r, g, b);
 			}
+		}
+	}
+}
+
+void Canvas32::doVaporSoft(int cx16, int cy16, int size, int k, SDL_Color tint, GraphSubset destClip)
+{
+	const int r16 = vaporSoftRadius16(size, k);
+	const int r2 = r16 * r16;
+	const int inv = (int)((256LL << 16) / r2); // 256 / R^2 in 16.16
+	const int yA = std::max({ ((cy16 - r16) >> 4) - 1, destClip.beg_y, 0 });
+	const int yB = std::min({ ((cy16 + r16) >> 4) + 2, destClip.end_y, _height });
+	const int xLo = std::max(destClip.beg_x, 0), xHi = std::min(destClip.end_x, _width);
+	const int a = tint.unused;
+	for (int dy = yA; dy < yB; ++dy)
+	{
+		const int py = dy * 16 + 8 - cy16;
+		const int py2 = py * py;
+		if (py2 >= r2)
+		{
+			continue;
+		}
+		const float half = std::sqrt((float)(r2 - py2));
+		const int xA = std::max((int)std::floor((cx16 - half) / 16.0f), xLo);
+		const int xB = std::min((int)std::ceil((cx16 + half) / 16.0f), xHi);
+		Uint32 *dstRow = rowPtr(dy);
+		for (int dx = xA; dx < xB; ++dx)
+		{
+			const int px = dx * 16 + 8 - cx16;
+			const int d2 = px * px + py2;
+			if (d2 >= r2)
+			{
+				continue;
+			}
+			const int q = (int)(((long long)(r2 - d2) * inv) >> 16); // 0..256: how far in from the rim
+			const int m = (q * q) >> 8;                                // (1 - r^2/R^2)^2, 0..256
+			if (m <= 0)
+			{
+				continue;
+			}
+			const Uint32 d = dstRow[dx];
+			const int r = (d >> _rshift) & 0xFF, g = (d >> _gshift) & 0xFF, b = (d >> _bshift) & 0xFF;
+			// the formula of the palette transparency tables, taken m/256 of the way
+			const int tr = std::min(255, (r * a / 255) + tint.r);
+			const int tg = std::min(255, (g * a / 255) + tint.g);
+			const int tb = std::min(255, (b * a / 255) + tint.b);
+			dstRow[dx] = pack(r + (((tr - r) * m) >> 8), g + (((tg - g) * m) >> 8), b + (((tb - b) * m) >> 8));
 		}
 	}
 }
