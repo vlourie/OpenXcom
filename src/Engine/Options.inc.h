@@ -290,6 +290,8 @@ OPT bool oxceGentle;
 OPT bool oxceGentleAsk;
 // Building collapse pilot (Battlescape/CollapsePilot.h): the barn house and the bunker fall apart when their supports are gone. Off by default, not on any screen.
 OPT bool oxceCollapse;
+// The screen shakes when a building collapses in sight (Map::shake, CollapsePilot): picture only, off by default and in gentle mode.
+OPT bool oxceHdCollapseShake;
 // BetterAI (Battlescape/AiProbe.h, the BetterAI screen of the HD tab): the master switch, off = the stock OXCE AI; under it
 // the fixes of the stock AI's errors (O1-O14) and the experimental AI3. Read once, at the first battle of a run.
 OPT bool oxceBetterAi;

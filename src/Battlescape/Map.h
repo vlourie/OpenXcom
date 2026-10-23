@@ -154,6 +154,11 @@ private:
 	/// turn draws the map from there, whatever the camera does meanwhile
 	Position _hiddenViewOffset;
 	bool _hiddenViewValid = false;
+	/// The shake of the drawn map (shake): its start on the picture clock, length and largest offset.
+	Uint32 _shakeStart = 0, _shakeMs = 0;
+	int _shakeAmp = 0;
+	/// The offset of the shake at this moment, (0, 0) when there is none.
+	Position shakeOffset(Uint32 now) const;
 	BattlescapeMessage *_message;
 	Camera *_camera;
 	int _visibleMapHeight;
@@ -355,6 +360,9 @@ public:
 	std::list<Explosion*> *getExplosions();
 	/// Hands the explosion set over to the loose hits: they play on by themselves, frameMs a frame.
 	void loosenExplosions(int frameMs);
+
+	/// Shakes the drawn map for ms, by up to amp screen pixels fading out (Options::oxceHdCollapseShake; picture only).
+	void shake(int amp, Uint32 ms);
 
 	/// Gets the pointer to the camera.
 	Camera *getCamera();
