@@ -306,6 +306,9 @@ LIGHTS = {
 }
 
 
+# во сколько раз реже мигают лампы вида blink у постройки (период в сценах .scene.txt растёт во столько же раз)
+BLINK_SLOWER = {"STR_LIVING_QUARTERS_LARGE": 3}
+
 WALK = 8          # клеток сетки экипажа на клетку базы (HdBaseLife::SUB)
 FLOOR_TOL = 64    # насколько цвет может отойти от цвета пола (RGB 0..255), чтобы считаться полом
 FLOOR_SHARE = 0.70
@@ -527,6 +530,8 @@ def build(t, rule, sprites, out, cover=0.0, most=0, art=ART):
         period = phase = 0.0
         if kind in ("blink", "pulse"):
             period, phase = 1.4 + (u * 7 + v * 3) % 1.2, (u * 13 + v * 5) % 1
+            if kind == "blink":
+                period *= BLINK_SLOWER.get(t, 1)   # тикет XP-000269: в большом кубрике свет в каютах моргал слишком часто
         per_tile.setdefault((cx, cy), []).append(
             "light %.1f %.1f %.1f %s %.2f %.2f %.2f %.2f %.2f" %
             (x - cx * TILE, y - cy * TILE, rad * TILE, kind, col[0], col[1], col[2], period, phase))
