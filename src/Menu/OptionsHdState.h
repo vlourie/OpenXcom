@@ -47,6 +47,8 @@ private:
 	struct Row
 	{
 		int group, index;
+		/// 0: the value is in the row's second column; 1 and 2: a long value, the label row and the row under it that holds the value.
+		int pair = 0;
 	};
 	TextList *_lstOptions;
 	/// The tabs over the list and the one pressed (TextButton::setGroup moves it).
@@ -69,7 +71,15 @@ private:
 	/// Is this setting grey under the BetterAI switch (an AI row while the switch is off)?
 	bool aiLocks(const OptionInfo &info) const;
 
-	void addRow(int group, int index, const std::string &name, const std::string &value);
+	void addRow(int group, int index, const std::string &name, const std::string &value, int pair = 0);
+	/// The rows of a setting: one with its short value beside the label, two with a long one under it.
+	void addSettingRow(int group, int index, const std::string &label, bool grey);
+	/// Is the value too long for the column beside the label (the list puts it under the label then)?
+	bool longValue(const std::string &value) const;
+	/// Writes a setting's value, and its color, in the row (or the pair of rows) the setting is in.
+	void setValueCell(size_t sel, const std::string &value, Uint8 color);
+	/// The width of the value column: the widest of the short values.
+	int _valueWidth = 0;
 	std::string valueText(const OptionInfo &info) const;
 	Uint8 valueColor(const OptionInfo &info) const;
 	/// Is this setting fixed while the tab is open from a battle (the battle saves rule)?

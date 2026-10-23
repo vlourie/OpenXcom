@@ -183,6 +183,10 @@ private:
 	bool _hdLabelsOn = false;
 	/// Are the labels drawn by the HD interface (its modern skin with the TrueType fonts)?
 	bool hdLabelsWanted() const;
+	/// The backdrop's middle color 0xRRGGBB from the mod's table hd/backdrop.txt for this battle's terrain or mission, -1: none.
+	int hdBackdropRgb();
+	int hdBackdropFind();
+	int _hdBackdropRgb = -2; ///< hdBackdropRgb once found (-2: not looked yet)
 	/// The hit chance text as it stands in _txtAccuracy, at canvas (x, y): baked, or kept for the HD interface.
 	void drawAccuracy(HdCanvas *canvas, int x, int y);
 	SurfaceSet *_projectileSet;
