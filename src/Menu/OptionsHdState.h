@@ -70,6 +70,8 @@ private:
 	int currentTab() const;
 	/// Is this setting grey under the BetterAI switch (an AI row while the switch is off)?
 	bool aiLocks(const OptionInfo &info) const;
+	/// Is the main option of this setting off (the setting does nothing for now: its row is grey)?
+	bool dependsOff(const OptionInfo &info) const;
 
 	void addRow(int group, int index, const std::string &name, const std::string &value, int pair = 0);
 	/// The rows of a setting: one with its short value beside the label, two with a long one under it.

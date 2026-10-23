@@ -47,8 +47,8 @@ static const int HD_TAB_COUNT = sizeof(HD_TABS) / sizeof(HD_TABS[0]);
 /// The groups of the list, in this order, each on its tab (a title can come twice: its graphics options on the first
 /// tab, the rest on its own); the first one also holds the art version row. The title is a category of Options.cpp.
 static const struct { const char *category; int tab; } HD_CATEGORIES[] = {
-	{ "STR_HD_ART", 0 }, { "STR_HD_GENTLE", 0 }, { "STR_HD_GRAPHICS", 0 }, { "STR_HD_BATTLE_UI", 0 },
-	{ "STR_HD_INTERFACE", 0 }, { "STR_HD_GEOSCAPE", 0 }, { "STR_HD_BASE", 0 },
+	{ "STR_HD_ART", 0 }, { "STR_HD_GENTLE", 0 }, { "STR_HD_GRAPHICS", 0 },
+	{ "STR_HD_INTERFACE", 0 },
 	{ "STR_HD_BATTLE", 1 }, { "STR_HD_BATTLE_UI", 1 }, { "STR_HD_PHYSICS", 1 },
 	{ "STR_HD_INTERFACE", 2 },
 	{ "STR_HD_GEOSCAPE", 3 }, { "STR_HD_BASE", 3 },
@@ -58,12 +58,7 @@ static const struct { const char *category; int tab; } HD_CATEGORIES[] = {
 /// category (the battle ones to "Graphics of the battle"). Options of the categories ART, GENTLE and GRAPHICS are there already.
 static const char *const HD_GRAPHICS_OPTIONS[] = {
 	"oxceHdBlastFall", "oxceHdKillCam", "oxceHdHiddenMap", "oxceHdBackdrop", "oxceHdEnemyNumber",
-	"oxceHdReticle", "oxceHdReticleDamageColor", "oxceHdReticleArtillery", "oxceHdReticleExplosive", "oxceHdAimArc",
-	"oxceHdAimNumSize", "oxceHdAimNumWeight", "oxceHdBlastArea", "oxceHdEnemyTurn", "oxceHdBattleHud", "oxceHdBattleHudColor",
-	"oxceHdPathDigits", "oxceHdPathNumSize", "oxceHdPathNumWeight",
-	"oxceHdUi", "oxceHdUiSkin", "oxceHdUiFont", "oxceHdPictures", "oxceHdUiSmooth",
-	"oxceHdGlobeScale", "oxceHdCraftOutlines", "oxceHdRadar", "oxceHdRadarWaves", "oxceHdRadarBeam",
-	"oxceHdBaseAnim", "oxceHdCraftLights", "oxceHdCraftLaunch" };
+	"oxceHdUi", "oxceHdUiSkin", "oxceHdUiFont", "oxceHdPictures", "oxceHdUiSmooth" };
 /// The tab open last: the window opens on it again, until the game is closed.
 static int hdTab = 0;
 /// The category of the HD lab (Engine/HdLab.h): its rows show only once the password was given.
@@ -368,7 +363,7 @@ void OptionsHdState::updateList()
 			const bool gentle = HdGentle::locks(info);
 			// grey out options a mod, the gentle mode or the battle in progress fixes
 			addSettingRow((int)g, (int)i, gentle ? std::string(tr(info.description())) + " " + std::string(tr("STR_GENTLE_LOCKED")) : std::string(tr(info.description())),
-				gentle || battleLocks(info) || fixeduserOptions.find(info.id()) != fixeduserOptions.end());
+				gentle || battleLocks(info) || dependsOff(info) || fixeduserOptions.find(info.id()) != fixeduserOptions.end());
 		}
 		if (lab)
 		{
@@ -409,11 +404,35 @@ void OptionsHdState::btnTabPress(Action *)
  */
 Uint8 OptionsHdState::valueColor(const OptionInfo &info) const
 {
-	if (HdGentle::locks(info) || battleLocks(info) || aiLocks(info))
+	if (HdGentle::locks(info) || battleLocks(info) || aiLocks(info) || dependsOff(info))
 	{
 		return _greyedOutColor;
 	}
 	return info.type() == OPTION_BOOL && !*info.asBool() ? _greyedOutColor : _lstOptions->getColor();
+}
+
+/**
+ * Is the main option of this setting off, so the setting does nothing for now? Its row is grey, but it can be changed.
+ */
+bool OptionsHdState::dependsOff(const OptionInfo &info) const
+{
+	const bool skin = Options::oxceHdUi > 0 && Options::oxceHdUiSkin > 0;
+	const bool fonts = skin && Options::oxceHdUiFont > 0;
+	if (info.type() == OPTION_INT)
+	{
+		const int *p = info.asInt();
+		if (p == &Options::oxceHdPathNumSize || p == &Options::oxceHdPathNumWeight) return !Options::oxceHdPathDigits || !fonts;
+		if (p == &Options::oxceHdAimNumSize || p == &Options::oxceHdAimNumWeight) return !fonts;
+		if (p == &Options::oxceHdBattleHudColor) return !skin;
+		if (p == &Options::oxceHdRadarWaves) return Options::oxceHdRadar != 3;
+	}
+	else if (info.type() == OPTION_BOOL)
+	{
+		const bool *b = info.asBool();
+		if (b == &Options::oxceHdBattleHud) return !skin;
+		if (b == &Options::oxceHdRadarBeam) return Options::oxceHdRadar != 3;
+	}
+	return false;
 }
 
 /**
@@ -799,6 +818,17 @@ void OptionsHdState::changeSetting(size_t sel, Uint8 button)
 			return;
 		}
 	}
+	{
+		// the main option of dependent rows changed: they turn grey, or back
+		const bool *pb = setting->type() == OPTION_BOOL ? setting->asBool() : nullptr;
+		const int *pi = setting->type() == OPTION_INT ? setting->asInt() : nullptr;
+		if (pb == &Options::oxceHdPathDigits || pi == &Options::oxceHdUi || pi == &Options::oxceHdUiSkin
+			|| pi == &Options::oxceHdUiFont || pi == &Options::oxceHdRadar)
+		{
+			updateList();
+			return;
+		}
+	}
 	setValueCell(sel, valueText(*setting), valueColor(*setting));
 }
 
@@ -876,7 +906,7 @@ void OptionsHdState::showDetail(size_t sel)
 				return std::make_pair(artText(), (Uint8)0);
 			}
 			const OptionInfo &info = _groups[row.group].settings[row.index];
-			return std::make_pair(valueText(info), HdGentle::locks(info) || battleLocks(info) || aiLocks(info) || (info.type() == OPTION_BOOL && !*info.asBool()) ? _greyedOutColor : (Uint8)0);
+			return std::make_pair(valueText(info), HdGentle::locks(info) || battleLocks(info) || aiLocks(info) || dependsOff(info) || (info.type() == OPTION_BOOL && !*info.asBool()) ? _greyedOutColor : (Uint8)0);
 		}));
 }
 
