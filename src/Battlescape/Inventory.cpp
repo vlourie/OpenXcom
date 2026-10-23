@@ -1395,7 +1395,18 @@ void Inventory::mouseClick(Action *action, State *state)
  */
 bool Inventory::isSlotAt(int x, int y) const
 {
-	return getSlotInPosition(&x, &y) != nullptr;
+	if (getSlotInPosition(&x, &y) != nullptr)
+	{
+		return true;
+	}
+	if (_selItem && _selection)
+	{
+		// the drop goes to the slot under the centre of the grabbed item (see mouseClick): a refused drop there is not a drop on the unit
+		int cx = _selection->getX() + (RuleInventory::HAND_W - _selItem->getRules()->getInventoryWidth()) * RuleInventory::SLOT_W/2 + RuleInventory::SLOT_W/2,
+			cy = _selection->getY() + (RuleInventory::HAND_H - _selItem->getRules()->getInventoryHeight()) * RuleInventory::SLOT_H/2 + RuleInventory::SLOT_H/2;
+		return getSlotInPosition(&cx, &cy) != nullptr;
+	}
+	return false;
 }
 
 /**
