@@ -97,11 +97,12 @@ CraftEquipmentState::CraftEquipmentState(Base *base, size_t craft) :
 	_ammoColor = _game->getMod()->getInterface("craftEquipment")->getElement("ammoColor")->color;
 
 	add(_window, "window", "craftEquipment");
-	add(_btnQuickSearch, "button", "craftEquipment");
 	add(_btnOk, "button", "craftEquipment");
 	add(_btnClear, "button", "craftEquipment");
 	add(_btnInventory, "button", "craftEquipment");
 	add(_txtTitle, "text", "craftEquipment");
+	// after the title: a long craft name runs under the field's corner, and the field must show over it (XP-000293)
+	add(_btnQuickSearch, "button", "craftEquipment");
 	add(_txtItem, "text", "craftEquipment");
 	add(_txtStores, "text", "craftEquipment");
 	add(_txtAvailable, "text", "craftEquipment");

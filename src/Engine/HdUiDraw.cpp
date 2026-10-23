@@ -746,6 +746,16 @@ void HdUi::drawPanelFrame(int x, int y, int w, int h, int color, int mul, int in
 	}
 }
 
+void HdUi::drawInputEdge(int x, int y, int w, int h, Uint32 edge)
+{
+	SDL_Surface *dest;
+	int k;
+	const SDL_Color *pal;
+	if (!target(dest, k, pal) || w <= 0 || h <= 0) return;
+	// a thin light line round an edit field: its black fill alone vanishes on a dark panel (XP-000293)
+	strokeRoundRect((float)x * k, (float)y * k, (float)(x + w) * k, (float)(y + h) * k, 1.0f * k, std::max(1.0f, k * 0.5f), withAlpha(edge, 0xB0));
+}
+
 void HdUi::drawHighlight(int x, int y, int w, int h, Uint32 accent)
 {
 	SDL_Surface *dest;

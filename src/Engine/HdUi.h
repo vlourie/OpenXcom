@@ -205,6 +205,8 @@ public:
 	void drawShadow(int x, int y, int w, int h, float radius);
 	/// The skin's list-row highlight: a translucent light band, with an accent bar at its left in `accent` (0 = none).
 	void drawHighlight(int x, int y, int w, int h, Uint32 accent = 0);
+	/// The skin's edit field outline: a thin line in `edge` (0xAARRGGBB, alpha replaced) round a base rectangle.
+	void drawInputEdge(int x, int y, int w, int h, Uint32 edge);
 	/// The skin's row banding of a list: a base band, odd ones a little darker, even ones a little lighter.
 	void drawRowBand(int x, int y, int w, int h, bool odd);
 	/// The skin's slider: a thin track from base (x, y) `w` wide (`h` = the row's height, the track is centred in it),
