@@ -1,0 +1,11 @@
+- Battle (HD): with the option "Gradient beyond the map's edge" on, the empty space beyond the map now takes its colour from the ground of the battle - green for a jungle, sand for a desert, grey for a city and so on - and goes dark with the night. The colours are in the mod's table hd/backdrop.txt, one line per terrain, and can be edited by hand; a terrain without a line keeps the environment's colour as before (ticket XP-000263).
+- Interface (HD): in the HD options every option of how things look - art version, scale and light, battle effects, reticles and numbers, the HD interface, the globe's and the base's pictures - is now on the single "Graphics" tab; the other tabs keep what is about controls, information and speed. A short value (yes/no, a number, a short word) stands in the same row as its name; a long one (a style name) goes in the row under it instead of being cut to pieces.
+- Interface (HD): the game looks whether an update is out at start and then every 5 minutes, not every 10 seconds.
+- Maps (HD): calmer grass on mountains and plains - no bright blotches or ripple, no grid on the cell joins.
+- Maps (HD): the double yellow road marking on port maps is continuous and no longer breaks on cell joins; the brown path by the house is laid with tiles in rows again instead of looking like mud (ticket XP-000222).
+- Maps (HD): the car wheel on the floor is the same whole wheel everywhere, without squares round the edges or see-through holes (tickets XP-000249, XP-000215).
+- Maps (HD): the broken wooden box is the shell of a box with shadow inside, as in the original, not a pile of sand (ticket XP-000249).
+- Maps (HD): four-piece pits fit together (ticket XP-000262); the house roof has no white stripes between cells (ticket XP-000251).
+- Maps (HD): a patch of mud and a stump in the mountains are coloured as in the original, not bright spots (tickets XP-000242, XP-000243).
+- Maps (HD): there is a rubbish bin under the window again, not a heap of stones (ticket XP-000248); the wooden crate is an old one of planks with dark gaps and thin iron edging (ticket XP-000264).
+- Maps (HD): the rails are straight and do not part on the cell joins (ticket XP-000253).

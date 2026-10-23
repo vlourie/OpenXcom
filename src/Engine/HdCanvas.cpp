@@ -462,7 +462,7 @@ void Canvas32::fill(Uint8 color)
  * color darkened, the middle a tenth of the way to a pale haze, the bottom three tenths of the way (a black
  * background goes from black to a dim blue-grey). Recorded like the flat fill and painted by the strips.
  */
-void Canvas32::fillBackdrop(Uint8 color)
+void Canvas32::fillBackdrop(Uint8 color, int rgb)
 {
 	Cmd cmd {};
 	cmd.type = Cmd::FILL_BACKDROP;
@@ -470,7 +470,7 @@ void Canvas32::fillBackdrop(Uint8 color)
 	cmd.y0 = 0;
 	cmd.y1 = _height;
 	static const int HAZE[3] = { 150, 165, 185 };
-	const int base[3] = { _colors[color].r, _colors[color].g, _colors[color].b };
+	const int base[3] = { rgb >= 0 ? (rgb >> 16) & 255 : _colors[color].r, rgb >= 0 ? (rgb >> 8) & 255 : _colors[color].g, rgb >= 0 ? rgb & 255 : _colors[color].b };
 	for (int c = 0; c < 3; ++c)
 	{
 		cmd.backdrop[0][c] = (Uint8)(base[c] * 78 / 100);

@@ -176,7 +176,8 @@ public:
 	virtual void fill(Uint8 color) = 0;
 	/// Clears the canvas to a vertical gradient around a palette color (Options::oxceHdBackdrop): darker at the top,
 	/// the color itself in the middle, a pale haze at the bottom. A palette canvas has only the flat color.
-	virtual void fillBackdrop(Uint8 color) { fill(color); }
+	/// @param rgb 0xRRGGBB of the middle color when the mod's table names one (hd/backdrop.txt), else -1: the palette color's own.
+	virtual void fillBackdrop(Uint8 color, int rgb = -1) { (void)rgb; fill(color); }
 	/// Draws a palette sprite (Surface::blitRaw semantics).
 	virtual void blit(SurfaceRaw<const Uint8> src, int x, int y, int shade, bool half = false, int newBaseColor = 0) = 0;
 	/// Draws a palette sprite clipped to a rectangle (Surface::blitNShade(range) semantics).
@@ -614,7 +615,7 @@ public:
 	int getWidth() const override { return _width; }
 	int getHeight() const override { return _height; }
 	void fill(Uint8 color) override;
-	void fillBackdrop(Uint8 color) override;
+	void fillBackdrop(Uint8 color, int rgb = -1) override;
 	void blit(SurfaceRaw<const Uint8> src, int x, int y, int shade, bool half = false, int newBaseColor = 0) override;
 	void blit(SurfaceRaw<const Uint8> src, int x, int y, int shade, GraphSubset range) override;
 	void blitScripted(ScriptWorkerBlit &work, const Surface *src, int x, int y, int shade, GraphSubset range, ScriptWorkerBlit *unlit = nullptr) override;

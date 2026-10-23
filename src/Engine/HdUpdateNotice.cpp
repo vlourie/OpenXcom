@@ -29,8 +29,9 @@
 namespace OpenXcom
 {
 
-/// How often the file is looked at: a stat and a line, nothing per frame.
-static const Uint32 LOOK_EVERY_MS = 10000;
+/// How often the file is looked at: a stat and a line, nothing per frame. Five minutes, as the launcher's
+/// own look (UpdateWatch.Every); a day once releases stop coming every few hours.
+static const Uint32 LOOK_EVERY_MS = 5 * 60 * 1000;
 /// The plate is one line of the small font with a frame round it.
 static const int PLATE_HEIGHT = 11;
 
@@ -65,7 +66,7 @@ void HdUpdateNotice::setColor(Uint8 color)
 }
 
 /**
- * Looks at launcher/update.txt next to the exe every ten seconds: its first line is the release out.
+ * Looks at launcher/update.txt next to the exe at start and every five minutes: its first line is the release out.
  */
 void HdUpdateNotice::think()
 {

@@ -44,14 +44,26 @@ namespace OpenXcom
 /// The tabs over the list, three in a row: graphics, battle, interface, geoscape and base, AI and rules, speed.
 static const char *const HD_TABS[] = { "STR_HD_TAB_GRAPHICS", "STR_HD_TAB_BATTLE", "STR_HD_TAB_INTERFACE", "STR_HD_TAB_WORLD", "STR_HD_TAB_AI", "STR_HD_TAB_SPEED" };
 static const int HD_TAB_COUNT = sizeof(HD_TABS) / sizeof(HD_TABS[0]);
-/// The categories of Options.cpp shown here, in this order, and the tab of each; the first one also holds the art version row.
+/// The groups of the list, in this order, each on its tab (a title can come twice: its graphics options on the first
+/// tab, the rest on its own); the first one also holds the art version row. The title is a category of Options.cpp.
 static const struct { const char *category; int tab; } HD_CATEGORIES[] = {
-	{ "STR_HD_ART", 0 }, { "STR_HD_GENTLE", 0 }, { "STR_HD_GRAPHICS", 0 },
+	{ "STR_HD_ART", 0 }, { "STR_HD_GENTLE", 0 }, { "STR_HD_GRAPHICS", 0 }, { "STR_HD_BATTLE_UI", 0 },
+	{ "STR_HD_INTERFACE", 0 }, { "STR_HD_GEOSCAPE", 0 }, { "STR_HD_BASE", 0 },
 	{ "STR_HD_BATTLE", 1 }, { "STR_HD_BATTLE_UI", 1 }, { "STR_HD_PHYSICS", 1 },
 	{ "STR_HD_INTERFACE", 2 },
 	{ "STR_HD_GEOSCAPE", 3 }, { "STR_HD_BASE", 3 },
 	{ "STR_HD_AI", 4 }, { "STR_HD_CHALLENGE", 4 },
 	{ "STR_HD_SPEED", 5 }, { "STR_HD_LAB", 5 } };
+/// The options of how things look, wherever their category is: they all go on the graphics tab, to the group of their
+/// category (the battle ones to "Graphics of the battle"). Options of the categories ART, GENTLE and GRAPHICS are there already.
+static const char *const HD_GRAPHICS_OPTIONS[] = {
+	"oxceHdBlastFall", "oxceHdKillCam", "oxceHdHiddenMap", "oxceHdBackdrop", "oxceHdEnemyNumber",
+	"oxceHdReticle", "oxceHdReticleDamageColor", "oxceHdReticleArtillery", "oxceHdReticleExplosive", "oxceHdAimArc",
+	"oxceHdAimNumSize", "oxceHdAimNumWeight", "oxceHdBlastArea", "oxceHdEnemyTurn", "oxceHdBattleHud", "oxceHdBattleHudColor",
+	"oxceHdPathDigits", "oxceHdPathNumSize", "oxceHdPathNumWeight",
+	"oxceHdUi", "oxceHdUiSkin", "oxceHdUiFont", "oxceHdPictures", "oxceHdUiSmooth",
+	"oxceHdGlobeScale", "oxceHdCraftOutlines", "oxceHdRadar", "oxceHdRadarWaves", "oxceHdRadarBeam",
+	"oxceHdBaseAnim", "oxceHdCraftLights", "oxceHdCraftLaunch" };
 /// The tab open last: the window opens on it again, until the game is closed.
 static int hdTab = 0;
 /// The category of the HD lab (Engine/HdLab.h): its rows show only once the password was given.
@@ -106,12 +118,16 @@ OptionsHdState::OptionsHdState(OptionsOrigin origin) : OptionsBaseState(origin),
 	Text text = Text(100, 9, 0, 0);
 	text.initText(_game->getMod()->getFont("FONT_BIG"), _game->getMod()->getFont("FONT_SMALL"), _game->getLanguage());
 	int rightcol = 0;
-	for (const char *s : { "STR_YES", "STR_NO", "STR_HD_ART_ORIGINAL", "STR_HD_ART_HD", "STR_HD_ART_ADULT" })
+	// (the short values: yes and no, the art versions, a few words of the short variants - what is longer goes under its label)
+	for (const char *s : { "STR_YES", "STR_NO", "STR_HD_ART_ORIGINAL", "STR_HD_ART_HD", "STR_HD_ART_ADULT",
+		"STR_HD_ENEMY_NUMBER_1", "STR_HD_ENEMY_NUMBER_2", "STR_HD_ENEMY_TURN_0", "STR_HD_ENEMY_TURN_2", "STR_HD_RETICLE_PACK",
+		"STR_HD_RETICLE_STOCK", "STR_HD_FIRE_0", "STR_HD_ALT_INFO_1", "STR_HD_RADAR_0" })
 	{
 		text.setText(tr(s));
 		rightcol = std::max(rightcol, text.getTextWidth());
 	}
 	rightcol += 2;
+	_valueWidth = rightcol;
 
 	_lstOptions->setAlign(ALIGN_RIGHT, 1);
 	_lstOptions->setColumns(2, _lstOptions->getWidth() - rightcol, rightcol);
@@ -144,7 +160,23 @@ OptionsHdState::OptionsHdState(OptionsOrigin origin) : OptionsBaseState(origin),
 		group.tab = c.tab;
 		for (const auto& optionInfo : Options::getOptionInfo())
 		{
-			if (optionInfo.type() != OPTION_KEY && !optionInfo.description().empty() && optionInfo.category() == category)
+			// the group an option is in: a graphics option on the first tab (the battle ones in the graphics group), the
+			// others where their category is (a category on two tabs: its second entry)
+			bool graphics = false;
+			for (const char *id : HD_GRAPHICS_OPTIONS)
+			{
+				graphics = graphics || optionInfo.id() == id;
+			}
+			const std::string home = graphics && optionInfo.category() == "STR_HD_BATTLE" ? std::string("STR_HD_GRAPHICS") : optionInfo.category();
+			int homeTab = -1;
+			for (const auto &d : HD_CATEGORIES)
+			{
+				if (home == d.category && (homeTab < 0 || !graphics))
+				{
+					homeTab = d.tab;
+				}
+			}
+			if (optionInfo.type() != OPTION_KEY && !optionInfo.description().empty() && home == category && homeTab == c.tab)
 			{
 				// asking at every start only means something when there is an adult tree to choose
 				// (asBool throws on an option of another type, so the type is checked first)
@@ -186,10 +218,75 @@ void OptionsHdState::init()
 	updateList();
 }
 
-void OptionsHdState::addRow(int group, int index, const std::string &name, const std::string &value)
+void OptionsHdState::addRow(int group, int index, const std::string &name, const std::string &value, int pair)
 {
 	_lstOptions->addRow(2, name.c_str(), value.c_str());
-	_rows.push_back(Row{ group, index });
+	_rows.push_back(Row{ group, index, pair });
+}
+
+/**
+ * Is the value wider than the column beside the label? Measured as the column itself was (base font).
+ */
+bool OptionsHdState::longValue(const std::string &value) const
+{
+	Text text = Text(200, 9, 0, 0);
+	text.initText(_game->getMod()->getFont("FONT_BIG"), _game->getMod()->getFont("FONT_SMALL"), _game->getLanguage());
+	text.setText(value);
+	return text.getTextWidth() > _valueWidth;
+}
+
+/**
+ * The rows of a setting. A short value (yes, no, a number, a few words) stands in the label's row, as ever; a long one
+ * would be cut to pieces in that narrow column, so it gets a row under the label, indented, in the value's color.
+ */
+void OptionsHdState::addSettingRow(int group, int index, const std::string &label, bool grey)
+{
+	const OptionInfo &info = _groups[group].settings[index];
+	const std::string value = valueText(info);
+	if (!longValue(value))
+	{
+		addRow(group, index, label, value);
+		_lstOptions->setCellColor(_lstOptions->getLastRowIndex(), 1, valueColor(info));
+	}
+	else
+	{
+		addRow(group, index, label, "", 1);
+		addRow(group, index, "   " + value, "", 2);
+		_lstOptions->setCellColor(_lstOptions->getLastRowIndex(), 0, valueColor(info));
+	}
+	if (grey)
+	{
+		_lstOptions->setRowColor(_lstOptions->getLastRowIndex(), _greyedOutColor);
+		if (_rows.back().pair == 2)
+		{
+			_lstOptions->setRowColor(_lstOptions->getLastRowIndex() - 1, _greyedOutColor);
+		}
+	}
+}
+
+/**
+ * Writes a setting's value in its row: the second column, or the row under the label when the value is long. A value
+ * that is now of the other kind than its rows were made for (short to long, or back) builds the list again.
+ */
+void OptionsHdState::setValueCell(size_t sel, const std::string &value, Uint8 color)
+{
+	const Row row = _rows[sel];
+	if ((row.pair == 0) == longValue(value))
+	{
+		updateList();
+		return;
+	}
+	if (row.pair == 0)
+	{
+		_lstOptions->setCellText(sel, 1, value);
+		_lstOptions->setCellColor(sel, 1, color);
+	}
+	else
+	{
+		const size_t at = row.pair == 1 ? sel + 1 : sel;
+		_lstOptions->setCellText(at, 0, "   " + value);
+		_lstOptions->setCellColor(at, 0, color);
+	}
 }
 
 /**
@@ -249,8 +346,12 @@ void OptionsHdState::updateList()
 		{
 			addRow(ROW_NONE, 0, "", "");
 		}
-		addRow(ROW_NONE, 0, tr(group.title), "");
-		_lstOptions->setCellColor(_lstOptions->getLastRowIndex(), 0, _colorGroup);
+		// a group of one setting that is called as the group is (the gentle mode) is that row alone, without a header over it
+		if (withArt || group.settings.size() != 1 || std::string(tr(group.settings[0].description())) != std::string(tr(group.title)))
+		{
+			addRow(ROW_NONE, 0, tr(group.title), "");
+			_lstOptions->setCellColor(_lstOptions->getLastRowIndex(), 0, _colorGroup);
+		}
 		if (withArt)
 		{
 			addRow(ROW_ART, 0, tr("STR_HD_ART_VERSION"), artText());
@@ -265,13 +366,9 @@ void OptionsHdState::updateList()
 		{
 			const OptionInfo &info = group.settings[i];
 			const bool gentle = HdGentle::locks(info);
-			addRow((int)g, (int)i, gentle ? std::string(tr(info.description())) + " " + std::string(tr("STR_GENTLE_LOCKED")) : std::string(tr(info.description())), valueText(info));
-			_lstOptions->setCellColor(_lstOptions->getLastRowIndex(), 1, valueColor(info));
 			// grey out options a mod, the gentle mode or the battle in progress fixes
-			if (gentle || battleLocks(info) || fixeduserOptions.find(info.id()) != fixeduserOptions.end())
-			{
-				_lstOptions->setRowColor(_lstOptions->getLastRowIndex(), _greyedOutColor);
-			}
+			addSettingRow((int)g, (int)i, gentle ? std::string(tr(info.description())) + " " + std::string(tr("STR_GENTLE_LOCKED")) : std::string(tr(info.description())),
+				gentle || battleLocks(info) || fixeduserOptions.find(info.id()) != fixeduserOptions.end());
 		}
 		if (lab)
 		{
@@ -570,7 +667,6 @@ void OptionsHdState::changeSetting(size_t sel, Uint8 button)
 			updateList();                             // the rows the mode or the switch holds change with it
 			return;
 		}
-		_lstOptions->setCellColor(sel, 1, valueColor(*setting));
 	}
 	else if (setting->type() == OPTION_INT)
 	{
@@ -703,7 +799,7 @@ void OptionsHdState::changeSetting(size_t sel, Uint8 button)
 			return;
 		}
 	}
-	_lstOptions->setCellText(sel, 1, valueText(*setting));
+	setValueCell(sel, valueText(*setting), valueColor(*setting));
 }
 
 /**

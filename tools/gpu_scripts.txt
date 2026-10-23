@@ -128,3 +128,5 @@ craft_launch_video.py
 gen_video.py
 gen_pilot_voices.py
 t254_silo_edit.py
+t249_box_gen.py
+t_regen_obj.py

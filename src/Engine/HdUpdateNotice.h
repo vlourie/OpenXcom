@@ -31,7 +31,7 @@ class Text;
  *
  * The launcher watches the release channel while the game runs and, when a release newer than the
  * installed one is out, writes its name into launcher/update.txt next to the exe (portal, Core/UpdateNotice.cs);
- * the file goes once the update is installed. The game only reads it: a look every ten seconds, the plate
+ * the file goes once the update is installed. The game only reads it: a look at start and every five minutes, the plate
  * shows while the file is there. Drawn like the FPS counter, after the frame of an HD test dump is taken, so
  * no dump ever has it; under the counter when that is on.
  */

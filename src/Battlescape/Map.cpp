@@ -50,6 +50,9 @@
 #include <chrono>
 #include <climits>
 #include <cmath>
+#include <map>
+#include <sstream>
+#include "../Engine/FileMap.h"
 #include "../Engine/ShaderDraw.h"
 #include "../Engine/ShaderMove.h"
 #include "../Savegame/SavedBattleGame.h"
@@ -1082,7 +1085,8 @@ void Map::draw()
 	if (Options::oxceHdBackdrop)
 	{
 		// the backdrop beyond the map's edge as a gradient around the environment's colour (a palette canvas: flat as ever)
-		_canvas->fillBackdrop(Palette::blockOffset(0) + _bgColor);
+		// (the ground's line of the mod's table hd/backdrop.txt, when there is one, in place of the environment's color)
+		_canvas->fillBackdrop(Palette::blockOffset(0) + _bgColor, hdBackdropRgb());
 	}
 	else
 	{
@@ -1548,6 +1552,83 @@ void Map::blit(SDL_Surface *surface)
 bool Map::hdLabelsWanted() const
 {
 	return HdUi::skin() && HdUi::instance().hasFonts();
+}
+
+/**
+ * Options::oxceHdBackdrop: the color of the void by the battle's ground. The mod's table hd/backdrop.txt ("NAME RRGGBB"
+ * a line, '#' starts a comment) names a terrain or a mission type; the terrain that most of the map's blocks come from
+ * and has a line wins, else the mission type. No file or no line: -1, the environment's own color as it was.
+ * The table's line wins over the environment's color (the jungle of Piratez has the heat's dark red).
+ * Only a picture: nothing of the battle is read but the names the save already holds.
+ */
+int Map::hdBackdropRgb()
+{
+	const int found = hdBackdropFind();
+	if (found < 0)
+	{
+		return -1;
+	}
+	// the void goes dark with the battle's own darkness (the global shade 0..15): to 15 percent at night
+	const int keep = 100 - 85 *std::max(0, std::min(15, _save->getGlobalShade())) / 15;
+	return ((((found >> 16) & 255) * keep / 100) << 16) | ((((found >> 8) & 255) * keep / 100) << 8) | ((found & 255) * keep / 100);
+}
+
+int Map::hdBackdropFind()
+{
+	if (_hdBackdropRgb != -2)
+	{
+		return _hdBackdropRgb;
+	}
+	_hdBackdropRgb = -1;
+	const std::string path = HdSprites::artPath("backdrop.txt");
+	std::unique_ptr<std::istream> in = FileMap::fileExists(path) ? FileMap::getIStream(path) : nullptr;
+	if (!in)
+	{
+		return _hdBackdropRgb;
+	}
+	std::map<std::string, int> table;
+	std::string line;
+	while (std::getline(*in, line))
+	{
+		if (line.size() >= 3 && (unsigned char)line[0] == 0xEF && (unsigned char)line[1] == 0xBB && (unsigned char)line[2] == 0xBF)
+		{
+			line.erase(0, 3);
+		}
+		std::istringstream fields(line);
+		std::string name, hex;
+		if (!(fields >> name >> hex) || name[0] == '#')
+		{
+			continue;
+		}
+		table[name] = (int)(strtoul(hex.c_str() + (hex[0] == '#' ? 1 : 0), nullptr, 16) & 0xFFFFFF);
+	}
+	std::map<std::string, int> blocks;
+	for (const auto &column : _save->getFlattenedMapTerrainNames())
+	{
+		for (const std::string &name : column)
+		{
+			if (table.count(name))
+			{
+				++blocks[name];
+			}
+		}
+	}
+	std::string best = table.count(_save->getMissionType()) ? _save->getMissionType() : "";
+	int most = 0;
+	for (const auto &b : blocks)
+	{
+		if (b.second > most)
+		{
+			most = b.second;
+			best = b.first;
+		}
+	}
+	if (!best.empty())
+	{
+		_hdBackdropRgb = table[best];
+	}
+	Log(LOG_INFO) << "HD backdrop: " << table.size() << " lines of " << path << ", ground " << (best.empty() ? "-" : best) << " -> " << _hdBackdropRgb << ", shade " << _save->getGlobalShade();
+	return _hdBackdropRgb;
 }
 
 void Map::drawAccuracy(HdCanvas *canvas, int x, int y)

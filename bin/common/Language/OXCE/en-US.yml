@@ -462,7 +462,7 @@ en-US:
   STR_HD_PICTURES: "HD pictures"
   STR_HD_PICTURES_DESC: "Pictures of the interface's images that mods ship in hd/UI (Ufopaedia illustrations, screens) are shown in the display's resolution in place of the 8-bit originals; everything else of the interface stays as it is. Needs a 32-bit display (OpenGL or a 32-bit filter)."
   STR_HD_BACKDROP: "Gradient beyond the map's edge"
-  STR_HD_BACKDROP_DESC: "On = the empty space beyond the battle map's edge is filled with a soft vertical gradient (a little darker at the top, a pale haze at the bottom) around the environment's background colour, instead of one flat colour. Off = one flat colour, as before. Picture only."
+  STR_HD_BACKDROP_DESC: "On = the empty space beyond the battle map's edge is filled with a soft vertical gradient (a little darker at the top, a pale haze at the bottom) around the colour of the ground (by the mod's table hd/backdrop.txt; no line - the environment's background colour), instead of one flat colour. Off = one flat colour, as before. Picture only."
   STR_HD_HIDDEN_MAP: "Map during an unseen enemy's turn"
   STR_HD_HIDDEN_MAP_DESC: "While an enemy you cannot see moves, the map stays on screen with the camera where it was instead of the hidden movement screen. Only what your units see is shown: the unseen enemy, its shots and explosions out of view are not drawn and the camera does not follow it. As soon as an enemy comes into view, the view switches to it as before. Off = the hidden movement screen. Picture only."
   STR_HD_PEDIA_RANGE: "Ufopaedia: weapon mode range"
