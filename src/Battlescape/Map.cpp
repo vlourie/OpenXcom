@@ -1036,6 +1036,11 @@ void Map::think()
 	{
 		_redraw = true;
 	}
+	// a collapse shaking the picture needs every frame until it is still again
+	if (_shakeMs && SDL_GetTicks() - _shakeStart <= _shakeMs)
+	{
+		_redraw = true;
+	}
 	// loose hits: each sprite goes on at its own frame time, whatever battle state runs now
 	if (!_looseHits.empty())
 	{
@@ -1167,7 +1172,13 @@ void Map::draw()
 		|| (_explosionInFOV && (!ignoreAllButAlliesHits || ((unitVisible && !unitEnemy) || hitExplosion))))
 	{
 		_camera->beginShown();
+		// a collapse shakes the picture: the camera is moved for this frame only, its own moves of the frame are kept
+		const Position shook = shakeOffset(SDL_GetTicks());
+		if (shook.x || shook.y)
+			_camera->setMapOffset(_camera->getMapOffset() + shook);
 		drawTerrain(_canvas);
+		if (shook.x || shook.y)
+			_camera->setMapOffset(_camera->getMapOffset() - shook);
 		_hiddenViewOffset = _camera->getMapOffset();
 		_hiddenViewValid = true;
 		_camera->endShown();
@@ -5001,6 +5012,38 @@ void Map::loosenExplosions(int frameMs)
 Camera *Map::getCamera()
 {
 	return _camera;
+}
+
+/**
+ * Shakes the drawn map: a stronger or longer shake already going on is kept. Picture only - the camera
+ * itself does not move, nothing of the battle reads it.
+ * @param amp The largest offset, screen pixels.
+ * @param ms How long, ms of the picture clock.
+ */
+void Map::shake(int amp, Uint32 ms)
+{
+	const Uint32 now = SDL_GetTicks();
+	const Uint32 left = _shakeMs && now - _shakeStart < _shakeMs ? _shakeMs - (now - _shakeStart) : 0;
+	if (amp <= 0 || (left >= ms && _shakeAmp >= amp))
+		return;
+	_shakeStart = now;
+	_shakeMs = std::max(ms, left);
+	_shakeAmp = std::max(amp, left ? _shakeAmp : 0);
+	_redraw = true;
+}
+
+/**
+ * The offset of the shake now: a jolt every 40 ms by a fixed pattern (no random numbers), fading out to the end.
+ */
+Position Map::shakeOffset(Uint32 now) const
+{
+	if (!_shakeMs || now - _shakeStart > _shakeMs)
+		return Position(0, 0, 0);
+	static const int JOLTS[8][2] = { { 1, 0 }, { -1, 1 }, { 0, -1 }, { 1, 1 }, { -1, 0 }, { 0, 1 }, { 1, -1 }, { -1, -1 } };
+	const Uint32 t = now - _shakeStart;
+	const int amp = (int)std::lround(_shakeAmp * (double)(_shakeMs - t) / _shakeMs);
+	const int *j = JOLTS[(t / 40) % 8];
+	return Position(j[0] * amp, j[1] * amp, 0);
 }
 
 /**

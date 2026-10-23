@@ -40,6 +40,7 @@
 #include "TileEngine.h"
 #include "../Engine/Game.h"
 #include "../Engine/HdFx.h"
+#include "../Engine/HdGentle.h"
 #include "../Engine/Language.h"
 #include "../Engine/Logger.h"
 #include "../Engine/Options.h"
@@ -564,6 +565,9 @@ void lay(Mod *mod, SavedBattleGame *save, int bi, const std::vector<Drop> &drops
 	static const int sides[4][2] = { { 1, 0 }, { -1, 0 }, { 0, 1 }, { 0, -1 } };
 	static const std::vector<std::pair<std::string, int> > nothing;
 	std::vector<std::pair<Tile*, int> > spills;  // a heap or a block laid, the chance of its spill
+	// the units hit: the hardest blow of the heaps on each (a 2x2 unit under four heaps takes one), pinned down by one heavy
+	std::vector<BattleUnit*> hitUnits;
+	std::vector<std::pair<int, bool> > hitBlows;
 	for (const Heap &h : heaps)
 	{
 		const Position at = h.tile->getPosition();
@@ -601,10 +605,14 @@ void lay(Mod *mod, SavedBattleGame *save, int bi, const std::vector<Drop> &drops
 			for (BattleUnit *u : under)
 			{
 				if (u->isOut()) continue;
-				u->damage(Position(0, 0, 0), blow, mod->getDamageType(DT_MELEE), save, { }, SIDE_FRONT, BODYPART_HEAD);
-				if (mass >= RUBBLE_HEAP_MASS)
-					u->spendEnergy(u->getEnergy());
-				++n.hit;
+				const size_t i = std::find(hitUnits.begin(), hitUnits.end(), u) - hitUnits.begin();
+				if (i == hitUnits.size())
+				{
+					hitUnits.push_back(u);
+					hitBlows.push_back(std::make_pair(0, false));
+				}
+				hitBlows[i].first = std::max(hitBlows[i].first, blow);
+				hitBlows[i].second = hitBlows[i].second || mass >= RUBBLE_HEAP_MASS;
 			}
 		}
 		else if (object && !underRubble(object)) ++n.object;
@@ -678,6 +686,13 @@ void lay(Mod *mod, SavedBattleGame *save, int bi, const std::vector<Drop> &drops
 			if (std::find(tiles.begin(), tiles.end(), h.tile) == tiles.end())
 				tiles.push_back(h.tile);
 		}
+	}
+	for (size_t i = 0; i < hitUnits.size(); ++i)
+	{
+		hitUnits[i]->damage(Position(0, 0, 0), hitBlows[i].first, mod->getDamageType(DT_MELEE), save, { }, SIDE_FRONT, BODYPART_HEAD);
+		if (hitBlows[i].second)
+			hitUnits[i]->spendEnergy(hitUnits[i]->getEnergy());
+		++n.hit;
 	}
 	// the spill: a heap or a block sheds the crumble of its row onto the free cells beside it
 	const std::vector<std::pair<std::string, int> > &crumble = row < 0 ? nothing : rubbleRecords(row, RK_STONE);
@@ -1321,6 +1336,11 @@ void debugStand(BattlescapeGame *battle, SavedBattleGame *save)
 						<< " flammable floor " << (t->getMapData(O_FLOOR) ? t->getMapData(O_FLOOR)->getFlammable() : -1)
 						<< " object " << (t->getMapData(O_OBJECT) ? t->getMapData(O_OBJECT)->getFlammable() : -1);
 				}
+			// OXCE_COLLAPSE_REVEAL: the fog is lifted off the whole map, so what falls is seen (the notice, the shake)
+			if (getenv("OXCE_COLLAPSE_REVEAL"))
+				for (int i = 0; i < save->getMapSizeXYZ(); ++i)
+					for (TilePart part : { O_FLOOR, O_WESTWALL, O_NORTHWALL })
+						save->getTile(i)->setDiscovered(true, part);
 			// OXCE_COLLAPSE_BLAST: terrain explosions there, set off by checkForTerrainExplosions after this settle
 			const char *powS = getenv("OXCE_COLLAPSE_BLAST_POWER");
 			const int power = powS && *powS ? atoi(powS) : 60;
@@ -1818,9 +1838,16 @@ bool settle(BattlescapeGame *battle, const char *why)
 			<< ", pressed floors " << rubble.pressed << ", units hit " << rubble.hit << ", knocked crowns " << rubble.knocked
 			<< ", dust " << rubble.dust << ")"
 			<< ", falling units " << save->getFallingUnits()->size()
-			<< "; scan " << scanMs << " ms, eval " << evalMs << " ms, apply " << applyMs << " ms, light+fov " << msSince(tl0) << " ms";
+			<< "; scan " << scanMs << " ms, eval " << evalMs << " ms, apply " << applyMs << " ms, light+fov " << msSince(tl0) << " ms; seen " << seenCells.size();
 	}
 	notice(battle, seenCells);
+	// the screen shakes, harder and longer the more the player saw fall (option, off by default; picture only)
+	if (Options::oxceHdCollapseShake && !seenCells.empty() && !HdGentle::on() && battle->getSave()->getBattleState())
+	{
+		const int seen = (int)seenCells.size(), amp = std::min(3, 1 + seen / 12), ms = std::min(900, 300 + 20 * seen);
+		battle->getMap()->shake(amp, (Uint32)ms);
+		Log(LOG_INFO) << "[COLLAPSE] shake " << amp << " px, " << ms << " ms (" << seen << " cells seen)";
+	}
 	// the units under what fell: the end of the turn checks the casualties itself (BattlescapeGame::endTurn), right
 	// after this settle; twice would count a death twice
 	if (hits && std::strcmp(why, "end turn") != 0)
