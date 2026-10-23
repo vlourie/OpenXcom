@@ -58,7 +58,7 @@ OPT SDLKey keyGeoDailyPilotExperience, keyGeoUfoTracker, keyGeoTechTreeViewer, k
 	keyInventoryArmor, keyInventoryAvatar, keyInventoryDiaryLight, keyInventorySave, keyInventoryLoad,
 	keyInvSavePersonalEquipment, keyInvLoadPersonalEquipment, keyInvShowPersonalEquipment,
 	keyBattleUnitUp, keyBattleUnitDown,
-	keyBattleShowLayers,
+	keyBattleShowLayers, keyBattlePanelHide,
 	keyBattleUseSpecial,
 	keyBattleActionItem1, keyBattleActionItem2, keyBattleActionItem3, keyBattleActionItem4, keyBattleActionItem5,
 	keyNightVisionToggle, keyNightVisionHold, keySelectMusicTrack;
@@ -244,6 +244,8 @@ OPT bool oxceHdPathDigits;
 // HD interface: the path numbers in battle (oxceHdPathDigits on), in percent of the usual: size and stroke weight; 100 = as it was
 OPT int oxceHdPathNumSize, oxceHdPathNumWeight;
 OPT bool oxceHdPanelHide;
+// HD interface: the path preview's arrow of a step that costs more than the usual is drawn longer (two or three arrows in a row); picture only
+OPT bool oxceHdPathStretch;
 // HD interface: the plate "a new update is available" in the top left corner while the launcher has written launcher/update.txt (Engine/HdUpdateNotice.h)
 OPT bool oxceHdUpdateNotice;
 // HD interface, craft crew screen (CraftSoldiersState): the rows of the soldiers who no longer fit the craft are grey instead of the "not enough space" window, and between the shorter sort box and OK stands a plate "seats used/seats in all"; off = as it was (default)
@@ -274,7 +276,8 @@ OPT bool oxceHdHiddenMap;
 OPT bool oxceHdBackdrop;
 // Battlescape, what the player sees in the enemy's and the neutrals' turn: 0 as it was, 1 the hidden movement screen
 // (as with oxceHdHiddenMap off) with a strip of text over it, 2 a soft red (enemy) or yellow (neutral) frame along the
-// screen's edge and the panel slides down, back in the player's turn only if this slid it. Picture only
+// screen's edge and the panel slides down, back in the player's turn only if this slid it, 3 as 2 and a progress bar of
+// the turn at the top right (the stock hidden screen's number). Picture only
 OPT int oxceHdEnemyTurn;
 // Ufopaedia: the weapon article's attack table has a range column (the range of the attack, at most the weapon's)
 OPT bool oxceHdPediaRange;

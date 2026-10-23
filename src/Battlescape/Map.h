@@ -264,6 +264,7 @@ private:
 	void blitMessage(HdCanvas *target);
 	void createCanvas();
 	SDL_Color vaporTint(const Particle &p) const;
+	SDL_Color vaporTintSoft(const Particle &p) const;
 	/// HD light: the drawing shade of a tile, cached for the frame (reShade is not cheap in night vision).
 	int hdShadeOf(Tile *tile);
 	/// HD light: the color of the light on a tile from its light layers (ambient/fire/items/units).
@@ -287,6 +288,8 @@ private:
 	TurnedObject turnedObject(int bigWall) const;
 	/// HD lab: a direction 0..7 as the turned view shows it (other values as they are).
 	int turnedDir(int dir) const;
+	/// HD interface (oxceHdPathStretch): a path preview's arrow, as many copies one behind another as the step is dear.
+	void blitPathArrow(HdCanvas *canvas, SurfaceRaw<const Uint8> frame, int x, int y, int newBaseColor, const Tile *tile, const Position &mapPosition);
 	int _iconHeight, _iconWidth, _messageColor;
 	int _hostileBarColor, _neutralBarColor, _borderBarColor;
 	const std::vector<Uint8> *_transparencies;

@@ -1,0 +1,1 @@
+- Battle (HD): the HD option "Enemy turn" has a new choice, "Frame with a bar": the same frame along the screen edge (red in the enemy turn, yellow in the neutrals turn) and a progress bar of the turn at the top right that fills as their units spend their time units. Picture only, the enemy turn itself does not change (ticket XP-000285).

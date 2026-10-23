@@ -136,9 +136,13 @@ public:
 	void setKind(Kind kind) { _kind = kind; }
 	Kind getKind() const { return _kind; }
 	void setText(const std::string &text) { _text = text; }
+	/// A progress bar at the frame's top right corner (frame kinds only): the share of the turn done, 0-100 (XP-000285).
+	void setBar(bool on, int percent) { _bar = on; _percent = percent < 0 ? 0 : (percent > 100 ? 100 : percent); }
 	void hdMirror() override;
 private:
 	Kind _kind = NONE;
+	bool _bar = false;
+	int _percent = 0;
 	std::string _text;
 };
 

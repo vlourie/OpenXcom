@@ -2044,6 +2044,25 @@ void HdTurnMark::hdMirror()
 	ui.shadeRows(0, H - band, W, band, rowFn);
 	ui.shadeRows(0, band, band, H - 2 * band, rowFn);
 	ui.shadeRows(W - band, band, band, H - 2 * band, rowFn);
+	if (_bar)
+	{
+		// the progress bar (oxceHdEnemyTurn 3), top right inside the frame: a dark groove, a line round it in the frame's
+		// colour and the share of the turn done filled from the left; the number is the stock hidden screen's own
+		const float bh = 5.0f * k, bw = 72.0f * k, r = bh * 0.5f;
+		const float x1 = (float)W - 12.0f * k, x0 = x1 - bw, y0 = 12.0f * k, y1 = y0 + bh;
+		const float line = std::max(1.0f, 0.4f * k);
+		ui.fillRoundRect(x0, y0, x1, y1, r, 0xC0180808u, 0xC0080404u);
+		const float fw = bw * (float)_percent / 100.0f;
+		if (fw >= bh)
+		{
+			ui.fillRoundRect(x0, y0, x0 + fw, y1, r, bright, face);
+		}
+		else if (fw > 0.0f)
+		{
+			ui.fillRoundRect(x0, y0 + (bh - fw) * 0.5f, x0 + fw, y1 - (bh - fw) * 0.5f, fw * 0.5f, bright, face);
+		}
+		ui.strokeRoundRect(x0, y0, x1, y1, r, line, bright);
+	}
 }
 
 }

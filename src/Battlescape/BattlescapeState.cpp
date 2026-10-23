@@ -555,6 +555,8 @@ BattlescapeState::BattlescapeState() :
 	_icons->onMouseIn((ActionHandler)&BattlescapeState::mouseInIcons);
 	_icons->onMouseOut((ActionHandler)&BattlescapeState::mouseOutIcons);
 	_btnPanelHide->onMouseClick((ActionHandler)&BattlescapeState::btnPanelHideClick);
+	// the key does what the arrow does, so it works while the arrow is there (an invisible surface takes no keys)
+	_btnPanelHide->onKeyboardPress((ActionHandler)&BattlescapeState::btnPanelHideClick, Options::keyBattlePanelHide);
 	// a click on the arrow is not one on the map under it
 	_btnPanelHide->onMouseIn((ActionHandler)&BattlescapeState::mouseInPanelArrow);
 	_btnPanelHide->onMouseOut((ActionHandler)&BattlescapeState::mouseOutPanelArrow);
@@ -1010,7 +1012,8 @@ void BattlescapeState::think()
 		}
 	}
 	// HD interface, oxceHdEnemyTurn: 1 a strip of text over the hidden movement screen in the enemy's turn, 2 a frame along
-	// the screen's edge (red: the enemy, yellow: the neutrals) and the panel down for the turn; picture and placement only
+	// the screen's edge (red: the enemy, yellow: the neutrals) and the panel down for the turn, 3 the same with a progress
+	// bar at the top right (XP-000285); picture and placement only
 	{
 		const int side = _save->getSide();
 		const bool otherTurn = side != FACTION_PLAYER;
@@ -1022,7 +1025,7 @@ void BattlescapeState::think()
 			{
 				kind = HdTurnMark::STRIP;
 			}
-			else if (mode == 2)
+			else if (mode == 2 || mode == 3)
 			{
 				kind = side == FACTION_HOSTILE ? HdTurnMark::FRAME_ENEMY : HdTurnMark::FRAME_NEUTRAL;
 			}
@@ -1032,11 +1035,13 @@ void BattlescapeState::think()
 			_hdTurnMark->setText(tr("STR_HD_ENEMY_TURN_STRIP"));
 		}
 		_hdTurnMark->setKind(kind);
+		_hdTurnMark->setBar(mode == 3, _aiProgress);
 		_hdTurnMark->setVisible(kind != HdTurnMark::NONE);
 		if (otherTurn != _wasOtherTurn)
 		{
 			_wasOtherTurn = otherTurn;
-			if (otherTurn && mode == 2 && HdBattleHud::on() && _panelTarget == 0)
+			_aiProgress = 0;
+			if (otherTurn && mode >= 2 && HdBattleHud::on() && _panelTarget == 0)
 			{
 				_panelAutoHid = true;
 				_panelTarget = _icons->getHeight();
@@ -1069,6 +1074,7 @@ void BattlescapeState::think()
 			if (ret > -1)
 			{
 				_map->refreshAIProgress(100 - ret); // progress = 100 - ret;
+				_aiProgress = 100 - ret; // the same number for the HD frame's bar (oxceHdEnemyTurn 3), picture only
 			}
 			_animTimer->think(this, 0);
 			_gameTimer->think(this, 0);

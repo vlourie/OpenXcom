@@ -62,6 +62,8 @@ private:
 	/// panel stands down because this slid it (it comes back in the player's turn only then)
 	HdTurnMark *_hdTurnMark = nullptr;
 	bool _panelAutoHid = false, _wasOtherTurn = false;
+	/// The share of the enemy's or the neutrals' turn done, 0-100, as the stock hidden screen's bar shows it; picture only
+	int _aiProgress = 0;
 	/// Moves the panel and everything on it to `shift` base pixels below its place.
 	void movePanel(int shift);
 	Map *_map;
