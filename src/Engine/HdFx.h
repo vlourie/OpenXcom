@@ -50,6 +50,14 @@ namespace HdFx
 {
 	/// The clip for a bullet or beam hit (onUnit: it landed on `target`; armorHeld: the unit lost nothing).
 	std::string hitClip(const RuleItem *damageItem, bool onUnit, const BattleUnit *target, bool armorHeld, const Tile *tile, int voxelZ);
+	/// XP-000298 (Options::oxceHdBloodSpray): the blood spray that flies along the bullet's way instead of the clip `clip` of a hit on flesh
+	/// ("hit_<family>_flesh"), when the hit took `loss` percent (1-100) of the unit's health; (dx, dy) is the bullet's way on the screen (y down).
+	/// Strength from the loss, direction one of eight, variant by `seed`. Empty: this hit has no spray (not flesh, no loss, no way).
+	std::string sprayClip(const std::string &clip, int dx, int dy, int loss, unsigned int seed);
+	/// The part of `unit`'s full health that `lost` points are, percent, 1-100 (for sprayClip).
+	int lossPercent(const BattleUnit *unit, int lost);
+	/// A hash of a hit for picking its variants: its own state, the battle's random numbers are not touched.
+	unsigned int hitHash(Position at, int loss);
 	/// The clip for an explosion.
 	std::string boomClip(const RuleItem *damageItem);
 	/// The clip for a melee swing of `weapon` (dealing `damage`) by a unit facing `direction`.
