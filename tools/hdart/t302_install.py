@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-r"""Тикеты 302 (пшеница) и 329 (рожь): кромка C (выбор Vitali 26.10 ~22:50) -> мод hd через манифест.
+r"""Тикеты 302 (пшеница) и 329 (рожь): бесшовное поле, вариант cut (выбор Vitali 26.10 ~23:40) -> мод hd через манифест.
+Кромка C (ticket_q21_edge.py, d214fb930) заменяется.
 
-Основа - art/_review/xp302/edge/CULTIVAT_4_C_wrap.png (ticket_q21_edge.py: цвет каймы изнутри кадра, плотнее
-мягкий край, колосья у кромки верха смешаны с соседней клеткой).
-  CULTIVAT:4     - основа как есть;
+Кадры - art/_review/xp302/seam/*_cut.png (t302_seam.py: периодическая функция плоскости, разрез графа, перекраски
+переносом цвета классики с периодическими полями, тон UBER не подстраивался):
+  CULTIVAT:4     - CULTIVAT_4_cut.png;
   VILROADS:1     - побайтная копия классики CULTIVAT:4 -> тот же кадр;
-  CULTIVAT_PP:4, CULTIVAT_UBER:4 - перекраски переносом цвета классики (R-030, obj_derive.transfer).
+  CULTIVAT_PP:4, CULTIVAT_UBER:4 - CULTIVAT_PP_4_cut.png, CULTIVAT_UBER_4_cut.png.
 Найденные семьёй, но не ставятся: GOTHIC:8 (классика на 96 % та же, свой HD lora_oxcehd_v1) - в отчёте.
 
     py -3.13 tools\hdart\t302_install.py          # сухой прогон: кадры в art/_review/tickets_2026-10-26/after и лист sheet_t302.png
@@ -27,7 +28,7 @@ import build_hd_pack as bp                          # noqa: E402
 R = os.path.join(ROOT, "art", "_review")
 OUT = os.path.join(R, "tickets_2026-10-26")
 STAGE = os.path.join(OUT, "after")
-BASE = os.path.join(R, "xp302", "edge", "CULTIVAT_4_C_wrap.png")
+SEAM = os.path.join(R, "xp302", "seam")
 FLOOR = (24, 20, 18)
 _world = None
 
@@ -65,17 +66,15 @@ def level(hd, cb):
 
 
 def build():
-    import obj_derive as od
-    hd = Image.open(BASE).convert("RGBA")
+    hd = Image.open(os.path.join(SEAM, "CULTIVAT_4_cut.png")).convert("RGBA")
     cb = classic("CULTIVAT", 4)
     out = {("CULTIVAT", 4): hd}
     cv = classic("VILROADS", 1)
     if not np.array_equal(np.asarray(cb), np.asarray(cv)):
         raise SystemExit("VILROADS:1 уже не копия классики CULTIVAT:4")
     out[("VILROADS", 1)] = hd
-    base = level(hd, cb)
     for s in ("CULTIVAT_PP", "CULTIVAT_UBER"):
-        out[(s, 4)] = od.transfer(base, cb, classic(s, 4))
+        out[(s, 4)] = Image.open(os.path.join(SEAM, "%s_4_cut.png" % s)).convert("RGBA")
     files = {}
     for (s, f), im in out.items():
         rel = tpath(s, f)
@@ -132,9 +131,9 @@ def main():
     if not a.yes:
         raise SystemExit("сухой прогон; --yes - записать в мод (по слову Vitali, под очередью правок)")
     import ticket_scene as ts
-    n = ts.install_files(files, "t302_install", "t302_install.py 26.10 (ticket_q21_edge.py, кромка C)",
-                         "Vitali: выбор кромки C 26.10 ~22:50 (decisions-2026-10-26.md)",
-                         "t302: кромка пшеницы/ржи CULTIVAT 4, VILROADS 1, CULTIVAT_PP 4, CULTIVAT_UBER 4")
+    n = ts.install_files(files, "t302_install", "t302_install.py 26.10 (t302_seam.py, cut)",
+                         "Vitali: выбор cut (бесшовное поле) 26.10 ~23:40, взамен кромки C",
+                         "t302: пшеница/рожь без швов CULTIVAT 4, VILROADS 1, CULTIVAT_PP 4, CULTIVAT_UBER 4 (cut)")
     print("установлено файлов: %d" % n)
 
 
