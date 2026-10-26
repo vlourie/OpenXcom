@@ -365,6 +365,8 @@ def cmd_status(a):
     cfg = load_config()
     if a.status not in STATUSES:
         die(f"статус - один из {' '.join(STATUSES)}")
+    if a.status == "Triaged":   # R-478: Triaged значит «игрок ответил», pull снова заберёт тикет
+        die("Triaged не ставить: отложенный - InProgress с заметкой (note) и строкой в docs/QA/ticket-plans.md, ждёт игрока - NeedsInfo (R-478)")
     of = parse_number(a.of) if a.of else None
     view = change_status(cfg, parse_number(a.number), a.status, a.note, of)
     save_ticket(cfg, view)

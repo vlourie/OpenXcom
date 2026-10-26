@@ -173,6 +173,11 @@ def main():
         check(code == 0 and site.tickets[2]["status"] == "NeedsInfo", "ask - «Нужна информация»")
         check(len(msgs) == 1 and msgs[0]["body"].startswith("Thanks for writing in") and "Ctrl+F8" in msgs[0]["body"], "ask - шаблон на языке тикета (en-US -> en)")
 
+        before = len(site.calls)
+        code, out = run(env, "status", "1", "Triaged", "--note", "ждёт решения")
+        check(code != 0 and "R-478" in out and len(site.calls) == before and site.tickets[1]["status"] == "InProgress",
+              "status Triaged - отказ без запроса к сайту (pull снова взял бы тикет, R-478)")
+
         repo = str(tmp / "repo")
         os.makedirs(repo)
         git(repo, "init", "-q")
