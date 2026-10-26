@@ -46,7 +46,10 @@ SCENS = ["census/collapse/stage0m/pilot_scen.tsv", "census/collapse/pilot3/pilot
          "census/collapse/pilot15/pilot_scen.tsv", "census/collapse/partial15/partial_scen.tsv",
          "census/collapse/pilot16/pilot_scen.tsv", "census/collapse/partial16/partial_scen.tsv",
          "census/collapse/pilot17/pilot_scen.tsv", "census/collapse/partial17/partial_scen.tsv",
-         "census/collapse/pilot18/pilot_scen.tsv", "census/collapse/partial18/partial_scen.tsv"]
+         "census/collapse/pilot18/pilot_scen.tsv", "census/collapse/partial18/partial_scen.tsv",
+         "census/collapse/pilot19/pilot_scen.tsv", "census/collapse/partial19/partial_scen.tsv",
+         "census/collapse/pilot20/pilot_scen.tsv", "census/collapse/partial20/partial_scen.tsv",
+         "census/collapse/pilot21/pilot_scen.tsv", "census/collapse/partial21/partial_scen.tsv"]
 BOX = {"амбар": (2, 11, 2, 11), "бункер": (1, 7, 1, 7)}     # здание пилота: клетки x0..x1, y0..y1
 LABEL_EN = {"амбар": "barn", "бункер": "bunker"}            # метка здания в логе игры
 # здания, у которых остались провальные сценарии (census/collapse/pilot3/fail_cases.md): в заголовке с флагом
@@ -103,7 +106,15 @@ EXPERIMENTAL = {
                 "urbanwarurbandio02", "urbanwarurbanmy", "urbanwaste11", "urbanwaste14", "urbanwaste19",
                 "urbanwaste37", "urbanwaste38", "urbanwaste62",
                 # партии 17-18: предметы, которые M0j5 не держит в целом блоке (cp22/unheld18.tsv)
-                "forestswampwasteforestswamp14", "styxswampforestswamp14", "urbanwaste01"}
+                "forestswampwasteforestswamp14", "styxswampforestswamp14", "urbanwaste01",
+                # партии 19-21 (охват 23.10; 21 - GOVT_BASE_DEFENSE, тикет XP-000294): census/collapse/pilot20/split.tsv
+                # и pilot21/split.tsv, девятнадцатая (деревья) - все игрокам; стенд 23.10 - модель = движок 58 218 обходов,
+                # в частичных лишнего нет, фонари ROADSGREEN:15/16 - верх падает за низом (7 из 7)
+                "industrialslumdio04", "urbandiohuge01", "urbanurbansanyaskillpro01", "urbanwaste08", "cultacultafarm02",
+                "cultappcultafarm05", "cultappcultafarm06", "cultaubercultasolhuge01", "atlantdesert07", "atlantdesert09",
+                "govbased01", "govbased07",
+                # партии 19-21: предметы, которые M0j5 не держит в целом блоке (cp23/unheld20.tsv)
+                "urbanjunkufourbanjunk24", "islandurban02"}
 # urban14, urban17, madurban19, 22-26, culta18, cultafarm21, urbanjunk11, comrcurban50: частичное падение
 # не доказано (census/collapse/partial/model_result.tsv, R-353), но по решению Vitali 15.10 в сборке игрока -
 # приёмку ведут игроки
@@ -131,6 +142,9 @@ SOURCES = ["tools/collapse_v7c.py", "tools/collapse_v7b.py", "tools/collapse_v7.
            "tools/collapse_pilot16_scen.py",
            "tools/collapse_pilot17_scen.py",
            "tools/collapse_pilot18_scen.py",
+           "tools/collapse_pilot19_scen.py",
+           "tools/collapse_pilot20_scen.py",
+           "tools/collapse_pilot21_scen.py",
            "tools/collapse_v7d.py", "tools/collapse_v8.py",
            "tools/collapse_pilot_export.py"]
 
@@ -943,6 +957,24 @@ def main():
     LABEL_EN.update(P18.LABEL_EN)
     TREES_IN.update(P18.TREES_IN)
     NAME_AS.update(P18.NAME_AS)
+    import collapse_pilot19_scen as P19           # девятнадцатая - охват 23.10 (бои переписи 19), блоки с деревьями
+    blds += P19.load()[2]
+    BOX.update(P19.BOX)
+    LABEL_EN.update(P19.LABEL_EN)
+    TREES_IN.update(P19.TREES_IN)
+    NAME_AS.update(P19.NAME_AS)
+    import collapse_pilot20_scen as P20           # двадцатая - охват 23.10 (бои переписи 19), без деревьев
+    blds += P20.load()[2]
+    BOX.update(P20.BOX)
+    LABEL_EN.update(P20.LABEL_EN)
+    TREES_IN.update(P20.TREES_IN)
+    NAME_AS.update(P20.NAME_AS)
+    import collapse_pilot21_scen as P21           # двадцать первая - GOVT_BASE_DEFENSE (тикет XP-000294, фонари)
+    blds += P21.load()[2]
+    BOX.update(P21.BOX)
+    LABEL_EN.update(P21.LABEL_EN)
+    TREES_IN.update(P21.TREES_IN)
+    NAME_AS.update(P21.NAME_AS)
     if len({b[2] for b in blds}) != len(blds) or len(set(LABEL_EN.values())) != len(LABEL_EN):
         raise SystemExit("метки зданий пилота не уникальны")
     # после загрузки сейва движок ищет модель по имени (последняя с этим именем) - одноимённые блоки другой модели
