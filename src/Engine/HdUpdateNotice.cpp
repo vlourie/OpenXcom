@@ -122,8 +122,14 @@ void HdUpdateNotice::draw()
 	}
 	_text->initText(_game->getMod()->getFont("FONT_BIG"), _game->getMod()->getFont("FONT_SMALL"), _game->getLanguage());
 	_text->setSmall();
-	_text->setText(_game->getLanguage()->getString("STR_HD_UPDATE_AVAILABLE").arg(_release));
+	const std::string words = _game->getLanguage()->getString("STR_HD_UPDATE_AVAILABLE").arg(_release);
+	_text->setWidth(getWidth() - 4);
+	_text->setText(words);
 	_plate = std::min(getWidth(), _text->getTextWidth() + 6);
+	// the HD interface sets the words in a wider TrueType face inside the text's own width:
+	// the text is as wide as the plate's inside, so a long release name condenses instead of running over the frame
+	_text->setWidth(_plate - 5);
+	_text->setText(words);
 
 	// the darkest colour of this palette behind the words: every screen has its own palette
 	Uint8 dark = 1;
