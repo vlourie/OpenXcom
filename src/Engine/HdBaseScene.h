@@ -295,6 +295,10 @@ namespace HdBaseScene
 	void draw(SDL_Surface *world, const SDL_Rect &area, const std::vector<Placed> &lights, float night, Uint32 ms,
 		const View *view = nullptr);
 
+	/// OXCE_HD_BASE_OFF=water,spin,flow,light,emit,crew leaves that part of the living base undrawn: a way to
+	/// measure what each costs (the cost log is OXCE_HD_BASE_PERF). Unset - everything is drawn.
+	bool measuredOff(const char *part);
+
 	/// Particles where they are on the world layer.
 	struct PlacedEmit
 	{

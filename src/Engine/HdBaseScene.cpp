@@ -403,6 +403,12 @@ bool parse(std::istream &in, TileScene &out)
 	return out.width > 0 && out.height > 0;
 }
 
+bool measuredOff(const char *part)
+{
+	static const std::string off = std::getenv("OXCE_HD_BASE_OFF") ? std::getenv("OXCE_HD_BASE_OFF") : "";
+	return !off.empty() && off.find(part) != std::string::npos;
+}
+
 float nightAt(double longitude, int hour, int minute, int second)
 {
 	if (const char *env = std::getenv("OXCE_HD_BASE_NIGHT"))
@@ -507,8 +513,13 @@ void draw(SDL_Surface *world, const SDL_Rect &area, const std::vector<Placed> &l
 	const float halo = 0.2f + 0.6f * night;
 	std::vector<Lit> lit;
 	lit.reserve(lights.size());
+	static const bool noLight = measuredOff("light"), noFlow = measuredOff("flow");
 	for (const Placed &p : lights)
 	{
+		if (noLight)
+		{
+			break;
+		}
 		const float v = strength(p, t, night);
 		if (v <= 0.01f)
 		{
@@ -553,7 +564,7 @@ void draw(SDL_Surface *world, const SDL_Rect &area, const std::vector<Placed> &l
 	};
 	std::vector<FlowNow> flows;
 	static const std::vector<PlacedFlow> noFlows;
-	for (const PlacedFlow &P : view ? view->flows : noFlows)
+	for (const PlacedFlow &P : view && !noFlow ? view->flows : noFlows)
 	{
 		FlowNow N = { &P, 0, 0, 1 };
 		if (P.flow.mode == Flow::STEADY)
@@ -1297,8 +1308,13 @@ void drawMotion(SDL_Surface *world, const View &view, Uint32 ms)
 	// OXCE_HD_BASE_PERF: the cost of the water, every 60 frames into the log
 	static const bool perf = std::getenv("OXCE_HD_BASE_PERF") != nullptr;
 	const auto perfStart = std::chrono::steady_clock::now();
+	static const bool noWater = measuredOff("water"), noSpin = measuredOff("spin");
 	for (const View::Area &W : view.waters)
 	{
+		if (noWater)
+		{
+			break;
+		}
 		const int x0 = std::max((int)W.box.x, view.x), y0 = std::max((int)W.box.y, view.y);
 		const int x1 = std::min(W.box.x + (int)W.box.w, view.x + view.w), y1 = std::min(W.box.y + (int)W.box.h, view.y + view.h);
 		if (x0 >= x1 || y0 >= y1)
@@ -1347,8 +1363,13 @@ void drawMotion(SDL_Surface *world, const View &view, Uint32 ms)
 		}
 	}
 	// the spins: a radar dish turning, a turret looking over its sector
+	const auto spinStart = std::chrono::steady_clock::now();
 	for (const PlacedSpin &P : view.spins)
 	{
+		if (noSpin)
+		{
+			break;
+		}
 		const Spin &S = P.spin;
 		float deg = S.rps != 0 ? t * S.rps * 360 + P.phase * 360 : S.middle + S.swing * std::sin(t / S.period * 2 * PI + P.phase * 2 * PI);
 		if (P.fit >= 0)
@@ -1410,6 +1431,18 @@ void drawMotion(SDL_Surface *world, const View &view, Uint32 ms)
 				sample(view.albedo, view.w, view.h, S.x + ca * dx + sa * dy - 0.5f - view.x, S.y - sa * dx + ca * dy - 0.5f - view.y, col);
 				line[x] = mix(line[x], col, m);
 			}
+		}
+	}
+	if (perf)
+	{
+		static double total = 0;
+		static int frames = 0;
+		total += std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - spinStart).count();
+		if (++frames == 60)
+		{
+			Log(LOG_INFO) << "HD base spins: " << total / frames << " ms per frame, " << view.spins.size() << " spins";
+			total = 0;
+			frames = 0;
 		}
 	}
 	// the fits (tickets 237-241): only their few thousand pixels, and only while a fit runs
@@ -1544,7 +1577,7 @@ void drawMotion(SDL_Surface *world, const View &view, Uint32 ms)
 
 void drawParticles(SDL_Surface *world, const SDL_Rect &area, const std::vector<PlacedEmit> &emits, float night, Uint32 ms)
 {
-	if (!world || world->format->BytesPerPixel != 4 || emits.empty())
+	if (!world || world->format->BytesPerPixel != 4 || emits.empty() || measuredOff("emit"))
 	{
 		return;
 	}
