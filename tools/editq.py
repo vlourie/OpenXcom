@@ -887,7 +887,7 @@ def cmd_release(a):
 
 # ---------------------------------------------------------------- для человека
 
-def describe(st):
+def describe(st, hist=5):
     lines = []
     if not st["q"]:
         lines.append("очередь правок игры пуста")
@@ -909,7 +909,7 @@ def describe(st):
     lines.append(f"выпуск: {rs}" + ("" if r.get("auto") else " (автовыпуск выключен)"))
     if r.get("note") and r["st"] == "idle":
         lines.append(f"  {r['note']}")
-    for h in st["hist"][-5:]:
+    for h in st["hist"][-hist:] if hist else []:
         lines.append(f"  сделано {stamp(h['at'])} #{h['t']} {h.get('sha') or '-'} {h.get('msg', '')}")
     return "\n".join(lines)
 
@@ -928,8 +928,9 @@ def cmd_brief(_a):
     st = load()
     if st["q"] or st["rel"]["st"] in ("pending", "running", "failed", "blocked"):
         print("ОЧЕРЕДЬ ПРАВОК ИГРЫ (tools/editq.py): файлы игры правит одна сессия за раз, "
-              "хук сам ставит в очередь.")
-        print(describe(st))
+              "хук сам ставит в очередь. Что сделано - editq.py list.")
+        # история «сделано» в стартовом контексте - 4 КБ длинных сообщений коммитов, никому на старте не нужна
+        print(describe(st, hist=0))
 
 
 def cmd_kick(a):
