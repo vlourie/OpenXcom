@@ -85,6 +85,27 @@ Projectile::Projectile(Mod *mod, SavedBattleGame *save, BattleAction action, Pos
 			{
 				_speed = std::max(1, _speed + _action.weapon->getRules()->getBulletSpeed());
 			}
+			// XP-000301: no vapor in the ruleset (neither the ammo's nor the weapon's) - a bullet or a rocket with a sprite gets
+			// the plain grey smoke when the option is on. Not a throw (that branch is above), not melee, not an energy beam.
+			// The vapor above stays as it was; nothing here reads the battle's random generator.
+			if (Options::oxceHdPlainSmoke && _vaporColor == -1 && _bulletSprite != Mod::NO_SURFACE &&
+				(_action.type == BA_AUTOSHOT || _action.type == BA_SNAPSHOT || _action.type == BA_AIMEDSHOT || _action.type == BA_LAUNCH))
+			{
+				const RuleDamageType *damage = _ammo->getRules()->getDamageType();
+				if (damage && damage->ResistType != DT_LASER && damage->ResistType != DT_PLASMA && damage->ResistType != DT_MELEE)
+				{
+					static uint64_t shotCounter = 0;
+					// splitmix64 over the shot's own numbers: the same shot gives the same smoke, two shots at one spot differ
+					uint64_t z = (uint64_t)(uint32_t)origin.x * 0x9E3779B97F4A7C15ull + (uint64_t)(uint32_t)origin.y * 0xBF58476D1CE4E5B9ull
+						+ (uint64_t)(uint32_t)targetVoxel.x * 0x94D049BB133111EBull + (uint64_t)(uint32_t)targetVoxel.y * 0xD6E8FEB86659FD93ull
+						+ (uint64_t)(uint32_t)(origin.z * 31 + targetVoxel.z) + (++shotCounter) * 0x9E3779B97F4A7C15ull;
+					z = (z ^ (z >> 30)) * 0xBF58476D1CE4E5B9ull;
+					z = (z ^ (z >> 27)) * 0x94D049BB133111EBull;
+					z ^= z >> 31;
+					_plainSmokeRng = RNG::RandomState(z | 1);
+					_plainSmoke = true;
+				}
+			}
 		}
 	}
 	if ((targetVoxel.x - origin.x) + (targetVoxel.y - origin.y) >= 0)
@@ -514,6 +535,10 @@ bool Projectile::move()
 		{
 			addVaporCloud();
 		}
+		else if (_plainSmoke)
+		{
+			addPlainSmoke();
+		}
 	}
 	return true;
 }
@@ -733,6 +758,53 @@ void Projectile::addVaporCloud()
 			Position tileOffset = particle.updateScreenPosition();
 			_save->getBattleGame()->getMap()->addVaporParticle(tilePos + tileOffset, particle);
 		}
+	}
+}
+
+/**
+ * Adds the plain grey smoke at the projectile's current position (Options::oxceHdPlainSmoke, XP-000301): a bullet or a
+ * rocket the ruleset gives no vapor. Only the picture: the particles live in the Map, and every number here comes from
+ * the projectile's own generator (_plainSmokeRng, seeded in the constructor from the shot) - the battle's random
+ * generator is neither read nor moved, so the shot, the hits and the AI go as without the smoke.
+ * The same particle numbers as a ruleset vapor without scripts: density 48..224, life 32..44, drift half a voxel.
+ */
+void Projectile::addPlainSmoke()
+{
+	// a moderate trail: about the usual Piratez bullet vapor (density 2-3, probability 10-33)
+	const int probability = 20;
+	const int density = 2;
+	if (_plainSmokeRng.percent(probability) == false)
+	{
+		return;
+	}
+	Map *map = _save->getBattleGame() ? _save->getBattleGame()->getMap() : nullptr;
+	if (!map)
+	{
+		return;
+	}
+
+	const Position voxelPos = getPosition();
+	const Position tilePos = voxelPos.toTile();
+	for (int i = 0; i != density; ++i)
+	{
+		const int particleDensity = _plainSmokeRng.generate(48, 224);
+		const int particleLifetime = _plainSmokeRng.generate(32, 44);
+		Uint8 size = 0;
+		if (particleDensity < 100)
+		{
+			size = 3;
+		}
+		else if (particleDensity < 125)
+		{
+			size = 2;
+		}
+		else if (particleDensity < 150)
+		{
+			size = 1;
+		}
+		Particle particle = Particle(voxelPos, Position{ }, Position{ }, Position{ }, Particle::SubVoxelAccuracy / 2, Particle::PlainSmokeColor, particleLifetime, size);
+		Position tileOffset = particle.updateScreenPosition();
+		map->addVaporParticle(tilePos + tileOffset, particle);
 	}
 }
 

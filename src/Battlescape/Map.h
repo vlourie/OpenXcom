@@ -25,6 +25,7 @@
 #include "../Mod/MapData.h"
 #include "Position.h"
 #include "Particle.h"
+#include <array>
 #include <vector>
 #include <string>
 #include <unordered_map>
@@ -265,6 +266,12 @@ private:
 	void createCanvas();
 	SDL_Color vaporTint(const Particle &p) const;
 	SDL_Color vaporTintSoft(const Particle &p) const;
+	/// The palette table of a vapor particle (the mod's table of its colour, or the plain grey smoke's own, XP-000301).
+	const Uint8 *vaporLut(const Particle &p) const;
+	/// The plain grey smoke (Particle::PlainSmokeColor): its four opacity levels, and the palette table built for the battle's palette.
+	static const std::array<SDL_Color, 4> &plainSmokeTints(); // 4 = Mod::TransparenciesOpacityLevels
+	bool buildPlainSmokeLut();
+	std::vector<Uint8> _plainSmokeLut;
 	/// HD light: the drawing shade of a tile, cached for the frame (reShade is not cheap in night vision).
 	int hdShadeOf(Tile *tile);
 	/// HD light: the color of the light on a tile from its light layers (ambient/fire/items/units).

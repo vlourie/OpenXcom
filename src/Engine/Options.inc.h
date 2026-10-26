@@ -216,6 +216,9 @@ OPT int oxceHdAimNumSize, oxceHdAimNumWeight;
 OPT bool oxceHdCtrlZoom;
 // HD render, battlescape: a unit killed or knocked out by a blast is shown falling, as from a shot (XP-000252); only the picture
 OPT bool oxceHdBlastFall;
+// Battlescape (XP-000301): a bullet or a rocket whose ammo and weapon have no vapor in the ruleset leaves a neutral grey smoke trail (the picture
+// only, with its own random generator - the battle's one is not touched; no throws, no melee, no energy beams). Off by default: then nothing changes
+OPT bool oxceHdPlainSmoke;
 // HD render, battlescape: the area the aimed explosive shot or throw would blast, filled on the floor in its damage type's colour, denser where the power is stronger
 OPT bool oxceHdBlastArea;
 // HD base screen: facility pictures play their phases (hd/BASEBITS.PCK/<i>.vN.png); off = the first phase only

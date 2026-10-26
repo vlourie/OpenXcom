@@ -28,6 +28,9 @@ class Particle
 public:
 	constexpr static int SubVoxelAccuracy = 256;
 	constexpr static int LayerAccuracy = 2;
+	/// Colour number of the engine's own neutral grey smoke (Options::oxceHdPlainSmoke, XP-000301): not a number of the
+	/// mod's tint table, the map draws it with its own tint and palette table.
+	constexpr static int PlainSmokeColor = 255;
 
 private:
 	Position _subVoxelPos;
