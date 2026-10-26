@@ -964,6 +964,92 @@ void BaseView::drawHdScene(SDL_Surface *world, int k, Uint32 now)
 			}
 		}
 	}
+	// the hangars (OXCE_HD_HANGAR_LIFE=1, the pilot of 26.10): the hands at the craft by its state, the vent breathing,
+	// the exhaust of a craft back from a flight and a floodlight over it at night - the craft is only read
+	static const bool hangarLife = std::getenv("OXCE_HD_HANGAR_LIFE") && std::atoi(std::getenv("OXCE_HD_HANGAR_LIFE")) != 0;
+	if (hangarLife)
+	{
+		auto emit = [&](HdBaseScene::EmitKind kind, float x, float y, float w, float h, float r, float g, float b, float level)
+		{
+			HdBaseScene::PlacedEmit e;
+			e.emit.kind = kind;
+			e.emit.x = x;
+			e.emit.y = y;
+			e.emit.w = w;
+			e.emit.h = h;
+			e.emit.r = r;
+			e.emit.g = g;
+			e.emit.b = b;
+			e.scale = site;
+			e.level = level;
+			e.seed = (Uint32)(x * 7 + y * 31) * 2654435761u;
+			emits.push_back(e);
+		};
+		for (const auto* fac : *_base->getFacilities())
+		{
+			// the vent grate in the top right of the pack's hangar picture (BASEBITS 10, pack pixels 93-111, 18-40)
+			if (fac->getRules()->getCrafts() > 0 && isHdFacility(fac) && hdTileIndex(fac, 1) == 10)
+			{
+				emit(HdBaseScene::STEAM, (getX() + (fac->getX() + 1) * GRID_SIZE) * k + 93 * site, (getY() + fac->getY() * GRID_SIZE) * k + 18 * site,
+					18 * site, 22 * site, 0.85f, 0.88f, 0.90f, 0.35f);
+			}
+		}
+		for (const HdCraft &craft : _hdCrafts)
+		{
+			Surface *frame = _texture->getFrame(craft.index);
+			if (!frame)
+			{
+				continue;
+			}
+			HdBaseLife::Plan::Craft c;
+			c.status = craft.status;
+			c.fuelX = (float)craft.fuelX / GRID_SIZE;
+			c.fuelY = (float)craft.fuelY / GRID_SIZE;
+			plan.crafts.push_back(c);
+			const unsigned char mine = (unsigned char)plan.crafts.size();
+			const int sq = GRID_SIZE / HdBaseLife::SUB;
+			int x0 = INT_MAX, x1 = -1, y1 = -1;
+			for (int py = 0; py < frame->getHeight(); ++py)
+			{
+				for (int px = 0; px < frame->getWidth(); ++px)
+				{
+					const int gx = (craft.x + px) / sq, gy = (craft.y + py) / sq;
+					if (frame->getPixel(px, py) && craft.x + px >= 0 && craft.y + py >= 0 && gx < HdBaseLife::SIZE * HdBaseLife::SUB && gy < HdBaseLife::SIZE * HdBaseLife::SUB)
+					{
+						plan.hull[gx][gy] = mine;
+						x0 = std::min(x0, craft.x + px);
+						x1 = std::max(x1, craft.x + px);
+						y1 = std::max(y1, craft.y + py);
+					}
+				}
+			}
+			if (x1 < 0)
+			{
+				continue;
+			}
+			const float midX = (getX() + (x0 + x1 + 1) / 2.0f) * k;
+			// back from a flight: a grey haze off its tail while it refuels
+			if (craft.status == HdBaseLife::CRAFT_BUSY)
+			{
+				emit(HdBaseScene::STEAM, midX - 8 * site, (getY() + y1) * k - 6 * site, 16 * site, 10 * site, 0.55f, 0.55f, 0.58f, 0.5f);
+			}
+			// at night a floodlight from above falls on the craft
+			if (night > 0.3f)
+			{
+				HdBaseScene::Placed p;
+				p.light.x = midX;
+				p.light.y = (getY() + craft.y + frame->getHeight() / 2.0f) * k;
+				p.light.radius = 1.1f * cellPx;
+				p.light.kind = HdBaseScene::STEADY;
+				p.light.r = 1.0f;
+				p.light.g = 0.95f;
+				p.light.b = 0.85f;
+				p.scale = site;
+				p.level = 0.9f * night;
+				lights.push_back(p);
+			}
+		}
+	}
 	const SDL_Rect area = { (Sint16)(getX() * k), (Sint16)(getY() * k), (Uint16)(getWidth() * k), (Uint16)(getHeight() * k) };
 	// the water ripples and the dishes turn under the crew; the lamps fall on the relief of the pictures
 	if (view)
@@ -1468,6 +1554,13 @@ void BaseView::draw()
 						craft.x = fx;
 						craft.y = fy;
 						craft.status = HdCraftLights::statusOf(*craftIt);
+						// OXCE_HD_HANGAR_STATUS=0..4: every craft shown in that state (HdCraftLights::Status) - a test of
+						// the hangar pictures, the craft itself unchanged
+						static const char *shown = std::getenv("OXCE_HD_HANGAR_STATUS");
+						if (shown && *shown >= '0' && *shown <= '4')
+						{
+							craft.status = *shown - '0';
+						}
 						craft.seed = (Uint32)(fac->getX() * 7 + fac->getY() * 31);
 						craft.inWorld = inWorld;
 						// the garland along the bottom edge of the hangar, under the craft

@@ -32,7 +32,9 @@ namespace OpenXcom
  * their feet carry a lantern (a light of HdBaseScene). They walk only over the bare floor of the
  * pictures, never through furniture or machines. Scientists in a lab and engineers in a workshop at work
  * stand at the furniture working with their hands, something lighting up in them now and then, and step
- * to the next table every 6-10 s.
+ * to the next table every 6-10 s. In the hangars (OXCE_HD_HANGAR_LIFE=1, a pilot) the hands work by the craft's
+ * state: two weld at the hull of a craft under repair, two carry the ammunition to one rearming, one holds the
+ * hose of one refuelling.
  *
  * How many walk and where they go is read from the base; where each of them is comes from the crew's
  * own dice and the display clock. Nothing of the game is changed and the game's random numbers are
@@ -59,7 +61,20 @@ namespace HdBaseLife
 		int scientists = 0, engineers = 0, soldiers = 0;
 		bool researching = false, producing = false;
 		Uint32 seed = 0;                  ///< tells one base from another
+		/// The crafts in the hangars, in the state their lights show (HdCraftLights::Status) - the hangar
+		/// hands work by it (OXCE_HD_HANGAR_LIFE=1, the pilot of 26.10)
+		struct Craft
+		{
+			int status = 0;               ///< CRAFT_READY...
+			float fuelX = 0, fuelY = 0;   ///< the fuel garland of its hangar, grid cells: the hose comes from there
+		};
+		std::vector<Craft> crafts;
+		/// [x][y] of the walking grid: the craft's number + 1 over the squares its picture covers - nobody
+		/// walks there, the hangar hands stand at its edge
+		unsigned char hull[SIZE * SUB][SIZE * SUB] = {};
 	};
+	/// The states of a craft as HdCraftLights::Status numbers them.
+	enum CraftState { CRAFT_READY, CRAFT_BUSY, CRAFT_REPAIRS, CRAFT_REARMING, CRAFT_NO_CREW };
 
 	/// Moves the crew on to `ms` of the display clock and draws it into the world layer, the grid's
 	/// corner at (ox, oy) and `cell` world pixels to a grid cell. Before the light: the figures darken at

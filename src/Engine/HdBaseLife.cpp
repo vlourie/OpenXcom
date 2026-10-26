@@ -83,6 +83,8 @@ struct Agent
 	bool atWork = false;              ///< stands there working with its hands
 	int spotX = -1, spotY = -1;       ///< the square it works at or goes to
 	float hands = 6;                  ///< how fast its hands go
+	int craft = -1;                   ///< a hangar hand: the craft (Plan::crafts) it works at
+	bool carry = false;               ///< a loader on its way to the craft with a box of ammunition
 
 	bool walking() const { return next < path.size(); }
 };
@@ -304,7 +306,7 @@ bool doorway(const Plan &plan, int gx, int gy)
 
 bool walkable(const Plan &plan, int gx, int gy)
 {
-	return facilityAt(plan, gx, gy) && (plan.walk[gx][gy] || doorway(plan, gx, gy));
+	return facilityAt(plan, gx, gy) && (plan.walk[gx][gy] || doorway(plan, gx, gy)) && !plan.hull[gx][gy];
 }
 
 /// May the crew step from square a to its neighbour b: over the floor, from one facility to another only
@@ -378,7 +380,7 @@ Cell spotSquare(const Plan &plan, Cell c)
 	{
 		for (int sy = 0; sy < SUB; ++sy)
 		{
-			if (plan.walk[c.first * SUB + sx][c.second * SUB + sy])
+			if (plan.walk[c.first * SUB + sx][c.second * SUB + sy] && !plan.hull[c.first * SUB + sx][c.second * SUB + sy])
 			{
 				free.push_back(Cell(c.first * SUB + sx, c.second * SUB + sy));
 			}
@@ -405,6 +407,10 @@ Cell pick(const std::vector<Cell> &cells, Cell otherwise)
 /// while it builds - by day, or on the night shift.
 bool works(const Agent &a, const Plan &plan, float night)
 {
+	if (a.craft >= 0)
+	{
+		return true;
+	}
 	if (night > 0.5f && !a.nightShift)
 	{
 		return false;
@@ -415,9 +421,15 @@ bool works(const Agent &a, const Plan &plan, float night)
 /// A place to work at in cell `c`: a floor square next to furniture (inside the room, not its wall), facing it,
 /// and not next to where another of the crew works. With `near`, one of the three nearest to it but not it - a
 /// step to the next table.
+bool hullSpot(const Plan &plan, const Agent &self, const Cell *near, Cell &square, int &face);
+
 bool workSpot(const Plan &plan, Cell c, const Agent &self, const Cell *near, Cell &square, int &face)
 {
 	static const int SIDE[FACES][2] = { { 1, 0 }, { 0, 1 }, { -1, 0 }, { 0, -1 } };
+	if (self.craft >= 0)
+	{
+		return hullSpot(plan, self, near, square, face);
+	}
 	struct Spot
 	{
 		Cell square;
@@ -470,6 +482,88 @@ bool workSpot(const Plan &plan, Cell c, const Agent &self, const Cell *near, Cel
 }
 
 /// Sets the agent walking over these squares (from where it stands): turning points only.
+/// A place for a hangar hand: on the floor at the edge of its craft, facing the hull - or, for a loader going for
+/// the next box, by the hangar's wall away from the craft. With `near`, one of the three nearest to it but not it.
+bool hullSpot(const Plan &plan, const Agent &self, const Cell *near, Cell &square, int &face)
+{
+	static const int SIDE[FACES][2] = { { 1, 0 }, { 0, 1 }, { -1, 0 }, { 0, -1 } };
+	const unsigned char mine = (unsigned char)(self.craft + 1);
+	const bool pile = plan.crafts[self.craft].status == CRAFT_REARMING && !self.carry;
+	float mx = 0, my = 0;
+	int count = 0;
+	for (int gx = 0; gx < G; ++gx)
+	{
+		for (int gy = 0; gy < G; ++gy)
+		{
+			if (plan.hull[gx][gy] == mine)
+			{
+				mx += gx;
+				my += gy;
+				++count;
+			}
+		}
+	}
+	if (!count)
+	{
+		return false;
+	}
+	mx /= count;
+	my /= count;
+	const int hangar = facilityAt(plan, (int)mx, (int)my);
+	struct Spot
+	{
+		Cell square;
+		int face, dist;
+	};
+	std::vector<Spot> spots;
+	for (int gx = 0; gx < G; ++gx)
+	{
+		for (int gy = 0; gy < G; ++gy)
+		{
+			if (!walkable(plan, gx, gy) || facilityAt(plan, gx, gy) != hangar)
+			{
+				continue;
+			}
+			bool taken = false;
+			for (const Agent &o : crew.agents)
+			{
+				taken = taken || (&o != &self && o.spotX >= 0 && std::abs(o.spotX - gx) <= 1 && std::abs(o.spotY - gy) <= 1);
+			}
+			const int dist = near ? std::max(std::abs(gx - near->first), std::abs(gy - near->second)) : 0;
+			if (taken || (near && dist == 0) || (pile && std::hypot(gx - mx, gy - my) < 5.5f))
+			{
+				continue;
+			}
+			for (int f = 0; f < FACES; ++f)
+			{
+				const int nx = gx + SIDE[f][0], ny = gy + SIDE[f][1];
+				if (nx < 0 || ny < 0 || nx >= G || ny >= G)
+				{
+					continue;
+				}
+				if (pile ? !plan.walk[nx][ny] && !plan.hull[nx][ny] && facilityAt(plan, nx, ny) == hangar : plan.hull[nx][ny] == mine)
+				{
+					spots.push_back({ Cell(gx, gy), f, dist });
+				}
+			}
+		}
+	}
+	if (spots.empty())
+	{
+		return false;
+	}
+	size_t choice = spots.size();
+	if (near)
+	{
+		std::stable_sort(spots.begin(), spots.end(), [](const Spot &p, const Spot &q) { return p.dist < q.dist; });
+		choice = std::min<size_t>(3, spots.size());
+	}
+	const Spot &s = spots[std::min(choice - 1, (size_t)(crew.roll() * choice))];
+	square = s.square;
+	face = s.face;
+	return true;
+}
+
 void walkOver(Agent &a, const std::vector<Cell> &squares)
 {
 	a.path.clear();
@@ -499,6 +593,10 @@ Uint32 keyOf(const Plan &plan, int sci, int eng, int sol)
 			h = (h ^ (Uint32)plan.facility[x][y]) * 16777619u;
 			h = (h ^ (Uint32)plan.place[x][y]) * 16777619u;
 		}
+	}
+	for (const Plan::Craft &c : plan.crafts)
+	{
+		h = (h ^ (Uint32)(c.status + 1)) * 16777619u;
 	}
 	return ((h ^ (Uint32)sci) * 16777619u ^ (Uint32)eng) * 16777619u ^ (Uint32)sol;
 }
@@ -583,9 +681,49 @@ void makeCrew(const Plan &plan, Uint32 key, float night)
 	{
 		add(ENG, BUILD, true);
 	}
+	// the hangar hands by the craft's state, day and night: two welders at a craft under repair, two loaders at one
+	// rearming, one with the fuel hose at one refuelling
+	for (size_t c = 0; c < plan.crafts.size() && !cellsWith(plan, HANGAR).empty(); ++c)
+	{
+		const int state = plan.crafts[c].status;
+		const int hands = state == CRAFT_REPAIRS || state == CRAFT_REARMING ? 2 : state == CRAFT_BUSY ? 1 : 0;
+		for (int i = 0; i < hands; ++i)
+		{
+			Agent a;
+			a.role = ENG;
+			a.job = HANGAR;
+			a.nightShift = true;
+			a.craft = (int)c;
+			a.carry = state == CRAFT_REARMING && i == 0;
+			a.hands = 5.0f + 2.0f * crew.roll();
+			a.dir = (int)(crew.roll() * DIRS) % DIRS;
+			Cell square;
+			int face;
+			if (!hullSpot(plan, a, nullptr, square, face))
+			{
+				continue;
+			}
+			a.homeX = a.cellX = square.first / SUB;
+			a.homeY = a.cellY = square.second / SUB;
+			a.pos = centre(square);
+			a.spotX = square.first;
+			a.spotY = square.second;
+			a.face = face;
+			a.atWork = true;
+			a.dir = face * DIRS / FACES;
+			a.wait = crew.roll() * 4;
+			crew.agents.push_back(a);
+		}
+	}
 }
 
 /// Where an agent goes next: to work, home at night, about the base when there is no work.
+/// Does it carry the ammunition of a rearming craft to and fro?
+bool loader(const Agent &a, const Plan &plan)
+{
+	return a.craft >= 0 && plan.crafts[a.craft].status == CRAFT_REARMING;
+}
+
 void choose(Agent &a, const Plan &plan, float night)
 {
 	const Cell home(a.homeX, a.homeY);
@@ -659,7 +797,7 @@ void choose(Agent &a, const Plan &plan, float night)
 		if (a.face >= 0)
 		{
 			a.atWork = true;
-			a.wait = 6.0f + crew.roll() * 4.0f;
+			a.wait = loader(a, plan) ? 2.0f + crew.roll() : 6.0f + crew.roll() * 4.0f;
 			a.dir = a.face * DIRS / FACES;
 		}
 	}
@@ -689,16 +827,22 @@ void move(Agent &a, const Plan &plan, float night, float dt)
 			a.wait = 2.5f + crew.roll() * 3.5f;
 			if (a.face >= 0)
 			{
-				// at the table: works at it 6-10 s
+				// at the table: works at it 6-10 s; a loader puts the box down or takes the next in 2-3 s
 				a.atWork = true;
-				a.wait = 6.0f + crew.roll() * 4.0f;
+				a.wait = loader(a, plan) ? 2.0f + crew.roll() : 6.0f + crew.roll() * 4.0f;
 				a.dir = a.face * DIRS / FACES;
 			}
 		}
 		return;
 	}
 	a.wait -= dt;
-	if (a.wait <= 0)
+	if (a.wait <= 0 && loader(a, plan) && a.atWork)
+	{
+		// with the box to the craft, without it back to the pile
+		a.carry = !a.carry;
+		choose(a, plan, night);
+	}
+	else if (a.wait <= 0)
 	{
 		// mostly a step to the next table of the room, now and then elsewhere
 		Cell square;
@@ -762,6 +906,48 @@ void draw(SDL_Surface *world, const Plan &plan, int ox, int oy, int cell, float 
 	const float s = cell / 128.0f;
 	const SDL_Rect clip = world->clip_rect;
 	const float t = (float)(ms % 3600000u) / 1000.0f;
+	// a dot of `size` world pixels over the layer: mixed in by `a`, or added (sparks)
+	auto dot = [&](float fx, float fy, int size, float r, float g, float b, float a, bool add)
+	{
+		const int x0 = (int)std::lround(fx - size / 2.0f), y0 = (int)std::lround(fy - size / 2.0f);
+		const float col[3] = { r, g, b };
+		for (int y = std::max(y0, (int)clip.y); y < std::min(y0 + size, clip.y + clip.h); ++y)
+		{
+			Uint32 *row = (Uint32*)((Uint8*)world->pixels + (size_t)y * world->pitch);
+			for (int x = std::max(x0, (int)clip.x); x < std::min(x0 + size, clip.x + clip.w); ++x)
+			{
+				const Uint32 px = row[x];
+				Uint32 out = px & 0xFF000000u;
+				for (int c = 0; c < 3; ++c)
+				{
+					const int shift = 16 - 8 * c;
+					const float was = ((px >> shift) & 0xFF) / 255.0f;
+					const float v = add ? was + col[c] * a : was + (col[c] - was) * a;
+					out |= (Uint32)std::lround(std::min(1.0f, std::max(0.0f, v)) * 255.0f) << shift;
+				}
+				row[x] = out;
+			}
+		}
+	};
+	const int thick = std::max(1, (int)std::lround(cell / 64.0f));
+	const float ppu = 1.95f * cell / 128.0f;
+	// the fuel hoses under the figures: from the garland of the hangar to whoever refuels, sagging to the floor
+	for (const Agent &a : crew.agents)
+	{
+		if (a.craft < 0 || plan.crafts[a.craft].status != CRAFT_BUSY)
+		{
+			continue;
+		}
+		const float x0 = ox + plan.crafts[a.craft].fuelX * cell, y0 = oy + plan.crafts[a.craft].fuelY * cell;
+		const float x1 = ox + a.pos.x * cell, y1 = oy + a.pos.y * cell;
+		const float mx = (x0 + x1) / 2, my = (y0 + y1) / 2 + 8 * s;
+		const int steps = (int)(std::hypot(x1 - x0, y1 - y0) / std::max(1.0f, thick * 0.7f)) + 2;
+		for (int i = 0; i <= steps; ++i)
+		{
+			const float u = i / (float)steps, v = 1 - u;
+			dot(v * v * x0 + 2 * u * v * mx + u * u * x1, v * v * y0 + 2 * u * v * my + u * u * y1, thick, 0.13f, 0.13f, 0.15f, 0.95f, false);
+		}
+	}
 	for (size_t n = 0; n < crew.agents.size(); ++n)
 	{
 		const Agent &a = crew.agents[n];
@@ -788,7 +974,7 @@ void draw(SDL_Surface *world, const Plan &plan, int ox, int oy, int cell, float 
 			// now and then something lights up in the hands: a test tube, a meter's screen, a soldering tip
 			Uint32 h = ((Uint32)(t * 1.5f) * 374761393u) ^ ((Uint32)n * 668265263u) ^ crew.key;
 			h = (h ^ (h >> 13)) * 1274126177u;
-			if (((h ^ (h >> 16)) & 0xFFFF) > 0.75f * 0xFFFF)
+			if (a.craft < 0 && ((h ^ (h >> 16)) & 0xFFFF) > 0.75f * 0xFFFF)
 			{
 				static const float FLASH[4][3] = { { 0.4f, 1.0f, 0.9f }, { 0.6f, 1.0f, 0.4f }, { 1.0f, 0.7f, 0.3f }, { 1.0f, 0.85f, 0.55f } };
 				const float *col = FLASH[a.role == ENG ? 3 : n % 3];
@@ -828,6 +1014,49 @@ void draw(SDL_Surface *world, const Plan &plan, int ox, int oy, int cell, float 
 				row[x0 + x] = out;
 			}
 		}
+		const float aim = (a.atWork && !a.walking() ? a.face * DIRS / FACES : a.dir) * 2 * PI / DIRS;
+		const float hx = cx + std::cos(aim) * 3.4f * ppu, hy = cy + std::sin(aim) * 3.4f * ppu;
+		// a loader's box of ammunition in its hands, olive with a dark rim
+		if (a.carry && (a.walking() || a.atWork))
+		{
+			const int side = std::max(3, (int)std::lround(3.8f * ppu));
+			dot(hx, hy, side, 0.12f, 0.13f, 0.08f, 1.0f, false);
+			dot(hx, hy, std::max(1, side - 2 * thick), 0.44f, 0.47f, 0.25f, 1.0f, false);
+		}
+		// a welder at a craft under repair: the arc in bursts, flickering, and sparks flying off it
+		if (a.craft >= 0 && a.atWork && !a.walking() && plan.crafts[a.craft].status == CRAFT_REPAIRS)
+		{
+			auto hash = [&](Uint32 v)
+			{
+				v = (v ^ ((Uint32)n * 668265263u) ^ crew.key) * 2246822519u;
+				return ((v ^ (v >> 15)) * 3266489917u >> 8) * (1.0f / 16777216.0f);
+			};
+			const float burst = hash((Uint32)(t / 1.3f) * 374761393u), flick = hash((Uint32)(t * 25.0f) * 2654435761u + 7);
+			if (burst > 0.3f && flick > 0.2f)
+			{
+				HdBaseScene::Placed L;
+				L.light.x = hx;
+				L.light.y = hy;
+				L.light.radius = 16 * s;
+				L.light.kind = HdBaseScene::STEADY;
+				L.light.r = 0.75f;
+				L.light.g = 0.88f;
+				L.light.b = 1.0f;
+				L.scale = s;
+				L.level = 1.6f + 0.8f * flick;
+				lights.push_back(L);
+				dot(hx, hy, thick + 1, 0.9f, 0.95f, 1.0f, 1.0f, true);
+				for (int i = 0; i < 7; ++i)
+				{
+					const float k0 = t / 0.45f + i / 7.0f + n * 0.37f, ph = k0 - std::floor(k0);
+					const float dir = hash((Uint32)k0 * 2246822519u + (Uint32)i * 97u) * 2 * PI;
+					const float reach = (8 + 10 * hash((Uint32)k0 * 3266489917u + (Uint32)i * 131u)) * s * ph;
+					const float glow = 1 - ph;
+					dot(hx + std::cos(dir) * reach, hy + std::sin(dir) * reach + 10 * s * ph * ph, thick,
+						1.0f, 0.55f + 0.4f * glow, 0.2f + 0.5f * glow, glow, true);
+				}
+			}
+		}
 		// a lantern a little ahead of whoever walks at night
 		if (night > 0.4f && a.walking())
 		{
@@ -852,17 +1081,18 @@ void draw(SDL_Surface *world, const Plan &plan, int ox, int oy, int cell, float 
 		total += std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - perfStart).count();
 		if (++frames == 60)
 		{
-			int walking = 0, asleep = 0, working = 0, roles[ROLES] = {};
+			int walking = 0, asleep = 0, working = 0, hangar = 0, roles[ROLES] = {};
 			for (const Agent &a : crew.agents)
 			{
 				walking += a.walking() ? 1 : 0;
 				working += a.atWork && !a.walking() ? 1 : 0;
+				hangar += a.craft >= 0 ? 1 : 0;
 				asleep += a.asleep ? 1 : 0;
 				++roles[a.role];
 			}
 			Log(LOG_INFO) << "HD base crew: " << total / frames << " ms per frame, " << crew.agents.size() << " figures ("
 				<< roles[SCI] << " sci, " << roles[ENG] << " eng, " << roles[GAL] + roles[GAL2] << " crew, " << roles[GUARD]
-				<< " guard, " << roles[NURSE] << " nurse), " << walking << " walking, " << working << " at work, " << asleep << " asleep; base "
+				<< " guard, " << roles[NURSE] << " nurse), " << walking << " walking, " << working << " at work, " << hangar << " in hangars, " << asleep << " asleep; base "
 				<< sci << " sci, " << eng << " eng, " << sol << " soldiers, research " << plan.researching
 				<< ", production " << plan.producing;
 			total = 0;
