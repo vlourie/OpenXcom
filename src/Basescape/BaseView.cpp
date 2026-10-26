@@ -18,6 +18,7 @@
  */
 #include "BaseView.h"
 #include <algorithm>
+#include <chrono>
 #include <sstream>
 #include <cmath>
 #include "../Engine/SurfaceSet.h"
@@ -652,6 +653,7 @@ void BaseView::drawHd()
 	{
 		return;
 	}
+	const auto frameStart = std::chrono::steady_clock::now();
 	const int rock = _base->getGlobeTexture() ? _base->getGlobeTexture()->getBaseGridSprite() : 0;
 	// every phase of the base's tiles at once, before the first of them is drawn
 	std::vector<HdBase::Want> want;
@@ -766,9 +768,24 @@ void BaseView::drawHd()
 		}
 	}
 	_hdNextChange = next;
+	const auto sceneStart = std::chrono::steady_clock::now();
 	if (lit)
 	{
 		drawHdScene(world, k, now);
+	}
+	if (std::getenv("OXCE_HD_BASE_PERF"))
+	{
+		static double pictures = 0, scene = 0;
+		static int frames = 0;
+		const auto end = std::chrono::steady_clock::now();
+		pictures += std::chrono::duration<double, std::milli>(sceneStart - frameStart).count();
+		scene += std::chrono::duration<double, std::milli>(end - sceneStart).count();
+		if (++frames == 60)
+		{
+			Log(LOG_INFO) << "HD base frame: pictures and rock " << pictures / frames << " ms + scene " << scene / frames << " ms per frame";
+			pictures = scene = 0;
+			frames = 0;
+		}
 	}
 }
 
@@ -1051,15 +1068,46 @@ void BaseView::drawHdScene(SDL_Surface *world, int k, Uint32 now)
 		}
 	}
 	const SDL_Rect area = { (Sint16)(getX() * k), (Sint16)(getY() * k), (Uint16)(getWidth() * k), (Uint16)(getHeight() * k) };
+	// OXCE_HD_BASE_PERF: what each part of the living base costs, an average every 60 frames into the log
+	static const bool perf = std::getenv("OXCE_HD_BASE_PERF") != nullptr;
+	typedef std::chrono::steady_clock Clock;
+	const auto t0 = Clock::now();
 	// the water ripples and the dishes turn under the crew; the lamps fall on the relief of the pictures
 	if (view)
 	{
 		HdBaseScene::drawMotion(world, *view, now);
 	}
+	const auto t1 = Clock::now();
 	// the crew before the light: it darkens with the rooms at night, and its lanterns light them
-	HdBaseLife::draw(world, plan, getX() * k, getY() * k, GRID_SIZE * k, night, now, lights);
+	static const bool noCrew = HdBaseScene::measuredOff("crew");
+	if (!noCrew)
+	{
+		HdBaseLife::draw(world, plan, getX() * k, getY() * k, GRID_SIZE * k, night, now, lights);
+	}
+	const auto t2 = Clock::now();
 	HdBaseScene::draw(world, area, lights, night, now, view);
+	const auto t3 = Clock::now();
 	HdBaseScene::drawParticles(world, area, emits, night, now);
+	if (perf)
+	{
+		static double sum[5] = { 0, 0, 0, 0, 0 };
+		static int frames = 0;
+		const auto t4 = Clock::now();
+		auto ms = [](Clock::time_point a, Clock::time_point b) { return std::chrono::duration<double, std::milli>(b - a).count(); };
+		sum[0] += ms(t0, t1);
+		sum[1] += ms(t1, t2);
+		sum[2] += ms(t2, t3);
+		sum[3] += ms(t3, t4);
+		sum[4] += ms(t0, t4);
+		if (++frames == 60)
+		{
+			Log(LOG_INFO) << "HD base scene: " << sum[4] / frames << " ms per frame = motion " << sum[0] / frames << " + crew "
+				<< sum[1] / frames << " + light " << sum[2] / frames << " + particles " << sum[3] / frames << " | "
+				<< lights.size() << " lights, " << emits.size() << " emitters, k=" << k << ", " << area.w << "x" << area.h << " px";
+			std::fill(sum, sum + 5, 0.0);
+			frames = 0;
+		}
+	}
 }
 
 /**
