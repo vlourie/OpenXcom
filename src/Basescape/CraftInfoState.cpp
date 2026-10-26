@@ -95,6 +95,86 @@ CraftWeaponIcons::~CraftWeaponIcons()
 	{
 		delete pair.second;
 	}
+	for (auto &pair : _redIcons)
+	{
+		delete pair.second;
+	}
+}
+
+/**
+ * The picture of an installed weapon, made once per weapon type: what the craft screen shows of it,
+ * the top left 15x17 of the frame, in the list's colours. With `red` (oxceHdCraftWeaponToggle: the weapon is
+ * switched off) the same picture in red: every colour becomes a red of its own lightness, taken from the
+ * list's palette.
+ * @param weapon The installed weapon.
+ * @param red The picture for a disabled weapon.
+ * @return The picture (owned here), or nullptr when the mod has no frame for the weapon.
+ */
+Surface *CraftWeaponIcons::iconFor(const CraftWeapon *weapon, bool red)
+{
+	Surface *&icon = _icons[weapon->getRules()];
+	if (!icon)
+	{
+		SurfaceSet *texture = _mod->getSurfaceSet("BASEBITS.PCK");
+		Surface *frame = texture->getFrame(weapon->getRules()->getSprite() + 48);
+		if (!frame)
+		{
+			return nullptr;
+		}
+		icon = new Surface(15, 17);
+		icon->setPalette(_palette);
+		for (int y = 0; y < 17 && y < frame->getHeight(); ++y)
+		{
+			for (int x = 0; x < 15 && x < frame->getWidth(); ++x)
+			{
+				icon->setPixel(x, y, _remap[frame->getPixel(x, y)]);
+			}
+		}
+	}
+	if (!red)
+	{
+		return icon;
+	}
+	if (!_redMapMade)
+	{
+		_redMapMade = true;
+		for (int c = 0; c < 256; ++c)
+		{
+			_redMap[c] = (Uint8)c;
+			if (c == 0)
+			{
+				continue;
+			}
+			const int lum = (_palette[c].r * 30 + _palette[c].g * 59 + _palette[c].b * 11) / 100;
+			const int tr = std::min(255, lum + 60), tg = lum / 4, tb = lum / 4;
+			int best = c, bestDist = INT_MAX;
+			for (int d = 1; d < 256; ++d)
+			{
+				const int dr = tr - _palette[d].r, dg = tg - _palette[d].g, db = tb - _palette[d].b;
+				const int dist = dr * dr + dg * dg + db * db;
+				if (dist < bestDist)
+				{
+					best = d;
+					bestDist = dist;
+				}
+			}
+			_redMap[c] = (Uint8)best;
+		}
+	}
+	Surface *&redIcon = _redIcons[weapon->getRules()];
+	if (!redIcon)
+	{
+		redIcon = new Surface(15, 17);
+		redIcon->setPalette(_palette);
+		for (int y = 0; y < 17; ++y)
+		{
+			for (int x = 0; x < 15; ++x)
+			{
+				redIcon->setPixel(x, y, _redMap[icon->getPixel(x, y)]);
+			}
+		}
+	}
+	return redIcon;
 }
 
 /**
@@ -103,37 +183,63 @@ CraftWeaponIcons::~CraftWeaponIcons()
  * @param craft The craft.
  * @return One picture per installed weapon, empty slots skipped.
  */
-std::vector<Surface*> CraftWeaponIcons::of(Craft *craft)
+std::vector<Surface*> CraftWeaponIcons::of(Craft *craft, bool marks)
 {
 	std::vector<Surface*> result;
-	SurfaceSet *texture = _mod->getSurfaceSet("BASEBITS.PCK");
 	for (const CraftWeapon *weapon : *craft->getWeapons())
 	{
 		if (!weapon)
 		{
 			continue;
 		}
-		Surface *&icon = _icons[weapon->getRules()];
+		Surface *icon = iconFor(weapon, marks && weapon->isDisabled());
 		if (!icon)
 		{
-			Surface *frame = texture->getFrame(weapon->getRules()->getSprite() + 48);
-			if (!frame)
-			{
-				continue;
-			}
-			icon = new Surface(15, 17);
-			icon->setPalette(_palette);
-			for (int y = 0; y < 17 && y < frame->getHeight(); ++y)
-			{
-				for (int x = 0; x < 15 && x < frame->getWidth(); ++x)
-				{
-					icon->setPixel(x, y, _remap[frame->getPixel(x, y)]);
-				}
-			}
+			continue;
 		}
 		result.push_back(icon);
 	}
 	return result;
+}
+
+/**
+ * OXCE-HD (oxceHdCraftWeaponToggle): the same switch as CraftInfoState::btnWIconClick (in a base) and
+ * GeoscapeCraftState::txtWeaponClick (out on the globe): CraftWeapon::setDisabled; a weapon switched on in a base
+ * sends the craft to rearm at once, as on the craft screen; a craft that is out is not touched.
+ * @param craft The craft the weapon is on.
+ * @param weapon The weapon.
+ */
+void CraftWeaponIcons::toggle(Craft *craft, CraftWeapon *weapon)
+{
+	weapon->setDisabled(!weapon->isDisabled());
+	if (!weapon->isDisabled() && craft->getStatus() != "STR_OUT")
+	{
+		craft->checkup();
+	}
+}
+
+/**
+ * OXCE-HD (oxceHdCraftWeaponToggle): which weapon a picture of a row stands for - the pictures are laid
+ * one after another, empty slots and weapons without a frame skipped, as of() does.
+ * @param craft The craft.
+ * @param slot The place of the picture in the row, from 0.
+ * @return The weapon, or nullptr when there is no such picture.
+ */
+CraftWeapon *CraftWeaponIcons::weaponAt(Craft *craft, int slot)
+{
+	int at = 0;
+	for (CraftWeapon *weapon : *craft->getWeapons())
+	{
+		if (!weapon || !iconFor(weapon, false))
+		{
+			continue;
+		}
+		if (at++ == slot)
+		{
+			return weapon;
+		}
+	}
+	return nullptr;
 }
 
 /**

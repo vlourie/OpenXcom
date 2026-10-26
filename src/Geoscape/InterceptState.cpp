@@ -27,6 +27,8 @@
 #include "../Interface/TextList.h"
 #include "../Savegame/Base.h"
 #include "../Savegame/Craft.h"
+#include "../Savegame/CraftWeapon.h"
+#include "../Engine/Action.h"
 #include "../Savegame/SavedGame.h"
 #include "../Savegame/Ufo.h"
 #include "../Savegame/MissionSite.h"
@@ -399,7 +401,7 @@ InterceptState::InterceptState(Globe *globe, bool useCustomSound, Base *base, Ta
 			_lstCrafts->addRow(4, xcraft->getName(_game->getLanguage()).c_str(), ssStatus.str().c_str(), xbase->getName().c_str(), ss.str().c_str());
 			if (_weaponIcons)
 			{
-				_lstCrafts->setRowIcons(row, _weaponIcons->of(xcraft));
+				_lstCrafts->setRowIcons(row, _weaponIcons->of(xcraft, Options::oxceHdCraftWeaponToggle));
 			}
 			if (hasEnoughPilots && status == "STR_READY")
 			{
@@ -464,8 +466,29 @@ void InterceptState::btnGotoBaseClick(Action *)
  * Pick a target for the selected craft.
  * @param action Pointer to an action.
  */
-void InterceptState::lstCraftsLeftClick(Action *)
+void InterceptState::lstCraftsLeftClick(Action *action)
 {
+	// OXCE-HD (oxceHdCraftWeaponToggle): a click on a weapon's icon switches that weapon (the list stays open);
+	// the rest of the row launches the craft as before
+	if (Options::oxceHdCraftWeaponToggle && _weaponIcons)
+	{
+		const int slot = _lstCrafts->getIconSlotAt((int)(action->getRelativeXMouse() / action->getXScale()));
+		if (slot >= 0)
+		{
+			const unsigned int iconRow = _lstCrafts->getSelectedRow();
+			if (iconRow < _crafts.size())
+			{
+				CraftWeapon *weapon = _weaponIcons->weaponAt(_crafts[iconRow], slot);
+				if (weapon)
+				{
+					CraftWeaponIcons::toggle(_crafts[iconRow], weapon);
+					_lstCrafts->setRowIcons(iconRow, _weaponIcons->of(_crafts[iconRow], true));
+					return;
+				}
+			}
+		}
+	}
+
 	// condition used in shift and non-shift paths
 	auto allowStart = [&](Craft* c)
 	{

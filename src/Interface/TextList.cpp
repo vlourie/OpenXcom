@@ -1642,6 +1642,27 @@ void TextList::setRowIcons(size_t row, const std::vector<Surface*> &frames, int 
 }
 
 /**
+ * OXCE-HD: which slot of a picture column a horizontal position is over.
+ * @param x Position in list pixels (0 = the list's left edge).
+ * @param col Which of the two picture columns.
+ * @return The slot from 0, or -1 when the position is outside the column.
+ */
+int TextList::getIconSlotAt(int x, int col) const
+{
+	if (col < 0 || col >= ICON_COLUMNS || _iconW[col] <= 0)
+	{
+		return -1;
+	}
+	const int rel = x - _iconX[col];
+	const int slotW = _iconW[col] / _iconSlots[col];
+	if (rel < 0 || slotW <= 0 || rel >= slotW * _iconSlots[col])
+	{
+		return -1;
+	}
+	return rel / slotW;
+}
+
+/**
  * OXCE-HD: calls fn(icon, x) for the pictures of a row, x in list pixels.
  */
 template<typename Fn>

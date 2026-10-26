@@ -246,6 +246,8 @@ public:
 	void setRowIcon(size_t row, Surface *frame, int col = 0);
 	/// OXCE-HD: several pictures of a row, from the left slot of the column on; those past its slots are not drawn.
 	void setRowIcons(size_t row, const std::vector<Surface*> &frames, int col = 0);
+	/// OXCE-HD: the slot of the picture column under `x` (list pixels, 0 = the list's left edge); -1 = outside the column.
+	int getIconSlotAt(int x, int col = 0) const;
 };
 
 }

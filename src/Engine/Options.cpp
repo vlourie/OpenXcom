@@ -482,6 +482,7 @@ void createAdvancedOptionsOXCE()
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceEnableSlackingIndicator", &oxceEnableSlackingIndicator, true, "STR_SHOW_SLACKING_INDICATOR", "STR_GEOSCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceInterceptGuiMaintenanceTime", &oxceInterceptGuiMaintenanceTime, 2, "STR_SHOW_MAINTENANCE_TIME", "STR_GEOSCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceCraftWeaponIcons", &oxceCraftWeaponIcons, true, "STR_CRAFT_WEAPON_ICONS", "STR_HD_GEOSCAPE")); // OXCE-HD
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdCraftWeaponToggle", &oxceHdCraftWeaponToggle, false, "STR_HD_CRAFT_WEAPON_TOGGLE", "STR_HD_GEOSCAPE")); // OXCE-HD
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceDogfightHitChance", &oxceDogfightHitChance, true, "STR_DOGFIGHT_HIT_CHANCE", "STR_HD_GEOSCAPE")); // OXCE-HD
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceShowETAMode", &oxceShowETAMode, 0, "STR_SHOW_ETA", "STR_GEOSCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceUfoLandingAlert", &oxceUfoLandingAlert, false, "STR_UFO_LANDING_ALERT", "STR_GEOSCAPE"));
