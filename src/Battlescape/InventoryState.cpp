@@ -21,6 +21,7 @@
 #include "InventorySaveState.h"
 #include "InventoryPersonalState.h"
 #include <algorithm>
+#include <climits>
 #include <cmath>
 #include "Inventory.h"
 #include "../Basescape/SoldierArmorState.h"
@@ -70,6 +71,61 @@
 
 namespace OpenXcom
 {
+
+/**
+ * OXCE-HD (oxceHdScrollSplit): the ground scroll button as two halves, an arrow to the left and an arrow to the right.
+ * The picture of the button is the mod's own, so it is made from it: the right half stays as it is, the left half
+ * becomes its mirror image, and a line in the darkest colour of the button's face is drawn between them.
+ * Picture only; the button works as before, the click handler tells the halves apart.
+ * @param btn The ground button, just added (its picture is copied from the screen's background).
+ */
+static void hdSplitScrollArrows(BattlescapeButton *btn)
+{
+	const int w = btn->getWidth(), h = btn->getHeight();
+	if (w < 16 || h < 8)
+	{
+		return;
+	}
+	const SDL_Color *pal = btn->getPalette();
+	Uint8 dark = 0;
+	int darkest = INT_MAX;
+	for (int y = 3; y < h - 3; ++y)
+	{
+		for (int x = 4; x < w - 4; ++x)
+		{
+			const Uint8 p = btn->getPixel(x, y);
+			if (!p)
+			{
+				continue;
+			}
+			const int lum = pal[p].r * 30 + pal[p].g * 59 + pal[p].b * 11;
+			if (lum < darkest)
+			{
+				darkest = lum;
+				dark = p;
+			}
+		}
+	}
+	btn->lock();
+	for (int y = 0; y < h; ++y)
+	{
+		for (int x = 0; x < w / 2; ++x)
+		{
+			btn->setPixel(x, y, btn->getPixel(w - 1 - x, y));
+		}
+	}
+	if (dark)
+	{
+		for (int y = 3; y < h - 3; ++y)
+		{
+			btn->setPixel(w / 2 - 1, y, dark);
+			btn->setPixel(w / 2, y, dark);
+		}
+	}
+	btn->unlock();
+	// the picture of the pressed button is made from this one
+	btn->initSurfaces();
+}
 
 static const int _templateBtnX = 288;
 static const int _createTemplateBtnY = 90;
@@ -174,6 +230,10 @@ InventoryState::InventoryState(bool tu, BattlescapeState *parent, Base *base, bo
 	add(_btnNext, "buttonNext", "inventory", _bg);
 	add(_btnUnload, "buttonUnload", "inventory", _bg);
 	add(_btnGround, "buttonGround", "inventory", _bg);
+	if (Options::oxceHdScrollSplit)
+	{
+		hdSplitScrollArrows(_btnGround);
+	}
 	add(_btnRank, "rank", "inventory", _bg);
 	add(_btnCreateTemplate, "buttonCreate", "inventory", _bg);
 	add(_btnApplyTemplate, "buttonApply", "inventory", _bg);
@@ -275,7 +335,7 @@ InventoryState::InventoryState(bool tu, BattlescapeState *parent, Base *base, bo
 
 	_btnGround->onMouseClick((ActionHandler)&InventoryState::btnGroundClickForward, SDL_BUTTON_LEFT);
 	_btnGround->onMouseClick((ActionHandler)&InventoryState::btnGroundClickBackward, SDL_BUTTON_RIGHT);
-	_btnGround->setTooltip("STR_SCROLL_RIGHT");
+	_btnGround->setTooltip(Options::oxceHdScrollSplit ? "STR_HD_SCROLL_SPLIT" : "STR_SCROLL_RIGHT");
 	_btnGround->onMouseIn((ActionHandler)&InventoryState::txtTooltipIn);
 	_btnGround->onMouseOut((ActionHandler)&InventoryState::txtTooltipOut);
 	_btnGround->onKeyboardPress((ActionHandler)&InventoryState::btnGroundClickBackward, Options::keyBattleLeft);
@@ -1366,6 +1426,16 @@ void InventoryState::btnGroundClickForward(Action *action)
 		if (mx <= _btnGround->getX() + (_btnGround->getWidth() / 2.0))
 		{
 			// clicked on the left half of the button
+			scrollBackwards = true;
+		}
+	}
+	else if (Options::oxceHdScrollSplit)
+	{
+		// OXCE-HD (oxceHdScrollSplit): the left half of the button (drawn as an arrow to the left) scrolls back;
+		// a key press has no mouse position (-1) and keeps scrolling forward
+		const double rx = action->getRelativeXMouse();
+		if (rx >= 0 && rx / action->getXScale() < _btnGround->getWidth() / 2.0)
+		{
 			scrollBackwards = true;
 		}
 	}

@@ -90,6 +90,8 @@ OPT bool oxceHdCraftWeaponToggle;
 OPT bool oxceHdFundsToggle;
 // HD interface, workshop: a new manufacturing job is put first in the base's list, not last (the same list order as moving it up with the arrows); the order decides who gets money and materials first; off = as it was (default)
 OPT bool oxceHdManufactureTop;
+// HD interface, battle inventory: the ground scroll button is drawn as two halves, an arrow to the left and an arrow to the right; a click on the left half scrolls the ground back (as the existing hidden oxceInventorySplitScrollButton does, without its picture); off = as it was (default); picture and click place only
+OPT bool oxceHdScrollSplit;
 OPT bool oxceDogfightHitChance;
 OPT int oxceShowETAMode;
 OPT bool oxceUfoLandingAlert;
@@ -267,6 +269,9 @@ OPT int oxceHdBattleHudColor;
 OPT bool oxceHdHoverBob;
 // HD render: combat effects of the HD mod (Engine/HdFx.h) - hits, swings, explosions, muzzle flashes; off = the classic animations
 OPT bool oxceHdFx;
+// HD render (XP-000298): the blood of a bullet hit that cost a unit health flies along the bullet's way, the more the more of its health was lost,
+// in one of three variants picked by a hash of the hit (the battle's random generator is not touched); picture only. Off by default: then the same blood as before
+OPT bool oxceHdBloodSpray;
 // HD render: the fire picture (SMOKE.PCK 0..7): 0 the pack's own (<i>.png, <i>.v1.png), style s = the pack's variants 2s and 2s + 1 (tools/hdart/fire_real_pack.py)
 OPT int oxceHdFire;
 // HD render: pace of the fire and smoke animation on tiles (Map::hdEnviClock), a step of HD_ENVI_PACE: 0 stock, higher = slower; picture only

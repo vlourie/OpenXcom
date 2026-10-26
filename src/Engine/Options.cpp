@@ -485,6 +485,7 @@ void createAdvancedOptionsOXCE()
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdCraftWeaponToggle", &oxceHdCraftWeaponToggle, false, "STR_HD_CRAFT_WEAPON_TOGGLE", "STR_HD_GEOSCAPE")); // OXCE-HD
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdFundsToggle", &oxceHdFundsToggle, false, "STR_HD_FUNDS_TOGGLE", "STR_HD_GEOSCAPE")); // OXCE-HD
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdManufactureTop", &oxceHdManufactureTop, false, "STR_HD_MANUFACTURE_TOP", "STR_HD_BASE")); // OXCE-HD
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdScrollSplit", &oxceHdScrollSplit, false, "STR_HD_SCROLL_SPLIT", "STR_HD_BATTLE_UI")); // OXCE-HD
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceDogfightHitChance", &oxceDogfightHitChance, true, "STR_DOGFIGHT_HIT_CHANCE", "STR_HD_GEOSCAPE")); // OXCE-HD
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceShowETAMode", &oxceShowETAMode, 0, "STR_SHOW_ETA", "STR_GEOSCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceUfoLandingAlert", &oxceUfoLandingAlert, false, "STR_UFO_LANDING_ALERT", "STR_GEOSCAPE"));
@@ -558,6 +559,7 @@ void createAdvancedOptionsOXCE()
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdHoverBob", &oxceHdHoverBob, true, "STR_HD_HOVER_BOB", "STR_HD_GRAPHICS"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdWalkerTurn", &oxceHdWalkerTurn, false, "STR_HD_WALKER_TURN", "STR_HD_GRAPHICS"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdFx", &oxceHdFx, true, "STR_HD_FX", "STR_HD_GRAPHICS"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdBloodSpray", &oxceHdBloodSpray, false, "STR_HD_BLOOD_SPRAY", "STR_HD_GRAPHICS"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdFire", &oxceHdFire, 2, "STR_HD_FIRE", "STR_HD_GRAPHICS"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdFirePace", &oxceHdFirePace, 1, "STR_HD_FIRE_PACE", "STR_HD_GRAPHICS"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdSmokePace", &oxceHdSmokePace, 2, "STR_HD_SMOKE_PACE", "STR_HD_GRAPHICS"));
