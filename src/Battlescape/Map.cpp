@@ -4305,7 +4305,7 @@ void Map::drawTerrain(HdCanvas *surface)
 					const char *setName = explosion->isBig() ? "X1.PCK" : explosion->isHit() ? "HIT.PCK" : "SMOKE.PCK";
 					std::string clip = HdFx::colour(explosion->getHdFx(), _game->getMod()->getSurfaceSet(setName)->getFrame(explosion->getStartFrame()), getPalette());
 					const int clipStep = explosion->getCurrentFrame() - explosion->getStartFrame();
-					const HdFrame *hd = nullptr;
+					const HdFrame *hd = nullptr, *stabHd = nullptr;
 					if (Options::oxceHdBloodSpray && explosion->getHdLoss() > 0)
 					{
 						// XP-000298: the blood of a bullet that took health flies on along its way (the bullet's way on the screen,
@@ -4320,11 +4320,24 @@ void Map::drawTerrain(HdCanvas *surface)
 							{
 								clip = spray;
 							}
+							else
+							{
+								// a blow in melee: the blood goes over the swing, from the attacker's side
+								const std::string stab = HdFx::stabClip(explosion->getHdFx(), wayX, wayY, explosion->getHdLoss(), explosion->getHdSeed());
+								if (!stab.empty())
+								{
+									stabHd = HdFx::frame(stab, clipStep, explosion->getFrameCount(), _k);
+								}
+							}
 						}
 					}
 					if (hd || (hd = HdFx::frame(clip, clipStep, explosion->getFrameCount(), _k)))
 					{
 						surface->blitFrame(*hd, bulletPositionScreen.x - hd->width / 2, bulletPositionScreen.y - hd->height / 2);
+						if (stabHd)
+						{
+							surface->blitFrame(*stabHd, bulletPositionScreen.x - stabHd->width / 2, bulletPositionScreen.y - stabHd->height / 2);
+						}
 						continue;
 					}
 				}
