@@ -291,6 +291,22 @@ bool parse(std::istream &in, TileScene &out)
 			{
 				out.water = kind == "blue" ? 1 : 2;
 				std::copy(g, g + 3, out.glint);
+				int least = 0;
+				if (words >> least && least > 0)
+				{
+					out.waterLeast = least;
+				}
+			}
+		}
+		else if (key == "flow")
+		{
+			Flow F;
+			std::string mode;
+			words >> mode >> F.colour[0] >> F.colour[1] >> F.colour[2] >> F.a1 >> F.a2 >> F.core >> F.halo >> F.dark;
+			if (words && (mode == "steady" || mode == "fit") && F.a1 > 0 && (mode == "fit" || F.a2 > 0))
+			{
+				F.mode = mode == "steady" ? Flow::STEADY : Flow::FIT;
+				out.flow = F;
 			}
 		}
 		else if (key == "spin" || key == "swing")
@@ -529,8 +545,36 @@ void draw(SDL_Surface *world, const SDL_Rect &area, const std::vector<Placed> &l
 	const int w = ax1 - ax0;
 	const int bands = (ay1 - ay0 + BAND - 1) / BAND;
 	const bool relief = view && !view->relief.empty();
-	// the water glints by day half as much as at night (base_scene_preview.py render)
-	const float glintGain = 3.5f * (0.5f + 0.5f * night);
+	// the pipes: where the light runs along them this frame (tools/hdart/base_flow_bake.py emission)
+	struct FlowNow
+	{
+		const PlacedFlow *P;
+		float shift, head, fade;
+	};
+	std::vector<FlowNow> flows;
+	static const std::vector<PlacedFlow> noFlows;
+	for (const PlacedFlow &P : view ? view->flows : noFlows)
+	{
+		FlowNow N = { &P, 0, 0, 1 };
+		if (P.flow.mode == Flow::STEADY)
+		{
+			N.shift = P.flow.a1 * t;
+		}
+		else
+		{
+			// slugs from the tank in the facility's fit: a1 trains a fit, each fading in and out
+			const float ft = P.fit >= 0 ? fitTime(*view, P.fit, ms) : -1;
+			if (ft < 0)
+			{
+				continue;
+			}
+			const float span = view->fits[P.fit].length / P.flow.a1;
+			const float local = std::fmod(ft, span);
+			N.fade = std::min(1.0f, std::min(local / 0.6f, std::max(0.0f, (span - local) / 0.8f)));
+			N.head = local / (span * 0.75f) * 1.35f - 0.05f;
+		}
+		flows.push_back(N);
+	}
 	HdWorkers::instance().run(bands, [&](int band)
 	{
 		// per row: the light falling on the pictures (ambient + lamps) and the halo over them
@@ -592,37 +636,58 @@ void draw(SDL_Surface *world, const SDL_Rect &area, const std::vector<Placed> &l
 					}
 				}
 			}
-			if (inView)
+			// the light running along the pipes: into the halo, so the night does not dim it; the pipe itself
+			// darker where it glows, or a white pipe washes out
+			for (const FlowNow &N : flows)
 			{
-				// glints dancing on the water: two crossing waves, only their crests (base_scene_preview.py render)
-				const float s = view->scale;
-				for (const View::Area &W : view->waters)
+				const PlacedFlow &P = *N.P;
+				const Flow &F = P.flow;
+				if (y < P.box.y || y >= P.box.y + P.box.h)
 				{
-					if (y < W.box.y || y >= W.box.y + W.box.h)
+					continue;
+				}
+				const Uint32 *mrow = &P.map[(size_t)(y - P.box.y) * P.box.w];
+				const int fx0 = std::max(ax0, (int)P.box.x), fx1 = std::min(ax1, P.box.x + (int)P.box.w);
+				for (int x = fx0; x < fx1; ++x)
+				{
+					const Uint32 q = mrow[x - P.box.x];
+					const float core = ((q >> 8) & 0xFF) / 255.0f, about = (q & 0xFF) / 255.0f;
+					if (core + about < 0.004f)
 					{
 						continue;
 					}
-					const float vy = (y - W.box.y) / s;
-					const float *mrow = &view->water[(size_t)(y - view->y) * view->w];
-					const int wx0 = std::max(ax0, (int)W.box.x), wx1 = std::min(ax1, W.box.x + (int)W.box.w);
-					for (int x = wx0; x < wx1; ++x)
+					const float u = ((q >> 16) & 0xFF) / 255.0f;
+					float e, white = 0, darken;
+					if (F.mode == Flow::STEADY)
 					{
-						const float m = mrow[x - view->x];
-						if (m <= 0.01f)
-						{
-							continue;
-						}
-						const float vx = (x - W.box.x) / s;
-						const float g = std::sin(0.21f * vx + 0.05f * vy + 3 * t) * std::sin(0.07f * vx - 0.19f * vy + 2.3f * t) - 0.72f;
-						if (g > 0)
-						{
-							float *o = &glow[(x - ax0) * 3];
-							const float k = g * glintGain * m;
-							o[0] += W.glint[0] * k;
-							o[1] += W.glint[1] * k;
-							o[2] += W.glint[2] * k;
-						}
+						const float p = 0.5f + 0.5f * std::cos(2 * PI * (u - N.shift) / F.a2);
+						const float p2 = p * p;
+						e = 0.18f + 0.82f * p2 * p2 * p2;
+						darken = F.dark * core;
 					}
+					else
+					{
+						float slug = 0;
+						for (int i = 0; i < 3; ++i)
+						{
+							const float d = (u - (N.head - 0.11f * i)) / 0.045f;
+							slug += std::exp(-d * d) * (1 - 0.25f * i);
+						}
+						const float behind = N.head - u;
+						e = (slug + (behind > 0 ? std::exp(-behind / 0.35f) * 0.35f : 0.0f)) * N.fade;
+						const float hot = core * slug * N.fade;
+						white = hot * hot * 0.6f;
+						darken = F.dark * core * N.fade;
+					}
+					const float k = e * (core * F.core + about * F.halo);
+					float *g = &glow[(x - ax0) * 3];
+					float *a = &acc[(x - ax0) * 3];
+					g[0] += F.colour[0] * k + white * 0.85f;
+					g[1] += F.colour[1] * k + white;
+					g[2] += F.colour[2] * k + white * 0.75f;
+					a[0] *= 1 - darken;
+					a[1] *= 1 - darken;
+					a[2] *= 1 - darken;
 				}
 			}
 			Uint32 *row = (Uint32*)((Uint8*)world->pixels + (size_t)y * world->pitch) + ax0;
@@ -650,7 +715,7 @@ void draw(SDL_Surface *world, const SDL_Rect &area, const std::vector<Placed> &l
 		total += std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - perfStart).count();
 		if (++frames == 60)
 		{
-			Log(LOG_INFO) << "HD base light: " << total / frames << " ms per frame, " << lit.size() << " lights, "
+			Log(LOG_INFO) << "HD base light: " << total / frames << " ms per frame, " << lit.size() << " lights, " << flows.size() << " flows, "
 				<< w << "x" << (ay1 - ay0) << " px, " << HdWorkers::instance().threads() << " threads";
 			total = 0;
 			frames = 0;
@@ -829,6 +894,34 @@ std::vector<float> distanceInside(const std::vector<unsigned char> &inside, int 
 }
 
 /// The colour of `albedo` (w x h) at (x, y) between its pixels, clamped to its edge: r, g, b 0..255.
+/// Pack pixels to a radian of the bottom's caustic net.
+const float CAUSTIC = 4.6f;
+
+/// The light of a pool's bottom at (x, y) (pack pixels) as at `t`: five steps of a warped wave make a net of
+/// bright threads that tiles every 2 pi (prototype proto.py caustic, 23.10); 0..1.
+float caustic(float x, float y, float t, float scale)
+{
+	const float TAU = 2 * PI, INTEN = 0.005f;
+	float px = std::fmod(x / scale, TAU), py = std::fmod(y / scale, TAU);
+	px = (px < 0 ? px + TAU : px) - 250;
+	py = (py < 0 ? py + TAU : py) - 250;
+	float ix = px, iy = py, c = 1;
+	for (int n = 0; n < 5; ++n)
+	{
+		const float tt = t * (1 - 3.5f / (n + 1));
+		const float nx = px + std::cos(tt - ix) + std::sin(tt + iy);
+		const float ny = py + std::sin(tt - iy) + std::cos(tt + ix);
+		ix = nx;
+		iy = ny;
+		const float a = px / (std::sin(ix + tt) / INTEN), b = py / (std::cos(iy + tt) / INTEN);
+		c += 1 / std::sqrt(a * a + b * b);
+	}
+	c = std::fabs(1.17f - std::pow(c / 5, 1.4f));
+	c *= c;
+	c *= c;
+	return std::min(1.0f, c * c);
+}
+
 void sample(const std::vector<Uint32> &albedo, int w, int h, float x, float y, float out[3])
 {
 	x = std::min((float)w - 1.001f, std::max(0.0f, x));
@@ -1046,8 +1139,9 @@ void bake(View &view, const HdFrame *rock, const std::vector<SDL_Rect> &empty, c
 				m[(size_t)y * bw + x] = hue && dist[i] > 14 * s;
 			}
 		}
-		// pools of 200 pack pixels and more; a glint of colour elsewhere is not water
-		const size_t least = (size_t)(200 * s * s);
+		// pools of 200 pack pixels and more (the scene may say less: the metagarden's pond); a glint of colour
+		// elsewhere is not water
+		const size_t least = (size_t)((W.least > 0 ? W.least : 200) * s * s);
 		std::vector<int> label(m.size(), 0);
 		std::vector<int> stack;
 		std::vector<float> mask(m.size(), 0.0f);
@@ -1195,7 +1289,14 @@ void drawMotion(SDL_Surface *world, const View &view, Uint32 ms)
 	const float t = (float)(ms % 3600000u) / 1000.0f;
 	const float s = view.scale;
 	auto inWorld = [&](int x, int y) { return x >= 0 && y >= 0 && x < world->w && y < world->h; };
-	// the water: the picture under it shifted by two slow waves (base_scene_preview.py render)
+	// the water: the picture under it shifted by two slow waves (base_scene_preview.py render), calmer since
+	// 23.10, and the light of the bottom running over it - two nets of caustics turned apart, so their cells
+	// do not repeat, and a long swell (water A, docs/research/base-living-2026-10-22.md 11)
+	const float c1 = std::cos(0.41f), s1 = std::sin(0.41f), c2 = std::cos(-0.93f), s2 = std::sin(-0.93f);
+	const float tw = t * 0.7f;
+	// OXCE_HD_BASE_PERF: the cost of the water, every 60 frames into the log
+	static const bool perf = std::getenv("OXCE_HD_BASE_PERF") != nullptr;
+	const auto perfStart = std::chrono::steady_clock::now();
 	for (const View::Area &W : view.waters)
 	{
 		const int x0 = std::max((int)W.box.x, view.x), y0 = std::max((int)W.box.y, view.y);
@@ -1217,13 +1318,33 @@ void drawMotion(SDL_Surface *world, const View &view, Uint32 ms)
 					continue;
 				}
 				const float vx = (x - W.box.x) / s;
-				const float dx = 1.8f * std::sin(0.09f * vx + 0.13f * vy + 2.3f * t) + 1.1f * std::sin(0.17f * vy - 0.05f * vx + 3.4f * t);
-				const float dy = 1.8f * std::sin(0.11f * vx - 0.08f * vy + 2.0f * t) + 1.1f * std::sin(0.15f * vx + 0.12f * vy - 2.9f * t);
+				const float dx = 1.8f * std::sin(0.09f * vx + 0.13f * vy + 2.3f * tw) + 1.1f * std::sin(0.17f * vy - 0.05f * vx + 3.4f * tw);
+				const float dy = 1.8f * std::sin(0.11f * vx - 0.08f * vy + 2.0f * tw) + 1.1f * std::sin(0.15f * vx + 0.12f * vy - 2.9f * tw);
 				float col[3];
-				sample(view.albedo, view.w, view.h, x - view.x + dx * s, y - view.y + dy * s, col);
+				sample(view.albedo, view.w, view.h, x - view.x + dx * 0.8f * s, y - view.y + dy * 0.8f * s, col);
+				const float ca = std::max(caustic(vx * c1 - vy * s1, vx * s1 + vy * c1, t * 0.55f, CAUSTIC),
+					0.75f * caustic(vx * c2 - vy * s2 + 17, vx * s2 + vy * c2 + 5, t * 0.43f + 3, CAUSTIC * 1.37f));
+				const float swell = 0.5f + 0.5f * std::sin(0.045f * vx + 0.03f * vy - 1.1f * t);
+				const float shade = 0.92f + 0.12f * swell;
+				for (int c = 0; c < 3; ++c)
+				{
+					col[c] = col[c] * shade + W.glint[c] * (0.55f * 255) * ca;
+				}
 				line[x] = mix(line[x], col, m);
 			}
 		});
+	}
+	if (perf)
+	{
+		static double total = 0;
+		static int frames = 0;
+		total += std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - perfStart).count();
+		if (++frames == 60)
+		{
+			Log(LOG_INFO) << "HD base water: " << total / frames << " ms per frame, " << view.waters.size() << " waters";
+			total = 0;
+			frames = 0;
+		}
 	}
 	// the spins: a radar dish turning, a turret looking over its sector
 	for (const PlacedSpin &P : view.spins)

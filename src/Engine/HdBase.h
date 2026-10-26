@@ -79,6 +79,9 @@ namespace HdBase
 	/// picture; nullptr when the tile has not both. The spins of its scene then turn the piece over the
 	/// picture under it, not a round piece of the picture.
 	const HdFrame *layer(int index, bool piece, int scale, int baseWidth, int baseHeight);
+	/// The map of a tile's pipes (`<frame index>.flow.png`, see HdBaseScene::Flow) the size of its picture,
+	/// or nullptr.
+	const HdFrame *flow(int index, int scale, int baseWidth, int baseHeight);
 	/// Has the pack lit tiles?
 	bool scenes();
 	/// Forgets everything (mod reload). `masterOffset` is where the game puts the master mod's
