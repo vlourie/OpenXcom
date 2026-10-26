@@ -88,6 +88,8 @@ OPT bool oxceCraftWeaponIcons;
 OPT bool oxceHdCraftWeaponToggle;
 // HD interface, geoscape: a click on the funds line of the side panel shows the rating (the score the monthly report ends with) instead of the money, and back; off = as it was (default); display only
 OPT bool oxceHdFundsToggle;
+// HD interface, workshop: a new manufacturing job is put first in the base's list, not last (the same list order as moving it up with the arrows); the order decides who gets money and materials first; off = as it was (default)
+OPT bool oxceHdManufactureTop;
 OPT bool oxceDogfightHitChance;
 OPT int oxceShowETAMode;
 OPT bool oxceUfoLandingAlert;

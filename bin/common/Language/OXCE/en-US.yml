@@ -376,6 +376,8 @@ en-US:
   STR_SHOW_MAINTENANCE_TIME_DESC: "{ALT}0>{ALT} Don't show {ALT}1>{ALT} Show only current activity duration {ALT}2>{ALT} Show all together (repair + rearm + refuel)."
   STR_CRAFT_WEAPON_ICONS: "Craft equipment icons before the name"
   STR_CRAFT_WEAPON_ICONS_DESC: "The icons of the weapons and equipment installed on a craft, as on the craft screen, before its name in the interception list and in the base's craft list."
+  STR_HD_MANUFACTURE_TOP: "New production goes to the top of the list"
+  STR_HD_MANUFACTURE_TOP_DESC: "A new job in the workshop stands first in the base's production list, not last, so you do not need to move it with the arrows. Careful: the order of the list matters in the game - the jobs run from top to bottom, and when money or materials are not enough for all, the upper ones get them first. The new job will stand before the old ones and take its share before them. It is the same if you raise it with the arrows yourself. Off = as it was: a new job goes to the bottom."
   STR_HD_FUNDS_TOGGLE: "Click on the funds: money or rating"
   STR_HD_FUNDS_TOGGLE_DESC: "For 'Show Funds' (Options, Geoscape). A click on the funds line of the geoscape side panel shows the current rating - the one the monthly report sums up - instead of the money, and the next click brings the money back. The choice is kept until the game is closed. Display only: the rating and the money are counted as always. Off = as it was: a click on the funds does nothing."
   STR_HD_CRAFT_WEAPON_TOGGLE: "Equipment icons: red when off, click to switch"
