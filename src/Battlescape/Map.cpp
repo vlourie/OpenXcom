@@ -1252,6 +1252,10 @@ SDL_Color Map::vaporTint(const Particle &p) const
 {
 	const auto &tints = _game->getMod()->getTransparencies();
 	SDL_Color none = { 0, 0, 0, 0 };
+	if (p.getColor() == Particle::PlainSmokeColor)
+	{
+		return p.getOpacity() < Mod::TransparenciesOpacityLevels ? plainSmokeTints()[p.getOpacity()] : none;
+	}
 	if (p.getColor() < tints.size() && p.getOpacity() < Mod::TransparenciesOpacityLevels)
 	{
 		return tints[p.getColor()][p.getOpacity()];
@@ -1269,11 +1273,12 @@ SDL_Color Map::vaporTintSoft(const Particle &p) const
 {
 	const auto &tints = _game->getMod()->getTransparencies();
 	SDL_Color none = { 0, 0, 0, 255 };
-	if (p.getColor() >= tints.size())
+	const bool plain = p.getColor() == Particle::PlainSmokeColor;
+	if (!plain && p.getColor() >= tints.size())
 	{
 		return none;
 	}
-	const auto &levels = tints[p.getColor()];
+	const auto &levels = plain ? plainSmokeTints() : tints[p.getColor()];
 	const int life = p.getOpacityRaw();
 	const int u = std::max(0, std::min((Mod::TransparenciesOpacityLevels - 1) * 100, (life * 10 + 25))); // level * 100
 	const int lo = u / 100, hi = std::min(lo + 1, Mod::TransparenciesOpacityLevels - 1), frac = u % 100;
@@ -1286,6 +1291,94 @@ SDL_Color Map::vaporTintSoft(const Particle &p) const
 	out.b = (Uint8)(mix(l.b, h.b) * fade / 4);
 	out.unused = (Uint8)(255 - (255 - mix(l.unused, h.unused)) * fade / 4);
 	return out;
+}
+
+/**
+ * The plain grey smoke of a bullet or a rocket with no vapor in the ruleset (Options::oxceHdPlainSmoke, XP-000301): the four
+ * opacity levels, made by the rule the mod's own "R, G, B, opacity" tints follow (Mod.cpp, transparencyLUTs) for the grey
+ * 7, 7, 7 with opacity 8 - the neutral cousin of the smoke tint of the Piratez table. A mod's table numbers differ from mod
+ * to mod, this one is the engine's own, so it works in any mod and in the original game.
+ */
+const std::array<SDL_Color, 4> &Map::plainSmokeTints()
+{
+	static_assert(Mod::TransparenciesOpacityLevels == 4, "the plain smoke has four opacity levels");
+	static const std::array<SDL_Color, 4> tints = []
+	{
+		std::array<SDL_Color, 4> t;
+		for (int level = 0; level < 4; ++level)
+		{
+			const int op = std::min((level + 1) * 8, 64);
+			const float co = 1.0f - (op / 64.0f) * (op / 64.0f);
+			SDL_Color c;
+			c.r = c.g = c.b = (Uint8)std::min(255, 7 * op);
+			c.unused = (Uint8)(255 * co);
+			t[level] = c;
+		}
+		return t;
+	}();
+	return tints;
+}
+
+/**
+ * Builds the palette table of the plain grey smoke (4 levels x 256 colours) from the palette the map shows, the way
+ * Mod::createTransparencyLUT does it for the mod's tints: the nearest palette colour to the tinted one.
+ * @return false if the map has no palette yet.
+ */
+bool Map::buildPlainSmokeLut()
+{
+	if (!_plainSmokeLut.empty())
+	{
+		return true;
+	}
+	const SDL_Color *pal = getPalette();
+	if (!pal)
+	{
+		return false;
+	}
+	std::vector<Uint8> lut;
+	lut.reserve(4 * Mod::TransparenciesPaletteColors);
+	for (const SDL_Color &tint : plainSmokeTints())
+	{
+		for (int current = 0; current < Mod::TransparenciesPaletteColors; ++current)
+		{
+			const int r = std::min(255, (pal[current].r * tint.unused / 255) + tint.r);
+			const int g = std::min(255, (pal[current].g * tint.unused / 255) + tint.g);
+			const int b = std::min(255, (pal[current].b * tint.unused / 255) + tint.b);
+			Uint8 closest = current;
+			int lowest = INT_MAX;
+			if (current != 0)
+			{
+				for (int comparator = 1; comparator < Mod::TransparenciesPaletteColors; ++comparator)
+				{
+					const int d = (r - pal[comparator].r) * (r - pal[comparator].r) + (g - pal[comparator].g) * (g - pal[comparator].g)
+						+ (b - pal[comparator].b) * (b - pal[comparator].b);
+					if (d < lowest)
+					{
+						closest = comparator;
+						lowest = d;
+					}
+				}
+			}
+			lut.push_back(closest);
+		}
+	}
+	_plainSmokeLut = std::move(lut);
+	return true;
+}
+
+/**
+ * The palette table (256 entries) of a vapor particle at its opacity level: the mod's table of its colour, or the plain
+ * grey smoke's own.
+ */
+const Uint8 *Map::vaporLut(const Particle &p) const
+{
+	if (p.getColor() == Particle::PlainSmokeColor)
+	{
+		return _plainSmokeLut.data() + p.getOpacity() * Mod::TransparenciesPaletteColors;
+	}
+	return _transparencies->data()
+		+ (p.getColor() * Mod::TransparenciesOpacityLevels * Mod::TransparenciesPaletteColors)
+		+ (p.getOpacity() * Mod::TransparenciesPaletteColors);
 }
 
 /**
@@ -3376,7 +3469,6 @@ void Map::drawTerrain(HdCanvas *surface)
 					SurfaceRaw<int> pixelMask(pixelMaskArray, 2 * _k, 2 * _k);
 					const int vaporScreenOriginX = screenPosition.x + _spriteWidth / 2;
 					const int vaporScreenOriginY = screenPosition.y + _spriteHeight - _spriteWidth / 2 + tile->getPosition().toVoxel().z * _k;
-					const Uint8* const transparetPtr = _transparencies->data();
 					const bool softVapor = surface->getHdMode() != HD_MODE_NEAREST;
 
 					//draw particle clouds behind solder
@@ -3391,9 +3483,7 @@ void Map::drawTerrain(HdCanvas *surface)
 						}
 						int vaporX = vaporScreenOriginX + p.getOffsetX() * _k;
 						int vaporY = vaporScreenOriginY + p.getOffsetY() * _k;
-						auto transparetOffsets = transparetPtr
-							+ (p.getColor() * Mod::TransparenciesOpacityLevels * Mod::TransparenciesPaletteColors)
-							+ (p.getOpacity() * Mod::TransparenciesPaletteColors);
+						auto transparetOffsets = vaporLut(p);
 
 						surface->drawVapor(pixelMask, vaporX, vaporY, p.getSize(), transparetOffsets, vaporTint(p));
 					}
@@ -3498,9 +3588,7 @@ void Map::drawTerrain(HdCanvas *surface)
 						}
 						int vaporX = vaporScreenOriginX + p.getOffsetX() * _k;
 						int vaporY = vaporScreenOriginY + p.getOffsetY() * _k;
-						auto transparetOffsets = transparetPtr
-							+ (p.getColor() * Mod::TransparenciesOpacityLevels * Mod::TransparenciesPaletteColors)
-							+ (p.getOpacity() * Mod::TransparenciesPaletteColors);
+						auto transparetOffsets = vaporLut(p);
 
 						surface->drawVapor(pixelMask, vaporX, vaporY, p.getSize(), transparetOffsets, vaporTint(p));
 					}
@@ -5021,7 +5109,15 @@ Projectile *Map::getProjectile() const
  */
 void Map::addVaporParticle(Position pos, Particle particle)
 {
-	if ((int)(_transparencies->size()) < (particle.getColor() + 1) * Mod::TransparenciesOpacityLevels * Mod::TransparenciesPaletteColors)
+	if (particle.getColor() == Particle::PlainSmokeColor)
+	{
+		// the plain grey smoke (XP-000301) has its own tint and table, no mod's table is needed
+		if (!buildPlainSmokeLut())
+		{
+			return;
+		}
+	}
+	else if ((int)(_transparencies->size()) < (particle.getColor() + 1) * Mod::TransparenciesOpacityLevels * Mod::TransparenciesPaletteColors)
 	{
 		return;
 	}
