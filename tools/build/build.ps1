@@ -677,12 +677,24 @@ function Invoke-ExeStep {
         ) 'enigmavbconsole'
         if (-not $enigma) { throw 'enigmavbconsole.exe не найден — укажите путь в EnigmaConsole (build_config.json)' }
         $evb = Join-Path $workDir 'openxcom.evb'
-        [IO.File]::WriteAllText($evb, (New-EvbText $exe $boxed $dlls), (New-Object Text.UTF8Encoding $true))
+        $evbText = New-EvbText $exe $boxed $dlls
+        # тот же exe, те же DLL и тот же проект - прежняя упаковка байт в байт: Enigma меняет штамп при каждом
+        # запуске, и выпуск без правки кода вёз игрокам новые 37-61 МиБ (docs/research/size-audit-2026-10-27.md)
+        $key = (@((Get-FileHash -LiteralPath $exe -Algorithm SHA256).Hash, $evbText) +
+                @($dlls.Keys | Sort-Object | ForEach-Object { "$_=" + (Get-FileHash -LiteralPath $dlls[$_] -Algorithm SHA256).Hash })) -join "`n"
+        $keyFile = "$boxed.key"
+        if ((Test-Path -LiteralPath $boxed) -and (Test-Path -LiteralPath $keyFile) -and ([IO.File]::ReadAllText($keyFile) -eq $key)) {
+            Write-Ok ("exe и DLL те же, что в прошлой упаковке - беру её: {0}" -f (Format-Size (Get-Item -LiteralPath $boxed).Length))
+            return $boxed
+        }
+        Remove-Item -LiteralPath $keyFile -Force -ErrorAction SilentlyContinue
+        [IO.File]::WriteAllText($evb, $evbText, (New-Object Text.UTF8Encoding $true))
         Remove-Item -LiteralPath $boxed -Force -ErrorAction SilentlyContinue
         $code = Invoke-Native $enigma @($evb)
         if (-not (Test-Path -LiteralPath $boxed)) { throw "Enigma не создала $boxed (код $code). Проект: $evb" }
         if ($code -ne 0) { Write-Warn "enigmavbconsole вернул код $code, но файл создан" }
         Write-Ok ("упаковано: {0}" -f (Format-Size (Get-Item -LiteralPath $boxed).Length))
+        [IO.File]::WriteAllText($keyFile, $key)
     }
     return $boxed
 }
