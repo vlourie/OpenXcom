@@ -1,0 +1,1 @@
+﻿- The "Update available" plate in the top left corner: a long release number (such as 2026.10.26-16) no longer runs over its frame - in the HD interface the words are condensed to fit.
