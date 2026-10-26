@@ -30,7 +30,9 @@ namespace OpenXcom
  * to the workshops while it builds, the crew about the gym, stores and hangars, a guard by the prison
  * and a nurse in the sick bay. At night all but the night shift go home to sleep, and those still on
  * their feet carry a lantern (a light of HdBaseScene). They walk only over the bare floor of the
- * pictures, never through furniture or machines.
+ * pictures, never through furniture or machines. Scientists in a lab and engineers in a workshop at work
+ * stand at the furniture working with their hands, something lighting up in them now and then, and step
+ * to the next table every 6-10 s.
  *
  * How many walk and where they go is read from the base; where each of them is comes from the crew's
  * own dice and the display clock. Nothing of the game is changed and the game's random numbers are

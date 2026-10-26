@@ -1143,7 +1143,19 @@ const HdBaseScene::View *BaseView::hdLayout(int k)
 						(Uint16)(rules->getSizeX() * cell), (Uint16)(rules->getSizeY() * cell) };
 					w.kind = scene->water;
 					std::copy(scene->glint, scene->glint + 3, w.glint);
+					w.least = scene->waterLeast;
 					waters.push_back(w);
+				}
+				// light running along the pipes (23.10): the map of this tile's pipes at the size of its picture
+				const HdFrame *pipes = scene->flow.mode != HdBaseScene::Flow::NONE ? HdBase::flow(index, k, GRID_SIZE, GRID_SIZE) : nullptr;
+				if (pipes && pipes->width == cell && pipes->height == cell && (scene->flow.mode == HdBaseScene::Flow::STEADY || fit >= 0))
+				{
+					HdBaseScene::PlacedFlow p;
+					p.flow = scene->flow;
+					p.box = { (Sint16)(view.x + x * cell), (Sint16)(view.y + y * cell), (Uint16)cell, (Uint16)cell };
+					p.map = pipes->pixels;
+					p.fit = fit;
+					view.flows.push_back(std::move(p));
 				}
 				for (const HdBaseScene::Spin &spin : scene->spins)
 				{
@@ -1168,7 +1180,7 @@ const HdBaseScene::View *BaseView::hdLayout(int k)
 	const Uint32 t0 = SDL_GetTicks();
 	HdBaseScene::bake(view, rock, empty, waters);
 	Log(LOG_INFO) << "HdBaseScene: the living base baked " << view.w << "x" << view.h << " in " << SDL_GetTicks() - t0
-		<< " ms, " << view.waters.size() << " waters, " << view.spins.size() << " spins";
+		<< " ms, " << view.waters.size() << " waters, " << view.spins.size() << " spins, " << view.flows.size() << " flows";
 	return &made.view;
 }
 

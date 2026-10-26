@@ -34,6 +34,7 @@ sys.path.insert(0, HERE)
 import numpy as np                                  # noqa: E402
 from PIL import Image                               # noqa: E402
 
+import base_flow_bake                               # noqa: E402
 import base_lights                                  # noqa: E402
 from facility_sheet import load_rules, sprites_map  # noqa: E402
 from gen_base_anim import Facility                  # noqa: E402
@@ -185,7 +186,6 @@ MORE = {
     "STR_POWER_PLANT": [_e("sparks", (.30, .30, .60, .60), (.55, .80, 1.0))],
     "STR_GREAT_LIBRARY": [_e("dust", ROOM, DUSTC)],
     "STR_COMPUTER_CORE": [_e("orbit", (.15, .25, .55, .75), CYAN)],
-    "STR_GDX_LAB": [_e("sparks", (.10, .40, .35, .85), (1.0, .80, .30))],
     "STR_LIVING_QUARTERS_DAMAGED": [_e("steam", MID, SMOKE)],
     "STR_LIVING_QUARTERS_ADVANCED_DAMAGED": [_e("steam", MID, SMOKE)],
     "STR_BUNKER_FACILITY_DAMAGED1": [_e("steam", MID, SMOKE)],
@@ -227,6 +227,9 @@ WATER = {t: ("blue", (.75, 1.0, 1.0)) for t in (
     "STR_LIVING_QUARTERS_ADVANCED_LARGE_DAMAGED", "STR_ALENIUM_CHAMBER")}
 # хеллерий - без волн, хватает пузырей (тикет XP-000235)
 WATER.update({t: ("green", (.8, 1.0, .4)) for t in ("STR_WELL", "STR_SLUDGE_VATS")})
+# пруд метасада (раздел 11, 23.10): 144 пикселя пака - меньше 200, с которых движок берёт воду; свой порог
+WATER["STR_METAGARDEN"] = ("blue", (.75, 1.0, 1.0))
+WATER_LEAST = {"STR_METAGARDEN": 100}
 # Вращение: центр u v и радиус в долях ширины постройки; ("spin", оборотов в с) или ("swing", градусов, период с).
 # Только где тарелка или турель целиком в круге (motion_sheet.png): иначе круг режет ствол.
 # Поворачивается круг картинки целиком (HdBaseScene::drawMotion), поэтому только там, где в круге одна тарелка
@@ -257,7 +260,7 @@ CYCLE = {
     "STR_LASER_DEFENSES": (45, 16),          # 244: два качания ствола (период 8 с) раз в 45 с
     "STR_GAUSS_DEFENSES": (45, 16),
     "STR_EYE_OF_HORUS": (30, 5),             # 239: веко три раза за 5 с
-    "STR_HYPER_WAVE_DECODER": (60, 10),      # 240: кабели разгораются дважды по 5 с, блик на шаре
+    "STR_HYPER_WAVE_DECODER": (60, 10),      # 240: блик на шаре; с 23.10 сгустки по кабелям (flow fit), не разгорание
     "STR_ACCESS_LIFT": (50, 4),              # 241: квадрат проседает дважды по 2 с
     "STR_SAM_DEFENSES": (58, 18),            # 245: два качания (период 9 с) и 40 с покоя
 }
@@ -267,8 +270,8 @@ GLOW = {
     # точки на перекрестиях - каждая своей рамкой (glow_blobs): в общей рамке гасла и лавандовая кайма постройки
     "STR_GRAV_SHIELD": [(12, 12, 104, 104, 285, 35, .08, .25, 2, 1, "blobs", 22.7, 21.5, 24.0)],
     "STR_FUSION_BALL_DEFENSES": [(13, 13, 88, 88, 18, 14, .60, .55, 1, 4)],
-    "STR_HYPER_WAVE_DECODER": [(8, 8, 112, 112, 85, 40, .30, 1.9, 2, 1)],
 }
+# декодер 23.10 (Vitali, «трубы - все»): вместо разгорания кабелей - сгустки по ним от бака, вид flow (FLOW ниже)
 # Веко: центр, полуоси, морганий за приступ (белок и зрачок внутри оранжевой каймы, сетка 22.10); цвет века -
 # металл купола над глазом (движок берёт его с картинки над эллипсом)
 LID = {"STR_EYE_OF_HORUS": [(63.0, 63.5, 14.5, 8.0, 3)]}
@@ -468,7 +471,8 @@ def extra_lines(t, cols, rows, img=None):
                                         " %d" % count if count else ""))
     if t in WATER:
         hue, (r, g, b) = WATER[t]
-        out.setdefault((0, 0), []).append("water %s %.2f %.2f %.2f" % (hue, r, g, b))
+        out.setdefault((0, 0), []).append("water %s %.2f %.2f %.2f" % (hue, r, g, b)
+                                          + (" %d" % WATER_LEAST[t] if t in WATER_LEAST else ""))
     if t in SPIN:
         u, v, rad, how = SPIN[t][:4]
         key, x, y = tile(u * W, v * H)
@@ -539,6 +543,11 @@ def build(t, rule, sprites, out, cover=0.0, most=0, art=ART):
     os.makedirs(dest, exist_ok=True)
     written = []
     extra = extra_lines(t, fac.cols, fac.rows, big)
+    # трубы (раздел 11, 23.10): карты <N>.flow.png и строка flow - base_flow_bake.py
+    flows = {}
+    if t in base_flow_bake.FLOW:
+        flows = base_flow_bake.write([t], out)
+        written += ["BASEBITS.PCK/%d.flow.png" % n for n in flows]
     num = 0
     for cy in range(fac.rows):
         for cx in range(fac.cols):
@@ -557,7 +566,8 @@ def build(t, rule, sprites, out, cover=0.0, most=0, art=ART):
             if most and t not in PILOT:
                 here = budget(here, cover, most)
             lines = (["# base_scene_pack.py %s %d,%d" % (t, cx, cy), "size %d %d" % (TILE, TILE), "gate " + gate]
-                     + here + extra.get((cx, cy), []) + ["walk %d %s" % (WALK, walk[(cx, cy)])])
+                     + here + extra.get((cx, cy), []) + ([flows[n]] if n in flows else [])
+                     + ["walk %d %s" % (WALK, walk[(cx, cy)])])
             with open(os.path.join(dest, "%d.scene.txt" % n), "w", encoding="ascii", newline="\n") as f:
                 f.write("\n".join(lines) + "\n")
             written += ["BASEBITS.PCK/%d.png" % n, "BASEBITS.PCK/%d.scene.txt" % n]

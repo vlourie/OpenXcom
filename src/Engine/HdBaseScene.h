@@ -40,7 +40,15 @@ namespace OpenXcom
  *                                    running round, weld - a welder's flashes, night - a duty lamp lit only
  *                                    at night), colour 0..1, period s and phase 0..1; a chase lamp adds the
  *                                    number of lamps in its ring (its phase is its place in it)
- *     water blue 0.75 1.00 1.00      the tile's water (blue or green by the picture) ripples and glints
+ *     water blue 0.75 1.00 1.00 100  the tile's water (blue or green by the picture) ripples, the light of its
+ *                                    bottom running over it; pools of the last number of pack pixels and more
+ *                                    (200 if left out)
+ *     flow steady 1.00 0.62 0.20 0.250 0.350 0.75 0.90 0.15
+ *                                    light runs along the pipes of `<frame index>.flow.png` (u along the
+ *                                    pipe, its core and halo - tools/hdart/base_flow_bake.py): steady or fit
+ *                                    (in the facility's fits), colour, then speed (of the pipe's length a
+ *                                    second) and spacing of the pulses - or slugs a fit and 0 -, gains of the
+ *                                    core and the halo, how much darker the pipe itself goes
  *     spin 64 64 33 0.18             a round piece of the picture turns: x y radius, turns per second
  *     swing 64 64 26 40 7.0 -5       ... or swings to and fro: x y radius, degrees each way, period s and
  *                                    the middle of the swing, degrees clockwise (0 if left out);
@@ -132,6 +140,17 @@ namespace HdBaseScene
 		int pulses = 1;
 	};
 
+	/// Light running along the pipes of a tile (`flow` of the scene, `<frame index>.flow.png`).
+	struct Flow
+	{
+		enum Mode { NONE, STEADY, FIT };
+		Mode mode = NONE;
+		float colour[3] = { 1, 1, 1 };
+		float a1 = 0.2f, a2 = 0.3f;       ///< steady: speed and spacing of the pulses (of the pipe's length); fit: slugs a fit
+		float core = 1, halo = 1;         ///< gains of the pipe's own light and of the halo about it
+		float dark = 0.15f;               ///< the pipe itself darker by this where it glows
+	};
+
 	struct TileScene
 	{
 		int width = 128, height = 128;    ///< the tile's picture in the pack
@@ -142,6 +161,8 @@ namespace HdBaseScene
 		std::vector<unsigned char> walk;  ///< n x n, row by row: 1 - the crew may stand there
 		int water = 0;                    ///< 0 none, 1 blue, 2 green: which of the picture is water
 		float glint[3] = { 1, 1, 1 };     ///< the colour of its glints
+		int waterLeast = 0;               ///< pack pixels a pool needs; 0 - 200
+		Flow flow;
 		std::vector<Spin> spins;
 		float cycle = 0, fit = 0;         ///< seconds from one fit to the next and of a fit; 0 - it moves all the time
 		std::vector<Glow> glows;
@@ -172,6 +193,16 @@ namespace HdBaseScene
 		SDL_Rect box;                     ///< the facility's pictures (the water is looked for there)
 		int kind = 1;                     ///< 1 blue, 2 green
 		float glint[3] = { 1, 1, 1 };
+		int least = 0;                    ///< pack pixels a pool needs; 0 - 200
+	};
+
+	/// The pipes of a tile where they are on the world layer.
+	struct PlacedFlow
+	{
+		Flow flow;
+		SDL_Rect box;                     ///< the tile
+		std::vector<Uint32> map;          ///< box.w x box.h: u along the pipe (red), core (green), halo (blue)
+		int fit = -1;                     ///< its facility's fit (View::fits) for a flow of fits
 	};
 
 	/// A spin where it is on the world layer.
@@ -233,7 +264,8 @@ namespace HdBaseScene
 		std::vector<PlacedGlow> glows;
 		std::vector<PlacedLid> lids;
 		std::vector<PlacedSink> sinks;
-		Uint32 fitsAt = 0;                ///< the display clock of the last tick, 0 - not yet
+		std::vector<PlacedFlow> flows;
+		Uint32 fitsAt = 0;               ///< the display clock of the last tick, 0 - not yet
 	};
 
 	/// Starts and ends the fits as at `ms` (once a frame, before drawMotion): a due one starts while fewer than
@@ -259,7 +291,7 @@ namespace HdBaseScene
 
 	/// Lights `area` of the world layer as it is at `ms` of the display clock (SDL_GetTicks): the pictures
 	/// under the ambient light of `night` and the lamps, their halo over them, the light falling on the
-	/// relief of `view` and its water glinting (nullptr: flat). Runs in bands on HdWorkers.
+	/// relief of `view` and the light running along its pipes (nullptr: flat). Runs in bands on HdWorkers.
 	void draw(SDL_Surface *world, const SDL_Rect &area, const std::vector<Placed> &lights, float night, Uint32 ms,
 		const View *view = nullptr);
 

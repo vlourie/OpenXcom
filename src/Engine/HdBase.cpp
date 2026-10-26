@@ -45,12 +45,13 @@ const char *ANIM = ".anim.txt";
 const char *SCENE = ".scene.txt";
 const char *UNDER = ".under.png";
 const char *PIECE = ".spin.png";
+const char *FLOW = ".flow.png";
 const int MAX_PHASES = 64;
 /// One phase of a loop or a burst (BaseView::blink steps every other tick of its 100 ms timer).
 const Uint32 STEP = 200;
 const Uint32 NEVER = 0xFFFFFFFFu;
 /// Keys of the loaded pictures of a tile: the still one, a piece of the loop, a piece of the burst.
-const int STILL = 0, LOOP = 1, BURST = 1000, UNDER_KEY = 2000, PIECE_KEY = 2001;
+const int STILL = 0, LOOP = 1, BURST = 1000, UNDER_KEY = 2000, PIECE_KEY = 2001, FLOW_KEY = 2002;
 /// Files use the master mod's own frame numbers; the game adds the master's offset (set by clear()).
 int masterOffset = 1000;
 
@@ -58,6 +59,7 @@ struct Tile
 {
 	std::string still;                               ///< <N>.png
 	std::string under, piece;                        ///< <N>.under.png, <N>.spin.png: the turning piece apart
+	std::string flow;                                ///< <N>.flow.png: the map of its pipes (HdBaseScene::Flow)
 	std::vector<std::string> loop;                   ///< .v1, .v2 ... in order
 	std::vector<std::string> burst;                  ///< .b1, .b2 ... in order
 	bool described = false;                          ///< has .anim.txt; else an older pack: <N>.png and .v* are whole phases of a loop
@@ -166,6 +168,11 @@ void scan()
 		if (rest == UNDER || rest == PIECE)
 		{
 			(rest == UNDER ? tiles[index].under : tiles[index].piece) = path;
+			continue;
+		}
+		if (rest == FLOW)
+		{
+			tiles[index].flow = path;
 			continue;
 		}
 		if (rest == SCENE)
@@ -624,6 +631,24 @@ const HdFrame *layer(int index, bool piece, int scale, int baseWidth, int baseHe
 	}
 	Tile &tile = it->second;
 	const Piece one = { piece ? &tile.piece : &tile.under, piece ? PIECE_KEY : UNDER_KEY, SDL_Rect{} };
+	return get(tile, one, scale, baseWidth, baseHeight);
+}
+
+const HdFrame *flow(int index, int scale, int baseWidth, int baseHeight)
+{
+	scan();
+	if (scale < 1 || baseWidth < 1 || baseHeight < 1)
+	{
+		return nullptr;
+	}
+	setScale(scale);
+	auto it = findTile(index);
+	if (it == tiles.end() || it->second.flow.empty())
+	{
+		return nullptr;
+	}
+	Tile &tile = it->second;
+	const Piece one = { &tile.flow, FLOW_KEY, SDL_Rect{} };
 	return get(tile, one, scale, baseWidth, baseHeight);
 }
 
