@@ -140,6 +140,9 @@
 namespace OpenXcom
 {
 
+/// OXCE-HD (oxceHdFundsToggle): the funds line shows the rating now; kept between loads of a game until the program is closed.
+static bool hdFundsShowRating = false;
+
 /**
  * Initializes all the elements in the Geoscape screen.
  * @param game Pointer to the core game.
@@ -393,6 +396,7 @@ GeoscapeState::GeoscapeState() : _pause(false), _zoomInEffectDone(false), _zoomO
 
 	_txtFunds->setAlign(ALIGN_CENTER);
 	_txtFunds->setVisible(Options::showFundsOnGeoscape);
+	_txtFunds->onMouseClick((ActionHandler)&GeoscapeState::txtFundsClick, SDL_BUTTON_LEFT);
 
 	_txtHour->setBig();
 	_txtHour->setAlign(ALIGN_RIGHT);
@@ -830,6 +834,21 @@ void GeoscapeState::think()
 }
 
 /**
+ * OXCE-HD (oxceHdFundsToggle): a click on the funds line switches it between the money and the rating (the number the
+ * monthly report ends with). The choice is kept until the game is closed. Display only.
+ * @param action Pointer to an action.
+ */
+void GeoscapeState::txtFundsClick(Action *)
+{
+	if (!Options::oxceHdFundsToggle)
+	{
+		return;
+	}
+	hdFundsShowRating = !hdFundsShowRating;
+	timeDisplay();
+}
+
+/**
  * Updates the Geoscape clock with the latest
  * game time and date in human-readable format. (+Funds)
  */
@@ -837,7 +856,7 @@ void GeoscapeState::timeDisplay()
 {
 	if (Options::showFundsOnGeoscape)
 	{
-		if (Options::oxceGeoShowScoreInsteadOfFunds)
+		if (Options::oxceGeoShowScoreInsteadOfFunds || (Options::oxceHdFundsToggle && hdFundsShowRating))
 		{
 			// it's a cheat (you're not supposed to see this info in real time), for debugging only
 			_txtFunds->setText(std::to_string(_game->getSavedGame()->getCurrentScore(_game->getSavedGame()->getMonthsPassed() + 1)));
