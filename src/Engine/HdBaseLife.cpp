@@ -49,7 +49,7 @@ enum Role { SCI, ENG, GAL, GAL2, GUARD, NURSE, ROLES };
 
 /// Body and hair of a role, as base_scene_preview.py crew_stamps.
 const float LOOKS[ROLES][2][3] = {
-	{ { 0.93f, 0.95f, 0.97f }, { 0.35f, 0.22f, 0.15f } },   // scientist in white
+	{ { 0.22f, 0.30f, 0.42f }, { 0.35f, 0.22f, 0.15f } },   // scientist in steel blue: white was lost on the labs' light floors
 	{ { 1.00f, 0.55f, 0.12f }, { 0.15f, 0.12f, 0.10f } },   // engineer in orange
 	{ { 0.75f, 0.15f, 0.30f }, { 0.90f, 0.75f, 0.30f } },   // crew
 	{ { 0.20f, 0.55f, 0.60f }, { 0.15f, 0.10f, 0.08f } },   // crew
@@ -57,6 +57,9 @@ const float LOOKS[ROLES][2][3] = {
 	{ { 0.55f, 0.90f, 0.75f }, { 0.95f, 0.85f, 0.60f } },   // nurse
 };
 const float SKIN[3] = { 226 / 255.0f, 180 / 255.0f, 150 / 255.0f };
+/// The figure's shadow in screen units, down and right of it: x, y, radii, opacity - a wide faint oval and a
+/// denser one inside it for a soft edge
+const float SHADOW[2][5] = { { 1.9f, 2.1f, 4.4f, 4.6f, 0.20f }, { 1.6f, 1.8f, 3.4f, 3.8f, 0.32f } };
 
 struct Point
 {
@@ -159,6 +162,15 @@ void makeStamps(int cell)
 						// into the figure's own frame: it faces the direction `ang` on the screen
 						const float fx = ux * ca + uy * sa, fy = -ux * sa + uy * ca;
 						float c[4] = { 0, 0, 0, 0 };
+						// the shadow on the screen, whichever way it faces: light from the top left, a soft edge
+						for (const float (&s)[5] : SHADOW)
+						{
+							const float ex = (ux - s[0]) / s[2], ey = (uy - s[1]) / s[3];
+							if (ex * ex + ey * ey <= 1)
+							{
+								c[3] = s[4] + c[3] * (1 - s[4]);
+							}
+						}
 						for (int n = 0; n < count; ++n)
 						{
 							const Oval &o = ovals[n];
@@ -192,7 +204,6 @@ void makeStamps(int cell)
 		{
 			const float swing = std::sin(ph / (float)PHASES * 2 * PI) * 1.6f;
 			const Oval ovals[] = {
-				{ 1.2f, 1.4f, 3.6f, 4.2f, { 0, 0, 0 }, 80 / 255.0f },
 				{ swing, -3.3f, 1.2f, 1.1f, { SKIN[0], SKIN[1], SKIN[2] }, 1 },
 				{ -swing, 3.3f, 1.2f, 1.1f, { SKIN[0], SKIN[1], SKIN[2] }, 1 },
 				{ 0, 0, 2.2f, 3.5f, { LOOKS[role][0][0], LOOKS[role][0][1], LOOKS[role][0][2] }, 1 },
@@ -201,7 +212,7 @@ void makeStamps(int cell)
 			};
 			for (int dir = 0; dir < DIRS; ++dir)
 			{
-				raster(ovals, 6, dir * 2 * PI / DIRS, const_cast<float*>(stamps.at(role, dir, ph)));
+				raster(ovals, 5, dir * 2 * PI / DIRS, const_cast<float*>(stamps.at(role, dir, ph)));
 			}
 		}
 	}
@@ -217,7 +228,6 @@ void makeStamps(int cell)
 			const float h = (pose / HANDS % HANDS) * 2.0f / (HANDS - 1) - 1;
 			const float lean = (pose / (HANDS * HANDS) - 1) * 0.25f;
 			const Oval ovals[] = {
-				{ 1.2f + lean, 1.4f, 3.6f, 4.2f, { 0, 0, 0 }, 80 / 255.0f },
 				{ 2.9f + 0.45f * l, -1.7f + 0.35f * h, 1.15f, 1.05f, { SKIN[0], SKIN[1], SKIN[2] }, 1 },
 				{ 2.9f + 0.45f * h, 1.7f - 0.35f * l, 1.15f, 1.05f, { SKIN[0], SKIN[1], SKIN[2] }, 1 },
 				{ lean, 0, 2.2f, 3.5f, { LOOKS[role][0][0], LOOKS[role][0][1], LOOKS[role][0][2] }, 1 },
@@ -226,7 +236,7 @@ void makeStamps(int cell)
 			};
 			for (int face = 0; face < FACES; ++face)
 			{
-				raster(ovals, 6, face * PI / 2, const_cast<float*>(stamps.atWork(role, face, pose)));
+				raster(ovals, 5, face * PI / 2, const_cast<float*>(stamps.atWork(role, face, pose)));
 			}
 		}
 	}
