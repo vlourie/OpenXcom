@@ -94,6 +94,8 @@ public:
 	Position getTarget() const;
 	/// Gets the unit that fired it (the picture marks reaction shots by it).
 	const BattleUnit *getActor() const { return _action.actor; }
+	/// Gets the voxels a bullet flies a frame (the HD picture stretches its trail over them, XP-000310).
+	int getSpeed() const { return _speed; }
 	/// Gets the distance that projectile traveled.
 	float getDistance() const;
 	/// Is this projectile being drawn back-to-front or front-to-back?

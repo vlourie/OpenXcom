@@ -2792,6 +2792,12 @@ void Map::drawTerrain(HdCanvas *surface)
 	int beginZ = 0, endZ = _save->getMapSizeZ() - 1;
 	Position mapPosition, screenPosition, bulletPositionScreen, movingUnitPosition;
 	int bulletLowX=16000, bulletLowY=16000, bulletLowZ=16000, bulletHighX=0, bulletHighY=0, bulletHighZ=0;
+	// HD render (XP-000310): a fast bullet flies more voxels a frame than its tracer has stamps, so between two frames part
+	// of the way was never drawn and the bullet blinked. In HD the stamps of the trail are spread over the whole jump of a
+	// frame (the gaps between them are filled below); the classic path and the slow bullets keep a stamp a voxel
+	const int bulletSpan = (_projectile && !_projectile->getItem() && _k > 1 && surface->getHdMode() != HD_MODE_NEAREST) ?
+		std::max((int)BULLET_SPRITES, _projectile->getSpeed()) : (int)BULLET_SPRITES;
+	const auto bulletBack = [&](int i) { return i * bulletSpan / BULLET_SPRITES; }; // voxels behind the head of stamp i
 	int dummy;
 	BattleUnit *movingUnit = _save->getTileEngine()->getMovingUnit();
 	int tileShade, tileColor, obstacleShade;
@@ -2829,18 +2835,19 @@ void Map::drawTerrain(HdCanvas *surface)
 		int part = _projectile->getItem() ? 0 : BULLET_SPRITES-1;
 		for (int i = 0; i <= part; ++i)
 		{
-			if (_projectile->getPosition(1-i).x < bulletLowX)
-				bulletLowX = _projectile->getPosition(1-i).x;
-			if (_projectile->getPosition(1-i).y < bulletLowY)
-				bulletLowY = _projectile->getPosition(1-i).y;
-			if (_projectile->getPosition(1-i).z < bulletLowZ)
-				bulletLowZ = _projectile->getPosition(1-i).z;
-			if (_projectile->getPosition(1-i).x > bulletHighX)
-				bulletHighX = _projectile->getPosition(1-i).x;
-			if (_projectile->getPosition(1-i).y > bulletHighY)
-				bulletHighY = _projectile->getPosition(1-i).y;
-			if (_projectile->getPosition(1-i).z > bulletHighZ)
-				bulletHighZ = _projectile->getPosition(1-i).z;
+			const Position bp = _projectile->getPosition(1 - bulletBack(i));
+			if (bp.x < bulletLowX)
+				bulletLowX = bp.x;
+			if (bp.y < bulletLowY)
+				bulletLowY = bp.y;
+			if (bp.z < bulletLowZ)
+				bulletLowZ = bp.z;
+			if (bp.x > bulletHighX)
+				bulletHighX = bp.x;
+			if (bp.y > bulletHighY)
+				bulletHighY = bp.y;
+			if (bp.z > bulletHighZ)
+				bulletHighZ = bp.z;
 		}
 		// divide by 16 to go from voxel to tile position
 		bulletLowX = bulletLowX / 16;
@@ -3447,7 +3454,7 @@ void Map::drawTerrain(HdCanvas *surface)
 									tmpSurface = _projectileSet->getFrame(_projectile->getParticle(i));
 									if (tmpSurface)
 									{
-										Position voxelPos = _projectile->getPosition(1-i);
+										Position voxelPos = _projectile->getPosition(1 - bulletBack(i));
 										// HD render: one voxel of the trail is k screen pixels and the tracer sprite is
 										// only three base pixels wide, so its thirty-five stamps are a row of separate
 										// dots with gaps between them. In HD the step to the next voxel is filled with
@@ -3456,11 +3463,11 @@ void Map::drawTerrain(HdCanvas *surface)
 										Position trail = Position(0, 0, 0);
 										int steps = 1;
 										// (a tiny frame without a dot is one hd/FX/weapons.txt leaves classic: its bars stay one a voxel)
-										if (surface->getHdMode() != HD_MODE_NEAREST && (HdSprites::registered(tmpSurface.getBuffer()) || tmpSurface.getWidth() > 4 * _k))
+										if (surface->getHdMode() != HD_MODE_NEAREST && (HdSprites::registered(tmpSurface.getBuffer()) || tmpSurface.getWidth() > 4 * _k || bulletSpan > BULLET_SPRITES))
 										{
 											Position from, to;
 											_camera->convertVoxelToScreen(voxelPos, &from);
-											_camera->convertVoxelToScreen(_projectile->getPosition(-i), &to);
+											_camera->convertVoxelToScreen(_projectile->getPosition(1 - bulletBack(i + 1)), &to);
 											const int gap = std::max(std::abs(to.x - from.x), std::abs(to.y - from.y));
 											// a stamp every third of the sprite: closer is wasted work, wider leaves a gap
 											const int stride = std::max(1, tmpSurface.getWidth() / 3);
@@ -3487,7 +3494,7 @@ void Map::drawTerrain(HdCanvas *surface)
 										}
 
 										// draw bullet itself
-										voxelPos = _projectile->getPosition(1-i);
+										voxelPos = _projectile->getPosition(1 - bulletBack(i));
 										if (voxelPos.x / 16 == itX &&
 											voxelPos.y / 16 == itY &&
 											voxelPos.z / 24 == itZ &&
