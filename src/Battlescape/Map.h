@@ -155,6 +155,8 @@ private:
 	/// turn draws the map from there, whatever the camera does meanwhile
 	Position _hiddenViewOffset;
 	bool _hiddenViewValid = false;
+	/// The unseen enemy's turn has drawn its picture: the frames after it keep the canvas as it is (XP-000326).
+	bool _hiddenFrozen = false;
 	/// The shake of the drawn map (shake): its start on the picture clock, length and largest offset.
 	Uint32 _shakeStart = 0, _shakeMs = 0;
 	int _shakeAmp = 0;
