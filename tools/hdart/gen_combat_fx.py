@@ -130,6 +130,28 @@ class Canvas:
         m = np.clip((ww * 0.5 + 0.7 - d) / 1.4, 0, 1) * a
         self._put(bx0, bx1, by0, by1, m, rgb, layer)
 
+    def star_poly(self, px, py, ro, ri, rot, rgb, a, layer="over", edge=1.4):
+        """Залитая пятиконечная звезда (как HIT.PCK классики): ro - наружный радиус, ri - внутренний, rot - угол первого луча."""
+        if a <= 0.002 or ro <= 0.5:
+            return
+        x0, x1, y0, y1 = self._box(px, py, ro * 1.1)
+        if x0 >= x1 or y0 >= y1:
+            return
+        dx = self.xx[y0:y1, x0:x1] - px
+        dy = self.yy[y0:y1, x0:x1] - py
+        d = np.sqrt(dx * dx + dy * dy)
+        period = 2 * math.pi / 5
+        phi = np.mod(np.arctan2(dy, dx) - rot, period)
+        phi = np.minimum(phi, period - phi)
+        p0 = (ro, 0.0)
+        p1 = (ri * math.cos(period / 2), ri * math.sin(period / 2))
+        dd = (p1[0] - p0[0], p1[1] - p0[1])
+        cr0 = p0[0] * dd[1] - p0[1] * dd[0]
+        den = np.cos(phi) * dd[1] - np.sin(phi) * dd[0]
+        bound = cr0 / np.where(np.abs(den) < 1e-6, 1e-6, den)
+        m = np.clip((bound - d) / edge + 0.5, 0, 1) * a
+        self._put(x0, x1, y0, y1, m.astype(np.float32), rgb, layer)
+
     def _put(self, x0, x1, y0, y1, m, rgb, layer):
         c = np.array(rgb, np.float32) / 255.0
         if layer == "glow":
@@ -237,7 +259,7 @@ class P:
                 self.vz = -self.vz * self.bounce; self.vx *= 0.5; self.vy *= 0.5
             else:
                 self.vz = 0; self.vx *= 0.3; self.vy *= 0.3
-                if self.kind in ("drop", "chunk", "splinter", "goo", "flake"):
+                if self.kind in ("drop", "chunk", "splinter", "goo", "flake", "clod", "chip", "blade", "grain"):
                     self.rest = True
 
 
@@ -331,6 +353,39 @@ def draw_part(cv, p):
         ang = p.seed + p.age * 18 * (0 if p.rest else 1)
         dx, dy = math.cos(ang) * L, math.sin(ang) * L * 0.6
         cv.line(px - dx, py - dy, px + dx, py + dy, p.size * s * 0.35, p.rgb, a, "over")
+    elif p.kind in ("clod", "chip"):    # v2: ком земли / щебень - чёткий многоугольник с тенью и бликом, лежит до конца клипа
+        a = 1.0 if u < 0.85 else (1 - u) / 0.15
+        r = p.size * s * 0.5
+        ang = p.seed + p.age * 9 * (0 if p.rest else 1)
+        pts = []
+        for i in range(6 if p.kind == "clod" else 4):
+            n = 6 if p.kind == "clod" else 4
+            aa = ang + i * 2 * math.pi / n
+            rr = r * (0.7 + 0.3 * ((p.seed * 7 + i * 3.1) % 1))
+            pts.append((px + math.cos(aa) * rr, py + math.sin(aa) * rr * 0.85))
+        dark = mix(p.rgb, (20, 16, 12), 0.5)
+        cv.disc(px + r * 0.12, py + r * 0.22, r * 1.0, dark, a * 0.9, 0.12, "over")
+        for i in range(len(pts)):
+            x0, y0 = pts[i]; x1, y1 = pts[(i + 1) % len(pts)]
+            cv.line(x0, y0, x1, y1, r * 1.0, p.rgb, a, "over")
+        for i in range(3):          # неровная масса: несколько смещённых кругов вместо одного шара
+            ox = math.cos(p.seed * 3 + i * 2.1) * r * 0.45
+            oy = math.sin(p.seed * 3 + i * 2.1) * r * 0.35
+            cv.disc(px + ox, py + oy, r * (0.55 + 0.2 * ((p.seed * 5 + i) % 1)), p.rgb, a, 0.12, "over")
+        hl = mix(p.rgb, (235, 225, 205), 0.35)
+        cv.disc(px - r * 0.3, py - r * 0.35, r * 0.3, hl, a * 0.8, 0.15, "over")
+    elif p.kind == "blade":         # v2: травинка - острый зелёный листок с тёмной серединой
+        a = 1.0 if u < 0.85 else (1 - u) / 0.15
+        L = p.size * s * 1.5
+        ang = p.seed * 2.1 + p.age * 10 * (0 if p.rest else 1)
+        dx, dy = math.cos(ang) * L, math.sin(ang) * L * 0.6
+        cv.line(px - dx, py - dy, px + dx, py + dy, p.size * s * 0.38, p.rgb, a, "over", taper="lens")
+        cv.line(px - dx * 0.6, py - dy * 0.6, px + dx * 0.6, py + dy * 0.6, p.size * s * 0.18, mix(p.rgb, (0, 0, 0), 0.4), a * 0.8, "over")
+    elif p.kind == "grain":         # v2: песчинка / снежинка - чёткая точка со светлым боком
+        a = 1.0 if u < 0.85 else (1 - u) / 0.15
+        r = p.size * s * 0.42
+        cv.disc(px, py, r, p.rgb, a, 0.1, "over")
+        cv.disc(px - r * 0.3, py - r * 0.3, r * 0.45, mix(p.rgb, (255, 255, 255), 0.5), a * 0.8, 0.1, "over")
     elif p.kind == "puff":          # клуб пыли/дыма, растёт и тает
         grow = 0.35 + 0.65 * (1 - (1 - u) ** 2)
         a = (min(1.0, u * 6) * (1 - u) ** 1.4) * 0.85
@@ -579,6 +634,9 @@ def kinetic(name, where, power, extra=None, blood=1.0, late=0.0):
     c = Clip(name, L_HIT, DUR_HIT, 64, h0=UNIT_H if onunit else 0.0)
     if onunit:
         target_fx(c, where, power, blood, late)
+    elif STYLE2 and where in V2_MATS:
+        ground_v2(c, where, name.split("_")[1], power)
+        return c               # звезда v2 заменяет вспышку и дым семьи (extra), иначе они вернут мягкие кружки
     else:
         material_fx(c, where, power)
     if extra:
@@ -1035,10 +1093,139 @@ def collapse_dust(v, mat):
         ground_cloud(c, dust, 22, 10.0, 22, 14, (0.9, 1.4), 0.3)
     return c
 
+# ------------------------------------------------------------------ попадания в землю, стиль v2 (тикет XP-000324)
+# Включается флагом --ground-v2 (STYLE2); без него hit_*_<материал> строится прежним material_fx, вывод в мод не меняется.
+# Что нового: яркая золотая пятиконечная звезда в первых 2-3 кадрах (как HIT.PCK классики), чёткие частицы вместо
+# мягких кружков (комья, щебень, травинки, песчинки), лунка-след, лежащие обломки и травинки остаются до конца клипа.
+# Длина клипа остаётся 10 кадров: движок растягивает клип на время взрыва HIT (Map.cpp), своей длительности у клипа нет.
+STYLE2 = False
+V2_MATS = ("grass", "dirt", "sand", "stone", "snow", "wood", "soft")
+# цвет частиц, вид, число (на единицу силы), второй вид (число), цвет пыли
+V2 = {
+    "grass": ([(48, 118, 30), (78, 150, 42), (34, 92, 26), (120, 160, 60), (150, 150, 70)], "blade", 16, ([(104, 78, 50), (84, 62, 40), (120, 96, 66)], "clod", 5), (112, 96, 66)),
+    "dirt":  ([(112, 82, 54), (88, 64, 42), (134, 102, 72), (72, 54, 36)], "clod", 14, ([(150, 122, 92)], "grain", 14), (120, 96, 70)),
+    "sand":  ([(226, 200, 140), (206, 178, 118), (242, 222, 172)], "grain", 34, ([(190, 160, 104)], "clod", 4), (214, 190, 138)),
+    "stone": ([(142, 140, 134), (112, 110, 104), (172, 170, 162)], "chip", 12, ([(200, 198, 190)], "grain", 12), (150, 148, 142)),
+    "snow":  ([(250, 252, 255), (222, 232, 246), (200, 214, 236)], "grain", 30, ([(235, 242, 252)], "chip", 4), (240, 245, 252)),
+    "wood":  ([(152, 102, 58), (122, 82, 46), (184, 134, 82)], "blade", 12, ([(100, 66, 38)], "chip", 4), (150, 120, 90)),
+    "soft":  ([(182, 166, 146), (152, 136, 116), (120, 106, 90)], "clod", 12, ([(200, 190, 172)], "grain", 12), (190, 180, 165)),
+}
+V2_STAR = {"cal1": 6.5, "cal2": 7.8, "cal3": 9.0, "cal4": 10.5, "cal5": 12.0, "pellet": 5.5}
+
+
+def star5(clip, R, dur=0.17, fade=0.06, h=3.0):
+    """Звезда попадания: золотая, залитая, с белым ядром и тёплым ореолом; держится dur с, потом гаснет за fade."""
+    rot = -math.pi / 2 + clip.rng.uniform(-0.12, 0.12)
+    @layer()
+    def f(cv, t, u):
+        if t > dur + fade:
+            return
+        v = 1.0 if t <= dur else 1 - (t - dur) / fade
+        grow = 0.7 + 0.4 * min(1.0, t / max(dur, 1e-3))
+        px, py = cv.proj(0, 0, h)
+        s = K * SS
+        ro = R * s * grow
+        cv.disc(px, py, ro * 0.85, (255, 150, 30), v * 0.28, 1.0, "glow")
+        cv.star_poly(px, py, ro * 1.0, ro * 0.44, rot, (232, 132, 0), v)
+        cv.star_poly(px, py, ro * 0.84, ro * 0.38, rot, (255, 188, 10), v)
+        cv.star_poly(px, py, ro * 0.5, ro * 0.24, rot, (255, 226, 96), v)
+        cv.disc(px, py, ro * 0.12, (255, 250, 220), v, 0.3, "over")
+    clip.layers.append(f)
+
+
+def crater(clip, rgb, r, a=0.7):
+    """Лунка-след: тёмный эллипс на земле, возникает сразу и остаётся почти до конца клипа."""
+    @layer(back=True)
+    def f(cv, t, u):
+        px, py = cv.proj(0, 0, 0)
+        k = min(1.0, t * 14) * (1 - max(0, u - 0.88) / 0.12)
+        cv.disc(px, py, r * K * SS, rgb, a * k, 0.2, "over", sy=0.5)
+        cv.disc(px, py - r * 0.15 * K * SS, r * 0.55 * K * SS, mix(rgb, (0, 0, 0), 0.4), a * k, 0.2, "over", sy=0.5)
+    clip.layers.append(f)
+
+
+def spray2(clip, n, kind, cols, speed, size, life=(0.9, 1.3), g=130, up=0.8, spread=0.8, bounce=0.25, delay=0.03):
+    rng = clip.rng
+    for _ in range(n):
+        dx, dy, dz = sphere_dir(rng, up, spread)
+        sp = speed * rng.uniform(0.35, 1.0)
+        clip.add(vx=dx * sp, vy=dy * sp, vz=dz * sp + speed * 0.3 * up, kind=kind, rgb=cols[rng.integers(len(cols))],
+                 size=rng.uniform(*size), life=rng.uniform(*life), g=g, drag=0.6, bounce=bounce,
+                 seed=rng.uniform(0, 10), age=-rng.uniform(0, delay))
+
+
+def ground_v2(clip, mat, fam, power):
+    cols, kind, n, (cols2, kind2, n2), dust = V2[mat]
+    p = power
+    sq = p ** 0.5
+    big = {"blade": (1.6, 2.6), "clod": (1.5, 2.6), "chip": (1.3, 2.3), "grain": (0.9, 1.5)}
+    star5(clip, V2_STAR.get(fam, 9.0))
+    crater(clip, mix(cols2[0] if mat == "grass" else cols[0], (0, 0, 0), 0.4), 2.2 + 1.0 * sq, 0.8)
+    spray2(clip, int(n * sq), kind, cols, 42 * sq, big[kind], spread=0.7)
+    spray2(clip, max(2, int(n2 * sq)), kind2, cols2, 36 * sq, big[kind2], spread=0.7)
+    if mat in ("stone",):
+        spray(clip, int(8 * p), "spark", "fire", 70, up=0.6, size=(0.4, 0.7), life=(0.15, 0.35), g=60)
+    # пыль - слабая и мелкая, только чтобы не было пустоты между звездой и лунками
+    puffs(clip, 2, [dust], 2.2 * sq, 9 * sq, 1.0, life=(0.35, 0.6), delay=0.06)
+
+
 # ------------------------------------------------------------------ состав
+
+# ------------------------------------------------------------------ брызги крови по полёту пули (XP-000298)
+# Флаг --blood-spray. blood_<сила 1..3>_<направление 0..7>_<вариант a..c>: брызги летят от точки попадания по ходу пули.
+# Направление - на экране по часовой от «вправо»: 0 вправо, 1 вправо-вниз, 2 вниз, 3 влево-вниз, 4 влево, 5 влево-вверх,
+# 6 вверх, 7 вправо-вверх. Сила - доля потерянного здоровья (движок: до 10 %, до 30 %, больше). Вариантов три: у каждого
+# своё зерно (crc32 имени), движок берёт вариант своим хэшем и ГСЧ боя не трогает.
+SPRAY_POWER = {1: 0.8, 2: 1.35, 3: 2.1}
+BLOOD_SPRAY = False
+
+def blood_spray(s, d, v):
+    name = f"blood_{s}_{d}_{v}"
+    p = SPRAY_POWER[s]
+    c = Clip(name, L_HIT, DUR_HIT, 80, h0=UNIT_H)
+    rng = c.rng
+    ang = d * math.pi / 4
+    ux, uy = math.cos(ang), math.sin(ang)           # куда летит пуля на экране
+    def vel(a, sp):
+        """Мировая скорость, чья проекция на экран - sp в направлении a (глубина y сжата вдвое, вверх - z)."""
+        cx, cy = math.cos(a), math.sin(a)
+        return (cx * sp, 2.0 * cy * sp if cy > 0 else 0.0, -cy * sp if cy < 0 else 0.0)
+    # крупные капли и мелкая взвесь: вперёд по ходу пули узким веером, часть - назад, как из входной раны
+    n_big, n_fine = int(10 * p), int(16 * p)
+    for _ in range(n_big):
+        a = ang + rng.normal(0, 0.28)
+        sp = 62 * p ** 0.5 * rng.uniform(0.45, 1.0)
+        vx, vy, vz = vel(a, sp)
+        c.add(vx=vx, vy=vy, vz=vz + 10 + 8 * rng.uniform(0, 1), kind="drop", rgb=(205, 24, 24), size=rng.uniform(0.8, 1.5) * (0.8 + 0.2 * s),
+              life=rng.uniform(0.45, 0.8), g=90, drag=0.6, seed=rng.uniform(0, 10), age=-rng.uniform(0, 0.05))
+    for _ in range(n_fine):
+        a = ang + rng.normal(0, 0.5)
+        sp = 48 * p ** 0.5 * rng.uniform(0.3, 1.0)
+        vx, vy, vz = vel(a, sp)
+        c.add(vx=vx, vy=vy, vz=vz + 6, kind="drop", rgb=(150, 10, 14), size=rng.uniform(0.5, 1.0), life=rng.uniform(0.4, 0.75),
+              g=90, drag=1.0, seed=rng.uniform(0, 10), age=-rng.uniform(0, 0.08))
+    for _ in range(max(1, int(3 * p))):                  # и немного назад, к стрелку
+        a = ang + math.pi + rng.normal(0, 0.6)
+        vx, vy, vz = vel(a, 26 * rng.uniform(0.4, 1.0))
+        c.add(vx=vx, vy=vy, vz=vz + 5, kind="drop", rgb=(180, 16, 18), size=rng.uniform(0.5, 0.9), life=rng.uniform(0.35, 0.6), g=90, drag=1.0,
+              seed=rng.uniform(0, 10))
+    # облачко брызг на входе сразу, а вдоль пути - тающая красная струя
+    c.add(kind="mist", rgb=(225, 40, 35), size=3.0 * p ** 0.5, life=0.22, g=0, drag=0, seed=1.5)
+    for i in range(int(2 + 2 * p)):
+        vx, vy, vz = vel(ang, 22 + 14 * i * p ** 0.5)
+        c.add(vx=vx, vy=vy, vz=vz + 4, kind="mist", rgb=(190, 25, 25), size=(2.4 + 0.5 * i) * p ** 0.5, life=0.5, g=0, drag=3.5,
+              seed=rng.uniform(0, 50), age=-0.03 * i)
+    flash(c, (255, 120, 90), 1.4 * p ** 0.5, 0.06)
+    return c
 
 def build_all():
     clips = []
+    if BLOOD_SPRAY:
+        for s in SPRAY_POWER:
+            for d in range(8):
+                for v in "abc":
+                    clips.append(lambda s=s, d=d, v=v: blood_spray(s, d, v))
+        return clips
     # удар ближнего боя движок рисует клипом взмаха (swing_*), попадания hit_<семья> у него нет
     kin = {"arrow": (0.7, ex_arrow), "blunt": (1.0, ex_blunt), "pellet": (0.55, ex_pellet), "gauss": (1.8, ex_gauss)}
     # пули по ступеням калибра: какую ступень берёт оружие - tools/hdart/weapon_classes.py
@@ -1086,9 +1273,19 @@ def main():
     ap.add_argument("--out", help="каталог hd мода (кладём в <out>/FX)")
     ap.add_argument("--only", default="", help="префиксы имён клипов через запятую")
     ap.add_argument("--list", action="store_true")
+    ap.add_argument("--ground-v2", action="store_true",
+                    help="попадания в землю новым стилем (звезда, чёткие частицы, след); только cal1-5 и pellet в материалах V2_MATS; "
+                         "без флага вывод прежний. Писать в art/_review/..., не в мод, пока Vitali не выбрал")
+    ap.add_argument("--blood-spray", action="store_true",
+                    help="брызги крови по полёту пули blood_<сила>_<направление>_<вариант> (72 клипа, XP-000298); только они")
     args = ap.parse_args()
+    global STYLE2, BLOOD_SPRAY
+    STYLE2 = args.ground_v2
+    BLOOD_SPRAY = args.blood_spray
     makers = build_all()
     pref = [p for p in args.only.split(",") if p]
+    if STYLE2:
+        pref = pref or [f"hit_{f}_{m}" for f in V2_STAR for m in V2_MATS]
     t0 = time.time(); done = 0
     index = []
     for mk in makers:

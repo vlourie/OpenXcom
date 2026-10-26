@@ -344,6 +344,37 @@ std::string hitClip(const RuleItem *damageItem, bool onUnit, const BattleUnit *t
 	return "hit_" + family + "_" + (onUnit ? target(targetUnit, armorHeld) : material(tile, voxelZ));
 }
 
+std::string sprayClip(const std::string &clip, int dx, int dy, int loss, unsigned int seed)
+{
+	static const std::string FLESH = "_flesh";
+	if (loss <= 0 || (dx == 0 && dy == 0) || clip.size() <= FLESH.size() || clip.compare(0, 4, "hit_") != 0
+		|| clip.compare(clip.size() - FLESH.size(), FLESH.size(), FLESH) != 0)
+	{
+		return "";
+	}
+	// the screen's angle, y down: clockwise from "right"; the clips name the eight directions the same way (gen_combat_fx.py blood_spray)
+	const int d = (((int)std::lround(std::atan2((double)dy, (double)dx) / (3.14159265358979323846 / 4.0))) % 8 + 8) % 8;
+	const int s = loss < 10 ? 1 : (loss < 30 ? 2 : 3);
+	return "blood_" + std::to_string(s) + "_" + std::to_string(d) + "_" + (char)('a' + (seed >> 8) % 3);
+}
+
+int lossPercent(const BattleUnit *unit, int lost)
+{
+	const int full = unit ? std::max(1, (int)unit->getBaseStats()->health) : 1;
+	return std::max(1, std::min(100, lost * 100 / full));
+}
+
+unsigned int hitHash(Position at, int loss)
+{
+	static unsigned int n = 0;
+	unsigned int h = (unsigned int)at.x * 73856093u ^ (unsigned int)at.y * 19349663u ^ (unsigned int)at.z * 83492791u
+		^ (unsigned int)loss * 2654435761u ^ (++n * 2246822519u);
+	h ^= h >> 15;
+	h *= 2246822519u;
+	h ^= h >> 13;
+	return h;
+}
+
 std::string boomClip(const RuleItem *damageItem)
 {
 	const std::string *table = lookup(hitOf, damageItem);

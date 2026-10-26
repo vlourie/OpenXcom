@@ -51,6 +51,9 @@ private:
 	bool _loose;
 	/// The hit animation's frame time, ms, for the sprites gone on by themselves
 	int _looseMs;
+	/// HD render (XP-000298): a voxel back along the bullet's way, for the direction of its blood; _hasFrom: it was given
+	Position _hdFrom;
+	bool _hasHdFrom = false;
 
 	/// Calculates the effects of the explosion.
 	void explode();
@@ -61,6 +64,8 @@ public:
 	ExplosionBState(BattlescapeGame *parent, LastPositions center, BattleActionAttack attack, Tile *tile = 0, bool lowerWeapon = false, int range = 0, int explosionCounter = 0, int terrainMeleeTilePart = 0);
 	/// Cleans up the ExplosionBState.
 	~ExplosionBState();
+	/// HD render (XP-000298): where the bullet came from (a voxel back along its way), for the direction of its blood.
+	void setHdFrom(Position from) { _hdFrom = from; _hasHdFrom = true; }
 	/// Initializes the state.
 	void init() override;
 	/// Handles a cancel request.

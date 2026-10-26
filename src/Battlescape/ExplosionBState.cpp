@@ -282,7 +282,8 @@ void ExplosionBState::init()
 		// HD render: what the hit lands on picks its combat effect (read only, before and after the hit)
 		const Tile *hdTile = _parent->getSave()->getTile(_center.toTile());
 		const BattleUnit *hdUnit = _hit ? _targetPsiOrHit : (hdTile ? hdTile->getOverlappingUnit(_parent->getSave()) : nullptr);
-		const int hdBefore = hdUnit ? hdUnit->getHealth() * 1000 + hdUnit->getStunlevel() : 0;
+		const int hdHealthBefore = hdUnit ? hdUnit->getHealth() : 0;
+		const int hdStunBefore = hdUnit ? hdUnit->getStunlevel() : 0;
 
 		_parent->getSave()->getTileEngine()->hit(_attack, _center, _power, _damageType, range, _terrainMeleeTilePart);
 
@@ -375,12 +376,18 @@ void ExplosionBState::init()
 			// a missed shot keeps the classic miss animation; a missed swing still swings
 			if (!_psi && !(miss && !_hit))
 			{
-				const bool armorHeld = onUnit && hdUnit && hdUnit->getHealth() * 1000 + hdUnit->getStunlevel() == hdBefore;
+				const bool armorHeld = onUnit && hdUnit && hdUnit->getHealth() == hdHealthBefore && hdUnit->getStunlevel() == hdStunBefore;
 				const std::string clip = _hit
 					? HdFx::swingClip(weaponRule, damageRule, _attack.attacker ? _attack.attacker->getDirection() : 0)
 					: HdFx::hitClip(itemRule, onUnit, hdUnit, armorHeld, hdTile, _center.z);
 				explosion->setHdFx(clip);
 				HdFx::noteForTest(clip);
+				// the blood of a bullet that took health flies on along its way (Options::oxceHdBloodSpray, XP-000298)
+				if (Options::oxceHdBloodSpray && !_hit && _hasHdFrom && onUnit && hdUnit && hdUnit->getHealth() < hdHealthBefore)
+				{
+					const int hdLoss = HdFx::lossPercent(hdUnit, hdHealthBefore - hdUnit->getHealth());
+					explosion->setHdSpray(_hdFrom, hdLoss, HdFx::hitHash(_center, hdLoss));
+				}
 			}
 			_parent->getMap()->getExplosions()->push_back(explosion);
 		}

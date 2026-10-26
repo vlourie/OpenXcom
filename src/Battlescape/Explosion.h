@@ -35,6 +35,9 @@ private:
 	bool _big, _hit, _onUnit;
 	int _frames;
 	std::string _hdFx;
+	Position _hdFrom;
+	int _hdLoss = 0;
+	unsigned int _hdSeed = 0;
 public:
 	static const int HIT_FRAMES;
 	static const int EXPLODE_FRAMES;
@@ -59,6 +62,15 @@ public:
 	const std::string &getHdFx() const { return _hdFx; }
 	/// HD render: sets the combat effect clip.
 	void setHdFx(const std::string &clip) { _hdFx = clip; }
+	/// HD render (Options::oxceHdBloodSpray, XP-000298): a bullet hit that cost the unit health - `from` is a voxel back along the bullet's
+	/// way, `loss` the part of the unit's full health lost, percent (1-100), `seed` a hash of the hit (HdFx::hitHash), not the battle's random numbers.
+	void setHdSpray(Position from, int loss, unsigned int seed) { _hdFrom = from; _hdLoss = loss; _hdSeed = seed; }
+	/// The voxel back along the bullet's way (valid when getHdLoss() > 0).
+	Position getHdFrom() const { return _hdFrom; }
+	/// The part of the unit's full health the hit took, percent (0: the hit is not a spray's).
+	int getHdLoss() const { return _hdLoss; }
+	/// A hash of the hit, to pick a variant of the spray.
+	unsigned int getHdSeed() const { return _hdSeed; }
 	/// The first frame of the animation.
 	int getStartFrame() const { return _startFrame; }
 	/// The number of frames the animation runs (the default of its kind until it has started).

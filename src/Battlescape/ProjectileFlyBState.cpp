@@ -776,12 +776,15 @@ void ProjectileFlyBState::think()
 						offset = -2;
 					}
 
-					_parent->statePushFront(new ExplosionBState(
+					ExplosionBState *hitBurst = new ExplosionBState(
 						_parent, _parent->getMap()->getProjectile()->getLastPositions(offset),
 						attack, 0,
 						noMoreShotsToShoot(),
 						shotgun ? 0 : _range + _parent->getMap()->getProjectile()->getDistance()
-					));
+					);
+					// where the bullet came from, for the direction of its blood (Options::oxceHdBloodSpray, XP-000298): a voxel twelve steps back
+					hitBurst->setHdFrom(_parent->getMap()->getProjectile()->getPosition(offset - 12));
+					_parent->statePushFront(hitBurst);
 
 					if (_projectileImpact == V_UNIT)
 					{
@@ -860,11 +863,18 @@ void ProjectileFlyBState::think()
 									const Position hdAt = proj->getPosition(offset);
 									const Tile *hdTile = _parent->getSave()->getTile(hdAt.toTile());
 									const BattleUnit *hdUnit = hdTile ? hdTile->getOverlappingUnit(_parent->getSave()) : nullptr;
-									const int hdBefore = hdUnit ? hdUnit->getHealth() * 1000 + hdUnit->getStunlevel() : 0;
+									const int hdHealthBefore = hdUnit ? hdUnit->getHealth() : 0;
+									const int hdStunBefore = hdUnit ? hdUnit->getStunlevel() : 0;
 									_parent->getSave()->getTileEngine()->hit(attack, proj->getPosition(offset), power, _ammo->getRules()->getDamageType());
 									const bool hdOnUnit = secondaryImpact == V_UNIT && hdUnit;
-									const bool hdArmorHeld = hdOnUnit && hdUnit->getHealth() * 1000 + hdUnit->getStunlevel() == hdBefore;
+									const bool hdArmorHeld = hdOnUnit && hdUnit->getHealth() == hdHealthBefore && hdUnit->getStunlevel() == hdStunBefore;
 									explosion->setHdFx(HdFx::hitClip(_ammo->getRules(), hdOnUnit, hdUnit, hdArmorHeld, hdTile, hdAt.z));
+									// the blood of a pellet that took health flies on along its way (Options::oxceHdBloodSpray, XP-000298): a voxel twelve steps back
+									if (Options::oxceHdBloodSpray && hdOnUnit && hdUnit->getHealth() < hdHealthBefore)
+									{
+										const int hdLoss = HdFx::lossPercent(hdUnit, hdHealthBefore - hdUnit->getHealth());
+										explosion->setHdSpray(proj->getPosition(offset - 12), hdLoss, HdFx::hitHash(hdAt, hdLoss));
+									}
 
 									//do not work yet
 //									if (_ammo->getRules()->getExplosionRadius(_unit) != 0)

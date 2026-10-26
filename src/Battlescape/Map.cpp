@@ -4303,8 +4303,26 @@ void Map::drawTerrain(HdCanvas *surface)
 						continue;
 					}
 					const char *setName = explosion->isBig() ? "X1.PCK" : explosion->isHit() ? "HIT.PCK" : "SMOKE.PCK";
-					const std::string clip = HdFx::colour(explosion->getHdFx(), _game->getMod()->getSurfaceSet(setName)->getFrame(explosion->getStartFrame()), getPalette());
-					if (const HdFrame *hd = HdFx::frame(clip, explosion->getCurrentFrame() - explosion->getStartFrame(), explosion->getFrameCount(), _k))
+					std::string clip = HdFx::colour(explosion->getHdFx(), _game->getMod()->getSurfaceSet(setName)->getFrame(explosion->getStartFrame()), getPalette());
+					const int clipStep = explosion->getCurrentFrame() - explosion->getStartFrame();
+					const HdFrame *hd = nullptr;
+					if (Options::oxceHdBloodSpray && explosion->getHdLoss() > 0)
+					{
+						// XP-000298: the blood of a bullet that took health flies on along its way (the bullet's way on the screen,
+						// from a voxel back to the hit); a mod without these clips keeps the hit's own blood
+						Position from;
+						_camera->convertVoxelToScreen(explosion->getHdFrom(), &from);
+						const int wayX = bulletPositionScreen.x - from.x, wayY = bulletPositionScreen.y - from.y;
+						if (std::abs(wayX) + std::abs(wayY) >= _k)
+						{
+							const std::string spray = HdFx::sprayClip(clip, wayX, wayY, explosion->getHdLoss(), explosion->getHdSeed());
+							if (!spray.empty() && (hd = HdFx::frame(spray, clipStep, explosion->getFrameCount(), _k)))
+							{
+								clip = spray;
+							}
+						}
+					}
+					if (hd || (hd = HdFx::frame(clip, clipStep, explosion->getFrameCount(), _k)))
 					{
 						surface->blitFrame(*hd, bulletPositionScreen.x - hd->width / 2, bulletPositionScreen.y - hd->height / 2);
 						continue;
