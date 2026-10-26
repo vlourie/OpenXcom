@@ -388,6 +388,12 @@ void ExplosionBState::init()
 					const int hdLoss = HdFx::lossPercent(hdUnit, hdHealthBefore - hdUnit->getHealth());
 					explosion->setHdSpray(_hdFrom, hdLoss, HdFx::hitHash(_center, hdLoss));
 				}
+				// a blow in melee that took health: the blood goes on from the attacker's side over the swing (stab_* clips)
+				else if (Options::oxceHdBloodSpray && _hit && onUnit && hdUnit && _attack.attacker && hdUnit->getHealth() < hdHealthBefore)
+				{
+					const int hdLoss = HdFx::lossPercent(hdUnit, hdHealthBefore - hdUnit->getHealth());
+					explosion->setHdSpray(_attack.attacker->getPosition().toVoxel() + Position(8, 8, 12), hdLoss, HdFx::hitHash(_center, hdLoss));
+				}
 			}
 			_parent->getMap()->getExplosions()->push_back(explosion);
 		}

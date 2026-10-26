@@ -22,6 +22,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <memory>
 #include <sstream>
 #include <unordered_map>
@@ -356,6 +357,28 @@ std::string sprayClip(const std::string &clip, int dx, int dy, int loss, unsigne
 	const int d = (((int)std::lround(std::atan2((double)dy, (double)dx) / (3.14159265358979323846 / 4.0))) % 8 + 8) % 8;
 	const int s = loss < 10 ? 1 : (loss < 30 ? 2 : 3);
 	return "blood_" + std::to_string(s) + "_" + std::to_string(d) + "_" + (char)('a' + (seed >> 8) % 3);
+}
+
+std::string stabClip(const std::string &swing, int dx, int dy, int loss, unsigned int seed)
+{
+	static const char *KINDS[] = {"swing_blade_", "swing_pierce_", "swing_claw_", "swing_bite_", "swing_sting_", "swing_whip_"};
+	if (loss <= 0 || (dx == 0 && dy == 0) || swing.find("%c") != std::string::npos)
+	{
+		return "";
+	}
+	bool blood = false;
+	for (const char *kind : KINDS)
+	{
+		blood = blood || swing.compare(0, std::strlen(kind), kind) == 0;
+	}
+	if (!blood)
+	{
+		return "";
+	}
+	// the same eight directions and three strengths as sprayClip (gen_combat_fx.py stab_spray)
+	const int d = (((int)std::lround(std::atan2((double)dy, (double)dx) / (3.14159265358979323846 / 4.0))) % 8 + 8) % 8;
+	const int s = loss < 10 ? 1 : (loss < 30 ? 2 : 3);
+	return "stab_" + std::to_string(s) + "_" + std::to_string(d) + "_" + (char)('a' + (seed >> 8) % 3);
 }
 
 int lossPercent(const BattleUnit *unit, int lost)

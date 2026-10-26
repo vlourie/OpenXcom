@@ -3,7 +3,7 @@
 """Брызги крови по полёту пули (XP-000298, выбор Vitali A, 26.10) -> мод hd через манифест build_hd_pack.
 
 Клипы строит gen_combat_fx.py --blood-spray --out art/_review/xp298 (blood_<сила>_<направление>_<вариант>, 72 шт.);
-этот скрипт кладёт их в хранилище и обе копии мода hd (FX/blood_*/N.png). Движок берёт их только при опции
+этот скрипт кладёт их в хранилище и обе копии мода hd (FX/blood_*/N.png; удар клинком - stab_*, те же 72 имени). Движок берёт их только при опции
 oxceHdBloodSpray (по умолчанию выключена), а без них оставляет прежнюю кровь.
 
     py -3.13 tools/hdart/blood_spray_pack.py          сухой прогон: что будет записано
@@ -23,7 +23,7 @@ def main():
     plan = []
     for clip in sorted(os.listdir(SRC)):
         d = os.path.join(SRC, clip)
-        if not (clip.startswith("blood_") and os.path.isdir(d)):
+        if not (clip.startswith(("blood_", "stab_")) and os.path.isdir(d)):
             continue
         for f in sorted(os.listdir(d), key=lambda n: int(n[:-4]) if n[:-4].isdigit() else 0):
             if f.endswith(".png") and f[:-4].isdigit():

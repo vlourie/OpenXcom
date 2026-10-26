@@ -54,6 +54,10 @@ namespace HdFx
 	/// ("hit_<family>_flesh"), when the hit took `loss` percent (1-100) of the unit's health; (dx, dy) is the bullet's way on the screen (y down).
 	/// Strength from the loss, direction one of eight, variant by `seed`. Empty: this hit has no spray (not flesh, no loss, no way).
 	std::string sprayClip(const std::string &clip, int dx, int dy, int loss, unsigned int seed);
+	/// The same for a melee blow with a blade, a spear, claws, teeth or a sting: the blood that goes over the swing clip `swing`
+	/// ("swing_<kind>_<dir>", as raw from swingClip) of an attacker standing (dx, dy) on the screen away from the target ("stab_<strength>_<dir>_<variant>").
+	/// Empty: no spray for this blow (a fist, a club, a butt, a shock or an energy blade, no loss, no way).
+	std::string stabClip(const std::string &swing, int dx, int dy, int loss, unsigned int seed);
 	/// The part of `unit`'s full health that `lost` points are, percent, 1-100 (for sprayClip).
 	int lossPercent(const BattleUnit *unit, int lost);
 	/// A hash of a hit for picking its variants: its own state, the battle's random numbers are not touched.

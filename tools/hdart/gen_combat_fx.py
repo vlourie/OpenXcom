@@ -1218,6 +1218,44 @@ def blood_spray(s, d, v):
     flash(c, (255, 120, 90), 1.4 * p ** 0.5, 0.06)
     return c
 
+# Колющий и режущий удар (XP-000298, вторая часть). stab_<сила 1..3>_<направление 0..7>_<вариант a..c>: направление - от
+# атакующего к цели на экране, те же 8 сторон и те же три силы, что у blood_*. Клинок входит и выходит: кровь коротким
+# веером вперёд по удару, заметнее назад к атакующему (из раны) и густое облачко на ране. Рисуется поверх клипа замаха.
+L_STAB = 8
+DUR_STAB = 0.45
+
+def stab_spray(s, d, v):
+    name = f"stab_{s}_{d}_{v}"
+    p = SPRAY_POWER[s]
+    c = Clip(name, L_STAB, DUR_STAB, 80, h0=UNIT_H)
+    rng = c.rng
+    ang = d * math.pi / 4
+    def vel(a, sp):
+        cx, cy = math.cos(a), math.sin(a)
+        return (cx * sp, 2.0 * cy * sp if cy > 0 else 0.0, -cy * sp if cy < 0 else 0.0)
+    land = 0.06                                          # клинок доходит до цели не в первый миг замаха
+    for _ in range(int(6 * p)):                          # вперёд по удару: узко и недалеко
+        a = ang + rng.normal(0, 0.22)
+        vx, vy, vz = vel(a, 46 * p ** 0.5 * rng.uniform(0.4, 1.0))
+        c.add(vx=vx, vy=vy, vz=vz + 8 + 6 * rng.uniform(0, 1), kind="drop", rgb=(200, 22, 22), size=rng.uniform(0.8, 1.4) * (0.8 + 0.2 * s),
+              life=rng.uniform(0.35, 0.65), g=90, drag=0.7, seed=rng.uniform(0, 10), age=-land - rng.uniform(0, 0.05))
+    for _ in range(int(9 * p)):                          # назад к атакующему: из раны на выходе клинка, шире
+        a = ang + math.pi + rng.normal(0, 0.55)
+        vx, vy, vz = vel(a, 40 * p ** 0.5 * rng.uniform(0.3, 1.0))
+        c.add(vx=vx, vy=vy, vz=vz + 7, kind="drop", rgb=(175, 14, 18), size=rng.uniform(0.6, 1.2), life=rng.uniform(0.35, 0.7),
+              g=90, drag=0.9, seed=rng.uniform(0, 10), age=-land - 0.04 - rng.uniform(0, 0.08))
+    for _ in range(int(10 * p)):                         # мелкая взвесь веером у раны
+        a = rng.uniform(0, 2 * math.pi)
+        vx, vy, vz = vel(a, 22 * rng.uniform(0.3, 1.0))
+        c.add(vx=vx, vy=vy, vz=vz + 5, kind="drop", rgb=(150, 10, 14), size=rng.uniform(0.5, 0.9), life=rng.uniform(0.3, 0.55),
+              g=90, drag=1.4, seed=rng.uniform(0, 10), age=-land - rng.uniform(0, 0.08))
+    c.add(kind="mist", rgb=(215, 32, 30), size=2.6 * p ** 0.5, life=0.3, g=0, drag=0, seed=2.5, age=-land)
+    for i in range(int(1 + p)):
+        vx, vy, vz = vel(ang, 14 + 10 * i)
+        c.add(vx=vx, vy=vy, vz=vz + 3, kind="mist", rgb=(185, 22, 22), size=(2.0 + 0.5 * i) * p ** 0.5, life=0.4, g=0, drag=3.0,
+              seed=rng.uniform(0, 50), age=-land - 0.03 * i)
+    return c
+
 def build_all():
     clips = []
     if BLOOD_SPRAY:
@@ -1225,6 +1263,7 @@ def build_all():
             for d in range(8):
                 for v in "abc":
                     clips.append(lambda s=s, d=d, v=v: blood_spray(s, d, v))
+                    clips.append(lambda s=s, d=d, v=v: stab_spray(s, d, v))
         return clips
     # удар ближнего боя движок рисует клипом взмаха (swing_*), попадания hit_<семья> у него нет
     kin = {"arrow": (0.7, ex_arrow), "blunt": (1.0, ex_blunt), "pellet": (0.55, ex_pellet), "gauss": (1.8, ex_gauss)}
@@ -1277,7 +1316,7 @@ def main():
                     help="попадания в землю новым стилем (звезда, чёткие частицы, след); только cal1-5 и pellet в материалах V2_MATS; "
                          "без флага вывод прежний. Писать в art/_review/..., не в мод, пока Vitali не выбрал")
     ap.add_argument("--blood-spray", action="store_true",
-                    help="брызги крови по полёту пули blood_<сила>_<направление>_<вариант> (72 клипа, XP-000298); только они")
+                    help="брызги крови по полёту пули blood_* и колющему удару stab_* (по 72 клипа, XP-000298); только они")
     args = ap.parse_args()
     global STYLE2, BLOOD_SPRAY
     STYLE2 = args.ground_v2
