@@ -56,6 +56,8 @@ public:
 	MainMenuState(bool updateCheck = false);
 	/// Cleans up the Main Menu state.
 	~MainMenuState();
+	/// HD test automation: opens the screen OXCE_HD_START names (also the live bench's open command).
+	static bool hdStart(Game *game, const std::string &what);
 	/// Handler for clicking the New Game button.
 	void btnNewGameClick(Action *action);
 	/// Handler for clicking the New Battle button.

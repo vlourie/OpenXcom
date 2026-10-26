@@ -10,6 +10,7 @@
 | сравнение | `python tools\hdtest_compare.py` — описание в `tools\hdtest_README.md` |
 | режимы HD | F11 в бою или опция `oxceHdMode`: 0 nearest, 1 паки, 2 паки + xBRZ |
 | масштаб | `oxceHdScale` 1–4; режим 0 при любом `k` обязан быть IDENTICAL |
+| проверка экранов | живой стенд `py -3.13 tools\hdbench.py start --name A` (загрузка один раз, ~24 с), затем `run --name A "click 448,52; waitstate BasescapeState 5000; shot E:/tmp/x.png"` — кадр за 1–3 с, `set опция=значение; reinit` без перезапуска; справка — в начале `tools\hdbench.py`, спецификация — `docs/research/hd-test-bench-2026-10-26.md`. `tools\game_hidden.py` — только для одиночного кадра |
 
 В поле `canvas` внутри `.json` записано, какая сборка снимала дамп, — при сравнении смотреть его.
 
