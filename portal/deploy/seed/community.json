@@ -242,6 +242,28 @@
           "body": "## What it does\n\nEvery people and race of Piratez now has up to 2,500 given names and surnames (before: from dozens to hundreds), each in its own spirit: gals are brash outlaws, nations get names of their own countries, lamias hiss, synths sound like machines, dogs get short nicknames.\n\nOnly new recruits get the new names: units already hired and saves are not renamed.\n\n## Compatibility\n\nRequires X-Piratez. The mod sits right after \"RU: Piratez Cyrillic Names\" and replaces its names; that mod itself is not changed - switch the new one off and the old names come back. It switches itself on with the Russian language.\n\n## Installing\n\n1. [Download the launcher](/download/launcher) and install the game if it is not installed yet.\n2. In the launcher open **Settings → Game components…**.\n3. Tick \"Русские имена Пираток 0.1\" (ticked at once for the Russian language) and confirm the install.\n\nTo get the old names back, untick it."
         }
       }
+    },
+    {
+      "slug": "enemy-randomizer",
+      "order": 85,
+      "published": true,
+      "author": "Crazyden85",
+      "homeUrl": "",
+      "downloadUrl": "/download/launcher",
+      "version": "1.0.0",
+      "image": "",
+      "texts": {
+        "ru": {
+          "name": "Случайные статы врагов (5 классов)",
+          "summary": "Каждый враг и гражданский получает класс — танк, разведчик, снайпер, берсерк или обычный — со своим разбросом статов; редкие становятся элитой, минибоссом или боссом.",
+          "body": "## Что делает\n\nКаждый враг и каждый гражданский при появлении в бою получает один из пяти классов, по 20%:\n\n- **обычный** — статы как в моде;\n- **танк** — HP ×1,8–2,6, сила и храбрость выше, ОД и реакция ниже;\n- **разведчик** — ОД ×1,25–1,5, реакция ×1,3–1,7, HP ниже;\n- **снайпер** — стрельба ×1,35–1,7, ближний бой и выносливость ниже;\n- **берсерк** — ближний бой ×1,4–1,8, HP, храбрость и бросок выше, стрельба ниже.\n\nВнутри класса статы каждый раз свои. Сверху некоторым достаётся ранг: 1% — **босс** (HP ×3,5), 2% — **минибосс** (×1,9), 2% — **элита** (×1,5). Пси-навык и пси-сила у всех плавают на ±20%.\n\nВаших бойцов мод не меняет. Статы выпадают при появлении юнита и хранятся в сохранении.\n\nЭто изменение механики: бои становятся заметно разнообразнее и в среднем тяжелее.\n\n## Что нужно\n\nX-Piratez и наш движок OXCE-HD (или обычный OXCE 7.0 и новее).\n\n## Как поставить\n\n1. [Скачать лаунчер](/download/launcher) и поставить игру, если она ещё не стоит.\n2. В лаунчере открыть **Настройки → Компоненты игры…**.\n3. Поставить галочку «Enemy Stat 2 - class Randomizer» и подтвердить установку.\n\nСам мод ставится только по галочке, по умолчанию его нет. Убрать — снять галочку или выключить его в меню модов игры: новые бои пойдут по статам из Пираток."
+        },
+        "en": {
+          "name": "Enemy stat randomizer (5 classes)",
+          "summary": "Every enemy and civilian gets a class - tank, scout, sniper, berserker or standard - with its own spread of stats; a rare few become elite, miniboss or boss.",
+          "body": "## What it does\n\nEvery enemy and every civilian gets one of five classes when it appears in battle, 20% each:\n\n- **standard** - stats as in the mod;\n- **tank** - HP x1.8-2.6, more strength and bravery, fewer TUs and lower reactions;\n- **scout** - TUs x1.25-1.5, reactions x1.3-1.7, less HP;\n- **sniper** - firing x1.35-1.7, weaker melee and stamina;\n- **berserker** - melee x1.4-1.8, more HP, bravery and throwing, poorer firing.\n\nWithin a class the stats differ every time. On top of that some get a rank: 1% become a **boss** (HP x3.5), 2% a **miniboss** (x1.9), 2% **elite** (x1.5). Psi skill and psi strength vary by +-20% for everyone.\n\nYour own units are not changed. The stats are rolled when a unit appears and are kept in the save.\n\nThis changes the game mechanics: battles become much more varied and on average harder.\n\n## Requirements\n\nX-Piratez and our OXCE-HD engine (or plain OXCE 7.0 or newer).\n\n## Installing\n\n1. [Download the launcher](/download/launcher) and install the game if it is not installed yet.\n2. In the launcher open **Settings → Game components…**.\n3. Tick \"Enemy Stat 2 - class Randomizer\" and confirm the install.\n\nThe mod is installed only when ticked; by default it is not there. To remove it, untick it or switch it off in the game's Mods menu: new battles go back to the Piratez stats."
+        }
+      }
     }
   ],
   "sections": [
