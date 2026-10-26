@@ -1621,7 +1621,8 @@ public sealed class MainWindow : Window
 
 sealed class MessageDialog : Window
 {
-    public MessageDialog(string text, bool withNo)
+    /// <param name="check">a tick under the text, on at the start; <see cref="Checked"/> says how it was left</param>
+    public MessageDialog(string text, bool withNo, string? check = null)
     {
         Title = L.T("title");
         Width = 460; SizeToContent = SizeToContent.Height; CanResize = false;
@@ -1639,9 +1640,17 @@ sealed class MessageDialog : Window
         }
         var panel = new StackPanel { Margin = new Thickness(20), Spacing = 16 };
         panel.Children.Add(new TextBlock { Text = text, TextWrapping = TextWrapping.Wrap });
+        if (check is not null)
+        {
+            var box = new CheckBox { Content = new TextBlock { Text = check, TextWrapping = TextWrapping.Wrap }, IsChecked = true, FontSize = 13 };
+            box.IsCheckedChanged += (_, _) => Checked = box.IsChecked == true;
+            panel.Children.Add(box);
+        }
         panel.Children.Add(buttons);
         Content = Skin.Panel(panel, new Thickness(0));
     }
+
+    public bool Checked { get; private set; } = true;
 }
 
 /// <summary>One line of text, for a build's name: the text, or null on "Cancel". allowEmpty: an optional

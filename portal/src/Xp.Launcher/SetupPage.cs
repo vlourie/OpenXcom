@@ -48,6 +48,7 @@ public sealed class SetupPage : UserControl
     ReleaseManifest? _manifest;
     ModProfile? _profile;
     HashSet<string> _picked = [];
+    List<string> _purge = [];   // "Remove completely": the unticked mods' folders that go whole after the install
     IReadOnlySet<string> _fresh = new HashSet<string>();   // the new mods "Update" asked about: marked in the list
     CancellationTokenSource? _cts;
     string _doneText = "";
@@ -511,6 +512,7 @@ public sealed class SetupPage : UserControl
             }
 
             // removing installed components takes a yes; no - back to the list, files and saved choice as they were
+            _purge = [];
             var commit = await Setup.CommitAsync(u, _manifest!, _picked, ConfirmRemovalAsync);
             if (commit is null)
             {
@@ -529,6 +531,8 @@ public sealed class SetupPage : UserControl
                 await u.DownloadAsync(plan, progress, ct);
                 await Task.Run(() => u.Install(state, plan, progress, CancellationToken.None), CancellationToken.None);
             }
+            // with what the player changed or put there, and without a copy kept for "undo the update"
+            if (_purge.Count > 0) await Task.Run(() => u.Purge(_purge), CancellationToken.None);
 
             // every mod a ticked component brings (art.hd: hd_core and hd), read from the files just installed
             var ticked = tickedParts.SelectMany(c => Setup.ModsOf(_manifest!, c, u.Paths.GameDir)).Distinct().ToList();
@@ -572,7 +576,10 @@ public sealed class SetupPage : UserControl
     async Task<bool> ConfirmRemovalAsync(IReadOnlyList<ComponentInfo> removing)
     {
         var names = string.Join("\n", removing.Select(c => "• " + Setup.Title(c)));
-        return await new MessageDialog(L.T("setup.removeAsk", names), withNo: true).ShowDialog<bool>((Window)TopLevel.GetTopLevel(this)!);
+        var ask = new MessageDialog(L.T("setup.removeAsk", names), withNo: true, check: L.T("setup.removeAll"));
+        var yes = await ask.ShowDialog<bool>((Window)TopLevel.GetTopLevel(this)!);
+        _purge = yes && ask.Checked ? Setup.OwnFolders(_manifest!, removing, _picked) : [];
+        return yes;
     }
 
     void ShowProgress(Core.Progress p)

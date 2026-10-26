@@ -343,8 +343,84 @@ public sealed class Updater(GamePaths paths, RepoClient repo, ILauncherLog log)
             if (Directory.Exists(Paths.LastBackup)) Directory.Delete(Paths.LastBackup, recursive: true);
             Directory.Move(backup, Paths.LastBackup);
         }
+        PruneEmptyDirs(journal.Deletes);
         File.Delete(Paths.Journal);
         CleanStaging();
+    }
+
+    /// <summary>
+    /// Folders the removed files left empty go too, up the tree to the first one with something in it. Never user,
+    /// user/mods or the launcher's own: the same line <see cref="InstallPolicy"/> draws for files.
+    /// </summary>
+    void PruneEmptyDirs(IEnumerable<string> deleted)
+    {
+        foreach (var d in deleted)
+        {
+            var seg = d.Split('/');
+            for (int n = seg.Length - 1; n > 0; n--)
+            {
+                var rel = string.Join('/', seg.Take(n));
+                if (InstallPolicy.WhyRootProtected(rel) is not null) break;
+                var dir = Paths.Full(rel);
+                try
+                {
+                    if (!Directory.Exists(dir)) continue;
+                    if (Directory.EnumerateFileSystemEntries(dir).Any()) break;
+                    Directory.Delete(dir);
+                }
+                catch (Exception e) when (e is IOException or UnauthorizedAccessException) { break; }
+            }
+        }
+    }
+
+    /// <summary>
+    /// "Remove completely": the folders of the mods the player has just unticked go as a whole - with the files the
+    /// player changed or put there - and so do their copies in the undo set, so the space comes back now and not at
+    /// the next update. Only a folder user/mods/&lt;name&gt; the installed release has no file in. Returns the folders removed.
+    /// </summary>
+    public List<string> Purge(IEnumerable<string> folders)
+    {
+        if (IsGameRunning(Paths.GameDir)) throw new UpdateBlockedException("the game is running: close it before removing mods");
+        if (File.Exists(Paths.Journal)) throw new InvalidOperationException("an unfinished install exists: run recovery first");
+        var state = LoadState();
+        var removed = new List<string>();
+        foreach (var folder in folders.Distinct(StringComparer.OrdinalIgnoreCase))
+        {
+            var seg = folder.Split('/');
+            if (!SafePath.IsValid(folder) || seg.Length != 3 || !seg[0].Equals("user", StringComparison.OrdinalIgnoreCase)
+                || !seg[1].Equals("mods", StringComparison.OrdinalIgnoreCase))
+            {
+                log.Error($"not removed, not a mod folder: {folder}");
+                continue;
+            }
+            var prefix = folder + "/";
+            bool Under(string k) => k.StartsWith(prefix, StringComparison.OrdinalIgnoreCase);
+            if (state.Installed.Keys.Any(Under))
+            {
+                log.Error($"not removed, the installed release has files in it: {folder}");
+                continue;
+            }
+            DeleteTree(Paths.Full(folder));
+            DeleteTree(SafePath.Resolve(Path.Combine(Paths.LastBackup, "files"), folder));
+            foreach (var k in state.Cache.Keys.Where(Under).ToList()) state.Cache.Remove(k);
+            foreach (var k in state.Kept.Keys.Where(Under).ToList()) state.Kept.Remove(k);
+            removed.Add(folder);
+        }
+        if (removed.Count > 0)
+        {
+            state.Save(Paths);
+            log.Info("removed completely: " + string.Join(", ", removed));
+        }
+        return removed;
+    }
+
+    static void DeleteTree(string dir)
+    {
+        if (!Directory.Exists(dir)) return;
+        // a read-only file stops Directory.Delete (R-141); a link inside is removed, not followed
+        var walk = new EnumerationOptions { RecurseSubdirectories = true, AttributesToSkip = FileAttributes.ReparsePoint };
+        foreach (var f in Directory.EnumerateFiles(dir, "*", walk)) File.SetAttributes(f, FileAttributes.Normal);
+        Directory.Delete(dir, recursive: true);
     }
 
     /// <summary>

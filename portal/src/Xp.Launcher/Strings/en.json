@@ -193,6 +193,7 @@
  "newMods.ask": "New mods worth a look have come out: {0}.\n\nGo to the install page?",
  "setup.adult": "\"{0}\" is for adults only. Are you 18 or older?",
  "setup.removeAsk": "These installed components are unticked, their files will be removed:\n\n{0}\n\nRemove them?",
+ "setup.removeAll": "Remove completely: the whole mod folder, with the files changed or added in it, and no copy kept to undo the update",
  "setup.total": "Total: {0}",
  "setup.install": "Install",
  "setup.installing": "Installing",

@@ -102,6 +102,26 @@ public static class Setup
     }
 
     /// <summary>
+    /// The folders "Remove completely" takes away with the removed components: user/mods/&lt;name&gt; where one of them
+    /// ships the metadata.yml, unless a component the ticks keep ships a file there too (art.hd puts hd/ into Piratez).
+    /// </summary>
+    public static List<string> OwnFolders(ReleaseManifest m, IEnumerable<ComponentInfo> removing, IEnumerable<string> picked)
+    {
+        var keep = Normalize(m, picked);
+        var gone = removing.Select(c => c.Id).ToHashSet(StringComparer.Ordinal);
+        var result = new List<string>();
+        foreach (var f in m.Files.Where(f => gone.Contains(f.Component)))
+        {
+            var seg = f.Path.Split('/');
+            if (seg.Length != 4 || !Same(seg[0], "user") || !Same(seg[1], "mods") || !Same(seg[3], "metadata.yml")) continue;
+            var folder = $"{seg[0]}/{seg[1]}/{seg[2]}";
+            if (m.Files.Any(k => keep.Contains(k.Component) && k.Path.StartsWith(folder + "/", StringComparison.OrdinalIgnoreCase))) continue;
+            if (!result.Contains(folder, StringComparer.OrdinalIgnoreCase)) result.Add(folder);
+        }
+        return result;
+    }
+
+    /// <summary>
     /// Saves the ticks as the player's choice. When they remove installed components, <paramref name="confirm"/>
     /// gets the list first; no - nothing is saved and the files stay. Returns the saved state and the
     /// choice it had before (the installed components when there was none), or null when cancelled.
