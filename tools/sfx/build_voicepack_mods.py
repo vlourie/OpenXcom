@@ -48,6 +48,18 @@ GENDER = {"М": [0], "Ж": [1], "оба": [0, 1]}
 # под 0 (census/sounds.tsv), а канал голосов не громче файла. Два прохода: замер громкости, потом усиление
 # к -12 LUFS и лимитер на -1 dB (однопроходный loudnorm упирался в пик: выходило от -13 до -19)
 TARGET_LUFS = -12.0
+# XP-000311 (26.10, выбор A): голос бойца держится за портретом, а не за типом. Портрет бойца - ключ look + 4 * вариант
+# облика, раздельно по полу (движок: RuleSoldier::getRandomVoiceSet, те же ключи, что у слоёв брони); у типов группы
+# ключи одни и те же, поэтому при смене типа (Псих -> Боец -> Воин) голос остаётся тем же. Портретов столько, сколько
+# ключей в layersDefinition нулевой брони типа (Piratez_Armors.rul): у уберов 60 на пол, у нэкомими 24.
+# Портреты делятся на отрезки подряд (по 10; если портретов меньше, чем 10 на голос, - поровну), голоса идут по кругу.
+# Типы вне групп остаются с одним голосом типа. Ручной выбор на базе по-прежнему главнее.
+PORTRAIT_GROUPS = [
+    {"types": ["STR_SOLDIER", "STR_SOLDIER_S", "STR_SOLDIER_M", "STR_SOLDIER_V"], "portraits": 60, "pool": ["V001", "V002"]},
+    {"types": ["STR_SOLDIER_NEKOMIMI", "STR_SOLDIER_NEKOMIMI_O", "STR_SOLDIER_NEKOMIMI_H", "STR_SOLDIER_NEKOMIMI_W"],
+     "portraits": 24, "pool": ["V014", "V015", "V016", "V017"]},
+]
+PORTRAIT_RUN = 10             # портретов подряд на один голос
 
 
 def loudness(path):
@@ -158,6 +170,17 @@ def build(lang, hold, events, rows, states, doge_steps, rejected):
             unit.setdefault(r["voice"], set()).add(r["target"])
     for s in ("STR_SOLDIER_DOGE", "STR_SOLDIER_BLOODOGE"):
         soldier[s] = {0: ["doge"], 1: ["doge"]}
+    # голос по портрету: тип -> {ключ портрета: голос}; голоса, которых нет в моде (на починке), в круг не идут
+    portrait = {}
+    for grp in PORTRAIT_GROUPS:
+        pool = [v for v in grp["pool"] if v in sets]
+        if len(pool) < 2:
+            continue
+        run = min(PORTRAIT_RUN, math.ceil(grp["portraits"] / len(pool)))
+        for t in grp["types"]:
+            portrait[t] = {f"{g}{n}": pool[(n // run) % len(pool)] for g in "MF" for n in range(grp["portraits"])}
+            for v in pool:   # голос портрета виден в «Голос бойца» у всех типов группы
+                choice[v]["types"].add(t)
     choice["doge"] = {"types": {"STR_SOLDIER_DOGE", "STR_SOLDIER_BLOODOGE"}, "genders": {0, 1}}
 
     def name(vid):
@@ -186,6 +209,9 @@ def build(lang, hold, events, rows, states, doge_steps, rejected):
             L.append(f"    voiceSetsMale: [{', '.join(name(v) for v in g[0])}]")
         if g[1]:
             L.append(f"    voiceSetsFemale: [{', '.join(name(v) for v in g[1])}]")
+        if s in portrait:
+            L.append("    voiceSets:   # по портрету: пол + look + 4 * вариант облика")
+            L += [f"      {k}: [{name(v)}]" for k, v in portrait[s].items()]
     L += ["", "units:"]
     for u, vs in sorted((u, sorted(v for v, us in unit.items() if u in us)) for u in
                         {u for us in unit.values() for u in us}):
