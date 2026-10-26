@@ -722,6 +722,7 @@ void Map::createCanvas()
 	delete _canvas;
 	delete _messageCanvas;
 	_messageCanvas = nullptr;
+	_hiddenFrozen = false;
 	if (_game->getScreen()->isLayered())
 	{
 		updateViewSize();
@@ -867,6 +868,7 @@ void Map::setHdMode(int mode)
 	if (_canvas)
 	{
 		_canvas->setHdMode(mode);
+		_hiddenFrozen = false;
 		_redraw = true;
 	}
 }
@@ -1085,18 +1087,6 @@ void Map::draw()
 	// HD lab: the battle map turned to another side (Engine/HdLab.h), as the options or the keys left it
 	_camera->setRotation(HdLab::mapRotation());
 	const auto drawStart = std::chrono::steady_clock::now();
-	_hdLabels.clear();
-	_hdLabelsOn = hdLabelsWanted();
-	if (Options::oxceHdBackdrop)
-	{
-		// the backdrop beyond the map's edge as a gradient around the environment's colour (a palette canvas: flat as ever)
-		// (the ground's line of the mod's table hd/backdrop.txt, when there is one, in place of the environment's color)
-		_canvas->fillBackdrop(Palette::blockOffset(0) + _bgColor, hdBackdropRgb());
-	}
-	else
-	{
-		_canvas->fill(Palette::blockOffset(0) + _bgColor);
-	}
 	// HD light: smooth colored light only on the true-color canvas in the HD modes
 	_hdLightOn = Options::oxceHdLight && _canvas->getHdMode() != HD_MODE_NEAREST;
 	if (_hdLightOn)
@@ -1164,13 +1154,34 @@ void Map::draw()
 		}
 	}
 
-	if ((_save->getSelectedUnit() && _save->getSelectedUnit()->getVisible())
+	const bool shown = (_save->getSelectedUnit() && _save->getSelectedUnit()->getVisible())
 		|| _unitDying
 		|| _save->getSide() == FACTION_PLAYER
 		|| _save->getDebugMode()
 		|| (_projectileInFOV && (!ignoreAllButAlliesHits || (unitVisible && !unitEnemy)))
-		|| (_explosionInFOV && (!ignoreAllButAlliesHits || ((unitVisible && !unitEnemy) || hitExplosion))))
+		|| (_explosionInFOV && (!ignoreAllButAlliesHits || ((unitVisible && !unitEnemy) || hitExplosion)));
+	const bool hiddenMap = !shown && Options::oxceHdHiddenMap && Options::oxceHdEnemyTurn != 1 && _hiddenViewValid;
+	if (hiddenMap && _hiddenFrozen && !_hdTestFrozen)
 	{
+		// XP-000326: an unseen enemy's turn keeps the one picture drawn when it began: a door opened or smoke blown
+		// on a tile the player discovered but does not see is not shown before the player sees it again
+		return;
+	}
+	_hdLabels.clear();
+	_hdLabelsOn = hdLabelsWanted();
+	if (Options::oxceHdBackdrop)
+	{
+		// the backdrop beyond the map's edge as a gradient around the environment's colour (a palette canvas: flat as ever)
+		// (the ground's line of the mod's table hd/backdrop.txt, when there is one, in place of the environment's color)
+		_canvas->fillBackdrop(Palette::blockOffset(0) + _bgColor, hdBackdropRgb());
+	}
+	else
+	{
+		_canvas->fill(Palette::blockOffset(0) + _bgColor);
+	}
+	if (shown)
+	{
+		_hiddenFrozen = false;
 		_camera->beginShown();
 		// a collapse shakes the picture: the camera is moved for this frame only, its own moves of the frame are kept
 		const Position shook = shakeOffset(SDL_GetTicks());
@@ -1185,19 +1196,25 @@ void Map::draw()
 		_messageOnCanvas = false;
 		_messageApart = false;
 	}
-	else if (Options::oxceHdHiddenMap && Options::oxceHdEnemyTurn != 1 && _hiddenViewValid)
+	else if (hiddenMap)
 	{
 		// an unseen enemy's turn: the map from where the player last saw it; the camera's own moves (a walking
-		// unit's level, a followed shot, centring on the next unit) are not shown and the camera keeps them
+		// unit's level, a followed shot, centring on the next unit) are not shown and the camera keeps them;
+		// no tile cursor, the mouse points at nothing the player can act on
 		const Position real = _camera->getMapOffset();
+		const CursorType cursor = _cursorType;
 		_camera->setMapOffset(_hiddenViewOffset);
+		_cursorType = CT_NONE;
 		drawTerrain(_canvas);
+		_cursorType = cursor;
 		_camera->setMapOffset(real);
+		_hiddenFrozen = true;
 		_messageOnCanvas = false;
 		_messageApart = false;
 	}
 	else
 	{
+		_hiddenFrozen = false;
 		// the message is laid out on the screen: while the view is zoomed it goes to a canvas of the map's own size
 		_messageApart = _viewWidth != getWidth() || _viewHeight != getHeight();
 		if (_messageApart && !_messageCanvas)
