@@ -42,6 +42,7 @@ const long long GUARD_MINUTES = 10;
 const int SWEEP_MS = 5000;
 /// How far behind the beam its trail fades out, radians.
 const double TRAIL = 1.3;
+const double TRAIL_COS2 = std::cos(TRAIL) * std::cos(TRAIL); // the wedge's edge, squared, for a test without trig
 /// The width of a wave's bright front, as a part of its radar's range; its tail is four times that.
 const double WAVE_WIDTH = 0.07;
 
@@ -241,6 +242,7 @@ struct Sweep
 	double sx, sy;    ///< the craft on the screen, world pixels
 	bool front;       ///< the craft is on the visible side
 	double angle;     ///< the beam now, radians on the screen
+	double ux, uy;    ///< the beam's direction, cos and sin of the angle
 };
 
 }
@@ -623,6 +625,8 @@ void HdRadar::draw(const View &view, const std::vector<Source> &sources, long lo
 			// each craft its own beat, so that a group does not sweep in step
 			const Uint32 beat = (Uint32)(((uintptr_t)s.id >> 4) * 2654435761u);
 			sw.angle = TAU * ((now + beat) % SWEEP_MS) / SWEEP_MS;
+			sw.ux = std::cos(sw.angle);
+			sw.uy = std::sin(sw.angle);
 			sweeps.push_back(sw);
 			grow(sw.cap);
 			if (!bare || beam) continue;
@@ -688,6 +692,15 @@ void HdRadar::draw(const View &view, const std::vector<Source> &sources, long lo
 	auto drawBeam = [&](Uint32 &pix, const Sweep &sw, float cov, int px, int py)
 	{
 		const double dx = px + 0.5 - sw.sx, dy = py + 0.5 - sw.sy;
+		// the beam shows only in the trail's wedge (behind the beam, within TRAIL) and in the strip along it:
+		// that is told without a trig call, with a margin so that the exact test below still decides every pixel
+		{
+			const double along = dx * sw.ux + dy * sw.uy, cross = sw.ux * dy - sw.uy * dx;
+			const double d2 = dx * dx + dy * dy;
+			const bool wedge = cross <= 0.01 && (d2 < 4 || (along > 0 && along * along > TRAIL_COS2 * d2 * 0.999));
+			const bool strip = along > -0.01 && std::fabs(cross) < beamW * 0.5 + 0.51;
+			if (!wedge && !strip) return;
+		}
 		double delta = std::fmod(sw.angle - std::atan2(dy, dx), TAU);
 		if (delta < 0) delta += TAU;
 		if (delta < TRAIL)

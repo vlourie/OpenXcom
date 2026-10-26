@@ -136,13 +136,16 @@ public:
 	void setKind(Kind kind) { _kind = kind; }
 	Kind getKind() const { return _kind; }
 	void setText(const std::string &text) { _text = text; }
-	/// A progress bar at the frame's top right corner (frame kinds only): the share of the turn done, 0-100 (XP-000285).
+	/// A wide progress bar at the bottom centre (frame kinds only): the share of the turn done, 0-100 (XP-000285, XP-000306).
 	void setBar(bool on, int percent) { _bar = on; _percent = percent < 0 ? 0 : (percent > 100 ? 100 : percent); }
+	/// The bar and the line over it stand `lift` base pixels above the screen's bottom edge (the panel in their way).
+	void setLift(int lift) { _lift = lift < 0 ? 0 : lift; }
 	void hdMirror() override;
 private:
 	Kind _kind = NONE;
 	bool _bar = false;
 	int _percent = 0;
+	int _lift = 0;
 	std::string _text;
 };
 
