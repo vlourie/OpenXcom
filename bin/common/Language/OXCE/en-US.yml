@@ -376,6 +376,8 @@ en-US:
   STR_SHOW_MAINTENANCE_TIME_DESC: "{ALT}0>{ALT} Don't show {ALT}1>{ALT} Show only current activity duration {ALT}2>{ALT} Show all together (repair + rearm + refuel)."
   STR_CRAFT_WEAPON_ICONS: "Craft equipment icons before the name"
   STR_CRAFT_WEAPON_ICONS_DESC: "The icons of the weapons and equipment installed on a craft, as on the craft screen, before its name in the interception list and in the base's craft list."
+  STR_HD_CRAFT_WEAPON_TOGGLE: "Equipment icons: red when off, click to switch"
+  STR_HD_CRAFT_WEAPON_TOGGLE_DESC: "For 'Craft equipment icons before the name'. The icon of a disabled weapon is red, and a click on an icon in the interception list or in the base's craft list switches that weapon on or off - the same switch as a click on the weapon's name on the craft window. A disabled weapon is not taken into a dogfight until it is switched on. Off = as it was: icons unmarked, a click on a row works as before."
   STR_DOGFIGHT_HIT_CHANCE: "Hit chances in the interception window"
   STR_DOGFIGHT_HIT_CHANCE_DESC: "Next to each craft weapon - its chance to hit the UFO, above the radar - the UFO's chance to hit the craft. Counts the pilots, the weapon's accuracy, the UFO size and both crafts' bonuses. A dash - the weapon will not fire in the chosen mode (out of range, no ammo, switched off). If the UFO is not researched yet: its own bonuses are not counted and a ? is added; the UFO's chance is ?."
   STR_SHOW_ETA: "Show estimated flight duration"

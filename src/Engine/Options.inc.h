@@ -84,6 +84,8 @@ OPT int oxceInterceptTableSize;
 OPT bool oxceEnableSlackingIndicator;
 OPT int oxceInterceptGuiMaintenanceTime;
 OPT bool oxceCraftWeaponIcons;
+// HD interface: in the craft lists with the weapon icons (interception, base crafts) a disabled weapon's icon is red and a click on an icon switches that weapon on/off (the same CraftWeapon::setDisabled as the craft screens); off = as it was (default)
+OPT bool oxceHdCraftWeaponToggle;
 OPT bool oxceDogfightHitChance;
 OPT int oxceShowETAMode;
 OPT bool oxceUfoLandingAlert;

@@ -35,6 +35,7 @@ class Text;
 class TextEdit;
 class Surface;
 class Craft;
+class CraftWeapon;
 
 /**
  * OXCE-HD: the craft screen's pictures of the weapons and equipment on a craft,
@@ -46,12 +47,21 @@ class CraftWeaponIcons
 	SDL_Color _palette[256];
 	Uint8 _remap[256];
 	std::map<const RuleCraftWeapon*, Surface*> _icons;
+	std::map<const RuleCraftWeapon*, Surface*> _redIcons; ///< OXCE-HD (oxceHdCraftWeaponToggle): the same pictures in red
+	Uint8 _redMap[256];
+	bool _redMapMade = false;
+	/// The picture of a weapon (red: the one for a disabled weapon); nullptr when the mod has no frame for it.
+	Surface *iconFor(const CraftWeapon *weapon, bool red);
 public:
 	/// The pictures for a list drawn in `palette`.
 	CraftWeaponIcons(Mod *mod, const SDL_Color *palette);
 	~CraftWeaponIcons();
-	/// The pictures of the craft's installed weapons in slot order (owned here).
-	std::vector<Surface*> of(Craft *craft);
+	/// The pictures of the craft's installed weapons in slot order (owned here). `marks`: a disabled weapon in red.
+	std::vector<Surface*> of(Craft *craft, bool marks = false);
+	/// OXCE-HD (oxceHdCraftWeaponToggle): the installed weapon whose picture stands in slot `slot` of a row (as of() lays them out); nullptr when none.
+	CraftWeapon *weaponAt(Craft *craft, int slot);
+	/// OXCE-HD (oxceHdCraftWeaponToggle): switches the weapon on/off as the craft screens do (on in a base: the craft starts rearming at once).
+	static void toggle(Craft *craft, CraftWeapon *weapon);
 };
 
 /**

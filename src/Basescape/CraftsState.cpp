@@ -28,6 +28,7 @@
 #include "../Interface/Text.h"
 #include "../Interface/TextList.h"
 #include "../Savegame/Craft.h"
+#include "../Savegame/CraftWeapon.h"
 #include "../Mod/RuleCraft.h"
 #include "../Savegame/Base.h"
 #include "../Menu/ErrorMessageState.h"
@@ -169,7 +170,7 @@ void CraftsState::initList(size_t scrl)
 		_lstCrafts->addRow(5, craft->getName(_game->getLanguage()).c_str(), tr(craft->getStatus()).c_str(), ss.str().c_str(), ss2.str().c_str(), ss3.str().c_str());
 		if (icons > 0)
 		{
-			_lstCrafts->setRowIcons(row, _weaponIcons->of(craft));
+			_lstCrafts->setRowIcons(row, _weaponIcons->of(craft, Options::oxceHdCraftWeaponToggle));
 		}
 		++row;
 	}
@@ -204,6 +205,18 @@ void CraftsState::lstCraftsClick(Action *action)
 
 	if (_game->isLeftClick(action))
 	{
+		// OXCE-HD (oxceHdCraftWeaponToggle): a click on a weapon's icon switches that weapon, the rest of the row works as before
+		if (Options::oxceHdCraftWeaponToggle && _weaponIcons)
+		{
+			const int slot = _lstCrafts->getIconSlotAt((int)(action->getRelativeXMouse() / action->getXScale()));
+			CraftWeapon *weapon = slot >= 0 ? _weaponIcons->weaponAt(crafts[row], slot) : nullptr;
+			if (weapon)
+			{
+				CraftWeaponIcons::toggle(crafts[row], weapon);
+				initList(_lstCrafts->getScroll());
+				return;
+			}
+		}
 		if (crafts[row]->getStatus() != "STR_OUT")
 		{
 			_game->pushState(new CraftInfoState(_base, row));
