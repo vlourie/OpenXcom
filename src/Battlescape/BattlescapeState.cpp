@@ -1030,18 +1030,22 @@ void BattlescapeState::think()
 				kind = side == FACTION_HOSTILE ? HdTurnMark::FRAME_ENEMY : HdTurnMark::FRAME_NEUTRAL;
 			}
 		}
-		if (kind == HdTurnMark::STRIP)
+		if (kind == HdTurnMark::STRIP || kind == HdTurnMark::FRAME_ENEMY)
 		{
-			_hdTurnMark->setText(tr("STR_HD_ENEMY_TURN_STRIP"));
+			_hdTurnMark->setText(tr("STR_HD_ENEMY_TURN_STRIP")); // the frame's own line: over the bar, the enemy's turn only
 		}
 		_hdTurnMark->setKind(kind);
 		_hdTurnMark->setBar(mode == 3, _aiProgress);
+		// the bar stands at the bottom centre: above the panel while the panel is in the way (debug mode keeps it up)
+		_hdTurnMark->setLift(_icons->getHeight() - _panelShift);
 		_hdTurnMark->setVisible(kind != HdTurnMark::NONE);
+		// in debug mode the enemy's side is played by the AI test rig, not by the player at the panel: the panel stays up
+		const bool debugMode = _save->getDebugMode();
 		if (otherTurn != _wasOtherTurn)
 		{
 			_wasOtherTurn = otherTurn;
 			_aiProgress = 0;
-			if (otherTurn && mode >= 2 && HdBattleHud::on() && _panelTarget == 0)
+			if (otherTurn && mode >= 2 && HdBattleHud::on() && _panelTarget == 0 && !debugMode)
 			{
 				_panelAutoHid = true;
 				_panelTarget = _icons->getHeight();
@@ -1053,6 +1057,13 @@ void BattlescapeState::think()
 				_panelTarget = 0;
 				_panelMovedAt = SDL_GetTicks();
 			}
+		}
+		else if (debugMode && _panelAutoHid)
+		{
+			// debug mode switched on in the middle of the turn: bring back the panel the frame slid down
+			_panelAutoHid = false;
+			_panelTarget = 0;
+			_panelMovedAt = SDL_GetTicks();
 		}
 	}
 	if (_panelShift != _panelTarget)

@@ -1994,20 +1994,25 @@ void HdTurnMark::hdMirror()
 	const int k = HdUi::scale();
 	if (k <= 0 || _kind == NONE) return;
 	HdUi &ui = HdUi::instance();
-	if (_kind == STRIP)
+	// a plate with a line of text, centred, its middle `cyBase` base pixels from the top: the text's cell is 16 base pixels
+	// tall, its capitals in the middle
+	const auto plate = [&](float cyBase)
 	{
-		// a plate with the line at the top, centred: the text's cell is 16 base pixels tall, its capitals in the middle
 		if (!ui.hasFonts() || _text.empty()) return;
 		const UString s = Unicode::convUtf8ToUtf32(_text);
 		const float cap = 6.0f;
 		HdFont &f = ui.font(true);
 		const float w = f.measure(s, f.sizeForCapHeight(cap * k)) / k;
-		const int tx = (int)std::lround((getWidth() - w) * 0.5f), ty = (int)std::lround(getHeight() * 0.5f) - 8; // under the screen's title
+		const int tx = (int)std::lround((getWidth() - w) * 0.5f), ty = (int)std::lround(cyBase) - 8;
 		const float cy = (ty + 8.0f) * k, hh = (cap * 0.5f + 5.0f) * k;
 		const float x0 = (tx - 10.0f) * k, x1 = (tx + w + 10.0f) * k;
 		ui.fillRoundRect(x0, cy - hh, x1, cy + hh, hh, 0xD8300C0Cu, 0xD8140404u);
 		ui.strokeRoundRect(x0, cy - hh, x1, cy + hh, hh, std::max(1.0f, 0.4f * k), 0xFFD84438u);
 		ui.drawTtfString(s, true, cap, tx, ty, 0xFFFFE6DCu, 0xC0000000u);
+	};
+	if (_kind == STRIP)
+	{
+		plate(getHeight() * 0.5f); // under the screen's title
 		return;
 	}
 	// the frame: a glow falling off toward the centre, a thin line a little inside the edge and thicker corner brackets
@@ -2044,12 +2049,20 @@ void HdTurnMark::hdMirror()
 	ui.shadeRows(0, H - band, W, band, rowFn);
 	ui.shadeRows(0, band, band, H - 2 * band, rowFn);
 	ui.shadeRows(W - band, band, band, H - 2 * band, rowFn);
+	// the bottom centre (XP-000306/312): the progress bar of mode 3 and over its place the plate with the line of text (the
+	// enemy's turn only); `_lift` base pixels up, so that the panel, if it stands in the way, stays clear
+	const float baseBottom = (float)getHeight() - 8.0f - (float)_lift;
+	const float barH = 6.0f, barTop = baseBottom - barH;
+	if (_kind == FRAME_ENEMY)
+	{
+		plate(barTop - 14.0f);
+	}
 	if (_bar)
 	{
-		// the progress bar (oxceHdEnemyTurn 3), top right inside the frame: a dark groove, a line round it in the frame's
+		// the progress bar (oxceHdEnemyTurn 3), wide, at the bottom centre: a dark groove, a line round it in the frame's
 		// colour and the share of the turn done filled from the left; the number is the stock hidden screen's own
-		const float bh = 5.0f * k, bw = 72.0f * k, r = bh * 0.5f;
-		const float x1 = (float)W - 12.0f * k, x0 = x1 - bw, y0 = 12.0f * k, y1 = y0 + bh;
+		const float bh = barH * k, bw = std::max(72.0f, 0.5f * (float)getWidth()) * k, r = bh * 0.5f;
+		const float x0 = ((float)W - bw) * 0.5f, x1 = x0 + bw, y0 = barTop * k, y1 = y0 + bh;
 		const float line = std::max(1.0f, 0.4f * k);
 		ui.fillRoundRect(x0, y0, x1, y1, r, 0xC0180808u, 0xC0080404u);
 		const float fw = bw * (float)_percent / 100.0f;
