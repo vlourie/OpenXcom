@@ -187,6 +187,7 @@ set ( engine_src
   Engine/HdUiDraw.cpp
   Engine/HdScreens.cpp
   Engine/HdTest.cpp
+  Engine/HdControl.cpp
   Engine/HdWorkers.cpp
   Engine/HdTurn.cpp
   Engine/HdTurnGroups.cpp

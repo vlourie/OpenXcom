@@ -269,6 +269,96 @@ MainMenuState::MainMenuState(bool updateCheck)
 	_txtTitle->setText(title.str());
 }
 
+/**
+ * HD test automation (OXCE_HD_START, and the live bench's open command): opens the named screen.
+ * @param game Pointer to the core game.
+ * @param what The screen.
+ * @return False if the name is unknown.
+ */
+bool MainMenuState::hdStart(Game *game, const std::string &what)
+{
+	bool known = true;
+	if (what == "newbattle")
+	{
+		game->pushState(new NewBattleState);
+	}
+	else if (what == "options")
+	{
+		game->pushState(new OptionsAdvancedState(OPT_MENU));
+	}
+	else if (what == "load")
+	{
+		game->pushState(new ListLoadState(OPT_MENU));
+	}
+	else if (what == "battle")
+	{
+		// the mission generator's OK with its defaults: straight into a battle
+		NewBattleState *nb = new NewBattleState;
+		game->pushState(nb);
+		if (AiProbe::battleSeed() >= 0)
+		{
+			nb->probeRandomize(AiProbe::battleSeed());
+		}
+		nb->btnOkClick(nullptr);
+	}
+	else if (what == "geoscape" || what == "save" || what == "base")
+	{
+		// a new game on the geoscape, zoomed a step in, the globe centred on Europe (no base placing)
+		SavedGame *save = game->getMod()->newSave(DIFF_BEGINNER);
+		save->setDifficulty(DIFF_BEGINNER);
+		game->setSavedGame(save);
+		GeoscapeState *gs = new GeoscapeState;
+		game->setState(gs);
+		gs->init();
+		gs->getGlobe()->center(0.2, -0.8);
+		gs->getGlobe()->zoomIn();
+		gs->timerReset();
+		// OXCE_HD_SAVES=n writes n saves of it (rows for the load list's checks)
+		const char *saves = getenv("OXCE_HD_SAVES");
+		for (int i = 0; saves && i < atoi(saves); ++i)
+		{
+			save->setName("HD test " + std::to_string(i + 1));
+			save->save("hdtest" + std::to_string(i + 1) + ".sav", game->getMod());
+		}
+		if (what == "save")
+		{
+			// the save list over it (an edit field: OXCE_HD_CLICK on a row, OXCE_HD_TYPE a name)
+			game->pushState(new ListSaveState(OPT_GEOSCAPE));
+		}
+		if (what == "base" && !save->getBases()->empty())
+		{
+			// the starting base's screen (its facilities' HD pictures)
+			game->pushState(new BasescapeState(save->getBases()->front(), gs->getGlobe()));
+		}
+	}
+	else if (what == "ufopaedia")
+	{
+		// a new game and the ufopaedia article OXCE_HD_ARTICLE (or the ufopaedia's index) over the globe
+		SavedGame *save = game->getMod()->newSave(DIFF_BEGINNER);
+		save->setDifficulty(DIFF_BEGINNER);
+		game->setSavedGame(save);
+		GeoscapeState *gs = new GeoscapeState;
+		game->setState(gs);
+		gs->init();
+		const char *article = getenv("OXCE_HD_ARTICLE");
+		if (article && *article)
+		{
+			// whatever has been researched (the save's debug mode): a check of an article needs no campaign
+			save->setDebugMode();
+			Ufopaedia::openArticle(game, std::string(article));
+		}
+		else
+		{
+			Ufopaedia::open(game);
+		}
+	}
+	else
+	{
+		known = false;
+	}
+	return known;
+}
+
 void MainMenuState::init()
 {
 	State::init();
@@ -290,81 +380,7 @@ void MainMenuState::init()
 	if (autoStart && *autoStart && !autoStarted)
 	{
 		autoStarted = true;
-		const std::string what = autoStart;
-		if (what == "newbattle")
-		{
-			_game->pushState(new NewBattleState);
-		}
-		else if (what == "options")
-		{
-			_game->pushState(new OptionsAdvancedState(OPT_MENU));
-		}
-		else if (what == "load")
-		{
-			_game->pushState(new ListLoadState(OPT_MENU));
-		}
-		else if (what == "battle")
-		{
-			// the mission generator's OK with its defaults: straight into a battle
-			NewBattleState *nb = new NewBattleState;
-			_game->pushState(nb);
-			if (AiProbe::battleSeed() >= 0)
-			{
-				nb->probeRandomize(AiProbe::battleSeed());
-			}
-			nb->btnOkClick(nullptr);
-		}
-		else if (what == "geoscape" || what == "save" || what == "base")
-		{
-			// a new game on the geoscape, zoomed a step in, the globe centred on Europe (no base placing)
-			SavedGame *save = _game->getMod()->newSave(DIFF_BEGINNER);
-			save->setDifficulty(DIFF_BEGINNER);
-			_game->setSavedGame(save);
-			GeoscapeState *gs = new GeoscapeState;
-			_game->setState(gs);
-			gs->init();
-			gs->getGlobe()->center(0.2, -0.8);
-			gs->getGlobe()->zoomIn();
-			gs->timerReset();
-			// OXCE_HD_SAVES=n writes n saves of it (rows for the load list's checks)
-			const char *saves = getenv("OXCE_HD_SAVES");
-			for (int i = 0; saves && i < atoi(saves); ++i)
-			{
-				save->setName("HD test " + std::to_string(i + 1));
-				save->save("hdtest" + std::to_string(i + 1) + ".sav", _game->getMod());
-			}
-			if (what == "save")
-			{
-				// the save list over it (an edit field: OXCE_HD_CLICK on a row, OXCE_HD_TYPE a name)
-				_game->pushState(new ListSaveState(OPT_GEOSCAPE));
-			}
-			if (what == "base" && !save->getBases()->empty())
-			{
-				// the starting base's screen (its facilities' HD pictures)
-				_game->pushState(new BasescapeState(save->getBases()->front(), gs->getGlobe()));
-			}
-		}
-		else if (what == "ufopaedia")
-		{
-			// a new game and the ufopaedia article OXCE_HD_ARTICLE (or the ufopaedia's index) over the globe
-			SavedGame *save = _game->getMod()->newSave(DIFF_BEGINNER);
-			save->setDifficulty(DIFF_BEGINNER);
-			_game->setSavedGame(save);
-			GeoscapeState *gs = new GeoscapeState;
-			_game->setState(gs);
-			gs->init();
-			const char *article = getenv("OXCE_HD_ARTICLE");
-			if (article && *article)
-			{
-				// whatever has been researched (the save's debug mode): a check of an article needs no campaign
-				save->setDebugMode();
-				Ufopaedia::openArticle(_game, std::string(article));
-			}
-			else
-			{
-				Ufopaedia::open(_game);
-			}
-		}
+		hdStart(_game, autoStart);
 		return;
 	}
 	if (Options::getLoadLastSave() && !Options::getLoadThisSave().empty())

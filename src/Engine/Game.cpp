@@ -31,6 +31,7 @@
 #include "HdUi.h"
 #include "HdCanvas.h"
 #include "HdTest.h"
+#include "HdControl.h"
 #include "HdSprites.h"
 #include "HdFx.h"
 #include "HdKillCam.h"
@@ -392,6 +393,11 @@ void Game::run()
 			}
 		}
 		hdEventMs = SDL_GetTicks() - hdEventStart;
+		// the live test bench (OXCE_HD_CONTROL, Engine/HdControl.cpp): commands from a file, one per drawn frame
+		if (_init)
+		{
+			HdControl::step(this);
+		}
 		if (Timer::probeClock)
 		{
 			runningState = RUNNING;
@@ -430,6 +436,7 @@ void Game::run()
 				// make a note of when this frame update occurred.
 				_timeOfLastFrame = SDL_GetTicks();
 				hdDrew = true;
+				HdControl::frameDrawn();
 				hdLogDraw0 = std::chrono::steady_clock::now();
 				_fpsCounter->addFrame();
 				_screen->clear();
