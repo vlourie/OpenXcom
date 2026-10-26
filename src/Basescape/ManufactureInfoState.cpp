@@ -235,6 +235,12 @@ void ManufactureInfoState::buildUi()
 	{
 		_production = new Production (_item, 1);
 		_base->addProduction(_production);
+		if (Options::oxceHdManufactureTop)
+		{
+			// OXCE-HD: the new job stands first in the base's list, as if moved up with the arrows to the top
+			auto &productions = _base->getProductions();
+			std::rotate(productions.begin(), productions.end() - 1, productions.end());
+		}
 	}
 	_btnSell->setPressed(_production->getSellItems());
 	_btnSell->setVisible(_production->getRules()->canAutoSell());

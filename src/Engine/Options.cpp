@@ -484,6 +484,7 @@ void createAdvancedOptionsOXCE()
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceCraftWeaponIcons", &oxceCraftWeaponIcons, true, "STR_CRAFT_WEAPON_ICONS", "STR_HD_GEOSCAPE")); // OXCE-HD
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdCraftWeaponToggle", &oxceHdCraftWeaponToggle, false, "STR_HD_CRAFT_WEAPON_TOGGLE", "STR_HD_GEOSCAPE")); // OXCE-HD
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdFundsToggle", &oxceHdFundsToggle, false, "STR_HD_FUNDS_TOGGLE", "STR_HD_GEOSCAPE")); // OXCE-HD
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdManufactureTop", &oxceHdManufactureTop, false, "STR_HD_MANUFACTURE_TOP", "STR_HD_BASE")); // OXCE-HD
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceDogfightHitChance", &oxceDogfightHitChance, true, "STR_DOGFIGHT_HIT_CHANCE", "STR_HD_GEOSCAPE")); // OXCE-HD
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceShowETAMode", &oxceShowETAMode, 0, "STR_SHOW_ETA", "STR_GEOSCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceUfoLandingAlert", &oxceUfoLandingAlert, false, "STR_UFO_LANDING_ALERT", "STR_GEOSCAPE"));
