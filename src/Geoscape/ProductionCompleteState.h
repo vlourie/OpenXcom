@@ -71,6 +71,8 @@ private:
 	int lootPieces() const;
 	/// Sends this many units of the loot to the base.
 	void lootSend(Base *to, int units);
+	/// XP-000297: sends the picked pieces of each kind of the loot to the base.
+	void lootSendParts(Base *to, const std::vector<std::pair<const RuleItem*, int> > &picked);
 	/// The base is picked: asks how much.
 	void lootPicked(Base *to);
 	/// Writes the message again with the loot shipped so far.
