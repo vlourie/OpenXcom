@@ -86,4 +86,38 @@ public:
 	void think() override;
 };
 
+class TextList;
+
+/**
+ * OXCE-HD (option oxceManufactureDelivery, XP-000297): the loot of a finished order with several kinds of items - a list of
+ * the kinds with how many of each goes to the base, from 0 to what of it is left in the stores. Display and choice only:
+ * what is picked goes to the callback, which ships it by the ordinary transfer.
+ */
+class ManufactureLootPartsState : public State
+{
+public:
+	typedef ManufactureDeliveryState::Items Items;
+private:
+	Base *_to;
+	Items _items;              ///< the kinds and the most of each that can go
+	std::vector<int> _amount;  ///< how many of each goes now, by row
+	std::function<void(const Items&)> _onOk;
+	Window *_window;
+	Text *_txtTitle, *_txtTotal;
+	TextList *_lstParts;
+	TextButton *_btnOk, *_btnCancel;
+	/// Writes the row's number and the total.
+	void refresh(size_t row);
+	/// Changes the selected row's number within 0..most.
+	void change(int by);
+	void leftArrowClick(Action *action);
+	void rightArrowClick(Action *action);
+	void btnOkClick(Action *action);
+	void btnCancelClick(Action *action);
+public:
+	/// Creates the state: the base, the kinds with the most of each; the pick goes to `onOk` (the kinds with a number above 0).
+	ManufactureLootPartsState(Base *to, const Items &items, const std::function<void(const Items&)> &onOk);
+	~ManufactureLootPartsState();
+};
+
 }

@@ -353,6 +353,21 @@ void ProductionCompleteState::lootPicked(Base *to)
 	{
 		return;
 	}
+	// XP-000297: several kinds of items to give (a disassembly) - the list of the kinds, a number for each
+	ManufactureDeliveryState::Items kinds;
+	for (const auto &part : _loot)
+	{
+		if (lootAvailable(part) > 0)
+		{
+			kinds.emplace_back(part.item, lootAvailable(part));
+		}
+	}
+	if (kinds.size() > 1)
+	{
+		_game->pushState(new ManufactureLootPartsState(to, kinds,
+			[this, to](const ManufactureDeliveryState::Items &picked) { lootSendParts(to, picked); }));
+		return;
+	}
 	_game->pushState(new ManufactureDeliveryState(to, units, [this, to](int n) { lootSend(to, n); },
 		[this](int n)
 		{
@@ -387,6 +402,30 @@ void ProductionCompleteState::lootSend(Base *to, int units)
 		if (qty > 0)
 		{
 			wanted.emplace_back(part.item, qty);
+		}
+	}
+	lootSendParts(to, wanted);
+}
+
+/**
+ * Sends the picked pieces of each kind of the loot to the base (XP-000297: the numbers come from the list of the kinds, and are
+ * cut to what the stores hold and the batch has left now). The rest is as lootSend: the ordinary transfer, paid now.
+ */
+void ProductionCompleteState::lootSendParts(Base *to, const std::vector<std::pair<const RuleItem*, int> > &picked)
+{
+	std::vector<std::pair<const RuleItem*, int> > wanted;
+	for (const auto &p : picked)
+	{
+		for (const auto &part : _loot)
+		{
+			if (part.item == p.first)
+			{
+				const int qty = std::min(p.second, lootAvailable(part));
+				if (qty > 0)
+				{
+					wanted.emplace_back(part.item, qty);
+				}
+			}
 		}
 	}
 	if (wanted.empty())

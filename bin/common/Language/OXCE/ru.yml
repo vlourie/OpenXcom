@@ -388,6 +388,7 @@ ru:
   STR_LOOT_TITLE: "Хабар: базы"
   STR_LOOT_LEFT: "Хабар на складе: {0}"
   STR_LOOT_SENT: "Переслано хабара: {0}"
+  STR_LOOT_PARTS_TOTAL: "Уйдёт штук: {0}"
   STR_DELIVERY_WILL_GO: "Уйдёт: {0} -> {1}"
   STR_DELIVERY_NONE: "На базу {0} ничего не уйдёт"
   STR_DELIVERY_ITEM_QTY: "{0} x{1}"

@@ -29,6 +29,7 @@
 #include "../Interface/ArrowButton.h"
 #include "../Interface/Text.h"
 #include "../Interface/TextButton.h"
+#include "../Interface/TextList.h"
 #include "../Interface/Window.h"
 #include "../Savegame/Base.h"
 #include "../Mod/RuleItem.h"
@@ -309,6 +310,158 @@ void ManufactureDeliveryState::think()
 	State::think();
 	_timerMore->think(this, 0);
 	_timerLess->think(this, 0);
+}
+
+/**
+ * Initializes the window of the loot by kinds (XP-000297): every kind starts at the most, as the one number of the other window does.
+ * @param to The base the loot goes to.
+ * @param items The kinds and the most of each that can go (more than 0).
+ * @param onOk Called with the kinds picked (a number above 0) when OK is clicked, after the window is closed.
+ */
+ManufactureLootPartsState::ManufactureLootPartsState(Base *to, const Items &items, const std::function<void(const Items&)> &onOk) : _to(to), _items(items), _onOk(onOk)
+{
+	_screen = false;
+	for (const auto &i : _items)
+	{
+		_amount.push_back(i.second);
+	}
+
+	// Create objects
+	_window = new Window(this, 240, 150, 40, 25, POPUP_BOTH);
+	_txtTitle = new Text(224, 24, 48, 31);
+	_lstParts = new TextList(224, 78, 47, 58);
+	_txtTotal = new Text(224, 9, 48, 138);
+	_btnOk = new TextButton(104, 16, 48, 153);
+	_btnCancel = new TextButton(104, 16, 168, 153);
+
+	// Set palette
+	setInterface("manufactureInfo");
+
+	add(_window, "window", "manufactureInfo");
+	add(_txtTitle, "text", "manufactureInfo");
+	add(_lstParts, "list", "manufactureInfo");
+	add(_txtTotal, "text", "manufactureInfo");
+	add(_btnOk, "button2", "manufactureInfo");
+	add(_btnCancel, "button2", "manufactureInfo");
+
+	centerAllSurfaces();
+
+	// Set up objects
+	setWindowBackground(_window, "manufactureInfo");
+
+	_txtTitle->setBig();
+	_txtTitle->setAlign(ALIGN_CENTER);
+	_txtTitle->setWordWrap(true);
+	_txtTitle->setText(tr("STR_DELIVERY_AMOUNT").arg(_to->getName()));
+
+	_txtTotal->setAlign(ALIGN_CENTER);
+
+	// the one by one arrows as on the summary list of the finished order: left - less, right - more; the right button goes to the end
+	_lstParts->setColumns(2, 150, 36);
+	_lstParts->setBackground(_window);
+	_lstParts->setSelectable(true);
+	_lstParts->setMargin(8);
+	_lstParts->setArrowColumn(194, ARROW_HORIZONTAL);
+	_lstParts->onLeftArrowClick((ActionHandler)&ManufactureLootPartsState::leftArrowClick);
+	_lstParts->onRightArrowClick((ActionHandler)&ManufactureLootPartsState::rightArrowClick);
+	for (size_t i = 0; i < _items.size(); ++i)
+	{
+		_lstParts->addRow(2, tr(_items[i].first->getType()).c_str(), "");
+		refresh(i);
+	}
+
+	_btnOk->setText(tr("STR_OK"));
+	_btnOk->onMouseClick((ActionHandler)&ManufactureLootPartsState::btnOkClick);
+	_btnOk->onKeyboardPress((ActionHandler)&ManufactureLootPartsState::btnOkClick, Options::keyOk);
+
+	_btnCancel->setText(tr("STR_CANCEL"));
+	_btnCancel->onMouseClick((ActionHandler)&ManufactureLootPartsState::btnCancelClick);
+	_btnCancel->onKeyboardPress((ActionHandler)&ManufactureLootPartsState::btnCancelClick, Options::keyCancel);
+}
+
+ManufactureLootPartsState::~ManufactureLootPartsState()
+{
+}
+
+/**
+ * Writes the number of a row ("picked/most") and the total of pieces that go.
+ * @param row The row.
+ */
+void ManufactureLootPartsState::refresh(size_t row)
+{
+	if (row < _items.size())
+	{
+		_lstParts->setCellText(row, 1, std::to_string(_amount[row]) + "/" + std::to_string(_items[row].second));
+	}
+	int total = 0;
+	for (int n : _amount)
+	{
+		total += n;
+	}
+	_txtTotal->setText(tr("STR_LOOT_PARTS_TOTAL").arg(total));
+}
+
+/**
+ * Changes the selected row's number within 0..most.
+ * @param by How much to add (negative: to take).
+ */
+void ManufactureLootPartsState::change(int by)
+{
+	const size_t row = _lstParts->getSelectedRow();
+	if (row >= _items.size())
+	{
+		return;
+	}
+	_amount[row] = std::max(0, std::min(_items[row].second, _amount[row] + by));
+	refresh(row);
+}
+
+/**
+ * Left arrow: one less (the scroll step); right click: none.
+ */
+void ManufactureLootPartsState::leftArrowClick(Action *action)
+{
+	if (_game->isRightClick(action, true)) change(-INT_MAX / 2);
+	else if (_game->isLeftClick(action, true)) change(-_game->getScrollStep());
+}
+
+/**
+ * Right arrow: one more (the scroll step); right click: all that is left.
+ */
+void ManufactureLootPartsState::rightArrowClick(Action *action)
+{
+	if (_game->isRightClick(action, true)) change(INT_MAX / 2);
+	else if (_game->isLeftClick(action, true)) change(_game->getScrollStep());
+}
+
+/**
+ * Closes the window and hands the kinds picked to the callback.
+ */
+void ManufactureLootPartsState::btnOkClick(Action *)
+{
+	Items picked;
+	for (size_t i = 0; i < _items.size(); ++i)
+	{
+		if (_amount[i] > 0)
+		{
+			picked.emplace_back(_items[i].first, _amount[i]);
+		}
+	}
+	// closed first: the callback may open a window of its own, which must not be the one popState takes
+	const std::function<void(const Items&)> onOk = _onOk;
+	_game->popState();
+	if (onOk && !picked.empty())
+	{
+		onOk(picked);
+	}
+}
+
+/**
+ * Closes the window, nothing is sent.
+ */
+void ManufactureLootPartsState::btnCancelClick(Action *)
+{
+	_game->popState();
 }
 
 }
