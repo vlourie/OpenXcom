@@ -1169,10 +1169,11 @@ void Map::draw()
 	}
 	_hdLabels.clear();
 	_hdLabelsOn = hdLabelsWanted();
-	if (Options::oxceHdBackdrop)
+	if (Options::oxceHdBackdrop && !hdVacuum())
 	{
 		// the backdrop beyond the map's edge as a gradient around the environment's colour (a palette canvas: flat as ever)
-		// (the ground's line of the mod's table hd/backdrop.txt, when there is one, in place of the environment's color)
+		// (the ground's line of the mod's table hd/backdrop.txt, when there is one, in place of the environment's color);
+		// in vacuum the void stays the flat color of the environment: no haze where there is no air (XP-000317)
 		_canvas->fillBackdrop(Palette::blockOffset(0) + _bgColor, hdBackdropRgb());
 	}
 	else
@@ -1779,6 +1780,40 @@ int Map::hdBackdropFind()
 	}
 	Log(LOG_INFO) << "HD backdrop: " << table.size() << " lines of " << path << ", ground " << (best.empty() ? "-" : best) << " -> " << _hdBackdropRgb << ", shade " << _save->getGlobalShade();
 	return _hdBackdropRgb;
+}
+
+/**
+ * Is this battle in vacuum? The mod's table hd/vacuum.txt names the environments (enviroEffects types, one a line,
+ * # comments), so the engine knows no mod's names. Looked up once a battle; only the picture asks it.
+ * @return True when the battle's environment is in the table.
+ */
+bool Map::hdVacuum()
+{
+	if (_hdVacuum >= 0)
+	{
+		return _hdVacuum == 1;
+	}
+	_hdVacuum = 0;
+	const RuleEnviroEffects *enviro = _save->getEnviroEffects();
+	const std::string path = HdSprites::artPath("vacuum.txt");
+	std::unique_ptr<std::istream> in = enviro && FileMap::fileExists(path) ? FileMap::getIStream(path) : nullptr;
+	std::string line;
+	while (in && std::getline(*in, line))
+	{
+		if (line.size() >= 3 && (unsigned char)line[0] == 0xEF && (unsigned char)line[1] == 0xBB && (unsigned char)line[2] == 0xBF)
+		{
+			line.erase(0, 3);
+		}
+		std::istringstream fields(line);
+		std::string name;
+		if (fields >> name && name[0] != '#' && name == enviro->getType())
+		{
+			_hdVacuum = 1;
+			break;
+		}
+	}
+	Log(LOG_INFO) << "HD vacuum: environment " << (enviro ? enviro->getType() : "-") << " -> " << _hdVacuum;
+	return _hdVacuum == 1;
 }
 
 void Map::drawAccuracy(HdCanvas *canvas, int x, int y)
@@ -4577,8 +4612,9 @@ void Map::animate(bool redraw)
 		return;
 	}
 
-	// units hanging with no floor below fade their sway in, landed ones fade it out (hoverBob); mode 0 draws them still, as the classic game
-	if (Options::oxceHdHoverBob && _canvas->getHdMode() != HD_MODE_NEAREST)
+	// units hanging with no floor below fade their sway in, landed ones fade it out (hoverBob); mode 0 draws them still, as the classic game,
+	// and so does vacuum: nothing to float in (XP-000318)
+	if (Options::oxceHdHoverBob && _canvas->getHdMode() != HD_MODE_NEAREST && !hdVacuum())
 	{
 		for (const auto* bu : *_save->getUnits())
 		{
