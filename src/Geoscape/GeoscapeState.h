@@ -167,6 +167,8 @@ public:
 	void btnZoomOutLeftClick(Action *action);
 	/// Handler for right-clicking the Zoom Out icon.
 	void btnZoomOutRightClick(Action *action);
+	/// OXCE-HD (oxceHdFundsToggle): a click on the funds line shows the rating instead of the money, and back.
+	void txtFundsClick(Action *action);
 	/// Blit method - renders the state and dogfights.
 	void blit() override;
 	/// Globe zoom in effect for dogfights.

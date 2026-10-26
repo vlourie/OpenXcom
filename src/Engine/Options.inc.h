@@ -86,6 +86,8 @@ OPT int oxceInterceptGuiMaintenanceTime;
 OPT bool oxceCraftWeaponIcons;
 // HD interface: in the craft lists with the weapon icons (interception, base crafts) a disabled weapon's icon is red and a click on an icon switches that weapon on/off (the same CraftWeapon::setDisabled as the craft screens); off = as it was (default)
 OPT bool oxceHdCraftWeaponToggle;
+// HD interface, geoscape: a click on the funds line of the side panel shows the rating (the score the monthly report ends with) instead of the money, and back; off = as it was (default); display only
+OPT bool oxceHdFundsToggle;
 OPT bool oxceDogfightHitChance;
 OPT int oxceShowETAMode;
 OPT bool oxceUfoLandingAlert;
