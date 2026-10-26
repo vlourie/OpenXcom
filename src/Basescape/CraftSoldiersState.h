@@ -60,6 +60,8 @@ private:
 	bool doesNotFit(const Soldier *s, const Craft *c) const;
 	/// OXCE-HD (oxceHdCraftFit): the plate with the seats and the grey rows of those who no longer fit.
 	void fitRefresh();
+	/// OXCE-HD (oxceHdWoundedRed): the row colours as the base sets them, and the name and the "WOUNDED>days" red for a wounded soldier. Display only.
+	void setListRowColor(TextList& list, size_t row, Uint8 color, const Soldier& soldier);
 	/// initializes the display list based on the craft soldier's list and the position to display
 	void initList(size_t scrl);
 public:

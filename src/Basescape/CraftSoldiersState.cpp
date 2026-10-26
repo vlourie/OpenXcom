@@ -391,6 +391,21 @@ bool CraftSoldiersState::doesNotFit(const Soldier *s, const Craft *c) const
 }
 
 /**
+ * OXCE-HD (oxceHdWoundedRed): the row colours as the base sets them (the mana highlight too), and then, with the option on,
+ * the name and the "WOUNDED>days" text of a wounded soldier red - a colour of the interface palette. Display only.
+ */
+void CraftSoldiersState::setListRowColor(TextList& list, size_t row, Uint8 color, const Soldier& soldier)
+{
+	HighlightLowManaSoldiersMixin<TouchState>::setListRowColor(list, row, color, soldier);
+	if (Options::oxceHdWoundedRed && soldier.isWounded())
+	{
+		const Uint8 red = Palette::blockOffset(2) + 2;
+		list.setCellColor(row, 0, red);
+		list.setCellColor(row, 2, red);
+	}
+}
+
+/**
  * OXCE-HD (oxceHdCraftFit): the plate with "seats used / seats in all" (the same Craft::getSpaceUsed and
  * Craft::getSpaceAvailable as the two texts above) and the rows of the soldiers who no longer fit in grey.
  */
