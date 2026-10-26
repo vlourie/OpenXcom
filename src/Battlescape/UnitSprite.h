@@ -67,6 +67,8 @@ private:
 	/// The unit's direction and its turret's, as the view shows them.
 	int shownDir() const;
 	int shownTurretDir() const;
+	/// HD: walking phase of a walker treading on the spot after a turn, -1 when standing.
+	int treadPhase() const;
 	GraphSubset _mask;
 
 	/// Drawing routine for XCom soldiers in overalls, sectoids (routine 0),
