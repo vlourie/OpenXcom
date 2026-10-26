@@ -195,6 +195,9 @@ private:
 	int hdBackdropRgb();
 	int hdBackdropFind();
 	int _hdBackdropRgb = -2; ///< hdBackdropRgb once found (-2: not looked yet)
+	/// Is the battle's environment in the mod's table hd/vacuum.txt (no backdrop gradient, no hover bob there)?
+	bool hdVacuum();
+	int _hdVacuum = -1; ///< hdVacuum once looked (-1: not looked yet)
 	/// The hit chance text as it stands in _txtAccuracy, at canvas (x, y): baked, or kept for the HD interface.
 	void drawAccuracy(HdCanvas *canvas, int x, int y);
 	SurfaceSet *_projectileSet;
