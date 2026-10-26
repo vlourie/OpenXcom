@@ -17,6 +17,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "UnitSprite.h"
+#include <unordered_map>
 #include "../Engine/HdCanvas.h"
 #include "../Engine/HdFx.h"
 #include "../Engine/SurfaceSet.h"
@@ -1094,6 +1095,45 @@ void UnitSprite::drawRoutine4()
 }
 
 /**
+ * HD (oxceHdWalkerTurn, XP-000291/314): after the hull changes its direction while not walking, it treads on the spot
+ * with the walking frames for a short while. A 45-degree turn lasts one step of the battle speed (~30 ms), too short
+ * to see, so the treading runs on the map's animation clock (100 ms a phase) instead of the turn itself.
+ * Only the picture: the direction, the turn and the clock are read, never changed.
+ * @return Walking phase 0-3, or -1 when the standing frame is drawn.
+ */
+int UnitSprite::treadPhase() const
+{
+	constexpr int Wrap = 64 * 3*3 * 5*5 * 7*7; // SavedBattleGame::nextAnimFrame
+	constexpr int Window = 8; // animation frames
+	struct Tread { int dir; int start; };
+	static std::unordered_map<int, Tread> treads;
+
+	if (!Options::oxceHdWalkerTurn || _dest->getHdMode() == HD_MODE_NEAREST)
+	{
+		return -1;
+	}
+	const int dir = _unit->getDirection();
+	auto it = treads.find(_unit->getId());
+	if (it == treads.end())
+	{
+		treads[_unit->getId()] = Tread{ dir, _animationFrame - Window }; // first sight: no treading
+		return -1;
+	}
+	Tread &t = it->second;
+	if (t.dir != dir)
+	{
+		t.dir = dir;
+		t.start = _animationFrame;
+	}
+	const int elapsed = ((_animationFrame - t.start) % Wrap + Wrap) % Wrap;
+	if (elapsed >= Window || _unit->getStatus() == STATUS_WALKING)
+	{
+		return -1;
+	}
+	return elapsed % 4;
+}
+
+/**
  * Drawing routine for sectopods and reapers.
  */
 void UnitSprite::drawRoutine5()
@@ -1114,12 +1154,9 @@ void UnitSprite::drawRoutine5()
 	{
 		selectUnit(s, 32 + (_part * 4), (shownDir() * 16) + ((_unit->getWalkingPhase() / 2) % 4));
 	}
-	else if (Options::oxceHdWalkerTurn && _dest->getHdMode() != HD_MODE_NEAREST && _unit->getStatus() == STATUS_TURNING &&
-		_unit->getDirection() != _unit->getToDirection())
+	else if (int phase = treadPhase(); phase >= 0)
 	{
-		// HD (oxceHdWalkerTurn, XP-000291): the hull turning on the spot treads with the walking frames, one phase per
-		// step of the turn; the frames and the turn itself are the same, only the picture changes
-		selectUnit(s, 32 + (_part * 4), (shownDir() * 16) + (shownDir() % 4));
+		selectUnit(s, 32 + (_part * 4), (shownDir() * 16) + phase);
 	}
 	else
 	{
