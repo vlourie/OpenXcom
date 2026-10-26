@@ -25,7 +25,7 @@
     "hd_voices_en": ["metadata.yml", "Ruleset/hd_voices_en.rul", "Resources/Sounds/voices"]
   },
   "ModExcludeDirs": ["UI_photo", "preview", "__pycache__", "UI_esrgan", "UI_FAST", "UI_FIXED", "hdart_sheets", "_cmp"],
-  "ModExcludeFiles": ["*.exe", "*.pyc", "Thumbs.db", "desktop.ini"],
+  "ModExcludeFiles": ["*.exe", "*.pyc", "Thumbs.db", "desktop.ini", "hd.zip"],
   "DataDirs": ["common", "standard"],
   "DataSource": "",
 
