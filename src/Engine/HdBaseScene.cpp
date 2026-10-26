@@ -99,29 +99,37 @@ const unsigned char *toneCurve()
 
 float hash1(Uint32 a, Uint32 b, Uint32 c);
 
-/// How bright a light is now (with the night's gain), as in base_scene_preview.py.
-float strength(const Placed &p, float t, float night)
+/// How bright a light is now (with the night's gain), as in base_scene_preview.py. `act` is how much its
+/// facility moves: a lamp that blinks, pulses or runs does so by `act`, and at 0 stands at the middle of it.
+float strength(const Placed &p, float t, float night, float act)
 {
 	const Light &L = p.light;
 	float gain = 0.28f + 0.72f * night;
 	float v = 1.0f;
+	// where a lamp stands while its facility rests (its turn is over): the middle of what it does, steady
+	float rest = -1.0f;
 	switch (L.kind)
 	{
 	case BLINK:
 		v = std::fmod(t / std::max(0.1f, L.period) + L.phase, 1.0f) < 0.5f ? 1.0f : 0.08f;
+		rest = 0.55f;
 		break;
 	case PULSE:
 		v = 0.6f + 0.4f * std::sin((t / std::max(0.1f, L.period) + L.phase) * 2 * PI);
+		rest = 0.6f;
 		break;
 	case FLICKER:
 		v = 0.82f + 0.18f * wobble(t, (float)(p.seed % 97));
+		rest = 0.82f;
 		break;
 	case SCREEN:
 		v = 0.8f + 0.2f * std::fabs(wobble(t * 0.5f, 4.0f + (float)(p.seed % 13)));
+		rest = 0.88f;
 		gain = 0.4f + 0.5f * night;
 		break;
 	case TV:
 		v = 0.55f + 0.45f * std::fabs(wobble(t * 1.7f, 9.0f + (float)(p.seed % 13)));
+		rest = 0.72f;
 		break;
 	case CHASE:
 	{
@@ -129,6 +137,7 @@ float strength(const Placed &p, float t, float night)
 		const int n = std::max(1, L.count);
 		const float ph = std::fmod((t / std::max(0.1f, L.period) - L.phase) * n + 1000.0f * n, (float)n);
 		v = ph < 2.5f ? std::max(0.12f, 1 - ph / 2.5f) : 0.12f;
+		rest = 0.3f;
 		break;
 	}
 	case WELD:
@@ -136,6 +145,7 @@ float strength(const Placed &p, float t, float night)
 		// bursts of flashes a few times a second, dark between them
 		const Uint32 tick = (Uint32)(t * 9);
 		v = hash1(tick, 77, p.seed % 7) > 0.55f ? 1.6f + 0.6f * hash1((Uint32)(t * 30), 3, p.seed % 7) : 0.0f;
+		rest = 0.0f;
 		break;
 	}
 	case DUTY:
@@ -149,6 +159,10 @@ float strength(const Placed &p, float t, float night)
 		break;
 	default:
 		break;
+	}
+	if (rest >= 0 && act < 1.0f)
+	{
+		v = rest + (v - rest) * std::max(0.0f, act);
 	}
 	if (p.home && L.kind == STEADY)
 	{
@@ -424,10 +438,34 @@ float nightAt(double longitude, int hour, int minute, int second)
 	return smooth((0.1f - sun) / 0.3f);
 }
 
+bool moves(const TileScene &scene)
+{
+	for (const Light &L : scene.lights)
+	{
+		if (L.kind != STEADY && L.kind != DUTY && L.kind != BURST)
+		{
+			return true;
+		}
+	}
+	return !scene.emits.empty() || scene.water != 0 || scene.flow.mode == Flow::STEADY || !scene.spins.empty();
+}
+
+namespace
+{
+
+/// How many facilities of a base move at once.
+const int MOVING = 3;
+/// Seconds a turn rises and falls over (a short fit - a third of its length).
+const float RAMP = 1.3f;
+
+}
+
 void tick(View &view, Uint32 ms)
 {
-	// a fresh layout, or the base screen left a while ago: deal the first fits over a period from now
+	// a fresh layout, or the base screen left a while ago: deal the first fits over a period from now, the
+	// first turns within seconds
 	const bool deal = view.fitsAt == 0 || ms - view.fitsAt > 2000;
+	const float dt = deal ? 0.0f : std::min(0.25f, (ms - view.fitsAt) / 1000.0f);
 	view.fitsAt = ms;
 	int running = 0;
 	for (Fit &F : view.fits)
@@ -435,32 +473,75 @@ void tick(View &view, Uint32 ms)
 		if (deal)
 		{
 			F.on = false;
-			F.next = ms + 3000 + (Uint32)(hash1(F.seed, 1) * F.period * 1000);
+			F.next = F.continuous ? ms + 400 + (Uint32)(hash1(F.seed, 1) * 6000)
+				: ms + 3000 + (Uint32)(hash1(F.seed, 1) * F.period * 1000);
 		}
-		if (F.on && ms - F.start >= (Uint32)(F.length * 1000))
+		if (F.on && F.continuous && !F.wants && (Sint32)(F.end - ms) > (Sint32)(RAMP * 1000))
 		{
-			// the next one about a period later, a little more or less, so the facilities do not keep step
+			F.end = ms + (Uint32)(RAMP * 1000);        // the work is over: the turn falls away now
+		}
+		if (F.on && (Sint32)(ms - F.end) >= 0)
+		{
 			F.on = false;
-			F.next = F.start + (Uint32)(F.period * 1000 * (0.85f + 0.3f * hash1(F.seed, F.start, 2)));
-		}
-		running += F.on ? 1 : 0;
-	}
-	for (Fit &F : view.fits)
-	{
-		if (!F.on && (Sint32)(ms - F.next) >= 0)
-		{
-			if (running < 3)
+			if (F.continuous)
 			{
-				F.on = true;
-				F.start = ms;
-				++running;
+				// rests 25-45 s, and the facility that has waited longest goes next
+				F.next = ms + 25000 + (Uint32)(hash1(F.seed, F.start, 2) * 20000);
 			}
 			else
 			{
-				F.next = ms + 2000 + (Uint32)(hash1(F.seed, ms, 3) * 3000);
+				// the next one about a period later, a little more or less, so the facilities do not keep step
+				F.next = F.start + (Uint32)(F.period * 1000 * (0.85f + 0.3f * hash1(F.seed, F.start, 2)));
 			}
 		}
+		running += F.on ? 1 : 0;
 	}
+	// the places go to the due fits first, then to the turns by how long they are overdue
+	while (running < MOVING)
+	{
+		Fit *best = nullptr;
+		for (Fit &F : view.fits)
+		{
+			if (F.on || !F.wants || (Sint32)(ms - F.next) < 0)
+			{
+				continue;
+			}
+			if (!best || (!F.continuous && best->continuous) ||
+				(F.continuous == best->continuous && (Sint32)(best->next - F.next) > 0))
+			{
+				best = &F;
+			}
+		}
+		if (!best)
+		{
+			break;
+		}
+		best->on = true;
+		best->start = ms;
+		best->end = ms + (Uint32)(best->length * 1000);
+		++running;
+	}
+	static const char *held = std::getenv("OXCE_HD_BASE_ACT");
+	for (Fit &F : view.fits)
+	{
+		float act = 0;
+		if (F.on)
+		{
+			const float ramp = std::min(RAMP, F.length / 3);
+			act = smooth((ms - F.start) / 1000.0f / ramp) * smooth((Sint32)(F.end - ms) / 1000.0f / ramp);
+		}
+		if (held && *held)
+		{
+			act = std::atoi(held) != 0 ? 1.0f : 0.0f;
+		}
+		F.act = act;
+		F.turned += act * dt;
+	}
+}
+
+float actOf(const View &view, int fit)
+{
+	return fit >= 0 && fit < (int)view.fits.size() ? view.fits[fit].act : 1.0f;
 }
 
 float fitTime(const View &view, int fit, Uint32 ms)
@@ -511,22 +592,18 @@ void draw(SDL_Surface *world, const SDL_Rect &area, const std::vector<Placed> &l
 		amb[c] = DAY[c] * (1 - night) + NIGHT[c] * night;
 	}
 	const float halo = 0.2f + 0.6f * night;
-	std::vector<Lit> lit;
+	// The lamps are linear: a lamp at its resting strength (a steady lamp, a blinking one of a facility that is
+	// not moving) goes into a picture of the whole area kept from frame to frame (`cache`, made again only when
+	// a resting lamp changes), and what a moving lamp is now over its resting strength is added every frame, so
+	// the frame pays for the few lamps that move and not for all of them (ticket 336).
+	std::vector<Lit> lit, resting;
 	lit.reserve(lights.size());
 	static const bool noLight = measuredOff("light"), noFlow = measuredOff("flow");
-	for (const Placed &p : lights)
+	const int w = ax1 - ax0;
+	const int rows = ay1 - ay0;
+	auto makeLit = [&](const Placed &p, float v, Lit &L) -> bool
 	{
-		if (noLight)
-		{
-			break;
-		}
-		const float v = strength(p, t, night);
-		if (v <= 0.01f)
-		{
-			continue;
-		}
 		const float s = std::max(0.05f, p.scale);
-		Lit L;
 		L.x = p.light.x;
 		L.y = p.light.y;
 		L.r2 = p.light.radius * p.light.radius;
@@ -547,28 +624,45 @@ void draw(SDL_Surface *world, const SDL_Rect &area, const std::vector<Placed> &l
 		L.x1 = std::min(ax1, (int)std::ceil(L.x + reach) + 1);
 		L.y0 = std::max(ay0, (int)std::floor(L.y - reach));
 		L.y1 = std::min(ay1, (int)std::ceil(L.y + reach) + 1);
-		if (L.x0 < L.x1 && L.y0 < L.y1)
+		return L.x0 < L.x1 && L.y0 < L.y1;
+	};
+	for (const Placed &p : lights)
+	{
+		if (noLight)
+		{
+			break;
+		}
+		const float now = strength(p, t, night, p.act);
+		// a burst lamp burns only in its facility's fit: nothing at rest; a lamp of the crew moves about
+		const float rest = p.light.kind == BURST || p.moving ? 0.0f : strength(p, t, night, 0.0f);
+		Lit L;
+		if (rest > 0.01f && makeLit(p, rest, L))
+		{
+			resting.push_back(L);
+		}
+		if (std::fabs(now - rest) > 0.004f && makeLit(p, now - rest, L))
 		{
 			lit.push_back(L);
 		}
 	}
 	const unsigned char *curve = toneCurve();
-	const int w = ax1 - ax0;
 	const int bands = (ay1 - ay0 + BAND - 1) / BAND;
 	const bool relief = view && !view->relief.empty();
 	// the pipes: where the light runs along them this frame (tools/hdart/base_flow_bake.py emission)
 	struct FlowNow
 	{
 		const PlacedFlow *P;
-		float shift, head, fade;
+		float shift, head, fade, act;
 	};
 	std::vector<FlowNow> flows;
 	static const std::vector<PlacedFlow> noFlows;
 	for (const PlacedFlow &P : view && !noFlow ? view->flows : noFlows)
 	{
-		FlowNow N = { &P, 0, 0, 1 };
+		FlowNow N = { &P, 0, 0, 1, 1 };
 		if (P.flow.mode == Flow::STEADY)
 		{
+			// the light runs along the pipes only in the facility's turn; the rest of the time they glow dimly, steady
+			N.act = view ? actOf(*view, P.fit) : 1.0f;
 			N.shift = P.flow.a1 * t;
 		}
 		else
@@ -586,6 +680,123 @@ void draw(SDL_Surface *world, const SDL_Rect &area, const std::vector<Placed> &l
 		}
 		flows.push_back(N);
 	}
+	// the light of one lamp on one row: into `acc` (the light falling on the pictures) and `glow` (its halo), the
+	// row's first pixel at the area's left edge
+	auto lampRow = [&](const Lit &L, int y, float *acc, float *glow, const float *rrow)
+	{
+		if (y < L.y0 || y >= L.y1)
+		{
+			return;
+		}
+		const float py = y + 0.5f;
+		const float dy = py - L.y, dy2 = dy * dy;
+		for (int x = L.x0; x < L.x1; ++x)
+		{
+			const float dx = x + 0.5f - L.x;
+			const float d2 = dx * dx + dy2;
+			float *a = &acc[(x - ax0) * 3];
+			if (d2 < L.r2)
+			{
+				// falls off to the edge of its reach, and by the angle it strikes the surface at: the floor
+				// at a slant, a wall or a cupboard lit on the lamp's side and dark on the other
+				const float f = 1 - d2 / L.r2;
+				float ndl;
+				if (rrow && x >= view->x && x < view->x + view->w)
+				{
+					const float *q = rrow + (size_t)(x - view->x) * 4;
+					const float lz = L.lz - q[3];
+					ndl = std::max(0.0f, (-dx * q[0] - dy * q[1] + lz * q[2]) / std::sqrt(d2 + lz * lz + 1e-3f));
+				}
+				else
+				{
+					ndl = L.lz / std::sqrt(d2 + L.lz2);
+				}
+				const float m = f * f * ndl;
+				a[0] += L.add[0] * m;
+				a[1] += L.add[1] * m;
+				a[2] += L.add[2] * m;
+			}
+			if (d2 < L.halo2)
+			{
+				const float h = CORE_GAIN * std::exp(d2 * L.core) + GLOW_GAIN * std::exp(d2 * L.wide);
+				float *g = &glow[(x - ax0) * 3];
+				g[0] += L.glow[0] * h;
+				g[1] += L.glow[1] * h;
+				g[2] += L.glow[2] * h;
+			}
+		}
+	};
+	auto reliefRow = [&](int y) -> const float *
+	{
+		// the relief of this row (normal and height), where the view covers it
+		const bool inView = relief && y >= view->y && y < view->y + view->h;
+		return inView ? &view->relief[(size_t)(y - view->y) * view->w * 4] : nullptr;
+	};
+	// the picture of the resting lamps, made again only when one of them (or the ambient light, the area, the
+	// relief) changes
+	struct Held
+	{
+		Uint64 key = 0;
+		int w = 0, h = 0;
+		std::vector<float> acc, glow;
+	};
+	static Held held;
+	static const bool noCache = measuredOff("cache");     // a test: the same frame the slow way
+	const bool cached = !noCache && !resting.empty() && (size_t)w * rows <= 4u * 1024 * 1024;
+	bool rebuilt = false;
+	if (cached)
+	{
+		Uint64 key = 1469598103934665603ull;
+		auto mix = [&key](const void *data, size_t bytes)
+		{
+			const unsigned char *b = (const unsigned char*)data;
+			for (size_t i = 0; i < bytes; ++i)
+			{
+				key = (key ^ b[i]) * 1099511628211ull;
+			}
+		};
+		for (const Lit &L : resting)
+		{
+			mix(&L, sizeof(Lit));
+		}
+		const int shape[6] = { w, rows, ax0, ay0, view ? view->w : 0, view ? view->x : 0 };
+		mix(amb, sizeof(amb));
+		mix(shape, sizeof(shape));
+		const Uint32 serial = view ? view->serial : 0;
+		mix(&serial, sizeof(serial));
+		if (key != held.key || held.w != w || held.h != rows)
+		{
+			held.acc.assign((size_t)w * rows * 3, 0.0f);
+			held.glow.assign((size_t)w * rows * 3, 0.0f);
+			HdWorkers::instance().run(bands, [&](int band)
+			{
+				const int y0 = ay0 + band * BAND, y1 = std::min(ay1, y0 + BAND);
+				for (int y = y0; y < y1; ++y)
+				{
+					float *acc = &held.acc[(size_t)(y - ay0) * w * 3], *glow = &held.glow[(size_t)(y - ay0) * w * 3];
+					for (int i = 0; i < w; ++i)
+					{
+						acc[i * 3 + 0] = amb[0];
+						acc[i * 3 + 1] = amb[1];
+						acc[i * 3 + 2] = amb[2];
+					}
+					const float *rrow = reliefRow(y);
+					for (const Lit &L : resting)
+					{
+						lampRow(L, y, acc, glow, rrow);
+					}
+				}
+			});
+			held.key = key;
+			held.w = w;
+			held.h = rows;
+			rebuilt = true;
+		}
+	}
+	else
+	{
+		lit.insert(lit.begin(), resting.begin(), resting.end());
+	}
 	HdWorkers::instance().run(bands, [&](int band)
 	{
 		// per row: the light falling on the pictures (ambient + lamps) and the halo over them
@@ -593,59 +804,25 @@ void draw(SDL_Surface *world, const SDL_Rect &area, const std::vector<Placed> &l
 		const int y0 = ay0 + band * BAND, y1 = std::min(ay1, y0 + BAND);
 		for (int y = y0; y < y1; ++y)
 		{
-			for (int i = 0; i < w; ++i)
+			if (cached)
 			{
-				acc[i * 3 + 0] = amb[0];
-				acc[i * 3 + 1] = amb[1];
-				acc[i * 3 + 2] = amb[2];
+				std::copy_n(&held.acc[(size_t)(y - ay0) * w * 3], (size_t)w * 3, acc.begin());
+				std::copy_n(&held.glow[(size_t)(y - ay0) * w * 3], (size_t)w * 3, glow.begin());
 			}
-			std::fill(glow.begin(), glow.end(), 0.0f);
-			const float py = y + 0.5f;
-			// the relief of this row (normal and height), where the view covers it
-			const bool inView = relief && y >= view->y && y < view->y + view->h;
-			const float *rrow = inView ? &view->relief[(size_t)(y - view->y) * view->w * 4] : nullptr;
+			else
+			{
+				for (int i = 0; i < w; ++i)
+				{
+					acc[i * 3 + 0] = amb[0];
+					acc[i * 3 + 1] = amb[1];
+					acc[i * 3 + 2] = amb[2];
+				}
+				std::fill(glow.begin(), glow.end(), 0.0f);
+			}
+			const float *rrow = lit.empty() ? nullptr : reliefRow(y);
 			for (const Lit &L : lit)
 			{
-				if (y < L.y0 || y >= L.y1)
-				{
-					continue;
-				}
-				const float dy = py - L.y, dy2 = dy * dy;
-				for (int x = L.x0; x < L.x1; ++x)
-				{
-					const float dx = x + 0.5f - L.x;
-					const float d2 = dx * dx + dy2;
-					float *a = &acc[(x - ax0) * 3];
-					if (d2 < L.r2)
-					{
-						// falls off to the edge of its reach, and by the angle it strikes the surface at: the floor
-						// at a slant, a wall or a cupboard lit on the lamp's side and dark on the other
-						const float f = 1 - d2 / L.r2;
-						float ndl;
-						if (rrow && x >= view->x && x < view->x + view->w)
-						{
-							const float *q = rrow + (size_t)(x - view->x) * 4;
-							const float lz = L.lz - q[3];
-							ndl = std::max(0.0f, (-dx * q[0] - dy * q[1] + lz * q[2]) / std::sqrt(d2 + lz * lz + 1e-3f));
-						}
-						else
-						{
-							ndl = L.lz / std::sqrt(d2 + L.lz2);
-						}
-						const float m = f * f * ndl;
-						a[0] += L.add[0] * m;
-						a[1] += L.add[1] * m;
-						a[2] += L.add[2] * m;
-					}
-					if (d2 < L.halo2)
-					{
-						const float h = CORE_GAIN * std::exp(d2 * L.core) + GLOW_GAIN * std::exp(d2 * L.wide);
-						float *g = &glow[(x - ax0) * 3];
-						g[0] += L.glow[0] * h;
-						g[1] += L.glow[1] * h;
-						g[2] += L.glow[2] * h;
-					}
-				}
+				lampRow(L, y, acc.data(), glow.data(), rrow);
 			}
 			// the light running along the pipes: into the halo, so the night does not dim it; the pipe itself
 			// darker where it glows, or a white pipe washes out
@@ -671,9 +848,16 @@ void draw(SDL_Surface *world, const SDL_Rect &area, const std::vector<Placed> &l
 					float e, white = 0, darken;
 					if (F.mode == Flow::STEADY)
 					{
-						const float p = 0.5f + 0.5f * std::cos(2 * PI * (u - N.shift) / F.a2);
-						const float p2 = p * p;
-						e = 0.18f + 0.82f * p2 * p2 * p2;
+						if (N.act < 0.01f)
+						{
+							e = 0.18f;
+						}
+						else
+						{
+							const float p = 0.5f + 0.5f * std::cos(2 * PI * (u - N.shift) / F.a2);
+							const float p2 = p * p;
+							e = 0.18f + 0.82f * p2 * p2 * p2 * N.act;
+						}
 						darken = F.dark * core;
 					}
 					else
@@ -722,14 +906,17 @@ void draw(SDL_Surface *world, const SDL_Rect &area, const std::vector<Placed> &l
 	if (perf)
 	{
 		static double total = 0;
-		static int frames = 0;
+		static int frames = 0, rebuilds = 0;
+		rebuilds += rebuilt ? 1 : 0;
 		total += std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - perfStart).count();
 		if (++frames == 60)
 		{
-			Log(LOG_INFO) << "HD base light: " << total / frames << " ms per frame, " << lit.size() << " lights, " << flows.size() << " flows, "
-				<< w << "x" << (ay1 - ay0) << " px, " << HdWorkers::instance().threads() << " threads";
+			Log(LOG_INFO) << "HD base light: " << total / frames << " ms per frame, " << resting.size() << " resting lamps"
+				<< (cached ? " (kept, " : " (not kept, ") << rebuilds << " rebuilds in 60 frames), " << lit.size() - (cached ? 0 : resting.size())
+				<< " moving, " << flows.size() << " flows, " << w << "x" << (ay1 - ay0) << " px, " << HdWorkers::instance().threads() << " threads";
 			total = 0;
 			frames = 0;
+			rebuilds = 0;
 		}
 	}
 }
@@ -994,6 +1181,8 @@ Uint32 mix(Uint32 px, const float col[3], float m)
 
 void bake(View &view, const HdFrame *rock, const std::vector<SDL_Rect> &empty, const std::vector<PlacedWater> &waters)
 {
+	static Uint32 bakes = 0;
+	view.serial = ++bakes;
 	const int w = view.w, h = view.h;
 	const size_t n = (size_t)w * h;
 	const float s = view.scale;
@@ -1221,6 +1410,7 @@ void bake(View &view, const HdFrame *rock, const std::vector<SDL_Rect> &empty, c
 		{
 			View::Area A;
 			A.box = W.box;
+			A.fit = W.fit;
 			std::copy(W.glint, W.glint + 3, A.glint);
 			view.waters.push_back(A);
 		}
@@ -1311,9 +1501,12 @@ void drawMotion(SDL_Surface *world, const View &view, Uint32 ms)
 	static const bool noWater = measuredOff("water"), noSpin = measuredOff("spin");
 	for (const View::Area &W : view.waters)
 	{
-		if (noWater)
+		// the pool stands still (the picture as it is) outside its facility's turn, and ripples up to the
+		// full strength over the turn's first second
+		const float act = actOf(view, W.fit);
+		if (noWater || act < 0.01f)
 		{
-			break;
+			continue;
 		}
 		const int x0 = std::max((int)W.box.x, view.x), y0 = std::max((int)W.box.y, view.y);
 		const int x1 = std::min(W.box.x + (int)W.box.w, view.x + view.w), y1 = std::min(W.box.y + (int)W.box.h, view.y + view.h);
@@ -1337,14 +1530,14 @@ void drawMotion(SDL_Surface *world, const View &view, Uint32 ms)
 				const float dx = 1.8f * std::sin(0.09f * vx + 0.13f * vy + 2.3f * tw) + 1.1f * std::sin(0.17f * vy - 0.05f * vx + 3.4f * tw);
 				const float dy = 1.8f * std::sin(0.11f * vx - 0.08f * vy + 2.0f * tw) + 1.1f * std::sin(0.15f * vx + 0.12f * vy - 2.9f * tw);
 				float col[3];
-				sample(view.albedo, view.w, view.h, x - view.x + dx * 0.8f * s, y - view.y + dy * 0.8f * s, col);
+				sample(view.albedo, view.w, view.h, x - view.x + dx * 0.8f * s * act, y - view.y + dy * 0.8f * s * act, col);
 				const float ca = std::max(caustic(vx * c1 - vy * s1, vx * s1 + vy * c1, t * 0.55f, CAUSTIC),
 					0.75f * caustic(vx * c2 - vy * s2 + 17, vx * s2 + vy * c2 + 5, t * 0.43f + 3, CAUSTIC * 1.37f));
 				const float swell = 0.5f + 0.5f * std::sin(0.045f * vx + 0.03f * vy - 1.1f * t);
-				const float shade = 0.92f + 0.12f * swell;
+				const float shade = 1 + (0.92f + 0.12f * swell - 1) * act;
 				for (int c = 0; c < 3; ++c)
 				{
-					col[c] = col[c] * shade + W.glint[c] * (0.55f * 255) * ca;
+					col[c] = col[c] * shade + W.glint[c] * (0.55f * 255) * ca * act;
 				}
 				line[x] = mix(line[x], col, m);
 			}
@@ -1372,7 +1565,21 @@ void drawMotion(SDL_Surface *world, const View &view, Uint32 ms)
 		}
 		const Spin &S = P.spin;
 		float deg = S.rps != 0 ? t * S.rps * 360 + P.phase * 360 : S.middle + S.swing * std::sin(t / S.period * 2 * PI + P.phase * 2 * PI);
-		if (P.fit >= 0)
+		if (P.fit >= 0 && view.fits[P.fit].continuous)
+		{
+			// a piece of a facility without fits turns while the facility has its turn, and stands where it is
+			// between the turns (a swinging one eases to its middle)
+			const Fit &F = view.fits[P.fit];
+			if (S.rps != 0)
+			{
+				deg = P.phase * 360 + F.turned * S.rps * 360;
+			}
+			else
+			{
+				deg = S.middle + S.swing * F.act * std::sin(F.turned / S.period * 2 * PI + P.phase * 2 * PI);
+			}
+		}
+		else if (P.fit >= 0)
 		{
 			// a turret of fits looks straight between them and swings from the middle in one (tickets 244, 245),
 			// easing back over the last half second if the fit is not whole swings
@@ -1593,8 +1800,10 @@ void drawParticles(SDL_Surface *world, const SDL_Rect &area, const std::vector<P
 	// the particles are gathered first and laid down in bands on all cores (a site's dust is ~90k pixels)
 	struct Blob { float x, y, r, ring, col[3], a; bool add; };
 	std::vector<Blob> blobs;
+	float actNow = 1.0f;      // how much the emitter's facility moves: its particles fade in and out with it
 	auto put = [&](float x, float y, float r, float ring, const float col[3], float a, bool add)
 	{
+		a *= actNow;
 		if (a > 0.004f && r > 0)
 		{
 			blobs.push_back({ x, y, r, ring, { col[0], col[1], col[2] }, a, add });
@@ -1609,6 +1818,11 @@ void drawParticles(SDL_Surface *world, const SDL_Rect &area, const std::vector<P
 	for (const PlacedEmit &p : emits)
 	{
 		const Emit &E = p.emit;
+		actNow = p.act;
+		if (actNow < 0.01f)
+		{
+			continue;
+		}
 		const float s = std::max(0.05f, p.scale);
 		const float col[3] = { E.r, E.g, E.b };
 		// more particles in a bigger box (pack pixels of a 64x64 box make the preview's count)

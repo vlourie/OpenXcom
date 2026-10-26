@@ -815,8 +815,50 @@ void BaseView::drawHdScene(SDL_Surface *world, int k, Uint32 now)
 	const float site = cellPx / 128.0f;           // world pixels per pack pixel, for the building sites
 	// the fits of the facilities (tickets 237-245): which run now, their turrets, glows and bursts below
 	const HdBaseScene::View *view = hdLayout(k);
+	// which of the facilities work (ticket 336, 27.10): the used workshop space fills the workshops one after
+	// another in the order of the base's list, the used laboratory space the laboratories likewise; the others
+	// idle. Only read from the game.
+	std::vector<char> hereWorks(_base->getFacilities()->size() + 1, 0), hereLabs(hereWorks);
+	{
+		int workLeft = _base->getUsedWorkshops(), labLeft = _base->getUsedLaboratories();
+		int n = 0;
+		for (const auto* fac : *_base->getFacilities())
+		{
+			++n;
+			if (fac->getBuildTime() != 0 || fac->getDisabled())
+			{
+				continue;
+			}
+			if (fac->getRules()->getWorkshops() > 0)
+			{
+				hereWorks[n - 1] = workLeft > 0;
+				workLeft -= fac->getRules()->getWorkshops();
+			}
+			if (fac->getRules()->getLaboratories() > 0)
+			{
+				hereLabs[n - 1] = labLeft > 0;
+				labLeft -= fac->getRules()->getLaboratories();
+			}
+		}
+	}
 	if (view)
 	{
+		// a facility of work asks for its turn of moving only while it works
+		int n = 0;
+		for (const auto* fac : *_base->getFacilities())
+		{
+			++n;
+			const int fit = n - 1 < (int)view->facilityFit.size() ? view->facilityFit[n - 1] : -1;
+			if (fit < 0 || !hdLayoutMade.view.fits[fit].continuous)
+			{
+				continue;
+			}
+			const HdBaseScene::TileScene *scene = HdBase::scene(hdTileIndex(fac, 0));
+			const HdBaseScene::Gate gate = scene ? scene->gate : HdBaseScene::GATE_NONE;
+			const bool labWork = fac->getRules()->getLaboratories() > 0 ? hereLabs[n - 1] != 0 : _base->getUsedLaboratories() > 0;
+			const bool shopWork = fac->getRules()->getWorkshops() > 0 ? hereWorks[n - 1] != 0 : _base->getUsedWorkshops() > 0;
+			hdLayoutMade.view.fits[fit].wants = gate == HdBaseScene::GATE_LAB ? labWork : gate == HdBaseScene::GATE_WORK ? shopWork : true;
+		}
 		HdBaseScene::tick(hdLayoutMade.view, now);
 	}
 	int number = 0;
@@ -825,6 +867,7 @@ void BaseView::drawHdScene(SDL_Surface *world, int k, Uint32 now)
 		++number;
 		const int fit = view && number - 1 < (int)view->facilityFit.size() ? view->facilityFit[number - 1] : -1;
 		const float fitAt = fit >= 0 ? HdBaseScene::fitTime(*view, fit, now) : 0.0f;
+		const float act = view ? HdBaseScene::actOf(*view, fit) : 1.0f;
 		const bool building = isHdBuilding(fac);
 		if (!isHdFacility(fac) && !building)
 		{
@@ -933,6 +976,14 @@ void BaseView::drawHdScene(SDL_Surface *world, int k, Uint32 now)
 				const float s = (float)(GRID_SIZE * k) / scene->width;
 				const float ox = (float)((getX() + x * GRID_SIZE) * k), oy = (float)((getY() + y * GRID_SIZE) * k);
 				float level = scene->gate == HdBaseScene::GATE_LAB ? labs : scene->gate == HdBaseScene::GATE_WORK ? works : 1.0f;
+				if (scene->gate == HdBaseScene::GATE_LAB && fac->getRules()->getLaboratories() > 0)
+				{
+					level = hereLabs[number - 1] ? 1.0f : 0.25f;
+				}
+				else if (scene->gate == HdBaseScene::GATE_WORK && fac->getRules()->getWorkshops() > 0)
+				{
+					level = hereWorks[number - 1] ? 1.0f : 0.25f;
+				}
 				if (fac->getDisabled())
 				{
 					level = 0.1f;
@@ -947,6 +998,7 @@ void BaseView::drawHdScene(SDL_Surface *world, int k, Uint32 now)
 					p.light.radius = light.radius * s;
 					p.scale = s;
 					p.level = level;
+					p.act = act;
 					if (light.kind == HdBaseScene::BURST)
 					{
 						// burns only in the facility's fit, its period the pulses of a fit
@@ -975,6 +1027,7 @@ void BaseView::drawHdScene(SDL_Surface *world, int k, Uint32 now)
 					e.emit.h = emit.h * s;
 					e.scale = s;
 					e.level = level;
+					e.act = act;
 					e.seed = (seed = seed * 1103515245u + 12345u) >> 8;
 					emits.push_back(e);
 				}
@@ -1103,7 +1156,9 @@ void BaseView::drawHdScene(SDL_Surface *world, int k, Uint32 now)
 		{
 			Log(LOG_INFO) << "HD base scene: " << sum[4] / frames << " ms per frame = motion " << sum[0] / frames << " + crew "
 				<< sum[1] / frames << " + light " << sum[2] / frames << " + particles " << sum[3] / frames << " | "
-				<< lights.size() << " lights, " << emits.size() << " emitters, k=" << k << ", " << area.w << "x" << area.h << " px";
+				<< lights.size() << " lights, " << emits.size() << " emitters, k=" << k << ", " << area.w << "x" << area.h << " px, "
+				<< (view ? std::count_if(view->fits.begin(), view->fits.end(), [](const HdBaseScene::Fit &F) { return F.act > 0.01f; }) : 0)
+				<< " of " << (view ? view->fits.size() : 0) << " facilities moving";
 			std::fill(sum, sum + 5, 0.0);
 			frames = 0;
 		}
@@ -1184,6 +1239,42 @@ const HdBaseScene::View *BaseView::hdLayout(int k)
 		bool water = false;
 		int num = 0;
 		int fit = -1;
+		if (hd)
+		{
+			// the facility moves in fits (tickets 237-245) when one of its tiles has a `cycle` line; otherwise, when
+			// anything of its pictures moves, it gets a turn in its order (ticket 336: no more than three facilities
+			// of the base move at once, the others stand still)
+			bool any = false;
+			for (int n = 0; n < rules->getSizeX() * rules->getSizeY(); ++n)
+			{
+				const HdBaseScene::TileScene *scene = HdBase::scene(hdTileIndex(fac, n));
+				if (!scene)
+				{
+					continue;
+				}
+				if (scene->cycle > 0 && fit < 0)
+				{
+					HdBaseScene::Fit F;
+					F.period = scene->cycle;
+					F.length = scene->fit;
+					F.seed = (Uint32)number * 2654435761u ^ (Uint32)(fac->getX() * 31 + fac->getY());
+					fit = (int)view.fits.size();
+					view.fits.push_back(F);
+				}
+				any = any || HdBaseScene::moves(*scene);
+			}
+			if (fit < 0 && any)
+			{
+				HdBaseScene::Fit F;
+				F.continuous = true;
+				F.length = 16.0f;
+				F.period = 0;
+				F.seed = (Uint32)number * 2654435761u ^ (Uint32)(fac->getX() * 31 + fac->getY());
+				fit = (int)view.fits.size();
+				view.fits.push_back(F);
+			}
+			view.facilityFit.back() = fit;
+		}
 		for (int y = fac->getY(); y < fac->getY() + rules->getSizeY(); ++y)
 		{
 			for (int x = fac->getX(); x < fac->getX() + rules->getSizeX(); ++x)
@@ -1210,17 +1301,7 @@ const HdBaseScene::View *BaseView::hdLayout(int k)
 					continue;
 				}
 				const float s = (float)cell / scene->width;
-				// the facility moves in fits (tickets 237-245): one fit for all its tiles
-				if (scene->cycle > 0 && fit < 0)
-				{
-					HdBaseScene::Fit F;
-					F.period = scene->cycle;
-					F.length = scene->fit;
-					F.seed = (Uint32)number * 2654435761u ^ (Uint32)(fac->getX() * 31 + fac->getY());
-					fit = (int)view.fits.size();
-					view.fits.push_back(F);
-					view.facilityFit.back() = fit;
-				}
+				const bool fitted = fit >= 0 && !view.fits[fit].continuous;    // the glows, lids and sinks of a `cycle` line
 				const float tx = (float)(view.x + x * cell), ty = (float)(view.y + y * cell);
 				for (const HdBaseScene::Glow &glow : scene->glows)
 				{
@@ -1231,7 +1312,7 @@ const HdBaseScene::View *BaseView::hdLayout(int k)
 					p.glow.w = glow.w * s;
 					p.glow.h = glow.h * s;
 					p.fit = fit;
-					if (fit >= 0)
+					if (fitted)
 					{
 						view.glows.push_back(p);
 					}
@@ -1246,7 +1327,7 @@ const HdBaseScene::View *BaseView::hdLayout(int k)
 					p.lid.ry = lid.ry * s;
 					p.fit = fit;
 					p.scale = s;
-					if (fit >= 0)
+					if (fitted)
 					{
 						view.lids.push_back(p);
 					}
@@ -1264,7 +1345,7 @@ const HdBaseScene::View *BaseView::hdLayout(int k)
 					p.sink.iw = sink.iw * s;
 					p.sink.ih = sink.ih * s;
 					p.fit = fit;
-					if (fit >= 0)
+					if (fitted)
 					{
 						view.sinks.push_back(p);
 					}
@@ -1278,11 +1359,12 @@ const HdBaseScene::View *BaseView::hdLayout(int k)
 					w.kind = scene->water;
 					std::copy(scene->glint, scene->glint + 3, w.glint);
 					w.least = scene->waterLeast;
+					w.fit = fit;
 					waters.push_back(w);
 				}
 				// light running along the pipes (23.10): the map of this tile's pipes at the size of its picture
 				const HdFrame *pipes = scene->flow.mode != HdBaseScene::Flow::NONE ? HdBase::flow(index, k, GRID_SIZE, GRID_SIZE) : nullptr;
-				if (pipes && pipes->width == cell && pipes->height == cell && (scene->flow.mode == HdBaseScene::Flow::STEADY || fit >= 0))
+				if (pipes && pipes->width == cell && pipes->height == cell && (scene->flow.mode == HdBaseScene::Flow::STEADY || fitted))
 				{
 					HdBaseScene::PlacedFlow p;
 					p.flow = scene->flow;
