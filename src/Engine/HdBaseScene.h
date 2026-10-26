@@ -80,6 +80,11 @@ namespace OpenXcom
  *     light 67.7 67.4 9 burst 0.55 1 0.45 2 0
  *                                    a burst light burns only in a fit: its period is the pulses a fit
  *
+ * Not more than three facilities of the base move at once (ticket 336, 27.10): a facility with a `cycle` moves in its
+ * fits, every other one with anything moving in its tiles (blinking lamps, particles, water, pipes, turning
+ * pieces) in turns of 16 s in the order of waiting, the one of work or research only while it works (View::fits,
+ * tick); the rest stand as the picture is, their lamps steady at the middle of what they do.
+ *
  * Only the picture changes: the light is drawn over the world layer from the display clock, the
  * game's state is only read (the time of day, whether the base researches and builds).
  */
@@ -173,12 +178,18 @@ namespace HdBaseScene
 	/// Reads a `.scene.txt`; false when it holds nothing usable.
 	bool parse(std::istream &in, TileScene &out);
 
+	/// True when anything of the tile moves on its own - a blinking, pulsing or running lamp, particles, water,
+	/// light along pipes, a turning piece: such a facility needs a turn (Fit) to move in.
+	bool moves(const TileScene &scene);
+
 	/// A light where it is on the world layer.
 	struct Placed
 	{
 		Light light;                      ///< x, y, radius in world pixels
 		float scale = 1;                  ///< world pixels per pack pixel (the lamp's height and halo)
 		float level = 1;                  ///< from the gate: 1 at work, less when the facility idles
+		float act = 1;                    ///< how much its facility moves now (Fit::act): a blinking lamp burns even when it rests
+		bool moving = false;              ///< a lamp of the crew (it walks, flashes): never kept with the resting lamps
 		bool home = false;                ///< a steady lamp of living quarters: out at night
 		Uint32 seed = 0;                  ///< staggers the flicker
 	};
@@ -194,6 +205,7 @@ namespace HdBaseScene
 		int kind = 1;                     ///< 1 blue, 2 green
 		float glint[3] = { 1, 1, 1 };
 		int least = 0;                    ///< pack pixels a pool needs; 0 - 200
+		int fit = -1;                     ///< its facility's turn (View::fits): the water moves only in it
 	};
 
 	/// The pipes of a tile where they are on the world layer.
@@ -215,13 +227,22 @@ namespace HdBaseScene
 		int fit = -1;                     ///< its facility's fit (View::fits), -1 - it turns all the time
 	};
 
-	/// When a facility's fits come: its own period, no more than three facilities at once (View::fits).
+	/// When a facility moves: its own period, no more than three facilities at once (View::fits). A facility
+	/// with a `cycle` line moves in fits of that length and period (its turrets, lids, sinks and glows by the time
+	/// into the fit); every other facility with anything moving in its pictures (water, pipes, turning pieces,
+	/// particles, blinking lamps) gets a place in turn for `length` seconds, then rests (ticket 336, 27.10):
+	/// `act` is how much it moves now, 0 .. 1, rising and falling over a second or so at the ends of its turn.
 	struct Fit
 	{
 		float period = 45, length = 10;   ///< seconds
 		Uint32 seed = 0;                  ///< staggers the periods of the facilities
 		Uint32 next = 0, start = 0;       ///< ms of the display clock: when it is due, when it began
+		Uint32 end = 0;                   ///< ms: when it is over (start + length, or sooner when the work stops)
 		bool on = false;
+		bool continuous = false;          ///< no `cycle` line: turns of `length` seconds, handed out in order of waiting
+		bool wants = true;                ///< a facility of work or research asks for a place only while it works
+		float act = 0;                    ///< 0 .. 1, worked out by tick
+		float turned = 0;                 ///< seconds moved so far, act-weighted (the angle of a turning piece)
 	};
 
 	/// A glow, a lid and a sink where they are on the world layer (world pixels).
@@ -256,7 +277,7 @@ namespace HdBaseScene
 		HdFrame ground;                   ///< the rock with the shadows, opaque, drawn under the pictures
 		std::vector<float> relief;        ///< per pixel: the normal (x, y, z) and the height, world pixels
 		std::vector<float> water;         ///< per pixel 0..1
-		struct Area { SDL_Rect box; float glint[3]; };
+		struct Area { SDL_Rect box; float glint[3]; int fit = -1; };
 		std::vector<Area> waters;
 		std::vector<PlacedSpin> spins;
 		std::vector<Fit> fits;
@@ -266,11 +287,17 @@ namespace HdBaseScene
 		std::vector<PlacedSink> sinks;
 		std::vector<PlacedFlow> flows;
 		Uint32 fitsAt = 0;               ///< the display clock of the last tick, 0 - not yet
+		Uint32 serial = 0;               ///< which bake made it (the light keeps a picture of the resting lamps by it)
 	};
 
-	/// Starts and ends the fits as at `ms` (once a frame, before drawMotion): a due one starts while fewer than
-	/// three run, the others wait a few seconds. A long gap (the base screen left and back) deals them anew.
+	/// Starts and ends the fits and turns as at `ms` (once a frame, before drawMotion): no more than three
+	/// facilities of the base move at once. A due fit comes first, then the turns go to the facilities that have
+	/// waited longest (`wants` - a facility of work asks only while it works). A long gap (the base screen left
+	/// and back) deals them anew. OXCE_HD_BASE_ACT=1 sets every facility moving, =0 every one still (a test).
 	void tick(View &view, Uint32 ms);
+
+	/// How much the facility's pictures move now, 0 .. 1 (Fit::act); 1 for a facility without a turn (-1).
+	float actOf(const View &view, int fit);
 
 	/// Seconds into the fit, -1 between fits (or no such fit). OXCE_HD_BASE_FIT=<s> holds every fit at <s>
 	/// for a test dump.
@@ -305,6 +332,7 @@ namespace HdBaseScene
 		Emit emit;                        ///< the box in world pixels
 		float scale = 1;                  ///< world pixels per pack pixel
 		float level = 1;                  ///< from the gate: sparks fly only where the facility works
+		float act = 1;                    ///< how much its facility moves now (Fit::act): 0 - nothing is drawn
 		Uint32 seed = 0;
 	};
 

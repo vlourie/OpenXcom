@@ -989,6 +989,7 @@ void draw(SDL_Surface *world, const Plan &plan, int ox, int oy, int cell, float 
 				L.light.b = col[2];
 				L.scale = s;
 				L.level = 2.0f;
+				L.moving = true;
 				lights.push_back(L);
 			}
 		}
@@ -1044,6 +1045,7 @@ void draw(SDL_Surface *world, const Plan &plan, int ox, int oy, int cell, float 
 				L.light.b = 1.0f;
 				L.scale = s;
 				L.level = 1.6f + 0.8f * flick;
+				L.moving = true;
 				lights.push_back(L);
 				dot(hx, hy, thick + 1, 0.9f, 0.95f, 1.0f, 1.0f, true);
 				for (int i = 0; i < 7; ++i)
@@ -1071,6 +1073,7 @@ void draw(SDL_Surface *world, const Plan &plan, int ox, int oy, int cell, float 
 			L.light.b = 0.6f;
 			L.scale = s;
 			L.level = 0.8f * night;
+			L.moving = true;
 			lights.push_back(L);
 		}
 	}
