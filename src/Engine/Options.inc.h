@@ -253,6 +253,8 @@ OPT bool oxceHdPathStretch;
 OPT bool oxceHdUpdateNotice;
 // HD interface, craft crew screen (CraftSoldiersState): the rows of the soldiers who no longer fit the craft are grey instead of the "not enough space" window, and between the shorter sort box and OK stands a plate "seats used/seats in all"; off = as it was (default)
 OPT bool oxceHdCraftFit;
+// HD interface, craft crew screen (CraftSoldiersState): the name and the "WOUNDED>days" text of a wounded soldier are red; off = as it was (default); picture only
+OPT bool oxceHdWoundedRed;
 // HD interface, modern skin: the colours of the battle's button panel (Engine/HdBattleHud.cpp). 0 = dark slate (default), 1 = gold, as the original panel
 OPT int oxceHdBattleHudColor;
 // Battlescape: a unit hanging in the air or in the water with no floor below sways in place (Map::hoverBob); off = the classic still frame
