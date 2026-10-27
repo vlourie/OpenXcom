@@ -612,7 +612,7 @@ en-US:
   STR_HD_BATTLE: "Battlescape"
   STR_HD_PHYSICS: "Physics"
   STR_HD_COLLAPSE: "Building collapse"
-  STR_HD_COLLAPSE_DESC: "When an explosion knocks out supports, whatever they held collapses and units and items fall down. Not every building yet: farm barns and houses, the base bunker, city houses and blocks, the commercial quarter and the junkyard. Changes the battle; can be switched mid-battle."
+  STR_HD_COLLAPSE_DESC: "When an explosion knocks out supports, whatever they held collapses - floors, walls, roofs and trees - and units and items fall down. Debris hits whoever is below, lands as rubble - gravel, heaps, boulders, fallen trunks - and raises dust. Works on most surface maps: towns, villages, farms, junkyards, deserts, forests and jungles; UFOs, ships and underground maps do not collapse. Changes the battle; can be switched mid-battle."
   STR_HD_COLLAPSE_SHAKE: "Shake on collapse"
   STR_HD_COLLAPSE_SHAKE_DESC: "The screen shakes for a moment when a building collapses in sight - harder the more fell. Picture only, the battle does not change. Needs Building collapse; off in gentle mode."
   STR_HD_COLLAPSE_NOTICE: "Building collapse off the screen: {0}"
