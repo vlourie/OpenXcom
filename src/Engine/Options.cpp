@@ -605,6 +605,7 @@ void createAdvancedOptionsOXCE()
 	// HD render workers (Engine/HdWorkers.h) and how far the battle timer may run ahead of slow frames
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdThreads", &oxceHdThreads, 0, "STR_HD_THREADS", "STR_HD_SPEED"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdFrameSkip", &oxceHdFrameSkip, 4, "STR_HD_FRAME_SKIP", "STR_HD_SPEED"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdGpu", &oxceHdGpu, false, "STR_HD_GPU", "STR_HD_SPEED"));
 	// HD lab (Engine/HdLab.h): functions on trial, behind a password; the key a correct password leaves has no row
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdMapRotation", &oxceHdMapRotation, 0, "STR_HD_MAP_ROTATION", "STR_HD_LAB"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdLabKey", &oxceHdLabKey, ""));

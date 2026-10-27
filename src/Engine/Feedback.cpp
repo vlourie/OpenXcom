@@ -284,6 +284,7 @@ bool Feedback::open(Game *game, const State *top)
 	f.emplace_back("fullscreen", jsonBool(Options::fullscreen));
 	f.emplace_back("borderless", jsonBool(Options::borderless));
 	f.emplace_back("openGL", jsonBool(Options::useOpenGL));
+	f.emplace_back("hdGpu", jsonBool(Options::oxceHdGpu));
 	f.emplace_back("hdMode", jsonInt(Options::oxceHdMode));
 	f.emplace_back("hdScale", jsonInt(Options::oxceHdScale));
 	// local paths are for the launcher to offer the files; it never sends them

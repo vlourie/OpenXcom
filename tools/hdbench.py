@@ -225,7 +225,7 @@ def cmd_start(a):
     if log.exists():
         log.unlink()   # лог этого запуска, а не прошлого (R-246)
     hidden_game.prepare_user(user, a.mods_dir, a.set, a.mods, a.save, a.master)
-    env = hidden_game.game_env(OXCE_HD_CONTROL=d)
+    env = hidden_game.game_env(gl=a.gl, OXCE_HD_CONTROL=d)
     t0 = time.perf_counter()
     p = hidden_game.launch(exe, hidden_game.game_args(exe, user, load=bool(a.save), master=a.master), env)
     (d / "pid").write_text(str(p.pid))
@@ -331,6 +331,7 @@ def main():
     s.add_argument("--mods", default="")
     s.add_argument("--master", default="")
     s.add_argument("--timeout", type=int, default=600)
+    s.add_argument("--gl", action="store_true", help="видеодрайвер windib на скрытом столе: настоящий OpenGL (oxceHdGpu)")
     r = sub.add_parser("run")
     r.add_argument("--name", required=True)
     r.add_argument("--file", default="")

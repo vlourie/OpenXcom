@@ -38,6 +38,7 @@
 #include "Timer.h"
 #include "HdTest.h"
 #include "HdWorkers.h"
+#include "HdGpu.h"
 #include <chrono>
 #include <SDL.h>
 #include <algorithm>
@@ -66,12 +67,14 @@ void Screen::makeVideoFlags()
 	{
 		_flags |= SDL_ASYNCBLIT;
 	}
-	if (useOpenGL())
+	if (useOpenGL() || useHdGpu())
 	{
 		_flags = SDL_OPENGL;
-		SDL_GL_SetAttribute( SDL_GL_RED_SIZE, 5 );
-		SDL_GL_SetAttribute( SDL_GL_GREEN_SIZE, 5 );
-		SDL_GL_SetAttribute( SDL_GL_BLUE_SIZE, 5 );
+		// the HD layer is true color: 5 bits a channel would band its gradients
+		const int bits = useHdGpu() ? 8 : 5;
+		SDL_GL_SetAttribute( SDL_GL_RED_SIZE, bits );
+		SDL_GL_SetAttribute( SDL_GL_GREEN_SIZE, bits );
+		SDL_GL_SetAttribute( SDL_GL_BLUE_SIZE, bits );
 		SDL_GL_SetAttribute( SDL_GL_DEPTH_SIZE, 16 );
 		SDL_GL_SetAttribute( SDL_GL_DOUBLEBUFFER, 1 );
 	}
@@ -109,7 +112,7 @@ void Screen::makeVideoFlags()
 	}
 
 	// the HD battlescape needs the layered (32-bit) output whatever the scaler
-	_bpp = (use32bitScaler() || useOpenGL() || Options::oxceHdScale > 1 || Options::oxceHdPictures || Options::oxceHdUi > 0) ? 32 : 8;
+	_bpp = (use32bitScaler() || useOpenGL() || useHdGpu() || Options::oxceHdScale > 1 || Options::oxceHdPictures || Options::oxceHdUi > 0) ? 32 : 8;
 	_layered = (_bpp == 32);
 	_baseWidth = Options::baseXResolution;
 	_baseHeight = Options::baseYResolution;
@@ -222,7 +225,14 @@ void Screen::flip()
 			composeInto(_world.get());
 		}
 		HdUi::instance().frameDone();
-		if (getWidth() != _world->w || getHeight() != _world->h || useOpenGL())
+		if (useHdGpu())
+		{
+			// stage 0: the world drawn by the processor goes up into the framebuffer and onto the display as one quad
+			HdGpu &gpu = HdGpu::instance();
+			gpu.upload(_world.get());
+			gpu.present(getWidth(), getHeight(), _topBlackBand, _bottomBlackBand, _leftBlackBand, _rightBlackBand, Options::useOpenGLSmoothing);
+		}
+		else if (getWidth() != _world->w || getHeight() != _world->h || useOpenGL())
 		{
 			Zoom::flipWithZoom(_world.get(), _screen, _topBlackBand, _bottomBlackBand, _leftBlackBand, _rightBlackBand, &glOutput);
 		}
@@ -288,6 +298,10 @@ void Screen::clear()
 	if (_layered && _world && _world->pixels == _screen->pixels)
 	{
 		// the world is the display (allocateWorld): zeroed above
+	}
+	else if (useHdGpu())
+	{
+		// an OpenGL display has no pixels of its own: HdGpu::present clears it
 	}
 	else if (_layered && _world && !useOpenGL())
 	{
@@ -391,7 +405,7 @@ void Screen::allocateWorld()
 	// a world of the display's size and pixel layout is drawn straight into the display's pixels: flip has
 	// nothing to copy and clear nothing more to zero (profile 27.10: the copy was 9-15% of the main thread
 	// on the globe and the base); any other display (zoom, OpenGL, a locked or other layout) keeps its own buffer
-	const bool onScreen = _screen && _screen->pixels && !useOpenGL() && !SDL_MUSTLOCK(_screen)
+	const bool onScreen = _screen && _screen->pixels && !useOpenGL() && !useHdGpu() && !SDL_MUSTLOCK(_screen)
 		&& _screen->w == w && _screen->h == h && _screen->pitch == ((4 * w + 15) & ~0xF)
 		&& _screen->format->BitsPerPixel == 32 && _screen->format->Rmask == 0x00FF0000
 		&& _screen->format->Gmask == 0x0000FF00 && _screen->format->Bmask == 0x000000FF;
@@ -653,6 +667,8 @@ void Screen::resetDisplay(bool resetVideo, bool noShaders)
 	if (resetVideo || _screen->format->BitsPerPixel != _bpp)
 	{
 		Log(LOG_INFO) << "Attempting to set display to " << width << "x" << height << "x" << _bpp << "...";
+		// GL objects die with the context SDL_SetVideoMode makes anew: dropped while the old one is still current
+		HdGpu::instance().release();
 
 #if defined __linux__ || defined _WIN32 || defined  __CYGWIN__
 		// Workaround for segfault when switching to opengl
@@ -684,6 +700,7 @@ void Screen::resetDisplay(bool resetVideo, bool noShaders)
 				if (_flags & SDL_OPENGL)
 				{
 					Options::useOpenGL = false;
+					Options::oxceHdGpu = false;
 				}
 				throw Exception(SDL_GetError());
 			}
@@ -780,6 +797,15 @@ void Screen::resetDisplay(bool resetVideo, bool noShaders)
 		_topBlackBand = _bottomBlackBand = _leftBlackBand = _rightBlackBand = _cursorTopBlackBand = _cursorLeftBlackBand = 0;
 	}
 
+	if (useHdGpu() && !HdGpu::instance().setup(_world->w, _world->h))
+	{
+		// no GL 3.3 or no framebuffer of this size: the player keeps a working display drawn the old way
+		Log(LOG_ERROR) << "HD GPU: off, the display goes back to the processor";
+		Options::oxceHdGpu = false;
+		resetDisplay(true, noShaders);
+		return;
+	}
+
 	if (useOpenGL())
 	{
 #ifndef __NO_OPENGL
@@ -866,6 +892,20 @@ void Screen::screenshot(const std::string &filename) const
 		glErrorCheck();
 #endif
 	}
+	else if (useHdGpu() && _world)
+	{
+		// the display as the player sees it: the world read back from the framebuffer, scaled between the bands
+		Surface::UniqueBufferPtr worldBuffer, displayBuffer;
+		Surface::UniqueSurfacePtr world, display;
+		std::tie(worldBuffer, world) = Surface::NewPair32Bit(_world->w, _world->h);
+		std::tie(displayBuffer, display) = Surface::NewPair32Bit(getWidth(), getHeight());
+		if (!HdGpu::instance().readBack(world.get()))
+		{
+			SDL_BlitSurface(_world.get(), 0, world.get(), 0);
+		}
+		Zoom::flipWithZoom(world.get(), display.get(), _topBlackBand, _bottomBlackBand, _leftBlackBand, _rightBlackBand, nullptr);
+		SDL_BlitSurface(display.get(), 0, screenshot, 0);
+	}
 	else
 	{
 		SDL_BlitSurface(_screen, 0, screenshot, 0);
@@ -929,6 +969,17 @@ void Screen::writeHdTestDump()
 		{
 			composeInto(tmp.get());
 		}
+		if (useHdGpu())
+		{
+			// the frame through the video card: up into the framebuffer and back by glReadPixels, so the
+			// check compares what the card holds (flip uploads the frame again before it is shown)
+			HdGpu &gpu = HdGpu::instance();
+			gpu.upload(tmp.get());
+			if (!gpu.readBack(tmp.get()))
+			{
+				Log(LOG_ERROR) << "HD GPU: the test dump could not be read back from the framebuffer";
+			}
+		}
 		HdTest::savePngRgb(_hdTestDumpPath, tmp.get());
 	}
 	else
@@ -979,7 +1030,21 @@ bool Screen::useOpenGL()
 #ifdef __NO_OPENGL
 	return false;
 #else
-	return Options::useOpenGL;
+	// the HD GPU output takes the display's GL context: the old scaler with its shaders stays off then
+	return Options::useOpenGL && !Options::oxceHdGpu;
+#endif
+}
+
+/**
+ * Check if the HD layer goes to the display through the video card (HdGpu).
+ * @return if it is enabled.
+ */
+bool Screen::useHdGpu()
+{
+#ifdef __NO_OPENGL
+	return false;
+#else
+	return Options::oxceHdGpu;
 #endif
 }
 

@@ -415,7 +415,8 @@ void Game::run()
 			hdThinkMs = SDL_GetTicks() - hdThinkStart;
 			_fpsCounter->think();
 			_updateNotice->think();
-			if (Options::FPS > 0 && !(Options::useOpenGL && Options::vSyncForOpenGL))
+			// the HD GPU output keeps the limiter under vsync: a driver set to drop vsync would spin the loop unbounded
+			if (Options::FPS > 0 && !(Screen::useOpenGL() && Options::vSyncForOpenGL))
 			{
 				// Update our FPS delay time based on the time of the last draw.
 				int fps = SDL_GetAppState() & SDL_APPINPUTFOCUS ? Options::FPS : Options::FPSInactive;

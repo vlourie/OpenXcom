@@ -29,6 +29,7 @@ a.add_argument("--master", default="", help="мастер-мод вместо з
 # с dummy-звуком Mix_OpenAudio падает и звуковой код не выполняется вовсе (AUDIO_ROADMAP.md);
 # драйвер disk SDL 1.2 пишет всё, что сыграла игра, сырым PCM в файл
 a.add_argument("--audio-disk", default="", help="файл для записи звука игры (драйвер disk); пусто - без звука")
+a.add_argument("--gl", action="store_true", help="видеодрайвер windib на скрытом столе: настоящий OpenGL (oxceHdGpu)")
 o = a.parse_args()
 EXE = Path(o.exe).resolve()
 
@@ -38,7 +39,7 @@ cfg = hidden_game.prepare_user(u, o.mods_dir, o.set, o.mods, o.save, o.master)
 dump = Path(o.out).resolve()
 if dump.exists():
     dump.unlink()
-env = hidden_game.game_env(OXCE_HD_DUMP=dump, OXCE_HD_DUMP_AFTER=o.after, OXCE_HD_CLICK=o.clicks, OXCE_HD_KEY=o.key)
+env = hidden_game.game_env(gl=o.gl, OXCE_HD_DUMP=dump, OXCE_HD_DUMP_AFTER=o.after, OXCE_HD_CLICK=o.clicks, OXCE_HD_KEY=o.key)
 if o.audio_disk:
     # драйвер disk спит SDL_DISKAUDIODELAY (по умолчанию 150 мс) на каждый буфер, а буфер 1024 при 22050 Гц -
     # 46 мс: запись шла втрое медленнее игры (30 с на 100). Задержка = длина буфера, запись ~ в реальном времени
