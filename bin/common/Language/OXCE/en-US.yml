@@ -1000,6 +1000,7 @@ en-US:
 #reports (moved from the hd mod, docs/portal/HD_SUBMODS.md step 2)
   STR_MY_REPORTS: "MY REPORTS"
   STR_LAUNCHER: "LAUNCHER"
+  STR_HD_PIRATEZ_CREDIT: "X-Piratez HD is based on X-Piratez by Dioxine. Dioxine takes no responsibility for this work."
   STR_REPORTS_TITLE: "MY REPORTS"
   STR_REPORTS_REFRESH: "REFRESH"
   STR_REPORTS_OPEN_SITE: "OPEN ON SITE"

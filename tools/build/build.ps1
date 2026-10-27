@@ -582,7 +582,11 @@ function New-PatchStep([string]$kind, $tree, [string]$zip, [string[]]$head) {
 #>
 function Save-StageNotes([string[]]$head, $mods, [string[]]$data, [string]$exeName) {
     $names = @($mods | ForEach-Object { $_.Name })
+    # подпись, которую попросил автор X-Piratez Dioxine (27.10): в каждом выпуске, на обоих языках
     $readme = @($head) + @(
+        '',
+        'X-Piratez HD основан на моде X-Piratez от Dioxine. Dioxine не несёт ответственности за эту работу.',
+        'X-Piratez HD is based on X-Piratez by Dioxine. Dioxine takes no responsibility for this work.',
         '',
         '1. Распаковать архив в папку игры (где лежит OpenXcomEx.exe и папка user), с заменой файлов.'
     )

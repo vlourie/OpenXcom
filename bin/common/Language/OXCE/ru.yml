@@ -883,6 +883,7 @@ ru:
 #reports (moved from the hd mod, docs/portal/HD_SUBMODS.md step 2)
   STR_MY_REPORTS: "МОИ ОТЧЁТЫ"
   STR_LAUNCHER: "ЛАУНЧЕР"
+  STR_HD_PIRATEZ_CREDIT: "X-Piratez HD основан на моде X-Piratez от Dioxine. Dioxine не несёт ответственности за эту работу."
   STR_REPORTS_TITLE: "МОИ ОТЧЁТЫ"
   STR_REPORTS_REFRESH: "ОБНОВИТЬ"
   STR_REPORTS_OPEN_SITE: "НА САЙТЕ"

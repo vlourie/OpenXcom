@@ -97,6 +97,9 @@ MainMenuState::MainMenuState(bool updateCheck)
 	_btnUpdate = new TextButton(72, 16, 209, 27);
 	_txtUpdateInfo = new Text(320, 17, 0, 11);
 	_txtTitle = new Text(256, 30, 32, 45);
+	// the credit Dioxine asked for, under the window: only over his X-Piratez, and only with the strings (R-036)
+	const bool credit = Options::getActiveMaster() == "piratez" && _game->getLanguage()->has("STR_HD_PIRATEZ_CREDIT");
+	_txtCredit = new Text(312, 19, 4, 181);
 
 	// Set palette
 	setInterface("mainMenu");
@@ -113,6 +116,7 @@ MainMenuState::MainMenuState(bool updateCheck)
 	add(_btnUpdate, "button", "mainMenu");
 	add(_txtUpdateInfo, "text", "mainMenu");
 	add(_txtTitle, "text", "mainMenu");
+	add(_txtCredit, "text", "mainMenu");
 
 	centerAllSurfaces();
 
@@ -153,6 +157,11 @@ MainMenuState::MainMenuState(bool updateCheck)
 	_txtUpdateInfo->setWordWrap(true);
 	_txtUpdateInfo->setText(tr("STR_LATEST_VERSION_INFO"));
 	_txtUpdateInfo->setVisible(false);
+
+	_txtCredit->setAlign(ALIGN_CENTER);
+	_txtCredit->setWordWrap(true);
+	if (credit) _txtCredit->setText(tr("STR_HD_PIRATEZ_CREDIT"));
+	_txtCredit->setVisible(credit);
 
 #ifdef _WIN32
 	//_debugInVisualStudio = true; // uncomment when debugging in Visual Studio (working dir and exe dir are not the same)
