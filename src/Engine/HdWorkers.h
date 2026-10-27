@@ -45,7 +45,8 @@ private:
 	std::atomic<int> _next { 0 };
 	/// A batch is running (see run).
 	std::atomic<bool> _busy { false };
-	int _running = 0;
+	/// Workers in the running batch, and how many more may join it (only as many are woken as it has jobs).
+	int _running = 0, _slots = 0;
 	unsigned _generation = 0;
 	bool _quit = false;
 

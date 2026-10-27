@@ -219,7 +219,8 @@ def cmd_start(a):
                 f.unlink()
     d.mkdir(parents=True, exist_ok=True)
     exe = Path(a.exe).resolve()
-    user = Path(a.user) if a.user else Path(os.environ.get("TEMP", ".")) / f"oxce_bench_{name}"
+    # resolved here: the game runs from its own folder and would look for a relative path there
+    user = Path(a.user).resolve() if a.user else Path(os.environ.get("TEMP", ".")) / f"oxce_bench_{name}"
     log = user / "openxcom.log"
     if log.exists():
         log.unlink()   # лог этого запуска, а не прошлого (R-246)

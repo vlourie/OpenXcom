@@ -86,12 +86,14 @@ void HdWorkers::workerLoop()
 		int jobs;
 		{
 			std::unique_lock<std::mutex> lock(_mutex);
-			_wake.wait(lock, [&] { return _quit || _generation != seen; });
+			_wake.wait(lock, [&] { return _quit || (_generation != seen && _slots > 0); });
 			if (_quit)
 			{
 				return;
 			}
 			seen = _generation;
+			--_slots;
+			++_running;
 			job = _job;
 			jobs = _jobs;
 		}
@@ -124,17 +126,32 @@ void HdWorkers::run(int jobs, const std::function<void(int)> &fn)
 		return;
 	}
 	struct Release { std::atomic<bool> &busy; ~Release() { busy = false; } } release{ _busy };
+	// only as many workers are woken as there are jobs besides the caller's: waking the whole pool for the
+	// frame clear's 8 slices cost the main thread a fifth of its work on the base (profile 27.10)
+	const int want = std::min(jobs - 1, (int)_threads.size());
 	{
 		std::lock_guard<std::mutex> lock(_mutex);
 		_job = &fn;
 		_jobs = jobs;
 		_next = 0;
-		_running = (int)_threads.size();
+		_slots = want;
 		++_generation;
 	}
-	_wake.notify_all();
+	if (want == (int)_threads.size())
+	{
+		_wake.notify_all();
+	}
+	else
+	{
+		for (int i = 0; i < want; ++i)
+		{
+			_wake.notify_one();
+		}
+	}
 	takeJobs(fn, jobs);
 	std::unique_lock<std::mutex> lock(_mutex);
+	// the batch is closed: a worker woken late does not take fn, which is gone once run returns
+	_slots = 0;
 	_done.wait(lock, [&] { return _running == 0; });
 }
 
