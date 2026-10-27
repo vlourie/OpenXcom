@@ -21,9 +21,13 @@
 		resolvers 1.1.1.1 8.8.8.8
 	}
 	# release repository (xp-release): plain files, Range requests for resumed downloads.
-	# Not compressed: blobs are fetched by byte ranges and checked by hash, gzip would break both
+	# Blobs are not compressed: fetched by byte ranges and checked by hash, gzip would break both
 	handle_path /releases/* {
 		root * /srv/releases
+		# manifests, pointers and notes go whole and are checked after unpacking: a 19 MiB manifest is 5 in gzip,
+		# and only a launcher that asks for it (0.3.19 on) gets it
+		@whole path /releases/* /channels/* /catalog.json
+		encode @whole gzip
 		# a blob is named by its hash and never changes; channels and manifests' status do
 		header /blobs/* Cache-Control "public, max-age=31536000, immutable"
 		header /channels/* Cache-Control "no-cache"

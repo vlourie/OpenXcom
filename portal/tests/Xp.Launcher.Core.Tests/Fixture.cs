@@ -132,6 +132,10 @@ public sealed class RepoHandler(string root) : HttpMessageHandler
     /// <summary>First response for each blob goes silent after this many bytes, without closing.</summary>
     public int StallBlobsAfter { get; set; } = -1;
     public bool IgnoreRange { get; set; }
+    /// <summary>Answers gzip to a request that asks for it, as Caddy's encode on the station does.</summary>
+    public bool Gzip { get; set; }
+    /// <summary>Keys whose request asked for gzip.</summary>
+    public List<string> AskedGzip { get; } = new();
     readonly HashSet<string> _cut = new();
 
     protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
@@ -155,8 +159,18 @@ public sealed class RepoHandler(string root) : HttpMessageHandler
         bool stall;
         lock (_cut) stall = StallBlobsAfter >= 0 && key.StartsWith("blobs/") && data.Length > StallBlobsAfter && _cut.Add(key);
         if (stall) body = new StallingStream(data, StallBlobsAfter);
+        bool gzip = request.Headers.AcceptEncoding.Any(e => e.Value == "gzip");
+        if (gzip) lock (AskedGzip) AskedGzip.Add(key);
+        if (gzip && Gzip)
+        {
+            var packed = new MemoryStream();
+            using (var z = new System.IO.Compression.GZipStream(packed, System.IO.Compression.CompressionLevel.Optimal, leaveOpen: true)) z.Write(data);
+            data = packed.ToArray();
+            body = new MemoryStream(data);
+        }
         var resp = new HttpResponseMessage(status) { Content = new StreamContent(body) };
         resp.Content.Headers.ContentLength = data.Length;
+        if (gzip && Gzip) resp.Content.Headers.ContentEncoding.Add("gzip");
         return Task.FromResult(resp);
     }
 }

@@ -1,3 +1,4 @@
+using System.IO.Compression;
 using System.Net;
 using System.Net.Http.Headers;
 
@@ -141,11 +142,18 @@ public sealed class RepoClient(HttpClient http, Uri baseUri, TrustedKeys keys)
 
     async Task<byte[]> GetSmallAsync(string key, int limit, CancellationToken ct)
     {
-        using var resp = await http.GetAsync(Url(key), HttpCompletionOption.ResponseHeadersRead, ct);
+        using var req = new HttpRequestMessage(HttpMethod.Get, Url(key));
+        // a manifest goes whole and is checked after unpacking, so it may come gzipped: 19 MiB is 5 (size audit
+        // 2026-10-27 §3). Asked here only: blobs go by byte ranges, which a compressed answer would break
+        req.Headers.AcceptEncoding.Add(new StringWithQualityHeaderValue("gzip"));
+        using var resp = await http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, ct);
         if (resp.StatusCode == HttpStatusCode.NotFound) throw new FileNotFoundException($"not on server: {key}");
         resp.EnsureSuccessStatusCode();
         if (resp.Content.Headers.ContentLength > limit) throw new TrustException($"{key}: larger than allowed");
-        await using var s = await resp.Content.ReadAsStreamAsync(ct);
+        var raw = await resp.Content.ReadAsStreamAsync(ct);
+        await using Stream s = resp.Content.Headers.ContentEncoding.Contains("gzip", StringComparer.OrdinalIgnoreCase)
+            ? new GZipStream(raw, CompressionMode.Decompress)
+            : raw;
         using var ms = new MemoryStream();
         var buf = new byte[81920];
         int n;

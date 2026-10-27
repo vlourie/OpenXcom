@@ -27,6 +27,21 @@ public sealed class UpdaterTests : IDisposable
     }
 
     [Fact]
+    public async Task The_manifest_may_come_gzipped_and_blobs_never_ask_for_it()
+    {
+        f.Server.Gzip = true;
+        f.StageV1();
+        f.BuildAndPublish("v1");
+        await f.UpdateAsync();
+
+        Assert.Equal("engine v1", f.ReadGame("openxcom_hd.exe"));
+        Assert.Contains(f.Server.AskedGzip, k => k.EndsWith("manifest.json"));
+        Assert.Contains(f.Server.AskedGzip, k => k.StartsWith("channels/"));
+        // blobs go by byte ranges and are checked by hash: a compressed answer would break both
+        Assert.DoesNotContain(f.Server.AskedGzip, k => k.StartsWith("blobs/"));
+    }
+
+    [Fact]
     public async Task Empty_file_is_installed_without_a_download()
     {
         // Piratez ships empty files (routes .RMP): there is nothing to fetch, and the launcher 0.3.4
