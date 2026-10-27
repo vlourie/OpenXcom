@@ -26,6 +26,7 @@ DENY = {
     "ключ интерпретатора со значением": "python -X utf8 tools/hdart/map_paint.py --map UBASE_00",
     "sh со скриптом из списка": "sh art/maps/paint/sweep.sh JUNGLE JUNGLE04 a",
     "bash -c": "bash -c \"python tools/hdart/map_paint.py --map X\"",
+    "скрипт, записанный в списке путём (27.10)": "python tools/hdart/doll_face_ctl.py render",
 }
 
 ALLOW = {

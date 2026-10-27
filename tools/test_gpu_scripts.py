@@ -27,11 +27,13 @@ import sys
 sys.stdout.reconfigure(encoding="utf-8")
 ROOT = os.path.normpath(os.path.join(os.path.dirname(__file__), ".."))
 LIST = os.path.join(ROOT, "tools", "gpu_scripts.txt")
-WHERE = [os.path.join(ROOT, "tools"), os.path.join(ROOT, "art", "maps", "paint")]
+WHERE = [os.path.join(ROOT, "tools"), os.path.join(ROOT, "art", "maps", "paint"), os.path.join(ROOT, "art", "rotation")]
 
 # загрузка весов в коде питона
 LOAD = re.compile(r"\.from_pretrained\s*\(|\.from_single_file\s*\(|\btorch\.load\s*\(|\.cuda\s*\(\s*\)|"
                   r"\.to\(\s*[\"']cuda|\bStableAudioModel\s*\(|\bsnapshot_download\s*\(|\btorch\.cuda\.")
+# модель грузит код вне дерева (F:\AIStudio, VoiceFactory): скрипт пишет об этом сам строкой «# gpu: чем»
+DECLARED = re.compile(r"(?m)^# gpu: \S")
 OLLAMA = re.compile(r"/api/(generate|chat)")
 OLLAMA_WORK = re.compile(r"[\"'](prompt|messages|images)[\"']|\bprompt\s*=")
 # загрузка в шелле: запуск тренера (accelerate launch, в том числе через переменную), ollama run;
@@ -76,6 +78,7 @@ class Module:
         self.units = {}          # имя -> (исходник, [ast-узлы])
         self.aliases = {}        # имя в модуле -> модуль (import m as a)
         self.names = {}          # имя в модуле -> (модуль, имя) (from m import f)
+        self.chains = {}         # имя -> цепочка, из которой оно взято (sp, pr = ip.sp, ip.pr)
         self.main = "__main__" in text and re.search(r"__name__\s*==\s*[\"']__main__", text) is not None
         try:
             tree = ast.parse(text)
@@ -99,12 +102,28 @@ class Module:
             elif isinstance(node, ast.ImportFrom) and node.module:
                 for a in node.names:
                     self.names[a.asname or a.name] = (node.module.split(".")[-1], a.name)
+            elif isinstance(node, ast.Assign) and len(node.targets) == 1:
+                t, v = node.targets[0], node.value
+                pairs = zip(t.elts, v.elts) if isinstance(t, ast.Tuple) and isinstance(v, ast.Tuple) else [(t, v)]
+                for tn, tv in pairs:
+                    chain = []
+                    while isinstance(tv, ast.Attribute):
+                        chain.insert(0, tv.attr)
+                        tv = tv.value
+                    if chain and isinstance(tn, ast.Name) and isinstance(tv, ast.Name):
+                        self.chains[tn.id] = [tv.id] + chain
 
     def calls(self, unit):
-        """Куда ведут вызовы единицы: (модуль, единица)."""
+        """Куда ведут вызовы единицы: (модуль, единица). Функция, взятая значением, - тоже вызов:
+        {"render": do_render}[a.cmd]() в main (strict_ctl_v1, t300_gen) зовёт do_render."""
         out = set()
         for root in self.units[unit][1]:
             for node in ast.walk(root):
+                if isinstance(node, ast.Name) and isinstance(node.ctx, ast.Load) and node.id != unit:
+                    if node.id in self.units:
+                        out.add((self.name, node.id))
+                    elif node.id in self.names:
+                        out.add(self.names[node.id])
                 if not isinstance(node, ast.Call):
                     continue
                 f = node.func
@@ -125,10 +144,12 @@ class Module:
                             out.add(t)
         return out
 
-    def resolve(self, chain):
+    def resolve(self, chain, depth=0):
         """a.b.c -> (модуль, единица): a - модуль этого файла, b - модуль, импортированный в a, и т.д.
         (po.gen_hd.Qwen21Painter -> gen_hd.Qwen21Painter; m.Class.method -> m.Class)."""
         head = chain[0]
+        if head in self.chains and head not in self.aliases and head not in self.names and depth < 4:
+            return self.resolve(self.chains[head] + chain[1:], depth + 1)
         mod = self.aliases.get(head) or (self.names[head][1] if head in self.names else None)
         if head in self.units:                    # Class.method(...) своего модуля
             return self.name, head
@@ -211,7 +232,7 @@ def classify():
             cls[n] = "LEGACY"
         elif n.endswith(".py"):
             # код верхнего уровня (с блоком __main__) доходит до загрузки - запуск файла грузит модель
-            top = (base, "<module>") in loads
+            top = (base, "<module>") in loads or DECLARED.search(mods[base].text) is not None
             if n.startswith("test_") or (not mods[base].main and not top):
                 cls[n] = "UTILITY"
             elif top:
@@ -249,8 +270,12 @@ def main():
     gpu = sorted(n for n, c in cls.items() if c == "GPU_MODEL_SCRIPT")
     # внешняя программа: её имя стоит в нашем GPU-запускателе
     external = {n for n in listed if n not in found and any(
-        re.search(r"(?<![A-Za-z0-9_.-])%s\b" % re.escape(n), read(found[g])) for g in gpu if not g.endswith(".py"))}
+        re.search(r"(?<![A-Za-z0-9_.-])%s\b" % re.escape(n), read(found[g])) for g in gpu)}
     bad = 0
+    for n in listed:
+        if "/" in n or "\\" in n:
+            bad += 1
+            print(f"ОШИБКА в списке путь, а gpu-guard и gpuq сверяют имя файла: {n}")
     for n in gpu:
         if n not in listed:
             bad += 1
