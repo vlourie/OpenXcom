@@ -25,6 +25,7 @@ namespace OpenXcom
 {
 
 class BattlescapeGame;
+class MapData;
 class Position;
 class RuleDamageType;
 class SavedBattleGame;
@@ -65,6 +66,13 @@ void idle(SavedBattleGame *save);
 /// explosion of this type, reaching each tile with its strongest power, destroyed all it can at the top of its
 /// damage. Reads the map, rolls nothing; empty with the option off.
 void mayFall(SavedBattleGame *save, const std::map<Tile*, int> &strongest, const RuleDamageType *type, std::vector<Position> &cells);
+
+/// What broke a map part: a shot (TileEngine::hit), an explosion (TileEngine::detonate), a melee hit.
+enum TrunkHit { TRUNK_SHOT, TRUNK_BLAST, TRUNK_MELEE };
+
+/// The armor this hit must reach to break the record (Options::oxceHdTrunkArmor): a tree trunk of the table is harder
+/// with the collapse on (x2, x3, or mixed by the hit), everything else - and everything with the option off - its own armor.
+int trunkArmor(const MapData *md, TrunkHit hit);
 
 }
 

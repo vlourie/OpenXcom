@@ -531,6 +531,7 @@ void createAdvancedOptionsOXCE()
 	// Building collapse (Battlescape/CollapsePilot.h): its own group on the HD tab, off by default
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceCollapse", &oxceCollapse, false, "STR_HD_COLLAPSE", "STR_HD_PHYSICS"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdCollapseShake", &oxceHdCollapseShake, false, "STR_HD_COLLAPSE_SHAKE", "STR_HD_PHYSICS"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdTrunkArmor", &oxceHdTrunkArmor, 0, "STR_HD_TRUNK_ARMOR", "STR_HD_PHYSICS"));
 	// BetterAI (Battlescape/AiProbe.h): the screen the first row of the HD tab opens; the master switch is off by default,
 	// the rows under it are grey while it is off; applies after a restart
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceBetterAi", &oxceBetterAi, false, "STR_BETTER_AI_ON", "STR_HD_AI"));

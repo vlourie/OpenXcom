@@ -24,6 +24,7 @@
 #include "AiCoverMap.h"
 #include "Map.h"
 #include "Camera.h"
+#include "CollapsePilot.h"
 #include "Projectile.h"
 #include "../Savegame/SavedGame.h"
 #include "../Savegame/SavedBattleGame.h"
@@ -3342,8 +3343,11 @@ void TileEngine::hit(BattleActionAttack attack, Position center, int power, cons
 			const TilePart tp = static_cast<TilePart>(part);
 			//Do we need to update the visibility of units due to smoke/fire?
 			effectGenerated = hitTile(tile, damage, type);
+			// a tree trunk may need more with the collapse on (Options::oxceHdTrunkArmor); otherwise the part's own armor
+			const int armorToBreak = CollapsePilot::trunkArmor(tile->getMapData(tp),
+				terrainMeleeTilePart > 0 || type->ResistType == DT_MELEE ? CollapsePilot::TRUNK_MELEE : CollapsePilot::TRUNK_SHOT);
 			//If a tile was destroyed we may have revealed new areas for one or more observers
-			if (tileFinalDamage >= tile->getMapData(tp)->getArmor()) terrainChanged = true;
+			if (tileFinalDamage >= armorToBreak) terrainChanged = true;
 
 			if (part == V_OBJECT && _save->getMissionType() == "STR_BASE_DEFENSE")
 			{
@@ -3352,7 +3356,7 @@ void TileEngine::hit(BattleActionAttack attack, Position center, int power, cons
 					_save->getModuleMap()[(center.x/16)/10][(center.y/16)/10].second--;
 				}
 			}
-			if (tile->damage(tp, tileFinalDamage, _save->getObjectiveType()))
+			if (tileFinalDamage >= armorToBreak && tile->damage(tp, tileFinalDamage, _save->getObjectiveType()))
 			{
 				_save->addDestroyedObjective();
 			}
@@ -3818,9 +3822,9 @@ bool TileEngine::detonate(Tile* tile, int explosive)
 		{
 			bigwalldestroyed = false;
 		}
-		// iterate through tile armor and destroy if can
+		// iterate through tile armor and destroy if can (a tree trunk may need more with the collapse on: CollapsePilot::trunkArmor)
 		while (	tiles[i]->getMapData(currentpart) &&
-				tiles[i]->getMapData(currentpart)->getArmor() <= remainingPower &&
+				CollapsePilot::trunkArmor(tiles[i]->getMapData(currentpart), CollapsePilot::TRUNK_BLAST) <= remainingPower &&
 				tiles[i]->getMapData(currentpart)->getArmor() != 255)
 		{
 			if ( i == 6 && (bigwall == 2 || bigwall == 3)) //diagonals for the current tile
@@ -3831,7 +3835,7 @@ bool TileEngine::detonate(Tile* tile, int explosive)
 			{
 				skipnorthwest = false;
 			}
-			remainingPower -= tiles[i]->getMapData(currentpart)->getArmor();
+			remainingPower -= CollapsePilot::trunkArmor(tiles[i]->getMapData(currentpart), CollapsePilot::TRUNK_BLAST);
 			destroyed = true;
 			if (_save->getMissionType() == "STR_BASE_DEFENSE" &&
 				tiles[i]->getMapData(currentpart)->isBaseModule())

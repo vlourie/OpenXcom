@@ -193,7 +193,7 @@ def main():
             raise SystemExit("сухой прогон; --install --yes - записать в мод (только по слову Vitali)")
         import ticket_scene as ts
         ts.install_files(paths, "t_jungle_stumps", "t_jungle_stumps.py 23.10, Qwen-2.1 strict, зёрна %s" % CHOICE,
-                         "Vitali 23.10 «Арт разрешаю» (JUNGLESTYX 62-64, мёртвые кадры джунглей)",
+                         "Vitali 23.10 «Арт разрешаю», 27.10 «делай всё» по листу sheet.png (JUNGLESTYX 62-64, мёртвые кадры джунглей)",
                          "jungle: мёртвые кадры JUNGLESTYX 62-64 и JUNGLEBITS 62-64 - Qwen-2.1 strict")
     return 0
 
