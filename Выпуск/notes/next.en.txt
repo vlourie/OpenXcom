@@ -1,1 +1,2 @@
 ﻿- X-Piratez HD is based on X-Piratez by Dioxine, and Dioxine takes no responsibility for this work - this is now said in the game's main menu (under the window, only for X-Piratez), in the description of the HD mods in the Mods menu, in the launcher and on the site.
+- Launcher 0.3.22: the bottom of the left column says whose game the picked build plays - Dioxine's credit for X-Piratez, a link to the author's page for the games from mod.io; the same credit on the Support page.
