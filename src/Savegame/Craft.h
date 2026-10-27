@@ -299,6 +299,8 @@ public:
 	bool arePilotsOnboard(const Mod* mod);
 	/// Checks if a pilot is already on the list.
 	bool isPilot(int pilotId);
+	/// The assigned pilot ids in the order of assignment (read only; sound code asks it, XP-000339).
+	const std::vector<int> &getPilotIds() const { return _pilots; }
 	/// Adds a pilot to the list.
 	void addPilot(int pilotId);
 	/// Removes all pilots from the list.
