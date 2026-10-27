@@ -158,7 +158,7 @@ function Get-LfSha([string] $path) {
 # Грабли R-336: строка кода стенда ИИ (OXCE_AI_DEV) в exe - первая найденная, или пусто; та же, что ищет build.ps1
 function Get-BenchMark([string] $exe) {
     $s = [Text.Encoding]::GetEncoding(28591).GetString([IO.File]::ReadAllBytes($exe))
-    foreach ($m in @('[AIPROBE] start', '[COLLAPSE] debug')) { if ($s.Contains($m)) { return $m } }
+    foreach ($m in @('OXCE-AI-DEV-BUILD-MARK', '[AIPROBE] start', '[COLLAPSE] debug')) { if ($s.Contains($m)) { return $m } }
     return ''
 }
 

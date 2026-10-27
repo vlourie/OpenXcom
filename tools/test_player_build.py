@@ -24,6 +24,7 @@ REL = ROOT / "Выпуск" / "release.ps1"
 ENC_W = "utf-8-sig"
 MARK = "[AIPROBE] start"
 MARK2 = "[COLLAPSE] debug"   # стенд обрушения (CollapsePilot.cpp под OXCE_AI_DEV)
+MARK3 = "OXCE-AI-DEV-BUILD-MARK"   # метка сборки стенда сама по себе (AiProbe.cpp), не строка лога
 
 RUNNER = r"""
 $ErrorActionPreference = 'Stop'
@@ -114,6 +115,7 @@ def make(work):
     pad = bytes(range(256)) * 4096
     (e / "bench.exe").write_bytes(b"MZ" + pad + MARK.encode() + b": turn " + pad)
     (e / "collapse.exe").write_bytes(b"MZ" + pad + MARK2.encode() + b": removed " + pad)
+    (e / "marked.exe").write_bytes(b"MZ" + pad + MARK3.encode() + b"\0" + pad)
     (e / "player.exe").write_bytes(b"MZ" + pad + b"[AIPROBE] sta" + pad + b"[COLLAPSE] found " + pad)
 
 
@@ -140,6 +142,8 @@ def main():
             fails.append("exe со строкой стенда не пойман")
         if "build=stop" not in exe.get("collapse.exe", "") or MARK2 not in exe.get("collapse.exe", ""):
             fails.append("exe со строкой стенда обрушения не пойман")
+        if "build=stop" not in exe.get("marked.exe", "") or MARK3 not in exe.get("marked.exe", ""):
+            fails.append("exe с меткой сборки стенда не пойман")
         if "build=go" not in exe.get("player.exe", "") or not exe.get("player.exe", "").rstrip().endswith("release="):
             fails.append("exe без строки стенда остановлен")
         for l in out.splitlines():
