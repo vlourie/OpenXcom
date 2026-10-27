@@ -23,6 +23,7 @@
 #include "../Engine/Sound.h"
 #include "../Engine/FileMap.h"
 #include "../Engine/Logger.h"
+#include "../Engine/Options.h"
 #include "../Engine/Exception.h"
 #include "../Engine/Unicode.h"
 #include "Mod.h"
@@ -146,7 +147,14 @@ void ExtraSounds::loadSound(SoundSet *set, int index, const std::string &fileNam
 		Log(LOG_VERBOSE) << "Adding sound: " << index << ", using index: " << indexWithOffset;
 		sound = set->addSound(indexWithOffset);
 	}
-	sound->load(fileName);
+	if (Options::lazyLoadResources)
+	{
+		sound->loadLater(fileName);
+	}
+	else
+	{
+		sound->load(fileName);
+	}
 }
 
 }
