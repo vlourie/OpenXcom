@@ -186,7 +186,8 @@ Surface::UniqueSurfacePtr Surface::NewSdlSurface(const Surface::UniqueBufferPtr&
  */
 void Surface::CleanSdlSurface(SDL_Surface* surface)
 {
-	if (surface->flags & SDL_SWSURFACE)
+	// SDL_SWSURFACE is 0, so "flags & SDL_SWSURFACE" never held and every clear went through SDL_FillRect's 4-byte loop
+	if (!SDL_MUSTLOCK(surface) && surface->pixels)
 	{
 		memset(surface->pixels, 0, surface->h * surface->pitch);
 	}
