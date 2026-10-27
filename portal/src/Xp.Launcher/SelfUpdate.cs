@@ -44,7 +44,9 @@ public sealed class SelfUpdate(RepoClient repo, Settings settings, ILauncherLog 
     public async Task<string> PrepareAsync(ReleaseManifest m, CancellationToken ct)
     {
         var dir = Path.Combine(Settings.Dir, "update", m.Release.Id);
-        await LauncherRelease.FetchAsync(repo, m, dir, ExeName, reuseFrom: AppDir, _ => { }, ct);
+        // the new files as the pack from this launcher's own release, when the release has one
+        await LauncherRelease.FetchAsync(repo, m, dir, ExeName, reuseFrom: AppDir, _ => { }, ct,
+            packFrom: LauncherRelease.IdFor(BuiltIn.VersionText, m.Release.Channel));
         log.Info($"launcher {m.Release.Version} prepared");
         return dir;
     }
@@ -64,7 +66,12 @@ public sealed class SelfUpdate(RepoClient repo, Settings settings, ILauncherLog 
         psi.ArgumentList.Add("--source"); psi.ArgumentList.Add(preparedDir);
         psi.ArgumentList.Add("--target"); psi.ArgumentList.Add(AppDir);
         psi.ArgumentList.Add("--exe"); psi.ArgumentList.Add(ExeName);
-        foreach (var f in m.Files) { psi.ArgumentList.Add("--file"); psi.ArgumentList.Add(f.Path); }
+        // each file with its hash: the bootstrapper checks every copy before it replaces the old file
+        foreach (var f in m.Files)
+        {
+            psi.ArgumentList.Add("--file"); psi.ArgumentList.Add(f.Path);
+            psi.ArgumentList.Add("--sha"); psi.ArgumentList.Add(f.Sha256);
+        }
         Process.Start(psi);
         log.Info($"bootstrapper started for launcher {m.Release.Version}");
     }

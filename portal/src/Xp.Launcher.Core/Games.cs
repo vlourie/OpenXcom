@@ -219,7 +219,12 @@ public sealed class GameInstaller(GamePaths paths, RepoClient repo, ILauncherLog
             }
             var to = SafePath.Resolve(stage, path);
             Directory.CreateDirectory(Path.GetDirectoryName(to)!);
-            entry.ExtractToFile(to, overwrite: true);
+            // a packing the zip reader does not know (Deflate64, LZMA) or a broken entry: an error the window shows, not a crash
+            try { entry.ExtractToFile(to, overwrite: true); }
+            catch (Exception e) when (e is NotSupportedException or InvalidDataException)
+            {
+                throw new IOException($"{path}: cannot unpack this archive ({e.Message})", e);
+            }
             done += entry.Length;
             progress?.Report(new Progress(Phase.Installing, done, total, path, 0));
         }

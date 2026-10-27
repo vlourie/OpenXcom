@@ -1335,8 +1335,9 @@ public sealed class MainWindow : Window
     {
         var u = _updater!;
         var ct = _cts!.Token;
-        var state = u.LoadState();
-        _latest = await u.CheckAsync(state, ct);
+        // off the window's thread: the state and the manifest run to megabytes of JSON, the signature check is not free
+        var state = await Task.Run(u.LoadState, ct);
+        _latest = await Task.Run(() => u.CheckAsync(state, ct), ct);
         _watch?.Know(_latest.Pointer);
         _installedRelease = state.InstalledReleaseId;
         // the plate in the game: a release other than the installed one is out, or nothing is
@@ -1411,7 +1412,7 @@ public sealed class MainWindow : Window
     {
         if (!await ConfirmAsync(L.T("rollback.confirm"))) return;
         await Task.Run(() => _updater!.RollbackLast());
-        var state = _updater!.LoadState();
+        var state = _updater!.PeekState();
         _pendingLine = null;
         SetStatus(L.T("status.rolledBack", state.InstalledVersion ?? L.T("none")));
         Navigate("home");
@@ -1547,7 +1548,7 @@ public sealed class MainWindow : Window
     void ShowPending(UpdatePlan plan, bool repair)
     {
         int files = plan.ToWrite.Count() + plan.PlayerModified.Count() + plan.Deletes.Count;
-        _pendingLine = plan.Manifest.Release.Id == _updater?.LoadState().InstalledReleaseId || repair
+        _pendingLine = plan.Manifest.Release.Id == _updater?.PeekState().InstalledReleaseId || repair
             ? L.T("status.repairNeeded", files, L.Size(plan.DownloadBytes))
             : L.T("main.updateLine", plan.Manifest.Release.Version, L.Size(plan.DownloadBytes));
     }
@@ -1562,7 +1563,7 @@ public sealed class MainWindow : Window
 
     void Refresh()
     {
-        var state = _updater?.LoadState();
+        var state = _updater?.PeekState();
         _version.Text = _paths is null ? L.T("main.whereIsGame")
                       : state?.InstalledVersion is { } v ? L.T("home.version", v) : L.T("home.notInstalled");
         _installed.Text = state?.InstalledVersion is { } iv ? L.T("settings.installed", iv) : L.T("settings.installedNone");

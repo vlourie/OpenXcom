@@ -2,8 +2,10 @@ using System.Diagnostics;
 using Xp.Manifest;
 
 // xp-bootstrap — replaces the launcher's files after the launcher has exited.
-// The files were already verified (signature + SHA-256) by the launcher; this program only
-// swaps them, starts the new launcher and puts the old one back if the new one does not confirm.
+// The files were already verified (signature + SHA-256) by the launcher, which passes each one's SHA-256 too
+// (--sha after its --file): every copy is checked against it before it takes the old file's place, so a file
+// changed or cut short since then breaks the swap off. Then the new launcher is started, and the old one
+// put back if the new one does not confirm. A launcher before 0.3.20 passes no hashes: its files go unchecked.
 // Started with no arguments it is the setup a new player downloads from the site: Installer.cs.
 
 namespace Xp.Bootstrapper;
@@ -35,12 +37,14 @@ static class Program
         }
     }
 
-    internal sealed record Job(int Pid, string Source, string Target, string Exe, List<string> Files);
+    /// <param name="Sha">The SHA-256 of a file by its path; empty from a launcher before 0.3.20.</param>
+    internal sealed record Job(int Pid, string Source, string Target, string Exe, List<string> Files, Dictionary<string, string> Sha);
 
     internal static Job Parse(string[] args)
     {
         int pid = 0; string? source = null, target = null, exe = null;
         var files = new List<string>();
+        var sha = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         for (int i = 0; i + 1 < args.Length; i += 2)
         {
             switch (args[i])
@@ -50,19 +54,26 @@ static class Program
                 case "--target": target = args[i + 1]; break;
                 case "--exe": exe = args[i + 1]; break;
                 case "--file": files.Add(args[i + 1]); break;
+                case "--sha":
+                    if (files.Count == 0 || sha.ContainsKey(files[^1]) || !Hashing.IsSha256Hex(args[i + 1]))
+                        throw new ArgumentException("--sha must follow its --file and be a SHA-256");
+                    sha[files[^1]] = args[i + 1];
+                    break;
                 default: throw new ArgumentException("unknown argument " + args[i]);
             }
         }
+        // all or none: a file left without its hash in a list that has them is a launcher's mistake, not an old launcher
+        if (sha.Count > 0 && sha.Count != files.Count) throw new ArgumentException("some files have no --sha");
         if (source is null || target is null || exe is null || files.Count == 0) throw new ArgumentException("incomplete arguments");
         foreach (var f in files.Append(exe))
             if (SafePath.Validate(f) is { } why) throw new UnsafePathException(f, why);
         if (!files.Contains(exe, StringComparer.OrdinalIgnoreCase)) throw new ArgumentException("the launcher exe is not among the files");
-        return new Job(pid, Path.GetFullPath(source), Path.GetFullPath(target), exe, files);
+        return new Job(pid, Path.GetFullPath(source), Path.GetFullPath(target), exe, files, sha);
     }
 
     internal static int Run(Job job)
     {
-        Log($"update: {job.Files.Count} files into {job.Target}");
+        Log($"update: {job.Files.Count} files into {job.Target}" + (job.Sha.Count == 0 ? " (no hashes from this launcher: unchecked)" : ""));
         if (!WaitForExit(job.Pid)) { Log("launcher did not exit, nothing changed"); return 2; }
 
         var backup = Path.Combine(job.Target, ".old-" + DateTime.UtcNow.ToString("yyyyMMddHHmmss"));
@@ -78,6 +89,12 @@ static class Program
                 replaced.Add(f);
                 Directory.CreateDirectory(Path.GetDirectoryName(dst)!);
                 File.Copy(src, dst + ".xp-new", overwrite: true);
+                // the copy itself is checked: what is moved in is what the launcher verified
+                if (job.Sha.TryGetValue(f, out var want) && Hashing.FileSha256(dst + ".xp-new") != want)
+                {
+                    File.Delete(dst + ".xp-new");
+                    throw new InvalidDataException($"{f}: SHA-256 does not match what the launcher verified");
+                }
                 File.Move(dst + ".xp-new", dst, overwrite: true);
             }
         }

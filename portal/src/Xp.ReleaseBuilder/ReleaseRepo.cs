@@ -143,7 +143,9 @@ public sealed class ReleaseRepo(string root, Action<string>? log = null)
         };
         foreach (var kv in o.Changelog) manifest.Release.Changelog[kv.Key] = kv.Value;
         manifest.Deletes = ComputeDeletes(o.Channel, manifest);
-        if (!o.LauncherKind) manifest.Packs = WritePacks(o, files);
+        // the launcher's too: its exe changes every release, and brotli takes it to about two fifths. A launcher
+        // before 0.3.20 does not read them and fetches the files one by one, as before
+        manifest.Packs = WritePacks(o, files);
 
         ManifestValidator.Validate(manifest);
         var bytes = JsonSerializer.SerializeToUtf8Bytes(manifest, ManifestJson.Default.ReleaseManifest);

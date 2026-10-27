@@ -73,6 +73,54 @@ public sealed class LauncherReleaseTests : IDisposable
         Assert.False(Directory.Exists(Into));
     }
 
+    /// <summary>l3 over l2 with an exe that packs well (text): the release carries a pack from l2.</summary>
+    async Task<ReleaseManifest> PublishL3()
+    {
+        var exe = string.Concat(Enumerable.Repeat("launcher 3.0 code ", 20000));
+        Fixture.Write(Launcher, "XPiratezLauncher.exe", exe);
+        f.Repo.Build(new BuildOptions { StageDir = Launcher, Id = "l3", Version = "3.0.0", Channel = "launcher-stable", LauncherKind = true }, f.Key);
+        f.Repo.Publish("launcher-stable", "l3", f.Key);
+        var m = await LatestAsync();
+        Assert.Equal("l2", Assert.Single(m.Packs).From);
+        return m;
+    }
+
+    [Fact]
+    public async Task A_launcher_update_comes_as_the_pack_from_the_running_release()
+    {
+        var running = Path.Combine(f.Root, "running");
+        await LauncherRelease.FetchAsync(_repo, await LatestAsync(), running, "XPiratezLauncher.exe", null, _ => { }, default);
+        var m = await PublishL3();
+        lock (f.Server.Requests) f.Server.Requests.Clear();
+
+        long bytes = 0;
+        await LauncherRelease.FetchAsync(_repo, m, Into, "XPiratezLauncher.exe", running, n => bytes += n, default, packFrom: "l2");
+
+        Assert.Equal(File.ReadAllText(Path.Combine(Launcher, "XPiratezLauncher.exe")), File.ReadAllText(Path.Combine(Into, "XPiratezLauncher.exe")));
+        Assert.Equal("bootstrap 2.0", File.ReadAllText(Path.Combine(Into, "xp-bootstrap.exe")));
+        Assert.Equal(m.Files.Sum(x => x.Size), bytes);
+        Assert.Equal(0, BlobRequests());
+        lock (f.Server.Requests) Assert.Contains(f.Server.Requests, r => r.Key == "releases/l3/packs/l2.tar.br");
+        Assert.Equal(new[] { "into" }, Directory.GetFileSystemEntries(f.Root, "into*").Select(e => Path.GetFileName(e)).ToArray());   // pack and blobs cleaned up
+    }
+
+    [Fact]
+    public async Task A_damaged_launcher_pack_falls_back_to_the_files()
+    {
+        var m = await PublishL3();
+        f.Server.Overrides["releases/l3/packs/l2.tar.br"] = new byte[m.Packs[0].Size];   // the size the manifest gives, other bytes
+        await LauncherRelease.FetchAsync(_repo, m, Into, "XPiratezLauncher.exe", null, _ => { }, default, packFrom: "l2");
+        Assert.Equal(File.ReadAllText(Path.Combine(Launcher, "XPiratezLauncher.exe")), File.ReadAllText(Path.Combine(Into, "XPiratezLauncher.exe")));
+        Assert.True(BlobRequests() > 0);
+    }
+
+    [Fact]
+    public void The_running_launcher_names_its_release_as_the_release_script_does()
+    {
+        Assert.Equal("launcher-0.3.20", LauncherRelease.IdFor("0.3.20", "launcher-stable"));
+        Assert.Equal("launcher-0.3.20-beta", LauncherRelease.IdFor("0.3.20", "launcher-beta"));
+    }
+
     [Fact]
     public async Task A_swapped_blob_never_lands_under_its_name()
     {

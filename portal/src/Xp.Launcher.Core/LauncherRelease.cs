@@ -15,17 +15,28 @@ public static class LauncherRelease
     public static string ChannelFor(string gameChannel) => "launcher-" + gameChannel;
 
     /// <summary>
+    /// The id Выпуск/release.ps1 gives a launcher version on a launcher channel ("launcher-0.3.20", "launcher-0.3.20-beta"):
+    /// the running launcher finds the pack from its own release by it.
+    /// </summary>
+    public static string IdFor(string version, string launcherChannel) =>
+        launcherChannel == ChannelFor("stable") ? $"launcher-{version}" : $"launcher-{version}-{launcherChannel[ChannelFor("").Length..]}";
+
+    /// <summary>
     /// Every file of <paramref name="m"/> into <paramref name="dir"/>, each verified by size and SHA-256.
     /// A file already there and right is kept; one found right in <paramref name="reuseFrom"/> (the
     /// running launcher's folder) is copied instead of downloaded. A release without
     /// <paramref name="exeName"/> is refused before anything is fetched. <paramref name="onBytes"/> gets
-    /// the bytes that became ready, kept and copied files included, so it sums to the release size.
+    /// the bytes that became ready, kept and copied files included, so it sums to the release size. With
+    /// <paramref name="packFrom"/> (the running launcher's release) the new files come as the release's pack from it when
+    /// there is one smaller than they are: brotli takes the exe to about two fifths. Any failure of the pack but a cancel
+    /// only means the files are fetched one by one.
     /// </summary>
     public static async Task FetchAsync(RepoClient repo, ReleaseManifest m, string dir, string exeName, string? reuseFrom,
-        Action<long> onBytes, CancellationToken ct)
+        Action<long> onBytes, CancellationToken ct, string? packFrom = null)
     {
         if (!m.Files.Any(f => f.Path.Equals(exeName, StringComparison.OrdinalIgnoreCase)))
             throw new ManifestException($"launcher release {m.Release.Id} has no {exeName}");
+        var need = new List<ManifestFile>();
         foreach (var f in m.Files)
         {
             ct.ThrowIfCancellationRequested();
@@ -33,15 +44,59 @@ public static class LauncherRelease
             if (Matches(target, f)) { onBytes(f.Size); continue; }
             if (reuseFrom is not null && SafePath.Resolve(reuseFrom, f.Path) is var current && Matches(current, f))
             {
-                Directory.CreateDirectory(Path.GetDirectoryName(target)!);
-                File.Copy(current, target + ".xp-new", overwrite: true);
-                File.Move(target + ".xp-new", target, overwrite: true);
+                Put(current, target);
                 onBytes(f.Size);
                 continue;
             }
-            // RepoClient writes <target>.part and moves it in only after the hash matched
-            await repo.DownloadBlobAsync(f.Sha256, f.Size, target, onBytes, ct);
+            need.Add(f);
         }
+        if (packFrom is not null && m.Packs.FirstOrDefault(p => p.From.Equals(packFrom, StringComparison.OrdinalIgnoreCase)) is { } pack
+            && pack.Size < need.DistinctBy(f => f.Sha256).Sum(f => f.Size))
+            need = await FromPackAsync(repo, m, pack, dir, need, onBytes, ct);
+        // RepoClient writes <target>.part and moves it in only after the hash matched
+        foreach (var f in need)
+            await repo.DownloadBlobAsync(f.Sha256, f.Size, SafePath.Resolve(dir, f.Path), onBytes, ct);
+    }
+
+    /// <summary>The files of <paramref name="need"/> from the pack, each checked by its SHA-256; returns those still to fetch.</summary>
+    static async Task<List<ManifestFile>> FromPackAsync(RepoClient repo, ReleaseManifest m, UpdatePack pack, string dir, List<ManifestFile> need,
+        Action<long> onBytes, CancellationToken ct)
+    {
+        // beside the prepared folder, not in it: the folder holds the release's files and nothing else
+        var file = dir.TrimEnd(Path.DirectorySeparatorChar) + ".pack.tar.br";
+        var blobs = dir.TrimEnd(Path.DirectorySeparatorChar) + ".blobs";
+        try
+        {
+            await repo.DownloadPackAsync(m.Release.Id, pack, file, _ => { }, ct);
+            Directory.CreateDirectory(blobs);
+            var sizes = need.DistinctBy(f => f.Sha256).ToDictionary(f => f.Sha256, f => f.Size, StringComparer.Ordinal);
+            await Task.Run(() => PackReader.Unpack(file, sizes, sha => Path.Combine(blobs, sha), null, ct), ct);
+            var rest = new List<ManifestFile>();
+            foreach (var f in need)
+            {
+                var blob = Path.Combine(blobs, f.Sha256);
+                if (!File.Exists(blob)) { rest.Add(f); continue; }
+                Put(blob, SafePath.Resolve(dir, f.Path));
+                onBytes(f.Size);
+            }
+            return rest;
+        }
+        catch (Exception e) when (e is not OperationCanceledException)
+        {
+            return need.Where(f => !Matches(SafePath.Resolve(dir, f.Path), f)).ToList();
+        }
+        finally
+        {
+            try { File.Delete(file); File.Delete(file + ".part"); } catch (IOException) { }
+            try { if (Directory.Exists(blobs)) Directory.Delete(blobs, recursive: true); } catch (IOException) { }
+        }
+    }
+
+    static void Put(string source, string target)
+    {
+        Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+        File.Copy(source, target + ".xp-new", overwrite: true);
+        File.Move(target + ".xp-new", target, overwrite: true);
     }
 
     static bool Matches(string path, ManifestFile f) =>

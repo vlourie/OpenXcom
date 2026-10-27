@@ -193,6 +193,7 @@ public sealed class RepoClient(HttpClient http, Uri baseUri, TrustedKeys keys)
         Directory.CreateDirectory(Path.GetDirectoryName(target)!);
         long have = File.Exists(part) ? new FileInfo(part).Length : 0;
         if (have > size) { File.Delete(part); have = 0; }
+        var resumedFrom = have;
 
         if (have < size)
         {
@@ -235,6 +236,12 @@ public sealed class RepoClient(HttpClient http, Uri baseUri, TrustedKeys keys)
         {
             File.Delete(part);
             onBytes(-size);
+            // a resumed file may carry a broken tail of the attempt before: once more from the start, then give up
+            if (resumedFrom > 0)
+            {
+                await DownloadFileAsync(url, sha256, size, target, what, onBytes, ct);
+                return;
+            }
             throw new TrustException($"{what}: SHA-256 mismatch, file discarded");
         }
         File.Move(part, target, overwrite: true);

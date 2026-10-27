@@ -102,6 +102,35 @@ public sealed class BootstrapperTests : IDisposable
         Assert.Empty(Directory.GetDirectories(Target, ".old-*"));
     }
 
+    /// <summary>The job as a launcher from 0.3.20 on passes it: every file with its SHA-256.</summary>
+    Boot.Job HashedJob(string coreSha) => Boot.Parse([
+        "--pid", "0", "--source", Source, "--target", Target, "--exe", "xp-launcher.exe",
+        "--file", "xp-launcher.exe", "--sha", Hashing.Sha256Hex("new exe"u8.ToArray()),
+        "--file", "lib/core.dll", "--sha", coreSha,
+        "--file", "lib/added.dll", "--sha", Hashing.Sha256Hex("new file"u8.ToArray())]);
+
+    [Fact]
+    public void Files_with_the_hashes_the_launcher_verified_are_swapped_in()
+    {
+        Launcher(confirms: true);
+        Assert.Equal(0, Boot.Run(HashedJob(Hashing.Sha256Hex("new core"u8.ToArray()))));
+        Assert.Equal("new core", Read("lib/core.dll"));
+        Assert.Equal("new file", Read("lib/added.dll"));
+    }
+
+    [Fact]
+    public void A_file_changed_since_the_launcher_verified_it_breaks_the_swap_off()
+    {
+        Launcher(confirms: true);
+        // the hash of what the launcher checked; the prepared folder holds something else by now
+        Assert.Equal(3, Boot.Run(HashedJob(Hashing.Sha256Hex("the verified core"u8.ToArray()))));
+        Assert.Equal("old exe", Read("xp-launcher.exe"));
+        Assert.Equal("old core", Read("lib/core.dll"));
+        Assert.False(File.Exists(Path.Combine(Target, "lib/added.dll")));
+        Assert.False(File.Exists(Path.Combine(Target, "lib/core.dll.xp-new")));
+        Assert.Equal([false], _starts);
+    }
+
     [Theory]
     [InlineData("../outside.exe")]
     [InlineData("C:/Windows/evil.dll")]
@@ -118,6 +147,11 @@ public sealed class BootstrapperTests : IDisposable
         Assert.Throws<ArgumentException>(() => Boot.Parse(["--source", Source, "--target", Target, "--exe", "xp-launcher.exe"]));   // no files
         Assert.Throws<ArgumentException>(() => Boot.Parse(["--source", Source, "--target", Target, "--exe", "other.exe", "--file", "lib/core.dll"]));
         Assert.Throws<ArgumentException>(() => Boot.Parse(["--bogus", "1"]));
+        var sha = Hashing.Sha256Hex("x"u8.ToArray());
+        Assert.Throws<ArgumentException>(() => Boot.Parse(["--sha", sha, "--source", Source, "--target", Target, "--exe", "xp-launcher.exe", "--file", "xp-launcher.exe"]));   // before any file
+        Assert.Throws<ArgumentException>(() => Boot.Parse(["--source", Source, "--target", Target, "--exe", "xp-launcher.exe", "--file", "xp-launcher.exe", "--sha", "not-a-hash"]));
+        Assert.Throws<ArgumentException>(() => Boot.Parse(["--source", Source, "--target", Target, "--exe", "xp-launcher.exe",
+            "--file", "xp-launcher.exe", "--sha", sha, "--file", "lib/core.dll"]));   // one file without its hash
     }
 }
 

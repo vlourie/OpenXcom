@@ -52,6 +52,23 @@ public sealed class Updater(GamePaths paths, RepoClient repo, ILauncherLog log)
     public Func<string, long> FreeSpace { get; set; } = dir => new DriveInfo(Path.GetPathRoot(dir)!).AvailableFreeSpace;
 
     public LauncherState LoadState() => LauncherState.Load(Paths, log);
+
+    /// <summary>
+    /// The state for reading only - the window's lines and buttons, redrawn often: the file (megabytes with the hash
+    /// cache) is parsed again only when it changed. Never changed or saved by the caller: <see cref="LoadState"/> for that.
+    /// </summary>
+    public LauncherState PeekState()
+    {
+        var fi = new FileInfo(Paths.StateFile);
+        var key = fi.Exists ? (fi.Length, fi.LastWriteTimeUtc.Ticks) : (-1L, 0L);
+        if (peeked is { } p && p.Key == key) return p.State;
+        var s = LoadState();
+        peeked = new Peeked(key, s);
+        return s;
+    }
+
+    sealed record Peeked((long Size, long Mtime) Key, LauncherState State);
+    Peeked? peeked;
     public void SaveState(LauncherState state) => state.Save(Paths);
 
     // ------------------------------------------------------------------ check
@@ -210,10 +227,12 @@ public sealed class Updater(GamePaths paths, RepoClient repo, ILauncherLog log)
         long total = blobs.Sum(b => b.Size), done = 0;
         foreach (var b in blobs.Where(b => File.Exists(StagedBlob(b.Sha256)))) done += b.Size;
         foreach (var b in blobs) done += Math.Min(PartLength(b.Sha256), b.Size);
+        // looked up once: a search of the plan per blob is quadratic, 30 000 files of a first install
+        var names = blobs.ToDictionary(b => b.Sha256, b => b.Path, StringComparer.Ordinal);
         await Parallel.ForEachAsync(toFetch,
             new ParallelOptions { MaxDegreeOfParallelism = DownloadParallelism, CancellationToken = ct }, async (b, token) =>
             {
-                var name = plan.ToWrite.First(c => c.File.Sha256 == b.Sha256).File.Path;
+                var name = names[b.Sha256];
                 for (int attempt = 1; ; attempt++)
                 {
                     try
@@ -224,6 +243,7 @@ public sealed class Updater(GamePaths paths, RepoClient repo, ILauncherLog log)
                             meter.Add(n);
                             progress?.Report(new Progress(Phase.Downloading, d, total, name, meter.BytesPerSecond));
                         }, token);
+                        MarkVerified(b.Sha256);
                         return;
                     }
                     catch (Exception e) when (attempt < 4 && e is IOException or HttpRequestException && !token.IsCancellationRequested)
@@ -291,39 +311,31 @@ public sealed class Updater(GamePaths paths, RepoClient repo, ILauncherLog log)
         }
     }
 
-    /// <summary>Entries are blobs named by their SHA-256; a blob this player does not need is skipped.</summary>
-    int Unpack(string file, List<ManifestFile> want, CancellationToken ct)
-    {
-        var sizes = want.ToDictionary(b => b.Sha256, b => b.Size, StringComparer.Ordinal);
-        int got = 0;
-        var buf = new byte[1 << 16];
-        using var fs = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.Read, 1 << 20);
-        using var br = new BrotliStream(fs, CompressionMode.Decompress);
-        using var tar = new TarReader(br);
-        while (tar.GetNextEntry() is { } e)
-        {
-            ct.ThrowIfCancellationRequested();
-            if (e.EntryType is not (TarEntryType.RegularFile or TarEntryType.V7RegularFile) || !Hashing.IsSha256Hex(e.Name))
-                throw new TrustException($"pack: unexpected entry '{e.Name}'");
-            if (!sizes.TryGetValue(e.Name, out var size) || File.Exists(StagedBlob(e.Name))) continue;
-            if (e.Length != size) throw new TrustException($"pack: {e.Name[..12]} is not the size the manifest gives");
-            var tmp = StagedBlob(e.Name) + ".unpack";
-            using var sha = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
-            using (var output = new FileStream(tmp, FileMode.Create, FileAccess.Write, FileShare.None, 1 << 16))
-                if (e.DataStream is { } data)
-                    for (int n; (n = data.Read(buf)) > 0;) { output.Write(buf, 0, n); sha.AppendData(buf, 0, n); }
-            if (Convert.ToHexStringLower(sha.GetHashAndReset()) != e.Name)
-            {
-                File.Delete(tmp);
-                throw new TrustException($"pack: {e.Name[..12]} does not match its hash");
-            }
-            File.Move(tmp, StagedBlob(e.Name), overwrite: true);
-            got++;
-        }
-        return got;
-    }
+    int Unpack(string file, List<ManifestFile> want, CancellationToken ct) =>
+        PackReader.Unpack(file, want.ToDictionary(b => b.Sha256, b => b.Size, StringComparer.Ordinal), StagedBlob, MarkVerified, ct);
 
     string StagedBlob(string sha) => Path.Combine(Paths.Staging, sha);
+
+    /// <summary>
+    /// Staged blobs whose SHA-256 this run has already checked (download, pack), with the size and time they had
+    /// then: <see cref="Install"/> hashes only the others. A blob changed since then is hashed again.
+    /// </summary>
+    readonly ConcurrentDictionary<string, (long Size, long Mtime)> verified = new(StringComparer.Ordinal);
+
+    void MarkVerified(string sha)
+    {
+        var fi = new FileInfo(StagedBlob(sha));
+        if (fi.Exists) verified[sha] = (fi.Length, fi.LastWriteTimeUtc.Ticks);
+    }
+
+    bool StagedOk(string sha)
+    {
+        var fi = new FileInfo(StagedBlob(sha));
+        if (!fi.Exists) return false;
+        if (verified.TryGetValue(sha, out var v) && v == (fi.Length, fi.LastWriteTimeUtc.Ticks)) return true;
+        return Hashing.FileSha256(fi.FullName) == sha;
+    }
+
     long PartLength(string sha) => FileLength(StagedBlob(sha) + ".part");
     static long FileLength(string path) => File.Exists(path) ? new FileInfo(path).Length : 0;
     static string Mb(long bytes) => $"{bytes / (1024.0 * 1024):F0} MB";
@@ -335,12 +347,15 @@ public sealed class Updater(GamePaths paths, RepoClient repo, ILauncherLog log)
         if (IsGameRunning(Paths.GameDir)) throw new UpdateBlockedException("the game is running: close it before updating");
         if (File.Exists(Paths.Journal)) throw new InvalidOperationException("an unfinished install exists: run recovery first");
         var writes = plan.ToWrite.ToList();
-        foreach (var w in writes)
-        {
-            var blob = StagedBlob(w.File.Sha256);
-            if (!File.Exists(blob) || Hashing.FileSha256(blob) != w.File.Sha256)
-                throw new TrustException($"staged file for {w.File.Path} is missing or damaged");
-        }
+        // each blob once, however many files share it, and not again when this run has just checked it
+        var damaged = new ConcurrentBag<string>();
+        Parallel.ForEach(writes.DistinctBy(w => w.File.Sha256),
+            new ParallelOptions { CancellationToken = ct, MaxDegreeOfParallelism = Math.Max(1, Environment.ProcessorCount / 2) }, w =>
+            {
+                if (!StagedOk(w.File.Sha256)) damaged.Add(w.File.Path);
+            });
+        if (damaged.Min(StringComparer.Ordinal) is { } bad)
+            throw new TrustException($"staged file for {bad} is missing or damaged");
 
         var journal = new Journal
         {

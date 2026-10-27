@@ -1,10 +1,11 @@
 using System.ComponentModel;
 using System.Diagnostics;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace Xp.Launcher.Core;
 
-public static class GameProcess
+public static partial class GameProcess
 {
     /// <summary>True if any running process has its executable inside <paramref name="gameDir"/>.</summary>
     public static bool IsRunningIn(string gameDir)
@@ -16,12 +17,7 @@ public static class GameProcess
             using (p)
             {
                 if (p.Id == self) continue;
-                string? exe;
-                // an exited process stays in the list while anyone holds its handle
-                try { if (p.HasExited) continue; }
-                catch (Exception e) when (e is Win32Exception or InvalidOperationException or NotSupportedException) { }
-                try { exe = p.MainModule?.FileName; }
-                catch (Exception e) when (e is Win32Exception or InvalidOperationException or NotSupportedException) { continue; }
+                var exe = ImagePath(p);
                 if (exe is not null && exe.StartsWith(root, StringComparison.OrdinalIgnoreCase)
                     && !exe.StartsWith(root + "launcher" + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase))
                     return true;
@@ -29,6 +25,54 @@ public static class GameProcess
         }
         return false;
     }
+
+    /// <summary>
+    /// The exe of a live process, null for an exited one or one closed to us. On Windows one query with the least
+    /// access: MainModule reads the whole module list of each process, about a second for all of them (code audit 27.10).
+    /// </summary>
+    static string? ImagePath(Process p)
+    {
+        if (OperatingSystem.IsWindows())
+        {
+            var h = OpenProcess(ProcessQueryLimitedInformation, false, p.Id);
+            if (h == 0) return null;
+            try
+            {
+                // an exited process stays in the list while anyone holds its handle
+                if (GetExitCodeProcess(h, out var code) && code != StillActive) return null;
+                return ImageName(h);
+            }
+            finally { CloseHandle(h); }
+        }
+        try { return p.HasExited ? null : p.MainModule?.FileName; }
+        catch (Exception e) when (e is Win32Exception or InvalidOperationException or NotSupportedException) { return null; }
+    }
+
+    static unsafe string? ImageName(nint process)
+    {
+        var buf = new char[1024];
+        int n = buf.Length;
+        fixed (char* p = buf)
+            return QueryFullProcessImageNameW(process, 0, p, ref n) ? new string(buf, 0, n) : null;
+    }
+
+    const uint ProcessQueryLimitedInformation = 0x1000;
+    const uint StillActive = 259;
+
+    [LibraryImport("kernel32.dll")]
+    private static partial nint OpenProcess(uint access, [MarshalAs(UnmanagedType.Bool)] bool inherit, int pid);
+
+    [LibraryImport("kernel32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool GetExitCodeProcess(nint process, out uint code);
+
+    [LibraryImport("kernel32.dll", EntryPoint = "QueryFullProcessImageNameW")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static unsafe partial bool QueryFullProcessImageNameW(nint process, uint flags, char* name, ref int size);
+
+    [LibraryImport("kernel32.dll")]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static partial bool CloseHandle(nint handle);
 
     /// <summary>Starts the game from its own directory and returns the process, for exit-code tracking.</summary>
     public static Process Start(GamePaths paths, string launchRelative, IEnumerable<string>? args = null)

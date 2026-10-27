@@ -1,6 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <IsAotCompatible>true</IsAotCompatible>
+    <!-- LibraryImport (GameProcess) generates its stubs with pointers -->
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <RootNamespace>Xp.Launcher.Core</RootNamespace>
   </PropertyGroup>
   <ItemGroup>
