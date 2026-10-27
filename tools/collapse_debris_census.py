@@ -25,20 +25,15 @@ sys.path.insert(0, os.path.join(ROOT, "tools"))
 import collapse_census as cc   # noqa: E402
 import collapse_v2 as V        # noqa: E402
 
-HEADER = "src/Battlescape/CollapsePilotData.h"
+HEADER = "src/Battlescape/CollapsePilotData.bin"
 OUT = "census/collapse/debris"
 RUBBLE_V1 = ["URBANWAR", "URBAN", "COMMERCE", "MILBARR", "VILBAN", "IDT_FARM", "URBAN40K", "BARN_JUNK", "BARN"]
 TIERS = ("крошка", "куча", "бурелом", "ствол")
 
 
 def header_blocks():
-    src = open(HEADER, encoding="utf-8").read()
-    sets = {}
-    for m in re.finditer(r'static const char \*const sets(\d+)\[\] = \{([^}]*)\}', src):
-        sets[int(m.group(1))] = [s.strip().strip('"') for s in m.group(2).split(",") if s.strip()]
-    rows = re.findall(r'\t\{ "([^"]+)", "([^"]+)", \d+, \d+, \d+, \d+, \d+, \d+, \d+, sets(\d+), \d+, parts\d+, \d+, '
-                      r'targets\d+, (\d)', src)
-    return [(lab, name, [s.upper() for s in sets.get(int(bi), [])], exp == "1") for lab, name, bi, exp in rows]
+    import collapse_blob
+    return [(b.label, b.name, [s.upper() for s in b.sets], b.experimental == 1) for b in collapse_blob.load(HEADER)]
 
 
 def has(s, *keys):

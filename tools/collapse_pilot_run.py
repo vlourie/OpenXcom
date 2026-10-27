@@ -6,7 +6,7 @@ r"""Пилот обрушения в движке (этап 1): невидимы
 CollapsePilot.cpp ставит бойцов на клетки участка (OXCE_COLLAPSE_UNIT, _STUN - без сознания, _DROP - предмет
 с земли) на первом обходе settle и снимает части сценария (OXCE_COLLAPSE_REMOVE, номера частей блока) на
 обходе OXCE_COLLAPSE_AT. Обходы - конец хода игрока (и цепочки взрывов местности). Итог сверяется с моделью
-M0j5 (collapse_v7c.evaluate7c после collapse_v8.install() - то же, что вывезено в CollapsePilotData.h): число упавших частей здания,
+M0j5 (collapse_v7c.evaluate7c после collapse_v8.install() - то же, что вывезено в CollapsePilotData.bin): число упавших частей здания,
 а бойцы, тело и предмет - по сохранению после хода ИИ.
 
     py -3.13 tools\collapse_pilot_run.py find  <сейв>...         в каком сейве стоит здание пилота (лог found)
@@ -33,8 +33,8 @@ import ai_probe  # noqa: E402
 
 ROOT = HERE.parent
 ENC = "utf-8-sig"
-# OXCE_COLLAPSE_HEADER - заголовок, с которым собран стенд, когда в src его ещё нет (бои вне очереди правок)
-HEADER = Path(os.environ.get("OXCE_COLLAPSE_HEADER") or ROOT / "src/Battlescape/CollapsePilotData.h")
+# OXCE_COLLAPSE_HEADER - таблица (.bin, все здания), с которой собран стенд, когда в src её ещё нет (бои вне очереди правок)
+HEADER = Path(os.environ.get("OXCE_COLLAPSE_HEADER") or ROOT / "src/Battlescape/CollapsePilotData.bin")
 SCEN = ROOT / "census/collapse/stage0m/pilot_scen.tsv"
 SCEN3 = ROOT / "census/collapse/pilot3/pilot_scen.tsv"   # третья партия зданий (collapse_pilot3_scen)
 SCEN4 = ROOT / "census/collapse/pilot4/pilot_scen.tsv"   # четвёртая партия (collapse_pilot4_scen)
@@ -131,18 +131,11 @@ ai_probe.bench_defaults = _bench_defaults
 
 def header_blocks():
     """{метка: {'parts': [(kind,x,y,z,flags)], 'index': {(kind,x,y,z): i}}} - номера частей как у движка."""
-    text = HEADER.read_text(encoding="utf-8")
+    import collapse_blob
     blocks = {}
-    for m in re.finditer(r'\{ "(\w+)", "[^"]*", \d+, \d+, \d+, \d+, \d+, \d+, \d+, sets\d+, \d+, (parts\d+), (\d+),', text):
-        label, arr, n = m.group(1), m.group(2), int(m.group(3))
-        body = re.search(r"static const CollapsePart %s\[\] = \{(.*?)\n\};" % arr, text, re.S).group(1)
-        parts = []
-        for row in re.findall(r"\{([^{}]*)\}", body):
-            v = [int(s) for s in row.split(",")]
-            parts.append((v[0], v[1], v[2], v[3], v[6]))
-        if len(parts) != n:
-            raise SystemExit("заголовок: у %s %d частей, ожидалось %d" % (label, len(parts), n))
-        blocks[label] = {"parts": parts, "index": {p[:4]: i for i, p in enumerate(parts)}}
+    for b in collapse_blob.load(HEADER):
+        parts = [(v[0], v[1], v[2], v[3], v[6]) for v in b.parts]
+        blocks[b.label] = {"parts": parts, "index": {p[:4]: i for i, p in enumerate(parts)}}
     return blocks
 
 

@@ -88,6 +88,7 @@ set ( battlescape_src
   Battlescape/AliensCrashState.cpp
   Battlescape/CollapseCore.cpp
   Battlescape/CollapsePilot.cpp
+  Battlescape/CollapsePilotData.cpp
   Battlescape/BattlescapeGame.cpp
   Battlescape/BattlescapeGenerator.cpp
   Battlescape/BattlescapeMessage.cpp
@@ -512,6 +513,19 @@ set ( c_src
   ../libs/miniz/miniz.c
 )
 set_property ( SOURCE ${c_src} APPEND PROPERTY COMPILE_DEFINITIONS MINIZ_NO_STDIO )
+
+# the packed collapse pilot table (tools/collapse_blob.py) built into the exe; the stand build takes the experimental
+# buildings too
+if ( OXCE_AI_DEV )
+  set ( collapse_blob_in "${CMAKE_CURRENT_SOURCE_DIR}/Battlescape/CollapsePilotData.bin" )
+else ()
+  set ( collapse_blob_in "${CMAKE_CURRENT_SOURCE_DIR}/Battlescape/CollapsePilotData.player.bin" )
+endif ()
+set ( collapse_blob_c "${CMAKE_CURRENT_BINARY_DIR}/CollapsePilotBlob.c" )
+add_custom_command ( OUTPUT "${collapse_blob_c}"
+  COMMAND ${CMAKE_COMMAND} -DIN=${collapse_blob_in} -DOUT=${collapse_blob_c} -DNAME=collapse_blob -P "${CMAKE_SOURCE_DIR}/cmake/bin2c.cmake"
+  DEPENDS "${collapse_blob_in}" "${CMAKE_SOURCE_DIR}/cmake/bin2c.cmake" VERBATIM )
+set ( c_src ${c_src} "${collapse_blob_c}" )
 set_property ( SOURCE Engine/Scalers/xbrz.cpp APPEND_STRING PROPERTY COMPILE_FLAGS -Wno-unused\ )
 
 set ( data_install_dir bin )
@@ -679,6 +693,11 @@ endif ()
 
 if (WIN32)
   set(CMAKE_EXE_LINKER_FLAGS -Wl,--export-all-symbols)
+  # crashDump names functions by the export table (dbghelp reads only it, checked 27.10): the COFF symbol table
+  # (12 MB of the exe) is not read by anything
+  if ( NOT "${CMAKE_BUILD_TYPE}" STREQUAL "Debug" )
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -s")
+  endif ()
   set(WIN32_LIBS imagehlp dbghelp)
 endif(WIN32)
 
