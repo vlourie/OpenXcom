@@ -1,1 +1,2 @@
 ﻿- The 'Wounded in red' option (was 'Craft crew: wounded in red') now also marks the wounded in the base soldier list: the name and 'WOUNDED>days' are red, so you see at once who should not go to training.
+- The 'Building collapse' option description now says where it works (most surface maps: towns, villages, farms, junkyards, deserts, forests and jungles) and what the rubble does: debris hits whoever is below, lands as gravel, heaps, boulders and fallen trunks, and raises dust.
