@@ -11,6 +11,9 @@
 # Команды (по одной в строке или через ';' в аргументе; '#' - комментарий). Координаты - пиксели БАЗОВОГО экрана (R-103):
 #   click|rclick|mclick|hover [ctrl+]x,y     wheel [ctrl+]up|down x,y      key [ctrl+|shift+|alt+]N|имя|fN (289 = F8)
 #   type текст     wait мс     shot файл.png (путь латиницей)     state     reinit     quit
+#   record папка кадров fps [night от до]   ролик: кадры f00000.png.. подряд, часы картинок базы (HdControl::ticks)
+#                        шагают на 1000/fps за кадр, а не по стенке - без рывков; night - ночь «Живой базы» от и до
+#                        (0..1) за ролик; склейка: ffmpeg -framerate fps -i папка/f%05d.png -c:v libx264 -pix_fmt yuv420p
 #   waitstate Имя [мс]   ждать, пока наверху стека класс Имя (окно, которое игра открывает по своему таймеру, например
 #                        CraftErrorState после загрузки NoCodexCatZ.sav: сразу после start наверху ещё GeoscapeState)
 #   set ключ=значение [ключ=значение...]   любая опция игры (oxceHdWoundedRed=true), k=N - масштаб мира; затем сброс экрана
@@ -99,6 +102,13 @@ def sanitize(lines, name):
             if not arg.isascii():
                 raise SystemExit(f"shot: путь латиницей (игра пишет файл через ANSI-вызов): {arg}")
             Path(arg).parent.mkdir(parents=True, exist_ok=True)
+        elif cmd == "record" and arg:
+            parts = arg.split()
+            if not parts[0].isascii():
+                raise SystemExit(f"record: папка латиницей (игра пишет файлы через ANSI-вызов): {parts[0]}")
+            Path(parts[0]).mkdir(parents=True, exist_ok=True)
+            # кадр 1920x1080 пишется в PNG за десятки мс; с запасом - секунда на кадр
+            timeout += int(parts[1]) if len(parts) > 1 and parts[1].isdigit() else 0
         elif cmd == "wait":
             timeout += int(arg or 0) / 1000
         elif cmd == "waitstate":
