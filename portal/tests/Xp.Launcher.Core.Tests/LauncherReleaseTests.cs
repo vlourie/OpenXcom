@@ -104,6 +104,38 @@ public sealed class LauncherReleaseTests : IDisposable
         Assert.Equal(new[] { "into" }, Directory.GetFileSystemEntries(f.Root, "into*").Select(e => Path.GetFileName(e)).ToArray());   // pack and blobs cleaned up
     }
 
+    sealed class Seen : IProgress<Progress>
+    {
+        public readonly List<Progress> All = [];
+        public void Report(Progress p) { lock (All) All.Add(p); }
+    }
+
+    [Fact]
+    public async Task The_window_sees_the_download_of_the_files_up_to_their_size()
+    {
+        var m = await LatestAsync();
+        var seen = new Seen();
+        await LauncherRelease.FetchAsync(_repo, m, Into, "XPiratezLauncher.exe", null, _ => { }, default, progress: seen);
+        var last = seen.All[^1];
+        Assert.All(seen.All, p => Assert.Equal(Phase.Downloading, p.Phase));
+        Assert.Equal(m.Files.Sum(x => x.Size), last.Total);
+        Assert.Equal(last.Total, last.Done);
+    }
+
+    [Fact]
+    public async Task The_window_sees_the_download_of_the_pack_up_to_its_size()
+    {
+        var running = Path.Combine(f.Root, "running");
+        await LauncherRelease.FetchAsync(_repo, await LatestAsync(), running, "XPiratezLauncher.exe", null, _ => { }, default);
+        var m = await PublishL3();
+        var seen = new Seen();
+        await LauncherRelease.FetchAsync(_repo, m, Into, "XPiratezLauncher.exe", running, _ => { }, default, packFrom: "l2", progress: seen);
+        Assert.NotEmpty(seen.All);
+        Assert.All(seen.All, p => Assert.Equal("pack l2", p.Current));
+        Assert.Equal(m.Packs[0].Size, seen.All[^1].Done);
+        Assert.Equal(m.Packs[0].Size, seen.All[^1].Total);
+    }
+
     [Fact]
     public async Task A_damaged_launcher_pack_falls_back_to_the_files()
     {

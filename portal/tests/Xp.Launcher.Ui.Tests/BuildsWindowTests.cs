@@ -7,6 +7,7 @@ using Avalonia.Controls;
 using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
+using Avalonia.LogicalTree;
 using Avalonia.Threading;
 using Avalonia.VisualTree;
 using Xp.Launcher;
@@ -505,6 +506,40 @@ public sealed class BuildsWindowTests : IDisposable
         var log = File.ReadAllText(Path.Combine(Game, "launcher", "logs", "launcher.log"));
         Assert.Contains("update watch: out stable 2026.10.21-8", log);
         Assert.Contains("update watch: looked, stable ", log);   // every look leaves its line, news or not
+        w.Close();
+    }
+
+    [AvaloniaFact]
+    public void A_launcher_update_shows_its_percent_on_the_settings_page_too()
+    {
+        var w = Open();
+        Call(w, "Navigate", "settings");
+        var line = F<WrapPanel>(w, "_workLine");
+        var bar = F<ProgressBar>(w, "_workBar");
+        Assert.False(line.IsVisible);
+        Assert.False(bar.IsVisible);
+
+        // «Обновить лаунчер» pressed: the pack of the new launcher a third downloaded
+        var work = typeof(MainWindow).GetField("_work", BindingFlags.Instance | BindingFlags.NonPublic)!;
+        work.SetValue(w, Enum.Parse(work.FieldType, "SelfUpdate"));
+        Set(w, "_cancelable", true);
+        Call(w, "ShowProgress", new Xp.Launcher.Core.Progress(Xp.Launcher.Core.Phase.Downloading, 5_000_000, 15_000_000, "pack launcher-0.3.20", 2_000_000));
+        Settle();
+        var texts = line.GetLogicalDescendants().OfType<TextBlock>().Select(t => t.Text).ToList();
+        Assert.True(line.IsVisible);
+        Assert.True(bar.IsVisible);
+        Assert.Equal(333, (int)bar.Value);
+        Assert.Contains("Обновляю лаунчер… 33 %", texts);
+        Assert.Contains(texts, t => t!.StartsWith("Загрузка: "));
+        Assert.Contains("Отмена", texts);
+        Assert.Equal("Обновляю лаунчер… 33 %", F<TextBlock>(w, "_mainText").Text);   // the main page says the same
+        Shot(w, "settings-self-update");
+
+        work.SetValue(w, Enum.Parse(work.FieldType, "None"));
+        Set(w, "_cancelable", false);
+        Call(w, "Refresh");
+        Assert.False(line.IsVisible);
+        Assert.False(bar.IsVisible);
         w.Close();
     }
 

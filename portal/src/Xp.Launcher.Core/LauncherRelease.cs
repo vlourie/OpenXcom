@@ -29,10 +29,11 @@ public static class LauncherRelease
     /// the bytes that became ready, kept and copied files included, so it sums to the release size. With
     /// <paramref name="packFrom"/> (the running launcher's release) the new files come as the release's pack from it when
     /// there is one smaller than they are: brotli takes the exe to about two fifths. Any failure of the pack but a cancel
-    /// only means the files are fetched one by one.
+    /// only means the files are fetched one by one. <paramref name="progress"/> sees only what comes over the network:
+    /// the pack against its own size, then the files still missing against theirs.
     /// </summary>
     public static async Task FetchAsync(RepoClient repo, ReleaseManifest m, string dir, string exeName, string? reuseFrom,
-        Action<long> onBytes, CancellationToken ct, string? packFrom = null)
+        Action<long> onBytes, CancellationToken ct, string? packFrom = null, IProgress<Progress>? progress = null)
     {
         if (!m.Files.Any(f => f.Path.Equals(exeName, StringComparison.OrdinalIgnoreCase)))
             throw new ManifestException($"launcher release {m.Release.Id} has no {exeName}");
@@ -50,24 +51,40 @@ public static class LauncherRelease
             }
             need.Add(f);
         }
+        var meter = new SpeedMeter();
         if (packFrom is not null && m.Packs.FirstOrDefault(p => p.From.Equals(packFrom, StringComparison.OrdinalIgnoreCase)) is { } pack
             && pack.Size < need.DistinctBy(f => f.Sha256).Sum(f => f.Size))
-            need = await FromPackAsync(repo, m, pack, dir, need, onBytes, ct);
+        {
+            long got = 0;
+            need = await FromPackAsync(repo, m, pack, dir, need, onBytes, n =>
+            {
+                got += n;
+                meter.Add(n);
+                progress?.Report(new Progress(Phase.Downloading, got, pack.Size, $"pack {pack.From}", meter.BytesPerSecond));
+            }, ct);
+        }
         // RepoClient writes <target>.part and moves it in only after the hash matched
+        long total = need.Sum(f => f.Size), done = 0;
         foreach (var f in need)
-            await repo.DownloadBlobAsync(f.Sha256, f.Size, SafePath.Resolve(dir, f.Path), onBytes, ct);
+            await repo.DownloadBlobAsync(f.Sha256, f.Size, SafePath.Resolve(dir, f.Path), n =>
+            {
+                onBytes(n);
+                done += n;
+                meter.Add(n);
+                progress?.Report(new Progress(Phase.Downloading, done, total, f.Path, meter.BytesPerSecond));
+            }, ct);
     }
 
     /// <summary>The files of <paramref name="need"/> from the pack, each checked by its SHA-256; returns those still to fetch.</summary>
     static async Task<List<ManifestFile>> FromPackAsync(RepoClient repo, ReleaseManifest m, UpdatePack pack, string dir, List<ManifestFile> need,
-        Action<long> onBytes, CancellationToken ct)
+        Action<long> onBytes, Action<long> onPackBytes, CancellationToken ct)
     {
         // beside the prepared folder, not in it: the folder holds the release's files and nothing else
         var file = dir.TrimEnd(Path.DirectorySeparatorChar) + ".pack.tar.br";
         var blobs = dir.TrimEnd(Path.DirectorySeparatorChar) + ".blobs";
         try
         {
-            await repo.DownloadPackAsync(m.Release.Id, pack, file, _ => { }, ct);
+            await repo.DownloadPackAsync(m.Release.Id, pack, file, onPackBytes, ct);
             Directory.CreateDirectory(blobs);
             var sizes = need.DistinctBy(f => f.Sha256).ToDictionary(f => f.Sha256, f => f.Size, StringComparer.Ordinal);
             await Task.Run(() => PackReader.Unpack(file, sizes, sha => Path.Combine(blobs, sha), null, ct), ct);

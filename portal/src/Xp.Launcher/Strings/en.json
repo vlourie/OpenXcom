@@ -46,6 +46,7 @@
  "log": "Log",
  "self.available": "Launcher {0} is available.",
  "self.install": "Update launcher",
+ "self.updating": "Updating launcher… {0} %",
  "self.required": "This release needs launcher {0} or newer.",
  "self.readonly": "The launcher folder is read-only: move the launcher to a folder of your own.",
  "size.mb": "{0:F1} MB",

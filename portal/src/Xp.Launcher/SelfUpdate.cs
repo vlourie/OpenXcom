@@ -41,12 +41,12 @@ public sealed class SelfUpdate(RepoClient repo, Settings settings, ILauncherLog 
     }
 
     /// <summary>Downloads and verifies every file of the new launcher; returns the directory holding it.</summary>
-    public async Task<string> PrepareAsync(ReleaseManifest m, CancellationToken ct)
+    public async Task<string> PrepareAsync(ReleaseManifest m, CancellationToken ct, IProgress<Core.Progress>? progress = null)
     {
         var dir = Path.Combine(Settings.Dir, "update", m.Release.Id);
         // the new files as the pack from this launcher's own release, when the release has one
         await LauncherRelease.FetchAsync(repo, m, dir, ExeName, reuseFrom: AppDir, _ => { }, ct,
-            packFrom: LauncherRelease.IdFor(BuiltIn.VersionText, m.Release.Channel));
+            packFrom: LauncherRelease.IdFor(BuiltIn.VersionText, m.Release.Channel), progress: progress);
         log.Info($"launcher {m.Release.Version} prepared");
         return dir;
     }

@@ -56,6 +56,8 @@ public sealed class MainWindow : Window
     readonly TextBlock _languageNote = new() { FontSize = 12, Foreground = Skin.B(Skin.Muted), IsVisible = false, TextWrapping = TextWrapping.Wrap };
     readonly TextBlock _installed = new() { FontSize = 13, Foreground = Skin.B(Skin.Text2), TextWrapping = TextWrapping.Wrap };
     readonly TextBlock _launcherLine = new() { FontSize = 12, Foreground = Skin.B(Skin.Muted), VerticalAlignment = VerticalAlignment.Center, TextWrapping = TextWrapping.Wrap };
+    readonly ProgressBar _workBar = new() { Minimum = 0, Maximum = 1000, Height = 4, MinHeight = 4, IsVisible = false, CornerRadius = new CornerRadius(0) };
+    readonly WrapPanel _workLine = new() { Orientation = Orientation.Horizontal, IsVisible = false };
     readonly TextBlock _rollbackNote = new() { FontSize = 12, Foreground = Skin.B(Skin.Muted), TextWrapping = TextWrapping.Wrap };
     readonly TextBlock _log = new() { FontFamily = new FontFamily("Consolas,monospace"), FontSize = 11, TextWrapping = TextWrapping.Wrap, Foreground = Skin.B(Skin.Muted), LineHeight = 16 };
     readonly Button _check, _repair, _rollback, _selfUpdate, _choose, _updateOnly, _components, _resetProfile;
@@ -743,6 +745,8 @@ public sealed class MainWindow : Window
         upRow.Children.Add(_selfUpdate);
         upRow.Children.Add(_launcherLine);
         updates.Children.Add(upRow);
+        updates.Children.Add(_workBar);
+        updates.Children.Add(_workLine);
 
         var broken = Group("settings.broken");
         _repair.HorizontalAlignment = HorizontalAlignment.Stretch;
@@ -1434,7 +1438,9 @@ public sealed class MainWindow : Window
         if (_launcherUpdate is null) return;
         if (!SelfUpdate.AppDirWritable()) { Fail(L.T("self.readonly")); return; }
         var su = new SelfUpdate(_repo!, _settings, _fileLog!);
-        var dir = await su.PrepareAsync(_launcherUpdate, _cts!.Token);
+        _cancelable = true;
+        var dir = await su.PrepareAsync(_launcherUpdate, _cts!.Token, new Progress<Core.Progress>(ShowProgress));
+        _cancelable = false;
         su.Apply(dir, _launcherUpdate);
         // a real exit even in a voice room: the bootstrapper waits for this process to swap its files
         Quit();
@@ -1609,7 +1615,7 @@ public sealed class MainWindow : Window
         else if (_work is Work.Update or Work.Repair or Work.Rollback or Work.SelfUpdate or Work.Games)
         {
             bool scanning = _work is Work.Repair or Work.Update && _phase is Phase.Checking or Phase.Scanning;
-            caption = L.T(_work == Work.Games ? "games.busy" : scanning ? "main.repairing" : "main.updating", (int)_percent);
+            caption = L.T(_work == Work.Games ? "games.busy" : _work == Work.SelfUpdate ? "self.updating" : scanning ? "main.repairing" : "main.updating", (int)_percent);
             look = "busy";
             _progress.IsVisible = true;
             if (_progressLine.Length > 0) Sub(_progressLine);
@@ -1654,22 +1660,44 @@ public sealed class MainWindow : Window
         foreach (var c in new[] { "primary", "busy", "warnfill" }) _main.Classes.Set(c, c == look);
         _main.IsEnabled = enabled && (_work is Work.None or Work.Check || look == "busy");
         _main.IsHitTestVisible = look != "busy";
+        UpdateWork(look == "busy" ? caption : null);
+    }
+
+    /// <summary>
+    /// The work under way on the settings page too: its buttons only go dim, and the player who pressed
+    /// «Обновить лаунчер» there saw nothing else of it. The same percent, line and «Отмена» as on the main page.
+    /// </summary>
+    void UpdateWork(string? busyCaption)
+    {
+        _workLine.Children.Clear();
+        _workBar.IsVisible = busyCaption is not null;
+        _workBar.Value = _progress.Value;
+        if (busyCaption is not null)
+        {
+            Sub(busyCaption, Skin.Text2, _workLine);
+            if (_progressLine.Length > 0) Sub(_progressLine, null, _workLine);
+            if (_cancelable) SubLink(L.T("cancel"), () => _cts?.Cancel(), _workLine);
+        }
+        else if (_work == Work.Check) Sub(_progressLine.Length > 0 ? L.T("status.checking") + " " + _progressLine : L.T("status.checking"), null, _workLine);
+        _workLine.IsVisible = _workLine.Children.Count > 0;
     }
 
     static string FirstLine(string s) => s.Split('\n')[0].Trim();
 
-    void Sub(string text, Color? color = null)
+    void Sub(string text, Color? color = null, WrapPanel? to = null)
     {
-        if (_sub.Children.Count > 0) _sub.Children.Add(Dot());
-        _sub.Children.Add(new TextBlock { Text = text, FontSize = 13, Foreground = Skin.B(color ?? Skin.Muted), TextWrapping = TextWrapping.Wrap, VerticalAlignment = VerticalAlignment.Center });
+        to ??= _sub;
+        if (to.Children.Count > 0) to.Children.Add(Dot());
+        to.Children.Add(new TextBlock { Text = text, FontSize = 13, Foreground = Skin.B(color ?? Skin.Muted), TextWrapping = TextWrapping.Wrap, VerticalAlignment = VerticalAlignment.Center });
     }
 
-    void SubLink(string text, Action onClick)
+    void SubLink(string text, Action onClick, WrapPanel? to = null)
     {
-        if (_sub.Children.Count > 0) _sub.Children.Add(Dot());
+        to ??= _sub;
+        if (to.Children.Count > 0) to.Children.Add(Dot());
         var l = Skin.Link(text, onClick);
         l.Foreground = Skin.B(Skin.Text2);
-        _sub.Children.Add(l);
+        to.Children.Add(l);
     }
 
     static TextBlock Dot() => new() { Text = "·", FontSize = 13, Foreground = Skin.B(Skin.Muted), Margin = new Thickness(8, 0), VerticalAlignment = VerticalAlignment.Center };
