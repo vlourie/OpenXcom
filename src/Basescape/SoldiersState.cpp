@@ -24,6 +24,7 @@
 #include "../Mod/RuleSoldierTransformation.h"
 #include "../Engine/LocalizedText.h"
 #include "../Engine/Options.h"
+#include "../Engine/Palette.h"
 #include "../Interface/ComboBox.h"
 #include "../Engine/Action.h"
 #include "../Geoscape/AllocatePsiTrainingState.h"
@@ -411,6 +412,13 @@ void SoldiersState::initList(size_t scrl)
 		}
 		else
 			setListRowColor(*_lstSoldiers, row, _lstSoldiers->getColor(), *soldier);
+		// OXCE-HD (oxceHdWoundedRed): the same red name and "WOUNDED>days" as on the craft crew screen. Display only.
+		if (Options::oxceHdWoundedRed && soldier->isWounded())
+		{
+			const Uint8 red = Palette::blockOffset(2) + 2;
+			_lstSoldiers->setCellColor(row, 0, red);
+			_lstSoldiers->setCellColor(row, 2, red);
+		}
 
 		if (soldier->getDeath())
 		{
