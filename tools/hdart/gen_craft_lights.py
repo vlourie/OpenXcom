@@ -1,18 +1,19 @@
 #!/usr/bin/env python3
 """
-gen_craft_lights.py - проблесковые огни кораблей в ангаре базы.
+gen_craft_lights.py - огни кораблей в ангаре базы, по авиационным правилам
+(14 CFR 25.1385-25.1401, docs/research/craft-lights-aviation-2026-10-27.md).
 
 Ставит огни по силуэту картинки корабля в ангаре (кадр BASEBITS.PCK = sprite + 33
 у корабля, у скина свой номер) и пишет для движка (HdCraftLights):
 
     <мод hd>/hd/BASEBITS.PCK/<кадр>.lights.txt
 
-    red    - левая законцовка крыла, горит ровно
-    green  - правая законцовка
-    strobe - хвост, белая двойная вспышка
-    beacon - маячок по центру корпуса, медленно пульсирует красным
-    blink #rrggbb - огонь, уже нарисованный на картинке (PAINTED): у такого корабля
-             светятся только нарисованные места, своим цветом
+    red    - бортовой огонь левой законцовки (левый борт по полёту), ровный
+    green  - правой законцовки
+    white  - хвостовой огонь, ровный белый
+    beacon - проблесковый маяк по центру корпуса, красный
+    вид #rrggbb - огонь, уже нарисованный на картинке (PAINTED): у такого корабля
+             светятся только нарисованные места; вид - по месту на корабле, цвет - авиационный
 
 Тень спрайта (тёмно-серая кромка справа и снизу) в поиск краёв не входит.
 Наземная техника и следы экспедиций (кадр 200 и прочие из SKIP) огней не получают.
@@ -37,8 +38,8 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from gen_base import basebits_map  # noqa: E402
 
 ENC_W = "utf-8-sig"
-# наземное и не летает: следы экспедиций, машины, байки, танк; 33 - обломки корабля
-SKIP = {33, 200, 238, 239, 240, 241, 263, 277, 178, 280, 284, 255}
+# наземное и не летает: следы экспедиций, машины, байки, танки (1294 - STR_GUNTANK); 33 - обломки корабля
+SKIP = {33, 200, 238, 239, 240, 241, 263, 277, 178, 280, 284, 255, 1294}
 ROOT = os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
 VANILLA_PCK = os.path.join(ROOT, "bin", "UFO", "GEOGRAPH", "BASEBITS.PCK")
 VANILLA_PAL = os.path.join(ROOT, "bin", "UFO", "GEODATA", "PALETTES.DAT")
@@ -47,7 +48,8 @@ PAL_BASESCAPE = 1
 # Огни, уже нарисованные на картинке корабля (X-Piratez): кадр -> [(x, y, цвет пятна)].
 # Отобраны глазами по листу кандидатов (пятно заметно другого цвета, чем корпус вокруг;
 # блик на стекле кабины - не огонь), координаты - центр пятна, цвет - его средний цвет.
-# У такого корабля светятся ТОЛЬКО эти места: вид blink, цвет - свой, осветлённый.
+# У такого корабля светятся ТОЛЬКО эти места; вид и цвет - по месту (painted_kind), цвет краски
+# решает только, белый ли маяк.
 PAINTED = {
     35: [(15.5, 10.1, "#931a1a"), (5.2, 24.2, "#9c2020"), (25.8, 24.2, "#a42525")],
     55: [(10.5, 26.5, "#e8a800"), (20.5, 26.5, "#e8a800")],
@@ -74,22 +76,42 @@ PAINTED = {
     1289: [(10.5, 11.5, "#cc4444"), (21.5, 11.5, "#cc4444")],
 }
 
-# Корабли, стоящие в ангаре боком (нос влево или вправо), по листу всех кораблей: крылья у них
-# сверху и снизу. Огни ставятся по повёрнутому силуэту, в файл пишется строка sideways -
-# движок делит на борта верх и низ, а не лево и право.
-SIDEWAYS = {186, 202}
+# Корабли, стоящие в ангаре боком, по листу всех кораблей: кадр -> куда смотрит нос. У обоих нос
+# влево: щуп слева, плоская корма справа (Verdant Snake - и в педии VSnake_Pedia.png); левый борт
+# у них СНИЗУ. Огни ставятся по силуэту, повёрнутому носом вверх, в файл пишется строка sideways.
+SIDEWAYS = {186: "left", 202: "left"}
+
+# Авиационные цвета (14 CFR 25.1397) в sRGB: красный - ближайший достижимый, зелёный - внутри нормы
+# (sRGB-зелёный жёлтый для неё), белый. Те же числа, что в HdCraftLights.cpp.
+AVIATION = {"red": "#ff0a00", "green": "#0dff99", "white": "#ffffff"}
+# огонь на оси корабля: ближе 1,5 пикселя к середине размаха (как keel в прежнем движке)
+KEEL = 1.5
 
 
-def glow_color(hexc):
-    """Цвет пятна -> цвет свечения: тот же тон, насыщенность не ниже 0.8, яркость полная
-    (краска тёмная и бледная, огонь нет). Белое пятно остаётся белым."""
+def is_white(hexc):
+    """Белая (бесцветная) краска: насыщенность не выше 0.2."""
     import colorsys
     r, g, b = (int(hexc[i:i + 2], 16) / 255.0 for i in (1, 3, 5))
-    h, s, v = colorsys.rgb_to_hsv(r, g, b)
-    if s > 0.2:
-        s = max(s, 0.8)
-    r, g, b = colorsys.hsv_to_rgb(h, s, 1.0)
-    return "#%02x%02x%02x" % (round(r * 255), round(g * 255), round(b * 255))
+    return colorsys.rgb_to_hsv(r, g, b)[1] <= 0.2
+
+
+def painted_kind(x, y, hexc, body, sides=True):
+    """Вид нарисованного огня по месту на корабле носом вверх (body - его силуэт): слева от оси -
+    левый бортовой красный, справа - правый зелёный; на оси в задней четверти - хвостовой белый;
+    на оси впереди - маяк (красный, белый - если краска белая: 25.1401 допускает оба).
+    sides=False - у корабля нет пары по бортам (одно пятно сбоку): это маяк, а не бортовой огонь."""
+    ys, xs = np.nonzero(body)
+    cx = (xs.min() + xs.max() + 1) / 2.0
+    d = x - cx if sides else 0.0
+    if d < -KEEL:
+        kind = "red"
+    elif d > KEEL:
+        kind = "green"
+    elif (y - ys.min()) / max(ys.max() + 1 - ys.min(), 1) > 0.75:
+        kind = "white"
+    else:
+        return "beacon " + AVIATION["white" if is_white(hexc) else "red"]
+    return kind + " " + AVIATION[kind]
 
 
 def craft_frames(mod_dir):
@@ -169,14 +191,34 @@ def body_mask(idx, pal):
 
 def place(idx, pal, frame=None):
     """Огни по силуэту: [(x, y, вид)] в пикселях кадра (центр пикселя = .5).
-    Если огни на картинке уже нарисованы (PAINTED) - только они, вид 'blink #цвет'."""
-    if frame in PAINTED:
-        return [(x, y, "blink " + glow_color(c)) for x, y, c in PAINTED[frame]]
+    Если огни на картинке уже нарисованы (PAINTED) - только они, вид по месту (painted_kind).
+    Корабль боком считается по силуэту, ПОВЁРНУТОМУ носом вверх, и точки поворачиваются обратно:
+    транспонирование - зеркало, оно переставило бы левый и правый борт."""
     body = body_mask(idx, pal)
-    if frame in SIDEWAYS:
-        # тот же расчёт по силуэту, повёрнутому носом вверх, и обратно: крылья сверху и снизу
-        return [(y, x, kind) for x, y, kind in place_body(body.T)]
-    return place_body(body)
+    h, w = body.shape
+    nose = SIDEWAYS.get(frame)
+    if nose == "left":
+        up = np.rot90(body, -1)                         # по часовой: нос слева -> вверх
+        to_up = lambda x, y: (h - y, x)
+        back = lambda x, y: (y, h - x)
+    elif nose == "right":
+        up = np.rot90(body, 1)                          # против часовой: нос справа -> вверх
+        to_up = lambda x, y: (y, w - x)
+        back = lambda x, y: (w - y, x)
+    else:
+        up = body
+        to_up = back = lambda x, y: (x, y)
+    if frame in PAINTED:
+        ys, xs = np.nonzero(up)
+        cx = (xs.min() + xs.max() + 1) / 2.0
+        across = [to_up(x, y)[0] - cx for x, y, _ in PAINTED[frame]]
+        sides = any(d < -KEEL for d in across) and any(d > KEEL for d in across)
+        lights = []
+        for x, y, c in PAINTED[frame]:
+            ux, uy = to_up(x, y)
+            lights.append((x, y, painted_kind(ux, uy, c, up, sides)))
+        return lights
+    return [back(x, y) + (kind,) for x, y, kind in place_body(up)]
 
 
 def place_body(body):
@@ -201,7 +243,7 @@ def place_body(body):
     if xr - xl >= 8:
         lights.append((xl + 0.5, yl + 0.5, "red"))
         lights.append((xr + 0.5, yr + 0.5, "green"))
-    lights.append((xb + 0.5, yb + 0.5, "strobe"))
+    lights.append((xb + 0.5, yb + 0.5, "white"))
     by = int(round(my)) - 2
     col = np.nonzero(body[:, int(round(mx))])[0]
     if len(col):
@@ -210,11 +252,11 @@ def place_body(body):
     return lights
 
 
-def write_lights(path, name, lights, sideways=False):
+def write_lights(path, name, lights, nose=None):
     with open(path, "w", encoding=ENC_W, newline="\n") as f:
         f.write("# %s - gen_craft_lights.py; x y kind [period s] [offset s]\n" % name)
-        if sideways:
-            f.write("sideways\n")
+        if nose:
+            f.write("sideways %s\n" % nose)
         for x, y, kind in lights:
             f.write("%5.1f %5.1f  %s\n" % (x, y, kind))
 
@@ -231,9 +273,9 @@ def read_lights(path):
     return out
 
 
-# --- превью: те же формулы, что в HdCraftLights.cpp
-COLORS = {"red": (1.0, 0.12, 0.08), "green": (0.10, 1.0, 0.30), "white": (1, 1, 1),
-          "strobe": (1, 1, 1), "beacon": (1.0, 0.10, 0.05)}
+# --- превью: те же формулы, что в HdCraftLights.cpp, корабль готов к вылету (READY)
+COLORS = {"red": (1.0, 0.04, 0.0), "green": (0.05, 1.0, 0.60), "white": (1, 1, 1),
+          "strobe": (1, 1, 1), "beacon": (1.0, 0.04, 0.0)}
 PERIOD = {"strobe": 1.3, "beacon": 1.0, "blink": 1.2}
 
 
@@ -247,13 +289,13 @@ def kind_color(kind):
 
 
 def intensity(kind, t):
+    """Готовый к вылету: бортовые ровно, маяк мигает, строб в ангаре не горит (AIM 4-3-23)."""
     if kind in ("red", "green", "white"):
         return 1.0
+    if kind == "strobe":
+        return 0.0
     p = PERIOD[kind]
     phase = (t % p) / p
-    if kind == "strobe":
-        ms = phase * p * 1000.0
-        return 1.0 if ms < 60 or 160 <= ms < 220 else 0.0
     s = math.sin(phase * 2 * math.pi)
     return s * s if s > 0 else 0.0
 
@@ -340,7 +382,7 @@ def main():
             lights = place(idx, pal, frame)
             if not lights:
                 continue
-            write_lights(path, name, lights, frame in SIDEWAYS)
+            write_lights(path, name, lights, SIDEWAYS.get(frame))
             written += 1
         items.append((idx, pal, lights))
         print("%-26s кадр %4d: %d огней" % (name, frame, len(lights)))

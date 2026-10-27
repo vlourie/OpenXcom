@@ -61,9 +61,6 @@ struct Light
 };
 
 std::map<int, std::vector<Light>> frames;
-/// Frames of a craft standing sideways in the hangar (a line "sideways" in the file): its
-/// sides are up and down in the picture, not left and right.
-std::map<int, bool> sideways;
 bool scanned = false;
 
 bool parseKind(const std::string &s, Kind &kind, float &period)
@@ -124,7 +121,6 @@ void scan()
 			continue;
 		}
 		std::vector<Light> lights;
-		bool side = false;
 		std::string line;
 		int number = 0;
 		while (std::getline(*in, line))
@@ -146,8 +142,7 @@ void scan()
 			std::string kind;
 			if (line.find("sideways") != std::string::npos)
 			{
-				side = true;
-				continue;
+				continue;                   // the sides are already in the kinds (gen_craft_lights.py)
 			}
 			if (!(ss >> light.x >> light.y))
 			{
@@ -188,7 +183,6 @@ void scan()
 		if (!lights.empty())
 		{
 			frames[(int)index] = std::move(lights);
-			sideways[(int)index] = side;
 		}
 	}
 	if (!frames.empty())
@@ -204,52 +198,41 @@ float pulse(float phase)
 	return s > 0.0f ? s * s : 0.0f;
 }
 
-/// Brightness 0..1 of a light at time t (seconds). `side`: -1 and 1 - the two sides of the craft,
-/// which blink in turn when pilots are missing; 0 - on its keel, dark then.
-float intensity(const Light &light, Status status, float t, int side)
+/// Brightness 0..1 of a light at time t (seconds), by the aviation rules: the position lights
+/// steady while there is anyone aboard to switch them on, the beacon only when the craft is ready
+/// (its engines start: keep clear), strobes never on the ground.
+float intensity(const Light &light, Status status, float t)
 {
-	if (status != BUSY)
-	{
-		// every light in one rhythm of the state, the offsets of the file set aside
-		const float period = status == READY ? 1.2f : status == REARMING ? 1.4f : 1.0f;
-		const float phase = std::fmod(std::fabs(t), period) / period;
-		switch (status)
-		{
-		case REARMING:
-		{
-			// two short flashes, then a pause
-			const float ms = phase * period * 1000.0f;
-			return (ms < 120.0f || (ms >= 260.0f && ms < 380.0f)) ? 1.0f : 0.0f;
-		}
-		case NO_CREW:
-			return side == 0 ? 0.0f : pulse(side < 0 ? phase : std::fmod(phase + 0.5f, 1.0f));
-		default:
-			return pulse(phase);    // ready, repairs: an even pulse
-		}
-	}
-	// refuelling and the rest: only the beacons, each in its own rhythm
-	if (light.kind != BEACON && light.kind != BLINK)
+	if (status == NO_CREW)
 	{
 		return 0.0f;
 	}
-	return pulse(std::fmod(std::fabs(t + light.offset), light.period) / light.period);
+	switch (light.kind)
+	{
+	case RED:
+	case GREEN:
+	case WHITE:
+		return 1.0f;
+	case BEACON:
+	case BLINK:
+	{
+		if (status != READY)
+		{
+			return 0.0f;
+		}
+		// 40 to 100 flashes a minute (14 CFR 25.1401(c))
+		const float period = std::min(std::max(light.period, 0.6f), 1.5f);
+		return pulse(std::fmod(std::fabs(t + light.offset), period) / period);
+	}
+	default:
+		return 0.0f;                // STROBE
+	}
 }
 
-void colorOf(const Light &light, Status status, float &r, float &g, float &b)
+/// Aviation red, green and white (14 CFR 25.1397) in sRGB: the red is the nearest the screen
+/// can show, the green inside the norm (sRGB green is too yellow for it).
+void colorOf(const Light &light, float &r, float &g, float &b)
 {
-	switch (status)
-	{
-	case READY:
-		r = 0.10f; g = 1.00f; b = 0.30f;
-		return;
-	case REPAIRS:
-	case REARMING:
-	case NO_CREW:
-		r = 1.00f; g = 0.12f; b = 0.08f;
-		return;
-	default:
-		break;
-	}
 	if (light.ownColor)
 	{
 		r = light.r; g = light.g; b = light.b;
@@ -257,12 +240,12 @@ void colorOf(const Light &light, Status status, float &r, float &g, float &b)
 	}
 	switch (light.kind)
 	{
-	case RED:    r = 1.00f; g = 0.12f; b = 0.08f; return;
-	case GREEN:  r = 0.10f; g = 1.00f; b = 0.30f; return;
+	case RED:
+	case BEACON: r = 1.00f; g = 0.04f; b = 0.00f; return;
+	case GREEN:  r = 0.05f; g = 1.00f; b = 0.60f; return;
 	case WHITE:
 	case STROBE:
 	case BLINK:  r = 1.00f; g = 1.00f; b = 1.00f; return;
-	case BEACON: r = 1.00f; g = 0.10f; b = 0.05f; return;
 	}
 }
 
@@ -315,8 +298,7 @@ void glow(SDL_Surface *world, float cx, float cy, int k, float r, float g, float
 /// The lights of a frame of the game's BASEBITS set. The files are named by the frame in the
 /// master mod's own numbering (sprite + 33), while the game shifts a mod's craft sprite above 4
 /// by the mod's offset (Mod::getOffset): the master's Brig, sprite 26, is frame 1059, not 59.
-/// `side`, when given: does the craft stand sideways.
-const std::vector<Light> *lightsOf(int index, bool *side = nullptr)
+const std::vector<Light> *lightsOf(int index)
 {
 	scan();
 	auto it = frames.find(index);
@@ -327,10 +309,6 @@ const std::vector<Light> *lightsOf(int index, bool *side = nullptr)
 	if (it == frames.end())
 	{
 		return nullptr;
-	}
-	if (side)
-	{
-		*side = sideways[it->first];
 	}
 	return &it->second;
 }
@@ -380,41 +358,26 @@ bool has(int index)
 
 void draw(SDL_Surface *world, int index, int x, int y, int k, Status status, Uint32 seed, Uint32 ticks)
 {
-	bool side = false;
-	const std::vector<Light> *lights = lightsOf(index, &side);
+	const std::vector<Light> *lights = lightsOf(index);
 	if (!world || world->format->BytesPerPixel != 4 || k < 1 || !lights)
 	{
 		return;
 	}
 	// each hangar keeps its own rhythm
 	const float t = (float)ticks / 1000.0f + (float)(seed % 997u) * 0.0371f;
-	// the sides of the craft: across its length, halves of the span of its lights (a craft nose up
-	// has them left and right, one standing sideways up and down). A light near the middle is on
-	// the keel (strobe, beacon): it stays dark while the sides blink in turn, unless every light is
-	auto across = [side](const Light &light) { return side ? light.y : light.x; };
-	float lo = across(lights->front()), hi = lo;
-	for (const Light &light : *lights)
-	{
-		lo = std::min(lo, across(light));
-		hi = std::max(hi, across(light));
-	}
-	const float middle = (lo + hi) / 2.0f, keel = 1.5f;
-	const bool anySide = hi - lo > 2.0f * keel;
 	if (SDL_MUSTLOCK(world))
 	{
 		SDL_LockSurface(world);
 	}
 	for (const Light &light : *lights)
 	{
-		const float d = across(light) - middle;
-		const int part = !anySide ? -1 : d < -keel ? -1 : d > keel ? 1 : 0;
-		const float amount = intensity(light, status, t, part);
+		const float amount = intensity(light, status, t);
 		if (amount <= 0.0f)
 		{
 			continue;
 		}
 		float r = 1.0f, g = 1.0f, b = 1.0f;
-		colorOf(light, status, r, g, b);
+		colorOf(light, r, g, b);
 		glow(world, x + light.x * k, y + light.y * k, k, r, g, b, amount, light.ownColor);
 	}
 	if (SDL_MUSTLOCK(world))
@@ -463,7 +426,6 @@ void clear(int offset)
 {
 	masterOffset = offset;
 	frames.clear();
-	sideways.clear();
 	scanned = false;
 }
 

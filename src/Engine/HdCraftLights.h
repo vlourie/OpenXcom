@@ -32,21 +32,25 @@ namespace OpenXcom
  * (pixel centres at .5):
  *
  *     # x    y    kind    [period s]  [offset s]
- *     3.5   21.0  red                           left wing tip, steady
- *     28.5  21.0  green                         right wing tip, steady
- *     16.0  34.0  strobe                        white double flash
- *     16.0  12.0  beacon  1.2                   slow red pulse
- *     10.5  26.0  blink   #ffc0a0               a light already painted on the craft
+ *     3.5   21.0  red                           left (port) wing tip, steady
+ *     28.5  21.0  green                         right (starboard) wing tip, steady
+ *     16.0  34.0  white                         tail, steady
+ *     16.0  12.0  beacon  1.2                   red anticollision beacon
+ *     10.5  26.0  red     #ff0a00               a light already painted on the craft
  *
- * Kinds: red, green, white (steady), strobe (white double flash), beacon (red pulse),
- * blink (pulse like a beacon, white unless coloured). Any light may carry its own
- * colour "#rrggbb" before the period. A line "sideways" marks a craft standing across
- * the hangar (nose left or right): its sides are up and down in the picture.
- * The lights follow the craft's state, every light in the state's colour and rhythm:
- * ready - green blinking; under repair - red, an even pulse; rearming - red, two short
- * flashes and a pause; not enough pilots aboard - red, the port and starboard sides in
- * turn, the lights on the keel dark; refuelling (and anything else) - only the beacons. The fuel is shown apart, by a
- * garland of five bulbs in the hangar (drawFuel).
+ * The aviation rules (14 CFR 25.1385-25.1401, ICAO Annex 2 3.2.3; see
+ * docs/research/craft-lights-aviation-2026-10-27.md): position lights red on the port side,
+ * green on the starboard side, white at the tail, steady; the anticollision beacon red, 40 to 100
+ * flashes a minute, on while the engines run or are about to start; strobes are off on the ground.
+ * Kinds: red, green, white (position lights), beacon (red flash), blink (a flash, white unless
+ * coloured), strobe (never lit in a hangar). Any light may carry its own colour "#rrggbb" before
+ * the period: it then pulls the pixels toward that colour instead of adding to them (a light
+ * painted on the craft). The sides are the craft's own: a craft standing across the hangar
+ * ("sideways left|right" in the file, where its nose points) has them up and down in the picture.
+ * The craft's state picks which lights burn, never their colour: ready - the position lights
+ * and the beacon (engines to start); repairs, rearming, refuelling and the rest - the position
+ * lights only (people around the craft, no beacon); not enough pilots aboard - dark. The fuel is
+ * shown apart, by a garland of five bulbs in the hangar (drawFuel).
  *
  * Drawn only in the true-color world layer; the classic frame never changes.
  */
