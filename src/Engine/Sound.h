@@ -43,7 +43,11 @@ public:
 	static UniqueSoundPtr NewSound(Mix_Chunk* sound);
 
 private:
-	UniqueSoundPtr _sound;
+	// decoded when first played (loadLater): a voice pack's ~18 thousand clips decoded at start took 2.8 GB
+	mutable UniqueSoundPtr _sound;
+	mutable std::string _later;
+	/// The sound's data, decoding the file of loadLater first.
+	Mix_Chunk *chunk() const;
 
 public:
 	/// Creates a blank sound effect.
@@ -59,6 +63,8 @@ public:
 	void load(const std::string &filename);
 	/// Loads sound from SDL_RWops
 	void load(SDL_RWops *rw);
+	/// Remembers the file and decodes it when the sound is first played.
+	void loadLater(const std::string &filename);
 	/// Plays the sound.
 	void play(int channel = -1, int angle = 0, int distance = 0) const;
 	/// Stops all sounds.

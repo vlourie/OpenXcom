@@ -52,6 +52,36 @@ void Sound::load(const std::string &filename) {
 
 	//always overwrite
 	_sound = std::move(s);
+	_later.clear();
+}
+
+/**
+ * Remembers a sound file to decode when the sound is first played.
+ * @param filename Filename of the sound file.
+ */
+void Sound::loadLater(const std::string &filename)
+{
+	//always overwrite
+	_sound.reset();
+	_later = filename;
+}
+
+/**
+ * Gets the sound's data, decoding the file of loadLater on the first call.
+ * @return The data or nullptr.
+ */
+Mix_Chunk *Sound::chunk() const
+{
+	if (!_later.empty())
+	{
+		_sound = NewSound(Mix_LoadWAV_RW(FileMap::getRWops(_later), SDL_TRUE));
+		if (!_sound)
+		{
+			Log(LOG_ERROR) << "Sound::load(" << _later << "): mix error=" << Mix_GetError();
+		}
+		_later.clear();
+	}
+	return _sound.get();
 }
 
 /**
@@ -67,6 +97,7 @@ void Sound::load(SDL_RWops *rw) {
 
 	//always overwrite
 	_sound = std::move(s);
+	_later.clear();
 }
 
 /**
@@ -75,7 +106,7 @@ void Sound::load(SDL_RWops *rw) {
  */
 void Sound::play(int channel, int angle, int distance) const
  {
-	if (!Options::mute && _sound)
+	if (!Options::mute && chunk())
  	{
 		int chan = Mix_PlayChannel(channel, _sound.get(), 0);
 		if (chan == -1)
@@ -108,7 +139,7 @@ void Sound::stop()
  */
 void Sound::loop()
 {
-	if (!Options::mute && _sound && Mix_Playing(3) == 0)
+	if (!Options::mute && chunk() && Mix_Playing(3) == 0)
 	{
 		int chan = Mix_PlayChannel(3, _sound.get(), -1);
 		if (chan == -1)
