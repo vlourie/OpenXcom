@@ -226,7 +226,7 @@ void Screen::flip()
 		{
 			Zoom::flipWithZoom(_world.get(), _screen, _topBlackBand, _bottomBlackBand, _leftBlackBand, _rightBlackBand, &glOutput);
 		}
-		else
+		else if (_world->pixels != _screen->pixels)   // else the world was drawn into the display (allocateWorld)
 		{
 			SDL_BlitSurface(_world.get(), 0, _screen, 0);
 		}
@@ -270,7 +270,36 @@ void Screen::clear()
 	{
 		Surface::CleanSdlSurface(_world.get());
 	}
-	Surface::CleanSdlSurface(_screen);
+	if (_layered && _world && _world->pixels == _screen->pixels)
+	{
+		// the world is the display (allocateWorld): zeroed above
+	}
+	else if (_layered && _world && !useOpenGL())
+	{
+		// the layered flip overwrites the whole display except the black bands around the zoomed world
+		// (a world of the display's size is copied whole), so only the bands are zeroed: the full clear
+		// cost as much as the copy itself (profile 27.10: 10-16% of the main thread on the globe and the base)
+		const int w = _screen->w, h = _screen->h;
+		const int l = std::max(0, _leftBlackBand), r = std::max(0, _rightBlackBand);
+		const int t = std::max(0, _topBlackBand), b = std::max(0, _bottomBlackBand);
+		const int mid = std::max(0, h - t - b);
+		SDL_Rect bands[4] = {
+			{0, 0, (Uint16)w, (Uint16)t},
+			{0, (Sint16)(h - b), (Uint16)w, (Uint16)b},
+			{0, (Sint16)t, (Uint16)l, (Uint16)mid},
+			{(Sint16)(w - r), (Sint16)t, (Uint16)r, (Uint16)mid}};
+		for (SDL_Rect &band : bands)
+		{
+			if (band.w && band.h)
+			{
+				SDL_FillRect(_screen, &band, 0);
+			}
+		}
+	}
+	else
+	{
+		Surface::CleanSdlSurface(_screen);
+	}
 }
 
 /**
@@ -344,7 +373,22 @@ void Screen::allocateWorld()
 {
 	const int w = _baseWidth * _worldScale;
 	const int h = _baseHeight * _worldScale;
-	if (!_world || _world->w != w || _world->h != h)
+	// a world of the display's size and pixel layout is drawn straight into the display's pixels: flip has
+	// nothing to copy and clear nothing more to zero (profile 27.10: the copy was 9-15% of the main thread
+	// on the globe and the base); any other display (zoom, OpenGL, a locked or other layout) keeps its own buffer
+	const bool onScreen = _screen && _screen->pixels && !useOpenGL() && !SDL_MUSTLOCK(_screen)
+		&& _screen->w == w && _screen->h == h && _screen->pitch == ((4 * w + 15) & ~0xF)
+		&& _screen->format->BitsPerPixel == 32 && _screen->format->Rmask == 0x00FF0000
+		&& _screen->format->Gmask == 0x0000FF00 && _screen->format->Bmask == 0x000000FF;
+	if (onScreen)
+	{
+		if (!_world || _world->pixels != _screen->pixels)
+		{
+			_worldBuffer.reset();
+			_world = Surface::NewSdlSurface(SDL_CreateRGBSurfaceFrom(_screen->pixels, w, h, 32, _screen->pitch, 0, 0, 0, 0));
+		}
+	}
+	else if (!_world || _world->w != w || _world->h != h || !_worldBuffer)
 	{
 		std::tie(_worldBuffer, _world) = Surface::NewPair32Bit(w, h);
 	}
@@ -630,6 +674,10 @@ void Screen::resetDisplay(bool resetVideo, bool noShaders)
 			}
 		}
 		Log(LOG_INFO) << "Display set to " << getWidth() << "x" << getHeight() << "x" << (int)_screen->format->BitsPerPixel << ".";
+		if (_layered)
+		{
+			allocateWorld();   // the new display's pixels: the world may be drawn straight into them, or no longer
+		}
 	}
 	else
 	{
