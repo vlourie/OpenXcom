@@ -37,6 +37,7 @@
 #include "../Mod/Texture.h"
 #include "../Engine/HdBase.h"
 #include "../Engine/HdBaseLife.h"
+#include "../Engine/HdControl.h"
 #include "../Engine/HdCraftLights.h"
 #include "../Engine/HdSmooth.h"
 #include "../Engine/HdUi.h"
@@ -676,7 +677,8 @@ void BaseView::drawHd()
 	}
 	HdBase::preload(want, k, Options::oxceHdBaseAnim);
 	// the pictures run on the display clock, never the game's: a still picture, a loop, a burst now and then
-	const Uint32 now = SDL_GetTicks();
+	// (the bench's record steps it by the frame)
+	const Uint32 now = HdControl::ticks();
 	Uint32 next = 0xFFFFFFFFu;
 	// the living base: the rock of the cells without an HD picture is lit with the rest (see draw)
 	const bool lit = hdScenes();
@@ -1469,7 +1471,7 @@ void BaseView::blink()
 			_animTick = 0;
 			++_animPhase;       // phases of the craft pictures
 		}
-		if (SDL_GetTicks() >= _hdNextChange)
+		if (HdControl::ticks() >= _hdNextChange)
 		{
 			_hdNextChange = 0xFFFFFFFFu;   // drawHd sets it again
 			_redraw = true;

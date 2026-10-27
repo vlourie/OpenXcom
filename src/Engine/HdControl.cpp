@@ -67,6 +67,13 @@ struct Control
 	std::string waitState;            // waitstate: the class the top state has to become
 	Uint32 waitStateUntil = 0;
 	std::string shotPath;
+	// record: frames dumped one after another while the display clock steps by the frame, not the wall -
+	// a clip without jerks however long a frame takes to write
+	std::string recordDir, recordPath, nightBefore;
+	int recordLeft = 0, recordIndex = 0;
+	double recordStep = 0, nightFrom = -1, nightTo = -1;
+	bool recordClock = false, hadNight = false;
+	Uint32 recordStart = 0, recordNow = 0;
 };
 
 Control &ctl()
@@ -89,6 +96,16 @@ std::string className(const State *s)
 	free(d);
 	const size_t p = n.rfind("::");
 	return p == std::string::npos ? n : n.substr(p + 2);
+}
+
+// OXCE_HD_BASE_NIGHT (HdBaseScene::nightAt reads it on every frame): a value, or "" to take it away
+void putNight(const std::string &value)
+{
+#ifdef _WIN32
+	_putenv(("OXCE_HD_BASE_NIGHT=" + value).c_str());   // "NAME=" removes it
+#else
+	if (value.empty()) unsetenv("OXCE_HD_BASE_NIGHT"); else setenv("OXCE_HD_BASE_NIGHT", value.c_str(), 1);
+#endif
 }
 
 bool fileExists(const std::string &path)
@@ -387,6 +404,31 @@ std::string run(Control &c, Game *g, const std::string &line)
 		g->getScreen()->requestHdTestDump(args);
 		return "";
 	}
+	if (cmd == "record")
+	{
+		// record <folder> <frames> <fps> [night <from> <to>]: f00000.png.. in the folder, the night of the living base
+		// going from one value to the other over the clip (without it - the base's own clock)
+		std::istringstream in(args);
+		std::string night;
+		double fps = 0;
+		c.recordDir.clear();
+		c.recordLeft = 0;
+		c.nightFrom = c.nightTo = -1;
+		in >> c.recordDir >> c.recordLeft >> fps >> night >> c.nightFrom >> c.nightTo;
+		if (c.recordDir.empty() || c.recordLeft <= 0 || fps <= 0 || (!night.empty() && (night != "night" || c.nightFrom < 0 || c.nightTo < 0)))
+		{
+			c.recordLeft = 0;
+			return "err record: <folder> <frames> <fps> [night <from> <to>]";
+		}
+		const char *had = getenv("OXCE_HD_BASE_NIGHT");
+		c.hadNight = had != nullptr;
+		c.nightBefore = had ? had : "";
+		c.recordIndex = 0;
+		c.recordStep = 1000.0 / fps;
+		c.recordStart = SDL_GetTicks();
+		c.recordClock = true;
+		return "";
+	}
 	if (cmd == "set")
 	{
 		c.sinceInput = 0;
@@ -495,6 +537,12 @@ void frameDrawn()
 	}
 }
 
+unsigned ticks()
+{
+	const Control &c = ctl();
+	return c.recordClock ? c.recordNow : SDL_GetTicks();
+}
+
 void step(Game *g)
 {
 	if (!enabled())
@@ -568,6 +616,41 @@ void step(Game *g)
 		}
 		c.loadPending = false;
 		c.results.push_back(!states.empty() && className(states.back()) == "ErrorMessageState" ? "err load: the game refused the save (see openxcom.log)" : "ok");
+		return;
+	}
+	if (c.recordClock)
+	{
+		if (g->getScreen()->hasHdTestDumpRequest())
+		{
+			return;
+		}
+		if (c.recordLeft == 0)
+		{
+			// the last frame is written: back to the wall clock and the night as it was
+			c.recordClock = false;
+			if (c.nightFrom >= 0)
+			{
+				putNight(c.hadNight ? c.nightBefore : "");
+			}
+			c.results.push_back(fileExists(c.recordPath) ? "ok record " + std::to_string(c.recordIndex) + " frames"
+				: "err record: frame not written " + c.recordPath);
+			return;
+		}
+		// this turn's frame is drawn at this clock and written after the states are blitted (Screen::writeHdTestDump)
+		c.recordNow = c.recordStart + (Uint32)(c.recordIndex * c.recordStep + 0.5);
+		if (c.nightFrom >= 0)
+		{
+			const int last = c.recordIndex + c.recordLeft - 1;
+			const double t = last > 0 ? (double)c.recordIndex / last : 0;
+			putNight(std::to_string(c.nightFrom + (c.nightTo - c.nightFrom) * t));
+		}
+		char name[32];
+		snprintf(name, sizeof(name), "/f%05d.png", c.recordIndex);
+		c.recordPath = c.recordDir + name;
+		remove(c.recordPath.c_str());
+		g->getScreen()->requestHdTestDump(c.recordPath);
+		++c.recordIndex;
+		--c.recordLeft;
 		return;
 	}
 	if (c.shotPending)

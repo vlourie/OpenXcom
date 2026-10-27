@@ -36,6 +36,8 @@ namespace HdControl
 	void frameDrawn();
 	/// Once per loop turn, after the events and with the states initialised: takes a new batch of commands, runs the next one.
 	void step(Game *game);
+	/// The display clock of the pictures (ms): SDL_GetTicks, except while the bench records frames - then it steps by the frame.
+	unsigned ticks();
 }
 
 }
