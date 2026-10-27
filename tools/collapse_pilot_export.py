@@ -15,7 +15,7 @@ r"""Пилот обрушения в движке (этап 1): выгрузка
 
     py -3.13 tools\collapse_pilot_export.py check    упрощённая копия на Python против evaluate7c: сценарии
                                                      pilot_scen.tsv и случайные наборы - бит в бит
-    py -3.13 tools\collapse_pilot_export.py export   src/Battlescape/CollapsePilotData.h и векторы
+    py -3.13 tools\collapse_pilot_export.py export   src/Battlescape/CollapsePilotData.bin, .player.bin и векторы
                                                      census/collapse/pilot1/vectors.txt (с проверкой check)
 """
 import hashlib
@@ -28,10 +28,11 @@ from collections import Counter, deque
 HERE = os.path.dirname(os.path.abspath(__file__))
 if HERE not in sys.path:
     sys.path.insert(0, HERE)
+import collapse_blob  # noqa: E402
 
 ENC = "utf-8-sig"
 OUT = "census/collapse/pilot1"
-HEADER = "src/Battlescape/CollapsePilotData.h"
+TABLE = "src/Battlescape/CollapsePilotData.bin"   # и .player.bin рядом (collapse_blob.py)
 VECTORS = OUT + "/vectors.txt"
 SCENS = ["census/collapse/stage0m/pilot_scen.tsv", "census/collapse/pilot3/pilot_scen.tsv",
          "census/collapse/pilot4/pilot_scen.tsv", "census/collapse/pilot5/pilot_scen.tsv",
@@ -790,22 +791,13 @@ def run_check(C, blds, write=None):
 
 # ------------------------------------------------------------------ выгрузка
 
-def cpp_header(datas):
-    L = ["// Сгенерировано tools/collapse_pilot_export.py - руками не править.",
-         "// Пилот обрушения: модель M0j5 (M0j4 = M0j3 плюс консоль стены, и слой связей) с разметкой v2 "
-         "(stage0l/stage0m, pilot3), здания пилота.",
-         "// Источники модели (sha256):"]
-    L += ["//   %s %s" % (p, sha(p)) for p in SOURCES]
-    L += ["#pragma once", "#include \"CollapseCore.h\"", "", "namespace OpenXcom", "{", "namespace CollapsePilotData",
-          "{", ""]
-    for bi, d in enumerate(datas):
+def blob_blocks(datas):
+    """Блоки таблицы движка (collapse_blob.Block): те же значения, что были в прежнем CollapsePilotData.h."""
+    out = []
+    for d in datas:
         P = d["parts"]
         sets = sorted({e["set"] for e in P} | {e["set"] for e in d["keep"]})
-        L.append("// %s: %s / %s, %dx%dx%d, частей %d" % (d["label"], d["terrain"], d["name"], d["sx"], d["sy"],
-                                                          d["sz"], len(P)))
-        L.append("static const char *const sets%d[] = { %s };" % (bi, ", ".join('"%s"' % s for s in sets)))
-        L.append("static const CollapsePart parts%d[] = {" % bi)
-        tg = []
+        parts, tg = [], []
         for e in P:
             off = len(tg)
             tg += e["targets"]
@@ -815,37 +807,36 @@ def cpp_header(datas):
                  (8 if e["carry0"] else 0) | (16 if e["can"] else 0) | (32 if e["posted0"] else 0) | \
                  (64 if e["light"] else 0) | (128 if e["inbox"] else 0) | (256 if e["held0"] else 0) | \
                  (512 if e["tree"] else 0)
-            L.append("\t{ %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d, %d },"
-                     % (e["kind"], e["x"], e["y"], e["z"], sets.index(e["set"]), e["mcd"], fl, e["contact"],
-                        e["liml"], nedge, ex[0], ex[1], ey[0], ey[1], e["mark"], off, len(e["targets"])))
-        L.append("};")
-        L.append("static const int targets%d[] = { %s };" % (bi, ", ".join(map(str, tg)) or "-1"))
-        if d["keep"]:
-            L.append("static const CollapsePart keep%d[] = {" % bi)
-            for e in d["keep"]:
-                L.append("\t{ %d, %d, %d, %d, %d, %d, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 }," % (
-                    e["kind"], e["x"], e["y"], e["z"], sets.index(e["set"]), e["mcd"]))
-            L.append("};")
-        if d["tcols"]:
-            L.append("static const int treeCols%d[] = { %s };" % (
-                bi, ", ".join(str(v) for st in d["tcols"] for v in [len(st)] + st)))
-            L.append("static const int crowns%d[] = { %s };" % (
-                bi, ", ".join(str(v) for i, need, cs in d["tcrowns"] for v in [i, need, len(cs)] + cs) or "-1"))
-        L.append("")
-    L.append("static const CollapseBlock blocks[] = {")
-    for bi, d in enumerate(datas):
+            parts.append((e["kind"], e["x"], e["y"], e["z"], sets.index(e["set"]), e["mcd"], fl, e["contact"],
+                          e["liml"], nedge, ex[0], ex[1], ey[0], ey[1], e["mark"], off, len(e["targets"])))
+        keep = [(e["kind"], e["x"], e["y"], e["z"], sets.index(e["set"]), e["mcd"]) + (0,) * 11
+                for e in d["keep"]] or None
+        tcols = [v for st in d["tcols"] for v in [len(st)] + st] if d["tcols"] else None
+        crowns = ([v for i, need, cs in d["tcrowns"] for v in [i, need, len(cs)] + cs] or [-1]) if d["tcols"] else None
         b = d["box"]
-        L.append('\t{ "%s", "%s", %d, %d, %d, %d, %d, %d, %d, sets%d, %d, parts%d, %d, targets%d, %d, %s, %d, '
-                 '%s, %d, %s, %d },' % (
-            LABEL_EN[d["label"]], d["name"], d["sx"], d["sy"], d["sz"], b[0], b[1], b[2], b[3], bi,
-            len({e["set"] for e in d["parts"]} | {e["set"] for e in d["keep"]}), bi, len(d["parts"]), bi,
-            1 if LABEL_EN[d["label"]] in EXPERIMENTAL else 0, "keep%d" % bi if d["keep"] else "nullptr",
-            len(d["keep"]), "treeCols%d" % bi if d["tcols"] else "nullptr", len(d["tcols"]),
-            "crowns%d" % bi if d["tcols"] else "nullptr", len(d["tcrowns"])))
-    L.append("};")
-    L.append("static const int blockCount = %d;" % len(datas))
-    L += ["", "}", "}", ""]
-    return "\n".join(L)
+        out.append(collapse_blob.Block(
+            label=LABEL_EN[d["label"]], name=d["name"], sx=d["sx"], sy=d["sy"], sz=d["sz"],
+            x0=b[0], x1=b[1], y0=b[2], y1=b[3], experimental=1 if LABEL_EN[d["label"]] in EXPERIMENTAL else 0,
+            sets=sets, parts=parts, targets=tg or [-1], keep=keep, treeCols=tcols, nTreeCols=len(d["tcols"]),
+            crowns=crowns, nCrowns=len(d["tcrowns"])))
+    return out
+
+
+def write_blobs(datas, path):
+    """Таблица для exe: path - сборка стенда (все здания), .player.bin рядом - игрокам, без экспериментальных;
+    .sources.txt рядом - источники модели (sha256), как раньше в шапке заголовка."""
+    blocks = blob_blocks(datas)
+    base = path[:-4] if path.endswith(".bin") else path
+    for p, bl in ((path, blocks), (base + ".player.bin", collapse_blob.player(blocks))):
+        data = collapse_blob.write(p, bl)
+        print("таблица -> %s: блоков %d, частей %d, %d байт" % (p, len(bl), sum(len(b.parts) for b in bl), len(data)))
+    L = ["Сгенерировано tools/collapse_pilot_export.py - руками не править.",
+         "Пилот обрушения: модель M0j5 (M0j4 = M0j3 плюс консоль стены, и слой связей) с разметкой v2 "
+         "(stage0l/stage0m, pilot3), здания пилота.",
+         "Источники модели (sha256):"]
+    L += ["  %s %s" % (p, sha(p)) for p in SOURCES]
+    with open(base + ".sources.txt", "w", encoding=ENC, newline="\n") as f:
+        f.write("\n".join(L) + "\n")
 
 
 def write_vectors(datas):
@@ -991,12 +982,8 @@ def main():
         blds = [b for b in blds if LABEL_EN[b[2]] in only.split(",")]
     datas = run_check(C, blds)
     if cmd == "export":
-        # третий аргумент - другой путь заголовка (проверка переноса в блокноте, без очереди правок)
-        header = sys.argv[2] if len(sys.argv) > 2 else HEADER
-        # ASCII-only заголовок не обязателен: исходники проекта - UTF-8 без спецификации (R-001, исключение .cpp/.h)
-        with open(header, "w", encoding="utf-8", newline="\n") as f:
-            f.write(cpp_header(datas))
-        print("заголовок ->", header)
+        # третий аргумент - другой путь таблицы (проверка переноса в блокноте, без очереди правок)
+        write_blobs(datas, sys.argv[2] if len(sys.argv) > 2 else TABLE)
         write_vectors(datas)
 
 

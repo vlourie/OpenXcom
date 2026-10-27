@@ -122,7 +122,7 @@ bool inPlace(SavedBattleGame *save, int bi, const CollapsePart &p, Position off)
 /// Parts of the building (inbox) in place; out of how many.
 int countInPlace(SavedBattleGame *save, const Instance &in, int *total)
 {
-	const CollapseBlock &b = CollapsePilotData::blocks[in.bi];
+	const CollapseBlock &b = CollapsePilotData::blocks()[in.bi];
 	int n = 0, all = 0;
 	for (int i = 0; i < b.nParts; ++i)
 	{
@@ -157,7 +157,7 @@ struct Fnv
 /// Fingerprint of the model data of block bi: a save made with other data of the same name is not this model.
 std::string modelSig(int bi)
 {
-	const CollapseBlock &b = CollapsePilotData::blocks[bi];
+	const CollapseBlock &b = CollapsePilotData::blocks()[bi];
 	Fnv f;
 	f.add(b.name);
 	for (int v : { b.sx, b.sy, b.sz, b.x0, b.x1, b.y0, b.y1, b.nSets, b.nParts })
@@ -397,7 +397,7 @@ int borrowSet(Mod *mod, SavedBattleGame *save, const std::string &name)
 /// The row of RUBBLE for the building of block bi.
 int rubbleRow(int bi)
 {
-	const CollapseBlock &b = CollapsePilotData::blocks[bi];
+	const CollapseBlock &b = CollapsePilotData::blocks()[bi];
 	for (int r = 0; r < RUBBLE_ROWS; ++r)
 	{
 		std::istringstream in(RUBBLE[r].keys);
@@ -738,7 +738,7 @@ void lay(Mod *mod, SavedBattleGame *save, int bi, const std::vector<Drop> &drops
  */
 int foreignParts(SavedBattleGame *save, const Instance &in)
 {
-	const CollapseBlock &b = CollapsePilotData::blocks[in.bi];
+	const CollapseBlock &b = CollapsePilotData::blocks()[in.bi];
 	const std::vector<MapDataSet*> &sets = *save->getMapDataSets();
 	const auto &setOf = st.setOf[in.bi];
 	std::vector<MapDataSet*> modelSet(b.nSets, nullptr);
@@ -792,6 +792,7 @@ int foreignParts(SavedBattleGame *save, const Instance &in)
 	return foreign;
 }
 
+#ifdef OXCE_AI_DEV
 /// Hash of every terrain record of the map: the debug stand compares what direct destruction left before the model.
 std::string terrainHash(SavedBattleGame *save)
 {
@@ -821,6 +822,7 @@ bool standEnv()
 		|| getenv("OXCE_COLLAPSE_BIG") || getenv("OXCE_COLLAPSE_FLY") || getenv("OXCE_COLLAPSE_DROP");
 	return on;
 }
+#endif
 
 /// The option is off, but the debug stand runs (OXCE_AI_DEV builds only): the same damage, no model -
 /// the control for what the collapse changes.
@@ -833,11 +835,13 @@ bool standOnly()
 #endif
 }
 
+#ifdef OXCE_AI_DEV
 int dbgAt()
 {
 	const char *atS = getenv("OXCE_COLLAPSE_AT");
 	return atS && *atS ? atoi(atS) : 1;
 }
+#endif
 
 /// Starts the state for this battle map: the save's terrain sets matched to the sets of every block.
 void bind(SavedBattleGame *save)
@@ -848,9 +852,9 @@ void bind(SavedBattleGame *save)
 	st.my = save->getMapSizeY();
 	st.mz = save->getMapSizeZ();
 	const std::vector<MapDataSet*> &sets = *save->getMapDataSets();
-	for (int bi = 0; bi < CollapsePilotData::blockCount; ++bi)
+	for (int bi = 0; bi < CollapsePilotData::blockCount(); ++bi)
 	{
-		const CollapseBlock &b = CollapsePilotData::blocks[bi];
+		const CollapseBlock &b = CollapsePilotData::blocks()[bi];
 		std::vector<int> setOf(sets.size(), -1);
 		for (size_t s = 0; s < sets.size(); ++s)
 			for (int k = 0; k < b.nSets; ++k)
@@ -871,7 +875,7 @@ bool inThisBuild(int bi)
 #ifdef OXCE_AI_DEV
 	return true;
 #else
-	return !CollapsePilotData::blocks[bi].experimental;
+	return !CollapsePilotData::blocks()[bi].experimental;
 #endif
 }
 
@@ -882,14 +886,14 @@ void store(SavedBattleGame *save)
 	auto &list = save->getCollapsePilot();
 	list.clear();
 	for (const Instance &in : st.inst)
-		list.push_back({ std::string(CollapsePilotData::blocks[in.bi].name), in.off, modelSig(in.bi) });
+		list.push_back({ std::string(CollapsePilotData::blocks()[in.bi].name), in.off, modelSig(in.bi) });
 }
 
 /// All parts of the block in place, the ones outside the building box too: of two models whose buildings are
 /// the same record for record (two templates of one house with different annexes) the block that matches more.
 int countAllInPlace(SavedBattleGame *save, const Instance &in)
 {
-	const CollapseBlock &b = CollapsePilotData::blocks[in.bi];
+	const CollapseBlock &b = CollapsePilotData::blocks()[in.bi];
 	int n = 0;
 	for (int i = 0; i < b.nParts; ++i)
 		if (inPlace(save, in.bi, b.parts[i], in.off)) ++n;
@@ -899,7 +903,7 @@ int countAllInPlace(SavedBattleGame *save, const Instance &in)
 /// Do the building boxes of two instances share a map cell?
 bool overlaps(const Instance &a, const Instance &b)
 {
-	const CollapseBlock &p = CollapsePilotData::blocks[a.bi], &q = CollapsePilotData::blocks[b.bi];
+	const CollapseBlock &p = CollapsePilotData::blocks()[a.bi], &q = CollapsePilotData::blocks()[b.bi];
 	return a.off.x + p.x0 <= b.off.x + q.x1 && b.off.x + q.x0 <= a.off.x + p.x1
 		&& a.off.y + p.y0 <= b.off.y + q.y1 && b.off.y + q.y0 <= a.off.y + p.y1
 		&& a.off.z < b.off.z + q.sz && b.off.z < a.off.z + p.sz;
@@ -948,9 +952,9 @@ void scan(SavedBattleGame *save)
 	std::vector<std::pair<int, Instance> > whole;  // (all parts of the block in place, instance)
 	Where where;
 	bool indexed = false;
-	for (int bi = 0; bi < CollapsePilotData::blockCount; ++bi)
+	for (int bi = 0; bi < CollapsePilotData::blockCount(); ++bi)
 	{
-		const CollapseBlock &b = CollapsePilotData::blocks[bi];
+		const CollapseBlock &b = CollapsePilotData::blocks()[bi];
 		if (!inThisBuild(bi) || !setsOnMap(bi)) continue;
 		if (!indexed)
 		{
@@ -1024,14 +1028,14 @@ void scan(SavedBattleGame *save)
 	for (const auto &w : whole)
 	{
 		const Instance &in = w.second;
-		const CollapseBlock &b = CollapsePilotData::blocks[in.bi];
+		const CollapseBlock &b = CollapsePilotData::blocks()[in.bi];
 		const Position &off = in.off;
 		const Instance *taken = nullptr;
 		for (const Instance &had : st.inst)
 			if (overlaps(had, in)) taken = &had;
 		if (taken)
 		{
-			const CollapseBlock &tb = CollapsePilotData::blocks[taken->bi];
+			const CollapseBlock &tb = CollapsePilotData::blocks()[taken->bi];
 			line() << "[COLLAPSE] overlaps " << b.label << " at " << off.x << "," << off.y << "," << off.z
 				<< ": " << w.first << " of " << b.nParts << " block parts in place, the place is " << tb.label << " at "
 				<< taken->off.x << "," << taken->off.y << "," << taken->off.z << " - left alone";
@@ -1069,8 +1073,8 @@ void adopt(SavedBattleGame *save)
 		int bi = -1;
 		if (version != 1 && version != FORMAT)
 			why = "unknown format";
-		for (int i = 0; !why && i < CollapsePilotData::blockCount; ++i)
-			if (e.model == CollapsePilotData::blocks[i].name && inThisBuild(i)) bi = i;
+		for (int i = 0; !why && i < CollapsePilotData::blockCount(); ++i)
+			if (e.model == CollapsePilotData::blocks()[i].name && inThisBuild(i)) bi = i;
 		if (!why && bi < 0)
 			why = "no such model in this build";
 		// format 1 kept no fingerprint: its entries are taken on the name alone
@@ -1078,7 +1082,7 @@ void adopt(SavedBattleGame *save)
 			why = "model data changed";
 		if (!why)
 		{
-			const CollapseBlock &b = CollapsePilotData::blocks[bi];
+			const CollapseBlock &b = CollapsePilotData::blocks()[bi];
 			if (off.x < 0 || off.y < 0 || off.z < 0 || off.x + b.sx > st.mx || off.y + b.sy > st.my || off.z + b.sz > st.mz)
 				why = "block outside the map";
 			else if (!setsOnMap(bi))
@@ -1103,17 +1107,18 @@ void adopt(SavedBattleGame *save)
 			continue;
 		}
 		st.inst.push_back(in);
-		Log(LOG_INFO) << "[COLLAPSE] kept " << CollapsePilotData::blocks[bi].label << " (" << e.model << ") at "
+		Log(LOG_INFO) << "[COLLAPSE] kept " << CollapsePilotData::blocks()[bi].label << " (" << e.model << ") at "
 			<< off.x << "," << off.y << "," << off.z << ": " << n << " of " << all << " parts in place, 0 foreign";
 	}
 	store(save);
 	Log(LOG_INFO) << "[COLLAPSE] from the battle: " << st.inst.size() << " pilot building(s)";
 }
 
+#ifdef OXCE_AI_DEV
 /// Takes the given parts of the building away (no debris part), then gravity as an explosion would.
 int removeParts(SavedBattleGame *save, const Instance &in, const std::vector<int> &parts)
 {
-	const CollapseBlock &b = CollapsePilotData::blocks[in.bi];
+	const CollapseBlock &b = CollapsePilotData::blocks()[in.bi];
 	int n = 0;
 	std::vector<Tile*> hit;
 	for (int i : parts)
@@ -1256,7 +1261,7 @@ void placed(SavedBattleGame *save, BattleUnit *u)
 
 void debugStand(BattlescapeGame *battle, SavedBattleGame *save)
 {
-	std::vector<bool> seen(CollapsePilotData::blockCount, false);
+	std::vector<bool> seen(CollapsePilotData::blockCount(), false);
 	const int at = dbgAt();
 	size_t nextUnit = 0;
 	// the player's units first, then the others: a tile with no way out needs more bodies than the squad
@@ -1274,7 +1279,7 @@ void debugStand(BattlescapeGame *battle, SavedBattleGame *save)
 	{
 		if (seen[in.bi]) continue;
 		seen[in.bi] = true;
-		const CollapseBlock &b = CollapsePilotData::blocks[in.bi];
+		const CollapseBlock &b = CollapsePilotData::blocks()[in.bi];
 		if (st.runs == 1)
 		{
 			// OXCE_COLLAPSE_BIG / _FLY: a large unit (its corner tile) and a flying one, of any side
@@ -1357,6 +1362,7 @@ void debugStand(BattlescapeGame *battle, SavedBattleGame *save)
 		}
 	}
 }
+#endif
 
 /// A part that fell in settle, as it was last drawn (HD render, HdFx::fall).
 struct Fallen
@@ -1477,7 +1483,7 @@ void mayFallParts(SavedBattleGame *save, const std::map<Tile*, int> &strongest, 
 	for (size_t ii = 0; ii < st.inst.size(); ++ii)
 	{
 		const Instance &in = st.inst[ii];
-		const CollapseBlock &b = CollapsePilotData::blocks[in.bi];
+		const CollapseBlock &b = CollapsePilotData::blocks()[in.bi];
 		std::vector<uint8_t> removed(b.nParts, 0), blasted(b.nParts, 0);
 		bool any = false;
 		for (int i = 0; i < b.nParts; ++i)
@@ -1594,19 +1600,21 @@ void begin(SavedBattleGame *save)
 	}
 	else
 		return;
+#ifdef OXCE_AI_DEV
 	// debug stand OXCE_COLLAPSE_HIT: parts taken away before the first settle, as a hit that left the building standing
-	std::vector<bool> seen(CollapsePilotData::blockCount, false);
+	std::vector<bool> seen(CollapsePilotData::blockCount(), false);
 	for (const Instance &in : st.inst)
 	{
 		if (seen[in.bi]) continue;
 		seen[in.bi] = true;
-		const CollapseBlock &b = CollapsePilotData::blocks[in.bi];
+		const CollapseBlock &b = CollapsePilotData::blocks()[in.bi];
 		const int n = removeParts(save, in, debugParts("OXCE_COLLAPSE_HIT", b.label));
 		if (n)
 		{
 			Log(LOG_INFO) << "[COLLAPSE] debug: hit " << n << " part(s) of " << b.label << " before the first settle";
 		}
 	}
+#endif
 }
 
 #ifdef OXCE_AI_DEV
@@ -1662,18 +1670,21 @@ bool settle(BattlescapeGame *battle, const char *why)
 	if (st.inst.empty())
 		return false;
 	++st.runs;
+#ifdef OXCE_AI_DEV
 	const int atRun = dbgAt();
 	if (st.runs == atRun + 1)
 		debugReport(save, "next settle");
 	debugStand(battle, save);
+#endif
 	const double scanMs = msSince(t0);
+#ifdef OXCE_AI_DEV
 	if (standEnv())
 	{
 		// the map as the damage left it, before the model: with the option on and off it must be the same
 		Log(LOG_INFO) << "[COLLAPSE] debug: before model settle " << st.runs << " (" << why << "): terrain " << terrainHash(save);
 		for (const Instance &in : st.inst)
 		{
-			const CollapseBlock &b = CollapsePilotData::blocks[in.bi];
+			const CollapseBlock &b = CollapsePilotData::blocks()[in.bi];
 			std::ostringstream rm;
 			for (int i = 0; i < b.nParts; ++i)
 				if ((b.parts[i].flags & CPF_INBOX) && !inPlace(save, in.bi, b.parts[i], in.off))
@@ -1682,10 +1693,13 @@ bool settle(BattlescapeGame *battle, const char *why)
 				<< " removed=" << rm.str();
 		}
 	}
+#endif
 	if (!model)
 	{
+#ifdef OXCE_AI_DEV
 		if (st.runs == atRun)
 			debugReport(save, "right after");
+#endif
 		return false;
 	}
 	TileEngine *te = save->getTileEngine();
@@ -1694,7 +1708,7 @@ bool settle(BattlescapeGame *battle, const char *why)
 	std::vector<Position> seenCells;
 	for (const Instance &in : st.inst)
 	{
-		const CollapseBlock &b = CollapsePilotData::blocks[in.bi];
+		const CollapseBlock &b = CollapsePilotData::blocks()[in.bi];
 		std::vector<uint8_t> removed(b.nParts, 0), held;
 		int nRemoved = 0;
 		for (int i = 0; i < b.nParts; ++i)
@@ -1706,6 +1720,7 @@ bool settle(BattlescapeGame *battle, const char *why)
 		const auto te0 = Clock::now();
 		collapseEvaluate(b, removed, held);
 		const double evalMs = msSince(te0);
+#ifdef OXCE_AI_DEV
 		// debug stand: the exact input and output of the model, for the check against the reference (collapse_pilot_run.py)
 		if (standEnv())
 		{
@@ -1718,6 +1733,7 @@ bool settle(BattlescapeGame *battle, const char *why)
 			Log(LOG_INFO) << "[COLLAPSE] debug: model " << b.label << " at " << in.off.x << "," << in.off.y << "," << in.off.z
 				<< " removed=" << rm.str() << " fell=" << fl.str();
 		}
+#endif
 		// remove what the model no longer holds: no debris part, as a part that fell apart
 		const auto ta0 = Clock::now();
 		int fell[4] = { 0, 0, 0, 0 }, outside = 0, objectives = 0, lifts = 0;
@@ -1852,8 +1868,10 @@ bool settle(BattlescapeGame *battle, const char *why)
 	// after this settle; twice would count a death twice
 	if (hits && std::strcmp(why, "end turn") != 0)
 		battle->checkForCasualties(battle->getMod()->getDamageType(DT_MELEE), BattleActionAttack{ }, false, true);
+#ifdef OXCE_AI_DEV
 	if (st.runs == atRun)
 		debugReport(save, "right after");
+#endif
 	return any;
 }
 
@@ -1901,7 +1919,7 @@ void mayFall(SavedBattleGame *save, const std::map<Tile*, int> &strongest, const
 	for (size_t ii = 0; ii < st.inst.size(); ++ii)
 		for (int i : falls[ii])
 		{
-			const CollapsePart &p = CollapsePilotData::blocks[st.inst[ii].bi].parts[i];
+			const CollapsePart &p = CollapsePilotData::blocks()[st.inst[ii].bi].parts[i];
 			const Position pos = st.inst[ii].off + Position(p.x, p.y, p.z);
 			const Tile *t = save->getTile(pos);
 			// only what the player has seen: the hint must not draw the building through the fog
@@ -1930,7 +1948,7 @@ void idle(SavedBattleGame *save)
 	{
 		shown = true;
 		for (const Instance &in : st.inst)
-			removeParts(save, in, debugParts("OXCE_COLLAPSE_REMOVE", CollapsePilotData::blocks[in.bi].label));
+			removeParts(save, in, debugParts("OXCE_COLLAPSE_REMOVE", CollapsePilotData::blocks()[in.bi].label));
 		// OXCE_COLLAPSE_HINT_BLAST "x,y,z" (map cells): the aim hint of an HE explosion there (OXCE_COLLAPSE_BLAST_POWER,
 		// the radius of a terrain explosion), then the explosion itself - the hint against what the model brings down
 		if (const char *hb = getenv("OXCE_COLLAPSE_HINT_BLAST"))
@@ -1959,7 +1977,7 @@ void idle(SavedBattleGame *save)
 					if (hit[ii][i]) hs << i << ",";
 				for (int i : falls[ii])
 					fs << i << ",";
-				Log(LOG_INFO) << "[COLLAPSE] debug: hint " << CollapsePilotData::blocks[in.bi].label << " at " << in.off.x << "," << in.off.y
+				Log(LOG_INFO) << "[COLLAPSE] debug: hint " << CollapsePilotData::blocks()[in.bi].label << " at " << in.off.x << "," << in.off.y
 					<< "," << in.off.z << " hit=" << hs.str() << " fell=" << fs.str();
 			}
 			Log(LOG_INFO) << "[COLLAPSE] debug: hint blast " << power << " at " << c << ", " << area.size() << " tile(s), " << hintMs << " ms";

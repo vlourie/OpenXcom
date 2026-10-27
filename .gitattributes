@@ -21,3 +21,5 @@ tools/collapse_ctype_marks.py text eol=crlf
 # Denote all files that are truly binary and should not be modified.
 *.png binary
 *.gif binary
+# таблица пилота обрушения, встраивается в exe (tools/collapse_blob.py)
+src/Battlescape/CollapsePilotData*.bin binary

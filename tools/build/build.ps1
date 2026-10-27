@@ -370,7 +370,7 @@ function Assert-ExeFresh([string]$exe) {
   build-release уже раз перенастроили с ON, и выпуск унаследовал его молча: проверка - по кэшу
   до ninja и по байтам готового exe.
 #>
-$BenchMarks = @('[AIPROBE] start')
+$BenchMarks = @('[AIPROBE] start', '[COLLAPSE] debug')
 
 function Get-CacheValue([string]$buildDir, [string]$name) {
     $cache = Join-Path $buildDir 'CMakeCache.txt'

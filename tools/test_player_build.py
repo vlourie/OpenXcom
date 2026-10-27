@@ -6,7 +6,8 @@
 - кэш ON, 1, TRUE с -NoNinja (чинить нечем) - сборка стоит;
 - кэш ON без -NoNinja - cmake зовётся с -DOXCE_AI_DEV=OFF, после него OFF;
 - контроль: заглушка cmake кэш не меняет - сборка стоит («по-прежнему»);
-- exe со строкой стенда - build.ps1 (Assert-ExeNoBench) и release.ps1 (Get-BenchMark) его ловят, без строки - нет.
+- exe со строкой стенда ИИ или обрушения - build.ps1 (Assert-ExeNoBench) и release.ps1 (Get-BenchMark) его ловят,
+  без строки - нет.
 На настоящих данных печатает OXCE_AI_DEV из build-release/CMakeCache.txt и строку стенда в exe стейджа.
 
     py -3.13 tools/test_player_build.py
@@ -22,6 +23,7 @@ BUILD = ROOT / "tools" / "build" / "build.ps1"
 REL = ROOT / "Выпуск" / "release.ps1"
 ENC_W = "utf-8-sig"
 MARK = "[AIPROBE] start"
+MARK2 = "[COLLAPSE] debug"   # стенд обрушения (CollapsePilot.cpp под OXCE_AI_DEV)
 
 RUNNER = r"""
 $ErrorActionPreference = 'Stop'
@@ -111,7 +113,8 @@ def make(work):
     e.mkdir()
     pad = bytes(range(256)) * 4096
     (e / "bench.exe").write_bytes(b"MZ" + pad + MARK.encode() + b": turn " + pad)
-    (e / "player.exe").write_bytes(b"MZ" + pad + b"[AIPROBE] sta" + pad)
+    (e / "collapse.exe").write_bytes(b"MZ" + pad + MARK2.encode() + b": removed " + pad)
+    (e / "player.exe").write_bytes(b"MZ" + pad + b"[AIPROBE] sta" + pad + b"[COLLAPSE] found " + pad)
 
 
 def main():
@@ -135,6 +138,8 @@ def main():
             print(" ", l)
         if "build=stop" not in exe.get("bench.exe", "") or MARK not in exe.get("bench.exe", ""):
             fails.append("exe со строкой стенда не пойман")
+        if "build=stop" not in exe.get("collapse.exe", "") or MARK2 not in exe.get("collapse.exe", ""):
+            fails.append("exe со строкой стенда обрушения не пойман")
         if "build=go" not in exe.get("player.exe", "") or not exe.get("player.exe", "").rstrip().endswith("release="):
             fails.append("exe без строки стенда остановлен")
         for l in out.splitlines():
