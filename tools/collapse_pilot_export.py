@@ -50,7 +50,9 @@ SCENS = ["census/collapse/stage0m/pilot_scen.tsv", "census/collapse/pilot3/pilot
          "census/collapse/pilot18/pilot_scen.tsv", "census/collapse/partial18/partial_scen.tsv",
          "census/collapse/pilot19/pilot_scen.tsv", "census/collapse/partial19/partial_scen.tsv",
          "census/collapse/pilot20/pilot_scen.tsv", "census/collapse/partial20/partial_scen.tsv",
-         "census/collapse/pilot21/pilot_scen.tsv", "census/collapse/partial21/partial_scen.tsv"]
+         "census/collapse/pilot21/pilot_scen.tsv", "census/collapse/partial21/partial_scen.tsv",
+         "census/collapse/pilot22/pilot_scen.tsv", "census/collapse/partial22/partial_scen.tsv",
+         "census/collapse/pilot23/pilot_scen.tsv", "census/collapse/partial23/partial_scen.tsv"]
 BOX = {"амбар": (2, 11, 2, 11), "бункер": (1, 7, 1, 7)}     # здание пилота: клетки x0..x1, y0..y1
 LABEL_EN = {"амбар": "barn", "бункер": "bunker"}            # метка здания в логе игры
 # здания, у которых остались провальные сценарии (census/collapse/pilot3/fail_cases.md): в заголовке с флагом
@@ -115,7 +117,10 @@ EXPERIMENTAL = {
                 "cultappcultafarm05", "cultappcultafarm06", "cultaubercultasolhuge01", "atlantdesert07", "atlantdesert09",
                 "govbased01", "govbased07",
                 # партии 19-21: предметы, которые M0j5 не держит в целом блоке (cp23/unheld20.tsv)
-                "urbanjunkufourbanjunk24", "islandurban02"}
+                "urbanjunkufourbanjunk24", "islandurban02",
+                # партии 22-23 (охват 27.10, бои переписи gen22): census/collapse/pilot23/split.tsv - провал HOLE
+                # (chemtown) и дыра в PFALL (industrialslum13); двадцать вторая (деревья) - все игрокам; висящих нет (cp24/unheld23.tsv)
+                "chemtown01b", "chemtown02", "industrialslum13"}
 # urban14, urban17, madurban19, 22-26, culta18, cultafarm21, urbanjunk11, comrcurban50: частичное падение
 # не доказано (census/collapse/partial/model_result.tsv, R-353), но по решению Vitali 15.10 в сборке игрока -
 # приёмку ведут игроки
@@ -146,6 +151,8 @@ SOURCES = ["tools/collapse_v7c.py", "tools/collapse_v7b.py", "tools/collapse_v7.
            "tools/collapse_pilot19_scen.py",
            "tools/collapse_pilot20_scen.py",
            "tools/collapse_pilot21_scen.py",
+           "tools/collapse_pilot22_scen.py",
+           "tools/collapse_pilot23_scen.py",
            "tools/collapse_v7d.py", "tools/collapse_v8.py",
            "tools/collapse_pilot_export.py"]
 
@@ -966,6 +973,18 @@ def main():
     LABEL_EN.update(P21.LABEL_EN)
     TREES_IN.update(P21.TREES_IN)
     NAME_AS.update(P21.NAME_AS)
+    import collapse_pilot22_scen as P22           # двадцать вторая - охват 27.10 (бои переписи gen22), блоки с деревьями
+    blds += P22.load()[2]
+    BOX.update(P22.BOX)
+    LABEL_EN.update(P22.LABEL_EN)
+    TREES_IN.update(P22.TREES_IN)
+    NAME_AS.update(P22.NAME_AS)
+    import collapse_pilot23_scen as P23           # двадцать третья - охват 27.10 (бои переписи gen22), без деревьев
+    blds += P23.load()[2]
+    BOX.update(P23.BOX)
+    LABEL_EN.update(P23.LABEL_EN)
+    TREES_IN.update(P23.TREES_IN)
+    NAME_AS.update(P23.NAME_AS)
     if len({b[2] for b in blds}) != len(blds) or len(set(LABEL_EN.values())) != len(LABEL_EN):
         raise SystemExit("метки зданий пилота не уникальны")
     # после загрузки сейва движок ищет модель по имени (последняя с этим именем) - одноимённые блоки другой модели
