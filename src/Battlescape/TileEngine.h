@@ -198,6 +198,8 @@ public:
 	bool hitUnit(BattleActionAttack attack, BattleUnit *target, const Position &relative, int damage, const RuleDamageType *type, bool rangeAtack = true);
 	/// Handles bullet/weapon hits.
 	void hit(BattleActionAttack attack, Position center, int power, const RuleDamageType *type, bool rangeAtack = true, int terrainMeleeTilePart = 0);
+	/// OXCE-HD (armor crushTerrain): breaks the walls and objects a step drives through, as a hit that destroys them would.
+	void crushTerrain(const std::vector<std::pair<Position, TilePart>> &parts);
 	/// Handles explosions.
 	void explode(BattleActionAttack attack, Position center, int power, const RuleDamageType *type, int maxRadius, bool rangeAtack = true);
 	/// The tiles an explosion would reach and the power it would reach them with, without touching anything.

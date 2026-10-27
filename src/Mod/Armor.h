@@ -137,6 +137,7 @@ private:
 	bool _turnBeforeFirstStep;
 	int _turnCost;
 	bool _allowsReverse = false;
+	int _crushTerrain = 0, _crushCost = 4;
 
 	ArmorMoveCost _moveCostBase = { 100, 100 };
 	ArmorMoveCost _moveCostBaseFly = { 100, 100 };
@@ -287,6 +288,10 @@ public:
 	int getTurnCost() const { return _turnCost; }
 	/// Can the player's unit back up to a tile straight behind it (no turn, the hull keeps facing)?
 	bool allowsReverse() const { return _allowsReverse; }
+	/// The strongest MCD armor of a wall or object the player's unit drives through and breaks (0 - never).
+	int getCrushTerrain() const { return _crushTerrain; }
+	/// What each broken part adds to the step, in move cost.
+	int getCrushCost() const { return _crushCost; }
 
 	/// Multiplier of all move costs.
 	ArmorMoveCost getMoveCostBase() const { return _moveCostBase; }

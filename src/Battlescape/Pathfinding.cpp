@@ -29,6 +29,7 @@
 #include "../fmath.h"
 #include "BattlescapeGame.h"
 #include "AiProbe.h"
+#include "CollapsePilot.h"
 #include "../Engine/Logger.h"
 #include <optional>
 #include <chrono>
@@ -453,6 +454,11 @@ PathfindingStep Pathfinding::getTUCost(Position startPosition, int direction, co
 	int maskOfPartsClimb = 0x0;
 	int maskArmor = size ? 0xF : 0x1;
 
+	// OXCE-HD (armor crushTerrain): the walls and objects this step breaks; isBlocked lets them through for this call only
+	struct CrushScope { bool &on; bool was; ~CrushScope() { on = was; } } crushScope{ _crushOn, _crushOn };
+	_crushStep.clear();
+	_crushOn = armor->getCrushTerrain() > 0 && bam != BAM_MISSILE && movementType != MT_FLY;
+
 	Position offsets[4] =
 	{
 		{ 0, 0, 0 },
@@ -677,7 +683,7 @@ PathfindingStep Pathfinding::getTUCost(Position startPosition, int direction, co
 						// as there is no wall blocking us.
 		if ((direction == 0 || direction == 7 || direction == 1) && !startTile[i]->hasLadderOnNorthWall())
 		{
-			wallTmp = startTile[i]->getTUCost(O_NORTHWALL, movementType);
+			wallTmp = partCost(unit, startTile[i], O_NORTHWALL, movementType);
 			if (wallTmp > 0)
 			{
 				wallcost += wallTmp;
@@ -686,7 +692,7 @@ PathfindingStep Pathfinding::getTUCost(Position startPosition, int direction, co
 		}
 		if (!triedStairsDown && (direction == 2 || direction == 1 || direction == 3) && !destinationTile[i]->hasLadderOnWestWall())
 		{
-			wallTmp = destinationTile[i]->getTUCost(O_WESTWALL, movementType);
+			wallTmp = partCost(unit, destinationTile[i], O_WESTWALL, movementType);
 			if (wallTmp > 0)
 			{
 				wallcost += wallTmp;
@@ -695,7 +701,7 @@ PathfindingStep Pathfinding::getTUCost(Position startPosition, int direction, co
 		}
 		if (!triedStairsDown && (direction == 4 || direction == 3 || direction == 5) && !destinationTile[i]->hasLadderOnNorthWall())
 		{
-			wallTmp = destinationTile[i]->getTUCost(O_NORTHWALL, movementType);
+			wallTmp = partCost(unit, destinationTile[i], O_NORTHWALL, movementType);
 			if (wallTmp > 0)
 			{
 				wallcost += wallTmp;
@@ -704,7 +710,7 @@ PathfindingStep Pathfinding::getTUCost(Position startPosition, int direction, co
 		}
 		if ((direction == 6 || direction == 5 || direction == 7) && !startTile[i]->hasLadderOnWestWall())
 		{
-			wallTmp = startTile[i]->getTUCost(O_WESTWALL, movementType);
+			wallTmp = partCost(unit, startTile[i], O_WESTWALL, movementType);
 			if (wallTmp > 0)
 			{
 				wallcost += wallTmp;
@@ -736,7 +742,7 @@ PathfindingStep Pathfinding::getTUCost(Position startPosition, int direction, co
 			cost += destinationTile[i]->getTUCost(O_FLOOR, movementType);
 			if (!triedStairsDown && !triedStairs && destinationTile[i]->getMapData(O_OBJECT) && !destinationTile[i]->hasLadderOnObject())
 			{
-				cost += destinationTile[i]->getTUCost(O_OBJECT, movementType);
+				cost += partCost(unit, destinationTile[i], O_OBJECT, movementType);
 			}
 			if (cost == 0)
 			{
@@ -825,6 +831,9 @@ PathfindingStep Pathfinding::getTUCost(Position startPosition, int direction, co
 		if (!triedStairsDown && abs(originTile->getTerrainLevel() - finalTile->getTerrainLevel()) > 10)
 			return {{INVALID_MOVE_COST, 0}};
 	}
+
+	// OXCE-HD (armor crushTerrain): each part the step breaks costs extra, whatever the unit's size
+	totalCost += (int)_crushStep.size() * armor->getCrushCost();
 
 
 	if (bam == BAM_MISSILE)
@@ -1176,7 +1185,7 @@ bool Pathfinding::isBlocked(const BattleUnit *unit, const Tile *tile, const int 
 			tile->getMapData(O_OBJECT)->getBigWall() != 0 &&
 			tile->getMapData(O_OBJECT)->getBigWall() <= BIGWALLNWSE &&
 			tile->getMapData(O_OBJECT)->getBigWall() != bigWallExclusion)
-			return true; // blocking part
+			return !crushes(unit, tile, O_OBJECT); // blocking part (unless the step breaks it: armor crushTerrain)
 		else
 			return false;
 	}
@@ -1184,27 +1193,31 @@ bool Pathfinding::isBlocked(const BattleUnit *unit, const Tile *tile, const int 
 	{
 		if (tile->getMapData(O_OBJECT) &&
 			(tile->getMapData(O_OBJECT)->getBigWall() == BIGWALLWEST ||
-			tile->getMapData(O_OBJECT)->getBigWall() == BIGWALLWESTANDNORTH))
+			tile->getMapData(O_OBJECT)->getBigWall() == BIGWALLWESTANDNORTH) &&
+			!crushes(unit, tile, O_OBJECT))
 			return true; // blocking part
 		Tile *tileWest = _save->getTile(tile->getPosition() + Position(-1, 0, 0));
 		if (!tileWest) return true;	// do not look outside of map
 		if (tileWest->getMapData(O_OBJECT) &&
 			(tileWest->getMapData(O_OBJECT)->getBigWall() == BIGWALLEAST ||
-			tileWest->getMapData(O_OBJECT)->getBigWall() == BIGWALLEASTANDSOUTH))
+			tileWest->getMapData(O_OBJECT)->getBigWall() == BIGWALLEASTANDSOUTH) &&
+			!crushes(unit, tileWest, O_OBJECT))
 			return true; // blocking part
 	}
 	if (part == O_NORTHWALL)
 	{
 		if (tile->getMapData(O_OBJECT) &&
 			(tile->getMapData(O_OBJECT)->getBigWall() == BIGWALLNORTH ||
-			 tile->getMapData(O_OBJECT)->getBigWall() == BIGWALLWESTANDNORTH))
+			 tile->getMapData(O_OBJECT)->getBigWall() == BIGWALLWESTANDNORTH) &&
+			!crushes(unit, tile, O_OBJECT))
 			return true; // blocking part
 		Tile *tileNorth = _save->getTile(tile->getPosition() + Position(0, -1, 0));
 		if (!tileNorth)
 			return true; // do not look outside of map
 		if (tileNorth->getMapData(O_OBJECT) &&
 			(tileNorth->getMapData(O_OBJECT)->getBigWall() == BIGWALLSOUTH ||
-			 tileNorth->getMapData(O_OBJECT)->getBigWall() == BIGWALLEASTANDSOUTH))
+			 tileNorth->getMapData(O_OBJECT)->getBigWall() == BIGWALLEASTANDSOUTH) &&
+			!crushes(unit, tileNorth, O_OBJECT))
 			return true; // blocking part
 	}
 	if (part == O_FLOOR)
@@ -1279,8 +1292,63 @@ bool Pathfinding::isBlocked(const BattleUnit *unit, const Tile *tile, const int 
 			return true;
 		}
 	}
-	if (tile->getTUCost(part, movementType) == Pathfinding::INVALID_MOVE_COST) return true; // blocking part
+	if (tile->getTUCost(part, movementType) == Pathfinding::INVALID_MOVE_COST)
+		return part == O_FLOOR || !crushes(unit, tile, (TilePart)part); // blocking part (unless the step breaks it: armor crushTerrain)
 	return false;
+}
+
+/**
+ * OXCE-HD (armor crushTerrain): can the unit break this part by driving through it? Only the player's own move
+ * (not the AI: an alien, a panicking unit or the bench's bot - their paths and costs stay as they were), only a wall
+ * or an object of armor up to the unit's crushTerrain; never a door, a mission objective (any special tile type:
+ * UFO parts recovered after the mission too), a base module, an explosive part or a grav lift.
+ * @param unit The walking unit.
+ * @param tile The tile of the part.
+ * @param part The wall or the object.
+ * @return True, if the unit may break it.
+ */
+bool Pathfinding::canCrush(const BattleUnit *unit, const Tile *tile, TilePart part) const
+{
+	if (!unit || !tile || part == O_FLOOR || part >= O_MAX)
+		return false;
+	const int limit = unit->getArmor()->getCrushTerrain();
+	if (limit <= 0)
+		return false;
+	const MapData *md = tile->getMapData(part);
+	if (!md || md->isDoor() || md->isUFODoor() || md->isGravLift() || md->isBaseModule()
+		|| md->getSpecialType() != TILE || md->getExplosive() > 0)
+		return false;
+	// a tree trunk is harder with the building collapse on (Options::oxceHdTrunkArmor): the tank pushes it as a melee hit
+	const int armor = CollapsePilot::trunkArmor(md, CollapsePilot::TRUNK_MELEE);
+	if (armor >= 255 || armor > limit)
+		return false;
+	return unit->getFaction() == FACTION_PLAYER
+		&& _save->getBattleGame() && _save->getBattleGame()->getPanicHandled()
+		&& !AiProbe::botTurn(_save);
+}
+
+/**
+ * Does the step getTUCost is asking about break this part? Notes it (once) in the step's list if so.
+ */
+bool Pathfinding::crushes(const BattleUnit *unit, const Tile *tile, TilePart part) const
+{
+	if (!_crushOn || !canCrush(unit, tile, part))
+		return false;
+	const std::pair<Position, TilePart> p(tile->getPosition(), part);
+	if (std::find(_crushStep.begin(), _crushStep.end(), p) == _crushStep.end())
+		_crushStep.push_back(p);
+	return true;
+}
+
+/**
+ * The move cost of a part for getTUCost: 0 for a blocking part the step breaks (its price is the armor's crushCost).
+ */
+int Pathfinding::partCost(const BattleUnit *unit, const Tile *tile, TilePart part, MovementType movementType) const
+{
+	const int cost = tile->getTUCost(part, movementType);
+	if (cost == INVALID_MOVE_COST && crushes(unit, tile, part))
+		return 0;
+	return cost;
 }
 
 /**
