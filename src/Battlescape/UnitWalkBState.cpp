@@ -34,6 +34,8 @@
 #include "../Mod/Armor.h"
 #include "../Mod/Mod.h"
 #include "UnitFallBState.h"
+#include "ExplosionBState.h"
+#include "CollapsePilot.h"
 #include "AiProbe.h"
 
 namespace OpenXcom
@@ -307,6 +309,8 @@ void UnitWalkBState::think()
 
 			_pf->setUnit(_unit); //TODO: remove as was done by `getTUCost`
 			PathfindingStep r = _pf->getTUCost(_unit->getPosition(), dir, _unit, 0, _action.getMoveType());
+			// OXCE-HD (armor crushTerrain): the walls and objects this step breaks (its cost has them)
+			std::vector<std::pair<Position, TilePart>> crush = _pf->getCrushStep();
 
 			int tu = r.cost.time;
 			int energy = r.cost.energy;
@@ -388,6 +392,35 @@ void UnitWalkBState::think()
 						return cancelCurentMove();
 					}
 				}
+			}
+			// OXCE-HD (armor crushTerrain): the step breaks what is in its way, then the way must be open
+			// (a part's death part may block again: broken in turn, a few times at most)
+			for (int round = 0; !_falling && !crush.empty(); ++round)
+			{
+				if (round == 3)
+				{
+					return cancelCurentMove();
+				}
+				_terrain->crushTerrain(crush);
+				// the building collapse pilot settles what the broken walls held (off by default), as after an explosion
+				if (CollapsePilot::settle(_parent, "crush"))
+				{
+					if (_unit->isOut())
+					{
+						return cancelCurentMove();
+					}
+					if (Tile *t = _terrain->checkForTerrainExplosions())
+					{
+						_parent->statePushFront(new ExplosionBState(_parent, t->getPosition().toVoxel() + Position(8, 8, 0), BattleActionAttack{ }, t));
+						return; // the step is asked again after the blast
+					}
+				}
+				PathfindingStep again = _pf->getTUCost(_unit->getPosition(), dir, _unit, 0, _action.getMoveType());
+				if (again.cost.time == Pathfinding::INVALID_MOVE_COST || again.pos != destination)
+				{
+					return cancelCurentMove();
+				}
+				crush = _pf->getCrushStep();
 			}
 			// now start moving
 			dir = _pf->dequeuePath();

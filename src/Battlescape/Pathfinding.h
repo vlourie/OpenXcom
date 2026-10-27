@@ -91,6 +91,14 @@ private:
 	mutable int _knownOccupantHits = 0;
 	/// PATROL_NO_PATH_CAUSE (bench, probeReach only): the kinds of units isBlocked lets through (IGNORE_*); 0 outside it
 	int _probeIgnore = 0;
+	/// OXCE-HD (armor crushTerrain): getTUCost is asking for a unit that drives through walls and objects; outside it - never
+	mutable bool _crushOn = false;
+	/// The parts the last getTUCost step breaks, each once.
+	mutable std::vector<std::pair<Position, TilePart>> _crushStep;
+	/// Does the step break this part (it would block)? Notes it in _crushStep if so.
+	bool crushes(const BattleUnit *unit, const Tile *tile, TilePart part) const;
+	/// The part's move cost: 0 for a part the step breaks.
+	int partCost(const BattleUnit *unit, const Tile *tile, TilePart part, MovementType movementType) const;
 
   public:
 	/// PATROL_NO_PATH_CAUSE (bench): units probeReach may let through - the unit's own side; the others isBlocked stops it at
@@ -298,6 +306,11 @@ private:
 	bool getStrafeMove() const;
 	/// Does the unit back up for a walk whose first step goes this way (straight behind it, armor allowsReverse, the player's own move)?
 	bool reverseStart(const BattleUnit *unit, int dir) const;
+	/// Can this unit break the part by driving through it (armor crushTerrain, the player's own move; not a door, an objective,
+	/// a base module, an explosive, a grav lift or a floor)?
+	bool canCrush(const BattleUnit *unit, const Tile *tile, TilePart part) const;
+	/// The parts the last getTUCost step breaks (empty for every unit without crushTerrain).
+	const std::vector<std::pair<Position, TilePart>> &getCrushStep() const { return _crushStep; }
 	/// Checks, for the up/down button, if the movement is valid.
 	bool validateUpDown(const BattleUnit *bu, const Position& startPosition, const int direction, bool missile = false) const;
 

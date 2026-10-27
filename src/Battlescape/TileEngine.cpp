@@ -3409,6 +3409,37 @@ void TileEngine::hit(BattleActionAttack attack, Position center, int power, cons
 }
 
 /**
+ * OXCE-HD (armor crushTerrain): breaks the walls and objects a step drives through (Pathfinding::getCrushStep), each as
+ * a hit that destroys it would: its death part stays. In the order of an explosion (R-302): all the parts first, then
+ * gravity on each tile and the tile above, then light and sight once around the step.
+ * The parts are never objectives or base modules (Pathfinding::canCrush), so no mission count changes.
+ * @param parts The tiles and their parts (all within a tile or two of the step).
+ */
+void TileEngine::crushTerrain(const std::vector<std::pair<Position, TilePart>> &parts)
+{
+	std::vector<Tile*> broken;
+	for (const auto &p : parts)
+	{
+		Tile *tile = _save->getTile(p.first);
+		if (!tile || !tile->getMapData(p.second))
+			continue;
+		tile->destroy(p.second, _save->getObjectiveType());
+		broken.push_back(tile);
+	}
+	if (broken.empty())
+		return;
+	for (Tile *tile : broken)
+	{
+		applyGravity(tile);
+		if (Tile *above = _save->getAboveTile(tile))
+			applyGravity(above);
+	}
+	const Position center = broken.front()->getPosition();
+	calculateLighting(LL_FIRE, center, 2, true);
+	calculateFOV(center, 2, true, true);
+}
+
+/**
  * Handles explosions.
  *
  * HE, smoke and fire explodes in a circular pattern on 1 level only. HE however damages floor tiles of the above level. Not the units on it.

@@ -132,6 +132,8 @@ void Armor::load(const YAML::YamlNodeReader& node, Mod *mod, const ModScript &pa
 	reader.tryRead("turnBeforeFirstStep", _turnBeforeFirstStep);
 	reader.tryRead("turnCost", _turnCost);
 	reader.tryRead("allowsReverse", _allowsReverse);
+	reader.tryRead("crushTerrain", _crushTerrain);
+	reader.tryRead("crushCost", _crushCost);
 	if (const YAML::YamlNodeReader& move = reader["moveCost"])
 	{
 		_moveCostBase.load(move["basePercent"]);
