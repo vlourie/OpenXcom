@@ -21,8 +21,9 @@ try { [Console]::OutputEncoding = New-Object Text.UTF8Encoding $false } catch {}
 
 function Get-Scripts {
     $list = Join-Path $PSScriptRoot '..\..\tools\gpu_scripts.txt'
+    # строка с путём (tools/hdart/x.py) - то же имя файла: команду сверяем по имени
     Get-Content -LiteralPath $list -Encoding UTF8 |
-        ForEach-Object { $_.Trim() } |
+        ForEach-Object { ($_.Trim() -split '[\\/]')[-1] } |
         Where-Object { $_ -and -not $_.StartsWith('#') }
 }
 

@@ -137,7 +137,9 @@ SHARED_LOG_ONLY = ("f:/aistudio/",)
 # Скрипты, которые грузят модель на карту. Нужны, чтобы увидеть запуск мимо очереди.
 # Тот же список читает хук .claude/hooks/gpu-guard.ps1.
 with io.open(os.path.join(REPO, "tools", "gpu_scripts.txt"), encoding="utf-8-sig") as _f:
-    GPU_SCRIPTS = {l.strip().lower() for l in _f if l.strip() and not l.startswith("#")}
+    # строка с путём (tools/hdart/x.py) - то же имя файла, как в gpu-guard
+    GPU_SCRIPTS = {l.strip().lower().replace("\\", "/").rsplit("/", 1)[-1]
+                   for l in _f if l.strip() and not l.startswith("#")}
 
 NO_WINDOW = 0x08000000
 NEW_GROUP = 0x00000200

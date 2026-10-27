@@ -19,6 +19,7 @@ STUDIO = Path(r"F:\AIStudio\Escape")
 sys.path.insert(0, str(STUDIO))
 import gen_cast as gc           # noqa: E402
 import gen_video as gv          # noqa: E402
+# gpu: WanGP / LTX-2.5 из F:\AIStudio (gen_video.generate) - только через очередь gpuq
 
 FRAMES = ROOT / "art" / "craft_launch" / "frames"
 OUT = ROOT / "art" / "craft_launch" / "video"
