@@ -443,6 +443,13 @@ void ManufactureInfoState::setAssignedEngineer()
  */
 std::string ManufactureInfoState::deliveryText() const
 {
+	if (_production->hasSeveralKinds())
+	{
+		// XP-000256: a recipe with several kinds - the delivery is by kinds, counted in pieces
+		int given = 0, all = 0;
+		_production->getDeliveryPiecesTotal(given, all);
+		return given >= all ? tr("STR_DELIVERY_FULLY_RESERVED") : tr("STR_DELIVERY_RESERVED_PIECES").arg(given).arg(all);
+	}
 	const int reserved = _production->getDeliveryTotal();
 	const int total = _production->getAmountTotal();
 	return reserved >= total ? tr("STR_DELIVERY_FULLY_RESERVED") : tr("STR_DELIVERY_RESERVED").arg(reserved).arg(total);
@@ -465,9 +472,17 @@ void ManufactureInfoState::updateDelivery()
 		_production->trimDelivery();
 	}
 	const bool available = _production->canDeliver() && !infinite && !_btnSell->getPressed() && _game->getSavedGame()->getBases()->size() > 1;
-	const int reserved = available ? _production->getDeliveryTotal() : 0;
+	int reserved = available ? _production->getDeliveryTotal() : 0;
+	bool full = available && reserved >= _production->getAmountTotal();
+	if (available && _production->hasSeveralKinds())
+	{
+		// by kinds (XP-000256): in pieces; all given out when nothing of any kind is left
+		int all = 0;
+		_production->getDeliveryPiecesTotal(reserved, all);
+		full = reserved >= all;
+	}
 	_btnDelivery->setVisible(available);
-	_btnDelivery->setPressed(available && reserved >= _production->getAmountTotal());
+	_btnDelivery->setPressed(full);
 	_txtDelivery->setVisible(reserved > 0);
 	// the plans of all the orders of the base: the button is there while any delivery is still to be made
 	_btnDeliveryPlan->setVisible(ManufactureDeliveryPlanState::hasPlan(_base, _game->getSavedGame()));
@@ -486,7 +501,12 @@ void ManufactureInfoState::btnDeliveryClick(Action *)
 	updateDelivery(); // the click turned the button over: back to what the plan says
 	_game->pushState(new TransferBaseState(_base,
 		[this]() { return deliveryText(); },
-		[this](Base *to) { const int n = _production->getDeliveryShare(to); return n > 0 ? std::to_string(n) : std::string("-"); },
+		[this](Base *to)
+		{
+			// a recipe with several kinds: pieces of all the kinds that go there (XP-000256)
+			const int n = _production->hasSeveralKinds() ? _production->getDeliveryPieces(to) : _production->getDeliveryShare(to);
+			return n > 0 ? std::to_string(n) : std::string("-");
+		},
 		[this](Base *to) { deliveryPicked(to); }));
 }
 
@@ -505,6 +525,30 @@ void ManufactureInfoState::btnDeliveryPlanClick(Action *)
  */
 void ManufactureInfoState::deliveryPicked(Base *to)
 {
+	if (_production->hasSeveralKinds())
+	{
+		// XP-000256: a recipe with several kinds (a disassembly) - the list of the kinds, a number for each: from 0 to what of the
+		// kind is not given to the other bases yet plus what this base has now; it starts at what this base has now
+		ManufactureDeliveryState::Items kinds;
+		std::vector<int> start;
+		for (const auto &i : _production->getRules()->getProducedItems())
+		{
+			const int mine = _production->getDeliveryPieces(to, i.first);
+			const int most = _production->getDeliveryLeft(i.first) + mine;
+			if (most > 0)
+			{
+				kinds.emplace_back(i.first, most);
+				start.push_back(mine);
+			}
+		}
+		if (!kinds.empty())
+		{
+			_game->pushState(new ManufactureLootPartsState(to, kinds,
+				[this, to](const ManufactureDeliveryState::Items &picked) { _production->setDeliveryParts(to, picked); },
+				start, true));
+		}
+		return;
+	}
 	const int mine = _production->getDeliveryShare(to);
 	const int room = std::max(0, _production->getAmountTotal() - _production->getDeliveryTotal() + mine);
 	_game->pushState(new ManufactureDeliveryState(_production, to, room));

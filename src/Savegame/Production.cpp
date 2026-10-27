@@ -482,6 +482,7 @@ void Production::setDeliveryShare(const Base *to, int amount)
 			if (amount > 0)
 			{
 				it->amount = amount;
+				it->parts.clear(); // whole orders now, not kinds
 			}
 			else
 			{
@@ -492,26 +493,230 @@ void Production::setDeliveryShare(const Base *to, int amount)
 	}
 	if (amount > 0)
 	{
-		_delivery.push_back({ to->getLongitude(), to->getLatitude(), amount });
+		_delivery.push_back({ to->getLongitude(), to->getLatitude(), amount, {} });
 	}
 }
 
 /**
  * Cuts the plan down to the amount ordered (the order was made smaller): from the last base of the plan.
+ * The shares by kinds (XP-000256) are cut kind by kind to what the order gives now.
  */
 void Production::trimDelivery()
 {
 	int excess = getDeliveryTotal() - _amount;
-	while (excess > 0 && !_delivery.empty())
+	for (auto it = _delivery.rbegin(); excess > 0 && it != _delivery.rend(); ++it)
 	{
-		DeliveryShare &last = _delivery.back();
-		const int cut = std::min(excess, last.amount);
-		last.amount -= cut;
-		excess -= cut;
-		if (last.amount <= 0)
+		if (!it->parts.empty())
 		{
-			_delivery.pop_back();
+			continue;
 		}
+		const int cut = std::min(excess, it->amount);
+		it->amount -= cut;
+		excess -= cut;
+	}
+	bool byKinds = false;
+	for (const auto &share : _delivery)
+	{
+		byKinds = byKinds || !share.parts.empty();
+	}
+	if (byKinds)
+	{
+		for (const auto &i : _rules->getProducedItems())
+		{
+			int over = -_amount * i.second;
+			for (const auto &share : _delivery)
+			{
+				for (const auto &p : getShareItems(share))
+				{
+					if (p.first == i.first)
+					{
+						over += p.second;
+					}
+				}
+			}
+			for (auto it = _delivery.rbegin(); over > 0 && it != _delivery.rend(); ++it)
+			{
+				auto p = it->parts.find(i.first->getType());
+				if (p == it->parts.end())
+				{
+					continue;
+				}
+				const int cut = std::min(over, p->second);
+				p->second -= cut;
+				over -= cut;
+				if (p->second <= 0)
+				{
+					it->parts.erase(p);
+				}
+			}
+		}
+	}
+	// a share with nothing left (whole orders gone, or all the kinds cut) leaves the plan
+	for (auto it = _delivery.begin(); it != _delivery.end();)
+	{
+		if (it->parts.empty() && it->amount <= 0)
+		{
+			it = _delivery.erase(it);
+		}
+		else
+		{
+			++it;
+		}
+	}
+}
+
+/**
+ * Does the recipe give several kinds of items (a disassembly)? The delivery of such an order goes by kinds (XP-000256).
+ */
+bool Production::hasSeveralKinds() const
+{
+	return _rules->getProducedItems().size() > 1;
+}
+
+/**
+ * What a share carries, by kinds, in the order of the recipe (only what is above 0): whole orders times what an order gives,
+ * or the pieces of a share by kinds.
+ */
+std::vector<std::pair<const RuleItem*, int> > Production::getShareItems(const DeliveryShare &share) const
+{
+	std::vector<std::pair<const RuleItem*, int> > out;
+	for (const auto &i : _rules->getProducedItems())
+	{
+		int n = 0;
+		if (share.parts.empty())
+		{
+			n = share.amount * i.second;
+		}
+		else
+		{
+			auto p = share.parts.find(i.first->getType());
+			n = (p != share.parts.end()) ? p->second : 0;
+		}
+		if (n > 0)
+		{
+			out.emplace_back(i.first, n);
+		}
+	}
+	return out;
+}
+
+/**
+ * Pieces of one kind of the product that no base has in the plan yet (the order gives `amount * per order`).
+ */
+int Production::getDeliveryLeft(const RuleItem *item) const
+{
+	auto produced = _rules->getProducedItems().find(item);
+	if (produced == _rules->getProducedItems().end())
+	{
+		return 0;
+	}
+	int left = _amount * produced->second;
+	for (const auto &share : _delivery)
+	{
+		for (const auto &p : getShareItems(share))
+		{
+			if (p.first == item)
+			{
+				left -= p.second;
+			}
+		}
+	}
+	return std::max(0, left);
+}
+
+/**
+ * Pieces of one kind that the plan sends to the base.
+ */
+int Production::getDeliveryPieces(const Base *to, const RuleItem *item) const
+{
+	for (const auto &share : _delivery)
+	{
+		if (std::fabs(to->getLongitude() - share.lon) < 1e-7 && std::fabs(to->getLatitude() - share.lat) < 1e-7)
+		{
+			for (const auto &p : getShareItems(share))
+			{
+				if (p.first == item)
+				{
+					return p.second;
+				}
+			}
+		}
+	}
+	return 0;
+}
+
+/**
+ * All the pieces (of all the kinds) that the plan sends to the base.
+ */
+int Production::getDeliveryPieces(const Base *to) const
+{
+	int total = 0;
+	for (const auto &share : _delivery)
+	{
+		if (std::fabs(to->getLongitude() - share.lon) < 1e-7 && std::fabs(to->getLatitude() - share.lat) < 1e-7)
+		{
+			for (const auto &p : getShareItems(share))
+			{
+				total += p.second;
+			}
+		}
+	}
+	return total;
+}
+
+/**
+ * Pieces in the plan and pieces the order gives in all.
+ */
+void Production::getDeliveryPiecesTotal(int &given, int &all) const
+{
+	all = 0;
+	int left = 0;
+	for (const auto &i : _rules->getProducedItems())
+	{
+		all += _amount * i.second;
+		left += getDeliveryLeft(i.first);
+	}
+	given = all - left;
+}
+
+/**
+ * Plans these pieces (by kinds) for the base instead of what it had in the plan; a kind gets not more than is left of it
+ * plus what the base had. Nothing to send - the base leaves the plan.
+ */
+void Production::setDeliveryParts(const Base *to, const std::vector<std::pair<const RuleItem*, int> > &items)
+{
+	std::map<std::string, int> parts;
+	for (const auto &i : items)
+	{
+		if (i.second <= 0 || _rules->getProducedItems().find(i.first) == _rules->getProducedItems().end())
+		{
+			continue;
+		}
+		const int qty = std::min(i.second, getDeliveryLeft(i.first) + getDeliveryPieces(to, i.first));
+		if (qty > 0)
+		{
+			parts[i.first->getType()] = qty;
+		}
+	}
+	for (auto it = _delivery.begin(); it != _delivery.end(); ++it)
+	{
+		if (std::fabs(to->getLongitude() - it->lon) < 1e-7 && std::fabs(to->getLatitude() - it->lat) < 1e-7)
+		{
+			if (parts.empty())
+			{
+				_delivery.erase(it);
+			}
+			else
+			{
+				it->amount = 0;
+				it->parts = parts;
+			}
+			return;
+		}
+	}
+	if (!parts.empty())
+	{
+		_delivery.push_back({ to->getLongitude(), to->getLatitude(), 0, parts });
 	}
 }
 
@@ -597,19 +802,49 @@ void Production::deliver(Base *b, SavedGame *g, const Mod *m)
 		return;
 	}
 	int left = _amount;
+	// XP-000256: pieces of each kind the batch still has to give (a share by kinds takes exactly its pieces, not more than that)
+	std::map<const RuleItem*, int> capacity;
+	for (const auto &i : _rules->getProducedItems())
+	{
+		capacity[i.first] = _amount * i.second;
+	}
 	for (const auto &share : _delivery)
 	{
 		Base *to = findBaseAt(g, share.lon, share.lat);
-		const int orders = std::min(share.amount, left);
-		if (!to || to == b || orders <= 0)
-		{
-			continue;
-		}
-		left -= orders;
 		std::vector<std::pair<const RuleItem*, int> > wanted;
-		for (const auto &i : _rules->getProducedItems())
+		if (share.parts.empty())
 		{
-			wanted.emplace_back(i.first, orders * i.second);
+			const int orders = std::min(share.amount, left);
+			if (!to || to == b || orders <= 0)
+			{
+				continue;
+			}
+			left -= orders;
+			for (const auto &i : _rules->getProducedItems())
+			{
+				capacity[i.first] -= orders * i.second;
+				wanted.emplace_back(i.first, orders * i.second);
+			}
+		}
+		else
+		{
+			if (!to || to == b)
+			{
+				continue;
+			}
+			for (const auto &p : getShareItems(share))
+			{
+				const int qty = std::min(p.second, std::max(0, capacity[p.first]));
+				if (qty > 0)
+				{
+					capacity[p.first] -= qty;
+					wanted.emplace_back(p.first, qty);
+				}
+			}
+			if (wanted.empty())
+			{
+				continue;
+			}
 		}
 		const ShipOutcome o = shipItems(b, to, wanted, g, m);
 		if (o.pieces <= 0)
@@ -660,6 +895,11 @@ void Production::save(YAML::YamlNodeWriter writer) const
 				shareWriter.write("lon", s.lon);
 				shareWriter.write("lat", s.lat);
 				shareWriter.write("amount", s.amount);
+				// XP-000256: a share by kinds (amount is 0 then: a build without this key drops the share, it does not send whole orders)
+				if (!s.parts.empty())
+				{
+					shareWriter.write("parts", s.parts);
+				}
 			});
 	}
 }
@@ -683,8 +923,22 @@ void Production::load(const YAML::YamlNodeReader& reader)
 	{
 		try
 		{
-			DeliveryShare s = { shareReader["lon"].readVal(1000.0), shareReader["lat"].readVal(1000.0), shareReader["amount"].readVal(0) };
-			if (std::fabs(s.lon) <= 100.0 && std::fabs(s.lat) <= 100.0 && s.amount > 0)
+			DeliveryShare s = { shareReader["lon"].readVal(1000.0), shareReader["lat"].readVal(1000.0), shareReader["amount"].readVal(0), {} };
+			// XP-000256: a share by kinds; only the kinds the recipe gives and only pieces above 0 are kept (a missing key: whole orders)
+			const std::map<std::string, int> parts = shareReader["parts"].readVal(std::map<std::string, int>());
+			for (const auto &i : _rules->getProducedItems())
+			{
+				auto p = parts.find(i.first->getType());
+				if (p != parts.end() && p->second > 0)
+				{
+					s.parts[p->first] = p->second;
+				}
+			}
+			if (!s.parts.empty())
+			{
+				s.amount = 0;
+			}
+			if (std::fabs(s.lon) <= 100.0 && std::fabs(s.lat) <= 100.0 && (s.amount > 0 || !s.parts.empty()))
 			{
 				_delivery.push_back(s);
 			}

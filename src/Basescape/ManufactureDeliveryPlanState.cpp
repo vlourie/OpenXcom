@@ -81,7 +81,7 @@ bool ManufactureDeliveryPlanState::hasPlan(const Base *base, const SavedGame *sa
 		}
 		for (const auto &share : production->getDelivery())
 		{
-			if (share.amount > 0 && baseAt(save, share))
+			if (!production->getShareItems(share).empty() && baseAt(save, share))
 			{
 				return true;
 			}
@@ -169,14 +169,11 @@ void ManufactureDeliveryPlanState::fill()
 		for (const auto &share : production->getDelivery())
 		{
 			Base *to = baseAt(save, share);
-			if (share.amount <= 0 || !to || to == _base)
+			// XP-000256: by kinds or whole orders - the share knows what it carries
+			const ManufactureDeliveryState::Items items = production->getShareItems(share);
+			if (items.empty() || !to || to == _base)
 			{
 				continue;
-			}
-			ManufactureDeliveryState::Items items;
-			for (const auto &i : production->getRules()->getProducedItems())
-			{
-				items.emplace_back(i.first, share.amount * i.second);
 			}
 			_lstPlan->addRow(2, ManufactureDeliveryState::describe(_game->getLanguage(), items).c_str(), to->getName().c_str());
 			_rows.push_back({ production, to });

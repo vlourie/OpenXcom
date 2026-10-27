@@ -318,12 +318,12 @@ void ManufactureDeliveryState::think()
  * @param items The kinds and the most of each that can go (more than 0).
  * @param onOk Called with the kinds picked (a number above 0) when OK is clicked, after the window is closed.
  */
-ManufactureLootPartsState::ManufactureLootPartsState(Base *to, const Items &items, const std::function<void(const Items&)> &onOk) : _to(to), _items(items), _onOk(onOk)
+ManufactureLootPartsState::ManufactureLootPartsState(Base *to, const Items &items, const std::function<void(const Items&)> &onOk, const std::vector<int> &start, bool allowEmpty) : _to(to), _items(items), _onOk(onOk), _allowEmpty(allowEmpty)
 {
 	_screen = false;
-	for (const auto &i : _items)
+	for (size_t i = 0; i < _items.size(); ++i)
 	{
-		_amount.push_back(i.second);
+		_amount.push_back(i < start.size() ? std::max(0, std::min(start[i], _items[i].second)) : _items[i].second);
 	}
 
 	// Create objects
@@ -449,8 +449,9 @@ void ManufactureLootPartsState::btnOkClick(Action *)
 	}
 	// closed first: the callback may open a window of its own, which must not be the one popState takes
 	const std::function<void(const Items&)> onOk = _onOk;
+	const bool allowEmpty = _allowEmpty;
 	_game->popState();
-	if (onOk && !picked.empty())
+	if (onOk && (!picked.empty() || allowEmpty))
 	{
 		onOk(picked);
 	}

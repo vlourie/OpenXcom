@@ -102,6 +102,7 @@ private:
 	Items _items;              ///< the kinds and the most of each that can go
 	std::vector<int> _amount;  ///< how many of each goes now, by row
 	std::function<void(const Items&)> _onOk;
+	bool _allowEmpty;          ///< OK with nothing picked still calls `onOk` (the plan of a workshop order: that takes the base out of it)
 	Window *_window;
 	Text *_txtTitle, *_txtTotal;
 	TextList *_lstParts;
@@ -116,7 +117,9 @@ private:
 	void btnCancelClick(Action *action);
 public:
 	/// Creates the state: the base, the kinds with the most of each; the pick goes to `onOk` (the kinds with a number above 0).
-	ManufactureLootPartsState(Base *to, const Items &items, const std::function<void(const Items&)> &onOk);
+	/// XP-000256, the plan of a workshop order: `start` - what each kind starts at (by rows; none - the most, as the loot does),
+	/// `allowEmpty` - OK with nothing picked is also passed on.
+	ManufactureLootPartsState(Base *to, const Items &items, const std::function<void(const Items&)> &onOk, const std::vector<int> &start = std::vector<int>(), bool allowEmpty = false);
 	~ManufactureLootPartsState();
 };
 
