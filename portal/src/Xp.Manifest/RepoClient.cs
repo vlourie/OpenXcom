@@ -78,6 +78,12 @@ public sealed class RepoClient(HttpClient http, Uri baseUri, TrustedKeys keys)
     public async Task<LatestRelease> GetLatestAsync(string channel, long minSequence, CancellationToken ct)
     {
         var pointer = await GetPointerAsync(channel, minSequence, ct);
+        return new LatestRelease(pointer, await GetManifestAsync(pointer, ct));
+    }
+
+    /// <summary>The manifest a verified pointer names, checked against its hash and signature.</summary>
+    public async Task<ReleaseManifest> GetManifestAsync(ChannelPointer pointer, CancellationToken ct)
+    {
         if (pointer.ManifestSize > MaxManifestBytes) throw new TrustException("manifest too large");
 
         var mKey = BlobKeys.Manifest(pointer.ReleaseId);
@@ -90,9 +96,9 @@ public sealed class RepoClient(HttpClient http, Uri baseUri, TrustedKeys keys)
         ReleaseManifest manifest;
         try { manifest = ManifestValidator.Parse(mBytes); }
         catch (ManifestException e) { throw new TrustException("manifest rejected: " + e.Message); }
-        if (manifest.Release.Id != pointer.ReleaseId || manifest.Release.Channel != channel)
+        if (manifest.Release.Id != pointer.ReleaseId || manifest.Release.Channel != pointer.Channel)
             throw new TrustException("manifest does not belong to this channel pointer");
-        return new LatestRelease(pointer, manifest);
+        return manifest;
     }
 
     /// <summary>

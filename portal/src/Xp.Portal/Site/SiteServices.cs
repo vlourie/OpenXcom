@@ -37,9 +37,9 @@ public sealed class ReleaseFeed(IOptions<PortalOptions> options, IHttpClientFact
 
     public async Task<ReleaseView?> CurrentAsync(string lang, CancellationToken ct)
     {
-        var latest = await LatestAsync(options.Value.ReleaseChannel, ct);
+        var latest = await LatestAsync(options.Value.ReleaseChannel);
         if (latest is null) return null;
-        var r = latest.Manifest.Release;
+        var r = latest.Release;
         var log_ = r.Changelog.TryGetValue(lang, out var c) ? c : r.Changelog.Values.FirstOrDefault() ?? "";
         return new ReleaseView(r.Id, r.Version, r.Published, log_);
     }
@@ -51,12 +51,11 @@ public sealed class ReleaseFeed(IOptions<PortalOptions> options, IHttpClientFact
     public async Task<GameView> GameAsync(CancellationToken ct)
     {
         var o = options.Value;
-        var latest = await LatestAsync(o.ReleaseChannel, ct);
-        var fromRelease = latest?.Manifest.Components.FirstOrDefault(c => c.Id == "mod.piratez")?.Version;
+        var latest = await LatestAsync(o.ReleaseChannel);
         // the mod writes "v.o2"; the players say "o2"
-        var piratez = (fromRelease ?? "").Trim().TrimStart('v', 'V').TrimStart('.');
+        var piratez = (latest?.Piratez ?? "").Trim().TrimStart('v', 'V').TrimStart('.');
         if (piratez.Length == 0) piratez = o.PiratezVersion;
-        var r = latest?.Manifest.Release;
+        var r = latest?.Release;
         return new GameView(piratez, o.EngineName, r?.Version, r?.Published);
     }
 
@@ -75,7 +74,8 @@ public sealed class ReleaseFeed(IOptions<PortalOptions> options, IHttpClientFact
             try
             {
                 var repo = new RepoClient(http.CreateClient("releases"), new Uri(o.ReleaseRepo), new TrustedKeys(o.ReleaseKeys));
-                return await repo.GetNotesAsync(o.ReleaseChannel, ct);
+                // not the visitor's token: the answer is shared, and one who left must not leave an error cached for all
+                return await repo.GetNotesAsync(o.ReleaseChannel, CancellationToken.None);
             }
             catch (Exception ex) when (ex is HttpRequestException or TrustException or ManifestException or IOException or TaskCanceledException)
             {
@@ -105,20 +105,28 @@ public sealed class ReleaseFeed(IOptions<PortalOptions> options, IHttpClientFact
     /// </summary>
     public async Task<LauncherView?> LauncherAsync(CancellationToken ct)
     {
-        var latest = await LatestAsync(options.Value.LauncherChannel, ct);
+        var latest = await LatestAsync(options.Value.LauncherChannel);
         if (latest is null) return null;
-        var files = latest.Manifest.Files;
-        var file = files.FirstOrDefault(f => f.Path.Equals(BootstrapFile, StringComparison.OrdinalIgnoreCase));
+        var file = latest.Bootstrap;
         if (file is null)
         {
-            log.LogWarning("launcher release {Id} has no {File}", latest.Manifest.Release.Id, BootstrapFile);
+            log.LogWarning("launcher release {Id} has no {File}", latest.Release.Id, BootstrapFile);
             return null;
         }
-        var r = latest.Manifest.Release;
+        var r = latest.Release;
         return new LauncherView(r.Version, file.Sha256, file.Size, r.Published);
     }
 
-    async Task<LatestRelease?> LatestAsync(string channel, CancellationToken ct)
+    /// <summary>
+    /// What the pages take from a release. The game's manifest lists every file (113 thousand, ~46 MB
+    /// parsed): it is fetched once per release and only these fields are kept (code audit 2026-10-27, portal §6).
+    /// </summary>
+    sealed record ReleaseSummary(string ManifestSha256, ReleaseInfo Release, string? Piratez, ManifestFile? Bootstrap);
+
+    /// <summary>The last summary of each channel: while the pointer names the same manifest, it is not fetched again.</summary>
+    readonly System.Collections.Concurrent.ConcurrentDictionary<string, ReleaseSummary> _last = new();
+
+    async Task<ReleaseSummary?> LatestAsync(string channel)
     {
         var o = options.Value;
         if (string.IsNullOrWhiteSpace(o.ReleaseRepo) || o.ReleaseKeys.Length == 0 || string.IsNullOrWhiteSpace(channel)) return null;
@@ -128,7 +136,15 @@ public sealed class ReleaseFeed(IOptions<PortalOptions> options, IHttpClientFact
             try
             {
                 var repo = new RepoClient(http.CreateClient("releases"), new Uri(o.ReleaseRepo), new TrustedKeys(o.ReleaseKeys));
-                return await repo.GetLatestAsync(channel, 0, ct);
+                // not the visitor's token: the answer is shared, and one who left must not leave an error cached for all
+                var pointer = await repo.GetPointerAsync(channel, 0, CancellationToken.None);
+                if (_last.TryGetValue(channel, out var last) && last.ManifestSha256 == pointer.ManifestSha256) return last;
+                var m = await repo.GetManifestAsync(pointer, CancellationToken.None);
+                var summary = new ReleaseSummary(pointer.ManifestSha256, m.Release,
+                    m.Components.FirstOrDefault(c => c.Id == "mod.piratez")?.Version,
+                    m.Files.FirstOrDefault(f => f.Path.Equals(BootstrapFile, StringComparison.OrdinalIgnoreCase)));
+                _last[channel] = summary;
+                return summary;
             }
             catch (Exception ex) when (ex is HttpRequestException or TrustException or ManifestException or IOException or TaskCanceledException)
             {

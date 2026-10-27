@@ -12,10 +12,15 @@ public sealed class ReleaseRepoFactory : PortalFactory
 {
     public const string Setup = "setup of the launcher, version 1.2.3";
     public Dictionary<string, byte[]> Blobs { get; } = new();
+    /// <summary>How many times each key was asked for.</summary>
+    public System.Collections.Concurrent.ConcurrentDictionary<string, int> Hits { get; } = new();
+    /// <summary>The key releases are signed with, for a test that publishes one.</summary>
+    public byte[] Key { get; }
 
     public ReleaseRepoFactory()
     {
         var (key, pub) = Signing.CreateKeyPair();
+        Key = key;
         Settings["Portal:ReleaseRepo"] = "http://repo.test/";
         Settings["Portal:ReleaseKeys:0"] = Convert.ToBase64String(pub);
         Settings["Portal:LauncherChannel"] = "launcher-stable";
@@ -85,15 +90,17 @@ public sealed class ReleaseRepoFactory : PortalFactory
     {
         base.ConfigureWebHost(builder);
         builder.ConfigureTestServices(services =>
-            services.AddHttpClient("releases").ConfigurePrimaryHttpMessageHandler(() => new Repo(Blobs)));
+            services.AddHttpClient("releases").ConfigurePrimaryHttpMessageHandler(() => new Repo(Blobs, Hits)));
     }
 
-    sealed class Repo(Dictionary<string, byte[]> blobs) : HttpMessageHandler
+    sealed class Repo(Dictionary<string, byte[]> blobs, System.Collections.Concurrent.ConcurrentDictionary<string, int> hits) : HttpMessageHandler
     {
         protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
         {
             byte[]? body;
-            lock (blobs) blobs.TryGetValue(request.RequestUri!.AbsolutePath.TrimStart('/'), out body);
+            var key = request.RequestUri!.AbsolutePath.TrimStart('/');
+            hits.AddOrUpdate(key, 1, (_, n) => n + 1);
+            lock (blobs) blobs.TryGetValue(key, out body);
             return Task.FromResult(body is null
                 ? new HttpResponseMessage(HttpStatusCode.NotFound)
                 : new HttpResponseMessage(HttpStatusCode.OK) { Content = new ByteArrayContent(body) });
@@ -163,5 +170,54 @@ public sealed class LauncherDownloadTests(ReleaseRepoFactory f) : IClassFixture<
         Assert.Contains(">Plan-ru</h2>", html);
         Assert.Contains("<li>inventory-next</li>", html);
         Assert.Contains("href=\"/releases\"", html);
+    }
+}
+
+/// <summary>
+/// The site keeps a few fields of a release, not its manifest: the game's lists 113 thousand files. Every
+/// 5 minutes it reads the channel pointer only, and the manifest again only when the pointer names another
+/// one (code audit 2026-10-27, portal §6).
+/// </summary>
+public sealed class ReleaseFeedTests(ReleaseRepoFactory f) : IClassFixture<ReleaseRepoFactory>
+{
+    [Fact]
+    public async Task The_manifest_is_fetched_once_per_release_and_a_new_pointer_brings_the_new_one()
+    {
+        var c = f.CreateClient();
+        var cache = f.Services.GetRequiredService<Microsoft.Extensions.Caching.Memory.IMemoryCache>();
+        string pKey = BlobKeys.Channel("launcher-stable"), mKey = BlobKeys.Manifest("launcher-1.2.3");
+        int Hits(string k) => f.Hits.TryGetValue(k, out var n) ? n : 0;
+
+        Assert.Equal(HttpStatusCode.OK, (await c.GetAsync("/download/launcher")).StatusCode);
+        cache.Remove("release:launcher-stable");   // as if the 5 minutes ran out
+        int pointers = Hits(pKey), manifests = Hits(mKey);
+        var again = await c.GetAsync("/download/launcher");
+        Assert.Equal("XPiratezHD-Setup-1.2.3.exe", again.Content.Headers.ContentDisposition?.FileName);
+        Assert.Equal(pointers + 1, Hits(pKey));
+        Assert.Equal(manifests, Hits(mKey));
+
+        // a new launcher release: the same setup file under another version
+        var setup = System.Text.Encoding.UTF8.GetBytes(ReleaseRepoFactory.Setup);
+        var m = new ReleaseManifest
+        {
+            Release = new ReleaseInfo { Id = "launcher-1.2.4", Version = "1.2.4", Channel = "launcher-stable", MinLauncher = "0.0.0" },
+            Roots = ["xp-bootstrap.exe"],
+            Components = [new ComponentInfo { Id = "launcher", Kind = ComponentKind.Launcher }],
+            Files = [new ManifestFile { Path = "xp-bootstrap.exe", Size = setup.Length, Sha256 = Hashing.Sha256Hex(setup), Component = "launcher" }],
+        };
+        var mBytes = JsonSerializer.SerializeToUtf8Bytes(m, ManifestJson.Default.ReleaseManifest);
+        var pointer = new ChannelPointer { Channel = "launcher-stable", Sequence = 2, ReleaseId = "launcher-1.2.4", ManifestSha256 = Hashing.Sha256Hex(mBytes), ManifestSize = mBytes.Length };
+        var pBytes = JsonSerializer.SerializeToUtf8Bytes(pointer, ManifestJson.Default.ChannelPointer);
+        lock (f.Blobs)
+        {
+            f.Blobs[BlobKeys.Manifest("launcher-1.2.4")] = mBytes;
+            f.Blobs[BlobKeys.Sig(BlobKeys.Manifest("launcher-1.2.4"))] = Signing.SerializeSignature(Signing.Sign(f.Key, mBytes));
+            f.Blobs[pKey] = pBytes;
+            f.Blobs[BlobKeys.Sig(pKey)] = Signing.SerializeSignature(Signing.Sign(f.Key, pBytes));
+        }
+        cache.Remove("release:launcher-stable");
+        var next = await c.GetAsync("/download/launcher");
+        Assert.Equal("XPiratezHD-Setup-1.2.4.exe", next.Content.Headers.ContentDisposition?.FileName);
+        Assert.Equal(1, Hits(BlobKeys.Manifest("launcher-1.2.4")));
     }
 }
