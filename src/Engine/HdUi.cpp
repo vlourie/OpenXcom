@@ -1174,6 +1174,7 @@ void HdUi::clearCaches()
 	_cropMisses.clear();
 	_glyphs.clear();
 	_fitted.clear();
+	_metrics.clear();
 }
 
 }

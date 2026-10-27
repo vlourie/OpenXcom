@@ -66,6 +66,12 @@ extern char **environ;
 #define PROBE_ENVIRON environ
 #endif
 
+#ifdef OXCE_AI_DEV
+/// The mark of a bench build: build.ps1 and release.ps1 stop a players' release whose exe has it. A string of its own,
+/// so rewording a log line does not turn the check green.
+extern "C" const char oxceAiDevBuildMark[] = "OXCE-AI-DEV-BUILD-MARK";
+#endif
+
 namespace OpenXcom
 {
 

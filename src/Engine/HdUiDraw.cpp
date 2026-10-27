@@ -245,6 +245,8 @@ void HdUi::scanFontSets()
 
 void HdUi::loadFonts()
 {
+	// the mods' bitmap fonts are new objects now: a new one can sit at the address of an old one
+	_metrics.clear();
 	scanFontSets();
 	_fontCounter.load(HdSprites::artPath("UI/fonts/Pulse-Big.ttf"));
 	_fontSetLoaded = -1;
