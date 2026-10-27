@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Options;
 using Xp.Portal;
 using Xp.Portal.Auth;
@@ -216,6 +217,8 @@ public static class PortalApp
             o.AddPolicy("stats-ping", c => WritesByIp(c, cfg.GetValue("RateLimits:StatsPingPer10Min", 30), TimeSpan.FromMinutes(10)));
             // the team's automation pulls a queue with its files in one go: reads and writes counted together
             o.AddPolicy("bot", c => ByIp(c, cfg.GetValue("RateLimits:BotPerMin", 300), TimeSpan.FromMinutes(1)));
+            // a person downloads the setup once, a download manager asks HEAD first and retries a broken one
+            o.AddPolicy("launcher-download", c => ByIp(c, cfg.GetValue("RateLimits:LauncherPer10Min", 20), TimeSpan.FromMinutes(10)));
         });
     }
 
@@ -266,7 +269,7 @@ public static class PortalApp
         VoiceApi.Map(app);
         app.MapGet("/files/{id:guid}", ServeFileAsync).ExcludeFromDescription();
         // HEAD too: download managers ask the name and size first, and 405 made them give up
-        app.MapMethods("/download/launcher", ["GET", "HEAD"], DownloadLauncherAsync).ExcludeFromDescription();
+        app.MapMethods("/download/launcher", ["GET", "HEAD"], DownloadLauncherAsync).RequireRateLimiting("launcher-download").ExcludeFromDescription();
         app.MapGet("/lang/{lang}", (string lang, string? back, HttpContext http) =>
         {
             if (Text.Languages.Contains(lang))
@@ -323,7 +326,7 @@ public static class PortalApp
     /// repository, and its name here carries the version instead, so the player sees what they got.
     /// </summary>
     static async Task<IResult> DownloadLauncherAsync(ReleaseFeed feed, IOptions<PortalOptions> options, IHttpClientFactory http,
-        ILogger<ReleaseFeed> log, CancellationToken ct)
+        IMemoryCache cache, ILogger<ReleaseFeed> log, CancellationToken ct)
     {
         var o = options.Value;
         if (o.LauncherDownloadUrl is { Length: > 0 } elsewhere) return Results.Redirect(elsewhere);
@@ -334,6 +337,11 @@ public static class PortalApp
             log.LogError("launcher {Version}: {Size} bytes in the manifest, more than the site hands out ({Max})", launcher.Version, launcher.Size, MaxLauncherBytes);
             return Results.StatusCode(StatusCodes.Status500InternalServerError);
         }
+        // the file that already matched the signed manifest, under its own hash: a new launcher is a new key.
+        // Only a match is kept, so a file the repository swapped is checked (and refused) on every request
+        var cacheKey = "launcher-file:" + launcher.Sha256;
+        if (cache.TryGetValue(cacheKey, out byte[]? kept) && kept is not null)
+            return Results.File(kept, "application/octet-stream", launcher.FileName);
         var client = http.CreateClient("releases");
         var url = new Uri(new Uri(o.ReleaseRepo.EndsWith('/') ? o.ReleaseRepo : o.ReleaseRepo + "/"), Xp.Manifest.BlobKeys.For(launcher.Sha256));
         using var resp = await client.GetAsync(url, HttpCompletionOption.ResponseHeadersRead, ct);
@@ -355,6 +363,7 @@ public static class PortalApp
                 launcher.Version, bytes.Length, sha, launcher.Size, launcher.Sha256);
             return Results.StatusCode(StatusCodes.Status500InternalServerError);
         }
+        cache.Set(cacheKey, bytes, new MemoryCacheEntryOptions { SlidingExpiration = TimeSpan.FromHours(6) });
         return Results.File(bytes, "application/octet-stream", launcher.FileName);
     }
 

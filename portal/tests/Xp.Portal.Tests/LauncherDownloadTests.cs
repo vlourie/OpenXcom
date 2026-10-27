@@ -8,7 +8,7 @@ using Xp.Manifest;
 namespace Xp.Portal.Tests;
 
 /// <summary>The portal with a release repository of its own: a launcher release signed by a test key.</summary>
-public sealed class ReleaseRepoFactory : PortalFactory
+public class ReleaseRepoFactory : PortalFactory
 {
     public const string Setup = "setup of the launcher, version 1.2.3";
     public Dictionary<string, byte[]> Blobs { get; } = new();
@@ -124,7 +124,14 @@ public sealed class LauncherDownloadTests(ReleaseRepoFactory f) : IClassFixture<
         Assert.Equal(ReleaseRepoFactory.Setup, await good.Content.ReadAsStringAsync());
         Assert.Equal("XPiratezHD-Setup-1.2.3.exe", good.Content.Headers.ContentDisposition?.FileName);
 
+        // the file that matched is kept: the next download does not go to the repository again
+        int fetched = f.Hits.TryGetValue(f.SetupKey, out var n) ? n : 0;
+        Assert.Equal(ReleaseRepoFactory.Setup, await (await c.GetAsync("/download/launcher")).Content.ReadAsStringAsync());
+        Assert.Equal(fetched, f.Hits.TryGetValue(f.SetupKey, out n) ? n : 0);
+
         var original = f.Blobs[f.SetupKey];
+        var cache = f.Services.GetRequiredService<Microsoft.Extensions.Caching.Memory.IMemoryCache>();
+        cache.Remove("launcher-file:" + Hashing.Sha256Hex(original));   // as after a restart: the swapped file is what the site meets
         try
         {
             // the same size, one byte different: only the hash tells them apart
@@ -219,5 +226,23 @@ public sealed class ReleaseFeedTests(ReleaseRepoFactory f) : IClassFixture<Relea
         var next = await c.GetAsync("/download/launcher");
         Assert.Equal("XPiratezHD-Setup-1.2.4.exe", next.Content.Headers.ContentDisposition?.FileName);
         Assert.Equal(1, Hits(BlobKeys.Manifest("launcher-1.2.4")));
+    }
+}
+
+public sealed class LimitedReleaseRepoFactory : ReleaseRepoFactory
+{
+    public LimitedReleaseRepoFactory() => Settings["RateLimits:LauncherPer10Min"] = "2";
+}
+
+/// <summary>One address cannot pull the setup over and over: the route had no limit at all (code audit 2026-10-27, portal §7).</summary>
+public sealed class LauncherDownloadLimitTests(LimitedReleaseRepoFactory f) : IClassFixture<LimitedReleaseRepoFactory>
+{
+    [Fact]
+    public async Task Downloads_from_one_address_are_limited()
+    {
+        var c = f.CreateClient();
+        Assert.Equal(HttpStatusCode.OK, (await c.GetAsync("/download/launcher")).StatusCode);
+        Assert.Equal(HttpStatusCode.OK, (await c.SendAsync(new HttpRequestMessage(HttpMethod.Head, "/download/launcher"))).StatusCode);
+        Assert.Equal(HttpStatusCode.TooManyRequests, (await c.GetAsync("/download/launcher")).StatusCode);
     }
 }
