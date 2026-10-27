@@ -9,6 +9,8 @@ import ai_probe
 ROOT = Path(__file__).resolve().parents[1]
 GAME = ROOT / "Пиратки" / "Dioxine_XPiratez"
 EXE = ROOT / "build-release" / "bin" / "openxcom.exe"
+# -data: по умолчанию установка Пираток; чужой игре с другими данными (TFTD) - своя папка из ссылок (mod_probe)
+DATA = Path(os.environ.get("OXCE_HIDDEN_DATA") or GAME)
 DEFAULT_USER = Path(tempfile.gettempdir()) / "oxce_hidden_user"
 
 
@@ -71,7 +73,7 @@ def game_env(**extra):
 
 
 def game_args(exe, user, load=False, master="", sound=False):
-    return [str(exe), "-data", str(GAME), "-user", str(user), "-cfg", str(user)] + (
+    return [str(exe), "-data", str(DATA), "-user", str(user), "-cfg", str(user)] + (
         ["-load", "hiddentest.sav"] if load else []) + (["-master", master] if master else []) + [
         "-fullscreen", "false", "-borderless", "false", "-displayWidth", "1920", "-displayHeight", "1080",
         "-soundVolume", "100" if sound else "0", "-musicVolume", "0", "-FPSInactive", "60"]
