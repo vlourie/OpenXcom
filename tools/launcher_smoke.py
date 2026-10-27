@@ -25,6 +25,10 @@ from pathlib import Path
 
 import psutil
 
+# грабли R-484: вывод в файл или конвейер идёт в cp1252, и кириллический заголовок окна обрывал проверку
+sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "tools"))
 import ai_probe  # noqa: E402
