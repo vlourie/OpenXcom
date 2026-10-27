@@ -32,6 +32,8 @@ public static class BlobKeys
     /// <summary>History and roadmap of a channel (<see cref="ChannelNotes"/>), signed like the pointer beside it.</summary>
     public static string Notes(string channel) => $"channels/{channel}.notes.json";
     public static string Manifest(string releaseId) => $"releases/{releaseId}/manifest.json";
+    /// <summary>The update from <paramref name="from"/> to <paramref name="releaseId"/> in one file (<see cref="UpdatePack"/>).</summary>
+    public static string Pack(string releaseId, string from) => $"releases/{releaseId}/packs/{from}.tar.br";
     public static string Sig(string key) => key + ".sig";
     public const string Catalog = "catalog.json";
 }

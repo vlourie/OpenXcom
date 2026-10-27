@@ -175,6 +175,13 @@ public sealed class RepoClient(HttpClient http, Uri baseUri, TrustedKeys keys)
         return DownloadFileAsync(Url(BlobKeys.For(sha256)), sha256, size, target, $"blob {sha256[..12]}", onBytes, ct);
     }
 
+    /// <summary>The update of <paramref name="releaseId"/> from an earlier release in one file, checked like a blob.</summary>
+    public Task DownloadPackAsync(string releaseId, UpdatePack pack, string target, Action<long> onBytes, CancellationToken ct)
+    {
+        if (!ManifestValidator.IsValidId(releaseId) || !ManifestValidator.IsValidId(pack.From)) throw new TrustException("bad pack name");
+        return DownloadFileAsync(Url(BlobKeys.Pack(releaseId, pack.From)), pack.Sha256, pack.Size, target, $"pack from {pack.From}", onBytes, ct);
+    }
+
     /// <summary>
     /// The same for a file elsewhere (a game on mod.io): resumed from &lt;target&gt;.part, under its final name only
     /// after the size and SHA-256 that our signed release gave for it matched.

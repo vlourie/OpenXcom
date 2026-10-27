@@ -1,4 +1,6 @@
 using System.Collections.Concurrent;
+using System.Formats.Tar;
+using System.IO.Compression;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Xp.Manifest;
@@ -31,6 +33,10 @@ public sealed class BuildOptions
     public bool KeepHd18Copies { get; set; }
     /// <summary>Launcher releases: every top-level entry is its own root, no component mapping.</summary>
     public bool LauncherKind { get; set; }
+    /// <summary>From how many recent releases of the channel the update is also packed into one file (<see cref="UpdatePack"/>).</summary>
+    public int PackFrom { get; set; } = 3;
+    /// <summary>Brotli quality of the packs: 0-11.</summary>
+    public int PackQuality { get; set; } = 9;
 }
 
 public enum ReleaseStatus { Draft, Published, Revoked }
@@ -137,6 +143,7 @@ public sealed class ReleaseRepo(string root, Action<string>? log = null)
         };
         foreach (var kv in o.Changelog) manifest.Release.Changelog[kv.Key] = kv.Value;
         manifest.Deletes = ComputeDeletes(o.Channel, manifest);
+        if (!o.LauncherKind) manifest.Packs = WritePacks(o, files);
 
         ManifestValidator.Validate(manifest);
         var bytes = JsonSerializer.SerializeToUtf8Bytes(manifest, ManifestJson.Default.ReleaseManifest);
@@ -237,6 +244,49 @@ public sealed class ReleaseRepo(string root, Action<string>? log = null)
         }
         deletes.Sort(StringComparer.Ordinal);
         return deletes;
+    }
+
+    /// <summary>
+    /// One file per recent published release of the channel with every blob this release adds to it: a launcher
+    /// that has that release fetches the update as a single download instead of thousands of blobs, and exe, rul
+    /// and yml travel compressed (61 MiB of exe -> ~9). Blobs stay in the store for older launchers and repairs.
+    /// </summary>
+    List<UpdatePack> WritePacks(BuildOptions o, List<ManifestFile> files)
+    {
+        var froms = LoadHistory(o.Channel)
+            .Where(h => h.Action is "publish" or "rollback" && h.ReleaseId != o.Id)
+            .Reverse()
+            .Select(h => h.ReleaseId)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Where(id => TryLoadRecord(id)?.Status == ReleaseStatus.Published && File.Exists(Full(BlobKeys.Manifest(id))))
+            .Take(Math.Max(0, o.PackFrom))
+            .ToList();
+        var packs = new ConcurrentBag<UpdatePack>();
+        Parallel.ForEach(froms, from =>
+        {
+            var have = LoadManifest(from).Files.Select(f => f.Sha256).ToHashSet(StringComparer.Ordinal);
+            // like files next to like: brotli finds the repeats of one kind (rul with rul, exe alone)
+            var add = files.Where(f => !have.Contains(f.Sha256)).DistinctBy(f => f.Sha256)
+                .OrderBy(f => Path.GetExtension(f.Path), StringComparer.OrdinalIgnoreCase).ThenBy(f => f.Path, StringComparer.Ordinal)
+                .ToList();
+            if (add.Count == 0) return;
+            var target = Full(BlobKeys.Pack(o.Id, from));
+            Directory.CreateDirectory(Path.GetDirectoryName(target)!);
+            var tmp = target + ".tmp";
+            using (var fs = new FileStream(tmp, FileMode.Create, FileAccess.Write, FileShare.None, 1 << 20))
+            using (var br = new BrotliStream(fs, new BrotliCompressionOptions { Quality = o.PackQuality }))
+            using (var tar = new TarWriter(br, TarEntryFormat.Ustar, leaveOpen: false))
+                foreach (var f in add)
+                {
+                    using var data = File.OpenRead(Full(BlobKeys.For(f.Sha256)));
+                    tar.WriteEntry(new UstarTarEntry(TarEntryType.RegularFile, f.Sha256) { DataStream = data });
+                }
+            File.Move(tmp, target, overwrite: true);
+            var pack = new UpdatePack { From = from, Size = new FileInfo(target).Length, Sha256 = Hashing.FileSha256(target), Blobs = add.Count, Raw = add.Sum(f => f.Size) };
+            packs.Add(pack);
+            _log($"pack from {from}: {pack.Blobs} files, {pack.Raw / (1024.0 * 1024):F1} -> {pack.Size / (1024.0 * 1024):F1} MiB");
+        });
+        return packs.OrderBy(p => p.From, StringComparer.Ordinal).ToList();
     }
 
     /// <summary>Copies a file into the content-addressed store. Returns true if it was new.</summary>
@@ -424,6 +474,13 @@ public sealed class ReleaseRepo(string root, Action<string>? log = null)
             else if (new FileInfo(blob).Length != f.Size) found.Add($"blob size differs for {f.Path}");
             else if (deep && Hashing.FileSha256(blob) != f.Sha256) found.Add($"blob hash differs for {f.Path}");
         });
+        foreach (var p in manifest.Packs)
+        {
+            var pack = Full(BlobKeys.Pack(pointer.ReleaseId, p.From));
+            if (!File.Exists(pack)) found.Add($"missing pack from {p.From}");
+            else if (new FileInfo(pack).Length != p.Size) found.Add($"pack size differs for {p.From}");
+            else if (deep && Hashing.FileSha256(pack) != p.Sha256) found.Add($"pack hash differs for {p.From}");
+        }
         problems.AddRange(found.Order());
         return problems;
     }

@@ -1,4 +1,7 @@
 using System.Collections.Concurrent;
+using System.Formats.Tar;
+using System.IO.Compression;
+using System.Security.Cryptography;
 using System.Text.Json;
 using Xp.Manifest;
 
@@ -14,6 +17,8 @@ public sealed class UpdatePlan
     public required List<FileCheck> Checks { get; init; }
     /// <summary>Installed files this release no longer ships and the player did not touch.</summary>
     public required List<string> Deletes { get; init; }
+    /// <summary>The release installed when the plan was made: the update may come as its pack (<see cref="UpdatePack"/>).</summary>
+    public string? From { get; init; }
     public IEnumerable<FileCheck> ToWrite => Checks.Where(c => c.State is FileState.Missing or FileState.Changed);
     public IEnumerable<FileCheck> PlayerModified => Checks.Where(c => c.State == FileState.PlayerModified);
     public long DownloadBytes => ToWrite.DistinctBy(c => c.File.Sha256).Sum(c => c.File.Size);
@@ -146,7 +151,7 @@ public sealed class Updater(GamePaths paths, RepoClient repo, ILauncherLog log)
             deletes.Add(candidate);
         }
 
-        var plan = new UpdatePlan { Manifest = manifest, Checks = results.OrderBy(c => c.File.Path, StringComparer.Ordinal).ToList(), Deletes = deletes };
+        var plan = new UpdatePlan { Manifest = manifest, Checks = results.OrderBy(c => c.File.Path, StringComparer.Ordinal).ToList(), Deletes = deletes, From = state.InstalledReleaseId };
         log.Info($"scan ({(full ? "full" : "quick")}): {plan.ToWrite.Count()} to write, {plan.PlayerModified.Count()} changed by player, {deletes.Count} to remove; "
             + $"{manifest.Files.Count} files, {hashed} hashed, {clock.Elapsed.TotalSeconds:F1} s");
         return plan;
@@ -178,7 +183,7 @@ public sealed class Updater(GamePaths paths, RepoClient repo, ILauncherLog log)
             return c with { State = FileState.Kept };
         }).ToList();
         state.Save(Paths);
-        return new UpdatePlan { Manifest = plan.Manifest, Checks = checks, Deletes = plan.Deletes };
+        return new UpdatePlan { Manifest = plan.Manifest, Checks = checks, Deletes = plan.Deletes, From = plan.From };
     }
 
     // --------------------------------------------------------------- download
@@ -189,19 +194,22 @@ public sealed class Updater(GamePaths paths, RepoClient repo, ILauncherLog log)
         var blobs = plan.ToWrite.Select(c => c.File).DistinctBy(f => f.Sha256).ToList();
         Directory.CreateDirectory(Paths.Staging);
 
-        long need = blobs.Where(b => !File.Exists(StagedBlob(b.Sha256))).Sum(b => b.Size - PartLength(b.Sha256))
-                    + plan.ToWrite.Sum(c => c.File.Size);
+        var toFetch = blobs.Where(b => !File.Exists(StagedBlob(b.Sha256))).ToList();
+        var pack = PackFor(plan, toFetch);
+        long need = toFetch.Sum(b => b.Size - PartLength(b.Sha256)) + plan.ToWrite.Sum(c => c.File.Size)
+                    + (pack is null ? 0 : pack.Size - FileLength(PackFile(plan, pack) + ".part"));
         var free = FreeSpace(Paths.GameDir);
         if (free < need + DiskMargin)
             throw new UpdateBlockedException($"not enough disk space: need {Mb(need + DiskMargin)}, free {Mb(free)}");
+        if (toFetch.Count < blobs.Count) log.Info($"{blobs.Count - toFetch.Count} files already downloaded by an earlier attempt");
+
+        var meter = new SpeedMeter();
+        if (pack is not null && await FetchPackAsync(plan, pack, toFetch, meter, progress, ct))
+            toFetch = toFetch.Where(b => !File.Exists(StagedBlob(b.Sha256))).ToList();
 
         long total = blobs.Sum(b => b.Size), done = 0;
-        var meter = new SpeedMeter();
         foreach (var b in blobs.Where(b => File.Exists(StagedBlob(b.Sha256)))) done += b.Size;
         foreach (var b in blobs) done += Math.Min(PartLength(b.Sha256), b.Size);
-
-        var toFetch = blobs.Where(b => !File.Exists(StagedBlob(b.Sha256))).ToList();
-        if (toFetch.Count < blobs.Count) log.Info($"{blobs.Count - toFetch.Count} files already downloaded by an earlier attempt");
         await Parallel.ForEachAsync(toFetch,
             new ParallelOptions { MaxDegreeOfParallelism = DownloadParallelism, CancellationToken = ct }, async (b, token) =>
             {
@@ -228,8 +236,96 @@ public sealed class Updater(GamePaths paths, RepoClient repo, ILauncherLog log)
         log.Info($"downloaded {toFetch.Count} files ({blobs.Count} needed, {Mb(total)})");
     }
 
+    /// <summary>
+    /// The pack of the installed release, when there is one and it is not larger than the files it replaces:
+    /// it carries the new blobs of every component, and a player without some of them, or a small repair,
+    /// may need less than the whole pack.
+    /// </summary>
+    static UpdatePack? PackFor(UpdatePlan plan, List<ManifestFile> toFetch)
+    {
+        if (plan.From is not { } from || toFetch.Count == 0) return null;
+        var pack = plan.Manifest.Packs.FirstOrDefault(p => p.From.Equals(from, StringComparison.OrdinalIgnoreCase));
+        return pack is not null && pack.Size <= toFetch.Sum(b => b.Size) ? pack : null;
+    }
+
+    string PackFile(UpdatePlan plan, UpdatePack pack) => Path.Combine(Paths.Staging, $"pack-{plan.Manifest.Release.Id}-{pack.From}.tar.br");
+
+    /// <summary>
+    /// Downloads the pack (resumable, its SHA-256 from the signed manifest) and unpacks the blobs this plan
+    /// needs into staging, each checked against its own SHA-256. Any failure but a cancel only means the
+    /// files are fetched one by one: false.
+    /// </summary>
+    async Task<bool> FetchPackAsync(UpdatePlan plan, UpdatePack pack, List<ManifestFile> want, SpeedMeter meter, IProgress<Progress>? progress, CancellationToken ct)
+    {
+        var file = PackFile(plan, pack);
+        long done = FileLength(file + ".part");
+        try
+        {
+            for (int attempt = 1; !File.Exists(file); attempt++)
+            {
+                try
+                {
+                    await repo.DownloadPackAsync(plan.Manifest.Release.Id, pack, file, n =>
+                    {
+                        done += n;
+                        meter.Add(n);
+                        progress?.Report(new Progress(Phase.Downloading, done, pack.Size, $"pack {pack.From}", meter.BytesPerSecond));
+                    }, ct);
+                }
+                catch (Exception e) when (attempt < 4 && e is IOException or HttpRequestException && !ct.IsCancellationRequested)
+                {
+                    log.Info($"download retry {attempt} for pack from {pack.From}: {e.Message}");
+                    await Task.Delay(TimeSpan.FromSeconds(1 << attempt), ct);
+                }
+            }
+            int got = await Task.Run(() => Unpack(file, want, ct), ct);
+            log.Info($"pack from {pack.From}: {Mb(pack.Size)}, {got} of {want.Count} files needed");
+            File.Delete(file);
+            return true;
+        }
+        catch (Exception e) when (e is not OperationCanceledException)
+        {
+            log.Error($"pack from {pack.From} failed, files come one by one: {e.Message}");
+            try { File.Delete(file); } catch (IOException) { }
+            return false;
+        }
+    }
+
+    /// <summary>Entries are blobs named by their SHA-256; a blob this player does not need is skipped.</summary>
+    int Unpack(string file, List<ManifestFile> want, CancellationToken ct)
+    {
+        var sizes = want.ToDictionary(b => b.Sha256, b => b.Size, StringComparer.Ordinal);
+        int got = 0;
+        var buf = new byte[1 << 16];
+        using var fs = new FileStream(file, FileMode.Open, FileAccess.Read, FileShare.Read, 1 << 20);
+        using var br = new BrotliStream(fs, CompressionMode.Decompress);
+        using var tar = new TarReader(br);
+        while (tar.GetNextEntry() is { } e)
+        {
+            ct.ThrowIfCancellationRequested();
+            if (e.EntryType is not (TarEntryType.RegularFile or TarEntryType.V7RegularFile) || !Hashing.IsSha256Hex(e.Name))
+                throw new TrustException($"pack: unexpected entry '{e.Name}'");
+            if (!sizes.TryGetValue(e.Name, out var size) || File.Exists(StagedBlob(e.Name))) continue;
+            if (e.Length != size) throw new TrustException($"pack: {e.Name[..12]} is not the size the manifest gives");
+            var tmp = StagedBlob(e.Name) + ".unpack";
+            using var sha = IncrementalHash.CreateHash(HashAlgorithmName.SHA256);
+            using (var output = new FileStream(tmp, FileMode.Create, FileAccess.Write, FileShare.None, 1 << 16))
+                if (e.DataStream is { } data)
+                    for (int n; (n = data.Read(buf)) > 0;) { output.Write(buf, 0, n); sha.AppendData(buf, 0, n); }
+            if (Convert.ToHexStringLower(sha.GetHashAndReset()) != e.Name)
+            {
+                File.Delete(tmp);
+                throw new TrustException($"pack: {e.Name[..12]} does not match its hash");
+            }
+            File.Move(tmp, StagedBlob(e.Name), overwrite: true);
+            got++;
+        }
+        return got;
+    }
+
     string StagedBlob(string sha) => Path.Combine(Paths.Staging, sha);
-    long PartLength(string sha) { var p = StagedBlob(sha) + ".part"; return File.Exists(p) ? new FileInfo(p).Length : 0; }
+    long PartLength(string sha) => FileLength(StagedBlob(sha) + ".part");
+    static long FileLength(string path) => File.Exists(path) ? new FileInfo(path).Length : 0;
     static string Mb(long bytes) => $"{bytes / (1024.0 * 1024):F0} MB";
 
     // ---------------------------------------------------------------- install

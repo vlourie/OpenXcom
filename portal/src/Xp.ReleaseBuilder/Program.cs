@@ -14,9 +14,11 @@ xp-release <command> [options]
            [--min-launcher 1.0.0] [--mandatory] [--changelog-ru <file>] [--changelog-en <file>]
            [--line oxce-hd] [--engine-name OXCE-HD]... [--map <prefix>=<component>]...
            [--component engine=<version>]... [--keep-hd18-copies]
-           [--root <root>]... [--launcher-kind] --key <file>
+           [--root <root>]... [--launcher-kind] [--pack-from 3] [--pack-quality 9] --key <file>
                                              hash, store blobs, write a signed manifest (draft);
-                                             files are split into components by docs/portal/EDITIONS.md
+                                             files are split into components by docs/portal/EDITIONS.md;
+                                             the update from each of the last N published releases
+                                             also goes into one file, releases/<id>/packs/<from>.tar.br
   catalog  --repo <dir> --in <catalog.json> --key <file>
                                              check presets against the channels, sign catalog.json
   publish  --repo <dir> --channel <ch> --id <id> --key <file>
@@ -67,6 +69,8 @@ try
                 Line = opt.Get("line") ?? "",
                 KeepHd18Copies = opt.Flag("keep-hd18-copies"),
             };
+            if (opt.Get("pack-from") is { } pf) o.PackFrom = int.Parse(pf);
+            if (opt.Get("pack-quality") is { } pq) o.PackQuality = int.Parse(pq);
             o.Engines.AddRange(opt.All("engine-name"));
             foreach (var m in opt.All("map")) { var (prefix, id) = Options.Pair(m); o.Maps[prefix.Replace('\\', '/')] = id; }
             foreach (var a in opt.All("add")) { var (d, s) = Options.Pair(a); o.Adds[d] = s; }

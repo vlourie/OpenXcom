@@ -83,6 +83,13 @@ public static partial class ManifestValidator
             if (!SafePath.UnderAnyRoot(d, m.Roots)) throw new ManifestException($"delete '{d}' is outside the roots");
             if (seen.Contains(d)) throw new ManifestException($"'{d}' is both shipped and deleted");
         }
+        var froms = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        foreach (var p in m.Packs)
+        {
+            if (!IsValidId(p.From) || p.From.Equals(m.Release.Id, StringComparison.OrdinalIgnoreCase)) throw new ManifestException($"bad pack source '{p.From}'");
+            if (!froms.Add(p.From)) throw new ManifestException($"two packs from '{p.From}'");
+            if (!Hashing.IsSha256Hex(p.Sha256) || p.Size <= 0 || p.Blobs <= 0 || p.Raw < 0) throw new ManifestException($"bad pack from '{p.From}'");
+        }
         ValidateComponents(m);
     }
 

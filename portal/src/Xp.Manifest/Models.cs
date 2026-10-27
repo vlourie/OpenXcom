@@ -23,6 +23,23 @@ public sealed class ReleaseManifest
     public List<ManifestFile> Files { get; set; } = new();
     /// <summary>Managed deletions: files of the previous release that this one no longer ships.</summary>
     public List<string> Deletes { get; set; } = new();
+    /// <summary>
+    /// The update in one file: for each recent release, every blob this one adds to it, as tar + brotli
+    /// (<see cref="BlobKeys.Pack"/>). Launchers before 0.3.19 do not know the field and fetch blob by blob.
+    /// </summary>
+    public List<UpdatePack> Packs { get; set; } = new();
+}
+
+public sealed class UpdatePack
+{
+    /// <summary>The release a player updates from.</summary>
+    public string From { get; set; } = "";
+    /// <summary>Size and SHA-256 of the packed file itself.</summary>
+    public long Size { get; set; }
+    public string Sha256 { get; set; } = "";
+    /// <summary>Blobs inside (entries named by their SHA-256) and their size unpacked.</summary>
+    public int Blobs { get; set; }
+    public long Raw { get; set; }
 }
 
 public sealed class ReleaseInfo

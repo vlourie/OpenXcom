@@ -770,7 +770,14 @@ switch ($Command) {
                 if (-not (Test-Path -LiteralPath $mf)) {
                     Write-Host ("  НЕТ выпуска {0}: канал на него указывает, а файлов нет. Разложите архив, в котором он собран." -f $id) -ForegroundColor Red
                 } else {
-                    $all = (Get-Content -LiteralPath $mf -Raw | ConvertFrom-Json).files
+                    $m = Get-Content -LiteralPath $mf -Raw | ConvertFrom-Json
+                    # обновление одним файлом: без него лаунчер 0.3.19+ качает по файлам - медленнее, но проходит
+                    foreach ($p in @($m.packs)) {
+                        if ($p -and -not (Test-Path -LiteralPath (Join-Path $dest "releases\$id\packs\$($p.from).tar.br"))) {
+                            Write-Host ("  у выпуска {0} нет архива обновления с {1}" -f $id, $p.from) -ForegroundColor Yellow
+                        }
+                    }
+                    $all = $m.files
                     $gone = 0
                     foreach ($f in $all) {
                         $h = $f.sha256
