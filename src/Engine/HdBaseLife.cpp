@@ -23,6 +23,7 @@
 #include <cstdlib>
 #include <deque>
 #include <utility>
+#include "HdWorkers.h"
 #include "Logger.h"
 
 namespace OpenXcom
@@ -215,6 +216,18 @@ void makeStamps(int cell)
 			}
 		}
 	};
+	// every figure is its own job: rasterised one after another they held the first frame of the base for
+	// ~180 ms on the main thread (profile 27.10)
+	struct Figure { Oval ovals[5]; float ang; float *out; };
+	std::vector<Figure> figures;
+	auto add = [&](const Oval (&ovals)[5], float ang, const float *out)
+	{
+		Figure f;
+		std::copy(ovals, ovals + 5, f.ovals);
+		f.ang = ang;
+		f.out = const_cast<float*>(out);
+		figures.push_back(f);
+	};
 	stamps.rgba.assign((size_t)ROLES * DIRS * PHASES * S * S * 4, 0.0f);
 	for (int role = 0; role < ROLES; ++role)
 	{
@@ -230,7 +243,7 @@ void makeStamps(int cell)
 			};
 			for (int dir = 0; dir < DIRS; ++dir)
 			{
-				raster(ovals, 5, dir * 2 * PI / DIRS, const_cast<float*>(stamps.at(role, dir, ph)));
+				add(ovals, dir * 2 * PI / DIRS, stamps.at(role, dir, ph));
 			}
 		}
 	}
@@ -257,10 +270,11 @@ void makeStamps(int cell)
 			};
 			for (int face = 0; face < FACES; ++face)
 			{
-				raster(ovals, 5, face * PI / 2, const_cast<float*>(stamps.atWork(role, face, pose)));
+				add(ovals, face * PI / 2, stamps.atWork(role, face, pose));
 			}
 		}
 	}
+	HdWorkers::instance().run((int)figures.size(), [&](int i) { raster(figures[i].ovals, 5, figures[i].ang, figures[i].out); });
 }
 
 typedef std::pair<int, int> Cell;

@@ -3448,3 +3448,12 @@
 Правило:  Перед выгрузкой и перед окном очереди партии: git log -3 -- tools/collapse_pilot_export.py src/Battlescape/CollapsePilot*; формат таблицы сейчас - .bin (стенд, OXCE_AI_DEV), .player.bin (игрокам), .sources.txt, все три в коммит
 Защита:   нет - проверка вручную; inq/commit партии 22 переписаны на три файла
 Наступал: 1   Последний: 2026-10-27
+
+## R-508  Стенд hdbench: open geoscape/base поверх экрана базы - Segmentation fault (старая игра удалена, экран базы ещё на стеке)
+Статус:   активны
+Файлы:    src/Menu/MainMenuState.cpp,tools/hdbench.py
+Симптом:  run 'open base; ...; open geoscape' - игра падает, процесс висит в обработчике падения, run возвращает 2; так же на exe до правок
+Причина:  MainMenuState::hdStart для geoscape/base/save делает newSave и game->setSavedGame (старая игра удаляется сразу), а setState снимает старые экраны только в следующем цикле - BasescapeState обращается к базе удалённой игры
+Правило:  open geoscape|base|save подавать только с главного меню или с глобуса без окон поверх; вернуться с базы - key 27 (кнопка выхода), а не open; падение стенда сначала повторить на старом exe
+Защита:   нет
+Наступал: 1   Последний: 2026-10-27
