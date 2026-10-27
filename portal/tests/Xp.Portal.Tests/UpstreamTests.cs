@@ -14,6 +14,77 @@ public sealed class UpstreamPortal : PortalFactory
     public UpstreamPortal() => Settings["Upstream:VkToken"] = VkKey;
 }
 
+/// <summary>The portal with a mod.io key set: the mod.io games are checked too.</summary>
+public sealed class ModioPortal : PortalFactory
+{
+    public const string ModioKey = "modio-SECRET-key";
+    public ModioPortal() => Settings["Upstream:ModioKey"] = ModioKey;
+}
+
+/// <summary>The mod.io answer alone, without the database fixture.</summary>
+public sealed class ModioParseTests
+{
+    [Fact]
+    public void Modio_mod_is_the_primary_file_id_with_version_and_date()
+    {
+        var seen = UpstreamParse.ModioMod(ModioUpstreamTests.Mod(158, 8236968, "4.2", 1792022400))!;
+        Assert.Equal("8236968", seen.Value);
+        Assert.Equal("4.2 (2026-10-15)", seen.Label);
+        Assert.Equal("https://mod.io/g/openxcom/m/the-x-com-files", seen.Url);
+        Assert.Equal("XComFiles_4.2.zip (2026-10-15)", UpstreamParse.ModioMod(ModioUpstreamTests.Mod(158, 1, null, 1792022400))!.Label);
+        Assert.Null(UpstreamParse.ModioMod("""{"id":158,"modfile":null}"""));
+        Assert.Throws<InvalidOperationException>(() => UpstreamParse.ModioMod("""{"error":{"code":401,"message":"bad key"}}"""));
+    }
+}
+
+public sealed class ModioUpstreamTests(ModioPortal f) : IClassFixture<ModioPortal>
+{
+    const string Api = "https://g-51.modapi.io/v1/games/51/mods/";
+
+    // the shape of GET /games/51/mods/{id}, trimmed to what the check reads
+    internal static string Mod(long mod, long file, string? version, long added) =>
+        "{\"id\":" + mod + ",\"name\":\"The X-Com Files\",\"profile_url\":\"https://mod.io/g/openxcom/m/the-x-com-files\"," +
+        "\"modfile\":{\"id\":" + file + ",\"mod_id\":" + mod + ",\"date_added\":" + added +
+        ",\"filename\":\"XComFiles_4.2.zip\",\"version\":" + (version is null ? "null" : "\"" + version + "\"") + "}}";
+
+    [Fact]
+    public async Task Modio_games_are_watched_and_a_new_file_is_reported()
+    {
+        await f.DbAsync(async db =>
+        {
+            db.TelegramRoutes.Add(new TelegramRoute { Category = TelegramNotices.UpstreamCategory, ChatId = "-100news" });
+            return await db.SaveChangesAsync();
+        });
+        var mods = new UpstreamOptions().ModioMods.Keys.ToList();
+        foreach (var m in mods) f.Upstream.Pages[Api + m] = (HttpStatusCode.OK, Mod(long.Parse(m), 1000 + mods.IndexOf(m), "1.0", 1792022400));
+
+        async Task<List<string>> Run()
+        {
+            var before = await f.DbAsync(db => db.NotificationJobs.Select(j => j.Id).ToListAsync());
+            await f.ScopedAsync(sp => sp.GetRequiredService<UpstreamCheck>().RunAsync(default));
+            return await f.DbAsync(db => db.NotificationJobs.Where(j => !before.Contains(j.Id)).OrderBy(j => j.Id).Select(j => j.Text).ToListAsync());
+        }
+
+        var first = (await Run()).Where(t => t.Contains("(mod.io)")).ToList();
+        Assert.Equal(mods.Count, first.Count);
+        Assert.Contains(first, t => t.Contains("<b>The X-Com Files (mod.io)</b>") && t.Contains("1.0 (2026-10-15)"));
+        Assert.Contains(f.Upstream.Requests, r => r.Url == Api + "158?api_key=" + ModioPortal.ModioKey);
+
+        // the author uploads 4.3: one notice for that game only
+        f.Upstream.Pages[Api + "158"] = (HttpStatusCode.OK, Mod(158, 9000000, "4.3", 1793000000));
+        var changed = Assert.Single(await Run(), t => t.Contains("(mod.io)"));
+        Assert.Contains("The X-Com Files (mod.io)", changed);
+        Assert.Contains("4.3 (", changed);
+
+        // a refused key never lands in the stored error, even when echoed
+        f.Upstream.Pages[Api + "378"] = (HttpStatusCode.OK, "{\"error\":{\"code\":401,\"message\":\"key " + ModioPortal.ModioKey + " revoked\"}}");
+        await Run();
+        var bad = await f.DbAsync(db => db.UpstreamStates.SingleAsync(u => u.Source == "modio-378"));
+        Assert.Equal(1, bad.Failures);
+        Assert.DoesNotContain(ModioPortal.ModioKey, bad.LastError);
+    }
+}
+
 public sealed class UpstreamTests(UpstreamPortal f) : IClassFixture<UpstreamPortal>
 {
     const string Rss = "https://rss.moddb.com/mods/x-piratez/downloads/feed/rss.xml";

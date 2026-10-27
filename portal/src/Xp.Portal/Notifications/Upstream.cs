@@ -27,6 +27,21 @@ public sealed class UpstreamOptions
     public string VkDomain { get; set; } = "xpz_ru";
     /// <summary>A post counts as a patch release when its text matches.</summary>
     public string VkMatch { get; set; } = "(?i)патч|patch";
+    /// <summary>OpenXcom on mod.io (game 51); the API answers only with a key.</summary>
+    public string ModioApiBase { get; set; } = "https://g-51.modapi.io/v1/games/51";
+    /// <summary>mod.io read-only API key (mod.io/me/access); a secret, only from the environment (Upstream__ModioKey).
+    /// Without it the mod.io games are not checked.</summary>
+    public string ModioKey { get; set; } = "";
+    /// <summary>mod.io mod id -> name: the games of ticket XP-000068 (docs/portal/MODIO-GAMES.md).</summary>
+    public Dictionary<string, string> ModioMods { get; set; } = new()
+    {
+        ["158"] = "The X-Com Files",
+        ["297"] = "Warhammer 40k",
+        ["896102"] = "40k ROSIGMA",
+        ["1463316"] = "X-Chronicles",
+        ["6046584"] = "Mars-com",
+        ["378"] = "The World of (Terrifying) Silence",
+    };
 }
 
 /// <summary>What a source shows now: <see cref="Value"/> identifies the version, <see cref="Label"/> is for a human.</summary>
@@ -102,6 +117,25 @@ public static partial class UpstreamParse
         return new(b.Id.ToString(CultureInfo.InvariantCulture), $"{TelegramNotices.Shorten(first, 120)} ({when})",
             $"https://vk.com/wall{b.Owner}_{b.Id}");
     }
+
+    /// <summary>The primary file of a mod.io mod (GET /games/{game}/mods/{mod}), identified by its file id:
+    /// a new upload is a new id even when the author keeps the version string.</summary>
+    public static UpstreamSeen? ModioMod(string json)
+    {
+        using var doc = JsonDocument.Parse(json);
+        var root = doc.RootElement;
+        if (root.TryGetProperty("error", out var err))
+            throw new InvalidOperationException("mod.io: " + (err.TryGetProperty("message", out var m) ? m.GetString() : "error"));
+        if (!root.TryGetProperty("modfile", out var file) || file.ValueKind != JsonValueKind.Object || !file.TryGetProperty("id", out var id))
+            return null;
+        var version = file.TryGetProperty("version", out var v) && v.ValueKind == JsonValueKind.String ? v.GetString()!.Trim() : "";
+        var name = file.TryGetProperty("filename", out var n) && n.ValueKind == JsonValueKind.String ? n.GetString()! : "";
+        var label = version.Length > 0 ? version : name;
+        if (file.TryGetProperty("date_added", out var d) && d.ValueKind == JsonValueKind.Number)
+            label += $" ({DateTimeOffset.FromUnixTimeSeconds(d.GetInt64()).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)})";
+        var url = root.TryGetProperty("profile_url", out var p) && p.ValueKind == JsonValueKind.String ? p.GetString()! : "";
+        return new(id.GetInt64().ToString(CultureInfo.InvariantCulture), label.Trim(), url);
+    }
 }
 
 /// <summary>
@@ -124,6 +158,11 @@ public sealed class UpstreamCheck(PortalDb db, TelegramNotices notices, IHttpCli
         };
         if (!string.IsNullOrWhiteSpace(o.VkToken))
             list.Add(new("ru-patch", "Русский патч (ВК)", async ct => UpstreamParse.VkWall(await VkWallAsync(ct), new Regex(o.VkMatch))));
+        // mod.io takes the key only in the query: HttpClient logs stay at Warning (appsettings), stored errors are masked
+        if (!string.IsNullOrWhiteSpace(o.ModioKey))
+            foreach (var (mod, name) in o.ModioMods.OrderBy(m => m.Key, StringComparer.Ordinal))
+                list.Add(new($"modio-{mod}", $"{name} (mod.io)", async ct => UpstreamParse.ModioMod(await GetAsync(
+                    $"{o.ModioApiBase.TrimEnd('/')}/mods/{Uri.EscapeDataString(mod)}?api_key={Uri.EscapeDataString(o.ModioKey.Trim())}", ct))));
         return list;
     }
 
@@ -162,7 +201,8 @@ public sealed class UpstreamCheck(PortalDb db, TelegramNotices notices, IHttpCli
                                   or InvalidOperationException or System.Xml.XmlException or JsonException or KeyNotFoundException)
         {
             var error = e.GetType().Name + ": " + e.Message;
-            if (options.Value.VkToken.Length > 0) error = error.Replace(options.Value.VkToken, "***");
+            foreach (var secret in new[] { options.Value.VkToken, options.Value.ModioKey.Trim() })
+                if (secret.Length > 0) error = error.Replace(secret, "***");
             state.Failures++;
             state.LastError = Cut(error, 512);
             log.LogWarning("Upstream {Source}: check {N} failed: {Error}", s.Key, state.Failures, state.LastError);
