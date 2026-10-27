@@ -220,13 +220,14 @@ namespace OpenXcom
 			_txtShotType->setWordWrap(true);
 			_txtShotType->setText(tr("STR_SHOT_TYPE"));
 
-			_txtAccuracy = rangeColumn ? new Text(38, 17, 104, 66) : new Text(50, 17, 104, 66);
+			// rangeColumn: the headers start where the list columns start (108/146/184), so the values stand under them
+			_txtAccuracy = rangeColumn ? new Text(38, 17, 108, 66) : new Text(50, 17, 104, 66);
 			add(_txtAccuracy);
 			_txtAccuracy->setColor(_textColor);
 			_txtAccuracy->setWordWrap(true);
 			_txtAccuracy->setText(tr(rangeColumn ? "STR_HD_PEDIA_ACCURACY" : "STR_ACCURACY_UC"));
 
-			_txtTuCost = rangeColumn ? new Text(38, 17, 142, 66) : new Text(60, 17, 158, 66);
+			_txtTuCost = rangeColumn ? new Text(38, 17, 146, 66) : new Text(60, 17, 158, 66);
 			add(_txtTuCost);
 			_txtTuCost->setColor(_textColor);
 			_txtTuCost->setWordWrap(true);
@@ -234,7 +235,7 @@ namespace OpenXcom
 
 			if (rangeColumn)
 			{
-				Text *txtRange = new Text(36, 17, 180, 66);
+				Text *txtRange = new Text(36, 17, 184, 66);
 				add(txtRange);
 				txtRange->setColor(_textColor);
 				txtRange->setWordWrap(true);
