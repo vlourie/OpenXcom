@@ -380,6 +380,7 @@ ru:
   STR_DELIVERY_TITLE: "Поставка: базы"
   STR_DELIVERY_AMOUNT: "Сколько отправить на базу {0}?"
   STR_DELIVERY_RESERVED: "В поставку: {0} из {1}"
+  STR_DELIVERY_RESERVED_PIECES: "В поставку: {0} из {1} шт."
   STR_DELIVERY_FULLY_RESERVED: "Зарезервировано полностью"
   STR_DELIVERY_SENT: "Отправлено: {0}"
   STR_DELIVERY_NO_SPACE: "Кэп, там нет места, но товар в пути: {0}"

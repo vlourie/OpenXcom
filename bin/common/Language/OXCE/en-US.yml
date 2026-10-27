@@ -445,6 +445,7 @@ en-US:
   STR_DELIVERY_TITLE: "Delivery: bases"
   STR_DELIVERY_AMOUNT: "How many to send to {0}?"
   STR_DELIVERY_RESERVED: "For delivery: {0} of {1}"
+  STR_DELIVERY_RESERVED_PIECES: "For delivery: {0} of {1} pcs"
   STR_DELIVERY_FULLY_RESERVED: "Fully reserved"
   STR_DELIVERY_SENT: "Sent: {0}"
   STR_DELIVERY_NO_SPACE: "Cap, there is no room there, but the goods are on their way: {0}"

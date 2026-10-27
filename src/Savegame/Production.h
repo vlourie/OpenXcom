@@ -40,6 +40,9 @@ struct DeliveryShare
 {
 	double lon, lat;
 	int amount; ///< in orders (units to produce), not in pieces
+	/// XP-000256: a share by kinds (a recipe with several kinds of products): item type -> pieces. Not empty: `amount` is 0 and
+	/// the share is these pieces. Empty: the share is `amount` whole orders, as before.
+	std::map<std::string, int> parts;
 };
 
 /// What the delivery of a finished order did (to be told in the Production Complete window; not saved).
@@ -91,6 +94,20 @@ public:
 	void trimDelivery();
 	/// Takes out of the plan the bases that are gone.
 	void pruneDelivery(const SavedGame *g);
+	/// Does the recipe give several kinds of items (the delivery is then by kinds, XP-000256)?
+	bool hasSeveralKinds() const;
+	/// Pieces of one kind of the product that are not given to any base yet.
+	int getDeliveryLeft(const RuleItem *item) const;
+	/// Pieces of the kind that go to the base by the plan.
+	int getDeliveryPieces(const Base *to, const RuleItem *item) const;
+	/// All the pieces that go to the base by the plan.
+	int getDeliveryPieces(const Base *to) const;
+	/// Pieces given to bases and pieces in all (for the line "for delivery: X of Y").
+	void getDeliveryPiecesTotal(int &given, int &all) const;
+	/// What a share carries, by kinds (the order of the recipe, pieces above 0).
+	std::vector<std::pair<const RuleItem*, int> > getShareItems(const DeliveryShare &share) const;
+	/// Plans these pieces for the base instead of its share (nothing - takes it out of the plan); not more than is left.
+	void setDeliveryParts(const Base *to, const std::vector<std::pair<const RuleItem*, int> > &items);
 	/// What the delivery at the end of the order did.
 	const DeliveryReport &getDeliveryReport() const { return _deliveryReport; }
 	/// What one shipment of items between bases did (XP-000292).
