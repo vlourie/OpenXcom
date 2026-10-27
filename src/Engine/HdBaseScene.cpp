@@ -36,6 +36,7 @@ namespace
 {
 
 const float PI = 3.14159265f;
+const float BELT_SPEED = 16.0f;      // pack pixels a second a belt carries its parts (ticket 336)
 /// Rows of the world layer one job lights.
 const int BAND = 8;
 /// The height of a lamp over the floor, pack pixels: light falls on the floor at a slant (base_scene_preview.py).
@@ -53,8 +54,8 @@ const int LUT_SIZE = LUT_MAX * LUT_STEPS + 1;
 
 bool kindOf(const std::string &word, Kind &kind)
 {
-	static const char *names[] = { "steady", "blink", "pulse", "screen", "flicker", "tv", "chase", "weld", "night", "burst" };
-	for (int i = 0; i < 10; ++i)
+	static const char *names[] = { "steady", "blink", "pulse", "screen", "flicker", "tv", "chase", "weld", "night", "burst", "marquee" };
+	for (int i = 0; i < 11; ++i)
 	{
 		if (word == names[i])
 		{
@@ -111,33 +112,71 @@ float strength(const Placed &p, float t, float night, float act)
 	switch (L.kind)
 	{
 	case BLINK:
-		v = std::fmod(t / std::max(0.1f, L.period) + L.phase, 1.0f) < 0.5f ? 1.0f : 0.08f;
-		rest = 0.55f;
+	{
+		// a status lamp (ticket 336, "the light blinks too much"): burns steady with a slow breath, and now and
+		// then, every 7-13 s of its own, gives a quick double wink
+		const float breath = 0.72f + 0.10f * std::sin((t / (2.5f * std::max(0.1f, L.period)) + L.phase) * 2 * PI);
+		const float every = 7.0f + 6.0f * hash1(p.seed, 21, 22);
+		const float u = std::fmod(t + L.phase * every + hash1(p.seed, 23, 24) * every, every);
+		const float dip = u < 0.9f ? 0.5f - 0.5f * std::cos(u / 0.45f * 2 * PI) : 0.0f;
+		v = breath * (1 - 0.8f * dip);
+		rest = 0.72f;
 		break;
+	}
 	case PULSE:
 		v = 0.6f + 0.4f * std::sin((t / std::max(0.1f, L.period) + L.phase) * 2 * PI);
 		rest = 0.6f;
 		break;
 	case FLICKER:
-		v = 0.82f + 0.18f * wobble(t, (float)(p.seed % 97));
-		rest = 0.82f;
+		// a flame breathes: only the slow sines of the wobble, a narrower swing
+		v = 0.86f + 0.14f * wobble(t * 0.55f, (float)(p.seed % 97));
+		rest = 0.86f;
 		break;
 	case SCREEN:
-		v = 0.8f + 0.2f * std::fabs(wobble(t * 0.5f, 4.0f + (float)(p.seed % 13)));
-		rest = 0.88f;
-		gain = 0.4f + 0.5f * night;
-		break;
 	case TV:
-		v = 0.55f + 0.45f * std::fabs(wobble(t * 1.7f, 9.0f + (float)(p.seed % 13)));
-		rest = 0.72f;
-		break;
-	case CHASE:
 	{
-		// a lamp of a ring that runs round once a period, a tail of 2.5 lamps behind the bright one
+		// a screen whose picture changes: every few seconds a new slide (another brightness) through a short dim,
+		// a slow breath on top; a TV changes oftener and deeper
+		const bool tv = L.kind == TV;
+		const float seg = tv ? 3.0f + 3.0f * hash1(p.seed, 31, 32) : 10.0f + 8.0f * hash1(p.seed, 31, 32);
+		const float x = t / seg + hash1(p.seed, 33, 34) * 10.0f;
+		const Uint32 n = (Uint32)x;
+		const float f = x - (float)n;
+		const float lo = tv ? 0.45f : 0.74f;
+		const float cur = lo + (1.0f - lo) * hash1(n, 35, p.seed % 53);
+		const float prev = lo + (1.0f - lo) * hash1(n - 1, 35, p.seed % 53);
+		const float since = f * seg;      // seconds into this slide
+		const float k = std::min(1.0f, since / 0.35f);
+		float lit = prev + (cur - prev) * smooth(k);
+		lit *= 1 - 0.35f * std::sin(k * PI);
+		v = lit * (0.94f + 0.06f * std::sin(t * 0.9f + (float)(p.seed % 13)));
+		rest = tv ? 0.72f : 0.88f;
+		if (!tv)
+		{
+			gain = 0.4f + 0.5f * night;
+		}
+		break;
+	}
+	case CHASE:
+	case MARQUEE:
+	{
+		// a ring runs round once a period. A marquee (casino sign, a machine's lights) keeps the quick tail of 2.5
+		// lamps and burns by day nearly as at night; the other rings (the hangar's) swell and fade as one broad
+		// slow wave instead
 		const int n = std::max(1, L.count);
 		const float ph = std::fmod((t / std::max(0.1f, L.period) - L.phase) * n + 1000.0f * n, (float)n);
-		v = ph < 2.5f ? std::max(0.12f, 1 - ph / 2.5f) : 0.12f;
-		rest = 0.3f;
+		if (L.kind == MARQUEE)
+		{
+			v = ph < 2.5f ? std::max(0.12f, 1 - ph / 2.5f) : 0.12f;
+			rest = 0.3f;
+			gain = 0.75f + 0.25f * night;
+		}
+		else
+		{
+			const float tail = 0.6f * n;
+			v = 0.25f + (ph < tail ? 0.75f * smooth(1 - ph / tail) : 0.0f);
+			rest = 0.45f;
+		}
 		break;
 	}
 	case WELD:
@@ -233,6 +272,46 @@ void blob(SDL_Surface *world, int ax0, int ay0, int ax1, int ay1, float cx, floa
 				continue;
 			}
 			const float k = a * table[(int)q];
+			const Uint32 px = row[x];
+			Uint32 out = px & 0xFF000000u;
+			for (int c = 0; c < 3; ++c)
+			{
+				const int shift = 16 - 8 * c;
+				const float v = ((px >> shift) & 0xFF) / 255.0f;
+				const float o = add ? v + col[c] * k : v + (col[c] - v) * std::min(1.0f, k);
+				out |= (Uint32)std::lround(std::min(1.0f, std::max(0.0f, o)) * 255.0f) << shift;
+			}
+			row[x] = out;
+		}
+	}
+}
+
+/// A rectangle with an edge a pixel soft (a part on a belt, a trolley, a dash of a running line), half sides
+/// hx, hy about (cx, cy), into the area: `add` adds light, otherwise the colour is laid over with its alpha.
+void boxFill(SDL_Surface *world, int ax0, int ay0, int ax1, int ay1, float cx, float cy, float hx, float hy,
+	const float col[3], float a, bool add)
+{
+	if (a <= 0.004f || hx <= 0 || hy <= 0)
+	{
+		return;
+	}
+	const int x0 = std::max(ax0, (int)std::floor(cx - hx - 1)), x1 = std::min(ax1, (int)std::ceil(cx + hx + 1));
+	const int y0 = std::max(ay0, (int)std::floor(cy - hy - 1)), y1 = std::min(ay1, (int)std::ceil(cy + hy + 1));
+	for (int y = y0; y < y1; ++y)
+	{
+		const float ky = std::min(1.0f, std::max(0.0f, hy - std::fabs(y + 0.5f - cy) + 0.5f));
+		if (ky <= 0)
+		{
+			continue;
+		}
+		Uint32 *row = (Uint32*)((Uint8*)world->pixels + (size_t)y * world->pitch);
+		for (int x = x0; x < x1; ++x)
+		{
+			const float k = std::min(1.0f, std::max(0.0f, hx - std::fabs(x + 0.5f - cx) + 0.5f)) * ky * a;
+			if (k <= 0)
+			{
+				continue;
+			}
 			const Uint32 px = row[x];
 			Uint32 out = px & 0xFF000000u;
 			for (int c = 0; c < 3; ++c)
@@ -347,11 +426,12 @@ bool parse(std::istream &in, TileScene &out)
 		}
 		else if (key == "emit")
 		{
-			static const char *names[] = { "steam", "bubbles", "sparks", "embers", "orbit", "sweep", "ripple", "dust", "flies", "arc", "beam" };
+			static const char *names[] = { "steam", "bubbles", "sparks", "embers", "orbit", "sweep", "ripple", "dust", "flies", "arc", "beam",
+				"belt", "beltrev", "roll", "shuttle", "heat", "cart", "ticker" };
 			Emit E;
 			std::string kind;
 			words >> kind >> E.x >> E.y >> E.w >> E.h >> E.r >> E.g >> E.b;
-			for (int i = 0; i < 11; ++i)
+			for (int i = 0; i < 18; ++i)
 			{
 				if (words && kind == names[i] && E.w >= 0 && E.h >= 0)
 				{
@@ -396,6 +476,18 @@ bool parse(std::istream &in, TileScene &out)
 			if (words && S.w > 0 && S.h > 0 && S.iw > 0 && S.ih > 0 && S.pulses > 0)
 			{
 				out.sinks.push_back(S);
+			}
+		}
+		else if (key == "post")
+		{
+			std::string kind;
+			Post P;
+			words >> kind >> P.x >> P.y >> P.face >> P.group;
+			if (words && P.face >= 0 && P.face < 4 && P.group >= 0 && P.group < 16
+				&& (kind == "belt" || kind == "seat" || kind == "dealer"))
+			{
+				P.kind = kind == "belt" ? Post::BELT : kind == "seat" ? Post::SEAT : Post::DEALER;
+				out.posts.push_back(P);
 			}
 		}
 		else if (key == "walk")
@@ -1798,7 +1890,7 @@ void drawParticles(SDL_Surface *world, const SDL_Rect &area, const std::vector<P
 	const auto perfStart = std::chrono::steady_clock::now();
 	const float t = (float)(ms % 3600000u) / 1000.0f;
 	// the particles are gathered first and laid down in bands on all cores (a site's dust is ~90k pixels)
-	struct Blob { float x, y, r, ring, col[3], a; bool add; };
+	struct Blob { float x, y, r, ring, col[3], a; bool add; float hx, hy; };   // hx > 0 - a box of half sides hx, hy
 	std::vector<Blob> blobs;
 	float actNow = 1.0f;      // how much the emitter's facility moves: its particles fade in and out with it
 	auto put = [&](float x, float y, float r, float ring, const float col[3], float a, bool add)
@@ -1806,7 +1898,15 @@ void drawParticles(SDL_Surface *world, const SDL_Rect &area, const std::vector<P
 		a *= actNow;
 		if (a > 0.004f && r > 0)
 		{
-			blobs.push_back({ x, y, r, ring, { col[0], col[1], col[2] }, a, add });
+			blobs.push_back({ x, y, r, ring, { col[0], col[1], col[2] }, a, add, 0.0f, 0.0f });
+		}
+	};
+	auto putBox = [&](float x, float y, float hx, float hy, const float col[3], float a, bool add)
+	{
+		a *= actNow;
+		if (a > 0.004f && hx > 0 && hy > 0)
+		{
+			blobs.push_back({ x, y, 0.0f, 0.0f, { col[0], col[1], col[2] }, a, add, hx, hy });
 		}
 	};
 	// steam is lit as the room is: grey by day, blue at night (it is laid over after the light)
@@ -2092,6 +2192,245 @@ void drawParticles(SDL_Surface *world, const SDL_Rect &area, const std::vector<P
 			}
 			break;
 		}
+		case BELT:
+		case BELTREV:
+		{
+			// parts ride along the long side of the box, glints of rollers slide over the belt (ticket 336); it
+			// runs while the facility works, and the parts are lit as the room is
+			if (p.level < 0.5f)
+			{
+				break;
+			}
+			const bool horiz = E.w >= E.h, reverse = E.kind == BELTREV;
+			const float lenW = horiz ? E.w : E.h, widW = horiz ? E.h : E.w;
+			const float Lp = lenW / s, Wp = widW / s;                // pack pixels
+			const float gap = std::max(2.6f * Wp, 22.0f);
+			const int n = (int)(Lp / gap) + 2;
+			const float along = t * BELT_SPEED;
+			// the point `pos` pack pixels along the belt (from its end for beltrev), `off` world pixels aside
+			auto place = [&](float pos, float off, float &px, float &py)
+			{
+				const float a = reverse ? Lp - pos : pos;
+				px = horiz ? E.x + a * s : E.x + widW / 2 + off;
+				py = horiz ? E.y + widW / 2 + off : E.y + a * s;
+			};
+			static const float white[3] = { 1, 1, 1 }, black[3] = { 0, 0, 0 };
+			// the glints of the rollers: a light and a dark bar across the belt, both riding
+			const int bars = std::max(1, (int)(Lp / 11));
+			const float bx = horiz ? 1.3f * s : widW / 2, by = horiz ? widW / 2 : 1.3f * s;
+			for (int j = 0; j <= bars; ++j)
+			{
+				const float pos = std::fmod(along + j * 11.0f, Lp + 11.0f);
+				if (pos > Lp)
+				{
+					continue;
+				}
+				float cx, cy;
+				place(pos, 0, cx, cy);
+				putBox(cx, cy, bx, by, white, 0.07f, true);
+				if (pos + 5.5f <= Lp)
+				{
+					place(pos + 5.5f, 0, cx, cy);
+					putBox(cx, cy, bx, by, black, 0.10f, false);
+				}
+			}
+			const float lead = (float)(p.seed % 17);
+			for (int i = 0; i < n; ++i)
+			{
+				const float raw = along + i * gap + lead;
+				const Uint32 lap = (Uint32)(raw / (n * gap));
+				const float pos = std::fmod(raw, n * gap);
+				if (pos > Lp)
+				{
+					continue;
+				}
+				const float a = std::min(1.0f, std::min(pos / 5.0f, (Lp - pos) / 5.0f));
+				const float ln = (0.44f + 0.26f * hash1(i, lap, p.seed)) * Wp;
+				const float wd = (0.42f + 0.20f * hash1(i, lap, p.seed + 1)) * Wp;
+				const float tone = 0.82f + 0.36f * hash1(i, lap, p.seed + 2);
+				float c[3], edge[3];
+				for (int j = 0; j < 3; ++j)
+				{
+					c[j] = std::min(1.0f, col[j] * tone * amb[j]);
+					edge[j] = c[j] * 0.4f;
+				}
+				float cx, cy;
+				place(pos, (hash1(i, lap, p.seed + 3) - 0.5f) * 0.12f * widW, cx, cy);
+				const float hx = horiz ? ln / 2 * s : wd / 2 * s, hy = horiz ? wd / 2 * s : ln / 2 * s;
+				putBox(cx + 1.2f * s, cy + 1.8f * s, hx, hy, black, 0.40f * a, false);        // the shadow
+				putBox(cx, cy, hx + 0.5f * s, hy + 0.5f * s, edge, 0.9f * a, false);          // the dark rim
+				putBox(cx, cy, hx, hy, c, 0.96f * a, false);                                  // the body
+				putBox(cx, cy - hy * 0.55f, hx * 0.92f, std::max(0.5f, hy * 0.22f), white, 0.22f * a, true);   // the glint
+			}
+			break;
+		}
+		case ROLL:
+		{
+			// a roller turning: glints run across its short side, thinner and paler towards the edges (a cylinder)
+			const bool horiz = E.w >= E.h;
+			const float lenW = horiz ? E.w : E.h, widW = horiz ? E.h : E.w;
+			for (int j = 0; j < 5; ++j)
+			{
+				const float th = t * 2 * PI / 1.8f + j * 2 * PI / 5;
+				const float c = std::cos(th);
+				if (c <= 0)
+				{
+					continue;
+				}
+				const float off = std::sin(th) * widW / 2 * 0.95f;
+				const float thick = (0.8f + 2.2f * c) * s;
+				if (horiz)
+				{
+					putBox(E.x + lenW / 2, E.y + widW / 2 + off, lenW / 2, thick / 2, col, 0.30f * c, true);
+				}
+				else
+				{
+					putBox(E.x + widW / 2 + off, E.y + lenW / 2, thick / 2, lenW / 2, col, 0.30f * c, true);
+				}
+			}
+			break;
+		}
+		case SHUTTLE:
+		{
+			// a print head goes to and fro along the long side of the box, its nozzle glowing, a cooling trail behind
+			const bool horiz = E.w >= E.h;
+			const float period = 6.0f + 2.0f * hash1(p.seed, 1, 2);
+			const float ph = t / period + hash1(p.seed, 3, 4);
+			const float u = 0.5f - 0.5f * std::cos(2 * PI * ph);
+			const float dirn = std::sin(2 * PI * ph) >= 0 ? 1.0f : -1.0f;
+			static const float white[3] = { 1, 1, 1 }, glint[3] = { 1.0f, 0.85f, 0.6f }, thread[3] = { 1.0f, 0.72f, 0.35f };
+			const float dark[3] = { 0.30f * amb[0], 0.19f * amb[1], 0.10f * amb[2] };
+			const float metal[3] = { 0.62f * amb[0], 0.40f * amb[1], 0.16f * amb[2] };
+			if (horiz)
+			{
+				const float hx = E.x + u * E.w, hyBody = E.y + 0.30f * E.h, hyTip = E.y + 0.80f * E.h;
+				putBox(hx, hyBody, 4.2f * s, 3.0f * s, dark, 0.96f, false);
+				putBox(hx, hyBody, 3.5f * s, 2.3f * s, metal, 0.96f, false);
+				putBox(hx, hyBody - 1.2f * s, 3.0f * s, 0.6f * s, glint, 0.40f, true);
+				for (int j = 1; j < 11; ++j)
+				{
+					put(hx - dirn * j * 1.4f * s, hyTip, 1.1f * s, 0, thread, 0.55f * (1 - j / 11.0f), true);
+				}
+				put(hx, hyTip, 7 * s, 0, col, 0.45f, true);
+				put(hx, hyTip, 1.6f * s, 0, white, 1.25f, true);
+				put(hx, hyTip + 4 * s, 13 * s, 0, col, 0.10f, true);
+			}
+			else
+			{
+				const float hy = E.y + u * E.h, hxBody = E.x + 0.30f * E.w, hxTip = E.x + 0.80f * E.w;
+				const float body[3] = { 0.50f * amb[0], 0.32f * amb[1], 0.16f * amb[2] };
+				putBox(hxBody, hy, 2.6f * s, 3.6f * s, body, 0.95f, false);
+				put(hxTip, hy, 7 * s, 0, col, 0.45f, true);
+				put(hxTip, hy, 1.6f * s, 0, white, 1.25f, true);
+			}
+			break;
+		}
+		case HEAT:
+		{
+			// hot metal breathing: a soft light swelling and fading, about 3.6 s a breath, each its own phase
+			if (p.level < 0.5f)
+			{
+				break;
+			}
+			const float v = 0.55f + 0.45f * std::sin((t / 3.6f + hash1(p.seed, 7, 9)) * 2 * PI);
+			const float m = std::min(E.w, E.h);
+			const float cx = E.x + E.w / 2, cy = E.y + E.h / 2;
+			const float hot[3] = { 0.5f + 0.5f * col[0], 0.5f + 0.5f * col[1], 0.5f + 0.5f * col[2] };
+			put(cx, cy, 0.62f * m, 0, col, 0.30f * v * p.level, true);
+			put(cx, cy, 0.30f * m, 0, hot, 0.18f * v * p.level, true);
+			break;
+		}
+		case CART:
+		{
+			// a trolley with a load goes along the long side of the box, unloads, comes back empty, waits
+			const bool horiz = E.w >= E.h;
+			const float lenW = horiz ? E.w : E.h, widW = horiz ? E.h : E.w;
+			const float period = 16.0f + 6.0f * hash1(p.seed, 5, 6);
+			const float u = std::fmod(t / period + hash1(p.seed, 7, 8), 1.0f);
+			float f = 0;
+			bool loaded = true;
+			if (u < 0.4f)
+			{
+				f = smooth(u / 0.4f);
+			}
+			else if (u < 0.5f)
+			{
+				f = 1;
+				loaded = u < 0.45f;
+			}
+			else if (u < 0.9f)
+			{
+				f = 1 - smooth((u - 0.5f) / 0.4f);
+				loaded = false;
+			}
+			else
+			{
+				loaded = false;
+			}
+			const float half = 3.6f * s, side = 2.2f * s;
+			const float along = half + f * std::max(0.0f, lenW - 2 * half);
+			const float cx = horiz ? E.x + along : E.x + widW / 2, cy = horiz ? E.y + widW / 2 : E.y + along;
+			const float hx = horiz ? half : side, hy = horiz ? side : half;
+			float body[3], edge[3], crate[3];
+			static const float black[3] = { 0, 0, 0 }, white[3] = { 1, 1, 1 };
+			static const float wood[3] = { 0.85f, 0.50f, 0.20f };
+			for (int j = 0; j < 3; ++j)
+			{
+				body[j] = col[j] * amb[j];
+				edge[j] = body[j] * 0.45f;
+				crate[j] = wood[j] * amb[j];
+			}
+			putBox(cx + 1.0f * s, cy + 1.5f * s, hx, hy, black, 0.35f, false);
+			putBox(cx, cy, hx + 0.4f * s, hy + 0.4f * s, edge, 0.95f, false);
+			putBox(cx, cy, hx, hy, body, 0.97f, false);
+			// the wheels: dark stubs at the four corners
+			for (int cornerX = -1; cornerX <= 1; cornerX += 2)
+			{
+				for (int cornerY = -1; cornerY <= 1; cornerY += 2)
+				{
+					putBox(cx + cornerX * (hx - 0.5f * s), cy + cornerY * (hy + 0.3f * s), 0.7f * s, 0.5f * s, black, 0.8f, false);
+				}
+			}
+			if (loaded)
+			{
+				putBox(cx, cy, hx * 0.6f, hy * 0.62f, crate, 0.97f, false);
+				putBox(cx, cy - hy * 0.25f, hx * 0.55f, 0.35f * s, white, 0.18f, true);
+			}
+			break;
+		}
+		case TICKER:
+		{
+			// a running line on a screen: rows of dashes scroll along the long side of the box, fading at its ends
+			const bool horiz = E.w >= E.h;
+			const float lenP = (horiz ? E.w : E.h) / s, widP = (horiz ? E.h : E.w) / s;
+			const int rows = std::max(1, (int)(widP / 3.0f));
+			const float span = lenP + 8.0f;
+			const int segments = (int)(span / 7.0f) + 1;
+			for (int r = 0; r < rows; ++r)
+			{
+				const float across = (r + 0.5f) * widP / rows;
+				const float speed = 5.0f + 3.0f * hash1(r, 11, p.seed);
+				const float shift = t * speed + hash1(r, 12, p.seed) * span;
+				for (int i = 0; i < segments; ++i)
+				{
+					const float raw = i * 7.0f + shift;
+					const Uint32 lap = (Uint32)(raw / span);
+					const float centre = lenP + 4.0f - std::fmod(raw, span);
+					const float len = 1.8f + 3.2f * hash1(i, lap, p.seed + r * 7);
+					const float a0 = std::max(0.0f, centre - len / 2), a1 = std::min(lenP, centre + len / 2);
+					if (a1 <= a0)
+					{
+						continue;
+					}
+					const float mid = (a0 + a1) / 2;
+					const float fade = smooth(std::min(mid, lenP - mid) / 2.0f);
+					const float x = horiz ? E.x + mid * s : E.x + across * s, y = horiz ? E.y + across * s : E.y + mid * s;
+					const float halfLen = (a1 - a0) / 2 * s, halfAcross = 0.65f * s;
+					putBox(x, y, horiz ? halfLen : halfAcross, horiz ? halfAcross : halfLen, col, 0.85f * fade, true);
+				}
+			}
+			break;
+		}
 		}
 	}
 	// a band draws the blobs that reach into it, in the same order as every other band (as blob's reach)
@@ -2101,10 +2440,17 @@ void drawParticles(SDL_Surface *world, const SDL_Rect &area, const std::vector<P
 		const int y0 = ay0 + band * BAND, y1 = std::min(ay1, y0 + BAND);
 		for (const Blob &b : blobs)
 		{
-			const float reach = b.ring + 2.8f * (b.ring > 0 ? 0.7f : 0.6f) * b.r + 1;
+			const float reach = b.hx > 0 ? std::max(b.hx, b.hy) + 2 : b.ring + 2.8f * (b.ring > 0 ? 0.7f : 0.6f) * b.r + 1;
 			if (b.y + reach >= y0 && b.y - reach < y1)
 			{
-				blob(world, ax0, y0, ax1, y1, b.x, b.y, b.r, b.ring, b.col, b.a, b.add);
+				if (b.hx > 0)
+				{
+					boxFill(world, ax0, y0, ax1, y1, b.x, b.y, b.hx, b.hy, b.col, b.a, b.add);
+				}
+				else
+				{
+					blob(world, ax0, y0, ax1, y1, b.x, b.y, b.r, b.ring, b.col, b.a, b.add);
+				}
 			}
 		}
 	});

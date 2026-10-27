@@ -82,11 +82,9 @@ EMITS = {
     "STR_SLUDGE_VATS": [("bubbles", u - .07, v - .07, u + .07, v + .07, .65, 1.0, .25)
                         for u, v in ((.30, .27), (.65, .27), (.30, .63), (.65, .63))],
     "STR_WELL": [("bubbles", .41, .36, .65, .60, .65, 1.0, .30)],
-    "STR_WORKSHOP": [("sparks", .38, .40, .62, .64, 1.0, .75, .35)],
-    "STR_FACTORY": [("sparks", .25, .28, .55, .55, 1.0, .75, .35), ("sparks", .50, .55, .80, .85, 1.0, .75, .35)],
-    "STR_INDUSTRIAL_PRINTER": [("sparks", .12, .22, .45, .50, .55, .80, 1.0),
-                               ("sparks", .45, .55, .80, .85, .55, .80, 1.0)],
-    "STR_RED_FORGE": [("sparks", .25, .38, .42, .55, 1.0, .65, .25), ("embers", .22, .35, .45, .58, 1.0, .45, .15)],
+    # тикет XP-000336 (27.10, Vitali «искры убрать»): искр нет нигде, у мастерской, фабрики, принтера, Кузни и
+    # Монетного двора их место занимает движение «по делу» - блок XP336 ниже
+    "STR_RED_FORGE": [("embers", .22, .35, .45, .58, 1.0, .45, .15)],
     "STR_STILL": [("steam", .20, .22, .65, .36, .95, .92, .85)],
     "STR_MESS_HALL": [("steam", .38, .36, .62, .62, .95, .92, .88)],
     "STR_BURROW": [("embers", .45, .40, .55, .50, 1.0, .55, .20)],
@@ -126,7 +124,7 @@ MORE = {
     "STR_WAR_BARRACKS_DAMAGED3": [_e("steam", MID, SMOKE), _e("dust", ROOM, DUSTC)],
     "STR_GENERAL_STORES_XLARGE": [_e("dust", ROOM, DUSTC)],
     "STR_JAIL_DOUBLE": [_e("dust", ROOM, DUSTC)],
-    "STR_ALENIUM_CHAMBER": [_e("ripple", WIDE, CYAN), _e("bubbles", MID, CYAN)],
+    "STR_ALENIUM_CHAMBER": [],          # тикет XP-000336: без воды и пузырей, только мягкая пульсация (блок XP336)
     "STR_TACTICAL_CENTER_DAMAGED": [_e("steam", MID, SMOKE)],
     "STR_FLAK_TOWER_DAMAGED": [_e("steam", MID, SMOKE)],
     "STR_GAUSS_DEFENSES": [_e("sweep", MID, CYAN)],
@@ -136,7 +134,6 @@ MORE = {
     "STR_TRAP_ROOM": [_e("embers", WIDE, (1.0, .35, .20))],
     "STR_HYDROPONICS_WEED": [_e("dust", ROOM, POLLEN), _e("flies", WIDE, (.10, .10, .06))],
     "STR_BODY_FARM_E": [_e("embers", (.15, .10, .75, .65), GREEN)],
-    "STR_MINT": [_e("sparks", (.35, .40, .65, .60), (1.0, .85, .35))],
     "STR_PERSONAL_LABS": [_e("dust", ROOM, DUSTC)],
     "STR_STUDY_ROOM": [_e("dust", ROOM, DUSTC)],
     "STR_ASTROSENSORIUM": [_e("orbit", WIDE, VIOLET)],
@@ -183,7 +180,6 @@ MORE = {
     "STR_HYDROPONICS_BOOM_HARVEST": [_e("dust", ROOM, (.95, .70, 1.0))],
     "STR_CASINO": [_e("sweep", MID, (1.0, .85, .40))],
     "STR_WELL": [_e("ripple", (.41, .36, .65, .60), GREEN)],
-    "STR_POWER_PLANT": [_e("sparks", (.30, .30, .60, .60), (.55, .80, 1.0))],
     "STR_GREAT_LIBRARY": [_e("dust", ROOM, DUSTC)],
     "STR_COMPUTER_CORE": [_e("orbit", (.15, .25, .55, .75), CYAN)],
     "STR_LIVING_QUARTERS_DAMAGED": [_e("steam", MID, SMOKE)],
@@ -218,13 +214,13 @@ for _t, _l in MORE.items():
 # хеллериевой - от точки u0 v0 до u1 v1. Воде онсэна и спа кругов ряби не даём: Vitali 22.10 - «не рябь, а еле
 # видные волны», они уже есть (WATER ниже, смещение в HdBaseScene::drawMotion)
 ARC = (.65, .82, 1.0)
-EMITS["STR_POWER_PLANT"].append(_e("arc", (.185, .165, .72, .165), ARC))
+EMITS.setdefault("STR_POWER_PLANT", []).append(_e("arc", (.185, .165, .72, .165), ARC))
 EMITS["STR_HELLERIUM_PLANT"].append(_e("arc", (.098, .093, .86, .093), (.75, 1.0, .55)))
 
 # Вода: оттенок на картинке и цвет бликов (HdBaseScene::bake ищет её по оттенку внутри стен; лист motion_sheet.png)
 WATER = {t: ("blue", (.75, 1.0, 1.0)) for t in (
     "STR_ONSEN", "STR_LUXURY_SPA", "STR_HOTEL", "STR_LIVING_QUARTERS_ADVANCED_LARGE",
-    "STR_LIVING_QUARTERS_ADVANCED_LARGE_DAMAGED", "STR_ALENIUM_CHAMBER")}
+    "STR_LIVING_QUARTERS_ADVANCED_LARGE_DAMAGED")}      # алениевая - без воды (тикет XP-000336)
 # хеллерий - без волн, хватает пузырей (тикет XP-000235)
 WATER.update({t: ("green", (.8, 1.0, .4)) for t in ("STR_WELL", "STR_SLUDGE_VATS")})
 # пруд метасада (раздел 11, 23.10): 144 пикселя пака - меньше 200, с которых движок берёт воду; свой порог
@@ -309,6 +305,59 @@ LIGHTS = {
 }
 
 
+# Тикет XP-000336 (27.10, Vitali «искры убери, добавь всякого, вместо - конвейеры в мастерских»): вместо искр у каждой
+# постройки своё движение. Новые виды emit (в движке ещё нет, образец - base_scene_xp336.py):
+#   belt / beltrev  x y w h цвет   лента: по длинной стороне коробки едут детали цвета (вперёд - вправо или вниз,
+#                                  beltrev - назад), по ленте скользят блики роликов; едут, пока работает постройка
+#   roll            x y w h цвет   валик: полосы блика бегут поперёк короткой стороны (поверхность цилиндра)
+#   shuttle         x y w h цвет   каретка печатной головы ходит вдоль длинной стороны туда-обратно, сопло светится
+#   heat            x y w h цвет   раскалённый металл дышит: мягкое пятно света ~3,6 с на вдох-выдох, фаза у каждого своя
+# и новый вид огня light marquee (как chase, но горит и днём: gain .75 + .25 ночью), им казино
+# Ленты рисунка (доли постройки, по картинке painted@512): мастерская - нижняя; фабрика - четыре (две вертикальные
+# едут вниз и вливаются в горизонтальные, те едут влево); принтер - четыре балки с головами; Монетный двор -
+# лента слитков внизу и валик пресса; Кузня - пульс раскалённой плиты поверх углей; электростанция - дыхание котлов.
+PART, PART2, GOLD = (.90, .62, .30), (.66, .58, .80), (1.0, .82, .35)
+EMITS["STR_WORKSHOP"] = [("belt", .205, .787, .87, .86) + PART]
+EMITS["STR_FACTORY"] = [("belt", .505, .035, .575, .475) + PART2, ("beltrev", .105, .478, .525, .552) + PART2,
+                        ("belt", .835, .045, .905, .800) + PART2, ("beltrev", .110, .810, .865, .885) + PART2]
+EMITS["STR_INDUSTRIAL_PRINTER"] = [("shuttle", .17, .300, .385, .375, .60, .85, 1.0),
+                                   ("shuttle", .575, .300, .790, .375, .60, .85, 1.0),
+                                   ("shuttle", .150, .710, .370, .785, .60, .85, 1.0),
+                                   ("shuttle", .545, .725, .770, .795, .60, .85, 1.0)]
+EMITS["STR_MINT"] = [("belt", .156, .650, .86, .722) + GOLD, ("roll", .40, .30, .615, .49, 1.0, .93, .78)]
+VIDEO_LIGHTS["STR_WORKSHOP"] = []          # вспышки сварки без искр - просто мигание; убраны вместе с ними
+EMITS["STR_RED_FORGE"].append(("heat", .17, .17, .50, .52, 1.0, .55, .20))
+EMITS["STR_POWER_PLANT"] += [("heat", .08, .10, .31, .34, 1.0, .65, .25), ("heat", .58, .10, .81, .34, 1.0, .65, .25)]
+VIDEO_LIGHTS["STR_POWER_PLANT"] = [(.22, .72, "screen", (.45, .80, 1.0), .35, 0, 0, 0)]
+# Казино: автоматы - огни бегут сверху вниз по шести экранам; кольцо огней по рамке вывески; рулетка - диск
+# крутится, по ободу бежит шарик (кольцо из 8 огней); красные лампы справа уже мигают (base_lights)
+_SLOTS = ((.247, (1, .35, .30)), (.313, (1, .80, .30)), (.384, (.40, 1, .50)),
+          (.629, (1, .35, .30)), (.697, (1, .80, .30)), (.768, (.40, 1, .50)))
+_MARQUEE = []
+for _i in range(28):
+    _s = _i / 28.0 * 4                                  # по периметру прямоугольника по часовой, от левого верха
+    _L, _R, _T, _B = .10, .88, .10, .875
+    _side, _f = int(_s) % 4, _s - int(_s)
+    _u, _v = ((_L + (_R - _L) * _f, _T), (_R, _T + (_B - _T) * _f),
+              (_R - (_R - _L) * _f, _B), (_L, _B - (_B - _T) * _f))[_side]
+    _MARQUEE.append((_u, _v, "marquee", (1.0, .85, .40), .09, 5.0, _i / 28.0, 28))
+VIDEO_LIGHTS["STR_CASINO"] = ([(.186, _v, "marquee", _c, .22, 3.0, _k / 6.0, 6) for _k, (_v, _c) in enumerate(_SLOTS)]
+                              + _MARQUEE
+                              + [(.504 + .066 * math.cos(a * math.pi / 4), .495 + .066 * math.sin(a * math.pi / 4),
+                                  "marquee", (1.0, 1.0, .90), .07, 1.6, a / 8.0, 8) for a in range(8)])
+SPIN["STR_CASINO"] = (.504, .495, .055, "spin", .25)       # диск рулетки (серый круг с клевером), без ободка
+# Придумано сверх выбора Vitali («прикольные вещи» тикета, 27.10) - ставится с --extra у base_live_install.py:
+#   cart   x y w h цвет   тележка с грузом едет вдоль длинной стороны, разгружается, возвращается пустой, ждёт
+#   ticker x y w h цвет   бегущая строка: чёрточки на экране ползут вдоль длинной стороны и гаснут у краёв
+# Склад - тележка по левому проходу (между стеной и перегородкой); тактический центр - бегущая строка на картах стола
+EXTRA_TYPES = ["STR_GENERAL_STORES", "STR_TACTICAL_CENTER"]
+EMITS.setdefault("STR_GENERAL_STORES", []).append(("cart", .078, .31, .188, .59, .50, .56, .66))
+EMITS.setdefault("STR_TACTICAL_CENTER", []).append(("ticker", .61, .28, .73, .65, 1.0, .85, .40))
+# Алениевая: воды нет; раз в 45 с мягкое голубое свечение из центра, один вдох-выдох за 5 с (вариант A тикета)
+CYCLE["STR_ALENIUM_CHAMBER"] = (45, 5)
+BURST["STR_ALENIUM_CHAMBER"] = [(64.0, 64.0, 72.0, (.45, .80, 1.0), 1)]
+
+
 # во сколько раз реже мигают лампы вида blink у постройки (период в сценах .scene.txt растёт во столько же раз)
 BLINK_SLOWER = {"STR_LIVING_QUARTERS_LARGE": 3}
 
@@ -367,6 +416,115 @@ def walk_mask(img, cols, rows):
                     bits.append("1" if ok else "0")
             out[(cx, cy)] = "".join(bits)
     return out
+
+
+# Места экипажа (тикет XP-000336, 27.10): строка сцены `post <вид> x y куда номер` (HdBaseScene::Post). Берутся из маски
+# пола: инженеры - у лент мастерских (belt, beltrev из EMITS), в казино у каждого стола дилер и до трёх мест игроков.
+# Стол казино - островок не-пола в маске вокруг клетки-зерна (квадраты сетки постройки, WALK на клетку).
+# Мастерская (XP-000336): по цвету пола в ней нет ни одного квадрата, инженерам некуда встать. Рукой - свободные
+# квадраты сетки 8x8 (art/_review/xp336/ingame/workshop_grid.png): средина комнаты и клочок у ленты
+WALK_FLOOR = {"STR_WORKSHOP": [(3, 2), (3, 3), (3, 4), (4, 4), (4, 5), (5, 3), (5, 4)]}
+CASINO_TABLES = {"STR_CASINO": [(5, 5), (9, 5), (5, 9), (9, 9)]}
+CASINO_ROOM = (4, 3, 12, 12)        # внутренность казино в квадратах (x0, y0, x1, y1): островки ищутся только в ней
+SQ = TILE / WALK
+
+
+def facility_walk(walk, cols, rows):
+    """Маска пола всей постройки g[y][x] из масок клеток."""
+    g = [[0] * (cols * WALK) for _ in range(rows * WALK)]
+    for (cx, cy), bits in walk.items():
+        for i, ch in enumerate(bits):
+            g[cy * WALK + i // WALK][cx * WALK + i % WALK] = int(ch)
+    return g
+
+
+def _face_to(sx, sy, tx, ty):
+    """Куда смотреть из точки s на точку t: 0 вправо, 1 вниз, 2 влево, 3 вверх."""
+    vx, vy = tx - sx, ty - sy
+    if abs(vx) >= abs(vy):
+        return 0 if vx > 0 else 2
+    return 1 if vy > 0 else 3
+
+
+def belt_posts(t, g, cols, rows):
+    """Где инженеру стоять у лент постройки: по два места у каждой ленты, на полу рядом с её длинной стороной."""
+    W, H = cols * TILE, rows * TILE
+    out, used = [], set()
+    for e in EMITS.get(t, []):
+        kind, u0, v0, u1, v1 = e[:5]
+        if kind not in ("belt", "beltrev"):
+            continue
+        x0, x1, y0, y1 = u0 * W, u1 * W, v0 * H, v1 * H
+        horiz = (x1 - x0) >= (y1 - y0)
+        for f in (.28, .72):
+            px, py = ((x0 + (x1 - x0) * f, (y0 + y1) / 2) if horiz else ((x0 + x1) / 2, y0 + (y1 - y0) * f))
+            best = None
+            for gy in range(len(g)):
+                for gx in range(len(g[0])):
+                    if not g[gy][gx] or any(abs(gx - ux) < 2 and abs(gy - uy) < 2 for ux, uy in used):
+                        continue
+                    cx, cy = (gx + .5) * SQ, (gy + .5) * SQ
+                    if x0 <= cx <= x1 and y0 <= cy <= y1:
+                        continue
+                    d = math.hypot(max(x0 - cx, 0, cx - x1), max(y0 - cy, 0, cy - y1))
+                    if d > 2.2 * SQ:
+                        continue
+                    score = d + .15 * math.hypot(cx - px, cy - py)
+                    if best is None or score < best[0]:
+                        best = (score, gx, gy, cx, cy)
+            if best:
+                _, gx, gy, cx, cy = best
+                used.add((gx, gy))
+                face = _face_to(cx, cy, min(max(cx, x0), x1), min(max(cy, y0), y1))
+                out.append(("belt", gx, gy, face, 0))
+    return out
+
+
+def casino_posts(t, g):
+    """У каждого стола казино: дилер на стороне прохода (к середине постройки) и до трёх мест игроков вокруг."""
+    out = []
+    x0, y0, x1, y1 = CASINO_ROOM
+    for n, seed in enumerate(CASINO_TABLES.get(t, [])):
+        island, todo = set(), [seed]
+        while todo:
+            x, y = todo.pop()
+            if (x, y) in island or not (x0 <= x <= x1 and y0 <= y <= y1) or g[y][x]:
+                continue
+            island.add((x, y))
+            todo += [(x + 1, y), (x - 1, y), (x, y + 1), (x, y - 1)]
+        if not island:
+            print("   %s: стол %d - острова нет, мест нет" % (t, n))
+            continue
+        mx, my = sum(x for x, _ in island) / len(island), sum(y for _, y in island) / len(island)
+        mid = (x0 + x1) / 2
+        near = {}
+        for x, y in island:
+            for dx, dy in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+                s = (x + dx, y + dy)
+                if s not in island and x0 <= s[0] <= x1 and y0 <= s[1] <= y1 and g[s[1]][s[0]]:
+                    near[s] = _face_to(s[0], s[1], x, y)
+        if not near:
+            continue
+        side = 1 if mx < mid else -1               # дилер - со стороны прохода посередине
+        dealer = min(near, key=lambda s: (-(s[0] - mx) * side, abs(s[1] - my)))
+        taken = [dealer]
+        out.append(("dealer", dealer[0], dealer[1], near[dealer], n))
+        for s in sorted(near, key=lambda s: ((s[0] - mx) * side, abs(s[1] - my))):
+            if len([p for p in out if p[0] == "seat" and p[4] == n]) >= 3:
+                break
+            if all(max(abs(s[0] - a), abs(s[1] - b)) >= 2 for a, b in taken):
+                taken.append(s)
+                out.append(("seat", s[0], s[1], near[s], n))
+    return out
+
+
+def post_lines(t, g, cols, rows):
+    """Строки post по клеткам {(cx, cy): [строки]}."""
+    lines = {}
+    for kind, gx, gy, face, group in belt_posts(t, g, cols, rows) + casino_posts(t, g):
+        key = (gx // WALK, gy // WALK)
+        lines.setdefault(key, []).append("post %s %.1f %.1f %d %d" % (kind, (gx % WALK + .5) * SQ, (gy % WALK + .5) * SQ, face, group))
+    return lines
 
 
 LIQUID_MIN = 0.006   # доля картинки постройки: меньше - не жидкость, а блик или лампа
@@ -523,6 +681,11 @@ def build(t, rule, sprites, out, cover=0.0, most=0, art=ART):
         found = [f for f in found if not (pa[min(H - 1, int(f[1] * H)), min(W - 1, int(f[0] * W))] > 128
                                           and math.hypot(f[0] * W - px, f[1] * H - py) > 6)]
     walk = walk_mask(big, fac.cols, fac.rows)
+    for gx, gy in WALK_FLOOR.get(t, ()):
+        # рукой: пол, который по цвету не найден (мастерская - серый пол в пятнах, края везде); квадрат сетки постройки
+        row = list(walk[(gx // WALK, gy // WALK)])
+        row[(gy % WALK) * WALK + gx % WALK] = "1"
+        walk[(gx // WALK, gy // WALK)] = "".join(row)
     gate = gate_of(rule)
     per_tile = {}
     for u, v, kind, col, rad, _area in found:
@@ -543,6 +706,8 @@ def build(t, rule, sprites, out, cover=0.0, most=0, art=ART):
     os.makedirs(dest, exist_ok=True)
     written = []
     extra = extra_lines(t, fac.cols, fac.rows, big)
+    for key, ls in post_lines(t, facility_walk(walk, fac.cols, fac.rows), fac.cols, fac.rows).items():
+        extra.setdefault(key, []).extend(ls)
     # трубы (раздел 11, 23.10): карты <N>.flow.png и строка flow - base_flow_bake.py
     flows = {}
     if t in base_flow_bake.FLOW:

@@ -898,6 +898,8 @@ void BaseView::drawHdScene(SDL_Surface *world, int k, Uint32 now)
 				{
 					plan.facility[x][y] = number;
 					plan.place[x][y] = bits ? bits : (int)HdBaseLife::OTHER;
+					plan.busyLab[x][y] = (bits & HdBaseLife::LAB) && hereLabs[number - 1];
+					plan.busyWork[x][y] = (bits & HdBaseLife::WORK) && hereWorks[number - 1];
 					// all floor unless the tile's scene tells where the furniture stands (below)
 					for (int sx = 0; sx < HdBaseLife::SUB; ++sx)
 					{
@@ -971,6 +973,19 @@ void BaseView::drawHdScene(SDL_Surface *world, int k, Uint32 now)
 							plan.walk[x * HdBaseLife::SUB + sx][y * HdBaseLife::SUB + sy] =
 								scene->walk[(sy * n / HdBaseLife::SUB) * n + sx * n / HdBaseLife::SUB];
 						}
+					}
+				}
+				if (x >= 0 && y >= 0 && x < HdBaseLife::SIZE && y < HdBaseLife::SIZE)
+				{
+					for (const HdBaseScene::Post &post : scene->posts)
+					{
+						HdBaseLife::Plan::Post P;
+						P.gx = x * HdBaseLife::SUB + std::min(HdBaseLife::SUB - 1, std::max(0, (int)(post.x * HdBaseLife::SUB / scene->width)));
+						P.gy = y * HdBaseLife::SUB + std::min(HdBaseLife::SUB - 1, std::max(0, (int)(post.y * HdBaseLife::SUB / scene->height)));
+						P.face = post.face;
+						P.kind = (int)post.kind;
+						P.group = number * 16 + post.group;
+						plan.posts.push_back(P);
 					}
 				}
 				const float s = (float)(GRID_SIZE * k) / scene->width;

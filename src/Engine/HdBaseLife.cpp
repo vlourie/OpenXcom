@@ -45,7 +45,15 @@ const int HANDS = 4, LEANS = 3, POSES = HANDS * HANDS * LEANS, FACES = 4;
 /// Supersampling of the figures, per side.
 const int AA = 4;
 
-enum Role { SCI, ENG, GAL, GAL2, GUARD, NURSE, ROLES };
+enum Role { SCI, ENG, GAL, GAL2, GUARD, NURSE, DEALER, PLAYER_A, PLAYER_B, PLAYER_C, ROLES };
+/// Who stands at work with the hands over a table (work stamps): the index among them, -1 - nobody of the role
+int workIndex(int role)
+{
+	return role == SCI ? 0 : role == ENG ? 1 : role == DEALER ? 2 : role >= PLAYER_A && role <= PLAYER_C ? 3 + role - PLAYER_A : -1;
+}
+const int WORKERS = 6;
+/// The kinds of Plan::Post, as HdBaseScene::Post::Kind
+enum PostKind { POST_BELT, POST_SEAT, POST_DEALER };
 
 /// Body and hair of a role, as base_scene_preview.py crew_stamps.
 const float LOOKS[ROLES][2][3] = {
@@ -55,6 +63,10 @@ const float LOOKS[ROLES][2][3] = {
 	{ { 0.20f, 0.55f, 0.60f }, { 0.15f, 0.10f, 0.08f } },   // crew
 	{ { 0.18f, 0.20f, 0.26f }, { 0.55f, 0.30f, 0.15f } },   // guard
 	{ { 0.55f, 0.90f, 0.75f }, { 0.95f, 0.85f, 0.60f } },   // nurse
+	{ { 0.78f, 0.06f, 0.10f }, { 0.12f, 0.09f, 0.08f } },   // a casino dealer in red
+	{ { 0.45f, 0.28f, 0.66f }, { 0.20f, 0.12f, 0.08f } },   // a gambler in violet
+	{ { 0.90f, 0.78f, 0.30f }, { 0.35f, 0.20f, 0.10f } },   // a gambler in mustard
+	{ { 0.25f, 0.62f, 0.50f }, { 0.85f, 0.70f, 0.35f } },   // a gambler in green
 };
 const float SKIN[3] = { 226 / 255.0f, 180 / 255.0f, 150 / 255.0f };
 /// The figure's shadow in screen units, down and right of it: x, y, radii, opacity - a wide faint oval and a
@@ -85,6 +97,10 @@ struct Agent
 	float hands = 6;                  ///< how fast its hands go
 	int craft = -1;                   ///< a hangar hand: the craft (Plan::crafts) it works at
 	bool carry = false;               ///< a loader on its way to the craft with a box of ammunition
+	bool dealer = false;              ///< a casino dealer: stands at its table for good
+	bool player = false;              ///< a gambler: sits at a table for a while, leaves, walks about, comes to another
+	int group = -1;                   ///< a casino table (Plan::Post::group) it plays at or deals at
+	int post = -1;                    ///< the seat (Plan::posts) it holds or goes to, -1 none
 
 	bool walking() const { return next < path.size(); }
 };
@@ -120,7 +136,7 @@ struct Stamps
 	}
 	const float *atWork(int role, int face, int pose) const
 	{
-		return &work[(size_t)(((role == ENG ? 1 : 0) * FACES + face) * POSES + pose) * size * size * 4];
+		return &work[(size_t)((std::max(0, workIndex(role)) * FACES + face) * POSES + pose) * size * size * 4];
 	}
 };
 
@@ -220,10 +236,13 @@ void makeStamps(int cell)
 	}
 	// at work: the hands forward over the table, each turning something in its own time, the head bent to
 	// the work and the body swaying a little (labwork.py work_ovals)
-	stamps.work.assign((size_t)2 * FACES * POSES * S * S * 4, 0.0f);
-	for (int r = 0; r < 2; ++r)
+	stamps.work.assign((size_t)WORKERS * FACES * POSES * S * S * 4, 0.0f);
+	for (int role = 0; role < ROLES; ++role)
 	{
-		const Role role = r ? ENG : SCI;
+		if (workIndex(role) < 0)
+		{
+			continue;
+		}
 		for (int pose = 0; pose < POSES; ++pose)
 		{
 			const float l = (pose % HANDS) * 2.0f / (HANDS - 1) - 1;
@@ -275,6 +294,26 @@ std::vector<Cell> cellsWith(const Plan &plan, int bits)
 			{
 				out.push_back(Cell(x, y));
 			}
+		}
+	}
+	return out;
+}
+
+/// Does work go on in this cell's facility now: a laboratory or workshop the base's used space has reached; other
+/// places are always open
+bool cellBusy(const Plan &plan, Cell c, int job)
+{
+	return job == LAB ? plan.busyLab[c.first][c.second] : job == WORK ? plan.busyWork[c.first][c.second] : true;
+}
+
+std::vector<Cell> busyCells(const Plan &plan, int job)
+{
+	std::vector<Cell> out;
+	for (const Cell &c : cellsWith(plan, job))
+	{
+		if (cellBusy(plan, c, job))
+		{
+			out.push_back(c);
 		}
 	}
 	return out;
@@ -436,7 +475,29 @@ bool workSpot(const Plan &plan, Cell c, const Agent &self, const Cell *near, Cel
 		int face, dist;
 	};
 	std::vector<Spot> spots;
-	for (int sx = 0; sx < SUB; ++sx)
+	if (self.job == WORK)
+	{
+		// at a belt of the room: the engineer stands at the posts its scene gives, one to a post
+		for (const Plan::Post &P : plan.posts)
+		{
+			if (P.kind != POST_BELT || P.gx / SUB != c.first || P.gy / SUB != c.second || !plan.walk[P.gx][P.gy])
+			{
+				continue;
+			}
+			bool taken = false;
+			for (const Agent &o : crew.agents)
+			{
+				taken = taken || (&o != &self && o.spotX >= 0 && std::abs(o.spotX - P.gx) <= 1 && std::abs(o.spotY - P.gy) <= 1);
+			}
+			const int dist = near ? std::max(std::abs(P.gx - near->first), std::abs(P.gy - near->second)) : 0;
+			if (!taken && !(near && dist == 0))
+			{
+				spots.push_back({ Cell(P.gx, P.gy), P.face, dist });
+			}
+		}
+	}
+	const bool atPosts = !spots.empty();
+	for (int sx = 0; sx < (atPosts ? 0 : SUB); ++sx)
 	{
 		for (int sy = 0; sy < SUB; ++sy)
 		{
@@ -598,6 +659,7 @@ Uint32 keyOf(const Plan &plan, int sci, int eng, int sol)
 	{
 		h = (h ^ (Uint32)(c.status + 1)) * 16777619u;
 	}
+	h = (h ^ (Uint32)plan.posts.size()) * 16777619u;
 	return ((h ^ (Uint32)sci) * 16777619u ^ (Uint32)eng) * 16777619u ^ (Uint32)sol;
 }
 
@@ -628,7 +690,7 @@ void makeCrew(const Plan &plan, Uint32 key, float night)
 		a.homeX = home.first;
 		a.homeY = home.second;
 		const bool sleeping = night > 0.6f && !nightShift;
-		const Cell start = sleeping ? home : pick(cellsWith(plan, job), home);
+		const Cell start = sleeping ? home : pick(works(a, plan, night) ? busyCells(plan, job) : cellsWith(plan, job), home);
 		a.cellX = start.first;
 		a.cellY = start.second;
 		a.pos = centre(spotSquare(plan, start));
@@ -715,6 +777,84 @@ void makeCrew(const Plan &plan, Uint32 key, float night)
 			crew.agents.push_back(a);
 		}
 	}
+	// the casino (ticket 336): a dealer in red stands at every table, and 1-3 gamblers sit at it, now and then one gets
+	// up and walks about while another comes to a free seat; day and night alike
+	std::vector<int> tables;
+	for (const Plan::Post &P : plan.posts)
+	{
+		if ((P.kind == POST_SEAT || P.kind == POST_DEALER) && std::find(tables.begin(), tables.end(), P.group) == tables.end())
+		{
+			tables.push_back(P.group);
+		}
+	}
+	int looks = 0;
+	for (int g : tables)
+	{
+		std::vector<int> seats;
+		for (size_t i = 0; i < plan.posts.size(); ++i)
+		{
+			const Plan::Post &P = plan.posts[i];
+			if (P.group != g || !plan.walk[P.gx][P.gy])
+			{
+				continue;
+			}
+			if (P.kind == POST_DEALER)
+			{
+				Agent a;
+				a.role = DEALER;
+				a.dealer = true;
+				a.nightShift = true;
+				a.group = g;
+				a.post = (int)i;
+				a.homeX = a.cellX = P.gx / SUB;
+				a.homeY = a.cellY = P.gy / SUB;
+				a.pos = centre(Cell(P.gx, P.gy));
+				a.spotX = P.gx;
+				a.spotY = P.gy;
+				a.face = P.face;
+				a.atWork = true;
+				a.dir = P.face * DIRS / FACES;
+				a.hands = 4.0f + 2.0f * crew.roll();
+				crew.agents.push_back(a);
+			}
+			else if (P.kind == POST_SEAT)
+			{
+				seats.push_back((int)i);
+			}
+		}
+		const int count = std::min<int>(3, (int)seats.size());
+		const int sitting = count ? 1 + std::min(count - 1, (int)(crew.roll() * count)) : 0;
+		for (int j = 0; j < count; ++j)
+		{
+			const Plan::Post &P = plan.posts[seats[j]];
+			Agent a;
+			a.role = (Role)(PLAYER_A + looks++ % 3);
+			a.player = true;
+			a.nightShift = true;
+			a.group = g;
+			a.homeX = a.cellX = P.gx / SUB;
+			a.homeY = a.cellY = P.gy / SUB;
+			a.hands = 3.0f + 2.0f * crew.roll();
+			if (j < sitting)
+			{
+				a.post = seats[j];
+				a.pos = centre(Cell(P.gx, P.gy));
+				a.spotX = P.gx;
+				a.spotY = P.gy;
+				a.face = P.face;
+				a.atWork = true;
+				a.dir = P.face * DIRS / FACES;
+				a.wait = 4.0f + crew.roll() * 30.0f;
+			}
+			else
+			{
+				a.pos = centre(spotSquare(plan, Cell(a.cellX, a.cellY)));
+				a.dir = (int)(crew.roll() * DIRS) % DIRS;
+				a.wait = 2.0f + crew.roll() * 12.0f;
+			}
+			crew.agents.push_back(a);
+		}
+	}
 }
 
 /// Where an agent goes next: to work, home at night, about the base when there is no work.
@@ -743,7 +883,7 @@ void choose(Agent &a, const Plan &plan, float night)
 	}
 	else
 	{
-		target = pick(cellsWith(plan, a.job), home);
+		target = pick(works(a, plan, night) ? busyCells(plan, a.job) : cellsWith(plan, a.job), home);
 	}
 	a.path.clear();
 	a.next = 0;
@@ -761,7 +901,7 @@ void choose(Agent &a, const Plan &plan, float night)
 			int face;
 			if (tries > 0)
 			{
-				target = pick(cellsWith(plan, a.job), home);
+				target = pick(busyCells(plan, a.job), home);
 			}
 			if ((plan.place[target.first][target.second] & a.job) && workSpot(plan, target, a, nullptr, spot, face))
 			{
@@ -803,8 +943,116 @@ void choose(Agent &a, const Plan &plan, float night)
 	}
 }
 
+/// A gambler on its feet: either sits down at a free seat (of the table with the fewest gamblers) or, when it has just
+/// sat, gets up - if another stays at the table - and walks about the casino
+void playerNext(Agent &a, const Plan &plan)
+{
+	const bool sat = a.atWork && a.post >= 0;
+	a.atWork = false;
+	auto claimed = [&](int post)
+	{
+		for (const Agent &o : crew.agents)
+		{
+			if (&o != &a && o.player && o.post == post)
+			{
+				return true;
+			}
+		}
+		return false;
+	};
+	auto load = [&](int group)
+	{
+		int n = 0;
+		for (const Agent &o : crew.agents)
+		{
+			n += &o != &a && o.player && o.post >= 0 && plan.posts[o.post].group == group ? 1 : 0;
+		}
+		return n;
+	};
+	const int facility = a.group / 16;
+	if (sat)
+	{
+		if (load(plan.posts[a.post].group) >= 1 && crew.roll() < 0.7f)
+		{
+			// gets up and walks to some spot of the casino floor
+			a.post = -1;
+			a.face = -1;
+			a.spotX = a.spotY = -1;
+			std::vector<Cell> floorCells;
+			for (const Cell &c : cellsWith(plan, ~0))
+			{
+				if (plan.facility[c.first][c.second] == facility)
+				{
+					floorCells.push_back(c);
+				}
+			}
+			const Cell where = pick(floorCells, Cell(a.cellX, a.cellY));
+			const std::vector<Cell> squares = route(plan, squareOf(a.pos), spotSquare(plan, where));
+			if (!squares.empty())
+			{
+				walkOver(a, squares);
+				return;
+			}
+			a.wait = 3.0f + crew.roll() * 3.0f;
+			return;
+		}
+		a.atWork = true;
+		a.wait = 14.0f + crew.roll() * 26.0f;
+		return;
+	}
+	// to a free seat, of the table that has the fewest gamblers
+	int best = -1, bestLoad = 99, ties = 0;
+	for (size_t i = 0; i < plan.posts.size(); ++i)
+	{
+		const Plan::Post &P = plan.posts[i];
+		if (P.kind != POST_SEAT || P.group / 16 != facility || claimed((int)i) || !plan.walk[P.gx][P.gy])
+		{
+			continue;
+		}
+		const int l = load(P.group);
+		if (l < bestLoad)
+		{
+			best = (int)i;
+			bestLoad = l;
+			ties = 1;
+		}
+		else if (l == bestLoad && crew.roll() * ++ties < 1.0f)
+		{
+			best = (int)i;
+		}
+	}
+	if (best >= 0)
+	{
+		const Plan::Post &P = plan.posts[best];
+		const std::vector<Cell> squares = route(plan, squareOf(a.pos), Cell(P.gx, P.gy));
+		if (!squares.empty())
+		{
+			a.post = best;
+			a.group = P.group;
+			a.face = P.face;
+			a.spotX = P.gx;
+			a.spotY = P.gy;
+			a.cellX = P.gx / SUB;
+			a.cellY = P.gy / SUB;
+			walkOver(a, squares);
+			if (!a.walking())
+			{
+				a.atWork = true;
+				a.dir = a.face * DIRS / FACES;
+				a.wait = 14.0f + crew.roll() * 26.0f;
+			}
+			return;
+		}
+	}
+	a.wait = 4.0f + crew.roll() * 6.0f;
+}
+
 void move(Agent &a, const Plan &plan, float night, float dt)
 {
+	if (a.dealer)
+	{
+		return;
+	}
 	if (a.walking())
 	{
 		const Point &to = a.path[a.next];
@@ -832,10 +1080,22 @@ void move(Agent &a, const Plan &plan, float night, float dt)
 				a.wait = loader(a, plan) ? 2.0f + crew.roll() : 6.0f + crew.roll() * 4.0f;
 				a.dir = a.face * DIRS / FACES;
 			}
+			if (a.player)
+			{
+				a.wait = a.face >= 0 ? 14.0f + crew.roll() * 26.0f : 8.0f + crew.roll() * 14.0f;
+			}
 		}
 		return;
 	}
 	a.wait -= dt;
+	if (a.player)
+	{
+		if (a.wait <= 0)
+		{
+			playerNext(a, plan);
+		}
+		return;
+	}
 	if (a.wait <= 0 && loader(a, plan) && a.atWork)
 	{
 		// with the box to the craft, without it back to the pile
@@ -850,7 +1110,7 @@ void move(Agent &a, const Plan &plan, float night, float dt)
 		const Cell here(a.spotX, a.spotY);
 		const bool wasAtWork = a.atWork;
 		a.atWork = false;
-		if (wasAtWork && works(a, plan, night) && crew.roll() < 0.75f && workSpot(plan, Cell(a.cellX, a.cellY), a, &here, square, face))
+		if (wasAtWork && works(a, plan, night) && cellBusy(plan, Cell(a.cellX, a.cellY), a.job) && crew.roll() < 0.75f && workSpot(plan, Cell(a.cellX, a.cellY), a, &here, square, face))
 		{
 			const std::vector<Cell> squares = route(plan, squareOf(a.pos), square);
 			if (!squares.empty())
@@ -974,7 +1234,7 @@ void draw(SDL_Surface *world, const Plan &plan, int ox, int oy, int cell, float 
 			// now and then something lights up in the hands: a test tube, a meter's screen, a soldering tip
 			Uint32 h = ((Uint32)(t * 1.5f) * 374761393u) ^ ((Uint32)n * 668265263u) ^ crew.key;
 			h = (h ^ (h >> 13)) * 1274126177u;
-			if (a.craft < 0 && ((h ^ (h >> 16)) & 0xFFFF) > 0.75f * 0xFFFF)
+			if (a.craft < 0 && (a.role == SCI || a.role == ENG) && ((h ^ (h >> 16)) & 0xFFFF) > 0.75f * 0xFFFF)
 			{
 				static const float FLASH[4][3] = { { 0.4f, 1.0f, 0.9f }, { 0.6f, 1.0f, 0.4f }, { 1.0f, 0.7f, 0.3f }, { 1.0f, 0.85f, 0.55f } };
 				const float *col = FLASH[a.role == ENG ? 3 : n % 3];

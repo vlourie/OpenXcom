@@ -38,8 +38,9 @@ namespace OpenXcom
  *                                    x y (pack pixels from the tile's corner), radius, kind (steady,
  *                                    blink, pulse, screen, flicker, tv, chase - one of a ring of lamps
  *                                    running round, weld - a welder's flashes, night - a duty lamp lit only
- *                                    at night), colour 0..1, period s and phase 0..1; a chase lamp adds the
- *                                    number of lamps in its ring (its phase is its place in it)
+ *                                    at night, marquee - a ring of lamps of an entrance sign or a machine, running
+ *                                    like chase but lit by day too), colour 0..1, period s and phase 0..1; a chase or
+ *                                    marquee lamp adds the number of lamps in its ring (its phase is its place in it)
  *     water blue 0.75 1.00 1.00 100  the tile's water (blue or green by the picture) ripples, the light of its
  *                                    bottom running over it; pools of the last number of pack pixels and more
  *                                    (200 if left out)
@@ -61,10 +62,24 @@ namespace OpenXcom
  *                                    buzzing about, arc - a lightning now and then from the box's corner
  *                                    (x, y) to the opposite one (x + w, y + h), beam - a plasma gun: sparks
  *                                    gather into its orb at (x + w, y + h), then a beam goes to (x, y)),
+ *                                    and the things that move (ticket 336; none of them throw sparks):
+ *                                    belt / beltrev - parts ride along the long side of the box (beltrev the other
+ *                                    way) while the facility works, glints of rollers slide over the belt;
+ *                                    roll - the glints of a roller turning across the short side of the box;
+ *                                    shuttle - a print head goes to and fro along the long side, its nozzle
+ *                                    glowing, a cooling trail behind it; heat - hot metal breathes, a soft
+ *                                    light swelling and fading about every 3.6 s; cart - a trolley with a load
+ *                                    goes along the long side, waits, comes back empty; ticker - dashes of a
+ *                                    running line scroll along the box (a screen),
  *                                    the box they start in
  *                                    (x y w h, pack pixels from the tile's corner), colour
  *     walk 8 0011110001111110...     where the crew may stand: n x n squares of the tile, row by row,
  *                                    1 - bare floor (tools/hdart/base_scene_pack.py walk_mask)
+ *     post belt 72 40 1 0            where the crew stands (ticket 336): kind (belt - an engineer at a belt while the
+ *                                    facility works, seat - a gambler's place at a table, dealer - the dealer of
+ *                                    a table), x y (pack pixels from the tile's corner, the middle of a floor square
+ *                                    of the walk mask), where it looks (0 right, 1 down, 2 left, 3 up) and the table's
+ *                                    number (seats and dealer of one table share it)
  *     cycle 45 16                    the facility moves in fits (tickets 237-245): one about every 45 s, 16 s
  *                                    long, no more than three facilities of the base at once; its swings and
  *                                    turret beams, glows, lid and sink move only in a fit, its burst lights burn
@@ -90,7 +105,7 @@ namespace OpenXcom
  */
 namespace HdBaseScene
 {
-	enum Kind { STEADY, BLINK, PULSE, SCREEN, FLICKER, TV, CHASE, WELD, DUTY, BURST };
+	enum Kind { STEADY, BLINK, PULSE, SCREEN, FLICKER, TV, CHASE, WELD, DUTY, BURST, MARQUEE };
 	enum Gate { GATE_NONE, GATE_LAB, GATE_WORK, GATE_HOME };
 
 	struct Light
@@ -111,13 +126,25 @@ namespace HdBaseScene
 		float middle = 0;                 ///< the middle of the swing, degrees clockwise
 	};
 
-	enum EmitKind { STEAM, BUBBLES, SPARKS, EMBERS, ORBIT, SWEEP, RIPPLE, DUST, FLIES, ARC, BEAM };
+	enum EmitKind { STEAM, BUBBLES, SPARKS, EMBERS, ORBIT, SWEEP, RIPPLE, DUST, FLIES, ARC, BEAM,
+		BELT, BELTREV, ROLL, SHUTTLE, HEAT, CART, TICKER };
 
 	struct Emit
 	{
 		EmitKind kind = STEAM;
 		float x = 0, y = 0, w = 0, h = 0; ///< the box the particles start in, pack pixels from the tile's corner
 		float r = 1, g = 1, b = 1;
+	};
+
+	/// A place where the crew stands to the things of a facility (ticket 336): an engineer at a belt, a gambler at a
+	/// table, the dealer of a table. The crew's squares come from these, the walk mask says where there is floor.
+	struct Post
+	{
+		enum Kind { BELT, SEAT, DEALER };
+		float x = 0, y = 0;               ///< pack pixels from the tile's corner: the middle of the square it stands on
+		int face = 0;                     ///< where it looks: 0 right, 1 down, 2 left, 3 up
+		Kind kind = BELT;
+		int group = 0;                    ///< a table's number within the facility (seats and the dealer of one table)
 	};
 
 	/// The pixels of a hue going darker or brighter in a fit (a shield's lamps, a decoder's cables).
@@ -164,7 +191,8 @@ namespace HdBaseScene
 		std::vector<Emit> emits;
 		int walkSize = 0;                 ///< n of the walk grid; 0 - none given, the whole tile is floor
 		std::vector<unsigned char> walk;  ///< n x n, row by row: 1 - the crew may stand there
-		int water = 0;                    ///< 0 none, 1 blue, 2 green: which of the picture is water
+		std::vector<Post> posts;
+		int water = 0;                   ///< 0 none, 1 blue, 2 green: which of the picture is water
 		float glint[3] = { 1, 1, 1 };     ///< the colour of its glints
 		int waterLeast = 0;               ///< pack pixels a pool needs; 0 - 200
 		Flow flow;

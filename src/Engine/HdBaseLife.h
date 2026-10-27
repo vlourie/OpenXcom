@@ -60,6 +60,18 @@ namespace HdBaseLife
 		unsigned char walk[SIZE * SUB][SIZE * SUB] = {};
 		int scientists = 0, engineers = 0, soldiers = 0;
 		bool researching = false, producing = false;
+		/// [x][y]: work goes on in this cell's facility now (ticket 336): the laboratory the used space of the base
+		/// has reached, the workshop likewise - scientists and engineers go only to such cells
+		bool busyLab[SIZE][SIZE] = {}, busyWork[SIZE][SIZE] = {};
+		/// Places to stand at of the facilities' scenes (HdBaseScene::Post), on the walking grid
+		struct Post
+		{
+			int gx = 0, gy = 0;           ///< the square
+			int face = 0;                 ///< where it looks: 0 right, 1 down, 2 left, 3 up
+			int kind = 0;                 ///< HdBaseScene::Post::Kind
+			int group = 0;                ///< the facility's number * 16 + the table's number
+		};
+		std::vector<Post> posts;
 		Uint32 seed = 0;                  ///< tells one base from another
 		/// The crafts in the hangars, in the state their lights show (HdCraftLights::Status) - the hangar
 		/// hands work by it (OXCE_HD_HANGAR_LIFE=1, the pilot of 26.10)
