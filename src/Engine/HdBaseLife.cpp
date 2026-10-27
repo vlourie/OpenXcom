@@ -471,6 +471,32 @@ bool works(const Agent &a, const Plan &plan, float night)
 	return (a.role == SCI && a.job == LAB && plan.researching) || (a.role == ENG && a.job == WORK && plan.producing);
 }
 
+/// A place where one of the crew can stand: the square, the way it faces, and how far it is from `near`.
+struct Spot
+{
+	Cell square;
+	int face, dist;
+};
+
+/// Picks one of the places: any of them, or with `near` one of the three nearest. False if there are none.
+bool pickSpot(std::vector<Spot> &spots, const Cell *near, Cell &square, int &face)
+{
+	if (spots.empty())
+	{
+		return false;
+	}
+	size_t choice = spots.size();
+	if (near)
+	{
+		std::stable_sort(spots.begin(), spots.end(), [](const Spot &p, const Spot &q) { return p.dist < q.dist; });
+		choice = std::min<size_t>(3, spots.size());
+	}
+	const Spot &s = spots[std::min(choice - 1, (size_t)(crew.roll() * choice))];
+	square = s.square;
+	face = s.face;
+	return true;
+}
+
 /// A place to work at in cell `c`: a floor square next to furniture (inside the room, not its wall), facing it,
 /// and not next to where another of the crew works. With `near`, one of the three nearest to it but not it - a
 /// step to the next table.
@@ -483,11 +509,6 @@ bool workSpot(const Plan &plan, Cell c, const Agent &self, const Cell *near, Cel
 	{
 		return hullSpot(plan, self, near, square, face);
 	}
-	struct Spot
-	{
-		Cell square;
-		int face, dist;
-	};
 	std::vector<Spot> spots;
 	if (self.job == WORK)
 	{
@@ -540,20 +561,7 @@ bool workSpot(const Plan &plan, Cell c, const Agent &self, const Cell *near, Cel
 			}
 		}
 	}
-	if (spots.empty())
-	{
-		return false;
-	}
-	size_t choice = spots.size();
-	if (near)
-	{
-		std::stable_sort(spots.begin(), spots.end(), [](const Spot &p, const Spot &q) { return p.dist < q.dist; });
-		choice = std::min<size_t>(3, spots.size());
-	}
-	const Spot &s = spots[std::min(choice - 1, (size_t)(crew.roll() * choice))];
-	square = s.square;
-	face = s.face;
-	return true;
+	return pickSpot(spots, near, square, face);
 }
 
 /// Sets the agent walking over these squares (from where it stands): turning points only.
@@ -585,11 +593,6 @@ bool hullSpot(const Plan &plan, const Agent &self, const Cell *near, Cell &squar
 	mx /= count;
 	my /= count;
 	const int hangar = facilityAt(plan, (int)mx, (int)my);
-	struct Spot
-	{
-		Cell square;
-		int face, dist;
-	};
 	std::vector<Spot> spots;
 	for (int gx = 0; gx < G; ++gx)
 	{
@@ -623,20 +626,7 @@ bool hullSpot(const Plan &plan, const Agent &self, const Cell *near, Cell &squar
 			}
 		}
 	}
-	if (spots.empty())
-	{
-		return false;
-	}
-	size_t choice = spots.size();
-	if (near)
-	{
-		std::stable_sort(spots.begin(), spots.end(), [](const Spot &p, const Spot &q) { return p.dist < q.dist; });
-		choice = std::min<size_t>(3, spots.size());
-	}
-	const Spot &s = spots[std::min(choice - 1, (size_t)(crew.roll() * choice))];
-	square = s.square;
-	face = s.face;
-	return true;
+	return pickSpot(spots, near, square, face);
 }
 
 void walkOver(Agent &a, const std::vector<Cell> &squares)

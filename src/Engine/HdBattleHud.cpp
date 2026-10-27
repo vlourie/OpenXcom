@@ -686,18 +686,32 @@ float insideBox(float x, float y, float x0, float y0, float x1, float y1, float 
 
 inline float ease(float t) { t = std::min(std::max(t, 0.0f), 1.0f); return t * (2.0f - t); }
 
+/// The HUD textures' hash: 0..1, the same for the same number every time.
+inline float hash01(Uint32 a)
+{
+	a ^= a >> 16; a *= 0x7FEB352Du; a ^= a >> 15; a *= 0x846CA68Bu; a ^= a >> 16;
+	return (float)(a & 0xFFFF) / 65535.0f;
+}
+
+/// Smooth value noise over the lattice of hash01, 0..1.
+inline float valueNoise(float fx, float fy, Uint32 seed)
+{
+	const int xi = (int)std::floor(fx), yi = (int)std::floor(fy);
+	const float tx = fx - (float)xi, ty = fy - (float)yi;
+	const float sx = tx * tx * (3.0f - 2.0f * tx), sy = ty * ty * (3.0f - 2.0f * ty);
+	auto at = [&](int i, int j) { return hash01(seed ^ ((Uint32)i * 0x85EBCA77u) ^ ((Uint32)j * 0xC2B2AE3Du)); };
+	const float top = at(xi, yi) + (at(xi + 1, yi) - at(xi, yi)) * sx;
+	const float bottom = at(xi, yi + 1) + (at(xi + 1, yi + 1) - at(xi, yi + 1)) * sx;
+	return top + (bottom - top) * sy;
+}
+
 /// Brushed metal: fine streaks along the rows, -0.5..0.5, the same at the same pixel every time.
 float brushed(int x, int y, float k)
 {
-	auto hash = [](Uint32 a)
-	{
-		a ^= a >> 16; a *= 0x7FEB352Du; a ^= a >> 15; a *= 0x846CA68Bu; a ^= a >> 16;
-		return (float)(a & 0xFFFF) / 65535.0f;
-	};
 	const float fx = (float)x / (6.0f * k);
 	const int xi = (int)fx;
 	const Uint32 row = (Uint32)y * 0x9E3779B1u;
-	const float a = hash(row ^ ((Uint32)xi * 0x85EBCA77u)), b = hash(row ^ ((Uint32)(xi + 1) * 0x85EBCA77u));
+	const float a = hash01(row ^ ((Uint32)xi * 0x85EBCA77u)), b = hash01(row ^ ((Uint32)(xi + 1) * 0x85EBCA77u));
 	return a + (b - a) * (fx - (float)xi) - 0.5f;
 }
 
@@ -705,24 +719,9 @@ float brushed(int x, int y, float k)
 /// the same at the same pixel every time.
 float plating(int x, int y, float k)
 {
-	auto hash = [](Uint32 a)
-	{
-		a ^= a >> 16; a *= 0x7FEB352Du; a ^= a >> 15; a *= 0x846CA68Bu; a ^= a >> 16;
-		return (float)(a & 0xFFFF) / 65535.0f;
-	};
-	auto noise = [&](float fx, float fy, Uint32 seed)
-	{
-		const int xi = (int)std::floor(fx), yi = (int)std::floor(fy);
-		const float tx = fx - (float)xi, ty = fy - (float)yi;
-		const float sx = tx * tx * (3.0f - 2.0f * tx), sy = ty * ty * (3.0f - 2.0f * ty);
-		auto at = [&](int i, int j) { return hash(seed ^ ((Uint32)i * 0x85EBCA77u) ^ ((Uint32)j * 0xC2B2AE3Du)); };
-		const float top = at(xi, yi) + (at(xi + 1, yi) - at(xi, yi)) * sx;
-		const float bottom = at(xi, yi + 1) + (at(xi + 1, yi + 1) - at(xi, yi + 1)) * sx;
-		return top + (bottom - top) * sy;
-	};
-	const float coarse = noise((float)x / (5.0f * k), (float)y / (5.0f * k), 0x2545F491u);
-	const float fine = noise((float)x / (1.5f * k), (float)y / (1.5f * k), 0x9E3779B9u);
-	const float grain = hash((Uint32)x * 0x27D4EB2Fu ^ (Uint32)y * 0x165667B1u);
+	const float coarse = valueNoise((float)x / (5.0f * k), (float)y / (5.0f * k), 0x2545F491u);
+	const float fine = valueNoise((float)x / (1.5f * k), (float)y / (1.5f * k), 0x9E3779B9u);
+	const float grain = hash01((Uint32)x * 0x27D4EB2Fu ^ (Uint32)y * 0x165667B1u);
 	return 0.6f * coarse + 0.25f * fine + 0.15f * grain - 0.5f;
 }
 
@@ -805,24 +804,9 @@ Relief steelRelief(float x, float y, float k)
 	{
 		// mahogany planking: planks laid along the panel, their ends staggered, each a little cupped; the grain runs
 		// along a plank in wavy streaks, a brass nail at each end
-		auto hash = [](Uint32 a)
-		{
-			a ^= a >> 16; a *= 0x7FEB352Du; a ^= a >> 15; a *= 0x846CA68Bu; a ^= a >> 16;
-			return (float)(a & 0xFFFF) / 65535.0f;
-		};
-		auto noise = [&](float fx, float fy, Uint32 seed)
-		{
-			const int xi = (int)std::floor(fx), yi = (int)std::floor(fy);
-			const float tx = fx - (float)xi, ty = fy - (float)yi;
-			const float sx = tx * tx * (3.0f - 2.0f * tx), sy = ty * ty * (3.0f - 2.0f * ty);
-			auto at = [&](int i, int j) { return hash(seed ^ ((Uint32)i * 0x85EBCA77u) ^ ((Uint32)j * 0xC2B2AE3Du)); };
-			const float top = at(xi, yi) + (at(xi + 1, yi) - at(xi, yi)) * sx;
-			const float bottom = at(xi, yi + 1) + (at(xi + 1, yi + 1) - at(xi, yi + 1)) * sx;
-			return top + (bottom - top) * sy;
-		};
 		const float ph = 6.5f * k, pw = 52.0f * k;
 		const float row = std::floor(y / ph);
-		const float shift = hash((Uint32)(int)row * 0x9E3779B1u) * pw;
+		const float shift = hash01((Uint32)(int)row * 0x9E3779B1u) * pw;
 		const float sx = x + shift;
 		const float plank = std::floor(sx / pw);
 		const float u = sx - plank * pw, v = y - row * ph;
@@ -833,10 +817,10 @@ Relief steelRelief(float x, float y, float k)
 		const float bow = 2.0f * v / ph - 1.0f;
 		r.h = 0.12f * (1.0f - bow * bow) - 0.35f * seam * seam;
 		// the grain: streaks wandering along the plank, a knot of darker rings now and then
-		const float wander = 2.6f * noise(sx / (14.0f * k), v / (3.0f * k), seed) + 0.8f * noise(sx / (4.0f * k), v / k, seed ^ 0x5A5A5A5Au);
+		const float wander = 2.6f * valueNoise(sx / (14.0f * k), v / (3.0f * k), seed) + 0.8f * valueNoise(sx / (4.0f * k), v / k, seed ^ 0x5A5A5A5Au);
 		const float streak = 0.5f + 0.5f * std::sin((v / (0.75f * k) + wander) * 3.14159265f);
-		const float tone = noise(sx / (24.0f * k), v / (6.0f * k), seed ^ 0x1234567u);
-		const float fibre = hash((Uint32)(int)std::floor(sx / (0.6f * k)) * 0x85EBCA77u ^ (Uint32)(int)y * 0xC2B2AE3Du);
+		const float tone = valueNoise(sx / (24.0f * k), v / (6.0f * k), seed ^ 0x1234567u);
+		const float fibre = hash01((Uint32)(int)std::floor(sx / (0.6f * k)) * 0x85EBCA77u ^ (Uint32)(int)y * 0xC2B2AE3Du);
 		r.dk = 0.16f * streak * streak + 0.12f * tone + 0.04f * fibre + 0.35f * seam * seam - 0.06f;
 		// a nail a little in from each end of the plank, at its middle
 		const float nr = 0.55f * k;
@@ -901,12 +885,9 @@ std::vector<Uint32> shadeMetal(const std::vector<float> &height, const std::vect
 	return out;
 }
 
-/// A pictogram's coverage softened by two box passes of radius rb: the walls of the cut.
-std::vector<float> softCover(const Raster &pic, int rb)
+/// Two box passes of radius rb over the W x H picture a, rows then columns, clamped at the edges; b is scratch.
+void boxBlur2(std::vector<float> &a, std::vector<float> &b, int W, int H, int rb)
 {
-	const int W = pic.w, H = pic.h;
-	std::vector<float> a(pic.cov.size()), b(pic.cov.size());
-	for (size_t i = 0; i < a.size(); ++i) a[i] = pic.cov[i] / 255.0f;
 	const float n = 1.0f / (float)(2 * rb + 1);
 	for (int pass = 0; pass < 2; ++pass)
 	{
@@ -925,6 +906,14 @@ std::vector<float> softCover(const Raster &pic, int rb)
 				a[(size_t)y * W + x] = sum * n;
 			}
 	}
+}
+
+/// A pictogram's coverage softened by two box passes of radius rb: the walls of the cut.
+std::vector<float> softCover(const Raster &pic, int rb)
+{
+	std::vector<float> a(pic.cov.size()), b(pic.cov.size());
+	for (size_t i = 0; i < a.size(); ++i) a[i] = pic.cov[i] / 255.0f;
+	boxBlur2(a, b, pic.w, pic.h, rb);
 	return a;
 }
 
@@ -1488,25 +1477,7 @@ const std::vector<Uint32> &itemShadow(const Surface *s, int k, int pad)
 	for (int y = 0; y < h * k; ++y)
 		for (int x = 0; x < w * k; ++x)
 			if (s->getPixel(x / k, y / k)) a[(size_t)(y + pad) * W + x + pad] = 1.0f;
-	const int rb = std::max(1, pad / 2);
-	const float n = 1.0f / (float)(2 * rb + 1);
-	for (int pass = 0; pass < 2; ++pass)
-	{
-		for (int y = 0; y < H; ++y)
-			for (int x = 0; x < W; ++x)
-			{
-				float sum = 0;
-				for (int d = -rb; d <= rb; ++d) sum += a[(size_t)y * W + std::min(std::max(x + d, 0), W - 1)];
-				b[(size_t)y * W + x] = sum * n;
-			}
-		for (int y = 0; y < H; ++y)
-			for (int x = 0; x < W; ++x)
-			{
-				float sum = 0;
-				for (int d = -rb; d <= rb; ++d) sum += b[(size_t)std::min(std::max(y + d, 0), H - 1) * W + x];
-				a[(size_t)y * W + x] = sum * n;
-			}
-	}
+	boxBlur2(a, b, W, H, std::max(1, pad / 2));
 	std::vector<Uint32> out((size_t)W * H);
 	for (size_t i = 0; i < out.size(); ++i) out[i] = (Uint32)(std::min(a[i], 1.0f) * 150.0f + 0.5f) << 24;
 	return shadows[hash] = out;

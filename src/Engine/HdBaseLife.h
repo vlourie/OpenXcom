@@ -20,6 +20,7 @@
 #include <vector>
 #include <SDL.h>
 #include "HdBaseScene.h"
+#include "HdCraftLights.h"
 
 namespace OpenXcom
 {
@@ -85,8 +86,9 @@ namespace HdBaseLife
 		/// walks there, the hangar hands stand at its edge
 		unsigned char hull[SIZE * SUB][SIZE * SUB] = {};
 	};
-	/// The states of a craft as HdCraftLights::Status numbers them.
-	enum CraftState { CRAFT_READY, CRAFT_BUSY, CRAFT_REPAIRS, CRAFT_REARMING, CRAFT_NO_CREW };
+	/// The states of a craft, the numbers HdCraftLights::statusOf gives (bound to them: a reordered copy would shift silently).
+	enum CraftState { CRAFT_READY = HdCraftLights::READY, CRAFT_BUSY = HdCraftLights::BUSY, CRAFT_REPAIRS = HdCraftLights::REPAIRS,
+		CRAFT_REARMING = HdCraftLights::REARMING, CRAFT_NO_CREW = HdCraftLights::NO_CREW };
 
 	/// Moves the crew on to `ms` of the display clock and draws it into the world layer, the grid's
 	/// corner at (ox, oy) and `cell` world pixels to a grid cell. Before the light: the figures darken at

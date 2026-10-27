@@ -134,7 +134,6 @@ public:
 	enum Kind { NONE, STRIP, FRAME_ENEMY, FRAME_NEUTRAL };
 	HdTurnMark(int width, int height) : Surface(width, height, 0, 0) {}
 	void setKind(Kind kind) { _kind = kind; }
-	Kind getKind() const { return _kind; }
 	void setText(const std::string &text) { _text = text; }
 	/// A wide progress bar at the bottom centre (frame kinds only): the share of the turn done, 0-100 (XP-000285, XP-000306).
 	void setBar(bool on, int percent) { _bar = on; _percent = percent < 0 ? 0 : (percent > 100 ? 100 : percent); }
