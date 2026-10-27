@@ -1018,6 +1018,94 @@ void Canvas32::blitScripted(ScriptWorkerBlit &work, const Surface *src, int x, i
 						seen[i] = bestOut > 0;
 					}
 				};
+				// the colour of an HD pixel p over a base pixel whose index the script turned from a into b (z - the
+				// same under the light alone, for a frame in its own colours)
+				auto shadedIndex = [&](Uint8 a) -> Uint8
+				{
+					const int lvl = a ? (a & 0x0F) + std::max(0, shade) : 0;
+					return lvl > 15 ? (Uint8)15 : (Uint8)((a & 0xF0) | lvl);
+				};
+				auto recolour = [&](Uint32 p, Uint8 a, Uint8 b, Uint8 z) -> Uint32
+				{
+					// the light alone - along the ramp, or past its end, where the shade turns the pixel
+					// into index 15, black - or a pixel of the pack with no classic pixel under it or
+					// beside it, which nothing but the light reaches: darken the pack's own colour by the
+					// palette's darkening, the hue stays the pack's. The lit result must be the shaded
+					// index itself: a script whose work depends on the shade (the shield of X-Piratez
+					// recolours only levels 4..15 after the light) leaves the unlit pixel as it was
+					// and still recolours the lit one
+					const Uint8 shaded = shadedIndex(a);
+					if (own && (p >> 24) && (a == 0 || (z == a && b == shaded)))
+					{
+						const float f = ownF;
+						const int r = std::min(255, (int)(((p >> 16) & 0xFF) * f + 0.5f));
+						const int g = std::min(255, (int)(((p >> 8) & 0xFF) * f + 0.5f));
+						const int bl = std::min(255, (int)((p & 0xFF) * f + 0.5f));
+						return (p & 0xFF000000u) | ((Uint32)r << 16) | ((Uint32)g << 8) | (Uint32)bl;
+					}
+					if (a == b || !(p >> 24))
+					{
+						return p;
+					}
+					if (b == 0)
+					{
+						return 0; // the script erased the pixel
+					}
+					const SDL_Color &ca = _colors[a], &cb = _colors[b];
+					// the new color keeps the brightness the HD pixel had on the old ramp. A
+					// per-channel ratio would look the same on paper, but the HD pixel is only
+					// close to the palette entry, not equal to it, and where the old color has
+					// a near-empty channel the ratio turns that gap into a hue (R-030)
+					const float la = 0.299f * ca.r + 0.587f * ca.g + 0.114f * ca.b;
+					const float lp = 0.299f * ((p >> 16) & 0xFF) + 0.587f * ((p >> 8) & 0xFF) + 0.114f * (p & 0xFF);
+					float f = flat ? 1.0f + ((lp + 2.0f) / (la + 2.0f) - 1.0f) * 0.3f : (lp + 2.0f) / (la + 2.0f);
+					// a pack brighter than the old entry lifts the new colour past 255 in its strongest
+					// channel; clipped alone, the others keep growing and the hue turns (red into pink)
+					const int top = std::max(std::max((int)cb.r, (int)cb.g), (int)cb.b);
+					if (top > 0 && top * f > 255.0f)
+					{
+						f = 255.0f / top;
+					}
+					const int r = std::min(255, (int)(cb.r * f + 0.5f));
+					const int g = std::min(255, (int)(cb.g * f + 0.5f));
+					const int bl = std::min(255, (int)(cb.b * f + 0.5f));
+					return (p & 0xFF000000u) | ((Uint32)r << 16) | ((Uint32)g << 8) | (Uint32)bl;
+				};
+				// 0 - no classic pixel, 1 - the light alone, 2 - the script's own work (a recolour, a flash, a shield).
+				// Empty when the script did only the light, and nothing below changes
+				std::vector<Uint8> editMask;
+				if (k >= 2)
+				{
+					bool any = false;
+					for (int sy = 0; sy < bh && !any; ++sy)
+					{
+						const Uint8 *in = _scriptSrc.getRaw(0, sy);
+						const Uint8 *out = _scriptDst.getRaw(0, sy);
+						for (int sx = 0; sx < bw; ++sx)
+						{
+							if (in[sx] && out[sx] != shadedIndex(in[sx]))
+							{
+								any = true;
+								break;
+							}
+						}
+					}
+					if (any)
+					{
+						editMask.assign((size_t)bw * bh, 0);						for (int sy = 0; sy < bh; ++sy)
+						{
+							const Uint8 *in = _scriptSrc.getRaw(0, sy);
+							const Uint8 *out = _scriptDst.getRaw(0, sy);
+							for (int sx = 0; sx < bw; ++sx)
+							{
+								if (in[sx])
+								{
+									editMask[(size_t)sy * bw + sx] = out[sx] != shadedIndex(in[sx]) ? 2 : 1;
+								}
+							}
+						}
+					}
+				}
 				HdFrame made;
 				made.width = w;
 				made.height = h;
@@ -1085,53 +1173,75 @@ void Canvas32::blitScripted(ScriptWorkerBlit &work, const Surface *src, int x, i
 								}
 							}
 						}
-						// the light alone - along the ramp, or past its end, where the shade turns the pixel
-						// into index 15, black - or a pixel of the pack with no classic pixel under it or
-						// beside it, which nothing but the light reaches: darken the pack's own colour by the
-						// palette's darkening, the hue stays the pack's. The lit result must be the shaded
-						// index itself: a script whose work depends on the shade (the shield of X-Piratez
-						// recolours only levels 4..15 after the light) leaves the unlit pixel as it was
-						// and still recolours the lit one
-						const int lvl = a ? (a & 0x0F) + std::max(0, shade) : 0;
-						const Uint8 shaded = lvl > 15 ? (Uint8)15 : (Uint8)((a & 0xF0) | lvl);
-						if (own && (p >> 24) && (a == 0 || (z == a && b == shaded)))
+						// the script's own work at this base pixel: a change of the index beyond the light alone. The shield
+						// flash of X-Piratez recolours a unit by this per base pixel, so the edge of the recoloured area is a
+						// stair of the base grid; an HD pixel near such an edge blends the colour without the script's work
+						// with the colour with it by the share of recoloured base pixels around it (XP-000315)
+						const Uint8 *edge = editMask.empty() ? nullptr : editMask.data();
+						Uint32 res = recolour(p, a, b, z);
+						if (edge && (p >> 24) && (res >> 24))
 						{
-							const float f = ownF;
-							const int r = std::min(255, (int)(((p >> 16) & 0xFF) * f + 0.5f));
-							const int g = std::min(255, (int)(((p >> 8) & 0xFF) * f + 0.5f));
-							const int bl = std::min(255, (int)((p & 0xFF) * f + 0.5f));
-							to[px] = (p & 0xFF000000u) | ((Uint32)r << 16) | ((Uint32)g << 8) | (Uint32)bl;
-							continue;
+							// bilinear weights of the four base pixels around the centre of this HD pixel
+							const int cxn = 2 * px + 1 - k, cyn = 2 * py + 1 - k;
+							const int x0 = cxn >= 0 ? cxn / (2 * k) : -1, y0 = cyn >= 0 ? cyn / (2 * k) : -1;
+							const float tx = (float)(cxn - x0 * 2 * k) / (float)(2 * k), ty = (float)(cyn - y0 * 2 * k) / (float)(2 * k);
+							float sumAll = 0.0f, sumEdit = 0.0f, bestW = 0.0f;
+							int ea = 0, eb = 0, ez = 0;
+							for (int j = 0; j < 4; ++j)
+							{
+								const int nx = x0 + (j & 1), ny = y0 + (j >> 1);
+								if (nx < 0 || ny < 0 || nx >= bw || ny >= bh)
+								{
+									continue;
+								}
+								const Uint8 m = edge[ny * bw + nx];
+								if (!m)
+								{
+									continue;
+								}
+								const float wgt = ((j & 1) ? tx : 1.0f - tx) * ((j >> 1) ? ty : 1.0f - ty);
+								sumAll += wgt;
+								if (m == 2)
+								{
+									sumEdit += wgt;
+									if (wgt > bestW)
+									{
+										bestW = wgt;
+										ea = *_scriptSrc.getRaw(nx, ny);
+										eb = *_scriptDst.getRaw(nx, ny);
+										ez = own ? *_scriptLit.getRaw(nx, ny) : 0;
+									}
+								}
+							}
+							if (sumAll > 0.0f)
+							{
+								const float share = sumEdit / sumAll;
+								Uint32 other = res;
+								float mix = 0.0f;
+								if (a && b != shadedIndex(a))
+								{
+									// this pixel is recoloured; toward the unrecoloured side it fades back to the light alone
+									if (share < 1.0f)
+									{
+										other = recolour(p, a, shadedIndex(a), a);
+										mix = 1.0f - share;
+									}
+								}
+								else if (bestW > 0.0f)
+								{
+									// this pixel is not; toward the recoloured side it takes the colour of the nearest recoloured pixel
+									other = recolour(p, (Uint8)ea, (Uint8)eb, (Uint8)ez);
+									mix = share;
+								}
+								if (mix > 0.0f && (other >> 24))
+								{
+									const float u = mix;
+									auto ch = [&](int s) { return (int)(((res >> s) & 0xFF) * (1.0f - u) + ((other >> s) & 0xFF) * u + 0.5f); };
+									res = (p & 0xFF000000u) | ((Uint32)ch(16) << 16) | ((Uint32)ch(8) << 8) | (Uint32)ch(0);
+								}
+							}
 						}
-						if (a == b || !(p >> 24))
-						{
-							to[px] = p;
-							continue;
-						}
-						if (b == 0)
-						{
-							to[px] = 0; // the script erased the pixel
-							continue;
-						}
-						const SDL_Color &ca = _colors[a], &cb = _colors[b];
-						// the new color keeps the brightness the HD pixel had on the old ramp. A
-						// per-channel ratio would look the same on paper, but the HD pixel is only
-						// close to the palette entry, not equal to it, and where the old color has
-						// a near-empty channel the ratio turns that gap into a hue (R-030)
-						const float la = 0.299f * ca.r + 0.587f * ca.g + 0.114f * ca.b;
-						const float lp = 0.299f * ((p >> 16) & 0xFF) + 0.587f * ((p >> 8) & 0xFF) + 0.114f * (p & 0xFF);
-						float f = flat ? 1.0f + ((lp + 2.0f) / (la + 2.0f) - 1.0f) * 0.3f : (lp + 2.0f) / (la + 2.0f);
-						// a pack brighter than the old entry lifts the new colour past 255 in its strongest
-						// channel; clipped alone, the others keep growing and the hue turns (red into pink)
-						const int top = std::max(std::max((int)cb.r, (int)cb.g), (int)cb.b);
-						if (top > 0 && top * f > 255.0f)
-						{
-							f = 255.0f / top;
-						}
-						const int r = std::min(255, (int)(cb.r * f + 0.5f));
-						const int g = std::min(255, (int)(cb.g * f + 0.5f));
-						const int bl = std::min(255, (int)(cb.b * f + 0.5f));
-						to[px] = (p & 0xFF000000u) | ((Uint32)r << 16) | ((Uint32)g << 8) | (Uint32)bl;
+						to[px] = res;
 					}
 				}
 				made.buildSpans();
