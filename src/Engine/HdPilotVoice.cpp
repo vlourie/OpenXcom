@@ -16,7 +16,10 @@
 #include "Options.h"
 #include "Sound.h"
 #include "../Mod/RuleCraft.h"
+#include "../Mod/RuleSoldier.h"
+#include "../Savegame/Base.h"
 #include "../Savegame/Craft.h"
+#include "../Savegame/Soldier.h"
 
 namespace OpenXcom
 {
@@ -77,20 +80,85 @@ Lines &load(const std::string &kind, Event ev, const std::string &lang)
 	return lines;
 }
 
-/// Plays a line of the craft's speaker; false when there is none.
-bool say(const Craft *craft, Event ev)
+/// The fighter who speaks for the craft: the first assigned pilot, else the first one aboard, else none.
+/// Read-only: Craft::getPilotList rewrites the pilot list (and with it the save), so the list is read as it is.
+const Soldier *speaker(const Craft *craft)
 {
-	if (!craft || ev < 0 || ev >= EVENT_COUNT || !ready())
+	const Base *base = craft->getBase();
+	if (!base)
 	{
-		return false;
+		return nullptr;
 	}
-	const int alt = craft->getRules()->getMaxAltitude();
-	const std::string kind = (alt >= 0 && alt <= 1) ? "ground" : "air";
+	const std::vector<Soldier *> &soldiers = base->getSoldiers();
+	for (int id : craft->getPilotIds())
+	{
+		for (const Soldier *soldier : soldiers)
+		{
+			if (soldier->getId() == id && soldier->getCraft() == craft)
+			{
+				return soldier;
+			}
+		}
+	}
+	for (const Soldier *soldier : soldiers)
+	{
+		if (soldier->getCraft() == craft)
+		{
+			return soldier;
+		}
+	}
+	return nullptr;
+}
+
+/// The voice set of a fighter: "dog" for the Piratez dogs, "<class>_male" for men, else "" (the class set itself).
+std::string setOf(const Soldier *soldier, const std::string &kind)
+{
+	if (!soldier)
+	{
+		return "";
+	}
+	const std::string &type = soldier->getRules()->getType();
+	if (type == "STR_SOLDIER_DOGE" || type == "STR_SOLDIER_BLOODOGE")
+	{
+		return "dog";
+	}
+	return soldier->getGender() == GENDER_MALE ? kind + "_male" : "";
+}
+
+/// The lines of an event in the player's language, else in English; null when the set has none.
+Lines *find(const std::string &kind, Event ev)
+{
 	Lines *lines = &load(kind, ev, Options::language.compare(0, 2, "ru") == 0 ? "ru" : "en");
 	if (lines->sounds.empty())
 	{
 		lines = &load(kind, ev, "en");
-		if (lines->sounds.empty())
+	}
+	return lines->sounds.empty() ? nullptr : lines;
+}
+
+/// Plays a line of the craft's speaker; false when there is none.
+bool say(const Craft *craft, Event ev)
+{	if (!craft || ev < 0 || ev >= EVENT_COUNT || !ready())
+	{
+		return false;
+	}
+	const int alt = craft->getRules()->getMaxAltitude();
+	std::string kind = (alt >= 0 && alt <= 1) ? "ground" : "air";
+	// the fighter's own set first; where it has no files for the event, the class set (air/ground) speaks as before
+	Lines *lines = nullptr;
+	const std::string own = setOf(speaker(craft), kind);
+	if (!own.empty())
+	{
+		lines = find(own, ev);
+		if (lines)
+		{
+			kind = own;
+		}
+	}
+	if (!lines)
+	{
+		lines = find(kind, ev);
+		if (!lines)
 		{
 			return false;
 		}
