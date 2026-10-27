@@ -40,6 +40,7 @@ public sealed class MainWindow : Window
     readonly TextBlock _linkSay = new() { FontSize = 14, TextWrapping = TextWrapping.Wrap, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 12, 0) };
     readonly DispatcherTimer _linkTimer = new() { Interval = TimeSpan.FromMilliseconds(30) };
     bool _linkHeld;     // the pointer is over the line: it stands still to be read
+    readonly StackPanel _credit = new() { Margin = new Thickness(12, 12, 12, 0) };   // whose game the picked build is (UpdateCredit)
     readonly TextBlock _version = new() { FontSize = 14, Foreground = Skin.B(Skin.Muted) };
     readonly Button _main = new() { Height = 64, HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Center, VerticalContentAlignment = VerticalAlignment.Center, FontFamily = Skin.Medium, FontSize = 22 };
     readonly TextBlock _mainText = new();
@@ -305,6 +306,7 @@ public sealed class MainWindow : Window
         var bottom = new StackPanel();
         bottom.Children.Add(site);
         bottom.Children.Add(quit);
+        bottom.Children.Add(_credit);
         bottom.Children.Add(new TextBlock { Text = L.T("nav.version", BuiltIn.VersionText), FontSize = 12, Foreground = Skin.B(Skin.Muted), Margin = new Thickness(12, 8, 12, 0) });
 
         var dock = new DockPanel { Margin = new Thickness(12, 24, 12, 16) };
@@ -983,6 +985,34 @@ public sealed class MainWindow : Window
             row.Click += (_, _) => { if (_build.SelectedIndex != index) _build.SelectedIndex = index; };
             _buildList.Children.Add(row);
         }
+        UpdateCredit();
+    }
+
+    /// <summary>
+    /// Under the rail, whose game the picked build plays: over X-Piratez the credit its author Dioxine asked for
+    /// (27.10), over a game from mod.io a link to its author's page. Not one line for all: the launcher plays other games too.
+    /// </summary>
+    void UpdateCredit()
+    {
+        _credit.Children.Clear();
+        Build? b = null;
+        try { if (_builds is { Exists: true }) b = _builds.Load(_fileLog).Current; }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { }
+        // no builds yet: the install is our release, X-Piratez
+        var game = b?.Template ?? b?.EngineMaster ?? "piratez";
+        if (game.Equals("piratez", StringComparison.OrdinalIgnoreCase))
+        {
+            _credit.Children.Add(new TextBlock { Text = L.T("credit.piratez"), FontSize = 11, LineHeight = 15, Foreground = Skin.B(Skin.Muted), TextWrapping = TextWrapping.Wrap });
+            return;
+        }
+        ModProfile? p = null;
+        try { p = _paths is null ? null : ProfileSet.Load(_paths.GameDir)?.Profiles.FirstOrDefault(x => x.Key.Equals(game, StringComparison.OrdinalIgnoreCase)); }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or System.Text.Json.JsonException) { }
+        if (p?.Source is not { Page.Length: > 0 } src) return;
+        var l = Skin.Link(L.T("credit.other", p.Title ?? b!.Title, src.Site), () => ReportWindow.OpenUrl(src.Page), 11);
+        if (l.Content is TextBlock t) t.TextWrapping = TextWrapping.Wrap;   // the rail is narrow
+        l.Foreground = Skin.B(Skin.Muted);
+        _credit.Children.Add(l);
     }
 
     void SelectBuild()

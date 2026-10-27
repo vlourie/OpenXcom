@@ -264,7 +264,7 @@ public sealed class BuildsWindowTests : IDisposable
             { "schema": 1, "profiles": [
               { "master": "piratez", "mods": [ { "id": "*" }, { "id": "hd" } ] },
               { "master": "Mars-com", "title": "Mars-com", "mods": [ { "id": "*" } ],
-                "source": { "url": "http://127.0.0.1:9/mars.zip", "version": "1.5", "size": 5238619, "sha256": "5dacabe689e7a943e0f0d3bf5d8dee48c5ee16670b7471b5082bb67adaf31683",
+                "source": { "page": "https://mod.io/g/openxcom/m/mars-com", "url": "http://127.0.0.1:9/mars.zip", "version": "1.5", "size": 5238619, "sha256": "5dacabe689e7a943e0f0d3bf5d8dee48c5ee16670b7471b5082bb67adaf31683",
                             "folders": [ { "name": "Mars-com", "id": "Mars-com" } ] } },
               { "id": "twots", "master": "xcom2", "title": "The World of (Terrifying) Silence", "data": "TFTD", "mods": [ { "id": "TWoTS" } ],
                 "source": { "url": "http://127.0.0.1:9/twots.zip", "version": "2.8", "size": 25782195, "sha256": "9eed5882605474238a478e73416e0cb5ceb43f20ba5f808cc1f6b309ee6f1d5a",
@@ -274,6 +274,9 @@ public sealed class BuildsWindowTests : IDisposable
         Write("launcher/games.json", """{ "games": { "Mars-com": { "version": "1.5", "sha256": "5dacabe689e7a943e0f0d3bf5d8dee48c5ee16670b7471b5082bb67adaf31683", "folders": [ "Mars-com" ] } } }""");
         var w = Open();
         Click(F<Dictionary<string, Button>>(w, "_nav")["settings"]);
+        // under the rail: the credit Dioxine asked for, while the build plays his X-Piratez
+        string Credit() => string.Join(" ", F<StackPanel>(w, "_credit").GetLogicalDescendants().OfType<TextBlock>().Select(t => t.Text));
+        Assert.Equal("X-Piratez HD основан на моде X-Piratez от Dioxine. Dioxine не несёт ответственности за эту работу.", Credit());
 
         Click(F<Button>(w, "_buildNew"));
         var pick = Dialog(w, "10-game-dialog");
@@ -295,7 +298,14 @@ public sealed class BuildsWindowTests : IDisposable
         Assert.Equal("Mars-com", b.GetProperty("template").GetString());
         Assert.Equal("Mars-com", b.GetProperty("engineMaster").GetString());
         Assert.Contains("id: Mars-com", File.ReadAllText(Cfg(b.GetProperty("id").GetString()!)));
+        // another author's game: no word of Dioxine, a link to its author's page instead
+        Assert.Equal("Mars-com - игра своего автора: страница на mod.io ↗", Credit());
         Shot(w, "12-settings-game-build");
+        // back to the X-Piratez build: the credit comes back
+        _ = F<ComboBox>(w, "_build").SelectedIndex = 0;
+        Settle();
+        Assert.StartsWith("X-Piratez HD основан", Credit());
+        Shot(w, "13-settings-piratez-credit");
         w.Close();
     }
 

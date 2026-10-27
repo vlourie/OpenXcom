@@ -18,6 +18,8 @@ public sealed class SupportPage : UserControl
         panel.Children.Add(Skin.H1(L.T("support.title")));
         panel.Children.Add(Skin.Note(L.T("support.hint"), 14, Skin.Text2));
         panel.Children.Add(Big("support.mod", "support.modNote", BuiltIn.Defaults.SupportModUrl));
+        // the credit Dioxine asked for (27.10), beside his button
+        panel.Children.Add(Skin.Note(L.T("credit.piratez"), 13, Skin.Text2));
         panel.Children.Add(Big("support.hd", "support.hdNote", BuiltIn.Defaults.SupportHdUrl));
         Content = new ScrollViewer { Content = panel };
     }

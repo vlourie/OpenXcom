@@ -108,6 +108,8 @@
  "support.hd": "Support the HD developers",
  "support.hdNote": "the new graphics, the launcher and the support site",
  "support.noLink": "link coming later",
+ "credit.piratez": "X-Piratez HD is based on X-Piratez by Dioxine. Dioxine takes no responsibility for this work.",
+ "credit.other": "{0} is its author's game: page on {1} ↗",
  "reports.hint": "Reports made with F8 in the game. Unsent ones never go by themselves: send them with the Send button when the site is reachable.",
  "reports.sendQueued": "Send queue",
  "reports.empty": "No reports.",
