@@ -72,17 +72,44 @@ Uint64 sizeKey(int w, int h)
 
 Uint64 hashPixels(const Uint8 *pixels, int pitch, int w, int h)
 {
-	Uint64 hash = 1469598103934665603ULL;
+	// content of the w x h bytes only (not the pitch), kept in memory only: cache keys and the hd/UI lookup,
+	// whose pictures are hashed by this same function at load. Four independent xxHash64-style lanes of
+	// 8 bytes instead of byte-wise FNV-1a: one multiply chain per byte was 13% of the main thread on the
+	// globe (profile 27.10), this is ~10x faster at the same quality of mixing
+	const Uint64 P1 = 11400714785074694791ULL, P2 = 14029467366897019727ULL, P3 = 1609587929392839161ULL;
+	Uint64 lane[4] = {P1 + P2, P2, 0, 0 - P1};
+	auto rotl = [](Uint64 v, int r) { return (v << r) | (v >> (64 - r)); };
+	auto round = [&](Uint64 acc, Uint64 word) { return rotl(acc + word * P2, 31) * P1; };
+	size_t n = 0;
 	for (int y = 0; y < h; ++y)
 	{
 		const Uint8 *row = pixels + (size_t)y * pitch;
-		for (int x = 0; x < w; ++x)
+		int x = 0;
+		for (; x + 8 <= w; x += 8, ++n)
 		{
-			hash ^= row[x];
-			hash *= 1099511628211ULL;
+			Uint64 word;
+			memcpy(&word, row + x, 8);
+			lane[n & 3] = round(lane[n & 3], word);
+		}
+		if (x < w)
+		{
+			Uint64 word = (Uint64)(0x80 | (w - x)) << 56;   // the tail of the row and its length
+			memcpy(&word, row + x, w - x);
+			lane[n & 3] = round(lane[n & 3], word);
+			++n;
 		}
 	}
-	return hash;
+	Uint64 hash = rotl(lane[0], 1) + rotl(lane[1], 7) + rotl(lane[2], 12) + rotl(lane[3], 18);
+	for (Uint64 l : lane)
+	{
+		hash = (hash ^ round(0, l)) * P1 + P3;
+	}
+	hash ^= ((Uint64)(Uint32)w << 32 | (Uint32)h) * P2;
+	hash ^= hash >> 33;
+	hash *= P2;
+	hash ^= hash >> 29;
+	hash *= P3;
+	return hash ^ (hash >> 32);
 }
 
 bool add(const std::string &name, const Surface *base, HdFrame &&frame, std::vector<SDL_Color> palette)

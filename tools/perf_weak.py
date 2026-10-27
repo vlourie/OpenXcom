@@ -18,6 +18,7 @@ import hidden_game
 
 OUT = Path(os.environ.get("PERF_WEAK_OUT", Path(tempfile.gettempdir()) / "perf_weak"))
 HB = [sys.executable, str(ROOT / "tools" / "hdbench.py")]
+EXE = []   # --exe для hdbench start
 E_CORES = list(range(8, 24))   # Core Ultra 9 285K: 0-7 P-ядра, 8-23 E-ядра
 # имя -> (ядра или None = вся машина, oxceHdThreads как у игрока с таким ПК: ядер больше 4 -> ядра-2)
 CFGS = {"full": (None, 0), "8c": (E_CORES[:8], 6), "4c": (E_CORES[:4], 4), "2c": (E_CORES[:2], 2)}
@@ -90,7 +91,7 @@ def stand(name, cfg_set, mem, steps, out, part):
     tsv.unlink(missing_ok=True)
     env = dict(os.environ, OXCE_HD_FRAMELOG=str(tsv))
     rc, txt, secs = hb("start", "--name", name, "--save", "", "--user", str(user), "--timeout", "1500", "--set", cfg_set,
-                       env=env)
+                       *EXE, env=env)
     m = re.search(r"pid (\d+)", txt)
     mem.pid = int(m.group(1)) if m else pid_of(name)
     rows = [{"step": "start", "rc": rc, "s": round(secs, 1), "rss": mem.now()[0], "priv": mem.now()[1]}]
@@ -210,7 +211,10 @@ def main():
     ap.add_argument("--cfg", default="full,4c,2c")
     ap.add_argument("--set", default="", help="доп. опции через ;")
     ap.add_argument("--tag", default="def")
+    ap.add_argument("--exe", help="другой exe (сравнение сборок до и после правки; лежать рядом с данными в bin)")
     a = ap.parse_args()
+    if a.exe:
+        EXE[:] = ["--exe", a.exe]
     if a.cmd == "report":
         for f in sorted(OUT.glob("pw_*/result.json")):
             print(summary(json.loads(f.read_text(encoding="utf-8-sig"))))
