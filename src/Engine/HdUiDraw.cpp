@@ -629,16 +629,6 @@ void HdUi::drawShadow(int x, int y, int w, int h, float radius)
 	}
 }
 
-void HdUi::drawRowBand(int x, int y, int w, int h, bool odd)
-{
-	SDL_Surface *dest;
-	int k;
-	const SDL_Color *pal;
-	if (!target(dest, k, pal) || w <= 0 || h <= 0) return;
-	const Uint32 c = odd ? 0x16000000u : 0x0AFFFFFFu;
-	fillRoundRect((float)x * k, (float)y * k, (float)(x + w) * k, (float)(y + h) * k, 0.0f, c, c);
-}
-
 void HdUi::drawSlider(int x, int y, int w, int h, float t, int color, int mul, bool pressed, const SDL_Color *colors)
 {
 	SDL_Surface *dest;
