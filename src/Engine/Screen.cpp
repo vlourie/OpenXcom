@@ -268,7 +268,22 @@ void Screen::clear()
 	Surface::CleanSdlSurface(_surface.get());
 	if (_world)
 	{
-		Surface::CleanSdlSurface(_world.get());
+		SDL_Surface *world = _world.get();
+		const size_t bytes = (size_t)world->h * world->pitch;
+		HdWorkers &pool = HdWorkers::instance();
+		if (!SDL_MUSTLOCK(world) && world->pixels && bytes >= ((size_t)1 << 21) && pool.threads() >= 4)
+		{
+			// a world of the display's size is megabytes: one core's memset was a quarter of the battle frame
+			// (profile 27.10), so the rows are zeroed in parallel; with two threads the hand-over cost more
+			// than it saved (the base 5.2 -> 6.3 ms)
+			Uint8 *pixels = (Uint8*)world->pixels;
+			const int jobs = std::min(pool.threads(), 8);
+			pool.run(jobs, [&](int job) { memset(pixels + bytes * job / jobs, 0, bytes * (job + 1) / jobs - bytes * job / jobs); });
+		}
+		else
+		{
+			Surface::CleanSdlSurface(world);
+		}
 	}
 	if (_layered && _world && _world->pixels == _screen->pixels)
 	{
