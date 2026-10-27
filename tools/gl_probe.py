@@ -19,6 +19,9 @@ CASES = {
     "gl0fps30": "useOpenGL=false;FPS=30;FPSInactive=30",
     "gpu": "useOpenGL=false;oxceHdGpu=true;vSyncForOpenGL=true",     # этап 0: вывод мира через FBO (HdGpu)
     "gpunv": "useOpenGL=false;oxceHdGpu=true;vSyncForOpenGL=false",
+    "thr4": "useOpenGL=false;oxceHdThreads=4",       # сколько стоит будить 22 потока рендера на каждый кусок кадра
+    "thr2": "useOpenGL=false;oxceHdThreads=2",
+    "thr1": "useOpenGL=false;oxceHdThreads=1",
 }
 for name in runs:
     u = Path(tempfile.gettempdir()) / f"oxce_gl_probe_{name}"
