@@ -1,0 +1,1 @@
+﻿- Lower processor load: the render threads are now woken only for parts of the frame big enough to pay for it; small ones are drawn by the main thread. On a 24-thread machine the processor load drops by about a third on the geoscape, by a fifth in the base and in battle. The picture is the same to the pixel.
