@@ -819,7 +819,7 @@ bool standEnv()
 {
 	static const bool on = getenv("OXCE_COLLAPSE_REMOVE") || getenv("OXCE_COLLAPSE_HIT") || getenv("OXCE_COLLAPSE_FIRE")
 		|| getenv("OXCE_COLLAPSE_BLAST") || getenv("OXCE_COLLAPSE_MODEL") || getenv("OXCE_COLLAPSE_UNIT") || getenv("OXCE_COLLAPSE_STUN")
-		|| getenv("OXCE_COLLAPSE_BIG") || getenv("OXCE_COLLAPSE_FLY") || getenv("OXCE_COLLAPSE_DROP");
+		|| getenv("OXCE_COLLAPSE_BIG") || getenv("OXCE_COLLAPSE_FLY") || getenv("OXCE_COLLAPSE_DROP") || getenv("OXCE_COLLAPSE_SHOT");
 	return on;
 }
 #endif
@@ -1355,6 +1355,33 @@ void debugStand(BattlescapeGame *battle, SavedBattleGame *save)
 					t->setExplosive(power, 0, true); // MCD explosive type: 0 is HE (ExplosionBState), DT_HE would read as smoke
 					Log(LOG_INFO) << "[COLLAPSE] debug: blast " << power << " at " << b.label << " " << p.x << "," << p.y << "," << p.z;
 				}
+			// OXCE_COLLAPSE_SHOT: a bullet (DT_AP; with OXCE_COLLAPSE_SHOT_MELEE a melee blow) of OXCE_COLLAPSE_SHOT_POWER
+			// into the object there, through TileEngine::hit - the trunk armor option (oxceHdTrunkArmor) on shots and blows
+			const char *shotS = getenv("OXCE_COLLAPSE_SHOT_POWER");
+			const int shotPower = shotS && *shotS ? atoi(shotS) : 30;
+			const bool melee = getenv("OXCE_COLLAPSE_SHOT_MELEE") != nullptr;
+			for (const Position &p : debugTiles("OXCE_COLLAPSE_SHOT", b.label))
+			{
+				Tile *t = save->getTile(in.off + p);
+				const MapData *md = t ? t->getMapData(O_OBJECT) : nullptr;
+				if (!md)
+					continue;
+				// a voxel of the object (a bullet finds it by voxelCheck; a blow names the part)
+				Position aim(-1, -1, -1);
+				const Position base = (in.off + p).toVoxel();
+				for (int vz = 0; vz < 24 && aim.x < 0; vz += 2)
+					for (int vy = 1; vy < 16 && aim.x < 0; vy += 2)
+						for (int vx = 1; vx < 16 && aim.x < 0; vx += 2)
+							if (save->getTileEngine()->voxelCheck(base + Position(vx, vy, vz), nullptr, true) == V_OBJECT)
+								aim = base + Position(vx, vy, vz);
+				if (aim.x < 0)
+					continue;
+				const int armor = md->getArmor(), need = CollapsePilot::trunkArmor(md, melee ? CollapsePilot::TRUNK_MELEE : CollapsePilot::TRUNK_SHOT);
+				const RuleDamageType *type = save->getBattleGame()->getMod()->getDamageType(melee ? DT_MELEE : DT_AP);
+				save->getTileEngine()->hit(BattleActionAttack{ }, aim, shotPower, type, !melee, melee ? V_OBJECT : 0);
+				Log(LOG_INFO) << "[COLLAPSE] debug: shot " << shotPower << (melee ? " melee" : "") << " at " << b.label << " " << p.x << ","
+					<< p.y << "," << p.z << " armor " << armor << " need " << need << " -> " << (t->getMapData(O_OBJECT) == md ? "stands" : "broken");
+			}
 			if (n)
 			{
 				Log(LOG_INFO) << "[COLLAPSE] debug: removed " << n << " part(s) of " << b.label << " at settle " << st.runs;
@@ -1517,7 +1544,7 @@ void mayFallParts(SavedBattleGame *save, const std::map<Tile*, int> &strongest, 
 				if (bw == 1 || bw == 6 || bw == 8)
 					d = std::max(d, at(pos + Position(1, 0, 0)));
 			}
-			if (d > 0 && md->getArmor() <= d)
+			if (d > 0 && CollapsePilot::trunkArmor(md, CollapsePilot::TRUNK_BLAST) <= d)
 			{
 				blasted[i] = 1;
 				any = true;
@@ -1573,6 +1600,66 @@ void notice(BattlescapeGame *battle, const std::vector<Position> &seen)
 	Log(LOG_INFO) << "[COLLAPSE] notice: " << SIDE[h][v] << " (" << n << " seen part(s) off the screen)";
 }
 
+std::string upperName(std::string s)
+{
+	for (char &c : s)
+		c = (char)std::toupper((unsigned char)c);
+	return s;
+}
+
+/// The trunk records of the table ("SET:mcd"): an object of a tree column with another part of its column above it,
+/// and never the top of a column - crowns stay as they are. Built on the first call (the same rule: scratchpad trunks.py).
+const std::unordered_set<std::string> &trunkRecords()
+{
+	static std::unordered_set<std::string> trunks;
+	static bool built = false;
+	if (built)
+		return trunks;
+	built = true;
+	std::unordered_set<std::string> below, tops;
+	for (int bi = 0; bi < CollapsePilotData::blockCount(); ++bi)
+	{
+		const CollapseBlock &b = CollapsePilotData::blocks()[bi];
+		const int *t = b.treeCols;
+		for (int c = 0; t && c < b.nTreeCols; ++c)
+		{
+			const int len = *t++;
+			for (int z = 0; z < len; ++z)
+			{
+				const CollapsePart &p = b.parts[t[z]];
+				if (p.kind == 3)
+					(z < len - 1 ? below : tops).insert(upperName(b.sets[p.set]) + ":" + std::to_string(p.mcd));
+			}
+			t += len;
+		}
+	}
+	for (const std::string &k : below)
+		if (!tops.count(k))
+			trunks.insert(k);
+	Log(LOG_INFO) << "[COLLAPSE] trunk records: " << trunks.size();
+	return trunks;
+}
+
+/// Records of this battle already looked up as trunks or not (begin() clears it: the records live as long as the mod).
+std::unordered_map<const MapData*, bool> trunkSeen;
+
+bool isTrunk(const MapData *md)
+{
+	auto it = trunkSeen.find(md);
+	if (it != trunkSeen.end())
+		return it->second;
+	bool trunk = false;
+	MapDataSet *set = md->getDataset();
+	for (size_t i = 0; set && i < set->getSize(); ++i)
+		if (set->getObject(i) == md)
+		{
+			trunk = trunkRecords().count(upperName(set->getName()) + ":" + std::to_string(i)) > 0;
+			break;
+		}
+	trunkSeen[md] = trunk;
+	return trunk;
+}
+
 }
 
 namespace CollapsePilot
@@ -1589,6 +1676,7 @@ void scanNew(SavedBattleGame *save)
 void begin(SavedBattleGame *save)
 {
 	st = decltype(st)();
+	trunkSeen.clear();
 	if (save->isPreview())
 		return;
 	if (Options::oxceCollapse)
@@ -2001,6 +2089,17 @@ void idle(SavedBattleGame *save)
 #else
 	(void)save;
 #endif
+}
+
+int trunkArmor(const MapData *md, TrunkHit hit)
+{
+	const int armor = md->getArmor();
+	if (!Options::oxceCollapse || Options::oxceHdTrunkArmor <= 0 || armor >= 255 || !isTrunk(md))
+		return armor;
+	// in halves: x2, x3, or mixed - a shot x3, a blast x1.5, a melee hit as in the game
+	static const int HALVES[4][3] = { { 2, 2, 2 }, { 4, 4, 4 }, { 6, 6, 6 }, { 6, 3, 2 } };
+	const int halves = HALVES[std::min(Options::oxceHdTrunkArmor, 3)][hit];
+	return (armor * halves + 1) / 2;
 }
 
 }

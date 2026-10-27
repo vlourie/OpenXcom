@@ -321,6 +321,9 @@ OPT bool oxceCollapse;
 OPT bool oxceHdWalkerTurn;
 // The screen shakes when a building collapses in sight (Map::shake, CollapsePilot): picture only, off by default and in gentle mode.
 OPT bool oxceHdCollapseShake;
+// How hard a tree trunk is to break with oxceCollapse on (CollapsePilot::trunkArmor): 0 as in the game, 1 armor x2,
+// 2 armor x3, 3 mixed (shots x3, blasts x1.5, melee x1). Changes the battle; nothing with oxceCollapse off.
+OPT int oxceHdTrunkArmor;
 // BetterAI (Battlescape/AiProbe.h, the BetterAI screen of the HD tab): the master switch, off = the stock OXCE AI; under it
 // the fixes of the stock AI's errors (O1-O14) and the experimental AI3. Read once, at the first battle of a run.
 OPT bool oxceBetterAi;

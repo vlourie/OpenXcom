@@ -425,6 +425,7 @@ bool OptionsHdState::dependsOff(const OptionInfo &info) const
 		if (p == &Options::oxceHdAimNumSize || p == &Options::oxceHdAimNumWeight) return !fonts;
 		if (p == &Options::oxceHdBattleHudColor) return !skin;
 		if (p == &Options::oxceHdRadarWaves) return Options::oxceHdRadar != 3;
+		if (p == &Options::oxceHdTrunkArmor) return !Options::oxceCollapse;
 	}
 	else if (info.type() == OPTION_BOOL)
 	{
@@ -508,6 +509,10 @@ std::string OptionsHdState::valueText(const OptionInfo &info) const
 	if (info.asInt() == &Options::oxceHdRadarWaves)
 	{
 		return tr("STR_HD_RADAR_WAVES_" + std::to_string(Options::oxceHdRadarWaves));
+	}
+	if (info.asInt() == &Options::oxceHdTrunkArmor)
+	{
+		return tr("STR_HD_TRUNK_ARMOR_" + std::to_string(Options::oxceHdTrunkArmor));
 	}
 	if (info.asInt() == &Options::oxceHdMapRotation)
 	{
@@ -756,6 +761,11 @@ void OptionsHdState::changeSetting(size_t sel, Uint8 button)
 		else if (i == &Options::oxceHdMapRotation)
 		{
 			min = 0;                                  // quarter turns of the battle map
+			max = 3;
+		}
+		else if (i == &Options::oxceHdTrunkArmor)
+		{
+			min = 0;                                  // 0 as in the game, 1 armor x2, 2 x3, 3 mixed
 			max = 3;
 		}
 		else if (i == &Options::oxceHdBattleHudColor)

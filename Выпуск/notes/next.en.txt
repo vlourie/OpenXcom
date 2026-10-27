@@ -1,3 +1,5 @@
 ﻿- The 'Wounded in red' option (was 'Craft crew: wounded in red') now also marks the wounded in the base soldier list: the name and 'WOUNDED>days' are red, so you see at once who should not go to training.
 - The 'Building collapse' option description now says where it works (most surface maps: towns, villages, farms, junkyards, deserts, forests and jungles) and what the rubble does: debris hits whoever is below, lands as gravel, heaps, boulders and fallen trunks, and raises dust.
 - The enemy turn caption now reads 'Enemy turn' instead of 'Enemies are rustling about'.
+- New option 'Tree trunk strength' (HD options -> Physics, works with 'Building collapse'): Original, x2, x3 or Mixed. In the original every second trunk falls to a single pistol bullet; x2 and x3 double and triple the trunk armor against everything; Mixed makes bullets and beams barely fell a tree (x3), blasts x1.5, while axes and chainsaws cut as before. Crowns and fire are unchanged.
+- Jungle stumps: broken JUNGLESTYX trees now leave HD stumps.
