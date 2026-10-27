@@ -189,7 +189,7 @@ public sealed class BuildStore(GamePaths paths, Func<string, bool>? isGameRunnin
         var profile = ProfileSet.Load(Paths.GameDir)?.For(template)
                       ?? throw new InvalidOperationException($"no profile '{template}' in {ProfileSet.FileName}");
         var b = NewBuild(UniqueId(set, title), Title(title), profile.Master);
-        b.Template = template;
+        b.Template = profile.Key;
         var dir = Path.GetDirectoryName(OptionsFile(b))!;
         if (Directory.Exists(dir)) throw new InvalidOperationException($"folder {b.Cfg} already exists");
         Directory.CreateDirectory(dir);

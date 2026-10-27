@@ -8,6 +8,7 @@ using Avalonia.Headless;
 using Avalonia.Headless.XUnit;
 using Avalonia.Input;
 using Avalonia.Threading;
+using Avalonia.VisualTree;
 using Xp.Launcher;
 using Xunit.Abstractions;
 
@@ -252,6 +253,49 @@ public sealed class BuildsWindowTests : IDisposable
 
         // the file the exe started by hand reads is never touched
         Assert.Equal(legacy, Hash(Path.Combine(Game, "user", "options.cfg")));
+    }
+
+    [AvaloniaFact]
+    public void A_new_build_asks_which_game_and_takes_that_games_profile()
+    {
+        // two games not ours in the release's profiles: Mars-com already fetched, TWoTS neither fetched nor with TFTD
+        Write("xp-profiles.json", """
+            { "schema": 1, "profiles": [
+              { "master": "piratez", "mods": [ { "id": "*" }, { "id": "hd" } ] },
+              { "master": "Mars-com", "title": "Mars-com", "mods": [ { "id": "*" } ],
+                "source": { "url": "http://127.0.0.1:9/mars.zip", "version": "1.5", "size": 5238619, "sha256": "5dacabe689e7a943e0f0d3bf5d8dee48c5ee16670b7471b5082bb67adaf31683",
+                            "folders": [ { "name": "Mars-com", "id": "Mars-com" } ] } },
+              { "id": "twots", "master": "xcom2", "title": "The World of (Terrifying) Silence", "data": "TFTD", "mods": [ { "id": "TWoTS" } ],
+                "source": { "url": "http://127.0.0.1:9/twots.zip", "version": "2.8", "size": 25782195, "sha256": "9eed5882605474238a478e73416e0cb5ceb43f20ba5f808cc1f6b309ee6f1d5a",
+                            "folders": [ { "name": "TWoTS", "id": "TWoTS" } ] } } ] }
+            """);
+        Write("user/mods/Mars-com/metadata.yml", "id: Mars-com\nisMaster: true\n");
+        Write("launcher/games.json", """{ "games": { "Mars-com": { "version": "1.5", "sha256": "5dacabe689e7a943e0f0d3bf5d8dee48c5ee16670b7471b5082bb67adaf31683", "folders": [ "Mars-com" ] } } }""");
+        var w = Open();
+        Click(F<Dictionary<string, Button>>(w, "_nav")["settings"]);
+
+        Click(F<Button>(w, "_buildNew"));
+        var pick = Dialog(w, "10-game-dialog");
+        var radios = pick.GetVisualDescendants().OfType<RadioButton>().ToList();
+        Assert.Equal(3, radios.Count);
+        string Lines(RadioButton r) => string.Join(" | ", ((StackPanel)r.Content!).Children.OfType<TextBlock>().Select(t => t.Text));
+        Assert.Equal("X-Piratez | установлена", Lines(radios[0]));
+        Assert.True(radios[0].IsChecked);   // the current build's game is offered first
+        Assert.Equal("Mars-com | установлена", Lines(radios[1]));
+        Assert.Contains("скачать", Lines(radios[2]));
+        Assert.Contains("Terror from the Deep", Lines(radios[2]));
+        Click(radios[1]);
+        Click(pick.GetVisualDescendants().OfType<Button>().First(b => b is not RadioButton && b.Classes.Contains("primary")));
+
+        Pump(() => w.OwnedWindows.Count == 1 && w.OwnedWindows[0] != pick, "the name dialog");
+        Answer(Dialog(w, "11-game-build-name"), "Марс");
+        Pump(() => Builds().Count == 2 && w.OwnedWindows.Count == 0, "the new build");
+        var b = BuildsJson().GetProperty("builds").EnumerateArray().Single(x => x.GetProperty("title").GetString() == "Марс");
+        Assert.Equal("Mars-com", b.GetProperty("template").GetString());
+        Assert.Equal("Mars-com", b.GetProperty("engineMaster").GetString());
+        Assert.Contains("id: Mars-com", File.ReadAllText(Cfg(b.GetProperty("id").GetString()!)));
+        Shot(w, "12-settings-game-build");
+        w.Close();
     }
 
     [AvaloniaFact]

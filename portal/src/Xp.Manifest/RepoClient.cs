@@ -161,9 +161,19 @@ public sealed class RepoClient(HttpClient http, Uri baseUri, TrustedKeys keys)
     /// Downloads one blob to &lt;target&gt;, resuming &lt;target&gt;.part if a previous attempt broke off.
     /// The file appears under its final name only after its size and SHA-256 matched.
     /// </summary>
-    public async Task DownloadBlobAsync(string sha256, long size, string target, Action<long> onBytes, CancellationToken ct)
+    public Task DownloadBlobAsync(string sha256, long size, string target, Action<long> onBytes, CancellationToken ct)
     {
         if (!Hashing.IsSha256Hex(sha256)) throw new TrustException("bad blob hash");
+        return DownloadFileAsync(Url(BlobKeys.For(sha256)), sha256, size, target, $"blob {sha256[..12]}", onBytes, ct);
+    }
+
+    /// <summary>
+    /// The same for a file elsewhere (a game on mod.io): resumed from &lt;target&gt;.part, under its final name only
+    /// after the size and SHA-256 that our signed release gave for it matched.
+    /// </summary>
+    public async Task DownloadFileAsync(Uri url, string sha256, long size, string target, string what, Action<long> onBytes, CancellationToken ct)
+    {
+        if (!Hashing.IsSha256Hex(sha256)) throw new TrustException($"{what}: bad hash");
         var part = target + ".part";
         Directory.CreateDirectory(Path.GetDirectoryName(target)!);
         long have = File.Exists(part) ? new FileInfo(part).Length : 0;
@@ -171,10 +181,10 @@ public sealed class RepoClient(HttpClient http, Uri baseUri, TrustedKeys keys)
 
         if (have < size)
         {
-            using var req = new HttpRequestMessage(HttpMethod.Get, Url(BlobKeys.For(sha256)));
+            using var req = new HttpRequestMessage(HttpMethod.Get, url);
             if (have > 0) req.Headers.Range = new RangeHeaderValue(have, null);
             using var resp = await http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, ct);
-            if (resp.StatusCode == HttpStatusCode.NotFound) throw new FileNotFoundException($"blob {sha256} not on server");
+            if (resp.StatusCode == HttpStatusCode.NotFound) throw new FileNotFoundException($"{what} not on server");
             resp.EnsureSuccessStatusCode();
             bool resumed = have > 0 && resp.StatusCode == HttpStatusCode.PartialContent;
             if (!resumed && have > 0)
@@ -188,15 +198,15 @@ public sealed class RepoClient(HttpClient http, Uri baseUri, TrustedKeys keys)
             {
                 var buf = new byte[1 << 16];
                 int n;
-                while ((n = await ReadAsync(input, buf, $"blob {sha256[..12]}", ct)) > 0)
+                while ((n = await ReadAsync(input, buf, what, ct)) > 0)
                 {
-                    if (have + n > size) throw new TrustException($"blob {sha256[..12]}: server sent more than the manifest size");
+                    if (have + n > size) throw new TrustException($"{what}: server sent more than the manifest size");
                     await output.WriteAsync(buf.AsMemory(0, n), ct);
                     have += n;
                     onBytes(n);
                 }
             }
-            if (have != size) throw new IOException($"blob {sha256[..12]}: connection closed at {have} of {size} bytes");
+            if (have != size) throw new IOException($"{what}: connection closed at {have} of {size} bytes");
         }
         else if (!File.Exists(part))
         {
@@ -210,7 +220,7 @@ public sealed class RepoClient(HttpClient http, Uri baseUri, TrustedKeys keys)
         {
             File.Delete(part);
             onBytes(-size);
-            throw new TrustException($"blob {sha256[..12]}: SHA-256 mismatch, file discarded");
+            throw new TrustException($"{what}: SHA-256 mismatch, file discarded");
         }
         File.Move(part, target, overwrite: true);
     }

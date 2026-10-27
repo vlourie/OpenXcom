@@ -19,7 +19,7 @@ namespace Xp.Launcher;
 /// </summary>
 public sealed class MainWindow : Window
 {
-    enum Work { None, Check, Update, Repair, Rollback, SelfUpdate }
+    enum Work { None, Check, Update, Repair, Rollback, SelfUpdate, Games }
 
     readonly Settings _settings = Settings.Load();
     readonly HttpClient _http = RepoClient.NewHttpClient();
@@ -1012,15 +1012,74 @@ public sealed class MainWindow : Window
     async Task NewBuildAsync()
     {
         if (!BuildsWritable() || CurrentBuild() is not { } cur) return;
-        var title = await new TextDialog(L.T("builds.newName"), L.T("builds.defaultNew")).ShowDialog<string?>(this);
+        var template = cur.Template ?? cur.EngineMaster ?? "piratez";
+        string? gameTitle = null;
+        // more than one game in the release's profiles: the build is of the game picked, fetched first if it is not here
+        if (_paths is not null && _repo is not null && ProfileSet.Load(_paths.GameDir) is { Profiles.Count: > 1 } set)
+        {
+            var gi = new GameInstaller(_paths, _repo, _fileLog!);
+            if (await new GameDialog(set, gi, set.For(template)).ShowDialog<ModProfile?>(this) is not { } pick) return;
+            if (!await PrepareGameAsync(set, gi, pick)) return;
+            template = pick.Key;
+            gameTitle = pick.Title;
+        }
+        var title = await new TextDialog(L.T("builds.newName"), gameTitle ?? L.T("builds.defaultNew")).ShowDialog<string?>(this);
         if (title is null) return;
         await BuildChangeAsync(() =>
         {
             var cfg = _builds!.OptionsFile(cur);
             var lang = OptionsCfg.Parse(File.Exists(cfg) ? File.ReadAllText(cfg) : "").Get("language") ?? Setup.GameLanguage(L.Language);
-            var b = _builds.Create(title, cur.Template ?? cur.EngineMaster ?? "piratez", lang, Screens.ScreenFromWindow(this)?.Bounds.Height);
+            var b = _builds.Create(title, template, lang, Screens.ScreenFromWindow(this)?.Bounds.Height);
             _fileLog?.Info($"build '{b.Id}' created from the profile '{b.Template}'");
         });
+    }
+
+    /// <summary>
+    /// Makes a game ready to play: fetches it (and the game it runs on) from its author's site after the player
+    /// agrees, and copies the player's TFTD for a game that needs it. False - not ready, the build is not made.
+    /// </summary>
+    async Task<bool> PrepareGameAsync(ProfileSet set, GameInstaller gi, ModProfile game)
+    {
+        var fetch = gi.ToFetch(set, game);
+        if (fetch.Count > 0)
+        {
+            var names = string.Join(", ", fetch.Select(p => $"{p.Title ?? p.Key} {p.Source!.Version}"));
+            if (!await ConfirmAsync(L.T("games.fetchConfirm", names, L.Size(fetch.Sum(p => p.Source!.Size))))) return false;
+            bool ok = false;
+            await RunAsync(Work.Games, async () =>
+            {
+                var progress = new Progress<Core.Progress>(ShowProgress);
+                var ct = _cts!.Token;
+                _cancelable = true;
+                foreach (var p in fetch) await Task.Run(() => gi.InstallAsync(p, progress, ct), ct);
+                ok = true;
+                SetStatus(L.T("games.installed", game.Title ?? game.Key));
+            });
+            if (!ok) return false;
+        }
+        if (game.Data is "TFTD" && !TftdData.Check(Path.Combine(_paths!.GameDir, TftdData.Folder)).Ok)
+        {
+            if (TftdData.Search().FirstOrDefault(f => f.Source != "game") is not { } found)
+            {
+                await new MessageDialog(L.T("games.noTftd", TftdData.SteamStoreUrl, TftdData.GogUrl), withNo: false).ShowDialog<bool>(this);
+                return false;
+            }
+            if (!await ConfirmAsync(L.T("games.tftdCopy", found.Dir))) return false;
+            UfoCheck? copied = null;
+            await RunAsync(Work.Games, async () =>
+            {
+                if (GameIsRunning()) throw new UpdateBlockedException("the game is running");
+                copied = await Task.Run(() => TftdData.Copy(found.Dir, _paths!.GameDir));
+            });
+            if (copied is null) return false;
+            if (!copied.Ok)
+            {
+                Fail(L.T("games.tftdBad", string.Join(", ", copied.Missing)));
+                Refresh();
+                return false;
+            }
+        }
+        return true;
     }
 
     async Task CopyBuildAsync()
@@ -1546,10 +1605,10 @@ public sealed class MainWindow : Window
             Sub(L.T("main.installHint"));
             SubLink(L.T("main.haveGame"), async () => await ChooseGameDirAsync());
         }
-        else if (_work is Work.Update or Work.Repair or Work.Rollback or Work.SelfUpdate)
+        else if (_work is Work.Update or Work.Repair or Work.Rollback or Work.SelfUpdate or Work.Games)
         {
             bool scanning = _work is Work.Repair or Work.Update && _phase is Phase.Checking or Phase.Scanning;
-            caption = L.T(scanning ? "main.repairing" : "main.updating", (int)_percent);
+            caption = L.T(_work == Work.Games ? "games.busy" : scanning ? "main.repairing" : "main.updating", (int)_percent);
             look = "busy";
             _progress.IsVisible = true;
             if (_progressLine.Length > 0) Sub(_progressLine);
@@ -1679,6 +1738,68 @@ sealed class TextDialog : Window
         panel.Children.Add(buttons);
         Content = Skin.Panel(panel, new Thickness(0));
         Opened += (_, _) => { box.Focus(); box.SelectAll(); };
+        // opened right after another dialog (the game of a new build), the window is activated later and the focus
+        // coming back drops the selection: typing went before the name instead of replacing it
+        bool first = true;
+        Activated += (_, _) => { if (first) { first = false; box.Focus(); box.SelectAll(); } };
+    }
+}
+
+/// <summary>
+/// The game a new build is of (docs/portal/MODIO-GAMES.md §2): ours and the ones fetched from their authors, each with
+/// what it takes to play it. The picked profile, or null on "Cancel".
+/// </summary>
+sealed class GameDialog : Window
+{
+    public GameDialog(ProfileSet set, GameInstaller gi, ModProfile? current)
+    {
+        Title = L.T("title");
+        Width = 520; SizeToContent = SizeToContent.Height; CanResize = false;
+        WindowStartupLocation = WindowStartupLocation.CenterOwner;
+        var installed = ProfileWriter.ScanMods(gi.Paths.GameDir);
+        var state = gi.LoadState();
+        bool tftd = TftdData.Check(Path.Combine(gi.Paths.GameDir, TftdData.Folder)).Ok;
+        var list = new StackPanel { Spacing = 10 };
+        ModProfile? picked = null;
+        foreach (var p in set.Profiles)
+        {
+            var status = gi.Status(p, state);
+            var name = p.Title ?? installed.FirstOrDefault(m => m.Id == p.Master)?.Name ?? p.Master;
+            var need = new List<string>();
+            if (status == GameStatus.Absent) need.Add(L.T("games.absent"));
+            else if (p.Source is { } src && status != GameStatus.Ready)
+            {
+                long size = gi.ToFetch(set, p).Sum(f => f.Source!.Size);
+                need.Add(L.T(status == GameStatus.Outdated ? "games.update" : "games.fetch", L.Size(size), src.Site));
+            }
+            if (p.Data is "TFTD" && !tftd) need.Add(L.T("games.needTftd"));
+            var line = new StackPanel { Spacing = 2 };
+            line.Children.Add(new TextBlock { Text = name, FontSize = 14 });
+            line.Children.Add(new TextBlock
+            {
+                Text = need.Count > 0 ? string.Join(" · ", need) : L.T("games.ready"),
+                FontSize = 12, Foreground = Skin.B(Skin.Muted), TextWrapping = TextWrapping.Wrap,
+            });
+            var radio = new RadioButton { GroupName = "game", Content = line, IsEnabled = status != GameStatus.Absent };
+            if (p == current || (picked is null && current is null)) { radio.IsChecked = radio.IsEnabled; }
+            if (radio.IsChecked == true) picked = p;
+            radio.IsCheckedChanged += (_, _) => { if (radio.IsChecked == true) picked = p; };
+            list.Children.Add(radio);
+        }
+        var ok = Skin.Btn(L.T("modified.ok"), "primary");
+        ok.Margin = new Thickness(0, 0, 8, 0);
+        ok.Click += (_, _) => { if (picked is not null) Close(picked); };
+        var cancel = Skin.Btn(L.T("cancel"));
+        cancel.Click += (_, _) => Close(null);
+        var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
+        buttons.Children.Add(ok);
+        buttons.Children.Add(cancel);
+        var panel = new StackPanel { Margin = new Thickness(20), Spacing = 16 };
+        panel.Children.Add(new TextBlock { Text = L.T("games.pick"), TextWrapping = TextWrapping.Wrap });
+        panel.Children.Add(new ScrollViewer { Content = list, MaxHeight = 420 });
+        panel.Children.Add(new TextBlock { Text = L.T("games.authors"), FontSize = 12, Foreground = Skin.B(Skin.Muted), TextWrapping = TextWrapping.Wrap });
+        panel.Children.Add(buttons);
+        Content = Skin.Panel(panel, new Thickness(0));
     }
 }
 

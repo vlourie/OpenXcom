@@ -20,8 +20,12 @@ public sealed class ProfileSet
     public int Schema { get; set; } = 1;
     public List<ModProfile> Profiles { get; set; } = [];
 
-    public ModProfile? For(string master) =>
-        Profiles.FirstOrDefault(p => p.Master.Equals(master, StringComparison.OrdinalIgnoreCase));
+    /// <summary>
+    /// The profile by its key (<see cref="ModProfile.Key"/>). A profile with an id of its own is only ever found by it:
+    /// plain TFTD (master xcom2) must not get TWoTS's mods.
+    /// </summary>
+    public ModProfile? For(string key) =>
+        Profiles.FirstOrDefault(p => p.Key.Equals(key, StringComparison.OrdinalIgnoreCase));
 
     public static ProfileSet Parse(string json) =>
         JsonSerializer.Deserialize(json, ProfileJson.Default.ProfileSet) ?? throw new JsonException("empty profile file");
@@ -36,8 +40,23 @@ public sealed class ProfileSet
 
 public sealed class ModProfile
 {
+    /// <summary>
+    /// The profile's own name when two games share a master (ROSIGMA runs on the 40k master); a build keeps it
+    /// as its template. Without it the profile is the master's.
+    /// </summary>
+    public string? Id { get; set; }
     /// <summary>The master mod id as in its metadata.yml ("piratez").</summary>
     public string Master { get; set; } = "";
+    [JsonIgnore]
+    public string Key => Id is { Length: > 0 } id ? id : Master;
+    /// <summary>The game's name in the launcher; null - the master mod's own name.</summary>
+    public string? Title { get; set; }
+    /// <summary>The profile whose game must be installed under this one (ROSIGMA runs on 40k).</summary>
+    public string? Requires { get; set; }
+    /// <summary>Original data the game needs besides UFO: "TFTD" for a game on the xcom2 master.</summary>
+    public string? Data { get; set; }
+    /// <summary>A game not ours, fetched from its author's site (<see cref="GameSource"/>); null - it comes with our release.</summary>
+    public GameSource? Source { get; set; }
     /// <summary>Raised when the recommended options change and should be offered again.</summary>
     public int Version { get; set; } = 1;
     /// <summary>
@@ -250,7 +269,7 @@ public static class ProfileWriter
         if (!byId.TryGetValue(profile.Master, out var master) || !master.IsMaster)
             throw new InvalidOperationException($"master mod '{profile.Master}' is not installed");
 
-        var doneKey = (stateKey ?? profile.Master).ToLowerInvariant();
+        var doneKey = (stateKey ?? profile.Key).ToLowerInvariant();
         if (resetMods) recommendedDone.Remove(doneKey);
         var lang = LangOf(language ?? cfg.Get("language") ?? "");
         bool playersList = !resetMods && writtenMods is not null && writtenMods.TryGetValue(doneKey, out var wrote)
@@ -332,7 +351,9 @@ public static class ProfileWriter
         master ??= build?.EngineMaster;
         master ??= OptionsCfg.Parse(File.Exists(cfgPath) ? File.ReadAllText(cfgPath) : "").Mods
             .Where(m => m.Active && installed.Any(i => i.IsMaster && i.Id == m.Id)).Select(m => m.Id).FirstOrDefault();
-        if (master is null || set.For(master) is not { } profile || !installed.Any(i => i.IsMaster && i.Id == profile.Master)) return null;
+        // a build keeps the profile it was made from: ROSIGMA's, not the plain 40k one of the same master
+        var key = build?.Template is { Length: > 0 } t && set.For(t)?.Master.Equals(master, StringComparison.OrdinalIgnoreCase) == true ? t : master;
+        if (master is null || set.For(key!) is not { } profile || !installed.Any(i => i.IsMaster && i.Id == profile.Master)) return null;
         var state = new ProfileState(paths);
         var done = state.Load();
         var written = state.LoadMods();
@@ -417,6 +438,7 @@ public sealed class ProfileState(GamePaths paths)
 [JsonSerializable(typeof(ProfileSet))]
 [JsonSerializable(typeof(Dictionary<string, int>))]
 [JsonSerializable(typeof(Dictionary<string, string>))]
+[JsonSerializable(typeof(GameStateFile))]
 internal sealed partial class ProfileJson : JsonSerializerContext
 {
 }

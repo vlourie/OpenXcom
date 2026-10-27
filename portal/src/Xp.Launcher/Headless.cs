@@ -126,9 +126,72 @@ static partial class Headless
         return 0;
     }
 
+    /// <summary>
+    /// "games [list|install &lt;id&gt;|tftd [--from dir]]": the games of xp-profiles.json and what each needs; "install"
+    /// fetches a game not ours from its author's site (and the one it runs on), "tftd" copies the player's Terror from
+    /// the Deep into &lt;game&gt;/TFTD. Refused (2) while the game runs; 4 - no TFTD copy found.
+    /// </summary>
+    static async Task<int> Games(string? game, string[] args, Settings settings)
+    {
+        if (game is null || !GamePaths.LooksLikeGameDir(game)) throw new InvalidOperationException("not a game folder: " + game);
+        var paths = new GamePaths(game);
+        var log = new FileLog(paths);
+        log.Written += Console.WriteLine;
+        var set = ProfileSet.Load(game) ?? throw new InvalidOperationException($"no {ProfileSet.FileName} in {game}");
+        using var http = RepoClient.NewHttpClient();
+        var repo = new RepoClient(http, new Uri(settings.RepoUrl ?? BuiltIn.Defaults.RepoUrl), BuiltIn.Keys);
+        var gi = new GameInstaller(paths, repo, log);
+        var what = args.Length > 2 && !args[2].StartsWith("--") ? args[2] : "list";
+        switch (what)
+        {
+            case "list":
+                var state = gi.LoadState();
+                bool tftd = TftdData.Check(Path.Combine(game, TftdData.Folder)).Ok;
+                foreach (var p in set.Profiles)
+                {
+                    var data = p.Data is "TFTD" && !tftd ? " | needs TFTD" : "";
+                    var src = p.Source is { } s ? $" | {s.Site} {s.Version} {s.Size / (1 << 20)} MB" : " | ours";
+                    Console.WriteLine($"{p.Key} | {p.Title ?? p.Master} | {gi.Status(p, state)}{src}{data}");
+                }
+                return 0;
+            case "install":
+                var key = args.Length > 3 ? args[3] : throw new InvalidOperationException("games install <id>");
+                var target = set.For(key) ?? throw new InvalidOperationException($"no game '{key}'");
+                var fetch = gi.ToFetch(set, target);
+                if (fetch.Count == 0) Console.WriteLine($"{target.Key}: installed");
+                long lastPct = -1;
+                var progress = new SyncProgress(p =>
+                {
+                    var pct = p.Total > 0 ? p.Done * 100 / p.Total : 100;
+                    if (pct / 10 != lastPct / 10) { lastPct = pct; Console.WriteLine($"{p.Current} {p.Phase} {pct}%"); }
+                });
+                foreach (var p in fetch)
+                {
+                    lastPct = -1;
+                    await gi.InstallAsync(p, progress, CancellationToken.None);
+                }
+                if (target.Data is "TFTD" && !TftdData.Check(Path.Combine(game, TftdData.Folder)).Ok)
+                    Console.WriteLine($"{target.Key} needs Terror from the Deep: games tftd");
+                return 0;
+            case "tftd":
+                if (GameProcess.IsRunningIn(game)) throw new UpdateBlockedException("the game is running: its data is not changed under it");
+                var from = Opt(args, "--from") ?? TftdData.Search().FirstOrDefault(f => f.Source != "game")?.Dir;
+                if (from is null)
+                {
+                    Console.WriteLine($"TFTD not found; Steam: {TftdData.SteamStoreUrl}  GOG: {TftdData.GogUrl}");
+                    return 4;
+                }
+                var check = TftdData.Copy(from, game);
+                Console.WriteLine(check.Ok ? $"TFTD copied from {from}" : "TFTD copy incomplete: " + string.Join(", ", check.Missing));
+                return check.Ok ? 0 : 1;
+            default: throw new InvalidOperationException("games: list, install or tftd");
+        }
+    }
+
     static async Task<int> RunAsync(string[] args, Settings settings)
     {
         var cmd = args.Length > 1 ? args[1] : "check";
+        if (cmd == "games") return await Games(Opt(args, "--game") ?? settings.GameDir, args, settings);
         if (cmd == "builds") return Builds(Opt(args, "--game") ?? settings.GameDir, args);
         if (cmd == "ufo") return FindUfo(Opt(args, "--game") ?? settings.GameDir);
         if (cmd == "profile") return ApplyProfile(Opt(args, "--game") ?? settings.GameDir, args);

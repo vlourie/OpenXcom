@@ -39,17 +39,20 @@ public static class UfoData
     ];
 
     /// <summary>Checks a folder case-insensitively: DOS copies are upper case, repacks often are not.</summary>
-    public static UfoCheck Check(string dir)
+    public static UfoCheck Check(string dir) => Check(dir, DataDirs, OptionalDirs, KeyFiles);
+
+    /// <summary>The same check for another original game's folders (TftdData).</summary>
+    internal static UfoCheck Check(string dir, string[] dataDirs, string[] optionalDirs, string[] keyFiles)
     {
         var missing = new List<string>();
         if (!Directory.Exists(dir)) return new UfoCheck(dir, ["(no folder)"]);
-        foreach (var d in DataDirs)
+        foreach (var d in dataDirs)
         {
-            if (OptionalDirs.Contains(d)) continue;
+            if (optionalDirs.Contains(d)) continue;
             var found = Find(dir, d, directory: true);
             if (found is null || !Directory.EnumerateFileSystemEntries(found).Any()) missing.Add(d + "/");
         }
-        foreach (var f in KeyFiles)
+        foreach (var f in keyFiles)
         {
             var parts = f.Split('/');
             var sub = Find(dir, parts[0], directory: true);
@@ -124,7 +127,10 @@ public static class UfoData
             .ToList();
 
     /// <summary>GOG Galaxy and the offline installers both register games under GOG.com\Games.</summary>
-    public static List<string> GogGames()
+    public static List<string> GogGames() => GogGames(name => name.Contains("UFO", StringComparison.OrdinalIgnoreCase)
+                                                            && !name.Contains("Terror", StringComparison.OrdinalIgnoreCase));
+
+    internal static List<string> GogGames(Func<string, bool> isIt)
     {
         var dirs = new List<string>();
         if (!OperatingSystem.IsWindows()) return dirs;
@@ -139,9 +145,7 @@ public static class UfoData
                     using var g = games.OpenSubKey(id);
                     var name = g?.GetValue("gameName") as string ?? "";
                     var path = g?.GetValue("path") as string;
-                    if (path is { Length: > 0 } && name.Contains("UFO", StringComparison.OrdinalIgnoreCase)
-                        && !name.Contains("Terror", StringComparison.OrdinalIgnoreCase))
-                        dirs.Add(path);
+                    if (path is { Length: > 0 } && isIt(name)) dirs.Add(path);
                 }
             }
             catch (Exception e) when (e is System.Security.SecurityException or IOException or UnauthorizedAccessException) { }
@@ -154,12 +158,16 @@ public static class UfoData
     /// upper-case names the engine looks for, and checks the result. DOS executables, DOSBox and
     /// the rest of a store install stay behind: they are not data.
     /// </summary>
-    public static UfoCheck Copy(string source, string dest, IProgress<(int Done, int Total)>? progress = null)
+    public static UfoCheck Copy(string source, string dest, IProgress<(int Done, int Total)>? progress = null) =>
+        Copy(source, dest, progress, "UFO", d => Check(d), DataDirs);
+
+    internal static UfoCheck Copy(string source, string dest, IProgress<(int Done, int Total)>? progress, string game,
+        Func<string, UfoCheck> check, string[] dataDirs)
     {
-        var from = Check(source);
-        if (!from.Ok) throw new InvalidOperationException($"'{source}' is not a UFO copy: missing {string.Join(", ", from.Missing)}");
+        var from = check(source);
+        if (!from.Ok) throw new InvalidOperationException($"'{source}' is not a {game} copy: missing {string.Join(", ", from.Missing)}");
         var files = new List<(string From, string To)>();
-        foreach (var d in DataDirs)
+        foreach (var d in dataDirs)
         {
             var src = Find(source, d, directory: true);
             if (src is null) continue;
@@ -172,10 +180,10 @@ public static class UfoData
             File.Copy(files[i].From, files[i].To, overwrite: true);
             progress?.Report((i + 1, files.Count));
         }
-        return Check(dest);
+        return check(dest);
     }
 
-    static string? Find(string dir, string name, bool directory)
+    internal static string? Find(string dir, string name, bool directory)
     {
         try
         {
@@ -186,7 +194,7 @@ public static class UfoData
     }
 
     [System.Runtime.Versioning.SupportedOSPlatform("windows")]
-    static string? Reg(RegistryKey hive, string key, string value)
+    internal static string? Reg(RegistryKey hive, string key, string value)
     {
         try
         {

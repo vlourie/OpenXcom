@@ -33,6 +33,163 @@
         { "key": "oxceHdUiFont", "value": "1", "needsMod": "hd_core" },
         { "key": "oxceHdPictures", "value": "true", "needsMod": "hd" }
       ]
+    },
+
+    // Игры не наши (docs/portal/MODIO-GAMES.md). Мы их не раздаём: лаунчер качает архив автора с mod.io на машине
+    // игрока, сверяет размер и sha256 и кладёт перечисленные папки в user/mods. Файл закреплён тем, что мы проверили
+    // с нашим движком (tools/compat/mod_probe.py, 27.10): новая версия автора - новая проверка и новая запись здесь.
+    // intro_voice (master "*") в чужих играх выключен явно: иначе он подменил бы их интро нашим.
+    {
+      "master": "x-com-files",
+      "title": "The X-Com Files",
+      "version": 1,
+      "source": {
+        "page": "https://mod.io/g/openxcom/m/the-x-com-files",
+        "url": "https://g-51.modapi.io/v1/games/51/mods/158/files/8236968/download",
+        "version": "4.2",
+        "size": 248338351,
+        "sha256": "b93057bffb64c11fb9713b51bd91ef855640069fb4614b9cd04e8c0376c0f385",
+        "folders": [
+          { "name": "XComFiles", "id": "x-com-files" },
+          { "name": "DarkGeoscape", "id": "dark-geoscape" },
+          { "name": "XCF Cyrillic Names", "id": "XCF-CyrNames" }
+        ]
+      },
+      "mods": [
+        { "id": "XCF-CyrNames", "lang": "ru" },
+        { "id": "*" },
+        { "id": "intro_voice", "off": true },
+        { "id": "hd_core" }
+      ],
+      "options": [
+        { "key": "oxceHdUiFont", "value": "1", "needsMod": "hd_core" }
+      ]
+    },
+    {
+      "master": "40k",
+      "title": "Warhammer 40k",
+      "version": 1,
+      "source": {
+        "page": "https://mod.io/g/openxcom/m/40k",
+        "url": "https://g-51.modapi.io/v1/games/51/mods/297/files/5956800/download",
+        "version": "039",
+        "size": 1110284118,
+        "sha256": "24aa2f6092913d8b14ef9ec6b400ea1cf745d228f3af6ed5eb4a54c2c4e32cd0",
+        "folders": [
+          { "name": "40k", "id": "40k" },
+          { "name": "Blood Angels", "id": "Blood Angels" },
+          { "name": "Imperial Fists", "id": "Imperial Fists" },
+          { "name": "Salamanders", "id": "Salamanders" }
+        ]
+      },
+      "mods": [
+        { "id": "*" },
+        { "id": "intro_voice", "off": true },
+        { "id": "hd_core" }
+      ],
+      "options": [
+        { "key": "oxceHdUiFont", "value": "1", "needsMod": "hd_core" }
+      ]
+    },
+    {
+      // ROSIGMA - переделка 40k целиком, идёт на его мастере: свой профиль, сборка помнит его по id
+      "id": "rosigma",
+      "master": "40k",
+      "title": "40k ROSIGMA",
+      "requires": "40k",
+      "version": 1,
+      "source": {
+        "page": "https://mod.io/g/openxcom/m/rosigma",
+        "url": "https://g-51.modapi.io/v1/games/51/mods/896102/files/8322585/download",
+        "version": "3.3",
+        "size": 440515685,
+        "sha256": "d2bbc37a6b8bca3c7e81da82625e560497bc7b2bd78fdccb3d15dd7c51dab101",
+        "folders": [
+          { "name": "rosigma", "id": "40k_ROSIGMA_edits" }
+        ]
+      },
+      "mods": [
+        { "id": "40k_ROSIGMA_edits" },
+        { "id": "*" },
+        { "id": "intro_voice", "off": true },
+        { "id": "hd_core" }
+      ],
+      "options": [
+        { "key": "oxceHdUiFont", "value": "1", "needsMod": "hd_core" }
+      ]
+    },
+    {
+      // без hd_core: его шрифт обрезает «П.Нав>100» у края экрана снаряжения, пока не починен
+      "master": "Xchr",
+      "title": "X-Chronicles",
+      "version": 1,
+      "source": {
+        "page": "https://mod.io/g/openxcom/m/x-chronicles",
+        "url": "https://g-51.modapi.io/v1/games/51/mods/1463316/files/8249632/download",
+        "version": "1.8",
+        "size": 22963354,
+        "sha256": "c2e99196a3a68b2605105d91df6bd1deb1f0c8879700693e9e192f33702cc83c",
+        "folders": [
+          { "name": "XCHR", "id": "Xchr" },
+          { "name": "XCHR Cyrillic Names", "id": "XCHR-CyrNames" }
+        ]
+      },
+      "mods": [
+        { "id": "XCHR-CyrNames", "lang": "ru" },
+        { "id": "*" },
+        { "id": "intro_voice", "off": true },
+        { "id": "hd_core", "off": true }
+      ]
+    },
+    {
+      "master": "Mars-com",
+      "title": "Mars-com",
+      "version": 1,
+      "source": {
+        "page": "https://mod.io/g/openxcom/m/mars-com",
+        "url": "https://g-51.modapi.io/v1/games/51/mods/6046584/files/8249614/download",
+        "version": "1.5",
+        "size": 5238619,
+        "sha256": "5dacabe689e7a943e0f0d3bf5d8dee48c5ee16670b7471b5082bb67adaf31683",
+        "folders": [
+          { "name": "Mars-com", "id": "Mars-com" }
+        ]
+      },
+      "mods": [
+        { "id": "*" },
+        { "id": "intro_voice", "off": true },
+        { "id": "hd_core" }
+      ],
+      "options": [
+        { "key": "oxceHdUiFont", "value": "1", "needsMod": "hd_core" }
+      ]
+    },
+    {
+      // на мастере TFTD: нужны данные Terror from the Deep игрока (лаунчер копирует их в <игра>/TFTD)
+      "id": "twots",
+      "master": "xcom2",
+      "title": "The World of (Terrifying) Silence",
+      "data": "TFTD",
+      "version": 1,
+      "source": {
+        "page": "https://mod.io/g/openxcom/m/the-world-of-terrifying-silence",
+        "url": "https://g-51.modapi.io/v1/games/51/mods/378/files/8249581/download",
+        "version": "2.8",
+        "size": 25782195,
+        "sha256": "9eed5882605474238a478e73416e0cb5ceb43f20ba5f808cc1f6b309ee6f1d5a",
+        "folders": [
+          { "name": "TWoTS", "id": "TWoTS" }
+        ]
+      },
+      "mods": [
+        { "id": "TWoTS" },
+        { "id": "*" },
+        { "id": "intro_voice", "off": true },
+        { "id": "hd_core" }
+      ],
+      "options": [
+        { "key": "oxceHdUiFont", "value": "1", "needsMod": "hd_core" }
+      ]
     }
   ]
 }
