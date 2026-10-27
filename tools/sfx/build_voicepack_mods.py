@@ -111,8 +111,13 @@ def build(lang, hold, events, rows, states, doge_steps, rejected):
     # rmtree не должен уйти через junction или за пределы двух наших модов.
     if mod.is_symlink() or mod.resolve().parent != B.MODS.resolve():
         raise ValueError(f"unsafe mod path: {mod}")
+    # прежний мод - в сторону: файл с тем же звуком вернётся байт в байт и не станет новым блобом выпуска.
+    # Не в user/mods: при падении сборки движок увидел бы второй мод с тем же id (R-074)
+    old = B.MODS.parent / f".{mod.name}.old"
+    if old.exists():
+        shutil.rmtree(old)
     if mod.exists():
-        shutil.rmtree(mod)
+        mod.rename(old)
     used = sorted({r["voice"] for r in rows} - hold)
     files, sets = [], {}          # sets: голос -> событие -> [номера]
     idx = FIRST
@@ -150,6 +155,14 @@ def build(lang, hold, events, rows, states, doge_steps, rejected):
     with ThreadPoolExecutor(max_workers=4) as pool:
         for _ in pool.map(encode, jobs):
             pass
+    kept = 0
+    for _, rel in files:
+        if (old / rel).is_file() and B.ogg_same(old / rel, mod / rel):
+            shutil.copyfile(old / rel, mod / rel)
+            kept += 1
+    print(f"hd_voices_{lang}: {kept} из {len(files)} звуков прежние байт в байт")
+    if old.exists():
+        shutil.rmtree(old)
 
     # кто чем звучит
     soldier, choice, unit = {}, {}, {}

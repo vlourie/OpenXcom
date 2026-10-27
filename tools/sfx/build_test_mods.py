@@ -48,11 +48,42 @@ def to_ogg(src, dst, robot=False, gain_db=0.0, af=""):
         tmp = dst.with_suffix(".robot.wav")
         sf.write(str(tmp), x, sr, subtype="PCM_16")
         src = tmp
+    # bitexact: без него поток Ogg получает случайный серийный номер, и тот же звук каждый раз - новый файл
+    # (новый блоб выпуска: 557 МиБ перекачки голосов за пересборку, аудит веса 27.10)
     subprocess.run(["ffmpeg", "-v", "error", "-y", "-i", str(src), "-af", af or f"volume={gain_db}dB",
-                    "-ac", "1", "-ar", str(RATE), "-c:a", "libvorbis", "-q:a", "5", str(dst)],
+                    "-ac", "1", "-ar", str(RATE), "-c:a", "libvorbis", "-q:a", "5",
+                    "-fflags", "+bitexact", "-flags:a", "+bitexact", str(dst)],
                    check=True)
     if robot:
         src.unlink()
+
+
+def ogg_same(a, b):
+    """Тот же звук в двух Ogg. Быстро - страницы совпадают кроме серийного номера и CRC; иначе - тот же PCM после
+    декодирования (bitexact меняет и комментарий кодировщика в заголовке, звук при этом тот же)."""
+    if ogg_pages_same(a, b):
+        return True
+    x, rx = sf.read(str(a), dtype="int16", always_2d=True)
+    y, ry = sf.read(str(b), dtype="int16", always_2d=True)
+    return rx == ry and x.shape == y.shape and bool((x == y).all())
+
+
+def ogg_pages_same(a, b):
+    x, y = Path(a).read_bytes(), Path(b).read_bytes()
+    if len(x) != len(y):
+        return False
+    pos = 0
+    while pos < len(x):
+        if x[pos:pos + 4] != b"OggS" or y[pos:pos + 4] != b"OggS" or pos + 27 > len(x):
+            return False
+        segs = x[pos + 26]
+        end = pos + 27 + segs + sum(x[pos + 27:pos + 27 + segs])
+        # заголовок: 14-17 серийный номер, 22-25 CRC (он считается и по серийнику)
+        if x[pos:pos + 14] != y[pos:pos + 14] or x[pos + 18:pos + 22] != y[pos + 18:pos + 22] \
+                or x[pos + 26:end] != y[pos + 26:end]:
+            return False
+        pos = end
+    return pos == len(x)
 
 
 def robotize(x, sr):
