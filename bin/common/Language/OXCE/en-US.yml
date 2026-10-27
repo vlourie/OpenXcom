@@ -678,6 +678,8 @@ en-US:
   STR_HD_THREADS_DESC: "How many processor threads draw the HD battlescape. 0 = all but two. Takes effect after a restart."
   STR_HD_FRAME_SKIP: "Catch-up steps"
   STR_HD_FRAME_SKIP_DESC: "When a frame is drawn slower than the unit speed settings ask, the game may take up to this many extra steps per frame so units still move at the set speed. 0 = one step per frame. Only at HD battlescape scale 2-4."
+  STR_HD_GPU: "Output through the video card"
+  STR_HD_GPU_DESC: "The video card puts the frame on the display (OpenGL 3.3): it stretches the frame to the window and copies it, not the processor. If the card or its driver cannot do it, the game goes back to the usual output by itself. The old OpenGL filter with its shaders does not work then."
   STR_AUTO_NIGHT_VISION_THRESHOLD: "Auto Night Vision threshold"
   STR_AUTO_NIGHT_VISION_THRESHOLD_DESC: "If darker than this threshold, toggle Night Vision on automatically."
   STR_SHOW_ACCURACY_ON_CROSSHAIR: "Show accuracy on crosshair"

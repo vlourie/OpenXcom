@@ -190,6 +190,7 @@ set ( engine_src
   Engine/HdTest.cpp
   Engine/HdControl.cpp
   Engine/HdWorkers.cpp
+  Engine/HdGpu.cpp
   Engine/HdTurn.cpp
   Engine/HdTurnGroups.cpp
   Engine/HdUpdateNotice.cpp

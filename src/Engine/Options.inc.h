@@ -304,6 +304,8 @@ OPT bool oxceNoBattleSaves;
 OPT int oxceHdThreads;
 // HD render: extra game steps a slow frame may catch up on, so that the unit speed settings hold when drawing is slower than they ask (0 = one step per frame)
 OPT int oxceHdFrameSkip;
+// HD render: the frame reaches the display through the video card (OpenGL 3.3 framebuffer); off - the processor scales and copies it as before
+OPT bool oxceHdGpu;
 // Art version currently loaded: false the ordinary HD pictures (hd/), true the adult ones (hd_18+/). Changing it reloads the resources.
 OPT bool oxceAdultArt;
 // Ask which art version to play at every start (AdultChoiceState). Off: play whatever oxceAdultArt says, without asking.

@@ -53,6 +53,7 @@ HdWorkers::HdWorkers()
 		<< " ui=" << Options::oxceHdUi << " frameSkip=" << Options::oxceHdFrameSkip
 		<< " openGL=" << (Options::useOpenGL ? "on" : "off")
 		<< " shader=" << (Options::useOpenGL ? Options::useOpenGLShader : std::string("-"))
+		<< " gpu=" << (Options::oxceHdGpu ? "on" : "off")
 		<< " cores=" << (int)std::thread::hardware_concurrency();
 }
 

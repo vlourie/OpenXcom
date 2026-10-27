@@ -63,11 +63,13 @@ def prepare_user(user, mods_dir="", set_opts="", mods="", save="", master=""):
     return cfg
 
 
-def game_env(**extra):
-    """Окружение игры. Ключи в верхний регистр: Path и PATH вдвоём дают exe без DLL (код 0xC0000135)."""
+def game_env(gl=False, **extra):
+    """Окружение игры. Ключи в верхний регистр: Path и PATH вдвоём дают exe без DLL (код 0xC0000135).
+    gl: видеодрайвер windib вместо dummy - с dummy OpenGL не поднимается (oxceHdGpu, useOpenGL); окно всё равно
+    на скрытом столе ai_probe.Hidden, на экран не выходит (проверено 27.10: аппаратный nvoglv64, vsync 60)."""
     env = {k.upper(): v for k, v in os.environ.items()}
     env["PATH"] = "C:\\msys64\\mingw64\\bin;" + env.get("PATH", "")
-    env.update(SDL_VIDEODRIVER="dummy", SDL_AUDIODRIVER="dummy")
+    env.update(SDL_VIDEODRIVER="windib" if gl else "dummy", SDL_AUDIODRIVER="dummy")
     env.update({k: str(v) for k, v in extra.items()})
     return env
 

@@ -142,6 +142,8 @@ public:
 	static bool use32bitScaler();
 	/// Checks whether OpenGL output is requested
 	static bool useOpenGL();
+	/// Checks whether the HD layer goes to the display through the video card (option oxceHdGpu, HdGpu)
+	static bool useHdGpu();
 	/// update the game scale as required.
 	static void updateScale(int type, int &width, int &height, bool change);
 };
