@@ -1398,6 +1398,11 @@ const HdBaseScene::View *BaseView::hdLayout(int k)
 					p.spin.y = view.y + y * cell + spin.y * s;
 					p.spin.radius = spin.radius * s;
 					p.phase = (float)((x * 7 + y * 13) % 17) / 17.0f;
+					// a turning dish keeps one way, picked by its place on the base: some turn back (XP-000350)
+					if ((x * 5 + y * 3) % 2 == 1)
+					{
+						p.spin.rps = -p.spin.rps;
+					}
 					p.fit = fit;
 					if (const HdFrame *piece = under ? HdBase::layer(index, true, k, GRID_SIZE, GRID_SIZE) : nullptr)
 					{
