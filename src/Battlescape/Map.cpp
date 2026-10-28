@@ -3207,8 +3207,11 @@ void Map::drawTerrain(HdCanvas *surface)
 					// has seen (not in the air above a level): the colour of the damage type, the stronger the power the denser;
 					// and the collapse hint - the tiles whose building parts may fall after the explosion, in hazard stripes.
 					// A hill is an object on a flat floor (terrain level below 0): the object would cover a diamond on the floor,
-					// so on such a tile the diamonds go right after the object, lifted by the terrain level like the path marks
+					// so on such a tile the diamonds go right after the object, lifted by the terrain level like the path marks.
+					// Only where a unit can stand: crates, racks and tables are impassable (TU walk 255) and keep the diamond
+					// under them, hills are walkable (XP-000346)
 					const bool blastOnHill = _blastMax > 0 && tile->getTerrainLevel() < 0 && tile->getSprite(O_OBJECT)
+						&& tile->getMapData(O_OBJECT)->getTUCost(MT_WALK) < 255
 						&& (turned ? turnedObject(tile->getMapData(O_OBJECT)->getBigWall()).back : tile->isBackTileObject(O_OBJECT));
 					auto drawBlastHint = [&](int lift)
 					{
