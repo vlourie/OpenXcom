@@ -10,3 +10,4 @@
 - Collapse hint and blast area (HD), ticket XP-000346: the yellow-black stripes no longer lie on top of crates, racks and tables - over an object they are lifted only where a unit can stand (hills).
 - New option 'Armor: sort by craft' (HD options, base; off by default), ticket XP-000345: the craft armor screen opens already sorted by 'Craft'.
 - Living base (HD), ticket XP-000350: large radars now turn different ways - each keeps its own direction.
+- Launcher 0.3.23, ticket XP-000353: when a mod.io game (e.g. TWoTS) cannot be downloaded, the launcher no longer stays silent - it says why and how to get the archive by hand: a link to the file and the exact folder to put it in (launcher\downloads in the game folder, or just leave it in Windows Downloads). On the next "New..." the launcher finds the archive, checks it is the right file and installs the game itself.
