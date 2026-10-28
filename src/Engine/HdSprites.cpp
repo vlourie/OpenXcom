@@ -41,6 +41,7 @@ namespace OpenXcom
 
 void HdFrame::buildSpans()
 {
+	touched();
 	rows.resize(height);
 	solid.resize(height);
 	for (int y = 0; y < height; ++y)

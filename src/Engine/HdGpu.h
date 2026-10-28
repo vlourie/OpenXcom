@@ -34,6 +34,8 @@ private:
 	unsigned _texture = 0, _fbo = 0, _vao = 0, _program = 0;
 	int _w = 0, _h = 0;
 	bool _linear = false;
+	/// The thread of the GL context (the one setup ran on).
+	Uint32 _thread = 0;
 	HdGpu() = default;
 	bool load();
 	bool build();
@@ -47,6 +49,8 @@ public:
 	void release();
 	/// The framebuffer is there.
 	bool ready() const { return _fbo != 0; }
+	/// The framebuffer is there and the caller is on the thread of its context (GL calls may be made).
+	bool current() const { return _fbo != 0 && SDL_ThreadID() == _thread; }
 	/// Uploads a 32-bit surface of the world's size into the framebuffer texture.
 	void upload(const SDL_Surface *world);
 	/// Draws the framebuffer texture onto the display between the black bands and swaps the buffers.

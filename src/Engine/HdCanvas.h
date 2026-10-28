@@ -289,6 +289,8 @@ public:
  */
 class Canvas32 : public HdCanvas
 {
+	/// Draws the recorded commands on the video card (option oxceHdGpu): it reads them and the tables.
+	friend class HdGpuCanvas;
 private:
 	/// Non-transparent extent [begin, end) of one sprite row.
 	struct Span { Uint16 begin, end; };
@@ -608,6 +610,8 @@ private:
 	const Uint32 *classicTable(int shade, int newBaseColor, Uint32 *scratch) const;
 	void doVapor(const int *pattern, int w, int h, int x, int y, int size, SDL_Color tint, const Uint8 *transparencyLUT, GraphSubset destClip);
 	void doVaporSoft(int cx16, int cy16, int size, int k, SDL_Color tint, GraphSubset destClip);
+	/// Radius of a soft vapor puff in 1/16 of a screen pixel.
+	static int vaporSoftRadius16(int size, int k);
 	void doFlash(int y0, int y1);
 	/// The palette index 1..255 whose color the pixel is, or -1.
 	int paletteIndexOf(Uint32 pixel) const;
