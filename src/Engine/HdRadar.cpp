@@ -58,6 +58,10 @@ const Uint32 ENEMY = 0xB3FF4636u;  // 70 %: the line round an enemy radar
 const Uint32 ENEMY_SHIP = 0xB3FF7A6Eu; // 70 %: the same round a hunter-killer, a lighter red
 const float ENEMY_GLOW = 0.3f;     // the glow just inside it, a part of ENEMY
 /// WAVES: a wave ends by this part of the time to the next one, and lasts no less than WAVE_MIN_MS.
+/// The most craft a row of the bases' wash is cut for (each works out its own there).
+const int MAX_ROW = 64;
+/// Every wash picture worked out (HdShadeBase's key): the card keeps the last one it was given.
+Uint64 washCount = 0;
 const double WAVE_FIT = 0.8;
 const int WAVE_MIN_MS = 1000;
 /// The most the animation clock moves on between two draws, ms.
@@ -410,6 +414,9 @@ void HdRadar::updateCache(const View &view, const std::vector<Source> &sources, 
 	}
 	if (key == _distKey) return;
 	_distKey.swap(key);
+	_washKey = ++washCount;
+	_colA = _colB = 0;
+	_wash.clear();
 
 	const double lineW = std::max(1.0, 0.75 * view.k);
 	const double glowLen = 3 * view.k;
@@ -444,6 +451,15 @@ void HdRadar::updateCache(const View &view, const std::vector<Source> &sources, 
 		_rowA = _rowB = 0;
 		return;
 	}
+	int capX0 = INT_MAX, capX1 = INT_MIN;
+	for (const Cap &cap : caps)
+	{
+		capX0 = std::min(capX0, cap.x0);
+		capX1 = std::max(capX1, cap.x1);
+	}
+	_colA = std::max(0, capX0 - _distX);
+	_colB = std::max(_colA, std::min(_distW, capX1 - _distX));
+	_wash.assign((size_t)(_colB - _colA) * (_rowB - _rowA), 0);
 
 	const double radius = view.radius;
 	auto rows = [&](int ra, int rb)
@@ -528,6 +544,18 @@ void HdRadar::updateCache(const View &view, const std::vector<Source> &sources, 
 					row.runs[open].x1 = xa + j;
 				}
 				i = j;
+			}
+			// the same as one picture: a run of one colour blends at its alpha even of 0 (the pixel made opaque),
+			// a pixel of its own only with an alpha (blendOwn)
+			Uint32 *flat = _wash.data() + (size_t)(r - _rowA) * (_colB - _colA);
+			const int flatX = _distX + _colA;
+			for (const Run &run : row.runs)
+			{
+				for (int px = run.x0; px < run.x1; ++px)
+				{
+					const Uint32 c = run.px < 0 ? run.color : row.px[run.px + px - run.x0];
+					flat[px - flatX] = run.px < 0 || (c >> 24) ? c : 0;
+				}
 			}
 		}
 	};
@@ -707,6 +735,23 @@ void HdRadar::draw(const View &view, const std::vector<Source> &sources, long lo
 			if (b > 0) row.blend(px, BEAM, b * cov);
 		}
 	};
+	// step 1 below as a picture the video card keeps: the bases' wash, cut where the craft are (but with WAVES)
+	HdShadeBase wash;
+	const bool washed = _rowA < _rowB && _colA < _colB && (bare || sweeps.size() <= (size_t)MAX_ROW);
+	if (washed)
+	{
+		wash.px = _wash.data();
+		wash.x = _distX + _colA;
+		wash.y = _distY + _rowA;
+		wash.w = _colB - _colA;
+		wash.h = _rowB - _rowA;
+		wash.key = _washKey;
+		for (size_t i = 0; !bare && i < sweeps.size(); ++i)
+		{
+			const Cap &cap = sweeps[i].cap;
+			wash.holes.insert(wash.holes.end(), { cap.x0, cap.y0, cap.x1, cap.y1 });
+		}
+	}
 	HdUi::instance().shadeRows(ux0, uy0, ux1 - ux0, uy1 - uy0, [&](int py, int x0, int x1, HdShadeRow &row)
 	{
 		const double Y = (py + 0.5 - view.cy) / radius;
@@ -719,7 +764,6 @@ void HdRadar::draw(const View &view, const std::vector<Source> &sources, long lo
 		const Sint16 *drow = r >= rowA && r < rowB ? dist + (size_t)r * distW : nullptr;
 
 		// the craft in this row, and the stretches of it they take: those are worked out per pixel
-		const int MAX_ROW = 64;
 		int rowSweep[MAX_ROW], nSweep = 0;
 		int ivA[MAX_ROW], ivB[MAX_ROW], nIv = 0;
 		for (int i = 0; i < (int)sweeps.size() && nSweep < MAX_ROW; ++i)
@@ -745,7 +789,7 @@ void HdRadar::draw(const View &view, const std::vector<Source> &sources, long lo
 
 		// 1. the bases' wash as it was worked out, but where the craft are (with WAVES the craft lie apart, on top)
 		const int nCut = bare ? 0 : nIv;
-		if (drow)
+		if (drow && !row.baseDrawn())
 		{
 			const Row &cached = _rows[r];
 			for (const Run &run : cached.runs)
@@ -881,7 +925,7 @@ void HdRadar::draw(const View &view, const std::vector<Source> &sources, long lo
 				if (a256) row.blend256(px, waveColor, a256);
 			}
 		}
-	});
+	}, washed ? &wash : nullptr);
 }
 
 /**

@@ -153,6 +153,11 @@ private:
 	std::vector<Row> _rows;
 	/// The rows that have any: [_rowA, _rowB) of _dist.
 	int _rowA = 0, _rowB = 0;
+	/// The same wash as one picture for the video card (HdShadeBase): rows [_rowA, _rowB), columns [_colA, _colB)
+	/// of _dist; _washKey changes with it.
+	std::vector<Uint32> _wash;
+	int _colA = 0, _colB = 0;
+	Uint64 _washKey = 0;
 
 	void schedule(const std::vector<Source> &sources, Uint32 now, long long minute);
 	/// WAVES: sets off at once every base (or every craft), a wave that ends before the next one is due.

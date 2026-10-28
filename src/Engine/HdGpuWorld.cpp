@@ -23,9 +23,12 @@
 #include <cstring>
 #include <iterator>
 #include <map>
+#include <memory>
+#include <new>
 #include <set>
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 #include "HdGpu.h"
 #include "HdGpuGl.h"
@@ -65,6 +68,7 @@ bool HdGpuWorld::canvasZoomed(unsigned, const SDL_Surface *, const std::vector<i
 	const std::vector<int> &, const std::vector<Uint32> &, Uint32, int, int, int, int, int) { return false; }
 unsigned HdGpuWorld::snapshot() { return 0; }
 Uint32 *HdGpuWorld::steps(size_t, size_t, int, int, int, int) { return nullptr; }
+bool HdGpuWorld::wash(const Uint32 *, int, int, int, int, Uint64, const std::vector<Sint32> &, int, int, int, int) { return false; }
 bool HdGpuWorld::building(const std::vector<float> &, const float *, int, int, int, int, int) { return false; }
 bool HdGpuWorld::alarm(const std::vector<Uint32> &, const Uint32 *, const Uint32 *, const Uint32 *, int, int, int, int) { return false; }
 void HdGpuWorld::forget() {}
@@ -82,12 +86,36 @@ using hdgl::Atlas;
 using hdgl::Place;
 
 /// The kinds of the writes (the first value of a write's second texel).
-enum Kind { K_FILL, K_COPY, K_ZOOM, K_FRAME, K_PIXELS, K_IMAGE, K_GLYPH, K_SPANS, K_COVER, K_SHADE, K_LIGHT, K_STEPS, K_ALARM };
+enum Kind { K_FILL, K_COPY, K_ZOOM, K_FRAME, K_PIXELS, K_IMAGE, K_GLYPH, K_SPANS, K_COVER, K_SHADE, K_LIGHT, K_STEPS, K_ALARM, K_WASH };
 /// The kind of a K_SHADE write for drawBuilding, after HdGpuWorld::Shade's.
 const int S_BUILD = 6;
 
 /// The side of the tiles the writes are sorted into.
 const int TILE = 32;
+
+/// The allocator of the frame's data: values a resize adds are left as they come (each write fills its own at once).
+template <typename T>
+struct NoInit : std::allocator<T>
+{
+	template <typename U>
+	struct rebind
+	{
+		using other = NoInit<U>;
+	};
+	NoInit() = default;
+	template <typename U>
+	NoInit(const NoInit<U> &) {}
+	template <typename U>
+	void construct(U *p) noexcept
+	{
+		::new ((void *)p) U;
+	}
+	template <typename U, typename... A>
+	void construct(U *p, A &&...a)
+	{
+		::new ((void *)p) U(std::forward<A>(a)...);
+	}
+};
 /// The fixed head of the data: (i / 255.0f) for the 256 alphas, then the two limits of HdUi's blendPixel.
 const int DATA_LOW = 256, DATA_HIGH = 257, DATA_FIXED = 258;
 /// Frames the processor draws after one with a writer the card does not take, before the card tries again.
@@ -124,6 +152,7 @@ const char *const FRAGMENT_SHADER =
 	"#define STEP_SET 0u\n"
 	"#define STEP_OPAQUE 1u\n"
 	"#define ALARM 12\n"
+	"#define WASH 13\n"
 	// HdGpuWorld::Shade, S_BUILD
 	"#define S_ADD 0\n"
 	"#define S_OVER 1\n"
@@ -139,6 +168,7 @@ const char *const FRAGMENT_SHADER =
 	"uniform sampler2D canvas;\n"
 	"uniform sampler2D heldAcc;\n"
 	"uniform sampler2D heldGlow;\n"
+	"uniform usampler2D heldWash;\n"
 	"uniform isamplerBuffer ops;\n"
 	"uniform usamplerBuffer data;\n"
 	"uniform isamplerBuffer bins;\n"
@@ -458,6 +488,18 @@ const char *const FRAGMENT_SHADER =
 	"			d = (d & 0xFF000000u) | (c.r << 16u) | (c.g << 8u) | c.b;\n"
 	"			break;\n"
 	"		}\n"
+	"		case WASH:\n"
+	"		{\n"
+	"			bool cut = false;\n"
+	"			for (int j = q.x, e = q.x + q.y * 4; j < e && !cut; j += 4)\n"
+	"			{\n"
+	"				cut = p.x >= int(dat(j)) && p.y >= int(dat(j + 1)) && p.x < int(dat(j + 2)) && p.y < int(dat(j + 3));\n"
+	"			}\n"
+	"			if (cut) break;\n"
+	"			uint w = texelFetch(heldWash, p - q.zw, 0).r;\n"
+	"			if (w != 0u) d = blend256(d, w, (w >> 24u) + (w >> 31u));\n"
+	"			break;\n"
+	"		}\n"
 	"		}\n"
 	"	}\n"
 	// probe (OXCE_HD_GPU_WORLD=probe): the lowest bit of blue flipped, the control of the dump comparison
@@ -522,7 +564,7 @@ struct HdGpuWorld::Impl
 	// the frame being recorded
 	int W = 0, H = 0;
 	std::vector<Sint32> ops;
-	std::vector<Uint32> data;
+	std::vector<Uint32, NoInit<Uint32>> data;
 	/// The tables of this frame (palettes, coverage curves) by a hash of their values: their place in `data`.
 	std::unordered_map<Uint64, Sint32> tables;
 	/// The canvas the frame copies: the texture it is read from, and the processor's pixels uploaded into canvasOwn.
@@ -537,6 +579,11 @@ struct HdGpuWorld::Impl
 	int snapW = 0, snapH = 0;
 	Uint64 heldKey = 0, frameKey = 0;
 	bool heldValid = false, frameLight = false;
+	/// HdRadar's wash (wash): the picture, its key and size; the key of this frame's (one a frame, as the light).
+	GLuint washTex = 0;
+	int washW = 0, washH = 0;
+	Uint64 washKey = 0, frameWashKey = 0;
+	bool washValid = false, frameWash = false;
 	std::vector<std::vector<int>> lists;
 	std::vector<Sint32> bins;
 	std::vector<Uint32> scratch;
@@ -585,6 +632,7 @@ struct HdGpuWorld::Impl
 		gl.Uniform1i(gl.GetUniformLocation(program, "bins"), 4);
 		gl.Uniform1i(gl.GetUniformLocation(program, "heldAcc"), 5);
 		gl.Uniform1i(gl.GetUniformLocation(program, "heldGlow"), 6);
+		gl.Uniform1i(gl.GetUniformLocation(program, "heldWash"), 7);
 		tilesAt = gl.GetUniformLocation(program, "tilesX");
 		probeAt = gl.GetUniformLocation(program, "probe");
 		gl.UseProgram(0);
@@ -633,6 +681,10 @@ struct HdGpuWorld::Impl
 		if (textures[0]) glDeleteTextures(3, textures);
 		if (canvasOwn) glDeleteTextures(1, &canvasOwn);
 		if (rest[0]) glDeleteTextures(2, rest);
+		if (washTex) glDeleteTextures(1, &washTex);
+		washTex = 0;
+		washW = washH = 0;
+		washValid = false;
 		if (snap) glDeleteTextures(1, &snap);
 		snap = 0;
 		snapW = snapH = 0;
@@ -666,6 +718,7 @@ struct HdGpuWorld::Impl
 		canvasTexture = 0;
 		canvasPixels = nullptr;
 		frameLight = false;
+		frameWash = false;
 		++atlas.clock;
 	}
 
@@ -785,6 +838,8 @@ struct HdGpuWorld::Impl
 			gl.ActiveTexture(GL_TEXTURE0 + 5 + i);
 			glBindTexture(GL_TEXTURE_2D, frameLight ? rest[i] : 0);
 		}
+		gl.ActiveTexture(GL_TEXTURE0 + 7);
+		glBindTexture(GL_TEXTURE_2D, frameWash ? washTex : 0);
 		for (int i = 0; i < 3; ++i)
 		{
 			gl.ActiveTexture(GL_TEXTURE0 + 2 + i);
@@ -795,6 +850,8 @@ struct HdGpuWorld::Impl
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 		gl.BindVertexArray(0);
 		const auto t4 = std::chrono::steady_clock::now();
+		gl.ActiveTexture(GL_TEXTURE0 + 7);
+		glBindTexture(GL_TEXTURE_2D, 0);
 		for (int i = 1; i >= 0; --i)
 		{
 			gl.ActiveTexture(GL_TEXTURE0 + 5 + i);
@@ -1616,6 +1673,65 @@ Uint32 *HdGpuWorld::steps(size_t table, size_t steps, int x0, int y0, int x1, in
 	q[9] = (Sint32)(rowsAt + rows);
 	q[10] = (Sint32)(rowsAt + rows + table);
 	return m.data.data() + rowsAt;
+}
+
+bool HdGpuWorld::wash(const Uint32 *px, int w, int h, int ox, int oy, Uint64 key, const std::vector<Sint32> &holes,
+	int x0, int y0, int x1, int y1)
+{
+	Impl &m = *_impl;
+	if (x0 >= x1 || y0 >= y1)
+	{
+		return true;
+	}
+	if (!px || w <= 0 || h <= 0 || x0 < 0 || y0 < 0 || x1 > m.W || y1 > m.H || x0 < ox || y0 < oy || x1 > ox + w || y1 > oy + h
+		|| holes.size() % 4 != 0)
+	{
+		fallBack("a shape out of the world");
+		return false;
+	}
+	if (m.frameWash && m.frameWashKey != key)
+	{
+		return refuse("two washes in a frame");
+	}
+	// the picture: uploaded when it changed
+	if (!m.washValid || m.washKey != key || m.washW != w || m.washH != h)
+	{
+		const bool fresh = !m.washTex || m.washW != w || m.washH != h;
+		if (!m.washTex)
+		{
+			glGenTextures(1, &m.washTex);
+		}
+		gl.ActiveTexture(GL_TEXTURE0);
+		glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+		glBindTexture(GL_TEXTURE_2D, m.washTex);
+		if (fresh)
+		{
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+			glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+			glTexImage2D(GL_TEXTURE_2D, 0, 0x8236 /* GL_R32UI */, w, h, 0, 0x8D94 /* GL_RED_INTEGER */, GL_UNSIGNED_INT, px);
+		}
+		else
+		{
+			glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, w, h, 0x8D94 /* GL_RED_INTEGER */, GL_UNSIGNED_INT, px);
+		}
+		glBindTexture(GL_TEXTURE_2D, 0);
+		m.washW = w;
+		m.washH = h;
+		m.washKey = key;
+		m.washValid = true;
+		++m.stats.uploads;
+		m.stats.uploadBytes += (long long)w * h * 4;
+	}
+	m.frameWash = true;
+	m.frameWashKey = key;
+	const Sint32 at = (Sint32)m.data.size();
+	m.data.insert(m.data.end(), holes.begin(), holes.end());
+	Sint32 *q = m.push(K_WASH, x0, y0, x1, y1);
+	q[8] = at;
+	q[9] = (Sint32)(holes.size() / 4);
+	q[10] = ox;
+	q[11] = oy;
+	return true;
 }
 
 bool HdGpuWorld::building(const std::vector<float> &vals, const float *glowLut, int lutSize, int x0, int y0, int x1, int y1)
