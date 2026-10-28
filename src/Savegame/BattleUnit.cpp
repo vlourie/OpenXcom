@@ -52,6 +52,7 @@
 #include "SavedBattleGame.h"
 #include "../Engine/ShaderDraw.h"
 #include "BattleUnitStatistics.h"
+#include "../Battlescape/KnowledgeArmor.h"
 #include "../fmath.h"
 #include "../fallthrough.h"
 
@@ -1853,9 +1854,12 @@ int BattleUnit::damage(Position relative, int damage, const RuleDamageType *type
 		std::get<toTransform>(args.data) += specialDamageTransformChance;
 		std::get<toArmor>(args.data) += type->getArmorPreFinalDamage(damage);
 
-		if (type->ArmorEffectiveness > 0.0f)
+		// the damage type's own effectiveness unless the knowledge armor rule (option oxceKnowledgeArmor) shifts it
+		const float armorEffectiveness = KnowledgeArmor::effectiveness(type, attack.attacker, attack.weapon_item, attack.damage_item,
+			this, save, &KnowledgeArmor::counts);
+		if (armorEffectiveness > 0.0f)
 		{
-			damage -= getArmor(side) * type->ArmorEffectiveness;
+			damage -= getArmor(side) * armorEffectiveness;
 		}
 		if (AiProbe::dmgNote.armed)
 		{

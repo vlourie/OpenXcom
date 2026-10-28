@@ -302,6 +302,9 @@ OPT bool oxceHdPediaRange;
 // Battlescape: no saving or loading inside a battle (pause menu buttons, quick/insta save, quick load, turn autosave,
 // the F8 report snapshot), apart from ironman; the geoscape saves as usual. Off by default; fixed while in a battle
 OPT bool oxceNoBattleSaves;
+// Battlescape, knowledge armor (Battlescape/KnowledgeArmor.h, Dioxine's proposal): the player's research and the enemy's
+// intelligence shift how well armor stops a hit; the numbers are the ruleset's knowledgeArmor. Changes the battle; off by default
+OPT bool oxceKnowledgeArmor;
 // HD render: threads the battlescape frame is drawn with (0 = one per core)
 OPT int oxceHdThreads;
 // HD render: extra game steps a slow frame may catch up on, so that the unit speed settings hold when drawing is slower than they ask (0 = one step per frame)

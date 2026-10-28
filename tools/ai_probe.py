@@ -43,6 +43,8 @@ TAGS = ("[AISTATE]", "[AIDECIDE]", "[AIPROBE]", "[AIRESULT]", "[AICASUALTY]", "[
         "[AIEXPO]",
         # итоги приборов стенда после [AIRESULT] (свет, отход, FOV на шаге) - архив <метка>.result.txt серии ai_arena.py
         "[AILIGHT]", "[AIESCRF]", "[AIWALKFOV]", "[AIWALKFOVSKIP]", "[AIAMBMEMO]",
+        # знание врага и оружия (oxceKnowledgeArmor): срабатывания за бой - tools/test_knowledge_armor.py
+        "[AIKNOWARMOR]",
         # PANIC_TURN_FIX (OXCE_AI_PANIC_TURN_FIX, build-ai74): смена флага обработки паники по ходам и делители точности боя
         "[AIPANIC]",
         # реакция и взрыв (AiProbe::event): реакция на выстрел - инвариант 3 PANIC_TURN_FIX

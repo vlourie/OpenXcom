@@ -57,6 +57,7 @@
 #include "../Savegame/SavedGame.h"
 #include "../Savegame/Tile.h"
 #include "TileEngine.h"
+#include "KnowledgeArmor.h"
 #include "../fmath.h"
 
 #ifdef _WIN32
@@ -646,6 +647,9 @@ void logResult(SavedBattleGame *save, const char *how)
 		<< " pmoves=" << decided[FACTION_PLAYER][0] << " pattacks=" << decided[FACTION_PLAYER][1]
 		<< " hmoves=" << decided[FACTION_HOSTILE][0] << " hattacks=" << decided[FACTION_HOSTILE][1]
 		<< " ms=" << (SDL_GetTicks() - startTicks) << " vms=" << (Timer::probeTicks - startVirtual);
+	// the knowledge armor rule (option oxceKnowledgeArmor): how many hits of the run each case changed
+	Log(LOG_INFO) << "[AIKNOWARMOR] on=" << (Options::oxceKnowledgeArmor ? 1 : 0) << " known=" << KnowledgeArmor::counts.known
+		<< " unknown=" << KnowledgeArmor::counts.unknown << " mirror=" << KnowledgeArmor::counts.mirror;
 	// the light of the run (OXCE_AI_LIGHTSKIP): did the walks go through the skip, was anybody lit, how dark was the map
 	int litHostile = 0, litNow = 0;
 	for (const auto *bu : *save->getUnits())

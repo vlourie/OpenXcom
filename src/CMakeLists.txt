@@ -115,6 +115,7 @@ set ( battlescape_src
   Battlescape/InventorySaveState.cpp
   Battlescape/InventoryState.cpp
   Battlescape/ItemSprite.cpp
+  Battlescape/KnowledgeArmor.cpp
   Battlescape/Map.cpp
   Battlescape/MedikitState.cpp
   Battlescape/MedikitView.cpp
