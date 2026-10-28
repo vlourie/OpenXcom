@@ -75,6 +75,8 @@ private:
 	void lootSendParts(Base *to, const std::vector<std::pair<const RuleItem*, int> > &picked);
 	/// The base is picked: asks how much.
 	void lootPicked(Base *to);
+	/// XP-000354: a random set - what is sold here (or taken back, a negative number) leaves (comes back to) the loot; the button follows.
+	void lootSold(const RuleItem *item, int pieces);
 	/// Writes the message again with the loot shipped so far.
 	void refreshMessage();
 
