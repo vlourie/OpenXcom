@@ -36,6 +36,38 @@ class Font;
 class Screen;
 
 /**
+ * A row of HdUi::shadeRows: the routine's blends of its pixels, drawn into the world's row, or kept as steps that
+ * the video card draws in the same order (HdGpuWorld::steps).
+ */
+class HdShadeRow
+{
+public:
+	/// `color` over pixel x at a of 256 (0..256), in integers (HdRadar's wash).
+	void blend256(int x, Uint32 color, Uint32 a)
+	{
+		if (_steps)
+		{
+			_steps->push_back((Uint32)x);
+			_steps->push_back(color);
+			_steps->push_back(0x80000000u | a);
+			return;
+		}
+		Uint32 &d = _row[x];
+		const Uint32 ia = 256 - a;
+		const Uint32 rb = ((d & 0xFF00FFu) * ia + (color & 0xFF00FFu) * a) >> 8;
+		const Uint32 g = ((d & 0xFF00u) * ia + (color & 0xFF00u) * a) >> 8;
+		d = 0xFF000000u | (rb & 0xFF00FFu) | (g & 0xFF00u);
+	}
+	/// HdUi::blend of pixel x.
+	void blend(int x, Uint32 color, float cov);
+private:
+	friend class HdUi;
+	Uint32 *_row = nullptr;
+	/// The steps: x, colour and HdGpuWorld's step word, in the order made.
+	std::vector<Uint32> *_steps = nullptr;
+};
+
+/**
  * The HD interface: every surface that a state blits onto the screen is also
  * drawn, in the same order, k times bigger into the true-color world layer,
  * which then is the whole frame (the classic 8-bit layer keeps being drawn,
@@ -122,13 +154,15 @@ public:
 	/// Blends a picture of 0xAARRGGBB pixels (straight alpha) with its top left at world pixel (x, y), clipped.
 	void drawImage(const Uint32 *argb, int w, int h, int x, int y);
 	/// Shades the world rectangle (x, y, w, h) row by row in bands on the render threads: fn(y, x0, x1, row)
-	/// blends into row[x0, x1), the row already clipped (blend() below). A per-pixel picture computed in place.
-	void shadeRows(int x, int y, int w, int h, const std::function<void(int, int, int, Uint32*)> &fn);
+	/// blends into the pixels [x0, x1) of the row, already clipped (HdShadeRow). A per-pixel picture computed in
+	/// place; on the video card the blends go there as steps (HdGpuWorld::steps).
+	void shadeRows(int x, int y, int w, int h, const std::function<void(int, int, int, HdShadeRow&)> &fn);
 	/// Shades the world rectangle (x, y, w, h) by coverages: fn(y, x0, x1, cov) puts into cov[l * (x1 - x0) + x - x0]
 	/// how much of colors[l] covers pixel x of the row (0: none, the row already clipped, cov zeroed); per pixel the
 	/// `layers` colours are blended in their order. The same picture as shadeRows blending them, but the video card
-	/// takes it (HdGpuWorld).
-	void shadeCover(int x, int y, int w, int h, int layers, const Uint32 *colors, const std::function<void(int, int, int, float*)> &fn);
+	/// takes it (HdGpuWorld). `spans`, when given: layer l has coverages only in the rows [spans[2l], spans[2l + 1]).
+	void shadeCover(int x, int y, int w, int h, int layers, const Uint32 *colors, const std::function<void(int, int, int, float*)> &fn,
+		const int *spans = nullptr);
 	/// Copies w x h pixels (rows `pitch` apart) as they are into the world rectangle (x, y, w, h), clipped.
 	void copyRows(int x, int y, int w, int h, const Uint32 *src, int pitch);
 	/// Blends 0xAARRGGBB (straight alpha) times `cov` (0..1) into a world pixel.
@@ -301,6 +335,7 @@ private:
 	};
 	void noteCover(const Cover &c);
 	std::vector<Cover> _covers;       ///< what fills the screen under the text, in drawing order (this frame)
+	std::vector<Uint32> _glyphScratch; ///< a classic glyph's pixels going to the video card (drawGlyph)
 	/// the text lines on the windows' screen pictures: this frame's, and the last one's (backdropText)
 	std::unordered_map<const void*, std::vector<SDL_Rect>> _backdropText, _lastBackdropText;
 	int _clipX = 0, _clipY = 0, _clipW = 0, _clipH = 0;

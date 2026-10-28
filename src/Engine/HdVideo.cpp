@@ -158,13 +158,92 @@ void HdVideo::draw(SDL_Surface *dest, int bright) const
  * The area fitted into dest with its aspect kept, black around and past the picture's edges;
  * bilinear, rows on the workers.
  */
-void HdVideo::drawFitted(const Uint32 *src, int w, int h, double rx, double ry, double rw, double rh, SDL_Surface *dest, int bright)
+namespace
 {
-	// a writer the video card does not take (HdGpuWorld)
-	HdGpuWorld::instance().cpu(dest, "a video");
+
+/// drawFitted on the video card: from `texture`, or (0) from `pixels` uploaded, the picture at (tx, ty) there.
+bool fitOnCard(unsigned texture, const SDL_Surface *pixels, int tx, int ty, int w, int h, double rx, double ry, double rw, double rh,
+	SDL_Surface *dest, int bright)
+{
+	HdGpuWorld &gw = HdGpuWorld::instance();
+	if (!gw.on(dest) || w < 2 || h < 2 || rw <= 0.0 || rh <= 0.0 || dest->format->BytesPerPixel != 4 || dest->format->Rmask != 0x00FF0000u)
+	{
+		return false;
+	}
+	// the tables of drawFitted below: per column of the picture's area and per row of dest the source and the
+	// weight of the next (-1: black)
+	bright = std::min(std::max(bright, 0), 256);
+	const double scale = std::min(dest->w / rw, dest->h / rh);
+	const int aw = std::min(dest->w, std::max(1, (int)(rw * scale + 0.5))), ah = std::min(dest->h, std::max(1, (int)(rh * scale + 0.5)));
+	const int ax = (dest->w - aw) / 2, ay = (dest->h - ah) / 2;
+	std::vector<int> cols(aw), rows(dest->h);
+	std::vector<Uint32> colWeights(aw), rowWeights(dest->h);
+	for (int dx = 0; dx < aw; ++dx)
+	{
+		const double s = rx + (dx + 0.5) / scale - 0.5;
+		if (s < -0.5 || s > w - 0.5)
+		{
+			cols[dx] = -1;
+			colWeights[dx] = 0;
+			continue;
+		}
+		const double c = std::min(std::max(s, 0.0), w - 1.0);
+		const int i = std::min((int)c, w - 2);
+		cols[dx] = tx + i;
+		colWeights[dx] = (Uint32)((c - i) * 256.0 + 0.5);
+	}
+	for (int dy = 0; dy < dest->h; ++dy)
+	{
+		const int ly = dy - ay;
+		const double s = ry + (ly + 0.5) / scale - 0.5;
+		if (ly < 0 || ly >= ah || s < -0.5 || s > h - 0.5 || bright == 0)
+		{
+			rows[dy] = -1;
+			rowWeights[dy] = 0;
+			continue;
+		}
+		const double c = std::min(std::max(s, 0.0), h - 1.0);
+		const int j = std::min((int)c, h - 2);
+		rows[dy] = ty + j;
+		rowWeights[dy] = (Uint32)((c - j) * 256.0 + 0.5);
+	}
+	const Uint32 black = SDL_MapRGB(dest->format, 0, 0, 0);
+	return (ax <= 0 || gw.fill(0, 0, ax, dest->h, black)) && (ax + aw >= dest->w || gw.fill(ax + aw, 0, dest->w, dest->h, black))
+		&& gw.canvasZoomed(texture, pixels, cols, colWeights, rows, rowWeights, black, ax, 0, ax + aw, dest->h, bright);
+}
+
+}
+
+bool HdVideo::drawFittedCard(unsigned texture, int tx, int ty, int w, int h, double rx, double ry, double rw, double rh, SDL_Surface *dest, int bright)
+{
+	return texture && fitOnCard(texture, nullptr, tx, ty, w, h, rx, ry, rw, rh, dest, bright);
+}
+
+void HdVideo::drawFitted(const Uint32 *src, int w, int h, double rx, double ry, double rw, double rh, SDL_Surface *dest, int bright, bool card)
+{
 	if (!src || w < 2 || h < 2 || rw <= 0.0 || rh <= 0.0 || !dest || dest->format->BytesPerPixel != 4 || dest->format->Rmask != 0x00FF0000u)
 	{
 		return;
+	}
+	HdGpuWorld &gw = HdGpuWorld::instance();
+	if (card && gw.on(dest))
+	{
+		// the picture goes up as the frame's canvas
+		SDL_Surface *pixels = SDL_CreateRGBSurfaceFrom((void*)src, w, h, 32, w * 4, 0x00FF0000u, 0x0000FF00u, 0x000000FFu, 0xFF000000u);
+		const bool verifying = gw.verifying();
+		const bool handed = pixels && fitOnCard(0, pixels, 0, 0, w, h, rx, ry, rw, rh, dest, bright);
+		if (pixels)
+		{
+			SDL_FreeSurface(pixels);
+		}
+		else
+		{
+			gw.cpu("a video");
+		}
+		if (handed && !verifying)
+		{
+			return;
+		}
 	}
 	bright = std::min(std::max(bright, 0), 256);
 	const double scale = std::min(dest->w / rw, dest->h / rh);

@@ -1650,8 +1650,34 @@ void Map::blit(SDL_Surface *surface)
 			SDL_Rect target {};
 			target.x = getX() * k;
 			target.y = getY() * k;
-			HdGpuWorld::instance().cpu("a palette canvas");
-			SDL_BlitSurface(shown->getSdlSurface(), nullptr, world, &target);
+			// on the video card: the bytes in the colours SDL's blit maps them to, its colour key 0 left out
+			SDL_Surface *src = shown->getSdlSurface();
+			HdGpuWorld &gpuWorld = HdGpuWorld::instance();
+			bool handed = false;
+			if (gpuWorld.on(world))
+			{
+				const SDL_Palette *pal = src->format->palette;
+				if (src->format->BitsPerPixel == 8 && pal && (src->flags & SDL_SRCCOLORKEY) && src->format->colorkey == 0
+					&& !(src->flags & SDL_SRCALPHA) && src->format->alpha == 255 && world->clip_rect.x == 0 && world->clip_rect.y == 0
+					&& world->clip_rect.w == world->w && world->clip_rect.h == world->h)
+				{
+					Uint32 lut[256] = {};
+					for (int i = 0; i < pal->ncolors && i < 256; ++i)
+					{
+						lut[i] = SDL_MapRGB(world->format, pal->colors[i].r, pal->colors[i].g, pal->colors[i].b);
+					}
+					handed = gpuWorld.pixels((const Uint8*)src->pixels, src->pitch, src->w, src->h, target.x, target.y, 1, lut,
+						target.x, target.y, target.x + src->w, target.y + src->h) && !gpuWorld.verifying();
+				}
+				else
+				{
+					gpuWorld.cpu("a palette canvas");
+				}
+			}
+			if (!handed)
+			{
+				SDL_BlitSurface(src, nullptr, world, &target);
+			}
 		}
 		// the message's two lines are not in the canvas when the HD interface can draw them
 		// itself: the canvas reaches the screen scaled, and a smeared line under a sharp one

@@ -22,7 +22,7 @@ struct Place
  * The frames the commands read, in the layers of one texture array: shelves in every layer; when nothing fits,
  * the frames no recent flush used give their places to new frames of the same size (the shaded and lit copies
  * come and go in a few sizes), then a whole layer is emptied (the one used by the oldest flush, never one this
- * flush uses), and the array is made bigger (everything uploaded anew) only when every layer is in use.
+ * flush uses), and the array is made bigger only when every layer is in use.
  */
 struct Atlas
 {
@@ -80,10 +80,34 @@ struct Atlas
 		freeSlots.clear();
 		layers.assign(layers.size(), Layer());
 	}
-	bool grow()
+	/// Twice the layers. `keep`: the frames stay where they are - a new array, the old layers copied into it on
+	/// the card and the old one let go (re-made in place with everything uploaded again, the flip stood 0.7 s with
+	/// the world on the card, R-520); without CopyImageSubData, or not `keep`, every layer starts empty.
+	bool grow(bool keep = false)
 	{
 		const int count = (int)layers.size();
-		return count < maxLayers && create(std::min(maxLayers, count * 2));
+		if (count >= maxLayers)
+		{
+			return false;
+		}
+		const int next = std::min(maxLayers, count * 2);
+		if (!keep || !gl.CopyImageSubData || !texture)
+		{
+			return create(next);
+		}
+		// no glGetError here: in a frame it waits for the driver's whole queue (R-519)
+		const GLuint old = texture;
+		glGenTextures(1, &texture);
+		gl.ActiveTexture(GL_TEXTURE0);
+		glBindTexture(GL_TEXTURE_2D_ARRAY, texture);
+		gl.TexImage3D(GL_TEXTURE_2D_ARRAY, 0, GL_RGBA8, page, page, next, 0, GL_BGRA, GL_UNSIGNED_BYTE, nullptr);
+		glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D_ARRAY, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
+		gl.CopyImageSubData(old, GL_TEXTURE_2D_ARRAY, 0, 0, 0, 0, texture, GL_TEXTURE_2D_ARRAY, 0, 0, 0, 0, page, page, count);
+		glDeleteTextures(1, &old);
+		layers.resize(next);
+		return true;
 	}
 	bool fit(Layer &layer, int w, int h, bool tight, int &x, int &y)
 	{

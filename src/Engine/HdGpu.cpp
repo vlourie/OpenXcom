@@ -165,6 +165,14 @@ bool HdGpu::load()
 	HD_GL_FUNCTIONS(HD_GL_LOAD)
 #undef HD_GL_LOAD
 	find(gl.SwapInterval, "wglSwapIntervalEXT");
+	// glCopyImageSubData only where the driver says it has it (a name alone may be answered without it)
+	int major = 0, minor = 0;
+	std::sscanf(glText(GL_VERSION), "%d.%d", &major, &minor);
+	const GLubyte *extensions = glGetString(GL_EXTENSIONS);
+	if (major * 10 + minor >= 43 || (extensions && std::strstr((const char *)extensions, "GL_ARB_copy_image")))
+	{
+		find(gl.CopyImageSubData, "glCopyImageSubData");
+	}
 	return ok;
 }
 

@@ -1140,8 +1140,6 @@ void move(Agent &a, const Plan &plan, float night, float dt)
 void draw(SDL_Surface *world, const Plan &plan, int ox, int oy, int cell, float night, Uint32 ms,
 	std::vector<HdBaseScene::Placed> &lights)
 {
-	// a writer the video card does not take (HdGpuWorld)
-	HdGpuWorld::instance().cpu(world, "the crew of the base");
 	if (!world || world->format->BytesPerPixel != 4 || cell < 8)
 	{
 		return;
@@ -1173,15 +1171,29 @@ void draw(SDL_Surface *world, const Plan &plan, int ox, int oy, int cell, float 
 	const float s = cell / 128.0f;
 	const SDL_Rect clip = world->clip_rect;
 	const float t = (float)(ms % 3600000u) / 1000.0f;
+	// on a frame of the video card every dot and figure is handed over (HdGpuWorld's ADD, OVER and STAMP); drawn
+	// here when verifying or when the card refuses one
+	HdGpuWorld &gw = HdGpuWorld::instance();
+	std::vector<float> vals;
 	// a dot of `size` world pixels over the layer: mixed in by `a`, or added (sparks)
 	auto dot = [&](float fx, float fy, int size, float r, float g, float b, float a, bool add)
 	{
 		const int x0 = (int)std::lround(fx - size / 2.0f), y0 = (int)std::lround(fy - size / 2.0f);
 		const float col[3] = { r, g, b };
-		for (int y = std::max(y0, (int)clip.y); y < std::min(y0 + size, clip.y + clip.h); ++y)
+		const int bx0 = std::max(x0, (int)clip.x), bx1 = std::min(x0 + size, clip.x + clip.w);
+		const int by0 = std::max(y0, (int)clip.y), by1 = std::min(y0 + size, clip.y + clip.h);
+		if (bx0 < bx1 && by0 < by1 && gw.on(world))
+		{
+			vals.assign((size_t)(bx1 - bx0) * (by1 - by0), a);
+			if (gw.shade(add ? HdGpuWorld::ADD : HdGpuWorld::OVER, vals, bx0, by0, bx1, by1, col) && !gw.verifying())
+			{
+				return;
+			}
+		}
+		for (int y = by0; y < by1; ++y)
 		{
 			Uint32 *row = (Uint32*)((Uint8*)world->pixels + (size_t)y * world->pitch);
-			for (int x = std::max(x0, (int)clip.x); x < std::min(x0 + size, clip.x + clip.w); ++x)
+			for (int x = bx0; x < bx1; ++x)
 			{
 				const Uint32 px = row[x];
 				Uint32 out = px & 0xFF000000u;
@@ -1261,7 +1273,19 @@ void draw(SDL_Surface *world, const Plan &plan, int ox, int oy, int cell, float 
 			}
 		}
 		const int x0 = (int)std::lround(cx - S / 2.0f), y0 = (int)std::lround(cy - S / 2.0f);
-		for (int y = std::max(0, clip.y - y0); y < S && y0 + y < clip.y + clip.h; ++y)
+		const int sx0 = std::max(0, clip.x - x0), sx1 = std::min(S, clip.x + clip.w - x0);
+		const int sy0 = std::max(0, clip.y - y0), sy1 = std::min(S, clip.y + clip.h - y0);
+		bool handed = false;
+		if (sx0 < sx1 && sy0 < sy1 && gw.on(world))
+		{
+			vals.resize((size_t)(sx1 - sx0) * (sy1 - sy0) * 4);
+			for (int y = sy0; y < sy1; ++y)
+			{
+				std::copy_n(src + ((size_t)y * S + sx0) * 4, (size_t)(sx1 - sx0) * 4, &vals[(size_t)(y - sy0) * (sx1 - sx0) * 4]);
+			}
+			handed = gw.shade(HdGpuWorld::STAMP, vals, x0 + sx0, y0 + sy0, x0 + sx1, y0 + sy1, nullptr) && !gw.verifying();
+		}
+		for (int y = std::max(0, clip.y - y0); !handed && y < S && y0 + y < clip.y + clip.h; ++y)
 		{
 			Uint32 *row = (Uint32*)((Uint8*)world->pixels + (size_t)(y0 + y) * world->pitch);
 			for (int x = std::max(0, clip.x - x0); x < S && x0 + x < clip.x + clip.w; ++x)

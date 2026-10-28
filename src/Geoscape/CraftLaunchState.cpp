@@ -88,11 +88,20 @@ inline Uint32 blendRgb(Uint32 px, int r, int g, int b, double a)
 	return (px & 0xFF000000u) | ((Uint32)nr << 16) | ((Uint32)ng << 8) | (Uint32)nb;
 }
 
-/// Adds light to a pixel, saturating.
-inline Uint32 addRgb(Uint32 px, double r, double g, double b)
+/// blendRgb as a table of the channels' values (HdGpuWorld::alarm): of value i the red in bits 16-23, the green
+/// in 8-15, the blue in 0-7.
+void blendTable(Uint32 *table, int r, int g, int b, double a)
 {
-	const int nr = std::min(255, (int)(((px >> 16) & 0xFF) + r)), ng = std::min(255, (int)(((px >> 8) & 0xFF) + g)), nb = std::min(255, (int)((px & 0xFF) + b));
-	return (px & 0xFF000000u) | ((Uint32)nr << 16) | ((Uint32)ng << 8) | (Uint32)nb;
+	for (int i = 0; i < 256; ++i)
+	{
+		table[i] = blendRgb(0xFF000000u | ((Uint32)i << 16) | ((Uint32)i << 8) | (Uint32)i, r, g, b, a) & 0x00FFFFFFu;
+	}
+}
+
+/// A channel of px through a table.
+inline Uint32 through(Uint32 px, const Uint32 *table)
+{
+	return (px & 0xFF000000u) | (table[(px >> 16) & 0xFF] & 0xFF0000u) | (table[(px >> 8) & 0xFF] & 0xFF00u) | (table[px & 0xFF] & 0xFFu);
 }
 
 double ease(double t)
@@ -334,6 +343,15 @@ void CraftLaunchState::blit()
 	}
 }
 
+/// The alarm per pixel of [x0, x1) x [y0, y1) of the shot: the stripe (bits 24-25: 1 yellow, 2 black) and the
+/// light of the beacons (bits 16-23 red, 8-15 green, 0-7 blue); the channels through the tables.
+struct CraftLaunchState::Alarm
+{
+	int side = 0, x0 = 0, y0 = 0, x1 = 0, y1 = 0;
+	std::vector<Uint32> px;
+	Uint32 wash[256], yellow[256], black[256];
+};
+
 /**
  * The base view drawn as the basescape draws it (HD pictures into the world layer, the classic
  * layer over them), read back and enlarged over the whole world layer.
@@ -348,8 +366,13 @@ void CraftLaunchState::drawBase(double zoom, int bright, int alarmMs)
 	{
 		return;
 	}
-	// a writer the video card does not take (HdGpuWorld)
-	HdGpuWorld::instance().cpu(world, "the craft launch");
+	HdGpuWorld &gw = HdGpuWorld::instance();
+	const int vx = _view->getX() * k, vy = _view->getY() * k, vs = VIEW_SIZE * k;
+	if (vx < 0 || vy < 0 || vx + vs > world->w || vy + vs > world->h)
+	{
+		// the card enlarges the view from inside the world only
+		gw.cpu(world, "the craft launch past the world");
+	}
 	// the view writes the craft of each hangar into the facilities while it draws, and a hangar lost
 	// in a base defence takes its craft with it (Base::destroyFacility): what it wrote is put back
 	std::vector<std::pair<BaseFacility*, Craft*>> held;
@@ -393,8 +416,38 @@ void CraftLaunchState::drawBase(double zoom, int bright, int alarmMs)
 	}
 	SDL_FillRect(classic, nullptr, 0);
 
+	// the area shown: the whole base at 0, the hangar at 1, the size eased on a log scale so the
+	// camera comes down at an even pace; the screen's aspect, so it fills the screen
+	const double aspect = world->w / (double)world->h;
+	const double h0 = VIEW_SIZE * WHOLE_MARGIN;
+	const double h1 = std::max(_hangarH, _hangarW / aspect) * HANGAR_MARGIN;
+	const double rh = std::exp(std::log(h0) + (std::log(h1) - std::log(h0)) * zoom);
+	const double cx = VIEW_SIZE / 2.0 + (_hangarX + _hangarW / 2.0 - VIEW_SIZE / 2.0) * zoom;
+	const double cy = VIEW_SIZE / 2.0 + (_hangarY + _hangarH / 2.0 - VIEW_SIZE / 2.0) * zoom;
+	const double rw = rh * aspect;
+
+	Alarm alarm;
+	const bool alarmOn = makeAlarm(alarmMs, k, alarm);
+	// on a frame of the card: the alarm over the world, the world kept, the view enlarged from there; whatever
+	// goes back to the processor after the alarm was taken comes back with it drawn
+	bool alarmDrawn = false;
+	if (gw.on(world))
+	{
+		const bool verifying = gw.verifying();
+		alarmDrawn = !alarmOn || gw.alarm(alarm.px, alarm.wash, alarm.yellow, alarm.black, vx + alarm.x0, vy + alarm.y0, vx + alarm.x1, vy + alarm.y1);
+		const unsigned snap = alarmDrawn ? gw.snapshot() : 0;
+		const bool handed = snap && HdVideo::drawFittedCard(snap, vx, vy, vs, vs, (cx - rw / 2.0) * k, (cy - rh / 2.0) * k, rw * k, rh * k, world, bright);
+		if (verifying)
+		{
+			alarmDrawn = false;
+		}
+		else if (handed)
+		{
+			return;
+		}
+	}
+
 	// the view, read back from the world layer
-	const int vx = _view->getX() * k, vy = _view->getY() * k, vs = VIEW_SIZE * k;
 	_shot.assign((size_t)vs * vs, SDL_MapRGB(world->format, 0, 0, 0));
 	for (int y = 0; y < vs; ++y)
 	{
@@ -411,37 +464,30 @@ void CraftLaunchState::drawBase(double zoom, int bright, int alarmMs)
 		}
 	}
 
-	drawAlarm(alarmMs, k);
-
-	// the area shown: the whole base at 0, the hangar at 1, the size eased on a log scale so the
-	// camera comes down at an even pace; the screen's aspect, so it fills the screen
-	const double aspect = world->w / (double)world->h;
-	const double h0 = VIEW_SIZE * WHOLE_MARGIN;
-	const double h1 = std::max(_hangarH, _hangarW / aspect) * HANGAR_MARGIN;
-	const double rh = std::exp(std::log(h0) + (std::log(h1) - std::log(h0)) * zoom);
-	const double cx = VIEW_SIZE / 2.0 + (_hangarX + _hangarW / 2.0 - VIEW_SIZE / 2.0) * zoom;
-	const double cy = VIEW_SIZE / 2.0 + (_hangarY + _hangarH / 2.0 - VIEW_SIZE / 2.0) * zoom;
-	const double rw = rh * aspect;
-	HdVideo::drawFitted(_shot.data(), vs, vs, (cx - rw / 2.0) * k, (cy - rh / 2.0) * k, rw * k, rh * k, world, bright);
+	if (alarmOn && !alarmDrawn)
+	{
+		drawAlarm(alarm);
+	}
+	HdVideo::drawFitted(_shot.data(), vs, vs, (cx - rw / 2.0) * k, (cy - rh / 2.0) * k, rw * k, rh * k, world, bright, false);
 }
 
 /**
  * The order to start, over the hangar in the shot of the base (`ms` since it was given, below 0 none):
  * a red wash pulsing, yellow and black stripes flashing along the hangar's edge, a turning beacon
- * in each corner.
+ * in each corner. Worked out per pixel here, drawn by drawAlarm or the video card (HdGpuWorld::alarm).
  */
-void CraftLaunchState::drawAlarm(int ms, int k)
+bool CraftLaunchState::makeAlarm(int ms, int k, Alarm &alarm) const
 {
 	const int vs = VIEW_SIZE * k;
-	if (ms < 0 || !_hangarKnown || _shot.size() != (size_t)vs * vs)
+	if (ms < 0 || !_hangarKnown)
 	{
-		return;
+		return false;
 	}
 	const int x0 = std::max(0, (int)std::floor(_hangarX * k)), y0 = std::max(0, (int)std::floor(_hangarY * k));
 	const int x1 = std::min(vs, (int)std::ceil((_hangarX + _hangarW) * k)), y1 = std::min(vs, (int)std::ceil((_hangarY + _hangarH) * k));
 	if (x0 >= x1 || y0 >= y1)
 	{
-		return;
+		return false;
 	}
 	const double t = ms / 1000.0;
 	const double come = std::min(1.0, ms / (double)ALARM_STRIPES_MS);
@@ -458,6 +504,16 @@ void CraftLaunchState::drawAlarm(int ms, int k)
 		rc[i] = std::cos(rot);
 		rs[i] = std::sin(rot);
 	}
+	alarm.side = vs;
+	alarm.x0 = x0;
+	alarm.y0 = y0;
+	alarm.x1 = x1;
+	alarm.y1 = y1;
+	blendTable(alarm.wash, 255, 30, 20, wash);
+	blendTable(alarm.yellow, 255, 200, 0, 0.85 * come);
+	blendTable(alarm.black, 20, 20, 20, 0.85 * come);
+	const int w = x1 - x0;
+	alarm.px.assign((size_t)w * (y1 - y0), 0);
 
 	HdWorkers &pool = HdWorkers::instance();
 	const int rows = y1 - y0;
@@ -468,15 +524,16 @@ void CraftLaunchState::drawAlarm(int ms, int k)
 		const int yb = y0 + (int)((long long)rows * (job + 1) / jobs);
 		for (int y = ya; y < yb; ++y)
 		{
-			Uint32 *row = _shot.data() + (size_t)y * vs;
+			Uint32 *out = alarm.px.data() + (size_t)(y - y0) * w;
 			for (int x = x0; x < x1; ++x)
 			{
-				Uint32 px = blendRgb(row[x], 255, 30, 20, wash);
+				Uint32 v = 0;
 				if (stripes && (x - x0 < band || x1 - 1 - x < band || y - y0 < band || y1 - 1 - y < band))
 				{
-					const bool yellow = ((x + y) / half) % 2 == 0;
-					px = yellow ? blendRgb(px, 255, 200, 0, 0.85 * come) : blendRgb(px, 20, 20, 20, 0.85 * come);
+					v = ((x + y) / half) % 2 == 0 ? 1u << 24 : 2u << 24;
 				}
+				// the light of the beacons added in whole steps, each saturating as it is added: the sums capped
+				int r = 0, g = 0, b = 0;
 				for (int i = 0; i < 4; ++i)
 				{
 					const double dx = x + 0.5 - bx[i], dy = y + 0.5 - by[i];
@@ -499,9 +556,49 @@ void CraftLaunchState::drawAlarm(int ms, int k)
 						beam = (c2 * c2 * 1.3 + 0.12 * core / d) * (1.0 - d / radius);
 					}
 					beam *= come;
-					px = addRgb(px, 255.0 * beam, 190.0 * beam, 110.0 * beam);
+					r = std::min(255, r + (int)(255.0 * beam));
+					g = std::min(255, g + (int)(190.0 * beam));
+					b = std::min(255, b + (int)(110.0 * beam));
 				}
-				row[x] = px;
+				out[x - x0] = v | ((Uint32)r << 16) | ((Uint32)g << 8) | (Uint32)b;
+			}
+		}
+	});
+	return true;
+}
+
+void CraftLaunchState::drawAlarm(const Alarm &alarm)
+{
+	const int vs = alarm.side;
+	if (_shot.size() != (size_t)vs * vs)
+	{
+		return;
+	}
+	const int w = alarm.x1 - alarm.x0;
+	HdWorkers &pool = HdWorkers::instance();
+	const int rows = alarm.y1 - alarm.y0;
+	const int jobs = std::max(1, std::min(rows / 16, pool.threads() * 2));
+	pool.run(jobs, [&](int job)
+	{
+		const int ya = alarm.y0 + (int)((long long)rows * job / jobs);
+		const int yb = alarm.y0 + (int)((long long)rows * (job + 1) / jobs);
+		for (int y = ya; y < yb; ++y)
+		{
+			Uint32 *row = _shot.data() + (size_t)y * vs;
+			const Uint32 *in = alarm.px.data() + (size_t)(y - alarm.y0) * w;
+			for (int x = alarm.x0; x < alarm.x1; ++x)
+			{
+				const Uint32 v = in[x - alarm.x0];
+				Uint32 px = through(row[x], alarm.wash);
+				const Uint32 stripe = (v >> 24) & 3;
+				if (stripe != 0)
+				{
+					px = through(px, stripe == 1 ? alarm.yellow : alarm.black);
+				}
+				const Uint32 r = std::min(255u, ((px >> 16) & 0xFF) + ((v >> 16) & 0xFF));
+				const Uint32 g = std::min(255u, ((px >> 8) & 0xFF) + ((v >> 8) & 0xFF));
+				const Uint32 b = std::min(255u, (px & 0xFF) + (v & 0xFF));
+				row[x] = (px & 0xFF000000u) | (r << 16) | (g << 8) | b;
 			}
 		}
 	});

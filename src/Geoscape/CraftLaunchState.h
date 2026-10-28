@@ -75,7 +75,11 @@ private:
 	/// `alarmMs` since the order to start was given, below 0 none.
 	void drawBase(double zoom, int bright, int alarmMs = -1);
 	/// The alarm over the hangar in the shot of the base, `ms` since it began; `k` the world scale.
-	void drawAlarm(int ms, int k);
+	struct Alarm;
+	/// Works the alarm out per pixel of the shot (false: none to draw).
+	bool makeAlarm(int ms, int k, Alarm &alarm) const;
+	/// Draws it into the shot.
+	void drawAlarm(const Alarm &alarm);
 	/// Closes the scene (once).
 	void close();
 public:

@@ -170,6 +170,10 @@ struct Functions
 #undef HD_GL_POINTER
 	/// WGL_EXT_swap_control (Windows only; elsewhere the driver's default stays).
 	int (APIENTRY *SwapInterval)(int) = nullptr;
+	/// glCopyImageSubData (OpenGL 4.3, GL_ARB_copy_image): an array of frames grows without its frames going up
+	/// again (Atlas::grow); null where the driver has not got it.
+	void (APIENTRY *CopyImageSubData)(GLuint, GLenum, GLint, GLint, GLint, GLint, GLuint, GLenum, GLint, GLint, GLint, GLint,
+		GLsizei, GLsizei, GLsizei) = nullptr;
 };
 
 /// The functions, loaded by HdGpu::setup.

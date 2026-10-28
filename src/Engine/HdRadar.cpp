@@ -178,20 +178,11 @@ inline float clamp01(double v)
 	return v <= 0 ? 0.0f : v >= 1 ? 1.0f : (float)v;
 }
 
-/// Blends `color` over an opaque pixel at a / 256.
-inline void blendInt(Uint32 &d, Uint32 color, Uint32 a)
-{
-	const Uint32 ia = 256 - a;
-	const Uint32 rb = ((d & 0xFF00FFu) * ia + (color & 0xFF00FFu) * a) >> 8;
-	const Uint32 g = ((d & 0xFF00u) * ia + (color & 0xFF00u) * a) >> 8;
-	d = 0xFF000000u | (rb & 0xFF00FFu) | (g & 0xFF00u);
-}
-
-/// Blends a colour at its own alpha.
-inline void blendOwn(Uint32 &d, Uint32 color)
+/// Blends a colour at its own alpha over pixel x (at a / 256: HdShadeRow::blend256).
+inline void blendOwn(HdShadeRow &row, int x, Uint32 color)
 {
 	const Uint32 a = color >> 24;
-	if (a) blendInt(d, color, a + (a >> 7));
+	if (a) row.blend256(x, color, a + (a >> 7));
 }
 
 /// The wash and the edge at the signed distance `d` (world pixels) to the coverage's edge, with the
@@ -689,7 +680,7 @@ void HdRadar::draw(const View &view, const std::vector<Source> &sources, long lo
 	const Uint32 waveColor = bare ? WAVE_BARE : WAVE;
 	const Uint32 waveA = waveColor >> 24;
 	// a craft's beam and the fading trail behind it over one pixel, `cov` - how much of it shows there
-	auto drawBeam = [&](Uint32 &pix, const Sweep &sw, float cov, int px, int py)
+	auto drawBeam = [&](HdShadeRow &row, const Sweep &sw, float cov, int px, int py)
 	{
 		const double dx = px + 0.5 - sw.sx, dy = py + 0.5 - sw.sy;
 		// the beam shows only in the trail's wedge (behind the beam, within TRAIL) and in the strip along it:
@@ -706,17 +697,17 @@ void HdRadar::draw(const View &view, const std::vector<Source> &sources, long lo
 		if (delta < TRAIL)
 		{
 			const double t = 1 - delta / TRAIL;
-			HdUi::blend(pix, TRAIL_COLOR, (float)(t * t) * cov);
+			row.blend(px, TRAIL_COLOR, (float)(t * t) * cov);
 		}
 		const double sd = delta > PI ? delta - TAU : delta;
 		if (std::fabs(sd) < PI / 2)
 		{
 			const double off = std::sqrt(dx * dx + dy * dy) * std::fabs(std::sin(sd));
 			const float b = clamp01(beamW * 0.5 + 0.5 - off);
-			if (b > 0) HdUi::blend(pix, BEAM, b * cov);
+			if (b > 0) row.blend(px, BEAM, b * cov);
 		}
 	};
-	HdUi::instance().shadeRows(ux0, uy0, ux1 - ux0, uy1 - uy0, [&](int py, int x0, int x1, Uint32 *row)
+	HdUi::instance().shadeRows(ux0, uy0, ux1 - ux0, uy1 - uy0, [&](int py, int x0, int x1, HdShadeRow &row)
 	{
 		const double Y = (py + 0.5 - view.cy) / radius;
 		if (Y * Y >= 1) return;
@@ -772,12 +763,12 @@ void HdRadar::draw(const View &view, const std::vector<Source> &sources, long lo
 						{
 							const Uint32 c = run.color, al = c >> 24;
 							const Uint32 a256 = al + (al >> 7);
-							for (int px = a; px < stop; ++px) blendInt(row[px], c, a256);
+							for (int px = a; px < stop; ++px) row.blend256(px, c, a256);
 						}
 						else
 						{
 							const Uint32 *src = cached.px.data() + run.px;
-							for (int px = a; px < stop; ++px) blendOwn(row[px], src[px - run.x0]);
+							for (int px = a; px < stop; ++px) blendOwn(row, px, src[px - run.x0]);
 						}
 					}
 					a = iv < nCut ? std::max(stop, ivB[iv]) : b;
@@ -806,9 +797,9 @@ void HdRadar::draw(const View &view, const std::vector<Source> &sources, long lo
 						if (px < cap.x0 || px >= cap.x1) continue;
 						const double d = capDist(cap, X, Y, Z, Zc, radius);
 						if (d < -lineW - 1) continue;
-						if (d <= glowLen + 1) blendOwn(row[px], washColor(d, lim, lineW, glowLen, false));
+						if (d <= glowLen + 1) blendOwn(row, px, washColor(d, lim, lineW, glowLen, false));
 						const Sweep &sw = sweeps[rowSweep[i]];
-						if (craftBeam && sw.front && d > -0.5) drawBeam(row[px], sw, clamp01(d + 0.5) * lim, px, py);
+						if (craftBeam && sw.front && d > -0.5) drawBeam(row, sw, clamp01(d + 0.5) * lim, px, py);
 					}
 					continue;
 				}
@@ -822,8 +813,7 @@ void HdRadar::draw(const View &view, const std::vector<Source> &sources, long lo
 				}
 				if (d < -lineW - 1) continue;
 				const float lim = limb(r2, radius);
-				Uint32 &pix = row[px];
-				blendOwn(pix, washColor(d, lim, lineW, glowLen));
+				blendOwn(row, px, washColor(d, lim, lineW, glowLen));
 				if (!craftBeam) continue;
 				const float open = 1 - clamp01(dB + 0.5);
 				if (open <= 0.01f) continue;
@@ -831,7 +821,7 @@ void HdRadar::draw(const View &view, const std::vector<Source> &sources, long lo
 				{
 					const Sweep &sw = sweeps[rowSweep[i]];
 					if (!sw.front || dc[i] <= -0.5) continue;
-					drawBeam(pix, sw, clamp01(dc[i] + 0.5) * open * lim, px, py);
+					drawBeam(row, sw, clamp01(dc[i] + 0.5) * open * lim, px, py);
 				}
 			}
 		}
@@ -888,7 +878,7 @@ void HdRadar::draw(const View &view, const std::vector<Source> &sources, long lo
 				if (light <= 0) continue;
 				const float a = light * clamp01(v * 0.125 + 0.5) * limb(r2, radius);
 				const Uint32 a256 = (Uint32)(a * waveA * (256.0f / 255.0f) + 0.5f);
-				if (a256) blendInt(row[px], waveColor, a256);
+				if (a256) row.blend256(px, waveColor, a256);
 			}
 		}
 	});
@@ -963,8 +953,16 @@ void HdRadar::drawRings(const View &view, const std::vector<Ring> &rings)
 			}
 		}
 	}
-	HdUi::instance().shadeRows(ux0, uy0, ux1 - ux0, uy1 - uy0, [&](int py, int x0, int x1, Uint32 *row)
+	// a circle a layer, in the rows of its cap: the video card takes it (HdUi::shadeCover)
+	std::vector<int> capRows;
+	for (const Cap &cap : caps)
 	{
+		capRows.push_back(cap.y0);
+		capRows.push_back(cap.y1);
+	}
+	HdUi::instance().shadeCover(ux0, uy0, ux1 - ux0, uy1 - uy0, (int)caps.size(), colors.data(), [&](int py, int x0, int x1, float *out)
+	{
+		const int ox = x0, n = x1 - x0;
 		const double Y = (py + 0.5 - view.cy) / radius;
 		if (Y * Y >= 1) return;
 		const double half = std::sqrt(1 - Y * Y) * radius;
@@ -1015,11 +1013,11 @@ void HdRadar::drawRings(const View &view, const std::vector<Ring> &rings)
 					const float line = clamp01(lineW * 0.5 + 0.5 - std::fabs(d - lineW * 0.5));
 					const float glow = d > 0 && d < glowLen ? (float)((1 - d / glowLen) * (1 - d / glowLen)) * ENEMY_GLOW : 0.0f;
 					const float cov = std::max(line, glow) * limb(r2, radius);
-					if (cov > 0.004f) HdUi::blend(row[px], colors[c], cov);
+					if (cov > 0.004f) out[c * n + (px - ox)] = cov;
 				}
 			}
 		}
-	});
+	}, capRows.data());
 }
 
 /**

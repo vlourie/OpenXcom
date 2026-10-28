@@ -962,8 +962,13 @@ bool HdGpuCanvas::prepare(Canvas32 &canvas, Target &target, Prepared &p)
 		}
 		if (grow)
 		{
-			// every layer holds frames of this flush: a bigger array, everything uploaded anew
-			if (atlas.grow())
+			// every layer holds frames of this flush: a bigger array, the frames there staying; those this attempt
+			// placed went up with nothing - placed again
+			for (Uint64 id : p.fresh)
+			{
+				atlas.drop(id);
+			}
+			if (atlas.grow(true))
 			{
 				tellOnce("frames in " + std::to_string(atlas.layers.size()) + " layers");
 				++shared.stats.grows;
@@ -1002,11 +1007,9 @@ bool HdGpuCanvas::prepare(Canvas32 &canvas, Target &target, Prepared &p)
 
 void HdGpuCanvas::draw(Canvas32 &canvas, Target &t, Prepared &p)
 {
-	GLint viewport[4], program = 0, texture0 = 0;
-	glGetIntegerv(GL_VIEWPORT, viewport);
-	glGetIntegerv(GL_CURRENT_PROGRAM, &program);
+	// nothing asked of the driver here: a glGet waits for its whole queue (R-519, R-520); what comes after this sets
+	// its own viewport and program (the world's compositor, HdGpu::present)
 	gl.ActiveTexture(GL_TEXTURE0);
-	glGetIntegerv(GL_TEXTURE_BINDING_2D, &texture0);
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 	// the frames first seen
 	glBindTexture(GL_TEXTURE_2D_ARRAY, shared.atlas.texture);
@@ -1182,12 +1185,10 @@ void HdGpuCanvas::draw(Canvas32 &canvas, Target &t, Prepared &p)
 	glBindTexture(GL_TEXTURE_BUFFER, 0);
 	gl.ActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D_ARRAY, 0);
-	glBindTexture(GL_TEXTURE_2D, (GLuint)texture0);
-	gl.UseProgram((GLuint)program);
+	gl.UseProgram(0);
 	glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 	glDisable(GL_BLEND);
 	gl.BindFramebuffer(GL_FRAMEBUFFER, 0);
-	glViewport(viewport[0], viewport[1], viewport[2], viewport[3]);
 	t.valid = true;
 	t.dirty = true;
 }

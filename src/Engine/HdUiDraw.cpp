@@ -19,7 +19,9 @@
 #include "HdUi.h"
 #include <algorithm>
 #include <cctype>
+#include <climits>
 #include <cmath>
+#include <cstring>
 #include <map>
 #include "FileMap.h"
 #include "Font.h"
@@ -119,7 +121,14 @@ thread_local std::vector<HdGpuWorld::Span> *spanSink = nullptr;
 void coverDone(SDL_Surface *dest, const std::vector<float> &covs, int x0, int y0, int x1, int y1, Uint32 color)
 {
 	HdGpuWorld &gpuWorld = HdGpuWorld::instance();
-	if (gpuWorld.cover(covs, x0, y0, x1, y1, color) && !gpuWorld.verifying())
+	// every row whole: one stretch [x0, x1), the second empty
+	std::vector<Sint32> runs((size_t)std::max(0, y1 - y0) * 4);
+	for (size_t r = 0; r < runs.size(); r += 4)
+	{
+		runs[r] = x0;
+		runs[r + 1] = runs[r + 2] = runs[r + 3] = x1;
+	}
+	if (gpuWorld.cover(runs, covs, x0, y0, x1, y1, color) && !gpuWorld.verifying())
 	{
 		return;
 	}
@@ -575,7 +584,23 @@ void HdUi::drawImage(const Uint32 *argb, int w, int h, int x, int y)
 	}
 }
 
-void HdUi::shadeRows(int x, int y, int w, int h, const std::function<void(int, int, int, Uint32*)> &fn)
+void HdShadeRow::blend(int x, Uint32 color, float cov)
+{
+	if (_steps)
+	{
+		// blendPixel leaves the pixel alone below this: no step
+		if ((color >> 24) / 255.0f * cov <= 0.002f) return;
+		Uint32 bits;
+		std::memcpy(&bits, &cov, 4);
+		_steps->push_back((Uint32)x);
+		_steps->push_back(color);
+		_steps->push_back(bits);
+		return;
+	}
+	blendPixel(_row[x], color, cov);
+}
+
+void HdUi::shadeRows(int x, int y, int w, int h, const std::function<void(int, int, int, HdShadeRow&)> &fn)
 {
 	FrameTiming timing(_frameMs);
 	SDL_Surface *dest;
@@ -586,29 +611,159 @@ void HdUi::shadeRows(int x, int y, int w, int h, const std::function<void(int, i
 	const int x0 = std::max(x, (int)clip.x), y0 = std::max(y, (int)clip.y);
 	const int x1 = std::min(x + w, clip.x + clip.w), y1 = std::min(y + h, clip.y + clip.h);
 	if (x0 >= x1 || y0 >= y1) return;
-	// a routine per pixel: the video card does not take it
-	HdGpuWorld::instance().cpu("rows shaded by a routine");
-	auto rows = [&](int ra, int rb)
+	const int n = y1 - y0;
+	HdWorkers &pool = HdWorkers::instance();
+	const int jobs = n >= 64 ? std::max(1, std::min(n / 16, pool.threads() * 4)) : 1;
+	auto band = [&](int job, int &ra, int &rb)
 	{
+		ra = y0 + (int)((long long)n * job / jobs);
+		rb = y0 + (int)((long long)n * (job + 1) / jobs);
+	};
+	HdGpuWorld &gpuWorld = HdGpuWorld::instance();
+	if (gpuWorld.on(dest))
+	{
+		// on the video card: each row's blends kept, then put in order by pixel (a pixel's own in the order made) -
+		// per row 4 values, per pixel of its stretch where its steps start, the steps (HdGpuWorld::steps)
+		struct Band
+		{
+			std::vector<Uint32> rows, table, steps, made, count;
+			size_t tableAt = 0, stepsAt = 0;
+		};
+		// kept from call to call: the bands' room stays (shadeRows draws on the main thread only)
+		static std::vector<Band> bands;
+		if (bands.size() < (size_t)jobs)
+		{
+			bands.resize(jobs);
+		}
+		auto record = [&](int job)
+		{
+			Band &b = bands[job];
+			b.rows.clear();
+			b.table.clear();
+			b.steps.clear();
+			int ra, rb;
+			band(job, ra, rb);
+			HdShadeRow row;
+			row._steps = &b.made;
+			for (int py = ra; py < rb; ++py)
+			{
+				b.made.clear();
+				fn(py, x0, x1, row);
+				const size_t made = b.made.size() / 3;
+				if (!made)
+				{
+					b.rows.insert(b.rows.end(), { 0u, 0u, 0u, 0u });
+					continue;
+				}
+				int xa = INT_MAX, xb = INT_MIN;
+				for (size_t i = 0; i < made; ++i)
+				{
+					xa = std::min(xa, (int)b.made[i * 3]);
+					xb = std::max(xb, (int)b.made[i * 3] + 1);
+				}
+				const int span = xb - xa;
+				b.rows.insert(b.rows.end(), { (Uint32)b.table.size(), (Uint32)xa, (Uint32)xb, (Uint32)(b.steps.size() / 2) });
+				b.count.assign((size_t)span + 1, 0);
+				for (size_t i = 0; i < made; ++i)
+				{
+					++b.count[b.made[i * 3] - xa + 1];
+				}
+				for (int i = 0; i < span; ++i)
+				{
+					b.count[i + 1] += b.count[i];
+				}
+				b.table.insert(b.table.end(), b.count.begin(), b.count.end());
+				const size_t first = b.steps.size();
+				b.steps.resize(first + made * 2);
+				for (size_t i = 0; i < made; ++i)
+				{
+					const size_t at = first + (size_t)b.count[b.made[i * 3] - xa]++ * 2;
+					b.steps[at] = b.made[i * 3 + 1];
+					b.steps[at + 1] = b.made[i * 3 + 2];
+				}
+			}
+		};
+		if (jobs > 1)
+		{
+			pool.run(jobs, record);
+		}
+		else
+		{
+			record(0);
+		}
+		// the bands one after another, copied into the write in place on the workers
+		size_t tables = 0, steps = 0;
+		for (int job = 0; job < jobs; ++job)
+		{
+			bands[job].tableAt = tables;
+			bands[job].stepsAt = steps;
+			tables += bands[job].table.size();
+			steps += bands[job].steps.size();
+		}
+		const bool verifying = gpuWorld.verifying();
+		bool handed = steps == 0;
+		if (!handed)
+		{
+			if (Uint32 *out = gpuWorld.steps(tables, steps, x0, y0, x1, y1))
+			{
+				Uint32 *table = out + (size_t)n * 4, *step = table + tables;
+				auto place = [&](int job)
+				{
+					const Band &b = bands[job];
+					const Uint32 tableAt = (Uint32)b.tableAt, stepAt = (Uint32)(b.stepsAt / 2);
+					int ra, rb;
+					band(job, ra, rb);
+					Uint32 *r = out + (size_t)(ra - y0) * 4;
+					for (size_t i = 0; i < b.rows.size(); i += 4)
+					{
+						const bool any = b.rows[i + 1] != b.rows[i + 2];
+						r[i] = b.rows[i] + (any ? tableAt : 0);
+						r[i + 1] = b.rows[i + 1];
+						r[i + 2] = b.rows[i + 2];
+						r[i + 3] = b.rows[i + 3] + (any ? stepAt : 0);
+					}
+					std::copy(b.table.begin(), b.table.end(), table + b.tableAt);
+					std::copy(b.steps.begin(), b.steps.end(), step + b.stepsAt);
+				};
+				if (jobs > 1)
+				{
+					pool.run(jobs, place);
+				}
+				else
+				{
+					place(0);
+				}
+				handed = true;
+			}
+		}
+		if (handed && !verifying)
+		{
+			return;
+		}
+	}
+	auto draw = [&](int job)
+	{
+		int ra, rb;
+		band(job, ra, rb);
+		HdShadeRow row;
 		for (int py = ra; py < rb; ++py)
 		{
-			fn(py, x0, x1, (Uint32*)((Uint8*)dest->pixels + (size_t)py * dest->pitch));
+			row._row = (Uint32*)((Uint8*)dest->pixels + (size_t)py * dest->pitch);
+			fn(py, x0, x1, row);
 		}
 	};
-	const int n = y1 - y0;
-	if (n >= 64)
+	if (jobs > 1)
 	{
-		HdWorkers &pool = HdWorkers::instance();
-		const int jobs = std::max(1, std::min(n / 16, pool.threads() * 4));
-		pool.run(jobs, [&](int job) { rows(y0 + (int)((long long)n * job / jobs), y0 + (int)((long long)n * (job + 1) / jobs)); });
+		pool.run(jobs, draw);
 	}
 	else
 	{
-		rows(y0, y1);
+		draw(0);
 	}
 }
 
-void HdUi::shadeCover(int x, int y, int w, int h, int layers, const Uint32 *colors, const std::function<void(int, int, int, float*)> &fn)
+void HdUi::shadeCover(int x, int y, int w, int h, int layers, const Uint32 *colors, const std::function<void(int, int, int, float*)> &fn,
+	const int *spans)
 {
 	FrameTiming timing(_frameMs);
 	SDL_Surface *dest;
@@ -622,59 +777,155 @@ void HdUi::shadeCover(int x, int y, int w, int h, int layers, const Uint32 *colo
 	const int n = x1 - x0, nRows = y1 - y0;
 	HdGpuWorld &gpuWorld = HdGpuWorld::instance();
 	const bool onCard = gpuWorld.on(dest);
-	// on the video card: the coverages of every layer over the whole rectangle, then one write a layer
-	std::vector<std::vector<float>> covs(onCard ? layers : 0, std::vector<float>((size_t)n * nRows, 0.0f));
+	auto inRow = [&](int l, int py) { return !spans || (py >= spans[2 * l] && py < spans[2 * l + 1]); };
 	auto blendRow = [&](int py, const float *c, int from)
 	{
 		Uint32 *row = (Uint32*)((Uint8*)dest->pixels + (size_t)py * dest->pitch);
-		for (int i = 0; i < n; ++i)
+		// layer after layer: a pixel still gets its colours in their order
+		for (int l = from; l < layers; ++l)
 		{
-			for (int l = from; l < layers; ++l)
+			if (!inRow(l, py)) continue;
+			const float *cl = c + (size_t)l * n;
+			for (int i = 0; i < n; ++i)
 			{
-				const float cv = c[(size_t)l * n + i];
-				if (cv > 0.002f) blendPixel(row[x0 + i], colors[l], cv);
+				if (cl[i] > 0.002f) blendPixel(row[x0 + i], colors[l], cl[i]);
 			}
 		}
 	};
-	auto rows = [&](int ra, int rb)
+	// on the video card: per layer and row the two stretches that hold every coverage blended (the closest runs
+	// joined; past 8 runs the first to the last), [a0, b0, a1, b1) from x0, and their coverages in the job's list
+	const int jobs = nRows >= 64 ? std::max(1, std::min(nRows / 16, HdWorkers::instance().threads() * 4)) : 1;
+	std::vector<Sint32> found(onCard ? (size_t)layers * nRows * 4 : 0, 0);
+	std::vector<Uint32> foundAt(onCard ? (size_t)layers * nRows : 0, 0);
+	std::vector<std::vector<float>> jobCov(onCard ? jobs : 0);
+	auto stretches = [&](const float *cl, Sint32 *out)
+	{
+		int ra[8], rb[8], m = 0, first = -1, last = -1;
+		bool many = false;
+		for (int i = 0; i < n; ++i)
+		{
+			if (!(cl[i] > 0.002f)) continue;
+			if (first < 0) first = i;
+			last = i;
+			if (many) continue;
+			if (m && rb[m - 1] == i) rb[m - 1] = i + 1;
+			else if (m < 8) { ra[m] = i; rb[m] = i + 1; ++m; }
+			else many = true;
+		}
+		if (first < 0) return;
+		if (many)
+		{
+			out[0] = first; out[1] = last + 1; out[2] = out[3] = last + 1;
+			return;
+		}
+		while (m > 2)
+		{
+			int g = 0;
+			for (int i = 1; i + 1 < m; ++i)
+			{
+				if (ra[i + 1] - rb[i] < ra[g + 1] - rb[g]) g = i;
+			}
+			rb[g] = rb[g + 1];
+			for (int i = g + 1; i + 1 < m; ++i) { ra[i] = ra[i + 1]; rb[i] = rb[i + 1]; }
+			--m;
+		}
+		out[0] = ra[0]; out[1] = rb[0];
+		out[2] = m > 1 ? ra[1] : rb[0]; out[3] = m > 1 ? rb[1] : rb[0];
+	};
+	auto rows = [&](int ra, int rb, int job)
 	{
 		std::vector<float> c((size_t)layers * n);
 		for (int py = ra; py < rb; ++py)
 		{
-			std::fill(c.begin(), c.end(), 0.0f);
+			for (int l = 0; l < layers; ++l)
+			{
+				if (inRow(l, py)) std::fill(c.begin() + (size_t)l * n, c.begin() + (size_t)(l + 1) * n, 0.0f);
+			}
 			fn(py, x0, x1, c.data());
 			if (!onCard)
 			{
 				blendRow(py, c.data(), 0);
 				continue;
 			}
+			std::vector<float> &list = jobCov[job];
 			for (int l = 0; l < layers; ++l)
 			{
-				std::copy(c.begin() + (size_t)l * n, c.begin() + (size_t)(l + 1) * n, covs[l].begin() + (size_t)(py - y0) * n);
+				if (!inRow(l, py)) continue;
+				const size_t at = (size_t)l * nRows + (py - y0);
+				const float *cl = c.data() + (size_t)l * n;
+				Sint32 *v = &found[at * 4];
+				stretches(cl, v);
+				foundAt[at] = (Uint32)list.size();
+				list.insert(list.end(), cl + v[0], cl + v[1]);
+				list.insert(list.end(), cl + v[2], cl + v[3]);
 			}
 		}
 	};
-	if (nRows >= 64)
+	auto band = [&](int job) { return y0 + (int)((long long)nRows * job / jobs); };
+	if (jobs > 1)
 	{
-		HdWorkers &pool = HdWorkers::instance();
-		const int jobs = std::max(1, std::min(nRows / 16, pool.threads() * 4));
-		pool.run(jobs, [&](int job) { rows(y0 + (int)((long long)nRows * job / jobs), y0 + (int)((long long)nRows * (job + 1) / jobs)); });
+		HdWorkers::instance().run(jobs, [&](int job) { rows(band(job), band(job + 1), job); });
 	}
 	else
 	{
-		rows(y0, y1);
+		rows(y0, y1, 0);
 	}
 	if (!onCard)
 	{
 		return;
 	}
-	// the layers the card took are in the world it gives back when it does not take one; with VERIFY the processor
-	// draws them all
+	// the job that worked out row r
+	auto jobOf = [&](int r)
+	{
+		int j = (int)((long long)r * jobs / nRows);
+		while (j + 1 < jobs && band(j + 1) - y0 <= r) ++j;
+		while (j > 0 && band(j) - y0 > r) --j;
+		return j;
+	};
+	// one write a layer, over the rows and the columns it has coverages in; the layers the card took are in the world
+	// it gives back when it does not take one; with VERIFY the processor draws them all
 	const bool verifying = gpuWorld.verifying();
 	int from = 0;
-	while (from < layers && gpuWorld.cover(covs[from], x0, y0, x1, y1, colors[from]))
+	for (; from < layers; ++from)
 	{
-		++from;
+		int ry0 = nRows, ry1 = 0, xa = n, xb = 0;
+		for (int r = 0; r < nRows; ++r)
+		{
+			const Sint32 *v = &found[((size_t)from * nRows + r) * 4];
+			if (v[0] == v[1] && v[2] == v[3]) continue;
+			ry0 = std::min(ry0, r);
+			ry1 = r + 1;
+			if (v[0] < v[1]) { xa = std::min(xa, (int)v[0]); xb = std::max(xb, (int)v[1]); }
+			if (v[2] < v[3]) { xa = std::min(xa, (int)v[2]); xb = std::max(xb, (int)v[3]); }
+		}
+		if (ry0 >= ry1)
+		{
+			continue;
+		}
+		std::vector<Sint32> runs((size_t)(ry1 - ry0) * 4);
+		std::vector<float> cov;
+		for (int r = ry0; r < ry1; ++r)
+		{
+			const size_t at = (size_t)from * nRows + r;
+			const Sint32 *v = &found[at * 4];
+			Sint32 *o = &runs[(size_t)(r - ry0) * 4];
+			for (int i = 0; i < 4; i += 2)
+			{
+				// an empty stretch where the write starts
+				o[i] = v[i] < v[i + 1] ? x0 + v[i] : x0 + xa;
+				o[i + 1] = v[i] < v[i + 1] ? x0 + v[i + 1] : x0 + xa;
+			}
+			const int len = v[1] - v[0] + v[3] - v[2];
+			if (len)
+			{
+				const float *src = jobCov[jobOf(r)].data() + foundAt[at];
+				cov.insert(cov.end(), src, src + len);
+			}
+		}
+		if (!gpuWorld.cover(runs, cov, x0 + xa, y0 + ry0, x0 + xb, y0 + ry1, colors[from]))
+		{
+			break;
+		}
 	}
 	if (verifying)
 	{
@@ -689,7 +940,14 @@ void HdUi::shadeCover(int x, int y, int w, int h, int layers, const Uint32 *colo
 	{
 		for (int l = from; l < layers; ++l)
 		{
-			std::copy(covs[l].begin() + (size_t)(py - y0) * n, covs[l].begin() + (size_t)(py - y0 + 1) * n, c.begin() + (size_t)l * n);
+			if (!inRow(l, py)) continue;
+			float *cl = c.data() + (size_t)l * n;
+			std::fill(cl, cl + n, 0.0f);
+			const size_t at = (size_t)l * nRows + (py - y0);
+			const Sint32 *v = &found[at * 4];
+			const float *src = jobCov[jobOf(py - y0)].data() + foundAt[at];
+			std::copy(src, src + (v[1] - v[0]), cl + v[0]);
+			std::copy(src + (v[1] - v[0]), src + (v[1] - v[0]) + (v[3] - v[2]), cl + v[2]);
 		}
 		blendRow(py, c.data(), from);
 	}
@@ -708,7 +966,7 @@ void HdUi::copyRows(int x, int y, int w, int h, const Uint32 *src, int pitch)
 	if (x0 >= x1 || y0 >= y1) return;
 	const Uint32 *from = src + (size_t)(y0 - y) * pitch + (x0 - x);
 	HdGpuWorld &gpuWorld = HdGpuWorld::instance();
-	if (gpuWorld.on(dest) && gpuWorld.image(from, pitch, x1 - x0, y1 - y0, x0, y0, true) && !gpuWorld.verifying())
+	if (gpuWorld.on(dest) && gpuWorld.image(from, pitch, x1 - x0, y1 - y0, x0, y0, HdGpuWorld::COPY) && !gpuWorld.verifying())
 	{
 		return;
 	}
