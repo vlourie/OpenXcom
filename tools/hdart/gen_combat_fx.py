@@ -1099,6 +1099,7 @@ def collapse_dust(v, mat):
 # мягких кружков (комья, щебень, травинки, песчинки), лунка-след, лежащие обломки и травинки остаются до конца клипа.
 # Длина клипа остаётся 10 кадров: движок растягивает клип на время взрыва HIT (Map.cpp), своей длительности у клипа нет.
 STYLE2 = False
+V2_NOSTAR = False   # --no-star (XP-000349): без золотой звезды, остальное v2 то же
 V2_MATS = ("grass", "dirt", "sand", "stone", "snow", "wood", "soft")
 # цвет частиц, вид, число (на единицу силы), второй вид (число), цвет пыли
 V2 = {
@@ -1159,7 +1160,10 @@ def ground_v2(clip, mat, fam, power):
     p = power
     sq = p ** 0.5
     big = {"blade": (1.6, 2.6), "clod": (1.5, 2.6), "chip": (1.3, 2.3), "grain": (0.9, 1.5)}
-    star5(clip, V2_STAR.get(fam, 9.0))
+    if not V2_NOSTAR:
+        star5(clip, V2_STAR.get(fam, 9.0))
+    else:
+        clip.rng.uniform(-0.12, 0.12)   # тот же расход ГСЧ, что в star5: частицы и лунка остаются побайтно прежними
     crater(clip, mix(cols2[0] if mat == "grass" else cols[0], (0, 0, 0), 0.4), 2.2 + 1.0 * sq, 0.8)
     spray2(clip, int(n * sq), kind, cols, 42 * sq, big[kind], spread=0.7)
     spray2(clip, max(2, int(n2 * sq)), kind2, cols2, 36 * sq, big[kind2], spread=0.7)
@@ -1315,11 +1319,14 @@ def main():
     ap.add_argument("--ground-v2", action="store_true",
                     help="попадания в землю новым стилем (звезда, чёткие частицы, след); только cal1-5 и pellet в материалах V2_MATS; "
                          "без флага вывод прежний. Писать в art/_review/..., не в мод, пока Vitali не выбрал")
+    ap.add_argument("--no-star", action="store_true",
+                    help="с --ground-v2: без золотой звезды (XP-000349, вариант B); крошки, лунка и пыль те же")
     ap.add_argument("--blood-spray", action="store_true",
                     help="брызги крови по полёту пули blood_* и колющему удару stab_* (по 72 клипа, XP-000298); только они")
     args = ap.parse_args()
-    global STYLE2, BLOOD_SPRAY
+    global STYLE2, BLOOD_SPRAY, V2_NOSTAR
     STYLE2 = args.ground_v2
+    V2_NOSTAR = args.no_star
     BLOOD_SPRAY = args.blood_spray
     makers = build_all()
     pref = [p for p in args.only.split(",") if p]
