@@ -257,6 +257,51 @@ public sealed class BuildsWindowTests : IDisposable
     }
 
     [AvaloniaFact]
+    public void A_game_that_cannot_be_fetched_says_why_and_where_to_put_it_by_hand()
+    {
+        // XP-000353: the fetch failed on the Setup page and the player saw only the bar blink
+        Write("xp-profiles.json", """
+            { "schema": 1, "profiles": [
+              { "master": "piratez", "mods": [ { "id": "*" }, { "id": "hd" } ] },
+              { "id": "twots", "master": "xcom2", "title": "The World of (Terrifying) Silence", "data": "TFTD", "mods": [ { "id": "TWoTS" } ],
+                "source": { "page": "https://mod.io/g/openxcom/m/twots", "url": "http://127.0.0.1:9/twots.zip", "version": "2.8", "size": 25782195, "sha256": "9eed5882605474238a478e73416e0cb5ceb43f20ba5f808cc1f6b309ee6f1d5a",
+                            "folders": [ { "name": "TWoTS", "id": "TWoTS" } ] } } ] }
+            """);
+        var opened = new List<string>();
+        ReportWindow.OpenUrlOverride = opened.Add;
+        try
+        {
+            var w = Open();
+            Click(F<Dictionary<string, Button>>(w, "_nav")["settings"]);
+            Click(F<Button>(w, "_buildNew"));
+            var pick = Dialog(w, "14-game-dialog-twots");
+            Click(pick.GetVisualDescendants().OfType<RadioButton>().ToList()[1]);
+            Click(pick.GetVisualDescendants().OfType<Button>().First(b => b is not RadioButton && b.Classes.Contains("primary")));
+
+            Pump(() => w.OwnedWindows.Count == 1 && w.OwnedWindows[0] != pick, "the fetch confirmation");
+            var ask = w.OwnedWindows[0];
+            Click(ask.GetVisualDescendants().OfType<Button>().First(b => b.Classes.Contains("primary")));
+
+            Pump(() => w.OwnedWindows.Count == 1 && w.OwnedWindows[0] != ask, "the by-hand dialog");
+            var hand = w.OwnedWindows[0];
+            Settle();
+            Shot(hand, "15-game-fetch-failed");
+            var text = string.Join("\n", hand.GetVisualDescendants().OfType<TextBlock>().Select(t => t.Text));
+            Assert.Contains("Скачать игру не получилось", text);
+            Assert.Contains("http://127.0.0.1:9/twots.zip", text);
+            Assert.Contains(Path.Combine(Game, "launcher", "downloads"), text);
+            Click(hand.GetVisualDescendants().OfType<Button>().First(b => b.Classes.Contains("primary")));
+
+            Pump(() => w.OwnedWindows.Count == 0, "the dialog closed");
+            Assert.Equal([Path.Combine(Game, "launcher", "downloads"), "http://127.0.0.1:9/twots.zip"], opened);
+            Assert.True(Directory.Exists(Path.Combine(Game, "launcher", "downloads")));
+            Assert.Single(Builds());   // no build of a game that is not there
+            w.Close();
+        }
+        finally { ReportWindow.OpenUrlOverride = null; }
+    }
+
+    [AvaloniaFact]
     public void A_new_build_asks_which_game_and_takes_that_games_profile()
     {
         // two games not ours in the release's profiles: Mars-com already fetched, TWoTS neither fetched nor with TFTD

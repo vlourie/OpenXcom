@@ -57,7 +57,10 @@ public sealed class GameTests : IDisposable
     {
         server = new FileServer(body);
         var repo = new RepoClient(new HttpClient(server), new Uri("http://repo.test/"), new TrustedKeys([Convert.ToBase64String(f.PublicKey)]));
-        return new GameInstaller(new GamePaths(f.Game), repo, f.Log) { IsGameRunning = _ => false, FreeSpace = _ => long.MaxValue };
+        return new GameInstaller(new GamePaths(f.Game), repo, f.Log)
+        {
+            IsGameRunning = _ => false, FreeSpace = _ => long.MaxValue, UserDownloads = Path.Combine(f.Root, "player-downloads"),
+        };
     }
 
     static readonly (string, string)[] Good =
@@ -139,6 +142,42 @@ public sealed class GameTests : IDisposable
         await gi.InstallAsync(game, null, default);
 
         Assert.Equal(1, server.Requests);
+        Assert.Equal(GameStatus.Ready, gi.Status(game));
+    }
+
+    [Fact]
+    public async Task An_archive_the_player_fetched_by_hand_is_taken_from_downloads_under_any_name()
+    {
+        // XP-000353: mod.io blocked for the player; the browser got the file into Downloads under the author's name
+        var zip = Zip(Good);
+        var gi = Installer(zip, out var server);
+        var game = Game(zip);
+        Directory.CreateDirectory(gi.UserDownloads);
+        var mine = Path.Combine(gi.UserDownloads, "40k_v039_by_author.zip");
+        File.WriteAllBytes(mine, zip);
+
+        await gi.InstallAsync(game, null, default);
+
+        Assert.Equal(0, server.Requests);
+        Assert.Equal(GameStatus.Ready, gi.Status(game));
+        Assert.True(File.Exists(mine));   // the player's file is only read
+    }
+
+    [Fact]
+    public async Task A_zip_of_the_same_size_but_another_file_in_downloads_is_not_taken()
+    {
+        var zip = Zip(Good);
+        var other = (byte[])zip.Clone();
+        other[^1] ^= 1;
+        var gi = Installer(zip, out var server);
+        var game = Game(zip);
+        Directory.CreateDirectory(gi.Downloads);
+        File.WriteAllBytes(Path.Combine(gi.Downloads, "40k.zip"), other);
+
+        Assert.Null(gi.FindFetched(game.Source!));
+        await gi.InstallAsync(game, null, default);
+
+        Assert.Equal(1, server.Requests);   // fetched from the site, the stray zip ignored
         Assert.Equal(GameStatus.Ready, gi.Status(game));
     }
 

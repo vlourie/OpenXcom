@@ -1072,6 +1072,30 @@ public sealed class MainWindow : Window
     /// Makes a game ready to play: fetches it (and the game it runs on) from its author's site after the player
     /// agrees, and copies the player's TFTD for a game that needs it. False - not ready, the build is not made.
     /// </summary>
+    /// <summary>
+    /// The fetch did not happen, and the page it was asked from (Setup) shows no error line: say why in a window,
+    /// and for a failure the player can get round - how to fetch the archive by hand and where exactly to put it
+    /// (XP-000353). Cancelled - nothing to say.
+    /// </summary>
+    async Task FetchFailedAsync(GameInstaller gi, List<ModProfile> fetch)
+    {
+        if (_error is not { } why)
+        {
+            if (_note is { } note && note != L.T("status.cancelled"))
+                await new MessageDialog(note, withNo: false).ShowDialog<bool>(this);
+            return;
+        }
+        var files = string.Join("\n", fetch.Select(p =>
+            L.T("games.byHandFile", p.Title ?? p.Key, p.Source!.Url, L.Size(p.Source.Size), p.Source.Page)));
+        var text = L.T("games.byHand", why, files, gi.Downloads, gi.UserDownloads);
+        _error = null;
+        Refresh();
+        if (!await new MessageDialog(text, withNo: true).ShowDialog<bool>(this)) return;
+        try { Directory.CreateDirectory(gi.Downloads); } catch (Exception e) when (e is IOException or UnauthorizedAccessException) { }
+        ReportWindow.OpenUrl(gi.Downloads);
+        foreach (var p in fetch) ReportWindow.OpenUrl(p.Source!.Url);
+    }
+
     async Task<bool> PrepareGameAsync(ProfileSet set, GameInstaller gi, ModProfile game)
     {
         var fetch = gi.ToFetch(set, game);
@@ -1089,7 +1113,11 @@ public sealed class MainWindow : Window
                 ok = true;
                 SetStatus(L.T("games.installed", game.Title ?? game.Key));
             });
-            if (!ok) return false;
+            if (!ok)
+            {
+                await FetchFailedAsync(gi, fetch);
+                return false;
+            }
         }
         if (game.Data is "TFTD" && !TftdData.Check(Path.Combine(_paths!.GameDir, TftdData.Folder)).Ok)
         {
@@ -1337,6 +1365,8 @@ public sealed class MainWindow : Window
         catch (ManifestException e) { Fail(L.T("err.trust", e.Message)); }
         catch (UpdateBlockedException e) when (!e.Message.Contains("disk")) { SetStatus(L.T("err.gameRunning")); }
         catch (UpdateBlockedException e) { Fail(L.T("err.disk", e.Message)); }
+        // a game is fetched from its author's site, not from our server: say which one did not answer (XP-000353)
+        catch (HttpRequestException e) when (work == Work.Games) { Fail(L.T("games.noSite", e.Message)); }
         catch (HttpRequestException e) { Offline(L.T("err.network", e.Message)); }
         catch (FileNotFoundException e) when (e.Message.StartsWith("not on server")) { Offline(L.T("err.network", e.Message)); }
         catch (Exception e) when (e is IOException or UnauthorizedAccessException or InvalidOperationException) { Fail(L.T("err.generic", e.Message)); }
@@ -1360,7 +1390,8 @@ public sealed class MainWindow : Window
     /// <summary>No server is not a failure of the game: it still plays, the button only says the check did not happen.</summary>
     void Offline(string message)
     {
-        if (_work is Work.Update or Work.Repair) { Fail(message); return; }
+        // a game fetched for a new build: no server means it is not there, a failure the player must see (XP-000353)
+        if (_work is Work.Update or Work.Repair or Work.Games) { Fail(message); return; }
         _offline = message;
         _fileLog?.Error(message);
     }

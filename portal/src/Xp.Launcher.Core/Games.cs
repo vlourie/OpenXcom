@@ -69,7 +69,10 @@ public sealed class GameInstaller(GamePaths paths, RepoClient repo, ILauncherLog
     public Func<string, long> FreeSpace { get; set; } = dir => new DriveInfo(Path.GetPathRoot(dir)!).AvailableFreeSpace;
 
     public string StateFile => Path.Combine(Paths.StateDir, "games.json");
-    string Downloads => Path.Combine(Paths.StateDir, "downloads");
+    /// <summary>Where the archive is fetched to, and where the player puts it by hand when the fetch fails (XP-000353).</summary>
+    public string Downloads => Path.Combine(Paths.StateDir, "downloads");
+    /// <summary>The player's own downloads folder, the browser's usual target: a game fetched by hand is looked for here too.</summary>
+    public string UserDownloads { get; set; } = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), "Downloads");
     string ModsDir => Path.Combine(Paths.GameDir, "user", "mods");
 
     public GameStateFile LoadState()
@@ -127,6 +130,13 @@ public sealed class GameInstaller(GamePaths paths, RepoClient repo, ILauncherLog
         if (IsGameRunning(Paths.GameDir)) throw new UpdateBlockedException("the game is running: its mods are not changed under it");
 
         var zip = Path.Combine(Downloads, $"{game.Key}-{src.Sha256[..12]}.zip");
+        if (!File.Exists(zip) && FindFetched(src, ct) is { } byHand)
+        {
+            log.Info($"games: {game.Key} {src.Version} taken from {byHand}, put there by hand");
+            Directory.CreateDirectory(Downloads);
+            File.Copy(byHand, zip + ".part", overwrite: true);
+            File.Move(zip + ".part", zip, overwrite: true);
+        }
         if (!File.Exists(zip))
         {
             long have = File.Exists(zip + ".part") ? new FileInfo(zip + ".part").Length : 0;
@@ -194,6 +204,32 @@ public sealed class GameInstaller(GamePaths paths, RepoClient repo, ILauncherLog
         File.Delete(zip);
         log.Info($"games: {game.Key} {src.Version} installed: {string.Join(", ", src.Folders.Select(f => f.Name))}");
         progress?.Report(new Progress(Phase.Done, 1, 1, game.Key, 0));
+    }
+
+    /// <summary>
+    /// An archive of the game the player fetched by hand (the fetch failed: a blocked site, a broken network):
+    /// any zip in launcher\downloads or the player's Downloads of the pinned size and SHA-256, under whatever name.
+    /// The player's own file is only read; the install works on a copy.
+    /// </summary>
+    public string? FindFetched(GameSource src, CancellationToken ct = default)
+    {
+        foreach (var dir in new[] { Downloads, UserDownloads })
+        {
+            if (!Directory.Exists(dir)) continue;
+            IEnumerable<string> zips;
+            try { zips = Directory.EnumerateFiles(dir, "*.zip").ToList(); }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException) { continue; }
+            foreach (var f in zips)
+            {
+                ct.ThrowIfCancellationRequested();
+                try
+                {
+                    if (new FileInfo(f).Length == src.Size && Hashing.FileSha256(f).Equals(src.Sha256, StringComparison.OrdinalIgnoreCase)) return f;
+                }
+                catch (Exception e) when (e is IOException or UnauthorizedAccessException) { }
+            }
+        }
+        return null;
     }
 
     /// <summary>
