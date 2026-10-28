@@ -55,8 +55,8 @@ const int LUT_SIZE = LUT_MAX * LUT_STEPS + 1;
 
 bool kindOf(const std::string &word, Kind &kind)
 {
-	static const char *names[] = { "steady", "blink", "pulse", "screen", "flicker", "tv", "chase", "weld", "night", "burst", "marquee" };
-	for (int i = 0; i < 11; ++i)
+	static const char *names[] = { "steady", "blink", "pulse", "screen", "flicker", "tv", "chase", "weld", "night", "burst", "marquee", "swell" };
+	for (int i = 0; i < 12; ++i)
 	{
 		if (word == names[i])
 		{
@@ -178,6 +178,18 @@ float strength(const Placed &p, float t, float night, float act)
 			v = 0.25f + (ph < tail ? 0.75f * smooth(1 - ph / tail) : 0.0f);
 			rest = 0.45f;
 		}
+		break;
+	}
+	case SWELL:
+	{
+		// a slow breath of light (the arrows of an empty hangar's pad, ticket 350): from nothing up over 5/7 of the
+		// period (5 s at 7), then down over the rest (2 s). The facility's turn does not hold it (rest stays -1): the
+		// lamp moves by the display clock all the time, its phase set by the facility's place on the base
+		const float per = std::max(0.1f, L.period);
+		const float rise = per * 5.0f / 7.0f;
+		const float u = std::fmod(t + L.phase * per + 1000.0f * per, per);
+		v = 2.0f * (u < rise ? smooth(u / rise) : 1 - smooth((u - rise) / (per - rise)));
+		gain = 0.75f + 0.25f * night;
 		break;
 	}
 	case WELD:
@@ -749,7 +761,7 @@ void draw(SDL_Surface *world, const SDL_Rect &area, const std::vector<Placed> &l
 		}
 		const float now = strength(p, t, night, p.act);
 		// a burst lamp burns only in its facility's fit: nothing at rest; a lamp of the crew moves about
-		const float rest = p.light.kind == BURST || p.moving ? 0.0f : strength(p, t, night, 0.0f);
+		const float rest = p.light.kind == BURST || p.light.kind == SWELL || p.moving ? 0.0f : strength(p, t, night, 0.0f);
 		Lit L;
 		if (rest > 0.01f && makeLit(p, rest, L))
 		{
