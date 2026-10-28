@@ -646,7 +646,8 @@ void HdShadeRow::blend(int x, Uint32 color, float cov)
 	blendPixel(_row[x], color, cov);
 }
 
-void HdUi::shadeRows(int x, int y, int w, int h, const std::function<void(int, int, int, HdShadeRow&)> &fn)
+void HdUi::shadeRows(int x, int y, int w, int h, const std::function<void(int, int, int, HdShadeRow&)> &fn,
+	const HdShadeBase *base)
 {
 	FrameTiming timing(_frameMs);
 	SDL_Surface *dest;
@@ -666,6 +667,16 @@ void HdUi::shadeRows(int x, int y, int w, int h, const std::function<void(int, i
 		rb = y0 + (int)((long long)n * (job + 1) / jobs);
 	};
 	HdGpuWorld &gpuWorld = HdGpuWorld::instance();
+	const bool verifying = gpuWorld.on(dest) && gpuWorld.verifying();
+	// the picture under the blends, from the card's own copy; a frame given back to the processor has it already
+	// (unless the processor draws the card's frames too), one not taken goes to the processor whole
+	bool under = false;
+	if (base && gpuWorld.on(dest))
+	{
+		const int bx0 = std::max(base->x, x0), by0 = std::max(base->y, y0);
+		const int bx1 = std::min(base->x + base->w, x1), by1 = std::min(base->y + base->h, y1);
+		under = bx0 >= bx1 || by0 >= by1 || gpuWorld.wash(base->px, base->w, base->h, base->x, base->y, base->key, base->holes, bx0, by0, bx1, by1);
+	}
 	if (gpuWorld.on(dest))
 	{
 		// on the video card: each row's blends kept, then put in order by pixel (a pixel's own in the order made) -
@@ -691,6 +702,7 @@ void HdUi::shadeRows(int x, int y, int w, int h, const std::function<void(int, i
 			band(job, ra, rb);
 			HdShadeRow row;
 			row._steps = &b.made;
+			row._baseDrawn = under;
 			for (int py = ra; py < rb; ++py)
 			{
 				b.made.clear();
@@ -759,7 +771,6 @@ void HdUi::shadeRows(int x, int y, int w, int h, const std::function<void(int, i
 			tables += bands[job].table.size();
 			steps += bands[job].steps.size();
 		}
-		const bool verifying = gpuWorld.verifying();
 		bool handed = steps == 0;
 		if (!handed)
 		{
@@ -805,6 +816,7 @@ void HdUi::shadeRows(int x, int y, int w, int h, const std::function<void(int, i
 		int ra, rb;
 		band(job, ra, rb);
 		HdShadeRow row;
+		row._baseDrawn = under && !verifying;
 		for (int py = ra; py < rb; ++py)
 		{
 			row._row = (Uint32*)((Uint8*)dest->pixels + (size_t)py * dest->pitch);

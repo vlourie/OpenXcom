@@ -120,6 +120,11 @@ public:
 	/// HdShadeRow's mark of a blend of a of 256 while it keeps its steps.
 	static const Uint32 STEP_256 = 0x80000000u;
 	Uint32 *steps(size_t table, size_t steps, int x0, int y0, int x1, int y1);
+	/// HdShadeBase of HdUi::shadeRows (HdRadar's wash of the bases) on [x0, x1) x [y0, y1): the w x h pixels `px`
+	/// with their top left at (ox, oy), kept on the card until `key` changes; per pixel 0 - nothing, else blend256 at
+	/// a = alpha + (alpha >> 7); left out inside `holes` (x0, y0, x1, y1 each). One key a frame.
+	bool wash(const Uint32 *px, int w, int h, int ox, int oy, Uint64 key, const std::vector<Sint32> &holes,
+		int x0, int y0, int x1, int y1);
 	/// HdBaseScene's drawBuilding: `vals` 6 floats a pixel of [x0, x1) x [y0, y1) (reveal, grid, beam, edge, line,
 	/// lift); the glow of the pixel's brightness lum is glowLut[min(lutSize - 1, (int)(lum (lutSize - 1) + 0.5))].
 	bool building(const std::vector<float> &vals, const float *glowLut, int lutSize, int x0, int y0, int x1, int y1);

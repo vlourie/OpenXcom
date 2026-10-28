@@ -60,11 +60,28 @@ public:
 	}
 	/// HdUi::blend of pixel x.
 	void blend(int x, Uint32 color, float cov);
+	/// The HdShadeBase of HdUi::shadeRows is drawn already (by the video card): the routine leaves out its own.
+	bool baseDrawn() const { return _baseDrawn; }
 private:
 	friend class HdUi;
 	Uint32 *_row = nullptr;
 	/// The steps: x, colour and HdGpuWorld's step word, in the order made.
 	std::vector<Uint32> *_steps = nullptr;
+	bool _baseDrawn = false;
+};
+
+/**
+ * What a routine of HdUi::shadeRows blends first in every pixel, as a picture (HdRadar's wash of the bases): per
+ * pixel of [x, x + w) x [y, y + h), row after row, 0 - nothing, else HdShadeRow::blend256 of it at a = alpha +
+ * (alpha >> 7) (alpha 0: the pixel only made opaque); left out inside `holes` (x0, y0, x1, y1 each). `key` changes
+ * whenever the pixels do. The video card draws it from a picture it keeps; the routine then leaves it out.
+ */
+struct HdShadeBase
+{
+	const Uint32 *px = nullptr;
+	int x = 0, y = 0, w = 0, h = 0;
+	Uint64 key = 0;
+	std::vector<Sint32> holes;
 };
 
 /**
@@ -155,8 +172,10 @@ public:
 	void drawImage(const Uint32 *argb, int w, int h, int x, int y);
 	/// Shades the world rectangle (x, y, w, h) row by row in bands on the render threads: fn(y, x0, x1, row)
 	/// blends into the pixels [x0, x1) of the row, already clipped (HdShadeRow). A per-pixel picture computed in
-	/// place; on the video card the blends go there as steps (HdGpuWorld::steps).
-	void shadeRows(int x, int y, int w, int h, const std::function<void(int, int, int, HdShadeRow&)> &fn);
+	/// place; on the video card the blends go there as steps (HdGpuWorld::steps), and `base` (if any) as the picture
+	/// under them (HdGpuWorld::wash) - fn then leaves it out (HdShadeRow::baseDrawn).
+	void shadeRows(int x, int y, int w, int h, const std::function<void(int, int, int, HdShadeRow&)> &fn,
+		const HdShadeBase *base = nullptr);
 	/// Shades the world rectangle (x, y, w, h) by coverages: fn(y, x0, x1, cov) puts into cov[l * (x1 - x0) + x - x0]
 	/// how much of colors[l] covers pixel x of the row (0: none, the row already clipped, cov zeroed); per pixel the
 	/// `layers` colours are blended in their order. The same picture as shadeRows blending them, but the video card
