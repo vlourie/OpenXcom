@@ -51,11 +51,23 @@ struct HdFrame
 	/// The pack painted this frame in its own colours (hd/<set>/color.txt, colorAuthority: pack):
 	/// the light of the map darkens it keeping its hue, instead of taking the palette ramp's.
 	bool ownColour = false;
+	/// The video card's copy of the pixels (HdGpuCanvas): the number it was uploaded under, 0 = none.
+	/// A copied, moved or refilled frame has none, so a frame made anew at the address of a dropped one
+	/// is never drawn from the dropped one's copy.
+	struct GpuStamp
+	{
+		mutable Uint64 id = 0;
+		GpuStamp() = default;
+		GpuStamp(const GpuStamp &) {}
+		GpuStamp &operator=(const GpuStamp &) { id = 0; return *this; }
+	} gpu;
 
 	/// Pointer to a row of pixels.
 	const Uint32 *row(int y) const { return pixels.data() + (size_t)y * width; }
-	/// Recomputes the row spans from the alpha channel.
+	/// Recomputes the row spans from the alpha channel (the pixels are new: the video card's copy is dropped).
 	void buildSpans();
+	/// The pixels changed: the video card's copy is not good any more.
+	void touched() { gpu.id = 0; }
 	/// True if the frame has any visible pixel.
 	bool empty() const { return pixels.empty(); }
 };

@@ -31,6 +31,7 @@
 #include "ShaderDraw.h"
 #include "ShaderMove.h"
 #include "HdWorkers.h"
+#include "HdGpuCanvas.h"
 #include "HdUiArt.h"
 #include "Logger.h"
 
@@ -153,6 +154,7 @@ namespace
 
 Canvas32::~Canvas32()
 {
+	HdGpuCanvas::instance().forget(*this);
 	liveCanvases.erase(std::remove(liveCanvases.begin(), liveCanvases.end(), this), liveCanvases.end());
 }
 
@@ -196,6 +198,7 @@ void Canvas32::setLight(const HdLight *light)
 SDL_Surface *Canvas32::getSdlSurface()
 {
 	flush();
+	HdGpuCanvas::instance().take(*this, true);
 	return _surface.get();
 }
 
@@ -1365,16 +1368,13 @@ void Canvas32::drawVapor(SurfaceRaw<int> pattern, int x, int y, int size, const 
 	record(cmd);
 }
 
-namespace
+/// The classic particle is a 2x2 pattern of k x k cells and lights (4 - size) of them; the puff falls off as
+/// (1 - r^2/R^2)^2, whose volume is 1.047 R^2, so the same R^2 = (4 - size) k^2 / 1.047 keeps the amount of tint
+/// of the classic particle: only its shape is softer.
+int Canvas32::vaporSoftRadius16(int size, int k)
 {
-	/// Radius of a soft vapor puff in 1/16 of a screen pixel. The classic particle is a 2x2 pattern of k x k cells and
-	/// lights (4 - size) of them; the puff falls off as (1 - r^2/R^2)^2, whose volume is 1.047 R^2, so the same
-	/// R^2 = (4 - size) k^2 / 1.047 keeps the amount of tint of the classic particle: only its shape is softer.
-	int vaporSoftRadius16(int size, int k)
-	{
-		const int cells = std::max(1, 4 - std::max(0, std::min(3, size)));
-		return std::max(8, (int)(16.0 * k * std::sqrt(cells / 1.047) + 0.5));
-	}
+	const int cells = std::max(1, 4 - std::max(0, std::min(3, size)));
+	return std::max(8, (int)(16.0 * k * std::sqrt(cells / 1.047) + 0.5));
 }
 
 /**
@@ -1415,6 +1415,7 @@ void Canvas32::flash()
 bool Canvas32::saveDump(const std::string &filename)
 {
 	flush();
+	HdGpuCanvas::instance().take(*this, true);
 	return HdTest::savePngRgb(filename, _surface.get());
 }
 
@@ -1475,25 +1476,43 @@ void Canvas32::flush()
 	const bool timed = HdDrawStats::on;
 	std::atomic<long long> stripMax{ 0 };
 	const auto flushStart = timed ? std::chrono::steady_clock::now() : std::chrono::steady_clock::time_point();
-	pool.run(strips, [&](int strip)
+	// option oxceHdGpu, HD modes: the video card draws the commands; else the strips, over the pixels it drew last
+	HdGpuCanvas &gpuCanvas = HdGpuCanvas::instance();
+	const bool onCard = gpuCanvas.run(*this);
+	if (!onCard || gpuCanvas.verifying())
 	{
-		const auto stripStart = timed ? std::chrono::steady_clock::now() : std::chrono::steady_clock::time_point();
-		const int y0 = (int)((long long)_height * strip / strips);
-		const int y1 = (int)((long long)_height * (strip + 1) / strips);
-		for (const Cmd &cmd : cmds)
+		if (!onCard)
 		{
-			if (cmd.y1 > y0 && cmd.y0 < y1)
+			gpuCanvas.take(*this, true);
+		}
+		pool.run(strips, [&](int strip)
+		{
+			const auto stripStart = timed ? std::chrono::steady_clock::now() : std::chrono::steady_clock::time_point();
+			const int y0 = (int)((long long)_height * strip / strips);
+			const int y1 = (int)((long long)_height * (strip + 1) / strips);
+			for (const Cmd &cmd : cmds)
 			{
-				execute(cmd, std::max(cmd.y0, y0), std::min(cmd.y1, y1));
+				if (cmd.y1 > y0 && cmd.y0 < y1)
+				{
+					execute(cmd, std::max(cmd.y0, y0), std::min(cmd.y1, y1));
+				}
 			}
-		}
-		if (timed)
+			if (timed)
+			{
+				const long long us = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - stripStart).count();
+				long long seen = stripMax.load();
+				while (us > seen && !stripMax.compare_exchange_weak(seen, us)) {}
+			}
+		});
+		if (onCard)
 		{
-			const long long us = std::chrono::duration_cast<std::chrono::microseconds>(std::chrono::steady_clock::now() - stripStart).count();
-			long long seen = stripMax.load();
-			while (us > seen && !stripMax.compare_exchange_weak(seen, us)) {}
+			gpuCanvas.verify(*this);
 		}
-	});
+		else
+		{
+			gpuCanvas.drawnByCpu(*this);
+		}
+	}
 	if (timed)
 	{
 		HdDrawStats &st = HdDrawStats::frame;
@@ -1695,6 +1714,8 @@ void Canvas32::perfReport()
 void Canvas32::copyTo(SDL_Surface *dest, int x, int y)
 {
 	flush();
+	// the frame the video card drew comes back a frame late (at once with OXCE_HD_GPU_SYNC)
+	HdGpuCanvas::instance().take(*this, false);
 	if (!dest || dest->format->BytesPerPixel != 4)
 	{
 		return;
@@ -1731,6 +1752,7 @@ void Canvas32::resize(int width, int height)
 		return;
 	}
 	flush();
+	HdGpuCanvas::instance().forget(*this);
 	std::tie(_buffer, _surface) = Surface::NewPair32Bit(width, height);
 	SDL_SetColorKey(_surface.get(), 0, 0);
 	_width = width;
@@ -1761,6 +1783,7 @@ inline Uint32 mix2(Uint32 a, Uint32 b, Uint32 w)
 void Canvas32::copyZoomed(SDL_Surface *dest, int x, int y, int w, int h, double fx, double fy, double zoom, double pull, double bars)
 {
 	flush();
+	HdGpuCanvas::instance().take(*this, false);
 	if (!dest || dest->format->BytesPerPixel != 4 || _width < 2 || _height < 2 || w < 1 || h < 1)
 	{
 		return;
@@ -2701,6 +2724,7 @@ void Canvas32::makeToned(const TonedJob &job) const
 {
 	const HdFrame &hd = *job.src;
 	HdFrame &out = *job.out;
+	out.touched();
 	out.rows = hd.rows;
 	out.solid = hd.solid;
 	out.pixels.resize(hd.pixels.size());

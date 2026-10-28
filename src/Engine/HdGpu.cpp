@@ -33,46 +33,8 @@ __declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
 }
 #endif
 
-#ifndef __NO_OPENGL
-#include <SDL_opengl.h>
-
-#ifndef APIENTRY
-#define APIENTRY
-#endif
-#ifndef GL_BGRA
-#define GL_BGRA 0x80E1
-#endif
-#ifndef GL_CLAMP_TO_EDGE
-#define GL_CLAMP_TO_EDGE 0x812F
-#endif
-#ifndef GL_TEXTURE0
-#define GL_TEXTURE0 0x84C0
-#endif
-#ifndef GL_FRAGMENT_SHADER
-#define GL_FRAGMENT_SHADER 0x8B30
-#endif
-#ifndef GL_VERTEX_SHADER
-#define GL_VERTEX_SHADER 0x8B31
-#endif
-#ifndef GL_COMPILE_STATUS
-#define GL_COMPILE_STATUS 0x8B81
-#endif
-#ifndef GL_LINK_STATUS
-#define GL_LINK_STATUS 0x8B82
-#endif
-#ifndef GL_READ_FRAMEBUFFER
-#define GL_READ_FRAMEBUFFER 0x8CA8
-#endif
-#ifndef GL_FRAMEBUFFER_COMPLETE
-#define GL_FRAMEBUFFER_COMPLETE 0x8CD5
-#endif
-#ifndef GL_COLOR_ATTACHMENT0
-#define GL_COLOR_ATTACHMENT0 0x8CE0
-#endif
-#ifndef GL_FRAMEBUFFER
-#define GL_FRAMEBUFFER 0x8D40
-#endif
-#endif
+#include "HdGpuGl.h"
+#include "HdGpuCanvas.h"
 
 namespace OpenXcom
 {
@@ -95,45 +57,15 @@ bool HdGpu::readBack(SDL_Surface *) { return false; }
 
 #else
 
+namespace hdgl
+{
+Functions gl;
+}
+
 namespace
 {
 
-// the OpenGL 2.0-3.3 functions the HD layer calls: opengl32 exports only 1.1, the rest the driver gives by name
-// (a loader in the manner of glad, but only for what is used; kept apart from the ones OpenGL.cpp loads for itself)
-#define HD_GL_FUNCTIONS(X) \
-	X(void, GenFramebuffers, (GLsizei, GLuint *)) \
-	X(void, DeleteFramebuffers, (GLsizei, const GLuint *)) \
-	X(void, BindFramebuffer, (GLenum, GLuint)) \
-	X(void, FramebufferTexture2D, (GLenum, GLenum, GLenum, GLuint, GLint)) \
-	X(GLenum, CheckFramebufferStatus, (GLenum)) \
-	X(void, GenVertexArrays, (GLsizei, GLuint *)) \
-	X(void, DeleteVertexArrays, (GLsizei, const GLuint *)) \
-	X(void, BindVertexArray, (GLuint)) \
-	X(GLuint, CreateShader, (GLenum)) \
-	X(void, ShaderSource, (GLuint, GLsizei, const char *const *, const GLint *)) \
-	X(void, CompileShader, (GLuint)) \
-	X(void, GetShaderiv, (GLuint, GLenum, GLint *)) \
-	X(void, GetShaderInfoLog, (GLuint, GLsizei, GLsizei *, char *)) \
-	X(void, DeleteShader, (GLuint)) \
-	X(GLuint, CreateProgram, ()) \
-	X(void, AttachShader, (GLuint, GLuint)) \
-	X(void, LinkProgram, (GLuint)) \
-	X(void, GetProgramiv, (GLuint, GLenum, GLint *)) \
-	X(void, GetProgramInfoLog, (GLuint, GLsizei, GLsizei *, char *)) \
-	X(void, DeleteProgram, (GLuint)) \
-	X(void, UseProgram, (GLuint)) \
-	X(GLint, GetUniformLocation, (GLuint, const char *)) \
-	X(void, Uniform1i, (GLint, GLint)) \
-	X(void, ActiveTexture, (GLenum))
-
-struct Functions
-{
-#define HD_GL_POINTER(ret, name, args) ret (APIENTRY *name) args = nullptr;
-	HD_GL_FUNCTIONS(HD_GL_POINTER)
-#undef HD_GL_POINTER
-	/// WGL_EXT_swap_control (Windows only; elsewhere the driver's default stays).
-	int (APIENTRY *SwapInterval)(int) = nullptr;
-} gl;
+using hdgl::gl;
 
 template <typename F>
 bool find(F &fn, const char *name)
@@ -188,6 +120,36 @@ GLuint compile(GLenum type, const char *source)
 	return shader;
 }
 
+}
+
+GLuint hdgl::program(const char *vertexSource, const char *fragmentSource, const char *what)
+{
+	GLuint vertex = compile(GL_VERTEX_SHADER, vertexSource);
+	GLuint fragment = compile(GL_FRAGMENT_SHADER, fragmentSource);
+	if (!vertex || !fragment)
+	{
+		if (vertex) gl.DeleteShader(vertex);
+		if (fragment) gl.DeleteShader(fragment);
+		Log(LOG_ERROR) << "HD GPU: no program for " << what;
+		return 0;
+	}
+	GLuint prog = gl.CreateProgram();
+	gl.AttachShader(prog, vertex);
+	gl.AttachShader(prog, fragment);
+	gl.LinkProgram(prog);
+	gl.DeleteShader(vertex);
+	gl.DeleteShader(fragment);
+	GLint ok = 0;
+	gl.GetProgramiv(prog, GL_LINK_STATUS, &ok);
+	if (!ok)
+	{
+		char log[1024] = {};
+		gl.GetProgramInfoLog(prog, sizeof(log) - 1, nullptr, log);
+		Log(LOG_ERROR) << "HD GPU: the program for " << what << " does not link: " << log;
+		gl.DeleteProgram(prog);
+		return 0;
+	}
+	return prog;
 }
 
 bool HdGpu::load()
@@ -258,6 +220,7 @@ bool HdGpu::setup(int w, int h)
 		glGenTextures(1, &_texture);
 		gl.GenVertexArrays(1, &_vao);
 		_w = _h = 0;
+		_thread = SDL_ThreadID();
 	}
 	if (w != _w || h != _h)
 	{
@@ -309,6 +272,8 @@ bool HdGpu::setup(int w, int h)
 
 void HdGpu::release()
 {
+	// the battle canvas's textures and buffers live in the same context
+	HdGpuCanvas::instance().release();
 	if (_program)
 	{
 		gl.DeleteProgram(_program);

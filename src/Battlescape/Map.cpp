@@ -1621,6 +1621,11 @@ void Map::blit(SDL_Surface *surface)
 		// a true-color canvas copies straight into the world (rows in parallel), a palette one is converted by SDL
 		if (Canvas32 *canvas32 = dynamic_cast<Canvas32*>(shown))
 		{
+			// an HD test dump compares the frame drawn now: the video card's canvas comes back at once, not a frame late
+			if (screen->hasHdTestDumpRequest())
+			{
+				canvas32->getSdlSurface();
+			}
 			// the final blow (HdKillCam): the frame goes to the screen enlarged around the victim
 			Position voxel, focus;
 			double zoom, pull, bars;
