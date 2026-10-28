@@ -157,6 +157,13 @@ CraftArmorState::CraftArmorState(Base *base, size_t craft) : _base(base), _craft
 	_lstSoldiers->onRightArrowClick((ActionHandler)&CraftArmorState::lstItemsRightArrowClick);
 	_lstSoldiers->onMouseClick((ActionHandler)&CraftArmorState::lstSoldiersClick, 0);
 	_lstSoldiers->onMousePress((ActionHandler)&CraftArmorState::lstSoldiersMousePress);
+
+	// HD option: open sorted by craft, as if the player picked "Craft" in the sort box (XP-000345)
+	if (Options::oxceHdArmorSortCraft)
+	{
+		_cbxSortBy->setSelected(3);
+		cbxSortByChange(nullptr);
+	}
 }
 
 /**

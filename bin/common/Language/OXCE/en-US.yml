@@ -532,6 +532,8 @@ en-US:
   STR_HD_TRANSFER_COST_DESC: "On the transfer screen the buttons are shorter and the cost of the transfer is shown between them, updated as you pick items."
   STR_HD_TRANSFER_CONFIRM: "Confirm transfers"
   STR_HD_TRANSFER_CONFIRM_DESC: "Ask for confirmation before a transfer is sent. The confirmation window has a 'Don't ask' switch that turns this off."
+  STR_HD_ARMOR_SORT_CRAFT: "Armor: sort by craft"
+  STR_HD_ARMOR_SORT_CRAFT_DESC: "The craft armor screen opens already sorted by 'Craft': the soldiers aboard come first, as if you had picked that sort yourself. Like the manual sort, it changes the order of the base's soldiers. Off = the original order."
   STR_HD_TRANSFER_DONT_ASK: "Don't ask"
   STR_HD_CRAFT_OUTLINES: "Craft outlines"
   STR_HD_CRAFT_OUTLINES_DESC: "On the globe your craft and every UFO once read by a hyper-wave decoder are small outlines seen from above, UFOs in the colour of their crew's race; in an interception the UFO is an outline instead of a blob. Off = the classic markers."

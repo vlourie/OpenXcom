@@ -591,6 +591,7 @@ void createAdvancedOptionsOXCE()
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdAmmoHint", &oxceHdAmmoHint, false, "STR_HD_AMMO_HINT", "STR_HD_BATTLE_UI"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdTransferCost", &oxceHdTransferCost, true, "STR_HD_TRANSFER_COST", "STR_HD_BASE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdTransferConfirm", &oxceHdTransferConfirm, true, "STR_HD_TRANSFER_CONFIRM", "STR_HD_BASE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdArmorSortCraft", &oxceHdArmorSortCraft, false, "STR_HD_ARMOR_SORT_CRAFT", "STR_HD_BASE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdCraftOutlines", &oxceHdCraftOutlines, true, "STR_HD_CRAFT_OUTLINES", "STR_HD_GEOSCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdPilotVoice", &oxceHdPilotVoice, true, "STR_HD_PILOT_VOICE", "STR_HD_GEOSCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdRadar", &oxceHdRadar, 0, "STR_HD_RADAR", "STR_HD_GEOSCAPE"));
