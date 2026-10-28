@@ -239,26 +239,39 @@ const float *softTable()
 	return table;
 }
 
-/// A soft round spot (sigma 0.6 r, as the preview's blobs) or a thin ring of radius `ring`, into the area:
-/// `add` adds light, otherwise the colour is laid over with its alpha.
-void blob(SDL_Surface *world, int ax0, int ay0, int ax1, int ay1, float cx, float cy, float r, float ring,
-	const float col[3], float a, bool add)
+/// The pixel under a blob of weight k: `add` adds light, otherwise the colour is laid over with its alpha
+/// (HdGpuWorld's ADD and OVER, the latter with min(1, k)).
+inline Uint32 tint(Uint32 px, const float col[3], float k, bool add)
 {
-	// a writer the video card does not take (HdGpuWorld)
-	HdGpuWorld::instance().cpu(world, "the light of the base");
+	Uint32 out = px & 0xFF000000u;
+	for (int c = 0; c < 3; ++c)
+	{
+		const int shift = 16 - 8 * c;
+		const float v = ((px >> shift) & 0xFF) / 255.0f;
+		const float o = add ? v + col[c] * k : v + (col[c] - v) * std::min(1.0f, k);
+		out |= (Uint32)std::lround(std::min(1.0f, std::max(0.0f, o)) * 255.0f) << shift;
+	}
+	return out;
+}
+
+/// A soft round spot (sigma 0.6 r, as the preview's blobs) or a thin ring of radius `ring`, in the area: its box
+/// box[0..3] (x0, y0, x1, y1), then fn(x, y, k) for every pixel it touches. False: nothing to draw.
+template <typename F>
+bool blobEach(int ax0, int ay0, int ax1, int ay1, float cx, float cy, float r, float ring, float a, int box[4], F fn)
+{
 	if (a <= 0.004f || r <= 0)
 	{
-		return;
+		return false;
 	}
 	const float sigma = ring > 0 ? 0.7f * r : 0.6f * r;
 	const float inv = 1.0f / (2 * sigma * sigma);
 	const float reach = ring + 2.8f * sigma;
 	const int x0 = std::max(ax0, (int)std::floor(cx - reach)), x1 = std::min(ax1, (int)std::ceil(cx + reach) + 1);
 	const int y0 = std::max(ay0, (int)std::floor(cy - reach)), y1 = std::min(ay1, (int)std::ceil(cy + reach) + 1);
+	box[0] = x0; box[1] = y0; box[2] = x1; box[3] = y1;
 	const float *table = softTable();
 	for (int y = y0; y < y1; ++y)
 	{
-		Uint32 *row = (Uint32*)((Uint8*)world->pixels + (size_t)y * world->pitch);
 		const float dy = y + 0.5f - cy;
 		for (int x = x0; x < x1; ++x)
 		{
@@ -274,34 +287,24 @@ void blob(SDL_Surface *world, int ax0, int ay0, int ax1, int ay1, float cx, floa
 			{
 				continue;
 			}
-			const float k = a * table[(int)q];
-			const Uint32 px = row[x];
-			Uint32 out = px & 0xFF000000u;
-			for (int c = 0; c < 3; ++c)
-			{
-				const int shift = 16 - 8 * c;
-				const float v = ((px >> shift) & 0xFF) / 255.0f;
-				const float o = add ? v + col[c] * k : v + (col[c] - v) * std::min(1.0f, k);
-				out |= (Uint32)std::lround(std::min(1.0f, std::max(0.0f, o)) * 255.0f) << shift;
-			}
-			row[x] = out;
+			fn(x, y, a * table[(int)q]);
 		}
 	}
+	return x0 < x1 && y0 < y1;
 }
 
 /// A rectangle with an edge a pixel soft (a part on a belt, a trolley, a dash of a running line), half sides
-/// hx, hy about (cx, cy), into the area: `add` adds light, otherwise the colour is laid over with its alpha.
-void boxFill(SDL_Surface *world, int ax0, int ay0, int ax1, int ay1, float cx, float cy, float hx, float hy,
-	const float col[3], float a, bool add)
+/// hx, hy about (cx, cy), in the area: as blobEach.
+template <typename F>
+bool boxEach(int ax0, int ay0, int ax1, int ay1, float cx, float cy, float hx, float hy, float a, int box[4], F fn)
 {
-	// a writer the video card does not take (HdGpuWorld)
-	HdGpuWorld::instance().cpu(world, "the light of the base");
 	if (a <= 0.004f || hx <= 0 || hy <= 0)
 	{
-		return;
+		return false;
 	}
 	const int x0 = std::max(ax0, (int)std::floor(cx - hx - 1)), x1 = std::min(ax1, (int)std::ceil(cx + hx + 1));
 	const int y0 = std::max(ay0, (int)std::floor(cy - hy - 1)), y1 = std::min(ay1, (int)std::ceil(cy + hy + 1));
+	box[0] = x0; box[1] = y0; box[2] = x1; box[3] = y1;
 	for (int y = y0; y < y1; ++y)
 	{
 		const float ky = std::min(1.0f, std::max(0.0f, hy - std::fabs(y + 0.5f - cy) + 0.5f));
@@ -309,7 +312,6 @@ void boxFill(SDL_Surface *world, int ax0, int ay0, int ax1, int ay1, float cx, f
 		{
 			continue;
 		}
-		Uint32 *row = (Uint32*)((Uint8*)world->pixels + (size_t)y * world->pitch);
 		for (int x = x0; x < x1; ++x)
 		{
 			const float k = std::min(1.0f, std::max(0.0f, hx - std::fabs(x + 0.5f - cx) + 0.5f)) * ky * a;
@@ -317,18 +319,34 @@ void boxFill(SDL_Surface *world, int ax0, int ay0, int ax1, int ay1, float cx, f
 			{
 				continue;
 			}
-			const Uint32 px = row[x];
-			Uint32 out = px & 0xFF000000u;
-			for (int c = 0; c < 3; ++c)
-			{
-				const int shift = 16 - 8 * c;
-				const float v = ((px >> shift) & 0xFF) / 255.0f;
-				const float o = add ? v + col[c] * k : v + (col[c] - v) * std::min(1.0f, k);
-				out |= (Uint32)std::lround(std::min(1.0f, std::max(0.0f, o)) * 255.0f) << shift;
-			}
-			row[x] = out;
+			fn(x, y, k);
 		}
 	}
+	return x0 < x1 && y0 < y1;
+}
+
+/// blobEach into the world.
+void blob(SDL_Surface *world, int ax0, int ay0, int ax1, int ay1, float cx, float cy, float r, float ring,
+	const float col[3], float a, bool add)
+{
+	int box[4];
+	blobEach(ax0, ay0, ax1, ay1, cx, cy, r, ring, a, box, [&](int x, int y, float k)
+	{
+		Uint32 *px = (Uint32*)((Uint8*)world->pixels + (size_t)y * world->pitch) + x;
+		*px = tint(*px, col, k, add);
+	});
+}
+
+/// boxEach into the world.
+void boxFill(SDL_Surface *world, int ax0, int ay0, int ax1, int ay1, float cx, float cy, float hx, float hy,
+	const float col[3], float a, bool add)
+{
+	int box[4];
+	boxEach(ax0, ay0, ax1, ay1, cx, cy, hx, hy, a, box, [&](int x, int y, float k)
+	{
+		Uint32 *px = (Uint32*)((Uint8*)world->pixels + (size_t)y * world->pitch) + x;
+		*px = tint(*px, col, k, add);
+	});
 }
 
 /// A light of this frame, with what does not change from pixel to pixel worked out.
@@ -669,8 +687,6 @@ float fitWave(float t, float length, int pulses)
 void draw(SDL_Surface *world, const SDL_Rect &area, const std::vector<Placed> &lights, float night, Uint32 ms,
 	const View *view)
 {
-	// a writer the video card does not take (HdGpuWorld)
-	HdGpuWorld::instance().cpu(world, "the light of the base");
 	if (!world || world->format->BytesPerPixel != 4)
 	{
 		return;
@@ -779,6 +795,39 @@ void draw(SDL_Surface *world, const SDL_Rect &area, const std::vector<Placed> &l
 		}
 		flows.push_back(N);
 	}
+	// the light of one lamp at the pixel x of a row dy below it: m of its colour into the light falling on the
+	// pictures (bit 1 of the answer: in its reach), h into its halo (bit 2)
+	auto lampAt = [&](const Lit &L, int x, float dy, float dy2, const float *rrow, float &m, float &h) -> int
+	{
+		const float dx = x + 0.5f - L.x;
+		const float d2 = dx * dx + dy2;
+		int on = 0;
+		if (d2 < L.r2)
+		{
+			// falls off to the edge of its reach, and by the angle it strikes the surface at: the floor
+			// at a slant, a wall or a cupboard lit on the lamp's side and dark on the other
+			const float f = 1 - d2 / L.r2;
+			float ndl;
+			if (rrow && x >= view->x && x < view->x + view->w)
+			{
+				const float *q = rrow + (size_t)(x - view->x) * 4;
+				const float lz = L.lz - q[3];
+				ndl = std::max(0.0f, (-dx * q[0] - dy * q[1] + lz * q[2]) / std::sqrt(d2 + lz * lz + 1e-3f));
+			}
+			else
+			{
+				ndl = L.lz / std::sqrt(d2 + L.lz2);
+			}
+			m = f * f * ndl;
+			on |= 1;
+		}
+		if (d2 < L.halo2)
+		{
+			h = CORE_GAIN * std::exp(d2 * L.core) + GLOW_GAIN * std::exp(d2 * L.wide);
+			on |= 2;
+		}
+		return on;
+	};
 	// the light of one lamp on one row: into `acc` (the light falling on the pictures) and `glow` (its halo), the
 	// row's first pixel at the area's left edge
 	auto lampRow = [&](const Lit &L, int y, float *acc, float *glow, const float *rrow)
@@ -791,39 +840,67 @@ void draw(SDL_Surface *world, const SDL_Rect &area, const std::vector<Placed> &l
 		const float dy = py - L.y, dy2 = dy * dy;
 		for (int x = L.x0; x < L.x1; ++x)
 		{
-			const float dx = x + 0.5f - L.x;
-			const float d2 = dx * dx + dy2;
-			float *a = &acc[(x - ax0) * 3];
-			if (d2 < L.r2)
+			float m, h;
+			const int on = lampAt(L, x, dy, dy2, rrow, m, h);
+			if (on & 1)
 			{
-				// falls off to the edge of its reach, and by the angle it strikes the surface at: the floor
-				// at a slant, a wall or a cupboard lit on the lamp's side and dark on the other
-				const float f = 1 - d2 / L.r2;
-				float ndl;
-				if (rrow && x >= view->x && x < view->x + view->w)
-				{
-					const float *q = rrow + (size_t)(x - view->x) * 4;
-					const float lz = L.lz - q[3];
-					ndl = std::max(0.0f, (-dx * q[0] - dy * q[1] + lz * q[2]) / std::sqrt(d2 + lz * lz + 1e-3f));
-				}
-				else
-				{
-					ndl = L.lz / std::sqrt(d2 + L.lz2);
-				}
-				const float m = f * f * ndl;
+				float *a = &acc[(x - ax0) * 3];
 				a[0] += L.add[0] * m;
 				a[1] += L.add[1] * m;
 				a[2] += L.add[2] * m;
 			}
-			if (d2 < L.halo2)
+			if (on & 2)
 			{
-				const float h = CORE_GAIN * std::exp(d2 * L.core) + GLOW_GAIN * std::exp(d2 * L.wide);
 				float *g = &glow[(x - ax0) * 3];
 				g[0] += L.glow[0] * h;
 				g[1] += L.glow[1] * h;
 				g[2] += L.glow[2] * h;
 			}
 		}
+	};
+	// the light running along a pipe at a pixel of its map `q`: k of its colour and `white` into the halo, the
+	// light falling on the pipe dimmed by `darken`; false - none there
+	auto flowAt = [&](const FlowNow &N, Uint32 q, float &k, float &white, float &darken) -> bool
+	{
+		const Flow &F = N.P->flow;
+		const float core = ((q >> 8) & 0xFF) / 255.0f, about = (q & 0xFF) / 255.0f;
+		if (core + about < 0.004f)
+		{
+			return false;
+		}
+		const float u = ((q >> 16) & 0xFF) / 255.0f;
+		float e;
+		white = 0;
+		if (F.mode == Flow::STEADY)
+		{
+			if (N.act < 0.01f)
+			{
+				e = 0.18f;
+			}
+			else
+			{
+				const float p = 0.5f + 0.5f * std::cos(2 * PI * (u - N.shift) / F.a2);
+				const float p2 = p * p;
+				e = 0.18f + 0.82f * p2 * p2 * p2 * N.act;
+			}
+			darken = F.dark * core;
+		}
+		else
+		{
+			float slug = 0;
+			for (int i = 0; i < 3; ++i)
+			{
+				const float d = (u - (N.head - 0.11f * i)) / 0.045f;
+				slug += std::exp(-d * d) * (1 - 0.25f * i);
+			}
+			const float behind = N.head - u;
+			e = (slug + (behind > 0 ? std::exp(-behind / 0.35f) * 0.35f : 0.0f)) * N.fade;
+			const float hot = core * slug * N.fade;
+			white = hot * hot * 0.6f;
+			darken = F.dark * core * N.fade;
+		}
+		k = e * (core * F.core + about * F.halo);
+		return true;
 	};
 	auto reliefRow = [&](int y) -> const float *
 	{
@@ -896,7 +973,76 @@ void draw(SDL_Surface *world, const SDL_Rect &area, const std::vector<Placed> &l
 	{
 		lit.insert(lit.begin(), resting.begin(), resting.end());
 	}
-	HdWorkers::instance().run(bands, [&](int band)
+	// a frame of the video card: the resting picture is kept on the card, the moving lamps and the pipes go with
+	// what they add per pixel (worked out here on all cores); not kept - the processor draws it
+	bool handed = false;
+	HdGpuWorld &gw = HdGpuWorld::instance();
+	if (gw.on(world) && !cached)
+	{
+		gw.cpu("the light of the base");
+	}
+	else if (gw.on(world))
+	{
+		std::vector<HdGpuWorld::Lamp> lamps(lit.size());
+		std::vector<HdGpuWorld::Pipe> pipes(flows.size());
+		HdWorkers::instance().run((int)(lit.size() + flows.size()), [&](int i)
+		{
+			if (i < (int)lit.size())
+			{
+				const Lit &L = lit[i];
+				HdGpuWorld::Lamp &out = lamps[i];
+				out.x0 = L.x0; out.y0 = L.y0; out.x1 = L.x1; out.y1 = L.y1;
+				std::copy(L.add, L.add + 3, out.add);
+				std::copy(L.glow, L.glow + 3, out.glow);
+				const int bw = L.x1 - L.x0;
+				out.mh.assign((size_t)bw * (L.y1 - L.y0) * 2, 0.0f);
+				for (int y = L.y0; y < L.y1; ++y)
+				{
+					const float dy = y + 0.5f - L.y, dy2 = dy * dy;
+					const float *rrow = reliefRow(y);
+					float *o = &out.mh[(size_t)(y - L.y0) * bw * 2];
+					for (int x = L.x0; x < L.x1; ++x, o += 2)
+					{
+						float m, h;
+						const int on = lampAt(L, x, dy, dy2, rrow, m, h);
+						o[0] = on & 1 ? m : 0.0f;
+						o[1] = on & 2 ? h : 0.0f;
+					}
+				}
+				return;
+			}
+			const FlowNow &N = flows[i - lit.size()];
+			const PlacedFlow &P = *N.P;
+			HdGpuWorld::Pipe &out = pipes[i - lit.size()];
+			std::copy(P.flow.colour, P.flow.colour + 3, out.colour);
+			out.x0 = std::max(ax0, (int)P.box.x);
+			out.x1 = std::min(ax1, P.box.x + (int)P.box.w);
+			out.y0 = std::max(ay0, (int)P.box.y);
+			out.y1 = std::min(ay1, P.box.y + (int)P.box.h);
+			if (out.x0 >= out.x1 || out.y0 >= out.y1)
+			{
+				return;
+			}
+			const int bw = out.x1 - out.x0;
+			out.kwd.assign((size_t)bw * (out.y1 - out.y0) * 3, 0.0f);
+			for (int y = out.y0; y < out.y1; ++y)
+			{
+				const Uint32 *mrow = &P.map[(size_t)(y - P.box.y) * P.box.w];
+				float *o = &out.kwd[(size_t)(y - out.y0) * bw * 3];
+				for (int x = out.x0; x < out.x1; ++x, o += 3)
+				{
+					if (!flowAt(N, mrow[x - P.box.x], o[0], o[1], o[2]))
+					{
+						o[0] = o[1] = o[2] = 0.0f;
+					}
+				}
+			}
+		});
+		// a pipe out of the area adds nothing
+		pipes.erase(std::remove_if(pipes.begin(), pipes.end(), [](const HdGpuWorld::Pipe &P) { return P.kwd.empty(); }), pipes.end());
+		handed = gw.light(held.key, held.acc, held.glow, ax0, ay0, w, rows, lamps, pipes, curve, LUT_SIZE, LUT_STEPS) && !gw.verifying();
+	}
+	HdWorkers::instance().run(handed ? 0 : bands, [&](int band)
 	{
 		// per row: the light falling on the pictures (ambient + lamps) and the halo over them
 		std::vector<float> acc((size_t)w * 3), glow((size_t)w * 3);
@@ -937,43 +1083,11 @@ void draw(SDL_Surface *world, const SDL_Rect &area, const std::vector<Placed> &l
 				const int fx0 = std::max(ax0, (int)P.box.x), fx1 = std::min(ax1, P.box.x + (int)P.box.w);
 				for (int x = fx0; x < fx1; ++x)
 				{
-					const Uint32 q = mrow[x - P.box.x];
-					const float core = ((q >> 8) & 0xFF) / 255.0f, about = (q & 0xFF) / 255.0f;
-					if (core + about < 0.004f)
+					float k, white, darken;
+					if (!flowAt(N, mrow[x - P.box.x], k, white, darken))
 					{
 						continue;
 					}
-					const float u = ((q >> 16) & 0xFF) / 255.0f;
-					float e, white = 0, darken;
-					if (F.mode == Flow::STEADY)
-					{
-						if (N.act < 0.01f)
-						{
-							e = 0.18f;
-						}
-						else
-						{
-							const float p = 0.5f + 0.5f * std::cos(2 * PI * (u - N.shift) / F.a2);
-							const float p2 = p * p;
-							e = 0.18f + 0.82f * p2 * p2 * p2 * N.act;
-						}
-						darken = F.dark * core;
-					}
-					else
-					{
-						float slug = 0;
-						for (int i = 0; i < 3; ++i)
-						{
-							const float d = (u - (N.head - 0.11f * i)) / 0.045f;
-							slug += std::exp(-d * d) * (1 - 0.25f * i);
-						}
-						const float behind = N.head - u;
-						e = (slug + (behind > 0 ? std::exp(-behind / 0.35f) * 0.35f : 0.0f)) * N.fade;
-						const float hot = core * slug * N.fade;
-						white = hot * hot * 0.6f;
-						darken = F.dark * core * N.fade;
-					}
-					const float k = e * (core * F.core + about * F.halo);
 					float *g = &glow[(x - ax0) * 3];
 					float *a = &acc[(x - ax0) * 3];
 					g[0] += F.colour[0] * k + white * 0.85f;
@@ -1038,8 +1152,6 @@ float valueNoise(float x, float y, float step, Uint32 seed)
 
 void drawBuilding(SDL_Surface *world, const SDL_Rect &rect, float progress, float scale, Uint32 seed, Uint32 ms)
 {
-	// a writer the video card does not take (HdGpuWorld)
-	HdGpuWorld::instance().cpu(world, "a facility being built");
 	if (!world || world->format->BytesPerPixel != 4)
 	{
 		return;
@@ -1057,59 +1169,121 @@ void drawBuilding(SDL_Surface *world, const SDL_Rect &rect, float progress, floa
 	// a scanner line runs down the blueprint over and over
 	const float scan = std::fmod(t * 40.0f, height + 40.0f) - 20.0f;
 	const float weld = 0.75f + 0.25f * std::sin(t * 9.0f);
+	// the glow of the brightness lum, pow(lum, 1.3) in steps of 1/1023 (the video card reads the same table)
+	static const int GLOW_STEPS = 1024;
+	static float glowLut[GLOW_STEPS];
+	static bool glowMade = false;
+	if (!glowMade)
+	{
+		for (int i = 0; i < GLOW_STEPS; ++i)
+		{
+			glowLut[i] = std::pow(i / (float)(GLOW_STEPS - 1), 1.3f);
+		}
+		glowMade = true;
+	}
+	// what a pixel takes from where it is: reveal, grid, beam, edge, line, lift
+	auto params = [&](int x, int y, float *v)
+	{
+		const float py = (y + 0.5f - rect.y) / s;
+		const float px = (x + 0.5f - rect.x) / s;
+		// where it is built first: blotches of a big and a small noise
+		const float n = (valueNoise(px, py, 24, seed) * 0.7f + valueNoise(px, py, 7, seed + 9) * 0.3f);
+		v[0] = std::min(1.0f, std::max(0.0f, (p - n) / 0.05f + 0.5f));
+		const float gx = std::fabs(std::fmod(px, 16.0f) - 8.0f), gy = std::fabs(std::fmod(py, 16.0f) - 8.0f);
+		v[1] = (gx > 7.4f || gy > 7.4f) ? 0.35f : 0.0f;
+		const float bx = std::fabs(std::fmod(px + 16.0f, 32.0f) - 16.0f), by = std::fabs(std::fmod(py + 16.0f, 32.0f) - 16.0f);
+		v[2] = (bx < 1.3f || by < 1.3f) ? 0.8f : 0.0f;
+		// the hot edge where the building grows
+		v[3] = p < 1 ? std::max(0.0f, 1 - std::fabs(n - p) / 0.03f) * weld : 0.0f;
+		v[4] = std::max(0.0f, 1 - std::fabs(py - scan) / 3.0f) * 0.5f;
+		v[5] = 0.85f + 0.15f * std::sin(t * 2.0f + py * 0.15f);
+	};
+	// the pixel from them (HdGpuWorld::building does the same)
+	auto apply = [&](Uint32 pxl, const float *v)
+	{
+		const float reveal = v[0], grid = v[1], beam = v[2], edge = v[3], line = v[4], lift = v[5];
+		float pic[3];
+		for (int c = 0; c < 3; ++c)
+		{
+			pic[c] = ((pxl >> (16 - 8 * c)) & 0xFF) / 255.0f;
+		}
+		float out[3] = { pic[0], pic[1], pic[2] };
+		if (reveal < 1)
+		{
+			// the blueprint: the room's own shapes in glowing cyan on dark blue, a fine grid, and the
+			// yellow beams of the scaffolding
+			const float lum = pic[0] * 0.3f + pic[1] * 0.55f + pic[2] * 0.15f;
+			const float glow = glowLut[std::min(GLOW_STEPS - 1, (int)(lum * (float)(GLOW_STEPS - 1) + 0.5f))];
+			float bp[3] = { 0.05f + glow * 0.25f, 0.12f + glow * 0.55f, 0.20f + glow * 0.85f };
+			for (int c = 0; c < 3; ++c)
+			{
+				const float cyan[3] = { 0.35f, 0.85f, 1.0f };
+				const float yellow[3] = { 0.75f, 0.62f, 0.25f };
+				float w = bp[c] * lift + cyan[c] * (grid * 0.4f + line);
+				w = w * (1 - beam) + yellow[c] * beam;
+				out[c] = pic[c] * reveal + w * (1 - reveal);
+			}
+		}
+		const float hot[3] = { 1.0f, 0.55f, 0.15f };
+		Uint32 o = pxl & 0xFF000000u;
+		for (int c = 0; c < 3; ++c)
+		{
+			const float w = out[c] + hot[c] * edge * 1.2f;
+			o |= (Uint32)std::lround(std::min(1.0f, std::max(0.0f, w)) * 255.0f) << (16 - 8 * c);
+		}
+		return o;
+	};
 	const int bands = (y1 - y0 + BAND - 1) / BAND;
+	const int bw = x1 - x0;
+	HdGpuWorld &gw = HdGpuWorld::instance();
+	if (gw.on(world))
+	{
+		// on the video card: the values of every pixel worked out here, the pixel there
+		static std::vector<float> vals;
+		vals.resize((size_t)bw * (y1 - y0) * 6);
+		HdWorkers::instance().run(bands, [&](int band)
+		{
+			const int ya = y0 + band * BAND, yb = std::min(y1, ya + BAND);
+			for (int y = ya; y < yb; ++y)
+			{
+				float *v = &vals[(size_t)(y - y0) * bw * 6];
+				for (int x = x0; x < x1; ++x, v += 6)
+				{
+					params(x, y, v);
+				}
+			}
+		});
+		const bool verifying = gw.verifying();
+		if (gw.building(vals, glowLut, GLOW_STEPS, x0, y0, x1, y1) && !verifying)
+		{
+			return;
+		}
+		HdWorkers::instance().run(bands, [&](int band)
+		{
+			const int ya = y0 + band * BAND, yb = std::min(y1, ya + BAND);
+			for (int y = ya; y < yb; ++y)
+			{
+				Uint32 *row = (Uint32*)((Uint8*)world->pixels + (size_t)y * world->pitch);
+				const float *v = &vals[(size_t)(y - y0) * bw * 6];
+				for (int x = x0; x < x1; ++x, v += 6)
+				{
+					row[x] = apply(row[x], v);
+				}
+			}
+		});
+		return;
+	}
 	HdWorkers::instance().run(bands, [&](int band)
 	{
 		const int ya = y0 + band * BAND, yb = std::min(y1, ya + BAND);
+		float v[6];
 		for (int y = ya; y < yb; ++y)
 		{
 			Uint32 *row = (Uint32*)((Uint8*)world->pixels + (size_t)y * world->pitch);
-			const float py = (y + 0.5f - rect.y) / s;
 			for (int x = x0; x < x1; ++x)
 			{
-				const float px = (x + 0.5f - rect.x) / s;
-				// where it is built first: blotches of a big and a small noise
-				const float n = (valueNoise(px, py, 24, seed) * 0.7f + valueNoise(px, py, 7, seed + 9) * 0.3f);
-				const float reveal = std::min(1.0f, std::max(0.0f, (p - n) / 0.05f + 0.5f));
-				const Uint32 pxl = row[x];
-				float pic[3];
-				for (int c = 0; c < 3; ++c)
-				{
-					pic[c] = ((pxl >> (16 - 8 * c)) & 0xFF) / 255.0f;
-				}
-				float out[3] = { pic[0], pic[1], pic[2] };
-				if (reveal < 1)
-				{
-					// the blueprint: the room's own shapes in glowing cyan on dark blue, a fine grid, and the
-					// yellow beams of the scaffolding
-					const float lum = pic[0] * 0.3f + pic[1] * 0.55f + pic[2] * 0.15f;
-					const float glow = std::pow(lum, 1.3f);
-					float bp[3] = { 0.05f + glow * 0.25f, 0.12f + glow * 0.55f, 0.20f + glow * 0.85f };
-					const float gx = std::fabs(std::fmod(px, 16.0f) - 8.0f), gy = std::fabs(std::fmod(py, 16.0f) - 8.0f);
-					const float grid = (gx > 7.4f || gy > 7.4f) ? 0.35f : 0.0f;
-					const float bx = std::fabs(std::fmod(px + 16.0f, 32.0f) - 16.0f), by = std::fabs(std::fmod(py + 16.0f, 32.0f) - 16.0f);
-					const float beam = (bx < 1.3f || by < 1.3f) ? 0.8f : 0.0f;
-					const float line = std::max(0.0f, 1 - std::fabs(py - scan) / 3.0f) * 0.5f;
-					const float lift = 0.85f + 0.15f * std::sin(t * 2.0f + py * 0.15f);
-					for (int c = 0; c < 3; ++c)
-					{
-						const float cyan[3] = { 0.35f, 0.85f, 1.0f };
-						const float yellow[3] = { 0.75f, 0.62f, 0.25f };
-						float v = bp[c] * lift + cyan[c] * (grid * 0.4f + line);
-						v = v * (1 - beam) + yellow[c] * beam;
-						out[c] = pic[c] * reveal + v * (1 - reveal);
-					}
-				}
-				// the hot edge where the building grows
-				const float edge = p < 1 ? std::max(0.0f, 1 - std::fabs(n - p) / 0.03f) * weld : 0.0f;
-				const float hot[3] = { 1.0f, 0.55f, 0.15f };
-				Uint32 o = pxl & 0xFF000000u;
-				for (int c = 0; c < 3; ++c)
-				{
-					const float v = out[c] + hot[c] * edge * 1.2f;
-					o |= (Uint32)std::lround(std::min(1.0f, std::max(0.0f, v)) * 255.0f) << (16 - 8 * c);
-				}
-				row[x] = o;
+				params(x, y, v);
+				row[x] = apply(row[x], v);
 			}
 		}
 	});
@@ -1277,6 +1451,74 @@ Uint32 mix(Uint32 px, const float col[3], float m)
 	}
 	return out;
 }
+
+/// The mixes of one part of the motion over its box: on a frame of the video card gathered and handed over at
+/// end() as one HdGpuWorld MIX (and drawn by the processor too when verifying or when the card refuses it),
+/// otherwise drawn at once. put() from many threads, a pixel once; outside the box - nothing.
+struct Mixes
+{
+	SDL_Surface *world;
+	bool card = false;
+	int x0 = 0, y0 = 0, x1 = 0, y1 = 0;
+	std::vector<float> v;
+
+	explicit Mixes(SDL_Surface *w) : world(w) {}
+	void begin(int bx0, int by0, int bx1, int by1)
+	{
+		x0 = std::max(0, bx0);
+		y0 = std::max(0, by0);
+		x1 = std::min(world->w, bx1);
+		y1 = std::min(world->h, by1);
+		card = x0 < x1 && y0 < y1 && HdGpuWorld::instance().on(world);
+		if (card)
+		{
+			v.assign((size_t)(x1 - x0) * (y1 - y0) * 4, 0.0f);
+		}
+	}
+	void put(int x, int y, const float col[3], float m)
+	{
+		if (x < x0 || y < y0 || x >= x1 || y >= y1)
+		{
+			return;
+		}
+		if (card)
+		{
+			float *o = &v[((size_t)(y - y0) * (x1 - x0) + (x - x0)) * 4];
+			o[0] = col[0];
+			o[1] = col[1];
+			o[2] = col[2];
+			o[3] = m;
+			return;
+		}
+		Uint32 *px = (Uint32*)((Uint8*)world->pixels + (size_t)y * world->pitch) + x;
+		*px = mix(*px, col, m);
+	}
+	void end()
+	{
+		if (!card)
+		{
+			return;
+		}
+		card = false;
+		HdGpuWorld &gw = HdGpuWorld::instance();
+		const bool verify = gw.verifying();
+		if (gw.shade(HdGpuWorld::MIX, v, x0, y0, x1, y1, nullptr) && !verify)
+		{
+			return;
+		}
+		// m 0 leaves the pixel as it is
+		const int w = x1 - x0;
+		for (int y = y0; y < y1; ++y)
+		{
+			Uint32 *row = (Uint32*)((Uint8*)world->pixels + (size_t)y * world->pitch);
+			const float *o = &v[(size_t)(y - y0) * w * 4];
+			for (int x = x0; x < x1; ++x, o += 4)
+			{
+				row[x] = mix(row[x], o, o[3]);
+			}
+		}
+	}
+};
 
 }
 
@@ -1584,8 +1826,6 @@ void bake(View &view, const HdFrame *rock, const std::vector<SDL_Rect> &empty, c
 
 void drawMotion(SDL_Surface *world, const View &view, Uint32 ms)
 {
-	// a writer the video card does not take (HdGpuWorld)
-	HdGpuWorld::instance().cpu(world, "the motion of the base");
 	if (!world || world->format->BytesPerPixel != 4 || view.albedo.empty())
 	{
 		return;
@@ -1593,6 +1833,7 @@ void drawMotion(SDL_Surface *world, const View &view, Uint32 ms)
 	const float t = (float)(ms % 3600000u) / 1000.0f;
 	const float s = view.scale;
 	auto inWorld = [&](int x, int y) { return x >= 0 && y >= 0 && x < world->w && y < world->h; };
+	Mixes mx(world);
 	// the water: the picture under it shifted by two slow waves (base_scene_preview.py render), calmer since
 	// 23.10, and the light of the bottom running over it - two nets of caustics turned apart, so their cells
 	// do not repeat, and a long swell (water A, docs/research/base-living-2026-10-22.md 11)
@@ -1617,11 +1858,11 @@ void drawMotion(SDL_Surface *world, const View &view, Uint32 ms)
 		{
 			continue;
 		}
+		mx.begin(x0, y0, x1, y1);
 		HdWorkers::instance().run(y1 - y0, [&](int row)
 		{
 			const int y = y0 + row;
 			const float vy = (y - W.box.y) / s;
-			Uint32 *line = (Uint32*)((Uint8*)world->pixels + (size_t)y * world->pitch);
 			for (int x = x0; x < x1; ++x)
 			{
 				const float m = view.water[(size_t)(y - view.y) * view.w + (x - view.x)];
@@ -1642,9 +1883,10 @@ void drawMotion(SDL_Surface *world, const View &view, Uint32 ms)
 				{
 					col[c] = col[c] * shade + W.glint[c] * (0.55f * 255) * ca * act;
 				}
-				line[x] = mix(line[x], col, m);
+				mx.put(x, y, col, m);
 			}
 		});
+		mx.end();
 	}
 	if (perf)
 	{
@@ -1700,13 +1942,13 @@ void drawMotion(SDL_Surface *world, const View &view, Uint32 ms)
 		const float ang = deg * PI / 180, ca = std::cos(ang), sa = std::sin(ang);
 		const int r = (int)std::ceil(S.radius);
 		const int cx = (int)std::lround(S.x), cy = (int)std::lround(S.y);
+		mx.begin(std::max(cx - r, view.x), std::max(cy - r, view.y), std::min(cx + r, view.x + view.w), std::min(cy + r, view.y + view.h));
 		for (int y = cy - r; y < cy + r; ++y)
 		{
 			if (y < view.y || y >= view.y + view.h || y < 0 || y >= world->h)
 			{
 				continue;
 			}
-			Uint32 *line = (Uint32*)((Uint8*)world->pixels + (size_t)y * world->pitch);
 			for (int x = cx - r; x < cx + r; ++x)
 			{
 				if (x < view.x || x >= view.x + view.w || !inWorld(x, y))
@@ -1728,7 +1970,7 @@ void drawMotion(SDL_Surface *world, const View &view, Uint32 ms)
 					{
 						col[c] = ((under >> (16 - 8 * c)) & 0xFF) * (1 - pc[3]) + pc[c];
 					}
-					line[x] = mix(line[x], col, 1);
+					mx.put(x, y, col, 1);
 					continue;
 				}
 				// a soft edge 3 pack pixels wide, so the turning piece does not show a seam
@@ -1739,9 +1981,10 @@ void drawMotion(SDL_Surface *world, const View &view, Uint32 ms)
 				}
 				float col[3];
 				sample(view.albedo, view.w, view.h, S.x + ca * dx + sa * dy - 0.5f - view.x, S.y - sa * dx + ca * dy - 0.5f - view.y, col);
-				line[x] = mix(line[x], col, m);
+				mx.put(x, y, col, m);
 			}
 		}
+		mx.end();
 	}
 	if (perf)
 	{
@@ -1758,12 +2001,7 @@ void drawMotion(SDL_Surface *world, const View &view, Uint32 ms)
 	// the fits (tickets 237-241): only their few thousand pixels, and only while a fit runs
 	auto put = [&](int vx, int vy, const float col[3])
 	{
-		const int x = view.x + vx, y = view.y + vy;
-		if (inWorld(x, y))
-		{
-			Uint32 *px = (Uint32*)((Uint8*)world->pixels + (size_t)y * world->pitch) + x;
-			*px = mix(*px, col, 1);
-		}
+		mx.put(view.x + vx, view.y + vy, col, 1);
 	};
 	auto rgb = [](Uint32 px, float out[3])
 	{
@@ -1787,6 +2025,15 @@ void drawMotion(SDL_Surface *world, const View &view, Uint32 ms)
 			const float a = fitWave(ft - spread * g / G.glow.groups, length - spread, G.glow.pulses);
 			factor[g] = 1 + (G.glow.peak - 1) * a;
 		}
+		int bx0 = view.w, by0 = view.h, bx1 = 0, by1 = 0;
+		for (const auto p : G.pixels)
+		{
+			bx0 = std::min(bx0, (int)(p % view.w));
+			bx1 = std::max(bx1, (int)(p % view.w) + 1);
+			by0 = std::min(by0, (int)(p / view.w));
+			by1 = std::max(by1, (int)(p / view.w) + 1);
+		}
+		mx.begin(view.x + bx0, view.y + by0, view.x + bx1, view.y + by1);
 		for (size_t i = 0; i < G.pixels.size(); ++i)
 		{
 			const float f = factor[G.group[i]];
@@ -1803,6 +2050,7 @@ void drawMotion(SDL_Surface *world, const View &view, Uint32 ms)
 			col[2] = std::min(255.0f, col[2] * fg);
 			put((int)(G.pixels[i] % view.w), (int)(G.pixels[i] / view.w), col);
 		}
+		mx.end();
 	}
 	for (const PlacedLid &P : view.lids)
 	{
@@ -1814,6 +2062,7 @@ void drawMotion(SDL_Surface *world, const View &view, Uint32 ms)
 		}
 		// the upper lid comes down the eye's own curve: at full shut it covers it to the lower edge
 		const Lid &L = P.lid;
+		mx.begin((int)std::floor(L.x - L.rx), (int)std::floor(L.y - L.ry), (int)std::ceil(L.x + L.rx) + 1, (int)std::ceil(L.y + L.ry) + 1);
 		for (int y = (int)std::floor(L.y - L.ry); y <= (int)std::ceil(L.y + L.ry); ++y)
 		{
 			for (int x = (int)std::floor(L.x - L.rx); x <= (int)std::ceil(L.x + L.rx); ++x)
@@ -1836,6 +2085,7 @@ void drawMotion(SDL_Surface *world, const View &view, Uint32 ms)
 				put(x - view.x, y - view.y, col);
 			}
 		}
+		mx.end();
 	}
 	for (const PlacedSink &P : view.sinks)
 	{
@@ -1850,6 +2100,7 @@ void drawMotion(SDL_Surface *world, const View &view, Uint32 ms)
 		const Sink &S = P.sink;
 		const float cx = S.x + S.w / 2, cy = S.y + S.h / 2, icx = S.ix + S.iw / 2, icy = S.iy + S.ih / 2;
 		const float out = 1 / (1 - 0.07f * a), in = 1 - 0.10f * a, dark = 1 - 0.35f * a;
+		mx.begin((int)S.x, (int)S.y, (int)(S.x + S.w), (int)(S.y + S.h));
 		for (int y = (int)S.y; y < (int)(S.y + S.h); ++y)
 		{
 			for (int x = (int)S.x; x < (int)(S.x + S.w); ++x)
@@ -1882,6 +2133,7 @@ void drawMotion(SDL_Surface *world, const View &view, Uint32 ms)
 				put(x - view.x, y - view.y, col);
 			}
 		}
+		mx.end();
 	}
 }
 
@@ -2444,13 +2696,54 @@ void drawParticles(SDL_Surface *world, const SDL_Rect &area, const std::vector<P
 		}
 		}
 	}
+	// a frame of the video card: the weights of every blob on all cores, the blobs handed over in their order
+	size_t first = 0;
+	HdGpuWorld &gw = HdGpuWorld::instance();
+	if (gw.on(world) && !blobs.empty())
+	{
+		const bool verify = gw.verifying();
+		struct Patch { int box[4]; bool any; std::vector<float> k; };
+		std::vector<Patch> patches(blobs.size());
+		HdWorkers::instance().run((int)blobs.size(), [&](int i)
+		{
+			const Blob &b = blobs[i];
+			Patch &pt = patches[i];
+			auto keep = [&](int x, int y, float k)
+			{
+				const int w = pt.box[2] - pt.box[0];
+				if (pt.k.empty())
+				{
+					pt.k.assign((size_t)w * (pt.box[3] - pt.box[1]), 0.0f);
+				}
+				pt.k[(size_t)(y - pt.box[1]) * w + (x - pt.box[0])] = b.add ? k : std::min(1.0f, k);
+			};
+			pt.any = b.hx > 0 ? boxEach(ax0, ay0, ax1, ay1, b.x, b.y, b.hx, b.hy, b.a, pt.box, keep)
+				: blobEach(ax0, ay0, ax1, ay1, b.x, b.y, b.r, b.ring, b.a, pt.box, keep);
+		});
+		for (; first < blobs.size(); ++first)
+		{
+			const Patch &pt = patches[first];
+			// a blob that touches nothing (every weight 0) leaves the pixels as they are
+			if (pt.any && !pt.k.empty() && !gw.shade(blobs[first].add ? HdGpuWorld::ADD : HdGpuWorld::OVER, pt.k,
+				pt.box[0], pt.box[1], pt.box[2], pt.box[3], blobs[first].col))
+			{
+				break;
+			}
+		}
+		// with VERIFY the processor draws them all; refused at `first`, the card's world came back with those before
+		if (verify)
+		{
+			first = 0;
+		}
+	}
 	// a band draws the blobs that reach into it, in the same order as every other band (as blob's reach)
-	const int bands = (ay1 - ay0 + BAND - 1) / BAND;
+	const int bands = first < blobs.size() ? (ay1 - ay0 + BAND - 1) / BAND : 0;
 	HdWorkers::instance().run(bands, [&](int band)
 	{
 		const int y0 = ay0 + band * BAND, y1 = std::min(ay1, y0 + BAND);
-		for (const Blob &b : blobs)
+		for (size_t i = first; i < blobs.size(); ++i)
 		{
+			const Blob &b = blobs[i];
 			const float reach = b.hx > 0 ? std::max(b.hx, b.hy) + 2 : b.ring + 2.8f * (b.ring > 0 ? 0.7f : 0.6f) * b.r + 1;
 			if (b.y + reach >= y0 && b.y - reach < y1)
 			{

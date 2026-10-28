@@ -1097,11 +1097,14 @@ void HdUi::drawGlyph(const Font *font, UCode c, int x, int y, int color, int mul
 	{
 		return;
 	}
-	HdGpuWorld::instance().cpu("a classic glyph");
 	const SDL_Rect clip = worldClip(dest, k);
 	const int cx0 = clip.x, cy0 = clip.y, cx1 = clip.x + clip.w, cy1 = clip.y + clip.h;
 	const int ox = x * k, oy = y * k;
 	const int x0 = std::max(cx0, ox), y0 = std::max(cy0, oy), x1 = std::min(cx1, ox + g.w), y1 = std::min(cy1, oy + g.h);
+	if (x0 >= x1 || y0 >= y1)
+	{
+		return;
+	}
 	// the colours of the glyph's shades (font palettes use offsets 1-5); the index wraps like the
 	// classic byte arithmetic (Text::draw's PaletteShift)
 	Uint32 lut[8] = {0, 0, 0, 0, 0, 0, 0, 0};
@@ -1110,6 +1113,52 @@ void HdUi::drawGlyph(const Font *font, UCode c, int x, int y, int color, int mul
 		const int inverse = mid ? 2 * (mid - v) : 0;
 		const Uint8 idx = (Uint8)(color + v * mul + inverse);
 		lut[v] = packColor(pal[idx]);
+	}
+	// the colour of a pixel of the glyph, its shades mixed
+	auto shadeAt = [&](size_t gi)
+	{
+		Uint32 s = lut[g.value[gi] & 7];
+		const Uint8 m = g.mix[gi];
+		if (m)
+		{
+			const Uint32 s2 = lut[g.value2[gi] & 7];
+			const Uint32 im = 255 - m;
+			s = 0xFF000000u | (((((s >> 16) & 0xFF) * im + ((s2 >> 16) & 0xFF) * m) / 255) << 16)
+				| (((((s >> 8) & 0xFF) * im + ((s2 >> 8) & 0xFF) * m) / 255) << 8) | (((s & 0xFF) * im + (s2 & 0xFF) * m) / 255);
+		}
+		return s;
+	};
+	// on the video card: the colours with the coverage as their alpha, blended there in integers as here
+	HdGpuWorld &gpuWorld = HdGpuWorld::instance();
+	if (gpuWorld.on(dest))
+	{
+		const int w = x1 - x0;
+		std::vector<Uint32> &argb = _glyphScratch;
+		argb.assign((size_t)w * (y1 - y0), 0);
+		// shade 0 has no colour (alpha 0): a full pixel of it is copied as it is here, which the card does not do
+		bool clear = false;
+		for (int dy = y0; dy < y1; ++dy)
+		{
+			const size_t go = (size_t)(dy - oy) * g.w;
+			Uint32 *out = &argb[(size_t)(dy - y0) * w];
+			for (int dx = x0; dx < x1; ++dx)
+			{
+				const size_t gi = go + (dx - ox);
+				const Uint8 cv = g.cov[gi];
+				if (!cv) continue;
+				const Uint32 s = shadeAt(gi);
+				clear = clear || (cv == 255 && (s >> 24) != 0xFF);
+				out[dx - x0] = ((Uint32)cv << 24) | (s & 0xFFFFFFu);
+			}
+		}
+		if (clear)
+		{
+			gpuWorld.cpu("a classic glyph of shade 0");
+		}
+		else if (gpuWorld.image(argb.data(), w, w, y1 - y0, x0, y0, HdGpuWorld::OVER_INT) && !gpuWorld.verifying())
+		{
+			return;
+		}
 	}
 	for (int dy = y0; dy < y1; ++dy)
 	{
@@ -1120,15 +1169,7 @@ void HdUi::drawGlyph(const Font *font, UCode c, int x, int y, int color, int mul
 			const size_t gi = go + (dx - ox);
 			const Uint8 cv = g.cov[gi];
 			if (!cv) continue;
-			Uint32 s = lut[g.value[gi] & 7];
-			const Uint8 m = g.mix[gi];
-			if (m)
-			{
-				const Uint32 s2 = lut[g.value2[gi] & 7];
-				const Uint32 im = 255 - m;
-				s = 0xFF000000u | (((((s >> 16) & 0xFF) * im + ((s2 >> 16) & 0xFF) * m) / 255) << 16)
-					| (((((s >> 8) & 0xFF) * im + ((s2 >> 8) & 0xFF) * m) / 255) << 8) | (((s & 0xFF) * im + (s2 & 0xFF) * m) / 255);
-			}
+			const Uint32 s = shadeAt(gi);
 			if (cv == 255)
 			{
 				drow[dx] = s;

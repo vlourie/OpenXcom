@@ -61,8 +61,13 @@ public:
 	void draw(SDL_Surface *dest, int bright = 256) const;
 	/// Draws the area (rx, ry, rw, rh) of a w x h 0xAARRGGBB picture over the whole of dest, fitted
 	/// with its aspect kept: bilinear, black where the area goes past the picture and around it,
-	/// `bright` of 256 (0 black). Rows on the HD workers.
-	static void drawFitted(const Uint32 *src, int w, int h, double rx, double ry, double rw, double rh, SDL_Surface *dest, int bright);
+	/// `bright` of 256 (0 black). Rows on the HD workers; on a frame of the video card drawn there (`card`).
+	static void drawFitted(const Uint32 *src, int w, int h, double rx, double ry, double rw, double rh, SDL_Surface *dest, int bright,
+		bool card = true);
+	/// The same on the video card from `texture` (HdGpuWorld::snapshot), the w x h picture at (tx, ty) in it;
+	/// false - not taken (not a frame of the card, or it went back to the processor).
+	static bool drawFittedCard(unsigned texture, int tx, int ty, int w, int h, double rx, double ry, double rw, double rh,
+		SDL_Surface *dest, int bright);
 };
 
 }

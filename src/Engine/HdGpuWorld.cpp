@@ -53,13 +53,20 @@ bool HdGpuWorld::readInto(SDL_Surface *) { return false; }
 bool HdGpuWorld::frame(const HdFrame &, int, int, int, int, int, int) { return false; }
 bool HdGpuWorld::pixels(const Uint8 *, int, int, int, int, int, int, const Uint32 *, int, int, int, int) { return false; }
 bool HdGpuWorld::fill(int, int, int, int, Uint32) { return false; }
-bool HdGpuWorld::image(const Uint32 *, int, int, int, int, int, bool) { return false; }
+bool HdGpuWorld::image(const Uint32 *, int, int, int, int, int, Image) { return false; }
 bool HdGpuWorld::glyph(const Uint8 *, int, int, int, int, int, Uint32, const float *) { return false; }
 bool HdGpuWorld::spans(const std::vector<Span> &) { return false; }
-bool HdGpuWorld::cover(const std::vector<float> &, int, int, int, int, Uint32) { return false; }
+bool HdGpuWorld::cover(const std::vector<Sint32> &, const std::vector<float> &, int, int, int, int, Uint32) { return false; }
+bool HdGpuWorld::shade(Shade, const std::vector<float> &, int, int, int, int, const float *) { return false; }
+bool HdGpuWorld::light(unsigned long long, const std::vector<float> &, const std::vector<float> &, int, int, int, int,
+	const std::vector<Lamp> &, const std::vector<Pipe> &, const unsigned char *, int, int) { return false; }
 bool HdGpuWorld::canvas(unsigned, const SDL_Surface *, int, int, int, int, int, int) { return false; }
 bool HdGpuWorld::canvasZoomed(unsigned, const SDL_Surface *, const std::vector<int> &, const std::vector<Uint32> &,
-	const std::vector<int> &, const std::vector<Uint32> &, Uint32, int, int, int, int) { return false; }
+	const std::vector<int> &, const std::vector<Uint32> &, Uint32, int, int, int, int, int) { return false; }
+unsigned HdGpuWorld::snapshot() { return 0; }
+Uint32 *HdGpuWorld::steps(size_t, size_t, int, int, int, int) { return nullptr; }
+bool HdGpuWorld::building(const std::vector<float> &, const float *, int, int, int, int, int) { return false; }
+bool HdGpuWorld::alarm(const std::vector<Uint32> &, const Uint32 *, const Uint32 *, const Uint32 *, int, int, int, int) { return false; }
 void HdGpuWorld::forget() {}
 void HdGpuWorld::release() {}
 void HdGpuWorld::fallBack(const char *) {}
@@ -75,7 +82,9 @@ using hdgl::Atlas;
 using hdgl::Place;
 
 /// The kinds of the writes (the first value of a write's second texel).
-enum Kind { K_FILL, K_COPY, K_ZOOM, K_FRAME, K_PIXELS, K_IMAGE, K_GLYPH, K_SPANS, K_COVER };
+enum Kind { K_FILL, K_COPY, K_ZOOM, K_FRAME, K_PIXELS, K_IMAGE, K_GLYPH, K_SPANS, K_COVER, K_SHADE, K_LIGHT, K_STEPS, K_ALARM };
+/// The kind of a K_SHADE write for drawBuilding, after HdGpuWorld::Shade's.
+const int S_BUILD = 6;
 
 /// The side of the tiles the writes are sorted into.
 const int TILE = 32;
@@ -109,8 +118,25 @@ const char *const FRAGMENT_SHADER =
 	"#define GLYPH 6\n"
 	"#define SPANS 7\n"
 	"#define COVER 8\n"
+	"#define SHADE 9\n"
+	"#define LIGHT 10\n"
+	"#define STEPS 11\n"
+	"#define ALARM 12\n"
+	// HdGpuWorld::Shade, S_BUILD
+	"#define S_ADD 0\n"
+	"#define S_OVER 1\n"
+	"#define S_MIX 2\n"
+	"#define S_STAMP 3\n"
+	"#define S_GLOW_ADD 4\n"
+	"#define S_GLOW_OWN 5\n"
+	"#define S_BUILD 6\n"
+	// HdGpuWorld::Image
+	"#define I_COPY 1\n"
+	"#define I_OVER_INT 2\n"
 	"uniform sampler2DArray atlas;\n"
 	"uniform sampler2D canvas;\n"
+	"uniform sampler2D heldAcc;\n"
+	"uniform sampler2D heldGlow;\n"
 	"uniform isamplerBuffer ops;\n"
 	"uniform usamplerBuffer data;\n"
 	"uniform isamplerBuffer bins;\n"
@@ -149,6 +175,19 @@ const char *const FRAGMENT_SHADER =
 	"	uint b = ((s & 255u) * a + (d & 255u) * ia) / 255u;\n"
 	"	return 0xFF000000u | (r << 16u) | (g << 8u) | b;\n"
 	"}\n"
+	// HdRadar's blend of a of 256 (HdShadeRow::blend256)
+	"uint blend256(uint d, uint c, uint a)\n"
+	"{\n"
+	"	uint ia = 256u - a;\n"
+	"	uint rb = ((d & 0xFF00FFu) * ia + (c & 0xFF00FFu) * a) >> 8u;\n"
+	"	uint g = ((d & 0xFF00u) * ia + (c & 0xFF00u) * a) >> 8u;\n"
+	"	return 0xFF000000u | (rb & 0xFF00FFu) | (g & 0xFF00u);\n"
+	"}\n"
+	// a channel each through a table of CraftLaunchState's alarm (HdGpuWorld::alarm)
+	"uvec3 through(uvec3 c, int t)\n"
+	"{\n"
+	"	return uvec3((dat(t + int(c.r)) >> 16u) & 255u, (dat(t + int(c.g)) >> 8u) & 255u, dat(t + int(c.b)) & 255u);\n"
+	"}\n"
 	// Canvas32's mix2: every channel, w of 256 of the second
 	"uint mix2(uint a, uint b, uint w)\n"
 	"{\n"
@@ -158,6 +197,123 @@ const char *const FRAGMENT_SHADER =
 	"		o |= ((((a >> s) & 255u) * (256u - w) + ((b >> s) & 255u) * w) >> 8u) << s;\n"
 	"	}\n"
 	"	return o;\n"
+	"}\n"
+	// std::lround, exactly: the fraction of a float is exact
+	"int lroundi(float y)\n"
+	"{\n"
+	"	float a = min(abs(y), 1.0e6);\n"
+	"	float t = floor(a);\n"
+	"	int r = int(t) + (a - t >= 0.5 ? 1 : 0);\n"
+	"	return y < 0.0 ? -r : r;\n"
+	"}\n"
+	// the base's routines per pixel (HdGpuWorld::shade), the values of the pixel from `at`
+	"uint shade(uint d, int kind, int at, vec3 col)\n"
+	"{\n"
+	"	uint o = d & 0xFF000000u;\n"
+	"	if (kind == S_STAMP && !(datf(at + 3) > datf(256))) return d;\n"
+	"	precise float h = datf(at), c = datf(at + 1);\n"
+	"	precise float a = 0.0;\n"
+	"	if (kind >= S_GLOW_ADD)\n"
+	"	{\n"
+	"		if (h < 0.0) return d;\n"
+	"		o = 0xFF000000u;\n"
+	"		a = min(0.85 * h + c, 1.0);\n"
+	"	}\n"
+	"	for (int ch = 0; ch < 3; ++ch)\n"
+	"	{\n"
+	"		uint sh = uint(16 - 8 * ch);\n"
+	"		uint b = (d >> sh) & 255u;\n"
+	"		float v = datf(int(b)), cc = col[ch];\n"
+	"		uint res;\n"
+	"		if (kind == S_ADD) { precise float x = v + cc * h; res = uint(lroundi(clamp(x, 0.0, 1.0) * 255.0)); }\n"
+	"		else if (kind == S_OVER) { precise float x = v + (cc - v) * h; res = uint(lroundi(clamp(x, 0.0, 1.0) * 255.0)); }\n"
+	"		else if (kind == S_MIX)\n"
+	"		{\n"
+	"			precise float m = datf(at + 3);\n"
+	"			precise float x = float(b) * (1.0 - m) + datf(at + ch) * m;\n"
+	"			res = uint(clamp(lroundi(x), 0, 255));\n"
+	"		}\n"
+	"		else if (kind == S_STAMP) { precise float x = datf(at + ch) + v * (1.0 - datf(at + 3)); res = uint(lroundi(min(1.0, x) * 255.0)); }\n"
+	"		else if (kind == S_GLOW_ADD) { precise float x = float(b) + 255.0 * (cc * h + c); res = uint(min(x, 255.0)); }\n"
+	"		else { precise float x = float(b) * (1.0 - a) + 255.0 * cc * a; res = uint(min(x, 255.0)); }\n"
+	"		o |= res << sh;\n"
+	"	}\n"
+	"	return o;\n"
+	"}\n"
+	// HdBaseScene's drawBuilding (HdGpuWorld::building), the values of the pixel from `at`, the glow table at `lut` of n
+	"uint building(uint d, int at, int lut, int n)\n"
+	"{\n"
+	"	precise float reveal = datf(at), grid = datf(at + 1), beam = datf(at + 2), edge = datf(at + 3), line = datf(at + 4), lift = datf(at + 5);\n"
+	"	precise vec3 pic = vec3(datf(int((d >> 16u) & 255u)), datf(int((d >> 8u) & 255u)), datf(int(d & 255u)));\n"
+	"	precise vec3 outc = pic;\n"
+	"	if (reveal < 1.0)\n"
+	"	{\n"
+	"		precise float lum = pic.x * 0.3 + pic.y * 0.55 + pic.z * 0.15;\n"
+	"		precise float lumAt = lum * float(n - 1) + 0.5;\n"
+	"		float glow = datf(lut + min(n - 1, int(lumAt)));\n"
+	"		precise vec3 bp = vec3(0.05 + glow * 0.25, 0.12 + glow * 0.55, 0.20 + glow * 0.85);\n"
+	"		const vec3 cyan = vec3(0.35, 0.85, 1.0), yellow = vec3(0.75, 0.62, 0.25);\n"
+	"		for (int c = 0; c < 3; ++c)\n"
+	"		{\n"
+	"			precise float v = bp[c] * lift + cyan[c] * (grid * 0.4 + line);\n"
+	"			precise float w = v * (1.0 - beam) + yellow[c] * beam;\n"
+	"			outc[c] = pic[c] * reveal + w * (1.0 - reveal);\n"
+	"		}\n"
+	"	}\n"
+	"	const vec3 hot = vec3(1.0, 0.55, 0.15);\n"
+	"	uint o = d & 0xFF000000u;\n"
+	"	for (int c = 0; c < 3; ++c)\n"
+	"	{\n"
+	"		precise float v = outc[c] + hot[c] * edge * 1.2;\n"
+	"		precise float x = min(1.0, max(0.0, v)) * 255.0;\n"
+	"		o |= uint(lroundi(x)) << uint(16 - 8 * c);\n"
+	"	}\n"
+	"	return o;\n"
+	"}\n"
+	// HdBaseScene::draw's light (HdGpuWorld::light), its head at `at`, the area's corner `corner`
+	"uint light(uint d, ivec2 p, int at, ivec2 corner)\n"
+	"{\n"
+	"	ivec2 o = p - corner;\n"
+	"	precise vec3 a = texelFetch(heldAcc, o, 0).rgb;\n"
+	"	precise vec3 g = texelFetch(heldGlow, o, 0).rgb;\n"
+	"	int nl = int(dat(at)), np = int(dat(at + 1)), lutAt = int(dat(at + 2)), lutTop = int(dat(at + 3));\n"
+	"	float steps = datf(at + 4);\n"
+	"	int e = at + 5;\n"
+	"	for (int l = 0; l < nl; ++l, e += 11)\n"
+	"	{\n"
+	"		ivec4 bx = ivec4(dat(e), dat(e + 1), dat(e + 2), dat(e + 3));\n"
+	"		if (p.x < bx.x || p.y < bx.y || p.x >= bx.z || p.y >= bx.w) continue;\n"
+	"		int j = int(dat(e + 10)) + ((p.y - bx.y) * (bx.z - bx.x) + (p.x - bx.x)) * 2;\n"
+	"		float m = datf(j), h = datf(j + 1);\n"
+	"		a.r += datf(e + 4) * m;\n"
+	"		a.g += datf(e + 5) * m;\n"
+	"		a.b += datf(e + 6) * m;\n"
+	"		g.r += datf(e + 7) * h;\n"
+	"		g.g += datf(e + 8) * h;\n"
+	"		g.b += datf(e + 9) * h;\n"
+	"	}\n"
+	"	for (int f = 0; f < np; ++f, e += 8)\n"
+	"	{\n"
+	"		ivec4 bx = ivec4(dat(e), dat(e + 1), dat(e + 2), dat(e + 3));\n"
+	"		if (p.x < bx.x || p.y < bx.y || p.x >= bx.z || p.y >= bx.w) continue;\n"
+	"		int j = int(dat(e + 7)) + ((p.y - bx.y) * (bx.z - bx.x) + (p.x - bx.x)) * 3;\n"
+	"		float k = datf(j), white = datf(j + 1), darken = datf(j + 2);\n"
+	"		g.r += datf(e + 4) * k + white * 0.85;\n"
+	"		g.g += datf(e + 5) * k + white;\n"
+	"		g.b += datf(e + 6) * k + white * 0.75;\n"
+	"		a.r *= 1.0 - darken;\n"
+	"		a.g *= 1.0 - darken;\n"
+	"		a.b *= 1.0 - darken;\n"
+	"	}\n"
+	"	uint out_ = d & 0xFF000000u;\n"
+	"	for (int ch = 0; ch < 3; ++ch)\n"
+	"	{\n"
+	"		uint sh = uint(16 - 8 * ch);\n"
+	"		precise float v = datf(int((d >> sh) & 255u)) * a[ch] + g[ch];\n"
+	"		int i = min(lutTop, int(v * steps));\n"
+	"		out_ |= dat(lutAt + max(0, i)) << sh;\n"
+	"	}\n"
+	"	return out_;\n"
 	"}\n"
 	"void main()\n"
 	"{\n"
@@ -183,17 +339,18 @@ const char *const FRAGMENT_SHADER =
 	"		case ZOOM:\n"
 	"		{\n"
 	"			int j = int(dat(q.y + (p.y - r.y) * 2));\n"
-	"			if (j < 0)\n"
+	"			int c = int(dat(q.x + (p.x - r.x) * 2));\n"
+	"			if (j < 0 || c < 0)\n"
 	"			{\n"
 	"				d = uint(q.z);\n"
 	"				break;\n"
 	"			}\n"
 	"			uint wy = dat(q.y + (p.y - r.y) * 2 + 1);\n"
-	"			int c = int(dat(q.x + (p.x - r.x) * 2));\n"
 	"			uint wx = dat(q.x + (p.x - r.x) * 2 + 1);\n"
 	"			uint top = mix2(canvasAt(ivec2(c, j)), canvasAt(ivec2(c + 1, j)), wx);\n"
 	"			uint low = mix2(canvasAt(ivec2(c, j + 1)), canvasAt(ivec2(c + 1, j + 1)), wx);\n"
 	"			d = mix2(top, low, wy);\n"
+	"			if (q.w < 256) d = mix2(uint(q.z), d, uint(q.w));\n"
 	"			break;\n"
 	"		}\n"
 	"		case FRAME:\n"
@@ -208,7 +365,8 @@ const char *const FRAGMENT_SHADER =
 	"		case IMAGE:\n"
 	"		{\n"
 	"			uint c = atlasAt(h.y, p + h.zw);\n"
-	"			if (q.x != 0) d = c;\n"
+	"			if (q.x == I_COPY) d = c;\n"
+	"			else if (q.x == I_OVER_INT) d = blendInt(d, c);\n"
 	"			else if ((c >> 24u) != 0u) d = blendPixel(d, c, 1.0);\n"
 	"			break;\n"
 	"		}\n"
@@ -233,8 +391,50 @@ const char *const FRAGMENT_SHADER =
 	"		}\n"
 	"		case COVER:\n"
 	"		{\n"
-	"			float cov = datf(q.x + (p.y - r.y) * q.y + (p.x - r.x));\n"
+	"			int at = q.x + (p.y - r.y) * 5;\n"
+	"			int a0 = int(dat(at + 1)), b0 = int(dat(at + 2)), a1 = int(dat(at + 3)), b1 = int(dat(at + 4));\n"
+	"			int j = p.x >= a0 && p.x < b0 ? p.x - a0 : (p.x >= a1 && p.x < b1 ? b0 - a0 + p.x - a1 : -1);\n"
+	"			if (j < 0) break;\n"
+	"			float cov = datf(int(dat(at)) + j);\n"
 	"			if (cov > datf(256)) d = blendPixel(d, uint(q.z), cov);\n"
+	"			break;\n"
+	"		}\n"
+	"		case SHADE:\n"
+	"		{\n"
+	"			if (q.y == S_BUILD)\n"
+	"			{\n"
+	"				d = building(d, q.x + ((p.y - r.y) * (r.z - r.x) + (p.x - r.x)) * 6, q.z, q.w);\n"
+	"				break;\n"
+	"			}\n"
+	"			int st = q.y == S_MIX || q.y == S_STAMP ? 4 : (q.y >= S_GLOW_ADD ? 2 : 1);\n"
+	"			ivec4 e = texelFetch(ops, i * 4 + 3);\n"
+	"			d = shade(d, q.y, q.x + ((p.y - r.y) * (r.z - r.x) + (p.x - r.x)) * st, vec3(intBitsToFloat(q.z), intBitsToFloat(q.w), intBitsToFloat(e.x)));\n"
+	"			break;\n"
+	"		}\n"
+	"		case LIGHT:\n"
+	"			d = light(d, p, q.x, q.yz);\n"
+	"			break;\n"
+	"		case STEPS:\n"
+	"		{\n"
+	"			int at = q.x + (p.y - r.y) * 4;\n"
+	"			int xa = int(dat(at + 1)), xb = int(dat(at + 2));\n"
+	"			if (p.x < xa || p.x >= xb) break;\n"
+	"			int t = q.y + int(dat(at)) + (p.x - xa), first = q.z + int(dat(at + 3)) * 2;\n"
+	"			for (int s = first + int(dat(t)) * 2, e = first + int(dat(t + 1)) * 2; s < e; s += 2)\n"
+	"			{\n"
+	"				uint c = dat(s), w = dat(s + 1);\n"
+	"				d = (w & 0x80000000u) != 0u ? blend256(d, c, w & 0x1FFu) : blendPixel(d, c, uintBitsToFloat(w));\n"
+	"			}\n"
+	"			break;\n"
+	"		}\n"
+	"		case ALARM:\n"
+	"		{\n"
+	"			uint v = dat(q.x + (p.y - r.y) * (r.z - r.x) + (p.x - r.x));\n"
+	"			uvec3 c = through(uvec3((d >> 16u) & 255u, (d >> 8u) & 255u, d & 255u), q.y);\n"
+	"			uint stripe = (v >> 24u) & 3u;\n"
+	"			if (stripe != 0u) c = through(c, stripe == 1u ? q.z : q.w);\n"
+	"			c = min(c + uvec3((v >> 16u) & 255u, (v >> 8u) & 255u, v & 255u), uvec3(255u));\n"
+	"			d = (d & 0xFF000000u) | (c.r << 16u) | (c.g << 8u) | c.b;\n"
 	"			break;\n"
 	"		}\n"
 	"		}\n"
@@ -307,6 +507,15 @@ struct HdGpuWorld::Impl
 	/// The canvas the frame copies: the texture it is read from, and the processor's pixels uploaded into canvasOwn.
 	GLuint canvasTexture = 0;
 	const SDL_Surface *canvasPixels = nullptr;
+	/// The base's lamps at rest (light): their two pictures, the key and the size they were uploaded for; the key of
+	/// this frame's light (one a frame: a second would overwrite the pictures the first reads).
+	GLuint rest[2] = { 0, 0 };
+	int heldW = 0, heldH = 0;
+	/// The world drawn so far (snapshot) and its size.
+	GLuint snap = 0;
+	int snapW = 0, snapH = 0;
+	Uint64 heldKey = 0, frameKey = 0;
+	bool heldValid = false, frameLight = false;
 	std::vector<std::vector<int>> lists;
 	std::vector<Sint32> bins;
 	std::vector<Uint32> scratch;
@@ -353,6 +562,8 @@ struct HdGpuWorld::Impl
 		gl.Uniform1i(gl.GetUniformLocation(program, "ops"), 2);
 		gl.Uniform1i(gl.GetUniformLocation(program, "data"), 3);
 		gl.Uniform1i(gl.GetUniformLocation(program, "bins"), 4);
+		gl.Uniform1i(gl.GetUniformLocation(program, "heldAcc"), 5);
+		gl.Uniform1i(gl.GetUniformLocation(program, "heldGlow"), 6);
 		tilesAt = gl.GetUniformLocation(program, "tilesX");
 		probeAt = gl.GetUniformLocation(program, "probe");
 		gl.UseProgram(0);
@@ -400,6 +611,13 @@ struct HdGpuWorld::Impl
 		if (buffers[0]) gl.DeleteBuffers(3, buffers);
 		if (textures[0]) glDeleteTextures(3, textures);
 		if (canvasOwn) glDeleteTextures(1, &canvasOwn);
+		if (rest[0]) glDeleteTextures(2, rest);
+		if (snap) glDeleteTextures(1, &snap);
+		snap = 0;
+		snapW = snapH = 0;
+		rest[0] = rest[1] = 0;
+		heldW = heldH = 0;
+		heldValid = false;
 		program = vao = canvasOwn = 0;
 		buffers[0] = buffers[1] = buffers[2] = 0;
 		textures[0] = textures[1] = textures[2] = 0;
@@ -426,6 +644,7 @@ struct HdGpuWorld::Impl
 		tables.clear();
 		canvasTexture = 0;
 		canvasPixels = nullptr;
+		frameLight = false;
 		++atlas.clock;
 	}
 
@@ -475,8 +694,8 @@ struct HdGpuWorld::Impl
 	}
 
 	/// Sorts the writes into the tiles (a write that hides a whole tile drops the ones before it there), uploads
-	/// them and draws the world into its framebuffer.
-	void composite()
+	/// them and draws the world into its framebuffer; `last` - the frame's own (the probe's bit flipped).
+	void composite(bool last = true)
 	{
 		const auto t0 = std::chrono::steady_clock::now();
 		const int tilesX = (W + TILE - 1) / TILE, tilesY = (H + TILE - 1) / TILE;
@@ -489,7 +708,7 @@ struct HdGpuWorld::Impl
 		for (int i = 0; i < count; ++i)
 		{
 			const Sint32 *q = &ops[(size_t)i * 16];
-			const bool opaque = q[4] == K_FILL || q[4] == K_COPY || q[4] == K_ZOOM || (q[4] == K_IMAGE && q[8] != 0);
+			const bool opaque = q[4] == K_FILL || q[4] == K_COPY || q[4] == K_ZOOM || (q[4] == K_IMAGE && q[8] == COPY);
 			for (int ty = q[1] / TILE; ty <= (q[3] - 1) / TILE; ++ty)
 			{
 				for (int tx = q[0] / TILE; tx <= (q[2] - 1) / TILE; ++tx)
@@ -535,11 +754,16 @@ struct HdGpuWorld::Impl
 		glColorMask(GL_TRUE, GL_TRUE, GL_TRUE, GL_TRUE);
 		gl.UseProgram(program);
 		gl.Uniform1i(tilesAt, tilesX);
-		gl.Uniform1ui(probeAt, probe ? 1u : 0u);
+		gl.Uniform1ui(probeAt, probe && last ? 1u : 0u);
 		gl.ActiveTexture(GL_TEXTURE0);
 		glBindTexture(GL_TEXTURE_2D_ARRAY, atlas.texture);
 		gl.ActiveTexture(GL_TEXTURE0 + 1);
 		glBindTexture(GL_TEXTURE_2D, canvasTexture);
+		for (int i = 0; i < 2; ++i)
+		{
+			gl.ActiveTexture(GL_TEXTURE0 + 5 + i);
+			glBindTexture(GL_TEXTURE_2D, frameLight ? rest[i] : 0);
+		}
 		for (int i = 0; i < 3; ++i)
 		{
 			gl.ActiveTexture(GL_TEXTURE0 + 2 + i);
@@ -550,6 +774,11 @@ struct HdGpuWorld::Impl
 		glDrawArrays(GL_TRIANGLES, 0, 3);
 		gl.BindVertexArray(0);
 		const auto t4 = std::chrono::steady_clock::now();
+		for (int i = 1; i >= 0; --i)
+		{
+			gl.ActiveTexture(GL_TEXTURE0 + 5 + i);
+			glBindTexture(GL_TEXTURE_2D, 0);
+		}
 		for (int i = 2; i >= 0; --i)
 		{
 			gl.ActiveTexture(GL_TEXTURE0 + 2 + i);
@@ -712,8 +941,9 @@ void HdGpuWorld::fallBack(const char *why)
 bool HdGpuWorld::refuse(const char *why)
 {
 	fallBack(why);
-	// the frame is the processor's now: the array may be made anew (everything on it goes up again)
-	if (why == GROWING && _impl->atlas.grow())
+	// the frame is the processor's now: a bigger array, the pictures on it copied over on the card (R-520); made
+	// anew, with everything going up again, only where the driver cannot copy
+	if (why == GROWING && _impl->atlas.grow(true) && _impl->atlas.places.empty())
 	{
 		_impl->transient.clear();
 	}
@@ -916,7 +1146,7 @@ bool HdGpuWorld::fill(int x0, int y0, int x1, int y1, Uint32 v)
 	return true;
 }
 
-bool HdGpuWorld::image(const Uint32 *argb, int pitch, int w, int h, int x, int y, bool copy)
+bool HdGpuWorld::image(const Uint32 *argb, int pitch, int w, int h, int x, int y, Image how)
 {
 	Impl &m = *_impl;
 	int x0 = x, y0 = y, x1 = x + w, y1 = y + h;
@@ -934,7 +1164,7 @@ bool HdGpuWorld::image(const Uint32 *argb, int pitch, int w, int h, int x, int y
 	q[5] = pl->layer;
 	q[6] = pl->x - x;
 	q[7] = pl->y - y;
-	q[8] = copy ? 1 : 0;
+	q[8] = (Sint32)how;
 	return true;
 }
 
@@ -1016,25 +1246,186 @@ bool HdGpuWorld::spans(const std::vector<Span> &spans)
 	return true;
 }
 
-bool HdGpuWorld::cover(const std::vector<float> &cov, int x0, int y0, int x1, int y1, Uint32 color)
+bool HdGpuWorld::cover(const std::vector<Sint32> &runs, const std::vector<float> &cov, int x0, int y0, int x1, int y1, Uint32 color)
 {
 	Impl &m = *_impl;
 	if (x0 >= x1 || y0 >= y1)
 	{
 		return true;
 	}
-	if (x0 < 0 || y0 < 0 || x1 > m.W || y1 > m.H || cov.size() != (size_t)(x1 - x0) * (y1 - y0))
+	const int rows = y1 - y0;
+	size_t total = 0;
+	bool inside = runs.size() == (size_t)rows * 4;
+	for (int r = 0; inside && r < rows; ++r)
+	{
+		const Sint32 *v = &runs[(size_t)r * 4];
+		inside = x0 <= v[0] && v[0] <= v[1] && v[1] <= x1 && x0 <= v[2] && v[2] <= v[3] && v[3] <= x1;
+		total += (size_t)(v[1] - v[0] + v[3] - v[2]);
+	}
+	if (x0 < 0 || y0 < 0 || x1 > m.W || y1 > m.H || !inside || cov.size() != total)
+	{
+		fallBack("a shape out of the world");
+		return false;
+	}
+	// per row of the rectangle: where its coverages start and its two stretches; then the coverages
+	const Sint32 at = (Sint32)m.data.size();
+	m.data.resize(m.data.size() + (size_t)rows * 5);
+	Uint32 next = (Uint32)m.data.size();
+	for (int r = 0; r < rows; ++r)
+	{
+		const Sint32 *v = &runs[(size_t)r * 4];
+		Uint32 *h = &m.data[at + (size_t)r * 5];
+		h[0] = next;
+		for (int i = 0; i < 4; ++i)
+		{
+			h[1 + i] = (Uint32)v[i];
+		}
+		next += (Uint32)(v[1] - v[0] + v[3] - v[2]);
+	}
+	m.data.resize(next);
+	std::memcpy(&m.data[at + (size_t)rows * 5], cov.data(), cov.size() * 4);
+	Sint32 *q = m.push(K_COVER, x0, y0, x1, y1);
+	q[8] = at;
+	q[10] = (Sint32)color;
+	return true;
+}
+
+bool HdGpuWorld::shade(Shade kind, const std::vector<float> &vals, int x0, int y0, int x1, int y1, const float col[3])
+{
+	Impl &m = *_impl;
+	if (x0 >= x1 || y0 >= y1)
+	{
+		return true;
+	}
+	const size_t stride = kind == MIX || kind == STAMP ? 4 : kind >= GLOW_ADD ? 2 : 1;
+	if (x0 < 0 || y0 < 0 || x1 > m.W || y1 > m.H || vals.size() != (size_t)(x1 - x0) * (y1 - y0) * stride)
 	{
 		fallBack("a shape out of the world");
 		return false;
 	}
 	const Sint32 at = (Sint32)m.data.size();
-	m.data.resize(m.data.size() + cov.size());
-	std::memcpy(&m.data[at], cov.data(), cov.size() * 4);
-	Sint32 *q = m.push(K_COVER, x0, y0, x1, y1);
+	m.data.resize(m.data.size() + vals.size());
+	std::memcpy(&m.data[at], vals.data(), vals.size() * 4);
+	Sint32 *q = m.push(K_SHADE, x0, y0, x1, y1);
 	q[8] = at;
-	q[9] = x1 - x0;
-	q[10] = (Sint32)color;
+	q[9] = (Sint32)kind;
+	const float none[3] = { 0, 0, 0 };
+	std::memcpy(&q[10], col ? col : none, 12);
+	return true;
+}
+
+bool HdGpuWorld::light(unsigned long long key, const std::vector<float> &acc, const std::vector<float> &glow, int ax0, int ay0, int w, int h,
+	const std::vector<Lamp> &lamps, const std::vector<Pipe> &pipes, const unsigned char *curve, int lutSize, int lutSteps)
+{
+	Impl &m = *_impl;
+	if (w <= 0 || h <= 0)
+	{
+		return true;
+	}
+	const size_t area = (size_t)w * h * 3;
+	bool fits = ax0 >= 0 && ay0 >= 0 && ax0 + w <= m.W && ay0 + h <= m.H && acc.size() == area && glow.size() == area && lutSize > 0;
+	for (const Lamp &L : lamps)
+	{
+		fits = fits && L.x0 >= 0 && L.y0 >= 0 && L.x1 <= m.W && L.y1 <= m.H && L.x0 < L.x1 && L.y0 < L.y1
+			&& L.mh.size() == (size_t)(L.x1 - L.x0) * (L.y1 - L.y0) * 2;
+	}
+	for (const Pipe &P : pipes)
+	{
+		fits = fits && P.x0 >= 0 && P.y0 >= 0 && P.x1 <= m.W && P.y1 <= m.H && P.x0 < P.x1 && P.y0 < P.y1
+			&& P.kwd.size() == (size_t)(P.x1 - P.x0) * (P.y1 - P.y0) * 3;
+	}
+	if (!fits)
+	{
+		fallBack("a light out of the world");
+		return false;
+	}
+	if (m.frameLight && m.frameKey != key)
+	{
+		return refuse("two lights of the base in a frame");
+	}
+	// the lamps at rest: uploaded when they changed
+	if (!m.heldValid || m.heldKey != key || m.heldW != w || m.heldH != h)
+	{
+		const bool fresh = !m.rest[0] || m.heldW != w || m.heldH != h;
+		if (!m.rest[0])
+		{
+			glGenTextures(2, m.rest);
+		}
+		const std::vector<float> *pics[2] = { &acc, &glow };
+		gl.ActiveTexture(GL_TEXTURE0);
+		glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+		for (int i = 0; i < 2; ++i)
+		{
+			glBindTexture(GL_TEXTURE_2D, m.rest[i]);
+			if (fresh)
+			{
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+				glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+				glTexImage2D(GL_TEXTURE_2D, 0, 0x8815 /* GL_RGB32F */, w, h, 0, GL_RGB, GL_FLOAT, pics[i]->data());
+			}
+			else
+			{
+				glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, w, h, GL_RGB, GL_FLOAT, pics[i]->data());
+			}
+		}
+		glBindTexture(GL_TEXTURE_2D, 0);
+		m.heldW = w;
+		m.heldH = h;
+		m.heldKey = key;
+		m.heldValid = true;
+		++m.stats.uploads;
+		m.stats.uploadBytes += (long long)area * 8;
+	}
+	m.frameLight = true;
+	m.frameKey = key;
+	// the head, the lamps and the pipes with where their values lie, the values, the curve
+	std::vector<Uint32> curve32(curve, curve + lutSize);
+	const Sint32 lut = m.table(curve32.data(), lutSize);
+	const Sint32 at = (Sint32)m.data.size();
+	m.data.resize(m.data.size() + 5 + lamps.size() * 11 + pipes.size() * 8);
+	Uint32 next = (Uint32)m.data.size();
+	Uint32 *v = &m.data[at];
+	const float steps = (float)lutSteps;
+	v[0] = (Uint32)lamps.size();
+	v[1] = (Uint32)pipes.size();
+	v[2] = (Uint32)lut;
+	v[3] = (Uint32)(lutSize - 1);
+	std::memcpy(&v[4], &steps, 4);
+	v += 5;
+	for (const Lamp &L : lamps)
+	{
+		v[0] = (Uint32)L.x0; v[1] = (Uint32)L.y0; v[2] = (Uint32)L.x1; v[3] = (Uint32)L.y1;
+		std::memcpy(&v[4], L.add, 12);
+		std::memcpy(&v[7], L.glow, 12);
+		v[10] = next;
+		next += (Uint32)L.mh.size();
+		v += 11;
+	}
+	for (const Pipe &P : pipes)
+	{
+		v[0] = (Uint32)P.x0; v[1] = (Uint32)P.y0; v[2] = (Uint32)P.x1; v[3] = (Uint32)P.y1;
+		std::memcpy(&v[4], P.colour, 12);
+		v[7] = next;
+		next += (Uint32)P.kwd.size();
+		v += 8;
+	}
+	const size_t values = m.data.size();
+	m.data.resize(next);
+	Uint32 *out = &m.data[values];
+	for (const Lamp &L : lamps)
+	{
+		std::memcpy(out, L.mh.data(), L.mh.size() * 4);
+		out += L.mh.size();
+	}
+	for (const Pipe &P : pipes)
+	{
+		std::memcpy(out, P.kwd.data(), P.kwd.size() * 4);
+		out += P.kwd.size();
+	}
+	Sint32 *q = m.push(K_LIGHT, ax0, ay0, ax0 + w, ay0 + h);
+	q[8] = at;
+	q[9] = ax0;
+	q[10] = ay0;
 	return true;
 }
 
@@ -1114,7 +1505,7 @@ bool HdGpuWorld::canvas(unsigned texture, const SDL_Surface *pixels, int ox, int
 }
 
 bool HdGpuWorld::canvasZoomed(unsigned texture, const SDL_Surface *pixels, const std::vector<int> &cols, const std::vector<Uint32> &colWeights,
-	const std::vector<int> &rows, const std::vector<Uint32> &rowWeights, Uint32 black, int x0, int y0, int x1, int y1)
+	const std::vector<int> &rows, const std::vector<Uint32> &rowWeights, Uint32 black, int x0, int y0, int x1, int y1, int bright)
 {
 	Impl &m = *_impl;
 	if (x0 >= x1 || y0 >= y1)
@@ -1148,6 +1539,108 @@ bool HdGpuWorld::canvasZoomed(unsigned texture, const SDL_Surface *pixels, const
 	q[8] = colsAt;
 	q[9] = rowsAt;
 	q[10] = (Sint32)black;
+	q[11] = std::min(256, std::max(0, bright));
+	return true;
+}
+
+unsigned HdGpuWorld::snapshot()
+{
+	if (!_on || !_impl)
+	{
+		return 0;
+	}
+	Impl &m = *_impl;
+	// the writes so far into the framebuffer (no probe: the frame's own composite flips its bit once), copied out
+	m.composite(false);
+	gl.ActiveTexture(GL_TEXTURE0 + 1);
+	if (!m.snap)
+	{
+		glGenTextures(1, &m.snap);
+	}
+	glBindTexture(GL_TEXTURE_2D, m.snap);
+	if (m.snapW != m.W || m.snapH != m.H)
+	{
+		glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, m.W, m.H, 0, GL_BGRA, GL_UNSIGNED_BYTE, nullptr);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+		m.snapW = m.W;
+		m.snapH = m.H;
+	}
+	gl.BindFramebuffer(GL_READ_FRAMEBUFFER, HdGpu::instance().framebuffer());
+	glCopyTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 0, 0, m.W, m.H);
+	gl.BindFramebuffer(GL_READ_FRAMEBUFFER, 0);
+	glBindTexture(GL_TEXTURE_2D, 0);
+	gl.ActiveTexture(GL_TEXTURE0);
+	// the frame goes on from that picture
+	m.start(m.W, m.H);
+	m.canvasTexture = m.snap;
+	Sint32 *q = m.push(K_COPY, 0, 0, m.W, m.H);
+	q[8] = 0;
+	q[9] = 0;
+	return m.snap;
+}
+
+Uint32 *HdGpuWorld::steps(size_t table, size_t steps, int x0, int y0, int x1, int y1)
+{
+	Impl &m = *_impl;
+	if (x0 >= x1 || y0 >= y1 || x0 < 0 || y0 < 0 || x1 > m.W || y1 > m.H)
+	{
+		fallBack("a shape out of the world");
+		return nullptr;
+	}
+	const size_t rowsAt = m.data.size(), rows = (size_t)(y1 - y0) * 4;
+	m.data.resize(rowsAt + rows + table + steps);
+	Sint32 *q = m.push(K_STEPS, x0, y0, x1, y1);
+	q[8] = (Sint32)rowsAt;
+	q[9] = (Sint32)(rowsAt + rows);
+	q[10] = (Sint32)(rowsAt + rows + table);
+	return m.data.data() + rowsAt;
+}
+
+bool HdGpuWorld::building(const std::vector<float> &vals, const float *glowLut, int lutSize, int x0, int y0, int x1, int y1)
+{
+	Impl &m = *_impl;
+	if (x0 >= x1 || y0 >= y1)
+	{
+		return true;
+	}
+	if (x0 < 0 || y0 < 0 || x1 > m.W || y1 > m.H || lutSize < 1 || vals.size() != (size_t)(x1 - x0) * (y1 - y0) * 6)
+	{
+		fallBack("a shape out of the world");
+		return false;
+	}
+	const Sint32 lutAt = m.table((const Uint32 *)glowLut, lutSize);
+	const Sint32 at = (Sint32)m.data.size();
+	m.data.resize(m.data.size() + vals.size());
+	std::memcpy(&m.data[at], vals.data(), vals.size() * 4);
+	Sint32 *q = m.push(K_SHADE, x0, y0, x1, y1);
+	q[8] = at;
+	q[9] = S_BUILD;
+	q[10] = lutAt;
+	q[11] = lutSize;
+	return true;
+}
+
+bool HdGpuWorld::alarm(const std::vector<Uint32> &px, const Uint32 *wash, const Uint32 *stripe1, const Uint32 *stripe2, int x0, int y0, int x1, int y1)
+{
+	Impl &m = *_impl;
+	if (x0 >= x1 || y0 >= y1)
+	{
+		return true;
+	}
+	if (x0 < 0 || y0 < 0 || x1 > m.W || y1 > m.H || px.size() != (size_t)(x1 - x0) * (y1 - y0))
+	{
+		fallBack("a shape out of the world");
+		return false;
+	}
+	const Sint32 washAt = m.table(wash, 256), s1At = m.table(stripe1, 256), s2At = m.table(stripe2, 256);
+	const Sint32 at = (Sint32)m.data.size();
+	m.data.insert(m.data.end(), px.begin(), px.end());
+	Sint32 *q = m.push(K_ALARM, x0, y0, x1, y1);
+	q[8] = at;
+	q[9] = washAt;
+	q[10] = s1At;
+	q[11] = s2At;
 	return true;
 }
 

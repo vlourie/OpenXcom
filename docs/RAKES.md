@@ -3682,3 +3682,12 @@
 Правило:  в пути кадра не звать glGet*/glGetError/glFinish; нужное состояние вести самим (viewport ставит present()); глобальные пределы спрашивать один раз при создании
 Защита:   HD GPU world: a composite of ... (bins, buffers, binding, draw) в логе при OXCE_HD_GPU_STATS=1
 Наступал: 1   Последний: 2026-10-28
+
+## R-520  Рост массива кадров видеокарты пересоздаёт его на том же имени и заливает всё заново - flip стоит 0.7 с
+Статус:   активны
+Файлы:    src/Engine/HdGpuAtlas.h, src/Engine/HdGpuCanvas.cpp, src/Engine/HdGpuWorld.cpp
+Симптом:  С миром на видеокарте один рывок 712 мс на flip сразу после строки лога 'HD GPU canvas: frames in 8 layers'; STATS мира не видит компоновку дольше 50 мс - время уходит в SDL_GL_SwapBuffers
+Причина:  Atlas::grow звал create(): TexImage3D на том же имени текстуры, которую читают кадры в очереди драйвера, и очистка мест - все кадры шли на карту заново (сотни МБ); плюс glGetIntegerv/glGetError в HdGpuCanvas::draw на каждый сброс (R-519)
+Правило:  Массив кадров растить новым именем с glCopyImageSubData старых слоёв (Atlas::grow(true)); места, поставленные неудачной попыткой, вернуть (drop p.fresh); в пути кадра никаких glGet* и glGetError - состояние держать самим
+Защита:   Atlas::grow(keep); gl.CopyImageSubData грузится только при GL 4.3 или GL_ARB_copy_image
+Наступал: 1   Последний: 2026-10-28

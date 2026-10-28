@@ -223,7 +223,6 @@ void Screen::flip()
 		const auto t0 = std::chrono::steady_clock::now();
 		if (!HdUi::active())
 		{
-			HdGpuWorld::instance().cpu("the classic layer composed");
 			composeInto(_world.get());
 		}
 		HdUi::instance().frameDone();
@@ -371,8 +370,14 @@ void Screen::composeSmooth(SDL_Surface *dst, const Uint32 *lut, int srcW, int sr
 		const int yb = (int)((long long)srcH * (job + 1) / jobs);
 		xbrz::scale((size_t)k, src.data(), big.data(), srcW, srcH, xbrz::ARGB, xbrz::ScalerCfg(), ya, yb);
 	});
-	if (SDL_MUSTLOCK(dst)) SDL_LockSurface(dst);
 	const int W = srcW * k, H = std::min(srcH * k, dst->h);
+	// on the video card: the enlarged layer, blended there in integers as below
+	HdGpuWorld &gpuWorld = HdGpuWorld::instance();
+	if (gpuWorld.on(dst) && gpuWorld.image(big.data(), W, std::min(W, dst->w), H, 0, 0, HdGpuWorld::OVER_INT) && !gpuWorld.verifying())
+	{
+		return;
+	}
+	if (SDL_MUSTLOCK(dst)) SDL_LockSurface(dst);
 	Uint8 *dstPixels = (Uint8*)dst->pixels;
 	const int dstPitch = dst->pitch;
 	pool.run(jobs, [&](int job)
@@ -505,6 +510,13 @@ void Screen::composeInto(SDL_Surface *dst) const
 	if (k >= 2 && k <= 6 && smooth)
 	{
 		composeSmooth(dst, lut, srcW, srcH, k);
+		return;
+	}
+	// on the video card: the palette pixels k times over, index 0 left out, as below
+	HdGpuWorld &gpuWorld = HdGpuWorld::instance();
+	if (gpuWorld.on(dst) && gpuWorld.pixels((const Uint8*)_surface->pixels, _surface->pitch, srcW, srcH, 0, 0, k, lut, 0, 0, srcW * k, srcH * k)
+		&& !gpuWorld.verifying())
+	{
 		return;
 	}
 	if (SDL_MUSTLOCK(dst)) SDL_LockSurface(dst);

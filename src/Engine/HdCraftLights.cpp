@@ -255,12 +255,33 @@ void colorOf(const Light &light, float &r, float &g, float &b)
 /// adding would bleach that colour to white. `size` scales the spot (the garland's bulbs are smaller).
 void glow(SDL_Surface *world, float cx, float cy, int k, float r, float g, float b, float amount, bool own, float size = 1.0f)
 {
-	// a writer the video card does not take (HdGpuWorld)
-	HdGpuWorld::instance().cpu(world, "the lights of a craft");
 	const float halo = 1.4f * k * size, core = 0.45f * k * size;
 	const float reach = halo * 2.6f;
 	const int x0 = std::max(0, (int)std::floor(cx - reach)), x1 = std::min(world->w, (int)std::ceil(cx + reach));
 	const int y0 = std::max(0, (int)std::floor(cy - reach)), y1 = std::min(world->h, (int)std::ceil(cy + reach));
+	// a frame of the video card: h and c per pixel handed over (HdGpuWorld's GLOW_ADD / GLOW_OWN, h -1: untouched)
+	HdGpuWorld &gw = HdGpuWorld::instance();
+	if (x0 < x1 && y0 < y1 && gw.on(world))
+	{
+		std::vector<float> hc((size_t)(x1 - x0) * (y1 - y0) * 2);
+		float *o = hc.data();
+		for (int y = y0; y < y1; ++y)
+		{
+			for (int x = x0; x < x1; ++x, o += 2)
+			{
+				const float dx = x + 0.5f - cx, dy = y + 0.5f - cy;
+				const float d2 = dx * dx + dy * dy;
+				const float h = amount * std::exp(-d2 / (halo * halo));
+				o[0] = h < 0.004f ? -1.0f : h;
+				o[1] = amount * std::exp(-d2 / (core * core));
+			}
+		}
+		const float col[3] = { r, g, b };
+		if (gw.shade(own ? HdGpuWorld::GLOW_OWN : HdGpuWorld::GLOW_ADD, hc, x0, y0, x1, y1, col) && !gw.verifying())
+		{
+			return;
+		}
+	}
 	for (int y = y0; y < y1; ++y)
 	{
 		Uint32 *row = (Uint32*)((Uint8*)world->pixels + (size_t)y * world->pitch);
