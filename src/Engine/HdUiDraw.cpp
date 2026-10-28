@@ -584,6 +584,52 @@ void HdUi::drawImage(const Uint32 *argb, int w, int h, int x, int y)
 	}
 }
 
+/// A step as HdShadeRow keeps it (the colour and STEP_256 | a or the bits of a coverage) in the words of
+/// HdGpuWorld::steps, written to `out` unless null; the count of its words.
+inline int stepWords(Uint32 color, Uint32 w, Uint32 *out)
+{
+	if (w & HdGpuWorld::STEP_256)
+	{
+		const Uint32 a = w & 0x1FFu;
+		if (a >= 1 && a <= 255)
+		{
+			if (out) out[0] = (a << 24) | (color & 0xFFFFFFu);
+			return 1;
+		}
+		if (a == 0)
+		{
+			// of 0: only the alpha opaque
+			if (out) out[0] = HdGpuWorld::STEP_OPAQUE;
+			return 1;
+		}
+		if (out)
+		{
+			out[0] = HdGpuWorld::STEP_SET;
+			out[1] = color;
+		}
+		return 2;
+	}
+	float cov;
+	std::memcpy(&cov, &w, 4);
+	// blendPixel's own limit: at it the colour is set
+	if ((color >> 24) / 255.0f * cov >= 0.998f)
+	{
+		if (out)
+		{
+			out[0] = HdGpuWorld::STEP_SET;
+			out[1] = color;
+		}
+		return 2;
+	}
+	if (out)
+	{
+		out[0] = HdGpuWorld::STEP_BLEND;
+		out[1] = color;
+		out[2] = w;
+	}
+	return 3;
+}
+
 void HdShadeRow::blend(int x, Uint32 color, float cov)
 {
 	if (_steps)
@@ -656,17 +702,21 @@ void HdUi::shadeRows(int x, int y, int w, int h, const std::function<void(int, i
 					continue;
 				}
 				int xa = INT_MAX, xb = INT_MIN;
+				bool ordered = true;
 				for (size_t i = 0; i < made; ++i)
 				{
-					xa = std::min(xa, (int)b.made[i * 3]);
-					xb = std::max(xb, (int)b.made[i * 3] + 1);
+					const int px = (int)b.made[i * 3];
+					ordered = ordered && (i == 0 || px >= (int)b.made[i * 3 - 3]);
+					xa = std::min(xa, px);
+					xb = std::max(xb, px + 1);
 				}
 				const int span = xb - xa;
-				b.rows.insert(b.rows.end(), { (Uint32)b.table.size(), (Uint32)xa, (Uint32)xb, (Uint32)(b.steps.size() / 2) });
+				b.rows.insert(b.rows.end(), { (Uint32)b.table.size(), (Uint32)xa, (Uint32)xb, (Uint32)b.steps.size() });
+				// per pixel where its words start (from the row's first)
 				b.count.assign((size_t)span + 1, 0);
 				for (size_t i = 0; i < made; ++i)
 				{
-					++b.count[b.made[i * 3] - xa + 1];
+					b.count[b.made[i * 3] - xa + 1] += stepWords(b.made[i * 3 + 1], b.made[i * 3 + 2], nullptr);
 				}
 				for (int i = 0; i < span; ++i)
 				{
@@ -674,12 +724,21 @@ void HdUi::shadeRows(int x, int y, int w, int h, const std::function<void(int, i
 				}
 				b.table.insert(b.table.end(), b.count.begin(), b.count.end());
 				const size_t first = b.steps.size();
-				b.steps.resize(first + made * 2);
+				b.steps.resize(first + b.count[span]);
+				Uint32 *out = b.steps.data() + first;
+				if (ordered)
+				{
+					// made pixel after pixel already: the words go as they are
+					for (size_t i = 0; i < made; ++i)
+					{
+						out += stepWords(b.made[i * 3 + 1], b.made[i * 3 + 2], out);
+					}
+					continue;
+				}
 				for (size_t i = 0; i < made; ++i)
 				{
-					const size_t at = first + (size_t)b.count[b.made[i * 3] - xa]++ * 2;
-					b.steps[at] = b.made[i * 3 + 1];
-					b.steps[at + 1] = b.made[i * 3 + 2];
+					Uint32 &at = b.count[b.made[i * 3] - xa];
+					at += stepWords(b.made[i * 3 + 1], b.made[i * 3 + 2], out + at);
 				}
 			}
 		};
@@ -710,7 +769,7 @@ void HdUi::shadeRows(int x, int y, int w, int h, const std::function<void(int, i
 				auto place = [&](int job)
 				{
 					const Band &b = bands[job];
-					const Uint32 tableAt = (Uint32)b.tableAt, stepAt = (Uint32)(b.stepsAt / 2);
+					const Uint32 tableAt = (Uint32)b.tableAt, stepAt = (Uint32)b.stepsAt;
 					int ra, rb;
 					band(job, ra, rb);
 					Uint32 *r = out + (size_t)(ra - y0) * 4;

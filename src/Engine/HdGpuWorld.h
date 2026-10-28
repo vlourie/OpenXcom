@@ -110,10 +110,14 @@ public:
 	/// HdUi::shadeRows: the blends of a routine per pixel, worked out by the processor. Per row of [y0, y1) `rows`
 	/// holds 4 values: where its pixels start in `table`, the stretch [xa, xb) it blends, where its steps start in
 	/// `steps`; `table` per pixel of the stretch and one more the index of the pixel's first step (from the row's
-	/// first, the next pixel's: past its last); `steps` 2 values a step - the colour, and STEP_256 | a (HdRadar's
-	/// blend of a of 256) or the bits of a coverage (HdUi's blendPixel). Each pixel's steps in their order.
+	/// first, the next pixel's: past its last), in words of `steps`; a step of `steps` - (a << 24) | colour for
+	/// HdRadar's blend of a of 256 (a 1..255), or STEP_SET and the colour (set it opaque: a of 256, HdUi's
+	/// blendPixel at its upper limit), STEP_OPAQUE (a of 0: the alpha opaque), STEP_BLEND, the colour and the bits
+	/// of a coverage (blendPixel). Each pixel's steps in their order.
 	/// The write is made here and the caller fills its data in place: (y1 - y0) * 4 values of rows, then `table`
 	/// values, then `steps` values (filled before the frame goes on); nullptr - not taken.
+	static const Uint32 STEP_SET = 0, STEP_OPAQUE = 1, STEP_BLEND = 2;
+	/// HdShadeRow's mark of a blend of a of 256 while it keeps its steps.
 	static const Uint32 STEP_256 = 0x80000000u;
 	Uint32 *steps(size_t table, size_t steps, int x0, int y0, int x1, int y1);
 	/// HdBaseScene's drawBuilding: `vals` 6 floats a pixel of [x0, x1) x [y0, y1) (reveal, grid, beam, edge, line,
