@@ -29,6 +29,7 @@
 #include <cmath>
 #include <list>
 #include "FileMap.h"
+#include "HdGpuWorld.h"
 #include "HdUi.h"
 #include "HdWorkers.h"
 #include "Logger.h"
@@ -909,6 +910,11 @@ void blendInto(SDL_Surface *dest, const HdFrame &f, int x, int y, const SDL_Rect
 	const int x0 = std::max(cx0, x), y0 = std::max(cy0, y);
 	const int x1 = std::min(cx1, x + f.width), y1 = std::min(cy1, y + f.height);
 	if (x0 >= x1 || y0 >= y1)
+	{
+		return;
+	}
+	HdGpuWorld &gpuWorld = HdGpuWorld::instance();
+	if (gpuWorld.on(dest) && gpuWorld.frame(f, x, y, x0, y0, x1, y1) && !gpuWorld.verifying())
 	{
 		return;
 	}

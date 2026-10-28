@@ -22,6 +22,7 @@
 #include <cstdio>
 #include <cstring>
 #include "FileMap.h"
+#include "HdGpuWorld.h"
 #include "HdWorkers.h"
 #include "Logger.h"
 #include "SDL2Helpers.h"
@@ -159,6 +160,8 @@ void HdVideo::draw(SDL_Surface *dest, int bright) const
  */
 void HdVideo::drawFitted(const Uint32 *src, int w, int h, double rx, double ry, double rw, double rh, SDL_Surface *dest, int bright)
 {
+	// a writer the video card does not take (HdGpuWorld)
+	HdGpuWorld::instance().cpu(dest, "a video");
 	if (!src || w < 2 || h < 2 || rw <= 0.0 || rh <= 0.0 || !dest || dest->format->BytesPerPixel != 4 || dest->format->Rmask != 0x00FF0000u)
 	{
 		return;

@@ -459,10 +459,7 @@ bool drawBackdrop(const void *owner, const std::string &interfaceName, int x, in
 	// opaque: a plain copy of the rows under the clip
 	const int X = x * k, Y = y * k;
 	const Uint32 *src = p->composed.data();
-	HdUi::instance().shadeRows(X, Y, W, H, [&](int py, int x0, int x1, Uint32 *row)
-	{
-		std::copy(src + (size_t)(py - Y) * W + (x0 - X), src + (size_t)(py - Y) * W + (x1 - X), row + x0);
-	});
+	HdUi::instance().copyRows(X, Y, W, H, src, W);
 	return true;
 }
 

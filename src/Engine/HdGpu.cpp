@@ -35,6 +35,7 @@ __declspec(dllexport) int AmdPowerXpressRequestHighPerformance = 1;
 
 #include "HdGpuGl.h"
 #include "HdGpuCanvas.h"
+#include "HdGpuWorld.h"
 
 namespace OpenXcom
 {
@@ -272,8 +273,9 @@ bool HdGpu::setup(int w, int h)
 
 void HdGpu::release()
 {
-	// the battle canvas's textures and buffers live in the same context
+	// the battle canvas's and the world's textures and buffers live in the same context
 	HdGpuCanvas::instance().release();
+	HdGpuWorld::instance().release();
 	if (_program)
 	{
 		gl.DeleteProgram(_program);

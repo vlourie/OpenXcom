@@ -53,6 +53,9 @@ public:
 	void take(Canvas32 &canvas, bool latest);
 	/// The processor drew the canvas: the framebuffer does not hold its picture any more.
 	void drawnByCpu(Canvas32 &canvas);
+	/// The texture of the canvas's framebuffer while it holds the canvas's picture (the card drew the last flush), else 0:
+	/// the world drawn by the card (HdGpuWorld) copies the canvas from it, without reading it back.
+	unsigned texture(const Canvas32 &canvas) const;
 	/// OXCE_HD_GPU_VERIFY: the processor draws every flush the card drew too, and verify compares the two.
 	bool verifying() const;
 	/// Compares the card's frame of the last flush with the canvas's pixels (the processor's) and logs the

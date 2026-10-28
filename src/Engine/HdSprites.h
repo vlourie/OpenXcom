@@ -61,13 +61,15 @@ struct HdFrame
 		GpuStamp(const GpuStamp &) {}
 		GpuStamp &operator=(const GpuStamp &) { id = 0; return *this; }
 	} gpu;
+	/// The same for the world drawn by the video card (HdGpuWorld: its own texture array).
+	GpuStamp gpuWorld;
 
 	/// Pointer to a row of pixels.
 	const Uint32 *row(int y) const { return pixels.data() + (size_t)y * width; }
 	/// Recomputes the row spans from the alpha channel (the pixels are new: the video card's copy is dropped).
 	void buildSpans();
 	/// The pixels changed: the video card's copy is not good any more.
-	void touched() { gpu.id = 0; }
+	void touched() { gpu.id = 0; gpuWorld.id = 0; }
 	/// True if the frame has any visible pixel.
 	bool empty() const { return pixels.empty(); }
 };

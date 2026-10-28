@@ -23,6 +23,7 @@
 #include <cstdlib>
 #include <sstream>
 #include <string>
+#include "HdGpuWorld.h"
 #include "HdWorkers.h"
 #include "Logger.h"
 
@@ -243,6 +244,8 @@ const float *softTable()
 void blob(SDL_Surface *world, int ax0, int ay0, int ax1, int ay1, float cx, float cy, float r, float ring,
 	const float col[3], float a, bool add)
 {
+	// a writer the video card does not take (HdGpuWorld)
+	HdGpuWorld::instance().cpu(world, "the light of the base");
 	if (a <= 0.004f || r <= 0)
 	{
 		return;
@@ -291,6 +294,8 @@ void blob(SDL_Surface *world, int ax0, int ay0, int ax1, int ay1, float cx, floa
 void boxFill(SDL_Surface *world, int ax0, int ay0, int ax1, int ay1, float cx, float cy, float hx, float hy,
 	const float col[3], float a, bool add)
 {
+	// a writer the video card does not take (HdGpuWorld)
+	HdGpuWorld::instance().cpu(world, "the light of the base");
 	if (a <= 0.004f || hx <= 0 || hy <= 0)
 	{
 		return;
@@ -664,6 +669,8 @@ float fitWave(float t, float length, int pulses)
 void draw(SDL_Surface *world, const SDL_Rect &area, const std::vector<Placed> &lights, float night, Uint32 ms,
 	const View *view)
 {
+	// a writer the video card does not take (HdGpuWorld)
+	HdGpuWorld::instance().cpu(world, "the light of the base");
 	if (!world || world->format->BytesPerPixel != 4)
 	{
 		return;
@@ -1031,6 +1038,8 @@ float valueNoise(float x, float y, float step, Uint32 seed)
 
 void drawBuilding(SDL_Surface *world, const SDL_Rect &rect, float progress, float scale, Uint32 seed, Uint32 ms)
 {
+	// a writer the video card does not take (HdGpuWorld)
+	HdGpuWorld::instance().cpu(world, "a facility being built");
 	if (!world || world->format->BytesPerPixel != 4)
 	{
 		return;
@@ -1575,6 +1584,8 @@ void bake(View &view, const HdFrame *rock, const std::vector<SDL_Rect> &empty, c
 
 void drawMotion(SDL_Surface *world, const View &view, Uint32 ms)
 {
+	// a writer the video card does not take (HdGpuWorld)
+	HdGpuWorld::instance().cpu(world, "the motion of the base");
 	if (!world || world->format->BytesPerPixel != 4 || view.albedo.empty())
 	{
 		return;

@@ -25,6 +25,7 @@
 #include "../Engine/Action.h"
 #include "../Engine/FileMap.h"
 #include "../Engine/Game.h"
+#include "../Engine/HdGpuWorld.h"
 #include "../Engine/HdSprites.h"
 #include "../Engine/HdUi.h"
 #include "../Engine/HdVideo.h"
@@ -347,6 +348,8 @@ void CraftLaunchState::drawBase(double zoom, int bright, int alarmMs)
 	{
 		return;
 	}
+	// a writer the video card does not take (HdGpuWorld)
+	HdGpuWorld::instance().cpu(world, "the craft launch");
 	// the view writes the craft of each hangar into the facilities while it draws, and a hangar lost
 	// in a base defence takes its craft with it (Base::destroyFacility): what it wrote is put back
 	std::vector<std::pair<BaseFacility*, Craft*>> held;

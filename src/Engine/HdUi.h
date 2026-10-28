@@ -124,6 +124,13 @@ public:
 	/// Shades the world rectangle (x, y, w, h) row by row in bands on the render threads: fn(y, x0, x1, row)
 	/// blends into row[x0, x1), the row already clipped (blend() below). A per-pixel picture computed in place.
 	void shadeRows(int x, int y, int w, int h, const std::function<void(int, int, int, Uint32*)> &fn);
+	/// Shades the world rectangle (x, y, w, h) by coverages: fn(y, x0, x1, cov) puts into cov[l * (x1 - x0) + x - x0]
+	/// how much of colors[l] covers pixel x of the row (0: none, the row already clipped, cov zeroed); per pixel the
+	/// `layers` colours are blended in their order. The same picture as shadeRows blending them, but the video card
+	/// takes it (HdGpuWorld).
+	void shadeCover(int x, int y, int w, int h, int layers, const Uint32 *colors, const std::function<void(int, int, int, float*)> &fn);
+	/// Copies w x h pixels (rows `pitch` apart) as they are into the world rectangle (x, y, w, h), clipped.
+	void copyRows(int x, int y, int w, int h, const Uint32 *src, int pitch);
 	/// Blends 0xAARRGGBB (straight alpha) times `cov` (0..1) into a world pixel.
 	static void blend(Uint32 &d, Uint32 color, float cov);
 	/// What a classic bitmap font is replaced with: the TrueType face (big or small), the capitals' height in

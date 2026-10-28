@@ -51,6 +51,10 @@ public:
 	bool ready() const { return _fbo != 0; }
 	/// The framebuffer is there and the caller is on the thread of its context (GL calls may be made).
 	bool current() const { return _fbo != 0 && SDL_ThreadID() == _thread; }
+	/// The world's framebuffer and its texture (HdGpuWorld draws the world into it), and its size.
+	unsigned framebuffer() const { return _fbo; }
+	int width() const { return _w; }
+	int height() const { return _h; }
 	/// Uploads a 32-bit surface of the world's size into the framebuffer texture.
 	void upload(const SDL_Surface *world);
 	/// Draws the framebuffer texture onto the display between the black bands and swaps the buffers.

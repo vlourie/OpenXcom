@@ -1623,8 +1623,9 @@ void drawGlint(int X, int Y, const CapGeom &c, int w, int h, int k, float pos)
 	const float r = c.window ? c.wr : c.R * 0.5f;
 	if (x1 <= x0 || y1 <= y0) return;
 	const float at = -0.3f + 1.6f * pos, strength = 0.3f * std::sin(pos * 3.14159265f);
-	HdUi::instance().shadeRows(X + (int)x0, Y + (int)y0, (int)std::ceil(x1 - x0) + 1, (int)std::ceil(y1 - y0) + 1,
-		[&](int py, int xa, int xb, Uint32 *row)
+	const Uint32 white = 0xFFFFFFFFu;
+	HdUi::instance().shadeCover(X + (int)x0, Y + (int)y0, (int)std::ceil(x1 - x0) + 1, (int)std::ceil(y1 - y0) + 1, 1, &white,
+		[&](int py, int xa, int xb, float *cov)
 		{
 			const float ly = py - Y + 0.5f, v = (ly - y0) / (y1 - y0);
 			for (int px = xa; px < xb; ++px)
@@ -1633,7 +1634,7 @@ void drawGlint(int X, int Y, const CapGeom &c, int w, int h, int k, float pos)
 				const float band = std::max(1.0f - std::fabs((lx - x0) / (x1 - x0) * 0.8f + v * 0.35f - at) / 0.09f, 0.0f);
 				if (band <= 0.0f) continue;
 				const float in = std::min(std::max(insideBox(lx, ly, x0, y0, x1, y1, r) + 0.5f, 0.0f), 1.0f);
-				HdUi::blend(row[px], 0xFFFFFFFFu, strength * band * in);
+				cov[px - xa] = strength * band * in;
 			}
 		});
 }
@@ -1994,9 +1995,11 @@ void HdTurnMark::hdMirror()
 	const bool red = _kind == FRAME_ENEMY;
 	const Uint32 face = 0xFF000000u | (red ? 0xD82020u : 0xE8B818u);
 	const Uint32 bright = 0xFF000000u | (red ? 0xF04030u : 0xFFD838u);
-	const auto rowFn = [=](int y, int x0, int x1, Uint32 *row)
+	// per pixel the glow (face), then the line (bright)
+	const Uint32 colors[2] = { face, bright };
+	const auto rowFn = [=](int y, int x0, int x1, float *cov)
 	{
-		const int dy = std::min(y, H - 1 - y);
+		const int dy = std::min(y, H - 1 - y), n = x1 - x0;
 		for (int x = x0; x < x1; ++x)
 		{
 			const int dx = std::min(x, W - 1 - x);
@@ -2004,22 +2007,22 @@ void HdTurnMark::hdMirror()
 			if (d < glow)
 			{
 				const float t = 1.0f - d / glow;
-				HdUi::blend(row[x], face, 0.50f * t * t);
+				cov[x - x0] = 0.50f * t * t;
 			}
 			const float lw = (float)std::max(dx, dy) < brLen ? brW : lineW;
-			const float cov = std::max(0.0f, std::min(1.0f, std::min(d + 1.0f - lineAt, lineAt + lw - d)));
-			if (cov > 0.0f)
+			const float line = std::max(0.0f, std::min(1.0f, std::min(d + 1.0f - lineAt, lineAt + lw - d)));
+			if (line > 0.0f)
 			{
-				HdUi::blend(row[x], bright, (lw == brW ? 0.95f : 0.72f) * cov);
+				cov[n + x - x0] = (lw == brW ? 0.95f : 0.72f) * line;
 			}
 		}
 	};
 	const int band = (int)std::ceil(std::max(glow, lineAt + brW)) + 2;
 	if (band * 2 >= H || band * 2 >= W) return;
-	ui.shadeRows(0, 0, W, band, rowFn);
-	ui.shadeRows(0, H - band, W, band, rowFn);
-	ui.shadeRows(0, band, band, H - 2 * band, rowFn);
-	ui.shadeRows(W - band, band, band, H - 2 * band, rowFn);
+	ui.shadeCover(0, 0, W, band, 2, colors, rowFn);
+	ui.shadeCover(0, H - band, W, band, 2, colors, rowFn);
+	ui.shadeCover(0, band, band, H - 2 * band, 2, colors, rowFn);
+	ui.shadeCover(W - band, band, band, H - 2 * band, 2, colors, rowFn);
 	// the bottom centre (XP-000306/312): the progress bar of mode 3 and over its place the plate with the line of text (the
 	// enemy's turn only); `_lift` base pixels up, so that the panel, if it stands in the way, stays clear
 	const float baseBottom = (float)getHeight() - 8.0f - (float)_lift;
