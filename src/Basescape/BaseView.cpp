@@ -1027,6 +1027,16 @@ void BaseView::drawHdScene(SDL_Surface *world, int k, Uint32 now)
 					}
 					p.home = scene->gate == HdBaseScene::GATE_HOME;
 					p.seed = (seed = seed * 1103515245u + 12345u) >> 8;
+					if (light.kind == HdBaseScene::SWELL)
+					{
+						// the arrows of a hangar pad breathe only while the hangar is empty (a craft in it brings its
+						// own lights); the phase is the hangar's own, by its cell on the base (XP-000350)
+						if (fac->getCraftForDrawing())
+						{
+							continue;
+						}
+						p.light.phase = std::fmod(light.phase + (float)((fac->getX() * 7 + fac->getY() * 13) % 17) / 17.0f, 1.0f);
+					}
 					lights.push_back(p);
 				}
 				for (const HdBaseScene::Emit &emit : scene->emits)

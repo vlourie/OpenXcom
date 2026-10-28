@@ -39,7 +39,10 @@ namespace OpenXcom
  *                                    blink, pulse, screen, flicker, tv, chase - one of a ring of lamps
  *                                    running round, weld - a welder's flashes, night - a duty lamp lit only
  *                                    at night, marquee - a ring of lamps of an entrance sign or a machine, running
- *                                    like chase but lit by day too), colour 0..1, period s and phase 0..1; a chase or
+ *                                    like chase but lit by day too; swell - a slow breath of light, 5/7 of the period
+ *                                    rising from nothing and the rest fading, all the time, not only in the facility's
+ *                                    turn: the arrows of an empty hangar's pad, ticket 350), colour 0..1, period s and
+ *                                    phase 0..1; a chase or
  *                                    marquee lamp adds the number of lamps in its ring (its phase is its place in it)
  *     water blue 0.75 1.00 1.00 100  the tile's water (blue or green by the picture) ripples, the light of its
  *                                    bottom running over it; pools of the last number of pack pixels and more
@@ -105,7 +108,7 @@ namespace OpenXcom
  */
 namespace HdBaseScene
 {
-	enum Kind { STEADY, BLINK, PULSE, SCREEN, FLICKER, TV, CHASE, WELD, DUTY, BURST, MARQUEE };
+	enum Kind { STEADY, BLINK, PULSE, SCREEN, FLICKER, TV, CHASE, WELD, DUTY, BURST, MARQUEE, SWELL };
 	enum Gate { GATE_NONE, GATE_LAB, GATE_WORK, GATE_HOME };
 
 	struct Light
