@@ -395,6 +395,7 @@ try {
     $ptrFile = Join-Path $repo "channels\$launcherChannel.json"
     $current = if (Test-Path -LiteralPath $ptrFile) { (Get-Content -LiteralPath $ptrFile -Raw | ConvertFrom-Json).releaseId }
     if ($launcherOnly) { $id = $lid }
+    $newLauncher = $current -ne $lid
     if ($current -eq $lid) {
         if ($launcherOnly) { throw "лаунчер $lv уже в канале $launcherChannel - поднимите <Version> в Xp.Launcher.csproj" }
         Ok "лаунчер $lv уже в канале $launcherChannel"
@@ -425,6 +426,21 @@ try {
         if (-not (Test-Path -LiteralPath $cfg.StationDrop -PathType Container)) { throw "нет папки $($cfg.StationDrop) (StationDrop) - станция выключена или папка не расшарена; архив остался в dist" }
         Copy-Item -LiteralPath $zip.FullName -Destination $cfg.StationDrop -Force
         Ok 'скопировано'
+    }
+
+    # ---- новый лаунчер в stable - установщик на страницу mod.io (tools/modio_publish.py); сбой выпуск не отменяет
+    if ($newLauncher -and $channel -eq 'stable') {
+        Step "Выкладываю лаунчер $lv на mod.io"
+        $modioArgs = @((Join-Path $root 'tools\modio_publish.py'), '--repo', $repo, '--channel', $launcherChannel)
+        $enNotes = @((Join-Path $notes "$id.en.txt"), (Join-Path $notes 'next.en.txt')) | Where-Object { Test-Path -LiteralPath $_ } | Select-Object -First 1
+        if ($enNotes) { $modioArgs += @('--changelog', $enNotes) }
+        if ($cfg.PSObject.Properties.Name -contains 'ModioMod' -and $cfg.ModioMod) { $modioArgs += @('--mod', [string]$cfg.ModioMod) }
+        if (-not (Get-Command py -ErrorAction SilentlyContinue)) { Warn 'нет py - mod.io пропущен: py -3.13 tools\modio_publish.py' }
+        else {
+            & py -3.13 @modioArgs | Out-Host
+            if ($LASTEXITCODE -eq 2) { Warn 'нет токена mod.io (%USERPROFILE%\.modio_token) - не выложено' }
+            elseif ($LASTEXITCODE -ne 0) { Warn "mod.io: код $LASTEXITCODE - выпуск цел, повторить: py -3.13 tools\modio_publish.py" }
+        }
     }
 
     Write-Host ''
