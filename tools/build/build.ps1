@@ -507,6 +507,18 @@ function Assert-ModContents([string]$dest, [string]$name) {
     $miss = @($need | Where-Object { -not (Test-Path -LiteralPath (Join-Path $dest $_)) })
     if ($miss.Count) { throw ("в моде {0} не хватает: {1}" -f $name, ($miss -join ', ')) }
     Write-Ok ("на месте: {0}" -f ($need -join ', '))
+    # master "*" грузит мод в любой игре: пиратское вступление играло в X-Com Files (XP-000068).
+    # Для всех игр - только то, что названо в ModAnyMaster (шрифт hd_core)
+    $meta = Join-Path $dest 'metadata.yml'
+    if (Test-Path -LiteralPath $meta) {
+        $line = @(Get-Content -LiteralPath $meta -Encoding UTF8 | Where-Object { $_ -match '^\s*master\s*:' }) | Select-Object -First 1
+        $master = if ($line) { ($line -replace '^\s*master\s*:\s*', '').Trim().Trim('"', "'") } else { '' }
+        $any = @(Get-Cfg 'ModAnyMaster' @('hd_core'))
+        if ($master -eq '*' -and $any -notcontains $name) {
+            throw ("у мода {0} master `"*`" - он загрузится и в чужих играх; нужен master piratez (или имя в ModAnyMaster)" -f $name)
+        }
+        Write-Ok ("мастер: {0}" -f $(if ($master) { $master } else { 'нет' }))
+    }
 }
 
 # ---------------------------------------------------------------- слепок сборки и патч
