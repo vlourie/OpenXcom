@@ -24,6 +24,7 @@
 #include <unordered_set>
 #include "Logger.h"
 #include "Font.h"
+#include "HdGpuWorld.h"
 #include "HdSmooth.h"
 #include "HdWorkers.h"
 #include "Options.h"
@@ -139,6 +140,14 @@ void HdUi::drawPixels(const Uint8 *pixels, int pitch, int w, int h, int x, int y
 	{
 		return;
 	}
+	// on the video card: the base pixels [x0, x1) x [y0, y1), on the world pixels the rows below give them
+	HdGpuWorld &gpuWorld = HdGpuWorld::instance();
+	if (gpuWorld.on(dest) && gpuWorld.pixels(pixels + (size_t)y0 * pitch + x0, pitch, x1 - x0, y1 - y0, (x + x0) * k, (y + y0) * k, k, lut,
+		std::max(cx0, (x + x0) * k), std::max(cy0, (y + y0) * k), std::min(cx1, (x + x1) * k), std::min(cy1, (y + y1) * k))
+		&& !gpuWorld.verifying())
+	{
+		return;
+	}
 	Uint8 *dp = (Uint8*)dest->pixels;
 	const int dpitch = dest->pitch;
 	auto rows = [&](int ra, int rb)
@@ -211,6 +220,11 @@ void HdUi::fillRect(int x, int y, int w, int h, Uint8 color, const SDL_Color *co
 		return;
 	}
 	const Uint32 v = packColor(pal[color]);
+	HdGpuWorld &gpuWorld = HdGpuWorld::instance();
+	if (gpuWorld.on(dest) && gpuWorld.fill(x0, y0, x1, y1, v) && !gpuWorld.verifying())
+	{
+		return;
+	}
 	for (int dy = y0; dy < y1; ++dy)
 	{
 		Uint32 *row = (Uint32*)((Uint8*)dest->pixels + (size_t)dy * dest->pitch);
@@ -795,6 +809,15 @@ void HdUi::drawSurfaceWorld(const Surface *surface, int wx, int wy, int s, const
 			const int dpitch = dest->pitch;
 			const int y0 = std::max(cy0, wy), y1 = std::min(cy1, wy + h * s);
 			const int x0 = std::max(cx0, wx), x1 = std::min(cx1, wx + w * s);
+			// on the video card: the base pixels under [x0, x1) x [y0, y1)
+			HdGpuWorld &gpuWorld = HdGpuWorld::instance();
+			bool onCard = false;
+			if (gpuWorld.on(dest) && y0 < y1 && x0 < x1)
+			{
+				const int sx0 = (x0 - wx) / s, sx1 = (x1 - 1 - wx) / s + 1, sy0 = (y0 - wy) / s, sy1 = (y1 - 1 - wy) / s + 1;
+				onCard = gpuWorld.pixels(pixels + (size_t)sy0 * pitch + sx0, pitch, sx1 - sx0, sy1 - sy0, wx + sx0 * s, wy + sy0 * s, s, lut, x0, y0, x1, y1)
+					&& !gpuWorld.verifying();
+			}
 			auto rows = [&](int ra, int rb)
 			{
 				for (int dy = ra; dy < rb; ++dy)
@@ -809,7 +832,7 @@ void HdUi::drawSurfaceWorld(const Surface *surface, int wx, int wy, int s, const
 				}
 			};
 			const int n = y1 - y0;
-			if (n > 0 && x0 < x1)
+			if (n > 0 && x0 < x1 && !onCard)
 			{
 				HdWorkers &pool = HdWorkers::instance();
 				const int jobs = std::max(1, std::min(n / 32, pool.threads() * 2));
@@ -1074,6 +1097,7 @@ void HdUi::drawGlyph(const Font *font, UCode c, int x, int y, int color, int mul
 	{
 		return;
 	}
+	HdGpuWorld::instance().cpu("a classic glyph");
 	const SDL_Rect clip = worldClip(dest, k);
 	const int cx0 = clip.x, cy0 = clip.y, cx1 = clip.x + clip.w, cy1 = clip.y + clip.h;
 	const int ox = x * k, oy = y * k;

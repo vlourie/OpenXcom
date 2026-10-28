@@ -39,6 +39,7 @@
 #include "HdTest.h"
 #include "HdWorkers.h"
 #include "HdGpu.h"
+#include "HdGpuWorld.h"
 #include <chrono>
 #include <SDL.h>
 #include <algorithm>
@@ -222,14 +223,19 @@ void Screen::flip()
 		const auto t0 = std::chrono::steady_clock::now();
 		if (!HdUi::active())
 		{
+			HdGpuWorld::instance().cpu("the classic layer composed");
 			composeInto(_world.get());
 		}
 		HdUi::instance().frameDone();
 		if (useHdGpu())
 		{
-			// stage 0: the world drawn by the processor goes up into the framebuffer and onto the display as one quad
+			// the world the card drew is in the framebuffer already; one the processor drew goes up into it,
+			// and onto the display as one quad
 			HdGpu &gpu = HdGpu::instance();
-			gpu.upload(_world.get());
+			if (!HdGpuWorld::instance().end())
+			{
+				gpu.upload(_world.get());
+			}
 			gpu.present(getWidth(), getHeight(), _topBlackBand, _bottomBlackBand, _leftBlackBand, _rightBlackBand, Options::useOpenGLSmoothing);
 		}
 		else if (getWidth() != _world->w || getHeight() != _world->h || useOpenGL())
@@ -276,7 +282,11 @@ void Screen::flip()
 void Screen::clear()
 {
 	Surface::CleanSdlSurface(_surface.get());
-	if (_world)
+	// option oxceHdGpu: the video card draws this frame's world (HdGpuWorld) and the processor's stays as it is
+	HdGpuWorld &gpuWorld = HdGpuWorld::instance();
+	const bool onCard = _layered && _world && _world->pixels != _screen->pixels && useHdGpu() && HdUi::active()
+		&& gpuWorld.begin(_world.get()) && !gpuWorld.verifying();
+	if (_world && !onCard)
 	{
 		SDL_Surface *world = _world.get();
 		const size_t bytes = (size_t)world->h * world->pitch;
@@ -402,6 +412,8 @@ void Screen::allocateWorld()
 {
 	const int w = _baseWidth * _worldScale;
 	const int h = _baseHeight * _worldScale;
+	// a frame the video card has begun on the old world is dropped
+	HdGpuWorld::instance().forget();
 	// a world of the display's size and pixel layout is drawn straight into the display's pixels: flip has
 	// nothing to copy and clear nothing more to zero (profile 27.10: the copy was 9-15% of the main thread
 	// on the globe and the base); any other display (zoom, OpenGL, a locked or other layout) keeps its own buffer
@@ -660,6 +672,7 @@ void Screen::resetDisplay(bool resetVideo, bool noShaders)
 	}
 	else
 	{
+		HdGpuWorld::instance().forget();
 		_world.reset();
 		_worldBuffer.reset();
 	}
@@ -964,12 +977,17 @@ void Screen::writeHdTestDump()
 		Surface::UniqueSurfacePtr tmp;
 		std::tie(tmpBuffer, tmp) = Surface::NewPair32Bit(_world->w, _world->h);
 		SDL_SetColorKey(tmp.get(), 0, 0);
-		SDL_BlitSurface(_world.get(), 0, tmp.get(), 0);
+		// a world the card draws is read back from its framebuffer as drawn so far
+		const bool onCard = HdGpuWorld::instance().readInto(tmp.get());
+		if (!onCard)
+		{
+			SDL_BlitSurface(_world.get(), 0, tmp.get(), 0);
+		}
 		if (!HdUi::active())
 		{
 			composeInto(tmp.get());
 		}
-		if (useHdGpu())
+		if (useHdGpu() && !onCard)
 		{
 			// the frame through the video card: up into the framebuffer and back by glReadPixels, so the
 			// check compares what the card holds (flip uploads the frame again before it is shown)

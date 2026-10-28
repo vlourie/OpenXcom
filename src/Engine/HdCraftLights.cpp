@@ -26,6 +26,7 @@
 #include <string>
 #include <vector>
 #include "FileMap.h"
+#include "HdGpuWorld.h"
 #include "HdSprites.h"
 #include "Logger.h"
 #include "../Mod/RuleCraft.h"
@@ -254,6 +255,8 @@ void colorOf(const Light &light, float &r, float &g, float &b)
 /// adding would bleach that colour to white. `size` scales the spot (the garland's bulbs are smaller).
 void glow(SDL_Surface *world, float cx, float cy, int k, float r, float g, float b, float amount, bool own, float size = 1.0f)
 {
+	// a writer the video card does not take (HdGpuWorld)
+	HdGpuWorld::instance().cpu(world, "the lights of a craft");
 	const float halo = 1.4f * k * size, core = 0.45f * k * size;
 	const float reach = halo * 2.6f;
 	const int x0 = std::max(0, (int)std::floor(cx - reach)), x1 = std::min(world->w, (int)std::ceil(cx + reach));

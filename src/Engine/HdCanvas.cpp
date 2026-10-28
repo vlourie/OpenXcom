@@ -32,6 +32,7 @@
 #include "ShaderMove.h"
 #include "HdWorkers.h"
 #include "HdGpuCanvas.h"
+#include "HdGpuWorld.h"
 #include "HdUiArt.h"
 #include "Logger.h"
 
@@ -1714,8 +1715,15 @@ void Canvas32::perfReport()
 void Canvas32::copyTo(SDL_Surface *dest, int x, int y)
 {
 	flush();
-	// the frame the video card drew comes back a frame late (at once with OXCE_HD_GPU_SYNC)
-	HdGpuCanvas::instance().take(*this, false);
+	// a world the video card draws copies the canvas from the card's framebuffer (HdGpuWorld), without it
+	// coming back; else the frame the card drew comes back a frame late (at once with OXCE_HD_GPU_SYNC)
+	HdGpuCanvas &gpuCanvas = HdGpuCanvas::instance();
+	HdGpuWorld &gpuWorld = HdGpuWorld::instance();
+	const unsigned onCard = gpuWorld.on(dest) ? gpuCanvas.texture(*this) : 0;
+	if (!onCard)
+	{
+		gpuCanvas.take(*this, false);
+	}
 	if (!dest || dest->format->BytesPerPixel != 4)
 	{
 		return;
@@ -1725,6 +1733,14 @@ void Canvas32::copyTo(SDL_Surface *dest, int x, int y)
 	if (x0 >= x1 || y0 >= y1)
 	{
 		return;
+	}
+	if (gpuWorld.on(dest) && gpuWorld.canvas(onCard, _surface.get(), x, y, x0, y0, x1, y1) && !gpuWorld.verifying())
+	{
+		return;
+	}
+	if (onCard)
+	{
+		gpuCanvas.take(*this, false);
 	}
 	const size_t bytes = (size_t)(x1 - x0) * 4;
 	HdWorkers &pool = HdWorkers::instance();
@@ -1783,7 +1799,14 @@ inline Uint32 mix2(Uint32 a, Uint32 b, Uint32 w)
 void Canvas32::copyZoomed(SDL_Surface *dest, int x, int y, int w, int h, double fx, double fy, double zoom, double pull, double bars)
 {
 	flush();
-	HdGpuCanvas::instance().take(*this, false);
+	// as copyTo: a world the video card draws reads the canvas from the card
+	HdGpuCanvas &gpuCanvas = HdGpuCanvas::instance();
+	HdGpuWorld &gpuWorld = HdGpuWorld::instance();
+	const unsigned onCard = gpuWorld.on(dest) ? gpuCanvas.texture(*this) : 0;
+	if (!onCard)
+	{
+		gpuCanvas.take(*this, false);
+	}
 	if (!dest || dest->format->BytesPerPixel != 4 || _width < 2 || _height < 2 || w < 1 || h < 1)
 	{
 		return;
@@ -1812,6 +1835,31 @@ void Canvas32::copyZoomed(SDL_Surface *dest, int x, int y, int w, int h, double 
 	}
 	const int bar = (int)(h * bars + 0.5);
 	const Uint32 black = SDL_MapRGB(dest->format, 0, 0, 0);
+	// the source row of each target row (-1: a black bar), and the weight of the next one (of 256)
+	std::vector<int> srcRows(y1 - y0);
+	std::vector<Uint32> rowWeights(y1 - y0, 0);
+	for (int dy = y0; dy < y1; ++dy)
+	{
+		const int ly = dy - y;
+		if (ly < bar || ly >= h - bar)
+		{
+			srcRows[dy - y0] = -1;
+			continue;
+		}
+		const double s = std::min(std::max(cy + (ly + 0.5 - h / 2.0) / sy - 0.5, 0.0), _height - 1.0);
+		const int j = std::min((int)s, _height - 2);
+		srcRows[dy - y0] = j;
+		rowWeights[dy - y0] = (Uint32)((s - j) * 256.0 + 0.5);
+	}
+	if (gpuWorld.on(dest) && gpuWorld.canvasZoomed(onCard, _surface.get(), cols, colWeights, srcRows, rowWeights, black, x0, y0, x1, y1)
+		&& !gpuWorld.verifying())
+	{
+		return;
+	}
+	if (onCard)
+	{
+		gpuCanvas.take(*this, false);
+	}
 	HdWorkers &pool = HdWorkers::instance();
 	const int rows = y1 - y0;
 	const int jobs = std::max(1, std::min(rows / 32, pool.threads() * 2));
@@ -1822,15 +1870,13 @@ void Canvas32::copyZoomed(SDL_Surface *dest, int x, int y, int w, int h, double 
 		for (int dy = ya; dy < yb; ++dy)
 		{
 			Uint32 *out = (Uint32*)((Uint8*)dest->pixels + (size_t)dy * dest->pitch) + x0;
-			const int ly = dy - y;
-			if (ly < bar || ly >= h - bar)
+			const int j = srcRows[dy - y0];
+			if (j < 0)
 			{
 				std::fill(out, out + (x1 - x0), black);
 				continue;
 			}
-			const double s = std::min(std::max(cy + (ly + 0.5 - h / 2.0) / sy - 0.5, 0.0), _height - 1.0);
-			const int j = std::min((int)s, _height - 2);
-			const Uint32 wy = (Uint32)((s - j) * 256.0 + 0.5);
+			const Uint32 wy = rowWeights[dy - y0];
 			const Uint32 *r0 = rowPtr(j), *r1 = rowPtr(j + 1);
 			for (int i = 0; i < x1 - x0; ++i)
 			{

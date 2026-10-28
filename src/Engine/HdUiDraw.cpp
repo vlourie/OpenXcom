@@ -24,6 +24,7 @@
 #include "FileMap.h"
 #include "Font.h"
 #include "Surface.h"
+#include "HdGpuWorld.h"
 #include "HdWorkers.h"
 #include "HdSprites.h"
 #include "Logger.h"
@@ -108,6 +109,29 @@ inline void blendPixel(Uint32 &d, Uint32 color, float cov)
 	const int g = (int)(((color >> 8) & 0xFF) * a + ((d >> 8) & 0xFF) * ia + 0.5f);
 	const int b = (int)((color & 0xFF) * a + (d & 0xFF) * ia + 0.5f);
 	d = 0xFF000000u | ((Uint32)r << 16) | ((Uint32)g << 8) | (Uint32)b;
+}
+
+/// While a shape goes to the video card (HdGpuWorld): blendSpan hands its runs over here instead of drawing them.
+thread_local std::vector<HdGpuWorld::Span> *spanSink = nullptr;
+
+/// The coverages of a shape over [x0, x1) x [y0, y1) to the video card (HdGpuWorld), or blended here when it does
+/// not take them (or verifies).
+void coverDone(SDL_Surface *dest, const std::vector<float> &covs, int x0, int y0, int x1, int y1, Uint32 color)
+{
+	HdGpuWorld &gpuWorld = HdGpuWorld::instance();
+	if (gpuWorld.cover(covs, x0, y0, x1, y1, color) && !gpuWorld.verifying())
+	{
+		return;
+	}
+	for (int y = y0; y < y1; ++y)
+	{
+		Uint32 *row = (Uint32*)((Uint8*)dest->pixels + (size_t)y * dest->pitch);
+		const float *cov = &covs[(size_t)(y - y0) * (x1 - x0)];
+		for (int x = x0; x < x1; ++x)
+		{
+			if (cov[x - x0] > 0.002f) blendPixel(row[x], color, cov[x - x0]);
+		}
+	}
 }
 
 /// The horizontal extent of a rounded rectangle at a row centre, and the row's vertical coverage.
@@ -325,6 +349,14 @@ void HdUi::blendSpan(SDL_Surface *dest, const SDL_Rect &clip, int y, float xa, f
 	if (xb <= xa) return;
 	Uint32 *row = (Uint32*)((Uint8*)dest->pixels + (size_t)y * dest->pitch);
 	const int ia = (int)std::floor(xa), ib = (int)std::ceil(xb) - 1;
+	if (spanSink)
+	{
+		// the coverages of the first, the last and the inner pixels, as worked out below
+		const float first = ia == ib ? cov * (xb - xa) : cov * (ia + 1 - xa);
+		const float last = ia == ib ? first : cov * (xb - ib);
+		spanSink->push_back(HdGpuWorld::Span{ y, ia, ib, first, last, cov, color });
+		return;
+	}
 	if (ia == ib)
 	{
 		blendPixel(row[ia], color, cov * (xb - xa));
@@ -365,6 +397,19 @@ void HdUi::fillRoundRect(float x0, float y0, float x1, float y1, float radius, U
 			blendSpan(dest, clip, y, xa, xb, c, vcov);
 		}
 	};
+	// on the video card: the runs of the rows, in one thread
+	HdGpuWorld &gpuWorld = HdGpuWorld::instance();
+	if (gpuWorld.on(dest))
+	{
+		std::vector<HdGpuWorld::Span> spans;
+		spanSink = &spans;
+		rows(ya, yb);
+		spanSink = nullptr;
+		if (gpuWorld.spans(spans) && !gpuWorld.verifying())
+		{
+			return;
+		}
+	}
 	const int n = yb - ya;
 	if (n >= 128)
 	{
@@ -389,25 +434,42 @@ void HdUi::strokeRoundRect(float x0, float y0, float x1, float y1, float radius,
 	radius = std::min(radius, std::min(x1 - x0, y1 - y0) * 0.5f);
 	const float ri = std::max(radius - width, 0.0f);
 	const int ya = std::max((int)std::floor(y0), (int)clip.y), yb = std::min((int)std::ceil(y1), clip.y + clip.h);
-	for (int y = ya; y < yb; ++y)
+	auto rows = [&]()
 	{
-		float xa, xb, vcov;
-		if (!rowExtent(x0, y0, x1, y1, radius, y + 0.5f, xa, xb, vcov)) continue;
-		float ia, ib, icov;
-		if (!rowExtent(x0 + width, y0 + width, x1 - width, y1 - width, ri, y + 0.5f, ia, ib, icov))
+		for (int y = ya; y < yb; ++y)
 		{
-			// a row of the top or bottom band: the whole extent
-			blendSpan(dest, clip, y, xa, xb, color, vcov);
-			continue;
+			float xa, xb, vcov;
+			if (!rowExtent(x0, y0, x1, y1, radius, y + 0.5f, xa, xb, vcov)) continue;
+			float ia, ib, icov;
+			if (!rowExtent(x0 + width, y0 + width, x1 - width, y1 - width, ri, y + 0.5f, ia, ib, icov))
+			{
+				// a row of the top or bottom band: the whole extent
+				blendSpan(dest, clip, y, xa, xb, color, vcov);
+				continue;
+			}
+			// the inner rows: the two sides; the inner edge's own partial coverage
+			blendSpan(dest, clip, y, xa, ia, color, vcov);
+			blendSpan(dest, clip, y, ib, xb, color, vcov);
+			if (icov < 1.0f)
+			{
+				blendSpan(dest, clip, y, ia, ib, color, vcov * (1.0f - icov));
+			}
 		}
-		// the inner rows: the two sides; the inner edge's own partial coverage
-		blendSpan(dest, clip, y, xa, ia, color, vcov);
-		blendSpan(dest, clip, y, ib, xb, color, vcov);
-		if (icov < 1.0f)
+	};
+	// on the video card: the runs of the rows, handed over
+	HdGpuWorld &gpuWorld = HdGpuWorld::instance();
+	if (gpuWorld.on(dest))
+	{
+		std::vector<HdGpuWorld::Span> spans;
+		spanSink = &spans;
+		rows();
+		spanSink = nullptr;
+		if (gpuWorld.spans(spans) && !gpuWorld.verifying())
 		{
-			blendSpan(dest, clip, y, ia, ib, color, vcov * (1.0f - icov));
+			return;
 		}
 	}
+	rows();
 }
 
 void HdUi::fillTriangle(float ax, float ay, float bx, float by, float cx, float cy, Uint32 color)
@@ -425,6 +487,9 @@ void HdUi::fillTriangle(float ax, float ay, float bx, float by, float cx, float 
 	const float ex[3] = { ax, bx, cx }, ey[3] = { ay, by, cy };
 	const int x0 = std::max((int)std::floor(std::min({ ax, bx, cx })), (int)clip.x), x1 = std::min((int)std::ceil(std::max({ ax, bx, cx })), clip.x + clip.w);
 	const int y0 = std::max((int)std::floor(std::min({ ay, by, cy })), (int)clip.y), y1 = std::min((int)std::ceil(std::max({ ay, by, cy })), clip.y + clip.h);
+	// on the video card: the coverages worked out here, blended there
+	const bool onCard = HdGpuWorld::instance().on(dest) && x0 < x1 && y0 < y1;
+	std::vector<float> covs(onCard ? (size_t)(x1 - x0) * (y1 - y0) : 0, 0.0f);
 	for (int y = y0; y < y1; ++y)
 	{
 		Uint32 *row = (Uint32*)((Uint8*)dest->pixels + (size_t)y * dest->pitch);
@@ -441,8 +506,13 @@ void HdUi::fillTriangle(float ax, float ay, float bx, float by, float cx, float 
 				const float d = (dx * (py - ey[i]) - dy * (px - ex[i])) / std::max(len, 1e-6f);
 				cov *= std::min(std::max(d + 0.5f, 0.0f), 1.0f);
 			}
-			if (cov > 0.002f) blendPixel(row[x], color, cov);
+			if (onCard) covs[(size_t)(y - y0) * (x1 - x0) + (x - x0)] = cov;
+			else if (cov > 0.002f) blendPixel(row[x], color, cov);
 		}
+	}
+	if (onCard)
+	{
+		coverDone(dest, covs, x0, y0, x1, y1, color);
 	}
 }
 
@@ -456,6 +526,9 @@ void HdUi::fillCircle(float cx, float cy, float r, Uint32 color)
 	const SDL_Rect clip = worldClip(dest, k);
 	const int y0 = std::max((int)std::floor(cy - r), (int)clip.y), y1 = std::min((int)std::ceil(cy + r), clip.y + clip.h);
 	const int x0 = std::max((int)std::floor(cx - r), (int)clip.x), x1 = std::min((int)std::ceil(cx + r), clip.x + clip.w);
+	// on the video card: the coverages worked out here, blended there
+	const bool onCard = HdGpuWorld::instance().on(dest) && x0 < x1 && y0 < y1;
+	std::vector<float> covs(onCard ? (size_t)(x1 - x0) * (y1 - y0) : 0, 0.0f);
 	for (int y = y0; y < y1; ++y)
 	{
 		Uint32 *row = (Uint32*)((Uint8*)dest->pixels + (size_t)y * dest->pitch);
@@ -463,8 +536,13 @@ void HdUi::fillCircle(float cx, float cy, float r, Uint32 color)
 		{
 			const float dx = x + 0.5f - cx, dy = y + 0.5f - cy;
 			const float cov = std::min(std::max(r - std::sqrt(dx * dx + dy * dy) + 0.5f, 0.0f), 1.0f);
-			if (cov > 0.002f) blendPixel(row[x], color, cov);
+			if (onCard) covs[(size_t)(y - y0) * (x1 - x0) + (x - x0)] = cov;
+			else if (cov > 0.002f) blendPixel(row[x], color, cov);
 		}
+	}
+	if (onCard)
+	{
+		coverDone(dest, covs, x0, y0, x1, y1, color);
 	}
 }
 
@@ -478,6 +556,13 @@ void HdUi::drawImage(const Uint32 *argb, int w, int h, int x, int y)
 	const SDL_Rect clip = worldClip(dest, k);
 	const int x0 = std::max(x, (int)clip.x), y0 = std::max(y, (int)clip.y);
 	const int x1 = std::min(x + w, clip.x + clip.w), y1 = std::min(y + h, clip.y + clip.h);
+	// on the video card: the part of the picture inside the clip
+	HdGpuWorld &gpuWorld = HdGpuWorld::instance();
+	if (gpuWorld.on(dest) && (x0 >= x1 || y0 >= y1 || gpuWorld.image(argb + (size_t)(y0 - y) * w + (x0 - x), w, x1 - x0, y1 - y0, x0, y0))
+		&& !gpuWorld.verifying())
+	{
+		return;
+	}
 	for (int py = y0; py < y1; ++py)
 	{
 		Uint32 *row = (Uint32*)((Uint8*)dest->pixels + (size_t)py * dest->pitch);
@@ -501,11 +586,138 @@ void HdUi::shadeRows(int x, int y, int w, int h, const std::function<void(int, i
 	const int x0 = std::max(x, (int)clip.x), y0 = std::max(y, (int)clip.y);
 	const int x1 = std::min(x + w, clip.x + clip.w), y1 = std::min(y + h, clip.y + clip.h);
 	if (x0 >= x1 || y0 >= y1) return;
+	// a routine per pixel: the video card does not take it
+	HdGpuWorld::instance().cpu("rows shaded by a routine");
 	auto rows = [&](int ra, int rb)
 	{
 		for (int py = ra; py < rb; ++py)
 		{
 			fn(py, x0, x1, (Uint32*)((Uint8*)dest->pixels + (size_t)py * dest->pitch));
+		}
+	};
+	const int n = y1 - y0;
+	if (n >= 64)
+	{
+		HdWorkers &pool = HdWorkers::instance();
+		const int jobs = std::max(1, std::min(n / 16, pool.threads() * 4));
+		pool.run(jobs, [&](int job) { rows(y0 + (int)((long long)n * job / jobs), y0 + (int)((long long)n * (job + 1) / jobs)); });
+	}
+	else
+	{
+		rows(y0, y1);
+	}
+}
+
+void HdUi::shadeCover(int x, int y, int w, int h, int layers, const Uint32 *colors, const std::function<void(int, int, int, float*)> &fn)
+{
+	FrameTiming timing(_frameMs);
+	SDL_Surface *dest;
+	int k;
+	const SDL_Color *pal;
+	if (!target(dest, k, pal) || w <= 0 || h <= 0 || layers <= 0) return;
+	const SDL_Rect clip = worldClip(dest, k);
+	const int x0 = std::max(x, (int)clip.x), y0 = std::max(y, (int)clip.y);
+	const int x1 = std::min(x + w, clip.x + clip.w), y1 = std::min(y + h, clip.y + clip.h);
+	if (x0 >= x1 || y0 >= y1) return;
+	const int n = x1 - x0, nRows = y1 - y0;
+	HdGpuWorld &gpuWorld = HdGpuWorld::instance();
+	const bool onCard = gpuWorld.on(dest);
+	// on the video card: the coverages of every layer over the whole rectangle, then one write a layer
+	std::vector<std::vector<float>> covs(onCard ? layers : 0, std::vector<float>((size_t)n * nRows, 0.0f));
+	auto blendRow = [&](int py, const float *c, int from)
+	{
+		Uint32 *row = (Uint32*)((Uint8*)dest->pixels + (size_t)py * dest->pitch);
+		for (int i = 0; i < n; ++i)
+		{
+			for (int l = from; l < layers; ++l)
+			{
+				const float cv = c[(size_t)l * n + i];
+				if (cv > 0.002f) blendPixel(row[x0 + i], colors[l], cv);
+			}
+		}
+	};
+	auto rows = [&](int ra, int rb)
+	{
+		std::vector<float> c((size_t)layers * n);
+		for (int py = ra; py < rb; ++py)
+		{
+			std::fill(c.begin(), c.end(), 0.0f);
+			fn(py, x0, x1, c.data());
+			if (!onCard)
+			{
+				blendRow(py, c.data(), 0);
+				continue;
+			}
+			for (int l = 0; l < layers; ++l)
+			{
+				std::copy(c.begin() + (size_t)l * n, c.begin() + (size_t)(l + 1) * n, covs[l].begin() + (size_t)(py - y0) * n);
+			}
+		}
+	};
+	if (nRows >= 64)
+	{
+		HdWorkers &pool = HdWorkers::instance();
+		const int jobs = std::max(1, std::min(nRows / 16, pool.threads() * 4));
+		pool.run(jobs, [&](int job) { rows(y0 + (int)((long long)nRows * job / jobs), y0 + (int)((long long)nRows * (job + 1) / jobs)); });
+	}
+	else
+	{
+		rows(y0, y1);
+	}
+	if (!onCard)
+	{
+		return;
+	}
+	// the layers the card took are in the world it gives back when it does not take one; with VERIFY the processor
+	// draws them all
+	const bool verifying = gpuWorld.verifying();
+	int from = 0;
+	while (from < layers && gpuWorld.cover(covs[from], x0, y0, x1, y1, colors[from]))
+	{
+		++from;
+	}
+	if (verifying)
+	{
+		from = 0;
+	}
+	else if (from == layers)
+	{
+		return;
+	}
+	std::vector<float> c((size_t)layers * n);
+	for (int py = y0; py < y1; ++py)
+	{
+		for (int l = from; l < layers; ++l)
+		{
+			std::copy(covs[l].begin() + (size_t)(py - y0) * n, covs[l].begin() + (size_t)(py - y0 + 1) * n, c.begin() + (size_t)l * n);
+		}
+		blendRow(py, c.data(), from);
+	}
+}
+
+void HdUi::copyRows(int x, int y, int w, int h, const Uint32 *src, int pitch)
+{
+	FrameTiming timing(_frameMs);
+	SDL_Surface *dest;
+	int k;
+	const SDL_Color *pal;
+	if (!target(dest, k, pal) || w <= 0 || h <= 0) return;
+	const SDL_Rect clip = worldClip(dest, k);
+	const int x0 = std::max(x, (int)clip.x), y0 = std::max(y, (int)clip.y);
+	const int x1 = std::min(x + w, clip.x + clip.w), y1 = std::min(y + h, clip.y + clip.h);
+	if (x0 >= x1 || y0 >= y1) return;
+	const Uint32 *from = src + (size_t)(y0 - y) * pitch + (x0 - x);
+	HdGpuWorld &gpuWorld = HdGpuWorld::instance();
+	if (gpuWorld.on(dest) && gpuWorld.image(from, pitch, x1 - x0, y1 - y0, x0, y0, true) && !gpuWorld.verifying())
+	{
+		return;
+	}
+	auto rows = [&](int ra, int rb)
+	{
+		for (int py = ra; py < rb; ++py)
+		{
+			const Uint32 *s = from + (size_t)(py - y0) * pitch;
+			std::copy(s, s + (x1 - x0), (Uint32*)((Uint8*)dest->pixels + (size_t)py * dest->pitch) + x0);
 		}
 	};
 	const int n = y1 - y0;
@@ -531,6 +743,12 @@ void HdUi::blendGlyph(SDL_Surface *dest, const SDL_Rect &clip, const HdFont::Gly
 	const int x0 = std::max(x, (int)clip.x), y0 = std::max(y, (int)clip.y);
 	const int x1 = std::min(x + g.w, clip.x + clip.w), y1 = std::min(y + g.h, clip.y + clip.h);
 	struct LutRef { const float *v; } lut = { customLut ? customLut : coverageLut().v };
+	HdGpuWorld &gpuWorld = HdGpuWorld::instance();
+	if (gpuWorld.on(dest) && (x0 >= x1 || y0 >= y1 || gpuWorld.glyph(&g.cov[(size_t)(y0 - y) * g.w + (x0 - x)], g.w, x1 - x0, y1 - y0, x0, y0, color, lut.v))
+		&& !gpuWorld.verifying())
+	{
+		return;
+	}
 	for (int py = y0; py < y1; ++py)
 	{
 		Uint32 *row = (Uint32*)((Uint8*)dest->pixels + (size_t)py * dest->pitch);

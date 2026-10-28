@@ -23,6 +23,7 @@
 #include <cstdlib>
 #include <deque>
 #include <utility>
+#include "HdGpuWorld.h"
 #include "HdWorkers.h"
 #include "Logger.h"
 
@@ -1139,6 +1140,8 @@ void move(Agent &a, const Plan &plan, float night, float dt)
 void draw(SDL_Surface *world, const Plan &plan, int ox, int oy, int cell, float night, Uint32 ms,
 	std::vector<HdBaseScene::Placed> &lights)
 {
+	// a writer the video card does not take (HdGpuWorld)
+	HdGpuWorld::instance().cpu(world, "the crew of the base");
 	if (!world || world->format->BytesPerPixel != 4 || cell < 8)
 	{
 		return;

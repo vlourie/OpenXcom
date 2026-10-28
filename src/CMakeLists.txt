@@ -192,6 +192,7 @@ set ( engine_src
   Engine/HdWorkers.cpp
   Engine/HdGpu.cpp
   Engine/HdGpuCanvas.cpp
+  Engine/HdGpuWorld.cpp
   Engine/HdTurn.cpp
   Engine/HdTurnGroups.cpp
   Engine/HdUpdateNotice.cpp

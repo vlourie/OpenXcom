@@ -41,6 +41,7 @@
 #include "../Engine/HdCanvas.h"
 #include "../Engine/HdFx.h"
 #include "../Engine/HdGentle.h"
+#include "../Engine/HdGpuWorld.h"
 #include "../Engine/HdKillCam.h"
 #include "../Engine/HdLab.h"
 #include "../Engine/HdSprites.h"
@@ -1649,6 +1650,7 @@ void Map::blit(SDL_Surface *surface)
 			SDL_Rect target {};
 			target.x = getX() * k;
 			target.y = getY() * k;
+			HdGpuWorld::instance().cpu("a palette canvas");
 			SDL_BlitSurface(shown->getSdlSurface(), nullptr, world, &target);
 		}
 		// the message's two lines are not in the canvas when the HD interface can draw them
