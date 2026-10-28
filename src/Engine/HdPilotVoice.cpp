@@ -111,6 +111,8 @@ const Soldier *speaker(const Craft *craft)
 }
 
 /// The voice set of a fighter: "dog" for the Piratez dogs, "<class>_male" for men, else "" (the class set itself).
+/// Men are told by the soldier type, not by getGender(): in Piratez the gender of a gal only picks her look set
+/// (UBERGAL M0-M59 / F0-F59, both women), so half of the gals are GENDER_MALE (R-521, XP-000341).
 std::string setOf(const Soldier *soldier, const std::string &kind)
 {
 	if (!soldier)
@@ -122,7 +124,11 @@ std::string setOf(const Soldier *soldier, const std::string &kind)
 	{
 		return "dog";
 	}
-	return soldier->getGender() == GENDER_MALE ? kind + "_male" : "";
+	if (type == "STR_SOLDIER_SLAVE" || type == "STR_SOLDIER_HERO" || type == "STR_SOLDIER_PUREBLOOD")
+	{
+		return kind + "_male";
+	}
+	return "";
 }
 
 /// The lines of an event in the player's language, else in English; null when the set has none.
