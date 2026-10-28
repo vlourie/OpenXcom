@@ -3956,6 +3956,15 @@ void Mod::loadFile(const FileMap::FileRecord &filerec, ModScript &parsers)
 		nodeAI.tryRead("targetWeightAsFriendly", _aiTargetWeightAsFriendly);
 		nodeAI.tryRead("targetWeightAsNeutral", _aiTargetWeightAsNeutral);
 	}
+	// the knowledge armor rule (Battlescape/KnowledgeArmor.h): only the numbers, the option oxceKnowledgeArmor turns it on
+	if (const auto& nodeKnowledge = loadDocInfoHelper("knowledgeArmor"))
+	{
+		nodeKnowledge.tryRead("knownEnemy", _knowledgeArmor.knownEnemy);
+		nodeKnowledge.tryRead("unknownWeapon", _knowledgeArmor.unknownWeapon);
+		nodeKnowledge.tryRead("intelligenceStep", _knowledgeArmor.intelligenceStep);
+		nodeKnowledge.tryRead("intelligencePivot", _knowledgeArmor.intelligencePivot);
+		nodeKnowledge.tryRead("difficultyIntelligence", _knowledgeArmor.difficultyIntelligence);
+	}
 	reader.tryRead("maxLookVariant", _maxLookVariant);
 	reader.tryRead("tooMuchSmokeThreshold", _tooMuchSmokeThreshold);
 	reader.tryRead("customTrainingFactor", _customTrainingFactor);

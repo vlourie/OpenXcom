@@ -127,6 +127,22 @@ struct ModData
 };
 
 /**
+ * The numbers of the knowledge armor rule (Battlescape/KnowledgeArmor.h, option oxceKnowledgeArmor): ruleset key knowledgeArmor.
+ */
+struct KnowledgeArmorRules
+{
+	/// Armor effectiveness taken off when the player hits an enemy whose armor article is open.
+	float knownEnemy = 0.2f;
+	/// Armor effectiveness added when the player hits with a weapon or ammo whose article is still closed.
+	float unknownWeapon = 0.2f;
+	/// Armor effectiveness taken off per point of the enemy's intelligence above intelligencePivot (added below it).
+	float intelligenceStep = 0.05f;
+	int intelligencePivot = 4;
+	/// Added to the enemy's intelligence, by difficulty (beginner to superhuman).
+	std::vector<int> difficultyIntelligence = { -1, 0, 0, 1, 2 };
+};
+
+/**
  * Helper exception representing the final message with all the required context for the end user to fix the errors in rulesets
  */
 struct LoadRuleException : Exception
@@ -251,6 +267,7 @@ private:
 	AIAttackWeight _aiTargetWeightAsHostileCivilians = AIAttackWeight{ 50 };
 	AIAttackWeight _aiTargetWeightAsFriendly = AIAttackWeight{ -200 };
 	AIAttackWeight _aiTargetWeightAsNeutral = AIAttackWeight{ -100 };
+	KnowledgeArmorRules _knowledgeArmor;
 
 	int _maxLookVariant, _tooMuchSmokeThreshold, _customTrainingFactor;
 	int _chanceToStopRetaliation;
@@ -919,6 +936,8 @@ public:
 	AIAttackWeight getAITargetWeightAsFriendly() const { return _aiTargetWeightAsFriendly; }
 	/// Gets default weight value of neutral unit (xcom to civ or vice versa).
 	AIAttackWeight getAITargetWeightAsNeutral() const { return _aiTargetWeightAsNeutral; }
+	/// Gets the numbers of the knowledge armor rule (Battlescape/KnowledgeArmor.h).
+	const KnowledgeArmorRules &getKnowledgeArmor() const { return _knowledgeArmor; }
 
 	/// Gets maximum supported lookVariant.
 	int getMaxLookVariant() const;

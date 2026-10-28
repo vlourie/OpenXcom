@@ -39,6 +39,7 @@
 #include "../fmath.h"
 #include <cmath>
 #include "AiProbe.h"
+#include "KnowledgeArmor.h"
 
 namespace OpenXcom
 {
@@ -3647,7 +3648,8 @@ double AIModule::fireModeEffect(BattleAction *action, BattleUnit *target, const 
 
 	// the expected damage after the resistance modifier and the armour over the roll (two dice: the triangle)
 	const float modifier = armor->getDamageModifier(dt->ResistType);
-	const float armorCut = dt->ArmorEffectiveness > 0.0f ? (float)sideArmor * dt->ArmorEffectiveness : 0.0f;
+	const float effectiveness = KnowledgeArmor::effectiveness(dt, _unit, action->weapon, attack.damage_item, target, _save);
+	const float armorCut = effectiveness > 0.0f ? (float)sideArmor * effectiveness : 0.0f;
 	auto afterArmor = [&](int roll)
 	{
 		int damage = (int)floor(roll * modifier);
@@ -5483,7 +5485,8 @@ bool AIModule::evalFireAction()
 				}
 				const RuleDamageType *type = ammo->getDamageType();
 				const int power = e->reduceByResistance(ammo->getPowerBonus(m.attack), type->ResistType);
-				const double perHit = std::max(0.0, power - e->getArmor(SIDE_FRONT) * (double)type->ArmorEffectiveness);
+				const float effectiveness = KnowledgeArmor::effectiveness(type, _unit, m.attack.weapon_item, m.attack.damage_item, e, _save);
+				const double perHit = std::max(0.0, power - e->getArmor(SIDE_FRONT) * (double)effectiveness);
 				if (perHit <= 0.0)
 				{
 					continue;
@@ -6842,8 +6845,9 @@ int AIModule::zeroEffectVerdictB2(SavedBattleGame *save, BattleUnit *attacker, B
 	{
 		return done(AIZ_ZERO, "resistance");
 	}
-	w << ",\"eff\":" << dt->ArmorEffectiveness << ",\"pre\":" << dt->ToArmorPre;
-	if (dt->ArmorEffectiveness <= 0.0f)
+	const float effectiveness = KnowledgeArmor::effectiveness(dt, attacker, weapon, attack.damage_item, target, save);
+	w << ",\"eff\":" << effectiveness << ",\"pre\":" << dt->ToArmorPre;
+	if (effectiveness <= 0.0f)
 	{
 		return done(AIZ_POTENTIAL, "ignores_armor");
 	}
@@ -6862,7 +6866,7 @@ int AIModule::zeroEffectVerdictB2(SavedBattleGame *save, BattleUnit *attacker, B
 		armorMin = std::min(armorMin, target->getArmor(side));
 	}
 	int through = resisted;
-	through -= armorMin * dt->ArmorEffectiveness; // the same int -= float as BattleUnit::damage
+	through -= armorMin * effectiveness; // the same int -= float as BattleUnit::damage
 	w << ",\"amin\":" << armorMin << ",\"left\":" << through;
 	if (through > 0)
 	{
@@ -7128,8 +7132,9 @@ int AIModule::zeroEffectVerdictHonest(SavedBattleGame *save, BattleUnit *attacke
 		}
 		return done(AIZ_ZERO, "resistance");
 	}
-	w << ",\"eff\":" << dt->ArmorEffectiveness << ",\"pre\":" << dt->ToArmorPre;
-	if (dt->ArmorEffectiveness <= 0.0f)
+	const float effectiveness = KnowledgeArmor::effectiveness(dt, attacker, weapon, attack.damage_item, target, save);
+	w << ",\"eff\":" << effectiveness << ",\"pre\":" << dt->ToArmorPre;
+	if (effectiveness <= 0.0f)
 	{
 		return done(AIZ_POTENTIAL, "ignores_armor");
 	}

@@ -52,7 +52,7 @@ static const struct { const char *category; int tab; } HD_CATEGORIES[] = {
 	{ "STR_HD_BATTLE", 1 }, { "STR_HD_BATTLE_UI", 1 }, { "STR_HD_PHYSICS", 1 },
 	{ "STR_HD_INTERFACE", 2 },
 	{ "STR_HD_GEOSCAPE", 3 }, { "STR_HD_BASE", 3 },
-	{ "STR_HD_AI", 4 }, { "STR_HD_CHALLENGE", 4 },
+	{ "STR_HD_AI", 4 }, { "STR_HD_CHALLENGE", 4 }, { "STR_HD_RULES", 4 },
 	{ "STR_HD_SPEED", 5 }, { "STR_HD_LAB", 5 } };
 /// The options of how things look, wherever their category is: they all go on the graphics tab, to the group of their
 /// category (the battle ones to "Graphics of the battle"). Options of the categories ART, GENTLE and GRAPHICS are there already.
