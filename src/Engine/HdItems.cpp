@@ -89,6 +89,7 @@ size_t bytes = 0;
 const size_t BUDGET = 64u * 1024u * 1024u;
 std::set<std::string> noHand;                 ///< types already logged as classic in the hand frame
 std::set<std::string> noGrid;                 ///< types already logged as classic in the grid
+std::set<std::string> misfit;                 ///< pictures already logged as another shape than the classic frame
 
 /// A picture attached to a surface, where it goes relative to the surface.
 struct Placed
@@ -340,6 +341,14 @@ void trim()
 	}
 }
 
+/// Is a picture of pw x ph the shape of a frame of w x h? Equal proportions, to 10% for the rounding of a pack made
+/// on a frame a pixel off (33x47 for 32x48); a frame twice as wide or half as tall is not.
+bool sameShape(int pw, int ph, int w, int h)
+{
+	const long long diff = std::llabs((long long)pw * h - (long long)ph * w);
+	return diff * 10 <= (long long)ph * w;
+}
+
 /// A picture at w x h, read now if it was not (and recoloured to `tint`'s palette when its hash is not 0);
 /// null when it cannot be read.
 std::shared_ptr<const HdFrame> get(const Key &key, const std::string &path, int w, int h, const Tint &tint)
@@ -354,6 +363,17 @@ std::shared_ptr<const HdFrame> get(const Key &key, const std::string &path, int 
 	if (!HdSprites::loadPng(path, frame) || frame.empty())
 	{
 		Log(LOG_WARNING) << "HD items: cannot read " << path;
+		frame = HdFrame();
+	}
+	else if (!sameShape(frame.width, frame.height, w, h))
+	{
+		// drawn for another classic frame (the pack was made on XPZ RU-patch's 16x48 Iron_Rod, the player has Piratez's
+		// 32x48): stretching it doubles the item's width and shifts it - the classic frame is shown, as without HD
+		if (misfit.insert(path).second)
+		{
+			Log(LOG_INFO) << "HD items: " << path << " is " << frame.width << "x" << frame.height
+				<< ", the classic frame is " << w << "x" << h << " at the same scale - not stretched, classic";
+		}
 		frame = HdFrame();
 	}
 	else if (frame.width != w || frame.height != h)

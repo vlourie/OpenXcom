@@ -1,3 +1,4 @@
 ﻿- Launcher 0.4.0, ticket XP-000068: a new build of another game ('New...') takes your screen settings (resolution, fullscreen, scaling, OpenGL and filters), sound, keys, mouse scrolling and all HD settings from the build you play. No more copying options.cfg by hand. Piratez's game options and mods list are not carried: the other game has its own.
 - The voiced X-Piratez intro is for Piratez only now: it no longer turns on in X-Com Files or other games, even with options.cfg copied by hand or the mod ticked in the Mods menu.
 - The launcher setup from the site (XPiratezHD-Setup) now has an icon - the launcher's own, not the blank program icon.
+- Tickets XP-000359 and XP-000360, junk fort (JUNKFORT3) and desert refinery: the floor grille is a flat checkerboard with a grey frame again, as in the original - no waves, ragged brown edge or mush between tiles; the broken grille and the grey floor next to it are redone the same way, from the original shapes and colours.
