@@ -2,6 +2,8 @@
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
     <AssemblyName>xp-bootstrap</AssemblyName>
+    <!-- the setup the site gives a new player: the launcher's icon, not the blank one of a plain exe -->
+    <ApplicationIcon>..\Xp.Launcher\Assets\app.ico</ApplicationIcon>
     <RootNamespace>Xp.Bootstrapper</RootNamespace>
     <PublishAot>true</PublishAot>
     <OptimizationPreference>Size</OptimizationPreference>
