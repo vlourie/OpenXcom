@@ -586,6 +586,7 @@ void createAdvancedOptionsOXCE()
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdUpdateNotice", &oxceHdUpdateNotice, true, "STR_HD_UPDATE_NOTICE", "STR_HD_INTERFACE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdCraftFit", &oxceHdCraftFit, false, "STR_HD_CRAFT_FIT", "STR_HD_INTERFACE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdWoundedRed", &oxceHdWoundedRed, false, "STR_HD_WOUNDED_RED", "STR_HD_INTERFACE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdCraftMission", &oxceHdCraftMission, false, "STR_HD_CRAFT_MISSION", "STR_HD_INTERFACE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdBaseAnim", &oxceHdBaseAnim, true, "STR_HD_BASE_ANIM", "STR_HD_BASE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdCraftLights", &oxceHdCraftLights, true, "STR_HD_CRAFT_LIGHTS", "STR_HD_BASE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdCraftLaunch", &oxceHdCraftLaunch, 1, "STR_HD_CRAFT_LAUNCH", "STR_HD_BASE"));

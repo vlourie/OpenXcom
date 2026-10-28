@@ -42,6 +42,20 @@
 #include "../Battlescape/BriefingState.h"
 #include "../Savegame/SavedBattleGame.h"
 #include "../Engine/Palette.h"
+#include "../Mod/RuleStartingCondition.h"
+#include "../Mod/AlienDeployment.h"
+#include "../Mod/AlienRace.h"
+#include "../Mod/RuleGlobe.h"
+#include "../Mod/RuleCraft.h"
+#include "../Mod/RuleSoldier.h"
+#include "../Mod/Texture.h"
+#include "../Mod/Polygon.h"
+#include "../Geoscape/Globe.h"
+#include "../Savegame/Base.h"
+#include "../Savegame/Target.h"
+#include "../Savegame/MissionSite.h"
+#include "../Savegame/AlienBase.h"
+#include "../Savegame/Ufo.h"
 
 namespace OpenXcom
 {
@@ -56,6 +70,133 @@ public:
 	CraftFitPlate(int width, int height, int x, int y) : TextButton(width, height, x, y) { }
 	void handle(Action *, State *) override { }
 };
+
+/**
+ * OXCE-HD (oxceHdCraftMission): the starting condition of a target - the same chain as ConfirmLandingState::checkStartingCondition:
+ * UFO: the deployment by the UFO type (type_UNDERWATER on a fake underwater texture); mission site: its deployment;
+ * alien base: the race's base custom mission, else the base deployment. No condition in the deployment - the one of the
+ * texture (mission site: the texture of the site, else the globe texture under it, as GeoscapeState hands it over;
+ * UFO and base: the globe texture). Reads only, no random numbers.
+ * @return The condition, or null if the landing would check nothing.
+ */
+static const RuleStartingCondition *findStartingCondition(const Mod *mod, const Target *target)
+{
+	const Ufo *u = dynamic_cast<const Ufo*>(target);
+	const MissionSite *m = dynamic_cast<const MissionSite*>(target);
+	const AlienBase *b = dynamic_cast<const AlienBase*>(target);
+	if (!u && !m && !b)
+	{
+		return nullptr;
+	}
+	Polygon *poly = Globe::polygonAt(mod->getGlobe(), target->getLongitude(), target->getLatitude());
+	Texture *globeTexture = mod->getGlobe()->getTexture(poly ? poly->getTexture() : -1);
+	Texture *missionTexture = globeTexture;
+	if (m)
+	{
+		if (globeTexture && globeTexture->isCosmeticOcean())
+		{
+			globeTexture = mod->getGlobe()->getTexture(-1);
+		}
+		missionTexture = mod->getGlobe()->getTexture(m->getTexture());
+		if (!missionTexture)
+		{
+			missionTexture = globeTexture;
+		}
+	}
+
+	const AlienDeployment *ruleDeploy = nullptr;
+	if (u)
+	{
+		std::string name = u->getRules()->getType();
+		if (missionTexture && missionTexture->isFakeUnderwater())
+		{
+			name += "_UNDERWATER";
+		}
+		ruleDeploy = mod->getDeployment(name);
+	}
+	else if (m)
+	{
+		ruleDeploy = mod->getDeployment(m->getDeployment()->getType());
+	}
+	else
+	{
+		const AlienRace *race = mod->getAlienRace(b->getAlienRace());
+		ruleDeploy = race ? mod->getDeployment(race->getBaseCustomMission()) : nullptr;
+		if (!ruleDeploy) ruleDeploy = mod->getDeployment(b->getDeployment()->getType());
+	}
+	if (!ruleDeploy)
+	{
+		return nullptr;
+	}
+	const RuleStartingCondition *rule = mod->getStartingCondition(ruleDeploy->getStartingCondition());
+	if (!rule && missionTexture)
+	{
+		rule = mod->getStartingCondition(missionTexture->getStartingCondition());
+	}
+	return rule;
+}
+
+enum MissionFit { MF_OK, MF_CRAFT, MF_SOLDIER_TYPE };
+
+/// OXCE-HD (oxceHdCraftMission): what the condition says about the craft as a whole - the same calls as the landing, one by one.
+struct MissionCraftFit
+{
+	bool craftOk = true;        // RuleStartingCondition::isCraftPermitted
+	bool needCommander = false; // requiresCommanderOnboard and no commander aboard
+	bool needItems = false;     // the required items are not aboard
+};
+
+static MissionCraftFit missionCraftFit(const RuleStartingCondition *rule, const Craft *craft)
+{
+	MissionCraftFit r;
+	if (rule)
+	{
+		r.craftOk = rule->isCraftPermitted(craft->getRules()->getType());
+		r.needCommander = rule->requiresCommanderOnboard() && !craft->isCommanderOnboard();
+		r.needItems = !craft->areRequiredItemsOnboard(rule->getRequiredItems());
+	}
+	return r;
+}
+
+/// OXCE-HD (oxceHdCraftMission): one soldier - the craft, then the soldier type (Craft::areOnlyPermittedSoldierTypesOnboard, per soldier).
+static MissionFit missionSoldierFit(const RuleStartingCondition *rule, const Craft *craft, const Soldier *s)
+{
+	if (!rule)
+	{
+		return MF_OK;
+	}
+	if (!rule->isCraftPermitted(craft->getRules()->getType()))
+	{
+		return MF_CRAFT;
+	}
+	if (!rule->isSoldierTypePermitted(s->getRules()->getType()))
+	{
+		return MF_SOLDIER_TYPE;
+	}
+	return MF_OK;
+}
+
+/// OXCE-HD (oxceHdCraftMission): the armor is replaced at the start, it is no ban. The same membership test as
+/// RuleStartingCondition::getArmorReplacement, but without its random pick (that would take a number from the generator).
+static bool missionArmorWillChange(const RuleStartingCondition *rule, const Soldier *s)
+{
+	if (!rule)
+	{
+		return false;
+	}
+	const std::string &armor = s->getArmor()->getType();
+	const auto &forbidden = rule->getForbiddenArmors();
+	const auto &allowed = rule->getAllowedArmors();
+	if (!forbidden.empty())
+	{
+		return std::find(forbidden.begin(), forbidden.end(), armor) != forbidden.end();
+	}
+	if (!allowed.empty())
+	{
+		return std::find(allowed.begin(), allowed.end(), armor) == allowed.end();
+	}
+	return false;
+}
 
 /**
  * Initializes all the elements in the Craft Soldiers screen.
@@ -78,6 +219,7 @@ CraftSoldiersState::CraftSoldiersState(Base *base, size_t craft)
 	_window = new Window(this, 320, 200, 0, 0);
 	// OXCE-HD (oxceHdCraftFit): the sort box and (without the preview button) OK shorter, between them the plate of the seats
 	const bool fit = Options::oxceHdCraftFit;
+	const bool mission = Options::oxceHdCraftMission; // OXCE-HD: the box "For mission:" under the list, the list 13 rows
 	_btnOk = new TextButton(hidePreview ? (fit ? 116 : 148) : 30, 16, hidePreview ? (fit ? 196 : 164) : 274, 176);
 	_btnFit = fit ? new CraftFitPlate(hidePreview ? 64 : 44, 16, hidePreview ? 128 : 116, 176) : nullptr;
 	_btnPreview = new TextButton(102, 16, 164, 176);
@@ -88,7 +230,13 @@ CraftSoldiersState::CraftSoldiersState(Base *base, size_t craft)
 	_txtAvailable = new Text(110, 9, 16, 24);
 	_txtUsed = new Text(110, 9, 122, 24);
 	_cbxSortBy = new ComboBox(this, fit ? (hidePreview ? 116 : 104) : 148, 16, 8, 176, true);
-	_lstSoldiers = new TextList(288, 128, 8, 40);
+	_lstSoldiers = new TextList(288, mission ? 104 : 128, 8, 40);
+	if (mission)
+	{
+		_txtMissionInfo = new Text(288, 9, 16, 145);
+		_txtMissionLabel = new Text(66, 9, 14, 161);
+		_cbxMission = new ComboBox(this, 228, 16, 80, 157, true);
+	}
 
 	touchComponentsCreate(_txtTitle, true);
 
@@ -110,6 +258,12 @@ CraftSoldiersState::CraftSoldiersState(Base *base, size_t craft)
 	add(_txtUsed, "text", "craftSoldiers");
 	add(_lstSoldiers, "list", "craftSoldiers");
 	add(_cbxSortBy, "button", "craftSoldiers");
+	if (_cbxMission)
+	{
+		add(_txtMissionInfo, "text", "craftSoldiers");
+		add(_txtMissionLabel, "text", "craftSoldiers");
+		add(_cbxMission, "button", "craftSoldiers");
+	}
 
 	touchComponentsAdd("button2", "craftSoldiers", _window);
 
@@ -149,6 +303,20 @@ CraftSoldiersState::CraftSoldiersState(Base *base, size_t craft)
 	_txtRank->setText(tr("STR_RANK"));
 
 	_txtCraft->setText(tr("STR_CRAFT"));
+
+	if (_cbxMission)
+	{
+		// OXCE-HD (oxceHdCraftMission): item 0 = no target (the list is as it was), then the detected targets
+		_txtMissionLabel->setText(tr("STR_CRAFT_FOR_MISSION"));
+		std::vector<std::string> names;
+		names.push_back(tr("STR_CRAFT_FOR_MISSION_NONE"));
+		buildMissionTargets(names);
+		_cbxMission->setOptions(names);
+		_cbxMission->setSelected(0);
+		_cbxMission->onChange((ActionHandler)&CraftSoldiersState::cbxMissionChange);
+		_lstSoldiers->onMouseOver((ActionHandler)&CraftSoldiersState::lstSoldiersMouseOver);
+		_lstSoldiers->onMouseOut((ActionHandler)&CraftSoldiersState::lstSoldiersMouseOut);
+	}
 
 	// populate sort options
 	FillSorters(_sortFunctors, *_cbxSortBy, (ActionHandler)&CraftSoldiersState::cbxSortByChange);
@@ -362,6 +530,7 @@ void CraftSoldiersState::initList(size_t scrl)
 	_txtAvailable->setText(tr("STR_SPACE_AVAILABLE").arg(c->getSpaceAvailable()));
 	_txtUsed->setText(tr("STR_SPACE_USED").arg(c->getSpaceUsed()));
 	fitRefresh();
+	missionRefresh();
 }
 
 /**
@@ -634,6 +803,7 @@ void CraftSoldiersState::lstSoldiersClick(Action *action)
 		_txtAvailable->setText(tr("STR_SPACE_AVAILABLE").arg(c->getSpaceAvailable()));
 		_txtUsed->setText(tr("STR_SPACE_USED").arg(c->getSpaceUsed()));
 		fitRefresh();
+		missionRefresh();
 	}
 	else if (_game->isRightClick(action, true))
 	{
@@ -699,6 +869,7 @@ void CraftSoldiersState::btnDeassignAllSoldiersClick(Action *action)
 	_txtAvailable->setText(tr("STR_SPACE_AVAILABLE").arg(c->getSpaceAvailable()));
 	_txtUsed->setText(tr("STR_SPACE_USED").arg(c->getSpaceUsed()));
 	fitRefresh();
+	missionRefresh();
 }
 
 /**
@@ -723,5 +894,171 @@ void CraftSoldiersState::btnDeassignCraftSoldiersClick(Action *action)
 	_txtAvailable->setText(tr("STR_SPACE_AVAILABLE").arg(c->getSpaceAvailable()));
 	_txtUsed->setText(tr("STR_SPACE_USED").arg(c->getSpaceUsed()));
 	fitRefresh();
+	missionRefresh();
+}
+
+/**
+ * OXCE-HD (oxceHdCraftMission): the detected targets, the sources and the filters of the UFO tracker (UfoTrackerState):
+ * mission sites, alien bases, UFOs - the UFOs only as they stand on the ground or have crashed (a flying one is not landed on;
+ * the landing check is made for those two). Item 0 of the box (none) is already in the names.
+ */
+void CraftSoldiersState::buildMissionTargets(std::vector<std::string> &names)
+{
+	SavedGame *save = _game->getSavedGame();
+	for (const auto *site : *save->getMissionSites())
+	{
+		if (site->getDetected())
+		{
+			_missionTargets.push_back(site);
+			names.push_back(site->getName(_game->getLanguage()));
+		}
+	}
+	for (const auto *ab : *save->getAlienBases())
+	{
+		if (ab->isDiscovered())
+		{
+			_missionTargets.push_back(ab);
+			names.push_back(ab->getName(_game->getLanguage()));
+		}
+	}
+	for (const auto *ufo : *save->getUfos())
+	{
+		if (ufo->getDetected() && (ufo->getStatus() == Ufo::LANDED || ufo->getStatus() == Ufo::CRASHED))
+		{
+			_missionTargets.push_back(ufo);
+			names.push_back(ufo->getName(_game->getLanguage()));
+		}
+	}
+}
+
+/**
+ * OXCE-HD (oxceHdCraftMission): another target chosen (or none): the condition is looked up, the rows repainted.
+ * Nothing is stored in the save, the order of the soldiers is not touched.
+ */
+void CraftSoldiersState::cbxMissionChange(Action *)
+{
+	const size_t sel = _cbxMission->getSelected();
+	_missionActive = sel >= 1 && sel <= _missionTargets.size();
+	_missionRule = _missionActive ? findStartingCondition(_game->getMod(), _missionTargets[sel - 1]) : nullptr;
+	if (!_missionActive)
+	{
+		_txtMissionInfo->setText("");
+	}
+	initList(_lstSoldiers->getScroll()); // all the rows as the base paints them, then missionRefresh()
+}
+
+/**
+ * OXCE-HD (oxceHdCraftMission): the colour of a row by the craft of the soldier, as initList sets it.
+ */
+Uint8 CraftSoldiersState::rowBaseColor(const Soldier *s, const Craft *c) const
+{
+	if (s->getCraft() == c)
+	{
+		return _lstSoldiers->getSecondaryColor();
+	}
+	if (s->getCraft() != 0)
+	{
+		return _otherCraftColor;
+	}
+	return _lstSoldiers->getColor();
+}
+
+/**
+ * OXCE-HD (oxceHdCraftMission): with a target chosen, the name of every soldier who can fly there is green, and the line
+ * under the list says how many, or what the craft lacks. Called after every fitRefresh(). Display only: the green name is a
+ * soldier with full health, not on a craft that is out, whose row is not grey (does not fit), and whom the starting condition
+ * of the target lets in (the craft and the soldier type - the checks of the landing). The rest keep their colours.
+ * Nothing chosen - nothing is done.
+ */
+void CraftSoldiersState::missionRefresh()
+{
+	if (!_cbxMission || !_missionActive)
+	{
+		return;
+	}
+	Craft *c = _base->getCrafts()->at(_craft);
+	const Uint8 green = Palette::blockOffset(3) + 2;
+	size_t row = 0, fit = 0;
+	for (const auto *soldier : *_base->getSoldiers())
+	{
+		const bool grey = row < _fitGrey.size() && _fitGrey[row];
+		if (!grey)
+		{
+			setListRowColor(*_lstSoldiers, row, rowBaseColor(soldier, c), *soldier);
+			const bool away = soldier->getCraft() && soldier->getCraft() != c && soldier->getCraft()->getStatus() == "STR_OUT";
+			if (soldier->hasFullHealth() && !away && missionSoldierFit(_missionRule, c, soldier) == MF_OK)
+			{
+				_lstSoldiers->setCellColor(row, 0, green);
+				++fit;
+			}
+		}
+		++row;
+	}
+	const MissionCraftFit cf = missionCraftFit(_missionRule, c);
+	if (!cf.craftOk)
+	{
+		_missionLine = tr("STR_CRAFT_MISSION_NO_CRAFT");
+	}
+	else if (cf.needCommander)
+	{
+		_missionLine = tr("STR_CRAFT_MISSION_NEED_COMMANDER");
+	}
+	else if (cf.needItems)
+	{
+		_missionLine = tr("STR_CRAFT_MISSION_NEED_ITEMS");
+	}
+	else
+	{
+		_missionLine = tr("STR_CRAFT_MISSION_FIT_COUNT").arg(fit).arg(_base->getSoldiers()->size());
+	}
+	_txtMissionInfo->setText(_missionLine);
+}
+
+/**
+ * OXCE-HD (oxceHdCraftMission): the mouse over a row - the line says why this soldier does or does not fit the target.
+ */
+void CraftSoldiersState::lstSoldiersMouseOver(Action *)
+{
+	if (!_missionActive)
+	{
+		return;
+	}
+	const size_t row = _lstSoldiers->getSelectedRow();
+	if (row >= _base->getSoldiers()->size())
+	{
+		return;
+	}
+	const Soldier *s = _base->getSoldiers()->at(row);
+	const Craft *c = _base->getCrafts()->at(_craft);
+	switch (missionSoldierFit(_missionRule, c, s))
+	{
+	case MF_CRAFT:
+		_txtMissionInfo->setText(tr("STR_CRAFT_MISSION_NO_CRAFT"));
+		break;
+	case MF_SOLDIER_TYPE:
+		_txtMissionInfo->setText(tr("STR_CRAFT_MISSION_NO_TYPE"));
+		break;
+	default:
+		if (!s->hasFullHealth() || (s->getCraft() && s->getCraft() != c && s->getCraft()->getStatus() == "STR_OUT"))
+		{
+			_txtMissionInfo->setText(tr("STR_CRAFT_MISSION_UNAVAILABLE")); // wounded or on a craft that is out: not green
+		}
+		else
+		{
+			_txtMissionInfo->setText(tr(missionArmorWillChange(_missionRule, s) ? "STR_CRAFT_MISSION_FITS_ARMOR" : "STR_CRAFT_MISSION_FITS"));
+		}
+		break;
+	}
+}
+
+/**
+ * OXCE-HD (oxceHdCraftMission): the mouse left the list - the line is the summary again.
+ */
+void CraftSoldiersState::lstSoldiersMouseOut(Action *)
+{
+	if (_missionActive)
+	{
+		_txtMissionInfo->setText(_missionLine);
+	}
 }
 }
