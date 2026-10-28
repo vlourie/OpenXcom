@@ -79,6 +79,22 @@ ProductionCompleteState::ProductionCompleteState(Base *base, const std::string &
 			}
 		}
 	}
+	// XP-000354: a random set (supply crates) is not known before it is done (canDeliver is no for it), so what has really
+	// dropped goes: the kinds and numbers of the summary, a piece a step (the same rules for the rest as for canDeliver)
+	else if (Options::oxceManufactureDelivery && _endType == PROGRESS_COMPLETE && production && !production->getRules()->getRandomProducedItems().empty()
+		&& !production->getRules()->getProducedCraft() && production->getRules()->getSpawnedPersonType().empty()
+		&& !(!production->getRules()->getTransferTimes().empty() && production->getRules()->getTransferTimes().front() > 0)
+		&& !production->getSellItems() && !production->getInfiniteAmount() && _game->getSavedGame()->getBases()->size() > 1)
+	{
+		for (const auto &i : production->getRandomProductionInfo())
+		{
+			const RuleItem *rule = _game->getMod()->getItem(i.first, false);
+			if (rule && i.second > 0)
+			{
+				_loot.push_back({ rule, i.second, 1 });
+			}
+		}
+	}
 	const bool loot = lootUnits() > 0;
 	// removeProduction() hasn't been called yet at this point, so the completed
 	// production is still in getProductions() and its engineers are not freed.
@@ -471,6 +487,26 @@ void ProductionCompleteState::lootSendParts(Base *to, const std::vector<std::pai
 }
 
 /**
+ * The pieces of the item were sold in this window (a summary of a random set): the batch has so many less to ship,
+ * and a button with nothing to ship is hidden. Taking back (a negative number) gives them back.
+ */
+void ProductionCompleteState::lootSold(const RuleItem *item, int pieces)
+{
+	if (!_btnLoot)
+	{
+		return;
+	}
+	for (auto &part : _loot)
+	{
+		if (part.item == item)
+		{
+			part.left -= pieces;
+		}
+	}
+	_btnLoot->setVisible(lootUnits() > 0);
+}
+
+/**
  * Writes the message again: what it said and then what has been shipped from this window (small, so it all fits).
  */
 void ProductionCompleteState::refreshMessage()
@@ -608,6 +644,7 @@ void ProductionCompleteState::lstSummaryClick(Action *action)
 			adjustedSellValue *= itemCount;
 			_game->getSavedGame()->setFunds(_game->getSavedGame()->getFunds() + adjustedSellValue);
 			_base->getStorageItems()->removeItem(itemRule, itemCount);
+			lootSold(itemRule, itemCount);
 		}
 	}
 
@@ -671,6 +708,7 @@ void ProductionCompleteState::changeOne(int change)
 		_base->getStorageItems()->removeItem(itemRule, 1);
 		_randomProductionInfo[name] -= 1;
 		_soldOneByOne[name] += 1;
+		lootSold(itemRule, 1);
 	}
 	else
 	{
@@ -682,6 +720,7 @@ void ProductionCompleteState::changeOne(int change)
 		_base->getStorageItems()->addItem(itemRule, 1);
 		_randomProductionInfo[name] += 1;
 		_soldOneByOne[name] -= 1;
+		lootSold(itemRule, -1);
 	}
 	_lstSummary->setCellText(sel, 1, std::to_string(_randomProductionInfo[name]));
 }
