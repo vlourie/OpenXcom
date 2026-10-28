@@ -1063,8 +1063,8 @@ public sealed class MainWindow : Window
         {
             var cfg = _builds!.OptionsFile(cur);
             var lang = OptionsCfg.Parse(File.Exists(cfg) ? File.ReadAllText(cfg) : "").Get("language") ?? Setup.GameLanguage(L.Language);
-            var b = _builds.Create(title, template, lang, Screens.ScreenFromWindow(this)?.Bounds.Height);
-            _fileLog?.Info($"build '{b.Id}' created from the profile '{b.Template}'");
+            var b = _builds.Create(title, template, lang, Screens.ScreenFromWindow(this)?.Bounds.Height, carryFrom: cfg);
+            _fileLog?.Info($"build '{b.Id}' created from the profile '{b.Template}', the player's options from '{cur.Id}'");
         });
     }
 

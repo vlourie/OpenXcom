@@ -196,6 +196,21 @@ public sealed class OptionsCfg
         options.Add(line);
     }
 
+    /// <summary>The options the file names, in its order.</summary>
+    public IEnumerable<string> Keys =>
+        options.Select(l => OptionLine.Match(l)).Where(m => m.Success).Select(m => m.Groups[1].Value);
+
+    /// <summary>An option as the other file writes it, its line as it is: no quoting is redone.</summary>
+    public void CopyFrom(OptionsCfg other, string key)
+    {
+        var line = other.options.FirstOrDefault(l => OptionLine.Match(l) is { Success: true } m && m.Groups[1].Value == key);
+        if (line is null) return;
+        HasOptions = true;
+        for (int i = 0; i < options.Count; i++)
+            if (OptionLine.Match(options[i]) is { Success: true } m && m.Groups[1].Value == key) { options[i] = line; return; }
+        options.Add(line);
+    }
+
     public string Render()
     {
         var sb = new StringBuilder();

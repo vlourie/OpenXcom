@@ -179,10 +179,38 @@ public sealed class BuildStore(GamePaths paths, Func<string, bool>? isGameRunnin
     };
 
     /// <summary>
-    /// A new build from a profile (MULTIMOD §3.5): its mods and options, none of the player's keys, recommended
-    /// options of its own on the first start. The game language is the one given (the current build's).
+    /// The options that belong to the player and the screen, not to a game: the screen and its scaling, sound, keys,
+    /// mouse scrolling and the HD layer. A new build takes them from the build the player is in (XP-000068): a fresh
+    /// options.cfg dropped the player's screen and HD settings. Game options (geoscape, battle - a master's rulesets fix
+    /// and recommend them), the mods list and oxceRecommendedOptionsWereSet stay the new game's own.
     /// </summary>
-    public Build Create(string title, string template, string? language, int? screenHeight)
+    static readonly HashSet<string> PlayerOptions = new(StringComparer.Ordinal)
+    {
+        "displayWidth", "displayHeight", "fullscreen", "borderless", "allowResize", "rootWindowedMode",
+        "windowedModePositionX", "windowedModePositionY", "keepAspectRatio", "nonSquarePixelRatio",
+        "cursorInBlackBandsInFullscreen", "cursorInBlackBandsInWindow", "cursorInBlackBandsInBorderlessWindow",
+        "baseXResolution", "baseYResolution", "baseXGeoscape", "baseYGeoscape", "baseXBattlescape", "baseYBattlescape",
+        "geoscapeScale", "battlescapeScale", "useScaleFilter", "useHQXFilter", "useXBRZFilter",
+        "useOpenGL", "useOpenGLShader", "useOpenGLSmoothing", "vSyncForOpenGL", "FPS", "FPSInactive", "asyncBlit",
+        "captureMouse",
+        "soundVolume", "musicVolume", "uiVolume", "oxceVoiceVolume", "StereoSound", "backgroundMute",
+        "audioSampleRate", "audioBitDepth", "audioChunkSize",
+        "battleScrollSpeed", "battleEdgeScroll", "battleDragScrollButton", "battleDragScrollInvert",
+        "geoScrollSpeed", "geoDragScrollButton", "geoDragScrollInvert", "dragScrollTimeTolerance",
+        "dragScrollPixelTolerance", "mousewheelSpeed", "changeValueByMouseWheel",
+    };
+
+    /// <summary>Is the option the player's (<see cref="PlayerOptions"/>), whatever game is played: key bindings and the HD layer too.</summary>
+    public static bool IsPlayerOption(string key) =>
+        PlayerOptions.Contains(key) || key.StartsWith("key", StringComparison.Ordinal) || key.StartsWith("oxceHd", StringComparison.Ordinal);
+
+    /// <summary>
+    /// A new build from a profile (MULTIMOD §3.5): its mods and options, recommended options of its own on the first
+    /// start. The game language is the one given (the current build's); the player's own options
+    /// (<see cref="IsPlayerOption"/>) come from <paramref name="carryFrom"/>, over the profile's recommended ones.
+    /// </summary>
+    /// <param name="carryFrom">options.cfg of the build the player is in; null or absent - nothing carried</param>
+    public Build Create(string title, string template, string? language, int? screenHeight, string? carryFrom = null)
     {
         Guard("create a build");
         var set = Repaired();
@@ -202,6 +230,7 @@ public sealed class BuildStore(GamePaths paths, Func<string, bool>? isGameRunnin
                 writtenMods: written, cfgDir: dir, stateKey: b.Id);
             state.Save(done);
             state.SaveMods(written);
+            if (carryFrom is not null && File.Exists(carryFrom)) Carry(carryFrom, OptionsFile(b), profile);
         }
         catch
         {
@@ -212,6 +241,19 @@ public sealed class BuildStore(GamePaths paths, Func<string, bool>? isGameRunnin
         set.Last = b.Id;
         Save(set);
         return b;
+    }
+
+    /// <summary>The player's options of <paramref name="from"/> into a new build's options.cfg; the profile's fixed ones stay.</summary>
+    static void Carry(string from, string to, ModProfile profile)
+    {
+        var src = OptionsCfg.Parse(File.ReadAllText(from));
+        var cfg = OptionsCfg.Parse(File.Exists(to) ? File.ReadAllText(to) : "");
+        var fixedKeys = profile.Options.Where(o => o.Mode.Equals("fixed", StringComparison.OrdinalIgnoreCase))
+                               .Select(o => o.Key).ToHashSet(StringComparer.Ordinal);
+        foreach (var key in src.Keys.Where(k => IsPlayerOption(k) && !fixedKeys.Contains(k)).ToList())
+            cfg.CopyFrom(src, key);
+        // the engine reads it with yaml-cpp: plain UTF-8, no BOM (R-001, the exception for game files)
+        FileUtil.WriteAtomic(to, new System.Text.UTF8Encoding(false).GetBytes(cfg.Render()));
     }
 
     /// <summary>A copy (MULTIMOD §3.5): options.cfg byte for byte, so the player's settings and the engine's

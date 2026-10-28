@@ -235,6 +235,49 @@ public sealed class BuildTests : IDisposable
     }
 
     [Fact]
+    public void A_new_build_of_another_game_takes_the_players_screen_sound_keys_and_hd_but_not_the_games_options()
+    {
+        Install();
+        Fixture.Write(f.Game, "user/mods/XComFiles/metadata.yml", "id: x-com-files\nname: X-Com Files\nisMaster: true\nmaster: xcom1\n");
+        Fixture.Write(f.Game, "user/mods/intro_voice/metadata.yml", "id: intro_voice\nmaster: piratez\n");
+        Fixture.Write(f.Game, "xp-profiles.json",
+            "{ \"schema\": 1, \"profiles\": [\n" +
+            "  { \"master\": \"piratez\", \"version\": 1, \"mods\": [ { \"id\": \"*\" }, { \"id\": \"intro_voice\" }, { \"id\": \"hd\" } ] },\n" +
+            "  { \"master\": \"x-com-files\", \"version\": 1, \"mods\": [ { \"id\": \"*\" }, { \"id\": \"intro_voice\", \"off\": true } ],\n" +
+            "    \"options\": [ { \"key\": \"oxceHdUiFont\", \"value\": \"1\" }, { \"key\": \"keyOk\", \"value\": \"13\", \"mode\": \"fixed\" } ] } ] }");
+        var s = Store();
+        var cur = s.Ensure();
+        // the player's Piratez build: their screen, sound, keys and HD settings, and Piratez's game options
+        File.WriteAllText(s.OptionsFile(cur),
+            "mods:\n  - active: true\n    id: piratez\n  - active: false\n    id: xcom1\n  - active: true\n    id: intro_voice\n" +
+            "  - active: true\n    id: hd\n" +
+            "options:\n  displayWidth: 2560\n  displayHeight: 1440\n  fullscreen: true\n  useOpenGLShader: Shaders/CRT.OpenGL.shader\n" +
+            "  musicVolume: 37\n  keyBattleKneel: 107\n  keyOk: 271\n  oxceHdMode: 3\n  oxceHdScale: 4\n  oxceHdUiFont: 0\n" +
+            "  battleUFOExtenderAccuracy: true\n  oxceRecommendedOptionsWereSet: true\n  language: ru\n");
+
+        var n = s.Create("X-Com Files", "x-com-files", "ru", 1080, carryFrom: s.OptionsFile(cur));
+        var cfg = OptionsCfg.Parse(File.ReadAllText(s.OptionsFile(n)));
+
+        Assert.Equal(("x-com-files", true), cfg.Mods[0]);
+        Assert.DoesNotContain(cfg.Mods, m => m.Id == "intro_voice" && m.Active);   // Piratez's intro stays in Piratez
+        Assert.DoesNotContain(cfg.Mods, m => m.Id == "hd" && m.Active);
+        Assert.Equal("2560", cfg.Get("displayWidth"));
+        Assert.Equal("1440", cfg.Get("displayHeight"));
+        Assert.Equal("true", cfg.Get("fullscreen"));
+        Assert.Equal("Shaders/CRT.OpenGL.shader", cfg.Get("useOpenGLShader"));
+        Assert.Equal("37", cfg.Get("musicVolume"));
+        Assert.Equal("107", cfg.Get("keyBattleKneel"));
+        Assert.Equal("3", cfg.Get("oxceHdMode"));
+        Assert.Equal("4", cfg.Get("oxceHdScale"));               // the player's, not "by the screen"
+        Assert.Equal("0", cfg.Get("oxceHdUiFont"));              // the player's over the profile's recommended
+        Assert.Equal("13", cfg.Get("keyOk"));                    // the profile's fixed one wins
+        Assert.Null(cfg.Get("battleUFOExtenderAccuracy"));       // a game option of Piratez
+        Assert.Null(cfg.Get("oxceRecommendedOptionsWereSet"));   // X-Com Files gets its own recommendations
+        Assert.Equal("ru", cfg.Get("language"));
+        Assert.NotEqual(0xEF, File.ReadAllBytes(s.OptionsFile(n))[0]);   // yaml-cpp: no BOM
+    }
+
+    [Fact]
     public void A_copy_keeps_the_profile_memory_and_a_delete_keeps_the_settings_aside()
     {
         Install();

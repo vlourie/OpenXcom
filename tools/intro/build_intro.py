@@ -33,6 +33,9 @@ BASE_W, BASE_H = 320, 200
 # (Mod.cpp, карта names). Совпали имена - и на шестом кадре показывалась чужая
 # картинка вместо нашей фотографии
 STEM = "voiceintro"
+# Вступление - про Пираток: с master "*" движок грузил его и в X-Com Files,
+# стоило включить мод в меню или перенести options.cfg руками (XP-000068)
+MASTER = "piratez"
 PHOTO_COLORS = 239          # цвета картинки живут в индексах 1..239
 TEXT_BASE = 240             # подпись: движок рисует буквы в TEXT_BASE+1 .. +5
 TEXT_RAMP = [(255, 255, 255), (214, 214, 214), (160, 160, 160), (96, 96, 96), (16, 16, 16)]
@@ -149,10 +152,16 @@ def build_track(ffmpeg, parts, total, music, music_db, out):
 def write_metadata(mod, mod_id, name):
     """Своя metadata.yml, если её нет: без неё игра папку модом не считает.
 
-    Чужую не трогаем - в HD-моде она своя и сложнее. Спецификацию не пишем:
-    этот файл читает игра, а не PowerShell (R-001)."""
+    Чужую не трогаем - в HD-моде она своя и сложнее. Свою, написанную раньше с
+    master "*", переводим на MASTER. Спецификацию не пишем: этот файл читает игра,
+    а не PowerShell (R-001)."""
     path = os.path.join(mod, "metadata.yml")
     if os.path.exists(path):
+        text = io.open(path, encoding="utf-8").read()
+        if text.startswith("# Сделано tools/intro/build_intro.py") and 'master: "*"' in text:
+            io.open(path, "w", encoding="utf-8", newline="\n").write(
+                text.replace('master: "*"', 'master: "%s"' % MASTER))
+            print("мастер:  ", path, "->", MASTER)
         return
     mod_id = mod_id or os.path.basename(mod.rstrip("/" + os.sep))
     os.makedirs(mod, exist_ok=True)
@@ -162,7 +171,7 @@ def write_metadata(mod, mod_id, name):
             'author: "Vitali"',
             'description: "Вступление: свои кадры под свой голос. Заменяет катсцену intro."',
             'id: "%s"' % mod_id,
-            'master: "*"']
+            'master: "%s"' % MASTER]
     io.open(path, "w", encoding="utf-8", newline="\n").write("\n".join(body) + "\n")
     print("мод:     ", path)
 
@@ -184,7 +193,7 @@ def write_readme(mod):
 
 def main():
     p = argparse.ArgumentParser()
-    p.add_argument("--in", dest="src", required=True, help="папка с photo/ и voice/")
+    p.add_argument("--in", dest="src", default="", help="папка с photo/ и voice/")
     p.add_argument("--mod", default="user/mods/hd", help="куда класть - наш HD-мод")
     p.add_argument("--id", default="", help="id самостоятельного мода (по умолчанию имя папки)")
     p.add_argument("--name", default="", help="как мод называется в списке модов")
@@ -195,7 +204,14 @@ def main():
     p.add_argument("--music-db", type=float, default=-16.0, help="насколько тише голоса подложка")
     p.add_argument("--no-captions", action="store_true", help="без подписей, только голос")
     p.add_argument("--dry", action="store_true", help="только посчитать, ничего не писать")
+    p.add_argument("--metadata-only", action="store_true",
+                   help="только metadata.yml установленного мода (мастер), без кадров и голоса")
     args = p.parse_args()
+    if args.metadata_only:
+        write_metadata(os.path.abspath(args.mod), args.id, args.name)
+        return
+    if not args.src:
+        p.error("нужен --in")
 
     ffmpeg, ffprobe = need("ffmpeg"), need("ffprobe")
     scenes = json.loads(io.open(args.scenes, encoding=ENC).read())
