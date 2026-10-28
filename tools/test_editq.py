@@ -48,11 +48,13 @@ def run(args, stdin=None, env=None):
                           env=env or ENV, capture_output=True, text=True, encoding="utf-8")
 
 
-def hook(kind, sid, tool, **ti):
+def hook(kind, sid, tool, agent=None, env=None, **ti):
     ev = {"session_id": sid, "tool_name": tool, "tool_input": ti, "hook_event_name": kind}
     if "stop_hook_active" in ti:
         ev = {"session_id": sid, "stop_hook_active": ti["stop_hook_active"]}
-    r = run(["hook", kind], stdin=json.dumps(ev, ensure_ascii=False))
+    if agent:
+        ev["agent_id"] = agent
+    r = run(["hook", kind], stdin=json.dumps(ev, ensure_ascii=False), env=env)
     return json.loads(r.stdout) if r.stdout.strip() else None
 
 
@@ -260,6 +262,33 @@ def main():
     files = git("show", "--name-only", "--format=", "HEAD").split()
     check(files == ["CHANGELOG.md", "src/f.h"], f"R-108: --add src/f.h в коммите, --drop нет: {files}")
     check("?? src/g.cpp" in git("status", "--porcelain", "-uall"), "--drop: файл остался в дереве")
+
+    # R-476: два субагента одной сессии S - у каждого свой билет; done второго не закрывает
+    # билет первого и не уносит его файлы. Отдельная очередь, чтобы выпуск выше не мешал.
+    env2 = dict(ENV, EDITQ_HOME=os.path.join(TMP, "q2"), EDITQ_RELEASE_DELAY="3600")
+    env2s = dict(env2, CLAUDE_CODE_SESSION_ID="S")
+    h_cpp, k_cpp = os.path.join(REPO, "src", "h.cpp"), os.path.join(REPO, "src", "k.cpp")
+    check(hook("pre", "S", "Edit", agent="ag1", env=env2, file_path=h_cpp) is None, "R-476: ag1 занял очередь")
+    write("src/h.cpp", "h ag1\n")
+    check(denied(hook("pre", "S", "Edit", agent="ag2", env=env2, file_path=k_cpp)),
+          "R-476: ag2 той же сессии получает отказ на правку src")
+    check(hook("pre", "S", "Edit", env=env2, file_path=k_cpp) is not None,
+          "R-476: главный разговор той же сессии тоже ждёт")
+    run(["leave", "--session", "S"], env=env2)
+    hook("pre", "S", "Bash", agent="ag2", env=env2, command='py -3.13 tools/editq.py done -m "x"')
+    r = run(["done", "-m", "hdart: ag2"], env=env2s)
+    check(r.returncode != 0 and "держишь не ты" in (r.stdout + r.stderr), "R-476: done ag2 - отказ, коммита нет")
+    check("src/h.cpp" in git("status", "--porcelain", "-uall"), "R-476: файл ag1 не закоммичен чужим done")
+    hook("pre", "S", "Bash", agent="ag1", env=env2, command='py -3.13 tools/editq.py done -m "x"')
+    r = run(["done", "-m", "src: ag1", "--drop", "src/g.cpp", "src/c.cpp"], env=env2s)    # остатки проверок выше
+    check(r.returncode == 0 and git("log", "-1", "--format=%s").strip() == "src: ag1",
+          "R-476: done ag1 коммитит своё: " + (r.stderr.strip() or "прошёл"))
+    check(git("show", "--name-only", "--format=", "HEAD").split() == ["src/h.cpp"], "R-476: в коммите только h.cpp")
+    hook("pre", "S", "Bash", agent="ag2", env=env2, command="py -3.13 tools/editq.py wait --name k")
+    r = run(["wait", "--name", "k", "--max", "5"], env=env2s)
+    check(r.returncode == 0 and "твоя очередь" in r.stdout, "R-476: после done ag1 ag2 получает очередь")
+    hook("pre", "S", "Bash", agent="ag2", env=env2, command="py -3.13 tools/editq.py leave")
+    run(["leave"], env=env2s)
 
     shutil.rmtree(TMP, ignore_errors=True)
     print(f"\n{'ВСЁ ПРОШЛО' if not fails else f'УПАЛО {len(fails)}'}")

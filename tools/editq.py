@@ -189,6 +189,32 @@ def is_game(r, pats=None):
 
 # ---------------------------------------------------------------- очередь
 
+# R-476: исполнители одного командира - одна сессия; хук знает субагента по agent_id,
+# и билет у каждого свой: «сессия#агент». Главный разговор - просто сессия.
+SELF_CMD = re.compile(r"editq\.py[\"']?\s+(wait|done|pause|leave)\b")
+AGENT_MARK_TTL = 30
+
+
+def owner(ev):
+    sid = ev.get("session_id") or ""
+    agent = ev.get("agent_id") or ""
+    return sid + "#" + agent if sid and agent else sid
+
+
+def agent_mark(sid):
+    return os.path.join(HOME, "agent." + re.sub(r"[^\w-]", "_", sid))
+
+
+def mark_agent(ev):
+    """Перед `editq.py wait|done|pause|leave` из Bash: кто его зовёт (my_sid прочтёт и сотрёт)."""
+    sid = ev.get("session_id") or ""
+    if not sid:
+        return
+    os.makedirs(HOME, exist_ok=True)
+    with io.open(agent_mark(sid), "w", encoding=ENC) as f:
+        json.dump({"agent": ev.get("agent_id") or "", "at": now()}, f)
+
+
 def entry_of(st, sid):
     for e in st["q"]:
         if e["sid"] == sid:
@@ -532,7 +558,7 @@ def hook(kind):
     if not raw.strip():
         return
     ev = json.loads(raw)
-    sid = ev.get("session_id") or ""
+    sid = owner(ev)
     if not sid:
         return
     tool = ev.get("tool_name") or ""
@@ -541,6 +567,8 @@ def hook(kind):
     if kind == "pre":
         if tool in ("Bash", "PowerShell"):
             cmd = ti.get("command") or ""
+            if SELF_CMD.search(cmd):
+                mark_agent(ev)
             sw = sweeping_git(cmd)
             if sw:
                 deny(f"{sw} запрещено: в одном рабочем дереве работают несколько сессий, и такая "
@@ -596,9 +624,22 @@ def hook(kind):
 # ---------------------------------------------------------------- команды сессии
 
 def my_sid(a):
-    sid = getattr(a, "session", None) or os.environ.get("CLAUDE_CODE_SESSION_ID")
+    sid = getattr(a, "session", None)
+    if sid:
+        return sid
+    sid = os.environ.get("CLAUDE_CODE_SESSION_ID")
     if not sid:
         raise SystemExit("не знаю, какая это сессия: нет CLAUDE_CODE_SESSION_ID (или --session)")
+    # R-476: субагенту Bash не даёт своего id - его за секунду до команды записал хук (mark_agent)
+    p = agent_mark(sid)
+    try:
+        with io.open(p, encoding=ENC) as f:
+            m = json.load(f)
+        os.remove(p)
+        if m.get("agent") and now() - m.get("at", 0) <= AGENT_MARK_TTL:
+            return sid + "#" + m["agent"]
+    except (OSError, ValueError):
+        pass
     return sid
 
 
