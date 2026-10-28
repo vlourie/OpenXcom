@@ -464,11 +464,20 @@ bool Globe::pointBack(double lon, double lat) const
 
 Polygon* Globe::getPolygonFromLonLat(double lon, double lat) const
 {
+	return polygonAt(_rules, lon, lat);
+}
+
+/**
+ * OXCE-HD (oxceHdCraftMission): the polygon under a point without a Globe object (the craft crew screen has none);
+ * the body of getPolygonFromLonLat, unchanged.
+ */
+Polygon* Globe::polygonAt(RuleGlobe *rules, double lon, double lat)
+{
 	const double zDiscard=0.75f;
 	double coslat = cos(lat);
 	double sinlat = sin(lat);
 
-	for (auto* polygon : *_rules->getPolygons())
+	for (auto* polygon : *rules->getPolygons())
 	{
 		double x, y, z, x2, y2;
 		double clat, clon;

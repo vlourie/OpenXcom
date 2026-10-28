@@ -285,6 +285,8 @@ public:
 	void keyboardPress(Action *action, State *state) override;
 	/// Get the polygons texture and shade at the given point.
 	void getPolygonTextureAndShade(double lon, double lat, int *texture, int *shade) const;
+	/// OXCE-HD (oxceHdCraftMission): the polygon under a point, no Globe object needed.
+	static Polygon* polygonAt(RuleGlobe *rules, double lon, double lat);
 	/// Sets hover base position.
 	void setNewBaseHoverPos(double lon, double lat);
 	/// Turns on new base hover mode.

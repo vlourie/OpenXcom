@@ -265,6 +265,8 @@ OPT bool oxceHdUpdateNotice;
 OPT bool oxceHdCraftFit;
 // HD interface, craft crew screen (CraftSoldiersState): the name and the "WOUNDED>days" text of a wounded soldier are red; off = as it was (default); picture only
 OPT bool oxceHdWoundedRed;
+// HD interface, craft crew screen (CraftSoldiersState): a box "For mission:" with the detected targets; for the chosen one the names of the soldiers who can fly (starting condition: craft and soldier type) are green and a line says why not; the list is 13 rows then; off = as it was (default); picture only
+OPT bool oxceHdCraftMission;
 // HD interface, modern skin: the colours of the battle's button panel (Engine/HdBattleHud.cpp). 0 = dark slate (default), 1 = gold, as the original panel
 OPT int oxceHdBattleHudColor;
 // Battlescape: a unit hanging in the air or in the water with no floor below sways in place (Map::hoverBob); off = the classic still frame
