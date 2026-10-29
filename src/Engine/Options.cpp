@@ -428,6 +428,8 @@ void createOptionsOXCE()
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceEnableUnitResponseSounds", &oxceEnableUnitResponseSounds, true, "", "HIDDEN"));
 	// HD: own slider for unit responses (channel 4) on the Audio screen; before it they followed the sound volume
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceVoiceVolume", &oxceVoiceVolume, MIX_MAX_VOLUME, "", "HIDDEN"));
+	// The player's own music from <user folder>/music (XP-000373): 0 off, 1 with the game's tracks, 2 only own; the Audio screen
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceUserMusic", &oxceUserMusic, 0, "", "HIDDEN"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHiddenMovementBackgroundChangeFrequency", &oxceHiddenMovementBackgroundChangeFrequency, 1, "", "HIDDEN"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceInventoryShowUnitSlot", &oxceInventoryShowUnitSlot, false, "", "HIDDEN"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceReplaceNotesLink", &oxceReplaceNotesLink, false, "", "HIDDEN"));

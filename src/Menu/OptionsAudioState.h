@@ -38,7 +38,7 @@ private:
 	Text *_txtMusicVolume, *_txtSoundVolume, *_txtUiVolume, *_txtVoiceVolume;
 	Slider *_slrMusicVolume, *_slrSoundVolume, *_slrUiVolume, *_slrVoiceVolume;
 	Text *_txtMusicFormat, *_txtCurrentMusic, *_txtSoundFormat, *_txtCurrentSound, *_txtVideoFormat;
-	ComboBox *_cbxMusicFormat, *_cbxSoundFormat, *_cbxVideoFormat;
+	ComboBox *_cbxMusicFormat, *_cbxSoundFormat, *_cbxVideoFormat, *_cbxUserMusic;
 	Text* _txtOptions;
 	ToggleTextButton *_btnBackgroundMute;
 public:
@@ -60,6 +60,8 @@ public:
 	void slrVoiceVolumeChange(Action *action);
 	/// Handler for changing the Music Format combobox.
 	void cbxMusicFormatChange(Action *action);
+	/// Handler for changing the own music combobox (XP-000373).
+	void cbxUserMusicChange(Action *action);
 	/// Handler for changing the Sound Format combobox.
 	void cbxSoundFormatChange(Action *action);
 	/// Handler for changing the Video Format combobox.

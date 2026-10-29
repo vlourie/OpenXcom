@@ -191,6 +191,18 @@ private:
 	std::map<const Surface*, std::vector<Surface*> > _hdSurfaceFrames;
 	std::map<std::string, SoundSet*> _sounds;
 	std::map<std::string, Music*> _musics;
+	/// The player's own music (XP-000373): a track file of <user folder>/music. The key (GMGEO_USER_<hash> / GMTACTIC_USER_<hash>)
+	/// holds the category name, so the random pick by substring and the jukebox find it like the game's own tracks; the key is
+	/// the hash of the relative path, never the file's name: no name of a rule can then be a part of it. Loaded at the first play.
+	struct UserTrack
+	{
+		std::string key, label, path;
+		Music *music = 0;
+		bool failed = false;
+	};
+	mutable std::vector<UserTrack> _userMusic;
+	mutable std::vector<Music*> _userMusicRetired;
+	mutable bool _userMusicScanned = false;
 	std::vector<Uint16> _voxelData;
 	std::vector<std::vector<Uint8> > _transparencyLUTs;
 
@@ -416,6 +428,12 @@ private:
 	T *getRule(const std::string &id, const std::string &name, const std::map<std::string, T*> &map, bool error) const;
 	/// Gets a random music. This is private to prevent access, use playMusic(name, true) instead.
 	Music *getRandomMusic(const std::string &name) const;
+	/// Scans <user folder>/music (the tracks that are loaded already stay), when the option is on and it was not done yet.
+	bool ensureUserMusic() const;
+	/// Scans <user folder>/music (geoscape/, battle/ and the folder itself for both) and makes the track list of it.
+	void scanUserMusic() const;
+	/// Loads a track of the player's own music at its first play; null when the file cannot be read (it is not offered again).
+	Music *loadUserTrack(UserTrack &track) const;
 	/// Gets a particular sound set. This is private to prevent access, use getSound(name, id) instead.
 	SoundSet *getSoundSet(const std::string &name, bool error = true) const;
 	/// Loads battlescape specific resources.
@@ -556,6 +574,17 @@ public:
 	void setCurrentMusicTrack(const std::string& currentMusicTrack) { _currentMusicTrack = currentMusicTrack; }
 	/// Plays a particular music.
 	void playMusic(const std::string &name, int id = 0);
+	/// The player's own music (XP-000373) of a category (GMGEO or GMTACTIC) for the jukebox: pairs of key and the file's name.
+	/// Empty when the option is off or the sound is. With the option "only own" and own tracks the game's tracks are not in the list.
+	std::vector<std::pair<std::string, std::string> > getUserMusicList(const std::string &category) const;
+	/// Loads and gets a track of the player's own music by its key; null when there is none or it cannot be read.
+	Music *getUserMusic(const std::string &key) const;
+	/// Scans <user folder>/music again (the jukebox's button): new files appear, the removed ones go.
+	void refreshUserMusic();
+	/// True when the option is "only own" and there are own tracks of the category.
+	bool userMusicOnly(const std::string &category) const;
+	/// The track name a battle plays: GMTACTIC (a random pick) instead of the saved one when only the own music is wanted.
+	std::string getBattleMusicName(const std::string &saved) const;
 	/// Gets a particular sound.
 	Sound *getSound(const std::string &set, int sound) const;
 	/// Gets all palettes.
