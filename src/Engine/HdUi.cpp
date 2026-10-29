@@ -1114,6 +1114,18 @@ void HdUi::drawGlyph(const Font *font, UCode c, int x, int y, int color, int mul
 		const Uint8 idx = (Uint8)(color + v * mul + inverse);
 		lut[v] = packColor(pal[idx]);
 	}
+	if (_labelTheme)
+	{
+		// a themed button's label: the theme's face to its shadow over the glyph's shades 1..5
+		const SDL_Color face = { (Uint8)(_labelFace >> 16), (Uint8)(_labelFace >> 8), (Uint8)_labelFace, 255 };
+		for (int v = 1; v < 8; ++v)
+		{
+			const float t = std::min(std::max((float)(v - 1) / 4.0f, 0.0f), 1.0f);
+			const SDL_Color m = { (Uint8)(face.r + (_labelShadow.r - face.r) * t + 0.5f), (Uint8)(face.g + (_labelShadow.g - face.g) * t + 0.5f),
+				(Uint8)(face.b + (_labelShadow.b - face.b) * t + 0.5f), 255 };
+			lut[v] = packColor(m);
+		}
+	}
 	// the colour of a pixel of the glyph, its shades mixed
 	auto shadeAt = [&](size_t gi)
 	{

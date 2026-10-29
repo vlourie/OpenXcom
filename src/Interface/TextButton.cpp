@@ -287,8 +287,10 @@ void TextButton::draw()
 void TextButton::hdMirrorSkin(bool pressed)
 {
 	HdUi::instance().drawButton(getX(), getY(), getWidth(), getHeight(), _color, _contrast ? 2 : 1, pressed, HdUi::paletteOf(this));
-	// the label keeps off the rounded edges (narrow buttons: a pixel)
+	// the label keeps off the rounded edges (narrow buttons: a pixel); in the theme's metal, its colours go with it
+	HdUi::instance().setLabelTheme(HdUi::windowTheme(), pressed);
 	_text->hdDrawAt(getX() + _text->getX(), getY() + _text->getY(), getX(), getY(), getWidth(), getHeight(), getWidth() >= 40 ? 3 : 2);
+	HdUi::instance().setLabelTheme(false);
 }
 
 void TextButton::hdMirror()
