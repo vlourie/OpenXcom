@@ -3790,3 +3790,12 @@
 Правило:  Масштаб боя менять опцией oxceHdScale=N при старте стенда (--set), а не set k. Перед любым IDENTICAL по эффекту на юнитах убедиться по кадру, что юниты в нём есть, и поставить контроль опция вкл/выкл на том же масштабе (R-086)
 Защита:   нет - проверка глазами по кадру стенда
 Наступал: 1   Последний: 2026-10-30
+
+## R-539  Опция вывода сменилась без нового дисплея: мир писался в OpenGL-окно без пикселей
+Статус:   активны
+Файлы:    src/Engine/Screen.cpp,src/Menu/OptionsHdState.cpp,src/Engine/HdControl.cpp
+Симптом:  Segmentation fault в Screen::flip -> Zoom::_zoomSurfaceY (HdWorkers::run) после выключения oxceHdGpu на ходу: щелчок в HD-опциях боя (до ЕСТЬ!) или set стенда + reinit; при k=4 (мир = дисплей 1920x1080) не падало, при k=2 падало; трасса в логе мусорная (c4::yml)
+Причина:  oxceHdGpu и useOpenGL читаются живыми, а дисплей создан под прежний вывод: OptionsHdState меняет опцию по щелчку, стенд вызывает resetDisplay(false) - makeVideoFlags переписывал _flags, но SDL_SetVideoMode не звался; OpenGL-поверхность SDL 1.2 без pixels, flip масштабировал мир в нулевой буфер (при мире размера дисплея шёл SDL_BlitSurface, который это переживал)
+Правило:  Вид вывода (SDL_OPENGL в _flags) и дисплей меняются только вместе: resetDisplay сам поднимает resetVideo при смене SDL_OPENGL, Screen::clear сверяет _flags с useOpenGL()/useHdGpu() до начала кадра. Сверять по _flags, не по _screen->flags (у SDL dummy флага нет). Проверять переключение на ходу при мире НЕ размера дисплея (k=2 на 1920x1080)
+Защита:   Screen::resetDisplay и Screen::clear (30.10)
+Наступал: 1   Последний: 2026-10-30
