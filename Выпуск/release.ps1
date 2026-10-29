@@ -443,6 +443,28 @@ try {
         }
     }
 
+    # ---- исходники движка этого выпуска на GitHub (GPL): метка hd-<выпуск> на HEAD сборки и ветка hd-render; сбой выпуск не отменяет
+    if (-not $launcherOnly -and $channel -eq 'stable') {
+        Step "Исходники на GitHub: метка hd-$id"
+        if (-not (Get-Command git -ErrorAction SilentlyContinue)) { Warn "нет git - не выложено: git tag -a hd-$id; git push origin hd-render hd-$id" }
+        else {
+            $ea = $ErrorActionPreference; $ErrorActionPreference = 'Continue'
+            $branch = (& git -C $root rev-parse --abbrev-ref HEAD 2>$null | Out-String).Trim()
+            $dirty = @(& git -C $root status --porcelain -- src CMakeLists.txt cmake libs deps 2>$null)
+            if ($branch -ne 'hd-render') { Warn "ветка $branch, а не hd-render - исходники не выложены" }
+            else {
+                if ($dirty.Count) { Warn "в src/CMake $($dirty.Count) незакоммиченных файлов - exe собран не ровно из метки (R-322)" }
+                & git -C $root rev-parse -q --verify "refs/tags/hd-$id" *> $null
+                # git пишет ход отправки в stderr - строками, иначе PowerShell 5 рисует его красным как NativeCommandError
+                if ($LASTEXITCODE -ne 0) { & git -C $root tag -a "hd-$id" -m "OXCE-HD release $id (source of the binaries shipped to players)" 2>&1 | ForEach-Object { "    $_" } | Out-Host }
+                & git -C $root push origin hd-render "hd-$id" 2>&1 | ForEach-Object { "    $_" } | Out-Host
+                if ($LASTEXITCODE -eq 0) { Ok "https://github.com/vlourie/OpenXcom/tree/hd-$id" }
+                else { Warn "git push: код $LASTEXITCODE - выпуск цел, повторить: git push origin hd-render hd-$id" }
+            }
+            $ErrorActionPreference = $ea
+        }
+    }
+
     Write-Host ''
     Write-Host ("ГОТОВО за {0:hh\:mm\:ss}: {1} в канале {2}" -f $clock.Elapsed, $id, $(if ($launcherOnly) { $launcherChannel } else { $channel })) -ForegroundColor Green
     Write-Host "Архив: $($zip.FullName)"
