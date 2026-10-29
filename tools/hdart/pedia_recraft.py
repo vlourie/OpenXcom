@@ -11,16 +11,27 @@ r"""pedia_recraft.py - перекрафт картинок педии по за�
 Выход: <круг>\<имя>__<вариант>__<метка>.png через pedia_ab.py новой моделью. В мод ничего не пишет:
 выбор - на странице pedia_notes.py --round <круг>, подключение - после выбора Vitali.
 
+--install кладёт выбранное (<круг>\picks.tsv, последняя строка на картинку) в обе копии мода hd (R-087):
+slot normal - hd\UI, slot 18 - hd_18+\UI. Прежний файл с .pal.txt - в <круг>\_prev\<копия>\..., журнал -
+<круг>\install_<время>.tsv. keep18 в edits.json: прежняя HD раздета, а hd_18+ её нет - она переезжает туда.
+Нет .pal.txt (у картинки не было HD) - пишется по палитре оригинала, как upscale_ui.py.
+
     py -3.13 tools\gpuq.py add --name pedia_recraft_v1 --prio 9 --preemptible -- C:/Python313/python.exe E:/OpenXCom/tools/hdart/pedia_recraft.py
     py -3.13 tools\hdart\pedia_recraft.py --no-gen            (только jobs.json)
+    py -3.13 tools\hdart\pedia_recraft.py --install --dry-run
 """
 import argparse
+import csv
 import hashlib
 import io
 import json
 import os
+import shutil
 import subprocess
 import sys
+import time
+
+from PIL import Image
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(os.path.dirname(HERE))
@@ -84,17 +95,98 @@ def jobs_for(d, origs, plan, caps):
     return jobs, miss
 
 
+MODS = {"game": os.path.join(pb.PIR, "hd"), "repo": os.path.join("user", "mods", "hd")}
+PICKED = ("e1", "e2", "o1", "o2")
+
+
+def picks_of(out):
+    """{stem: строка picks.tsv} - последняя строка на картинку, только выбранный кандидат"""
+    last = {}
+    with io.open(os.path.join(out, "picks.tsv"), encoding="utf-8-sig") as f:
+        for r in csv.DictReader(f, delimiter="\t"):
+            last[r["stem"]] = r
+    return {s: r for s, r in last.items() if r["pick"] in PICKED and r["file"]}
+
+
+def put(src, dst, dry):
+    """dst заменяется копией src; прежний файл удаляется, а не перезаписывается - он может быть жёсткой
+    ссылкой на тот же файл другого слота или другой копии"""
+    if not dry:
+        if os.path.exists(dst):
+            os.remove(dst)
+        shutil.copyfile(src, dst)
+
+
+def install(out, d, origs, dry):
+    edits = {e["stem"]: e for e in d["edits"]}
+    picks = picks_of(out)
+    stamp = time.strftime("%Y%m%d_%H%M%S")
+    log, bad = [], []
+    for stem, r in sorted(picks.items()):
+        e, src = edits.get(stem), os.path.join(out, r["file"])
+        if not e or not os.path.exists(src) or stem.lower() not in origs:
+            bad.append(stem)
+            continue
+        for name, root in MODS.items():
+            ui, a18 = os.path.join(root, "hd", "UI"), os.path.join(root, "hd_18+", "UI")
+            dst_dir = a18 if e.get("slot") == "18" else ui
+            if not os.path.isdir(dst_dir):
+                log.append((name, stem, r["pick"], "нет папки " + dst_dir))
+                continue
+            prev = os.path.join(out, "_prev", name, os.path.relpath(dst_dir, root))
+            what = []
+            for ext in (".png", ".pal.txt"):
+                old = os.path.join(dst_dir, stem + ext)
+                if os.path.exists(old) and not dry:
+                    os.makedirs(prev, exist_ok=True)
+                    shutil.copy2(old, os.path.join(prev, stem + ext))
+            if e.get("keep18") and dst_dir == ui and os.path.exists(os.path.join(ui, stem + ".png")) \
+                    and not os.path.exists(os.path.join(a18, stem + ".png")):
+                what.append("прежняя HD -> hd_18+")
+                if not dry:
+                    os.makedirs(a18, exist_ok=True)
+                    for ext in (".png", ".pal.txt"):
+                        if os.path.exists(os.path.join(ui, stem + ext)):
+                            shutil.copy2(os.path.join(ui, stem + ext), os.path.join(a18, stem + ext))
+            put(src, os.path.join(dst_dir, stem + ".png"), dry)
+            what.append(os.path.relpath(dst_dir, root))
+            pal = os.path.join(dst_dir, stem + ".pal.txt")
+            if not os.path.exists(pal):
+                what.append(".pal.txt по оригиналу")
+                if not dry:
+                    p = Image.open(os.path.join(pb.ORIG, origs[stem.lower()])).getpalette()[:768]
+                    p += [0] * (768 - len(p))
+                    with open(pal, "w") as f:
+                        f.write("\n".join("%d %d %d" % tuple(p[i:i + 3]) for i in range(0, 768, 3)) + "\n")
+            log.append((name, stem, r["pick"], ", ".join(what)))
+    for row in log:
+        print("  %-5s %-32s %-3s %s" % row)
+    print("выбрано %d, поставлено %d%s%s" % (len(picks), len(picks) - len(bad),
+                                             ("; мимо: " + ", ".join(bad)) if bad else "", " (dry-run)" if dry else ""))
+    if not dry:
+        jl = os.path.join(out, "install_%s.tsv" % stamp)
+        with io.open(jl, "w", encoding="utf-8-sig") as f:
+            for row in log:
+                f.write("\t".join(row) + "\n")
+        print("журнал: %s" % jl)
+    return 1 if bad else 0
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--round", default="recraft_v1", help="папка круга в art\\pedia_regen")
     ap.add_argument("--tag", default="r1")
     ap.add_argument("--no-gen", dest="no_gen", action="store_true")
+    ap.add_argument("--install", action="store_true", help="выбранное из picks.tsv - в мод hd")
+    ap.add_argument("--dry-run", dest="dry", action="store_true")
     a = ap.parse_args()
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     os.chdir(ROOT)
     out = os.path.join(pb.ROOT, a.round)
     d = pb.load(os.path.join(out, "edits.json"), None)
     origs = {os.path.splitext(n)[0].lower(): n for n in os.listdir(pb.ORIG)}
+    if a.install:
+        return install(out, d, origs, a.dry)
     plan = pb.load(os.path.join(pb.ROOT, "plan.json"), {}).get("info", {})
     caps = pb.load(os.path.join(pb.ROOT, "captions.json"), {})
     jobs, miss = jobs_for(d, origs, plan, caps)
