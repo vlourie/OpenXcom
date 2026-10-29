@@ -29,6 +29,7 @@
 #include "FileMap.h"
 #include "HdSprites.h"
 #include "Logger.h"
+#include "Options.h"
 #include "../Mod/Armor.h"
 #include "../Mod/MapData.h"
 #include "../Mod/MapDataSet.h"
@@ -290,7 +291,8 @@ Clip &clipOf(const std::string &name)
 	}
 	Clip &clip = clips[name];
 	const std::string suffix = ".png";
-	for (const std::string &file : HdSprites::artFolder(std::string(FOLDER) + "/" + name))
+	// a tinted clip ("<clip>@RRGGBB", tinted()) lives in the folder of its plain clip
+	for (const std::string &file : HdSprites::artFolder(std::string(FOLDER) + "/" + name.substr(0, name.find('@'))))
 	{
 		if (file.size() > suffix.size() && file.compare(file.size() - suffix.size(), suffix.size(), suffix) == 0 && std::isdigit((unsigned char)file[0]))
 		{
@@ -299,6 +301,104 @@ Clip &clipOf(const std::string &name)
 	}
 	Log(LOG_INFO) << "HD fx clip " << name << ": " << clip.count << " frame(s)" << (clip.count ? "" : " - MISSING, classic animation stays");
 	return clip;
+}
+
+/// XP-000366: hd/blood.txt, "NAME RRGGBB" a line ('#' a comment): exact armour types and prefixes ("ZOMBIE_*"), read once.
+bool bloodRead = false;
+std::unordered_map<std::string, int> bloodExact;
+std::vector<std::pair<std::string, int>> bloodPrefix;
+/// The colour found for an armour type (-1: none), so the table is searched once for each type.
+std::unordered_map<std::string, int> bloodOf;
+
+void readBlood()
+{
+	if (bloodRead)
+	{
+		return;
+	}
+	bloodRead = true;
+	const std::string path = HdSprites::artPath("blood.txt");
+	std::unique_ptr<std::istream> in = FileMap::fileExists(path) ? FileMap::getIStream(path) : nullptr;
+	if (!in)
+	{
+		return;
+	}
+	std::string line;
+	while (std::getline(*in, line))
+	{
+		if (line.size() >= 3 && (unsigned char)line[0] == 0xEF && (unsigned char)line[1] == 0xBB && (unsigned char)line[2] == 0xBF)
+		{
+			line.erase(0, 3);
+		}
+		std::istringstream fields(line);
+		std::string name, hex;
+		if (!(fields >> name >> hex) || name[0] == '#')
+		{
+			continue;
+		}
+		const int rgb = (int)(std::strtoul(hex.c_str() + (hex[0] == '#' ? 1 : 0), nullptr, 16) & 0xFFFFFF);
+		if (name.back() == '*')
+		{
+			name.pop_back();
+			bloodPrefix.emplace_back(name, rgb);
+		}
+		else
+		{
+			bloodExact[name] = rgb;
+		}
+	}
+	Log(LOG_INFO) << "HD blood: " << bloodExact.size() << " names and " << bloodPrefix.size() << " prefixes of " << path;
+}
+
+/// Is `clip` a blood clip: a hit on flesh, a spray or a stab?
+bool isBlood(const std::string &clip)
+{
+	static const std::string FLESH = "_flesh";
+	return clip.compare(0, 6, "blood_") == 0 || clip.compare(0, 5, "stab_") == 0
+		|| (clip.compare(0, 4, "hit_") == 0 && clip.size() > FLESH.size() && clip.compare(clip.size() - FLESH.size(), FLESH.size(), FLESH) == 0);
+}
+
+/// The tone of the blood becomes the colour `rgb`: a pixel that is red (the blood and the flash of a hit; the grey, white and
+/// yellow of sparks are left) takes the colour scaled by its brightness against the clip's blood (190 of 255), so the body of the blood
+/// is the table's colour itself, the highlights lighter (towards white) and the shadows darker; the alpha stays. Once, when a frame loads.
+void tintBlood(HdFrame &hd, int rgb)
+{
+	const double tr = (rgb >> 16) & 255, tg = (rgb >> 8) & 255, tb = rgb & 255;
+	for (Uint32 &p : hd.pixels)
+	{
+		const Uint32 a = p >> 24;
+		const int r = (p >> 16) & 255, g = (p >> 8) & 255, b = p & 255;
+		const int v = std::max({ r, g, b }), mn = std::min({ r, g, b });
+		if (a == 0 || v == 0 || r != v)
+		{
+			continue;
+		}
+		// the hue within 45 degrees of red, and enough saturation (the flash of a hit is paler: it takes the colour partly)
+		const double s = (double)(v - mn) / v;
+		const int hue60 = (g - b) * 60;
+		if (v == mn || std::abs(hue60) > 45 * (v - mn))
+		{
+			continue;
+		}
+		const double w = std::max(0.0, std::min(1.0, (s - 0.30) / 0.25));
+		if (w <= 0.0)
+		{
+			continue;
+		}
+		const double f = v / 190.0;
+		double nr = tr * f, ng = tg * f, nb = tb * f;
+		const double top = std::max({ nr, ng, nb });
+		if (top > 255.0)
+		{
+			// over the top: the highlight goes lighter towards white, keeping the tone
+			const double lift = std::min(1.0, (top - 255.0) / 255.0), k = 255.0 / top;
+			nr = nr * k * (1.0 - lift) + 255.0 * lift;
+			ng = ng * k * (1.0 - lift) + 255.0 * lift;
+			nb = nb * k * (1.0 - lift) + 255.0 * lift;
+		}
+		const int orr = (int)std::lround(r + (nr - r) * w), og = (int)std::lround(g + (ng - g) * w), ob = (int)std::lround(b + (nb - b) * w);
+		p = (a << 24) | ((Uint32)std::max(0, std::min(255, orr)) << 16) | ((Uint32)std::max(0, std::min(255, og)) << 8) | (Uint32)std::max(0, std::min(255, ob));
+	}
 }
 
 void drop(Clip &clip)
@@ -379,6 +479,60 @@ std::string stabClip(const std::string &swing, int dx, int dy, int loss, unsigne
 	const int d = (((int)std::lround(std::atan2((double)dy, (double)dx) / (3.14159265358979323846 / 4.0))) % 8 + 8) % 8;
 	const int s = loss < 10 ? 1 : (loss < 30 ? 2 : 3);
 	return "stab_" + std::to_string(s) + "_" + std::to_string(d) + "_" + (char)('a' + (seed >> 8) % 3);
+}
+
+int bloodRgb(const Armor *armor)
+{
+	if (!Options::oxceHdBloodColor || !armor)
+	{
+		return -1;
+	}
+	readBlood();
+	const std::string &type = armor->getType();
+	auto known = bloodOf.find(type);
+	if (known != bloodOf.end())
+	{
+		return known->second;
+	}
+	int rgb = -1;
+	auto exact = bloodExact.find(type);
+	if (exact != bloodExact.end())
+	{
+		rgb = exact->second;
+	}
+	else
+	{
+		size_t longest = 0;
+		for (const auto &p : bloodPrefix)
+		{
+			if (p.first.size() >= longest && type.compare(0, p.first.size(), p.first) == 0)
+			{
+				longest = p.first.size();
+				rgb = p.second;
+			}
+		}
+	}
+	if (rgb >= 0)
+	{
+		// what the effects see in this armour, to know whether its blood or its sparks are drawn
+		const bool bl = armor->getBleedImmune(), pa = armor->getPainImmune(), zo = armor->getZombiImmune(), fe = armor->getFearImmune();
+		const char *kind = fe && bl == pa && pa == zo ? "mech (sparks, no blood)" : bl && pa && zo ? "ghost" : "flesh (blood)";     // as target()
+		Log(LOG_INFO) << "HD blood: armour " << type << " -> " << std::hex << rgb << std::dec << ", a hit on it is drawn as " << kind
+			<< " (bleed " << armor->getBleedImmune() << " pain " << armor->getPainImmune() << " zombi " << armor->getZombiImmune() << " fear " << armor->getFearImmune() << ")";
+	}
+	bloodOf[type] = rgb;
+	return rgb;
+}
+
+std::string tinted(const std::string &clip, int rgb)
+{
+	if (rgb < 0 || clip.find('@') != std::string::npos || !isBlood(clip))
+	{
+		return clip;
+	}
+	char hex[8];
+	std::snprintf(hex, sizeof(hex), "@%06X", rgb & 0xFFFFFF);
+	return clip + hex;
 }
 
 int lossPercent(const BattleUnit *unit, int lost)
@@ -561,7 +715,9 @@ const HdFrame *frame(const std::string &name, int step, int steps, int k)
 	{
 		clip.tried[index] = true;
 		HdFrame loaded;
-		if (HdSprites::loadPng(HdSprites::artPath(std::string(FOLDER) + "/" + name + "/" + std::to_string(index) + ".png"), loaded))
+		// a tinted clip ("<clip>@RRGGBB", tinted()): the picture of the plain clip, recoloured once here and kept
+		const size_t at = name.find('@');
+		if (HdSprites::loadPng(HdSprites::artPath(std::string(FOLDER) + "/" + name.substr(0, at) + "/" + std::to_string(index) + ".png"), loaded))
 		{
 			// the pictures are 4x; another scale gets them resampled
 			const int w = loaded.width / 4 * k, h = loaded.height / 4 * k;
@@ -572,6 +728,10 @@ const HdFrame *frame(const std::string &name, int step, int steps, int k)
 			else
 			{
 				hd = std::move(loaded);
+			}
+			if (at != std::string::npos)
+			{
+				tintBlood(hd, (int)std::strtoul(name.c_str() + at + 1, nullptr, 16));
 			}
 			hd.buildSpans();
 			const size_t bytes = hd.pixels.size() * sizeof(Uint32);

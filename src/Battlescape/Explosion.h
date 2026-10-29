@@ -38,6 +38,7 @@ private:
 	Position _hdFrom;
 	int _hdLoss = 0;
 	unsigned int _hdSeed = 0;
+	int _hdBlood = -1;
 public:
 	static const int HIT_FRAMES;
 	static const int EXPLODE_FRAMES;
@@ -71,6 +72,11 @@ public:
 	int getHdLoss() const { return _hdLoss; }
 	/// A hash of the hit, to pick a variant of the spray.
 	unsigned int getHdSeed() const { return _hdSeed; }
+	/// HD render (Options::oxceHdBloodColor, XP-000366): the colour 0xRRGGBB of the blood of the unit this hit landed on, by its armour
+	/// (hd/blood.txt, HdFx::bloodRgb); -1: red as it was.
+	int getHdBlood() const { return _hdBlood; }
+	/// HD render: sets the blood colour.
+	void setHdBlood(int rgb) { _hdBlood = rgb; }
 	/// The first frame of the animation.
 	int getStartFrame() const { return _startFrame; }
 	/// The number of frames the animation runs (the default of its kind until it has started).

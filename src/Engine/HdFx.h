@@ -29,6 +29,7 @@ namespace OpenXcom
 struct HdFrame;
 struct DotStyle;
 class RuleItem;
+class Armor;
 class BattleUnit;
 class Tile;
 class MapData;
@@ -58,6 +59,12 @@ namespace HdFx
 	/// ("swing_<kind>_<dir>", as raw from swingClip) of an attacker standing (dx, dy) on the screen away from the target ("stab_<strength>_<dir>_<variant>").
 	/// Empty: no spray for this blow (a fist, a club, a butt, a shock or an energy blade, no loss, no way).
 	std::string stabClip(const std::string &swing, int dx, int dy, int loss, unsigned int seed);
+	/// XP-000366 (Options::oxceHdBloodColor): the colour 0xRRGGBB of the blood of a creature in `armor`, by the mod's table hd/blood.txt
+	/// ("NAME RRGGBB", NAME an armour type or a prefix ending in '*'); -1: no table, no line, or the option is off - the blood stays red.
+	int bloodRgb(const Armor *armor);
+	/// The name of blood clip `clip` (hit_*_flesh, blood_*, stab_*) in colour `rgb`: frame() recolours it once when it loads
+	/// (the tone changes, the brightness and the alpha stay) and keeps it. Any other clip, or rgb < 0: `clip` as it is.
+	std::string tinted(const std::string &clip, int rgb);
 	/// The part of `unit`'s full health that `lost` points are, percent, 1-100 (for sprayClip).
 	int lossPercent(const BattleUnit *unit, int lost);
 	/// A hash of a hit for picking its variants: its own state, the battle's random numbers are not touched.
