@@ -57,7 +57,7 @@ static const struct { const char *category; int tab; } HD_CATEGORIES[] = {
 /// The options of how things look, wherever their category is: they all go on the graphics tab, to the group of their
 /// category (the battle ones to "Graphics of the battle"). Options of the categories ART, GENTLE and GRAPHICS are there already.
 static const char *const HD_GRAPHICS_OPTIONS[] = {
-	"oxceHdBlastFall", "oxceHdKillCam", "oxceHdHiddenMap", "oxceHdAnimHidden", "oxceHdBackdrop", "oxceHdBeyondEdge", "oxceHdEnemyNumber",
+	"oxceHdBlastFall", "oxceHdKillCam", "oxceHdHiddenMap", "oxceHdAnimHidden", "oxceHdBackdrop", "oxceHdBeyondEdge", "oxceHdBeyondLook", "oxceHdMapBorder", "oxceHdEnemyNumber",
 	"oxceHdUi", "oxceHdUiSkin", "oxceHdWindowTheme", "oxceHdUiFont", "oxceHdPictures", "oxceHdUiSmooth" };
 /// The tab open last: the window opens on it again, until the game is closed.
 static int hdTab = 0;
@@ -502,6 +502,14 @@ std::string OptionsHdState::valueText(const OptionInfo &info) const
 	{
 		return tr("STR_HD_ENEMY_TURN_" + std::to_string(Options::oxceHdEnemyTurn));
 	}
+	if (info.asInt() == &Options::oxceHdBeyondLook)
+	{
+		return tr("STR_HD_BEYOND_LOOK_" + std::to_string(Options::oxceHdBeyondLook));
+	}
+	if (info.asInt() == &Options::oxceHdMapBorder)
+	{
+		return tr("STR_HD_MAP_BORDER_" + std::to_string(Options::oxceHdMapBorder));
+	}
 	if (info.asInt() == &Options::oxceHdRadar)
 	{
 		return tr("STR_HD_RADAR_" + std::to_string(Options::oxceHdRadar));
@@ -741,6 +749,11 @@ void OptionsHdState::changeSetting(size_t sel, Uint8 button)
 		else if (i == &Options::oxceHdEnemyNumber)
 		{
 			min = 0;                                  // 0 none, 1 blinking, 2 steady
+			max = 2;
+		}
+		else if (i == &Options::oxceHdBeyondLook || i == &Options::oxceHdMapBorder)
+		{
+			min = 0;                                  // beyond the edge: 0 as it is, 1 black and white, 2 fog; border: 0 off, 1 line, 2 fence
 			max = 2;
 		}
 		else if (i == &Options::oxceHdEnemyTurn)

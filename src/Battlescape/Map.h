@@ -213,13 +213,20 @@ private:
 	int _hdVacuum = -1; ///< hdVacuum once looked (-1: not looked yet)
 	/// Options::oxceHdBeyondEdge (XP-000263): the ground beyond the map's edge, under the map, at the canvas of HD scale above 1.
 	void hdDrawBeyondEdge(HdCanvas *surface, const Position &cameraPos);
-	/// The commonest floors of the ground level, found once a battle: their pictures and shares (the cells beyond the edge take them by a hash).
+	/// The commonest floor of the map's outer band on the ground level, found once a battle: the cells beyond the edge take it
+	/// where the cell they mirror is not discovered yet (the mirror shows no floor the player has not seen).
 	struct HdGhostFloor { SurfaceRaw<const Uint8> sprite; int yOffset = 0; int count = 0; };
 	std::vector<HdGhostFloor> _hdGhostFloors;
-	int _hdGhostTotal = 0;   ///< the sum of the counts of _hdGhostFloors
 	/// The veils of the backdrop's colour over the far cells (by colour and opacity), kept while the battle's map lives.
 	std::unordered_map<unsigned long long, HdFrame> _hdHazeFrames;
 	int _hdGhostState = -1;  ///< -1: floors not looked yet, 0: none (no ground level to go on), 1: _hdGhostFloors are there
+	/// Options::oxceHdBeyondLook 1: the floor of a palette sprite in greys (made once, kept while the battle's map lives), nullptr if it cannot be made.
+	const HdFrame *hdGrayFloor(HdCanvas *surface, SurfaceRaw<const Uint8> sprite);
+	std::unordered_map<const void*, HdFrame> _hdGrayFrames;
+	/// Options::oxceHdMapBorder (XP-000380, XP-000382): the line or the fence along the map's edge. Pass 0 goes under the map's
+	/// cells (the line, the two far sides of the fence), pass 1 over them (the two near sides of the fence).
+	void hdDrawMapBorder(HdCanvas *surface, const Position &cameraPos, int pass);
+	std::unordered_map<unsigned long long, HdFrame> _hdBorderFrames;
 	/// The hit chance text as it stands in _txtAccuracy, at canvas (x, y): baked, or kept for the HD interface.
 	void drawAccuracy(HdCanvas *canvas, int x, int y);
 	SurfaceSet *_projectileSet;

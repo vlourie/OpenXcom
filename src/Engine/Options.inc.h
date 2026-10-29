@@ -307,6 +307,13 @@ OPT bool oxceHdBackdrop;
 // Battlescape (XP-000263), HD scale above 1: the ground goes on beyond the map's edge - the commonest floors of the map's
 // edge on the ground level, laid out by a hash of the cell, fading into the backdrop with the distance. Off by default; picture only
 OPT bool oxceHdBeyondEdge;
+// Battlescape (XP-000380, XP-000382), HD scale above 1: the border of the battle field on the ground level, along the whole
+// perimeter of the map: 0 off, 1 a line a few pixels thick just outside the edge, 2 a half-transparent red fence one level high.
+// Picture only; works without oxceHdBeyondEdge
+OPT int oxceHdMapBorder;
+// Battlescape (XP-000263), with oxceHdBeyondEdge: the look of the ground beyond the map's edge: 0 as it is (colours, the veil of
+// the backdrop's colour), 1 black and white (grey floors), 2 fog (a pale haze instead of the backdrop's colour). Picture only
+OPT int oxceHdBeyondLook;
 // Battlescape, what the player sees in the enemy's and the neutrals' turn: 0 as it was, 1 the hidden movement screen
 // (as with oxceHdHiddenMap off) with a strip of text over it, 2 a soft red (enemy) or yellow (neutral) frame along the
 // screen's edge and the panel slides down, back in the player's turn only if this slid it, 3 as 2 and a progress bar of
