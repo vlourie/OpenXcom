@@ -209,6 +209,8 @@ public static class Setup
             Roots = m.Roots,
             Files = m.Files.Where(f => keep.Contains(f.Component) || !known.Contains(f.Component)).ToList(),
             Deletes = m.Deletes,
+            // the pack carries every component's blobs and the unpacking takes only the wanted ones (R-527)
+            Packs = m.Packs,
         };
     }
 

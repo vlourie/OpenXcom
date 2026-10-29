@@ -59,6 +59,25 @@ public sealed class UpdatePackTests : IDisposable
     }
 
     [Fact]
+    public async Task An_update_comes_as_one_file_with_components_picked()
+    {
+        await InstallV1BuildV2();
+        f.Repo.Publish("stable", "v2", f.Key);
+        // a player through the setup wizard: the manifest is cut down to the picked components and must keep its packs (R-527)
+        var components = f.Repo.LoadManifest("v2").Components.Select(c => c.Id).ToList();
+        Assert.NotEmpty(components);
+        var state = f.Updater.LoadState();
+        state.Components = components;
+        f.Updater.SaveState(state);
+
+        await f.UpdateAsync();
+
+        AssertV2Installed();
+        Assert.Contains(f.Server.Requests, r => r.Key == "releases/v2/packs/v1.tar.br");
+        Assert.DoesNotContain(f.Server.Requests, r => r.Key.StartsWith("blobs/"));
+    }
+
+    [Fact]
     public async Task A_first_install_takes_files_one_by_one()
     {
         f.StageV1();
