@@ -205,6 +205,8 @@ OPT bool oxceHdLight;
 OPT bool oxceHdGroundVariants;
 // HD render: a soft shadow on the floor under every visible unit standing on something (HD modes only)
 OPT bool oxceHdUnitShadow;
+// HD render: the floor darkens softly beside the walls and objects standing on it, by their LOFT (HD modes only)
+OPT bool oxceHdFloorAo;
 // HD lab (Engine/HdLab.h): the battle map turned by this many quarters (0..3), only while the lab is open
 OPT int oxceHdMapRotation;
 // HD lab: the key a correct lab password leaves (empty: the lab is closed)
