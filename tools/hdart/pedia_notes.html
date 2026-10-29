@@ -133,7 +133,7 @@ let ROUND = "";
 const ROUND_FILTERS = [
   ["open", "Ещё не выбраны", c => !c.pick || c.pick === "again"],
   ["ready", "Не выбраны, кандидаты готовы", c => (!c.pick || c.pick === "again") && c.cands.length > 0],
-  ["picked", "Выбран кандидат", c => /^[eo]\d$/.test(c.pick)],
+  ["picked", "Выбран кандидат", c => /^[eok]\d$/.test(c.pick)],
   ["again", "Ещё раз", c => c.pick === "again"],
   ["keep", "Оставить как было", c => c.pick === "keep"],
   ["all", "Все картинки круга", c => true],
@@ -183,10 +183,10 @@ function applyFilter(keep) {
 
 function listState(c) {
   if (!ROUND) return c.status || "none";
-  return /^[eo]\d$/.test(c.pick) ? "ok" : c.pick === "again" ? "redo" : c.pick === "keep" ? "doubt" : "none";
+  return /^[eok]\d$/.test(c.pick) ? "ok" : c.pick === "again" ? "redo" : c.pick === "keep" ? "doubt" : "none";
 }
 function pickRu(p) { return p === "again" ? "ещё раз" : p === "keep" ? "как было" : p ? "взят " + p : ""; }
-const VAR_RU = { e1: "правка, зерно 1", e2: "правка, зерно 2", o1: "из оригинала", o2: "из оригинала, зерно 2" };
+const VAR_RU = { e1: "правка, зерно 1", e2: "правка, зерно 2", o1: "из оригинала", o2: "из оригинала, зерно 2", k1: "как есть, без перерисовки" };
 
 function chip(text, cls) { const s = document.createElement("span"); s.className = "chip " + cls; s.textContent = text; return s; }
 
