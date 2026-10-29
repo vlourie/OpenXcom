@@ -451,8 +451,25 @@ void Canvas32::record(Cmd &cmd)
 	_cmds.push_back(cmd);
 }
 
+namespace
+{
+	/// The color of the backdrop's row y of `height` rows: the row's place 0..2 (0 top, 1 middle, 2 bottom), between two
+	/// stops the colors mix linearly (8-bit weight).
+	void backdropMix(const Uint8 stops[3][3], int y, int height, int rgb[3])
+	{
+		const int pos = (int)(((2LL * y + 1) * 512) / (2LL * height));
+		const int seg = pos >= 256 ? 1 : 0;
+		const int w = pos >= 256 ? std::min(pos - 256, 256) : pos;
+		for (int c = 0; c < 3; ++c)
+		{
+			rgb[c] = (stops[seg][c] * (256 - w) + stops[seg + 1][c] * w + 128) >> 8;
+		}
+	}
+}
+
 void Canvas32::fill(Uint8 color)
 {
+	_backdropOn = false;
 	Cmd cmd {};
 	cmd.type = Cmd::FILL;
 	cmd.color = color;
@@ -481,7 +498,20 @@ void Canvas32::fillBackdrop(Uint8 color, int rgb)
 		cmd.backdrop[1][c] = (Uint8)((base[c] * 90 + HAZE[c] * 10) / 100);
 		cmd.backdrop[2][c] = (Uint8)((base[c] * 70 + HAZE[c] * 30) / 100);
 	}
+	std::memcpy(_backdropStops, cmd.backdrop, sizeof(_backdropStops));
+	_backdropOn = true;
 	record(cmd);
+}
+
+int Canvas32::backdropAt(int y) const
+{
+	if (!_backdropOn || _height <= 0)
+	{
+		return -1;
+	}
+	int rgb[3];
+	backdropMix(_backdropStops, std::max(0, std::min(_height - 1, y)), _height, rgb);
+	return (rgb[0] << 16) | (rgb[1] << 8) | rgb[2];
 }
 
 namespace
@@ -1947,15 +1977,8 @@ void Canvas32::doFillBackdrop(const Cmd &cmd, int y0, int y1)
 {
 	for (int y = y0; y < y1; ++y)
 	{
-		// the row's place 0..2: 0 top, 1 middle, 2 bottom; between two stops the colors mix linearly (8-bit weight)
-		const int pos = (int)(((2LL * y + 1) * 512) / (2LL * _height));
-		const int seg = pos >= 256 ? 1 : 0;
-		const int w = pos >= 256 ? std::min(pos - 256, 256) : pos;
 		int rgb[3];
-		for (int c = 0; c < 3; ++c)
-		{
-			rgb[c] = (cmd.backdrop[seg][c] * (256 - w) + cmd.backdrop[seg + 1][c] * w + 128) >> 8;
-		}
+		backdropMix(cmd.backdrop, y, _height, rgb);
 		const Uint32 value = pack(rgb[0], rgb[1], rgb[2]) | _surface->format->Amask;
 		Uint32 *row = rowPtr(y);
 		for (int x = 0; x < _width; ++x)

@@ -178,6 +178,9 @@ public:
 	/// the color itself in the middle, a pale haze at the bottom. A palette canvas has only the flat color.
 	/// @param rgb 0xRRGGBB of the middle color when the mod's table names one (hd/backdrop.txt), else -1: the palette color's own.
 	virtual void fillBackdrop(Uint8 color, int rgb = -1) { (void)rgb; fill(color); }
+	/// The color 0xRRGGBB the last fillBackdrop gives to the row y (the beyond-edge ground fades into it, XP-000263);
+	/// -1 when the last fill was flat or the canvas is a palette one.
+	virtual int backdropAt(int y) const { (void)y; return -1; }
 	/// Draws a palette sprite (Surface::blitRaw semantics).
 	virtual void blit(SurfaceRaw<const Uint8> src, int x, int y, int shade, bool half = false, int newBaseColor = 0) = 0;
 	/// Draws a palette sprite clipped to a rectangle (Surface::blitNShade(range) semantics).
@@ -499,6 +502,9 @@ private:
 	std::vector<Cmd> _cmds;
 	/// HdSprites::generation() when the first of _cmds was recorded (see flush).
 	unsigned _cmdsGeneration = 0;
+	/// The stops of the last fillBackdrop (top, middle, bottom), for backdropAt; _backdropOn is false after a flat fill.
+	Uint8 _backdropStops[3][3] = {};
+	bool _backdropOn = false;
 	std::vector<Uint8> _arena;
 	std::vector<int> _arenaInt;
 
@@ -625,6 +631,7 @@ public:
 	int getHeight() const override { return _height; }
 	void fill(Uint8 color) override;
 	void fillBackdrop(Uint8 color, int rgb = -1) override;
+	int backdropAt(int y) const override;
 	void blit(SurfaceRaw<const Uint8> src, int x, int y, int shade, bool half = false, int newBaseColor = 0) override;
 	void blit(SurfaceRaw<const Uint8> src, int x, int y, int shade, GraphSubset range) override;
 	void blitScripted(ScriptWorkerBlit &work, const Surface *src, int x, int y, int shade, GraphSubset range, ScriptWorkerBlit *unlit = nullptr) override;
