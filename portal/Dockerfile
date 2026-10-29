@@ -14,12 +14,13 @@ RUN dotnet publish src/Xp.Portal/Xp.Portal.csproj -c Release -o /out --no-restor
 FROM mcr.microsoft.com/dotnet/aspnet:10.0
 WORKDIR /app
 COPY --from=build /out .
-# uploads and the data-protection keys live on volumes, owned by the unprivileged user
-RUN mkdir -p /data/files /data/keys && chown -R app:app /data
+# uploads, the data-protection keys and the update packs live on volumes, owned by the unprivileged user
+RUN mkdir -p /data/files /data/keys /data/packs && chown -R app:app /data
 USER app
 ENV ASPNETCORE_ENVIRONMENT=Production \
     ASPNETCORE_HTTP_PORTS=8080 \
     Attachments__StorageRoot=/data/files \
-    DataProtection__KeysDir=/data/keys
+    DataProtection__KeysDir=/data/keys \
+    Packs__CacheDir=/data/packs
 EXPOSE 8080
 ENTRYPOINT ["dotnet", "Xp.Portal.dll"]

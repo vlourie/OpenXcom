@@ -1,6 +1,13 @@
 # HTTPS in front of the portal. Caddy gets and renews the Let's Encrypt certificate by itself;
 # for that, ports 80 and 443 of the router must lead to this server.
 {$PORTAL_HOST} {
+	# update packs the site makes on request (/api/v1/packs): its cache volume, plain files with Range.
+	# A pack made again after it was dropped has another hash: no caching on the way
+	handle_path /releases/lazy/* {
+		root * /srv/packcache
+		header Cache-Control "no-cache"
+		file_server
+	}
 	# release repository (xp-release): plain files, Range requests for resumed downloads.
 	# Blobs are not compressed: fetched by byte ranges and checked by hash, gzip would break both
 	handle_path /releases/* {

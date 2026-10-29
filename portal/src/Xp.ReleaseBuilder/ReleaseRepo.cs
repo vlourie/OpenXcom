@@ -267,24 +267,9 @@ public sealed class ReleaseRepo(string root, Action<string>? log = null)
         Parallel.ForEach(froms, from =>
         {
             var have = LoadManifest(from).Files.Select(f => f.Sha256).ToHashSet(StringComparer.Ordinal);
-            // like files next to like: brotli finds the repeats of one kind (rul with rul, exe alone)
-            var add = files.Where(f => !have.Contains(f.Sha256)).DistinctBy(f => f.Sha256)
-                .OrderBy(f => Path.GetExtension(f.Path), StringComparer.OrdinalIgnoreCase).ThenBy(f => f.Path, StringComparer.Ordinal)
-                .ToList();
+            var add = PackWriter.Order(files.Where(f => !have.Contains(f.Sha256)));
             if (add.Count == 0) return;
-            var target = Full(BlobKeys.Pack(o.Id, from));
-            Directory.CreateDirectory(Path.GetDirectoryName(target)!);
-            var tmp = target + ".tmp";
-            using (var fs = new FileStream(tmp, FileMode.Create, FileAccess.Write, FileShare.None, 1 << 20))
-            using (var br = new BrotliStream(fs, new BrotliCompressionOptions { Quality = o.PackQuality }))
-            using (var tar = new TarWriter(br, TarEntryFormat.Ustar, leaveOpen: false))
-                foreach (var f in add)
-                {
-                    using var data = File.OpenRead(Full(BlobKeys.For(f.Sha256)));
-                    tar.WriteEntry(new UstarTarEntry(TarEntryType.RegularFile, f.Sha256) { DataStream = data });
-                }
-            File.Move(tmp, target, overwrite: true);
-            var pack = new UpdatePack { From = from, Size = new FileInfo(target).Length, Sha256 = Hashing.FileSha256(target), Blobs = add.Count, Raw = add.Sum(f => f.Size) };
+            var pack = PackWriter.Write(from, add, sha => Full(BlobKeys.For(sha)), Full(BlobKeys.Pack(o.Id, from)), o.PackQuality);
             packs.Add(pack);
             _log($"pack from {from}: {pack.Blobs} files, {pack.Raw / (1024.0 * 1024):F1} -> {pack.Size / (1024.0 * 1024):F1} MiB");
         });

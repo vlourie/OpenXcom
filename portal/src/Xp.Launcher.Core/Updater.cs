@@ -25,7 +25,7 @@ public sealed class UpdatePlan
     public bool NothingToDo => !ToWrite.Any() && Deletes.Count == 0 && !PlayerModified.Any();
 }
 
-public enum Phase { Checking, Scanning, Downloading, Installing, RollingBack, Done }
+public enum Phase { Checking, Scanning, Packing, Downloading, Installing, RollingBack, Done }
 
 public sealed record Progress(Phase Phase, long Done, long Total, string? Current, double BytesPerSecond);
 
@@ -50,6 +50,10 @@ public sealed class Updater(GamePaths paths, RepoClient repo, ILauncherLog log)
     public GamePaths Paths { get; } = paths;
     public Func<string, bool> IsGameRunning { get; set; } = GameProcess.IsRunningIn;
     public Func<string, long> FreeSpace { get; set; } = dir => new DriveInfo(Path.GetPathRoot(dir)!).AvailableFreeSpace;
+    /// <summary>The site that packs an update the manifest has no pack for; null - the files come one by one.</summary>
+    public LazyPacks? Lazy { get; set; }
+    /// <summary>From how many files the site is asked for a pack: below it the files one by one are as quick.</summary>
+    public int LazyPackMinFiles { get; set; } = 200;
 
     public LauncherState LoadState() => LauncherState.Load(Paths, log);
 
@@ -212,16 +216,22 @@ public sealed class Updater(GamePaths paths, RepoClient repo, ILauncherLog log)
         Directory.CreateDirectory(Paths.Staging);
 
         var toFetch = blobs.Where(b => !File.Exists(StagedBlob(b.Sha256))).ToList();
-        var pack = PackFor(plan, toFetch);
-        long need = toFetch.Sum(b => b.Size - PartLength(b.Sha256)) + plan.ToWrite.Sum(c => c.File.Size)
-                    + (pack is null ? 0 : pack.Size - FileLength(PackFile(plan, pack) + ".part"));
+        var pack = PackFor(plan, toFetch) ?? await LazyPackFor(plan, toFetch, progress, ct);
+        long need = toFetch.Sum(b => b.Size - PartLength(b.Sha256)) + plan.ToWrite.Sum(c => c.File.Size);
         var free = FreeSpace(Paths.GameDir);
+        if (pack is not null)
+        {
+            long packNeed = pack.Size - FileLength(pack.File + ".part");
+            // the pack lies beside the blobs it unpacks to until the end: without room for it the files come one by one
+            if (free >= need + packNeed + DiskMargin) need += packNeed;
+            else { log.Info($"no room for the {pack.Label} ({Mb(pack.Size)}): files come one by one"); pack = null; }
+        }
         if (free < need + DiskMargin)
             throw new UpdateBlockedException($"not enough disk space: need {Mb(need + DiskMargin)}, free {Mb(free)}");
         if (toFetch.Count < blobs.Count) log.Info($"{blobs.Count - toFetch.Count} files already downloaded by an earlier attempt");
 
         var meter = new SpeedMeter();
-        if (pack is not null && await FetchPackAsync(plan, pack, toFetch, meter, progress, ct))
+        if (pack is not null && await FetchPackAsync(pack, toFetch, meter, progress, ct))
             toFetch = toFetch.Where(b => !File.Exists(StagedBlob(b.Sha256))).ToList();
 
         long total = blobs.Sum(b => b.Size), done = 0;
@@ -256,28 +266,63 @@ public sealed class Updater(GamePaths paths, RepoClient repo, ILauncherLog log)
         log.Info($"downloaded {toFetch.Count} files ({blobs.Count} needed, {Mb(total)})");
     }
 
+    /// <summary>A pack to fetch: one the manifest names, or one the site made for this update.</summary>
+    sealed record PackGet(string File, string Label, string Current, long Size, Func<string, Action<long>, CancellationToken, Task> Download);
+
     /// <summary>
     /// The pack of the installed release, when there is one and it is not larger than the files it replaces:
     /// it carries the new blobs of every component, and a player without some of them, or a small repair,
     /// may need less than the whole pack.
     /// </summary>
-    static UpdatePack? PackFor(UpdatePlan plan, List<ManifestFile> toFetch)
+    PackGet? PackFor(UpdatePlan plan, List<ManifestFile> toFetch)
     {
         if (plan.From is not { } from || toFetch.Count == 0) return null;
         var pack = plan.Manifest.Packs.FirstOrDefault(p => p.From.Equals(from, StringComparison.OrdinalIgnoreCase));
-        return pack is not null && pack.Size <= toFetch.Sum(b => b.Size) ? pack : null;
+        if (pack is null || pack.Size > toFetch.Sum(b => b.Size)) return null;
+        var id = plan.Manifest.Release.Id;
+        return new PackGet(Path.Combine(Paths.Staging, $"pack-{id}-{pack.From}.tar.br"), $"pack from {pack.From}", $"pack {pack.From}", pack.Size,
+            (target, onBytes, ct) => repo.DownloadPackAsync(id, pack, target, onBytes, ct));
     }
 
-    string PackFile(UpdatePlan plan, UpdatePack pack) => Path.Combine(Paths.Staging, $"pack-{plan.Manifest.Release.Id}-{pack.From}.tar.br");
+    /// <summary>
+    /// A release older than the manifest's packs, or a first install: the site packs the update for it (<see cref="LazyPacks"/>),
+    /// with the art layers this player has. Its size and hash come from the site, so it is taken only when not larger than the
+    /// files it replaces, and every blob in it is still checked against the signed manifest.
+    /// </summary>
+    async Task<PackGet?> LazyPackFor(UpdatePlan plan, List<ManifestFile> toFetch, IProgress<Progress>? progress, CancellationToken ct)
+    {
+        var m = plan.Manifest;
+        // a repair of the installed release: the site would pack the whole of it for a part
+        if (Lazy is null || toFetch.Count < LazyPackMinFiles || string.Equals(plan.From, m.Release.Id, StringComparison.OrdinalIgnoreCase)) return null;
+        var from = plan.From ?? "";
+        var name = from.Length > 0 ? from : "nothing";
+        long bytes = toFetch.Sum(b => b.Size);
+        var art = m.Components.Where(c => c.Kind == ComponentKind.Art).Select(c => c.Id);
+        progress?.Report(new Progress(Phase.Packing, 0, bytes, null, 0));
+        var a = await Lazy.AskAsync(m.Release.Channel, m.Release.Id, from, art, () => progress?.Report(new Progress(Phase.Packing, 0, bytes, null, 0)), ct);
+        if (a.Pack is not { } p)
+        {
+            log.Info($"no pack from the site for {name}, files come one by one: {a.Note}");
+            return null;
+        }
+        if (p.Size > bytes)
+        {
+            log.Info($"the site's pack from {name} ({Mb(p.Size)}) is larger than the {Mb(bytes)} it replaces: files come one by one");
+            return null;
+        }
+        var url = new Uri(repo.BaseUri, $"lazy/{m.Release.Id}/{p.Key}.tar.br");
+        return new PackGet(Path.Combine(Paths.Staging, $"pack-{m.Release.Id}-{p.Key}.tar.br"), $"site pack from {name}", $"pack {name}", p.Size,
+            (target, onBytes, c) => repo.DownloadFileAsync(url, p.Sha256, p.Size, target, "site pack", onBytes, c));
+    }
 
     /// <summary>
-    /// Downloads the pack (resumable, its SHA-256 from the signed manifest) and unpacks the blobs this plan
-    /// needs into staging, each checked against its own SHA-256. Any failure but a cancel only means the
-    /// files are fetched one by one: false.
+    /// Downloads the pack (resumable, checked against its SHA-256) and unpacks the blobs this plan needs into
+    /// staging, each checked against its own SHA-256 from the signed manifest. Any failure but a cancel only
+    /// means the files are fetched one by one: false.
     /// </summary>
-    async Task<bool> FetchPackAsync(UpdatePlan plan, UpdatePack pack, List<ManifestFile> want, SpeedMeter meter, IProgress<Progress>? progress, CancellationToken ct)
+    async Task<bool> FetchPackAsync(PackGet pack, List<ManifestFile> want, SpeedMeter meter, IProgress<Progress>? progress, CancellationToken ct)
     {
-        var file = PackFile(plan, pack);
+        var file = pack.File;
         long done = FileLength(file + ".part");
         try
         {
@@ -285,27 +330,27 @@ public sealed class Updater(GamePaths paths, RepoClient repo, ILauncherLog log)
             {
                 try
                 {
-                    await repo.DownloadPackAsync(plan.Manifest.Release.Id, pack, file, n =>
+                    await pack.Download(file, n =>
                     {
                         done += n;
                         meter.Add(n);
-                        progress?.Report(new Progress(Phase.Downloading, done, pack.Size, $"pack {pack.From}", meter.BytesPerSecond));
+                        progress?.Report(new Progress(Phase.Downloading, done, pack.Size, pack.Current, meter.BytesPerSecond));
                     }, ct);
                 }
                 catch (Exception e) when (attempt < 4 && e is IOException or HttpRequestException && !ct.IsCancellationRequested)
                 {
-                    log.Info($"download retry {attempt} for pack from {pack.From}: {e.Message}");
+                    log.Info($"download retry {attempt} for {pack.Label}: {e.Message}");
                     await Task.Delay(TimeSpan.FromSeconds(1 << attempt), ct);
                 }
             }
             int got = await Task.Run(() => Unpack(file, want, ct), ct);
-            log.Info($"pack from {pack.From}: {Mb(pack.Size)}, {got} of {want.Count} files needed");
+            log.Info($"{pack.Label}: {Mb(pack.Size)}, {got} of {want.Count} files needed");
             File.Delete(file);
             return true;
         }
         catch (Exception e) when (e is not OperationCanceledException)
         {
-            log.Error($"pack from {pack.From} failed, files come one by one: {e.Message}");
+            log.Error($"{pack.Label} failed, files come one by one: {e.Message}");
             try { File.Delete(file); } catch (IOException) { }
             return false;
         }

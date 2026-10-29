@@ -174,7 +174,7 @@ public sealed class MainWindow : Window
         _account = new AccountPanel(_settings);
         _voicePage = new VoicePage(_settings, _account, () => _builds, () => Navigate("settings"));
         _voicePage.RoomChanged += RoomChanged;
-        _setupPage = new SetupPage(_settings, () => _repo);
+        _setupPage = new SetupPage(_settings, () => _repo) { Lazy = () => LazyPacks.For(_http, _settings.PortalUrl ?? BuiltIn.Defaults.PortalUrl) };
         _setupPage.Finished += (dir, play) => OnSetupFinished(dir, play);
         _setupPage.PickExisting += async () => await ChooseGameDirAsync();
 
@@ -918,7 +918,7 @@ public sealed class MainWindow : Window
         _paths = new GamePaths(dir);
         _fileLog = new FileLog(_paths);
         _fileLog.Written += line => Dispatcher.UIThread.Post(() => AppendLog(line));
-        _updater = new Updater(_paths, _repo!, _fileLog);
+        _updater = new Updater(_paths, _repo!, _fileLog) { Lazy = LazyPacks.For(_http, _settings.PortalUrl ?? BuiltIn.Defaults.PortalUrl) };
         _builds = new BuildStore(_paths);
         _gameDir.Text = _paths.GameDir;
         _fileLog.Info($"launcher {BuiltIn.VersionText} started, game dir <game>");
@@ -1604,6 +1604,7 @@ public sealed class MainWindow : Window
         _progressLine = p.Phase switch
         {
             Phase.Scanning => L.T("status.scanning", L.Size(p.Done), L.Size(p.Total)),
+            Phase.Packing => L.T("status.packing", L.Size(p.Total)),
             Phase.Downloading => L.T("status.downloading", L.Size(p.Done), L.Size(p.Total), L.Size(p.BytesPerSecond)),
             Phase.Installing => L.T("status.installing", L.Size(p.Done), L.Size(p.Total)),
             _ => _progressLine,

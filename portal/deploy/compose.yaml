@@ -74,10 +74,15 @@ services:
     image: xp-portal
     restart: unless-stopped
     env_file: portal.env
-    environment: *portal-env
+    environment:
+      <<: *portal-env
+      # the update of an old release in one file, made on request from the repository (PackService)
+      Packs__ReleaseDir: /srv/releases
     volumes:
       - portal-files:/data/files
       - portal-keys:/data/keys
+      - ${RELEASES_DIR:-./releases}:/srv/releases:ro
+      - pack-cache:/data/packs
     depends_on:
       migrate: { condition: service_completed_successfully }
       clamav: { condition: service_started }
@@ -96,6 +101,8 @@ services:
       # release repository, served at /releases/: filled by 'station.ps1 releases' (or by hand,
       # blobs first, channels last); RELEASES_DIR in .env to keep it elsewhere
       - ${RELEASES_DIR:-./releases}:/srv/releases:ro
+      # the packs the site made, at /releases/lazy/
+      - pack-cache:/srv/packcache:ro
       - caddy-data:/data
       - caddy-config:/config
     depends_on: [portal]
@@ -116,5 +123,6 @@ volumes:
   clamav-db:
   portal-files:
   portal-keys:
+  pack-cache:
   caddy-data:
   caddy-config:

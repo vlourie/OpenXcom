@@ -202,7 +202,7 @@ static partial class Headless
         log.Written += Console.WriteLine;
         using var http = RepoClient.NewHttpClient();
         var repo = new RepoClient(http, new Uri(Opt(args, "--repo") ?? settings.RepoUrl ?? BuiltIn.Defaults.RepoUrl), BuiltIn.Keys);
-        var u = new Updater(paths, repo, log);
+        var u = new Updater(paths, repo, log) { Lazy = LazyPacks.For(http, settings.PortalUrl ?? BuiltIn.Defaults.PortalUrl) };
         if (u.Recover()) Console.WriteLine(u.RecoveryFinished ? "an interrupted install was finished" : "an interrupted install was undone");
         if (cmd != "check") u.MigrateSettings();
 

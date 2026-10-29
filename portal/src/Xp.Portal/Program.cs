@@ -16,6 +16,7 @@ using Xp.Portal.Data;
 using Xp.Portal.Devices;
 using Xp.Portal.Files;
 using Xp.Portal.Notifications;
+using Xp.Portal.Packs;
 using Xp.Portal.Review;
 using Xp.Portal.Site;
 using Xp.Portal.Stats;
@@ -52,6 +53,7 @@ public static class PortalApp
         s.Configure<TelegramOptions>(cfg.GetSection(TelegramOptions.Section));
         s.Configure<UpstreamOptions>(cfg.GetSection(UpstreamOptions.Section));
         s.Configure<EmailOptions>(cfg.GetSection(EmailOptions.Section));
+        s.Configure<PackOptions>(cfg.GetSection(PackOptions.Section));
         s.Configure<Argon2Options>(cfg.GetSection("Argon2"));
         s.Configure<LiveKitOptions>(cfg.GetSection(LiveKitOptions.Section));
         s.AddSingleton(TimeProvider.System);
@@ -155,6 +157,7 @@ public static class PortalApp
         s.AddSingleton<Markup>();
         s.AddScoped<Roadmap>();
         s.AddSingleton<LauncherStatsService>();
+        s.AddSingleton<PackService>();
         s.AddScoped<PackSeed>();
         s.AddScoped<CommunityService>();
         s.AddScoped<CommunitySeed>();
@@ -219,6 +222,8 @@ public static class PortalApp
             o.AddPolicy("bot", c => ByIp(c, cfg.GetValue("RateLimits:BotPerMin", 300), TimeSpan.FromMinutes(1)));
             // a person downloads the setup once, a download manager asks HEAD first and retries a broken one
             o.AddPolicy("launcher-download", c => ByIp(c, cfg.GetValue("RateLimits:LauncherPer10Min", 20), TimeSpan.FromMinutes(10)));
+            // an update pack: asked once, then again every five seconds while the site makes it (three minutes at most)
+            o.AddPolicy("packs", c => WritesByIp(c, cfg.GetValue("RateLimits:PacksPer10Min", 200), TimeSpan.FromMinutes(10)));
         });
     }
 
@@ -266,6 +271,7 @@ public static class PortalApp
         DeviceApi.Map(app);
         ReviewApi.Map(app);
         StatsApi.Map(app);
+        PackApi.Map(app);
         VoiceApi.Map(app);
         app.MapGet("/files/{id:guid}", ServeFileAsync).ExcludeFromDescription();
         // HEAD too: download managers ask the name and size first, and 405 made them give up

@@ -136,6 +136,8 @@ public sealed class RepoHandler(string root) : HttpMessageHandler
     public bool Gzip { get; set; }
     /// <summary>Keys whose request asked for gzip.</summary>
     public List<string> AskedGzip { get; } = new();
+    /// <summary>The site's API (api/...), answered here instead of from the files.</summary>
+    public Func<HttpRequestMessage, HttpResponseMessage>? Api { get; set; }
     readonly HashSet<string> _cut = new();
 
     protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken ct)
@@ -143,6 +145,7 @@ public sealed class RepoHandler(string root) : HttpMessageHandler
         var key = Uri.UnescapeDataString(request.RequestUri!.AbsolutePath.TrimStart('/'));
         long? from = request.Headers.Range?.Ranges.FirstOrDefault()?.From;
         lock (Requests) Requests.Add((key, from));
+        if (key.StartsWith("api/") && Api is { } api) return Task.FromResult(api(request));
 
         byte[]? data;
         lock (Overrides) data = Overrides.TryGetValue(key, out var o) ? o : null;

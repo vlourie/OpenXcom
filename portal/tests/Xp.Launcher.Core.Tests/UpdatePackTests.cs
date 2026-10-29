@@ -169,6 +169,148 @@ public sealed class UpdatePackTests : IDisposable
         Assert.Throws<ManifestException>(() => ManifestValidator.Validate(m));
     }
 
+    // ------------------------------------------------------------ packs the site makes
+
+    /// <summary>v1 installed, v2 published without a pack in its manifest: a release too old for the manifest's packs.</summary>
+    async Task InstallV1PublishV2WithoutPacks()
+    {
+        f.StageV1();
+        f.BuildAndPublish("v1");
+        await f.UpdateAsync();
+        f.StageV2();
+        Fixture.Write(f.Stage, "user/mods/hd/Ruleset/items.rul", Rules);
+        f.Repo.Build(new BuildOptions { StageDir = f.Stage, Id = "v2", Version = "v2", Channel = "stable", Launch = "openxcom_hd.exe", PackFrom = 0 }, f.Key);
+        f.Repo.Publish("stable", "v2", f.Key);
+        f.Server.Requests.Clear();
+        f.Updater.LazyPackMinFiles = 1;
+        f.Updater.Lazy = new LazyPacks(new HttpClient(f.Server), new Uri("http://portal.test/")) { Delay = (_, _) => Task.CompletedTask };
+    }
+
+    const string LazyKey = "0123456789abcdef0123456789abcdef";
+
+    /// <summary>The site: "making it" the first time, then the pack of v2 from v1 at lazy/v2/&lt;key&gt;.tar.br.</summary>
+    List<string> SiteMakesPack(int waits = 1)
+    {
+        var bodies = new List<string>();
+        f.Server.Api = req =>
+        {
+            lock (bodies) bodies.Add(req.Content!.ReadAsStringAsync().Result);
+            if (waits-- > 0)
+            {
+                var wait = new HttpResponseMessage(System.Net.HttpStatusCode.Accepted) { Content = new StringContent("{\"retryAfter\":5}") };
+                wait.Headers.RetryAfter = new System.Net.Http.Headers.RetryConditionHeaderValue(TimeSpan.FromSeconds(5));
+                return wait;
+            }
+            var have = f.Repo.LoadManifest("v1").Files.Select(x => x.Sha256).ToHashSet();
+            var add = PackWriter.Order(f.Repo.LoadManifest("v2").Files.Where(x => !have.Contains(x.Sha256)));
+            var p = PackWriter.Write("v1", add, sha => Path.Combine(f.RepoDir, BlobKeys.For(sha)), Path.Combine(f.RepoDir, "lazy", "v2", LazyKey + ".tar.br"), 4);
+            var json = $"{{\"key\":\"{LazyKey}\",\"size\":{p.Size},\"sha256\":\"{p.Sha256}\",\"blobs\":{p.Blobs},\"raw\":{p.Raw}}}";
+            return new HttpResponseMessage(System.Net.HttpStatusCode.OK) { Content = new StringContent(json, Encoding.UTF8, "application/json") };
+        };
+        return bodies;
+    }
+
+    [Fact]
+    public async Task An_old_release_gets_its_update_as_one_file_the_site_makes()
+    {
+        await InstallV1PublishV2WithoutPacks();
+        var asked = SiteMakesPack();
+
+        await f.UpdateAsync();
+
+        AssertV2Installed();
+        Assert.Equal(2, asked.Count);   // "making it", then the pack
+        Assert.Contains("\"from\":\"v1\"", asked[0]);
+        Assert.Contains("\"to\":\"v2\"", asked[0]);
+        Assert.Contains(f.Server.Requests, r => r.Key == $"lazy/v2/{LazyKey}.tar.br");
+        Assert.DoesNotContain(f.Server.Requests, r => r.Key.StartsWith("blobs/"));
+        Assert.Contains(f.Log.Lines, l => l.StartsWith("site pack from v1:"));
+    }
+
+    [Fact]
+    public async Task Without_room_for_the_pack_beside_the_files_they_come_one_by_one()
+    {
+        await InstallV1PublishV2WithoutPacks();
+        SiteMakesPack(waits: 0);
+        var state = f.Updater.LoadState();
+        var latest = await f.Updater.CheckAsync(state, default);
+        var plan = f.Updater.Scan(state, latest.Manifest, false, null, default);
+        long files = plan.ToWrite.DistinctBy(c => c.File.Sha256).Sum(c => c.File.Size) + plan.ToWrite.Sum(c => c.File.Size);
+        f.Updater.FreeSpace = _ => files + 256L * 1024 * 1024 + 10;   // room for the files, not for the pack too
+
+        await f.Updater.DownloadAsync(plan, null, default);
+        f.Updater.Install(state, plan, null);
+
+        AssertV2Installed();
+        Assert.Contains(f.Server.Requests, r => r.Key.StartsWith("blobs/"));
+        Assert.DoesNotContain(f.Server.Requests, r => r.Key.StartsWith("lazy/"));
+        Assert.Contains(f.Log.Lines, l => l.StartsWith("no room for the site pack from v1"));
+    }
+
+    [Fact]
+    public async Task When_the_site_makes_no_pack_the_files_come_one_by_one()
+    {
+        await InstallV1PublishV2WithoutPacks();
+        f.Server.Api = _ => new HttpResponseMessage(System.Net.HttpStatusCode.NotFound);
+
+        await f.UpdateAsync();
+
+        AssertV2Installed();
+        Assert.Contains(f.Server.Requests, r => r.Key.StartsWith("blobs/"));
+        Assert.Contains(f.Log.Lines, l => l.StartsWith("no pack from the site for v1") && l.Contains("404"));
+    }
+
+    [Fact]
+    public async Task A_site_that_takes_too_long_is_not_waited_for()
+    {
+        await InstallV1PublishV2WithoutPacks();
+        SiteMakesPack(waits: 1000);
+
+        await f.UpdateAsync();
+
+        AssertV2Installed();
+        Assert.Contains(f.Server.Requests, r => r.Key.StartsWith("blobs/"));
+        Assert.Contains(f.Log.Lines, l => l.StartsWith("no pack from the site") && l.Contains("did not make it"));
+    }
+
+    [Fact]
+    public async Task A_site_pack_that_is_not_what_the_site_said_is_thrown_away()
+    {
+        await InstallV1PublishV2WithoutPacks();
+        SiteMakesPack(waits: 0);
+        // the file the site serves is not the one it described: its hash fails, the files come one by one
+        var real = f.Server.Api!;
+        f.Server.Api = req =>
+        {
+            var resp = real(req);
+            var size = new FileInfo(Path.Combine(f.RepoDir, "lazy", "v2", LazyKey + ".tar.br")).Length;
+            lock (f.Server.Overrides) f.Server.Overrides[$"lazy/v2/{LazyKey}.tar.br"] = new byte[size];
+            return resp;
+        };
+
+        await f.UpdateAsync();
+
+        AssertV2Installed();
+        Assert.Contains(f.Server.Requests, r => r.Key.StartsWith("blobs/"));
+        Assert.Contains(f.Log.Lines, l => l.StartsWith("ERROR site pack from v1 failed") && l.Contains("SHA-256"));
+    }
+
+    [Fact]
+    public async Task A_site_answer_that_is_no_pack_is_not_followed()
+    {
+        await InstallV1PublishV2WithoutPacks();
+        f.Server.Api = _ => new HttpResponseMessage(System.Net.HttpStatusCode.OK)
+        {
+            Content = new StringContent($"{{\"key\":\"../../blobs/x\",\"size\":10,\"sha256\":\"{new string('a', 64)}\",\"blobs\":1,\"raw\":10}}"),
+        };
+
+        await f.UpdateAsync();
+
+        AssertV2Installed();
+        Assert.DoesNotContain(f.Server.Requests, r => r.Key.StartsWith("lazy/") || r.Key.Contains(".."));
+        Assert.Contains(f.Log.Lines, l => l.StartsWith("no pack from the site") && l.Contains("not a pack"));
+    }
+
     void Resign(string id, Action<ReleaseManifest> change)
     {
         var m = f.Repo.LoadManifest(id);

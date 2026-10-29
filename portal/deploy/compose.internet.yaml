@@ -12,5 +12,6 @@ services:
     volumes: !override
       - ./Caddyfile.internet:/etc/caddy/Caddyfile:ro
       - ${RELEASES_DIR:-./releases}:/srv/releases:ro
+      - pack-cache:/srv/packcache:ro
       - caddy-data:/data
       - caddy-config:/config

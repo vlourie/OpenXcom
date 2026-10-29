@@ -22,6 +22,8 @@ public sealed class SetupPage : UserControl
 
     readonly Settings _settings;
     readonly Func<RepoClient?> _repo;
+    /// <summary>The site that packs the first install into one file (<see cref="LazyPacks"/>).</summary>
+    public Func<LazyPacks?> Lazy { get; init; } = () => null;
 
     /// <summary>The wizard is over: the game folder, and whether the player pressed "Play".</summary>
     public event Action<string, bool>? Finished;
@@ -222,7 +224,7 @@ public sealed class SetupPage : UserControl
             _dir = dir;
             _paths = new GamePaths(dir);
             var log = new FileLog(_paths);
-            _updater = new Updater(_paths, _repo() ?? throw new InvalidOperationException("no repository"), log);
+            _updater = new Updater(_paths, _repo() ?? throw new InvalidOperationException("no repository"), log) { Lazy = Lazy() };
             _updater.Recover();
             _updater.MigrateSettings();
             return true;
@@ -591,6 +593,7 @@ public sealed class SetupPage : UserControl
         _barLine.Text = p.Phase switch
         {
             Phase.Scanning => L.T("status.scanning", L.Size(p.Done), L.Size(p.Total)),
+            Phase.Packing => L.T("status.packing", L.Size(p.Total)),
             Phase.Downloading => L.T("status.downloading", L.Size(p.Done), L.Size(p.Total), L.Size(p.BytesPerSecond)),
             Phase.Installing => L.T("status.installing", L.Size(p.Done), L.Size(p.Total)),
             _ => _barLine.Text,

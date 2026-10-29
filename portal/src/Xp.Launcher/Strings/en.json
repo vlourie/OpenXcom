@@ -17,6 +17,7 @@
  "status.idle": "Ready.",
  "status.checking": "Checking for updates…",
  "status.scanning": "Checking files: {0} of {1}",
+ "status.packing": "The server is packing the update ({0}) into one file…",
  "status.downloading": "Downloading: {0} of {1}, {2}/s",
  "status.installing": "Installing: {0} of {1}",
  "status.upToDate": "Latest version installed, all files in place.",

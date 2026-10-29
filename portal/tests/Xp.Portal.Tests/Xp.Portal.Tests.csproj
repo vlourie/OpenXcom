@@ -17,5 +17,7 @@
     <ProjectReference Include="..\..\src\Xp.Portal\Xp.Portal.csproj" />
     <!-- the launcher's own report sender against the real API: the contract is checked from both ends -->
     <ProjectReference Include="..\..\src\Xp.Launcher.Core\Xp.Launcher.Core.csproj" />
+    <!-- packs on request are made from a repository the real release builder wrote -->
+    <ProjectReference Include="..\..\src\Xp.ReleaseBuilder\Xp.ReleaseBuilder.csproj" />
   </ItemGroup>
 </Project>

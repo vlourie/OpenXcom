@@ -20,6 +20,13 @@
 		# public resolvers: the machine's own DNS may cache the absence of the TXT record
 		resolvers 1.1.1.1 8.8.8.8
 	}
+	# update packs the site makes on request (/api/v1/packs): its cache volume, plain files with Range.
+	# A pack made again after it was dropped has another hash: no caching on the way
+	handle_path /releases/lazy/* {
+		root * /srv/packcache
+		header Cache-Control "no-cache"
+		file_server
+	}
 	# release repository (xp-release): plain files, Range requests for resumed downloads.
 	# Blobs are not compressed: fetched by byte ranges and checked by hash, gzip would break both
 	handle_path /releases/* {
