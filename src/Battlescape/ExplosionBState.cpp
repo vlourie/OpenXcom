@@ -381,6 +381,11 @@ void ExplosionBState::init()
 					? HdFx::swingClip(weaponRule, damageRule, _attack.attacker ? _attack.attacker->getDirection() : 0)
 					: HdFx::hitClip(itemRule, onUnit, hdUnit, armorHeld, hdTile, _center.z);
 				explosion->setHdFx(clip);
+				// the blood of a creature in an armour the mod's table colours (Options::oxceHdBloodColor, XP-000366): picture only
+				if (Options::oxceHdBloodColor && onUnit && hdUnit)
+				{
+					explosion->setHdBlood(HdFx::bloodRgb(hdUnit->getArmor()));
+				}
 				HdFx::noteForTest(clip);
 				// the blood of a bullet that took health flies on along its way (Options::oxceHdBloodSpray, XP-000298)
 				if (Options::oxceHdBloodSpray && !_hit && _hasHdFrom && onUnit && hdUnit && hdUnit->getHealth() < hdHealthBefore)

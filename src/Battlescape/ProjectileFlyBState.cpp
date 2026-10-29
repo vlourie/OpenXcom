@@ -869,6 +869,10 @@ void ProjectileFlyBState::think()
 									const bool hdOnUnit = secondaryImpact == V_UNIT && hdUnit;
 									const bool hdArmorHeld = hdOnUnit && hdUnit->getHealth() == hdHealthBefore && hdUnit->getStunlevel() == hdStunBefore;
 									explosion->setHdFx(HdFx::hitClip(_ammo->getRules(), hdOnUnit, hdUnit, hdArmorHeld, hdTile, hdAt.z));
+									if (Options::oxceHdBloodColor && hdOnUnit)
+									{
+										explosion->setHdBlood(HdFx::bloodRgb(hdUnit->getArmor()));      // XP-000366
+									}
 									// the blood of a pellet that took health flies on along its way (Options::oxceHdBloodSpray, XP-000298): a voxel twelve steps back
 									if (Options::oxceHdBloodSpray && hdOnUnit && hdUnit->getHealth() < hdHealthBefore)
 									{

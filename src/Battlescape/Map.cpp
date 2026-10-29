@@ -4536,7 +4536,7 @@ void Map::drawTerrain(HdCanvas *surface)
 						if (std::abs(wayX) + std::abs(wayY) >= _k)
 						{
 							const std::string spray = HdFx::sprayClip(clip, wayX, wayY, explosion->getHdLoss(), explosion->getHdSeed());
-							if (!spray.empty() && (hd = HdFx::frame(spray, clipStep, explosion->getFrameCount(), _k)))
+							if (!spray.empty() && (hd = HdFx::frame(HdFx::tinted(spray, explosion->getHdBlood()), clipStep, explosion->getFrameCount(), _k)))
 							{
 								clip = spray;
 							}
@@ -4546,12 +4546,12 @@ void Map::drawTerrain(HdCanvas *surface)
 								const std::string stab = HdFx::stabClip(explosion->getHdFx(), wayX, wayY, explosion->getHdLoss(), explosion->getHdSeed());
 								if (!stab.empty())
 								{
-									stabHd = HdFx::frame(stab, clipStep, explosion->getFrameCount(), _k);
+									stabHd = HdFx::frame(HdFx::tinted(stab, explosion->getHdBlood()), clipStep, explosion->getFrameCount(), _k);
 								}
 							}
 						}
 					}
-					if (hd || (hd = HdFx::frame(clip, clipStep, explosion->getFrameCount(), _k)))
+					if (hd || (hd = HdFx::frame(HdFx::tinted(clip, explosion->getHdBlood()), clipStep, explosion->getFrameCount(), _k)))
 					{
 						surface->blitFrame(*hd, bulletPositionScreen.x - hd->width / 2, bulletPositionScreen.y - hd->height / 2);
 						if (stabHd)

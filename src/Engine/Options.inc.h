@@ -279,6 +279,9 @@ OPT bool oxceHdFx;
 // HD render (XP-000298): the blood of a bullet hit that cost a unit health flies along the bullet's way, the more the more of its health was lost,
 // in one of three variants picked by a hash of the hit (the battle's random generator is not touched); picture only. Off by default: then the same blood as before
 OPT bool oxceHdBloodSpray;
+// HD render (XP-000366, 367, 368): the blood of a hit on a creature in the colour the mod's table hd/blood.txt gives its armour (zombies ochre green, the deep
+// ones blue, ogres and ubers dark red, machines graphite), the tone changed and the brightness kept (HdFx::bloodRgb, HdFx::tinted); picture only. Off by default: red as before
+OPT bool oxceHdBloodColor;
 // HD render: the fire picture (SMOKE.PCK 0..7): 0 the pack's own (<i>.png, <i>.v1.png), style s = the pack's variants 2s and 2s + 1 (tools/hdart/fire_real_pack.py)
 OPT int oxceHdFire;
 // HD render: pace of the fire and smoke animation on tiles (Map::hdEnviClock), a step of HD_ENVI_PACE: 0 stock, higher = slower; picture only
