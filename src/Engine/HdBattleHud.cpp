@@ -20,6 +20,7 @@
 #include <algorithm>
 #include <cctype>
 #include <cmath>
+#include <mutex>
 #include <string>
 #include <unordered_map>
 #include "HdFont.h"
@@ -200,10 +201,136 @@ const Theme DEEP_BRONZE = {
 /// The bars laid in grooves of the panel's card (HdHudPanel::PART_BAR), the numbers on the hands' wells (PART_COUNT).
 std::vector<const Surface*> grooves, counters;
 
+// --- the player's own colour (oxceHdBattleHudColor 9, XP-000377) ---
+// A theme built from two colours the player picks (hue, saturation, value each): the keys' (their metal, the legends'
+// light, the accent) and the background's (the panel's steel, wells, card, grooves). It is the Cruiser's theme with
+// every colour moved to the chosen hue and saturation and the chosen value, the steps of the metal keeping their
+// brightness relative to each other (and the alpha of each colour). Built again only when an option changes.
+
+struct Hsv { float h, s, v; };   ///< h 0..360, s and v 0..1
+
+Hsv toHsv(Uint32 c)
+{
+	const float r = (float)((c >> 16) & 0xFF) / 255.0f, g = (float)((c >> 8) & 0xFF) / 255.0f, b = (float)(c & 0xFF) / 255.0f;
+	const float mx = std::max(r, std::max(g, b)), mn = std::min(r, std::min(g, b)), d = mx - mn;
+	float h = 0.0f;
+	if (d > 1e-6f)
+	{
+		if (mx == r) h = 60.0f * std::fmod((g - b) / d, 6.0f);
+		else if (mx == g) h = 60.0f * ((b - r) / d + 2.0f);
+		else h = 60.0f * ((r - g) / d + 4.0f);
+		if (h < 0.0f) h += 360.0f;
+	}
+	return Hsv{ h, mx > 1e-6f ? d / mx : 0.0f, mx };
+}
+
+/// 0xAARRGGBB with the alpha byte of `like`.
+Uint32 fromHsv(float h, float s, float v, Uint32 like = 0xFF000000u)
+{
+	h = std::fmod(std::fmod(h, 360.0f) + 360.0f, 360.0f);
+	s = std::min(std::max(s, 0.0f), 1.0f);
+	v = std::min(std::max(v, 0.0f), 1.0f);
+	const float c = v * s, x = c * (1.0f - std::fabs(std::fmod(h / 60.0f, 2.0f) - 1.0f)), m = v - c;
+	float r = 0, g = 0, b = 0;
+	switch ((int)(h / 60.0f))
+	{
+	case 0: r = c; g = x; break;
+	case 1: r = x; g = c; break;
+	case 2: g = c; b = x; break;
+	case 3: g = x; b = c; break;
+	case 4: r = x; b = c; break;
+	default: r = c; b = x; break;
+	}
+	auto ch = [&](float f) { return (Uint32)std::min(std::max((f + m) * 255.0f + 0.5f, 0.0f), 255.0f); };
+	return (like & 0xFF000000u) | (ch(r) << 16) | (ch(g) << 8) | ch(b);
+}
+
+/// What the player's colours made: the theme, its metal's ramp, the keys' hue for their legends' light.
+struct CustomState
+{
+	int sig[6] = { -1, -1, -1, -1, -1, -1 };   ///< the options it was built from
+	unsigned version = 0;                      ///< counts the buildings: what caches of it are keyed by
+	Theme theme = CRUISER;
+	Uint32 ramp[7] = {};
+	float keyH = 0.0f, keyV = 0.0f;
+};
+CustomState custom;
+std::mutex customMutex;
+
+/// A colour of the keys' group moved to the player's key colour k (the Cruiser's face colour is where k lands).
+Uint32 keyTone(Uint32 c, const Hsv &k)
+{
+	static const Hsv ref = toHsv(HULL_DARK[4]), top = toHsv(HULL_DARK[6]);
+	const Hsv a = toHsv(c);
+	float v;
+	if (a.v <= ref.v)
+	{
+		v = k.v * a.v / ref.v;
+	}
+	else
+	{
+		// above the face the highlights climb toward white, by as much as is left
+		const float ceil = k.v + (1.0f - k.v) * 0.6f;
+		v = k.v + std::min((a.v - ref.v) / (top.v - ref.v), 1.3f) * (ceil - k.v);
+	}
+	const float s = k.s * std::min(std::max(a.s / ref.s, 0.35f), 1.25f);
+	return fromHsv(k.h, s, v, c);
+}
+
+/// A colour of the background's group moved to the player's background colour b (the Cruiser's steel is where b lands).
+Uint32 backTone(Uint32 c, const Hsv &b)
+{
+	static const Hsv ref = toHsv(CRUISER.steel);
+	const Hsv a = toHsv(c);
+	const float s = b.s * std::min(std::max(a.s / ref.s, 0.35f), 1.25f);
+	return fromHsv(b.h, s, a.v * b.v / ref.v, c);
+}
+
+/// Builds the theme again if an option it comes from changed. The first call after a change must come from the main
+/// thread, before the render threads read the theme (themeKey, metalCached and the drawing calls do).
+void customRefresh()
+{
+	auto in = [](int v, int hi) { return std::min(std::max(v, 0), hi); };
+	const int sig[6] = { in(Options::oxceHdCustomKeyHue, 359), in(Options::oxceHdCustomKeySat, 100), in(Options::oxceHdCustomKeyVal, 100),
+		in(Options::oxceHdCustomBackHue, 359), in(Options::oxceHdCustomBackSat, 100), in(Options::oxceHdCustomBackVal, 100) };
+	if (std::equal(sig, sig + 6, custom.sig))
+	{
+		return;
+	}
+	std::lock_guard<std::mutex> lock(customMutex);
+	if (std::equal(sig, sig + 6, custom.sig))
+	{
+		return;
+	}
+	const Hsv k = { (float)sig[0], (float)sig[1] / 100.0f, (float)sig[2] / 100.0f }, b = { (float)sig[3], (float)sig[4] / 100.0f, (float)sig[5] / 100.0f };
+	const Theme &base = CRUISER;
+	Theme t = base;
+	for (int i = 0; i < 7; ++i) custom.ramp[i] = keyTone(HULL_DARK[i], k) | 0xFF000000u;
+	t.ramp = custom.ramp;
+	t.tileTop = keyTone(base.tileTop, k); t.tileBottom = keyTone(base.tileBottom, k); t.tileEdge = keyTone(base.tileEdge, k);
+	t.hoverTop = keyTone(base.hoverTop, k); t.hoverBottom = keyTone(base.hoverBottom, k);
+	t.sheenTop = keyTone(base.sheenTop, k); t.sheenBottom = keyTone(base.sheenBottom, k);
+	t.accent = keyTone(base.accent, k); t.litTop = keyTone(base.litTop, k); t.litBottom = keyTone(base.litBottom, k);
+	t.icon = keyTone(base.icon, k); t.iconHover = keyTone(base.iconHover, k); t.iconLit = keyTone(base.iconLit, k);
+	t.panelTop = backTone(base.panelTop, b); t.panelBottom = backTone(base.panelBottom, b); t.panelEdge = backTone(base.panelEdge, b);
+	t.wellTop = backTone(base.wellTop, b); t.wellBottom = backTone(base.wellBottom, b); t.wellEdge = backTone(base.wellEdge, b);
+	t.cardTop = backTone(base.cardTop, b); t.cardBottom = backTone(base.cardBottom, b); t.cardEdge = backTone(base.cardEdge, b);
+	t.rankFill = backTone(base.rankFill, b);
+	t.steel = backTone(base.steel, b); t.wellBase = backTone(base.wellBase, b); t.cardBase = backTone(base.cardBase, b);
+	t.lipLight = backTone(base.lipLight, b);
+	t.grooveTop = backTone(base.grooveTop, b); t.grooveBottom = backTone(base.grooveBottom, b);
+	custom.theme = t;
+	custom.keyH = k.h;
+	custom.keyV = k.v;
+	std::copy(sig, sig + 6, custom.sig);
+	++custom.version;
+}
+
 const Theme &theme()
 {
 	switch (Options::oxceHdBattleHudColor)
 	{
+	case HdBattleHud::COLOR_CUSTOM: customRefresh(); return custom.theme;
 	case 1: return GOLD;
 	case 2: return CONSUL;
 	case 3: return CRUISER;
@@ -922,11 +1049,12 @@ std::unordered_map<Uint64, std::vector<Uint32>> metalCache;
 
 std::vector<Uint32> *metalCached(Uint64 key, int k)
 {
-	if (k != metalScale || Options::oxceHdBattleHudColor != metalTheme)
+	const int themeNow = HdBattleHud::themeKey();
+	if (k != metalScale || themeNow != metalTheme)
 	{
 		metalCache.clear();
 		metalScale = k;
-		metalTheme = Options::oxceHdBattleHudColor;
+		metalTheme = themeNow;
 	}
 	auto found = metalCache.find(key);
 	return found != metalCache.end() ? &found->second : nullptr;
@@ -957,6 +1085,8 @@ struct KeyLook
 /// The warm light of a pirate key that is on, and of the glow round it.
 const Uint32 EMBER = 0xFFFFB04Au;
 
+const KeyLook &customKeyLook();
+
 const KeyLook &keyLook()
 {
 	static const KeyLook DARK = { true, 0xFF121A26u, 0xFF05080Cu, 0xFFDCE6F2u, 0xFFE6A23Cu, 0xFFE6A23Cu, false, 0, 0, false, nullptr };
@@ -974,6 +1104,7 @@ const KeyLook &keyLook()
 	static const KeyLook BRONZE_KEYS = { false, 0, 0, 0, 0xFF80F0D0u, 0xFFB8F0DCu, true, 0xFF40F0C0u, 0xFF60FFF0u, false, "UI/battle_keys_bronze/" };
 	switch (Options::oxceHdBattleHudColor)
 	{
+	case HdBattleHud::COLOR_CUSTOM: return customKeyLook();
 	case 1: return BRASS_KEYS;
 	case 2: return CONSUL_KEYS;
 	case 3: return CRUISER_KEYS;
@@ -984,6 +1115,23 @@ const KeyLook &keyLook()
 	case 8: return BRONZE_KEYS;
 	default: return DARK;
 	}
+}
+
+/// The keys of the player's own colour: the legend cut dark into the metal, or - for keys too dark for that to show -
+/// lit in a window of dark glass; the lights are of the keys' hue.
+const KeyLook &customKeyLook()
+{
+	static KeyLook look = { false, 0, 0, 0, 0, 0, false, 0, 0, false, nullptr };
+	static unsigned built = 0;
+	customRefresh();
+	if (built != custom.version)
+	{
+		const float h = custom.keyH;
+		look = KeyLook{ custom.keyV < 0.30f, fromHsv(h, 0.55f, 0.10f), fromHsv(h, 0.6f, 0.04f), fromHsv(h, 0.10f, 0.96f),
+			fromHsv(h, 0.45f, 0.97f), fromHsv(h, 0.12f, 0.88f), false, 0, 0, false, nullptr };
+		built = custom.version;
+	}
+	return look;
 }
 
 /// Are the pictograms the pirate panel's drawn figures?
@@ -1761,6 +1909,24 @@ void HdBattleHud::drawButton(const void *key, int x, int y, int w, int h, Icon i
 	if (hotkey && a.over) drawBadge(x, y, w, h, keyLabel(hotkey), std::min(std::max((a.hoverTime - 0.45f) / 0.2f, 0.0f), 1.0f));
 }
 
+void HdBattleHud::drawSample(int x, int y, int w, int h)
+{
+	const int k = HdUi::scale();
+	if (k <= 0 || w < 40 || h < 20) return;
+	HdUi &ui = HdUi::instance();
+	// a piece of the panel's steel with three keys on it, one of them on: the colours as they will be on the battle panel
+	const int pw = w * k, ph = h * k;
+	ui.drawImage(panelMetal(pw, ph, k).data(), pw, ph, x * k, y * k);
+	ui.notePanel(x, y, w, h);
+	static const char sampleKeys[3] = { 0, 0, 0 };
+	const int kw = 23, kh = 22, gap = (w - 3 * kw) / 4, ky = y + (h - kh) / 2;
+	for (int i = 0; i < 3; ++i)
+	{
+		const Icon icon = i == 0 ? ICON_OPTIONS : i == 1 ? ICON_INVENTORY : ICON_KNEEL;
+		drawButton(&sampleKeys[i], x + gap + i * (kw + gap), ky, kw, kh, icon, i == 2, false, 0, nullptr, nullptr);
+	}
+}
+
 bool HdBattleHud::grooved(const Surface *bar)
 {
 	return on() && theme().plaques && std::find(grooves.begin(), grooves.end(), bar) != grooves.end();
@@ -1774,6 +1940,16 @@ bool HdBattleHud::counter(const Surface *number, Uint32 &plate, Uint32 &edge)
 	plate = 0xF0140C06u;
 	edge = theme().ramp[3];
 	return true;
+}
+
+int HdBattleHud::themeKey()
+{
+	if (Options::oxceHdBattleHudColor == COLOR_CUSTOM)
+	{
+		customRefresh();
+		return 1000 + (int)(custom.version & 0xFFFFFF);
+	}
+	return Options::oxceHdBattleHudColor;
 }
 
 Uint32 HdBattleHud::metalShade(float s)

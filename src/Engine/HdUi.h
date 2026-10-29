@@ -112,6 +112,10 @@ public:
 	/// Draws an 8-bit surface (index 0 transparent) at base position (x, y): nearest or smoothed. The colours
 	/// are the surface's own palette (what an SDL blit of it onto the screen shows), the screen's when it has none.
 	void drawSurface(const Surface *surface, int x, int y, bool smooth);
+	/// drawSurface for a button that is a piece of a window's picture (the inventory's keys, XP-000378), recast in the
+	/// metal of the theme (oxceHdWindowTheme): the picture's tones, dark to light, become the metal's shades, so the
+	/// button keeps its relief and its pictogram and loses the picture's copper.
+	void drawSurfaceThemed(const Surface *surface, int x, int y, bool smooth);
 	/// Draws an 8-bit surface scaled to the base rectangle (x, y, w, h), smoothed first (mode 2) and averaged
 	/// down: a sprite shown smaller than it is drawn (the rank badge in a list row). Cached by content and size.
 	void drawSurfaceFit(const Surface *surface, int x, int y, int w, int h);
@@ -147,7 +151,9 @@ public:
 	/// The theme's metal at the ramp step v of a widget (1 the light end ... 5 the dark end, where the palette's
 	/// pal[color + v * mul] was), 0xAARRGGBB.
 	static Uint32 themeShade(int v);
-	/// The face of a themed label or arrow: the metal's light end.
+	/// Are the letters on a themed button's cap (not pressed) dark - the metal is light - or light (the metal is dark)?
+	static bool themeInk();
+	/// The face of a themed label or arrow on a cap that is not pressed: the metal's darkest or its light end (themeInk).
 	static Uint32 themeFace();
 	/// Draws the next labels in the theme's colours (lit = on a pressed button: dark letters on the light metal)
 	/// instead of the palette's, until cleared.
@@ -356,6 +362,10 @@ private:
 	size_t _cropMissesArts = 0;       ///< the pack size they were searched in
 	std::unordered_map<GlyphKey, Glyph, GlyphKeyHash> _glyphs;
 	std::unordered_map<Uint64, HdFrame> _fitted; ///< drawSurfaceFit: by content, palette, size and scale
+	bool _recolor = false;                       ///< drawSurface casts what it draws in the theme's metal (drawSurfaceThemed)
+	std::unordered_map<Uint64, HdFrame> _recolored; ///< the pieces drawSurfaceThemed drew, by content and theme
+	/// Draws a frame placed at world (ox, oy) clipped to `clip`: as it is, or - while _recolor - recast in the metal.
+	void drawPlaced(SDL_Surface *dest, const HdFrame &frame, int ox, int oy, const SDL_Rect &clip);
 	struct Cover
 	{
 		int x = 0, y = 0, w = 0, h = 0;

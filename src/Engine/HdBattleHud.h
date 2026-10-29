@@ -71,6 +71,14 @@ public:
 	/// A shade 0..1 (dark to light) of the panel's metal for the option's look (brass, hull steel, silver...):
 	/// the windows' metal frames (HdScreens) are cast in it.
 	static Uint32 metalShade(float s);
+	/// The value of oxceHdBattleHudColor that is the player's own colour (the window "Own colour").
+	static const int COLOR_CUSTOM = 9;
+	/// What the panel's colours are for the caches of what is drawn with them: the option's value, and for the own
+	/// colour a number that changes with every change of its six options. Call from the main thread.
+	static int themeKey();
+	/// A sample of the panel in the current colours (the window "Own colour"): a piece of its steel with three keys, one on,
+	/// in the base rectangle (x, y, w, h).
+	static void drawSample(int x, int y, int w, int h);
 };
 
 /**

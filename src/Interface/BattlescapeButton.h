@@ -41,6 +41,7 @@ protected:
 	Surface *_altSurface;
 	Uint8 _hdIcon;
 	bool _hdLit;
+	bool _hdTheme;
 public:
 	/// Creates a new image button with the specified size and position.
 	BattlescapeButton(int width, int height, int x = 0, int y = 0);
@@ -72,6 +73,9 @@ public:
 	void setHdIcon(int icon) { _hdIcon = (Uint8)icon; }
 	/// HD interface, modern skin: shows the pictogram lit, for a state the classic panel paints into the button's own pixels (the UFO kneel frame).
 	void setHdLit(bool lit) { _hdLit = lit; }
+	/// HD interface, modern skin (oxceHdWindowTheme, XP-000378): the button is a piece of its window's picture (copper keys),
+	/// drawn in the metal of the battle panel's colour in place of the picture's own colours. Picture only.
+	void setHdTheme(bool on) { _hdTheme = on; }
 	/// Alters both versions of the button's X pos.
 	void setX(int x) override;
 	/// Alters both versions of the button's Y pos.

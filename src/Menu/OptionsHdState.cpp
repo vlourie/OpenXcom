@@ -37,6 +37,7 @@
 #include "AdultChoiceState.h"
 #include "HdLabPasswordState.h"
 #include "OptionDetailState.h"
+#include "OptionsCustomColorState.h"
 
 namespace OpenXcom
 {
@@ -67,7 +68,8 @@ static const std::string LAB_CATEGORY = "STR_HD_LAB";
 static const std::string AI_CATEGORY = "STR_HD_AI";
 /// Row markers in _rows: ROW_LAB asks for the lab's password, ROW_LAB_LOCK closes the lab again, ROW_BETTERAI opens the
 /// BetterAI screen, ROW_BACK goes back from it.
-static const int ROW_NONE = -1, ROW_ART = -2, ROW_LAB = -3, ROW_LAB_LOCK = -4, ROW_BETTERAI = -5, ROW_BACK = -6;
+/// ROW_CUSTOM opens the window of the player's own colour of the battle panel (under that colour's row).
+static const int ROW_NONE = -1, ROW_ART = -2, ROW_LAB = -3, ROW_LAB_LOCK = -4, ROW_BETTERAI = -5, ROW_BACK = -6, ROW_CUSTOM = -7;
 
 /**
  * Initializes all the elements in the HD Options window.
@@ -364,6 +366,15 @@ void OptionsHdState::updateList()
 			// grey out options a mod, the gentle mode or the battle in progress fixes
 			addSettingRow((int)g, (int)i, gentle ? std::string(tr(info.description())) + " " + std::string(tr("STR_GENTLE_LOCKED")) : std::string(tr(info.description())),
 				gentle || battleLocks(info) || dependsOff(info) || fixeduserOptions.find(info.id()) != fixeduserOptions.end());
+			if (info.type() == OPTION_INT && info.asInt() == &Options::oxceHdBattleHudColor)
+			{
+				// under the panel's colour: the window where the player makes one of his own
+				addRow(ROW_CUSTOM, 0, std::string(tr("STR_HD_CUSTOM_COLOR")) + " >", "");
+				if (dependsOff(info))
+				{
+					_lstOptions->setRowColor(_lstOptions->getLastRowIndex(), _greyedOutColor);
+				}
+			}
 		}
 		if (lab)
 		{
@@ -658,6 +669,12 @@ void OptionsHdState::changeSetting(size_t sel, Uint8 button)
 		updateList();                                 // the HD sprites row shows the same option
 		return;
 	}
+	if (row.group == ROW_CUSTOM)
+	{
+		// the list is filled again when the window closes (init): the panel's colour row shows the own one
+		_game->pushState(new OptionsCustomColorState(_origin));
+		return;
+	}
 	if (row.group == ROW_LAB)
 	{
 		// the list is filled again when the tab comes back on top (init)
@@ -784,7 +801,7 @@ void OptionsHdState::changeSetting(size_t sel, Uint8 button)
 		else if (i == &Options::oxceHdBattleHudColor)
 		{
 			min = 0;                                  // 0 dark slate, 1 gold as the original, 2 Consul's hull, 3 Cruiser's, 4 ship's brass,
-			max = 8;                                  // 5 starship, 6 niello silver, 7 black iron and bone, 8 bronze of the deep
+			max = 9;                                  // 5 starship, 6 niello silver, 7 black iron and bone, 8 bronze of the deep, 9 the player's own
 		}
 		else if (i == &Options::oxceHdCraftLaunch)
 		{
@@ -886,6 +903,10 @@ std::string OptionsHdState::rowDescription(size_t sel) const
 		{
 			desc = tr("STR_BETTER_AI_DESC");
 		}
+		else if (row.group == ROW_CUSTOM)
+		{
+			desc = tr("STR_HD_CUSTOM_COLOR_DESC");
+		}
 		else if (row.group == ROW_ART)
 		{
 			desc = tr("STR_HD_ART_VERSION_DESC");
@@ -921,7 +942,7 @@ void OptionsHdState::showDetail(size_t sel)
 	{
 		return;
 	}
-	if (row.group == ROW_LAB || row.group == ROW_LAB_LOCK || row.group == ROW_BETTERAI || row.group == ROW_BACK)
+	if (row.group == ROW_LAB || row.group == ROW_LAB_LOCK || row.group == ROW_BETTERAI || row.group == ROW_BACK || row.group == ROW_CUSTOM)
 	{
 		changeSetting(sel, SDL_BUTTON_LEFT);
 		return;

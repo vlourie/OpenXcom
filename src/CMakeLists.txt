@@ -330,6 +330,7 @@ set ( menu_src
   Menu/OptionsDefaultsState.cpp
   Menu/OptionsFoldersState.cpp
   Menu/OptionDetailState.cpp
+  Menu/OptionsCustomColorState.cpp
   Menu/HdLabPasswordState.cpp
   Menu/OptionsHdState.cpp
   Menu/OptionsGeoscapeState.cpp
