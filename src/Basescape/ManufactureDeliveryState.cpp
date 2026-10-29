@@ -32,6 +32,7 @@
 #include "../Interface/TextList.h"
 #include "../Interface/Window.h"
 #include "../Savegame/Base.h"
+#include "../Savegame/ItemContainer.h"
 #include "../Mod/RuleItem.h"
 #include "../Mod/RuleManufacture.h"
 #include "../Savegame/Production.h"
@@ -329,7 +330,9 @@ ManufactureLootPartsState::ManufactureLootPartsState(Base *to, const Items &item
 	// Create objects
 	_window = new Window(this, 240, 150, 40, 25, POPUP_BOTH);
 	_txtTitle = new Text(224, 24, 48, 31);
-	_lstParts = new TextList(224, 78, 47, 58);
+	// XP-000374: the head of the column with what the base already has stands over the list
+	_txtOnBase = new Text(44, 9, 156, 57);
+	_lstParts = new TextList(224, 69, 47, 67);
 	_txtTotal = new Text(224, 9, 48, 138);
 	_btnOk = new TextButton(104, 16, 48, 153);
 	_btnCancel = new TextButton(104, 16, 168, 153);
@@ -339,6 +342,7 @@ ManufactureLootPartsState::ManufactureLootPartsState(Base *to, const Items &item
 
 	add(_window, "window", "manufactureInfo");
 	add(_txtTitle, "text", "manufactureInfo");
+	add(_txtOnBase, "text", "manufactureInfo");
 	add(_lstParts, "list", "manufactureInfo");
 	add(_txtTotal, "text", "manufactureInfo");
 	add(_btnOk, "button2", "manufactureInfo");
@@ -356,8 +360,12 @@ ManufactureLootPartsState::ManufactureLootPartsState(Base *to, const Items &item
 
 	_txtTotal->setAlign(ALIGN_CENTER);
 
+	_txtOnBase->setText(tr("STR_DELIVERY_ON_BASE"));
+
 	// the one by one arrows as on the summary list of the finished order: left - less, right - more; the right button goes to the end
-	_lstParts->setColumns(2, 150, 36);
+	// name, how many of it the base already has in its stores (XP-000374, read only), picked/most; the arrows stay where they were
+	_lstParts->setColumns(3, 100, 40, 46);
+	_lstParts->setWordWrap(true);
 	_lstParts->setBackground(_window);
 	_lstParts->setSelectable(true);
 	_lstParts->setMargin(8);
@@ -366,7 +374,7 @@ ManufactureLootPartsState::ManufactureLootPartsState(Base *to, const Items &item
 	_lstParts->onRightArrowClick((ActionHandler)&ManufactureLootPartsState::rightArrowClick);
 	for (size_t i = 0; i < _items.size(); ++i)
 	{
-		_lstParts->addRow(2, tr(_items[i].first->getType()).c_str(), "");
+		_lstParts->addRow(3, tr(_items[i].first->getType()).c_str(), std::to_string(_to->getStorageItems()->getItem(_items[i].first)).c_str(), "");
 		refresh(i);
 	}
 
@@ -391,7 +399,7 @@ void ManufactureLootPartsState::refresh(size_t row)
 {
 	if (row < _items.size())
 	{
-		_lstParts->setCellText(row, 1, std::to_string(_amount[row]) + "/" + std::to_string(_items[row].second));
+		_lstParts->setCellText(row, 2, std::to_string(_amount[row]) + "/" + std::to_string(_items[row].second));
 	}
 	int total = 0;
 	for (int n : _amount)

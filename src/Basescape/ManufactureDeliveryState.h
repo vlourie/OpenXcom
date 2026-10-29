@@ -104,7 +104,7 @@ private:
 	std::function<void(const Items&)> _onOk;
 	bool _allowEmpty;          ///< OK with nothing picked still calls `onOk` (the plan of a workshop order: that takes the base out of it)
 	Window *_window;
-	Text *_txtTitle, *_txtTotal;
+	Text *_txtTitle, *_txtTotal, *_txtOnBase;
 	TextList *_lstParts;
 	TextButton *_btnOk, *_btnCancel;
 	/// Writes the row's number and the total.

@@ -455,6 +455,7 @@ en-US:
   STR_LOOT_LEFT: "Loot in the stores: {0}"
   STR_LOOT_SENT: "Loot shipped: {0}"
   STR_LOOT_PARTS_TOTAL: "Pieces to send: {0}"
+  STR_DELIVERY_ON_BASE: "At base"
   STR_DELIVERY_WILL_GO: "Will go: {0} -> {1}"
   STR_DELIVERY_NONE: "Nothing goes to {0}"
   STR_DELIVERY_ITEM_QTY: "{0} x{1}"
