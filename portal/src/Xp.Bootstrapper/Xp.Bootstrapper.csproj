@@ -5,6 +5,10 @@
     <!-- the setup the site gives a new player: the launcher's icon, not the blank one of a plain exe -->
     <ApplicationIcon>..\Xp.Launcher\Assets\app.ico</ApplicationIcon>
     <RootNamespace>Xp.Bootstrapper</RootNamespace>
+    <!-- the site gives it out as XPiratezHD-Setup-<launcher version>.exe: the same number in its properties,
+         read from the launcher's project so the version is raised in one place -->
+    <Version>$([System.Text.RegularExpressions.Regex]::Match($([System.IO.File]::ReadAllText('$(MSBuildThisFileDirectory)..\Xp.Launcher\Xp.Launcher.csproj')), '&lt;Version&gt;([^&lt;]+)&lt;/Version&gt;').Groups[1].Value)</Version>
+    <AssemblyTitle>X-Piratez HD Setup</AssemblyTitle>
     <PublishAot>true</PublishAot>
     <OptimizationPreference>Size</OptimizationPreference>
     <InvariantGlobalization>true</InvariantGlobalization>

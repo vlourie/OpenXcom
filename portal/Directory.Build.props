@@ -8,5 +8,9 @@
     <Deterministic>true</Deterministic>
     <InvariantGlobalization>false</InvariantGlobalization>
     <Version>0.1.0</Version>
+    <!-- Properties > Details of the exe a player downloads: without these Windows shows the assembly name -->
+    <Company>X-Piratez HD</Company>
+    <Product>X-Piratez HD</Product>
+    <Copyright>© 2026 X-Piratez HD</Copyright>
   </PropertyGroup>
 </Project>

@@ -34,5 +34,14 @@ foreach ($proj in 'src\Xp.Launcher', 'src\Xp.Bootstrapper') {
     dotnet publish (Join-Path $PSScriptRoot $proj) -c Release -r win-x64 -o $Out @extra
     if ($LASTEXITCODE -ne 0) { throw "сборка $proj упала" }
 }
+# свойства файла видит игрок (Свойства - Подробно): название, компания и версия установщика = версии лаунчера
+$lv = (Get-Item -LiteralPath (Join-Path $Out 'XPiratezLauncher.exe')).VersionInfo
+foreach ($exe in 'XPiratezLauncher.exe', 'xp-bootstrap.exe') {
+    $vi = (Get-Item -LiteralPath (Join-Path $Out $exe)).VersionInfo
+    "{0}: {1} | {2} | {3}" -f $exe, $vi.FileDescription, $vi.CompanyName, $vi.FileVersion
+    if ($vi.FileDescription -notlike 'X-Piratez HD*' -or $vi.CompanyName -ne 'X-Piratez HD' -or $vi.FileVersion -ne $lv.FileVersion) {
+        throw "у $exe чужие свойства файла: описание '$($vi.FileDescription)', компания '$($vi.CompanyName)', версия $($vi.FileVersion) (лаунчер $($lv.FileVersion))"
+    }
+}
 Get-ChildItem $Out -File | Where-Object { $_.Extension -in '.exe', '.dll' } |
     Format-Table Name, @{ n = 'MB'; e = { [math]::Round($_.Length / 1MB, 1) } } -AutoSize
