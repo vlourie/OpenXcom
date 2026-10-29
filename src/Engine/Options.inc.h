@@ -203,6 +203,8 @@ OPT int oxceHdMode;
 OPT bool oxceHdLight;
 // HD render: the ground pattern - a floor with pack variants (<i>.v1.png ...) is laid over the map as patches
 OPT bool oxceHdGroundVariants;
+// HD render: a soft shadow on the floor under every visible unit standing on something (HD modes only)
+OPT bool oxceHdUnitShadow;
 // HD lab (Engine/HdLab.h): the battle map turned by this many quarters (0..3), only while the lab is open
 OPT int oxceHdMapRotation;
 // HD lab: the key a correct lab password leaves (empty: the lab is closed)
