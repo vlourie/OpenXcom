@@ -188,6 +188,9 @@ OPT bool oxceHdUiSmooth;
 OPT int oxceHdUi;
 /// HD interface: the widget skin (0 classic shapes, 1 ramps with gradients, 2 dark panels, 3 flat).
 OPT int oxceHdUiSkin;
+// HD interface, modern skin (XP-000369): the windows' buttons, sliders, scroll bars and arrows in the metal of the battle panel's theme
+// (oxceHdBattleHudColor) instead of the screen palette's ramp - the same on every screen. Off (default) = as it was; picture only
+OPT bool oxceHdWindowTheme;
 // HD interface, modern skin: the battle's button panel drawn as tiles with vector pictograms (HdBattleHud); off = the mod's picture, smoothed
 OPT bool oxceHdBattleHud;
 /// HD interface: 0 the game's own font, smoothed (classic colours, widths and lines); 1 TrueType (hd/UI/Font*.ttf).

@@ -577,6 +577,7 @@ void createAdvancedOptionsOXCE()
 	// HD interface (see Engine/HdUi.h): the widgets drawn again in the world layer at the display's resolution
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdUi", &oxceHdUi, 0, "STR_HD_UI", "STR_HD_INTERFACE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdUiSkin", &oxceHdUiSkin, 2, "STR_HD_UI_SKIN", "STR_HD_INTERFACE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdWindowTheme", &oxceHdWindowTheme, false, "STR_HD_WINDOW_THEME", "STR_HD_INTERFACE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdBattleHud", &oxceHdBattleHud, true, "STR_HD_BATTLE_HUD", "STR_HD_BATTLE_UI"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdBattleHudColor", &oxceHdBattleHudColor, 0, "STR_HD_BATTLE_HUD_COLOR", "STR_HD_BATTLE_UI"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdUiFont", &oxceHdUiFont, 0, "STR_HD_UI_FONT", "STR_HD_INTERFACE"));

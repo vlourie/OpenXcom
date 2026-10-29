@@ -17,6 +17,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "HdUi.h"
+#include "HdBattleHud.h"
 #include <algorithm>
 #include <cctype>
 #include <climits>
@@ -178,6 +179,35 @@ bool HdUi::skin()
 int HdUi::style()
 {
 	return std::min(std::max(Options::oxceHdUiSkin, 1), 3);
+}
+
+bool HdUi::windowTheme()
+{
+	return Options::oxceHdWindowTheme && skin();
+}
+
+Uint32 HdUi::themeShade(int v)
+{
+	// the ramp's steps 1..5 (light to dark) as shades of the theme's metal: the light end of a lit button stays metal,
+	// short of the pale top of the ramp
+	static const float SHADE[] = { 0.97f, 0.80f, 0.74f, 0.40f, 0.29f, 0.15f };
+	return HdBattleHud::metalShade(SHADE[std::min(std::max(v, 0), 5)]);
+}
+
+Uint32 HdUi::themeFace()
+{
+	return HdBattleHud::metalShade(0.97f);
+}
+
+void HdUi::setLabelTheme(bool on, bool lit)
+{
+	_labelTheme = on;
+	if (!on) return;
+	// a lit (pressed) button: dark letters on the light metal, a light shadow; any other: the metal's light end on the
+	// dark one, a dark shadow
+	_labelFace = lit ? HdBattleHud::metalShade(0.0f) : themeFace();
+	const Uint32 s = HdBattleHud::metalShade(lit ? 0.9f : 0.0f);
+	_labelShadow = SDL_Color{ (Uint8)(s >> 16), (Uint8)(s >> 8), (Uint8)s, 255 };
 }
 
 namespace
@@ -1099,7 +1129,8 @@ void HdUi::drawButton(int x, int y, int w, int h, int color, int mul, bool press
 	if (colors) pal = colors;
 	// the button's face hides whatever is under it: its label needs no outline even on a picture
 	notePanel(x, y, w, h);
-	auto c = [&](int v) { return rgba(pal[(Uint8)(color + v * mul)]); };
+	const bool themed = windowTheme();
+	auto c = [&](int v) { return themed ? themeShade(v) : rgba(pal[(Uint8)(color + v * mul)]); };
 	const float x0 = (float)x * k, y0 = (float)y * k, x1 = (float)(x + w) * k, y1 = (float)(y + h) * k;
 	const float r = 1.5f * k, edge = std::max(1.0f, k * 0.5f);
 	const bool over = !pressed && hover(x, y, w, h);
@@ -1183,7 +1214,8 @@ void HdUi::drawSlider(int x, int y, int w, int h, float t, int color, int mul, b
 	const SDL_Color *pal;
 	if (!target(dest, k, pal) || w <= 0 || h <= 0) return;
 	if (colors) pal = colors;
-	auto c = [&](int v) { return rgba(pal[(Uint8)(color + v * mul)]); };
+	const bool themed = windowTheme();
+	auto c = [&](int v) { return themed ? themeShade(v) : rgba(pal[(Uint8)(color + v * mul)]); };
 	t = std::min(std::max(t, 0.0f), 1.0f);
 	const float cy = ((float)y + h * 0.5f) * k;
 	const float kr = std::min(0.32f * h, 5.0f) * k;                 // the knob's radius
@@ -1222,7 +1254,7 @@ void HdUi::drawScrollBar(int x, int y, int w, int h, int ty0, int ty1, int color
 	{
 		const float a = y0 + (float)ty0 * k, b = std::min(y1, y0 + (float)ty1 * k);
 		const bool lit = pressed || hover(x, y, w, h);
-		const Uint32 c = rgba(pal[(Uint8)(color + 2)]);
+		const Uint32 c = windowTheme() ? themeShade(2) : rgba(pal[(Uint8)(color + 2)]);
 		fillRoundRect(cx - thumbHw, a, cx + thumbHw, b, thumbHw, scaled(c, lit ? 1.3f : 1.1f), scaled(c, lit ? 1.0f : 0.8f));
 		strokeRoundRect(cx - thumbHw, a, cx + thumbHw, b, thumbHw, std::max(1.0f, 0.35f * k), 0x40FFFFFFu);
 	}
@@ -1239,8 +1271,9 @@ void HdUi::drawChevron(int x, int y, int w, int h, int color, const SDL_Color *c
 	const float cx = ((float)x + w * 0.5f) * k, cy = ((float)y + h * 0.5f) * k;
 	const float hw = std::min(w * 0.32f, 3.5f) * k, hh = std::min(h * 0.28f, 2.2f) * k;
 	const float off = std::max(1.0f, 0.5f * k);
-	fillTriangle(cx - hw + off, cy - hh + off, cx + hw + off, cy - hh + off, cx + off, cy + hh + off, (rgba(pal[(Uint8)(color + 5)]) & 0x00FFFFFFu) | 0xA0000000u);
-	fillTriangle(cx - hw, cy - hh, cx + hw, cy - hh, cx, cy + hh, rgba(pal[(Uint8)(color + 1)]));
+	const bool themed = windowTheme();
+	fillTriangle(cx - hw + off, cy - hh + off, cx + hw + off, cy - hh + off, cx + off, cy + hh + off, ((themed ? themeShade(5) : rgba(pal[(Uint8)(color + 5)])) & 0x00FFFFFFu) | 0xA0000000u);
+	fillTriangle(cx - hw, cy - hh, cx + hw, cy - hh, cx, cy + hh, themed ? themeFace() : rgba(pal[(Uint8)(color + 1)]));
 }
 
 void HdUi::drawPanelFrame(int x, int y, int w, int h, int color, int mul, int inset, bool thin, const SDL_Color *colors)
@@ -1726,8 +1759,9 @@ void HdUi::drawTtfLine(const std::vector<TextRun> &runs, int originX, int origin
 				const int hi = std::max({ (int)c.r, (int)c.g, (int)c.b }), lo = std::min({ (int)c.r, (int)c.g, (int)c.b });
 				if (faceV == 1 && lo >= 176 && hi - lo >= 24) faceV = 2;
 			}
-			const Uint32 face = rgba(pal[idx(faceV)]);
-			const SDL_Color dark = pal[idx(shadowV)];
+			// a themed button's label (setLabelTheme) has the theme's colours in place of the palette's
+			const Uint32 face = _labelTheme ? _labelFace : rgba(pal[idx(faceV)]);
+			const SDL_Color dark = _labelTheme ? _labelShadow : pal[idx(shadowV)];
 			// on a busy picture the shade is taken down to two fifths: an outline the colour of the ramp's
 			// shadow is barely darker than a light photograph
 			const SDL_Color edge = { (Uint8)(dark.r * 2 / 5), (Uint8)(dark.g * 2 / 5), (Uint8)(dark.b * 2 / 5), 255 };

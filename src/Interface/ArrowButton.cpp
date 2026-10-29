@@ -109,7 +109,7 @@ void ArrowButton::hdMirror()
 	const float cx = (getX() + w * 0.5f) * k, cy = (getY() + h * 0.5f) * k;
 	const bool big = _shape == ARROW_BIG_UP || _shape == ARROW_BIG_DOWN;
 	const float aw = (big ? 0.3f : 0.34f) * std::min(w, h) * k, ah = (big ? 0.5f : 0.55f) * std::min(w, h) * k;
-	const Uint32 c = HdUi::rgba(pal[(Uint8)(_color + 1)]);
+	const Uint32 c = HdUi::windowTheme() ? HdUi::themeFace() : HdUi::rgba(pal[(Uint8)(_color + 1)]);
 	switch (_shape)
 	{
 	case ARROW_BIG_UP: case ARROW_SMALL_UP:

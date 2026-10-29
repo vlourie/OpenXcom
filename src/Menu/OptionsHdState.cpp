@@ -58,7 +58,7 @@ static const struct { const char *category; int tab; } HD_CATEGORIES[] = {
 /// category (the battle ones to "Graphics of the battle"). Options of the categories ART, GENTLE and GRAPHICS are there already.
 static const char *const HD_GRAPHICS_OPTIONS[] = {
 	"oxceHdBlastFall", "oxceHdKillCam", "oxceHdHiddenMap", "oxceHdAnimHidden", "oxceHdBackdrop", "oxceHdEnemyNumber",
-	"oxceHdUi", "oxceHdUiSkin", "oxceHdUiFont", "oxceHdPictures", "oxceHdUiSmooth" };
+	"oxceHdUi", "oxceHdUiSkin", "oxceHdWindowTheme", "oxceHdUiFont", "oxceHdPictures", "oxceHdUiSmooth" };
 /// The tab open last: the window opens on it again, until the game is closed.
 static int hdTab = 0;
 /// The category of the HD lab (Engine/HdLab.h): its rows show only once the password was given.
@@ -430,7 +430,7 @@ bool OptionsHdState::dependsOff(const OptionInfo &info) const
 	else if (info.type() == OPTION_BOOL)
 	{
 		const bool *b = info.asBool();
-		if (b == &Options::oxceHdBattleHud) return !skin;
+		if (b == &Options::oxceHdBattleHud || b == &Options::oxceHdWindowTheme) return !skin;
 		if (b == &Options::oxceHdRadarBeam) return Options::oxceHdRadar != 3;
 	}
 	return false;
