@@ -377,3 +377,12 @@
 Правило:  exe игрокам - без упаковщиков: DLL рядом с exe (build_config EnigmaPack по умолчанию false, Copy-ExeDlls кладёт их в стейдж и CopyExeTo). Срабатывание на exe - сначала проверить MpCmdRun -DisableRemediation распакованный и упакованный exe по отдельности, а не подавать в Microsoft и не ждать подписи
 Защита:   build.ps1: Enigma только с EnigmaPack true
 Наступал: 1   Последний: 2026-10-29
+
+## R-531  Установщик с сайта в свойствах файла - xp-bootstrap, версия 0.1.0: у .NET-сборки без AssemblyTitle/Company/Product поля берутся из имени сборки
+Статус:   активны
+Файлы:    portal/Directory.Build.props;portal/src/Xp.Bootstrapper/Xp.Bootstrapper.csproj;portal/src/Xp.Launcher/Xp.Launcher.csproj;portal/publish.ps1
+Симптом:  Игрок скачал XPiratezHD-Setup-0.4.1.exe, в Свойства - Подробно: описание и компания xp-bootstrap, версия 0.1.0.0; у лаунчера описание и компания XPiratezLauncher. Выглядит как непонятная программа, к тому же рядом с ложным срабатыванием Defender.
+Причина:  В csproj не заданы AssemblyTitle (FileDescription), Company, Product, Copyright - SDK подставляет AssemblyName. Version у установщика наследовалась из Directory.Build.props (0.1.0), версию поднимали только в Xp.Launcher.csproj. Свойства файла ни один шаг выпуска не смотрел.
+Правило:  Всё, что качает игрок, проверять глазами игрока: Свойства - Подробно (VersionInfo) у каждого нашего exe. Версия установщика - из Xp.Launcher.csproj, одна точка подъёма.
+Защита:   publish.ps1 после dotnet publish: FileDescription 'X-Piratez HD*', CompanyName 'X-Piratez HD', FileVersion установщика = лаунчера, иначе throw
+Наступал: 1   Последний: 2026-10-29
