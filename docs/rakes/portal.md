@@ -359,3 +359,12 @@
 Правило:  Упал verify с 'missing blob' - сначала Get-MpThreatDetection, а не перевыпуск. Восстановить из карантина, исключение для D:/xp-repo и dist, и подать ложное срабатывание в Microsoft - только Vitali (настройки безопасности). Выпуск лаунчера отдельно: проверять свой канал (verify --channel launcher-stable), остальное довести вручную: pack-releases.ps1, scp, station.ps1 releases
 Защита:   нет
 Наступал: 1   Последний: 2026-10-29
+
+## R-529  Форма ложного срабатывания Microsoft (WDSI) с личной учётной записью: 'An error has occurred', заявка не создаётся
+Статус:   активны
+Файлы:    docs/rakes/portal.md
+Симптом:  29.10 подача Program:Win32/Contebrew.A!ml на microsoft.com/wdsi/filesubmission: капча принята, файл загружен (initupload, upload, commitupload - 200), а submitfile - 500 через 5-6 с; страница пишет 'An error has occurred...', журнал submissionhistory - 'Unable to access your submission history'. Пять попыток: Software developer и Home customer, архив AES-256 и ZipCrypto - одно и то же
+Причина:  Сбой портала WDSI у личных учётных записей Microsoft (MSA, gmail/outlook): то же у других с августа 2026 (Microsoft Q&A 5984841, outlook.com). Не в файле, не в шифровании архива, не в тексте и не в разделе формы
+Правило:  Увидел 500 на submitfile или пустой журнал - не перебирать архивы и разделы (каждая попытка - капча Vitali). Повторить позже; архив делать ZipCrypto (-mem=ZipCrypto, пароль infected) потоком 7z e -so | 7z a -si, чтобы exe не попадал на диск. Портал Defender (Actions & submissions) - только для учётной записи организации с лицензией MDE. Против повторов на каждом выпуске - подпись exe (SignPath Foundation для open source, Azure Trusted Signing)
+Защита:   нет
+Наступал: 1   Последний: 2026-10-29
