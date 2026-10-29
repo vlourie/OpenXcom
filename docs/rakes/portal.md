@@ -350,3 +350,12 @@
 Правило:  Копию манифеста делать от всех полей, а новое поле манифеста проверять по всем местам, где манифест пересобирается (grep 'new ReleaseManifest'). Тест архива обязан идти и с выбранными компонентами
 Защита:   тест в UpdatePackTests с state.Components (план: docs/research/launcher-update-packs-plan-2026-10-29.md, шаг 1)
 Наступал: 1   Последний: 2026-10-29
+
+## R-528  Defender удалил exe игры из хранилища выпусков как Program:Win32/Contebrew.A!ml - verify канала stable падает 'missing blob for openxcom_hd.exe'
+Статус:   активны
+Файлы:    Выпуск/release.ps1;portal/src/Xp.ReleaseBuilder/ReleaseRepo.cs
+Симптом:  29.10 выпуск лаунчера 0.4.1: подпись и публикация прошли, затем 'PROBLEM: missing blob for openxcom_hd.exe', ОШИБКА verify, архив для станции не собран. dist/_stage/openxcom_hd.exe не читается: 'file contains a virus or potentially unwanted software'
+Причина:  Windows Defender эвристикой ML (Program:Win32/Contebrew.A!ml, ThreatID 251873) в 08:03-08:16 поместил в карантин блобы exe выпусков 2026.10.27/27-2/28-2 (32da659b..., d2ad300c...) в D:/xp-repo и копию в dist/_stage; deep verify читает каждый блоб и сам будит проверку. Станция их уже получила раньше - у игроков Defender может сделать то же
+Правило:  Упал verify с 'missing blob' - сначала Get-MpThreatDetection, а не перевыпуск. Восстановить из карантина, исключение для D:/xp-repo и dist, и подать ложное срабатывание в Microsoft - только Vitali (настройки безопасности). Выпуск лаунчера отдельно: проверять свой канал (verify --channel launcher-stable), остальное довести вручную: pack-releases.ps1, scp, station.ps1 releases
+Защита:   нет
+Наступал: 1   Последний: 2026-10-29
