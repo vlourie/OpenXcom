@@ -781,6 +781,20 @@ void Canvas32::blitFrame(const HdFrame &hd, int x, int y)
 	record(cmd);
 }
 
+void Canvas32::blitFrameShaded(const HdFrame &hd, int x, int y, int shade)
+{
+	if (_hdMode == HD_MODE_NEAREST || hd.empty())
+	{
+		return;
+	}
+	blitFrame(*tonedFor(hd, shade), x, y);
+}
+
+const HdFrame *Canvas32::frameOf(SurfaceRaw<const Uint8> src)
+{
+	return _hdMode == HD_MODE_NEAREST ? nullptr : hdFrameFor(src);
+}
+
 void Canvas32::blit(SurfaceRaw<const Uint8> src, int x, int y, int shade, GraphSubset range)
 {
 	if (_cellPart) traceForeign(src.getBuffer(), "clip");

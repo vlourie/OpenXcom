@@ -37,6 +37,7 @@
 #include "../Engine/Game.h"
 #include "../Engine/Screen.h"
 #include "../Engine/HdTest.h"
+#include "../Engine/HdBattleHud.h"
 #include "../Engine/HdBlit.h"
 #include "../Engine/HdCanvas.h"
 #include "../Engine/HdFx.h"
@@ -243,6 +244,75 @@ const HdFrame &fallDiamond(int k)
 	f.generated = true;
 	f.buildSpans();
 	return f;
+}
+
+/**
+ * The part of a floor diamond (the bottom 32x16 of the 32x40 frame, k times) that lies within the cell's coordinates
+ * a in [aLo, aHi] along the map's x (the diamond's top to its right corner) and b in [bLo, bHi] along the map's y (the
+ * top to the left corner), in one colour (XP-000380: the line along the map's edge). The pixels are the diamond's own
+ * (the test of fillDiamond), so the band meets the neighbour cell's without a gap or an overlap.
+ */
+void fillEdgeBand(HdFrame &f, Uint32 rgb, int alpha, int k, double aLo, double aHi, double bLo, double bHi)
+{
+	f.width = 32 * k;
+	f.height = 16 * k;
+	f.pixels.assign((size_t)f.width * f.height, 0);
+	const Uint32 px = ((Uint32)alpha << 24) | (rgb & 0xFFFFFF);
+	for (int y = 0; y < f.height; ++y)
+	{
+		for (int x = 0; x < f.width; ++x)
+		{
+			const double s = (x + 0.5 - 16.0 * k) / (16.0 * k), t = (y + 0.5) / (8.0 * k);
+			const double a = (s + t) / 2, b = (t - s) / 2;
+			if (a > 0 && a < 1 && b > 0 && b < 1 && a >= aLo && a <= aHi && b >= bLo && b <= bHi)
+			{
+				f.pixels[(size_t)y * f.width + x] = px;
+			}
+		}
+	}
+	f.generated = true;
+	f.buildSpans();
+}
+
+/**
+ * One cell's length of a vertical fence one level (24 base pixels) high along a map edge (XP-000382): a frame 16k wide and
+ * 32k tall; the foot runs from the left of the frame's row 24k down to its right (`down`, the map's edges that run from the
+ * top corner to the right one and from the bottom corner to the left one) or from row 32k up (`!down`). Half transparent in the
+ * body, firmer along the foot and the top.
+ */
+void fillFence(HdFrame &f, bool down, Uint32 rgb, int body, int edge, int k)
+{
+	f.width = 16 * k;
+	f.height = 32 * k;
+	f.pixels.assign((size_t)f.width * f.height, 0);
+	for (int y = 0; y < f.height; ++y)
+	{
+		for (int x = 0; x < f.width; ++x)
+		{
+			const double foot = down ? 24.0 * k + (x + 0.5) / 2 : 32.0 * k - (x + 0.5) / 2;
+			const double top = foot - 24.0 * k, at = y + 0.5;
+			if (at > top && at < foot)
+			{
+				const int alpha = (at > foot - 1.5 * k || at < top + 1.0 * k) ? edge : body;
+				f.pixels[(size_t)y * f.width + x] = ((Uint32)alpha << 24) | (rgb & 0xFFFFFF);
+			}
+		}
+	}
+	f.generated = true;
+	f.buildSpans();
+}
+
+/// A map cell's index mirrored across the edge of a map `size` cells long and folded back and forth when the mirror's
+/// image is past the other edge too (-1 -> 0, size -> size - 1, 2 * size -> 0 ...).
+int mirrorIndex(int v, int size)
+{
+	const int period = 2 * size;
+	v %= period;
+	if (v < 0)
+	{
+		v += period;
+	}
+	return v < size ? v : period - 1 - v;
 }
 
 /**
@@ -1830,10 +1900,14 @@ int Map::hdBackdropFind()
 /**
  * Options::oxceHdBeyondEdge (XP-000263): the ground goes on beyond the map's edge. Under the map (before its cells are drawn),
  * on the ground level (z = 0, the formula of the map's own cells), over the backdrop, in the cells of the screen that lie off the
- * map: a floor of the 2-3 commonest ones of the map's outer band on the ground level, picked by a hash of the cell (the same
- * every frame, no flicker), under a veil of the backdrop's colour at its row that thickens with the distance from the edge until
- * the floor is gone into the backdrop (the veil is a floor-diamond frame with alpha, as the explosion area's). Picture only: no
- * tile is touched, no light, no fog of war, no cache of the battle; the cells are not on the map, so nothing there can be clicked.
+ * map: the mirror of the map's edge cells - the floor of the map's cell reflected across the edge (x < 0 -> -1 - x, x >= sizeX ->
+ * 2 * sizeX - 1 - x, the same for y; folded back and forth when the image is past the other edge too), the ground level - under
+ * a veil of the backdrop's colour at its row that thickens with the distance from the edge until the floor is gone into the
+ * backdrop (the veil is a floor-diamond frame with alpha, as the explosion area's). A floor of the map the player has not
+ * discovered is not shown: the cell takes the commonest floor of the map's outer band instead. Options::oxceHdBeyondLook (XP-000263):
+ * 1 the floors in greys, 2 a pale fog instead of the backdrop's colour (the floors are gone into it half way, the fog itself
+ * thins out to the end). Picture only: no tile is touched, no light, no fog of war, no cache of the battle; the cells are
+ * not on the map, so nothing there can be clicked.
  */
 void Map::hdDrawBeyondEdge(HdCanvas *surface, const Position &cameraPos)
 {
@@ -1883,17 +1957,7 @@ void Map::hdDrawBeyondEdge(HdCanvas *surface, const Position &cameraPos)
 		if (floors * 2 >= cells && !_hdGhostFloors.empty())
 		{
 			std::stable_sort(_hdGhostFloors.begin(), _hdGhostFloors.end(), [](const HdGhostFloor &a, const HdGhostFloor &b) { return a.count > b.count; });
-			size_t keep = 1;
-			while (keep < _hdGhostFloors.size() && keep < 3 && _hdGhostFloors[keep].count * 5 >= _hdGhostFloors[0].count)
-			{
-				++keep;
-			}
-			_hdGhostFloors.resize(keep);
-			_hdGhostTotal = 0;
-			for (const HdGhostFloor &f : _hdGhostFloors)
-			{
-				_hdGhostTotal += f.count;
-			}
+			_hdGhostFloors.resize(1); // the commonest one: the floor of the cells whose mirror the player has not discovered
 			_hdGhostState = 1;
 		}
 		else
@@ -1906,9 +1970,12 @@ void Map::hdDrawBeyondEdge(HdCanvas *surface, const Position &cameraPos)
 	{
 		return;
 	}
-	const int REACH = 20;          // the cells beyond the edge that are drawn: the farthest is all the backdrop's colour
+	const int REACH = 36;          // the cells beyond the edge that are drawn: the farthest is all the backdrop's colour
 	const double POWER = 1.3;      // the veil grows a little slower than the distance
 	const int HAZE_STEPS = 24;     // the veil's opacity steps (a frame of the veil for each step and colour)
+	const int look = Options::oxceHdBeyondLook;
+	const double FOG_AT = 0.55;    // fog: the floors are under the fog up to this part of the way, beyond it only the fog is drawn
+	const double FOG_MAX = 0.92;   // fog: its opacity where the floors end
 	const int W = _spriteWidth, H = _spriteHeight;
 	const int width = surface->getWidth(), height = surface->getHeight();
 	// the cells whose sprite touches the screen (the map's own test), as a box of tiles: u = x - y and v = x + y on the screen
@@ -1939,40 +2006,84 @@ void Map::hdDrawBeyondEdge(HdCanvas *surface, const Position &cameraPos)
 			{
 				continue;
 			}
+			// the cell of the map this one mirrors across the edge, and its floor: the map's own, or - where the player has not
+			// discovered it - the commonest one of the map's outer band
+			const int mx = mirrorIndex(x, sizeX), my = mirrorIndex(y, sizeY);
+			const Tile *source = _save->getTile(Position(mx, my, 0));
+			if (!source)
+			{
+				continue;
+			}
+			SurfaceRaw<const Uint8> sprite;
+			int yOffset = 0;
+			if (source->isDiscovered(O_FLOOR))
+			{
+				const MapData *data = source->getMapData(O_FLOOR);
+				sprite = source->getSprite(O_FLOOR);
+				if (!data || data->isNoFloor() || !sprite)
+				{
+					continue;
+				}
+				yOffset = source->getYOffset(O_FLOOR);
+			}
+			else
+			{
+				sprite = _hdGhostFloors[0].sprite;
+				yOffset = _hdGhostFloors[0].yOffset;
+			}
 			Uint32 h = (Uint32)x * 0x9E3779B1u ^ (Uint32)y * 0x85EBCA77u;
 			h ^= h >> 15; h *= 0x2C1B3C6Du; h ^= h >> 12; h *= 0x297A2D39u; h ^= h >> 15;
-			int pick = (int)(h % (Uint32)_hdGhostTotal);
-			size_t i = 0;
-			while (i + 1 < _hdGhostFloors.size() && pick >= _hdGhostFloors[i].count)
-			{
-				pick -= _hdGhostFloors[i].count;
-				++i;
-			}
-			const HdGhostFloor &floor = _hdGhostFloors[i];
 			// the farther from the edge, the more of the backdrop's colour over the floor, by steps; the hash of the cell (the
-			// same every frame) tips a cell to the next step by the part of the way it has gone, so the rings do not show
+			// same every frame) tips a cell to the next step by the part of the way it has gone, so the rings do not show.
+			// Fog: the floors sink into it up to FOG_AT of the way and beyond it only the fog is drawn, thinning out to the end
 			const double t = (double)(distance - 1) / std::max(1, REACH - 1);
 			const double dither = ((h >> 8) & 255) / 256.0;
-			const double hazeAt = std::pow(t, POWER) * HAZE_STEPS;
-			const int haze = std::min(HAZE_STEPS, (int)hazeAt + (dither < hazeAt - (int)hazeAt ? 1 : 0));
-			if (_hdGroundVariants)
+			bool drawFloor = true;
+			double cover = std::pow(t, POWER);
+			if (look == 2)
 			{
-				surface->setGroundCell(true, x, y, 0);
+				drawFloor = t <= FOG_AT;
+				cover = drawFloor ? FOG_MAX * std::pow(t / FOG_AT, POWER) : FOG_MAX * (1.0 - (t - FOG_AT) / (1.0 - FOG_AT));
 			}
-			surface->blit(floor.sprite, screenPosition.x, screenPosition.y - floor.yOffset * _k, baseShade, false, _nvColor);
-			if (_hdGroundVariants)
+			const double hazeAt = cover * HAZE_STEPS;
+			const int haze = std::max(0, std::min(HAZE_STEPS, (int)hazeAt + (dither < hazeAt - (int)hazeAt ? 1 : 0)));
+			if (drawFloor)
 			{
-				surface->setGroundCell(false, 0, 0, 0);
+				// look 1: the floor in greys (the kept grey copy of the pack's picture, shaded as the colour one would be)
+				const HdFrame *gray = look == 1 ? hdGrayFloor(surface, sprite) : nullptr;
+				if (gray)
+				{
+					surface->blitFrameShaded(*gray, screenPosition.x, screenPosition.y - yOffset * _k, baseShade);
+				}
+				else
+				{
+					if (_hdGroundVariants)
+					{
+						surface->setGroundCell(true, mx, my, 0);
+					}
+					surface->blit(sprite, screenPosition.x, screenPosition.y - yOffset * _k, baseShade, false, _nvColor);
+					if (_hdGroundVariants)
+					{
+						surface->setGroundCell(false, 0, 0, 0);
+					}
+				}
 			}
 			if (haze > 0)
 			{
 				// the floor's diamond (the bottom 32x16 of its frame) under a veil of the backdrop's colour at its row
-				const int cy = screenPosition.y - floor.yOffset * _k + 24 * _k;
+				const int cy = screenPosition.y - yOffset * _k + 24 * _k;
 				int rgb = surface->backdropAt(cy + 8 * _k);
 				if (rgb < 0)
 				{
 					const SDL_Color &c = getPalette()[Palette::blockOffset(0) + _bgColor];
 					rgb = (c.r << 16) | (c.g << 8) | c.b;
+				}
+				if (look == 2)
+				{
+					// the fog: the backdrop's colour at the row mixed towards a pale haze, darker the darker the battle's light
+					const int pale = 255 * (20 - baseShade) / 20;
+					const int fog[3] = { pale * 216 / 255, pale * 224 / 255, pale * 232 / 255 };
+					rgb = ((((rgb >> 16) & 255) * 3 + fog[0] * 7) / 10 << 16) | ((((rgb >> 8) & 255) * 3 + fog[1] * 7) / 10 << 8) | (((rgb & 255) * 3 + fog[2] * 7) / 10);
 				}
 				rgb &= 0xFCFCFC;
 				const int alpha = haze * 255 / HAZE_STEPS;
@@ -1990,6 +2101,167 @@ void Map::hdDrawBeyondEdge(HdCanvas *surface, const Position &cameraPos)
 				}
 				surface->blitFrame(it->second, screenPosition.x, cy);
 			}
+		}
+	}
+}
+
+/**
+ * Options::oxceHdBeyondLook 1 (XP-000263): the floor of a palette sprite in greys. The picture the canvas draws for the
+ * sprite (the pack's, or the smoothed one) with the luminance of its colours in all three channels and its alpha kept; made
+ * once for a sprite and kept for the battle (the ground variants' blends are not made for it: one plain picture).
+ * @return The grey frame, or nullptr when the canvas draws the sprite as a palette one (nothing to take the colours from).
+ */
+const HdFrame *Map::hdGrayFloor(HdCanvas *surface, SurfaceRaw<const Uint8> sprite)
+{
+	const void *key = sprite.getBuffer();
+	auto it = _hdGrayFrames.find(key);
+	if (it != _hdGrayFrames.end())
+	{
+		return it->second.empty() ? nullptr : &it->second;
+	}
+	HdFrame &gray = _hdGrayFrames[key];
+	const HdFrame *color = surface->frameOf(sprite);
+	if (!color || color->empty())
+	{
+		return nullptr;
+	}
+	gray.width = color->width;
+	gray.height = color->height;
+	gray.pixels.resize(color->pixels.size());
+	for (size_t i = 0; i < color->pixels.size(); ++i)
+	{
+		const Uint32 p = color->pixels[i];
+		const Uint32 l = (77 * ((p >> 16) & 255) + 151 * ((p >> 8) & 255) + 28 * (p & 255) + 128) >> 8;
+		gray.pixels[i] = (p & 0xFF000000u) | (l << 16) | (l << 8) | l;
+	}
+	gray.generated = true;
+	gray.buildSpans();
+	return &gray;
+}
+
+/**
+ * Options::oxceHdMapBorder (XP-000380, XP-000382): the border of the battle field along the whole perimeter of the map, on the
+ * ground level (z = 0), made of true-colour frames with alpha, one cell's length each (the floor diamond's band for the line, a
+ * 16k x 32k frame for the fence). 1: a line about 3 base pixels thick on the outside of the edge, in the metal of the battle
+ * panel's theme when the HD interface is on, else warm yellow; 2: a red fence one level high at 30% opacity, standing on the
+ * edge. Pass 0 goes under the map's cells (the line, and the two far sides of the fence - the map's cells stand before them),
+ * pass 1 over them (the two near sides of the fence - they stand before the map's cells). Picture only: nothing of the map is
+ * touched, nothing can be clicked, no light.
+ */
+void Map::hdDrawMapBorder(HdCanvas *surface, const Position &cameraPos, int pass)
+{
+	const int mode = Options::oxceHdMapBorder;
+	if ((mode != 1 && mode != 2) || (mode == 1 && pass != 0))
+	{
+		return;
+	}
+	const int sizeX = _save->getMapSizeX(), sizeY = _save->getMapSizeY();
+	const int k = _k;
+	const int width = surface->getWidth(), height = surface->getHeight();
+	if (_hdLightOn)
+	{
+		_canvas->setLight(nullptr);
+	}
+	// where the floor diamond of a cell of the ground level starts (its top-left corner)
+	auto diamondAt = [&](int x, int y, int &dx, int &dy)
+	{
+		Position p;
+		_camera->convertMapToScreen(Position(x, y, 0), &p);
+		p += cameraPos;
+		dx = p.x;
+		dy = p.y + 24 * k;
+	};
+	auto frameFor = [&](unsigned long long key, auto &&fill) -> const HdFrame&
+	{
+		auto it = _hdBorderFrames.find(key);
+		if (it == _hdBorderFrames.end())
+		{
+			HdFrame &made = _hdBorderFrames[key];
+			fill(made);
+			return made;
+		}
+		return it->second;
+	};
+	if (mode == 1)
+	{
+		// the line's colour: the battle panel's metal (the theme of the windows) when the HD interface is on, else warm yellow
+		const Uint32 rgb = (HdUi::active() ? HdBattleHud::metalShade(0.8f) : 0xF0C040u) & 0xFFFFFF;
+		const int alpha = 235;
+		const double F = 0.2;      // the band is this part of the outer cell's depth (about 3 base pixels)
+		const double G = 1.0 - F;
+		// kinds: 0 north-east side, 1 south-east, 2 south-west, 3 north-west; 4 top corner, 5 right, 6 bottom, 7 left
+		static const double LIM[8][4] = {
+			{ 0, 1, G, 1 }, { 0, F, 0, 1 }, { 0, 1, 0, F }, { G, 1, 0, 1 },
+			{ G, 1, G, 1 }, { 0, F, G, 1 }, { 0, F, 0, F }, { G, 1, 0, F } };
+		auto put = [&](int kind, int x, int y)
+		{
+			int dx, dy;
+			diamondAt(x, y, dx, dy);
+			if (!(dx > -32 * k && dx < width && dy > -16 * k && dy < height))
+			{
+				return;
+			}
+			const HdFrame &f = frameFor(((unsigned long long)rgb << 8) | (unsigned long long)kind, [&](HdFrame &out)
+			{
+				fillEdgeBand(out, rgb, alpha, k, LIM[kind][0], LIM[kind][1], LIM[kind][2], LIM[kind][3]);
+			});
+			surface->blitFrame(f, dx, dy);
+		};
+		for (int x = 0; x < sizeX; ++x)
+		{
+			put(0, x, -1);
+			put(2, x, sizeY);
+		}
+		for (int y = 0; y < sizeY; ++y)
+		{
+			put(3, -1, y);
+			put(1, sizeX, y);
+		}
+		put(4, -1, -1);
+		put(5, sizeX, -1);
+		put(6, sizeX, sizeY);
+		put(7, -1, sizeY);
+		return;
+	}
+	// the fence: one cell's length is a frame 16k wide, 32k tall; the bottom edge of the cell's side runs along the foot
+	const Uint32 rgb = 0xE02828;
+	const int body = 77, edge = 150;   // 30% and a firmer foot and top
+	auto put = [&](bool down, int x, int y, int offX, int offY)
+	{
+		int dx, dy;
+		diamondAt(x, y, dx, dy);
+		dx += offX;
+		dy += offY;
+		if (!(dx > -16 * k && dx < width && dy > -32 * k && dy < height))
+		{
+			return;
+		}
+		const HdFrame &f = frameFor(0x100000000ULL | (unsigned long long)(down ? 1 : 0), [&](HdFrame &out)
+		{
+			fillFence(out, down, rgb, body, edge, k);
+		});
+		surface->blitFrame(f, dx, dy);
+	};
+	if (pass == 0)
+	{
+		for (int x = 0; x < sizeX; ++x)
+		{
+			put(true, x, 0, 16 * k, -24 * k);            // north-east side: from the top corner of cell (x, 0) to its right one
+		}
+		for (int y = 0; y < sizeY; ++y)
+		{
+			put(false, 0, y, 0, -24 * k);                // north-west side: from the left corner of cell (0, y) to its top one
+		}
+	}
+	else
+	{
+		for (int y = 0; y < sizeY; ++y)
+		{
+			put(false, sizeX - 1, y, 16 * k, -16 * k);   // south-east side: from the right corner of cell (sizeX - 1, y) to its bottom one
+		}
+		for (int x = 0; x < sizeX; ++x)
+		{
+			put(true, x, sizeY - 1, 0, -16 * k);         // south-west side: from the left corner of cell (x, sizeY - 1) to its bottom one
 		}
 	}
 }
@@ -3306,6 +3578,12 @@ void Map::drawTerrain(HdCanvas *surface)
 	{
 		hdDrawBeyondEdge(surface, cameraPos);
 	}
+	// XP-000380, XP-000382: the border of the field along the map's edge (HD scale above 1, not turned); without the ground beyond too
+	const bool hdBorder = Options::oxceHdMapBorder > 0 && _k > 1 && !turned;
+	if (hdBorder)
+	{
+		hdDrawMapBorder(surface, cameraPos, 0);
+	}
 	// HD lab: the turned view goes a cell past the map's far edges, for the walls that face away there
 	const int rimX = endX + (turned && endX >= _camera->getViewSizeX() ? 1 : 0);
 	const int rimY = endY + (turned && endY >= _camera->getViewSizeY() ? 1 : 0);
@@ -4198,6 +4476,11 @@ void Map::drawTerrain(HdCanvas *surface)
 				}
 			}
 		}
+	}
+	// XP-000382: the near sides of the fence stand before the map's cells
+	if (hdBorder && Options::oxceHdMapBorder == 2)
+	{
+		hdDrawMapBorder(surface, cameraPos, 1);
 	}
 	if (pathfinderTurnedOn)
 	{
