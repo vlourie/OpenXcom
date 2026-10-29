@@ -151,6 +151,9 @@ public:
 	/// The theme's metal at the ramp step v of a widget (1 the light end ... 5 the dark end, where the palette's
 	/// pal[color + v * mul] was), 0xAARRGGBB.
 	static Uint32 themeShade(int v);
+	/// Are themed buttons cast as caps of the metal's mid-light tone (the player's own colour of the battle panel only:
+	/// the ready themes keep the ramp's dark caps with light letters)?
+	static bool themeCaps();
 	/// Are the letters on a themed button's cap (not pressed) dark - the metal is light - or light (the metal is dark)?
 	static bool themeInk();
 	/// The face of a themed label or arrow on a cap that is not pressed: the metal's darkest or its light end (themeInk).

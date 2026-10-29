@@ -194,14 +194,19 @@ Uint32 HdUi::themeShade(int v)
 	return HdBattleHud::metalShade(SHADE[std::min(std::max(v, 0), 5)]);
 }
 
+bool HdUi::themeCaps()
+{
+	// the dark panel's buttons (skin 2) are near black whatever the metal
+	return windowTheme() && Options::oxceHdBattleHudColor == HdBattleHud::COLOR_CUSTOM && style() != 2;
+}
+
 bool HdUi::themeInk()
 {
-	// the dark panel's buttons (skin 2) are near black whatever the metal: light letters. The others have the metal's own
+	// the ready themes' caps are the ramp's dark end: light letters. The player's own colour has the metal's own
 	// mid-light tone for a cap (the metal at 0.64, drawButton): dark letters on it when the metal is light enough, as the
 	// battle panel's keys carry theirs, light ones when it is dark (the threshold is the cap's brightness, 0.299 R +
-	// 0.587 G + 0.114 B of 255, at 0.40: only the black iron's metal is under it among the ready themes)
-	const int st = style();
-	if (st == 2) return false;
+	// 0.587 G + 0.114 B of 255, at 0.40)
+	if (!themeCaps()) return false;
 	const Uint32 cap = HdBattleHud::metalShade(0.64f);
 	const float luma = (0.299f * (float)((cap >> 16) & 0xFF) + 0.587f * (float)((cap >> 8) & 0xFF) + 0.114f * (float)(cap & 0xFF)) / 255.0f;
 	return luma >= 0.40f;
@@ -1144,7 +1149,7 @@ void HdUi::drawButton(int x, int y, int w, int h, int color, int mul, bool press
 	if (colors) pal = colors;
 	// the button's face hides whatever is under it: its label needs no outline even on a picture
 	notePanel(x, y, w, h);
-	const bool themed = windowTheme();
+	const bool themed = windowTheme(), caps = themeCaps();
 	auto c = [&](int v) { return themed ? themeShade(v) : rgba(pal[(Uint8)(color + v * mul)]); };
 	const float x0 = (float)x * k, y0 = (float)y * k, x1 = (float)(x + w) * k, y1 = (float)(y + h) * k;
 	const float r = 1.5f * k, edge = std::max(1.0f, k * 0.5f);
@@ -1176,8 +1181,8 @@ void HdUi::drawButton(int x, int y, int w, int h, int color, int mul, bool press
 		}
 		else
 		{
-			// themed: the metal's cap tone (the letters on it go by themeInk), not the ramp's dark end
-			const Uint32 flat = themed ? HdBattleHud::metalShade(over ? 0.72f : 0.64f) : (over ? c(3) : c(4));
+			// the player's own colour: the metal's cap tone (the letters on it go by themeInk), not the ramp's dark end
+			const Uint32 flat = caps ? HdBattleHud::metalShade(over ? 0.72f : 0.64f) : (over ? c(3) : c(4));
 			fillRoundRect(x0, y0, x1, y1, r, flat, flat);
 			strokeRoundRect(x0, y0, x1, y1, r, edge, withAlpha(c(2), 0x90));
 		}
@@ -1185,16 +1190,16 @@ void HdUi::drawButton(int x, int y, int w, int h, int color, int mul, bool press
 	}
 	if (pressed)
 	{
-		// lit: the bright end of the ramp, a little darker towards the bottom (themed: lighter than any cap at rest)
-		fillRoundRect(x0, y0, x1, y1, r, themed ? HdBattleHud::metalShade(0.92f) : c(1), themed ? HdBattleHud::metalShade(0.80f) : c(2));
+		// lit: the bright end of the ramp, a little darker towards the bottom (own colour: lighter than any cap at rest)
+		fillRoundRect(x0, y0, x1, y1, r, caps ? HdBattleHud::metalShade(0.92f) : c(1), caps ? HdBattleHud::metalShade(0.80f) : c(2));
 		strokeRoundRect(x0, y0, x1, y1, r, edge, scaled(c(1), 1.15f));
 	}
 	else
 	{
 		// under the mouse: the same shape, a step lighter
 		const float lit = over ? 1.22f : 1.0f;
-		// themed: a cap of the metal's mid-light tone, dark below, as the keys of the battle panel; the letters go by themeInk
-		fillRoundRect(x0, y0, x1, y1, r, scaled(themed ? HdBattleHud::metalShade(0.72f) : c(3), lit), scaled(themed ? HdBattleHud::metalShade(0.56f) : c(5), lit));
+		// own colour: a cap of the metal's mid-light tone, dark below, as the keys of the battle panel; the letters go by themeInk
+		fillRoundRect(x0, y0, x1, y1, r, scaled(caps ? HdBattleHud::metalShade(0.72f) : c(3), lit), scaled(caps ? HdBattleHud::metalShade(0.56f) : c(5), lit));
 		// a light edge on top, a dark one below (the shape reads as raised)
 		strokeRoundRect(x0, y0, x1, y1, r, edge, (scaled(c(2), lit) & 0x00FFFFFFu) | 0xB0000000u);
 		fillRoundRect(x0 + edge, y1 - edge * 1.5f, x1 - edge, y1 - edge * 0.5f, edge, (c(5) & 0x00FFFFFFu) | 0x90000000u, (c(5) & 0x00FFFFFFu) | 0x90000000u);
