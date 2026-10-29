@@ -381,6 +381,9 @@ OPT bool oxceDisableTechTreeViewer;
 OPT int oxceTogglePersonalLightType;
 OPT int oxceToggleNightVisionType;
 OPT int oxceToggleBrightnessType;
+// The player's own music (XP-000373): files in <user folder>/music (geoscape/, battle/, and the files of the folder itself for both).
+// 0 off (default: nothing is scanned, the music is as it was), 1 with the game's tracks, 2 only the own ones (where there are any).
+OPT int oxceUserMusic;
 
 OPT bool oxceShowBurningAsWounded;
 OPT bool oxceDisableInfoOnThrowCursor;

@@ -658,6 +658,14 @@ Mod::~Mod()
 	{
 		delete pair.second;
 	}
+	for (auto& track : _userMusic)
+	{
+		delete track.music;
+	}
+	for (auto* music : _userMusicRetired)
+	{
+		delete music;
+	}
 	for (auto& pair : _sounds)
 	{
 		delete pair.second;
@@ -1333,6 +1341,9 @@ const std::map<std::string, Music*> &Mod::getMusicTrackList() const
 
 /**
  * Returns a random music from the mod.
+ * The player's own music (XP-000373) takes part when the option is on: its tracks have the category in their keys
+ * (GMGEO_USER_..., GMTACTIC_USER_...), so they are found by the same substring; "only own" leaves the game's
+ * tracks out while there are own ones. The pick is RNG::seedless, the music's own generator: the game's is not touched.
  * @param name Name of the music to pick from.
  * @return Pointer to the music.
  */
@@ -1344,6 +1355,24 @@ Music *Mod::getRandomMusic(const std::string &name) const
 	}
 	else
 	{
+		const bool own = !name.empty() && ensureUserMusic();
+		// the name of an own track that is gone now (a saved one): any track of its category, not silence
+		const size_t userAt = name.find("_USER_");
+		if (userAt != std::string::npos && userAt > 0)
+		{
+			bool known = false;
+			if (own)
+			{
+				for (const auto& track : _userMusic)
+				{
+					known = known || (track.key == name && !track.failed);
+				}
+			}
+			if (!known)
+			{
+				return getRandomMusic(name.substr(0, userAt));
+			}
+		}
 		std::vector<Music*> music;
 		for (auto& pair : _musics)
 		{
@@ -1352,15 +1381,259 @@ Music *Mod::getRandomMusic(const std::string &name) const
 				music.push_back(pair.second);
 			}
 		}
-		if (music.empty())
+		std::vector<UserTrack*> mine;
+		if (own)
 		{
-			return _muteMusic;
+			for (auto& track : _userMusic)
+			{
+				if (!track.failed && track.key.find(name) != std::string::npos)
+				{
+					mine.push_back(&track);
+				}
+			}
 		}
-		else
+		for (;;)
 		{
-			return music[RNG::seedless(0, music.size() - 1)];
+			const size_t standard = (Options::oxceUserMusic == 2 && !mine.empty()) ? 0 : music.size();
+			const size_t total = standard + mine.size();
+			if (total == 0)
+			{
+				return _muteMusic;
+			}
+			const size_t pick = RNG::seedless(0, total - 1);
+			if (pick < standard)
+			{
+				return music[pick];
+			}
+			if (Music *chosen = loadUserTrack(*mine[pick - standard]))
+			{
+				return chosen;
+			}
+			mine.erase(mine.begin() + (pick - standard));
 		}
 	}
+}
+
+/**
+ * Scans the player's own music once, when the option is on (XP-000373).
+ * @return True if the own music is in use.
+ */
+bool Mod::ensureUserMusic() const
+{
+	if (Options::oxceUserMusic <= 0 || Options::mute)
+	{
+		return false;
+	}
+	if (!_userMusicScanned)
+	{
+		scanUserMusic();
+	}
+	return true;
+}
+
+/**
+ * Scans <user folder>/music: the files of the folder go to both categories, the files of geoscape/ to the geoscape
+ * and of battle/ to the battle. The tracks that were found before keep their loaded music; the ones whose file is gone
+ * are put away (the music may be playing). With no files it does nothing but a log line and the empty folders.
+ */
+void Mod::scanUserMusic() const
+{
+	_userMusicScanned = true;
+	const std::string root = Options::getUserFolder() + "music";
+	for (const std::string& dir : { root, root + "/geoscape", root + "/battle" })
+	{
+		if (!CrossPlatform::folderExists(dir))
+		{
+			CrossPlatform::createFolder(dir);
+		}
+	}
+	// what SDL_mixer opens (which of them depends on how it was built; a file it cannot open is skipped at its first play)
+	static const char *const exts[] = { ".ogg", ".mp3", ".flac", ".wav", ".mid", ".midi", ".mod", ".xm", ".it", ".s3m", ".opus" };
+	struct Found { std::string name, rel; bool geo, battle; };
+	std::vector<Found> found;
+	const auto scan = [&](const std::string& sub, bool geo, bool battle)
+	{
+		const std::string dir = sub.empty() ? root : root + "/" + sub;
+		try
+		{
+			for (const auto& entry : CrossPlatform::getFolderContents(dir))
+			{
+				std::string lower = std::get<0>(entry);
+				std::transform(lower.begin(), lower.end(), lower.begin(), ::tolower);
+				bool music = false;
+				for (const char *ext : exts)
+				{
+					const size_t n = strlen(ext);
+					music = music || (lower.size() > n && lower.compare(lower.size() - n, n, ext) == 0);
+				}
+				if (!std::get<1>(entry) && music)
+				{
+					found.push_back({ std::get<0>(entry), sub.empty() ? std::get<0>(entry) : sub + "/" + std::get<0>(entry), geo, battle });
+				}
+			}
+		}
+		catch (Exception &e)
+		{
+			Log(LOG_WARNING) << "Own music: cannot read '" << dir << "': " << e.what();
+		}
+	};
+	scan("", true, true);
+	scan("geoscape", true, false);
+	scan("battle", false, true);
+
+	std::vector<UserTrack> fresh;
+	const auto add = [&](const char *category, const Found& f)
+	{
+		uint32_t hash = 2166136261u;
+		for (char c : f.rel)
+		{
+			hash = (hash ^ (uint8_t)::tolower((unsigned char)c)) * 16777619u;
+		}
+		char hex[16];
+		snprintf(hex, sizeof(hex), "%08x", (unsigned)hash);
+		UserTrack track;
+		track.key = std::string(category) + "_USER_" + hex;
+		track.label = f.name;
+		track.path = root + "/" + f.rel;
+		for (auto& old : _userMusic)
+		{
+			if (old.key == track.key)
+			{
+				track.music = old.music;
+				old.music = 0;
+				break;
+			}
+		}
+		fresh.push_back(track);
+	};
+	for (const auto& f : found)
+	{
+		if (f.geo) add("GMGEO", f);
+		if (f.battle) add("GMTACTIC", f);
+	}
+	std::stable_sort(fresh.begin(), fresh.end(), [](const UserTrack& a, const UserTrack& b)
+	{
+		std::string x = a.label, y = b.label;
+		std::transform(x.begin(), x.end(), x.begin(), ::tolower);
+		std::transform(y.begin(), y.end(), y.begin(), ::tolower);
+		return x < y;
+	});
+	for (auto& old : _userMusic)
+	{
+		if (old.music)
+		{
+			_userMusicRetired.push_back(old.music);
+		}
+	}
+	_userMusic = fresh;
+	Log(LOG_INFO) << "Own music: " << found.size() << " file(s) in '" << root << "'";
+}
+
+/**
+ * Loads a track of the player's own music at its first play and keeps it.
+ * @param track The track.
+ * @return The music, or null when the file cannot be opened (the track is not offered any more until the next scan).
+ */
+Music *Mod::loadUserTrack(UserTrack &track) const
+{
+	if (track.music || track.failed)
+	{
+		return track.music;
+	}
+	Music *music = new Music();
+	try
+	{
+		SDL_RWops *rwops = SDL_RWFromFile(track.path.c_str(), "rb");
+		if (!rwops)
+		{
+			throw Exception(SDL_GetError());
+		}
+		music->load(rwops);
+		track.music = music;
+		Log(LOG_INFO) << "Own music: loaded '" << track.path << "'";
+	}
+	catch (Exception &e)
+	{
+		Log(LOG_WARNING) << "Own music: cannot load '" << track.path << "': " << e.what();
+		track.failed = true;
+		// not deleted now: a Music stops whatever is playing when it goes
+		_userMusicRetired.push_back(music);
+	}
+	return track.music;
+}
+
+/**
+ * Gets the own tracks of a category for the jukebox.
+ * @param category GMGEO or GMTACTIC.
+ * @return Pairs of the track's key and the file's name.
+ */
+std::vector<std::pair<std::string, std::string> > Mod::getUserMusicList(const std::string &category) const
+{
+	std::vector<std::pair<std::string, std::string> > list;
+	if (ensureUserMusic())
+	{
+		const std::string prefix = category + "_USER_";
+		for (const auto& track : _userMusic)
+		{
+			if (!track.failed && track.key.compare(0, prefix.size(), prefix) == 0)
+			{
+				list.push_back(std::make_pair(track.key, track.label));
+			}
+		}
+	}
+	return list;
+}
+
+/**
+ * Gets an own track by its key, loading it if needed.
+ * @param key The key from getUserMusicList.
+ * @return The music, or null.
+ */
+Music *Mod::getUserMusic(const std::string &key) const
+{
+	if (ensureUserMusic())
+	{
+		for (auto& track : _userMusic)
+		{
+			if (track.key == key)
+			{
+				return loadUserTrack(track);
+			}
+		}
+	}
+	return 0;
+}
+
+/**
+ * Scans the own music folder again (the jukebox's button).
+ */
+void Mod::refreshUserMusic()
+{
+	if (Options::oxceUserMusic > 0 && !Options::mute)
+	{
+		scanUserMusic();
+	}
+}
+
+/**
+ * Is only the own music wanted for the category, and are there own tracks of it?
+ * @param category GMGEO or GMTACTIC.
+ * @return True if the game's tracks of the category are left out.
+ */
+bool Mod::userMusicOnly(const std::string &category) const
+{
+	return Options::oxceUserMusic == 2 && !getUserMusicList(category).empty();
+}
+
+/**
+ * The name a battle starts its music by: the saved one, or GMTACTIC (a random pick of the own tracks)
+ * when only the own music is wanted. The saved name itself is never changed.
+ * @param saved The name saved with the battle.
+ * @return The name to play.
+ */
+std::string Mod::getBattleMusicName(const std::string &saved) const
+{
+	return userMusicOnly("GMTACTIC") ? std::string("GMTACTIC") : saved;
 }
 
 /**
@@ -1380,6 +1653,10 @@ void Mod::playMusic(const std::string &name, int id)
 		}
 
 		Music *music = 0;
+		if (id != 0 && userMusicOnly(name))
+		{
+			id = 0;
+		}
 		if (id == 0)
 		{
 			music = getRandomMusic(name);
@@ -1399,6 +1676,14 @@ void Mod::playMusic(const std::string &name, int id)
 				if (item.second == music)
 				{
 					setCurrentMusicTrack(item.first);
+					break;
+				}
+			}
+			for (const auto& track : _userMusic)
+			{
+				if (track.music == music)
+				{
+					setCurrentMusicTrack(track.key);
 					break;
 				}
 			}
@@ -6836,6 +7121,9 @@ void Mod::loadExtraResources()
 		delete gmcat;
 		delete adlibcat;
 		delete aintrocat;
+
+		// the player's own music (XP-000373): scanned here when the option is on, the files are opened at their first play
+		ensureUserMusic();
 	}
 #endif
 

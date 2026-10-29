@@ -840,7 +840,7 @@ BattlescapeState::BattlescapeState() :
 		}
 		else
 		{
-			_game->getMod()->playMusic(_save->getMusic());
+			_game->getMod()->playMusic(_game->getMod()->getBattleMusicName(_save->getMusic()));
 		}
 	}
 
@@ -954,7 +954,7 @@ void BattlescapeState::init()
 			}
 			else
 			{
-				_game->getMod()->playMusic(_save->getMusic());
+				_game->getMod()->playMusic(_game->getMod()->getBattleMusicName(_save->getMusic()));
 			}
 		}
 
