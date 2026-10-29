@@ -570,6 +570,7 @@ void createAdvancedOptionsOXCE()
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdQuickFlight", &oxceHdQuickFlight, true, "STR_HD_QUICK_FLIGHT", "STR_HD_BATTLE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdLooseHits", &oxceHdLooseHits, true, "STR_HD_LOOSE_HITS", "STR_HD_BATTLE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdHiddenMap", &oxceHdHiddenMap, true, "STR_HD_HIDDEN_MAP", "STR_HD_BATTLE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdAnimHidden", &oxceHdAnimHidden, true, "STR_HD_ANIM_HIDDEN", "STR_HD_BATTLE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdBackdrop", &oxceHdBackdrop, false, "STR_HD_BACKDROP", "STR_HD_BATTLE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdEnemyTurn", &oxceHdEnemyTurn, 0, "STR_HD_ENEMY_TURN", "STR_HD_BATTLE_UI"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdEnemyNumber", &oxceHdEnemyNumber, 1, "STR_HD_ENEMY_NUMBER", "STR_HD_BATTLE"));

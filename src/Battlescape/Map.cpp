@@ -1162,10 +1162,11 @@ void Map::draw()
 		|| (_projectileInFOV && (!ignoreAllButAlliesHits || (unitVisible && !unitEnemy)))
 		|| (_explosionInFOV && (!ignoreAllButAlliesHits || ((unitVisible && !unitEnemy) || hitExplosion)));
 	const bool hiddenMap = !shown && Options::oxceHdHiddenMap && Options::oxceHdEnemyTurn != 1 && _hiddenViewValid;
-	if (hiddenMap && _hiddenFrozen && !_hdTestFrozen)
+	if (hiddenMap && _hiddenFrozen && !_hdTestFrozen && !hiddenPictureMayAnimate())
 	{
 		// XP-000326: an unseen enemy's turn keeps the one picture drawn when it began: a door opened or smoke blown
 		// on a tile the player discovered but does not see is not shown before the player sees it again
+		// (XP-000097: while nothing of that kind has changed, the picture goes on animating: smoke, fire, lamps)
 		return;
 	}
 	_hdLabels.clear();
@@ -1203,6 +1204,12 @@ void Map::draw()
 		// an unseen enemy's turn: the map from where the player last saw it; the camera's own moves (a walking
 		// unit's level, a followed shot, centring on the next unit) are not shown and the camera keeps them;
 		// no tile cursor, the mouse points at nothing the player can act on
+		if (!_hiddenFrozen && hdAnimWanted())
+		{
+			// the picture freezes now: what it shows is the reference the animating frames are compared with
+			_hiddenSig = hiddenSignature();
+			_hiddenAnimTick = _animTicks;
+		}
 		const Position real = _camera->getMapOffset();
 		const CursorType cursor = _cursorType;
 		_camera->setMapOffset(_hiddenViewOffset);
@@ -4657,6 +4664,97 @@ void Map::setSelectorPosition(int mx, int my)
 }
 
 /**
+ * The picture's animation where the classic game stops it (XP-000097): needs the option and an HD drawing mode; the
+ * classic drawing (mode 0) stays as it always was.
+ */
+bool Map::hdAnimWanted() const
+{
+	return Options::oxceHdAnimHidden && _canvas && _canvas->getHdMode() != HD_MODE_NEAREST;
+}
+
+/**
+ * Hashes everything the picture draws from the battle except its animation (XP-000097): the tiles up to the level of the
+ * frozen view (what is discovered and seen, the parts, smoke, fire, light, UFO doors open or shut, the items), the units
+ * the player sees, the shots and effects in flight. Two equal values mean that a redraw shows nothing the frozen
+ * picture does not show; only the frame of the animation (and the frames of the parts) differs.
+ */
+uint64_t Map::hiddenSignature() const
+{
+	uint64_t h = 1469598103934665603ULL;
+	const auto mix = [&h](uint64_t v) { h = (h ^ v) * 1099511628211ULL; };
+	const int sizeX = _save->getMapSizeX(), sizeY = _save->getMapSizeY(), sizeZ = _save->getMapSizeZ();
+	const int topZ = _camera->getShowAllLayers() ? sizeZ - 1 : std::min(sizeZ - 1, (int)_hiddenViewOffset.z);
+	mix(sizeX); mix(sizeY); mix(topZ);
+	for (int z = 0; z <= topZ; ++z)
+	{
+		for (int y = 0; y < sizeY; ++y)
+		{
+			for (int x = 0; x < sizeX; ++x)
+			{
+				Tile *tile = _save->getTile(Position(x, y, z));
+				const uint64_t seen = (tile->isDiscovered(O_FLOOR) ? 1 : 0) | (tile->isDiscovered(O_WESTWALL) ? 2 : 0)
+					| (tile->isDiscovered(O_NORTHWALL) ? 4 : 0) | (tile->getVisible() ? 8 : 0);
+				mix(seen);
+				if (!seen)
+				{
+					continue; // a black tile: nothing of it is drawn
+				}
+				mix((uint64_t)tile->getSmoke() | ((uint64_t)tile->getFire() << 8));
+				for (int part = 0; part < O_MAX; ++part)
+				{
+					mix((uint64_t)(uintptr_t)tile->getMapData((TilePart)part));
+					mix(tile->isUfoDoorOpen((TilePart)part) ? 1 : 0);
+				}
+				for (int layer = 0; layer < LL_MAX; ++layer)
+				{
+					mix((uint64_t)tile->getLight((LightLayers)layer));
+				}
+				const auto *items = tile->getInventory();
+				mix(items->size());
+				for (const BattleItem *item : *items)
+				{
+					mix((uint64_t)(uintptr_t)item);
+					mix((uint64_t)item->getFuseTimer());
+				}
+			}
+		}
+	}
+	for (const BattleUnit *bu : *_save->getUnits())
+	{
+		mix(bu->getVisible() ? 1 : 0);
+		if (!bu->getVisible())
+		{
+			continue; // not drawn: where it is and what it does is not shown
+		}
+		const Position pos = bu->getPosition();
+		mix(bu->getId()); mix(pos.x); mix(pos.y); mix(pos.z);
+		mix(bu->getDirection()); mix(bu->getStatus()); mix(bu->isKneeled() ? 1 : 0); mix(bu->getFire());
+	}
+	mix(_projectile ? 1 : 0);
+	mix(_explosions.size());
+	mix(_looseHits.size());
+	mix(_gentleShots.size());
+	mix(HdFx::active(SDL_GetTicks()) ? 1 : 0);
+	return h;
+}
+
+/**
+ * The picture of an unseen enemy's turn is frozen (XP-000326): may this redraw draw the world live? Yes while the
+ * signature of what the player has discovered is the one the picture froze with: the redraw then differs from the
+ * frozen picture only in the animation (smoke, fire, lamps, doors that were opening). Looked at once a tick of the
+ * picture's clock, not on every mouse move; a change that is later undone lets the animation go on again.
+ */
+bool Map::hiddenPictureMayAnimate()
+{
+	if (!hdAnimWanted() || _hiddenAnimTick == _animTicks)
+	{
+		return false;
+	}
+	_hiddenAnimTick = _animTicks;
+	return hiddenSignature() == _hiddenSig;
+}
+
+/**
  * Handles animating tiles. 8 Frames per animation.
  * @param redraw Redraw the battlescape?
  */
@@ -4670,6 +4768,7 @@ void Map::animate(bool redraw)
 
 	_save->nextAnimFrame();
 	_animFrame = _save->getAnimFrame();
+	++_animTicks;
 
 	if (AiProbe::fast())
 	{
@@ -4731,6 +4830,71 @@ void Map::animate(bool redraw)
 		_save->getTile(i)->animate();
 	}
 
+	animateVapor();
+
+	// animate certain units (large flying units have a propulsion animation)
+	for (auto* bu : *_save->getUnits())
+	{
+		const Position pos = bu->getPosition();
+
+		// skip units that do not have position
+		if (pos == TileEngine::invalid)
+		{
+			continue;
+		}
+
+		if (_save->getDepth() > 0)
+		{
+			bu->setFloorAbove(false);
+
+			// make sure this unit isn't obscured by the floor above him, otherwise it looks weird.
+			if (_camera->getViewLevel() > pos.z)
+			{
+				for (int z = std::min(_camera->getViewLevel(), _save->getMapSizeZ() - 1); z != pos.z; --z)
+				{
+					if (!_save->getTile(Position(pos.x, pos.y, z))->hasNoFloor(0))
+					{
+						bu->setFloorAbove(true);
+						break;
+					}
+				}
+			}
+		}
+
+		bu->breathe();
+	}
+
+	if (redraw) _redraw = true;
+	// gentle mode: the reaction arrows go away on the picture clock, also while the battle is busy
+	if (!_gentleShots.empty()) _redraw = true;
+}
+
+/**
+ * The tick of the picture's animation and nothing else (XP-000097), for the time a menu is open over the battle: the
+ * frame of the smoke, the fire, the lamps and the vapor, and a redraw. The ambient sounds, the UFO doors (their frames
+ * are the game's: a door is open once its animation reaches frame 7) and the units are left to animate.
+ */
+void Map::animateDrawOnly()
+{
+	if (_hdTestFrozen || AiProbe::fast() || !hdAnimWanted())
+	{
+		return;
+	}
+	_animFrame = (_animFrame + 1) % 705600; // the span of SavedBattleGame::nextAnimFrame; the save's own frame is not touched
+	++_animTicks;
+	for (int i = 0; i < _save->getMapSizeXYZ(); ++i)
+	{
+		_save->getTile(i)->animateDrawOnly();
+	}
+	animateVapor();
+	_redraw = true;
+}
+
+/**
+ * Animates the vapor particles of the map, one tick.
+ */
+void Map::animateVapor()
+{
 	// animate vapor
 	for (auto i : Collections::rangeValueLess(_vaporParticles.size()))
 	{
@@ -4794,42 +4958,6 @@ void Map::animate(bool redraw)
 			std::sort(std::begin(tilePar), std::end(tilePar), [](const Particle& a, const Particle& b){ return a.getLayerZ() < b.getLayerZ(); });
 		}
 	}
-
-	// animate certain units (large flying units have a propulsion animation)
-	for (auto* bu : *_save->getUnits())
-	{
-		const Position pos = bu->getPosition();
-
-		// skip units that do not have position
-		if (pos == TileEngine::invalid)
-		{
-			continue;
-		}
-
-		if (_save->getDepth() > 0)
-		{
-			bu->setFloorAbove(false);
-
-			// make sure this unit isn't obscured by the floor above him, otherwise it looks weird.
-			if (_camera->getViewLevel() > pos.z)
-			{
-				for (int z = std::min(_camera->getViewLevel(), _save->getMapSizeZ() - 1); z != pos.z; --z)
-				{
-					if (!_save->getTile(Position(pos.x, pos.y, z))->hasNoFloor(0))
-					{
-						bu->setFloorAbove(true);
-						break;
-					}
-				}
-			}
-		}
-
-		bu->breathe();
-	}
-
-	if (redraw) _redraw = true;
-	// gentle mode: the reaction arrows go away on the picture clock, also while the battle is busy
-	if (!_gentleShots.empty()) _redraw = true;
 }
 
 /**

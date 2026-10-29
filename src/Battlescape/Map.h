@@ -157,6 +157,19 @@ private:
 	bool _hiddenViewValid = false;
 	/// The unseen enemy's turn has drawn its picture: the frames after it keep the canvas as it is (XP-000326).
 	bool _hiddenFrozen = false;
+	/// Options::oxceHdAnimHidden (XP-000097): what the frozen picture may show again. The signature of what the player has
+	/// discovered but does not see, as it was when the picture froze; the picture animates again on every animation tick
+	/// at which the signature is still the same. _animTicks counts the ticks of the picture's clock, _hiddenAnimTick
+	/// is the tick the signature was last compared at (once a tick, not on every mouse move).
+	uint64_t _hiddenSig = 0;
+	unsigned _animTicks = 0, _hiddenAnimTick = 0;
+	/// What the picture shows of the battle besides its animation (tile contents, smoke, fire, light, doors, items,
+	/// visible units, shots in flight), hashed; the same value = a redraw shows nothing new.
+	uint64_t hiddenSignature() const;
+	/// The frozen picture of an unseen enemy's turn: does the world still match it, so that it can be drawn live again?
+	bool hiddenPictureMayAnimate();
+	/// The animation of the vapor particles, one tick (a part of animate)
+	void animateVapor();
 	/// The shake of the drawn map (shake): its start on the picture clock, length and largest offset.
 	Uint32 _shakeStart = 0, _shakeMs = 0;
 	int _shakeAmp = 0;
@@ -342,6 +355,12 @@ public:
 	void keyboardRelease(Action *action, State *state) override;
 	/// Rotates the tile frames 0-7
 	void animate(bool redraw);
+	/// XP-000097: the tick of the picture's animation and nothing else (no ambient sounds, no door mechanics): for the
+	/// time a menu is open over the battle; does nothing unless hdAnimWanted
+	void animateDrawOnly();
+	/// Options::oxceHdAnimHidden and an HD drawing mode (XP-000097): the picture's animation goes on where the classic game
+	/// stops it - while a battle state is busy, in a menu over the battle, in an unseen enemy's turn
+	bool hdAnimWanted() const;
 	/// Sets the battlescape selector position relative to mouse position.
 	void setSelectorPosition(int mx, int my);
 	/// Gets the currently selected position.

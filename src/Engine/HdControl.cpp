@@ -37,6 +37,7 @@
 #include "Options.h"
 #include "OptionInfo.h"
 #include "Logger.h"
+#include "RNG.h"
 #include "../Savegame/SavedGame.h"
 #include "../Savegame/SavedBattleGame.h"
 #include "../Menu/LoadGameState.h"
@@ -225,6 +226,9 @@ std::string stateLine(Game *g)
 		const SavedBattleGame *sb = g->getSavedGame()->getSavedBattle();
 		const int side = (int)sb->getSide();
 		out << " side=" << (side >= 0 && side < 3 ? sides[side] : "?") << " turn=" << sb->getTurn();
+		// the state of the game's random numbers and the save's animation frame: checks that the picture's animation
+		// (XP-000097) does not touch the battle
+		out << " seed=" << RNG::getSeed() << " animFrame=" << sb->getAnimFrame();
 	}
 	return out.str();
 }

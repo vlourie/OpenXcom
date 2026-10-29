@@ -62,6 +62,8 @@ private:
 	/// panel stands down because this slid it (it comes back in the player's turn only then)
 	HdTurnMark *_hdTurnMark = nullptr;
 	bool _panelAutoHid = false, _wasOtherTurn = false;
+	/// animate() runs for a menu over the battle: only the picture's animation (Map::animateDrawOnly)
+	bool _menuAnim = false;
 	/// The share of the enemy's or the neutrals' turn done, 0-100, as the stock hidden screen's bar shows it; picture only
 	int _aiProgress = 0;
 	/// Moves the panel and everything on it to `shift` base pixels below its place.
@@ -237,6 +239,8 @@ public:
 	void updateUiButton(const BattleUnit* battleUnit);
 	/// Animates map objects on the map, also smoke,fire, ...
 	void animate();
+	/// A menu is open over the battle (XP-000097): the picture's animation goes on, nothing else of animate() does.
+	void animateInMenu();
 	/// Handles the battle game state.
 	void handleState();
 	/// Sets the state timer interval.
