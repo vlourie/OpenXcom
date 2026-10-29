@@ -272,6 +272,14 @@ OPT bool oxceHdWoundedRed;
 OPT bool oxceHdCraftMission;
 // HD interface, modern skin: the colours of the battle's button panel (Engine/HdBattleHud.cpp). 0 = dark slate (default), 1 = gold, as the original panel
 OPT int oxceHdBattleHudColor;
+// HD interface, modern skin (XP-000377): the player's own colour of the battle panel (oxceHdBattleHudColor 9): the keys' (and the windows' buttons') colour
+// and the background's (frames, steel, wells, grooves) as hue 0-359, saturation 0-100, value 0-100; the window "Own colour" (Menu/OptionsCustomColorState)
+OPT int oxceHdCustomKeyHue;
+OPT int oxceHdCustomKeySat;
+OPT int oxceHdCustomKeyVal;
+OPT int oxceHdCustomBackHue;
+OPT int oxceHdCustomBackSat;
+OPT int oxceHdCustomBackVal;
 // Battlescape: a unit hanging in the air or in the water with no floor below sways in place (Map::hoverBob); off = the classic still frame
 OPT bool oxceHdHoverBob;
 // HD render: combat effects of the HD mod (Engine/HdFx.h) - hits, swings, explosions, muzzle flashes; off = the classic animations

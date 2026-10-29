@@ -24,6 +24,7 @@
 #include <unordered_set>
 #include "Logger.h"
 #include "Font.h"
+#include "HdBattleHud.h"
 #include "HdGpuWorld.h"
 #include "HdSmooth.h"
 #include "HdWorkers.h"
@@ -729,7 +730,7 @@ void HdUi::drawSurface(const Surface *surface, int x, int y, bool smooth)
 				const int x1 = std::min(outer.x + outer.w, (x + w) * k), y1 = std::min(outer.y + outer.h, (y + h) * k);
 				clip.w = (Uint16)std::max(0, x1 - clip.x);
 				clip.h = (Uint16)std::max(0, y1 - clip.y);
-				HdUiArt::drawFrame(dest, *frame, (x - artX) * k, (y - artY) * k, &clip);
+				drawPlaced(dest, *frame, (x - artX) * k, (y - artY) * k, clip);
 			}
 			return;
 		}
@@ -737,7 +738,7 @@ void HdUi::drawSurface(const Surface *surface, int x, int y, bool smooth)
 	if (!oversize && smooth && k >= 2 && k <= 6)
 	{
 		if (!cropped) why = "xBRZ";
-		if ((long long)w * h >= 65536 && drawSparse(dest, surface, x, y, k, pal, pixelHash))
+		if (!_recolor && (long long)w * h >= 65536 && drawSparse(dest, surface, x, y, k, pal, pixelHash))
 		{
 			if (!cropped) why = "xBRZ sparse";
 			return;
@@ -746,11 +747,120 @@ void HdUi::drawSurface(const Surface *surface, int x, int y, bool smooth)
 		if (frame)
 		{
 			const SDL_Rect clip = worldClip(dest, k);
-			HdUiArt::drawFrame(dest, *frame, x * k, y * k, &clip);
+			drawPlaced(dest, *frame, x * k, y * k, clip);
 			return;
 		}
 	}
+	if (_recolor)
+	{
+		// nearest, as a frame: the metal is cast over a frame's pixels
+		HdFrame nearest;
+		nearest.width = w * k;
+		nearest.height = h * k;
+		nearest.pixels.assign((size_t)nearest.width * nearest.height, 0u);
+		for (int py = 0; py < nearest.height; ++py)
+		{
+			for (int px = 0; px < nearest.width; ++px)
+			{
+				const Uint8 idx = pixels[(size_t)(py / k) * pitch + px / k];
+				if (idx) nearest.pixels[(size_t)py * nearest.width + px] = packColor(pal[idx]);
+			}
+		}
+		const SDL_Rect clip = worldClip(dest, k);
+		drawPlaced(dest, nearest, x * k, y * k, clip);
+		return;
+	}
 	drawPixels(pixels, pitch, w, h, x, y, pal);
+}
+
+void HdUi::drawSurfaceThemed(const Surface *surface, int x, int y, bool smooth)
+{
+	_recolor = true;
+	drawSurface(surface, x, y, smooth);
+	_recolor = false;
+}
+
+/**
+ * A frame placed at world (ox, oy), clipped: as it is, or, for drawSurfaceThemed, the part of it that shows cast in the
+ * theme's metal. The tones of the part, darkest to lightest (over its solid pixels), become the metal's shades 0.10 to
+ * 0.94, the alpha stays: a button of a copper picture keeps its relief and its pictogram. The pieces are kept by their
+ * content and the theme, so a button costs a hash of its pixels a frame, not a recolouring.
+ */
+void HdUi::drawPlaced(SDL_Surface *dest, const HdFrame &frame, int ox, int oy, const SDL_Rect &clip)
+{
+	if (!_recolor)
+	{
+		HdUiArt::drawFrame(dest, frame, ox, oy, &clip);
+		return;
+	}
+	const int x0 = std::max((int)clip.x, ox), y0 = std::max((int)clip.y, oy);
+	const int x1 = std::min(clip.x + clip.w, ox + frame.width), y1 = std::min(clip.y + clip.h, oy + frame.height);
+	if (x0 >= x1 || y0 >= y1)
+	{
+		return;
+	}
+	const int w = x1 - x0, h = y1 - y0;
+	const int theme = HdBattleHud::themeKey();
+	Uint64 key = 1469598103934665603ULL;
+	for (int row = 0; row < h; ++row)
+	{
+		const Uint32 *src = frame.row(y0 - oy + row) + (x0 - ox);
+		for (int col = 0; col < w; ++col)
+		{
+			key = (key ^ src[col]) * 1099511628211ULL;
+		}
+	}
+	key ^= ((Uint64)w << 48) ^ ((Uint64)h << 36) ^ ((Uint64)(Uint32)theme << 8);
+	auto found = _recolored.find(key);
+	if (found == _recolored.end())
+	{
+		if (_recolored.size() >= 24)
+		{
+			_recolored.clear();
+		}
+		HdFrame &r = _recolored[key];
+		r.width = w;
+		r.height = h;
+		r.pixels.assign((size_t)w * h, 0u);
+		float lo = 1e9f, hi = -1e9f;
+		auto luma = [](Uint32 c) { return 0.299f * (float)((c >> 16) & 0xFF) + 0.587f * (float)((c >> 8) & 0xFF) + 0.114f * (float)(c & 0xFF); };
+		for (int row = 0; row < h; ++row)
+		{
+			const Uint32 *src = frame.row(y0 - oy + row) + (x0 - ox);
+			for (int col = 0; col < w; ++col)
+			{
+				// (what is black stays black: the corners round a key, the picture's ground)
+				if ((src[col] >> 24) >= 200 && luma(src[col]) >= 10.0f)
+				{
+					const float l = luma(src[col]);
+					lo = std::min(lo, l);
+					hi = std::max(hi, l);
+				}
+			}
+		}
+		// the metal's shade of each of 256 tones, once
+		Uint32 metal[256];
+		for (int i = 0; i < 256; ++i)
+		{
+			const float t = hi > lo + 1.0f ? std::min(std::max(((float)i - lo) / (hi - lo), 0.0f), 1.0f) : 0.55f;
+			metal[i] = HdBattleHud::metalShade(0.10f + 0.84f * t) & 0x00FFFFFFu;
+		}
+		for (int row = 0; row < h; ++row)
+		{
+			const Uint32 *src = frame.row(y0 - oy + row) + (x0 - ox);
+			Uint32 *out = r.pixels.data() + (size_t)row * w;
+			for (int col = 0; col < w; ++col)
+			{
+				const Uint32 a = src[col] >> 24;
+				if (!a) continue;
+				const float l = luma(src[col]);
+				out[col] = l < 10.0f ? src[col] : (a << 24) | metal[std::min(255, (int)(l + 0.5f))];
+			}
+		}
+		r.buildSpans();
+		found = _recolored.find(key);
+	}
+	HdUiArt::drawFrame(dest, found->second, x0, y0, &clip);
 }
 
 /**
@@ -1251,6 +1361,7 @@ void HdUi::clearCaches()
 	_cropMisses.clear();
 	_glyphs.clear();
 	_fitted.clear();
+	_recolored.clear();
 	_metrics.clear();
 }
 

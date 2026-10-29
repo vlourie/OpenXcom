@@ -586,6 +586,13 @@ void createAdvancedOptionsOXCE()
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdWindowTheme", &oxceHdWindowTheme, false, "STR_HD_WINDOW_THEME", "STR_HD_INTERFACE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdBattleHud", &oxceHdBattleHud, true, "STR_HD_BATTLE_HUD", "STR_HD_BATTLE_UI"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdBattleHudColor", &oxceHdBattleHudColor, 0, "STR_HD_BATTLE_HUD_COLOR", "STR_HD_BATTLE_UI"));
+	// the player's own colours of that panel (the window "Own colour"): not rows of the list, no description
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdCustomKeyHue", &oxceHdCustomKeyHue, 256));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdCustomKeySat", &oxceHdCustomKeySat, 25));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdCustomKeyVal", &oxceHdCustomKeyVal, 49));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdCustomBackHue", &oxceHdCustomBackHue, 255));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdCustomBackSat", &oxceHdCustomBackSat, 25));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdCustomBackVal", &oxceHdCustomBackVal, 38));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdUiFont", &oxceHdUiFont, 0, "STR_HD_UI_FONT", "STR_HD_INTERFACE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdGlobeScale", &oxceHdGlobeScale, 0, "STR_HD_GLOBE_SCALE", "STR_HD_GEOSCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdPictures", &oxceHdPictures, true, "STR_HD_PICTURES", "STR_HD_INTERFACE"));

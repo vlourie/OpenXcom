@@ -31,7 +31,7 @@ namespace OpenXcom
  * @param x X position in pixels.
  * @param y Y position in pixels.
  */
-BattlescapeButton::BattlescapeButton(int width, int height, int x, int y) : InteractiveSurface(width, height, x, y), _color(0), _group(0), _inverted(false), _toggleMode(INVERT_NONE), _altSurface(0), _hdIcon(0), _hdLit(false)
+BattlescapeButton::BattlescapeButton(int width, int height, int x, int y) : InteractiveSurface(width, height, x, y), _color(0), _group(0), _inverted(false), _toggleMode(INVERT_NONE), _altSurface(0), _hdIcon(0), _hdLit(false), _hdTheme(false)
 {
 }
 
@@ -230,8 +230,10 @@ void BattlescapeButton::blit(SDL_Surface *surface)
 	// HD interface, modern skin: the battle panel draws the button as a tile with its pictogram, in
 	// place of the copied piece of the panel's picture; the classic layer gets the pixels as ever
 	const bool hud = _hdIcon && HdUi::isScreen(surface) && HdBattleHud::on();
+	// a button of a window's picture in the metal of the theme: the picture's pixels are drawn recast (below), not as they are
+	const bool themed = !hud && _hdTheme && HdUi::isScreen(surface) && HdUi::windowTheme();
 	Surface *shown = _inverted ? _altSurface : this;
-	shown->setHdKind(hud ? HD_SKIP : HD_NORMAL);
+	shown->setHdKind(hud || themed ? HD_SKIP : HD_NORMAL);
 	if (_inverted)
 	{
 		_altSurface->blit(surface);
@@ -239,6 +241,10 @@ void BattlescapeButton::blit(SDL_Surface *surface)
 	else
 	{
 		Surface::blit(surface);
+	}
+	if (themed && _visible && !_hidden)
+	{
+		HdUi::instance().drawSurfaceThemed(shown, getX(), getY(), HdUi::mode() >= 2);
 	}
 	if (hud && _visible && !_hidden)
 	{

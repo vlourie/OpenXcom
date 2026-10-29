@@ -474,7 +474,7 @@ void drawFrame(int x, int y, int w, int h, int inset, bool thin, Uint32 accent)
 	// what lies inside is a window: its labels keep the classic shadow (as drawPanelFrame says)
 	ui.notePanel(x, y, w, h);
 	const int W = w * k, H = h * k, B = std::min(inset * k, std::min(W, H) / 2);
-	const int metal = Options::oxceHdBattleHudColor;
+	const int metal = HdBattleHud::themeKey();
 	Frame *f = nullptr;
 	for (auto it = frames.begin(); it != frames.end(); ++it)
 	{
