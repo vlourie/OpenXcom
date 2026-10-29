@@ -177,16 +177,8 @@ const int BLAST_ALPHA_STEPS = 32;
  * edge, so every pixel belongs to exactly one tile and a fill of many tiles is even.
  * Kept for the battle (drawn by the strips after this frame records); at most a few colours by 32 steps.
  */
-const HdFrame &blastDiamond(Uint32 rgb, int alpha, int k)
+void fillDiamond(HdFrame &f, Uint32 rgb, int alpha, int k)
 {
-	static std::map<unsigned long long, HdFrame> cache;
-	const unsigned long long key = ((unsigned long long)rgb << 24) | ((unsigned long long)alpha << 8) | (unsigned long long)k;
-	auto it = cache.find(key);
-	if (it != cache.end())
-	{
-		return it->second;
-	}
-	HdFrame &f = cache[key];
 	f.width = 32 * k;
 	f.height = 16 * k;
 	f.pixels.assign((size_t)f.width * f.height, 0);
@@ -204,6 +196,19 @@ const HdFrame &blastDiamond(Uint32 rgb, int alpha, int k)
 	}
 	f.generated = true;
 	f.buildSpans();
+}
+
+const HdFrame &blastDiamond(Uint32 rgb, int alpha, int k)
+{
+	static std::map<unsigned long long, HdFrame> cache;
+	const unsigned long long key = ((unsigned long long)rgb << 24) | ((unsigned long long)alpha << 8) | (unsigned long long)k;
+	auto it = cache.find(key);
+	if (it != cache.end())
+	{
+		return it->second;
+	}
+	HdFrame &f = cache[key];
+	fillDiamond(f, rgb, alpha, k);
 	return f;
 }
 
@@ -1823,6 +1828,173 @@ int Map::hdBackdropFind()
 }
 
 /**
+ * Options::oxceHdBeyondEdge (XP-000263): the ground goes on beyond the map's edge. Under the map (before its cells are drawn),
+ * on the ground level (z = 0, the formula of the map's own cells), over the backdrop, in the cells of the screen that lie off the
+ * map: a floor of the 2-3 commonest ones of the map's outer band on the ground level, picked by a hash of the cell (the same
+ * every frame, no flicker), under a veil of the backdrop's colour at its row that thickens with the distance from the edge until
+ * the floor is gone into the backdrop (the veil is a floor-diamond frame with alpha, as the explosion area's). Picture only: no
+ * tile is touched, no light, no fog of war, no cache of the battle; the cells are not on the map, so nothing there can be clicked.
+ */
+void Map::hdDrawBeyondEdge(HdCanvas *surface, const Position &cameraPos)
+{
+	const int sizeX = _save->getMapSizeX(), sizeY = _save->getMapSizeY();
+	if (_hdGhostState < 0)
+	{
+		_hdGhostState = 0;
+		std::vector<const MapData*> kinds;
+		int cells = 0, floors = 0;
+		const int BAND = 6;
+		for (int y = 0; y < sizeY; ++y)
+		{
+			for (int x = 0; x < sizeX; ++x)
+			{
+				++cells;
+				const Tile *t = _save->getTile(Position(x, y, 0));
+				const MapData *data = t ? t->getMapData(O_FLOOR) : nullptr;
+				const SurfaceRaw<const Uint8> sprite = t ? t->getSprite(O_FLOOR) : SurfaceRaw<const Uint8>();
+				if (!data || data->isNoFloor() || !sprite)
+				{
+					continue;
+				}
+				++floors;
+				// the commonest floors are counted where the ground meets the edge: the outer band of the level (a base or a
+				// ship in the middle of a desert has its own floors, which the desert beyond the edge does not go on with)
+				if (x >= BAND && x < sizeX - BAND && y >= BAND && y < sizeY - BAND)
+				{
+					continue;
+				}
+				size_t i = 0;
+				while (i < kinds.size() && kinds[i] != data)
+				{
+					++i;
+				}
+				if (i == kinds.size())
+				{
+					kinds.push_back(data);
+					HdGhostFloor f;
+					f.sprite = sprite;
+					f.yOffset = t->getYOffset(O_FLOOR);
+					_hdGhostFloors.push_back(f);
+				}
+				++_hdGhostFloors[i].count;
+			}
+		}
+		// no ground level to go on (an underground map, a level of air): at least half of it must have a floor
+		if (floors * 2 >= cells && !_hdGhostFloors.empty())
+		{
+			std::stable_sort(_hdGhostFloors.begin(), _hdGhostFloors.end(), [](const HdGhostFloor &a, const HdGhostFloor &b) { return a.count > b.count; });
+			size_t keep = 1;
+			while (keep < _hdGhostFloors.size() && keep < 3 && _hdGhostFloors[keep].count * 5 >= _hdGhostFloors[0].count)
+			{
+				++keep;
+			}
+			_hdGhostFloors.resize(keep);
+			_hdGhostTotal = 0;
+			for (const HdGhostFloor &f : _hdGhostFloors)
+			{
+				_hdGhostTotal += f.count;
+			}
+			_hdGhostState = 1;
+		}
+		else
+		{
+			_hdGhostFloors.clear();
+		}
+		Log(LOG_INFO) << "HD beyond edge: " << floors << " floors of " << cells << " cells of the ground level -> " << _hdGhostFloors.size() << " kept, state " << _hdGhostState;
+	}
+	if (_hdGhostState != 1)
+	{
+		return;
+	}
+	const int REACH = 20;          // the cells beyond the edge that are drawn: the farthest is all the backdrop's colour
+	const double POWER = 1.3;      // the veil grows a little slower than the distance
+	const int HAZE_STEPS = 24;     // the veil's opacity steps (a frame of the veil for each step and colour)
+	const int W = _spriteWidth, H = _spriteHeight;
+	const int width = surface->getWidth(), height = surface->getHeight();
+	// the cells whose sprite touches the screen (the map's own test), as a box of tiles: u = x - y and v = x + y on the screen
+	const double ulo = (-W - cameraPos.x) * 2.0 / W, uhi = (width + W - cameraPos.x) * 2.0 / W;
+	const double vlo = (-H - cameraPos.y) * 4.0 / W, vhi = (height + H - cameraPos.y) * 4.0 / W;
+	const int x0 = std::max(-REACH, (int)std::floor((ulo + vlo) / 2) - 1), x1 = std::min(sizeX - 1 + REACH, (int)std::ceil((uhi + vhi) / 2) + 1);
+	const int y0 = std::max(-REACH, (int)std::floor((vlo - uhi) / 2) - 1), y1 = std::min(sizeY - 1 + REACH, (int)std::ceil((vhi - ulo) / 2) + 1);
+	const int baseShade = std::max(0, std::min(15, _save->getGlobalShade()));
+	if (_hdLightOn)
+	{
+		_canvas->setLight(nullptr);
+	}
+	for (int y = y0; y <= y1; ++y)
+	{
+		for (int x = x0; x <= x1; ++x)
+		{
+			const int dx = x < 0 ? -x : (x >= sizeX ? x - sizeX + 1 : 0);
+			const int dy = y < 0 ? -y : (y >= sizeY ? y - sizeY + 1 : 0);
+			const int distance = std::max(dx, dy);
+			if (distance == 0 || distance > REACH)
+			{
+				continue;
+			}
+			Position screenPosition;
+			_camera->convertMapToScreen(Position(x, y, 0), &screenPosition);
+			screenPosition += cameraPos;
+			if (!(screenPosition.x > -W && screenPosition.x < width + W && screenPosition.y > -H && screenPosition.y < height + H))
+			{
+				continue;
+			}
+			Uint32 h = (Uint32)x * 0x9E3779B1u ^ (Uint32)y * 0x85EBCA77u;
+			h ^= h >> 15; h *= 0x2C1B3C6Du; h ^= h >> 12; h *= 0x297A2D39u; h ^= h >> 15;
+			int pick = (int)(h % (Uint32)_hdGhostTotal);
+			size_t i = 0;
+			while (i + 1 < _hdGhostFloors.size() && pick >= _hdGhostFloors[i].count)
+			{
+				pick -= _hdGhostFloors[i].count;
+				++i;
+			}
+			const HdGhostFloor &floor = _hdGhostFloors[i];
+			// the farther from the edge, the more of the backdrop's colour over the floor, by steps; the hash of the cell (the
+			// same every frame) tips a cell to the next step by the part of the way it has gone, so the rings do not show
+			const double t = (double)(distance - 1) / std::max(1, REACH - 1);
+			const double dither = ((h >> 8) & 255) / 256.0;
+			const double hazeAt = std::pow(t, POWER) * HAZE_STEPS;
+			const int haze = std::min(HAZE_STEPS, (int)hazeAt + (dither < hazeAt - (int)hazeAt ? 1 : 0));
+			if (_hdGroundVariants)
+			{
+				surface->setGroundCell(true, x, y, 0);
+			}
+			surface->blit(floor.sprite, screenPosition.x, screenPosition.y - floor.yOffset * _k, baseShade, false, _nvColor);
+			if (_hdGroundVariants)
+			{
+				surface->setGroundCell(false, 0, 0, 0);
+			}
+			if (haze > 0)
+			{
+				// the floor's diamond (the bottom 32x16 of its frame) under a veil of the backdrop's colour at its row
+				const int cy = screenPosition.y - floor.yOffset * _k + 24 * _k;
+				int rgb = surface->backdropAt(cy + 8 * _k);
+				if (rgb < 0)
+				{
+					const SDL_Color &c = getPalette()[Palette::blockOffset(0) + _bgColor];
+					rgb = (c.r << 16) | (c.g << 8) | c.b;
+				}
+				rgb &= 0xFCFCFC;
+				const int alpha = haze * 255 / HAZE_STEPS;
+				const unsigned long long key = ((unsigned long long)rgb << 8) | (unsigned long long)alpha;
+				auto it = _hdHazeFrames.find(key);
+				if (it == _hdHazeFrames.end())
+				{
+					HdFrame &f = _hdHazeFrames[key];
+					fillDiamond(f, rgb, alpha, _k);
+					it = _hdHazeFrames.find(key);
+					if (_hdHazeFrames.size() % 50 == 0)
+					{
+						Log(LOG_INFO) << "HD beyond edge: " << _hdHazeFrames.size() << " haze frames";
+					}
+				}
+				surface->blitFrame(it->second, screenPosition.x, cy);
+			}
+		}
+	}
+}
+
+/**
  * Is this battle in vacuum? The mod's table hd/vacuum.txt names the environments (enviroEffects types, one a line,
  * # comments), so the engine knows no mod's names. Looked up once a battle; only the picture asks it.
  * @return True when the battle's environment is in the table.
@@ -3129,6 +3301,11 @@ void Map::drawTerrain(HdCanvas *surface)
 
 	surface->lock();
 	const Position cameraPos = _camera->getMapOffset();
+	// XP-000263: the ground beyond the map's edge, under the map: only at HD scale above 1, not turned, not in vacuum
+	if (Options::oxceHdBeyondEdge && _k > 1 && !turned && !_camera->getShowSingleLayer() && !hdVacuum())
+	{
+		hdDrawBeyondEdge(surface, cameraPos);
+	}
 	// HD lab: the turned view goes a cell past the map's far edges, for the walls that face away there
 	const int rimX = endX + (turned && endX >= _camera->getViewSizeX() ? 1 : 0);
 	const int rimY = endY + (turned && endY >= _camera->getViewSizeY() ? 1 : 0);

@@ -211,6 +211,15 @@ private:
 	/// Is the battle's environment in the mod's table hd/vacuum.txt (no backdrop gradient, no hover bob there)?
 	bool hdVacuum();
 	int _hdVacuum = -1; ///< hdVacuum once looked (-1: not looked yet)
+	/// Options::oxceHdBeyondEdge (XP-000263): the ground beyond the map's edge, under the map, at the canvas of HD scale above 1.
+	void hdDrawBeyondEdge(HdCanvas *surface, const Position &cameraPos);
+	/// The commonest floors of the ground level, found once a battle: their pictures and shares (the cells beyond the edge take them by a hash).
+	struct HdGhostFloor { SurfaceRaw<const Uint8> sprite; int yOffset = 0; int count = 0; };
+	std::vector<HdGhostFloor> _hdGhostFloors;
+	int _hdGhostTotal = 0;   ///< the sum of the counts of _hdGhostFloors
+	/// The veils of the backdrop's colour over the far cells (by colour and opacity), kept while the battle's map lives.
+	std::unordered_map<unsigned long long, HdFrame> _hdHazeFrames;
+	int _hdGhostState = -1;  ///< -1: floors not looked yet, 0: none (no ground level to go on), 1: _hdGhostFloors are there
 	/// The hit chance text as it stands in _txtAccuracy, at canvas (x, y): baked, or kept for the HD interface.
 	void drawAccuracy(HdCanvas *canvas, int x, int y);
 	SurfaceSet *_projectileSet;

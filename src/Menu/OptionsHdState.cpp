@@ -57,7 +57,7 @@ static const struct { const char *category; int tab; } HD_CATEGORIES[] = {
 /// The options of how things look, wherever their category is: they all go on the graphics tab, to the group of their
 /// category (the battle ones to "Graphics of the battle"). Options of the categories ART, GENTLE and GRAPHICS are there already.
 static const char *const HD_GRAPHICS_OPTIONS[] = {
-	"oxceHdBlastFall", "oxceHdKillCam", "oxceHdHiddenMap", "oxceHdAnimHidden", "oxceHdBackdrop", "oxceHdEnemyNumber",
+	"oxceHdBlastFall", "oxceHdKillCam", "oxceHdHiddenMap", "oxceHdAnimHidden", "oxceHdBackdrop", "oxceHdBeyondEdge", "oxceHdEnemyNumber",
 	"oxceHdUi", "oxceHdUiSkin", "oxceHdWindowTheme", "oxceHdUiFont", "oxceHdPictures", "oxceHdUiSmooth" };
 /// The tab open last: the window opens on it again, until the game is closed.
 static int hdTab = 0;

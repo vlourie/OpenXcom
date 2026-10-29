@@ -301,6 +301,9 @@ OPT bool oxceHdAnimHidden;
 // Battlescape: the backdrop beyond the map's edge is a vertical gradient from the environment's background colour
 // instead of one flat colour (Map::draw). Off by default; picture only
 OPT bool oxceHdBackdrop;
+// Battlescape (XP-000263), HD scale above 1: the ground goes on beyond the map's edge - the commonest floors of the map's
+// edge on the ground level, laid out by a hash of the cell, fading into the backdrop with the distance. Off by default; picture only
+OPT bool oxceHdBeyondEdge;
 // Battlescape, what the player sees in the enemy's and the neutrals' turn: 0 as it was, 1 the hidden movement screen
 // (as with oxceHdHiddenMap off) with a strip of text over it, 2 a soft red (enemy) or yellow (neutral) frame along the
 // screen's edge and the panel slides down, back in the player's turn only if this slid it, 3 as 2 and a progress bar of
