@@ -3799,3 +3799,12 @@
 Правило:  Вид вывода (SDL_OPENGL в _flags) и дисплей меняются только вместе: resetDisplay сам поднимает resetVideo при смене SDL_OPENGL, Screen::clear сверяет _flags с useOpenGL()/useHdGpu() до начала кадра. Сверять по _flags, не по _screen->flags (у SDL dummy флага нет). Проверять переключение на ходу при мире НЕ размера дисплея (k=2 на 1920x1080)
 Защита:   Screen::resetDisplay и Screen::clear (30.10)
 Наступал: 1   Последний: 2026-10-30
+
+## R-540  Tile::isDiscovered(O_OBJECT) всегда false - игра ставит флаг увиденного только полу и стенам
+Статус:   активны
+Файлы:    src/Savegame/Tile.cpp,src/Battlescape/Map.cpp
+Симптом:  Затенение углов (oxceHdFloorAo) ложилось только у стен: предметы (ящики, стеллажи, кровати) пол не затеняли ни в одном бою
+Причина:  Tile::setDiscovered(true, O_FLOOR) открывает пол и обе стены, флаг O_OBJECT не ставит никто (кроме загрузки старого сейва); Map рисует предмет по isDiscovered(O_FLOOR) его клетки
+Правило:  Увиденность предмета клетки проверять как isDiscovered(O_FLOOR) этой клетки; isDiscovered(O_OBJECT) не использовать
+Защита:   Map::hdFloorAo: tp == O_OBJECT ? O_FLOOR : tp
+Наступал: 1   Последний: 2026-10-30

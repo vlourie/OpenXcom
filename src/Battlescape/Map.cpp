@@ -641,6 +641,34 @@ const HdFrame &arcStop(int k)
 	return f;
 }
 
+/// The shade of the corners on the floor (Map::hdFloorAo): the opacity of the darkest level, the levels of the grid,
+/// the share of the own object's lower voxels above which the floor is not seen, the most looks kept for a battle.
+const int FLOOR_AO_ALPHA = 90;
+const int FLOOR_AO_LEVELS = 16;
+const int FLOOR_AO_HIDDEN = 230;
+const size_t FLOOR_AO_MAX_FRAMES = 2048;
+
+/**
+ * The blur of the corner shade: a gaussian 7x7 (sigma 1.5 voxels) with 0.5 in the centre - a wall voxel next to the floor
+ * gives about 0.4, three voxels away about 0.05.
+ */
+const std::array<std::array<double, 7>, 7> &floorAoKernel()
+{
+	static const std::array<std::array<double, 7>, 7> kernel = []
+	{
+		std::array<std::array<double, 7>, 7> k {};
+		for (int a = -3; a <= 3; ++a)
+		{
+			for (int b = -3; b <= 3; ++b)
+			{
+				k[a + 3][b + 3] = 0.5 * std::exp(-(a * a + b * b) / (2 * 1.5 * 1.5));
+			}
+		}
+		return k;
+	}();
+	return kernel;
+}
+
 }
 
 /**
@@ -1055,6 +1083,10 @@ int Map::hdEnviClock(int animFrame, Position pos, int pace)
  */
 Map::~Map()
 {
+	if (!_hdAoFrames.empty())
+	{
+		Log(LOG_INFO) << "HD floor AO: " << _hdAoFrames.size() << " looks for this battle, grids and frames made in " << _hdAoBuildMs << " ms";
+	}
 	delete _scrollMouseTimer;
 	delete _scrollKeyTimer;
 	delete _fadeTimer;
@@ -2188,6 +2220,218 @@ const HdFrame *Map::hdGrayFloor(HdCanvas *surface, SurfaceRaw<const Uint8> sprit
 	gray.generated = true;
 	gray.buildSpans();
 	return &gray;
+}
+
+/**
+ * Options::oxceHdFloorAo: what of a map part stands low enough to shade the floor beside it - the lower 4 voxels of its
+ * LOFT (layers 0 and 1), and how strongly by its height: a flat part (rubble, a plate - nothing above layer 0) shades
+ * nothing, a part 12 voxels high or more shades fully. Made once for a part and kept.
+ */
+const Map::HdAoShape &Map::hdAoShape(const MapData *part)
+{
+	auto it = _hdAoShapes.find(part);
+	if (it != _hdAoShapes.end())
+	{
+		return it->second;
+	}
+	HdAoShape &shape = _hdAoShapes[part];
+	shape = HdAoShape();
+	const std::vector<Uint16> *voxels = _game->getMod()->getVoxelData();
+	const int lofts = voxels ? (int)(voxels->size() / 16) : 0;
+	auto usable = [&](int id) { return id > 0 && id < lofts; };
+	int top = -1;
+	for (int layer = 0; layer < 12; ++layer)
+	{
+		const int id = part->getLoftID(layer);
+		if (!usable(id))
+		{
+			continue;
+		}
+		for (int y = 0; y < 16; ++y)
+		{
+			const Uint16 row = voxels->at(id * 16 + y);
+			if (layer < 2)
+			{
+				shape.rows[y] |= row;
+			}
+			if (row)
+			{
+				top = layer;
+			}
+		}
+	}
+	for (int y = 0; y < 16; ++y)
+	{
+		for (Uint16 row = shape.rows[y]; row; row &= row - 1)
+		{
+			++shape.count;
+		}
+	}
+	shape.valid = shape.count > 0 && top >= 1;
+	shape.weight = std::min(1.0f, (top + 1) / 6.0f);
+	return shape;
+}
+
+/**
+ * Options::oxceHdFloorAo: the shade of the corners on the floor of a tile - beside a wall or an object standing on the floor
+ * the floor darkens softly. Made from the LOFT of the walls and objects of the tile and of the eight around it: their low
+ * voxels (Map::hdAoShape) on a grid of 22 x 22 voxels - the floor and the three voxels around it the blur reaches -
+ * blurred (floorAoKernel), cut to 16 levels and laid onto the floor diamond. Only the parts the player has discovered
+ * count, an open UFO door does not. A floor under its own object (FLOOR_AO_HIDDEN of 256 voxels) is not shaded: it is not
+ * seen. The rules of tools/ao_census.py (docs/research/hd-shadows-ao-2026-10-30.md §5, §14: the census took one voxel of
+ * the four sides, which left a step at the tile's edge); one frame for each grid, kept for the battle; a tile remembers
+ * its parts and builds anew only when they change (a door, an explosion, a discovered wall).
+ * Picture only: nothing of the map is touched.
+ * @return The frame for the floor diamond (32k x 16k, black with alpha), or nullptr when nothing shades this floor.
+ */
+const HdFrame *Map::hdFloorAo(Tile *tile, const Position &pos)
+{
+	if (_hdAoK != _k)
+	{
+		_hdAoCells.clear();
+		_hdAoFrames.clear();
+		_hdAoFull = false;
+		_hdAoK = _k;
+	}
+	if ((int)_hdAoCells.size() != _save->getMapSizeXYZ())
+	{
+		_hdAoCells.assign(_save->getMapSizeXYZ(), HdAoCell());
+	}
+	auto partOf = [&](int dx, int dy, TilePart tp) -> const MapData*
+	{
+		// an object is seen with its floor: the game never sets the object's own flag
+		const Tile *t = (dx || dy) ? _save->getTile(pos + Position(dx, dy, 0)) : tile;
+		if (!t || !t->isDiscovered(tp == O_OBJECT ? O_FLOOR : tp) || t->isUfoDoorOpen(tp))
+		{
+			return nullptr;
+		}
+		return t->getMapData(tp);
+	};
+	// the walls and the object of this tile and of the eight around it: [((dy + 1) * 3 + dx + 1) * 3 + west, north, object]
+	const TilePart kinds[3] = { O_WESTWALL, O_NORTHWALL, O_OBJECT };
+	const MapData *parts[HD_AO_PARTS];
+	for (int i = 0; i < HD_AO_PARTS; ++i)
+	{
+		parts[i] = partOf(i / 3 % 3 - 1, i / 9 - 1, kinds[i % 3]);
+	}
+	HdAoCell &cell = _hdAoCells[_save->getTileIndex(pos)];
+	if (cell.built && std::equal(parts, parts + HD_AO_PARTS, cell.parts))
+	{
+		return cell.frame;
+	}
+	std::copy(parts, parts + HD_AO_PARTS, cell.parts);
+	cell.built = true;
+	cell.frame = nullptr;
+	struct Timing
+	{
+		double &total;
+		std::chrono::steady_clock::time_point started;
+		~Timing() { total += std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - started).count(); }
+	} timing { _hdAoBuildMs, std::chrono::steady_clock::now() };
+
+	const HdAoShape *shapes[HD_AO_PARTS];
+	bool any = false;
+	for (int i = 0; i < HD_AO_PARTS; ++i)
+	{
+		shapes[i] = parts[i] && hdAoShape(parts[i]).valid ? &hdAoShape(parts[i]) : nullptr;
+		any = any || shapes[i];
+	}
+	const HdAoShape *ownObject = shapes[(1 * 3 + 1) * 3 + 2];
+	if (!any || (ownObject && ownObject->count >= FLOOR_AO_HIDDEN))
+	{
+		return nullptr;
+	}
+	// the grid [y + 3][x + 3]: the floor's voxels and the three the blur reaches beyond each edge, so the shade of two
+	// tiles meets at their edge without a step
+	double grid[22][22] = {};
+	for (int i = 0; i < HD_AO_PARTS; ++i)
+	{
+		const HdAoShape *s = shapes[i];
+		if (!s)
+		{
+			continue;
+		}
+		const int ox = (i / 3 % 3 - 1) * 16, oy = (i / 9 - 1) * 16;
+		for (int vy = std::max(0, -3 - oy); vy <= std::min(15, 18 - oy); ++vy)
+		{
+			for (int vx = std::max(0, -3 - ox); vx <= std::min(15, 18 - ox); ++vx)
+			{
+				if (s->rows[vy] & (1 << (15 - vx)))
+				{
+					double &g = grid[oy + vy + 3][ox + vx + 3];
+					g = std::max(g, (double)s->weight);
+				}
+			}
+		}
+	}
+	const auto &kernel = floorAoKernel();
+	std::string levels(256, '\0');
+	bool shaded = false;
+	for (int y = 0; y < 16; ++y)
+	{
+		for (int x = 0; x < 16; ++x)
+		{
+			double sum = 0;
+			for (int a = -3; a <= 3; ++a)
+			{
+				for (int b = -3; b <= 3; ++b)
+				{
+					sum += kernel[a + 3][b + 3] * grid[y + a + 3][x + b + 3];
+				}
+			}
+			const int level = std::min(FLOOR_AO_LEVELS - 1, (int)std::nearbyint(std::min(1.0, sum) * (FLOOR_AO_LEVELS - 1)));
+			levels[y * 16 + x] = (char)level;
+			shaded = shaded || level > 0;
+		}
+	}
+	if (!shaded)
+	{
+		return nullptr;
+	}
+	auto found = _hdAoFrames.find(levels);
+	if (found != _hdAoFrames.end())
+	{
+		cell.frame = &found->second;
+		return cell.frame;
+	}
+	if (_hdAoFrames.size() >= FLOOR_AO_MAX_FRAMES)
+	{
+		if (!_hdAoFull)
+		{
+			Log(LOG_WARNING) << "HD floor AO: " << FLOOR_AO_MAX_FRAMES << " looks made, the rest of the floors are drawn without the shade";
+			_hdAoFull = true;
+		}
+		return nullptr;
+	}
+	// the diamond: a pixel's centre (u, v) from the top corner, in base pixels, is the voxel (v + u / 2, v - u / 2)
+	HdFrame &f = _hdAoFrames[levels];
+	f.width = 32 * _k;
+	f.height = 16 * _k;
+	f.pixels.assign((size_t)f.width * f.height, 0);
+	auto level = [&](int vx, int vy) { return (double)levels[vy * 16 + vx]; };
+	for (int y = 0; y < f.height; ++y)
+	{
+		for (int x = 0; x < f.width; ++x)
+		{
+			const double u = (x + 0.5) / _k - 16, v = (y + 0.5) / _k;
+			const double vx = v + u / 2, vy = v - u / 2;
+			if (vx < 0 || vx >= 16 || vy < 0 || vy >= 16)
+			{
+				continue;
+			}
+			const double fx = Clamp(vx - 0.5, 0.0, 15.0), fy = Clamp(vy - 0.5, 0.0, 15.0);
+			const int x0 = (int)fx, y0 = (int)fy, x1 = std::min(15, x0 + 1), y1 = std::min(15, y0 + 1);
+			const double tx = fx - x0, ty = fy - y0;
+			const double l = (level(x0, y0) * (1 - tx) + level(x1, y0) * tx) * (1 - ty)
+				+ (level(x0, y1) * (1 - tx) + level(x1, y1) * tx) * ty;
+			const int alpha = (int)std::lround(FLOOR_AO_ALPHA * l / (FLOOR_AO_LEVELS - 1));
+			f.pixels[(size_t)y * f.width + x] = (Uint32)alpha << 24;
+		}
+	}
+	f.generated = true;
+	f.buildSpans();
+	cell.frame = &f;
+	return cell.frame;
 }
 
 /**
@@ -3723,6 +3967,12 @@ void Map::drawTerrain(HdCanvas *surface)
 							surface->blit(tmpSurface, screenPosition.x, screenPosition.y - tile->getYOffset(O_FLOOR) * _k, tileShade, false, _nvColor);
 						if (_hdGroundVariants && !turned)
 							surface->setGroundCell(false, 0, 0, 0);
+						// HD render: the shade of the corners - the floor darkens softly beside the walls and objects on it
+						if (Options::oxceHdFloorAo && surface->getHdMode() != HD_MODE_NEAREST && !turned && tile->isDiscovered(O_FLOOR))
+						{
+							if (const HdFrame *ao = hdFloorAo(tile, mapPosition))
+								surface->blitFrame(*ao, screenPosition.x, screenPosition.y + 24 * _k - tile->getYOffset(O_FLOOR) * _k);
+						}
 					}
 
 					// HD render: the explosion area of what is aimed, on the floor of every tile it reaches that the player

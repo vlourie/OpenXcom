@@ -223,6 +223,19 @@ private:
 	/// Options::oxceHdBeyondLook 1: the floor of a palette sprite in greys (made once, kept while the battle's map lives), nullptr if it cannot be made.
 	const HdFrame *hdGrayFloor(HdCanvas *surface, SurfaceRaw<const Uint8> sprite);
 	std::unordered_map<const void*, HdFrame> _hdGrayFrames;
+	/// HD render: the shade of the corners on the floor (option oxceHdFloorAo), see Map::hdFloorAo.
+	struct HdAoShape { Uint16 rows[16]; float weight; int count; bool valid; };
+	static const int HD_AO_PARTS = 27;
+	struct HdAoCell { const MapData *parts[HD_AO_PARTS]; const HdFrame *frame; bool built; };
+	const HdFrame *hdFloorAo(Tile *tile, const Position &pos);
+	const HdAoShape &hdAoShape(const MapData *part);
+	std::unordered_map<const MapData*, HdAoShape> _hdAoShapes;
+	std::vector<HdAoCell> _hdAoCells;
+	std::unordered_map<std::string, HdFrame> _hdAoFrames;
+	int _hdAoK = 0;
+	bool _hdAoFull = false;
+	/// the time spent making the grids and frames this battle (reported when the map goes)
+	double _hdAoBuildMs = 0;
 	/// Options::oxceHdMapBorder (XP-000380, XP-000382): the line or the fence along the map's edge. Pass 0 goes under the map's
 	/// cells (the line, the two far sides of the fence), pass 1 over them (the two near sides of the fence).
 	void hdDrawMapBorder(HdCanvas *surface, const Position &cameraPos, int pass);
