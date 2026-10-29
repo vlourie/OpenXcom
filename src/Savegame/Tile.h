@@ -322,6 +322,8 @@ public:
 	int getExplosiveType() const;
 	/// Animated the tile parts.
 	void animate();
+	/// Animates the tile parts for the picture only (XP-000097): the UFO doors are left as they are (their frames are mechanics).
+	void animateDrawOnly();
 	/// HD render test: resets animation phase (tile object frames and smoke/fire offset) to a deterministic state.
 	void hdTestResetAnimation();
 	/// Update cached value of sprite.

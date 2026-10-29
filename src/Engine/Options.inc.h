@@ -291,6 +291,10 @@ OPT bool oxceHdQuickFlight, oxceHdLooseHits;
 // Battlescape: an unseen enemy's turn shows the map as the player last saw it (the camera stays put) instead of the
 // hidden movement screen; nothing the player cannot see is drawn (Map::draw). Picture only
 OPT bool oxceHdHiddenMap;
+// Battlescape (XP-000097), HD drawing modes: smoke, fire and lamps keep animating where the classic game stops them - while
+// a battle state is busy, in the action menu over the battle, and in an unseen enemy's turn as long as nothing the player
+// has discovered but does not see has changed (Map::hiddenSignature). Picture only
+OPT bool oxceHdAnimHidden;
 // Battlescape: the backdrop beyond the map's edge is a vertical gradient from the environment's background colour
 // instead of one flat colour (Map::draw). Off by default; picture only
 OPT bool oxceHdBackdrop;

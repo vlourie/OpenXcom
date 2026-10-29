@@ -2803,12 +2803,19 @@ void BattlescapeState::handleItemClick(BattleItem *item, bool middleClick)
  */
 void BattlescapeState::animate()
 {
+	if (_menuAnim)
+	{
+		_map->animateDrawOnly();
+		return;
+	}
 	if (AiProbe::fast())
 	{
 		_map->animate(false); // UFO doors only, nothing on the screen is animated
 		return;
 	}
-	_map->animate(!_battleGame->isBusy());
+	// XP-000097: in the HD drawing modes the picture is redrawn also while a battle state is busy (smoke and fire went still
+	// while a unit walked or shot); the classic drawing keeps the game's own rule
+	_map->animate(!_battleGame->isBusy() || _map->hdAnimWanted());
 
 	blinkVisibleUnitButtons();
 	blinkHealthBar();
@@ -2817,6 +2824,22 @@ void BattlescapeState::animate()
 	{
 		drawHandsItems();
 	}
+}
+
+/**
+ * The action menu or the skill menu is open over the battle (XP-000097): only the top state thinks, so the timer of
+ * the animation stood still and with it the smoke and the fire. Here it runs for the picture alone: the animation of
+ * the map for drawing and a redraw. The game timer, the battle, the ambient sounds and the random numbers are not touched.
+ */
+void BattlescapeState::animateInMenu()
+{
+	if (!_map->hdAnimWanted() || !_animTimer->isRunning())
+	{
+		return;
+	}
+	_menuAnim = true;
+	_animTimer->think(this, 0);
+	_menuAnim = false;
 }
 
 /**

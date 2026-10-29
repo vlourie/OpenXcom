@@ -729,6 +729,23 @@ void Tile::animate()
 }
 
 /**
+ * Animate the tile parts for the picture only (XP-000097): the frame of every part that is not a UFO door advances as in
+ * animate(); a UFO door keeps its frame - whether it is open or opening is the game's (Tile::getTUCost, openDoor).
+ */
+void Tile::animateDrawOnly()
+{
+	for (int i = O_FLOOR; i < O_MAX; ++i)
+	{
+		if (_objects[i] && !_objectsCache[i].isUfoDoor)
+		{
+			const int newframe = _objectsCache[i].currentFrame + 1;
+			_objectsCache[i].currentFrame = newframe == 8 ? 0 : newframe;
+			updateSprite((TilePart)i);
+		}
+	}
+}
+
+/**
  * HD render test: puts the tile into a deterministic animation state.
  * Animated terrain objects go back to frame 0 (UFO doors keep their open/closed
  * state, which is part of the save), and the random smoke/fire animation offset
