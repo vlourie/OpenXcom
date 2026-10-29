@@ -280,6 +280,12 @@ void Screen::flip()
  */
 void Screen::clear()
 {
+	// the HD options screen switches oxceHdGpu at the click, before OK resets the display: the frame
+	// is not begun on a display made for the other output (resetDisplay makes _flags agree again)
+	if (((_flags & SDL_OPENGL) != 0) != (useOpenGL() || useHdGpu()))
+	{
+		resetDisplay(true);
+	}
 	Surface::CleanSdlSurface(_surface.get());
 	// option oxceHdGpu: the video card draws this frame's world (HdGpuWorld) and the processor's stays as it is
 	HdGpuWorld &gpuWorld = HdGpuWorld::instance();
@@ -646,7 +652,15 @@ void Screen::resetDisplay(bool resetVideo, bool noShaders)
 
 	int width = Options::displayWidth;
 	int height = Options::displayHeight;
+	const Uint32 madeFlags = _flags;
 	makeVideoFlags();
+	// an OpenGL display has no pixels and a software one no GL context: the output switched between them
+	// (oxceHdGpu or useOpenGL changed) needs a new display whatever the caller asked, or flip writes the world
+	// into a null pixel buffer (segfault in Zoom::_zoomSurfaceY when the world is not of the display's size)
+	if (_screen && ((madeFlags ^ _flags) & SDL_OPENGL))
+	{
+		resetVideo = true;
+	}
 
 	// when layered, the internal buffer is the 8-bit classic layer whatever the display depth
 	const int bufferBpp = _layered ? 8 : _bpp;
