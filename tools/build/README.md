@@ -5,7 +5,7 @@
 
 | Кнопка | Что делает | Результат в `E:\OpenXCom\dist` |
 |---|---|---|
-| **EXE** | проверки → `ninja` → поиск нужных DLL → Enigma Virtual Box | `OpenXComEx_<дата>_<время>.exe` |
+| **EXE** | проверки → `ninja` → поиск нужных DLL (кладутся рядом с exe) | `OpenXComEx_<дата>_<время>.exe` |
 | **Мод** | моды + `common`/`standard` → zip и патч | `OXCE-HD_…_mod.zip`, `OXCE-HD_…_mod_patch.zip` |
 | **Оба** | всё вместе в один архив | `OXCE-HD_…_full.zip`, `OXCE-HD_…_full_patch.zip` |
 
@@ -63,9 +63,11 @@
   и берёт всё, что лежит в `C:\msys64\mingw64\bin`. Сейчас это `libFLAC.dll`, `libogg-0.dll`,
   `libwinpthread-1.dll`. Плюс `DynamicDlls` — то, что SDL_mixer грузит сам во время игры
   (`libvorbisfile-3.dll` → `libvorbis-0.dll`, `libogg-0.dll` — музыка ogg); в таблице импорта
-  их нет. Если внешних DLL не останется, Enigma пропускается.
-- **Enigma**: проект `dist\_work\openxcom.evb` создаётся заново при каждой сборке (формат
-  один в один как ваш `openxcom.evb`) и отдаётся `enigmavbconsole.exe`.
+  их нет. DLL копируются рядом с exe — в стейдж и в `CopyExeTo`.
+- **Enigma** (только с `EnigmaPack: true`): проект `dist\_work\openxcom.evb` создаётся заново при
+  каждой сборке и отдаётся `enigmavbconsole.exe`, DLL вшиваются в exe. По умолчанию выключена:
+  упакованный exe Defender удаляет как `Program:Win32/Contebrew.A!ml`, а тот же exe без упаковки
+  чистый (грабли R-530).
 - **Моды** зеркалятся в `dist\_stage` через `robocopy /MIR`, поэтому повторная сборка копирует
   только изменённое. Архив делает 7-Zip (если установлен, быстрый режим `-mx=1`),
   иначе встроенный в Windows `tar.exe`.
@@ -83,6 +85,7 @@
 | `ModRequire` | что обязано лежать в моде; чего нет — сборка останавливается |
 | `ModExcludeDirs` / `ModExcludeFiles` | что не класть в архив |
 | `DataDirs` | папки движка рядом с exe (`common`, `standard`) |
+| `EnigmaPack` | `true` — вшивать DLL в exe Enigma Virtual Box (по умолчанию `false`, DLL рядом с exe) |
 | `EnigmaConsole` | путь к `enigmavbconsole.exe`, если он не в `Program Files (x86)\Enigma Virtual Box` |
 | `SevenZip`, `Ninja` | явные пути, если не находятся сами |
 | `ExeName` | имя exe внутри архива и в `CopyExeTo` |

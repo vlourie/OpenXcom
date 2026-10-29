@@ -368,3 +368,12 @@
 Правило:  Увидел 500 на submitfile или пустой журнал - не перебирать архивы и разделы (каждая попытка - капча Vitali). Повторить позже; архив делать ZipCrypto (-mem=ZipCrypto, пароль infected) потоком 7z e -so | 7z a -si, чтобы exe не попадал на диск. Портал Defender (Actions & submissions) - только для учётной записи организации с лицензией MDE. Против повторов на каждом выпуске - подпись exe (SignPath Foundation для open source, Azure Trusted Signing)
 Защита:   нет
 Наступал: 1   Последний: 2026-10-29
+
+## R-530  Defender удаляет exe игры, упакованный Enigma Virtual Box (Contebrew.A!ml), а тот же exe без упаковки чистый
+Статус:   активны
+Файлы:    tools/build/build.ps1;tools/build/build_config.json
+Симптом:  29.10, база 1.463.16.0: openxcom_hd выпусков 2026.09.27-2026.10.28-2 удаляется как Program:Win32/Contebrew.A!ml (R-528). MpCmdRun -Scan -ScanType 3 -File ... -DisableRemediation: exe из build-release/bin без упаковки - чисто; dist/_work/openxcom_boxed и выпущенный 32da659b... - Contebrew.A!ml; пять DLL из MSYS2 (libFLAC, libvorbisfile-3, libwinpthread-1, libogg-0, libvorbis-0) - чисто
+Причина:  build.ps1 Invoke-ExeStep вшивал пять DLL в exe через Enigma Virtual Box. Упаковщики виртуальной ФС, которыми пользуется и вредонос, ML Defender считает подозрительными; разработчик Enigma сам пишет о случайных срабатываниях на упакованные файлы. Код игры ни при чём
+Правило:  exe игрокам - без упаковщиков: DLL рядом с exe (build_config EnigmaPack по умолчанию false, Copy-ExeDlls кладёт их в стейдж и CopyExeTo). Срабатывание на exe - сначала проверить MpCmdRun -DisableRemediation распакованный и упакованный exe по отдельности, а не подавать в Microsoft и не ждать подписи
+Защита:   build.ps1: Enigma только с EnigmaPack true
+Наступал: 1   Последний: 2026-10-29

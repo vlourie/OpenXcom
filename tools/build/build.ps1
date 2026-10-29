@@ -1,7 +1,7 @@
 ﻿<#
   OXCE HD — сборка одним запуском.
 
-    -Target Exe   ninja -> openxcom.exe -> Enigma Virtual Box (DLL внутрь) -> dist\OpenXComEx_<дата>_<время>.exe
+    -Target Exe   ninja -> openxcom.exe (+ DLL рядом; Enigma Virtual Box только с EnigmaPack) -> dist\OpenXComEx_<дата>_<время>.exe
                   и dist\OXCE-HD_<дата>_<hash>_exe.zip   (внутри exe + лаунчер + common + standard, для второй машины)
                   Лаунчер (portal\publish.ps1) публикуется заново, только если его исходники новее.
 
@@ -682,9 +682,15 @@ function Invoke-ExeStep {
     foreach ($k in $dlls.Keys) { Write-Info ("{0,-24} {1}" -f $k, $dlls[$k]) }
 
     $boxed = Join-Path $workDir 'openxcom_boxed.exe'
-    if ($dlls.Count -eq 0) {
-        Write-Ok 'внешних DLL нет — Enigma не нужна, exe берётся как есть'
+    # грабли R-530: упакованный Enigma exe Defender (база 1.463.16.0) удаляет как Program:Win32/Contebrew.A!ml,
+    # тот же exe без упаковки и сами DLL чистые - по умолчанию DLL кладутся рядом с exe (Copy-ExeDlls)
+    $script:exeDlls = [ordered]@{}
+    if ($dlls.Count -eq 0 -or -not (Get-Cfg 'EnigmaPack' $false)) {
+        if ($dlls.Count -eq 0) { Write-Ok 'внешних DLL нет — Enigma не нужна, exe берётся как есть' }
+        else { Write-Ok ("Enigma выключена (EnigmaPack): exe как есть, рядом {0} DLL" -f $dlls.Count) }
+        Remove-Item -LiteralPath "$boxed.key" -Force -ErrorAction SilentlyContinue
         Copy-Item -LiteralPath $exe -Destination $boxed -Force
+        $script:exeDlls = $dlls
     } else {
         Write-Step 'Enigma Virtual Box'
         $enigma = Find-Tool (Get-Cfg 'EnigmaConsole' '') @(
@@ -932,6 +938,11 @@ function Invoke-LauncherStep {
     return [pscustomobject]@{ Paths = $paths; Version = $ver; Mode = $mode }
 }
 
+# DLL, которые exe грузит (без EnigmaPack они не вшиты) - туда же, куда exe
+function Copy-ExeDlls([string]$to) {
+    foreach ($k in $script:exeDlls.Keys) { Copy-Item -LiteralPath $script:exeDlls[$k] -Destination (Join-Path $to $k) -Force }
+}
+
 function Copy-Launcher($launcher, [string]$to) {
     foreach ($p in $launcher.Paths) { Copy-Item -LiteralPath $p -Destination $to -Force }
 }
@@ -1072,6 +1083,7 @@ try {
             if (Test-Path -LiteralPath $stageMods) { Remove-Item -LiteralPath $stageMods -Recurse -Force }
             $data = @(Invoke-DataStep)
             Copy-Item -LiteralPath $boxed -Destination (Join-Path $stageDir $exeName) -Force
+            Copy-ExeDlls $stageDir
             if ($launcher) { Copy-Launcher $launcher $stageDir }
             Save-StageNotes @("OXCE HD — $exeName и данные движка ($stamp, $branch $hash)") @() $data $exeName
             $exeZip = Join-Path $distDir "${base}_exe.zip"
@@ -1097,6 +1109,7 @@ try {
             $mods = @(Invoke-ModStep)
             $data = @(Invoke-DataStep)
             Copy-Item -LiteralPath $boxed -Destination (Join-Path $stageDir $exeName) -Force
+            Copy-ExeDlls $stageDir
             if ($launcher) { Copy-Launcher $launcher $stageDir }
             $head = @("OXCE HD — $exeName и моды ($stamp, $branch $hash)")
             Save-StageNotes $head $mods $data $exeName
@@ -1118,6 +1131,7 @@ try {
     if ($copyTo -and $Target -ne 'Mod') {
         if (Test-Path -LiteralPath $copyTo) {
             Copy-Item -LiteralPath (Join-Path $workDir 'openxcom_boxed.exe') -Destination (Join-Path $copyTo $exeName) -Force
+            Copy-ExeDlls $copyTo
             Write-Info "exe также скопирован в $copyTo\$exeName"
             if ($launcher) {
                 # запущенный лаунчер держит свой exe: тогда в установке останется старый, и об этом надо сказать
