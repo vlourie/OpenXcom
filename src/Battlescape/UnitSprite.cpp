@@ -1154,8 +1154,9 @@ void UnitSprite::drawRoutine5()
 	{
 		selectUnit(s, 32 + (_part * 4), (shownDir() * 16) + ((_unit->getWalkingPhase() / 2) % 4));
 	}
-	else if (int phase = treadPhase(); phase >= 0)
+	else if (int phase = treadPhase(); phase >= 0 && _unitSurface->getFrame(32 + (_part * 4) + (shownDir() * 16) + phase))
 	{
+		// Units that never walk (X-Piratez truck turret: 32 frames) have no walking frames to tread with.
 		selectUnit(s, 32 + (_part * 4), (shownDir() * 16) + phase);
 	}
 	else
