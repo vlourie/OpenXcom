@@ -4,7 +4,8 @@ r"""pedia_recraft.py - перекрафт картинок педии по за�
 
 Вход - art\pedia_regen\<круг>\edits.json: по картинке, что изменить (core - английский для модели,
 переведён с заметки), с чего рисовать (base: hd - наша HD из установки, h18 - картинка 18+, orig - только
-оригинал) и куда встанет выбранное (slot). Кандидаты на картинку:
+оригинал) и куда встанет выбранное (slot); input - править не base, а эту картинку (кандидат прошлого круга).
+Кандидаты на картинку:
   e1, e2 - правка поверх base, два зерна: «измени только это, остальное как на фото» (сила 1.0);
   o1     - заново из оригинала (ESRGAN), промпт серии hd (pedia_batch.spec_for) плюс та же правка;
            при base h18 не делается - Vitali прямо велел брать 18+; при base orig - o1 и o2.
@@ -68,7 +69,7 @@ def jobs_for(d, origs, plan, caps):
         core, neg = fill(e.get("core", ""), d), fill(e.get("neg", ""), d)
         var = {}
         if e["base"] in ("hd", "h18"):
-            src = os.path.abspath(os.path.join(HD if e["base"] == "hd" else H18, stem + ".png"))
+            src = os.path.abspath(e.get("input") or os.path.join(HD if e["base"] == "hd" else H18, stem + ".png"))
             if not os.path.exists(src):
                 miss.append(stem + " (" + e["base"] + ")")
                 continue
