@@ -11,6 +11,7 @@ r"""pedia_ab.py - картинки педии по заданию jobs.json од
 «фото» из hd\UI: иначе модель перерисовывает чужой ответ со всеми его выдумками.
 
 jobs.json - список {"file": "Bike_3.png", "variants": {"photo_hd": {"prompt": "...", "neg": "..."}, ...}}.
+У варианта можно задать "strength", "input" (вход - готовая картинка вместо ESRGAN) и "seed".
 Выход: <out>\<имя>__<вариант>__<модель>.png - готовые кадры x4, в мод ничего не пишет.
 
     tools\hdart\.venv\Scripts\python.exe tools\hdart\pedia_ab.py --model old --jobs art\_refs\pedia_ab\jobs.json
@@ -240,7 +241,7 @@ def main():
         W, H = pu.target_size(crop.shape[1], crop.shape[0], args.mp)
         img = Image.fromarray(crop).resize((W, H), Image.LANCZOS)
         t1 = time.time()
-        seed = pu.seed_of(name, args.seed)
+        seed = int(spec.get("seed") or pu.seed_of(name, args.seed))     # свой seed варианта - второй кандидат
         strength = float(spec.get("strength", args.strength))
         if args.model == "new":
             out = gen(img, spec["prompt"], spec.get("neg", ""), seed, strength)
