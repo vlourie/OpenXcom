@@ -480,6 +480,8 @@ en-US:
   STR_HD_LIGHT_DESC: "In the HD sprite modes: light blends smoothly between tiles and has color (cool at night, warm from fire and lamps). The game's own visibility rules are not affected."
   STR_HD_GROUND_VARIANTS: "HD ground variants"
   STR_HD_GROUND_VARIANTS_DESC: "In the HD sprite modes: where a mod's HD pack holds several paintings of a floor (<index>.v1.png and on), they are laid over the map as smooth patches with blended, ragged edges, so a field of one tile stops looking like a grid. Off = the pack's own painting everywhere."
+  STR_HD_UNIT_SHADOW: "HD unit shadow"
+  STR_HD_UNIT_SHADOW_DESC: "In the HD sprite modes: a soft shadow on the floor under every visible unit that stands on something; it follows the unit's step and rises with the terrain. Not drawn under units hanging with no floor below. Picture only: the game's own visibility rules are not affected."
   STR_HD_HOVER_BOB: "HD unit sway"
   STR_HD_HOVER_BOB_DESC: "In the HD sprite modes: flying units that hang with no floor below sway gently up and down, easing in on take-off and out on landing. Picture only, the unit's position does not change. Off (and mode 0) = they hang still, as in the classic game."
   STR_HD_WALKER_TURN: "HD walker shuffle"

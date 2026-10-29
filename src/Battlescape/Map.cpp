@@ -246,6 +246,57 @@ const HdFrame &fallDiamond(int k)
 	return f;
 }
 
+/// The opacity of a unit's shadow at its centre (it fades to nothing at the edge).
+const int UNIT_SHADOW_ALPHA = 110;
+
+/**
+ * The shadow under a unit: a soft black ellipse on the floor (2:1, a circle in the isometric view), 7x3.5 pixels
+ * of half axes per tile of the unit's size, centred on its footprint and moved a pixel to the right (the light
+ * comes from the top left, docs/research/hd-shadows-ao-2026-10-30.md). The frame is the floor diamond of the
+ * unit's `part` (the bottom 32x16 of its 32x40 frame, k times) with the piece of the ellipse that lies in it,
+ * so the pieces of a big unit meet with no gap and no overlap. One cached frame per size, part and scale.
+ */
+const HdFrame &unitShadow(int size, int part, int k)
+{
+	static std::map<int, HdFrame> cache;
+	const int key = (k << 8) | (size << 4) | part;
+	auto it = cache.find(key);
+	if (it != cache.end())
+	{
+		return it->second;
+	}
+	HdFrame &f = cache[key];
+	f.width = 32 * k;
+	f.height = 16 * k;
+	f.pixels.assign((size_t)f.width * f.height, 0);
+	const int dx = part % 2, dy = part / 2;
+	// the footprint's centre in this part's diamond: the top part's diamond centre, half a tile lower per extra tile
+	const double cx = 16.0 * k - 16.0 * k * (dx - dy) + 1.0 * k;
+	const double cy = 8.0 * k * size - 8.0 * k * (dx + dy);
+	const double ax = 7.0 * k * size, ay = 3.5 * k * size;
+	const double hw = 16.0 * k, hh = 8.0 * k;
+	for (int y = 0; y < f.height; ++y)
+	{
+		for (int x = 0; x < f.width; ++x)
+		{
+			if (std::fabs(x + 0.5 - hw) / hw + std::fabs(y + 0.5 - hh) / hh >= 1.0)
+			{
+				continue;
+			}
+			const double ex = (x + 0.5 - cx) / ax, ey = (y + 0.5 - cy) / ay;
+			const double d = 1.0 - (ex * ex + ey * ey);
+			const int alpha = d > 0 ? (int)std::lround(UNIT_SHADOW_ALPHA * d * d) : 0;
+			if (alpha > 0)
+			{
+				f.pixels[(size_t)y * f.width + x] = (Uint32)alpha << 24;
+			}
+		}
+	}
+	f.generated = true;
+	f.buildSpans();
+	return f;
+}
+
 /**
  * The part of a floor diamond (the bottom 32x16 of the 32x40 frame, k times) that lies within the cell's coordinates
  * a in [aLo, aHi] along the map's x (the diamond's top to its right corner) and b in [bLo, bHi] along the map's y (the
@@ -2885,6 +2936,15 @@ void Map::drawUnit(UnitSprite &unitSprite, Tile *unitTile, Tile *currTile, Posit
 		shade = std::min(+NIGHT_VISION_SHADE, shade);
 	}
 	HdDrawTimer timer(HdDrawStats::frame.unitsUs);
+	// HD: the shadow on the floor, under the piece drawn here and cut by its mask; not under a unit hanging with no
+	// floor, nor under the top of one reaching up from the level below (its floor is there); not in the turned view
+	if (Options::oxceHdUnitShadow && _canvas->getHdMode() != HD_MODE_NEAREST && !unitFromBelow && !unitFromAbove && !turned
+		&& !bu->isFloating() && !bu->isOut() && part < bu->getArmor()->getSize() * bu->getArmor()->getSize())
+	{
+		const Position bob = hoverBob(bu);
+		_canvas->blitFrame(unitShadow(bu->getArmor()->getSize(), part, _k), tileScreenPosition.x + offsets.ScreenOffset.x - bob.x,
+			tileScreenPosition.y + offsets.ScreenOffset.y - bob.y + 24 * _k, mask);
+	}
 	// the facing indicator: with Alt held, or always (HD option, only what Alt shows)
 	unitSprite.draw(bu, part, tileScreenPosition.x + offsets.ScreenOffset.x, tileScreenPosition.y + offsets.ScreenOffset.y, shade, mask, (_isAltPressed || (Options::oxceHdAltInfo & 1)) && !_isCtrlPressed);
 }

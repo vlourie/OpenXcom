@@ -781,6 +781,28 @@ void Canvas32::blitFrame(const HdFrame &hd, int x, int y)
 	record(cmd);
 }
 
+void Canvas32::blitFrame(const HdFrame &hd, int x, int y, GraphSubset range)
+{
+	if (_hdMode == HD_MODE_NEAREST || hd.empty())
+	{
+		return;
+	}
+	Cmd cmd {};
+	cmd.type = Cmd::BLIT_HD;
+	cmd.x = x;
+	cmd.y = y;
+	cmd.hd = &hd;
+	cmd.srcDomain = GraphSubset(hd.width, hd.height);
+	cmd.clip = GraphSubset::intersection(range, fullArea());
+	cmd.y0 = std::max(y, cmd.clip.beg_y);
+	cmd.y1 = std::min(y + hd.height, cmd.clip.end_y);
+	if (cmd.y0 >= cmd.y1)
+	{
+		return;
+	}
+	record(cmd);
+}
+
 void Canvas32::blitFrameShaded(const HdFrame &hd, int x, int y, int shade)
 {
 	if (_hdMode == HD_MODE_NEAREST || hd.empty())

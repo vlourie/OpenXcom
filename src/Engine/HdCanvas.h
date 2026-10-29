@@ -241,6 +241,8 @@ public:
 	/// HD render: draws a true-color frame as it is (combat effects, see HdFx; no effect on the classic
 	/// canvas). The frame must stay alive until the canvas is flushed.
 	virtual void blitFrame(const HdFrame &hd, int x, int y) {}
+	/// HD render: blitFrame cut to `range` of the canvas (the mask of a unit's piece: its shadow, see Map::drawUnit).
+	virtual void blitFrame(const HdFrame &hd, int x, int y, GraphSubset range) {}
 	/// HD render (XP-000263): blitFrame at a shade 0..16 (a shaded copy of the frame is kept; the frame must stay alive and
 	/// unchanged while the canvas lives). No effect on the classic canvas.
 	virtual void blitFrameShaded(const HdFrame &hd, int x, int y, int shade) {}
@@ -659,6 +661,7 @@ public:
 	void setWallField(const HdWallField *field) override { _wallField = field; }
 	void setCellAddress(int part, int x, int y, int z, int path) override { _cellPart = part; _cellX = x; _cellY = y; _cellZ = z; _cellPath = path; }
 	void blitFrame(const HdFrame &hd, int x, int y) override;
+	void blitFrame(const HdFrame &hd, int x, int y, GraphSubset range) override;
 	void blitFrameShaded(const HdFrame &hd, int x, int y, int shade) override;
 	const HdFrame *frameOf(SurfaceRaw<const Uint8> src) override;
 	/// The ground pattern at point (u, v) of level z (tiles; u along the map's x, v along its y) for
