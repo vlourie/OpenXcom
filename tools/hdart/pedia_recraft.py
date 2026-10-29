@@ -8,7 +8,8 @@ r"""pedia_recraft.py - перекрафт картинок педии по за�
 Кандидаты на картинку:
   e1, e2 - правка поверх base, два зерна: «измени только это, остальное как на фото» (сила 1.0);
   o1     - заново из оригинала (ESRGAN), промпт серии hd (pedia_batch.spec_for) плюс та же правка;
-           при base h18 не делается - Vitali прямо велел брать 18+; при base orig - o1 и o2.
+           при base h18 не делается - Vitali прямо велел брать 18+; при base orig - o1 и o2;
+  k1     - при copy: base как есть, без генерации («взять фото 18+, не перерисовывать»).
 Выход: <круг>\<имя>__<вариант>__<метка>.png через pedia_ab.py новой моделью. В мод ничего не пишет:
 выбор - на странице pedia_notes.py --round <круг>, подключение - после выбора Vitali.
 
@@ -66,6 +67,8 @@ def jobs_for(d, origs, plan, caps):
         if k not in origs:
             miss.append(stem)
             continue
+        if e.get("copy"):
+            continue                                    # кандидат k1 - копия base без генерации, см. copies
         core, neg = fill(e.get("core", ""), d), fill(e.get("neg", ""), d)
         var = {}
         if e["base"] in ("hd", "h18"):
@@ -96,8 +99,19 @@ def jobs_for(d, origs, plan, caps):
     return jobs, miss
 
 
+def copies(d, out, tag):
+    """copy в edits.json: Vitali велел взять base как есть - кандидат k1 без видеокарты"""
+    for e in d["edits"]:
+        if e.get("copy"):
+            src = os.path.join(HD if e["base"] == "hd" else H18, e["stem"] + ".png")
+            if os.path.exists(src):
+                shutil.copyfile(src, os.path.join(out, "%s__k1__%s.png" % (e["stem"], tag)))
+            else:
+                print("  нет %s для копии %s" % (src, e["stem"]))
+
+
 MODS = {"game": os.path.join(pb.PIR, "hd"), "repo": os.path.join("user", "mods", "hd")}
-PICKED = ("e1", "e2", "o1", "o2")
+PICKED = ("e1", "e2", "o1", "o2", "k1")
 
 
 def picks_of(out):
@@ -191,6 +205,7 @@ def main():
     plan = pb.load(os.path.join(pb.ROOT, "plan.json"), {}).get("info", {})
     caps = pb.load(os.path.join(pb.ROOT, "captions.json"), {})
     jobs, miss = jobs_for(d, origs, plan, caps)
+    copies(d, out, a.tag)
     jpath = os.path.join(out, "jobs.json")
     pb.save(jpath, jobs)
     print("круг %s: картинок %d, кандидатов %d%s" % (a.round, len(jobs), sum(len(j["variants"]) for j in jobs),
