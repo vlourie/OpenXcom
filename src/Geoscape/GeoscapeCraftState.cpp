@@ -106,7 +106,7 @@ GeoscapeCraftState::GeoscapeCraftState(Craft *craft, Globe *globe, Waypoint *way
 		_txtWeaponName[i] = new Text(120, 9, 42, offset_upper + 92 + 8*i);
 		_txtWeaponAmmo[i] = new Text(80, 9, 164, offset_upper + 92 + 8*i);
 	}
-	_txtRedirect = new Text(230, 17, 13, offset_lower + 0);
+	_txtRedirect = new Text(230, 17, 13, offset_lower - 3);
 	_txtETA = new Text(230, 9, 13, offset_lower + 4);
 	_btnBase = new TextButton(192, 12, 32, offset_lower + 14);
 	_btnTarget = new TextButton(192, 12, 32, offset_lower + 28);
