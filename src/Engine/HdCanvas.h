@@ -249,6 +249,9 @@ public:
 	/// HD render (XP-000263): blitFrame at a shade 0..16 (a shaded copy of the frame is kept; the frame must stay alive and
 	/// unchanged while the canvas lives). No effect on the classic canvas.
 	virtual void blitFrameShaded(const HdFrame &hd, int x, int y, int shade) {}
+	/// HD render (option oxceHdVolumeSmoke): a true-color frame under one flat light - a shade 0..16 (fractions too) and
+	/// a light colour (0..1 a channel) - lit per pixel, no copy kept. No effect on the classic canvas.
+	virtual void blitFrameToned(const HdFrame &hd, int x, int y, float shade, const float tint[3]) { (void)hd; (void)x; (void)y; (void)shade; (void)tint; }
 	/// HD render (XP-000263): the true-color frame the canvas draws for a palette frame (its pack frame, or its smoothed
 	/// version), nullptr when it draws the palette frame as it is (the classic canvas, the nearest mode).
 	virtual const HdFrame *frameOf(SurfaceRaw<const Uint8> src) { (void)src; return nullptr; }
@@ -666,6 +669,7 @@ public:
 	void blitFrame(const HdFrame &hd, int x, int y) override;
 	void blitFrame(const HdFrame &hd, int x, int y, GraphSubset range) override;
 	void blitFrameShaded(const HdFrame &hd, int x, int y, int shade) override;
+	void blitFrameToned(const HdFrame &hd, int x, int y, float shade, const float tint[3]) override;
 	const HdFrame *frameOf(SurfaceRaw<const Uint8> src) override;
 	/// The ground pattern at point (u, v) of level z (tiles; u along the map's x, v along its y) for
 	/// `count` variants: 0 .. count - 1, continuous (exposed for tests).

@@ -3167,6 +3167,39 @@ void Canvas32::recordHdLit(Cmd &cmd, const HdFrame &hd, int shade)
 }
 
 /**
+ * A frame under one flat light, lit per pixel when the command runs (no copy is kept: puffs of smoke take every
+ * shade and colour the light gives them, a cache of copies would only grow).
+ */
+void Canvas32::blitFrameToned(const HdFrame &hd, int x, int y, float shade, const float tint[3])
+{
+	if (_hdMode == HD_MODE_NEAREST || hd.empty())
+	{
+		return;
+	}
+	Cmd cmd {};
+	cmd.type = Cmd::BLIT_HD_LIT;
+	cmd.x = x;
+	cmd.y = y;
+	cmd.hd = &hd;
+	cmd.srcDomain = GraphSubset(hd.width, hd.height);
+	cmd.clip = fullArea();
+	cmd.y0 = y;
+	cmd.y1 = y + hd.height;
+	cmd.tintFlat = true;
+	const Uint16 s = (Uint16)(std::max(0.0f, std::min(16.0f, shade)) * 256.0f + 0.5f);
+	for (int i = 0; i < HdLight::NODES; ++i)
+	{
+		cmd.lightShade[i] = s;
+		for (int c = 0; c < 3; ++c)
+		{
+			cmd.lightTint[i][c] = (Uint8)std::max(0, std::min(255, (int)(tint[c] * 255.0f + 0.5f)));
+		}
+	}
+	lightWeightsFor(hd.width, hd.height); // built on the recording thread
+	record(cmd);
+}
+
+/**
  * The tone a floor blit draws its frame at, as blit and recordHdLit pick it:
  * the shaded copy's key, or GROUND_RAW when the frame is drawn as it is
  * (shaded by the command, interpolated per pixel, or not shaded at all).
