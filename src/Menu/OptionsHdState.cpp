@@ -38,6 +38,7 @@
 #include "HdLabPasswordState.h"
 #include "OptionDetailState.h"
 #include "OptionsCustomColorState.h"
+#include "OptionsButtonFaceState.h"
 
 namespace OpenXcom
 {
@@ -68,8 +69,9 @@ static const std::string LAB_CATEGORY = "STR_HD_LAB";
 static const std::string AI_CATEGORY = "STR_HD_AI";
 /// Row markers in _rows: ROW_LAB asks for the lab's password, ROW_LAB_LOCK closes the lab again, ROW_BETTERAI opens the
 /// BetterAI screen, ROW_BACK goes back from it.
-/// ROW_CUSTOM opens the window of the player's own colour of the battle panel (under that colour's row).
-static const int ROW_NONE = -1, ROW_ART = -2, ROW_LAB = -3, ROW_LAB_LOCK = -4, ROW_BETTERAI = -5, ROW_BACK = -6, ROW_CUSTOM = -7;
+/// ROW_CUSTOM opens the window of the player's own colour of the battle panel (under that colour's row); ROW_FACE the window of
+/// the windows' buttons' look (under the row of their theme).
+static const int ROW_NONE = -1, ROW_ART = -2, ROW_LAB = -3, ROW_LAB_LOCK = -4, ROW_BETTERAI = -5, ROW_BACK = -6, ROW_CUSTOM = -7, ROW_FACE = -8;
 
 /**
  * Initializes all the elements in the HD Options window.
@@ -375,6 +377,15 @@ void OptionsHdState::updateList()
 					_lstOptions->setRowColor(_lstOptions->getLastRowIndex(), _greyedOutColor);
 				}
 			}
+			if (info.type() == OPTION_BOOL && info.asBool() == &Options::oxceHdWindowTheme)
+			{
+				// under the windows' buttons' theme: the window of their relief, shape and gloss (XP-000399)
+				addRow(ROW_FACE, 0, std::string(tr("STR_HD_BUTTON_FACE")) + " >", "");
+				if (dependsOff(info) || !Options::oxceHdWindowTheme)
+				{
+					_lstOptions->setRowColor(_lstOptions->getLastRowIndex(), _greyedOutColor);
+				}
+			}
 		}
 		if (lab)
 		{
@@ -675,6 +686,11 @@ void OptionsHdState::changeSetting(size_t sel, Uint8 button)
 		_game->pushState(new OptionsCustomColorState(_origin));
 		return;
 	}
+	if (row.group == ROW_FACE)
+	{
+		_game->pushState(new OptionsButtonFaceState(_origin));
+		return;
+	}
 	if (row.group == ROW_LAB)
 	{
 		// the list is filled again when the tab comes back on top (init)
@@ -907,6 +923,10 @@ std::string OptionsHdState::rowDescription(size_t sel) const
 		{
 			desc = tr("STR_HD_CUSTOM_COLOR_DESC");
 		}
+		else if (row.group == ROW_FACE)
+		{
+			desc = tr("STR_HD_BUTTON_FACE_DESC");
+		}
 		else if (row.group == ROW_ART)
 		{
 			desc = tr("STR_HD_ART_VERSION_DESC");
@@ -942,7 +962,7 @@ void OptionsHdState::showDetail(size_t sel)
 	{
 		return;
 	}
-	if (row.group == ROW_LAB || row.group == ROW_LAB_LOCK || row.group == ROW_BETTERAI || row.group == ROW_BACK || row.group == ROW_CUSTOM)
+	if (row.group == ROW_LAB || row.group == ROW_LAB_LOCK || row.group == ROW_BETTERAI || row.group == ROW_BACK || row.group == ROW_CUSTOM || row.group == ROW_FACE)
 	{
 		changeSetting(sel, SDL_BUTTON_LEFT);
 		return;

@@ -151,8 +151,13 @@ public:
 	/// The theme's metal at the ramp step v of a widget (1 the light end ... 5 the dark end, where the palette's
 	/// pal[color + v * mul] was), 0xAARRGGBB.
 	static Uint32 themeShade(int v);
-	/// Are themed buttons cast as caps of the metal's mid-light tone (the player's own colour of the battle panel only:
-	/// the ready themes keep the ramp's dark caps with light letters)?
+	/// The relief the windows' buttons are cast in (oxceHdButtonFace, or the one a button of the window "Buttons' look"
+	/// stands for): 0 the flat button as before; 0 too without the theme or on the dark skin.
+	static int buttonFace();
+	/// The next buttons are cast in the relief `face` whatever the option says, until set back to -1.
+	static void setFaceOverride(int face);
+	/// Are themed buttons cast as caps of the metal's mid-light tone (the player's own colour of the battle panel, or a
+	/// relief: the ready themes' flat buttons keep the ramp's dark caps with light letters)?
 	static bool themeCaps();
 	/// Are the letters on a themed button's cap (not pressed) dark - the metal is light - or light (the metal is dark)?
 	static bool themeInk();

@@ -67,6 +67,8 @@ public:
 	void loadLater(const std::string &filename);
 	/// Plays the sound.
 	void play(int channel = -1, int angle = 0, int distance = 0) const;
+	/// Plays it as a shot: with oxceHdShotCut the same sound still playing (the shot before) fades out first.
+	void playShot(int angle) const;
 	/// Stops all sounds.
 	static void stop();
 	/// Plays the sound repeatedly.

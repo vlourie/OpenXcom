@@ -124,6 +124,25 @@ void Sound::play(int channel, int angle, int distance) const
 }
 
 /**
+ * Plays the sound of a shot (XP-000400): with oxceHdShotCut the same sound of a shot before, still playing (a shotgun's
+ * pump), fades out at once, so that it is not heard over this one. The shots keep their time; only the sound is cut.
+ * @param angle Stereo position of the shot.
+ */
+void Sound::playShot(int angle) const
+{
+	Mix_Chunk *mine = Options::oxceHdShotCut && !Options::mute ? chunk() : nullptr;
+	if (mine)
+	{
+		const int channels = Mix_AllocateChannels(-1);
+		for (int c = 0; c < channels; ++c)
+		{
+			if (Mix_Playing(c) && Mix_GetChunk(c) == mine) Mix_FadeOutChannel(c, 40);
+		}
+	}
+	play(-1, angle);
+}
+
+/**
  * Stops all sounds playing.
  */
 void Sound::stop()
