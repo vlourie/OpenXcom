@@ -68,6 +68,12 @@ private:
 	struct GridLabel { std::string text; int x, y; };
 	std::vector<GridLabel> _labels;
 	Text *_hdLabel;
+	/// the stack numbers and wound counters of the ground items: baked in the classic digits (_stackTop), and as
+	/// {value, where, colour} for the HD interface to draw with its own font (XP-000424)
+	struct HdStack { int value, x, y; Uint8 color; };
+	std::vector<HdStack> _hdStacks;
+	Surface *_stackTop;
+	NumberText *_hdNumber;
 	/// the items the HD interface draws from their own pictures (hd/BIGOBS.PCK), with where the classic sprite goes
 	struct HdPlaced { HdItems::Pick pick; int x, y; };
 	std::vector<HdPlaced> _hdItems;
@@ -89,6 +95,8 @@ private:
 	bool hdLabels(const SDL_Surface *surface) const;
 	/// Draws the slot names with the TrueType fonts where the classic layout put them.
 	void drawHdLabels();
+	/// Draws the stack numbers with the HD interface's font where the classic layout put them.
+	void drawHdStacks();
 	/// Clear all occupied slots markers.
 	std::vector<std::vector<char>>* clearOccupiedSlotsCache();
 	/// Moves an item to a specified slot.

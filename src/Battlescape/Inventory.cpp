@@ -78,6 +78,9 @@ Inventory::Inventory(Game *game, int width, int height, int x, int y, bool base)
 	_warning = new WarningMessage(224, 24, 48, 176);
 	_stackNumber = new NumberText(15, 15, 0, 0);
 	_stackNumber->setBordered(true);
+	_stackTop = new Surface(width, height, 0, 0);
+	_hdNumber = new NumberText(15, 15, 0, 0);
+	_hdNumber->setBordered(true);
 
 	_warning->initText(_game->getMod()->getFont("FONT_BIG"), _game->getMod()->getFont("FONT_SMALL"), _game->getLanguage());
 	_warning->setColor(_game->getMod()->getInterface("battlescape")->getElement("warning")->color2);
@@ -137,6 +140,8 @@ Inventory::~Inventory()
 	delete _selection;
 	delete _warning;
 	delete _stackNumber;
+	delete _stackTop;
+	delete _hdNumber;
 	delete _animTimer;
 }
 
@@ -158,6 +163,8 @@ void Inventory::setPalette(const SDL_Color *colors, int firstcolor, int ncolors)
 	_selection->setPalette(colors, firstcolor, ncolors);
 	_warning->setPalette(colors, firstcolor, ncolors);
 	_stackNumber->setPalette(getPalette());
+	_stackTop->setPalette(colors, firstcolor, ncolors);
+	_hdNumber->setPalette(getPalette());
 }
 
 /**
@@ -337,6 +344,22 @@ void Inventory::drawHdLabels()
 }
 
 /**
+ * The stack numbers and the fatal wounds counters of the ground items, drawn with the HD interface's font
+ * (NumberText::hdMirror) onto the HD layer where the classic digits stand.
+ */
+void Inventory::drawHdStacks()
+{
+	for (const HdStack &stack : _hdStacks)
+	{
+		_hdNumber->setValue(stack.value);
+		_hdNumber->setColor(stack.color);
+		_hdNumber->setX(getX() + stack.x);
+		_hdNumber->setY(getY() + stack.y);
+		_hdNumber->hdMirror();
+	}
+}
+
+/**
  * Draws the items contained in the soldier's inventory.
  */
 void Inventory::drawItems()
@@ -380,6 +403,8 @@ void Inventory::drawItems()
 
 	ScriptWorkerBlit work;
 	_items->clear();
+	_stackTop->clear();
+	_hdStacks.clear();
 	Uint8 color =_game->getMod()->getInterface("inventory")->getElement("numStack")->color;
 	Uint8 color2 = _game->getMod()->getInterface("inventory")->getElement("numStack")->color2;
 	if (_selUnit != 0)
@@ -532,6 +557,7 @@ void Inventory::drawItems()
 				_stackNumber->draw();
 				_stackNumber->setColor(color2);
 				_stackNumber->blit(stackLayer.getSurface());
+				_hdStacks.push_back({ fatalWounds, _stackNumber->getX(), _stackNumber->getY(), color2 });
 			}
 
 			// item stacking
@@ -547,10 +573,12 @@ void Inventory::drawItems()
 				_stackNumber->draw();
 				_stackNumber->setColor(color);
 				_stackNumber->blit(stackLayer.getSurface());
+				_hdStacks.push_back({ (int)_stackLevel[groundItem->getSlotX()][groundItem->getSlotY()], _stackNumber->getX(), _stackNumber->getY(), color });
 			}
 		}
 
-		stackLayer.blitNShade(over, 0, 0);
+		// the numbers have a layer of their own: the HD interface draws them with its own font (see blit)
+		stackLayer.blitNShade(_stackTop, 0, 0);
 	}
 }
 
@@ -786,6 +814,11 @@ void Inventory::blit(SDL_Surface *surface)
 	_items->blitNShade(this, 0, 0);
 	const bool fonts = hdLabels(surface);
 	const bool hdItems = _hdItemsScale && HdUi::isScreen(surface);
+	if (!fonts && !hdItems)
+	{
+		// the classic path: the numbers over the items, as they were when they lay in the items' own layer
+		_stackTop->blitNShade(this, 0, 0);
+	}
 	if (fonts || hdItems)
 	{
 		// the layers go to the screen one by one, in the same order: the classic pixels come out the
@@ -808,6 +841,19 @@ void Inventory::blit(SDL_Surface *surface)
 				HdItems::draw(placed.pick, getX() + placed.x, getY() + placed.y, window);
 			}
 			layer(_itemsTop);
+		}
+		if (fonts)
+		{
+			// the classic digits go to the classic pixels only; the HD layer gets the numbers in the interface's font
+			SDL_Rect target {};
+			target.x = getX();
+			target.y = getY();
+			SDL_BlitSurface(_stackTop->getSurface(), nullptr, surface, &target);
+			drawHdStacks();
+		}
+		else
+		{
+			layer(_stackTop);
 		}
 		if (hint)
 		{
