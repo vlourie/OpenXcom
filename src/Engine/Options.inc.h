@@ -209,6 +209,8 @@ OPT bool oxceHdUnitShadow;
 OPT bool oxceHdFloorAo;
 // HD render: a soft shadow on the floor under every item lying on it, from the alpha of its HD frame (HD modes only)
 OPT bool oxceHdItemShadow;
+// HD render: explosions, hits and muzzle flashes light the map around them, shadowed by its LOFT (HD modes with oxceHdLight)
+OPT bool oxceHdFlashLight;
 // HD lab (Engine/HdLab.h): the battle map turned by this many quarters (0..3), only while the lab is open
 OPT int oxceHdMapRotation;
 // HD lab: the key a correct lab password leaves (empty: the lab is closed)

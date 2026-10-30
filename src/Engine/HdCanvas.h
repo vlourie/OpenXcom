@@ -104,6 +104,9 @@ struct HdLight
 	float tint[NODES][3] = { { 1, 1, 1 }, { 1, 1, 1 }, { 1, 1, 1 }, { 1, 1, 1 }, { 1, 1, 1 }, { 1, 1, 1 }, { 1, 1, 1 }, { 1, 1, 1 }, { 1, 1, 1 } };
 	/// All nodes equal: the sprite is drawn flat (through the shaded-frame cache).
 	bool flat = true;
+	/// A flash lights the field this frame (Options::oxceHdFlashLight): its nodes change every frame, so its sprites
+	/// are lit per pixel and kept out of the cache of lit copies.
+	bool dynamic = false;
 };
 
 /**

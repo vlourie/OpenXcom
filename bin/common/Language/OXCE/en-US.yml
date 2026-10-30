@@ -486,6 +486,8 @@ en-US:
   STR_HD_FLOOR_AO_DESC: "In the HD sprite modes: the floor darkens softly beside the walls, crates and other things standing on it, as in the corners of a room. Taken from the shape of the map parts the player has seen; low rubble shades less. Picture only: visibility and the game's rules are not affected."
   STR_HD_ITEM_SHADOW: "HD item shadow"
   STR_HD_ITEM_SHADOW_DESC: "In the HD sprite modes: a soft shadow on the floor under every item lying on it - weapons, loot, bodies. Made from the item's own picture. Picture only: visibility and the game's rules are not affected."
+  STR_HD_FLASH_LIGHT: "HD flash light"
+  STR_HD_FLASH_LIGHT_DESC: "In the HD sprite modes with HD light and HD effects: explosions, hits and muzzle flashes light the floor, walls and soldiers around them in the flash's own colour and strength; walls cast its shadow, the light does not pass through them. Best seen at night: by day nothing gets brighter. Picture only: visibility and the game's rules are not affected."
   STR_HD_HOVER_BOB: "HD unit sway"
   STR_HD_HOVER_BOB_DESC: "In the HD sprite modes: flying units that hang with no floor below sway gently up and down, easing in on take-off and out on landing. Picture only, the unit's position does not change. Off (and mode 0) = they hang still, as in the classic game."
   STR_HD_WALKER_TURN: "HD walker shuffle"

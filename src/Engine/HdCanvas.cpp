@@ -3154,7 +3154,7 @@ void Canvas32::recordHdLit(Cmd &cmd, const HdFrame &hd, int shade)
 		}
 	}
 	const LightWeights &weights = lightWeightsFor(hd.width, hd.height); // built on the recording thread
-	if (const HdFrame *lit = litFor(hd, cmd, weights))
+	if (const HdFrame *lit = _light.dynamic ? nullptr : litFor(hd, cmd, weights))
 	{
 		// the frame under this light made once: a plain alpha copy
 		cmd.type = Cmd::BLIT_HD;
