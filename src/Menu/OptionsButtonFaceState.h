@@ -39,15 +39,17 @@ class OptionsButtonFaceState : public State
 {
 private:
 	Window *_window;
-	Text *_txtTitle, *_txtGloss;
+	Text *_txtTitle, *_txtGloss, *_txtInkHue, *_txtInkLight;
 	TextButton *_btnFace[12], *_btnShape[3];
 	TextButton *_faceSel, *_shapeSel;
-	Slider *_slrGloss;
+	Slider *_slrGloss, *_slrInkHue, *_slrInkLight;
 	TextButton *_btnOk, *_btnCancel, *_btnReset;
-	/// What the options were when the window opened: the relief, the shape, the gloss.
-	int _was[3];
-	/// Shows the options on the buttons, the slider and the label.
+	/// What the options were when the window opened: the relief, the shape, the gloss, the letters' hue and brightness.
+	int _was[5];
+	/// Shows the options on the buttons, the sliders and the labels.
 	void show();
+	/// Shows the letters' hue and brightness on their sliders and labels.
+	void showInk();
 public:
 	/// Creates the window.
 	OptionsButtonFaceState(OptionsOrigin origin);
@@ -58,6 +60,8 @@ public:
 	void btnShapeClick(Action *action);
 	/// Handler for moving the gloss slider.
 	void slrGlossChange(Action *action);
+	/// Handler for moving the sliders of the letters' hue and brightness.
+	void slrInkChange(Action *action);
 	/// Handler for clicking OK.
 	void btnOkClick(Action *action);
 	/// Handler for clicking Cancel.

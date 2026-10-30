@@ -290,6 +290,10 @@ OPT int oxceHdCustomBackVal;
 OPT int oxceHdButtonFace;
 OPT int oxceHdButtonShape;
 OPT int oxceHdButtonGloss;
+// The same window (XP-000411): the buttons' letters (and arrows) in the theme's metal - a hue 1-360 degrees (0 = as before, picked by the
+// cap) and a brightness 0-100 (50 = as before); kept readable against the cap; picture only
+OPT int oxceHdButtonInkHue;
+OPT int oxceHdButtonInkLight;
 // Battlescape sound (XP-000400): a shot's sound fades out the same sound of a shot before it still playing (a shotgun's pump heard
 // over the next reaction shot); the shots keep their time and order. Off = sounds overlap, as before
 OPT bool oxceHdShotCut;
