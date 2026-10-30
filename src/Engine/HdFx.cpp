@@ -481,6 +481,22 @@ std::string stabClip(const std::string &swing, int dx, int dy, int loss, unsigne
 	return "stab_" + std::to_string(s) + "_" + std::to_string(d) + "_" + (char)('a' + (seed >> 8) % 3);
 }
 
+bool dryFloor(const Tile *tile)
+{
+	const MapData *floor = tile ? tile->getMapData(O_FLOOR) : nullptr;
+	if (!floor)
+	{
+		return false;
+	}
+	if (std::strcmp(materialOf(floor), "water") == 0)
+	{
+		return false;
+	}
+	std::string set = floor->getDataset() ? floor->getDataset()->getName() : "";
+	std::transform(set.begin(), set.end(), set.begin(), [](unsigned char c) { return (char)std::toupper(c); });
+	return !has(set, "LAVA") && !has(set, "MAGMA");
+}
+
 int bloodRgb(const Armor *armor)
 {
 	if (!Options::oxceHdBloodColor || !armor)

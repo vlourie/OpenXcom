@@ -309,6 +309,9 @@ OPT bool oxceHdBloodSpray;
 // HD render (XP-000366, 367, 368): the blood of a hit on a creature in the colour the mod's table hd/blood.txt gives its armour (zombies ochre green, the deep
 // ones blue, ogres and ubers dark red, machines graphite), the tone changed and the brightness kept (HdFx::bloodRgb, HdFx::tinted); picture only. Off by default: red as before
 OPT bool oxceHdBloodColor;
+// HD render (XP-000421): a unit that steps on the tile of a bleeding unit leaves bloody soles on its next two tiles, fading in three turns; the colour is the
+// blood colour of the one who bleeds (HdFx::bloodRgb); kept in the Map only, not saved; picture only. Off by default
+OPT bool oxceHdBloodSteps;
 // HD render: the fire picture (SMOKE.PCK 0..7): 0 the pack's own (<i>.png, <i>.v1.png), style s = the pack's variants 2s and 2s + 1 (tools/hdart/fire_real_pack.py)
 OPT int oxceHdFire;
 // HD render: pace of the fire and smoke animation on tiles (Map::hdEnviClock), a step of HD_ENVI_PACE: 0 stock, higher = slower; picture only

@@ -2573,6 +2573,178 @@ const HdFrame *Map::hdItemShadow(HdCanvas *surface, SurfaceRaw<const Uint8> spri
 	return &f;
 }
 
+/// Bloody soles (Options::oxceHdBloodSteps, XP-000421): how many tiles after the blood a unit leaves them, how many soles the map keeps,
+/// how many turns they last (fresh for the first two, then paler, gone at the third), the opacity of a fresh and of an old one,
+/// and the red when the blood has no colour of its own.
+const int HD_STEP_TILES = 2, HD_STEP_MAX = 64, HD_STEP_LIFE = 3, HD_STEP_ALPHA[2] = { 200, 105 }, HD_STEP_RED = 0x8E1212;
+
+/**
+ * One sole on a floor diamond (the bottom 32x16 of a 32x40 frame, k times): a forefoot oval, a narrow arch and a heel oval, turned to the way of the
+ * step (one of eight), set a little to the left or to the right of the middle by the foot. Drawn once for the key and kept for the battle.
+ */
+const HdFrame &Map::hdStepFrame(int dx, int dy, int side, int rgb, int tier)
+{
+	const unsigned long long key = ((unsigned long long)(rgb & 0xFFFFFF) << 24) | ((unsigned long long)_k << 12)
+		| ((unsigned long long)((dx + 1) * 3 + (dy + 1)) << 8) | ((unsigned long long)side << 4) | (unsigned long long)tier;
+	auto it = _hdStepFrames.find(key);
+	if (it != _hdStepFrames.end())
+	{
+		return it->second;
+	}
+	HdFrame &f = _hdStepFrames[key];
+	const int k = _k;
+	f.width = 32 * k;
+	f.height = 16 * k;
+	f.pixels.assign((size_t)f.width * f.height, 0);
+	// the cell is the square u, v in [-0.5, 0.5] (u along the map's x, v along its y); screen X = u - v, Y = u + v
+	const double len = std::sqrt((double)(dx * dx + dy * dy));
+	const double hx = dx / len, hy = dy / len, qx = -hy, qy = hx;
+	const double off = side ? 0.12 : -0.12;
+	struct Oval { double ahead, across, a, b; };
+	const Oval ovals[3] = { { 0.13, off, 0.21, 0.115 }, { -0.04, off, 0.09, 0.06 }, { -0.19, off, 0.11, 0.095 } };
+	const double soft = 1.0 / (16.0 * k);
+	const Uint32 rgbPart = (Uint32)rgb & 0xFFFFFF;
+	for (int y = 0; y < f.height; ++y)
+	{
+		for (int x = 0; x < f.width; ++x)
+		{
+			const double X = (x + 0.5) / (16.0 * k) - 1.0, Y = (y + 0.5) / (8.0 * k) - 1.0;
+			const double u = (X + Y) / 2, v = (Y - X) / 2;
+			double cover = 0.0;
+			for (const Oval &o : ovals)
+			{
+				const double s = (u - (hx * o.ahead + qx * o.across)) * hx + (v - (hy * o.ahead + qy * o.across)) * hy;
+				const double t = (u - (hx * o.ahead + qx * o.across)) * qx + (v - (hy * o.ahead + qy * o.across)) * qy;
+				const double e = std::sqrt((s / o.a) * (s / o.a) + (t / o.b) * (t / o.b));
+				cover = std::max(cover, std::min(1.0, std::max(0.0, (1.0 - e) * std::min(o.a, o.b) / soft + 0.5)));
+			}
+			const int alpha = (int)std::lround(HD_STEP_ALPHA[tier] * cover);
+			if (alpha > 0)
+			{
+				f.pixels[(size_t)y * f.width + x] = ((Uint32)alpha << 24) | rgbPart;
+			}
+		}
+	}
+	f.generated = true;
+	f.buildSpans();
+	return f;
+}
+
+/**
+ * Options::oxceHdBloodSteps: before a frame, looks at every unit the player sees (or all in the debug mode) that has moved to another
+ * tile since the last look. A unit that has bloody soles (HD_STEP_TILES more tiles to go) lays one on the tile it has entered; a unit
+ * that has entered a tile where another unit bleeds (fatal wounds, alive - standing or lying unconscious, a corpse does not count; the
+ * bleeding one seen too, its 2x2 body counts on all its tiles) gets them from the next tile on, in the blood colour of the one who
+ * bleeds. Flying and floating units leave none. A unit the player does not see is not followed at all, so no sole tells of a move in
+ * the fog. The turn only for the fading (SavedBattleGame::getTurn, read). Nothing of the units, the tiles or the save is touched.
+ */
+void Map::hdObserveSteps()
+{
+	if (!Options::oxceHdBloodSteps || _canvas->getHdMode() == HD_MODE_NEAREST)
+	{
+		if (!_hdStepTracks.empty() || !_hdSteps.empty())
+		{
+			_hdStepTracks.clear();
+			_hdSteps.clear();
+			_hdStepOrder.clear();
+		}
+		return;
+	}
+	const int turn = _save->getTurn();
+	if (turn != _hdStepTurn)
+	{
+		_hdStepTurn = turn;
+		for (auto s = _hdSteps.begin(); s != _hdSteps.end();)
+		{
+			s = turn - s->second.turn >= HD_STEP_LIFE || turn < s->second.turn ? _hdSteps.erase(s) : std::next(s);
+		}
+	}
+	const bool debug = _save->getDebugMode();
+	for (BattleUnit *bu : *_save->getUnits())
+	{
+		HdStepTrack &track = _hdStepTracks[bu->getId()];
+		const Position pos = bu->getPosition();
+		if (bu->isOut() || pos.x < 0 || !(bu->getFaction() == FACTION_PLAYER || bu->getVisible() || debug))
+		{
+			track.seen = false;
+			track.left = 0;
+			continue;
+		}
+		if (!track.seen)
+		{
+			track = HdStepTrack();
+			track.seen = true;
+			track.last = pos;
+			continue;
+		}
+		if (pos == track.last)
+		{
+			continue;
+		}
+		const Position from = track.last;
+		track.last = pos;
+		const int dx = pos.x - from.x, dy = pos.y - from.y;
+		if (std::abs(dx) > 1 || std::abs(dy) > 1)
+		{
+			track.left = 0;
+			continue;
+		}
+		if (dx == 0 && dy == 0)
+		{
+			continue;
+		}
+		const MovementType mt = bu->getMovementType();
+		if (mt == MT_FLY || mt == MT_FLOAT || bu->isFloating())
+		{
+			track.left = 0;
+			continue;
+		}
+		const Tile *here = _save->getTile(pos);
+		const int size = bu->getArmor()->getSize();
+		if (track.left > 0)
+		{
+			--track.left;
+			if (here && !here->hasNoFloor(_save) && HdFx::dryFloor(here))
+			{
+				track.foot ^= 1;
+				const int index = _save->getTileIndex(pos);
+				_hdSteps[index] = HdStep{ dx, dy, track.foot, track.rgb, turn, ++_hdStepSeq };
+				_hdStepOrder.push_back(std::make_pair(index, _hdStepSeq));
+				while (_hdSteps.size() > (size_t)HD_STEP_MAX || _hdStepOrder.size() > (size_t)HD_STEP_MAX * 4)
+				{
+					auto old = _hdSteps.find(_hdStepOrder.front().first);
+					if (old != _hdSteps.end() && old->second.seq == _hdStepOrder.front().second)
+					{
+						_hdSteps.erase(old);
+					}
+					_hdStepOrder.pop_front();
+				}
+			}
+		}
+		for (const BattleUnit *other : *_save->getUnits())
+		{
+			if (other == bu || other->getStatus() == STATUS_DEAD || other->getHealth() <= 0 || other->getFatalWounds() <= 0)
+			{
+				continue;
+			}
+			const Position op = other->getPosition();
+			const int osize = other->getArmor()->getSize();
+			if (op.x < 0 || op.z != pos.z || op.x >= pos.x + size || pos.x >= op.x + osize || op.y >= pos.y + size || pos.y >= op.y + osize)
+			{
+				continue;
+			}
+			if (!(other->getFaction() == FACTION_PLAYER || other->getVisible() || debug || (here && here->getVisible() > 0)))
+			{
+				continue;
+			}
+			const int rgb = HdFx::bloodRgb(other->getArmor());
+			track.left = HD_STEP_TILES;
+			track.rgb = rgb >= 0 ? rgb : HD_STEP_RED;
+			break;
+		}
+	}
+}
+
 /**
  * Options::oxceHdFloorAo: the shade of the corners on the floor of a tile - beside a wall or an object standing on the floor
  * the floor darkens softly. Made from the LOFT of the walls and objects of the tile and of the eight around it: their low
@@ -4193,6 +4365,7 @@ void Map::drawTerrain(HdCanvas *surface)
 	const int rimX = endX + (turned && endX >= _camera->getViewSizeX() ? 1 : 0);
 	const int rimY = endY + (turned && endY >= _camera->getViewSizeY() ? 1 : 0);
 	hdGatherFlierShadows(cameraPos, endZ);
+	hdObserveSteps();
 	for (int itZ = beginZ; itZ <= endZ; itZ++)
 	{
 		bool topLayer = itZ == endZ;
@@ -4284,6 +4457,22 @@ void Map::drawTerrain(HdCanvas *surface)
 						{
 							for (const HdFrame *piece : shadows->second)
 								surface->blitFrame(*piece, screenPosition.x, screenPosition.y + 24 * _k - tile->getYOffset(O_FLOOR) * _k);
+						}
+					}
+					// HD render (Options::oxceHdBloodSteps, XP-000421): a bloody sole on this floor, after the floor, before what lies and stands here;
+					// only on a floor the player has discovered, two tiers of opacity by the age in turns
+					if (!_hdSteps.empty() && !turned)
+					{
+						auto step = _hdSteps.find(_save->getTileIndex(mapPosition));
+						if (step != _hdSteps.end() && tile->isDiscovered(O_FLOOR) && !tile->hasNoFloor(_save))
+						{
+							const int age = _save->getTurn() - step->second.turn;
+							if (age >= 0 && age < HD_STEP_LIFE)
+							{
+								const HdStep &s = step->second;
+								surface->blitFrame(hdStepFrame(s.dx, s.dy, s.side, s.rgb, age < 2 ? 0 : 1), screenPosition.x,
+									screenPosition.y + 24 * _k + tile->getTerrainLevel() * _k);
+							}
 						}
 					}
 
