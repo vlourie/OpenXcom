@@ -39,11 +39,13 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--yes", action="store_true")
     ap.add_argument("--approval", default="", help="слова Vitali, по которым ставится (в манифест)")
+    ap.add_argument("--skip", nargs="*", default=[], help="наборы, которые не ставить (Vitali 30.10: без серых)")
     a = ap.parse_args()
     from PIL import Image
     files = frames()
     if len(files) != EXPECT:
         raise SystemExit("ждали %d заготовок, а их %d (py -3.13 tools\\hdart\\t413_fam_build.py build)" % (EXPECT, len(files)))
+    files = {r: p for r, p in files.items() if r.split("/")[1][:-4] not in a.skip}
     for rel, p in files.items():
         im = Image.open(p)
         if im.size != (128, 160) or im.mode != "RGBA":
