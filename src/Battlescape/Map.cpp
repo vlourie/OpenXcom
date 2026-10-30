@@ -3522,6 +3522,7 @@ void Map::hdTestFreeze(const std::string &mapDumpPath)
 
 	_save->setAnimFrame(0);
 	_animFrame = 0;
+	_menuTicks = 0;
 	for (int i = 0; i < _save->getMapSizeXYZ(); ++i)
 	{
 		_save->getTile(i)->hdTestResetAnimation();
@@ -6540,7 +6541,7 @@ void Map::animate(bool redraw)
 	}
 
 	_save->nextAnimFrame();
-	_animFrame = _save->getAnimFrame();
+	_animFrame = (_save->getAnimFrame() + _menuTicks) % 705600; // plus the frames the menus ran: the picture's clock does not go back
 	++_animTicks;
 
 	if (AiProbe::fast())
@@ -6654,6 +6655,7 @@ void Map::animateDrawOnly()
 		return;
 	}
 	_animFrame = (_animFrame + 1) % 705600; // the span of SavedBattleGame::nextAnimFrame; the save's own frame is not touched
+	_menuTicks = (_menuTicks + 1) % 705600;
 	++_animTicks;
 	for (int i = 0; i < _save->getMapSizeXYZ(); ++i)
 	{
