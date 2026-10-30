@@ -65,6 +65,8 @@ public:
 	void load(SDL_RWops *rw);
 	/// Remembers the file and decodes it when the sound is first played.
 	void loadLater(const std::string &filename);
+	/// Decodes the file of loadLater now instead of at the first play.
+	void warm() const;
 	/// Plays the sound.
 	void play(int channel = -1, int angle = 0, int distance = 0) const;
 	/// Plays it as a shot: with oxceHdShotCut the same sound still playing (the shot before) fades out first.

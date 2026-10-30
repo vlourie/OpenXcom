@@ -26,6 +26,8 @@ enum Event { SELECT, ORDER, ATTACK, ESCORT, RETURN, REBASE, WING, CANCEL, DAMAGE
 
 /// The player gave an order: the line plays at once and cuts off the one still on the radio.
 void order(const Craft *craft, Event ev);
+/// Loads the lines of an event ahead (a dogfight window opens): the first report is not read from the disk in its frame.
+void prime(const Craft *craft, Event ev);
 /// The craft speaks up by itself (hit, guns empty): skipped while another line plays, and within
 /// a pause after the last report of the same kind from this craft.
 void report(const Craft *craft, Event ev);
