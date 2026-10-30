@@ -230,10 +230,119 @@ bool HdUi::themeInk()
 	return luma >= 0.40f;
 }
 
+namespace
+{
+/// RGB 0..1 to hue 0..360, saturation and lightness 0..1 (the HSL model), and back.
+void rgbToHsl(float r, float g, float b, float &h, float &s, float &l)
+{
+	const float hi = std::max({ r, g, b }), lo = std::min({ r, g, b }), d = hi - lo;
+	l = (hi + lo) * 0.5f;
+	h = 0.0f;
+	s = 0.0f;
+	if (d <= 1e-6f) return;
+	s = d / (1.0f - std::fabs(2.0f * l - 1.0f));
+	if (hi == r) h = 60.0f * std::fmod((g - b) / d, 6.0f);
+	else if (hi == g) h = 60.0f * ((b - r) / d + 2.0f);
+	else h = 60.0f * ((r - g) / d + 4.0f);
+	if (h < 0.0f) h += 360.0f;
+}
+
+void hslToRgb(float h, float s, float l, float &r, float &g, float &b)
+{
+	const float c = (1.0f - std::fabs(2.0f * l - 1.0f)) * s;
+	const float x = c * (1.0f - std::fabs(std::fmod(h / 60.0f, 2.0f) - 1.0f)), m = l - c * 0.5f;
+	float pr = 0.0f, pg = 0.0f, pb = 0.0f;
+	const int sector = (int)(h / 60.0f) % 6;
+	switch (sector)
+	{
+	case 0: pr = c; pg = x; break;
+	case 1: pr = x; pg = c; break;
+	case 2: pg = c; pb = x; break;
+	case 3: pg = x; pb = c; break;
+	case 4: pr = x; pb = c; break;
+	default: pr = c; pb = x; break;
+	}
+	r = pr + m;
+	g = pg + m;
+	b = pb + m;
+}
+
+inline float lumaOf(float r, float g, float b) { return 0.299f * r + 0.587f * g + 0.114f * b; }
+
+inline float lumaOf(Uint32 c)
+{
+	return lumaOf((float)((c >> 16) & 0xFF) / 255.0f, (float)((c >> 8) & 0xFF) / 255.0f, (float)(c & 0xFF) / 255.0f);
+}
+
+/// The brightness of the cap the letters lie on, as drawButton fills it (the middle of its gradient), pressed or not.
+float capLuma(bool pressed)
+{
+	float s;   // the metal's shade (0 dark ... 1 light), as in drawButton
+	if (HdUi::buttonFace() > 0) s = pressed ? 0.80f : 0.64f;
+	else if (HdUi::style() == 2) s = pressed ? 0.77f : 0.075f;
+	else if (HdUi::style() == 3) s = pressed ? 0.74f : (HdUi::themeCaps() ? 0.64f : 0.29f);
+	else if (pressed) s = HdUi::themeCaps() ? 0.86f : 0.77f;
+	else s = HdUi::themeCaps() ? 0.64f : 0.275f;
+	return lumaOf(HdBattleHud::metalShade(s));
+}
+
+/// The player's hue and brightness of the letters (oxceHdButtonInkHue, oxceHdButtonInkLight): the face `face` and the shadow
+/// `shadow` as the theme gives them are replaced. Hue 0 and brightness 50 leave them as they are (false). The letters are kept
+/// readable: their luma stays at least INK_CONTRAST off the cap's. `dark` - the letters are dark (on a light cap).
+bool inkAdjust(bool dark, bool pressed, Uint32 &face, SDL_Color &shadow)
+{
+	const int hue = std::min(std::max(Options::oxceHdButtonInkHue, 0), 360);
+	const int light = std::min(std::max(Options::oxceHdButtonInkLight, 0), 100);
+	if (hue == 0 && light == 50) return false;
+	const float INK_CONTRAST = 0.50f;
+	float h, s, l, r, g, b;
+	rgbToHsl((float)((face >> 16) & 0xFF) / 255.0f, (float)((face >> 8) & 0xFF) / 255.0f, (float)(face & 0xFF) / 255.0f, h, s, l);
+	if (hue > 0)
+	{
+		// a colour: a rich tone, pale on a dark cap, deep on a light one
+		h = (float)(hue % 360);
+		s = 0.75f;
+		l = dark ? 0.22f : 0.85f;
+	}
+	l = light < 50 ? l * (float)light / 50.0f : l + (1.0f - l) * (float)(light - 50) / 50.0f;
+	// the nearest lightness that reads on the cap (none does: the one furthest from it)
+	const float cap = capLuma(pressed);
+	float best = l, bestDist = 1e9f, widest = -1.0f, widestL = l;
+	for (int i = 0; i <= 50; ++i)
+	{
+		const float t = (float)i / 50.0f;
+		hslToRgb(h, s, t, r, g, b);
+		const float gap = std::fabs(lumaOf(r, g, b) - cap);
+		if (gap >= INK_CONTRAST && std::fabs(t - l) < bestDist)
+		{
+			bestDist = std::fabs(t - l);
+			best = t;
+		}
+		if (gap > widest)
+		{
+			widest = gap;
+			widestL = t;
+		}
+	}
+	l = bestDist < 1e9f ? best : widestL;
+	hslToRgb(h, s, l, r, g, b);
+	auto toByte = [](float v) { return (Uint8)(std::min(std::max(v, 0.0f), 1.0f) * 255.0f + 0.5f); };
+	face = 0xFF000000u | (Uint32)toByte(r) << 16 | (Uint32)toByte(g) << 8 | toByte(b);
+	// the shadow of the other kind, of the letters' own hue
+	const bool lightLetters = lumaOf(r, g, b) >= 0.5f;
+	hslToRgb(h, s * 0.6f, lightLetters ? 0.06f : 0.92f, r, g, b);
+	shadow = SDL_Color{ toByte(r), toByte(g), toByte(b), 255 };
+	return true;
+}
+}
+
 Uint32 HdUi::themeFace()
 {
 	// the arrows lie on the same caps as the letters
-	return HdBattleHud::metalShade(themeInk() ? 0.0f : 0.97f);
+	Uint32 face = HdBattleHud::metalShade(themeInk() ? 0.0f : 0.97f);
+	SDL_Color shadow;
+	inkAdjust(themeInk(), false, face, shadow);
+	return face;
 }
 
 void HdUi::setLabelTheme(bool on, bool lit)
@@ -246,6 +355,8 @@ void HdUi::setLabelTheme(bool on, bool lit)
 	_labelFace = HdBattleHud::metalShade(dark ? 0.0f : 0.97f);
 	const Uint32 s = HdBattleHud::metalShade(dark ? 0.9f : 0.0f);
 	_labelShadow = SDL_Color{ (Uint8)(s >> 16), (Uint8)(s >> 8), (Uint8)s, 255 };
+	// the player's hue and brightness of the letters (XP-000411); the defaults leave the theme's own
+	inkAdjust(dark, lit, _labelFace, _labelShadow);
 }
 
 namespace
