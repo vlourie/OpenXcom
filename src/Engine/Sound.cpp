@@ -112,6 +112,17 @@ Mix_Chunk *Sound::chunk() const
 }
 
 /**
+ * Decodes the file of loadLater now, so that the first play (a shot in a dogfight) has no decoding in its frame (XP-000392).
+ */
+void Sound::warm() const
+{
+	if (!Options::mute)
+	{
+		chunk();
+	}
+}
+
+/**
  * Loads a sound file from a specified rwops.
  * @param rw SDL_RWops of the sound data.
  */

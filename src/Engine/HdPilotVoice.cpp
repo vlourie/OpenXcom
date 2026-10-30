@@ -193,6 +193,22 @@ void order(const Craft *craft, Event ev)
 	say(craft, ev);
 }
 
+void prime(const Craft *craft, Event ev)
+{
+	if (!craft || ev < 0 || ev >= EVENT_COUNT || !ready())
+	{
+		return;
+	}
+	// the same lookup as say(), without the line: loads the files of the speaker's set (else the class set)
+	const int alt = craft->getRules()->getMaxAltitude();
+	const std::string kind = (alt >= 0 && alt <= 1) ? "ground" : "air";
+	const std::string own = setOf(speaker(craft), kind);
+	if (own.empty() || !find(own, ev))
+	{
+		find(kind, ev);
+	}
+}
+
 void report(const Craft *craft, Event ev)
 {
 	if (!ready() || Mix_Playing(CHANNEL))

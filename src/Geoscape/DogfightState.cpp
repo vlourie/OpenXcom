@@ -276,6 +276,25 @@ DogfightState::DogfightState(GeoscapeState *state, Craft *craft, Ufo *ufo, bool 
 		}
 	}
 
+	// XP-000392: the sounds of the first shots and hits are decoded and the pilot's lines are read now, while the window
+	// opens, not in the frame of the first shot (the sounds of extraSounds are decoded at their first play, R-496)
+	{
+		Mod *mod = _game->getMod();
+		for (int i = 0; i < _weaponNum; ++i)
+		{
+			CraftWeapon* w = _craft->getWeapons()->at(i);
+			if (w && w->getRules()->getSound() >= 0)
+			{
+				mod->getSound("GEO.CAT", w->getRules()->getSound())->warm();
+			}
+		}
+		mod->getSound("GEO.CAT", _ufo->getRules()->getFireSound() == -1 ? Mod::UFO_FIRE : _ufo->getRules()->getFireSound())->warm();
+		mod->getSound("GEO.CAT", Mod::UFO_HIT)->warm();
+		mod->getSound("GEO.CAT", Mod::INTERCEPTOR_HIT)->warm();
+		HdPilotVoice::prime(_craft, HdPilotVoice::DAMAGED);
+		HdPilotVoice::prime(_craft, HdPilotVoice::NOAMMO);
+	}
+
 	// pilot modifiers
 	const std::vector<Soldier*> pilots = _craft->getPilotList(false, _game->getMod()); // refresh soldier bonuses
 

@@ -1,0 +1,1 @@
+- Dogfight (interception): the hitch at the first shot and at the first hit on your craft is removed - the sounds of the weapons and hits and the pilot's lines are now loaded in advance, when the interception window opens, not in the frame of the shot; the window itself takes a fraction of a second longer to open (ticket XP-000392). The rules of the fight are not affected.
