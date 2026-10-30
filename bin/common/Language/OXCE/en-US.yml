@@ -490,6 +490,8 @@ en-US:
   STR_HD_FLASH_LIGHT_DESC: "In the HD sprite modes with HD light and HD effects: explosions, hits and muzzle flashes light the floor, walls and soldiers around them in the flash's own colour and strength; walls cast its shadow, the light does not pass through them. Best seen at night: by day nothing gets brighter. Picture only: visibility and the game's rules are not affected."
   STR_HD_VOLUME_SMOKE: "HD volume smoke"
   STR_HD_VOLUME_SMOKE_DESC: "In the HD sprite modes the smoke of a tile is no flat blot but puffs with volume: each is born at its own place, rises, grows and melts away, lit by the tile's light where it floats (and by flashes, with HD flash light on); dark soot rises over a fire. Night vision and water keep the old smoke. Picture only: visibility and the game's rules are not affected."
+  STR_HD_VOLUME_FIRE: "HD fire tongues"
+  STR_HD_VOLUME_FIRE_DESC: "In the HD sprite modes the fire of a tile is drawn from separate tongues of flame in the pack's style, dark red at the edge and bright yellow inside: each shoots up, curls, loses its tip and dies down, and the next one rises elsewhere, so no two burning tiles and no two moments look the same. Night vision and water keep the old fire. Picture only: the fire's spread and the game's rules are not affected."
   STR_HD_HOVER_BOB: "HD unit sway"
   STR_HD_HOVER_BOB_DESC: "In the HD sprite modes: flying units that hang with no floor below sway gently up and down, easing in on take-off and out on landing. Picture only, the unit's position does not change. Off (and mode 0) = they hang still, as in the classic game."
   STR_HD_WALKER_TURN: "HD walker shuffle"

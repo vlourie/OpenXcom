@@ -46,6 +46,7 @@
 #include "../Engine/HdKillCam.h"
 #include "../Engine/HdLab.h"
 #include "../Engine/HdSmoke.h"
+#include "../Engine/HdFire.h"
 #include "../Engine/HdSprites.h"
 #include "../Engine/HdTurn.h"
 #include "../Engine/HdTurnGroups.h"
@@ -1188,6 +1189,10 @@ Map::~Map()
 	if (HdSmoke::bakeMs())
 	{
 		Log(LOG_INFO) << "HD volume smoke: puff banks baked in " << HdSmoke::bakeMs() << " ms (this run)";
+	}
+	if (HdFire::bakeMs())
+	{
+		Log(LOG_INFO) << "HD fire tongues: tongue banks baked in " << HdFire::bakeMs() << " ms (this run)";
 	}
 	delete _scrollMouseTimer;
 	delete _scrollKeyTimer;
@@ -4472,6 +4477,25 @@ void drawSmokePuffs(HdCanvas *surface, const Tile *tile, Position screen, int k,
 		surface->blitFrameToned(HdSmoke::frame(k, p.kind, p.shape, p.life), x, y, shade, tint);
 	}
 }
+
+/**
+ * HD render (option oxceHdVolumeFire): the tongues of a burning tile (HdFire) over its floor's ellipse, back to front,
+ * at full brightness as the pack's fire; they reach past the tile's sprite, above and to the sides.
+ */
+void drawFireTongues(HdCanvas *surface, const Tile *tile, Position screen, int k, int clock)
+{
+	static std::vector<HdFire::Tongue> tongues;
+	tongues.clear();
+	const Position pos = tile->getPosition();
+	HdFire::tongues(pos.x, pos.y, pos.z, k, clock, tongues);
+	const int y0 = screen.y + tile->getTerrainLevel() * k;
+	for (const HdFire::Tongue &g : tongues)
+	{
+		const HdFire::Sprite s = HdFire::frame(k, g.shape, g.size, g.life, g.mirror);
+		surface->blitFrame(*s.frame, screen.x + (int)std::lround(g.x - HdFire::WIDTH * k / 2.0f) + s.dx,
+			y0 + (int)std::lround(g.y - HdFire::BASE * k) + s.dy);
+	}
+}
 }
 
 void Map::drawTerrain(HdCanvas *surface)
@@ -5390,9 +5414,15 @@ void Map::drawTerrain(HdCanvas *surface)
 							// instead (a pack without them keeps its own fire)
 							// (option oxceHdVolumeSmoke: puffs instead of the pack's smoke, soot over its fire; not under
 							// night vision nor water, which keep the pack's frame)
+							// (option oxceHdVolumeFire: tongues of flame instead of the pack's fire, under the same limits)
 							const bool puffs = Options::oxceHdVolumeSmoke && !_nvColor && _save->getDepth() == 0;
+							const bool tongues = tile->getFire() && Options::oxceHdVolumeFire && !_nvColor && _save->getDepth() == 0;
 							const int variant = tile->getFire() ? (enviRest ? 1 : 0) + 2 * Options::oxceHdFire : 0;
-							if (!puffs || tile->getFire())
+							if (tongues)
+							{
+								drawFireTongues(surface, tile, screenPosition, _k, enviClock);
+							}
+							else if (!puffs || tile->getFire())
 							{
 								if (variant)
 									surface->setFrameVariant(variant);
