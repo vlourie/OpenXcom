@@ -62,6 +62,9 @@ namespace HdFx
 	/// XP-000366 (Options::oxceHdBloodColor): the colour 0xRRGGBB of the blood of a creature in `armor`, by the mod's table hd/blood.txt
 	/// ("NAME RRGGBB", NAME an armour type or a prefix ending in '*'); -1: no table, no line, or the option is off - the blood stays red.
 	int bloodRgb(const Armor *armor);
+	/// XP-000421 (Options::oxceHdBloodSteps): whether bloody soles may be laid on the floor of `tile`: it has a floor, and the floor is
+	/// not water or lava (by the footstep sound and the name of the set, as material()).
+	bool dryFloor(const Tile *tile);
 	/// The name of blood clip `clip` (hit_*_flesh, blood_*, stab_*) in colour `rgb`: frame() recolours it once when it loads
 	/// (the tone changes, the brightness and the alpha stay) and keeps it. Any other clip, or rgb < 0: `clip` as it is.
 	std::string tinted(const std::string &clip, int rgb);
