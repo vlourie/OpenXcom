@@ -142,6 +142,8 @@ private:
 	Position _cacheCursorPosition;
 	int _cacheHasLOS; // -1 = unknown, 0 = no LOS, 1 = has LOS
 	int _animFrame;
+	/// the picture's frames added while a menu was open (animateDrawOnly): the save's own frame stood still; not saved (XP-000442)
+	int _menuTicks = 0;
 	std::unordered_map<int, int> _hoverFade; // unit id -> 1..HOVER_FADE_STEPS, how far the sway of a hanging unit has faded in
 	/// HD render (option oxceHdUnitShadow): the shadows of the units hanging with no floor, laid on the first floor below -
 	/// the pieces each floor tile draws after its floor (by tile index), gathered anew every frame (Map::hdGatherFlierShadows).
