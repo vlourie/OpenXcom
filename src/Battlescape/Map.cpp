@@ -3802,6 +3802,25 @@ int getShadePulseForFrame(int shade, int frame)
 }
 
 /**
+ * HD: true when the battle is on an orbital map (enviro effects STR_ENVIRO_SPACE, the ORBIT_* terrains of Piratez): no sun
+ * lights the ground there, so units cast no HD shadow (ticket XP-000446). Not STR_ENVIRO_MOON, not the freighter.
+ * The string compare runs only when the battle's enviro effects change (a new battle or stage), not per unit per frame.
+ */
+static bool hdOrbitalMap(const SavedBattleGame *save)
+{
+	static const RuleEnviroEffects *seen = nullptr;
+	static bool known = false, orbital = false;
+	const RuleEnviroEffects *env = save->getEnviroEffects();
+	if (!known || env != seen)
+	{
+		seen = env;
+		known = true;
+		orbital = env && env->getType() == "STR_ENVIRO_SPACE";
+	}
+	return orbital;
+}
+
+/**
  * Draw part of unit graphic that overlap current tile.
  * @param surface
  * @param unitTile
@@ -4068,8 +4087,8 @@ void Map::drawUnit(UnitSprite &unitSprite, Tile *unitTile, Tile *currTile, Posit
 	HdDrawTimer timer(HdDrawStats::frame.unitsUs);
 	// HD: the shadow on the floor, under the piece drawn here and cut by its mask; not under a unit hanging with no
 	// floor, nor under the top of one reaching up from the level below (its floor is there); not in the turned view;
-	// not under water (depth > 0: no sun there, ticket XP-000446)
-	if (Options::oxceHdUnitShadow && _canvas->getHdMode() != HD_MODE_NEAREST && _save->getDepth() <= 0 && !unitFromBelow && !unitFromAbove && !turned
+	// not under water (depth > 0: no sun there) nor on an orbital map (ticket XP-000446)
+	if (Options::oxceHdUnitShadow && _canvas->getHdMode() != HD_MODE_NEAREST && _save->getDepth() <= 0 && !hdOrbitalMap(_save) && !unitFromBelow && !unitFromAbove && !turned
 		&& !bu->isFloating() && !bu->isOut() && part < bu->getArmor()->getSize() * bu->getArmor()->getSize())
 	{
 		const Position bob = hoverBob(bu);
@@ -6891,8 +6910,8 @@ Position Map::hoverBob(const BattleUnit *unit) const
 void Map::hdGatherFlierShadows(const Position &cameraPos, int endZ)
 {
 	_hdFlierShadows.clear();
-	// not under water (depth > 0: no sun there, ticket XP-000446)
-	if (!Options::oxceHdUnitShadow || _canvas->getHdMode() == HD_MODE_NEAREST || _camera->getRotation() != 0 || _save->getDepth() > 0)
+	// not under water (depth > 0: no sun there) nor on an orbital map (ticket XP-000446)
+	if (!Options::oxceHdUnitShadow || _canvas->getHdMode() == HD_MODE_NEAREST || _camera->getRotation() != 0 || _save->getDepth() > 0 || hdOrbitalMap(_save))
 	{
 		return;
 	}
