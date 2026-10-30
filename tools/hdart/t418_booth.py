@@ -89,6 +89,25 @@ def sil_lines(solid, eps=3.0, ss=4):
     return Image.fromarray(small, "L")
 
 
+BASE_INSET = 1.0      # на сколько пикселей HD низ будки поднят над ромбом основания (R-121, правило 12 CLAUDE.md)
+
+
+def base_lines(sil, inset=BASE_INSET, ss=4):
+    """Нижний контур будки - ПРЯМЫЕ отрезки вдоль ромба основания клетки (изо-наклон 2:1), а не ступени классики. В игре HD-пол
+    соседних клеток (и тень углов пола) закрывает ромб ступенькой 8x4 пикселей HD: у пола на 0,5-4 пикселя ниже линии ромба
+    (замер в игре 30.10, t418_edge.py / t418_stand.py). Кадр, доходящий до линии, получает от соседа зубцы. Поэтому силуэт
+    режется двумя прямыми y <= 128 + x/2 - inset (левое нижнее ребро) и y <= 128 + (128-x)/2 - inset (правое), сглаживание
+    через сверхдискретизацию ss; тело потом подгоняется под этот силуэт (fit_silhouette), а не обрезается."""
+    a = np.asarray(sil, np.float32) / 255.0
+    H, W = a.shape
+    yy, xx = np.mgrid[0:H * ss, 0:W * ss].astype(np.float32)
+    xs, ys = (xx + 0.5) / ss, (yy + 0.5) / ss
+    lim = np.minimum(128.0 + xs / 2.0, 128.0 + (W - xs) / 2.0) - inset
+    keep = (ys <= lim).astype(np.float32)
+    cov = keep.reshape(H, ss, W, ss).mean((1, 3))
+    return Image.fromarray(np.rint(a * cov * 255).astype(np.uint8), "L")
+
+
 def fill_matte_holes(m):
     """Матрица ответа модели: гладкий блик стекла (белое пятно) близок к серой подложке и ключ вырезал в нём дыру. Всё, что не
     связано с краем кадра и имеет альфу ниже 0,5, - тело: альфа 1 (цвет остаётся цветом ответа)."""
@@ -167,7 +186,7 @@ def cut_seed(job, seed):
     cut = Image.new("RGBA", (full.width * 4, full.height * 4), (0, 0, 0, 0))
     cut.paste(part, (box[0] * 4, box[1] * 4))
     solid = full.split()[3].point(lambda v: 255 if v > 0 else 0)
-    sil = sil_lines(solid)                              # силуэт классики прямыми отрезками, без роста
+    sil = base_lines(sil_lines(solid))                  # силуэт классики прямыми отрезками, низ - по ромбу основания, без ступеней
     cut, sv, sh = fit_silhouette(cut, sil)
     FIT[(job, seed)] = (sv, sh)
     a = np.asarray(cut).astype(np.float32)
