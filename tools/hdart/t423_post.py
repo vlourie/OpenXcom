@@ -26,6 +26,7 @@ import t417_container_gen as g                       # noqa: E402
 K, SET, CELLS, FRAMES = G.K, G.SET, G.CELLS, G.FRAMES
 GEN, CAND, REV, SEEDS = G.GEN, G.CAND, G.REV, G.SEEDS
 BGC = g.BGC
+SUF = ""                      # "_r2" - круг 2 (зёрна G.SEEDS_R2, голова перевёрнута): листы и таблица со своим хвостом
 GOLD_FRAMES = [5, 8, 9]
 
 
@@ -223,7 +224,7 @@ def do_build(a=None):
             row["edge"] = max(d_[2] for d_ in dv) if dv else 0.0
         rows.append(row)
     os.makedirs(REV, exist_ok=True)
-    out = os.path.join(REV, "t423_checks.tsv")
+    out = os.path.join(REV, "t423_checks" + SUF + ".tsv")
     with open(out, "w", encoding="utf-8-sig", newline="") as fh:
         w = csv.writer(fh, delimiter="\t")
         w.writerow(["вариант", "шов (по границам клеток классики)", "внутри клетки", "шов как рисует движок", "просвет внутри контура, пикс",
@@ -290,19 +291,22 @@ def do_sheet(a=None):
     variants = [("классика x4", g.classic_frames(sc)), ("HD сейчас", g.hd_now_frames(sc))] + [("зерно %d" % s, seed_frames(s)) for s in seeds]
     full = [(n, g.assemble(f, items, W, H, K, BGC)) for n, f in variants]
     big = [(n, im.resize((im.width * 2, im.height * 2), Image.NEAREST)) for n, im in full]
-    ts.sheet(big, os.path.join(REV, "t423_whole.png"), cols=3)
+    ts.sheet(big, os.path.join(REV, "t423_whole" + SUF + ".png"), cols=3)
     edges = []
     for n, im in full:
         edges.append((n + ": нижний край слева", zoom_crop(im, (0, 34, 34, 58), 4)))
         edges.append((n + ": нижний край справа", zoom_crop(im, (28, 34, 64, 58), 4)))
         edges.append((n + ": голова", zoom_crop(im, (0, 30, 28, 58), 4)))
-    ts.sheet(edges, os.path.join(REV, "t423_edges.png"), cols=3)
+    ts.sheet(edges, os.path.join(REV, "t423_edges" + SUF + ".png"), cols=3)
+    heads = [(n + ": голова крупно", zoom_crop(im, (0, 36, 30, 62), 7)) for n, im in full]
+    ts.sheet(heads, os.path.join(REV, "t423_head" + SUF + ".png"), cols=3)
     keys = [(SET, f) for f in FRAMES]
     ov = {s: {(SET, f): im for f, im in seed_frames(s).items()} for s in seeds}
     scenes = (("t423_scene_retdung10.png", "RETICULAN_DUNGEON", "RETDUNG_10", (150, 110)),
               ("t423_scene_snakeboat.png", "VES_SNAKEBOAT", "VES_SNAKEBOAT", (150, 110)),
               ("t423_scene_dret_base.png", "D_RET_BASE", "D_RET_BASE", (150, 110)))
     for name, terrain, block, (w, h) in scenes:
+        name = name.replace(".png", SUF + ".png")
         found = ts.find_cells(sc, terrain, block, keys)
         zmin = min(f[3] for f in found)
         box = ts.window([(f[0], f[1], tuple(v * K for v in f[2])) for f in found], w, h, K)
@@ -317,14 +321,15 @@ def do_sheet(a=None):
             for t, im in panels:
                 c = im.crop((190, 90, 470, 330))
                 zp.append((t, c.resize((c.width * 2, c.height * 2), Image.NEAREST)))
-            ts.sheet(zp, os.path.join(REV, "t423_scene_zoom.png"), cols=3)
-            print("лист", os.path.join(REV, "t423_scene_zoom.png"))
+            ts.sheet(zp, os.path.join(REV, "t423_scene_zoom" + SUF + ".png"), cols=3)
+            print("лист", os.path.join(REV, "t423_scene_zoom" + SUF + ".png"))
 
 
 def do_cand(a=None):
     """Ведущий лист t423_cand.png: весь стол (классика | сейчас | зёрна), потом сцена RETDUNG_10 в полный размер и крупно у пола."""
-    names = ["t423_whole.png", "t423_scene_retdung10.png", "t423_scene_zoom.png"]
+    names = ["t423_whole" + SUF + ".png", "t423_head" + SUF + ".png", "t423_scene_retdung10" + SUF + ".png", "t423_scene_zoom" + SUF + ".png"]
     ims = [Image.open(os.path.join(REV, n)).convert("RGB") for n in names]
+    ims = [i if i.width <= 1800 else i.resize((1800, round(i.height * 1800 / i.width)), Image.LANCZOS) for i in ims]   # лист не шире экрана
     Wd = max(i.width for i in ims)
     Hd = sum(i.height for i in ims) + 8 * (len(ims) + 1)
     out = Image.new("RGB", (Wd, Hd), (12, 12, 14))
@@ -332,8 +337,8 @@ def do_cand(a=None):
     for i in ims:
         out.paste(i, (0, y))
         y += i.height + 8
-    out.save(os.path.join(REV, "t423_cand.png"))
-    print("лист", os.path.join(REV, "t423_cand.png"), out.size)
+    out.save(os.path.join(REV, ("t423_cand2.png" if SUF else "t423_cand.png")))
+    print("лист", os.path.join(REV, ("t423_cand2.png" if SUF else "t423_cand.png")), out.size)
 
 
 # ---------------------------------------------------------------------------------------------------------
@@ -372,7 +377,12 @@ def main():
     ap.add_argument("cmd", choices=["build", "family", "sheet", "cand", "install"])
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--yes", action="store_true")
+    ap.add_argument("--round", type=int, default=1, help="2 - круг 2: голова перевёрнута, зёрна 4241-4243")
     a = ap.parse_args()
+    if a.round == 2:
+        global SUF
+        SUF = "_r2"
+        SEEDS[:] = G.SEEDS_R2
     globals()["do_" + a.cmd](a)
     return 0
 

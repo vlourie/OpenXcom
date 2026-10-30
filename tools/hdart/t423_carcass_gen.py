@@ -37,6 +37,7 @@ import t417_container_gen as g                       # noqa: E402
 
 SET = "U_DISEC2"
 SEEDS = [4231, 4232, 4233]
+SEEDS_R2 = [4241, 4242, 4243]          # круг 2 (Vitali 30.10: голова перевёрнута, лежит на темечке, рот сверху)
 K = g.K
 GEN = os.path.join(ROOT, "art", "tickets", "t423", "gen")
 CAND = os.path.join(ROOT, "art", "tickets", "t423", "cand")
@@ -55,6 +56,15 @@ WHAT = ("a skinned cow carcass lying on its back on a mortuary dissection table.
         "table: a long cow muzzle pointing down to the lower left, one dark eye, one dark nostril, a short ear, no horns, "
         "no skull. The table is a low, wide, rounded pale cream-white tray with thick side walls, a raised rim and a thin "
         "lilac blood groove running along its top")
+WHAT_R2 = ("a skinned cow carcass lying on its back on a mortuary dissection table. The carcass is flayed, the raw muscle is "
+           "tan-beige with darker brown shading, the belly faces up and the four legs stick up into the air, bent, each leg "
+           "ending in a red cut stump. At the lower left end of the carcass the beige head of the cow hangs over the end of the "
+           "table, UPSIDE DOWN: the cow head is turned over and rests on the top of its skull (the poll), so the lower jaw and "
+           "the open-lipped mouth face UP, the nostrils face up and outward, the chin points up and to the left, the ears hang "
+           "down under the head, the eye is closed and seen from below the brow; long cow muzzle, no horns, no skull. The "
+           "table is a low, wide, rounded pale cream-white tray with thick side walls, a raised rim and a thin lilac blood "
+           "groove running along its top")
+NEG_R2 = ", head facing the viewer, forehead facing up, face looking up, head lying on its cheek, head resting on its chin, normal head"
 NEG = ("human skull, skeleton, bones, teeth, grin, eye sockets, alien head, cylinder, tube, flasks, bottles, jars, hole, "
        "horns, antlers, living animal, fur, hide, skin on the legs, knife, surgeon, people, robot arms, text, labels, "
        "blood puddle, floor, ground, wall, extra table")
@@ -63,14 +73,15 @@ TAIL = ("The tile diamonds named above are only invisible placement guides: the 
         "No floor, no ground, no other objects, no frame, no text.")
 
 
-def prompt():
+def prompt(r2=False):
     import battle_view as bv
     import ticket_q21_probe as q
     import probe_object as po
     pb = bv.prompt_block("object")
-    text = (q.PANEL_HINT.replace("{what}", WHAT) + bv._sentence(pb["positive"]) + " "
-            + q.KEEP.replace("{noun}", "object").replace("{what}", WHAT) + TAIL)
-    neg = po.NEGATIVE + ", " + pb["negative"] + ", " + NEG
+    what = WHAT_R2 if r2 else WHAT
+    text = (q.PANEL_HINT.replace("{what}", what) + bv._sentence(pb["positive"]) + " "
+            + q.KEEP.replace("{noun}", "object").replace("{what}", what) + TAIL)
+    neg = po.NEGATIVE + ", " + pb["negative"] + ", " + NEG + (NEG_R2 if r2 else "")
     return text, neg
 
 
@@ -90,7 +101,7 @@ def do_preview(a=None):
     full, box, frame, flat = model_input(sc)
     os.makedirs(os.path.join(GEN, "raw"), exist_ok=True)
     flat.convert("RGB").save(os.path.join(GEN, "raw", "input.png"))
-    t, n = prompt()
+    t, n = prompt(getattr(a, "r2", False))
     print("холст %dx%d, габарит %s, вход %s\nPROMPT: %s\nNEG: %s" % (full.width, full.height, box, flat.size, t, n))
 
 
@@ -106,11 +117,11 @@ def do_render(a=None):
                        qwen21_ref_mp=1.0, qwen21_prompt="strict", qwen21_hint="off", qwen21_ref_order="ref-first")
     painter = po.gen_hd.Qwen21Painter(ns, {"ground": ("", "")})
     args = ap_.Namespace(steps=g.STEPS, cfg=g.CFG, mp=g.MP)
-    text, neg = prompt()
+    text, neg = prompt(a.r2)
     print("PROMPT:", text, "\nNEG:", neg, flush=True)
     po.gen_fire.NEGATIVE = neg
     t0 = time.time()
-    for n, seed in enumerate(a.seeds or SEEDS, 1):
+    for n, seed in enumerate(a.seeds or (SEEDS_R2 if a.r2 else SEEDS), 1):
         dst = os.path.join(GEN, "raw", "%d.png" % seed)
         if os.path.exists(dst):
             print("[%d] зерно %d уже есть" % (n, seed), flush=True)
@@ -126,6 +137,7 @@ def main():
     ap.add_argument("cmd", choices=["preview", "render", "build", "sheet", "install"])
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--seeds", type=int, nargs="*")
+    ap.add_argument("--r2", action="store_true", help="круг 2: голова перевёрнута (WHAT_R2, зёрна 4241-4243)")
     ap.add_argument("--yes", action="store_true")
     a = ap.parse_args()
     globals()["do_" + a.cmd](a)
