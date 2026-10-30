@@ -253,6 +253,15 @@ const HdFrame &fallDiamond(int k)
 /// The opacity of a unit's shadow at its centre (it fades to nothing at the edge).
 const int UNIT_SHADOW_ALPHA = 220;
 
+/// How strong the shadows of units are at the battle's global shade (0 day .. 15 night), 0..UNIT_SHADOW_STEPS: full up to
+/// shade 4, then weaker by a step per shade and none from shade 10 on (no sun at night, ticket XP-000447). Whole steps, so
+/// the cached frames come in a few strengths only.
+const int UNIT_SHADOW_STEPS = 6;
+inline int unitShadowStrength(int globalShade)
+{
+	return std::max(0, std::min(UNIT_SHADOW_STEPS, 10 - globalShade));
+}
+
 /**
  * The shadow under a unit: a soft black ellipse on the floor (2:1, a circle in the isometric view), 7x3.5 pixels
  * of half axes per tile of the unit's size, centred on its footprint and moved a pixel to the right (the light
@@ -260,10 +269,10 @@ const int UNIT_SHADOW_ALPHA = 220;
  * unit's `part` (the bottom 32x16 of its 32x40 frame, k times) with the piece of the ellipse that lies in it,
  * so the pieces of a big unit meet with no gap and no overlap. One cached frame per size, part and scale.
  */
-const HdFrame &unitShadow(int size, int part, int k)
+const HdFrame &unitShadow(int size, int part, int k, int strength)
 {
 	static std::map<int, HdFrame> cache;
-	const int key = (k << 8) | (size << 4) | part;
+	const int key = (strength << 16) | (k << 8) | (size << 4) | part;
 	auto it = cache.find(key);
 	if (it != cache.end())
 	{
@@ -289,7 +298,7 @@ const HdFrame &unitShadow(int size, int part, int k)
 			}
 			const double ex = (x + 0.5 - cx) / ax, ey = (y + 0.5 - cy) / ay;
 			const double d = 1.0 - (ex * ex + ey * ey);
-			const int alpha = d > 0 ? (int)std::lround(UNIT_SHADOW_ALPHA * d * d) : 0;
+			const int alpha = d > 0 ? (int)std::lround(UNIT_SHADOW_ALPHA * strength / UNIT_SHADOW_STEPS * d * d) : 0;
 			if (alpha > 0)
 			{
 				f.pixels[(size_t)y * f.width + x] = (Uint32)alpha << 24;
@@ -315,10 +324,10 @@ const double FLIER_SHADOW_SPREAD[FLIER_SHADOW_LEVELS + 1] = { 1.0, 1.0, 1.15, 1.
  * @return The piece (empty when the ellipse misses the diamond).
  */
 std::map<long long, HdFrame> flierShadowCache;
-const HdFrame &flierShadow(int size, int drop, int rx, int ry, int k)
+const HdFrame &flierShadow(int size, int drop, int rx, int ry, int k, int strength)
 {
 	std::map<long long, HdFrame> &cache = flierShadowCache;
-	const long long key = ((((long long)k * 8 + size) * 4 + drop) * 4096 + (rx + 2048)) * 4096 + (ry + 2048);
+	const long long key = (((((long long)strength * 16 + k) * 8 + size) * 4 + drop) * 4096 + (rx + 2048)) * 4096 + (ry + 2048);
 	auto it = cache.find(key);
 	if (it != cache.end())
 	{
@@ -326,7 +335,7 @@ const HdFrame &flierShadow(int size, int drop, int rx, int ry, int k)
 	}
 	HdFrame &f = cache[key];
 	const double ax = 7.0 * k * size * FLIER_SHADOW_SPREAD[drop], ay = 3.5 * k * size * FLIER_SHADOW_SPREAD[drop];
-	const double peak = UNIT_SHADOW_ALPHA * FLIER_SHADOW_FADE[drop];
+	const double peak = UNIT_SHADOW_ALPHA * FLIER_SHADOW_FADE[drop] * strength / UNIT_SHADOW_STEPS;
 	const double hw = 16.0 * k, hh = 8.0 * k;
 	std::vector<Uint32> pixels((size_t)(32 * k) * (16 * k), 0);
 	bool any = false;
@@ -4087,12 +4096,14 @@ void Map::drawUnit(UnitSprite &unitSprite, Tile *unitTile, Tile *currTile, Posit
 	HdDrawTimer timer(HdDrawStats::frame.unitsUs);
 	// HD: the shadow on the floor, under the piece drawn here and cut by its mask; not under a unit hanging with no
 	// floor, nor under the top of one reaching up from the level below (its floor is there); not in the turned view;
-	// not under water (depth > 0: no sun there) nor on an orbital map (ticket XP-000446)
-	if (Options::oxceHdUnitShadow && _canvas->getHdMode() != HD_MODE_NEAREST && _save->getDepth() <= 0 && !hdOrbitalMap(_save) && !unitFromBelow && !unitFromAbove && !turned
+	// not under water (depth > 0: no sun there) nor on an orbital map (ticket XP-000446); weaker in the dusk, none at night
+	// (the strength of the global shade, ticket XP-000447)
+	const int shadowStrength = Options::oxceHdUnitShadow ? unitShadowStrength(_save->getGlobalShade()) : 0;
+	if (shadowStrength > 0 && _canvas->getHdMode() != HD_MODE_NEAREST && _save->getDepth() <= 0 && !hdOrbitalMap(_save) && !unitFromBelow && !unitFromAbove && !turned
 		&& !bu->isFloating() && !bu->isOut() && part < bu->getArmor()->getSize() * bu->getArmor()->getSize())
 	{
 		const Position bob = hoverBob(bu);
-		_canvas->blitFrame(unitShadow(bu->getArmor()->getSize(), part, _k), tileScreenPosition.x + offsets.ScreenOffset.x - bob.x,
+		_canvas->blitFrame(unitShadow(bu->getArmor()->getSize(), part, _k, shadowStrength), tileScreenPosition.x + offsets.ScreenOffset.x - bob.x,
 			tileScreenPosition.y + offsets.ScreenOffset.y - bob.y + 24 * _k, mask);
 	}
 	// the facing indicator: with Alt held, or always (HD option, only what Alt shows)
@@ -6915,6 +6926,12 @@ void Map::hdGatherFlierShadows(const Position &cameraPos, int endZ)
 	{
 		return;
 	}
+	// weaker in the dusk, none at night (ticket XP-000447)
+	const int strength = unitShadowStrength(_save->getGlobalShade());
+	if (strength <= 0)
+	{
+		return;
+	}
 	if (flierShadowCache.size() > 1000)
 	{
 		flierShadowCache.clear();
@@ -6974,7 +6991,7 @@ void Map::hdGatherFlierShadows(const Position &cameraPos, int endZ)
 				{
 					continue;
 				}
-				const HdFrame &piece = flierShadow(size, drop, rx, ry, _k);
+				const HdFrame &piece = flierShadow(size, drop, rx, ry, _k, strength);
 				if (!piece.empty())
 				{
 					_hdFlierShadows[_save->getTileIndex(at)].push_back(&piece);
