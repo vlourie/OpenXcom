@@ -1994,11 +1994,27 @@ int Map::hdBackdropFind()
  */
 void Map::hdDrawBeyondEdge(HdCanvas *surface, const Position &cameraPos)
 {
-	const int sizeX = _save->getMapSizeX(), sizeY = _save->getMapSizeY();
+	const int sizeX = _save->getMapSizeX(), sizeY = _save->getMapSizeY(), sizeZ = _save->getMapSizeZ();
+	// a cell of the ground level with a floor over it (a base's rooms stand on a bedrock under them, XP-000401): what the
+	// player sees there is the room, not the ground, so its ground is not what goes on beyond the edge
+	auto covered = [&](int x, int y)
+	{
+		for (int z = 1; z < sizeZ; ++z)
+		{
+			const Tile *t = _save->getTile(Position(x, y, z));
+			const MapData *data = t ? t->getMapData(O_FLOOR) : nullptr;
+			if (data && !data->isNoFloor())
+			{
+				return true;
+			}
+		}
+		return false;
+	};
 	if (_hdGhostState < 0)
 	{
 		_hdGhostState = 0;
-		std::vector<const MapData*> kinds;
+		std::vector<const MapData*> kinds, openKinds;
+		std::vector<HdGhostFloor> openFloors;
 		int cells = 0, floors = 0;
 		const int BAND = 6;
 		for (int y = 0; y < sizeY; ++y)
@@ -2034,7 +2050,27 @@ void Map::hdDrawBeyondEdge(HdCanvas *surface, const Position &cameraPos)
 					_hdGhostFloors.push_back(f);
 				}
 				++_hdGhostFloors[i].count;
+				if (!covered(x, y))
+				{
+					size_t j = 0;
+					while (j < openKinds.size() && openKinds[j] != data)
+					{
+						++j;
+					}
+					if (j == openKinds.size())
+					{
+						openKinds.push_back(data);
+						openFloors.push_back(_hdGhostFloors[i]);
+						openFloors.back().count = 0;
+					}
+					++openFloors[j].count;
+				}
 			}
+		}
+		// the open ground of the band (under the sky) when there is any: the grass between a base's rooms, not their bedrock
+		if (!openFloors.empty())
+		{
+			_hdGhostFloors.swap(openFloors);
 		}
 		// no ground level to go on (an underground map, a level of air): at least half of it must have a floor
 		if (floors * 2 >= cells && !_hdGhostFloors.empty())
@@ -2090,7 +2126,7 @@ void Map::hdDrawBeyondEdge(HdCanvas *surface, const Position &cameraPos)
 				continue;
 			}
 			// the cell of the map this one mirrors across the edge, and its floor: the map's own, or - where the player has not
-			// discovered it - the commonest one of the map's outer band
+			// discovered it, or a room stands over it - the commonest open one of the map's outer band
 			const int mx = mirrorIndex(x, sizeX), my = mirrorIndex(y, sizeY);
 			const Tile *source = _save->getTile(Position(mx, my, 0));
 			if (!source)
@@ -2099,7 +2135,7 @@ void Map::hdDrawBeyondEdge(HdCanvas *surface, const Position &cameraPos)
 			}
 			SurfaceRaw<const Uint8> sprite;
 			int yOffset = 0;
-			if (source->isDiscovered(O_FLOOR))
+			if (source->isDiscovered(O_FLOOR) && !covered(mx, my))
 			{
 				const MapData *data = source->getMapData(O_FLOOR);
 				sprite = source->getSprite(O_FLOOR);
