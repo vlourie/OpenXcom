@@ -8,3 +8,4 @@
 - HD graphics (base): the rail air-defence guns are no longer splayed in a V; the barrels are parallel as in the original, and stay so while the turret swings.
 - HD graphics (battle): the lift ladder on the lower floor is now the same as on the upper floor (outline and rungs), with the original's floor grating under it and a straight diamond edge; its copies on other maps are fixed too.
 - HD graphics (battle): the "Eight" car's body edge (roof, bonnet, fins, wheels) is now straight lines instead of a staircase; tone and texture are as before.
+- HD graphics (battle, jungle): hill slopes are now covered with the same fluffy grass as the flat ground around them - no seam and no blurry green patch; the shape of the mound and its shading follow the original (tickets XP-000429, XP-000431).
