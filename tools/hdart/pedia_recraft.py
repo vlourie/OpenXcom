@@ -17,6 +17,7 @@ r"""pedia_recraft.py - перекрафт картинок педии по за�
 slot normal - hd\UI, slot 18 - hd_18+\UI. Прежний файл с .pal.txt - в <круг>\_prev\<копия>\..., журнал -
 <круг>\install_<время>.tsv. keep18 в edits.json: прежняя HD раздета, а hd_18+ её нет - она переезжает туда.
 Нет .pal.txt (у картинки не было HD) - пишется по палитре оригинала, как upscale_ui.py.
+Поставленное и «оставить как было» - в заметках досмотра «в порядке» (pedia_settle.py), иначе снова на досмотре.
 
     py -3.13 tools\gpuq.py add --name pedia_recraft_v1 --prio 9 --preemptible -- C:/Python313/python.exe E:/OpenXCom/tools/hdart/pedia_recraft.py
     py -3.13 tools\hdart\pedia_recraft.py --no-gen            (только jobs.json)
@@ -184,6 +185,8 @@ def install(out, d, origs, dry):
             for row in log:
                 f.write("\t".join(row) + "\n")
         print("журнал: %s" % jl)
+        import pedia_settle
+        pedia_settle.main()
     return 1 if bad else 0
 
 
