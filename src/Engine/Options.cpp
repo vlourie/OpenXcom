@@ -552,6 +552,7 @@ void createAdvancedOptionsOXCE()
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdFloorAo", &oxceHdFloorAo, true, "STR_HD_FLOOR_AO", "STR_HD_GRAPHICS"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdItemShadow", &oxceHdItemShadow, true, "STR_HD_ITEM_SHADOW", "STR_HD_GRAPHICS"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdFlashLight", &oxceHdFlashLight, false, "STR_HD_FLASH_LIGHT", "STR_HD_GRAPHICS"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdVolumeSmoke", &oxceHdVolumeSmoke, false, "STR_HD_VOLUME_SMOKE", "STR_HD_GRAPHICS"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdTerrainAddress", &oxceHdTerrainAddress, false, "", "STR_HD_GRAPHICS"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdReticle", &oxceHdReticle, 0, "STR_HD_RETICLE", "STR_HD_BATTLE_UI"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdReticleDamageColor", &oxceHdReticleDamageColor, true, "STR_HD_RETICLE_DAMAGE_COLOR", "STR_HD_BATTLE_UI"));

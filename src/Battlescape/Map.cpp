@@ -45,6 +45,7 @@
 #include "../Engine/HdGpuWorld.h"
 #include "../Engine/HdKillCam.h"
 #include "../Engine/HdLab.h"
+#include "../Engine/HdSmoke.h"
 #include "../Engine/HdSprites.h"
 #include "../Engine/HdTurn.h"
 #include "../Engine/HdTurnGroups.h"
@@ -1183,6 +1184,10 @@ Map::~Map()
 	if (!_hdAoFrames.empty())
 	{
 		Log(LOG_INFO) << "HD floor AO: " << _hdAoFrames.size() << " looks for this battle, grids and frames made in " << _hdAoBuildMs << " ms";
+	}
+	if (HdSmoke::bakeMs())
+	{
+		Log(LOG_INFO) << "HD volume smoke: puff banks baked in " << HdSmoke::bakeMs() << " ms (this run)";
 	}
 	delete _scrollMouseTimer;
 	delete _scrollKeyTimer;
@@ -4429,6 +4434,46 @@ void Map::drawSkillBonus(HdCanvas *surface, int x, int y)
 	surface->blitClassic(_txtSkillBonus, x + 13 * _k - textWidth * _k, y + 30 * _k, _k);
 }
 
+namespace
+{
+/**
+ * HD render (option oxceHdVolumeSmoke): the puffs of a smoking tile (HdSmoke) over its floor diamond, back to front,
+ * each at the light of the field where it floats (bilinear over the nine nodes); without the HD light, at the tile's
+ * flat shade. The fire itself is not drawn here.
+ */
+void drawSmokePuffs(HdCanvas *surface, const Tile *tile, Position screen, int k, int clock, const HdLight *light, int tileShade)
+{
+	static std::vector<HdSmoke::Puff> puffs;
+	puffs.clear();
+	const Position pos = tile->getPosition();
+	HdSmoke::puffs(pos.x, pos.y, pos.z, tile->getSmoke(), tile->getFire() > 0, clock, puffs);
+	const int side = HdSmoke::SIDE * k;
+	for (const HdSmoke::Puff &p : puffs)
+	{
+		float shade = (float)tileShade, tint[3] = { 1, 1, 1 };
+		if (light)
+		{
+			const float fu = std::max(0.0f, std::min(2.0f, p.u * 2)), fv = std::max(0.0f, std::min(2.0f, p.v * 2));
+			const int i = std::min(1, (int)fu), j = std::min(1, (int)fv);
+			const float a = fu - i, b = fv - j;
+			const int n = j * 3 + i;
+			const auto at = [a, b](float n00, float n01, float n10, float n11)
+			{
+				return (n00 * (1 - a) + n01 * a) * (1 - b) + (n10 * (1 - a) + n11 * a) * b;
+			};
+			shade = at(light->shade[n], light->shade[n + 1], light->shade[n + 3], light->shade[n + 4]);
+			for (int c = 0; c < 3; ++c)
+			{
+				tint[c] = at(light->tint[n][c], light->tint[n + 1][c], light->tint[n + 3][c], light->tint[n + 4][c]);
+			}
+		}
+		const int x = screen.x + 16 * k + (int)std::lround((p.u - p.v) * 16 * k) - side / 2;
+		const int y = screen.y + 24 * k + (int)std::lround(((p.u + p.v) * 8 - p.h + tile->getTerrainLevel()) * k) - side / 2;
+		surface->blitFrameToned(HdSmoke::frame(k, p.kind, p.shape, p.life), x, y, shade, tint);
+	}
+}
+}
+
 void Map::drawTerrain(HdCanvas *surface)
 {
 	_isAltPressed = _game->isAltPressed(true);
@@ -5343,12 +5388,26 @@ void Map::drawTerrain(HdCanvas *surface)
 							// pack's in-between picture of the frame (variant 1), if it has one, doubles the
 							// fire's frame rate; a fire style of oxceHdFire takes the pack's variants 2s and 2s + 1
 							// instead (a pack without them keeps its own fire)
+							// (option oxceHdVolumeSmoke: puffs instead of the pack's smoke, soot over its fire; not under
+							// night vision nor water, which keep the pack's frame)
+							const bool puffs = Options::oxceHdVolumeSmoke && !_nvColor && _save->getDepth() == 0;
 							const int variant = tile->getFire() ? (enviRest ? 1 : 0) + 2 * Options::oxceHdFire : 0;
-							if (variant)
-								surface->setFrameVariant(variant);
-							surface->blit(tmpSurface, screenPosition.x, screenPosition.y + (tile->getFire() ? tile->getTerrainLevel() * _k : 0), shade, false, _nvColor);
-							if (variant)
-								surface->setFrameVariant(0);
+							if (!puffs || tile->getFire())
+							{
+								if (variant)
+									surface->setFrameVariant(variant);
+								surface->blit(tmpSurface, screenPosition.x, screenPosition.y + (tile->getFire() ? tile->getTerrainLevel() * _k : 0), shade, false, _nvColor);
+								if (variant)
+									surface->setFrameVariant(0);
+							}
+							if (puffs)
+							{
+								if (_hdLightOn)
+								{
+									updateHdLight(tile, tileShade, mapPosition);
+								}
+								drawSmokePuffs(surface, tile, screenPosition, _k, enviClock, _hdLightOn ? &_hdLight : nullptr, tileShade);
+							}
 						}
 						else
 						{

@@ -211,6 +211,8 @@ OPT bool oxceHdFloorAo;
 OPT bool oxceHdItemShadow;
 // HD render: explosions, hits and muzzle flashes light the map around them, shadowed by its LOFT (HD modes with oxceHdLight)
 OPT bool oxceHdFlashLight;
+// HD render: the smoke of a tile as puffs of a baked volume that rise, grow and melt, lit where they float (HD modes, Engine/HdSmoke.h)
+OPT bool oxceHdVolumeSmoke;
 // HD lab (Engine/HdLab.h): the battle map turned by this many quarters (0..3), only while the lab is open
 OPT int oxceHdMapRotation;
 // HD lab: the key a correct lab password leaves (empty: the lab is closed)
