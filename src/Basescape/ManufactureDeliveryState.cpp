@@ -84,8 +84,9 @@ ManufactureDeliveryState::ManufactureDeliveryState(Production *production, Base 
 	_txtAmount = new Text(60, 16, 130, 102);
 	_btnLess = new ArrowButton(ARROW_BIG_DOWN, 13, 14, 108, 102);
 	_btnMore = new ArrowButton(ARROW_BIG_UP, 13, 14, 192, 102);
-	_btnOk = new TextButton(84, 16, 68, 134);
-	_btnCancel = new TextButton(84, 16, 168, 134);
+	// XP-000412: confirm on the right, as in the other manufacture windows
+	_btnOk = new TextButton(84, 16, 168, 134);
+	_btnCancel = new TextButton(84, 16, 68, 134);
 	// the wheel works on the whole window
 	_surface = new InteractiveSurface(200, 124, 60, 38);
 	_surface->onMouseClick((ActionHandler)&ManufactureDeliveryState::handleWheel, 0);
@@ -334,8 +335,8 @@ ManufactureLootPartsState::ManufactureLootPartsState(Base *to, const Items &item
 	_txtOnBase = new Text(44, 9, 156, 57);
 	_lstParts = new TextList(224, 69, 47, 67);
 	_txtTotal = new Text(224, 9, 48, 138);
-	_btnOk = new TextButton(104, 16, 48, 153);
-	_btnCancel = new TextButton(104, 16, 168, 153);
+	_btnOk = new TextButton(104, 16, 168, 153);
+	_btnCancel = new TextButton(104, 16, 48, 153);
 
 	// Set palette
 	setInterface("manufactureInfo");
