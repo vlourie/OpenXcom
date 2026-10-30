@@ -182,6 +182,7 @@ set ( engine_src
   Engine/HdCanvas.cpp
   Engine/HdSmooth.cpp
   Engine/HdSmoke.cpp
+  Engine/HdFire.cpp
   Engine/HdUi.cpp
   Engine/HdSprites.cpp
   Engine/HdPaletteShift.cpp
