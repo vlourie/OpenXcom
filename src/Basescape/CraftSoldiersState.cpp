@@ -234,8 +234,10 @@ CraftSoldiersState::CraftSoldiersState(Base *base, size_t craft)
 	if (mission)
 	{
 		_txtMissionInfo = new Text(288, 9, 16, 145);
-		_txtMissionLabel = new Text(66, 9, 14, 161);
-		_cbxMission = new ComboBox(this, 228, 16, 80, 157, true);
+		// the box is half as wide, at the right edge (x 194..308), so that its button does not cover the open sort list;
+		// the label ends right at the box
+		_txtMissionLabel = new Text(100, 9, 92, 161);
+		_cbxMission = new ComboBox(this, 114, 16, 194, 157, true);
 	}
 
 	touchComponentsCreate(_txtTitle, true);
@@ -257,11 +259,15 @@ CraftSoldiersState::CraftSoldiersState(Base *base, size_t craft)
 	add(_txtAvailable, "text", "craftSoldiers");
 	add(_txtUsed, "text", "craftSoldiers");
 	add(_lstSoldiers, "list", "craftSoldiers");
+	if (_cbxMission)
+	{
+		// the texts go under the sort box, so its open list is drawn over them
+		add(_txtMissionInfo, "text", "craftSoldiers");
+		add(_txtMissionLabel, "text", "craftSoldiers");
+	}
 	add(_cbxSortBy, "button", "craftSoldiers");
 	if (_cbxMission)
 	{
-		add(_txtMissionInfo, "text", "craftSoldiers");
-		add(_txtMissionLabel, "text", "craftSoldiers");
 		add(_cbxMission, "button", "craftSoldiers");
 	}
 
@@ -307,10 +313,37 @@ CraftSoldiersState::CraftSoldiersState(Base *base, size_t craft)
 	if (_cbxMission)
 	{
 		// OXCE-HD (oxceHdCraftMission): item 0 = no target (the list is as it was), then the detected targets
+		_txtMissionLabel->setAlign(ALIGN_RIGHT);
 		_txtMissionLabel->setText(tr("STR_CRAFT_FOR_MISSION"));
 		std::vector<std::string> names;
 		names.push_back(tr("STR_CRAFT_FOR_MISSION_NONE"));
 		buildMissionTargets(names);
+		{
+			// the box is narrow: a long name is cut with "..." to the width of the box, the list of targets itself is not touched
+			Text probe(300, 9, 0, 0);
+			probe.initText(_game->getMod()->getFont("FONT_BIG"), _game->getMod()->getFont("FONT_SMALL"), _game->getLanguage());
+			probe.setSmall();
+			const int maxWidth = _cbxMission->getWidth() - 24;
+			for (size_t i = 1; i < names.size(); ++i)
+			{
+				UString name = Unicode::convUtf8ToUtf32(names[i]);
+				probe.setText(names[i]);
+				if (probe.getTextWidth() <= maxWidth)
+				{
+					continue;
+				}
+				while (name.size() > 1)
+				{
+					name.pop_back();
+					probe.setText(Unicode::convUtf32ToUtf8(name) + "...");
+					if (probe.getTextWidth() <= maxWidth)
+					{
+						break;
+					}
+				}
+				names[i] = Unicode::convUtf32ToUtf8(name) + "...";
+			}
+		}
 		_cbxMission->setOptions(names);
 		_cbxMission->setSelected(0);
 		_cbxMission->onChange((ActionHandler)&CraftSoldiersState::cbxMissionChange);
