@@ -270,7 +270,7 @@ private:
 	/// HD render (option oxceHdBloodSteps, XP-000421): bloody soles on the floor. Picture only: the Map keeps them, not the units, the tiles or the
 	/// save (a loaded battle has none); the tracks follow each unit's steps (by unit id), the soles stand by tile index (at most HD_STEP_MAX).
 	struct HdStepTrack { Position last; bool seen = false; int left = 0; int rgb = 0; int foot = 0; };
-	struct HdStep { int dx, dy, side, rgb, turn; Uint32 seq; };
+	struct HdStep { int dx, dy, variant, kind, rgb, turn; Uint32 seq; };
 	std::unordered_map<int, HdStepTrack> _hdStepTracks;
 	std::unordered_map<int, HdStep> _hdSteps;
 	std::deque<std::pair<int, Uint32>> _hdStepOrder;
@@ -279,8 +279,9 @@ private:
 	std::map<unsigned long long, HdFrame> _hdStepFrames;
 	/// Watches the steps of the units (before a frame is drawn) and lays the soles.
 	void hdObserveSteps();
-	/// The sole frame (floor diamond, 32k x 16k) for a step by (dx, dy), the foot `side`, colour `rgb` and fading `tier` (0 fresh, 1 old).
-	const HdFrame &hdStepFrame(int dx, int dy, int side, int rgb, int tier);
+	/// The print frame (floor diamond, 32k x 16k) for a step by (dx, dy): `variant` 0/1 the left or right foot of a one-tile unit, 2..5 the quarter of a
+	/// 2x2 body; `kind` the look (HdFx::Track), colour `rgb`, fading `tier` (0 fresh, 1 old).
+	const HdFrame &hdStepFrame(int dx, int dy, int variant, int kind, int rgb, int tier);
 	/// HD render: the shade of the corners on the floor (option oxceHdFloorAo), see Map::hdFloorAo.
 	struct HdAoShape { Uint16 rows[16]; float weight; int count; bool valid; };
 	static const int HD_AO_PARTS = 27;

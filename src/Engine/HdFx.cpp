@@ -350,6 +350,66 @@ void readBlood()
 	Log(LOG_INFO) << "HD blood: " << bloodExact.size() << " names and " << bloodPrefix.size() << " prefixes of " << path;
 }
 
+/// XP-000421: hd/tracks.txt, "NAME kind" a line ('#' a comment), like blood.txt: exact armour types and prefixes, read once.
+const char *const TRACK_NAMES[] = { "boot", "bare", "wheel", "track", "paw", "none" };
+bool tracksRead = false;
+std::unordered_map<std::string, int> tracksExact;
+std::vector<std::pair<std::string, int>> tracksPrefix;
+/// The kind found for an armour type, so the table is searched once for each type.
+std::unordered_map<std::string, int> trackOf;
+
+void readTracks()
+{
+	if (tracksRead)
+	{
+		return;
+	}
+	tracksRead = true;
+	const std::string path = HdSprites::artPath("tracks.txt");
+	std::unique_ptr<std::istream> in = FileMap::fileExists(path) ? FileMap::getIStream(path) : nullptr;
+	if (!in)
+	{
+		return;
+	}
+	std::string line;
+	while (std::getline(*in, line))
+	{
+		if (line.size() >= 3 && (unsigned char)line[0] == 0xEF && (unsigned char)line[1] == 0xBB && (unsigned char)line[2] == 0xBF)
+		{
+			line.erase(0, 3);
+		}
+		std::istringstream fields(line);
+		std::string name, word;
+		if (!(fields >> name >> word) || name[0] == '#')
+		{
+			continue;
+		}
+		int kind = -1;
+		for (int i = 0; i < 6; ++i)
+		{
+			if (word == TRACK_NAMES[i])
+			{
+				kind = i;
+			}
+		}
+		if (kind < 0)
+		{
+			Log(LOG_WARNING) << "HD tracks: unknown kind '" << word << "' for " << name << " in " << path;
+			continue;
+		}
+		if (name.back() == '*')
+		{
+			name.pop_back();
+			tracksPrefix.emplace_back(name, kind);
+		}
+		else
+		{
+			tracksExact[name] = kind;
+		}
+	}
+	Log(LOG_INFO) << "HD tracks: " << tracksExact.size() << " names and " << tracksPrefix.size() << " prefixes of " << path;
+}
+
 /// Is `clip` a blood clip: a hit on flesh, a spray or a stab?
 bool isBlood(const std::string &clip)
 {
@@ -538,6 +598,62 @@ int bloodRgb(const Armor *armor)
 	}
 	bloodOf[type] = rgb;
 	return rgb;
+}
+
+Track trackKind(const Armor *armor)
+{
+	if (!armor)
+	{
+		return TRACK_BOOT;
+	}
+	readTracks();
+	const std::string &type = armor->getType();
+	auto known = trackOf.find(type);
+	if (known != trackOf.end())
+	{
+		return (Track)known->second;
+	}
+	int kind = -1;
+	auto exact = tracksExact.find(type);
+	if (exact != tracksExact.end())
+	{
+		kind = exact->second;
+	}
+	else
+	{
+		size_t longest = 0;
+		for (const auto &p : tracksPrefix)
+		{
+			if (p.first.size() >= longest && type.compare(0, p.first.size(), p.first) == 0)
+			{
+				longest = p.first.size();
+				kind = p.second;
+			}
+		}
+	}
+	const char *how = "table";
+	if (kind < 0)
+	{
+		how = "rule";
+		const MovementType mt = armor->getMovementType();
+		if (mt == MT_FLY || mt == MT_FLOAT || mt == MT_SLIDE || mt == MT_SINK)
+		{
+			kind = TRACK_NONE;
+		}
+		else if (armor->getSize() >= 2)
+		{
+			const int routine = armor->getDrawingRoutine();
+			kind = routine == 2 || routine == 11 ? TRACK_CRAWLER : routine == 5 ? TRACK_PAW : TRACK_BOOT;
+		}
+		else
+		{
+			kind = TRACK_BOOT;
+		}
+	}
+	trackOf[type] = kind;
+	Log(LOG_INFO) << "HD tracks: armour " << type << " -> " << TRACK_NAMES[kind] << " (" << how << ", movement " << (int)armor->getMovementType()
+		<< ", size " << armor->getSize() << ", drawing routine " << armor->getDrawingRoutine() << ")";
+	return (Track)kind;
 }
 
 std::string tinted(const std::string &clip, int rgb)

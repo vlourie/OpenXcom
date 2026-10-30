@@ -65,6 +65,12 @@ namespace HdFx
 	/// XP-000421 (Options::oxceHdBloodSteps): whether bloody soles may be laid on the floor of `tile`: it has a floor, and the floor is
 	/// not water or lava (by the footstep sound and the name of the set, as material()).
 	bool dryFloor(const Tile *tile);
+	/// XP-000421: the look of a bloody footprint: a boot (army tread), a bare foot, wheels, caterpillar tracks, paws, or none.
+	enum Track { TRACK_BOOT, TRACK_BARE, TRACK_WHEEL, TRACK_CRAWLER, TRACK_PAW, TRACK_NONE };
+	/// The look of the footprint of a creature in `armor`, by the mod's table hd/tracks.txt ("NAME kind", NAME an armour type or a prefix
+	/// ending in '*', kind boot/bare/wheel/track/paw/none; the exact name beats a prefix). No file or no line: by the armour's movementType
+	/// (flying, floating, sliding - none) and size (2: drawingRoutine 2 and 11 - track, 5 - paw), else a boot. Found once for each type (the log says how).
+	Track trackKind(const Armor *armor);
 	/// The name of blood clip `clip` (hit_*_flesh, blood_*, stab_*) in colour `rgb`: frame() recolours it once when it loads
 	/// (the tone changes, the brightness and the alpha stay) and keeps it. Any other clip, or rgb < 0: `clip` as it is.
 	std::string tinted(const std::string &clip, int rgb);
