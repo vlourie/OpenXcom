@@ -49,6 +49,8 @@ public:
 	~ItemSprite();
 	/// Draws the item.
 	void draw(const BattleItem* item, int x, int y, int shade);
+	/// The floor sprite `draw` draws for the item (HD render: Map takes its shadow from it).
+	const Surface *getFloorSprite(const BattleItem* item, int shade) const;
 	/// Draws the item shadow.
 	void drawShadow(const BattleItem* item, int x, int y);
 };

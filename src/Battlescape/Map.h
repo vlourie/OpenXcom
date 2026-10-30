@@ -228,6 +228,9 @@ private:
 	/// Options::oxceHdBeyondLook 1: the floor of a palette sprite in greys (made once, kept while the battle's map lives), nullptr if it cannot be made.
 	const HdFrame *hdGrayFloor(HdCanvas *surface, SurfaceRaw<const Uint8> sprite);
 	std::unordered_map<const void*, HdFrame> _hdGrayFrames;
+	/// HD render (option oxceHdItemShadow): the shadow of an item lying on the floor, by the HD frame it is drawn with (kept while the battle's map lives).
+	const HdFrame *hdItemShadow(HdCanvas *surface, SurfaceRaw<const Uint8> sprite);
+	std::unordered_map<const HdFrame*, HdFrame> _hdItemShadows;
 	/// HD render: the shade of the corners on the floor (option oxceHdFloorAo), see Map::hdFloorAo.
 	struct HdAoShape { Uint16 rows[16]; float weight; int count; bool valid; };
 	static const int HD_AO_PARTS = 27;

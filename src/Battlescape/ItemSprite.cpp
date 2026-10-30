@@ -72,6 +72,14 @@ void ItemSprite::draw(const BattleItem* item, int x, int y, int shade)
 }
 
 /**
+ * The floor sprite of the item, the same `draw` draws.
+ */
+const Surface *ItemSprite::getFloorSprite(const BattleItem* item, int shade) const
+{
+	return item->getFloorSprite(_itemSurface, _save, _animationFrame, shade);
+}
+
+/**
  * Draws shadow of item.
  */
 void ItemSprite::drawShadow(const BattleItem* item, int x, int y)

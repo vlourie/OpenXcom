@@ -484,6 +484,8 @@ en-US:
   STR_HD_UNIT_SHADOW_DESC: "In the HD sprite modes: a soft shadow on the floor under every visible unit that stands on something; it follows the unit's step and rises with the terrain. Not drawn under units hanging with no floor below. Picture only: the game's own visibility rules are not affected."
   STR_HD_FLOOR_AO: "HD corner shade"
   STR_HD_FLOOR_AO_DESC: "In the HD sprite modes: the floor darkens softly beside the walls, crates and other things standing on it, as in the corners of a room. Taken from the shape of the map parts the player has seen; low rubble shades less. Picture only: visibility and the game's rules are not affected."
+  STR_HD_ITEM_SHADOW: "HD item shadow"
+  STR_HD_ITEM_SHADOW_DESC: "In the HD sprite modes: a soft shadow on the floor under every item lying on it - weapons, loot, bodies. Made from the item's own picture. Picture only: visibility and the game's rules are not affected."
   STR_HD_HOVER_BOB: "HD unit sway"
   STR_HD_HOVER_BOB_DESC: "In the HD sprite modes: flying units that hang with no floor below sway gently up and down, easing in on take-off and out on landing. Picture only, the unit's position does not change. Off (and mode 0) = they hang still, as in the classic game."
   STR_HD_WALKER_TURN: "HD walker shuffle"
