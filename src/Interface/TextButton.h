@@ -85,7 +85,8 @@ public:
 	/// HD interface: the bevel as drawn, crisp, and the label as HD text.
 	void hdMirror() override;
 	/// HD interface, modern skin: the button lit or not (for subclasses with their own pressed state).
-	void hdMirrorSkin(bool pressed);
+	/// inkIndex >= 0: the label is in that palette colour, theme or not (a graph button lit in its line's colour).
+	void hdMirrorSkin(bool pressed, int inkIndex = -1);
 	/// Special handling for mouse presses.
 	void mousePress(Action *action, State *state) override;
 	/// Special handling for mouse releases.

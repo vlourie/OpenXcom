@@ -166,6 +166,9 @@ public:
 	/// Draws the next labels in the theme's colours (lit = on a pressed button: dark letters on the light metal)
 	/// instead of the palette's, until cleared.
 	void setLabelTheme(bool on, bool lit = false);
+	/// Draws the next labels in the given letter colour and shadow (a graph button lit in its line's colour), until cleared
+	/// with setLabelTheme(false).
+	void setLabelInk(const SDL_Color &face, const SDL_Color &shadow);
 	/// Finds the mods' TrueType font sets and loads the one the option asks for; called after the mods load.
 	void loadFonts();
 	/// Loads the font set the option names when it is not the one already loaded (the option can change in play).

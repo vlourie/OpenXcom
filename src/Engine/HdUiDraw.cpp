@@ -359,6 +359,13 @@ void HdUi::setLabelTheme(bool on, bool lit)
 	inkAdjust(dark, lit, _labelFace, _labelShadow);
 }
 
+void HdUi::setLabelInk(const SDL_Color &face, const SDL_Color &shadow)
+{
+	_labelTheme = true;
+	_labelFace = 0xFF000000u | ((Uint32)face.r << 16) | ((Uint32)face.g << 8) | (Uint32)face.b;
+	_labelShadow = SDL_Color{ shadow.r, shadow.g, shadow.b, 255 };
+}
+
 namespace
 {
 /// A colour mixed towards black (t = 0 the colour, 1 black), alpha kept.
