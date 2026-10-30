@@ -9,3 +9,4 @@
 - HD graphics (battle): the lift ladder on the lower floor is now the same as on the upper floor (outline and rungs), with the original's floor grating under it and a straight diamond edge; its copies on other maps are fixed too.
 - HD graphics (battle): the "Eight" car's body edge (roof, bonnet, fins, wheels) is now straight lines instead of a staircase; tone and texture are as before.
 - HD graphics (battle, jungle): hill slopes are now covered with the same fluffy grass as the flat ground around them - no seam and no blurry green patch; the shape of the mound and its shading follow the original (tickets XP-000429, XP-000431).
+- HD graphics (battle, snow): cracks, thawed patches and stones on snow are redrawn after the original's pattern - no seams between tiles and no blurry patches, thin cracks stay thin; the sandy beach and the snowy swamp are fixed the same way (tickets XP-000436, XP-000437).
