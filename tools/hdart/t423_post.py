@@ -26,6 +26,7 @@ import t417_container_gen as g                       # noqa: E402
 K, SET, CELLS, FRAMES = G.K, G.SET, G.CELLS, G.FRAMES
 GEN, CAND, REV, SEEDS = G.GEN, G.CAND, G.REV, G.SEEDS
 BGC = g.BGC
+COMPARE = []                  # зёрна прошлых кругов, которые показываются на листах рядом (круг 3: 4232 круга 1)
 SUF = ""                      # "_r2" - круг 2 (зёрна G.SEEDS_R2, голова перевёрнута): листы и таблица со своим хвостом
 GOLD_FRAMES = [5, 8, 9]
 
@@ -288,7 +289,7 @@ def do_sheet(a=None):
     sc = ts.Scene()
     items, W, H = g.make_items(CELLS)
     seeds = avail_seeds()
-    variants = [("классика x4", g.classic_frames(sc)), ("HD сейчас", g.hd_now_frames(sc))] + [("зерно %d" % s, seed_frames(s)) for s in seeds]
+    variants = [("классика x4", g.classic_frames(sc)), ("HD сейчас", g.hd_now_frames(sc))] + [("зерно %d" % s, seed_frames(s)) for s in COMPARE + seeds]
     full = [(n, g.assemble(f, items, W, H, K, BGC)) for n, f in variants]
     big = [(n, im.resize((im.width * 2, im.height * 2), Image.NEAREST)) for n, im in full]
     ts.sheet(big, os.path.join(REV, "t423_whole" + SUF + ".png"), cols=3)
@@ -337,8 +338,8 @@ def do_cand(a=None):
     for i in ims:
         out.paste(i, (0, y))
         y += i.height + 8
-    out.save(os.path.join(REV, ("t423_cand2.png" if SUF else "t423_cand.png")))
-    print("лист", os.path.join(REV, ("t423_cand2.png" if SUF else "t423_cand.png")), out.size)
+    out.save(os.path.join(REV, {"": "t423_cand.png", "_r2": "t423_cand2.png", "_r3": "t423_cand3.png"}[SUF]))
+    print("лист", os.path.join(REV, {"": "t423_cand.png", "_r2": "t423_cand2.png", "_r3": "t423_cand3.png"}[SUF]), out.size)
 
 
 # ---------------------------------------------------------------------------------------------------------
@@ -377,12 +378,16 @@ def main():
     ap.add_argument("cmd", choices=["build", "family", "sheet", "cand", "install"])
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--yes", action="store_true")
-    ap.add_argument("--round", type=int, default=1, help="2 - круг 2: голова перевёрнута, зёрна 4241-4243")
+    ap.add_argument("--round", type=int, default=1, help="2 - круг 2 (голова на темечке, отменён), 3 - круг 3: голова плашмя на боку в профиль, зёрна 4251-4253")
     a = ap.parse_args()
+    global SUF
     if a.round == 2:
-        global SUF
         SUF = "_r2"
         SEEDS[:] = G.SEEDS_R2
+    elif a.round == 3:
+        SUF = "_r3"
+        SEEDS[:] = G.SEEDS_R3
+        COMPARE[:] = [4232]
     globals()["do_" + a.cmd](a)
     return 0
 
