@@ -813,6 +813,7 @@ void Game::setVolume(int sound, int music, int ui)
 		{
 			sound = volumeExponent(sound) * (double)SDL_MIX_MAXVOLUME;
 			Mix_Volume(-1, sound);
+			Sound::setChannelVolume(sound);
 			if (_save && _save->getSavedBattle())
 			{
 				Mix_Volume(3, sound * _save->getSavedBattle()->getAmbientVolume());

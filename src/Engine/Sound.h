@@ -69,6 +69,8 @@ public:
 	void play(int channel = -1, int angle = 0, int distance = 0) const;
 	/// Plays it as a shot: with oxceHdShotCut the same sound still playing (the shot before) fades out first.
 	void playShot(int angle) const;
+	/// Remembers the volume Game::setVolume gave the sound channels (a channel faded out by playShot gets it back).
+	static void setChannelVolume(int volume);
 	/// Stops all sounds.
 	static void stop();
 	/// Plays the sound repeatedly.
