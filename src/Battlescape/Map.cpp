@@ -4067,8 +4067,9 @@ void Map::drawUnit(UnitSprite &unitSprite, Tile *unitTile, Tile *currTile, Posit
 	}
 	HdDrawTimer timer(HdDrawStats::frame.unitsUs);
 	// HD: the shadow on the floor, under the piece drawn here and cut by its mask; not under a unit hanging with no
-	// floor, nor under the top of one reaching up from the level below (its floor is there); not in the turned view
-	if (Options::oxceHdUnitShadow && _canvas->getHdMode() != HD_MODE_NEAREST && !unitFromBelow && !unitFromAbove && !turned
+	// floor, nor under the top of one reaching up from the level below (its floor is there); not in the turned view;
+	// not under water (depth > 0: no sun there, ticket XP-000446)
+	if (Options::oxceHdUnitShadow && _canvas->getHdMode() != HD_MODE_NEAREST && _save->getDepth() <= 0 && !unitFromBelow && !unitFromAbove && !turned
 		&& !bu->isFloating() && !bu->isOut() && part < bu->getArmor()->getSize() * bu->getArmor()->getSize())
 	{
 		const Position bob = hoverBob(bu);
@@ -6890,7 +6891,8 @@ Position Map::hoverBob(const BattleUnit *unit) const
 void Map::hdGatherFlierShadows(const Position &cameraPos, int endZ)
 {
 	_hdFlierShadows.clear();
-	if (!Options::oxceHdUnitShadow || _canvas->getHdMode() == HD_MODE_NEAREST || _camera->getRotation() != 0)
+	// not under water (depth > 0: no sun there, ticket XP-000446)
+	if (!Options::oxceHdUnitShadow || _canvas->getHdMode() == HD_MODE_NEAREST || _camera->getRotation() != 0 || _save->getDepth() > 0)
 	{
 		return;
 	}
