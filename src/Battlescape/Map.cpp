@@ -247,7 +247,7 @@ const HdFrame &fallDiamond(int k)
 }
 
 /// The opacity of a unit's shadow at its centre (it fades to nothing at the edge).
-const int UNIT_SHADOW_ALPHA = 110;
+const int UNIT_SHADOW_ALPHA = 220;
 
 /**
  * The shadow under a unit: a soft black ellipse on the floor (2:1, a circle in the isometric view), 7x3.5 pixels
@@ -643,7 +643,7 @@ const HdFrame &arcStop(int k)
 
 /// The shade of the corners on the floor (Map::hdFloorAo): the opacity of the darkest level, the levels of the grid,
 /// the share of the own object's lower voxels above which the floor is not seen, the most looks kept for a battle.
-const int FLOOR_AO_ALPHA = 90;
+const int FLOOR_AO_ALPHA = 135;
 const int FLOOR_AO_LEVELS = 16;
 const int FLOOR_AO_HIDDEN = 230;
 const size_t FLOOR_AO_MAX_FRAMES = 2048;

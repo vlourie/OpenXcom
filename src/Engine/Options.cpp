@@ -548,8 +548,8 @@ void createAdvancedOptionsOXCE()
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdMode", &oxceHdMode, 2, "STR_HD_MODE", "STR_HD_GRAPHICS"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdLight", &oxceHdLight, true, "STR_HD_LIGHT", "STR_HD_GRAPHICS"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdGroundVariants", &oxceHdGroundVariants, true, "STR_HD_GROUND_VARIANTS", "STR_HD_GRAPHICS"));
-	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdUnitShadow", &oxceHdUnitShadow, false, "STR_HD_UNIT_SHADOW", "STR_HD_GRAPHICS"));
-	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdFloorAo", &oxceHdFloorAo, false, "STR_HD_FLOOR_AO", "STR_HD_GRAPHICS"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdUnitShadow", &oxceHdUnitShadow, true, "STR_HD_UNIT_SHADOW", "STR_HD_GRAPHICS"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdFloorAo", &oxceHdFloorAo, true, "STR_HD_FLOOR_AO", "STR_HD_GRAPHICS"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdTerrainAddress", &oxceHdTerrainAddress, false, "", "STR_HD_GRAPHICS"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdReticle", &oxceHdReticle, 0, "STR_HD_RETICLE", "STR_HD_BATTLE_UI"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdReticleDamageColor", &oxceHdReticleDamageColor, true, "STR_HD_RETICLE_DAMAGE_COLOR", "STR_HD_BATTLE_UI"));
