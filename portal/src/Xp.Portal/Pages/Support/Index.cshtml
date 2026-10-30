@@ -1,0 +1,15 @@
+@page "/support"
+@{
+    ViewData["Title"] = T["nav.support"];
+}
+<h1>@T["support.title"]</h1>
+<p class="lead">@T["support.lead"]</p>
+
+<section class="panel">
+    <h2 class="title">@T["support.hd.title"]</h2>
+    <p class="hint">@T["support.hd.note"]</p>
+    @* DonatePay lets its widget open only on this site's address: opened directly it answers 404 *@
+    <iframe class="donate" src="https://widget.donatepay.ru/widgets/page/758a108fdb3ee7b5e63bdb9a839665d31672c04e594d571c6780ddc984b659aa?widget_id=7931824&sum=300"
+            title="DonatePay" loading="lazy" frameborder="0"></iframe>
+    <p><a class="button secondary" href="https://www.donationalerts.ru/r/pepelatzigravetzappa" target="_blank" rel="noopener">@T["support.hd.alerts"]</a></p>
+</section>

@@ -78,6 +78,8 @@ public sealed class Defaults
     public string SupportModUrl { get; set; } = "";
     /// <summary>"Support the HD developers" page; empty - the button is shown disabled.</summary>
     public string SupportHdUrl { get; set; } = "";
+    /// <summary>The site's /support page with the DonatePay widget (it opens only there); empty - disabled.</summary>
+    public string SupportHdPageUrl { get; set; } = "";
 }
 
 [JsonSourceGenerationOptions(WriteIndented = true, PropertyNamingPolicy = JsonKnownNamingPolicy.CamelCase)]

@@ -21,6 +21,7 @@ public sealed class SupportPage : UserControl
         // the credit Dioxine asked for (27.10), beside his button
         panel.Children.Add(Skin.Note(L.T("credit.piratez"), 13, Skin.Text2));
         panel.Children.Add(Big("support.hd", "support.hdNote", BuiltIn.Defaults.SupportHdUrl));
+        panel.Children.Add(Big("support.hdPage", "support.hdPageNote", BuiltIn.Defaults.SupportHdPageUrl));
         Content = new ScrollViewer { Content = panel };
     }
 
