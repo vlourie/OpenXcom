@@ -671,7 +671,7 @@ en-US:
   STR_HD_SHAPE_PILLOW: "Pillow"
   STR_HD_SHAPE_RECESSED: "Recessed"
   STR_HD_SHOT_CUT: "A shot cuts the sound of the shot before"
-  STR_HD_SHOT_CUT_DESC: "When a weapon fires again while the sound of its last shot is still playing (a shotgun's pump heard over the next reaction shot, the tail of a burst), the old sound fades out at once and the new shot is heard clean. Only the same sound is cut; the shots keep their time and order. Off = sounds overlap, as in the original."
+  STR_HD_SHOT_CUT_DESC: "On - when a weapon fires again while the sound of its last shot is still playing, the old sound fades out quickly. Off - sounds overlap, as in the original."
   STR_HD_GLOBE_SCALE: "HD interface: globe scale"
   STR_HD_GLOBE_SCALE_DESC: "The globe gets a scale of its own, apart from the windows, the base and the lists. \"As geoscape\" = the same as the Geoscape Scale in the Video options. 2x-6x = the globe is drawn as at that geoscape scale, e.g. 3x: set the Geoscape Scale to 5x or 6x for big windows and the globe to 3x for a detailed one. Works with the HD interface on; a value no finer than the Geoscape Scale changes nothing. Smaller numbers cost more on a big display."
   STR_HD_GLOBE_SCALE_SAME: "As geoscape"
