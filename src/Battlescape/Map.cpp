@@ -385,27 +385,61 @@ void fillEdgeBand(HdFrame &f, Uint32 rgb, int alpha, int k, double aLo, double a
 }
 
 /**
- * One cell's length of a vertical fence one level (24 base pixels) high along a map edge (XP-000382): a frame 16k wide and
- * 32k tall; the foot runs from the left of the frame's row 24k down to its right (`down`, the map's edges that run from the
- * top corner to the right one and from the bottom corner to the left one) or from row 32k up (`!down`). Half transparent in the
- * body, firmer along the foot and the top.
+ * One cell's length of a vertical fence one level (24 base pixels) high along a map edge (XP-000382, XP-000420): a frame 16k wide
+ * and 32k tall; the foot runs from the left of the frame's row 24k down to its right (`down`, the map's edges that run from the
+ * top corner to the right one and from the bottom corner to the left one) or from row 32k up (`!down`). A real fence, not a band:
+ * posts on the cell's corners (half a post at each end of the frame, so two neighbours make one whole post and a corner of the
+ * map gets one), three pickets between them, two rails along the foot's slope, the gaps only faintly tinted. Posts and pickets
+ * have a lighter left edge and a darker right one for volume. Measured in base pixels (u along the cell's 16, v up from the foot)
+ * and scaled by k, so every k gives the same fence. `body` is the alpha of the gaps, `edge` the alpha of the posts.
  */
 void fillFence(HdFrame &f, bool down, Uint32 rgb, int body, int edge, int k)
 {
 	f.width = 16 * k;
 	f.height = 32 * k;
 	f.pixels.assign((size_t)f.width * f.height, 0);
+	const int r = (rgb >> 16) & 0xFF, g = (rgb >> 8) & 0xFF, b = rgb & 0xFF;
+	auto light = [](int c) { return c + (255 - c) * 45 / 100; };
+	auto dark = [](int c) { return c * 58 / 100; };
+	const Uint32 cBase = (Uint32)(r << 16 | g << 8 | b);
+	const Uint32 cLight = (Uint32)(light(r) << 16 | light(g) << 8 | light(b));
+	const Uint32 cDark = (Uint32)(dark(r) << 16 | dark(g) << 8 | dark(b));
+	const int aPost = edge, aPicket = edge * 92 / 100, aRail = edge * 78 / 100;
 	for (int y = 0; y < f.height; ++y)
 	{
 		for (int x = 0; x < f.width; ++x)
 		{
 			const double foot = down ? 24.0 * k + (x + 0.5) / 2 : 32.0 * k - (x + 0.5) / 2;
 			const double top = foot - 24.0 * k, at = y + 0.5;
-			if (at > top && at < foot)
+			if (!(at > top && at < foot))
 			{
-				const int alpha = (at > foot - 1.5 * k || at < top + 1.0 * k) ? edge : body;
-				f.pixels[(size_t)y * f.width + x] = ((Uint32)alpha << 24) | (rgb & 0xFFFFFF);
+				continue;
 			}
+			const double u = (x + 0.5) / k, v = (foot - at) / k;
+			int alpha = body;
+			Uint32 col = cBase;
+			if (u < 1.0 || u >= 15.0)
+			{
+				// a post: [15, 16) of this frame and [0, 1) of the next one; the light edge on the left, the shade on the right
+				alpha = aPost;
+				col = u >= 15.0 ? (u < 15.5 ? cLight : cBase) : (u < 0.5 ? cBase : cDark);
+				if (v > 23.4)
+				{
+					col = cLight;   // the cut top of the post
+				}
+			}
+			else if (v < 21.0 && ((u >= 3.4 && u < 4.6) || (u >= 7.4 && u < 8.6) || (u >= 11.4 && u < 12.6)))
+			{
+				const double in = std::fmod(u - 3.4, 4.0) / 1.2;   // 0..1 across the picket
+				alpha = aPicket;
+				col = in < 0.3 ? cLight : (in > 0.7 ? cDark : cBase);
+			}
+			else if ((v >= 4.0 && v < 5.5) || (v >= 15.0 && v < 16.5))
+			{
+				alpha = aRail;
+				col = (v < 4.4 || (v >= 15.0 && v < 15.4)) ? cLight : cBase;
+			}
+			f.pixels[(size_t)y * f.width + x] = ((Uint32)alpha << 24) | (col & 0xFFFFFF);
 		}
 	}
 	f.generated = true;
@@ -2705,8 +2739,8 @@ const HdFrame *Map::hdFloorAo(Tile *tile, const Position &pos)
  * Options::oxceHdMapBorder (XP-000380, XP-000382): the border of the battle field along the whole perimeter of the map, on the
  * ground level (z = 0), made of true-colour frames with alpha, one cell's length each (the floor diamond's band for the line, a
  * 16k x 32k frame for the fence). 1: a line about 3 base pixels thick on the outside of the edge, in the metal of the battle
- * panel's theme when the HD interface is on, else warm yellow; 2: a red fence one level high at 30% opacity, standing on the
- * edge. Pass 0 goes under the map's cells (the line, and the two far sides of the fence - the map's cells stand before them),
+ * panel's theme when the HD interface is on, else warm yellow; 2: a red fence one level high (posts, pickets and rails
+ * with gaps between, XP-000420), standing on the edge. Pass 0 goes under the map's cells (the line, and the two far sides of the fence - the map's cells stand before them),
  * pass 1 over them (the two near sides of the fence - they stand before the map's cells). Picture only: nothing of the map is
  * touched, nothing can be clicked, no light.
  */
@@ -2787,7 +2821,7 @@ void Map::hdDrawMapBorder(HdCanvas *surface, const Position &cameraPos, int pass
 	}
 	// the fence: one cell's length is a frame 16k wide, 32k tall; the bottom edge of the cell's side runs along the foot
 	const Uint32 rgb = 0xE02828;
-	const int body = 77, edge = 150;   // 30% and a firmer foot and top
+	const int body = 24, edge = 235;   // the gaps between the pickets barely tinted, the posts almost solid
 	auto put = [&](bool down, int x, int y, int offX, int offY)
 	{
 		int dx, dy;
@@ -2798,7 +2832,7 @@ void Map::hdDrawMapBorder(HdCanvas *surface, const Position &cameraPos, int pass
 		{
 			return;
 		}
-		const HdFrame &f = frameFor(0x100000000ULL | (unsigned long long)(down ? 1 : 0), [&](HdFrame &out)
+		const HdFrame &f = frameFor(0x100000000ULL | ((unsigned long long)k << 4) | (unsigned long long)(down ? 1 : 0), [&](HdFrame &out)
 		{
 			fillFence(out, down, rgb, body, edge, k);
 		});
