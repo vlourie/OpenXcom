@@ -18,12 +18,18 @@ mods\hd\hd\UI и, если есть, 18+ из mods\hd\hd_18+\UI; названи�
 в art\pedia_regen\<круг>\picks.tsv так же, только дописыванием; выбранные уходят из списка.
 
     py -3.13 tools\hdart\pedia_notes.py --round recraft_v1 --port 8785
+
+--round all (Vitali 30.10: одна страница на все круги) - картинки всех кругов, у каждой последний круг, где она
+есть; выбор пишется в picks.tsv того круга, новые круги появляются без перезапуска.
+
+    py -3.13 tools\hdart\pedia_notes.py --round all --port 8794
 """
 import argparse
 import csv
 import io
 import json
 import os
+import re
 import sys
 import threading
 import time
@@ -160,6 +166,28 @@ def round_cards(cards, folder):
     return out
 
 
+def round_key(name):
+    m = re.match(r"recraft_v(\d+)(.*)$", name)
+    return (int(m.group(1)), m.group(2)) if m else (0, name)
+
+
+def all_round_cards(cards):
+    """--round all: картинки всех кругов, у каждой - последний круг, где она есть (recraft_v6b после v6)."""
+    rounds = sorted((n for n in os.listdir(pb.ROOT) if n.startswith("recraft_v") and
+                     os.path.exists(os.path.join(pb.ROOT, n, "edits.json"))), key=round_key)
+    by = {}
+    for n in rounds:
+        for c in round_cards(cards, os.path.join(pb.ROOT, n)):
+            by[c["key"]] = dict(c, round=n)
+    S["round_of"] = {k: os.path.join(pb.ROOT, c["round"]) for k, c in by.items()}
+    return [by[c["key"]] for c in cards if c["key"] in by]
+
+
+def folder_of(k):
+    """Папка круга картинки: при --round all своя у каждой."""
+    return S["round_of"].get(k, "") if S.get("all") else S["round"]
+
+
 def candidates(folder, stem):
     """Готовые кандидаты круга: <имя>__<вариант>__<метка>.png (pedia_ab.py)."""
     pre = stem.lower() + "__"
@@ -221,26 +249,32 @@ class Handler(BaseHTTPRequestHandler):
                 return self.send(200, f.read(), "text/html; charset=utf-8")
         if u.path == "/api/cards":
             notes = read_notes()
+            if S.get("all"):
+                S["cards"] = all_round_cards(S["base"])     # новые круги подхватываются без перезапуска
             rd = S["round"]
-            picks = read_picks(rd) if rd else {}
+            picks = {}
             out = []
             for c in S["cards"]:
                 n = notes.get(c["key"], {})
                 c = dict(c, status=n.get("status", ""), note=n.get("note", "").replace("\\n", "\n"),
                          my_prompt=n.get("prompt", "").replace("\\n", "\n"), when=n.get("when", ""))
-                if rd:
-                    p = picks.get(c["key"], {})
-                    c.update(cands=candidates(rd, c["stem"]), pick=p.get("pick", ""),
+                f = folder_of(c["key"]) if rd else ""
+                if f:
+                    if f not in picks:
+                        picks[f] = read_picks(f)
+                    p = picks[f].get(c["key"], {})
+                    c.update(cands=candidates(f, c["stem"]), pick=p.get("pick", ""),
                              pick_note=p.get("note", "").replace("\\n", "\n"), pick_when=p.get("when", ""))
                 out.append(c)
-            return self.send(200, json.dumps({"round": os.path.basename(rd) if rd else "", "cards": out},
-                                             ensure_ascii=False))
+            name = "все круги" if S.get("all") else os.path.basename(rd) if rd else ""
+            return self.send(200, json.dumps({"round": name, "cards": out}, ensure_ascii=False))
         if len(parts) == 3 and parts[0] == "img":
             kind, k = parts[1], parts[2].lower()
             try:
-                if kind == "cand" and S["round"] and parts[2] in os.listdir(S["round"]) and k.endswith(".png"):
-                    with open(os.path.join(S["round"], parts[2]), "rb") as f:
-                        return self.send(200, f.read(), "image/png")
+                f = folder_of(k.split("__")[0]) if kind == "cand" and S["round"] else ""
+                if f and parts[2] in os.listdir(f) and k.endswith(".png"):
+                    with open(os.path.join(f, parts[2]), "rb") as fh:
+                        return self.send(200, fh.read(), "image/png")
                 if kind == "orig" and k in S["origs"]:
                     return self.send(200, orig_png(os.path.join(ORIG, S["origs"][k])), "image/png")
                 for name, folder in (("hd", HD), ("h18", H18)):
@@ -263,11 +297,13 @@ class Handler(BaseHTTPRequestHandler):
         when = time.strftime("%Y-%m-%d %H:%M:%S")
         stem = os.path.splitext(S["origs"][k])[0]
         if path == "/api/pick":
-            pick = str(d.get("pick", ""))
-            files = {c["var"]: c["file"] for c in candidates(S["round"], stem)}
+            pick, rd = str(d.get("pick", "")), folder_of(k)
+            if not rd:
+                return self.send(400, '{"error":"картинки нет ни в одном круге"}')
+            files = {c["var"]: c["file"] for c in candidates(rd, stem)}
             if pick not in files and pick not in ("again", "keep", ""):
                 return self.send(400, '{"error":"нет такого кандидата"}')
-            append_pick(S["round"], {"stem": stem, "pick": pick, "file": files.get(pick, ""),
+            append_pick(rd, {"stem": stem, "pick": pick, "file": files.get(pick, ""),
                                      "note": str(d.get("note", "")), "when": when})
         else:
             append_note({"stem": stem, "status": str(d.get("status", "")), "note": str(d.get("note", "")),
@@ -286,8 +322,12 @@ def main():
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")      # консоль cp1252 без PYTHONIOENCODING
     os.chdir(ROOT)
     S["cards"], S["origs"], S["hd"], S["h18"] = build()
+    S["base"], S["all"], S["round_of"] = S["cards"], a.round == "all", {}
     S["round"] = os.path.join(pb.ROOT, a.round) if a.round else ""
-    if S["round"]:
+    if S["all"]:
+        S["cards"] = all_round_cards(S["base"])
+        print("все круги: картинок %d, выбор - в picks.tsv своего круга" % len(S["cards"]))
+    elif S["round"]:
         S["cards"] = round_cards(S["cards"], S["round"])
         print("круг %s: картинок %d, выбор - %s" % (a.round, len(S["cards"]), os.path.join(S["round"], "picks.tsv")))
     print("карточек %d, с HD %d, с 18+ %d, с промптом %d; заметки - %s" % (

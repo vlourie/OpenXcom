@@ -272,7 +272,7 @@ function show(i) {
   $("caption").textContent = c.caption ? "Описание картинки моделью (по нему собран промпт): " + c.caption : "";
   if (ROUND) {
     $("vnote").textContent = c.vnote || c.note || "—";
-    $("asked").textContent = c.base_ru + (c.slot === "18" ? " · встанет в режим 18+" : " · встанет в обычный режим") +
+    $("asked").textContent = (c.round ? c.round + " · " : "") + c.base_ru + (c.slot === "18" ? " · встанет в режим 18+" : " · встанет в обычный режим") +
                              (c.core ? " · модели сказано: " + c.core : "");
     $("note").value = c.pick_note;
     $("saved").textContent = c.pick ? pickRu(c.pick) + (c.pick_when ? " · " + c.pick_when : "") : "";
@@ -361,14 +361,19 @@ async function refreshCands() {
   try {
     const d = await (await fetch("/api/cards")).json();
     const by = Object.fromEntries(d.cards.map(c => [c.key, c]));
+    // общая страница кругов: картинки нового круга - в список, картинка, ушедшая в новый круг, - его кандидаты
+    const have = new Set(cards.map(c => c.key)), fresh = d.cards.filter(c => !have.has(c.key));
     cards.forEach(c => {
-      const n = by[c.key]; if (!n || n.cands.length === c.cands.length) return;
+      const n = by[c.key]; if (!n || (n.cands.length === c.cands.length && n.round === c.round)) return;
+      Object.assign(c, { round: n.round, base_ru: n.base_ru, slot: n.slot, vnote: n.vnote, core: n.core,
+                         pick: n.pick, pick_note: n.pick_note, pick_when: n.pick_when });
       c.cands = n.cands;
       const i = view.indexOf(c);
       if (i === cur) renderPics(c);
       const el = $("list").children[i];
       if (el && !c.pick) { const m = el.querySelector(".n"); if (m) m.textContent = " ●" + c.cands.length; }
     });
+    if (fresh.length) { cards = d.cards.map(n => cards.find(c => c.key === n.key) || n); applyFilter(true); }
   } catch (e) {}
 }
 
@@ -383,6 +388,7 @@ fetch("/api/cards").then(r => r.json()).then(d => {
     setInterval(refreshCands, 60000);
   }
   FILTERS.forEach(f => { const o = document.createElement("option"); o.value = f[0]; o.textContent = f[1]; $("filter").appendChild(o); });
+  if (ROUND === "все круги") $("filter").value = "ready";      // общая страница - сразу готовые к выбору
   loadPrefs();
   cards = d.cards; applyFilter(false);
 }).catch(e => { $("name").textContent = "Сервер не ответил: " + e.message; });
