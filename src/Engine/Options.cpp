@@ -549,7 +549,7 @@ void createAdvancedOptionsOXCE()
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdLight", &oxceHdLight, true, "STR_HD_LIGHT", "STR_HD_GRAPHICS"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdGroundVariants", &oxceHdGroundVariants, true, "STR_HD_GROUND_VARIANTS", "STR_HD_GRAPHICS"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdUnitShadow", &oxceHdUnitShadow, true, "STR_HD_UNIT_SHADOW", "STR_HD_GRAPHICS"));
-	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdFloorAo", &oxceHdFloorAo, true, "STR_HD_FLOOR_AO", "STR_HD_GRAPHICS"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdFloorAo", &oxceHdFloorAo, false, "STR_HD_FLOOR_AO", "STR_HD_GRAPHICS"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdItemShadow", &oxceHdItemShadow, true, "STR_HD_ITEM_SHADOW", "STR_HD_GRAPHICS"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdFlashLight", &oxceHdFlashLight, false, "STR_HD_FLASH_LIGHT", "STR_HD_GRAPHICS"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdVolumeSmoke", &oxceHdVolumeSmoke, false, "STR_HD_VOLUME_SMOKE", "STR_HD_GRAPHICS"));
