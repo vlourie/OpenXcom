@@ -26,7 +26,8 @@ import t417_container_gen as g                       # noqa: E402
 K, SET, CELLS, FRAMES = G.K, G.SET, G.CELLS, G.FRAMES
 GEN, CAND, REV, SEEDS = G.GEN, G.CAND, G.REV, G.SEEDS
 BGC = g.BGC
-COMPARE = []                  # зёрна прошлых кругов, которые показываются на листах рядом (круг 3: 4232 круга 1)
+COMPARE = []                  # (подпись, зерно, папка кандидатов) прошлых кругов, которые показываются на листах рядом
+RAWDIR = os.path.join(G.GEN, "raw")     # круг 4: ответы с зеркально повёрнутой головой (t423_mirror.py) лежат в raw_r4, кандидаты - в cand_r4
 SUF = ""                      # "_r2" - круг 2 (зёрна G.SEEDS_R2, голова перевёрнута): листы и таблица со своим хвостом
 GOLD_FRAMES = [5, 8, 9]
 
@@ -85,7 +86,7 @@ def flow_fit(sc, seed, pre):
     S = FLOW_S
     cx0, cy0, cx1, cy1 = box
     tgt = cv2.resize(al[cy0 * K:cy1 * K, cx0 * K:cx1 * K].astype(np.float32), (fw * S, fh * S), interpolation=cv2.INTER_AREA)
-    hd = Image.open(os.path.join(GEN, "raw", "%d.png" % seed)).convert("RGB")
+    hd = Image.open(os.path.join(RAWDIR, "%d.png" % seed)).convert("RGB")
     m = op.edge_matte(hd)
     ys, xs = np.nonzero(m > 0.5)
     rb = (xs.min(), ys.min(), xs.max() + 1, ys.max() + 1)
@@ -197,7 +198,7 @@ def do_build(a=None):
     ref = g.owner_map(cl, items, W, H)
     rows = []
     variants = [("классика x4", cl, None), ("HD сейчас", now, None)]
-    seeds = [s for s in SEEDS if os.path.exists(os.path.join(GEN, "raw", "%d.png" % s))]
+    seeds = [s for s in SEEDS if os.path.exists(os.path.join(RAWDIR, "%d.png" % s))]
     for s in seeds:
         canvas, frames, info = build_seed(sc, s, pre)
         d = os.path.join(CAND, "s%d" % s)
@@ -273,8 +274,8 @@ def avail_seeds():
     return [s for s in SEEDS if os.path.exists(os.path.join(CAND, "s%d" % s, "%s_9.png" % SET))]
 
 
-def seed_frames(seed):
-    d = os.path.join(CAND, "s%d" % seed)
+def seed_frames(seed, base=None):
+    d = os.path.join(base or CAND, "s%d" % seed)
     return {f: Image.open(os.path.join(d, "%s_%d.png" % (SET, f))).convert("RGBA") for f in FRAMES}
 
 
@@ -289,7 +290,7 @@ def do_sheet(a=None):
     sc = ts.Scene()
     items, W, H = g.make_items(CELLS)
     seeds = avail_seeds()
-    variants = [("классика x4", g.classic_frames(sc)), ("HD сейчас", g.hd_now_frames(sc))] + [("зерно %d" % s, seed_frames(s)) for s in COMPARE + seeds]
+    variants = [("классика x4", g.classic_frames(sc)), ("HD сейчас", g.hd_now_frames(sc))] + [(lb, seed_frames(s, bd)) for lb, s, bd in COMPARE] + [("зерно %d" % s, seed_frames(s)) for s in seeds]
     full = [(n, g.assemble(f, items, W, H, K, BGC)) for n, f in variants]
     big = [(n, im.resize((im.width * 2, im.height * 2), Image.NEAREST)) for n, im in full]
     ts.sheet(big, os.path.join(REV, "t423_whole" + SUF + ".png"), cols=3)
@@ -338,8 +339,8 @@ def do_cand(a=None):
     for i in ims:
         out.paste(i, (0, y))
         y += i.height + 8
-    out.save(os.path.join(REV, {"": "t423_cand.png", "_r2": "t423_cand2.png", "_r3": "t423_cand3.png"}[SUF]))
-    print("лист", os.path.join(REV, {"": "t423_cand.png", "_r2": "t423_cand2.png", "_r3": "t423_cand3.png"}[SUF]), out.size)
+    out.save(os.path.join(REV, {"": "t423_cand.png", "_r2": "t423_cand2.png", "_r3": "t423_cand3.png", "_r4": "t423_cand4.png"}[SUF]))
+    print("лист", os.path.join(REV, {"": "t423_cand.png", "_r2": "t423_cand2.png", "_r3": "t423_cand3.png", "_r4": "t423_cand4.png"}[SUF]), out.size)
 
 
 # ---------------------------------------------------------------------------------------------------------
@@ -378,16 +379,22 @@ def main():
     ap.add_argument("cmd", choices=["build", "family", "sheet", "cand", "install"])
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--yes", action="store_true")
-    ap.add_argument("--round", type=int, default=1, help="2 - круг 2 (голова на темечке, отменён), 3 - круг 3: голова плашмя на боку в профиль, зёрна 4251-4253")
+    ap.add_argument("--round", type=int, default=1, help="2 - круг 2 (голова на темечке, отменён), 3 - круг 3: голова плашмя на боку в профиль, зёрна 4251-4253, 4 - круг 4: голова 4251 отражена зеркально (t423_mirror.py)")
     a = ap.parse_args()
-    global SUF
+    global SUF, RAWDIR, CAND
     if a.round == 2:
         SUF = "_r2"
         SEEDS[:] = G.SEEDS_R2
     elif a.round == 3:
         SUF = "_r3"
         SEEDS[:] = G.SEEDS_R3
-        COMPARE[:] = [4232]
+        COMPARE[:] = [("зерно 4232 (круг 1)", 4232, CAND)]
+    elif a.round == 4:
+        SUF = "_r4"
+        SEEDS[:] = [4251]
+        COMPARE[:] = [("4251 как было (круг 3)", 4251, CAND)]
+        RAWDIR = os.path.join(G.GEN, "raw_r4")
+        CAND = os.path.join(os.path.dirname(G.CAND), "cand_r4")
     globals()["do_" + a.cmd](a)
     return 0
 
