@@ -140,6 +140,10 @@ private:
 	int _cacheHasLOS; // -1 = unknown, 0 = no LOS, 1 = has LOS
 	int _animFrame;
 	std::unordered_map<int, int> _hoverFade; // unit id -> 1..HOVER_FADE_STEPS, how far the sway of a hanging unit has faded in
+	/// HD render (option oxceHdUnitShadow): the shadows of the units hanging with no floor, laid on the first floor below -
+	/// the pieces each floor tile draws after its floor (by tile index), gathered anew every frame (Map::hdGatherFlierShadows).
+	std::unordered_map<int, std::vector<const HdFrame*>> _hdFlierShadows;
+	void hdGatherFlierShadows(const Position &cameraPos, int endZ);
 	Projectile *_projectile;
 	bool _followProjectile;
 	bool _projectileInFOV;

@@ -298,6 +298,64 @@ const HdFrame &unitShadow(int size, int part, int k)
 	return f;
 }
 
+/// How many levels below a hanging unit its shadow still falls (Vitali 30.10); the strength and the spread by level.
+const int FLIER_SHADOW_LEVELS = 3;
+const double FLIER_SHADOW_FADE[FLIER_SHADOW_LEVELS + 1] = { 1.0, 1.0, 0.7, 0.45 };
+const double FLIER_SHADOW_SPREAD[FLIER_SHADOW_LEVELS + 1] = { 1.0, 1.0, 1.15, 1.3 };
+
+/**
+ * The shadow of a unit hanging `drop` levels above a floor: the ellipse of unitShadow (weaker and wider the higher the unit,
+ * FLIER_SHADOW_FADE/SPREAD) centred (rx, ry) pixels from the top left of a floor diamond (32k x 16k), cut to that diamond.
+ * A unit flying between tiles lays its shadow on several floors, each of which draws its own piece after its floor, so
+ * the floors drawn later do not cover it (docs/research/hd-shadows-v2-2026-10-30.md §4). Cached by the offset, which a
+ * step takes in a few dozen places; Map::hdGatherFlierShadows starts the cache anew, before a frame, past a thousand pieces.
+ * @return The piece (empty when the ellipse misses the diamond).
+ */
+std::map<long long, HdFrame> flierShadowCache;
+const HdFrame &flierShadow(int size, int drop, int rx, int ry, int k)
+{
+	std::map<long long, HdFrame> &cache = flierShadowCache;
+	const long long key = ((((long long)k * 8 + size) * 4 + drop) * 4096 + (rx + 2048)) * 4096 + (ry + 2048);
+	auto it = cache.find(key);
+	if (it != cache.end())
+	{
+		return it->second;
+	}
+	HdFrame &f = cache[key];
+	const double ax = 7.0 * k * size * FLIER_SHADOW_SPREAD[drop], ay = 3.5 * k * size * FLIER_SHADOW_SPREAD[drop];
+	const double peak = UNIT_SHADOW_ALPHA * FLIER_SHADOW_FADE[drop];
+	const double hw = 16.0 * k, hh = 8.0 * k;
+	std::vector<Uint32> pixels((size_t)(32 * k) * (16 * k), 0);
+	bool any = false;
+	for (int y = 0; y < 16 * k; ++y)
+	{
+		for (int x = 0; x < 32 * k; ++x)
+		{
+			if (std::fabs(x + 0.5 - hw) / hw + std::fabs(y + 0.5 - hh) / hh >= 1.0)
+			{
+				continue;
+			}
+			const double ex = (x + 0.5 - rx) / ax, ey = (y + 0.5 - ry) / ay;
+			const double d = 1.0 - (ex * ex + ey * ey);
+			const int alpha = d > 0 ? (int)std::lround(peak * d * d) : 0;
+			if (alpha > 0)
+			{
+				pixels[(size_t)y * 32 * k + x] = (Uint32)alpha << 24;
+				any = true;
+			}
+		}
+	}
+	if (any)
+	{
+		f.width = 32 * k;
+		f.height = 16 * k;
+		f.pixels.swap(pixels);
+		f.generated = true;
+		f.buildSpans();
+	}
+	return f;
+}
+
 /**
  * The part of a floor diamond (the bottom 32x16 of the 32x40 frame, k times) that lies within the cell's coordinates
  * a in [aLo, aHi] along the map's x (the diamond's top to its right corner) and b in [bLo, bHi] along the map's y (the
@@ -2410,14 +2468,13 @@ const Map::HdAoShape &Map::hdAoShape(const MapData *part)
 }
 
 /// The opacity of an item's shadow where it is densest (docs/research/hd-shadows-v2-2026-10-30.md, §5).
-const int ITEM_SHADOW_ALPHA = 110;
+const int ITEM_SHADOW_ALPHA = 165;
 
 /**
  * Options::oxceHdItemShadow: the shadow of an item lying on the floor, made from the alpha of the picture the canvas draws for
- * its floor sprite - black, blurred, 3k pixels bigger on every side than the frame (drawn at x - 3k, y - 3k). The form (sheet of
- * stage 1, OXCE_HD_ITEM_SHADOW_FORM until Vitali picks one): A - the silhouette moved k right and down; B - the silhouette pressed
- * to the floor (half as tall, towards its lowest row) and moved k/2 right; C - B with half of A. The item is drawn over it, so
- * only the rim around the item shows. Made once for a frame and kept while the battle's map lives. Picture only.
+ * its floor sprite - black, blurred, 3k pixels bigger on every side than the frame (drawn at x - 3k, y - 3k): the silhouette
+ * moved k right and down (form A of the stage 1 sheet, Vitali 30.10, x1.5). The item is drawn over it, so only the rim around
+ * the item shows. Made once for a frame and kept while the battle's map lives. Picture only.
  * @return The shadow, or nullptr when the canvas draws the sprite as a palette one (no alpha to take).
  */
 const HdFrame *Map::hdItemShadow(HdCanvas *surface, SurfaceRaw<const Uint8> sprite)
@@ -2433,35 +2490,14 @@ const HdFrame *Map::hdItemShadow(HdCanvas *surface, SurfaceRaw<const Uint8> spri
 		return it->second.empty() ? nullptr : &it->second;
 	}
 	HdFrame &f = _hdItemShadows[hd];
-	static const char form = [] { const char *p = getenv("OXCE_HD_ITEM_SHADOW_FORM"); return p && *p ? *p : 'B'; }();
 	const int k = _k, pad = 3 * k, w = hd->width + 2 * pad, h = hd->height + 2 * pad;
-	// the lowest row of the silhouette: B presses the item to the floor towards it
-	int bottom = -1;
-	for (int y = hd->height - 1; y >= 0 && bottom < 0; --y)
-	{
-		for (int x = 0; x < hd->width; ++x)
-		{
-			if ((hd->row(y)[x] >> 24) >= 128)
-			{
-				bottom = y;
-				break;
-			}
-		}
-	}
-	if (bottom < 0)
-	{
-		return nullptr;
-	}
 	auto alphaAt = [&](int x, int y) { return x < 0 || y < 0 || x >= hd->width || y >= hd->height ? 0.0f : (hd->row(y)[x] >> 24) / 255.0f; };
 	std::vector<float> a((size_t)w * h, 0.0f), t((size_t)w * h, 0.0f);
 	for (int y = 0; y < h; ++y)
 	{
 		for (int x = 0; x < w; ++x)
 		{
-			const int sx = x - pad, sy = y - pad;
-			const float moved = alphaAt(sx - k, sy - k);
-			const float pressed = sy > bottom ? 0.0f : alphaAt(sx - k / 2, bottom - 2 * (bottom - sy));
-			a[(size_t)y * w + x] = form == 'A' ? moved : form == 'C' ? std::max(pressed, 0.5f * moved) : pressed;
+			a[(size_t)y * w + x] = alphaAt(x - pad - k, y - pad - k);
 		}
 	}
 	// two box passes each way: close to a gaussian
@@ -4122,6 +4158,7 @@ void Map::drawTerrain(HdCanvas *surface)
 	// HD lab: the turned view goes a cell past the map's far edges, for the walls that face away there
 	const int rimX = endX + (turned && endX >= _camera->getViewSizeX() ? 1 : 0);
 	const int rimY = endY + (turned && endY >= _camera->getViewSizeY() ? 1 : 0);
+	hdGatherFlierShadows(cameraPos, endZ);
 	for (int itZ = beginZ; itZ <= endZ; itZ++)
 	{
 		bool topLayer = itZ == endZ;
@@ -4203,6 +4240,16 @@ void Map::drawTerrain(HdCanvas *surface)
 						{
 							if (const HdFrame *ao = hdFloorAo(tile, mapPosition))
 								surface->blitFrame(*ao, screenPosition.x, screenPosition.y + 24 * _k - tile->getYOffset(O_FLOOR) * _k);
+						}
+					}
+					// HD render: the shadow of a unit hanging above this floor (Map::hdGatherFlierShadows), under all that stands here
+					if (!_hdFlierShadows.empty())
+					{
+						auto shadows = _hdFlierShadows.find(_save->getTileIndex(mapPosition));
+						if (shadows != _hdFlierShadows.end())
+						{
+							for (const HdFrame *piece : shadows->second)
+								surface->blitFrame(*piece, screenPosition.x, screenPosition.y + 24 * _k - tile->getYOffset(O_FLOOR) * _k);
 						}
 					}
 
@@ -4377,8 +4424,11 @@ void Map::drawTerrain(HdCanvas *surface)
 						BattleItem* item = tile->getTopItem();
 						if (item)
 						{
-							// HD render: the item's shadow first, at the same place (from its frame's alpha, Map::hdItemShadow)
-							if (Options::oxceHdItemShadow && surface->getHdMode() != HD_MODE_NEAREST && !turned)
+							// HD render: the item's shadow first, at the same place (from its frame's alpha, Map::hdItemShadow); not
+							// under a piece of a big unit's body: the piece drawn later would shade the one beside it (Vitali 30.10)
+							const BattleUnit *body = item->getUnit();
+							if (Options::oxceHdItemShadow && surface->getHdMode() != HD_MODE_NEAREST && !turned
+								&& !(body && body->getArmor()->getSize() > 1))
 							{
 								const Surface *floorSprite = itemSprite.getFloorSprite(item, tileShade);
 								if (const HdFrame *shadow = floorSprite ? hdItemShadow(surface, floorSprite) : nullptr)
@@ -6111,6 +6161,89 @@ Position Map::hoverBob(const BattleUnit *unit) const
 		offset.x = (int)std::lround(1.0 * _k * it->second / HOVER_FADE_STEPS * std::sin(Tau * t / 48.0));
 	}
 	return offset;
+}
+
+/**
+ * Options::oxceHdUnitShadow for the units hanging with no floor (the shadow drawUnit leaves out): the pieces of their shadows
+ * on the first floor below, up to FLIER_SHADOW_LEVELS down, for the floor pass of drawTerrain. Only a unit drawn (visible or
+ * debug mode, not above the levels shown) gives one, and only onto a floor the player has discovered. The shadow stands
+ * where the unit's feet are on the screen with its step, without the sway and the climb of a level (it stays on the floor).
+ * Picture only: reads the units and tiles.
+ */
+void Map::hdGatherFlierShadows(const Position &cameraPos, int endZ)
+{
+	_hdFlierShadows.clear();
+	if (!Options::oxceHdUnitShadow || _canvas->getHdMode() == HD_MODE_NEAREST || _camera->getRotation() != 0)
+	{
+		return;
+	}
+	if (flierShadowCache.size() > 1000)
+	{
+		flierShadowCache.clear();
+	}
+	for (const BattleUnit *bu : *_save->getUnits())
+	{
+		const Position pos = bu->getPosition();
+		if (!bu->isFloating() || bu->isOut() || bu->getStatus() == STATUS_COLLAPSING || pos.x < 0 || pos.z > endZ
+			|| !(bu->getVisible() || _save->getDebugMode()))
+		{
+			continue;
+		}
+		// the first floor down from the unit's own level (a unit just lifting off still has its own), as Tile::hasNoFloor sees it
+		int drop = -1;
+		for (int d = 0; d <= FLIER_SHADOW_LEVELS && pos.z - d >= 0; ++d)
+		{
+			const Tile *t = _save->getTile(Position(pos.x, pos.y, pos.z - d));
+			if (t && !t->hasNoFloor(_save))
+			{
+				drop = d;
+				break;
+			}
+		}
+		if (drop < 0)
+		{
+			continue;
+		}
+		const int size = bu->getArmor()->getSize();
+		const int z = pos.z - drop;
+		const UnitWalkingOffset offsets = calculateWalkingOffset(bu);
+		const Position bob = hoverBob(bu);
+		Position screen;
+		_camera->convertMapToScreen(Position(pos.x, pos.y, z), &screen);
+		screen += cameraPos;
+		// the centre of the footprint, as unitShadow has it: a pixel right of the middle of the floor diamond(s)
+		const int cx = screen.x + offsets.ScreenOffset.x - bob.x + 17 * _k;
+		const int cy = screen.y + offsets.ScreenOffset.y - offsets.TerrainLevelOffset * _k - bob.y + 24 * _k + 8 * _k * size;
+		const double ax = 7.0 * _k * size * FLIER_SHADOW_SPREAD[drop], ay = 3.5 * _k * size * FLIER_SHADOW_SPREAD[drop];
+		const Position dest = bu->getDestination();
+		const int x0 = std::min(pos.x, dest.x) - 1, x1 = std::max(pos.x, dest.x) + size;
+		const int y0 = std::min(pos.y, dest.y) - 1, y1 = std::max(pos.y, dest.y) + size;
+		for (int y = y0; y <= y1; ++y)
+		{
+			for (int x = x0; x <= x1; ++x)
+			{
+				const Position at(x, y, z);
+				Tile *t = _save->getTile(at);
+				if (!t || t->hasNoFloor(_save) || !t->isDiscovered(O_FLOOR))
+				{
+					continue;
+				}
+				Position tileScreen;
+				_camera->convertMapToScreen(at, &tileScreen);
+				tileScreen += cameraPos;
+				const int rx = cx - tileScreen.x, ry = cy - (tileScreen.y + 24 * _k - t->getYOffset(O_FLOOR) * _k);
+				if (std::abs(rx - 16 * _k) >= 16 * _k + ax || std::abs(ry - 8 * _k) >= 8 * _k + ay)
+				{
+					continue;
+				}
+				const HdFrame &piece = flierShadow(size, drop, rx, ry, _k);
+				if (!piece.empty())
+				{
+					_hdFlierShadows[_save->getTileIndex(at)].push_back(&piece);
+				}
+			}
+		}
+	}
 }
 
 
