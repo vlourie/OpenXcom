@@ -41,10 +41,10 @@ def main():
     yes = "--yes" in sys.argv
     files = collect()
     for rel, p in files.items():
-        im = Image.open(p)
-        old = Image.open(os.path.join(REPO_PACK, rel))
-        if im.mode != "RGBA" or im.size != old.size:
-            raise SystemExit("%s: ждали RGBA %s, а %s %s" % (p, old.size, im.mode, im.size))
+        # with: незакрытый кадр пака держит файл, и os.replace при установке падает (Windows)
+        with Image.open(p) as im, Image.open(os.path.join(REPO_PACK, rel)) as old:
+            if im.mode != "RGBA" or im.size != old.size:
+                raise SystemExit("%s: ждали RGBA %s, а %s %s" % (p, old.size, im.mode, im.size))
     print("файлов к установке: %d" % len(files))
     if not yes:
         raise SystemExit("сухой прогон; --yes - записать в мод (под очередью правок)")
