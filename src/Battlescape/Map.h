@@ -30,6 +30,7 @@
 #include <map>
 #include <vector>
 #include <string>
+#include <tuple>
 #include <unordered_map>
 
 namespace OpenXcom
@@ -146,6 +147,35 @@ private:
 	/// the pieces each floor tile draws after its floor (by tile index), gathered anew every frame (Map::hdGatherFlierShadows).
 	std::unordered_map<int, std::vector<const HdFrame*>> _hdFlierShadows;
 	void hdGatherFlierShadows(const Position &cameraPos, int endZ);
+	/// HD render (option oxceHdFlashLight, docs/research/hd-flash-light-2026-10-30.md): a light of a combat effect drawn this
+	/// frame - an explosion, a hit, a muzzle flash - with its strength and colour taken from the frame of its clip.
+	struct HdFlash
+	{
+		Position voxel;          ///< where it shines from
+		float radius = 0;        ///< reach, voxels
+		float strength = 0;      ///< 0..1 at the source
+		float rgb[3] = { 1, 1, 1 };
+	};
+	/// Which of the nine light nodes of the cells around a flash it sees (bit per node), by LOFT: the box of cells
+	/// [origin, origin + size), made on the workers when a flash at that voxel first shines, kept while it does.
+	struct HdFlashSight
+	{
+		Position origin, size;
+		std::vector<Uint16> bits;
+		bool used = false;
+	};
+	std::vector<HdFlash> _hdFlashes;
+	std::map<std::tuple<int, int, int>, HdFlashSight> _hdFlashSight;
+	void hdGatherFlashLights();
+	void hdAddFlash(const Position &voxel, const HdFrame &frame);
+	void hdAddFlashLit(const Position &voxel, double area, const double rgb[3]);
+	/// Does the line from voxel `from` to `to` pass a solid voxel of the map (floor, walls, object; an open UFO door
+	/// lets it through)? The first `skip` steps and the object of cell `target` are not counted.
+	bool hdLoftBlocked(const Position &from, const Position &to, int skip, const Position &target) const;
+	/// The nine light nodes of cell `pos` the flash at `voxel` sees, as bits (node 0 = bit 0); all of them without LOFT.
+	Uint16 hdFlashNodes(const Position &voxel, const Position &pos) const;
+	/// The flashes' light added into the field of the tile being drawn (after updateHdLight built it).
+	void hdAddFlashLight(const Position &pos, HdLight &light);
 	Projectile *_projectile;
 	bool _followProjectile;
 	bool _projectileInFOV;
