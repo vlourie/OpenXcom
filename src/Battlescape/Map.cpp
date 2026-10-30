@@ -2889,19 +2889,23 @@ const HdFrame *Map::hdItemShadow(HdCanvas *surface, SurfaceRaw<const Uint8> spri
 	return &f;
 }
 
-/// Bloody soles (Options::oxceHdBloodSteps, XP-000421): how many tiles after the blood a unit leaves them, how many soles the map keeps,
+/// Bloody footprints (Options::oxceHdBloodSteps, XP-000421): how many tiles after the blood a unit leaves them, how many prints the map keeps,
 /// how many turns they last (fresh for the first two, then paler, gone at the third), the opacity of a fresh and of an old one,
 /// and the red when the blood has no colour of its own.
-const int HD_STEP_TILES = 2, HD_STEP_MAX = 64, HD_STEP_LIFE = 3, HD_STEP_ALPHA[2] = { 200, 105 }, HD_STEP_RED = 0x8E1212;
+const int HD_STEP_TILES = 2, HD_STEP_MAX = 96, HD_STEP_LIFE = 3, HD_STEP_ALPHA[2] = { 200, 105 }, HD_STEP_RED = 0x8E1212;
 
 /**
- * One sole on a floor diamond (the bottom 32x16 of a 32x40 frame, k times): a forefoot oval, a narrow arch and a heel oval, turned to the way of the
- * step (one of eight), set a little to the left or to the right of the middle by the foot. Drawn once for the key and kept for the battle.
+ * One print on a floor diamond (the bottom 32x16 of a 32x40 frame, k times), by the look of the walker (`kind`, HdFx::Track), turned to the way of the
+ * step (one of eight). `variant` 0/1: one foot of a unit of one tile, left or right of the middle; 2..5: the quarter (x + 2 y) of the four tiles
+ * of a 2x2 body. A boot is three ovals (forefoot, arch, heel); a bare foot is a heel, an arch, a ball and five toes (the big one inside); a paw
+ * is a pad, four toe pads and four claws; a wheel is two ruts with a cross tread, a track is two wide bands with plates. A big walker (a 2x2 body)
+ * leaves a print on each of its four tiles, 1.35 times bigger; wheels and tracks run on all four, two lanes a tile apart, so the ruts join at the tile edges.
+ * Edges are smooth (a signed distance with a pixel of grace), the print is cut by the diamond itself. Drawn once for the key and kept for the battle.
  */
-const HdFrame &Map::hdStepFrame(int dx, int dy, int side, int rgb, int tier)
+const HdFrame &Map::hdStepFrame(int dx, int dy, int variant, int kind, int rgb, int tier)
 {
-	const unsigned long long key = ((unsigned long long)(rgb & 0xFFFFFF) << 24) | ((unsigned long long)_k << 12)
-		| ((unsigned long long)((dx + 1) * 3 + (dy + 1)) << 8) | ((unsigned long long)side << 4) | (unsigned long long)tier;
+	const unsigned long long key = ((unsigned long long)kind << 48) | ((unsigned long long)(rgb & 0xFFFFFF) << 24) | ((unsigned long long)_k << 12)
+		| ((unsigned long long)((dx + 1) * 3 + (dy + 1)) << 8) | ((unsigned long long)variant << 4) | (unsigned long long)tier;
 	auto it = _hdStepFrames.find(key);
 	if (it != _hdStepFrames.end())
 	{
@@ -2915,24 +2919,88 @@ const HdFrame &Map::hdStepFrame(int dx, int dy, int side, int rgb, int tier)
 	// the cell is the square u, v in [-0.5, 0.5] (u along the map's x, v along its y); screen X = u - v, Y = u + v
 	const double len = std::sqrt((double)(dx * dx + dy * dy));
 	const double hx = dx / len, hy = dy / len, qx = -hy, qy = hx;
-	const double off = side ? 0.12 : -0.12;
+	const bool body = variant >= 2;
+	const int quarter = body ? variant - 2 : 0;
+	const bool right = body ? (((quarter & 1) + (quarter >> 1)) & 1) != 0 : variant != 0;
+	const double sg = right ? 1.0 : -1.0, sc = (body ? 1.35 : 1.0) * (kind == HdFx::TRACK_BARE || kind == HdFx::TRACK_PAW ? 1.3 : 1.0), off = sg * (body ? 0.1 : 0.12);
 	struct Oval { double ahead, across, a, b; };
-	const Oval ovals[3] = { { 0.13, off, 0.21, 0.115 }, { -0.04, off, 0.09, 0.06 }, { -0.19, off, 0.11, 0.095 } };
+	Oval ovals[16];
+	int count = 0;
+	auto add = [&](double ahead, double across, double a, double b) { ovals[count++] = Oval{ ahead * sc, off + across * sc, a * sc, b * sc }; };
+	const bool lanes = kind == HdFx::TRACK_WHEEL || kind == HdFx::TRACK_CRAWLER;
+	if (kind == HdFx::TRACK_BARE)
+	{
+		const double inner[5] = { 0.068, 0.033, 0.002, -0.030, -0.058 }, ahead[5] = { 0.19, 0.18, 0.168, 0.152, 0.132 },
+			r[5] = { 0.04, 0.03, 0.028, 0.025, 0.022 };
+		add(-0.17, 0, 0.075, 0.065);
+		add(-0.065, sg * 0.022, 0.075, 0.04);
+		add(0.04, 0, 0.078, 0.082);
+		for (int i = 0; i < 5; ++i)
+		{
+			add(ahead[i], -sg * inner[i], r[i], r[i]);
+		}
+	}
+	else if (kind == HdFx::TRACK_PAW)
+	{
+		const double across[4] = { -0.108, -0.037, 0.037, 0.108 }, ahead[4] = { 0.045, 0.098, 0.098, 0.045 };
+		add(-0.05, 0, 0.085, 0.10);
+		for (int i = 0; i < 4; ++i)
+		{
+			add(ahead[i], across[i], 0.036, 0.032);
+			add(ahead[i] + 0.052, across[i], 0.028, 0.009);
+		}
+	}
+	else if (!lanes)
+	{
+		add(0.13, 0, 0.21, 0.115);
+		add(-0.04, 0, 0.09, 0.06);
+		add(-0.19, 0, 0.11, 0.095);
+	}
+	// the lanes of a wheeled or tracked body: two, a body's track apart (one tile for a 2x2 body), seen from this tile's middle
+	const bool wheel = kind == HdFx::TRACK_WHEEL;
+	const double laneHalf = body ? 0.5 : 0.2, laneWidth = wheel ? (body ? 0.09 : 0.055) : (body ? 0.17 : 0.1);
+	const double lateral = body ? ((quarter & 1) - 0.5) * qx + ((quarter >> 1) - 0.5) * qy : 0.0;
+	// the cross tread: bars along the way, whole to the tile (so they meet at its edges), dark bars and paler gaps
+	const double pass = std::fabs(hx) > 0.9 || std::fabs(hy) > 0.9 ? 1.0 : std::sqrt(2.0);
+	const double period = pass / (wheel ? 6 : 8), duty = wheel ? 0.55 : 0.8, gap = wheel ? 0.25 : 0.5;
 	const double soft = 1.0 / (16.0 * k);
 	const Uint32 rgbPart = (Uint32)rgb & 0xFFFFFF;
+	auto grace = [soft](double distance) { return std::min(1.0, std::max(0.0, 0.5 - distance / soft)); };
 	for (int y = 0; y < f.height; ++y)
 	{
 		for (int x = 0; x < f.width; ++x)
 		{
 			const double X = (x + 0.5) / (16.0 * k) - 1.0, Y = (y + 0.5) / (8.0 * k) - 1.0;
 			const double u = (X + Y) / 2, v = (Y - X) / 2;
-			double cover = 0.0;
-			for (const Oval &o : ovals)
+			if (std::fabs(u) > 0.5 || std::fabs(v) > 0.5)
 			{
-				const double s = (u - (hx * o.ahead + qx * o.across)) * hx + (v - (hy * o.ahead + qy * o.across)) * hy;
-				const double t = (u - (hx * o.ahead + qx * o.across)) * qx + (v - (hy * o.ahead + qy * o.across)) * qy;
-				const double e = std::sqrt((s / o.a) * (s / o.a) + (t / o.b) * (t / o.b));
-				cover = std::max(cover, std::min(1.0, std::max(0.0, (1.0 - e) * std::min(o.a, o.b) / soft + 0.5)));
+				continue;
+			}
+			const double s = u * hx + v * hy, t = u * qx + v * qy;
+			double cover = 0.0;
+			for (int i = 0; i < count; ++i)
+			{
+				const double ds = s - ovals[i].ahead, dt = t - ovals[i].across;
+				const double e = std::sqrt((ds / ovals[i].a) * (ds / ovals[i].a) + (dt / ovals[i].b) * (dt / ovals[i].b));
+				cover = std::max(cover, grace((e - 1.0) * std::min(ovals[i].a, ovals[i].b)));
+			}
+			if (lanes)
+			{
+				double across = 1e9;
+				for (int lane = -1; lane <= 1; lane += 2)
+				{
+					const double d = std::fabs(t - (lane * laneHalf - lateral));
+					across = std::min(across, d);
+					cover = std::max(cover, grace(d - laneWidth));
+				}
+				if (cover > 0.0)
+				{
+					// a wheel's tread is a chevron (the bars lean back from the middle of the rut), a track's plates lie square
+					const double at = (s + (wheel ? across * 1.1 : 0.0)) / period + duty / 2;
+					const double w = at - std::floor(at);
+					const double bar = grace(w < duty ? -std::min(w, duty - w) * period : std::min(w - duty, 1.0 - w) * period);
+					cover *= gap + (1.0 - gap) * bar;
+				}
 			}
 			const int alpha = (int)std::lround(HD_STEP_ALPHA[tier] * cover);
 			if (alpha > 0)
@@ -2948,10 +3016,11 @@ const HdFrame &Map::hdStepFrame(int dx, int dy, int side, int rgb, int tier)
 
 /**
  * Options::oxceHdBloodSteps: before a frame, looks at every unit the player sees (or all in the debug mode) that has moved to another
- * tile since the last look. A unit that has bloody soles (HD_STEP_TILES more tiles to go) lays one on the tile it has entered; a unit
+ * tile since the last look. A unit that has bloody soles (HD_STEP_TILES more tiles to go) lays a print of its kind (HdFx::trackKind: boot,
+ * bare foot, wheels, tracks, paws; a 2x2 body on all four tiles it covers) on the tile it has entered; a unit
  * that has entered a tile where another unit bleeds (fatal wounds, alive - standing or lying unconscious, a corpse does not count; the
  * bleeding one seen too, its 2x2 body counts on all its tiles) gets them from the next tile on, in the blood colour of the one who
- * bleeds. Flying and floating units leave none. A unit the player does not see is not followed at all, so no sole tells of a move in
+ * bleeds. Flying and floating units, and the kind `none` (turrets, slime and so on), leave none. A unit the player does not see is not followed at all, so no sole tells of a move in
  * the fog. The turn only for the fading (SavedBattleGame::getTurn, read). Nothing of the units, the tiles or the save is touched.
  */
 void Map::hdObserveSteps()
@@ -3017,23 +3086,39 @@ void Map::hdObserveSteps()
 		}
 		const Tile *here = _save->getTile(pos);
 		const int size = bu->getArmor()->getSize();
+		const int kind = HdFx::trackKind(bu->getArmor());
+		if (kind == HdFx::TRACK_NONE)
+		{
+			track.left = 0;
+			continue;
+		}
 		if (track.left > 0)
 		{
 			--track.left;
-			if (here && !here->hasNoFloor(_save) && HdFx::dryFloor(here))
+			track.foot ^= 1;
+			// a unit of one tile leaves a print on it; a 2x2 body on each of its four (a wheeled or tracked one - its lanes, a walker - big prints)
+			for (int j = 0; j < size; ++j)
 			{
-				track.foot ^= 1;
-				const int index = _save->getTileIndex(pos);
-				_hdSteps[index] = HdStep{ dx, dy, track.foot, track.rgb, turn, ++_hdStepSeq };
-				_hdStepOrder.push_back(std::make_pair(index, _hdStepSeq));
-				while (_hdSteps.size() > (size_t)HD_STEP_MAX || _hdStepOrder.size() > (size_t)HD_STEP_MAX * 4)
+				for (int i = 0; i < size; ++i)
 				{
-					auto old = _hdSteps.find(_hdStepOrder.front().first);
-					if (old != _hdSteps.end() && old->second.seq == _hdStepOrder.front().second)
+					const Position at(pos.x + i, pos.y + j, pos.z);
+					const Tile *floorTile = _save->getTile(at);
+					if (!floorTile || floorTile->hasNoFloor(_save) || !HdFx::dryFloor(floorTile))
 					{
-						_hdSteps.erase(old);
+						continue;
 					}
-					_hdStepOrder.pop_front();
+					const int index = _save->getTileIndex(at);
+					_hdSteps[index] = HdStep{ dx, dy, size > 1 ? 2 + (i & 1) + 2 * (j & 1) : track.foot, kind, track.rgb, turn, ++_hdStepSeq };
+					_hdStepOrder.push_back(std::make_pair(index, _hdStepSeq));
+					while (_hdSteps.size() > (size_t)HD_STEP_MAX || _hdStepOrder.size() > (size_t)HD_STEP_MAX * 4)
+					{
+						auto old = _hdSteps.find(_hdStepOrder.front().first);
+						if (old != _hdSteps.end() && old->second.seq == _hdStepOrder.front().second)
+						{
+							_hdSteps.erase(old);
+						}
+						_hdStepOrder.pop_front();
+					}
 				}
 			}
 		}
@@ -4787,7 +4872,7 @@ void Map::drawTerrain(HdCanvas *surface)
 							if (age >= 0 && age < HD_STEP_LIFE)
 							{
 								const HdStep &s = step->second;
-								surface->blitFrame(hdStepFrame(s.dx, s.dy, s.side, s.rgb, age < 2 ? 0 : 1), screenPosition.x,
+								surface->blitFrame(hdStepFrame(s.dx, s.dy, s.variant, s.kind, s.rgb, age < 2 ? 0 : 1), screenPosition.x,
 									screenPosition.y + 24 * _k + tile->getTerrainLevel() * _k);
 							}
 						}
