@@ -194,10 +194,28 @@ Uint32 HdUi::themeShade(int v)
 	return HdBattleHud::metalShade(SHADE[std::min(std::max(v, 0), 5)]);
 }
 
+namespace
+{
+/// The relief a button of the window "Buttons' look" stands for while it is drawn, -1 none.
+int faceOverride = -1;
+}
+
+int HdUi::buttonFace()
+{
+	if (!windowTheme() || style() == 2) return 0;
+	const int face = faceOverride >= 0 ? faceOverride : Options::oxceHdButtonFace;
+	return std::min(std::max(face, 0), HdBattleHud::FACES - 1);
+}
+
+void HdUi::setFaceOverride(int face)
+{
+	faceOverride = face;
+}
+
 bool HdUi::themeCaps()
 {
-	// the dark panel's buttons (skin 2) are near black whatever the metal
-	return windowTheme() && Options::oxceHdBattleHudColor == HdBattleHud::COLOR_CUSTOM && style() != 2;
+	// the dark panel's buttons (skin 2) are near black whatever the metal; a relief is cast round the metal's mid-light tone
+	return windowTheme() && style() != 2 && (Options::oxceHdBattleHudColor == HdBattleHud::COLOR_CUSTOM || buttonFace() > 0);
 }
 
 bool HdUi::themeInk()
@@ -1154,6 +1172,12 @@ void HdUi::drawButton(int x, int y, int w, int h, int color, int mul, bool press
 	const float x0 = (float)x * k, y0 = (float)y * k, x1 = (float)(x + w) * k, y1 = (float)(y + h) * k;
 	const float r = 1.5f * k, edge = std::max(1.0f, k * 0.5f);
 	const bool over = !pressed && hover(x, y, w, h);
+	if (buttonFace() > 0)
+	{
+		// a relief, a shape and a gloss of the player's choice (the window "Buttons' look")
+		HdBattleHud::drawFace(x, y, w, h, pressed, over, buttonFace());
+		return;
+	}
 	const int st = style();
 	if (st == 2)
 	{

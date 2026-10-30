@@ -79,6 +79,11 @@ public:
 	/// A sample of the panel in the current colours (the window "Own colour"): a piece of its steel with three keys, one on,
 	/// in the base rectangle (x, y, w, h).
 	static void drawSample(int x, int y, int w, int h);
+	/// How many reliefs a window button can have (oxceHdButtonFace), the first (0) being the flat button as before; how many shapes.
+	static const int FACES = 12, SHAPES = 3;
+	/// A window button cast in the panel's metal with the relief `face` (< 0 the option's), the shape and the gloss of the options,
+	/// in the base rectangle (x, y, w, h): under the mouse a step lighter, pressed sunk and lit. Cached by size and look.
+	static void drawFace(int x, int y, int w, int h, bool pressed, bool over, int face = -1);
 };
 
 /**

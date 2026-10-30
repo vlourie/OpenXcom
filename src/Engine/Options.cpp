@@ -562,6 +562,7 @@ void createAdvancedOptionsOXCE()
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdCtrlZoom", &oxceHdCtrlZoom, true, "STR_HD_CTRL_ZOOM", "STR_HD_BATTLE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdBlastFall", &oxceHdBlastFall, false, "STR_HD_BLAST_FALL", "STR_HD_BATTLE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdPlainSmoke", &oxceHdPlainSmoke, false, "STR_HD_PLAIN_SMOKE", "STR_HD_BATTLE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdShotCut", &oxceHdShotCut, false, "STR_HD_SHOT_CUT", "STR_HD_BATTLE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdBlastArea", &oxceHdBlastArea, true, "STR_HD_BLAST_AREA", "STR_HD_BATTLE_UI"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdHoverBob", &oxceHdHoverBob, true, "STR_HD_HOVER_BOB", "STR_HD_GRAPHICS"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdWalkerTurn", &oxceHdWalkerTurn, false, "STR_HD_WALKER_TURN", "STR_HD_GRAPHICS"));
@@ -595,6 +596,9 @@ void createAdvancedOptionsOXCE()
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdCustomBackHue", &oxceHdCustomBackHue, 255));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdCustomBackSat", &oxceHdCustomBackSat, 25));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdCustomBackVal", &oxceHdCustomBackVal, 38));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdButtonFace", &oxceHdButtonFace, 0));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdButtonShape", &oxceHdButtonShape, 0));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdButtonGloss", &oxceHdButtonGloss, 40));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdUiFont", &oxceHdUiFont, 0, "STR_HD_UI_FONT", "STR_HD_INTERFACE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdGlobeScale", &oxceHdGlobeScale, 0, "STR_HD_GLOBE_SCALE", "STR_HD_GEOSCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdPictures", &oxceHdPictures, true, "STR_HD_PICTURES", "STR_HD_INTERFACE"));

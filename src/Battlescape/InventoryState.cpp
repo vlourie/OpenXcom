@@ -239,8 +239,8 @@ InventoryState::InventoryState(bool tu, BattlescapeState *parent, Base *base, bo
 	add(_btnApplyTemplate, "buttonApply", "inventory", _bg);
 	add(_btnLinks, "buttonLinks", "inventory", _bg);
 	// HD interface, oxceHdWindowTheme (XP-000378): the keys at the top right are pieces of the screen's copper picture;
-	// they are drawn in the metal of the battle panel's colour (picture only)
-	for (BattlescapeButton *btn : { _btnOk, _btnPrev, _btnNext, _btnUnload, _btnGround, _btnLinks })
+	// they are drawn in the metal of the battle panel's colour (picture only); the layout's keys too (XP-000397)
+	for (BattlescapeButton *btn : { _btnOk, _btnPrev, _btnNext, _btnUnload, _btnGround, _btnLinks, _btnCreateTemplate, _btnApplyTemplate })
 	{
 		btn->setHdTheme(true);
 	}

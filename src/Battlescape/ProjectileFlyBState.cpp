@@ -587,11 +587,11 @@ bool ProjectileFlyBState::createNewProjectile()
 			// and we have a lift-off
 			if (_ammo->getRules()->getFireSound() != Mod::NO_SOUND)
 			{
-				_parent->getMod()->getSoundByDepth(_parent->getDepth(), _ammo->getRules()->getFireSound())->play(-1, _parent->getMap()->getSoundAngle(projectile->getOrigin()));
+				_parent->getMod()->getSoundByDepth(_parent->getDepth(), _ammo->getRules()->getFireSound())->playShot(_parent->getMap()->getSoundAngle(projectile->getOrigin()));
 			}
 			else if (_action.weapon->getRules()->getFireSound() != Mod::NO_SOUND)
 			{
-				_parent->getMod()->getSoundByDepth(_parent->getDepth(), _action.weapon->getRules()->getFireSound())->play(-1, _parent->getMap()->getSoundAngle(projectile->getOrigin()));
+				_parent->getMod()->getSoundByDepth(_parent->getDepth(), _action.weapon->getRules()->getFireSound())->playShot(_parent->getMap()->getSoundAngle(projectile->getOrigin()));
 			}
 			hdMuzzle(projectile->getPosition(0));
 			if (_action.type != BA_LAUNCH)

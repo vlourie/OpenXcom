@@ -284,6 +284,15 @@ OPT int oxceHdCustomKeyVal;
 OPT int oxceHdCustomBackHue;
 OPT int oxceHdCustomBackSat;
 OPT int oxceHdCustomBackVal;
+// HD interface, modern skin (XP-000399): the windows' buttons cast in the battle panel's metal (oxceHdWindowTheme) get a relief
+// (0 the flat button as before, 1..HdBattleHud::FACES-1 smooth, brushed, cast...), a shape (0 a chamfered plate, 1 a pillow, 2 a
+// panel sunk in a rim) and a gloss 0-100 (matte to a mirror); the window "Buttons' look" (Menu/OptionsButtonFaceState); picture only
+OPT int oxceHdButtonFace;
+OPT int oxceHdButtonShape;
+OPT int oxceHdButtonGloss;
+// Battlescape sound (XP-000400): a shot's sound fades out the same sound of a shot before it still playing (a shotgun's pump heard
+// over the next reaction shot); the shots keep their time and order. Off = sounds overlap, as before
+OPT bool oxceHdShotCut;
 // Battlescape: a unit hanging in the air or in the water with no floor below sways in place (Map::hoverBob); off = the classic still frame
 OPT bool oxceHdHoverBob;
 // HD render: combat effects of the HD mod (Engine/HdFx.h) - hits, swings, explosions, muzzle flashes; off = the classic animations

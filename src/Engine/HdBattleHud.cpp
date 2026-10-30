@@ -894,6 +894,40 @@ void rivet(Relief &r, float x, float y, float cx, float cy, float rr)
 	r.dk += 0.18f * std::max(1.0f - std::fabs(d - 1.05f) / 0.2f, 0.0f);
 }
 
+/// Mahogany planking: planks laid along the panel, their ends staggered, each a little cupped; the grain runs along a
+/// plank in wavy streaks, a brass nail at each end (`metal` = the nail's coverage).
+Relief planking(float x, float y, float k)
+{
+	Relief r;
+	const float ph = 6.5f * k, pw = 52.0f * k;
+	const float row = std::floor(y / ph);
+	const float shift = hash01((Uint32)(int)row * 0x9E3779B1u) * pw;
+	const float sx = x + shift;
+	const float plank = std::floor(sx / pw);
+	const float u = sx - plank * pw, v = y - row * ph;
+	const Uint32 seed = (Uint32)(int)row * 0x27D4EB2Fu ^ (Uint32)(int)plank * 0x165667B1u;
+	// the seams: a dark groove along and across, the plank's edges eased into it
+	const float edge = std::min(std::min(v, ph - v), std::min(u, pw - u));
+	const float seam = std::max(1.0f - edge / (0.55f * k), 0.0f);
+	const float bow = 2.0f * v / ph - 1.0f;
+	r.h = 0.12f * (1.0f - bow * bow) - 0.35f * seam * seam;
+	// the grain: streaks wandering along the plank, a knot of darker rings now and then
+	const float wander = 2.6f * valueNoise(sx / (14.0f * k), v / (3.0f * k), seed) + 0.8f * valueNoise(sx / (4.0f * k), v / k, seed ^ 0x5A5A5A5Au);
+	const float streak = 0.5f + 0.5f * std::sin((v / (0.75f * k) + wander) * 3.14159265f);
+	const float tone = valueNoise(sx / (24.0f * k), v / (6.0f * k), seed ^ 0x1234567u);
+	const float fibre = hash01((Uint32)(int)std::floor(sx / (0.6f * k)) * 0x85EBCA77u ^ (Uint32)(int)y * 0xC2B2AE3Du);
+	r.dk = 0.16f * streak * streak + 0.12f * tone + 0.04f * fibre + 0.35f * seam * seam - 0.06f;
+	// a nail a little in from each end of the plank, at its middle
+	const float nr = 0.55f * k;
+	Relief nail;
+	rivet(nail, u, v, 1.8f * k, ph * 0.5f, nr);
+	rivet(nail, u, v, pw - 1.8f * k, ph * 0.5f, nr);
+	r.h += nail.h;
+	r.dk += nail.dk;
+	r.metal = std::min(nail.h / 0.12f, 1.0f);
+	return r;
+}
+
 /// The hull's relief on the steel between the keys: larger shingles, or the Cruiser's big panels with chamfered
 /// corners, their seams lined with rivets.
 Relief steelRelief(float x, float y, float k)
@@ -928,37 +962,8 @@ Relief steelRelief(float x, float y, float k)
 		break;
 	}
 	case 3:
-	{
-		// mahogany planking: planks laid along the panel, their ends staggered, each a little cupped; the grain runs
-		// along a plank in wavy streaks, a brass nail at each end
-		const float ph = 6.5f * k, pw = 52.0f * k;
-		const float row = std::floor(y / ph);
-		const float shift = hash01((Uint32)(int)row * 0x9E3779B1u) * pw;
-		const float sx = x + shift;
-		const float plank = std::floor(sx / pw);
-		const float u = sx - plank * pw, v = y - row * ph;
-		const Uint32 seed = (Uint32)(int)row * 0x27D4EB2Fu ^ (Uint32)(int)plank * 0x165667B1u;
-		// the seams: a dark groove along and across, the plank's edges eased into it
-		const float edge = std::min(std::min(v, ph - v), std::min(u, pw - u));
-		const float seam = std::max(1.0f - edge / (0.55f * k), 0.0f);
-		const float bow = 2.0f * v / ph - 1.0f;
-		r.h = 0.12f * (1.0f - bow * bow) - 0.35f * seam * seam;
-		// the grain: streaks wandering along the plank, a knot of darker rings now and then
-		const float wander = 2.6f * valueNoise(sx / (14.0f * k), v / (3.0f * k), seed) + 0.8f * valueNoise(sx / (4.0f * k), v / k, seed ^ 0x5A5A5A5Au);
-		const float streak = 0.5f + 0.5f * std::sin((v / (0.75f * k) + wander) * 3.14159265f);
-		const float tone = valueNoise(sx / (24.0f * k), v / (6.0f * k), seed ^ 0x1234567u);
-		const float fibre = hash01((Uint32)(int)std::floor(sx / (0.6f * k)) * 0x85EBCA77u ^ (Uint32)(int)y * 0xC2B2AE3Du);
-		r.dk = 0.16f * streak * streak + 0.12f * tone + 0.04f * fibre + 0.35f * seam * seam - 0.06f;
-		// a nail a little in from each end of the plank, at its middle
-		const float nr = 0.55f * k;
-		Relief nail;
-		rivet(nail, u, v, 1.8f * k, ph * 0.5f, nr);
-		rivet(nail, u, v, pw - 1.8f * k, ph * 0.5f, nr);
-		r.h += nail.h;
-		r.dk += nail.dk;
-		r.metal = std::min(nail.h / 0.12f, 1.0f);
+		r = planking(x, y, k);
 		break;
-	}
 	default:
 		break;
 	}
@@ -1925,6 +1930,292 @@ void HdBattleHud::drawSample(int x, int y, int w, int h)
 		const Icon icon = i == 0 ? ICON_OPTIONS : i == 1 ? ICON_INVENTORY : ICON_KNEEL;
 		drawButton(&sampleKeys[i], x + gap + i * (kw + gap), ky, kw, kh, icon, i == 2, false, 0, nullptr, nullptr);
 	}
+}
+
+namespace
+{
+
+/// A rivet head, a hammered dimple: the distance from (x, y) to the nearest of the points jittered one in each cell of
+/// a grid `cell` wide (the point's cell number goes to `id`).
+float nearestJittered(float x, float y, float cell, Uint32 seed, Uint32 &id)
+{
+	const int cx = (int)std::floor(x / cell), cy = (int)std::floor(y / cell);
+	float best = 1e9f;
+	for (int j = cy - 1; j <= cy + 1; ++j)
+		for (int i = cx - 1; i <= cx + 1; ++i)
+		{
+			const Uint32 h = seed ^ ((Uint32)i * 0x85EBCA77u) ^ ((Uint32)j * 0xC2B2AE3Du);
+			const float px = ((float)i + 0.2f + 0.6f * hash01(h)) * cell, py = ((float)j + 0.2f + 0.6f * hash01(h ^ 0x68E31DA4u)) * cell;
+			const float d = (x - px) * (x - px) + (y - py) * (y - py);
+			if (d < best)
+			{
+				best = d;
+				id = h;
+			}
+		}
+	return std::sqrt(best);
+}
+
+/// The relief of a window button's face (oxceHdButtonFace): a height, a darkening and a lightening of the metal (`metal`,
+/// -1..1) at (x, y) of a W x H face, k screen pixels a base pixel.
+Relief faceRelief(int face, float x, float y, float W, float H, float k)
+{
+	Relief r;
+	switch (face)
+	{
+	case 2:
+		// brushed: fine streaks along the rows
+		r.metal = 2.0f * brushed((int)x, (int)y, k);
+		break;
+	case 3:
+	{
+		// cast: soft mottling with a grain over it
+		const float p = plating((int)x, (int)y, k);
+		r.metal = 2.0f * p;
+		r.h = 0.06f * p;
+		break;
+	}
+	case 4:
+	{
+		// hammered: overlapping shallow dimples a few base pixels across, each catching the light on its far side
+		Uint32 id = 0;
+		const float cell = 3.2f * k, d = nearestJittered(x, y, cell, 0x3C6EF372u, id) / (0.62f * cell);
+		r.h = -0.22f * std::max(1.0f - d * d, 0.0f);
+		r.metal = 0.5f * (hash01(id) - 0.5f);
+		break;
+	}
+	case 5:
+	{
+		// riveted: a brushed plate with a rivet in each corner and along the long edges every dozen base pixels
+		r.metal = 1.2f * brushed((int)x, (int)y, k);
+		const float in = 2.4f * k, rr = 0.8f * k;
+		rivet(r, x, y, in, in, rr);
+		rivet(r, x, y, W - in, in, rr);
+		rivet(r, x, y, in, H - in, rr);
+		rivet(r, x, y, W - in, H - in, rr);
+		const int n = (int)((W - 2.0f * in) / (12.0f * k));
+		for (int i = 1; i < n; ++i)
+		{
+			const float cx = in + (W - 2.0f * in) * (float)i / (float)n;
+			rivet(r, x, y, cx, in, rr);
+			rivet(r, x, y, cx, H - in, rr);
+		}
+		break;
+	}
+	case 6:
+		// scales: small plates laid like shingles
+		r = shingles(x, y, 4.0f * k, 2.5f * k, 0.5f * k);
+		break;
+	case 7:
+	{
+		// tread plate: raised lozenges in rows, every other one turned the other way
+		const float cell = 4.5f * k;
+		const float i = std::floor(x / cell), j = std::floor(y / cell);
+		const float u = x - (i + 0.5f) * cell, v = y - (j + 0.5f) * cell;
+		const float s = std::fmod(i + j, 2.0f) != 0.0f ? 1.0f : -1.0f;
+		const float a = (u + s * v) * 0.70710678f, b = (u - s * v) * 0.70710678f;
+		const float e = (a / (1.7f * k)) * (a / (1.7f * k)) + (b / (0.45f * k)) * (b / (0.45f * k));
+		r.h = 0.35f * std::sqrt(std::max(1.0f - e, 0.0f));
+		r.metal = 0.4f * brushed((int)x, (int)y, k);
+		break;
+	}
+	case 8:
+	{
+		// carbon: a 2x2 twill of dark tows, the ones along the rows and the ones across lit differently
+		const float t = 1.4f * k;
+		const int i = (int)std::floor(x / t), j = (int)std::floor(y / t);
+		const bool along = (((i - j) % 4) + 4) % 4 < 2;
+		const float f = along ? y / t - std::floor(y / t) : x / t - std::floor(x / t);
+		const float bulge = std::sin(f * 3.14159265f);
+		r.h = 0.1f * bulge;
+		r.dk = 0.24f - (along ? 0.16f : 0.07f) * bulge;
+		break;
+	}
+	case 9:
+		// wood: the pirate panel's mahogany planking
+		r = planking(x, y, k);
+		r.metal = 0.0f;
+		break;
+	case 10:
+	{
+		// lightning: two zigzag bolts engraved across the face, their floors polished bright
+		if (x < 2.0f * k || x > W - 2.0f * k) break;
+		const float seg = 5.0f * k;
+		const int i = (int)std::floor(x / seg);
+		const float f = x / seg - (float)i;
+		float g = 0.0f;
+		for (int b = 0; b < 2; ++b)
+		{
+			const Uint32 seed = b ? 0x1B873593u : 0xCC9E2D51u;
+			const float mid = H * (b ? 0.68f : 0.32f), amp = 0.32f * H;
+			const float ya = mid + (hash01(seed ^ (Uint32)i * 0x9E3779B1u) - 0.5f) * amp;
+			const float yb = mid + (hash01(seed ^ (Uint32)(i + 1) * 0x9E3779B1u) - 0.5f) * amp;
+			const float slope = (yb - ya) / seg;
+			const float dist = std::fabs(y - (ya + (yb - ya) * f)) / std::sqrt(1.0f + slope * slope);
+			g = std::max(g, std::max(1.0f - dist / (0.5f * k), 0.0f));
+		}
+		r.h = -0.3f * g;
+		r.metal = 1.4f * g * g;
+		break;
+	}
+	case 11:
+	{
+		// worn: grime in blotches, thicker towards the edges, and bright scratches through it
+		const float dust = valueNoise(x / (4.0f * k), y / (4.0f * k), 0x2F6B1D35u);
+		const float rim = std::max(1.0f - std::min(std::min(x, W - x), std::min(y, H - y)) / (3.5f * k), 0.0f);
+		r.dk = 0.1f * dust + 0.12f * rim * dust;
+		const float cell = 7.0f * k;
+		float scratch = 0.0f;
+		const int ci = (int)std::floor(x / cell), cj = (int)std::floor(y / cell);
+		for (int j = cj - 1; j <= cj + 1; ++j)
+			for (int i = ci - 1; i <= ci + 1; ++i)
+			{
+				const Uint32 h = 0x7A5B3C1Du ^ ((Uint32)i * 0x85EBCA77u) ^ ((Uint32)j * 0xC2B2AE3Du);
+				if (hash01(h) < 0.45f) continue;
+				const float px = ((float)i + hash01(h ^ 1u)) * cell, py = ((float)j + hash01(h ^ 2u)) * cell;
+				const float ang = hash01(h ^ 3u) * 3.14159265f, len = (0.4f + 0.6f * hash01(h ^ 4u)) * cell;
+				const float dx = std::cos(ang), dy = std::sin(ang);
+				const float along = (x - px) * dx + (y - py) * dy;
+				if (std::fabs(along) > len) continue;
+				const float across = std::fabs(-(x - px) * dy + (y - py) * dx);
+				scratch = std::max(scratch, std::max(1.0f - across / (0.3f * k), 0.0f) * (1.0f - std::fabs(along) / len));
+			}
+		r.dk -= 0.2f * scratch;
+		r.metal = -0.5f * dust;
+		break;
+	}
+	default:
+		break;
+	}
+	return r;
+}
+
+/// A window button's face as it is cast: W x H screen pixels, the shades of the metal at 0..1 in `lut` (256).
+std::vector<Uint32> castFace(int W, int H, float k, int face, int shape, float gloss, bool pressed, bool over, const Uint32 *lut)
+{
+	const size_t n = (size_t)W * H;
+	std::vector<float> height(n, 0.0f), dark(n, 0.0f), metal(n, 0.0f), cover(n, 0.0f);
+	const float r = 1.5f * k, bevel = std::max(1.6f * k, 1.0f), dome = 0.5f * (float)std::min(W, H);
+	auto shapeRows = [&](int ra, int rb)
+	{
+		for (int y = ra; y < rb; ++y)
+			for (int x = 0; x < W; ++x)
+			{
+				const size_t i = (size_t)y * W + x;
+				const float px = (float)x + 0.5f, py = (float)y + 0.5f;
+				const float d = insideBox(px, py, 0.0f, 0.0f, (float)W, (float)H, r);
+				cover[i] = std::min(std::max(d + 0.5f, 0.0f), 1.0f);
+				if (cover[i] <= 0.0f) continue;
+				float h;
+				switch (shape)
+				{
+				case 1:
+				{
+					// a pillow: rounded all the way to its middle
+					const float t = 1.0f - std::min(d / dome, 1.0f);
+					h = std::sqrt(std::max(1.0f - t * t, 0.0f));
+					break;
+				}
+				case 2:
+				{
+					// a rim, then a panel sunk inside it
+					const float t = d / bevel;
+					h = t < 1.0f ? t : t < 2.0f ? 1.0f - 0.55f * (t - 1.0f) : 0.45f;
+					break;
+				}
+				default:
+					// a plate with a chamfer round it
+					h = std::min(d / bevel, 1.0f);
+					break;
+				}
+				const Relief rel = faceRelief(face, px, py, (float)W, (float)H, k);
+				h += rel.h;
+				// pressed: the face sinks, the slopes that caught the light lose it
+				height[i] = pressed ? -0.6f * h : h;
+				// a thin dark outline holds the shape against any background
+				dark[i] = rel.dk + 0.25f * std::max(1.0f - d / (0.7f * k), 0.0f);
+				metal[i] = rel.metal;
+			}
+	};
+	auto shadeRows = [&](std::vector<Uint32> &out, int ra, int rb)
+	{
+		// the light from the upper left, as on the battle panel; the view straight on
+		const float lx = -0.5f, ly = -0.6f, lz = 0.62f;
+		const float hx = lx, hy = ly, hz = lz + 1.0f, hn = std::sqrt(hx * hx + hy * hy + hz * hz);
+		// gloss 0 matte, 0.5 polished metal, 1 a mirror under coloured glass: the highlight narrows and brightens, the
+		// texture's own streaks fade, past the middle the face reflects a horizon (light above, dark below)
+		const float power = 3.0f + 90.0f * gloss * gloss, bright = 0.08f + 0.75f * gloss;
+		const float grain = 0.075f * (1.0f - 0.7f * gloss), mirror = std::max(2.0f * gloss - 1.0f, 0.0f);
+		// pressed (the chosen speed, tab or tile) reads lighter, as the lit button of the classic look, even under a mirror
+		const float lift = (pressed ? 0.2f : 0.0f) + (over ? 0.07f : 0.0f);
+		for (int y = ra; y < rb; ++y)
+		{
+			const int yu = std::max(y - 1, 0), yd = std::min(y + 1, H - 1);
+			for (int x = 0; x < W; ++x)
+			{
+				const size_t i = (size_t)y * W + x;
+				if (cover[i] <= 0.0f) continue;
+				const int xl = std::max(x - 1, 0), xr = std::min(x + 1, W - 1);
+				const float gx = (height[(size_t)y * W + xr] - height[(size_t)y * W + xl]) * 0.5f * k;
+				const float gy = (height[(size_t)yd * W + x] - height[(size_t)yu * W + x]) * 0.5f * k;
+				const float nl = 1.0f / std::sqrt(gx * gx + gy * gy + 1.0f);
+				const float nx = -gx * nl, ny = -gy * nl, nz = nl;
+				const float d = nx * lx + ny * ly + nz * lz;
+				const float spec = bright * std::pow(std::max((nx * hx + ny * hy + nz * hz) / hn, 0.0f), power);
+				float s = 0.6f + 0.9f * (d - lz) - dark[i] + lift + grain * metal[i];
+				if (mirror > 0.0f)
+				{
+					// the reflected horizon bends with the face's slopes
+					const float v = ((float)y + 0.5f) / (float)H + 0.35f * ny;
+					const float sky = std::min(std::max((0.46f - v) / 0.04f, -1.0f), 1.0f);
+					s += mirror * (0.22f * sky - 0.06f);
+				}
+				const Uint32 c = lut[std::min(std::max((int)(s * 255.0f + 0.5f), 0), 255)];
+				const Uint32 lit = mix(c, 0xFFFFFFFFu, std::min(spec, 1.0f) * 0.85f);
+				out[i] = withAlpha(lit, (Uint32)(cover[i] * 255.0f + 0.5f));
+			}
+		}
+	};
+	std::vector<Uint32> out(n, 0);
+	HdWorkers &pool = HdWorkers::instance();
+	const int jobs = std::max(1, std::min(H / 8, pool.threads() * 2));
+	pool.run(jobs, [&](int job) { shapeRows((int)((long long)H * job / jobs), (int)((long long)H * (job + 1) / jobs)); });
+	pool.run(jobs, [&](int job) { shadeRows(out, (int)((long long)H * job / jobs), (int)((long long)H * (job + 1) / jobs)); });
+	return out;
+}
+
+int faceScale = 0, faceTheme = -1;
+std::unordered_map<Uint64, std::vector<Uint32>> faceCache;
+Uint32 faceLut[256];
+
+}
+
+void HdBattleHud::drawFace(int x, int y, int w, int h, bool pressed, bool over, int face)
+{
+	const int k = HdUi::scale();
+	if (k <= 0 || w <= 0 || h <= 0) return;
+	if (face < 0) face = Options::oxceHdButtonFace;
+	face = std::min(std::max(face, 1), FACES - 1);
+	const int shape = std::min(std::max(Options::oxceHdButtonShape, 0), SHAPES - 1);
+	const int gloss = std::min(std::max(Options::oxceHdButtonGloss, 0), 100);
+	// the casts go with the colours (the metal's shades are read here, on the main thread) and the scale
+	const int themeNow = themeKey();
+	if (k != faceScale || themeNow != faceTheme || faceCache.size() > 256)
+	{
+		faceCache.clear();
+		faceScale = k;
+		faceTheme = themeNow;
+		for (int i = 0; i < 256; ++i) faceLut[i] = metalShade((float)i / 255.0f);
+	}
+	const int W = w * k, H = h * k;
+	const Uint64 key = (Uint64)W | (Uint64)H << 14 | (Uint64)face << 28 | (Uint64)shape << 33 | (Uint64)gloss << 36
+		| (Uint64)pressed << 44 | (Uint64)over << 45;
+	auto found = faceCache.find(key);
+	if (found == faceCache.end())
+	{
+		found = faceCache.emplace(key, castFace(W, H, (float)k, face, shape, (float)gloss / 100.0f, pressed, over, faceLut)).first;
+	}
+	HdUi::instance().drawImage(found->second.data(), W, H, x * k, y * k);
 }
 
 bool HdBattleHud::grooved(const Surface *bar)
