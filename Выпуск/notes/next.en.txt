@@ -16,3 +16,4 @@
 - HD graphics (battle, hills on grass): hill slopes are covered with the same grass as the flat ground around them - no sharp border, no seams and no steps along the edge; the shape and shading follow the original (ticket XP-000445).
 - HD graphics (battle, furniture): the blue corner stove with a pot and two burners is redrawn and now looks the same in all six furniture sets that use it (before, some sets showed grass or bowls on it) (ticket XP-000435).
 - HD graphics (battle, Ghoul City): the overhead structures above the warehouses are steel girders again, as in the original, instead of rails with sleepers - straight, a bolted junction and burnt ones (ticket XP-000443).
+- HD graphics (battle, hills on grass and in the jungle): the edge of the slopes is straight and smooth, with no steps (tickets XP-000431, XP-000445).
