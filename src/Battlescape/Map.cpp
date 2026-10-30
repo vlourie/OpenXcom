@@ -2822,7 +2822,8 @@ const Map::HdAoShape &Map::hdAoShape(const MapData *part)
 			++shape.count;
 		}
 	}
-	shape.valid = shape.count > 0 && top >= 1;
+	// a low part covering the whole cell (tall grass, top layer 1) is a carpet, not a wall: it shades no neighbour (XP-000439)
+	shape.valid = shape.count > 0 && top >= 1 && !(shape.count >= FLOOR_AO_HIDDEN && top <= 1);
 	shape.weight = std::min(1.0f, (top + 1) / 6.0f);
 	return shape;
 }
