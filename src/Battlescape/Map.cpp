@@ -54,6 +54,7 @@
 #include <cmath>
 #include <map>
 #include <sstream>
+#include <unordered_set>
 #include "../Engine/FileMap.h"
 #include "../Engine/ShaderDraw.h"
 #include "../Engine/ShaderMove.h"
@@ -353,17 +354,20 @@ void fillFence(HdFrame &f, bool down, Uint32 rgb, int body, int edge, int k)
 	f.buildSpans();
 }
 
-/// A map cell's index mirrored across the edge of a map `size` cells long and folded back and forth when the mirror's
-/// image is past the other edge too (-1 -> 0, size -> size - 1, 2 * size -> 0 ...).
-int mirrorIndex(int v, int size)
+/// A map cell's index mirrored across the edge of a map `size` cells long (-1 -> 0, size -> size - 1) and folded back and
+/// forth within the `band` cells along the edge when the image goes deeper (band 6: -7 -> 5, -8 -> 5, -13 -> 0 ...): the
+/// ground beyond the edge goes on with the map's outer band only, not with what stands in the middle of the map.
+/// A coordinate inside the map stays as it is (XP-000263).
+int bandIndex(int v, int size, int band)
 {
-	const int period = 2 * size;
-	v %= period;
-	if (v < 0)
+	if (v >= 0 && v < size)
 	{
-		v += period;
+		return v;
 	}
-	return v < size ? v : period - 1 - v;
+	band = std::max(1, std::min(band, size));
+	const int depth = (v < 0 ? -1 - v : v - size) % (2 * band);
+	const int in = depth < band ? depth : 2 * band - 1 - depth;
+	return v < 0 ? in : size - 1 - in;
 }
 
 /**
@@ -1984,10 +1988,12 @@ int Map::hdBackdropFind()
  * Options::oxceHdBeyondEdge (XP-000263): the ground goes on beyond the map's edge. Under the map (before its cells are drawn),
  * on the ground level (z = 0, the formula of the map's own cells), over the backdrop, in the cells of the screen that lie off the
  * map: the mirror of the map's edge cells - the floor of the map's cell reflected across the edge (x < 0 -> -1 - x, x >= sizeX ->
- * 2 * sizeX - 1 - x, the same for y; folded back and forth when the image is past the other edge too), the ground level - under
+ * 2 * sizeX - 1 - x, the same for y; folded back and forth within the outer band of 6 cells, see bandIndex), the ground level - under
  * a veil of the backdrop's colour at its row that thickens with the distance from the edge until the floor is gone into the
  * backdrop (the veil is a floor-diamond frame with alpha, as the explosion area's). A floor of the map the player has not
- * discovered is not shown: the cell takes the commonest floor of the map's outer band instead. Options::oxceHdBeyondLook (XP-000263):
+ * discovered is not shown: the cell takes the commonest floor of the map's outer band instead, under a denser veil. The floors
+ * are those of the battle's first frame (a blast leaves no scorched earth beyond the edge), and a floor of under a tenth of the
+ * band's open ground (a house, a ship) is the commonest floor too. Options::oxceHdBeyondLook (XP-000263):
  * 1 the floors in greys, 2 a pale fog instead of the backdrop's colour (the floors are gone into it half way, the fog itself
  * thins out to the end). Picture only: no tile is touched, no light, no fog of war, no cache of the battle; the cells are
  * not on the map, so nothing there can be clicked.
@@ -1995,6 +2001,7 @@ int Map::hdBackdropFind()
 void Map::hdDrawBeyondEdge(HdCanvas *surface, const Position &cameraPos)
 {
 	const int sizeX = _save->getMapSizeX(), sizeY = _save->getMapSizeY(), sizeZ = _save->getMapSizeZ();
+	const int BAND = 6; // the outer band of the map that the ground beyond the edge is made of (XP-000263)
 	// a cell of the ground level with a floor over it (a base's rooms stand on a bedrock under them, XP-000401): what the
 	// player sees there is the room, not the ground, so its ground is not what goes on beyond the edge
 	auto covered = [&](int x, int y)
@@ -2013,10 +2020,18 @@ void Map::hdDrawBeyondEdge(HdCanvas *surface, const Position &cameraPos)
 	if (_hdGhostState < 0)
 	{
 		_hdGhostState = 0;
-		std::vector<const MapData*> kinds, openKinds;
-		std::vector<HdGhostFloor> openFloors;
-		int cells = 0, floors = 0;
-		const int BAND = 6;
+		// the floors of the ground level as they are at the battle's first frame (XP-000263): the mirror takes them, not the
+		// live tiles, which a blast turns into the scorched earth or debris. A battle loaded from a save has them damaged
+		// already: the scorched earth, and the floors that a destroyed part leaves (the die MCD of an object of the set) when
+		// they are few, are taken as not known, the ghost floor goes there
+		MapData *scorched = MapDataSet::getScorchedEarthTile();
+		std::unordered_set<const MapData*> debris;
+		std::unordered_set<const MapDataSet*> debrisDone;
+		std::unordered_map<const MapData*, int> census; // the cells of each floor over the level
+		struct Kind { const MapData *data; int all; int open; };
+		std::vector<Kind> kinds;
+		int cells = 0, floors = 0, bandAll = 0, bandOpen = 0, damaged = 0, scorchedCells = 0;
+		_hdFloorSnap.assign((size_t)sizeX * sizeY, HdSnapFloor());
 		for (int y = 0; y < sizeY; ++y)
 		{
 			for (int x = 0; x < sizeX; ++x)
@@ -2024,12 +2039,53 @@ void Map::hdDrawBeyondEdge(HdCanvas *surface, const Position &cameraPos)
 				++cells;
 				const Tile *t = _save->getTile(Position(x, y, 0));
 				const MapData *data = t ? t->getMapData(O_FLOOR) : nullptr;
-				const SurfaceRaw<const Uint8> sprite = t ? t->getSprite(O_FLOOR) : SurfaceRaw<const Uint8>();
-				if (!data || data->isNoFloor() || !sprite)
+				if (!data || data->isNoFloor() || !t->getSprite(O_FLOOR))
 				{
 					continue;
 				}
 				++floors;
+				HdSnapFloor &snap = _hdFloorSnap[(size_t)y * sizeX + x];
+				snap.data = data;
+				snap.kind = 2;
+				++census[data];
+				MapDataSet *set = data->getDataset();
+				if (set && debrisDone.insert(set).second)
+				{
+					for (const MapData *object : *set->getObjectsRaw())
+					{
+						const int die = object->getDieMCD();
+						if (die > 0 && (size_t)die < set->getSize())
+						{
+							debris.insert(set->getObject(die));
+						}
+					}
+				}
+			}
+		}
+		for (int y = 0; y < sizeY; ++y)
+		{
+			for (int x = 0; x < sizeX; ++x)
+			{
+				HdSnapFloor &snap = _hdFloorSnap[(size_t)y * sizeX + x];
+				if (snap.kind != 2)
+				{
+					continue;
+				}
+				const MapData *data = snap.data;
+				// a floor that is a destruction's leaving is damage only when it is a small part of the level: the ground of a
+				// whole map (a burnt or snowy plain) is another object's die MCD too
+				if (data == scorched || (debris.count(data) && census[data] * 10 < cells))
+				{
+					snap.kind = 1;
+					++damaged;
+					scorchedCells += data == scorched ? 1 : 0;
+					continue;
+				}
+				const bool open = !covered(x, y);
+				if (!open)
+				{
+					snap.kind = 1; // a room stands over it: what the player sees there is not the ground
+				}
 				// the commonest floors are counted where the ground meets the edge: the outer band of the level (a base or a
 				// ship in the middle of a desert has its own floors, which the desert beyond the edge does not go on with)
 				if (x >= BAND && x < sizeX - BAND && y >= BAND && y < sizeY - BAND)
@@ -2037,53 +2093,76 @@ void Map::hdDrawBeyondEdge(HdCanvas *surface, const Position &cameraPos)
 					continue;
 				}
 				size_t i = 0;
-				while (i < kinds.size() && kinds[i] != data)
+				while (i < kinds.size() && kinds[i].data != data)
 				{
 					++i;
 				}
 				if (i == kinds.size())
 				{
-					kinds.push_back(data);
-					HdGhostFloor f;
-					f.sprite = sprite;
-					f.yOffset = t->getYOffset(O_FLOOR);
-					_hdGhostFloors.push_back(f);
+					kinds.push_back(Kind{ data, 0, 0 });
 				}
-				++_hdGhostFloors[i].count;
-				if (!covered(x, y))
+				++kinds[i].all;
+				++bandAll;
+				if (open)
 				{
-					size_t j = 0;
-					while (j < openKinds.size() && openKinds[j] != data)
-					{
-						++j;
-					}
-					if (j == openKinds.size())
-					{
-						openKinds.push_back(data);
-						openFloors.push_back(_hdGhostFloors[i]);
-						openFloors.back().count = 0;
-					}
-					++openFloors[j].count;
+					++kinds[i].open;
+					++bandOpen;
 				}
 			}
 		}
 		// the open ground of the band (under the sky) when there is any: the grass between a base's rooms, not their bedrock
-		if (!openFloors.empty())
+		const bool useOpen = bandOpen > 0;
+		const int bandTotal = useOpen ? bandOpen : bandAll;
+		auto share = [&](const Kind &k) { return useOpen ? k.open : k.all; };
+		int rare = 0;
+		// no ground level to go on (an underground map, a level of air, a level of the scorched earth): at least half of it
+		// must have a floor that is not damaged
+		if ((floors - damaged) * 2 >= cells && !kinds.empty())
 		{
-			_hdGhostFloors.swap(openFloors);
-		}
-		// no ground level to go on (an underground map, a level of air): at least half of it must have a floor
-		if (floors * 2 >= cells && !_hdGhostFloors.empty())
-		{
-			std::stable_sort(_hdGhostFloors.begin(), _hdGhostFloors.end(), [](const HdGhostFloor &a, const HdGhostFloor &b) { return a.count > b.count; });
-			_hdGhostFloors.resize(1); // the commonest one: the floor of the cells whose mirror the player has not discovered
+			const Kind *best = &kinds[0];
+			for (const Kind &k : kinds)
+			{
+				if (share(k) > share(*best))
+				{
+					best = &k;
+				}
+			}
+			HdGhostFloor ghost;
+			ghost.sprite = best->data->getDataset()->getSurfaceset()->getFrame(best->data->getSprite(0));
+			ghost.yOffset = best->data->getYOffset();
+			ghost.count = share(*best);
+			_hdGhostFloors.assign(1, ghost); // the commonest one: the floor of the cells whose mirror the player has not discovered
+			// a floor of under a tenth of the band's open ground is a house's or a ship's: the cell takes the ghost floor too
+			for (int y = 0; y < sizeY; ++y)
+			{
+				for (int x = 0; x < sizeX; ++x)
+				{
+					HdSnapFloor &snap = _hdFloorSnap[(size_t)y * sizeX + x];
+					if (snap.kind != 2)
+					{
+						continue;
+					}
+					for (const Kind &k : kinds)
+					{
+						if (k.data == snap.data)
+						{
+							if (share(k) * 10 < bandTotal)
+							{
+								snap.kind = 1;
+								rare += (x < BAND || x >= sizeX - BAND || y < BAND || y >= sizeY - BAND) ? 1 : 0;
+							}
+							break;
+						}
+					}
+				}
+			}
 			_hdGhostState = 1;
 		}
 		else
 		{
-			_hdGhostFloors.clear();
+			_hdFloorSnap.clear();
 		}
-		Log(LOG_INFO) << "HD beyond edge: " << floors << " floors of " << cells << " cells of the ground level -> " << _hdGhostFloors.size() << " kept, state " << _hdGhostState;
+		Log(LOG_INFO) << "HD beyond edge: " << floors << " floors of " << cells << " cells of the ground level (" << damaged << " damaged, " << scorchedCells << " of them scorched earth) -> " << kinds.size() << " kinds in the band of " << bandTotal << " cells, " << rare << " band cells of rare floors, state " << _hdGhostState;
 	}
 	if (_hdGhostState != 1)
 	{
@@ -2127,7 +2206,7 @@ void Map::hdDrawBeyondEdge(HdCanvas *surface, const Position &cameraPos)
 			}
 			// the cell of the map this one mirrors across the edge, and its floor: the map's own, or - where the player has not
 			// discovered it, or a room stands over it - the commonest open one of the map's outer band
-			const int mx = mirrorIndex(x, sizeX), my = mirrorIndex(y, sizeY);
+			const int mx = bandIndex(x, sizeX, BAND), my = bandIndex(y, sizeY, BAND);
 			const Tile *source = _save->getTile(Position(mx, my, 0));
 			if (!source)
 			{
@@ -2135,17 +2214,34 @@ void Map::hdDrawBeyondEdge(HdCanvas *surface, const Position &cameraPos)
 			}
 			SurfaceRaw<const Uint8> sprite;
 			int yOffset = 0;
-			if (source->isDiscovered(O_FLOOR) && !covered(mx, my))
+			bool unseen = false;
+			const HdSnapFloor &snap = _hdFloorSnap[(size_t)my * sizeX + mx];
+			if (source->isDiscovered(O_FLOOR))
 			{
-				const MapData *data = source->getMapData(O_FLOOR);
-				sprite = source->getSprite(O_FLOOR);
-				if (!data || data->isNoFloor() || !sprite)
+				if (snap.kind == 0)
 				{
 					continue;
 				}
-				yOffset = source->getYOffset(O_FLOOR);
+				if (snap.kind == 2)
+				{
+					if (source->getMapData(O_FLOOR) == snap.data && source->getSprite(O_FLOOR))
+					{
+						sprite = source->getSprite(O_FLOOR); // the floor is still there: its animation goes on
+						yOffset = source->getYOffset(O_FLOOR);
+					}
+					else
+					{
+						// destroyed in the battle: the floor as it was
+						sprite = snap.data->getDataset()->getSurfaceset()->getFrame(snap.data->getSprite(0));
+						yOffset = snap.data->getYOffset();
+					}
+				}
 			}
 			else
+			{
+				unseen = true;
+			}
+			if (!sprite)
 			{
 				sprite = _hdGhostFloors[0].sprite;
 				yOffset = _hdGhostFloors[0].yOffset;
@@ -2163,6 +2259,11 @@ void Map::hdDrawBeyondEdge(HdCanvas *surface, const Position &cameraPos)
 			{
 				drawFloor = t <= FOG_AT;
 				cover = drawFloor ? FOG_MAX * std::pow(t / FOG_AT, POWER) : FOG_MAX * (1.0 - (t - FOG_AT) / (1.0 - FOG_AT));
+			}
+			if (unseen)
+			{
+				// the ghost floor stands where the player has not discovered the cell this one mirrors: under a denser veil
+				cover = std::min(0.97, cover * 1.4 + 0.12 * std::min(1.0, cover * 4.0));
 			}
 			const double hazeAt = cover * HAZE_STEPS;
 			const int haze = std::max(0, std::min(HAZE_STEPS, (int)hazeAt + (dither < hazeAt - (int)hazeAt ? 1 : 0)));

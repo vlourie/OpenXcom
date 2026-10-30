@@ -217,6 +217,11 @@ private:
 	/// where the cell they mirror is not discovered yet (the mirror shows no floor the player has not seen).
 	struct HdGhostFloor { SurfaceRaw<const Uint8> sprite; int yOffset = 0; int count = 0; };
 	std::vector<HdGhostFloor> _hdGhostFloors;
+	/// The floors of the ground level as the battle began (XP-000263), a cell of the map each, found once with _hdGhostFloors:
+	/// kind 0 no floor (a hole), 1 the floor is not known (a damage - the scorched earth, a debris - a room over it, a rare floor
+	/// of the band: the ghost floor goes there), 2 the floor is `data`. Memory of the picture only, not saved.
+	struct HdSnapFloor { const MapData *data = nullptr; Uint8 kind = 0; };
+	std::vector<HdSnapFloor> _hdFloorSnap;
 	/// The veils of the backdrop's colour over the far cells (by colour and opacity), kept while the battle's map lives.
 	std::unordered_map<unsigned long long, HdFrame> _hdHazeFrames;
 	int _hdGhostState = -1;  ///< -1: floors not looked yet, 0: none (no ground level to go on), 1: _hdGhostFloors are there
