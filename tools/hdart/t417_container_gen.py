@@ -42,7 +42,9 @@ from PIL import Image                                # noqa: E402
 STEPS, CFG, MP, ZOOM, SOFT, PAD, TONE = 40, 4.0, 1.0, 16, 40, 3, 0.7
 K = 4
 SET = "PORTROADS"
-SEEDS = [4171, 4172, 4173]
+SEEDS_R1 = [4171, 4172, 4173]          # пилот 30.10 (промпт WHAT_R1): 4172 - выбор Vitali, но «края тонкие»
+SEEDS_R2 = [4181, 4182, 4183, 4184]    # круг 2 (заново: толстые борта и кромка, ровное дно)
+SEEDS = SEEDS_R2
 GEN = os.path.join(ROOT, "art", "tickets", "t417", "gen")
 CAND = os.path.join(ROOT, "art", "tickets", "t417", "cand")
 REV = os.path.join(ROOT, "art", "_review", "tickets_2026-10-30")
@@ -50,15 +52,25 @@ REV = os.path.join(ROOT, "art", "_review", "tickets_2026-10-30")
 C23 = [(85, 0, 0), (86, 1, 0), (84, 0, 1), (83, 1, 1), (82, 0, 2), (81, 1, 2)]
 C24 = [(85, 0, 0), (86, 1, 0), (84, 0, 1), (83, 1, 1), (84, 0, 2), (83, 1, 2), (82, 0, 3), (81, 1, 3)]
 FRAMES = [f for f, _c, _r in C23]
+REPEATED = {f for f in FRAMES if [x[0] for x in C24].count(f) > 1}      # кадры, которые 2x4 рисует дважды: {84, 83}
 OWN_DX, OWN_DY = 0, -16            # ромб-территория клетки: центр пола кадра (16, 32) + (dx, dy)
 LUM = np.array([0.299, 0.587, 0.114], np.float32)
 
-WHAT = ("a large open-top yellow steel skip container: a wide shallow bowl-shaped bin painted bright golden yellow, with a "
-        "thick rounded rim all around its top opening; inside, four sloping inner walls with thin vertical dark brown ribs "
-        "and one diagonal brown brace on the far right wall, and a smooth lighter yellow flat floor; the two outer walls "
-        "facing the viewer slope inward toward the bottom, the lower left one in dark brown shade")
+WHAT_R1 = ("a large open-top yellow steel skip container: a wide shallow bowl-shaped bin painted bright golden yellow, with a "
+           "thick rounded rim all around its top opening; inside, four sloping inner walls with thin vertical dark brown ribs "
+           "and one diagonal brown brace on the far right wall, and a smooth lighter yellow flat floor; the two outer walls "
+           "facing the viewer slope inward toward the bottom, the lower left one in dark brown shade")
+# круг 2 (Vitali 30.10: «края слишком тонкие, нет ромбиков снаружи, перерисовать заново»): толстые борта и широкая кромка, дно без выступов
+WHAT = ("a large open-top yellow steel skip container made of heavy thick steel plate: a wide shallow bowl-shaped bin painted "
+        "bright golden yellow, with very thick heavy walls and a broad thick rolled rim all around its top opening - the rim is a "
+        "wide bright yellow band with the thick steel edge of the wall clearly visible, about as wide as three ribs; inside, "
+        "sloping inner walls with thin vertical dark brown ribs evenly spaced and one diagonal brown brace on the far right wall, "
+        "and a perfectly smooth flat lighter yellow floor running unbroken along the whole length with no steps, no ridges, no "
+        "lips, no cross beams and no bumps; the two outer walls facing the viewer slope inward toward the bottom, the lower left "
+        "one in dark brown shade")
 NEG = ("closed lid, cargo box, shipping container with corrugated doors, wheels, ladder, wood grain, planks, text, labels, "
-       "ground, extra objects, people, slab, stone slab, paving tiles, base plate, floor tiles, ground square")
+       "ground, extra objects, people, slab, stone slab, paving tiles, base plate, floor tiles, ground square, thin walls, "
+       "thin rim, thin wire rim, step in the floor, raised floor edge, floor bumps, floor ridge, cross beam, floor plate")
 
 
 # ---------------------------------------------------------------------------------------------------------
@@ -103,9 +115,9 @@ def prompt():
     return text, neg
 
 
-def model_input(sc):
+def model_input(sc, cells=None):
     import probe_object as po
-    items, W, H = make_items(C23)
+    items, W, H = make_items(cells or C23)
     full = compose_k1(sc, items, W, H)
     box = padded_box(full)
     frame = full.crop(box)
@@ -122,6 +134,7 @@ def do_preview(a=None):
     full, box, frame, flat = model_input(sc)
     os.makedirs(os.path.join(GEN, "raw"), exist_ok=True)
     flat.convert("RGB").save(os.path.join(GEN, "raw", "input.png"))
+    model_input(sc, C24)[3].convert("RGB").save(os.path.join(GEN, "raw", "input_24.png"))
     t, n = prompt()
     print("холст %dx%d, габарит %s, вход %s\nPROMPT: %s\nNEG: %s" % (full.width, full.height, box, flat.size, t, n))
 
@@ -131,7 +144,7 @@ def do_render(a=None):
     import ticket_scene as ts
     import probe_object as po
     sc = ts.Scene()
-    full, box, frame, flat = model_input(sc)
+    flats = [("", model_input(sc)[3]), ("_24", model_input(sc, C24)[3])]      # 2x3 и длинный 2x4 (средняя пара повторена)
     os.makedirs(os.path.join(GEN, "raw"), exist_ok=True)
     ns = ap_.Namespace(models=po.gen_hd.DEFAULT_MODELS_DIR, qwen21_model="", qwen21_steps=STEPS, qwen21_cfg=CFG,
                        qwen21_mp=MP, qwen21_strength=0.0, qwen21_offload="model", qwen21_thrifty=False, qwen21_ref="",
@@ -143,13 +156,14 @@ def do_render(a=None):
     po.gen_fire.NEGATIVE = neg
     t0 = time.time()
     for n, seed in enumerate(SEEDS, 1):
-        dst = os.path.join(GEN, "raw", "%d.png" % seed)
-        if os.path.exists(dst):
-            print("[%d/%d] зерно %d уже есть" % (n, len(SEEDS), seed), flush=True)
-            continue
-        hd = po.gen_fire.run_pass(painter, args, text, flat.convert("RGB"), seed)
-        po.gen_hd.save_png(hd, dst)
-        print("[%d/%d] зерно %d готово, %.0f с" % (n, len(SEEDS), seed, time.time() - t0), flush=True)
+        for suf, flat in flats:
+            dst = os.path.join(GEN, "raw", "%d%s.png" % (seed, suf))
+            if os.path.exists(dst):
+                print("[%d/%d] зерно %d%s уже есть" % (n, len(SEEDS), seed, suf), flush=True)
+                continue
+            hd = po.gen_fire.run_pass(painter, args, text, flat.convert("RGB"), seed)
+            po.gen_hd.save_png(hd, dst)
+            print("[%d/%d] зерно %d%s готово, %.0f с" % (n, len(SEEDS), seed, suf, time.time() - t0), flush=True)
 
 
 # ---------------------------------------------------------------------------------------------------------
@@ -291,7 +305,12 @@ class Lattice:
         return self.oy + 32 + OWN_DY + 16 * (b - 0.5) + (X - self.ox - 16 - OWN_DX) / 2.0
 
 
-def curve_offsets(canvas, lat, W, H, wmax=24, smooth=0.3):
+CUT_POW = 2.0          # степень цены стыка в динамике: 1 - средний скачок, 2 - штраф за крупные расхождения (ребро, кромка пола)
+SINGLE_ALL = os.environ.get("T417_SINGLE", "0") == "1"   # свободные сплошные пиксели - одному владельцу и в 2x3 (иначе несут все окна, R-547)
+WMAX = 40              # допуск пути стыка от прямой решётки, пикс x4
+
+
+def curve_offsets(canvas, lat, W, H, wmax=WMAX, smooth=0.3, two=False):
     """Граница рядов - не прямая, а путь по картинке: стык контейнера 2x4 (пара 84/83 дважды) идёт по этой границе между копиями, и скачок
     через неё - |I(q) - I(q - s)| (s = шаг ряда (-16, 8)). Путь ищется динамикой по столбцам x4 (шаг по вертикали не больше 1 пикс x4 на
     столбец, смещение не больше wmax пикс x4 от прямой решётки) и минимизирует средний скачок. Путь задан для границы b=2 (ряд 1|ряд 2),
@@ -313,7 +332,15 @@ def curve_offsets(canvas, lat, W, H, wmax=24, smooth=0.3):
     yy = np.rint(base[:, None] + wr[None, :]).astype(int)
     valid = (yy >= 0) & (yy < H4)
     cost = np.where(valid, D[np.clip(yy, 0, H4 - 1), xs[:, None]], 255.0)
-    good = np.nonzero(cost[:, wmax] < 255)[0]                    # столбцы, где прямая внутри силуэта
+    if two:        # длинный 2x4: стыки b=2 и b=3 (путь b=3 - путь b=2, сдвинутый на s = (-64, +32) пикс x4); цена - сумма
+        y3 = yy + sy
+        x3 = xs[:, None] - sx + 0 * yy
+        v3 = valid & (y3 < H4) & (x3 >= 0)
+        c3 = np.where(v3, D[np.clip(y3, 0, H4 - 1), np.clip(x3, 0, W4 - 1)], 255.0)
+        cost = np.where((cost < 255) & (c3 < 255), (cost + c3) / 2, 255.0)
+    inval = cost >= 255
+    cost = np.where(inval, 1e4, cost ** CUT_POW / 8.0 ** (CUT_POW - 1))   # CUT_POW 2: крупные расхождения (ребро, край пола) дороже мелких
+    good = np.nonzero(cost[:, wmax] < 1e4)[0]                    # столбцы, где прямая внутри силуэта
     if len(good) == 0:
         return np.zeros(W4), 0, 0.0, 0.0
     i0_, i1_ = good.min(), good.max()
@@ -342,12 +369,12 @@ def curve_offsets(canvas, lat, W, H, wmax=24, smooth=0.3):
     idx = np.nonzero(~np.isnan(w))[0]
     w[:idx.min()] = w[idx.min()]
     w[idx.max() + 1:] = w[idx.max()]
-    straight = float(np.mean(cs[:, wmax]))
-    best = float(np.mean(cs[np.arange(n), path]))
+    straight = float(np.mean((cs[:, wmax] * 8.0 ** (CUT_POW - 1)) ** (1 / CUT_POW)))
+    best = float(np.mean((cs[np.arange(n), path] * 8.0 ** (CUT_POW - 1)) ** (1 / CUT_POW)))
     return w, int(round(lat.ox * K)), best, straight
 
 
-def territory_owners(items, al, sil, lat, w2, X0):
+def territory_owners(items, al, sil, lat, w2, X0, single=False):
     """Владелец каждого пикселя многоугольника: клетка (c, r), чьё окно его содержит. Ряд r - по границам-путям (см. curve_offsets);
     колонка - по решётке. Пиксели, где такой клетки нет (за краем раскладки), - свободные: сплошные рисуют все клетки с силуэтом классики
     (одинаковые пиксели), кромку (альфа меньше 1) - ближайшая клетка из тех, чьё окно её содержит. -> (own int32: индекс клетки, -1 свободный,
@@ -380,9 +407,13 @@ def territory_owners(items, al, sil, lat, w2, X0):
     free = (own == -1)
     # свободная кромка (альфа меньше 1) - одному владельцу: ближайшая клетка по решётке среди тех, чьё окно содержит пиксель; свободные сплошные пиксели
     # несут все клетки (одинаковые пиксели общей картинки), см. slice_frames
-    for y, x in zip(*np.nonzero(free & (al < 1.0))):
+    firsts = [n for n, it in enumerate(items) if it["f"] not in {i2["f"] for i2 in items[:n]}]
+    for y, x in zip(*np.nonzero(free & ((al < 1.0) | single))):
         px, py = X[y, x], Y[y, x]
-        cand = [n for n, it in enumerate(items) if it["x"] <= px < it["x"] + 32 and it["y"] <= py < it["y"] + 40]
+        # single (длинный 2x4): каждый свободный пиксель - ровно одному кадру (первому вхождению), копии кадра не владеют: несущие
+        # пиксели при раскладке 2x3 ложились бы поверх чужих (ступенька у торцевой стенки)
+        cand = [n for n in (([n for n in firsts if items[n]["f"] not in REPEATED] or firsts) if single else range(len(items)))
+                if items[n]["x"] <= px < items[n]["x"] + 32 and items[n]["y"] <= py < items[n]["y"] + 40]
         if cand:
             own[y, x] = min(cand, key=lambda n: (items[n]["c"] - lat.xc[y, x]) ** 2 + (items[n]["r"] - lat.yc[y, x]) ** 2)
             fb += 1
@@ -390,22 +421,40 @@ def territory_owners(items, al, sil, lat, w2, X0):
     return own, fb, nfree
 
 
+def shift_mask(a, dx, dy):
+    """Маска a, сдвинутая на (dx, dy) пикселей x4: значение в (x, y) - a[y - dy, x - dx] после переноса пикселя в (x + dx, y + dy)."""
+    out = np.zeros_like(a)
+    h, w = a.shape
+    ys, xs = slice(max(0, dy), min(h, h + dy)), slice(max(0, dx), min(w, w + dx))
+    yd, xd = slice(max(0, -dy), min(h, h - dy)), slice(max(0, -dx), min(w, w - dx))
+    out[yd, xd] = a[ys, xs]
+    return out
+
+
 def slice_frames(canvas, al, items, sil, own):
     """Кадры клеток из общей картинки x4: клетка берёт пиксели своей территории и свободные сплошные пиксели (территории нет) своего окна.
     -> {кадр: PIL RGBA 128x160}."""
     out = {}
     for n, it in enumerate(items):
+        if it["f"] in out:                       # повтор кадра в раскладке 2x4 (пара 84/83): пиксели его территории - копия первой
+            continue
         win = np.zeros(own.shape, bool)
         win[it["y"] * K:(it["y"] + 40) * K, it["x"] * K:(it["x"] + 32) * K] = True
-        m = (own == n) | ((own == -1) & (al >= 1.0) & win)
+        free = (own == -1) & (al >= 1.0) & win
+        if it["f"] in REPEATED:     # повторяемый кадр (84/83 в 2x4) свободных пикселей не несёт: во втором ряду они легли бы чужим куском (ступенька дна)
+            free &= False
+        for d_ in items:                          # копия кадра в другом ряду (2x4): свободный пиксель несём, только если его копия тоже сплошная
+            if d_ is not it and d_["f"] == it["f"]:
+                free &= shift_mask(al >= 1.0, (d_["x"] - it["x"]) * K, (d_["y"] - it["y"]) * K)
+        m = (own == n) | free
         piece = np.where(m[..., None], canvas, 0).astype(np.uint8)
         out[it["f"]] = Image.fromarray(piece, "RGBA").crop((it["x"] * K, it["y"] * K, it["x"] * K + 128, it["y"] * K + 160))
     return out
 
 
-def prep(sc):
-    """Раскладка 2x3 и цель: (items, W, H, verts, al, sil)."""
-    items, W, H = make_items(C23)
+def prep(sc, cells=None):
+    """Раскладка (по умолчанию 2x3) и цель: (items, W, H, verts, al, sil)."""
+    items, W, H = make_items(cells or C23)
     full = compose_k1(sc, items, W, H)
     verts, _segs = fit_polygon(np.asarray(full)[..., 3] > 0)
     al = raster_aa(verts, (H * K, W * K))
@@ -415,17 +464,102 @@ def prep(sc):
 # ---------------------------------------------------------------------------------------------------------
 # холст x4 из ответа модели
 # ---------------------------------------------------------------------------------------------------------
-def body_rgb(sc, seed):
+def _smooth1(v, sigma):
+    """Сглаживание вектора с пропусками (nan): гауссово по соседям, пропуск закрывается ближайшим (как t418_booth._smooth1)."""
+    import cv2
+    v = np.asarray(v, np.float32)
+    ok = np.isfinite(v)
+    if not ok.any():
+        return v
+    idx = np.arange(len(v))
+    v = np.interp(idx, idx[ok], v[ok]).astype(np.float32)
+    return cv2.GaussianBlur(v.reshape(1, -1), (0, 0), sigma).reshape(-1)
+
+
+def fit_silhouette(cut, sil, sigma=30.0, lim=1.15):
+    """Подгонка тела из ответа модели под силуэт-многоугольник (идея t418_booth.fit_silhouette): по каждому столбцу тело (альфа > 128)
+    растягивается по вертикали между своими верхом и низом так, чтобы они совпали с верхом и низом силуэта; потом то же по строкам.
+    Параметры сглажены (sigma пикс x4), растяжка не больше lim. Нужна затем, что внешний край кромки, нарисованный моделью, лежит не
+    там, где классика: срез по силуэту режет кромку рваными кусками (бусины по борту), а подгонка совмещает край кромки с силуэтом.
+    cut - RGBA кадр, sil - L (0..255). -> (RGBA, макс. растяжка по столбцам, по строкам)."""
+    import cv2
+    a = np.asarray(cut, np.float32)
+    body = a[..., 3] > 128
+    cl = np.asarray(sil) > 128
+    pm = a.copy()
+    pm[..., :3] *= pm[..., 3:4] / 255.0
+    stats = []
+    for axis in (0, 1):
+        b, c = (body, cl) if axis == 0 else (body.T, cl.T)
+        n = b.shape[1]
+        mt = np.full(n, np.nan, np.float32)
+        mb, ct, cb = mt.copy(), mt.copy(), mt.copy()
+        for x in range(n):
+            ys = np.nonzero(b[:, x])[0]
+            yc = np.nonzero(c[:, x])[0]
+            if len(ys) > 3 and len(yc) > 3:
+                mt[x], mb[x], ct[x], cb[x] = ys[0], ys[-1], yc[0], yc[-1]
+        mt, mb, ct, cb = (_smooth1(v, sigma) for v in (mt, mb, ct, cb))
+        scale = np.clip((mb - mt) / np.maximum(cb - ct, 1.0), 1.0 / lim, lim)
+        stats.append(float(np.max(np.abs(scale - 1.0))))
+        yy = np.arange(b.shape[0], dtype=np.float32)[:, None]
+        src = mt[None, :] + (yy - ct[None, :]) * scale[None, :]
+        xx = np.broadcast_to(np.arange(n, dtype=np.float32)[None, :], src.shape)
+        if axis == 0:
+            mx, my = np.ascontiguousarray(xx), np.ascontiguousarray(src.astype(np.float32))
+        else:
+            mx, my = np.ascontiguousarray(src.astype(np.float32).T), np.ascontiguousarray(xx.T)
+        pm = cv2.remap(pm, mx, my, cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT, borderValue=(0, 0, 0, 0))
+        body = pm[..., 3] > 128
+    al = pm[..., 3:4]
+    rgb = np.where(al > 0, pm[..., :3] / np.maximum(al, 1e-3) * 255.0, 0)
+    return Image.fromarray(np.clip(np.rint(np.concatenate([rgb, al], -1)), 0, 255).astype(np.uint8), "RGBA"), stats[0], stats[1]
+
+
+def place_body(hd, frame, matte, max_aspect=1.3):
+    """Тело ответа модели (по матрице) - на габарит классики (как probe_object.cut_out), БЕЗ среза по силуэту. -> RGBA размера frame x4."""
+    from PIL import ImageFilter
+    rgba = hd.convert("RGBA")
+    rgba.putalpha(Image.fromarray((np.clip(matte, 0, 1) * 255).astype(np.uint8), "L"))
+    cw, ch = frame.width * K, frame.height * K
+    ob = frame.split()[3].getbbox()
+    ab = Image.fromarray((matte > 0.5).astype(np.uint8) * 255, "L").filter(ImageFilter.MinFilter(5)).getbbox()
+    ab = (max(0, ab[0] - 2), max(0, ab[1] - 2), min(hd.width, ab[2] + 2), min(hd.height, ab[3] + 2))
+    ox0, oy0, ox1, oy1 = [v * K for v in ob]
+    sw, sh = (ox1 - ox0) / (ab[2] - ab[0]), (oy1 - oy0) / (ab[3] - ab[1])
+    sg = (sw * sh) ** 0.5
+    sw, sh = (min(max(v, sg / max_aspect), sg * max_aspect) for v in (sw, sh))
+    piece = rgba.crop(ab)
+    piece = piece.resize((max(1, round(piece.width * sw)), max(1, round(piece.height * sh))), Image.LANCZOS)
+    M = max(piece.width, piece.height)
+    big = Image.new("RGBA", (cw + 2 * M, ch + 2 * M), (0, 0, 0, 0))
+    big.alpha_composite(piece, (M + round((ox0 + ox1 - piece.width) / 2), M + oy1 - piece.height))
+    return big.crop((M, M, M + cw, M + ch))
+
+
+FIT_STATS = {}
+
+
+def body_rgb(sc, seed, cells=None, suf="", al=None):
     """Ответ модели -> RGB холста x4: габарит по классике (cut_out), тон к классике (match_tone), цвет у кромки продлён из ядра."""
     import probe_object as po
     import obj_derive as od
     from PIL import ImageFilter
-    items, W, H = make_items(C23)
+    items, W, H = make_items(cells or C23)
     full = compose_k1(sc, items, W, H)
     box = padded_box(full)
     frame = full.crop(box)
-    hd = Image.open(os.path.join(GEN, "raw", "%d.png" % seed)).convert("RGB")
-    part = po.match_tone(po.cut_out(hd, frame, 0, SOFT), frame, TONE)
+    hd = Image.open(os.path.join(GEN, "raw", "%d%s.png" % (seed, suf))).convert("RGB")
+    if al is not None:                      # круг 2: тело своей матрицей, подгонка под многоугольник, а не срез им (края кромки без бусин)
+        import obj_photo as op
+        matte = op.edge_matte(hd)
+        body = place_body(hd, frame, matte)
+        sil = Image.fromarray(np.rint(al[box[1] * K:box[3] * K, box[0] * K:box[2] * K] * 255).astype(np.uint8), "L")
+        body, sv, sh_ = fit_silhouette(body, sil)
+        FIT_STATS[(seed, suf)] = (sv, sh_)
+        part = po.match_tone(body, frame, TONE)
+    else:
+        part = po.match_tone(po.cut_out(hd, frame, 0, SOFT), frame, TONE)
     cut = Image.new("RGBA", (W * K, H * K), (0, 0, 0, 0))
     cut.paste(part, (box[0] * K, box[1] * K))
     a = np.asarray(cut, np.float32)
@@ -555,13 +689,14 @@ def hd_now_frames(sc):
     return {f: sc.hd(SET, f) for f in FRAMES}
 
 
-def build_seed(sc, seed, pre, wmax=24):
+def build_seed(sc, seed, pre, wmax=WMAX, long24=False):
+    """long24: ответ модели - на длинный 2x4 (raw/<зерно>_24.png), pre - prep(sc, C24); кадры 84/83 - из ряда 1, ряд 2 - их копия."""
     items, W, H, verts, al, sil = pre
-    rgb = body_rgb(sc, seed)
+    rgb = body_rgb(sc, seed, C24 if long24 else C23, "_24" if long24 else "", al if seed in SEEDS_R2 else None)
     canvas = canvas_of(rgb, al)
     lat = Lattice(items, al.shape)
-    w2, X0, best, straight = curve_offsets(canvas, lat, W, H, wmax)
-    own, fb, nfree = territory_owners(items, al, sil, lat, w2, X0)
+    w2, X0, best, straight = curve_offsets(canvas, lat, W, H, wmax, two=long24)
+    own, fb, nfree = territory_owners(items, al, sil, lat, w2, X0, single=(long24 or SINGLE_ALL))
     frames = slice_frames(canvas, al, items, sil, own)
     info = dict(path_best=best, path_straight=straight, fallback=fb, free=nfree, wmax=wmax,
                 wrange=(float(np.nanmin(w2)), float(np.nanmax(w2))), w2=w2, X0=X0)
@@ -599,31 +734,41 @@ def do_build(a=None):
         return row
     measure("классика x4", cl)
     measure("HD сейчас", now)
-    for seed in SEEDS:
-        if not os.path.exists(os.path.join(GEN, "raw", "%d.png" % seed)):
-            print("нет ответа модели для зерна", seed)
-            continue
-        canvas, frames, info = build_seed(sc, seed, pre)
-        print("зерно %d: путь стыка рядов - средний скачок %.1f (прямая решётки %.1f), смещение %.0f..%.0f пикс x4, запасных назначений кромки %d, "
-              "свободных сплошных пикселей %d" % (seed, info["path_best"], info["path_straight"], info["wrange"][0], info["wrange"][1],
-                                                  info["fallback"], info["free"]))
-        d = os.path.join(CAND, "s%d" % seed)
-        os.makedirs(d, exist_ok=True)
-        for f, im in frames.items():
-            im.save(os.path.join(d, "%s_%d.png" % (SET, f)))
-        Image.fromarray(canvas, "RGBA").save(os.path.join(d, "_canvas.png"))
-        cc = np.asarray(assemble(frames, items, W, H, K))[..., :3].astype(np.float32)
-        vis = np.asarray(assemble(frames, items, W, H, K))[..., 3] > 250
-        cdiff = float(np.abs(cc - canvas[..., :3].astype(np.float32))[vis].max())
-        out_cl = 0
-        for n, it in enumerate(items):
-            alpha = np.asarray(frames[it["f"]])[..., 3] > 0
-            reg = np.zeros(sil[n].shape, bool)
-            reg[it["y"] * K:it["y"] * K + 160, it["x"] * K:it["x"] * K + 128] = alpha
-            out_cl += int((reg & ~sil[n]).sum())
-        r = measure("зерно %d" % seed, frames, seed)
-        r["canvas_diff"] = cdiff
-        r["out_classic"] = out_cl
+    pre24 = None
+    for seed in SEEDS_R1 + SEEDS:
+        for long24 in (False, True):
+            suf = "_24" if long24 else ""
+            if not os.path.exists(os.path.join(GEN, "raw", "%d%s.png" % (seed, suf))):
+                if not (seed in SEEDS_R1 and long24):
+                    print("нет ответа модели для зерна %d%s" % (seed, suf))
+                continue
+            if long24 and pre24 is None:
+                pre24 = prep(sc, C24)
+            pr = pre24 if long24 else pre
+            canvas, frames, info = build_seed(sc, seed, pr, long24=long24)
+            name = "зерно %d%s" % (seed, " (длинный 2x4)" if long24 else "")
+            print("%s: путь стыка рядов - средний скачок %.1f (прямая решётки %.1f), смещение %.0f..%.0f пикс x4, запасных назначений кромки %d, "
+                  "свободных сплошных пикселей %d" % (name, info["path_best"], info["path_straight"], info["wrange"][0], info["wrange"][1],
+                                                      info["fallback"], info["free"]))
+            d = os.path.join(CAND, "s%d%s" % (seed, suf))
+            os.makedirs(d, exist_ok=True)
+            for f, im in frames.items():
+                im.save(os.path.join(d, "%s_%d.png" % (SET, f)))
+            Image.fromarray(canvas, "RGBA").save(os.path.join(d, "_canvas.png"))
+            r = measure(name, frames, seed)
+            if long24:
+                r["canvas_diff"] = "-"
+            else:
+                cc = np.asarray(assemble(frames, items, W, H, K))[..., :3].astype(np.float32)
+                vis = np.asarray(assemble(frames, items, W, H, K))[..., 3] > 250
+                r["canvas_diff"] = float(np.abs(cc - canvas[..., :3].astype(np.float32))[vis].max())
+            out_cl = 0
+            for n, it in enumerate(pr[0]):
+                alpha = np.asarray(frames[it["f"]])[..., 3] > 0
+                reg = np.zeros(pr[5][n].shape, bool)
+                reg[it["y"] * K:it["y"] * K + 160, it["x"] * K:it["x"] * K + 128] = alpha
+                out_cl += int((reg & ~pr[5][n]).sum())
+            r["out_classic"] = out_cl
     out = os.path.join(REV, "t417_checks.tsv")
     os.makedirs(REV, exist_ok=True)
     with open(out, "w", encoding="utf-8-sig", newline="") as fh:
