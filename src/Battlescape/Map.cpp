@@ -2409,6 +2409,100 @@ const Map::HdAoShape &Map::hdAoShape(const MapData *part)
 	return shape;
 }
 
+/// The opacity of an item's shadow where it is densest (docs/research/hd-shadows-v2-2026-10-30.md, §5).
+const int ITEM_SHADOW_ALPHA = 110;
+
+/**
+ * Options::oxceHdItemShadow: the shadow of an item lying on the floor, made from the alpha of the picture the canvas draws for
+ * its floor sprite - black, blurred, 3k pixels bigger on every side than the frame (drawn at x - 3k, y - 3k). The form (sheet of
+ * stage 1, OXCE_HD_ITEM_SHADOW_FORM until Vitali picks one): A - the silhouette moved k right and down; B - the silhouette pressed
+ * to the floor (half as tall, towards its lowest row) and moved k/2 right; C - B with half of A. The item is drawn over it, so
+ * only the rim around the item shows. Made once for a frame and kept while the battle's map lives. Picture only.
+ * @return The shadow, or nullptr when the canvas draws the sprite as a palette one (no alpha to take).
+ */
+const HdFrame *Map::hdItemShadow(HdCanvas *surface, SurfaceRaw<const Uint8> sprite)
+{
+	const HdFrame *hd = surface->frameOf(sprite);
+	if (!hd || hd->empty())
+	{
+		return nullptr;
+	}
+	auto it = _hdItemShadows.find(hd);
+	if (it != _hdItemShadows.end())
+	{
+		return it->second.empty() ? nullptr : &it->second;
+	}
+	HdFrame &f = _hdItemShadows[hd];
+	static const char form = [] { const char *p = getenv("OXCE_HD_ITEM_SHADOW_FORM"); return p && *p ? *p : 'B'; }();
+	const int k = _k, pad = 3 * k, w = hd->width + 2 * pad, h = hd->height + 2 * pad;
+	// the lowest row of the silhouette: B presses the item to the floor towards it
+	int bottom = -1;
+	for (int y = hd->height - 1; y >= 0 && bottom < 0; --y)
+	{
+		for (int x = 0; x < hd->width; ++x)
+		{
+			if ((hd->row(y)[x] >> 24) >= 128)
+			{
+				bottom = y;
+				break;
+			}
+		}
+	}
+	if (bottom < 0)
+	{
+		return nullptr;
+	}
+	auto alphaAt = [&](int x, int y) { return x < 0 || y < 0 || x >= hd->width || y >= hd->height ? 0.0f : (hd->row(y)[x] >> 24) / 255.0f; };
+	std::vector<float> a((size_t)w * h, 0.0f), t((size_t)w * h, 0.0f);
+	for (int y = 0; y < h; ++y)
+	{
+		for (int x = 0; x < w; ++x)
+		{
+			const int sx = x - pad, sy = y - pad;
+			const float moved = alphaAt(sx - k, sy - k);
+			const float pressed = sy > bottom ? 0.0f : alphaAt(sx - k / 2, bottom - 2 * (bottom - sy));
+			a[(size_t)y * w + x] = form == 'A' ? moved : form == 'C' ? std::max(pressed, 0.5f * moved) : pressed;
+		}
+	}
+	// two box passes each way: close to a gaussian
+	const int r = k;
+	for (int pass = 0; pass < 4; ++pass)
+	{
+		const bool across = pass % 2 == 0;
+		for (int y = 0; y < h; ++y)
+		{
+			for (int x = 0; x < w; ++x)
+			{
+				float sum = 0.0f;
+				for (int d = -r; d <= r; ++d)
+				{
+					const int xx = across ? x + d : x, yy = across ? y : y + d;
+					if (xx >= 0 && yy >= 0 && xx < w && yy < h)
+					{
+						sum += a[(size_t)yy * w + xx];
+					}
+				}
+				t[(size_t)y * w + x] = sum / (2 * r + 1);
+			}
+		}
+		a.swap(t);
+	}
+	f.width = w;
+	f.height = h;
+	f.pixels.assign((size_t)w * h, 0);
+	for (size_t i = 0; i < a.size(); ++i)
+	{
+		const int alpha = (int)std::lround(ITEM_SHADOW_ALPHA * std::min(1.0f, a[i]));
+		if (alpha > 0)
+		{
+			f.pixels[i] = (Uint32)alpha << 24;
+		}
+	}
+	f.generated = true;
+	f.buildSpans();
+	return &f;
+}
+
 /**
  * Options::oxceHdFloorAo: the shade of the corners on the floor of a tile - beside a wall or an object standing on the floor
  * the floor darkens softly. Made from the LOFT of the walls and objects of the tile and of the eight around it: their low
@@ -4283,6 +4377,13 @@ void Map::drawTerrain(HdCanvas *surface)
 						BattleItem* item = tile->getTopItem();
 						if (item)
 						{
+							// HD render: the item's shadow first, at the same place (from its frame's alpha, Map::hdItemShadow)
+							if (Options::oxceHdItemShadow && surface->getHdMode() != HD_MODE_NEAREST && !turned)
+							{
+								const Surface *floorSprite = itemSprite.getFloorSprite(item, tileShade);
+								if (const HdFrame *shadow = floorSprite ? hdItemShadow(surface, floorSprite) : nullptr)
+									surface->blitFrame(*shadow, screenPosition.x - 3 * _k, screenPosition.y + (tile->getTerrainLevel() - 3) * _k);
+							}
 							itemSprite.draw(item,
 								screenPosition.x,
 								screenPosition.y + tile->getTerrainLevel() * _k,
