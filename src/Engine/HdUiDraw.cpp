@@ -286,9 +286,26 @@ float capLuma(bool pressed)
 	return lumaOf(HdBattleHud::metalShade(s));
 }
 
-/// The player's hue and brightness of the letters (oxceHdButtonInkHue, oxceHdButtonInkLight): the face `face` and the shadow
-/// `shadow` as the theme gives them are replaced. Hue 0 and brightness 50 leave them as they are (false). The letters are kept
-/// readable: their luma stays at least INK_CONTRAST off the cap's. `dark` - the letters are dark (on a light cap).
+/// The tone of the letters (oxceHdButtonInkTone, XP-000399): 0 auto, 1 light, 2 dark.
+int inkTone()
+{
+	return std::min(std::max(Options::oxceHdButtonInkTone, 0), 2);
+}
+
+/// Whether the letters are dark: forced by the tone, else (auto) on a lit button or a light cap (themeInk). A lit (pressed or
+/// chosen) button is the light end of the metal: it keeps dark letters even where the tone is forced light.
+bool inkDark(bool lit)
+{
+	const int tone = inkTone();
+	if (tone == 1) return lit;
+	if (tone == 2) return true;
+	return lit || HdUi::themeInk();
+}
+
+/// The player's hue, saturation and brightness of the letters (oxceHdButtonInkHue, oxceHdButtonInkSat, oxceHdButtonInkLight): the
+/// face `face` and the shadow `shadow` as the theme gives them are replaced. Hue 0 and brightness 50 leave them as they are (false).
+/// The letters are kept readable: their luma stays at least INK_CONTRAST off the cap's - unless the player forced the tone
+/// (oxceHdButtonInkTone 1 or 2): then the colour is exactly what the sliders say. `dark` - the letters are dark (on a light cap).
 bool inkAdjust(bool dark, bool pressed, Uint32 &face, SDL_Color &shadow)
 {
 	const int hue = std::min(std::max(Options::oxceHdButtonInkHue, 0), 360);
@@ -301,14 +318,14 @@ bool inkAdjust(bool dark, bool pressed, Uint32 &face, SDL_Color &shadow)
 	{
 		// a colour: a rich tone, pale on a dark cap, deep on a light one
 		h = (float)(hue % 360);
-		s = 0.75f;
+		s = (float)std::min(std::max(Options::oxceHdButtonInkSat, 0), 100) / 100.0f;
 		l = dark ? 0.22f : 0.85f;
 	}
 	l = light < 50 ? l * (float)light / 50.0f : l + (1.0f - l) * (float)(light - 50) / 50.0f;
-	// the nearest lightness that reads on the cap (none does: the one furthest from it)
+	// the nearest lightness that reads on the cap (none does: the one furthest from it); a forced tone skips it
 	const float cap = capLuma(pressed);
 	float best = l, bestDist = 1e9f, widest = -1.0f, widestL = l;
-	for (int i = 0; i <= 50; ++i)
+	for (int i = 0; i <= 50 && inkTone() == 0; ++i)
 	{
 		const float t = (float)i / 50.0f;
 		hslToRgb(h, s, t, r, g, b);
@@ -324,7 +341,7 @@ bool inkAdjust(bool dark, bool pressed, Uint32 &face, SDL_Color &shadow)
 			widestL = t;
 		}
 	}
-	l = bestDist < 1e9f ? best : widestL;
+	if (inkTone() == 0) l = bestDist < 1e9f ? best : widestL;
 	hslToRgb(h, s, l, r, g, b);
 	auto toByte = [](float v) { return (Uint8)(std::min(std::max(v, 0.0f), 1.0f) * 255.0f + 0.5f); };
 	face = 0xFF000000u | (Uint32)toByte(r) << 16 | (Uint32)toByte(g) << 8 | toByte(b);
@@ -339,9 +356,10 @@ bool inkAdjust(bool dark, bool pressed, Uint32 &face, SDL_Color &shadow)
 Uint32 HdUi::themeFace()
 {
 	// the arrows lie on the same caps as the letters
-	Uint32 face = HdBattleHud::metalShade(themeInk() ? 0.0f : 0.97f);
+	const bool dark = inkDark(false);
+	Uint32 face = HdBattleHud::metalShade(dark ? 0.0f : 0.97f);
 	SDL_Color shadow;
-	inkAdjust(themeInk(), false, face, shadow);
+	inkAdjust(dark, false, face, shadow);
 	return face;
 }
 
@@ -351,7 +369,7 @@ void HdUi::setLabelTheme(bool on, bool lit)
 	if (!on) return;
 	// a lit (pressed) button is the light end of the metal: dark letters on it, a light shadow; any other: dark letters
 	// on a light metal cap, light ones on a dark one (themeInk), the shadow of the other kind
-	const bool dark = lit || themeInk();
+	const bool dark = inkDark(lit);
 	_labelFace = HdBattleHud::metalShade(dark ? 0.0f : 0.97f);
 	const Uint32 s = HdBattleHud::metalShade(dark ? 0.9f : 0.0f);
 	_labelShadow = SDL_Color{ (Uint8)(s >> 16), (Uint8)(s >> 8), (Uint8)s, 255 };

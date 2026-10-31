@@ -33,23 +33,23 @@ class Slider;
  * (oxceHdWindowTheme) get a relief (oxceHdButtonFace), a shape (oxceHdButtonShape) and a gloss (oxceHdButtonGloss).
  * The reliefs are a kaleidoscope of buttons, each cast in its own relief; a click picks one, and every button of the
  * window, these included, shows the shape and the gloss at once. OK keeps what was set, Cancel gives back what the
- * player had, Reset sets the starting look (the flat button as before).
+ * player had, Reset sets the starting look (the flat button as before). The letters have their own window
+ * (OptionsButtonInkState), opened by a button here.
  */
 class OptionsButtonFaceState : public State
 {
 private:
 	Window *_window;
-	Text *_txtTitle, *_txtGloss, *_txtInkHue, *_txtInkLight;
+	OptionsOrigin _origin;
+	Text *_txtTitle, *_txtGloss;
 	TextButton *_btnFace[12], *_btnShape[3];
 	TextButton *_faceSel, *_shapeSel;
-	Slider *_slrGloss, *_slrInkHue, *_slrInkLight;
-	TextButton *_btnOk, *_btnCancel, *_btnReset;
-	/// What the options were when the window opened: the relief, the shape, the gloss, the letters' hue and brightness.
-	int _was[5];
+	Slider *_slrGloss;
+	TextButton *_btnInk, *_btnOk, *_btnCancel, *_btnReset;
+	/// What the options were when the window opened: the relief, the shape, the gloss.
+	int _was[3];
 	/// Shows the options on the buttons, the sliders and the labels.
 	void show();
-	/// Shows the letters' hue and brightness on their sliders and labels.
-	void showInk();
 public:
 	/// Creates the window.
 	OptionsButtonFaceState(OptionsOrigin origin);
@@ -60,8 +60,8 @@ public:
 	void btnShapeClick(Action *action);
 	/// Handler for moving the gloss slider.
 	void slrGlossChange(Action *action);
-	/// Handler for moving the sliders of the letters' hue and brightness.
-	void slrInkChange(Action *action);
+	/// Handler for clicking the button of the letters' window.
+	void btnInkClick(Action *action);
 	/// Handler for clicking OK.
 	void btnOkClick(Action *action);
 	/// Handler for clicking Cancel.
