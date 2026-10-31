@@ -1967,7 +1967,6 @@ void Map::hdAddFlashLit(const Position &voxel, double area, const double rgb[3])
 	{
 		flash.rgb[c] = 0.3f + 0.7f * (float)(rgb[c] / maxc); // a little towards white
 	}
-	_hdFlashes.push_back(flash);
 
 	// the box of cells the flash may reach: its level and the ones its reach gets to, two at most each way
 	const int reachXY = (int)std::ceil(flash.radius / 16.0f), reachZ = std::min(2, (int)std::ceil(flash.radius / 24.0f));
@@ -1975,6 +1974,11 @@ void Map::hdAddFlashLit(const Position &voxel, double area, const double rgb[3])
 	const Position lo(std::max(0, cell.x - reachXY), std::max(0, cell.y - reachXY), std::max(0, cell.z - reachZ));
 	const Position hi(std::min(_save->getMapSizeX() - 1, cell.x + reachXY), std::min(_save->getMapSizeY() - 1, cell.y + reachXY),
 		std::min(_save->getMapSizeZ() - 1, cell.z + reachZ));
+	if (hi.x < lo.x || hi.y < lo.y || hi.z < lo.z)
+	{
+		return; // a flash beyond the map's edge reaches no cell of it (XP-000444: the box came out negative)
+	}
+	_hdFlashes.push_back(flash);
 	HdFlashSight &sight = _hdFlashSight[std::make_tuple(voxel.x, voxel.y, voxel.z)];
 	sight.used = true;
 	if (!sight.bits.empty() && lo.x >= sight.origin.x && lo.y >= sight.origin.y && lo.z >= sight.origin.z
