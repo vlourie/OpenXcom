@@ -353,6 +353,7 @@ void Inventory::drawHdStacks()
 	{
 		_hdNumber->setValue(stack.value);
 		_hdNumber->setColor(stack.color);
+		_hdNumber->setBordered(stack.bordered);
 		_hdNumber->setX(getX() + stack.x);
 		_hdNumber->setY(getY() + stack.y);
 		_hdNumber->hdMirror();
@@ -370,6 +371,7 @@ void Inventory::drawItems()
 	// with HD pictures of items the overlays go over them, in a layer of their own (see blit)
 	_hdItems.clear();
 	_hdItemsScale = HdItems::enabled() ? HdUi::scale() : 0;
+	_hdFontsLaid = _hdFontsNow;
 	Surface *over = _items;
 	if (_hdItemsScale)
 	{
@@ -460,7 +462,15 @@ void Inventory::drawItems()
 					text.setX(invItem->getSlot()->getX() + RuleInventory::HAND_W * RuleInventory::SLOT_W - 5);
 					text.setY(invItem->getSlot()->getY() + RuleInventory::HAND_H * RuleInventory::SLOT_H - 7);
 					text.setValue(2);
-					text.blit(over->getSurface());
+					if (_hdFontsLaid)
+					{
+						// the HD interface draws it with its own font, like the stack numbers (XP-000453)
+						_hdStacks.push_back({ 2, text.getX(), text.getY(), text.getColor(), false });
+					}
+					else
+					{
+						text.blit(over->getSurface());
+					}
 				}
 			}
 
@@ -787,7 +797,8 @@ void Inventory::think()
  */
 void Inventory::blit(SDL_Surface *surface)
 {
-	if ((HdItems::enabled() ? HdUi::scale() : 0) != _hdItemsScale)
+	_hdFontsNow = hdLabels(surface);
+	if ((HdItems::enabled() ? HdUi::scale() : 0) != _hdItemsScale || _hdFontsNow != _hdFontsLaid)
 	{
 		// the HD interface was switched on or off or changed its k: lay the items out for it again
 		drawItems();
