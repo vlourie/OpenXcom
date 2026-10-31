@@ -557,9 +557,9 @@ bool dryFloor(const Tile *tile)
 	return !has(set, "LAVA") && !has(set, "MAGMA");
 }
 
-int bloodRgb(const Armor *armor)
+int bloodRgb(const Armor *armor, bool always)
 {
-	if (!Options::oxceHdBloodColor || !armor)
+	if ((!Options::oxceHdBloodColor && !always) || !armor)
 	{
 		return -1;
 	}

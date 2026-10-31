@@ -573,6 +573,8 @@ void createAdvancedOptionsOXCE()
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdFx", &oxceHdFx, true, "STR_HD_FX", "STR_HD_GRAPHICS"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdBloodSpray", &oxceHdBloodSpray, false, "STR_HD_BLOOD_SPRAY", "STR_HD_GRAPHICS"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdBloodSteps", &oxceHdBloodSteps, false, "STR_HD_BLOOD_STEPS", "STR_HD_GRAPHICS"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdBloodStepsLife", &oxceHdBloodStepsLife, 3, "STR_HD_BLOOD_STEPS_LIFE", "STR_HD_GRAPHICS"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdBloodStepsColor", &oxceHdBloodStepsColor, 0, "STR_HD_BLOOD_STEPS_COLOR", "STR_HD_GRAPHICS"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdBloodColor", &oxceHdBloodColor, false, "STR_HD_BLOOD_COLOR", "STR_HD_GRAPHICS"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdFire", &oxceHdFire, 2, "STR_HD_FIRE", "STR_HD_GRAPHICS"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdFirePace", &oxceHdFirePace, 1, "STR_HD_FIRE_PACE", "STR_HD_GRAPHICS"));

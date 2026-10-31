@@ -322,6 +322,11 @@ OPT bool oxceHdBloodColor;
 // HD render (XP-000421): a unit that steps on the tile of a bleeding unit leaves bloody soles on its next two tiles, fading in three turns; the colour is the
 // blood colour of the one who bleeds (HdFx::bloodRgb); kept in the Map only, not saved; picture only. Off by default
 OPT bool oxceHdBloodSteps;
+// HD render (XP-000421): how many turns the bloody soles and drops last: 1..10, 11 = always (they stay until the map's cap of prints pushes them out); default 3
+OPT int oxceHdBloodStepsLife;
+// HD render (XP-000421): the colour of the soles and drops: 0 by the creature (HdFx::bloodRgb with the table hd/blood.txt, whether "Blood colour by creature" is on or not),
+// 1 red for all
+OPT int oxceHdBloodStepsColor;
 // HD render: the fire picture (SMOKE.PCK 0..7): 0 the pack's own (<i>.png, <i>.v1.png), style s = the pack's variants 2s and 2s + 1 (tools/hdart/fire_real_pack.py)
 OPT int oxceHdFire;
 // HD render: pace of the fire and smoke animation on tiles (Map::hdEnviClock), a step of HD_ENVI_PACE: 0 stock, higher = slower; picture only
