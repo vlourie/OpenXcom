@@ -47,6 +47,8 @@ public:
 	~ActionMenuState();
 	/// Init function.
 	void init() override;
+	/// Keeps the battle's picture animating under the menu.
+	void think() override;
 	/// Handler for right-clicking anything.
 	void handle(Action *action) override;
 	/// Handler for clicking a action menu item.

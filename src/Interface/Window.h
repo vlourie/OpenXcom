@@ -17,6 +17,8 @@
  * You should have received a copy of the GNU General Public License
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
+#include <functional>
+#include <string>
 #include "../Engine/Surface.h"
 
 namespace OpenXcom
@@ -51,6 +53,13 @@ private:
 	bool _contrast, _screen, _thinBorder;
 	Uint8 _innerColor;
 	bool _mute;
+	std::string _interface;           ///< the interface the state named its background by (HdScreens' theme)
+	/// The window's rectangle at the current popup step (the whole window when it does not pop up).
+	SDL_Rect popupSquare() const;
+	/// The bevel as draw() paints it: `fill` gets every rectangle in draw()'s order, in the window's own
+	/// pixels (`dot` for the single pixels of the thin border), and `square` comes in as popupSquare()
+	/// and leaves as the inside, where the background goes. One geometry for draw() and hdMirror().
+	void bevel(SDL_Rect &square, const std::function<void(SDL_Rect &r, Uint8 color, bool dot)> &fill) const;
 public:
 	static Sound *soundPopup[3];
 	/// Creates a new window with the specified size and position.
@@ -59,6 +68,9 @@ public:
 	~Window();
 	/// Sets the background surface.
 	void setBackground(const Surface *bg);
+	/// The interface the background was chosen by (State::setWindowBackground): the HD interface's screen
+	/// picture of its theme is shown instead of the background (HdScreens). Nothing classic changes.
+	void setInterfaceName(const std::string &name) { _interface = name; }
 	/// Sets the border color.
 	void setColor(Uint8 color) override;
 	/// Gets the border color.
@@ -71,6 +83,8 @@ public:
 	void popup();
 	/// Draws the window.
 	void draw() override;
+	/// HD interface: the bevel crisp and the background from its HD picture (hd/UI), when it has one.
+	void hdMirror() override;
 	/// sets the X delta.
 	void setDX(int dx);
 	/// sets the Y delta.

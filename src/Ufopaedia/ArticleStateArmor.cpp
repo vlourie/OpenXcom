@@ -24,6 +24,7 @@
 #include "../Mod/Mod.h"
 #include "../Mod/Armor.h"
 #include "../Engine/Game.h"
+#include "../Engine/HdUiArt.h"
 #include "../Engine/Surface.h"
 #include "../Engine/LocalizedText.h"
 #include "../Engine/FileMap.h"
@@ -79,12 +80,15 @@ namespace OpenXcom
 		_txtTitle->setText(tr(defs->getTitleForPage(_state->current_page)));
 
 		// optional background image
+		std::vector<std::pair<const Surface*, std::string>> hdLayers;
 		if (!defs->customPalette)
 		{
 			auto& bgImageName = itf->getBackgroundImage(_game->getMod(), _game->getSavedGame());
 			if (!bgImageName.empty())
 			{
-				_game->getMod()->getSurface(bgImageName)->blitNShade(_bg, 0, 0);
+				Surface *bgSurf = _game->getMod()->getSurface(bgImageName);
+				bgSurf->blitNShade(_bg, 0, 0);
+				hdLayers.emplace_back(bgSurf, bgImageName);
 			}
 		}
 
@@ -105,7 +109,9 @@ namespace OpenXcom
 			{
 				auto* surf = _game->getMod()->getSurface(layer, true);
 				surf->blitNShade(_bg, 0, 0);
+				hdLayers.emplace_back(surf, layer);
 			}
+			HdUiArt::composeLayers(_bg, hdLayers);
 			delete s;
 			s = nullptr;
 		}

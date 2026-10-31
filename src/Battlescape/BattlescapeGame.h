@@ -143,6 +143,11 @@ private:
 	bool _endTurnRequested;
 	bool _endConfirmationHandled;
 	bool _allEnemiesNeutralized;
+	std::vector<int> _guardedUnits; // bench bot: units that already turned to face the enemy this turn
+	int _guardedTurn = -1;
+
+	/// Bench bot: ends a unit's turn facing the nearest enemy its side sees.
+	bool carefulGuard(BattleUnit *unit);
 
 	helper::SingleRun _endTurnProcessed;
 	helper::SingleRun _triggerProcessed;
@@ -168,6 +173,10 @@ public:
 	~BattlescapeGame();
 	/// Checks for units panicking or falling and so on.
 	int think();
+	/// The queue of battle states (the AI turn probe fingerprints it before each decision).
+	const std::list<BattleState*> &getStates() const { return _states; }
+	/// AI actions of the current unit so far (the AI turn probe fingerprints it before each decision).
+	int getAIActionCounter() const { return _AIActionCounter; }
 	/// Initializes the Battlescape game.
 	void init();
 	/// Determines whether a playable unit is selected.
@@ -190,10 +199,17 @@ public:
 	void checkForCasualties(const RuleDamageType *damageType, BattleActionAttack attack, bool hiddenExplosion = false, bool terrainExplosion = false);
 	/// Checks reserved tu and energy.
 	bool checkReservedTU(BattleUnit *bu, int tu, int energy, bool justChecking = false);
+	/// AI2-D RESERVE_AFFORDABLE (bench flag OXCE_AI_RESERVE_AFFORDABLE): 0 off, 1 shadow ([AITRACE] ai2d line, play unchanged),
+	/// 2 the hostile patrol reserve is dropped when it cannot buy the reaction snapshot.
+	static int reserveAffordableMode();
+	/// The hostile reserve type checkReservedTU goes on with: BA_NONE in mode 2 when the reaction snapshot is not affordable.
+	BattleActionType reserveAffordable(BattleUnit *bu, BattleActionType reserve, BattleItem *reserveWeapon, int tu, int energy, bool justChecking);
 	/// Handles unit AI.
 	void handleAI(BattleUnit *unit);
 	/// Drops an item and affects it with gravity.
 	void dropItem(Position position, BattleItem *item, bool removeItem = false, bool updateLight = true);
+	/// A comrade's thrown item lands on the unit's tile: the unit takes it into a free hand if it can (option oxceCatchThrown).
+	bool catchThrownItem(const BattleUnit *thrower, BattleItem *item);
 	/// Converts a unit into a unit of another type.
 	BattleUnit *convertUnit(BattleUnit *unit);
 	/// Spawns a new unit in the middle of battle.
@@ -258,6 +274,8 @@ public:
 	int takeItemFromGround(BattleItem* item, BattleAction *action);
 	/// Assigns the item to a slot (stolen from battlescapeGenerator::addItem()).
 	bool takeItem(BattleItem* item, BattleAction *action);
+	/// The careful bot: the nearest loaded gun or fitting ammo on the ground near by - takes it, or walks to it.
+	bool findBotWeapon(BattleAction *action, bool &walkToItem);
 	/// Returns the type of action that is reserved.
 	BattleActionType getReservedAction();
 	/// Tallies the living units, converting them if necessary.

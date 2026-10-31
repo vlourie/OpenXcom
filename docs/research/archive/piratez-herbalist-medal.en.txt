@@ -1,0 +1,17 @@
+﻿About the Herbalist commendation: the bonus works, it's only the medal that can never be awarded.
+
+- STR_NEKO_CLASS_HERBALIST (Piratez_Globals.rul:4092) has criteria totalIronMan: [9999]. That's the same placeholder the other catgirl class medals use, and nobody ever reaches it.
+- Outlaw, Warrior and Ace get around the placeholder because something hands them out by commendationName:
+  - Outlaw: STR_CATGIRL_VICTIM_RECRUITMENT (Piratez.rul ~201514)
+  - Warrior: STR_CATGIRL_WARRIOR_RECRUITMENT (Piratez.rul ~201565) and STR_MRSHAN_WARRIOR_EVENT (Piratez_Events.rul:3378)
+  - Ace: an event (Piratez_Events.rul:3442)
+  Nothing awards Herbalist that way.
+- Herbalist isn't a recruit, it's the STR_HERBALIST_TRAINING transformation (Piratez_Transformations.rul:2865). In OXCE a transformation can only require commendations (requiredCommendations); it can't grant one, so there's no ruleset field to attach the medal to.
+- The bonus itself is fine. The transformation gives STR_NEKO_CLASS_HERBALIST_BONUS (psiSkill +1, mana +30, Piratez_Bonuses.rul:832) directly via soldierBonusType. Herbalists get their stats; they only miss the class medal in the diary that the other classes show.
+
+What you can do:
+- leave it as is (harmless dead entry), or
+- delete the STR_NEKO_CLASS_HERBALIST commendation (the pedia article with the same id is separate and stays), or
+- if you want the medal shown, it needs a script (Yankes) or an event that spawns a ready-made Herbalist. Plain ruleset can't do it through the transformation.
+
+This comes from the ruleset and the engine code only; I haven't tested it in game.

@@ -31,9 +31,91 @@
 #include "../Interface/Text.h"
 #include "../Interface/TextButton.h"
 #include "../Interface/TextList.h"
+#include "../Engine/HdBase.h"
+#include "../Engine/HdSprites.h"
+#include "../Engine/HdUiArt.h"
+#include "../Engine/Options.h"
+#include "../Engine/Screen.h"
+#include <algorithm>
+#include <cstring>
+#include <map>
+#include <memory>
 
 namespace OpenXcom
 {
+
+namespace
+{
+
+/**
+ * The HD picture of a facility's preview: the base's own pictures of its tiles (HdBase), so the
+ * article shows the facility as the base does. Registered once per facility and world scale on a
+ * kept copy of the preview: HdUiArt keys a picture by its surface too, and the article's own image
+ * goes with the article - the article's image is then found by its content. Nothing is registered
+ * when a tile has no picture (the classic preview stays), and the classic pixels are not touched.
+ * @param facility The facility.
+ * @param image The classic preview, already drawn.
+ * @param x0 Where the facility's first tile is in the preview.
+ * @param y0 Where the facility's first tile is in the preview.
+ */
+void hdPreview(const RuleBaseFacility *facility, const Surface *image, int x0, int y0)
+{
+	static const bool pictures = Options::oxceHdBaseAnim;   // as BaseView::isHdFacility: read once per run
+	Screen *screen = Screen::current();
+	const int k = screen ? screen->getWorldScale() : 1;
+	if (!pictures || k < 2 || !HdUiArt::active())
+	{
+		return;
+	}
+	static std::map<std::string, std::unique_ptr<Surface>> made;
+	static unsigned generation = 0;
+	if (generation != HdUiArt::generation())
+	{
+		made.clear();
+		generation = HdUiArt::generation();
+	}
+	const std::string key = facility->getType() + "@" + std::to_string(k);
+	if (made.count(key))
+	{
+		return;
+	}
+	const int tile = 32;
+	HdFrame frame;
+	frame.width = image->getWidth() * k;
+	frame.height = image->getHeight() * k;
+	frame.pixels.assign((size_t)frame.width * frame.height, 0);
+	int num = 0;
+	for (int y = 0; y < facility->getSizeY(); ++y)
+	{
+		for (int x = 0; x < facility->getSizeX(); ++x)
+		{
+			// the tile the base view draws (BaseView::hdTileIndex)
+			const int index = (facility->getSpriteEnabled() ? facility->getSpriteFacility() : facility->getSpriteShape()) + num++;
+			const HdFrame *picture = HdBase::phases(index) ? HdBase::frame(index, 0, k, tile, tile) : nullptr;
+			if (!picture)
+			{
+				return;
+			}
+			const int left = (x0 + x * tile) * k, top = (y0 + y * tile) * k;
+			const int w = std::min(picture->width, frame.width - left);
+			for (int row = 0; row < picture->height && top + row < frame.height; ++row)
+			{
+				if (w > 0 && top + row >= 0 && left >= 0)
+				{
+					memcpy(&frame.pixels[(size_t)(top + row) * frame.width + left],
+						&picture->pixels[(size_t)row * picture->width], (size_t)w * 4);
+				}
+			}
+		}
+	}
+	std::unique_ptr<Surface> kept(new Surface(*image));
+	if (HdUiArt::add("pedia " + facility->getType(), kept.get(), std::move(frame), {}))
+	{
+		made[key] = std::move(kept);
+	}
+}
+
+}
 
 	ArticleStateBaseFacility::ArticleStateBaseFacility(ArticleDefinitionBaseFacility *defs, std::shared_ptr<ArticleCommonState> state) : ArticleState(defs->id, std::move(state))
 	{
@@ -103,6 +185,7 @@ namespace OpenXcom
 			}
 			y_pos += tile_size;
 		}
+		hdPreview(facility, _image, x_offset, y_offset);
 
 		_txtInfo = new Text(300, 90, 10, 104);
 		add(_txtInfo);

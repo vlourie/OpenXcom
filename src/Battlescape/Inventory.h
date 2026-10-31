@@ -18,6 +18,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "../Engine/InteractiveSurface.h"
+#include "../Engine/HdItems.h"
 #include <locale>
 #include <map>
 #include <string>
@@ -31,6 +32,7 @@ class WarningMessage;
 class BattleItem;
 class BattleUnit;
 class NumberText;
+class Text;
 class Timer;
 
 /**
@@ -62,7 +64,42 @@ private:
 	RuleInventory *_inventorySlotBackPack = nullptr;
 	RuleInventory *_inventorySlotBelt = nullptr;
 	RuleInventory *_inventorySlotGround = nullptr;
+	/// a slot name as the classic layout put it, for the HD interface to draw with its own fonts
+	struct GridLabel { std::string text; int x, y; };
+	std::vector<GridLabel> _labels;
+	Text *_hdLabel;
+	/// the stack numbers and wound counters of the ground items: baked in the classic digits (_stackTop), and as
+	/// {value, where, colour} for the HD interface to draw with its own font (XP-000424)
+	/// (and the "2" of the two-handed items in the hands, without the outline: XP-000453)
+	struct HdStack { int value, x, y; Uint8 color; bool bordered = true; };
+	std::vector<HdStack> _hdStacks;
+	/// does the HD interface draw the numbers with its own font on the surface blit() goes to; and what drawItems() laid them for
+	bool _hdFontsNow = false, _hdFontsLaid = false;
+	Surface *_stackTop;
+	NumberText *_hdNumber;
+	/// the items the HD interface draws from their own pictures (hd/BIGOBS.PCK), with where the classic sprite goes
+	struct HdPlaced { HdItems::Pick pick; int x, y; };
+	std::vector<HdPlaced> _hdItems;
+	HdItems::Pick _hdSelected;
+	/// the k drawItems() laid the HD pictures out for (0: every item classic, the overlays in _items)
+	int _hdItemsScale = 0;
+	/// the primers, "2" and numbers of the items when HD pictures lie under them
+	Surface *_itemsTop;
+	/// ammunition hint (oxceHdAmmoHint, XP-000257): where drawItems() put each item, the frames layer, and the weapon they were drawn for
+	struct HintCell { const RuleItem *rules; SDL_Rect rect; };
+	std::vector<HintCell> _hintCells;
+	Surface *_hint;
+	const RuleItem *_hintWeapon = nullptr;
+	bool _hintDirty = true;
+	/// Frames the items that fit the weapon (nullptr: none) in the hint layer.
+	void drawHint(const RuleItem *weapon);
 
+	/// Is the HD interface going to draw the slot names with its own fonts on that surface?
+	bool hdLabels(const SDL_Surface *surface) const;
+	/// Draws the slot names with the TrueType fonts where the classic layout put them.
+	void drawHdLabels();
+	/// Draws the stack numbers with the HD interface's font where the classic layout put them.
+	void drawHdStacks();
 	/// Clear all occupied slots markers.
 	std::vector<std::vector<char>>* clearOccupiedSlotsCache();
 	/// Moves an item to a specified slot.
@@ -114,6 +151,12 @@ public:
 	void mouseClick(Action *action, State *state) override;
 	/// Quickly drops the selected item on the ground.
 	bool quickDrop();
+	/// Whether a slot lies at the given point of the inventory (relative to it).
+	bool isSlotAt(int x, int y) const;
+	/// The hand the grabbed item takes for a use: the one it is in, else a free hand it fits; nullptr if none.
+	const RuleInventory *useHand(const BattleItem *item) const;
+	/// Puts the grabbed item into the hand for the TU of the move and lets go of it.
+	void putInHand(const RuleInventory *hand);
 	/// Unloads the selected weapon.
 	bool unload(bool quickUnload = false);
 	/// Checks whether the given item is visible with the current search string.

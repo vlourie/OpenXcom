@@ -17,15 +17,16 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <algorithm>
 #include "UnitFallBState.h"
 #include <algorithm>
+#include "CollapsePilot.h"
 #include "TileEngine.h"
 #include "Pathfinding.h"
 #include "../Savegame/BattleUnit.h"
 #include "../Savegame/SavedBattleGame.h"
 #include "../Savegame/Tile.h"
 #include "../Engine/Options.h"
+#include "../Engine/HdGentle.h"
 #include "../Mod/Armor.h"
 #include "../Mod/Mod.h"
 
@@ -56,9 +57,9 @@ void UnitFallBState::init()
 {
 	_terrain = _parent->getTileEngine();
 	if (_parent->getSave()->getSide() == FACTION_PLAYER)
-		_parent->setStateInterval(Options::battleXcomSpeed);
+		_parent->setStateInterval(HdGentle::xcomSpeed());
 	else
-		_parent->setStateInterval(Options::battleAlienSpeed);
+		_parent->setStateInterval(HdGentle::alienSpeed());
 
 }
 
@@ -267,6 +268,7 @@ void UnitFallBState::think()
 	{
 		tilesToFallInto.clear();
 		unitsToMove.clear();
+		CollapsePilot::afterFall(_parent);
 		_parent->popState();
 		return;
 	}

@@ -45,15 +45,22 @@ private:
 	SelectMusicTrackOrigin _origin;
 	Window *_window;
 	Text *_txtTitle;
-	TextButton *_btnCancel;
+	TextButton *_btnCancel, *_btnRefresh;
 	TextList *_lstTracks;
 	std::vector<Music*> _tracks;
 	std::vector<std::string> _trackNames;
+	int _currentTrackIndex = -1;
+	/// Fills the list with the tracks of the category (the game's and the player's own).
+	void fillList();
+	/// Colours the row of the track playing now in the battlescape theme.
+	void markCurrentBattle();
 public:
 	/// Creates the Select Music Track state.
 	SelectMusicTrackState(SelectMusicTrackOrigin origin);
 	/// Cleans up the Select Music Track state.
 	~SelectMusicTrackState();
+	/// Handler for clicking the button that scans the player's own music folder again.
+	void btnRefreshClick(Action *action);
 	/// Handler for clicking the Cancel button.
 	void btnCancelClick(Action *action);
 	/// Handler for clicking the Weapons list.

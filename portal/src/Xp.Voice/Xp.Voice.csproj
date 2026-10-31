@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Voice rooms of the launcher (docs/portal/VOICE_CHAT.md, part B): LiveKit through its C ABI
+       (livekit_ffi.dll + protobuf) and the sound card through miniaudio (xpaudio.dll). -->
+  <PropertyGroup>
+    <IsAotCompatible>true</IsAotCompatible>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <RootNamespace>Xp.Voice</RootNamespace>
+    <VoiceNative>$(MSBuildThisFileDirectory)..\..\third_party\voice\</VoiceNative>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Google.Protobuf" Version="3.36.2" />
+  </ItemGroup>
+  <ItemGroup>
+    <!-- generated from protocol/*.proto by tools/voice_deps.py - kept out of git, 5.7 MB -->
+    <Compile Include="$(VoiceNative)generated\*.cs" Link="Proto\%(Filename).cs" />
+    <None Include="$(VoiceNative)livekit_ffi.dll" Link="livekit_ffi.dll" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+    <None Include="$(VoiceNative)xpaudio.dll" Link="xpaudio.dll" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+  <Target Name="RequireVoiceNative" BeforeTargets="BeforeBuild">
+    <Error Condition="!Exists('$(VoiceNative)generated\Ffi.cs') Or !Exists('$(VoiceNative)livekit_ffi.dll')"
+           Text="no native voice parts in portal\third_party\voice: run  py -3.13 tools\voice_deps.py --proto  (and --audio for xpaudio.dll)" />
+    <Error Condition="!Exists('$(VoiceNative)xpaudio.dll')"
+           Text="no xpaudio.dll in portal\third_party\voice: run  py -3.13 tools\voice_deps.py --audio" />
+  </Target>
+</Project>

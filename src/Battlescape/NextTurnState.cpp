@@ -36,12 +36,14 @@
 #include "../Interface/Text.h"
 #include "../Interface/TextButton.h"
 #include "../Engine/Action.h"
+#include "../Engine/HdScreens.h"
 #include "../Savegame/BattleUnit.h"
 #include "../Savegame/Node.h"
 #include "../Savegame/SavedBattleGame.h"
 #include "../Savegame/SavedGame.h"
 #include "../Savegame/HitLog.h"
 #include "AIModule.h"
+#include "AiProbe.h"
 #include "BattlescapeState.h"
 #include "BattlescapeGame.h"
 #include "BriefingState.h"
@@ -65,6 +67,9 @@ NextTurnState::NextTurnState(SavedBattleGame *battleGame, BattlescapeState *stat
 		// skip everything, go straight to init()
 		return;
 	}
+
+	// the HD picture of the turn and hidden movement screens: another one each turn (ticket XP-000234)
+	HdScreens::nextVariant("hiddenMovement");
 
 	// set random hidden movement/next turn background for this turn
 	if (_battleGame->getSide() == FACTION_PLAYER)
@@ -156,6 +161,7 @@ NextTurnState::NextTurnState(SavedBattleGame *battleGame, BattlescapeState *stat
 	_window->setColor(Palette::blockOffset(0)-1);
 	_window->setHighContrast(true);
 	_window->setBackground(_game->getMod()->getSurface(_battleGame->getHiddenMovementBackground()));
+	_window->setInterfaceName("nextTurn");
 
 
 	_txtMessageReinforcements->setBig();
@@ -307,7 +313,8 @@ NextTurnState::NextTurnState(SavedBattleGame *battleGame, BattlescapeState *stat
 		}
 	}
 
-	if (Options::skipNextTurnScreen && message.empty() && messageReinforcements.empty())
+	// the AI probe has nobody to click the screen away
+	if (AiProbe::autoClose() || (Options::skipNextTurnScreen && message.empty() && messageReinforcements.empty()))
 	{
 		_timer = new Timer(NEXT_TURN_DELAY);
 		_timer->onTimer((StateHandler)&NextTurnState::close);

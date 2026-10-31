@@ -1,0 +1,1927 @@
+using System.Diagnostics;
+using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Controls.Documents;
+using Avalonia.Input;
+using Avalonia.Interactivity;
+using Avalonia.Layout;
+using Avalonia.Media;
+using Avalonia.Platform.Storage;
+using Avalonia.Threading;
+using Xp.Launcher.Core;
+using Xp.Manifest;
+
+namespace Xp.Launcher;
+
+/// <summary>
+/// The launcher: a rail with four pages (docs/portal/LAUNCHER_UI.md). The home page has one main
+/// button whose caption is the status; everything rare lives in Settings.
+/// </summary>
+public sealed class MainWindow : Window
+{
+    enum Work { None, Check, Update, Repair, Rollback, SelfUpdate, Games }
+
+    readonly Settings _settings = Settings.Load();
+    readonly HttpClient _http = RepoClient.NewHttpClient();
+    readonly string[] _args;
+
+    // rail
+    readonly Dictionary<string, Button> _nav = new();
+    readonly Dictionary<string, Control> _pages = new();
+    readonly Border _reportsBadge = new() { Background = Skin.B(Skin.Accent), CornerRadius = new CornerRadius(2), Padding = new Thickness(6, 1), IsVisible = false, VerticalAlignment = VerticalAlignment.Center };
+    readonly TextBlock _reportsCount = new() { Foreground = Skin.B(Skin.OnAccent), FontSize = 12, FontFamily = Skin.Medium };
+
+    // home
+    readonly Border _notice = new() { Background = Skin.B(Skin.WarnFill), BorderBrush = Skin.B(Skin.WarnFrame), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(2), Padding = new Thickness(14, 8), IsVisible = false, Margin = new Thickness(0, 0, 0, 16) };
+    // the strip over the picture while the launcher is not linked: a running line and one button
+    readonly Border _linkStrip = new() { Background = Skin.B(Skin.Fill), BorderBrush = Skin.B(Skin.FrameInner), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(2), Padding = new Thickness(14, 6), IsVisible = false, Margin = new Thickness(0, 0, 0, 16) };
+    readonly TextBlock _linkRun = new() { FontSize = 14, FontFamily = Skin.Medium, Foreground = Skin.B(Skin.Accent), RenderTransform = new TranslateTransform() };
+    readonly Border _linkLane = new() { ClipToBounds = true, Height = 22, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 12, 0) };
+    readonly TextBlock _linkSay = new() { FontSize = 14, TextWrapping = TextWrapping.Wrap, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 12, 0) };
+    readonly DispatcherTimer _linkTimer = new() { Interval = TimeSpan.FromMilliseconds(30) };
+    bool _linkHeld;     // the pointer is over the line: it stands still to be read
+    readonly StackPanel _credit = new() { Margin = new Thickness(12, 12, 12, 0) };   // whose game the picked build is (UpdateCredit)
+    readonly TextBlock _version = new() { FontSize = 14, Foreground = Skin.B(Skin.Muted) };
+    readonly Button _main = new() { Height = 64, HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Center, VerticalContentAlignment = VerticalAlignment.Center, FontFamily = Skin.Medium, FontSize = 22 };
+    readonly TextBlock _mainText = new();
+    readonly ProgressBar _progress = new() { Minimum = 0, Maximum = 1000, Height = 4, MinHeight = 4, VerticalAlignment = VerticalAlignment.Bottom, Margin = new Thickness(2), IsVisible = false, CornerRadius = new CornerRadius(0) };
+    readonly WrapPanel _sub = new() { Orientation = Orientation.Horizontal, MinHeight = 20 };
+    readonly TextBlock _current = new() { FontSize = 11, Foreground = Skin.B(Skin.Dim), TextTrimming = TextTrimming.CharacterEllipsis };
+    readonly Border _whatsNew;
+    readonly TextBlock _whatsNewTitle = new() { FontFamily = Skin.Medium, FontSize = 18, TextWrapping = TextWrapping.Wrap };
+    readonly StackPanel _changelog = new() { Spacing = 14 };   // a release per entry, newest first (ShowRelease)
+
+    // settings
+    readonly TextBox _gameDir = new() { IsReadOnly = true, FontSize = 13 };
+    readonly ComboBox _language = new() { HorizontalAlignment = HorizontalAlignment.Stretch, FontSize = 13 };
+    readonly TextBlock _languageNote = new() { FontSize = 12, Foreground = Skin.B(Skin.Muted), IsVisible = false, TextWrapping = TextWrapping.Wrap };
+    readonly TextBlock _installed = new() { FontSize = 13, Foreground = Skin.B(Skin.Text2), TextWrapping = TextWrapping.Wrap };
+    readonly TextBlock _launcherLine = new() { FontSize = 12, Foreground = Skin.B(Skin.Muted), VerticalAlignment = VerticalAlignment.Center, TextWrapping = TextWrapping.Wrap };
+    readonly ProgressBar _workBar = new() { Minimum = 0, Maximum = 1000, Height = 4, MinHeight = 4, IsVisible = false, CornerRadius = new CornerRadius(0) };
+    readonly WrapPanel _workLine = new() { Orientation = Orientation.Horizontal, IsVisible = false };
+    readonly TextBlock _rollbackNote = new() { FontSize = 12, Foreground = Skin.B(Skin.Muted), TextWrapping = TextWrapping.Wrap };
+    readonly TextBlock _log = new() { FontFamily = new FontFamily("Consolas,monospace"), FontSize = 11, TextWrapping = TextWrapping.Wrap, Foreground = Skin.B(Skin.Muted), LineHeight = 16 };
+    readonly Button _check, _repair, _rollback, _selfUpdate, _choose, _updateOnly, _components, _resetProfile;
+
+    // builds (docs/portal/MULTIMOD.md §3, §7): the switcher on the home page, the rest in Settings
+    readonly ComboBox _build = new() { MinWidth = 260, FontSize = 14 };
+    readonly Button _buildNew, _buildCopy, _buildRename, _buildDelete;
+    // every build in Settings, the chosen one lit: the buttons below act on it, so it has to be in sight
+    readonly StackPanel _buildList = new() { Spacing = 6, Margin = new Thickness(0, 0, 0, 8) };
+    bool _fillingBuilds;
+
+    readonly SetupPage _setupPage;
+    readonly ReportsPage _reportsPage;
+    readonly NewsPage _newsPage;
+    bool _newsRoadmap;      // which half of the news page the next Navigate("news") opens
+    readonly AccountPanel _account;
+    readonly VoicePage _voicePage;
+    TrayIcon? _tray;
+    NativeMenuItem? _trayLeave;  // "leave the room": in the tray menu only while in a room
+    bool _hiddenForGame;    // the window went to the tray for the time of the game "Play" started (Settings.TrayWhilePlaying)
+    bool _closedToTray;     // the cross hid the window (Settings.CloseToTray): the launcher runs on in the tray
+    bool _quitting;    // a real exit: the window does not go to the tray even in a room
+    bool _gone;         // the site is told the launcher is off the online list (once, at most a second)
+    UpdateWatch? _watch;
+    string[]? _watchChannels;   // the game's and the launcher's channel, from the last check that went through
+    readonly DispatcherTimer _watchTimer = new() { Interval = UpdateWatch.Every };
+    bool _watchBusy;
+    DateTime _lastLook;   // UTC of the last look at the channels: coming to the window looks again if it is a minute old
+    bool _staleCheck;   // a release came out while the home page could not check (the game, another action): it checks later
+    Notifier? _notifier;
+    readonly DispatcherTimer _statsTimer = new() { Interval = LauncherStats.Every };
+    bool _statsPlaying;         // the last word to the site's count was "playing"
+    string? _installedRelease;  // of the last check: the state is not read under a running game (R-179)
+
+    GamePaths? _paths;
+    BuildStore? _builds;
+    Updater? _updater;
+    FileLog? _fileLog;
+    RepoClient? _repo;
+    LatestRelease? _latest;
+    ReleaseManifest? _launcherUpdate;
+    CancellationTokenSource? _cts;
+    Process? _game;
+    Work _work;
+    bool _cancelable;
+    long _lastProgressTicks;
+
+    // what the main button says, besides "busy" and "running"
+    string? _pendingLine;       // an update or a repair is waiting: its one-line summary
+    Version? _needLauncher;     // the release asks for a newer launcher
+    string? _offline;           // the last check could not reach the server
+    string? _error;             // the last update failed
+    string? _note;              // a neutral one-off result ("rolled back to 1.2")
+    string? _gameFailed;        // the game "Play" started ended with an error code: until the next start
+    string _progressLine = "";
+    double _percent;
+    Phase _phase;
+
+    public MainWindow(string[] args)
+    {
+        _args = args;
+        Title = L.T("title") + " " + BuiltIn.VersionText;
+        Width = _settings.WindowWidth is >= 800 and <= 4000 ? _settings.WindowWidth.Value : 960;
+        Height = _settings.WindowHeight is >= 520 and <= 3000 ? _settings.WindowHeight.Value : 600;
+        MinWidth = 800; MinHeight = 520;
+        WindowStartupLocation = WindowStartupLocation.CenterScreen;
+        // открываемся во весь экран
+        WindowState = WindowState.Maximized;
+
+        _check = Skin.Btn(L.T("checkUpdates"), "ghost");
+        _check.Click += async (_, _) => await RunAsync(Work.Check, () => CheckAsync(full: false, apply: false));
+        // «Играть» обновляет и запускает; эта кнопка только обновляет - игру запускать не обязательно
+        _updateOnly = Skin.Btn(L.T("main.updateOnly"), "ghost", 64);
+        // Work.Update, not Check: the main button shows the percent and the bar, the same as «Обновить и играть»
+        _updateOnly.Click += async (_, _) =>
+        {
+            if (await OfferNewModsAsync()) return;
+            await RunAsync(Work.Update, () => CheckAsync(full: false, apply: true));
+        };
+        _repair = Skin.Btn(L.T("repair"));
+        _repair.HorizontalContentAlignment = HorizontalAlignment.Left;
+        _repair.Click += async (_, _) => await RunAsync(Work.Repair, () => CheckAsync(full: true, apply: true));
+        _rollback = Skin.Btn(L.T("rollback"), "warn");
+        _rollback.HorizontalContentAlignment = HorizontalAlignment.Left;
+        _rollback.Click += async (_, _) => await RunAsync(Work.Rollback, RollbackAsync);
+        _selfUpdate = Skin.Btn(L.T("self.install"), "primary");
+        _selfUpdate.IsVisible = false;
+        _selfUpdate.Click += async (_, _) => await RunAsync(Work.SelfUpdate, SelfUpdateAsync);
+        _choose = Skin.Btn(L.T("settings.change"));
+        _choose.Click += async (_, _) => await ChooseGameDirAsync();
+        _components = Skin.Btn(L.T("settings.components"));
+        _components.Click += (_, _) => OpenSetup(_paths?.GameDir);
+        _resetProfile = Skin.Btn(L.T("settings.resetProfile"));
+        _resetProfile.Click += async (_, _) => await ResetProfileAsync();
+        _buildNew = Skin.Btn(L.T("builds.new"));
+        _buildNew.Click += async (_, _) => await NewBuildAsync();
+        _buildCopy = Skin.Btn(L.T("builds.copy"));
+        _buildCopy.Click += async (_, _) => await CopyBuildAsync();
+        _buildRename = Skin.Btn(L.T("builds.rename"));
+        _buildRename.Click += async (_, _) => await RenameBuildAsync();
+        _buildDelete = Skin.Btn(L.T("builds.delete"), "warn");
+        _buildDelete.Click += async (_, _) => await DeleteBuildAsync();
+        _build.SelectionChanged += (_, _) => SelectBuild();
+        _main.Content = _mainText;
+        _main.Click += async (_, _) => await OnMainAsync();
+
+        _reportsPage = new ReportsPage(_settings, ReportRoots);
+        _reportsPage.Changed += CountReports;
+        // the channel of the last check, held in memory: LoadState may move a broken state file aside,
+        // and nothing is written from a page that only reads (R-179). Before any check — stable
+        _newsPage = new NewsPage(() => _repo, () => _latest?.Manifest.Release.Channel is { Length: > 0 } ch ? ch : "stable",
+            NotesKept, () => _latest?.Pointer.ReleaseId);
+        _account = new AccountPanel(_settings);
+        _voicePage = new VoicePage(_settings, _account, () => _builds, () => Navigate("settings"));
+        _voicePage.RoomChanged += RoomChanged;
+        _setupPage = new SetupPage(_settings, () => _repo) { Lazy = () => LazyPacks.For(_http, _settings.PortalUrl ?? BuiltIn.Defaults.PortalUrl) };
+        _setupPage.Finished += (dir, play) => OnSetupFinished(dir, play);
+        _setupPage.PickExisting += async () => await ChooseGameDirAsync();
+
+        _whatsNew = Skin.Panel(WhatsNewContent(), new Thickness(20));
+        _whatsNew.Width = 250;
+        _whatsNew.IsVisible = false;
+
+        _pages["home"] = HomePage();
+        _pages["setup"] = _setupPage;
+        _pages["reports"] = _reportsPage;
+        _pages["news"] = _newsPage;
+        _pages["voice"] = _voicePage;
+        _pages["support"] = new SupportPage();
+        _pages["settings"] = SettingsPage();
+
+        var host = new Panel();
+        foreach (var p in _pages.Values) host.Children.Add(p);
+        var root = new Grid { ColumnDefinitions = new ColumnDefinitions("180,*") };
+        root.Children.Add(RailPanel());
+        Grid.SetColumn(host, 1);
+        root.Children.Add(host);
+        Content = root;
+        // F11 - весь экран без заголовка окна и панели задач: для разбора картинок кадром больше
+        AddHandler(KeyDownEvent, (object? _, KeyEventArgs e) =>
+        {
+            if (e.Key is not Key.F11) return;
+            WindowState = WindowState == WindowState.FullScreen ? WindowState.Maximized : WindowState.FullScreen;
+            e.Handled = true;
+        }, RoutingStrategies.Tunnel);
+        Navigate("home");
+        // started by an xpiratez://voice link: the voice page with that room on top
+        if (VoiceLink.Find(args) is { } linked)
+        {
+            _voicePage.OpenRoom(linked);
+            Navigate("voice");
+        }
+#if DEBUG
+        // screenshots of every page without clicking through them
+        if (Array.IndexOf(args, "--page") is var i and >= 0 && i + 1 < args.Length && _pages.ContainsKey(args[i + 1])) Navigate(args[i + 1]);
+#endif
+
+        Opened += async (_, _) =>
+        {
+            await StartupAsync();
+#if DEBUG
+            // the wizard for screenshots: --setup new (its first step), --setup <scratch dir> (the list of components);
+            // only after the start-up check, the wizard does not open while the launcher is busy
+            if (Array.IndexOf(args, "--setup") is var j and >= 0 && j + 1 < args.Length) OpenSetup(args[j + 1] == "new" ? null : args[j + 1]);
+#endif
+        };
+        // back from a game started without us, or after it closed: the locks follow it
+        Activated += (_, _) =>
+        {
+            // the player is at the window: the home page says it, the reminder in the tray goes
+            _notifier?.Hide();
+            if (_paths is not null) Refresh();
+            // back from the tray or another window: a release out since the last look shows at once, not at the next tick
+            if (DateTime.UtcNow - _lastLook > TimeSpan.FromMinutes(1)) _ = WatchAsync(tick: false);
+        };
+        _watchTimer.Tick += async (_, _) => await WatchAsync();
+        Closing += async (_, e) =>
+        {
+            if (_voicePage.InRoom)
+            {
+                e.Cancel = true;
+                // the cross of the window while talking: the conversation goes on from the tray
+                if (!_quitting && !e.IsProgrammatic && e.CloseReason == WindowCloseReason.WindowClosing) { ToTray(); return; }
+                // a real exit: the room is left and the microphone given back first, then the window closes
+                _quitting = true;
+                await _voicePage.LeaveAsync();
+                Close();
+                return;
+            }
+            // the cross: the launcher stays in the tray and goes on watching for releases
+            if (!_quitting && !e.IsProgrammatic && e.CloseReason == WindowCloseReason.WindowClosing && _settings.CloseToTray)
+            {
+                e.Cancel = true;
+                CloseToTray();
+                return;
+            }
+            if (!_gone && _voicePage.Linked)
+            {
+                e.Cancel = true;
+                _gone = true;
+                await _voicePage.GoneAsync();
+                Dispatcher.UIThread.Post(Close);
+                return;
+            }
+            _cts?.Cancel();
+            _watchTimer.Stop();
+            _statsTimer.Stop();
+            _notifier?.Dispose();
+            if (WindowState == WindowState.Normal)
+            {
+                _settings.WindowWidth = Width;
+                _settings.WindowHeight = Height;
+                try { _settings.Save(); } catch (IOException) { }
+            }
+        };
+    }
+
+    // ------------------------------------------------------------------ layout
+
+    Control RailPanel()
+    {
+        var logo = new TextBlock { FontFamily = Skin.Medium, FontWeight = FontWeight.Bold, FontSize = 20, LineHeight = 21, Margin = new Thickness(12, 0, 12, 24) };
+        logo.Inlines!.Add(new Run("X-PIRATEZ"));
+        logo.Inlines.Add(new LineBreak());
+        logo.Inlines.Add(new Run("HD") { Foreground = Skin.B(Skin.Accent) });
+
+        var top = new StackPanel { Spacing = 2 };
+        top.Children.Add(logo);
+        top.Children.Add(NavButton("home", "nav.home", Skin.IconHome, null));
+        _reportsBadge.Child = _reportsCount;
+        top.Children.Add(NavButton("reports", "nav.reports", Skin.IconReports, _reportsBadge));
+        top.Children.Add(NavButton("news", "nav.news", Skin.IconNews, null));
+        top.Children.Add(NavButton("voice", "nav.voice", Skin.IconVoice, null));
+        top.Children.Add(NavButton("support", "nav.support", Skin.IconHeart, null));
+        top.Children.Add(NavButton("settings", "nav.settings", Skin.IconSettings, null));
+
+        var site = NavLike(L.T("nav.site") + "  ↗", Skin.IconGlobe, null);
+        site.Foreground = Skin.B(Skin.Accent);
+        var portal = _settings.PortalUrl ?? BuiltIn.Defaults.PortalUrl;
+        site.IsEnabled = portal.StartsWith("http", StringComparison.OrdinalIgnoreCase);
+        site.Click += (_, _) => ReportWindow.OpenUrl(portal);
+        var quit = NavLike(L.T("nav.quit"), Skin.IconQuit, null);
+        quit.Click += (_, _) => Quit();
+
+        var bottom = new StackPanel();
+        bottom.Children.Add(site);
+        bottom.Children.Add(quit);
+        bottom.Children.Add(_credit);
+        bottom.Children.Add(new TextBlock { Text = L.T("nav.version", BuiltIn.VersionText), FontSize = 12, Foreground = Skin.B(Skin.Muted), Margin = new Thickness(12, 8, 12, 0) });
+
+        var dock = new DockPanel { Margin = new Thickness(12, 24, 12, 16) };
+        DockPanel.SetDock(bottom, Dock.Bottom);
+        dock.Children.Add(bottom);
+        dock.Children.Add(top);
+        return new Border { Background = Skin.B(Skin.Rail), BorderBrush = Skin.B(Skin.Track), BorderThickness = new Thickness(0, 0, 1, 0), Child = dock };
+    }
+
+    Button NavButton(string page, string key, string icon, Control? badge)
+    {
+        var b = NavLike(L.T(key), icon, badge);
+        b.Click += (_, _) => Navigate(page);
+        _nav[page] = b;
+        return b;
+    }
+
+    static Button NavLike(string text, string icon, Control? badge)
+    {
+        var b = new Button { Height = 44, HorizontalAlignment = HorizontalAlignment.Stretch, HorizontalContentAlignment = HorizontalAlignment.Stretch, VerticalContentAlignment = VerticalAlignment.Center, Padding = new Thickness(12, 0), FontSize = 15, BorderThickness = new Thickness(0) };
+        b.Classes.Add("nav");
+        var row = new DockPanel();
+        var ic = Skin.Icon(icon, b);
+        ic.Margin = new Thickness(0, 0, 12, 0);
+        DockPanel.SetDock(ic, Dock.Left);
+        row.Children.Add(ic);
+        if (badge is not null) { DockPanel.SetDock(badge, Dock.Right); row.Children.Add(badge); }
+        row.Children.Add(new TextBlock { Text = text, VerticalAlignment = VerticalAlignment.Center });
+        b.Content = row;
+        return b;
+    }
+
+    void Navigate(string page)
+    {
+        foreach (var (name, p) in _pages) p.IsVisible = name == page;
+        foreach (var (name, b) in _nav)
+        {
+            bool on = name == page;
+            b.Classes.Set("on", on);
+            b.BorderThickness = new Thickness(on ? 3 : 0, 0, 0, 0);
+        }
+        if (page == "reports") _reportsPage.Shown();
+        if (page == "news") _newsPage.Shown(_newsRoadmap);
+        _newsRoadmap = false;
+        if (page == "voice") _voicePage.Shown();
+        else _voicePage.Hidden();
+    }
+
+    // ------------------------------------------------------------------ voice, the tray, the second start
+
+    /// <summary>Exit for real: from the rail, the tray, the self-update. In a room the room is left first.</summary>
+    void Quit()
+    {
+        _quitting = true;
+        Close();
+    }
+
+    /// <summary>
+    /// Another start of the launcher (a second click on the shortcut, an xpiratez://voice link from the
+    /// browser) told this one to come forward, with the room of the link if there was one.
+    /// </summary>
+    public void Signal(string? room)
+    {
+        ShowWindow();
+        if (room is null) return;
+        _voicePage.OpenRoom(room);
+        Navigate("voice");
+    }
+
+    void ShowWindow()
+    {
+        if (_closedToTray)
+        {
+            _closedToTray = false;
+            UpdateTray();
+        }
+        Show();
+        if (WindowState == WindowState.Minimized) WindowState = WindowState.Maximized;
+        Activate();
+    }
+
+    void ToTray()
+    {
+        _voicePage.Hidden();
+        Hide();
+    }
+
+    /// <summary>The cross of the window with Settings.CloseToTray: hidden to the tray, once with a hint where it went.</summary>
+    void CloseToTray()
+    {
+        _closedToTray = true;
+        UpdateTray();
+        ToTray();
+        if (_settings.CloseToTrayTold) return;
+        _settings.CloseToTrayTold = true;
+        try { _settings.Save(); } catch (IOException) { }
+        _notifier ??= new Notifier(this, () => { ShowWindow(); Navigate("home"); });
+        _notifier.Show(L.T("watch.title"), L.T("tray.closedHint"), stay: false);
+    }
+
+    void RoomChanged()
+    {
+        UpdateTray();
+        if (_voicePage.InRoom) return;
+        // out of the room while hidden (left from the tray, sent away, refused): the window comes back,
+        // with the reason on the voice page - a hidden launcher without a tray icon could not be reached.
+        // Hidden for the game it waits for the game's exit: the tray icon stays
+        if (!IsVisible && !_quitting && !_hiddenForGame && !_closedToTray)
+        {
+            ShowWindow();
+            Navigate("voice");
+        }
+    }
+
+    /// <summary>
+    /// The tray icon lives while the player is in a room, the game hid the window or the cross did: it is the way back to a hidden window.
+    /// </summary>
+    void UpdateTray()
+    {
+        bool room = _voicePage.InRoom;
+        if (!room && !_hiddenForGame && !_closedToTray)
+        {
+            if (_tray is not null) _tray.IsVisible = false;
+            return;
+        }
+        if (_tray is null)
+        {
+            var open = new NativeMenuItem(L.T("voice.trayOpen"));
+            open.Click += (_, _) => ShowWindow();
+            _trayLeave = new NativeMenuItem(L.T("voice.trayLeave"));
+            _trayLeave.Click += async (_, _) => await _voicePage.LeaveAsync();
+            var quit = new NativeMenuItem(L.T("voice.trayQuit"));
+            quit.Click += (_, _) => Quit();
+            var menu = new NativeMenu();
+            menu.Items.Add(open);
+            menu.Items.Add(_trayLeave);
+            menu.Items.Add(new NativeMenuItemSeparator());
+            menu.Items.Add(quit);
+            _tray = new TrayIcon
+            {
+                Icon = new WindowIcon(Avalonia.Platform.AssetLoader.Open(new Uri("avares://XPiratezLauncher/Assets/app.ico"))),
+                Menu = menu,
+            };
+            _tray.Clicked += (_, _) => ShowWindow();
+            if (Application.Current is { } app) TrayIcon.SetIcons(app, [_tray]);
+        }
+        _trayLeave!.IsVisible = room;
+        _tray.ToolTipText = room ? L.T("voice.trayTip", _voicePage.RoomTitle ?? "") : _hiddenForGame ? L.T("tray.playing") : L.T("tray.idle");
+        _tray.IsVisible = true;
+    }
+
+    /// <summary>
+    /// The game "Play" started: its exit is followed, and for the time of the game the window goes to the tray
+    /// if the player keeps that on. Called right after the start, with <see cref="_game"/> set.
+    /// </summary>
+    void FollowGame()
+    {
+        var game = _game!;
+        game.EnableRaisingEvents = true;
+        game.Exited += (_, _) => Dispatcher.UIThread.Post(() =>
+        {
+            var code = game.ExitCode;
+            _fileLog?.Info($"game exited with code {code}");
+            game.Dispose();   // the open handle keeps the exited game in the process list
+            if (_game == game) _game = null;
+            // not the player's own exit: a crash (an exception code, 0xC0000005) or an engine error (1)
+            if (code != 0) _gameFailed = L.T("main.gameFailed", code is < 0 or > 0xFFFF ? $"0x{code:X8}" : code.ToString());
+            if (_hiddenForGame)
+            {
+                _hiddenForGame = false;
+                UpdateTray();
+                if (!IsVisible && !_quitting) ShowWindow();
+            }
+            Refresh();
+            _ = RecheckAsync();
+            if (!GameIsRunning()) _ = PingStatsAsync(false);
+        });
+        _ = PingStatsAsync(true);
+        if (!_settings.TrayWhilePlaying) return;
+        _hiddenForGame = true;
+        UpdateTray();
+        ToTray();
+    }
+
+    Control HomePage()
+    {
+        var title = new TextBlock { FontFamily = Skin.Medium, FontWeight = FontWeight.Bold, FontSize = 44, LetterSpacing = 1 };
+        title.Inlines!.Add(new Run("X-PIRATEZ "));
+        title.Inlines.Add(new Run("HD") { Foreground = Skin.B(Skin.Accent) });
+        var heading = new StackPanel { Spacing = 6 };
+        heading.Children.Add(new Viewbox { Child = title, Stretch = Stretch.Uniform, StretchDirection = StretchDirection.DownOnly, HorizontalAlignment = HorizontalAlignment.Left });
+        heading.Children.Add(_version);
+
+        // «Обновить и играть» two thirds, «Обновить» one third
+        var mainArea = new Grid { ColumnDefinitions = new ColumnDefinitions("2*,*") };
+        mainArea.Children.Add(_main);
+        mainArea.Children.Add(_progress);
+        _updateOnly.Margin = new Thickness(10, 0, 0, 0);
+        _updateOnly.Padding = new Thickness(22, 0);
+        _updateOnly.Height = 64;
+        _updateOnly.FontSize = 18;
+        _updateOnly.HorizontalAlignment = HorizontalAlignment.Stretch;
+        _updateOnly.HorizontalContentAlignment = HorizontalAlignment.Center;
+        Grid.SetColumn(_updateOnly, 1);
+        mainArea.Children.Add(_updateOnly);
+
+        // the build "Play" starts, right over the button (MULTIMOD §7)
+        var buildRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 10 };
+        buildRow.Children.Add(new TextBlock { Text = L.T("home.build"), FontSize = 14, Foreground = Skin.B(Skin.Text2), VerticalAlignment = VerticalAlignment.Center });
+        buildRow.Children.Add(_build);
+
+        var content = new StackPanel { Spacing = 14, VerticalAlignment = VerticalAlignment.Bottom };
+        content.Children.Add(heading);
+        content.Children.Add(buildRow);
+        content.Children.Add(mainArea);
+        content.Children.Add(_sub);
+        content.Children.Add(_current);
+
+        var hero = new Grid();
+        // the card art: indigo duotone like the pictures in the game's windows; the gradient shows while it loads or if it is missing
+        hero.Children.Add(new Border
+        {
+            CornerRadius = new CornerRadius(3),
+            Background = new LinearGradientBrush
+            {
+                StartPoint = new RelativePoint(0.2, 0, RelativeUnit.Relative),
+                EndPoint = new RelativePoint(0.8, 1, RelativeUnit.Relative),
+                GradientStops = { new GradientStop(Color.Parse("#181868"), 0), new GradientStop(Color.Parse("#180810"), 1) },
+            },
+        });
+        if (HeroArt() is { } art)
+            hero.Children.Add(new Border { CornerRadius = new CornerRadius(3), ClipToBounds = true, Background = new ImageBrush(art) { Stretch = Stretch.UniformToFill } });
+        hero.Children.Add(new Border { CornerRadius = new CornerRadius(3), Background = Glow(0.7, 0.3, "#8C185888") });
+        hero.Children.Add(new Border { CornerRadius = new CornerRadius(3), Background = Glow(0.2, 0.8, "#CC181868") });
+        hero.Children.Add(new Border
+        {
+            BorderBrush = Skin.B(Skin.FrameOuter), BorderThickness = new Thickness(2), CornerRadius = new CornerRadius(3),
+            Child = new Border { BorderBrush = Skin.B(Skin.FrameInner), BorderThickness = new Thickness(2), Padding = new Thickness(28), Child = content },
+        });
+
+        var body = new Grid { ColumnDefinitions = new ColumnDefinitions("*,Auto") };
+        body.Children.Add(hero);
+        _whatsNew.Margin = new Thickness(16, 0, 0, 0);
+        Grid.SetColumn(_whatsNew, 1);
+        body.Children.Add(_whatsNew);
+
+        var page = new DockPanel { Margin = new Thickness(28, 24, 28, 28) };
+        DockPanel.SetDock(_notice, Dock.Top);
+        page.Children.Add(_notice);
+        DockPanel.SetDock(_linkStrip, Dock.Top);
+        page.Children.Add(LinkStrip());
+        page.Children.Add(body);
+        return page;
+    }
+
+    /// <summary>
+    /// Voice, art verdicts and the rest work under the player's account on the site. Until the launcher
+    /// is linked, the home page says so in a running line over the picture, and its button starts the
+    /// link right here: the site opens with the code already in it, so a signed-in player only says yes.
+    /// </summary>
+    Control LinkStrip()
+    {
+        var icon = new Border { Width = 18, Height = 18, Margin = new Thickness(0, 0, 12, 0), VerticalAlignment = VerticalAlignment.Center, Child = new Avalonia.Controls.Shapes.Path { Data = Geometry.Parse(Skin.IconGlobe), Stroke = Skin.B(Skin.Accent), StrokeThickness = 2, Stretch = Stretch.Uniform } };
+        var go = Skin.Btn(L.T("link.go"), "primary", 32);
+        go.Click += async (_, _) => await _account.StartAsync();
+        var open = Skin.Btn(L.T("account.open"), "primary", 32);
+        open.Click += (_, _) => _account.OpenSite();
+        var cancel = Skin.Btn(L.T("account.cancel"), "ghost", 32);
+        cancel.Click += (_, _) => _account.CancelLink();
+        var buttons = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, VerticalAlignment = VerticalAlignment.Center };
+        buttons.Children.Add(go);
+        buttons.Children.Add(open);
+        buttons.Children.Add(cancel);
+
+        _linkRun.Text = L.T("link.strip");
+        _linkLane.Child = new Canvas { Children = { _linkRun } };
+        _linkLane.PointerEntered += (_, _) => _linkHeld = true;
+        _linkLane.PointerExited += (_, _) => _linkHeld = false;
+        _linkTimer.Tick += (_, _) => StepLinkLine();
+
+        var row = new DockPanel();
+        DockPanel.SetDock(icon, Dock.Left);
+        row.Children.Add(icon);
+        DockPanel.SetDock(buttons, Dock.Right);
+        row.Children.Add(buttons);
+        row.Children.Add(new Panel { Children = { _linkLane, _linkSay } });
+        _linkStrip.Child = row;
+
+        void Update()
+        {
+            bool waiting = _account.PendingCode.Length > 0;
+            _linkStrip.IsVisible = !_account.Linked;
+            go.IsVisible = !waiting;
+            open.IsVisible = cancel.IsVisible = waiting;
+            // waiting or refused: words that must be read whole stand still; otherwise the line runs
+            string? say = waiting ? L.T("link.waiting", _account.PendingCode) : _account.Error;
+            _linkSay.Text = say ?? "";
+            _linkSay.Foreground = Skin.B(!waiting && say is not null ? Skin.WarnText : Skin.Text);
+            _linkSay.IsVisible = say is not null;
+            _linkLane.IsVisible = say is null;
+            _linkTimer.IsEnabled = _linkStrip.IsVisible && say is null;
+        }
+        _account.Changed += Update;
+        Update();
+        return _linkStrip;
+    }
+
+    void StepLinkLine()
+    {
+        // nothing to move while the window is in the tray or another page is open
+        if (_linkHeld || !_linkLane.IsEffectivelyVisible || _linkRun.RenderTransform is not TranslateTransform move) return;
+        double lane = _linkLane.Bounds.Width, text = _linkRun.Bounds.Width;
+        if (lane <= 0 || text <= 0) return;
+        move.Y = (_linkLane.Bounds.Height - _linkRun.Bounds.Height) / 2;
+        move.X -= 1.5;
+        if (move.X < -text) move.X = lane;
+    }
+
+    /// <summary>The card of the home page: one of the heroines' pictures (Assets/hero_&lt;n&gt;.jpg), another at each start.</summary>
+    static Avalonia.Media.Imaging.Bitmap? HeroArt()
+    {
+        try
+        {
+            var all = Enumerable.Range(1, 16).Select(n => new Uri($"avares://XPiratezLauncher/Assets/hero_{n}.jpg"))
+                .Where(u => Avalonia.Platform.AssetLoader.Exists(u)).ToList();
+            if (all.Count == 0) return null;
+            var pick = all[Random.Shared.Next(all.Count)];
+            using var s = Avalonia.Platform.AssetLoader.Open(pick);
+            return new Avalonia.Media.Imaging.Bitmap(s);
+        }
+        catch (Exception) { return null; }   // a build without the picture keeps the gradient
+    }
+
+    static RadialGradientBrush Glow(double x, double y, string color)
+    {
+        var c = Color.Parse(color);
+        return new()
+        {
+            Center = new RelativePoint(x, y, RelativeUnit.Relative),
+            GradientOrigin = new RelativePoint(x, y, RelativeUnit.Relative),
+            RadiusX = new RelativeScalar(0.6, RelativeUnit.Relative),
+            RadiusY = new RelativeScalar(0.6, RelativeUnit.Relative),
+            // fade to the same colour at zero alpha: fading to Colors.Transparent (white) greys the middle
+            GradientStops = { new GradientStop(c, 0), new GradientStop(Color.FromArgb(0, c.R, c.G, c.B), 1) },
+        };
+    }
+
+    Control WhatsNewContent()
+    {
+        var dock = new DockPanel();
+        _whatsNewTitle.Margin = new Thickness(0, 0, 0, 12);
+        DockPanel.SetDock(_whatsNewTitle, Dock.Top);
+        dock.Children.Add(_whatsNewTitle);
+        // under the latest "What's new": the way to every earlier one and to the plans
+        var more = new StackPanel { Spacing = 4, Margin = new Thickness(0, 12, 0, 0) };
+        more.Children.Add(Skin.Link(L.T("home.allUpdates"), () => Navigate("news")));
+        more.Children.Add(Skin.Link(L.T("home.roadmap"), () => { _newsRoadmap = true; Navigate("news"); }));
+        DockPanel.SetDock(more, Dock.Bottom);
+        dock.Children.Add(more);
+        dock.Children.Add(new ScrollViewer { Content = _changelog });
+        return dock;
+    }
+
+    Control SettingsPage()
+    {
+        var game = Group("settings.game");
+        game.Children.Add(Skin.Note(L.T("gameDir"), 13, Skin.Text2));
+        var dirRow = new DockPanel();
+        _choose.Margin = new Thickness(8, 0, 0, 0);
+        DockPanel.SetDock(_choose, Dock.Right);
+        dirRow.Children.Add(_choose);
+        dirRow.Children.Add(_gameDir);
+        game.Children.Add(dirRow);
+        var modsRow = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
+        modsRow.Children.Add(_components);
+        modsRow.Children.Add(_resetProfile);
+        game.Children.Add(modsRow);
+        game.Children.Add(Skin.Note(L.T("settings.modsHint"), 13, Skin.Text2));
+        game.Children.Add(Skin.Note(L.T("settings.language"), 13, Skin.Text2));
+        _language.Items.Add(new ComboBoxItem { Content = "Русский", Tag = "ru" });
+        _language.Items.Add(new ComboBoxItem { Content = "English", Tag = "en" });
+        _language.SelectedIndex = L.Language == "en" ? 1 : 0;
+        _language.SelectionChanged += (_, _) =>
+        {
+            if (_language.SelectedItem is not ComboBoxItem { Tag: string lang }) return;
+            _settings.Language = lang;
+            try { _settings.Save(); } catch (IOException) { }
+            _languageNote.Text = L.T("settings.languageRestart");
+            _languageNote.IsVisible = lang != L.Language;
+        };
+        game.Children.Add(_language);
+        game.Children.Add(_languageNote);
+        var tray = new CheckBox { Content = L.T("settings.trayWhilePlaying"), IsChecked = _settings.TrayWhilePlaying, FontSize = 13 };
+        tray.IsCheckedChanged += (_, _) =>
+        {
+            _settings.TrayWhilePlaying = tray.IsChecked == true;
+            try { _settings.Save(); } catch (IOException) { }
+        };
+        game.Children.Add(tray);
+        var notify = new CheckBox { Content = L.T("settings.notifyUpdates"), IsChecked = _settings.NotifyUpdates, FontSize = 13 };
+        notify.IsCheckedChanged += (_, _) =>
+        {
+            _settings.NotifyUpdates = notify.IsChecked == true;
+            try { _settings.Save(); } catch (IOException) { }
+        };
+        game.Children.Add(notify);
+        var closeToTray = new CheckBox { Content = L.T("settings.closeToTray"), IsChecked = _settings.CloseToTray, FontSize = 13 };
+        closeToTray.IsCheckedChanged += (_, _) =>
+        {
+            _settings.CloseToTray = closeToTray.IsChecked == true;
+            try { _settings.Save(); } catch (IOException) { }
+        };
+        game.Children.Add(closeToTray);
+        var stats = new CheckBox { Content = L.T("settings.sendStats"), IsChecked = _settings.SendStats, FontSize = 13 };
+        stats.IsCheckedChanged += (_, _) =>
+        {
+            _settings.SendStats = stats.IsChecked == true;
+            try { _settings.Save(); } catch (IOException) { }
+        };
+        game.Children.Add(stats);
+        game.Children.Add(Skin.H2(L.T("settings.builds")));
+        game.Children.Add(_buildList);
+        var buildsRow = new WrapPanel { Orientation = Orientation.Horizontal };
+        foreach (var b in new[] { _buildNew, _buildCopy, _buildRename, _buildDelete })
+        {
+            b.Margin = new Thickness(0, 0, 8, 6);
+            buildsRow.Children.Add(b);
+        }
+        game.Children.Add(buildsRow);
+        game.Children.Add(Skin.Note(L.T("builds.hint"), 13, Skin.Text2));
+
+        var updates = Group("settings.updates");
+        updates.Children.Add(_installed);
+        var upRow = new WrapPanel { Orientation = Orientation.Horizontal };
+        _check.Margin = new Thickness(0, 0, 10, 6);
+        _selfUpdate.Margin = new Thickness(0, 0, 10, 6);
+        upRow.Children.Add(_check);
+        upRow.Children.Add(_selfUpdate);
+        upRow.Children.Add(_launcherLine);
+        updates.Children.Add(upRow);
+        updates.Children.Add(_workBar);
+        updates.Children.Add(_workLine);
+
+        var broken = Group("settings.broken");
+        _repair.HorizontalAlignment = HorizontalAlignment.Stretch;
+        _rollback.HorizontalAlignment = HorizontalAlignment.Stretch;
+        broken.Children.Add(_repair);
+        broken.Children.Add(Skin.Note(L.T("settings.repairHint"), 12));
+        broken.Children.Add(_rollback);
+        _rollbackNote.Text = L.T("settings.rollbackHint");
+        broken.Children.Add(_rollbackNote);
+
+        var log = new StackPanel { Spacing = 10 };
+        var logHead = new DockPanel();
+        var copy = Skin.Btn(L.T("settings.copy"), null, 28);
+        copy.Margin = new Thickness(8, 0, 0, 0);
+        copy.FontSize = 12;
+        copy.Padding = new Thickness(10, 0);
+        copy.Click += async (_, _) => { if (GetTopLevel(this)?.Clipboard is { } c) await c.SetTextAsync(_log.Text ?? ""); };
+        var folder = Skin.Btn(L.T("settings.logFolder"), null, 28);
+        folder.Margin = new Thickness(8, 0, 0, 0);
+        folder.FontSize = 12;
+        folder.Padding = new Thickness(10, 0);
+        folder.Click += (_, _) => { if (_paths is not null && Directory.Exists(_paths.Logs)) ReportWindow.OpenUrl(_paths.Logs); };
+        DockPanel.SetDock(folder, Dock.Right);
+        DockPanel.SetDock(copy, Dock.Right);
+        logHead.Children.Add(folder);
+        logHead.Children.Add(copy);
+        logHead.Children.Add(Skin.H2(L.T("log")));
+        log.Children.Add(logHead);
+        log.Children.Add(new Border
+        {
+            Background = Skin.B(Skin.Rail), CornerRadius = new CornerRadius(2), Padding = new Thickness(10), Height = 150,
+            Child = new ScrollViewer { Content = _log },
+        });
+
+        var grid = new Grid { ColumnDefinitions = new ColumnDefinitions("*,14,*"), RowDefinitions = new RowDefinitions("Auto,14,Auto,14,Auto") };
+        void Put(Control c, int row, int col) { Grid.SetRow(c, row); Grid.SetColumn(c, col); grid.Children.Add(c); }
+        // the account first: the strip on the home page sends the player here, and it has to be in sight on arrival
+        var account = Skin.Panel(_account);
+        Grid.SetColumnSpan(account, 3);
+        Put(account, 0, 0);
+        Put(Skin.Panel(game), 2, 0);
+        Put(Skin.Panel(updates), 2, 2);
+        Put(Skin.Panel(broken), 4, 0);
+        Put(Skin.Panel(log), 4, 2);
+
+        var page = new StackPanel { Spacing = 14, Margin = new Thickness(28, 24, 28, 28) };
+        page.Children.Add(Skin.H1(L.T("nav.settings")));
+        page.Children.Add(grid);
+        return new ScrollViewer { Content = page };
+    }
+
+    static StackPanel Group(string key)
+    {
+        var s = new StackPanel { Spacing = 10 };
+        s.Children.Add(Skin.H2(L.T(key)));
+        return s;
+    }
+
+    // --------------------------------------------------------------- start-up
+
+    async Task StartupAsync()
+    {
+        var repoUrl = _settings.RepoUrl ?? BuiltIn.Defaults.RepoUrl;
+        _repo = new RepoClient(_http, new Uri(repoUrl), BuiltIn.Keys);
+        _watch = new UpdateWatch(_repo);
+        if (_settings.GameDir is { } dir && GamePaths.LooksLikeGameDir(dir)) OpenGameDir(dir);
+        Refresh();
+        // first start: no game yet - the wizard installs it
+        if (_paths is null) OpenSetup(null);
+        await _account.CheckAsync();
+
+        if (_updater is not null) await RunAsync(Work.Check, () => CheckAsync(full: false, apply: false, startup: true));
+        // the first look only remembers the channels; then every five minutes (UpdateWatch.Every)
+        _ = WatchAsync();
+        _watchTimer.Start();
+        // the site's count: the first word now, then every five minutes while a game runs - one started
+        // by hand too (GameIsRunning sees it), and a "stopped" once it is gone
+        _ = PingStatsAsync(GameIsRunning());
+        _statsTimer.Tick += (_, _) =>
+        {
+            bool playing = GameIsRunning();
+            if (playing || _statsPlaying) _ = PingStatsAsync(playing);
+        };
+        _statsTimer.Start();
+    }
+
+    /// <summary>One anonymous word to the site's count (Core.LauncherStats); off in the settings, silent on failure.</summary>
+    async Task PingStatsAsync(bool playing)
+    {
+        if (!_settings.SendStats) return;
+        if (!LauncherStats.IsInstallId(_settings.StatsId))
+        {
+            _settings.StatsId = LauncherStats.NewInstallId();
+            try { _settings.Save(); } catch (IOException) { }
+        }
+        _statsPlaying = playing;
+        try
+        {
+            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(20));
+            await LauncherStats.PingAsync(_http, new Uri(_settings.PortalUrl ?? BuiltIn.Defaults.PortalUrl), _settings.StatsId!,
+                playing, BuiltIn.VersionText, _installedRelease, cts.Token);
+        }
+        catch (Exception e) when (e is HttpRequestException or TaskCanceledException or UriFormatException)
+        {
+            _fileLog?.Info("stats: " + e.Message);
+        }
+    }
+
+    /// <summary>
+    /// A release out since the launcher last looked: the home page checks again (not under the game - the check
+    /// writes the state) and, unless the player is at the window, a Windows notification says so.
+    /// </summary>
+    async Task WatchAsync(bool tick = true)
+    {
+        // no server at the start: the timer tries the check again instead (not a coming back to the window -
+        // the check would lock the buttons each time the player looks in)
+        if (_offline is not null && tick) _staleCheck = true;
+        if (_watch is null || _watchChannels is not { } channels || _watchBusy) { await RecheckAsync(); return; }
+        _watchBusy = true;
+        try
+        {
+            List<ChannelPointer> news;
+            _lastLook = DateTime.UtcNow;
+            using (var cts = new CancellationTokenSource(TimeSpan.FromSeconds(30)))
+            {
+                try
+                {
+                    news = await _watch.NewsAsync(channels, cts.Token);
+                    // every look leaves a line: a player's log shows whether the launcher looked at all
+                    _fileLog?.Info("update watch: looked, " + _watch.Summary);
+                }
+                catch (Exception e) when (e is HttpRequestException or TaskCanceledException or IOException or TrustException or ManifestException)
+                {
+                    _fileLog?.Error("update watch: " + e.Message);
+                    news = [];
+                }
+            }
+            if (news.Count > 0)
+            {
+                _fileLog?.Info("update watch: out " + string.Join(", ", news.Select(p => $"{p.Channel} {p.ReleaseId}")));
+                _staleCheck = true;
+                // a game being played hears of it from the plate in its corner (UpdateNotice)
+                if (_paths is not null && news.FirstOrDefault(p => p.Channel == channels[0]) is { } release)
+                    UpdateNotice.Raise(_paths, release.ReleaseId);
+                if (_settings.NotifyUpdates && !(IsVisible && IsActive))
+                {
+                    var game = news.FirstOrDefault(p => p.Channel == channels[0]);
+                    _notifier ??= new Notifier(this, () => { ShowWindow(); Navigate("home"); });
+                    _notifier.Show(L.T("watch.title"), game is not null ? L.T("watch.game", game.ReleaseId) : L.T("watch.launcher"));
+                }
+            }
+            await RecheckAsync();
+        }
+        finally { _watchBusy = false; }
+    }
+
+    /// <summary>The home page checks again after a release came out, once nothing is in the way.</summary>
+    async Task RecheckAsync()
+    {
+        if (!_staleCheck || _work != Work.None || _updater is null || GameIsRunning()) return;
+        _staleCheck = false;
+        await RunAsync(Work.Check, () => CheckAsync(full: false, apply: false));
+    }
+
+    void OpenGameDir(string dir)
+    {
+        _paths = new GamePaths(dir);
+        _fileLog = new FileLog(_paths);
+        _fileLog.Written += line => Dispatcher.UIThread.Post(() => AppendLog(line));
+        _updater = new Updater(_paths, _repo!, _fileLog) { Lazy = LazyPacks.For(_http, _settings.PortalUrl ?? BuiltIn.Defaults.PortalUrl) };
+        _builds = new BuildStore(_paths);
+        _gameDir.Text = _paths.GameDir;
+        _fileLog.Info($"launcher {BuiltIn.VersionText} started, game dir <game>");
+        try
+        {
+            if (_updater.Recover()) SetStatus(L.T(_updater.RecoveryFinished ? "status.recoveredFinished" : "status.recovered"));
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException)
+        {
+            SetStatus(L.T("err.generic", e.Message));
+        }
+        // the first start with builds copies user/options.cfg; under a running game it waits for "Play"
+        if (!GameIsRunning())
+        {
+            CurrentBuild();
+            _updater.MigrateSettings();
+        }
+        FillBuilds();
+        TellGameWhereWeAre();
+        CountReports();
+    }
+
+    // ----------------------------------------------------------------- builds
+
+    /// <summary>The build "Play" starts, migrating on the first start; null when that cannot be done now (logged).</summary>
+    Build? CurrentBuild()
+    {
+        if (_builds is null) return null;
+        try { return _builds.Ensure(log: _fileLog); }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or UpdateBlockedException or InvalidOperationException)
+        {
+            _fileLog?.Error("builds: " + e.Message);
+            return null;
+        }
+    }
+
+    void FillBuilds()
+    {
+        _fillingBuilds = true;
+        _build.Items.Clear();
+        if (_builds is { Exists: true })
+        {
+            var set = _builds.Load(_fileLog);
+            foreach (var b in set.Builds) _build.Items.Add(new ComboBoxItem { Content = b.Title, Tag = b.Id });
+            _build.SelectedIndex = set.Current is { } c ? set.Builds.IndexOf(c) : -1;
+        }
+        _fillingBuilds = false;
+        FillBuildList();
+    }
+
+    /// <summary>The list in Settings, built from the switcher: a click on a row picks it the same way.</summary>
+    void FillBuildList()
+    {
+        _buildList.Children.Clear();
+        for (int i = 0; i < _build.Items.Count; i++)
+        {
+            if (_build.Items[i] is not ComboBoxItem { Content: string title }) continue;
+            bool chosen = i == _build.SelectedIndex;
+            var row = Skin.Btn(chosen ? "✓  " + title : title, chosen ? "primary" : null);
+            row.HorizontalAlignment = HorizontalAlignment.Stretch;
+            row.HorizontalContentAlignment = HorizontalAlignment.Left;
+            row.IsEnabled = _build.IsEnabled;
+            int index = i;
+            row.Click += (_, _) => { if (_build.SelectedIndex != index) _build.SelectedIndex = index; };
+            _buildList.Children.Add(row);
+        }
+        UpdateCredit();
+    }
+
+    /// <summary>
+    /// Under the rail, whose game the picked build plays: over X-Piratez the credit its author Dioxine asked for
+    /// (27.10), over a game from mod.io a link to its author's page. Not one line for all: the launcher plays other games too.
+    /// </summary>
+    void UpdateCredit()
+    {
+        _credit.Children.Clear();
+        Build? b = null;
+        try { if (_builds is { Exists: true }) b = _builds.Load(_fileLog).Current; }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { }
+        // no builds yet: the install is our release, X-Piratez
+        var game = b?.Template ?? b?.EngineMaster ?? "piratez";
+        if (game.Equals("piratez", StringComparison.OrdinalIgnoreCase))
+        {
+            _credit.Children.Add(new TextBlock { Text = L.T("credit.piratez"), FontSize = 11, LineHeight = 15, Foreground = Skin.B(Skin.Muted), TextWrapping = TextWrapping.Wrap });
+            return;
+        }
+        ModProfile? p = null;
+        try { p = _paths is null ? null : ProfileSet.Load(_paths.GameDir)?.Profiles.FirstOrDefault(x => x.Key.Equals(game, StringComparison.OrdinalIgnoreCase)); }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or System.Text.Json.JsonException) { }
+        if (p?.Source is not { Page.Length: > 0 } src) return;
+        var l = Skin.Link(L.T("credit.other", p.Title ?? b!.Title, src.Site), () => ReportWindow.OpenUrl(src.Page), 11);
+        if (l.Content is TextBlock t) t.TextWrapping = TextWrapping.Wrap;   // the rail is narrow
+        l.Foreground = Skin.B(Skin.Muted);
+        _credit.Children.Add(l);
+    }
+
+    void SelectBuild()
+    {
+        if (_fillingBuilds || _builds is null || _build.SelectedItem is not ComboBoxItem { Tag: string id }) return;
+        if (!BuildsWritable()) { FillBuilds(); return; }
+        try
+        {
+            _builds.Select(id);
+            _fileLog?.Info($"build '{id}' picked");
+            FillBuildList();
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or UpdateBlockedException or InvalidOperationException)
+        {
+            Fail(L.T("err.generic", e.Message));
+            FillBuilds();
+        }
+        Refresh();
+    }
+
+    /// <summary>Builds change only with the launcher idle and the game closed (MULTIMOD §3.6).</summary>
+    bool BuildsWritable()
+    {
+        if (_builds is null || _work != Work.None) return false;
+        if (!GameIsRunning()) return true;
+        SetStatus(L.T("builds.running"));
+        Refresh();
+        return false;
+    }
+
+    async Task NewBuildAsync()
+    {
+        if (!BuildsWritable() || CurrentBuild() is not { } cur) return;
+        var template = cur.Template ?? cur.EngineMaster ?? "piratez";
+        string? gameTitle = null;
+        // more than one game in the release's profiles: the build is of the game picked, fetched first if it is not here
+        if (_paths is not null && _repo is not null && ProfileSet.Load(_paths.GameDir) is { Profiles.Count: > 1 } set)
+        {
+            var gi = new GameInstaller(_paths, _repo, _fileLog!);
+            if (await new GameDialog(set, gi, set.For(template)).ShowDialog<ModProfile?>(this) is not { } pick) return;
+            if (!await PrepareGameAsync(set, gi, pick)) return;
+            template = pick.Key;
+            gameTitle = pick.Title;
+        }
+        var title = await new TextDialog(L.T("builds.newName"), gameTitle ?? L.T("builds.defaultNew")).ShowDialog<string?>(this);
+        if (title is null) return;
+        await BuildChangeAsync(() =>
+        {
+            var cfg = _builds!.OptionsFile(cur);
+            var lang = OptionsCfg.Parse(File.Exists(cfg) ? File.ReadAllText(cfg) : "").Get("language") ?? Setup.GameLanguage(L.Language);
+            var b = _builds.Create(title, template, lang, Screens.ScreenFromWindow(this)?.Bounds.Height, carryFrom: cfg);
+            _fileLog?.Info($"build '{b.Id}' created from the profile '{b.Template}', the player's options from '{cur.Id}'");
+        });
+    }
+
+    /// <summary>
+    /// Makes a game ready to play: fetches it (and the game it runs on) from its author's site after the player
+    /// agrees, and copies the player's TFTD for a game that needs it. False - not ready, the build is not made.
+    /// </summary>
+    /// <summary>
+    /// The fetch did not happen, and the page it was asked from (Setup) shows no error line: say why in a window,
+    /// and for a failure the player can get round - how to fetch the archive by hand and where exactly to put it
+    /// (XP-000353). Cancelled - nothing to say.
+    /// </summary>
+    async Task FetchFailedAsync(GameInstaller gi, List<ModProfile> fetch)
+    {
+        if (_error is not { } why)
+        {
+            if (_note is { } note && note != L.T("status.cancelled"))
+                await new MessageDialog(note, withNo: false).ShowDialog<bool>(this);
+            return;
+        }
+        var files = string.Join("\n", fetch.Select(p =>
+            L.T("games.byHandFile", p.Title ?? p.Key, p.Source!.Url, L.Size(p.Source.Size), p.Source.Page)));
+        var text = L.T("games.byHand", why, files, gi.Downloads, gi.UserDownloads);
+        _error = null;
+        Refresh();
+        if (!await new MessageDialog(text, withNo: true).ShowDialog<bool>(this)) return;
+        try { Directory.CreateDirectory(gi.Downloads); } catch (Exception e) when (e is IOException or UnauthorizedAccessException) { }
+        ReportWindow.OpenUrl(gi.Downloads);
+        foreach (var p in fetch) ReportWindow.OpenUrl(p.Source!.Url);
+    }
+
+    async Task<bool> PrepareGameAsync(ProfileSet set, GameInstaller gi, ModProfile game)
+    {
+        var fetch = gi.ToFetch(set, game);
+        if (fetch.Count > 0)
+        {
+            var names = string.Join(", ", fetch.Select(p => $"{p.Title ?? p.Key} {p.Source!.Version}"));
+            if (!await ConfirmAsync(L.T("games.fetchConfirm", names, L.Size(fetch.Sum(p => p.Source!.Size))))) return false;
+            bool ok = false;
+            await RunAsync(Work.Games, async () =>
+            {
+                var progress = new Progress<Core.Progress>(ShowProgress);
+                var ct = _cts!.Token;
+                _cancelable = true;
+                foreach (var p in fetch) await Task.Run(() => gi.InstallAsync(p, progress, ct), ct);
+                ok = true;
+                SetStatus(L.T("games.installed", game.Title ?? game.Key));
+            });
+            if (!ok)
+            {
+                await FetchFailedAsync(gi, fetch);
+                return false;
+            }
+        }
+        if (game.Data is "TFTD" && !TftdData.Check(Path.Combine(_paths!.GameDir, TftdData.Folder)).Ok)
+        {
+            if (TftdData.Search().FirstOrDefault(f => f.Source != "game") is not { } found)
+            {
+                await new MessageDialog(L.T("games.noTftd", TftdData.SteamStoreUrl, TftdData.GogUrl), withNo: false).ShowDialog<bool>(this);
+                return false;
+            }
+            if (!await ConfirmAsync(L.T("games.tftdCopy", found.Dir))) return false;
+            UfoCheck? copied = null;
+            await RunAsync(Work.Games, async () =>
+            {
+                if (GameIsRunning()) throw new UpdateBlockedException("the game is running");
+                copied = await Task.Run(() => TftdData.Copy(found.Dir, _paths!.GameDir));
+            });
+            if (copied is null) return false;
+            if (!copied.Ok)
+            {
+                Fail(L.T("games.tftdBad", string.Join(", ", copied.Missing)));
+                Refresh();
+                return false;
+            }
+        }
+        return true;
+    }
+
+    async Task CopyBuildAsync()
+    {
+        if (!BuildsWritable() || CurrentBuild() is not { } cur) return;
+        var title = await new TextDialog(L.T("builds.copyName", cur.Title), L.T("builds.defaultCopy", cur.Title)).ShowDialog<string?>(this);
+        if (title is null) return;
+        await BuildChangeAsync(() => _fileLog?.Info($"build '{_builds!.Copy(cur.Id, title).Id}' copied from '{cur.Id}'"));
+    }
+
+    async Task RenameBuildAsync()
+    {
+        if (!BuildsWritable() || CurrentBuild() is not { } cur) return;
+        var title = await new TextDialog(L.T("builds.renameName", cur.Title), cur.Title).ShowDialog<string?>(this);
+        if (title is null) return;
+        await BuildChangeAsync(() => _builds!.Rename(cur.Id, title));
+    }
+
+    async Task DeleteBuildAsync()
+    {
+        if (!BuildsWritable() || CurrentBuild() is not { } cur) return;
+        if (_builds!.Load().Builds.Count < 2) { await new MessageDialog(L.T("builds.onlyOne"), withNo: false).ShowDialog<bool>(this); return; }
+        if (!await ConfirmAsync(L.T("builds.deleteConfirm", cur.Title))) return;
+        await BuildChangeAsync(() => _fileLog?.Info($"build '{cur.Id}' deleted, its settings kept in {_builds.Delete(cur.Id)}"));
+    }
+
+    /// <summary>A change of the builds; the game may have started while a dialog was open, so the store checks again.</summary>
+    async Task BuildChangeAsync(Action change)
+    {
+        if (!BuildsWritable()) return;
+        try { change(); }
+        catch (UpdateBlockedException) { SetStatus(L.T("builds.running")); }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or InvalidOperationException or System.Text.Json.JsonException)
+        {
+            await new MessageDialog(L.T("err.generic", e.Message), withNo: false).ShowDialog<bool>(this);
+        }
+        FillBuilds();
+        Refresh();
+    }
+
+    /// <summary>
+    /// F8 in a game started without us (from its own exe) still needs to find the report form:
+    /// the game reads this file when XP_LAUNCHER is not set.
+    /// </summary>
+    void TellGameWhereWeAre()
+    {
+        if (_paths is null || Environment.ProcessPath is not { } self) return;
+        try
+        {
+            Directory.CreateDirectory(_paths.StateDir);
+            var file = Path.Combine(_paths.StateDir, "launcher-path.txt");
+            if (!File.Exists(file) || File.ReadAllText(file).Trim() != self) FileUtil.WriteAtomic(file, System.Text.Encoding.UTF8.GetBytes(self));
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { _fileLog?.Error("launcher-path.txt: " + e.Message); }
+    }
+
+    List<string> ReportRoots()
+    {
+        var roots = new List<string>();
+        if (_paths is not null) roots.Add(Path.Combine(_paths.GameDir, "user", "reports"));
+        roots.AddRange(_settings.ReportRoots);
+        return roots;
+    }
+
+    /// <summary>The rail counter and the home notices: reports the team asked about, reports not yet sent.</summary>
+    void CountReports()
+    {
+        var reports = ReportStore.List(ReportRoots());
+        var needInfo = reports.Where(r => r.Draft.Status == ReportStatus.Sent && r.Draft.TicketStatus == "NeedsInfo").ToList();
+        int unsent = reports.Count(r => r.Draft.Status != ReportStatus.Sent);
+        int queued = reports.Count(r => r.Draft.Status == ReportStatus.Queued);
+        int count = needInfo.Count + unsent;
+        _reportsCount.Text = count.ToString();
+        _reportsBadge.IsVisible = count > 0;
+
+        if (needInfo.Count > 0) ShowNotice(L.T("notice.needsInfo", needInfo[0].Draft.DisplayNumber ?? ""), L.T("notice.open"), () => Navigate("reports"));
+        else if (_launcherUpdate is not null && _needLauncher is null) ShowNotice(L.T("notice.launcher", _launcherUpdate.Release.Version), L.T("self.install"), async () => await RunAsync(Work.SelfUpdate, SelfUpdateAsync));
+        else if (queued > 0) ShowNotice(L.T("notice.queued", queued), L.T("notice.send"), () => { Navigate("reports"); _reportsPage.SendQueued(); });
+        else _notice.IsVisible = false;
+    }
+
+    void ShowNotice(string text, string action, Action onClick)
+    {
+        var row = new DockPanel();
+        var icon = new Border { Width = 18, Height = 18, Margin = new Thickness(0, 0, 12, 0), Child = new Avalonia.Controls.Shapes.Path { Data = Geometry.Parse(Skin.IconMessage), Stroke = Skin.B(Skin.Accent), StrokeThickness = 2, Stretch = Stretch.Uniform } };
+        DockPanel.SetDock(icon, Dock.Left);
+        row.Children.Add(icon);
+        var link = new Button { Content = action, FontFamily = Skin.Medium, FontSize = 14, VerticalAlignment = VerticalAlignment.Center };
+        link.Classes.Add("link");
+        link.Click += (_, _) => onClick();
+        DockPanel.SetDock(link, Dock.Right);
+        row.Children.Add(link);
+        row.Children.Add(new TextBlock { Text = text, FontSize = 14, TextWrapping = TextWrapping.Wrap, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(0, 0, 12, 0) });
+        _notice.Child = row;
+        _notice.IsVisible = true;
+    }
+
+    async Task ChooseGameDirAsync()
+    {
+        var picked = await StorageProvider.OpenFolderPickerAsync(new FolderPickerOpenOptions { Title = L.T("gameDir"), AllowMultiple = false });
+        var dir = picked.FirstOrDefault()?.TryGetLocalPath();
+        if (dir is null) return;
+        if (!GamePaths.LooksLikeGameDir(dir)) { SetStatus(L.T("status.notGameDir")); Navigate("home"); return; }
+        _settings.GameDir = dir;
+        _settings.Save();
+        OpenGameDir(dir);
+        Refresh();
+        Navigate("home");
+        await RunAsync(Work.Check, () => CheckAsync(full: false, apply: false));
+    }
+
+    // ---------------------------------------------------------------- actions
+
+    void OpenSetup(string? installedGame, IReadOnlySet<string>? fresh = null)
+    {
+        if (_work != Work.None || (installedGame is not null && GameIsRunning())) return;
+        _setupPage.Start(installedGame, fresh);
+        Navigate("setup");
+    }
+
+    /// <summary>
+    /// Before "Update": mods of the release the player has not ticked and has never seen (Setup.Unseen). Asked once -
+    /// the answer either way marks them seen; yes opens the components page with them marked instead of the update,
+    /// whose install brings the release too. True - the page was opened, the update does not run.
+    /// Nothing is ever ticked for the player: an addon (a tank going backwards) is the player's choice.
+    /// </summary>
+    async Task<bool> OfferNewModsAsync()
+    {
+        if (_work != Work.None || _updater is not { } u || _latest is null || _paths is null || GameIsRunning()) return false;
+        List<ComponentInfo> fresh;
+        try
+        {
+            var m = _latest.Manifest;
+            var state = u.LoadState();
+            var master = Setup.Master(m, (IEnumerable<string>?)state.Components ?? Setup.Installed(m, state));
+            var profile = master is null ? null : (await u.ProfilesAsync(m, CancellationToken.None))?.For(master);
+            var cfg = CurrentBuild() is { } b ? _builds!.OptionsFile(b) : null;
+            var lang = (cfg is not null && File.Exists(cfg) ? OptionsCfg.Parse(File.ReadAllText(cfg)).Get("language") : null) ?? Setup.GameLanguage(L.Language);
+            fresh = Setup.Unseen(m, state, profile, lang);
+        }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or HttpRequestException or TrustException or System.Text.Json.JsonException)
+        {
+            _fileLog?.Error("new mods not checked: " + e.Message);   // the update goes on as always
+            return false;
+        }
+        if (fresh.Count == 0) return false;
+        var names = string.Join(", ", fresh.Select(Setup.Title));
+        bool open = await ConfirmAsync(L.T("newMods.ask", names));
+        try { Setup.MarkSeen(u, fresh.Select(c => c.Id)); }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException) { _fileLog?.Error("new mods not marked seen: " + e.Message); }
+        _fileLog?.Info($"new mods offered: {string.Join(", ", fresh.Select(c => c.Id))} - {(open ? "to the components page" : "not now")}");
+        if (!open) return false;
+        OpenSetup(_paths.GameDir, fresh.Select(c => c.Id).ToHashSet(StringComparer.Ordinal));
+        return true;
+    }
+
+    /// <summary>The player changed the mods in the game and wants ours back: the profile's list and recommended options.</summary>
+    async Task ResetProfileAsync()
+    {
+        if (_paths is null || GameIsRunning() || !await ConfirmAsync(L.T("settings.resetConfirm"))) return;
+        string text;
+        try
+        {
+            var r = ProfileWriter.ApplyForGame(_paths, null, null, Screens.ScreenFromWindow(this)?.Bounds.Height, resetMods: true,
+                build: _builds?.Ensure(log: _fileLog));
+            text = r is null ? L.T("settings.resetNothing")
+                 : r.Changes.Count == 0 ? L.T("settings.resetSame")
+                 : L.T("settings.resetDone", ProfileText.Lines(r.Items));
+            if (r is { Written: true }) _fileLog?.Info("options.cfg back to the profile: " + string.Join("; ", r.Changes));
+        }
+        catch (UpdateBlockedException) { text = L.T("builds.running"); }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or System.Text.Json.JsonException or InvalidOperationException)
+        {
+            text = L.T("err.generic", e.Message);
+        }
+        await new MessageDialog(text, withNo: false).ShowDialog<bool>(this);
+    }
+
+    void OnSetupFinished(string dir, bool play)
+    {
+        if (_paths is null || !Path.GetFullPath(dir).Equals(_paths.GameDir, StringComparison.OrdinalIgnoreCase)) OpenGameDir(dir);
+        _pendingLine = null;
+        _error = null;
+        Refresh();
+        Navigate("home");
+        if (play) Play();
+    }
+
+    async Task OnMainAsync()
+    {
+        if (_paths is null) { OpenSetup(null); await Task.CompletedTask; return; }
+        if (_needLauncher is not null) { await RunAsync(Work.SelfUpdate, SelfUpdateAsync); return; }
+        if (_error is not null || _pendingLine is not null)
+        {
+            if (await OfferNewModsAsync()) return;
+            await RunAsync(Work.Update, () => CheckAsync(full: false, apply: true));
+            if (_error is null && _pendingLine is null && _needLauncher is null) Play();
+            return;
+        }
+        Play();
+    }
+
+    async Task RunAsync(Work work, Func<Task> action)
+    {
+        if (_work != Work.None || _updater is null) return;
+        _work = work;
+        _cts = new CancellationTokenSource();
+        _note = null;
+        if (work != Work.Check) _error = null;
+        _percent = 0;
+        _phase = Phase.Checking;
+        _progressLine = "";
+        Refresh();
+        try
+        {
+            await action();
+            _offline = null;
+        }
+        catch (OperationCanceledException) { SetStatus(L.T("status.cancelled")); }
+        catch (TrustException e) { Fail(L.T("err.trust", e.Message)); }
+        catch (ManifestException e) { Fail(L.T("err.trust", e.Message)); }
+        catch (UpdateBlockedException e) when (!e.Message.Contains("disk")) { SetStatus(L.T("err.gameRunning")); }
+        catch (UpdateBlockedException e) { Fail(L.T("err.disk", e.Message)); }
+        // a game is fetched from its author's site, not from our server: say which one did not answer (XP-000353)
+        catch (HttpRequestException e) when (work == Work.Games) { Fail(L.T("games.noSite", e.Message)); }
+        catch (HttpRequestException e) { Offline(L.T("err.network", e.Message)); }
+        catch (FileNotFoundException e) when (e.Message.StartsWith("not on server")) { Offline(L.T("err.network", e.Message)); }
+        catch (Exception e) when (e is IOException or UnauthorizedAccessException or InvalidOperationException) { Fail(L.T("err.generic", e.Message)); }
+        finally
+        {
+            _work = Work.None;
+            _cancelable = false;
+            _cts.Dispose();
+            _cts = null;
+            _current.Text = "";
+            Refresh();
+        }
+    }
+
+    void Fail(string message)
+    {
+        _error = message;
+        _fileLog?.Error(message);
+    }
+
+    /// <summary>No server is not a failure of the game: it still plays, the button only says the check did not happen.</summary>
+    void Offline(string message)
+    {
+        // a game fetched for a new build: no server means it is not there, a failure the player must see (XP-000353)
+        if (_work is Work.Update or Work.Repair or Work.Games) { Fail(message); return; }
+        _offline = message;
+        _fileLog?.Error(message);
+    }
+
+    async Task CheckAsync(bool full, bool apply, bool startup = false)
+    {
+        var u = _updater!;
+        var ct = _cts!.Token;
+        // off the window's thread: the state and the manifest run to megabytes of JSON, the signature check is not free
+        var state = await Task.Run(u.LoadState, ct);
+        _latest = await Task.Run(() => u.CheckAsync(state, ct), ct);
+        _watch?.Know(_latest.Pointer);
+        _installedRelease = state.InstalledReleaseId;
+        // the plate in the game: a release other than the installed one is out, or nothing is
+        if (state.InstalledReleaseId is not null && _latest.Manifest.Release.Id != state.InstalledReleaseId)
+            UpdateNotice.Raise(_paths!, _latest.Manifest.Release.Version);
+        else UpdateNotice.Clear(_paths!);
+        _watchChannels = [state.Channel, SelfUpdate.ChannelFor(state.Channel)];
+        _staleCheck = false;
+        var channel = _latest.Manifest.Release.Channel is { Length: > 0 } ch ? ch : state.Channel;
+        ShowRelease(_latest.Manifest, await NotesAsync(channel, ct), state.InstalledVersion);
+        await CheckLauncherAsync(state.Channel, ct);
+
+        _needLauncher = Version.TryParse(_latest.Manifest.Release.MinLauncher, out var need) && need > BuiltIn.Version ? need : null;
+        if (_needLauncher is not null) return;
+
+        if (startup && state.ScanIsFresh(_latest.Manifest.Release.Id, DateTime.UtcNow))
+        {
+            _fileLog?.Info($"scan skipped: every file in place on {state.LastScanUtc:u}, the same release");
+            _pendingLine = null;
+            SetStatus(L.T("status.scanFresh", state.LastScanUtc!.Value.ToLocalTime()));
+            return;
+        }
+
+        var progress = new Progress<Core.Progress>(ShowProgress);
+        var plan = await Task.Run(() => u.Scan(state, _latest.Manifest, full, progress, ct), ct);
+        if (!full)
+        {
+            // the hashes learned by the scan and its time stay for the next start; nothing is written
+            // under the game (R-179), the next scan then learns them again
+            var clean = !plan.PlayerModified.Any() && !plan.ToWrite.Any() && plan.Deletes.Count == 0;
+            state.LastScanUtc = clean ? DateTime.UtcNow : null;
+            state.LastScanReleaseId = clean ? _latest.Manifest.Release.Id : null;
+            if (!GameIsRunning()) u.SaveState(state);
+        }
+        if (plan.PlayerModified.Any())
+        {
+            if (!apply)
+            {
+                ShowPending(plan, full);
+                return;
+            }
+            var replace = await new ModifiedFilesDialog(plan.PlayerModified.Select(c => c.File.Path).ToList(), preselect: full).ShowDialog<HashSet<string>?>(this);
+            if (replace is null) { SetStatus(L.T("status.cancelled")); return; }
+            plan = u.Resolve(state, plan, replace);
+        }
+
+        if (plan.NothingToDo || (!plan.ToWrite.Any() && plan.Deletes.Count == 0))
+        {
+            _pendingLine = null;
+            if (_work != Work.Check) SetStatus(L.T("status.upToDate"));
+            return;
+        }
+        if (!apply)
+        {
+            ShowPending(plan, full);
+            return;
+        }
+        if (GameIsRunning()) throw new UpdateBlockedException("the game is running");
+
+        _cancelable = true;
+        await u.DownloadAsync(plan, progress, ct);
+        _cancelable = false;
+        Refresh();
+        await Task.Run(() => u.Install(state, plan, progress, CancellationToken.None));
+        UpdateNotice.Clear(_paths!);
+        _installedRelease = _latest.Manifest.Release.Id;
+        _pendingLine = null;
+        SetStatus(L.T("status.done", _latest.Manifest.Release.Version));
+    }
+
+    async Task RollbackAsync()
+    {
+        if (!await ConfirmAsync(L.T("rollback.confirm"))) return;
+        await Task.Run(() => _updater!.RollbackLast());
+        var state = _updater!.PeekState();
+        _pendingLine = null;
+        SetStatus(L.T("status.rolledBack", state.InstalledVersion ?? L.T("none")));
+        Navigate("home");
+    }
+
+    async Task CheckLauncherAsync(string channel, CancellationToken ct)
+    {
+        try { _launcherUpdate = await new SelfUpdate(_repo!, _settings, _fileLog!).CheckAsync(channel, ct); }
+        catch (Exception e) when (e is HttpRequestException or TrustException or ManifestException)
+        {
+            _fileLog?.Error("launcher channel: " + e.Message);
+            _launcherUpdate = null;
+        }
+        if (_launcherUpdate is not null) _fileLog?.Info($"launcher {_launcherUpdate.Release.Version} available");
+    }
+
+    async Task SelfUpdateAsync()
+    {
+        if (_launcherUpdate is null) return;
+        if (!SelfUpdate.AppDirWritable()) { Fail(L.T("self.readonly")); return; }
+        var su = new SelfUpdate(_repo!, _settings, _fileLog!);
+        _cancelable = true;
+        var dir = await su.PrepareAsync(_launcherUpdate, _cts!.Token, new Progress<Core.Progress>(ShowProgress));
+        _cancelable = false;
+        su.Apply(dir, _launcherUpdate);
+        // a real exit even in a voice room: the bootstrapper waits for this process to swap its files
+        Quit();
+    }
+
+    void Play()
+    {
+        if (_updater is null || GameIsRunning()) return;
+        var state = _updater.LoadState();
+        var exe = new[] { state.InstalledLaunch, "openxcom_hd.exe", "OpenXcomEx.exe" }
+            .FirstOrDefault(e => e.Length > 0 && File.Exists(Path.Combine(_updater.Paths.GameDir, e)));
+        if (exe is null) { Fail(L.T("err.noLaunch")); Refresh(); return; }
+        // the build's own options.cfg, given to the game with -cfg (MULTIMOD §3); without one the game cannot be told where its settings are
+        if (CurrentBuild() is not { } build) { Fail(L.T("err.generic", "builds")); Refresh(); return; }
+        // a start-up under a running game skipped it; before the profile, which reads the mods list as migrated
+        _updater.MigrateSettings();
+        try
+        {
+            // the profile of the master mod: fixed options and the mod order, before every start
+            try
+            {
+                var screen = Screens.ScreenFromWindow(this)?.Bounds.Height;
+                if (ProfileWriter.ApplyForGame(_updater.Paths, null, null, screen, build: build) is { Written: true } r)
+                    _fileLog?.Info($"{build.Cfg}options.cfg by the profile: " + string.Join("; ", r.Changes));
+            }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException or System.Text.Json.JsonException or InvalidOperationException)
+            {
+                _fileLog?.Error("profile not applied: " + e.Message);   // the game still starts, as the player left it
+            }
+            // before the start: once the game runs, nothing of the builds is written
+            try { _builds!.MarkPlayed(build.Id); }
+            catch (Exception e) when (e is IOException or UnauthorizedAccessException) { _fileLog?.Error("builds.json: " + e.Message); }
+            var args = _builds!.LaunchArgs(build);
+            _game = GameProcess.Start(_updater.Paths, exe, args);
+            _fileLog?.Info($"game started: {exe} {string.Join(' ', args)} (build '{build.Id}')");
+            _gameFailed = null;
+            FollowGame();
+        }
+        catch (UpdateBlockedException) { SetStatus(L.T("builds.running")); }   // started from elsewhere a moment ago: one game at a time
+        catch (Exception e) when (e is IOException or System.ComponentModel.Win32Exception or InvalidOperationException)
+        {
+            Fail(L.T("err.generic", e.Message));
+        }
+        Refresh();
+    }
+
+    bool GameIsRunning() => _game is { HasExited: false } || (_paths is not null && GameProcess.IsRunningIn(_paths.GameDir));
+
+    // ----------------------------------------------------------------- display
+
+    /// <summary>
+    /// "What's new": every release from the version the player had before the update up to the latest - the one
+    /// installed now when an update waits, the one kept in backup/last when it is already in. Without the history
+    /// (an old repository, no network for it) - the latest manifest's own text, as before.
+    /// </summary>
+    void ShowRelease(ReleaseManifest m, ChannelNotes? notes, string? installed)
+    {
+        var latest = m.Release.Version;
+        var before = installed != latest ? installed : _updater?.PreviousVersion();
+        var range = notes is null ? [] : NoteRange.Since(notes.Releases, latest, before);
+        if (range.Count == 0) range = [new ReleaseNote { Version = latest, Changelog = m.Release.Changelog }];
+        _changelog.Children.Clear();
+        foreach (var r in range)
+        {
+            var text = NoteText.Pick(r.Changelog, L.Language).Trim();
+            if (text.Length == 0) continue;
+            var entry = new StackPanel { Spacing = 4 };
+            if (range.Count > 1) entry.Children.Add(new TextBlock { Text = r.Version, FontFamily = Skin.Medium, FontSize = 15, Foreground = Skin.B(Skin.Text) });
+            entry.Children.Add(new TextBlock { Text = text, TextWrapping = TextWrapping.Wrap, FontSize = 13, LineHeight = 19, Foreground = Skin.B(Skin.Text2) });
+            _changelog.Children.Add(entry);
+        }
+        _whatsNewTitle.Text = range.Count > 1 ? L.T("home.whatsNewSince", before ?? "") : L.T("home.whatsNew", latest);
+        _whatsNew.IsVisible = _changelog.Children.Count > 0;
+    }
+
+    /// <summary>The history kept on disk (XP-000268); null before the game folder is known.</summary>
+    NotesCache? NotesKept() => _paths is { } p ? new NotesCache(p) { IsGameRunning = GameIsRunning } : null;
+
+    /// <summary>The channel's history for "What's new"; null when there is none or it cannot be had now - never a failed check.</summary>
+    async Task<ChannelNotes?> NotesAsync(string channel, CancellationToken ct)
+    {
+        if (_repo is not { } repo) return null;
+        try { return NotesKept() is { } kept ? await kept.GetAsync(repo, channel, _latest?.Pointer.ReleaseId, ct) : await repo.GetNotesAsync(channel, ct); }
+        catch (Exception e) when (!ct.IsCancellationRequested && e is HttpRequestException or IOException or TrustException or TaskCanceledException or ArgumentException)
+        {
+            _fileLog?.Info("history for what's new: " + e.Message);
+            return null;
+        }
+    }
+
+    void ShowProgress(Core.Progress p)
+    {
+        // at most ~10 updates a second: 39 000 files would otherwise flood the UI thread
+        var now = Environment.TickCount64;
+        if (now - _lastProgressTicks < 100 && p.Done < p.Total) return;
+        _lastProgressTicks = now;
+        _phase = p.Phase;
+        _percent = p.Total > 0 ? 100.0 * p.Done / p.Total : 0;
+        _progress.Value = _percent * 10;
+        _progressLine = p.Phase switch
+        {
+            Phase.Scanning => L.T("status.scanning", L.Size(p.Done), L.Size(p.Total)),
+            Phase.Packing => L.T("status.packing", L.Size(p.Total)),
+            Phase.Downloading => L.T("status.downloading", L.Size(p.Done), L.Size(p.Total), L.Size(p.BytesPerSecond)),
+            Phase.Installing => L.T("status.installing", L.Size(p.Done), L.Size(p.Total)),
+            _ => _progressLine,
+        };
+        _current.Text = _work == Work.Check ? "" : p.Current ?? "";
+        UpdateMain();
+    }
+
+    void ShowPending(UpdatePlan plan, bool repair)
+    {
+        int files = plan.ToWrite.Count() + plan.PlayerModified.Count() + plan.Deletes.Count;
+        _pendingLine = plan.Manifest.Release.Id == _updater?.PeekState().InstalledReleaseId || repair
+            ? L.T("status.repairNeeded", files, L.Size(plan.DownloadBytes))
+            : L.T("main.updateLine", plan.Manifest.Release.Version, L.Size(plan.DownloadBytes));
+    }
+
+    void SetStatus(string text) => _note = text;
+
+    void AppendLog(string line)
+    {
+        var lines = (_log.Text ?? "").Split('\n').TakeLast(200).Append(line);
+        _log.Text = string.Join('\n', lines).TrimStart('\n');
+    }
+
+    void Refresh()
+    {
+        var state = _updater?.PeekState();
+        _version.Text = _paths is null ? L.T("main.whereIsGame")
+                      : state?.InstalledVersion is { } v ? L.T("home.version", v) : L.T("home.notInstalled");
+        _installed.Text = state?.InstalledVersion is { } iv ? L.T("settings.installed", iv) : L.T("settings.installedNone");
+        _launcherLine.Text = _launcherUpdate is { } lu ? L.T("settings.launcherNew", BuiltIn.VersionText, lu.Release.Version) : L.T("settings.launcherLatest", BuiltIn.VersionText);
+
+        bool idle = _updater is not null && _work == Work.None;
+        // not only the game "Play" started: one started from its own exe, or before the launcher, locks the same
+        bool running = _game is { HasExited: false } || (idle && GameIsRunning());
+        _check.IsEnabled = idle;
+        _updateOnly.IsEnabled = idle && !running && _paths is not null;
+        _repair.IsEnabled = idle && !running && state?.InstalledReleaseId is not null;
+        _rollback.IsEnabled = idle && !running && _updater!.CanRollback;
+        _choose.IsEnabled = _work == Work.None;
+        _components.IsEnabled = idle && !running && _paths is not null;
+        _resetProfile.IsEnabled = idle && !running && _paths is not null;
+        // under a running game the builds are read only (MULTIMOD §3.6, §7)
+        bool buildsOn = idle && !running && _builds is { Exists: true };
+        _build.IsEnabled = buildsOn;
+        foreach (var b in new[] { _buildNew, _buildCopy, _buildRename, _buildDelete }) b.IsEnabled = buildsOn;
+        foreach (var r in _buildList.Children) r.IsEnabled = buildsOn;
+        _selfUpdate.IsVisible = _launcherUpdate is not null;
+        _selfUpdate.IsEnabled = idle;
+        if (_launcherUpdate is not null) _selfUpdate.Content = L.T("self.install") + " " + _launcherUpdate.Release.Version;
+        CountReports();
+        UpdateMain();
+    }
+
+    /// <summary>The main button and the line under it: the table in LAUNCHER_UI.md §5.</summary>
+    void UpdateMain()
+    {
+        string caption;
+        string look = "primary";
+        bool enabled = true;
+        _sub.Children.Clear();
+        _progress.IsVisible = false;
+
+        if (_paths is null)
+        {
+            caption = L.T("main.install");
+            Sub(L.T("main.installHint"));
+            SubLink(L.T("main.haveGame"), async () => await ChooseGameDirAsync());
+        }
+        else if (_work is Work.Update or Work.Repair or Work.Rollback or Work.SelfUpdate or Work.Games)
+        {
+            bool scanning = _work is Work.Repair or Work.Update && _phase is Phase.Checking or Phase.Scanning;
+            caption = L.T(_work == Work.Games ? "games.busy" : _work == Work.SelfUpdate ? "self.updating" : scanning ? "main.repairing" : "main.updating", (int)_percent);
+            look = "busy";
+            _progress.IsVisible = true;
+            if (_progressLine.Length > 0) Sub(_progressLine);
+            if (_cancelable) SubLink(L.T("cancel"), () => _cts?.Cancel());
+        }
+        else if (_game is { HasExited: false } || (_work == Work.None && GameIsRunning()))
+        {
+            caption = L.T("main.running");
+            enabled = false;
+            if (_pendingLine is not null) Sub(L.T("main.runningUpdate"));
+        }
+        else if (_needLauncher is not null)
+        {
+            caption = L.T("self.install");
+            enabled = _launcherUpdate is not null;
+            Sub(L.T("self.required", _needLauncher));
+        }
+        else if (_error is not null)
+        {
+            caption = L.T("main.retry");
+            look = "warnfill";
+            Sub(FirstLine(_error), Skin.WarnText);
+            SubLink(L.T("main.details"), () => Navigate("settings"));
+        }
+        else if (_pendingLine is not null)
+        {
+            caption = L.T("main.update");
+            if (_gameFailed is not null) Sub(_gameFailed, Skin.WarnText);
+            Sub(_pendingLine);
+            SubLink(L.T("main.playAnyway"), Play);
+        }
+        else
+        {
+            caption = L.T("play");
+            if (_gameFailed is not null) Sub(_gameFailed, Skin.WarnText);
+            if (_work == Work.Check) Sub(_progressLine.Length > 0 ? L.T("status.checking") + " " + _progressLine : L.T("status.checking"));
+            else if (_offline is not null) { Sub(L.T("main.offline")); SubLink(L.T("main.retry"), async () => await RunAsync(Work.Check, () => CheckAsync(full: false, apply: false))); }
+            else if (_note is not null) Sub(_note);
+        }
+
+        _mainText.Text = caption;
+        foreach (var c in new[] { "primary", "busy", "warnfill" }) _main.Classes.Set(c, c == look);
+        _main.IsEnabled = enabled && (_work is Work.None or Work.Check || look == "busy");
+        _main.IsHitTestVisible = look != "busy";
+        UpdateWork(look == "busy" ? caption : null);
+    }
+
+    /// <summary>
+    /// The work under way on the settings page too: its buttons only go dim, and the player who pressed
+    /// «Обновить лаунчер» there saw nothing else of it. The same percent, line and «Отмена» as on the main page.
+    /// </summary>
+    void UpdateWork(string? busyCaption)
+    {
+        _workLine.Children.Clear();
+        _workBar.IsVisible = busyCaption is not null;
+        _workBar.Value = _progress.Value;
+        if (busyCaption is not null)
+        {
+            Sub(busyCaption, Skin.Text2, _workLine);
+            if (_progressLine.Length > 0) Sub(_progressLine, null, _workLine);
+            if (_cancelable) SubLink(L.T("cancel"), () => _cts?.Cancel(), _workLine);
+        }
+        else if (_work == Work.Check) Sub(_progressLine.Length > 0 ? L.T("status.checking") + " " + _progressLine : L.T("status.checking"), null, _workLine);
+        _workLine.IsVisible = _workLine.Children.Count > 0;
+    }
+
+    static string FirstLine(string s) => s.Split('\n')[0].Trim();
+
+    void Sub(string text, Color? color = null, WrapPanel? to = null)
+    {
+        to ??= _sub;
+        if (to.Children.Count > 0) to.Children.Add(Dot());
+        to.Children.Add(new TextBlock { Text = text, FontSize = 13, Foreground = Skin.B(color ?? Skin.Muted), TextWrapping = TextWrapping.Wrap, VerticalAlignment = VerticalAlignment.Center });
+    }
+
+    void SubLink(string text, Action onClick, WrapPanel? to = null)
+    {
+        to ??= _sub;
+        if (to.Children.Count > 0) to.Children.Add(Dot());
+        var l = Skin.Link(text, onClick);
+        l.Foreground = Skin.B(Skin.Text2);
+        to.Children.Add(l);
+    }
+
+    static TextBlock Dot() => new() { Text = "·", FontSize = 13, Foreground = Skin.B(Skin.Muted), Margin = new Thickness(8, 0), VerticalAlignment = VerticalAlignment.Center };
+
+    // ----------------------------------------------------------------- dialogs
+
+    Task<bool> ConfirmAsync(string text) => new MessageDialog(text, withNo: true).ShowDialog<bool>(this);
+}
+
+sealed class MessageDialog : Window
+{
+    /// <param name="check">a tick under the text, on at the start; <see cref="Checked"/> says how it was left</param>
+    public MessageDialog(string text, bool withNo, string? check = null)
+    {
+        Title = L.T("title");
+        Width = 460; SizeToContent = SizeToContent.Height; CanResize = false;
+        WindowStartupLocation = WindowStartupLocation.CenterOwner;
+        var yes = Skin.Btn(L.T(withNo ? "yes" : "modified.ok"), "primary");
+        yes.Margin = new Thickness(0, 0, 8, 0);
+        yes.Click += (_, _) => Close(true);
+        var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
+        buttons.Children.Add(yes);
+        if (withNo)
+        {
+            var no = Skin.Btn(L.T("no"));
+            no.Click += (_, _) => Close(false);
+            buttons.Children.Add(no);
+        }
+        var panel = new StackPanel { Margin = new Thickness(20), Spacing = 16 };
+        panel.Children.Add(new TextBlock { Text = text, TextWrapping = TextWrapping.Wrap });
+        if (check is not null)
+        {
+            var box = new CheckBox { Content = new TextBlock { Text = check, TextWrapping = TextWrapping.Wrap }, IsChecked = true, FontSize = 13 };
+            box.IsCheckedChanged += (_, _) => Checked = box.IsChecked == true;
+            panel.Children.Add(box);
+        }
+        panel.Children.Add(buttons);
+        Content = Skin.Panel(panel, new Thickness(0));
+    }
+
+    public bool Checked { get; private set; } = true;
+}
+
+/// <summary>One line of text, for a build's name: the text, or null on "Cancel". allowEmpty: an optional
+/// answer (a reason), "" when left blank.</summary>
+sealed class TextDialog : Window
+{
+    public TextDialog(string prompt, string initial, int maxLength = 60, bool allowEmpty = false)
+    {
+        Title = L.T("title");
+        Width = 460; SizeToContent = SizeToContent.Height; CanResize = false;
+        WindowStartupLocation = WindowStartupLocation.CenterOwner;
+        var box = new TextBox { Text = initial, FontSize = 14, MaxLength = maxLength };
+        var ok = Skin.Btn(L.T("modified.ok"), "primary");
+        ok.Margin = new Thickness(0, 0, 8, 0);
+        void Done() { if (allowEmpty || (box.Text ?? "").Trim().Length > 0) Close((box.Text ?? "").Trim()); }
+        ok.Click += (_, _) => Done();
+        box.KeyDown += (_, e) => { if (e.Key == Key.Enter) Done(); };
+        var cancel = Skin.Btn(L.T("cancel"));
+        cancel.Click += (_, _) => Close(null);
+        var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
+        buttons.Children.Add(ok);
+        buttons.Children.Add(cancel);
+        var panel = new StackPanel { Margin = new Thickness(20), Spacing = 16 };
+        panel.Children.Add(new TextBlock { Text = prompt, TextWrapping = TextWrapping.Wrap });
+        panel.Children.Add(box);
+        panel.Children.Add(buttons);
+        Content = Skin.Panel(panel, new Thickness(0));
+        Opened += (_, _) => { box.Focus(); box.SelectAll(); };
+        // opened right after another dialog (the game of a new build), the window is activated later and the focus
+        // coming back drops the selection: typing went before the name instead of replacing it
+        bool first = true;
+        Activated += (_, _) => { if (first) { first = false; box.Focus(); box.SelectAll(); } };
+    }
+}
+
+/// <summary>
+/// The game a new build is of (docs/portal/MODIO-GAMES.md §2): ours and the ones fetched from their authors, each with
+/// what it takes to play it. The picked profile, or null on "Cancel".
+/// </summary>
+sealed class GameDialog : Window
+{
+    public GameDialog(ProfileSet set, GameInstaller gi, ModProfile? current)
+    {
+        Title = L.T("title");
+        Width = 520; SizeToContent = SizeToContent.Height; CanResize = false;
+        WindowStartupLocation = WindowStartupLocation.CenterOwner;
+        var installed = ProfileWriter.ScanMods(gi.Paths.GameDir);
+        var state = gi.LoadState();
+        bool tftd = TftdData.Check(Path.Combine(gi.Paths.GameDir, TftdData.Folder)).Ok;
+        var list = new StackPanel { Spacing = 10 };
+        ModProfile? picked = null;
+        foreach (var p in set.Profiles)
+        {
+            var status = gi.Status(p, state);
+            var name = p.Title ?? installed.FirstOrDefault(m => m.Id == p.Master)?.Name ?? p.Master;
+            var need = new List<string>();
+            if (status == GameStatus.Absent) need.Add(L.T("games.absent"));
+            else if (p.Source is { } src && status != GameStatus.Ready)
+            {
+                long size = gi.ToFetch(set, p).Sum(f => f.Source!.Size);
+                need.Add(L.T(status == GameStatus.Outdated ? "games.update" : "games.fetch", L.Size(size), src.Site));
+            }
+            if (p.Data is "TFTD" && !tftd) need.Add(L.T("games.needTftd"));
+            var line = new StackPanel { Spacing = 2 };
+            line.Children.Add(new TextBlock { Text = name, FontSize = 14 });
+            line.Children.Add(new TextBlock
+            {
+                Text = need.Count > 0 ? string.Join(" · ", need) : L.T("games.ready"),
+                FontSize = 12, Foreground = Skin.B(Skin.Muted), TextWrapping = TextWrapping.Wrap,
+            });
+            var radio = new RadioButton { GroupName = "game", Content = line, IsEnabled = status != GameStatus.Absent };
+            if (p == current || (picked is null && current is null)) { radio.IsChecked = radio.IsEnabled; }
+            if (radio.IsChecked == true) picked = p;
+            radio.IsCheckedChanged += (_, _) => { if (radio.IsChecked == true) picked = p; };
+            list.Children.Add(radio);
+        }
+        var ok = Skin.Btn(L.T("modified.ok"), "primary");
+        ok.Margin = new Thickness(0, 0, 8, 0);
+        ok.Click += (_, _) => { if (picked is not null) Close(picked); };
+        var cancel = Skin.Btn(L.T("cancel"));
+        cancel.Click += (_, _) => Close(null);
+        var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right };
+        buttons.Children.Add(ok);
+        buttons.Children.Add(cancel);
+        var panel = new StackPanel { Margin = new Thickness(20), Spacing = 16 };
+        panel.Children.Add(new TextBlock { Text = L.T("games.pick"), TextWrapping = TextWrapping.Wrap });
+        panel.Children.Add(new ScrollViewer { Content = list, MaxHeight = 420 });
+        panel.Children.Add(new TextBlock { Text = L.T("games.authors"), FontSize = 12, Foreground = Skin.B(Skin.Muted), TextWrapping = TextWrapping.Wrap });
+        panel.Children.Add(buttons);
+        Content = Skin.Panel(panel, new Thickness(0));
+    }
+}
+
+/// <summary>Files the player changed: checked ones get replaced, the rest are kept until the next release.</summary>
+sealed class ModifiedFilesDialog : Window
+{
+    public ModifiedFilesDialog(List<string> files, bool preselect)
+    {
+        Title = L.T("modified.title");
+        Width = 640; Height = 460;
+        WindowStartupLocation = WindowStartupLocation.CenterOwner;
+        var boxes = files.Select(f => new CheckBox { Content = f, IsChecked = preselect }).ToList();
+        var list = new StackPanel();
+        foreach (var b in boxes) list.Children.Add(b);
+
+        var ok = Skin.Btn(L.T("modified.ok"), "primary");
+        ok.Margin = new Thickness(0, 0, 8, 0);
+        ok.Click += (_, _) => Close(boxes.Where(b => b.IsChecked == true).Select(b => (string)b.Content!).ToHashSet(StringComparer.OrdinalIgnoreCase));
+        var cancel = Skin.Btn(L.T("cancel"));
+        cancel.Click += (_, _) => Close(null);
+        var buttons = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Right, Margin = new Thickness(0, 8, 0, 0) };
+        buttons.Children.Add(ok);
+        buttons.Children.Add(cancel);
+
+        var root = new DockPanel { Margin = new Thickness(16) };
+        var text = new TextBlock { Text = L.T("modified.text"), TextWrapping = TextWrapping.Wrap, Margin = new Thickness(0, 0, 0, 8) };
+        DockPanel.SetDock(text, Dock.Top);
+        DockPanel.SetDock(buttons, Dock.Bottom);
+        root.Children.Add(text);
+        root.Children.Add(buttons);
+        root.Children.Add(new ScrollViewer { Content = list });
+        Content = root;
+    }
+}

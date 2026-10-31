@@ -76,6 +76,8 @@ public:
 	void setColor(Uint8 color) override;
 	/// Gets the border color.
 	Uint8 getColor() const;
+	/// Sets the text color of one row of the list (the other rows keep the color of the box).
+	void setRowColor(size_t row, Uint8 color);
 	/// Sets the high contrast color setting.
 	void setHighContrast(bool contrast) override;
 	/// Sets the arrow color of the text list.

@@ -17,6 +17,9 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "UnitSprite.h"
+#include <unordered_map>
+#include "../Engine/HdCanvas.h"
+#include "../Engine/HdFx.h"
 #include "../Engine/SurfaceSet.h"
 #include "../Mod/RuleItem.h"
 #include "../Mod/Armor.h"
@@ -27,6 +30,7 @@
 #include "../Mod/RuleInventory.h"
 #include "../Mod/Mod.h"
 #include "../Engine/Exception.h"
+#include "../Engine/Options.h"
 
 namespace OpenXcom
 {
@@ -38,18 +42,19 @@ namespace OpenXcom
  * @param x X position in pixels.
  * @param y Y position in pixels.
  */
-UnitSprite::UnitSprite(Surface* dest, const Mod* mod, const SavedBattleGame* save, int frame, bool helmet, int red, int blue) :
+UnitSprite::UnitSprite(HdCanvas* dest, const Mod* mod, const SavedBattleGame* save, int frame, bool helmet, int red, int blue) :
 	_unit(0), _itemR(0), _itemL(0),
 	_unitSurface(0),
-	_itemSurface(const_cast<Mod*>(mod)->getSurfaceSet("HANDOB.PCK")),
-	_fireSurface(const_cast<Mod*>(mod)->getSurfaceSet("SMOKE.PCK")),
-	_breathSurface(const_cast<Mod*>(mod)->getSurfaceSet("BREATH-1.PCK", false)),
-	_facingArrowSurface(const_cast<Mod*>(mod)->getSurfaceSet("DETBLOB.DAT")),
+	_itemSurface(const_cast<Mod*>(mod)->getHdSurfaceSet("HANDOB.PCK")),
+	_fireSurface(const_cast<Mod*>(mod)->getHdSurfaceSet("SMOKE.PCK")),
+	_breathSurface(const_cast<Mod*>(mod)->getHdSurfaceSet("BREATH-1.PCK", false)),
+	_facingArrowSurface(const_cast<Mod*>(mod)->getHdSurfaceSet("DETBLOB.DAT")),
 	_dest(dest), _save(save), _mod(mod),
 	_part(0), _animationFrame(frame), _drawingRoutine(0),
 	_helmet(helmet),
 	_red(red), _blue(blue),
 	_x(0), _y(0), _shade(0), _burn(0),
+	_scale(1),
 	_mask(0, 0)
 {
 
@@ -61,6 +66,22 @@ UnitSprite::UnitSprite(Surface* dest, const Mod* mod, const SavedBattleGame* sav
 UnitSprite::~UnitSprite()
 {
 
+}
+
+/**
+ * HD lab: the unit's direction as the turned view shows it.
+ */
+int UnitSprite::shownDir() const
+{
+	return (_unit->getDirection() + _dirShift) % 8;
+}
+
+/**
+ * HD lab: the turret's direction as the turned view shows it.
+ */
+int UnitSprite::shownTurretDir() const
+{
+	return (_unit->getTurretDirection() + _dirShift) % 8;
 }
 
 namespace
@@ -146,12 +167,25 @@ void UnitSprite::blitItem(Part& item)
 	}
 	ScriptWorkerBlit work;
 	BattleItem::ScriptFill(&work, (item.bodyPart == BODYPART_ITEM_RIGHTHAND ? _itemR : _itemL), _save, item.bodyPart, _animationFrame, _shade);
+	// the same script without the light: an HD frame in its own colours keeps its hue in the shade
+	ScriptWorkerBlit unlit;
+	if (_shade != 0)
+	{
+		BattleItem::ScriptFill(&unlit, (item.bodyPart == BODYPART_ITEM_RIGHTHAND ? _itemR : _itemL), _save, item.bodyPart, _animationFrame, 0);
+	}
 
 	_dest->lock();
 
-	work.executeBlit(item.src, _dest,  _x + item.offX, _y + item.offY, _shade, _mask);
+	_dest->blitScripted(work, item.src, _x + item.offX * _scale, _y + item.offY * _scale, _shade, _mask, _shade != 0 ? &unlit : nullptr);
 
 	_dest->unlock();
+
+	// HD render: a muzzle flash of this weapon starts at the end of its barrel as drawn, not at the voxel the shot leaves from
+	const BattleItem *weapon = item.bodyPart == BODYPART_ITEM_RIGHTHAND ? _itemR : _itemL;
+	if (weapon && HdFx::wantsTip(weapon->getId()))
+	{
+		HdFx::noteTip(weapon->getId(), item.src, shownDir(), _x + item.offX * _scale, _y + item.offY * _scale);
+	}
 }
 
 /**
@@ -166,10 +200,27 @@ void UnitSprite::blitBody(Part& body)
 	}
 	ScriptWorkerBlit work;
 	BattleUnit::ScriptFill(&work, _unit, _save, body.bodyPart, _animationFrame, _shade, _burn);
+	// the same script without the light: an HD frame in its own colours keeps its hue in the shade
+	ScriptWorkerBlit unlit;
+	if (_shade != 0)
+	{
+		BattleUnit::ScriptFill(&unlit, _unit, _save, body.bodyPart, _animationFrame, 0, _burn);
+	}
 
 	_dest->lock();
 
-	work.executeBlit(body.src, _dest,  _x + body.offX, _y + body.offY, _shade, _mask);
+	// HD render: while aiming, the pack's aiming picture of a body frame (variant 1), if it has one -
+	// a frame shared by the standing and the aiming pose (the far arm) can hold the weapon in both
+	const bool aiming = _unit->getStatus() == STATUS_AIMING;
+	if (aiming)
+	{
+		_dest->setFrameVariant(1);
+	}
+	_dest->blitScripted(work, body.src, _x + body.offX * _scale, _y + body.offY * _scale, _shade, _mask, _shade != 0 ? &unlit : nullptr);
+	if (aiming)
+	{
+		_dest->setFrameVariant(0);
+	}
 
 	_dest->unlock();
 }
@@ -188,9 +239,9 @@ void UnitSprite::draw(const BattleUnit* unit, int part, int x, int y, int shade,
 	_shade = shade;
 	_mask = mask;
 
-	if (_unit->isOut())
+	if (_unit->isOut() && !_unit->isFallShown())
 	{
-		// unit is drawn as an item
+		// unit is drawn as an item (HD: unless its fall is still being shown, UnitDieBState)
 		return;
 	}
 
@@ -199,7 +250,7 @@ void UnitSprite::draw(const BattleUnit* unit, int part, int x, int y, int shade,
 	_itemR = getIfVisible(_unit->getRightHandWeapon());
 	_itemL = getIfVisible(_unit->getLeftHandWeapon());
 
-	_unitSurface = const_cast<Mod*>(_mod)->getSurfaceSet(armor->getSpriteSheet());
+	_unitSurface = const_cast<Mod*>(_mod)->getHdSurfaceSet(armor->getSpriteSheet());
 
 	_drawingRoutine = armor->getDrawingRoutine();
 
@@ -250,7 +301,11 @@ void UnitSprite::draw(const BattleUnit* unit, int part, int x, int y, int shade,
 	// draw fire
 	if (unit->getFire() > 0)
 	{
-		_fireSurface->getFrame(4 + (_animationFrame / 2) % 4)->blitNShade(_dest, _x, _y, 0, _mask);
+		// HD render: on the odd tick the pack's in-between picture of the frame (variant 1), if it has one;
+		// a fire style of oxceHdFire takes the pack's variants 2s and 2s + 1 instead
+		_dest->setFrameVariant(_animationFrame % 2 + 2 * Options::oxceHdFire);
+		_dest->blit(_fireSurface->getFrame(4 + (_animationFrame / 2) % 4), _x, _y, 0, _mask);
+		_dest->setFrameVariant(0);
 	}
 	if (_breathSurface && _helmet && unit->getBreathExhaleFrame() >= 0 && armor->drawBubbles() && !unit->getFloorAbove())
 	{
@@ -258,20 +313,20 @@ void UnitSprite::draw(const BattleUnit* unit, int part, int x, int y, int shade,
 		if (tmpSurface)
 		{
 			// lower the bubbles for shorter or kneeling units.
-			tmpSurface->blitNShade(_dest, _x, _y- 30 + (22 - unit->getHeight()), shade, _mask);
+			_dest->blit(tmpSurface, _x, _y + (-30 + (22 - unit->getHeight())) * _scale, shade, _mask);
 		}
 	}
 	if (drawFacingIndicator && part == 0)
 	{
 		// draw unit facing indicator
-		auto* tmpSurface = _facingArrowSurface->getFrame(7 + ((unit->getDirection() + 1) % 8));
+		auto* tmpSurface = _facingArrowSurface->getFrame(7 + ((shownDir() + 1) % 8));
 		if (unit->getOriginalFaction() == FACTION_PLAYER)
 		{
-			tmpSurface->blitNShade(_dest, _x, _y, 0);
+			_dest->blit(tmpSurface, _x, _y, 0);
 		}
 		else
 		{
-			Surface::blitRaw(_dest, tmpSurface, _x, _y, 0, false, unit->getOriginalFaction() == FACTION_HOSTILE ? _blue : _red);
+			_dest->blit(tmpSurface, _x, _y, 0, false, unit->getOriginalFaction() == FACTION_HOSTILE ? _blue : _red);
 		}
 	}
 }
@@ -368,10 +423,10 @@ void UnitSprite::drawRoutine0()
 	const int offXAiming = 0;
 	const int soldierHeight = 22;
 
-	const int unitDir = _unit->getDirection();
+	const int unitDir = shownDir();
 	const int walkPhase = _unit->getWalkingPhase();
 
-	if (_unit->getStatus() == STATUS_COLLAPSING)
+	if ((_unit->getStatus() == STATUS_COLLAPSING || _unit->isFallShown()))
 	{
 		Part coll{ BODYPART_COLLAPSING };
 		selectUnit(coll, die, _unit->getFallingPhase());
@@ -661,7 +716,7 @@ void UnitSprite::drawRoutine1()
 	constexpr static int offY3[8] = { -4, -4, -1, 0, 5, 0, 1, 0 }; // for the left handed rifles
 	constexpr static int offXAiming = 0;
 
-	if (_unit->getStatus() == STATUS_COLLAPSING)
+	if ((_unit->getStatus() == STATUS_COLLAPSING || _unit->isFallShown()))
 	{
 		Part coll{ BODYPART_COLLAPSING };
 		selectUnit(coll, die, _unit->getFallingPhase());
@@ -669,7 +724,7 @@ void UnitSprite::drawRoutine1()
 		return;
 	}
 
-	const int unitDir = _unit->getDirection();
+	const int unitDir = shownDir();
 	const int walkPhase = _unit->getWalkingPhase();
 
 	selectUnit(leftArm, larm, unitDir);
@@ -693,7 +748,7 @@ void UnitSprite::drawRoutine1()
 		// draw handob item
 		if (_unit->getStatus() == STATUS_AIMING && _itemR->getRules()->isTwoHanded())
 		{
-			int dir = (_unit->getDirection() + 2)%8;
+			int dir = (shownDir() + 2)%8;
 			selectItem(itemR, _itemR, dir);
 			itemR.offX = (offX[unitDir]);
 			itemR.offY = (offY[unitDir]);
@@ -820,24 +875,46 @@ void UnitSprite::drawRoutine2()
 	}
 
 	// draw the tank itself
-	selectUnit(s, hoverTank + (_part * 8), _unit->getDirection());
+	selectUnit(s, hoverTank + (_part * 8), shownDir());
 	blitBody(s);
 
 	// draw the turret, together with the last part
-	if (_part == 3 && turret != -1)
+	if (turret != -1)
 	{
 		Part t{ BODYPART_LARGE_TURRET };
-		selectUnit(t, 64 + (turret * 8), _unit->getTurretDirection());
-		int turretOffsetX = 0;
-		int turretOffsetY = -4;
-		if (hoverTank)
+		selectUnit(t, 64 + (turret * 8), shownTurretDir());
+		// A turret frame bigger than the unit cell (e.g. 64x80 for a long barrel, loaded from a folder of
+		// images) is centred on the classic turret place and drawn with every part, each time through that
+		// part's clip: a moving unit is clipped to one tile column per part, so a turret drawn only with the
+		// last part would lose what sticks out over the other tiles. A classic frame keeps the old behaviour,
+		// and so does mode 0, which draws the classic frame as it is.
+		const int cellW = 32;
+		const int cellH = 40;
+		const int scale = std::max(1, _scale);
+		const int frameW = t.src ? t.src->getWidth() / scale : cellW;
+		const int frameH = t.src ? t.src->getHeight() / scale : cellH;
+		const bool bigTurret = _dest->getHdMode() != HD_MODE_NEAREST && (frameW > cellW || frameH > cellH);
+		if (_part == 3 || bigTurret)
 		{
-			turretOffsetX += offX[_unit->getDirection()];
-			turretOffsetY += offy[_unit->getDirection()];
+			int turretOffsetX = 0;
+			int turretOffsetY = -4;
+			if (hoverTank)
+			{
+				turretOffsetX += offX[shownDir()];
+				turretOffsetY += offy[shownDir()];
+			}
+			if (bigTurret)
+			{
+				// from this part's tile to the last part's tile (parts: 0 top, 1 right, 2 left, 3 bottom)
+				const int px = _part % 2;
+				const int py = _part / 2;
+				turretOffsetX += -(px - py) * (cellW / 2) - (frameW - cellW) / 2;
+				turretOffsetY += (2 - px - py) * (cellW / 4) - (frameH - cellH) / 2;
+			}
+			t.offX = (turretOffsetX);
+			t.offY = (turretOffsetY);
+			blitBody(t);
 		}
-		t.offX = (turretOffsetX);
-		t.offY = (turretOffsetY);
-		blitBody(t);
 	}
 
 }
@@ -868,7 +945,7 @@ void UnitSprite::drawRoutine3()
 		}
 	}
 
-	selectUnit(s, (_part * 8), _unit->getDirection());
+	selectUnit(s, (_part * 8), shownDir());
 
 	blitBody(s);
 
@@ -921,9 +998,9 @@ void UnitSprite::drawRoutine4()
 		die = 148;
 	}
 
-	const int unitDir = _unit->getDirection();
+	const int unitDir = shownDir();
 
-	if (_unit->getStatus() == STATUS_COLLAPSING)
+	if ((_unit->getStatus() == STATUS_COLLAPSING || _unit->isFallShown()))
 	{
 		Part coll{ BODYPART_COLLAPSING };
 		selectUnit(coll, die, _unit->getFallingPhase());
@@ -1018,19 +1095,73 @@ void UnitSprite::drawRoutine4()
 }
 
 /**
+ * HD (oxceHdWalkerTurn, XP-000291/314): after the hull changes its direction while not walking, it treads on the spot
+ * with the walking frames for a short while. A 45-degree turn lasts one step of the battle speed (~30 ms), too short
+ * to see, so the treading runs on the map's animation clock (100 ms a phase) instead of the turn itself.
+ * Only the picture: the direction, the turn and the clock are read, never changed.
+ * @return Walking phase 0-3, or -1 when the standing frame is drawn.
+ */
+int UnitSprite::treadPhase() const
+{
+	constexpr int Wrap = 64 * 3*3 * 5*5 * 7*7; // SavedBattleGame::nextAnimFrame
+	constexpr int Window = 8; // animation frames
+	struct Tread { int dir; int start; };
+	static std::unordered_map<int, Tread> treads;
+
+	if (!Options::oxceHdWalkerTurn || _dest->getHdMode() == HD_MODE_NEAREST)
+	{
+		return -1;
+	}
+	const int dir = _unit->getDirection();
+	auto it = treads.find(_unit->getId());
+	if (it == treads.end())
+	{
+		treads[_unit->getId()] = Tread{ dir, _animationFrame - Window }; // first sight: no treading
+		return -1;
+	}
+	Tread &t = it->second;
+	if (t.dir != dir)
+	{
+		t.dir = dir;
+		t.start = _animationFrame;
+	}
+	const int elapsed = ((_animationFrame - t.start) % Wrap + Wrap) % Wrap;
+	if (elapsed >= Window || _unit->getStatus() == STATUS_WALKING)
+	{
+		return -1;
+	}
+	return elapsed % 4;
+}
+
+/**
  * Drawing routine for sectopods and reapers.
  */
 void UnitSprite::drawRoutine5()
 {
 	Part s{ BODYPART_LARGE_TORSO + _part };
+	const bool separateTurret = _dest->getHdMode() != HD_MODE_NEAREST &&
+		_part == 0 && _unit->getTurretType() != -1 && !_unit->isSmallUnit();
 
-	if (_unit->getStatus() == STATUS_WALKING)
+	// Some four-tile vehicles (such as X-Piratez piloted tanks) use the first
+	// eight frames as a separate turret.  Keep the remaining body parts on the
+	// walking animation, but select that turret by its independent direction.
+	// Mode 0 draws the classic frame as it is.
+	if (separateTurret)
 	{
-		selectUnit(s, 32 + (_part * 4), (_unit->getDirection() * 16) + ((_unit->getWalkingPhase() / 2) % 4));
+		selectUnit(s, 0, shownTurretDir());
+	}
+	else if (_unit->getStatus() == STATUS_WALKING)
+	{
+		selectUnit(s, 32 + (_part * 4), (shownDir() * 16) + ((_unit->getWalkingPhase() / 2) % 4));
+	}
+	else if (int phase = treadPhase(); phase >= 0 && _unitSurface->getFrame(32 + (_part * 4) + (shownDir() * 16) + phase))
+	{
+		// Units that never walk (X-Piratez truck turret: 32 frames) have no walking frames to tread with.
+		selectUnit(s, 32 + (_part * 4), (shownDir() * 16) + phase);
 	}
 	else
 	{
-		selectUnit(s, 0 + (_part * 8), _unit->getDirection());
+		selectUnit(s, 0 + (_part * 8), shownDir());
 	}
 
 	blitBody(s);
@@ -1058,7 +1189,7 @@ void UnitSprite::drawRoutine6()
 	constexpr static int offY3[8] = { -4, -4, -1, 0, 5, 0, 1, 0 }; // for the left handed rifles
 	constexpr static int offXAiming = 0;
 
-	if (_unit->getStatus() == STATUS_COLLAPSING)
+	if ((_unit->getStatus() == STATUS_COLLAPSING || _unit->isFallShown()))
 	{
 		Part coll{ BODYPART_COLLAPSING };
 		selectUnit(coll, die, _unit->getFallingPhase());
@@ -1066,7 +1197,7 @@ void UnitSprite::drawRoutine6()
 		return;
 	}
 
-	const int unitDir = _unit->getDirection();
+	const int unitDir = shownDir();
 	const int walkPhase = _unit->getWalkingPhase();
 
 	selectUnit(torso, Torso, unitDir);
@@ -1233,7 +1364,7 @@ void UnitSprite::drawRoutine7()
 	constexpr static int rarmWalk = 40;
 	constexpr static int yoffWalk[8] = {1, 0, -1, 0, 1, 0, -1, 0}; // bobbing up and down
 
-	if (_unit->getStatus() == STATUS_COLLAPSING)
+	if ((_unit->getStatus() == STATUS_COLLAPSING || _unit->isFallShown()))
 	{
 		Part coll{ BODYPART_COLLAPSING };
 		selectUnit(coll, die, _unit->getFallingPhase());
@@ -1241,7 +1372,7 @@ void UnitSprite::drawRoutine7()
 		return;
 	}
 
-	const int unitDir = _unit->getDirection();
+	const int unitDir = shownDir();
 	const int walkPhase = _unit->getWalkingPhase();
 
 	selectUnit(torso, Torso, unitDir);
@@ -1292,7 +1423,7 @@ void UnitSprite::drawRoutine8()
 
 	selectUnit(legs, Body, Pulsate[_animationFrame % 8]);
 
-	if (_unit->getStatus() == STATUS_COLLAPSING)
+	if ((_unit->getStatus() == STATUS_COLLAPSING || _unit->isFallShown()))
 	{
 		Part coll{ BODYPART_COLLAPSING };
 		selectUnit(coll, die, _unit->getFallingPhase());
@@ -1317,7 +1448,7 @@ void UnitSprite::drawRoutine9()
 
 	selectUnit(torso, Body, _animationFrame % 8);
 
-	if (_unit->getStatus() == STATUS_COLLAPSING)
+	if ((_unit->getStatus() == STATUS_COLLAPSING || _unit->isFallShown()))
 	{
 		Part coll{ BODYPART_COLLAPSING };
 		selectUnit(coll, die, _unit->getFallingPhase());
@@ -1347,7 +1478,7 @@ void UnitSprite::drawRoutine11()
 	}
 
 	Part s{ BODYPART_LARGE_TORSO + _part };
-	selectUnit(s, body + (_part * 4), 16 * _unit->getDirection() + animFrame);
+	selectUnit(s, body + (_part * 4), 16 * shownDir() + animFrame);
 	s.offY = (4);
 	blitBody(s);
 
@@ -1356,12 +1487,12 @@ void UnitSprite::drawRoutine11()
 	if ((_part == 3 || _part == 0) && turret != -1 && !_unit->getFloorAbove())
 	{
 		Part t{ BODYPART_LARGE_TURRET };
-		selectUnit(t, 256 + (turret * 8), _unit->getTurretDirection());
-		t.offX = (offTurretX[_unit->getDirection()]);
+		selectUnit(t, 256 + (turret * 8), shownTurretDir());
+		t.offX = (offTurretX[shownDir()]);
 		if (_part == 3)
-			t.offY = (offTurretYBelow[_unit->getDirection()]);
+			t.offY = (offTurretYBelow[shownDir()]);
 		else
-			t.offY = (offTurretYAbove[_unit->getDirection()]);
+			t.offY = (offTurretYAbove[shownDir()]);
 		blitBody(t);
 	}
 
@@ -1390,7 +1521,7 @@ void UnitSprite::drawRoutine16()
 
 	selectUnit(s, 0, _animationFrame % 8);
 
-	if ( (_unit->getStatus() == STATUS_COLLAPSING))
+	if ( ((_unit->getStatus() == STATUS_COLLAPSING || _unit->isFallShown())))
 	{
 		Part coll{ BODYPART_COLLAPSING };
 		selectUnit(coll, die, _unit->getFallingPhase());
@@ -1410,7 +1541,7 @@ void UnitSprite::drawRoutine19()
 	// magic numbers
 	constexpr static int stand = 0, move = 8, die = 16;
 
-	if (_unit->getStatus() == STATUS_COLLAPSING)
+	if ((_unit->getStatus() == STATUS_COLLAPSING || _unit->isFallShown()))
 	{
 		Part coll{ BODYPART_COLLAPSING };
 		selectUnit(coll, die, _unit->getFallingPhase());
@@ -1419,11 +1550,11 @@ void UnitSprite::drawRoutine19()
 	}
 	else if (_unit->getStatus() == STATUS_WALKING)
 	{
-		selectUnit(s, move, _unit->getDirection());
+		selectUnit(s, move, shownDir());
 	}
 	else
 	{
-		selectUnit(s, stand, _unit->getDirection());
+		selectUnit(s, stand, shownDir());
 	}
 
 	blitBody(s);
@@ -1438,11 +1569,11 @@ void UnitSprite::drawRoutine20()
 
 	if (_unit->getStatus() == STATUS_WALKING)
 	{
-		selectUnit(s, (_part * 5), (_unit->getWalkingPhase()/2%4) + 5 * (4 * _unit->getDirection()));
+		selectUnit(s, (_part * 5), (_unit->getWalkingPhase()/2%4) + 5 * (4 * shownDir()));
 	}
 	else
 	{
-		selectUnit(s, (_part * 5), 5 * (4 * _unit->getDirection()));
+		selectUnit(s, (_part * 5), 5 * (4 * shownDir()));
 	}
 
 	blitBody(s);
@@ -1455,7 +1586,7 @@ void UnitSprite::drawRoutine21()
 {
 	Part s{ BODYPART_LARGE_TORSO + _part };
 
-	selectUnit(s, (_part * 4), (_unit->getDirection() * 16) + (_animationFrame % 4));
+	selectUnit(s, (_part * 4), (shownDir() * 16) + (_animationFrame % 4));
 
 	blitBody(s);
 }

@@ -39,6 +39,7 @@ class RuleResearch;
 class RuleSoldier;
 class RulesoldierBonus;
 class RuleCommendations;
+class RuleVoiceSet;
 
 /**
  * Move cost multipler.
@@ -135,6 +136,8 @@ private:
 
 	bool _turnBeforeFirstStep;
 	int _turnCost;
+	bool _allowsReverse = false;
+	int _crushTerrain = 0, _crushCost = 4;
 
 	ArmorMoveCost _moveCostBase = { 100, 100 };
 	ArmorMoveCost _moveCostBaseFly = { 100, 100 };
@@ -160,6 +163,9 @@ private:
 	std::vector<int> _startMovingSoundMale, _startMovingSoundFemale;
 	std::vector<int> _selectWeaponSoundMale, _selectWeaponSoundFemale;
 	std::vector<int> _annoyedSoundMale, _annoyedSoundFemale;
+
+	std::map<std::string, std::vector<std::string> > _voiceSetNames;
+	std::map<std::string, std::vector<const RuleVoiceSet*> > _voiceSets;
 
 	int _size, _weight, _visibilityAtDark, _visibilityAtDay;
 
@@ -280,6 +286,12 @@ public:
 	bool getTurnBeforeFirstStep() const { return _turnBeforeFirstStep; }
 	/// Gets the turn cost.
 	int getTurnCost() const { return _turnCost; }
+	/// Can the player's unit back up to a tile straight behind it (no turn, the hull keeps facing)?
+	bool allowsReverse() const { return _allowsReverse; }
+	/// The strongest MCD armor of a wall or object the player's unit drives through and breaks (0 - never).
+	int getCrushTerrain() const { return _crushTerrain; }
+	/// What each broken part adds to the step, in move cost.
+	int getCrushCost() const { return _crushCost; }
 
 	/// Multiplier of all move costs.
 	ArmorMoveCost getMoveCostBase() const { return _moveCostBase; }
@@ -337,6 +349,12 @@ public:
 	const std::vector<int> &getMaleAnnoyedSounds() const { return _annoyedSoundMale; }
 	/// Gets the female "annoyed" sounds.
 	const std::vector<int> &getFemaleAnnoyedSounds() const { return _annoyedSoundFemale; }
+
+	/// Gets the list of defined voice sets.
+	const std::map<std::string, std::vector<const RuleVoiceSet*> > &getVoiceSetsRaw() const { return _voiceSets; }
+	/// Gets a random voice set.
+	const RuleVoiceSet* getRandomVoiceSet(const Soldier* s) const;
+
 	/// Gets whether this is a normal or big unit.
 	int getSize() const;
 	/// Gets how much space the armor occupies in a craft.

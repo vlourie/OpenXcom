@@ -49,6 +49,8 @@ private:
 public:
 	static LoadingPhase loading;
 	static std::string error;
+	/// Play the intro once the next load is done? Set when a reload throws away a pending cutscene.
+	static bool playIntroAfterReload;
 
 	/// Creates the Start state.
 	StartState();

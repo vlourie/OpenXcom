@@ -1,0 +1,56 @@
+@page "/forum/{section}"
+@model Xp.Portal.Pages.Forum.SectionModel
+@{
+    ViewData["Title"] = Model.Name;
+}
+<p class="crumbs"><a href="/forum">@T["nav.forum"]</a> / @Model.Name</p>
+<h1>@Model.Name</h1>
+<p class="lead">@Model.Summary</p>
+
+@if (Model.CanStart)
+{
+    <a class="button" href="/forum/@Model.Slug/new">@T["forum.new.topic"]</a>
+}
+else if (Model.Section.StaffOnly)
+{
+    <p class="hint">@T["forum.staff.only.hint"]</p>
+}
+else
+{
+    <p class="hint">@T["forum.sign.in"]</p>
+}
+
+<section class="panel">
+    @if (Model.Topics.Count == 0)
+    {
+        <p class="hint">@T["forum.empty"]</p>
+    }
+    else
+    {
+        foreach (var t in Model.Topics)
+        {
+            <div class="topic">
+                <div>
+                    <span class="marks">
+                        @if (t.Pinned)
+                        {
+                            <span class="tag warn">@T["forum.pinned"]</span>
+                        }
+                        @if (t.Locked)
+                        {
+                            <span class="tag">@T["forum.locked"]</span>
+                        }
+                    </span>
+                    <a class="name" href="/forum/t/@t.Number">@t.Title</a>
+                    <div class="by">
+                        @T.Format("forum.started", t.Author?.DisplayName ?? "—", t.CreatedAt.ToString("yyyy-MM-dd"))
+                        · @T.Format("forum.last.by", t.LastPostAuthor?.DisplayName ?? "—", t.LastPostAt.ToString("yyyy-MM-dd HH:mm"))
+                    </div>
+                </div>
+                <div class="num">@t.PostCount</div>
+            </div>
+        }
+    }
+</section>
+
+<partial name="_Pager" model="Model.Pager" />

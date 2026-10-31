@@ -38,6 +38,9 @@
 #include "../Savegame/ItemContainer.h"
 #include "../Engine/Timer.h"
 #include "../Menu/ErrorMessageState.h"
+#include "ManufactureDeliveryPlanState.h"
+#include "ManufactureDeliveryState.h"
+#include "TransferBaseState.h"
 #include "../Mod/RuleInterface.h"
 #include <climits>
 
@@ -79,6 +82,17 @@ void ManufactureInfoState::buildUi()
 	_btnStop = new TextButton(136, 16, 16, 155);
 	_btnSell = new ToggleTextButton(60, 16, 244, 61);
 	_btnFallback = new ToggleTextButton(72, 16, 168, 61);
+	_btnDelivery = nullptr;
+	_txtDelivery = nullptr;
+	_btnDeliveryPlan = nullptr;
+	if (Options::oxceManufactureDelivery)
+	{
+		// XP-000256: under the Sell button; the line of what is planned stands in the free band on the left. Option off - no widgets at all
+		_btnDelivery = new ToggleTextButton(60, 12, 244, 78);
+		_txtDelivery = new Text(126, 9, 16, 80);
+		// the plan of the deliveries of all the orders of the base, to cancel any: between the line and the Delivery button
+		_btnDeliveryPlan = new TextButton(96, 12, 144, 78);
+	}
 	_txtAvailableEngineer = new Text(160, 9, 16, 50);
 	_txtAvailableSpace = new Text(160, 9, 16, 60);
 	_txtHoursPerUnit = new Text(150, 9, 16, 70);
@@ -103,6 +117,8 @@ void ManufactureInfoState::buildUi()
 
 	_surfaceUnits = new InteractiveSurface(160, 150, 160, 25);
 	_surfaceUnits->onMouseClick((ActionHandler)&ManufactureInfoState::handleWheelUnit, 0);
+
+	touchComponentsCreate(_txtTitle, false, -1, +22, true);
 
 	// Set palette
 	setInterface("manufactureInfo");
@@ -133,10 +149,21 @@ void ManufactureInfoState::buildUi()
 	add(_btnStop, "button2", "manufactureInfo");
 	add(_btnSell, "button1", "manufactureInfo");
 	add(_btnFallback, "button1", "manufactureInfo");
+	if (_btnDelivery)
+	{
+		add(_btnDelivery, "button1", "manufactureInfo");
+		add(_txtDelivery, "text", "manufactureInfo");
+		add(_btnDeliveryPlan, "button1", "manufactureInfo");
+	}
+
+	touchComponentsAdd("button3", "manufactureInfo", _window);
 
 	centerAllSurfaces();
 
+	// Set up objects
 	setWindowBackground(_window, "manufactureInfo");
+
+	touchComponentsConfigure();
 
 	_txtTitle->setText(tr(_item ? _item->getName() : _production->getRules()->getName()));
 	_txtTitle->setBig();
@@ -208,9 +235,26 @@ void ManufactureInfoState::buildUi()
 	{
 		_production = new Production (_item, 1);
 		_base->addProduction(_production);
+		if (Options::oxceHdManufactureTop)
+		{
+			// OXCE-HD: the new job stands first in the base's list, as if moved up with the arrows to the top
+			auto &productions = _base->getProductions();
+			std::rotate(productions.begin(), productions.end() - 1, productions.end());
+		}
 	}
 	_btnSell->setPressed(_production->getSellItems());
 	_btnSell->setVisible(_production->getRules()->canAutoSell());
+	if (_btnDelivery)
+	{
+		_btnDelivery->setText(tr("STR_DELIVERY"));
+		_btnDelivery->onMouseClick((ActionHandler)&ManufactureInfoState::btnDeliveryClick, 0);
+		_btnDelivery->setVisible(false);
+		_txtDelivery->setVisible(false);
+		_btnDeliveryPlan->setText(tr("STR_DELIVERY_CANCEL"));
+		_btnDeliveryPlan->onMouseClick((ActionHandler)&ManufactureInfoState::btnDeliveryPlanClick);
+		_btnDeliveryPlan->setVisible(false);
+		_production->pruneDelivery(_game->getSavedGame());
+	}
 	initProfitInfo();
 	setAssignedEngineer();
 
@@ -308,6 +352,17 @@ ManufactureInfoState::~ManufactureInfoState()
 }
 
 /**
+ * Resets stuff when coming back from other screens.
+ */
+void ManufactureInfoState::init()
+{
+	State::init();
+
+	touchComponentsRefresh();
+	updateDelivery();
+}
+
+/**
  * Refreshes profit values.
  * @param action A pointer to an Action.
  */
@@ -380,6 +435,123 @@ void ManufactureInfoState::setAssignedEngineer()
 	else s4 << _production->getAmountTotal();
 	_txtTodo->setText(s4.str());
 	_txtMonthlyProfit->setText(tr("STR_MONTHLY_PROFIT").arg(Unicode::formatFunding(getMonthlyNetFunds()).c_str()));
+	updateDelivery();
+}
+
+/**
+ * The line of the delivery plan: all given out, or how many of the order are.
+ */
+std::string ManufactureInfoState::deliveryText() const
+{
+	if (_production->hasSeveralKinds())
+	{
+		// XP-000256: a recipe with several kinds - the delivery is by kinds, counted in pieces
+		int given = 0, all = 0;
+		_production->getDeliveryPiecesTotal(given, all);
+		return given >= all ? tr("STR_DELIVERY_FULLY_RESERVED") : tr("STR_DELIVERY_RESERVED_PIECES").arg(given).arg(all);
+	}
+	const int reserved = _production->getDeliveryTotal();
+	const int total = _production->getAmountTotal();
+	return reserved >= total ? tr("STR_DELIVERY_FULLY_RESERVED") : tr("STR_DELIVERY_RESERVED").arg(reserved).arg(total);
+}
+
+/**
+ * Shows the Delivery button (option oxceManufactureDelivery) only for an order that can be delivered: ordinary items, a number
+ * of them, not sold, and another base to send to; the button is pressed in when all the order is given out. Cuts the plan
+ * down when the order was made smaller.
+ */
+void ManufactureInfoState::updateDelivery()
+{
+	if (!_btnDelivery)
+	{
+		return;
+	}
+	const bool infinite = _production->getInfiniteAmount();
+	if (!infinite)
+	{
+		_production->trimDelivery();
+	}
+	const bool available = _production->canDeliver() && !infinite && !_btnSell->getPressed() && _game->getSavedGame()->getBases()->size() > 1;
+	int reserved = available ? _production->getDeliveryTotal() : 0;
+	bool full = available && reserved >= _production->getAmountTotal();
+	if (available && _production->hasSeveralKinds())
+	{
+		// by kinds (XP-000256): in pieces; all given out when nothing of any kind is left
+		int all = 0;
+		_production->getDeliveryPiecesTotal(reserved, all);
+		full = reserved >= all;
+	}
+	_btnDelivery->setVisible(available);
+	_btnDelivery->setPressed(full);
+	_txtDelivery->setVisible(reserved > 0);
+	// the plans of all the orders of the base: the button is there while any delivery is still to be made
+	_btnDeliveryPlan->setVisible(ManufactureDeliveryPlanState::hasPlan(_base, _game->getSavedGame()));
+	if (reserved > 0)
+	{
+		_txtDelivery->setText(deliveryText());
+	}
+}
+
+/**
+ * Shows the list of the other bases; a click on a base asks how many go there. The screen stays until OK.
+ * @param action A pointer to an Action.
+ */
+void ManufactureInfoState::btnDeliveryClick(Action *)
+{
+	updateDelivery(); // the click turned the button over: back to what the plan says
+	_game->pushState(new TransferBaseState(_base,
+		[this]() { return deliveryText(); },
+		[this](Base *to)
+		{
+			// a recipe with several kinds: pieces of all the kinds that go there (XP-000256)
+			const int n = _production->hasSeveralKinds() ? _production->getDeliveryPieces(to) : _production->getDeliveryShare(to);
+			return n > 0 ? std::to_string(n) : std::string("-");
+		},
+		[this](Base *to) { deliveryPicked(to); }));
+}
+
+/**
+ * Shows the deliveries that are still to be made (of all the orders of the base) to cancel any of them.
+ * @param action A pointer to an Action.
+ */
+void ManufactureInfoState::btnDeliveryPlanClick(Action *)
+{
+	_game->pushState(new ManufactureDeliveryPlanState(_base));
+}
+
+/**
+ * A base was picked: how many of the order go there, from nothing to what is not given out yet.
+ * @param to The base.
+ */
+void ManufactureInfoState::deliveryPicked(Base *to)
+{
+	if (_production->hasSeveralKinds())
+	{
+		// XP-000256: a recipe with several kinds (a disassembly) - the list of the kinds, a number for each: from 0 to what of the
+		// kind is not given to the other bases yet plus what this base has now; it starts at what this base has now
+		ManufactureDeliveryState::Items kinds;
+		std::vector<int> start;
+		for (const auto &i : _production->getRules()->getProducedItems())
+		{
+			const int mine = _production->getDeliveryPieces(to, i.first);
+			const int most = _production->getDeliveryLeft(i.first) + mine;
+			if (most > 0)
+			{
+				kinds.emplace_back(i.first, most);
+				start.push_back(mine);
+			}
+		}
+		if (!kinds.empty())
+		{
+			_game->pushState(new ManufactureLootPartsState(to, kinds,
+				[this, to](const ManufactureDeliveryState::Items &picked) { _production->setDeliveryParts(to, picked); },
+				start, true));
+		}
+		return;
+	}
+	const int mine = _production->getDeliveryShare(to);
+	const int room = std::max(0, _production->getAmountTotal() - _production->getDeliveryTotal() + mine);
+	_game->pushState(new ManufactureDeliveryState(_production, to, room));
 }
 
 /**
@@ -422,7 +594,7 @@ void ManufactureInfoState::moreEngineer(int change)
  */
 void ManufactureInfoState::moreEngineerPress(Action *action)
 {
-	if (action->getDetails()->button.button == SDL_BUTTON_LEFT) _timerMoreEngineer->start();
+	if (_game->isLeftClick(action, true)) _timerMoreEngineer->start();
 }
 
 /**
@@ -431,7 +603,7 @@ void ManufactureInfoState::moreEngineerPress(Action *action)
  */
 void ManufactureInfoState::moreEngineerRelease(Action *action)
 {
-	if (action->getDetails()->button.button == SDL_BUTTON_LEFT)
+	if (_game->isLeftClick(action, true))
 	{
 		_timerMoreEngineer->setInterval(250);
 		_timerMoreEngineer->stop();
@@ -444,8 +616,8 @@ void ManufactureInfoState::moreEngineerRelease(Action *action)
  */
 void ManufactureInfoState::moreEngineerClick(Action *action)
 {
-	if (action->getDetails()->button.button == SDL_BUTTON_RIGHT) moreEngineer(INT_MAX);
-	if (action->getDetails()->button.button == SDL_BUTTON_LEFT) moreEngineer(1);
+	if (_game->isRightClick(action, true)) moreEngineer(INT_MAX);
+	if (_game->isLeftClick(action, true)) moreEngineer(_game->getScrollStep());
 }
 
 /**
@@ -471,7 +643,7 @@ void ManufactureInfoState::lessEngineer(int change)
  */
 void ManufactureInfoState::lessEngineerPress(Action *action)
 {
-	if (action->getDetails()->button.button == SDL_BUTTON_LEFT) _timerLessEngineer->start();
+	if (_game->isLeftClick(action, true)) _timerLessEngineer->start();
 }
 
 /**
@@ -480,7 +652,7 @@ void ManufactureInfoState::lessEngineerPress(Action *action)
  */
 void ManufactureInfoState::lessEngineerRelease(Action *action)
 {
-	if (action->getDetails()->button.button == SDL_BUTTON_LEFT)
+	if (_game->isLeftClick(action, true))
 	{
 		_timerLessEngineer->setInterval(250);
 		_timerLessEngineer->stop();
@@ -493,8 +665,8 @@ void ManufactureInfoState::lessEngineerRelease(Action *action)
  */
 void ManufactureInfoState::lessEngineerClick(Action *action)
 {
-	if (action->getDetails()->button.button == SDL_BUTTON_RIGHT) lessEngineer(INT_MAX);
-	if (action->getDetails()->button.button == SDL_BUTTON_LEFT) lessEngineer(1);
+	if (_game->isRightClick(action, true)) lessEngineer(INT_MAX);
+	if (_game->isLeftClick(action, true)) lessEngineer(_game->getScrollStep());
 }
 
 /**
@@ -530,7 +702,7 @@ void ManufactureInfoState::moreUnit(int change)
  */
 void ManufactureInfoState::moreUnitPress(Action *action)
 {
-	if (action->getDetails()->button.button == SDL_BUTTON_LEFT && _production->getAmountTotal() < INT_MAX)
+	if (_game->isLeftClick(action, true) && _production->getAmountTotal() < INT_MAX)
 		_timerMoreUnit->start();
 }
 
@@ -540,7 +712,7 @@ void ManufactureInfoState::moreUnitPress(Action *action)
  */
 void ManufactureInfoState::moreUnitRelease(Action *action)
 {
-	if (action->getDetails()->button.button == SDL_BUTTON_LEFT)
+	if (_game->isLeftClick(action, true))
 	{
 		_timerMoreUnit->setInterval(250);
 		_timerMoreUnit->stop();
@@ -554,7 +726,7 @@ void ManufactureInfoState::moreUnitRelease(Action *action)
 void ManufactureInfoState::moreUnitClick(Action *action)
 {
 	if (_production->getInfiniteAmount()) return; // We can't increase over infinite :)
-	if (action->getDetails()->button.button == SDL_BUTTON_RIGHT)
+	if (_game->isRightClick(action, true))
 	{
 		if (_production->getRules()->getProducedCraft())
 		{
@@ -566,9 +738,9 @@ void ManufactureInfoState::moreUnitClick(Action *action)
 			setAssignedEngineer();
 		}
 	}
-	else if (action->getDetails()->button.button == SDL_BUTTON_LEFT)
+	else if (_game->isLeftClick(action, true))
 	{
-		moreUnit(1);
+		moreUnit(_game->getScrollStep());
 	}
 }
 
@@ -610,7 +782,7 @@ void ManufactureInfoState::lessUnit(int change)
  */
 void ManufactureInfoState::lessUnitPress(Action *action)
 {
-	if (action->getDetails()->button.button == SDL_BUTTON_LEFT) _timerLessUnit->start();
+	if (_game->isLeftClick(action, true)) _timerLessUnit->start();
 }
 
 /**
@@ -619,7 +791,7 @@ void ManufactureInfoState::lessUnitPress(Action *action)
  */
 void ManufactureInfoState::lessUnitRelease(Action *action)
 {
-	if (action->getDetails()->button.button == SDL_BUTTON_LEFT)
+	if (_game->isLeftClick(action, true))
 	{
 		_timerLessUnit->setInterval(250);
 		_timerLessUnit->stop();
@@ -632,18 +804,18 @@ void ManufactureInfoState::lessUnitRelease(Action *action)
  */
 void ManufactureInfoState::lessUnitClick(Action *action)
 {
-	if (action->getDetails()->button.button == SDL_BUTTON_RIGHT
-	||  action->getDetails()->button.button == SDL_BUTTON_LEFT)
+	if (_game->isRightClick(action, true)
+	||  _game->isLeftClick(action, true))
 	{
 		bool wasInfinite = _production->getInfiniteAmount();
 		_production->setInfiniteAmount(false);
-		if (action->getDetails()->button.button == SDL_BUTTON_RIGHT
+		if (_game->isRightClick(action, true)
 		|| _production->getAmountTotal() <= _production->getAmountProduced())
 		{ // So the produced item number is increased over the planned, OR it was simply a right-click
 			_production->setAmountTotal(_production->getAmountProduced()+1);
 			setAssignedEngineer();
 		}
-		if (action->getDetails()->button.button == SDL_BUTTON_LEFT)
+		if (_game->isLeftClick(action, true))
 		{
 			if (wasInfinite)
 			{
@@ -670,9 +842,9 @@ void ManufactureInfoState::lessUnitClick(Action *action)
 				{
 					newTotal += 1; // +1 for the item being produced currently
 				}
-				_production->setAmountTotal(newTotal + 1); // +1 because of lessUnit(1) call below
+				_production->setAmountTotal(newTotal + _game->getScrollStep()); // +_game->getScrollStep() because of lessUnit(_game->getScrollStep()) call below
 			}
-			lessUnit(1);
+			lessUnit(_game->getScrollStep());
 		}
 	}
 }
@@ -694,7 +866,7 @@ void ManufactureInfoState::minimumUnitClick(Action* action)
 void ManufactureInfoState::onMoreEngineer()
 {
 	_timerMoreEngineer->setInterval(50);
-	moreEngineer(1);
+	moreEngineer(_game->getScrollStep());
 }
 
 /**
@@ -703,7 +875,7 @@ void ManufactureInfoState::onMoreEngineer()
 void ManufactureInfoState::onLessEngineer()
 {
 	_timerLessEngineer->setInterval(50);
-	lessEngineer(1);
+	lessEngineer(_game->getScrollStep());
 }
 
 /**
@@ -722,7 +894,7 @@ void ManufactureInfoState::handleWheelEngineer(Action *action)
 void ManufactureInfoState::onMoreUnit()
 {
 	_timerMoreUnit->setInterval(50);
-	moreUnit(1);
+	moreUnit(_game->getScrollStep());
 }
 
 /**
@@ -731,7 +903,7 @@ void ManufactureInfoState::onMoreUnit()
 void ManufactureInfoState::onLessUnit()
 {
 	_timerLessUnit->setInterval(50);
-	lessUnit(1);
+	lessUnit(_game->getScrollStep());
 }
 
 /**

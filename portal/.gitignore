@@ -1,0 +1,24 @@
+bin/
+obj/
+out/
+*.user
+.vs/
+TestResults/
+# ключи подписи никогда не лежат в репозитории
+*.key
+
+# server secrets
+.env
+portal.env
+
+# local dev data of the portal (uploads, mail pickup)
+.dev/
+
+# release repository on the server (station.ps1 releases)
+deploy/releases/
+
+# native parts of the launcher voice: tools/voice_deps.py downloads them (pinned by SHA-256)
+third_party/
+
+# station voice config, written by station.ps1 voice-open
+deploy/voice-open/

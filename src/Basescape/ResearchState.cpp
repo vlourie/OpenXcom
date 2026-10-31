@@ -74,6 +74,10 @@ ResearchState::ResearchState(Base *base) : _base(base)
 	add(_txtProgress, "text", "researchMenu");
 	add(_lstResearch, "list", "researchMenu");
 
+	addBaseSwitch(_base, "researchMenu", "text", "button", 24,
+		[](const Base *other) { return other->getAvailableLaboratories() > 0; },
+		[](Base *other) { return withBaseSwitch(new ResearchState(other)); });
+
 	centerAllSurfaces();
 
 	// Set up objects

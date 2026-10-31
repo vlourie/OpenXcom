@@ -1,0 +1,25 @@
+@page "/wiki"
+@model Xp.Portal.Pages.Wiki.WikiHomeModel
+@{
+    ViewData["Title"] = T["nav.wiki"];
+}
+<h1>@T["wiki.title"]</h1>
+<p class="lead">@T["wiki.lead"]</p>
+
+@if (Model.Mods.Count == 0)
+{
+    <p class="hint">@T["wiki.empty"]</p>
+}
+else
+{
+    <div class="cards">
+        @foreach (var m in Model.Mods)
+        {
+            <a class="card" href="/wiki/@m.Slug">
+                <h3>@m.Name</h3>
+                <p>@m.Summary</p>
+                <span class="count">@T.Format("wiki.pages", m.WikiPages)</span>
+            </a>
+        }
+    </div>
+}

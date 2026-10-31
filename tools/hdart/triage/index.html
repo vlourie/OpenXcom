@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Разбор генераций TERRAIN</title>
+<style>
+:root{
+  --ground:#17191d; --panel:#1f2227; --sunk:#141619; --ink:#e6e3dc; --muted:#8e939b; --line:#30343b;
+  --accent:#e3a843; --bad:#ec6a63; --g1:#6fb3e8; --g2:#8fd17f; --floor:#26262a;
+  --cell:240px;
+  font:15px/1.5 "Segoe UI", system-ui, sans-serif; color-scheme:dark;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);padding:0 16px 40px}
+header{position:sticky;top:0;z-index:3;background:var(--ground);border-bottom:1px solid var(--line);
+  padding:10px 0;display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center}
+h1{font-size:16px;margin:0;font-weight:600}
+.prog{font:13px/1 Consolas, monospace;color:var(--muted);font-variant-numeric:tabular-nums}
+.prog b{color:var(--ink)} .prog .bad{color:var(--bad)} .prog .g1{color:var(--g1)} .prog .g2{color:var(--g2)}
+select,input[type=number]{background:var(--panel);color:var(--ink);border:1px solid var(--line);border-radius:5px;padding:5px 8px;font:inherit;font-size:13px}
+input[type=number]{width:80px}
+.bar{height:4px;background:var(--sunk);border-radius:2px;overflow:hidden;flex:1 1 200px;min-width:120px}
+.bar i{display:block;height:100%;background:var(--accent);width:0}
+main{max-width:1100px;margin:18px auto 0;display:flex;flex-direction:column;gap:16px}
+.title{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:baseline}
+.title h2{margin:0;font-size:20px;font-weight:600;font-family:Consolas, monospace}
+.chip{font:12px/1 Consolas, monospace;padding:4px 7px;border-radius:4px;background:var(--panel);border:1px solid var(--line);color:var(--muted)}
+.chip.v-bad{color:var(--bad);border-color:var(--bad)} .chip.v-g1{color:var(--g1);border-color:var(--g1)} .chip.v-g2{color:var(--g2);border-color:var(--g2)}
+.trio{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+figure{margin:0;background:var(--panel);border:2px solid var(--line);border-radius:8px;padding:10px;display:flex;flex-direction:column;gap:8px;align-items:center}
+figure.pick-g1{border-color:var(--g1)} figure.pick-g2{border-color:var(--g2)} .trio.is-bad figure{border-color:var(--bad)}
+.pic{width:100%;max-width:var(--cell);aspect-ratio:4/5;background:var(--floor);border-radius:4px;display:grid;place-items:center;overflow:hidden}
+.pic.check{background:repeating-conic-gradient(#3a3a40 0 25%,#2a2a2f 0 50%) 0 0/16px 16px}
+.pic.light{background:#bdbdb6}
+.pic img{width:100%;height:100%;object-fit:contain;image-rendering:pixelated}
+figcaption{font-size:13px;color:var(--muted);text-align:center;display:flex;flex-direction:column;gap:2px}
+figcaption b{color:var(--ink);font-weight:600}
+figcaption small{font:11px/1.3 Consolas, monospace;color:var(--muted);max-width:var(--cell)}
+.acts{display:flex;flex-wrap:wrap;gap:8px}
+button{font:600 14px/1 "Segoe UI", system-ui, sans-serif;border-radius:6px;padding:11px 16px;cursor:pointer;border:1px solid var(--line);background:var(--panel);color:var(--ink)}
+button:focus-visible,textarea:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button kbd{font:12px Consolas, monospace;opacity:.7;margin-left:6px}
+.b-bad{border-color:var(--bad);color:var(--bad)} .b-g1{border-color:var(--g1);color:var(--g1)} .b-g2{border-color:var(--g2);color:var(--g2)}
+.b-bad.on{background:var(--bad);color:#1b0c0b} .b-g1.on{background:var(--g1);color:#07131d} .b-g2.on{background:var(--g2);color:#0c1a08}
+.nav{margin-left:auto;display:flex;gap:8px}
+.blocks{display:flex;flex-direction:column;gap:10px}
+.blk{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:12px 14px}
+.blk h3{margin:0 0 6px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);font-weight:600}
+.blk ul{margin:0;padding-left:18px}
+.blk p{margin:0}
+.blk .en{font:13px/1.4 Consolas, monospace;color:var(--muted);margin-top:6px}
+.wait{color:var(--muted);font-style:italic}
+textarea{width:100%;min-height:74px;resize:vertical;background:var(--sunk);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:9px 10px;font:14px/1.45 Consolas, monospace}
+.row{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;margin-top:8px;font-size:12px;color:var(--muted)}
+.row code{font:12px Consolas, monospace;color:var(--muted)}
+.saved{color:var(--g2)}
+.small{padding:6px 10px;font-size:12px}
+.keys{font-size:12px;color:var(--muted)}
+.keys kbd{font:12px Consolas, monospace;background:var(--panel);border:1px solid var(--line);border-radius:3px;padding:1px 5px}
+@media (max-width:720px){.trio{grid-template-columns:1fr}.nav{margin-left:0}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Разбор генераций TERRAIN</h1>
+  <span class="prog" id="prog">загрузка…</span>
+  <div class="bar"><i id="bar"></i></div>
+  <label>показать
+    <select id="filter">
+      <option value="all">все</option>
+      <option value="todo">без отметки</option>
+      <option value="bad">брак</option>
+      <option value="g1">лучше 1</option>
+      <option value="g2">лучше 2</option>
+      <option value="edited">промпт правлен</option>
+    </select>
+  </label>
+  <label>класс <select id="cls"><option value="">все</option></select></label>
+  <label>фон <select id="bg"><option value="">пол боя</option><option value="check">шахматка</option><option value="light">светлый</option></select></label>
+  <label>№ <input type="number" id="jump" min="1"></label>
+</header>
+
+<main id="main">
+  <div class="title">
+    <h2 id="name">…</h2>
+    <span class="chip" id="pos"></span>
+    <span class="chip" id="clsChip"></span>
+    <span class="chip" id="verdictChip" hidden></span>
+  </div>
+
+  <div class="trio" id="trio">
+    <figure id="f0"><div class="pic"><img id="i0" alt="оригинал"></div>
+      <figcaption><b>оригинал</b><small>32×40 из PCK</small></figcaption></figure>
+    <figure id="f1"><div class="pic"><img id="i1" alt="генерация 1"></div>
+      <figcaption><b>генерация 1</b><small>прежний пак</small><small id="m1"></small></figcaption></figure>
+    <figure id="f2"><div class="pic"><img id="i2" alt="генерация 2"></div>
+      <figcaption><b>генерация 2</b><small>LoRA oxcehd</small><small id="m2"></small></figcaption></figure>
+  </div>
+
+  <div class="acts">
+    <button type="button" class="b-bad" id="bBad">Брак <kbd>X</kbd></button>
+    <button type="button" class="b-g1" id="bG1">Лучше 1 <kbd>1</kbd></button>
+    <button type="button" class="b-g2" id="bG2">Лучше 2 <kbd>2</kbd></button>
+    <div class="nav">
+      <button type="button" id="prev">← Назад</button>
+      <button type="button" id="next">Дальше →</button>
+    </div>
+  </div>
+
+  <div class="blocks">
+    <section class="blk">
+      <h3>1 · Что это по данным игры</h3>
+      <ul id="facts"></ul>
+    </section>
+    <section class="blk">
+      <h3>2 · Как видит модель</h3>
+      <div id="cap"></div>
+    </section>
+    <section class="blk">
+      <h3>3 · Промпт на генерацию</h3>
+      <textarea id="prompt" spellcheck="false"></textarea>
+      <div class="row">
+        <button type="button" class="small" id="reset">Вернуть предложенный</button>
+        <span id="saveState"></span>
+      </div>
+      <div class="row"><span>в батче был:</span><code id="used"></code></div>
+    </section>
+  </div>
+
+  <p class="keys"><kbd>1</kbd> лучше 1 · <kbd>2</kbd> лучше 2 · <kbd>X</kbd> брак (повторное нажатие снимает) ·
+    <kbd>←</kbd> <kbd>→</kbd> листать · <kbd>Ctrl</kbd>+<kbd>Enter</kbd> в поле промпта — сохранить и дальше.
+    После отметки страница сама переходит к следующему кадру без отметки.</p>
+</main>
+
+<script>
+let ITEMS = [], view = [], pos = 0, capsTotal = 0, saveTimer = null;
+const $ = id => document.getElementById(id);
+const VNAME = {bad: "брак", g1: "лучше 1", g2: "лучше 2"};
+
+async function load(keepId) {
+  const r = await fetch("/api/items");
+  const d = await r.json();
+  ITEMS = d.items; capsTotal = d.captions;
+  const cls = [...new Set(ITEMS.map(x => x.cls))].sort();
+  const sel = $("cls");
+  if (sel.options.length === 1) cls.forEach(c => sel.add(new Option(c + " (" + ITEMS.filter(x => x.cls === c).length + ")", c)));
+  rebuild(keepId);
+}
+function matches(it) {
+  const f = $("filter").value, c = $("cls").value, v = it.dec && it.dec.verdict;
+  if (c && it.cls !== c) return false;
+  if (f === "todo") return !v;
+  if (f === "edited") return !!(it.dec && it.dec.edited);
+  if (f === "all") return true;
+  return v === f;
+}
+function rebuild(keepId) {
+  view = ITEMS.filter(matches);
+  const i = keepId ? view.findIndex(x => x.id === keepId) : -1;
+  pos = i >= 0 ? i : Math.min(pos, Math.max(0, view.length - 1));
+  show();
+}
+function stats() {
+  const c = {bad: 0, g1: 0, g2: 0};
+  ITEMS.forEach(x => { const v = x.dec && x.dec.verdict; if (v) c[v]++; });
+  const done = c.bad + c.g1 + c.g2;
+  $("prog").innerHTML = "отмечено <b>" + done + "</b> из " + ITEMS.length +
+    " · <span class='bad'>брак " + c.bad + "</span> · <span class='g1'>1: " + c.g1 +
+    "</span> · <span class='g2'>2: " + c.g2 + "</span> · описаний моделью " + capsTotal;
+  $("bar").style.width = (100 * done / Math.max(1, ITEMS.length)) + "%";
+}
+function metric(g) {
+  return (g.ok ? "мерки: годен" : "мерки: " + (g.flags || "не годен")) + " · балл " + g.score.toFixed(2);
+}
+function show() {
+  stats();
+  const it = view[pos];
+  if (!it) { $("name").textContent = "в этом отборе кадров нет"; return; }
+  $("name").textContent = it.set + " · " + it.frame;
+  $("pos").textContent = (pos + 1) + " / " + view.length;
+  $("clsChip").textContent = it.cls;
+  const v = it.dec && it.dec.verdict;
+  const vc = $("verdictChip");
+  vc.hidden = !v; vc.className = "chip v-" + (v || ""); vc.textContent = v ? VNAME[v] : "";
+  ["o", "1", "2"].forEach((w, k) => $("i" + k).src = "/img/" + w + "/" + it.id + ".png");
+  $("m1").textContent = metric(it.g1); $("m2").textContent = metric(it.g2);
+  $("trio").classList.toggle("is-bad", v === "bad");
+  $("f1").classList.toggle("pick-g1", v === "g1");
+  $("f2").classList.toggle("pick-g2", v === "g2");
+  $("bBad").classList.toggle("on", v === "bad"); $("bG1").classList.toggle("on", v === "g1"); $("bG2").classList.toggle("on", v === "g2");
+  const fl = $("facts"); fl.replaceChildren();
+  it.facts_ru.forEach(t => { const li = document.createElement("li"); li.textContent = t; fl.appendChild(li); });
+  const cap = $("cap"); cap.replaceChildren();
+  if (it.cap) {
+    const p = document.createElement("p"); p.textContent = it.cap.ru; cap.appendChild(p);
+    const e = document.createElement("p"); e.className = "en";
+    e.textContent = it.cap.class + " · " + it.cap.material + " · " + it.cap.en; cap.appendChild(e);
+  } else {
+    const p = document.createElement("p"); p.className = "wait";
+    p.textContent = "модель ещё не описала этот кадр — описания идут в фоне, обновится при следующем переходе";
+    cap.appendChild(p);
+  }
+  $("prompt").value = (it.dec && it.dec.prompt) || it.prompt_default;
+  $("used").textContent = it.prompt_used;
+  $("saveState").textContent = it.dec && it.dec.edited ? "промпт правлен" : "";
+  document.querySelectorAll(".pic").forEach(p => { p.classList.toggle("check", $("bg").value === "check"); p.classList.toggle("light", $("bg").value === "light"); });
+}
+async function post(body) {
+  const r = await fetch("/api/mark", {method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(body)});
+  const d = await r.json();
+  if (!r.ok) throw new Error(d.error || "не сохранилось");
+  const it = ITEMS.find(x => x.id === body.id); it.dec = d.dec;
+  return d;
+}
+async function mark(v) {
+  const it = view[pos]; if (!it) return;
+  const cur = it.dec && it.dec.verdict;
+  const verdict = cur === v ? "" : v;
+  try {
+    await post({id: it.id, verdict, prompt: $("prompt").value});
+  } catch (e) { $("saveState").textContent = "ошибка: " + e.message; return; }
+  if (verdict) {
+    const next = view.findIndex((x, k) => k > pos && !(x.dec && x.dec.verdict));
+    if ($("filter").value === "all" || $("filter").value === "todo") {
+      if ($("filter").value === "todo") { rebuildAfter(next >= 0 ? view[next].id : null); return; }
+      if (next >= 0) pos = next;
+    }
+  }
+  show();
+}
+function rebuildAfter(id) { load(id); }
+function go(d) { pos = Math.max(0, Math.min(view.length - 1, pos + d)); flushPrompt(); show(); }
+function flushPrompt() {
+  if (!saveTimer) return;
+  clearTimeout(saveTimer); saveTimer = null; savePrompt();
+}
+async function savePrompt() {
+  const it = view[pos]; if (!it) return;
+  try { const d = await post({id: it.id, prompt: $("prompt").value});
+    $("saveState").innerHTML = d.dec && d.dec.edited ? "<span class='saved'>промпт сохранён</span>" : "промпт как предложен";
+  } catch (e) { $("saveState").textContent = "ошибка: " + e.message; }
+}
+$("prompt").addEventListener("input", () => { clearTimeout(saveTimer); saveTimer = setTimeout(() => { saveTimer = null; savePrompt(); }, 700); $("saveState").textContent = "…"; });
+$("prompt").addEventListener("keydown", e => { if (e.key === "Enter" && e.ctrlKey) { e.preventDefault(); flushPrompt(); go(1); } });
+$("reset").addEventListener("click", () => { const it = view[pos]; if (!it) return; $("prompt").value = it.prompt_default; clearTimeout(saveTimer); saveTimer = null; savePrompt(); });
+$("bBad").addEventListener("click", () => mark("bad"));
+$("bG1").addEventListener("click", () => mark("g1"));
+$("bG2").addEventListener("click", () => mark("g2"));
+$("prev").addEventListener("click", () => go(-1));
+$("next").addEventListener("click", () => go(1));
+["filter", "cls"].forEach(id => $(id).addEventListener("change", () => { flushPrompt(); pos = 0; rebuild(); }));
+$("bg").addEventListener("change", show);
+$("jump").addEventListener("change", e => { const n = parseInt(e.target.value, 10); if (n >= 1) { pos = Math.min(view.length - 1, n - 1); show(); } });
+document.addEventListener("keydown", e => {
+  if (e.target.tagName === "TEXTAREA" || e.target.tagName === "INPUT" || e.target.tagName === "SELECT") return;
+  if (e.key === "1") mark("g1");
+  else if (e.key === "2") mark("g2");
+  else if (e.key === "x" || e.key === "X" || e.key === "ч" || e.key === "Ч" || e.key === "0") mark("bad");
+  else if (e.key === "ArrowRight") go(1);
+  else if (e.key === "ArrowLeft") go(-1);
+  else return;
+  e.preventDefault();
+});
+// описания моделью приходят в фоне: подтягиваем раз в 30 секунд, не сбивая место
+setInterval(() => { if (!saveTimer && document.activeElement !== $("prompt")) load(view[pos] && view[pos].id); }, 30000);
+load();
+</script>
+</body>
+</html>

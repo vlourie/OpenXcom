@@ -1,0 +1,2005 @@
+/*
+ * Copyright 2010-2026 OpenXcom Developers.
+ *
+ * This file is part of OpenXcom.
+ *
+ * OpenXcom is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * OpenXcom is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
+ */
+#include "HdUi.h"
+#include "HdBattleHud.h"
+#include <algorithm>
+#include <cctype>
+#include <climits>
+#include <cmath>
+#include <cstring>
+#include <map>
+#include "FileMap.h"
+#include "Font.h"
+#include "Surface.h"
+#include "HdGpuWorld.h"
+#include "HdWorkers.h"
+#include "HdSprites.h"
+#include "Logger.h"
+#include "Options.h"
+#include "Screen.h"
+#include <chrono>
+
+/*
+ * The modern skin's drawing: anti-aliased rounded rectangles, strokes,
+ * triangles, circles and TrueType text into the world layer. Everything is
+ * in world pixels and clipped by the HD interface's clip rectangle.
+ */
+
+namespace OpenXcom
+{
+
+namespace
+{
+
+/// Where a mod keeps the TrueType font sets the player can switch between, below the art tree.
+const char *FONT_FOLDER = "UI/fonts";
+/// The classic fonts: FONT_BIG's capitals are 13 base pixels tall, FONT_SMALL's 8, the geoscape's 8 and 6;
+/// the TrueType text is set a little lighter than the chunky bitmaps: this much of the classic capitals.
+const float CAP_RATIO_BIG = 0.78f, CAP_RATIO_SMALL = 0.80f;
+/// A classic font with capitals this tall (or taller) is a big one: the heavy TrueType face.
+const int BIG_CAP_ROWS = 11;
+/// The baseline of a line of capitals centred in a box of `boxH` base pixels.
+inline float centredBaseline(float boxH, float cap) { return (boxH + cap) * 0.5f; }
+/// The same baseline, lifted so that what hangs below it (`deep` base pixels: the tails of 'р', 'у', 'p')
+/// still ends inside a box `limit` tall. The bitmap fonts are drawn to fit their cell - 'р' reaches one
+/// row below the baseline in the small font - while a TrueType face hangs about twice as deep, so a
+/// baseline set by the capitals alone pushes the tails out of the cell. `deep` is the face's deepest tail,
+/// not this line's: a line of capitals and the line under it must sit on one baseline, or neighbouring
+/// cells of a list drift apart. Never lifted above the capitals' own height: cutting the top off is worse
+/// than a tail crossing into the line below.
+inline float baselineWithTails(float boxH, float cap, float deep, float limit)
+{
+	const float centred = centredBaseline(boxH, cap);
+	if (deep <= 0.0f || centred + deep <= limit) return centred;
+	return std::max(cap, limit - deep);
+}
+/// Letter-spacing of capital titles in the big font (a fraction of the font size).
+const float TRACKING_CAPS = 0.045f;
+/// Dot leaders: a run of at least this many dots keeps its classic length (an ellipsis does not).
+const size_t LEADER_MIN = 4;
+
+/// Glyph coverage weighted for blending in sRGB: light text on the dark panels blends thin, this gives
+/// the strokes back a little weight (a gamma of 0.85 on the coverage).
+struct CoverageLut
+{
+	float v[256];
+	CoverageLut() { for (int i = 0; i < 256; ++i) v[i] = (float)std::pow(i / 255.0, 0.85); }
+};
+const CoverageLut &coverageLut() { static CoverageLut lut; return lut; }
+
+inline bool isLowerLetter(UCode c)
+{
+	return (c >= 'a' && c <= 'z') || (c >= 0xDF && c <= 0xFF && c != 0xF7) || (c >= 0x430 && c <= 0x45F);
+}
+
+/// The number of dots at the start / end of a run (a dot leader), 0 when fewer than LEADER_MIN.
+inline size_t leadingDots(const UString &s)
+{
+	size_t n = 0;
+	while (n < s.size() && s[n] == '.') ++n;
+	return n >= LEADER_MIN && n < s.size() ? n : 0;
+}
+inline size_t trailingDots(const UString &s)
+{
+	size_t n = 0;
+	while (n < s.size() && s[s.size() - 1 - n] == '.') ++n;
+	return n >= LEADER_MIN ? n : 0;
+}
+
+inline void blendPixel(Uint32 &d, Uint32 color, float cov)
+{
+	const float a = (color >> 24) / 255.0f * cov;
+	if (a <= 0.002f) return;
+	if (a >= 0.998f) { d = color | 0xFF000000u; return; }
+	const float ia = 1.0f - a;
+	const int r = (int)(((color >> 16) & 0xFF) * a + ((d >> 16) & 0xFF) * ia + 0.5f);
+	const int g = (int)(((color >> 8) & 0xFF) * a + ((d >> 8) & 0xFF) * ia + 0.5f);
+	const int b = (int)((color & 0xFF) * a + (d & 0xFF) * ia + 0.5f);
+	d = 0xFF000000u | ((Uint32)r << 16) | ((Uint32)g << 8) | (Uint32)b;
+}
+
+/// While a shape goes to the video card (HdGpuWorld): blendSpan hands its runs over here instead of drawing them.
+thread_local std::vector<HdGpuWorld::Span> *spanSink = nullptr;
+
+/// The coverages of a shape over [x0, x1) x [y0, y1) to the video card (HdGpuWorld), or blended here when it does
+/// not take them (or verifies).
+void coverDone(SDL_Surface *dest, const std::vector<float> &covs, int x0, int y0, int x1, int y1, Uint32 color)
+{
+	HdGpuWorld &gpuWorld = HdGpuWorld::instance();
+	// every row whole: one stretch [x0, x1), the second empty
+	std::vector<Sint32> runs((size_t)std::max(0, y1 - y0) * 4);
+	for (size_t r = 0; r < runs.size(); r += 4)
+	{
+		runs[r] = x0;
+		runs[r + 1] = runs[r + 2] = runs[r + 3] = x1;
+	}
+	if (gpuWorld.cover(runs, covs, x0, y0, x1, y1, color) && !gpuWorld.verifying())
+	{
+		return;
+	}
+	for (int y = y0; y < y1; ++y)
+	{
+		Uint32 *row = (Uint32*)((Uint8*)dest->pixels + (size_t)y * dest->pitch);
+		const float *cov = &covs[(size_t)(y - y0) * (x1 - x0)];
+		for (int x = x0; x < x1; ++x)
+		{
+			if (cov[x - x0] > 0.002f) blendPixel(row[x], color, cov[x - x0]);
+		}
+	}
+}
+
+/// The horizontal extent of a rounded rectangle at a row centre, and the row's vertical coverage.
+inline bool rowExtent(float x0, float y0, float x1, float y1, float r, float yc, float &xa, float &xb, float &vcov)
+{
+	vcov = std::min(yc + 0.5f, y1) - std::max(yc - 0.5f, y0);
+	if (vcov <= 0.0f) return false;
+	if (vcov > 1.0f) vcov = 1.0f;
+	float dy = 0.0f;
+	if (yc < y0 + r) dy = (y0 + r) - yc;
+	else if (yc > y1 - r) dy = yc - (y1 - r);
+	const float inset = r > 0.0f ? r - std::sqrt(std::max(r * r - dy * dy, 0.0f)) : 0.0f;
+	xa = x0 + inset;
+	xb = x1 - inset;
+	return xb > xa;
+}
+
+
+/// Adds the time of a drawing call to the frame's interface time.
+struct FrameTiming
+{
+	double &ms;
+	std::chrono::steady_clock::time_point t;
+	FrameTiming(double &m) : ms(m), t(std::chrono::steady_clock::now()) {}
+	~FrameTiming() { ms += std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t).count(); }
+};
+
+}
+
+bool HdUi::skin()
+{
+	return Options::oxceHdUiSkin > 0 && active();
+}
+
+int HdUi::style()
+{
+	return std::min(std::max(Options::oxceHdUiSkin, 1), 3);
+}
+
+bool HdUi::windowTheme()
+{
+	return Options::oxceHdWindowTheme && skin();
+}
+
+Uint32 HdUi::themeShade(int v)
+{
+	// the ramp's steps 1..5 (light to dark) as shades of the theme's metal: the light end of a lit button stays metal,
+	// short of the pale top of the ramp
+	static const float SHADE[] = { 0.97f, 0.80f, 0.74f, 0.40f, 0.29f, 0.15f };
+	return HdBattleHud::metalShade(SHADE[std::min(std::max(v, 0), 5)]);
+}
+
+namespace
+{
+/// The relief a button of the window "Buttons' look" stands for while it is drawn, -1 none.
+int faceOverride = -1;
+}
+
+int HdUi::buttonFace()
+{
+	if (!windowTheme() || style() == 2) return 0;
+	const int face = faceOverride >= 0 ? faceOverride : Options::oxceHdButtonFace;
+	return std::min(std::max(face, 0), HdBattleHud::FACES - 1);
+}
+
+void HdUi::setFaceOverride(int face)
+{
+	faceOverride = face;
+}
+
+bool HdUi::themeCaps()
+{
+	// the dark panel's buttons (skin 2) are near black whatever the metal; a relief is cast round the metal's mid-light tone
+	return windowTheme() && style() != 2 && (Options::oxceHdBattleHudColor == HdBattleHud::COLOR_CUSTOM || buttonFace() > 0);
+}
+
+bool HdUi::themeInk()
+{
+	// the ready themes' caps are the ramp's dark end: light letters. The player's own colour has the metal's own
+	// mid-light tone for a cap (the metal at 0.64, drawButton): dark letters on it when the metal is light enough, as the
+	// battle panel's keys carry theirs, light ones when it is dark (the threshold is the cap's brightness, 0.299 R +
+	// 0.587 G + 0.114 B of 255, at 0.40)
+	if (!themeCaps()) return false;
+	const Uint32 cap = HdBattleHud::metalShade(0.64f);
+	const float luma = (0.299f * (float)((cap >> 16) & 0xFF) + 0.587f * (float)((cap >> 8) & 0xFF) + 0.114f * (float)(cap & 0xFF)) / 255.0f;
+	return luma >= 0.40f;
+}
+
+namespace
+{
+/// RGB 0..1 to hue 0..360, saturation and lightness 0..1 (the HSL model), and back.
+void rgbToHsl(float r, float g, float b, float &h, float &s, float &l)
+{
+	const float hi = std::max({ r, g, b }), lo = std::min({ r, g, b }), d = hi - lo;
+	l = (hi + lo) * 0.5f;
+	h = 0.0f;
+	s = 0.0f;
+	if (d <= 1e-6f) return;
+	s = d / (1.0f - std::fabs(2.0f * l - 1.0f));
+	if (hi == r) h = 60.0f * std::fmod((g - b) / d, 6.0f);
+	else if (hi == g) h = 60.0f * ((b - r) / d + 2.0f);
+	else h = 60.0f * ((r - g) / d + 4.0f);
+	if (h < 0.0f) h += 360.0f;
+}
+
+void hslToRgb(float h, float s, float l, float &r, float &g, float &b)
+{
+	const float c = (1.0f - std::fabs(2.0f * l - 1.0f)) * s;
+	const float x = c * (1.0f - std::fabs(std::fmod(h / 60.0f, 2.0f) - 1.0f)), m = l - c * 0.5f;
+	float pr = 0.0f, pg = 0.0f, pb = 0.0f;
+	const int sector = (int)(h / 60.0f) % 6;
+	switch (sector)
+	{
+	case 0: pr = c; pg = x; break;
+	case 1: pr = x; pg = c; break;
+	case 2: pg = c; pb = x; break;
+	case 3: pg = x; pb = c; break;
+	case 4: pr = x; pb = c; break;
+	default: pr = c; pb = x; break;
+	}
+	r = pr + m;
+	g = pg + m;
+	b = pb + m;
+}
+
+inline float lumaOf(float r, float g, float b) { return 0.299f * r + 0.587f * g + 0.114f * b; }
+
+inline float lumaOf(Uint32 c)
+{
+	return lumaOf((float)((c >> 16) & 0xFF) / 255.0f, (float)((c >> 8) & 0xFF) / 255.0f, (float)(c & 0xFF) / 255.0f);
+}
+
+/// The brightness of the cap the letters lie on, as drawButton fills it (the middle of its gradient), pressed or not.
+float capLuma(bool pressed)
+{
+	float s;   // the metal's shade (0 dark ... 1 light), as in drawButton
+	if (HdUi::buttonFace() > 0) s = pressed ? 0.80f : 0.64f;
+	else if (HdUi::style() == 2) s = pressed ? 0.77f : 0.075f;
+	else if (HdUi::style() == 3) s = pressed ? 0.74f : (HdUi::themeCaps() ? 0.64f : 0.29f);
+	else if (pressed) s = HdUi::themeCaps() ? 0.86f : 0.77f;
+	else s = HdUi::themeCaps() ? 0.64f : 0.275f;
+	return lumaOf(HdBattleHud::metalShade(s));
+}
+
+/// The tone of the letters (oxceHdButtonInkTone, XP-000399): 0 auto, 1 light, 2 dark.
+int inkTone()
+{
+	return std::min(std::max(Options::oxceHdButtonInkTone, 0), 2);
+}
+
+/// Whether the letters are dark: forced by the tone, else (auto) on a lit button or a light cap (themeInk). A lit (pressed or
+/// chosen) button is the light end of the metal: it keeps dark letters even where the tone is forced light.
+bool inkDark(bool lit)
+{
+	const int tone = inkTone();
+	if (tone == 1) return lit;
+	if (tone == 2) return true;
+	return lit || HdUi::themeInk();
+}
+
+/// The player's hue, saturation and brightness of the letters (oxceHdButtonInkHue, oxceHdButtonInkSat, oxceHdButtonInkLight): the
+/// face `face` and the shadow `shadow` as the theme gives them are replaced. Hue 0 and brightness 50 leave them as they are (false).
+/// The letters are kept readable: their luma stays at least INK_CONTRAST off the cap's - unless the player forced the tone
+/// (oxceHdButtonInkTone 1 or 2): then the colour is exactly what the sliders say. `dark` - the letters are dark (on a light cap).
+bool inkAdjust(bool dark, bool pressed, Uint32 &face, SDL_Color &shadow)
+{
+	const int hue = std::min(std::max(Options::oxceHdButtonInkHue, 0), 360);
+	const int light = std::min(std::max(Options::oxceHdButtonInkLight, 0), 100);
+	if (hue == 0 && light == 50) return false;
+	const float INK_CONTRAST = 0.50f;
+	float h, s, l, r, g, b;
+	rgbToHsl((float)((face >> 16) & 0xFF) / 255.0f, (float)((face >> 8) & 0xFF) / 255.0f, (float)(face & 0xFF) / 255.0f, h, s, l);
+	if (hue > 0)
+	{
+		// a colour: a rich tone, pale on a dark cap, deep on a light one
+		h = (float)(hue % 360);
+		s = (float)std::min(std::max(Options::oxceHdButtonInkSat, 0), 100) / 100.0f;
+		l = dark ? 0.22f : 0.85f;
+	}
+	l = light < 50 ? l * (float)light / 50.0f : l + (1.0f - l) * (float)(light - 50) / 50.0f;
+	// the nearest lightness that reads on the cap (none does: the one furthest from it); a forced tone skips it
+	const float cap = capLuma(pressed);
+	float best = l, bestDist = 1e9f, widest = -1.0f, widestL = l;
+	for (int i = 0; i <= 50 && inkTone() == 0; ++i)
+	{
+		const float t = (float)i / 50.0f;
+		hslToRgb(h, s, t, r, g, b);
+		const float gap = std::fabs(lumaOf(r, g, b) - cap);
+		if (gap >= INK_CONTRAST && std::fabs(t - l) < bestDist)
+		{
+			bestDist = std::fabs(t - l);
+			best = t;
+		}
+		if (gap > widest)
+		{
+			widest = gap;
+			widestL = t;
+		}
+	}
+	if (inkTone() == 0) l = bestDist < 1e9f ? best : widestL;
+	hslToRgb(h, s, l, r, g, b);
+	auto toByte = [](float v) { return (Uint8)(std::min(std::max(v, 0.0f), 1.0f) * 255.0f + 0.5f); };
+	face = 0xFF000000u | (Uint32)toByte(r) << 16 | (Uint32)toByte(g) << 8 | toByte(b);
+	// the shadow of the other kind, of the letters' own hue
+	const bool lightLetters = lumaOf(r, g, b) >= 0.5f;
+	hslToRgb(h, s * 0.6f, lightLetters ? 0.06f : 0.92f, r, g, b);
+	shadow = SDL_Color{ toByte(r), toByte(g), toByte(b), 255 };
+	return true;
+}
+}
+
+Uint32 HdUi::themeFace()
+{
+	// the arrows lie on the same caps as the letters
+	const bool dark = inkDark(false);
+	Uint32 face = HdBattleHud::metalShade(dark ? 0.0f : 0.97f);
+	SDL_Color shadow;
+	inkAdjust(dark, false, face, shadow);
+	return face;
+}
+
+void HdUi::setLabelTheme(bool on, bool lit)
+{
+	_labelTheme = on;
+	if (!on) return;
+	// a lit (pressed) button is the light end of the metal: dark letters on it, a light shadow; any other: dark letters
+	// on a light metal cap, light ones on a dark one (themeInk), the shadow of the other kind
+	const bool dark = inkDark(lit);
+	_labelFace = HdBattleHud::metalShade(dark ? 0.0f : 0.97f);
+	const Uint32 s = HdBattleHud::metalShade(dark ? 0.9f : 0.0f);
+	_labelShadow = SDL_Color{ (Uint8)(s >> 16), (Uint8)(s >> 8), (Uint8)s, 255 };
+	// the player's hue and brightness of the letters (XP-000411); the defaults leave the theme's own
+	inkAdjust(dark, lit, _labelFace, _labelShadow);
+}
+
+void HdUi::setLabelInk(const SDL_Color &face, const SDL_Color &shadow)
+{
+	_labelTheme = true;
+	_labelFace = 0xFF000000u | ((Uint32)face.r << 16) | ((Uint32)face.g << 8) | (Uint32)face.b;
+	_labelShadow = SDL_Color{ shadow.r, shadow.g, shadow.b, 255 };
+}
+
+namespace
+{
+/// A colour mixed towards black (t = 0 the colour, 1 black), alpha kept.
+inline Uint32 darkened(Uint32 c, float t) { return HdUi::scaled(c, 1.0f - t); }
+inline Uint32 withAlpha(Uint32 c, Uint32 a) { return (c & 0x00FFFFFFu) | (a << 24); }
+}
+
+int HdUi::scale()
+{
+	Screen *screen = Screen::current();
+	return screen && active() ? screen->getWorldScale() : 0;
+}
+
+Uint32 HdUi::scaled(Uint32 c, float f)
+{
+	const int r = std::min(255, (int)(((c >> 16) & 0xFF) * f + 0.5f));
+	const int g = std::min(255, (int)(((c >> 8) & 0xFF) * f + 0.5f));
+	const int b = std::min(255, (int)((c & 0xFF) * f + 0.5f));
+	return (c & 0xFF000000u) | ((Uint32)r << 16) | ((Uint32)g << 8) | (Uint32)b;
+}
+
+Uint32 HdUi::mixed(Uint32 a, Uint32 b, float t)
+{
+	const float it = 1.0f - t;
+	const int al = (int)(((a >> 24) & 0xFF) * it + ((b >> 24) & 0xFF) * t + 0.5f);
+	const int r = (int)(((a >> 16) & 0xFF) * it + ((b >> 16) & 0xFF) * t + 0.5f);
+	const int g = (int)(((a >> 8) & 0xFF) * it + ((b >> 8) & 0xFF) * t + 0.5f);
+	const int bl = (int)((a & 0xFF) * it + (b & 0xFF) * t + 0.5f);
+	return ((Uint32)al << 24) | ((Uint32)r << 16) | ((Uint32)g << 8) | (Uint32)bl;
+}
+
+/**
+ * Is the text drawn with the mod's TrueType fonts: they are there and the
+ * option asks for them. Otherwise the game's own font is drawn, smoothed -
+ * the classic colours, widths and lines, only without the stair-steps.
+ */
+bool HdUi::hasFonts() const
+{
+	return Options::oxceHdUiFont > 0 && _fontBig.loaded() && _fontSmall.loaded();
+}
+
+/**
+ * The font sets the mods ship, in the order the option numbers them: the pair under the
+ * plain names (hd/UI/FontBig.ttf, FontSmall.ttf) is set 1, then whatever lies in
+ * hd/UI/fonts - <Name>-Big.ttf with <Name>-Small.ttf, or a single <Name>.ttf for both.
+ * A mod adds a font by dropping the files there; nothing here knows their names.
+ */
+void HdUi::scanFontSets()
+{
+	_fontSets.clear();
+	const std::string one = HdSprites::artPath("UI/Font.ttf");
+	const bool hasOne = FileMap::fileExists(one);
+	FontSet plain;
+	plain.name = "Default";
+	plain.big = FileMap::fileExists(HdSprites::artPath("UI/FontBig.ttf")) ? HdSprites::artPath("UI/FontBig.ttf") : (hasOne ? one : std::string());
+	plain.small = FileMap::fileExists(HdSprites::artPath("UI/FontSmall.ttf")) ? HdSprites::artPath("UI/FontSmall.ttf") : (hasOne ? one : std::string());
+	if (plain.big.empty()) plain.big = plain.small;
+	if (plain.small.empty()) plain.small = plain.big;
+	if (!plain.big.empty())
+	{
+		_fontSets.push_back(plain);
+	}
+	// the sets are kept by name, so that the numbering does not depend on the order the files come in
+	std::map<std::string, FontSet> found;
+	for (const std::string &file : HdSprites::artFolder(FONT_FOLDER))
+	{
+		const size_t dot = file.find_last_of('.');
+		if (dot == std::string::npos) continue;
+		const std::string ext = file.substr(dot);
+		if (ext != ".ttf" && ext != ".otf" && ext != ".ttc") continue;
+		std::string stem = file.substr(0, dot);
+		int which = 0;   // 0 = the one file of the set, 1 = its big face, 2 = its small one
+		if (stem.size() > 4 && stem.compare(stem.size() - 4, 4, "-big") == 0) { which = 1; stem.resize(stem.size() - 4); }
+		else if (stem.size() > 6 && stem.compare(stem.size() - 6, 6, "-small") == 0) { which = 2; stem.resize(stem.size() - 6); }
+		if (stem.empty()) continue;
+		const std::string path = HdSprites::artPath(std::string(FONT_FOLDER) + "/" + file);
+		FontSet &set = found[stem];
+		if (set.name.empty())
+		{
+			set.name = stem;
+			set.name[0] = (char)toupper((unsigned char)set.name[0]);
+		}
+		if (which == 1) set.big = path;
+		else if (which == 2) set.small = path;
+		else { if (set.big.empty()) set.big = path; if (set.small.empty()) set.small = path; }
+	}
+	for (auto &pair : found)
+	{
+		FontSet set = pair.second;
+		if (set.big.empty()) set.big = set.small;
+		if (set.small.empty()) set.small = set.big;
+		if (set.big.empty()) continue;
+		_fontSets.push_back(set);
+	}
+}
+
+void HdUi::loadFonts()
+{
+	// the mods' bitmap fonts are new objects now: a new one can sit at the address of an old one
+	_metrics.clear();
+	scanFontSets();
+	_fontCounter.load(HdSprites::artPath("UI/fonts/Pulse-Big.ttf"));
+	_fontSetLoaded = -1;
+	applyFontOption();
+	Log(LOG_INFO) << "HD interface: " << _fontSets.size() << " TrueType font set(s) in the mods";
+}
+
+/**
+ * Puts the set the option asks for into the two faces. The option can be turned in play
+ * (the options list, a saved game of another profile), so this is checked once per frame;
+ * loading only happens when the number actually changed.
+ */
+void HdUi::applyFontOption()
+{
+	int want = Options::oxceHdUiFont;
+	if (want < 0) want = 0;
+	if (want > (int)_fontSets.size()) want = (int)_fontSets.size();
+	if (want == _fontSetLoaded)
+	{
+		return;
+	}
+	_fontSetLoaded = want;
+	if (want == 0)
+	{
+		return;   // the game's own font, smoothed: no face to load
+	}
+	const FontSet &set = _fontSets[want - 1];
+	_fontBig.load(set.big);
+	_fontSmall.load(set.small);
+	if (!_fontSmall.loaded() && _fontBig.loaded()) _fontSmall.load(set.big);
+	if (!_fontBig.loaded() && _fontSmall.loaded()) _fontBig.load(set.small);
+	// signs the main face has no glyph for (mod texts use the heart suit) come from here
+	_fontBig.loadFallback(HdSprites::artPath("UI/FontFallback.ttf"));
+	_fontSmall.loadFallback(HdSprites::artPath("UI/FontFallback.ttf"));
+	if (hasFonts())
+	{
+		// the two numbers that decide where a line sits: the capitals' share of the size, and how deep
+		// the tails hang under the baseline. A face with deep tails is lifted more inside the cell
+		Log(LOG_INFO) << "HD interface: TrueType font " << want << " loaded (" << fontSetName(want)
+			<< "), capitals " << (int)(100.0f / _fontBig.sizeForCapHeight(1.0f) + 0.5f) << "%, tails "
+			<< (int)(_fontBig.descent(100.0f) + 0.5f) << "% of the size";
+	}
+	else
+	{
+		Log(LOG_WARNING) << "HD interface: TrueType font " << want << " did not load (" << set.big << ")";
+	}
+}
+
+/**
+ * What the options list writes next to the setting: the name the face carries itself
+ * ("Exo 2"), so the player picks a font by name instead of counting numbers.
+ */
+std::string HdUi::fontSetName(int index) const
+{
+	if (index <= 0 || index > (int)_fontSets.size())
+	{
+		return "Classic";
+	}
+	if (index == _fontSetLoaded)
+	{
+		const std::string own = _fontBig.familyName();
+		if (!own.empty())
+		{
+			return own;
+		}
+	}
+	return _fontSets[index - 1].name;
+}
+
+void HdUi::blendSpan(SDL_Surface *dest, const SDL_Rect &clip, int y, float xa, float xb, Uint32 color, float cov)
+{
+	if (y < clip.y || y >= clip.y + clip.h || cov <= 0.0f) return;
+	const float cx0 = (float)clip.x, cx1 = (float)(clip.x + clip.w);
+	xa = std::max(xa, cx0);
+	xb = std::min(xb, cx1);
+	if (xb <= xa) return;
+	Uint32 *row = (Uint32*)((Uint8*)dest->pixels + (size_t)y * dest->pitch);
+	const int ia = (int)std::floor(xa), ib = (int)std::ceil(xb) - 1;
+	if (spanSink)
+	{
+		// the coverages of the first, the last and the inner pixels, as worked out below
+		const float first = ia == ib ? cov * (xb - xa) : cov * (ia + 1 - xa);
+		const float last = ia == ib ? first : cov * (xb - ib);
+		spanSink->push_back(HdGpuWorld::Span{ y, ia, ib, first, last, cov, color });
+		return;
+	}
+	if (ia == ib)
+	{
+		blendPixel(row[ia], color, cov * (xb - xa));
+		return;
+	}
+	blendPixel(row[ia], color, cov * (ia + 1 - xa));
+	blendPixel(row[ib], color, cov * (xb - ib));
+	if (cov >= 0.998f && (color >> 24) == 255)
+	{
+		const Uint32 v = color | 0xFF000000u;
+		for (int x = ia + 1; x < ib; ++x) row[x] = v;
+	}
+	else
+	{
+		for (int x = ia + 1; x < ib; ++x) blendPixel(row[x], color, cov);
+	}
+}
+
+void HdUi::fillRoundRect(float x0, float y0, float x1, float y1, float radius, Uint32 top, Uint32 bottom)
+{
+	FrameTiming timing(_frameMs);
+	SDL_Surface *dest;
+	int k;
+	const SDL_Color *pal;
+	if (!target(dest, k, pal) || x1 <= x0 || y1 <= y0) return;
+	const SDL_Rect clip = worldClip(dest, k);
+	radius = std::min(radius, std::min(x1 - x0, y1 - y0) * 0.5f);
+	const int ya = std::max((int)std::floor(y0), (int)clip.y), yb = std::min((int)std::ceil(y1), clip.y + clip.h);
+	if (yb <= ya) return;
+	auto rows = [&](int ra, int rb)
+	{
+		for (int y = ra; y < rb; ++y)
+		{
+			float xa, xb, vcov;
+			if (!rowExtent(x0, y0, x1, y1, radius, y + 0.5f, xa, xb, vcov)) continue;
+			const float t = (y + 0.5f - y0) / (y1 - y0);
+			const Uint32 c = top == bottom ? top : mixed(top, bottom, std::min(std::max(t, 0.0f), 1.0f));
+			blendSpan(dest, clip, y, xa, xb, c, vcov);
+		}
+	};
+	// on the video card: the runs of the rows, in one thread
+	HdGpuWorld &gpuWorld = HdGpuWorld::instance();
+	if (gpuWorld.on(dest))
+	{
+		std::vector<HdGpuWorld::Span> spans;
+		spanSink = &spans;
+		rows(ya, yb);
+		spanSink = nullptr;
+		if (gpuWorld.spans(spans) && !gpuWorld.verifying())
+		{
+			return;
+		}
+	}
+	const int n = yb - ya;
+	if (n >= 128)
+	{
+		HdWorkers &pool = HdWorkers::instance();
+		const int jobs = std::max(1, std::min(n / 32, pool.threads() * 2));
+		pool.run(jobs, [&](int job) { rows(ya + (int)((long long)n * job / jobs), ya + (int)((long long)n * (job + 1) / jobs)); });
+	}
+	else
+	{
+		rows(ya, yb);
+	}
+}
+
+void HdUi::strokeRoundRect(float x0, float y0, float x1, float y1, float radius, float width, Uint32 color)
+{
+	FrameTiming timing(_frameMs);
+	SDL_Surface *dest;
+	int k;
+	const SDL_Color *pal;
+	if (!target(dest, k, pal) || x1 <= x0 || y1 <= y0 || width <= 0.0f) return;
+	const SDL_Rect clip = worldClip(dest, k);
+	radius = std::min(radius, std::min(x1 - x0, y1 - y0) * 0.5f);
+	const float ri = std::max(radius - width, 0.0f);
+	const int ya = std::max((int)std::floor(y0), (int)clip.y), yb = std::min((int)std::ceil(y1), clip.y + clip.h);
+	auto rows = [&]()
+	{
+		for (int y = ya; y < yb; ++y)
+		{
+			float xa, xb, vcov;
+			if (!rowExtent(x0, y0, x1, y1, radius, y + 0.5f, xa, xb, vcov)) continue;
+			float ia, ib, icov;
+			if (!rowExtent(x0 + width, y0 + width, x1 - width, y1 - width, ri, y + 0.5f, ia, ib, icov))
+			{
+				// a row of the top or bottom band: the whole extent
+				blendSpan(dest, clip, y, xa, xb, color, vcov);
+				continue;
+			}
+			// the inner rows: the two sides; the inner edge's own partial coverage
+			blendSpan(dest, clip, y, xa, ia, color, vcov);
+			blendSpan(dest, clip, y, ib, xb, color, vcov);
+			if (icov < 1.0f)
+			{
+				blendSpan(dest, clip, y, ia, ib, color, vcov * (1.0f - icov));
+			}
+		}
+	};
+	// on the video card: the runs of the rows, handed over
+	HdGpuWorld &gpuWorld = HdGpuWorld::instance();
+	if (gpuWorld.on(dest))
+	{
+		std::vector<HdGpuWorld::Span> spans;
+		spanSink = &spans;
+		rows();
+		spanSink = nullptr;
+		if (gpuWorld.spans(spans) && !gpuWorld.verifying())
+		{
+			return;
+		}
+	}
+	rows();
+}
+
+void HdUi::fillTriangle(float ax, float ay, float bx, float by, float cx, float cy, Uint32 color)
+{
+	FrameTiming timing(_frameMs);
+	SDL_Surface *dest;
+	int k;
+	const SDL_Color *pal;
+	if (!target(dest, k, pal)) return;
+	const SDL_Rect clip = worldClip(dest, k);
+	// counter-clockwise order for the edge distances
+	const float area = (bx - ax) * (cy - ay) - (cx - ax) * (by - ay);
+	if (std::fabs(area) < 1e-6f) return;
+	if (area < 0) { std::swap(bx, cx); std::swap(by, cy); }
+	const float ex[3] = { ax, bx, cx }, ey[3] = { ay, by, cy };
+	const int x0 = std::max((int)std::floor(std::min({ ax, bx, cx })), (int)clip.x), x1 = std::min((int)std::ceil(std::max({ ax, bx, cx })), clip.x + clip.w);
+	const int y0 = std::max((int)std::floor(std::min({ ay, by, cy })), (int)clip.y), y1 = std::min((int)std::ceil(std::max({ ay, by, cy })), clip.y + clip.h);
+	// on the video card: the coverages worked out here, blended there
+	const bool onCard = HdGpuWorld::instance().on(dest) && x0 < x1 && y0 < y1;
+	std::vector<float> covs(onCard ? (size_t)(x1 - x0) * (y1 - y0) : 0, 0.0f);
+	for (int y = y0; y < y1; ++y)
+	{
+		Uint32 *row = (Uint32*)((Uint8*)dest->pixels + (size_t)y * dest->pitch);
+		for (int x = x0; x < x1; ++x)
+		{
+			const float px = x + 0.5f, py = y + 0.5f;
+			float cov = 1.0f;
+			for (int i = 0; i < 3 && cov > 0.0f; ++i)
+			{
+				const int j = (i + 1) % 3;
+				const float dx = ex[j] - ex[i], dy = ey[j] - ey[i];
+				const float len = std::sqrt(dx * dx + dy * dy);
+				// signed distance to the edge line: inside is positive
+				const float d = (dx * (py - ey[i]) - dy * (px - ex[i])) / std::max(len, 1e-6f);
+				cov *= std::min(std::max(d + 0.5f, 0.0f), 1.0f);
+			}
+			if (onCard) covs[(size_t)(y - y0) * (x1 - x0) + (x - x0)] = cov;
+			else if (cov > 0.002f) blendPixel(row[x], color, cov);
+		}
+	}
+	if (onCard)
+	{
+		coverDone(dest, covs, x0, y0, x1, y1, color);
+	}
+}
+
+void HdUi::fillCircle(float cx, float cy, float r, Uint32 color)
+{
+	FrameTiming timing(_frameMs);
+	SDL_Surface *dest;
+	int k;
+	const SDL_Color *pal;
+	if (!target(dest, k, pal) || r <= 0.0f) return;
+	const SDL_Rect clip = worldClip(dest, k);
+	const int y0 = std::max((int)std::floor(cy - r), (int)clip.y), y1 = std::min((int)std::ceil(cy + r), clip.y + clip.h);
+	const int x0 = std::max((int)std::floor(cx - r), (int)clip.x), x1 = std::min((int)std::ceil(cx + r), clip.x + clip.w);
+	// on the video card: the coverages worked out here, blended there
+	const bool onCard = HdGpuWorld::instance().on(dest) && x0 < x1 && y0 < y1;
+	std::vector<float> covs(onCard ? (size_t)(x1 - x0) * (y1 - y0) : 0, 0.0f);
+	for (int y = y0; y < y1; ++y)
+	{
+		Uint32 *row = (Uint32*)((Uint8*)dest->pixels + (size_t)y * dest->pitch);
+		for (int x = x0; x < x1; ++x)
+		{
+			const float dx = x + 0.5f - cx, dy = y + 0.5f - cy;
+			const float cov = std::min(std::max(r - std::sqrt(dx * dx + dy * dy) + 0.5f, 0.0f), 1.0f);
+			if (onCard) covs[(size_t)(y - y0) * (x1 - x0) + (x - x0)] = cov;
+			else if (cov > 0.002f) blendPixel(row[x], color, cov);
+		}
+	}
+	if (onCard)
+	{
+		coverDone(dest, covs, x0, y0, x1, y1, color);
+	}
+}
+
+void HdUi::drawImage(const Uint32 *argb, int w, int h, int x, int y)
+{
+	FrameTiming timing(_frameMs);
+	SDL_Surface *dest;
+	int k;
+	const SDL_Color *pal;
+	if (!target(dest, k, pal) || w <= 0 || h <= 0) return;
+	const SDL_Rect clip = worldClip(dest, k);
+	const int x0 = std::max(x, (int)clip.x), y0 = std::max(y, (int)clip.y);
+	const int x1 = std::min(x + w, clip.x + clip.w), y1 = std::min(y + h, clip.y + clip.h);
+	// on the video card: the part of the picture inside the clip
+	HdGpuWorld &gpuWorld = HdGpuWorld::instance();
+	if (gpuWorld.on(dest) && (x0 >= x1 || y0 >= y1 || gpuWorld.image(argb + (size_t)(y0 - y) * w + (x0 - x), w, x1 - x0, y1 - y0, x0, y0))
+		&& !gpuWorld.verifying())
+	{
+		return;
+	}
+	for (int py = y0; py < y1; ++py)
+	{
+		Uint32 *row = (Uint32*)((Uint8*)dest->pixels + (size_t)py * dest->pitch);
+		const Uint32 *src = argb + (size_t)(py - y) * w;
+		for (int px = x0; px < x1; ++px)
+		{
+			const Uint32 c = src[px - x];
+			if (c >> 24) blendPixel(row[px], c, 1.0f);
+		}
+	}
+}
+
+/// A step as HdShadeRow keeps it (the colour and STEP_256 | a or the bits of a coverage) in the words of
+/// HdGpuWorld::steps, written to `out` unless null; the count of its words.
+inline int stepWords(Uint32 color, Uint32 w, Uint32 *out)
+{
+	if (w & HdGpuWorld::STEP_256)
+	{
+		const Uint32 a = w & 0x1FFu;
+		if (a >= 1 && a <= 255)
+		{
+			if (out) out[0] = (a << 24) | (color & 0xFFFFFFu);
+			return 1;
+		}
+		if (a == 0)
+		{
+			// of 0: only the alpha opaque
+			if (out) out[0] = HdGpuWorld::STEP_OPAQUE;
+			return 1;
+		}
+		if (out)
+		{
+			out[0] = HdGpuWorld::STEP_SET;
+			out[1] = color;
+		}
+		return 2;
+	}
+	float cov;
+	std::memcpy(&cov, &w, 4);
+	// blendPixel's own limit: at it the colour is set
+	if ((color >> 24) / 255.0f * cov >= 0.998f)
+	{
+		if (out)
+		{
+			out[0] = HdGpuWorld::STEP_SET;
+			out[1] = color;
+		}
+		return 2;
+	}
+	if (out)
+	{
+		out[0] = HdGpuWorld::STEP_BLEND;
+		out[1] = color;
+		out[2] = w;
+	}
+	return 3;
+}
+
+void HdShadeRow::blend(int x, Uint32 color, float cov)
+{
+	if (_steps)
+	{
+		// blendPixel leaves the pixel alone below this: no step
+		if ((color >> 24) / 255.0f * cov <= 0.002f) return;
+		Uint32 bits;
+		std::memcpy(&bits, &cov, 4);
+		_steps->push_back((Uint32)x);
+		_steps->push_back(color);
+		_steps->push_back(bits);
+		return;
+	}
+	blendPixel(_row[x], color, cov);
+}
+
+void HdUi::shadeRows(int x, int y, int w, int h, const std::function<void(int, int, int, HdShadeRow&)> &fn,
+	const HdShadeBase *base)
+{
+	FrameTiming timing(_frameMs);
+	SDL_Surface *dest;
+	int k;
+	const SDL_Color *pal;
+	if (!target(dest, k, pal) || w <= 0 || h <= 0) return;
+	const SDL_Rect clip = worldClip(dest, k);
+	const int x0 = std::max(x, (int)clip.x), y0 = std::max(y, (int)clip.y);
+	const int x1 = std::min(x + w, clip.x + clip.w), y1 = std::min(y + h, clip.y + clip.h);
+	if (x0 >= x1 || y0 >= y1) return;
+	const int n = y1 - y0;
+	HdWorkers &pool = HdWorkers::instance();
+	const int jobs = n >= 64 ? std::max(1, std::min(n / 16, pool.threads() * 4)) : 1;
+	auto band = [&](int job, int &ra, int &rb)
+	{
+		ra = y0 + (int)((long long)n * job / jobs);
+		rb = y0 + (int)((long long)n * (job + 1) / jobs);
+	};
+	HdGpuWorld &gpuWorld = HdGpuWorld::instance();
+	const bool verifying = gpuWorld.on(dest) && gpuWorld.verifying();
+	// the picture under the blends, from the card's own copy; a frame given back to the processor has it already
+	// (unless the processor draws the card's frames too), one not taken goes to the processor whole
+	bool under = false;
+	if (base && gpuWorld.on(dest))
+	{
+		const int bx0 = std::max(base->x, x0), by0 = std::max(base->y, y0);
+		const int bx1 = std::min(base->x + base->w, x1), by1 = std::min(base->y + base->h, y1);
+		under = bx0 >= bx1 || by0 >= by1 || gpuWorld.wash(base->px, base->w, base->h, base->x, base->y, base->key, base->holes, bx0, by0, bx1, by1);
+	}
+	if (gpuWorld.on(dest))
+	{
+		// on the video card: each row's blends kept, then put in order by pixel (a pixel's own in the order made) -
+		// per row 4 values, per pixel of its stretch where its steps start, the steps (HdGpuWorld::steps)
+		struct Band
+		{
+			std::vector<Uint32> rows, table, steps, made, count;
+			size_t tableAt = 0, stepsAt = 0;
+		};
+		// kept from call to call: the bands' room stays (shadeRows draws on the main thread only)
+		static std::vector<Band> bands;
+		if (bands.size() < (size_t)jobs)
+		{
+			bands.resize(jobs);
+		}
+		auto record = [&](int job)
+		{
+			Band &b = bands[job];
+			b.rows.clear();
+			b.table.clear();
+			b.steps.clear();
+			int ra, rb;
+			band(job, ra, rb);
+			HdShadeRow row;
+			row._steps = &b.made;
+			row._baseDrawn = under;
+			for (int py = ra; py < rb; ++py)
+			{
+				b.made.clear();
+				fn(py, x0, x1, row);
+				const size_t made = b.made.size() / 3;
+				if (!made)
+				{
+					b.rows.insert(b.rows.end(), { 0u, 0u, 0u, 0u });
+					continue;
+				}
+				int xa = INT_MAX, xb = INT_MIN;
+				bool ordered = true;
+				for (size_t i = 0; i < made; ++i)
+				{
+					const int px = (int)b.made[i * 3];
+					ordered = ordered && (i == 0 || px >= (int)b.made[i * 3 - 3]);
+					xa = std::min(xa, px);
+					xb = std::max(xb, px + 1);
+				}
+				const int span = xb - xa;
+				b.rows.insert(b.rows.end(), { (Uint32)b.table.size(), (Uint32)xa, (Uint32)xb, (Uint32)b.steps.size() });
+				// per pixel where its words start (from the row's first)
+				b.count.assign((size_t)span + 1, 0);
+				for (size_t i = 0; i < made; ++i)
+				{
+					b.count[b.made[i * 3] - xa + 1] += stepWords(b.made[i * 3 + 1], b.made[i * 3 + 2], nullptr);
+				}
+				for (int i = 0; i < span; ++i)
+				{
+					b.count[i + 1] += b.count[i];
+				}
+				b.table.insert(b.table.end(), b.count.begin(), b.count.end());
+				const size_t first = b.steps.size();
+				b.steps.resize(first + b.count[span]);
+				Uint32 *out = b.steps.data() + first;
+				if (ordered)
+				{
+					// made pixel after pixel already: the words go as they are
+					for (size_t i = 0; i < made; ++i)
+					{
+						out += stepWords(b.made[i * 3 + 1], b.made[i * 3 + 2], out);
+					}
+					continue;
+				}
+				for (size_t i = 0; i < made; ++i)
+				{
+					Uint32 &at = b.count[b.made[i * 3] - xa];
+					at += stepWords(b.made[i * 3 + 1], b.made[i * 3 + 2], out + at);
+				}
+			}
+		};
+		if (jobs > 1)
+		{
+			pool.run(jobs, record);
+		}
+		else
+		{
+			record(0);
+		}
+		// the bands one after another, copied into the write in place on the workers
+		size_t tables = 0, steps = 0;
+		for (int job = 0; job < jobs; ++job)
+		{
+			bands[job].tableAt = tables;
+			bands[job].stepsAt = steps;
+			tables += bands[job].table.size();
+			steps += bands[job].steps.size();
+		}
+		bool handed = steps == 0;
+		if (!handed)
+		{
+			if (Uint32 *out = gpuWorld.steps(tables, steps, x0, y0, x1, y1))
+			{
+				Uint32 *table = out + (size_t)n * 4, *step = table + tables;
+				auto place = [&](int job)
+				{
+					const Band &b = bands[job];
+					const Uint32 tableAt = (Uint32)b.tableAt, stepAt = (Uint32)b.stepsAt;
+					int ra, rb;
+					band(job, ra, rb);
+					Uint32 *r = out + (size_t)(ra - y0) * 4;
+					for (size_t i = 0; i < b.rows.size(); i += 4)
+					{
+						const bool any = b.rows[i + 1] != b.rows[i + 2];
+						r[i] = b.rows[i] + (any ? tableAt : 0);
+						r[i + 1] = b.rows[i + 1];
+						r[i + 2] = b.rows[i + 2];
+						r[i + 3] = b.rows[i + 3] + (any ? stepAt : 0);
+					}
+					std::copy(b.table.begin(), b.table.end(), table + b.tableAt);
+					std::copy(b.steps.begin(), b.steps.end(), step + b.stepsAt);
+				};
+				if (jobs > 1)
+				{
+					pool.run(jobs, place);
+				}
+				else
+				{
+					place(0);
+				}
+				handed = true;
+			}
+		}
+		if (handed && !verifying)
+		{
+			return;
+		}
+	}
+	auto draw = [&](int job)
+	{
+		int ra, rb;
+		band(job, ra, rb);
+		HdShadeRow row;
+		row._baseDrawn = under && !verifying;
+		for (int py = ra; py < rb; ++py)
+		{
+			row._row = (Uint32*)((Uint8*)dest->pixels + (size_t)py * dest->pitch);
+			fn(py, x0, x1, row);
+		}
+	};
+	if (jobs > 1)
+	{
+		pool.run(jobs, draw);
+	}
+	else
+	{
+		draw(0);
+	}
+}
+
+void HdUi::shadeCover(int x, int y, int w, int h, int layers, const Uint32 *colors, const std::function<void(int, int, int, float*)> &fn,
+	const int *spans)
+{
+	FrameTiming timing(_frameMs);
+	SDL_Surface *dest;
+	int k;
+	const SDL_Color *pal;
+	if (!target(dest, k, pal) || w <= 0 || h <= 0 || layers <= 0) return;
+	const SDL_Rect clip = worldClip(dest, k);
+	const int x0 = std::max(x, (int)clip.x), y0 = std::max(y, (int)clip.y);
+	const int x1 = std::min(x + w, clip.x + clip.w), y1 = std::min(y + h, clip.y + clip.h);
+	if (x0 >= x1 || y0 >= y1) return;
+	const int n = x1 - x0, nRows = y1 - y0;
+	HdGpuWorld &gpuWorld = HdGpuWorld::instance();
+	const bool onCard = gpuWorld.on(dest);
+	auto inRow = [&](int l, int py) { return !spans || (py >= spans[2 * l] && py < spans[2 * l + 1]); };
+	auto blendRow = [&](int py, const float *c, int from)
+	{
+		Uint32 *row = (Uint32*)((Uint8*)dest->pixels + (size_t)py * dest->pitch);
+		// layer after layer: a pixel still gets its colours in their order
+		for (int l = from; l < layers; ++l)
+		{
+			if (!inRow(l, py)) continue;
+			const float *cl = c + (size_t)l * n;
+			for (int i = 0; i < n; ++i)
+			{
+				if (cl[i] > 0.002f) blendPixel(row[x0 + i], colors[l], cl[i]);
+			}
+		}
+	};
+	// on the video card: per layer and row the two stretches that hold every coverage blended (the closest runs
+	// joined; past 8 runs the first to the last), [a0, b0, a1, b1) from x0, and their coverages in the job's list
+	const int jobs = nRows >= 64 ? std::max(1, std::min(nRows / 16, HdWorkers::instance().threads() * 4)) : 1;
+	std::vector<Sint32> found(onCard ? (size_t)layers * nRows * 4 : 0, 0);
+	std::vector<Uint32> foundAt(onCard ? (size_t)layers * nRows : 0, 0);
+	std::vector<std::vector<float>> jobCov(onCard ? jobs : 0);
+	auto stretches = [&](const float *cl, Sint32 *out)
+	{
+		int ra[8], rb[8], m = 0, first = -1, last = -1;
+		bool many = false;
+		for (int i = 0; i < n; ++i)
+		{
+			if (!(cl[i] > 0.002f)) continue;
+			if (first < 0) first = i;
+			last = i;
+			if (many) continue;
+			if (m && rb[m - 1] == i) rb[m - 1] = i + 1;
+			else if (m < 8) { ra[m] = i; rb[m] = i + 1; ++m; }
+			else many = true;
+		}
+		if (first < 0) return;
+		if (many)
+		{
+			out[0] = first; out[1] = last + 1; out[2] = out[3] = last + 1;
+			return;
+		}
+		while (m > 2)
+		{
+			int g = 0;
+			for (int i = 1; i + 1 < m; ++i)
+			{
+				if (ra[i + 1] - rb[i] < ra[g + 1] - rb[g]) g = i;
+			}
+			rb[g] = rb[g + 1];
+			for (int i = g + 1; i + 1 < m; ++i) { ra[i] = ra[i + 1]; rb[i] = rb[i + 1]; }
+			--m;
+		}
+		out[0] = ra[0]; out[1] = rb[0];
+		out[2] = m > 1 ? ra[1] : rb[0]; out[3] = m > 1 ? rb[1] : rb[0];
+	};
+	auto rows = [&](int ra, int rb, int job)
+	{
+		std::vector<float> c((size_t)layers * n);
+		for (int py = ra; py < rb; ++py)
+		{
+			for (int l = 0; l < layers; ++l)
+			{
+				if (inRow(l, py)) std::fill(c.begin() + (size_t)l * n, c.begin() + (size_t)(l + 1) * n, 0.0f);
+			}
+			fn(py, x0, x1, c.data());
+			if (!onCard)
+			{
+				blendRow(py, c.data(), 0);
+				continue;
+			}
+			std::vector<float> &list = jobCov[job];
+			for (int l = 0; l < layers; ++l)
+			{
+				if (!inRow(l, py)) continue;
+				const size_t at = (size_t)l * nRows + (py - y0);
+				const float *cl = c.data() + (size_t)l * n;
+				Sint32 *v = &found[at * 4];
+				stretches(cl, v);
+				foundAt[at] = (Uint32)list.size();
+				list.insert(list.end(), cl + v[0], cl + v[1]);
+				list.insert(list.end(), cl + v[2], cl + v[3]);
+			}
+		}
+	};
+	auto band = [&](int job) { return y0 + (int)((long long)nRows * job / jobs); };
+	if (jobs > 1)
+	{
+		HdWorkers::instance().run(jobs, [&](int job) { rows(band(job), band(job + 1), job); });
+	}
+	else
+	{
+		rows(y0, y1, 0);
+	}
+	if (!onCard)
+	{
+		return;
+	}
+	// the job that worked out row r
+	auto jobOf = [&](int r)
+	{
+		int j = (int)((long long)r * jobs / nRows);
+		while (j + 1 < jobs && band(j + 1) - y0 <= r) ++j;
+		while (j > 0 && band(j) - y0 > r) --j;
+		return j;
+	};
+	// one write a layer, over the rows and the columns it has coverages in; the layers the card took are in the world
+	// it gives back when it does not take one; with VERIFY the processor draws them all
+	const bool verifying = gpuWorld.verifying();
+	int from = 0;
+	for (; from < layers; ++from)
+	{
+		int ry0 = nRows, ry1 = 0, xa = n, xb = 0;
+		for (int r = 0; r < nRows; ++r)
+		{
+			const Sint32 *v = &found[((size_t)from * nRows + r) * 4];
+			if (v[0] == v[1] && v[2] == v[3]) continue;
+			ry0 = std::min(ry0, r);
+			ry1 = r + 1;
+			if (v[0] < v[1]) { xa = std::min(xa, (int)v[0]); xb = std::max(xb, (int)v[1]); }
+			if (v[2] < v[3]) { xa = std::min(xa, (int)v[2]); xb = std::max(xb, (int)v[3]); }
+		}
+		if (ry0 >= ry1)
+		{
+			continue;
+		}
+		std::vector<Sint32> runs((size_t)(ry1 - ry0) * 4);
+		std::vector<float> cov;
+		for (int r = ry0; r < ry1; ++r)
+		{
+			const size_t at = (size_t)from * nRows + r;
+			const Sint32 *v = &found[at * 4];
+			Sint32 *o = &runs[(size_t)(r - ry0) * 4];
+			for (int i = 0; i < 4; i += 2)
+			{
+				// an empty stretch where the write starts
+				o[i] = v[i] < v[i + 1] ? x0 + v[i] : x0 + xa;
+				o[i + 1] = v[i] < v[i + 1] ? x0 + v[i + 1] : x0 + xa;
+			}
+			const int len = v[1] - v[0] + v[3] - v[2];
+			if (len)
+			{
+				const float *src = jobCov[jobOf(r)].data() + foundAt[at];
+				cov.insert(cov.end(), src, src + len);
+			}
+		}
+		if (!gpuWorld.cover(runs, cov, x0 + xa, y0 + ry0, x0 + xb, y0 + ry1, colors[from]))
+		{
+			break;
+		}
+	}
+	if (verifying)
+	{
+		from = 0;
+	}
+	else if (from == layers)
+	{
+		return;
+	}
+	std::vector<float> c((size_t)layers * n);
+	for (int py = y0; py < y1; ++py)
+	{
+		for (int l = from; l < layers; ++l)
+		{
+			if (!inRow(l, py)) continue;
+			float *cl = c.data() + (size_t)l * n;
+			std::fill(cl, cl + n, 0.0f);
+			const size_t at = (size_t)l * nRows + (py - y0);
+			const Sint32 *v = &found[at * 4];
+			const float *src = jobCov[jobOf(py - y0)].data() + foundAt[at];
+			std::copy(src, src + (v[1] - v[0]), cl + v[0]);
+			std::copy(src + (v[1] - v[0]), src + (v[1] - v[0]) + (v[3] - v[2]), cl + v[2]);
+		}
+		blendRow(py, c.data(), from);
+	}
+}
+
+void HdUi::copyRows(int x, int y, int w, int h, const Uint32 *src, int pitch)
+{
+	FrameTiming timing(_frameMs);
+	SDL_Surface *dest;
+	int k;
+	const SDL_Color *pal;
+	if (!target(dest, k, pal) || w <= 0 || h <= 0) return;
+	const SDL_Rect clip = worldClip(dest, k);
+	const int x0 = std::max(x, (int)clip.x), y0 = std::max(y, (int)clip.y);
+	const int x1 = std::min(x + w, clip.x + clip.w), y1 = std::min(y + h, clip.y + clip.h);
+	if (x0 >= x1 || y0 >= y1) return;
+	const Uint32 *from = src + (size_t)(y0 - y) * pitch + (x0 - x);
+	HdGpuWorld &gpuWorld = HdGpuWorld::instance();
+	if (gpuWorld.on(dest) && gpuWorld.image(from, pitch, x1 - x0, y1 - y0, x0, y0, HdGpuWorld::COPY) && !gpuWorld.verifying())
+	{
+		return;
+	}
+	auto rows = [&](int ra, int rb)
+	{
+		for (int py = ra; py < rb; ++py)
+		{
+			const Uint32 *s = from + (size_t)(py - y0) * pitch;
+			std::copy(s, s + (x1 - x0), (Uint32*)((Uint8*)dest->pixels + (size_t)py * dest->pitch) + x0);
+		}
+	};
+	const int n = y1 - y0;
+	if (n >= 64)
+	{
+		HdWorkers &pool = HdWorkers::instance();
+		const int jobs = std::max(1, std::min(n / 16, pool.threads() * 4));
+		pool.run(jobs, [&](int job) { rows(y0 + (int)((long long)n * job / jobs), y0 + (int)((long long)n * (job + 1) / jobs)); });
+	}
+	else
+	{
+		rows(y0, y1);
+	}
+}
+
+void HdUi::blend(Uint32 &d, Uint32 color, float cov)
+{
+	blendPixel(d, color, cov);
+}
+
+void HdUi::blendGlyph(SDL_Surface *dest, const SDL_Rect &clip, const HdFont::Glyph &g, int x, int y, Uint32 color, const float *customLut)
+{
+	const int x0 = std::max(x, (int)clip.x), y0 = std::max(y, (int)clip.y);
+	const int x1 = std::min(x + g.w, clip.x + clip.w), y1 = std::min(y + g.h, clip.y + clip.h);
+	struct LutRef { const float *v; } lut = { customLut ? customLut : coverageLut().v };
+	HdGpuWorld &gpuWorld = HdGpuWorld::instance();
+	if (gpuWorld.on(dest) && (x0 >= x1 || y0 >= y1 || gpuWorld.glyph(&g.cov[(size_t)(y0 - y) * g.w + (x0 - x)], g.w, x1 - x0, y1 - y0, x0, y0, color, lut.v))
+		&& !gpuWorld.verifying())
+	{
+		return;
+	}
+	for (int py = y0; py < y1; ++py)
+	{
+		Uint32 *row = (Uint32*)((Uint8*)dest->pixels + (size_t)py * dest->pitch);
+		const Uint8 *cov = &g.cov[(size_t)(py - y) * g.w];
+		for (int px = x0; px < x1; ++px)
+		{
+			const Uint8 c = cov[px - x];
+			if (c) blendPixel(row[px], color, lut.v[c]);
+		}
+	}
+}
+
+void HdUi::drawButton(int x, int y, int w, int h, int color, int mul, bool pressed, const SDL_Color *colors)
+{
+	SDL_Surface *dest;
+	int k;
+	const SDL_Color *pal;
+	if (!target(dest, k, pal) || w <= 0 || h <= 0) return;
+	if (colors) pal = colors;
+	// the button's face hides whatever is under it: its label needs no outline even on a picture
+	notePanel(x, y, w, h);
+	const bool themed = windowTheme(), caps = themeCaps();
+	auto c = [&](int v) { return themed ? themeShade(v) : rgba(pal[(Uint8)(color + v * mul)]); };
+	const float x0 = (float)x * k, y0 = (float)y * k, x1 = (float)(x + w) * k, y1 = (float)(y + h) * k;
+	const float r = 1.5f * k, edge = std::max(1.0f, k * 0.5f);
+	const bool over = !pressed && hover(x, y, w, h);
+	if (buttonFace() > 0)
+	{
+		// a relief, a shape and a gloss of the player's choice (the window "Buttons' look")
+		HdBattleHud::drawFace(x, y, w, h, pressed, over, buttonFace());
+		return;
+	}
+	const int st = style();
+	if (st == 2)
+	{
+		// dark: a near-black panel tinted with the ramp, a thin light edge; lit = the ramp's mid tone
+		if (pressed)
+		{
+			// lit: the light end of the ramp (the label's colours invert to dark, as in the classic look)
+			fillRoundRect(x0, y0, x1, y1, r, c(1), c(2));
+			strokeRoundRect(x0, y0, x1, y1, r, edge, scaled(c(1), 1.15f));
+		}
+		else
+		{
+			fillRoundRect(x0, y0, x1, y1, r, darkened(c(5), over ? 0.25f : 0.5f), darkened(c(5), over ? 0.45f : 0.7f));
+			strokeRoundRect(x0, y0, x1, y1, r, edge, withAlpha(c(2), over ? 0xC0 : 0x70));
+		}
+		return;
+	}
+	if (st == 3)
+	{
+		// flat: one mid tone, a thin edge; lit = the light end
+		if (pressed)
+		{
+			fillRoundRect(x0, y0, x1, y1, r, c(2), c(2));
+			strokeRoundRect(x0, y0, x1, y1, r, edge, withAlpha(c(1), 0xC0));
+		}
+		else
+		{
+			// the player's own colour: the metal's cap tone (the letters on it go by themeInk), not the ramp's dark end
+			const Uint32 flat = caps ? HdBattleHud::metalShade(over ? 0.72f : 0.64f) : (over ? c(3) : c(4));
+			fillRoundRect(x0, y0, x1, y1, r, flat, flat);
+			strokeRoundRect(x0, y0, x1, y1, r, edge, withAlpha(c(2), 0x90));
+		}
+		return;
+	}
+	if (pressed)
+	{
+		// lit: the bright end of the ramp, a little darker towards the bottom (own colour: lighter than any cap at rest)
+		fillRoundRect(x0, y0, x1, y1, r, caps ? HdBattleHud::metalShade(0.92f) : c(1), caps ? HdBattleHud::metalShade(0.80f) : c(2));
+		strokeRoundRect(x0, y0, x1, y1, r, edge, scaled(c(1), 1.15f));
+	}
+	else
+	{
+		// under the mouse: the same shape, a step lighter
+		const float lit = over ? 1.22f : 1.0f;
+		// own colour: a cap of the metal's mid-light tone, dark below, as the keys of the battle panel; the letters go by themeInk
+		fillRoundRect(x0, y0, x1, y1, r, scaled(caps ? HdBattleHud::metalShade(0.72f) : c(3), lit), scaled(caps ? HdBattleHud::metalShade(0.56f) : c(5), lit));
+		// a light edge on top, a dark one below (the shape reads as raised)
+		strokeRoundRect(x0, y0, x1, y1, r, edge, (scaled(c(2), lit) & 0x00FFFFFFu) | 0xB0000000u);
+		fillRoundRect(x0 + edge, y1 - edge * 1.5f, x1 - edge, y1 - edge * 0.5f, edge, (c(5) & 0x00FFFFFFu) | 0x90000000u, (c(5) & 0x00FFFFFFu) | 0x90000000u);
+		if (lit > 1.0f)
+		{
+			// a sheen across the upper half
+			fillRoundRect(x0 + edge, y0 + edge, x1 - edge, y0 + (y1 - y0) * 0.5f, std::max(r - edge, 0.0f), 0x28FFFFFFu, 0x08FFFFFFu);
+		}
+	}
+}
+
+void HdUi::drawShadow(int x, int y, int w, int h, float radius)
+{
+	SDL_Surface *dest;
+	int k;
+	const SDL_Color *pal;
+	if (!target(dest, k, pal) || w <= 0 || h <= 0) return;
+	// rings of falling alpha around the rectangle, shifted a little down (the light is above)
+	const float step = std::max(1.0f, 0.75f * k), down = 0.5f * k;
+	const float x0 = (float)x * k, y0 = (float)y * k + down, x1 = (float)(x + w) * k, y1 = (float)(y + h) * k + down;
+	const float r = radius * k;
+	static const Uint32 alpha[] = { 0x58, 0x3A, 0x22, 0x10, 0x06 };
+	const int rings = 5;
+	for (int i = 1; i <= rings; ++i)
+	{
+		const float d = i * step;
+		strokeRoundRect(x0 - d, y0 - d, x1 + d, y1 + d, r + d, step, alpha[i - 1] << 24);
+	}
+}
+
+void HdUi::drawSlider(int x, int y, int w, int h, float t, int color, int mul, bool pressed, const SDL_Color *colors)
+{
+	SDL_Surface *dest;
+	int k;
+	const SDL_Color *pal;
+	if (!target(dest, k, pal) || w <= 0 || h <= 0) return;
+	if (colors) pal = colors;
+	const bool themed = windowTheme();
+	auto c = [&](int v) { return themed ? themeShade(v) : rgba(pal[(Uint8)(color + v * mul)]); };
+	t = std::min(std::max(t, 0.0f), 1.0f);
+	const float cy = ((float)y + h * 0.5f) * k;
+	const float kr = std::min(0.32f * h, 5.0f) * k;                 // the knob's radius
+	const float tx0 = (float)x * k + kr, tx1 = (float)(x + w) * k - kr;
+	const float th = std::max(1.0f, 1.0f * k);                       // the track's half height
+	const float kx = tx0 + (tx1 - tx0) * t;
+	// the track: a dark groove, filled up to the knob in the ramp's light end
+	fillRoundRect(tx0 - th, cy - th, tx1 + th, cy + th, th, 0x90000000u, 0x70000000u);
+	strokeRoundRect(tx0 - th, cy - th, tx1 + th, cy + th, th, std::max(1.0f, 0.35f * k), 0x50FFFFFFu);
+	if (kx > tx0)
+	{
+		fillRoundRect(tx0 - th, cy - th, kx, cy + th, th, c(2), c(3));
+	}
+	// the knob: a disc with a dark rim and a light top, its shadow below
+	const bool lit = pressed || hover(x, y, w, h);
+	const float rim = std::max(1.0f, 0.4f * k);
+	fillCircle(kx + 0.35f * k, cy + 0.5f * k, kr, 0x60000000u);
+	fillCircle(kx, cy, kr, scaled(c(5), 0.8f));
+	fillCircle(kx, cy, kr - rim, lit ? scaled(c(1), 1.15f) : c(2));
+	fillCircle(kx, cy - kr * 0.3f, kr * 0.5f, lit ? 0x50FFFFFFu : 0x30FFFFFFu);
+}
+
+void HdUi::drawScrollBar(int x, int y, int w, int h, int ty0, int ty1, int color, bool pressed, const SDL_Color *colors)
+{
+	SDL_Surface *dest;
+	int k;
+	const SDL_Color *pal;
+	if (!target(dest, k, pal) || w <= 0 || h <= 0) return;
+	if (colors) pal = colors;
+	// a thin groove down the middle, the thumb a rounded bar a little wider than it
+	const float cx = ((float)x + w * 0.5f) * k;
+	const float trackHw = std::min((float)w, 2.5f) * 0.5f * k, thumbHw = std::min((float)w, 5.0f) * 0.5f * k;
+	const float y0 = (float)y * k, y1 = (float)(y + h) * k;
+	fillRoundRect(cx - trackHw, y0, cx + trackHw, y1, trackHw, 0x70000000u, 0x70000000u);
+	if (ty1 > ty0)
+	{
+		const float a = y0 + (float)ty0 * k, b = std::min(y1, y0 + (float)ty1 * k);
+		const bool lit = pressed || hover(x, y, w, h);
+		const Uint32 c = windowTheme() ? themeShade(2) : rgba(pal[(Uint8)(color + 2)]);
+		fillRoundRect(cx - thumbHw, a, cx + thumbHw, b, thumbHw, scaled(c, lit ? 1.3f : 1.1f), scaled(c, lit ? 1.0f : 0.8f));
+		strokeRoundRect(cx - thumbHw, a, cx + thumbHw, b, thumbHw, std::max(1.0f, 0.35f * k), 0x40FFFFFFu);
+	}
+}
+
+void HdUi::drawChevron(int x, int y, int w, int h, int color, const SDL_Color *colors)
+{
+	SDL_Surface *dest;
+	int k;
+	const SDL_Color *pal;
+	if (!target(dest, k, pal) || w <= 0 || h <= 0) return;
+	if (colors) pal = colors;
+	// a small triangle pointing down, with a shadow
+	const float cx = ((float)x + w * 0.5f) * k, cy = ((float)y + h * 0.5f) * k;
+	const float hw = std::min(w * 0.32f, 3.5f) * k, hh = std::min(h * 0.28f, 2.2f) * k;
+	const float off = std::max(1.0f, 0.5f * k);
+	const bool themed = windowTheme();
+	fillTriangle(cx - hw + off, cy - hh + off, cx + hw + off, cy - hh + off, cx + off, cy + hh + off, ((themed ? themeShade(5) : rgba(pal[(Uint8)(color + 5)])) & 0x00FFFFFFu) | 0xA0000000u);
+	fillTriangle(cx - hw, cy - hh, cx + hw, cy - hh, cx, cy + hh, themed ? themeFace() : rgba(pal[(Uint8)(color + 1)]));
+}
+
+void HdUi::drawPanelFrame(int x, int y, int w, int h, int color, int mul, int inset, bool thin, const SDL_Color *colors)
+{
+	SDL_Surface *dest;
+	int k;
+	const SDL_Color *pal;
+	if (!target(dest, k, pal) || w <= 0 || h <= 0) return;
+	// a window stands between the text and whatever picture fills the screen behind it, whichever way its
+	// own fill was drawn: its labels keep the classic shadow
+	notePanel(x, y, w, h);
+	if (colors) pal = colors;
+	auto c = [&](int v) { return rgba(pal[(Uint8)(color + v * mul)]); };
+	const float x0 = (float)x * k, y0 = (float)y * k, x1 = (float)(x + w) * k, y1 = (float)(y + h) * k;
+	const float r = (thin ? 1.0f : 2.0f) * k, edge = std::max(1.0f, k * 0.5f);
+	const float band = (float)inset * k;
+	const int st = style();
+	if (st == 2)
+	{
+		// dark: a near-black band, a thin light edge outside and a faint one inside
+		strokeRoundRect(x0, y0, x1, y1, r, band, darkened(c(5), 0.6f));
+		strokeRoundRect(x0, y0, x1, y1, r, edge, withAlpha(c(2), 0x80));
+		if (band > edge * 2)
+		{
+			strokeRoundRect(x0 + band - edge, y0 + band - edge, x1 - band + edge, y1 - band + edge, std::max(r - band + edge, 0.0f), edge, withAlpha(c(3), 0x50));
+		}
+		return;
+	}
+	if (st == 3)
+	{
+		// flat: the band in the mid tone, one light edge
+		strokeRoundRect(x0, y0, x1, y1, r, band, thin ? c(3) : c(4));
+		strokeRoundRect(x0, y0, x1, y1, r, edge, withAlpha(c(2), 0x90));
+		return;
+	}
+	// the band: the dark end of the ramp, with a light outer edge and a dark inner edge
+	strokeRoundRect(x0, y0, x1, y1, r, band, thin ? c(3) : c(4));
+	strokeRoundRect(x0, y0, x1, y1, r, edge, (c(2) & 0x00FFFFFFu) | 0xC0000000u);
+	if (band > edge * 2)
+	{
+		strokeRoundRect(x0 + band - edge, y0 + band - edge, x1 - band + edge, y1 - band + edge, std::max(r - band + edge, 0.0f), edge, (c(5) & 0x00FFFFFFu) | 0xC0000000u);
+	}
+}
+
+void HdUi::drawInputEdge(int x, int y, int w, int h, Uint32 edge)
+{
+	SDL_Surface *dest;
+	int k;
+	const SDL_Color *pal;
+	if (!target(dest, k, pal) || w <= 0 || h <= 0) return;
+	// a thin light line round an edit field: its black fill alone vanishes on a dark panel (XP-000293)
+	strokeRoundRect((float)x * k, (float)y * k, (float)(x + w) * k, (float)(y + h) * k, 1.0f * k, std::max(1.0f, k * 0.5f), withAlpha(edge, 0xB0));
+}
+
+void HdUi::drawHighlight(int x, int y, int w, int h, Uint32 accent)
+{
+	SDL_Surface *dest;
+	int k;
+	const SDL_Color *pal;
+	if (!target(dest, k, pal) || w <= 0 || h <= 0) return;
+	const float x0 = (float)x * k, y0 = (float)y * k, x1 = (float)(x + w) * k, y1 = (float)(y + h) * k;
+	fillRoundRect(x0, y0, x1, y1, 1.0f * k, 0x30FFFFFFu, 0x30FFFFFFu);
+	strokeRoundRect(x0, y0, x1, y1, 1.0f * k, std::max(1.0f, k * 0.5f), 0x40FFFFFFu);
+	if (accent >> 24)
+	{
+		// the accent bar at the left, inside the band
+		const float bw = std::max(1.0f, 1.0f * k), inset = std::max(1.0f, 0.5f * k);
+		fillRoundRect(x0 + inset, y0 + inset, x0 + inset + bw, y1 - inset, bw * 0.5f, accent, accent);
+	}
+}
+
+const HdUi::FontMetrics &HdUi::metrics(const Font *font)
+{
+	auto it = _metrics.find(font);
+	if (it != _metrics.end())
+	{
+		return it->second;
+	}
+	FontMetrics &m = _metrics[font];
+	if (!font)
+	{
+		return m;
+	}
+	// the capitals: the rows of 'H' (or '0') with anything in them, shadow included
+	int rows = 0;
+	for (UCode c : { (UCode)'H', (UCode)'0', (UCode)'A' })
+	{
+		SurfaceCrop crop = font->getChar(c);
+		const Surface *sheet = crop.getSurface();
+		const SDL_Rect *r = crop.getCrop();
+		if (!sheet || r->w <= 0 || r->h <= 0) continue;
+		int first = -1, last = -1;
+		for (int y = 0; y < r->h; ++y)
+		{
+			bool any = false;
+			for (int x = 0; x < r->w && !any; ++x) any = sheet->getPixel(r->x + x, r->y + y) != 0;
+			if (any) { if (first < 0) first = y; last = y; }
+		}
+		if (first >= 0) { rows = last - first + 1; break; }
+	}
+	if (rows <= 0) rows = font->getHeight() - 1;
+	m.classicCap = rows;
+	m.big = rows >= BIG_CAP_ROWS;
+	m.cap = rows * (m.big ? CAP_RATIO_BIG : CAP_RATIO_SMALL);
+	m.lineH = std::max(1, font->getHeight() + font->getSpacing());
+	m.cellH = std::max(m.lineH, font->getHeight());
+	return m;
+}
+
+float HdUi::ttfWidth(const UString &s, bool big, float capHeight)
+{
+	const int k = scale();
+	if (!k || !hasFonts()) return 0.0f;
+	HdFont &f = font(big);
+	return f.measure(s, f.sizeForCapHeight(capHeight * k)) / k;
+}
+
+void HdUi::drawTtfString(const UString &s, bool big, float capHeight, int x, int y, Uint32 face, Uint32 shadow)
+{
+	FrameTiming timing(_frameMs);
+	SDL_Surface *dest;
+	int k;
+	const SDL_Color *pal;
+	if (!target(dest, k, pal) || !hasFonts() || s.empty()) return;
+	const SDL_Rect clip = worldClip(dest, k);
+	HdFont &f = font(big);
+	const float px = f.sizeForCapHeight(capHeight * k);
+	const float cell = big ? 16.0f : 9.0f;
+	const float deep = f.descent(px) / k;
+	const int baseline = y * k + (int)std::lround(baselineWithTails(cell, capHeight, deep, cell) * k);
+	const int shadowOff = std::max(1, k / 2);
+	for (int pass = (shadow >> 24) ? 0 : 1; pass < 2; ++pass)
+	{
+		float pen = (float)(x * k);
+		UCode prev = 0;
+		for (UCode c : s)
+		{
+			if (prev) pen += f.kern(prev, c, px);
+			const HdFont::Glyph &g = f.glyph(c, px);
+			if (g.w > 0)
+			{
+				const int gx = (int)std::lround(pen) + g.xoff + (pass == 0 ? shadowOff : 0);
+				const int gy = baseline + g.yoff + (pass == 0 ? shadowOff : 0);
+				blendGlyph(dest, clip, g, gx, gy, pass == 0 ? shadow : face);
+			}
+			pen += g.advance;
+			prev = c;
+		}
+	}
+}
+
+/// Thinner strokes: the glyph's edge pixels are made lighter (a coverage gamma above the usual 0.85), so the
+/// stroke loses about (1 - weight) of its width, a stroke being some 0.2 of the cap height; the full pixels stay.
+/// Null = the usual coverage (weight 1). The table is per thread and kept for the last weight asked.
+static const float *strokeWeightLut(float weight, float capHeight, int k)
+{
+	if (weight >= 0.999f) return nullptr;
+	thread_local float weightLut[256];
+	thread_local float weightLutFor = -1.0f;
+	const float w = std::max(0.5f, weight);
+	const float stroke = 0.2f * capHeight * k;
+	const float mean = std::max(0.06f, 1.0f / 1.85f - (1.0f - w) * stroke * 0.5f);
+	const float key = mean * 1000.0f;
+	if (weightLutFor != key)
+	{
+		const double gamma = 1.0 / mean - 1.0;
+		for (int i = 0; i < 256; ++i) weightLut[i] = (float)std::pow(i / 255.0, gamma);
+		weightLutFor = key;
+	}
+	return weightLut;
+}
+
+void HdUi::drawMapText(const UString &s, float capHeight, float lineH, int wx, int wy, Uint32 face, Uint32 outline, float weight)
+{
+	FrameTiming timing(_frameMs);
+	SDL_Surface *dest;
+	int k;
+	const SDL_Color *pal;
+	if (!target(dest, k, pal) || !hasFonts() || s.empty()) return;
+	const SDL_Rect clip = worldClip(dest, k);
+	HdFont &f = font(true);
+	const float px = f.sizeForCapHeight(capHeight * k);
+	const float base = baselineWithTails(lineH, capHeight, f.descent(px) / k, lineH);
+	// the same edge as a line lying on an HD picture (drawTtfLine): it grows with the scale
+	const int outlineW = std::max(2, k);
+	const float *faceLut = strokeWeightLut(weight, capHeight, k);
+	for (int pass = 0; pass < 2; ++pass)
+	{
+		float pen = (float)wx;
+		int line = 0;
+		UCode prev = 0;
+		for (UCode c : s)
+		{
+			if (Unicode::isLinebreak(c))
+			{
+				pen = (float)wx;
+				++line;
+				prev = 0;
+				continue;
+			}
+			if (prev) pen += f.kern(prev, c, px);
+			const HdFont::Glyph &g = pass == 0 ? f.outline(c, px, 1.0f, outlineW) : f.glyph(c, px);
+			if (g.w > 0)
+			{
+				const int baseline = wy + (int)std::lround((line * lineH + base) * k);
+				blendGlyph(dest, clip, g, (int)std::lround(pen) + g.xoff, baseline + g.yoff, pass == 0 ? outline : face, pass == 0 ? nullptr : faceLut);
+			}
+			pen += g.advance;
+			prev = c;
+		}
+	}
+}
+
+void HdUi::drawMapTag(const UString &s, int wx, int wy, Uint32 face, Uint32 plate, Uint32 edge, float scale, float weight)
+{
+	SDL_Surface *dest;
+	int k;
+	const SDL_Color *pal;
+	if (!target(dest, k, pal) || !hasFonts() || s.empty()) return;
+	HdFont &f = font(true);
+	// the classic digit: 5 rows inside a border of one pixel all round (scale: the player's percent of it)
+	const float cap = 5.0f * scale;
+	const float px = f.sizeForCapHeight(cap * k);
+	const float w = f.measure(s, px);
+	const float padX = 1.5f * k * scale, padY = 1.0f * k * scale;
+	const float x0 = wx - w * 0.5f - padX, x1 = wx + w * 0.5f + padX;
+	const float y0 = (float)wy, y1 = wy + cap * k + 2.0f * padY;
+	const float radius = std::min((y1 - y0) * 0.5f, 2.0f * k);
+	fillRoundRect(x0, y0, x1, y1, radius, plate, plate);
+	strokeRoundRect(x0, y0, x1, y1, radius, std::max(1.0f, 0.5f * k), edge);
+	FrameTiming timing(_frameMs);
+	const SDL_Rect clip = worldClip(dest, k);
+	const int baseline = (int)std::lround(y0 + padY + cap * k);
+	const float *faceLut = strokeWeightLut(weight, cap, k);
+	float pen = wx - w * 0.5f;
+	UCode prev = 0;
+	for (UCode c : s)
+	{
+		if (prev) pen += f.kern(prev, c, px);
+		const HdFont::Glyph &g = f.glyph(c, px);
+		if (g.w > 0)
+		{
+			blendGlyph(dest, clip, g, (int)std::lround(pen) + g.xoff, baseline + g.yoff, face, faceLut);
+		}
+		pen += g.advance;
+		prev = c;
+	}
+}
+
+void HdUi::drawCounter(const UString &s, int x, int y, float capHeight, Uint32 face, Uint32 plate, Uint32 edge)
+{
+	SDL_Surface *dest;
+	int k;
+	const SDL_Color *pal;
+	if (!target(dest, k, pal) || !hasFonts() || s.empty()) return;
+	HdFont &f = _fontCounter.loaded() ? _fontCounter : font(true);
+	const float px = f.sizeForCapHeight(capHeight * k);
+	const float w = f.measure(s, px);
+	// a weapon's ammo slots are 6 base pixels apart: the tabs of 5-pixel digits just touch
+	const float padX = 1.0f * k, padY = 0.5f * k;
+	const float x0 = (float)x * k - padX, x1 = (float)x * k + w + padX;
+	const float y0 = (float)y * k - padY, y1 = (y + capHeight) * k + padY;
+	const float radius = std::min((y1 - y0) * 0.5f, 1.5f * k);
+	fillRoundRect(x0, y0, x1, y1, radius, plate, plate);
+	strokeRoundRect(x0, y0, x1, y1, radius, std::max(1.0f, 0.4f * k), edge);
+	FrameTiming timing(_frameMs);
+	const SDL_Rect clip = worldClip(dest, k);
+	const int baseline = (int)std::lround((y + capHeight) * k);
+	// a black edge round each digit first: the tab is dark, but its edge and the frame under it are not
+	const int outlineW = std::max(1, k / 3);
+	for (int pass = 0; pass < 2; ++pass)
+	{
+		float pen = (float)x * k;
+		UCode prev = 0;
+		for (UCode c : s)
+		{
+			if (prev) pen += f.kern(prev, c, px);
+			const HdFont::Glyph &g = pass == 0 ? f.outline(c, px, 1.0f, outlineW) : f.glyph(c, px);
+			if (g.w > 0)
+			{
+				blendGlyph(dest, clip, g, (int)std::lround(pen) + g.xoff, baseline + g.yoff, pass == 0 ? 0xE0000000u : face);
+			}
+			pen += f.glyph(c, px).advance;
+			prev = c;
+		}
+	}
+}
+
+void HdUi::drawTtfCaret(const UString &value, size_t pos, const Font *classic, int x, int y, int textW, int textH, int align, Uint32 color)
+{
+	SDL_Surface *dest;
+	int k;
+	const SDL_Color *pal;
+	if (!target(dest, k, pal) || !hasFonts()) return;
+	const FontMetrics &m = metrics(classic);
+	HdFont &f = font(m.big);
+	const float cap = m.cap;
+	const float px = f.sizeForCapHeight(cap * k);
+	// the line as drawTtfLine places it (condensed when it would not fit)
+	float total = f.measure(value, px);
+	const float avail = (float)textW * k;
+	float condense = 1.0f;
+	if (total > avail && avail > 0)
+	{
+		condense = std::max(avail / total, 0.6f);
+		total = f.measure(value, px, condense);
+	}
+	float pen;
+	switch (align)
+	{
+	case 1: pen = x * k + (avail - total) * 0.5f; break;
+	case 2: pen = x * k + avail - total - 0.5f * k; break;
+	default: pen = (float)x * k; break;
+	}
+	pen += f.measure(UString(value.begin(), value.begin() + std::min(pos, value.size())), px, condense);
+	// the line box as drawTtfLine centres a single line: the text's box when it is about a line tall,
+	// with the same lift when the line has tails, so that the caret stands on the letters' own baseline
+	const bool inBox = textH > 0 && textH <= m.lineH + 3;
+	const float boxH = (float)(inBox ? textH : m.lineH);
+	const float deep = f.descent(px) / k;
+	const float baseline = y * k + baselineWithTails(boxH, cap, deep, (float)(inBox ? textH : m.cellH)) * k;
+	const float w = std::max(1.0f, 0.4f * k);
+	fillRoundRect(pen, baseline - cap * k * 1.15f, pen + w, baseline + cap * k * 0.2f, w * 0.5f, color, color);
+}
+
+/**
+ * A line of text as the classic layout arranged it, drawn with the TrueType
+ * fonts: the runs' natural widths are summed, the line is placed by the
+ * alignment within the text's width, condensed when it would not fit.
+ */
+void HdUi::drawTtfLine(const std::vector<TextRun> &runs, int originX, int originY, int textW, int textH, int align, bool singleLine, const SDL_Color *pal)
+{
+	FrameTiming timing(_frameMs);
+	SDL_Surface *dest;
+	int k;
+	const SDL_Color *screenPal;
+	if (!target(dest, k, screenPal) || !hasFonts() || runs.empty()) return;
+	if (!pal) pal = screenPal;
+	const SDL_Rect clip = worldClip(dest, k);
+	// each run: its body, and the dot leaders at its ends that keep their classic length (world pixels);
+	// capital titles in the big font get a little letter-spacing
+	struct Part
+	{
+		size_t lead = 0, trail = 0;
+		UString body;
+		float px = 0.0f, track = 0.0f, leadW = 0.0f, trailW = 0.0f;
+	};
+	std::vector<Part> parts(runs.size());
+	// a line taller than its rectangle allows (the capitals plus a little room; the classic big font is
+	// crammed into 13-pixel buttons): set smaller
+	float shrink = 1.0f;
+	for (const TextRun &r : runs)
+	{
+		const FontMetrics &m = metrics(r.font);
+		const int room = textH - (m.big ? 4 : 2);
+		if (textH > 0 && m.cap > room)
+		{
+			shrink = std::min(shrink, std::max((float)room / m.cap, 0.5f));
+		}
+	}
+	for (size_t i = 0; i < runs.size(); ++i)
+	{
+		const TextRun &r = runs[i];
+		Part &p = parts[i];
+		const FontMetrics &m = metrics(r.font);
+		HdFont &f = font(m.big);
+		p.px = f.sizeForCapHeight(m.cap * k * shrink);
+		p.trail = trailingDots(r.text);
+		p.lead = p.trail < r.text.size() ? leadingDots(r.text) : 0;
+		p.body.assign(r.text.begin() + p.lead, r.text.end() - p.trail);
+		p.leadW = (float)(p.lead * r.dotW) * k;
+		p.trailW = (float)(p.trail * r.dotW) * k;
+		if (m.big && !p.body.empty())
+		{
+			bool caps = true;
+			for (UCode c : p.body) if (isLowerLetter(c)) { caps = false; break; }
+			if (caps) p.track = TRACKING_CAPS * p.px;
+		}
+	}
+	auto bodyWidth = [&](size_t i, float condense)
+	{
+		const Part &p = parts[i];
+		if (p.body.empty()) return 0.0f;
+		return font(metrics(runs[i].font).big).measure(p.body, p.px, condense) + p.track * condense * (float)(p.body.size() - 1);
+	};
+	// natural width
+	float total = 0.0f, fixed = 0.0f;
+	for (size_t i = 0; i < runs.size(); ++i)
+	{
+		total += parts[i].leadW + bodyWidth(i, 1.0f) + parts[i].trailW;
+		fixed += parts[i].leadW + parts[i].trailW;
+	}
+	if (total <= 0.0f) return;
+	// the room: from the first run's classic x (the indent the layout gave it) to the text's right edge
+	const int lineStart = runs.front().x;
+	const float avail = (float)(textW - (align == 0 ? lineStart : 0)) * k;
+	// the dot leaders give way first: they were counted to fill the classic width, where a digit "1" is
+	// three pixels wide; a TrueType "1" is as wide as any digit, and a lone number in a dotted column
+	// was set at half size to leave the dots their length (the debriefing's quantity column)
+	for (size_t i = runs.size(); i-- > 0 && total > avail && avail > 0; )
+	{
+		Part &p = parts[i];
+		const float dot = (float)runs[i].dotW * k;
+		while (p.trail > 0 && total > avail)
+		{
+			--p.trail;
+			p.trailW -= dot;
+			total -= dot;
+			fixed -= dot;
+		}
+	}
+	float condense = 1.0f;
+	if (total > avail && avail > 0 && total > fixed)
+	{
+		// too wide: condense a little; if that is not enough, set the line smaller (a big label in a
+		// narrow button, as the classic big font is crammed into it), then condense the rest
+		condense = std::max((avail - fixed) / (total - fixed), 0.8f);
+		total = fixed;
+		for (size_t i = 0; i < runs.size(); ++i) total += bodyWidth(i, condense);
+		if (total > avail)
+		{
+			const float s = std::max((avail - fixed) / (total - fixed), 0.5f / shrink);
+			shrink *= s;
+			for (Part &p : parts) { p.px *= s; p.track *= s; }
+			total = fixed;
+			for (size_t i = 0; i < runs.size(); ++i) total += bodyWidth(i, condense);
+			if (total > avail)
+			{
+				condense = std::max(condense * (avail - fixed) / (total - fixed), 0.6f);
+				total = fixed;
+				for (size_t i = 0; i < runs.size(); ++i) total += bodyWidth(i, condense);
+			}
+		}
+	}
+	float pen;
+	switch (align)
+	{
+	case 1: pen = originX * k + ((float)textW * k - total) * 0.5f; break;                         // centre
+	case 2: pen = originX * k + (float)textW * k - total - 0.5f * k; break;                         // right
+	default: pen = (float)(originX + lineStart) * k; break;                                         // left
+	}
+	// a line lying straight on an HD picture: the letters are given an outline of their own, because a
+	// light line over a bright photograph cannot be read at all. Over a panel or a plain background the
+	// classic drop shadow is what the text has always had, and it stays
+	bool busy = false;
+	const void *backdrop = nullptr;
+	const bool onPicture = overPicture(originX, originY, std::max(textW, 1), std::max(textH, 1), &busy, &backdrop);
+	if (onPicture && backdrop)
+	{
+		// a line on a window's screen picture: its box is where the picture is frosted in the next frame (HdScreens)
+		const FontMetrics &m0 = metrics(runs.front().font);
+		const bool inBox = singleLine && textH > 0 && textH <= m0.lineH + 3;
+		const int bx0 = (int)std::floor(pen / k), bx1 = (int)std::ceil((pen + total) / k);
+		const int by = originY + (inBox ? 0 : runs.front().y), bh = inBox ? textH : m0.lineH;
+		_backdropText[backdrop].push_back(SDL_Rect{ (Sint16)bx0, (Sint16)by, (Uint16)std::max(bx1 - bx0, 1), (Uint16)std::max(bh, 1) });
+	}
+	// two base pixels' worth of edge: at k = 4 a fixed 2 would be a quarter of a base pixel and simply
+	// would not be seen, so the outline grows with the scale like everything else here
+	const int outlineW = std::max(2, k);
+	const int shadowOff = onPicture ? 0 : std::max(1, k / 2);
+	// and on a busy picture (a ufopaedia article's) a soft dark halo around the outline, half a step wider:
+	// the outline in the text's own dark shade is still a mid tone in a light ramp, and over a busy
+	// photograph the letters ran into it (the cities' lore)
+	const int haloW = outlineW + std::max(1, k / 2);
+	for (int pass = busy ? -1 : 0; pass < 2; ++pass)
+	{
+		float x = pen;
+		for (size_t i = 0; i < runs.size(); ++i)
+		{
+			const TextRun &r = runs[i];
+			const Part &p = parts[i];
+			const FontMetrics &m = metrics(r.font);
+			HdFont &f = font(m.big);
+			// the colour rule of the classic text: shade 1/2 is the face, shade 5 the shadow
+			int faceV = m.classicCap >= 12 ? 2 : 1;
+			const int shadowV = 5;
+			auto idx = [&](int v) { return (Uint8)(r.color + v * r.mul + (r.mid ? 2 * (r.mid - v) : 0)); };
+			// a pale tinted face in the small font (all channels light, a faint hue) reads as white next to
+			// a white row on the same list: the ramp's next shade carries the hue (the sale list's ammunition,
+			// face (236,200,192) by the rows picked for sale, (232,232,232)). Grey faces keep their shade
+			{
+				const SDL_Color c = pal[idx(faceV)];
+				const int hi = std::max({ (int)c.r, (int)c.g, (int)c.b }), lo = std::min({ (int)c.r, (int)c.g, (int)c.b });
+				if (faceV == 1 && lo >= 176 && hi - lo >= 24) faceV = 2;
+			}
+			// a themed button's label (setLabelTheme) has the theme's colours in place of the palette's
+			const Uint32 face = _labelTheme ? _labelFace : rgba(pal[idx(faceV)]);
+			const SDL_Color dark = _labelTheme ? _labelShadow : pal[idx(shadowV)];
+			// on a busy picture the shade is taken down to two fifths: an outline the colour of the ramp's
+			// shadow is barely darker than a light photograph
+			const SDL_Color edge = { (Uint8)(dark.r * 2 / 5), (Uint8)(dark.g * 2 / 5), (Uint8)(dark.b * 2 / 5), 255 };
+			const Uint32 shadow = onPicture ? rgba(busy ? edge : dark, 255) : rgba(dark, 150);
+			const Uint32 halo = rgba(SDL_Color{ (Uint8)(dark.r / 5), (Uint8)(dark.g / 5), (Uint8)(dark.b / 5), 255 }, 110);
+			// pass -1 is the halo, pass 0 the outline on a picture, the drop shadow anywhere else
+			auto shape = [&](UCode ch) -> const HdFont::Glyph &
+			{
+				if (pass < 0) return f.outline(ch, p.px, condense, haloW);
+				return pass == 0 && onPicture ? f.outline(ch, p.px, condense, outlineW) : f.glyph(ch, p.px, condense);
+			};
+			const Uint32 color = pass < 0 ? halo : pass == 0 ? shadow : face;
+			const int off = pass == 0 ? shadowOff : 0;   // the halo (pass -1) is only ever on a picture
+			// the baseline: the capitals centred in the classic line box, or in the text's own box when
+			// that is a single line of about the line's height (a button's label sits in its middle),
+			// then lifted if this line's own tails would leave the cell (the box when it is the text's)
+			const bool inBox = singleLine && textH > 0 && textH <= m.lineH + 3;
+			const float boxY = inBox ? 0.0f : (float)r.y, boxH = inBox ? (float)textH : (float)m.lineH;
+			const float deep = f.descent(p.px) / k;
+			const float limit = inBox ? (float)textH : (float)m.cellH;
+			const float base = boxY + baselineWithTails(boxH, m.cap * shrink, deep, limit);
+			const int baseline = originY * k + (int)std::lround(base * k);
+			// a dot leader: n dots evenly over the classic length
+			auto leader = [&](size_t n, float from, float width)
+			{
+				if (n == 0 || width <= 0.0f) return;
+				const HdFont::Glyph &g = shape('.');
+				if (g.w <= 0) return;
+				const float cell = width / n;
+				for (size_t d = 0; d < n; ++d)
+				{
+					const int gx = (int)std::lround(from + cell * d + (cell - g.advance) * 0.5f) + g.xoff + off;
+					blendGlyph(dest, clip, g, gx, baseline + g.yoff + off, color);
+				}
+			};
+			leader(p.lead, x, p.leadW);
+			x += p.leadW;
+			UCode prev = 0;
+			for (UCode c : p.body)
+			{
+				if (prev) x += f.kern(prev, c, p.px, condense) + p.track * condense;
+				const HdFont::Glyph &g = shape(c);
+				if (g.w > 0)
+				{
+					const int gx = (int)std::lround(x) + g.xoff + off;
+					const int gy = baseline + g.yoff + off;
+					blendGlyph(dest, clip, g, gx, gy, color);
+				}
+				x += g.advance;
+				prev = c;
+			}
+			leader(p.trail, x, p.trailW);
+			x += p.trailW;
+		}
+	}
+}
+
+}

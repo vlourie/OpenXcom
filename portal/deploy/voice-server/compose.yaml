@@ -1,0 +1,30 @@
+# Production voice server (docs/portal/VOICE_RELEASE.md): LiveKit with its built-in TURN behind Caddy
+# with the layer4 module, the layout LiveKit's own generator writes (github.com/livekit/deploy,
+# generate/templates). Linux only: both services use host networking, which Docker Desktop on Windows
+# and macOS does not give.
+#
+# setup.sh writes livekit.yaml and caddy.yaml from .env and starts this; run it, not compose, after
+# any change of .env. Caddy shares port 443 by name: the voice name goes to LiveKit's signalling and
+# API (127.0.0.1:7880), the TURN name to TURN/TLS (127.0.0.1:5349). Media goes straight to LiveKit:
+# 7882/udp for everyone, 7881/tcp when a player's network lets no UDP through, 3478/udp TURN.
+services:
+  caddy:
+    image: livekit/caddyl4:${CADDYL4_TAG:-latest}
+    command: run --config /etc/caddy.yaml --adapter yaml
+    restart: unless-stopped
+    network_mode: host
+    volumes:
+      - ./caddy.yaml:/etc/caddy.yaml:ro
+      - ./caddy_data:/data
+
+  livekit:
+    # the version the station probe passed on; LIVEKIT_TAG in .env to move, after the probe has
+    image: livekit/livekit-server:${LIVEKIT_TAG:-v1.13.7}
+    command: ["--config", "/etc/livekit.yaml"]
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      # "key: secret"; setup.sh creates both once and keeps them in .env (mode 600)
+      LIVEKIT_KEYS: "${LIVEKIT_API_KEY:?run setup.sh}: ${LIVEKIT_API_SECRET:?run setup.sh}"
+    volumes:
+      - ./livekit.yaml:/etc/livekit.yaml:ro

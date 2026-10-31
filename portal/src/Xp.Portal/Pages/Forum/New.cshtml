@@ -1,0 +1,24 @@
+@page "/forum/{section}/new"
+@model Xp.Portal.Pages.Forum.NewTopicModel
+@{
+    ViewData["Title"] = T["forum.new.topic"];
+}
+<p class="crumbs">
+    <a href="/forum">@T["nav.forum"]</a> /
+    <a href="/forum/@Model.Slug">@Model.Name</a> /
+    @T["forum.new.topic"]
+</p>
+<h1>@T["forum.new.topic"]</h1>
+
+<partial name="_Errors" model="Model.Errors" />
+
+<form method="post">
+    <label for="title">@T["field.title"]</label>
+    <input type="text" id="title" name="title" value="@Model.Title" maxlength="160" required>
+
+    <label for="body">@T["forum.your.post"]</label>
+    <textarea id="body" name="body" rows="12" maxlength="20000" required>@Model.Body</textarea>
+    <p class="hint">@T["forum.markdown"]</p>
+
+    <button type="submit">@T["forum.start"]</button>
+</form>

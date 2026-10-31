@@ -1,0 +1,3 @@
+﻿An even cursor box.
+
+— Battle cursor box: the corners of the red and yellow cube now meet, and so does the dotted outline on the levels below.

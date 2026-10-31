@@ -27,6 +27,8 @@ namespace OpenXcom
 {
 
 class Surface;
+class HdPanelToggle;
+class HdTurnMark;
 class Map;
 class ImageButton;
 class BattlescapeButton;
@@ -49,6 +51,23 @@ class BattlescapeState : public State
 private:
 	Surface *_rank, *_rankTiny;
 	InteractiveSurface *_icons;
+	/// HD interface: the arrow that slides the panel down off the screen and back (oxceHdPanelHide); picture and
+	/// placement only. _panelShift = how far down the panel stands now (base pixels), _panelTarget = where it goes.
+	HdPanelToggle *_btnPanelHide;
+	int _panelShift = 0, _panelTarget = 0;
+	bool _mouseOverPanelArrow = false;
+	Uint32 _panelMovedAt = 0;
+	std::vector<Surface*> _panelSurfaces;
+	/// HD interface, oxceHdEnemyTurn: the frame or the strip of the enemy's and the neutrals' turn, and whether the
+	/// panel stands down because this slid it (it comes back in the player's turn only then)
+	HdTurnMark *_hdTurnMark = nullptr;
+	bool _panelAutoHid = false, _wasOtherTurn = false;
+	/// animate() runs for a menu over the battle: only the picture's animation (Map::animateDrawOnly)
+	bool _menuAnim = false;
+	/// The share of the enemy's or the neutrals' turn done, 0-100, as the stock hidden screen's bar shows it; picture only
+	int _aiProgress = 0;
+	/// Moves the panel and everything on it to `shift` base pixels below its place.
+	void movePanel(int shift);
 	Map *_map;
 	BattlescapeButton *_btnUnitUp, *_btnUnitDown, *_btnMapUp, *_btnMapDown, *_btnShowMap, *_btnKneel;
 	BattlescapeButton *_btnInventory, *_btnCenter, *_btnNextSoldier, *_btnNextStop, *_btnShowLayers, *_btnHelp;
@@ -208,6 +227,8 @@ public:
 	void btnSelectMusicTrackClick(Action *action);
 	/// Handler for clicking the lighting button.
 	void btnPersonalLightingClick(Action *action);
+	/// Handler for clicking the invidual lighting button.
+	void btnPersonalIndividualLightingClick(Action* action);
 	/// Handler for toggling the "night vision" mode.
 	void btnNightVisionClick(Action *action);
 	/// Determines whether a playable unit is selected.
@@ -218,6 +239,8 @@ public:
 	void updateUiButton(const BattleUnit* battleUnit);
 	/// Animates map objects on the map, also smoke,fire, ...
 	void animate();
+	/// A menu is open over the battle (XP-000097): the picture's animation goes on, nothing else of animate() does.
+	void animateInMenu();
 	/// Handles the battle game state.
 	void handleState();
 	/// Sets the state timer interval.
@@ -258,10 +281,19 @@ public:
 	void saveVoxelMap();
 	/// Saves a first-person voxel view of the battlescape.
 	void saveVoxelView();
+	/// HD render test: writes a deterministic capture of the current frame (map, full frame, JSON sidecar).
+	void hdTestDump();
+	/// HD render: cycles the sprite drawing mode of the canvas (nearest / HD packs / HD packs + smoothing).
+	void hdModeToggle();
 	/// Handler for the mouse moving over the icons, disables the tile selection cube.
 	void mouseInIcons(Action *action);
 	/// Handler for the mouse going out of the icons, enabling the tile selection cube.
 	void mouseOutIcons(Action *action);
+	/// HD interface: the panel's arrow - slides the panel down off the screen, or back.
+	void btnPanelHideClick(Action *action);
+	/// HD interface: the mouse over the panel's arrow counts as over the icons (a click on it is not one on the map).
+	void mouseInPanelArrow(Action *action);
+	void mouseOutPanelArrow(Action *action);
 	/// Checks if the mouse is over the icons.
 	bool getMouseOverIcons() const;
 	/// Is the player allowed to press buttons?

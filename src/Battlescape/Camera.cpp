@@ -21,7 +21,10 @@
 #include "../Engine/Action.h"
 #include "../Engine/Options.h"
 #include "../Engine/Timer.h"
+#include "../Engine/HdGentle.h"
 #include "../fmath.h"
+#include <algorithm>
+#include <cmath>
 
 namespace OpenXcom
 {
@@ -39,9 +42,11 @@ namespace OpenXcom
 Camera::Camera(int spriteWidth, int spriteHeight, int mapsize_x, int mapsize_y, int mapsize_z, Map *map, int visibleMapHeight) :
 	_scrollMouseTimer(0), _scrollKeyTimer(0),
 	_spriteWidth(spriteWidth), _spriteHeight(spriteHeight),
+	_k(spriteWidth / 32 > 0 ? spriteWidth / 32 : 1),
 	_mapsize_x(mapsize_x), _mapsize_y(mapsize_y), _mapsize_z(mapsize_z),
 	_screenWidth(map->getWidth()), _screenHeight(map->getHeight()),
-	_mapOffset(-250,250,0),
+	_viewWidth(map->getWidth()), _viewHeight(map->getHeight()),
+	_mapOffset(-250 * (spriteWidth / 32 > 0 ? spriteWidth / 32 : 1), 250 * (spriteWidth / 32 > 0 ? spriteWidth / 32 : 1), 0),
 	_scrollMouseX(0), _scrollMouseY(0), _scrollKeyX(0), _scrollKeyY(0), _scrollTrigger(false),
 	_visibleMapHeight(visibleMapHeight), _showAllLayers(false), _showSingleLayer(false),
 	_map(map)
@@ -108,9 +113,9 @@ void Camera::mouseRelease(Action *action, State *)
 		int posX = action->getXMouse();
 		int posY = action->getYMouse();
 		if ((posX < (SCROLL_BORDER * action->getXScale()) && posX > 0)
-			|| (posX > (_screenWidth - SCROLL_BORDER) * action->getXScale())
+			|| (posX > (_screenWidth / _k - SCROLL_BORDER) * action->getXScale())
 			|| (posY < (SCROLL_BORDER * action->getYScale()) && posY > 0)
-			|| (posY > (_screenHeight - SCROLL_BORDER) * action->getYScale()))
+			|| (posY > (_screenHeight / _k - SCROLL_BORDER) * action->getYScale()))
 			// A cheap hack to avoid handling this event as a click
 			// on the map when the mouse is on the scroll-border
 			action->getDetails()->button.button = 0;
@@ -146,14 +151,14 @@ void Camera::mouseOver(Action *action, State *)
 				_scrollMouseY = scrollSpeed/2;
 			}
 			//upleft
-			else if (posY > (_screenHeight - SCROLL_DIAGONAL_EDGE) * action->getYScale())
+			else if (posY > (_screenHeight / _k - SCROLL_DIAGONAL_EDGE) * action->getYScale())
 			{
 				_scrollMouseY = -scrollSpeed/2;
 			}
 			else _scrollMouseY = 0;
 		}
 		//right scroll
-		else if (posX > (_screenWidth - SCROLL_BORDER) * action->getXScale())
+		else if (posX > (_screenWidth / _k - SCROLL_BORDER) * action->getXScale())
 		{
 			_scrollMouseX = -scrollSpeed;
 			// if close to top or bottom, also scroll diagonally
@@ -163,7 +168,7 @@ void Camera::mouseOver(Action *action, State *)
 				_scrollMouseY = scrollSpeed/2;
 			}
 			//upright
-			else if (posY > (_screenHeight - SCROLL_DIAGONAL_EDGE) * action->getYScale())
+			else if (posY > (_screenHeight / _k - SCROLL_DIAGONAL_EDGE) * action->getYScale())
 			{
 				_scrollMouseY = -scrollSpeed/2;
 			}
@@ -186,14 +191,14 @@ void Camera::mouseOver(Action *action, State *)
 				_scrollMouseY /=2;
 			}
 			//up right
-			else if (posX > (_screenWidth - SCROLL_DIAGONAL_EDGE) * action->getXScale())
+			else if (posX > (_screenWidth / _k - SCROLL_DIAGONAL_EDGE) * action->getXScale())
 			{
 				_scrollMouseX = -scrollSpeed;
 				_scrollMouseY /=2;
 			}
 		}
 		//down
-		else if (posY > (_screenHeight- SCROLL_BORDER) * action->getYScale())
+		else if (posY > (_screenHeight / _k - SCROLL_BORDER) * action->getYScale())
 		{
 			_scrollMouseY = -scrollSpeed;
 			// if close to left or right edge, also scroll diagonally
@@ -204,7 +209,7 @@ void Camera::mouseOver(Action *action, State *)
 				_scrollMouseY /=2;
 			}
 			//down right
-			else if (posX > (_screenWidth - SCROLL_DIAGONAL_EDGE) * action->getXScale())
+			else if (posX > (_screenWidth / _k - SCROLL_DIAGONAL_EDGE) * action->getXScale())
 			{
 				_scrollMouseX = -scrollSpeed;
 				_scrollMouseY /=2;
@@ -312,7 +317,8 @@ void Camera::keyboardRelease(Action *action, State *)
  */
 void Camera::scrollMouse()
 {
-	scrollXY(_scrollMouseX, _scrollMouseY, true);
+	// scroll speeds are kept in base pixels, the camera moves in world pixels
+	scrollXY(viewStep(_scrollMouseX), viewStep(_scrollMouseY), true);
 }
 
 /**
@@ -320,7 +326,21 @@ void Camera::scrollMouse()
  */
 void Camera::scrollKey()
 {
-	scrollXY(_scrollKeyX, _scrollKeyY, true);
+	scrollXY(viewStep(_scrollKeyX), viewStep(_scrollKeyY), true);
+}
+
+/**
+ * A scroll step of base screen pixels in world pixels of the view: the map goes as fast on the
+ * screen at any battle view zoom (k times the step without the zoom).
+ */
+int Camera::viewStep(int base) const
+{
+	if (_viewWidth == _screenWidth || base == 0)
+	{
+		return base * _k;
+	}
+	const int step = (int)std::lround(base * (double)_viewWidth / _screenWidth);
+	return (step != 0 ? step : (base > 0 ? 1 : -1)) * _k;
 }
 
 /**
@@ -338,17 +358,20 @@ void Camera::scrollXY(int x, int y, bool redraw)
 	{
 		int xx = 0;
 		int yy = 0;
-		convertScreenToMap((_screenWidth / 2), (_visibleMapHeight / 2), &xx, &yy);
-		_center.x = xx;
-		_center.y = yy;
+		// (the bounds are those of the view: the screen directions below are the view's)
+		convertScreenToView(halfWorld(_viewWidth), halfWorld(_visibleMapHeight), &xx, &yy);
+		const Position center = viewToWorld(Position(xx, yy, _center.z));
+		_center.x = center.x;
+		_center.y = center.y;
 
 		// Handling map bounds...
 		// Ok, this is a prototype, it should be optimized.
 		// Actually this should be calculated instead of slow-approximation.
-		if (_center.x < 0)             { _mapOffset.x -= 1; _mapOffset.y -= 1; continue; }
-		if (_center.x > _mapsize_x -1) { _mapOffset.x += 1; _mapOffset.y += 1; continue; }
-		if (_center.y < 0)             { _mapOffset.x += 1; _mapOffset.y -= 1; continue; }
-		if (_center.y > _mapsize_y -1) { _mapOffset.x -= 1; _mapOffset.y += 1; continue; }
+		// (steps of k world pixels = 1 base pixel, keeping the offset a multiple of k)
+		if (xx < 0)                    { _mapOffset.x -= _k; _mapOffset.y -= _k; continue; }
+		if (xx > getViewSizeX() -1)    { _mapOffset.x += _k; _mapOffset.y += _k; continue; }
+		if (yy < 0)                    { _mapOffset.x += _k; _mapOffset.y -= _k; continue; }
+		if (yy > getViewSizeY() -1)    { _mapOffset.x -= _k; _mapOffset.y += _k; continue; }
 		break;
 	}
 	while (true);
@@ -369,7 +392,7 @@ void Camera::jumpXY(int x, int y)
 	_mapOffset.y += y;
 	int xx = 0;
 	int yy = 0;
-	convertScreenToMap((_screenWidth / 2), (_visibleMapHeight / 2), &xx, &yy);
+	convertScreenToMap(halfWorld(_viewWidth), halfWorld(_visibleMapHeight), &xx, &yy);
 	_center.x = xx;
 	_center.y = yy;
 }
@@ -425,11 +448,176 @@ void Camera::centerOnPosition(Position mapPos, bool redraw)
 	_center.y = Clamp<int>(_center.y, -1, _mapsize_y);
 	convertMapToScreen(_center, &screenPos);
 
-	_mapOffset.x = -(screenPos.x - (_screenWidth / 2));
-	_mapOffset.y = -(screenPos.y - (_visibleMapHeight / 2));
+	_mapOffset.x = -(screenPos.x - halfWorld(_viewWidth));
+	_mapOffset.y = -(screenPos.y - halfWorld(_visibleMapHeight));
 
 	_mapOffset.z = _center.z;
+	_glideNext = true;
 	if (redraw) _map->draw();
+}
+
+/**
+ * Is a tile well inside the visible part of the map (above the icons) at the logical offset?
+ * The unit standing on it fits whole: its floor point is half a tile in from the sides and the
+ * bottom, and a tile's height below the top.
+ * @param mapPos Position to check.
+ */
+bool Camera::inView(Position mapPos) const
+{
+	Position screenPos;
+	convertMapToScreen(mapPos, &screenPos);
+	const int x = screenPos.x + _mapOffset.x + _spriteWidth / 2;
+	const int y = screenPos.y + _mapOffset.y + _spriteHeight - _spriteWidth / 4;
+	return x >= _spriteWidth / 2 && x <= _viewWidth - _spriteWidth / 2
+		&& y >= _spriteHeight && y <= _visibleMapHeight - _spriteWidth / 4;
+}
+
+/**
+ * Centers map on a position for a unit picked or an event, unless in gentle mode the position
+ * is in view already: then the camera stays and only goes to its level. Without the mode it is
+ * centerOnPosition exactly.
+ * @param mapPos Position to center on.
+ * @param redraw Redraw map or not.
+ */
+void Camera::focusOn(Position mapPos, bool redraw)
+{
+	if (HdGentle::on() && mapPos.x >= 0 && mapPos.y >= 0 && mapPos.z >= 0 && mapPos.z < _mapsize_z && inView(mapPos))
+	{
+		_mapOffset.z = mapPos.z;
+		if (redraw) _map->draw();
+		return;
+	}
+	centerOnPosition(mapPos, redraw);
+}
+
+/// Gentle mode: how fast the picture catches up with the camera, s (a critically damped spring:
+/// about 0.3 s to 95 % of the way, no overshoot; a new target turns it from where it is now).
+static const double GLIDE_TIME = 0.13;
+/// Gentle mode: a centering further than this many screens is cut, not glided: a fast sweep of
+/// the whole screen is just what the mode is for avoiding.
+static const double GLIDE_FAR = 1.5;
+/// Gentle mode: frames further apart than this, ms (a message or a dialog over the map), stop
+/// counting as a glide for clicks into the map.
+static const unsigned GLIDE_GAP = 250;
+/// Gentle mode: one frame moves the picture by at most this much time of its way, ms: after a pause
+/// (the AI thinking, a dialog) the picture goes on from where it stood instead of jumping ahead.
+/// About one frame at 50-60 fps: a slower game glides longer, never in bigger steps.
+static const unsigned GLIDE_STEP = 20;
+
+/**
+ * Gentle mode: puts the shown offset in place of the logical one for drawing the map. A centering
+ * (centerOnPosition) since the last frame glides there; any other move (scrolling, a level up or
+ * down) moves the picture along at once, a glide on its way included. Does nothing without the mode.
+ */
+void Camera::beginShown()
+{
+	_gliding = false;
+	if (!HdGentle::on())
+	{
+		_shownValid = false;
+		_glideNext = false;
+		return;
+	}
+	const unsigned now = SDL_GetTicks();
+	const Position logical = _mapOffset;
+	if (!_shownValid)
+	{
+		_shownX = logical.x;
+		_shownY = logical.y;
+		_shownVX = _shownVY = 0;
+		_shownValid = true;
+	}
+	else if (logical.x != _lastLogical.x || logical.y != _lastLogical.y)
+	{
+		if (!_glideNext)
+		{
+			_shownX += logical.x - _lastLogical.x;
+			_shownY += logical.y - _lastLogical.y;
+		}
+		else if (std::abs(logical.x - _shownX) > GLIDE_FAR * _viewWidth || std::abs(logical.y - _shownY) > GLIDE_FAR * _visibleMapHeight)
+		{
+			_shownX = logical.x;
+			_shownY = logical.y;
+			_shownVX = _shownVY = 0;
+		}
+		else if (_shownX == _lastLogical.x && _shownY == _lastLogical.y && _shownVX == 0 && _shownVY == 0)
+		{
+			_shownTicks = now; // a glide from rest starts with this frame
+		}
+	}
+	_glideNext = false;
+	_lastLogical = logical;
+
+	if (_shownX != logical.x || _shownY != logical.y)
+	{
+		const unsigned ms = std::min(now - _shownTicks, GLIDE_STEP);
+		const double dt = ms / 1000.0;
+		const double omega = 2.0 / GLIDE_TIME;
+		const double x = omega * dt;
+		const double decay = 1.0 / (1.0 + x + 0.48 * x * x + 0.235 * x * x * x);
+		auto spring = [&](double &cur, double &vel, double target)
+		{
+			const double change = cur - target;
+			const double temp = (vel + omega * change) * dt;
+			vel = (vel - omega * temp) * decay;
+			cur = target + (change + temp) * decay;
+		};
+		spring(_shownX, _shownVX, logical.x);
+		spring(_shownY, _shownVY, logical.y);
+		if (std::abs(_shownX - logical.x) < _k && std::abs(_shownY - logical.y) < _k)
+		{
+			_shownX = logical.x;
+			_shownY = logical.y;
+			_shownVX = _shownVY = 0;
+		}
+	}
+	else
+	{
+		_shownVX = _shownVY = 0;
+	}
+	_shownTicks = now;
+	_gliding = _shownX != logical.x || _shownY != logical.y;
+
+	_savedOffset = logical;
+	_mapOffset.x = (int)std::lround(_shownX / _k) * _k;
+	_mapOffset.y = (int)std::lround(_shownY / _k) * _k;
+	_drawnOffset = _mapOffset;
+	_inShown = true;
+}
+
+/**
+ * Gentle mode: is the picture still on its way to the logical offset? A glide whose frames
+ * stopped coming (a message over the map) does not count: it ends at the next frame anyway.
+ */
+bool Camera::isGliding() const
+{
+	return _gliding && SDL_GetTicks() - _shownTicks <= GLIDE_GAP;
+}
+
+/**
+ * Gentle mode: brings the logical offset back after drawing the map. If the drawing moved the
+ * camera itself (following a projectile, which the mode turns off), that place is taken as is.
+ */
+void Camera::endShown()
+{
+	if (!_inShown)
+	{
+		return;
+	}
+	_inShown = false;
+	if (_mapOffset.x == _drawnOffset.x && _mapOffset.y == _drawnOffset.y)
+	{
+		_mapOffset.x = _savedOffset.x;
+		_mapOffset.y = _savedOffset.y;
+	}
+	else
+	{
+		_shownX = _mapOffset.x;
+		_shownY = _mapOffset.y;
+		_shownVX = _shownVY = 0;
+		_lastLogical = _mapOffset;
+		_gliding = false;
+	}
 }
 
 /**
@@ -451,20 +639,48 @@ Position Camera::getCenterPosition()
  */
 void Camera::convertScreenToMap(int screenX, int screenY, int *mapX, int *mapY) const
 {
+	convertScreenToView(screenX, screenY, mapX, mapY);
+	if (_rot)
+	{
+		const Position mapPos = viewToWorld(Position(*mapX, *mapY, 0));
+		*mapX = mapPos.x;
+		*mapY = mapPos.y;
+	}
+}
+
+/**
+ * Converts screen coordinates to the tile coordinates of the view: the map's own when the view is
+ * not turned (HD lab), else the turned ones (see worldToView). Clamped to one tile around the view.
+ * @param screenX Screen x position.
+ * @param screenY Screen y position.
+ * @param viewX View x position.
+ * @param viewY View y position.
+ */
+void Camera::convertScreenToView(int screenX, int screenY, int *mapX, int *mapY) const
+{
+	// HD render: the original integer arithmetic is not scale invariant (the "/ 4" truncates),
+	// so the conversion is done in base pixels: world coordinates are always k times base ones.
+	const int spriteWidth = _spriteWidth / _k;
+	const int spriteHeight = _spriteHeight / _k;
+	const int offsetX = _mapOffset.x / _k;
+	const int offsetY = _mapOffset.y / _k;
+	screenX /= _k;
+	screenY /= _k;
+
 	// add half a tile height to the mouse position per layer we are above the floor
-	screenY += (-_spriteWidth/2) + (_mapOffset.z) * ((_spriteHeight + _spriteWidth / 4) / 2);
+	screenY += (-spriteWidth/2) + (_mapOffset.z) * ((spriteHeight + spriteWidth / 4) / 2);
 
 	// calculate the actual x/y pixel position on a diamond shaped map
 	// taking the view offset into account
-	*mapY = - screenX + _mapOffset.x + 2 * screenY - 2 * _mapOffset.y;
-	*mapX = screenY - _mapOffset.y - *mapY / 4 - (_spriteWidth/4);
+	*mapY = - screenX + offsetX + 2 * screenY - 2 * offsetY;
+	*mapX = screenY - offsetY - *mapY / 4 - (spriteWidth/4);
 
 	// to get the row & column itself, divide by the size of a tile
-	*mapX /= (_spriteWidth / 4);
-	*mapY /= _spriteWidth;
+	*mapX /= (spriteWidth / 4);
+	*mapY /= spriteWidth;
 
-	*mapX = Clamp(*mapX, -1, _mapsize_x);
-	*mapY = Clamp(*mapY, -1, _mapsize_y);
+	*mapX = Clamp(*mapX, -1, getViewSizeX());
+	*mapY = Clamp(*mapY, -1, getViewSizeY());
 }
 
 /**
@@ -474,9 +690,104 @@ void Camera::convertScreenToMap(int screenX, int screenY, int *mapX, int *mapY) 
  */
 void Camera::convertMapToScreen(Position mapPos, Position *screenPos) const
 {
+	viewToScreen(_rot ? worldToView(mapPos) : mapPos, screenPos);
+}
+
+/**
+ * Converts view tile coordinates X,Y,Z to screen positions X, Y.
+ * @param viewPos X,Y,Z coordinates in the view.
+ * @param screenPos Screen position.
+ */
+void Camera::viewToScreen(Position mapPos, Position *screenPos) const
+{
 	screenPos->z = 0; // not used
 	screenPos->x = mapPos.x * (_spriteWidth / 2) - mapPos.y * (_spriteWidth / 2);
 	screenPos->y = mapPos.x * (_spriteWidth / 4) + mapPos.y * (_spriteWidth / 4) - mapPos.z * ((_spriteHeight + _spriteWidth / 4) / 2);
+}
+
+/**
+ * HD lab: the view tile of a world tile. The view turned by a quarter puts the world's north
+ * (-y) where the unturned view has its east (+x): (x, y) -> (H - 1 - y, x); two and three
+ * quarters are that twice and three times. Works for tiles off the map too (it is affine).
+ * @param mapPos Tile on the map.
+ * @return Tile in the view.
+ */
+Position Camera::worldToView(Position mapPos) const
+{
+	switch (_rot)
+	{
+	case 1: return Position(_mapsize_y - 1 - mapPos.y, mapPos.x, mapPos.z);
+	case 2: return Position(_mapsize_x - 1 - mapPos.x, _mapsize_y - 1 - mapPos.y, mapPos.z);
+	case 3: return Position(mapPos.y, _mapsize_x - 1 - mapPos.x, mapPos.z);
+	default: return mapPos;
+	}
+}
+
+/**
+ * HD lab: the world tile of a view tile (the inverse of worldToView).
+ * @param viewPos Tile in the view.
+ * @return Tile on the map.
+ */
+Position Camera::viewToWorld(Position viewPos) const
+{
+	switch (_rot)
+	{
+	case 1: return Position(viewPos.y, _mapsize_y - 1 - viewPos.x, viewPos.z);
+	case 2: return Position(_mapsize_x - 1 - viewPos.x, _mapsize_y - 1 - viewPos.y, viewPos.z);
+	case 3: return Position(_mapsize_x - 1 - viewPos.y, viewPos.x, viewPos.z);
+	default: return viewPos;
+	}
+}
+
+/**
+ * HD lab: a step on the map (a direction, a neighbour's offset) as a step in the view.
+ * @param step Step on the map.
+ * @return Step in the view.
+ */
+Position Camera::worldStepToView(Position step) const
+{
+	switch (_rot)
+	{
+	case 1: return Position(-step.y, step.x, step.z);
+	case 2: return Position(-step.x, -step.y, step.z);
+	case 3: return Position(step.y, -step.x, step.z);
+	default: return step;
+	}
+}
+
+/**
+ * HD lab: a step in the view as a step on the map (the inverse of worldStepToView).
+ * @param step Step in the view.
+ * @return Step on the map.
+ */
+Position Camera::viewStepToWorld(Position step) const
+{
+	switch (_rot)
+	{
+	case 1: return Position(step.y, -step.x, step.z);
+	case 2: return Position(-step.x, -step.y, step.z);
+	case 3: return Position(-step.y, step.x, step.z);
+	default: return step;
+	}
+}
+
+/**
+ * HD lab: turns the view by quarters. The tile at the centre of the view stays at the centre;
+ * the picture jumps there at once (a glide from the old offset would cross the whole map).
+ * @param rot Quarter turns, 0..3.
+ */
+void Camera::setRotation(int rot)
+{
+	rot = ((rot % 4) + 4) % 4;
+	if (rot == _rot)
+	{
+		return;
+	}
+	const Position center = getCenterPosition();
+	_rot = rot;
+	centerOnPosition(center, false);
+	_glideNext = false;
+	_shownValid = false;
 }
 
 /**
@@ -486,13 +797,23 @@ void Camera::convertMapToScreen(Position mapPos, Position *screenPos) const
  */
 void Camera::convertVoxelToScreen(Position voxelPos, Position *screenPos) const
 {
+	// HD lab: in a turned view the voxel is turned as its tile is (a voxel is 16 x 16 of a tile)
+	switch (_rot)
+	{
+	case 1: voxelPos = Position(_mapsize_y * 16 - 1 - voxelPos.y, voxelPos.x, voxelPos.z); break;
+	case 2: voxelPos = Position(_mapsize_x * 16 - 1 - voxelPos.x, _mapsize_y * 16 - 1 - voxelPos.y, voxelPos.z); break;
+	case 3: voxelPos = Position(voxelPos.y, _mapsize_x * 16 - 1 - voxelPos.x, voxelPos.z); break;
+	default: break;
+	}
 	Position mapPosition = voxelPos.toTile();
-	convertMapToScreen(mapPosition, screenPos);
+	viewToScreen(mapPosition, screenPos);
 	double dx = voxelPos.x - (mapPosition.x * 16);
 	double dy = voxelPos.y - (mapPosition.y * 16);
 	double dz = voxelPos.z - (mapPosition.z * 24);
-	screenPos->x += (int)(dx - dy) + (_spriteWidth/2);
-	screenPos->y += (int)(((_spriteHeight / 2.0)) + (dx / 2.0) + (dy / 2.0) - dz);
+	// HD render: one voxel is k screen pixels; computed exactly as k times the original integer result
+	const double baseSpriteHeight = _spriteHeight / (double)_k;
+	screenPos->x += (int)(dx - dy) * _k + (_spriteWidth/2);
+	screenPos->y += (int)(((baseSpriteHeight / 2.0)) + (dx / 2.0) + (dy / 2.0) - dz) * _k;
 	screenPos->x += _mapOffset.x;
 	screenPos->y += _mapOffset.y;
 }
@@ -600,21 +921,24 @@ __________
 			sizex += _spriteWidth;
 			sizey += _spriteWidth/2;
 		}
+		// the icons in view pixels (the battle view zoom shrinks or widens the view, not the icons)
+		const int iconWidth = _map->getIconWidth() * _k * _viewWidth / _screenWidth;
+		const int iconHeight = _map->getIconHeight() * _k * _viewHeight / _screenHeight;
 		if ( screenPos.x < 0 - sizex
-			|| screenPos.x >= _screenWidth + sizex
+			|| screenPos.x >= _viewWidth + sizex
 			|| screenPos.y < 0 - sizey
-			|| screenPos.y >= _screenHeight + sizey ) return false; //totally outside
-		int side = ( _screenWidth - _map->getIconWidth() ) / 2;
-		if ( (screenPos.y < (_screenHeight - _map->getIconHeight()) + sizey) ) return true; //above icons
-		if ( (side > 1) && ( (screenPos.x < side + sizex) || (screenPos.x >= (_screenWidth - side - sizex)) ) ) return true; //at sides (if there are any)
+			|| screenPos.y >= _viewHeight + sizey ) return false; //totally outside
+		int side = ( _viewWidth - iconWidth ) / 2;
+		if ( (screenPos.y < (_viewHeight - iconHeight) + sizey) ) return true; //above icons
+		if ( (side > 1) && ( (screenPos.x < side + sizex) || (screenPos.x >= (_viewWidth - side - sizex)) ) ) return true; //at sides (if there are any)
 		return false;
 	}
 	else
 	{
 		return screenPos.x >= 0
-			&& screenPos.x <= _screenWidth - 10
+			&& screenPos.x <= _viewWidth - 10 * _k
 			&& screenPos.y >= 0
-			&& screenPos.y <= _screenHeight - 10;
+			&& screenPos.y <= _viewHeight - 10 * _k;
 	}
 }
 
@@ -625,7 +949,9 @@ void Camera::resize()
 {
 	_screenWidth = _map->getWidth();
 	_screenHeight = _map->getHeight();
-	_visibleMapHeight = _map->getHeight() - _map->getIconHeight();
+	_viewWidth = _map->getViewWidth();
+	_viewHeight = _map->getViewHeight();
+	_visibleMapHeight = _map->getViewVisibleHeight();
 }
 
 void Camera::stopKeyScrolling()

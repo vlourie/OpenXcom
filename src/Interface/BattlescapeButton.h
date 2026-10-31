@@ -39,6 +39,9 @@ protected:
 	bool _inverted;
 	InversionType _toggleMode;
 	Surface *_altSurface;
+	Uint8 _hdIcon;
+	bool _hdLit;
+	bool _hdTheme;
 public:
 	/// Creates a new image button with the specified size and position.
 	BattlescapeButton(int width, int height, int x = 0, int y = 0);
@@ -54,6 +57,8 @@ public:
 	void mousePress(Action *action, State *state) override;
 	/// Special handling for mouse releases.
 	void mouseRelease(Action *action, State *state) override;
+	/// Shows a press of the button's hotkey on the HD panel.
+	void keyboardPress(Action *action, State *state) override;
 	/// Invert a button explicitly either ON or OFF.
 	void toggle(bool invert);
 	/// Allows this button to be toggled on/off with a click.
@@ -64,6 +69,13 @@ public:
 	void initSurfaces(Surface* custom = nullptr);
 	/// Blits this surface onto another one.
 	void blit(SDL_Surface *surface) override;
+	/// HD interface, modern skin: the pictogram the battle panel draws this button with (HdBattleHud::Icon, 0 = its own pixels).
+	void setHdIcon(int icon) { _hdIcon = (Uint8)icon; }
+	/// HD interface, modern skin: shows the pictogram lit, for a state the classic panel paints into the button's own pixels (the UFO kneel frame).
+	void setHdLit(bool lit) { _hdLit = lit; }
+	/// HD interface, modern skin (oxceHdWindowTheme, XP-000378): the button is a piece of its window's picture (copper keys),
+	/// drawn in the metal of the battle panel's colour in place of the picture's own colours. Picture only.
+	void setHdTheme(bool on) { _hdTheme = on; }
 	/// Alters both versions of the button's X pos.
 	void setX(int x) override;
 	/// Alters both versions of the button's Y pos.

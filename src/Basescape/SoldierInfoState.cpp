@@ -39,6 +39,7 @@
 #include "../Menu/ErrorMessageState.h"
 #include "SellState.h"
 #include "SoldierArmorState.h"
+#include "SoldierVoiceState.h"
 #include "SoldierBonusState.h"
 #include "SoldierTransformState.h"
 #include "SoldierRankState.h"
@@ -57,7 +58,7 @@ namespace OpenXcom
  * @param soldierId ID of the selected soldier.
  */
 SoldierInfoState::SoldierInfoState(Base *base, size_t soldierId, bool forceLimits, bool readOnly) :
-	_base(base), _soldierId(soldierId), _forceLimits(forceLimits), _readOnly(readOnly), _noTransformations(false), _soldier(0)
+	_base(base), _soldierId(soldierId), _forceLimits(forceLimits), _readOnly(readOnly), _noTransformations(false), _soldier(0), _barScaleMode(0)
 {
 	if (_base == 0)
 	{
@@ -89,8 +90,10 @@ SoldierInfoState::SoldierInfoState(Base *base, size_t soldierId, bool forceLimit
 	_edtSoldier = new TextEdit(this, 210, 16, 40, 9);
 	_btnSack = new TextButton(60, 14, 260, 33);
 	_btnDiary = new TextButton(60, 14, 260, 48);
-	_txtRank = new Text(130, 9, 0, 48);
-	_txtMissions = new Text(100, 9, 130, 48);
+	// OXCE-HD: the missions moved left and both cut to the next text - the TTF is wider than the classic font,
+	// and "missions> 147" ran into "kills>" at 200; the longest rank ("Властительница") still ends before 115
+	_txtRank = new Text(115, 9, 0, 48);
+	_txtMissions = new Text(85, 9, 115, 48);
 	_txtKills = new Text(100, 9, 200, 48);
 	_txtStuns = new Text(60, 9, 260, 48);
 	_txtCraft = new Text(130, 9, 0, 56);
@@ -278,6 +281,7 @@ SoldierInfoState::SoldierInfoState(Base *base, size_t soldierId, bool forceLimit
 
 	_btnArmor->setText(tr("STR_ARMOR"));
 	_btnArmor->onMouseClick((ActionHandler)&SoldierInfoState::btnArmorClick);
+	_btnArmor->onMouseClick((ActionHandler)&SoldierInfoState::btnBarScaleClick, SDL_BUTTON_RIGHT);
 	if (_readOnly)
 	{
 		_btnArmor->setVisible(false);
@@ -459,6 +463,8 @@ void SoldierInfoState::init()
 		bar->setValue(withArmor2);
 		bar->setValue2(std::min(withArmor2, initial2));
 	};
+
+	applyBarScale();
 
 	formatStat(current->tu, max.tu, withArmor.tu, initial->tu, _numTimeUnits, _barTimeUnits);
 	formatStat(current->stamina, max.stamina, withArmor.stamina, initial->stamina, _numStamina, _barStamina);
@@ -704,11 +710,65 @@ void SoldierInfoState::btnNextClick(Action *)
 }
 
 /**
+ * Cycles the stat bar scale between x170 (default), x800 and x2000,
+ * then re-applies it to every bar. Triggered by right-clicking the Armor button.
+ * @param action Pointer to an action.
+ */
+void SoldierInfoState::btnBarScaleClick(Action *)
+{
+	_barScaleMode = (_barScaleMode + 1) % 3;
+	applyBarScale();
+}
+
+/**
+ * Recomputes and applies the Bar::setScale() factor for every stat bar
+ * based on the currently selected scale mode. The bars themselves are
+ * 170px wide, so scale = 170 / maxValueForCurrentMode.
+ * Note: the "0/20/40.../160" axis numbers are part of the background
+ * graphic (BACK06.SCR) and are not redrawn by this function. That axis is
+ * drawn at one pixel per point - the "20" sits 20 pixels right of the "0" and
+ * the grid lines stand every ten - so the default mode has to be 170, the full
+ * width of the bar. With 160 every bar landed up to a whole grid cell right of
+ * the number it was meant to reach.
+ */
+void SoldierInfoState::applyBarScale()
+{
+	static const double maxValues[3] = { 170.0, 800.0, 2000.0 };
+	double scale = 170.0 / maxValues[_barScaleMode];
+
+	_barTimeUnits->setScale(scale);
+	_barStamina->setScale(scale);
+	_barHealth->setScale(scale);
+	_barBravery->setScale(scale);
+	_barReactions->setScale(scale);
+	_barFiring->setScale(scale);
+	_barThrowing->setScale(scale);
+	_barMelee->setScale(scale);
+	_barStrength->setScale(scale);
+	if (_game->getMod()->isManaFeatureEnabled())
+	{
+		_barMana->setScale(scale);
+	}
+	_barPsiStrength->setScale(scale);
+	_barPsiSkill->setScale(scale);
+}
+
+/**
  * Shows the Select Armor window.
  * @param action Pointer to an action.
  */
 void SoldierInfoState::btnArmorClick(Action *)
 {
+	// voice set can be changed at any time
+	if (_game->isCtrlPressed() && _game->getMod()->getEnableUnitResponseSounds())
+	{
+		if (true)
+		{
+			_game->pushState(new SoldierVoiceState(nullptr, _soldier, SV_GEOSCAPE));
+			return;
+		}
+	}
+
 	if (!_soldier->getCraft() || (_soldier->getCraft() && _soldier->getCraft()->getStatus() != "STR_OUT"))
 	{
 		_game->pushState(new SoldierArmorState(_base, _soldierId, SA_GEOSCAPE));

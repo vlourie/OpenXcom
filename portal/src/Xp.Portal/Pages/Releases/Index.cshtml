@@ -1,0 +1,35 @@
+@page "/releases"
+@model Xp.Portal.Pages.Releases.ReleasesModel
+@{
+    ViewData["Title"] = T["releases.title"];
+}
+<h1>@T["releases.title"]</h1>
+<p class="lead">@T["releases.lead"]</p>
+
+@if (Model.Releases.Count == 0)
+{
+    <p class="hint">@T["releases.none"]</p>
+}
+else
+{
+    <nav class="groups">
+        @foreach (var day in Model.Releases.GroupBy(r => r.Published.ToString("yyyy-MM-dd")).Take(14))
+        {
+            <a class="chip" href="#r-@day.First().Id">@day.Key <span class="mono">@day.Count()</span></a>
+        }
+    </nav>
+    @foreach (var r in Model.Releases)
+    {
+        <section class="panel release-entry" id="r-@r.Id">
+            <h2 class="title">@r.Version <span class="when">@r.Published.ToString("yyyy-MM-dd")</span></h2>
+            @if (r.Changelog.Length > 0)
+            {
+                <div class="release">@r.Changelog</div>
+            }
+            else
+            {
+                <p class="hint">@T["releases.empty"]</p>
+            }
+        </section>
+    }
+}

@@ -75,7 +75,7 @@ enum GameDifficulty : int { DIFF_BEGINNER = 0, DIFF_EXPERIENCED, DIFF_VETERAN, D
 /**
  * Enumerator for the various save types.
  */
-enum SaveType { SAVE_DEFAULT, SAVE_INSTA, SAVE_QUICK, SAVE_AUTO_GEOSCAPE, SAVE_AUTO_BATTLESCAPE, SAVE_IRONMAN, SAVE_IRONMAN_END };
+enum SaveType { SAVE_DEFAULT, SAVE_INSTA, SAVE_QUICK, SAVE_AUTO_GEOSCAPE, SAVE_AUTO_BATTLESCAPE, SAVE_IRONMAN, SAVE_IRONMAN_END, SAVE_BATTLE_END };
 
 /**
  * Enumerator for the current game ending.
@@ -342,11 +342,7 @@ public:
 	/// Gets if a research still has undiscovered non-disabled "protected unlocks".
 	bool hasUndiscoveredProtectedUnlock(const RuleResearch * r) const;
 	/// Gets if a certain research has been completed.
-	bool isResearched(const std::string &research, bool considerDebugMode = true) const;
-	/// Gets if a certain research has been completed.
 	bool isResearched(const RuleResearch *research, bool considerDebugMode = true) const;
-	/// Gets if a certain list of research topics has been completed.
-	bool isResearched(const std::vector<std::string> &research, bool considerDebugMode = true) const;
 	/// Gets if a certain list of research topics has been completed.
 	bool isResearched(const std::vector<const RuleResearch *> &research, bool considerDebugMode = true, bool skipDisabled = false) const;
 	/// Gets if a certain item has been obtained.

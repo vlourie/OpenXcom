@@ -19,12 +19,16 @@
 #include <sstream>
 #include "BattlescapeGame.h"
 #include "BattlescapeState.h"
+#include "AiProbe.h"
+#include "AiCoverMap.h"
+#include "CollapsePilot.h"
 #include "Map.h"
 #include "Camera.h"
 #include "NextTurnState.h"
 #include "BattleState.h"
 #include "UnitTurnBState.h"
 #include "UnitWalkBState.h"
+#include "UnitTeleportingState.h"
 #include "ProjectileFlyBState.h"
 #include "MeleeAttackBState.h"
 #include "PsiAttackBState.h"
@@ -192,6 +196,8 @@ BattlescapeGame::BattlescapeGame(SavedBattleGame *save, BattlescapeState *parent
 
 	_debugPlay = false;
 
+	CollapsePilot::begin(_save);
+
 	checkForCasualties(nullptr, BattleActionAttack{ }, true);
 	cancelCurrentAction();
 }
@@ -224,8 +230,16 @@ int BattlescapeGame::think()
 			_save->setUnitsFalling(false);
 			return ret;
 		}
-		// it's a non player side (ALIENS or CIVILIANS)
-		if (_save->getSide() != FACTION_PLAYER)
+		CollapsePilot::idle(_save);
+		AiProbe::panicState(_save, _playerPanicHandled);
+		// the AI test bench's bot plays the player: its panicking units first, as the player branch below (PANIC_TURN_FIX)
+		if (_save->getSide() == FACTION_PLAYER && !_playerPanicHandled && AiProbe::botTurn(_save) && AiProbe::panicTurnFix())
+		{
+			_playerPanicHandled = handlePanickingPlayer();
+			_save->getBattleState()->updateSoldierInfo();
+		}
+		// it's a non player side (ALIENS or CIVILIANS), or the AI test bench's bot plays the player
+		else if (_save->getSide() != FACTION_PLAYER || AiProbe::botTurn(_save))
 		{
 			auto sideBackup = _save->getSide();
 			_save->resetUnitHitStates();
@@ -295,6 +309,72 @@ void BattlescapeGame::init()
 	}
 }
 
+/**
+ * The bench bot (OXCE_AI_CAREFUL) ends a unit's turn facing the nearest enemy its side sees now:
+ * reaction fire looks that way and hits land on the front armor instead of the rear.
+ * The turn is paid by the player's rule (UnitTurnBState charges time units); once per unit per turn.
+ * @param unit Unit that has finished its actions.
+ * @return True if a turn was queued.
+ */
+bool BattlescapeGame::carefulGuard(BattleUnit *unit)
+{
+	if (!AiProbe::careful(unit) || unit->isOut())
+	{
+		return false;
+	}
+	if (_guardedTurn != _save->getTurn())
+	{
+		_guardedTurn = _save->getTurn();
+		_guardedUnits.clear();
+	}
+	if (std::find(_guardedUnits.begin(), _guardedUnits.end(), unit->getId()) != _guardedUnits.end())
+	{
+		return false;
+	}
+	_guardedUnits.push_back(unit->getId());
+	const BattleUnit *threat = nullptr;
+	int best = 1 << 30;
+	for (auto* bu : *_save->getUnits())
+	{
+		// only what the bot's side sees now: no knowledge a player would not have
+		if (bu->getFaction() != FACTION_HOSTILE || bu->isOut() || !bu->getVisible())
+		{
+			continue;
+		}
+		int d = Position::distanceSq(unit->getPosition(), bu->getPosition());
+		if (d < best)
+		{
+			best = d;
+			threat = bu;
+		}
+	}
+	// none in sight: where the side last saw the enemy nearest to reaching this unit (OXCE_AI_WATCH) - melee comes to the back
+	Position target;
+	if (threat)
+	{
+		target = threat->getPosition();
+	}
+	else if (!AiProbe::watchPoint(_save, unit, target))
+	{
+		return false;
+	}
+	// the whole turn must be affordable: UnitTurnBState short of time units mid-turn waits for the player's panic check,
+	// which never comes on the bot's turn, and the battle hangs
+	const int diff = std::abs(unit->directionTo(target) - unit->getDirection());
+	const int steps = std::min(diff, 8 - diff);
+	if (steps == 0 || unit->getTimeUnits() < steps * unit->getTurnCost())
+	{
+		return false;
+	}
+	BattleAction turn;
+	turn.actor = unit;
+	turn.type = BA_TURN;
+	turn.target = target;
+	AiProbe::tally(unit, threat ? "guard" : "watch");
+	statePushBack(new UnitTurnBState(this, turn));
+	return true;
+}
+
 
 /**
  * Handles the processing of the AI states of a unit.
@@ -304,12 +384,25 @@ void BattlescapeGame::handleAI(BattleUnit *unit)
 {
 	std::ostringstream ss;
 
+	AiProbe::passStartNote(_save, unit); // P0-D: the first unit of a side's turn - where its traversal began
+#ifdef OXCE_AI_DEV
+	AiCoverMap::update(_save); // the enemy's cover map (OXCE_AI_COVERMAP): built on the first decision, refreshed after
+#endif
 	if (unit->getTimeUnits() <= 5)
 	{
 		unit->dontReselect();
 	}
-	if (_AIActionCounter >= 2 || !unit->reselectAllowed() || unit->getTurnsSinceStunned() == 0) //stun check for restoring OXC behavior that AI does not attack after waking up even having full TU
+	// COUNTER_FIX (clean1: always in the bench): a counter another unit left (it died, fell unconscious, lost the selection) does not carry over
+	if (AiProbe::counterCheck(_save, unit, _AIActionCounter))
 	{
+		_AIActionCounter = 0;
+	}
+	if (_AIActionCounter >= AiProbe::maxActions(unit) || !unit->reselectAllowed() || unit->getTurnsSinceStunned() == 0) //stun check for restoring OXC behavior that AI does not attack after waking up even having full TU
+	{
+		if (carefulGuard(unit))
+		{
+			return;
+		}
 		if (_save->selectNextPlayerUnit(true, _AISecondMove) == 0)
 		{
 			if (!_save->getDebugMode())
@@ -326,8 +419,9 @@ void BattlescapeGame::handleAI(BattleUnit *unit)
 		if (_save->getSelectedUnit())
 		{
 			_parentState->updateSoldierInfo();
-			getMap()->getCamera()->centerOnPosition(_save->getSelectedUnit()->getPosition());
-			if (_save->getSelectedUnit()->getId() <= unit->getId())
+			getMap()->getCamera()->focusOn(_save->getSelectedUnit()->getPosition());
+			// P0-D (clean2): the second pass begins when the selection wrapped round (the bot's turn: by index, upstream: by id)
+			if (AiProbe::secondPassWrapped(_save, unit, _save->getSelectedUnit()))
 			{
 				_AISecondMove = true;
 			}
@@ -350,7 +444,18 @@ void BattlescapeGame::handleAI(BattleUnit *unit)
 		unit->setAIModule(new AIModule(_save, unit, 0));
 		ai = unit->getAIModule();
 	}
+	if (AiProbe::careful(unit))
+	{
+		// the bench bot: an AI module aims at the player by default, the bot's enemies are the hostiles
+		// (without this it sees nobody spotting it and counts its own soldiers in a grenade's blast)
+		ai->setTargetFaction(FACTION_HOSTILE);
+	}
 	_AIActionCounter++;
+	AiProbe::counterOwn(_save, unit, _AIActionCounter);
+	if (_AIActionCounter > 2)
+	{
+		AiProbe::tally(unit, "act.extra");
+	}
 	if (_AIActionCounter == 1)
 	{
 		_playedAggroSound = false;
@@ -361,6 +466,14 @@ void BattlescapeGame::handleAI(BattleUnit *unit)
 	BattleAction action;
 	action.actor = unit;
 	action.number = _AIActionCounter;
+	AiProbe::beforeThink(_save, unit);
+	// AI3-RETRY (bench): a walk or attack handed on that left the unit's state as it was is not handed on again in that state
+	static const bool failedRetry = AiProbe::param("OXCE_AI_FAILED_RETRY", 0) != 0;
+	const bool retryRule = failedRetry && unit->getFaction() != FACTION_PLAYER;
+	if (retryRule)
+	{
+		ai->retryBegin();
+	}
 	unit->think(&action);
 
 	if (action.type == BA_RETHINK)
@@ -371,7 +484,9 @@ void BattlescapeGame::handleAI(BattleUnit *unit)
 
 	_AIActionCounter = action.number;
 	BattleItem *weapon = unit->getMainHandWeapon();
-	bool pickUpWeaponsMoreActively = unit->getPickUpWeaponsMoreActively();
+	// the careful bot picks up as the AI does when told to more actively, but only out of every enemy's sight it knows of
+	const bool botArms = AiProbe::pickUp(unit);
+	bool pickUpWeaponsMoreActively = unit->getPickUpWeaponsMoreActively() || botArms;
 	bool weaponPickedUp = false;
 	bool walkToItem = false;
 	if (!weapon || !weapon->haveAnyAmmo())
@@ -382,6 +497,11 @@ void BattlescapeGame::handleAI(BattleUnit *unit)
 			{
 				weaponPickedUp = findItem(&action, pickUpWeaponsMoreActively, walkToItem);
 			}
+		}
+		else if (botArms && unit->getVisibleUnits()->empty())
+		{
+			weaponPickedUp = findBotWeapon(&action, walkToItem);
+			AiProbe::tally(unit, weaponPickedUp ? "arms.take" : walkToItem ? "arms.walk" : "arms.none");
 		}
 	}
 	if (pickUpWeaponsMoreActively && weaponPickedUp)
@@ -400,15 +520,83 @@ void BattlescapeGame::handleAI(BattleUnit *unit)
 			_playedAggroSound = true;
 		}
 	}
+	// AI3-RETRY (bench): the action failed before in this very state - in place of the empty try, the think that followed it
+	// (it may roll other dice): within the selection's actions, counted as one; banned again, or none left - the selection ends
+	// (BA_NONE), as when the counter runs out. No time units, no turn, no view change.
+	if (retryRule)
+	{
+		char why = ai->retryBanned(action);
+		if (why != 0 && _AIActionCounter < AiProbe::maxActions(unit))
+		{
+			AiProbe::note(unit, (std::string("retry.rethink ") + why + std::to_string((int)action.type)).c_str());
+			_AIActionCounter++;
+			AiProbe::counterOwn(_save, unit, _AIActionCounter);
+			action.number = _AIActionCounter;
+			unit->think(&action);
+			if (action.type == BA_RETHINK)
+			{
+				unit->think(&action);
+			}
+			_AIActionCounter = action.number;
+			why = ai->retryBanned(action);
+		}
+		if (why != 0)
+		{
+			AiProbe::note(unit, (std::string("retry.end ") + why + std::to_string((int)action.type)).c_str());
+			action.type = BA_NONE;
+		}
+	}
+	AiProbe::logDecision(_save, unit, action);
+	AiProbe::blockedStepDecide(_save, unit);
+	if (AiProbe::knownOccupantPath())
+	{
+		ai->knownOccupantDecided(action);
+	}
+	if (AiProbe::knownOccupantPathV2())
+	{
+		ai->knownOccupantV2Decided(action);
+	}
+	if (AiProbe::patrolReuseProbe())
+	{
+		ai->patrolReuseDecided(action);
+	}
 	if (action.type == BA_WALK)
 	{
 		ss << "Walking to " << action.target;
 		_parentState->debug(ss.str());
 
 		auto* targetTile = _save->getTile(action.target);
+		// KNOWN_OCCUPANT_PATH_V2 (bench): the walk to the point findFirePoint / setupAmbush chose keeps that branch's target blocked
+		const BattleUnit *ko2 = AiProbe::knownOccupantPathV2() ? ai->knownOccupantV2Walk(action) : 0;
 		if (targetTile)
 		{
+			if (ko2)
+			{
+				_save->getPathfinding()->setKnownOccupant(action.actor, ko2);
+			}
 			_save->getPathfinding()->calculate(action.actor, action.target, BAM_NORMAL);
+			// its search again without the remembered step is the same walk's: the target stays blocked
+			AiProbe::blockedStepPlan(_save, unit, action);
+			if (ko2)
+			{
+				_save->getPathfinding()->setKnownOccupant(0, 0);
+				ai->knownOccupantV2Walked(action, _save->getPathfinding()->getStartDirection() != -1, _save->getPathfinding()->takeKnownOccupantHits());
+			}
+		}
+		if (AiProbe::knownOccupantPath())
+		{
+			ai->knownOccupantWalked(action, _save->getPathfinding()->getStartDirection() != -1);
+		}
+		AiProbe::walkPlanned(_save, unit, _save->getPathfinding()->getStartDirection() != -1, walkToItem);
+		if (!walkToItem && ai->isPatrolWalk(action) && AiProbe::patrolStunReserve(_save, unit, action, _save->getPathfinding()->getStartDirection() != -1))
+		{
+			// PATROL_STUN_RESERVE_V1 (bench): the walk would leave the armor's stun recovery at or below zero
+			// (V2 has already cut the path to its safe prefix and gets here only when no step is safe)
+			_save->getPathfinding()->abortPath();
+		}
+		if (!walkToItem && ai->isPatrolWalk(action) && AiProbe::patrolOutOfEnergy(_save, unit, action, _save->getPathfinding()->getStartDirection() != -1))
+		{
+			ai->spendPatrol();
 		}
 		if (_save->getPathfinding()->getStartDirection() != -1)
 		{
@@ -445,8 +633,17 @@ void BattlescapeGame::handleAI(BattleUnit *unit)
 		}
 	}
 
+	if (retryRule)
+	{
+		// AI3-RETRY: p - the walk found no path, s - its walk was pushed (and may stop at once), a - an attack
+		ai->retryRemember(action, action.type == BA_WALK ? (_save->getPathfinding()->getStartDirection() != -1 ? 's' : 'p') : 'a');
+	}
 	if (action.type == BA_NONE)
 	{
+		if (carefulGuard(unit))
+		{
+			return;
+		}
 		_parentState->debug("Idle");
 		_AIActionCounter = 0;
 		if (_save->selectNextPlayerUnit(true, _AISecondMove) == 0)
@@ -465,8 +662,9 @@ void BattlescapeGame::handleAI(BattleUnit *unit)
 		if (_save->getSelectedUnit())
 		{
 			_parentState->updateSoldierInfo();
-			getMap()->getCamera()->centerOnPosition(_save->getSelectedUnit()->getPosition());
-			if (_save->getSelectedUnit()->getId() <= unit->getId())
+			getMap()->getCamera()->focusOn(_save->getSelectedUnit()->getPosition());
+			// P0-D (clean2): the second pass begins when the selection wrapped round (the bot's turn: by index, upstream: by id)
+			if (AiProbe::secondPassWrapped(_save, unit, _save->getSelectedUnit()))
 			{
 				_AISecondMove = true;
 			}
@@ -510,6 +708,7 @@ bool BattlescapeGame::kneel(BattleUnit *bu)
  */
 void BattlescapeGame::endTurn()
 {
+	AiProbe::sideEnds(_save);
 	_debugPlay = _save->getDebugMode() && _parentState->getGame()->isCtrlPressed() && (_save->getSide() != FACTION_NEUTRAL);
 	_currentAction.type = BA_NONE;
 	_currentAction.skillRules = nullptr;
@@ -546,7 +745,7 @@ void BattlescapeGame::endTurn()
 				if (!tile && unit && item->getFuseTimer() != -1 && !_allEnemiesNeutralized)
 				{
 					int explodeAnyway = rule->getExplodeInventory(getMod());
-					if (explodeAnyway >= 2 || (explodeAnyway == 1 && item->getSlot()->getType() != INV_HAND))
+					if (explodeAnyway >= 2 || (explodeAnyway == 1 && item->getSlot() && item->getSlot()->getType() != INV_HAND))
 					{
 						tile = unit->getTile();
 					}
@@ -558,6 +757,8 @@ void BattlescapeGame::endTurn()
 						if (rule->getBattleType() == BT_GRENADE) // it's a grenade to explode now
 						{
 							Position p = tile->getPosition().toVoxel() + Position(8, 8, -tile->getTerrainLevel() + (unit ? unit->getHeight() / 2 : 0));
+							// a raised tile of the top level (rock, crate) lifts the centre above the map: keep it on the topmost voxel
+							p.z = std::min<int>(p.z, _save->getMapSizeZ() * Position::TileZ - 1);
 							forRemoval.push_back(std::tuple(nullptr, new ExplosionBState(this, p, BattleActionAttack::GetBeforeShoot(BA_TRIGGER_TIMED_GRENADE, unit, item))));
 							exploded = true;
 						}
@@ -620,6 +821,8 @@ void BattlescapeGame::endTurn()
 
 
 		_save->endTurn();
+		// fire may have burnt supports: the building collapse pilot (off by default)
+		CollapsePilot::settle(this, "end turn");
 		t = _save->getTileEngine()->checkForTerrainExplosions();
 		if (t)
 		{
@@ -686,7 +889,7 @@ void BattlescapeGame::endTurn()
 
 		if (playableUnitSelected())
 		{
-			getMap()->getCamera()->centerOnPosition(_save->getSelectedUnit()->getPosition());
+			getMap()->getCamera()->focusOn(_save->getSelectedUnit()->getPosition());
 			setupCursor();
 		}
 	}
@@ -801,6 +1004,11 @@ void BattlescapeGame::checkForCasualties(const RuleDamageType *damageType, Battl
 			}
 		}
 
+		if (killStat.status == STATUS_DEAD || killStat.status == STATUS_UNCONSCIOUS)
+		{
+			AiProbe::logCasualty(_save, victim, murderer, killStat.weapon, killStat.status == STATUS_DEAD, (int)killStat.side, terrainExplosion);
+		}
+
 		if (murderer && killStat.status != STATUS_IGNORE_ME)
 		{
 			if (murderer->getFaction() == FACTION_PLAYER && murderer->getOriginalFaction() != FACTION_PLAYER)
@@ -813,6 +1021,10 @@ void BattlescapeGame::checkForCasualties(const RuleDamageType *damageType, Battl
 						if (!victim->isCosmetic())
 						{
 							bu->getStatistics()->kills.push_back(new BattleUnitKills(killStat));
+							if (killStat.status == STATUS_DEAD)
+							{
+								bu->addKillCount();
+							}
 							if (victim->getFaction() == FACTION_HOSTILE)
 							{
 								bu->getStatistics()->slaveKills++;
@@ -877,6 +1089,7 @@ void BattlescapeGame::checkForCasualties(const RuleDamageType *damageType, Battl
 					int modifier = _save->getUnitMoraleModifier(victim);
 					int loserMod =  _save->getFactionMoraleModifier(victim->getOriginalFaction() != FACTION_HOSTILE);
 					int winnerMod = _save->getFactionMoraleModifier(victim->getOriginalFaction() == FACTION_HOSTILE);
+					bool killRevealTried = false; // AI2-H FAIR KNOWLEDGE h6: one gate call per kill, not one per member of the losing squad
 					for (auto* bu : *_save->getUnits())
 					{
 						if (!bu->isOut())
@@ -891,6 +1104,15 @@ void BattlescapeGame::checkForCasualties(const RuleDamageType *damageType, Battl
 								if (victim->getFaction() == FACTION_HOSTILE && murderer)
 								{
 									murderer->setTurnsSinceSpotted(0);
+									if (murderer->getFaction() != FACTION_HOSTILE && !killRevealTried)
+									{
+										// AI2-H FAIR KNOWLEDGE h6: the kill credits the murderer (attribution kept as is) but is no proof of where it
+										// stands now - the gate writes the place only while the hostile side sees it (a = attack type, b = murderer
+										// source: 0 the attacker of this attack, 1 the killer of a unit whose death blast did it, 2 the last unit to hit the victim)
+										killRevealTried = true;
+										murderer->updateHonestKnownPosition(FACTION_HOSTILE, _save, BattleUnit::AI_REVEAL_KILLER_SEEN, victim, (int)attack.type,
+											murderer == attack.attacker ? 0 : (murderer == origMurderer ? 1 : 2));
+									}
 								}
 							}
 							// the winning squad all get a morale increase
@@ -1287,7 +1509,7 @@ void BattlescapeGame::popState()
 					}
 					if (_save->getSelectedUnit())
 					{
-						getMap()->getCamera()->centerOnPosition(_save->getSelectedUnit()->getPosition());
+						getMap()->getCamera()->focusOn(_save->getSelectedUnit()->getPosition());
 					}
 				}
 			}
@@ -1394,6 +1616,10 @@ bool BattlescapeGame::checkReservedTU(BattleUnit *bu, int tu, int energy, bool j
 		{
 			cost.type = ai->getReserveMode();
 		}
+		if (cost.type != BA_NONE && reserveAffordableMode() >= 1)
+		{
+			cost.type = reserveAffordable(bu, cost.type, cost.weapon, tu, energy, justChecking);
+		}
 		cost.updateTU();
 		cost.Energy += energy;
 		cost.Time = tu; //override original
@@ -1472,6 +1698,84 @@ bool BattlescapeGame::checkReservedTU(BattleUnit *bu, int tu, int energy, bool j
 	}
 
 	return true;
+}
+
+/**
+ * AI2-D RESERVE_AFFORDABLE: the bench flag OXCE_AI_RESERVE_AFFORDABLE, read once (0 in a release build).
+ * 0 off (AI2_BASELINE_A2H), 1 shadow (the verdict logged, play unchanged), 2 applied.
+ */
+int BattlescapeGame::reserveAffordableMode()
+{
+	static const int mode = (int)AiProbe::param("OXCE_AI_RESERVE_AFFORDABLE", 0);
+	return mode;
+}
+
+/**
+ * AI2-D RESERVE_AFFORDABLE: the hostile reserve (a share of base TU by aggression) exists to keep a reaction shot, and a hostile
+ * unit reacts at range only with a snapshot of the weapon TileEngine picks for it (getMainHandWeapon(true, true)), only when
+ * canUseWeapon, the weapon is a firearm with ammo for the snapshot and BattleActionCost(BA_SNAPSHOT).haveTU() - the same calls,
+ * nothing recomputed here. If that snapshot cannot be paid with the TU the unit has now, it cannot be paid after the step either,
+ * so the reserve buys nothing: like the player's rule ("current TU is less than the reserved shot, we can't reserve anything"),
+ * mode 2 goes on with BA_NONE - the step then needs only its own TU and energy. An affordable snapshot keeps the old reserve.
+ * Target-dependent parts of the reaction (range, line of fire) are not known here and are not judged. No RNG, no state.
+ * The [AITRACE] ai2d line is written (mode 1 and up) when the old reserve blocks a real move (not justChecking).
+ */
+BattleActionType BattlescapeGame::reserveAffordable(BattleUnit *bu, BattleActionType reserve, BattleItem *reserveWeapon, int tu, int energy, bool justChecking)
+{
+	BattleItem *w = bu->getMainHandWeapon(true, true); // the weapon TileEngine reacts with (AI: quickest)
+	BattleActionCost snap(BA_SNAPSHOT, bu, w);
+	const char *why = "ok";
+	if (!w)
+		why = "no_weapon";
+	else if (!_save->canUseWeapon(w, bu, false, BA_SNAPSHOT))
+		why = "cannot_use";
+	else if (w->getRules()->getBattleType() != BT_FIREARM)
+		why = "not_firearm";
+	else if (!w->getAmmoForAction(BA_SNAPSHOT))
+		why = "no_ammo";
+	else if (snap.Time <= 0)
+		why = "no_snap";
+	else if (!snap.haveTU())
+		why = bu->getTimeUnits() < snap.Time ? "tu" : "energy";
+	const bool affordable = (why[0] == 'o' && why[1] == 'k');
+	const int mode = reserveAffordableMode();
+	if (!justChecking)
+	{
+		// the old reserve, as checkReservedTU computes it
+		BattleActionCost old;
+		old.actor = bu;
+		old.type = reserve;
+		old.weapon = reserveWeapon;
+		old.updateTU();
+		old.Energy += energy;
+		old.Time = tu;
+		int share = 0;
+		switch (reserve)
+		{
+		case BA_SNAPSHOT: share = (bu->getBaseStats()->tu / 3); break;
+		case BA_AUTOSHOT: share = ((bu->getBaseStats()->tu / 5)*2); break;
+		case BA_AIMEDSHOT: share = (bu->getBaseStats()->tu / 2); break;
+		default: break;
+		}
+		old.Time += share;
+		const bool oldOk = old.Time <= 0 || old.haveTU();
+		if (!oldOk && AiProbe::active()) // the bench's line; the player's AI3 (BetterAI) does not write it
+		{
+			Log(LOG_INFO) << "[AITRACE] {\"ai2d\":\"reserve\",\"rec\":" << AiProbe::nextRec() << ",\"turn\":" << _save->getTurn()
+				<< ",\"unit\":" << bu->getId() << ",\"rt\":" << (int)reserve << ",\"share\":" << share
+				<< ",\"rw\":\"" << (reserveWeapon ? reserveWeapon->getRules()->getType() : std::string()) << "\""
+				<< ",\"w\":\"" << (w ? w->getRules()->getType() : std::string()) << "\""
+				<< ",\"why\":\"" << why << "\",\"snapT\":" << snap.Time << ",\"snapE\":" << snap.Energy
+				<< ",\"tu\":" << bu->getTimeUnits() << ",\"en\":" << bu->getEnergy() << ",\"stepT\":" << tu << ",\"stepE\":" << energy
+				<< ",\"stepOk\":" << ((tu <= bu->getTimeUnits() && energy <= bu->getEnergy()) ? 1 : 0)
+				<< ",\"afford\":" << (affordable ? 1 : 0) << ",\"applied\":" << ((mode >= 2 && !affordable) ? 1 : 0) << "}";
+		}
+	}
+	if (mode >= 2 && !affordable)
+	{
+		return BA_NONE;
+	}
+	return reserve;
 }
 
 
@@ -1730,6 +2034,11 @@ void BattlescapeGame::primaryAction(Position pos)
 
 	if (_currentAction.targeting && _save->getSelectedUnit())
 	{
+		if (_currentAction.type != BA_THROW && _currentAction.weapon && _currentAction.weapon->getRules()->isOutOfRange(_currentAction.actor->distance3dToPositionSq(pos)))
+		{
+			_parentState->warning("STR_OUT_OF_RANGE");
+			return;
+		}
 		if (_currentAction.type == BA_LAUNCH)
 		{
 			int maxWaypoints = _currentAction.weapon->getCurrentWaypoints();
@@ -1810,7 +2119,7 @@ void BattlescapeGame::primaryAction(Position pos)
 			{
 				if (!_currentAction.weapon->getRules()->isLOSRequired() ||
 					(_currentAction.actor->getFaction() == FACTION_PLAYER && targetUnit->getFaction() != FACTION_HOSTILE) ||
-					std::find(_currentAction.actor->getVisibleUnits()->begin(), _currentAction.actor->getVisibleUnits()->end(), targetUnit) != _currentAction.actor->getVisibleUnits()->end())
+					AiProbe::upstreamSees(_currentAction.actor, targetUnit, 1)) // UPSTREAM_VIS (bench, upstream 613ec4a28)
 				{
 					std::string error;
 					if (_currentAction.spendTU(&error))
@@ -1878,7 +2187,7 @@ void BattlescapeGame::primaryAction(Position pos)
 					_currentAction.target = pos;
 					if (!_currentAction.weapon->getRules()->isLOSRequired() ||
 						(attackerFaction == FACTION_PLAYER && targetFaction != FACTION_HOSTILE) ||
-						std::find(_currentAction.actor->getVisibleUnits()->begin(), _currentAction.actor->getVisibleUnits()->end(), targetUnit) != _currentAction.actor->getVisibleUnits()->end())
+						AiProbe::upstreamSees(_currentAction.actor, targetUnit, 2)) // UPSTREAM_VIS (bench, upstream 613ec4a28)
 					{
 						// get the sound/animation started
 						getMap()->setCursorType(CT_NONE);
@@ -1955,11 +2264,14 @@ void BattlescapeGame::primaryAction(Position pos)
 				_save->getPathfinding()->removePreview();
 			}
 			_currentAction.target = pos;
-			_save->getPathfinding()->calculate(_currentAction.actor, _currentAction.target, BAM_NORMAL); // precalculate move
 
-			_currentAction.strafe = false;
-			_currentAction.run = false;
-			_currentAction.sneak = false;
+			if (!_save->isPreview())
+			{
+				_save->getPathfinding()->calculate(_currentAction.actor, _currentAction.target, BAM_NORMAL); // precalculate move
+
+				_currentAction.strafe = false;
+				_currentAction.run = false;
+				_currentAction.sneak = false;
 
 			if (isCtrlPressed)
 			{
@@ -1977,28 +2289,46 @@ void BattlescapeGame::primaryAction(Position pos)
 				_currentAction.sneak = _save->getSelectedUnit()->getArmor()->allowsSneaking(_save->getSelectedUnit()->isSmallUnit());
 			}
 
-			// recalculate path after setting new move types
-			if (BAM_NORMAL != _currentAction.getMoveType())
-			{
-				_save->getPathfinding()->calculate(_currentAction.actor, _currentAction.target, _currentAction.getMoveType());
+				// recalculate path after setting new move types
+				if (BAM_NORMAL != _currentAction.getMoveType())
+				{
+					_save->getPathfinding()->calculate(_currentAction.actor, _currentAction.target, _currentAction.getMoveType());
+				}
+
+				// if running or shifting, ignore spotted enemies (i.e. don't stop)
+				_currentAction.ignoreSpottedEnemies = (_currentAction.run && Mod::EXTENDED_RUNNING_COST) || isShiftPressed;
+
+				if (bPreviewed && !_save->getPathfinding()->previewPath() && _save->getPathfinding()->getStartDirection() != -1)
+				{
+					_save->getPathfinding()->removePreview();
+					bPreviewed = false;
+				}
 			}
-
-			// if running or shifting, ignore spotted enemies (i.e. don't stop)
-			_currentAction.ignoreSpottedEnemies = (_currentAction.run && Mod::EXTENDED_RUNNING_COST) || isShiftPressed;
-
-			if (bPreviewed && !_save->getPathfinding()->previewPath() && _save->getPathfinding()->getStartDirection() != -1)
+			else
 			{
-				_save->getPathfinding()->removePreview();
-				bPreviewed = false;
+				_save->getPathfinding()->calculateTeleportDestination(_currentAction.actor, _currentAction.target, BAM_NORMAL);
+				if (bPreviewed && !_save->getPathfinding()->previewPath())
+				{
+					_save->getPathfinding()->removePreview();
+					bPreviewed = false;
+				}
 			}
-
-			if (!bPreviewed && _save->getPathfinding()->getStartDirection() != -1)
+				
+			if (!bPreviewed )
 			{
-				//  -= start walking =-
-				getMap()->setCursorType(CT_NONE);
-				_parentState->getGame()->getCursor()->setVisible(false);
-				statePushBack(new UnitWalkBState(this, _currentAction));
-				playUnitResponseSound(_currentAction.actor, 1); // "start moving" sound
+				if (_save->getPathfinding()->getStartDirection() != -1)
+				{
+					//  -= start walking =-
+					getMap()->setCursorType(CT_NONE);
+					_parentState->getGame()->getCursor()->setVisible(false);
+					statePushBack(new UnitWalkBState(this, _currentAction));
+					playUnitResponseSound(_currentAction.actor, 1); // "start moving" sound
+				}
+				else if (auto tpPos = _save->getPathfinding()->getTeleportDestination(); _save->isPreview() && tpPos)
+				{
+					_currentAction.target = *tpPos;
+					statePushBack(new UnitTeleportingState(this, _currentAction));
+				}
 			}
 		}
 	}
@@ -2181,6 +2511,57 @@ void BattlescapeGame::setTUReserved(BattleActionType tur)
 void BattlescapeGame::dropItem(Position position, BattleItem *item, bool removeItem, bool updateLight)
 {
 	_save->getTileEngine()->itemDrop(_save->getTile(position), item, updateLight);
+}
+
+/**
+ * XP-000208: an item thrown by a soldier has landed (dropItem) on the tile of another soldier of the player's side;
+ * that one takes it into a hand, the right first and then the left, as if he picked it up from the ground in the
+ * inventory: the same hand test as Inventory::useHand and the same price, BattleItem::getMoveToCost(hand) from the
+ * ground. A primed item, no free hand or not enough TU - the item stays on the ground as it fell. Only in the
+ * player's turn, only for the player's own soldiers (not mind-controlled ones), never the thrower himself.
+ * @param thrower The unit that threw the item.
+ * @param item The item, already on the ground.
+ * @return Whether the item went into a hand.
+ */
+bool BattlescapeGame::catchThrownItem(const BattleUnit *thrower, BattleItem *item)
+{
+	if (!Options::oxceCatchThrown || !thrower || !item || _save->getSide() != FACTION_PLAYER)
+	{
+		return false;
+	}
+	if (thrower->getFaction() != FACTION_PLAYER || thrower->getOriginalFaction() != FACTION_PLAYER)
+	{
+		return false;
+	}
+	Tile *tile = item->getTile();
+	if (!tile || item->getSlot() != getMod()->getInventoryGround() || item->getFuseTimer() > -1 || item->getRules()->isFixed())
+	{
+		return false;
+	}
+	BattleUnit *catcher = tile->getUnit();
+	if (!catcher || catcher == thrower || catcher->getTile() != tile || catcher->getStatus() != STATUS_STANDING || catcher->isOut() ||
+		catcher->getFaction() != FACTION_PLAYER || catcher->getOriginalFaction() != FACTION_PLAYER)
+	{
+		return false;
+	}
+	const RuleInventory *hands[] = { getMod()->getInventoryRightHand(), getMod()->getInventoryLeftHand() };
+	BattleItem *inHand[] = { catcher->getRightHandWeapon(), catcher->getLeftHandWeapon() };
+	for (int i = 0; i < 2; ++i)
+	{
+		const RuleInventory *hand = hands[i];
+		if (hand && !inHand[i] && item->getRules()->canBePlacedIntoInventorySection(hand) && hand->fitItemInSlot(item->getRules(), 0, 0))
+		{
+			if (!catcher->spendTimeUnits(item->getMoveToCost(hand)))
+			{
+				return false;
+			}
+			_save->getTileEngine()->itemMoveInventory(tile, catcher, item, hand, 0, 0);
+			_save->getTileEngine()->calculateLighting(LL_ITEMS, tile->getPosition());
+			_save->getTileEngine()->calculateFOV(tile->getPosition(), item->getVisibilityUpdateRange(), false);
+			return true;
+		}
+	}
+	return false;
 }
 
 /**
@@ -2492,35 +2873,35 @@ void BattlescapeGame::tallySummonedVIPs()
 		{
 			if (unit->getStatus() == STATUS_DEAD)
 			{
-				_save->addLostVIP(unit->getValue());
+				_save->addLostVIP(unit->getValueVIP());
 			}
 			else if (escapeType == ESCAPE_EXIT)
 			{
 				if (unit->isInExitArea(END_POINT))
-					_save->addSavedVIP(unit->getValue());
+					_save->addSavedVIP(unit->getValueVIP());
 				else
-					_save->addLostVIP(unit->getValue());
+					_save->addLostVIP(unit->getValueVIP());
 			}
 			else if (escapeType == ESCAPE_ENTRY)
 			{
 				if (unit->isInExitArea(START_POINT))
-					_save->addSavedVIP(unit->getValue());
+					_save->addSavedVIP(unit->getValueVIP());
 				else
-					_save->addLostVIP(unit->getValue());
+					_save->addLostVIP(unit->getValueVIP());
 			}
 			else if (escapeType == ESCAPE_EITHER)
 			{
 				if (unit->isInExitArea(START_POINT) || unit->isInExitArea(END_POINT))
-					_save->addSavedVIP(unit->getValue());
+					_save->addSavedVIP(unit->getValueVIP());
 				else
-					_save->addLostVIP(unit->getValue());
+					_save->addLostVIP(unit->getValueVIP());
 			}
 			else //if (escapeType == ESCAPE_NONE)
 			{
 				if (unit->isInExitArea(START_POINT))
-					_save->addSavedVIP(unit->getValue()); // waiting in craft, saved even if aborted
+					_save->addSavedVIP(unit->getValueVIP()); // waiting in craft, saved even if aborted
 				else
-					_save->addWaitingOutsideVIP(unit->getValue()); // waiting outside, lost if aborted
+					_save->addWaitingOutsideVIP(unit->getValueVIP()); // waiting outside, lost if aborted
 			}
 		}
 	}
@@ -2918,6 +3299,81 @@ bool BattlescapeGame::takeItem(BattleItem* item, BattleAction *action)
 	default: break;
 	}
 	return placed;
+}
+
+/**
+ * The careful bot's own search: surveyItems ranks by attraction, so junk outranks a gun, and worthTaking
+ * counts 25 free slots, which a Piratez soldier never has - the gun a panic or a faint dropped at its feet stayed there.
+ * Here only what makes the unit armed again: a loaded firearm (its right hand free), or ammo for a gun in its hands;
+ * the nearest within 8 tiles, on a tile no one else stands on. takeItem itself checks the room and the time units.
+ * @param action The unit's action; becomes a walk to the item when it lies elsewhere.
+ * @param walkToItem Set when the action is that walk.
+ * @return Whether an item was taken.
+ */
+bool BattlescapeGame::findBotWeapon(BattleAction *action, bool &walkToItem)
+{
+	BattleUnit *unit = action->actor;
+	auto *right = unit->getRightHandWeapon();
+	auto *left = unit->getLeftHandWeapon();
+	auto fitsHands = [&](const RuleItem *ammo)
+	{
+		for (auto *w : { right, left })
+		{
+			if (w && w->isWeaponWithAmmo() && !w->haveAnyAmmo() && w->getRules()->getSlotForAmmo(ammo) != -1)
+			{
+				return true;
+			}
+		}
+		return false;
+	};
+	BattleItem *best = nullptr;
+	int bestDist = 9;
+	for (auto *bi : *_save->getItems())
+	{
+		Tile *tile = bi->getTile();
+		if (bi->isOwnerIgnored() || !bi->getSlot() || bi->getSlot()->getType() != INV_GROUND || !tile || tile->getDangerous())
+		{
+			continue;
+		}
+		const int dist = Position::distance2d(unit->getPosition(), tile->getPosition());
+		if (dist >= bestDist || tile->getPosition().z != unit->getPosition().z)
+		{
+			continue;
+		}
+		const bool useful = bi->getRules()->getBattleType() == BT_FIREARM
+			? !right && bi->haveAnyAmmo()
+			: bi->getRules()->getBattleType() == BT_AMMO && fitsHands(bi->getRules());
+		if (!useful || (tile->getUnit() && tile->getUnit() != unit && !tile->getUnit()->isOut()))
+		{
+			continue;
+		}
+		best = bi;
+		bestDist = dist;
+	}
+	if (!best)
+	{
+		return false;
+	}
+	if (best->getTile()->getPosition() == unit->getPosition())
+	{
+		if (!takeItem(best, action))
+		{
+			best->getTile()->setDangerous(true); // no room or no time units: not again this turn
+			return false;
+		}
+		if (best->getGlow())
+		{
+			_save->getTileEngine()->calculateLighting(LL_ITEMS, unit->getPosition());
+			_save->getTileEngine()->calculateFOV(unit->getPosition(), best->getVisibilityUpdateRange(), false);
+		}
+		return true;
+	}
+	action->target = best->getTile()->getPosition();
+	action->type = BA_WALK;
+	action->finalAction = false;
+	action->desperate = false;
+	walkToItem = true;
+	return false;
 }
 
 /**
@@ -3368,7 +3824,7 @@ void BattlescapeGame::autoEndBattle()
 		if (end)
 		{
 			_save->setSelectedUnit(0);
-			cancelCurrentAction(true);
+			cancelAllActions();
 			requestEndTurn(askForConfirmation);
 		}
 	}

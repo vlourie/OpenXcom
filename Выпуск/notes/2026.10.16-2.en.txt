@@ -1,0 +1,1 @@
+- Soldier voices are now much louder, on par with battle sounds, and have their own "Voice Volume" slider in the sound options (right column). Setting "Sound Volume" to zero mutes voices too.

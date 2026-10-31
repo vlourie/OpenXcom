@@ -108,7 +108,12 @@ void AbandonGameState::btnYesClick(Action *)
 
 	if (_origin == OPT_BATTLESCAPE && _game->getSavedGame()->getSavedBattle()->getAmbientSound() != Mod::NO_SOUND)
 		_game->getMod()->getSoundByDepth(0, _game->getSavedGame()->getSavedBattle()->getAmbientSound())->stopLoop();
-	if (!_game->getSavedGame()->isIronman())
+	if (_origin == OPT_BATTLESCAPE && Options::oxceNoBattleSaves && !_game->getSavedGame()->isIronman())
+	{
+		// no battle saves: leaving saves the battle, as ironman does, in the battle autosave slot
+		_game->pushState(new SaveGameState(OPT_GEOSCAPE, SAVE_BATTLE_END, _palette));
+	}
+	else if (!_game->getSavedGame()->isIronman())
 	{
 		Screen::updateScale(Options::geoscapeScale, Options::baseXGeoscape, Options::baseYGeoscape, true);
 		_game->getScreen()->resetDisplay(false);

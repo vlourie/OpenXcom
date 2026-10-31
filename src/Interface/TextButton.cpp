@@ -17,6 +17,8 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "TextButton.h"
+#include <cstring>
+#include "../Engine/HdUi.h"
 #include <SDL.h>
 #include <SDL_mixer.h>
 #include "Text.h"
@@ -271,7 +273,61 @@ void TextButton::draw()
 	}
 	_text->setInvert(press);
 
+	if (HdUi::active())
+	{
+		_hdBase.resize((size_t)getWidth() * getHeight());
+		for (int y = 0; y < getHeight(); ++y)
+		{
+			memcpy(&_hdBase[(size_t)y * getWidth()], getBuffer() + (size_t)y * getPitch(), getWidth());
+		}
+	}
 	_text->blit(this->getSurface());
+}
+
+void TextButton::hdMirrorSkin(bool pressed, int inkIndex)
+{
+	HdUi::instance().drawButton(getX(), getY(), getWidth(), getHeight(), _color, _contrast ? 2 : 1, pressed, HdUi::paletteOf(this));
+	// the label keeps off the rounded edges (narrow buttons: a pixel); in the theme's metal, its colours go with it
+	HdUi::instance().setLabelTheme(HdUi::windowTheme(), pressed);
+	if (inkIndex >= 0 && inkIndex < 256)
+	{
+		const SDL_Color *pal = HdUi::paletteOf(this);
+		if (pal)
+		{
+			SDL_Color face = pal[inkIndex];
+			if (HdUi::windowTheme())
+			{
+				// a lit button of the theme is the light end of the metal: the line's colour deepened, a light shadow
+				face = SDL_Color{ (Uint8)(face.r * 6 / 10), (Uint8)(face.g * 6 / 10), (Uint8)(face.b * 6 / 10), 255 };
+				HdUi::instance().setLabelInk(face, SDL_Color{ 240, 236, 224, 255 });
+			}
+			else
+			{
+				HdUi::instance().setLabelInk(face, SDL_Color{ 0, 0, 0, 255 });
+			}
+		}
+	}
+	_text->hdDrawAt(getX() + _text->getX(), getY() + _text->getY(), getX(), getY(), getWidth(), getHeight(), getWidth() >= 40 ? 3 : 2);
+	HdUi::instance().setLabelTheme(false);
+}
+
+void TextButton::hdMirror()
+{
+	if (HdUi::skin())
+	{
+		hdMirrorSkin(_group == 0 ? isButtonPressed() : (*_group == this));
+		return;
+	}
+	if (_hdBase.size() == (size_t)getWidth() * getHeight())
+	{
+		HdUi::instance().drawPixels(_hdBase.data(), getWidth(), getWidth(), getHeight(), getX(), getY(), HdUi::paletteOf(this));
+	}
+	else
+	{
+		HdUi::instance().drawSurface(this, getX(), getY(), false);
+		return;
+	}
+	_text->hdDrawAt(getX() + _text->getX(), getY() + _text->getY(), getX(), getY(), getWidth(), getHeight());
 }
 
 /**

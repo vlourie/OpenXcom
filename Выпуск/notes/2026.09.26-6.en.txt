@@ -1,0 +1,1 @@
+— HD combat effects now depend on the weapon: muzzle flashes by weapon type, different hits on flesh, armour and ground, blade arcs and spear thrusts, psi rings and fire for explosions. Damage and odds are unchanged, only the picture is new.

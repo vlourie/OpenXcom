@@ -17,7 +17,8 @@
  * You should have received a copy of the GNU General Public License
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
-#include "../Engine/State.h"
+#include <string>
+#include "../Engine/TouchState.h"
 
 namespace OpenXcom
 {
@@ -36,7 +37,7 @@ class InteractiveSurface;
 /**
  * Screen that allows changing of Production settings (assigned engineer, units to build).
  */
-class ManufactureInfoState : public State
+class ManufactureInfoState : public TouchState
 {
 private:
 	Base * _base;
@@ -50,6 +51,9 @@ private:
 	Text * _txtAllocatedEngineer, * _txtUnitToProduce, * _txtUnitUp, * _txtUnitDown, * _txtEngineerUp, * _txtEngineerDown, * _txtAllocated, * _txtTodo;
 	ToggleTextButton *_btnSell;
 	ToggleTextButton *_btnFallback;
+	ToggleTextButton *_btnDelivery; ///< oxceManufactureDelivery (XP-000256): the plan of the delivery to other bases
+	Text *_txtDelivery;
+	TextButton *_btnDeliveryPlan; ///< the deliveries still to be made, to cancel them
 	Timer * _timerMoreEngineer, * _timerMoreUnit, * _timerLessEngineer, * _timerLessUnit;
 	InteractiveSurface *_surfaceEngineers, *_surfaceUnits;
 	int _producedItemsValue;
@@ -59,6 +63,16 @@ private:
 	int getMonthlyNetFunds () const;
 	/// Handler for the Sell button.
 	void btnSellClick (Action * action);
+	/// Handler for the Delivery button: the list of the other bases.
+	void btnDeliveryClick (Action * action);
+	/// Handler for the button of the deliveries still to be made.
+	void btnDeliveryPlanClick (Action * action);
+	/// Shows or hides the Delivery button and its line, and writes what is planned.
+	void updateDelivery ();
+	/// The line of the delivery plan.
+	std::string deliveryText () const;
+	/// A base was picked in the list: asks how many go there.
+	void deliveryPicked (Base * to);
 	/// Handler for the Stop button.
 	void btnStopClick (Action * action);
 	/// Handler for the OK button.
@@ -124,6 +138,8 @@ public:
 	ManufactureInfoState(Base * base, Production * production);
 	/// Cleans up the state
 	~ManufactureInfoState();
+	/// Resets state.
+	void init() override;
 };
 
 }

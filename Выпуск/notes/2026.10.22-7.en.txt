@@ -1,0 +1,1 @@
+﻿- Living base (HD): the laser, plasma and gauss turrets no longer leave their barrel tips behind or turn bits of the walls - these turrets now stand still. Only the SAM launcher sweeps its barrels. The small radar spins just its dish and mast, not the boxes and cables around it. The rubble lost its grey frame around the edge.

@@ -1,0 +1,3 @@
+﻿Battle graphics: the best tiles are back.
+
+— The latest tile generation turned out worse than the previous one: metal looked like rusty stone, snow like sand, smooth surfaces like wood. Every tile now uses the best version from all art generations: the previous pack is the base, and newer art is used only where it is actually better.

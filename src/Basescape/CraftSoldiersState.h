@@ -20,6 +20,8 @@
 #include "../Engine/TouchState.h"
 #include <vector>
 #include "SoldierSortUtil.h"
+#include "HighlightLowManaSoldiersMixin.h"
+#include "SortSoldiersMixin.h"
 
 namespace OpenXcom
 {
@@ -29,30 +31,52 @@ class Window;
 class Text;
 class TextList;
 class ComboBox;
-class Base;
 class Soldier;
+class Craft;
+class Target;
+class RuleStartingCondition;
 struct SortFunctor;
 
 /**
  * Select Squad screen that lets the player
  * pick the soldiers to assign to a craft.
  */
-class CraftSoldiersState : public TouchState
+class CraftSoldiersState : public SortSoldiersMixin<HighlightLowManaSoldiersMixin<TouchState>>
 {
 private:
 	TextButton *_btnOk;
 	TextButton *_btnPreview;
+	TextButton *_btnFit; // OXCE-HD (oxceHdCraftFit): the plate "seats used / seats in all", not pressable
 	Window *_window;
 	Text *_txtTitle, *_txtName, *_txtRank, *_txtCraft, *_txtAvailable, *_txtUsed;
 	ComboBox *_cbxSortBy;
 	TextList *_lstSoldiers;
 
-	Base *_base;
 	size_t _craft;
 	Uint8 _otherCraftColor;
 	std::vector<Soldier *> _origSoldierOrder;
 	std::vector<SortFunctor *> _sortFunctors;
 	getStatFn_t _dynGetter;
+	std::vector<char> _fitGrey; // OXCE-HD (oxceHdCraftFit): the rows now drawn grey, by row of the list
+	// OXCE-HD (oxceHdCraftMission): the box "For mission:", the line with the reason; all null with the option off
+	ComboBox *_cbxMission = nullptr;
+	Text *_txtMissionLabel = nullptr, *_txtMissionInfo = nullptr;
+	std::vector<const Target *> _missionTargets; // the targets of the box, from item 1 on (item 0 = none)
+	bool _missionActive = false; // a target is chosen
+	const RuleStartingCondition *_missionRule = nullptr; // its starting condition (null = none)
+	std::string _missionLine; // the line under the list when the mouse is not over a row
+	/// OXCE-HD (oxceHdCraftMission): the detected targets (the sources of the UFO tracker) into the box.
+	void buildMissionTargets(std::vector<std::string> &names);
+	/// OXCE-HD (oxceHdCraftMission): the colour a row has by the craft of the soldier (as initList sets it).
+	Uint8 rowBaseColor(const Soldier *s, const Craft *c) const;
+	/// OXCE-HD (oxceHdCraftMission): green names of the soldiers who can fly to the chosen target, and the line. Display only.
+	void missionRefresh();
+	/// OXCE-HD (oxceHdCraftFit): would the click on this soldier meet a craft limit (space, number of units)? Display only.
+	bool doesNotFit(const Soldier *s, const Craft *c) const;
+	/// OXCE-HD (oxceHdCraftFit): the plate with the seats and the grey rows of those who no longer fit.
+	void fitRefresh();
+	/// OXCE-HD (oxceHdWoundedRed): the row colours as the base sets them, and the name and the "WOUNDED>days" red for a wounded soldier. Display only.
+	void setListRowColor(TextList& list, size_t row, Uint8 color, const Soldier& soldier);
 	/// initializes the display list based on the craft soldier's list and the position to display
 	void initList(size_t scrl);
 public:
@@ -62,6 +86,11 @@ public:
 	~CraftSoldiersState();
 	/// Handler for changing the sort by combobox.
 	void cbxSortByChange(Action *action);
+	/// OXCE-HD (oxceHdCraftMission): handler for changing the "For mission:" combobox.
+	void cbxMissionChange(Action *action);
+	/// OXCE-HD (oxceHdCraftMission): the reason for the soldier under the mouse in the line under the list.
+	void lstSoldiersMouseOver(Action *action);
+	void lstSoldiersMouseOut(Action *action);
 	/// Handler for clicking the OK button.
 	void btnOkClick(Action *action);
 	/// Handler for clicking the Preview button.

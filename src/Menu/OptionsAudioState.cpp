@@ -69,6 +69,14 @@ OptionsAudioState::OptionsAudioState(OptionsOrigin origin) : OptionsBaseState(or
 	_txtOptions = new Text(114, 9, 94, 104);
 	_btnBackgroundMute = new ToggleTextButton(104, 16, 94, 114);
 
+	// the player's own music (XP-000373): under the background mute, the text of the choice says what it is
+	_cbxUserMusic = new ComboBox(this, 108, 16, 94, 131);
+
+	// HD: unit responses (channel 4) get their own slider, right column under the sound format
+	// (left column below the background mute is the tooltip, y 148)
+	_txtVoiceVolume = new Text(114, 9, 206, 122);
+	_slrVoiceVolume = new Slider(104, 16, 206, 132);
+
 	add(_txtMusicVolume, "text", "audioMenu");
 	add(_slrMusicVolume, "button", "audioMenu");
 
@@ -90,6 +98,11 @@ OptionsAudioState::OptionsAudioState(OptionsOrigin origin) : OptionsBaseState(or
 
 	add(_txtOptions, "text", "audioMenu");
 	add(_btnBackgroundMute, "button", "audioMenu");
+
+	add(_txtVoiceVolume, "text", "audioMenu");
+	add(_slrVoiceVolume, "button", "audioMenu");
+
+	add(_cbxUserMusic, "button", "audioMenu");
 
 	centerAllSurfaces();
 
@@ -122,6 +135,15 @@ OptionsAudioState::OptionsAudioState(OptionsOrigin origin) : OptionsBaseState(or
 	_slrUiVolume->setTooltip("STR_UI_VOLUME_DESC");
 	_slrUiVolume->onMouseIn((ActionHandler)&OptionsAudioState::txtTooltipIn);
 	_slrUiVolume->onMouseOut((ActionHandler)&OptionsAudioState::txtTooltipOut);
+
+	_txtVoiceVolume->setText(tr("STR_VOICE_VOLUME"));
+
+	_slrVoiceVolume->setRange(0, SDL_MIX_MAXVOLUME);
+	_slrVoiceVolume->setValue(Options::oxceVoiceVolume);
+	_slrVoiceVolume->onChange((ActionHandler)&OptionsAudioState::slrVoiceVolumeChange);
+	_slrVoiceVolume->setTooltip("STR_VOICE_VOLUME_DESC");
+	_slrVoiceVolume->onMouseIn((ActionHandler)&OptionsAudioState::txtTooltipIn);
+	_slrVoiceVolume->onMouseOut((ActionHandler)&OptionsAudioState::txtTooltipOut);
 
 	std::vector<std::string> musicText, soundText, videoText;
 	/* MUSIC_AUTO, MUSIC_FLAC, MUSIC_OGG, MUSIC_MP3, MUSIC_MOD, MUSIC_WAV, MUSIC_ADLIB, MUSIC_GM, MUSIC_MIDI */
@@ -186,6 +208,17 @@ OptionsAudioState::OptionsAudioState(OptionsOrigin origin) : OptionsBaseState(or
 	_cbxSoundFormat->setVisible(_origin == OPT_MENU && _game->getMod()->getSoundDefinitions()->empty());
 	_txtCurrentSound->setVisible(_origin == OPT_MENU && _game->getMod()->getSoundDefinitions()->empty());
 
+	std::vector<std::string> userMusicText;
+	userMusicText.push_back(tr("STR_USER_MUSIC_0"));
+	userMusicText.push_back(tr("STR_USER_MUSIC_1"));
+	userMusicText.push_back(tr("STR_USER_MUSIC_2"));
+	_cbxUserMusic->setOptions(userMusicText);
+	_cbxUserMusic->setSelected(std::max(0, std::min(2, Options::oxceUserMusic)));
+	_cbxUserMusic->setTooltip("STR_USER_MUSIC_DESC");
+	_cbxUserMusic->onChange((ActionHandler)&OptionsAudioState::cbxUserMusicChange);
+	_cbxUserMusic->onMouseIn((ActionHandler)&OptionsAudioState::txtTooltipIn);
+	_cbxUserMusic->onMouseOut((ActionHandler)&OptionsAudioState::txtTooltipOut);
+
 	_txtOptions->setText(tr("STR_SOUND_OPTIONS"));
 
 	_btnBackgroundMute->setText(tr("STR_BACKGROUND_MUTE"));
@@ -221,6 +254,16 @@ void OptionsAudioState::slrMusicVolumeChange(Action *)
 void OptionsAudioState::slrSoundVolumeChange(Action *)
 {
 	Options::soundVolume = _slrSoundVolume->getValue();
+	_game->setVolume(Options::soundVolume, Options::musicVolume, Options::uiVolume);
+}
+
+/**
+ * Updates the unit voice volume (HD): channel 4 is set together with the sound channels.
+ * @param action Pointer to an action.
+ */
+void OptionsAudioState::slrVoiceVolumeChange(Action *)
+{
+	Options::oxceVoiceVolume = _slrVoiceVolume->getValue();
 	_game->setVolume(Options::soundVolume, Options::musicVolume, Options::uiVolume);
 }
 
@@ -269,6 +312,15 @@ void OptionsAudioState::cbxMusicFormatChange(Action *)
 {
 	Options::preferredMusic = (MusicFormat)_cbxMusicFormat->getSelected();
 	Options::reload = true;
+}
+
+/**
+ * Changes the own music option: it works at once (the folder is scanned when it is first needed).
+ * @param action Pointer to an action.
+ */
+void OptionsAudioState::cbxUserMusicChange(Action *)
+{
+	Options::oxceUserMusic = _cbxUserMusic->getSelected();
 }
 
 /**

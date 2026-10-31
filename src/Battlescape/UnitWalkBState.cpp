@@ -29,10 +29,14 @@
 #include "../Savegame/Tile.h"
 #include "../Engine/Sound.h"
 #include "../Engine/Options.h"
+#include "../Engine/HdGentle.h"
 #include "../Engine/Logger.h"
 #include "../Mod/Armor.h"
 #include "../Mod/Mod.h"
 #include "UnitFallBState.h"
+#include "ExplosionBState.h"
+#include "CollapsePilot.h"
+#include "AiProbe.h"
 
 namespace OpenXcom
 {
@@ -68,7 +72,9 @@ void UnitWalkBState::init()
 	_target = _action.target;
 	if (Options::traceAI) { Log(LOG_INFO) << "Walking from: " << _unit->getPosition() << "," << " to " << _target;}
 	int dir = _pf->getStartDirection();
-	if (!_action.strafe && dir != -1 && dir != _unit->getDirection())
+	// the path starts straight behind a unit that can back up: it walks it backwards, no turn and no TU for one
+	_unit->setReverseMove(!_action.strafe && _pf->reverseStart(_unit, dir));
+	if (!_action.strafe && dir != -1 && dir != _unit->getDirection() && !_unit->getReverseMove())
 	{
 		_beforeFirstStep = true;
 	}
@@ -80,6 +86,7 @@ void UnitWalkBState::init()
  */
 void UnitWalkBState::deinit()
 {
+	_unit->setReverseMove(false);
 	_terrain->removeMovingUnit(_unit);
 }
 
@@ -196,8 +203,11 @@ void UnitWalkBState::think()
 		// is the step finished?
 		if (_unit->getStatus() == STATUS_STANDING)
 		{
-			// update the TU display
-			_parent->getSave()->getBattleState()->updateSoldierInfo();
+			// update the TU display (the bench may watch what its FOV changes in the selected unit's sight, AiProbe::walkFov*: reads only;
+			// BOT_WALKFOV_UI_SKIP_V1 skips the display's FOV for the bot's own walker, AiProbe::walkFovKeep - the step's own FOV below stays)
+			AiProbe::walkFovBefore(_parent, _unit);
+			_parent->getSave()->getBattleState()->updateSoldierInfo(AiProbe::walkFovKeep(_parent, _unit));
+			AiProbe::walkFovAfter(_parent, _unit);
 			// if the unit burns floor tiles, burn floor tiles as long as we're not falling
 			if (!_falling && (_unit->getSpecialAbility() == SPECAB_BURNFLOOR || _unit->getSpecialAbility() == SPECAB_BURN_AND_EXPLODE))
 			{
@@ -219,9 +229,13 @@ void UnitWalkBState::think()
 			}
 
 			int change = _parent->checkForProximityGrenades(_unit);
-			// move our personal lighting with us
-			_terrain->calculateLighting(change ? LL_ITEMS : LL_UNITS, _unit->getPosition(), 2);
+			// move our personal lighting with us (the bench may skip it for a unit that sheds no light, AiProbe::lightSkip)
+			if (change || !AiProbe::lightSkip(_terrain, _unit))
+			{
+				_terrain->calculateLighting(change ? LL_ITEMS : LL_UNITS, _unit->getPosition(), 2);
+			}
 			_terrain->calculateFOV(_unit->getPosition(), 2, false); //update unit visibility for all units which can see last and current position.
+			AiProbe::walkFovConfirm(_parent, _unit); // did the step's own FOV keep what updateSoldierInfo had added (the audit and the shadow above, reads only)
 			//tile visibility for this unit is handled later.
 			unitSpotted = (!_action.ignoreSpottedEnemies && !_falling && !_action.desperate && _parent->getPanicHandled() && _numUnitsSpotted != _unit->getUnitsSpottedThisTurn().size());
 
@@ -232,6 +246,7 @@ void UnitWalkBState::think()
 			}
 			if (unitSpotted)
 			{
+				AiProbe::walkStop(_unit, "spotted", _unit->getDestination(), _unit->getDirection(), (int)_action.getMoveType(), -1, -1, -1);
 				return cancelCurentMove();
 			}
 			// check for reaction fire
@@ -240,6 +255,7 @@ void UnitWalkBState::think()
 				if (_terrain->checkReactionFire(_unit, _action))
 				{
 					// unit got fired upon - stop walking
+					AiProbe::walkStop(_unit, "reaction", _unit->getDestination(), _unit->getDirection(), (int)_action.getMoveType(), -1, -1, -1);
 					return cancelCurentMove();
 				}
 			}
@@ -293,6 +309,8 @@ void UnitWalkBState::think()
 
 			_pf->setUnit(_unit); //TODO: remove as was done by `getTUCost`
 			PathfindingStep r = _pf->getTUCost(_unit->getPosition(), dir, _unit, 0, _action.getMoveType());
+			// OXCE-HD (armor crushTerrain): the walls and objects this step breaks (its cost has them)
+			std::vector<std::pair<Position, TilePart>> crush = _pf->getCrushStep();
 
 			int tu = r.cost.time;
 			int energy = r.cost.energy;
@@ -300,6 +318,7 @@ void UnitWalkBState::think()
 
 			if (tu == Pathfinding::INVALID_MOVE_COST)
 			{
+				AiProbe::walkStop(_unit, "invalid", destination, dir, (int)_action.getMoveType(), tu, energy, -1);
 				return cancelCurentMove();
 			}
 
@@ -309,6 +328,7 @@ void UnitWalkBState::think()
 				{
 					_action.result = "STR_NOT_ENOUGH_TIME_UNITS";
 				}
+				AiProbe::walkStop(_unit, "tu", destination, dir, (int)_action.getMoveType(), tu, energy, -1);
 				return cancelCurentMove();
 			}
 
@@ -318,19 +338,23 @@ void UnitWalkBState::think()
 				{
 					_action.result = "STR_NOT_ENOUGH_ENERGY";
 				}
+				AiProbe::walkStop(_unit, "energy", destination, dir, (int)_action.getMoveType(), tu, energy, -1);
 				return cancelCurentMove();
 			}
 
 			if (_parent->getPanicHandled() && !_falling && _parent->checkReservedTU(_unit, tu, energy) == false)
 			{
+				AiProbe::walkStop(_unit, "reserve", destination, dir, (int)_action.getMoveType(), tu, energy, -1);
 				return cancelCurentMove();
 			}
 
 			// we are looking in the wrong way, turn first (unless strafing)
 			// we are not using the turn state, because turning during walking costs no tu
-			if (dir != _unit->getDirection() && dir < Pathfinding::DIR_UP && !_pf->getStrafeMove())
+			// (backing up, the hull turns its rear to the step: a bend of the path, the straight path never turns)
+			const int face = dir < Pathfinding::DIR_UP && _unit->getReverseMove() ? (dir + 4) % 8 : dir;
+			if (face != _unit->getDirection() && dir < Pathfinding::DIR_UP && !_pf->getStrafeMove())
 			{
-				_unit->lookAt(dir);
+				_unit->lookAt(face);
 				return;
 			}
 
@@ -361,9 +385,42 @@ void UnitWalkBState::think()
 					if (!_falling && unitInMyWay && unitInMyWay != _unit)
 					{
 						_action.clearTU();
+						_unit->increaseAIWalkAbortCounter();
+						AiProbe::walkStop(_unit, "unit", destination, dir, (int)_action.getMoveType(), tu, energy, unitInMyWay->getId(), _parent->getSave());
+						AiProbe::firepointBlocked(_unit, _action, dir);
+						AiProbe::blockedStepStop(_parent->getSave(), _unit, dir);
 						return cancelCurentMove();
 					}
 				}
+			}
+			// OXCE-HD (armor crushTerrain): the step breaks what is in its way, then the way must be open
+			// (a part's death part may block again: broken in turn, a few times at most)
+			for (int round = 0; !_falling && !crush.empty(); ++round)
+			{
+				if (round == 3)
+				{
+					return cancelCurentMove();
+				}
+				_terrain->crushTerrain(crush);
+				// the building collapse pilot settles what the broken walls held (off by default), as after an explosion
+				if (CollapsePilot::settle(_parent, "crush"))
+				{
+					if (_unit->isOut())
+					{
+						return cancelCurentMove();
+					}
+					if (Tile *t = _terrain->checkForTerrainExplosions())
+					{
+						_parent->statePushFront(new ExplosionBState(_parent, t->getPosition().toVoxel() + Position(8, 8, 0), BattleActionAttack{ }, t));
+						return; // the step is asked again after the blast
+					}
+				}
+				PathfindingStep again = _pf->getTUCost(_unit->getPosition(), dir, _unit, 0, _action.getMoveType());
+				if (again.cost.time == Pathfinding::INVALID_MOVE_COST || again.pos != destination)
+				{
+					return cancelCurentMove();
+				}
+				crush = _pf->getCrushStep();
 			}
 			// now start moving
 			dir = _pf->dequeuePath();
@@ -432,6 +489,7 @@ void UnitWalkBState::think()
 			if (Options::traceAI) { Log(LOG_INFO) << "Egads! A turn reveals new units! I must pause!"; }
 			_unit->setHiding(false); // not hidden, are we...
 			_unit->abortTurn(); //revert to a standing state.
+			AiProbe::walkStop(_unit, "turnspot", _unit->getPosition(), _unit->getDirection(), (int)_action.getMoveType(), -1, -1, -1);
 			return cancelCurentMove();
 		}
 	}
@@ -458,7 +516,12 @@ void UnitWalkBState::cancel()
 void UnitWalkBState::postPathProcedures()
 {
 	_action.clearTU();
-	if (_unit->getFaction() != FACTION_PLAYER)
+	// the bot's player units take the AI branch their walk's AIModule decision was made for (POSTWALK_FIX, bench only)
+	const bool aiBranch = _unit->getFaction() != FACTION_PLAYER
+		|| AiProbe::postWalkAi(_parent->getSave(), _unit, _parent->getPanicHandled());
+	AiProbe::postWalkBegin(_parent->getSave(), _unit, _action, aiBranch);
+	bool meleePushed = false;
+	if (aiBranch)
 	{
 		int dir = _action.finalFacing;
 		if (_action.finalAction)
@@ -479,6 +542,7 @@ void UnitWalkBState::postPathProcedures()
 				action.updateTU();
 				_unit->setCharging(0);
 				_parent->statePushBack(new MeleeAttackBState(_parent, action));
+				meleePushed = true;
 			}
 		}
 		else if (_unit->isHiding())
@@ -506,8 +570,13 @@ void UnitWalkBState::postPathProcedures()
 		//todo: set the unit to aggrostate and try to find cover?
 		_unit->clearTimeUnits();
 	}
+	AiProbe::postWalkEnd(_parent->getSave(), _unit, meleePushed);
 
-	_terrain->calculateLighting(LL_UNITS, _unit->getPosition());
+	// the light of the unit at the end of its walk (the bench may skip it for a unit that sheds no light, AiProbe::lightSkip)
+	if (!AiProbe::lightSkip(_terrain, _unit))
+	{
+		_terrain->calculateLighting(LL_UNITS, _unit->getPosition());
+	}
 	_terrain->calculateFOV(_unit);
 	if (!_falling)
 		_parent->popState();
@@ -519,9 +588,9 @@ void UnitWalkBState::postPathProcedures()
 void UnitWalkBState::setNormalWalkSpeed()
 {
 	if (_unit->getFaction() == FACTION_PLAYER)
-		_parent->setStateInterval(Options::battleXcomSpeed);
+		_parent->setStateInterval(HdGentle::xcomSpeed());
 	else
-		_parent->setStateInterval(Options::battleAlienSpeed);
+		_parent->setStateInterval(HdGentle::alienSpeed());
 }
 
 

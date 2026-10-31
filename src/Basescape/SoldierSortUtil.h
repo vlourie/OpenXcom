@@ -27,6 +27,10 @@ namespace OpenXcom
 
 typedef int (*getStatFn_t)(const Game*, const Soldier*);
 
+class Surface;
+/// OXCE-HD: the soldier's race picture from the soldier info screen, for the soldier lists.
+Surface *soldierFlag(Mod *mod, const Soldier *soldier);
+
 struct SortFunctor
 {
 	Game *_game;
@@ -34,7 +38,7 @@ struct SortFunctor
 	SortFunctor(Game *game, getStatFn_t getStatFn) : _game(game), _getStatFn(getStatFn) { }
 	bool operator()(Soldier *a, Soldier *b)
 	{
-		bool ret = _getStatFn(_game, a) < _getStatFn(_game, b);
+		bool ret = _getStatFn(_game, a) > _getStatFn(_game, b);
 		return ret;
 	}
 	getStatFn_t getGetter()
@@ -103,6 +107,7 @@ GET_SOLDIER_STAT_FN(kills, Kills)
 GET_SOLDIER_STAT_FN(woundRecovery, WoundRecovery)
 GET_SOLDIER_STAT_FN(manaMissing, ManaMissing)
 GET_SOLDIER_STAT_FN(idleDays, IdleDays)
+GET_SOLDIER_STAT_FN(currentMana, CurrentMana)
 #undef GET_SOLDIER_STAT_FN
 
 }

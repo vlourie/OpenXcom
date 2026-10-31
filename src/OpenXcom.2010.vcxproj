@@ -128,7 +128,7 @@
     <ClCompile>
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>$(ProjectDir)..\deps\include;$(ProjectDir)..\deps\include\SDL;$(ProjectDir)..\libs\rapidyaml\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_DEPRECATE;_SCL_SECURE_NO_WARNINGS;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_CRT_SECURE_NO_DEPRECATE;_SCL_SECURE_NO_WARNINGS;_DEBUG;_CONSOLE;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <WarningLevel>Level1</WarningLevel>
@@ -350,6 +350,7 @@
     <ClCompile Include="..\libs\rapidyaml\c4\yml\version.cpp" />
     <ClCompile Include="Basescape\BaseInfoState.cpp" />
     <ClCompile Include="Basescape\BasescapeState.cpp" />
+    <ClCompile Include="Basescape\BaseSwitch.cpp" />
     <ClCompile Include="Basescape\BaseView.cpp" />
     <ClCompile Include="Basescape\BuildFacilitiesState.cpp" />
     <ClCompile Include="Basescape\CraftArmorState.cpp" />
@@ -368,6 +369,7 @@
     <ClCompile Include="Basescape\GlobalResearchDiaryState.cpp" />
     <ClCompile Include="Basescape\GlobalResearchState.cpp" />
     <ClCompile Include="Basescape\ItemLocationsState.cpp" />
+    <ClCompile Include="Basescape\ItemCountTooltip.cpp" />
     <ClCompile Include="Basescape\ManageAlienContainmentState.cpp" />
     <ClCompile Include="Basescape\ManufactureDependenciesTreeState.cpp" />
     <ClCompile Include="Basescape\ManufactureState.cpp" />
@@ -401,6 +403,7 @@
     <ClCompile Include="Basescape\SoldierTransformationListState.cpp" />
     <ClCompile Include="Basescape\SoldierTransformationState.cpp" />
     <ClCompile Include="Basescape\SoldierTransformState.cpp" />
+    <ClCompile Include="Basescape\SoldierVoiceState.cpp" />
     <ClCompile Include="Basescape\StoresState.cpp" />
     <ClCompile Include="Basescape\TechTreeSelectState.cpp" />
     <ClCompile Include="Basescape\TechTreeViewerState.cpp" />
@@ -468,6 +471,7 @@
     <ClCompile Include="Battlescape\UnitDieBState.cpp" />
     <ClCompile Include="Battlescape\UnitPanicBState.cpp" />
     <ClCompile Include="Battlescape\UnitSprite.cpp" />
+    <ClCompile Include="Battlescape\UnitTeleportingState.cpp" />
     <ClCompile Include="Battlescape\UnitTurnBState.cpp" />
     <ClCompile Include="Battlescape\UnitWalkBState.cpp" />
     <ClCompile Include="Battlescape\Particle.cpp" />
@@ -640,6 +644,7 @@
     <ClCompile Include="Mod\ExtraSprites.cpp" />
     <ClCompile Include="Mod\ExtraStrings.cpp" />
     <ClCompile Include="Mod\RuleMissionScript.cpp" />
+    <ClCompile Include="Mod\RuleVoiceSet.cpp" />
     <ClCompile Include="Mod\RuleWeaponSet.cpp" />
     <ClCompile Include="Mod\Texture.cpp" />
     <ClCompile Include="Mod\MapScript.cpp" />
@@ -827,6 +832,7 @@
     <ClInclude Include="..\libs\rapidyaml\ryml_std.hpp" />
     <ClInclude Include="Basescape\BaseInfoState.h" />
     <ClInclude Include="Basescape\BasescapeState.h" />
+    <ClInclude Include="Basescape\BaseSwitch.h" />
     <ClInclude Include="Basescape\BaseView.h" />
     <ClInclude Include="Basescape\BuildFacilitiesState.h" />
     <ClInclude Include="Basescape\CraftArmorState.h" />
@@ -844,6 +850,9 @@
     <ClInclude Include="Basescape\GlobalManufactureState.h" />
     <ClInclude Include="Basescape\GlobalResearchDiaryState.h" />
     <ClInclude Include="Basescape\GlobalResearchState.h" />
+    <ClInclude Include="Basescape\HighlightLowManaSoldiersMixin.h" />
+    <ClInclude Include="Basescape\ItemCountTooltip.h" />
+    <ClInclude Include="Basescape\ItemCountTooltipMixin.h" />
     <ClInclude Include="Basescape\ItemLocationsState.h" />
     <ClInclude Include="Basescape\ManufactureDependenciesTreeState.h" />
     <ClInclude Include="Basescape\NewManufactureListState.h" />
@@ -878,6 +887,8 @@
     <ClInclude Include="Basescape\SoldierTransformationListState.h" />
     <ClInclude Include="Basescape\SoldierTransformationState.h" />
     <ClInclude Include="Basescape\SoldierTransformState.h" />
+    <ClInclude Include="Basescape\SortSoldiersMixin.h" />
+    <ClInclude Include="Basescape\SoldierVoiceState.h" />
     <ClInclude Include="Basescape\StoresState.h" />
     <ClInclude Include="Basescape\TechTreeSelectState.h" />
     <ClInclude Include="Basescape\TechTreeViewerState.h" />
@@ -945,6 +956,7 @@
     <ClInclude Include="Battlescape\UnitDieBState.h" />
     <ClInclude Include="Battlescape\UnitPanicBState.h" />
     <ClInclude Include="Battlescape\UnitSprite.h" />
+    <ClInclude Include="Battlescape\UnitTeleportingState.h" />
     <ClInclude Include="Battlescape\UnitTurnBState.h" />
     <ClInclude Include="Battlescape\UnitWalkBState.h" />
     <ClInclude Include="Battlescape\Particle.h" />
@@ -1129,6 +1141,7 @@
     <ClInclude Include="Mod\RuleStatBonus.h" />
     <ClInclude Include="Mod\RuleCommendations.h" />
     <ClInclude Include="Mod\RuleConverter.h" />
+    <ClInclude Include="Mod\RuleVoiceSet.h" />
     <ClInclude Include="Mod\RuleWeaponSet.h" />
     <ClInclude Include="resource.h" />
     <ClInclude Include="Mod\ArticleDefinition.h" />

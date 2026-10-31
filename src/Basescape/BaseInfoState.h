@@ -66,6 +66,8 @@ public:
 	~BaseInfoState();
 	/// Updates the base stats.
 	void init() override;
+	/// Shows another base (a screen above it switched bases).
+	void setBase(Base *base);
 	/// Handler for changing the text on the Name edit.
 	void edtBaseChange(Action *action);
 	/// Handler for clicking the mini base view.

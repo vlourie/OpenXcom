@@ -17,6 +17,8 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "Frame.h"
+#include <algorithm>
+#include "../Engine/HdUi.h"
 #include "../Engine/Palette.h"
 
 namespace OpenXcom
@@ -117,6 +119,31 @@ void Frame::setThickness(int thickness)
  * always aligned to the top-left corner of the screen
  * and cropped to fit the inside area.
  */
+/**
+ * The HD interface's frame: the modern skin draws a rounded outline (and the
+ * fill, if any); otherwise the classic bevel, crisp.
+ */
+void Frame::hdMirror()
+{
+	if (!HdUi::skin())
+	{
+		Surface::hdMirrorNearest();
+		return;
+	}
+	HdUi &ui = HdUi::instance();
+	const SDL_Color *pal = HdUi::paletteOf(this);
+	const int k = HdUi::scale();
+	const int mul = _contrast ? 2 : 1;
+	const float x0 = (float)getX() * k, y0 = (float)getY() * k, x1 = (float)(getX() + getWidth()) * k, y1 = (float)(getY() + getHeight()) * k;
+	const float r = 1.5f * k;
+	const float width = std::max(1.0f, std::min((float)_thickness, 3.0f) * k * 0.5f);
+	if (_bg != 0)
+	{
+		ui.fillRoundRect(x0, y0, x1, y1, r, HdUi::rgba(pal[_bg]), HdUi::rgba(pal[_bg]));
+	}
+	ui.strokeRoundRect(x0, y0, x1, y1, r, width, HdUi::rgba(pal[(Uint8)(_color + 1 * mul)], 220));
+}
+
 void Frame::draw()
 {
 	Surface::draw();

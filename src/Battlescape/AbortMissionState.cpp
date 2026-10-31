@@ -120,6 +120,7 @@ AbortMissionState::AbortMissionState(SavedBattleGame *battleGame, BattlescapeSta
 	// Set up objects
 	_window->setHighContrast(true);
 	_window->setBackground(_game->getMod()->getSurface("TAC00.SCR"));
+	_window->setInterfaceName("battlescape");
 
 	_txtInEntrance->setBig();
 	_txtInEntrance->setHighContrast(true);

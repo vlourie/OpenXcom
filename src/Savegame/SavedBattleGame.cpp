@@ -40,6 +40,8 @@
 #include "../Engine/Sound.h"
 #include "../Mod/RuleInventory.h"
 #include "../Battlescape/AIModule.h"
+#include "../Battlescape/AiCoverMap.h"
+#include "../Battlescape/AiProbe.h"
 #include "../Engine/RNG.h"
 #include "../Engine/Options.h"
 #include "../Engine/Logger.h"
@@ -92,6 +94,9 @@ SavedBattleGame::SavedBattleGame(Mod *rule, Language *lang, bool isPreview) :
  */
 SavedBattleGame::~SavedBattleGame()
 {
+#ifdef OXCE_AI_DEV
+	AiCoverMap::reset(this);
+#endif
 	for (auto* mds : _mapDataSets)
 	{
 		mds->unloadData();
@@ -419,6 +424,54 @@ void SavedBattleGame::load(const YAML::YamlNodeReader& node, Mod *mod, SavedGame
 	reader.tryRead("togglePersonalLight", _togglePersonalLight);
 	reader.tryRead("toggleNightVision", _toggleNightVision);
 	reader.tryRead("toggleBrightness", _toggleBrightness);
+	// building collapse pilot, off by default: checked against the build in CollapsePilot
+	if (Options::oxceCollapse)
+	{
+		if (const auto& cp = reader["collapsePilot"])
+		{
+			// a damaged key must not stop the battle from loading: an entry that can't be read
+			// stays empty and CollapsePilot rejects it, a key that can't be read at all is one such entry
+			_collapsePilotVersion = -1;
+			try
+			{
+				if (cp.isMap())
+				{
+					cp.tryRead("version", _collapsePilotVersion);
+					const auto& buildings = cp["buildings"];
+					if (buildings && buildings.isSeq())
+					{
+						for (const auto& b : buildings.children())
+						{
+							CollapsePilotEntry e = { std::string(), Position(-1, -1, -1), std::string() };
+							try
+							{
+								if (b.isMap())
+								{
+									b.tryRead("model", e.model);
+									b.tryRead("at", e.at);
+									b.tryRead("sig", e.sig);
+								}
+							}
+							catch (const YAML::Exception&)
+							{
+								e = { std::string(), Position(-1, -1, -1), std::string() };
+							}
+							_collapsePilot.push_back(e);
+						}
+					}
+				}
+			}
+			catch (const YAML::Exception&)
+			{
+				_collapsePilotVersion = -1;
+				_collapsePilot.clear();
+			}
+			if (_collapsePilotVersion < 0 && _collapsePilot.empty())
+			{
+				_collapsePilot.push_back({ std::string(), Position(-1, -1, -1), std::string() });
+			}
+		}
+	}
 	_scriptValues.load(reader, _rule->getScriptGlobal());
 
 	// Sanity checks
@@ -447,9 +500,11 @@ void SavedBattleGame::load(const YAML::YamlNodeReader& node, Mod *mod, SavedGame
  */
 void SavedBattleGame::loadMapResources(Mod *mod)
 {
+	// HD render: a loaded battle picks up the HD scale option before its terrain loads
+	mod->refreshHdScale();
 	for (auto* mds : _mapDataSets)
 	{
-		mds->loadData(mod->getMCDPatch(mds->getName()));
+		mds->loadData(mod->getMCDPatch(mds->getName()), true, mod->getHdScale());
 	}
 
 	int mdsID, mdID;
@@ -618,6 +673,23 @@ void SavedBattleGame::save(YAML::YamlNodeWriter writer) const
 	writer.write("togglePersonalLight", _togglePersonalLight);
 	writer.write("toggleNightVision", _toggleNightVision);
 	writer.write("toggleBrightness", _toggleBrightness);
+	if (Options::oxceCollapse && _collapsePilotVersion > 0 && !_collapsePilot.empty())
+	{
+		auto cp = writer["collapsePilot"];
+		cp.setAsMap();
+		cp.write("version", _collapsePilotVersion);
+		auto buildings = cp["buildings"];
+		buildings.setAsSeq();
+		for (const auto& b : _collapsePilot)
+		{
+			auto w = buildings.write();
+			w.setAsMap();
+			w.write("model", b.model);
+			w.write("at", b.at);
+			if (!b.sig.empty())
+				w.write("sig", b.sig);
+		}
+	}
 	_scriptValues.save(writer, _rule->getScriptGlobal());
 }
 
@@ -1478,6 +1550,7 @@ const RuleCraftDeployment& SavedBattleGame::getCustomDeployment(const RuleCraft*
  */
 void SavedBattleGame::endTurn()
 {
+	AiProbe::turnStage(this, "endturn");
 	// reset turret direction for all hostile and neutral units (as it may have been changed during reaction fire)
 	for (auto* bu : _units)
 	{
@@ -1519,6 +1592,7 @@ void SavedBattleGame::endTurn()
 	else if (_side == FACTION_NEUTRAL)
 	{
 		prepareNewTurn();
+		AiProbe::turnStage(this, "envi");
 		_turn++;
 		_side = FACTION_PLAYER;
 		if (_lastSelectedUnit && _lastSelectedUnit->isSelectable(FACTION_PLAYER, false, false))
@@ -1610,8 +1684,10 @@ void SavedBattleGame::endTurn()
 		}
 	}
 
+	AiProbe::turnStage(this, "rest");
 	//scripts update
 	newTurnUpdateScripts();
+	AiProbe::turnStage(this, "script");
 
 	//fov check will be done by `BattlescapeGame::endTurn`
 
@@ -2342,7 +2418,22 @@ Node *SavedBattleGame::getPatrolNode(bool scout, BattleUnit *unit, Node *fromNod
 			&& (!scout || n != fromNode)																// scouts push forward
 			&& n->getPosition().x > 0 && n->getPosition().y > 0)
 		{
-			if (!preferred
+			if (AiProbe::oxceFixes())
+			{
+				// O7 (BetterAI): the rank test above came to nothing - its case is inside the last one; a node of the unit's
+				// own rank goes first, the higher flags among equals
+				auto ownRank = [unit](const Node *node)
+				{
+					return unit->getRankInt() >= 0 && node->getRank() == Node::nodeRank[unit->getRankInt()][0];
+				};
+				if (!preferred
+					|| (ownRank(n) && !ownRank(preferred))
+					|| (ownRank(n) == ownRank(preferred) && preferred->getFlags() < n->getFlags()))
+				{
+					preferred = n;
+				}
+			}
+			else if (!preferred
 				|| (unit->getRankInt() >=0 &&
 					preferred->getRank() == Node::nodeRank[unit->getRankInt()][0] &&
 					preferred->getFlags() < n->getFlags())
@@ -2683,8 +2774,7 @@ bool SavedBattleGame::eyesOnTarget(UnitFaction faction, BattleUnit* unit)
 	{
 		if (bu->getFaction() != faction) continue;
 
-		auto* vis = bu->getVisibleUnits();
-		if (std::find(vis->begin(), vis->end(), unit) != vis->end()) return true;
+		if (AiProbe::upstreamSees(bu, unit, 4)) return true; // UPSTREAM_VIS (bench, upstream 613ec4a28)
 		// aliens know the location of all XCom agents sighted by all other aliens due to sharing locations over their space-walkie-talkies
 	}
 

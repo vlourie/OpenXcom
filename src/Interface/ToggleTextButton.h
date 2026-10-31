@@ -38,6 +38,8 @@ public:
 	void mousePress(Action *action, State *state) override;
 	void setPressed(bool pressed);
 	bool getPressed() const { return _isPressed; }
+	/// HD interface, modern skin: lit when pressed.
+	void hdMirror() override;
 	void setColor(Uint8 color) override;
 	void setInvertColor(Uint8 color);
 	ToggleTextButton(int width, int height, int x, int y);

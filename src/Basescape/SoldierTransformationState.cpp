@@ -17,6 +17,8 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "SoldierTransformationState.h"
+#include "ItemCountTooltipMixin.h"
+#include "TrainingBlocksState.h"
 #include <sstream>
 #include <algorithm>
 #include "../Engine/Action.h"
@@ -33,6 +35,7 @@
 #include "../Mod/RuleSoldier.h"
 #include "../Mod/RuleSoldierBonus.h"
 #include "../Mod/RuleSoldierTransformation.h"
+#include "../Mod/RuleItem.h"
 #include "../Savegame/Base.h"
 #include "../Savegame/ItemContainer.h"
 #include "../Savegame/SavedGame.h"
@@ -71,6 +74,7 @@ SoldierTransformationState::SoldierTransformationState(RuleSoldierTransformation
 	_lstRequiredItems = new TextList(270, 32, 30, 88);
 
 	_lstStatChanges = new TextList(288, 40, 16, 130);
+	_txtBlocks = new Text(288, 9, 16, 120);
 
 	// Set palette
 	setInterface("soldierTransformation");
@@ -94,6 +98,7 @@ SoldierTransformationState::SoldierTransformationState(RuleSoldierTransformation
 	add(_lstRequiredItems, "list1", "soldierTransformation");
 
 	add(_lstStatChanges, "list2", "soldierTransformation");
+	add(_txtBlocks, "text", "soldierTransformation");
 
 	centerAllSurfaces();
 
@@ -140,6 +145,9 @@ SoldierTransformationState::SoldierTransformationState(RuleSoldierTransformation
 	_txtUnitAvailableColumn->setWordWrap(true);
 
 	_lstRequiredItems->setColumns(3, 140, 75, 55);
+	_lstRequiredItems->setBackground(_window);
+	_lstRequiredItems->setSelectable(true);
+	ItemCountTooltipMixin::BindToSurface(_lstRequiredItems);
 
 	if (_game->getMod()->isManaFeatureEnabled())
 	{
@@ -151,6 +159,8 @@ SoldierTransformationState::SoldierTransformationState(RuleSoldierTransformation
 	}
 	_lstStatChanges->setAlign(ALIGN_RIGHT);
 	_lstStatChanges->setAlign(ALIGN_LEFT, 0);
+
+	_txtBlocks->onMouseClick((ActionHandler)&SoldierTransformationState::txtBlocksClick);
 
 	initTransformationData();
 }
@@ -176,6 +186,75 @@ std::string SoldierTransformationState::formatStat(int stat, bool plus, bool hid
 	if (plus && stat > 0) ss << '+';
 	ss << stat << Unicode::TOK_COLOR_FLIP;
 	return ss.str();
+}
+
+/**
+ * Fills the line of training paths the transformation closes: the ones the soldier
+ * (of the type it leaves) could still take that forbid this one done before.
+ * Not yet researched ones are "?" when the tech tree viewer is off.
+ */
+void SoldierTransformationState::initBlocks()
+{
+	_blocks.clear();
+	_txtBlocks->setVisible(false);
+	if (!Options::oxceHdTrainingBlocks || !Mod::isEmptyRuleName(_transformationRule->getProducedItem()))
+		return;
+
+	const Mod *mod = _game->getMod();
+	const SavedGame *save = _game->getSavedGame();
+	const auto &history = _sourceSoldier->getPreviousTransformations();
+	const std::string &name = _transformationRule->getName();
+	const std::string &type = _transformationRule->getProducedSoldierType().empty() ? _sourceSoldier->getRules()->getType() : _transformationRule->getProducedSoldierType();
+	int unknown = 0;
+	for (const auto &id : mod->getSoldierTransformationList())
+	{
+		const RuleSoldierTransformation *rule = mod->getSoldierTransformation(id);
+		if (!rule || rule == _transformationRule)
+			continue;
+		const auto &forbidden = rule->getForbiddenPreviousTransformations();
+		if (std::find(forbidden.begin(), forbidden.end(), name) == forbidden.end())
+			continue;
+		const auto &types = rule->getAllowedSoldierTypes();
+		if (std::find(types.begin(), types.end(), type) == types.end())
+			continue;
+		// already closed by what the soldier went through
+		if (std::any_of(forbidden.begin(), forbidden.end(), [&](const std::string &f) { return history.find(f) != history.end(); }))
+			continue;
+		if (Options::oxceDisableTechTreeViewer && !save->isResearched(rule->getRequiredResearch()))
+			unknown++;
+		else
+			_blocks.push_back(tr(rule->getName()));
+	}
+	if (unknown > 0)
+		_blocks.push_back(unknown > 1 ? tr("STR_TRAINING_BLOCKS_UNKNOWN").arg(unknown).c_str() : "?");
+	if (_blocks.empty())
+		return;
+
+	// as many names as fit the line, the rest counted
+	size_t shown = _blocks.size();
+	for (;;)
+	{
+		std::string list;
+		for (size_t i = 0; i < shown; ++i)
+			list += (i ? ", " : "") + _blocks[i];
+		if (shown < _blocks.size())
+			list += tr("STR_TRAINING_BLOCKS_MORE").arg((int)(_blocks.size() - shown)).c_str();
+		_txtBlocks->setText(tr("STR_TRAINING_BLOCKS").arg(list));
+		if (shown <= 1 || _txtBlocks->getTextWidth(0) <= _txtBlocks->getWidth())
+			break;
+		--shown;
+	}
+	_txtBlocks->setVisible(true);
+}
+
+/**
+ * Lists all the paths the transformation closes.
+ * @param action Pointer to an action.
+ */
+void SoldierTransformationState::txtBlocksClick(Action *)
+{
+	if (!_blocks.empty())
+		_game->pushState(new TrainingBlocksState(tr(_transformationRule->getName()), _blocks));
 }
 
 /**
@@ -231,6 +310,8 @@ void SoldierTransformationState::initTransformationData()
 
 	_btnStart->setVisible(transformationPossible);
 
+	initBlocks();
+
 	if (!Mod::isEmptyRuleName(_transformationRule->getProducedItem()))
 	{
 		_txtRecoveryTime->setVisible(false);
@@ -243,7 +324,7 @@ void SoldierTransformationState::initTransformationData()
 	UnitStats changedStatsMin = _sourceSoldier->calculateStatChanges(_game->getMod(), _transformationRule, _sourceSoldier, 1, _sourceSoldier->getRules());
 	UnitStats changedStatsMax = _sourceSoldier->calculateStatChanges(_game->getMod(), _transformationRule, _sourceSoldier, 2, _sourceSoldier->getRules());
 	UnitStats bonusStats;
-	auto* bonusRule = _game->getMod()->getSoldierBonus(_transformationRule->getSoldierBonusType(), false);
+	auto* bonusRule = _transformationRule->getSoldierBonus();
 	if (bonusRule)
 	{
 		bonusStats += *bonusRule->getStats();
@@ -618,6 +699,34 @@ void SoldierTransformationState::btnRightArrowClick(Action *action)
 
 	_sourceSoldier = *iter;
 	initTransformationData();
+}
+
+/**
+ * Gets the item rule for the currently selected row in the required items list,
+ * so the per-base breakdown tooltip can be shown.
+ */
+const RuleItem* SoldierTransformationState::GetItemForTooltip()
+{
+	auto selRow = _lstRequiredItems->getSelectedRow();
+	if (selRow < 0)
+		return nullptr;
+
+	int i = 0;
+	for (auto& requiredItem : _transformationRule->getRequiredItems())
+	{
+		if (i == selRow)
+		{
+			return _game->getMod()->getItem(requiredItem.first);
+		}
+		++i;
+	}
+
+	return nullptr;
+}
+
+const Base* SoldierTransformationState::GetBase()
+{
+	return _base;
 }
 
 }

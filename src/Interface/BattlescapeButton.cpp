@@ -17,6 +17,8 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "BattlescapeButton.h"
+#include "../Engine/HdBattleHud.h"
+#include "../Engine/HdUi.h"
 #include "../Engine/Action.h"
 
 namespace OpenXcom
@@ -29,7 +31,7 @@ namespace OpenXcom
  * @param x X position in pixels.
  * @param y Y position in pixels.
  */
-BattlescapeButton::BattlescapeButton(int width, int height, int x, int y) : InteractiveSurface(width, height, x, y), _color(0), _group(0), _inverted(false), _toggleMode(INVERT_NONE), _altSurface(0)
+BattlescapeButton::BattlescapeButton(int width, int height, int x, int y) : InteractiveSurface(width, height, x, y), _color(0), _group(0), _inverted(false), _toggleMode(INVERT_NONE), _altSurface(0), _hdIcon(0), _hdLit(false), _hdTheme(false)
 {
 }
 
@@ -92,7 +94,26 @@ void BattlescapeButton::mousePress(Action *action, State *state)
 	{
 		_inverted = true;
 	}
+	if (_hdIcon && isButtonHandled(action->getDetails()->button.button))
+	{
+		HdBattleHud::notePress(this);
+	}
 	InteractiveSurface::mousePress(action, state);
+}
+
+/**
+ * HD interface, modern skin: the key on the battle panel goes down with its hotkey, as if clicked.
+ * @param action Pointer to an action.
+ * @param state State that the action handlers belong to.
+ */
+void BattlescapeButton::keyboardPress(Action *action, State *state)
+{
+	const SDL_keysym &key = action->getDetails()->key.keysym;
+	if (_hdIcon && key.sym != SDLK_UNKNOWN && _keyPress.find(key.sym) != _keyPress.end() && !(key.mod & (KMOD_CTRL | KMOD_ALT | KMOD_SHIFT)))
+	{
+		HdBattleHud::notePress(this);
+	}
+	InteractiveSurface::keyboardPress(action, state);
 }
 
 /*
@@ -206,6 +227,13 @@ void BattlescapeButton::initSurfaces(Surface* custom)
  */
 void BattlescapeButton::blit(SDL_Surface *surface)
 {
+	// HD interface, modern skin: the battle panel draws the button as a tile with its pictogram, in
+	// place of the copied piece of the panel's picture; the classic layer gets the pixels as ever
+	const bool hud = _hdIcon && HdUi::isScreen(surface) && HdBattleHud::on();
+	// a button of a window's picture in the metal of the theme: the picture's pixels are drawn recast (below), not as they are
+	const bool themed = !hud && _hdTheme && HdUi::isScreen(surface) && HdUi::windowTheme();
+	Surface *shown = _inverted ? _altSurface : this;
+	shown->setHdKind(hud || themed ? HD_SKIP : HD_NORMAL);
 	if (_inverted)
 	{
 		_altSurface->blit(surface);
@@ -213,6 +241,25 @@ void BattlescapeButton::blit(SDL_Surface *surface)
 	else
 	{
 		Surface::blit(surface);
+	}
+	if (themed && _visible && !_hidden)
+	{
+		HdUi::instance().drawSurfaceThemed(shown, getX(), getY(), HdUi::mode() >= 2);
+	}
+	if (hud && _visible && !_hidden)
+	{
+		const char *hotkey = nullptr;
+		for (const auto &key : _keyPress)
+		{
+			if (key.first > SDLK_UNKNOWN && key.first < SDLK_LAST)
+			{
+				hotkey = SDL_GetKeyName(key.first);
+				break;
+			}
+		}
+		const bool held = isButtonPressed(SDL_BUTTON_LEFT) || (isButtonPressed(SDL_BUTTON_RIGHT) && isButtonHandled(SDL_BUTTON_RIGHT));
+		HdBattleHud::drawButton(this, getX(), getY(), getWidth(), getHeight(), (HdBattleHud::Icon)_hdIcon,
+			_inverted || _hdLit, held, _color, HdUi::paletteOf(this), hotkey);
 	}
 }
 

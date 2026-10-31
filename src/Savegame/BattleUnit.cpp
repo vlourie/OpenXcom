@@ -31,6 +31,7 @@
 #include "../Battlescape/Pathfinding.h"
 #include "../Battlescape/BattlescapeGame.h"
 #include "../Battlescape/AIModule.h"
+#include "../Battlescape/AiProbe.h"
 #include "../Battlescape/Inventory.h"
 #include "../Battlescape/TileEngine.h"
 #include "../Battlescape/ExplosionBState.h"
@@ -44,12 +45,14 @@
 #include "../Mod/RuleSoldier.h"
 #include "../Mod/RuleSoldierBonus.h"
 #include "../Mod/RuleStartingCondition.h"
+#include "../Mod/RuleVoiceSet.h"
 #include "Soldier.h"
 #include "Tile.h"
 #include "SavedGame.h"
 #include "SavedBattleGame.h"
 #include "../Engine/ShaderDraw.h"
 #include "BattleUnitStatistics.h"
+#include "../Battlescape/KnowledgeArmor.h"
 #include "../fmath.h"
 #include "../fallthrough.h"
 
@@ -97,7 +100,12 @@ BattleUnit::BattleUnit(const Mod *mod, Soldier *soldier, int depth, const RuleSt
 	default:             rankbonus =  0; break;
 	}
 
-	_value = soldier->getRules()->getValue() + soldier->getMissions() + rankbonus;
+	_valueKilled = soldier->getRules()->getValue() + soldier->getMissions() + rankbonus;
+	_valueCaptured = 0;
+	_valueCapturedResearched = 0;
+	_valueCivilian = 0;
+	_valueCivilianKilledByXcom = 0;
+	_valueVIP = 0;
 
 
 	for (int i = 0; i < BODYPART_MAX; ++i)
@@ -307,6 +315,16 @@ void BattleUnit::prepareUnitResponseSounds(const Mod *mod)
 	if (!mod->getEnableUnitResponseSounds())
 		return;
 
+	if (_geoscapeSoldier && !_geoscapeSoldier->getVoiceSetType().empty())
+	{
+		const auto* vs = mod->getVoiceSet(_geoscapeSoldier->getVoiceSetType(), false);
+		if (vs)
+		{
+			setUnitAndSoldierVoiceSet(vs);
+			return;
+		}
+	}
+
 	// custom sounds by soldier name
 	bool custom = false;
 	if (mod->getSelectUnitSounds().find(_name) != mod->getSelectUnitSounds().end())
@@ -336,52 +354,89 @@ void BattleUnit::prepareUnitResponseSounds(const Mod *mod)
 	// lower priority: soldier type / unit type
 	if (_geoscapeSoldier)
 	{
-		auto soldierRules = _geoscapeSoldier->getRules();
-		if (_gender == GENDER_MALE)
+		const auto* soldierRules = _geoscapeSoldier->getRules();
+		const auto* soldierTypeVoiceSet = soldierRules->getRandomVoiceSet(_geoscapeSoldier);
+		if (soldierTypeVoiceSet)
 		{
-			_selectUnitSound = soldierRules->getMaleSelectUnitSounds();
-			_startMovingSound = soldierRules->getMaleStartMovingSounds();
-			_selectWeaponSound = soldierRules->getMaleSelectWeaponSounds();
-			_annoyedSound = soldierRules->getMaleAnnoyedSounds();
+			setUnitAndSoldierVoiceSet(soldierTypeVoiceSet);
+		}
+		else if (_gender == GENDER_MALE)
+		{
+			const auto* voiceSetMale = soldierRules->getRandomVoiceSetMale();
+			if (voiceSetMale)
+			{
+				setUnitAndSoldierVoiceSet(voiceSetMale);
+			}
+			else
+			{
+				_selectUnitSound = soldierRules->getMaleSelectUnitSounds();
+				_startMovingSound = soldierRules->getMaleStartMovingSounds();
+				_selectWeaponSound = soldierRules->getMaleSelectWeaponSounds();
+				_annoyedSound = soldierRules->getMaleAnnoyedSounds();
+			}
 		}
 		else
 		{
-			_selectUnitSound = soldierRules->getFemaleSelectUnitSounds();
-			_startMovingSound = soldierRules->getFemaleStartMovingSounds();
-			_selectWeaponSound = soldierRules->getFemaleSelectWeaponSounds();
-			_annoyedSound = soldierRules->getFemaleAnnoyedSounds();
+			const auto* voiceSetFemale = soldierRules->getRandomVoiceSetFemale();
+			if (voiceSetFemale)
+			{
+				setUnitAndSoldierVoiceSet(voiceSetFemale);
+			}
+			else
+			{
+				_selectUnitSound = soldierRules->getFemaleSelectUnitSounds();
+				_startMovingSound = soldierRules->getFemaleStartMovingSounds();
+				_selectWeaponSound = soldierRules->getFemaleSelectWeaponSounds();
+				_annoyedSound = soldierRules->getFemaleAnnoyedSounds();
+			}
 		}
 	}
 	else if (_unitRules)
 	{
-		_selectUnitSound = _unitRules->getSelectUnitSounds();
-		_startMovingSound = _unitRules->getStartMovingSounds();
-		_selectWeaponSound = _unitRules->getSelectWeaponSounds();
-		_annoyedSound = _unitRules->getAnnoyedSounds();
+		const auto* unitVoiceSet = _unitRules->getRandomVoiceSet();
+		if (unitVoiceSet)
+		{
+			setUnitAndSoldierVoiceSet(unitVoiceSet);
+		}
+		else
+		{
+			_selectUnitSound = _unitRules->getSelectUnitSounds();
+			_startMovingSound = _unitRules->getStartMovingSounds();
+			_selectWeaponSound = _unitRules->getSelectWeaponSounds();
+			_annoyedSound = _unitRules->getAnnoyedSounds();
+		}
 	}
 
 	// higher priority: armor
-	if (_gender == GENDER_MALE)
+	const auto* armorVoiceSet = _armor->getRandomVoiceSet(_geoscapeSoldier);
+	if (armorVoiceSet)
 	{
-		if (!_armor->getMaleSelectUnitSounds().empty())
-			_selectUnitSound = _armor->getMaleSelectUnitSounds();
-		if (!_armor->getMaleStartMovingSounds().empty())
-			_startMovingSound = _armor->getMaleStartMovingSounds();
-		if (!_armor->getMaleSelectWeaponSounds().empty())
-			_selectWeaponSound = _armor->getMaleSelectWeaponSounds();
-		if (!_armor->getMaleAnnoyedSounds().empty())
-			_annoyedSound = _armor->getMaleAnnoyedSounds();
+		setUnitAndSoldierVoiceSet(armorVoiceSet);
 	}
 	else
 	{
-		if (!_armor->getFemaleSelectUnitSounds().empty())
-			_selectUnitSound = _armor->getFemaleSelectUnitSounds();
-		if (!_armor->getFemaleStartMovingSounds().empty())
-			_startMovingSound = _armor->getFemaleStartMovingSounds();
-		if (!_armor->getFemaleSelectWeaponSounds().empty())
-			_selectWeaponSound = _armor->getFemaleSelectWeaponSounds();
-		if (!_armor->getFemaleAnnoyedSounds().empty())
-			_annoyedSound = _armor->getFemaleAnnoyedSounds();
+		if (_gender == GENDER_MALE)
+		{
+			if (!_armor->getMaleSelectUnitSounds().empty())
+				_selectUnitSound = _armor->getMaleSelectUnitSounds();
+			if (!_armor->getMaleStartMovingSounds().empty())
+				_startMovingSound = _armor->getMaleStartMovingSounds();
+			if (!_armor->getMaleSelectWeaponSounds().empty())
+				_selectWeaponSound = _armor->getMaleSelectWeaponSounds();
+			if (!_armor->getMaleAnnoyedSounds().empty())
+				_annoyedSound = _armor->getMaleAnnoyedSounds();
+		}
+		else
+		{
+			if (!_armor->getFemaleSelectUnitSounds().empty())
+				_selectUnitSound = _armor->getFemaleSelectUnitSounds();
+			if (!_armor->getFemaleStartMovingSounds().empty())
+				_startMovingSound = _armor->getFemaleStartMovingSounds();
+			if (!_armor->getFemaleSelectWeaponSounds().empty())
+				_selectWeaponSound = _armor->getFemaleSelectWeaponSounds();
+			if (!_armor->getFemaleAnnoyedSounds().empty())
+				_annoyedSound = _armor->getFemaleAnnoyedSounds();
+		}
 	}
 }
 
@@ -462,7 +517,12 @@ BattleUnit::BattleUnit(const Mod *mod, const Unit *unit, UnitFaction faction, in
 		_vip = true;
 	}
 
-	_value = unit->getValue();
+	_valueKilled = unit->getValueKilled();
+	_valueCaptured = unit->getValueCaptured();
+	_valueCapturedResearched = unit->getValueCapturedResearched();
+	_valueCivilian = unit->getValueCivilian();
+	_valueCivilianKilledByXcom = unit->getValueCivilianKilledByXcom();
+	_valueVIP = unit->getValueVIP();
 
 
 	for (int i = 0; i < BODYPART_MAX; ++i)
@@ -599,6 +659,15 @@ void BattleUnit::load(const YAML::YamlNodeReader& node, const Mod *mod, const Sc
 {
 	const auto& reader = node.useIndex();
 	reader.tryRead("id", _id);
+	if (reader["voiceSetID"])
+	{
+		auto voiceSetID = reader["voiceSetID"].readVal<std::string>("");
+		auto* voiceSet = mod->getVoiceSet(voiceSetID, false); // ignore bugged types
+		if (voiceSet)
+		{
+			setUnitAndSoldierVoiceSet(voiceSet);
+		}
+	}
 	reader.tryRead("faction", _faction);
 	reader.tryRead("status", _status);
 	reader.tryRead("wantsToSurrender", _wantsToSurrender);
@@ -692,6 +761,21 @@ void BattleUnit::load(const YAML::YamlNodeReader& node, const Mod *mod, const Sc
 	reader.tryRead("vip", _vip);
 	reader.tryRead("bannedInNextStage", _bannedInNextStage);
 	reader.tryRead("meleeAttackedBy", _meleeAttackedBy);
+	{
+		// AI2-H FAIR KNOWLEDGE: absent in older saves - never seen
+		std::vector<int> seen;
+		reader.tryRead("aiSeen", seen);
+		if (seen.size() == FACTION_MAX * 4)
+		{
+			int old[FACTION_MAX][4];
+			std::copy(&_aiSeen[0][0], &_aiSeen[0][0] + FACTION_MAX * 4, &old[0][0]);
+			for (int i = 0; i < FACTION_MAX * 4; ++i)
+			{
+				_aiSeen[i / 4][i % 4] = seen[i];
+			}
+			logAiSeenChange(old, nullptr, "LOAD", nullptr, -1, -1);
+		}
+	}
 	_scriptValues.load(reader, shared);
 }
 
@@ -703,6 +787,8 @@ void BattleUnit::save(YAML::YamlNodeWriter writer, const ScriptGlobal *shared) c
 {
 	writer.setAsMap();
 	writer.write("id", _id);
+	if (_unitVoiceSet)
+		writer.write("voiceSetID", _unitVoiceSet->getType());
 	writer.write("genUnitType", _type);
 	writer.write("genUnitArmor", _armor->getType());
 	writer.write("faction", _faction);
@@ -849,6 +935,16 @@ void BattleUnit::save(YAML::YamlNodeWriter writer, const ScriptGlobal *shared) c
 		writer.write("bannedInNextStage", _bannedInNextStage);
 	if (!_meleeAttackedBy.empty())
 		writer.write("meleeAttackedBy", _meleeAttackedBy);
+	if (AiProbe::fairKnowledge() && (_aiSeen[0][0] >= 0 || _aiSeen[1][0] >= 0 || _aiSeen[2][0] >= 0))
+	{
+		// AI2-H FAIR KNOWLEDGE: x y z dir per side, x -1 - never seen; written only with the flag on
+		std::vector<int> seen;
+		for (const auto &s : _aiSeen)
+		{
+			seen.insert(seen.end(), s, s + 4);
+		}
+		writer.write("aiSeen", seen);
+	}
 
 	_scriptValues.save(writer, shared);
 }
@@ -1097,7 +1193,8 @@ void BattleUnit::startWalking(int direction, Position destination, SavedBattleGa
 	}
 	else
 	{
-		_direction = direction;
+		// backing up: the hull keeps facing away from the step
+		_direction = _reverseMove ? (direction + 4) % 8 : direction;
 		_status = STATUS_WALKING;
 	}
 	if (_haveNoFloorBelow || direction >= Pathfinding::DIR_UP)
@@ -1137,15 +1234,16 @@ void BattleUnit::keepWalking(SavedBattleGame *savedBattleGame, bool fullWalkCycl
 	else
 	{
 		// diagonal walking takes double the steps
-		middle = 4 + 4 * (_direction % 2);
-		end = 8 + 8 * (_direction % 2);
+		const int moveDir = getMoveDirection();
+		middle = 4 + 4 * (moveDir % 2);
+		end = 8 + 8 * (moveDir % 2);
 		if (isBigUnit())
 		{
-			if (_direction < 1 || _direction > 5)
+			if (moveDir < 1 || moveDir > 5)
 				middle = end;
-			else if (_direction == 5)
+			else if (moveDir == 5)
 				middle = 12;
-			else if (_direction == 1)
+			else if (moveDir == 1)
 				middle = 5;
 			else
 				middle = 1;
@@ -1418,6 +1516,26 @@ bool BattleUnit::isFloating() const
 }
 
 /**
+ * Teleports unit.
+ */
+void BattleUnit::teleport(Tile* tile, SavedBattleGame* saveBattleGame)
+{
+	/*
+	if (isFloating())
+		_status = STATUS_FLYING;
+	else
+		_status = STATUS_WALKING;
+	*/
+
+	_destination = tile->getPosition();
+	_lastPos = _pos;
+	_pos = _destination;
+
+	setTile(tile, saveBattleGame);
+	_status = STATUS_STANDING;
+}
+
+/**
  * Aim. (shows the right hand sprite and weapon holding)
  * @param aiming true/false
  */
@@ -1677,6 +1795,16 @@ int BattleUnit::damage(Position relative, int damage, const RuleDamageType *type
 	{
 		bodypart = bodypartOverride;
 	}
+	if (AiProbe::dmgNote.armed)
+	{
+		AiProbe::dmgNote.reached = true;
+		AiProbe::dmgNote.side = (int)side;
+		AiProbe::dmgNote.part = (int)bodypart;
+		AiProbe::dmgNote.resisted = orgDamage;
+		AiProbe::dmgNote.scripted = damage;
+		AiProbe::dmgNote.armor = getArmor(side);
+		AiProbe::dmgNote.afterArmor = damage;
+	}
 
 
 	const RuleItem *specialDamageTransform = attack.damage_item ? attack.damage_item->getRules() : nullptr;
@@ -1726,9 +1854,16 @@ int BattleUnit::damage(Position relative, int damage, const RuleDamageType *type
 		std::get<toTransform>(args.data) += specialDamageTransformChance;
 		std::get<toArmor>(args.data) += type->getArmorPreFinalDamage(damage);
 
-		if (type->ArmorEffectiveness > 0.0f)
+		// the damage type's own effectiveness unless the knowledge armor rule (option oxceKnowledgeArmor) shifts it
+		const float armorEffectiveness = KnowledgeArmor::effectiveness(type, attack.attacker, attack.weapon_item, attack.damage_item,
+			this, save, &KnowledgeArmor::counts);
+		if (armorEffectiveness > 0.0f)
 		{
-			damage -= getArmor(side) * type->ArmorEffectiveness;
+			damage -= getArmor(side) * armorEffectiveness;
+		}
+		if (AiProbe::dmgNote.armed)
+		{
+			AiProbe::dmgNote.afterArmor = damage;
 		}
 
 		if (damage > 0)
@@ -1867,6 +2002,7 @@ int BattleUnit::damage(Position relative, int damage, const RuleDamageType *type
 		// AI direct hit tracking
 		std::get<arg_attackerTurnsSinceSpotted>(args.data) = 255;
 		std::get<arg_attackerTurnsLeftSpottedForSnipers>(args.data) = 0;
+		bool directShotReveal = false; // AI2-H FAIR KNOWLEDGE h6: the engine's spot-on-hit below applied (the projectile left the attacker's cell)
 		if (attack.attacker)
 		{
 			std::get<arg_attackerTurnsSinceSpotted>(args.data) = attack.attacker->getTurnsSinceSpottedByFaction(getFaction());
@@ -1884,6 +2020,7 @@ int BattleUnit::damage(Position relative, int damage, const RuleDamageType *type
 				}
 
 				std::get<arg_attackerTurnsSinceSpotted>(args.data) = 0;
+				directShotReveal = true;
 				if (Mod::EXTENDED_SPOT_ON_HIT_FOR_SNIPING > 0)
 				{
 					// 0 = don't spot
@@ -1959,6 +2096,15 @@ int BattleUnit::damage(Position relative, int damage, const RuleDamageType *type
 		{
 			attack.attacker->setTurnsSinceSpottedByFaction(getFaction(), std::get<arg_attackerTurnsSinceSpotted>(args.data));
 			attack.attacker->setTurnsLeftSpottedForSnipersByFaction(getFaction(), std::get<arg_attackerTurnsLeftSpottedForSnipers>(args.data));
+			if (std::get<arg_attackerTurnsSinceSpotted>(args.data) == 0 && attack.attacker->getFaction() != getFaction())
+			{
+				// AI2-H FAIR KNOWLEDGE h6: the engine reveals the attacker by turnsSinceSpotted == 0, which an older sighting or cheatTurn
+				// may have left; the victim's side gets the attacker's place only for a direct shot the engine spotted (a script
+				// un-spotting it keeps it hidden) or while the side sees the attacker now - the gate checks the latter
+				attack.attacker->updateHonestKnownPosition(getFaction(), save,
+					directShotReveal ? AI_REVEAL_DIRECT_SHOT : AI_REVEAL_ATTACKER_SEEN, this,
+					(int)attack.type, attack.weapon_item ? attack.weapon_item->getId() : -1);
+			}
 		}
 	}
 
@@ -2084,6 +2230,17 @@ void BattleUnit::instaFalling()
 int BattleUnit::getFallingPhase() const
 {
 	return _fallPhase;
+}
+
+/**
+ * HD render (ticket XP-000252): the unit is already dead or out cold (instaFalling), only its fall is
+ * shown frame by frame. Nothing but the picture reads this.
+ * @param phase The frame of the fall; -1 - the show ends on the last one.
+ */
+void BattleUnit::setShownFall(int phase)
+{
+	_fallShown = phase >= 0;
+	_fallPhase = _fallShown ? std::min(phase, _armor->getDeathFrames() - 1) : _armor->getDeathFrames() - 1;
 }
 
 /**
@@ -2955,6 +3112,40 @@ int BattleUnit::getFire() const
 }
 
 /**
+ * Sets the shield charge value to display in the inventory screen.
+ * Set by mod scripts via Tag.UNIT_ENERGY_SHIELD_HP mirroring.
+ */
+void BattleUnit::setDisplayShieldHp(int hp)
+{
+	_displayShieldHp = hp;
+}
+
+/**
+ * Gets the shield charge value to display in the inventory screen.
+ */
+int BattleUnit::getDisplayShieldHp() const
+{
+	return _displayShieldHp;
+}
+
+/**
+ * Sets the shield max capacity to display in the inventory screen.
+ * Set by mod scripts via Tag.ARMOR_ENERGY_SHIELD_CAPACITY mirroring.
+ */
+void BattleUnit::setDisplayShieldCapacity(int capacity)
+{
+	_displayShieldCapacity = capacity;
+}
+
+/**
+ * Gets the shield max capacity to display in the inventory screen.
+ */
+int BattleUnit::getDisplayShieldCapacity() const
+{
+	return _displayShieldCapacity;
+}
+
+/**
  * Get the pointer to the vector of inventory items.
  * @return pointer to vector.
  */
@@ -3036,7 +3227,10 @@ bool BattleUnit::addItem(BattleItem *item, const Mod *mod, bool allowSecondClip,
 	// their loadouts are defined in the rulesets and more or less set in stone.
 	if (isStandardPlayerUnit)
 	{
-		weight = getCarriedWeight() + item->getTotalWeight();
+		if (!Mod::EXTENDED_IGNORE_OVERWEIGHT_RULE)
+		{
+			weight = getCarriedWeight() + item->getTotalWeight();
+		}
 		// allow all weapons to be loaded by avoiding this check,
 		// they'll return false later anyway if the unit has something in his hand.
 		if (rule->getBattleType() != BT_FIREARM && rule->getBattleType() != BT_MELEE)
@@ -3265,8 +3459,14 @@ void BattleUnit::think(BattleAction *action)
 	{
 		// only perform once per turn
 		_aiMedikitUsed = true;
-		while (_currentAIState->medikit_think(BMT_HEAL)) {}
-		while (_currentAIState->medikit_think(BMT_STIMULANT)) {}
+		int used = 0;
+		AiProbe::medikitBefore(this, BMT_HEAL);
+		while (_currentAIState->medikit_think(BMT_HEAL)) { ++used; }
+		AiProbe::medikitAfter(this, BMT_HEAL, used);
+		used = 0;
+		AiProbe::medikitBefore(this, BMT_STIMULANT);
+		while (_currentAIState->medikit_think(BMT_STIMULANT)) { ++used; }
+		AiProbe::medikitAfter(this, BMT_STIMULANT, used);
 	}
 	_currentAIState->think(action);
 }
@@ -3291,6 +3491,17 @@ void BattleUnit::setAIModule(AIModule *ai)
 AIModule *BattleUnit::getAIModule() const
 {
 	return _currentAIState;
+}
+
+/**
+ * Increases the AI walk abort counter.
+ */
+void BattleUnit::increaseAIWalkAbortCounter()
+{
+	if (_currentAIState)
+	{
+		_currentAIState->increaseWalkAbortCounter();
+	}
 }
 
 /**
@@ -4422,15 +4633,6 @@ int BattleUnit::getLoftemps(int entry) const
 }
 
 /**
-  * Get the unit's value. Used for score at debriefing.
-  * @return value score
-  */
-int BattleUnit::getValue() const
-{
-	return _value;
-}
-
-/**
  * Get the unit's death sounds.
  * @return List of sound IDs.
  */
@@ -4791,7 +4993,7 @@ int BattleUnit::getCarriedWeight(BattleItem *draggingItem) const
 /**
  * Set default state on unit.
  */
-void BattleUnit::resetTurnsSince()
+void BattleUnit::resetTurnsSince(const SavedBattleGame *save, const char *reason)
 {
 	for (auto& since : _turnsSinceSpotted)
 	{
@@ -4801,6 +5003,13 @@ void BattleUnit::resetTurnsSince()
 	{
 		left = 0;
 	}
+	int old[FACTION_MAX][4];
+	std::copy(&_aiSeen[0][0], &_aiSeen[0][0] + FACTION_MAX * 4, &old[0][0]);
+	for (auto& seen : _aiSeen)
+	{
+		seen[0] = seen[1] = seen[2] = seen[3] = -1;
+	}
+	logAiSeenChange(old, save, reason, nullptr, -1, -1);
 	//_turnsSinceStunned is reset elsewhere
 }
 
@@ -4920,12 +5129,147 @@ int BattleUnit::getTurnsLeftSpottedForSnipersByFaction(UnitFaction faction) cons
 }
 
 /**
+ * AI2-H FAIR KNOWLEDGE h6: the single write gate of honest memory - the side gets this unit's place and facing only for a
+ * proven reveal. FOV and REACTION come from inside the engine's visibility branches; DIRECT_SHOT only where the engine itself
+ * spots the shooter on a hit (BattleUnit::damage). ATTACKER_SEEN and KILLER_SEEN are no proof of the place by themselves (the
+ * engine reveals by turnsSinceSpotted, which an older sighting, cheatTurn or kill attribution may have zeroed): they write only
+ * while a unit of the side has this unit on its visible list. A refused reveal writes nothing and logs one deny line.
+ * Never reads turnsSinceSpotted; the cheat has no reveal kind. Called at every honest observation, so a visible walker is
+ * remembered at each step.
+ */
+bool BattleUnit::updateHonestKnownPosition(UnitFaction side, const SavedBattleGame *save, AiReveal why, const BattleUnit *observer, int a, int b)
+{
+	if (!AiProbe::fairKnowledge() || side < 0 || side >= FACTION_MAX)
+	{
+		return false;
+	}
+	const char *reason = "?";
+	const char *basis = nullptr;
+	switch (why)
+	{
+	case AI_REVEAL_FOV:
+		reason = "OBSERVATION_FOV";
+		basis = "fov";
+		break;
+	case AI_REVEAL_REACTION:
+		reason = "OBSERVATION_REACTION";
+		basis = "reaction";
+		break;
+	case AI_REVEAL_DIRECT_SHOT:
+		reason = "DIRECT_SHOT_REVEAL";
+		basis = "shot_from_cell";
+		break;
+	case AI_REVEAL_ATTACKER_SEEN:
+		reason = "HIT_REVEAL";
+		basis = AiProbe::fairSideSeesNow(save, side, this) ? "seen_now" : nullptr;
+		break;
+	case AI_REVEAL_KILLER_SEEN:
+		reason = "KILL_REVEAL";
+		basis = AiProbe::fairSideSeesNow(save, side, this) ? "seen_now" : nullptr;
+		break;
+	}
+	const bool change = _aiSeen[side][0] != _pos.x || _aiSeen[side][1] != _pos.y || _aiSeen[side][2] != _pos.z || _aiSeen[side][3] != _direction;
+	if (!basis)
+	{
+		AiProbe::fairDeny(save, this, side, reason, _aiSeen[side], change, observer, a, b);
+		return false;
+	}
+	int old[FACTION_MAX][4];
+	std::copy(&_aiSeen[0][0], &_aiSeen[0][0] + FACTION_MAX * 4, &old[0][0]);
+	_aiSeen[side][0] = _pos.x;
+	_aiSeen[side][1] = _pos.y;
+	_aiSeen[side][2] = _pos.z;
+	_aiSeen[side][3] = _direction;
+	logAiSeenChange(old, save, reason, observer, a, b, basis);
+	return true;
+}
+
+/**
+ * h5: the memory-write line - for every side whose memory of this unit differs from old, one [AITRACE] line. Reads only.
+ * h6: plus the reveal basis of the write.
+ */
+void BattleUnit::logAiSeenChange(const int (&old)[FACTION_MAX][4], const SavedBattleGame *save, const char *reason, const BattleUnit *observer, int a, int b,
+	const char *basis) const
+{
+	for (int f = 0; f < FACTION_MAX; ++f)
+	{
+		if (!std::equal(&old[f][0], &old[f][0] + 4, &_aiSeen[f][0]))
+		{
+			AiProbe::fairWrite(save, this, f, reason, old[f], _aiSeen[f], observer, a, b, basis);
+		}
+	}
+}
+
+/**
+ * AI2-H FAIR KNOWLEDGE: where the side last honestly saw this unit.
+ */
+bool BattleUnit::getAiSeen(UnitFaction side, Position &pos, int &dir) const
+{
+	if (side < 0 || side >= FACTION_MAX || _aiSeen[side][0] < 0)
+	{
+		return false;
+	}
+	pos = Position(_aiSeen[side][0], _aiSeen[side][1], _aiSeen[side][2]);
+	dir = _aiSeen[side][3];
+	return true;
+}
+
+/**
+ * AI2-H FAIR KNOWLEDGE: the side reached for the unit at the remembered place and found nobody there - forget the place.
+ */
+void BattleUnit::forgetAiSeen(UnitFaction side, const SavedBattleGame *save, const BattleUnit *observer)
+{
+	if (side < 0 || side >= FACTION_MAX)
+	{
+		return;
+	}
+	int old[FACTION_MAX][4];
+	std::copy(&_aiSeen[0][0], &_aiSeen[0][0] + FACTION_MAX * 4, &old[0][0]);
+	_aiSeen[side][0] = _aiSeen[side][1] = _aiSeen[side][2] = _aiSeen[side][3] = -1;
+	logAiSeenChange(old, save, "FORGET_PROBE", observer, -1, -1);
+}
+
+/**
  * Get this unit's original Faction.
  * @return original faction
  */
 UnitFaction BattleUnit::getOriginalFaction() const
 {
 	return _originalFaction;
+}
+
+/**
+ * Set unit voice set. Propagate to geoscape soldier if possible.
+ */
+void BattleUnit::setUnitAndSoldierVoiceSet(const RuleVoiceSet* voiceSet)
+{
+	_unitVoiceSet = voiceSet;
+
+	if (voiceSet)
+	{
+		// set also on the soldier if it exists, so that the voice set is persisted beyond a single battle
+		if (_geoscapeSoldier)
+		{
+			_geoscapeSoldier->setVoiceSetType(voiceSet->getType());
+		}
+
+		_selectUnitSound = voiceSet->getSelectUnitSounds();
+		_startMovingSound = voiceSet->getStartMovingSounds();
+		_selectWeaponSound = voiceSet->getSelectWeaponSounds();
+		_annoyedSound = voiceSet->getAnnoyedSounds();
+	}
+	else
+	{
+		if (_geoscapeSoldier)
+		{
+			_geoscapeSoldier->setVoiceSetType("");
+		}
+
+		_selectUnitSound = { };
+		_startMovingSound = { };
+		_selectWeaponSound = { };
+		_annoyedSound = { };
+	}
 }
 
 /**
@@ -6788,6 +7132,10 @@ void BattleUnit::ScriptRegister(ScriptParserBase* parser)
 
 	bu.add<&BattleUnit::getTurnsSinceSpottedByFaction>("getTurnsSinceSpottedByFaction");
 	bu.add<&BattleUnit::setTurnsSinceSpottedByFaction>("setTurnsSinceSpottedByFaction");
+	bu.add<&BattleUnit::setDisplayShieldHp>("setDisplayShieldHp");
+	bu.add<&BattleUnit::getDisplayShieldHp>("getDisplayShieldHp");
+	bu.add<&BattleUnit::setDisplayShieldCapacity>("setDisplayShieldCapacity");
+	bu.add<&BattleUnit::getDisplayShieldCapacity>("getDisplayShieldCapacity");
 
 	bu.add<&BattleUnit::getTurnsLeftSpottedForSnipers>("getTurnsLeftSpottedForSnipers");
 	bu.add<&setBaseStatRangeArrayScript<&BattleUnit::_turnsLeftSpottedForSnipers, FACTION_HOSTILE, 0, 255>>("setTurnsLeftSpottedForSnipers");

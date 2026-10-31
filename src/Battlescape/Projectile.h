@@ -20,6 +20,7 @@
 #include <vector>
 #include "Position.h"
 #include "BattlescapeGame.h"
+#include "../Engine/RNG.h"
 
 namespace OpenXcom
 {
@@ -59,6 +60,11 @@ private:
 	int _bulletSprite;
 	bool _reversed;
 	int _vaporColor, _vaporDensity, _vaporProbability;
+	// XP-000301: a plain grey smoke trail for a bullet or a rocket with no vapor of its own in the ruleset
+	// (Options::oxceHdPlainSmoke). Its own random generator, so the battle's one (RNG::globalRandomState) is never read
+	bool _plainSmoke = false;
+	RNG::RandomState _plainSmokeRng{1};
+	void addPlainSmoke();
 	void applyAccuracy(Position origin, Position *target, double accuracy, bool keepRange, bool extendLine);
 public:
 	/// Creates a new Projectile.
@@ -86,6 +92,10 @@ public:
 	Position getOrigin() const;
 	/// Gets the targetted tile for the projectile.
 	Position getTarget() const;
+	/// Gets the unit that fired it (the picture marks reaction shots by it).
+	const BattleUnit *getActor() const { return _action.actor; }
+	/// Gets the voxels a bullet flies a frame (the HD picture stretches its trail over them, XP-000310).
+	int getSpeed() const { return _speed; }
 	/// Gets the distance that projectile traveled.
 	float getDistance() const;
 	/// Is this projectile being drawn back-to-front or front-to-back?

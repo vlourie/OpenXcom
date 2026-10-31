@@ -1,0 +1,113 @@
+@page "/"
+@model IndexModel
+@{
+    ViewData["Title"] = T["home.title"];
+}
+
+<section class="hero">
+    @if (Model.HeroImage.Length > 0)
+    {
+        <div class="shot"><img src="~/img/@Model.HeroImage" srcset="@Art.SrcSet($"img/{Model.HeroImage}")" alt="@T["home.shot.alt"]"></div>
+    }
+    else
+    {
+        <div class="shot empty">@T["home.shot.slot"]</div>
+    }
+    <div class="say">
+        <h1>@T["home.headline"]</h1>
+        <p class="lead">@T["home.lead"]</p>
+        @if (Model.Launcher is { } dl)
+        {
+            <a class="button big" href="/download/launcher" download>@T["home.download"]</a>
+            <p class="hint">@T.Format("home.download.about", dl.Version, dl.Megabytes)</p>
+        }
+        else if (Model.LauncherUrl.Length > 0)
+        {
+            <a class="button big" href="@Model.LauncherUrl">@T["home.download"]</a>
+        }
+        else
+        {
+            <p class="hint">@T["home.download.none"]</p>
+        }
+    </div>
+</section>
+
+<div class="stats game">
+    <div><div class="k">@T["game.piratez"]</div><div class="v">@Model.Game.Piratez</div></div>
+    <div><div class="k">@T["game.engine"]</div><div class="v">@Model.Game.Engine</div></div>
+    <div>
+        <div class="k">@T["game.build"]</div>
+        @if (Model.Game.Build is { } build)
+        {
+            <div class="v">@build <span class="when">@Model.Game.Published?.ToString("yyyy-MM-dd")</span></div>
+        }
+        else
+        {
+            <div class="v">—</div>
+        }
+    </div>
+</div>
+
+<section class="panel quiet launcher-stats">
+    <p>@T.Format("home.stats", Model.Stats.Installs, Model.Stats.Hours, Model.Stats.PlayingNow)</p>
+    <p class="hint">@T["home.stats.note"]</p>
+</section>
+
+<div class="cards">
+    <a class="card" href="/mods">
+        <h3>@T["nav.mods"]</h3>
+        <p>@T["home.mods.text"]</p>
+        <span class="count">@Model.Counts.Mods</span>
+    </a>
+    <a class="card" href="/wiki">
+        <h3>@T["nav.wiki"]</h3>
+        <p>@T["home.wiki.text"]</p>
+        <span class="count">@Model.Counts.WikiPages</span>
+    </a>
+    <a class="card" href="/forum">
+        <h3>@T["nav.forum"]</h3>
+        <p>@T["home.forum.text"]</p>
+        <span class="count">@Model.Counts.Topics</span>
+    </a>
+    <a class="card" href="/tickets/new">
+        <h3>@T["nav.report"]</h3>
+        <p>@T["home.report.text"]</p>
+    </a>
+</div>
+
+<div class="row">
+    <section class="panel">
+        <h2 class="title">@T["home.changes"]</h2>
+        @if (Model.Release is { Changelog.Length: > 0 } rel)
+        {
+            <div class="release">@rel.Changelog</div>
+        }
+        else
+        {
+            <p class="hint">@T["home.changes.none"]</p>
+        }
+        <a class="button secondary" href="/releases">@T["releases.all"]</a>
+        <a class="button secondary" href="/roadmap">@T["roadmap.plan.title"]</a>
+    </section>
+    <section class="panel">
+        <h2 class="title">@T["home.latest"]</h2>
+        @if (Model.Latest.Count == 0)
+        {
+            <p class="hint">@T["forum.empty"]</p>
+        }
+        else
+        {
+            foreach (var t in Model.Latest)
+            {
+                <div class="topic">
+                    <div>
+                        <a class="name" href="/forum/t/@t.Number">@t.Title</a>
+                        <div class="by">@Model.SectionName(t) · @t.LastPostAt.ToString("yyyy-MM-dd HH:mm")</div>
+                    </div>
+                    <div class="num">@t.PostCount</div>
+                </div>
+            }
+        }
+        <a class="button secondary" href="/forum">@T["home.forum.all"]</a>
+    </section>
+</div>

@@ -1,0 +1,79 @@
+@page "/forum/t/{number:long}"
+@model Xp.Portal.Pages.Forum.TopicModel
+@inject Markup Md
+@{
+    ViewData["Title"] = Model.Topic.Title;
+}
+<p class="crumbs">
+    <a href="/forum">@T["nav.forum"]</a> /
+    <a href="/forum/@Model.Topic.Section!.Slug">@Model.SectionName</a> /
+    @Model.Topic.Title
+</p>
+<h1>@Model.Topic.Title</h1>
+<p class="hint">
+    @T.Format("forum.started", Model.Topic.Author?.DisplayName ?? "—", Model.Topic.CreatedAt.ToString("yyyy-MM-dd HH:mm"))
+    @if (Model.Topic.Locked)
+    {
+        <span class="tag">@T["forum.locked"]</span>
+    }
+    @if (Model.Topic.Pinned)
+    {
+        <span class="tag warn">@T["forum.pinned"]</span>
+    }
+</p>
+
+@if (Model.CanModerate)
+{
+    <form method="post" class="inline">
+        <button type="submit" class="small secondary" asp-page-handler="Pin">@(Model.Topic.Pinned ? T["forum.unpin"] : T["forum.pin"])</button>
+        <button type="submit" class="small secondary" asp-page-handler="Lock">@(Model.Topic.Locked ? T["forum.unlock"] : T["forum.lock"])</button>
+    </form>
+}
+
+@foreach (var p in Model.Posts)
+{
+    <article class="post @(p.AuthorId == Model.Topic.AuthorId ? "op" : "")">
+        <div class="who">
+            <span class="nick">@(p.Author?.DisplayName ?? "—")</span>
+            <span class="at">@p.CreatedAt.ToString("yyyy-MM-dd HH:mm")</span>
+            @if (p.EditedAt is { } edited)
+            {
+                <span class="at">@T.Format("forum.edited", edited.ToString("yyyy-MM-dd HH:mm"))</span>
+            }
+        </div>
+        <div class="body article">
+            @if (p.Deleted)
+            {
+                <p class="hint">@T["forum.post.removed"]</p>
+            }
+            else
+            {
+                @Md.Render(p.Body)
+            }
+        </div>
+    </article>
+}
+
+<partial name="_Pager" model="Model.Pager" />
+
+@if (Model.CanReply)
+{
+    <section class="panel">
+        <h2 class="title">@T["forum.reply"]</h2>
+        <partial name="_Errors" model="Model.Errors" />
+        <form method="post">
+            <label for="body">@T["forum.your.post"]</label>
+            <textarea id="body" name="body" rows="8" maxlength="20000" required></textarea>
+            <p class="hint">@T["forum.markdown"]</p>
+            <button type="submit" asp-page-handler="Reply">@T["forum.send"]</button>
+        </form>
+    </section>
+}
+else if (Model.Topic.Locked)
+{
+    <p class="hint">@T["forum.locked.hint"]</p>
+}
+else
+{
+    <p class="hint">@T["forum.sign.in"]</p>
+}

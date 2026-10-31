@@ -1,0 +1,2 @@
+﻿- HD walls: about 1100 walls that still had a stair-stepped or haloed edge now get a clean edge exactly along the original silhouette, while the material, pattern and details stay as before - planks, brick, stone, screens and consoles are unchanged. Their mirrored halves are aligned too.
+- HD: consoles and monitors that started flickering again in update 2026.10.15-4 (including UAC walls and SGR consoles), and a few more devices on ships and bases, no longer flicker: only the light changes between animation frames. Graphics only: tiles, walkability and cover are unchanged.

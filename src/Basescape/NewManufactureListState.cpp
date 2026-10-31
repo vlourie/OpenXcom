@@ -102,13 +102,15 @@ NewManufactureListState::NewManufactureListState(Base *base) : _base(base), _sho
 
 	_txtCategory->setText(tr("STR_CATEGORY"));
 
-	_lstManufacture->setColumns(3, 156, 120, 10);
+	_lstManufacture->setColumns(3, 156, 106, 24);
+	_lstManufacture->setAlign(ALIGN_RIGHT, 2);
 	_lstManufacture->setSelectable(true);
 	_lstManufacture->setBackground(_window);
 	_lstManufacture->setMargin(2);
 	_lstManufacture->onMouseClick((ActionHandler)&NewManufactureListState::lstProdClick, SDL_BUTTON_LEFT);
 	_lstManufacture->onMouseClick((ActionHandler)&NewManufactureListState::lstProdClick, SDL_BUTTON_RIGHT);
 	_lstManufacture->onMouseClick((ActionHandler)&NewManufactureListState::lstProdClick, SDL_BUTTON_MIDDLE);
+	ItemCountTooltipMixin::BindToSurface(_lstManufacture);
 
 	_btnOk->setText(tr("STR_OK"));
 	_btnOk->onMouseClick((ActionHandler)&NewManufactureListState::btnOkClick);
@@ -284,13 +286,14 @@ void NewManufactureListState::lstProdClickMiddle(Action *)
 	_doInit = false;
 
 	std::string articleId = _displayedStrings[_lstManufacture->getSelectedRow()];
+	const RuleManufacture* selectedTopic = _game->getMod()->getManufacture(articleId);
+
 	if (_game->isCtrlPressed(true))
 	{
-		Ufopaedia::openArticle(_game, articleId);
+		Ufopaedia::openArticle(_game, selectedTopic->getUfopediaType());
 	}
 	else
 	{
-		const RuleManufacture* selectedTopic = _game->getMod()->getManufacture(articleId);
 		_game->pushState(new TechTreeViewerState(0, selectedTopic));
 	}
 }
@@ -433,11 +436,11 @@ void NewManufactureListState::fillProductionList(bool refreshCategories)
 			}
 
 			// supplies calculation
-			int productionPossible = 10; // max
+			int productionPossible = 1000; // max: up to three digits, then '+'
 			if (manuf->getManufactureCost() > 0)
 			{
 				int64_t byFunds = _game->getSavedGame()->getFunds() / manuf->getManufactureCost();
-				if (byFunds < 10LL)
+				if (byFunds < 1000LL)
 				{
 					int byFundsInt = (int)byFunds;
 					productionPossible = std::min(productionPossible, byFundsInt);
@@ -458,7 +461,7 @@ void NewManufactureListState::fillProductionList(bool refreshCategories)
 			{
 				if (basicFilter == MANU_FILTER_DEFAULT_NO_SUPPLIES)
 					continue;
-				if (productionPossible < 10)
+				if (productionPossible < 1000)
 				{
 					ss << productionPossible;
 				}
@@ -529,6 +532,24 @@ void NewManufactureListState::fillProductionList(bool refreshCategories)
 		_cbxCategory->setOptions(_catStrings, true);
 		_cbxCategory->onChange((ActionHandler)&NewManufactureListState::cbxCategoryChange);
 	}
+}
+
+const RuleItem* NewManufactureListState::GetItemForTooltip()
+{
+	if (_lstManufacture->getSelectedRow() < 0)
+		return nullptr;
+
+	RuleManufacture* rule = _game->getMod()->getManufacture(_displayedStrings[_lstManufacture->getSelectedRow()]);
+
+	if (rule->getProducedItems().size() != 1)
+		return nullptr;
+
+	return rule->getProducedItems().begin()->first;
+}
+
+const Base* NewManufactureListState::GetBase()
+{
+	return _base;
 }
 
 }

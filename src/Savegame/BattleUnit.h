@@ -102,6 +102,7 @@ private:
 	UnitStatus _status;
 	bool _wantsToSurrender, _isSurrendering;
 	int _walkPhase, _fallPhase;
+	bool _fallShown = false;                     ///< HD: the fall of a unit already out is being shown (setShownFall)
 	std::vector<BattleUnit *> _visibleUnits, _unitsSpottedThisTurn;
 	std::vector<Tile *> _visibleTiles;
 	std::unordered_set<Tile *> _visibleTilesLookup;
@@ -111,6 +112,8 @@ private:
 	int _currentArmor[SIDE_MAX], _maxArmor[SIDE_MAX];
 	int _fatalWounds[BODYPART_MAX];
 	int _fire;
+	int _displayShieldHp = 0;
+	int _displayShieldCapacity = 0;
 	std::vector<BattleItem*> _inventory;
 	BattleItem* _specWeapon[SPEC_WEAPON_MAX];
 	AIModule *_currentAIState;
@@ -121,6 +124,7 @@ private:
 	int _customMarker;
 	int _kills;
 	int _faceDirection; // used only during strafing moves
+	bool _reverseMove = false; // backing up: the hull (_direction) faces away from the step
 	std::vector<int> _meleeAttackedBy;
 	bool _hitByFire, _hitByAnything, _alreadyExploded;
 	int _fireMaxHit;
@@ -132,6 +136,10 @@ private:
 	Uint8 _turnsSinceSpotted[FACTION_MAX] = { 255, 255, 255 };
 	Uint8 _turnsLeftSpottedForSnipers[FACTION_MAX] = { 0, 0, 0 };
 	Uint8 _turnsSinceStunned = 255;
+	// AI2-H FAIR KNOWLEDGE (bench flag OXCE_AI_FAIR_KNOWLEDGE): per viewing side, where it last honestly saw this unit -
+	// x, y, z, direction; x -1 - never seen. Written only with the flag on, read only by the AI.
+	int _aiSeen[FACTION_MAX][4] = { { -1, -1, -1, -1 }, { -1, -1, -1, -1 }, { -1, -1, -1, -1 } };
+	friend class AiKnownPlace;
 
 	BattleUnit* _previousOwner = nullptr;
 	const Unit *_spawnUnit = nullptr;
@@ -145,6 +153,7 @@ private:
 	UnitSide _fatalShotSide;
 	UnitBodyPart _fatalShotBodyPart;
 	std::string _murdererWeapon, _murdererWeaponAmmo;
+	std::optional<bool> _lightingState = std::nullopt;
 
 	// static data
 	std::string _type;
@@ -156,7 +165,8 @@ private:
 	int _lastReloadSound;
 	std::vector<int> _deathSound, _aggroSound;
 	std::vector<int> _selectUnitSound, _startMovingSound, _selectWeaponSound, _annoyedSound;
-	int _value, _moveSound;
+	int _valueKilled, _valueCaptured, _valueCapturedResearched, _valueCivilian, _valueCivilianKilledByXcom, _valueVIP;
+	int _moveSound;
 	int _intelligence, _aggression;
 	int _maxViewDistanceAtDark, _maxViewDistanceAtDay;
 	int _maxViewDistanceAtDarkSquared;
@@ -169,6 +179,7 @@ private:
 	Soldier *_geoscapeSoldier;
 	std::vector<int> _loftempsSet;
 	const Unit *_unitRules;
+	const RuleVoiceSet* _unitVoiceSet = nullptr;
 	int _rankInt;
 	int _rankIntUnified = 0;
 	int _turretType;
@@ -264,6 +275,14 @@ public:
 	int getDirection() const;
 	/// Gets the unit's face direction (only used by strafing moves)
 	int getFaceDirection() const;
+	/// Gets the direction the unit turns to (the picture of the turn on the spot reads it; nothing else)
+	int getToDirection() const { return _toDirection; }
+	/// Backs the unit up for the walk: the steps go opposite to the hull, which keeps facing.
+	void setReverseMove(bool reverse) { _reverseMove = reverse; }
+	/// Is the unit backing up?
+	bool getReverseMove() const { return _reverseMove; }
+	/// Gets the direction of the step the unit walks (the hull's, or opposite to it when backing up).
+	int getMoveDirection() const { return _reverseMove ? (_direction + 4) % 8 : _direction; }
 	/// Gets the unit's turret direction.
 	int getTurretDirection() const;
 	/// Gets the unit's turret To direction.
@@ -310,6 +329,8 @@ public:
 	bool isFloating() const;
 	/// Have unit floor below?
 	bool haveNoFloorBelow() const { return _haveNoFloorBelow; }
+	// Teleport unit.
+	void teleport(Tile* tile, SavedBattleGame* saveBattleGame = nullptr);
 
 	/// Aim.
 	void aim(bool aiming);
@@ -346,6 +367,10 @@ public:
 	void instaFalling();
 	/// Get falling sequence.
 	int getFallingPhase() const;
+	/// HD: shows the fall of a unit already dead or out cold frame by frame (UnitDieBState, oxceHdBlastFall); -1 ends it.
+	void setShownFall(int phase);
+	/// HD: is the fall of a unit already out being shown - it is drawn falling, not as an item.
+	bool isFallShown() const { return _fallShown; }
 
 	/// The unit is out - either dead or unconscious.
 	bool isOut() const;
@@ -419,6 +444,16 @@ public:
 	void setFire(int fire);
 	/// Get fire.
 	int getFire() const;
+	/// Sets the shield charge value to display in the inventory screen.
+	void setDisplayShieldHp(int hp);
+	/// Gets the shield charge value to display in the inventory screen.
+	int getDisplayShieldHp() const;
+	/// Sets the shield max capacity to display in the inventory screen.
+	void setDisplayShieldCapacity(int capacity);
+	/// Gets the shield max capacity to display in the inventory screen.
+	int getDisplayShieldCapacity() const;
+	/// Gets the script tag values (read-only).
+	const ScriptValues<BattleUnit> &getScriptValuesRaw() const { return _scriptValues; }
 
 	/// Get the list of items in the inventory.
 	std::vector<BattleItem*> *getInventory();
@@ -435,6 +470,8 @@ public:
 	AIModule *getAIModule() const;
 	/// Set AI Module.
 	void setAIModule(AIModule *ai);
+	/// Increases the AI walk abort counter.
+	void increaseAIWalkAbortCounter();
 	/// Gets weight value as hostile unit.
 	AIAttackWeight getAITargetWeightAsHostile(const Mod *mod) const;
 	/// Gets weight value as civilian unit when consider by aliens.
@@ -483,6 +520,8 @@ public:
 	const BattleItem *getActiveHand(const BattleItem *left, const BattleItem *right) const;
 	/// Reloads a weapon if needed.
 	bool reloadAmmo();
+	/// Has the AI's once-a-turn medikit check (think) already run this turn?
+	bool isAiMedikitUsed() const { return _aiMedikitUsed; }
 
 	/// Toggle the right hand as main hand for reactions.
 	void toggleRightHandForReactions(bool isCtrl);
@@ -585,8 +624,13 @@ public:
 	int getKneelHeight() const;
 	/// Get the unit's loft ID.
 	int getLoftemps(int entry = 0) const;
-	/// Get the unit's value.
-	int getValue() const;
+	/// Get the unit's value. Used for score at debriefing.
+	int getValueKilled() const { return _valueKilled; }
+	int getValueCaptured() const { return _valueCaptured; }
+	int getValueCapturedResearched() const { return _valueCapturedResearched; }
+	int getValueCivilian() const { return _valueCivilian; }
+	int getValueCivilianKilledByXcom() const { return _valueCivilianKilledByXcom; }
+	int getValueVIP() const { return _valueVIP; }
 	/// Get the reload sound (of the last reloaded weapon).
 	int getReloadSound() const { return _lastReloadSound; }
 	/// Get the unit's death sounds.
@@ -687,7 +731,7 @@ public:
 	int getCarriedWeight(BattleItem *draggingItem = 0) const;
 
 	/// Set default state on unit.
-	void resetTurnsSince();
+	void resetTurnsSince(const SavedBattleGame *save = nullptr, const char *reason = "RESET");
 	/// Update counters on unit.
 	void updateTurnsSince();
 	/// Set how many turns this unit will be exposed for.
@@ -706,6 +750,27 @@ public:
 	int  getTurnsLeftSpottedForSnipers() const;
 	/// Get how many turns left snipers know about this target. For specific faction.
 	int  getTurnsLeftSpottedForSnipersByFaction(UnitFaction faction) const;
+	/// AI2-H FAIR KNOWLEDGE h6: the only kinds of event allowed to put this unit's place into a side's honest memory.
+	/// turnsSinceSpotted == 0 is not one of them (an older sighting, cheatTurn, kill attribution set it too).
+	enum AiReveal
+	{
+		AI_REVEAL_FOV,           ///< the side's unit sees it: in view sector and visible() (TileEngine FOV)
+		AI_REVEAL_REACTION,      ///< the side's unit spots it for reaction fire (canTargetUnit and visible())
+		AI_REVEAL_DIRECT_SHOT,   ///< it hit the side with a direct shot: the engine's own spot-on-hit (the projectile left its cell)
+		AI_REVEAL_ATTACKER_SEEN, ///< it hit the side some other way (melee, timed grenade, blast) - written only if the side sees it now
+		AI_REVEAL_KILLER_SEEN,   ///< it is credited with a kill - written only if the side sees it now
+	};
+	/// AI2-H FAIR KNOWLEDGE h6: the single write gate of honest memory. Writes this unit's place and facing for the side when
+	/// the reveal is proven (FOV, REACTION, DIRECT_SHOT; ATTACKER_SEEN / KILLER_SEEN only if a unit of the side has it on its
+	/// visible list now), otherwise writes nothing and logs the refusal. No-op with the flag off. a, b only go to the log.
+	bool updateHonestKnownPosition(UnitFaction side, const SavedBattleGame *save, AiReveal why, const BattleUnit *observer, int a = -1, int b = -1);
+	/// AI2-H FAIR KNOWLEDGE: the place and facing the side last honestly saw this unit at; false if it never saw it.
+	bool getAiSeen(UnitFaction side, Position &pos, int &dir) const;
+	/// AI2-H FAIR KNOWLEDGE: the side found the remembered place empty (a melee probe) - it no longer knows where the unit is.
+	void forgetAiSeen(UnitFaction side, const SavedBattleGame *save, const BattleUnit *observer);
+	/// h5: one [AITRACE] memory-write line per side whose memory of this unit differs from old (passive, flag 1 only).
+	void logAiSeenChange(const int (&old)[FACTION_MAX][4], const SavedBattleGame *save, const char *reason, const BattleUnit *observer, int a, int b,
+		const char *basis = "") const;
 	/// Reset how many turns passed since stunned last time.
 	void resetTurnsSinceStunned() { _turnsSinceStunned = 255; }
 	/// Increase how many turns passed since stunned last time.
@@ -717,6 +782,11 @@ public:
 	UnitFaction getOriginalFaction() const;
 	/// Get alien/HWP unit.
 	const Unit *getUnitRules() const { return _unitRules; }
+	/// Get unit voice set.
+	const RuleVoiceSet* getUnitVoiceSet() const { return _unitVoiceSet; }
+	/// Set unit voice set. Propagate to geoscape soldier if possible.
+	void setUnitAndSoldierVoiceSet(const RuleVoiceSet* voiceSet);
+
 	Position lastCover;
 	/// get the vector of units we've seen this turn.
 	std::vector<BattleUnit *> &getUnitsSpottedThisTurn();
@@ -882,6 +952,9 @@ public:
 	bool indicatorsAreEnabled() const { return !_disableIndicators; }
 	/// Disable showing indicators for this unit.
 	void disableIndicators();
+
+	std::optional<bool> getLightingState() const { return _lightingState; }
+	void setLightingState(bool val) { _lightingState = val; }
 
 	/// Multiplier of move cost.
 	ArmorMoveCost getMoveCostBase() const { return _moveCostBase; }

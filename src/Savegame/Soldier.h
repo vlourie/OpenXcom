@@ -18,6 +18,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <string>
+#include <optional>
 #include "../Engine/Yaml.h"
 #include "../Mod/Unit.h"
 #include "../Mod/StatString.h"
@@ -63,6 +64,7 @@ public:
 private:
 	std::string _name;
 	std::string _callsign;
+	std::string _voiceSetType;
 	int _id, _nationality, _improvement, _psiStrImprovement;
 	RuleSoldier *_rules;
 	UnitStats _initialStats, _currentStats, _tmpStatsWithSoldierBonuses, _tmpStatsWithAllBonuses;
@@ -111,6 +113,10 @@ public:
 	void setCallsign(const std::string &callsign);
 	/// Check for callsign assignment.
 	bool hasCallsign() const;
+	/// Gets the soldier's voice set type.
+	const std::string& getVoiceSetType() const { return _voiceSetType; }
+	/// Sets the soldier's voice set type.
+	void setVoiceSetType(const std::string& voiceSetType) { _voiceSetType = voiceSetType; }
 	/// Gets the soldier's nationality.
 	int getNationality() const;
 	/// Sets the soldier's nationality.
@@ -199,6 +205,7 @@ public:
 
 	/// Gets the amount of missing mana.
 	int getManaMissing() const;
+	std::optional<Uint8> getMissingManaColorForState() const;
 	/// Sets the amount of missing mana.
 	void setManaMissing(int manaMissing);
 	/// Gets the soldier's mana recovery time.

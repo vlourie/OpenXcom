@@ -18,7 +18,9 @@
  */
 
 #include "ExplosionBState.h"
+#include "AiProbe.h"
 #include "BattlescapeState.h"
+#include "CollapsePilot.h"
 #include "Explosion.h"
 #include "TileEngine.h"
 #include "Map.h"
@@ -31,6 +33,8 @@
 #include "../Mod/RuleItem.h"
 #include "../Mod/Armor.h"
 #include "../Engine/RNG.h"
+#include "../Engine/HdFx.h"
+#include "../Engine/HdGentle.h"
 
 namespace OpenXcom
 {
@@ -49,7 +53,7 @@ namespace OpenXcom
  */
 ExplosionBState::ExplosionBState(BattlescapeGame *parent, LastPositions center, BattleActionAttack attack, Tile *tile, bool lowerWeapon, int range, int explosionCounter, int terrainMeleeTilePart) : BattleState(parent),
 	_explosionCounter(explosionCounter), _terrainMeleeTilePart(terrainMeleeTilePart), _attack(attack), _center(center.last), _before(center.before), _damageType(), _tile(tile), _targetPsiOrHit(nullptr),
-	_power(0), _radius(6), _range(range), _areaOfEffect(false), _lowerWeapon(lowerWeapon), _hit(false), _psi(false)
+	_power(0), _radius(6), _range(range), _areaOfEffect(false), _lowerWeapon(lowerWeapon), _hit(false), _psi(false), _loose(false), _looseMs(0)
 {
 
 }
@@ -206,6 +210,7 @@ void ExplosionBState::init()
 	{
 		if (_power > 0)
 		{
+			AiProbe::event(_parent->getSave(), "explosion", _attack.attacker, _center.toTile());
 			_parent->getSave()->getTileEngine()->explode(_attack, _center, _power, _damageType, _radius, range);
 
 			int powerForAnimation = _power;
@@ -232,6 +237,8 @@ void ExplosionBState::init()
 			int counter = std::max(1, (powerForAnimation / 5) / 5);
 			_parent->getMap()->setBlastFlash(true);
 			int lowerLimit = std::max(1, powerForAnimation / 5);
+			const std::string hdFx = HdFx::boomClip(itemRule);
+			HdFx::noteForTest(hdFx);
 			for (int i = 0; i < lowerLimit; i++)
 			{
 				int X = RNG::generate(-powerForAnimation / 2, powerForAnimation / 2);
@@ -239,6 +246,7 @@ void ExplosionBState::init()
 				Position p = _center;
 				p.x += X; p.y += Y;
 				Explosion *explosion = new Explosion(p, frame, frameDelay, true, false, frameCount);
+				explosion->setHdFx(hdFx);
 				// add the explosion on the map
 				_parent->getMap()->getExplosions()->push_back(explosion);
 				if (i > 0 && i % counter == 0)
@@ -260,7 +268,7 @@ void ExplosionBState::init()
 			_parent->playSound(sound);
 			if (_parent->getMap()->getFollowProjectile() || _explosionCounter > 0)
 			{
-				_parent->getMap()->getCamera()->centerOnPosition(_center.toTile(), false);
+				_parent->getMap()->getCamera()->focusOn(_center.toTile(), false);
 			}
 		}
 		else
@@ -271,9 +279,18 @@ void ExplosionBState::init()
 	else
 	// create a bullet hit
 	{
+		// HD render: what the hit lands on picks its combat effect (read only, before and after the hit)
+		const Tile *hdTile = _parent->getSave()->getTile(_center.toTile());
+		const BattleUnit *hdUnit = _hit ? _targetPsiOrHit : (hdTile ? hdTile->getOverlappingUnit(_parent->getSave()) : nullptr);
+		const int hdHealthBefore = hdUnit ? hdUnit->getHealth() : 0;
+		const int hdStunBefore = hdUnit ? hdUnit->getStunlevel() : 0;
+
 		_parent->getSave()->getTileEngine()->hit(_attack, _center, _power, _damageType, range, _terrainMeleeTilePart);
 
-		_parent->setStateInterval(std::max(1, ((BattlescapeState::DEFAULT_ANIM_SPEED/2) - (10 * itemRule->getExplosionSpeed()))));
+		_looseMs = std::max(1, ((BattlescapeState::DEFAULT_ANIM_SPEED/2) - (10 * itemRule->getExplosionSpeed())));
+		_parent->setStateInterval(_looseMs);
+		// loose hits: a shot's hit sprites go on by themselves (see think), melee and psi keep their pace
+		_loose = !_hit && !_psi && (action == BA_SNAPSHOT || action == BA_AUTOSHOT || action == BA_AIMEDSHOT) && AiProbe::hdPace() && HdGentle::looseHits();
 		int anim = -1;
 		int animFrames = -1;
 		int sound = -1;
@@ -348,7 +365,41 @@ void ExplosionBState::init()
 
 		if (anim != -1)
 		{
-			Explosion *explosion = new Explosion(_center, anim, 0, false, (_hit || _psi), animFrames); // Don't burn the tile
+			// a hit that landed on a unit: the HD pack may have another picture of these frames (blood)
+			bool onUnit = false;
+			if (!miss && !_psi)
+			{
+				const Tile *hitTile = _parent->getSave()->getTile(_center.toTile());
+				onUnit = (_hit ? _targetPsiOrHit : (hitTile ? hitTile->getOverlappingUnit(_parent->getSave()) : nullptr)) != nullptr;
+			}
+			Explosion *explosion = new Explosion(_center, anim, 0, false, (_hit || _psi), animFrames, onUnit); // Don't burn the tile
+			// a missed shot keeps the classic miss animation; a missed swing still swings
+			if (!_psi && !(miss && !_hit))
+			{
+				const bool armorHeld = onUnit && hdUnit && hdUnit->getHealth() == hdHealthBefore && hdUnit->getStunlevel() == hdStunBefore;
+				const std::string clip = _hit
+					? HdFx::swingClip(weaponRule, damageRule, _attack.attacker ? _attack.attacker->getDirection() : 0)
+					: HdFx::hitClip(itemRule, onUnit, hdUnit, armorHeld, hdTile, _center.z);
+				explosion->setHdFx(clip);
+				// the blood of a creature in an armour the mod's table colours (Options::oxceHdBloodColor, XP-000366): picture only
+				if (Options::oxceHdBloodColor && onUnit && hdUnit)
+				{
+					explosion->setHdBlood(HdFx::bloodRgb(hdUnit->getArmor()));
+				}
+				HdFx::noteForTest(clip);
+				// the blood of a bullet that took health flies on along its way (Options::oxceHdBloodSpray, XP-000298)
+				if (Options::oxceHdBloodSpray && !_hit && _hasHdFrom && onUnit && hdUnit && hdUnit->getHealth() < hdHealthBefore)
+				{
+					const int hdLoss = HdFx::lossPercent(hdUnit, hdHealthBefore - hdUnit->getHealth());
+					explosion->setHdSpray(_hdFrom, hdLoss, HdFx::hitHash(_center, hdLoss));
+				}
+				// a blow in melee that took health: the blood goes on from the attacker's side over the swing (stab_* clips)
+				else if (Options::oxceHdBloodSpray && _hit && onUnit && hdUnit && _attack.attacker && hdUnit->getHealth() < hdHealthBefore)
+				{
+					const int hdLoss = HdFx::lossPercent(hdUnit, hdHealthBefore - hdUnit->getHealth());
+					explosion->setHdSpray(_attack.attacker->getPosition().toVoxel() + Position(8, 8, 12), hdLoss, HdFx::hitHash(_center, hdLoss));
+				}
+			}
 			_parent->getMap()->getExplosions()->push_back(explosion);
 		}
 		if (_parent->getMap()->getFollowProjectile())
@@ -358,7 +409,7 @@ void ExplosionBState::init()
 
 		if (_targetPsiOrHit && _parent->getSave()->getSide() == FACTION_HOSTILE && _targetPsiOrHit->getFaction() == FACTION_PLAYER)
 		{
-			_parent->getMap()->getCamera()->centerOnPosition(_center.toTile(), false);
+			_parent->getMap()->getCamera()->focusOn(_center.toTile(), false);
 		}
 		// bullet hit sound
 		_parent->playSound(sound, _center.toTile());
@@ -381,6 +432,14 @@ void ExplosionBState::think()
 {
 	if (!_parent->getMap()->getBlastFlash())
 	{
+		if (_loose)
+		{
+			// loose hits: the sprites of the shot and its pellets play on by themselves and the burst goes on now;
+			// the results come in the same order as when they waited for the sprites, only sooner
+			_parent->getMap()->loosenExplosions(_looseMs);
+			explode();
+			return;
+		}
 		if (_parent->getMap()->getExplosions()->empty())
 			explode();
 
@@ -473,6 +532,11 @@ void ExplosionBState::explode()
 
 	// check for terrain explosions
 	Tile *t = save->getTileEngine()->checkForTerrainExplosions();
+	// the building collapse pilot settles once the chain of terrain explosions is over (off by default)
+	if (!t && CollapsePilot::settle(_parent, "explosion"))
+	{
+		t = save->getTileEngine()->checkForTerrainExplosions();
+	}
 	if (t)
 	{
 		Position p = t->getPosition().toVoxel();

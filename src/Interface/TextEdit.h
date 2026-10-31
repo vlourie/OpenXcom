@@ -97,6 +97,8 @@ public:
 	void blink();
 	/// Draws the text edit.
 	void draw() override;
+	/// HD interface: background and caret crisp, the value as HD text.
+	void hdMirror() override;
 	/// Special handling for mouse presses.
 	void mousePress(Action *action, State *state) override;
 	/// Special handling for keyboard presses.

@@ -25,6 +25,7 @@ namespace OpenXcom
 {
 
 class SavedBattleGame;
+class SavedGame;
 class Mod;
 class Craft;
 class RuleCraft;
@@ -207,6 +208,9 @@ public:
 	// Auto-equip a set of units
 	static void autoEquip(std::vector<BattleUnit*> units, Mod *mod, std::vector<BattleItem*> *craftInv,
 		RuleInventory *groundRuleInv, int worldShade, bool allowAutoLoadout, bool overrideEquipmentLayout);
+	/// Checks (no RNG, no state) that the alien ranks of a landing exist in the race at every possible depth; empty if fine.
+	static std::string checkAlienRanks(const Mod *mod, const SavedGame *save, const AlienDeployment *ruleDeploy,
+		const AlienDeployment *alienDeploy, const std::string &alienRace, Texture *missionTexture, const std::string &where);
 };
 
 }

@@ -44,9 +44,9 @@ public:
 class MainMenuState : public State
 {
 private:
-	TextButton *_btnNewGame, *_btnNewBattle, *_btnLoad, *_btnOptions, *_btnMods, *_btnQuit, *_btnUpdate;
+	TextButton *_btnNewGame, *_btnNewBattle, *_btnLoad, *_btnOptions, *_btnMods, *_btnQuit, *_btnUpdate, *_btnReports, *_btnLauncher;
 	Window *_window;
-	Text *_txtTitle, *_txtUpdateInfo;
+	Text *_txtTitle, *_txtUpdateInfo, *_txtCredit;
 #ifdef _WIN32
 	bool _debugInVisualStudio;
 	std::string _newVersion;
@@ -56,6 +56,8 @@ public:
 	MainMenuState(bool updateCheck = false);
 	/// Cleans up the Main Menu state.
 	~MainMenuState();
+	/// HD test automation: opens the screen OXCE_HD_START names (also the live bench's open command).
+	static bool hdStart(Game *game, const std::string &what);
 	/// Handler for clicking the New Game button.
 	void btnNewGameClick(Action *action);
 	/// Handler for clicking the New Battle button.
@@ -66,6 +68,10 @@ public:
 	void btnOptionsClick(Action *action);
 	/// Handler for clicking the Mods button.
 	void btnModsClick(Action *action);
+	/// Handler for clicking the My Reports button.
+	void btnReportsClick(Action *action);
+	/// Handler for clicking the Launcher button.
+	void btnLauncherClick(Action *action);
 	/// Handler for clicking the Quit button.
 	void btnQuitClick(Action *action);
 	/// Handler for clicking the Update button.

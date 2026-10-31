@@ -1,0 +1,37 @@
+@page "/wiki/{mod}/{slug}"
+@model Xp.Portal.Pages.Wiki.ArticleModel
+@inject Markup Md
+@{
+    ViewData["Title"] = Model.Article.Title;
+}
+<p class="crumbs">
+    <a href="/wiki">@T["nav.wiki"]</a> /
+    <a href="/wiki/@Model.ModSlug">@Model.ModName</a> /
+    @Model.Article.Title
+</p>
+<h1>@Model.Article.Title</h1>
+
+@if (Model.Article.Kind == WikiKind.Generated)
+{
+    <p class="derived">@T.Format("wiki.derived", Model.Article.SourceVersion ?? "?", Model.Article.Source ?? "")</p>
+}
+@if (Model.OtherLanguage)
+{
+    <p class="derived">@T["wiki.other.language"]</p>
+}
+
+<article class="article">@Md.Render(Model.Article.Body)</article>
+
+<p class="hint">
+    @T.Format("wiki.updated", Model.Article.UpdatedAt.ToString("yyyy-MM-dd HH:mm"))
+    @if (Model.Article.Editor is { } e)
+    {
+        <text> · @e.DisplayName</text>
+    }
+    · <a href="/wiki/@Model.ModSlug/@Model.Article.Slug/history">@T["wiki.history"]</a>
+</p>
+
+@if (Model.CanEdit)
+{
+    <a class="button secondary" href="/wiki/@Model.ModSlug/@Model.Article.Slug/edit">@T["wiki.edit"]</a>
+}

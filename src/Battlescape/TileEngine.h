@@ -18,6 +18,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <vector>
+#include <map>
 #include "Position.h"
 #include "BattlescapeGame.h"
 #include "../Mod/RuleItem.h"
@@ -185,6 +186,8 @@ public:
 	void calculateFOV(Position position, int eventRadius = -1, const bool updateTiles = true, const bool appendToTileVisibility = false);
 	/// Checks reaction fire.
 	bool checkReactionFire(BattleUnit *unit, const BattleAction &originalAction);
+	/// The light a unit sheds by itself (personal light, a glowing hand item, fire), before the clamp of calculateUnitLighting; 0 - none.
+	int unitLightPower(const BattleUnit *unit) const;
 	/// Recalculate all lighting in some area.
 	void calculateLighting(LightLayers layer, Position position = invalid, int eventRadius = 0, bool terrianChanged = false);
 	/// Handles tile hit.
@@ -195,8 +198,13 @@ public:
 	bool hitUnit(BattleActionAttack attack, BattleUnit *target, const Position &relative, int damage, const RuleDamageType *type, bool rangeAtack = true);
 	/// Handles bullet/weapon hits.
 	void hit(BattleActionAttack attack, Position center, int power, const RuleDamageType *type, bool rangeAtack = true, int terrainMeleeTilePart = 0);
+	/// OXCE-HD (armor crushTerrain): breaks the walls and objects a step drives through, as a hit that destroys them would.
+	void crushTerrain(const std::vector<std::pair<Position, TilePart>> &parts);
 	/// Handles explosions.
 	void explode(BattleActionAttack attack, Position center, int power, const RuleDamageType *type, int maxRadius, bool rangeAtack = true);
+	/// The tiles an explosion would reach and the power it would reach them with, without touching anything.
+	void explosionArea(Position center, int power, const RuleDamageType *type, int maxRadius, std::map<Tile*, int> &area,
+		std::map<Tile*, int> *strongest = nullptr);
 	/// Checks if a destroyed tile starts an explosion.
 	Tile *checkForTerrainExplosions();
 	/// Unit opens door?
@@ -217,6 +225,9 @@ public:
 	bool isTileInLOS(BattleAction *action, Tile *tile, bool drawing);
 	/// Turn XCom soldier's personal lighting on or off.
 	void togglePersonalLighting();
+	/// Turn XCom soldier's individual personal lighting on or off.
+	void togglePersonalIndividualLighting();
+
 	/// Checks the horizontal blockage of a tile.
 	int horizontalBlockage(Tile *startTile, Tile *endTile, ItemDamageType type, bool skipObject = false);
 	/// Checks the vertical blockage of a tile.
@@ -275,6 +286,8 @@ public:
 	bool isVoxelVisible(Position voxel);
 	/// Checks what type of voxel occupies this space.
 	VoxelType voxelCheck(Position voxel, BattleUnit *excludeUnit, bool excludeAllUnits = false, bool onlyVisible = false, BattleUnit *excludeAllBut = 0);
+	/// AI2-H h7: voxelCheck's unit test while AiKnownPlace has moved units (a moved unit only at its known place).
+	VoxelType voxelCheckKnown(Position voxel, Tile *tile, BattleUnit *excludeUnit, bool onlyVisible, BattleUnit *excludeAllBut);
 	/// Flushes cache of voxel check
 	void voxelCheckFlush();
 	/// Blows this tile up.

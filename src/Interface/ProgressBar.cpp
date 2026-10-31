@@ -18,6 +18,8 @@
  */
 #include "ProgressBar.h"
 #include <SDL.h>
+#include <algorithm>
+#include "../Engine/HdUi.h"
 
 namespace OpenXcom
 {
@@ -122,6 +124,39 @@ void ProgressBar::draw()
 	square.w = square.w * _value / 100;
 
 	drawRect(&square, _color);
+}
+
+/**
+ * The HD interface's version of the bar: the same geometry drawn crisply at the
+ * world scale instead of its classic pixels scaled up - the track, the filled
+ * part with a slight gradient, and the border, like Bar does.
+ */
+void ProgressBar::hdMirror()
+{
+	if (!HdUi::skin())
+	{
+		Surface::hdMirrorNearest();
+		return;
+	}
+	HdUi &ui = HdUi::instance();
+	const SDL_Color *pal = HdUi::paletteOf(this);
+	const int k = HdUi::scale();
+	const float x0 = (float)getX() * k, y0 = (float)getY() * k;
+	const float x1 = (float)(getX() + getWidth()) * k, y1 = (float)(getY() + getHeight()) * k;
+	const float r = std::min(1.0f * k, (y1 - y0) * 0.5f);
+	const Uint32 border = HdUi::rgba(pal[_borderColor ? _borderColor : (Uint8)(_color + 4)], 200);
+	// the hollow inside of the classic bar
+	ui.fillRoundRect(x0, y0, x1, y1, r, 0xA0000000u, 0xA0000000u);
+	const float inset = 0.5f * k;
+	const int value = std::max(0, std::min(_value, 100));
+	const float w = (x1 - x0 - 2.0f * inset) * value / 100.0f;
+	if (w > 0.5f)
+	{
+		const Uint32 c = HdUi::rgba(pal[_color]);
+		ui.fillRoundRect(x0 + inset, y0 + inset, x0 + inset + w, y1 - inset, std::max(r - inset, 0.0f),
+			HdUi::scaled(c, 1.12f), HdUi::scaled(c, 0.85f));
+	}
+	ui.strokeRoundRect(x0, y0, x1, y1, r, std::max(1.0f, k * 0.5f), border);
 }
 
 }

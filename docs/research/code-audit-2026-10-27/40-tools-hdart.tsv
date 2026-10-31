@@ -1,0 +1,457 @@
+﻿путь	строк	класс	mtime	последняя_очередь	lock-хэш	доказательство
+tools/hdart/attic/ab_sdxl.py	162	АТТИК-уже	2026-09-26			импортёры: нет | gpu_scripts.txt | доки: gen3-audit.md,README.md
+tools/hdart/attic/ab_sheet.py	132	АТТИК-уже	2026-09-26			импортёры: нет | доки: HD_TERRAIN_PLAN.md,RAKES.md
+tools/hdart/attic/check_floors.py	182	АТТИК-уже	2026-09-26			импортёры: нет | доки: README.md
+tools/hdart/attic/field_sweep.py	232	АТТИК-уже	2026-09-26			импортёры: нет | gpu_scripts.txt | доки: README.md
+tools/hdart/attic/gen_tile.py	603	АТТИК-уже	2026-09-26			импортёры: нет | gpu_scripts.txt | доки: RAKES.md,merged.md
+tools/hdart/attic/keep_batch.py	118	АТТИК-уже	2026-09-26			импортёры: нет | gpu_scripts.txt | доки: README.md | тесты: test_gpu_guard.py
+tools/hdart/attic/merge_best.py	152	АТТИК-уже	2026-09-26			импортёры: нет | доки: RAKES.md,merged.md
+tools/hdart/attic/paint3.py	525	АТТИК-уже	2026-09-26			импортёры: ab_sdxl.py | gpu_scripts.txt | доки: RAKES.md,merged.md | тесты: test_gpu_guard.py
+tools/hdart/attic/pick_old_grey.py	136	АТТИК-уже	2026-09-26			импортёры: нет | доки: lora-batch-review.md,README.md
+tools/hdart/attic/prompt_writer.py	639	АТТИК-уже	2026-09-26			импортёры: ab_sdxl.py,paint3.py | gpu_scripts.txt | доки: gen3-audit.md,README.md
+tools/hdart/attic/repack_all.py	74	АТТИК-уже	2026-09-26			импортёры: нет | доки: README.md
+tools/hdart/attic/run_batch.py	196	АТТИК-уже	2026-09-26			импортёры: нет | gpu_scripts.txt | доки: RAKES.md,README.md
+tools/hdart/acceptance_plan.py	563	ЖИВОЙ-библиотека	2026-09-30		да	импорт из acceptance_run.py
+tools/hdart/acceptance_run.py	366	ЖИВОЙ-библиотека	2026-09-30	2026-09-30x3	да	импорт из obj_photo.py
+tools/hdart/asset_rev.py	113	ЖИВОЙ-библиотека	2026-09-29		да	импорт из obj_generation.py
+tools/hdart/base_pack.py	101	ЖИВОЙ-библиотека	2026-09-27			импорт из gen_base_bubbles.py
+tools/hdart/common.py	13	ЖИВОЙ-библиотека	2026-09-26		да	импорт из tank_turret.py
+tools/hdart/cover_check.py	100	ЖИВОЙ-библиотека	2026-09-27		да	импорт из tile_qa.py
+tools/hdart/dupe_plan.py	149	ЖИВОЙ-библиотека	2026-10-05		да	импорт из score_batch.py
+tools/hdart/facility_sheet.py	254	ЖИВОЙ-библиотека	2026-10-05			импорт из gen_base_anim.py
+tools/hdart/gen_base.py	199	ЖИВОЙ-библиотека	2026-10-05			импорт из gen_craft_lights.py
+tools/hdart/gen_lora_test.py	237	ЖИВОЙ-библиотека	2026-09-22			импорт из unpanel_batch.py
+tools/hdart/gen_screens.py	444	ЖИВОЙ-библиотека	2026-10-22	2026-10-22x14		импорт из gen_promo.py
+tools/hdart/glass_alpha.py	482	ЖИВОЙ-библиотека	2026-10-21			импорт из ticket_family.py
+tools/hdart/map_update.py	436	ЖИВОЙ-библиотека	2026-09-30			импорт из map_pick.py
+tools/hdart/model_lock.py	248	ЖИВОЙ-библиотека	2026-09-30		да	импорт из obj_gen_spec.py
+tools/hdart/obj_derive.py	215	ЖИВОЙ-библиотека	2026-09-29		да	импорт из obj_gen_spec.py
+tools/hdart/obj_families.py	558	ЖИВОЙ-библиотека	2026-09-29		да	импорт из review_server.py
+tools/hdart/obj_gen_spec.py	266	ЖИВОЙ-библиотека	2026-10-01		да	импорт из obj_generation.py
+tools/hdart/obj_generation.py	512	ЖИВОЙ-библиотека	2026-10-01		да	импорт из review_server.py
+tools/hdart/obj_photo.py	526	ЖИВОЙ-библиотека	2026-09-30	2026-10-03x30	да	импорт из obj_gen_spec.py
+tools/hdart/obj_review.py	191	ЖИВОЙ-библиотека	2026-09-30		да	импорт из review_server.py
+tools/hdart/obj_series.py	510	ЖИВОЙ-библиотека	2026-09-28	2026-09-28x18	да	импорт из obj_gen_spec.py
+tools/hdart/obj_struct.py	297	ЖИВОЙ-библиотека	2026-09-29		да	импорт из obj_generation.py
+tools/hdart/tile_qa.py	456	ЖИВОЙ-библиотека	2026-09-30		да	импорт из acceptance_run.py
+tools/hdart/vx_control.py	175	ЖИВОЙ-библиотека	2026-09-28		да	импорт из obj_gen_spec.py
+tools/hdart/battle_view.py	358	ЖИВОЙ-вход	2026-10-04			claude:.claude/agents/artist.md:26 | claude:.claude/agents/gpu-forge.md:15 | claude:.claude/agents/ticket-art.md:23
+tools/hdart/build_dataset.py	620	ЖИВОЙ-вход	2026-10-05		да	док:docs/GENERATORS.md:37 | sh:tools/hdart/train_lora.ps1:3
+tools/hdart/build_hd_pack.py	425	ЖИВОЙ-вход	2026-09-29			tools:tools/sfx/build_pilot_voices.py:69 | claude:.claude/hooks/guard-paths.ps1:32 | claude:.claude/hooks/pack-guard.ps1:6
+tools/hdart/build_pack.py	592	ЖИВОЙ-вход	2026-10-05		да	док:docs/GENERATORS.md:29 | док:docs/handbook/map.md:19 | док:tools/hdart/README.md:14
+tools/hdart/check_lora.py	91	ЖИВОЙ-вход	2026-10-05			sh:tools/hdart/train_lora.ps1:213
+tools/hdart/cut_gloves.py	60	ЖИВОЙ-вход	2026-09-17			док:tools/hdart/README.md:458
+tools/hdart/extract_pck.py	157	ЖИВОЙ-вход	2026-10-05		да	док:docs/GENERATORS.md:11 | док:tools/hdart/README.md:9 | sh:tools/hdart/gen_all.ps1:172
+tools/hdart/fetch_fonts.py	494	ЖИВОЙ-вход	2026-10-05			tools:tools/compat/hd_layout.py:5
+tools/hdart/gen_base_anim.py	870	ЖИВОЙ-вход	2026-10-05			док:docs/GENERATORS.md:409
+tools/hdart/gen_base_bubbles.py	210	ЖИВОЙ-вход	2026-10-05			док:docs/GENERATORS.md:425
+tools/hdart/gen_combat_fx.py	1366	ЖИВОЙ-вход	2026-10-26			док:docs/GENERATORS.md:284
+tools/hdart/gen_craft_lights.py	355	ЖИВОЙ-вход	2026-10-05			док:docs/GENERATORS.md:393
+tools/hdart/gen_cursor.py	355	ЖИВОЙ-вход	2026-09-22			док:docs/GENERATORS.md:322
+tools/hdart/gen_cursor_box.py	158	ЖИВОЙ-вход	2026-10-05			док:docs/GENERATORS.md:345
+tools/hdart/gen_fire.py	273	ЖИВОЙ-вход	2026-09-22		да	док:docs/GENERATORS.md:25
+tools/hdart/gen_fx.py	1364	ЖИВОЙ-вход	2026-10-05			док:docs/GENERATORS.md:301 | док:tools/hdart/README.md:345
+tools/hdart/gen_hd.py	1907	ЖИВОЙ-вход	2026-09-30		да	tools:tools/subject_report.py:29 | claude:.claude/hooks/gpu-guard.ps1:9 | док:docs/GENERATORS.md:23
+tools/hdart/gen_icons.py	547	ЖИВОЙ-вход	2026-10-05			док:docs/GENERATORS.md:445
+tools/hdart/gen_path.py	466	ЖИВОЙ-вход	2026-09-26			док:docs/GENERATORS.md:360
+tools/hdart/gen_promo.py	411	ЖИВОЙ-вход	2026-10-23	2026-10-23x4		док:docs/GENERATORS.md:460 | portal:portal/src/Xp.Launcher/SetupPage.cs:102
+tools/hdart/gen_reticle.py	306	ЖИВОЙ-вход	2026-10-05			док:docs/GENERATORS.md:377
+tools/hdart/ground_dump.py	75	ЖИВОЙ-вход	2026-10-05			portal:portal/tests/Xp.Launcher.Core.Tests/PckTests.cs:142
+tools/hdart/hints.py	293	ЖИВОЙ-вход	2026-09-15		да	док:tools/hdart/README.md:123
+tools/hdart/make_ref.py	192	ЖИВОЙ-вход	2026-09-22		да	док:docs/GENERATORS.md:92
+tools/hdart/map_mockup.py	351	ЖИВОЙ-вход	2026-10-06		да	tools:tools/portal_mod_art.py:6
+tools/hdart/map_paint.py	1286	ЖИВОЙ-вход	2026-09-27		да	claude:.claude/hooks/gpu-guard.ps1:36 | док:docs/GENERATORS.md:13 | док:docs/PROJECT.md:56
+tools/hdart/map_pick.py	502	ЖИВОЙ-вход	2026-09-30			claude:.claude/launch.json:14
+tools/hdart/merge_gens.py	191	ЖИВОЙ-вход	2026-09-30			док:docs/GENERATORS.md:513 | док:docs/PROJECT.md:56
+tools/hdart/optimize_hd.py	322	ЖИВОЙ-вход	2026-10-07			док:docs/GENERATORS.md:31 | док:tools/hdart/README.md:238
+tools/hdart/pedia_ab.py	259	ЖИВОЙ-вход	2026-10-01	2026-10-22x18		док:docs/GENERATORS.md:495
+tools/hdart/pedia_batch.py	488	ЖИВОЙ-вход	2026-10-01	2026-10-01x50		док:docs/GENERATORS.md:479
+tools/hdart/pedia_review.py	162	ЖИВОЙ-вход	2026-10-05			док:tools/hdart/README.md:302
+tools/hdart/pedia_text.py	252	ЖИВОЙ-вход	2026-10-05			док:tools/hdart/README.md:302
+tools/hdart/photo_ui.py	1050	ЖИВОЙ-вход	2026-10-20		да	док:docs/handbook/map.md:19 | док:tools/hdart/README.md:231 | док:tools/hdart/README_photo.md:1
+tools/hdart/placeholder_sheet.py	49	ЖИВОЙ-вход	2026-10-05			док:tools/hdart/README.md:132
+tools/hdart/probe_object.py	315	ЖИВОЙ-вход	2026-09-28	2026-10-22x7	да	tools:tools/collapse_debris_set.py:8
+tools/hdart/review_floors.py	707	ЖИВОЙ-вход	2026-09-26			portal:portal/src/Xp.Launcher.Core/Review.cs:401 | portal:portal/src/Xp.Portal/Data/Review.cs:18 | portal:portal/tests/Xp.Launcher.Core.Tests/ReviewTests.cs:69
+tools/hdart/review_server.py	369	ЖИВОЙ-вход	2026-10-01		да	claude:.claude/launch.json:44
+tools/hdart/score_batch.py	379	ЖИВОЙ-вход	2026-09-26		да	док:docs/GENERATORS.md:37
+tools/hdart/sprite_scale.py	313	ЖИВОЙ-вход	2026-09-16		да	док:tools/hdart/README.md:481
+tools/hdart/subjects_terrain.py	310	ЖИВОЙ-вход	2026-09-19		да	tools:tools/subject_report.py:23
+tools/hdart/tank_turret.py	786	ЖИВОЙ-вход	2026-10-05			tools:tools/portal_mod_art.py:27 | док:tools/hdart/README_tank.md:1
+tools/hdart/ticket_family.py	145	ЖИВОЙ-вход	2026-10-22			claude:.claude/agents/ticket-art.md:18 | claude:.claude/skills/tickets/SKILL.md:66
+tools/hdart/tile_forge.py	490	ЖИВОЙ-вход	2026-10-05		да	док:docs/GENERATORS.md:28
+tools/hdart/triage/server.py	199	ЖИВОЙ-вход	2026-09-24			portal:portal/deploy/ddns/test_dynu.py:3 | sh:tools/hdart/triage/start.cmd:6
+tools/hdart/unpanel_batch.py	74	ЖИВОЙ-вход	2026-10-05			portal:portal/src/Xp.Portal/Data/Review.cs:103
+tools/hdart/upscale_ui.py	201	ЖИВОЙ-вход	2026-09-16	2026-10-22x4		док:docs/handbook/map.md:19 | док:tools/hdart/README.md:195 | tools:tools/site_art_2x.py:26
+tools/hdart/upscale_units.py	846	ЖИВОЙ-вход	2026-10-02	2026-10-20x3		док:tools/hdart/README.md:469 | док:tools/hdart/README_tank.md:84
+tools/hdart/xbrz_py/__init__.py	34	ЖИВОЙ-вход	2026-09-25			sh:tools/hdart/xbrz_py/build.cmd:2
+tools/hdart/xcom_sprites.py	316	ЖИВОЙ-вход	2026-09-25		да	tools:tools/collapse_debris_set.py:314 | tools:tools/collapse_debris_sheet.py:26 | tools:tools/collapse_debris_short.py:18
+tools/hdart/anim_flicker.py	695	РАБОЧАЯ-СЕРИЯ	2026-10-21			импортёры: t286_jukebox.py | доки: player-tickets-2026-10-21.md,RAKES.md | тесты: test_anim_flicker.py
+tools/hdart/base_flow_bake.py	429	РАБОЧАЯ-СЕРИЯ	2026-10-23			импортёры: base_flow_install.py,base_scene_pack.py,base_scene_xp336.py | доки: base-living-2026-10-22.md
+tools/hdart/base_hangar_edit.py	94	РАБОЧАЯ-СЕРИЯ	2026-10-22	2026-10-22x1		импортёры: нет | gpu_scripts.txt | доки: RAKES.md,base-living-2026-10-22.md | очередь: 2026-10-22x1
+tools/hdart/base_lights.py	120	РАБОЧАЯ-СЕРИЯ	2026-10-22			импортёры: base_scene_pack.py,base_scene_preview.py | доки: RAKES.md,base-living-2026-10-22.md
+tools/hdart/base_pool_repair.py	95	РАБОЧАЯ-СЕРИЯ	2026-10-22	2026-10-22x1		импортёры: нет | gpu_scripts.txt | доки: base-living-2026-10-22.md | очередь: 2026-10-22x1
+tools/hdart/base_scene_pack.py	769	РАБОЧАЯ-СЕРИЯ	2026-10-27			импортёры: base_fits_install.py,base_live_install.py | доки: ticket-audit-2026-10-22.md,RAKES.md
+tools/hdart/base_scene_xp336.py	746	РАБОЧАЯ-СЕРИЯ	2026-10-27			импортёры: нет
+tools/hdart/base_spin_layer.py	99	РАБОЧАЯ-СЕРИЯ	2026-10-22			импортёры: нет | доки: player-tickets-2026-10-22.md
+tools/hdart/base_turret_split.py	432	РАБОЧАЯ-СЕРИЯ	2026-10-22	2026-10-22x2		импортёры: нет | gpu_scripts.txt | доки: base-turret-layer-2026-10-22.md | очередь: 2026-10-22x2
+tools/hdart/cast_faces.py	60	РАБОЧАЯ-СЕРИЯ	2026-10-22			импортёры: нет
+tools/hdart/cockpit_pilot.py	173	РАБОЧАЯ-СЕРИЯ	2026-10-20	2026-10-20x3		импортёры: нет | gpu_scripts.txt | доки: RAKES.md,glass-transparency-2026-10-20.md | очередь: 2026-10-20x3
+tools/hdart/craft_launch_frames.py	196	РАБОЧАЯ-СЕРИЯ	2026-10-22	2026-10-22x3		импортёры: нет | gpu_scripts.txt | доки: RAKES.md,craft-launch-2026-10-22.md | очередь: 2026-10-22x3
+tools/hdart/craft_launch_pack.py	109	РАБОЧАЯ-СЕРИЯ	2026-10-22			импортёры: нет
+tools/hdart/craft_launch_swap.py	148	РАБОЧАЯ-СЕРИЯ	2026-10-22	2026-10-22x2		импортёры: нет | gpu_scripts.txt | доки: craft-launch-2026-10-22.md | очередь: 2026-10-22x2
+tools/hdart/craft_launch_video.py	145	РАБОЧАЯ-СЕРИЯ	2026-10-22	2026-10-22x6		импортёры: нет | gpu_scripts.txt | доки: craft-launch-2026-10-22.md | очередь: 2026-10-22x6
+tools/hdart/cube_seam.py	151	РАБОЧАЯ-СЕРИЯ	2026-10-20			импортёры: нет | доки: RAKES.md
+tools/hdart/doll_b2_render.py	318	РАБОЧАЯ-СЕРИЯ	2026-10-20	2026-10-20x1		импортёры: doll_ctl_pilot.py,doll_face_ctl.py,doll_face_paste.py,doll_face_pilot.py | gpu_scripts.txt | доки: doll-hd-2026-10-20.md | очередь: 2026-10-20x1
+tools/hdart/doll_ctl_pilot.py	278	РАБОЧАЯ-СЕРИЯ	2026-10-20	2026-10-20x3		импортёры: doll_face_ctl.py | gpu_scripts.txt | доки: doll-hd-2026-10-20.md | очередь: 2026-10-20x3
+tools/hdart/doll_face_ctl.py	158	РАБОЧАЯ-СЕРИЯ	2026-10-20	2026-10-20x1		импортёры: нет | gpu_scripts.txt | доки: doll-hd-2026-10-20.md | очередь: 2026-10-20x1
+tools/hdart/doll_face_paste.py	134	РАБОЧАЯ-СЕРИЯ	2026-10-20			импортёры: нет | доки: RAKES.md,doll-hd-2026-10-20.md
+tools/hdart/doll_face_pilot.py	248	РАБОЧАЯ-СЕРИЯ	2026-10-20	2026-10-20x1		импортёры: doll_face_ctl.py,doll_face_paste.py | gpu_scripts.txt | доки: doll-hd-2026-10-20.md | очередь: 2026-10-20x1
+tools/hdart/doll_paint_pilot.py	182	РАБОЧАЯ-СЕРИЯ	2026-10-20	2026-10-20x2		импортёры: doll_ctl_pilot.py,doll_face_ctl.py | gpu_scripts.txt | доки: doll-hd-2026-10-20.md | очередь: 2026-10-20x2
+tools/hdart/doll_photo_pilot.py	407	РАБОЧАЯ-СЕРИЯ	2026-10-20	2026-10-20x2		импортёры: doll_ctl_pilot.py,doll_face_ctl.py,doll_face_paste.py,doll_face_pilot.py | gpu_scripts.txt | доки: doll-hd-2026-10-20.md | очередь: 2026-10-20x2
+tools/hdart/fx_map.py	129	РАБОЧАЯ-СЕРИЯ	2026-10-23			импортёры: нет
+tools/hdart/gen_base_paint.py	363	РАБОЧАЯ-СЕРИЯ	2026-10-22	2026-10-22x13		импортёры: base_census.py,base_hangar_edit.py,base_pool_repair.py,base_scene_pack.py | gpu_scripts.txt | доки: RAKES.md,base-living-2026-10-22.md | очередь: 2026-10-22x13
+tools/hdart/gen_ufo_pedia.py	614	РАБОЧАЯ-СЕРИЯ	2026-10-21	2026-10-21x23		импортёры: нет | gpu_scripts.txt | доки: DECISIONS.md,player-tickets-2026-10-21.md | тесты: test_ufo_pedia_style.py | очередь: 2026-10-21x23
+tools/hdart/glass_probe_map.py	67	РАБОЧАЯ-СЕРИЯ	2026-10-20			импортёры: нет | доки: RAKES.md,glass-transparency-2026-10-20.md
+tools/hdart/green_tone.py	134	РАБОЧАЯ-СЕРИЯ	2026-10-20			импортёры: нет | доки: RAKES.md
+tools/hdart/hud_buttons_cut.py	303	РАБОЧАЯ-СЕРИЯ	2026-10-20			импортёры: нет
+tools/hdart/hud_panel_pilot.py	331	РАБОЧАЯ-СЕРИЯ	2026-10-20	2026-10-20x28		импортёры: hud_buttons_cut.py | gpu_scripts.txt | доки: RAKES.md | очередь: 2026-10-20x28
+tools/hdart/item_b2_render.py	331	РАБОЧАЯ-СЕРИЯ	2026-10-15	2026-10-15x2		импортёры: нет | gpu_scripts.txt | доки: doll-hd-2026-10-20.md,inventory-redo-2026-10-15.md | очередь: 2026-10-15x2
+tools/hdart/relief_object.py	484	РАБОЧАЯ-СЕРИЯ	2026-10-20			импортёры: нет | доки: RAKES.md
+tools/hdart/rim_alpha.py	541	РАБОЧАЯ-СЕРИЯ	2026-10-21			импортёры: нет | доки: RAKES.md
+tools/hdart/test_photo_swapper.py	100	РАБОЧАЯ-СЕРИЯ	2026-10-20			импортёры: нет | доки: RAKES.md
+tools/hdart/tree_family.py	802	РАБОЧАЯ-СЕРИЯ	2026-10-14	2026-10-14x90		импортёры: tree_qc.py | gpu_scripts.txt | доки: RAKES.md | тесты: test_gpuq.py | очередь: 2026-10-14x90
+tools/hdart/wall_exact.py	337	РАБОЧАЯ-СЕРИЯ	2026-10-15	2026-10-15x27		импортёры: wall_exact_sheet.py | gpu_scripts.txt | доки: RAKES.md | очередь: 2026-10-15x27
+tools/hdart/wall_final_render.py	157	РАБОЧАЯ-СЕРИЯ	2026-10-15	2026-10-22x7		импортёры: wall_exact.py,wall_exact_sheet.py,wall_final_select.py | gpu_scripts.txt | доки: RAKES.md,inventory-redo-2026-10-15.md | очередь: 2026-10-22x7
+tools/hdart/wreck_object.py	132	РАБОЧАЯ-СЕРИЯ	2026-10-22	2026-10-22x1		импортёры: нет | gpu_scripts.txt | очередь: 2026-10-22x1
+tools/hdart/link_frames.py	224	РАБОЧАЯ-СЕРИЯ-библиотека	2026-09-22			импорт из water_build.py | импортёры: build.py,gen_lora_batch.py,prompt_writer.py,water_build.py | доки: README.md
+tools/hdart/long_object.py	573	РАБОЧАЯ-СЕРИЯ-библиотека	2026-09-28	2026-09-28x2		импорт из wall_section.py | импортёры: wall_section.py | gpu_scripts.txt | доки: DECISIONS.md,HD_PIPELINE.md | очередь: 2026-09-28x2
+tools/hdart/loop_twins.py	281	РАБОЧАЯ-СЕРИЯ-библиотека	2026-10-14			импорт из t286_jukebox.py | импортёры: anim_flicker.py,t286_jukebox.py | доки: RAKES.md | тесты: test_anim_flicker.py,test_loop_twins.py
+tools/hdart/snow_seam.py	371	РАБОЧАЯ-СЕРИЯ-библиотека	2026-10-13			импорт из tree_render_v2.py | импортёры: tree_render_v2.py | доки: RAKES.md
+tools/hdart/tree_family_asm.py	1358	РАБОЧАЯ-СЕРИЯ-библиотека	2026-10-14			импорт из tree_family.py | импортёры: tree_family.py,tree_qc.py | доки: RAKES.md
+tools/hdart/tree_qc.py	298	РАБОЧАЯ-СЕРИЯ-библиотека	2026-10-13			импорт из tree_family_asm.py | импортёры: tree_family_asm.py
+tools/hdart/tree_render.py	900	РАБОЧАЯ-СЕРИЯ-библиотека	2026-10-12	2026-10-12x10		импорт из tree_family.py | импортёры: tree_family.py,tree_family_asm.py,tree_qc.py,tree_render_v2.py | gpu_scripts.txt | доки: RAKES.md | очередь: 2026-10-12x10
+tools/hdart/tree_render_v2.py	1826	РАБОЧАЯ-СЕРИЯ-библиотека	2026-10-13	2026-10-09x2		импорт из tree_family_asm.py | импортёры: tree_family_asm.py | gpu_scripts.txt | доки: RAKES.md | очередь: 2026-10-09x2
+tools/hdart/wall_restore.py	187	РАБОЧАЯ-СЕРИЯ-библиотека	2026-10-08	2026-10-08x1		импорт из wall_final_render.py | импортёры: doll_b2_render.py,item_b2_render.py,wall_exact.py,wall_final_render.py | gpu_scripts.txt | доки: DECISIONS.md,RAKES.md | очередь: 2026-10-08x1
+tools/hdart/wall_section.py	909	РАБОЧАЯ-СЕРИЯ-библиотека	2026-10-08	2026-10-08x39		импорт из wall_final_render.py | импортёры: doll_b2_render.py,doll_ctl_pilot.py,doll_face_ctl.py,doll_face_paste.py | gpu_scripts.txt | доки: DECISIONS.md,RAKES.md | очередь: 2026-10-08x39
+tools/hdart/wall_thru.py	214	РАБОЧАЯ-СЕРИЯ-библиотека	2026-10-08	2026-10-08x7		импорт из wall_restore.py | импортёры: wall_restore.py,wall_v2.py | gpu_scripts.txt | очередь: 2026-10-08x7
+tools/hdart/water_build.py	394	РАБОЧАЯ-СЕРИЯ-библиотека	2026-10-07			импорт из ticket_scene.py | импортёры: contour_check.py,cube_seam.py,cube_seam_scan.py,flat_tile.py | доки: RAKES.md,map-ground-2026-10-07.md | тесты: test_pixel_lines_contour.py
+tools/hdart/carpet_check.py	85	РАЗОВЫЙ-завершённая серия	2026-10-05			импортёры: нет | доки: RAKES.md,map-addressing-scc-contract-2026-10-06.md
+tools/hdart/check_craft_lights.py	178	РАЗОВЫЙ-завершённая серия	2026-10-05			импортёры: нет | доки: RAKES.md
+tools/hdart/check_triton.py	94	РАЗОВЫЙ-завершённая серия	2026-09-22			импортёры: нет | gpu_scripts.txt
+tools/hdart/contour_check.py	100	РАЗОВЫЙ-завершённая серия	2026-10-14			импортёры: floor_batch.py,lines_material.py,pixel_lines.py | доки: RAKES.md | тесты: test_pixel_lines_contour.py
+tools/hdart/craft_outline.py	723	РАЗОВЫЙ-завершённая серия	2026-10-05			импортёры: нет | доки: RAKES.md,release-2026.10.08-2-composition.md
+tools/hdart/family_review.py	208	РАЗОВЫЙ-завершённая серия	2026-09-29			импортёры: нет | доки: HD_PIPELINE_V2.md
+tools/hdart/fire_real_pack.py	214	РАЗОВЫЙ-завершённая серия	2026-09-28			импортёры: нет | доки: HD_PIPELINE_V2.md
+tools/hdart/flat_tile.py	86	РАЗОВЫЙ-завершённая серия	2026-10-08			импортёры: нет | доки: RAKES.md
+tools/hdart/gen_fire_real.py	91	РАЗОВЫЙ-завершённая серия	2026-09-28	2026-09-28x1		импортёры: нет | gpu_scripts.txt | доки: HD_PIPELINE_V2.md | очередь: 2026-09-28x1
+tools/hdart/glow_loop.py	105	РАЗОВЫЙ-завершённая серия	2026-10-12			импортёры: нет
+tools/hdart/grate_floor.py	157	РАЗОВЫЙ-завершённая серия	2026-10-12			импортёры: нет
+tools/hdart/grout_tile.py	146	РАЗОВЫЙ-завершённая серия	2026-10-09			импортёры: нет | доки: RAKES.md
+tools/hdart/hints_apply.py	91	РАЗОВЫЙ-завершённая серия	2026-09-22			импортёры: нет
+tools/hdart/inv_redo_prep.py	278	РАЗОВЫЙ-завершённая серия	2026-10-15			импортёры: нет | доки: inventory-redo-2026-10-15.md
+tools/hdart/lattice_floor.py	111	РАЗОВЫЙ-завершённая серия	2026-10-12			импортёры: нет
+tools/hdart/lines_material.py	192	РАЗОВЫЙ-завершённая серия	2026-10-15			импортёры: нет | доки: RAKES.md
+tools/hdart/list_ground_sets.py	167	РАЗОВЫЙ-завершённая серия	2026-09-26			импортёры: нет
+tools/hdart/map_queue.py	110	РАЗОВЫЙ-завершённая серия	2026-10-05			импортёры: нет | доки: MAP_QUEUE.md
+tools/hdart/mirror_frames.py	223	РАЗОВЫЙ-завершённая серия	2026-10-05			импортёры: gen_lora_batch.py,mirror_sheet.py,other_view_registry.py | доки: HD_PIPELINE.md,RAKES.md
+tools/hdart/other_view_registry.py	1357	РАЗОВЫЙ-завершённая серия	2026-10-07			импортёры: нет
+tools/hdart/palette_shift_sets.py	99	РАЗОВЫЙ-завершённая серия	2026-10-14			импортёры: floor_batch.py,floor_scene.py | доки: RAKES.md | тесты: test_floor_batch_palshift.py
+tools/hdart/pedia_flatbg.py	106	РАЗОВЫЙ-завершённая серия	2026-10-05			импортёры: нет
+tools/hdart/pedia_nudecheck.py	114	РАЗОВЫЙ-завершённая серия	2026-09-26	2026-09-26x1		импортёры: нет | gpu_scripts.txt | очередь: 2026-09-26x1
+tools/hdart/pedia_pick.py	320	РАЗОВЫЙ-завершённая серия	2026-10-05			импортёры: нет
+tools/hdart/pedia_push.py	109	РАЗОВЫЙ-завершённая серия	2026-10-05			импортёры: pedia_nudecheck.py | доки: terrain-recolor.md
+tools/hdart/pixel_lines.py	239	РАЗОВЫЙ-завершённая серия	2026-10-14			импортёры: contour_check.py,glow_loop.py,lines_material.py | доки: RAKES.md | тесты: test_pixel_lines_contour.py
+tools/hdart/ragged_obj.py	61	РАЗОВЫЙ-завершённая серия	2026-10-08			импортёры: нет | доки: RAKES.md
+tools/hdart/render_chunks.py	160	РАЗОВЫЙ-завершённая серия	2026-10-01	2026-10-07x32	да	импортёры: hd_e2e_v1_r2.py | доки: DECISIONS.md | тесты: test_render_chunks.py | очередь: 2026-10-07x32
+tools/hdart/ridge_roof.py	121	РАЗОВЫЙ-завершённая серия	2026-10-08			импортёры: grout_tile.py,stripe_plate.py | доки: RAKES.md
+tools/hdart/stripe_plate.py	123	РАЗОВЫЙ-завершённая серия	2026-10-09			импортёры: нет | доки: RAKES.md
+tools/hdart/support_area.py	316	РАЗОВЫЙ-завершённая серия	2026-10-06			импортёры: нет | доки: RAKES.md
+tools/hdart/surface_tone.py	104	РАЗОВЫЙ-завершённая серия	2026-10-07			импортёры: нет | доки: map-water-2026-10-07.md
+tools/hdart/tile_edge.py	161	РАЗОВЫЙ-завершённая серия	2026-10-07			импортёры: нет
+tools/hdart/triage/build.py	246	РАЗОВЫЙ-завершённая серия	2026-09-26			импортёры: нет | доки: RAKES.md,README.md
+tools/hdart/triage/caption.py	113	РАЗОВЫЙ-завершённая серия	2026-09-24			импортёры: нет | gpu_scripts.txt | доки: RAKES.md | тесты: test_gpu_guard.py
+tools/hdart/vr_floor.py	172	РАЗОВЫЙ-завершённая серия	2026-10-12			импортёры: нет | доки: RAKES.md
+tools/hdart/w015_mag_fit.py	196	РАЗОВЫЙ-завершённая серия	2026-10-05			импортёры: нет
+tools/hdart/wall_final_select.py	566	РАЗОВЫЙ-завершённая серия	2026-10-08			импортёры: wall_exact_sheet.py | доки: DECISIONS.md
+tools/hdart/wall_neighbors.py	132	РАЗОВЫЙ-завершённая серия	2026-10-14			импортёры: нет
+tools/hdart/wall_restore_c.py	221	РАЗОВЫЙ-завершённая серия	2026-10-08	2026-10-08x1		импортёры: wall_final_select.py | gpu_scripts.txt | доки: RAKES.md | очередь: 2026-10-08x1
+tools/hdart/wall_v2.py	171	РАЗОВЫЙ-завершённая серия	2026-10-08	2026-10-08x9		импортёры: нет | gpu_scripts.txt | доки: RAKES.md | очередь: 2026-10-08x9
+tools/hdart/water_cube.py	147	РАЗОВЫЙ-завершённая серия	2026-10-12			импортёры: нет
+tools/hdart/base_census.py	80	РАЗОВЫЙ-тикет/проба	2026-10-22			импортёры: нет
+tools/hdart/base_fits_install.py	100	РАЗОВЫЙ-тикет/проба	2026-10-22			импортёры: нет | доки: base-living-2026-10-22.md
+tools/hdart/base_flow_install.py	110	РАЗОВЫЙ-тикет/проба	2026-10-24			импортёры: нет | доки: base-living-2026-10-22.md
+tools/hdart/base_live_install.py	76	РАЗОВЫЙ-тикет/проба	2026-10-27			импортёры: нет
+tools/hdart/base_scene_preview.py	945	РАЗОВЫЙ-тикет/проба	2026-10-22			импортёры: нет | доки: RAKES.md,base-living-2026-10-22.md
+tools/hdart/blood_spray_pack.py	54	РАЗОВЫЙ-тикет/проба	2026-10-26			импортёры: нет
+tools/hdart/cockpit_census.py	142	РАЗОВЫЙ-тикет/проба	2026-10-20			импортёры: нет
+tools/hdart/cube_seam_scan.py	100	РАЗОВЫЙ-тикет/проба	2026-10-20			импортёры: нет | доки: RAKES.md
+tools/hdart/fit_sheet.py	88	РАЗОВЫЙ-тикет/проба	2026-10-05			импортёры: нет | доки: RAKES.md,PACK_REVIEW.md
+tools/hdart/footstep_census.py	21	РАЗОВЫЙ-тикет/проба	2026-09-26			импортёры: нет | доки: combat-fx.md
+tools/hdart/fx_census.py	111	РАЗОВЫЙ-тикет/проба	2026-10-05			импортёры: нет | доки: combat-fx.md
+tools/hdart/hill_census.py	184	РАЗОВЫЙ-тикет/проба	2026-10-20			импортёры: relief_object.py
+tools/hdart/item_b2_install.py	128	РАЗОВЫЙ-тикет/проба	2026-10-19			импортёры: нет | доки: RAKES.md,inventory-hd-enviro-palette.md | тесты: test_item_asset_check.py
+tools/hdart/map_hint_sheet.py	161	РАЗОВЫЙ-тикет/проба	2026-10-05			импортёры: нет
+tools/hdart/mirror_sheet.py	114	РАЗОВЫЙ-тикет/проба	2026-10-05			импортёры: нет | доки: RAKES.md
+tools/hdart/orig_sheet.py	86	РАЗОВЫЙ-тикет/проба	2026-10-05			импортёры: нет
+tools/hdart/pedia_compare.py	394	РАЗОВЫЙ-тикет/проба	2026-10-05			импортёры: нет
+tools/hdart/pilot2_job_sheet.py	436	РАЗОВЫЙ-тикет/проба	2026-10-07			импортёры: crossing_build.py,crossing_geom.py,sidewalk_probe.py,sidewalk_render.py | доки: RAKES.md,map-pilot2-plan-2026-10-06.md
+tools/hdart/probes/plib.py	176	РАЗОВЫЙ-тикет/проба	2026-10-26			импортёры: xp308.py,xp323.py,xp324_sheet.py,xp327.py
+tools/hdart/probes/xp308.py	252	РАЗОВЫЙ-тикет/проба	2026-10-26			импортёры: нет
+tools/hdart/probes/xp323.py	154	РАЗОВЫЙ-тикет/проба	2026-10-26			импортёры: нет
+tools/hdart/probes/xp324_sheet.py	98	РАЗОВЫЙ-тикет/проба	2026-10-26			импортёры: нет
+tools/hdart/probes/xp327.py	56	РАЗОВЫЙ-тикет/проба	2026-10-26			импортёры: нет
+tools/hdart/promo_compare.py	40	РАЗОВЫЙ-тикет/проба	2026-10-27			импортёры: нет
+tools/hdart/sweep_sheet.py	76	РАЗОВЫЙ-тикет/проба	2026-09-26			импортёры: нет
+tools/hdart/t222_lines.py	288	РАЗОВЫЙ-тикет/проба	2026-10-23			импортёры: нет
+tools/hdart/t222_path.py	114	РАЗОВЫЙ-тикет/проба	2026-10-23			импортёры: нет
+tools/hdart/t242_mud.py	99	РАЗОВЫЙ-тикет/проба	2026-10-23			импортёры: нет
+tools/hdart/t247_barrel_splice.py	105	РАЗОВЫЙ-тикет/проба	2026-10-22			импортёры: нет | доки: player-tickets-2026-10-22.md
+tools/hdart/t248_bin.py	42	РАЗОВЫЙ-тикет/проба	2026-10-23			импортёры: нет
+tools/hdart/t249_asphalt_edge.py	170	РАЗОВЫЙ-тикет/проба	2026-10-23			импортёры: нет
+tools/hdart/t249_box.py	238	РАЗОВЫЙ-тикет/проба	2026-10-23			импортёры: t_regen_obj.py
+tools/hdart/t249_box_gen.py	107	РАЗОВЫЙ-тикет/проба	2026-10-23	2026-10-23x2		импортёры: нет | gpu_scripts.txt | очередь: 2026-10-23x2
+tools/hdart/t249_box_series.py	144	РАЗОВЫЙ-тикет/проба	2026-10-23			импортёры: нет
+tools/hdart/t249_wheel.py	294	РАЗОВЫЙ-тикет/проба	2026-10-23			импортёры: нет
+tools/hdart/t250_room.py	337	РАЗОВЫЙ-тикет/проба	2026-10-23			импортёры: нет
+tools/hdart/t251_roof.py	245	РАЗОВЫЙ-тикет/проба	2026-10-23			импортёры: нет
+tools/hdart/t253_rails.py	286	РАЗОВЫЙ-тикет/проба	2026-10-23			импортёры: нет
+tools/hdart/t253_sheet.py	290	РАЗОВЫЙ-тикет/проба	2026-10-23			импортёры: t253_rails.py
+tools/hdart/t254_silo_edit.py	101	РАЗОВЫЙ-тикет/проба	2026-10-22	2026-10-22x1		импортёры: нет | gpu_scripts.txt | доки: player-tickets-2026-10-22.md | очередь: 2026-10-22x1
+tools/hdart/t259_wall_b2.py	56	РАЗОВЫЙ-тикет/проба	2026-10-22			импортёры: нет
+tools/hdart/t262_pits.py	308	РАЗОВЫЙ-тикет/проба	2026-10-23			импортёры: t276_277_cracks.py,t277_pits_rim.py
+tools/hdart/t264_crate.py	69	РАЗОВЫЙ-тикет/проба	2026-10-23			импортёры: нет
+tools/hdart/t264_crate_v3.py	88	РАЗОВЫЙ-тикет/проба	2026-10-23			импортёры: нет
+tools/hdart/t266_pull_image.py	66	РАЗОВЫЙ-тикет/проба	2026-10-23			импортёры: нет
+tools/hdart/t276_277_cracks.py	234	РАЗОВЫЙ-тикет/проба	2026-10-23			импортёры: нет
+tools/hdart/t276_build.py	527	РАЗОВЫЙ-тикет/проба	2026-10-23			импортёры: нет
+tools/hdart/t276_gen.py	137	РАЗОВЫЙ-тикет/проба	2026-10-23	2026-10-23x6		импортёры: нет | gpu_scripts.txt | доки: RAKES.md | очередь: 2026-10-23x6
+tools/hdart/t277_pits_rim.py	121	РАЗОВЫЙ-тикет/проба	2026-10-23			импортёры: нет
+tools/hdart/t280_install.py	53	РАЗОВЫЙ-тикет/проба	2026-10-27			импортёры: нет
+tools/hdart/t280_probe.py	134	РАЗОВЫЙ-тикет/проба	2026-10-27			импортёры: нет
+tools/hdart/t280_sheet.py	91	РАЗОВЫЙ-тикет/проба	2026-10-27			импортёры: нет
+tools/hdart/t286_jukebox.py	125	РАЗОВЫЙ-тикет/проба	2026-10-23			импортёры: нет
+tools/hdart/t295_install.py	53	РАЗОВЫЙ-тикет/проба	2026-10-23			импортёры: нет
+tools/hdart/t300_gen.py	229	РАЗОВЫЙ-тикет/проба	2026-10-23	2026-10-23x2		импортёры: t300_sheet.py | gpu_scripts.txt | очередь: 2026-10-23x2
+tools/hdart/t300_install.py	54	РАЗОВЫЙ-тикет/проба	2026-10-26			импортёры: нет
+tools/hdart/t300_sheet.py	91	РАЗОВЫЙ-тикет/проба	2026-10-23			импортёры: нет
+tools/hdart/t300a_gen.py	264	РАЗОВЫЙ-тикет/проба	2026-10-26	2026-10-26x1		импортёры: t300r_gen.py | очередь: 2026-10-26x1
+tools/hdart/t300r_gen.py	229	РАЗОВЫЙ-тикет/проба	2026-10-26	2026-10-26x1		импортёры: нет | очередь: 2026-10-26x1
+tools/hdart/t302_305_probe.py	299	РАЗОВЫЙ-тикет/проба	2026-10-24			импортёры: нет
+tools/hdart/t302_install.py	141	РАЗОВЫЙ-тикет/проба	2026-10-26			импортёры: нет
+tools/hdart/t302_seam.py	666	РАЗОВЫЙ-тикет/проба	2026-10-26			импортёры: нет | доки: RAKES.md
+tools/hdart/t322_333_install.py	281	РАЗОВЫЙ-тикет/проба	2026-10-26			импортёры: t300_install.py
+tools/hdart/t_grass.py	46	РАЗОВЫЙ-тикет/проба	2026-10-23			импортёры: нет
+tools/hdart/t_installed.py	167	РАЗОВЫЙ-тикет/проба	2026-10-23			импортёры: нет
+tools/hdart/t_jungle_stumps.py	104	РАЗОВЫЙ-тикет/проба	2026-10-23	2026-10-23x3		импортёры: t_jungle_stumps_build.py | gpu_scripts.txt | доки: collapse-ideas-2026-10-22.md | очередь: 2026-10-23x3
+tools/hdart/t_jungle_stumps_build.py	202	РАЗОВЫЙ-тикет/проба	2026-10-23			импортёры: нет | доки: collapse-ideas-2026-10-22.md
+tools/hdart/t_regen_obj.py	325	РАЗОВЫЙ-тикет/проба	2026-10-23	2026-10-23x9		импортёры: t_regen_sheet.py | gpu_scripts.txt | очередь: 2026-10-23x9
+tools/hdart/t_regen_sheet.py	26	РАЗОВЫЙ-тикет/проба	2026-10-23			импортёры: нет
+tools/hdart/ticket_q21_edge.py	145	РАЗОВЫЙ-тикет/проба	2026-10-26			импортёры: нет
+tools/hdart/ticket_q21_probe.py	214	РАЗОВЫЙ-тикет/проба	2026-10-26	2026-10-26x11		импортёры: нет | gpu_scripts.txt | доки: RAKES.md | очередь: 2026-10-26x11
+tools/hdart/ticket_q21_sheet.py	297	РАЗОВЫЙ-тикет/проба	2026-10-26			импортёры: нет
+tools/hdart/ticket_scene.py	223	РАЗОВЫЙ-тикет/проба	2026-10-23			импортёры: t222_lines.py,t222_path.py,t242_mud.py,t248_bin.py | доки: RAKES.md
+tools/hdart/tracer_preview.py	245	РАЗОВЫЙ-тикет/проба	2026-10-05			импортёры: нет | доки: RAKES.md
+tools/hdart/tree_install.py	136	РАЗОВЫЙ-тикет/проба	2026-10-13			импортёры: нет
+tools/hdart/truth_sheet.py	269	РАЗОВЫЙ-тикет/проба	2026-09-30			импортёры: truth_codex.py,truth_recheck.py
+tools/hdart/wall_exact_install.py	144	РАЗОВЫЙ-тикет/проба	2026-10-15			импортёры: нет | доки: RAKES.md
+tools/hdart/wall_exact_sheet.py	197	РАЗОВЫЙ-тикет/проба	2026-10-15			импортёры: нет | доки: RAKES.md
+tools/hdart/detail_class.py	317	СТАРОЕ-ПОКОЛЕНИЕ-держит-живое	2026-09-30		да	импорт из photo_accept.py | импортёры: photo_accept.py,photo_probe.py,simple_probe.py | доки: DECISIONS.md,inventory-items-hd.md | тесты: test_detail_class.py
+tools/hdart/ground_seam.py	596	СТАРОЕ-ПОКОЛЕНИЕ-держит-живое	2026-10-08			импорт из t251_roof.py | импортёры: flat_tile.py,floor_batch.py,glow_loop.py,grate_floor.py | доки: RAKES.md,credits-audit-2026-10-15.md | тесты: test_pixel_lines_contour.py
+tools/hdart/item_asset_check.py	158	СТАРОЕ-ПОКОЛЕНИЕ-держит-живое	2026-10-15			импорт из item_photo.py | импортёры: item_b2_render.py,item_geometry.py,item_photo.py,weapon_parts.py | доки: RAKES.md,inventory-items-hd.md | тесты: test_item_asset_check.py
+tools/hdart/item_photo.py	1098	СТАРОЕ-ПОКОЛЕНИЕ-держит-живое	2026-10-03	2026-10-03x10		импорт из weapons_probe5.py | импортёры: base_hangar_edit.py,base_pool_repair.py,base_turret_split.py,craft_launch_frames.py | gpu_scripts.txt | доки: RAKES.md | очередь: 2026-10-03x10
+tools/hdart/photo_accept.py	625	СТАРОЕ-ПОКОЛЕНИЕ-держит-живое	2026-10-01		да	импорт из photo_render.py | импортёры: hd_e2e_v1_r2.py,photo_decomp.py,photo_render.py,photo_struct.py | доки: PHOTO_BASE.md,RAKES.md | тесты: test_photo_accept.py
+tools/hdart/photo_base.py	671	СТАРОЕ-ПОКОЛЕНИЕ-держит-живое	2026-10-01		да	импорт из item_photo.py | импортёры: hd_e2e_v1_r2.py,hd_e2e_v1_run.py,item_photo.py,photo_accept.py | доки: DECISIONS.md,PHOTO_BASE.md | тесты: test_photo_accept.py,test_photo_base.py
+tools/hdart/photo_render.py	274	СТАРОЕ-ПОКОЛЕНИЕ-держит-живое	2026-10-01	2026-10-01x2	да	импорт из item_photo.py | импортёры: hd_e2e_v1_r2.py,hd_e2e_v1_run.py,item_photo.py,photo_struct.py | gpu_scripts.txt | доки: DECISIONS.md,PHOTO_BASE.md | тесты: test_photo_accept.py | очередь: 2026-10-01x2
+tools/hdart/pilot_batch.py	479	СТАРОЕ-ПОКОЛЕНИЕ-держит-живое	2026-09-30		да	импорт из photo_accept.py | импортёры: detail_class.py,photo_accept.py,photo_struct.py,pilot_report.py | доки: RAKES.md | тесты: test_pilot_batch.py
+tools/hdart/struct_guide.py	359	СТАРОЕ-ПОКОЛЕНИЕ-держит-живое	2026-10-01		да	импорт из item_photo.py | импортёры: hd_e2e_v1_r2.py,hd_e2e_v1_run.py,item_photo.py,photo_struct.py | доки: DECISIONS.md,HD_UNITS.md | тесты: test_struct_guide.py,test_struct_report.py
+tools/hdart/struct_probe.py	338	СТАРОЕ-ПОКОЛЕНИЕ-держит-живое	2026-10-01	2026-10-01x3	да	импорт из item_photo.py | импортёры: handob_tommy_q21.py,hd_e2e_v1_r2.py,hd_e2e_v1_run.py,item_photo.py | gpu_scripts.txt | доки: DECISIONS.md,RAKES.md | очередь: 2026-10-01x3
+tools/hdart/unit_parts.py	706	СТАРОЕ-ПОКОЛЕНИЕ-держит-живое	2026-10-05	2026-10-05x11		импорт из doll_photo_pilot.py | импортёры: agent_full.py,agent_pose.py,craft_launch_swap.py,doll_ctl_pilot.py | gpu_scripts.txt | доки: RAKES.md | очередь: 2026-10-05x11
+tools/hdart/unit_pilot.py	643	СТАРОЕ-ПОКОЛЕНИЕ-держит-живое	2026-10-03	2026-10-03x2		импорт из unit_parts.py | импортёры: unit_direct.py,unit_parts.py,unit_ref.py,unit_refit.py | gpu_scripts.txt | доки: RAKES.md | очередь: 2026-10-03x2
+tools/hdart/unit_turnaround.py	1150	СТАРОЕ-ПОКОЛЕНИЕ-держит-живое	2026-10-04	2026-10-04x24		импорт из unit_parts.py | импортёры: unit_parts.py | gpu_scripts.txt | доки: RAKES.md | очередь: 2026-10-04x24
+tools/hdart/weapon_classes.py	317	СТАРОЕ-ПОКОЛЕНИЕ-держит-живое	2026-09-26			импорт из fx_map.py | импортёры: fx_map.py
+tools/hdart/weapons_edit.py	331	СТАРОЕ-ПОКОЛЕНИЕ-держит-живое	2026-10-04	2026-10-04x2		импорт из weapons_probe5.py | импортёры: handob_gpu.py,weapons_probe3.py,weapons_probe4.py,weapons_probe5.py | gpu_scripts.txt | очередь: 2026-10-04x2
+tools/hdart/weapons_probe3.py	200	СТАРОЕ-ПОКОЛЕНИЕ-держит-живое	2026-10-04	2026-10-04x1		импорт из weapons_probe5.py | импортёры: handob_gpu.py,weapons_probe4.py,weapons_probe5.py,weapons_restore.py | gpu_scripts.txt | очередь: 2026-10-04x1
+tools/hdart/weapons_probe5.py	204	СТАРОЕ-ПОКОЛЕНИЕ-держит-живое	2026-10-04	2026-10-04x2		импорт из tree_render.py | импортёры: base_hangar_edit.py,base_pool_repair.py,base_turret_split.py,craft_launch_frames.py | gpu_scripts.txt | очередь: 2026-10-04x2
+tools/hdart/acceptance_batch.py	124	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-09-29			импортёры: нет | доки: HD_PIPELINE_V2.md
+tools/hdart/acceptance_report.py	358	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-09-30			импортёры: нет | доки: HD_PIPELINE_V2.md
+tools/hdart/agent_full.py	681	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-05	2026-10-05x1		импортёры: agent_pose.py | gpu_scripts.txt | доки: RAKES.md,STATUS.md | очередь: 2026-10-05x1
+tools/hdart/agent_pose.py	687	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-05	2026-10-05x4		импортёры: нет | доки: RAKES.md,grip-contract.md | очередь: 2026-10-05x4
+tools/hdart/aligned_recolor_v1.py	181	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-02		да	импортёры: aligned_recolor_v2.py,ar_boundary_validation.py,relation_discovery_v5.py,v5_ar2_recount.py | тесты: test_aligned_recolor_v1.py,test_aligned_recolor_v2.py
+tools/hdart/aligned_recolor_v2.py	104	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-02		да	импортёры: hd_e2e_v1.py,relation_holdout_v5.py,relation_holdout_v7.py,v5_ar2_recount.py | доки: DECISIONS.md | тесты: test_aligned_recolor_v2.py
+tools/hdart/ar_boundary_validation.py	421	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-02		да	импортёры: aligned_recolor_v2.py,relation_safety_v7_prep.py,v5_ar2_recount.py | доки: DECISIONS.md | тесты: test_ar_boundary_validation.py
+tools/hdart/arbiter.py	846	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-09-30	2026-09-30x1		импортёры: arbiter_v2.py,truth_codex.py,truth_recheck.py,truth_sheet.py | gpu_scripts.txt | доки: DECISIONS.md,HD_PIPELINE_V2.md | тесты: test_arbiter.py,test_arbiter_v2.py | очередь: 2026-09-30x1
+tools/hdart/arbiter_v2.py	477	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-09-30			импортёры: нет | gpu_scripts.txt | тесты: test_arbiter_v2.py
+tools/hdart/assembly_discovery_v1.py	241	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-02		да	импортёры: assembly_group_v1.py,assembly_repeated_v1.py,hd_e2e_v1.py,relation_discovery_v5.py | доки: RAKES.md | тесты: test_assembly_discovery_v1.py
+tools/hdart/assembly_evidence_v2_prep.py	546	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-02		да	импортёры: relation_safety_v7_prep.py | доки: DECISIONS.md
+tools/hdart/assembly_group_v1.py	224	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-02		да	импортёры: assembly_evidence_v2_prep.py,hd_e2e_v1.py,relation_holdout_v7.py,relation_v6_prep.py | доки: DECISIONS.md | тесты: test_assembly_group_v1.py
+tools/hdart/assembly_repeated_v1.py	201	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-02		да	импортёры: assembly_evidence_v2_prep.py,hd_e2e_v1.py,relation_holdout_v7.py,relation_safety_v7_prep.py | тесты: test_assembly_repeated_v1.py
+tools/hdart/asset_fidelity.py	261	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-03		да	импортёры: prod_two_pass_v4.py,restore_batch_v1.py,restore_probe_v1.py | доки: DECISIONS.md,RAKES.md | тесты: test_asset_fidelity.py
+tools/hdart/axis_a_clean_v5.py	141	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-02		да	импортёры: relation_holdout_v7.py | доки: DECISIONS.md,RAKES.md
+tools/hdart/crossing_build.py	768	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-07			импортёры: crossing_clean.py,crossing_control.py,crossing_geom.py,crossing_pair_edge.py | доки: RAKES.md,map-crossing-2026-10-07.md
+tools/hdart/crossing_check.py	701	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-07			импортёры: crossing_build.py,crossing_clean.py,crossing_pair_edge.py,crossing_second.py | доки: RAKES.md,map-crossing-2026-10-07.md
+tools/hdart/crossing_clean.py	314	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-07			импортёры: crossing_pair_edge.py,crossing_second.py | доки: RAKES.md,map-crossing-2026-10-07.md
+tools/hdart/crossing_control.py	107	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-07			импортёры: нет | доки: RAKES.md,map-crossing-2026-10-07.md
+tools/hdart/crossing_geom.py	248	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-07			импортёры: нет | доки: RAKES.md,map-crossing-2026-10-07.md
+tools/hdart/crossing_pair_edge.py	357	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-07			импортёры: crossing_geom.py | доки: map-crossing-2026-10-07.md
+tools/hdart/crossing_second.py	202	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-07			импортёры: нет | доки: map-crossing-2026-10-07.md
+tools/hdart/derive_recolor_acceptance_v2.py	776	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-03		да	импортёры: derive_recolor_acceptance_v2_report_fix.py,derive_recolor_acceptance_v3.py,derive_recolor_acceptance_v31.py,derive_recolor_acceptance_v32.py | доки: RAKES.md | тесты: test_derive_recolor_acceptance_v2.py
+tools/hdart/derive_recolor_acceptance_v2_report_fix.py	75	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-03			импортёры: нет | доки: DECISIONS.md
+tools/hdart/derive_recolor_acceptance_v3.py	765	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-03		да	импортёры: derive_recolor_acceptance_v31.py,derive_recolor_acceptance_v32.py,derive_recolor_base_acceptance_v1.py,derive_recolor_v33_dev.py | доки: DECISIONS.md,RAKES.md
+tools/hdart/derive_recolor_acceptance_v31.py	539	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-03		да	импортёры: derive_recolor_acceptance_v32.py,derive_recolor_base_acceptance_v1.py,derive_recolor_v33_dev.py | доки: DECISIONS.md,RAKES.md
+tools/hdart/derive_recolor_acceptance_v32.py	856	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-03		да	импортёры: derive_recolor_base_acceptance_v1.py,derive_recolor_v33_dev.py | доки: DECISIONS.md
+tools/hdart/derive_recolor_base_acceptance_v1.py	850	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-03		да	импортёры: derive_recolor_base_acceptance_v11.py,derive_recolor_safe_acceptance_v1.py | доки: DECISIONS.md,RAKES.md
+tools/hdart/derive_recolor_base_acceptance_v11.py	660	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-03		да	импортёры: нет | доки: DECISIONS.md
+tools/hdart/derive_recolor_base_v1.py	98	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-03		да	импортёры: derive_recolor_base_acceptance_v1.py | доки: DECISIONS.md
+tools/hdart/derive_recolor_safe_acceptance_v1.py	533	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-03		да	импортёры: hd_e2e_v1_r33.py,hd_e2e_v1_run.py | доки: DECISIONS.md
+tools/hdart/derive_recolor_v3.py	265	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-03		да	импортёры: derive_recolor_acceptance_v3.py,derive_recolor_acceptance_v31.py,derive_recolor_acceptance_v32.py,derive_recolor_base_acceptance_v1.py | доки: DECISIONS.md,RAKES.md
+tools/hdart/derive_recolor_v31.py	263	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-03		да	импортёры: derive_recolor_acceptance_v31.py,derive_recolor_acceptance_v32.py,derive_recolor_base_acceptance_v1.py,derive_recolor_base_v1.py | доки: DECISIONS.md,RAKES.md
+tools/hdart/derive_recolor_v32.py	168	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-03		да	импортёры: derive_recolor_acceptance_v32.py | доки: DECISIONS.md
+tools/hdart/derive_recolor_v33_dev.py	539	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-03		да	импортёры: derive_recolor_base_acceptance_v1.py,derive_recolor_v33_rdiag.py | доки: DECISIONS.md
+tools/hdart/derive_recolor_v33_rdiag.py	190	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-03			импортёры: нет | доки: DECISIONS.md
+tools/hdart/detail_probe.py	401	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-09-30			импортёры: photo_probe.py,simple_probe.py | доки: DECISIONS.md
+tools/hdart/detail_retry_v2.py	130	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-05	2026-10-05x1		импортёры: нет | доки: DECISIONS.md | очередь: 2026-10-05x1
+tools/hdart/dispute_arbiter.py	412	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-05			импортёры: нет | доки: DECISIONS.md,RAKES.md
+tools/hdart/dupe_frames.py	171	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-05			импортёры: нет | доки: RAKES.md
+tools/hdart/dupe_sets.py	148	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-05			импортёры: нет | доки: hd-dupes.md
+tools/hdart/dupe_view.py	108	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-05			импортёры: нет
+tools/hdart/families_recolor_diff.py	234	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-01		да	импортёры: family_relation_v2.py | доки: DECISIONS.md | тесты: test_families_recolor_diff.py
+tools/hdart/family_relation_v2.py	193	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-01		да	импортёры: relation_holdout_v4.py,relation_holdout_v5.py,relation_holdout_v7.py,routing_holdout_v5.py | доки: DECISIONS.md | тесты: test_family_relation_v2.py
+tools/hdart/final_select.py	247	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-05		да	импортёры: v3_baseline.py | доки: DECISIONS.md
+tools/hdart/floor_batch.py	1148	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-14			импортёры: contour_check.py,floor_scene.py,floor_series.py,tree_install.py | доки: RAKES.md,credits-audit-2026-10-15.md | тесты: test_floor_batch_palshift.py,test_floor_batch_plan.py
+tools/hdart/floor_context.py	224	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-09-27			импортёры: floor_group.py
+tools/hdart/floor_group.py	364	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-09-28	2026-09-28x4		импортёры: ground_relief.py | gpu_scripts.txt | доки: HD_PIPELINE_V2.md,RAKES.md | очередь: 2026-09-28x4
+tools/hdart/floor_scene.py	196	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-14			импортёры: нет
+tools/hdart/floor_series.py	224	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-14			импортёры: нет
+tools/hdart/floor_sheets.py	132	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-09-22			импортёры: нет
+tools/hdart/frame_context.py	160	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-07			импортёры: нет | доки: map-pilot2-plan-2026-10-06.md
+tools/hdart/gen_lora_batch.py	228	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-09-26			импортёры: build.py,keep_batch.py,paint3.py | gpu_scripts.txt | доки: HD_PIPELINE_V2.md,RAKES.md | тесты: test_gpu_guard.py
+tools/hdart/gen_reticle_v2.py	367	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-03			импортёры: нет | доки: release-2026.10.08-2-composition.md
+tools/hdart/geom_mask.py	326	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-07			импортёры: map_pilot2_jobs.py,mask_vs_classic.py,pilot2_job_sheet.py | доки: RAKES.md,map-pilot2-plan-2026-10-06.md | тесты: test_geom_mask_hole.py
+tools/hdart/grip_check8.py	381	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-06			импортёры: grip_pilot_tasks.py,support_area.py | доки: RAKES.md
+tools/hdart/grip_engine_check.py	236	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-06			импортёры: grip_check8.py,grip_pilot_tasks.py,support_area.py
+tools/hdart/grip_matrix.py	853	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-06			импортёры: grip_check8.py,grip_engine_check.py,grip_pilot.py,grip_pilot_tasks.py | доки: RAKES.md,grip-contract.md
+tools/hdart/grip_pilot.py	318	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-06			импортёры: grip_support_arm.py | доки: grip-contract.md
+tools/hdart/grip_pilot_tasks.py	355	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-06			импортёры: нет | доки: RAKES.md
+tools/hdart/grip_support_arm.py	213	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-06			импортёры: нет | доки: grip-contract.md
+tools/hdart/ground_field.py	202	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-07			импортёры: crossing_build.py,crossing_check.py,pilot2_job_sheet.py,sidewalk_probe.py | доки: map-pilot2-plan-2026-10-06.md | тесты: test_ground_field.py
+tools/hdart/ground_relief.py	297	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-09-28	2026-09-28x5		импортёры: нет | gpu_scripts.txt | доки: HD_PIPELINE_V2.md,RAKES.md | очередь: 2026-09-28x5
+tools/hdart/handob_cand1642.py	615	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-07			импортёры: handob_edit1642.py | доки: RAKES.md
+tools/hdart/handob_codex.py	228	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-06			импортёры: handob_gpu.py | доки: RAKES.md
+tools/hdart/handob_edit1642.py	414	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-07			импортёры: нет | gpu_scripts.txt
+tools/hdart/handob_fit4.py	379	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-07			импортёры: нет
+tools/hdart/handob_gpu.py	291	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-06	2026-10-06x1		импортёры: нет | gpu_scripts.txt | доки: RAKES.md | очередь: 2026-10-06x1
+tools/hdart/handob_planes.py	90	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-07			импортёры: нет | доки: RAKES.md
+tools/hdart/handob_tommy.py	556	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-06			импортёры: нет | доки: RAKES.md
+tools/hdart/handob_tommy_q21.py	143	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-07	2026-10-07x1		импортёры: нет | gpu_scripts.txt | очередь: 2026-10-07x1
+tools/hdart/hd_e2e_v1.py	913	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-03		да	импортёры: hd_e2e_v1_identity.py,hd_e2e_v1_r2.py,hd_e2e_v1_r3.py,hd_e2e_v1_r31.py | тесты: test_hd_e2e_v1.py
+tools/hdart/hd_e2e_v1_identity.py	159	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-03			импортёры: нет
+tools/hdart/hd_e2e_v1_r2.py	789	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-03		да	импортёры: hd_e2e_v1_r3.py | тесты: test_hd_e2e_v1_r2.py
+tools/hdart/hd_e2e_v1_r3.py	1140	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-03		да	импортёры: hd_e2e_v1_r31.py,hd_e2e_v1_r32.py | тесты: test_hd_e2e_v1_r3.py,test_hd_e2e_v1_r31.py
+tools/hdart/hd_e2e_v1_r31.py	134	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-03		да	импортёры: hd_e2e_v1_r32.py | тесты: test_hd_e2e_v1_r31.py
+tools/hdart/hd_e2e_v1_r32.py	311	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-03		да	импортёры: нет | доки: DECISIONS.md
+tools/hdart/hd_e2e_v1_r33.py	389	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-03		да	импортёры: hd_e2e_v1_run.py
+tools/hdart/hd_e2e_v1_review.py	309	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-03		да	импортёры: hd_e2e_v1_r32.py
+tools/hdart/hd_e2e_v1_run.py	323	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-03	2026-10-03x1	да	импортёры: prod_two_pass_v1.py,restore_batch_v1.py,restore_probe_v1.py | gpu_scripts.txt | очередь: 2026-10-03x1
+tools/hdart/hd_manifest.py	497	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-09-30			импортёры: нет | доки: HD_PIPELINE_V2.md,map-pipeline-audit-2026-10-05.md | тесты: test_hd_manifest.py
+tools/hdart/identity_auto.py	634	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-05		да	импортёры: v3_baseline.py | доки: DECISIONS.md
+tools/hdart/identity_card.py	768	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-01		да	импортёры: hd_e2e_v1_identity.py,identity_holdout.py,prod_two_pass_v3sf.py,prod_two_pass_v4.py | доки: DECISIONS.md | тесты: test_identity_card.py
+tools/hdart/identity_holdout.py	389	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-01			импортёры: нет | доки: DECISIONS.md | тесты: test_identity_holdout.py
+tools/hdart/identity_propose.py	939	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-09-30	2026-09-29x6	да	импортёры: arbiter.py,identity_card.py,prod_two_pass_v3sf.py | gpu_scripts.txt | доки: HD_PIPELINE_V2.md,RAKES.md | тесты: test_identity_propose.py | очередь: 2026-09-29x6
+tools/hdart/identity_routing.py	514	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-01		да	импортёры: aligned_recolor_v2.py,ar_boundary_validation.py,assembly_evidence_v2_prep.py,axis_a_clean_v5.py | доки: DECISIONS.md | тесты: test_identity_routing.py,test_routing_holdout_v7.py
+tools/hdart/item_geometry.py	399	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-03			импортёры: нет | доки: inventory-items-hd.md
+tools/hdart/map_catalog.py	635	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-06			импортёры: нет | доки: map-pipeline-audit-2026-10-05.md
+tools/hdart/map_pilot2_jobs.py	335	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-07			импортёры: нет | доки: RAKES.md,map-pilot2-plan-2026-10-06.md | тесты: test_geom_mask_hole.py
+tools/hdart/map_screen_check.py	442	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-06			импортёры: crossing_check.py,crossing_pair_edge.py,crossing_second.py,floor_batch.py | доки: map-pipeline-audit-2026-10-05.md
+tools/hdart/map_truth.py	700	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-06			импортёры: floor_batch.py,floor_scene.py,geom_mask.py,map_catalog.py | доки: map-pipeline-audit-2026-10-05.md
+tools/hdart/map_verdict.py	267	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-06			импортёры: нет | доки: map-pipeline-audit-2026-10-05.md
+tools/hdart/mask_vs_classic.py	101	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-07			импортёры: нет | доки: RAKES.md,map-pilot2-plan-2026-10-06.md
+tools/hdart/mcd_state.py	226	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-01		да	импортёры: relation_discovery_v2.py,relation_holdout_v4.py,relation_holdout_v5.py,relation_holdout_v7.py | доки: DECISIONS.md,map-pipeline-audit-2026-10-05.md | тесты: test_mcd_state.py
+tools/hdart/must_check.py	304	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-05			импортёры: нет | доки: DECISIONS.md
+tools/hdart/obj_batch.py	94	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-09-30			импортёры: нет | доки: HD_PIPELINE_V2.md,RAKES.md
+tools/hdart/obj_push.py	147	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-09-30			импортёры: нет | доки: map-pipeline-audit-2026-10-05.md
+tools/hdart/obj_queue.py	285	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-09-30			импортёры: нет | доки: HD_PIPELINE_V2.md,RAKES.md
+tools/hdart/oldauto_ab_v1.py	407	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-03			импортёры: нет | доки: DECISIONS.md
+tools/hdart/photo_decomp.py	321	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-01			импортёры: нет | доки: DECISIONS.md | тесты: test_photo_decomp.py
+tools/hdart/photo_probe.py	212	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-09-30			импортёры: нет | доки: DECISIONS.md,RAKES.md
+tools/hdart/photo_struct.py	592	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-01		да	импортёры: нет | доки: DECISIONS.md
+tools/hdart/photo_struct_render.py	121	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-01	2026-10-01x2	да	импортёры: hd_e2e_v1_r2.py,photo_struct.py | gpu_scripts.txt | доки: DECISIONS.md | очередь: 2026-10-01x2
+tools/hdart/pilot_report.py	310	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-09-30			импортёры: нет | доки: DECISIONS.md | тесты: test_detail_class.py
+tools/hdart/post_review_safety.py	70	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-02		да	импортёры: assembly_evidence_v2_prep.py,relation_holdout_v5.py,relation_holdout_v7.py,relation_safety_v7_prep.py | доки: DECISIONS.md,RAKES.md | тесты: test_post_review_safety.py
+tools/hdart/probe_floor.py	456	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-09-27	2026-09-27x3		импортёры: floor_group.py,ground_relief.py | gpu_scripts.txt | доки: HD_PIPELINE_V2.md,RAKES.md | очередь: 2026-09-27x3
+tools/hdart/prod2_final.py	163	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-05		да	импортёры: dispute_arbiter.py,v3_baseline.py
+tools/hdart/prod_two_pass_v1.py	430	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-04	2026-10-04x9	да	импортёры: detail_retry_v2.py,prod_two_pass_v2.py,prod_two_pass_v3.py,prod_two_pass_v3sf.py | gpu_scripts.txt | доки: DECISIONS.md,RAKES.md | очередь: 2026-10-04x9
+tools/hdart/prod_two_pass_v2.py	239	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-05	2026-10-05x3	да	импортёры: detail_retry_v2.py,prod_two_pass_v3.py,prod_two_pass_v3sf.py | gpu_scripts.txt | доки: DECISIONS.md | очередь: 2026-10-05x3
+tools/hdart/prod_two_pass_v3.py	148	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-05	2026-10-06x3	да	импортёры: prod_two_pass_v3sf.py,v3_baseline.py | доки: DECISIONS.md | очередь: 2026-10-06x3
+tools/hdart/prod_two_pass_v3sf.py	316	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-07	2026-10-07x3		импортёры: нет | доки: DECISIONS.md | очередь: 2026-10-07x3
+tools/hdart/prod_two_pass_v4.py	1232	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-07	2026-10-07x1		импортёры: нет | gpu_scripts.txt | доки: DECISIONS.md | очередь: 2026-10-07x1
+tools/hdart/qwen_judge.py	280	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-05	2026-10-05x1		импортёры: нет | gpu_scripts.txt | очередь: 2026-10-05x1
+tools/hdart/qwen_literal.py	93	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-03	2026-10-03x1		импортёры: нет | gpu_scripts.txt | очередь: 2026-10-03x1
+tools/hdart/recipe_guard.py	412	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-14			импортёры: floor_batch.py,floor_series.py | доки: RAKES.md | тесты: test_recipe_guard.py
+tools/hdart/relation_discovery_v2.py	929	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-02		да	импортёры: aligned_recolor_v1.py,aligned_recolor_v2.py,ar_boundary_validation.py,assembly_discovery_v1.py | тесты: test_relation_discovery_v2.py,test_relation_discovery_v3.py
+tools/hdart/relation_discovery_v3.py	854	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-02		да	импортёры: ar_boundary_validation.py,assembly_discovery_v1.py,assembly_evidence_v2_prep.py,hd_e2e_v1.py | доки: DECISIONS.md | тесты: test_hd_e2e_v1.py,test_hd_e2e_v1_r2.py
+tools/hdart/relation_discovery_v4.py	818	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-02		да	импортёры: aligned_recolor_v1.py,aligned_recolor_v2.py,ar_boundary_validation.py,hd_e2e_v1.py | доки: DECISIONS.md | тесты: test_aligned_recolor_v1.py,test_relation_discovery_v4.py
+tools/hdart/relation_discovery_v5.py	607	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-02		да	импортёры: relation_holdout_v5.py,relation_holdout_v7.py,relation_safety_v7_prep.py,v5_ar2_recount.py | доки: RAKES.md | тесты: test_relation_discovery_v5.py,test_v5_ar2_recount.py
+tools/hdart/relation_holdout_v4.py	1102	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-02		да	импортёры: ar_boundary_validation.py,assembly_evidence_v2_prep.py,hd_e2e_v1.py,relation_discovery_v5.py | доки: DECISIONS.md,RAKES.md | тесты: test_relation_holdout_v4.py,test_relation_holdout_v4_ref.py
+tools/hdart/relation_holdout_v4_axis_zip.py	128	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-02		да	импортёры: axis_a_clean_v5.py,relation_holdout_v7.py | доки: DECISIONS.md,RAKES.md
+tools/hdart/relation_holdout_v4_ref.py	343	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-02		да	импортёры: relation_discovery_v5.py,relation_holdout_v5.py,relation_holdout_v7.py,v5_ar2_recount.py | доки: DECISIONS.md | тесты: test_relation_holdout_v4_ref.py
+tools/hdart/relation_holdout_v5.py	1120	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-02		да	импортёры: assembly_evidence_v2_prep.py,relation_holdout_v7.py,relation_safety_v7_prep.py,relation_v6_prep.py | тесты: test_relation_holdout_v5.py
+tools/hdart/relation_holdout_v7.py	1104	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-03		да	импортёры: hd_e2e_v1.py,hd_e2e_v1_identity.py | доки: DECISIONS.md | тесты: test_relation_holdout_v7.py
+tools/hdart/relation_probe.py	701	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-01		да	импортёры: aligned_recolor_v1.py,families_recolor_diff.py,family_relation_v2.py,hd_e2e_v1.py | доки: DECISIONS.md,RAKES.md | тесты: test_relation_discovery_v2.py,test_relation_probe.py
+tools/hdart/relation_safety_v7_prep.py	611	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-02		да	импортёры: hd_e2e_v1.py,hd_e2e_v1_r2.py,hd_e2e_v1_r3.py,relation_holdout_v7.py | доки: DECISIONS.md | тесты: test_relation_safety_v7_prep.py
+tools/hdart/relation_taxonomy.py	1043	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-02		да	импортёры: ar_boundary_validation.py,hd_e2e_v1.py,hd_e2e_v1_r2.py,hd_e2e_v1_r3.py | доки: DECISIONS.md,RAKES.md | тесты: test_relation_discovery_v5.py,test_relation_taxonomy.py
+tools/hdart/relation_truth_v2.py	575	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-02		да	импортёры: ar_boundary_validation.py,hd_e2e_v1_review.py,relation_discovery_v4.py,relation_holdout_v4.py | доки: DECISIONS.md,RAKES.md | тесты: test_relation_holdout_v4_ref.py,test_relation_holdout_v4.py
+tools/hdart/relation_v6_prep.py	498	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-02		да	импортёры: assembly_evidence_v2_prep.py,relation_safety_v7_prep.py | доки: DECISIONS.md
+tools/hdart/repro_smoke.py	232	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-09-30	2026-10-01x2		импортёры: нет | gpu_scripts.txt | доки: DECISIONS.md,HD_PIPELINE_V2.md | тесты: test_model_lock.py | очередь: 2026-10-01x2
+tools/hdart/restore_batch_v1.py	618	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-03	2026-10-03x2	да	импортёры: prod_two_pass_v1.py,prod_two_pass_v4.py | gpu_scripts.txt | доки: DECISIONS.md,RAKES.md | очередь: 2026-10-03x2
+tools/hdart/restore_pedia.py	112	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-05			импортёры: нет | доки: terrain-recolor.md
+tools/hdart/restore_probe_v1.py	263	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-03	2026-10-03x1	да	импортёры: restore_batch_v1.py,restore_probe_v1b.py,restore_probe_v1c.py,weapons_restore.py | gpu_scripts.txt | доки: DECISIONS.md | очередь: 2026-10-03x1
+tools/hdart/restore_probe_v1b.py	47	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-03	2026-10-03x1	да	импортёры: restore_batch_v1.py,restore_probe_v1c.py | gpu_scripts.txt | доки: DECISIONS.md | очередь: 2026-10-03x1
+tools/hdart/restore_probe_v1c.py	53	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-03	2026-10-03x1		импортёры: нет | gpu_scripts.txt | доки: DECISIONS.md | очередь: 2026-10-03x1
+tools/hdart/routing_holdout.py	1010	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-01		да	импортёры: hd_e2e_v1_identity.py,relation_holdout_v4.py,relation_holdout_v5.py,relation_holdout_v7.py | доки: DECISIONS.md,RAKES.md | тесты: test_routing_holdout.py,test_routing_holdout_diag.py
+tools/hdart/routing_holdout_diag.py	237	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-01		да	импортёры: routing_holdout_diag2.py,routing_rules_v5.py | доки: DECISIONS.md | тесты: test_routing_holdout_diag.py
+tools/hdart/routing_holdout_diag2.py	321	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-01		да	импортёры: routing_rules_v5.py | доки: DECISIONS.md | тесты: test_routing_holdout_diag2.py
+tools/hdart/routing_holdout_table.py	99	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-01			импортёры: нет | тесты: test_routing_holdout_diag2.py
+tools/hdart/routing_holdout_v5.py	758	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-01		да	импортёры: relation_holdout_v4.py,routing_holdout_v7.py,routing_holdout_v8.py,routing_rules_v6.py | доки: RAKES.md | тесты: test_routing_holdout_v5.py
+tools/hdart/routing_holdout_v7.py	683	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-02		да	импортёры: relation_holdout_v4.py,relation_holdout_v5.py,relation_holdout_v7.py,routing_holdout_v8.py | доки: DECISIONS.md,RAKES.md | тесты: test_relation_holdout_v4.py,test_routing_holdout_v7.py
+tools/hdart/routing_holdout_v8.py	778	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-02		да	импортёры: hd_e2e_v1_identity.py,relation_holdout_v4.py,relation_holdout_v5.py,relation_holdout_v7.py | тесты: test_routing_holdout_v8.py
+tools/hdart/routing_model_v8.py	1057	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-02		да	импортёры: ar_boundary_validation.py,hd_e2e_v1.py,hd_e2e_v1_identity.py,hd_e2e_v1_r2.py | доки: DECISIONS.md,RAKES.md | тесты: test_relation_discovery_v2.py,test_routing_holdout_v8.py
+tools/hdart/routing_rules.py	325	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-01		да	импортёры: relation_holdout_v4.py,routing_holdout.py,routing_holdout_v5.py,routing_holdout_v7.py | доки: DECISIONS.md | тесты: test_routing_rules.py
+tools/hdart/routing_rules_v5.py	539	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-01		да	импортёры: routing_holdout_v5.py,routing_holdout_v7.py,routing_model_v8.py,routing_rules_v6.py | доки: DECISIONS.md | тесты: test_routing_rules_v5.py
+tools/hdart/routing_rules_v6.py	842	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-02		да	импортёры: routing_holdout_v7.py,routing_model_v8.py,routing_rules_v7.py | доки: DECISIONS.md,RAKES.md | тесты: test_routing_rules_v6.py
+tools/hdart/routing_rules_v7.py	704	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-02		да	импортёры: hd_e2e_v1.py,relation_holdout_v4.py,relation_holdout_v5.py,relation_holdout_v7.py | доки: DECISIONS.md,RAKES.md | тесты: test_routing_holdout_v7.py,test_routing_model_v8.py
+tools/hdart/scc_gate.py	149	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-06			импортёры: нет | доки: map-addressing-scc-prototype-report-2026-10-06.md,map-pilot2-plan-2026-10-06.md | тесты: test_scc_gate.py
+tools/hdart/sidewalk_probe.py	818	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-07			импортёры: crossing_build.py,crossing_clean.py,crossing_geom.py | доки: RAKES.md,map-crossing-2026-10-07.md
+tools/hdart/sidewalk_render.py	129	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-07	2026-10-07x1		импортёры: sidewalk_probe.py | gpu_scripts.txt | очередь: 2026-10-07x1
+tools/hdart/simple_probe.py	337	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-09-30			импортёры: photo_probe.py | доки: DECISIONS.md,RAKES.md
+tools/hdart/slot_control.py	122	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-01			импортёры: нет | доки: DECISIONS.md
+tools/hdart/strict_ctl_v1.py	302	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-03	2026-10-03x1	да	импортёры: detail_retry_v2.py,prod_two_pass_v1.py,prod_two_pass_v2.py | gpu_scripts.txt | доки: DECISIONS.md,RAKES.md | очередь: 2026-10-03x1
+tools/hdart/struct_report.py	325	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-01			импортёры: нет | доки: DECISIONS.md,RAKES.md | тесты: test_struct_report.py
+tools/hdart/truth_codex.py	186	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-09-30			импортёры: нет
+tools/hdart/truth_recheck.py	223	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-09-30			импортёры: нет
+tools/hdart/two_component_v1.py	178	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-02		да	импортёры: assembly_evidence_v2_prep.py,hd_e2e_v1.py,relation_holdout_v7.py,relation_safety_v7_prep.py | тесты: test_two_component_v1.py
+tools/hdart/unit_direct.py	208	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-03	2026-10-03x3		импортёры: нет | gpu_scripts.txt | доки: RAKES.md | очередь: 2026-10-03x3
+tools/hdart/unit_ref.py	307	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-03			импортёры: нет | доки: RAKES.md
+tools/hdart/unit_refit.py	682	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-03	2026-10-03x4		импортёры: нет | gpu_scripts.txt | доки: RAKES.md | очередь: 2026-10-03x4
+tools/hdart/v3_baseline.py	150	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-07			импортёры: prod_two_pass_v3sf.py | доки: DECISIONS.md,RAKES.md
+tools/hdart/v5_ar2_recount.py	597	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-02		да	импортёры: assembly_evidence_v2_prep.py,relation_holdout_v5.py,relation_holdout_v7.py,relation_safety_v7_prep.py | доки: DECISIONS.md | тесты: test_relation_safety_v7_prep.py,test_v5_ar2_recount.py
+tools/hdart/v5_component_validation.py	629	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-02		да	импортёры: ar_boundary_validation.py,relation_holdout_v5.py,v5_freeze_readiness.py | тесты: test_v5_component_validation.py
+tools/hdart/v5_freeze_readiness.py	404	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-02		да	импортёры: relation_safety_v7_prep.py,v5_ar2_recount.py | доки: DECISIONS.md,RAKES.md | тесты: test_v5_freeze_readiness.py
+tools/hdart/visual_judge.py	553	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-05		да	импортёры: detail_retry_v2.py,dispute_arbiter.py,final_select.py,identity_auto.py | доки: DECISIONS.md,RAKES.md
+tools/hdart/vitali_judge.py	483	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-05			импортёры: нет | доки: DECISIONS.md
+tools/hdart/weapon_accept.py	433	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-05			импортёры: weapon_judge.py | доки: RAKES.md
+tools/hdart/weapon_ammo_cards.py	334	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-05			импортёры: weapon_grip_cards.py,weapon_handob_cards.py
+tools/hdart/weapon_describe_merge.py	71	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-05			импортёры: нет
+tools/hdart/weapon_fit.py	1300	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-05			импортёры: weapon_accept.py,weapon_from_ref.py,weapon_judge.py,weapon_part_fit.py | доки: RAKES.md | тесты: test_weapon_fit.py,test_weapon_parts.py
+tools/hdart/weapon_from_ref.py	179	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-05			импортёры: weapon_accept.py,weapon_judge.py,weapon_parts.py | доки: RAKES.md
+tools/hdart/weapon_grip_cards.py	420	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-06			импортёры: grip_engine_check.py | доки: RAKES.md
+tools/hdart/weapon_handob_cards.py	297	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-05			импортёры: grip_check8.py,weapon_grip_cards.py | доки: weapon-battle-render.md
+tools/hdart/weapon_judge.py	1003	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-05			импортёры: нет | доки: DECISIONS.md,RAKES.md
+tools/hdart/weapon_part_fit.py	440	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-05			импортёры: нет | тесты: test_weapon_part_fit.py
+tools/hdart/weapon_parts.py	1369	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-05			импортёры: weapon_accept.py,weapon_judge.py | доки: RAKES.md | тесты: test_weapon_parts.py
+tools/hdart/weapons_batch.py	129	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-03	2026-10-03x4		импортёры: нет | gpu_scripts.txt | очередь: 2026-10-03x4
+tools/hdart/weapons_chatgpt.py	355	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-05			импортёры: handob_codex.py,handob_tommy.py,weapon_judge.py | доки: DECISIONS.md,RAKES.md
+tools/hdart/weapons_probe4.py	122	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-04	2026-10-04x1		импортёры: нет | gpu_scripts.txt | очередь: 2026-10-04x1
+tools/hdart/weapons_redraw.py	265	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-05	2026-10-05x1		импортёры: нет | gpu_scripts.txt | доки: RAKES.md | очередь: 2026-10-05x1
+tools/hdart/weapons_restore.py	161	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-04	2026-10-04x1		импортёры: нет | gpu_scripts.txt | очередь: 2026-10-04x1
+tools/hdart/weapons_sr.py	104	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-03	2026-10-03x2		импортёры: нет | gpu_scripts.txt | очередь: 2026-10-03x2
+tools/hdart/weapons_synth.py	222	СТАРОЕ-ПОКОЛЕНИЕ-изолировано	2026-10-04	2026-10-04x2		импортёры: weapons_redraw.py | gpu_scripts.txt | доки: RAKES.md | очередь: 2026-10-04x2

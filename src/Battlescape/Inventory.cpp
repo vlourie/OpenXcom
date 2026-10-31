@@ -47,6 +47,8 @@
 #include <unordered_map>
 #include "../Engine/Screen.h"
 #include "../Engine/CrossPlatform.h"
+#include "../Engine/HdUi.h"
+#include "../Engine/HdAmmoHint.h"
 #include "TileEngine.h"
 
 namespace OpenXcom
@@ -69,15 +71,26 @@ Inventory::Inventory(Game *game, int width, int height, int x, int y, bool base)
 	_depth = _game->getSavedGame()->getSavedBattle()->getDepth();
 	_grid = new Surface(width, height, 0, 0);
 	_items = new Surface(width, height, 0, 0);
+	_itemsTop = new Surface(width, height, 0, 0);
+	_hint = new Surface(width, height, 0, 0);
 	_gridLabels = new Surface(width, height, 0, 0);
 	_selection = new Surface(RuleInventory::HAND_W * RuleInventory::SLOT_W, RuleInventory::HAND_H * RuleInventory::SLOT_H, x, y);
 	_warning = new WarningMessage(224, 24, 48, 176);
 	_stackNumber = new NumberText(15, 15, 0, 0);
 	_stackNumber->setBordered(true);
+	_stackTop = new Surface(width, height, 0, 0);
+	_hdNumber = new NumberText(15, 15, 0, 0);
+	_hdNumber->setBordered(true);
 
 	_warning->initText(_game->getMod()->getFont("FONT_BIG"), _game->getMod()->getFont("FONT_SMALL"), _game->getLanguage());
 	_warning->setColor(_game->getMod()->getInterface("battlescape")->getElement("warning")->color2);
 	_warning->setTextColor(_game->getMod()->getInterface("battlescape")->getElement("warning")->color);
+
+	// the same widget drawGridLabels() lays the names out with
+	_hdLabel = new Text(90, 9, 0, 0);
+	_hdLabel->initText(_game->getMod()->getFont("FONT_BIG"), _game->getMod()->getFont("FONT_SMALL"), _game->getLanguage());
+	_hdLabel->setColor(_game->getMod()->getInterface("inventory")->getElement("textSlots")->color);
+	_hdLabel->setHighContrast(true);
 
 	_animTimer = new Timer(100);
 	_animTimer->onTimer((SurfaceHandler)&Inventory::animate);
@@ -120,10 +133,15 @@ Inventory::~Inventory()
 {
 	delete _grid;
 	delete _items;
+	delete _itemsTop;
+	delete _hint;
 	delete _gridLabels;
+	delete _hdLabel;
 	delete _selection;
 	delete _warning;
 	delete _stackNumber;
+	delete _stackTop;
+	delete _hdNumber;
 	delete _animTimer;
 }
 
@@ -138,10 +156,15 @@ void Inventory::setPalette(const SDL_Color *colors, int firstcolor, int ncolors)
 	Surface::setPalette(colors, firstcolor, ncolors);
 	_grid->setPalette(colors, firstcolor, ncolors);
 	_items->setPalette(colors, firstcolor, ncolors);
+	_itemsTop->setPalette(colors, firstcolor, ncolors);
+	_hint->setPalette(colors, firstcolor, ncolors);
 	_gridLabels->setPalette(colors, firstcolor, ncolors);
+	_hdLabel->setPalette(colors, firstcolor, ncolors);
 	_selection->setPalette(colors, firstcolor, ncolors);
 	_warning->setPalette(colors, firstcolor, ncolors);
 	_stackNumber->setPalette(getPalette());
+	_stackTop->setPalette(colors, firstcolor, ncolors);
+	_hdNumber->setPalette(getPalette());
 }
 
 /**
@@ -262,6 +285,7 @@ void Inventory::drawGrid()
 void Inventory::drawGridLabels(bool showTuCost)
 {
 	_gridLabels->clear();
+	_labels.clear();
 
 	Text text = Text(90, 9, 0, 0);
 	text.setPalette(_gridLabels->getPalette());
@@ -292,6 +316,47 @@ void Inventory::drawGridLabels(bool showTuCost)
 			text.setText(_game->getLanguage()->getString(i->getId()).arg(1 + _groundOffset / _groundSlotsX).arg(1 + _xMax / _groundSlotsX));
 		}
 		text.blit(_gridLabels->getSurface());
+		_labels.push_back({ text.getText(), text.getX(), text.getY() });
+	}
+}
+
+/**
+ * Is the HD interface going to draw the slot names with its own fonts? Then they stay out of the
+ * inventory's own pixels: those reach the HD layer through the upscaler, which smears letters (R-022).
+ */
+bool Inventory::hdLabels(const SDL_Surface *surface) const
+{
+	return HdUi::isScreen(surface) && HdUi::active() && HdUi::skin() && HdUi::instance().hasFonts();
+}
+
+/**
+ * The slot names, drawn with the TrueType fonts straight onto the HD layer where the classic layout
+ * put them. draw() is what lays the string out; hdDrawAt reads that layout.
+ */
+void Inventory::drawHdLabels()
+{
+	for (const auto &label : _labels)
+	{
+		_hdLabel->setText(label.text);
+		_hdLabel->draw();
+		_hdLabel->hdDrawAt(getX() + label.x, getY() + label.y);
+	}
+}
+
+/**
+ * The stack numbers and the fatal wounds counters of the ground items, drawn with the HD interface's font
+ * (NumberText::hdMirror) onto the HD layer where the classic digits stand.
+ */
+void Inventory::drawHdStacks()
+{
+	for (const HdStack &stack : _hdStacks)
+	{
+		_hdNumber->setValue(stack.value);
+		_hdNumber->setColor(stack.color);
+		_hdNumber->setBordered(stack.bordered);
+		_hdNumber->setX(getX() + stack.x);
+		_hdNumber->setY(getY() + stack.y);
+		_hdNumber->hdMirror();
 	}
 }
 
@@ -303,18 +368,46 @@ void Inventory::drawItems()
 	const int Pulsate[8] = { 0, 1, 2, 3, 4, 3, 2, 1 };
 	const SavedBattleGame* save = _game->getSavedGame()->getSavedBattle();
 	Surface *tempSurface = _game->getMod()->getSurfaceSet("SCANG.DAT")->getFrame(6);
+	// with HD pictures of items the overlays go over them, in a layer of their own (see blit)
+	_hdItems.clear();
+	_hdItemsScale = HdItems::enabled() ? HdUi::scale() : 0;
+	_hdFontsLaid = _hdFontsNow;
+	Surface *over = _items;
+	if (_hdItemsScale)
+	{
+		_itemsTop->clear();
+		over = _itemsTop;
+	}
 	auto primers = [&](int x, int y, bool a)
 	{
-		tempSurface->blitNShade(_items, x, y, Pulsate[_animFrame % 8], false, a ? 0 : 32);
+		tempSurface->blitNShade(over, x, y, Pulsate[_animFrame % 8], false, a ? 0 : 32);
 	};
 	auto indicators = [&](Surface *surf, int x, int y)
 	{
-		surf->blitNShade(_items, x, y, Pulsate[_animFrame % 8]);
+		surf->blitNShade(over, x, y, Pulsate[_animFrame % 8]);
 	};
+	// the HD picture of an item instead of its classic sprite; x, y: where the classic sprite or hand frame goes
+	auto hdPicture = [&](const BattleItem *item, const Surface *frame, const SurfaceSet *set, HdItems::Context context, int x, int y)
+	{
+		HdItems::Pick pick;
+		if (!_hdItemsScale || !HdItems::pick(item->getRules(), item, save, _animFrame, HdItems::indexOf(set, frame), set, context, _hdItemsScale, pick, getPalette()))
+		{
+			return false;
+		}
+		_hdItems.push_back({ pick, x, y });
+		return true;
+	};
+
+	// the ammunition hint frames are laid again when the items are
+	const bool hintOn = HdAmmoHint::enabled();
+	_hintCells.clear();
+	_hintDirty = true;
 
 	ScriptWorkerBlit work;
 	_items->clear();
-	Uint8 color = _game->getMod()->getInterface("inventory")->getElement("numStack")->color;
+	_stackTop->clear();
+	_hdStacks.clear();
+	Uint8 color =_game->getMod()->getInterface("inventory")->getElement("numStack")->color;
 	Uint8 color2 = _game->getMod()->getInterface("inventory")->getElement("numStack")->color2;
 	if (_selUnit != 0)
 	{
@@ -342,8 +435,20 @@ void Inventory::drawItems()
 			{
 				continue;
 			}
-			BattleItem::ScriptFill(&work, invItem, save, BODYPART_ITEM_INVENTORY, _animFrame, 0);
-			work.executeBlit(frame, _items, x, y, 0);
+			const bool hand = invItem->getSlot()->getType() == INV_HAND;
+			if (hintOn)
+			{
+				const RuleItem *r = invItem->getRules();
+				_hintCells.push_back({ r, hand ?
+					SDL_Rect{ (Sint16)invItem->getSlot()->getX(), (Sint16)invItem->getSlot()->getY(), (Uint16)(RuleInventory::HAND_W * RuleInventory::SLOT_W), (Uint16)(RuleInventory::HAND_H * RuleInventory::SLOT_H) } :
+					SDL_Rect{ (Sint16)x, (Sint16)y, (Uint16)(r->getInventoryWidth() * RuleInventory::SLOT_W), (Uint16)(r->getInventoryHeight() * RuleInventory::SLOT_H) } });
+			}
+			if (!hdPicture(invItem, frame, texture, hand ? HdItems::HAND : HdItems::GRID,
+				hand ? invItem->getSlot()->getX() : x, hand ? invItem->getSlot()->getY() : y))
+			{
+				BattleItem::ScriptFill(&work, invItem, save, BODYPART_ITEM_INVENTORY, _animFrame, 0);
+				work.executeBlit(frame, _items, x, y, 0);
+			}
 
 			// two-handed indicator
 			if (invItem->getSlot()->getType() == INV_HAND)
@@ -357,7 +462,15 @@ void Inventory::drawItems()
 					text.setX(invItem->getSlot()->getX() + RuleInventory::HAND_W * RuleInventory::SLOT_W - 5);
 					text.setY(invItem->getSlot()->getY() + RuleInventory::HAND_H * RuleInventory::SLOT_H - 7);
 					text.setValue(2);
-					text.blit(_items->getSurface());
+					if (_hdFontsLaid)
+					{
+						// the HD interface draws it with its own font, like the stack numbers (XP-000453)
+						_hdStacks.push_back({ 2, text.getX(), text.getY(), text.getColor(), false });
+					}
+					else
+					{
+						text.blit(over->getSurface());
+					}
 				}
 			}
 
@@ -399,8 +512,16 @@ void Inventory::drawItems()
 			int x, y;
 			x = (groundItem->getSlot()->getX() + (groundItem->getSlotX() - _groundOffset) * RuleInventory::SLOT_W);
 			y = (groundItem->getSlot()->getY() + groundItem->getSlotY() * RuleInventory::SLOT_H);
-			BattleItem::ScriptFill(&work, groundItem, save, BODYPART_ITEM_INVENTORY, _animFrame, 0);
-			work.executeBlit(frame, _items, x, y, 0);
+			if (hintOn)
+			{
+				const RuleItem *r = groundItem->getRules();
+				_hintCells.push_back({ r, SDL_Rect{ (Sint16)x, (Sint16)y, (Uint16)(r->getInventoryWidth() * RuleInventory::SLOT_W), (Uint16)(r->getInventoryHeight() * RuleInventory::SLOT_H) } });
+			}
+			if (!hdPicture(groundItem, frame, texture, HdItems::GRID, x, y))
+			{
+				BattleItem::ScriptFill(&work, groundItem, save, BODYPART_ITEM_INVENTORY, _animFrame, 0);
+				work.executeBlit(frame, _items, x, y, 0);
+			}
 
 			// grenade primer indicators
 			if (groundItem->getFuseTimer() >= 0 && groundItem->getRules()->getInventoryWidth() > 0)
@@ -446,6 +567,7 @@ void Inventory::drawItems()
 				_stackNumber->draw();
 				_stackNumber->setColor(color2);
 				_stackNumber->blit(stackLayer.getSurface());
+				_hdStacks.push_back({ fatalWounds, _stackNumber->getX(), _stackNumber->getY(), color2 });
 			}
 
 			// item stacking
@@ -461,10 +583,36 @@ void Inventory::drawItems()
 				_stackNumber->draw();
 				_stackNumber->setColor(color);
 				_stackNumber->blit(stackLayer.getSurface());
+				_hdStacks.push_back({ (int)_stackLevel[groundItem->getSlotX()][groundItem->getSlotY()], _stackNumber->getX(), _stackNumber->getY(), color });
 			}
 		}
 
-		stackLayer.blitNShade(_items, 0, 0);
+		// the numbers have a layer of their own: the HD interface draws them with its own font (see blit)
+		stackLayer.blitNShade(_stackTop, 0, 0);
+	}
+}
+
+/**
+ * Frames the items that fit the weapon under the cursor (oxceHdAmmoHint): the answer is the weapon's own
+ * list of ammunition, for every ammo slot it has.
+ * @param weapon The weapon, or nullptr for no frames.
+ */
+void Inventory::drawHint(const RuleItem *weapon)
+{
+	_hint->clear();
+	_hintWeapon = weapon;
+	_hintDirty = false;
+	if (!weapon)
+	{
+		return;
+	}
+	for (const HintCell &cell : _hintCells)
+	{
+		if (HdAmmoHint::fits(weapon, cell.rules) && cell.rect.w > 2 && cell.rect.h > 2)
+		{
+			_hint->drawRect(cell.rect.x, cell.rect.y, cell.rect.w, cell.rect.h, _twoHandedGreen);
+			_hint->drawRect(cell.rect.x + 1, cell.rect.y + 1, cell.rect.w - 2, cell.rect.h - 2, 0);
+		}
 	}
 }
 
@@ -473,10 +621,19 @@ void Inventory::drawItems()
  */
 void Inventory::drawSelectedItem()
 {
+	_hdSelected = HdItems::Pick();
 	if (_selItem)
 	{
 		_selection->clear();
-		_selItem->getRules()->drawHandSprite(_game->getMod()->getSurfaceSet("BIGOBS.PCK"), _selection, _selItem, _game->getSavedGame()->getSavedBattle(), _animFrame);
+		SurfaceSet *texture = _game->getMod()->getSurfaceSet("BIGOBS.PCK");
+		const SavedBattleGame *save = _game->getSavedGame()->getSavedBattle();
+		const int k = HdItems::enabled() ? HdUi::scale() : 0;
+		if (k && HdItems::pick(_selItem->getRules(), _selItem, save, _animFrame,
+			HdItems::indexOf(texture, _selItem->getBigSprite(texture, save, _animFrame)), texture, HdItems::HAND, k, _hdSelected, getPalette()))
+		{
+			return;   // drawn by blit over the classic layers
+		}
+		_selItem->getRules()->drawHandSprite(texture, _selection, _selItem, _game->getSavedGame()->getSavedBattle(), _animFrame);
 	}
 }
 
@@ -640,9 +797,103 @@ void Inventory::think()
  */
 void Inventory::blit(SDL_Surface *surface)
 {
+	_hdFontsNow = hdLabels(surface);
+	if ((HdItems::enabled() ? HdUi::scale() : 0) != _hdItemsScale || _hdFontsNow != _hdFontsLaid)
+	{
+		// the HD interface was switched on or off or changed its k: lay the items out for it again
+		drawItems();
+		drawSelectedItem();
+	}
+	// the ammunition hint: the weapon under the cursor (not while an item is carried), its fitting ammunition framed
+	const bool hint = HdAmmoHint::enabled();
+	if (hint)
+	{
+		const RuleItem *weapon = (!_selItem && _mouseOverItem) ? _mouseOverItem->getRules() : nullptr;
+		if (_hintDirty || weapon != _hintWeapon)
+		{
+			drawHint(weapon);
+		}
+	}
+	else if (_hintWeapon || !_hintCells.empty())
+	{
+		_hint->clear();
+		_hintWeapon = nullptr;
+		_hintCells.clear();
+	}
 	clear();
 	_grid->blitNShade(this, 0, 0);
 	_items->blitNShade(this, 0, 0);
+	const bool fonts = hdLabels(surface);
+	const bool hdItems = _hdItemsScale && HdUi::isScreen(surface);
+	if (!fonts && !hdItems)
+	{
+		// the classic path: the numbers over the items, as they were when they lay in the items' own layer
+		_stackTop->blitNShade(this, 0, 0);
+	}
+	if (fonts || hdItems)
+	{
+		// the layers go to the screen one by one, in the same order: the classic pixels come out the
+		// same, and the HD layer gets the names in its own fonts under the dragged item and the warning,
+		// and the items' own pictures under their overlays
+		Surface::blit(surface);
+		auto layer = [&](Surface *over)
+		{
+			over->setX(over->getX() + getX());
+			over->setY(over->getY() + getY());
+			over->blit(surface);
+			over->setX(over->getX() - getX());
+			over->setY(over->getY() - getY());
+		};
+		const SDL_Rect window = { (Sint16)getX(), (Sint16)getY(), (Uint16)getWidth(), (Uint16)getHeight() };
+		if (hdItems)
+		{
+			for (const HdPlaced &placed : _hdItems)
+			{
+				HdItems::draw(placed.pick, getX() + placed.x, getY() + placed.y, window);
+			}
+			layer(_itemsTop);
+		}
+		if (fonts)
+		{
+			// the classic digits go to the classic pixels only; the HD layer gets the numbers in the interface's font
+			SDL_Rect target {};
+			target.x = getX();
+			target.y = getY();
+			SDL_BlitSurface(_stackTop->getSurface(), nullptr, surface, &target);
+			drawHdStacks();
+		}
+		else
+		{
+			layer(_stackTop);
+		}
+		if (hint)
+		{
+			layer(_hint);
+		}
+		if (fonts)
+		{
+			SDL_Rect target {};
+			target.x = getX();
+			target.y = getY();
+			SDL_BlitSurface(_gridLabels->getSurface(), nullptr, surface, &target);
+			drawHdLabels();
+		}
+		else
+		{
+			layer(_gridLabels);
+		}
+		layer(_selection);
+		if (hdItems && _hdSelected.frame)
+		{
+			HdItems::draw(_hdSelected, getX() + _selection->getX(), getY() + _selection->getY(), window);
+		}
+		layer(_warning);
+		return;
+	}
+	if (hint)
+	{
+		_hint->blitNShade(this, 0, 0);
+	}
 	_gridLabels->blitNShade(this, 0, 0);
 	_selection->blitNShade(this, _selection->getX(), _selection->getY());
 	_warning->blit(this->getSurface());
@@ -742,6 +993,10 @@ void Inventory::mouseClick(Action *action, State *state)
 					else if (item->getRules()->isFixed())
 					{
 						// do nothing!
+					}
+					else if (_game->isCtrlPressed() && _game->isAltPressed())
+					{
+						// movement to craft in InventoryState
 					}
 					else if (_game->isCtrlPressed())
 					{
@@ -1189,6 +1444,72 @@ void Inventory::mouseClick(Action *action, State *state)
 		}
 	}
 	InteractiveSurface::mouseClick(action, state);
+}
+
+/**
+ * Whether a slot lies at the given point (a click there drops the grabbed item into it, not on the unit).
+ * @param x, y Point relative to the inventory.
+ */
+bool Inventory::isSlotAt(int x, int y) const
+{
+	if (getSlotInPosition(&x, &y) != nullptr)
+	{
+		return true;
+	}
+	if (_selItem && _selection)
+	{
+		// the drop goes to the slot under the centre of the grabbed item (see mouseClick): a refused drop there is not a drop on the unit
+		int cx = _selection->getX() + (RuleInventory::HAND_W - _selItem->getRules()->getInventoryWidth()) * RuleInventory::SLOT_W/2 + RuleInventory::SLOT_W/2,
+			cy = _selection->getY() + (RuleInventory::HAND_H - _selItem->getRules()->getInventoryHeight()) * RuleInventory::SLOT_H/2 + RuleInventory::SLOT_H/2;
+		return getSlotInPosition(&cx, &cy) != nullptr;
+	}
+	return false;
+}
+
+/**
+ * The hand an item dropped on the unit's body goes to before the use: the one it is in already,
+ * else the right or the left hand when it is free and takes the item.
+ * @param item The grabbed item.
+ * @return The hand, or nullptr when both are taken.
+ */
+const RuleInventory *Inventory::useHand(const BattleItem *item) const
+{
+	if (item->getSlot()->getType() == INV_HAND)
+	{
+		return item->getSlot();
+	}
+	const std::pair<const RuleInventory*, BattleItem*> hands[] = {
+		{ _inventorySlotRightHand, _selUnit->getRightHandWeapon() },
+		{ _inventorySlotLeftHand, _selUnit->getLeftHandWeapon() } };
+	for (const auto &hand : hands)
+	{
+		if (hand.first && !hand.second && item->getRules()->canBePlacedIntoInventorySection(hand.first) && hand.first->fitItemInSlot(item->getRules(), 0, 0))
+		{
+			return hand.first;
+		}
+	}
+	return nullptr;
+}
+
+/**
+ * Puts the grabbed item into a hand, paying the TU of the move as a drop there would, and lets go of it.
+ * @param hand The hand from useHand(); the caller has checked the TU.
+ */
+void Inventory::putInHand(const RuleInventory *hand)
+{
+	BattleItem *item = _selItem;
+	const bool fromGround = item->getSlot()->getType() == INV_GROUND;
+	if (item->getSlot() != hand)
+	{
+		_selUnit->spendTimeUnits(item->getMoveToCost(hand));
+		moveItem(item, hand, 0, 0);
+	}
+	setSelectedItem(0);
+	if (fromGround)
+	{
+		arrangeGround();
+	}
+	_game->getMod()->getSoundByDepth(_depth, Mod::ITEM_DROP)->play();
 }
 
 /**

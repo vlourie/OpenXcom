@@ -1,0 +1,25 @@
+@page "/admin/super/audit"
+@model Xp.Portal.Pages.Admin.Super.AuditModel
+@{
+    ViewData["Title"] = T["super.audit"];
+}
+<partial name="_SuperNav" />
+<h1>@T["super.audit"]</h1>
+<form method="get" class="panel">
+    <label for="Action">@T["super.audit.action"]</label>
+    <input type="text" id="Action" name="Action" value="@Model.Action" maxlength="64" placeholder="user." />
+    <button type="submit" class="secondary">@T["admin.filter.apply"]</button>
+</form>
+<table>
+    <tr><th>@T["field.created"]</th><th>@T["super.audit.who"]</th><th>@T["super.audit.action"]</th><th></th><th></th></tr>
+    @foreach (var r in Model.Rows)
+    {
+        <tr>
+            <td>@r.Entry.At.ToString("yyyy-MM-dd HH:mm:ss")</td>
+            <td>@(r.Actor ?? "cli")</td>
+            <td>@r.Entry.Action</td>
+            <td>@r.Entry.Target</td>
+            <td class="pre">@r.Entry.Detail</td>
+        </tr>
+    }
+</table>

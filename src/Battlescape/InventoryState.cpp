@@ -21,9 +21,12 @@
 #include "InventorySaveState.h"
 #include "InventoryPersonalState.h"
 #include <algorithm>
+#include <climits>
+#include <cmath>
 #include "Inventory.h"
 #include "../Basescape/SoldierArmorState.h"
 #include "../Basescape/SoldierAvatarState.h"
+#include "../Basescape/SoldierVoiceState.h"
 #include "../Basescape/SoldierDiaryLightState.h"
 #include "../Engine/Game.h"
 #include "../Engine/FileMap.h"
@@ -58,11 +61,218 @@
 #include "BattlescapeGenerator.h"
 #include "ExtendedInventoryLinksState.h"
 #include "TileEngine.h"
+#include "BattlescapeGame.h"
+#include "MedikitState.h"
 #include "../Mod/RuleInterface.h"
 #include "../Ufopaedia/Ufopaedia.h"
+#include "AiProbe.h"
+#include "../Engine/HdItems.h"
+#include "../Engine/HdUiArt.h"
+#include "../Engine/HdUi.h"
+#include "../Engine/HdScreens.h"
 
 namespace OpenXcom
 {
+
+/**
+ * OXCE-HD (oxceHdInvBackdrop, XP-000098): the background of the equipment screen. The classic background (TAC01.SCR) is
+ * black; in the HD interface a painted scene of the screens' pictures (HdScreens, the ids inventoryArmory, inventoryShip and
+ * inventoryTarp of hd/UI/screens/screens.txt) is drawn in its place, in the 320x200 field only, with a dark translucent plate
+ * under every group of slots so the brown grid stays readable on it. Picture only: the classic layer is untouched, and
+ * with the option at 0 (or no picture) the surface is drawn as ever.
+ */
+class InventoryBackdrop : public Surface
+{
+	/// The plate of one group of slots as a picture at scale k: `x`, `y` base pixels in the field, `w` x `h` world pixels.
+	struct Plate
+	{
+		int x = 0, y = 0, w = 0, h = 0;
+		std::vector<Uint32> px;
+	};
+	std::vector<std::vector<SDL_Rect>> _groups;     ///< the cells of each group of slots (base pixels, the grid's cells)
+	std::vector<Plate> _plates;
+	int _platesK = 0;
+
+	static constexpr int PAD = 2;                   ///< the plate reaches this far (base pixels) past the grid
+	static constexpr Uint32 PLATE = 0x960B0907u;    ///< ARGB of the plate: a warm black, a little over half opaque
+
+	void buildPlates(int k)
+	{
+		_plates.clear();
+		_platesK = k;
+		for (const std::vector<SDL_Rect> &cells : _groups)
+		{
+			int x0 = INT_MAX, y0 = INT_MAX, x1 = INT_MIN, y1 = INT_MIN;
+			std::vector<SDL_Rect> padded;
+			for (const SDL_Rect &c : cells)
+			{
+				SDL_Rect r;
+				r.x = (Sint16)std::max(c.x - PAD, 0);
+				r.y = (Sint16)std::max(c.y - PAD, 0);
+				const int rx1 = std::min(c.x + c.w + PAD, (int)getWidth()), ry1 = std::min(c.y + c.h + PAD, (int)getHeight());
+				if (rx1 <= r.x || ry1 <= r.y)
+				{
+					continue;
+				}
+				r.w = (Uint16)(rx1 - r.x);
+				r.h = (Uint16)(ry1 - r.y);
+				padded.push_back(r);
+				x0 = std::min(x0, (int)r.x); y0 = std::min(y0, (int)r.y);
+				x1 = std::max(x1, rx1); y1 = std::max(y1, ry1);
+			}
+			if (padded.empty())
+			{
+				continue;
+			}
+			Plate p;
+			p.x = x0; p.y = y0; p.w = (x1 - x0) * k; p.h = (y1 - y0) * k;
+			p.px.assign((size_t)p.w * p.h, 0u);
+			// the cells' union, each world pixel once: neighbouring cells do not darken twice
+			for (const SDL_Rect &r : padded)
+			{
+				for (int yy = (r.y - y0) * k; yy < (r.y + r.h - y0) * k; ++yy)
+				{
+					Uint32 *row = p.px.data() + (size_t)yy * p.w;
+					std::fill(row + (r.x - x0) * k, row + (r.x + r.w - x0) * k, PLATE);
+				}
+			}
+			_plates.push_back(std::move(p));
+		}
+	}
+public:
+	InventoryBackdrop(int width, int height, int x, int y) : Surface(width, height, x, y) {}
+	/// Remembers where the grids of the slots are (what Inventory::drawGrid draws) for the plates under them.
+	void setSlots(std::map<std::string, RuleInventory*> *inventories)
+	{
+		_groups.clear();
+		_plates.clear();
+		_platesK = 0;
+		for (const auto &invPair : *inventories)
+		{
+			const RuleInventory *ruleInv = invPair.second;
+			std::vector<SDL_Rect> cells;
+			SDL_Rect r;
+			r.w = RuleInventory::SLOT_W + 1;
+			r.h = RuleInventory::SLOT_H + 1;
+			if (ruleInv->getType() == INV_SLOT)
+			{
+				for (const auto &slotInfo : *ruleInv->getSlots())
+				{
+					r.x = (Sint16)(ruleInv->getX() + RuleInventory::SLOT_W * slotInfo.x);
+					r.y = (Sint16)(ruleInv->getY() + RuleInventory::SLOT_H * slotInfo.y);
+					cells.push_back(r);
+				}
+			}
+			else if (ruleInv->getType() == INV_HAND)
+			{
+				r.x = (Sint16)ruleInv->getX();
+				r.y = (Sint16)ruleInv->getY();
+				r.w = RuleInventory::HAND_W * RuleInventory::SLOT_W;
+				r.h = RuleInventory::HAND_H * RuleInventory::SLOT_H;
+				cells.push_back(r);
+			}
+			else if (ruleInv->getType() == INV_GROUND)
+			{
+				// the ground's grid runs to the field's edges
+				r.x = (Sint16)ruleInv->getX();
+				r.y = (Sint16)ruleInv->getY();
+				r.w = (Uint16)std::max(0, (int)getWidth() - r.x);
+				r.h = (Uint16)std::max(0, (int)getHeight() - r.y);
+				cells.push_back(r);
+			}
+			if (!cells.empty())
+			{
+				_groups.push_back(cells);
+			}
+		}
+	}
+	/// The picture of the chosen scene and the plates under the slots, then the classic background's HD picture over them.
+	void hdMirror() override
+	{
+		static const char *const IDS[] = { "", "inventoryArmory", "inventoryShip", "inventoryTarp" };
+		const int theme = Options::oxceHdInvBackdrop;
+		if (theme >= 1 && theme <= 3 && HdScreens::has(IDS[theme]))
+		{
+			HdUi &ui = HdUi::instance();
+			const int k = HdUi::scale();
+			ui.setClip(getX(), getY(), getWidth(), getHeight());
+			const bool drawn = HdScreens::drawBackdrop(this, IDS[theme], getX(), getY(), getWidth(), getHeight());
+			if (drawn && k > 0)
+			{
+				if (_platesK != k)
+				{
+					buildPlates(k);
+				}
+				for (const Plate &p : _plates)
+				{
+					ui.drawImage(p.px.data(), p.w, p.h, (getX() + p.x) * k, (getY() + p.y) * k);
+				}
+			}
+			ui.clearClip();
+			if (drawn)
+			{
+				// the text over it is text on a picture (outlined, the picture frosted under it)
+				ui.noteBackdrop(this, getX(), getY(), getWidth(), getHeight());
+			}
+		}
+		Surface::hdMirror();
+	}
+};
+
+/**
+ * OXCE-HD (oxceHdScrollSplit): the ground scroll button as two halves, an arrow to the left and an arrow to the right.
+ * The picture of the button is the mod's own, so it is made from it: the right half stays as it is, the left half
+ * becomes its mirror image, and a line in the darkest colour of the button's face is drawn between them.
+ * Picture only; the button works as before, the click handler tells the halves apart.
+ * @param btn The ground button, just added (its picture is copied from the screen's background).
+ */
+static void hdSplitScrollArrows(BattlescapeButton *btn)
+{
+	const int w = btn->getWidth(), h = btn->getHeight();
+	if (w < 16 || h < 8)
+	{
+		return;
+	}
+	const SDL_Color *pal = btn->getPalette();
+	Uint8 dark = 0;
+	int darkest = INT_MAX;
+	for (int y = 3; y < h - 3; ++y)
+	{
+		for (int x = 4; x < w - 4; ++x)
+		{
+			const Uint8 p = btn->getPixel(x, y);
+			if (!p)
+			{
+				continue;
+			}
+			const int lum = pal[p].r * 30 + pal[p].g * 59 + pal[p].b * 11;
+			if (lum < darkest)
+			{
+				darkest = lum;
+				dark = p;
+			}
+		}
+	}
+	btn->lock();
+	for (int y = 0; y < h; ++y)
+	{
+		for (int x = 0; x < w / 2; ++x)
+		{
+			btn->setPixel(x, y, btn->getPixel(w - 1 - x, y));
+		}
+	}
+	if (dark)
+	{
+		for (int y = 3; y < h - 3; ++y)
+		{
+			btn->setPixel(w / 2 - 1, y, dark);
+			btn->setPixel(w / 2, y, dark);
+		}
+	}
+	btn->unlock();
+	// the picture of the pressed button is made from this one
+	btn->initSurfaces();
+}
 
 static const int _templateBtnX = 288;
 static const int _createTemplateBtnY = 90;
@@ -106,7 +316,9 @@ InventoryState::InventoryState(bool tu, BattlescapeState *parent, Base *base, bo
 	}
 
 	// Create objects
-	_bg = new Surface(320, 200, 0, 0);
+	InventoryBackdrop *hdBackdrop = new InventoryBackdrop(320, 200, 0, 0);
+	hdBackdrop->setSlots(_game->getMod()->getInventories());
+	_bg = hdBackdrop;
 	_soldier = new Surface(320, 200, 0, 0);
 	_txtPosition = new Text(70, 9, 65, 95);
 	_txtNameStatic = new Text(210, 17, 28, 6);
@@ -167,10 +379,20 @@ InventoryState::InventoryState(bool tu, BattlescapeState *parent, Base *base, bo
 	add(_btnNext, "buttonNext", "inventory", _bg);
 	add(_btnUnload, "buttonUnload", "inventory", _bg);
 	add(_btnGround, "buttonGround", "inventory", _bg);
+	if (Options::oxceHdScrollSplit)
+	{
+		hdSplitScrollArrows(_btnGround);
+	}
 	add(_btnRank, "rank", "inventory", _bg);
 	add(_btnCreateTemplate, "buttonCreate", "inventory", _bg);
 	add(_btnApplyTemplate, "buttonApply", "inventory", _bg);
 	add(_btnLinks, "buttonLinks", "inventory", _bg);
+	// HD interface, oxceHdWindowTheme (XP-000378): the keys at the top right are pieces of the screen's copper picture;
+	// they are drawn in the metal of the battle panel's colour (picture only); the layout's keys too (XP-000397)
+	for (BattlescapeButton *btn : { _btnOk, _btnPrev, _btnNext, _btnUnload, _btnGround, _btnLinks, _btnCreateTemplate, _btnApplyTemplate })
+	{
+		btn->setHdTheme(true);
+	}
 	add(_selAmmo);
 	add(_inv);
 	add(_txtPosition, "textSlot", "inventory", _bg);
@@ -179,6 +401,15 @@ InventoryState::InventoryState(bool tu, BattlescapeState *parent, Base *base, bo
 	if (Options::showMoreStatsInInventoryView)
 	{
 		_txtTus->setY(_txtTus->getY() + 8);
+		if (_tu)
+		{
+			// in battle TU takes the first stat row, the stat rows move one down;
+			// the last one (shield) comes out below the unload button, its long text is not covered
+			_txtStatLine1->setY(_txtStatLine1->getY() + 8);
+			_txtStatLine2->setY(_txtStatLine2->getY() + 8);
+			_txtStatLine3->setY(_txtStatLine3->getY() + 8);
+			_txtStatLine4->setY(_txtStatLine4->getY() + 8);
+		}
 	}
 
 	centerAllSurfaces();
@@ -259,7 +490,7 @@ InventoryState::InventoryState(bool tu, BattlescapeState *parent, Base *base, bo
 
 	_btnGround->onMouseClick((ActionHandler)&InventoryState::btnGroundClickForward, SDL_BUTTON_LEFT);
 	_btnGround->onMouseClick((ActionHandler)&InventoryState::btnGroundClickBackward, SDL_BUTTON_RIGHT);
-	_btnGround->setTooltip("STR_SCROLL_RIGHT");
+	_btnGround->setTooltip(Options::oxceHdScrollSplit ? "STR_HD_SCROLL_SPLIT" : "STR_SCROLL_RIGHT");
 	_btnGround->onMouseIn((ActionHandler)&InventoryState::txtTooltipIn);
 	_btnGround->onMouseOut((ActionHandler)&InventoryState::txtTooltipOut);
 	_btnGround->onKeyboardPress((ActionHandler)&InventoryState::btnGroundClickBackward, Options::keyBattleLeft);
@@ -323,9 +554,12 @@ InventoryState::InventoryState(bool tu, BattlescapeState *parent, Base *base, bo
 	_inv->draw();
 	_inv->setTuMode(_tu);
 	_inv->setSelectedUnit(_game->getSavedGame()->getSavedBattle()->getSelectedUnit(), true);
-	_inv->onMouseClick((ActionHandler)&InventoryState::invClick, 0);
+	_inv->onMouseClick((ActionHandler)&InventoryState::invLeftClick, SDL_BUTTON_LEFT);
+	_inv->onMouseClick((ActionHandler)&InventoryState::invRightClick, SDL_BUTTON_RIGHT);
 	_inv->onMouseOver((ActionHandler)&InventoryState::invMouseOver);
 	_inv->onMouseOut((ActionHandler)&InventoryState::invMouseOut);
+	_inv->onMouseClick((ActionHandler)&InventoryState::btnGroundClickForward, SDL_BUTTON_WHEELDOWN);
+	_inv->onMouseClick((ActionHandler)&InventoryState::btnGroundClickBackward, SDL_BUTTON_WHEELUP);
 
 	if (_battleGame->getDebugMode() && _game->isShiftPressed())
 	{
@@ -340,10 +574,10 @@ InventoryState::InventoryState(bool tu, BattlescapeState *parent, Base *base, bo
 
 	_txtTus->setVisible(_tu);
 	_txtWeight->setVisible(Options::showMoreStatsInInventoryView);
-	_txtStatLine1->setVisible(Options::showMoreStatsInInventoryView && !_tu);
-	_txtStatLine2->setVisible(Options::showMoreStatsInInventoryView && !_tu);
-	_txtStatLine3->setVisible(Options::showMoreStatsInInventoryView && !_tu);
-	_txtStatLine4->setVisible(Options::showMoreStatsInInventoryView && !_tu);
+	_txtStatLine1->setVisible(Options::showMoreStatsInInventoryView);
+	_txtStatLine2->setVisible(Options::showMoreStatsInInventoryView);
+	_txtStatLine3->setVisible(Options::showMoreStatsInInventoryView);
+	_txtStatLine4->setVisible(Options::showMoreStatsInInventoryView || _tu);
 }
 
 static void _clearInventoryTemplate(std::vector<EquipmentLayoutItem*> &inventoryTemplate)
@@ -365,6 +599,12 @@ InventoryState::~InventoryState()
 		{
 			Screen::updateScale(Options::battlescapeScale, Options::baseXBattlescape, Options::baseYBattlescape, true);
 			_game->getScreen()->resetDisplay(false);
+		}
+
+		if (_itemUsed)
+		{
+			// as the battle does after a use from the action menu (BattlescapeGame::handleNonTargetAction)
+			_battleGame->getTileEngine()->updateGameStateAfterScript(BattleActionAttack::GetBeforeShoot(*_useAction), TileEngine::invalid);
 		}
 
 		//fix case when scripts could kill unit before inventory is closed
@@ -518,10 +758,14 @@ void InventoryState::init()
 
 		if (s->getArmor()->hasLayersDefinition())
 		{
+			std::vector<std::pair<const Surface*, std::string>> hdLayers;
 			for (const auto& layer : s->getArmorLayers())
 			{
-				_game->getMod()->getSurface(layer, true)->blitNShade(_soldier, 0, 0);
+				Surface *surf = _game->getMod()->getSurface(layer, true);
+				surf->blitNShade(_soldier, 0, 0);
+				hdLayers.emplace_back(surf, layer);
 			}
+			HdUiArt::composeLayers(_soldier, hdLayers);
 		}
 		else
 		{
@@ -584,6 +828,18 @@ void InventoryState::init()
 		_inv->arrangeGround();
 	}
 
+	// back from the medikit window of an item dropped on the body
+	if (_itemUsed)
+	{
+		_inv->setMouseOverItem(nullptr);
+		_inv->arrangeGround();
+		if (!_useAction->result.empty())
+		{
+			_inv->showWarning(tr(_useAction->result));
+			_useAction->result.clear();
+		}
+	}
+
 	updateStats();
 	refreshMouse();
 }
@@ -644,11 +900,36 @@ void InventoryState::edtSoldierChange(Action *)
 }
 
 /**
+ * Gets the armour energy shield of the unit: charge and capacity.
+ * A mod script may push them with setDisplayShieldHp/Capacity; without that they are read
+ * straight from the tags Yankes' scripts keep (unit UNIT_ENERGY_SHIELD_HP, armour ARMOR_ENERGY_SHIELD_CAPACITY).
+ */
+static void getUnitShield(const Mod *mod, const BattleUnit *unit, int &hp, int &capacity)
+{
+	hp = unit->getDisplayShieldHp();
+	capacity = unit->getDisplayShieldCapacity();
+	if (capacity > 0)
+	{
+		return;
+	}
+	auto hpTag = mod->getScriptGlobal()->getTag<ScriptTag<BattleUnit>>("Tag.UNIT_ENERGY_SHIELD_HP");
+	auto capacityTag = mod->getScriptGlobal()->getTag<ScriptTag<Armor>>("Tag.ARMOR_ENERGY_SHIELD_CAPACITY");
+	if (hpTag && capacityTag)
+	{
+		hp = unit->getScriptValuesRaw().get(hpTag);
+		capacity = unit->getArmor()->getScriptValuesRaw().get(capacityTag);
+	}
+}
+
+/**
  * Updates the soldier stats (Weight, TU).
  */
 void InventoryState::updateStats()
 {
 	BattleUnit *unit = _battleGame->getSelectedUnit();
+
+	int shieldHp, shieldCapacity;
+	getUnitShield(_game->getMod(), unit, shieldHp, shieldCapacity);
 
 	_txtTus->setText(tr("STR_TIME_UNITS_SHORT").arg(unit->getTimeUnits()));
 
@@ -705,7 +986,11 @@ void InventoryState::updateStats()
 					txtField->setText(tr("STR_MELEE_SHORT").arg(unit->getBaseStats()->melee));
 					break;
 				case 14:
-					if (showPsiStrength)
+					if (shieldCapacity > 0)
+					{
+						txtField->setText(tr("STR_SHIELD_SHORT").arg(shieldHp).arg(shieldCapacity));
+					}
+					else if (showPsiStrength)
 					{
 						txtField->setText(tr("STR_PSI_SHORT")
 							.arg(unit->getBaseStats()->psiStrength)
@@ -716,6 +1001,16 @@ void InventoryState::updateStats()
 						txtField->setText("");
 					}
 					break;
+						case 20:
+							if (shieldCapacity > 0)
+							{
+								txtField->setText(tr("STR_SHIELD_SHORT").arg(shieldHp).arg(shieldCapacity));
+							}
+							else
+							{
+								txtField->setText("");
+							}
+							break;
 				default:
 					txtField->setText("");
 					break;
@@ -781,6 +1076,13 @@ void InventoryState::btnArmorClick(Action *action)
 	// don't accept clicks when moving items
 	if (_inv->getSelectedItem() != 0)
 	{
+		// a medikit, food or pills dropped on the body: used on the unit
+		if (useOnSelf())
+		{
+			invMouseOut(action);
+			updateStats();
+			return;
+		}
 		// but we can reuse this for quickly dropping an item (as a Ctrl+L-click alternative)
 		if (Options::oxceInventoryDropItemOverPaperdoll)
 		{
@@ -799,6 +1101,17 @@ void InventoryState::btnArmorClick(Action *action)
 			}
 		}
 		return;
+	}
+
+	// voice set can be changed at any time
+	if ((_game->isCtrlPressed() || _base == 0) && _game->getMod()->getEnableUnitResponseSounds())
+	{
+		BattleUnit* unit = _battleGame->getSelectedUnit();
+		if (unit->getOriginalFaction() == FACTION_PLAYER)
+		{
+			_game->pushState(new SoldierVoiceState(unit, nullptr, SV_BATTLESCAPE));
+			return;
+		}
 	}
 
 	// only allowed during base equipment
@@ -851,16 +1164,7 @@ void InventoryState::btnArmorClickRight(Action *action)
 
 	if (!(s->getCraft() && s->getCraft()->getStatus() == "STR_OUT"))
 	{
-		size_t soldierIndex = 0;
-		for (auto soldierIt = _base->getSoldiers()->begin(); soldierIt != _base->getSoldiers()->end(); ++soldierIt)
-		{
-			if ((*soldierIt)->getId() == s->getId())
-			{
-				soldierIndex = soldierIt - _base->getSoldiers()->begin();
-			}
-		}
-
-		_game->pushState(new SoldierAvatarState(_base, soldierIndex));
+		_game->pushState(new SoldierAvatarState(unit));
 	}
 }
 
@@ -1230,6 +1534,7 @@ void InventoryState::btnUnloadClick(Action *)
 		_txtItem->setText("");
 		_txtAmmo->setText("");
 		_selAmmo->clear();
+		HdItems::detach(_selAmmo);
 		updateStats();
 		_game->getMod()->getSoundByDepth(0, Mod::ITEM_DROP)->play();
 	}
@@ -1276,6 +1581,16 @@ void InventoryState::btnGroundClickForward(Action *action)
 		if (mx <= _btnGround->getX() + (_btnGround->getWidth() / 2.0))
 		{
 			// clicked on the left half of the button
+			scrollBackwards = true;
+		}
+	}
+	else if (Options::oxceHdScrollSplit)
+	{
+		// OXCE-HD (oxceHdScrollSplit): the left half of the button (drawn as an arrow to the left) scrolls back;
+		// a key press has no mouse position (-1) and keeps scrolling forward
+		const double rx = action->getRelativeXMouse();
+		if (rx >= 0 && rx / action->getXScale() < _btnGround->getWidth() / 2.0)
+		{
 			scrollBackwards = true;
 		}
 	}
@@ -1775,9 +2090,147 @@ void InventoryState::onAutoequip(Action *)
  * Updates item info.
  * @param action Pointer to an action.
  */
-void InventoryState::invClick(Action *act)
+void InventoryState::invLeftClick(Action *act)
 {
-	updateStats();
+	if (_game->isCtrlPressed() && _game->isAltPressed())
+		onMoveGroundInventoryToBaseClick(true);
+	else
+	{
+		// the whole drawn figure is the body (ogres and other big units are bigger than the 40x70 button): its pixels where no slot lies;
+		// the button's own area, when the button is live, is left to btnArmorClick
+		if (_inv->getSelectedItem())
+		{
+			const int x = (int)floor(act->getAbsoluteXMouse()), y = (int)floor(act->getAbsoluteYMouse());
+			const bool inButton = !_game->getMod()->getInventoryOverlapsPaperdoll() &&
+				x >= _btnArmor->getX() && x < _btnArmor->getX() + _btnArmor->getWidth() &&
+				y >= _btnArmor->getY() && y < _btnArmor->getY() + _btnArmor->getHeight();
+			if (!inButton && !_inv->isSlotAt(x - _inv->getX(), y - _inv->getY()) && _soldier->getPixel(x - _soldier->getX(), y - _soldier->getY()) != 0)
+			{
+				useOnSelf();
+			}
+		}
+		updateStats();
+	}
+
+	_prev_key = 0, _key_repeats = 0;
+}
+
+/**
+ * An item dropped on the unit's body is taken into a hand and used on the unit, as the action
+ * menu's use with the unit as the target: a medikit opens its window, a single-use kind (food,
+ * pills) is used at once. The TU of the move into the hand and of the use must be there together;
+ * a hand must be free. Only in the battle, only medikit kinds (option oxceInventoryUseOnBody).
+ * @return Whether the item asked for a use (done, or refused with a warning).
+ */
+bool InventoryState::useOnSelf()
+{
+	BattleItem *item = _inv->getSelectedItem();
+	BattleUnit *unit = _inv->getSelectedUnit();
+	if (!_tu || !Options::oxceInventoryUseOnBody || !item || !unit || item->getRules()->getBattleType() != BT_MEDIKIT || _game->isCtrlPressed() || _game->isShiftPressed())
+	{
+		return false;
+	}
+
+	const RuleItem *rule = item->getRules();
+	auto warn = [this](const std::string &id) { _inv->showWarning(tr(id)); return true; };
+	std::string message;
+	if (unit->getOriginalFaction() == FACTION_PLAYER && !_game->getSavedGame()->isResearched(rule->getRequirements()))
+	{
+		return warn("STR_UNABLE_TO_USE_ALIEN_ARTIFACT_UNTIL_RESEARCHED");
+	}
+	if (!_battleGame->canUseWeapon(item, unit, false, BA_USE, &message))
+	{
+		return warn(message);
+	}
+	if (!rule->getAllowTargetSelf())
+	{
+		return warn("STR_INV_USE_NOT_ON_SELF");
+	}
+	const BattleMediKitType type = rule->getMediKitType();
+	if ((type == BMT_HEAL && item->getHealQuantity() <= 0) ||
+		(type == BMT_STIMULANT && item->getStimulantQuantity() <= 0) ||
+		(type == BMT_PAINKILLER && item->getPainKillerQuantity() <= 0))
+	{
+		return warn("STR_NO_USES_LEFT");
+	}
+	const RuleInventory *hand = _inv->useHand(item);
+	if (!hand)
+	{
+		return warn("STR_INV_USE_FREE_A_HAND");
+	}
+
+	if (!_useAction)
+	{
+		_useAction = std::make_unique<BattleAction>();
+	}
+	BattleAction &use = *_useAction;
+	use = BattleAction();
+	use.type = BA_USE;
+	use.actor = unit;
+	use.weapon = item;
+	use.updateTU();
+	const int moveCost = item->getSlot() == hand ? 0 : item->getMoveToCost(hand);
+	use.Time += moveCost;
+	const bool enough = use.haveTU(&message);
+	use.Time -= moveCost;
+	if (!enough)
+	{
+		return warn(message == "STR_NOT_ENOUGH_TIME_UNITS" ? "STR_INV_USE_NOT_SO_FAST" : message);
+	}
+
+	_inv->putInHand(hand);
+	_itemUsed = true;
+	TileEngine *tileEngine = _battleGame->getTileEngine();
+	if (!type)
+	{
+		_game->pushState(new MedikitState(unit, &use, tileEngine));
+		return true;
+	}
+	// the single-use kinds as ActionMenuState::handleAction applies them
+	if (use.spendTU(&use.result))
+	{
+		switch (type)
+		{
+		case BMT_HEAL:
+			{
+				UnitBodyPart part = BODYPART_TORSO;
+				for (int i = 0; i < BODYPART_MAX; ++i)
+				{
+					if (unit->getFatalWound((UnitBodyPart)i))
+					{
+						part = (UnitBodyPart)i;
+						break;
+					}
+				}
+				tileEngine->medikitUse(&use, unit, BMA_HEAL, part);
+			}
+			break;
+		case BMT_STIMULANT:
+			tileEngine->medikitUse(&use, unit, BMA_STIMULANT, BODYPART_TORSO);
+			break;
+		case BMT_PAINKILLER:
+			tileEngine->medikitUse(&use, unit, BMA_PAINKILLER, BODYPART_TORSO);
+			break;
+		case BMT_NORMAL:
+			break;
+		}
+		tileEngine->medikitRemoveIfEmpty(&use);
+	}
+	_inv->setMouseOverItem(nullptr);
+	_inv->arrangeGround();
+	if (!use.result.empty())
+	{
+		warn(use.result);
+		use.result.clear();
+	}
+	return true;
+}
+
+void InventoryState::invRightClick(Action* action)
+{
+	if (_game->isCtrlPressed() && _game->isAltPressed())
+		onMoveGroundInventoryToBaseClick(false);
+
 	_prev_key = 0, _key_repeats = 0;
 }
 
@@ -1985,6 +2438,7 @@ void InventoryState::invMouseOver(Action *)
 		}
 
 		_selAmmo->clear();
+		HdItems::detach(_selAmmo);
 		bool hasSelfAmmo = item->getRules()->getBattleType() != BT_AMMO && item->getRules()->getClipSize() > 0;
 		if ((item->isWeaponWithAmmo() || hasSelfAmmo) && item->haveAnyAmmo())
 		{
@@ -2015,6 +2469,7 @@ void InventoryState::invMouseOver(Action *)
 		}
 		_txtAmmo->setText("");
 		_selAmmo->clear();
+		HdItems::detach(_selAmmo);
 		updateTemplateButtons(!_tu);
 	}
 }
@@ -2028,6 +2483,7 @@ void InventoryState::invMouseOut(Action *)
 	_txtItem->setText("");
 	_txtAmmo->setText("");
 	_selAmmo->clear();
+	HdItems::detach(_selAmmo);
 	_inv->setMouseOverItem(0);
 	_mouseHoverItem = nullptr;
 	_currentDamageTooltipItem = nullptr;
@@ -2110,6 +2566,100 @@ void InventoryState::onMoveGroundInventoryToBase(Action *)
 	_game->getMod()->getSoundByDepth(_battleGame->getDepth(), Mod::ITEM_DROP)->play();
 }
 
+void InventoryState::onMoveGroundInventoryToBaseClick(bool leftClick)
+{
+	if (_inv->getSelectedItem() != nullptr || _base == nullptr || _noCraft)
+		return;
+
+	BattleUnit* unit = _battleGame->getSelectedUnit();
+	Craft* craft = unit->getGeoscapeSoldier()->getCraft();
+
+	if (craft == 0 || craft->getStatus() == "STR_OUT")
+		return;
+
+	auto* selectedItem = _inv->getMouseOverItem();
+	if (!selectedItem || selectedItem->getRules()->isFixed())
+		return;
+
+	std::vector<BattleItem*> sameSlotItems{ selectedItem };
+	if (!leftClick)
+	{
+		auto* selectedItemSlot = selectedItem->getSlot();
+		auto type = selectedItemSlot->getType();
+		auto id = selectedItemSlot->getId();
+		auto slotX = selectedItemSlot->getX();
+		auto slotY = selectedItemSlot->getY();
+		auto invX = selectedItem->getSlotX();
+		auto invY = selectedItem->getSlotY();
+
+		auto& itemInventory = selectedItem->getOwner() == unit
+			? *unit->getInventory()
+			: *unit->getTile()->getInventory();
+
+		for (auto* bi : itemInventory)
+		{
+			if (!bi || bi == selectedItem)
+				continue;
+
+			auto slot = bi->getSlot();
+			if (!slot)
+				continue;
+
+			if (!(bi->getSlotX() == invX && bi->getSlotY() == invY))
+				continue;
+
+			if (!(slot->getId() == id && slot->getType() == type && slot->getX() == slotX && slot->getY() == slotY))
+				continue;
+
+			sameSlotItems.push_back(bi);
+		}
+	}
+
+	for (auto* item : sameSlotItems)
+	{
+		// step 1: move stuff from craft to base
+		const auto& weaponType = item->getRules();
+		// check all ammo slots first
+		for (int slot = 0; slot < RuleItem::AmmoSlotMax; ++slot)
+		{
+			if (item->getAmmoForSlot(slot))
+			{
+				const auto& ammoType = item->getAmmoForSlot(slot)->getRules();
+				// only real ammo
+				if (weaponType != ammoType)
+				{
+					craft->getItems()->removeItem(ammoType);
+					_base->getStorageItems()->addItem(ammoType);
+				}
+			}
+		}
+		// and the weapon as last
+		craft->getItems()->removeItem(weaponType);
+		_base->getStorageItems()->addItem(weaponType);
+
+		// step 2: remove from inventory/ground
+		if (item->getOwner() != nullptr && item->getOwner() == unit)
+		{
+			Collections::removeIf(*unit->getInventory(), 1, [item](BattleItem* i) { return i == item; });
+			updateStats();
+			_game->getSavedGame()->getSavedBattle()->removeItem(item);
+		}
+		else
+		{
+			auto& groundInventory = *unit->getTile()->getInventory();
+			Collections::removeIf(groundInventory, 1, [item](BattleItem* i) { return i == item; });
+			_inv->arrangeGround();
+		}
+
+		_game->getSavedGame()->getSavedBattle()->removeItem(item);
+	}
+
+	refreshMouse();
+
+	// give audio feedback
+	_game->getMod()->getSoundByDepth(_battleGame->getDepth(), Mod::ITEM_DROP)->play();
+}
+
 /**
  * Takes care of any events from the core game engine.
  * @param action Pointer to an action.
@@ -2162,6 +2712,20 @@ void InventoryState::handle(Action *action)
  */
 void InventoryState::think()
 {
+	// the AI test bench: the pre-battle equipment screen has nobody to press OK
+	if (!_tu && _parent && AiProbe::autoClose())
+	{
+		btnOkClick(nullptr);
+		return;
+	}
+	if (_tu && Options::showMoreStatsInInventoryView)
+	{
+		// in battle the last stat row sits where the first line of the ammo counter appears; a counter
+		// that starts with an empty line (Piratez: "{NEWLINE}{NEWLINE}Патр.>9") leaves the row free
+		const std::string &ammo = _txtAmmo->getText();
+		_txtStatLine4->setVisible(ammo.empty() || ammo[0] == '\n');
+	}
+
 	if (_mouseHoverItem)
 	{
 		int anim = _inv->getAnimFrame();
@@ -2212,11 +2776,15 @@ void InventoryState::think()
 			r.w -= 2;
 			r.h -= 2;
 			_selAmmo->drawRect(&r, Palette::blockOffset(0)+15);
-			firstAmmo->getRules()->drawHandSprite(_game->getMod()->getSurfaceSet("BIGOBS.PCK"), _selAmmo, firstAmmo, _game->getSavedGame()->getSavedBattle(), anim);
+			if (!HdItems::attachHand(firstAmmo->getRules(), firstAmmo, _game->getSavedGame()->getSavedBattle(), anim, _game->getMod()->getSurfaceSet("BIGOBS.PCK"), _selAmmo))
+			{
+				firstAmmo->getRules()->drawHandSprite(_game->getMod()->getSurfaceSet("BIGOBS.PCK"), _selAmmo, firstAmmo, _game->getSavedGame()->getSavedBattle(), anim);
+			}
 		}
 		else
 		{
 			_selAmmo->clear();
+			HdItems::detach(_selAmmo);
 		}
 	}
 	State::think();

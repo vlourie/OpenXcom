@@ -111,6 +111,17 @@ ManageAlienContainmentState::ManageAlienContainmentState(Base *base, int prisonT
 
 	touchComponentsAdd("button2", "manageContainment", _window);
 
+	addBaseSwitch(_base, "manageContainment", "text", "button", 24,
+		[prisonType](const Base *other) { return other->getAvailableContainment(prisonType) > 0; },
+		[prisonType](Base *other) { return withBaseSwitch(new ManageAlienContainmentState(other, prisonType, OPT_GEOSCAPE)); },
+		[this]()
+		{
+			// an overcrowded prison has to be emptied first
+			int available = _base->getAvailableContainment(_prisonType);
+			bool overCrowded = (available == 0 || Options::storageLimitsEnforced) && available < _base->getUsedContainment(_prisonType);
+			return overCrowded || std::any_of(_qtys.begin(), _qtys.end(), [](int qty) { return qty > 0; });
+		});
+
 	centerAllSurfaces();
 
 	// Set up objects
@@ -304,6 +315,7 @@ void ManageAlienContainmentState::resetListAndTotals()
 
 		_btnCleanup->setVisible(needToCleanup);
 	}
+	updateBaseSwitch();
 }
 
 /**
@@ -623,6 +635,7 @@ void ManageAlienContainmentState::updateStrings()
 	}
 	_txtAvailable->setText(tr("STR_SPACE_AVAILABLE").arg(spaces));
 	_txtUsed->setText(tr("STR_SPACE_USED").arg(aliens));
+	updateBaseSwitch();
 
 	if (Options::canSellLiveAliens)
 	{

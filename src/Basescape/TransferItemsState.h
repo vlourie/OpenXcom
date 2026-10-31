@@ -21,6 +21,7 @@
 #include "../Savegame/Transfer.h"
 #include <vector>
 #include <string>
+#include "ItemCountTooltipMixin.h"
 
 namespace OpenXcom
 {
@@ -40,7 +41,7 @@ class RuleItem;
  * Transfer screen that lets the player pick
  * what items to transfer between bases.
  */
-class TransferItemsState : public TouchState
+class TransferItemsState : public ItemCountTooltipMixin<TouchState>
 {
 private:
 	Base *_baseFrom, *_baseTo;
@@ -49,6 +50,7 @@ private:
 	TextEdit *_btnQuickSearch;
 	Window *_window;
 	Text *_txtTitle, *_txtQuantity, *_txtAmountTransfer, *_txtAmountDestination;
+	Text *_txtCost = nullptr;
 	ComboBox *_cbxCategory;
 	TextList *_lstItems;
 	std::vector<TransferRow> _items;
@@ -63,6 +65,11 @@ private:
 	Timer *_timerInc, *_timerDec;
 	TransferSortDirection _previousSort, _currentSort;
 	bool _errorShown;
+	// OXCE-HD: exchange - both bases send at once; a negative amount goes from _baseTo back to _baseFrom,
+	// and these count what goes back the way _pQty and the rest count what goes to _baseTo
+	bool _exchange;
+	int _pBack, _cBack, _aBack;
+	double _iBack;
 
 	/// Gets the category of the current selection.
 	std::string getCategory(int sel) const;
@@ -116,12 +123,24 @@ public:
 	void decrease();
 	/// Decreases the quantity of an item by the given value.
 	void decreaseByValue(int change);
+	/// Moves the selected row in exchange mode: positive toward the destination, negative back.
+	void exchangeByValue(int change);
+	/// Gets the texts of a row in exchange mode.
+	void exchangeTexts(const TransferRow &row, std::string &from, std::string &amount, std::string &to) const;
+	/// Sends some of a row from one base to the other.
+	void sendRow(const TransferRow &row, int n, Base *from, Base *to, int time);
 	/// Updates the quantity-strings of the selected item.
 	void updateItemStrings();
+	/// Shows the cost between the buttons (HD option).
+	void updateCost();
 	/// Gets the total of the transfer.
 	int getTotal() const;
 	/// Handler for changing the category filter.
 	void cbxCategoryChange(Action *action);
+
+protected:
+	const RuleItem* GetItemForTooltip() override;
+	const Base* GetBase() override;
 };
 
 }

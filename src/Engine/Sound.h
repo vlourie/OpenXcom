@@ -43,7 +43,11 @@ public:
 	static UniqueSoundPtr NewSound(Mix_Chunk* sound);
 
 private:
-	UniqueSoundPtr _sound;
+	// decoded when first played (loadLater): a voice pack's ~18 thousand clips decoded at start took 2.8 GB
+	mutable UniqueSoundPtr _sound;
+	mutable std::string _later;
+	/// The sound's data, decoding the file of loadLater first.
+	Mix_Chunk *chunk() const;
 
 public:
 	/// Creates a blank sound effect.
@@ -59,8 +63,16 @@ public:
 	void load(const std::string &filename);
 	/// Loads sound from SDL_RWops
 	void load(SDL_RWops *rw);
+	/// Remembers the file and decodes it when the sound is first played.
+	void loadLater(const std::string &filename);
+	/// Decodes the file of loadLater now instead of at the first play.
+	void warm() const;
 	/// Plays the sound.
 	void play(int channel = -1, int angle = 0, int distance = 0) const;
+	/// Plays it as a shot: with oxceHdShotCut the same sound still playing (the shot before) fades out first.
+	void playShot(int angle) const;
+	/// Remembers the volume Game::setVolume gave the sound channels (a channel faded out by playShot gets it back).
+	static void setChannelVolume(int volume);
 	/// Stops all sounds.
 	static void stop();
 	/// Plays the sound repeatedly.

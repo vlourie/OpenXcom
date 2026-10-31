@@ -36,7 +36,10 @@
 #include "../Battlescape/BriefingState.h"
 #include "../Battlescape/BattlescapeGenerator.h"
 #include "../Engine/Exception.h"
+#include "../Engine/Logger.h"
 #include "../Engine/Options.h"
+#include "../Savegame/AlienMission.h"
+#include "../Mod/RuleAlienMission.h"
 #include "../Mod/RuleStartingCondition.h"
 #include "../Mod/AlienDeployment.h"
 #include "../Mod/AlienRace.h"
@@ -240,8 +243,77 @@ std::string ConfirmLandingState::checkStartingCondition()
  * Enters the mission.
  * @param action Pointer to an action.
  */
+/**
+ * Checks the alien ranks of the deployment the battle will be generated from (U-03).
+ * Resolves the deployments, the race and the texture exactly as btnYesClick() hands them to the generator.
+ * @return Empty if the aliens can be generated, otherwise the details for the log.
+ */
+std::string ConfirmLandingState::checkAlienDeployment()
+{
+	const Mod *mod = _game->getMod();
+	Ufo* u = dynamic_cast<Ufo*>(_craft->getDestination());
+	MissionSite* m = dynamic_cast<MissionSite*>(_craft->getDestination());
+	AlienBase* b = dynamic_cast<AlienBase*>(_craft->getDestination());
+
+	const AlienDeployment *ruleDeploy = 0, *customDeploy = 0, *customMission = 0;
+	Texture *texture = _missionTexture;
+	std::string race;
+	std::ostringstream where;
+	if (u != 0)
+	{
+		where << "mission=" << (u->getStatus() == Ufo::CRASHED ? "STR_UFO_CRASH_RECOVERY" : "STR_UFO_GROUND_ASSAULT") << " ufo=" << u->getRules()->getType();
+		if (u->getMission())
+		{
+			where << " alienMission=" << u->getMission()->getRules().getType() << " #" << u->getMission()->getId();
+		}
+		customDeploy = mod->getDeployment(u->getCraftStats().craftCustomDeploy);
+		if (_missionTexture && _missionTexture->isFakeUnderwater())
+		{
+			customMission = mod->getDeployment(u->getRules()->getType() + "_UNDERWATER");
+			if (!customMission) return ""; // btnYesClick() reports it
+		}
+		race = u->getAlienRace();
+		ruleDeploy = customMission ? customMission : mod->getDeployment(u->getRules()->getType());
+	}
+	else if (m != 0)
+	{
+		where << "mission=" << m->getDeployment()->getType() << " alienMission=" << m->getRules()->getType();
+		customDeploy = m->getMissionCustomDeploy();
+		race = m->getAlienRace();
+		ruleDeploy = mod->getDeployment(m->getDeployment()->getType());
+	}
+	else if (b != 0)
+	{
+		const AlienRace *baseRace = mod->getAlienRace(b->getAlienRace());
+		if (!baseRace) return "";
+		where << "mission=" << b->getDeployment()->getType() << " alienBase";
+		customDeploy = mod->getDeployment(baseRace->getBaseCustomDeploy());
+		customMission = mod->getDeployment(baseRace->getBaseCustomMission());
+		race = b->getAlienRace();
+		texture = 0;
+		ruleDeploy = customMission ? customMission : mod->getDeployment(b->getDeployment()->getType());
+	}
+	else
+	{
+		return ""; // btnYesClick() reports it
+	}
+	const AlienDeployment *alienDeploy = customDeploy && !customDeploy->getDeploymentData()->empty() ? customDeploy : ruleDeploy;
+	return BattlescapeGenerator::checkAlienRanks(mod, _game->getSavedGame(), ruleDeploy, alienDeploy, race, texture, where.str());
+}
+
 void ConfirmLandingState::btnYesClick(Action *)
 {
+	// U-03: an alien rank missing from the race - refuse the landing before anything of the battle exists
+	std::string invalid = checkAlienDeployment();
+	if (!invalid.empty())
+	{
+		Log(LOG_ERROR) << invalid;
+		_craft->returnToBase();
+		_game->popState();
+		_game->pushState(new CraftErrorState(0, tr("STR_INVALID_ALIEN_DEPLOYMENT")));
+		return;
+	}
+
 	std::string message = checkStartingCondition();
 	if (!message.empty())
 	{

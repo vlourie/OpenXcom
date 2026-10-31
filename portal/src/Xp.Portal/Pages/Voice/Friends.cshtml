@@ -1,0 +1,165 @@
+@page "/me/friends/{add:guid?}"
+@model Xp.Portal.Pages.Voice.FriendsModel
+@{
+    ViewData["Title"] = T["friends.title"];
+}
+<h1>@T["friends.title"]</h1>
+<partial name="_Errors" model="Model.Errors" />
+<p class="hint">@T["friends.intro"] <a href="/voice">@T["voice.title"]</a></p>
+
+@if (Model.Candidate is { } c)
+{
+    var waiting = Model.View.Incoming.FirstOrDefault(r => r.Person.Id == c.Id);
+    <div class="panel">
+        <h2>@T.Format("friends.add.title", c.Name)</h2>
+        @if (Model.View.Friends.Any(x => x.Id == c.Id))
+        {
+            <p class="hint">@T["friends.add.already"]</p>
+        }
+        else if (waiting is not null)
+        {
+            <form method="post" asp-page-handler="Accept" class="inline">
+                <input type="hidden" name="id" value="@waiting.Id" />
+                <button type="submit">@T["friends.accept"]</button>
+            </form>
+        }
+        else if (Model.View.Outgoing.Any(r => r.Person.Id == c.Id))
+        {
+            <p class="hint">@T["friends.add.waiting"]</p>
+        }
+        else
+        {
+            <form method="post" asp-page-handler="Request" class="inline">
+                <input type="hidden" name="who" value="@c.Id" />
+                <button type="submit">@T["friends.add.send"]</button>
+            </form>
+        }
+    </div>
+}
+
+<div class="panel">
+    <h2>@T["friends.request.title"]</h2>
+    <form method="post" asp-page-handler="Request">
+        <label for="who">@T["friends.request.who"]</label>
+        <input type="text" id="who" name="who" required maxlength="256" autocomplete="off" />
+        <button type="submit">@T["friends.add.send"]</button>
+    </form>
+    <p class="hint">@T["friends.request.hint"]</p>
+    <label for="share">@T["friends.share"]</label>
+    <input type="text" id="share" readonly value="@Model.ShareLink" />
+    <p class="hint">@T["friends.share.hint"]</p>
+</div>
+
+@if (Model.View.Incoming.Count > 0)
+{
+    <div class="panel">
+        <h2>@T["friends.incoming"]</h2>
+        <table>
+            @foreach (var r in Model.View.Incoming)
+            {
+                <tr>
+                    <td>@r.Person.Name</td>
+                    <td>@r.At.ToString("yyyy-MM-dd HH:mm")</td>
+                    <td>
+                        <form method="post" asp-page-handler="Accept" class="inline">
+                            <input type="hidden" name="id" value="@r.Id" />
+                            <button type="submit">@T["friends.accept"]</button>
+                        </form>
+                        <form method="post" asp-page-handler="Decline" class="inline">
+                            <input type="hidden" name="id" value="@r.Id" />
+                            <button type="submit" class="secondary">@T["friends.decline"]</button>
+                        </form>
+                        <form method="post" asp-page-handler="Block" class="inline">
+                            <input type="hidden" name="user" value="@r.Person.Id" />
+                            <button type="submit" class="link">@T["friends.block"]</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </table>
+    </div>
+}
+
+<div class="panel">
+    <h2>@T["friends.list"] (@Model.View.FriendsTotal)</h2>
+    @if (Model.View.Friends.Count == 0)
+    {
+        <p class="hint">@T["friends.empty"]</p>
+    }
+    else
+    {
+        <table>
+            @foreach (var x in Model.View.Friends)
+            {
+                <tr>
+                    <td>@x.Name</td>
+                    <td class="hint">@T.Format("friends.since", x.Since.ToString("yyyy-MM-dd"))</td>
+                    <td>
+                        <form method="post" asp-page-handler="Remove" class="inline">
+                            <input type="hidden" name="user" value="@x.Id" />
+                            <button type="submit" class="secondary">@T["friends.remove"]</button>
+                        </form>
+                        <form method="post" asp-page-handler="Block" class="inline">
+                            <input type="hidden" name="user" value="@x.Id" />
+                            <button type="submit" class="link">@T["friends.block"]</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </table>
+        <p class="hint">@T["friends.remove.hint"]</p>
+        @if (Model.Pages > 1)
+        {
+            <p>
+                @for (int i = 1; i <= Model.Pages; i++)
+                {
+                    if (i == Model.P) { <strong>@i</strong> }
+                    else { <a href="/me/friends?P=@i">@i</a> }
+                }
+            </p>
+        }
+    }
+</div>
+
+@if (Model.View.Outgoing.Count > 0)
+{
+    <div class="panel">
+        <h2>@T["friends.outgoing"]</h2>
+        <table>
+            @foreach (var r in Model.View.Outgoing)
+            {
+                <tr>
+                    <td>@r.Person.Name</td>
+                    <td>@r.At.ToString("yyyy-MM-dd HH:mm")</td>
+                    <td>
+                        <form method="post" asp-page-handler="Cancel" class="inline">
+                            <input type="hidden" name="id" value="@r.Id" />
+                            <button type="submit" class="secondary">@T["friends.cancel"]</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </table>
+    </div>
+}
+
+@if (Model.View.Blocked.Count > 0)
+{
+    <div class="panel">
+        <h2>@T["friends.blocked"]</h2>
+        <table>
+            @foreach (var p in Model.View.Blocked)
+            {
+                <tr>
+                    <td>@p.Name</td>
+                    <td>
+                        <form method="post" asp-page-handler="Unblock" class="inline">
+                            <input type="hidden" name="user" value="@p.Id" />
+                            <button type="submit" class="secondary">@T["friends.unblock"]</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </table>
+    </div>
+}

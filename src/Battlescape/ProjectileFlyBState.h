@@ -42,6 +42,8 @@ private:
 	int _range;
 	/// Tries to create a projectile sprite.
 	bool createNewProjectile();
+	/// HD render: starts the muzzle flash of this shot at a voxel (pictures only).
+	void hdMuzzle(Position origin);
 	bool _initialized, _targetFloor;
 
 public:

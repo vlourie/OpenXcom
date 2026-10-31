@@ -1,0 +1,7 @@
+# HD render test: k = BLANKS.PCK frame 0 width / 32, so a 128x160 frame 0 means k = 4.
+extraSprites:
+  - type: BLANKS.PCK
+    width: 128
+    height: 160
+    files:
+      0: Resources/HdTest/blanks_0.png

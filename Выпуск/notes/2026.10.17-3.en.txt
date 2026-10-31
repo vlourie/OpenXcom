@@ -1,0 +1,2 @@
+Fixed
+- The intro plays again when starting the game through the launcher, if the intro option is enabled.
