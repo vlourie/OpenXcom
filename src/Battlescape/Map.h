@@ -271,19 +271,25 @@ private:
 	std::unordered_map<const HdFrame*, HdFrame> _hdItemShadows;
 	/// HD render (option oxceHdBloodSteps, XP-000421): bloody soles on the floor. Picture only: the Map keeps them, not the units, the tiles or the
 	/// save (a loaded battle has none); the tracks follow each unit's steps (by unit id), the soles stand by tile index (at most HD_STEP_MAX).
-	struct HdStepTrack { Position last; bool seen = false; int left = 0; int rgb = 0; int foot = 0; };
-	struct HdStep { int dx, dy, variant, kind, rgb, turn; Uint32 seq; };
+	/// A tile keeps several prints (HD_STEP_PER_TILE at most, the oldest goes first); `pattern` is the look of the print among HD_STEP_PATTERNS, picked by
+	/// a hash of the tile, the turn, the unit and its step (never the battle's random numbers); `kind` HD_STEP_DROPS: the drops of a wounded unit on the move.
+	struct HdStepTrack { Position last; bool seen = false; int left = 0; int rgb = 0; int foot = 0; Uint32 count = 0; };
+	struct HdStep { int dx, dy, variant, kind, rgb, turn; Uint32 seq; int pattern; };
 	std::unordered_map<int, HdStepTrack> _hdStepTracks;
-	std::unordered_map<int, HdStep> _hdSteps;
+	std::unordered_map<int, std::vector<HdStep>> _hdSteps;
 	std::deque<std::pair<int, Uint32>> _hdStepOrder;
+	size_t _hdStepCount = 0;
 	Uint32 _hdStepSeq = 0;
-	int _hdStepTurn = -1;
+	int _hdStepTurn = -1, _hdStepLifeSeen = -1;
 	std::map<unsigned long long, HdFrame> _hdStepFrames;
 	/// Watches the steps of the units (before a frame is drawn) and lays the soles.
 	void hdObserveSteps();
+	/// Puts one print on tile `index` (the oldest of the tile or of the map goes when there are too many).
+	void hdLayStep(int index, const HdStep &step);
 	/// The print frame (floor diamond, 32k x 16k) for a step by (dx, dy): `variant` 0/1 the left or right foot of a one-tile unit, 2..5 the quarter of a
-	/// 2x2 body; `kind` the look (HdFx::Track), colour `rgb`, fading `tier` (0 fresh, 1 old).
-	const HdFrame &hdStepFrame(int dx, int dy, int variant, int kind, int rgb, int tier);
+	/// 2x2 body (for drops 0 light, 1 heavy); `kind` the look (HdFx::Track, or HD_STEP_DROPS), colour `rgb`, fading `tier` (0 fresh .. 2 old), `pattern` one of
+	/// HD_STEP_PATTERNS looks (0 the plain print, the others turned, shifted, a bit larger or smaller and worn in places).
+	const HdFrame &hdStepFrame(int dx, int dy, int variant, int kind, int rgb, int tier, int pattern);
 	/// HD render: the shade of the corners on the floor (option oxceHdFloorAo), see Map::hdFloorAo.
 	struct HdAoShape { Uint16 rows[16]; float weight; int count; bool valid; };
 	static const int HD_AO_PARTS = 27;

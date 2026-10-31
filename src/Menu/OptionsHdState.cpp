@@ -455,6 +455,7 @@ bool OptionsHdState::dependsOff(const OptionInfo &info) const
 		if (p == &Options::oxceHdBattleHudColor) return !skin;
 		if (p == &Options::oxceHdRadarWaves) return Options::oxceHdRadar != 3;
 		if (p == &Options::oxceHdTrunkArmor) return !Options::oxceCollapse;
+		if (p == &Options::oxceHdBloodStepsLife || p == &Options::oxceHdBloodStepsColor) return !Options::oxceHdBloodSteps;
 	}
 	else if (info.type() == OPTION_BOOL)
 	{
@@ -526,6 +527,19 @@ std::string OptionsHdState::valueText(const OptionInfo &info) const
 	if (info.asInt() == &Options::oxceHdEnemyNumber)
 	{
 		return tr("STR_HD_ENEMY_NUMBER_" + std::to_string(Options::oxceHdEnemyNumber));
+	}
+	// how long the bloody soles last: the turns, 11 = always; their colour by name
+	if (info.asInt() == &Options::oxceHdBloodStepsLife)
+	{
+		if (Options::oxceHdBloodStepsLife >= 11)
+		{
+			return tr("STR_HD_BLOOD_STEPS_LIFE_ALWAYS");
+		}
+		return std::to_string(std::max(1, Options::oxceHdBloodStepsLife));
+	}
+	if (info.asInt() == &Options::oxceHdBloodStepsColor)
+	{
+		return tr("STR_HD_BLOOD_STEPS_COLOR_" + std::to_string(Options::oxceHdBloodStepsColor));
 	}
 	if (info.asInt() == &Options::oxceHdEnemyTurn)
 	{
@@ -796,6 +810,16 @@ void OptionsHdState::changeSetting(size_t sel, Uint8 button)
 			min = 0;                                  // 0 none, 1 blinking, 2 steady
 			max = 2;
 		}
+		else if (i == &Options::oxceHdBloodStepsLife)
+		{
+			min = 1;                                  // bloody soles: 1..10 turns, 11 = always
+			max = 11;
+		}
+		else if (i == &Options::oxceHdBloodStepsColor)
+		{
+			min = 0;                                  // 0 by the creature, 1 red
+			max = 1;
+		}
 		else if (i == &Options::oxceHdBeyondLook || i == &Options::oxceHdMapBorder)
 		{
 			min = 0;                                  // beyond the edge: 0 as it is, 1 black and white, 2 fog; border: 0 off, 1 line, 2 fence
@@ -900,7 +924,7 @@ void OptionsHdState::changeSetting(size_t sel, Uint8 button)
 		// the main option of dependent rows changed: they turn grey, or back
 		const bool *pb = setting->type() == OPTION_BOOL ? setting->asBool() : nullptr;
 		const int *pi = setting->type() == OPTION_INT ? setting->asInt() : nullptr;
-		if (pb == &Options::oxceHdPathDigits || pi == &Options::oxceHdUi || pi == &Options::oxceHdUiSkin
+		if (pb == &Options::oxceHdPathDigits || pb == &Options::oxceHdBloodSteps || pi == &Options::oxceHdUi || pi == &Options::oxceHdUiSkin
 			|| pi == &Options::oxceHdUiFont || pi == &Options::oxceHdRadar)
 		{
 			updateList();

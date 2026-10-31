@@ -2909,10 +2909,37 @@ const HdFrame *Map::hdItemShadow(HdCanvas *surface, SurfaceRaw<const Uint8> spri
 	return &f;
 }
 
-/// Bloody footprints (Options::oxceHdBloodSteps, XP-000421): how many tiles after the blood a unit leaves them, how many prints the map keeps,
-/// how many turns they last (fresh for the first two, then paler, gone at the third), the opacity of a fresh and of an old one,
-/// and the red when the blood has no colour of its own.
-const int HD_STEP_TILES = 2, HD_STEP_MAX = 96, HD_STEP_LIFE = 3, HD_STEP_ALPHA[2] = { 200, 105 }, HD_STEP_RED = 0x8E1212;
+/// Bloody footprints (Options::oxceHdBloodSteps, XP-000421): how many tiles after the blood a unit leaves them, how many prints the map keeps and
+/// one tile keeps, the looks of a print (HD_STEP_PATTERNS), the opacity of a fresh, a middle and an old one (the age spread over the time they last,
+/// Options::oxceHdBloodStepsLife: 1..10 turns, HD_STEP_ALWAYS = they do not go by time), the red when the blood has no colour of its own (or the player
+/// wants red), and the kind of a print that is not a sole: the drops of a wounded unit on the move.
+const int HD_STEP_TILES = 2, HD_STEP_MAX = 240, HD_STEP_PER_TILE = 3, HD_STEP_PATTERNS = 4, HD_STEP_ALPHA[3] = { 200, 150, 105 }, HD_STEP_RED = 0x8E1212,
+	HD_STEP_ALWAYS = 11, HD_STEP_DROPS = 8, HD_STEP_FRAMES_MAX = 1200;
+
+/// Turns a print lasts by the setting (the slider's 11 = always: 0).
+static int hdStepLife()
+{
+	const int life = Options::oxceHdBloodStepsLife;
+	return life >= HD_STEP_ALWAYS ? 0 : std::max(1, life);
+}
+
+/// A hash of numbers for the looks of the prints (Map::hdStepFrame, hdObserveSteps): its own state, the battle's random numbers are not touched.
+static Uint32 hdStepMix(Uint32 x)
+{
+	x ^= x >> 16;
+	x *= 0x7FEB352DU;
+	x ^= x >> 15;
+	x *= 0x846CA68BU;
+	x ^= x >> 16;
+	return x;
+}
+
+/// The age of a print in turns -> 0 fresh, 1 middle, 2 old; the time it lasts is spread in three (a print that is always there ages over ten turns).
+static int hdStepTier(int age)
+{
+	const int life = hdStepLife() > 0 ? hdStepLife() : 10;
+	return std::max(0, std::min(2, age * 3 / life));
+}
 
 /**
  * One print on a floor diamond (the bottom 32x16 of a 32x40 frame, k times), by the look of the walker (`kind`, HdFx::Track), turned to the way of the
@@ -2921,11 +2948,13 @@ const int HD_STEP_TILES = 2, HD_STEP_MAX = 96, HD_STEP_LIFE = 3, HD_STEP_ALPHA[2
  * is a pad, four toe pads and four claws; a wheel is two ruts with a cross tread, a track is two wide bands with plates. A big walker (a 2x2 body)
  * leaves a print on each of its four tiles, 1.35 times bigger; wheels and tracks run on all four, two lanes a tile apart, so the ruts join at the tile edges.
  * Edges are smooth (a signed distance with a pixel of grace), the print is cut by the diamond itself. Drawn once for the key and kept for the battle.
+ * `pattern` (HD_STEP_PATTERNS looks of one print): 0 plain, the others turned, shifted, larger or smaller and worn in patches; the kind HD_STEP_DROPS
+ * is the blood of a wounded unit on the move: round drops along its way (`variant` 1: more and larger).
  */
-const HdFrame &Map::hdStepFrame(int dx, int dy, int variant, int kind, int rgb, int tier)
+const HdFrame &Map::hdStepFrame(int dx, int dy, int variant, int kind, int rgb, int tier, int pattern)
 {
-	const unsigned long long key = ((unsigned long long)kind << 48) | ((unsigned long long)(rgb & 0xFFFFFF) << 24) | ((unsigned long long)_k << 12)
-		| ((unsigned long long)((dx + 1) * 3 + (dy + 1)) << 8) | ((unsigned long long)variant << 4) | (unsigned long long)tier;
+	const unsigned long long key = ((unsigned long long)kind << 48) | ((unsigned long long)(rgb & 0xFFFFFF) << 24) | ((unsigned long long)pattern << 20)
+		| ((unsigned long long)_k << 12) | ((unsigned long long)((dx + 1) * 3 + (dy + 1)) << 8) | ((unsigned long long)variant << 4) | (unsigned long long)tier;
 	auto it = _hdStepFrames.find(key);
 	if (it != _hdStepFrames.end())
 	{
@@ -2938,17 +2967,60 @@ const HdFrame &Map::hdStepFrame(int dx, int dy, int variant, int kind, int rgb, 
 	f.pixels.assign((size_t)f.width * f.height, 0);
 	// the cell is the square u, v in [-0.5, 0.5] (u along the map's x, v along its y); screen X = u - v, Y = u + v
 	const double len = std::sqrt((double)(dx * dx + dy * dy));
-	const double hx = dx / len, hy = dy / len, qx = -hy, qy = hx;
-	const bool body = variant >= 2;
+	const double hx0 = dx / len, hy0 = dy / len;
+	const bool drops = kind == HD_STEP_DROPS;
+	const bool lanes = kind == HdFx::TRACK_WHEEL || kind == HdFx::TRACK_CRAWLER;
+	// the looks of one print (HD_STEP_PATTERNS): 0 as it is drawn plain; the others turn it a little, shift it, make it a bit larger or smaller and wear
+	// it in places (patches of the noise below); the ruts of wheels and tracks must join at the tile's edges, so they only wear; drops have their own scatter
+	static const double PAT_ANGLE[HD_STEP_PATTERNS] = { 0.0, 0.2, -0.17, 0.09 }, PAT_SHIFT_S[HD_STEP_PATTERNS] = { 0.0, 0.035, -0.04, 0.015 },
+		PAT_SHIFT_T[HD_STEP_PATTERNS] = { 0.0, -0.045, 0.035, 0.05 }, PAT_SCALE[HD_STEP_PATTERNS] = { 1.0, 0.94, 1.07, 0.98 }, PAT_WEAR[HD_STEP_PATTERNS] = { 0.0, 0.85, 0.6, 0.75 };
+	const int pat = std::max(0, std::min(HD_STEP_PATTERNS - 1, pattern));
+	const bool moves = !lanes && !drops;
+	const double ang = moves ? PAT_ANGLE[pat] : 0.0, pscale = moves ? PAT_SCALE[pat] : 1.0;
+	const double hx = hx0 * std::cos(ang) - hy0 * std::sin(ang), hy = hx0 * std::sin(ang) + hy0 * std::cos(ang), qx = -hy, qy = hx;
+	const double shiftU = moves ? PAT_SHIFT_S[pat] * hx + PAT_SHIFT_T[pat] * qx : 0.0, shiftV = moves ? PAT_SHIFT_S[pat] * hy + PAT_SHIFT_T[pat] * qy : 0.0;
+	const bool body = variant >= 2 && !drops;
 	const int quarter = body ? variant - 2 : 0;
 	const bool right = body ? (((quarter & 1) + (quarter >> 1)) & 1) != 0 : variant != 0;
-	const double sg = right ? 1.0 : -1.0, sc = (body ? 1.35 : 1.0) * (kind == HdFx::TRACK_BARE || kind == HdFx::TRACK_PAW ? 1.3 : 1.0), off = sg * (body ? 0.1 : 0.12);
+	const double sg = right ? 1.0 : -1.0, sc = drops ? 1.0 : (body ? 1.35 : 1.0) * (kind == HdFx::TRACK_BARE || kind == HdFx::TRACK_PAW ? 1.3 : 1.0),
+		off = drops ? 0.0 : sg * (body ? 0.1 : 0.12);
 	struct Oval { double ahead, across, a, b; };
 	Oval ovals[16];
 	int count = 0;
 	auto add = [&](double ahead, double across, double a, double b) { ovals[count++] = Oval{ ahead * sc, off + across * sc, a * sc, b * sc }; };
-	const bool lanes = kind == HdFx::TRACK_WHEEL || kind == HdFx::TRACK_CRAWLER;
-	if (kind == HdFx::TRACK_BARE)
+	// value noise on a grid of a quarter of a tile (the pattern's own), smooth between the nodes
+	auto node = [pat](int ix, int iy) { return (hdStepMix((Uint32)ix * 374761393U + (Uint32)iy * 668265263U + (Uint32)pat * 1274126177U) & 0xFFFF) / 65535.0; };
+	auto wear = [&](double u, double v)
+	{
+		const double gu = (u + 0.5) * 4.0 + 8.0, gv = (v + 0.5) * 4.0 + 8.0;
+		const int iu = (int)std::floor(gu), iv = (int)std::floor(gv);
+		double fu = gu - iu, fv = gv - iv;
+		fu = fu * fu * (3.0 - 2.0 * fu);
+		fv = fv * fv * (3.0 - 2.0 * fv);
+		const double n = (node(iu, iv) * (1 - fu) + node(iu + 1, iv) * fu) * (1 - fv) + (node(iu, iv + 1) * (1 - fu) + node(iu + 1, iv + 1) * fu) * fv;
+		double w = std::min(1.0, std::max(0.0, (n - 0.5) / 0.17));
+		w = w * w * (3.0 - 2.0 * w);
+		return 1.0 - PAT_WEAR[pat] * w;
+	};
+	if (drops)
+	{
+		// the drops of a wounded unit on the move: along its way through the tile, a few round ones, some pulled out along the way, some with a small one beside;
+		// the heavy variant (many wounds) has more and larger ones
+		const Uint32 seed = hdStepMix((Uint32)(pat * 7919 + variant * 104729 + (dx + 1) * 3 + (dy + 1) + 17));
+		auto rnd = [seed](int i) { return (hdStepMix(seed * 2654435761U + (Uint32)i * 40503U) & 0xFFFF) / 65535.0; };
+		const int n = 4 + (pat & 1) + 3 * (variant ? 1 : 0);
+		for (int i = 0; i < n; ++i)
+		{
+			const double ahead = -0.36 + 0.72 * (i + 0.2 + 0.6 * rnd(i * 5)) / n, across = (rnd(i * 5 + 1) - 0.5) * 0.30,
+				rad = (variant ? 0.045 : 0.03) * (0.6 + 0.8 * rnd(i * 5 + 2)), stretch = 1.1 + 0.5 * rnd(i * 5 + 3);
+			add(ahead, across, rad * stretch, rad);
+			if (rnd(i * 5 + 4) > 0.5 && count < 16)
+			{
+				add(ahead + 0.05 + rad, across + (rnd(i * 5 + 4) > 0.75 ? 0.05 : -0.05), 0.012, 0.012);
+			}
+		}
+	}
+	else if (kind == HdFx::TRACK_BARE)
 	{
 		const double inner[5] = { 0.068, 0.033, 0.002, -0.030, -0.058 }, ahead[5] = { 0.19, 0.18, 0.168, 0.152, 0.132 },
 			r[5] = { 0.04, 0.03, 0.028, 0.025, 0.022 };
@@ -2996,7 +3068,8 @@ const HdFrame &Map::hdStepFrame(int dx, int dy, int variant, int kind, int rgb, 
 			{
 				continue;
 			}
-			const double s = u * hx + v * hy, t = u * qx + v * qy;
+			const double pu = (u - shiftU) / pscale, pv = (v - shiftV) / pscale;
+			const double s = pu * hx + pv * hy, t = pu * qx + pv * qy;
 			double cover = 0.0;
 			for (int i = 0; i < count; ++i)
 			{
@@ -3022,7 +3095,11 @@ const HdFrame &Map::hdStepFrame(int dx, int dy, int variant, int kind, int rgb, 
 					cover *= gap + (1.0 - gap) * bar;
 				}
 			}
-			const int alpha = (int)std::lround(HD_STEP_ALPHA[tier] * cover);
+			if (cover > 0.0 && pat > 0 && !drops)
+			{
+				cover *= wear(u, v);
+			}
+			const int alpha = (int)std::lround(HD_STEP_ALPHA[std::max(0, std::min(2, tier))] * cover);
 			if (alpha > 0)
 			{
 				f.pixels[(size_t)y * f.width + x] = ((Uint32)alpha << 24) | rgbPart;
@@ -3035,8 +3112,46 @@ const HdFrame &Map::hdStepFrame(int dx, int dy, int variant, int kind, int rgb, 
 }
 
 /**
+ * Puts a print on tile `index`: a tile keeps HD_STEP_PER_TILE at most (the oldest of the tile goes), the map HD_STEP_MAX (the oldest of the map goes).
+ */
+void Map::hdLayStep(int index, const HdStep &step)
+{
+	std::vector<HdStep> &prints = _hdSteps[index];
+	if (prints.size() >= (size_t)HD_STEP_PER_TILE)
+	{
+		prints.erase(prints.begin());
+		--_hdStepCount;
+	}
+	prints.push_back(step);
+	++_hdStepCount;
+	_hdStepOrder.push_back(std::make_pair(index, step.seq));
+	while (_hdStepCount > (size_t)HD_STEP_MAX || _hdStepOrder.size() > (size_t)HD_STEP_MAX * 4)
+	{
+		auto old = _hdSteps.find(_hdStepOrder.front().first);
+		if (old != _hdSteps.end())
+		{
+			std::vector<HdStep> &list = old->second;
+			for (auto p = list.begin(); p != list.end(); ++p)
+			{
+				if (p->seq == _hdStepOrder.front().second)
+				{
+					list.erase(p);
+					--_hdStepCount;
+					break;
+				}
+			}
+			if (list.empty())
+			{
+				_hdSteps.erase(old);
+			}
+		}
+		_hdStepOrder.pop_front();
+	}
+}
+
+/**
  * Options::oxceHdBloodSteps: before a frame, looks at every unit the player sees (or all in the debug mode) that has moved to another
- * tile since the last look. A unit that has bloody soles (HD_STEP_TILES more tiles to go) lays a print of its kind (HdFx::trackKind: boot,
+ * tile since the last look. A wounded unit (alive, fatal wounds) on the move drops blood on each tile it enters (the drops, HD_STEP_DROPS). A unit that has bloody soles (HD_STEP_TILES more tiles to go) lays a print of its kind (HdFx::trackKind: boot,
  * bare foot, wheels, tracks, paws; a 2x2 body on all four tiles it covers) on the tile it has entered; a unit
  * that has entered a tile where another unit bleeds (fatal wounds, alive - standing or lying unconscious, a corpse does not count; the
  * bleeding one seen too, its 2x2 body counts on all its tiles) gets them from the next tile on, in the blood colour of the one who
@@ -3052,18 +3167,31 @@ void Map::hdObserveSteps()
 			_hdStepTracks.clear();
 			_hdSteps.clear();
 			_hdStepOrder.clear();
+			_hdStepCount = 0;
 		}
 		return;
 	}
+	// the cache of the print frames is cleared between frames when it grows (patterns x colours x directions), the frames are made again as they are met
+	if (_hdStepFrames.size() > (size_t)HD_STEP_FRAMES_MAX)
+	{
+		_hdStepFrames.clear();
+	}
 	const int turn = _save->getTurn();
-	if (turn != _hdStepTurn)
+	const int life = hdStepLife();
+	if (turn != _hdStepTurn || life != _hdStepLifeSeen)
 	{
 		_hdStepTurn = turn;
+		_hdStepLifeSeen = life;
 		for (auto s = _hdSteps.begin(); s != _hdSteps.end();)
 		{
-			s = turn - s->second.turn >= HD_STEP_LIFE || turn < s->second.turn ? _hdSteps.erase(s) : std::next(s);
+			auto &prints = s->second;
+			const size_t before = prints.size();
+			prints.erase(std::remove_if(prints.begin(), prints.end(), [&](const HdStep &p) { return turn < p.turn || (life > 0 && turn - p.turn >= life); }), prints.end());
+			_hdStepCount -= before - prints.size();
+			s = prints.empty() ? _hdSteps.erase(s) : std::next(s);
 		}
 	}
+	const bool redOnly = Options::oxceHdBloodStepsColor == 1;
 	const bool debug = _save->getDebugMode();
 	for (BattleUnit *bu : *_save->getUnits())
 	{
@@ -3107,6 +3235,28 @@ void Map::hdObserveSteps()
 		const Tile *here = _save->getTile(pos);
 		const int size = bu->getArmor()->getSize();
 		const int kind = HdFx::trackKind(bu->getArmor());
+		++track.count;
+		// the wounded one on the move (alive, fatal wounds - read only) drops blood on each tile it enters: a few drops along its way, more and larger when
+		// it has many wounds; in its own blood colour (or red by the setting)
+		if (bu->getFatalWounds() > 0 && bu->getHealth() > 0 && bu->getStatus() != STATUS_DEAD)
+		{
+			const int own = redOnly ? -1 : HdFx::bloodRgb(bu->getArmor(), true);
+			for (int j = 0; j < size; ++j)
+			{
+				for (int i = 0; i < size; ++i)
+				{
+					const Position at(pos.x + i, pos.y + j, pos.z);
+					const Tile *floorTile = _save->getTile(at);
+					if (!floorTile || floorTile->hasNoFloor(_save) || !HdFx::dryFloor(floorTile))
+					{
+						continue;
+					}
+					const int index = _save->getTileIndex(at);
+					const int pattern = (int)((hdStepMix((Uint32)index * 0x9E3779B1U ^ (Uint32)turn * 0x85EBCA6BU ^ (Uint32)bu->getId() * 0xC2B2AE35U ^ track.count * 0x27D4EB2FU ^ 0x5BD1E995U) >> 8) % HD_STEP_PATTERNS);
+					hdLayStep(index, HdStep{ dx, dy, bu->getFatalWounds() >= 3 ? 1 : 0, HD_STEP_DROPS, own >= 0 ? own : HD_STEP_RED, turn, ++_hdStepSeq, pattern });
+				}
+			}
+		}
 		if (kind == HdFx::TRACK_NONE)
 		{
 			track.left = 0;
@@ -3128,17 +3278,8 @@ void Map::hdObserveSteps()
 						continue;
 					}
 					const int index = _save->getTileIndex(at);
-					_hdSteps[index] = HdStep{ dx, dy, size > 1 ? 2 + (i & 1) + 2 * (j & 1) : track.foot, kind, track.rgb, turn, ++_hdStepSeq };
-					_hdStepOrder.push_back(std::make_pair(index, _hdStepSeq));
-					while (_hdSteps.size() > (size_t)HD_STEP_MAX || _hdStepOrder.size() > (size_t)HD_STEP_MAX * 4)
-					{
-						auto old = _hdSteps.find(_hdStepOrder.front().first);
-						if (old != _hdSteps.end() && old->second.seq == _hdStepOrder.front().second)
-						{
-							_hdSteps.erase(old);
-						}
-						_hdStepOrder.pop_front();
-					}
+					const int pattern = (int)((hdStepMix((Uint32)index * 0x9E3779B1U ^ (Uint32)turn * 0x85EBCA6BU ^ (Uint32)bu->getId() * 0xC2B2AE35U ^ track.count * 0x27D4EB2FU) >> 8) % HD_STEP_PATTERNS);
+					hdLayStep(index, HdStep{ dx, dy, size > 1 ? 2 + (i & 1) + 2 * (j & 1) : track.foot, kind, track.rgb, turn, ++_hdStepSeq, pattern });
 				}
 			}
 		}
@@ -3158,7 +3299,7 @@ void Map::hdObserveSteps()
 			{
 				continue;
 			}
-			const int rgb = HdFx::bloodRgb(other->getArmor());
+			const int rgb = redOnly ? -1 : HdFx::bloodRgb(other->getArmor(), true);
 			track.left = HD_STEP_TILES;
 			track.rgb = rgb >= 0 ? rgb : HD_STEP_RED;
 			break;
@@ -4964,18 +5105,22 @@ void Map::drawTerrain(HdCanvas *surface)
 						}
 					}
 					// HD render (Options::oxceHdBloodSteps, XP-000421): a bloody sole on this floor, after the floor, before what lies and stands here;
-					// only on a floor the player has discovered, two tiers of opacity by the age in turns
+					// only on a floor the player has discovered, three tiers of opacity by the age in turns (all the prints of the tile, the oldest first);
+					// they last Options::oxceHdBloodStepsLife turns (11 = always)
 					if (!_hdSteps.empty() && !turned)
 					{
 						auto step = _hdSteps.find(_save->getTileIndex(mapPosition));
 						if (step != _hdSteps.end() && tile->isDiscovered(O_FLOOR) && !tile->hasNoFloor(_save))
 						{
-							const int age = _save->getTurn() - step->second.turn;
-							if (age >= 0 && age < HD_STEP_LIFE)
+							const int life = hdStepLife();
+							for (const HdStep &s : step->second)
 							{
-								const HdStep &s = step->second;
-								surface->blitFrame(hdStepFrame(s.dx, s.dy, s.variant, s.kind, s.rgb, age < 2 ? 0 : 1), screenPosition.x,
-									screenPosition.y + 24 * _k + tile->getTerrainLevel() * _k);
+								const int age = _save->getTurn() - s.turn;
+								if (age >= 0 && (life == 0 || age < life))
+								{
+									surface->blitFrame(hdStepFrame(s.dx, s.dy, s.variant, s.kind, s.rgb, hdStepTier(age), s.pattern), screenPosition.x,
+										screenPosition.y + 24 * _k + tile->getTerrainLevel() * _k);
+								}
 							}
 						}
 					}
