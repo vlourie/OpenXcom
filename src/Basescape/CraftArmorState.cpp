@@ -531,6 +531,12 @@ void CraftArmorState::lstSoldiersClick(Action *action)
 		{
 			SavedGame *save;
 			save = _game->getSavedGame();
+			if (_game->isShiftPressed(true) && !_game->isCtrlPressed(true))
+			{
+				// Shift + right click: remember this soldier's armor as the "last selected" one, change nothing (XP-000449)
+				save->setLastSelectedArmor(s->getArmor()->getType());
+				return;
+			}
 			Armor *a = _game->isCtrlPressed(true) ? s->getRules()->getDefaultArmor() : _game->getMod()->getArmor(save->getLastSelectedArmor());
 			bool armorUnlocked = true;
 			if (a && a->getRequiredResearch() && !_game->getSavedGame()->isResearched(a->getRequiredResearch()))
