@@ -70,8 +70,11 @@ private:
 	Text *_hdLabel;
 	/// the stack numbers and wound counters of the ground items: baked in the classic digits (_stackTop), and as
 	/// {value, where, colour} for the HD interface to draw with its own font (XP-000424)
-	struct HdStack { int value, x, y; Uint8 color; };
+	/// (and the "2" of the two-handed items in the hands, without the outline: XP-000453)
+	struct HdStack { int value, x, y; Uint8 color; bool bordered = true; };
 	std::vector<HdStack> _hdStacks;
+	/// does the HD interface draw the numbers with its own font on the surface blit() goes to; and what drawItems() laid them for
+	bool _hdFontsNow = false, _hdFontsLaid = false;
 	Surface *_stackTop;
 	NumberText *_hdNumber;
 	/// the items the HD interface draws from their own pictures (hd/BIGOBS.PCK), with where the classic sprite goes
