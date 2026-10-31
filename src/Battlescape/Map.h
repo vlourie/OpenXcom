@@ -258,8 +258,14 @@ private:
 	/// The floors of the ground level as the battle began (XP-000263), a cell of the map each, found once with _hdGhostFloors:
 	/// kind 0 no floor (a hole), 1 the floor is not known (a damage - the scorched earth, a debris - a room over it, a rare floor
 	/// of the band: the ghost floor goes there), 2 the floor is `data`. Memory of the picture only, not saved.
-	struct HdSnapFloor { const MapData *data = nullptr; Uint8 kind = 0; };
+	/// `low` (XP-000398): the cell's object when it is a low one (see hdLowObject), which the mirror shows beyond the edge too.
+	struct HdSnapFloor { const MapData *data = nullptr; Uint8 kind = 0; const MapData *low = nullptr; };
 	std::vector<HdSnapFloor> _hdFloorSnap;
+	/// Options::oxceHdBeyondEdge (XP-000398): is the map part a low object (a bush, grass, a stone, a log - not higher than half a
+	/// cell by its LOFT, not the ground's own relief, not a tall picture)? 1 low, 2 tall (a tree, a wall), 3 relief (a slope, a
+	/// hill), 4 a tall picture of a low LOFT. Made once for a part and kept.
+	Uint8 hdLowObject(const MapData *part);
+	std::unordered_map<const MapData*, Uint8> _hdLowParts;
 	/// The veils of the backdrop's colour over the far cells (by colour and opacity), kept while the battle's map lives.
 	std::unordered_map<unsigned long long, HdFrame> _hdHazeFrames;
 	int _hdGhostState = -1;  ///< -1: floors not looked yet, 0: none (no ground level to go on), 1: _hdGhostFloors are there
