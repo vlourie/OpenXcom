@@ -2412,6 +2412,90 @@ int Map::hdBackdropFind()
 }
 
 /**
+ * Options::oxceHdBeyondEdge (XP-000398): is the map part a low object that the mirror beyond the edge shows (a bush, grass, a
+ * stone, a log)? By the part's data only: its type is an object, the topmost non-empty layer of its LOFT is 5 or lower (a layer
+ * is 2 voxels: up to 12 voxels, half a cell - a tree's trunk and a wall go to layer 11), it is not the ground's own relief (a
+ * part of layer 2 or higher whose layers 0 and 1 fill the cell, FLOOR_AO_HIDDEN: a slope, a hill - they are the ground, the
+ * mirror's floor stands for them), and the topmost opaque row of its classic picture is 8 or lower down of 40 (a tall picture
+ * of a part without a LOFT is not a low object). Made once for a part and kept.
+ * @return 1 low, 2 tall, 3 relief, 4 tall picture.
+ */
+Uint8 Map::hdLowObject(const MapData *part)
+{
+	auto it = _hdLowParts.find(part);
+	if (it != _hdLowParts.end())
+	{
+		return it->second;
+	}
+	Uint8 kind = 1;
+	const std::vector<Uint16> *voxels = _game->getMod()->getVoxelData();
+	const int lofts = voxels ? (int)(voxels->size() / 16) : 0;
+	int top = -1;
+	Uint16 rows[16] = { 0 };
+	for (int layer = 0; layer < 12; ++layer)
+	{
+		const int id = part->getLoftID(layer);
+		if (!(id > 0 && id < lofts))
+		{
+			continue;
+		}
+		for (int y = 0; y < 16; ++y)
+		{
+			const Uint16 row = voxels->at(id * 16 + y);
+			if (layer < 2)
+			{
+				rows[y] |= row;
+			}
+			if (row)
+			{
+				top = layer;
+			}
+		}
+	}
+	int count = 0;
+	for (int y = 0; y < 16; ++y)
+	{
+		for (Uint16 row = rows[y]; row; row &= row - 1)
+		{
+			++count;
+		}
+	}
+	if (top > 5)
+	{
+		kind = 2;
+	}
+	else if (top >= 2 && count >= FLOOR_AO_HIDDEN)
+	{
+		kind = 3;
+	}
+	else if (part->getDataset() && part->getDataset()->getSurfaceset())
+	{
+		Surface *frame = part->getDataset()->getSurfaceset()->getFrame(part->getSprite(0));
+		if (frame)
+		{
+			int first = frame->getHeight();
+			for (int y = 0; y < frame->getHeight() && first == frame->getHeight(); ++y)
+			{
+				for (int x = 0; x < frame->getWidth(); ++x)
+				{
+					if (frame->getPixel(x, y))
+					{
+						first = y;
+						break;
+					}
+				}
+			}
+			if (first < 8)
+			{
+				kind = 4;
+			}
+		}
+	}
+	_hdLowParts[part] = kind;
+	return kind;
+}
+
+/**
  * Options::oxceHdBeyondEdge (XP-000263): the ground goes on beyond the map's edge. Under the map (before its cells are drawn),
  * on the ground level (z = 0, the formula of the map's own cells), over the backdrop, in the cells of the screen that lie off the
  * map: the mirror of the map's edge cells - the floor of the map's cell reflected across the edge (x < 0 -> -1 - x, x >= sizeX ->
@@ -2424,6 +2508,10 @@ int Map::hdBackdropFind()
  * 1 the floors in greys, 2 a pale fog instead of the backdrop's colour (the floors are gone into it half way, the fog itself
  * thins out to the end). Picture only: no tile is touched, no light, no fog of war, no cache of the battle; the cells are
  * not on the map, so nothing there can be clicked.
+ * XP-000398: the low objects of the cells (hdLowObject: bushes, grass, stones, logs; not trees, walls and the ground's slopes)
+ * are mirrored too, after the cell's floor, 2 to 12 cells from the edge, thinning out by the cell's hash as the veil would
+ * thicken (an object of a cell the player has not discovered is not shown). The ring next to the map on its near sides (the cells
+ * the map's cells are drawn over) has none: the map would cut their tops off.
  */
 void Map::hdDrawBeyondEdge(HdCanvas *surface, const Position &cameraPos)
 {
@@ -2458,6 +2546,7 @@ void Map::hdDrawBeyondEdge(HdCanvas *surface, const Position &cameraPos)
 		struct Kind { const MapData *data; int all; int open; };
 		std::vector<Kind> kinds;
 		int cells = 0, floors = 0, bandAll = 0, bandOpen = 0, damaged = 0, scorchedCells = 0;
+		int objectKinds[5] = { 0, 0, 0, 0, 0 }; // the objects of the ground level by hdLowObject's kind (XP-000398)
 		_hdFloorSnap.assign((size_t)sizeX * sizeY, HdSnapFloor());
 		for (int y = 0; y < sizeY; ++y)
 		{
@@ -2474,6 +2563,18 @@ void Map::hdDrawBeyondEdge(HdCanvas *surface, const Position &cameraPos)
 				HdSnapFloor &snap = _hdFloorSnap[(size_t)y * sizeX + x];
 				snap.data = data;
 				snap.kind = 2;
+				if (const MapData *object = t->getMapData(O_OBJECT))
+				{
+					if (t->getSprite(O_OBJECT))
+					{
+						const Uint8 lowKind = hdLowObject(object);
+						++objectKinds[lowKind];
+						if (lowKind == 1)
+						{
+							snap.low = object;
+						}
+					}
+				}
 				++census[data];
 				MapDataSet *set = data->getDataset();
 				if (set && debrisDone.insert(set).second)
@@ -2589,7 +2690,8 @@ void Map::hdDrawBeyondEdge(HdCanvas *surface, const Position &cameraPos)
 		{
 			_hdFloorSnap.clear();
 		}
-		Log(LOG_INFO) << "HD beyond edge: " << floors << " floors of " << cells << " cells of the ground level (" << damaged << " damaged, " << scorchedCells << " of them scorched earth) -> " << kinds.size() << " kinds in the band of " << bandTotal << " cells, " << rare << " band cells of rare floors, state " << _hdGhostState;
+		Log(LOG_INFO) << "HD beyond edge: " << floors << " floors of " << cells << " cells of the ground level (" << damaged << " damaged, " << scorchedCells << " of them scorched earth) -> " << kinds.size() << " kinds in the band of " << bandTotal << " cells, " << rare << " band cells of rare floors, state " << _hdGhostState
+			<< "; objects: " << objectKinds[1] << " low (mirrored), " << objectKinds[2] << " tall, " << objectKinds[3] << " relief, " << objectKinds[4] << " tall picture";
 	}
 	if (_hdGhostState != 1)
 	{
@@ -2747,6 +2849,45 @@ void Map::hdDrawBeyondEdge(HdCanvas *surface, const Position &cameraPos)
 					}
 				}
 				surface->blitFrame(it->second, screenPosition.x, cy);
+			}
+			// XP-000398: the low object of the cell this one mirrors, over its floor and veil: 2 to OBJECT_REACH cells from the
+			// edge, fewer of them the denser the veil (the cell's hash against the share left), none where the player has not
+			// discovered the mirrored cell, and none in the ring where the map's cells (drawn later) stand over the object's top
+			const int OBJECT_REACH = 12;
+			const double OBJECT_COVER = 0.30; // the veil's opacity at which no object is left
+			if (snap.low && snap.kind == 2 && !unseen && drawFloor && distance >= 2 && distance <= OBJECT_REACH)
+			{
+				auto inMap = [&](int cx, int cy2) { return cx >= 0 && cx < sizeX && cy2 >= 0 && cy2 < sizeY; };
+				const double share = 1.0 - cover / OBJECT_COVER;
+				const double roll = ((h >> 18) & 1023) / 1024.0;
+				if (share > 0.0 && roll < share && !inMap(x - 1, y) && !inMap(x, y - 1) && !inMap(x - 1, y - 1))
+				{
+					SurfaceRaw<const Uint8> objectSprite;
+					int objectOffset = 0;
+					if (source->getMapData(O_OBJECT) == snap.low && source->getSprite(O_OBJECT))
+					{
+						objectSprite = source->getSprite(O_OBJECT); // still there: its animation goes on
+						objectOffset = source->getYOffset(O_OBJECT);
+					}
+					else if (snap.low->getDataset() && snap.low->getDataset()->getSurfaceset())
+					{
+						// destroyed in the battle: the object as it was
+						objectSprite = snap.low->getDataset()->getSurfaceset()->getFrame(snap.low->getSprite(0));
+						objectOffset = snap.low->getYOffset();
+					}
+					if (objectSprite)
+					{
+						const HdFrame *gray = look == 1 ? hdGrayFloor(surface, objectSprite) : nullptr;
+						if (gray)
+						{
+							surface->blitFrameShaded(*gray, screenPosition.x, screenPosition.y - objectOffset * _k, baseShade);
+						}
+						else
+						{
+							surface->blit(objectSprite, screenPosition.x, screenPosition.y - objectOffset * _k, baseShade, false, _nvColor);
+						}
+					}
+				}
 			}
 		}
 	}
