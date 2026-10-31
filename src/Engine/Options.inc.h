@@ -302,6 +302,10 @@ OPT int oxceHdButtonGloss;
 // cap) and a brightness 0-100 (50 = as before); kept readable against the cap; picture only
 OPT int oxceHdButtonInkHue;
 OPT int oxceHdButtonInkLight;
+// The same letters, the window "Buttons' text" (XP-000399): the tone 0 auto (the theme picks light or dark by the cap, and keeps the letters
+// readable) / 1 light / 2 dark (forced; readability is the player's), and the saturation 0-100 of a hue picked (75 = as before); picture only
+OPT int oxceHdButtonInkTone;
+OPT int oxceHdButtonInkSat;
 // Battlescape sound (XP-000400): a shot's sound fades out the same sound of a shot before it still playing (a shotgun's pump heard
 // over the next reaction shot); the shots keep their time and order. Off = sounds overlap, as before
 OPT bool oxceHdShotCut;

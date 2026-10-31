@@ -17,6 +17,7 @@
  * along with OpenXcom.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "OptionsButtonFaceState.h"
+#include "OptionsButtonInkState.h"
 #include <algorithm>
 #include "../Engine/Action.h"
 #include "../Engine/Game.h"
@@ -56,7 +57,7 @@ const char *const FACE[12] = { "STR_HD_FACE_FLAT", "STR_HD_FACE_SMOOTH", "STR_HD
 	"STR_HD_FACE_WOOD", "STR_HD_FACE_LIGHTNING", "STR_HD_FACE_WORN" };
 const char *const SHAPE[3] = { "STR_HD_SHAPE_PLATE", "STR_HD_SHAPE_PILLOW", "STR_HD_SHAPE_RECESSED" };
 /// What Reset sets: the flat button as before, a plate, a little gloss (the same as the options' defaults, Options.cpp).
-const int START[5] = { 0, 0, 40, 0, 50 };
+const int START[3] = { 0, 0, 40 };
 
 }
 
@@ -64,15 +65,13 @@ const int START[5] = { 0, 0, 40, 0, 50 };
  * Initializes all the elements in the Buttons' Look window.
  * @param origin Game section that originated this state.
  */
-OptionsButtonFaceState::OptionsButtonFaceState(OptionsOrigin origin) : _faceSel(0), _shapeSel(0)
+OptionsButtonFaceState::OptionsButtonFaceState(OptionsOrigin origin) : _origin(origin), _faceSel(0), _shapeSel(0)
 {
 	_screen = false;
 
 	_was[0] = Options::oxceHdButtonFace;
 	_was[1] = Options::oxceHdButtonShape;
 	_was[2] = Options::oxceHdButtonGloss;
-	_was[3] = Options::oxceHdButtonInkHue;
-	_was[4] = Options::oxceHdButtonInkLight;
 
 	// Create objects
 	_window = new Window(this, 288, 180, 16, 10, POPUP_BOTH);
@@ -85,13 +84,10 @@ OptionsButtonFaceState::OptionsButtonFaceState(OptionsOrigin origin) : _faceSel(
 	{
 		_btnShape[i] = new TextButton(86, 16, 28 + i * 89, 96);
 	}
-	// three rows, each a label and a slider: the gloss, the letters' hue and brightness (XP-000411)
+	// the gloss: a label and a slider; under them the button of the window of the letters (XP-000399)
 	_txtGloss = new Text(120, 9, 28, 119);
 	_slrGloss = new Slider(140, 16, 152, 115);
-	_txtInkHue = new Text(120, 9, 28, 136);
-	_slrInkHue = new Slider(140, 16, 152, 132);
-	_txtInkLight = new Text(120, 9, 28, 153);
-	_slrInkLight = new Slider(140, 16, 152, 149);
+	_btnInk = new TextButton(264, 16, 28, 139);
 	_btnOk = new TextButton(80, 16, 28, 170);
 	_btnCancel = new TextButton(80, 16, 120, 170);
 	_btnReset = new TextButton(80, 16, 212, 170);
@@ -111,10 +107,7 @@ OptionsButtonFaceState::OptionsButtonFaceState(OptionsOrigin origin) : _faceSel(
 	}
 	add(_txtGloss, "confirmVideo", "optionsMenu");
 	add(_slrGloss, "button", "optionsMenu");
-	add(_txtInkHue, "confirmVideo", "optionsMenu");
-	add(_slrInkHue, "button", "optionsMenu");
-	add(_txtInkLight, "confirmVideo", "optionsMenu");
-	add(_slrInkLight, "button", "optionsMenu");
+	add(_btnInk, "button", "optionsMenu");
 	add(_btnOk, "button", "optionsMenu");
 	add(_btnCancel, "button", "optionsMenu");
 	add(_btnReset, "button", "optionsMenu");
@@ -144,10 +137,8 @@ OptionsButtonFaceState::OptionsButtonFaceState(OptionsOrigin origin) : _faceSel(
 	_slrGloss->setRange(0, 100);
 	_slrGloss->onChange((ActionHandler)&OptionsButtonFaceState::slrGlossChange);
 
-	_slrInkHue->setRange(0, 360);
-	_slrInkHue->onChange((ActionHandler)&OptionsButtonFaceState::slrInkChange);
-	_slrInkLight->setRange(0, 100);
-	_slrInkLight->onChange((ActionHandler)&OptionsButtonFaceState::slrInkChange);
+	_btnInk->setText(std::string(tr("STR_HD_BUTTON_INK_BTN")) + " >");
+	_btnInk->onMouseClick((ActionHandler)&OptionsButtonFaceState::btnInkClick);
 
 	_btnOk->setText(tr("STR_OK"));
 	_btnOk->onMouseClick((ActionHandler)&OptionsButtonFaceState::btnOkClick);
@@ -194,38 +185,15 @@ void OptionsButtonFaceState::show()
 	const int gloss = std::min(std::max(Options::oxceHdButtonGloss, 0), 100);
 	_slrGloss->setValue(gloss);
 	_txtGloss->setText(std::string(tr("STR_HD_BUTTON_GLOSS")) + ": " + std::to_string(gloss) + "%");
-	showInk();
 }
 
 /**
- * Puts the options of the letters on their sliders and labels; the labels say "auto" at the starting values (the theme picks
- * the letters' colour by the cap), and that the theme of the windows' buttons is needed while it is off - the sliders then
- * keep still.
- */
-void OptionsButtonFaceState::showInk()
-{
-	const int hue = std::min(std::max(Options::oxceHdButtonInkHue, 0), 360);
-	const int light = std::min(std::max(Options::oxceHdButtonInkLight, 0), 100);
-	_slrInkHue->setValue(hue);
-	_slrInkLight->setValue(light);
-	const std::string needs = Options::oxceHdWindowTheme ? std::string() : " (" + std::string(tr("STR_HD_BUTTON_INK_NEEDS")) + ")";
-	_txtInkHue->setText(std::string(tr("STR_HD_BUTTON_INK_HUE")) + ": " + (hue == 0 ? std::string(tr("STR_HD_BUTTON_INK_AUTO")) : std::to_string(hue)) + needs);
-	_txtInkLight->setText(std::string(tr("STR_HD_BUTTON_INK_LIGHT")) + ": " + (light == 50 ? std::string(tr("STR_HD_BUTTON_INK_AUTO")) : std::to_string(light) + "%") + needs);
-}
-
-/**
- * Puts the sliders' values in the letters' hue and brightness (the buttons follow at the next frame). Without the theme of
- * the windows' buttons they change nothing, and the sliders go back.
+ * Opens the window of the letters' tone, hue, saturation and brightness.
  * @param action Pointer to an action.
  */
-void OptionsButtonFaceState::slrInkChange(Action *)
+void OptionsButtonFaceState::btnInkClick(Action *)
 {
-	if (Options::oxceHdWindowTheme)
-	{
-		Options::oxceHdButtonInkHue = _slrInkHue->getValue();
-		Options::oxceHdButtonInkLight = _slrInkLight->getValue();
-	}
-	showInk();
+	_game->pushState(new OptionsButtonInkState(_origin));
 }
 
 /**
@@ -282,8 +250,6 @@ void OptionsButtonFaceState::btnCancelClick(Action *)
 	Options::oxceHdButtonFace = _was[0];
 	Options::oxceHdButtonShape = _was[1];
 	Options::oxceHdButtonGloss = _was[2];
-	Options::oxceHdButtonInkHue = _was[3];
-	Options::oxceHdButtonInkLight = _was[4];
 	_game->popState();
 }
 
@@ -296,8 +262,6 @@ void OptionsButtonFaceState::btnResetClick(Action *)
 	Options::oxceHdButtonFace = START[0];
 	Options::oxceHdButtonShape = START[1];
 	Options::oxceHdButtonGloss = START[2];
-	Options::oxceHdButtonInkHue = START[3];
-	Options::oxceHdButtonInkLight = START[4];
 	show();
 }
 
