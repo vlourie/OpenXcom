@@ -12,3 +12,4 @@
 - HD graphics (battle, city litter): three heaps of rubbish and the bottles on the ground are redrawn after the original and look the same in every set that has these frames (ticket XP-000391).
 - HD graphics (battle, torn asphalt): the black dots and the stair-step along the edge of the torn asphalt tiles are removed; the edge is straight and the asphalt colour reaches the very rim (ticket XP-000389).
 - HD graphics (battle): the side stairs and the pier are redrawn and are the same across all 38 frames of the family (ports, moorings, warehouses, desert ruins, comms, cult areas) (ticket XP-000383).
+- HD graphics (battle, plants): the tree is redrawn after the original and is the same in three sets - CULTIVAT, CULTIVAT_UBER and GOTHIC (ticket XP-000394).
