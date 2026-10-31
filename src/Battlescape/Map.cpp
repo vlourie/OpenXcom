@@ -2417,8 +2417,9 @@ int Map::hdBackdropFind()
  * is 2 voxels: up to 12 voxels, half a cell - a tree's trunk and a wall go to layer 11), it is not the ground's own relief (a
  * part of layer 2 or higher whose layers 0 and 1 fill the cell, FLOOR_AO_HIDDEN: a slope, a hill - they are the ground, the
  * mirror's floor stands for them), and the topmost opaque row of its classic picture is 8 or lower down of 40 (a tall picture
- * of a part without a LOFT is not a low object). Made once for a part and kept.
- * @return 1 low, 2 tall, 3 relief, 4 tall picture.
+ * of a part without a LOFT is not a low object), and, when it has a LOFT, its set has floor parts (a set without any is a prop set: crates, barrels).
+ * Made once for a part and kept.
+ * @return 1 low, 2 tall, 3 relief, 4 tall picture, 5 prop (a set without floors).
  */
 Uint8 Map::hdLowObject(const MapData *part)
 {
@@ -2491,6 +2492,28 @@ Uint8 Map::hdLowObject(const MapData *part)
 			}
 		}
 	}
+	if (kind == 1 && top >= 0)
+	{
+		// a solid part of a set that has no floor parts at all is a loose prop (a crate, a barrel, a sack: containers, CRATES),
+		// not the ground's own cover: a terrain set (FOREST, MOUNTGRASS, the desert's) always has floors next to its bushes and
+		// stones. A part without a LOFT (the jungle's vines, a candle) is a picture only and stays as it was
+		bool floors = false;
+		if (part->getDataset())
+		{
+			for (const MapData *other : *part->getDataset()->getObjectsRaw())
+			{
+				if (other->getObjectType() == O_FLOOR && !other->isNoFloor())
+				{
+					floors = true;
+					break;
+				}
+			}
+		}
+		if (!floors)
+		{
+			kind = 5;
+		}
+	}
 	_hdLowParts[part] = kind;
 	return kind;
 }
@@ -2546,7 +2569,7 @@ void Map::hdDrawBeyondEdge(HdCanvas *surface, const Position &cameraPos)
 		struct Kind { const MapData *data; int all; int open; };
 		std::vector<Kind> kinds;
 		int cells = 0, floors = 0, bandAll = 0, bandOpen = 0, damaged = 0, scorchedCells = 0;
-		int objectKinds[5] = { 0, 0, 0, 0, 0 }; // the objects of the ground level by hdLowObject's kind (XP-000398)
+		int objectKinds[6] = { 0, 0, 0, 0, 0, 0 }; // the objects of the ground level by hdLowObject's kind (XP-000398)
 		_hdFloorSnap.assign((size_t)sizeX * sizeY, HdSnapFloor());
 		for (int y = 0; y < sizeY; ++y)
 		{
@@ -2691,7 +2714,7 @@ void Map::hdDrawBeyondEdge(HdCanvas *surface, const Position &cameraPos)
 			_hdFloorSnap.clear();
 		}
 		Log(LOG_INFO) << "HD beyond edge: " << floors << " floors of " << cells << " cells of the ground level (" << damaged << " damaged, " << scorchedCells << " of them scorched earth) -> " << kinds.size() << " kinds in the band of " << bandTotal << " cells, " << rare << " band cells of rare floors, state " << _hdGhostState
-			<< "; objects: " << objectKinds[1] << " low (mirrored), " << objectKinds[2] << " tall, " << objectKinds[3] << " relief, " << objectKinds[4] << " tall picture";
+			<< "; objects: " << objectKinds[1] << " low (mirrored), " << objectKinds[2] << " tall, " << objectKinds[3] << " relief, " << objectKinds[4] << " tall picture, " << objectKinds[5] << " props";
 	}
 	if (_hdGhostState != 1)
 	{

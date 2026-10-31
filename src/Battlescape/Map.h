@@ -263,7 +263,7 @@ private:
 	std::vector<HdSnapFloor> _hdFloorSnap;
 	/// Options::oxceHdBeyondEdge (XP-000398): is the map part a low object (a bush, grass, a stone, a log - not higher than half a
 	/// cell by its LOFT, not the ground's own relief, not a tall picture)? 1 low, 2 tall (a tree, a wall), 3 relief (a slope, a
-	/// hill), 4 a tall picture of a low LOFT. Made once for a part and kept.
+	/// hill), 4 a tall picture of a low LOFT, 5 a prop of a set without floors (crates, barrels). Made once for a part and kept.
 	Uint8 hdLowObject(const MapData *part);
 	std::unordered_map<const MapData*, Uint8> _hdLowParts;
 	/// The veils of the backdrop's colour over the far cells (by colour and opacity), kept while the battle's map lives.
