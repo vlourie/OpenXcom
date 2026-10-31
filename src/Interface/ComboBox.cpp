@@ -175,6 +175,19 @@ void ComboBox::setColor(Uint8 color)
 }
 
 /**
+ * Changes the text color of one row of the dropdown list; call after setOptions.
+ * @param row Row number (item of the box).
+ * @param color Color value.
+ */
+void ComboBox::setRowColor(size_t row, Uint8 color)
+{
+	if (row < _list->getTexts())
+	{
+		_list->setRowColor(row, color);
+	}
+}
+
+/**
  * Returns the color used to draw the combo box.
  * @return Color value.
  */

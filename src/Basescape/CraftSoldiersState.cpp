@@ -345,6 +345,15 @@ CraftSoldiersState::CraftSoldiersState(Base *base, size_t craft)
 			}
 		}
 		_cbxMission->setOptions(names);
+		// XP-000376: the rows are coloured as in the UFO tracker (T): mission sites in the second colour (yellow of the
+		// basescape palette: the tracker's own index belongs to the geoscape palette), UFOs and alien bases in the box's colour
+		for (size_t i = 0; i < _missionTargets.size(); ++i)
+		{
+			if (dynamic_cast<const MissionSite*>(_missionTargets[i]))
+			{
+				_cbxMission->setRowColor(i + 1, 144);
+			}
+		}
 		_cbxMission->setSelected(0);
 		_cbxMission->onChange((ActionHandler)&CraftSoldiersState::cbxMissionChange);
 		_lstSoldiers->onMouseOver((ActionHandler)&CraftSoldiersState::lstSoldiersMouseOver);
@@ -932,7 +941,7 @@ void CraftSoldiersState::btnDeassignCraftSoldiersClick(Action *action)
 
 /**
  * OXCE-HD (oxceHdCraftMission): the detected targets, the sources and the filters of the UFO tracker (UfoTrackerState):
- * mission sites, alien bases, UFOs - the UFOs only as they stand on the ground or have crashed (a flying one is not landed on;
+ * mission sites, UFOs, alien bases (in the order of the tracker) - the UFOs only as they stand on the ground or have crashed (a flying one is not landed on;
  * the landing check is made for those two). Item 0 of the box (none) is already in the names.
  */
 void CraftSoldiersState::buildMissionTargets(std::vector<std::string> &names)
@@ -946,20 +955,21 @@ void CraftSoldiersState::buildMissionTargets(std::vector<std::string> &names)
 			names.push_back(site->getName(_game->getLanguage()));
 		}
 	}
-	for (const auto *ab : *save->getAlienBases())
-	{
-		if (ab->isDiscovered())
-		{
-			_missionTargets.push_back(ab);
-			names.push_back(ab->getName(_game->getLanguage()));
-		}
-	}
+	// the order of the UFO tracker (T): sites, then UFOs and crashes, then alien bases (XP-000376)
 	for (const auto *ufo : *save->getUfos())
 	{
 		if (ufo->getDetected() && (ufo->getStatus() == Ufo::LANDED || ufo->getStatus() == Ufo::CRASHED))
 		{
 			_missionTargets.push_back(ufo);
 			names.push_back(ufo->getName(_game->getLanguage()));
+		}
+	}
+	for (const auto *ab : *save->getAlienBases())
+	{
+		if (ab->isDiscovered())
+		{
+			_missionTargets.push_back(ab);
+			names.push_back(ab->getName(_game->getLanguage()));
 		}
 	}
 }
