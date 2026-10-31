@@ -113,6 +113,8 @@ private:
 	void change(int by);
 	void leftArrowClick(Action *action);
 	void rightArrowClick(Action *action);
+	/// Left click on the name: where the item is on all the bases and on the way (as in the stores), XP-000393.
+	void lstPartsClick(Action *action);
 	void btnOkClick(Action *action);
 	void btnCancelClick(Action *action);
 public:

@@ -36,6 +36,7 @@
 #include "../Mod/RuleItem.h"
 #include "../Mod/RuleManufacture.h"
 #include "../Savegame/Production.h"
+#include "ItemLocationsState.h"
 
 namespace OpenXcom
 {
@@ -373,6 +374,7 @@ ManufactureLootPartsState::ManufactureLootPartsState(Base *to, const Items &item
 	_lstParts->setArrowColumn(194, ARROW_HORIZONTAL);
 	_lstParts->onLeftArrowClick((ActionHandler)&ManufactureLootPartsState::leftArrowClick);
 	_lstParts->onRightArrowClick((ActionHandler)&ManufactureLootPartsState::rightArrowClick);
+	_lstParts->onMouseClick((ActionHandler)&ManufactureLootPartsState::lstPartsClick);
 	for (size_t i = 0; i < _items.size(); ++i)
 	{
 		_lstParts->addRow(3, tr(_items[i].first->getType()).c_str(), std::to_string(_to->getStorageItems()->getItem(_items[i].first)).c_str(), "");
@@ -441,6 +443,26 @@ void ManufactureLootPartsState::rightArrowClick(Action *action)
 {
 	if (_game->isRightClick(action, true)) change(INT_MAX / 2);
 	else if (_game->isLeftClick(action, true)) change(_game->getScrollStep());
+}
+
+/**
+ * Left click on the row (not on the arrows): the window of the stores - how many of the item is on each base and on the way.
+ */
+void ManufactureLootPartsState::lstPartsClick(Action *action)
+{
+	if (!_game->isLeftClick(action, true))
+	{
+		return;
+	}
+	if (action->getAbsoluteXMouse() >= _lstParts->getArrowsLeftEdge() && action->getAbsoluteXMouse() <= _lstParts->getArrowsRightEdge())
+	{
+		return;
+	}
+	const size_t row = _lstParts->getSelectedRow();
+	if (row < _items.size())
+	{
+		_game->pushState(new ItemLocationsState(_items[row].first));
+	}
 }
 
 /**
