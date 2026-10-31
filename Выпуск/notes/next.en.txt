@@ -11,3 +11,4 @@
 - HD graphics (battle, snow): the snow maps are redrawn - stone, pond, grass and slopes on snow, and the related snow sets (polar, snowy forest and swamp); the edges are straight, no seams between tiles (tickets XP-000385, XP-000386, XP-000387). Picture only; the bush on snow is still the old one.
 - HD graphics (battle, city litter): three heaps of rubbish and the bottles on the ground are redrawn after the original and look the same in every set that has these frames (ticket XP-000391).
 - HD graphics (battle, torn asphalt): the black dots and the stair-step along the edge of the torn asphalt tiles are removed; the edge is straight and the asphalt colour reaches the very rim (ticket XP-000389).
+- HD graphics (battle): the side stairs and the pier are redrawn and are the same across all 38 frames of the family (ports, moorings, warehouses, desert ruins, comms, cult areas) (ticket XP-000383).
