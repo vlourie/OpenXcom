@@ -317,6 +317,82 @@ def cmd_list(a):
     return 0
 
 
+def _is_link(path):
+    """Ссылка или соединение (reparse point): такую папку снимаем саму, внутрь не ходим (R-047)."""
+    try:
+        st = os.lstat(path)
+    except OSError:
+        return False
+    return os.path.islink(path) or bool(getattr(st, "st_file_attributes", 0) & 0x400)   # FILE_ATTRIBUTE_REPARSE_POINT
+
+
+def _links_and_size(top):
+    """Все ссылки внутри top (не заходя в них) и объём обычных файлов."""
+    links, size, stack = [], 0, [top]
+    while stack:
+        cur = stack.pop()
+        try:
+            entries = list(os.scandir(cur))
+        except OSError:
+            continue
+        for e in entries:
+            if _is_link(e.path):
+                links.append(e.path)
+            elif e.is_dir(follow_symlinks=False):
+                stack.append(e.path)
+            else:
+                try:
+                    size += e.stat(follow_symlinks=False).st_size
+                except OSError:
+                    pass
+    return links, size
+
+
+def cmd_sweep(a):
+    """Убрать папки пользователя стендов %TEMP%/oxce_bench_*: живые и свежие не трогать; соединения
+    (mods -> установка игры) снять rmdir, проверить, что ссылок не осталось, и только потом удалить папку."""
+    temp = Path(os.environ.get("TEMP", "."))
+    live = set()
+    if STANDS.exists():
+        for d in STANDS.iterdir():
+            if pid_alive(read_pid(d.name)) and meta(d.name).get("user"):
+                live.add(os.path.normcase(str(Path(meta(d.name)["user"]).resolve())))
+    now, gone, kept, freed = time.time(), 0, 0, 0
+    for d in sorted(temp.glob("oxce_bench_*")):
+        if _is_link(d) or not d.is_dir():
+            continue
+        newest = max([d.stat().st_mtime] + [f.stat().st_mtime for f in d.iterdir() if f.is_file()])
+        if os.path.normcase(str(d.resolve())) in live or now - newest < a.min_age * 60:
+            kept += 1
+            continue
+        links, size = _links_and_size(str(d))
+        if a.dry_run:
+            print(f"удалил бы {d.name}: {size / 2**20:.0f} МБ, ссылок {len(links)}")
+            gone += 1
+            freed += size
+            continue
+        try:
+            for l in links:
+                if os.path.isdir(l):
+                    os.rmdir(l)    # снимает только соединение, цель не трогает
+                else:
+                    os.unlink(l)
+            left, _ = _links_and_size(str(d))
+            if left:
+                print(f"{d.name}: ссылки не снялись ({left[0]}), оставлена")
+                kept += 1
+                continue
+            shutil.rmtree(d)
+        except OSError as e:
+            print(f"{d.name}: не удалена ({e})")
+            kept += 1
+            continue
+        gone += 1
+        freed += size
+    print(f"{'удалил бы' if a.dry_run else 'удалено'} папок: {gone}, {freed / 2**30:.2f} ГБ; оставлено (живые, свежие, ошибки): {kept}")
+    return 0
+
+
 def main():
     hidden_game.utf8_streams()
     ap = argparse.ArgumentParser(description="Живой стенд проверок OXCE-HD")
@@ -343,11 +419,14 @@ def main():
         if n == "log":
             x.add_argument("-n", type=int, default=40)
     sub.add_parser("list")
+    w = sub.add_parser("sweep", help="убрать папки пользователя стендов в TEMP (живые и свежие не трогает)")
+    w.add_argument("--min-age", type=int, default=60, help="мин; папки моложе не трогать")
+    w.add_argument("--dry-run", action="store_true")
     a = ap.parse_args()
     if a.cmd == "log":
         show_log(a.name, a.n)
         return 0
-    return {"start": cmd_start, "run": cmd_run, "stop": cmd_stop, "list": cmd_list}[a.cmd](a)
+    return {"start": cmd_start, "run": cmd_run, "stop": cmd_stop, "list": cmd_list, "sweep": cmd_sweep}[a.cmd](a)
 
 
 if __name__ == "__main__":
