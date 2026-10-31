@@ -6480,7 +6480,7 @@ bool Map::hdAnimWanted() const
 /**
  * Hashes everything the picture draws from the battle except its animation (XP-000097): the tiles up to the level of the
  * frozen view (what is discovered and seen, the parts, smoke, fire, light, UFO doors open or shut, the items), the units
- * the player sees, the shots and effects in flight. Two equal values mean that a redraw shows nothing the frozen
+ * the player sees, the effects that could show an unseen place. Two equal values mean that a redraw shows nothing the frozen
  * picture does not show; only the frame of the animation (and the frames of the parts) differs.
  */
 uint64_t Map::hiddenSignature() const
@@ -6535,9 +6535,34 @@ uint64_t Map::hiddenSignature() const
 		mix(bu->getId()); mix(pos.x); mix(pos.y); mix(pos.z);
 		mix(bu->getDirection()); mix(bu->getStatus()); mix(bu->isKneeled() ? 1 : 0); mix(bu->getFire());
 	}
-	mix(_projectile ? 1 : 0);
-	mix(_explosions.size());
-	mix(_looseHits.size());
+	// a shot in flight is drawn only where the tile it flies over is seen (_projectileInFOV) and a hit on a seen tile is
+	// seen: neither shows what the frozen picture hides, so they no longer stop the animation (XP-000097, the tracer of an
+	// unseen enemy's shot froze the smoke and the fire for its flight). What the picture could draw from an unseen
+	// place is counted: a big explosion (it is drawn wherever it is) and one on a tile that is not seen (it is drawn
+	// along with another that is in view); explosions are drawn at all only when one of them is in view (Map::draw)
+	size_t unseenExplosions = 0, unseenLooseHits = 0;
+	if (_explosionInFOV)
+	{
+		const auto unseen = [this](const Explosion *explosion)
+		{
+			if (explosion->isBig())
+			{
+				return true;
+			}
+			const Tile *at = _save->getTile(explosion->getPosition().toTile());
+			return !at || !at->getVisible();
+		};
+		for (const Explosion *explosion : _explosions)
+		{
+			unseenExplosions += unseen(explosion) ? 1 : 0;
+		}
+		for (const auto &loose : _looseHits)
+		{
+			unseenLooseHits += unseen(loose.explosion) ? 1 : 0;
+		}
+	}
+	mix(unseenExplosions);
+	mix(unseenLooseHits);
 	mix(_gentleShots.size());
 	mix(HdFx::active(SDL_GetTicks()) ? 1 : 0);
 	return h;
@@ -6547,11 +6572,13 @@ uint64_t Map::hiddenSignature() const
  * The picture of an unseen enemy's turn is frozen (XP-000326): may this redraw draw the world live? Yes while the
  * signature of what the player has discovered is the one the picture froze with: the redraw then differs from the
  * frozen picture only in the animation (smoke, fire, lamps, doors that were opening). Looked at once a tick of the
- * picture's clock, not on every mouse move; a change that is later undone lets the animation go on again.
+ * picture's clock, not on every mouse move (but on every frame a shot, a hit or a flash is moving: the tracer would
+ * go in steps of 100 ms); a change that is later undone lets the animation go on again.
  */
 bool Map::hiddenPictureMayAnimate()
 {
-	if (!hdAnimWanted() || _hiddenAnimTick == _animTicks)
+	const bool moving = _projectile || !_explosions.empty() || !_looseHits.empty() || HdFx::active(SDL_GetTicks());
+	if (!hdAnimWanted() || (_hiddenAnimTick == _animTicks && !moving))
 	{
 		return false;
 	}
