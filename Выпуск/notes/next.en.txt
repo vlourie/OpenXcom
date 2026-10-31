@@ -15,3 +15,4 @@
 - HD graphics (battle): the bottom of the central stairs and the side ladder are redrawn and are the same across all 38 frames of the family (ports, moorings, warehouses, desert ruins, comms, cult areas) (ticket XP-000383).
 - HD graphics (battle, plants): the tree is redrawn after the original and is the same in three sets - CULTIVAT, CULTIVAT_UBER and GOTHIC (ticket XP-000394).
 - HD graphics (battle, Ghoul City): the steel beams over the warehouses are redone - solid like the original, with no dark floor between the strips, no seams where tiles meet and no white-pink blots at the ends of the junctions; the same 12 frames in two sets (ticket XP-000443).
+- HD graphics (battle, plantations): the cabbage is redrawn after the original - a big head filling the whole bed, no heart, the same in all four frames: green, purple and the furniture one (ticket XP-000395).
