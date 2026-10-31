@@ -36,7 +36,11 @@ def main():
         pck, name = rel.split("/")[1][:-4], int(rel.split("/")[2][:-4])
         with Image.open(os.path.join(backup, rel)) as a, Image.open(os.path.join(game, rel)) as b:
             old, new = a.convert("RGBA"), b.convert("RGBA")
-        cl = g.classic_of(pck, name).resize(old.size, Image.NEAREST).convert("RGBA")
+        try:
+            cl = g.classic_of(pck, name).resize(old.size, Image.NEAREST).convert("RGBA")
+        except Exception as e:                      # набор без классики в разборе (напр. MOORINGS) - панель пустая
+            print("нет классики", pck, name, type(e).__name__)
+            cl = Image.new("RGBA", old.size)
         box = t3.union_box([cl, old, new])
         w = 300 if len(files) <= 5 else 200
         c = cl.crop(box)
