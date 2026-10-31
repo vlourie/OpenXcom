@@ -4895,6 +4895,38 @@ void Map::drawTerrain(HdCanvas *surface)
 	// frames instead of the throw box; the throw mark stays over it
 	const bool explosiveReticle = _cursorType == CT_THROW && _aimKind == AIM_EXPLOSIVE && Options::oxceHdReticleExplosive > 0
 		&& _k > 1 && surface->getHdMode() != HD_MODE_NEAREST;
+	// HD render (XP-000451): the frame of the cursor (the box, the crosshairs) is drawn after the whole map, over the smoke and
+	// the fire of the neighbours too (the volume puffs and tongues reach over the cells drawn after the cursor's own);
+	// each piece keeps its place, its colour and the light of its tile. The classic mode draws it in place, as before
+	struct CursorPiece
+	{
+		SurfaceRaw<const Uint8> frame;
+		int x, y, color;
+		bool lit;
+		HdLight light;
+	};
+	std::vector<CursorPiece> cursorOnTop;
+	const bool cursorLast = surface->getHdMode() != HD_MODE_NEAREST;
+	auto putCursor = [&](SurfaceRaw<const Uint8> frame, int x, int y, int color, const Tile *at)
+	{
+		if (!cursorLast)
+		{
+			surface->blit(frame, x, y, 0, false, color);
+			return;
+		}
+		CursorPiece piece;
+		piece.frame = frame;
+		piece.x = x;
+		piece.y = y;
+		piece.color = color;
+		// the tile's light is what the canvas holds at this blit (set by the cell's floor, undiscovered cells have none)
+		piece.lit = _hdLightOn && at->isDiscovered(O_FLOOR);
+		if (piece.lit)
+		{
+			piece.light = _hdLight;
+		}
+		cursorOnTop.push_back(piece);
+	};
 
 	NumberText *_numWaypid = 0;
 
@@ -5349,13 +5381,13 @@ void Map::drawTerrain(HdCanvas *surface)
 									frameNumber = 6; // red static crosshairs (no target: keeps its red)
 							}
 							tmpSurface = _game->getMod()->getHdSurfaceSet("CURSOR.PCK")->getFrame(frameNumber);
-							surface->blit(tmpSurface, screenPosition.x, screenPosition.y, 0, false, reticleColor);
+							putCursor(tmpSurface, screenPosition.x, screenPosition.y, reticleColor, tile);
 						}
 						else if (_camera->getViewLevel() > itZ)
 						{
 							frameNumber = 2; // blue box
 							tmpSurface = _game->getMod()->getHdSurfaceSet("CURSOR.PCK")->getFrame(frameNumber);
-							surface->blit(tmpSurface, screenPosition.x, screenPosition.y, 0);
+							putCursor(tmpSurface, screenPosition.x, screenPosition.y, 0, tile);
 						}
 					}
 
@@ -5866,7 +5898,7 @@ void Map::drawTerrain(HdCanvas *surface)
 									frameNumber = 6; // red static crosshairs (no target: keeps its red)
 							}
 							tmpSurface = _game->getMod()->getHdSurfaceSet("CURSOR.PCK")->getFrame(frameNumber);
-							surface->blit(tmpSurface, screenPosition.x, screenPosition.y, 0, false, reticleColor);
+							putCursor(tmpSurface, screenPosition.x, screenPosition.y, reticleColor, tile);
 
 							// UFO extender accuracy: display adjusted accuracy value on crosshair in real-time.
 							if (_cursorType >= CT_AIM && _showInfoOnCursor && (_cursorType != CT_THROW || !Options::oxceDisableInfoOnThrowCursor))
@@ -6069,7 +6101,7 @@ void Map::drawTerrain(HdCanvas *surface)
 						{
 							frameNumber = 5; // blue box
 							tmpSurface = _game->getMod()->getHdSurfaceSet("CURSOR.PCK")->getFrame(frameNumber);
-							surface->blit(tmpSurface, screenPosition.x, screenPosition.y, 0);
+							putCursor(tmpSurface, screenPosition.x, screenPosition.y, 0, tile);
 						}
 						if (!_isAltPressed && _cursorType > CT_AIM && _camera->getViewLevel() == itZ)
 						{
@@ -6091,7 +6123,7 @@ void Map::drawTerrain(HdCanvas *surface)
 							{
 								int frame[6] = { 0, 0, 0, 11, 13, 15 };
 								tmpSurface = _game->getMod()->getHdSurfaceSet("CURSOR.PCK")->getFrame(frame[_cursorType] + (_animFrame / 4) % 2);
-								surface->blit(tmpSurface, screenPosition.x, screenPosition.y, 0);
+								putCursor(tmpSurface, screenPosition.x, screenPosition.y, 0, tile);
 							}
 						}
 					}
@@ -6545,6 +6577,18 @@ void Map::drawTerrain(HdCanvas *surface)
 			}
 			surface->blitFrame(*f.second, bulletPositionScreen.x - f.second->width / 2, bulletPositionScreen.y - f.second->height / 2);
 		}
+	}
+
+	// HD render (XP-000451): the cursor's frame over the smoke, the fire and all that was drawn (see putCursor); the canvas's
+	// light is set again after each piece for the one that follows, and reset at the end of Map::draw
+	for (const CursorPiece &piece : cursorOnTop)
+	{
+		_canvas->setLight(piece.lit ? &piece.light : nullptr);
+		surface->blit(piece.frame, piece.x, piece.y, 0, false, piece.color);
+	}
+	if (!cursorOnTop.empty())
+	{
+		_canvas->setLight(nullptr);
 	}
 
 	surface->unlock();
