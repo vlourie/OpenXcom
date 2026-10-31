@@ -356,6 +356,10 @@ OPT bool oxceHdBeyondEdge;
 // perimeter of the map: 0 off, 1 a line a few pixels thick just outside the edge, 2 a half-transparent red fence one level high.
 // Picture only; works without oxceHdBeyondEdge
 OPT int oxceHdMapBorder;
+// Inventory screen (XP-000098), HD interface with the screen pictures (oxceHdPictures): the picture behind the slots, in the
+// 320x200 field only: 0 black as it was, 1 an armoury, 2 a ship's hold, 3 a canvas tarpaulin; a dark translucent plate under the
+// slot grids keeps the brown grid readable. Picture only
+OPT int oxceHdInvBackdrop;
 // Battlescape (XP-000263), with oxceHdBeyondEdge: the look of the ground beyond the map's edge: 0 as it is (colours, the veil of
 // the backdrop's colour), 1 black and white (grey floors), 2 fog (a pale haze instead of the backdrop's colour). Picture only
 OPT int oxceHdBeyondLook;

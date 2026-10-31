@@ -39,6 +39,8 @@ NEGATIVE = ("text, letters, words, numbers, caption, title, logo, watermark, sig
             "extra limbs, duplicated faces, clones, nudity, cleavage, bare midriff, lingerie, pin-up, glamour "
             "pose, gore, photograph, plastic 3d render, high contrast, busy pattern, bright white areas")
 
+INVENTORY_LINES = ["inventory_armory.png = inventoryArmory", "inventory_ship.png = inventoryShip",
+                   "inventory_tarp.png = inventoryTarp"]
 THEMES = {
     "research": "A dim laboratory in the hold of a pirate ship: a half-dismantled alien device glowing faint lime "
                 "green on a brass workbench, glass jars and tubes, a magnifying lamp on an arm. A pirate woman "
@@ -400,6 +402,8 @@ def install(args):
     more = [n for n in HIDDEN if n in picks or os.path.exists(os.path.join(dests[0], "%s.png" % n))]
     lines += ["%s = %s" % (" ".join("%s.png" % f for f in [n] + (more if n == "hidden" else [])),
                            " ".join(SCREENS[n].split())) for n in themes]
+    # фоны экрана снаряжения (тикет XP-000098, oxceHdInvBackdrop): три картинки, ставит t098_install.py; строки остаются
+    lines += [l for l in INVENTORY_LINES if os.path.exists(os.path.join(dests[0], l.split(" = ")[0]))]
     for d in dests:
         os.makedirs(d, exist_ok=True)
         for n, v in picks.items():
