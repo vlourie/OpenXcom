@@ -455,6 +455,7 @@ bool OptionsHdState::dependsOff(const OptionInfo &info) const
 		if (p == &Options::oxceHdBattleHudColor) return !skin;
 		if (p == &Options::oxceHdRadarWaves) return Options::oxceHdRadar != 3;
 		if (p == &Options::oxceHdTrunkArmor) return !Options::oxceCollapse;
+		if (p == &Options::oxceHdInvBackdrop) return !Options::oxceHdPictures || Options::oxceHdUi <= 0;
 		if (p == &Options::oxceHdBloodStepsLife || p == &Options::oxceHdBloodStepsColor) return !Options::oxceHdBloodSteps;
 	}
 	else if (info.type() == OPTION_BOOL)
@@ -552,6 +553,10 @@ std::string OptionsHdState::valueText(const OptionInfo &info) const
 	if (info.asInt() == &Options::oxceHdMapBorder)
 	{
 		return tr("STR_HD_MAP_BORDER_" + std::to_string(Options::oxceHdMapBorder));
+	}
+	if (info.asInt() == &Options::oxceHdInvBackdrop)
+	{
+		return tr("STR_HD_INV_BACKDROP_" + std::to_string(Options::oxceHdInvBackdrop));
 	}
 	if (info.asInt() == &Options::oxceHdRadar)
 	{
@@ -824,6 +829,11 @@ void OptionsHdState::changeSetting(size_t sel, Uint8 button)
 		{
 			min = 0;                                  // beyond the edge: 0 as it is, 1 black and white, 2 fog; border: 0 off, 1 line, 2 fence
 			max = 2;
+		}
+		else if (i == &Options::oxceHdInvBackdrop)
+		{
+			min = 0;                                  // inventory: 0 black, 1 armoury, 2 ship's hold, 3 canvas
+			max = 3;
 		}
 		else if (i == &Options::oxceHdEnemyTurn)
 		{

@@ -68,9 +68,156 @@
 #include "AiProbe.h"
 #include "../Engine/HdItems.h"
 #include "../Engine/HdUiArt.h"
+#include "../Engine/HdUi.h"
+#include "../Engine/HdScreens.h"
 
 namespace OpenXcom
 {
+
+/**
+ * OXCE-HD (oxceHdInvBackdrop, XP-000098): the background of the equipment screen. The classic background (TAC01.SCR) is
+ * black; in the HD interface a painted scene of the screens' pictures (HdScreens, the ids inventoryArmory, inventoryShip and
+ * inventoryTarp of hd/UI/screens/screens.txt) is drawn in its place, in the 320x200 field only, with a dark translucent plate
+ * under every group of slots so the brown grid stays readable on it. Picture only: the classic layer is untouched, and
+ * with the option at 0 (or no picture) the surface is drawn as ever.
+ */
+class InventoryBackdrop : public Surface
+{
+	/// The plate of one group of slots as a picture at scale k: `x`, `y` base pixels in the field, `w` x `h` world pixels.
+	struct Plate
+	{
+		int x = 0, y = 0, w = 0, h = 0;
+		std::vector<Uint32> px;
+	};
+	std::vector<std::vector<SDL_Rect>> _groups;     ///< the cells of each group of slots (base pixels, the grid's cells)
+	std::vector<Plate> _plates;
+	int _platesK = 0;
+
+	static constexpr int PAD = 2;                   ///< the plate reaches this far (base pixels) past the grid
+	static constexpr Uint32 PLATE = 0x960B0907u;    ///< ARGB of the plate: a warm black, a little over half opaque
+
+	void buildPlates(int k)
+	{
+		_plates.clear();
+		_platesK = k;
+		for (const std::vector<SDL_Rect> &cells : _groups)
+		{
+			int x0 = INT_MAX, y0 = INT_MAX, x1 = INT_MIN, y1 = INT_MIN;
+			std::vector<SDL_Rect> padded;
+			for (const SDL_Rect &c : cells)
+			{
+				SDL_Rect r;
+				r.x = (Sint16)std::max(c.x - PAD, 0);
+				r.y = (Sint16)std::max(c.y - PAD, 0);
+				const int rx1 = std::min(c.x + c.w + PAD, (int)getWidth()), ry1 = std::min(c.y + c.h + PAD, (int)getHeight());
+				if (rx1 <= r.x || ry1 <= r.y)
+				{
+					continue;
+				}
+				r.w = (Uint16)(rx1 - r.x);
+				r.h = (Uint16)(ry1 - r.y);
+				padded.push_back(r);
+				x0 = std::min(x0, (int)r.x); y0 = std::min(y0, (int)r.y);
+				x1 = std::max(x1, rx1); y1 = std::max(y1, ry1);
+			}
+			if (padded.empty())
+			{
+				continue;
+			}
+			Plate p;
+			p.x = x0; p.y = y0; p.w = (x1 - x0) * k; p.h = (y1 - y0) * k;
+			p.px.assign((size_t)p.w * p.h, 0u);
+			// the cells' union, each world pixel once: neighbouring cells do not darken twice
+			for (const SDL_Rect &r : padded)
+			{
+				for (int yy = (r.y - y0) * k; yy < (r.y + r.h - y0) * k; ++yy)
+				{
+					Uint32 *row = p.px.data() + (size_t)yy * p.w;
+					std::fill(row + (r.x - x0) * k, row + (r.x + r.w - x0) * k, PLATE);
+				}
+			}
+			_plates.push_back(std::move(p));
+		}
+	}
+public:
+	InventoryBackdrop(int width, int height, int x, int y) : Surface(width, height, x, y) {}
+	/// Remembers where the grids of the slots are (what Inventory::drawGrid draws) for the plates under them.
+	void setSlots(std::map<std::string, RuleInventory*> *inventories)
+	{
+		_groups.clear();
+		_plates.clear();
+		_platesK = 0;
+		for (const auto &invPair : *inventories)
+		{
+			const RuleInventory *ruleInv = invPair.second;
+			std::vector<SDL_Rect> cells;
+			SDL_Rect r;
+			r.w = RuleInventory::SLOT_W + 1;
+			r.h = RuleInventory::SLOT_H + 1;
+			if (ruleInv->getType() == INV_SLOT)
+			{
+				for (const auto &slotInfo : *ruleInv->getSlots())
+				{
+					r.x = (Sint16)(ruleInv->getX() + RuleInventory::SLOT_W * slotInfo.x);
+					r.y = (Sint16)(ruleInv->getY() + RuleInventory::SLOT_H * slotInfo.y);
+					cells.push_back(r);
+				}
+			}
+			else if (ruleInv->getType() == INV_HAND)
+			{
+				r.x = (Sint16)ruleInv->getX();
+				r.y = (Sint16)ruleInv->getY();
+				r.w = RuleInventory::HAND_W * RuleInventory::SLOT_W;
+				r.h = RuleInventory::HAND_H * RuleInventory::SLOT_H;
+				cells.push_back(r);
+			}
+			else if (ruleInv->getType() == INV_GROUND)
+			{
+				// the ground's grid runs to the field's edges
+				r.x = (Sint16)ruleInv->getX();
+				r.y = (Sint16)ruleInv->getY();
+				r.w = (Uint16)std::max(0, (int)getWidth() - r.x);
+				r.h = (Uint16)std::max(0, (int)getHeight() - r.y);
+				cells.push_back(r);
+			}
+			if (!cells.empty())
+			{
+				_groups.push_back(cells);
+			}
+		}
+	}
+	/// The picture of the chosen scene and the plates under the slots, then the classic background's HD picture over them.
+	void hdMirror() override
+	{
+		static const char *const IDS[] = { "", "inventoryArmory", "inventoryShip", "inventoryTarp" };
+		const int theme = Options::oxceHdInvBackdrop;
+		if (theme >= 1 && theme <= 3 && HdScreens::has(IDS[theme]))
+		{
+			HdUi &ui = HdUi::instance();
+			const int k = HdUi::scale();
+			ui.setClip(getX(), getY(), getWidth(), getHeight());
+			const bool drawn = HdScreens::drawBackdrop(this, IDS[theme], getX(), getY(), getWidth(), getHeight());
+			if (drawn && k > 0)
+			{
+				if (_platesK != k)
+				{
+					buildPlates(k);
+				}
+				for (const Plate &p : _plates)
+				{
+					ui.drawImage(p.px.data(), p.w, p.h, (getX() + p.x) * k, (getY() + p.y) * k);
+				}
+			}
+			ui.clearClip();
+			if (drawn)
+			{
+				// the text over it is text on a picture (outlined, the picture frosted under it)
+				ui.noteBackdrop(this, getX(), getY(), getWidth(), getHeight());
+			}
+		}
+		Surface::hdMirror();
+	}
+};
 
 /**
  * OXCE-HD (oxceHdScrollSplit): the ground scroll button as two halves, an arrow to the left and an arrow to the right.
@@ -169,7 +316,9 @@ InventoryState::InventoryState(bool tu, BattlescapeState *parent, Base *base, bo
 	}
 
 	// Create objects
-	_bg = new Surface(320, 200, 0, 0);
+	InventoryBackdrop *hdBackdrop = new InventoryBackdrop(320, 200, 0, 0);
+	hdBackdrop->setSlots(_game->getMod()->getInventories());
+	_bg = hdBackdrop;
 	_soldier = new Surface(320, 200, 0, 0);
 	_txtPosition = new Text(70, 9, 65, 95);
 	_txtNameStatic = new Text(210, 17, 28, 6);
