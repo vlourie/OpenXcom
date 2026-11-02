@@ -56,6 +56,7 @@
 #include "../Interface/Cursor.h"
 #include "../Engine/Screen.h"
 #include "../Engine/HdUi.h"
+#include "../Engine/HdCraftRoute.h"
 #include "../Engine/HdOutline.h"
 #include "../Engine/HdWorkers.h"
 
@@ -998,6 +999,10 @@ void Globe::draw()
 	drawLand();
 	drawRadars();
 	drawFlights();
+	if (Options::oxceHdCraftRoute)
+	{
+		drawRoutes();
+	}
 	drawShadow();
 	drawMarkers();
 	drawDetail();
@@ -1737,6 +1742,40 @@ void Globe::drawFlights()
 	}
 
 	// Unlock the surface
+	_radars->unlock();
+}
+
+/**
+ * Draws the routes of several points (oxceHdCraftRoute): a thin line craft - stop - stop - target and a small cross
+ * on each stop, in the same layer and the same shaded line as the flight paths (smoothed with them in the HD layer).
+ * The routes under way and the one being made in the Select Destination window.
+ */
+void Globe::drawRoutes()
+{
+	const std::vector<std::vector<HdCraftRoute::Point> > routes = HdCraftRoute::lines(_game->getSavedGame());
+	if (routes.empty())
+	{
+		return;
+	}
+	_radars->lock();
+	for (const auto &route : routes)
+	{
+		for (size_t i = 1; i < route.size(); ++i)
+		{
+			drawPath(_radars, route[i - 1].first, route[i - 1].second, route[i].first, route[i].second);
+		}
+		for (size_t i = 1; i < route.size(); ++i)
+		{
+			if (pointBack(route[i].first, route[i].second))
+			{
+				continue;
+			}
+			double x, y;
+			polarToCart(route[i].first, route[i].second, &x, &y);
+			XuLine(_radars, this, x - 2, y, x + 2, y, 8);
+			XuLine(_radars, this, x, y - 2, x, y + 2, 8);
+		}
+	}
 	_radars->unlock();
 }
 

@@ -21,6 +21,7 @@
 #include "../fmath.h"
 #include "../Engine/Language.h"
 #include "../Engine/RNG.h"
+#include "../Engine/HdCraftRoute.h"
 #include "../Engine/ScriptBind.h"
 #include "../Mod/RuleCraft.h"
 #include "CraftWeapon.h"
@@ -96,6 +97,7 @@ void Craft::recalcSpeedMaxRadian()
  */
 Craft::~Craft()
 {
+	HdCraftRoute::forget(this); // OXCE-HD (oxceHdCraftRoute)
 	for (auto* cw : _weapons)
 	{
 		delete cw;
@@ -521,6 +523,7 @@ std::string Craft::getAltitude() const
  */
 void Craft::setDestination(Target *dest)
 {
+	HdCraftRoute::forget(this); // OXCE-HD (oxceHdCraftRoute): any order throws the route queue away; empty and free with the option off
 	if (_status != "STR_OUT")
 	{
 		_takeoff = 60;
