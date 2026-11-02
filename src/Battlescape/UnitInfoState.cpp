@@ -82,7 +82,7 @@ UnitInfoState::UnitInfoState(BattleUnit *unit, BattlescapeState *parent, bool fr
 	yPos += step;
 
 	_txtHealth = new Text(104, 9, 8, yPos);
-	_maxHealth = new Text(30, 9, 112, yPos);
+	_maxHealth = new Text(40, 9, 102, yPos); // XP-000469: wider to the left (right-aligned, the right edge stays 142) for "128/86"
 	_numHealth = new Text(18, 9, 150, yPos);
 	_barHealth = new Bar(150, 5, 170, yPos + 1);
 	yPos += step;
@@ -582,7 +582,15 @@ void UnitInfoState::init()
 	ss << _unit->getHealth();
 	_numHealth->setText(ss.str());
 	_barHealth->setMax(_unit->getBaseStats()->health);
-	_maxHealth->setText(std::to_string(_unit->getBaseStats()->health));
+	{
+		// XP-000469: the current stun level after a slash ("128/86"), only for our own soldiers and only when stunned (picture only)
+		std::string maxHealthText = std::to_string(_unit->getBaseStats()->health);
+		if (_unit->getFaction() == FACTION_PLAYER && _unit->getStunlevel() > 0)
+		{
+			maxHealthText += "/" + std::to_string(_unit->getStunlevel());
+		}
+		_maxHealth->setText(maxHealthText);
+	}
 	_barHealth->setValue(_unit->getHealth());
 	_barHealth->setValue2(_unit->getStunlevel());
 
