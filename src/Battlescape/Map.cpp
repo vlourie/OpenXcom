@@ -1431,6 +1431,7 @@ void Map::draw()
 
 	const bool shown = (_save->getSelectedUnit() && _save->getSelectedUnit()->getVisible())
 		|| _unitDying
+		|| ownShotShown()
 		|| _save->getSide() == FACTION_PLAYER
 		|| _save->getDebugMode()
 		|| (_projectileInFOV && (!ignoreAllButAlliesHits || (unitVisible && !unitEnemy)))
@@ -6806,6 +6807,17 @@ void Map::setSelectorPosition(int mx, int my)
 }
 
 /**
+ * Is a shot of the player's own soldier on the picture (XP-000462)? In an unseen enemy's turn the picture is frozen unless
+ * something the player sees happens; the reaction burst of his soldier is such a thing, but it lost its right to the live
+ * picture after the first round: once the enemy it fired at is dead or out of view and the bullets fly over tiles that
+ * are not seen, the flashes, the tracers and the soldier's aim froze and only the sound of the other rounds went on.
+ */
+bool Map::ownShotShown() const
+{
+	return _ownShot || (Sint32)(SDL_GetTicks() - _ownShotUntil) < 0;
+}
+
+/**
  * The picture's animation where the classic game stops it (XP-000097): needs the option and an HD drawing mode; the
  * classic drawing (mode 0) stays as it always was.
  */
@@ -7424,6 +7436,14 @@ CursorType Map::getCursorType() const
  */
 void Map::setProjectile(Projectile *projectile)
 {
+	// XP-000462: the shot of the player's own soldier in an enemy's turn (reaction fire) stays on the picture for the rest
+	// of the burst, whether or not the enemy is still seen and the bullet flies over a seen tile (picture only)
+	const bool own = projectile && projectile->getActor() && projectile->getActor()->getFaction() == FACTION_PLAYER;
+	if (_ownShot || own)
+	{
+		_ownShotUntil = SDL_GetTicks() + OWN_SHOT_HOLD_MS;
+	}
+	_ownShot = own;
 	_projectile = projectile;
 	if (projectile && HdGentle::smoothCamera())
 	{
