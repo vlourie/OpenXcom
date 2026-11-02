@@ -80,8 +80,9 @@ Lines &load(const std::string &kind, Event ev, const std::string &lang)
 	return lines;
 }
 
-/// The fighter who speaks for the craft: the first assigned pilot, else the first one aboard, else none.
-/// Read-only: Craft::getPilotList rewrites the pilot list (and with it the save), so the list is read as it is.
+/// The fighter who speaks for the craft: the one the engine would seat as pilot (Craft::getPilotList), else the first aboard.
+/// Read-only: getPilotList rewrites the pilot list (and with it the save), so its choice is repeated here without writing.
+/// Soldier::hasAllPilotingRequirements reads cached stats that may be out of date; a wrong guess only changes the voice.
 const Soldier *speaker(const Craft *craft)
 {
 	const Base *base = craft->getBase();
@@ -90,14 +91,38 @@ const Soldier *speaker(const Craft *craft)
 		return nullptr;
 	}
 	const std::vector<Soldier *> &soldiers = base->getSoldiers();
-	for (int id : craft->getPilotIds())
+	const int needed = craft->getRules()->getPilots();
+	if (needed > 0)
 	{
+		// the first assigned pilot who is aboard and fit
+		for (int id : craft->getPilotIds())
+		{
+			for (const Soldier *soldier : soldiers)
+			{
+				if (soldier->getId() == id && soldier->getCraft() == craft && soldier->hasAllPilotingRequirements())
+				{
+					return soldier;
+				}
+			}
+		}
+		// none assigned: just enough fit ones all fly, the first by the base order; else the engine takes them from the rear
+		const Soldier *first = nullptr, *last = nullptr;
+		int fit = 0;
 		for (const Soldier *soldier : soldiers)
 		{
-			if (soldier->getId() == id && soldier->getCraft() == craft)
+			if (soldier->getCraft() == craft && soldier->hasAllPilotingRequirements())
 			{
-				return soldier;
+				if (!first)
+				{
+					first = soldier;
+				}
+				last = soldier;
+				++fit;
 			}
+		}
+		if (fit > 0)
+		{
+			return fit == needed ? first : last;
 		}
 	}
 	for (const Soldier *soldier : soldiers)
