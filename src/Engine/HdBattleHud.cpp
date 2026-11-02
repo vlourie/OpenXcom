@@ -1697,15 +1697,81 @@ const std::vector<Uint32> &panelMetal(int W, int H, int k)
 	return metalCache[key] = shadeMetal(height, dark, cover, W, H, (float)k * 0.5f, 0.0f, theme().steel, &brass);
 }
 
+/// A picture shrunk to W x H like resampled, but with its frame - the band of source pixels round the edge, bandL/R/T/B
+/// wide - drawn in a band of target pixels tx (sides) and ty (top, bottom) wide, and the middle stretched to fill the
+/// rest: a thinner frame round the same picture (ticket XP-000458, the brass hand wells).
+std::vector<Uint32> resampledFramed(const HdFrame &f, int W, int H, float bandL, float bandR, float bandT, float bandB,
+	float tx, float ty)
+{
+	// where each target edge falls in the source: 0..S, piecewise linear across the three bands
+	auto edges = [](int T, int S, float s0, float s1, float t0, float t1) {
+		std::vector<float> e((size_t)T + 1);
+		for (int i = 0; i <= T; ++i)
+		{
+			const float t = (float)i;
+			if (t <= t0) e[i] = t * s0 / t0;
+			else if (t >= (float)T - t1) e[i] = (float)S - s1 + (t - ((float)T - t1)) * s1 / t1;
+			else e[i] = s0 + (t - t0) * ((float)S - s0 - s1) / ((float)T - t0 - t1);
+		}
+		return e;
+	};
+	const std::vector<float> ex = edges(W, f.width, bandL, bandR, tx, tx), ey = edges(H, f.height, bandT, bandB, ty, ty);
+	std::vector<float> across((size_t)W * f.height * 4);
+	for (int y = 0; y < f.height; ++y)
+	{
+		for (int x = 0; x < W; ++x)
+		{
+			const float a0 = ex[x], a1 = std::max(ex[x + 1], a0 + 1.0f);
+			float acc[4] = { 0, 0, 0, 0 }, wsum = 0;
+			for (int s = (int)a0; s < (int)std::ceil(a1) && s < f.width; ++s)
+			{
+				const float wgt = std::min(a1, s + 1.0f) - std::max(a0, (float)s);
+				if (wgt <= 0.0f) continue;
+				const Uint32 p = f.pixels[(size_t)y * f.width + s];
+				for (int c = 0; c < 4; ++c) acc[c] += wgt * ((p >> (24 - 8 * c)) & 0xFF);
+				wsum += wgt;
+			}
+			for (int c = 0; c < 4; ++c) across[((size_t)y * W + x) * 4 + c] = wsum > 0 ? acc[c] / wsum : 0;
+		}
+	}
+	std::vector<Uint32> out((size_t)W * H);
+	for (int y = 0; y < H; ++y)
+	{
+		const float b0 = ey[y], b1 = std::max(ey[y + 1], b0 + 1.0f);
+		for (int x = 0; x < W; ++x)
+		{
+			float acc[4] = { 0, 0, 0, 0 }, wsum = 0;
+			for (int s = (int)b0; s < (int)std::ceil(b1) && s < f.height; ++s)
+			{
+				const float wgt = std::min(b1, s + 1.0f) - std::max(b0, (float)s);
+				if (wgt <= 0.0f) continue;
+				for (int c = 0; c < 4; ++c) acc[c] += wgt * across[((size_t)s * W + x) * 4 + c];
+				wsum += wgt;
+			}
+			Uint32 p = 0;
+			for (int c = 0; c < 4; ++c) p |= (Uint32)std::min(wsum > 0 ? acc[c] / wsum + 0.5f : 0.0f, 255.0f) << (24 - 8 * c);
+			out[(size_t)y * W + x] = p;
+		}
+	}
+	return out;
+}
+
 /// A hand's well painted (the pirate panel), its brass frame and floor in one W x H picture with rounded corners, or
-/// nullptr: no picture, the frame and floor are cast instead.
-const std::vector<Uint32> *paintedWell(int W, int H, int k)
+/// nullptr: no picture, the frame and floor are cast instead. thinEdge > 0: the painted frame is drawn that many pixels
+/// wide (at most as wide as it was), the floor stretched to the rest - the ship's brass panel only (ticket XP-000458),
+/// the other panels' wells stay as they were.
+const std::vector<Uint32> *paintedWell(int W, int H, int k, float thinEdge = 0.0f)
 {
 	const HdFrame *face = paintedFace(WELL_FACE);
 	if (!face) return nullptr;
 	const Uint64 key = (3ull << 60) | ((Uint64)(W & 0xFFFF) << 16) | (Uint64)(H & 0xFFFF);
 	if (std::vector<Uint32> *hit = metalCached(key, k)) return hit;
-	std::vector<Uint32> img = resampled(*face, W, H);
+	// the pirate well.png's frame (the rim, the groove, the inner lip) as shares of the picture's sides
+	const float fL = 0.116f, fR = 0.122f, fT = 0.101f, fB = 0.104f;
+	std::vector<Uint32> img = thinEdge > 0.0f
+		? resampledFramed(*face, W, H, fL * face->width, fR * face->width, fT * face->height, fB * face->height,
+			std::min(thinEdge, std::min(fL, fR) * (float)W), std::min(thinEdge, std::min(fT, fB) * (float)H))
+		: resampled(*face, W, H);
 	for (int y = 0; y < H; ++y)
 	{
 		for (int x = 0; x < W; ++x)
@@ -2332,7 +2398,9 @@ void HdHudPanel::hdMirror()
 				const int fw = (int)std::ceil(f);
 				const int ow = iw - 2 * in + 2 * fw, oh = ih - 2 * in + 2 * fw;
 				// the pirate panel's painted well (frame and floor in one) takes the place of both, under the item
-				const std::vector<Uint32> *painted = paintedWell(ow, oh, k);
+				// the ship's brass panel (4) only: its frame is thinner, the floor reaches nearer the item (ticket XP-000458)
+				const float thin = Options::oxceHdBattleHudColor == 4 ? 0.75f * ((float)fw + m - (float)in) : 0.0f;
+				const std::vector<Uint32> *painted = paintedWell(ow, oh, k, thin);
 				if (painted) ui.drawImage(painted->data(), ow, oh, ix + in - fw, iy + in - fw);
 				else ui.drawImage(wellFloor(iw, ih, k, t.wellBase).data(), iw, ih, ix, iy);
 				// the item lies on that floor: its shadow falls down and to the right
