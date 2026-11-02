@@ -109,7 +109,7 @@ public static class VoiceApi
     /// Who is asking: the launcher's device token, or for reading only a signed-in browser session.
     /// Changes through the session would bypass the antiforgery check of the site's forms, so they are not taken.
     /// </summary>
-    static async Task<Guid?> WhoAsync(HttpContext http, PortalDb db, TimeProvider clock, bool write, CancellationToken ct)
+    internal static async Task<Guid?> WhoAsync(HttpContext http, PortalDb db, TimeProvider clock, bool write, CancellationToken ct)
     {
         http.Response.Headers.CacheControl = "no-store";
         var token = http.Request.Headers[DeviceApi.TokenHeader].ToString();

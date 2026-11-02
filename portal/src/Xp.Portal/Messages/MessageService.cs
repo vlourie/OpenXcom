@@ -78,7 +78,7 @@ public sealed class MessageService(PortalDb db, TimeProvider clock, IOptions<Por
     /// A dialogue with one person, newest page first (page 1 is the end of the conversation), each page in
     /// reading order. Opening it marks what the other wrote as read.
     /// </summary>
-    public async Task<ThreadView> ThreadAsync(Guid me, Guid other, int page, CancellationToken ct)
+    public async Task<ThreadView> ThreadAsync(Guid me, Guid other, int page, CancellationToken ct, bool markRead = true)
     {
         var person = await PersonAsync(other, ct);
         var q = Dialogue(me, other);
@@ -86,14 +86,20 @@ public sealed class MessageService(PortalDb db, TimeProvider clock, IOptions<Por
         var rows = await q.OrderByDescending(m => m.CreatedAt).Skip(Math.Max(0, page - 1) * MessageLimits.PerPage)
             .Take(MessageLimits.PerPage).ToListAsync(ct);
         rows.Reverse();
-        var now = clock.GetUtcNow();
-        await db.PrivateMessages.Where(m => m.SenderId == other && m.RecipientId == me && m.ReadAt == null)
-            .ExecuteUpdateAsync(s => s.SetProperty(m => m.ReadAt, now), ct);
+        if (markRead) await MarkReadAsync(me, other, ct);
         var blocked = await db.UserBlocks.AnyAsync(x => x.BlockerId == me && x.BlockedId == other, ct);
         var (lo, hi) = Friendship.Pair(me, other);
         var friend = await db.Friendships.AnyAsync(f => f.UserLowId == lo && f.UserHighId == hi, ct);
         return new ThreadView(person,
             rows.Select(m => new BubbleView(m.Id, m.SenderId == me, m.Body, m.CreatedAt, m.ReadAt != null)).ToList(), total, blocked, friend);
+    }
+
+    /// <summary>What the other wrote to this person is read. The launcher says so itself, once the dialogue is in view.</summary>
+    public async Task MarkReadAsync(Guid me, Guid other, CancellationToken ct)
+    {
+        var now = clock.GetUtcNow();
+        await db.PrivateMessages.Where(m => m.SenderId == other && m.RecipientId == me && m.ReadAt == null)
+            .ExecuteUpdateAsync(s => s.SetProperty(m => m.ReadAt, now), ct);
     }
 
     /// <summary>The messages of a pair that this person has not deleted for themselves.</summary>

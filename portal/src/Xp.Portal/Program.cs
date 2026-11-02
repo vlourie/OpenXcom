@@ -279,6 +279,7 @@ public static class PortalApp
         StatsApi.Map(app);
         PackApi.Map(app);
         VoiceApi.Map(app);
+        Xp.Portal.Messages.MessageApi.Map(app);
         app.MapGet("/files/{id:guid}", ServeFileAsync).ExcludeFromDescription();
         // HEAD too: download managers ask the name and size first, and 405 made them give up
         app.MapMethods("/download/launcher", ["GET", "HEAD"], DownloadLauncherAsync).RequireRateLimiting("launcher-download").ExcludeFromDescription();
