@@ -32,6 +32,7 @@
 #include "../Interface/TextList.h"
 #include "../Interface/Window.h"
 #include "../Mod/Mod.h"
+#include "../Mod/Armor.h"
 #include "../Mod/RuleSoldier.h"
 #include "../Mod/RuleSoldierBonus.h"
 #include "../Mod/RuleSoldierTransformation.h"
@@ -287,7 +288,20 @@ void SoldierTransformationState::initTransformationData()
 	{
 		transferTime = _transformationRule->getTransferTime() > 0 ? _transformationRule->getTransferTime() : 24;
 	}
-	_txtTransferTime->setText(tr("STR_TRANSFER_TIME").arg(tr("STR_HOUR", transferTime)));
+	std::string transferLine = tr("STR_TRANSFER_TIME").arg(tr("STR_HOUR", transferTime));
+	// the soldier goes into the transfer with the armor he wears (keepSoldierArmor): say so, when it is really so - he
+	// is kept as he is (not cloned, not made into an item) and wears an armor that is a thing in the stores (not the
+	// infinite one); text only (ticket XP-000467)
+	if (transferTime > 0 && _transformationRule->isKeepingSoldierArmor() && !_transformationRule->isCreatingClone() &&
+		Mod::isEmptyRuleName(_transformationRule->getProducedItem()) &&
+		_sourceSoldier->getArmor() && _sourceSoldier->getArmor()->getStoreItem())
+	{
+		const std::string withHint = transferLine + tr("STR_TRANSFER_KEEPS_ARMOR").c_str();
+		_txtTransferTime->setText(withHint);
+		if (_txtTransferTime->getTextWidth(0) <= _txtTransferTime->getWidth())
+			transferLine = withHint;
+	}
+	_txtTransferTime->setText(transferLine);
 	_txtRecoveryTime->setText(tr("STR_RECOVERY_TIME").arg(tr("STR_DAY", _transformationRule->getRecoveryTime())));
 
 	int row = 0;
