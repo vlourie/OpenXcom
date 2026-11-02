@@ -39,6 +39,13 @@ public sealed class VoicePage : UserControl
     readonly Border _side;
     readonly Border _soundPanel;
     readonly Button _settingsButton;
+
+    // the tabs: the voice rooms, and the private messages of the same account
+    readonly Grid _columns;
+    readonly Button _tabRooms, _tabMessages;
+    readonly TextBlock _hint = Skin.Note(L.T("voice.hint"), 14, Skin.Text2);
+    bool _onMessages;
+    public MessagesPage Messages { get; }
     List<VoiceRoom> _mine = [];
     readonly DispatcherTimer _beat = new() { Interval = TimeSpan.FromSeconds(20) };
     int _beats;
@@ -95,7 +102,11 @@ public sealed class VoicePage : UserControl
         _settings = settings;
         _account = account;
         _builds = builds;
-        _account.Changed += () => { if (IsVisible && !InRoom) _ = LoadAsync(); };
+        _account.Changed += () =>
+        {
+            if (_onMessages) ShowTab(true);
+            else if (IsVisible && !InRoom) _ = LoadAsync();
+        };
 
         // --- not linked
         _unlinked.Children.Add(Skin.Note(L.T("voice.unlinked"), 14, Skin.Text2));
@@ -224,18 +235,31 @@ public sealed class VoicePage : UserControl
         left.Children.Add(_requestsBox);
         left.Children.Add(_lobby);
         left.Children.Add(_roomPanel);
-        var columns = new Grid { ColumnDefinitions = new ColumnDefinitions("*,20,280") };
-        columns.Children.Add(left);
+        _columns = new Grid { ColumnDefinitions = new ColumnDefinitions("*,20,280") };
+        _columns.Children.Add(left);
         Grid.SetColumn(_side, 2);
-        columns.Children.Add(_side);
+        _columns.Children.Add(_side);
+
+        // the second tab: private messages (ticket XP-000476)
+        Messages = new MessagesPage(settings) { IsVisible = false };
+        Messages.UnreadChanged += ShowTabs;
+        _tabRooms = Skin.Btn(L.T("msgs.tabRooms"), "primary");
+        _tabRooms.Click += (_, _) => ShowTab(false);
+        _tabMessages = Skin.Btn(L.T("msgs.tabMessages"), "ghost");
+        _tabMessages.Click += (_, _) => ShowTab(true);
+        var tabs = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8 };
+        tabs.Children.Add(_tabRooms);
+        tabs.Children.Add(_tabMessages);
 
         var panel = new StackPanel { Spacing = 14, Margin = new Thickness(28, 24, 28, 28), MaxWidth = 1120, HorizontalAlignment = HorizontalAlignment.Left };
         panel.Children.Add(top);
-        panel.Children.Add(Skin.Note(L.T("voice.hint"), 14, Skin.Text2));
+        panel.Children.Add(tabs);
+        panel.Children.Add(_hint);
         panel.Children.Add(_soundPanel);
         panel.Children.Add(_status);
         panel.Children.Add(_unlinked);
-        panel.Children.Add(columns);
+        panel.Children.Add(_columns);
+        panel.Children.Add(Messages);
         Content = new ScrollViewer { Content = panel };
 
         _timer.Tick += (_, _) => Tick();
@@ -305,7 +329,35 @@ public sealed class VoicePage : UserControl
     {
         FillDevices();
         ShowKey();
-        if (!InRoom) _ = LoadAsync();
+        if (_onMessages) ShowTab(true);
+        else if (!InRoom) _ = LoadAsync();
+    }
+
+    /// <summary>Voice rooms or private messages. The voice session goes on under the second tab; the sound settings belong to the first.</summary>
+    public void ShowTab(bool messages)
+    {
+        _onMessages = messages;
+        bool linked = Linked;
+        _hint.IsVisible = _columns.IsVisible = _settingsButton.IsVisible = !messages;
+        Messages.IsVisible = messages && linked;
+        if (messages)
+        {
+            ShowSettings(false);
+            _unlinked.IsVisible = !linked;
+            Messages.Shown();
+        }
+        else if (!InRoom) _ = LoadAsync();
+        else _columns.IsVisible = true;
+        ShowTabs();
+    }
+
+    void ShowTabs()
+    {
+        _tabRooms.Classes.Set("primary", !_onMessages);
+        _tabRooms.Classes.Set("ghost", _onMessages);
+        _tabMessages.Classes.Set("primary", _onMessages);
+        _tabMessages.Classes.Set("ghost", !_onMessages);
+        _tabMessages.Content = Messages.Unread > 0 ? L.T("msgs.tabMessagesN", Messages.Unread) : L.T("msgs.tabMessages");
     }
 
     /// <summary>An xpiratez://voice link: the room goes on top of the lobby with its "Join". Entering is

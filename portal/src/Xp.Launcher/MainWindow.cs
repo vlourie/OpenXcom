@@ -30,6 +30,9 @@ public sealed class MainWindow : Window
     readonly Dictionary<string, Control> _pages = new();
     readonly Border _reportsBadge = new() { Background = Skin.B(Skin.Accent), CornerRadius = new CornerRadius(2), Padding = new Thickness(6, 1), IsVisible = false, VerticalAlignment = VerticalAlignment.Center };
     readonly TextBlock _reportsCount = new() { Foreground = Skin.B(Skin.OnAccent), FontSize = 12, FontFamily = Skin.Medium };
+    // unread private messages, on the "Chat" button (the site's count, asked together with the tickets)
+    readonly Border _chatBadge = new() { Background = Skin.B(Skin.Accent), CornerRadius = new CornerRadius(2), Padding = new Thickness(6, 1), IsVisible = false, VerticalAlignment = VerticalAlignment.Center };
+    readonly TextBlock _chatCount = new() { Foreground = Skin.B(Skin.OnAccent), FontSize = 12, FontFamily = Skin.Medium };
 
     // home
     readonly Border _notice = new() { Background = Skin.B(Skin.WarnFill), BorderBrush = Skin.B(Skin.WarnFrame), BorderThickness = new Thickness(1), CornerRadius = new CornerRadius(2), Padding = new Thickness(14, 8), IsVisible = false, Margin = new Thickness(0, 0, 0, 16) };
@@ -175,6 +178,7 @@ public sealed class MainWindow : Window
         _account = new AccountPanel(_settings);
         _voicePage = new VoicePage(_settings, _account, () => _builds, () => Navigate("settings"));
         _voicePage.RoomChanged += RoomChanged;
+        _voicePage.Messages.UnreadChanged += () => { ShowChatBadge(); CountReports(); };
         _setupPage = new SetupPage(_settings, () => _repo) { Lazy = () => LazyPacks.For(_http, _settings.PortalUrl ?? BuiltIn.Defaults.PortalUrl) };
         _setupPage.Finished += (dir, play) => OnSetupFinished(dir, play);
         _setupPage.PickExisting += async () => await ChooseGameDirAsync();
@@ -293,7 +297,8 @@ public sealed class MainWindow : Window
         _reportsBadge.Child = _reportsCount;
         top.Children.Add(NavButton("reports", "nav.reports", Skin.IconReports, _reportsBadge));
         top.Children.Add(NavButton("news", "nav.news", Skin.IconNews, null));
-        top.Children.Add(NavButton("voice", "nav.voice", Skin.IconVoice, null));
+        _chatBadge.Child = _chatCount;
+        top.Children.Add(NavButton("voice", "nav.voice", Skin.IconVoice, _chatBadge));
         top.Children.Add(NavButton("support", "nav.support", Skin.IconHeart, null));
         top.Children.Add(NavButton("settings", "nav.settings", Skin.IconSettings, null));
 
@@ -866,6 +871,8 @@ public sealed class MainWindow : Window
     async Task WatchAsync(bool tick = true)
     {
         if (tick) _ = LookAtTicketsAsync();
+        // the unread messages ride on the same look (one small request), not on a timer of their own
+        _ = _voicePage.Messages.LookAsync();
         // no server at the start: the timer tries the check again instead (not a coming back to the window -
         // the check would lock the buttons each time the player looks in)
         if (_offline is not null && tick) _staleCheck = true;
@@ -1254,9 +1261,18 @@ public sealed class MainWindow : Window
         else if (fresh.Count == 1)
             ShowNotice(L.T("notice.ticketNews", fresh[0].Draft.DisplayNumber ?? "", ReportsPage.MarkText(TicketAttention.MarkOf(fresh[0].Draft, _settings.SeenTickets))), L.T("notice.open"), () => Navigate("reports"));
         else if (fresh.Count > 1) ShowNotice(L.T("notice.ticketsNews", fresh.Count), L.T("notice.open"), () => Navigate("reports"));
+        else if (_voicePage.Messages.Unread > 0)
+            ShowNotice(L.T("notice.messages", _voicePage.Messages.Unread), L.T("notice.open"), () => { Navigate("voice"); _voicePage.ShowTab(true); });
         else if (_launcherUpdate is not null && _needLauncher is null) ShowNotice(L.T("notice.launcher", _launcherUpdate.Release.Version), L.T("self.install"), async () => await RunAsync(Work.SelfUpdate, SelfUpdateAsync));
         else if (queued > 0) ShowNotice(L.T("notice.queued", queued), L.T("notice.send"), () => { Navigate("reports"); _reportsPage.SendQueued(); });
         else _notice.IsVisible = false;
+    }
+
+    void ShowChatBadge()
+    {
+        int n = _voicePage.Messages.Unread;
+        _chatCount.Text = n.ToString();
+        _chatBadge.IsVisible = n > 0;
     }
 
     void ShowNotice(string text, string action, Action onClick)
