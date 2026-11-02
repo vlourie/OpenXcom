@@ -65,7 +65,9 @@ namespace HdSmoke
 	/// Appends the puffs of tile (x, y, z) at the clock `clock` (Map::hdEnviClock ticks), drawn back to front.
 	/// @param smoke Tile::getSmoke (the number of slots and the kind of a cloud).
 	/// @param fire The tile burns: soot rises over the flames instead.
-	void puffs(int x, int y, int z, int smoke, bool fire, int clock, std::vector<Puff> &out);
+	/// @param crowd How many of the tile's eight neighbours smoke or burn too (0..8): deep inside a field fewer puffs are
+	///        drawn, the neighbours cover the tile (the fill cost of a full-screen cloud, XP-000468).
+	void puffs(int x, int y, int z, int smoke, bool fire, int clock, std::vector<Puff> &out, int crowd = 0);
 }
 
 }

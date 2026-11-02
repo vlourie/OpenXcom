@@ -3313,6 +3313,20 @@ void Canvas32::doBlitHdLit(const Cmd &cmd, GraphSubset destClip)
 	const int rs = _rshift, gs = _gshift, bs = _bshift;
 	const LitOf lit(*this, cmd.lightShade, cmd.lightTint, cmd.tintFlat);
 	const Uint32 opacity = cmd.opacity;
+	// One flat light over the whole frame (a puff of smoke, XP-000468): every pixel whose four weights sum to 256 gets
+	// the factors of its brightness from a table of this command, made on demand - what LitOf computes, per
+	// brightness instead of per pixel (the weights of a pixel on a node's corner sum to 255: LitOf as it is)
+	bool flat = cmd.tintFlat;
+	for (int i = 1; flat && i < HdLight::NODES; ++i)
+	{
+		flat = cmd.lightShade[i] == cmd.lightShade[0];
+	}
+	Uint32 flatF[3][256];
+	Uint8 flatHave[256];
+	if (flat)
+	{
+		memset(flatHave, 0, sizeof(flatHave));
+	}
 	for (int dy = y0; dy < y1; ++dy)
 	{
 		const int sy = dy - y;
@@ -3342,7 +3356,36 @@ void Canvas32::doBlitHdLit(const Cmd &cmd, GraphSubset destClip)
 					continue;
 				}
 			}
-			const Uint32 l = lit(p, wRow + sx * 5);
+			const Uint8 *wq = wRow + sx * 5;
+			Uint32 l;
+			if (flat && (unsigned)(wq[1] + wq[2] + wq[3] + wq[4]) == 256u)
+			{
+				const Uint32 pr = (p >> 16) & 0xFF, pg = (p >> 8) & 0xFF, pb = p & 0xFF;
+				const Uint32 m = pr > pg ? (pr > pb ? pr : pb) : (pg > pb ? pg : pb);
+				if (!flatHave[m])
+				{
+					flatHave[m] = 1;
+					const Uint32 shade8 = cmd.lightShade[0];
+					const int s0 = std::min(16, (int)(shade8 >> 8));
+					const int s1 = std::min(16, s0 + 1);
+					const Uint32 frac = shade8 & 0xFF;
+					for (int c = 0; c < 3; ++c)
+					{
+						const Sint32 fa = (Sint32)lit.toneFactor[c][s0][m], fb = (Sint32)lit.toneFactor[c][s1][m];
+						Uint32 f = (Uint32)(fa + (((fb - fa) * (Sint32)frac) >> 8));
+						if (!lit.whiteTint)
+						{
+							f = (f * lit.flatTint[c]) >> 8;
+						}
+						flatF[c][m] = f;
+					}
+				}
+				l = (p & 0xFF000000u) | (((pr * flatF[0][m] + 32768u) >> 16) << 16) | (((pg * flatF[1][m] + 32768u) >> 16) << 8)
+					| ((pb * flatF[2][m] + 32768u) >> 16);			}
+			else
+			{
+				l = lit(p, wq);
+			}
 			Uint32 r = (l >> 16) & 0xFF, g = (l >> 8) & 0xFF, b = l & 0xFF;
 			if (a != 255)
 			{

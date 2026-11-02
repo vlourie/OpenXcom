@@ -213,11 +213,24 @@ int bakeMs()
  * A tile has a few slots; a slot's puff lives a period of 36..52 ticks of its own, the slots of a tile spread
  * over it. Every life (the cycle number) has its own place of birth, rise and drift, so a cloud never repeats.
  */
-void puffs(int x, int y, int z, int smoke, bool fire, int clock, std::vector<Puff> &out)
+void puffs(int x, int y, int z, int smoke, bool fire, int clock, std::vector<Puff> &out, int crowd)
 {
 	const size_t first = out.size();
-	const int slots = fire ? 3 : std::min(5, 2 + smoke / 4);
+	int slots = fire ? 3 : std::min(5, 2 + smoke / 4);
+	// a tile deep inside a smoke field is covered by the puffs of its neighbours: fewer slots there (the fill cost of a
+	// full-screen cloud, XP-000468); by the neighbourhood only, never by the view, so that nothing flickers on scrolling
 	const int kind = fire ? SOOT : smoke < 6 ? THIN : THICK;
+	if (!fire)
+	{
+		if (crowd >= 8)
+		{
+			slots = std::min(slots, 3);
+		}
+		else if (crowd >= 6)
+		{
+			slots = std::min(slots, 4);
+		}
+	}
 	for (int s = 0; s < slots; ++s)
 	{
 		const Uint32 hs = hash3(x, y, z * 8 + s, 0x5EEDu);
