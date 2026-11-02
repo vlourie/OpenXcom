@@ -93,6 +93,11 @@ private:
 	bool _hintDirty = true;
 	/// Frames the items that fit the weapon (nullptr: none) in the hint layer.
 	void drawHint(const RuleItem *weapon);
+	/// The slots the armor shuts (the mod's black filler items lie over them), in base pixels, while the HD backdrop
+	/// shows: the grid, the plates and the fillers themselves are left out there (XP-000454)
+	std::vector<SDL_Rect> _hdBlocked;
+	/// Is the picture of an item all black: a filler of a shut slot?
+	bool hdFiller(const Surface *frame) const;
 
 	/// Is the HD interface going to draw the slot names with its own fonts on that surface?
 	bool hdLabels(const SDL_Surface *surface) const;
@@ -125,6 +130,10 @@ public:
 	void draw() override;
 	/// Draws the inventory grid.
 	void drawGrid();
+	/// The picture the HD backdrop (oxceHdInvBackdrop) shows on the equipment screen now: its id in the screens' list, or nullptr.
+	static const char *hdBackdropId();
+	/// The shut slots (see _hdBlocked): the backdrop leaves its plates out under them.
+	const std::vector<SDL_Rect> &hdBlocked() const { return _hdBlocked; }
 	/// Draws the inventory grid labels.
 	void drawGridLabels(bool showTuCost = false);
 	/// Draws the inventory items.

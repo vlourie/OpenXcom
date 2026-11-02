@@ -92,6 +92,21 @@ class InventoryBackdrop : public Surface
 	std::vector<std::vector<SDL_Rect>> _groups;     ///< the cells of each group of slots (base pixels, the grid's cells)
 	std::vector<Plate> _plates;
 	int _platesK = 0;
+	const Inventory *_inv = nullptr;                ///< the equipment grid: which slots the armor shuts (no plate under them, XP-000454)
+	std::vector<SDL_Rect> _platesBlocked;           ///< the shut slots the plates were built without
+
+	/// Is the cell (base pixels) one of the slots the armor shuts?
+	bool shut(const SDL_Rect &c) const
+	{
+		for (const SDL_Rect &b : _platesBlocked)
+		{
+			if (c.x >= b.x && c.x < b.x + b.w && c.y >= b.y && c.y < b.y + b.h)
+			{
+				return true;
+			}
+		}
+		return false;
+	}
 
 	static constexpr int PAD = 2;                   ///< the plate reaches this far (base pixels) past the grid
 	static constexpr Uint32 PLATE = 0x960B0907u;    ///< ARGB of the plate: a warm black, a little over half opaque
@@ -106,6 +121,10 @@ class InventoryBackdrop : public Surface
 			std::vector<SDL_Rect> padded;
 			for (const SDL_Rect &c : cells)
 			{
+				if (shut(c))
+				{
+					continue;
+				}
 				SDL_Rect r;
 				r.x = (Sint16)std::max(c.x - PAD, 0);
 				r.y = (Sint16)std::max(c.y - PAD, 0);
@@ -141,6 +160,8 @@ class InventoryBackdrop : public Surface
 	}
 public:
 	InventoryBackdrop(int width, int height, int x, int y) : Surface(width, height, x, y) {}
+	/// The equipment grid, for the slots the armor shuts.
+	void setInventory(const Inventory *inv) { _inv = inv; }
 	/// Remembers where the grids of the slots are (what Inventory::drawGrid draws) for the plates under them.
 	void setSlots(std::map<std::string, RuleInventory*> *inventories)
 	{
@@ -189,18 +210,27 @@ public:
 	/// The picture of the chosen scene and the plates under the slots, then the classic background's HD picture over them.
 	void hdMirror() override
 	{
-		static const char *const IDS[] = { "", "inventoryArmory", "inventoryShip", "inventoryTarp" };
-		const int theme = Options::oxceHdInvBackdrop;
-		if (theme >= 1 && theme <= 3 && HdScreens::has(IDS[theme]))
+		const char *const id = Inventory::hdBackdropId();
+		if (id)
 		{
 			HdUi &ui = HdUi::instance();
 			const int k = HdUi::scale();
 			ui.setClip(getX(), getY(), getWidth(), getHeight());
-			const bool drawn = HdScreens::drawBackdrop(this, IDS[theme], getX(), getY(), getWidth(), getHeight());
+			const bool drawn = HdScreens::drawBackdrop(this, id, getX(), getY(), getWidth(), getHeight());
 			if (drawn && k > 0)
 			{
-				if (_platesK != k)
+				// the plates go under the slots the armor has, not under the ones it shuts (XP-000454)
+				const std::vector<SDL_Rect> none;
+				const std::vector<SDL_Rect> &blocked = _inv ? _inv->hdBlocked() : none;
+				bool same = blocked.size() == _platesBlocked.size();
+				for (size_t i = 0; same && i < blocked.size(); ++i)
 				{
+					same = blocked[i].x == _platesBlocked[i].x && blocked[i].y == _platesBlocked[i].y
+						&& blocked[i].w == _platesBlocked[i].w && blocked[i].h == _platesBlocked[i].h;
+				}
+				if (_platesK != k || !same)
+				{
+					_platesBlocked = blocked;
 					buildPlates(k);
 				}
 				for (const Plate &p : _plates)
@@ -351,6 +381,7 @@ InventoryState::InventoryState(bool tu, BattlescapeState *parent, Base *base, bo
 	}
 	_selAmmo = new Surface(RuleInventory::HAND_W * RuleInventory::SLOT_W, RuleInventory::HAND_H * RuleInventory::SLOT_H, 272, 88);
 	_inv = new Inventory(_game, 320, 200, 0, 0, _parent == 0);
+	hdBackdrop->setInventory(_inv);
 	_btnQuickSearch = new TextEdit(this, 40, 9, 244, 140);
 
 	// Set palette
