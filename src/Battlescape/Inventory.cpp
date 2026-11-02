@@ -48,6 +48,7 @@
 #include "../Engine/Screen.h"
 #include "../Engine/CrossPlatform.h"
 #include "../Engine/HdUi.h"
+#include "../Engine/HdScreens.h"
 #include "../Engine/HdAmmoHint.h"
 #include "TileEngine.h"
 
@@ -211,6 +212,47 @@ void Inventory::draw()
 }
 
 /**
+ * OXCE-HD (oxceHdInvBackdrop, XP-000454): the picture the backdrop shows on the equipment screen now, or nullptr
+ * (the option off, no picture of the theme, the HD interface off).
+ */
+const char *Inventory::hdBackdropId()
+{
+	static const char *const IDS[] = { "", "inventoryArmory", "inventoryShip", "inventoryTarp" };
+	const int theme = Options::oxceHdInvBackdrop;
+	return HdUi::active() && theme >= 1 && theme <= 3 && HdScreens::has(IDS[theme]) ? IDS[theme] : nullptr;
+}
+
+/**
+ * Is the picture of an item black all over? The mod shuts a slot the armor has not with an item of that size and a black
+ * picture (INV_NULL_*): on the classic black background it cannot be seen, on the HD backdrop it is a black block.
+ */
+bool Inventory::hdFiller(const Surface *frame) const
+{
+	static std::unordered_map<const Surface*, bool> known;
+	const auto found = known.find(frame);
+	if (found != known.end())
+	{
+		return found->second;
+	}
+	const SDL_Color *pal = getPalette();
+	bool black = pal && frame->getWidth() > 0 && frame->getHeight() > 0;
+	for (int y = 0; black && y < frame->getHeight(); ++y)
+	{
+		for (int x = 0; x < frame->getWidth(); ++x)
+		{
+			const SDL_Color &c = pal[frame->getPixel(x, y)];
+			if (c.r > 10 || c.g > 10 || c.b > 10)
+			{
+				black = false;
+				break;
+			}
+		}
+	}
+	known[frame] = black;
+	return black;
+}
+
+/**
  * Draws the inventory grid for item placement.
  */
 void Inventory::drawGrid()
@@ -218,6 +260,18 @@ void Inventory::drawGrid()
 	_grid->clear();
 	RuleInterface *rule = _game->getMod()->getInterface("inventory");
 	Uint8 color = rule->getElement("grid")->color;
+	// the slots the armor shuts have no cell on the HD backdrop (XP-000454)
+	auto shut = [&](int x, int y)
+	{
+		for (const SDL_Rect &b : _hdBlocked)
+		{
+			if (x >= b.x && x < b.x + b.w && y >= b.y && y < b.y + b.h)
+			{
+				return true;
+			}
+		}
+		return false;
+	};
 
 	for (const auto& invPair : *_game->getMod()->getInventories())
 	{
@@ -233,6 +287,10 @@ void Inventory::drawGrid()
 				r.y = ruleInv->getY() + RuleInventory::SLOT_H * slotInfo.y;
 				r.w = RuleInventory::SLOT_W + 1;
 				r.h = RuleInventory::SLOT_H + 1;
+				if (shut(r.x, r.y))
+				{
+					continue;
+				}
 				_grid->drawRect(&r, color);
 				r.x++;
 				r.y++;
@@ -409,6 +467,8 @@ void Inventory::drawItems()
 	_hdStacks.clear();
 	Uint8 color =_game->getMod()->getInterface("inventory")->getElement("numStack")->color;
 	Uint8 color2 = _game->getMod()->getInterface("inventory")->getElement("numStack")->color2;
+	std::vector<SDL_Rect> blocked;
+	const bool backdrop = hdBackdropId() != nullptr;
 	if (_selUnit != 0)
 	{
 		SurfaceSet *texture = _game->getMod()->getSurfaceSet("BIGOBS.PCK");
@@ -433,6 +493,14 @@ void Inventory::drawItems()
 			}
 			else
 			{
+				continue;
+			}
+			if (backdrop && invItem->getSlot()->getType() == INV_SLOT && hdFiller(frame))
+			{
+				// a shut slot's black filler: on the HD backdrop the slot is left as the scene, no cell and no block (XP-000454)
+				blocked.push_back(SDL_Rect{ (Sint16)x, (Sint16)y,
+					(Uint16)(invItem->getRules()->getInventoryWidth() * RuleInventory::SLOT_W),
+					(Uint16)(invItem->getRules()->getInventoryHeight() * RuleInventory::SLOT_H) });
 				continue;
 			}
 			const bool hand = invItem->getSlot()->getType() == INV_HAND;
@@ -479,6 +547,17 @@ void Inventory::drawItems()
 			{
 				primers(x, y, invItem->isFuseEnabled());
 			}
+		}
+		// the shut slots changed (another soldier, the backdrop switched): the grid is laid again without their cells
+		bool same = blocked.size() == _hdBlocked.size();
+		for (size_t i = 0; same && i < blocked.size(); ++i)
+		{
+			same = blocked[i].x == _hdBlocked[i].x && blocked[i].y == _hdBlocked[i].y && blocked[i].w == _hdBlocked[i].w && blocked[i].h == _hdBlocked[i].h;
+		}
+		if (!same)
+		{
+			_hdBlocked = blocked;
+			drawGrid();
 		}
 
 		Surface stackLayer(getWidth(), getHeight(), 0, 0);
