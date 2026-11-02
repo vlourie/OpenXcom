@@ -23,6 +23,7 @@
 #include "Game.h"
 #include "Language.h"
 #include "Options.h"
+#include "HdUi.h"
 #include "../Interface/Text.h"
 #include "../Mod/Mod.h"
 
@@ -163,7 +164,8 @@ void HdUpdateNotice::blit(SDL_Surface *surface)
 		return;
 	}
 	// under the FPS counter when that is on
-	const int y = Options::fpsCounter ? 6 : 0;
+	// (the HD interface's counter is set in a taller face, XP-000473)
+	const int y = Options::fpsCounter ? (HdUi::active() && HdUi::skin() && HdUi::instance().hasFonts() ? 9 : 6) : 0;
 	setY(y);
 	Surface::blit(surface);
 	_text->setX(getX() + 3);
