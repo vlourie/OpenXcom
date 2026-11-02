@@ -4788,7 +4788,7 @@ namespace
  * each at the light of the field where it floats (bilinear over the nine nodes); without the HD light, at the tile's
  * flat shade. The fire itself is not drawn here.
  */
-void drawSmokePuffs(HdCanvas *surface, const Tile *tile, Position screen, int k, int clock, const HdLight *light, int tileShade)
+void drawSmokePuffs(HdCanvas *surface, const Tile *tile, Position screen, int k, int clock, const HdLight *light, int tileShade, float opacity = 1.0f)
 {
 	static std::vector<HdSmoke::Puff> puffs;
 	puffs.clear();
@@ -4816,7 +4816,7 @@ void drawSmokePuffs(HdCanvas *surface, const Tile *tile, Position screen, int k,
 		}
 		const int x = screen.x + 16 * k + (int)std::lround((p.u - p.v) * 16 * k) - side / 2;
 		const int y = screen.y + 24 * k + (int)std::lround(((p.u + p.v) * 8 - p.h + tile->getTerrainLevel()) * k) - side / 2;
-		surface->blitFrameToned(HdSmoke::frame(k, p.kind, p.shape, p.life), x, y, shade, tint);
+		surface->blitFrameToned(HdSmoke::frame(k, p.kind, p.shape, p.life), x, y, shade, tint, opacity);
 	}
 }
 
@@ -4824,7 +4824,7 @@ void drawSmokePuffs(HdCanvas *surface, const Tile *tile, Position screen, int k,
  * HD render (option oxceHdVolumeFire): the tongues of a burning tile (HdFire) over its floor's ellipse, back to front,
  * at full brightness as the pack's fire; they reach past the tile's sprite, above and to the sides.
  */
-void drawFireTongues(HdCanvas *surface, const Tile *tile, Position screen, int k, int clock)
+void drawFireTongues(HdCanvas *surface, const Tile *tile, Position screen, int k, int clock, float opacity = 1.0f)
 {
 	static std::vector<HdFire::Tongue> tongues;
 	tongues.clear();
@@ -4834,8 +4834,18 @@ void drawFireTongues(HdCanvas *surface, const Tile *tile, Position screen, int k
 	for (const HdFire::Tongue &g : tongues)
 	{
 		const HdFire::Sprite s = HdFire::frame(k, g.shape, g.size, g.life, g.mirror);
-		surface->blitFrame(*s.frame, screen.x + (int)std::lround(g.x - HdFire::WIDTH * k / 2.0f) + s.dx,
-			y0 + (int)std::lround(g.y - HdFire::BASE * k) + s.dy);
+		const int x = screen.x + (int)std::lround(g.x - HdFire::WIDTH * k / 2.0f) + s.dx;
+		const int y = y0 + (int)std::lround(g.y - HdFire::BASE * k) + s.dy;
+		if (opacity < 1.0f)
+		{
+			// next to the battle cursor (XP-000451): see-through, at full brightness (shade 0, white light)
+			static const float white[3] = { 1, 1, 1 };
+			surface->blitFrameToned(*s.frame, x, y, 0.0f, white, opacity);
+		}
+		else
+		{
+			surface->blitFrame(*s.frame, x, y);
+		}
 	}
 }
 }
@@ -5037,6 +5047,20 @@ void Map::drawTerrain(HdCanvas *surface)
 
 
 	bool pathfinderTurnedOn = _save->getPathfinding()->isPathPreviewed();
+
+	// HD render (XP-000451): the cursor frame is drawn in the pass of its own tile and the volumetric smoke and fire of the
+	// tiles in front of it come later and bury it; within one tile of the cursor (its floor and the one above) they are drawn
+	// see-through, so the frame shows. Walls, units and items in front still cover it, as in the classic frame.
+	// Only while the battle cursor is shown (not in a projectile's flight, the enemy's turn, nor over the icons).
+	const bool cursorFadeOn = hdFrames && _cursorType != CT_NONE && !_save->getBattleState()->getMouseOverIcons();
+	const auto cursorFade = [&](int tx, int ty, int tz)
+	{
+		if (!cursorFadeOn || (tz != _camera->getViewLevel() && tz != _camera->getViewLevel() + 1))
+			return 1.0f;
+		if (tx < _selectorX - _cursorSize || tx > _selectorX + 1 || ty < _selectorY - _cursorSize || ty > _selectorY + 1)
+			return 1.0f;
+		return 0.4f;
+	};
 
 	if (!_waypoints.empty() || (pathfinderTurnedOn && (_previewSettingTu || _previewSettingEnergy)))
 	{
@@ -5766,7 +5790,7 @@ void Map::drawTerrain(HdCanvas *surface)
 							const int variant = tile->getFire() ? (enviRest ? 1 : 0) + 2 * Options::oxceHdFire : 0;
 							if (tongues)
 							{
-								drawFireTongues(surface, tile, screenPosition, _k, enviClock);
+								drawFireTongues(surface, tile, screenPosition, _k, enviClock, cursorFade(itX, itY, itZ));
 							}
 							else if (!puffs || tile->getFire())
 							{
@@ -5782,7 +5806,7 @@ void Map::drawTerrain(HdCanvas *surface)
 								{
 									updateHdLight(tile, tileShade, mapPosition);
 								}
-								drawSmokePuffs(surface, tile, screenPosition, _k, enviClock, _hdLightOn ? &_hdLight : nullptr, tileShade);
+								drawSmokePuffs(surface, tile, screenPosition, _k, enviClock, _hdLightOn ? &_hdLight : nullptr, tileShade, cursorFade(itX, itY, itZ));
 							}
 						}
 						else

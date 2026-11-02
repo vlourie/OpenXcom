@@ -251,7 +251,9 @@ public:
 	virtual void blitFrameShaded(const HdFrame &hd, int x, int y, int shade) {}
 	/// HD render (option oxceHdVolumeSmoke): a true-color frame under one flat light - a shade 0..16 (fractions too) and
 	/// a light colour (0..1 a channel) - lit per pixel, no copy kept. No effect on the classic canvas.
-	virtual void blitFrameToned(const HdFrame &hd, int x, int y, float shade, const float tint[3]) { (void)hd; (void)x; (void)y; (void)shade; (void)tint; }
+	/// `opacity` (0..1, default 1 = as drawn) scales the frame's own alpha: the puffs and tongues next to the battle cursor
+	/// are drawn see-through so that its frame shows through them (XP-000451).
+	virtual void blitFrameToned(const HdFrame &hd, int x, int y, float shade, const float tint[3], float opacity = 1.0f) { (void)hd; (void)x; (void)y; (void)shade; (void)tint; (void)opacity; }
 	/// HD render (XP-000263): the true-color frame the canvas draws for a palette frame (its pack frame, or its smoothed
 	/// version), nullptr when it draws the palette frame as it is (the classic canvas, the nearest mode).
 	virtual const HdFrame *frameOf(SurfaceRaw<const Uint8> src) { (void)src; return nullptr; }
@@ -343,6 +345,8 @@ private:
 		Uint16 lightShade[HdLight::NODES];
 		Uint8 lightTint[HdLight::NODES][3];
 		bool tintFlat;
+		/// BLIT_HD_LIT: 0 = the frame's alpha as it is, 1..254 = the frame's alpha scaled by opacity / 255.
+		Uint8 opacity;
 	};
 	/// Per-pixel weights of a frame size: the quadrant of the diamond the pixel is in and the bilinear
 	/// weights of that quadrant's four nodes (sum 256); 5 bytes per pixel.
@@ -669,7 +673,7 @@ public:
 	void blitFrame(const HdFrame &hd, int x, int y) override;
 	void blitFrame(const HdFrame &hd, int x, int y, GraphSubset range) override;
 	void blitFrameShaded(const HdFrame &hd, int x, int y, int shade) override;
-	void blitFrameToned(const HdFrame &hd, int x, int y, float shade, const float tint[3]) override;
+	void blitFrameToned(const HdFrame &hd, int x, int y, float shade, const float tint[3], float opacity = 1.0f) override;
 	const HdFrame *frameOf(SurfaceRaw<const Uint8> src) override;
 	/// The ground pattern at point (u, v) of level z (tiles; u along the map's x, v along its y) for
 	/// `count` variants: 0 .. count - 1, continuous (exposed for tests).

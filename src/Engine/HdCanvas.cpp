@@ -3170,7 +3170,7 @@ void Canvas32::recordHdLit(Cmd &cmd, const HdFrame &hd, int shade)
  * A frame under one flat light, lit per pixel when the command runs (no copy is kept: puffs of smoke take every
  * shade and colour the light gives them, a cache of copies would only grow).
  */
-void Canvas32::blitFrameToned(const HdFrame &hd, int x, int y, float shade, const float tint[3])
+void Canvas32::blitFrameToned(const HdFrame &hd, int x, int y, float shade, const float tint[3], float opacity)
 {
 	if (_hdMode == HD_MODE_NEAREST || hd.empty())
 	{
@@ -3194,6 +3194,10 @@ void Canvas32::blitFrameToned(const HdFrame &hd, int x, int y, float shade, cons
 		{
 			cmd.lightTint[i][c] = (Uint8)std::max(0, std::min(255, (int)(tint[c] * 255.0f + 0.5f)));
 		}
+	}
+	if (opacity < 1.0f)
+	{
+		cmd.opacity = (Uint8)std::max(1, std::min(254, (int)(opacity * 255.0f + 0.5f)));
 	}
 	lightWeightsFor(hd.width, hd.height); // built on the recording thread
 	record(cmd);
@@ -3308,6 +3312,7 @@ void Canvas32::doBlitHdLit(const Cmd &cmd, GraphSubset destClip)
 	const Uint8 *weights = wit->second.w.data();
 	const int rs = _rshift, gs = _gshift, bs = _bshift;
 	const LitOf lit(*this, cmd.lightShade, cmd.lightTint, cmd.tintFlat);
+	const Uint32 opacity = cmd.opacity;
 	for (int dy = y0; dy < y1; ++dy)
 	{
 		const int sy = dy - y;
@@ -3324,10 +3329,18 @@ void Canvas32::doBlitHdLit(const Cmd &cmd, GraphSubset destClip)
 		for (int sx = sx0; sx < sx1; ++sx)
 		{
 			const Uint32 p = srcRow[sx];
-			const Uint32 a = p >> 24;
+			Uint32 a = p >> 24;
 			if (!a)
 			{
 				continue;
+			}
+			if (opacity)
+			{
+				a = (a * opacity + 127) / 255;
+				if (!a)
+				{
+					continue;
+				}
 			}
 			const Uint32 l = lit(p, wRow + sx * 5);
 			Uint32 r = (l >> 16) & 0xFF, g = (l >> 8) & 0xFF, b = l & 0xFF;
