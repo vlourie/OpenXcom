@@ -24,7 +24,7 @@ os.chdir(ROOT)
 from PIL import Image                        # noqa: E402
 
 REPO_PACK = os.path.join(ROOT, "user", "mods", "hd", "hd")
-CAND = os.path.join(ROOT, "art", "tickets", "t463", "cand2", "D")
+CAND = os.path.join(ROOT, "art", "tickets", "t463", "cand2", "D_edge")   # D с ровным краем подставки (t463_edge.py, R-121); исходный D - cand2/D
 FRAMES = [("XBASEN_BITS", 39), ("FREIGHTER_COMMAND_2", 30)]
 
 
@@ -77,9 +77,9 @@ def main():
             if len(os.listdir(d)) != len(want):
                 raise SystemExit("набор %s в repo: не полон" % pck)
     import ticket_scene as ts
-    n = ts.install_files(files, "t463_install", "t463 cand2",
+    n = ts.install_files(files, "t463_install", "t463 cand2 D_edge",
                          "Vitali 02.11, страница выбора, пункт c1102b_463: вариант D",
-                         "XP-000463: кулер XBASEN_BITS:39 + копия FREIGHTER_COMMAND_2:30, прозрачная бутыль с хеллерием (вариант D)")
+                         "XP-000463: кулер XBASEN_BITS:39 + копия FREIGHTER_COMMAND_2:30, вариант D, край подставки спрямлён (R-121)")
     print("установлено файлов:", n)
 
 
