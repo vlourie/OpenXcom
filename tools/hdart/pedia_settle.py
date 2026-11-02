@@ -23,10 +23,17 @@ import pedia_notes as pn  # noqa: E402
 REGEN = os.path.join(pn.ROOT, "art", "pedia_regen")
 
 
+def _round_key(p):
+    """recraft_v6 < recraft_v6b < recraft_v7: номер, потом буква (int() на «6b» падал)"""
+    s = p.rsplit("_v", 1)[1]
+    n = "".join(c for c in s if c.isdigit())
+    return int(n), s[len(n):]
+
+
 def settled():
     """{stem: (круг, выбор)} - что по кругам уже решено: поставлено или оставлено как было."""
     out = {}
-    for rd in sorted(glob.glob(os.path.join(REGEN, "recraft_v*")), key=lambda p: int(p.rsplit("_v", 1)[1])):
+    for rd in sorted(glob.glob(os.path.join(REGEN, "recraft_v*")), key=_round_key):
         picks = pn.read_picks(rd)
         done = set()
         for jl in glob.glob(os.path.join(rd, "install_*.tsv")):
