@@ -1,0 +1,1 @@
+- Battle (HD): the hit blink of enemy figures works again - red for health damage, white for armor damage, black for stun (Council tip #154). After the action menu had been open a few times in a battle the blink stopped showing at all; it follows the game's own clock again. Picture only, mechanics untouched (ticket XP-000466).

@@ -166,12 +166,12 @@ void UnitSprite::blitItem(Part& item)
 		return;
 	}
 	ScriptWorkerBlit work;
-	BattleItem::ScriptFill(&work, (item.bodyPart == BODYPART_ITEM_RIGHTHAND ? _itemR : _itemL), _save, item.bodyPart, _animationFrame, _shade);
+	BattleItem::ScriptFill(&work, (item.bodyPart == BODYPART_ITEM_RIGHTHAND ? _itemR : _itemL), _save, item.bodyPart, _save->getAnimFrame(), _shade);
 	// the same script without the light: an HD frame in its own colours keeps its hue in the shade
 	ScriptWorkerBlit unlit;
 	if (_shade != 0)
 	{
-		BattleItem::ScriptFill(&unlit, (item.bodyPart == BODYPART_ITEM_RIGHTHAND ? _itemR : _itemL), _save, item.bodyPart, _animationFrame, 0);
+		BattleItem::ScriptFill(&unlit, (item.bodyPart == BODYPART_ITEM_RIGHTHAND ? _itemR : _itemL), _save, item.bodyPart, _save->getAnimFrame(), 0);
 	}
 
 	_dest->lock();
@@ -199,12 +199,14 @@ void UnitSprite::blitBody(Part& body)
 		return;
 	}
 	ScriptWorkerBlit work;
-	BattleUnit::ScriptFill(&work, _unit, _save, body.bodyPart, _animationFrame, _shade, _burn);
+	// the scripts' clock is the save's own (their hit blink counts from battle_game.getAnimFrame): the map's picture clock
+	// runs ahead of it by the frames a menu was open (Map::_menuTicks, XP-000442), the blink would never show (XP-000466)
+	BattleUnit::ScriptFill(&work, _unit, _save, body.bodyPart, _save->getAnimFrame(), _shade, _burn);
 	// the same script without the light: an HD frame in its own colours keeps its hue in the shade
 	ScriptWorkerBlit unlit;
 	if (_shade != 0)
 	{
-		BattleUnit::ScriptFill(&unlit, _unit, _save, body.bodyPart, _animationFrame, 0, _burn);
+		BattleUnit::ScriptFill(&unlit, _unit, _save, body.bodyPart, _save->getAnimFrame(), 0, _burn);
 	}
 
 	_dest->lock();
