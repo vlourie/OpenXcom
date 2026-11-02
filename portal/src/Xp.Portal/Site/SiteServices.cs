@@ -203,6 +203,10 @@ public sealed class Text
 
     public string Format(string key, params object[] args) => string.Format(CultureInfo.CurrentCulture, this[key], args);
 
+    /// <summary>A text in a chosen language, not the reader's: for a letter to somebody whose language is not known.</summary>
+    public string In(string lang, string key) =>
+        _all[lang].TryGetValue(key, out var v) ? v : _all["ru"].TryGetValue(key, out var r) ? r : key;
+
     internal IEnumerable<string> Keys(string lang) => _all[lang].Keys;
 }
 
@@ -237,6 +241,17 @@ public sealed class EmailSender(IOptions<EmailOptions> options, Text text, ILogg
 
     public Task SendTestAsync(string to) =>
         SendAsync(to, text["mail.test.subject"], text["mail.test.body"]);
+
+    /// <summary>
+    /// "You have a new private message", in both languages (the site does not know the reader's). Names
+    /// the sender, never quotes the text. A failed letter is logged, not thrown: the message is sent either way.
+    /// </summary>
+    public Task SendMessageNoticeAsync(string to, string from, string openLink, string unsubscribeLink)
+    {
+        var ru = string.Format(text.In("ru", "mail.pm.body"), from, openLink, unsubscribeLink);
+        var en = string.Format(text.In("en", "mail.pm.body"), from, openLink, unsubscribeLink);
+        return TrySendAsync(to, text.In("ru", "mail.pm.subject") + " / " + text.In("en", "mail.pm.subject"), ru + "\n\n----\n\n" + en);
+    }
 
     async Task TrySendAsync(string to, string subject, string body)
     {

@@ -1,0 +1,15 @@
+@page "/account/unsubscribe"
+@model Xp.Portal.Pages.Messages.UnsubscribeModel
+@{
+    ViewData["Title"] = T["msg.unsub.title"];
+}
+<h1>@T["msg.unsub.title"]</h1>
+@if (Model.Done)
+{
+    <p>@T["msg.unsub.done"]</p>
+}
+else
+{
+    <p class="errors">@T["msg.unsub.bad"]</p>
+}
+<p><a href="/">@T["site.title"]</a></p>

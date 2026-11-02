@@ -121,6 +121,9 @@ public static class PortalApp
             o.Conventions.AuthorizeFolder("/Admin/Super", Policies.SuperAdmin);
             o.Conventions.AuthorizeFolder("/Me");
             o.Conventions.AuthorizeFolder("/Voice");
+            // private messages need an account; the link at the bottom of the letter does not (its signature is the proof)
+            o.Conventions.AuthorizeFolder("/Messages");
+            o.Conventions.AllowAnonymousToPage("/Messages/Unsubscribe");
             // reading the forum and the wiki needs no account; writing does
             o.Conventions.AuthorizePage("/Forum/New");
             o.Conventions.AuthorizePage("/Wiki/Edit");
@@ -166,6 +169,7 @@ public static class PortalApp
         s.AddSingleton<LiveKitTokens>();
         s.AddSingleton<IVoiceServer, LiveKitServer>();
         s.AddScoped<VoiceService>();
+        s.AddScoped<Xp.Portal.Messages.MessageService>();
         if (cfg.GetValue("Workers:Enabled", true))
         {
             s.AddHostedService<TelegramWorker>();
@@ -214,6 +218,8 @@ public static class PortalApp
             o.AddPolicy("review-write", c => WritesByIp(c, cfg.GetValue("RateLimits:ReviewPer10Min", 60), TimeSpan.FromMinutes(10)));
             // friends, rooms, invites and an owner's moderation: an evening's worth, not a script's
             o.AddPolicy("voice-write", c => WritesByIp(c, cfg.GetValue("RateLimits:VoicePer10Min", 120), TimeSpan.FromMinutes(10)));
+            // private messages: a conversation is a few sends a minute; the per-person limits in MessageService do the real work
+            o.AddPolicy("messages-write", c => WritesByIp(c, cfg.GetValue("RateLimits:MessagesPer10Min", 120), TimeSpan.FromMinutes(10)));
             // a pass per connection and per reconnect; a launcher that loops is stopped here, not at the media server
             o.AddPolicy("voice-pass", c => WritesByIp(c, cfg.GetValue("RateLimits:VoicePassPerMin", 20), TimeSpan.FromMinutes(1)));
             // a launcher pings at start, at game start and exit, and every five minutes while the game runs

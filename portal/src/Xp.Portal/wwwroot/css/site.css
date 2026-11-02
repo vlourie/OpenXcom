@@ -428,6 +428,16 @@ dialog.lightbox .close { position: fixed; top: 10px; right: 14px; min-width: 0; 
 
 .secret { font-family: ui-monospace, Consolas, monospace; font-size: 18px; letter-spacing: 1px; overflow-wrap: anywhere; color: var(--accent); }
 
+/* ---------- private messages: plain text, line breaks kept, nothing is a link ----------------------- */
+
+.pm { display: flex; flex-direction: column; gap: 10px; margin: 12px 0; }
+.pm .msg { max-width: 78ch; padding: 8px 12px; background: var(--ui-5); box-shadow: inset 0 0 0 1px var(--ui-4); }
+.pm .msg.mine { align-self: flex-end; background: var(--ui-9); }
+.pm .msg .text { white-space: pre-wrap; overflow-wrap: anywhere; margin: 4px 0; }
+.pm .msg .meta { color: var(--ink-faint); font-size: 12px; }
+.pm .msg .meta form { margin-left: 8px; }
+.unread-count { display: inline-block; min-width: 18px; padding: 0 5px; margin-left: 4px; text-align: center; font-size: 12px; font-weight: 700; background: var(--sand); color: var(--void); }
+
 /* ---------- narrow screens --------------------------------------------------------------------- */
 
 @media (max-width: 720px) {

@@ -95,6 +95,7 @@
                     <td>@x.Name</td>
                     <td class="hint">@T.Format("friends.since", x.Since.ToString("yyyy-MM-dd"))</td>
                     <td>
+                        <a class="button secondary small" href="/me/messages/@x.Id">@T["friends.message"]</a>
                         <form method="post" asp-page-handler="Remove" class="inline">
                             <input type="hidden" name="user" value="@x.Id" />
                             <button type="submit" class="secondary">@T["friends.remove"]</button>

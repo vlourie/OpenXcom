@@ -44,6 +44,8 @@ public sealed class PortalDb(DbContextOptions<PortalDb> options)
     public DbSet<VoiceEvent> VoiceEvents => Set<VoiceEvent>();
     public DbSet<VoiceEventTicket> VoiceEventTickets => Set<VoiceEventTicket>();
     public DbSet<VoiceJob> VoiceJobs => Set<VoiceJob>();
+    public DbSet<PrivateMessage> PrivateMessages => Set<PrivateMessage>();
+    public DbSet<MessageSetting> MessageSettings => Set<MessageSetting>();
 
     protected override void OnModelCreating(ModelBuilder b)
     {
@@ -53,6 +55,7 @@ public sealed class PortalDb(DbContextOptions<PortalDb> options)
         Community(b);
         Art(b);
         Voice(b);
+        Messages(b);
 
         b.Entity<PortalUser>(e =>
         {
@@ -300,6 +303,26 @@ public sealed class PortalDb(DbContextOptions<PortalDb> options)
             e.Property(j => j.State).HasConversion<string>().HasMaxLength(16);
             e.Property(j => j.LastError).HasMaxLength(512);
             e.Property(j => j.Identity).HasMaxLength(128);
+        });
+    }
+
+    /// <summary>Private messages. A person who leaves takes their messages with them (cascade), the other side's copy included.</summary>
+    static void Messages(ModelBuilder b)
+    {
+        b.Entity<PrivateMessage>(e =>
+        {
+            e.Property(m => m.Body).HasMaxLength(MessageLimits.BodyMax);
+            // the inbox and the unread counter ask by recipient; a dialogue and the rate limits ask by pair and time
+            e.HasIndex(m => new { m.RecipientId, m.ReadAt });
+            e.HasIndex(m => new { m.RecipientId, m.SenderId, m.CreatedAt });
+            e.HasIndex(m => new { m.SenderId, m.CreatedAt });
+            e.HasOne<PortalUser>().WithMany().HasForeignKey(m => m.SenderId).OnDelete(DeleteBehavior.Cascade);
+            e.HasOne<PortalUser>().WithMany().HasForeignKey(m => m.RecipientId).OnDelete(DeleteBehavior.Cascade);
+        });
+        b.Entity<MessageSetting>(e =>
+        {
+            e.HasKey(s => s.UserId);
+            e.HasOne<PortalUser>().WithMany().HasForeignKey(s => s.UserId).OnDelete(DeleteBehavior.Cascade);
         });
     }
 

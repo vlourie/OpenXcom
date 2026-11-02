@@ -1,0 +1,87 @@
+@page "/me/messages/{id:guid}"
+@model Xp.Portal.Pages.Messages.ThreadModel
+@{
+    var v = Model.View!;
+    ViewData["Title"] = T.Format("msg.with", v.Person.Name);
+}
+<h1>@T.Format("msg.with", v.Person.Name)</h1>
+<partial name="_Errors" model="Model.Errors" />
+<p class="hint"><a href="/me/messages">← @T["msg.title"]</a></p>
+
+@if (Model.Pages > 1 && Model.P < Model.Pages)
+{
+    <p><a href="/me/messages/@Model.Id?p=@(Model.P + 1)">@T["msg.older"]</a></p>
+}
+
+<div class="pm">
+    @if (v.Messages.Count == 0)
+    {
+        <p class="hint">@T["msg.thread.empty"]</p>
+    }
+    @foreach (var m in v.Messages)
+    {
+        <div class="msg @(m.Mine ? "mine" : "")">
+            <div class="meta">
+                @(m.Mine ? T["msg.you"] : v.Person.Name) · @m.At.ToString("yyyy-MM-dd HH:mm")@(m.Mine && m.Read ? " · " + T["msg.read"] : "")
+                <form method="post" asp-page-handler="Delete" class="inline">
+                    <input type="hidden" name="message" value="@m.Id" />
+                    <button type="submit" class="link">@T["msg.delete"]</button>
+                </form>
+            </div>
+            @* plain text only: Razor escapes it, the stylesheet keeps the line breaks, and nothing in it is made a link *@
+            <div class="text">@m.Body</div>
+            @if (!m.Mine)
+            {
+                <details>
+                    <summary class="hint">@T["msg.complain"]</summary>
+                    <form method="post" asp-page-handler="Complain">
+                        <input type="hidden" name="message" value="@m.Id" />
+                        <textarea name="text" required maxlength="@MessageLimits.ComplaintMax" rows="3" aria-label="@T["msg.complain.text"]"></textarea>
+                        <button type="submit" class="secondary small">@T["msg.complain.send"]</button>
+                    </form>
+                </details>
+            }
+        </div>
+    }
+</div>
+
+@if (Model.Pages > 1 && Model.P > 1)
+{
+    <p><a href="/me/messages/@Model.Id?p=@(Model.P - 1)">@T["msg.newer"]</a></p>
+}
+
+@if (v.IBlocked)
+{
+    <div class="panel">
+        <p>@T["msg.blocked"]</p>
+        <form method="post" asp-page-handler="Unblock">
+            <button type="submit" class="secondary">@T["friends.unblock"]</button>
+        </form>
+    </div>
+}
+else
+{
+    <div class="panel">
+        <form method="post" asp-page-handler="Send">
+            <label for="body">@T["msg.new.text"]</label>
+            <textarea id="body" name="body" required maxlength="@MessageLimits.BodyMax" rows="4">@Model.Draft</textarea>
+            <button type="submit">@T["msg.send"]</button>
+        </form>
+        <p class="hint">@T.Format("msg.new.hint", MessageLimits.BodyMax)</p>
+    </div>
+
+    <div class="panel">
+        <form method="post" asp-page-handler="Block" class="inline">
+            <button type="submit" class="secondary">@T["msg.block"]</button>
+        </form>
+        <details>
+            <summary class="hint">@T["msg.complain.whole"]</summary>
+            <form method="post" asp-page-handler="Complain">
+                <textarea name="text" required maxlength="@MessageLimits.ComplaintMax" rows="3" aria-label="@T["msg.complain.text"]"></textarea>
+                <button type="submit" class="secondary small">@T["msg.complain.send"]</button>
+            </form>
+        </details>
+        <p class="hint">@T["msg.block.hint"]</p>
+        <p class="hint">@T["msg.complain.hint"]</p>
+    </div>
+}

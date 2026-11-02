@@ -1,0 +1,70 @@
+@page "/me/messages"
+@model Xp.Portal.Pages.Messages.InboxModel
+@{
+    ViewData["Title"] = T["msg.title"];
+}
+<h1>@T["msg.title"]</h1>
+<partial name="_Errors" model="Model.Errors" />
+<p class="hint">@T["msg.intro"] <a href="/me/friends">@T["friends.title"]</a> · <a href="/voice">@T["voice.title"]</a></p>
+
+<div class="panel">
+    <h2>@T["msg.new"]</h2>
+    <form method="post" asp-page-handler="Send">
+        <label for="who">@T["msg.new.who"]</label>
+        <input type="text" id="who" name="who" required maxlength="256" autocomplete="off" value="@Model.Who" />
+        <label for="body">@T["msg.new.text"]</label>
+        <textarea id="body" name="body" required maxlength="@MessageLimits.BodyMax" rows="4">@Model.Draft</textarea>
+        <button type="submit">@T["msg.send"]</button>
+    </form>
+    <p class="hint">@T.Format("msg.new.hint", MessageLimits.BodyMax)</p>
+</div>
+
+<div class="panel">
+    <h2>@T["msg.dialogues"]</h2>
+    @if (Model.Dialogues.Count == 0)
+    {
+        <p class="hint">@T["msg.empty"]</p>
+    }
+    else
+    {
+        <table>
+            @foreach (var d in Model.Dialogues)
+            {
+                <tr>
+                    <td>
+                        <a href="/me/messages/@d.Person.Id">@d.Person.Name</a>
+                        @if (d.Unread > 0)
+                        {
+                            <span class="tag warn">@T.Format("msg.unread", d.Unread)</span>
+                        }
+                    </td>
+                    <td class="hint">@(d.LastMine ? T["msg.you"] + ": " : "")@d.Preview</td>
+                    <td class="hint">@d.At.ToString("yyyy-MM-dd HH:mm")</td>
+                </tr>
+            }
+        </table>
+    }
+</div>
+
+@if (Model.Friends.Count > 0)
+{
+    <div class="panel">
+        <h2>@T["msg.friends"]</h2>
+        <p>
+            @foreach (var f in Model.Friends)
+            {
+                <a class="button secondary small" href="/me/messages/@f.Id">@f.Name</a>
+            }
+        </p>
+    </div>
+}
+
+<div class="panel">
+    <h2>@T["msg.notice"]</h2>
+    <form method="post" asp-page-handler="Notice">
+        <input type="hidden" name="on" value="@((!Model.EmailNotice).ToString().ToLowerInvariant())" />
+        <p class="hint">@T[Model.EmailNotice ? "msg.notice.is_on" : "msg.notice.is_off"]</p>
+        <button type="submit" class="secondary">@T[Model.EmailNotice ? "msg.notice.turn_off" : "msg.notice.turn_on"]</button>
+    </form>
+    <p class="hint">@T["msg.notice.hint"]</p>
+</div>

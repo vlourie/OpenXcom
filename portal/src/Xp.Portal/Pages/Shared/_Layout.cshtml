@@ -1,6 +1,15 @@
+@using System.Security.Claims
+@inject Xp.Portal.Messages.MessageService Messages
 @{
     var user = Context.User;
     var signedIn = user.Identity?.IsAuthenticated == true;
+    // the counter beside "Messages"; a database that hiccups here must not take the whole page down
+    var unread = 0;
+    if (signedIn && Guid.TryParse(user.FindFirstValue(ClaimTypes.NameIdentifier), out var uid))
+    {
+        try { unread = await Messages.UnreadAsync(uid, Context.RequestAborted); }
+        catch (Exception e) when (e is not OperationCanceledException) { unread = 0; }
+    }
     var back = Context.Request.Path + Context.Request.QueryString;
     // the guest link carries its secret in the query: never echo it into the language links
     if (Context.Request.Query.ContainsKey("k")) back = Context.Request.Path;
@@ -9,6 +18,7 @@
     string On(string prefix) => path.StartsWith(prefix, StringComparison.OrdinalIgnoreCase) ? "on" : "";
     // friends live under /me but belong to voice
     var friends = path.StartsWith("/me/friends", StringComparison.OrdinalIgnoreCase);
+    var inMessages = path.StartsWith("/me/messages", StringComparison.OrdinalIgnoreCase);
 }
 <!DOCTYPE html>
 <html lang="@Text.Lang">
@@ -33,8 +43,9 @@
         <a href="/support" class="@On("/support")">@T["nav.support"]</a>
         @if (signedIn)
         {
-            <a href="/me" class="@(friends ? "" : On("/me"))">@T["nav.my"]</a>
+            <a href="/me" class="@(friends || inMessages ? "" : On("/me"))">@T["nav.my"]</a>
             <a href="/voice" class="@(friends ? "on" : On("/voice"))">@T["nav.voice"]</a>
+            <a href="/me/messages" class="@On("/me/messages")">@T["nav.messages"]@if (unread > 0) {<span class="unread-count" title="@T.Format("msg.unread", unread)">@unread</span>}</a>
             @if (user.IsInRole(Roles.Admin) || user.IsInRole(Roles.SuperAdmin))
             {
                 <a href="/admin" class="@On("/admin")">@T["nav.admin"]</a>

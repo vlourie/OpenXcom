@@ -666,6 +666,22 @@ namespace Xp.Portal.Data.Migrations
                     b.ToTable("LauncherInstalls");
                 });
 
+            modelBuilder.Entity("Xp.Portal.Data.MessageSetting", b =>
+                {
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("EmailNotice")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTimeOffset>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("UserId");
+
+                    b.ToTable("MessageSettings");
+                });
+
             modelBuilder.Entity("Xp.Portal.Data.ModText", b =>
                 {
                     b.Property<Guid>("ModId")
@@ -942,6 +958,46 @@ namespace Xp.Portal.Data.Migrations
                         .HasDatabaseName("UserNameIndex");
 
                     b.ToTable("AspNetUsers", (string)null);
+                });
+
+            modelBuilder.Entity("Xp.Portal.Data.PrivateMessage", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Body")
+                        .IsRequired()
+                        .HasMaxLength(4000)
+                        .HasColumnType("character varying(4000)");
+
+                    b.Property<DateTimeOffset>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTimeOffset?>("ReadAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("RecipientDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("RecipientId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("SenderDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("SenderId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RecipientId", "ReadAt");
+
+                    b.HasIndex("SenderId", "CreatedAt");
+
+                    b.HasIndex("RecipientId", "SenderId", "CreatedAt");
+
+                    b.ToTable("PrivateMessages");
                 });
 
             modelBuilder.Entity("Xp.Portal.Data.RoomBan", b =>
@@ -1897,6 +1953,15 @@ namespace Xp.Portal.Data.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("Xp.Portal.Data.MessageSetting", b =>
+                {
+                    b.HasOne("Xp.Portal.Data.PortalUser", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Xp.Portal.Data.ModText", b =>
                 {
                     b.HasOne("Xp.Portal.Data.GameMod", null)
@@ -1926,6 +1991,21 @@ namespace Xp.Portal.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("Review");
+                });
+
+            modelBuilder.Entity("Xp.Portal.Data.PrivateMessage", b =>
+                {
+                    b.HasOne("Xp.Portal.Data.PortalUser", null)
+                        .WithMany()
+                        .HasForeignKey("RecipientId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Xp.Portal.Data.PortalUser", null)
+                        .WithMany()
+                        .HasForeignKey("SenderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("Xp.Portal.Data.RoomBan", b =>
