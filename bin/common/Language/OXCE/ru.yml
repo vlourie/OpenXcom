@@ -562,6 +562,7 @@ ru:
   STR_TRAINING_BLOCKS: "Закроет пути: {0}"
   STR_TRAINING_BLOCKS_MORE: " и ещё {0}"
   STR_TRAINING_BLOCKS_UNKNOWN: "? ({0})"
+  STR_TRANSFER_KEEPS_ARMOR: " (броня уйдёт с бойцом)"
   STR_TRAINING_BLOCKS_TITLE: "Закроет бойцу пути тренировки:"
   STR_HD_RADAR_0: "Круги"
   STR_HD_RADAR_1: "Общая зона"
