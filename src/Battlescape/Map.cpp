@@ -4789,12 +4789,12 @@ namespace
  * each at the light of the field where it floats (bilinear over the nine nodes); without the HD light, at the tile's
  * flat shade. The fire itself is not drawn here.
  */
-void drawSmokePuffs(HdCanvas *surface, const Tile *tile, Position screen, int k, int clock, const HdLight *light, int tileShade, float opacity = 1.0f)
+void drawSmokePuffs(HdCanvas *surface, const Tile *tile, Position screen, int k, int clock, const HdLight *light, int tileShade, float opacity, int crowd)
 {
 	static std::vector<HdSmoke::Puff> puffs;
 	puffs.clear();
 	const Position pos = tile->getPosition();
-	HdSmoke::puffs(pos.x, pos.y, pos.z, tile->getSmoke(), tile->getFire() > 0, clock, puffs);
+	HdSmoke::puffs(pos.x, pos.y, pos.z, tile->getSmoke(), tile->getFire() > 0, clock, puffs, crowd);
 	const int side = HdSmoke::SIDE * k;
 	for (const HdSmoke::Puff &p : puffs)
 	{
@@ -5807,7 +5807,22 @@ void Map::drawTerrain(HdCanvas *surface)
 								{
 									updateHdLight(tile, tileShade, mapPosition);
 								}
-								drawSmokePuffs(surface, tile, screenPosition, _k, enviClock, _hdLightOn ? &_hdLight : nullptr, tileShade, cursorFade(itX, itY, itZ));
+								int crowd = 0;
+								if (!tile->getFire())
+								{
+									for (int dy = -1; dy <= 1; ++dy)
+									{
+										for (int dx = -1; dx <= 1; ++dx)
+										{
+											const Tile *nb = (dx || dy) ? _save->getTile(Position(itX + dx, itY + dy, itZ)) : nullptr;
+											if (nb && (nb->getSmoke() > 0 || nb->getFire() > 0))
+											{
+												++crowd;
+											}
+										}
+									}
+								}
+								drawSmokePuffs(surface, tile, screenPosition, _k, enviClock, _hdLightOn ? &_hdLight : nullptr, tileShade, cursorFade(itX, itY, itZ), crowd);
 							}
 						}
 						else
