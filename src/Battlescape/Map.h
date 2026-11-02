@@ -201,6 +201,12 @@ private:
 	/// is the tick the signature was last compared at (once a tick, not on every mouse move).
 	uint64_t _hiddenSig = 0;
 	unsigned _animTicks = 0, _hiddenAnimTick = 0;
+	/// XP-000462: a shot of the player's own soldier (reaction fire in an unseen enemy's turn) is in flight, or ended less
+	/// than OWN_SHOT_HOLD_MS ago (the hit, the next round of the burst): the picture draws it, it is not frozen away
+	static constexpr Uint32 OWN_SHOT_HOLD_MS = 800;
+	bool _ownShot = false;
+	Uint32 _ownShotUntil = 0;
+	bool ownShotShown() const;
 	/// What the picture shows of the battle besides its animation (tile contents, smoke, fire, light, doors, items,
 	/// visible units, shots in flight), hashed; the same value = a redraw shows nothing new.
 	uint64_t hiddenSignature() const;
