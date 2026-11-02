@@ -72,6 +72,7 @@ public sealed class MainWindow : Window
 
     readonly SetupPage _setupPage;
     readonly ReportsPage _reportsPage;
+    readonly SupportPage _supportPage;
     readonly NewsPage _newsPage;
     bool _newsRoadmap;      // which half of the news page the next Navigate("news") opens
     readonly AccountPanel _account;
@@ -187,7 +188,8 @@ public sealed class MainWindow : Window
         _pages["reports"] = _reportsPage;
         _pages["news"] = _newsPage;
         _pages["voice"] = _voicePage;
-        _pages["support"] = new SupportPage();
+        _supportPage = new SupportPage(_settings);
+        _pages["support"] = _supportPage;
         _pages["settings"] = SettingsPage();
 
         var host = new Panel();
@@ -348,7 +350,8 @@ public sealed class MainWindow : Window
             b.Classes.Set("on", on);
             b.BorderThickness = new Thickness(on ? 3 : 0, 0, 0, 0);
         }
-        if (page == "reports") _reportsPage.Shown();        if (page == "news") _newsPage.Shown(_newsRoadmap);
+        if (page == "reports") _reportsPage.Shown();
+        if (page == "support") _supportPage.Shown();        if (page == "news") _newsPage.Shown(_newsRoadmap);
         _newsRoadmap = false;
         if (page == "voice") _voicePage.Shown();
         else _voicePage.Hidden();

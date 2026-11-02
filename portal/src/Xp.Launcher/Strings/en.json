@@ -504,5 +504,7 @@
  "tickets.mark.needsInfo": "We need information from you",
  "reports.markRead": "Mark as read",
  "notice.ticketNews": "Report {0}: {1}",
- "notice.ticketsNews": "News on your reports: {0}"
+ "notice.ticketsNews": "News on your reports: {0}",
+ "support.more": "Other ways",
+ "support.moreHint": "If the main ways are not available to you, try these."
 }

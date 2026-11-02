@@ -504,5 +504,7 @@
  "tickets.mark.needsInfo": "Нужна информация от вас",
  "reports.markRead": "Прочитано",
  "notice.ticketNews": "Отчёт {0}: {1}",
- "notice.ticketsNews": "Новое по вашим отчётам: {0}"
+ "notice.ticketsNews": "Новое по вашим отчётам: {0}",
+ "support.more": "Другие способы",
+ "support.moreHint": "Если основные способы вам недоступны, попробуйте эти."
 }
