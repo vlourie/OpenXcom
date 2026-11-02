@@ -393,6 +393,7 @@ private:
 	int _mouseX = -1, _mouseY = -1;
 	bool _hoverOn = false;
 	bool _labelTheme = false;          ///< the labels drawn now are in the theme's colours (setLabelTheme)
+	bool _labelFlat = false;           ///< the themed labels have no shadow or outline (a forced letter tone, XP-000460)
 	Uint32 _labelFace = 0;             ///< the letters' colour, 0xAARRGGBB
 	SDL_Color _labelShadow = { 0, 0, 0, 255 };   ///< their shadow's
 	double _frameMs = 0, _totalMs = 0, _lastFrameMs = 0, _worstMs = 0, _lastWorstMs = 0;
