@@ -4596,6 +4596,20 @@
             "items": {
               "$ref": "#/components/schemas/TicketAttachmentView"
             }
+          },
+          "lastStaffReplyAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
+          },
+          "statusChangedAt": {
+            "type": [
+              "null",
+              "string"
+            ],
+            "format": "date-time"
           }
         }
       },

@@ -14,6 +14,8 @@ public sealed class FakePortal : HttpMessageHandler
     public Func<string, (HttpStatusCode, string)?>? RefuseFile;
     public string Status = "New";
     public string? StaffReply;
+    /// <summary>The field a newer portal adds to the ticket; null - an older portal that does not send it.</summary>
+    public string? StatusChangedAt;
     public readonly List<(string Name, long Size)> Files = new();
     public readonly List<JsonElement> Created = new();
     public readonly HashSet<string> Keys = new();
@@ -37,7 +39,8 @@ public sealed class FakePortal : HttpMessageHandler
         {
             var files = string.Join(",", Files.Select(f => $$"""{"id":"{{Guid.NewGuid()}}","fileName":"{{f.Name}}","size":{{f.Size}},"scan":"Clean"}"""));
             var messages = StaffReply is null ? "" : JsonSerializer.Serialize(new { fromStaff = true, body = StaffReply, createdAt = "2026-09-23T02:00:00Z" });
-            return Json(HttpStatusCode.OK, $$"""{"number":7,"displayNumber":"XP-000007","category":"code","status":"{{Status}}","title":"t","description":"d","createdAt":"2026-09-23T00:00:00Z","updatedAt":"2026-09-23T00:00:00Z","messages":[{{messages}}],"attachments":[{{files}}]}""");
+            var changed = StatusChangedAt is null ? "" : $$""","statusChangedAt":"{{StatusChangedAt}}" """;
+            return Json(HttpStatusCode.OK, $$"""{"number":7,"displayNumber":"XP-000007","category":"code","status":"{{Status}}","title":"t","description":"d","createdAt":"2026-09-23T00:00:00Z","updatedAt":"2026-09-23T00:00:00Z","messages":[{{messages}}],"attachments":[{{files}}]{{changed}}}""");
         }
         if (req.Method == HttpMethod.Post && path == "/api/v1/tickets/7/attachments")
         {

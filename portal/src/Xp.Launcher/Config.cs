@@ -18,6 +18,20 @@ public sealed class Settings
     public string? PortalUrl { get; set; }
     /// <summary>Folders reports came from besides &lt;game&gt;/user/reports: a game with its user folder elsewhere.</summary>
     public List<string> ReportRoots { get; set; } = new();
+    /// <summary>
+    /// Ticket number -> time of the newest team event (answer, status move) the player has seen, see <see cref="Core.TicketAttention"/>.
+    /// Null: never set up, the first look takes what the tickets hold as already seen.
+    /// </summary>
+    public Dictionary<string, DateTimeOffset>? SeenTickets { get; set; }
+    /// <summary>The first look after the update that brought the marks: what the tickets hold now counts as seen.</summary>
+    public void EnsureSeenTickets(IEnumerable<Core.Report> reports)
+    {
+        if (SeenTickets is not null) return;
+        SeenTickets = new();
+        Core.TicketAttention.Baseline(SeenTickets, reports, DateTimeOffset.UtcNow);
+        try { Save(); } catch (Exception e) when (e is IOException or UnauthorizedAccessException) { }
+    }
+
     public Dictionary<string, long> LauncherSequence { get; set; } = new();
     public double? WindowWidth { get; set; }
     public double? WindowHeight { get; set; }

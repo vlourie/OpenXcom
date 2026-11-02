@@ -22,8 +22,15 @@ public sealed record CreateTicketResponse(long Number, string DisplayNumber, str
 
 public sealed record TicketMessageView(bool FromStaff, string Body, DateTimeOffset CreatedAt);
 public sealed record TicketAttachmentView(Guid Id, string FileName, long Size, string Scan);
+/// <remarks>
+/// <paramref name="LastStaffReplyAt"/> and <paramref name="StatusChangedAt"/> (added for the launcher's "new answer" mark,
+/// older launchers ignore them): when the team last wrote to the player, and when the team last moved the ticket
+/// to another status. Neither moves when the player writes or the portal shuffles priority, category or files,
+/// which is why <paramref name="UpdatedAt"/> cannot stand in for them. Null - never happened.
+/// </remarks>
 public sealed record TicketView(long Number, string DisplayNumber, string Category, string Status, string Title, string Description,
-    DateTimeOffset CreatedAt, DateTimeOffset UpdatedAt, IReadOnlyList<TicketMessageView> Messages, IReadOnlyList<TicketAttachmentView> Attachments);
+    DateTimeOffset CreatedAt, DateTimeOffset UpdatedAt, IReadOnlyList<TicketMessageView> Messages, IReadOnlyList<TicketAttachmentView> Attachments,
+    DateTimeOffset? LastStaffReplyAt = null, DateTimeOffset? StatusChangedAt = null);
 
 public sealed record ReplyRequest([property: Required] string Body);
 
@@ -95,7 +102,26 @@ public static class TicketApi
             .Select(m => new TicketMessageView(m.FromStaff, m.Body, m.CreatedAt)).ToListAsync(ct);
         var files = await db.TicketAttachments.Where(a => a.TicketId == t.Id).OrderBy(a => a.CreatedAt)
             .Select(a => new TicketAttachmentView(a.Id, a.FileName, a.Size, a.Scan.ToString())).ToListAsync(ct);
-        return new TicketView(t.Number, t.DisplayNumber, t.Category, t.Status.ToString(), t.Title, t.Description, t.CreatedAt, t.UpdatedAt, msgs, files);
+        return new TicketView(t.Number, t.DisplayNumber, t.Category, t.Status.ToString(), t.Title, t.Description, t.CreatedAt, t.UpdatedAt, msgs, files,
+            msgs.Where(m => m.FromStaff).Select(m => (DateTimeOffset?)m.CreatedAt).Max(), await StatusChangedAtAsync(db, t, msgs, ct));
+    }
+
+    /// <summary>
+    /// The last status move made by the team. The portal itself also moves a ticket (a player's answer to "needs info" or
+    /// "fixed" returns it to Triaged, in the same call as the message): that row is the player's doing, not news for them.
+    /// </summary>
+    static async Task<DateTimeOffset?> StatusChangedAtAsync(PortalDb db, Ticket t, IReadOnlyList<TicketMessageView> msgs, CancellationToken ct)
+    {
+        var moves = await db.TicketHistory.Where(h => h.TicketId == t.Id && (h.Action == "status" || h.Action == "duplicate"))
+            .Select(h => new { h.At, h.To }).ToListAsync(ct);
+        var player = msgs.Where(m => !m.FromStaff).Select(m => m.CreatedAt).ToList();
+        DateTimeOffset? last = null;
+        foreach (var h in moves)
+        {
+            bool byPlayer = h.To == nameof(TicketStatus.Triaged) && player.Any(p => (h.At - p).Duration() < TimeSpan.FromSeconds(5));
+            if (!byPlayer && (last is null || h.At > last)) last = h.At;
+        }
+        return last;
     }
 
     static async Task<IResult> ReplyAsync(long number, ReplyRequest req, [FromHeader(Name = TokenHeader)] string? token, PortalDb db, TicketService tickets, CancellationToken ct)

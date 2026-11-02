@@ -496,5 +496,13 @@
  "voice.err.banned": "You are banned in this room.",
  "voice.err.account_banned": "Voice is not allowed for your account.",
  "voice.err.already_friends": "You are friends already.",
- "voice.trayTip": "X-Piratez: you are in \"{0}\""
+ "voice.trayTip": "X-Piratez: you are in \"{0}\"",
+ "tickets.mark.newReply": "New reply",
+ "tickets.mark.resolved": "Resolved",
+ "tickets.mark.closed": "Closed",
+ "tickets.mark.changed": "Status changed",
+ "tickets.mark.needsInfo": "We need information from you",
+ "reports.markRead": "Mark as read",
+ "notice.ticketNews": "Report {0}: {1}",
+ "notice.ticketsNews": "News on your reports: {0}"
 }

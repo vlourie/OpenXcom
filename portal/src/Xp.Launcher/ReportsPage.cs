@@ -76,6 +76,7 @@ public sealed class ReportsPage : UserControl
     {
         _list.Children.Clear();
         var reports = ReportStore.List(_roots());
+        _settings.EnsureSeenTickets(reports);
         int queued = reports.Count(r => r.Draft.Status == ReportStatus.Queued);
         _sendAll.IsVisible = queued > 0;
         _sendAll.IsEnabled = !_busy;
@@ -96,7 +97,10 @@ public sealed class ReportsPage : UserControl
             _ => (L.T("reports.state.draft"), Color.Parse("#1A1828"), Skin.Muted),
         };
 
+        var mark = TicketAttention.MarkOf(d, _settings.SeenTickets);
         var meta = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 10 };
+        if (mark != TicketMark.None)
+            meta.Children.Add(new TextBlock { Text = "●", FontSize = 14, Foreground = Skin.B(Skin.Accent), VerticalAlignment = VerticalAlignment.Center });
         if (d.DisplayNumber is { } num) meta.Children.Add(new TextBlock { Text = num, FontFamily = Skin.Medium, FontSize = 13, VerticalAlignment = VerticalAlignment.Center });
         meta.Children.Add(new TextBlock { Text = $"{d.CreatedAt.ToLocalTime():yyyy-MM-dd HH:mm} · {L.T("report.kind." + d.Kind)}", FontSize = 13, Foreground = Skin.B(Skin.Muted), VerticalAlignment = VerticalAlignment.Center });
         meta.Children.Add(new Border
@@ -104,6 +108,13 @@ public sealed class ReportsPage : UserControl
             Background = Skin.B(tagBg), CornerRadius = new CornerRadius(2), Padding = new Thickness(8, 2),
             Child = new TextBlock { Text = tag, FontSize = 12, FontFamily = Skin.Medium, Foreground = Skin.B(tagFg) },
         });
+        // what is new since the player looked: a filled label, so it is seen from across the list
+        if (mark != TicketMark.None)
+            meta.Children.Add(new Border
+            {
+                Background = Skin.B(Skin.Accent), CornerRadius = new CornerRadius(2), Padding = new Thickness(8, 2),
+                Child = new TextBlock { Text = MarkText(mark), FontSize = 12, FontFamily = Skin.Medium, Foreground = Skin.B(Skin.OnAccent) },
+            });
 
         var text = new StackPanel { Spacing = 6 };
         text.Children.Add(meta);
@@ -117,8 +128,11 @@ public sealed class ReportsPage : UserControl
         var buttons = new StackPanel { Orientation = Orientation.Horizontal, Spacing = 8, VerticalAlignment = VerticalAlignment.Top };
         if (d.Status == ReportStatus.Sent)
         {
+            // opening the ticket is looking at it; "needs info" stays lit anyway until the player answers
             if (d.TicketUrl is { } url && url.StartsWith("http", StringComparison.OrdinalIgnoreCase))
-                buttons.Children.Add(Small("reports.onSite", null, () => ReportWindow.OpenUrl(url)));
+                buttons.Children.Add(Small("reports.onSite", mark != TicketMark.None ? "primary" : null, () => { MarkRead(d); ReportWindow.OpenUrl(url); }));
+            if (mark is not (TicketMark.None or TicketMark.NeedsInfo))
+                buttons.Children.Add(Small("reports.markRead", null, () => MarkRead(d)));
         }
         else
         {
@@ -147,7 +161,29 @@ public sealed class ReportsPage : UserControl
         DockPanel.SetDock(buttons, Dock.Right);
         row.Children.Add(buttons);
         row.Children.Add(text);
-        return Skin.Panel(row, new Thickness(16, 12));
+        var panel = Skin.Panel(row, new Thickness(16, 12));
+        if (mark != TicketMark.None) panel.BorderBrush = Skin.B(Skin.Accent);
+        return panel;
+    }
+
+    public static string MarkText(TicketMark mark) => mark switch
+    {
+        TicketMark.NeedsInfo => L.T("tickets.mark.needsInfo"),
+        TicketMark.Resolved => L.T("tickets.mark.resolved"),
+        TicketMark.Closed => L.T("tickets.mark.closed"),
+        TicketMark.NewReply => L.T("tickets.mark.newReply"),
+        TicketMark.StatusChanged => L.T("tickets.mark.changed"),
+        _ => "",
+    };
+
+    /// <summary>The player looked at the ticket: the marks go, the rail counter and the home notice recount.</summary>
+    void MarkRead(ReportDraft d)
+    {
+        _settings.SeenTickets ??= new();
+        TicketAttention.MarkSeen(_settings.SeenTickets, d);
+        try { _settings.Save(); } catch (Exception e) when (e is IOException or UnauthorizedAccessException) { }
+        Fill();
+        Changed?.Invoke();
     }
 
     /// <summary>The ticket's stage as a coloured label: "needs info" in the accent, the rest calm.</summary>

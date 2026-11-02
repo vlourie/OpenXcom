@@ -348,8 +348,7 @@ public sealed class MainWindow : Window
             b.Classes.Set("on", on);
             b.BorderThickness = new Thickness(on ? 3 : 0, 0, 0, 0);
         }
-        if (page == "reports") _reportsPage.Shown();
-        if (page == "news") _newsPage.Shown(_newsRoadmap);
+        if (page == "reports") _reportsPage.Shown();        if (page == "news") _newsPage.Shown(_newsRoadmap);
         _newsRoadmap = false;
         if (page == "voice") _voicePage.Shown();
         else _voicePage.Hidden();
@@ -822,7 +821,7 @@ public sealed class MainWindow : Window
 
         if (_updater is not null) await RunAsync(Work.Check, () => CheckAsync(full: false, apply: false, startup: true));
         // the first look only remembers the channels; then every five minutes (UpdateWatch.Every)
-        _ = WatchAsync();
+        _ = WatchAsync();   // and the first look at the tickets
         _watchTimer.Start();
         // the site's count: the first word now, then every five minutes while a game runs - one started
         // by hand too (GameIsRunning sees it), and a "stopped" once it is gone
@@ -863,6 +862,7 @@ public sealed class MainWindow : Window
     /// </summary>
     async Task WatchAsync(bool tick = true)
     {
+        if (tick) _ = LookAtTicketsAsync();
         // no server at the start: the timer tries the check again instead (not a coming back to the window -
         // the check would lock the buttons each time the player looks in)
         if (_offline is not null && tick) _staleCheck = true;
@@ -903,6 +903,32 @@ public sealed class MainWindow : Window
             await RecheckAsync();
         }
         finally { _watchBusy = false; }
+    }
+
+    DateTime _ticketsLook;
+    bool _ticketsBusy;
+
+    /// <summary>
+    /// Asks the site about the player's sent tickets: at the start and then about every half hour while the launcher
+    /// runs, so the rail counter and the home notice know of an answer without the Reports page being opened. Asking
+    /// is harmless (the page does the same); a dead network or no tickets is silence.
+    /// </summary>
+    async Task LookAtTicketsAsync()
+    {
+        if (_ticketsBusy || DateTime.UtcNow - _ticketsLook < TimeSpan.FromMinutes(25)) return;
+        var roots = ReportRoots();
+        if (!ReportStore.List(roots).Any(r => r.Draft.Status == ReportStatus.Sent)) return;
+        var portalUrl = _settings.PortalUrl ?? BuiltIn.Defaults.PortalUrl;
+        if (!Uri.TryCreate(portalUrl, UriKind.Absolute, out var baseUri)) return;
+        _ticketsBusy = true;
+        _ticketsLook = DateTime.UtcNow;
+        try { await ReportFlow.RefreshAsync(roots, baseUri, CancellationToken.None); }
+        catch (Exception e) when (e is HttpRequestException or OperationCanceledException or PortalException or IOException or UnauthorizedAccessException or System.Text.Json.JsonException)
+        {
+            _fileLog?.Info("tickets: " + e.Message);
+        }
+        finally { _ticketsBusy = false; }
+        CountReports();
     }
 
     /// <summary>The home page checks again after a release came out, once nothing is in the way.</summary>
@@ -1210,14 +1236,21 @@ public sealed class MainWindow : Window
     void CountReports()
     {
         var reports = ReportStore.List(ReportRoots());
-        var needInfo = reports.Where(r => r.Draft.Status == ReportStatus.Sent && r.Draft.TicketStatus == "NeedsInfo").ToList();
+        _settings.EnsureSeenTickets(reports);
+        // needs-info first, then what is new since the player looked (answer, fixed, closed); opening a ticket clears the latter
+        var news = TicketAttention.Unread(reports, _settings.SeenTickets);
+        var needInfo = news.Where(r => TicketAttention.MarkOf(r.Draft, _settings.SeenTickets) == TicketMark.NeedsInfo).ToList();
+        var fresh = news.Except(needInfo).ToList();
         int unsent = reports.Count(r => r.Draft.Status != ReportStatus.Sent);
         int queued = reports.Count(r => r.Draft.Status == ReportStatus.Queued);
-        int count = needInfo.Count + unsent;
+        int count = news.Count + unsent;
         _reportsCount.Text = count.ToString();
         _reportsBadge.IsVisible = count > 0;
 
         if (needInfo.Count > 0) ShowNotice(L.T("notice.needsInfo", needInfo[0].Draft.DisplayNumber ?? ""), L.T("notice.open"), () => Navigate("reports"));
+        else if (fresh.Count == 1)
+            ShowNotice(L.T("notice.ticketNews", fresh[0].Draft.DisplayNumber ?? "", ReportsPage.MarkText(TicketAttention.MarkOf(fresh[0].Draft, _settings.SeenTickets))), L.T("notice.open"), () => Navigate("reports"));
+        else if (fresh.Count > 1) ShowNotice(L.T("notice.ticketsNews", fresh.Count), L.T("notice.open"), () => Navigate("reports"));
         else if (_launcherUpdate is not null && _needLauncher is null) ShowNotice(L.T("notice.launcher", _launcherUpdate.Release.Version), L.T("self.install"), async () => await RunAsync(Work.SelfUpdate, SelfUpdateAsync));
         else if (queued > 0) ShowNotice(L.T("notice.queued", queued), L.T("notice.send"), () => { Navigate("reports"); _reportsPage.SendQueued(); });
         else _notice.IsVisible = false;

@@ -322,6 +322,65 @@ public sealed class TicketApiTests(PortalFactory f) : IClassFixture<PortalFactor
         Assert.Contains("attach the save", raw);
     }
 
+    [Fact]
+    public async Task The_view_says_when_the_team_last_answered_and_last_moved_the_ticket_and_the_players_own_moves_do_not_count()
+    {
+        var t = await CreateAsync();
+        var fresh = await Guest(t.Token).GetFromJsonAsync<TicketView>($"/api/v1/tickets/{t.Number}");
+        Assert.Null(fresh!.LastStaffReplyAt);
+        Assert.Null(fresh.StatusChangedAt);
+
+        var staffAt = f.Clock.GetUtcNow().AddMinutes(10);
+        f.Clock.SetUtcNow(staffAt);
+        var actor = Guid.NewGuid();
+        await f.ScopedAsync(async sp =>
+        {
+            var db = sp.GetRequiredService<PortalDb>();
+            var svc = sp.GetRequiredService<TicketService>();
+            var x = await db.Tickets.FirstAsync(y => y.Number == t.Number);
+            await svc.AddMessageAsync(x, "internal", null, fromStaff: true, isInternal: true, default);
+            await svc.AddMessageAsync(x, "Which mod is on?", null, fromStaff: true, isInternal: false, default);
+            await svc.ChangeStatusAsync(x, TicketStatus.NeedsInfo, actor, default);
+            return 0;
+        });
+        var asked = await Guest(t.Token).GetFromJsonAsync<TicketView>($"/api/v1/tickets/{t.Number}");
+        Assert.Equal("NeedsInfo", asked!.Status);
+        Assert.Equal(staffAt, asked.LastStaffReplyAt);
+        Assert.Equal(staffAt, asked.StatusChangedAt);
+
+        // the player answers: the portal itself returns the ticket to triage, which is not news for the player
+        f.Clock.SetUtcNow(staffAt.AddHours(1));
+        Assert.Equal(HttpStatusCode.NoContent, (await Guest(t.Token).PostAsJsonAsync($"/api/v1/tickets/{t.Number}/messages", new { body = "Piratez only." })).StatusCode);
+        var answered = await Guest(t.Token).GetFromJsonAsync<TicketView>($"/api/v1/tickets/{t.Number}");
+        Assert.Equal("Triaged", answered!.Status);
+        Assert.Equal(staffAt, answered.LastStaffReplyAt);
+        Assert.Equal(staffAt, answered.StatusChangedAt);
+        Assert.True(answered.UpdatedAt > staffAt);   // UpdatedAt moved, which is why it cannot serve as the mark
+
+        // priority and category moves by the team are not a status move
+        f.Clock.SetUtcNow(staffAt.AddHours(2));
+        await f.ScopedAsync(async sp =>
+        {
+            var x = await sp.GetRequiredService<PortalDb>().Tickets.FirstAsync(y => y.Number == t.Number);
+            await sp.GetRequiredService<TicketService>().SetPriorityAsync(x, TicketPriority.High, actor, default);
+            return 0;
+        });
+        Assert.Equal(staffAt, (await Guest(t.Token).GetFromJsonAsync<TicketView>($"/api/v1/tickets/{t.Number}"))!.StatusChangedAt);
+
+        // fixed: the new move is the newest
+        f.Clock.SetUtcNow(staffAt.AddHours(3));
+        await f.ScopedAsync(async sp =>
+        {
+            var x = await sp.GetRequiredService<PortalDb>().Tickets.FirstAsync(y => y.Number == t.Number);
+            await sp.GetRequiredService<TicketService>().ChangeStatusAsync(x, TicketStatus.Resolved, actor, default);
+            return 0;
+        });
+        var done = await Guest(t.Token).GetFromJsonAsync<TicketView>($"/api/v1/tickets/{t.Number}");
+        Assert.Equal("Resolved", done!.Status);
+        Assert.Equal(staffAt.AddHours(3), done.StatusChangedAt);
+        Assert.Equal(staffAt, done.LastStaffReplyAt);
+    }
+
     // ---- telegram ----
 
     [Fact]

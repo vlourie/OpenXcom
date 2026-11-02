@@ -79,6 +79,8 @@ public sealed class ReportDraft
     /// <summary>The team's newest answer on the ticket, for the game's "My reports" list.</summary>
     public string? StaffReply { get; set; }
     public DateTimeOffset? StaffReplyAt { get; set; }
+    /// <summary>When the team last moved the ticket to another status (the portal says; null from an older portal).</summary>
+    public DateTimeOffset? StatusChangedAt { get; set; }
     /// <summary>When the portal was last asked about the ticket.</summary>
     public DateTimeOffset? CheckedAt { get; set; }
     /// <summary>When the ticket was first seen finished or gone; the report is kept a while after, then rotated away.</summary>
@@ -321,7 +323,8 @@ public sealed record CreateTicketResponse(long Number, string DisplayNumber, str
 public sealed record TicketAttachmentView(Guid Id, string FileName, long Size, string Scan);
 public sealed record TicketMessageView(bool FromStaff, string Body, DateTimeOffset CreatedAt);
 public sealed record TicketView(long Number, string DisplayNumber, string Category, string Status, string Title, string Description,
-    DateTimeOffset CreatedAt, DateTimeOffset UpdatedAt, List<TicketMessageView>? Messages, List<TicketAttachmentView> Attachments);
+    DateTimeOffset CreatedAt, DateTimeOffset UpdatedAt, List<TicketMessageView>? Messages, List<TicketAttachmentView> Attachments,
+    DateTimeOffset? LastStaffReplyAt = null, DateTimeOffset? StatusChangedAt = null);
 
 /// <summary>The portal said no: a machine-readable code (file_too_large, consent_required, …) and its HTTP status.</summary>
 public sealed class PortalException(int status, string code, string message) : Exception(message)
@@ -600,10 +603,13 @@ public static class ReportStore
             if (d.Status != ReportStatus.Sent || d.TicketNumber is not { } number || string.IsNullOrEmpty(d.Token)) continue;
             var t = await portal.GetAsync(number, d.Token, ct);
             var now = DateTimeOffset.UtcNow;
+            var was = d.TicketStatus;
             d.TicketStatus = t?.Status ?? "Gone";
             var reply = t?.Messages?.LastOrDefault(m => m.FromStaff);
             d.StaffReply = reply?.Body;
-            d.StaffReplyAt = reply?.CreatedAt;
+            d.StaffReplyAt = reply?.CreatedAt ?? t?.LastStaffReplyAt;
+            // a portal without the field: a status that differs from the one seen last time is the change, dated now
+            d.StatusChangedAt = t?.StatusChangedAt ?? (t is not null && was is not null && was != t.Status ? now : d.StatusChangedAt);
             d.CheckedAt = now;
             d.FinishedAt = IsFinished(d.TicketStatus) ? d.FinishedAt ?? now : null;
             r.Save();
