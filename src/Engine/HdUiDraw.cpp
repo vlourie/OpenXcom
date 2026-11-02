@@ -358,6 +358,7 @@ Uint32 HdUi::themeFace()
 	// the arrows lie on the same caps as the letters
 	const bool dark = inkDark(false);
 	Uint32 face = HdBattleHud::metalShade(dark ? 0.0f : 0.97f);
+	if (inkTone() == 2) face = 0xFF000000u;   // the dark tone is honest black, in the arrows too (XP-000460)
 	SDL_Color shadow;
 	inkAdjust(dark, false, face, shadow);
 	return face;
@@ -371,15 +372,24 @@ void HdUi::setLabelTheme(bool on, bool lit)
 	// on a light metal cap, light ones on a dark one (themeInk), the shadow of the other kind
 	const bool dark = inkDark(lit);
 	_labelFace = HdBattleHud::metalShade(dark ? 0.0f : 0.97f);
+	if (inkTone() == 2) _labelFace = 0xFF000000u;   // the dark tone is honest black (XP-000460)
 	const Uint32 s = HdBattleHud::metalShade(dark ? 0.9f : 0.0f);
 	_labelShadow = SDL_Color{ (Uint8)(s >> 16), (Uint8)(s >> 8), (Uint8)s, 255 };
 	// the player's hue and brightness of the letters (XP-000411); the defaults leave the theme's own
 	inkAdjust(dark, lit, _labelFace, _labelShadow);
+	// a forced tone (light or dark) has no contrast outline: the letters are one colour, no light shadow round dark ones
+	// and no dark one round light ones (XP-000460); the automatic tone keeps its shadow
+	_labelFlat = inkTone() != 0;
+	if (_labelFlat)
+	{
+		_labelShadow = SDL_Color{ (Uint8)(_labelFace >> 16), (Uint8)(_labelFace >> 8), (Uint8)_labelFace, 255 };
+	}
 }
 
 void HdUi::setLabelInk(const SDL_Color &face, const SDL_Color &shadow)
 {
 	_labelTheme = true;
+	_labelFlat = false;
 	_labelFace = 0xFF000000u | ((Uint32)face.r << 16) | ((Uint32)face.g << 8) | (Uint32)face.b;
 	_labelShadow = SDL_Color{ shadow.r, shadow.g, shadow.b, 255 };
 }
@@ -1921,7 +1931,9 @@ void HdUi::drawTtfLine(const std::vector<TextRun> &runs, int originX, int origin
 	// the outline in the text's own dark shade is still a mid tone in a light ramp, and over a busy
 	// photograph the letters ran into it (the cities' lore)
 	const int haloW = outlineW + std::max(1, k / 2);
-	for (int pass = busy ? -1 : 0; pass < 2; ++pass)
+	// a button label of a forced letter tone (setLabelTheme) is the letters only: no halo, outline or drop shadow
+	const bool flat = _labelTheme && _labelFlat;
+	for (int pass = flat ? 1 : busy ? -1 : 0; pass < 2; ++pass)
 	{
 		float x = pen;
 		for (size_t i = 0; i < runs.size(); ++i)
