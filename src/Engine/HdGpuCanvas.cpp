@@ -227,6 +227,12 @@ const char *const FRAGMENT_SHADER =
 	"			f[ch] = v;\n"
 	"		}\n"
 	"		c = (c * f + 32768u) >> 16u;\n"
+	// Cmd::opacity (XP-000451): the frame's alpha scaled, as Canvas32::doBlitHdLit
+	"		if (flags.z != 0)\n"
+	"		{\n"
+	"			p.a = (p.a * uint(flags.z) + 127u) / 255u;\n"
+	"			if (p.a == 0u) discard;\n"
+	"		}\n"
 	"	}\n"
 	"	put(c, p.a);\n"
 	"}\n";
@@ -916,6 +922,7 @@ bool HdGpuCanvas::prepare(Canvas32 &canvas, Target &target, Prepared &p)
 				const bool white = cmd.tintFlat && cmd.lightTint[4][0] == 255 && cmd.lightTint[4][1] == 255 && cmd.lightTint[4][2] == 255;
 				x[28] = cmd.tintFlat ? 1 : 0;
 				x[29] = white ? 1 : 0;
+				x[30] = cmd.opacity;
 				break;
 			}
 			case Cmd::VAPOR_SOFT:
