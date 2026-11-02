@@ -263,6 +263,8 @@ public:
 	void drawRadars();
 	/// Draws the flight paths of the globe.
 	void drawFlights();
+	/// Draws the routes of several points (oxceHdCraftRoute): the ones under way and the one being made.
+	void drawRoutes();
 	/// Draws the country details of the globe.
 	void drawDetail();
 	/// Draws all the markers over the globe.

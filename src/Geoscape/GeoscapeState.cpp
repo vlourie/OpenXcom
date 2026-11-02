@@ -79,6 +79,7 @@
 #include "DogfightState.h"
 #include "UfoLostState.h"
 #include "CraftPatrolState.h"
+#include "../Engine/HdCraftRoute.h"
 #include "LowFuelState.h"
 #include "MultipleTargetsState.h"
 #include "ConfirmLandingState.h"
@@ -1443,6 +1444,10 @@ void GeoscapeState::time5Seconds()
 					case Ufo::IGNORE_ME:
 						break;
 					}
+				}
+				else if (w != 0 && Options::oxceHdCraftRoute && HdCraftRoute::advance(xcraft, _game->getSavedGame()))
+				{
+					// OXCE-HD (oxceHdCraftRoute): a stop of the route, not the last one - on to the next, no window
 				}
 				else if (w != 0)
 				{

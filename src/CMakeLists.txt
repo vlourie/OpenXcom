@@ -170,6 +170,7 @@ set ( engine_src
   Engine/HdBaseScene.cpp
   Engine/HdCraftBack.cpp
   Engine/HdCraftLights.cpp
+  Engine/HdCraftRoute.cpp
   Engine/HdFx.cpp
   Engine/HdItems.cpp
   Engine/HdOutline.cpp

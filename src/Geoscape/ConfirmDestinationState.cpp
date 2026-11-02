@@ -47,6 +47,7 @@
 #include "../Engine/Sound.h"
 #include "CraftLaunchState.h"
 #include "../Engine/HdPilotVoice.h"
+#include "../Engine/HdCraftRoute.h"
 #include "../Ufopaedia/Ufopaedia.h"
 
 namespace OpenXcom
@@ -406,6 +407,19 @@ void ConfirmDestinationState::btnOkClick(Action *)
 		}
 
 		craft->setStatus("STR_OUT");
+	}
+
+	// OXCE-HD (oxceHdCraftRoute): Shift+clicks on the globe made stops before this target - the craft flies to the first one,
+	// the rest and this target wait in its queue (the leader, and the wing mates that go for the same target)
+	if (Options::oxceHdCraftRoute && HdCraftRoute::pendingFor(_crafts))
+	{
+		for (auto* craft : _crafts)
+		{
+			if (craft != _target && craft->getDestination() == _target)
+			{
+				HdCraftRoute::apply(craft, _target, _game->getSavedGame());
+			}
+		}
 	}
 
 	// HD: the leader answers the order over the radio

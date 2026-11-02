@@ -36,6 +36,7 @@
 #include "../Mod/RuleStartingCondition.h"
 #include "ConfirmCydoniaState.h"
 #include "../Engine/Options.h"
+#include "../Engine/HdCraftRoute.h"
 
 namespace OpenXcom
 {
@@ -172,6 +173,11 @@ SelectDestinationState::SelectDestinationState(std::vector<Craft*> crafts, Globe
 		_globe->setCraftRange(_crafts.front()->getLongitude(), _crafts.front()->getLatitude(), _crafts.front()->getBaseRange());
 		_globe->invalidate();
 	}
+
+	if (Options::oxceHdCraftRoute)
+	{
+		HdCraftRoute::pendingOpen(_crafts); // OXCE-HD (oxceHdCraftRoute): Shift+click adds stops of the route
+	}
 }
 
 /**
@@ -179,6 +185,11 @@ SelectDestinationState::SelectDestinationState(std::vector<Craft*> crafts, Globe
  */
 SelectDestinationState::~SelectDestinationState()
 {
+	if (Options::oxceHdCraftRoute) // OXCE-HD (oxceHdCraftRoute): the unsent route goes with the window
+	{
+		HdCraftRoute::pendingClose();
+		_globe->invalidate();
+	}
 	_globe->setCraftRange(0.0, 0.0, 0.0);
 }
 
@@ -233,6 +244,15 @@ void SelectDestinationState::globeClick(Action *action)
 		std::vector<Target*> v = _globe->getTargets(mouseX, mouseY, true, _crafts.front());
 		if (v.empty())
 		{
+			// OXCE-HD (oxceHdCraftRoute): Shift+click on an empty place is a stop of the route, not the target
+			if (Options::oxceHdCraftRoute && _game->isShiftPressed())
+			{
+				if (HdCraftRoute::pendingAdd(lon, lat))
+				{
+					_globe->invalidate();
+				}
+				return;
+			}
 			Waypoint *w = new Waypoint();
 			w->setLongitude(lon);
 			w->setLatitude(lat);
