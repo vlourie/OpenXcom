@@ -101,7 +101,8 @@ def run_game(args, tag, extra):
         dump.unlink()
     env = {k.upper(): v for k, v in os.environ.items()}
     env["PATH"] = "C:\\msys64\\mingw64\\bin;" + env.get("PATH", "")
-    env.update(SDL_VIDEODRIVER="dummy", SDL_AUDIODRIVER="dummy", OXCE_HD_DUMP=str(dump), OXCE_HD_DUMP_AFTER=str(o.after))
+    env.update(SDL_VIDEODRIVER="dummy", SDL_AUDIODRIVER="dummy", OXCE_HD_DUMP=str(dump), OXCE_HD_DUMP_AFTER=str(o.after),
+               OXCE_HD_PERFLOG="1")
     exe = inst / "openxcom_hd.exe"
     # как Play в лаунчере: рабочий каталог - установка, аргументы - builds args; плюс сейв и ключи прогона
     p = ai_probe.Hidden([str(exe), *args, *extra], str(inst), env)

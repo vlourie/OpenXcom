@@ -69,7 +69,8 @@ def game_env(gl=False, **extra):
     на скрытом столе ai_probe.Hidden, на экран не выходит (проверено 27.10: аппаратный nvoglv64, vsync 60)."""
     env = {k.upper(): v for k, v in os.environ.items()}
     env["PATH"] = "C:\\msys64\\mingw64\\bin;" + env.get("PATH", "")
-    env.update(SDL_VIDEODRIVER="windib" if gl else "dummy", SDL_AUDIODRIVER="dummy")
+    # OXCE_HD_PERFLOG: строки «HD frame» в логе - у игроков их нет без подробного лога
+    env.update(SDL_VIDEODRIVER="windib" if gl else "dummy", SDL_AUDIODRIVER="dummy", OXCE_HD_PERFLOG="1")
     env.update({k: str(v) for k, v in extra.items()})
     return env
 

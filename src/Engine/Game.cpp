@@ -752,7 +752,10 @@ void Game::run()
 			}
 			if (now - hdWatchStart >= 2000)
 			{
-				if (hdWatchStart)
+				// players' logs stay clean: the 2 s report only with verbose logging, the AI harness or OXCE_HD_PERFLOG
+				// (tools read it); a stall above is logged always
+				static const bool hdPerfLog = Options::verboseLogging || AiProbe::harness() || getenv("OXCE_HD_PERFLOG");
+				if (hdWatchStart && hdPerfLog)
 				{
 					Log(LOG_INFO) << "HD frame: " << hdFrames << " fr, worst " << hdWorst << " ms (" << hdWorstState
 						<< "), >=33 ms " << hdSlow << ", >=100 ms " << hdStalls;
