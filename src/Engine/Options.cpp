@@ -596,6 +596,11 @@ void createAdvancedOptionsOXCE()
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdUi", &oxceHdUi, 0, "STR_HD_UI", "STR_HD_INTERFACE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdUiSkin", &oxceHdUiSkin, 2, "STR_HD_UI_SKIN", "STR_HD_INTERFACE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdWindowTheme", &oxceHdWindowTheme, false, "STR_HD_WINDOW_THEME", "STR_HD_INTERFACE"));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdWindowThemeColor", &oxceHdWindowThemeColor, 0, "STR_HD_WINDOW_THEME_COLOR", "STR_HD_INTERFACE"));
+	// the player's own colour of the windows' metal (the window "Own colour of the windows"): not rows of the list, no description
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdWinKeyHue", &oxceHdWinKeyHue, 256));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdWinKeySat", &oxceHdWinKeySat, 25));
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdWinKeyVal", &oxceHdWinKeyVal, 49));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdBattleHud", &oxceHdBattleHud, true, "STR_HD_BATTLE_HUD", "STR_HD_BATTLE_UI"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdBattleHudColor", &oxceHdBattleHudColor, 0, "STR_HD_BATTLE_HUD_COLOR", "STR_HD_BATTLE_UI"));
 	// the player's own colours of that panel (the window "Own colour"): not rows of the list, no description

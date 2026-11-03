@@ -36,6 +36,8 @@ class Surface;
  * battle panel's, so the windows' buttons take it too when oxceHdWindowTheme is on.
  * Opened from the HD options. While it is open the own colour is the panel's colour, so that everything shows it;
  * OK keeps what was set, Cancel gives back the colours the player had, Reset sets the starting ones.
+ * The same window with `windows` set (XP-000479) makes the own colour of the windows' metal apart from the panel's
+ * (oxceHdWindowThemeColor 10): the buttons' colour alone, three sliders, with a sample of window buttons.
  */
 class OptionsCustomColorState : public State
 {
@@ -46,6 +48,10 @@ private:
 	Slider *_slr[6];
 	Surface *_sample;
 	TextButton *_btnOk, *_btnCancel, *_btnReset;
+	/// The windows' own colour (3 sliders) instead of the panel's (6); how many sliders; the option a slider stands for.
+	bool _windows;
+	int _n;
+	int *value(int i) const;
 	/// What the options were when the window opened: the panel's colour, then the six values of the own colour.
 	int _was[7];
 	/// Writes the sliders' values to the options and the labels.
@@ -54,7 +60,7 @@ private:
 	void show();
 public:
 	/// Creates the window.
-	OptionsCustomColorState(OptionsOrigin origin);
+	OptionsCustomColorState(OptionsOrigin origin, bool windows = false);
 	~OptionsCustomColorState();
 	/// Handler for moving a slider.
 	void slrChange(Action *action);

@@ -474,7 +474,7 @@ void drawFrame(int x, int y, int w, int h, int inset, bool thin, Uint32 accent)
 	// what lies inside is a window: its labels keep the classic shadow (as drawPanelFrame says)
 	ui.notePanel(x, y, w, h);
 	const int W = w * k, H = h * k, B = std::min(inset * k, std::min(W, H) / 2);
-	const int metal = HdBattleHud::themeKey();
+	const int metal = HdBattleHud::windowThemeKey();
 	Frame *f = nullptr;
 	for (auto it = frames.begin(); it != frames.end(); ++it)
 	{
@@ -557,7 +557,7 @@ void drawFrame(int x, int y, int w, int h, int inset, bool thin, Uint32 accent)
 			const int along = dy < dx ? px : py, across = dy < dx ? py : px;
 			const Uint32 seed = (Uint32)(across / std::max(1, k / 2)) * 2654435761u ^ (Uint32)(along / (6 * k)) * 40503u;
 			const float grain = ((seed >> 8) & 0xFF) / 255.0f - 0.5f;
-			Uint32 c = HdBattleHud::metalShade(0.12f + 0.62f * diff + 0.05f * grain);
+			Uint32 c = HdBattleHud::windowMetalShade(0.12f + 0.62f * diff + 0.05f * grain);
 			c = HdUi::mixed(c, 0xFFFFFFF0u, std::min(spec * 0.55f, 1.0f));
 			// the thin line in the screen's colour along the inner edge
 			const float li = band - d - 0.25f * k;

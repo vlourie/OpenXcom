@@ -76,9 +76,18 @@ public:
 	/// What the panel's colours are for the caches of what is drawn with them: the option's value, and for the own
 	/// colour a number that changes with every change of its six options. Call from the main thread.
 	static int themeKey();
+	/// The same for the windows (XP-000479): their metal is the panel's (oxceHdWindowThemeColor 0, the same values as the panel's) or
+	/// their own colour; the key of the own colour changes with every change of its three options. Call from the main thread.
+	static int windowThemeKey();
+	/// The colour of the windows' metal as a value of oxceHdBattleHudColor (COLOR_CUSTOM = their own).
+	static int windowColor();
+	/// metalShade for the windows: in the windows' colour.
+	static Uint32 windowMetalShade(float s);
 	/// A sample of the panel in the current colours (the window "Own colour"): a piece of its steel with three keys, one on,
 	/// in the base rectangle (x, y, w, h).
 	static void drawSample(int x, int y, int w, int h);
+	/// A sample of the windows' metal (the window "Own colour of the windows"): three window buttons, one pressed, on a dark strip.
+	static void drawWindowSample(int x, int y, int w, int h);
 	/// How many reliefs a window button can have (oxceHdButtonFace), the first (0) being the flat button as before; how many shapes.
 	static const int FACES = 12, SHAPES = 3;
 	/// A window button cast in the panel's metal with the relief `face` (< 0 the option's), the shape and the gloss of the options,

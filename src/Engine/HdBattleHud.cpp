@@ -326,9 +326,41 @@ void customRefresh()
 	++custom.version;
 }
 
-const Theme &theme()
+/// What the player's own colour of the windows' metal made (XP-000479): the ramp of the keys' colour alone (the windows have
+/// no background of the panel's kind), by the same keyTone as the panel's own colour.
+struct WindowCustomState
 {
-	switch (Options::oxceHdBattleHudColor)
+	int sig[3] = { -1, -1, -1 };   ///< the options it was built from
+	unsigned version = 0;          ///< counts the buildings: what caches of it are keyed by
+	Uint32 ramp[7] = {};
+};
+WindowCustomState winCustom;
+
+/// Builds the windows' own ramp again if one of its three options changed (as customRefresh: the first call after a change
+/// from the main thread, before the render threads read it).
+void winCustomRefresh()
+{
+	auto in = [](int v, int hi) { return std::min(std::max(v, 0), hi); };
+	const int sig[3] = { in(Options::oxceHdWinKeyHue, 359), in(Options::oxceHdWinKeySat, 100), in(Options::oxceHdWinKeyVal, 100) };
+	if (std::equal(sig, sig + 3, winCustom.sig))
+	{
+		return;
+	}
+	std::lock_guard<std::mutex> lock(customMutex);
+	if (std::equal(sig, sig + 3, winCustom.sig))
+	{
+		return;
+	}
+	const Hsv k = { (float)sig[0], (float)sig[1] / 100.0f, (float)sig[2] / 100.0f };
+	for (int i = 0; i < 7; ++i) winCustom.ramp[i] = keyTone(HULL_DARK[i], k) | 0xFF000000u;
+	std::copy(sig, sig + 3, winCustom.sig);
+	++winCustom.version;
+}
+
+/// The theme of a value of oxceHdBattleHudColor (the player's own one is the battle panel's: the windows' own colour is winCustom).
+const Theme &themeOf(int color)
+{
+	switch (color)
 	{
 	case HdBattleHud::COLOR_CUSTOM: customRefresh(); return custom.theme;
 	case 1: return GOLD;
@@ -341,6 +373,11 @@ const Theme &theme()
 	case 8: return DEEP_BRONZE;
 	default: return SLATE;
 	}
+}
+
+const Theme &theme()
+{
+	return themeOf(Options::oxceHdBattleHudColor);
 }
 
 inline Uint32 withAlpha(Uint32 c, Uint32 a) { return (c & 0x00FFFFFFu) | (a << 24); }
@@ -1998,6 +2035,21 @@ void HdBattleHud::drawSample(int x, int y, int w, int h)
 	}
 }
 
+void HdBattleHud::drawWindowSample(int x, int y, int w, int h)
+{
+	const int k = HdUi::scale();
+	if (k <= 0 || w < 40 || h < 20) return;
+	HdUi &ui = HdUi::instance();
+	// a dark strip with three window buttons cast in the windows' metal (the same drawFace the windows' buttons use), the last pressed
+	ui.fillRoundRect((float)x * k, (float)y * k, (float)(x + w) * k, (float)(y + h) * k, 3.0f * k, windowMetalShade(0.07f), windowMetalShade(0.03f));
+	ui.notePanel(x, y, w, h);
+	const int kw = 56, kh = 18, gap = (w - 3 * kw) / 4, ky = y + (h - kh) / 2;
+	for (int i = 0; i < 3; ++i)
+	{
+		drawFace(x + gap + i * (kw + gap), ky, kw, kh, i == 2, false);
+	}
+}
+
 namespace
 {
 
@@ -2265,13 +2317,13 @@ void HdBattleHud::drawFace(int x, int y, int w, int h, bool pressed, bool over, 
 	const int shape = std::min(std::max(Options::oxceHdButtonShape, 0), SHAPES - 1);
 	const int gloss = std::min(std::max(Options::oxceHdButtonGloss, 0), 100);
 	// the casts go with the colours (the metal's shades are read here, on the main thread) and the scale
-	const int themeNow = themeKey();
+	const int themeNow = windowThemeKey();
 	if (k != faceScale || themeNow != faceTheme || faceCache.size() > 256)
 	{
 		faceCache.clear();
 		faceScale = k;
 		faceTheme = themeNow;
-		for (int i = 0; i < 256; ++i) faceLut[i] = metalShade((float)i / 255.0f);
+		for (int i = 0; i < 256; ++i) faceLut[i] = windowMetalShade((float)i / 255.0f);
 	}
 	const int W = w * k, H = h * k;
 	const Uint64 key = (Uint64)W | (Uint64)H << 14 | (Uint64)face << 28 | (Uint64)shape << 33 | (Uint64)gloss << 36
@@ -2307,6 +2359,51 @@ int HdBattleHud::themeKey()
 		return 1000 + (int)(custom.version & 0xFFFFFF);
 	}
 	return Options::oxceHdBattleHudColor;
+}
+
+int HdBattleHud::windowColor()
+{
+	const int v = Options::oxceHdWindowThemeColor;
+	return v <= 0 ? Options::oxceHdBattleHudColor : std::min(v - 1, (int)COLOR_CUSTOM);
+}
+
+int HdBattleHud::windowThemeKey()
+{
+	// 0 = the panel's colour: the very key it has, so the windows' caches act as they did before the option
+	if (Options::oxceHdWindowThemeColor <= 0)
+	{
+		return themeKey();
+	}
+	if (windowColor() == COLOR_CUSTOM)
+	{
+		winCustomRefresh();
+		return 0x50000000 + (int)(winCustom.version & 0xFFFFFF);
+	}
+	return 0x40000000 + windowColor();
+}
+
+Uint32 HdBattleHud::windowMetalShade(float s)
+{
+	if (Options::oxceHdWindowThemeColor <= 0)
+	{
+		return metalShade(s);
+	}
+	const Uint32 *ramp;
+	if (windowColor() == COLOR_CUSTOM)
+	{
+		winCustomRefresh();
+		ramp = winCustom.ramp;
+	}
+	else
+	{
+		// (as metalShade says: the dark panel's graphite reads as no metal round a window, its frames are the pirate panel's brass)
+		ramp = themeOf(windowColor()).ramp;
+		ramp = !ramp ? BRASS : ramp == GRAPHITE ? SHIP_BRASS : ramp;
+	}
+	s = std::min(std::max(s, 0.0f), 1.0f);
+	int i = 0;
+	while (i < 5 && s > RAMP_AT[i + 1]) ++i;
+	return mix(ramp[i], ramp[i + 1], (s - RAMP_AT[i]) / (RAMP_AT[i + 1] - RAMP_AT[i]));
 }
 
 Uint32 HdBattleHud::metalShade(float s)

@@ -61,7 +61,7 @@ static const struct { const char *category; int tab; } HD_CATEGORIES[] = {
 /// category (the battle ones to "Graphics of the battle"). Options of the categories ART, GENTLE and GRAPHICS are there already.
 static const char *const HD_GRAPHICS_OPTIONS[] = {
 	"oxceHdBlastFall", "oxceHdKillCam", "oxceHdHiddenMap", "oxceHdAnimHidden", "oxceHdBackdrop", "oxceHdBeyondEdge", "oxceHdBeyondLook", "oxceHdMapBorder", "oxceHdEnemyNumber",
-	"oxceHdUi", "oxceHdUiSkin", "oxceHdWindowTheme", "oxceHdUiFont", "oxceHdPictures", "oxceHdUiSmooth" };
+	"oxceHdUi", "oxceHdUiSkin", "oxceHdWindowTheme", "oxceHdWindowThemeColor", "oxceHdUiFont", "oxceHdPictures", "oxceHdUiSmooth" };
 /// The tab open last: the window opens on it again, until the game is closed.
 static int hdTab = 0;
 /// The category of the HD lab (Engine/HdLab.h): its rows show only once the password was given.
@@ -72,7 +72,8 @@ static const std::string AI_CATEGORY = "STR_HD_AI";
 /// BetterAI screen, ROW_BACK goes back from it.
 /// ROW_CUSTOM opens the window of the player's own colour of the battle panel (under that colour's row); ROW_FACE the window of
 /// the windows' buttons' look (under the row of their theme), ROW_INK the window of their letters (under that row).
-static const int ROW_NONE = -1, ROW_ART = -2, ROW_LAB = -3, ROW_LAB_LOCK = -4, ROW_BETTERAI = -5, ROW_BACK = -6, ROW_CUSTOM = -7, ROW_FACE = -8, ROW_INK = -9;
+static const int ROW_NONE = -1, ROW_ART = -2, ROW_LAB = -3, ROW_LAB_LOCK = -4, ROW_BETTERAI = -5, ROW_BACK = -6, ROW_CUSTOM = -7, ROW_FACE = -8, ROW_INK = -9, ROW_WINCUSTOM = -10;
+/// ROW_WINCUSTOM opens the window of the player's own colour of the windows' metal (under the row of the windows' colour; XP-000479).
 
 /**
  * Initializes all the elements in the HD Options window.
@@ -378,6 +379,15 @@ void OptionsHdState::updateList()
 					_lstOptions->setRowColor(_lstOptions->getLastRowIndex(), _greyedOutColor);
 				}
 			}
+			if (info.type() == OPTION_INT && info.asInt() == &Options::oxceHdWindowThemeColor)
+			{
+				// under the windows' colour: the window where the player makes one of his own for them (XP-000479)
+				addRow(ROW_WINCUSTOM, 0, std::string(tr("STR_HD_WIN_CUSTOM_COLOR")) + " >", "");
+				if (dependsOff(info))
+				{
+					_lstOptions->setRowColor(_lstOptions->getLastRowIndex(), _greyedOutColor);
+				}
+			}
 			if (info.type() == OPTION_BOOL && info.asBool() == &Options::oxceHdWindowTheme)
 			{
 				// under the windows' buttons' theme: the window of their relief, shape and gloss (XP-000399)
@@ -453,6 +463,7 @@ bool OptionsHdState::dependsOff(const OptionInfo &info) const
 		if (p == &Options::oxceHdPathNumSize || p == &Options::oxceHdPathNumWeight) return !Options::oxceHdPathDigits || !fonts;
 		if (p == &Options::oxceHdAimNumSize || p == &Options::oxceHdAimNumWeight) return !fonts;
 		if (p == &Options::oxceHdBattleHudColor) return !skin;
+		if (p == &Options::oxceHdWindowThemeColor) return !skin || !Options::oxceHdWindowTheme;
 		if (p == &Options::oxceHdRadarWaves) return Options::oxceHdRadar != 3;
 		if (p == &Options::oxceHdTrunkArmor) return !Options::oxceCollapse;
 		if (p == &Options::oxceHdInvBackdrop) return !Options::oxceHdPictures || Options::oxceHdUi <= 0;
@@ -586,6 +597,12 @@ std::string OptionsHdState::valueText(const OptionInfo &info) const
 	{
 		return tr("STR_HD_BATTLE_HUD_COLOR_" + std::to_string(Options::oxceHdBattleHudColor));
 	}
+	if (info.asInt() == &Options::oxceHdWindowThemeColor)
+	{
+		// 0 as the battle panel's, then the panel's names (its value + 1)
+		const int v = Options::oxceHdWindowThemeColor;
+		return v <= 0 ? tr("STR_HD_WINDOW_THEME_COLOR_SAME") : tr("STR_HD_BATTLE_HUD_COLOR_" + std::to_string(std::min(v - 1, 9)));
+	}
 	if (info.asInt() == &Options::oxceHdPathNumSize || info.asInt() == &Options::oxceHdPathNumWeight
 		|| info.asInt() == &Options::oxceHdAimNumSize || info.asInt() == &Options::oxceHdAimNumWeight)
 	{
@@ -710,6 +727,11 @@ void OptionsHdState::changeSetting(size_t sel, Uint8 button)
 	{
 		// the list is filled again when the window closes (init): the panel's colour row shows the own one
 		_game->pushState(new OptionsCustomColorState(_origin));
+		return;
+	}
+	if (row.group == ROW_WINCUSTOM)
+	{
+		_game->pushState(new OptionsCustomColorState(_origin, true));
 		return;
 	}
 	if (row.group == ROW_FACE)
@@ -865,6 +887,11 @@ void OptionsHdState::changeSetting(size_t sel, Uint8 button)
 			min = 0;                                  // 0 dark slate, 1 gold as the original, 2 Consul's hull, 3 Cruiser's, 4 ship's brass,
 			max = 9;                                  // 5 starship, 6 niello silver, 7 black iron and bone, 8 bronze of the deep, 9 the player's own
 		}
+		else if (i == &Options::oxceHdWindowThemeColor)
+		{
+			min = 0;                                  // 0 as the battle panel's, 1..10 the panel's colours 0..9 (10 the player's own)
+			max = 10;
+		}
 		else if (i == &Options::oxceHdCraftLaunch)
 		{
 			min = 0;                                  // 0 off, 1 crafts with soldiers aboard, 2 every craft
@@ -969,6 +996,10 @@ std::string OptionsHdState::rowDescription(size_t sel) const
 		{
 			desc = tr("STR_HD_CUSTOM_COLOR_DESC");
 		}
+		else if (row.group == ROW_WINCUSTOM)
+		{
+			desc = tr("STR_HD_WIN_CUSTOM_COLOR_DESC");
+		}
 		else if (row.group == ROW_FACE)
 		{
 			desc = tr("STR_HD_BUTTON_FACE_DESC");
@@ -1012,7 +1043,7 @@ void OptionsHdState::showDetail(size_t sel)
 	{
 		return;
 	}
-	if (row.group == ROW_LAB || row.group == ROW_LAB_LOCK || row.group == ROW_BETTERAI || row.group == ROW_BACK || row.group == ROW_CUSTOM || row.group == ROW_FACE || row.group == ROW_INK)
+	if (row.group == ROW_LAB || row.group == ROW_LAB_LOCK || row.group == ROW_BETTERAI || row.group == ROW_BACK || row.group == ROW_CUSTOM || row.group == ROW_WINCUSTOM || row.group == ROW_FACE || row.group == ROW_INK)
 	{
 		changeSetting(sel, SDL_BUTTON_LEFT);
 		return;

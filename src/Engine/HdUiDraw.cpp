@@ -191,7 +191,7 @@ Uint32 HdUi::themeShade(int v)
 	// the ramp's steps 1..5 (light to dark) as shades of the theme's metal: the light end of a lit button stays metal,
 	// short of the pale top of the ramp
 	static const float SHADE[] = { 0.97f, 0.80f, 0.74f, 0.40f, 0.29f, 0.15f };
-	return HdBattleHud::metalShade(SHADE[std::min(std::max(v, 0), 5)]);
+	return HdBattleHud::windowMetalShade(SHADE[std::min(std::max(v, 0), 5)]);
 }
 
 namespace
@@ -215,7 +215,7 @@ void HdUi::setFaceOverride(int face)
 bool HdUi::themeCaps()
 {
 	// the dark panel's buttons (skin 2) are near black whatever the metal; a relief is cast round the metal's mid-light tone
-	return windowTheme() && style() != 2 && (Options::oxceHdBattleHudColor == HdBattleHud::COLOR_CUSTOM || buttonFace() > 0);
+	return windowTheme() && style() != 2 && (HdBattleHud::windowColor() == HdBattleHud::COLOR_CUSTOM || buttonFace() > 0);
 }
 
 bool HdUi::themeInk()
@@ -225,7 +225,7 @@ bool HdUi::themeInk()
 	// battle panel's keys carry theirs, light ones when it is dark (the threshold is the cap's brightness, 0.299 R +
 	// 0.587 G + 0.114 B of 255, at 0.40)
 	if (!themeCaps()) return false;
-	const Uint32 cap = HdBattleHud::metalShade(0.64f);
+	const Uint32 cap = HdBattleHud::windowMetalShade(0.64f);
 	const float luma = (0.299f * (float)((cap >> 16) & 0xFF) + 0.587f * (float)((cap >> 8) & 0xFF) + 0.114f * (float)(cap & 0xFF)) / 255.0f;
 	return luma >= 0.40f;
 }
@@ -283,7 +283,7 @@ float capLuma(bool pressed)
 	else if (HdUi::style() == 3) s = pressed ? 0.74f : (HdUi::themeCaps() ? 0.64f : 0.29f);
 	else if (pressed) s = HdUi::themeCaps() ? 0.86f : 0.77f;
 	else s = HdUi::themeCaps() ? 0.64f : 0.275f;
-	return lumaOf(HdBattleHud::metalShade(s));
+	return lumaOf(HdBattleHud::windowMetalShade(s));
 }
 
 /// The tone of the letters (oxceHdButtonInkTone, XP-000399): 0 auto, 1 light, 2 dark.
@@ -357,7 +357,7 @@ Uint32 HdUi::themeFace()
 {
 	// the arrows lie on the same caps as the letters
 	const bool dark = inkDark(false);
-	Uint32 face = HdBattleHud::metalShade(dark ? 0.0f : 0.97f);
+	Uint32 face = HdBattleHud::windowMetalShade(dark ? 0.0f : 0.97f);
 	if (inkTone() == 2) face = 0xFF000000u;   // the dark tone is honest black, in the arrows too (XP-000460)
 	SDL_Color shadow;
 	inkAdjust(dark, false, face, shadow);
@@ -371,9 +371,9 @@ void HdUi::setLabelTheme(bool on, bool lit)
 	// a lit (pressed) button is the light end of the metal: dark letters on it, a light shadow; any other: dark letters
 	// on a light metal cap, light ones on a dark one (themeInk), the shadow of the other kind
 	const bool dark = inkDark(lit);
-	_labelFace = HdBattleHud::metalShade(dark ? 0.0f : 0.97f);
+	_labelFace = HdBattleHud::windowMetalShade(dark ? 0.0f : 0.97f);
 	if (inkTone() == 2) _labelFace = 0xFF000000u;   // the dark tone is honest black (XP-000460)
-	const Uint32 s = HdBattleHud::metalShade(dark ? 0.9f : 0.0f);
+	const Uint32 s = HdBattleHud::windowMetalShade(dark ? 0.9f : 0.0f);
 	_labelShadow = SDL_Color{ (Uint8)(s >> 16), (Uint8)(s >> 8), (Uint8)s, 255 };
 	// the player's hue and brightness of the letters (XP-000411); the defaults leave the theme's own
 	inkAdjust(dark, lit, _labelFace, _labelShadow);
@@ -1352,7 +1352,7 @@ void HdUi::drawButton(int x, int y, int w, int h, int color, int mul, bool press
 		else
 		{
 			// the player's own colour: the metal's cap tone (the letters on it go by themeInk), not the ramp's dark end
-			const Uint32 flat = caps ? HdBattleHud::metalShade(over ? 0.72f : 0.64f) : (over ? c(3) : c(4));
+			const Uint32 flat = caps ? HdBattleHud::windowMetalShade(over ? 0.72f : 0.64f) : (over ? c(3) : c(4));
 			fillRoundRect(x0, y0, x1, y1, r, flat, flat);
 			strokeRoundRect(x0, y0, x1, y1, r, edge, withAlpha(c(2), 0x90));
 		}
@@ -1361,7 +1361,7 @@ void HdUi::drawButton(int x, int y, int w, int h, int color, int mul, bool press
 	if (pressed)
 	{
 		// lit: the bright end of the ramp, a little darker towards the bottom (own colour: lighter than any cap at rest)
-		fillRoundRect(x0, y0, x1, y1, r, caps ? HdBattleHud::metalShade(0.92f) : c(1), caps ? HdBattleHud::metalShade(0.80f) : c(2));
+		fillRoundRect(x0, y0, x1, y1, r, caps ? HdBattleHud::windowMetalShade(0.92f) : c(1), caps ? HdBattleHud::windowMetalShade(0.80f) : c(2));
 		strokeRoundRect(x0, y0, x1, y1, r, edge, scaled(c(1), 1.15f));
 	}
 	else
@@ -1369,7 +1369,7 @@ void HdUi::drawButton(int x, int y, int w, int h, int color, int mul, bool press
 		// under the mouse: the same shape, a step lighter
 		const float lit = over ? 1.22f : 1.0f;
 		// own colour: a cap of the metal's mid-light tone, dark below, as the keys of the battle panel; the letters go by themeInk
-		fillRoundRect(x0, y0, x1, y1, r, scaled(caps ? HdBattleHud::metalShade(0.72f) : c(3), lit), scaled(caps ? HdBattleHud::metalShade(0.56f) : c(5), lit));
+		fillRoundRect(x0, y0, x1, y1, r, scaled(caps ? HdBattleHud::windowMetalShade(0.72f) : c(3), lit), scaled(caps ? HdBattleHud::windowMetalShade(0.56f) : c(5), lit));
 		// a light edge on top, a dark one below (the shape reads as raised)
 		strokeRoundRect(x0, y0, x1, y1, r, edge, (scaled(c(2), lit) & 0x00FFFFFFu) | 0xB0000000u);
 		fillRoundRect(x0 + edge, y1 - edge * 1.5f, x1 - edge, y1 - edge * 0.5f, edge, (c(5) & 0x00FFFFFFu) | 0x90000000u, (c(5) & 0x00FFFFFFu) | 0x90000000u);
