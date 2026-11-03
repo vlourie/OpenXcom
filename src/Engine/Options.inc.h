@@ -193,6 +193,12 @@ OPT int oxceHdUiSkin;
 // HD interface, modern skin (XP-000369): the windows' buttons, sliders, scroll bars and arrows in the metal of the battle panel's theme
 // (oxceHdBattleHudColor) instead of the screen palette's ramp - the same on every screen. Off (default) = as it was; picture only
 OPT bool oxceHdWindowTheme;
+// HD interface, modern skin (XP-000479): the colour of that metal for the windows apart from the battle panel's: 0 = the panel's (as before),
+// 1..10 = one of the panel's colours (the panel's value + 1; 10 = the player's own, oxceHdWinKeyHue/Sat/Val, the window "Own colour of the windows")
+OPT int oxceHdWindowThemeColor;
+OPT int oxceHdWinKeyHue;
+OPT int oxceHdWinKeySat;
+OPT int oxceHdWinKeyVal;
 // HD interface, modern skin: the battle's button panel drawn as tiles with vector pictograms (HdBattleHud); off = the mod's picture, smoothed
 OPT bool oxceHdBattleHud;
 /// HD interface: 0 the game's own font, smoothed (classic colours, widths and lines); 1 TrueType (hd/UI/Font*.ttf).

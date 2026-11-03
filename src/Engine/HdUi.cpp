@@ -800,7 +800,7 @@ void HdUi::drawPlaced(SDL_Surface *dest, const HdFrame &frame, int ox, int oy, c
 		return;
 	}
 	const int w = x1 - x0, h = y1 - y0;
-	const int theme = HdBattleHud::themeKey();
+	const int theme = HdBattleHud::windowThemeKey();
 	Uint64 key = 1469598103934665603ULL;
 	for (int row = 0; row < h; ++row)
 	{
@@ -843,7 +843,7 @@ void HdUi::drawPlaced(SDL_Surface *dest, const HdFrame &frame, int ox, int oy, c
 		for (int i = 0; i < 256; ++i)
 		{
 			const float t = hi > lo + 1.0f ? std::min(std::max(((float)i - lo) / (hi - lo), 0.0f), 1.0f) : 0.55f;
-			metal[i] = HdBattleHud::metalShade(0.10f + 0.84f * t) & 0x00FFFFFFu;
+			metal[i] = HdBattleHud::windowMetalShade(0.10f + 0.84f * t) & 0x00FFFFFFu;
 		}
 		for (int row = 0; row < h; ++row)
 		{
