@@ -60,8 +60,8 @@ ManufactureState::ManufactureState(Base *base) : _base(base)
 	_txtFunds = new Text(150, 9, 160, 34);
 	_txtItem = new Text(80, 9, 10, 52);
 	_txtEngineers = new Text(56, 18, 112, 44);
-	_txtProduced = new Text(56, 18, 168, 44);
-	_txtCost = new Text(44, 27, 222, 44);
+	_txtProduced = new Text(56, 18, 178, 44);
+	_txtCost = new Text(44, 27, 230, 44);
 	_txtTimeLeft = new Text(60, 27, 260, 44);
 	_lstManufacture = new TextList(288, 88, 8, 80);
 
@@ -129,7 +129,8 @@ ManufactureState::ManufactureState(Base *base) : _base(base)
 	{
 		_lstManufacture->setArrowColumn(137, ARROW_VERTICAL);
 	}
-	_lstManufacture->setColumns(5, 114, 16, 52, 56, 48);
+	// "Produced" is 10 wider (its figures end further right, clear of the reorder arrows at 137..160), "Cost" and "Time" give it the room
+	_lstManufacture->setColumns(5, 114, 16, 62, 54, 40);
 	_lstManufacture->setAlign(ALIGN_RIGHT);
 	_lstManufacture->setAlign(ALIGN_LEFT, 0);
 	_lstManufacture->setSelectable(true);
