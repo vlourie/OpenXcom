@@ -35,6 +35,8 @@
 #include "HdGpuWorld.h"
 #include "HdUiArt.h"
 #include "Logger.h"
+#include "Options.h"
+#include "../Battlescape/AiProbe.h"
 
 namespace OpenXcom
 {
@@ -128,6 +130,13 @@ namespace
 	inline const Uint8 *rawRow(const SurfaceRaw<const Uint8> &s, int y)
 	{
 		return (const Uint8*)s.getBuffer() + (size_t)y * s.getPitch();
+	}
+
+	/// Players' logs stay clean: the "HD perf" lines only with verbose logging, the AI harness or OXCE_HD_PERFLOG (tools read them).
+	bool perfLogOn()
+	{
+		static const bool on = Options::verboseLogging || AiProbe::harness() || getenv("OXCE_HD_PERFLOG");
+		return on;
 	}
 }
 
@@ -1723,7 +1732,7 @@ void Canvas32::trimSmooth()
 		}
 	}
 	// measurement: how often the cap is reached, and how much goes each time
-	if (!dropped.empty())
+	if (!dropped.empty() && perfLogOn())
 	{
 		Log(LOG_INFO) << "HD perf: smooth cache trimmed, " << dropped.size() << " of " << count << " frames, "
 			<< (before >> 20) << " -> " << (_smoothBytes >> 20) << " MB";
@@ -1755,6 +1764,10 @@ size_t Canvas32::smoothBytes() const
  */
 void Canvas32::perfReport()
 {
+	if (!perfLogOn())
+	{
+		return;
+	}
 	const Uint32 now = SDL_GetTicks();
 	if (now - _perfLast < 2000)
 	{

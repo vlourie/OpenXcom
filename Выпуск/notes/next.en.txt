@@ -1,3 +1,4 @@
 ﻿- Custom colour window: the "-" and "+" buttons at the sliders now change the value by 1 instead of throwing the slider to its end, so a colour can be tuned precisely (ticket XP-000480).
 - Production screen: the "Produced" column is moved to the right, the row-reorder arrows no longer cover the first digits of the produced count (ticket XP-000481).
 - Soldier transformation window: the soldier-switch arrows ("<<" and ">>" at the top) now also work with the "Previous soldier" / "Next soldier" keys from the options, like in the soldier info window (ticket XP-000483).
+- Game log (openxcom.log) no longer grows to tens of thousands of lines: the service "HD perf" lines are written only with verbose logging, and long-frame lines ("HD stall") are limited to 200 per run.
