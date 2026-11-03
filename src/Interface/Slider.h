@@ -39,7 +39,7 @@ private:
 	TextButton *_button;
 	double _pos;
 	int _min, _max, _value;
-	bool _pressed, _contrast;
+	bool _pressed, _contrast, _stepButtons;
 	ActionHandler _change;
 	int _thickness, _textness, _minX, _maxX, _offsetX;
 
@@ -78,6 +78,8 @@ public:
 	void mousePress(Action *action, State *state) override;
 	/// Special handling for mouse releases.
 	void mouseRelease(Action *action, State *state) override;
+	/// Makes the "-" and "+" at the ends of the slider step the value by one instead of jumping to the end.
+	void setStepButtons(bool step);
 	/// Hooks an action handler to when the slider changes.
 	void onChange(ActionHandler handler);
 };

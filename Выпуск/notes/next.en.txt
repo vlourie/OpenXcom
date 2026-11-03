@@ -1,0 +1,1 @@
+﻿- Custom colour window: the "-" and "+" buttons at the sliders now change the value by 1 instead of throwing the slider to its end, so a colour can be tuned precisely (ticket XP-000480).
