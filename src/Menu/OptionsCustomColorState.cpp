@@ -128,6 +128,7 @@ OptionsCustomColorState::OptionsCustomColorState(OptionsOrigin origin)
 	for (int i = 0; i < 6; ++i)
 	{
 		_slr[i]->setRange(0, HIGH[i]);
+		_slr[i]->setStepButtons(true);
 		_slr[i]->onChange((ActionHandler)&OptionsCustomColorState::slrChange);
 	}
 
