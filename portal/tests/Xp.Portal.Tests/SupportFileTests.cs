@@ -25,4 +25,13 @@ public sealed class SupportFileTests(PortalFactory f) : IClassFixture<PortalFact
         Assert.Equal(HttpStatusCode.OK, r.StatusCode);
         Assert.Contains("text/html", r.Content.Headers.ContentType?.MediaType);
     }
+
+    [Fact]
+    public async Task The_donation_widget_may_load_in_its_frame()
+    {
+        // 03.11 the frame stood empty: the policy had no frame-src, and DonatePay answers 404 without the site's origin in the Referer
+        var r = await f.CreateClient().GetAsync("/support");
+        Assert.Contains("frame-src https://widget.donatepay.ru", r.Headers.GetValues("Content-Security-Policy").Single());
+        Assert.Matches("<iframe class=\"donate\"[^>]*referrerpolicy=\"origin\"", await r.Content.ReadAsStringAsync());
+    }
 }

@@ -31,44 +31,59 @@
 </head>
 <body>
 <header class="top">
-    <a class="brand" href="/">@T["site.title"]</a>
-    <nav>
-        <a href="/download/launcher" class="get" download>@T["nav.download"]</a>
+    @* two rows: the brand with the player's own controls, then one strip of sections that never wraps *@
+    <div class="head">
+        <a class="brand" href="/">@T["site.title"]</a>
+        <div class="side">
+            <a href="/download/launcher" class="get" download>@T["nav.download"]</a>
+            @if (signedIn)
+            {
+                var name = user.FindFirstValue("xp:name");
+                <a href="/me/messages" class="mail @On("/me/messages")" title="@T["nav.messages"]" aria-label="@T["nav.messages"]">✉@if (unread > 0) {<span class="unread-count" title="@T.Format("msg.unread", unread)">@unread</span>}</a>
+                <details class="account">
+                    <summary>@(string.IsNullOrWhiteSpace(name) ? T["nav.account"] : name)</summary>
+                    <div class="drop">
+                        <a href="/me" class="@(friends || inMessages ? "" : On("/me"))">@T["nav.my"]</a>
+                        <a href="/me/messages" class="@On("/me/messages")">@T["nav.messages"]</a>
+                        <a href="/me/devices">@T["nav.devices"]</a>
+                        <a href="/me/security">@T["nav.security"]</a>
+                        @if (user.IsInRole(Roles.Admin) || user.IsInRole(Roles.SuperAdmin))
+                        {
+                            <a href="/admin" class="@On("/admin")">@T["nav.admin"]</a>
+                        }
+                        @if (user.IsInRole(Roles.SuperAdmin))
+                        {
+                            <a href="/admin/super/users">@T["nav.super"]</a>
+                        }
+                        <form method="post" action="/account/logout" asp-antiforgery="true">
+                            <button type="submit" class="link">@T["nav.logout"]</button>
+                        </form>
+                    </div>
+                </details>
+            }
+            else
+            {
+                <a href="/account/login" class="plain">@T["nav.login"]</a>
+                <a href="/account/register" class="plain">@T["nav.register"]</a>
+            }
+            <span class="lang">
+                <a href="/lang/ru?back=@Uri.EscapeDataString(back)" class="@(Text.Lang == "ru" ? "on" : "")">RU</a>
+                <a href="/lang/en?back=@Uri.EscapeDataString(back)" class="@(Text.Lang == "en" ? "on" : "")">EN</a>
+            </span>
+        </div>
+    </div>
+    <nav class="tabs">
         <a href="/mods" class="@On("/mods")">@T["nav.mods"]</a>
         <a href="/releases" class="@On("/releases")">@T["nav.releases"]</a>
         <a href="/roadmap" class="@On("/roadmap")">@T["nav.roadmap"]</a>
         <a href="/wiki" class="@On("/wiki")">@T["nav.wiki"]</a>
         <a href="/forum" class="@On("/forum")">@T["nav.forum"]</a>
-        <a href="/tickets/new" class="@On("/tickets")">@T["nav.report"]</a>
-        <a href="/support" class="@On("/support")">@T["nav.support"]</a>
         @if (signedIn)
         {
-            <a href="/me" class="@(friends || inMessages ? "" : On("/me"))">@T["nav.my"]</a>
             <a href="/voice" class="@(friends ? "on" : On("/voice"))">@T["nav.voice"]</a>
-            <a href="/me/messages" class="@On("/me/messages")">@T["nav.messages"]@if (unread > 0) {<span class="unread-count" title="@T.Format("msg.unread", unread)">@unread</span>}</a>
-            @if (user.IsInRole(Roles.Admin) || user.IsInRole(Roles.SuperAdmin))
-            {
-                <a href="/admin" class="@On("/admin")">@T["nav.admin"]</a>
-            }
-            @if (user.IsInRole(Roles.SuperAdmin))
-            {
-                <a href="/admin/super/users">@T["nav.super"]</a>
-            }
-            <a href="/me/devices">@T["nav.devices"]</a>
-            <a href="/me/security">@T["nav.security"]</a>
-            <form method="post" action="/account/logout" class="inline" asp-antiforgery="true">
-                <button type="submit" class="link">@T["nav.logout"]</button>
-            </form>
         }
-        else
-        {
-            <a href="/account/login">@T["nav.login"]</a>
-            <a href="/account/register">@T["nav.register"]</a>
-        }
-        <span class="lang">
-            <a href="/lang/ru?back=@Uri.EscapeDataString(back)" class="@(Text.Lang == "ru" ? "on" : "")">RU</a>
-            <a href="/lang/en?back=@Uri.EscapeDataString(back)" class="@(Text.Lang == "en" ? "on" : "")">EN</a>
-        </span>
+        <a href="/tickets/new" class="@On("/tickets")">@T["nav.report"]</a>
+        <a href="/support" class="love @On("/support")">@T["nav.support"]</a>
     </nav>
 </header>
 <main class="@(ViewData["Wide"] is true ? "wide" : "")">
@@ -79,5 +94,6 @@
     @RenderBody()
 </main>
 <footer>@T["site.footer"]<br>@T["site.credit"]</footer>
+<script src="~/js/nav.js" asp-append-version="true" defer></script>
 </body>
 </html>

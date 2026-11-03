@@ -329,7 +329,8 @@ public static class PortalApp
         h["Referrer-Policy"] = "no-referrer";   // the guest's secret link must never leave in a Referer
         h.XFrameOptions = "DENY";
         h["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()";
-        h.ContentSecurityPolicy = "default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'";
+        // frame-src: the DonatePay widget on /support is the one page from elsewhere the site shows in a frame
+        h.ContentSecurityPolicy = "default-src 'self'; img-src 'self' data:; style-src 'self'; script-src 'self'; frame-src https://widget.donatepay.ru; object-src 'none'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'";
         await next();
     }
 
