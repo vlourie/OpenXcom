@@ -75,24 +75,33 @@ void ResearchInfoState::buildUi()
 {
 	_screen = false;
 
-	_window = new Window(this, 230, 140, 45, 30);
-	_txtTitle = new Text(210, 17, 61, 40);
+	// the option "approximate term" (XP-000491) makes the window 14 px taller for one more line: the upper part
+	// goes 7 px up, the buttons 7 px down; with the option off every number is as it was
+	const int dy = Options::oxceHdResearchEta ? 7 : 0;
 
-	_txtAvailableScientist = new Text(210, 9, 61, 60);
-	_txtAvailableSpace = new Text(210, 9, 61, 70);
-	_txtAllocatedScientist = new Text(210, 17, 61, 80);
-	_txtMore = new Text(110, 17, 85, 100);
-	_txtLess = new Text(110, 17, 85, 120);
-	_btnCancel = new TextButton(90, 16, 61, 145);
-	_btnOk = new TextButton(90, 16, 169, 145);
+	_window = new Window(this, 230, 140 + 2 * dy, 45, 30 - dy);
+	_txtTitle = new Text(210, 17, 61, 40 - dy);
 
-	_btnMore = new ArrowButton(ARROW_BIG_UP, 13, 14, 195, 100);
-	_btnLess = new ArrowButton(ARROW_BIG_DOWN, 13, 14, 195, 120);
+	_txtAvailableScientist = new Text(210, 9, 61, 60 - dy);
+	_txtAvailableSpace = new Text(210, 9, 61, 70 - dy);
+	_txtAllocatedScientist = new Text(210, 17, 61, 80 - dy);
+	_txtMore = new Text(110, 17, 85, 100 - dy);
+	_txtLess = new Text(110, 17, 85, 120 - dy);
+	_btnCancel = new TextButton(90, 16, 61, 145 + dy);
+	_btnOk = new TextButton(90, 16, 169, 145 + dy);
 
-	_surfaceScientists = new InteractiveSurface(230, 140, 45, 30);
+	_btnMore = new ArrowButton(ARROW_BIG_UP, 13, 14, 195, 100 - dy);
+	_btnLess = new ArrowButton(ARROW_BIG_DOWN, 13, 14, 195, 120 - dy);
+
+	_surfaceScientists = new InteractiveSurface(230, 140 + 2 * dy, 45, 30 - dy);
 	_surfaceScientists->onMouseClick((ActionHandler)&ResearchInfoState::handleWheel, 0);
 
-	touchComponentsCreate(_txtTitle, false, -45, +30, true);
+	if (dy)
+	{
+		_txtEta = new Text(210, 9, 61, 134);
+	}
+
+	touchComponentsCreate(_txtTitle, false, -45, +30 - dy, true);
 
 	// Set palette
 	setInterface("allocateResearch");
@@ -105,6 +114,10 @@ void ResearchInfoState::buildUi()
 	add(_txtAvailableScientist, "text", "allocateResearch");
 	add(_txtAvailableSpace, "text", "allocateResearch");
 	add(_txtAllocatedScientist, "text", "allocateResearch");
+	if (_txtEta)
+	{
+		add(_txtEta, "text", "allocateResearch");
+	}
 	add(_txtMore, "text", "allocateResearch");
 	add(_txtLess, "text", "allocateResearch");
 	add(_btnMore, "button1", "allocateResearch");
@@ -222,6 +235,47 @@ void ResearchInfoState::setAssignedScientist()
 	_txtAvailableScientist->setText(tr("STR_SCIENTISTS_AVAILABLE_UC").arg(_base->getAvailableScientists()));
 	_txtAvailableSpace->setText(tr("STR_LABORATORY_SPACE_AVAILABLE_UC").arg(_base->getFreeLaboratories()));
 	_txtAllocatedScientist->setText(tr("STR_SCIENTISTS_ALLOCATED").arg(_project->getAssigned()));
+	if (_txtEta)
+	{
+		_txtEta->setText(etaText());
+	}
+}
+
+/**
+ * The approximate term of the project, "from and to" in days (option oxceHdResearchEta, XP-000491).
+ * Display only. It is counted from what the player can know: the ruleset cost R, the man-days already spent
+ * and the scientists assigned now. The real cost of the project (hidden, RNG 50-150 % of R, see the constructor
+ * above) is never read here: the bounds are the bounds of that RNG, not its result.
+ * The project is stepped once a day (spent += assigned, then done when spent >= cost), so the term is at least a day;
+ * and a project still on the list is not finished, i.e. its cost is above the spent.
+ * Once the spent passes the lower bound the range narrows from below: this follows from the project not being done yet.
+ */
+std::string ResearchInfoState::etaText() const
+{
+	const long long cost = _project->getRules()->getCost();
+	const long long spent = _project->getSpent();
+	const long long assigned = _project->getAssigned();
+	if (cost <= 0)
+	{
+		// a project of no cost is finished by the next daily step, whoever works on it
+		return tr("STR_HD_RESEARCH_ETA_ONE").arg(std::string(tr("STR_DAY", 1u)));
+	}
+	if (assigned <= 0)
+	{
+		return tr("STR_HD_RESEARCH_ETA_NONE");
+	}
+	// the bounds of the random cost: as the constructor makes it, rule cost * (50..150) / 100, at least 1
+	const long long lowCost = std::max(1LL, cost * 50 / 100);
+	const long long highCost = std::max(lowCost, cost * 150 / 100);
+	const long long lowGoal = std::max(lowCost, spent + 1);
+	const long long highGoal = std::max(highCost, spent + 1);
+	const long long fromDays = (lowGoal - spent + assigned - 1) / assigned;
+	const long long toDays = (highGoal - spent + assigned - 1) / assigned;
+	if (fromDays >= toDays)
+	{
+		return tr("STR_HD_RESEARCH_ETA_ONE").arg(std::string(tr("STR_DAY", (unsigned)toDays)));
+	}
+	return tr("STR_HD_RESEARCH_ETA_RANGE").arg((int)fromDays).arg(std::string(tr("STR_DAY", (unsigned)toDays)));
 }
 
 /**

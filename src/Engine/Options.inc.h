@@ -94,6 +94,8 @@ OPT bool oxceHdGlobeBox;
 OPT bool oxceHdFundsToggle;
 // HD interface, workshop: a new manufacturing job is put first in the base's list, not last (the same list order as moving it up with the arrows); the order decides who gets money and materials first; off = as it was (default)
 OPT bool oxceHdManufactureTop;
+// HD interface, research: in the window where scientists are assigned to a project, a line with an approximate range of days to the end, counted from the ruleset cost (the real cost is a hidden 50-150 % of it), the days already spent and the scientists assigned now; the hidden cost itself is never read; off = as it was (default); display only (XP-000491)
+OPT bool oxceHdResearchEta;
 // HD interface, battle inventory: the ground scroll button is drawn as two halves, an arrow to the left and an arrow to the right; a click on the left half scrolls the ground back (as the existing hidden oxceInventorySplitScrollButton does, without its picture); off = as it was (default); picture and click place only
 OPT bool oxceHdScrollSplit;
 OPT bool oxceDogfightHitChance;
