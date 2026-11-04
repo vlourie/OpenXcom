@@ -4,3 +4,5 @@
 - Production screen: the "Produced" column is moved to the right, the row-reorder arrows no longer cover the first digits of the produced count (ticket XP-000481).
 - Soldier transformation window: the soldier-switch arrows ("<<" and ">>" at the top) now also work with the "Previous soldier" / "Next soldier" keys from the options, like in the soldier info window (ticket XP-000483).
 - Game log (openxcom.log) is no longer flooded with HD service lines (measurements, picture loading, long frames): they are written only with verbose logging. Warnings and errors stay.
+- Lockers next to the base beds no longer show through at the top.
+- The wooden farm staircase was redrawn: left and right now share one style, with clean edges and real gaps between the steps.
