@@ -260,6 +260,11 @@ void ResearchState::fillProjectList(size_t scrl)
 	{
 		std::ostringstream sstr;
 		sstr << proj->getAssigned();
+		if (Options::oxceHdResearchEta && proj->getAssigned() > 0)
+		{
+			// the short term after the count, by the ruleset cost, never the real one (XP-000494)
+			sstr << " " << ResearchInfoState::etaShort(this, proj);
+		}
 		const RuleResearch *r = proj->getRules();
 
 		std::string wstr = tr(r->getName());
