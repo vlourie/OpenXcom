@@ -486,6 +486,7 @@ void createAdvancedOptionsOXCE()
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceCraftWeaponIcons", &oxceCraftWeaponIcons, true, "STR_CRAFT_WEAPON_ICONS", "STR_HD_GEOSCAPE")); // OXCE-HD
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdCraftWeaponToggle", &oxceHdCraftWeaponToggle, false, "STR_HD_CRAFT_WEAPON_TOGGLE", "STR_HD_GEOSCAPE")); // OXCE-HD
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdCraftRoute", &oxceHdCraftRoute, false, "STR_HD_CRAFT_ROUTE", "STR_HD_GEOSCAPE")); // OXCE-HD
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdGlobeBox", &oxceHdGlobeBox, false, "STR_HD_GLOBE_BOX", "STR_HD_GEOSCAPE")); // OXCE-HD
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdFundsToggle", &oxceHdFundsToggle, false, "STR_HD_FUNDS_TOGGLE", "STR_HD_GEOSCAPE")); // OXCE-HD
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdManufactureTop", &oxceHdManufactureTop, false, "STR_HD_MANUFACTURE_TOP", "STR_HD_BASE")); // OXCE-HD
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdScrollSplit", &oxceHdScrollSplit, false, "STR_HD_SCROLL_SPLIT", "STR_HD_BATTLE_UI")); // OXCE-HD

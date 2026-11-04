@@ -20,6 +20,7 @@
 #include <string>
 #include <vector>
 #include <list>
+#include <functional>
 #include <unordered_map>
 #include "../Engine/InteractiveSurface.h"
 #include "../Engine/FastLineClip.h"
@@ -128,6 +129,23 @@ private:
 	Uint32 _mouseScrollingStartTime;
 	int _totalMouseMoveX, _totalMouseMoveY;
 	bool _mouseMovedOverThreshold;
+
+	// OXCE-HD (oxceHdGlobeBox): the frame of the left button held and moved on the globe (XP-000489)
+	bool _boxArmed = false;             ///< the left button was pressed on the globe: a frame may start
+	bool _boxActive = false;            ///< the mouse went far enough: the frame is shown
+	bool _boxDone = false;              ///< the frame was let go: the click handler takes it once (takeBox)
+	bool _boxSwallow = false;           ///< the click that follows the release of a frame is not a click on the globe
+	int _boxX0 = 0, _boxY0 = 0, _boxX1 = 0, _boxY1 = 0; ///< its corners, base pixels as the mouse gives them
+	/// Is a frame possible here (option on, the left button not the globe's drag button, the geoscape's own window on top)?
+	bool boxAllowed(State *state) const;
+	/// Follows the mouse with the frame.
+	void boxMove(Action *action);
+	/// Draws the frame over the markers (the HD layer when it draws, else the classic picture).
+	void drawBox(SDL_Surface *surface);
+	/// Checks if a target is within the circle around a marker of some part of a rectangle.
+	bool targetInRect(Target* target, int x0, int y0, int x1, int y1) const;
+	/// The targets for which hit says yes, by the rules of a click on the globe.
+	std::vector<Target*> collectTargets(const std::function<bool(Target*)> &hit, Craft *currentCraft) const;
 
 	/// Sets the globe zoom factor.
 	void setZoom(size_t zoom);
@@ -241,6 +259,12 @@ public:
 	void toggleDetail();
 	/// Gets all the targets near a point on the globe.
 	std::vector<Target*> getTargets(int x, int y, bool craft, Craft *currentCraft) const;
+	/// Gets all the targets a click anywhere in a rectangle would find (the frame, oxceHdGlobeBox).
+	std::vector<Target*> getTargetsInRect(int x0, int y0, int x1, int y1) const;
+	/// Takes the frame that was just let go (once): true and its corners, or false when the click is a plain one.
+	bool takeBox(int &x0, int &y0, int &x1, int &y1);
+	/// Drops the frame (a window opened over the globe, the button was let go elsewhere).
+	void boxCancel();
 	/// Caches visible globe polygons.
 	void cachePolygons();
 	/// Sets the palette of the globe.

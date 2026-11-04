@@ -324,6 +324,33 @@ std::string run(Control &c, Game *g, const std::string &line)
 		c.sinceInput = 0;
 		return "ok";
 	}
+	if (cmd == "lpress" || cmd == "lmove" || cmd == "lrelease")
+	{
+		// the left button held and moved (the frame on the globe, XP-000489): lpress needs a hover before it
+		int x, y;
+		if (sscanf(args.c_str(), "%d,%d", &x, &y) != 2)
+		{
+			return "err " + cmd + ": x,y expected";
+		}
+		SDL_Event ev;
+		memset(&ev, 0, sizeof(ev));
+		if (cmd == "lmove")
+		{
+			ev.type = SDL_MOUSEMOTION;
+			ev.motion.state = SDL_BUTTON(SDL_BUTTON_LEFT);
+			toDisplay(g, x, y, ev.motion.x, ev.motion.y);
+		}
+		else
+		{
+			ev.type = cmd == "lpress" ? SDL_MOUSEBUTTONDOWN : SDL_MOUSEBUTTONUP;
+			ev.button.button = SDL_BUTTON_LEFT;
+			ev.button.state = cmd == "lpress" ? SDL_PRESSED : SDL_RELEASED;
+			toDisplay(g, x, y, ev.button.x, ev.button.y);
+		}
+		SDL_PushEvent(&ev);
+		c.sinceInput = 0;
+		return "ok";
+	}
 	if (cmd == "wheel")
 	{
 		const Uint16 mods = takeMods(args);
