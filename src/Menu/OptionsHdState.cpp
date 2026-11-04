@@ -531,6 +531,11 @@ std::string OptionsHdState::valueText(const OptionInfo &info) const
 	{
 		return tr("STR_HD_FIRE_" + std::to_string(Options::oxceHdFire));
 	}
+	// the smoke: the pack's own, puffs, puffs over a veil (STR_HD_VOLUME_SMOKE_0..2)
+	if (info.asInt() == &Options::oxceHdVolumeSmoke)
+	{
+		return tr("STR_HD_VOLUME_SMOKE_" + std::to_string(std::max(0, std::min(2, Options::oxceHdVolumeSmoke))));
+	}
 	// the pace of fire and smoke as the speed it gives, percent of the stock one
 	if (info.asInt() == &Options::oxceHdFirePace || info.asInt() == &Options::oxceHdSmokePace)
 	{
@@ -826,6 +831,11 @@ void OptionsHdState::changeSetting(size_t sel, Uint8 button)
 		{
 			min = 0;                                  // 0 = the pack's own fire
 			max = 3;
+		}
+		else if (i == &Options::oxceHdVolumeSmoke)
+		{
+			min = 0;                                  // 0 the pack's smoke, 1 puffs, 2 puffs over a veil
+			max = 2;
 		}
 		else if (i == &Options::oxceHdFirePace || i == &Options::oxceHdSmokePace)
 		{

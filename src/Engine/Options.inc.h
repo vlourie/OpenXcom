@@ -220,7 +220,7 @@ OPT bool oxceHdItemShadow;
 // HD render: explosions, hits and muzzle flashes light the map around them, shadowed by its LOFT (HD modes with oxceHdLight)
 OPT bool oxceHdFlashLight;
 // HD render: the smoke of a tile as puffs of a baked volume that rise, grow and melt, lit where they float (HD modes, Engine/HdSmoke.h)
-OPT bool oxceHdVolumeSmoke;
+OPT int oxceHdVolumeSmoke;
 // HD render: the fire of a tile as tongues of flame in the pack's painted style, every tile and moment its own (HD modes, Engine/HdFire.h)
 OPT bool oxceHdVolumeFire;
 // HD lab (Engine/HdLab.h): the battle map turned by this many quarters (0..3), only while the lab is open

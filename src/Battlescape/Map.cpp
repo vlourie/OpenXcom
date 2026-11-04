@@ -4784,6 +4784,9 @@ void Map::drawSkillBonus(HdCanvas *surface, int x, int y)
 
 namespace
 {
+/// HD render (oxceHdVolumeSmoke 2): how much of the pack's smoke frame shows through under the puffs (0..1)
+const float SMOKE_VEIL_OPACITY = 0.6f;
+
 /**
  * HD render (option oxceHdVolumeSmoke): the puffs of a smoking tile (HdSmoke) over its floor diamond, back to front,
  * each at the light of the field where it floats (bilinear over the nine nodes); without the HD light, at the tile's
@@ -5786,7 +5789,9 @@ void Map::drawTerrain(HdCanvas *surface)
 							// (option oxceHdVolumeSmoke: puffs instead of the pack's smoke, soot over its fire; not under
 							// night vision nor water, which keep the pack's frame)
 							// (option oxceHdVolumeFire: tongues of flame instead of the pack's fire, under the same limits)
-							const bool puffs = Options::oxceHdVolumeSmoke && !_nvColor && _save->getDepth() == 0;
+							// (oxceHdVolumeSmoke 2, the veil: the pack's own smoke frame, see-through, under the puffs, in the tile's
+							// colours - a smoke without gaps, as under night vision; a burning tile keeps its fire and soot)
+							const bool puffs = Options::oxceHdVolumeSmoke > 0 && !_nvColor && _save->getDepth() == 0;
 							const bool tongues = tile->getFire() && Options::oxceHdVolumeFire && !_nvColor && _save->getDepth() == 0;
 							const int variant = tile->getFire() ? (enviRest ? 1 : 0) + 2 * Options::oxceHdFire : 0;
 							if (tongues)
@@ -5806,6 +5811,18 @@ void Map::drawTerrain(HdCanvas *surface)
 								if (_hdLightOn)
 								{
 									updateHdLight(tile, tileShade, mapPosition);
+								}
+								if (Options::oxceHdVolumeSmoke >= 2 && !tile->getFire())
+								{
+									if (const HdFrame *veil = surface->frameOf(tmpSurface))
+									{
+										// one flat light over the tile: the centre node of its light field
+										static const float white[3] = { 1, 1, 1 };
+										const float *veilTint = _hdLightOn ? _hdLight.tint[4] : white;
+										surface->blitFrameToned(*veil, screenPosition.x, screenPosition.y,
+											_hdLightOn ? _hdLight.shade[4] : (float)tileShade, veilTint,
+											SMOKE_VEIL_OPACITY * cursorFade(itX, itY, itZ));
+									}
 								}
 								int crowd = 0;
 								if (!tile->getFire())

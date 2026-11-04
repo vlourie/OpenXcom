@@ -100,7 +100,13 @@ void OptionInfo::load(const YAML::YamlNodeReader& reader) const
 		*(_ref.b) = reader[ryml::to_csubstr(_id)].readVal(_def.b);
 		break;
 	case OPTION_INT:
-		*(_ref.i) = reader[ryml::to_csubstr(_id)].readVal(_def.i);
+		{
+			// an option that was a switch before it became a choice (oxceHdVolumeSmoke) may still be saved as true / false:
+			// they read as 1 / 0, as the switch did (a number as it is)
+			const auto node = reader[ryml::to_csubstr(_id)];
+			const std::string text = node.readVal<std::string>(std::string());
+			*(_ref.i) = text == "true" ? 1 : text == "false" ? 0 : node.readVal(_def.i);
+		}
 		break;
 	case OPTION_KEY:
 		*(_ref.k) = (SDLKey)reader[ryml::to_csubstr(_id)].readVal((int)_def.k);
@@ -143,8 +149,15 @@ void OptionInfo::load(const std::map<std::string, std::string> &map, bool makeLo
 			*(_ref.b) = b;
 			break;
 		case OPTION_INT:
-			ss << std::dec << value;
-			ss >> std::dec >> i;
+			if (value == "true" || value == "false")
+			{
+				i = value == "true" ? 1 : 0; // a switch that became a choice (oxceHdVolumeSmoke)
+			}
+			else
+			{
+				ss << std::dec << value;
+				ss >> std::dec >> i;
+			}
 			*(_ref.i) = i;
 			break;
 		case OPTION_KEY:
