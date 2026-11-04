@@ -46,6 +46,7 @@ const std::string OptionsVideoState::GL_STRING = "*";
  */
 OptionsVideoState::OptionsVideoState(OptionsOrigin origin) : OptionsBaseState(origin)
 {
+	setHdScreen("videoMenu");
 	setCategory(_btnVideo);
 
 	// Create objects

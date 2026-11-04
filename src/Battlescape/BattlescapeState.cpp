@@ -162,6 +162,7 @@ BattlescapeState::BattlescapeState() :
 	_autosave(0),
 	_numberOfDirectlyVisibleUnits(0), _numberOfEnemiesTotal(0), _numberOfEnemiesTotalPlusWounded(0)
 {
+	setHdScreen("battleMap");   // the map and the panel are not under a screen's theme (the geoscape lies below them in the stack): XP-000479's options
 	_save = _game->getSavedGame()->getSavedBattle();
 
 	std::fill_n(_visibleUnit, 10, (BattleUnit*)(0));

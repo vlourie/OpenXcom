@@ -18,6 +18,7 @@
  */
 #include "OptionsScreenThemesState.h"
 #include <algorithm>
+#include <functional>
 #include <set>
 #include "../Engine/Action.h"
 #include "../Engine/Game.h"
@@ -71,6 +72,7 @@ std::string colorName(const Language *lang, int v)
  */
 OptionsScreenThemesState::OptionsScreenThemesState(OptionsOrigin origin) : _origin(origin)
 {
+	setHdScreen("hdWindows");
 	_screen = false;
 
 	// Create objects
@@ -180,20 +182,46 @@ void OptionsScreenThemesState::fillList()
 			_lstScreens->setCellColor(row, 2, _greyedOutColor);
 		}
 	};
+	// a screen is listed when this ruleset has an interface for it (or it has none by its nature), or a theme was set to it, or a
+	// screen under it is listed
+	std::function<bool(const std::string &)> listed = [&](const std::string &screen)
+	{
+		if (_game->getMod()->getInterface(screen, false) || themes.own(screen) || HdScreenThemes::hasNoCategory(screen))
+		{
+			return true;
+		}
+		for (const std::string &child : HdScreenThemes::childrenOf(screen))
+		{
+			if (listed(child)) return true;
+		}
+		return false;
+	};
+	// the groups (level 0) and the screens under them, two levels at most: every row with screens under it has the mark at the left
+	std::function<void(const std::string &, int)> addTree = [&](const std::string &parent, int depth)
+	{
+		for (const std::string &screen : HdScreenThemes::childrenOf(parent))
+		{
+			if (!listed(screen)) continue;
+			bool expandable = false;
+			for (const std::string &child : HdScreenThemes::childrenOf(screen))
+			{
+				if (depth < 2 && listed(child)) { expandable = true; break; }
+			}
+			const bool open = expandable && opened().count(screen) != 0;
+			addRow(screen, expandable, expandable ? (open ? "-" : "+") : "", std::string(depth * 2, ' ') + screenName(lang, screen));
+			if (open)
+			{
+				addTree(screen, depth + 1);
+			}
+		}
+	};
 	for (const std::string &group : HdScreenThemes::groups())
 	{
 		const bool open = opened().count(group) != 0;
 		addRow(group, true, open ? "-" : "+", screenName(lang, group));
-		if (!open)
+		if (open)
 		{
-			continue;
-		}
-		for (const std::string &screen : HdScreenThemes::screensOf(group))
-		{
-			if (_game->getMod()->getInterface(screen, false) || themes.own(screen))
-			{
-				addRow(screen, false, "", "  " + screenName(lang, screen));
-			}
+			addTree(group, 1);
 		}
 	}
 	_lstScreens->scrollTo(scroll);
@@ -247,6 +275,7 @@ void OptionsScreenThemesState::btnOkClick(Action *)
  */
 OptionsScreenThemeEditState::OptionsScreenThemeEditState(OptionsOrigin origin, const std::string &screen) : _origin(origin), _name(screen)
 {
+	setHdScreen("hdWindows");
 	_screen = false;
 
 	// from now on the options are the screen's theme, for every window on the stack, until OK or Cancel (or anything that deletes this)

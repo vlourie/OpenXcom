@@ -36,6 +36,7 @@ namespace OpenXcom
  */
 OptionsDefaultsState::OptionsDefaultsState(OptionsOrigin origin, OptionsBaseState *state) : _origin(origin), _state(state)
 {
+	setHdScreen("optionsDialog");
 	_screen = false;
 
 	// Create objects

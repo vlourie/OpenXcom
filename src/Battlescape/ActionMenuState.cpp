@@ -60,6 +60,7 @@ ActionMenuState::ActionMenuState(BattleAction *action) : _action(action)
 ActionMenuState::ActionMenuState(BattleAction *action, int x, int y) : _action(action)
 {
 	_screen = false;
+	setHdScreen("actionMenu");
 
 	// Set palette
 	_game->getSavedGame()->getSavedBattle()->setPaletteByDepth(this);

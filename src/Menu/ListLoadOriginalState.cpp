@@ -45,6 +45,7 @@ namespace OpenXcom
  */
 ListLoadOriginalState::ListLoadOriginalState(OptionsOrigin origin) : _origin(origin)
 {
+	setHdScreen("saveMenus");
 	_screen = false;
 
 	// Create objects

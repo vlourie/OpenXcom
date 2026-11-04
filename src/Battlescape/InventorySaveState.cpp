@@ -39,6 +39,7 @@ namespace OpenXcom
 */
 InventorySaveState::InventorySaveState(InventoryState *parent) : _parent(parent), _previousSelectedRow(-1), _selectedRow(-1)
 {
+	setHdScreen("inventorySave");
 	_screen = false;
 
 	// Create objects

@@ -83,6 +83,7 @@ static const int ROW_NONE = -1, ROW_ART = -2, ROW_LAB = -3, ROW_LAB_LOCK = -4, R
  */
 OptionsHdState::OptionsHdState(OptionsOrigin origin) : OptionsBaseState(origin), _betterAiView(false), _aiGroup(-1)
 {
+	setHdScreen("hdMenu");
 	setCategory(_btnHd);
 
 	for (int t = 0; t < HD_TAB_COUNT; ++t)

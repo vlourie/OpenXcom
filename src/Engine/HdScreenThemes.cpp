@@ -19,6 +19,7 @@
 #include "HdScreenThemes.h"
 #include <algorithm>
 #include <sstream>
+#include <unordered_set>
 #include <vector>
 #include "CrossPlatform.h"
 #include "HdBattleHud.h"
@@ -34,36 +35,78 @@ namespace
 
 const char *FILE_NAME = "hd_screen_themes.yml";
 
-/// The tree's top: the groups under "all" and the screens (the interface categories of the ruleset) in each. A name the table
-/// does not know hangs straight under "all". The groups have the names of the main screens too (geoscape, basescape): that
-/// screen is the group itself. The table of every screen is stage 4 of XP-000484.
+/// The tree's top: the groups under "all" and the screens in each. A name the table does not know (another mod's) hangs
+/// straight under "all". The groups have the names of the main screens too (geoscape, basescape): that screen is the group itself.
+/// Every name in the lists is a screen of the game: an interface category of the ruleset (setInterface, getInterface), or, with
+/// "!", a window that has none (it names itself by State::setHdScreen). "name:parent" puts a screen under another one of the table
+/// (a room's window, a sub-window of the production), otherwise it is under its group. The window of the menu shows three
+/// levels at most (group, screen, its sub-screen): the table keeps to that.
 struct Group
 {
 	const char *name;
-	const char *screens;   ///< names, separated by spaces
+	const char *screens;   ///< tokens, separated by spaces: name, name!, name:parent, name!:parent
 };
 
 const Group GROUPS[] = {
-	{ "menu", "mainMenu newGameMenu newBattleMenu optionsMenu saveMenus modsMenu pauseMenu noteMenu oxceLinks endGameStatistics "
-		"tests ufopaedia statsForNerds" },
-	{ "geoscape", "intercept dogfight dogfightExperience dogfightInfo graphs fundingWindow monthlyReport ufoTracker geoCraft "
-		"selectMusicTrack itemsArriving baseNaming baseDestroyed targetInfo multipleTargets" },
-	{ "basescape", "baseInfo allocateManufacture allocateMartial allocatePsi allocateResearch buyMenu sellMenu costsInfo craftArmor "
-		"craftEquipment craftEquipmentLoad craftEquipmentSave craftInfo craftPilots craftPilotsSelect craftSelect craftSoldiers "
-		"craftWeapons dependencyTree dismantleFacility globalContainmentMenu globalManufactureMenu globalResearchDiary "
-		"globalResearchMenu itemLocations manageContainment manufactureInfo manufactureMenu placeFacility researchMenu sackSoldier "
-		"selectFacility selectNewManufacture selectNewResearch soldierArmor soldierAvatar soldierBonus soldierDiary "
-		"soldierDiaryLight soldierDiaryMission soldierDiaryPerformance soldierInfo soldierList soldierMemorial soldierRank "
-		"soldierTransform soldierTransformation soldierVoice storesInfo techTreeSelect techTreeViewer transferBaseSelect "
-		"transferConfirm transferInfo transferMenu transformationList" },
-	{ "battlescape", "debriefing commendations commendationsLate promotions cannotReequip" },
+	{ "menu", "mainMenu newGameMenu newBattleMenu "
+		"optionsMenu videoMenu:optionsMenu audioMenu:optionsMenu controlsMenu:optionsMenu geoscapeMenu:optionsMenu "
+		"battlescapeMenu:optionsMenu advancedMenu:optionsMenu foldersMenu:optionsMenu hdMenu!:optionsMenu hdWindows!:optionsMenu "
+		"optionsDialog!:optionsMenu saveMenus modsMenu pauseMenu abandonGame!:pauseMenu noteMenu oxceLinks endGameStatistics tests "
+		"ufopaedia ufopaediaArticle!:ufopaedia statsForNerds" },
+	{ "geoscape", "intercept dogfight dogfightExperience:dogfight dogfightInfo:dogfight graphs fundingWindow monthlyReport ufoTracker "
+		"geoCraft craftLaunch! selectMusicTrack itemsArriving buildNewBase! confirmNewBase!:buildNewBase baseNaming:buildNewBase "
+		"selectDestination! baseDestroyed baseDefense baseDefense_geo targetInfo multipleTargets" },
+	{ "basescape", "baseInfo storesInfo:baseInfo costsInfo:baseInfo transferInfo:baseInfo selectFacility placeFacility:selectFacility "
+		"dismantleFacility manufactureMenu selectNewManufacture:manufactureMenu allocateManufacture:manufactureMenu "
+		"manufactureInfo:manufactureMenu dependencyTree:manufactureMenu globalManufactureMenu "
+		"researchMenu selectNewResearch:researchMenu allocateResearch:researchMenu techTreeViewer techTreeSelect:techTreeViewer "
+		"globalResearchMenu globalResearchDiary:globalResearchMenu "
+		"craftSelect craftInfo craftSoldiers craftArmor craftWeapons craftPilots craftPilotsSelect:craftPilots "
+		"craftEquipment craftEquipmentLoad:craftEquipment craftEquipmentSave:craftEquipment "
+		"soldierList soldierInfo soldierArmor:soldierInfo soldierBonus:soldierInfo soldierRank:soldierInfo soldierTransform:soldierInfo "
+		"transformationList:soldierInfo soldierTransformation:soldierInfo trainingBlocks!:soldierInfo soldierVoice:soldierInfo "
+		"soldierAvatar:soldierInfo sackSoldier:soldierInfo soldierDiary soldierDiaryMission:soldierDiary "
+		"soldierDiaryPerformance:soldierDiary soldierDiaryLight:soldierDiary soldierMemorial "
+		"buyMenu sellMenu transferMenu transferConfirm:transferMenu transferBaseSelect allocateMartial allocatePsi manageContainment "
+		"globalContainmentMenu itemLocations" },
+	{ "battlescape", "debriefing commendations commendationsLate:commendations promotions cannotReequip briefing "
+		"inventory inventoryLoad!:inventory inventorySave!:inventory inventoryPersonal!:inventory alienInventory!:inventory "
+		"medikit minimap scanner! actionMenu! skillMenu! stats soldierStatChange! abortMission! confirmEndMission! aliensCrash! "
+		"nextTurn! experienceOverview! noExperience! turnDiary! primeGrenade! infobox! infoboxOK!" },
 	{ "messages", "UFOInfo UFOLost alienBase terrorSite craftError craftPilotError craftPatrol lowFuel geoscapeEvent geoManufacture "
 		"geoManufactureComplete geoNewCraft geoNewFacility geoNewItem geoResearch geoResearchComplete geoResearchRequired "
-		"trainingFinished martialTraining psiTraining" },
+		"trainingFinished martialTraining psiTraining errorMessages" },
 	{ "landing", "confirmLanding confirmCydonia confirmDestination" },
 };
 
 const char *ALL = "all";
+
+/// One token of a group's list: the screen, its parent ("" = the group), whether it has no ruleset category ("!").
+struct Token
+{
+	std::string name;
+	std::string parent;
+	bool noCategory = false;
+};
+
+Token parseToken(const std::string &s)
+{
+	Token t;
+	std::string name = s;
+	const size_t colon = name.find(':');
+	if (colon != std::string::npos)
+	{
+		t.parent = name.substr(colon + 1);
+		name = name.substr(0, colon);
+	}
+	if (!name.empty() && name.back() == '!')
+	{
+		t.noCategory = true;
+		name.pop_back();
+	}
+	t.name = name;
+	return t;
+}
 
 /// Screen -> its parent: every group and every screen of the table.
 const std::unordered_map<std::string, std::string> &tree()
@@ -79,16 +122,38 @@ const std::unordered_map<std::string, std::string> &tree()
 			std::string s;
 			while (in >> s)
 			{
+				const Token token = parseToken(s);
 				// (a screen named like its group, as geoscape and basescape are, is the group)
-				if (m.find(s) == m.end())
+				if (m.find(token.name) == m.end())
 				{
-					m[s] = g.name;
+					m[token.name] = token.parent.empty() ? g.name : token.parent;
 				}
 			}
 		}
 		return m;
 	}();
 	return t;
+}
+
+/// The screens with no ruleset category ("!" in the table): the menu lists them whatever the ruleset says.
+const std::unordered_set<std::string> &noCategory()
+{
+	static const std::unordered_set<std::string> s = []
+	{
+		std::unordered_set<std::string> r;
+		for (const Group &g : GROUPS)
+		{
+			std::istringstream in(g.screens);
+			std::string tok;
+			while (in >> tok)
+			{
+				const Token token = parseToken(tok);
+				if (token.noCategory) r.insert(token.name);
+			}
+		}
+		return r;
+	}();
+	return s;
 }
 
 /// One value of a theme: its key in the file, its place in Values, its bounds and the option it is laid into.
@@ -330,31 +395,41 @@ const std::vector<std::string> &HdScreenThemes::groups()
 	return g;
 }
 
-const std::vector<std::string> &HdScreenThemes::screensOf(const std::string &group)
+const std::vector<std::string> &HdScreenThemes::childrenOf(const std::string &parent)
 {
 	static const std::unordered_map<std::string, std::vector<std::string>> m = []
 	{
 		std::unordered_map<std::string, std::vector<std::string>> r;
 		for (const Group &g : GROUPS)
 		{
-			std::vector<std::string> &list = r[g.name];
 			std::istringstream in(g.screens);
 			std::string s;
 			while (in >> s)
 			{
-				// (only the screens the tree puts under this group: a name that is a group itself, or one listed twice, is not repeated)
-				const auto t = tree().find(s);
-				if (t != tree().end() && t->second == g.name && std::find(list.begin(), list.end(), s) == list.end())
+				// (only what the tree puts under its parent: a name that is a group itself, or one listed twice, is not repeated)
+				const Token token = parseToken(s);
+				const auto t = tree().find(token.name);
+				if (t == tree().end() || t->second == ALL)
 				{
-					list.push_back(s);
+					continue;
+				}
+				std::vector<std::string> &list = r[t->second];
+				if (std::find(list.begin(), list.end(), token.name) == list.end())
+				{
+					list.push_back(token.name);
 				}
 			}
 		}
 		return r;
 	}();
 	static const std::vector<std::string> none;
-	const auto found = m.find(group);
+	const auto found = m.find(parent);
 	return found == m.end() ? none : found->second;
+}
+
+bool HdScreenThemes::hasNoCategory(const std::string &screen)
+{
+	return noCategory().count(screen) != 0;
 }
 
 namespace

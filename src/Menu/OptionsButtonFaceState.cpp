@@ -67,6 +67,7 @@ const int START[3] = { 0, 0, 40 };
  */
 OptionsButtonFaceState::OptionsButtonFaceState(OptionsOrigin origin) : _origin(origin), _faceSel(0), _shapeSel(0)
 {
+	setHdScreen("hdWindows");
 	_screen = false;
 
 	_was[0] = Options::oxceHdButtonFace;

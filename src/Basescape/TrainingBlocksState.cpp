@@ -35,6 +35,7 @@ namespace OpenXcom
  */
 TrainingBlocksState::TrainingBlocksState(const std::string &title, const std::vector<std::string> &blocks)
 {
+	setHdScreen("trainingBlocks");
 	_screen = false;
 
 	// Create objects

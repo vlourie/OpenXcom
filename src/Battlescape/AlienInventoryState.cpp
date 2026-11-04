@@ -47,6 +47,7 @@ namespace OpenXcom
  */
 AlienInventoryState::AlienInventoryState(BattleUnit *unit)
 {
+	setHdScreen("alienInventory");
 	if (Options::maximizeInfoScreens)
 	{
 		Options::baseXResolution = Screen::ORIGINAL_WIDTH;

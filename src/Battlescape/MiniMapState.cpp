@@ -41,6 +41,7 @@ namespace OpenXcom
  */
 MiniMapState::MiniMapState (Camera * camera, SavedBattleGame * battleGame, int maxShade)
 {
+	setHdScreen("minimap");
 	if (Options::maximizeInfoScreens)
 	{
 		Options::baseXResolution = Screen::ORIGINAL_WIDTH;

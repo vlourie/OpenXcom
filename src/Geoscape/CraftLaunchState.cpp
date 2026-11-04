@@ -130,6 +130,7 @@ int fade(Uint32 t, Uint32 length, bool in, bool out)
 CraftLaunchState::CraftLaunchState(std::unique_ptr<HdVideo> video, const Craft *craft, Base *base, bool landing) :
 	_video(std::move(video)), _craft(craft), _base(base), _landing(landing), _phase(PHASE_CLIP)
 {
+	setHdScreen("craftLaunch");
 	if (_base)
 	{
 		// the base view in the middle of the screen, as the basescape draws it (the world layer is

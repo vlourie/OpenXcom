@@ -35,6 +35,7 @@ namespace OpenXcom
  */
 OptionsControlsState::OptionsControlsState(OptionsOrigin origin) : OptionsBaseState(origin), _selected(-1), _selKey(0)
 {
+	setHdScreen("controlsMenu");
 	setCategory(_btnControls);
 
 	// Create objects

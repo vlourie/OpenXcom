@@ -123,6 +123,7 @@ namespace OpenXcom
 	ArticleState::ArticleState(const std::string &article_id, std::shared_ptr<ArticleCommonState> state) : _id(article_id)
 	{
 		// init background and navigation elements
+		setHdScreen("ufopaediaArticle");
 		_bg = new Surface(320, 200, 0, 0);
 		// the article's picture: its text lies straight on it, so the HD text is outlined over it
 		_bg->setHdKind(Surface::HD_PICTURE);

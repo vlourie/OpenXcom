@@ -40,6 +40,7 @@ namespace OpenXcom
  */
 AbandonGameState::AbandonGameState(OptionsOrigin origin) : _origin(origin)
 {
+	setHdScreen("abandonGame");
 	_screen = false;
 
 	int x;

@@ -38,6 +38,7 @@ namespace OpenXcom
  */
 InfoboxOKState::InfoboxOKState(const std::string &msg)
 {
+	setHdScreen("infoboxOK");
 	_screen = false;
 
 	// Create objects

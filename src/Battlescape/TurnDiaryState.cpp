@@ -37,6 +37,7 @@ namespace OpenXcom
  */
 TurnDiaryState::TurnDiaryState(const HitLog *hitLog)
 {
+	setHdScreen("turnDiary");
 	_screen = false;
 
 	// Create objects

@@ -37,6 +37,7 @@ namespace OpenXcom
  */
 NoExperienceState::NoExperienceState()
 {
+	setHdScreen("noExperience");
 	_screen = false;
 
 	// Create objects

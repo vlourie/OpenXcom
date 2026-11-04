@@ -60,6 +60,7 @@ const char *const TONE[3] = { "STR_HD_INK_TONE_AUTO", "STR_HD_INK_TONE_LIGHT", "
  */
 OptionsButtonInkState::OptionsButtonInkState(OptionsOrigin origin) : _toneSel(0)
 {
+	setHdScreen("hdWindows");
 	_screen = false;
 
 	_was[0] = Options::oxceHdButtonInkTone;

@@ -45,6 +45,7 @@ namespace OpenXcom
  */
 BriefingLightState::BriefingLightState(AlienDeployment *deployment)
 {
+	setHdScreen("briefing");
 	_screen = true;
 	// Create objects
 	_window = new Window(this, 320, 200, 0, 0);

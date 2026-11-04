@@ -36,6 +36,7 @@ namespace OpenXcom
 */
 InventoryLoadState::InventoryLoadState(InventoryState *parent) : _parent(parent)
 {
+	setHdScreen("inventoryLoad");
 	_screen = false;
 
 	// Create objects
