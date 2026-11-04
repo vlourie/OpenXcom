@@ -46,7 +46,9 @@ private:
 	Text *_txtTitle, *_txtAvailableScientist, *_txtAvailableSpace, *_txtAllocatedScientist, *_txtMore, *_txtLess;
 	Text *_txtEta = nullptr; // the line of the approximate term (option oxceHdResearchEta, XP-000491)
 	void setAssignedScientist();
+	Text *_txtEtaExpected = nullptr; // "expected about N days" under it (XP-000493)
 	std::string etaText() const;
+	std::string etaExpectedText() const;
 	ResearchProject *_project;
 	RuleResearch *_rule;
 	void buildUi();
@@ -58,6 +60,10 @@ public:
 	ResearchInfoState(Base *base, ResearchProject *project);
 	/// Cleans up the ResearchInfo state
 	~ResearchInfoState();
+	/// The days to the end by the ruleset cost, for the assign window and the research list (option oxceHdResearchEta).
+	static bool etaDays(const ResearchProject *project, long long &fromDays, long long &toDays, long long &expectedDays);
+	/// The short term "(2-5d)" for a cell of the research list; empty with no scientists.
+	static std::string etaShort(const State *state, const ResearchProject *project);
 	/// Resets state.
 	void init() override;
 	/// Handler for clicking the OK button.

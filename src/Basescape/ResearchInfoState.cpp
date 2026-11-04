@@ -34,6 +34,7 @@
 #include "../Engine/Timer.h"
 #include "../Engine/RNG.h"
 #include <climits>
+#include <sstream>
 
 namespace OpenXcom
 {
@@ -77,7 +78,8 @@ void ResearchInfoState::buildUi()
 
 	// the option "approximate term" (XP-000491) makes the window 14 px taller for one more line: the upper part
 	// goes 7 px up, the buttons 7 px down; with the option off every number is as it was
-	const int dy = Options::oxceHdResearchEta ? 7 : 0;
+	// (XP-000493: two lines now, the range and the "expected about N days", so 22 px taller: dy = 11)
+	const int dy = Options::oxceHdResearchEta ? 11 : 0;
 
 	_window = new Window(this, 230, 140 + 2 * dy, 45, 30 - dy);
 	_txtTitle = new Text(210, 17, 61, 40 - dy);
@@ -98,7 +100,8 @@ void ResearchInfoState::buildUi()
 
 	if (dy)
 	{
-		_txtEta = new Text(210, 9, 61, 134);
+		_txtEta = new Text(210, 9, 61, 132);
+		_txtEtaExpected = new Text(210, 9, 61, 141);
 	}
 
 	touchComponentsCreate(_txtTitle, false, -45, +30 - dy, true);
@@ -117,6 +120,7 @@ void ResearchInfoState::buildUi()
 	if (_txtEta)
 	{
 		add(_txtEta, "text", "allocateResearch");
+		add(_txtEtaExpected, "text", "allocateResearch");
 	}
 	add(_txtMore, "text", "allocateResearch");
 	add(_txtLess, "text", "allocateResearch");
@@ -238,6 +242,7 @@ void ResearchInfoState::setAssignedScientist()
 	if (_txtEta)
 	{
 		_txtEta->setText(etaText());
+		_txtEtaExpected->setText(etaExpectedText());
 	}
 }
 
@@ -252,30 +257,96 @@ void ResearchInfoState::setAssignedScientist()
  */
 std::string ResearchInfoState::etaText() const
 {
-	const long long cost = _project->getRules()->getCost();
-	const long long spent = _project->getSpent();
-	const long long assigned = _project->getAssigned();
-	if (cost <= 0)
-	{
-		// a project of no cost is finished by the next daily step, whoever works on it
-		return tr("STR_HD_RESEARCH_ETA_ONE").arg(std::string(tr("STR_DAY", 1u)));
-	}
-	if (assigned <= 0)
+	long long fromDays = 0, toDays = 0, expectedDays = 0;
+	if (!etaDays(_project, fromDays, toDays, expectedDays))
 	{
 		return tr("STR_HD_RESEARCH_ETA_NONE");
 	}
-	// the bounds of the random cost: as the constructor makes it, rule cost * (50..150) / 100, at least 1
-	const long long lowCost = std::max(1LL, cost * 50 / 100);
-	const long long highCost = std::max(lowCost, cost * 150 / 100);
-	const long long lowGoal = std::max(lowCost, spent + 1);
-	const long long highGoal = std::max(highCost, spent + 1);
-	const long long fromDays = (lowGoal - spent + assigned - 1) / assigned;
-	const long long toDays = (highGoal - spent + assigned - 1) / assigned;
 	if (fromDays >= toDays)
 	{
 		return tr("STR_HD_RESEARCH_ETA_ONE").arg(std::string(tr("STR_DAY", (unsigned)toDays)));
 	}
 	return tr("STR_HD_RESEARCH_ETA_RANGE").arg((int)fromDays).arg(std::string(tr("STR_DAY", (unsigned)toDays)));
+}
+
+/**
+ * The second line, "expected about N days" (XP-000493): the term if the cost were the ruleset cost itself.
+ * Empty when there is no scientists or the range is a single number.
+ */
+std::string ResearchInfoState::etaExpectedText() const
+{
+	long long fromDays = 0, toDays = 0, expectedDays = 0;
+	if (!etaDays(_project, fromDays, toDays, expectedDays) || fromDays >= toDays)
+	{
+		return "";
+	}
+	return tr("STR_HD_RESEARCH_ETA_EXPECTED").arg(std::string(tr("STR_DAY", (unsigned)expectedDays)));
+}
+
+/**
+ * The days to the end of a project counted from the ruleset cost, the spent and the scientists assigned now
+ * (the same numbers for the assign window and for the research list, XP-000493, XP-000494).
+ * The real cost of the project (_cost, the hidden RNG result) and the RNG are never touched: the bounds are the bounds
+ * of the RNG (rule cost * 50..150 / 100, as the constructor above makes it) and "expected" is the term at the ruleset
+ * cost itself, clamped to the bounds.
+ * @param project The project.
+ * @param fromDays Out: the least term, a day at least.
+ * @param toDays Out: the longest term.
+ * @param expectedDays Out: the term at the ruleset cost, between the two.
+ * @return False if there are no scientists (no term).
+ */
+bool ResearchInfoState::etaDays(const ResearchProject *project, long long &fromDays, long long &toDays, long long &expectedDays)
+{
+	const long long cost = project->getRules()->getCost();
+	const long long spent = project->getSpent();
+	const long long assigned = project->getAssigned();
+	if (cost <= 0)
+	{
+		// a project of no cost is finished by the next daily step, whoever works on it
+		fromDays = toDays = expectedDays = 1;
+		return true;
+	}
+	if (assigned <= 0)
+	{
+		return false;
+	}
+	const long long lowCost = std::max(1LL, cost * 50 / 100);
+	const long long highCost = std::max(lowCost, cost * 150 / 100);
+	const long long lowGoal = std::max(lowCost, spent + 1);
+	const long long highGoal = std::max(highCost, spent + 1);
+	fromDays = (lowGoal - spent + assigned - 1) / assigned;
+	toDays = (highGoal - spent + assigned - 1) / assigned;
+	const long long midGoal = std::max(cost, spent + 1);
+	expectedDays = std::min(toDays, std::max(fromDays, (midGoal - spent + assigned - 1) / assigned));
+	return true;
+}
+
+/**
+ * The short term for a cell of the research list, e.g. "(2-5d)" (option oxceHdResearchEta, XP-000494).
+ * @param state The state whose language is used.
+ * @param project The project.
+ * @return The text, empty if no scientists are assigned.
+ */
+std::string ResearchInfoState::etaShort(const State *state, const ResearchProject *project)
+{
+	long long fromDays = 0, toDays = 0, expectedDays = 0;
+	if (!etaDays(project, fromDays, toDays, expectedDays))
+	{
+		return "";
+	}
+	std::ostringstream range;
+	range << fromDays;
+	if (toDays > fromDays)
+	{
+		range << "-" << toDays;
+	}
+	std::string text = state->tr("STR_HD_RESEARCH_ETA_SHORT").arg(range.str());
+	if (text.compare(0, 4, "STR_") == 0)
+	{
+		// a language without the new string: the existing short day
+		text = state->tr("STR_DAY_SHORT").arg(range.str());
+	}
+	return text;
 }
 
 /**

@@ -230,6 +230,11 @@ std::string stateLine(Game *g)
 		// (XP-000097) does not touch the battle
 		out << " seed=" << RNG::getSeed() << " animFrame=" << sb->getAnimFrame();
 	}
+	else if (g->getSavedGame())
+	{
+		// outside a battle too (XP-000493): checks that a window does not draw random numbers
+		out << " seed=" << RNG::getSeed();
+	}
 	return out.str();
 }
 
