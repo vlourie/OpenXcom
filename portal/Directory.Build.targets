@@ -1,0 +1,10 @@
+<Project>
+  <!-- NU1903, CVE-2026-111497 (Brotli decoder, the launcher unpacks its update packs with it): SDK 10.0.302 brings ILCompiler
+       10.0.10, the fix is 10.0.14. Pinned here so any machine with the SDK from global.json publishes a patched exe.
+       An SDK that already brings 10.0.14 or newer turns this off by itself. -->
+  <ItemGroup Condition="$([MSBuild]::VersionLessThan('$(BundledNETCoreAppPackageVersion)', '10.0.14'))">
+    <KnownILCompilerPack Update="Microsoft.DotNet.ILCompiler" ILCompilerPackVersion="10.0.14" />
+    <KnownFrameworkReference Update="Microsoft.NETCore.App" LatestRuntimeFrameworkVersion="10.0.14" />
+    <KnownFrameworkReference Update="Microsoft.AspNetCore.App" LatestRuntimeFrameworkVersion="10.0.14" />
+  </ItemGroup>
+</Project>
