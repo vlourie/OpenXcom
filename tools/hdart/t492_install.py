@@ -12,6 +12,7 @@ ICEKING_VILLAGE:61 - 20 кадров, у каждого основа и вари
     py -3.13 tools\hdart\t492_install.py --yes           установить землю (под очередью правок)
     py -3.13 tools\hdart\t492_install.py --b1 [--yes]    кадры B, вариант B1 (чистая классика)
     py -3.13 tools\hdart\t492_install.py --b2 [--yes]    кадры B, вариант B2 (круглое зерно)
+    py -3.13 tools\hdart\t492_install.py --plant [--yes] перерисовка IDT_SNOWCULTIVAT 1, 4, 6, 7, вариант 2 (Vitali 04.11: «все 2»)
 """
 import os
 import shutil
@@ -31,11 +32,16 @@ import water_build as wb                     # noqa: E402
 
 BACKUP = os.path.join(ROOT, "art", "_backup", "tickets_2026-11-04")
 REPO_PACK = os.path.join(ROOT, "user", "mods", "hd", "hd")
+PLANT = (1, 4, 6, 7)     # 6 - куст, 7 - кочан: нарисованы заново, средний цвет сверять только у земли 1 и 4
 
 
 def collect(style):
     files = {}
-    if style is None:
+    if style == "plant":
+        for f in PLANT:
+            files["TERRAIN/IDT_SNOWCULTIVAT.PCK/%d.png" % f] = os.path.join(
+                ROOT, "art", "tickets", "t492", "plant", "v2", "IDT_SNOWCULTIVAT_%d.png" % f)
+    elif style is None:
         for s, f in tb.FAMILY:
             for v in range(4):
                 n = tb.name_of(f, v)
@@ -59,6 +65,8 @@ def check(files):
             a = np.asarray(im).astype(float)
         sname, name = rel.split("/")[1][:-4], rel.split("/")[2]
         f = int(name.split(".")[0])
+        if sname == "IDT_SNOWCULTIVAT" and f in (6, 7):
+            continue
         P = wb.read_set(sname)[f]
         m = P > 0
         cl = pal[P[m]][:, :3].mean(0)
@@ -72,7 +80,7 @@ def check(files):
 def main():
     sys.stdout.reconfigure(encoding="utf-8")
     yes = "--yes" in sys.argv
-    style = "B1" if "--b1" in sys.argv else "B2" if "--b2" in sys.argv else None
+    style = "B1" if "--b1" in sys.argv else "B2" if "--b2" in sys.argv else "plant" if "--plant" in sys.argv else None
     files = collect(style)
     check(files)
     print("файлов к установке: %d (%s)" % (len(files), style or "земля, семья S2"))
@@ -86,7 +94,12 @@ def main():
             shutil.copyfile(src, dst)
     print("резерв:", BACKUP)
     import ticket_scene as ts
-    if style is None:
+    if style == "plant":
+        n = ts.install_files(files, "t492_plant",
+                             "XP-000492: IDT_SNOWCULTIVAT 1, 4 земля крупой, 6 куст, 7 кочан капусты, вариант 2",
+                             "Vitali 04.11 в чате: «все 2»",
+                             "t492: растения и земля IDT_SNOWCULTIVAT, вариант 2")
+    elif style is None:
         n = ts.install_files(files, "t492_install",
                              "XP-000492: земля S2, семья IDT_SNOWBARN:0 (20 кадров с вариантами v1-v3)",
                              "Vitali 04.11 в чате: вариант 1 (земля S2)",
