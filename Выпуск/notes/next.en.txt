@@ -2,3 +2,4 @@
 - Snow village: the bush and the cabbage heads on the garden beds look like plants again instead of stones; the soil and bed tiles are redrawn with fine grain.
 - Base, research: with the option "Approximate research term" the scientists window shows "Expected ~N days" under the range, and the research list shows the term in brackets after the number of scientists, for example "3 (2-5d)". It is an estimate from the ruleset cost; the real cost stays hidden.
 - The hyena rider no longer walks backwards: as before, the hyena turns before stepping back and pays TU for it. Vehicles keep their reverse gear.
+- Sand near the crashed plane (desert and snow, and the "Sands" terrain): the crater is a pit again instead of a frame with pipes, and the flat tile is flat again, with no pipes and no patch among its neighbours.
