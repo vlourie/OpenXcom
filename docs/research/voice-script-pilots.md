@@ -36,7 +36,7 @@
 | --- | --- | --- |
 | 07 | Принято, ложусь на курс. | Copy, setting course. |
 | 08 | Курс взят. | Course locked. |
-| 09 | Понял, лечу. | Got it, flying. |
+| 09 | Поняла, лечу. | Got it, flying. |
 | 10 | Есть. Будем там раньше, чем ждут. | Aye. We'll beat them there. |
 | 11 | Принято. Держитесь крепче. | Copy. Hold on tight. |
 | 12 | Уже в пути. | Already on my way. |
@@ -104,7 +104,7 @@
 | 44 | Ну, как скажешь. | Well, if you say so. |
 | 45 | Отбой. Жду дальше. | Standing down. Waiting. |
 | 46 | Ладно, остаюсь. | Fine, I'll stay. |
-| 47 | Понял, отмена. | Copy, cancelled. |
+| 47 | Поняла, отмена. | Copy, cancelled. |
 | 48 | Передумал, кэп? | Changed your mind, Cap? |
 
 **damaged**
@@ -222,7 +222,7 @@
 | 44 | Ну и ладно. | Fine then. |
 | 45 | Отбой. Стою. | Stand down. Parked. |
 | 46 | Стою, жду. | Parked, waiting. |
-| 47 | Понял, отмена. | Copy, cancelled. |
+| 47 | Поняла, отмена. | Copy, cancelled. |
 | 48 | Передумал? Бывает. | Changed your mind? Happens. |
 
 **damaged**
