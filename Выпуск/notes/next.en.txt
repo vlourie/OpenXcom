@@ -10,6 +10,7 @@
 - Lockers next to the base beds no longer show through at the top.
 - The wooden farm staircase was redrawn: left and right now share one style, with clean edges and real gaps between the steps.
 - Wasteland filling station: the fuel pump and the bucket were redrawn and are no longer blurry. The pump now looks like a real one, with a hose and nozzle; the bucket is round, with even recesses.
+- Snow village: the white snow, tiles and garden bed were redrawn from the original's pattern and are sharper; the made-up green and black detail on the bed is gone.
 - Pilot voices on the globe: the female pilots and drivers were re-recorded. The old voices sounded masculine despite their pitch, and the Russian lines used the masculine form; now they have a female timbre and the correct wording (ticket XP-000461).
 - Launcher 0.4.4: fixed a security issue in the .NET Brotli decoder (CVE-2026-111497); the launcher updates itself.
 - Snowy village and winter forest: the grey ground no longer looks like crumpled foil. It was redrawn as fine grain following the original pattern, with three variants per tile so the field does not repeat as a grid, with clean edges; the same ground tiles in the winter forests and in the Ice King village got the same fix (ticket XP-000492).
