@@ -44,7 +44,9 @@ private:
 	ArrowButton *_btnMore, *_btnLess;
 	Window *_window;
 	Text *_txtTitle, *_txtAvailableScientist, *_txtAvailableSpace, *_txtAllocatedScientist, *_txtMore, *_txtLess;
+	Text *_txtEta = nullptr; // the line of the approximate term (option oxceHdResearchEta, XP-000491)
 	void setAssignedScientist();
+	std::string etaText() const;
 	ResearchProject *_project;
 	RuleResearch *_rule;
 	void buildUi();

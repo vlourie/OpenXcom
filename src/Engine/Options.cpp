@@ -489,7 +489,8 @@ void createAdvancedOptionsOXCE()
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdGlobeBox", &oxceHdGlobeBox, false, "STR_HD_GLOBE_BOX", "STR_HD_GEOSCAPE")); // OXCE-HD
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdFundsToggle", &oxceHdFundsToggle, false, "STR_HD_FUNDS_TOGGLE", "STR_HD_GEOSCAPE")); // OXCE-HD
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdManufactureTop", &oxceHdManufactureTop, false, "STR_HD_MANUFACTURE_TOP", "STR_HD_BASE")); // OXCE-HD
-	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdScrollSplit", &oxceHdScrollSplit, false, "STR_HD_SCROLL_SPLIT", "STR_HD_BATTLE_UI")); // OXCE-HD
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdResearchEta", &oxceHdResearchEta, false, "STR_HD_RESEARCH_ETA", "STR_HD_BASE")); // OXCE-HD
+	_info.push_back(OptionInfo(OPTION_OXCE, "oxceHdScrollSplit",&oxceHdScrollSplit, false, "STR_HD_SCROLL_SPLIT", "STR_HD_BATTLE_UI")); // OXCE-HD
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceDogfightHitChance", &oxceDogfightHitChance, true, "STR_DOGFIGHT_HIT_CHANCE", "STR_HD_GEOSCAPE")); // OXCE-HD
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceShowETAMode", &oxceShowETAMode, 0, "STR_SHOW_ETA", "STR_GEOSCAPE"));
 	_info.push_back(OptionInfo(OPTION_OXCE, "oxceUfoLandingAlert", &oxceUfoLandingAlert, false, "STR_UFO_LANDING_ALERT", "STR_GEOSCAPE"));
