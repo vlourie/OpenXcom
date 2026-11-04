@@ -331,6 +331,9 @@ OPT bool oxceHdBloodSpray;
 // HD render (XP-000366, 367, 368): the blood of a hit on a creature in the colour the mod's table hd/blood.txt gives its armour (zombies ochre green, the deep
 // ones blue, ogres and ubers dark red, machines graphite), the tone changed and the brightness kept (HdFx::bloodRgb, HdFx::tinted); picture only. Off by default: red as before
 OPT bool oxceHdBloodColor;
+// Battlescape (XP-000490): the colour flash of a unit's body at a hit (X-Piratez, HitFX-basic.rul: white armour, red health, blue stun, yellow morale);
+// off = the mod's flash script is not run for the picture, nothing else of the game changes. On by default: as the mod made it
+OPT bool oxceHdHitFlash;
 // HD render (XP-000421): a unit that steps on the tile of a bleeding unit leaves bloody soles on its next two tiles, fading in three turns; the colour is the
 // blood colour of the one who bleeds (HdFx::bloodRgb); kept in the Map only, not saved; picture only. Off by default
 OPT bool oxceHdBloodSteps;
