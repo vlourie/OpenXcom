@@ -40,6 +40,7 @@
 #include "OptionsCustomColorState.h"
 #include "OptionsButtonFaceState.h"
 #include "OptionsButtonInkState.h"
+#include "OptionsScreenThemesState.h"
 
 namespace OpenXcom
 {
@@ -72,7 +73,8 @@ static const std::string AI_CATEGORY = "STR_HD_AI";
 /// BetterAI screen, ROW_BACK goes back from it.
 /// ROW_CUSTOM opens the window of the player's own colour of the battle panel (under that colour's row); ROW_FACE the window of
 /// the windows' buttons' look (under the row of their theme), ROW_INK the window of their letters (under that row).
-static const int ROW_NONE = -1, ROW_ART = -2, ROW_LAB = -3, ROW_LAB_LOCK = -4, ROW_BETTERAI = -5, ROW_BACK = -6, ROW_CUSTOM = -7, ROW_FACE = -8, ROW_INK = -9, ROW_WINCUSTOM = -10;
+static const int ROW_NONE = -1, ROW_ART = -2, ROW_LAB = -3, ROW_LAB_LOCK = -4, ROW_BETTERAI = -5, ROW_BACK = -6, ROW_CUSTOM = -7, ROW_FACE = -8, ROW_INK = -9, ROW_WINCUSTOM = -10, ROW_SCREENS = -11;
+/// ROW_SCREENS opens the window of the themes by screen (under the row of the windows' own colour; XP-000484).
 /// ROW_WINCUSTOM opens the window of the player's own colour of the windows' metal (under the row of the windows' colour; XP-000479).
 
 /**
@@ -384,6 +386,12 @@ void OptionsHdState::updateList()
 				// under the windows' colour: the window where the player makes one of his own for them (XP-000479)
 				addRow(ROW_WINCUSTOM, 0, std::string(tr("STR_HD_WIN_CUSTOM_COLOR")) + " >", "");
 				if (dependsOff(info))
+				{
+					_lstOptions->setRowColor(_lstOptions->getLastRowIndex(), _greyedOutColor);
+				}
+				// and the window of the themes by screen: each screen its own colour, look and letters, or its parent's (XP-000484)
+				addRow(ROW_SCREENS, 0, std::string(tr("STR_HD_SCREEN_THEMES")) + " >", "");
+				if (Options::oxceHdUi <= 0 || Options::oxceHdUiSkin <= 0)   // (the themes need the skin; the global switch of the theme they do not)
 				{
 					_lstOptions->setRowColor(_lstOptions->getLastRowIndex(), _greyedOutColor);
 				}
@@ -739,6 +747,11 @@ void OptionsHdState::changeSetting(size_t sel, Uint8 button)
 		_game->pushState(new OptionsCustomColorState(_origin, true));
 		return;
 	}
+	if (row.group == ROW_SCREENS)
+	{
+		_game->pushState(new OptionsScreenThemesState(_origin));
+		return;
+	}
 	if (row.group == ROW_FACE)
 	{
 		_game->pushState(new OptionsButtonFaceState(_origin));
@@ -1010,6 +1023,10 @@ std::string OptionsHdState::rowDescription(size_t sel) const
 		{
 			desc = tr("STR_HD_WIN_CUSTOM_COLOR_DESC");
 		}
+		else if (row.group == ROW_SCREENS)
+		{
+			desc = tr("STR_HD_SCREEN_THEMES_DESC");
+		}
 		else if (row.group == ROW_FACE)
 		{
 			desc = tr("STR_HD_BUTTON_FACE_DESC");
@@ -1053,7 +1070,7 @@ void OptionsHdState::showDetail(size_t sel)
 	{
 		return;
 	}
-	if (row.group == ROW_LAB || row.group == ROW_LAB_LOCK || row.group == ROW_BETTERAI || row.group == ROW_BACK || row.group == ROW_CUSTOM || row.group == ROW_WINCUSTOM || row.group == ROW_FACE || row.group == ROW_INK)
+	if (row.group == ROW_LAB || row.group == ROW_LAB_LOCK || row.group == ROW_BETTERAI || row.group == ROW_BACK || row.group == ROW_CUSTOM || row.group == ROW_WINCUSTOM || row.group == ROW_SCREENS || row.group == ROW_FACE || row.group == ROW_INK)
 	{
 		changeSetting(sel, SDL_BUTTON_LEFT);
 		return;
