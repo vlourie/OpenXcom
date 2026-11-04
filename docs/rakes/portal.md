@@ -386,3 +386,21 @@
 Правило:  Всё, что качает игрок, проверять глазами игрока: Свойства - Подробно (VersionInfo) у каждого нашего exe. Версия установщика - из Xp.Launcher.csproj, одна точка подъёма.
 Защита:   publish.ps1 после dotnet publish: FileDescription 'X-Piratez HD*', CompanyName 'X-Piratez HD', FileVersion установщика = лаунчера, иначе throw
 Наступал: 1   Последний: 2026-10-29
+
+## R-594  Совет по безопасности .NET в день публикации останавливает любую сборку портала: NU1903 как ошибка
+Статус:   активны
+Файлы:    portal/Directory.Build.targets,portal/Directory.Build.props
+Симптом:  dotnet test и dotnet publish падают на восстановлении пакетов: Microsoft.DotNet.ILCompiler 10.0.10 has a known high severity vulnerability, код накануне собирался
+Причина:  TreatWarningsAsErrors делает NU1903 ошибкой; версию ILCompiler задаёт SDK 10.0.302, а база советов NuGet обновляется сама, без правок в репозитории
+Правило:  Поднимать версию пакетов в portal/Directory.Build.targets до исправленной из совета (она отключается сама на новом SDK), уязвимость не глушить. Проверять по ilc.rsp, какой версией собран exe. Лаунчер у игроков заменится только с новым номером версии
+Защита:   сборка сама останавливается на NU1903
+Наступал: 1   Последний: 2026-11-04
+
+## R-603  ssh на станцию: там cmd, а не PowerShell - ';' не разделяет команды
+Статус:   активны
+Файлы:    docs/handbook/build.md
+Симптом:  cd C:\xp-portal\portal\deploy; powershell ... station.ps1 releases - ответ 'The filename, directory name, or volume label syntax is incorrect', код 0 у конвейера, каналы остались на старом выпуске
+Причина:  оболочка ssh на станции - cmd: ';' не разделитель; записанная в памяти команда была с ';'
+Правило:  на станцию: cd /d <папка> && powershell -File ...; строку отдавать в одинарных кавычках Git Bash и с полным именем файла, без переменных; после station.ps1 releases смотреть channels/stable.json, а не конец вывода
+Защита:   нет
+Наступал: 1   Последний: 2026-11-04
