@@ -58,6 +58,9 @@ protected:
 	RuleInterface *_ruleInterface;
 	RuleInterface *_ruleInterfaceParent;
 	const Sound* _customSound;
+	/// The screen of the theme by screen (XP-000484): set with the interface, may be named by setHdScreen; empty = the screen below's.
+	std::string _hdScreen;
+	bool _hdScreenFixed = false;
 
 	SDL_Color _palette[256];
 	Uint8 _cursorColor;
@@ -68,6 +71,10 @@ public:
 	virtual ~State();
 	/// Set interface rules.
 	void setInterface(const std::string &s, bool alterPal = false, SavedBattleGame *battleGame = 0);
+	/// Names the screen of the theme by screen (where a category is shared by different screens, or there is none); the later setInterface does not change it.
+	void setHdScreen(const std::string &screen);
+	/// The screen of the theme by screen, empty = this state has none (the one below's is taken).
+	const std::string &getHdScreen() const { return _hdScreen; }
 	/// Set window background.
 	void setWindowBackground(Window *window, const std::string &s);
 	/// Set window background by image name (instead of by interface name).

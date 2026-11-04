@@ -20,6 +20,7 @@
 #include <SDL.h>
 #include "../Engine/Game.h"
 #include "../Engine/Options.h"
+#include "../Engine/HdScreenThemes.h"
 #include "../Engine/Screen.h"
 #include "../Mod/Mod.h"
 #include "../Savegame/SavedGame.h"
@@ -221,6 +222,7 @@ void OptionsBaseState::btnOkClick(Action *)
 	dY = Options::baseYResolution - dY;
 	recenter(dX, dY);
 	Options::save();
+	HdScreenThemes::instance().load();   // the themes by screen (XP-000484): the file is read again on leaving the options window
 	_game->loadLanguages();
 	_game->getScreen()->resetDisplay();
 	SDL_WM_GrabInput(Options::captureMouse);

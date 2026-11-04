@@ -82,6 +82,10 @@ void State::setInterface(const std::string& category, bool alterPal, SavedBattle
 	int backPal = -1;
 	std::string pal = "PAL_GEOSCAPE";
 
+	if (!_hdScreenFixed)
+	{
+		_hdScreen = category;
+	}
 	_ruleInterface = _game->getMod()->getInterface(category);
 	if (_ruleInterface)
 	{
@@ -130,9 +134,24 @@ void State::setInterface(const std::string& category, bool alterPal, SavedBattle
  */
 void State::setWindowBackground(Window *window, const std::string &s)
 {
+	if (!_hdScreenFixed && _hdScreen.empty())
+	{
+		_hdScreen = s;
+	}
 	auto& bgImageName = _game->getMod()->getInterface(s)->getBackgroundImage(_game->getMod(), _game->getSavedGame());
 	setWindowBackgroundImage(window, bgImageName);
 	window->setInterfaceName(s);
+}
+
+/**
+ * Names the screen of the theme by screen (XP-000484, HdScreenThemes) where the interface category is shared by different
+ * screens or the state has none. Fixed: a setInterface or setWindowBackground after it does not change the name.
+ * @param screen Name of the screen.
+ */
+void State::setHdScreen(const std::string &screen)
+{
+	_hdScreen = screen;
+	_hdScreenFixed = true;
 }
 
 /**

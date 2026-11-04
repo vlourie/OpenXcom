@@ -2302,9 +2302,16 @@ std::vector<Uint32> castFace(int W, int H, float k, int face, int shape, float g
 	return out;
 }
 
-int faceScale = 0, faceTheme = -1;
-std::unordered_map<Uint64, std::vector<Uint32>> faceCache;
-Uint32 faceLut[256];
+/// The casts of one colour of the windows' metal (windowThemeKey) with the shades of that metal: the themes by screen
+/// (XP-000484) put different colours into one frame, so each colour keeps its own, they are not thrown out in turn.
+struct FaceSet
+{
+	std::unordered_map<Uint64, std::vector<Uint32>> cache;
+	Uint32 lut[256];
+};
+int faceScale = 0;
+size_t faceCasts = 0;
+std::unordered_map<int, FaceSet> faceSets;
 
 }
 
@@ -2318,20 +2325,27 @@ void HdBattleHud::drawFace(int x, int y, int w, int h, bool pressed, bool over, 
 	const int gloss = std::min(std::max(Options::oxceHdButtonGloss, 0), 100);
 	// the casts go with the colours (the metal's shades are read here, on the main thread) and the scale
 	const int themeNow = windowThemeKey();
-	if (k != faceScale || themeNow != faceTheme || faceCache.size() > 256)
+	if (k != faceScale || faceCasts > 256 || faceSets.size() > 8)
 	{
-		faceCache.clear();
+		faceSets.clear();
+		faceCasts = 0;
 		faceScale = k;
-		faceTheme = themeNow;
-		for (int i = 0; i < 256; ++i) faceLut[i] = windowMetalShade((float)i / 255.0f);
 	}
+	auto set = faceSets.find(themeNow);
+	if (set == faceSets.end())
+	{
+		set = faceSets.emplace(themeNow, FaceSet()).first;
+		for (int i = 0; i < 256; ++i) set->second.lut[i] = windowMetalShade((float)i / 255.0f);
+	}
+	FaceSet &faces = set->second;
 	const int W = w * k, H = h * k;
 	const Uint64 key = (Uint64)W | (Uint64)H << 14 | (Uint64)face << 28 | (Uint64)shape << 33 | (Uint64)gloss << 36
 		| (Uint64)pressed << 44 | (Uint64)over << 45;
-	auto found = faceCache.find(key);
-	if (found == faceCache.end())
+	auto found = faces.cache.find(key);
+	if (found == faces.cache.end())
 	{
-		found = faceCache.emplace(key, castFace(W, H, (float)k, face, shape, (float)gloss / 100.0f, pressed, over, faceLut)).first;
+		found = faces.cache.emplace(key, castFace(W, H, (float)k, face, shape, (float)gloss / 100.0f, pressed, over, faces.lut)).first;
+		++faceCasts;
 	}
 	HdUi::instance().drawImage(found->second.data(), W, H, x * k, y * k);
 }
@@ -2377,7 +2391,10 @@ int HdBattleHud::windowThemeKey()
 	if (windowColor() == COLOR_CUSTOM)
 	{
 		winCustomRefresh();
-		return 0x50000000 + (int)(winCustom.version & 0xFFFFFF);
+		// the colour itself, not the count of the ramp's buildings (XP-000484): screens with different own colours that take
+		// turns in a frame rebuild the ramp each time, but their caches stay (the same colour on two screens is one cache)
+		const auto in = [](int v, int hi) { return std::min(std::max(v, 0), hi); };
+		return 0x50000000 | (in(Options::oxceHdWinKeyHue, 359) << 14) | (in(Options::oxceHdWinKeySat, 100) << 7) | in(Options::oxceHdWinKeyVal, 100);
 	}
 	return 0x40000000 + windowColor();
 }
