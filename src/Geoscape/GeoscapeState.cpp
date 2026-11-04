@@ -723,6 +723,7 @@ void GeoscapeState::init()
 	// the wheel button on a globe label opens its ufopaedia article
 	_globe->onMouseClick((ActionHandler)&GeoscapeState::globeClick, SDL_BUTTON_MIDDLE);
 	_globe->onMouseOver(0);
+	_globe->boxCancel(); // OXCE-HD (oxceHdGlobeBox): a frame left over from before another window
 	_globe->rotateStop();
 	_globe->setFocus(true);
 	_globe->draw();
@@ -3022,7 +3023,17 @@ void GeoscapeState::globeClick(Action *action)
 	// Clicking markers on the globe
 	if (action->getDetails()->button.button == SDL_BUTTON_LEFT)
 	{
-		std::vector<Target*> v = _globe->getTargets(mouseX, mouseY, false, 0);
+		std::vector<Target*> v;
+		int bx0, by0, bx1, by1;
+		if (_globe->takeBox(bx0, by0, bx1, by1))
+		{
+			// OXCE-HD (oxceHdGlobeBox): a frame was drawn - the same list as a click gives, for the markers inside it
+			v = _globe->getTargetsInRect(bx0, by0, bx1, by1);
+		}
+		else
+		{
+			v = _globe->getTargets(mouseX, mouseY, false, 0);
+		}
 		if (!v.empty())
 		{
 			// Pass empty vector

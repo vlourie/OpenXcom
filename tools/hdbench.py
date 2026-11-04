@@ -10,6 +10,8 @@
 #
 # Команды (по одной в строке или через ';' в аргументе; '#' - комментарий). Координаты - пиксели БАЗОВОГО экрана (R-103):
 #   click|rclick|mclick|hover [ctrl+]x,y     wheel [ctrl+]up|down x,y      key [ctrl+|shift+|alt+]N|имя|fN (289 = F8)
+#   lpress|lmove|lrelease x,y   левая кнопка зажата / мышь движется с зажатой кнопкой / отпущена (рамка на глобусе,
+#                        XP-000489): перед lpress нужен hover в ту же точку; пример: hover 190,120; lpress 190,120; lmove 226,150; lrelease 226,150
 #   type текст     wait мс     shot файл.png (путь латиницей)     state     reinit     quit
 #   record папка кадров fps [night от до]   ролик: кадры f00000.png.. подряд, часы картинок базы (HdControl::ticks)
 #                        шагают на 1000/fps за кадр, а не по стенке - без рывков; night - ночь «Живой базы» от и до

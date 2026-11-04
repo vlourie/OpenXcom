@@ -88,6 +88,8 @@ OPT bool oxceCraftWeaponIcons;
 OPT bool oxceHdCraftWeaponToggle;
 // HD interface, geoscape: on the globe, in the window where a target is chosen for a craft, Shift+click on an empty place adds a stop of the route, a plain click chooses the last target; the craft flies the stops in turn (no "reached the point" window between them); the route lives in memory only (not in the save) and goes with any other order to the craft; off = as it was (default); a plain Shift+click then works as a click
 OPT bool oxceHdCraftRoute;
+// HD interface, geoscape: the left button held and moved on the globe draws a frame; on release the markers inside it open in the same list a click on a marker opens (one marker - its own window); a short click works as always; not with the left button set to rotate the globe; no order to several craft; off = as it was (default); interface only (XP-000489)
+OPT bool oxceHdGlobeBox;
 // HD interface, geoscape: a click on the funds line of the side panel shows the rating (the score the monthly report ends with) instead of the money, and back; off = as it was (default); display only
 OPT bool oxceHdFundsToggle;
 // HD interface, workshop: a new manufacturing job is put first in the base's list, not last (the same list order as moving it up with the arrows); the order decides who gets money and materials first; off = as it was (default)

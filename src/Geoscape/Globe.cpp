@@ -59,6 +59,7 @@
 #include "../Engine/HdCraftRoute.h"
 #include "../Engine/HdOutline.h"
 #include "../Engine/HdWorkers.h"
+#include "GeoscapeState.h"
 
 namespace OpenXcom
 {
@@ -795,14 +796,13 @@ bool Globe::targetNear(Target* target, int x, int y) const
 }
 
 /**
- * Returns a list of all the targets currently near a certain
- * cartesian point over the globe.
- * @param x X coordinate of point.
- * @param y Y coordinate of point.
- * @param craft Only get craft targets.
+ * Returns a list of the targets that hit says yes to: the one place with the rules of what a click
+ * on the globe finds (bases, their craft, detected UFOs, waypoints, sites, found alien bases).
+ * @param hit Does the target count.
+ * @param currentCraft Craft to leave out.
  * @return List of pointers to targets.
  */
-std::vector<Target*> Globe::getTargets(int x, int y, bool craft, Craft *currentCraft) const
+std::vector<Target*> Globe::collectTargets(const std::function<bool(Target*)> &hit, Craft *currentCraft) const
 {
 	std::vector<Target*> v;
 	{
@@ -811,7 +811,7 @@ std::vector<Target*> Globe::getTargets(int x, int y, bool craft, Craft *currentC
 			if (xbase->getLongitude() == 0.0 && xbase->getLatitude() == 0.0)
 				continue;
 
-			if (targetNear(xbase, x, y))
+			if (hit(xbase))
 			{
 				v.push_back(xbase);
 			}
@@ -823,7 +823,7 @@ std::vector<Target*> Globe::getTargets(int x, int y, bool craft, Craft *currentC
 				if (xcraft->getLongitude() == xbase->getLongitude() && xcraft->getLatitude() == xbase->getLatitude() && xcraft->getDestination() == 0)
 					continue;
 
-				if (targetNear(xcraft, x, y))
+				if (hit(xcraft))
 				{
 					v.push_back(xcraft);
 				}
@@ -835,21 +835,21 @@ std::vector<Target*> Globe::getTargets(int x, int y, bool craft, Craft *currentC
 		if (!ufo->getDetected() || ufo->getStatus() == Ufo::IGNORE_ME)
 			continue;
 
-		if (targetNear(ufo, x, y))
+		if (hit(ufo))
 		{
 			v.push_back(ufo);
 		}
 	}
 	for (auto* wp : *_game->getSavedGame()->getWaypoints())
 	{
-		if (targetNear(wp, x, y))
+		if (hit(wp))
 		{
 			v.push_back(wp);
 		}
 	}
 	for (auto* site : *_game->getSavedGame()->getMissionSites())
 	{
-		if (targetNear(site, x, y))
+		if (hit(site))
 		{
 			v.push_back(site);
 		}
@@ -860,12 +860,52 @@ std::vector<Target*> Globe::getTargets(int x, int y, bool craft, Craft *currentC
 		{
 			continue;
 		}
-		if (targetNear(ab, x, y))
+		if (hit(ab))
 		{
 			v.push_back(ab);
 		}
 	}
 	return v;
+}
+
+/**
+ * Checks if a target is near some part of a rectangle: the circle around its marker that a click hits
+ * touches the rectangle. With a rectangle of one point it is targetNear.
+ */
+bool Globe::targetInRect(Target* target, int x0, int y0, int x1, int y1) const
+{
+	Sint16 tx, ty;
+	if (pointBack(target->getLongitude(), target->getLatitude()))
+		return false;
+	polarToCart(target->getLongitude(), target->getLatitude(), &tx, &ty);
+
+	const int dx = tx < x0 ? x0 - tx : (tx > x1 ? tx - x1 : 0);
+	const int dy = ty < y0 ? y0 - ty : (ty > y1 ? ty - y1 : 0);
+	return (dx * dx + dy * dy <= NEAR_RADIUS);
+}
+
+/**
+ * Returns a list of all the targets currently near a certain
+ * cartesian point over the globe.
+ * @param x X coordinate of point.
+ * @param y Y coordinate of point.
+ * @param craft Only get craft targets.
+ * @return List of pointers to targets.
+ */
+std::vector<Target*> Globe::getTargets(int x, int y, bool craft, Craft *currentCraft) const
+{
+	return collectTargets([&](Target *target) { return targetNear(target, x, y); }, currentCraft);
+}
+
+/**
+ * Returns the targets that a click anywhere in a rectangle over the globe would find: the same list by the
+ * same rules (getTargets), for the frame drawn with the mouse (oxceHdGlobeBox).
+ */
+std::vector<Target*> Globe::getTargetsInRect(int x0, int y0, int x1, int y1) const
+{
+	if (x0 > x1) std::swap(x0, x1);
+	if (y0 > y1) std::swap(y0, y1);
+	return collectTargets([&](Target *target) { return targetInRect(target, x0, y0, x1, y1); }, 0);
 }
 
 /**
@@ -2342,6 +2382,125 @@ void Globe::blit(SDL_Surface *surface)
 		// the option was switched: the markers kept out of _markers come back, or go
 		invalidate();
 	}
+	if (_boxActive)
+	{
+		drawBox(surface); // OXCE-HD (oxceHdGlobeBox): over everything on the globe
+	}
+}
+
+/**
+ * Is a frame possible (oxceHdGlobeBox): the option is on, the left button is not the one that turns the globe (turning
+ * is more important), and the geoscape's own window is on top (the windows that take the globe over - the choice of a
+ * destination, a new base - have their own clicks).
+ */
+bool Globe::boxAllowed(State *state) const
+{
+	return Options::oxceHdGlobeBox && Options::geoDragScrollButton != SDL_BUTTON_LEFT && dynamic_cast<GeoscapeState*>(state) != 0;
+}
+
+/**
+ * The mouse moved with the left button down: the frame follows it once it went more than a few pixels from where it started.
+ * @param action Pointer to an action.
+ */
+void Globe::boxMove(Action *action)
+{
+	if (action->getDetails()->type != SDL_MOUSEMOTION)
+	{
+		return;
+	}
+	// the release was missed (a window took it): no frame
+	if (0 == (action->getDetails()->motion.state & SDL_BUTTON(SDL_BUTTON_LEFT)) && 0 == (SDL_GetMouseState(0, 0) & SDL_BUTTON(SDL_BUTTON_LEFT)))
+	{
+		boxCancel();
+		return;
+	}
+	const int x = (int)floor(action->getAbsoluteXMouse()), y = (int)floor(action->getAbsoluteYMouse());
+	static const int BOX_THRESHOLD = 4;
+	if (!_boxActive && std::max(std::abs(x - _boxX0), std::abs(y - _boxY0)) > BOX_THRESHOLD)
+	{
+		_boxActive = true;
+	}
+	if (_boxActive)
+	{
+		_boxX1 = x;
+		_boxY1 = y;
+	}
+}
+
+/**
+ * Takes the frame just let go; true once per frame, with its corners.
+ */
+bool Globe::takeBox(int &x0, int &y0, int &x1, int &y1)
+{
+	if (!_boxDone)
+	{
+		return false;
+	}
+	_boxDone = false;
+	x0 = _boxX0;
+	y0 = _boxY0;
+	x1 = _boxX1;
+	y1 = _boxY1;
+	return true;
+}
+
+/**
+ * Drops the frame and what could become one.
+ */
+void Globe::boxCancel()
+{
+	_boxArmed = _boxActive = _boxDone = _boxSwallow = false;
+}
+
+/**
+ * Draws the frame: a light thin outline with a faint fill. The HD layer draws it crisp at the world scale; the classic
+ * picture (and the HD layer at scale 1) gets the outline in the lightest colour of the palette.
+ * @param surface Pointer to the surface the globe is blitted onto.
+ */
+void Globe::drawBox(SDL_Surface *surface)
+{
+	int x0 = std::min(_boxX0, _boxX1), x1 = std::max(_boxX0, _boxX1);
+	int y0 = std::min(_boxY0, _boxY1), y1 = std::max(_boxY0, _boxY1);
+	x0 = std::max(x0, (int)getX());
+	y0 = std::max(y0, (int)getY());
+	x1 = std::min(x1, (int)getX() + (int)getWidth() - 1);
+	y1 = std::min(y1, (int)getY() + (int)getHeight() - 1);
+	if (x1 < x0 || y1 < y0)
+	{
+		return;
+	}
+	const SDL_Color *pal = getPalette();
+	int light = 1, dark = 1, lightSum = -1, darkSum = 1000;
+	for (int i = 1; i < 256; ++i)
+	{
+		const int sum = pal[i].r + pal[i].g + pal[i].b;
+		if (sum > lightSum) { lightSum = sum; light = i; }
+		if (sum < darkSum) { darkSum = sum; dark = i; }
+	}
+	if (HdUi::isScreen(surface) && HdUi::active())
+	{
+		const int k = HdUi::scale();
+		HdUi &ui = HdUi::instance();
+		ui.setClip(getX(), getY(), getWidth(), getHeight());
+		const float fx0 = (float)(x0 * k), fy0 = (float)(y0 * k), fx1 = (float)((x1 + 1) * k), fy1 = (float)((y1 + 1) * k);
+		const float w = std::max(1.0f, 0.45f * k);
+		ui.fillRoundRect(fx0, fy0, fx1, fy1, 0.0f, HdUi::rgba(pal[light], 0x2A), HdUi::rgba(pal[light], 0x2A));
+		ui.strokeRoundRect(fx0 - w, fy0 - w, fx1 + w, fy1 + w, 0.0f, w, HdUi::rgba(pal[dark], 0xA0));
+		ui.strokeRoundRect(fx0, fy0, fx1, fy1, 0.0f, w, HdUi::rgba(pal[light], 0xF0));
+		ui.clearClip();
+		return;
+	}
+	SDL_Rect clip = { (Sint16)getX(), (Sint16)getY(), (Uint16)getWidth(), (Uint16)getHeight() };
+	SDL_SetClipRect(surface, &clip);
+	SDL_Rect top = { (Sint16)x0, (Sint16)y0, (Uint16)(x1 - x0 + 1), 1 };
+	SDL_Rect bottom = { (Sint16)x0, (Sint16)y1, (Uint16)(x1 - x0 + 1), 1 };
+	SDL_Rect left = { (Sint16)x0, (Sint16)y0, 1, (Uint16)(y1 - y0 + 1) };
+	SDL_Rect right = { (Sint16)x1, (Sint16)y0, 1, (Uint16)(y1 - y0 + 1) };
+	SDL_FillRect(surface, &top, (Uint32)light);
+	SDL_FillRect(surface, &bottom, (Uint32)light);
+	SDL_FillRect(surface, &left, (Uint32)light);
+	SDL_FillRect(surface, &right, (Uint32)light);
+	SDL_SetClipRect(surface, 0);
 }
 
 /**
@@ -2448,6 +2607,11 @@ void Globe::mouseOver(Action *action, State *state)
 	double lon, lat;
 	cartToPolar((Sint16)floor(action->getAbsoluteXMouse()), (Sint16)floor(action->getAbsoluteYMouse()), &lon, &lat);
 
+	if (_boxArmed)
+	{
+		boxMove(action); // OXCE-HD (oxceHdGlobeBox)
+	}
+
 	if (_isMouseScrolling && action->getDetails()->type == SDL_MOUSEMOTION)
 	{
 		// The following is the workaround for a rare problem where sometimes
@@ -2532,6 +2696,15 @@ void Globe::mousePress(Action *action, State *state)
 	double lon, lat;
 	cartToPolar((Sint16)floor(action->getAbsoluteXMouse()), (Sint16)floor(action->getAbsoluteYMouse()), &lon, &lat);
 
+	if (action->getDetails()->button.button == SDL_BUTTON_LEFT)
+	{
+		// OXCE-HD (oxceHdGlobeBox): the left button may start a frame (it shows only after the mouse moves)
+		_boxSwallow = _boxActive = _boxDone = false;
+		_boxArmed = boxAllowed(state);
+		_boxX0 = _boxX1 = (int)floor(action->getAbsoluteXMouse());
+		_boxY0 = _boxY1 = (int)floor(action->getAbsoluteYMouse());
+	}
+
 	if (action->getDetails()->button.button == Options::geoDragScrollButton)
 	{
 		_isMouseScrolling = true;
@@ -2559,6 +2732,22 @@ void Globe::mouseRelease(Action *action, State *state)
 {
 	double lon, lat;
 	cartToPolar((Sint16)floor(action->getAbsoluteXMouse()), (Sint16)floor(action->getAbsoluteYMouse()), &lon, &lat);
+	if (action->getDetails()->button.button == SDL_BUTTON_LEFT && _boxArmed)
+	{
+		// OXCE-HD (oxceHdGlobeBox): a frame let go - the click handler takes it (takeBox) and opens the list; the click
+		// that follows this release (when it ends on the globe) is not a click on a marker
+		_boxArmed = false;
+		if (_boxActive)
+		{
+			_boxX1 = (int)floor(action->getAbsoluteXMouse());
+			_boxY1 = (int)floor(action->getAbsoluteYMouse());
+			_boxActive = false;
+			_boxDone = true;
+			_boxSwallow = true;
+			InteractiveSurface::mouseClick(action, state);
+			_boxDone = false;
+		}
+	}
 	if (action->getDetails()->button.button == Options::geoDragScrollButton)
 	{
 		stopScrolling(action);
@@ -2578,6 +2767,11 @@ void Globe::mouseRelease(Action *action, State *state)
  */
 void Globe::mouseClick(Action *action, State *state)
 {
+	if (_boxSwallow && action->getDetails()->button.button == SDL_BUTTON_LEFT)
+	{
+		_boxSwallow = false; // OXCE-HD (oxceHdGlobeBox): the release of a frame, the list is open already
+		return;
+	}
 	if (action->getDetails()->button.button == SDL_BUTTON_WHEELUP)
 	{
 		zoomIn();
