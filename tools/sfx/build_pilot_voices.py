@@ -147,7 +147,7 @@ def main():
                  generator_version="build_pilot_voices.py 22.10 radio q4" if not new else
                  "build_pilot_voices.py 27.10 radio q4 bitexact",
                  source_path=str(src.relative_to(ROOT)).replace("\\", "/"), approved=True,
-                 approval=a.approval if new else "Vitali 22.10: «сегодняшние все нужно исправить» - тикет XP-000246",
+                 approval=a.approval if new or a.approval else "Vitali 22.10: «сегодняшние все нужно исправить» - тикет XP-000246",
                  source_frame=f"{vid}:{ln['lang']}:{ln['n']}")
     rels = [rel for rel, *_ in items]
     bp.save(man, why=f"pilot_voices: {len(rels)} реплик пилотов и водителей (XP-000246)")

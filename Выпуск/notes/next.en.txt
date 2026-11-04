@@ -8,4 +8,5 @@
 - Lockers next to the base beds no longer show through at the top.
 - The wooden farm staircase was redrawn: left and right now share one style, with clean edges and real gaps between the steps.
 - Wasteland filling station: the fuel pump and the bucket were redrawn and are no longer blurry. The pump now looks like a real one, with a hose and nozzle; the bucket is round, with even recesses.
+- Pilot voices on the globe: the female pilots and drivers were re-recorded. The old voices sounded masculine despite their pitch, and the Russian lines used the masculine form; now they have a female timbre and the correct wording (ticket XP-000461).
 - Launcher 0.4.4: fixed a security issue in the .NET Brotli decoder (CVE-2026-111497); the launcher updates itself.
