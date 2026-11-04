@@ -29,6 +29,7 @@
 #include <iterator>
 #include <sstream>
 #include "HdUi.h"
+#include "HdScreenThemes.h"
 #include "HdCanvas.h"
 #include "HdTest.h"
 #include "HdControl.h"
@@ -120,6 +121,9 @@ Game::Game(const std::string &title) : _screen(0), _cursor(0), _lang(0), _save(0
 	// Create fps counter
 	_fpsCounter = new FpsCounter(15, 5, 0, 0);
 	_updateNotice = new HdUpdateNotice(this);
+
+	// the themes by screen (XP-000484): hd_screen_themes.yml next to options.cfg, read here and on leaving the options window
+	HdScreenThemes::instance().load();
 
 	// Create blank language
 	_lang = new Language();
@@ -631,10 +635,32 @@ void Game::run()
 						}
 					}
 					const Uint32 hdBlitStart = SDL_GetTicks();
+					// the themes by screen (XP-000484): the screen of the first state drawn is its own or the nearest one below in the stack
+					HdScreenThemes &hdThemes = HdScreenThemes::instance();
+					static const std::string hdNoScreen;
+					const std::string *hdScreen = &hdNoScreen;
+					if (!hdThemes.empty())
+					{
+						for (auto below = i;; --below)
+						{
+							if (!(*below)->getHdScreen().empty())
+							{
+								hdScreen = &(*below)->getHdScreen();
+								break;
+							}
+							if (below == _states.begin()) break;
+						}
+					}
 					for (; i != _states.end(); ++i)
 					{
 						// the HD interface's hover effects follow the cursor, in the top state only
 						HdUi::instance().setMouse(mx, my, std::next(i) == _states.end());
+						if (!(*i)->getHdScreen().empty())
+						{
+							hdScreen = &(*i)->getHdScreen();
+						}
+						// the options its drawing reads are the screen's theme's while it blits (none set: nothing is touched)
+						HdScreenThemes::Scope hdTheme(hdThemes.empty() ? nullptr : hdScreen);
 						(*i)->blit();
 					}
 					hdBlitMs = SDL_GetTicks() - hdBlitStart;
