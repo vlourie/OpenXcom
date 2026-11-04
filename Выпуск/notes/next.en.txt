@@ -7,3 +7,4 @@
 - Game log (openxcom.log) is no longer flooded with HD service lines (measurements, picture loading, long frames): they are written only with verbose logging. Warnings and errors stay.
 - Lockers next to the base beds no longer show through at the top.
 - The wooden farm staircase was redrawn: left and right now share one style, with clean edges and real gaps between the steps.
+- Launcher 0.4.4: fixed a security issue in the .NET Brotli decoder (CVE-2026-111497); the launcher updates itself.
