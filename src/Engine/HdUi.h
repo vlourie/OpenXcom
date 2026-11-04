@@ -166,6 +166,12 @@ public:
 	/// Draws the next labels in the theme's colours (lit = on a pressed button: dark letters on the light metal)
 	/// instead of the palette's, until cleared.
 	void setLabelTheme(bool on, bool lit = false);
+	/// A palette colour of a plain text under the screen's text theme (HdScreenThemes::activeTextHue/Sat): the hue and the saturation
+	/// replaced, the brightness (V) kept. Callers ask only while HdScreenThemes::textActive(); the results are memoised by colour.
+	static SDL_Color textTint(const SDL_Color &c);
+	/// The text drawn next is a button's label: the screen's text theme does not touch it (the buttons' letters are the window theme's own
+	/// choice, "Text of the buttons"), until cleared.
+	void setButtonLabel(bool on) { _buttonLabel = on; }
 	/// Draws the next labels in the given letter colour and shadow (a graph button lit in its line's colour), until cleared
 	/// with setLabelTheme(false).
 	void setLabelInk(const SDL_Color &face, const SDL_Color &shadow);
@@ -393,6 +399,7 @@ private:
 	int _mouseX = -1, _mouseY = -1;
 	bool _hoverOn = false;
 	bool _labelTheme = false;          ///< the labels drawn now are in the theme's colours (setLabelTheme)
+	bool _buttonLabel = false;         ///< the text drawn now is a button's label: no text theme (setButtonLabel)
 	bool _labelFlat = false;           ///< the themed labels have no shadow or outline (a forced letter tone, XP-000460)
 	Uint32 _labelFace = 0;             ///< the letters' colour, 0xAARRGGBB
 	SDL_Color _labelShadow = { 0, 0, 0, 255 };   ///< their shadow's

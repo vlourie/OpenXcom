@@ -67,7 +67,8 @@ public:
 
 /**
  * The window of one screen's theme: the colour of the windows' buttons and frames from a list (the last row, the own colour, opens
- * OptionsCustomColorState), the buttons' look (OptionsButtonFaceState) and letters (OptionsButtonInkState), and "As the parent".
+ * OptionsCustomColorState), the buttons' look (OptionsButtonFaceState) and letters (OptionsButtonInkState), the colour of the plain
+ * texts (OptionsCustomColorState in its text mode: hue and saturation, the brightness is the palette's), and "As the parent".
  * Those windows work on the options, so for the time of this one the options hold the screen's theme (HdScreenThemes::beginEdit):
  * what is on screen is a sample of it. OK writes the screen's record to hd_screen_themes.yml, Cancel (and anything that closes the
  * window) gives the options back as they were.
@@ -80,7 +81,7 @@ private:
 	Window *_window;
 	Text *_txtTitle, *_txtParent, *_txtState;
 	TextList *_lstColor;
-	TextButton *_btnCustom, *_btnFace, *_btnInk, *_btnParent, *_btnOk, *_btnCancel;
+	TextButton *_btnCustom, *_btnFace, *_btnInk, *_btnText, *_btnParent, *_btnOk, *_btnCancel;
 	Uint8 _colorGroup;
 	/// Shows the options on the list and the state line.
 	void show();
@@ -93,6 +94,7 @@ public:
 	void btnCustomClick(Action *action);
 	void btnFaceClick(Action *action);
 	void btnInkClick(Action *action);
+	void btnTextClick(Action *action);
 	void btnParentClick(Action *action);
 	void btnOkClick(Action *action);
 	void btnCancelClick(Action *action);

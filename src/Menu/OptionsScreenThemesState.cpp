@@ -289,7 +289,8 @@ OptionsScreenThemeEditState::OptionsScreenThemeEditState(OptionsOrigin origin, c
 	_btnCustom = new TextButton(116, 16, 176, 48);
 	_btnFace = new TextButton(116, 16, 176, 68);
 	_btnInk = new TextButton(116, 16, 176, 88);
-	_btnParent = new TextButton(116, 16, 176, 122);
+	_btnText = new TextButton(116, 16, 176, 106);
+	_btnParent = new TextButton(116, 16, 176, 124);
 	_txtState = new Text(264, 9, 28, 144);
 	_btnOk = new TextButton(120, 16, 28, 163);
 	_btnCancel = new TextButton(120, 16, 172, 163);
@@ -304,6 +305,7 @@ OptionsScreenThemeEditState::OptionsScreenThemeEditState(OptionsOrigin origin, c
 	add(_btnCustom, "button", "optionsMenu");
 	add(_btnFace, "button", "optionsMenu");
 	add(_btnInk, "button", "optionsMenu");
+	add(_btnText, "button", "optionsMenu");
 	add(_btnParent, "button", "optionsMenu");
 	add(_txtState, "confirmVideo", "optionsMenu");
 	add(_btnOk, "button", "optionsMenu");
@@ -342,6 +344,9 @@ OptionsScreenThemeEditState::OptionsScreenThemeEditState(OptionsOrigin origin, c
 
 	_btnInk->setText(std::string(tr("STR_HD_BUTTON_INK_BTN")) + " >");
 	_btnInk->onMouseClick((ActionHandler)&OptionsScreenThemeEditState::btnInkClick);
+
+	_btnText->setText(std::string(tr("STR_HD_SCREEN_TEXT_BTN")) + " >");
+	_btnText->onMouseClick((ActionHandler)&OptionsScreenThemeEditState::btnTextClick);
 
 	_btnParent->setText(tr("STR_HD_SCREEN_PARENT_BTN"));
 	_btnParent->onMouseClick((ActionHandler)&OptionsScreenThemeEditState::btnParentClick);
@@ -440,6 +445,15 @@ void OptionsScreenThemeEditState::btnFaceClick(Action *)
 void OptionsScreenThemeEditState::btnInkClick(Action *)
 {
 	_game->pushState(new OptionsButtonInkState(_origin));
+}
+
+/**
+ * Opens the window of the plain texts' colour (it works on the text theme the edit holds).
+ * @param action Pointer to an action.
+ */
+void OptionsScreenThemeEditState::btnTextClick(Action *)
+{
+	_game->pushState(new OptionsCustomColorState(_origin, false, true));
 }
 
 /**

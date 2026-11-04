@@ -37,8 +37,10 @@ namespace OpenXcom
  * (oxceHdUiSkin) is not a part of a theme either: more than a dozen places read it outside the drawing of a state.
  *
  * The theme is put to work by Scope: for the blit of one state it lays the values into the options the drawing reads at
- * drawing time (the windows' theme, colour, relief, letters), and gives the previous ones back after. No file, or no
- * values for the screen: Scope writes nothing, the frame is as it was.
+ * drawing time (the windows' theme, colour, relief, letters), and gives the previous ones back after. The colour of the plain
+ * texts (textHue, textSat: the hue and saturation replaced, the brightness of every shade kept) is the two statics
+ * activeTextHue/Sat that Text's drawing reads; the battle map ("battleMap") never gets it. No file, or no values for the
+ * screen: Scope writes nothing, the frame is as it was.
  */
 class HdScreenThemes
 {
@@ -58,8 +60,8 @@ public:
 		int inkHue = -1;        ///< oxceHdButtonInkHue
 		int inkLight = -1;      ///< oxceHdButtonInkLight
 		int inkSat = -1;        ///< oxceHdButtonInkSat
-		int textHue = -1;       ///< read and kept only (the colour of plain text, stage 3)
-		int textSat = -1;       ///< the same
+		int textHue = -1;       ///< the hue of the plain texts (labels, lists), 0..359; -1 the palette's own
+		int textSat = -1;       ///< their saturation, 0..100; -1 the palette's own (the brightness of every shade is always kept)
 
 		bool any() const;
 		/// Takes from `parent` what this one does not set.
@@ -67,6 +69,11 @@ public:
 	};
 
 	static HdScreenThemes &instance();
+
+	/// The text theme in force now (the Scope of the state being drawn, or the edit of a screen's theme); -1 = the palette's own.
+	/// The plain texts' drawing (HdUi::textTint) reads them; the buttons' labels have their own letters and do not.
+	static int activeTextHue, activeTextSat;
+	static bool textActive() { return activeTextHue >= 0 || activeTextSat >= 0; }
 
 	/// Reads the file (at start and on leaving the options window). No file, or a bad one: no themes; a bad one makes one line in the log.
 	void load();
@@ -102,6 +109,8 @@ public:
 		Scope &operator=(const Scope &) = delete;
 	private:
 		bool _on = false;
+		bool _textCut = false;   ///< the text theme was taken off for this blit (the battle map under an edit)
+		int _textWas[2] = { -1, -1 };
 		int _was[16];
 	};
 
@@ -124,6 +133,8 @@ public:
 	const std::string &editScreen() const { return _editScreen; }
 	/// "As the parent": the options take the parent's values (and what the options were), the screen's own are dropped on commit.
 	void editAsParent();
+	/// The text colour the screen's parent has (-1, -1: none): what the window "Text colour" sets back.
+	void editParentText(int &hue, int &sat);
 	/// What the screen's record would be now (an empty one: as the parent).
 	Values editResult() const;
 	/// Ends: with `commit` the record is set and the file written; the options come back either way. Does nothing if no edit is open.

@@ -26,6 +26,7 @@
 #include "Font.h"
 #include "HdBattleHud.h"
 #include "HdGpuWorld.h"
+#include "HdScreenThemes.h"
 #include "HdSmooth.h"
 #include "HdWorkers.h"
 #include "Options.h"
@@ -1222,7 +1223,8 @@ void HdUi::drawGlyph(const Font *font, UCode c, int x, int y, int color, int mul
 	{
 		const int inverse = mid ? 2 * (mid - v) : 0;
 		const Uint8 idx = (Uint8)(color + v * mul + inverse);
-		lut[v] = packColor(pal[idx]);
+		// (a plain text under the screen's text theme, XP-000484: the shade's hue and saturation replaced, its brightness kept)
+		lut[v] = packColor(!_labelTheme && !_buttonLabel && HdScreenThemes::textActive() ? textTint(pal[idx]) : pal[idx]);
 	}
 	if (_labelTheme)
 	{

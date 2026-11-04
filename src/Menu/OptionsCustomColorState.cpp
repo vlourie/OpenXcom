@@ -21,6 +21,7 @@
 #include "../Engine/Action.h"
 #include "../Engine/Game.h"
 #include "../Engine/HdBattleHud.h"
+#include "../Engine/HdScreenThemes.h"
 #include "../Engine/HdUi.h"
 #include "../Engine/LocalizedText.h"
 #include "../Engine/Options.h"
@@ -65,6 +66,8 @@ int *const VALUE[6] = { &Options::oxceHdCustomKeyHue, &Options::oxceHdCustomKeyS
 	&Options::oxceHdCustomBackHue, &Options::oxceHdCustomBackSat, &Options::oxceHdCustomBackVal };
 /// The same for the windows' own colour (XP-000479): the buttons' hue, saturation, value alone.
 int *const WINDOW_VALUE[3] = { &Options::oxceHdWinKeyHue, &Options::oxceHdWinKeySat, &Options::oxceHdWinKeyVal };
+/// The same for the plain texts' colour (XP-000484): the hue and the saturation the text theme holds.
+int *const TEXT_VALUE[2] = { &HdScreenThemes::activeTextHue, &HdScreenThemes::activeTextSat };
 const int HIGH[6] = { 359, 100, 100, 359, 100, 100 };
 /// What Reset sets: the Cruiser hull's colours (the same as the options' defaults, Options.cpp).
 const int START[6] = { 256, 25, 49, 255, 25, 38 };
@@ -76,18 +79,24 @@ const char *const LABEL[3] = { "STR_HD_CUSTOM_HUE", "STR_HD_CUSTOM_SAT", "STR_HD
  * Initializes all the elements in the Own Colour window.
  * @param origin Game section that originated this state.
  */
-OptionsCustomColorState::OptionsCustomColorState(OptionsOrigin origin, bool windows) : _windows(windows), _n(windows ? 3 : 6)
+OptionsCustomColorState::OptionsCustomColorState(OptionsOrigin origin, bool windows, bool text) : _windows(windows), _n(text ? 2 : windows ? 3 : 6)
 {
+	_text = text;
+	_txtSample = _txtSampleBig = nullptr;
 	setHdScreen("hdWindows");
 	_screen = false;
 
 	// remember what the player had; from now on the own colour is the panel's colour (or the windows' colour: 10), so that the whole interface shows it
-	_was[0] = _windows ? Options::oxceHdWindowThemeColor : Options::oxceHdBattleHudColor;
+	_was[0] = _text ? 0 : _windows ? Options::oxceHdWindowThemeColor : Options::oxceHdBattleHudColor;
 	for (int i = 0; i < _n; ++i)
 	{
 		_was[1 + i] = *value(i);
 	}
-	if (_windows)
+	if (_text)
+	{
+		// (the text mode works on the text theme of the edit alone: the colours are not touched)
+	}
+	else if (_windows)
 	{
 		Options::oxceHdWindowThemeColor = HdBattleHud::COLOR_CUSTOM + 1;
 	}
@@ -100,16 +109,22 @@ OptionsCustomColorState::OptionsCustomColorState(OptionsOrigin origin, bool wind
 	_window = new Window(this, 288, 180, 16, 10, POPUP_BOTH);
 	_txtTitle = new Text(264, 17, 28, 18);
 	// (the windows' colour has the buttons' column alone, in the middle)
-	_txtKeys = new Text(120, 9, _windows ? 100 : 28, 38);
+	_txtKeys = new Text(_text ? 264 : 120, 9, _text ? 28 : _windows ? 100 : 28, 38);
 	_txtBack = _windows ? nullptr : new Text(120, 9, 172, 38);
 	for (int i = 0; i < _n; ++i)
 	{
 		const int col = i / 3, row = i % 3;
-		const int cx = _windows ? 100 : 28 + col * 144;
+		const int cx = _windows || _text ? 100 : 28 + col * 144;
 		_txtValue[i] = new Text(120, 9, cx, 52 + row * 26);
 		_slr[i] = new Slider(120, 16, cx, 62 + row * 26);
 	}
-	_sample = new HdCustomSample(264, 28, 28, 136, _windows);
+	_sample = _text ? nullptr : new HdCustomSample(264, 28, 28, 136, _windows);
+	if (_text)
+	{
+		// the sample is plain texts: every text on the stack follows the colour being made
+		_txtSample = new Text(264, 9, 28, 118);
+		_txtSampleBig = new Text(264, 17, 28, 130);
+	}
 	_btnOk = new TextButton(80, 16, 28, 168);
 	_btnCancel = new TextButton(80, 16, 120, 168);
 	_btnReset = new TextButton(80, 16, 212, 168);
@@ -129,7 +144,15 @@ OptionsCustomColorState::OptionsCustomColorState(OptionsOrigin origin, bool wind
 		add(_txtValue[i], "confirmVideo", "optionsMenu");
 		add(_slr[i], "button", "optionsMenu");
 	}
-	add(_sample);
+	if (_sample)
+	{
+		add(_sample);
+	}
+	if (_txtSample)
+	{
+		add(_txtSample, "confirmVideo", "optionsMenu");
+		add(_txtSampleBig, "confirmVideo", "optionsMenu");
+	}
 	add(_btnOk, "button", "optionsMenu");
 	add(_btnCancel, "button", "optionsMenu");
 	add(_btnReset, "button", "optionsMenu");
@@ -141,10 +164,18 @@ OptionsCustomColorState::OptionsCustomColorState(OptionsOrigin origin, bool wind
 
 	_txtTitle->setAlign(ALIGN_CENTER);
 	_txtTitle->setBig();
-	_txtTitle->setText(tr(_windows ? "STR_HD_WIN_CUSTOM_COLOR_TITLE" : "STR_HD_CUSTOM_COLOR_TITLE"));
+	_txtTitle->setText(tr(_text ? "STR_HD_TEXT_COLOR_TITLE" : _windows ? "STR_HD_WIN_CUSTOM_COLOR_TITLE" : "STR_HD_CUSTOM_COLOR_TITLE"));
 
 	_txtKeys->setAlign(ALIGN_CENTER);
-	_txtKeys->setText(tr("STR_HD_CUSTOM_KEYS"));
+	_txtKeys->setText(tr(_text ? "STR_HD_TEXT_COLOR_KEYS" : "STR_HD_CUSTOM_KEYS"));
+	if (_txtSample)
+	{
+		_txtSample->setAlign(ALIGN_CENTER);
+		_txtSample->setText(tr("STR_HD_TEXT_COLOR_SAMPLE"));
+		_txtSampleBig->setAlign(ALIGN_CENTER);
+		_txtSampleBig->setBig();
+		_txtSampleBig->setText(tr("STR_HD_TEXT_COLOR_SAMPLE_BIG"));
+	}
 	if (_txtBack)
 	{
 		_txtBack->setAlign(ALIGN_CENTER);
@@ -190,7 +221,7 @@ OptionsCustomColorState::~OptionsCustomColorState()
  */
 int *OptionsCustomColorState::value(int i) const
 {
-	return _windows ? WINDOW_VALUE[i] : VALUE[i];
+	return _text ? TEXT_VALUE[i] : _windows ? WINDOW_VALUE[i] : VALUE[i];
 }
 
 /**
@@ -200,9 +231,11 @@ void OptionsCustomColorState::show()
 {
 	for (int i = 0; i < _n; ++i)
 	{
-		const int v = std::min(std::max(*value(i), 0), HIGH[i]);
+		// (a text colour not set yet, -1: the palette's own, "-"; the sliders wait at a visible start, the first move sets both)
+		const bool unset = _text && *value(i) < 0;
+		const int v = unset ? (i == 0 ? 30 : 60) : std::min(std::max(*value(i), 0), HIGH[i]);
 		_slr[i]->setValue(v);
-		_txtValue[i]->setText(std::string(tr(LABEL[i % 3])) + ": " + std::to_string(v));
+		_txtValue[i]->setText(std::string(tr(LABEL[i % 3])) + ": " + (unset ? std::string("-") : std::to_string(v)));
 	}
 }
 
@@ -242,7 +275,10 @@ void OptionsCustomColorState::btnOkClick(Action *)
  */
 void OptionsCustomColorState::btnCancelClick(Action *)
 {
-	(_windows ? Options::oxceHdWindowThemeColor : Options::oxceHdBattleHudColor) = _was[0];
+	if (!_text)
+	{
+		(_windows ? Options::oxceHdWindowThemeColor : Options::oxceHdBattleHudColor) = _was[0];
+	}
 	for (int i = 0; i < _n; ++i)
 	{
 		*value(i) = _was[1 + i];
@@ -256,9 +292,17 @@ void OptionsCustomColorState::btnCancelClick(Action *)
  */
 void OptionsCustomColorState::btnResetClick(Action *)
 {
-	for (int i = 0; i < _n; ++i)
+	if (_text)
 	{
-		*value(i) = START[i];
+		// the parent's colour (none: the palette's own)
+		HdScreenThemes::instance().editParentText(*TEXT_VALUE[0], *TEXT_VALUE[1]);
+	}
+	else
+	{
+		for (int i = 0; i < _n; ++i)
+		{
+			*value(i) = START[i];
+		}
 	}
 	show();
 }
