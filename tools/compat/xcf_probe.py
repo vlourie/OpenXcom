@@ -79,7 +79,7 @@ def run(name, sets="all", extra_env=None, timeout=900):
     out = HERE / ("exp_" + name)
     env = {k.upper(): v for k, v in os.environ.items()}
     env["PATH"] = "C:\\msys64\\mingw64\\bin;" + env.get("PATH", "")
-    env.update(SDL_VIDEODRIVER="dummy", SDL_AUDIODRIVER="dummy")
+    env.update(SDL_VIDEODRIVER="dummy", SDL_AUDIODRIVER="dummy", OXCE_HD_PERFLOG="1")  # the HD export line stays in the log
     if sets:
         env.update(OXCE_HD_EXPORT=str(out), OXCE_HD_EXPORT_SETS=sets)
     env.update(extra_env or {})

@@ -737,16 +737,13 @@ void Game::run()
 					}
 				}
 			}
-			// players' logs stay clean: the 2 s report and stalls past the first 200 of a run only with verbose logging,
-			// the AI harness or OXCE_HD_PERFLOG (tools read them)
+			// the stall and 2 s report lines only with verbose logging, the AI harness or OXCE_HD_PERFLOG (tools read them)
 			static const bool hdPerfLog = Options::verboseLogging || AiProbe::harness() || getenv("OXCE_HD_PERFLOG");
 			if (spent >= 100)
 			{
 				++hdStalls;
-				static unsigned hdStallLines = 0;
-				if (hdPerfLog || hdStallLines < 200)
+				if (hdPerfLog)
 				{
-					++hdStallLines;
 					Log(LOG_INFO) << "HD stall: " << spent << " ms on " << state
 						<< " | free " << hdFreeMs << " init " << hdInitMs << " event " << hdEventMs
 						<< " think " << hdThinkMs << " blit " << hdBlitMs << " flip " << hdFlipMs
@@ -756,10 +753,6 @@ void Game::run()
 						<< HdUi::instance().lastWorstW() << "x" << HdUi::instance().lastWorstH()
 						<< " (" << HdUi::instance().lastWorstWhy() << ")"
 						<< " | packs read " << packFrames << " fr in " << (int)(packMs + 0.5) << " ms";
-					if (!hdPerfLog && hdStallLines == 200)
-					{
-						Log(LOG_INFO) << "HD stall: 200 lines written, further stalls of this run are not logged";
-					}
 				}
 			}
 			if (now - hdWatchStart >= 2000)
