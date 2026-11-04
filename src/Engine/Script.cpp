@@ -533,8 +533,12 @@ void ScriptWorkerBlit::executeBlit(const Surface* src, Surface* dest, int x, int
  * @param x x offset of source surface.
  * @param y y offset of source surface.
  */
+const Uint8* ScriptWorkerBlit::hitFlashProc = nullptr;
+
 void ScriptWorkerBlit::executeBlit(const Surface* src, Surface* dest, int x, int y, int shade, GraphSubset mask)
 {
+	// the event of the hit flash, when the player switched it off (option oxceHdHitFlash): skipped, nothing else
+	const Uint8* const skipEvent = Options::oxceHdHitFlash ? nullptr : hitFlashProc;
 	ShaderMove<const Uint8> srcShader(src, x, y);
 	ShaderMove<Uint8> destShader(dest, 0, 0);
 
@@ -554,8 +558,11 @@ void ScriptWorkerBlit::executeBlit(const Surface* src, Surface* dest, int x, int
 						auto ptr = _events;
 						while (*ptr)
 						{
-							reset(arg);
-							scriptExe(*this, ptr->data());
+							if (ptr->data() != skipEvent)
+							{
+								reset(arg);
+								scriptExe(*this, ptr->data());
+							}
 							++ptr;
 						}
 						++ptr;
@@ -565,8 +572,11 @@ void ScriptWorkerBlit::executeBlit(const Surface* src, Surface* dest, int x, int
 
 						while (*ptr)
 						{
-							reset(arg);
-							scriptExe(*this, ptr->data());
+							if (ptr->data() != skipEvent)
+							{
+								reset(arg);
+								scriptExe(*this, ptr->data());
+							}
 							++ptr;
 						}
 						++ptr;
@@ -4258,12 +4268,23 @@ const ScriptContainerBase* ScriptParserEventsBase::getEvents() const
 std::vector<ScriptContainerBase> ScriptParserEventsBase::releseEvents()
 {
 	std::sort(std::begin(_eventsData), std::end(_eventsData), [](const EventData& a, const EventData& b) { return a.offset < b.offset; });
+	const auto isUnitRecolor = getName() == "recolorUnitSprite";
+	if (isUnitRecolor)
+	{
+		ScriptWorkerBlit::hitFlashProc = nullptr;
+	}
 	for (auto& e : _eventsData)
 	{
 		const auto reservedSpaceForZero = e.offset < 0;
 		if (_events.size() + (reservedSpaceForZero ?  2 : 1) < EventsMax)
 		{
 			_events.push_back(std::move(e.script));
+			// the hit flash of X-Piratez (HitFX-basic.rul): remember its code so the option can switch it off (XP-000490);
+			// the buffer of the code does not move when the list is handed over to ScriptGlobal
+			if (isUnitRecolor && e.name == "YSCRIPT_HITFX_RECOLOR_UNIT" && _events.back())
+			{
+				ScriptWorkerBlit::hitFlashProc = _events.back().data();
+			}
 		}
 		else
 		{

@@ -867,6 +867,10 @@ public:
 		_proc = nullptr;
 		_events = nullptr;
 	}
+	/// The body hit flash of X-Piratez (event YSCRIPT_HITFX_RECOLOR_UNIT of recolorUnitSprite): its code, found when the events are
+	/// released; with the option oxceHdHitFlash off the blit skips exactly that event (XP-000490). The event only
+	/// reads tags and sets the colour of a pixel, so skipping it changes nothing but the colour.
+	static const Uint8* hitFlashProc;
 	/// Is a script set (false: the blit is a plain shaded copy)?
 	bool hasScript() const
 	{
