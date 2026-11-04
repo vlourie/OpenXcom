@@ -34,6 +34,8 @@ namespace
 {
 
 const char *FILE_NAME = "hd_screen_themes.yml";
+/// The screen of the battle map (BattlescapeState): no text theme ever reaches it, its frame stays as it is (XP-000484, R-608).
+const char *BATTLE_MAP = "battleMap";
 
 /// The tree's top: the groups under "all" and the screens in each. A name the table does not know (another mod's) hangs
 /// straight under "all". The groups have the names of the main screens too (geoscape, basescape): that screen is the group itself.
@@ -162,7 +164,7 @@ struct Field
 	const char *key;
 	int HdScreenThemes::Values::*value;
 	int lo, hi;
-	int *option;      ///< nullptr for a value kept only (text) or a boolean option (boolOption)
+	int *option;      ///< nullptr for a boolean option (boolOption); for the text, the static the text drawing reads
 	bool *boolOption;
 	int unit;         ///< what the player edits together: 0 the colour, 1 the buttons' look, 2 their letters, 3 the plain text
 };
@@ -185,8 +187,9 @@ const Field *fields(size_t &count)
 		{ "inkHue", &V::inkHue, 0, 360, &Options::oxceHdButtonInkHue, nullptr, 2 },
 		{ "inkLight", &V::inkLight, 0, 100, &Options::oxceHdButtonInkLight, nullptr, 2 },
 		{ "inkSat", &V::inkSat, 0, 100, &Options::oxceHdButtonInkSat, nullptr, 2 },
-		{ "textHue", &V::textHue, 0, 360, nullptr, nullptr, 3 },
-		{ "textSat", &V::textSat, 0, 100, nullptr, nullptr, 3 },
+		// (the plain texts' colour is held in the two statics the text drawing reads: the Scope and the edit put the values there)
+		{ "textHue", &V::textHue, 0, 359, &HdScreenThemes::activeTextHue, nullptr, 3 },
+		{ "textSat", &V::textSat, 0, 100, &HdScreenThemes::activeTextSat, nullptr, 3 },
 	};
 	count = sizeof(F) / sizeof(F[0]);
 	return F;
@@ -214,6 +217,9 @@ void HdScreenThemes::Values::inherit(const Values &parent)
 		if (this->*f[i].value < 0) this->*f[i].value = parent.*f[i].value;
 	}
 }
+
+int HdScreenThemes::activeTextHue = -1;
+int HdScreenThemes::activeTextSat = -1;
 
 HdScreenThemes &HdScreenThemes::instance()
 {
@@ -496,6 +502,13 @@ void HdScreenThemes::editAsParent()
 	loadEdit(resolved(parentOf(_editScreen)));
 }
 
+void HdScreenThemes::editParentText(int &hue, int &sat)
+{
+	const Values *p = _editing ? resolved(parentOf(_editScreen)) : nullptr;
+	hue = p ? p->textHue : -1;
+	sat = p ? p->textSat : -1;
+}
+
 HdScreenThemes::Values HdScreenThemes::editResult() const
 {
 	Values r;
@@ -572,9 +585,22 @@ HdScreenThemes::Scope::Scope(const std::string *screen)
 		return;
 	}
 	HdScreenThemes &themes = instance();
-	if (themes.empty() || themes._editing)
+	const bool battleMap = *screen == BATTLE_MAP;
+	if (themes._editing)
 	{
-		// (while a screen's theme is being edited the options are the edited values for every window on the stack)
+		// (while a screen's theme is being edited the options are the edited values for every window on the stack; the battle map
+		// is under no text theme even then)
+		if (battleMap && textActive())
+		{
+			_textWas[0] = activeTextHue;
+			_textWas[1] = activeTextSat;
+			activeTextHue = activeTextSat = -1;
+			_textCut = true;
+		}
+		return;
+	}
+	if (themes.empty())
+	{
 		return;
 	}
 	const Values *v = themes.resolved(*screen);
@@ -594,7 +620,8 @@ HdScreenThemes::Scope::Scope(const std::string *screen)
 		else if (f[i].option)
 		{
 			_was[i] = *f[i].option;
-			if (v->*f[i].value >= 0) *f[i].option = v->*f[i].value;
+			// (the battle map and its panel keep their frame whatever the file says of the text)
+			if (v->*f[i].value >= 0 && !(battleMap && f[i].unit == 3)) *f[i].option = v->*f[i].value;
 		}
 	}
 	_on = true;
@@ -604,6 +631,11 @@ HdScreenThemes::Scope::Scope(const std::string *screen)
 
 HdScreenThemes::Scope::~Scope()
 {
+	if (_textCut)
+	{
+		activeTextHue = _textWas[0];
+		activeTextSat = _textWas[1];
+	}
 	if (!_on)
 	{
 		return;

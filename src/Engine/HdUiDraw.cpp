@@ -18,6 +18,7 @@
  */
 #include "HdUi.h"
 #include "HdBattleHud.h"
+#include "HdScreenThemes.h"
 #include <algorithm>
 #include <cctype>
 #include <climits>
@@ -392,6 +393,77 @@ void HdUi::setLabelInk(const SDL_Color &face, const SDL_Color &shadow)
 	_labelFlat = false;
 	_labelFace = 0xFF000000u | ((Uint32)face.r << 16) | ((Uint32)face.g << 8) | (Uint32)face.b;
 	_labelShadow = SDL_Color{ shadow.r, shadow.g, shadow.b, 255 };
+}
+
+SDL_Color HdUi::textTint(const SDL_Color &c)
+{
+	// the text theme (XP-000484): a table of the colours already worked out, by the colour itself (a palette can change between frames,
+	// the colour cannot), for the hue and saturation in force; the shades of a text are a few dozen colours, so it is hit all the time
+	struct Entry
+	{
+		Uint32 src = 0xFFFFFFFFu;
+		int hue = -2, sat = -2;
+		SDL_Color out = { 0, 0, 0, 255 };
+	};
+	// (4096 sets of two; the theme is in the hash too, so two screens of a stack with different text colours do not push each other out)
+	thread_local Entry memo[8192];
+	const int hue = HdScreenThemes::activeTextHue, sat = HdScreenThemes::activeTextSat;
+	const Uint32 key = ((Uint32)c.r << 16) | ((Uint32)c.g << 8) | (Uint32)c.b;
+	const Uint32 mixed = key ^ ((Uint32)(hue + 1) * 0x9E3779B1u) ^ ((Uint32)(sat + 1) * 0x85EBCA6Bu);
+	Entry *set = &memo[(size_t)((mixed * 2654435761u) >> 20) * 2];
+	for (int way = 0; way < 2; ++way)
+	{
+		if (set[way].src == key && set[way].hue == hue && set[way].sat == sat)
+		{
+			SDL_Color r = set[way].out;
+			r.unused = c.unused;
+			return r;
+		}
+	}
+	const int mx = std::max({ (int)c.r, (int)c.g, (int)c.b }), mn = std::min({ (int)c.r, (int)c.g, (int)c.b });
+	SDL_Color out = c;
+	if (mx > 0)
+	{
+		// HSV: the brightness (the biggest channel) stays, the hue and the saturation are the theme's (the palette's own where it sets none)
+		const float v = (float)mx / 255.0f, delta = (float)(mx - mn);
+		float h = 0.0f;
+		if (hue >= 0)
+		{
+			h = (float)hue;
+		}
+		else if (delta > 0.0f)
+		{
+			if (mx == c.r) h = std::fmod(((float)c.g - (float)c.b) / delta, 6.0f);
+			else if (mx == c.g) h = ((float)c.b - (float)c.r) / delta + 2.0f;
+			else h = ((float)c.r - (float)c.g) / delta + 4.0f;
+			h *= 60.0f;
+			if (h < 0.0f) h += 360.0f;
+		}
+		const float s = sat >= 0 ? (float)sat / 100.0f : delta / (float)mx;
+		const float hh = h / 60.0f;
+		const float fl = std::floor(hh);
+		const float f = hh - fl;
+		const float p = v * (1.0f - s), q = v * (1.0f - s * f), t = v * (1.0f - s * (1.0f - f));
+		float r, g, b;
+		switch (((int)fl % 6 + 6) % 6)
+		{
+		case 0: r = v; g = t; b = p; break;
+		case 1: r = q; g = v; b = p; break;
+		case 2: r = p; g = v; b = t; break;
+		case 3: r = p; g = q; b = v; break;
+		case 4: r = t; g = p; b = v; break;
+		default: r = v; g = p; b = q; break;
+		}
+		out.r = (Uint8)std::min(255, (int)(r * 255.0f + 0.5f));
+		out.g = (Uint8)std::min(255, (int)(g * 255.0f + 0.5f));
+		out.b = (Uint8)std::min(255, (int)(b * 255.0f + 0.5f));
+	}
+	set[1] = set[0];
+	set[0].src = key;
+	set[0].hue = hue;
+	set[0].sat = sat;
+	set[0].out = out;
+	return out;
 }
 
 namespace
@@ -1933,6 +2005,7 @@ void HdUi::drawTtfLine(const std::vector<TextRun> &runs, int originX, int origin
 	const int haloW = outlineW + std::max(1, k / 2);
 	// a button label of a forced letter tone (setLabelTheme) is the letters only: no halo, outline or drop shadow
 	const bool flat = _labelTheme && _labelFlat;
+	const bool textTheme = !_labelTheme && !_buttonLabel && HdScreenThemes::textActive();
 	for (int pass = flat ? 1 : busy ? -1 : 0; pass < 2; ++pass)
 	{
 		float x = pen;
@@ -1955,8 +2028,9 @@ void HdUi::drawTtfLine(const std::vector<TextRun> &runs, int originX, int origin
 				if (faceV == 1 && lo >= 176 && hi - lo >= 24) faceV = 2;
 			}
 			// a themed button's label (setLabelTheme) has the theme's colours in place of the palette's
-			const Uint32 face = _labelTheme ? _labelFace : rgba(pal[idx(faceV)]);
-			const SDL_Color dark = _labelTheme ? _labelShadow : pal[idx(shadowV)];
+			// (a plain text under the screen's text theme, XP-000484: the palette's shade with the theme's hue and saturation, same brightness)
+			const Uint32 face = _labelTheme ? _labelFace : rgba(textTheme ? textTint(pal[idx(faceV)]) : pal[idx(faceV)]);
+			const SDL_Color dark = _labelTheme ? _labelShadow : textTheme ? textTint(pal[idx(shadowV)]) : pal[idx(shadowV)];
 			// on a busy picture the shade is taken down to two fifths: an outline the colour of the ramp's
 			// shadow is barely darker than a light photograph
 			const SDL_Color edge = { (Uint8)(dark.r * 2 / 5), (Uint8)(dark.g * 2 / 5), (Uint8)(dark.b * 2 / 5), 255 };

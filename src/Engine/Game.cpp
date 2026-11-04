@@ -639,7 +639,7 @@ void Game::run()
 					HdScreenThemes &hdThemes = HdScreenThemes::instance();
 					static const std::string hdNoScreen;
 					const std::string *hdScreen = &hdNoScreen;
-					if (!hdThemes.empty())
+					if (!hdThemes.empty() || hdThemes.editing())
 					{
 						for (auto below = i;; --below)
 						{
@@ -660,7 +660,7 @@ void Game::run()
 							hdScreen = &(*i)->getHdScreen();
 						}
 						// the options its drawing reads are the screen's theme's while it blits (none set: nothing is touched)
-						HdScreenThemes::Scope hdTheme(hdThemes.empty() ? nullptr : hdScreen);
+						HdScreenThemes::Scope hdTheme(hdThemes.empty() && !hdThemes.editing() ? nullptr : hdScreen);
 						(*i)->blit();
 					}
 					hdBlitMs = SDL_GetTicks() - hdBlitStart;

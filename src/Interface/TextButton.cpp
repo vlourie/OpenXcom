@@ -307,7 +307,9 @@ void TextButton::hdMirrorSkin(bool pressed, int inkIndex)
 			}
 		}
 	}
+	HdUi::instance().setButtonLabel(true);   // (the screen's text colour is for plain texts, not for the buttons' labels)
 	_text->hdDrawAt(getX() + _text->getX(), getY() + _text->getY(), getX(), getY(), getWidth(), getHeight(), getWidth() >= 40 ? 3 : 2);
+	HdUi::instance().setButtonLabel(false);
 	HdUi::instance().setLabelTheme(false);
 }
 
@@ -327,7 +329,9 @@ void TextButton::hdMirror()
 		HdUi::instance().drawSurface(this, getX(), getY(), false);
 		return;
 	}
+	HdUi::instance().setButtonLabel(true);
 	_text->hdDrawAt(getX() + _text->getX(), getY() + _text->getY(), getX(), getY(), getWidth(), getHeight());
+	HdUi::instance().setButtonLabel(false);
 }
 
 /**

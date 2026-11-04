@@ -38,6 +38,9 @@ class Surface;
  * OK keeps what was set, Cancel gives back the colours the player had, Reset sets the starting ones.
  * The same window with `windows` set (XP-000479) makes the own colour of the windows' metal apart from the panel's
  * (oxceHdWindowThemeColor 10): the buttons' colour alone, three sliders, with a sample of window buttons.
+ * With `text` set (XP-000484, only inside the edit of a screen's theme) it makes the colour of the plain texts: hue and saturation
+ * on two sliders (they work on HdScreenThemes::activeTextHue/Sat, which every text on the stack follows, so the sample is a text line);
+ * Reset sets the parent's colour (none, the palette's own, when the parent has none).
  */
 class OptionsCustomColorState : public State
 {
@@ -47,6 +50,9 @@ private:
 	Text *_txtValue[6];
 	Slider *_slr[6];
 	Surface *_sample;
+	/// The text mode (XP-000484): the plain texts' colour of the screen being edited, hue and saturation on two sliders; the sample is two texts.
+	bool _text;
+	Text *_txtSample, *_txtSampleBig;
 	TextButton *_btnOk, *_btnCancel, *_btnReset;
 	/// The windows' own colour (3 sliders) instead of the panel's (6); how many sliders; the option a slider stands for.
 	bool _windows;
@@ -60,7 +66,7 @@ private:
 	void show();
 public:
 	/// Creates the window.
-	OptionsCustomColorState(OptionsOrigin origin, bool windows = false);
+	OptionsCustomColorState(OptionsOrigin origin, bool windows = false, bool text = false);
 	~OptionsCustomColorState();
 	/// Handler for moving a slider.
 	void slrChange(Action *action);
