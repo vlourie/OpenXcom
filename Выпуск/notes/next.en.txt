@@ -3,3 +3,4 @@
 - Base, research: with the option "Approximate research term" the scientists window shows "Expected ~N days" under the range, and the research list shows the term in brackets after the number of scientists, for example "3 (2-5d)". It is an estimate from the ruleset cost; the real cost stays hidden.
 - The hyena rider no longer walks backwards: as before, the hyena turns before stepping back and pays TU for it. Vehicles keep their reverse gear.
 - Sand near the crashed plane (desert and snow, and the "Sands" terrain): the crater is a pit again instead of a frame with pipes, and the flat tile is flat again, with no pipes and no patch among its neighbours.
+- Battle map floors: tile edges are now straight instead of stepped, on all flat floors, including the green tiles by the car and the sand. Grass with tufts has only its lower edge straightened.
