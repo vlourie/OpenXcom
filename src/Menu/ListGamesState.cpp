@@ -86,6 +86,7 @@ struct compareSaveTimestamp
  */
 ListGamesState::ListGamesState(OptionsOrigin origin, int firstValidRow, bool autoquick) : _origin(origin), _firstValidRow(firstValidRow), _autoquick(autoquick), _sortable(true)
 {
+	setHdScreen("saveMenus");
 	_screen = false;
 
 	bool isMobile = false;

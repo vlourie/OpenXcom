@@ -36,6 +36,7 @@ namespace OpenXcom
  */
 OptionsBattlescapeState::OptionsBattlescapeState(OptionsOrigin origin) : OptionsBaseState(origin)
 {
+	setHdScreen("battlescapeMenu");
 	setCategory(_btnBattlescape);
 
 	// Create objects

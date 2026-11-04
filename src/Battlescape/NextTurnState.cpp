@@ -62,6 +62,7 @@ namespace OpenXcom
  */
 NextTurnState::NextTurnState(SavedBattleGame *battleGame, BattlescapeState *state) : _battleGame(battleGame), _state(state), _timer(0), _currentTurn(0), _showBriefing(false)
 {
+	setHdScreen("nextTurn");
 	if (_battleGame->isPreview())
 	{
 		// skip everything, go straight to init()

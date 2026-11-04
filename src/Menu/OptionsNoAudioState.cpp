@@ -30,6 +30,7 @@ namespace OpenXcom
  */
 OptionsNoAudioState::OptionsNoAudioState(OptionsOrigin origin) : OptionsBaseState(origin)
 {
+	setHdScreen("audioMenu");
 	setCategory(_btnAudio);
 
 	// Create objects

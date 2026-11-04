@@ -113,6 +113,7 @@ int SoldierStatChangeState::findSoldier(const SoldierStatChangeList &list, const
 SoldierStatChangeState::SoldierStatChangeState(std::shared_ptr<SoldierStatChangeList> list, size_t index) :
 	_list(list), _index(index), _manaEnabled(false), _colorUp(0), _colorDown(0)
 {
+	setHdScreen("soldierStatChange");
 	_manaEnabled = _game->getMod()->isManaFeatureEnabled();
 	RuleInterface *ruleStats = _game->getMod()->getInterface("stats");
 

@@ -105,9 +105,12 @@ public:
 		int _was[16];
 	};
 
-	/// The menu "Themes of the screens" (OptionsScreenThemesState): the groups and their screens, in the table's order.
+	/// The menu "Themes of the screens" (OptionsScreenThemesState): the groups, and what the tree puts under a group or a screen
+	/// (the screens of a room's window, of the production...), in the table's order.
 	static const std::vector<std::string> &groups();
-	static const std::vector<std::string> &screensOf(const std::string &group);
+	static const std::vector<std::string> &childrenOf(const std::string &parent);
+	/// Whether the screen has no interface category in the ruleset (a window that names itself by State::setHdScreen): the menu lists it always.
+	static bool hasNoCategory(const std::string &screen);
 
 	/**
 	 * Editing the theme of one screen. The windows the player edits it in (the colour, the buttons' look and letters) read and

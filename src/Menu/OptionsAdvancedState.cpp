@@ -42,6 +42,7 @@ namespace OpenXcom
  */
 OptionsAdvancedState::OptionsAdvancedState(OptionsOrigin origin) : OptionsBaseState(origin)
 {
+	setHdScreen("advancedMenu");
 	setCategory(_btnAdvanced);
 
 	// Create objects

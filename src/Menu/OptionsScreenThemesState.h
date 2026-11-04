@@ -42,7 +42,7 @@ private:
 	struct Row
 	{
 		std::string screen;
-		bool group;
+		bool group;   ///< has screens under it (the mark at the left opens them): a group, or a screen with sub-screens
 	};
 	OptionsOrigin _origin;
 	Window *_window;

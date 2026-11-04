@@ -39,6 +39,7 @@ namespace OpenXcom
  */
 InventoryPersonalState::InventoryPersonalState(Soldier* soldier)
 {
+	setHdScreen("inventoryPersonal");
 	_screen = false;
 
 	// Create objects

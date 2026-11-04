@@ -78,6 +78,7 @@ const char *const LABEL[3] = { "STR_HD_CUSTOM_HUE", "STR_HD_CUSTOM_SAT", "STR_HD
  */
 OptionsCustomColorState::OptionsCustomColorState(OptionsOrigin origin, bool windows) : _windows(windows), _n(windows ? 3 : 6)
 {
+	setHdScreen("hdWindows");
 	_screen = false;
 
 	// remember what the player had; from now on the own colour is the panel's colour (or the windows' colour: 10), so that the whole interface shows it

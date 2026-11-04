@@ -38,6 +38,7 @@ namespace OpenXcom
  */
 HdLabPasswordState::HdLabPasswordState(OptionsOrigin origin, std::function<void()> opened) : _opened(opened)
 {
+	setHdScreen("optionsDialog");
 	_screen = false;
 
 	// Create objects

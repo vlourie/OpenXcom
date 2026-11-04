@@ -44,6 +44,7 @@ namespace OpenXcom
  */
 ConfirmNewBaseState::ConfirmNewBaseState(Base *base, Globe *globe) : _base(base), _globe(globe), _cost(0)
 {
+	setHdScreen("confirmNewBase");
 	_screen = false;
 
 	// Create objects

@@ -43,6 +43,7 @@ namespace OpenXcom
  */
 ExperienceOverviewState::ExperienceOverviewState(BattlescapeState* parent) : _parent(parent)
 {
+	setHdScreen("experienceOverview");
 	_screen = false;
 
 	// Create objects

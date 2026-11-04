@@ -44,6 +44,7 @@ namespace OpenXcom
 PrimeGrenadeState::PrimeGrenadeState(BattleAction *action, bool inInventoryView, BattleItem *grenadeInInventory) :
 	_action(action), _inInventoryView(inInventoryView), _grenadeInInventory(grenadeInInventory)
 {
+	setHdScreen("primeGrenade");
 	_screen = false;
 
 	// Create objects

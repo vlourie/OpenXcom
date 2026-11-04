@@ -318,6 +318,7 @@ InventoryState::InventoryState(bool tu, BattlescapeState *parent, Base *base, bo
 	_tu(tu), _noCraft(noCraft), _parent(parent), _base(base),
 	_resetCustomDeploymentBackup(false), _reloadUnit(false), _globalLayoutIndex(-1)
 {
+	setHdScreen("inventory");
 	_battleGame = _game->getSavedGame()->getSavedBattle();
 
 	if (Options::oxceAlternateCraftEquipmentManagement && !_tu && _base && _noCraft)

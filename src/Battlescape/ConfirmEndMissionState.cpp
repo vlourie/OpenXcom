@@ -39,6 +39,7 @@ namespace OpenXcom
  */
 ConfirmEndMissionState::ConfirmEndMissionState(SavedBattleGame *battleGame, int wounded, BattlescapeGame *parent) : _battleGame(battleGame), _wounded(wounded), _parent(parent)
 {
+	setHdScreen("confirmEndMission");
 	// Create objects
 	_screen = false;
 	_window = new Window(this, 320, 144, 0, 0);

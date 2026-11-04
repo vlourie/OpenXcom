@@ -43,6 +43,7 @@ const std::string OptionsAudioState::sndFormats[] = {"?", "1.4", "1.0"};
  */
 OptionsAudioState::OptionsAudioState(OptionsOrigin origin) : OptionsBaseState(origin)
 {
+	setHdScreen("audioMenu");
 	setCategory(_btnAudio);
 
 	// Create object

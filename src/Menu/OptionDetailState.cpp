@@ -39,6 +39,7 @@ namespace OpenXcom
  */
 OptionDetailState::OptionDetailState(OptionsOrigin origin, const std::string &name, const std::string &desc, Changer changer) : _changer(changer), _valueColor(0)
 {
+	setHdScreen("optionsDialog");
 	_screen = false;
 
 	// Create objects
