@@ -809,6 +809,7 @@ void Game::run()
 		// the result line is in the log and nobody reads the options back: leave without unloading the mod
 		CrossPlatform::exitNow();
 	}
+	HdScreenThemes::instance().endEdit(false);   // a screen's theme left open at the end: the options go back as they were, not saved edited (XP-000484)
 	Options::save();
 }
 

@@ -19,6 +19,7 @@
  */
 #include <string>
 #include <unordered_map>
+#include <vector>
 
 namespace OpenXcom
 {
@@ -31,6 +32,9 @@ namespace OpenXcom
  * A screen (State::_hdScreen) has a parent in a tree: the screen -> a group (menu, geoscape, basescape, battlescape,
  * messages, landing) -> all. A screen the table does not know (another mod's) hangs straight under all. Each value is
  * taken separately: the screen's own, else its parent's and so on up to "all"; what no one set stays as the options say.
+ * "all" is the options themselves (the common ones): it is not kept in the file (an "all" there is skipped with one line
+ * in the log), so a state with no screen of its own (the start, the loading) is never under a theme. The windows' skin
+ * (oxceHdUiSkin) is not a part of a theme either: more than a dozen places read it outside the drawing of a state.
  *
  * The theme is put to work by Scope: for the blit of one state it lays the values into the options the drawing reads at
  * drawing time (the windows' theme, colour, relief, letters), and gives the previous ones back after. No file, or no
@@ -43,7 +47,6 @@ public:
 	struct Values
 	{
 		int windowTheme = -1;   ///< oxceHdWindowTheme (0, 1)
-		int skin = -1;          ///< oxceHdUiSkin
 		int color = -1;         ///< oxceHdWindowThemeColor (0 the panel's, 1..10; 10 = the own colour of hue, sat, val)
 		int hue = -1;           ///< oxceHdWinKeyHue
 		int sat = -1;           ///< oxceHdWinKeySat
@@ -99,13 +102,41 @@ public:
 		Scope &operator=(const Scope &) = delete;
 	private:
 		bool _on = false;
-		int _was[13];
+		int _was[16];
 	};
+
+	/// The menu "Themes of the screens" (OptionsScreenThemesState): the groups and their screens, in the table's order.
+	static const std::vector<std::string> &groups();
+	static const std::vector<std::string> &screensOf(const std::string &group);
+
+	/**
+	 * Editing the theme of one screen. The windows the player edits it in (the colour, the buttons' look and letters) read and
+	 * write the options directly, so for the time of the edit the options hold the screen's values (the screen's own, then its
+	 * parents', then what the options were), and Scope does nothing: every window on the stack shows the values being edited.
+	 * endEdit puts the options back as they were, so options.cfg is never changed by it; only the screen's record is.
+	 */
+	/// Starts: remembers the options, puts the screen's resolved values in them. False when an edit is already open.
+	bool beginEdit(const std::string &screen);
+	bool editing() const { return _editing; }
+	const std::string &editScreen() const { return _editScreen; }
+	/// "As the parent": the options take the parent's values (and what the options were), the screen's own are dropped on commit.
+	void editAsParent();
+	/// What the screen's record would be now (an empty one: as the parent).
+	Values editResult() const;
+	/// Ends: with `commit` the record is set and the file written; the options come back either way. Does nothing if no edit is open.
+	void endEdit(bool commit);
 
 private:
 	HdScreenThemes() = default;
+	/// Puts the values (nullptr: none) over what the options were before the edit, into the options.
+	void loadEdit(const Values *v);
 	std::unordered_map<std::string, Values> _own;       ///< what the file says
 	std::unordered_map<std::string, Values> _cache;     ///< the screen -> its values with the parents' put in (any() false = none)
+	bool _editing = false;
+	bool _editParent = false;                           ///< "as the parent" was pressed: the record starts empty
+	std::string _editScreen;
+	int _editWas[16] = {};                              ///< the options before the edit (by the fields of the table)
+	int _editStart[16] = {};                            ///< the options as the edit set them: a unit changed from these is the player's
 };
 
 }

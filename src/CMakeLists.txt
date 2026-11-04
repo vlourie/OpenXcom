@@ -337,6 +337,7 @@ set ( menu_src
   Menu/OptionsCustomColorState.cpp
   Menu/OptionsButtonFaceState.cpp
   Menu/OptionsButtonInkState.cpp
+  Menu/OptionsScreenThemesState.cpp
   Menu/HdLabPasswordState.cpp
   Menu/OptionsHdState.cpp
   Menu/OptionsGeoscapeState.cpp
