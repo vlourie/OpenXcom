@@ -1648,11 +1648,23 @@ void setLogFileName(const std::string& name) {
 	Log(LOG_DEBUG) << "setLogFileName("<<name<<") was '"<<logFileName<<"'; "<<sz<<" in buffer";
 	logFileName = name;
 }
+/// Players' logs stay clean: the HD service lines only with verbose logging, the AI harness or OXCE_HD_PERFLOG (tools read them).
+static bool hdServiceLineHidden(int level, const std::string& bare)
+{
+	if (level != LOG_INFO || (bare.compare(0, 3, "HD ") != 0 && bare.compare(0, 2, "Hd") != 0))
+		return false;
+	static const bool tools = AiProbe::harness() || getenv("OXCE_HD_PERFLOG"); // env only: nothing here may log (R-474)
+	return !tools && !Options::verboseLogging;
+}
 void log(int level, const std::ostringstream& baremsgstream) {
+	const std::string bare = baremsgstream.str();
+	if (hdServiceLineHidden(level, bare)) {
+		return;
+	}
 	std::ostringstream msgstream;
 	msgstream << "[" << CrossPlatform::now() << "]" << "\t"
 			  << "[" << Logger::toString(level) << "]" << "\t"
-			  << baremsgstream.str() << std::endl;
+			  << bare << std::endl;
 	auto msg = msgstream.str();
 
 	int effectiveLevel = Logger::reportingLevel();
