@@ -167,5 +167,17 @@
         if (document.visibilityState === "visible") { window.clearTimeout(timer); poll(); }
     });
     toEnd();
+    // a post comes back as a reload: the next line goes on being typed, and the page does not ride down to #end
+    var say = document.getElementById("say");
+    if (say && (location.hash === "#end" || location.search.indexOf("handler=") >= 0)) {
+        say.focus({ preventScroll: true });
+        // the browser goes to the anchor after "load" has run and that drops the focus: undo it on the next turn
+        window.addEventListener("load", function () {
+            window.setTimeout(function () {
+                window.scrollTo(0, 0);
+                say.focus({ preventScroll: true });
+            }, 0);
+        });
+    }
     schedule(every);
 })();

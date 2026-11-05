@@ -644,7 +644,7 @@ dialog.lightbox .close { position: fixed; top: 10px; right: 14px; min-width: 0; 
     #tab-list:checked ~ .chan-tabs label[for="tab-list"],
     #tab-feed:checked ~ .chan-tabs label[for="tab-feed"],
     #tab-who:checked ~ .chan-tabs label[for="tab-who"] { color: var(--void); background: var(--ui-12); }
-    .chan-lines { height: 55vh; }
+    .chan-lines { height: 40vh; }
 }
 
 @media (max-width: 720px) {

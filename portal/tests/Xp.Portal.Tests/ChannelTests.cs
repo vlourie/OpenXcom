@@ -96,6 +96,8 @@ public sealed partial class ChannelTests(VoiceFactory f) : IClassFixture<VoiceFa
     {
         var rows = await f.DbAsync(db => db.VoiceRooms.Where(r => r.IsPublic).OrderBy(r => r.PublicId).Select(r => new { r.PublicId, r.Title, r.Topic }).ToListAsync());
         Assert.Equal(["ch-english", "ch-general", "ch-pomosch"], rows.Where(r => ChannelSeed.Channels.Any(c => c.PublicId == r.PublicId)).Select(r => r.PublicId));
+        // the list and /voice go by CreatedAt: the general channel is the first one a player sees
+        Assert.Equal(General, await f.DbAsync(db => db.VoiceRooms.Where(r => r.IsPublic).OrderBy(r => r.CreatedAt).Select(r => r.PublicId).FirstAsync()));
         Assert.Contains(rows, r => r.Title == "#общий");
         Assert.Contains(rows, r => r.Title == "#english");
         Assert.Contains(rows, r => r.Title == "#помощь");

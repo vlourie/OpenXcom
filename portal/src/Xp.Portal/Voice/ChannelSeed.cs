@@ -43,8 +43,12 @@ public static class ChannelSeed
         }
         var capacity = Math.Clamp(sp.GetRequiredService<IOptions<LiveKitOptions>>().Value.Capacity, 2, 100);
         var now = clock.GetUtcNow();
+        // the list goes by CreatedAt: a second apart, so #общий comes first and is the channel /voice opens
         foreach (var (id, title, topic) in missing)
+        {
             db.VoiceRooms.Add(new VoiceRoom { PublicId = id, OwnerId = owner.Id, Title = title, Topic = topic, Capacity = capacity, IsPublic = true, CreatedAt = now });
+            now = now.AddSeconds(1);
+        }
         await db.SaveChangesAsync(ct);
         return missing.Count;
     }
