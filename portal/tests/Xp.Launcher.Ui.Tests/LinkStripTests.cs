@@ -211,6 +211,62 @@ public sealed class LinkStripTests : IDisposable
         w.Close();
     }
 
+    void SentTicket(long number, string status, DateTimeOffset? reply)
+    {
+        var id = Guid.NewGuid().ToString();
+        var dir = Path.Combine(Game, "user", "reports", id);
+        Directory.CreateDirectory(dir);
+        File.WriteAllText(Path.Combine(dir, Xp.Launcher.Core.Report.DraftFile), System.Text.Json.JsonSerializer.Serialize(new
+        {
+            id, title = "t", kind = "bug", status = "Sent", token = "tok", ticketNumber = number, displayNumber = $"XP-{number:D6}",
+            ticketUrl = $"https://p.test/t/{number}?k=tok", ticketStatus = status, staffReply = reply is null ? null : "ответ", staffReplyAt = reply,
+            statusChangedAt = reply, createdAt = DateTimeOffset.UtcNow.AddDays(-1), checkedAt = DateTimeOffset.UtcNow,
+        }));
+    }
+
+    static void Call(MainWindow w, string method) =>
+        typeof(MainWindow).GetMethod(method, BindingFlags.Instance | BindingFlags.NonPublic)!.Invoke(w, null);
+
+    static string NoticeText(MainWindow w) =>
+        F<Border>(w, "_notice").GetLogicalDescendants().OfType<TextBlock>().Select(t => t.Text ?? "").First(t => t != L.T("notice.open") && t != L.T("self.install"));
+
+    [AvaloniaFact]
+    public void A_new_launcher_stands_alone_and_the_other_notices_take_turns()
+    {
+        var w = Open("http://127.0.0.1:9/");
+        SentTicket(1, "NeedsInfo", DateTimeOffset.UtcNow.AddMinutes(-5));
+        SentTicket(2, "Triaged", DateTimeOffset.UtcNow.AddMinutes(-5));
+        Call(w, "CountReports");
+        var timer = F<DispatcherTimer>(w, "_noticeTimer");
+        Assert.Equal(TimeSpan.FromSeconds(5), timer.Interval);
+        Assert.True(timer.IsEnabled);
+
+        // two notices: each turn shows the other, and a refresh between turns keeps the one on screen
+        Assert.Contains("XP-000001", NoticeText(w));
+        Call(w, "NextNotice");
+        var second = NoticeText(w);
+        Assert.Contains("XP-000002", second);
+        Call(w, "CountReports");
+        Assert.Equal(second, NoticeText(w));
+        Call(w, "NextNotice");
+        Assert.Contains("XP-000001", NoticeText(w));
+
+        // a new launcher pushes them all out and does not change on a turn
+        typeof(MainWindow).GetField("_launcherUpdate", BindingFlags.Instance | BindingFlags.NonPublic)!
+            .SetValue(w, new Xp.Manifest.ReleaseManifest { Release = new Xp.Manifest.ReleaseInfo { Version = "9.9.9" } });
+        Call(w, "CountReports");
+        var update = L.T("notice.launcher", "9.9.9");
+        Assert.Equal(update, NoticeText(w));
+        Assert.False(timer.IsEnabled);
+        Call(w, "NextNotice");
+        Assert.Equal(update, NoticeText(w));
+
+        // it stands above everything else on the page, the link strip included
+        var page = (DockPanel)F<Border>(w, "_notice").Parent!;
+        Assert.Equal(0, page.Children.IndexOf(F<Border>(w, "_notice")));
+        w.Close();
+    }
+
     [AvaloniaFact]
     public void A_linked_launcher_has_no_strip()
     {

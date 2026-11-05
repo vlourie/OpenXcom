@@ -36,6 +36,10 @@ public sealed class MainWindow : Window
 
     // home
     readonly Border _notice = new() { Background = Skin.B(Skin.WarnFill), CornerRadius = Skin.Radius, Padding = new Thickness(14, 8), IsVisible = false, Margin = new Thickness(0, 0, 0, 16) };
+    readonly DispatcherTimer _noticeTimer = new() { Interval = TimeSpan.FromSeconds(5) };
+    List<(string Text, string Action, Action Click)> _notices = [];
+    int _noticeAt;
+    bool _noticeHeld;
     // the strip over the picture while the launcher is not linked: a running line and one button
     readonly Border _linkStrip = new() { Background = Skin.B(Skin.Fill), CornerRadius = Skin.Radius, Padding = new Thickness(14, 6), IsVisible = false, Margin = new Thickness(0, 0, 0, 16) };
     readonly TextBlock _linkRun = new() { FontSize = 14, FontFamily = Skin.Medium, Foreground = Skin.B(Skin.Accent), RenderTransform = new TranslateTransform() };
@@ -556,6 +560,9 @@ public sealed class MainWindow : Window
         body.Children.Add(_whatsNew);
 
         var page = new DockPanel { Margin = new Thickness(28, 24, 28, 28) };
+        _notice.PointerEntered += (_, _) => _noticeHeld = true;
+        _notice.PointerExited += (_, _) => _noticeHeld = false;
+        _noticeTimer.Tick += (_, _) => NextNotice();
         DockPanel.SetDock(_notice, Dock.Top);
         page.Children.Add(_notice);
         DockPanel.SetDock(_linkStrip, Dock.Top);
@@ -1253,15 +1260,41 @@ public sealed class MainWindow : Window
         _reportsCount.Text = count.ToString();
         _reportsBadge.IsVisible = count > 0;
 
-        if (needInfo.Count > 0) ShowNotice(L.T("notice.needsInfo", needInfo[0].Draft.DisplayNumber ?? ""), L.T("notice.open"), () => Navigate("reports"));
-        else if (fresh.Count == 1)
-            ShowNotice(L.T("notice.ticketNews", fresh[0].Draft.DisplayNumber ?? "", ReportsPage.MarkText(TicketAttention.MarkOf(fresh[0].Draft, _settings.SeenTickets))), L.T("notice.open"), () => Navigate("reports"));
-        else if (fresh.Count > 1) ShowNotice(L.T("notice.ticketsNews", fresh.Count), L.T("notice.open"), () => Navigate("reports"));
-        else if (_voicePage.Messages.Unread > 0)
-            ShowNotice(L.T("notice.messages", _voicePage.Messages.Unread), L.T("notice.open"), () => { Navigate("voice"); _voicePage.ShowTab(true); });
-        else if (_launcherUpdate is not null && _needLauncher is null) ShowNotice(L.T("notice.launcher", _launcherUpdate.Release.Version), L.T("self.install"), async () => await RunAsync(Work.SelfUpdate, SelfUpdateAsync));
-        else if (queued > 0) ShowNotice(L.T("notice.queued", queued), L.T("notice.send"), () => { Navigate("reports"); _reportsPage.SendQueued(); });
-        else _notice.IsVisible = false;
+        // a new launcher stands alone and does not change (Vitali 05.11); without one the rest take turns
+        var notices = new List<(string Text, string Action, Action Click)>();
+        if (_launcherUpdate is not null) notices.Add((L.T("notice.launcher", _launcherUpdate.Release.Version), L.T("self.install"), async () => await RunAsync(Work.SelfUpdate, SelfUpdateAsync)));
+        else
+        {
+            if (needInfo.Count > 0) notices.Add((L.T("notice.needsInfo", needInfo[0].Draft.DisplayNumber ?? ""), L.T("notice.open"), () => Navigate("reports")));
+            if (fresh.Count == 1)
+                notices.Add((L.T("notice.ticketNews", fresh[0].Draft.DisplayNumber ?? "", ReportsPage.MarkText(TicketAttention.MarkOf(fresh[0].Draft, _settings.SeenTickets))), L.T("notice.open"), () => Navigate("reports")));
+            else if (fresh.Count > 1) notices.Add((L.T("notice.ticketsNews", fresh.Count), L.T("notice.open"), () => Navigate("reports")));
+            if (_voicePage.Messages.Unread > 0)
+                notices.Add((L.T("notice.messages", _voicePage.Messages.Unread), L.T("notice.open"), () => { Navigate("voice"); _voicePage.ShowTab(true); }));
+            if (queued > 0) notices.Add((L.T("notice.queued", queued), L.T("notice.send"), () => { Navigate("reports"); _reportsPage.SendQueued(); }));
+        }
+
+        // a refresh keeps the notice on screen where it is, so the turns stay even
+        string? showing = _noticeAt < _notices.Count ? _notices[_noticeAt].Text : null;
+        _notices = notices;
+        _noticeAt = Math.Max(0, notices.FindIndex(n => n.Text == showing));
+        _noticeTimer.IsEnabled = notices.Count > 1;
+        ShowNoticeAt();
+    }
+
+    void NextNotice()
+    {
+        // the pointer over a notice holds it: the link under it must not change on the way to a click
+        if (_noticeHeld || !_notice.IsEffectivelyVisible || _notices.Count < 2) return;
+        _noticeAt = (_noticeAt + 1) % _notices.Count;
+        ShowNoticeAt();
+    }
+
+    void ShowNoticeAt()
+    {
+        if (_notices.Count == 0) { _notice.IsVisible = false; _noticeHeld = false; return; }
+        var (text, action, click) = _notices[_noticeAt];
+        ShowNotice(text, action, click);
     }
 
     void ShowChatBadge()
