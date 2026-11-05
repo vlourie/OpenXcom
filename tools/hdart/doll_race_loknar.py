@@ -9,6 +9,7 @@ M4-7 красная; M в имени - тоже женская фигура). С
   E:/OpenXCom/tools/hdart/.venv-qwen21/Scripts/python.exe E:/OpenXCom/tools/hdart/doll_race_loknar.py fixbase
   E:/OpenXCom/tools/hdart/.venv-qwen21/Scripts/python.exe E:/OpenXCom/tools/hdart/doll_race_loknar.py assemble
   py -3 tools/gpuq.py add --name doll_loknar_heads -- E:/OpenXCom/tools/hdart/.venv-qwen21/Scripts/python.exe E:/OpenXCom/tools/hdart/doll_race_loknar.py heads --looks F4,F0,M0,M4
+  py -3 tools/gpuq.py add --name doll_loknar_armor -- E:/OpenXCom/tools/hdart/.venv-qwen21/Scripts/python.exe E:/OpenXCom/tools/hdart/doll_race_loknar.py armor
   --dry-run - без модели: входы кадров и зоны на листах.
 """
 import argparse
@@ -88,6 +89,23 @@ GLOSSLESS_FEET = ", paw, hoof, mitten, sock, shoe, sandal, claws, talons, webbed
 # у классики этих кож много тёмной тени и яркие блики: по медиане тело выходит темнее, чем видит глаз, и темнее лица (лист #1134)
 LIFT = {"F0": 5, "M0": 8, "M4": 6}
 BODY_FROM_ROW = 74                                  # выше кадр тела не рисует
+# костюм: одна поднятая рука своя, опущенную руку голого тела классика закрывает чёрным клином; окно на груди показывает кожу внешности
+SUIT = RACE + "__7__SYNTH_SUIT"
+SUIT_SEEDS = [0, 1]
+SUIT_WEDGE_MIN = 100                                # чёрное пятно больше этого в точках 320x200 - клин, рисует код; мелкие - тени костюма
+SUIT_STRENGTH = 0.7                                 # 0.85: фигура уже силуэта и надутая игрушка (#1147)
+SUIT_PANEL = (14, 14, 18, 255)                      # подложка кадра: то, что модель оставит внутри силуэта, читается контуром, а не серой каймой (R-089)
+SUIT_RIM = (22, 8, 10, 136)                         # кайма: цветность меньше, светлота больше, от края не дальше (k=4), выше строки сапог (там блики тоже серые)
+SUIT_TEXT = ("{style} {who}, wearing a skin-tight one-piece muscle suit of wet-looking dark blue-steel synthetic polymer with sharp "
+             "silvery-blue specular highlights: sculpted bulging muscles on the arms, broad shoulders and thick thighs, fibrous muscle "
+             "strands running along them, filling the outline of the input completely. "
+             "Glossy violet-magenta parts of the same material: the high collar at the throat, the broad band under the bust, the "
+             "raised fist and the other hand. Heavy glossy black boots with violet edges. Her right arm is raised and bent with "
+             "the fist at the height of her head, exactly as in the input. "
+             "Her skin, face, hair and the open window of the suit over the bust stay exactly as in the input. "
+             "Realistic material, painted game art, not a photo.")
+SUIT_NEGATIVE = (", leather, buckles, pouches, belts, straps, zipper, pockets, logo, text, metal plates, robot, mechanical joints, cape, "
+                 "cloth folds, toy, balloon, inflated, plastic figurine, cartoon, horizontal stripes, green, grey outline")
 _low_hair = None
 
 
@@ -296,7 +314,7 @@ def feet_worker(jobs):
             painter = P.Painter([x["prompt"] for x in jobs] + [x["negative"] for x in jobs])
             print("модель загружена за %d с" % painter.load_s, flush=True)
         try:
-            rgb, _s0 = painter.paint(j["init"], j["mask"], j["control"], j["prompt"], j["seed"], FEET_STRENGTH, P.RUN["item"]["control"], j["negative"])
+            rgb, _s0 = painter.paint(j["init"], j["mask"], j["control"], j["prompt"], j["seed"], j.get("strength", FEET_STRENGTH), P.RUN["item"]["control"], j["negative"])
         except Exception as e:                      # память карты: новый процесс продолжит
             print("кадр %s упал: %s" % (j["tag"], str(e)[:300]), flush=True)
             sys.exit(75)
@@ -469,10 +487,108 @@ def heads(ns):
     rh.finish(jobs, ns.dry_run)
 
 
+def suit_masks():
+    """-> весь слой, клин: большое чёрное пятно классики. Модель его не рисует, иначе в нём появятся складки и блики."""
+    idx = db.load_indices(P.FILES[SUIT])
+    dark = (idx != 0) & (db.to_rgba(idx, P.PAL)[..., :3].sum(2) < 24)
+    n, lb, st, _c = cv2.connectedComponentsWithStats(dark.astype(np.uint8), connectivity=8)
+    wedge = np.zeros(dark.shape, bool)
+    for i in range(1, n):
+        if st[i, cv2.CC_STAT_AREA] >= SUIT_WEDGE_MIN:
+            wedge |= lb == i
+    return idx != 0, wedge
+
+
+def body_layer(look):
+    return Image.open(os.path.join(OUT, "heads", "layers", "%s__2__%s_nude.png" % (RACE.lower(), look.lower()))).convert("RGBA")
+
+
+def armor_jobs():
+    """Кадр брони как ступень 4 пилота: вход - готовая кукла F4 и B2 костюма, маска - костюм без клина, контроль - классика серым."""
+    common()
+    whole, wedge = suit_masks()
+    canvas = Image.new("RGBA", (db.W * dp.K, db.H * dp.K), SUIT_PANEL)
+    canvas.alpha_composite(body_layer(BASE))
+    bl, _m = dp.b2_layer(SUIT)
+    canvas.alpha_composite(bl)
+    ctl = vc.control_map(dp.classic(P.FILES, P.PAL, ["%s__2__%s_NUDE" % (RACE, BASE), SUIT]).crop(dp.CROP), dp.Z, "gray")
+    return [{"tag": "armor_synth_s%d" % s, "seed": P.RUN["seed"] + 100 + s, "strength": SUIT_STRENGTH,
+             "prompt": SUIT_TEXT.format(style=P.STYLE, who=WHO), "negative": P.NEGATIVE + SUIT_NEGATIVE,
+             "init": P.to8(canvas), "mask": P.mask8(whole & ~wedge, P.RUN["armor"]["grow8"]), "control": ctl} for s in SUIT_SEEDS]
+
+
+def suit_rim(rgb, lab, whole):
+    """Модель рисует фигуру уже силуэта: у края бледная муть. Альфу не трогать (под ней голое тело), муть -> тёмный контур, как у классики."""
+    chroma, light, far, row = SUIT_RIM
+    d = cv2.distanceTransform((ws.sil4(whole) > 0.5).astype(np.uint8), cv2.DIST_L2, 5)
+    rim = (np.hypot(lab[..., 1], lab[..., 2]) < chroma) & (lab[..., 0] > light) & (d > 0) & (d <= far)
+    rim[row * dp.K:] = False
+    n, lb = cv2.connectedComponents(rim.astype(np.uint8), connectivity=8)
+    touch = np.unique(lb[rim & (d <= 2)])
+    w = cv2.GaussianBlur(np.isin(lb, touch[touch > 0]).astype(np.float32), (0, 0), 1.5)[..., None]
+    return rgb * (1 - w) + np.array(SUIT_PANEL[:3], np.float32) * w
+
+
+def armor_layer(rgb8):
+    """Ответ кадра -> слой: тон от классики, альфа и окно - силуэт классики x4, клин чёрный со сглаженным краем."""
+    whole, wedge = suit_masks()
+    names = ["%s__2__%s_NUDE" % (RACE, BASE), SUIT]
+    f4, d0, d1 = P.tone_lock(P.full4(rgb8), names, whole & ~wedge)
+    lab = bp._rgb_to_lab(f4 / 255.0)
+    lab[..., 1] = np.maximum(lab[..., 1], 0.0)      # зелёных цветов в костюме нет, модель кладёт их в блики
+    f4 = bp._lab_to_rgb(lab) * 255.0
+    f4 = suit_rim(f4, lab, whole)
+    layer = np.asarray(P.layer_from(f4, whole), np.float32).copy()
+    w = ws.sil4(wedge)[..., None]
+    col = np.median(db.to_rgba(db.load_indices(P.FILES[SUIT]), P.PAL)[wedge][:, :3], axis=0)
+    layer[..., :3] = layer[..., :3] * (1 - w) + col * w
+    return Image.fromarray(np.clip(layer + 0.5, 0, 255).astype(np.uint8), "RGBA"), d0, d1
+
+
+def armor(ns):
+    jobs = armor_jobs()
+    if ns.worker:
+        feet_worker(jobs)
+        return
+    raw, out = os.path.join(OUT, "raw"), os.path.join(OUT, "armor")
+    os.makedirs(out, exist_ok=True)
+    for j in jobs:
+        j["init"].convert("RGB").save(os.path.join(raw, j["tag"] + "_in.png"))
+        j["mask"].save(os.path.join(raw, j["tag"] + "_mask.png"))
+    if not ns.dry_run:
+        run_stage("armor", [], jobs, raw)
+    box = tuple(v * dp.K for v in (40, 44, 110, 152))
+    W, H = box[2] - box[0], box[3] - box[1]
+    bg = (40, 42, 50, 255)
+
+    def on(look, layer):
+        c = Image.new("RGBA", (db.W * dp.K, db.H * dp.K), bg)
+        c.alpha_composite(body_layer(look))
+        c.alpha_composite(layer)
+        return c.crop(box).convert("RGB")
+
+    classic = dp.classic(P.FILES, P.PAL, ["%s__2__%s_NUDE" % (RACE, BASE), SUIT]).resize((db.W * dp.K, db.H * dp.K), Image.NEAREST)
+    cl = Image.new("RGBA", classic.size, bg)
+    cl.alpha_composite(classic)
+    rows = [[cl.crop(box).convert("RGB")]]
+    for j in jobs:
+        rgb8 = np.asarray(j["init"].convert("RGB")) if ns.dry_run else np.asarray(Image.open(os.path.join(raw, j["tag"] + "_out.png")).convert("RGB"))
+        layer, d0, d1 = armor_layer(rgb8)
+        layer.save(os.path.join(out, j["tag"] + ".png"))
+        print("%s: тон dE %.1f -> %.1f" % (j["tag"], d0, d1), flush=True)
+        rows.append([on(look, layer) for look in (BASE, "F0", "M0", "M4")])
+    sheet = Image.new("RGB", (W * 4, H * len(rows)), bg[:3])
+    for y, row in enumerate(rows):
+        for x, t in enumerate(row):
+            sheet.paste(t, (x * W, y * H))
+    sheet.save(os.path.join(out, "armor_synth.png"))
+    print("лист:", os.path.join(out, "armor_synth.png"), sheet.size, flush=True)
+
+
 def main():
     sys.stdout.reconfigure(encoding="utf-8")
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("stage", choices=("bodies", "feet", "fixbase", "assemble", "heads"))
+    ap.add_argument("stage", choices=("bodies", "feet", "fixbase", "assemble", "heads", "armor"))
     ap.add_argument("--looks", default="")
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--worker", action="store_true", help="(служебное) рисовать недостающие кадры подряд")
@@ -485,6 +601,8 @@ def main():
         fixbase()
     elif ns.stage == "assemble":
         assemble()
+    elif ns.stage == "armor":
+        armor(ns)
     else:
         heads(ns)
 
