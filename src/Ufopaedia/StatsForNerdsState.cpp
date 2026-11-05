@@ -279,10 +279,12 @@ void StatsForNerdsState::buildUI(bool debug, bool ids, bool defaults)
 	_btnPrev->setText("<<");
 	_btnPrev->onMouseClick((ActionHandler)&StatsForNerdsState::btnPrevClick);
 	_btnPrev->onKeyboardPress((ActionHandler)&StatsForNerdsState::btnPrevClick, Options::keyGeoLeft);
+	_btnPrev->onKeyboardPress((ActionHandler)&StatsForNerdsState::btnPrevClick, Options::keyBattlePrevUnit);
 
 	_btnNext->setText(">>");
 	_btnNext->onMouseClick((ActionHandler)&StatsForNerdsState::btnNextClick);
 	_btnNext->onKeyboardPress((ActionHandler)&StatsForNerdsState::btnNextClick, Options::keyGeoRight);
+	_btnNext->onKeyboardPress((ActionHandler)&StatsForNerdsState::btnNextClick, Options::keyBattleNextUnit);
 
 	if (Options::oxceDisableStatsForNerds)
 	{

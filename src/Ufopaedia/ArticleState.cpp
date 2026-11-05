@@ -239,9 +239,11 @@ namespace OpenXcom
 		_btnPrev->setText("<<");
 		_btnPrev->onMouseClick((ActionHandler)&ArticleState::btnPrevClick);
 		_btnPrev->onKeyboardPress((ActionHandler)&ArticleState::btnPrevClick, Options::keyGeoLeft);
+		_btnPrev->onKeyboardPress((ActionHandler)&ArticleState::btnPrevClick, Options::keyBattlePrevUnit);
 		_btnNext->setText(">>");
 		_btnNext->onMouseClick((ActionHandler)&ArticleState::btnNextClick);
 		_btnNext->onKeyboardPress((ActionHandler)&ArticleState::btnNextClick, Options::keyGeoRight);
+		_btnNext->onKeyboardPress((ActionHandler)&ArticleState::btnNextClick, Options::keyBattleNextUnit);
 		_btnInfo->setText(tr("STR_INFO_UFOPEDIA"));
 		_btnInfo->onMouseClick((ActionHandler)&ArticleState::btnInfoClick);
 		_btnInfo->onKeyboardPress((ActionHandler)&ArticleState::btnInfoClick, Options::keyGeoUfopedia);
