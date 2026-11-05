@@ -13,3 +13,4 @@
 - Forest and jungle: the dead tree is no longer broken by a strip of grass; the trunk is solid, with roots and a straight edge.
 - The barrel from the original is a metal drum again rather than a wooden cask: a straight cylinder with ribs, in every set where it appears.
 - Falling trees no longer sound like a collapsing house: they have their own sound. Buildings keep the old one.
+- Ship and base chairs are redrawn: a round riveted base, a round seat with a dark centre, a backrest that tapers upward with a rectangular cut-out. The same look in every set, 73 frames.
