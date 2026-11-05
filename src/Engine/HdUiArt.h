@@ -65,6 +65,8 @@ namespace HdUiArt
 		std::vector<const Art*> layers;   ///< a composed picture: made from these when first drawn (see composeLayers)
 		bool doll = false;                ///< a paper doll's layer or composite: never searched as a crop
 		SDL_Rect opaque = {0, 0, 0, 0};   ///< a composite: where its classic pixels are not transparent
+		int cropX = 0, cropY = 0;         ///< a composite of a part of the layers: where the part starts in them
+		std::vector<Uint32> backdrop;     ///< a composite: the classic image under the layers (baseWidth * baseHeight), or empty
 	};
 	/// Where the texts drawn over `art` (its surface of w x h at x, y) land on the picture: the whole
 	/// surface, or only a doll's figure - its canvas is the whole screen, and the texts around it are
@@ -85,6 +87,9 @@ namespace HdUiArt
 	/// own pictures (in that order) when first drawn - the classic composite itself matches no picture.
 	/// Nothing is registered when a layer has no picture (the doll then stays as it is drawn today).
 	void composeLayers(const Surface *composite, const std::vector<std::pair<const Surface*, std::string>> &layers);
+	/// The same for a part of a paper doll (the face in the battle's panel): `composite` holds `backdrop` and over
+	/// it the layers' window that starts at (cropX, cropY). Only the layers showing in the window need a picture.
+	void composeLayerPart(const Surface *composite, const Surface *backdrop, const std::vector<std::pair<const Surface*, std::string>> &layers, int cropX, int cropY);
 	/// The picture's pixels, loading them if needed (empty when the file cannot be read).
 	const HdFrame &frame(const Art *art);
 	/// The picture of the classic image with these pixels (by content), or nullptr.
