@@ -105,6 +105,7 @@ doll_race_heads.py
 doll_race_loknar.py
 doll_armor_solo.py
 doll_armor_over.py
+doll_armor_batch.py
 obj3d_gen.py
 gen_screens.py
 gen_ufo_pedia.py
